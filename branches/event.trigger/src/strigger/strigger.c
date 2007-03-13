@@ -60,7 +60,7 @@ static int   _get_trigger(void);
 static char *_res_type(uint8_t  res_type);
 static int   _set_trigger(void);
 static int   _trig_offset(uint16_t offset);
-static char *_trig_type(uint8_t  trig_type);
+static char *_trig_type(uint16_t trig_type);
 static char *_trig_user(uint32_t user_id);
 
 int main(int argc, char *argv[])
@@ -217,11 +217,11 @@ static int _get_trigger(void)
 
 		if (line_no == 0) {
 			/*      7777777 88888888 7777777 88888888 666666 88888888 xxxxxxx */
-			printf("TRIG_ID RES_TYPE  RES_ID TYPE     OFFSET     USER PROGRAM\n");
+			printf("TRIG_ID RES_TYPE  RES_ID TYPE     OFFSET USER     PROGRAM\n");
 		}
 		line_no++;
 
-		printf("%7u %8s %7s %8s %6d %8.8s %s\n",
+		printf("%7u %-8s %7s %-8s %6d %-8s %s\n",
 			trig_msg->trigger_array[i].trig_id,
 			_res_type(trig_msg->trigger_array[i].res_type),
 			trig_msg->trigger_array[i].res_id,
@@ -235,7 +235,7 @@ static int _get_trigger(void)
 	return 0;
 }
 
-static char *_res_type(uint8_t  res_type)
+static char *_res_type(uint8_t res_type)
 {
 	if      (res_type == TRIGGER_RES_TYPE_JOB)
 		return "job";
@@ -245,7 +245,7 @@ static char *_res_type(uint8_t  res_type)
 		return "unknown";
 }
 
-static char *_trig_type(uint8_t  trig_type)
+static char *_trig_type(uint16_t trig_type)
 {
 	if      (trig_type == TRIGGER_TYPE_UP)
 		return "up";

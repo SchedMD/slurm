@@ -3,7 +3,7 @@
  *
  *  $Id$
  *****************************************************************************
- *  Copyright (C) 2002-2006 The Regents of the University of California.
+ *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Kevin Tew <tew1@llnl.gov>, et. al.
  *  UCRL-CODE-226842.
@@ -3917,7 +3917,7 @@ static void _pack_trigger_msg(trigger_info_msg_t *msg , Buf buffer)
 		pack32 (msg->trigger_array[i].trig_id,   buffer);
 		pack8  (msg->trigger_array[i].res_type,  buffer);
 		packstr(msg->trigger_array[i].res_id,    buffer);
-		pack8  (msg->trigger_array[i].trig_type, buffer);
+		pack16 (msg->trigger_array[i].trig_type, buffer);
 		pack16 (msg->trigger_array[i].offset,    buffer);
 		pack32 (msg->trigger_array[i].user_id,   buffer);
 		packstr(msg->trigger_array[i].program,   buffer);
@@ -3938,7 +3938,7 @@ static int  _unpack_trigger_msg(trigger_info_msg_t ** msg_ptr , Buf buffer)
 		safe_unpack8 (&msg->trigger_array[i].res_type,  buffer);
 		safe_unpackstr_xmalloc(&msg->trigger_array[i].res_id, 
 				&uint16_tmp, buffer);
-		safe_unpack8 (&msg->trigger_array[i].trig_type, buffer);
+		safe_unpack16(&msg->trigger_array[i].trig_type, buffer);
 		safe_unpack16(&msg->trigger_array[i].offset,    buffer);
 		safe_unpack32(&msg->trigger_array[i].user_id,   buffer);
 		safe_unpackstr_xmalloc(&msg->trigger_array[i].program, 

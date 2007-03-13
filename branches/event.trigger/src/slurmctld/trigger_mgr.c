@@ -71,7 +71,7 @@ typedef struct trig_mgr_info {
 	bitstr_t *nodes_bitmap;	/* bitmap of requested nodes (if applicable) */
 	uint32_t job_id;	/* job ID (if applicable) */
 	struct job_record *job_ptr; /* pointer to job record (if applicable) */
-	uint8_t  trig_type;	/* TRIGGER_TYPE_* */
+	uint16_t trig_type;	/* TRIGGER_TYPE_* */
 	time_t   trig_time;	/* offset (pending) or time stamp (complete) */
 	uint32_t user_id;	/* user requesting trigger */
 	uint32_t group_id;	/* user's group id (pending) or pid (complete) */
@@ -88,7 +88,7 @@ void _trig_del(void *x) {
 	xfree(tmp);
 }
 
-static char *_res_type(uint8_t  res_type)
+static char *_res_type(uint8_t res_type)
 {
 	if      (res_type == TRIGGER_RES_TYPE_JOB)
 		return "job";
@@ -98,7 +98,7 @@ static char *_res_type(uint8_t  res_type)
 		return "unknown";
 }
 
-static char *_trig_type(uint8_t  trig_type)
+static char *_trig_type(uint16_t trig_type)
 {
 	if      (trig_type == TRIGGER_TYPE_UP)
 		return "up";
