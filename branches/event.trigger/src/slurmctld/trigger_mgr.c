@@ -268,7 +268,6 @@ extern int trigger_set(uid_t uid, gid_t gid, trigger_info_msg_t *msg)
 	for (i=0; i<msg->record_count; i++) {
 		if (msg->trigger_array[i].res_type ==
 				TRIGGER_RES_TYPE_JOB) {
-
 			job_id = (uint32_t) atol(
 				msg->trigger_array[i].res_id);
 			job_ptr = find_job_record(job_id);
@@ -362,6 +361,61 @@ static void _dump_trigger_state(trig_mgr_info_t *trig_ptr, Buf buffer)
 	pack8    (trig_ptr->state,     buffer);
 }
 
+static int _load_trigger_state(Buf buffer)
+{
+	trig_mgr_info_t *trig_ptr;
+	uint16_t str_len;
+
+	trig_ptr = xmalloc(sizeof(trig_mgr_info_t));
+	safe_unpack32   (&trig_ptr->trig_id,   buffer);
+	safe_unpack8    (&trig_ptr->res_type,  buffer);
+	safe_unpackstr_xmalloc(&trig_ptr->res_id, &str_len, buffer);
+	/* rebuild nodes_bitmap as needed from res_id */
+	/* rebuild job_id as needed from res_id */
+	/* rebuild job_ptr as needed from res_id */
+	safe_unpack16   (&trig_ptr->trig_type, buffer);
+	safe_unpack_time(&trig_ptr->trig_time, buffer);
+	safe_unpack32   (&trig_ptr->user_id,   buffer);
+	safe_unpack32   (&trig_ptr->group_id,  buffer);
+	safe_unpackstr_xmalloc(&trig_ptr->program, &str_len, buffer);
+	safe_unpack8    (&trig_ptr->state,     buffer);
+	if ((trig_ptr->res_type < TRIGGER_RES_TYPE_JOB)
+	||  (trig_ptr->res_type > TRIGGER_RES_TYPE_NODE)
+	||  (trig_ptr->state > 2))
+		goto unpack_error;
+	if (trig_ptr->res_type == TRIGGER_RES_TYPE_JOB) {
+		trig_ptr->job_id = (uint32_t) atol(trig_ptr->res_id);
+		trig_ptr->job_ptr = find_job_record(trig_ptr->job_id);
+		if ((trig_ptr->job_id == 0)
+		||  (trig_ptr->job_ptr == NULL)
+		||  (IS_JOB_FINISHED(trig_ptr->job_ptr)))
+			goto unpack_error;
+	} else {
+		trig_ptr->job_id = 0;
+		trig_ptr->job_ptr = NULL;
+		if ((trig_ptr->res_id != NULL)
+		&&  (trig_ptr->res_id[0] != '*')
+		&&  (node_name2bitmap(trig_ptr->res_id, false,
+				&trig_ptr->nodes_bitmap) != 0))
+			goto unpack_error;
+	}
+
+	slurm_mutex_lock(&trigger_mutex);
+	if (trigger_list == NULL)
+		trigger_list = list_create(_trig_del);
+	list_append(trigger_list, trig_ptr);
+	slurm_mutex_unlock(&trigger_mutex);
+
+	return SLURM_SUCCESS;
+
+unpack_error:
+	error("Incomplete trigger record");
+	xfree(trig_ptr->res_id);
+	xfree(trig_ptr->program);
+	FREE_NULL_BITMAP(trig_ptr->nodes_bitmap);
+	xfree(trig_ptr);
+	return SLURM_FAILURE;
+}
 extern int trigger_state_save(void)
 {
 	static int high_buffer_size = (1024 * 1024);
