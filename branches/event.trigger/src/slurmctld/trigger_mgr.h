@@ -54,7 +54,7 @@ extern void trigger_node_up(struct node_record *node_ptr);
 extern void trigger_reconfig(void);
 
 /* Save and restore state for slurmctld fail-over or restart */
-extern void trigger_state_save(void);
+extern int  trigger_state_save(void);
 extern void trigger_state_restore(void);
 
 /* Execute programs as needed for triggers that have been pulled

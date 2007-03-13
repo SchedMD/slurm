@@ -44,7 +44,10 @@
 #endif
 
 #include <errno.h>
+#include <fcntl.h>
 #include <stdlib.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 
 #include "src/common/bitstring.h"
 #include "src/common/list.h"
@@ -56,6 +59,9 @@
 
 #define _DEBUG 1
 #define MAX_PROG_TIME 300	/* maximum run time for program */
+
+/* Change TRIGGER_STATE_VERSION value when changing the state save format */
+#define TRIGGER_STATE_VERSION      "VER001"
 
 List trigger_list;
 uint32_t next_trigger_id = 1;
@@ -340,9 +346,98 @@ extern void trigger_reconfig(void)
 	slurm_mutex_unlock(&trigger_mutex);
 }
 
-extern void trigger_state_save(void)
+static void _dump_trigger_state(trig_mgr_info_t *trig_ptr, Buf buffer)
 {
-	/* FIXME */
+	pack32   (trig_ptr->trig_id,   buffer);
+	pack8    (trig_ptr->res_type,  buffer);
+	packstr  (trig_ptr->res_id,    buffer);
+	/* rebuild nodes_bitmap as needed from res_id */
+	/* rebuild job_id as needed from res_id */
+	/* rebuild job_ptr as needed from res_id */
+	pack16   (trig_ptr->trig_type, buffer);
+	pack_time(trig_ptr->trig_time, buffer);
+	pack32   (trig_ptr->user_id,   buffer);
+	pack32   (trig_ptr->group_id,  buffer);
+	packstr  (trig_ptr->program,   buffer);
+	pack8    (trig_ptr->state,     buffer);
+}
+
+extern int trigger_state_save(void)
+{
+	static int high_buffer_size = (1024 * 1024);
+	int error_code = 0, log_fd;
+	char *old_file, *new_file, *reg_file;
+	Buf buffer = init_buf(high_buffer_size);
+	ListIterator trig_iter;
+	trig_mgr_info_t *trig_in;
+	/* Locks: Read config */
+	slurmctld_lock_t config_read_lock =
+		{ READ_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
+
+	/* write header: version, time */
+	packstr(TRIGGER_STATE_VERSION, buffer);
+	pack_time(time(NULL), buffer);
+
+	/* write individual trigger records */
+	slurm_mutex_lock(&trigger_mutex);
+	if (trigger_list == NULL)
+		trigger_list = list_create(_trig_del);
+
+	trig_iter = list_iterator_create(trigger_list);
+	while ((trig_in = list_next(trig_iter)))
+		_dump_trigger_state(trig_in, buffer);
+	list_iterator_destroy(trig_iter);
+	slurm_mutex_unlock(&trigger_mutex);
+
+	/* write the buffer to file */
+	lock_slurmctld(config_read_lock);
+	old_file = xstrdup(slurmctld_conf.state_save_location);
+	xstrcat(old_file, "/trigger_state.old");
+	reg_file = xstrdup(slurmctld_conf.state_save_location);
+	xstrcat(reg_file, "/trigger_state");
+	new_file = xstrdup(slurmctld_conf.state_save_location);
+	xstrcat(new_file, "/trigger_state.new");
+	unlock_slurmctld(config_read_lock);
+
+	lock_state_files();
+	log_fd = creat(new_file, 0600);
+	if (log_fd == 0) {
+		error("Can't save state, create file %s error %m",
+		      new_file);
+		error_code = errno;
+	} else {
+		int pos = 0, nwrite = get_buf_offset(buffer), amount;
+		char *data = (char *)get_buf_data(buffer);
+		high_buffer_size = MAX(nwrite, high_buffer_size);
+		while (nwrite > 0) {
+			amount = write(log_fd, &data[pos], nwrite);
+			if ((amount < 0) && (errno != EINTR)) {
+				error("Error writing file %s, %m", new_file);
+				error_code = errno;
+				break;
+			}
+			nwrite -= amount;
+			pos    += amount;
+		}
+		fsync(log_fd);
+		close(log_fd);
+	}
+	if (error_code)
+		(void) unlink(new_file);
+	else {			/* file shuffle */
+		(void) unlink(old_file);
+		(void) link(reg_file, old_file);
+		(void) unlink(reg_file);
+		(void) link(new_file, reg_file);
+		(void) unlink(new_file);
+	}
+	xfree(old_file);
+	xfree(reg_file);
+	xfree(new_file);
+	unlock_state_files();
+
+	free_buf(buffer);
+	return error_code;
 }
 
 extern void trigger_state_restore(void)
@@ -478,7 +573,7 @@ static void _trigger_node_event(trig_mgr_info_t *trig_in, time_t now)
 
 static void _trigger_run_program(trig_mgr_info_t *trig_in)
 {
-	char program[256], arg0[128], arg1[128], *pname;
+	char program[1024], arg0[1024], arg1[1024], *pname;
 	uid_t uid;
 	gid_t gid;
 	pid_t child;
@@ -490,7 +585,6 @@ static void _trigger_run_program(trig_mgr_info_t *trig_in)
 	else
 		pname++;
 	strncpy(arg0, pname, sizeof(arg0));
-/* FIXME: set to actual node list below */
 	strncpy(arg1, trig_in->res_id, sizeof(arg1));
 	uid = trig_in->user_id;
 	gid = trig_in->group_id;
