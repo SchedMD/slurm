@@ -239,7 +239,7 @@ extern int trigger_set(uid_t uid, gid_t gid, trigger_info_msg_t *msg)
 	int i;
 	int rc = SLURM_SUCCESS;
 	uint32_t job_id;
-	bitstr_t *bitmap;
+	bitstr_t *bitmap = NULL;
 	trig_mgr_info_t * trig_add;
 	struct job_record *job_ptr;
 	slurmctld_lock_t job_read_lock =
