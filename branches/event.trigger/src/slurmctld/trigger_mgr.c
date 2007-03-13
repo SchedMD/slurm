@@ -494,9 +494,84 @@ extern int trigger_state_save(void)
 	return error_code;
 }
 
-extern void trigger_state_restore(void)
+extern int trigger_state_restore(void)
 {
-	/* FIXME */
+	int data_allocated, data_read = 0, error_code = 0;
+	uint32_t data_size = 0;
+	int state_fd, trigger_cnt = 0;
+	char *data = NULL, *state_file;
+	Buf buffer;
+	time_t buf_time;
+	char *ver_str = NULL;
+	uint16_t ver_str_len;
+
+	/* read the file */
+	state_file = xstrdup(slurmctld_conf.state_save_location);
+	xstrcat(state_file, "/trigger_state");
+	lock_state_files();
+	state_fd = open(state_file, O_RDONLY);
+	if (state_fd < 0) {
+		info("No trigger state file (%s) to recover", state_file);
+		error_code = ENOENT;
+	} else {
+		data_allocated = BUF_SIZE;
+		data = xmalloc(data_allocated);
+		while (1) {
+			data_read = read(state_fd, &data[data_size],
+					 BUF_SIZE);
+			if (data_read < 0) {
+				if (errno == EINTR)
+					continue;
+				else {
+					error("Read error on %s: %m", 
+					      state_file);
+					break;
+				}
+			} else if (data_read == 0)	/* eof */
+				break;
+			data_size      += data_read;
+			data_allocated += data_read;
+			xrealloc(data, data_allocated);
+		}
+		close(state_fd);
+	}
+	xfree(state_file);
+	unlock_state_files();
+
+	buffer = create_buf(data, data_size);
+	if (size_buf(buffer) >= sizeof(uint16_t) + 
+			strlen(TRIGGER_STATE_VERSION)) {
+	        char *ptr = get_buf_data(buffer);
+
+	        if (!memcmp(&ptr[sizeof(uint16_t)], TRIGGER_STATE_VERSION, 3)) {
+		        safe_unpackstr_xmalloc(&ver_str, &ver_str_len, buffer);
+		        debug3("Version string in trigger_state header is %s",
+			       ver_str);
+		}
+	}
+	if (ver_str && (strcmp(ver_str, TRIGGER_STATE_VERSION) != 0)) {
+		error("Can't recover trigger state, data version incompatable");
+		xfree(ver_str);
+		free_buf(buffer);
+		return EFAULT;
+	}
+	xfree(ver_str);
+
+	safe_unpack_time(&buf_time, buffer);
+
+	while (remaining_buf(buffer) > 0) {
+		error_code = _load_trigger_state(buffer);
+		if (error_code != SLURM_SUCCESS)
+			goto unpack_error;
+		trigger_cnt++;
+	}
+	goto fini;
+
+unpack_error:
+	error("Incomplete trigger data checkpoint file");
+fini:	verbose("State of %d triggers recovered", trigger_cnt);
+	free_buf(buffer);
+	return SLURM_FAILURE;
 }
 
 /* Test if the event has been triggered, change trigger state as needed */

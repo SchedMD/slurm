@@ -62,6 +62,7 @@
 #include "src/common/xstring.h"
 #include "src/common/node_select.h"
 #include "src/common/slurm_jobacct.h"
+#include "src/common/slurm_rlimits_info.h"
 
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/node_scheduler.h"
@@ -69,8 +70,7 @@
 #include "src/slurmctld/read_config.h"
 #include "src/slurmctld/sched_plugin.h"
 #include "src/slurmctld/slurmctld.h"
-
-#include "src/common/slurm_rlimits_info.h"
+#include "src/slurmctld/trigger_mgr.h"
 
 static int  _build_bitmaps(void);
 static int  _init_all_slurm_conf(void);
@@ -668,7 +668,7 @@ static int _build_all_partitionline_info()
  * IN recover - replace job, node and/or partition data with last saved 
  *              state information depending upon value
  *              0 = use no saved state information
- *              1 = recover saved job state, 
+ *              1 = recover saved job and trigger state, 
  *                  node DOWN/DRAIN state and reason information
  *              2 = recover all state saved from last slurmctld shutdown
  * RET 0 if no error, otherwise an error code
@@ -781,6 +781,9 @@ int read_slurm_conf(int recover)
 #endif
 	(void) _sync_nodes_to_comp_job();/* must follow select_g_node_init() */
 	load_part_uid_allow_list(1);
+
+	if (recover >= 1)
+		(void) trigger_state_restore();
 
 	/* sort config_list by weight for scheduling */
 	list_sort(config_list, &list_compare_config);

@@ -55,7 +55,7 @@ extern void trigger_reconfig(void);
 
 /* Save and restore state for slurmctld fail-over or restart */
 extern int  trigger_state_save(void);
-extern void trigger_state_restore(void);
+extern int  trigger_state_restore(void);
 
 /* Execute programs as needed for triggers that have been pulled
  * and purge any vestigial trigger records */
