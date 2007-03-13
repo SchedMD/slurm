@@ -500,24 +500,6 @@ bit_super_set(bitstr_t *b1, bitstr_t *b2)  {
 }
 
 /*
- * return number of bits set in b1 that are also set in b2, 0 if no overlap
- */
-extern int
-bit_overlap(bitstr_t *b1, bitstr_t *b2)
-{
-	int count = 0;
-	bitoff_t bit;
-	
-	_assert_bitstr_valid(b1);
-	_assert_bitstr_valid(b2);
-	assert(_bitstr_bits(b1) == _bitstr_bits(b2));
-
-	for (bit = 0; bit < _bitstr_bits(b); bit += sizeof(bitstr_t)*8)
-		count += hweight(b1[_bit_word(bit)] & b2[_bit_word(bit)]);
-
-	return count;
-}
-/*
  * return 1 if b1 and b2 are identical, 0 otherwise
  */
 extern int
@@ -678,6 +660,25 @@ bit_set_count(bitstr_t *b)
 
 	for (bit = 0; bit < _bitstr_bits(b); bit += sizeof(bitstr_t)*8)
 		count += hweight(b[_bit_word(bit)]);
+
+	return count;
+}
+
+/*
+ * return number of bits set in b1 that are also set in b2, 0 if no overlap
+ */
+extern int
+bit_overlap(bitstr_t *b1, bitstr_t *b2)
+{
+	int count = 0;
+	bitoff_t bit;
+	
+	_assert_bitstr_valid(b1);
+	_assert_bitstr_valid(b2);
+	assert(_bitstr_bits(b1) == _bitstr_bits(b2));
+
+	for (bit = 0; bit < _bitstr_bits(b1); bit += sizeof(bitstr_t)*8)
+		count += hweight(b1[_bit_word(bit)] & b2[_bit_word(bit)]);
 
 	return count;
 }
