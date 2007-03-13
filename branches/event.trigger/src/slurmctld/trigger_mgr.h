@@ -49,9 +49,8 @@ extern trigger_info_msg_t * trigger_get(uid_t uid, trigger_info_msg_t *msg);
 extern int trigger_set(uid_t uid, gid_t gid, trigger_info_msg_t *msg);
 
 /* Note the some event has occured and flag triggers as needed */
-extern void trigger_node_down(char *node_name);
-extern void trigger_node_up(char *node_name);
-extern void trigger_job_fini(uint32_t job_id);
+extern void trigger_node_down(struct node_record *node_ptr);
+extern void trigger_node_up(struct node_record *node_ptr);
 
 /* Save and restore state for slurmctld fail-over or restart */
 extern void trigger_state_save(void);

@@ -113,7 +113,7 @@
 #define PURGE_JOB_INTERVAL 60
 
 /* Process pending trigger events every TRIGGER_INTERVAL seconds */
-#define TRIGGER_INTERVAL 60
+#define TRIGGER_INTERVAL 10
 
 /* Pathname of group file record for checking update times */
 #define GROUP_FILE	"/etc/group"
