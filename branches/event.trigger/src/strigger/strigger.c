@@ -103,12 +103,17 @@ static int _clear_trigger(void)
 		ti.res_id   = tmp_c;
 	}
 	if (slurm_clear_trigger(&ti)) {
-		slurm_perror("slurm_clear_trigger");
-		return 1;
+		if (!params.quiet) {
+			slurm_perror("slurm_clear_trigger");
+			return 1;
+		}
+		return 0;
 	}
 
 	if (params.job_id)
 		verbose("triggers for job %s cleared", ti.res_id);
+	else if (params.user_id)
+		verbose("triggers for user %u cleared", ti.user_id);
 	else
 		verbose("trigger %u cleared", ti.trig_id);
 	return 0;

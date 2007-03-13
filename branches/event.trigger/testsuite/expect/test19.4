@@ -39,6 +39,26 @@ set file_out     "test$test_id.output"
 print_header $test_id
 
 #
+# get my uid and clear any vestigial triggers
+#
+set uid 0
+spawn $bin_id -u
+expect {
+	-re "($number)" {
+		set uid $expect_out(1,string)
+		exp_continue
+	}
+	eof {
+		wait
+	}
+}
+if {$uid == 0} {
+	send_user "\nCan't get my uid\n"
+	exit 1
+}
+exec $strigger --clear --quiet --user=$uid
+
+#
 # Build input script file
 #
 set cwd "[$bin_pwd]"
@@ -64,19 +84,6 @@ expect {
 if {$matches == 0} {
 	send_user "\nFAILURE: trigger creation failure\n"
 	exit 1
-}
-
-# get my uid
-set uid 0
-spawn $bin_id -u
-expect {
-	-re "($number)" {
-		set uid $expect_out(1,string)
-		exp_continue
-	}
-	eof {
-		wait
-	}
 }
 
 set matches 0

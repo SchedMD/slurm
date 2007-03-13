@@ -3,7 +3,8 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 1.2.2
 ========================
- -- Added new command "strigger" for event trigger support.
+ -- Added new command "strigger" for event trigger management, a new 
+    capability. See "man strigger" for details.
 
 * Changes in SLURM 1.2.1
 ========================

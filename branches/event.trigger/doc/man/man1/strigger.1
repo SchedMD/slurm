@@ -75,8 +75,13 @@ time limit, specify \fB\-\-offset=360\fR (six minutes).
 Execute the program at the specified fully qualified pathname
 when the event occurs.
 The program will be executed as the user who sets the trigger.
-If the program fails to complete within a few seconds, it will 
-be killed.
+If the program fails to terminate within 5 minutes, it will 
+be killed along with any spawned processes.
+
+.TP
+\fB\-q\fR, \fB\-\-quiet\fR
+Do not report non\-fatal errors. 
+This can be useful to clear triggers which may have already been purged.
 
 .TP
 \fB\-r\fR, \fB\-\-reconfig\fR
@@ -98,6 +103,11 @@ This must be used in conjunction with the \fB\-\-node\fR option.
 \fB\-u\fR, \fB\-\-up\fR
 Trigger an event if the specified node is returned to service
 from a DOWN state.
+
+.TP
+\fB\-\-user\fR=\fIuser_name_or_id\fR
+Clear or get triggers associated with the specified user.
+Specify either a user name or user ID.
 
 .TP
 \fB\-v\fR, \fB\-\-verbose\fR

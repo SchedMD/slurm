@@ -96,6 +96,7 @@ extern void parse_command_line(int argc, char *argv[])
 		{"node",      optional_argument, 0, 'n'},
 		{"offset",    required_argument, 0, 'o'},
 		{"program",   required_argument, 0, 'p'},
+		{"quiet",     no_argument,       0, 'q'},
 		{"reconfig",  no_argument,       0, 'r'},
 		{"time",      no_argument,       0, 't'},
 		{"up",        no_argument,       0, 'u'},
@@ -113,7 +114,7 @@ extern void parse_command_line(int argc, char *argv[])
 	_init_options();
 
 	optind = 0;
-	while((opt_char = getopt_long(argc, argv, "dfi:j:no:p:rtuvV",
+	while((opt_char = getopt_long(argc, argv, "dfi:j:no:p:qrtuvV",
 			long_options, &option_index)) != -1) {
 		switch (opt_char) {
 		case (int)'?':
@@ -155,6 +156,8 @@ extern void parse_command_line(int argc, char *argv[])
 			xfree(params.program);
 			params.program = xstrdup(optarg);
 			break;
+		case (int)'q':
+			params.quiet = true;
 		case (int)'r':
 			params.reconfig = true;
 			break;
@@ -220,6 +223,7 @@ static void _init_options( void )
 	params.node_id    = NULL;
 	params.offset     = 0;
 	params.program    = NULL;
+	params.quiet      = false;
 	params.reconfig   = false;
 	params.time_limit = false;
 	params.node_up    = false;
@@ -241,6 +245,7 @@ static void _print_options( void )
 	verbose("node       = %s", params.node_id);
 	verbose("offset     = %d secs", params.offset);
 	verbose("program    = %s", params.program);
+	verbose("quiet      = %s", params.quiet ? "true" : "false");
 	verbose("reconfig   = %s", params.reconfig ? "true" : "false");
 	verbose("time_limit = %s", params.time_limit ? "true" : "false");
 	verbose("trigger_id = %u", params.trigger_id);

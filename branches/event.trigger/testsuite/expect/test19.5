@@ -42,12 +42,32 @@ set file_out_time "test$test_id.time_output"
 print_header $test_id
 
 #
+# get my uid and clear any vestigial triggers
+#
+set uid 0
+spawn $bin_id -u
+expect {
+	-re "($number)" {
+		set uid $expect_out(1,string)
+		exp_continue
+	}
+	eof {
+		wait
+	}
+}
+if {$uid == 0} {
+	send_user "\nCan't get my uid\n"
+	exit 1
+}
+exec $strigger --clear --quiet --user=$uid
+
+#
 # Build input script file and submit a job
 #
 make_bash_script $file_in "sleep 60"
 
 set job_id 0
-spawn $srun --batch --output=/dev/null -t1 $file_in
+spawn $srun --batch --output=/dev/null -t2 $file_in
 expect {
 	-re "jobid ($number) submitted" {
 		set job_id $expect_out(1,string)
@@ -79,7 +99,7 @@ make_bash_script $file_in_fini "
 	$squeue -j $job_id -tall >$cwd/$file_out_fini"
 
 set matches 0
-set strigger_pid [spawn $strigger --set -v --time --jobid=$job_id --offset=-30 --program=$cwd/$file_in_time]
+set strigger_pid [spawn $strigger --set -v --time --jobid=$job_id --offset=-90 --program=$cwd/$file_in_time]
 expect {
 	-re "trigger set" {
 		incr matches
@@ -118,19 +138,6 @@ expect {
 if {$matches == 0} {
 	send_user "\nFAILURE: trigger creation failure\n"
 	set exit_code 1
-}
-
-# get my uid
-set uid 0
-spawn $bin_id -u
-expect {
-	-re "($number)" {
-		set uid $expect_out(1,string)
-		exp_continue
-	}
-	eof {
-		wait
-	}
 }
 
 set matches 0
@@ -195,18 +202,6 @@ if {[wait_for_file $file_out_fini] != 0} {
 	if {$job_fini == 0} {
 		send_user "\nFAILURE: file $file_out_fini contents are bad\n"
 		set exit_code 1
-	}
-}
-
-set strigger_pid [spawn $strigger --clear -v --reconfig --user=$uid]
-expect {
-	timeout {
-		send_user "\nFAILURE: strigger not responding\n"
-		slow_kill $strigger_pid
-		set exit_code 1
-	}
-	eof {
-		wait
 	}
 }
 
