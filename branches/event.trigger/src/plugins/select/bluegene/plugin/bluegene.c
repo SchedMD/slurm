@@ -688,26 +688,16 @@ extern int format_node_name(bg_record_t *bg_record, char *buf, int buf_size)
 extern bool blocks_overlap(bg_record_t *rec_a, bg_record_t *rec_b)
 {
 	bitstr_t *my_bitmap = NULL;
-	int rc;
-	
-/* #ifdef HAVE_BG_FILES */
-/* 	int rc; */
-/* 	if(rec_a->bp_count > 1 && rec_a->bp_count > 1) { */
-/* 		reset_ba_system(); */
-/* 		set_node_list(rec_a->bg_block_list); */
-/* 		load_block_wiring(rec_a->bg_block_id); */
-/* 		rc = load_block_wiring(rec_b->bg_block_id); */
-/* 		if(rc == SLURM_ERROR) */
-/* 			return true; */
-/* 	} */
-/* #endif */
+
 	if(rec_a->bp_count > 1 && rec_a->bp_count > 1) {
 		reset_ba_system();
 		check_and_set_node_list(rec_a->bg_block_list);
-		rc = check_and_set_node_list(rec_b->bg_block_list);
-		if(rc == SLURM_ERROR)
+		if(check_and_set_node_list(rec_b->bg_block_list)
+		   == SLURM_ERROR) 
 			return true;
 	}
+	
+	
 	my_bitmap = bit_copy(rec_a->bitmap);
 	bit_and(my_bitmap, rec_b->bitmap);
 	if (bit_ffs(my_bitmap) == -1) {
@@ -724,10 +714,10 @@ extern bool blocks_overlap(bg_record_t *rec_a, bg_record_t *rec_b)
 		if(rec_a->nodecard != (uint16_t) NO_VAL) {
 			if(rec_b->nodecard == (uint16_t) NO_VAL)
 				return true;
-			else if(rec_a->nodecard 
+			else if(rec_a->nodecard
 				!= rec_b->nodecard)
 				return false;
-		}				
+		}
 	}
 	
 	return true;
