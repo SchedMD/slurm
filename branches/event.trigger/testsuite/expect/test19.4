@@ -1,7 +1,7 @@
 #!/usr/bin/expect
 ############################################################################
 # Purpose: Test of SLURM functionality
-#          strigger --set (node options)
+#          strigger --set --reconfig
 #
 # Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
 #          "FAILURE: ..." otherwise with an explanation of the failure, OR
@@ -31,7 +31,7 @@
 ############################################################################
 source ./globals
 
-set test_id      "19.3"
+set test_id      "19.4"
 set exit_code    0
 set file_in      "test$test_id.input"
 set file_out     "test$test_id.output"
@@ -43,10 +43,10 @@ print_header $test_id
 #
 set cwd "[$bin_pwd]"
 exec $bin_rm -f $file_in $file_out
-make_bash_script $file_in "$bin_echo DOWN >$cwd/$file_out"
+make_bash_script $file_in "$bin_echo RECONFIG >$cwd/$file_out"
 
 set matches 0
-set strigger_pid [spawn $strigger --set -v --down --program=$cwd/$file_in]
+set strigger_pid [spawn $strigger --set -v --reconfig --program=$cwd/$file_in]
 expect {
 	-re "trigger set" {
 		incr matches
@@ -80,7 +80,7 @@ expect {
 }
 
 set matches 0
-set strigger_pid [spawn $strigger --get -v --down --user=$uid]
+set strigger_pid [spawn $strigger --get -v --reconfig --user=$uid]
 expect {
 	-re "$file_in" {
 		incr matches
@@ -100,7 +100,44 @@ if {$matches == 0} {
 	set exit_code 1
 }
 
-set strigger_pid [spawn $strigger --clear -v --down --user=$uid]
+#
+# Try to trigger event
+#
+set invalid 0
+spawn $scontrol reconfig
+expect {
+	-re "Invalid user" {
+		set invalid 1
+		exp_continue
+	}
+	eof {
+		wait
+	}
+}
+if {$invalid == 0} {
+	if {[wait_for_file $file_out] != 0} {
+		send_user "\nFAILURE: file $file_out is missing\n"
+		set exit_code 1
+	} else {
+		set reconfig 0
+		spawn $bin_cat $file_out
+		expect {
+			-re "RECONFIG" {
+				set reconfig 1
+				exp_continue
+			}
+			eof {
+				wait
+			}
+		}
+		if {$reconfig == 0} {
+			send_user "\nFAILURE: file $file_out contents are bad\n"
+			set exit_code 1
+		}
+	}
+}
+
+set strigger_pid [spawn $strigger --clear -v --reconfig --user=$uid]
 expect {
 	timeout {
 		send_user "\nFAILURE: strigger not responding\n"
@@ -113,7 +150,7 @@ expect {
 }
 
 if {$exit_code == 0} {
-	exec $bin_rm -f $file_in
+	exec $bin_rm -f $file_in $file_out
 	send_user "\nSUCCESS\n"
 }
 exit $exit_code
