@@ -57,6 +57,9 @@ extern void trigger_reconfig(void);
 extern int  trigger_state_save(void);
 extern int  trigger_state_restore(void);
 
+/* Free all allocated memory */
+extern void trigger_fini(void);
+
 /* Execute programs as needed for triggers that have been pulled
  * and purge any vestigial trigger records */
 extern void trigger_process(void);

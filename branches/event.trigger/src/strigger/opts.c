@@ -50,6 +50,7 @@
 #endif
 
 #include <limits.h>
+#include <pwd.h>
 #include <stdlib.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -64,6 +65,7 @@
 #define OPT_LONG_SET    0x102
 #define OPT_LONG_GET    0x103
 #define OPT_LONG_CLEAR  0x104
+#define OPT_LONG_USER   0x105
 
 /* getopt_long options, integers but not characters */
 
@@ -101,6 +103,7 @@ extern void parse_command_line(int argc, char *argv[])
 		{"version",   no_argument,       0, 'V'},
 		{"help",      no_argument,       0, OPT_LONG_HELP},
 		{"usage",     no_argument,       0, OPT_LONG_USAGE},
+		{"user",      required_argument, 0, OPT_LONG_USER},
 		{"set",       no_argument,       0, OPT_LONG_SET},
 		{"get",       no_argument,       0, OPT_LONG_GET},
 		{"clear",     no_argument,       0, OPT_LONG_CLEAR},
@@ -133,7 +136,7 @@ extern void parse_command_line(int argc, char *argv[])
 		case (int)'j':
 			tmp_l = atol(optarg);
 			if (tmp_l <= 0) {
-				error("Invalid job id %s", optarg);
+				error("Invalid jobid %s", optarg);
 				exit(1);
 			}
 			params.job_id = tmp_l;
@@ -160,6 +163,19 @@ extern void parse_command_line(int argc, char *argv[])
 			break;
 		case (int)'u':
 			params.node_up = true;
+			break;
+		case (int) OPT_LONG_USER:
+			if ((optarg[0] >= '0') && (optarg[0] <= '9'))
+				params.user_id = (uint32_t) atol(optarg);
+			else {
+				struct passwd *pw;
+				pw = getpwnam(optarg);
+				if (pw == NULL) {
+					error("Invalid user %s", optarg);
+					exit(1);
+				}
+				params.user_id = pw->pw_uid;
+			}
 			break;
 		case (int) 'v':
 			params.verbose++;
@@ -207,28 +223,30 @@ static void _init_options( void )
 	params.reconfig   = false;
 	params.time_limit = false;
 	params.node_up    = false;
+	params.user_id    = 0;
 	params.verbose    = 0;
 }
 
 /* print the parameters specified */
 static void _print_options( void )
 {
-	info("-----------------------------");
-	info("set        = %s", params.mode_set ? "true" : "false");
-	info("get        = %s", params.mode_get ? "true" : "false");
-	info("clear      = %s", params.mode_clear ? "true" : "false");
-	info("node_down  = %s", params.node_down ? "true" : "false");
-	info("trigger_id = %u", params.trigger_id);
-	info("job_fini   = %s", params.job_fini ? "true" : "false");
-	info("job_id     = %u", params.job_id);
-	info("node       = %s", params.node_id);
-	info("offset     = %d secs", params.offset);
-	info("program    = %s", params.program);
-	info("reconfig   = %s", params.reconfig ? "true" : "false");
-	info("time_limit = %s", params.time_limit ? "true" : "false");
-	info("node_up    = %s", params.node_up ? "true" : "false");
-	info("verbose    = %d", params.verbose);
-	info("-----------------------------");
+	verbose("-----------------------------");
+	verbose("set        = %s", params.mode_set ? "true" : "false");
+	verbose("get        = %s", params.mode_get ? "true" : "false");
+	verbose("clear      = %s", params.mode_clear ? "true" : "false");
+	verbose("job_id     = %u", params.job_id);
+	verbose("job_fini   = %s", params.job_fini ? "true" : "false");
+	verbose("node_down  = %s", params.node_down ? "true" : "false");
+	verbose("node_up    = %s", params.node_up ? "true" : "false");
+	verbose("node       = %s", params.node_id);
+	verbose("offset     = %d secs", params.offset);
+	verbose("program    = %s", params.program);
+	verbose("reconfig   = %s", params.reconfig ? "true" : "false");
+	verbose("time_limit = %s", params.time_limit ? "true" : "false");
+	verbose("trigger_id = %u", params.trigger_id);
+	verbose("user_id    = %u", params.user_id);
+	verbose("verbose    = %d", params.verbose);
+	verbose("-----------------------------");
 }
 
 static void _validate_options( void )
@@ -240,8 +258,8 @@ static void _validate_options( void )
 	}
 	
 	if (params.mode_clear
-	&&  ((params.trigger_id + params.job_id) == 0)) {
-		error("You must specify a --id or --jobid to clear");
+	&&  ((params.trigger_id + params.job_id + params.user_id) == 0)) {
+		error("You must specify a --id, --jobid, or --user to clear");
 		exit(1);
 	}
 
@@ -314,6 +332,7 @@ Usage: strigger [--set | --get | --clear] [OPTIONS]\n\
   -r, --reconfig      trigger event on configuration changes\n\
   -t, --time          trigger event on job's time limit\n\
   -u, --up            trigger event when node returned to service from DOWN state\n\
+      --user          a user name or ID to filter triggers by\n\
   -v, --verbose       print detailed event logging\n\
   -V, --version       print version information and exit\n\
 \nHelp options:\n\

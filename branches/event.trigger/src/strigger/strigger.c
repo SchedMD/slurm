@@ -96,6 +96,7 @@ static int _clear_trigger(void)
 
 	bzero(&ti, sizeof(trigger_info_t));
 	ti.trig_id	= params.trigger_id;
+	ti.user_id	= params.user_id;
 	if (params.job_id) {
 		ti.res_type = TRIGGER_RES_TYPE_JOB;
 		snprintf(tmp_c, sizeof(tmp_c), "%u", params.job_id);
@@ -214,6 +215,11 @@ static int _get_trigger(void)
 			    trig_msg->trigger_array[i].trig_id)
 				continue;
 		}
+		if (params.user_id) {
+			if (params.user_id !=
+			    trig_msg->trigger_array[i].user_id)
+				continue;
+		}
 
 		if (line_no == 0) {
 			/*      7777777 88888888 7777777 88888888 666666 88888888 xxxxxxx */
@@ -221,7 +227,7 @@ static int _get_trigger(void)
 		}
 		line_no++;
 
-		printf("%7u %-8s %7s %-8s %6d %-8s %s\n",
+		printf("%7u %-8s %-7s %-8s %6d %-8s %s\n",
 			trig_msg->trigger_array[i].trig_id,
 			_res_type(trig_msg->trigger_array[i].res_type),
 			trig_msg->trigger_array[i].res_id,

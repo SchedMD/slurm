@@ -386,7 +386,8 @@ int main(int argc, char *argv[])
 	job_fini();
 	part_fini();	/* part_fini() must preceed node_fini() */
 	node_fini();
-	
+	trigger_fini();
+
 	/* Plugins are needed to purge job/node data structures,
 	 * unplug after other data structures are purged */
 	g_slurm_jobcomp_fini();

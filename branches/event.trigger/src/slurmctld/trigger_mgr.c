@@ -55,6 +55,7 @@
 #include "src/common/xstring.h"
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/slurmctld.h"
+#include "src/slurmctld/state_save.h"
 #include "src/slurmctld/trigger_mgr.h"
 
 #define _DEBUG 1
@@ -176,7 +177,7 @@ extern int trigger_clear(uid_t uid, trigger_info_msg_t *msg)
 			rc = ESLURM_INVALID_JOB_ID;
 			goto fini;
 		}
-	} else if (trig_in->trig_id == 0) {
+	} else if ((trig_in->trig_id == 0) && (trig_in->user_id == 0)) {
 		rc = EINVAL;
 		goto fini;
 	}
@@ -191,12 +192,16 @@ extern int trigger_clear(uid_t uid, trigger_info_msg_t *msg)
 		&&  (trig_in->trig_id != trig_test->trig_id))
 			continue;
 		if (job_id
-		&& (job_id != trig_test->job_id))
+		&&  (job_id != trig_test->job_id))
+			continue;
+		if (trig_in->user_id
+		&&  (trig_in->user_id != trig_test->user_id))
 			continue;
 		list_delete(trig_iter);
 		rc = SLURM_SUCCESS;
 	}
 	list_iterator_destroy(trig_iter);
+	schedule_trigger_save();
 
 fini:	slurm_mutex_unlock(&trigger_mutex);
 	return rc;
@@ -309,6 +314,7 @@ extern int trigger_set(uid_t uid, gid_t gid, trigger_info_msg_t *msg)
 		trig_add->program = msg->trigger_array[i].program;
 		msg->trigger_array[i].program = NULL;
 		list_append(trigger_list, trig_add);
+		schedule_trigger_save();
 	}
 
 fini:	slurm_mutex_unlock(&trigger_mutex);
@@ -404,6 +410,7 @@ static int _load_trigger_state(Buf buffer)
 	if (trigger_list == NULL)
 		trigger_list = list_create(_trig_del);
 	list_append(trigger_list, trig_ptr);
+	next_trigger_id = MAX(next_trigger_id, trig_ptr->trig_id + 1);
 	slurm_mutex_unlock(&trigger_mutex);
 
 	return SLURM_SUCCESS;
@@ -750,6 +757,7 @@ extern void trigger_process(void)
 	time_t now = time(NULL);
 	slurmctld_lock_t job_node_read_lock =
 		{ NO_LOCK, READ_LOCK, READ_LOCK, NO_LOCK };
+	bool state_change = false;
 
 	lock_slurmctld(job_node_read_lock);
 	slurm_mutex_lock(&trigger_mutex);
@@ -773,6 +781,7 @@ extern void trigger_process(void)
 #endif
 			trig_in->state = 2;
 			trig_in->trig_time = now;
+			state_change = true;
 			_trigger_run_program(trig_in);
 		} else if ((trig_in->state == 2) && 
 			   (difftime(now, trig_in->trig_time) > 
@@ -783,10 +792,22 @@ extern void trigger_process(void)
 			if (trig_in->group_id != 0)
 				kill(-trig_in->group_id, SIGKILL);
 			list_delete(trig_iter);
+			state_change = true;
 		}
 	}
 	list_iterator_destroy(trig_iter);
 	_clear_event_triggers();
 	slurm_mutex_unlock(&trigger_mutex);
 	unlock_slurmctld(job_node_read_lock);
+	if (state_change)
+		schedule_trigger_save();
+}
+
+/* Free all allocated memory */
+extern void trigger_fini(void)
+{
+	if (trigger_list != NULL) {
+		list_destroy(trigger_list);
+		trigger_list = NULL;
+	}
 }

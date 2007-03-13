@@ -60,6 +60,7 @@ struct strigger_parameters {
 	bool     reconfig;
 	bool     time_limit;
 	uint32_t trigger_id;
+	uint32_t user_id;
 	int      verbose;
 };
 
