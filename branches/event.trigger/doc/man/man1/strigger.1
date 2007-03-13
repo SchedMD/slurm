@@ -23,6 +23,9 @@ and gracefully terminating a job when it's time limit is approaching.
 .TP
 \fB\-\-clear\fP
 Clear or delete a previously defined event trigger.
+The \fB\-\-id\fR, \fB\-\-jobid\fR or \fB\-\-userid\fR
+option must be specified to identify the trigger(s) to 
+be cleared.
 
 .TP
 \fB\-d\fR, \fB\-\-down\fR
@@ -35,7 +38,7 @@ Trigger an event when the specified job completes execution.
 .TP
 \fB\-\-get\fP
 Show registered event triggers.
-Specified options are used for filtering.
+Options can be used for filtering purposes.
 
 .TP
 \fB\-i\fR, \fB\-\-id\fR=\fIid\fR
@@ -52,9 +55,9 @@ trigger event.
 
 .TP
 \fB\-n\fR, \fB\-\-node\fR[=\fIhost\fR]
-Host names of interest. 
-If no \fIhost\fR value is specified, all nodes associated with the 
-job (if \fB\-\-jobid\fR is specified) or on the system are included.
+Host name(s) of interest. 
+By default, all nodes associated with the job (if \fB\-\-jobid\fR 
+is specified) or on the system are considered for event triggers.
 \fBNOTE:\fR The \fB\-\-node\fR option can not be used in conjunction 
 with the \fB\-\-jobid\fR option. When the \fB\-\-jobid\fR option is 
 used in conjunction with the \fB\-\-up\fR or \fB\-\-down\fR option, 
@@ -66,9 +69,9 @@ trigger event.
 The specified action should follow the event by this time interval.
 Specify a negative value if action should preceded the event.
 The default value is zero if no \fB\-\-offset\fR option is specified.
-The resolution of this time is about one minute, so to execute 
+The resolution of this time is about 20 seconds, so to execute 
 a script not less than five minutes prior to a job reaching its 
-time limit, specify \fB\-\-offset=360\fR (six minutes).
+time limit, specify \fB\-\-offset=320\fR (5 minutes plus 20 seconds).
 
 .TP
 \fB\-p\fR, \fB\-\-program\fR=\fIpath\fR
@@ -85,7 +88,7 @@ This can be useful to clear triggers which may have already been purged.
 
 .TP
 \fB\-r\fR, \fB\-\-reconfig\fR
-Trigger an event when the configuration changes.
+Trigger an event when the system configuration changes.
 
 .TP
 \fB\-\-set\fP
@@ -97,7 +100,7 @@ to be processed.
 .TP
 \fB\-t\fR, \fB\-\-time\fR
 Trigger an event when the specified job's time limit is reached.
-This must be used in conjunction with the \fB\-\-node\fR option.
+This must be used in conjunction with the \fB\-\-jobid\fR option.
 
 .TP
 \fB\-u\fR, \fB\-\-up\fR
@@ -125,15 +128,17 @@ Trigger ID number.
 
 .TP
 \fBRES_TYPE\fP
-Resource type: job or node
+Resource type: \fIjob\fR or \fInode\fR
 
 .TP
 \fBRES_ID\fP
-Resource ID: job ID or host name or "*" for any host
+Resource ID: job ID or host names or "*" for any host
 
 .TP
 \fBTYPE\fP
-Trigger type: time (for jobs only), down or up (for jobs or nodes)
+Trigger type: \fItime\fR or \fIfini\R (for jobs only), 
+\fIdown\fR or \fIup\fR (for jobs or nodes), or
+\fIreconfig\fR (for nodes only)
 
 .TP
 \fBOFFSET\fP
