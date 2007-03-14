@@ -60,12 +60,13 @@
 #include "src/common/xstring.h"
 #include "src/strigger/strigger.h"
 
-#define OPT_LONG_HELP   0x100
-#define OPT_LONG_USAGE  0x101
-#define OPT_LONG_SET    0x102
-#define OPT_LONG_GET    0x103
-#define OPT_LONG_CLEAR  0x104
-#define OPT_LONG_USER   0x105
+#define OPT_LONG_HELP      0x100
+#define OPT_LONG_USAGE     0x101
+#define OPT_LONG_SET       0x102
+#define OPT_LONG_GET       0x103
+#define OPT_LONG_CLEAR     0x104
+#define OPT_LONG_USER      0x105
+#define OPT_LONG_BLOCK_ERR 0x106
 
 /* getopt_long options, integers but not characters */
 
@@ -89,6 +90,7 @@ extern void parse_command_line(int argc, char *argv[])
 	int option_index;
 	long tmp_l;
 	static struct option long_options[] = {
+		{"block_err", no_argument,       0, OPT_LONG_BLOCK_ERR},
 		{"down",      no_argument,       0, 'd'},
 		{"fini",      no_argument,       0, 'f'},
 		{"id",        required_argument, 0, 'i'},
@@ -201,6 +203,9 @@ extern void parse_command_line(int argc, char *argv[])
 		case (int) OPT_LONG_CLEAR:
 			params.mode_clear = true;
 			break;
+		case (int) OPT_LONG_BLOCK_ERR:
+			params.block_err = true;
+			break;
 		}
 	}
 
@@ -216,6 +221,7 @@ static void _init_options( void )
 	params.mode_get   = false;
 	params.mode_clear = false;
 
+	params.block_err  = false;
 	params.node_down  = false;
 	params.trigger_id = 0;
 	params.job_fini   = false;
@@ -238,6 +244,7 @@ static void _print_options( void )
 	verbose("set        = %s", params.mode_set ? "true" : "false");
 	verbose("get        = %s", params.mode_get ? "true" : "false");
 	verbose("clear      = %s", params.mode_clear ? "true" : "false");
+	verbose("block_err  = %s", params.block_err ? "true" : "false");
 	verbose("job_id     = %u", params.job_id);
 	verbose("job_fini   = %s", params.job_fini ? "true" : "false");
 	verbose("node_down  = %s", params.node_down ? "true" : "false");
@@ -270,8 +277,8 @@ static void _validate_options( void )
 
 	if (params.mode_set
 	&&  ((params.node_down + params.node_up + params.reconfig +
-	      params.job_fini  + params.time_limit) == 0)) {
-		error("You must specify a trigger (--down, --up, "
+	      params.job_fini  + params.time_limit + params.block_err) == 0)) {
+		error("You must specify a trigger (--block_err, --down, --up, "
 			"--reconfig, --time or --fini)");
 		exit(1);
 	}
@@ -327,6 +334,7 @@ Usage: strigger [--set | --get | --clear] [OPTIONS]\n\
       --set           create a trigger\n\
       --get           get trigger information\n\
       --clear         delete a trigger\n\n\
+      --block_err     trigger event on BlueGene block error\n\
   -d, --down          trigger event when node goes DOWN\n\
   -f, --fini          trigger event when job finishes\n\
   -i, --id=#          a trigger's ID number\n\

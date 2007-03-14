@@ -38,6 +38,7 @@
 \*****************************************************************************/
 
 #include "src/common/node_select.h"
+#include "src/slurmctld/trigger_mgr.h"
 #include "bluegene.h"
 
 #define _DEBUG 0
@@ -656,6 +657,7 @@ try_again:
 					BLOCK_ERROR_STATE;
 				(*found_bg_record)->state = RM_PARTITION_ERROR;
 				slurm_mutex_unlock(&block_state_mutex);
+				trigger_block_error();
 				goto try_again;
 			}
 		}

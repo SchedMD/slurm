@@ -140,6 +140,8 @@ static int _set_trigger(void)
 		else
 			ti.res_id = "*";
 	}
+	if (params.block_err)
+		ti.trig_type |= TRIGGER_TYPE_BLOCK_ERR;
 	if (params.node_down)
 		ti.trig_type |= TRIGGER_TYPE_DOWN;
 	if (params.node_up)
@@ -175,6 +177,11 @@ static int _get_trigger(void)
 
 	for (i=0; i<trig_msg->record_count; i++) {
 		/* perform filtering */
+		if (params.block_err) {
+			if (trig_msg->trigger_array[i].trig_type 
+					!= TRIGGER_TYPE_BLOCK_ERR)
+				continue;
+		}
 		if (params.job_fini) {
 			if (trig_msg->trigger_array[i].trig_type 
 					!= TRIGGER_TYPE_FINI)
@@ -227,12 +234,12 @@ static int _get_trigger(void)
 		}
 
 		if (line_no == 0) {
-			/*      7777777 88888888 7777777 88888888 666666 88888888 xxxxxxx */
-			printf("TRIG_ID RES_TYPE  RES_ID TYPE     OFFSET USER     PROGRAM\n");
+			/*      7777777 88888888 7777777 999999999 666666 88888888 xxxxxxx */
+			printf("TRIG_ID RES_TYPE  RES_ID TYPE      OFFSET USER     PROGRAM\n");
 		}
 		line_no++;
 
-		printf("%7u %-8s %-7s %-8s %6d %-8s %s\n",
+		printf("%7u %-8s %-7s %-9s %6d %-8s %s\n",
 			trig_msg->trigger_array[i].trig_id,
 			_res_type(trig_msg->trigger_array[i].res_type),
 			trig_msg->trigger_array[i].res_id,
@@ -268,6 +275,8 @@ static char *_trig_type(uint16_t trig_type)
 		return "fini";
 	else if (trig_type == TRIGGER_TYPE_RECONFIG)
 		return "reconfig";
+	else if (trig_type == TRIGGER_TYPE_BLOCK_ERR)
+		return "block_err";
 	else
 		return "unknown";
 }

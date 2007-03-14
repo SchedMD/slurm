@@ -38,6 +38,7 @@
 \*****************************************************************************/
 
 #include "bluegene.h"
+#include "src/slurmctld/trigger_mgr.h"
 #include <fcntl.h>
  
 #define HUGE_BUF_SIZE (1024*16)
@@ -756,6 +757,7 @@ extern int select_p_update_block (update_part_msg_t *part_desc_ptr)
 		bg_record->job_running = BLOCK_ERROR_STATE;
 		bg_record->state = RM_PARTITION_ERROR;
 		slurm_mutex_unlock(&block_state_mutex);
+		trigger_block_error();
 	} else if(part_desc_ptr->state_up){
 		slurm_mutex_lock(&block_state_mutex);
 		bg_record->job_running = NO_JOB_RUNNING;
@@ -922,6 +924,7 @@ extern int select_p_update_sub_node (update_part_msg_t *part_desc_ptr)
 						BLOCK_ERROR_STATE;
 					found_record->state =
 						RM_PARTITION_ERROR;
+					trigger_block_error();
 				} else if(part_desc_ptr->state_up){
 					found_record->job_running =
 						NO_JOB_RUNNING;
@@ -975,6 +978,7 @@ extern int select_p_update_sub_node (update_part_msg_t *part_desc_ptr)
 		if(!part_desc_ptr->state_up) {
 			bg_record->job_running = BLOCK_ERROR_STATE;
 			bg_record->state = RM_PARTITION_ERROR;
+			trigger_block_error();
 		} else if(part_desc_ptr->state_up){
 			bg_record->job_running = NO_JOB_RUNNING;
 			bg_record->state = RM_PARTITION_FREE;
