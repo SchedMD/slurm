@@ -1038,6 +1038,7 @@ free_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr, bool purge_node_hash)
 	xfree (ctl_conf_ptr->epilog);
 	xfree (ctl_conf_ptr->job_acct_logfile);
 	xfree (ctl_conf_ptr->job_acct_type);
+	xfree (ctl_conf_ptr->database_type);
 	xfree (ctl_conf_ptr->job_comp_loc);
 	xfree (ctl_conf_ptr->job_comp_type);
 	xfree (ctl_conf_ptr->job_credential_private_key);
@@ -1098,6 +1099,7 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	xfree (ctl_conf_ptr->job_acct_logfile);
 	ctl_conf_ptr->job_acct_freq             = 0;
 	xfree (ctl_conf_ptr->job_acct_type);
+	xfree (ctl_conf_ptr->database_type);
 	xfree (ctl_conf_ptr->job_comp_loc);
 	xfree (ctl_conf_ptr->job_comp_type);
 	xfree (ctl_conf_ptr->job_credential_private_key);
@@ -1460,6 +1462,9 @@ validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 
 	if (!s_p_get_string(&conf->job_acct_type, "JobAcctType", hashtbl))
 		conf->job_acct_type = xstrdup(DEFAULT_JOB_ACCT_TYPE);
+
+	if (!s_p_get_string(&conf->job_acct_type, "DatabaseType", hashtbl))
+		conf->database_type = xstrdup(DEFAULT_DATABASE_TYPE);
 
 	s_p_get_string(&conf->job_comp_loc, "JobCompLoc", hashtbl);
 

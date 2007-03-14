@@ -38,6 +38,7 @@ AC_DEFUN([X_AC_DATABASES],
         		if test "$ac_have_mysql" == "yes"; then
             			AC_MSG_RESULT([MySQL test program built properly.])
             			AC_SUBST(MYSQL_LIBS)
+				AC_DEFINE(HAVE_MYSQL, 1, [Define to 1 if using MySQL libaries])
 	        	else
         			AC_MSG_WARN([*** MySQL test program execution failed.])
 			fi        	
@@ -85,6 +86,7 @@ AC_DEFUN([X_AC_DATABASES],
     					AC_MSG_RESULT([PostgreSQL test program built properly.])
             				AC_SUBST(PGSQL_LIBS)
 					AC_SUBST(PGSQL_CFLAGS)
+					AC_DEFINE(HAVE_PGSQL, 1, [Define to 1 if using PostgreSQL libaries])
 		        	else	
        					AC_MSG_WARN([*** PostgreSQL test program execution failed.])
 				fi        	

@@ -362,6 +362,21 @@ char *slurm_get_jobacct_type(void)
 	slurm_conf_unlock();
 	return jobacct_type;
 }
+/* slurm_get_database_type
+ * returns the database type from slurmctld_conf object
+ * RET char *    - database type,  MUST be xfreed by caller
+ */
+char *slurm_get_database_type(void)
+{
+	char *database_type;
+	slurm_ctl_conf_t *conf;
+
+	conf = slurm_conf_lock();
+	database_type = xstrdup(conf->database_type);
+	slurm_conf_unlock();
+	return database_type;
+	
+}
 
 /* slurm_get_jobcomp_type
  * returns the job completion logger type from slurmctld_conf object

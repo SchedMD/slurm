@@ -176,6 +176,12 @@ uint16_t slurm_get_jobacct_freq(void);
  */
 char *slurm_get_jobacct_type(void);
 
+/* slurm_get_database_type
+ * returns the database type from slurmctld_conf object
+ * RET char *    - database type,  MUST be xfreed by caller
+ */
+char *slurm_get_database_type(void);
+
 /* slurm_get_jobcomp_type
  * returns the job completion logger type from slurmctld_conf object
  * RET char *    - job completion type,  MUST be xfreed by caller

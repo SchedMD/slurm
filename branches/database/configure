@@ -912,10 +912,6 @@ MYSQL_LIBS
 HAVEPGCONFIG
 PGSQL_LIBS
 PGSQL_CFLAGS
-HAVE_MYSQL_TRUE
-HAVE_MYSQL_FALSE
-HAVE_PGSQL_TRUE
-HAVE_PGSQL_FALSE
 DEBUG_MODULES_TRUE
 DEBUG_MODULES_FALSE
 SLURMCTLD_PORT
@@ -7509,7 +7505,7 @@ ia64-*-hpux*)
   ;;
 *-*-irix6*)
   # Find out which ABI we are using.
-  echo '#line 7512 "configure"' > conftest.$ac_ext
+  echo '#line 7508 "configure"' > conftest.$ac_ext
   if { (eval echo "$as_me:$LINENO: \"$ac_compile\"") >&5
   (eval $ac_compile) 2>&5
   ac_status=$?
@@ -9391,11 +9387,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:9394: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:9390: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:9398: \$? = $ac_status" >&5
+   echo "$as_me:9394: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -9659,11 +9655,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:9662: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:9658: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:9666: \$? = $ac_status" >&5
+   echo "$as_me:9662: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -9763,11 +9759,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:9766: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:9762: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:9770: \$? = $ac_status" >&5
+   echo "$as_me:9766: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -12204,7 +12200,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<EOF
-#line 12207 "configure"
+#line 12203 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -12304,7 +12300,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<EOF
-#line 12307 "configure"
+#line 12303 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -14672,11 +14668,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:14675: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:14671: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:14679: \$? = $ac_status" >&5
+   echo "$as_me:14675: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -14776,11 +14772,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:14779: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:14775: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:14783: \$? = $ac_status" >&5
+   echo "$as_me:14779: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -16337,11 +16333,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:16340: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:16336: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:16344: \$? = $ac_status" >&5
+   echo "$as_me:16340: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -16441,11 +16437,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:16444: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:16440: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:16448: \$? = $ac_status" >&5
+   echo "$as_me:16444: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -18660,11 +18656,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:18663: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:18659: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:18667: \$? = $ac_status" >&5
+   echo "$as_me:18663: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -18928,11 +18924,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:18931: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:18927: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:18935: \$? = $ac_status" >&5
+   echo "$as_me:18931: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -19032,11 +19028,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:19035: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:19031: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:19039: \$? = $ac_status" >&5
+   echo "$as_me:19035: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -26408,6 +26404,11 @@ rm -f core conftest.err conftest.$ac_objext \
             			{ echo "$as_me:$LINENO: result: MySQL test program built properly." >&5
 echo "${ECHO_T}MySQL test program built properly." >&6; }
 
+
+cat >>confdefs.h <<\_ACEOF
+#define HAVE_MYSQL 1
+_ACEOF
+
 	        	else
         			{ echo "$as_me:$LINENO: WARNING: *** MySQL test program execution failed." >&5
 echo "$as_me: WARNING: *** MySQL test program execution failed." >&2;}
@@ -26803,6 +26804,11 @@ rm -f core conftest.err conftest.$ac_objext \
 echo "${ECHO_T}PostgreSQL test program built properly." >&6; }
 
 
+
+cat >>confdefs.h <<\_ACEOF
+#define HAVE_PGSQL 1
+_ACEOF
+
 		        	else
        					{ echo "$as_me:$LINENO: WARNING: *** PostgreSQL test program execution failed." >&5
 echo "$as_me: WARNING: *** PostgreSQL test program execution failed." >&2;}
@@ -26817,26 +26823,6 @@ echo "$as_me: WARNING: libpq-fe.h header not found: PostgreSQL support not avail
   		fi
 		CFLAGS="$save_CFLAGS"
        	fi
-
-
-
-if test "x$ac_have_mysql" = "xyes"; then
-  HAVE_MYSQL_TRUE=
-  HAVE_MYSQL_FALSE='#'
-else
-  HAVE_MYSQL_TRUE='#'
-  HAVE_MYSQL_FALSE=
-fi
-
-
-
-if test "x$ac_have_pgsql" = "xyes"; then
-  HAVE_PGSQL_TRUE=
-  HAVE_PGSQL_FALSE='#'
-else
-  HAVE_PGSQL_TRUE='#'
-  HAVE_PGSQL_FALSE=
-fi
 
 
 
@@ -28245,7 +28231,7 @@ _ACEOF
 
 
 
-ac_config_files="$ac_config_files Makefile config.xml auxdir/Makefile src/Makefile src/api/Makefile src/common/Makefile src/sacct/Makefile src/salloc/Makefile src/sbatch/Makefile src/sattach/Makefile src/srun/Makefile src/slaunch/Makefile src/slurmd/Makefile src/slurmd/slurmd/Makefile src/slurmd/slurmstepd/Makefile src/slurmctld/Makefile src/sbcast/Makefile src/scontrol/Makefile src/scancel/Makefile src/squeue/Makefile src/sinfo/Makefile src/smap/Makefile src/sview/Makefile src/plugins/Makefile src/plugins/auth/Makefile src/plugins/auth/authd/Makefile src/plugins/auth/munge/Makefile src/plugins/auth/none/Makefile src/plugins/checkpoint/Makefile src/plugins/checkpoint/aix/Makefile src/plugins/checkpoint/none/Makefile src/plugins/jobacct/Makefile src/plugins/jobacct/linux/Makefile src/plugins/jobacct/aix/Makefile src/plugins/jobacct/none/Makefile src/plugins/jobcomp/Makefile src/plugins/jobcomp/filetxt/Makefile src/plugins/jobcomp/none/Makefile src/plugins/jobcomp/script/Makefile src/plugins/proctrack/Makefile src/plugins/proctrack/aix/Makefile src/plugins/proctrack/pgid/Makefile src/plugins/proctrack/linuxproc/Makefile src/plugins/proctrack/rms/Makefile src/plugins/proctrack/sgi_job/Makefile src/plugins/sched/Makefile src/plugins/sched/backfill/Makefile src/plugins/sched/builtin/Makefile src/plugins/sched/gang/Makefile src/plugins/sched/hold/Makefile src/plugins/sched/wiki/Makefile src/plugins/sched/wiki2/Makefile src/plugins/select/Makefile src/plugins/select/bluegene/Makefile src/plugins/select/bluegene/block_allocator/Makefile src/plugins/select/bluegene/plugin/Makefile src/plugins/select/linear/Makefile src/plugins/select/cons_res/Makefile src/plugins/switch/Makefile src/plugins/switch/elan/Makefile src/plugins/switch/none/Makefile src/plugins/switch/federation/Makefile src/plugins/mpi/Makefile src/plugins/mpi/mpichgm/Makefile src/plugins/mpi/mvapich/Makefile src/plugins/mpi/lam/Makefile src/plugins/mpi/none/Makefile src/plugins/mpi/openmpi/Makefile src/plugins/task/Makefile src/plugins/task/affinity/Makefile src/plugins/task/none/Makefile doc/Makefile doc/man/Makefile doc/html/Makefile doc/html/configurator.html testsuite/Makefile testsuite/expect/Makefile testsuite/slurm_unit/Makefile testsuite/slurm_unit/common/Makefile testsuite/slurm_unit/slurmctld/Makefile testsuite/slurm_unit/slurmd/Makefile testsuite/slurm_unit/api/Makefile testsuite/slurm_unit/api/manual/Makefile"
+ac_config_files="$ac_config_files Makefile config.xml auxdir/Makefile src/Makefile src/api/Makefile src/common/Makefile src/sacct/Makefile src/salloc/Makefile src/sbatch/Makefile src/sattach/Makefile src/srun/Makefile src/slaunch/Makefile src/slurmd/Makefile src/slurmd/slurmd/Makefile src/slurmd/slurmstepd/Makefile src/slurmctld/Makefile src/sbcast/Makefile src/scontrol/Makefile src/scancel/Makefile src/squeue/Makefile src/sinfo/Makefile src/smap/Makefile src/sview/Makefile src/plugins/Makefile src/plugins/auth/Makefile src/plugins/auth/authd/Makefile src/plugins/auth/munge/Makefile src/plugins/auth/none/Makefile src/plugins/checkpoint/Makefile src/plugins/checkpoint/aix/Makefile src/plugins/checkpoint/none/Makefile src/plugins/jobacct/Makefile src/plugins/jobacct/linux/Makefile src/plugins/jobacct/aix/Makefile src/plugins/jobacct/none/Makefile src/plugins/jobcomp/Makefile src/plugins/jobcomp/filetxt/Makefile src/plugins/jobcomp/none/Makefile src/plugins/jobcomp/script/Makefile src/plugins/proctrack/Makefile src/plugins/proctrack/aix/Makefile src/plugins/proctrack/pgid/Makefile src/plugins/proctrack/linuxproc/Makefile src/plugins/proctrack/rms/Makefile src/plugins/proctrack/sgi_job/Makefile src/plugins/sched/Makefile src/plugins/sched/backfill/Makefile src/plugins/sched/builtin/Makefile src/plugins/sched/gang/Makefile src/plugins/sched/hold/Makefile src/plugins/sched/wiki/Makefile src/plugins/sched/wiki2/Makefile src/plugins/select/Makefile src/plugins/select/bluegene/Makefile src/plugins/select/bluegene/block_allocator/Makefile src/plugins/select/bluegene/plugin/Makefile src/plugins/select/linear/Makefile src/plugins/select/cons_res/Makefile src/plugins/switch/Makefile src/plugins/switch/elan/Makefile src/plugins/switch/none/Makefile src/plugins/switch/federation/Makefile src/plugins/mpi/Makefile src/plugins/mpi/mpichgm/Makefile src/plugins/mpi/mvapich/Makefile src/plugins/mpi/lam/Makefile src/plugins/mpi/none/Makefile src/plugins/mpi/openmpi/Makefile src/plugins/task/Makefile src/plugins/task/affinity/Makefile src/plugins/task/none/Makefile src/plugins/database/Makefile src/plugins/database/flatfile/Makefile src/plugins/database/mysql/Makefile src/plugins/database/pgsql/Makefile doc/Makefile doc/man/Makefile doc/html/Makefile doc/html/configurator.html testsuite/Makefile testsuite/expect/Makefile testsuite/slurm_unit/Makefile testsuite/slurm_unit/common/Makefile testsuite/slurm_unit/slurmctld/Makefile testsuite/slurm_unit/slurmd/Makefile testsuite/slurm_unit/api/Makefile testsuite/slurm_unit/api/manual/Makefile"
 
 
 cat >confcache <<\_ACEOF
@@ -28439,20 +28425,6 @@ if test -z "${HAVE_GTK_TRUE}" && test -z "${HAVE_GTK_FALSE}"; then
   { { echo "$as_me:$LINENO: error: conditional \"HAVE_GTK\" was never defined.
 Usually this means the macro was only invoked conditionally." >&5
 echo "$as_me: error: conditional \"HAVE_GTK\" was never defined.
-Usually this means the macro was only invoked conditionally." >&2;}
-   { (exit 1); exit 1; }; }
-fi
-if test -z "${HAVE_MYSQL_TRUE}" && test -z "${HAVE_MYSQL_FALSE}"; then
-  { { echo "$as_me:$LINENO: error: conditional \"HAVE_MYSQL\" was never defined.
-Usually this means the macro was only invoked conditionally." >&5
-echo "$as_me: error: conditional \"HAVE_MYSQL\" was never defined.
-Usually this means the macro was only invoked conditionally." >&2;}
-   { (exit 1); exit 1; }; }
-fi
-if test -z "${HAVE_PGSQL_TRUE}" && test -z "${HAVE_PGSQL_FALSE}"; then
-  { { echo "$as_me:$LINENO: error: conditional \"HAVE_PGSQL\" was never defined.
-Usually this means the macro was only invoked conditionally." >&5
-echo "$as_me: error: conditional \"HAVE_PGSQL\" was never defined.
 Usually this means the macro was only invoked conditionally." >&2;}
    { (exit 1); exit 1; }; }
 fi
@@ -29025,6 +28997,10 @@ do
     "src/plugins/task/Makefile") CONFIG_FILES="$CONFIG_FILES src/plugins/task/Makefile" ;;
     "src/plugins/task/affinity/Makefile") CONFIG_FILES="$CONFIG_FILES src/plugins/task/affinity/Makefile" ;;
     "src/plugins/task/none/Makefile") CONFIG_FILES="$CONFIG_FILES src/plugins/task/none/Makefile" ;;
+    "src/plugins/database/Makefile") CONFIG_FILES="$CONFIG_FILES src/plugins/database/Makefile" ;;
+    "src/plugins/database/flatfile/Makefile") CONFIG_FILES="$CONFIG_FILES src/plugins/database/flatfile/Makefile" ;;
+    "src/plugins/database/mysql/Makefile") CONFIG_FILES="$CONFIG_FILES src/plugins/database/mysql/Makefile" ;;
+    "src/plugins/database/pgsql/Makefile") CONFIG_FILES="$CONFIG_FILES src/plugins/database/pgsql/Makefile" ;;
     "doc/Makefile") CONFIG_FILES="$CONFIG_FILES doc/Makefile" ;;
     "doc/man/Makefile") CONFIG_FILES="$CONFIG_FILES doc/man/Makefile" ;;
     "doc/html/Makefile") CONFIG_FILES="$CONFIG_FILES doc/html/Makefile" ;;
@@ -29300,10 +29276,6 @@ MYSQL_LIBS!$MYSQL_LIBS$ac_delim
 HAVEPGCONFIG!$HAVEPGCONFIG$ac_delim
 PGSQL_LIBS!$PGSQL_LIBS$ac_delim
 PGSQL_CFLAGS!$PGSQL_CFLAGS$ac_delim
-HAVE_MYSQL_TRUE!$HAVE_MYSQL_TRUE$ac_delim
-HAVE_MYSQL_FALSE!$HAVE_MYSQL_FALSE$ac_delim
-HAVE_PGSQL_TRUE!$HAVE_PGSQL_TRUE$ac_delim
-HAVE_PGSQL_FALSE!$HAVE_PGSQL_FALSE$ac_delim
 DEBUG_MODULES_TRUE!$DEBUG_MODULES_TRUE$ac_delim
 DEBUG_MODULES_FALSE!$DEBUG_MODULES_FALSE$ac_delim
 SLURMCTLD_PORT!$SLURMCTLD_PORT$ac_delim
@@ -29334,7 +29306,7 @@ WITH_AUTHD_FALSE!$WITH_AUTHD_FALSE$ac_delim
 LTLIBOBJS!$LTLIBOBJS$ac_delim
 _ACEOF
 
-  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 95; then
+  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 91; then
     break
   elif $ac_last_try; then
     { { echo "$as_me:$LINENO: error: could not make $CONFIG_STATUS" >&5

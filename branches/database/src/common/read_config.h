@@ -57,6 +57,7 @@ extern char *default_plugstack;
 #define DEFAULT_JOB_ACCT_LOGFILE    "/var/log/slurm_accounting.log"
 #define DEFAULT_JOB_ACCT_FREQ       30
 #define DEFAULT_JOB_ACCT_TYPE       "jobacct/none"
+#define DEFAULT_DATABASE_TYPE       "database/flatfile"
 #define DEFAULT_JOB_COMP_TYPE       "jobcomp/none"
 #define DEFAULT_KILL_TREE           0
 #define DEFAULT_KILL_WAIT           30
