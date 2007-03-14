@@ -2619,6 +2619,8 @@ static void _opt_list()
 		info("dependency     : none");
 	else
 		info("dependency     : %u", opt.dependency);
+	if (opt.shared != (uint16_t) NO_VAL)
+		info("shared         : %u", opt.shared);
 	str = print_constraints();
 	info("constraints    : %s", str);
 	xfree(str);
