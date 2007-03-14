@@ -104,6 +104,7 @@
 #define OPT_NSOCKETS    0x10
 #define OPT_NCORES      0x11
 #define OPT_NTHREADS    0x12
+#define OPT_EXCLUSIVE   0x13
 
 /* generic getopt_long flags, integers and *not* valid characters */
 #define LONG_OPT_HELP        0x100
@@ -1111,6 +1112,7 @@ env_vars_t env_vars[] = {
 {"SLURM_TASK_PROLOG",   OPT_STRING,     &opt.task_prolog,   NULL             },
 {"SLURM_TASK_EPILOG",   OPT_STRING,     &opt.task_epilog,   NULL             },
 {"SLURM_WORKING_DIR",   OPT_STRING,     &opt.cwd,           &opt.cwd_set     },
+{"SLURM_EXCLUSIVE",     OPT_EXCLUSIVE,  NULL,               NULL             },
 {NULL, 0, NULL, NULL}
 };
 
@@ -1192,6 +1194,10 @@ _process_env_var(env_vars_t *e, const char *val)
 
 	case OPT_OVERCOMMIT:
 		opt.overcommit = true;
+		break;
+
+	case OPT_EXCLUSIVE:
+		opt.exclusive = true;
 		break;
 
 	case OPT_CORE:
