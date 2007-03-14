@@ -228,7 +228,7 @@ extern trigger_info_msg_t * trigger_get(uid_t uid, trigger_info_msg_t *msg)
 	trig_out = resp_data->trigger_array;
 	while ((trig_in = list_next(trig_iter))) {
 		/* Note: Filtering currently done by strigger */
-		if (trig_in->state > 1)
+		if (trig_in->state >= 1)
 			continue;	/* no longer pending */
 		trig_out->trig_id   = trig_in->trig_id;
 		trig_out->res_type  = trig_in->res_type;
@@ -590,11 +590,12 @@ static void _trigger_job_event(trig_mgr_info_t *trig_in, time_t now)
 	if ((trig_in->trig_type & TRIGGER_TYPE_FINI)
 	&&  ((trig_in->job_ptr == NULL) ||
 	     (IS_JOB_FINISHED(trig_in->job_ptr)))) {
+		trig_in->state = 1;
+		trig_in->trig_time = now + (trig_in->trig_time - 0x8000);
 #if _DEBUG
 		info("trigger[%u] event for job %u fini",
 			trig_in->trig_id, trig_in->job_id);
 #endif
-		trig_in->state = 1;
 		return;
 	}
 	if (trig_in->job_ptr == NULL) {
@@ -609,11 +610,12 @@ static void _trigger_job_event(trig_mgr_info_t *trig_in, time_t now)
 	if (trig_in->trig_type & TRIGGER_TYPE_TIME) {
 		long rem_time = (trig_in->job_ptr->end_time - now);
 		if (rem_time <= (0x8000 - trig_in->trig_time)) {
+			trig_in->state = 1;
+			trig_in->trig_time = now;
 #if _DEBUG
 			info("trigger[%u] for job %u time",
 				trig_in->trig_id, trig_in->job_id);
 #endif
-			trig_in->state = 1;
 			return;
 		}
 	}
@@ -626,6 +628,8 @@ static void _trigger_job_event(trig_mgr_info_t *trig_in, time_t now)
 				trig_in->trig_id, trig_in->job_id);
 #endif
 			trig_in->state = 1;
+			trig_in->trig_time = now + 
+					(trig_in->trig_time - 0x8000);
 			return;
 		}
 	}
@@ -633,11 +637,13 @@ static void _trigger_job_event(trig_mgr_info_t *trig_in, time_t now)
 		if (trigger_down_nodes_bitmap
 		&&  bit_overlap(trig_in->job_ptr->node_bitmap, 
 				trigger_up_nodes_bitmap)) {
+			trig_in->state = 1;
+			trig_in->trig_time = now + 
+					(0x8000 - trig_in->trig_time);
 #if _DEBUG
 			info("trigger[%u] for job %u up",
 				trig_in->trig_id, trig_in->job_id);
 #endif
-			trig_in->state = 1;
 			return;
 		}
 	}
@@ -663,6 +669,8 @@ static void _trigger_node_event(trig_mgr_info_t *trig_in, time_t now)
 			trig_in->state = 1;
 		}
 		if (trig_in->state == 1) {
+			trig_in->trig_time = now + 
+					(trig_in->trig_time - 0x8000);
 #if _DEBUG
 			info("trigger[%u] for node %s down",
 				trig_in->trig_id, trig_in->res_id);
@@ -688,6 +696,8 @@ static void _trigger_node_event(trig_mgr_info_t *trig_in, time_t now)
 			trig_in->state = 1;
 		}
 		if (trig_in->state == 1) {
+			trig_in->trig_time = now + 
+					(trig_in->trig_time - 0x8000);
 #if _DEBUG
 			info("trigger[%u] for node %s up",
 				trig_in->trig_id, trig_in->res_id);
@@ -698,6 +708,7 @@ static void _trigger_node_event(trig_mgr_info_t *trig_in, time_t now)
 	if ((trig_in->trig_type & TRIGGER_TYPE_RECONFIG)
 	&&   trigger_node_reconfig) {
 		trig_in->state = 1;
+		trig_in->trig_time = now + (trig_in->trig_time - 0x8000);
 		xfree(trig_in->res_id);
 		trig_in->res_id = xstrdup("reconfig");
 #if _DEBUG
@@ -772,7 +783,8 @@ extern void trigger_process(void)
 			else
 				_trigger_node_event(trig_in, now);
 		}
-		if (trig_in->state == 1) {
+		if ((trig_in->state == 1) &&
+		    (trig_in->trig_time <= now)) {
 #if _DEBUG
 			info("launching program for trigger[%u]",
 				trig_in->trig_id);
