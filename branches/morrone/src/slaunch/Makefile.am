@@ -9,8 +9,8 @@ bin_PROGRAMS = slaunch
 slaunch_SOURCES = \
 	slaunch.c slaunch.h \
 	opt.c opt.h \
-	attach.h    \
-	attach.c    \
+	debugger.h    \
+	debugger.c    \
 	fname.c     \
 	fname.h     \
 	sigstr.c    \

@@ -83,7 +83,7 @@
 #include "src/api/pmi_server.h"
 
 #include "src/srun/opt.h"
-#include "src/srun/attach.h"
+#include "src/srun/debugger.h"
 #include "src/common/mpi.h"
 
 /* generic OPT_ definitions -- mainly for use with env vars  */

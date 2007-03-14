@@ -75,7 +75,7 @@
 #include "src/common/mpi.h"
 #include "src/api/pmi_server.h"
 
-#include "src/slaunch/attach.h"
+#include "src/slaunch/debugger.h"
 
 /* generic OPT_ definitions -- mainly for use with env vars  */
 #define OPT_NONE	0x00

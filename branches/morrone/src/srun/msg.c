@@ -73,7 +73,7 @@
 #include "src/srun/opt.h"
 #include "src/srun/msg.h"
 #include "src/srun/sigstr.h"
-#include "src/srun/attach.h"
+#include "src/srun/debugger.h"
 #include "src/srun/allocate.h"
 #include "src/srun/multi_prog.h"
 #include "src/srun/signals.h"

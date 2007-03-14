@@ -74,7 +74,7 @@ binPROGRAMS_INSTALL = $(INSTALL_PROGRAM)
 PROGRAMS = $(bin_PROGRAMS)
 am_srun_OBJECTS = srun.$(OBJEXT) opt.$(OBJEXT) srun_job.$(OBJEXT) \
 	msg.$(OBJEXT) signals.$(OBJEXT) launch.$(OBJEXT) \
-	attach.$(OBJEXT) fname.$(OBJEXT) sigstr.$(OBJEXT) \
+	debugger.$(OBJEXT) fname.$(OBJEXT) sigstr.$(OBJEXT) \
 	allocate.$(OBJEXT) core-format.$(OBJEXT) multi_prog.$(OBJEXT) \
 	srun.wrapper.$(OBJEXT)
 srun_OBJECTS = $(am_srun_OBJECTS)
@@ -289,8 +289,8 @@ srun_SOURCES = \
 	signals.c signals.h \
 	launch.c    \
 	launch.h    \
-	attach.h    \
-	attach.c    \
+	debugger.h    \
+	debugger.c    \
 	fname.c     \
 	fname.h     \
 	sigstr.c    \
@@ -379,8 +379,8 @@ distclean-compile:
 	-rm -f *.tab.c
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/allocate.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/attach.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/core-format.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/debugger.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/fname.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/launch.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/msg.Po@am__quote@

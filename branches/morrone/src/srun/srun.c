@@ -87,7 +87,7 @@
 #include "src/srun/msg.h"
 #include "src/srun/opt.h"
 #include "src/srun/sigstr.h"
-#include "src/srun/attach.h"
+#include "src/srun/debugger.h"
 #include "src/srun/srun.h"
 #include "src/srun/signals.h"
 

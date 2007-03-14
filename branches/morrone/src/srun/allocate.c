@@ -59,7 +59,7 @@
 #include "src/srun/allocate.h"
 #include "src/srun/msg.h"
 #include "src/srun/opt.h"
-#include "src/srun/attach.h"
+#include "src/srun/debugger.h"
 
 #define MAX_ALLOC_WAIT 60	/* seconds */
 #define MIN_ALLOC_WAIT  5	/* seconds */

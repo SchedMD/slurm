@@ -78,7 +78,7 @@
 
 #include "src/slaunch/opt.h"
 #include "src/slaunch/sigstr.h"
-#include "src/slaunch/attach.h"
+#include "src/slaunch/debugger.h"
 #include "src/slaunch/slaunch.h"
 #include "src/slaunch/fname.h"
 #include "src/slaunch/multi_prog.h"

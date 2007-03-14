@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  attach.c - Definitions needed for parallel debugger
+ *  debugger.c - Definitions needed for parallel debugger
  *  $Id$
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
@@ -42,10 +42,10 @@
 
 #include "src/common/log.h"
 
-#include "src/srun/attach.h"
+#include "src/srun/debugger.h"
 
 /*
- *  Instantiate extern variables from attach.h
+ *  Instantiate extern variables from debugger.h
  */
 MPIR_PROCDESC *MPIR_proctable;
 int MPIR_proctable_size;

@@ -14,8 +14,8 @@ srun_SOURCES = \
 	signals.c signals.h \
 	launch.c    \
 	launch.h    \
-	attach.h    \
-	attach.c    \
+	debugger.h    \
+	debugger.c    \
 	fname.c     \
 	fname.h     \
 	sigstr.c    \
