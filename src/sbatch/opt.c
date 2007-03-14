@@ -80,7 +80,8 @@
 #define OPT_CONN_TYPE	0x08
 #define OPT_NO_ROTATE	0x0a
 #define OPT_GEOMETRY	0x0b
-#define OPT_MULTI       0x0f
+#define OPT_MULTI	0x0f
+#define OPT_EXCLUSIVE	0x10
 
 /* generic getopt_long flags, integers and *not* valid characters */
 #define LONG_OPT_JOBID       0x105
@@ -469,6 +470,7 @@ env_vars_t env_vars[] = {
   {"SBATCH_PARTITION",     OPT_STRING,     &opt.partition,     NULL           },
   {"SBATCH_RAMDISK_IMAGE", OPT_STRING,     &opt.ramdiskimage,  NULL           },
   {"SBATCH_TIMELIMIT",     OPT_INT,        &opt.time_limit,    NULL           },
+  {"SBATCH_EXCLUSIVE",     OPT_EXCLUSIVE,  NULL,               NULL           },
   {NULL, 0, NULL, NULL}
 };
 
@@ -562,6 +564,10 @@ _process_env_var(env_vars_t *e, const char *val)
 			error("\"%s=%s\" -- invalid geometry, ignoring...",
 			      e->var, val);
 		}
+		break;
+
+	case OPT_EXCLUSIVE:
+		opt.shared = 0;
 		break;
 
 	default:
