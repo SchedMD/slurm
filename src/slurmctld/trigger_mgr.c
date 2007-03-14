@@ -790,6 +790,7 @@ static void _clear_event_triggers(void)
 	if (trigger_up_nodes_bitmap)
 		bit_nclear(trigger_up_nodes_bitmap,   0, (node_record_count-1));
 	trigger_node_reconfig = false;
+	trigger_block_err = false;
 }
 
 extern void trigger_process(void)
