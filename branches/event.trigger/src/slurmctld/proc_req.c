@@ -279,6 +279,7 @@ void slurmctld_req (slurm_msg_t * msg)
 		break;
 	case REQUEST_TRIGGER_GET:
 		_slurm_rpc_trigger_get(msg);
+		slurm_free_trigger_msg(msg->data);
 		break;
 	case REQUEST_TRIGGER_CLEAR:
 		_slurm_rpc_trigger_clear(msg);
