@@ -142,6 +142,10 @@ AC_SUBST(HAVE_SOME_CURSES)
 X_AC_GTK
 AM_CONDITIONAL(HAVE_GTK, test "x$ac_have_gtk" = "xyes")
 
+X_AC_DATABASES
+AM_CONDITIONAL(HAVE_MYSQL, test "x$ac_have_mysql" = "xyes")
+AM_CONDITIONAL(HAVE_PGSQL, test "x$ac_have_pgsql" = "xyes")
+
 dnl checks for system services.
 dnl
 
