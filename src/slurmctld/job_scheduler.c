@@ -164,10 +164,24 @@ int schedule(void)
 	char *ionodes = NULL;
 	char tmp_char[256];
 #endif
+	static bool wiki_sched = false;
+	static bool wiki_sched_test = false;
+
+	/* don't bother trying to avoid fragmentation with sched/wiki */
+	if (!wiki_sched_test) {
+		char *sched_type = slurm_get_sched_type();
+		if ((strcmp(sched_type, "sched/wiki") == 0)
+		||  (strcmp(sched_type, "sched/wiki2") == 0))
+			wiki_sched = true;
+		xfree(sched_type);
+		wiki_sched_test = true;
+	}
+
 	lock_slurmctld(job_write_lock);
 	/* Avoid resource fragmentation if important */
-	if (switch_no_frag() && job_is_completing()) {
+	if ((!wiki_sched) && switch_no_frag() && job_is_completing()) {
 		unlock_slurmctld(job_write_lock);
+		debug("schedule() returning, some job still completing");
 		return SLURM_SUCCESS;
 	}
 	debug("Running job scheduler");
