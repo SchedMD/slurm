@@ -504,3 +504,12 @@ test18.35  Test of task layout controls (--task-layout-byid,
 test18.36  Test of CPU affinity support (--cpu-bind option).
 test18.37  Test of memory affinity support for NUMA systems (--mem-bind option).
 test18.38  Test of slaunch --jobid
+
+test19.#   Testing of strigger options.
+=======================================
+test19.1   strigger --help
+test19.2   strigger --usage
+test19.3   strigger --set (node options)
+test19.4   strigger --set --reconfig
+test19.5   strigger --set (job options)
+test19.6   strigger --clear and --get (with filtering)

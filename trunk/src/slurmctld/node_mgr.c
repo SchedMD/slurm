@@ -68,6 +68,7 @@
 #include "src/slurmctld/proc_req.h"
 #include "src/slurmctld/sched_plugin.h"
 #include "src/slurmctld/slurmctld.h"
+#include "src/slurmctld/trigger_mgr.h"
 
 #define _DEBUG		0
 #define MAX_RETRIES	10
@@ -1504,6 +1505,7 @@ validate_node_specs (char *node_name, uint16_t cpus,
 			info ("node %s returned to service", node_name);
 			xfree(node_ptr->reason);
 			reset_job_priority();
+			trigger_node_up(node_ptr);
 		} else if ((base_state == NODE_STATE_ALLOCATED) &&
 			   (job_count == 0)) {	/* job vanished */
 			last_node_update = time (NULL);
@@ -1693,6 +1695,7 @@ extern int validate_nodes_via_front_end(uint32_t job_count,
 					return_hostlist = hostlist_create(
 						node_ptr->name);
 				xfree(node_ptr->reason);
+				trigger_node_up(node_ptr);
 			} else if ((base_state == NODE_STATE_ALLOCATED) &&
 				   (jobs_on_node == 0)) {	/* job vanished */
 				updated_job = true;
@@ -2132,6 +2135,7 @@ static void _make_node_down(struct node_record *node_ptr)
 	bit_set   (idle_node_bitmap,  inx);
 	bit_set   (share_node_bitmap, inx);
 	select_g_update_node_state(inx, node_ptr->node_state);	
+	trigger_node_down(node_ptr);
 }
 
 /*

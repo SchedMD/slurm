@@ -75,6 +75,7 @@
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/sched_plugin.h"
 #include "src/slurmctld/srun_comm.h"
+#include "src/slurmctld/trigger_mgr.h"
 
 #define DETAILS_FLAG 0xdddd
 #define MAX_RETRIES  10

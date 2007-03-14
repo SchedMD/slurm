@@ -3,7 +3,7 @@
  *
  *  $Id$
  *****************************************************************************
- *  Copyright (C) 2002-2006 The Regents of the University of California.
+ *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Kevin Tew <tew1@llnl.gov>, et. al.
  *  UCRL-CODE-226842.
@@ -312,8 +312,10 @@ static void _pack_kvs_get(kvs_get_msg_t *msg_ptr, Buf buffer);
 static int  _unpack_kvs_get(kvs_get_msg_t **msg_ptr, Buf buffer);
 
 static void _pack_file_bcast(file_bcast_msg_t * msg , Buf buffer );
-
 static int _unpack_file_bcast(file_bcast_msg_t ** msg_ptr , Buf buffer );
+
+static void _pack_trigger_msg(trigger_info_msg_t *msg , Buf buffer );
+static int  _unpack_trigger_msg(trigger_info_msg_t ** msg_ptr , Buf buffer );
 
 /* pack_header
  * packs a slurm protocol header that proceeds every slurm message
@@ -662,6 +664,12 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 		break;	/* no data in message */
 	case RESPONSE_FORWARD_FAILED:
 		break;
+	case REQUEST_TRIGGER_GET:
+	case RESPONSE_TRIGGER_GET:
+	case REQUEST_TRIGGER_SET:
+	case REQUEST_TRIGGER_CLEAR:
+	_pack_trigger_msg((trigger_info_msg_t *) msg->data, buffer);
+		break;
 	default:
 		debug("No pack method for msg type %u", msg->msg_type);
 		return EINVAL;
@@ -972,6 +980,13 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 	case PMI_KVS_PUT_RESP:
 		break;	/* no data */
 	case RESPONSE_FORWARD_FAILED:
+		break;
+	case REQUEST_TRIGGER_GET:
+	case RESPONSE_TRIGGER_GET:
+	case REQUEST_TRIGGER_SET:
+	case REQUEST_TRIGGER_CLEAR:
+		rc = _unpack_trigger_msg((trigger_info_msg_t **) 
+					  &msg->data, buffer);
 		break;
 	default:
 		debug("No unpack method for msg type %u", msg->msg_type);
@@ -3889,6 +3904,51 @@ unpack_error:
 	for (i=0; i<FILE_BLOCKS; i++)
 		xfree( msg -> block[i] );
 	xfree( msg );
+	*msg_ptr = NULL;
+	return SLURM_ERROR;
+}
+
+static void _pack_trigger_msg(trigger_info_msg_t *msg , Buf buffer)
+{
+	int i;
+
+	pack32(msg->record_count, buffer);
+	for (i=0; i<msg->record_count; i++) {
+		pack32 (msg->trigger_array[i].trig_id,   buffer);
+		pack8  (msg->trigger_array[i].res_type,  buffer);
+		packstr(msg->trigger_array[i].res_id,    buffer);
+		pack16 (msg->trigger_array[i].trig_type, buffer);
+		pack16 (msg->trigger_array[i].offset,    buffer);
+		pack32 (msg->trigger_array[i].user_id,   buffer);
+		packstr(msg->trigger_array[i].program,   buffer);
+	}
+}
+
+static int  _unpack_trigger_msg(trigger_info_msg_t ** msg_ptr , Buf buffer)
+{
+	int i;
+	uint16_t uint16_tmp;
+	trigger_info_msg_t *msg = xmalloc(sizeof(trigger_info_msg_t));
+
+	safe_unpack32  (&msg->record_count, buffer);
+	msg->trigger_array = xmalloc(sizeof(trigger_info_t) *
+			msg->record_count);
+	for (i=0; i<msg->record_count; i++) {
+		safe_unpack32(&msg->trigger_array[i].trig_id,   buffer);
+		safe_unpack8 (&msg->trigger_array[i].res_type,  buffer);
+		safe_unpackstr_xmalloc(&msg->trigger_array[i].res_id, 
+				&uint16_tmp, buffer);
+		safe_unpack16(&msg->trigger_array[i].trig_type, buffer);
+		safe_unpack16(&msg->trigger_array[i].offset,    buffer);
+		safe_unpack32(&msg->trigger_array[i].user_id,   buffer);
+		safe_unpackstr_xmalloc(&msg->trigger_array[i].program, 
+				&uint16_tmp, buffer);
+	}
+	*msg_ptr = msg; 
+	return SLURM_SUCCESS;
+
+unpack_error:
+	slurm_free_trigger_msg(msg);
 	*msg_ptr = NULL;
 	return SLURM_ERROR;
 }

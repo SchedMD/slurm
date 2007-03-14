@@ -3,6 +3,8 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 1.2.2
 ========================
+ -- Added new command "strigger" for event trigger management, a new 
+    capability. See "man strigger" for details.
  -- srun --get-user-env now sends su's stderr to /dev/null
 
 * Changes in SLURM 1.2.1

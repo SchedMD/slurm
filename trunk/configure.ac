@@ -255,6 +255,7 @@ AC_CONFIG_FILES([Makefile
 		 src/squeue/Makefile
 		 src/sinfo/Makefile
 		 src/smap/Makefile
+		 src/strigger/Makefile
 		 src/sview/Makefile
 		 src/plugins/Makefile
 		 src/plugins/auth/Makefile
