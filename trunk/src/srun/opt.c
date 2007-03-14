@@ -1197,7 +1197,7 @@ _process_env_var(env_vars_t *e, const char *val)
 		break;
 
 	case OPT_EXCLUSIVE:
-		opt.exclusive = true;
+		opt.shared = 0;
 		break;
 
 	case OPT_CORE:

@@ -84,6 +84,7 @@
 #define OPT_BELL        0x0f
 #define OPT_NO_BELL     0x10
 #define OPT_JOBID       0x11
+#define OPT_EXCLUSIVE   0x12
 
 /* generic getopt_long flags, integers and *not* valid characters */
 #define LONG_OPT_JOBID       0x105
@@ -501,6 +502,7 @@ env_vars_t env_vars[] = {
   {"SALLOC_WAIT",          OPT_INT,        &opt.max_wait,      NULL           },
   {"SALLOC_BELL",          OPT_BELL,       NULL,               NULL           },
   {"SALLOC_NO_BELL",       OPT_NO_BELL,    NULL,               NULL           },
+  {"SALLOC_EXCLUSIVE",     OPT_EXCLUSIVE,  NULL,               NULL           },
   {NULL, 0, NULL, NULL}
 };
 
@@ -605,6 +607,9 @@ _process_env_var(env_vars_t *e, const char *val)
 		info("WARNING: Creating SLURM job allocation from within "
 			"another allocation");
 		info("WARNING: You are attempting to initiate a second job");
+		break;
+	case OPT_EXCLUSIVE:
+		opt.shared = 0;
 		break;
 	default:
 		/* do nothing */
