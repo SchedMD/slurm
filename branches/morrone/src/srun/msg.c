@@ -221,57 +221,6 @@ rwfail:
 	      "read from srun message-handler process failed");
 }
 
-static void _update_step_layout(int fd, slurm_step_layout_t *layout, 
-				int nodeid)
-{
-	int msg_type = PIPE_UPDATE_STEP_LAYOUT;
-	int dummy = 0xdeadbeef;
-	
-	safe_write(fd, &msg_type, sizeof(int)); /* read by par_thr() */
-	safe_write(fd, &dummy, sizeof(int));    /* read by par_thr() */
-
-	/* the rest are read by _handle_update_step_layout() */
-	safe_write(fd, &nodeid, sizeof(int));
-	safe_write(fd, &layout->node_cnt, sizeof(uint32_t));
-	safe_write(fd, &layout->task_cnt, sizeof(uint32_t));
-	safe_write(fd, &layout->tasks[nodeid], sizeof(uint16_t));
-	safe_write(fd, layout->tids[nodeid],
-		   layout->tasks[nodeid]*sizeof(uint32_t));
-
-	return;
-
-rwfail:
-	error("_update_step_layout: write to srun main process failed");
-}
-
-static void _handle_update_step_layout(int fd, slurm_step_layout_t *layout)
-{
-	int nodeid;
-	
-	safe_read(fd, &nodeid, sizeof(int));
-	safe_read(fd, &layout->node_cnt, sizeof(uint32_t));
-	safe_read(fd, &layout->task_cnt, sizeof(uint32_t));
-	xassert(nodeid >= 0 && nodeid <= layout->task_cnt);
-
-	/* If this is the first call to this function, then we probably need
-	   to intialize some of the arrays */
-	if (layout->tasks == NULL)
-		layout->tasks = xmalloc(layout->node_cnt * sizeof(uint16_t *));
-	if (layout->tids == NULL)
-		layout->tids = xmalloc(layout->node_cnt * sizeof(uint32_t *));
-
-	safe_read(fd, &layout->tasks[nodeid], sizeof(uint16_t));
-	xassert(layout->tids[nodeid] == NULL);
-	layout->tids[nodeid] = xmalloc(layout->tasks[nodeid]*sizeof(uint32_t));
-	safe_read(fd, layout->tids[nodeid],
-		  layout->tasks[nodeid]*sizeof(uint32_t));
-	return;
-
-rwfail:
-	error("_handle_update_step_layout: "
-	      "read from srun message-handler process failed");
-}
-
 static void _dump_proctable(srun_job_t *job)
 {
 	int node_inx, task_inx, taskid;
@@ -655,90 +604,6 @@ _confirm_launch_complete(srun_job_t *job)
 	job->ltimeout = 0;
 }
 
-static void
-_reattach_handler(srun_job_t *job, slurm_msg_t *msg)
-{
-	int i;
-	reattach_tasks_response_msg_t *resp = msg->data;
-	int nodeid = nodelist_find(job->step_layout->node_list, 
-				   resp->node_name);
-		
-	if ((nodeid < 0) || (nodeid >= job->nhosts)) {
-		error ("Invalid reattach response received");
-		return;
-	}
-
-	slurm_mutex_lock(&job->task_mutex);
-	job->host_state[nodeid] = SRUN_HOST_REPLIED;
-	slurm_mutex_unlock(&job->task_mutex);
-
-	if(message_thread) {
-		pipe_enum_t pipe_enum = PIPE_HOST_STATE;
-		safe_write(job->forked_msg->par_msg->msg_pipe[1],
-			   &pipe_enum, sizeof(int));
-		safe_write(job->forked_msg->par_msg->msg_pipe[1],
-			   &nodeid, sizeof(int));
-		safe_write(job->forked_msg->par_msg->msg_pipe[1],
-			   &job->host_state[nodeid], sizeof(int));
-	}
-
-	if (resp->return_code != 0) {
-		if (job->stepid == NO_VAL) { 
-			error ("Unable to attach to job %d: %s", 
-			       job->jobid, slurm_strerror(resp->return_code));
-		} else {
-			error ("Unable to attach to step %d.%d on node %d: %s",
-			       job->jobid, job->stepid, nodeid,
-			       slurm_strerror(resp->return_code));
-		}
-		job->rc = 1;
-
-		update_job_state(job, SRUN_JOB_FAILED);
-		return;
-	}
-
-	/* 
-	 * store global task id information as returned from slurmd
-	 */
-	job->step_layout->tids[nodeid]  = 
-		xmalloc( resp->ntasks * sizeof(uint32_t) );
-
-	job->step_layout->tasks[nodeid] = resp->ntasks;
-
-	info ("ntasks = %d\n");
-
-	for (i = 0; i < resp->ntasks; i++) {
-		job->step_layout->tids[nodeid][i] = resp->gtids[i];
-		info ("setting task%d on hostid %d\n", 
-		      resp->gtids[i], nodeid);
-	}
-	_update_step_layout(job->forked_msg->par_msg->msg_pipe[1],
-			    job->step_layout, nodeid);
-
-	/* Build process table for any parallel debugger
-         */
-	if ((remote_argc == 0) && (resp->executable_names)) {
-		remote_argc = 1;
-		xrealloc(remote_argv, 2 * sizeof(char *));
-		remote_argv[0] = resp->executable_names[0];
-		resp->executable_names = NULL; /* nothing left to free */
-		remote_argv[1] = NULL;
-	}
-	_update_mpir_proctable(job->forked_msg->par_msg->msg_pipe[1], job,
-			       nodeid, resp->ntasks,
-			       resp->local_pids, remote_argv[0]);
-
-	_print_pid_list(resp->node_name, resp->ntasks, resp->local_pids, 
-			remote_argv[0]);
-
-	update_running_tasks(job, nodeid);
-	return;
-rwfail:
-	error("_reattach_handler: "
-	      "write from srun message-handler process failed");
-}
-
-
 static void 
 _print_exit_status(srun_job_t *job, hostlist_t hl, char *host, int status)
 {
@@ -919,11 +784,6 @@ _handle_msg(srun_job_t *job, slurm_msg_t *msg)
 		debug2("task_exit received");
 		_exit_handler(job, msg);
 		slurm_free_task_exit_msg(msg->data);
-		break;
-	case RESPONSE_REATTACH_TASKS:
-		debug2("received reattach response");
-		_reattach_handler(job, msg);
-		slurm_free_reattach_tasks_response_msg(msg->data);
 		break;
 	case SRUN_PING:
 		debug3("slurmctld ping received");
@@ -1255,10 +1115,6 @@ par_thr(void *arg)
 		case PIPE_UPDATE_MPIR_PROCTABLE:
 			_handle_update_mpir_proctable(par_msg->msg_pipe[0],
 						      job);
-			break;
-		case PIPE_UPDATE_STEP_LAYOUT:
-			_handle_update_step_layout(par_msg->msg_pipe[0],
-						   job->step_layout);
 			break;
 		case PIPE_NODE_FAIL:
 			_node_fail_handler(par_msg->msg_pipe[0], job);
