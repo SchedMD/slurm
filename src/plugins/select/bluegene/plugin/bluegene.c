@@ -37,6 +37,7 @@
 \*****************************************************************************/
 
 #include "bluegene.h"
+#include "src/slurmctld/trigger_mgr.h"
 #include <stdio.h>
 
 #define BUFSIZE 4096
@@ -670,6 +671,7 @@ end_it:
 	bg_record->job_running = BLOCK_ERROR_STATE;
 	bg_record->state = RM_PARTITION_ERROR;
 	slurm_mutex_unlock(&block_state_mutex);
+	trigger_block_error();
 	return;
 }
 

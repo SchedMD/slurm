@@ -58,7 +58,7 @@
 #include "src/slurmctld/state_save.h"
 #include "src/slurmctld/trigger_mgr.h"
 
-#define _DEBUG 1
+#define _DEBUG 0
 #define MAX_PROG_TIME 300	/* maximum run time for program */
 
 /* Change TRIGGER_STATE_VERSION value when changing the state save format */
@@ -69,6 +69,7 @@ uint32_t next_trigger_id = 1;
 static pthread_mutex_t trigger_mutex = PTHREAD_MUTEX_INITIALIZER;
 bitstr_t *trigger_down_nodes_bitmap = NULL;
 bitstr_t *trigger_up_nodes_bitmap   = NULL;
+static bool trigger_block_err = false;
 static bool trigger_node_reconfig = false;
 
 typedef struct trig_mgr_info {
@@ -95,6 +96,7 @@ void _trig_del(void *x) {
 	xfree(tmp);
 }
 
+#if _DEBUG
 static char *_res_type(uint8_t res_type)
 {
 	if      (res_type == TRIGGER_RES_TYPE_JOB)
@@ -117,6 +119,8 @@ static char *_trig_type(uint16_t trig_type)
 		return "fini";
 	else if (trig_type == TRIGGER_TYPE_RECONFIG)
 		return "reconfig";
+	else if (trig_type == TRIGGER_TYPE_BLOCK_ERR)
+		return "block_err";
 	else
 		return "unknown";
 }
@@ -131,7 +135,6 @@ static int _trig_offset(uint16_t offset)
 
 static void _dump_trigger_msg(char *header, trigger_info_msg_t *msg)
 {
-#if _DEBUG
 	int i;
 
 	info(header);
@@ -151,8 +154,12 @@ static void _dump_trigger_msg(char *header, trigger_info_msg_t *msg)
 			msg->trigger_array[i].user_id,
 			msg->trigger_array[i].program);
 	}
-#endif
 }
+#else
+static void _dump_trigger_msg(char *header, trigger_info_msg_t *msg)
+{
+}
+#endif
 
 extern int trigger_clear(uid_t uid, trigger_info_msg_t *msg)
 {
@@ -348,6 +355,13 @@ extern void trigger_reconfig(void)
 {
 	slurm_mutex_lock(&trigger_mutex);
 	trigger_node_reconfig = true;
+	slurm_mutex_unlock(&trigger_mutex);
+}
+
+extern void trigger_block_error(void)
+{
+	slurm_mutex_lock(&trigger_mutex);
+	trigger_block_err = true;
 	slurm_mutex_unlock(&trigger_mutex);
 }
 
@@ -587,6 +601,7 @@ static void _trigger_job_event(trig_mgr_info_t *trig_in, time_t now)
 	if ((trig_in->job_ptr == NULL)
 	||  (trig_in->job_ptr->job_id == trig_in->job_id))
 		trig_in->job_ptr = find_job_record(trig_in->job_ptr->job_id);
+
 	if ((trig_in->trig_type & TRIGGER_TYPE_FINI)
 	&&  ((trig_in->job_ptr == NULL) ||
 	     (IS_JOB_FINISHED(trig_in->job_ptr)))) {
@@ -598,6 +613,7 @@ static void _trigger_job_event(trig_mgr_info_t *trig_in, time_t now)
 #endif
 		return;
 	}
+
 	if (trig_in->job_ptr == NULL) {
 #if _DEBUG
 		info("trigger[%u] for defunct job %u",
@@ -607,6 +623,7 @@ static void _trigger_job_event(trig_mgr_info_t *trig_in, time_t now)
 		trig_in->trig_time = now;
 		return;
 	}
+
 	if (trig_in->trig_type & TRIGGER_TYPE_TIME) {
 		long rem_time = (trig_in->job_ptr->end_time - now);
 		if (rem_time <= (0x8000 - trig_in->trig_time)) {
@@ -619,6 +636,7 @@ static void _trigger_job_event(trig_mgr_info_t *trig_in, time_t now)
 			return;
 		}
 	}
+
 	if (trig_in->trig_type & TRIGGER_TYPE_DOWN) {
 		if (trigger_down_nodes_bitmap
 		&&  bit_overlap(trig_in->job_ptr->node_bitmap, 
@@ -633,6 +651,7 @@ static void _trigger_job_event(trig_mgr_info_t *trig_in, time_t now)
 			return;
 		}
 	}
+
 	if (trig_in->trig_type & TRIGGER_TYPE_UP) {
 		if (trigger_down_nodes_bitmap
 		&&  bit_overlap(trig_in->job_ptr->node_bitmap, 
@@ -651,6 +670,16 @@ static void _trigger_job_event(trig_mgr_info_t *trig_in, time_t now)
 
 static void _trigger_node_event(trig_mgr_info_t *trig_in, time_t now)
 {
+	if ((trig_in->trig_type & TRIGGER_TYPE_BLOCK_ERR)
+	&&   trigger_block_err) {
+		trig_in->state = 1;
+		trig_in->trig_time = now + (trig_in->trig_time - 0x8000);
+#if _DEBUG
+		info("trigger[%u] for block_err", trig_in->trig_id);
+#endif
+		return;
+	}
+
 	if ((trig_in->trig_type & TRIGGER_TYPE_DOWN)
 	&&   trigger_down_nodes_bitmap
 	&&   (bit_ffs(trigger_down_nodes_bitmap) != -1)) {
@@ -678,6 +707,7 @@ static void _trigger_node_event(trig_mgr_info_t *trig_in, time_t now)
 			return;
 		}
 	}
+
 	if ((trig_in->trig_type & TRIGGER_TYPE_UP)
 	&&   trigger_up_nodes_bitmap
 	&&   (bit_ffs(trigger_up_nodes_bitmap) != -1)) {
@@ -705,6 +735,7 @@ static void _trigger_node_event(trig_mgr_info_t *trig_in, time_t now)
 			return;
 		}
 	}
+
 	if ((trig_in->trig_type & TRIGGER_TYPE_RECONFIG)
 	&&   trigger_node_reconfig) {
 		trig_in->state = 1;

@@ -47,6 +47,7 @@
 #include <src/common/slurm_protocol_defs.h>
 
 struct strigger_parameters {
+	bool     block_err;
 	bool     job_fini;
 	uint32_t job_id;
 	bool     mode_set;
