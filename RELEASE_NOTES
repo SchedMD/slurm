@@ -1,5 +1,5 @@
 RELEASE NOTES FOR SLURM VERSION 1.2
-6 February 2007
+13 March 2007
 
 
 IMPORTANT NOTE:
@@ -18,6 +18,9 @@ NEW COMMANDS
   sattach - Attach to an existing job step (functions like "srun --attach")
   sbatch  - Submit a batch job script (functions like "srun --batch")
   See the individual man pages for more information. 
+
+* A new command, strigger, was added to manage event triggers. This was 
+  added in SLURM version 1.2.2. See strigger's man pages for details.
 
 * A new GUI is available for viewing and modifying state information, sview.
   Note that sview will only be built on systems which have libglade-2.0 and 

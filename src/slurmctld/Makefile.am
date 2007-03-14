@@ -38,7 +38,9 @@ slurmctld_SOURCES = 	\
 	srun_comm.h	\
 	state_save.c	\
 	state_save.h	\
-	step_mgr.c
+	step_mgr.c	\
+	trigger_mgr.c	\
+	trigger_mgr.h
 
 slurmctld_LDFLAGS = -export-dynamic $(CMD_LDFLAGS) \
 			$(FEDERATION_LDFLAGS)	

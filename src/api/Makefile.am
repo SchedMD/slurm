@@ -73,6 +73,7 @@ slurmapi_src =           \
 	pmi_server.c pmi_server.h \
 	submit.c         \
 	suspend.c        \
+	triggers.c       \
 	reconfigure.c    \
 	update_config.c
 

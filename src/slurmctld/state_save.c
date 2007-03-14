@@ -1,7 +1,7 @@
 /*****************************************************************************\
  *  state_save.c - Keep saved slurmctld state current 
  *****************************************************************************
- *  Copyright (C) 2004 The Regents of the University of California.
+ *  Copyright (C) 2004-2007 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
  *  UCRL-CODE-226842.
@@ -45,10 +45,11 @@
 
 #include "src/common/macros.h"
 #include "src/slurmctld/slurmctld.h"
+#include "src/slurmctld/trigger_mgr.h"
 
 static pthread_mutex_t state_save_lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t  state_save_cond = PTHREAD_COND_INITIALIZER;
-static int save_jobs = 0, save_nodes = 0, save_parts = 0;
+static int save_jobs = 0, save_nodes = 0, save_parts = 0, save_triggers = 0;
 static bool run_save_thread = true;
 
 /* Queue saving of job state information */
@@ -78,6 +79,15 @@ extern void schedule_part_save(void)
 	pthread_cond_broadcast(&state_save_cond);
 }
 
+/* Queue saving of trigger state information */
+extern void schedule_trigger_save(void)
+{
+	slurm_mutex_lock(&state_save_lock);
+	save_triggers++;
+	slurm_mutex_unlock(&state_save_lock);
+	pthread_cond_broadcast(&state_save_cond);
+}
+
 /* shutdown the slurmctld_state_save thread */
 extern void shutdown_state_save(void)
 {
@@ -102,7 +112,8 @@ extern void *slurmctld_state_save(void *no_data)
 		/* wait for work to perform */
 		slurm_mutex_lock(&state_save_lock);
 		while (1) {
-			if (save_jobs + save_nodes + save_parts)
+			if (save_jobs + save_nodes + save_parts + 
+			    save_triggers)
 				break;		/* do the work */
 			else if (!run_save_thread) {
 				run_save_thread = true;
@@ -145,6 +156,17 @@ extern void *slurmctld_state_save(void *no_data)
 		slurm_mutex_unlock(&state_save_lock);
 		if (run_save)
 			(void)dump_all_part_state();
+
+		/* save trigger info if necessary */
+		run_save = false;
+		slurm_mutex_lock(&state_save_lock);
+		if (save_triggers) {
+			run_save = true;
+			save_triggers = 0;
+		}
+		slurm_mutex_unlock(&state_save_lock);
+		if (run_save)
+			(void)trigger_state_save();
 	}
 }
 

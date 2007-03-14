@@ -1,7 +1,7 @@
 /*****************************************************************************\
  *  slurm.h - Definitions for all of the SLURM RPCs
  *****************************************************************************
- *  Copyright (C) 2002-2006 The Regents of the University of California.
+ *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>, 
  *	Joey Ekstrom <ekstrom1@llnl.gov> et. al.
@@ -938,6 +938,29 @@ typedef struct partition_info update_part_msg_t;
 /* Opaque data type for slurm_step_ctx_* functions */
 typedef struct slurm_step_ctx_struct *slurm_step_ctx;
 
+#define TRIGGER_RES_TYPE_JOB   1
+#define TRIGGER_RES_TYPE_NODE  2
+#define TRIGGER_TYPE_UP        0x01
+#define TRIGGER_TYPE_DOWN      0x02
+#define TRIGGER_TYPE_TIME      0x04
+#define TRIGGER_TYPE_FINI      0x08
+#define TRIGGER_TYPE_RECONFIG  0x10
+
+typedef struct trigger_info {
+	uint32_t trig_id;	/* trigger ID */
+	uint8_t  res_type;	/* TRIGGER_RES_TYPE_* */
+	char *   res_id;	/* resource ID */
+	uint16_t trig_type;	/* TRIGGER_TYPE_* */
+	uint16_t offset;	/* seconds from trigger, 0x8000 origin */
+	uint32_t user_id;	/* user requesting trigger */
+	char *   program;	/* program to execute */
+} trigger_info_t;
+
+typedef struct trigger_info_msg {
+	uint32_t record_count;		/* number of records */
+	trigger_info_t *trigger_array;	/* the trigger records */
+} trigger_info_msg_t;
+
 /*****************************************************************************\
  *	RESOURCE ALLOCATION FUNCTIONS
 \*****************************************************************************/
@@ -1825,6 +1848,33 @@ extern char * slurm_hostlist_shift PARAMS(( hostlist_t hl ));
  */
 extern void slurm_hostlist_destroy PARAMS(( hostlist_t hl ));
 
+/*****************************************************************************\
+ *      SLURM TRIGGER FUNCTIONS
+\*****************************************************************************/
+
+/*
+ * slurm_set_trigger - Set an event trigger
+ * RET 0 or a slurm error code
+ */
+extern int slurm_set_trigger PARAMS(( trigger_info_t * trigger_set ));
+
+/*
+ * slurm_clear_trigger - Clear (remove) an existing event trigger
+ * RET 0 or a slurm error code
+ */
+extern int slurm_clear_trigger PARAMS(( trigger_info_t * trigger_clear ));
+
+/*
+ * slurm_get_triggers - Get all event trigger information
+ * Use slurm_free_trigger_msg() to free the memory allocated by this function
+ * RET 0 or a slurm error code
+ */
+extern int slurm_get_triggers PARAMS(( trigger_info_msg_t ** trigger_get ));
+
+/*
+ * slurm_free_trigger_msg - Free data structure returned by slurm_get_triggers()
+ */
+extern void slurm_free_trigger_msg PARAMS(( trigger_info_msg_t * trigger_free ));
 END_C_DECLS
 
 #endif

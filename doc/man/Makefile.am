@@ -15,6 +15,7 @@ man1_MANS =            \
 	man1/smap.1 \
 	man1/squeue.1 \
 	man1/srun.1 \
+	man1/strigger.1 \
 	man1/sview.1
 
 man3_MANS = man3/slurm_hostlist_create.3 \

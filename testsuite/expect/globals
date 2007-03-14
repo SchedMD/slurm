@@ -65,6 +65,7 @@ cset slaunch     "${slurm_dir}/bin/slaunch"
 cset smap        "${slurm_dir}/bin/smap"
 cset squeue      "${slurm_dir}/bin/squeue"
 cset srun        "${slurm_dir}/bin/srun"
+cset strigger    "${slurm_dir}/bin/strigger"
 
 # If length of string partition is zero, use output of function 
 #	default_partition, otherwise use the partition explicitly 
