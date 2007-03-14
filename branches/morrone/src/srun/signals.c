@@ -143,8 +143,7 @@ _handle_intr(srun_job_t *job, time_t *last_intr, time_t *last_intr_sent)
 
 	if (((time(NULL) - *last_intr) > 1) && !opt.disable_status) {
 		info("interrupt (one more within 1 sec to abort)");
-		if (mode != MODE_ATTACH)
-			report_task_status(job);
+		report_task_status(job);
 		*last_intr = time(NULL);
 	} else  { /* second Ctrl-C in half as many seconds */
 		update_job_state(job, SRUN_JOB_CANCELLED);

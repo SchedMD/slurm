@@ -89,7 +89,7 @@ int
 allocate_test(void)
 {
 	int rc;
-	job_desc_msg_t *j = job_desc_msg_create_from_opts (NULL);
+	job_desc_msg_t *j = job_desc_msg_create_from_opts();
 	if(!j)
 		return SLURM_ERROR;
 	
@@ -106,7 +106,7 @@ allocate_nodes(void)
 	SigFunc *oquitf, *ointf, *otermf;
 	sigset_t oset;
 	resource_allocation_response_msg_t *resp = NULL;
-	job_desc_msg_t *j = job_desc_msg_create_from_opts (NULL);
+	job_desc_msg_t *j = job_desc_msg_create_from_opts();
 
 	if(!j)
 		return NULL;
@@ -391,7 +391,7 @@ _intr_handler(int signo)
  * (see opt.h)
  */
 job_desc_msg_t *
-job_desc_msg_create_from_opts (char *script)
+job_desc_msg_create_from_opts ()
 {
 	job_desc_msg_t *j = xmalloc(sizeof(*j));
 	char buf[8192];
@@ -561,36 +561,6 @@ job_desc_msg_create_from_opts (char *script)
 	} else {
 		j->alloc_resp_hostname = NULL;
 		j->other_hostname = NULL;
-	}
-
-	if (script) {
-		/*
-		 * If script is set then we are building a request for
-		 *  a batch job
-		 */
-		xassert (opt.batch);
-
-		j->environment = NULL;
-		if (opt.get_user_env) {
-			struct passwd *pw = NULL;
-			pw = getpwuid(opt.uid);
-			if (pw != NULL) {
-				j->environment =
-					env_array_user_default(pw->pw_name);
-				/* FIXME - should we abort if j->environment
-				   is NULL? */
-			}
-		}
-		env_array_merge(&j->environment, (const char **)environ);
-		j->env_size = envcount (j->environment);
-		j->script = script;
-		j->argv = remote_argv;
-		j->argc = remote_argc;
-		j->err  = opt.efname;
-		j->in   = opt.ifname;
-		j->out  = opt.ofname;
-		j->work_dir = opt.cwd;
-		j->no_requeue = opt.no_requeue;
 	}
 
 	return (j);

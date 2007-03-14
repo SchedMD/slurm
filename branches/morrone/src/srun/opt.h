@@ -62,16 +62,6 @@ extern char **remote_argv;
 extern int remote_argc;
 extern int _verbose;
 
-/* mutually exclusive modes for srun */
-enum modes {
-	MODE_UNKNOWN	= 0,
-	MODE_NORMAL	= 1,
-	MODE_IMMEDIATE	= 2,
-	MODE_ATTACH	= 3,
-	MODE_ALLOCATE	= 4,
-	MODE_BATCH	= 5
-};
-
 extern enum modes mode;
 
 #define format_task_dist_states(t) (t == SLURM_DIST_BLOCK) ? "block" :   \
@@ -142,7 +132,6 @@ typedef struct srun_options {
 
 	int  slurmd_debug;	/* --slurmd-debug, -D           */
 	core_format_t core_type;/* --core= 	        	*/
-	char *attach;		/* --attach=id	    -a id	*/ 
 	bool join;		/* --join, 	    -j		*/
 
 	/* no longer need these, they are set globally : 	*/
@@ -154,13 +143,9 @@ typedef struct srun_options {
 	bool hold;		/* --hold, -H			*/
 	bool labelio;		/* --label-output, -l		*/
 	bool unbuffered;        /* --unbuffered,   -u           */
-	bool allocate;		/* --allocate, 	   -A		*/
-	bool noshell;		/* --noshell                    */
 	bool overcommit;	/* --overcommit,   -O		*/
-	bool batch;		/* --batch,   -b		*/
 	bool no_kill;		/* --no-kill, -k		*/
 	bool kill_bad_exit;	/* --kill-on-bad-exit, -K	*/
-	bool no_requeue;	/* --no-requeue			*/
 	uint16_t shared;	/* --share,   -s		*/
 	int  max_wait;		/* --wait,    -W		*/
 	bool quit_on_intr;      /* --quit-on-interrupt, -q      */

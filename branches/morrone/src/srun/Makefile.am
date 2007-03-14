@@ -16,8 +16,6 @@ srun_SOURCES = \
 	launch.h    \
 	attach.h    \
 	attach.c    \
-	reattach.c  \
-	reattach.h  \
 	fname.c     \
 	fname.h     \
 	sigstr.c    \

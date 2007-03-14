@@ -564,13 +564,8 @@ job_state(srun_job_t *job)
 void 
 job_force_termination(srun_job_t *job)
 {
-	if (mode == MODE_ATTACH) {
-		info ("forcing detach");
-		update_job_state(job, SRUN_JOB_DETACHED);
-	} else {
-		info ("forcing job termination");
-		update_job_state(job, SRUN_JOB_FORCETERM);
-	}
+	info ("forcing job termination");
+	update_job_state(job, SRUN_JOB_FORCETERM);
 
 	client_io_handler_finish(job->client_io);
 }

@@ -392,10 +392,7 @@ static void _node_fail_handler(int fd, srun_job_t *job)
 	}
 	slurm_mutex_unlock(&job->task_mutex);
 
-	if (!opt.allocate) {
-		client_io_handler_downnodes(job->client_io, node_ids,
-					    num_node_ids);
-	}
+	client_io_handler_downnodes(job->client_io, node_ids, num_node_ids);
 
 	if (!opt.no_kill) {
 		update_job_state(job, SRUN_JOB_FORCETERM);
@@ -1421,9 +1418,6 @@ extern slurm_fd slurmctld_msg_init(void)
 
 	if (slurmctld_fd)	/* May set early for queued job allocation */
 		return slurmctld_fd;
-
-	if (opt.allocate && opt.noshell)
-		return -1;
 
 	slurmctld_fd = -1;
 	slurmctld_comm_addr.hostname = NULL;
