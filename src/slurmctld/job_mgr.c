@@ -2536,8 +2536,8 @@ static int _validate_job_desc(job_desc_msg_t * job_desc_msg, int allocate,
 	 * and sched/wiki2 */
 	if (!wiki_sched_test) {
 		char *sched_type = slurm_get_sched_type();
-		if ((strcmp(sched_type, "sched/wiki") == 0) ||
-		    (strcmp(sched_type, "sched/wiki2") == 0))
+		if ((strcmp(sched_type, "sched/wiki") == 0)
+		||  (strcmp(sched_type, "sched/wiki2") == 0))
 			wiki_sched = true;
 		xfree(sched_type);
 		wiki_sched_test = true;

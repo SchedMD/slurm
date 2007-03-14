@@ -3,6 +3,8 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 1.1.33
 =========================
+ - sched/wiki - Do not wait for job completion before permitting 
+   additional jobs to be scheduled.
 
 * Changes in SLURM 1.1.32
 =========================
