@@ -100,6 +100,7 @@
 #define OPT_CPU_BIND    0x0d
 #define OPT_MEM_BIND    0x0e
 #define OPT_MULTI       0x0f
+#define OPT_EXCLUSIVE   0x10
 
 /* generic getopt_long flags, integers and *not* valid characters */
 #define LONG_OPT_HELP        0x100
@@ -829,6 +830,7 @@ env_vars_t env_vars[] = {
   {"SLURM_NO_ROTATE",     OPT_NO_ROTATE,  NULL,               NULL           },
   {"SLURM_NPROCS",        OPT_INT,        &opt.nprocs,        &opt.nprocs_set},
   {"SLURM_OVERCOMMIT",    OPT_OVERCOMMIT, NULL,               NULL           },
+  {"SLURM_EXCLUSIVE",     OPT_EXCLUSIVE,  NULL,               NULL           },
   {"SLURM_PARTITION",     OPT_STRING,     &opt.partition,     NULL           },
   {"SLURM_REMOTE_CWD",    OPT_STRING,     &opt.cwd,           NULL           },
   {"SLURM_STDERRMODE",    OPT_STRING,     &opt.efname,        NULL           },
@@ -921,6 +923,10 @@ _process_env_var(env_vars_t *e, const char *val)
 
 	case OPT_OVERCOMMIT:
 		opt.overcommit = true;
+		break;
+
+	case OPT_EXCLUSIVE:
+		opt.exclusive = true;
 		break;
 
 	case OPT_CORE:
