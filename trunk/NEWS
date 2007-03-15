@@ -246,7 +246,8 @@ documents those changes that are of interest to users and admins.
  - sched/wiki - Do not wait for job completion before permitting 
    additional jobs to be scheduled.
  - Add srun SLURM_EXCLUSIVE environment variable support, from 
-   Gilles Civario (Bull)
+   Gilles Civario (Bull).
+ - sched/wiki - Report job's node sharing options.
 
 * Changes in SLURM 1.1.32
 =========================
