@@ -103,8 +103,7 @@ static void 	_msg_thr_poll(srun_job_t *job);
 static void	_set_jfds_nonblocking(srun_job_t *job);
 static void     _print_pid_list(const char *host, int ntasks, 
 				uint32_t *pid, char *executable_name);
-static void	_node_fail_handler(int fd, srun_job_t *job);
-static void	_node_fail_forwarder(char *nodelist, srun_job_t *job);
+static void	_node_fail_handler(const char *nodelist, srun_job_t *job);
 
 #define _poll_set_rd(_pfd, _fd) do {    \
 	(_pfd).fd = _fd;                \
@@ -120,47 +119,11 @@ static void	_node_fail_forwarder(char *nodelist, srun_job_t *job);
 #define _poll_wr_isset(pfd) ((pfd).revents & POLLOUT)
 #define _poll_err(pfd)      ((pfd).revents & POLLERR)
 
-/* fd is job->forked_msg->par_msg->msg_pipe[1] */
-static void _update_mpir_proctable(int fd, srun_job_t *job,
+static void _update_mpir_proctable(srun_job_t *job,
 				   int nodeid, int ntasks, uint32_t *pid,
 				   char *executable)
 {
-	int msg_type = PIPE_UPDATE_MPIR_PROCTABLE;
-	int dummy = 0xdeadbeef;
-	int len;
-	int i;
-
-	xassert(message_thread);
-	safe_write(fd, &msg_type, sizeof(int)); /* read by par_thr() */
-	safe_write(fd, &dummy, sizeof(int));    /* read by par_thr() */
-
-	/* the rest are read by _handle_update_mpir_proctable() */
-	safe_write(fd, &nodeid, sizeof(int));
-	safe_write(fd, &ntasks, sizeof(int));
-	len = strlen(executable) + 1;
-	safe_write(fd, &len, sizeof(int));
-	if (len > 0) {
-		safe_write(fd, executable, len);
-	}
-	for (i = 0; i < ntasks; i++) {
-		int taskid = job->step_layout->tids[nodeid][i];
-		safe_write(fd, &taskid, sizeof(int));
-		safe_write(fd, &pid[i], sizeof(int));
-	}
-
-	return;
-
-rwfail:
-	error("_update_mpir_proctable: write to srun main process failed");
-}
-
-static void _handle_update_mpir_proctable(int fd, srun_job_t *job)
-{
 	static int tasks_recorded = 0;
-	int nodeid;
-	int ntasks;
-	int len;
-	char *executable = NULL;
 	int i;
 	char *name = NULL;
 	
@@ -173,32 +136,25 @@ static void _handle_update_mpir_proctable(int fd, srun_job_t *job)
 		xstrfmtcat(totalview_jobid, "%u", job->jobid);
 	}
 
-	safe_read(fd, &nodeid, sizeof(int));
-	safe_read(fd, &ntasks, sizeof(int));
-	safe_read(fd, &len, sizeof(int));
-	if (len > 0) {
-		executable = xmalloc(len);
-		safe_read(fd, executable, len);
-
-		/* remote_argv global will be NULL during an srun --attach */
-		if (remote_argv == NULL) {
-			remote_argc = 1;
-			xrealloc(remote_argv, 2 * sizeof(char *));
-			remote_argv[0] = executable;
-			remote_argv[1] = NULL;
-		}
+	/* FIXME - possibly never, now that --attach is removed */
+	/* remote_argv global will be NULL during an srun --attach */
+	if (remote_argv == NULL) {
+		remote_argc = 1;
+		xrealloc(remote_argv, 2 * sizeof(char *));
+		remote_argv[0] = executable;
+		remote_argv[1] = NULL;
 	}
+
 	name = nodelist_nth_host(job->step_layout->node_list, nodeid);
 	for (i = 0; i < ntasks; i++) {
 		MPIR_PROCDESC *tv;
-		int taskid, pid;
+		int taskid;
 
-		safe_read(fd, &taskid, sizeof(int));
-		safe_read(fd, &pid, sizeof(int));
+		taskid = job->step_layout->tids[nodeid][i];
 
 		tv = &MPIR_proctable[taskid];
 		tv->host_name = xstrdup(name);
-		tv->pid = pid;
+		tv->pid = pid[i];
 		tv->executable_name = executable;
 		tasks_recorded++;
 	}
@@ -215,10 +171,6 @@ static void _handle_update_mpir_proctable(int fd, srun_job_t *job)
 	}
 	
 	return;
-
-rwfail:
-	error("_handle_update_mpir_proctable: "
-	      "read from srun message-handler process failed");
 }
 
 static void _dump_proctable(srun_job_t *job)
@@ -243,26 +195,12 @@ static void _dump_proctable(srun_job_t *job)
 	
 void debugger_launch_failure(srun_job_t *job)
 {
-	int i;
-	pipe_enum_t pipe_enum = PIPE_MPIR_DEBUG_STATE;
-	
 	if (opt.parallel_debug) {
-		if(message_thread && job) {
-			i = MPIR_DEBUG_ABORTING;
-			safe_write(job->forked_msg->par_msg->msg_pipe[1],
-				   &pipe_enum, sizeof(int));
-			safe_write(job->forked_msg->par_msg->msg_pipe[1],
-				   &i, sizeof(int));
-		} else if(!job) {
-			error("Hey I don't have a job to write to on the "
-			      "failure of the debugger launch.");
-		}
+		MPIR_debug_state = MPIR_DEBUG_ABORTING;
+		MPIR_Breakpoint();
+		if (opt.debugger_test)
+			_dump_proctable(job);
 	}
-	return;
-rwfail:
-	error("debugger_launch_failure: "
-	      "write from srun message-handler process failed");
-
 }
 
 /*
@@ -291,10 +229,8 @@ void timeout_handler(time_t timeout)
  * not. The job will continue to execute given the --no-kill option. 
  * Otherwise all of the job's tasks and the job itself are killed..
  */
-static void _node_fail_handler(int fd, srun_job_t *job)
+static void _node_fail_handler(const char *nodelist, srun_job_t *job)
 {
-	char *nodelist = NULL;
-	int len = 0;
 	hostset_t fail_nodes, all_nodes;
 	hostlist_iterator_t fail_itr;
 	char *node;
@@ -302,12 +238,6 @@ static void _node_fail_handler(int fd, srun_job_t *job)
 	int *node_ids;
 	int i, j;
 	int node_id, num_tasks;
-
-	/* get the hostlist string of failed nodes from the message thread */
-	safe_read(fd, &len, sizeof(int));
-	nodelist = (char *)xmalloc(len+1);
-	safe_read(fd, nodelist, len);
-	nodelist[len] = '\0';
 
 	/* now process the down nodes and tell the IO client about them */
 	fail_nodes = hostset_create(nodelist);
@@ -348,41 +278,6 @@ static void _node_fail_handler(int fd, srun_job_t *job)
 		info("sending SIGINT to remaining tasks");
 		fwd_signal(job, SIGINT, opt.max_threads);
 	}
-
-	xfree(nodelist);
-	return;
-rwfail:
-	error("Failure reading node failure message from message process: %m");
-	if (nodelist != NULL)
-		xfree(nodelist);
-	return;
-}
-
-/*
- * Forward the node failure message to the main srun process.
- *
- * NOTE: this is called from the forked message handling process
- */
-static void _node_fail_forwarder(char *nodelist, srun_job_t *job)
-{
-	pipe_enum_t pipe_enum = PIPE_NODE_FAIL;
-	int dummy = 0xdeadbeef;
-	int pipe_fd = job->forked_msg->par_msg->msg_pipe[1];
-	int len;
-
-	len = strlen(nodelist);
-	if (message_thread) {
-		safe_write(pipe_fd, &pipe_enum, sizeof(int));
-		safe_write(pipe_fd, &dummy, sizeof(int));
-
-		/* the following writes are handled by _node_fail_handler */
-		safe_write(pipe_fd, &len, sizeof(int));
-		safe_write(pipe_fd, nodelist, len);
-	}
-	return;
-rwfail:
-	error("Failure sending node failure message to main process: %m");
-	return;
 }
 
 static bool _job_msg_done(srun_job_t *job)
@@ -393,7 +288,6 @@ static bool _job_msg_done(srun_job_t *job)
 static void
 _process_launch_resp(srun_job_t *job, launch_tasks_response_msg_t *msg)
 {
-	pipe_enum_t pipe_enum = PIPE_HOST_STATE;
 	int nodeid = nodelist_find(job->step_layout->node_list,
 				   msg->node_name);
 
@@ -405,105 +299,38 @@ _process_launch_resp(srun_job_t *job, launch_tasks_response_msg_t *msg)
 	job->host_state[nodeid] = SRUN_HOST_REPLIED;
 	pthread_mutex_unlock(&job->task_mutex);
 
-	if(message_thread) {
-		safe_write(job->forked_msg->par_msg->msg_pipe[1],
-			   &pipe_enum, sizeof(int));
-		safe_write(job->forked_msg->par_msg->msg_pipe[1],
-			   &nodeid, sizeof(int));
-		safe_write(job->forked_msg->par_msg->msg_pipe[1],
-			   &job->host_state[nodeid], sizeof(int));
-		
-	}
-	_update_mpir_proctable(job->forked_msg->par_msg->msg_pipe[1], job,
+	_update_mpir_proctable(job,
 			       nodeid, msg->count_of_pids,
 			       msg->local_pids, remote_argv[0]);
 	_print_pid_list( msg->node_name, msg->count_of_pids, 
 			 msg->local_pids, remote_argv[0]     );
 	return;
-rwfail:
-	error("_process_launch_resp: "
-	      "write from srun message-handler process failed");
-	
-}
-
-static void
-update_tasks_state(srun_job_t *job, uint32_t nodeid)
-{
-	int i;
-	pipe_enum_t pipe_enum = PIPE_TASK_STATE;
-	slurm_mutex_lock(&job->task_mutex);
-	debug2("updating %u tasks state for node %u", 
-	       job->step_layout->tasks[nodeid], nodeid);
-	for (i = 0; i < job->step_layout->tasks[nodeid]; i++) {
-		uint32_t tid = job->step_layout->tids[nodeid][i];
-
-		if(message_thread) {
-			safe_write(job->forked_msg->par_msg->msg_pipe[1],
-				   &pipe_enum,sizeof(int));
-			safe_write(job->forked_msg->par_msg->msg_pipe[1],
-				   &tid,sizeof(int));
-			safe_write(job->forked_msg->par_msg->msg_pipe[1],
-				   &job->task_state[tid],sizeof(int));
-		}
-	}
-	slurm_mutex_unlock(&job->task_mutex);
-	return;
-rwfail:
-	slurm_mutex_unlock(&job->task_mutex);
-	error("update_tasks_state: "
-	      "write from srun message-handler process failed");
-
 }
 
 static void
 update_running_tasks(srun_job_t *job, uint32_t nodeid)
 {
 	int i;
-	pipe_enum_t pipe_enum = PIPE_TASK_STATE;
+
 	debug2("updating %u running tasks for node %u", 
 	       job->step_layout->tasks[nodeid], nodeid);
 	slurm_mutex_lock(&job->task_mutex);
 	for (i = 0; i < job->step_layout->tasks[nodeid]; i++) {
 		uint32_t tid = job->step_layout->tids[nodeid][i];
 		job->task_state[tid] = SRUN_TASK_RUNNING;
-
-		if(message_thread) {
-			safe_write(job->forked_msg->
-				   par_msg->msg_pipe[1],
-				   &pipe_enum,sizeof(int));
-			safe_write(job->forked_msg->
-				   par_msg->msg_pipe[1],&tid, sizeof(int));
-			safe_write(job->forked_msg->par_msg->msg_pipe[1],
-				   &job->task_state[tid], sizeof(int));
-		}
 	}
 	slurm_mutex_unlock(&job->task_mutex);
-	return;
-rwfail:
-	slurm_mutex_unlock(&job->task_mutex);
-	error("update_running_tasks: "
-	      "write from srun message-handler process failed");
 }
 
 static void
 update_failed_tasks(srun_job_t *job, uint32_t nodeid)
 {
 	int i;
-	pipe_enum_t pipe_enum = PIPE_TASK_STATE;
 	
 	slurm_mutex_lock(&job->task_mutex);
 	for (i = 0; i < job->step_layout->tasks[nodeid]; i++) {
 		uint32_t tid = job->step_layout->tids[nodeid][i];
 		job->task_state[tid] = SRUN_TASK_FAILED;
-
-		if(message_thread) {
-			safe_write(job->forked_msg->par_msg->msg_pipe[1],
-				   &pipe_enum, sizeof(int));
-			safe_write(job->forked_msg->par_msg->msg_pipe[1], 
-				   &tid, sizeof(int));
-			safe_write(job->forked_msg->par_msg->msg_pipe[1],
-				   &job->task_state[tid], sizeof(int));
-		}
 		tasks_exited++;
 	}
 	slurm_mutex_unlock(&job->task_mutex);
@@ -512,18 +339,13 @@ update_failed_tasks(srun_job_t *job, uint32_t nodeid)
 		debug2("all tasks exited");
 		update_job_state(job, SRUN_JOB_TERMINATED);
 	}
-rwfail:
 	slurm_mutex_unlock(&job->task_mutex);
-	error("update_failed_tasks: "
-	      "write from srun message-handler process failed");
-
 }
 
 static void
 _launch_handler(srun_job_t *job, slurm_msg_t *resp)
 {
 	launch_tasks_response_msg_t *msg = resp->data;
-	pipe_enum_t pipe_enum = PIPE_HOST_STATE;
 	int nodeid = nodelist_find(job->step_layout->node_list, 
 				   msg->node_name);
 		
@@ -540,15 +362,6 @@ _launch_handler(srun_job_t *job, slurm_msg_t *resp)
 		job->host_state[nodeid] = SRUN_HOST_REPLIED;
 		slurm_mutex_unlock(&job->task_mutex);
 		
-		if(message_thread) {
-			safe_write(job->forked_msg->par_msg->msg_pipe[1],
-				   &pipe_enum, sizeof(int));
-			safe_write(job->forked_msg->par_msg->msg_pipe[1],
-				   &nodeid, sizeof(int));
-			safe_write(job->forked_msg->par_msg->msg_pipe[1],
-				   &job->host_state[nodeid],
-				   sizeof(int));
-		}
 		update_failed_tasks(job, nodeid);
 
 		/*
@@ -564,11 +377,6 @@ _launch_handler(srun_job_t *job, slurm_msg_t *resp)
 		_process_launch_resp(job, msg);
 		update_running_tasks(job, nodeid);
 	}
-	return;
-rwfail:
-	error("_launch_handler: "
-	      "write from srun message-handler process failed");
-
 }
 
 /* _confirm_launch_complete
@@ -661,25 +469,6 @@ _die_if_signaled(srun_job_t *job, int status)
 	}
 }
 
-static void
-_update_task_exitcode(srun_job_t *job, int taskid)
-{
-	pipe_enum_t pipe_enum = PIPE_TASK_EXITCODE;
-
-	if(message_thread) {
-		safe_write(job->forked_msg->par_msg->msg_pipe[1],
-			   &pipe_enum, sizeof(int));
-		safe_write(job->forked_msg->par_msg->msg_pipe[1],
-			   &taskid, sizeof(int));
-		safe_write(job->forked_msg->par_msg->msg_pipe[1],
-			   &job->tstatus[taskid], sizeof(int));
-	}
-	return;
-rwfail:
-	error("_update_task_exitcode: "
-	      "write from srun message-handler process failed");
-}
-
 static void 
 _exit_handler(srun_job_t *job, slurm_msg_t *exit_msg)
 {
@@ -710,7 +499,6 @@ _exit_handler(srun_job_t *job, slurm_msg_t *exit_msg)
 
 		slurm_mutex_lock(&job->task_mutex);
 		job->tstatus[taskid] = status;
-		_update_task_exitcode(job, taskid);
 		if (status) 
 			job->task_state[taskid] = SRUN_TASK_ABNORMAL_EXIT;
 		else {
@@ -729,9 +517,6 @@ _exit_handler(srun_job_t *job, slurm_msg_t *exit_msg)
 		}
 	}
 	
-	update_tasks_state(job, slurm_step_layout_host_id(job->step_layout, 
-							  task0));
-		
 	_print_exit_status(job, hl, host, status);
 
 	hostlist_destroy(hl);
@@ -804,7 +589,7 @@ _handle_msg(srun_job_t *job, slurm_msg_t *msg)
 	case SRUN_NODE_FAIL:
 		verbose("node_fail received");
 		nf = msg->data;
-		_node_fail_forwarder(nf->nodelist, job);
+		_node_fail_handler(nf->nodelist, job);
 		slurm_free_srun_node_fail_msg(msg->data);
 		break;
 	case RESPONSE_RESOURCE_ALLOCATION:
@@ -835,7 +620,7 @@ _handle_msg(srun_job_t *job, slurm_msg_t *msg)
 static void
 _accept_msg_connection(srun_job_t *job, int fdnum)
 {
-	slurm_fd     fd = (slurm_fd) NULL;
+	slurm_fd     fd = (slurm_fd) 0;
 	slurm_msg_t *msg = NULL;
 	slurm_addr   cli_addr;
 	unsigned char *uc;
@@ -1015,128 +800,18 @@ void *
 msg_thr(void *arg)
 {
 	srun_job_t *job = (srun_job_t *) arg;
-	forked_msg_pipe_t *par_msg = job->forked_msg->par_msg;
 	debug3("msg thread pid = %lu", (unsigned long) getpid());
 
 	slurm_uid = (uid_t) slurm_get_slurm_user_id();
 
 	_msg_thr_poll(job);
 
-	close(par_msg->msg_pipe[1]); // close excess fildes
 	debug3("msg thread done");	
 	return (void *)1;
 }
 
-
 /*
- *  This function runs in a pthread of the parent srun process and
- *  handles messages from the srun message-handler process.
- */
-void *
-par_thr(void *arg)
-{
-	srun_job_t *job = (srun_job_t *) arg;
-	forked_msg_pipe_t *par_msg = job->forked_msg->par_msg;
-	forked_msg_pipe_t *msg_par = job->forked_msg->msg_par;
-	int c;
-	pipe_enum_t type=0;
-	int tid=-1;
-	int status;
-	debug3("par thread pid = %lu", (unsigned long) getpid());
-
-	//slurm_uid = (uid_t) slurm_get_slurm_user_id();
-	close(msg_par->msg_pipe[0]); // close read end of pipe
-	close(par_msg->msg_pipe[1]); // close write end of pipe 
-	while(read(par_msg->msg_pipe[0], &c, sizeof(int)) 
-	      == sizeof(int)) {
-		// getting info from msg thread
-		if(type == PIPE_NONE) {
-			debug2("got type %d\n",c);
-			type = c;
-			continue;
-		} 
-
-		switch(type) {
-		case PIPE_JOB_STATE:
-			debug("PIPE_JOB_STATE, c = %d", c);
-			update_job_state(job, c);
-			break;
-		case PIPE_TASK_STATE:
-			debug("PIPE_TASK_STATE, c = %d", c);
-			if(tid == -1) {
-				tid = c;
-				continue;
-			}
-			slurm_mutex_lock(&job->task_mutex);
-			job->task_state[tid] = c;
-			if(c == SRUN_TASK_FAILED)
-				tasks_exited++;
-			slurm_mutex_unlock(&job->task_mutex);
-			if (tasks_exited == opt.nprocs) {
-				debug2("all tasks exited");
-				update_job_state(job, SRUN_JOB_TERMINATED);
-			}
-			tid = -1;
-			break;
-		case PIPE_TASK_EXITCODE:
-			debug("PIPE_TASK_EXITCODE");
-			if(tid == -1) {
-				debug("  setting tid");
-				tid = c;
-				continue;
-			}
-			slurm_mutex_lock(&job->task_mutex);
-			debug("  setting task %d exitcode %d", tid, c);
-			job->tstatus[tid] = c;
-			slurm_mutex_unlock(&job->task_mutex);
-			tid = -1;
-			break;
-		case PIPE_HOST_STATE:
-			if(tid == -1) {
-				tid = c;
-				continue;
-			}
-			slurm_mutex_lock(&job->task_mutex);
-			job->host_state[tid] = c;
-			slurm_mutex_unlock(&job->task_mutex);
-			tid = -1;
-			break;
-		case PIPE_SIGNALED:
-			slurm_mutex_lock(&job->state_mutex);
-			job->signaled = c;
-			slurm_mutex_unlock(&job->state_mutex);
-			break;
-		case PIPE_MPIR_DEBUG_STATE:
-			MPIR_debug_state = c;
-			MPIR_Breakpoint();
-			if (opt.debugger_test)
-				_dump_proctable(job);
-			break;
-		case PIPE_UPDATE_MPIR_PROCTABLE:
-			_handle_update_mpir_proctable(par_msg->msg_pipe[0],
-						      job);
-			break;
-		case PIPE_NODE_FAIL:
-			_node_fail_handler(par_msg->msg_pipe[0], job);
-			break;
-		default:
-			error("Unrecognized message from message thread %d",
-			      type);
-		}
-		type = PIPE_NONE;
-	}
-	close(par_msg->msg_pipe[0]); // close excess fildes    
-	close(msg_par->msg_pipe[1]); // close excess fildes
-	if(waitpid(par_msg->pid,&status,0)<0) // wait for pid to finish
-		return NULL;// there was an error
-	debug3("par thread done");
-	return (void *)1;
-}
-
-/*
- * Forks the srun process that handles messages even if the main srun
- * process is stopped (for instance, by totalview).  Also creates
- * the various pthreads used in the original and monitor process.
+ * Create the message handling pthread.
  *
  * NOTE: call this before creating any pthreads to avoid having forked process 
  * hang on localtime_t() mutex locked in parent processes pthread.
@@ -1146,11 +821,7 @@ msg_thr_create(srun_job_t *job)
 {
 	int i, retries = 0;
 	pthread_attr_t attr;
-	int c;
-	
-	job->forked_msg = xmalloc(sizeof(forked_msg_t));
-	job->forked_msg->par_msg = xmalloc(sizeof(forked_msg_pipe_t));
-	job->forked_msg->msg_par = xmalloc(sizeof(forked_msg_pipe_t));
+	int rc;
 	
 	set_allocate_job(job);
 
@@ -1166,84 +837,20 @@ msg_thr_create(srun_job_t *job)
 			     job->jaddr[i]).sin_port));
 	}
 
-	if (pipe(job->forked_msg->par_msg->msg_pipe) == -1) {
-		error("pipe():  %m"); 
-		return SLURM_ERROR;
-	}
-	if (pipe(job->forked_msg->msg_par->msg_pipe) == -1) {
-		error("pipe():  %m"); 
-		return SLURM_ERROR;
-	}
-	debug2("created the pipes for communication");
-
-	/* retry fork for super-heavily loaded systems */
-	for (i = 0; ; i++) {
-		if((job->forked_msg->par_msg->pid = fork()) != -1)
-			break;
-		if (i < 3)
-			usleep(1000);
-		else {
-			error("fork(): %m");
-			return SLURM_ERROR;
-		}
+	slurm_attr_init(&attr);
+	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
+thread_create_retry:
+	rc = pthread_create(&job->msg_tid, &attr, &msg_thr, (void *)job);
+	if (rc) {
+		if (++retries > MAX_RETRIES)
+			fatal("Can't create pthread");
+		sleep(1);
+		goto thread_create_retry;
 	}
 
-	if (job->forked_msg->par_msg->pid == 0) {
-		/* child */
-		setsid();  
-		message_thread = 1;
-		close(job->forked_msg->
-		      par_msg->msg_pipe[0]); // close read end of pipe
-		close(job->forked_msg->
-		      msg_par->msg_pipe[1]); // close write end of pipe
-		slurm_attr_init(&attr);
-		pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
-		while ((errno = pthread_create(&job->jtid, &attr, &msg_thr,
-					       (void *)job))) {
-			if (++retries > MAX_RETRIES)
-				fatal("Can't create pthread");
-			sleep(1);
-		}
-		slurm_attr_destroy(&attr);
-		debug("Started msg to parent server thread (%lu)", 
-		      (unsigned long) job->jtid);
+	slurm_attr_destroy(&attr);
+	debug("Started message thread (%lu)", (unsigned long) job->msg_tid);
 		
-		/*
-		 * Wait for the main srun process to exit.  When it
-		 * does, the other end of the msg_par->msg_pipe will
-		 * close.
-		 */
-		while(read(job->forked_msg->msg_par->msg_pipe[0],
-			   &c, sizeof(int)) > 0)
-			; /* do nothing */
-		
-		close(job->forked_msg->msg_par->msg_pipe[0]);
-		/*
-		 * These xfree aren't really necessary if we are just going
-		 * to exit, and they can cause the message thread to
-		 * segfault.
-		 */
-		/* xfree(job->forked_msg->par_msg); */
-		/* xfree(job->forked_msg->msg_par); */
-		/* xfree(job->forked_msg); */
-		_exit(0);
-	} else {
-		/* parent */
-
-		slurm_attr_init(&attr);
-		while ((errno = pthread_create(&job->jtid, &attr, &par_thr, 
-					       (void *)job))) {
-			if (++retries > MAX_RETRIES)
-				fatal("Can't create pthread");
-			sleep(1);	/* sleep and try again */
-		}
-		slurm_attr_destroy(&attr);
-
-		debug("Started parent to msg server thread (%lu)", 
-		      (unsigned long) job->jtid);
-	}
-
-	
 	return SLURM_SUCCESS;
 }
 

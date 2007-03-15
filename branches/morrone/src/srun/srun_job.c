@@ -528,26 +528,14 @@ _job_create_structure(allocation_info_t *ainfo)
 void
 update_job_state(srun_job_t *job, srun_job_state_t state)
 {
-	pipe_enum_t pipe_enum = PIPE_JOB_STATE;
 	pthread_mutex_lock(&job->state_mutex);
 	if (job->state < state) {
 		job->state = state;
-		if(message_thread) {
-			safe_write(job->forked_msg->par_msg->msg_pipe[1],
-				   &pipe_enum, sizeof(int));
-			safe_write(job->forked_msg->par_msg->msg_pipe[1],
-				   &job->state, sizeof(int));
-		}
 		pthread_cond_signal(&job->state_cond);
 		
 	}
 	pthread_mutex_unlock(&job->state_mutex);
 	return;
-rwfail:
-	pthread_mutex_unlock(&job->state_mutex);
-	error("update_job_state: "
-	      "write from srun message-handler process failed");
-
 }
 
 srun_job_state_t 
@@ -696,7 +684,6 @@ fwd_signal(srun_job_t *job, int signo, int max_threads)
 	slurm_msg_t req;
 	kill_tasks_msg_t msg;
 	static pthread_mutex_t sig_mutex = PTHREAD_MUTEX_INITIALIZER;
-	pipe_enum_t pipe_enum = PIPE_SIGNALED;
 	hostlist_t hl;
 	char *name = NULL;
 	char buf[8192];
@@ -711,12 +698,6 @@ fwd_signal(srun_job_t *job, int signo, int max_threads)
 		slurm_mutex_lock(&job->state_mutex);
 		job->signaled = true;
 		slurm_mutex_unlock(&job->state_mutex);
-		if(message_thread) {
-			write(job->forked_msg->par_msg->msg_pipe[1],
-			      &pipe_enum,sizeof(int));
-			write(job->forked_msg->par_msg->msg_pipe[1],
-			      &job->signaled,sizeof(int));
-		}
 	}
 
 	debug2("forward signal %d to job", signo);

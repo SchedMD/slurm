@@ -268,68 +268,28 @@ static void
 _update_failed_node(srun_job_t *j, int id)
 {
 	int i;
-	pipe_enum_t pipe_enum = PIPE_HOST_STATE;
 	
 	pthread_mutex_lock(&j->task_mutex);
 	if (j->host_state[id] == SRUN_HOST_INIT) {
 		j->host_state[id] = SRUN_HOST_UNREACHABLE;
-
-		if(message_thread) {
-			safe_write(j->forked_msg->par_msg->msg_pipe[1],
-			      &pipe_enum,sizeof(int));
-			safe_write(j->forked_msg->par_msg->msg_pipe[1],
-			      &id,sizeof(int));
-			safe_write(j->forked_msg->par_msg->msg_pipe[1],
-			      &j->host_state[id],sizeof(int));
-		}
 	}
 
-	pipe_enum = PIPE_TASK_STATE;
 	for (i = 0; i < j->step_layout->tasks[id]; i++) {
 		j->task_state[j->step_layout->tids[id][i]] = SRUN_TASK_FAILED;
-
-		if(message_thread) {
-			safe_write(j->forked_msg->par_msg->msg_pipe[1],
-				   &pipe_enum, sizeof(int));
-			safe_write(j->forked_msg->par_msg->msg_pipe[1],
-				   &j->step_layout->tids[id][i], sizeof(int));
-			safe_write(j->forked_msg->par_msg->msg_pipe[1],
-				   &j->task_state[j->step_layout->tids[id][i]],
-				   sizeof(int));
-		}
 	}
 	pthread_mutex_unlock(&j->task_mutex);
 
 	/* update_failed_tasks(j, id); */
-	return;
-rwfail:
-	pthread_mutex_unlock(&j->task_mutex);
-	error("_update_failed_node: "
-	      "write from srun message-handler process failed");
 }
 
 static void
 _update_contacted_node(srun_job_t *j, int id)
 {
-	pipe_enum_t pipe_enum = PIPE_HOST_STATE;
 	pthread_mutex_lock(&j->task_mutex);
 	if (j->host_state[id] == SRUN_HOST_INIT) {
 		j->host_state[id] = SRUN_HOST_CONTACTED;
-		if(message_thread) {
-			safe_write(j->forked_msg->par_msg->msg_pipe[1],
-				   &pipe_enum, sizeof(int));
-			safe_write(j->forked_msg->par_msg->msg_pipe[1],
-				   &id, sizeof(int));
-			safe_write(j->forked_msg->par_msg->msg_pipe[1],
-				   &j->host_state[id], sizeof(int));
-		}
 	}
 	pthread_mutex_unlock(&j->task_mutex);
-	return;
-rwfail:
-	pthread_mutex_unlock(&j->task_mutex);
-	error("_update_contacted_node: "
-	      "write from srun message-handler process failed");
 }
 
 static void 
