@@ -17,6 +17,7 @@ job?</a></li>
 <li><a href="#orphan">Why do I have job steps when my job has already COMPLETED?</a></li>
 <li><a href="#multi_batch">How can I run a job within an existing job allocation?</a></li>
 <li><a href="#user_env">How does SLURM establish the environment for my job?</a></li>
+<li><a href="#prompt">How can I get shell prompts in interactive mode?</a></li>
 </ol>
 <h2>For Administrators</h2>
 <ol>
@@ -270,6 +271,12 @@ The environment variables in effect at the time the <i>srun</i> command
 is executed are propagated to the spawned processes. 
 The <i>~/.profile</i> and <i>~/.bashrc</i> scripts are not executed 
 as part of the process launch.</p>
+
+<p><a name="prompt"><b>13. How can I get shell prompts in interactive 
+mode?</b></a><br>
+<i>srun -u bash -i</i><br>
+Srun's <i>-u</i> option turns off buffering of stdout.
+Bash's <i>-i</i> option tells it to run in interactive mode (with prompts).
 
 <p class="footer"><a href="#top">top</a></p>
 
@@ -527,6 +534,6 @@ of <i>srun</i> serves a similar purpose.
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 2 March 2007</p>
+<p style="text-align:center;">Last modified 15 March 2007</p>
 
 <!--#include virtual="footer.txt"-->
