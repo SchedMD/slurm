@@ -64,6 +64,11 @@
 /* Change TRIGGER_STATE_VERSION value when changing the state save format */
 #define TRIGGER_STATE_VERSION      "VER001"
 
+/* TRIG_IS_JOB_FINI differs from IS_JOB_FINISHED by considering 
+ * completing jobs as not really finished */
+#define TRIG_IS_JOB_FINI(_X)             \
+        (IS_JOB_FINISHED(_X) && ((_X->job_state & JOB_COMPLETING) == 0))
+
 List trigger_list;
 uint32_t next_trigger_id = 1;
 static pthread_mutex_t trigger_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -408,7 +413,7 @@ static int _load_trigger_state(Buf buffer)
 		trig_ptr->job_ptr = find_job_record(trig_ptr->job_id);
 		if ((trig_ptr->job_id == 0)
 		||  (trig_ptr->job_ptr == NULL)
-		||  (IS_JOB_FINISHED(trig_ptr->job_ptr)))
+		||  (TRIG_IS_JOB_FINI(trig_ptr->job_ptr)))
 			goto unpack_error;
 	} else {
 		trig_ptr->job_id = 0;
@@ -599,12 +604,12 @@ fini:	verbose("State of %d triggers recovered", trigger_cnt);
 static void _trigger_job_event(trig_mgr_info_t *trig_in, time_t now)
 {
 	if ((trig_in->job_ptr == NULL)
-	||  (trig_in->job_ptr->job_id == trig_in->job_id))
+	||  (trig_in->job_ptr->job_id != trig_in->job_id))
 		trig_in->job_ptr = find_job_record(trig_in->job_ptr->job_id);
 
 	if ((trig_in->trig_type & TRIGGER_TYPE_FINI)
 	&&  ((trig_in->job_ptr == NULL) ||
-	     (IS_JOB_FINISHED(trig_in->job_ptr)))) {
+	     (TRIG_IS_JOB_FINI(trig_in->job_ptr)))) {
 		trig_in->state = 1;
 		trig_in->trig_time = now + (trig_in->trig_time - 0x8000);
 #if _DEBUG
