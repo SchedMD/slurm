@@ -228,6 +228,12 @@ jobs will fail. The default value is 2000 jobs. This value may not
 be reset via "scontrol reconfig". It only takes effect upon restart 
 of the slurmctld daemon.
 May not exceed 65533.
+
+.TP
+\fBMessageTimeout\fR
+Time permitted for a round\-trip communication to complete
+in seconds. Default value is 10 seconds.
+
 .TP
 \fBMinJobAge\fR
 The minimum age of a completed job before its record is purged from 
@@ -246,11 +252,6 @@ Currently supported versions include:
 \fBmvapich\fR,
 \fBnone\fR (default, which works for many other versions of MPI including 
 LAM MPI and Open MPI).
-
-.TP
-\fBMessageTimeout\fR
-Time permitted for a round\-trip communication to complete
-in seconds. Default value is 10 seconds.
 
 .TP
 \fBPluginDir\fR
