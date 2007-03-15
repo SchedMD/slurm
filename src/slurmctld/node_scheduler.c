@@ -291,36 +291,43 @@ _pick_best_load(struct job_record *job_ptr, bitstr_t * bitmap,
 	
 	_node_load_bitmaps(bitmap, &no_load_bit, &light_load_bit, 
 			&heavy_load_bit);
-			
-	/* first try to use idle nodes */
-	bit_and(bitmap, no_load_bit);
-	FREE_NULL_BITMAP(no_load_bit);
+
 	/* always include required nodes or selection algorithm fails,
 	 * note that we have already confirmed these nodes are available
 	 * to this job */
 	if (job_ptr->details && job_ptr->details->req_node_bitmap)
-		bit_or(bitmap, job_ptr->details->req_node_bitmap);
-	
+		 bit_or(no_load_bit, job_ptr->details->req_node_bitmap);
+
+	/* NOTE: select_g_job_test() is destructive of  bitmap */
+
+	/* first try to use idle nodes */
+	bit_and(bitmap, no_load_bit);
 	error_code = select_g_job_test(job_ptr, bitmap, 
 				       min_nodes, max_nodes, 
 				       req_nodes, test_only);
 
 	/* now try to use idle and lightly loaded nodes */
 	if (error_code) {
+		bit_nclear(bitmap, 0, (node_record_count-1));
+		bit_or(bitmap, no_load_bit);
 		bit_or(bitmap, light_load_bit);
 		error_code = select_g_job_test(job_ptr, bitmap, 
 					       min_nodes, max_nodes, 
 					       req_nodes, test_only);
 	} 
-	FREE_NULL_BITMAP(light_load_bit);
 
 	/* now try to use all possible nodes */
 	if (error_code) {
+		bit_nclear(bitmap, 0, (node_record_count-1));
+		bit_or(bitmap, no_load_bit);
+		bit_or(bitmap, light_load_bit);
 		bit_or(bitmap, heavy_load_bit);
 		error_code = select_g_job_test(job_ptr, bitmap, 
 					       min_nodes, max_nodes, 
 					       req_nodes, test_only);
 	}
+	FREE_NULL_BITMAP(no_load_bit);
+	FREE_NULL_BITMAP(light_load_bit);
 	FREE_NULL_BITMAP(heavy_load_bit);
 
 	return error_code;
@@ -452,6 +459,7 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 	int avail_nodes = 0, avail_cpus = 0;	
 	int avail_mem = 0; /* avail_: resources available for use now */
 	bitstr_t *avail_bitmap = NULL, *total_bitmap = NULL;
+	bitstr_t *backup_bitmap = NULL;
 	bitstr_t *partially_idle_node_bitmap = NULL, *possible_bitmap = NULL;
 	int max_feature, min_feature;
 	bool runable_ever  = false;	/* Job can ever run */
@@ -612,10 +620,6 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 	}
 	
 	for (j = min_feature; j <= max_feature; j++) {
-		/* we use this var to go straight down the list if the
-		 * first one doesn't work we go to the next until the
-		 * list is empty.
-		 */
 		for (i = 0; i < node_set_size; i++) {
 			bool pick_light_load = false;
 			if (node_set_ptr[i].feature != j)
@@ -707,6 +711,10 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 				continue;	/* Keep accumulating nodes */
 			if (avail_cpus   < job_ptr->num_procs)
 				continue;	/* Keep accumulating CPUs */
+
+			/* NOTE: select_g_job_test() is destructive of
+			 * avail_bitmap, so save a backup copy */
+			backup_bitmap = bit_copy(avail_bitmap);
 			if (pick_light_load) {
 				pick_code = _pick_best_load(job_ptr, 
 							    avail_bitmap, 
@@ -722,8 +730,9 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 							      req_nodes,
 							      false);
 			}
-			
+
 			if (pick_code == SLURM_SUCCESS) {
+				FREE_NULL_BITMAP(backup_bitmap);
 				if (bit_set_count(avail_bitmap) > max_nodes) {
 					/* end of tests for this feature */
 					avail_nodes = 0; 
@@ -738,11 +747,8 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 				*select_bitmap = avail_bitmap;
 				return SLURM_SUCCESS;
 			} else {
-				/* reset the counters and start from the
-				 * next node in the list */
 				FREE_NULL_BITMAP(avail_bitmap);
-				avail_nodes = 0;
-				avail_cpus = 0;
+				avail_bitmap = backup_bitmap;
 			}
 		}
 
