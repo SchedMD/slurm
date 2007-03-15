@@ -761,7 +761,7 @@ Default values can be specified with a record in which
 The default entry values will apply only to lines following it in the 
 configuration file and the default values can be reset multiple times 
 in the configuration file with multiple entries where "NodeName=DEFAULT".
-The "NodeName="  specification must be placed on every line 
+The "NodeName=" specification must be placed on every line 
 describing the configuration of nodes. 
 In fact, it is generally possible and desirable to define the 
 configurations of all nodes in only a few lines.
@@ -959,7 +959,17 @@ For example one may put the same set of nodes into two different
 partitions, each with different constraints (time limit, job sizes, 
 groups allowed to use the partition, etc.).
 Jobs are allocated resources within a single partition.
-The partition configuration file contains the following information: 
+Default values can be specified with a record in which
+"PartitionName" is "DEFAULT".
+The default entry values will apply only to lines following it in the
+configuration file and the default values can be reset multiple times
+in the configuration file with multiple entries where "PartitionName=DEFAULT".
+The "PartitionName=" specification must be placed on every line
+describing the configuration of partitions.
+\fBNOTE:\fR Put all parameters for each partition on a single line.
+Each line of partition configuration information should 
+represent a different partition.
+The partition configuration file contains the following information:
 .TP
 \fBAllowGroups\fR
 Comma separated list of group IDs which may execute jobs in the partition. 
@@ -1027,6 +1037,10 @@ but have no resources (possibly on a temporary basis).
 \fBPartitionName\fR
 Name by which the partition may be referenced (e.g. "Interactive"). 
 This name can be specified by users when submitting jobs.
+If the \fBPartitionName\fR is "DEFAULT", the values specified
+with that record will apply to subsequent partition specifications
+unless explicitly set to other values in that partition record or
+replaced with a different set of default values.
 .TP
 \fBShared\fR
 Ability of the partition to execute more than one job at a 
