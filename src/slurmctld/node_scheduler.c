@@ -388,7 +388,7 @@ _resolve_shared_status(uint16_t user_flag, uint16_t part_enum,
 		 * the user has to explicitly disable sharing to
 		 * get exclusive nodes.
 		 */
-		shared = user_flag == 0 ? 0 : 1;
+		shared = (user_flag == 0) ? 0 : 1;
 	} else {
 		/* The partition sharing option is only used if
 		 * the consumable resources plugin is NOT in use.
@@ -398,7 +398,7 @@ _resolve_shared_status(uint16_t user_flag, uint16_t part_enum,
 		else if (part_enum == SHARED_NO) /* can't share */
 			shared = 0;
 		else
-			shared = user_flag == 1 ? 1 : 0;
+			shared = (user_flag == 1) ? 1 : 0;
 	}
 
 	return shared;
