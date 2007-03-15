@@ -32,9 +32,15 @@ consumable resources (in Slurm version 1.2.1 or higher).
 Alternately, <i>SelectType=select/linear</i> or 
 <i>SelectType=select/bluegene</i> can be used with the 
 <i>Shared=yes</i> or <i>Shared=force</i> parameter in 
-partitiion configuration specifications.</p>
+partition configuration specifications.</p>
 
 <p>The default value of <i>SchedulerPort</i> is 7321.</p>
+
+<h4>SLURM commands</h4>
+<p> Note that the <i>srun --immediate</i> option is not compatible 
+with Moab. 
+All jobs must wait for Moab to schedule them rather than being 
+scheduled immediately by SLURM.</p>
 
 <a name="wiki.conf"><h4>wiki.conf</h4></a>
 <p>SLURM's wiki configuration is stored in a file 
@@ -49,7 +55,7 @@ a man page distributed with SLURM.</p>
 <p>The currently supported wiki.conf keywords include:</p>
 
 <p><b>AuthKey</b> is a DES based encryption key used to sign 
-communctions between SLURM and Maui or Moab. 
+communications between SLURM and Maui or Moab. 
 This use of this key is essential to insure that a user 
 not build his own program to cancel other user's jobs in 
 SLURM.
@@ -73,7 +79,7 @@ This identifies the computer on which the Moab daemons
 executes which should be notified of events.</p>
 
 <p><b>JobAggregationTime</b> is used to avoid notifying Moab 
-of large numbers of events occuring about the same time.
+of large numbers of events occurring about the same time.
 If an event occurs within this number of seconds since Moab was
 last notified of an event, another notification is not sent.
 This should be an integer number of seconds.
@@ -106,7 +112,7 @@ EPort=15017
 # Moab event notification host, where the Moab daemon runs
 #EHost=tux0
 #
-# Moab event notifcation throttle, matches JOBAGGREGATIONTIME
+# Moab event notification throttle, matches JOBAGGREGATIONTIME
 # in moab.cfg (integer value in seconds)
 JobAggregationTime=15
 </pre>
