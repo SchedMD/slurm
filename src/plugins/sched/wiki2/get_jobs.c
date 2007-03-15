@@ -1,7 +1,7 @@
 /*****************************************************************************\
  *  get_jobs.c - Process Wiki get job info request
  *****************************************************************************
- *  Copyright (C) 2006 The Regents of the University of California.
+ *  Copyright (C) 2006-2007 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
  *  UCRL-CODE-226842.
@@ -41,6 +41,7 @@
 
 #include "./msg.h"
 #include "src/common/list.h"
+#include "src/common/node_select.h"
 #include "src/common/uid.h"
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/slurmctld.h"
@@ -48,6 +49,8 @@
 static char *	_dump_all_jobs(int *job_cnt, int state_info);
 static char *	_dump_job(struct job_record *job_ptr, int state_info);
 static char *	_get_group_name(gid_t gid);
+static void	_get_job_comment(struct job_record *job_ptr, 
+			char *buffer, int buf_size);
 static uint32_t	_get_job_end_time(struct job_record *job_ptr);
 static char *	_get_job_features(struct job_record *job_ptr);
 static uint32_t	_get_job_min_disk(struct job_record *job_ptr);
@@ -282,17 +285,8 @@ static char *	_dump_job(struct job_record *job_ptr, int state_info)
 		_get_job_min_disk(job_ptr));
 	xstrcat(buf, tmp);
 
-	if (job_ptr->dependency) {
-		/* Kludge for job dependency set via srun */
-		snprintf(tmp, sizeof(tmp),
-			"COMMENT=\"DEPEND=afterany:%u\";",
-			job_ptr->dependency);
-		xstrcat(buf, tmp);
-	} else if (job_ptr->comment && job_ptr->comment[0]) {
-		snprintf(tmp, sizeof(tmp),
-			"COMMENT=\"%s\";", job_ptr->comment);
-		xstrcat(buf, tmp);
-	}
+	_get_job_comment(job_ptr, tmp, sizeof(tmp));
+	xstrcat(buf, tmp);
 
 	end_time = _get_job_end_time(job_ptr);
 	if (end_time) {
@@ -319,6 +313,58 @@ static char *	_dump_job(struct job_record *job_ptr, int state_info)
 	xstrcat(buf, tmp);
 
 	return buf;
+}
+
+static void	_get_job_comment(struct job_record *job_ptr, 
+			char *buffer, int buf_size)
+{
+	int size, sharing = 0;
+	char *field_sep = "";
+	static int cr_enabled = 0, cr_test = 0;
+
+	/* HEADER */
+	size = snprintf(buffer, buf_size, "COMMENT=\"");
+
+	/* JOB DEPENDENCY */
+	if (job_ptr->dependency) {
+		/* Kludge for job dependency set via srun */
+		size += snprintf((buffer + size), (buf_size - size),
+			"DEPEND=afterany:%u", job_ptr->dependency);
+		field_sep = "?";
+	}
+
+	/* SHARED NODES */
+	if (cr_test == 0) {
+		select_g_get_info_from_plugin(SELECT_CR_PLUGIN,
+					      &cr_enabled);
+		cr_test = 1;
+	}
+	if (cr_enabled)	{			/* consumable resources */
+		if (job_ptr->details && (job_ptr->details->shared != 0))
+			sharing = 1;
+	} else if (job_ptr->part_ptr) {			/* partition with */
+		if (job_ptr->part_ptr->shared == 2)	/* forced sharing */
+			sharing = 1;
+		if ((job_ptr->part_ptr->shared == 1)	/* optional sharing */
+		&&  (job_ptr->details)
+		&&  (job_ptr->details->shared))		/* with job to share */
+			sharing = 1;
+	}
+	if (sharing) {
+		/* Kludge for job's node sharing status */
+		size += snprintf((buffer + size), (buf_size - size),
+			"%sNACCESSPOLICY:shared", field_sep);
+		field_sep = "?";
+	}
+
+	/* COMMENT SET BY MOAB */
+	if (job_ptr->comment && job_ptr->comment[0]) {
+		size += snprintf((buffer + size), (buf_size - size),
+			"%s%s", field_sep, job_ptr->comment);
+		field_sep = "?";
+	}
+
+	size += snprintf((buffer + size), (buf_size - size), "\";");
 }
 
 static uint32_t _get_job_min_mem(struct job_record *job_ptr)
