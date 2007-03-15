@@ -616,7 +616,6 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 		 * first one doesn't work we go to the next until the
 		 * list is empty.
 		 */
-		int tries = 0;
 		for (i = 0; i < node_set_size; i++) {
 			bool pick_light_load = false;
 			if (node_set_ptr[i].feature != j)
@@ -706,8 +705,7 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 			    ((req_nodes   > min_nodes) && 
 			     (avail_nodes < req_nodes)))
 				continue;	/* Keep accumulating nodes */
-			if (slurmctld_conf.fast_schedule
-			&&  (avail_cpus   < job_ptr->num_procs))
+			if (avail_cpus   < job_ptr->num_procs)
 				continue;	/* Keep accumulating CPUs */
 			if (pick_light_load) {
 				pick_code = _pick_best_load(job_ptr, 
@@ -745,8 +743,6 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 				FREE_NULL_BITMAP(avail_bitmap);
 				avail_nodes = 0;
 				avail_cpus = 0;
-				tries++;
-				i = tries;
 			}
 		}
 

@@ -6,6 +6,8 @@ documents those changes that are of interest to users and admins.
  -- Added new command "strigger" for event trigger management, a new 
     capability. See "man strigger" for details.
  -- srun --get-user-env now sends su's stderr to /dev/null
+ -- Fix in node_scheduling logic with multiple node_sets, from 
+    Ernest Artiaga, BSC.
 
 * Changes in SLURM 1.2.1
 ========================
