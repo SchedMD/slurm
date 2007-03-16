@@ -263,6 +263,14 @@ for {set inx 0} {$inx < $interations} {incr inx} {
 			send_user "Can't avoid this possible error\n"
 			exp_continue
 		}
+		-re "error: .*configuring interconnect" {
+			send_user "Can't avoid this possible error\n"
+			exp_continue
+		}
+		-re "error: update_failed_tasks" {
+			send_user "Can't avoid this possible error\n"
+			exp_continue
+		}
 		-re "error:" {
 			send_user "\nFAILURE: some error happened\n"
 			set failures 1
