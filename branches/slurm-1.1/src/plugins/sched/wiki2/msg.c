@@ -127,12 +127,21 @@ static void *_msg_thread(void *no_data)
 	uint16_t sched_port;
 	char *msg;
 	slurm_ctl_conf_t *conf = slurm_conf_lock();
+	int i;
 
 	sched_port = conf->schedport;
 	slurm_conf_unlock();
-	if ((sock_fd = slurm_init_msg_engine_port(sched_port)) 
-			== SLURM_SOCKET_ERROR) {
-		fatal("wiki: slurm_init_msg_engine_port %u %m",
+
+	/* If SchedulerPort is already taken, keep trying to open it
+	 * once per minute. Slurmctld will continue to function
+	 * during this interval even if nothing can be scheduled. */
+	for (i=0; ; i++) {
+		if (i > 0)
+			sleep(60);
+		sock_fd = slurm_init_msg_engine_port(sched_port);
+		if (sock_fd != SLURM_SOCKET_ERROR)
+			break;
+		error("wiki: slurm_init_msg_engine_port %u %m",
 			sched_port);
 	}
 

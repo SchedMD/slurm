@@ -3,17 +3,18 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 1.1.33
 =========================
- - sched/wiki - Do not wait for job completion before permitting 
+ - sched/wiki2 - Do not wait for job completion before permitting 
    additional jobs to be scheduled.
  - Add srun SLURM_EXCLUSIVE environment variable support, from 
    Gilles Civario (Bull).
- - sched/wiki - Report job's node sharing options.
+ - sched/wiki2 - Report job's node sharing options.
+ - sched/wiki2 - If SchedulerPort is in use, retry opening it indefinitely.
 
-* Changes in SLURM 1.1.32
+*  Changes in SLURM 1.1.32
 =========================
  - If a job's stdout/err file names are unusable (bad path), use the 
    default names.
- - sched/wiki - Fix logic to be compatible with select/cons_res plugin
+ - sched/wiki2 - Fix logic to be compatible with select/cons_res plugin
    for allocating individual processors within nodes.
  - Fix job end time calculation when changed from an initial value of 
    INFINITE.
