@@ -91,6 +91,7 @@ if {[wait_for_job $job_id "DONE"] != 0} {
 }
 
 set matches 0
+set cpus_per_node 1
 
 spawn $scontrol show job $job_id
 expect {
@@ -215,10 +216,9 @@ if {[wait_for_job $job_id "DONE"] != 0} {
 }
 
 set matches 0
-set cpus_per_node 1
 spawn $scontrol show job $job_id
 expect {
-	-re "BP_List=$alpha_numeric\[$number-$number \]" {
+	-re "BP_List=$alpha_numeric\[$number-$number\]" {
 		incr matches
 		exp_continue
 	}
