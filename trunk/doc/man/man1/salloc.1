@@ -4,7 +4,7 @@
 salloc \- Obtain a SLURM job allocation (a set of nodes), execute a command, and then release the allocation when the command is finished.
 .SH "SYNOPSIS"
 .LP 
-salloc [\fIoptions\fP] <\fIcommand\fP> [\fIcommand args\fR]
+salloc [\fIoptions\fP] [<\fIcommand\fP> [\fIcommand args\fR]]
 .SH "DESCRIPTION"
 .LP 
 salloc is used to allocate a SLURM job allocation, which is a set of resources (nodes), possibly with some set of constraints (e.g. number of processors per node).  When salloc successfully obtains the requested allocation, it then runs the command specified by the user.  Finally, when the user specified command is complete, salloc relinquishes the job allocation.
