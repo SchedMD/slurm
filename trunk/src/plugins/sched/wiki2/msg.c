@@ -144,6 +144,7 @@ static void *_msg_thread(void *no_data)
 			break;
 		error("wiki: slurm_init_msg_engine_port %u %m",
 			sched_port);
+		error("wiki: Unable to communicate with Moab");
 	}
 
 	/* Process incoming RPCs until told to shutdown */
