@@ -10,7 +10,7 @@ documents those changes that are of interest to users and admins.
  - sched/wiki2 - Report job's node sharing options.
  - sched/wiki2 - If SchedulerPort is in use, retry opening it indefinitely.
 
-*  Changes in SLURM 1.1.32
+* Changes in SLURM 1.1.32
 =========================
  - If a job's stdout/err file names are unusable (bad path), use the 
    default names.
