@@ -964,10 +964,8 @@ bitfmt2int (char *bit_str_ptr)
 	if (bit_str_ptr == NULL) 
 		return NULL;
 	size = strlen (bit_str_ptr) + 1;
-	bit_int_ptr = xmalloc ( sizeof (int *) * 
+	bit_int_ptr = xmalloc ( sizeof (int) * 
 			(size * 2 + 1));	/* more than enough space */
-	if (bit_int_ptr == NULL)
-		return NULL;
 
 	bit_inx = sum = 0;
 	start_val = -1;
