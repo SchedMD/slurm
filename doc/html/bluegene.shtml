@@ -81,7 +81,7 @@ mpirun -exec /home/user/prog -cwd /home/user -args 124
 date 
 </pre></p>
  
-<a name="naming">
+<h3><a name="naming">Naming Convensions</a></h3>
 <p>The naming of base partitions includes a three-digit suffix representing the its 
 coordinates in the X, Y and Z dimensions with a zero origin.
 For example, "bg012" represents the base partition whose coordinate is at X=0, Y=1 and Z=2.  In a system 
@@ -100,7 +100,8 @@ For example, "bg[620x731]" is used to represent the eight base partitions enclos
 with endpoints bg620 and bg731 (bg620, bg621, bg630, bg631, bg720, bg721, 
 bg730 and bg731).</p></a>
 
-<p>One new tool provided is <i>smap</i> as of 1.2 <i>sview</i> is
+<p>One new tool provided is <i>smap</i>. 
+As of SLURM verison 1.2, <i>sview</i> is
 another new tool offering even more viewing and configuring options.
 Smap is aware of system topography and provides a map of what base partitions 
 are allocated to jobs, partitions, etc. 
