@@ -226,7 +226,11 @@ expect {
 		set cpu_count $expect_out(1,string)
 		set node_count [expr $cpu_count / $cpus_per_node]
 		if {$node_count != 32} {
-			send_user "\nFAILURE: Bad node count allocated\n"
+			send_user "\n=======================================\n"
+			send_user "FAILURE: Bad node count allocated\n"
+			send_user "This can indicate a low configured value of\n"
+			send_user "Numpsets in bluegene.conf (few available I/O nodes).\n"
+			send_user "=======================================\n"
 			set exit_code 1
 		}
 		exp_continue
