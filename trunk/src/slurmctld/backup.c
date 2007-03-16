@@ -124,7 +124,7 @@ void run_backup(void)
 		/* Lock of slurmctld_conf below not important */
 		if (slurmctld_conf.slurmctld_timeout
 		&&  (difftime(time(NULL), last_ping) <
-		     (slurmctld_conf.slurmctld_timeout / 2)))
+		     (slurmctld_conf.slurmctld_timeout / 3)))
 			continue;
 
 		last_ping = time(NULL);
