@@ -1305,7 +1305,7 @@ _get_resource_range(const char *arg, const char *what, int* min, int *max,
 	return true;
 }
 
-void set_options(const int argc, char **argv, int first)
+static void set_options(const int argc, char **argv)
 {
 	int opt_char, option_index = 0;
 	struct utsname name;
@@ -1412,26 +1412,19 @@ void set_options(const int argc, char **argv, int first)
 
 	if(opt.progname == NULL)
 		opt.progname = xbasename(argv[0]);
-	else if(!first)
-		argv[0] = opt.progname;
 	else
-		error("opt.progname is set but it is the first time through.");
+		error("opt.progname is already set.");
 	optind = 0;		
 	while((opt_char = getopt_long(argc, argv, opt_string,
 				      optz, &option_index)) != -1) {
 		switch (opt_char) {
 
 		case (int)'?':
-			if(first) {
-				fprintf(stderr, "Try \"srun --help\" for more "
-					"information\n");
-				exit(1);
-			} 
+			fprintf(stderr,
+				"Try \"srun --help\" for more information\n");
+			exit(1);
 			break;
 		case (int)'B':
-			if(!first && opt.extra_set)
-				break;
-
 			opt.extra_set = _verify_socket_core_thread_count(
 				optarg,
 				&opt.min_sockets_per_node,
@@ -1450,37 +1443,24 @@ void set_options(const int argc, char **argv, int first)
 			}
 			break;
 		case (int)'c':
-			if(!first && opt.cpus_set)
-				break;
 			opt.cpus_set = true;
 			opt.cpus_per_task = 
 				_get_int(optarg, "cpus-per-task", true);
 			break;
 		case (int)'C':
-			if(!first && opt.constraints)
-				break;
 			xfree(opt.constraints);
 			opt.constraints = xstrdup(optarg);
 			break;
 		case (int)'d':
-			if(!first && opt.slurmd_debug)
-				break;
-			
 			opt.slurmd_debug = 
 				_get_int(optarg, "slurmd-debug", false);
 			break;
 		case (int)'D':
-			if(!first && opt.cwd_set)
-				break;
-
 			opt.cwd_set = true;
 			xfree(opt.cwd);
 			opt.cwd = xstrdup(optarg);
 			break;
 		case (int)'e':
-			if(!first && opt.efname)
-				break;
-			
 			xfree(opt.efname);
 			if (strncasecmp(optarg, "none", (size_t) 4) == 0)
 				opt.efname = xstrdup("/dev/null");
@@ -1488,8 +1468,6 @@ void set_options(const int argc, char **argv, int first)
 				opt.efname = xstrdup(optarg);
 			break;
 		case (int)'g':
-			if(!first && opt.geometry)
-				break;
 			if (_verify_geometry(optarg, opt.geometry))
 				exit(1);
 			break;
@@ -1497,9 +1475,6 @@ void set_options(const int argc, char **argv, int first)
 			opt.hold = true;
 			break;
 		case (int)'i':
-			if(!first && opt.ifname)
-				break;
-			
 			xfree(opt.ifname);
 			if (strncasecmp(optarg, "none", (size_t) 4) == 0)
 				opt.ifname = xstrdup("/dev/null");
@@ -1513,9 +1488,6 @@ void set_options(const int argc, char **argv, int first)
 			opt.join = true;
 			break;
 		case (int)'J':
-			if(!first && opt.job_name_set)
-				break;
-
 			opt.job_name_set = true;
 			xfree(opt.job_name);
 			opt.job_name = xstrdup(optarg);
@@ -1530,8 +1502,6 @@ void set_options(const int argc, char **argv, int first)
 			opt.labelio = true;
 			break;
 		case (int)'m':
-			if(!first && opt.distribution)
-				break;
 			opt.distribution = _verify_dist_type(optarg, 
 							     &opt.plane_size);
 			if (opt.distribution == SLURM_DIST_UNKNOWN) {
@@ -1541,17 +1511,11 @@ void set_options(const int argc, char **argv, int first)
 			}
 			break;
 		case (int)'n':
-			if(!first && opt.nprocs_set)
-				break;
-						
 			opt.nprocs_set = true;
 			opt.nprocs = 
 				_get_int(optarg, "number of tasks", true);
 			break;
 		case (int)'N':
-			if(!first && opt.nodes_set)
-				break;
-						
 			opt.nodes_set = 
 				_get_resource_range(optarg, 
 						    "requested node count",
@@ -1565,9 +1529,6 @@ void set_options(const int argc, char **argv, int first)
 			}
 			break;
 		case (int)'o':
-			if(!first && opt.ofname)
-				break;			
-			
 			xfree(opt.ofname);
 			if (strncasecmp(optarg, "none", (size_t) 4) == 0)
 				opt.ofname = xstrdup("/dev/null");
@@ -1578,32 +1539,19 @@ void set_options(const int argc, char **argv, int first)
 			opt.overcommit = true;
 			break;
 		case (int)'p':
-			if(!first && opt.partition)
-				break;
-						
 			xfree(opt.partition);
 			opt.partition = xstrdup(optarg);
 			break;
 		case (int)'P':
-			if(!first && opt.dependency)
-				break;
-						
 			opt.dependency = _get_int(optarg, "dependency", true);
 			break;
 		case (int)'q':
 			opt.quit_on_intr = true;
 			break;
 		case (int) 'Q':
-			if(!first && opt.quiet)
-				break;
-			
 			opt.quiet++;
 			break;
 		case (int)'r':
-			if(!first && opt.relative)
-				break;
-			
-			//xfree(opt.relative);
 			opt.relative = _get_int(optarg, "relative", false);
 			opt.relative_set = true;
 			break;
@@ -1614,15 +1562,9 @@ void set_options(const int argc, char **argv, int first)
 			opt.shared = 1;
 			break;
 		case (int)'t':
-			if(!first && opt.time_limit)
-				break;
-			
 			opt.time_limit = _get_int(optarg, "time", true);
 			break;
 		case (int)'T':
-			if(!first && opt.max_threads)
-				break;
-			
 			opt.max_threads = 
 				_get_int(optarg, "max_threads", true);
 			pmi_server_max_threads(opt.max_threads);
@@ -1631,15 +1573,10 @@ void set_options(const int argc, char **argv, int first)
 			opt.unbuffered = true;
 			break;
 		case (int)'U':
-			if(!first && opt.account)
-				break;
 			xfree(opt.account);
 			opt.account = xstrdup(optarg);
 			break;
 		case (int)'v':
-			if(!first && _verbose)
-				break;
-			
 			_verbose++;
 			break;
 		case (int)'V':
@@ -1647,9 +1584,6 @@ void set_options(const int argc, char **argv, int first)
 			exit(0);
 			break;
 		case (int)'w':
-			if(!first && opt.nodelist)
-				break;
-			
 			xfree(opt.nodelist);
 			opt.nodelist = xstrdup(optarg);
 			if (!_valid_node_list(&opt.nodelist))
@@ -1854,8 +1788,6 @@ void set_options(const int argc, char **argv, int first)
 			opt.multi_prog = true;
 			break;
 		case LONG_OPT_COMMENT:
-			if(!first && opt.comment)
-				break;
 			xfree(opt.comment);
 			opt.comment = xstrdup(optarg);
 			break;
@@ -1899,26 +1831,18 @@ void set_options(const int argc, char **argv, int first)
 				true);
 			break;
 		case LONG_OPT_BLRTS_IMAGE:
-			if(!first && opt.blrtsimage)
-				break;			
 			xfree(opt.blrtsimage);
 			opt.blrtsimage = xstrdup(optarg);
 			break;
 		case LONG_OPT_LINUX_IMAGE:
-			if(!first && opt.linuximage)
-				break;			
 			xfree(opt.linuximage);
 			opt.linuximage = xstrdup(optarg);
 			break;
 		case LONG_OPT_MLOADER_IMAGE:
-			if(!first && opt.mloaderimage)
-				break;			
 			xfree(opt.mloaderimage);
 			opt.mloaderimage = xstrdup(optarg);
 			break;
 		case LONG_OPT_RAMDISK_IMAGE:
-			if(!first && opt.ramdiskimage)
-				break;			
 			xfree(opt.ramdiskimage);
 			opt.ramdiskimage = xstrdup(optarg);
 			break;
@@ -1933,13 +1857,6 @@ void set_options(const int argc, char **argv, int first)
 				exit (1);
 			}
 		}
-	}
-
-	if (!first) {
-		if (!_opt_verify())
-			exit(1);
-		if (_verbose > 3)
-			_opt_list();
 	}
 
 	spank_option_table_destroy (optz);
@@ -1994,7 +1911,7 @@ static void _opt_args(int argc, char **argv)
 	int i;
 	char **rest = NULL;
 
-	set_options(argc, argv, 1);	
+	set_options(argc, argv);
 
         /* When CR with memory as a CR is enabled we need to assign
 	   adequate value or check the value to opt.mem */
