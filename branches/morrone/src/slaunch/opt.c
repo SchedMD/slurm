@@ -178,6 +178,9 @@ int initialize_and_process_args(int argc, char *argv[])
 	/* initialize options with argv */
 	_opt_args(argc, argv);
 
+	if (!_opt_verify())
+		exit(1);
+
 	if (opt.verbose > 1)
 		_opt_list();
 
@@ -1545,9 +1548,6 @@ static void _opt_args(int argc, char **argv)
 			opt.argv[0] = fullpath;
 		} 
 	}
-
-	if (!_opt_verify())
-		exit(1);
 }
 
 static bool

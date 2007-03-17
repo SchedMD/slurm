@@ -137,12 +137,12 @@ static void _update_mpir_proctable(srun_job_t *job,
 	}
 
 	/* FIXME - possibly never, now that --attach is removed */
-	/* remote_argv global will be NULL during an srun --attach */
-	if (remote_argv == NULL) {
-		remote_argc = 1;
-		xrealloc(remote_argv, 2 * sizeof(char *));
-		remote_argv[0] = executable;
-		remote_argv[1] = NULL;
+	/* opt.argv global will be NULL during an srun --attach */
+	if (opt.argv == NULL) {
+		opt.argc = 1;
+		xrealloc(opt.argv, 2 * sizeof(char *));
+		opt.argv[0] = executable;
+		opt.argv[1] = NULL;
 	}
 
 	name = nodelist_nth_host(job->step_layout->node_list, nodeid);
@@ -301,9 +301,9 @@ _process_launch_resp(srun_job_t *job, launch_tasks_response_msg_t *msg)
 
 	_update_mpir_proctable(job,
 			       nodeid, msg->count_of_pids,
-			       msg->local_pids, remote_argv[0]);
+			       msg->local_pids, opt.argv[0]);
 	_print_pid_list( msg->node_name, msg->count_of_pids, 
-			 msg->local_pids, remote_argv[0]     );
+			 msg->local_pids, opt.argv[0]     );
 	return;
 }
 

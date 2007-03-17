@@ -58,8 +58,6 @@
 #define INT_UNASSIGNED ((int)-1)
 
 /* global variables relating to user options */
-extern char **remote_argv;
-extern int remote_argc;
 extern int _verbose;
 
 extern enum modes mode;
@@ -197,6 +195,8 @@ typedef struct srun_options {
 	char *mail_user;	/* --mail-user			*/
 	char *ctrl_comm_ifhn;	/* --ctrl-comm-ifhn		*/
 	bool get_user_env;	/* --get-user-env		*/
+	int argc;		/* length of argv array		*/
+	char **argv;		/* left over on command line	*/
 } opt_t;
 
 extern opt_t opt;

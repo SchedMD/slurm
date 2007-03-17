@@ -402,8 +402,8 @@ static int _call_spank_local_user (srun_job_t *job)
 	info->jobid = job->jobid;
 	info->stepid = job->stepid;
 	info->step_layout = job->step_layout;	
-	info->argc = remote_argc;
-	info->argv = remote_argv;
+	info->argc = opt.argc;
+	info->argv = opt.argv;
 
 	return spank_local_user(info);
 }
@@ -694,8 +694,8 @@ static int _run_srun_script (srun_job_t *job, char *script)
 		 */
 		args = xmalloc(sizeof(char *) * 1024);
 		args[0] = script;
-		for (i = 0; i < remote_argc; i++) {
-			args[i+1] = remote_argv[i];
+		for (i = 0; i < opt.argc; i++) {
+			args[i+1] = opt.argv[i];
 		}
 		args[i+1] = NULL;
 		execv(script, args);

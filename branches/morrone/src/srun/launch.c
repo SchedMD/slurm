@@ -125,8 +125,8 @@ launch(void *arg)
 	r.job_id          = job->jobid;
 	r.uid             = opt.uid;
 	r.gid             = opt.gid;
-	r.argc            = remote_argc;
-	r.argv            = remote_argv;
+	r.argc            = opt.argc;
+	r.argv            = opt.argv;
 	r.cred            = job->cred;
 	r.job_step_id     = job->stepid;
 	r.envc            = my_envc;

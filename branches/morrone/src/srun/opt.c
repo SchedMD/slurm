@@ -158,8 +158,6 @@
 #define LONG_OPT_GET_USER_ENV    0x145
 
 /*---- global variables, defined in opt.h ----*/
-char **remote_argv;
-int remote_argc;
 int _verbose;
 opt_t opt;
 
@@ -242,6 +240,9 @@ int initialize_and_process_args(int argc, char *argv[])
 
 	/* initialize options with argv */
 	_opt_args(argc, argv);
+
+	if (!_opt_verify())
+		exit(1);
 
 	if (_verbose > 3)
 		_opt_list();
@@ -1954,37 +1955,33 @@ static void _opt_args(int argc, char **argv)
 	}
 #endif
 
-	remote_argc = 0;
+	opt.argc = 0;
 	if (optind < argc) {
 		rest = argv + optind;
-		while (rest[remote_argc] != NULL)
-			remote_argc++;
+		while (rest[opt.argc] != NULL)
+			opt.argc++;
 	}
-	remote_argv = (char **) xmalloc((remote_argc + 1) * sizeof(char *));
-	for (i = 0; i < remote_argc; i++)
-		remote_argv[i] = xstrdup(rest[i]);
-	remote_argv[i] = NULL;	/* End of argv's (for possible execv) */
+	opt.argv = (char **) xmalloc((opt.argc + 1) * sizeof(char *));
+	for (i = 0; i < opt.argc; i++)
+		opt.argv[i] = xstrdup(rest[i]);
+	opt.argv[i] = NULL;	/* End of argv's (for possible execv) */
 
 	if (opt.multi_prog) {
-		if (remote_argc < 1) {
+		if (opt.argc < 1) {
 			error("configuration file not specified");
 			exit(1);
 		}
-		_load_multi(&remote_argc, remote_argv);
+		_load_multi(&opt.argc, opt.argv);
 
 	}
-	else if (remote_argc > 0) {
+	else if (opt.argc > 0) {
 		char *fullpath;
-		char *cmd       = remote_argv[0];
-		int  mode       = R_OK | X_OK;
 
-		if ((fullpath = _search_path(cmd, false, mode))) {
-			xfree(remote_argv[0]);
-			remote_argv[0] = fullpath;
+		if ((fullpath = _search_path(opt.argv[0], false, R_OK|X_OK))) {
+			xfree(opt.argv[0]);
+			opt.argv[0] = fullpath;
 		} 
 	}
-	if (!_opt_verify())
-		exit(1);
 }
 
 /* 
@@ -2036,10 +2033,10 @@ static bool _opt_verify(void)
 	if (opt.job_min_cpus < opt.cpus_per_task)
 		opt.job_min_cpus = opt.cpus_per_task;
 
-	if ((opt.job_name == NULL) && (remote_argc > 0))
-		opt.job_name = _base_name(remote_argv[0]);
+	if ((opt.job_name == NULL) && (opt.argc > 0))
+		opt.job_name = _base_name(opt.argv[0]);
 
-	if (remote_argc == 0) {
+	if (opt.argc == 0) {
 		error("must supply remote command");
 		verified = false;
 	}
@@ -2355,8 +2352,8 @@ print_commandline()
 	char buf[256];
 
 	buf[0] = '\0';
-	for (i = 0; i < remote_argc; i++)
-		snprintf(buf, 256,  "%s", remote_argv[i]);
+	for (i = 0; i < opt.argc; i++)
+		snprintf(buf, 256,  "%s", opt.argv[i]);
 	return xstrdup(buf);
 }
 
