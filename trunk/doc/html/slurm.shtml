@@ -41,12 +41,14 @@ an IBM SP/AIX cluster with 12,208 Power5 processors and Federation switch</li>
 a Linux cluster with 10,240 PowerPC processors and Myrinet switch</li>
 <li>Peloton with 1,152 nodes each having four sockets with dual core Opteron processors and an InfiniBand switch</li>
 </ul>
-<p>There are about 150 downloads of SLURM per month from LLNL's FTP server alone.
-As of December 2006, SLURM has been downloaded over 4300 times to over 500 
-distinct sites in 40 countries. 
-SLURM is also distributed and supported by <a href="http://www.hp.com">
-Hewlett-Packard</a> as the resource manager in their XC System Software.</p>
+<p>There are about 200 downloads of SLURM per month from LLNL's FTP server 
+and <a href="https:sourceforge.net">SourceForge.net</a>.
+As of March 2007, SLURM has been downloaded over 5000 times to over 500 
+distinct sites in 41 countries. 
+SLURM is also actively being developed, distributed and supported by 
+<a href="http://www.hp.com">Hewlett-Packard</a> and
+<a href="http://www.bull.com">Bull</a>.</p>
 
-<p style="text-align:center;">Last modified 12 January 2007</p>
+<p style="text-align:center;">Last modified 19 March 2007</p>
 
 <!--#include virtual="footer.txt"-->
