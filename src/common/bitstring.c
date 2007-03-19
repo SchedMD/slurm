@@ -677,7 +677,7 @@ bit_overlap(bitstr_t *b1, bitstr_t *b2)
 	_assert_bitstr_valid(b2);
 	assert(_bitstr_bits(b1) == _bitstr_bits(b2));
 
-	for (bit = 0; bit < _bitstr_bits(b1); bit += sizeof(bitstr_t)*8)
+	for (bit = 0; bit < _bitstr_bits(b1); bit += sizeof(bitstr_t)*8) 
 		count += hweight(b1[_bit_word(bit)] & b2[_bit_word(bit)]);
 
 	return count;
