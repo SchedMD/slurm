@@ -9,6 +9,7 @@ documents those changes that are of interest to users and admins.
    Gilles Civario (Bull).
  - sched/wiki2 - Report job's node sharing options.
  - sched/wiki2 - If SchedulerPort is in use, retry opening it indefinitely.
+ - sched/wiki2 - Add support for changing the size of a pending job.
 
 * Changes in SLURM 1.1.32
 =========================

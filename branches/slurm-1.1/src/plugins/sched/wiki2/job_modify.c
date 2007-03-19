@@ -1,7 +1,7 @@
 /*****************************************************************************\
  *  job_modify.c - Process Wiki job modify request
  *****************************************************************************
- *  Copyright (C) 2006 The Regents of the University of California.
+ *  Copyright (C) 2006-2007 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
  *  UCRL-CODE-217948.
@@ -53,7 +53,8 @@ static void	_null_term(char *str)
 	}
 }
 
-static int	_job_modify(uint32_t jobid, char *bank_ptr, char *part_name_ptr, 
+static int	_job_modify(uint32_t jobid, char *bank_ptr, 
+			uint32_t new_node_cnt, char *part_name_ptr, 
 			uint32_t new_time_limit)
 {
 	struct job_record *job_ptr;
@@ -71,13 +72,14 @@ static int	_job_modify(uint32_t jobid, char *bank_ptr, char *part_name_ptr,
 	if (new_time_limit) {
 		time_t old_time = job_ptr->time_limit;
 		job_ptr->time_limit = new_time_limit;
-		info("wiki: change job %d time_limit to %u",
+		info("wiki: change job %u time_limit to %u",
 			jobid, new_time_limit);
 		/* Update end_time based upon change
 		 * to preserve suspend time info */
 		job_ptr->end_time = job_ptr->end_time +
 				((job_ptr->time_limit -
 				  old_time) * 60);
+		last_job_update = time(NULL);
 	}
 	if (bank_ptr) {
 #if 1
@@ -85,10 +87,11 @@ static int	_job_modify(uint32_t jobid, char *bank_ptr, char *part_name_ptr,
 #else
 		/* for slurm v1.2, wiki currently usses account field 
 		 * as moab "comment" field */
-		info("wiki: change job %d bank %s", 
+		info("wiki: change job %u bank %s", 
 			jobid, bank_ptr);
 		xfree(job_ptr->account);
 		job_ptr->account = xstrdup(bank_ptr);
+		last_job_update = time(NULL);
 #endif
 	}
 
@@ -100,22 +103,37 @@ static int	_job_modify(uint32_t jobid, char *bank_ptr, char *part_name_ptr,
 				part_name_ptr);
 			return ESLURM_INVALID_PARTITION_NAME;
 		}
-		info("wiki: change job %d partition %s",
+		info("wiki: change job %u partition %s",
 			jobid, part_name_ptr);
 		strncpy(job_ptr->partition, part_name_ptr, MAX_SLURM_NAME);
 		job_ptr->part_ptr = part_ptr;
+		last_job_update = time(NULL);
 	}
 
-	last_job_update = time(NULL);
+	if (new_node_cnt) {
+		if (IS_JOB_PENDING(job_ptr) && job_ptr->details) {
+			job_ptr->details->min_nodes = new_node_cnt;
+			if (job_ptr->details->max_nodes < new_node_cnt)
+				job_ptr->details->max_nodes = new_node_cnt;
+			info("wiki: change job %u min_nodes to %u",
+				jobid, new_node_cnt);
+			last_job_update = time(NULL);
+		} else {
+			error("wiki: MODIFYJOB node count of non-pending "
+				"job %u", jobid);
+			return ESLURM_DISABLED;
+		}
+	}
+
 	return SLURM_SUCCESS;
 }
 
 /* RET 0 on success, -1 on failure */
 extern int	job_modify_wiki(char *cmd_ptr, int *err_code, char **err_msg)
 {
-	char *arg_ptr, *bank_ptr, *part_ptr, *time_ptr, *tmp_char;
+	char *arg_ptr, *bank_ptr, *nodes_ptr, *part_ptr, *time_ptr, *tmp_char;
 	int slurm_rc;
-	uint32_t jobid, new_time_limit = 0;
+	uint32_t jobid, new_node_cnt = 0, new_time_limit = 0;
 	static char reply_msg[128];
 	/* Locks: write job, read node and partition info */
 	slurmctld_lock_t job_write_lock = {
@@ -135,12 +153,17 @@ extern int	job_modify_wiki(char *cmd_ptr, int *err_code, char **err_msg)
 		error("wiki: MODIFYJOB has invalid jobid");
 		return -1;
 	}
-	bank_ptr = strstr(cmd_ptr, "BANK=");
-	part_ptr = strstr(cmd_ptr, "PARTITION=");
-	time_ptr = strstr(cmd_ptr, "TIMELIMIT=");
+	bank_ptr  = strstr(cmd_ptr, "BANK=");
+	nodes_ptr = strstr(cmd_ptr, "NODES=");
+	part_ptr  = strstr(cmd_ptr, "PARTITION=");
+	time_ptr  = strstr(cmd_ptr, "TIMELIMIT=");
 	if (bank_ptr) {
 		bank_ptr += 5;
 		_null_term(bank_ptr);
+	}
+	if (nodes_ptr) {
+		nodes_ptr += 5;
+		new_node_cnt = strtoul(time_ptr, NULL, 10);
 	}
 	if (part_ptr) {
 		part_ptr += 10;
@@ -152,7 +175,8 @@ extern int	job_modify_wiki(char *cmd_ptr, int *err_code, char **err_msg)
 	}
 
 	lock_slurmctld(job_write_lock);
-	slurm_rc = _job_modify(jobid, bank_ptr, part_ptr, new_time_limit);
+	slurm_rc = _job_modify(jobid, bank_ptr, new_node_cnt, part_ptr, 
+			new_time_limit);
 	unlock_slurmctld(job_write_lock);
 	if (slurm_rc != SLURM_SUCCESS) {
 		*err_code = -700;
