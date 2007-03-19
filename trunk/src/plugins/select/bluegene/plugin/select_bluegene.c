@@ -419,6 +419,12 @@ extern int select_p_state_restore(char *dir_name)
 		
 		j = 0;
 		while(bg_info_record->ionode_inx[j] >= 0) {
+			if (bg_info_record->ionode_inx[j+1] >= bluegene_numpsets) {
+				fatal("Job state recovered incompatable with "
+					"bluegene.conf. ionodes=%u state=%d",
+					bluegene_numpsets,
+					bg_info_record->ionode_inx[j+1]);
+			}
 			bit_nset(ionode_bitmap,
 				 bg_info_record->ionode_inx[j],
 				 bg_info_record->ionode_inx[j+1]);
@@ -426,6 +432,12 @@ extern int select_p_state_restore(char *dir_name)
 		}		
 		j = 0;
 		while(bg_info_record->bp_inx[j] >= 0) {
+			if (bg_info_record->ionode_inx[j+1] >= bluegene_numpsets) {
+				fatal("Job state recovered incompatable with "
+					"bluegene.conf. ionodes=%u state=%d",
+					bluegene_numpsets,
+					bg_info_record->ionode_inx[j+1]);
+			}
 			bit_nset(node_bitmap,
 				 bg_info_record->bp_inx[j],
 				 bg_info_record->bp_inx[j+1]);
