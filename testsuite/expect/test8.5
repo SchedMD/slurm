@@ -167,7 +167,15 @@ expect {
 		set cpu_count $expect_out(1,string)
 		set node_count [expr $cpu_count / $cpus_per_node]
 		if {$node_count != 128} {
+			send_user "\n=======================================\n"
 			send_user "\nFAILURE: Bad node count allocated\n"
+			send_user "This can indicate a low configured value of Numpsets\n"
+			send_user "  in bluegene.conf (few available I/O nodes).\n"
+			send_user "This could indicate Static Bluegene partitioning\n"
+			send_user "  with no small blocks (1/4 of a base partition).\n"
+			send_user "This could also indicate MinNodes for the partition\n"
+			send_user "  being too high for this test.\n"
+			send_user "=======================================\n"
 			set exit_code 1
 		}
 		exp_continue
@@ -228,8 +236,12 @@ expect {
 		if {$node_count != 32} {
 			send_user "\n=======================================\n"
 			send_user "FAILURE: Bad node count allocated\n"
-			send_user "This can indicate a low configured value of\n"
-			send_user "Numpsets in bluegene.conf (few available I/O nodes).\n"
+			send_user "This can indicate a low configured value of Numpsets\n"
+			send_user "  in bluegene.conf (few available I/O nodes).\n"
+			send_user "This could indicate Static Bluegene partitioning\n"
+			send_user "  with no small blocks (1/16 of a base partition).\n"
+			send_user "This could also indicate MinNodes for the partition\n"
+			send_user "  being too high for this test.\n"
 			send_user "=======================================\n"
 			set exit_code 1
 		}
