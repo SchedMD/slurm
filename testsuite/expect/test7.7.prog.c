@@ -1,7 +1,7 @@
 /*****************************************************************************\
  *  test7.7.prog.c - Test of sched/wiki2 plugin
  *****************************************************************************
- *  Copyright (C) 2006 The Regents of the University of California.
+ *  Copyright (C) 2006-2007 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
  *  UCRL-CODE-226842.
@@ -328,7 +328,8 @@ static void _modify_job(long my_job_id)
 
 	snprintf(out_msg, sizeof(out_msg),
 		"TS=%u AUTH=root DT=CMD=MODIFYJOB ARG=%ld "
-		/* PARTITION=pdebug" */
+		/* "PARTITION=pdebug " */
+		/* "NODES=2 " */ 
 		"TIMELIMIT=10 BANK=test_bank",
 		(uint32_t) now, my_job_id);
 	_xmit(out_msg);
@@ -398,11 +399,12 @@ int main(int argc, char * argv[])
 	_get_jobs();
 	_get_nodes();
 	_job_will_run(job_id);
+	_modify_job(job_id);
+	_get_jobs();
 	_start_job(job_id);
 	_get_jobs();
 	_suspend_job(job_id);
 	_resume_job(job_id);
-	_modify_job(job_id);
 	_signal_job(job_id);
 	if (e_port)
 		_event_mgr();
