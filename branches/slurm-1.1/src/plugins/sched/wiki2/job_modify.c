@@ -113,7 +113,8 @@ static int	_job_modify(uint32_t jobid, char *bank_ptr,
 	if (new_node_cnt) {
 		if (IS_JOB_PENDING(job_ptr) && job_ptr->details) {
 			job_ptr->details->min_nodes = new_node_cnt;
-			if (job_ptr->details->max_nodes < new_node_cnt)
+			if (job_ptr->details->max_nodes
+			&&  (job_ptr->details->max_nodes < new_node_cnt))
 				job_ptr->details->max_nodes = new_node_cnt;
 			info("wiki: change job %u min_nodes to %u",
 				jobid, new_node_cnt);
@@ -162,8 +163,8 @@ extern int	job_modify_wiki(char *cmd_ptr, int *err_code, char **err_msg)
 		_null_term(bank_ptr);
 	}
 	if (nodes_ptr) {
-		nodes_ptr += 5;
-		new_node_cnt = strtoul(time_ptr, NULL, 10);
+		nodes_ptr += 6;
+		new_node_cnt = strtoul(nodes_ptr, NULL, 10);
 	}
 	if (part_ptr) {
 		part_ptr += 10;
