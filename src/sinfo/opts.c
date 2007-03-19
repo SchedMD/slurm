@@ -222,13 +222,16 @@ extern void parse_command_line(int argc, char *argv[])
 
 	if ( params.format == NULL ) {
 		if ( params.summarize ) {
+#ifdef HAVE_BG
+			params.format = "%9P %.5a %.10l %.32F  %N";
+#else
 			params.format = "%9P %.5a %.10l %.15F  %N";
-
+#endif
 		} else if ( params.node_flag ) {
 			params.node_field_flag = true;	/* compute size later */
 			params.format = params.long_output ?
-			  "%N %.5D %.9P %.11T %.4c %.8z %.6m %.8d %.6w %.8f %20R" :
-			  "%N %.5D %.9P %6t";
+			  "%N %.6D %.9P %.11T %.4c %.8z %.6m %.8d %.6w %.8f %20R" :
+			  "%N %.6D %.9P %6t";
 
 		} else if (params.list_reasons) {
 			params.format = params.long_output ?  
@@ -240,7 +243,7 @@ extern void parse_command_line(int argc, char *argv[])
 
 		} else {
 			params.format = params.long_output ? 
-			  "%9P %.5a %.10l %.8s %.4r %.5h %.10g %.5D %.11T %N" :
+			  "%9P %.5a %.10l %.10s %.4r %.5h %.10g %.6D %.11T %N" :
 			  "%9P %.5a %.10l %.5D %.6t %N";
 		}
 	}
