@@ -1386,7 +1386,7 @@ extern void build_node_details(struct job_record *job_ptr)
         xfree(job_ptr->alloc_lps);
         if (job_ptr->cr_enabled) {
                 cr_enabled = job_ptr->cr_enabled;
-                job_ptr->alloc_lps = xmalloc(job_ptr->node_cnt * sizeof(int));
+                job_ptr->alloc_lps = xmalloc(job_ptr->node_cnt * sizeof(uint32_t));
                 job_ptr->alloc_lps_cnt = job_ptr->node_cnt;
         }
 
@@ -1394,7 +1394,7 @@ extern void build_node_details(struct job_record *job_ptr)
 		node_ptr = find_node_record(this_node_name);
 		     		
 		if (node_ptr) {
-			int usable_lps = 0;
+			uint16_t usable_lps = 0;
 #ifdef HAVE_BG
 			if(job_ptr->node_cnt == 1) {
 				memcpy(&job_ptr->node_addr[node_inx++],
@@ -1419,7 +1419,6 @@ extern void build_node_details(struct job_record *job_ptr)
 			} else {
 				if (cr_enabled) {
 					xfree(job_ptr->alloc_lps); 
-					job_ptr->alloc_lps = NULL;
 					job_ptr->alloc_lps_cnt = 0;
 				}
 				error("Unable to get extra jobinfo "
