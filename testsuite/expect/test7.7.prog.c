@@ -328,8 +328,8 @@ static void _modify_job(long my_job_id)
 
 	snprintf(out_msg, sizeof(out_msg),
 		"TS=%u AUTH=root DT=CMD=MODIFYJOB ARG=%ld "
-		/* "PARTITION=pdebug" */
-		/* "NODES=2" */
+		/* "PARTITION=pdebug " */
+		/* "NODES=2 " */
 		"TIMELIMIT=10 BANK=test_bank",
 		(uint32_t) now, my_job_id);
 	_xmit(out_msg);
@@ -389,6 +389,7 @@ int main(int argc, char * argv[])
 	_get_nodes();
 	_job_will_run(job_id);
 	_modify_job(job_id);
+	_get_jobs();
 	_start_job(job_id);
 	_suspend_job(job_id);
 	_resume_job(job_id);
