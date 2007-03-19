@@ -1,6 +1,9 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins.
 
+* Changes in SLURM 1.2.3
+========================
+
 * Changes in SLURM 1.2.2
 ========================
  -- Added new command "strigger" for event trigger management, a new 
