@@ -99,6 +99,14 @@ void slurm_sched_plugin_job_is_pending( void )
 }
 
 /**************************************************************************/
+/* TAG(              slurm_sched_plugin_partition_change                ) */
+/**************************************************************************/
+void slurm_sched_plugin_partition_change( void )
+{
+	/* Empty. */
+}
+
+/**************************************************************************/
 /* TAG(              slurm_sched_plugin_reconfig                        ) */
 /**************************************************************************/
 int slurm_sched_plugin_reconfig( void )

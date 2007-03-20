@@ -74,6 +74,7 @@
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/proc_req.h"
 #include "src/slurmctld/read_config.h"
+#include "src/slurmctld/sched_plugin.h"
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/state_save.h"
 #include "src/slurmctld/trigger_mgr.h"
@@ -1429,6 +1430,7 @@ static void _slurm_rpc_reconfigure_controller(slurm_msg_t * msg)
 		info("_slurm_rpc_reconfigure_controller: completed %s", 
 			TIME_STR);
 		slurm_send_rc_msg(msg, SLURM_SUCCESS);
+		slurm_sched_partition_change();
 		schedule();	/* has its own locks */
 		save_all_state();
 	}

@@ -1,7 +1,7 @@
 /*****************************************************************************\
  *  event.c - Moab event notification
  *****************************************************************************
- *  Copyright (C) 2006 The Regents of the University of California.
+ *  Copyright (C) 2006-2007 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
  *  UCRL-CODE-226842.
@@ -99,23 +99,35 @@ static void _close_fd(void)
 
 /*
  * event_notify - Notify Moab of some event
- * msg IN - event type, NULL to close connection
+ * event_code IN - message code to send Moab
+ *          1234 - job state change
+ *          TBD  - partition state change
+ * desc IN - event description
  * RET 0 on success, -1 on failure
  */
-extern int	event_notify(char *msg)
+extern int	event_notify(int event_code, char *desc)
 {
 	time_t now = time(NULL);
 	int rc = 0, retry = 2;
+	char *event_msg;
 
 	if (e_port == 0) {
 		/* Event notification disabled */
 		return 0;
 	}
 
-	if (job_aggregation_time
-	&&  (difftime(now, last_notify_time) < job_aggregation_time)) {
-		debug("wiki event notification already sent recently");
-		return 0;
+	if (event_code == 1234) {
+		if (job_aggregation_time
+		&&  (difftime(now, last_notify_time) < job_aggregation_time)) {
+			debug("wiki event notification already sent recently");
+			return 0;
+		}
+		event_msg = "1234\0";
+	} else if (event_code == 5) {	/* actual value TBD */
+		event_msg = "5\0";	/* actual value TBD */
+	} else {
+		error("event_notify: invalid event code: %d", event_code);
+		return -1;
 	}
 
 	pthread_mutex_lock(&event_mutex);
@@ -128,12 +140,8 @@ extern int	event_notify(char *msg)
 			break;
 		}
 
-		/* Always send "1234\0" as the message
-		 * (we do not care if all of the message is sent, 
-		 * just that some of it went through to wake up Moab)
-		 */
-		if (write(event_fd, "1234", 5) > 0) {
-			verbose("wiki event_notification sent: %s", msg);
+		if (write(event_fd, event_msg, (strlen(event_msg) + 1)) > 0) {
+			verbose("wiki event_notification sent: %s", desc);
 			last_notify_time = now;
 			rc = 0;
 			/* Dave Jackson says to leave the connection 

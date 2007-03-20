@@ -4,7 +4,7 @@
  *	time stamp (last_part_update)
  *  $Id$
  *****************************************************************************
- *  Copyright (C) 2002 The Regents of the University of California.
+ *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette@llnl.gov> et. al.
  *  UCRL-CODE-226842.
@@ -62,6 +62,7 @@
 
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/proc_req.h"
+#include "src/slurmctld/sched_plugin.h"
 #include "src/slurmctld/slurmctld.h"
 
 /* Global variables */
@@ -867,6 +868,7 @@ int update_part(update_part_msg_t * part_desc)
 	}
 
 	if (error_code == SLURM_SUCCESS) {
+		slurm_sched_partition_change();	/* notify sched plugin */
 		reset_job_priority();	/* free jobs */
 		if (select_g_block_init(part_list) != SLURM_SUCCESS )
 			error("failed to update node selection plugin state");
