@@ -619,7 +619,10 @@ _read_config()
 	if (cf->slurmctld_port == 0)
 		fatal("Unable to establish controller port");
 	conf->use_pam = cf->use_pam;
-	
+
+	if (cf->task_plugin_param & TASK_PARAM_CPUSETS)
+		conf->use_cpusets = 1;
+
 	slurm_mutex_unlock(&conf->config_mutex);
 	slurm_conf_unlock();
 }
@@ -663,19 +666,19 @@ _print_conf()
 	debug3("CacheGroups = %d",       cf->cache_groups);
 	debug3("Confile     = `%s'",     conf->conffile);
 	debug3("Debug       = %d",       cf->slurmd_debug);
-	debug3("CPUs        = %-2d (CF: %2d, HW: %2d)",
+	debug3("CPUs        = %-2u (CF: %2u, HW: %2u)",
 	       conf->cpus,
 	       conf->conf_cpus,
 	       conf->actual_cpus);
-	debug3("Sockets     = %-2d (CF: %2d, HW: %2d)",
+	debug3("Sockets     = %-2u (CF: %2u, HW: %2u)",
 	       conf->sockets,
 	       conf->conf_sockets,
 	       conf->actual_sockets);
-	debug3("Cores       = %-2d (CF: %2d, HW: %2d)",
+	debug3("Cores       = %-2u (CF: %2u, HW: %2u)",
 	       conf->cores,
 	       conf->conf_cores,
 	       conf->actual_cores);
-	debug3("Threads     = %-2d (CF: %2d, HW: %2d)",
+	debug3("Threads     = %-2u (CF: %2u, HW: %2u)",
 	       conf->threads,
 	       conf->conf_threads,
 	       conf->actual_threads);
@@ -683,7 +686,7 @@ _print_conf()
 	str[0] = '\0';
 	for (i = 0; i < conf->block_map_size; i++) {
 		char id[10];	       
-		sprintf(id, "%d,", conf->block_map[i]);
+		sprintf(id, "%u,", conf->block_map[i]);
 		strcat(str, id);
 	}
 	str[strlen(str)-1] = '\0';		/* trim trailing "," */
@@ -691,14 +694,14 @@ _print_conf()
 	str[0] = '\0';
 	for (i = 0; i < conf->block_map_size; i++) {
 		char id[10];	       
-		sprintf(id, "%d,", conf->block_map_inv[i]);
+		sprintf(id, "%u,", conf->block_map_inv[i]);
 		strcat(str, id);
 	}
 	str[strlen(str)-1] = '\0';		/* trim trailing "," */
 	debug3("Inverse Map = %s", str);
 	xfree(str);
-	debug3("RealMemory  = %d",       conf->real_memory_size);
-	debug3("TmpDisk     = %d",       conf->tmp_disk_space);
+	debug3("RealMemory  = %u",       conf->real_memory_size);
+	debug3("TmpDisk     = %u",       conf->tmp_disk_space);
 	debug3("Epilog      = `%s'",     conf->epilog);
 	debug3("Logfile     = `%s'",     cf->slurmd_logfile);
 	debug3("NodeName    = %s",       conf->node_name);
@@ -711,8 +714,9 @@ _print_conf()
 	debug3("Slurm UID   = %u",       conf->slurm_user_id);
 	debug3("TaskProlog  = `%s'",     conf->task_prolog);
 	debug3("TaskEpilog  = `%s'",     conf->task_epilog);
-	debug3("Use PAM     = %d",       conf->use_pam);
-	debug3("Fast Sched  = %d",       conf->fast_schedule);
+	debug3("Use CPUSETS = %u",       conf->use_cpusets);
+	debug3("Use PAM     = %u",       conf->use_pam);
+	debug3("Fast Sched  = %u",       conf->fast_schedule);
 	slurm_conf_unlock();
 }
 
@@ -752,6 +756,7 @@ _init_conf()
 	conf->pidfile     = xstrdup(DEFAULT_SLURMD_PIDFILE);
 	conf->spooldir	  = xstrdup(DEFAULT_SPOOLDIR);
 	conf->use_pam	  =  0;
+	conf->use_cpusets =  0;
 	conf->fast_schedule = 0;
 
 	slurm_mutex_init(&conf->config_mutex);

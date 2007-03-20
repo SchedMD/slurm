@@ -156,6 +156,10 @@ int task_pre_launch ( slurmd_job_t *job )
 	debug("affinity task_pre_launch: %u.%u, task %d", 
 		job->jobid, job->stepid, job->envtp->procid);
 
+#ifdef HAVE_CPUSETS_EXP
+	if (!conf->use_cpusets) {
+	  info("Using sched_affinity for tasks");
+#endif
 	/*** CPU binding support ***/
 	if (job->cpu_bind_type) {	
 		cpu_set_t new_mask, cur_mask;
@@ -189,7 +193,30 @@ int task_pre_launch ( slurmd_job_t *job )
 		slurm_chk_memset(&cur_mask, job);
 	}
 #endif
+#ifdef HAVE_CPUSETS_EXP
+	}
+	else {
+		cs_cpumask_t cpu_mask;
+		cs_memmask_t mem_mask;
 
+		info("Using cpuset affinity for tasks");
+		debug("from job structure - nprocs=%u, ntasks=%u, cpus=%u",
+			job->nprocs, job->ntasks, job->cpus);
+		debug("from job->envtp - procid=%d, localid=%d, pid=%d",
+			job->envtp->procid, job->envtp->localid, job->envtp->task_pid);
+
+		cs_cpumask_clear(&cpu_mask);
+		cs_memmask_clear(&mem_mask);
+		if (get_cpuset_mask(&cpu_mask, job)) {
+			debug2("cpu_mask = %d (decimal) and %08x (hex)", cpu_mask, cpu_mask);
+			make_task_cpuset(job, &cpu_mask, &mem_mask);
+		}
+		slurm_chkaffinity(&cpu_mask, job, 0);
+#ifdef HAVE_NUMA
+		slurm_chk_memset(&mem_mask, job);
+#endif
+	}
+#endif
 	return SLURM_SUCCESS;
 }
 

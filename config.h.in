@@ -21,6 +21,9 @@
 /* Define to 1 if have Blue Gene files */
 #undef HAVE_BG_FILES
 
+/* define if you have the cpuset library */
+#undef HAVE_CPUSETS
+
 /* Define to 1 if you have the <curses.h> header file. */
 #undef HAVE_CURSES_H
 
