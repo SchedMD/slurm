@@ -61,6 +61,21 @@ AC_DEFUN([X_AC_AFFINITY], [
 
 
 #
+# Test for CPUSET library functions and set the definitions
+#
+  AC_CHECK_LIB([cpuset],
+        [cs_init],
+        [ac_have_cpuset=yes; CPUSET_LIBS="-lcpuset"])
+ 
+  AC_SUBST(CPUSET_LIBS)
+  AM_CONDITIONAL(HAVE_CPUSETS, test "x$ac_have_cpuset" = "xyes")
+  if test "x$ac_have_cpuset" = "xyes"; then
+    AC_DEFINE(HAVE_CPUSETS, 1, [define if you have the cpuset library])
+  else
+    AC_MSG_WARN([Unable to locate CPUSET memory affinity functions])
+  fi
+
+#
 # Test for other affinity functions as appropriate
 # TBD
 

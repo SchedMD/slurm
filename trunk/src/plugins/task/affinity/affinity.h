@@ -63,8 +63,12 @@
 #define __USE_GNU
 #include <sched.h> /* SMB */
 
-#if HAVE_STDLIB_H
+#ifdef HAVE_STDLIB_H
 #  include <stdlib.h>
+#endif
+
+#ifdef HAVE_CPUSETS_EXP
+#  include <cpuset.h>
 #endif
 
 #include <slurm/slurm_errno.h>
@@ -91,6 +95,11 @@ void	slurm_chkaffinity(cpu_set_t *mask, slurmd_job_t *job, int statval);
 int	get_cpuset(cpu_set_t *mask, slurmd_job_t *job);
 int	slurm_setaffinity(pid_t pid, size_t size, const cpu_set_t *mask);
 int	slurm_getaffinity(pid_t pid, size_t size, cpu_set_t *mask);
+#ifdef HAVE_CPUSETS_EXP
+int	get_cpuset_mask(cs_cpumask_t *mask, slurmd_job_t *job);
+int	get_memset_mask(cs_memmask_t *mem_mask, cs_cpumask_t *cpu_mask, slurmd_job_t *job);
+int	make_task_cpuset(slurmd_job_t *job, cs_cpumask_t *cpu_mask, cs_memmask_t *mem_mask);
+#endif
 
 /*** from numa.c ***/
 #ifdef HAVE_NUMA

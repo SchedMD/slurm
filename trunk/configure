@@ -885,6 +885,9 @@ NUMA_LIBS
 HAVE_NUMA_TRUE
 HAVE_NUMA_FALSE
 PLPA_LIBS
+CPUSET_LIBS
+HAVE_CPUSETS_TRUE
+HAVE_CPUSETS_FALSE
 HAVE_SCHED_SETAFFINITY_TRUE
 HAVE_SCHED_SETAFFINITY_FALSE
 PAM_LIBS
@@ -7501,7 +7504,7 @@ ia64-*-hpux*)
   ;;
 *-*-irix6*)
   # Find out which ABI we are using.
-  echo '#line 7504 "configure"' > conftest.$ac_ext
+  echo '#line 7507 "configure"' > conftest.$ac_ext
   if { (eval echo "$as_me:$LINENO: \"$ac_compile\"") >&5
   (eval $ac_compile) 2>&5
   ac_status=$?
@@ -9383,11 +9386,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:9386: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:9389: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:9390: \$? = $ac_status" >&5
+   echo "$as_me:9393: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -9651,11 +9654,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:9654: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:9657: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:9658: \$? = $ac_status" >&5
+   echo "$as_me:9661: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -9755,11 +9758,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:9758: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:9761: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:9762: \$? = $ac_status" >&5
+   echo "$as_me:9765: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -12196,7 +12199,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<EOF
-#line 12199 "configure"
+#line 12202 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -12296,7 +12299,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<EOF
-#line 12299 "configure"
+#line 12302 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -14664,11 +14667,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:14667: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:14670: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:14671: \$? = $ac_status" >&5
+   echo "$as_me:14674: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -14768,11 +14771,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:14771: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:14774: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:14775: \$? = $ac_status" >&5
+   echo "$as_me:14778: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -16329,11 +16332,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:16332: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:16335: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:16336: \$? = $ac_status" >&5
+   echo "$as_me:16339: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -16433,11 +16436,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:16436: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:16439: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:16440: \$? = $ac_status" >&5
+   echo "$as_me:16443: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -18652,11 +18655,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:18655: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:18658: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:18659: \$? = $ac_status" >&5
+   echo "$as_me:18662: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -18920,11 +18923,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:18923: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:18926: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:18927: \$? = $ac_status" >&5
+   echo "$as_me:18930: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -19024,11 +19027,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:19027: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:19030: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:19031: \$? = $ac_status" >&5
+   echo "$as_me:19034: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -23105,6 +23108,113 @@ _ACEOF
 echo "$as_me: WARNING: Unable to locate PLPA processor affinity functions" >&2;}
   fi
 
+
+#
+# Test for CPUSET library functions and set the definitions
+#
+  { echo "$as_me:$LINENO: checking for cs_init in -lcpuset" >&5
+echo $ECHO_N "checking for cs_init in -lcpuset... $ECHO_C" >&6; }
+if test "${ac_cv_lib_cpuset_cs_init+set}" = set; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+else
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-lcpuset  $LIBS"
+cat >conftest.$ac_ext <<_ACEOF
+/* confdefs.h.  */
+_ACEOF
+cat confdefs.h >>conftest.$ac_ext
+cat >>conftest.$ac_ext <<_ACEOF
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char cs_init ();
+int
+main ()
+{
+return cs_init ();
+  ;
+  return 0;
+}
+_ACEOF
+rm -f conftest.$ac_objext conftest$ac_exeext
+if { (ac_try="$ac_link"
+case "(($ac_try" in
+  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
+  *) ac_try_echo=$ac_try;;
+esac
+eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
+  (eval "$ac_link") 2>conftest.er1
+  ac_status=$?
+  grep -v '^ *+' conftest.er1 >conftest.err
+  rm -f conftest.er1
+  cat conftest.err >&5
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); } &&
+	 { ac_try='test -z "$ac_c_werror_flag" || test ! -s conftest.err'
+  { (case "(($ac_try" in
+  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
+  *) ac_try_echo=$ac_try;;
+esac
+eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
+  (eval "$ac_try") 2>&5
+  ac_status=$?
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); }; } &&
+	 { ac_try='test -s conftest$ac_exeext'
+  { (case "(($ac_try" in
+  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
+  *) ac_try_echo=$ac_try;;
+esac
+eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
+  (eval "$ac_try") 2>&5
+  ac_status=$?
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); }; }; then
+  ac_cv_lib_cpuset_cs_init=yes
+else
+  echo "$as_me: failed program was:" >&5
+sed 's/^/| /' conftest.$ac_ext >&5
+
+	ac_cv_lib_cpuset_cs_init=no
+fi
+
+rm -f core conftest.err conftest.$ac_objext \
+      conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+{ echo "$as_me:$LINENO: result: $ac_cv_lib_cpuset_cs_init" >&5
+echo "${ECHO_T}$ac_cv_lib_cpuset_cs_init" >&6; }
+if test $ac_cv_lib_cpuset_cs_init = yes; then
+  ac_have_cpuset=yes; CPUSET_LIBS="-lcpuset"
+fi
+
+
+
+
+
+if test "x$ac_have_cpuset" = "xyes"; then
+  HAVE_CPUSETS_TRUE=
+  HAVE_CPUSETS_FALSE='#'
+else
+  HAVE_CPUSETS_TRUE='#'
+  HAVE_CPUSETS_FALSE=
+fi
+
+  if test "x$ac_have_cpuset" = "xyes"; then
+
+cat >>confdefs.h <<\_ACEOF
+#define HAVE_CPUSETS 1
+_ACEOF
+
+  else
+    { echo "$as_me:$LINENO: WARNING: Unable to locate CPUSET memory affinity functions" >&5
+echo "$as_me: WARNING: Unable to locate CPUSET memory affinity functions" >&2;}
+  fi
 
 #
 # Test for other affinity functions as appropriate
@@ -27638,6 +27748,13 @@ echo "$as_me: error: conditional \"HAVE_NUMA\" was never defined.
 Usually this means the macro was only invoked conditionally." >&2;}
    { (exit 1); exit 1; }; }
 fi
+if test -z "${HAVE_CPUSETS_TRUE}" && test -z "${HAVE_CPUSETS_FALSE}"; then
+  { { echo "$as_me:$LINENO: error: conditional \"HAVE_CPUSETS\" was never defined.
+Usually this means the macro was only invoked conditionally." >&5
+echo "$as_me: error: conditional \"HAVE_CPUSETS\" was never defined.
+Usually this means the macro was only invoked conditionally." >&2;}
+   { (exit 1); exit 1; }; }
+fi
 if test -z "${HAVE_SCHED_SETAFFINITY_TRUE}" && test -z "${HAVE_SCHED_SETAFFINITY_FALSE}"; then
   { { echo "$as_me:$LINENO: error: conditional \"HAVE_SCHED_SETAFFINITY\" was never defined.
 Usually this means the macro was only invoked conditionally." >&5
@@ -28491,6 +28608,9 @@ NUMA_LIBS!$NUMA_LIBS$ac_delim
 HAVE_NUMA_TRUE!$HAVE_NUMA_TRUE$ac_delim
 HAVE_NUMA_FALSE!$HAVE_NUMA_FALSE$ac_delim
 PLPA_LIBS!$PLPA_LIBS$ac_delim
+CPUSET_LIBS!$CPUSET_LIBS$ac_delim
+HAVE_CPUSETS_TRUE!$HAVE_CPUSETS_TRUE$ac_delim
+HAVE_CPUSETS_FALSE!$HAVE_CPUSETS_FALSE$ac_delim
 HAVE_SCHED_SETAFFINITY_TRUE!$HAVE_SCHED_SETAFFINITY_TRUE$ac_delim
 HAVE_SCHED_SETAFFINITY_FALSE!$HAVE_SCHED_SETAFFINITY_FALSE$ac_delim
 PAM_LIBS!$PAM_LIBS$ac_delim
@@ -28544,7 +28664,7 @@ WITH_AUTHD_FALSE!$WITH_AUTHD_FALSE$ac_delim
 LTLIBOBJS!$LTLIBOBJS$ac_delim
 _ACEOF
 
-  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 87; then
+  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 90; then
     break
   elif $ac_last_try; then
     { { echo "$as_me:$LINENO: error: could not make $CONFIG_STATUS" >&5
