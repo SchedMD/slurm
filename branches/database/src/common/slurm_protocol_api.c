@@ -362,6 +362,7 @@ char *slurm_get_jobacct_type(void)
 	slurm_conf_unlock();
 	return jobacct_type;
 }
+
 /* slurm_get_database_type
  * returns the database type from slurmctld_conf object
  * RET char *    - database type,  MUST be xfreed by caller
@@ -374,7 +375,67 @@ char *slurm_get_database_type(void)
 	conf = slurm_conf_lock();
 	database_type = xstrdup(conf->database_type);
 	slurm_conf_unlock();
-	return database_type;
+	return database_type;	
+}
+
+/* slurm_get_database_user
+ * returns the database user from slurmctld_conf object
+ * RET char *    - database user,  MUST be xfreed by caller
+ */
+char *slurm_get_database_user(void)
+{
+	char *database_user;
+	slurm_ctl_conf_t *conf;
+
+	conf = slurm_conf_lock();
+	database_user = xstrdup(conf->database_user);
+	slurm_conf_unlock();
+	return database_user;	
+}
+
+/* slurm_get_database_host
+ * returns the database host from slurmctld_conf object
+ * RET char *    - database host,  MUST be xfreed by caller
+ */
+char *slurm_get_database_host(void)
+{
+	char *database_host;
+	slurm_ctl_conf_t *conf;
+
+	conf = slurm_conf_lock();
+	database_host = xstrdup(conf->database_host);
+	slurm_conf_unlock();
+	return database_host;	
+}
+
+/* slurm_get_database_pass
+ * returns the database password from slurmctld_conf object
+ * RET char *    - database password,  MUST be xfreed by caller
+ */
+char *slurm_get_database_pass(void)
+{
+	char *database_pass;
+	slurm_ctl_conf_t *conf;
+
+	conf = slurm_conf_lock();
+	database_pass = xstrdup(conf->database_pass);
+	slurm_conf_unlock();
+	return database_pass;	
+}
+
+/* slurm_get_database_port
+ * returns the database port from slurmctld_conf object
+ * RET uint32_t   - database port
+ */
+uint32_t slurm_get_database_port(void)
+{
+	uint32_t database_port;
+	slurm_ctl_conf_t *conf;
+
+	conf = slurm_conf_lock();
+	database_port = conf->database_port;
+	slurm_conf_unlock();
+	return database_port;
 	
 }
 

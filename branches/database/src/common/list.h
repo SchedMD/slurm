@@ -281,7 +281,7 @@ void * list_remove (ListIterator i);
  *  Note: The client is responsible for freeing the returned data.
  */
 
-int list_delete (ListIterator i);
+int list_delete_item (ListIterator i);
 /*
  *  Removes from the list the last item returned via list iterator [i];
  *    if a deletion function was specified when the list was created,

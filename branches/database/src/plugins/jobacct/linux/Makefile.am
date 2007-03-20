@@ -17,3 +17,5 @@ jobacct_linux_la_SOURCES = jobacct_linux.c \
 	$(top_builddir)/src/slurmd/common/proctrack.h 
 
 jobacct_linux_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
+jobacct_linux_la_LIBADD  =  \
+	$(top_builddir)/src/common/libcommon.la -lpthread 

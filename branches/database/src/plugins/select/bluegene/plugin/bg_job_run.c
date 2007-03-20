@@ -767,7 +767,7 @@ static int _excise_block(List block_list, pm_partition_id_t bg_block_id,
 			
 			/* exact match of name and node list */
 			debug("synced Block %s", bg_block_id);
-			list_delete(iter);
+			list_delete_item(iter);
 			rc = SLURM_SUCCESS;
 			break;
 		}		

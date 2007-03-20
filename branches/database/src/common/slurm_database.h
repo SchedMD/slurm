@@ -49,39 +49,43 @@
  * Initialize the database make sure tables are created and in working
  * order
  */
-extern int database_p_jobacct_database_init ();
+extern int database_g_jobacct_database_init ();
+
+/*
+ * finish up database connection
+ */
+extern int database_g_jobacct_database_fini ();
 
 /* 
  * load into the database the start of a job
  */
-extern int database_p_jobacct_job_start (struct job_record *job_ptr);
+extern int database_g_jobacct_job_start (struct job_record *job_ptr);
 
 /* 
  * load into the database the end of a job
  */
-extern int database_p_jobacct_job_complete (struct job_record *job_ptr);
+extern int database_g_jobacct_job_complete (struct job_record *job_ptr);
 
 /* 
  * load into the database the start of a job step
  */
-extern int database_p_jobacct_step_start (struct step_record *step_ptr);
+extern int database_g_jobacct_step_start (struct step_record *step_ptr);
 
 /* 
  * load into the database the end of a job step
  */
-extern int database_p_jobacct_step_complete (struct step_record *step_ptr);
+extern int database_g_jobacct_step_complete (struct step_record *step_ptr);
 
 /* 
  * load into the database a suspention of a job
  */
-extern int database_p_jobacct_job_suspend (struct job_record *job_ptr);
-
+extern int database_g_jobacct_job_suspend (struct job_record *job_ptr);
 
 /* 
  * get info from the database 
  * returns List of job_rec_t *
  * note List needs to be freed when called
  */
-extern List database_p_jobacct_getdata ();
+extern List database_g_jobacct_getdata ();
 	
 #endif /*_SLURM_DATABASE_H*/

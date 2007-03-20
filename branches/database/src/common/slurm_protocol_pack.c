@@ -2078,6 +2078,11 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer)
 	packstr(build_ptr->job_acct_logfile, buffer);
 	pack16(build_ptr->job_acct_freq, buffer);
 	packstr(build_ptr->job_acct_type, buffer);
+	packstr(build_ptr->database_type, buffer);
+	packstr(build_ptr->database_user, buffer);
+	packstr(build_ptr->database_host, buffer);
+	packstr(build_ptr->database_pass, buffer);
+	pack32((uint32_t)build_ptr->database_port, buffer);
 	packstr(build_ptr->job_comp_loc, buffer);
 	packstr(build_ptr->job_comp_type, buffer);
 	pack16((uint16_t)build_ptr->kill_wait, buffer);
@@ -2165,6 +2170,11 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **
 			       buffer);
 	safe_unpack16(&build_ptr->job_acct_freq, buffer);
 	safe_unpackstr_xmalloc(&build_ptr->job_acct_type, &uint16_tmp, buffer);
+	safe_unpackstr_xmalloc(&build_ptr->database_type, &uint16_tmp, buffer);
+	safe_unpackstr_xmalloc(&build_ptr->database_user, &uint16_tmp, buffer);
+	safe_unpackstr_xmalloc(&build_ptr->database_host, &uint16_tmp, buffer);
+	safe_unpackstr_xmalloc(&build_ptr->database_pass, &uint16_tmp, buffer);
+	safe_unpack32(&build_ptr->database_port, buffer);
 	safe_unpackstr_xmalloc(&build_ptr->job_comp_loc, &uint16_tmp, buffer);
 	safe_unpackstr_xmalloc(&build_ptr->job_comp_type, &uint16_tmp, buffer);
 	safe_unpack16(&build_ptr->kill_wait, buffer);
@@ -2244,6 +2254,10 @@ unpack_error:
 	xfree(build_ptr->epilog);
 	xfree(build_ptr->job_acct_logfile);
 	xfree(build_ptr->job_acct_type);
+	xfree(build_ptr->database_type);
+	xfree(build_ptr->database_user);
+	xfree(build_ptr->database_host);
+	xfree(build_ptr->database_pass);
 	xfree(build_ptr->job_comp_loc);
 	xfree(build_ptr->job_comp_type);
 	xfree(build_ptr->job_credential_private_key);
