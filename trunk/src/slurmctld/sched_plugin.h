@@ -80,6 +80,11 @@ uint32_t slurm_sched_initial_priority( uint32_t max_prio );
  */
 void slurm_sched_job_is_pending( void );
 
+/*
+ * Note that some partition state change happened.
+ */
+void slurm_sched_partition_change( void );
+
 /* 
  * Return any plugin-specific error number
  */

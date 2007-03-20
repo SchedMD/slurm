@@ -1,7 +1,7 @@
 /*****************************************************************************\
  *  sched_wiki.c - Wiki plugin for Moab and Maui schedulers.
  *****************************************************************************
- *  Copyright (C) 2006 The Regents of the University of California.
+ *  Copyright (C) 2006-2007 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
  *  UCRL-CODE-226842.
@@ -72,7 +72,7 @@ extern void fini( void )
 /***************************************************************************/
 extern int slurm_sched_plugin_schedule( void )
 {
-	(void) event_notify("Requested by slurm");
+	(void) event_notify(1234, "Requested by Slurm");
 	return SLURM_SUCCESS;
 }
 
@@ -82,7 +82,7 @@ extern int slurm_sched_plugin_schedule( void )
 /**************************************************************************/
 extern uint32_t slurm_sched_plugin_initial_priority( uint32_t last_prio )
 {
-	(void) event_notify("Job submit");
+	(void) event_notify(1234, "Job submit");
 	if (init_prio_mode == PRIO_DECREMENT) {
 		if (last_prio >= 2)
 			return (last_prio - 1);
@@ -106,6 +106,14 @@ void slurm_sched_plugin_job_is_pending( void )
 int slurm_sched_plugin_reconfig( void )
 {
 	return parse_wiki_config();
+}
+
+/**************************************************************************/
+/* TAG(              slurm_sched_plugin_partition_change                ) */
+/**************************************************************************/
+void slurm_sched_plugin_partition_change( void )
+{
+	(void) event_notify(1234, "Partition change");
 }
 
 /**************************************************************************/
