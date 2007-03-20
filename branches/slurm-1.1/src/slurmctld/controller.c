@@ -485,6 +485,7 @@ static void *_slurmctld_signal_hand(void *no_data)
 				set_slurmctld_state_loc();
 			}
 			unlock_slurmctld(config_write_lock);
+			slurm_sched_partition_change();
 			break;
 		case SIGABRT:	/* abort */
 			info("SIGABRT received");

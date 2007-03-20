@@ -1,7 +1,7 @@
 /*****************************************************************************\
  *  msg.c - Message/communcation manager for Wiki plugin
  *****************************************************************************
- *  Copyright (C) 2006 The Regents of the University of California.
+ *  Copyright (C) 2006-2007 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
  *  UCRL-CODE-217948.
@@ -88,7 +88,7 @@ extern int spawn_msg_thread(void)
 			_msg_thread, NULL))
 		fatal("pthread_create %m");
 
-	(void) event_notify("slurm startup");
+	(void) event_notify(1234, "Slurm startup");
 	slurm_attr_destroy(&thread_attr_msg);
 	thread_running = true;
 	pthread_mutex_unlock(&thread_flag_mutex);

@@ -1,7 +1,7 @@
 /*****************************************************************************\
  *  msg.h - Message/communcation manager for Wiki plugin
  *****************************************************************************
- *  Copyright (C) 2006 The Regents of the University of California.
+ *  Copyright (C) 2006-2007 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
  *  UCRL-CODE-217948.
@@ -94,7 +94,7 @@ extern uint16_t	job_aggregation_time;
 extern uint16_t kill_wait;
 extern uint16_t use_host_exp;
 
-extern int	event_notify(char *msg);
+extern int	event_notify(int event_code, char *desc);
 extern int	spawn_msg_thread(void);
 extern void	term_msg_thread(void);
 extern char *   bitmap2wiki_node_name(bitstr_t *bitmap);
