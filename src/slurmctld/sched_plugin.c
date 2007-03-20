@@ -53,6 +53,7 @@ typedef struct slurm_sched_ops {
 	int		(*schedule)		( void );
 	u_int32_t	(*initial_priority)	( u_int32_t );
 	void            (*job_is_pending)     	( void );
+	void            (*partition_change)    	( void );
 	int		(*get_errno)		( void );
 	char *		(*strerror)		( int );
 } slurm_sched_ops_t;
@@ -86,6 +87,7 @@ slurm_sched_get_ops( slurm_sched_context_t *c )
 		"slurm_sched_plugin_schedule",
 		"slurm_sched_plugin_initial_priority",
 		"slurm_sched_plugin_job_is_pending",
+		"slurm_sched_plugin_partition_change",
 		"slurm_sched_get_errno",
 		"slurm_sched_strerror"
 	};
@@ -254,6 +256,7 @@ slurm_sched_initial_priority( u_int32_t last_prio )
 
 	return (*(g_sched_context->ops.initial_priority))( last_prio );
 }
+
 /* *********************************************************************** */
 /*  TAG(                   slurm_sched_job_is_pending                   )  */
 /* *********************************************************************** */
@@ -264,6 +267,18 @@ slurm_sched_job_is_pending( void )
 		return;
 
 	(*(g_sched_context->ops.job_is_pending))();
+}
+
+/* *********************************************************************** */
+/*  TAG(                   slurm_sched_partition_change                 )  */
+/* *********************************************************************** */
+void
+slurm_sched_partition_change( void )
+{
+	if ( slurm_sched_init() < 0 )
+		return;
+
+	(*(g_sched_context->ops.partition_change))();
 }
 
 /* *********************************************************************** */

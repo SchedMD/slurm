@@ -282,6 +282,14 @@ extern "C" void slurm_sched_plugin_job_is_pending( void )
 	// Wiki does not respond to pending job
 }
 
+// **************************************************************************
+//  TAG(                 slurm_sched_plugin_partition_change                )
+// **************************************************************************
+extern "C" void slurm_sched_plugin_partition_change( void )
+{
+	// Wiki does not respond to partition changes
+}
+
 // *************************************************************************
 //  TAG(              slurm_sched_get_errno                                )
 // *************************************************************************

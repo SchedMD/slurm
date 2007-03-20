@@ -5,7 +5,7 @@
 <h2> Overview</h2>
 <p> This document describes SLURM scheduler plugins and the API that defines 
 them. It is intended as a resource to programmers wishing to write their own SLURM 
-scheduler plugins. This is version 0 of the API.</p>
+scheduler plugins. This is version 1 of the API.</p>
 
 <p>It is noteworthy that two different models are used for job scheduling.
 The <b>backfill</b> scheduler lets SLURM establish the initial job priority
@@ -28,9 +28,10 @@ abbreviation for the type of scheduler. We recommend, for example:</p>
 scheduling services. This is the default behavior and implements first-in-first-out scheduling.</li>
 <li><b>backfill</b>&#151;Raise the priority of jobs if doing so results in their starting earlier 
 without any delay in the expected initiation time of any higher priority job.</li>
-<li><b>wiki</b>&#151;Use 
+<li><b>wiki</b>&#151;Uses
 <a href="http://www.clusterresources.com/pages/products/maui-cluster-scheduler.php">
-The Maui Scheduler</a> (Wiki version) or 
+The Maui Scheduler</a> as an external entity to control SLURM job scheduling.</li>
+<li><b>wiki2</b>&#151;Uses 
 <a href="http://www.clusterresources.com/pages/products/moab-cluster-suite.php">
 Moab Cluster Suite</a> as an external entity to control SLURM job scheduling.</li>
 </ul>
@@ -90,7 +91,13 @@ by altering their priority and (optionally) list of required nodes.</p>
 <p style="margin-left:.2in"><b>Returns</b>: The priority to be assigned to this job.</p>
 
 <p class="commandline">void slurm_sched_plugin_job_is_pending (void);</p>
-<p style="margin-left:.2in"><b>Description</b>: Note that some job is pending execution..</p>
+<p style="margin-left:.2in"><b>Description</b>: Note that some job is pending execution.</p>
+<p style="margin-left:.2in"><b>Arguments</b>: None</p>
+<p style="margin-left:.2in"><b>Returns</b>: Nothing.</p>
+
+<p class="commandline">void slurm_sched_plugin_partition_change (void);</p>
+<p style="margin-left:.2in"><b>Description</b>: Note that some partition state change 
+happened such as time or size limits.</p>
 <p style="margin-left:.2in"><b>Arguments</b>: None</p>
 <p style="margin-left:.2in"><b>Returns</b>: Nothing.</p>
 <p class="footer"><a href="#top">top</a></p>
@@ -113,11 +120,11 @@ or NULL if no description found in this plugin.</p>
 <p class="footer"><a href="#top">top</a></p>
 
 <h2>Versioning</h2>
-<p> This document describes version 0 of the SLURM Scheduler API. Future 
+<p> This document describes version 1 of the SLURM Scheduler API. Future 
 releases of SLURM may revise this API. A scheduler plugin conveys its ability 
 to implement a particular API version using the mechanism outlined for SLURM plugins.</p>
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 24 August 2006</p>
+<p style="text-align:center;">Last modified 20 March 2007</p>
 
 <!--#include virtual="footer.txt"-->
