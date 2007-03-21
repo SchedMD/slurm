@@ -364,7 +364,7 @@ _ping_slurmctld(char *control_machine, char *backup_controller)
 	fprintf(stdout, "are %s/%s\n", 
 		state[primary], state[secondary]);
 
-	if (down_msg && ((getuid() == 0) || (geteuid() == 0))) {
+	if (down_msg && (getuid() == 0)) {
 		fprintf(stdout, "*****************************************\n");
 		fprintf(stdout, "** RESTORE SLURMCTLD DAEMON TO SERVICE **\n");
 		fprintf(stdout, "*****************************************\n");
