@@ -79,15 +79,14 @@ pkglibLTLIBRARIES_INSTALL = $(INSTALL)
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
 @HAVE_SCHED_SETAFFINITY_TRUE@task_affinity_la_DEPENDENCIES = $(top_builddir)/src/common/libcommon.la
 am__task_affinity_la_SOURCES_DIST = affinity.c affinity.h cpuset.c \
-	cpuset.h dist_tasks.c dist_tasks.h numa.c schedutils.c \
-	task_affinity.c
+	dist_tasks.c dist_tasks.h numa.c schedutils.c task_affinity.c
 @HAVE_SCHED_SETAFFINITY_TRUE@am_task_affinity_la_OBJECTS =  \
 @HAVE_SCHED_SETAFFINITY_TRUE@	affinity.lo cpuset.lo \
 @HAVE_SCHED_SETAFFINITY_TRUE@	dist_tasks.lo numa.lo \
 @HAVE_SCHED_SETAFFINITY_TRUE@	schedutils.lo task_affinity.lo
 am__EXTRA_task_affinity_la_SOURCES_DIST = affinity.c affinity.h \
-	cpuset.c cpuset.h dist_tasks.c dist_tasks.h numa.c \
-	schedutils.c task_affinity.c
+	cpuset.c dist_tasks.c dist_tasks.h numa.c schedutils.c \
+	task_affinity.c
 task_affinity_la_OBJECTS = $(am_task_affinity_la_OBJECTS)
 @HAVE_SCHED_SETAFFINITY_TRUE@am_task_affinity_la_rpath = -rpath \
 @HAVE_SCHED_SETAFFINITY_TRUE@	$(pkglibdir)
@@ -299,7 +298,7 @@ INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common
 @HAVE_SCHED_SETAFFINITY_TRUE@pkglib_LTLIBRARIES = task_affinity.la
 @HAVE_SCHED_SETAFFINITY_TRUE@task_affinity_la_SOURCES = \
 @HAVE_SCHED_SETAFFINITY_TRUE@	affinity.c affinity.h \
-@HAVE_SCHED_SETAFFINITY_TRUE@	cpuset.c cpuset.h \
+@HAVE_SCHED_SETAFFINITY_TRUE@	cpuset.c \
 @HAVE_SCHED_SETAFFINITY_TRUE@	dist_tasks.c dist_tasks.h \
 @HAVE_SCHED_SETAFFINITY_TRUE@	numa.c \
 @HAVE_SCHED_SETAFFINITY_TRUE@	schedutils.c \
@@ -309,7 +308,7 @@ INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common
 @HAVE_SCHED_SETAFFINITY_TRUE@task_affinity_la_LIBADD = $(top_builddir)/src/common/libcommon.la
 @HAVE_SCHED_SETAFFINITY_FALSE@EXTRA_task_affinity_la_SOURCES = \
 @HAVE_SCHED_SETAFFINITY_FALSE@	affinity.c affinity.h \
-@HAVE_SCHED_SETAFFINITY_FALSE@	cpuset.c cpuset.h \
+@HAVE_SCHED_SETAFFINITY_FALSE@	cpuset.c \
 @HAVE_SCHED_SETAFFINITY_FALSE@	dist_tasks.c dist_tasks.h \
 @HAVE_SCHED_SETAFFINITY_FALSE@	numa.c \
 @HAVE_SCHED_SETAFFINITY_FALSE@	schedutils.c \
