@@ -48,6 +48,8 @@
 #include "affinity.h"
 #include "dist_tasks.h"
 
+#define CPUSET_DIR "/dev/cpuset"
+
 /*
  * These variables are required by the generic plugin interface.  If they
  * are not found in the plugin, the plugin loader will ignore it.
@@ -156,10 +158,11 @@ int task_pre_launch ( slurmd_job_t *job )
 	debug("affinity task_pre_launch: %u.%u, task %d", 
 		job->jobid, job->stepid, job->envtp->procid);
 
-#ifdef HAVE_CPUSETS_EXP
-	if (!conf->use_cpusets) {
-	  info("Using sched_affinity for tasks");
-#endif
+	if (conf->use_cpusets)
+		info("Using cpuset affinity for tasks");
+	else
+		info("Using sched_affinity for tasks");
+
 	/*** CPU binding support ***/
 	if (job->cpu_bind_type) {	
 		cpu_set_t new_mask, cur_mask;
@@ -168,15 +171,34 @@ int task_pre_launch ( slurmd_job_t *job )
 		int setval = 0;
 		slurm_getaffinity(mypid, sizeof(cur_mask), &cur_mask);
 
-		if (get_cpuset(&new_mask, job)) {
-			if (!(job->cpu_bind_type & CPU_BIND_NONE)) {
+		if (get_cpuset(&new_mask, job)
+		&&  (!(job->cpu_bind_type & CPU_BIND_NONE))) {
+			if (conf->use_cpusets) {
+				char path[PATH_MAX];
+				if (snprintf(path, PATH_MAX, "%sslurm%u_%d",
+						CPUSET_DIR, job->jobid,
+						job->envtp->localid) > 
+						PATH_MAX) {
+					error("cpuset path too long");
+					return SLURM_ERROR;
+				}
+				setval = slurm_set_cpuset(path, mypid,
+						sizeof(new_mask), 
+						&new_mask);
+				slurm_get_cpuset(path, mypid,
+						sizeof(cur_mask), 
+						&cur_mask);
+			} else {
 				setval = slurm_setaffinity(mypid,
-						sizeof(new_mask), &new_mask);
+						sizeof(new_mask), 
+						&new_mask);
 				slurm_getaffinity(mypid,
-						sizeof(cur_mask), &cur_mask);
+						sizeof(cur_mask), 
+						&cur_mask);
 			}
 		}
-		slurm_chkaffinity(setval ? &new_mask : &cur_mask, job, setval);
+		slurm_chkaffinity(setval ? &new_mask : &cur_mask, 
+					job, setval);
 	}
 
 #ifdef HAVE_NUMA
@@ -191,30 +213,6 @@ int task_pre_launch ( slurmd_job_t *job )
 			}
 		}
 		slurm_chk_memset(&cur_mask, job);
-	}
-#endif
-#ifdef HAVE_CPUSETS_EXP
-	}
-	else {
-		cs_cpumask_t cpu_mask;
-		cs_memmask_t mem_mask;
-
-		info("Using cpuset affinity for tasks");
-		debug("from job structure - nprocs=%u, ntasks=%u, cpus=%u",
-			job->nprocs, job->ntasks, job->cpus);
-		debug("from job->envtp - procid=%d, localid=%d, pid=%d",
-			job->envtp->procid, job->envtp->localid, job->envtp->task_pid);
-
-		cs_cpumask_clear(&cpu_mask);
-		cs_memmask_clear(&mem_mask);
-		if (get_cpuset_mask(&cpu_mask, job)) {
-			debug2("cpu_mask = %d (decimal) and %08x (hex)", cpu_mask, cpu_mask);
-			make_task_cpuset(job, &cpu_mask, &mem_mask);
-		}
-		slurm_chkaffinity(&cpu_mask, job, 0);
-#ifdef HAVE_NUMA
-		slurm_chk_memset(&mem_mask, job);
-#endif
 	}
 #endif
 	return SLURM_SUCCESS;
