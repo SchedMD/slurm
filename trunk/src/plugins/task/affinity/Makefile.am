@@ -10,7 +10,7 @@ if HAVE_SCHED_SETAFFINITY
 pkglib_LTLIBRARIES = task_affinity.la
 task_affinity_la_SOURCES = 	\
 	affinity.c affinity.h \
-	cpuset.c cpuset.h \
+	cpuset.c \
 	dist_tasks.c dist_tasks.h \
 	numa.c \
 	schedutils.c \
@@ -21,7 +21,7 @@ else
 pkglib_LTLIBRARIES =
 EXTRA_task_affinity_la_SOURCES = \
 	affinity.c affinity.h \
-	cpuset.c cpuset.h \
+	cpuset.c \
 	dist_tasks.c dist_tasks.h \
 	numa.c \
 	schedutils.c \
