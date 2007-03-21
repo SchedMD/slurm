@@ -86,7 +86,7 @@
 #define JOB_HASH_INX(_job_id)	(_job_id % hash_table_size)
 
 /* Change JOB_STATE_VERSION value when changing the state save format */
-#define JOB_STATE_VERSION      "VER005"
+#define JOB_STATE_VERSION      "VER006"
 
 /* Global variables */
 List   job_list = NULL;		/* job_record list */
@@ -482,6 +482,7 @@ static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer)
 	pack32(dump_job_ptr->dependency, buffer);
 	pack32(dump_job_ptr->num_procs, buffer);
 	pack32(dump_job_ptr->exit_code, buffer);
+	pack32(dump_job_ptr->db_index, buffer);
 
 	pack_time(dump_job_ptr->start_time, buffer);
 	pack_time(dump_job_ptr->end_time, buffer);
@@ -544,7 +545,7 @@ static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer)
 static int _load_job_state(Buf buffer)
 {
 	uint32_t job_id, user_id, group_id, time_limit, priority, alloc_sid;
-	uint32_t dependency, exit_code, num_procs;
+	uint32_t dependency, exit_code, num_procs, db_index;
 	time_t start_time, end_time, suspend_time, pre_sus_time;
 	uint16_t job_state, next_step_id, details, batch_flag, step_flag;
 	uint16_t kill_on_node_fail, kill_on_step_done, name_len;
@@ -567,6 +568,7 @@ static int _load_job_state(Buf buffer)
 	safe_unpack32(&dependency, buffer);
 	safe_unpack32(&num_procs, buffer);
 	safe_unpack32(&exit_code, buffer);
+	safe_unpack32(&db_index, buffer);
 
 	safe_unpack_time(&start_time, buffer);
 	safe_unpack_time(&end_time, buffer);
@@ -669,6 +671,7 @@ static int _load_job_state(Buf buffer)
 	job_ptr->exit_code    = exit_code;
 	job_ptr->state_reason = state_reason;
 	job_ptr->num_procs    = num_procs;
+	job_ptr->db_index     = db_index;
 	job_ptr->time_last_active = time(NULL);
 	strncpy(job_ptr->name, name, MAX_JOBNAME_LEN);
 	xfree(name);
@@ -1335,6 +1338,7 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 			job_ptr->exit_code = 1;
 			job_ptr->state_reason = FAIL_BAD_CONSTRAINTS;
 			job_ptr->start_time = job_ptr->end_time = time(NULL);
+			jobacct_g_job_start_slurmctld(job_ptr);
 			job_completion_logger(job_ptr);
 		}
 		return error_code;
@@ -1367,6 +1371,7 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 		job_ptr->exit_code  = 1;
 		job_ptr->state_reason = FAIL_BAD_CONSTRAINTS;
 		job_ptr->start_time = job_ptr->end_time = time(NULL);
+		jobacct_g_job_start_slurmctld(job_ptr);
 		job_completion_logger(job_ptr);
 		if (!independent)
 			return ESLURM_DEPENDENCY;
@@ -1381,6 +1386,7 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 	no_alloc = test_only || too_fragmented || 
 		(!top_prio) || (!independent);
 	error_code = select_nodes(job_ptr, no_alloc, NULL);
+	jobacct_g_job_start_slurmctld(job_ptr);
 	if (!test_only) {
 		last_job_update = time(NULL);
 		slurm_sched_schedule();	/* work for external scheduler */
@@ -1956,7 +1962,6 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 		job_ptr->priority = 1;      /* Move to end of queue */
 		job_ptr->state_reason = fail_reason;
 	}
-	jobacct_g_job_start_slurmctld(job_ptr);
 	
 cleanup:
 	FREE_NULL_BITMAP(req_bitmap);

@@ -126,7 +126,7 @@ extern int mysql_get_db_connection(MYSQL **mysql_db, char *db_name,
 	return rc;
 }
 
-extern int mysql_db_query(MYSQL *mysql_db, int database_init, char *query)
+extern int mysql_db_query(MYSQL *mysql_db, int database_init,  char *query)
 {
 	if(!database_init)
 		fatal("You haven't inited this database yet.");
@@ -139,6 +139,40 @@ extern int mysql_db_query(MYSQL *mysql_db, int database_init, char *query)
 	}
 
 	return SLURM_SUCCESS;
+}
+
+extern MYSQL_RES *mysql_db_query_ret(MYSQL *mysql_db, int database_init,
+				     char *query)
+{
+	MYSQL_RES *result = NULL;
+	
+	if(mysql_db_query(mysql_db, database_init, query) != SLURM_ERROR)  {
+		result = mysql_store_result(mysql_db);
+		if(!result && mysql_field_count(mysql_db)) {
+			/* should have returned data */
+			error("We should have gotten a result: %s", 
+			      mysql_error(mysql_db));
+		}
+	}
+
+	return result;
+}
+
+extern int mysql_insert_ret_id(MYSQL *mysql_db, int database_init, char *query)
+{
+	int new_id = 0;
+	
+	if(mysql_db_query(mysql_db, database_init, query) != SLURM_ERROR)  {
+		new_id = mysql_insert_id(mysql_db);
+		if(!new_id) {
+			/* should have new id */
+			error("We should have gotten a new id: %s", 
+			      mysql_error(mysql_db));
+		}
+	}
+
+	return new_id;
+	
 }
 
 #endif

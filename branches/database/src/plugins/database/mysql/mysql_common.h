@@ -83,6 +83,11 @@ extern int mysql_get_db_connection(MYSQL **mysql_db, char *db_name,
 				   int *database_init);
 extern int mysql_db_query(MYSQL *mysql_db, int database_init, char *query);
 
+extern MYSQL_RES *mysql_db_query_ret(MYSQL *mysql_db, int database_init,
+				     char *query);
+
+extern int mysql_insert_ret_id(MYSQL *mysql_db, int database_init, 
+			       char *query);
 #endif
 
 #endif
