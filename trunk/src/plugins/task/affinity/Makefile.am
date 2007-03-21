@@ -9,8 +9,8 @@ INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common
 if HAVE_SCHED_SETAFFINITY
 pkglib_LTLIBRARIES = task_affinity.la
 task_affinity_la_SOURCES = 	\
-	affinity.c \
-	affinity.h \
+	affinity.c affinity.h \
+	cpuset.c cpuset.h \
 	dist_tasks.c dist_tasks.h \
 	numa.c \
 	schedutils.c \
@@ -20,8 +20,8 @@ task_affinity_la_LIBADD  = $(top_builddir)/src/common/libcommon.la
 else
 pkglib_LTLIBRARIES =
 EXTRA_task_affinity_la_SOURCES = \
-	affinity.c \
-	affinity.h \
+	affinity.c affinity.h \
+	cpuset.c cpuset.h \
 	dist_tasks.c dist_tasks.h \
 	numa.c \
 	schedutils.c \
