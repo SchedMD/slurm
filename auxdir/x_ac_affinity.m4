@@ -60,8 +60,16 @@ AC_DEFUN([X_AC_AFFINITY], [
   fi
 
 #
+# Test for cpusets
+#
+  if test -d "/dev/cpuset" ; then
+     have_sched_setaffinity=yes
+  fi
+
+#
 # Test for other affinity functions as appropriate
 # TBD
+#
 
 #
 # Set HAVE_SCHED_SETAFFINITY if any task affinity supported
