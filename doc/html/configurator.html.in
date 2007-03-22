@@ -505,7 +505,6 @@ CPU affinity support
 <DT><B>TaskPluginParam</B> (As used by <I>TaskPlugin=Affinity</I> only):
 <DT><input type="radio" name="task_plugin_param" value="Cpusets">
     <B>Cpusets</B>: Use <I>cpusets</I> to control task binding.
-    To become available in the Spring of 2007.
 <DT><input type="radio" name="task_plugin_param" value="Sched" checked>
     <B>Sched</B>: Use <I>sched_setaffinity</I> or <I>plpa_sched_setaffinity</I>
     (if available) to bind tasks to processors. This is the default mode of
@@ -645,6 +644,6 @@ before terminating all remaining tasks. A value of zero indicates unlimited wait
 </FORM>
 <HR>
 <p class="footer">UCRL-WEB-225274<br>
-Last modified 19 December 2006</p>
+Last modified 22 March 2007</p>
 </BODY>
 
