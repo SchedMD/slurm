@@ -59,6 +59,14 @@ int	slurm_build_cpuset(char *base, char *path, uid_t uid, gid_t gid)
 	char file_path[PATH_MAX], mstr[16];
 	int fd, rc;
 
+	if (mkdir(path, 0700) && (errno != EEXIST)) {
+		error("mkdir(%s): %m", path);
+		return -1;
+	}
+	if (chown(path, uid, gid))
+		error("chown(%s): %m", path);
+
+	/* copy "cpus" contents from parent directory */
 	snprintf(file_path, sizeof(file_path), "%s/cpus", base);
 	fd = open(file_path, O_RDONLY);
 	if (fd < 0) {
@@ -71,12 +79,6 @@ int	slurm_build_cpuset(char *base, char *path, uid_t uid, gid_t gid)
 		error("read(%s): %m", file_path);
 		return -1;
 	}
-
-	if (mkdir(path, 0700) && (errno != EEXIST)) {
-		error("mkdir(%s): %m", path);
-		return -1;
-	}
-
 	snprintf(file_path, sizeof(file_path), "%s/cpus", path);
 	fd = open(file_path, O_CREAT | O_WRONLY, 0700);
 	if (fd < 0) {
@@ -85,7 +87,43 @@ int	slurm_build_cpuset(char *base, char *path, uid_t uid, gid_t gid)
 	}
 	rc = write(fd, mstr, rc);
 	close(fd);
+	if (rc < 1) {
+		error("write(%s): %m", file_path);
+		return -1;
+	}
 
+	/* copy "mems" contents from parent directory, if it exists */
+	snprintf(file_path, sizeof(file_path), "%s/mems", base);
+	fd = open(file_path, O_RDONLY);
+	if (fd < 0) {
+		error("open(%s): %m", file_path);
+	} else {
+		rc = read(fd, mstr, sizeof(mstr));
+		close(fd);
+		if (rc < 1)
+			error("read(%s): %m", file_path);
+		snprintf(file_path, sizeof(file_path), "%s/mems", path);
+		fd = open(file_path, O_CREAT | O_WRONLY, 0700);
+		if (fd < 0) {
+			error("open(%s): %m", file_path);
+			return -1;
+		}
+		rc = write(fd, mstr, rc);
+		close(fd);
+		if (rc < 1)
+			error("write(%s): %m", file_path);
+	}
+
+	snprintf(file_path, sizeof(file_path), "%s/notify_on_release", path);
+	fd = open(file_path, O_CREAT | O_WRONLY, 0700);
+	if (fd < 0) {
+		error("open(%s): %m", file_path);
+		return -1;
+	}
+	rc = write(fd, "1", 2);
+	close(fd);
+
+	/* only now can we add tasks */
 	snprintf(file_path, sizeof(file_path), "%s/tasks", path);
 	snprintf(mstr, sizeof(mstr), "%d", getpid());
 	fd = open(file_path, O_CREAT | O_WRONLY, 0700);
@@ -100,22 +138,10 @@ int	slurm_build_cpuset(char *base, char *path, uid_t uid, gid_t gid)
 		return -1;
 	}
 
-	snprintf(file_path, sizeof(file_path), "%s/notify_on_release", path);
-	fd = open(file_path, O_CREAT | O_WRONLY, 0700);
-	if (fd < 0) {
-		error("open(%s): %m", file_path);
-		return -1;
-	}
-	rc = write(fd, "1", 2);
-	close(fd);
-
-	if (chown(path, uid, gid))
-		error("chown(%s): %m", path);
-
 	return 0;
 }
 
-int	slurm_set_cpuset(char *path, pid_t pid, size_t size, 
+int	slurm_set_cpuset(char *base, char *path, pid_t pid, size_t size, 
 		const cpu_set_t *mask)
 {
 	int fd, rc;
@@ -126,15 +152,6 @@ int	slurm_set_cpuset(char *path, pid_t pid, size_t size,
 		error("mkdir(%s): %m", path);
 		return -1;
 	}
-
-	snprintf(file_path, sizeof(file_path), "%s/notify_on_release", path);
-	fd = open(file_path, O_CREAT | O_WRONLY, 0700);
-	if (fd < 0) {
-		error("open(%s): %m", file_path);
-		return -1;
-	}
-	rc = write(fd, "1", 2);
-	close(fd);
 
 	snprintf(file_path, sizeof(file_path), "%s/cpus", path);
 	_cpuset_to_cpustr(mask, mstr);
@@ -149,6 +166,37 @@ int	slurm_set_cpuset(char *path, pid_t pid, size_t size,
 		error("write(%s): %m", file_path);
 		return -1;
 	}
+
+	/* copy "mems" contents from parent directory, if it exists */
+	snprintf(file_path, sizeof(file_path), "%s/mems", base);
+	fd = open(file_path, O_RDONLY);
+	if (fd < 0) {
+		error("open(%s): %m", file_path);
+	} else {
+		rc = read(fd, mstr, sizeof(mstr));
+		close(fd);
+		if (rc < 1)
+			error("read(%s): %m", file_path);
+		snprintf(file_path, sizeof(file_path), "%s/mems", path);
+		fd = open(file_path, O_CREAT | O_WRONLY, 0700);
+		if (fd < 0) {
+			error("open(%s): %m", file_path);
+			return -1;
+		}
+		rc = write(fd, mstr, rc);
+		close(fd);
+		if (rc < 1)
+			error("write(%s): %m", file_path);
+	}
+
+	snprintf(file_path, sizeof(file_path), "%s/notify_on_release", path);
+	fd = open(file_path, O_CREAT | O_WRONLY, 0700);
+	if (fd < 0) {
+		error("open(%s): %m", file_path);
+		return -1;
+	}
+	rc = write(fd, "1", 2);
+	close(fd);
 
 	snprintf(file_path, sizeof(file_path), "%s/tasks", path);
 	snprintf(mstr, sizeof(mstr), "%d", pid);
