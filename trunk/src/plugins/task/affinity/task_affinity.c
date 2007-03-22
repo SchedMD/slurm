@@ -174,15 +174,20 @@ int task_pre_setuid ( slurmd_job_t *job )
  */
 int task_pre_launch ( slurmd_job_t *job )
 {
-	char path[PATH_MAX];
+	char base[PATH_MAX], path[PATH_MAX];
 
 	debug("affinity task_pre_launch: %u.%u, task %d", 
 		job->jobid, job->stepid, job->envtp->procid);
 
 	if (conf->use_cpusets) {
 		info("Using cpuset affinity for tasks");
-		if (snprintf(path, PATH_MAX, "%s/slurm%u/slurm%u.%u_%d",
-				CPUSET_DIR, job->jobid, job->jobid, job->stepid,
+		if (snprintf(base, PATH_MAX, "%s/slurm%u",
+				CPUSET_DIR, job->jobid) > PATH_MAX) {
+			error("cpuset path too long");
+			return SLURM_ERROR;
+		}
+		if (snprintf(path, PATH_MAX, "%s/slurm%u.%u_%d",
+				base, job->jobid, job->stepid,
 				job->envtp->localid) > PATH_MAX) {
 			error("cpuset path too long");
 			return SLURM_ERROR;
@@ -201,7 +206,7 @@ int task_pre_launch ( slurmd_job_t *job )
 		if (get_cpuset(&new_mask, job)
 		&&  (!(job->cpu_bind_type & CPU_BIND_NONE))) {
 			if (conf->use_cpusets) {
-				setval = slurm_set_cpuset(path, mypid,
+				setval = slurm_set_cpuset(base, path, mypid,
 						sizeof(new_mask), 
 						&new_mask);
 				slurm_get_cpuset(path, mypid,
