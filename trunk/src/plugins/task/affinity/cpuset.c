@@ -59,7 +59,7 @@ int	slurm_set_cpuset(char *path, pid_t pid, size_t size,
 {
 	int fd, rc;
 	char file_path[PATH_MAX];
-	char mstr[1 + CPU_SETSIZE / 4];
+	char mstr[1 + CPU_SETSIZE * 4];
 
 	if (mkdir(path, 0700) && (errno != EEXIST)) {
 		error("mkdir(%s): %m", path);
