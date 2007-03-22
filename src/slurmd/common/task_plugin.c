@@ -50,6 +50,7 @@ typedef struct slurmd_task_ops {
 	int		(*slurmd_reserve_resources)	( uint32_t job_id, launch_tasks_request_msg_t *req, uint32_t node_id );
 	int		(*slurmd_release_resources)	( uint32_t job_id);
 
+	int		(*pre_setuid)		( slurmd_job_t *job );
 	int		(*pre_launch)		( slurmd_job_t *job );
 	int		(*post_term)		( slurmd_job_t *job );
 } slurmd_task_ops_t;
@@ -76,6 +77,7 @@ _slurmd_task_get_ops( slurmd_task_context_t *c )
 		"task_slurmd_launch_request",
 		"task_slurmd_reserve_resources",
 		"task_slurmd_release_resources",
+		"task_pre_setuid",
 		"task_pre_launch",
 		"task_post_term",
 	};
@@ -245,6 +247,20 @@ extern int slurmd_release_resources( uint32_t job_id )
 		return SLURM_ERROR;
 
 	return (*(g_task_context->ops.slurmd_release_resources))(job_id);
+}
+
+/*
+ * Note that a task launch is about to occur.
+ * Run before setting UID to the user.
+ *
+ * RET - slurm error code
+ */
+extern int pre_setuid( slurmd_job_t *job )
+{
+	if ( slurmd_task_init() )
+		return SLURM_ERROR;
+
+	return (*(g_task_context->ops.pre_setuid))(job);
 }
 
 /*

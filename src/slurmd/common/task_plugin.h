@@ -83,6 +83,14 @@ extern int slurmd_release_resources( uint32_t job_id );
 
 /*
  * Note that a task launch is about to occur.
+ * Run before setting UID to the user.
+ *
+ * RET - slurm error code
+ */
+extern int pre_setuid(slurmd_job_t *job);
+
+/*
+ * Note that a task launch is about to occur.
  *
  * RET - slurm error code
  */

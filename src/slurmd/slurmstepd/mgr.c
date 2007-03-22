@@ -895,6 +895,7 @@ _fork_all_tasks(slurmd_job_t *job)
 			if (conf->propagate_prio == 1)
 				_set_prio_process(job);
 
+			(void) pre_setuid(job);
  			if (_become_user(job, &sprivs) < 0) {
  				error("_become_user failed: %m");
 				/* child process, should not return */
