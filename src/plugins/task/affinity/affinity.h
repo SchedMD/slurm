@@ -88,7 +88,7 @@
 #include "src/common/util-net.h"
 #include "src/common/slurm_resource_info.h"
 
-#define CPUSET_DIR "/etc/cpuset"
+#define CPUSET_DIR "/dev/cpuset"
 
 /*** from affinity.c ***/
 void	slurm_chkaffinity(cpu_set_t *mask, slurmd_job_t *job, int statval);
