@@ -132,7 +132,7 @@ extern int mysql_db_query(MYSQL *mysql_db, int database_init,  char *query)
 		fatal("You haven't inited this database yet.");
 
 	if(mysql_query(mysql_db, query)) {
-		error("mysql_real_query failed: %d %s\n%s",
+		error("mysql_query failed: %d %s\n%s",
 		      mysql_errno(mysql_db),
 		      mysql_error(mysql_db), query);
 		return SLURM_ERROR;

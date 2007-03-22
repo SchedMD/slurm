@@ -297,7 +297,7 @@ extern int mysql_jobacct_job_complete(struct job_record *job_ptr)
 	if(job_ptr->db_index) {
 		snprintf(query, sizeof(query),
 			 "update %s set start=%u, end=%u, state=%d, "
-			 "nodelist=%s, account=%s, "
+			 "nodelist='%s', account='%s', "
 			 "kill_requid=%d where id=%u",
 			 job_table, (int)job_ptr->start_time,
 			 (int)job_ptr->end_time, 
