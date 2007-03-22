@@ -66,7 +66,8 @@ int	slurm_build_cpuset(char *base, char *path, uid_t uid, gid_t gid)
 	if (chown(path, uid, gid))
 		error("chown(%s): %m", path);
 
-	/* copy "cpus" contents from parent directory */
+	/* Copy "cpus" contents from parent directory
+	 * "cpus" must be set before any tasks can be added. */
 	snprintf(file_path, sizeof(file_path), "%s/cpus", base);
 	fd = open(file_path, O_RDONLY);
 	if (fd < 0) {
@@ -92,7 +93,8 @@ int	slurm_build_cpuset(char *base, char *path, uid_t uid, gid_t gid)
 		return -1;
 	}
 
-	/* copy "mems" contents from parent directory, if it exists */
+	/* Copy "mems" contents from parent directory, if it exists.
+	 * "mems" must be set before any tasks can be added. */
 	snprintf(file_path, sizeof(file_path), "%s/mems", base);
 	fd = open(file_path, O_RDONLY);
 	if (fd < 0) {
@@ -114,6 +116,8 @@ int	slurm_build_cpuset(char *base, char *path, uid_t uid, gid_t gid)
 			error("write(%s): %m", file_path);
 	}
 
+	/* Delete cpuset once its tasks complete.
+	 * Dependent upon system daemon. */
 	snprintf(file_path, sizeof(file_path), "%s/notify_on_release", path);
 	fd = open(file_path, O_CREAT | O_WRONLY, 0700);
 	if (fd < 0) {
@@ -123,20 +127,8 @@ int	slurm_build_cpuset(char *base, char *path, uid_t uid, gid_t gid)
 	rc = write(fd, "1", 2);
 	close(fd);
 
-	/* only now can we add tasks */
-	snprintf(file_path, sizeof(file_path), "%s/tasks", path);
-	snprintf(mstr, sizeof(mstr), "%d", getpid());
-	fd = open(file_path, O_CREAT | O_WRONLY, 0700);
-	if (fd < 0) {
-		error("open(%s): %m", file_path);
-		return -1;
-	}
-	rc = write(fd, mstr, strlen(mstr)+1);
-	close(fd);
-	if (rc < 1) {
-		error("write(%s, %s): %m", file_path, mstr);
-		return -1;
-	}
+	/* Only now can we add tasks.
+	 * We can't add self, so add tasks after exec. */
 
 	return 0;
 }
@@ -153,6 +145,7 @@ int	slurm_set_cpuset(char *base, char *path, pid_t pid, size_t size,
 		return -1;
 	}
 
+	/* Set "cpus" per user request */
 	snprintf(file_path, sizeof(file_path), "%s/cpus", path);
 	_cpuset_to_cpustr(mask, mstr);
 	fd = open(file_path, O_CREAT | O_WRONLY, 0700);
@@ -167,7 +160,8 @@ int	slurm_set_cpuset(char *base, char *path, pid_t pid, size_t size,
 		return -1;
 	}
 
-	/* copy "mems" contents from parent directory, if it exists */
+	/* copy "mems" contents from parent directory, if it exists. 
+	 * "mems" must be set before any tasks can be added. */
 	snprintf(file_path, sizeof(file_path), "%s/mems", base);
 	fd = open(file_path, O_RDONLY);
 	if (fd < 0) {
@@ -189,6 +183,8 @@ int	slurm_set_cpuset(char *base, char *path, pid_t pid, size_t size,
 			error("write(%s): %m", file_path);
 	}
 
+	/* Delete cpuset once its tasks complete.
+	 * Dependent upon system daemon. */
 	snprintf(file_path, sizeof(file_path), "%s/notify_on_release", path);
 	fd = open(file_path, O_CREAT | O_WRONLY, 0700);
 	if (fd < 0) {
@@ -198,13 +194,14 @@ int	slurm_set_cpuset(char *base, char *path, pid_t pid, size_t size,
 	rc = write(fd, "1", 2);
 	close(fd);
 
+	/* Only now can we add tasks. */
 	snprintf(file_path, sizeof(file_path), "%s/tasks", path);
-	snprintf(mstr, sizeof(mstr), "%d", pid);
 	fd = open(file_path, O_CREAT | O_WRONLY, 0700);
 	if (fd < 0) {
 		error("open(%s): %m", file_path);
 		return -1;
 	}
+	snprintf(mstr, sizeof(mstr), "%d", pid);
 	rc = write(fd, mstr, strlen(mstr)+1);
 	close(fd);
 	if (rc < 1) {
