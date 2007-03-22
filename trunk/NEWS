@@ -3,12 +3,9 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 1.2.3
 ========================
- -- task/affinity using cpusets logic added, from Don Albert, Bull.
-    Cpuset libary must be installed and set "TaskPluginParam=cpusets"
-    in slurm.conf to enable.
-    NOTE: Currently disabled until additional testing is performed. 
-    Enable by changing "HAVE_CPUSETTS_EXP" to "HAVE_CPUSETS" in 
-    src/plugins/task/affinity/*.[ch].
+ -- task/affinity using cpusets logic added, from Don Albert (Bull) and
+    Moe Jette (LLNL).  Cpuset libary must be installed and set 
+    "TaskPluginParam=cpusets" in slurm.conf to enable.
 
 * Changes in SLURM 1.2.2
 ========================
