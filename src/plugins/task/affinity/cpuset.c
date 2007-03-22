@@ -54,25 +54,36 @@ static void _cpuset_to_cpustr(const cpu_set_t *mask, char *str)
 	}
 }
 
-int	slurm_build_cpuset(char *path, uid_t uid, gid_t gid)
+int	slurm_build_cpuset(char *base, char *path, uid_t uid, gid_t gid)
 {
 	char file_path[PATH_MAX], mstr[16];
 	int fd, rc;
+
+	snprintf(file_path, sizeof(file_path), "%s/cpus", base);
+	fd = open(file_path, O_RDONLY);
+	if (fd < 0) {
+		error("open(%s): %m", file_path);
+		return -1;
+	}
+	rc = read(fd, mstr, sizeof(mstr));
+	close(fd);
+	if (rc < 1) {
+		error("read(%s): %m", file_path);
+		return -1;
+	}
 
 	if (mkdir(path, 0700) && (errno != EEXIST)) {
 		error("mkdir(%s): %m", path);
 		return -1;
 	}
-	if (chown(path, uid, gid))
-		error("chown(%s): %m", path);
 
-	snprintf(file_path, sizeof(file_path), "%s/notify_on_release", path);
+	snprintf(file_path, sizeof(file_path), "%s/cpus", path);
 	fd = open(file_path, O_CREAT | O_WRONLY, 0700);
 	if (fd < 0) {
 		error("open(%s): %m", file_path);
 		return -1;
 	}
-	rc = write(fd, "1", 2);
+	rc = write(fd, mstr, rc);
 	close(fd);
 
 	snprintf(file_path, sizeof(file_path), "%s/tasks", path);
@@ -88,6 +99,19 @@ int	slurm_build_cpuset(char *path, uid_t uid, gid_t gid)
 		error("write(%s, %s): %m", file_path, mstr);
 		return -1;
 	}
+
+	snprintf(file_path, sizeof(file_path), "%s/notify_on_release", path);
+	fd = open(file_path, O_CREAT | O_WRONLY, 0700);
+	if (fd < 0) {
+		error("open(%s): %m", file_path);
+		return -1;
+	}
+	rc = write(fd, "1", 2);
+	close(fd);
+
+	if (chown(path, uid, gid))
+		error("chown(%s): %m", path);
+
 	return 0;
 }
 
