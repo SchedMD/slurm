@@ -88,14 +88,22 @@
 #include "src/common/util-net.h"
 #include "src/common/slurm_resource_info.h"
 
+#define CPUSET_DIR "/etc/cpuset"
+
 /*** from affinity.c ***/
 void	slurm_chkaffinity(cpu_set_t *mask, slurmd_job_t *job, int statval);
 int	get_cpuset(cpu_set_t *mask, slurmd_job_t *job);
 int	slurm_setaffinity(pid_t pid, size_t size, const cpu_set_t *mask);
 int	slurm_getaffinity(pid_t pid, size_t size, cpu_set_t *mask);
+
+/*** from cpuset.c ***/
+#ifdef HAVE_NUMA
+int	slurm_set_memset(char *path, nodemask_t *new_mask);
+int	slurm_memset_available(void);
+#endif
+int	slurm_get_cpuset(char *path, pid_t pid, size_t size, cpu_set_t *mask);
 int	slurm_set_cpuset(char *path, pid_t pid, size_t size, 
 		const cpu_set_t *mask);
-int	slurm_get_cpuset(char *path, pid_t pid, size_t size, cpu_set_t *mask);
 
 /*** from numa.c ***/
 #ifdef HAVE_NUMA

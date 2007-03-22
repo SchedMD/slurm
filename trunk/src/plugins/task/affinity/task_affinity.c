@@ -48,8 +48,6 @@
 #include "affinity.h"
 #include "dist_tasks.h"
 
-#define CPUSET_DIR "/dev/cpuset"
-
 /*
  * These variables are required by the generic plugin interface.  If they
  * are not found in the plugin, the plugin loader will ignore it.
@@ -155,12 +153,20 @@ int task_slurmd_release_resources ( uint32_t job_id )
  */
 int task_pre_launch ( slurmd_job_t *job )
 {
+	char path[PATH_MAX];
+
 	debug("affinity task_pre_launch: %u.%u, task %d", 
 		job->jobid, job->stepid, job->envtp->procid);
 
-	if (conf->use_cpusets)
+	if (conf->use_cpusets) {
 		info("Using cpuset affinity for tasks");
-	else
+		if (snprintf(path, PATH_MAX, "%s/slurm%u.%u_%d",
+				CPUSET_DIR, job->jobid, job->stepid,
+				job->envtp->localid) > PATH_MAX) {
+			error("cpuset path too long");
+			return SLURM_ERROR;
+		}
+	} else
 		info("Using sched_affinity for tasks");
 
 	/*** CPU binding support ***/
@@ -174,14 +180,6 @@ int task_pre_launch ( slurmd_job_t *job )
 		if (get_cpuset(&new_mask, job)
 		&&  (!(job->cpu_bind_type & CPU_BIND_NONE))) {
 			if (conf->use_cpusets) {
-				char path[PATH_MAX];
-				if (snprintf(path, PATH_MAX, "%sslurm%u_%d",
-						CPUSET_DIR, job->jobid,
-						job->envtp->localid) > 
-						PATH_MAX) {
-					error("cpuset path too long");
-					return SLURM_ERROR;
-				}
 				setval = slurm_set_cpuset(path, mypid,
 						sizeof(new_mask), 
 						&new_mask);
@@ -202,15 +200,24 @@ int task_pre_launch ( slurmd_job_t *job )
 	}
 
 #ifdef HAVE_NUMA
-	if (job->mem_bind_type && (numa_available() >= 0)) {
+	if (conf->use_cpusets && (slurm_memset_available() >= 0)) {
 		nodemask_t new_mask, cur_mask;
 
 		cur_mask = numa_get_membind();
-		if (get_memset(&new_mask, job)) {
-			if (!(job->mem_bind_type & MEM_BIND_NONE)) {
-				numa_set_membind(&new_mask);
-				cur_mask = new_mask;
-			}
+		if (get_memset(&new_mask, job)
+		&&  (!(job->mem_bind_type & MEM_BIND_NONE))) {
+			slurm_set_memset(path, &new_mask);
+			cur_mask = new_mask;
+		}
+		slurm_chk_memset(&cur_mask, job);
+	} else if (job->mem_bind_type && (numa_available() >= 0)) {
+		nodemask_t new_mask, cur_mask;
+
+		cur_mask = numa_get_membind();
+		if (get_memset(&new_mask, job)
+		&&  (!(job->mem_bind_type & MEM_BIND_NONE))) {
+			numa_set_membind(&new_mask);
+			cur_mask = new_mask;
 		}
 		slurm_chk_memset(&cur_mask, job);
 	}
