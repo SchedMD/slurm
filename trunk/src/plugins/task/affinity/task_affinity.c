@@ -163,7 +163,7 @@ int task_pre_setuid ( slurmd_job_t *job )
 		error("cpuset path too long");
 		return SLURM_ERROR;
 	}
-	slurm_build_cpuset(path, job->uid, job->gid);
+	slurm_build_cpuset(CPUSET_DIR, path, job->uid, job->gid);
 	return SLURM_SUCCESS;
 }
 
