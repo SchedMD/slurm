@@ -147,6 +147,27 @@ int task_slurmd_release_resources ( uint32_t job_id )
 }
 
 /*
+ * task_pre_setuid() is called before setting the UID for the 
+ * user to launch his jobs. Use this to create the CPUSET directory
+ * and set the owner appropriately.
+ */
+int task_pre_setuid ( slurmd_job_t *job )
+{
+	char path[PATH_MAX];
+
+	if (!conf->use_cpusets)
+		return SLURM_SUCCESS;
+
+	if (snprintf(path, PATH_MAX, "%s/slurm%u",
+			CPUSET_DIR, job->jobid) > PATH_MAX) {
+		error("cpuset path too long");
+		return SLURM_ERROR;
+	}
+	slurm_build_cpuset(path, job->uid, job->gid);
+	return SLURM_SUCCESS;
+}
+
+/*
  * task_pre_launch() is called prior to exec of application task.
  *	It is followed by TaskProlog program (from slurm.conf) and
  *	--task-prolog (from srun command line).
@@ -160,8 +181,8 @@ int task_pre_launch ( slurmd_job_t *job )
 
 	if (conf->use_cpusets) {
 		info("Using cpuset affinity for tasks");
-		if (snprintf(path, PATH_MAX, "%s/slurm%u.%u_%d",
-				CPUSET_DIR, job->jobid, job->stepid,
+		if (snprintf(path, PATH_MAX, "%s/slurm%u/slurm%u.%u_%d",
+				CPUSET_DIR, job->jobid, job->jobid, job->stepid,
 				job->envtp->localid) > PATH_MAX) {
 			error("cpuset path too long");
 			return SLURM_ERROR;

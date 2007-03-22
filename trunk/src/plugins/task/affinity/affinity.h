@@ -88,7 +88,8 @@
 #include "src/common/util-net.h"
 #include "src/common/slurm_resource_info.h"
 
-#define CPUSET_DIR "/dev/cpuset"
+#define CPUSET_DIRX "/dev/cpuset"
+#define CPUSET_DIR "/g/g0/jette/cpuset"
 
 /*** from affinity.c ***/
 void	slurm_chkaffinity(cpu_set_t *mask, slurmd_job_t *job, int statval);
@@ -101,6 +102,7 @@ int	slurm_getaffinity(pid_t pid, size_t size, cpu_set_t *mask);
 int	slurm_set_memset(char *path, nodemask_t *new_mask);
 int	slurm_memset_available(void);
 #endif
+int	slurm_build_cpuset(char *path, uid_t uid, gid_t gid);
 int	slurm_get_cpuset(char *path, pid_t pid, size_t size, cpu_set_t *mask);
 int	slurm_set_cpuset(char *path, pid_t pid, size_t size, 
 		const cpu_set_t *mask);

@@ -128,6 +128,16 @@ int task_slurmd_release_resources ( uint32_t job_id )
 }
 
 /*
+ * task_pre_setuid() is called before setting the UID for the
+ * user to launch his jobs. Use this to create the CPUSET directory
+ * and set the owner appropriately.
+ */
+int task_pre_setuid ( slurmd_job_t *job )
+{
+	return SLURM_SUCCESS;
+}
+
+/*
  * task_pre_launch() is called prior to exec of application task.
  *	It is followed by TaskProlog program (from slurm.conf) and
  *	--task-prolog (from srun command line).
