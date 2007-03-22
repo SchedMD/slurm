@@ -110,7 +110,7 @@ int	slurm_get_cpuset(char *path, pid_t pid, size_t size, cpu_set_t *mask)
 {
 	int fd, rc;
 	char file_path[PATH_MAX];
-	char mstr[1 + CPU_SETSIZE / 4];
+	char mstr[1 + CPU_SETSIZE * 4];
 
 	snprintf(file_path, sizeof(file_path), "%s/cpus", path);
 	fd = open(file_path, O_RDONLY);
@@ -154,13 +154,12 @@ int	slurm_memset_available(void)
 	return stat(file_path, &buf);
 }
 
-int	slurm_set_memset(char *path, nodemask_t *new_mask);
+int	slurm_set_memset(char *path, nodemask_t *new_mask)
 {
 	char file_path[PATH_MAX];
-	char mstr[1 + CPU_SETSIZE / 4], tmp[10];
-	int fd, i, max_node, wrote;
+	char mstr[1 + CPU_SETSIZE * 4], tmp[10];
+	int fd, i, max_node;
 	ssize_t rc;
-	static nodemask_t mem_mask;
 
 	snprintf(file_path, sizeof(file_path), "%s/mems", CPUSET_DIR);
 	fd = open(file_path, O_CREAT | O_RDONLY, 0700);
@@ -171,7 +170,7 @@ int	slurm_set_memset(char *path, nodemask_t *new_mask);
 
 	mstr[0] = '\0';
 	max_node = numa_max_node();
-	for (i=0, i<=max_node, i++) {
+	for (i=0; i<=max_node; i++) {
 		if (!nodemask_isset(new_mask, i))
 			continue;
 		snprintf(tmp, sizeof(tmp), "%d", i);
@@ -180,7 +179,7 @@ int	slurm_set_memset(char *path, nodemask_t *new_mask);
 		strcat(mstr, tmp);
 	}
 
-	i = strlen(i) + 1;
+	i = strlen(mstr) + 1;
 	rc = write(fd, mstr, i+1);
 	close(fd);
 	if (rc <= i) {
