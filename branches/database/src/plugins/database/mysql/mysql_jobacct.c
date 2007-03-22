@@ -45,116 +45,24 @@ static MYSQL *jobacct_mysql_db = NULL;
 static int jobacct_db_init = 0;
 
 static char *job_index = "index_table";
-/* jobid partition submittime uid gid blockid */
+/* id jobid partition submit uid gid blockid */
 
 static char *job_table = "job";
-/* index start end name state priority cpus nodes account kill_requid */
+/* id start end suspended name track_steps state priority cpus
+   nodelist account kill_requid */
 
 static char *step_table = "step";
-/* index stepid start end name node_list state kill_requid comp_code num_cpus
+/* id stepid start end suspended name nodelist state kill_requid
+   comp_code cpus
    max_vsize max_vsize_task max_vsize_node ave_vsize
    max_rss max_rss_task max_rss_node ave_rss
    max_pages max_pages_task max_pages_node ave_pages
    min_cpu min_cpu_task min_cpu_node ave_cpu */
 
 static char *rusage_table = "step_rusage";
-/* index stepid
-   cputime_sec cputime_usecs user_sec user_usecs sys_sec sys_usecs
+/* id stepid cpu_sec cpu_usec user_sec user_usec sys_sec sys_usec
    max_rss max_ixrss max_idrss max_isrss max_minflt max_majflt
    max_nswap inblock outblock msgsnd msgrcv nsignals nvcsw nivcsw */
-
-/* Format of the JOB_STEP record */
-static FILE *		LOGFILE;
-
-const char *_jobstep_format = 
-"%d "
-"%u "	/* stepid */
-"%d "	/* completion status */
-"%d "	/* completion code */
-"%u "	/* nprocs */
-"%u "	/* number of cpus */
-"%u "	/* elapsed seconds */
-"%u "	/* total cputime seconds */
-"%u "	/* total cputime microseconds */
-"%u "	/* user seconds */
-"%u "	/* user microseconds */
-"%u "	/* system seconds */
-"%u "	/* system microseconds */
-"%u "	/* max rss */
-"%u "	/* max ixrss */
-"%u "	/* max idrss */
-"%u "	/* max isrss */
-"%u "	/* max minflt */
-"%u "	/* max majflt */
-"%u "	/* max nswap */
-"%u "	/* total inblock */
-"%u "	/* total outblock */
-"%u "	/* total msgsnd */
-"%u "	/* total msgrcv */
-"%u "	/* total nsignals */
-"%u "	/* total nvcsw */
-"%u "	/* total nivcsw */
-"%u "	/* max vsize */
-"%u "	/* max vsize task */
-"%.2f "	/* ave vsize */
-"%u "	/* max rss */
-"%u "	/* max rss task */
-"%.2f "	/* ave rss */
-"%u "	/* max pages */
-"%u "	/* max pages task */
-"%.2f "	/* ave pages */
-"%.2f "	/* min cpu */
-"%u "	/* min cpu task */
-"%.2f "	/* ave cpu */
-"%s "	/* step process name */
-"%s "	/* step node names */
-"%u "	/* max vsize node */
-"%u "	/* max rss node */
-"%u "	/* max pages node */
-"%u "	/* min cpu node */
-"%s "   /* account */
-"%d";   /* requester user id */
-/*
- * Print the record to the log file.
- */
-
-static int _print_record(struct job_record *job_ptr, 
-			 time_t time, char *data)
-{ 
-	static int   rc=SLURM_SUCCESS;
-	char *block_id = NULL;
-	if(!job_ptr->details) {
-		error("job_acct: job=%u doesn't exist", job_ptr->job_id);
-		return SLURM_ERROR;
-	}
-	debug2("_print_record, job=%u, \"%s\"",
-	       job_ptr->job_id, data);
-#ifdef HAVE_BG
-	select_g_get_jobinfo(job_ptr->select_jobinfo, 
-			     SELECT_DATA_BLOCK_ID, 
-			     &block_id);
-		
-#endif
-	if(!block_id)
-		block_id = xstrdup("-");
-
-	slurm_mutex_lock( &mysql_lock );
-
-	if (fprintf(LOGFILE,
-		    "%u %s %u %u %d %d %s - %s\n",
-		    job_ptr->job_id, job_ptr->partition,
-		    (int)job_ptr->details->submit_time, (int)time, 
-		    job_ptr->user_id, job_ptr->group_id, block_id, data)
-	    < 0)
-		rc=SLURM_ERROR;
-#ifdef HAVE_FDATSYNC
-	fdatasync(LOGFILE_FD);
-#endif
-	slurm_mutex_unlock( &mysql_lock );
-	xfree(block_id);
-
-	return rc;
-}
 
 static int _mysql_jobacct_check_tables()
 {
@@ -177,7 +85,7 @@ static int _mysql_jobacct_check_tables()
 		 "create table if not exists %s(id int not null, "
 		 "start int unsigned default 0, end int unsigned default 0, "
 		 "suspended int unsigned default 0, "
-		 "name tinytext not null, track_steps tinyint, "
+		 "name tinytext not null, track_steps tinyint not null, "
 		 "state smallint not null, priority int unsigned not null, "
 		 "cpus mediumint unsigned not null, nodelist text, "
 		 "account tinytext, kill_requid smallint)",
@@ -192,18 +100,25 @@ static int _mysql_jobacct_check_tables()
 		 "start int unsigned default 0, end int unsigned default 0, "
 		 "suspended int unsigned default 0, name text not null, "
 		 "nodelist text not null, state smallint not null, "
-		 "kill_requid smallint, comp_code smallint, "
+		 "kill_requid smallint default -1, "
+		 "comp_code smallint default 0, "
 		 "cpus mediumint unsigned not null, "
-		 "max_vsize mediumint unsigned, "
-		 "max_vsize_task smallint unsigned, "
-		 "max_vsize_node mediumint unsigned, ave_vsize float, "
-		 "max_rss mediumint unsigned, max_rss_task smallint unsigned, "
-		 "max_rss_node mediumint unsigned, ave_rss float, "
-		 "max_pages mediumint unsigned, "
-		 "max_pages_task smallint unsigned, "
-		 "max_pages_node mediumint unsigned, ave_pages float, "
-		 "min_cpu mediumint unsigned, min_cpu_task smallint unsigned, "
-		 "min_cpu_node mediumint unsigned, ave_cpu float)",
+		 "max_vsize mediumint unsigned default 0, "
+		 "max_vsize_task smallint unsigned default 0, "
+		 "max_vsize_node mediumint unsigned default 0, "
+		 "ave_vsize float default 0.0, "
+		 "max_rss mediumint unsigned default 0, "
+		 "max_rss_task smallint unsigned default 0, "
+		 "max_rss_node mediumint unsigned default 0, "
+		 "ave_rss float default 0.0, "
+		 "max_pages mediumint unsigned default 0, "
+		 "max_pages_task smallint unsigned default 0, "
+		 "max_pages_node mediumint unsigned default 0, "
+		 "ave_pages float default 0.0, "
+		 "min_cpu mediumint unsigned default 0, "
+		 "min_cpu_task smallint unsigned default 0, "
+		 "min_cpu_node mediumint unsigned default 0, "
+		 "ave_cpu float default 0.0)",
 		 step_table);
 	if(mysql_db_query(jobacct_mysql_db, jobacct_db_init, query)
 	   == SLURM_ERROR) 
@@ -212,16 +127,26 @@ static int _mysql_jobacct_check_tables()
 	snprintf(query, sizeof(query),
 		 "create table if not exists %s(id int not null, "
 		 "stepid smallint not null, "
-		 "cpu_sec int unsigned, cpu_usecs int unsigned, "
-		 "user_sec int unsigned, user_usecs int unsigned, "
-		 "sys_sec int unsigned, sys_usecs int unsigned, "
-		 "max_rss int unsigned, max_ixrss int unsigned, "
-		 "max_idrss int unsigned, max_isrss int unsigned, "
-		 "max_minflt int unsigned, max_majflt int unsigned, "
-		 "max_nswap int unsigned, inblock int unsigned, "
-		 "outblock int unsigned, msgsnd int unsigned, "
-		 "msgrcv int unsigned, nsignals int unsigned, "
-		 "nvcsw int unsigned, invcsw int unsigned)",
+		 "cpu_sec int unsigned default 0, "
+		 "cpu_usec int unsigned default 0, "
+		 "user_sec int unsigned default 0, "
+		 "user_usec int unsigned default 0, "
+		 "sys_sec int unsigned default 0, "
+		 "sys_usec int unsigned default 0, "
+		 "max_rss int unsigned default 0, "
+		 "max_ixrss int unsigned default 0, "
+		 "max_idrss int unsigned default 0, "
+		 "max_isrss int unsigned default 0, "
+		 "max_minflt int unsigned default 0, "
+		 "max_majflt int unsigned default 0, "
+		 "max_nswap int unsigned default 0, "
+		 "inblock int unsigned default 0, "
+		 "outblock int unsigned default 0, "
+		 "msgsnd int unsigned default 0, "
+		 "msgrcv int unsigned default 0, "
+		 "nsignals int unsigned default 0, "
+		 "nvcsw int unsigned default 0, "
+		 "nivcsw int unsigned default 0)",
 		 rusage_table);
 	if(mysql_db_query(jobacct_mysql_db, jobacct_db_init, query)
 	   == SLURM_ERROR) 
@@ -371,10 +296,13 @@ extern int mysql_jobacct_job_complete(struct job_record *job_ptr)
 
 	if(job_ptr->db_index) {
 		snprintf(query, sizeof(query),
-			 "update %s set end=%u, state=%d, "
+			 "update %s set start=%u, end=%u, state=%d, "
+			 "nodelist=%s, account=%s, "
 			 "kill_requid=%d where id=%u",
-			 job_table, (int)job_ptr->end_time, 
+			 job_table, (int)job_ptr->start_time,
+			 (int)job_ptr->end_time, 
 			 job_ptr->job_state & (~JOB_COMPLETING),
+			 nodes, account,
 			 job_ptr->requid, job_ptr->db_index);
 		rc = mysql_db_query(jobacct_mysql_db, jobacct_db_init, query);
 	} else 
@@ -444,12 +372,10 @@ extern int mysql_jobacct_step_start(struct step_record *step_ptr)
 
 extern int mysql_jobacct_step_complete(struct step_record *step_ptr)
 {
-	char buf[BUFFER_SIZE];
 	time_t now;
 	int elapsed;
 	int comp_status;
 	int cpus = 0;
-	char node_list[BUFFER_SIZE];
 	struct jobacctinfo *jobacct = (struct jobacctinfo *)step_ptr->jobacct;
 #ifdef HAVE_BG
 	char *ionodes = NULL;
@@ -458,7 +384,8 @@ extern int mysql_jobacct_step_complete(struct step_record *step_ptr)
 	float ave_cpu = 0, ave_cpu2 = 0;
 	char *account;
 	char query[1024];
-	return SLURM_ERROR;
+	int rc =SLURM_SUCCESS;
+
 	if(!jobacct_db_init) {
 		debug("jobacct init was not called or it failed");
 		return SLURM_ERROR;
@@ -475,27 +402,12 @@ extern int mysql_jobacct_step_complete(struct step_record *step_ptr)
 
 #ifdef HAVE_BG
 	cpus = step_ptr->job_ptr->num_procs;
-	select_g_get_jobinfo(step_ptr->job_ptr->select_jobinfo, 
-			     SELECT_DATA_IONODES, 
-			     &ionodes);
-	if(ionodes) {
-		snprintf(node_list, BUFFER_SIZE, 
-			 "%s[%s]", step_ptr->job_ptr->nodes, ionodes);
-		xfree(ionodes);
-	} else
-		snprintf(node_list, BUFFER_SIZE, "%s", 
-			 step_ptr->job_ptr->nodes);
 	
 #else
-	if(!step_ptr->step_layout || !step_ptr->step_layout->task_cnt) {
+	if(!step_ptr->step_layout || !step_ptr->step_layout->task_cnt)
 		cpus = step_ptr->job_ptr->num_procs;
-		snprintf(node_list, BUFFER_SIZE, "%s", step_ptr->job_ptr->nodes);
-	
-	} else {
+	else 
 		cpus = step_ptr->step_layout->task_cnt;
-		snprintf(node_list, BUFFER_SIZE, "%s", 
-			 step_ptr->step_layout->node_list);
-	}
 #endif
 	/* figure out the ave of the totals sent */
 	if(cpus > 0) {
@@ -520,117 +432,139 @@ extern int mysql_jobacct_step_complete(struct step_record *step_ptr)
 	else
 		account = "(null)";
 
-/* 	if(step_ptr->job_ptr->db_index) { */
-/* 		snprintf(query, sizeof(query), */
-/* 			 "update %s set start=%u, end=%u, state=%d, " */
-/* 			 "kill_requid=%d, nodelist='%s', account='%s' " */
-/* 			 "where id=%u", */
-/* 			 step_table, (int)job_ptr->start_time, */
-/* 			 (int)job_ptr->end_time,  */
-/* 			 job_ptr->job_state & (~JOB_COMPLETING), */
-/* 			 job_ptr->requid, nodes, account,step_ptr-> job_ptr->db_index); */
-/* 		rc = mysql_db_query(jobacct_mysql_db, jobacct_db_init, query); */
-/* 		if(rc != SLURM_ERROR) { */
-/* 			snprintf(query, sizeof(query), */
-/* 			 "update %s set start=%u, end=%u, state=%d, " */
-/* 			 "kill_requid=%d, nodelist='%s', account='%s' " */
-/* 			 "where id=%u", */
-/* 			 rusage_table, (int)job_ptr->start_time, */
-/* 			 (int)job_ptr->end_time,  */
-/* 			 job_ptr->job_state & (~JOB_COMPLETING), */
-/* 			 job_ptr->requid, nodes, account, job_ptr->db_index); */
-/* 			rc = mysql_db_query(jobacct_mysql_db, jobacct_db_init, */
-/* 					    query); */
-/* 		} */
-/* 	} else  */
-/* 		rc = SLURM_ERROR; */
-
-
-	snprintf(buf, BUFFER_SIZE, _jobstep_format,
-		 JOB_STEP,
-		 step_ptr->step_id,	/* stepid */
-		 comp_status,		/* completion status */
-		 step_ptr->exit_code,	/* completion code */
-		 cpus,          	/* number of tasks */
-		 cpus,                  /* number of cpus */
-		 elapsed,	        /* elapsed seconds */
-		 /* total cputime seconds */
-		 jobacct->rusage.ru_utime.tv_sec	
-		 + jobacct->rusage.ru_stime.tv_sec,
-		 /* total cputime seconds */
-		 jobacct->rusage.ru_utime.tv_usec	
-		 + jobacct->rusage.ru_stime.tv_usec,
-		 jobacct->rusage.ru_utime.tv_sec,	/* user seconds */
-		 jobacct->rusage.ru_utime.tv_usec,/* user microseconds */
-		 jobacct->rusage.ru_stime.tv_sec,	/* system seconds */
-		 jobacct->rusage.ru_stime.tv_usec,/* system microsecs */
-		 jobacct->rusage.ru_maxrss,	/* max rss */
-		 jobacct->rusage.ru_ixrss,	/* max ixrss */
-		 jobacct->rusage.ru_idrss,	/* max idrss */
-		 jobacct->rusage.ru_isrss,	/* max isrss */
-		 jobacct->rusage.ru_minflt,	/* max minflt */
-		 jobacct->rusage.ru_majflt,	/* max majflt */
-		 jobacct->rusage.ru_nswap,	/* max nswap */
-		 jobacct->rusage.ru_inblock,	/* total inblock */
-		 jobacct->rusage.ru_oublock,	/* total outblock */
-		 jobacct->rusage.ru_msgsnd,	/* total msgsnd */
-		 jobacct->rusage.ru_msgrcv,	/* total msgrcv */
-		 jobacct->rusage.ru_nsignals,	/* total nsignals */
-		 jobacct->rusage.ru_nvcsw,	/* total nvcsw */
-		 jobacct->rusage.ru_nivcsw,	/* total nivcsw */
-		 jobacct->max_vsize,	/* max vsize */
-		 jobacct->max_vsize_id.taskid,	/* max vsize node */
-		 ave_vsize,	/* ave vsize */
-		 jobacct->max_rss,	/* max vsize */
-		 jobacct->max_rss_id.taskid,	/* max rss node */
-		 ave_rss,	/* ave rss */
-		 jobacct->max_pages,	/* max pages */
-		 jobacct->max_pages_id.taskid,	/* max pages node */
-		 ave_pages,	/* ave pages */
-		 ave_cpu2,	/* min cpu */
-		 jobacct->min_cpu_id.taskid,	/* min cpu node */
-		 ave_cpu,	/* ave cpu */
-		 step_ptr->name,      	/* step exe name */
-		 node_list, /* name of nodes step running on */
-		 jobacct->max_vsize_id.nodeid,	/* max vsize task */
-		 jobacct->max_rss_id.nodeid,	/* max rss task */
-		 jobacct->max_pages_id.nodeid,	/* max pages task */
-		 jobacct->min_cpu_id.nodeid,	/* min cpu task */
-		 account,
-		 step_ptr->job_ptr->requid); /* requester user id */
+	if(step_ptr->job_ptr->db_index) {
+		snprintf(query, sizeof(query),
+			 "update %s set end=%u, state=%d, "
+			 "kill_requid=%d, "
+			 "max_vsize=%u, max_vsize_task=%u, "
+			 "max_vsize_node=%u, ave_vsize=%.2f, "
+			 "max_rss=%u, max_rss_task=%u, "
+			 "max_rss_node=%u, ave_rss=%.2f, "
+			 "max_pages=%u, max_pages_task=%u, "
+			 "max_pages_node=%u, ave_pages=%.2f, "
+			 "min_cpu=%.2f, min_cpu_task=%u, "
+			 "min_cpu_node=%u, ave_cpu=%.2f "
+			 "where id=%u and stepid=%u",
+			 step_table, (int)now,
+			 comp_status,
+			 step_ptr->job_ptr->requid, 
+			 jobacct->max_vsize,	/* max vsize */
+			 jobacct->max_vsize_id.taskid,	/* max vsize task */
+			 jobacct->max_vsize_id.nodeid,	/* max vsize node */
+			 ave_vsize,	/* ave vsize */
+			 jobacct->max_rss,	/* max vsize */
+			 jobacct->max_rss_id.taskid,	/* max rss task */
+			 jobacct->max_rss_id.nodeid,	/* max rss node */
+			 ave_rss,	/* ave rss */
+			 jobacct->max_pages,	/* max pages */
+			 jobacct->max_pages_id.taskid,	/* max pages task */
+			 jobacct->max_pages_id.nodeid,	/* max pages node */
+			 ave_pages,	/* ave pages */
+			 ave_cpu2,	/* min cpu */
+			 jobacct->min_cpu_id.taskid,	/* min cpu task */
+			 jobacct->min_cpu_id.nodeid,	/* min cpu node */
+			 ave_cpu,	/* ave cpu */
+			 step_ptr->job_ptr->db_index, step_ptr->step_id);
+		rc = mysql_db_query(jobacct_mysql_db, jobacct_db_init, query);
+		if(rc != SLURM_ERROR) {
+			snprintf(query, sizeof(query),
+				 "insert into %s (id, stepid, cpu_sec, "
+				 "cpu_usec, user_sec, user_usec, sys_sec, "
+				 "sys_usec, max_rss, max_ixrss, max_idrss, "
+				 "max_isrss, max_minflt, max_majflt, "
+				 "max_nswap, inblock, outblock, msgsnd, "
+				 "msgrcv, nsignals, nvcsw, nivcsw) "
+				 "values (%u, %u, %ld, "
+				 "%ld, %ld, %ld, %ld, "
+				 "%ld, %ld, %ld, %ld, "
+				 "%ld, %ld, %ld, "
+				 "%ld, %ld, %ld, %ld, "
+				 "%ld, %ld, %ld, %ld)",
+				 rusage_table, step_ptr->job_ptr->db_index,
+				 step_ptr->step_id,
+				 /* total cputime seconds */
+				 jobacct->rusage.ru_utime.tv_sec	
+				 + jobacct->rusage.ru_stime.tv_sec,
+				 /* total cputime seconds */
+				 jobacct->rusage.ru_utime.tv_usec	
+				 + jobacct->rusage.ru_stime.tv_usec,
+				 /* user seconds */
+				 jobacct->rusage.ru_utime.tv_sec,	
+				 /* user microseconds */
+				 jobacct->rusage.ru_utime.tv_usec,
+				 /* system seconds */
+				 jobacct->rusage.ru_stime.tv_sec,
+				 /* system microsecs */
+				 jobacct->rusage.ru_stime.tv_usec,
+				 /* max rss */
+				 jobacct->rusage.ru_maxrss,
+				 /* max ixrss */
+				 jobacct->rusage.ru_ixrss,
+				 /* max idrss */
+				 jobacct->rusage.ru_idrss,	
+				 /* max isrss */
+				 jobacct->rusage.ru_isrss,
+				 /* max minflt */
+				 jobacct->rusage.ru_minflt,
+				 /* max majflt */
+				 jobacct->rusage.ru_majflt,
+				 /* max nswap */
+				 jobacct->rusage.ru_nswap,
+				 /* total inblock */
+				 jobacct->rusage.ru_inblock,
+				 /* total outblock */
+				 jobacct->rusage.ru_oublock,
+				 /* total msgsnd */
+				 jobacct->rusage.ru_msgsnd,
+				 /* total msgrcv */
+				 jobacct->rusage.ru_msgrcv,
+				 /* total nsignals */
+				 jobacct->rusage.ru_nsignals,
+				 /* total nvcsw */
+				 jobacct->rusage.ru_nvcsw,
+				 /* total nivcsw */
+				 jobacct->rusage.ru_nivcsw);
+			
+			rc = mysql_db_query(jobacct_mysql_db, jobacct_db_init,
+					    query);
+		}
+	} else
+		rc = SLURM_ERROR;
 		 
-	return _print_record(step_ptr->job_ptr, now, buf);
+	return rc;
 }
 
 extern int mysql_jobacct_suspend(struct job_record *job_ptr)
 {
-		char buf[BUFFER_SIZE];
-	static time_t	now = 0;
-	static time_t	temp = 0;
-	int elapsed;
+	char query[1024];
+	int rc = SLURM_SUCCESS;
+	
 	if(!jobacct_db_init) {
 		debug("jobacct init was not called or it failed");
 		return SLURM_ERROR;
 	}
 	
-	/* tell what time has passed */
-	if(!now)
-		now = job_ptr->start_time;
-	temp = now;
-	now = time(NULL);
+	if(job_ptr->db_index) {
+		snprintf(query, sizeof(query),
+			 "update %s set suspended=%u-suspended, state=%d "
+			 "where id=%u",
+			 job_table, (int)job_ptr->suspend_time, 
+			 job_ptr->job_state & (~JOB_COMPLETING),
+			 job_ptr->db_index);
+		rc = mysql_db_query(jobacct_mysql_db, jobacct_db_init, query);
+		if(rc != SLURM_ERROR) {
+			snprintf(query, sizeof(query),
+				 "update %s set suspended=%u-suspended, "
+				 "state=%d where id=%u and end=0",
+				 step_table, (int)job_ptr->suspend_time, 
+				 job_ptr->job_state, job_ptr->db_index);
+			rc = mysql_db_query(jobacct_mysql_db, jobacct_db_init,
+					    query);			
+		}
+	} else
+		rc = SLURM_ERROR;
 	
-	if ((elapsed=now-temp) < 0)
-		elapsed=0;	/* For *very* short jobs, if clock is wrong */
-	
-	/* here we are really just going for a marker in time to tell when
-	 * the process was suspended or resumed (check job state), we don't 
-	 * really need to keep track of anything else */
-	snprintf(buf, BUFFER_SIZE, "%d %u %d",
-		 JOB_SUSPEND,
-		 elapsed,
-		 job_ptr->job_state & (~JOB_COMPLETING));/* job status */
-		
-	return _print_record(job_ptr, now, buf);
+	return rc;
 }
 
 extern List mysql_jobacct_getdata()
