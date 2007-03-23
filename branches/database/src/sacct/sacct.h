@@ -274,6 +274,12 @@ typedef struct sacct_parameters {
 	char *opt_state_list;	/* --states */
 } sacct_parameters_t;
 
+typedef struct expired_rec {  /* table of expired jobs */
+	uint32_t job;
+	time_t job_submit;
+	char *line;
+} expired_rec_t;
+
 extern fields_t fields[];
 extern sacct_parameters_t params;
 

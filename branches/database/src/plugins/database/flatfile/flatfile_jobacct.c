@@ -1,8 +1,7 @@
 /*****************************************************************************\
- *  database_pgsql.c - Store/Get all information in a postgresql database.
- *
- *  $Id: database_pgsql.c 10893 2007-01-29 21:53:48Z da $
+ *  flatfile_jobacct.c - functions the flatfile jobacct database.
  *****************************************************************************
+ *
  *  Copyright (C) 2004-2007 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Danny Auble <da@llnl.gov>
@@ -34,59 +33,15 @@
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+ *
+ *  This file is patterned after jobcomp_linux.c, written by Morris Jette and
+ *  Copyright (C) 2002 The Regents of the University of California.
 \*****************************************************************************/
 
-#ifdef HAVE_CONFIG_H
-#  include "config.h"
-#endif
-
-#if HAVE_STDINT_H
-#  include <stdint.h>
-#endif
-#if HAVE_INTTYPES_H
-#  include <inttypes.h>
-#endif
-
-#include <stdio.h>
-#include <slurm/slurm_errno.h>
-#include "src/plugins/jobacct/common/jobacct_common.h"
-
-#include "src/slurmctld/slurmctld.h"
+#include "flatfile_jobacct.h"
+#include "flatfile_jobacct_process.h"
 
 #define BUFFER_SIZE 4096
-
-/*
- * These variables are required by the generic plugin interface.  If they
- * are not found in the plugin, the plugin loader will ignore it.
- *
- * plugin_name - a string giving a human-readable description of the
- * plugin.  There is no maximum length, but the symbol must refer to
- * a valid string.
- *
- * plugin_type - a string suggesting the type of the plugin or its
- * applicability to a particular form of data or method of data handling.
- * If the low-level plugin API is used, the contents of this string are
- * unimportant and may be anything.  SLURM uses the higher-level plugin
- * interface which requires this string to be of the form
- *
- *	<application>/<method>
- *
- * where <application> is a description of the intended application of
- * the plugin (e.g., "jobacct" for SLURM job completion logging) and <method>
- * is a description of how this plugin satisfies that application.  SLURM will
- * only load job completion logging plugins if the plugin_type string has a 
- * prefix of "jobacct/".
- *
- * plugin_version - an unsigned 32-bit integer giving the version number
- * of the plugin.  If major and minor revisions are desired, the major
- * version number may be multiplied by a suitable magnitude constant such
- * as 100 or 1000.  Various SLURM versions will likely require a certain
- * minimum versions for their plugins as the job accounting API 
- * matures.
- */
-const char plugin_name[] = "Database POSTGRESQL plugin";
-const char plugin_type[] = "database/pgsql";
-const uint32_t plugin_version = 100;
 
 static FILE *		LOGFILE;
 static int		LOGFILE_FD;
@@ -184,26 +139,11 @@ static int _print_record(struct job_record *job_ptr,
 	return rc;
 }
 
-/*
- * init() is called when the plugin is loaded, before any other functions
- * are called.  Put global initialization here.
- */
-extern int init ( void )
-{
-	verbose("%s loaded", plugin_name);
-	return SLURM_SUCCESS;
-}
-
-extern int fini ( void )
-{
-	return SLURM_SUCCESS;
-}
-
 /* 
  * Initialize the database make sure tables are created and in working
  * order
  */
-extern int database_p_jobacct_database_init ()
+extern int flatfile_jobacct_init ()
 {
 	char *log_file = slurm_get_jobacct_loc();	
 	int 		rc = SLURM_SUCCESS;
@@ -242,7 +182,7 @@ extern int database_p_jobacct_database_init ()
 /*
  * finish up database connection
  */
-extern int database_p_jobacct_database_fini ()
+extern int flatfile_jobacct_fini ()
 {
 	if (LOGFILE)
 		fclose(LOGFILE);
@@ -252,7 +192,7 @@ extern int database_p_jobacct_database_fini ()
 /* 
  * load into the database the start of a job
  */
-extern int database_p_jobacct_job_start (struct job_record *job_ptr)
+extern int flatfile_jobacct_job_start (struct job_record *job_ptr)
 {
 	int	i,
 		ncpus=0,
@@ -317,7 +257,7 @@ extern int database_p_jobacct_job_start (struct job_record *job_ptr)
 /* 
  * load into the database the end of a job
  */
-extern int database_p_jobacct_job_complete (struct job_record *job_ptr)
+extern int flatfile_jobacct_job_complete (struct job_record *job_ptr)
 {
 	char buf[BUFFER_SIZE];
 	if(!database_init) {
@@ -344,7 +284,7 @@ extern int database_p_jobacct_job_complete (struct job_record *job_ptr)
 /* 
  * load into the database the start of a job step
  */
-extern int database_p_jobacct_step_start (struct step_record *step_ptr)
+extern int flatfile_jobacct_step_start (struct step_record *step_ptr)
 {
 	char buf[BUFFER_SIZE];
 	int cpus = 0;
@@ -447,7 +387,7 @@ extern int database_p_jobacct_step_start (struct step_record *step_ptr)
 /* 
  * load into the database the end of a job step
  */
-extern int database_p_jobacct_step_complete (struct step_record *step_ptr)
+extern int flatfile_jobacct_step_complete (struct step_record *step_ptr)
 {
 	char buf[BUFFER_SIZE];
 	time_t now;
@@ -583,7 +523,7 @@ extern int database_p_jobacct_step_complete (struct step_record *step_ptr)
 /* 
  * load into the database a suspention of a job
  */
-extern int database_p_jobacct_suspend (struct job_record *job_ptr)
+extern int flatfile_jobacct_suspend (struct job_record *job_ptr)
 {
 	char buf[BUFFER_SIZE];
 	static time_t	now = 0;
@@ -614,24 +554,23 @@ extern int database_p_jobacct_suspend (struct job_record *job_ptr)
 	return _print_record(job_ptr, now, buf);
 }
 
-
 /* 
  * get info from the database 
  * returns List of job_rec_t *
  * note List needs to be freed when called
  */
-extern List database_p_jobacct_getdata(List selected_steps,
-				       List selected_parts,
-				       void *params)
+extern List flatfile_jobacct_getdata(List selected_steps, List selected_parts,
+				     void *params)
 {
-	return NULL;
+	return flatfile_jobacct_process_getdata(selected_steps, selected_parts,
+						params);	
 }
 
 /* 
  * expire old info from the database 
  */
-extern void database_p_jobacct_do_expire(List selected_parts,
-					 void *params)
+extern void flatfile_jobacct_do_expire(List selected_parts,
+				       void *params)
 {
-	return;
+	return flatfile_jobacct_process_do_expire(selected_parts, params);
 }

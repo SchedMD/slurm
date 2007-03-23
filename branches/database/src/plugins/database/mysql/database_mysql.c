@@ -39,8 +39,6 @@
 #include "mysql_jobacct.h"
 #include "mysql_common.h"
 
-#define BUFFER_SIZE 4096
-
 /*
  * These variables are required by the generic plugin interface.  If they
  * are not found in the plugin, the plugin loader will ignore it.
@@ -162,8 +160,20 @@ extern int database_p_jobacct_suspend(struct job_record *job_ptr)
  * returns List of job_rec_t *
  * note List needs to be freed when called
  */
-extern List database_p_jobacct_getdata()
+extern List database_p_jobacct_getdata(List selected_steps,
+				       List selected_parts,
+				       void *params)
 {
-	return mysql_jobacct_getdata();
+	return mysql_jobacct_getdata(selected_steps, selected_parts,
+				     params);
 }
 
+/* 
+ * expire old info from the database 
+ */
+extern void database_p_jobacct_do_expire(List selected_parts,
+					 void *params)
+{
+	mysql_jobacct_do_expire(selected_parts, params);
+	return;
+}

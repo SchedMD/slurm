@@ -40,6 +40,7 @@
 
 #include "mysql_common.h"
 #include "mysql_jobacct.h"
+#include "mysql_jobacct_process.h"
 
 static MYSQL *jobacct_mysql_db = NULL;
 static int jobacct_db_init = 0;
@@ -567,9 +568,22 @@ extern int mysql_jobacct_suspend(struct job_record *job_ptr)
 	return rc;
 }
 
-extern List mysql_jobacct_getdata()
+/* 
+ * get info from the database 
+ * returns List of job_rec_t *
+ * note List needs to be freed when called
+ */
+extern List mysql_jobacct_getdata(List selected_steps, List selected_parts,
+				  void *params)
 {
-	return NULL;
+	return mysql_jobacct_process_getdata(selected_steps, selected_parts,
+					     params);	
 }
 
-
+/* 
+ * expire old info from the database 
+ */
+extern void mysql_jobacct_do_expire(List selected_parts, void *params)
+{
+	return mysql_jobacct_process_do_expire(selected_parts, params);
+}

@@ -52,8 +52,7 @@
 #include "src/plugins/jobacct/common/jobacct_common.h"
 
 #include "src/slurmctld/slurmctld.h"
-
-#define BUFFER_SIZE 4096
+#include "flatfile_jobacct.h"
 
 /*
  * These variables are required by the generic plugin interface.  If they
@@ -88,102 +87,6 @@ const char plugin_name[] = "Database FLATFILE plugin";
 const char plugin_type[] = "database/flatfile";
 const uint32_t plugin_version = 100;
 
-static FILE *		LOGFILE;
-static int		LOGFILE_FD;
-static pthread_mutex_t  logfile_lock = PTHREAD_MUTEX_INITIALIZER;
-static int              database_init;
-/* Format of the JOB_STEP record */
-const char *_jobstep_format = 
-"%d "
-"%u "	/* stepid */
-"%d "	/* completion status */
-"%d "	/* completion code */
-"%u "	/* nprocs */
-"%u "	/* number of cpus */
-"%u "	/* elapsed seconds */
-"%u "	/* total cputime seconds */
-"%u "	/* total cputime microseconds */
-"%u "	/* user seconds */
-"%u "	/* user microseconds */
-"%u "	/* system seconds */
-"%u "	/* system microseconds */
-"%u "	/* max rss */
-"%u "	/* max ixrss */
-"%u "	/* max idrss */
-"%u "	/* max isrss */
-"%u "	/* max minflt */
-"%u "	/* max majflt */
-"%u "	/* max nswap */
-"%u "	/* total inblock */
-"%u "	/* total outblock */
-"%u "	/* total msgsnd */
-"%u "	/* total msgrcv */
-"%u "	/* total nsignals */
-"%u "	/* total nvcsw */
-"%u "	/* total nivcsw */
-"%u "	/* max vsize */
-"%u "	/* max vsize task */
-"%.2f "	/* ave vsize */
-"%u "	/* max rss */
-"%u "	/* max rss task */
-"%.2f "	/* ave rss */
-"%u "	/* max pages */
-"%u "	/* max pages task */
-"%.2f "	/* ave pages */
-"%.2f "	/* min cpu */
-"%u "	/* min cpu task */
-"%.2f "	/* ave cpu */
-"%s "	/* step process name */
-"%s "	/* step node names */
-"%u "	/* max vsize node */
-"%u "	/* max rss node */
-"%u "	/* max pages node */
-"%u "	/* min cpu node */
-"%s "   /* account */
-"%d";   /* requester user id */
-
-/*
- * Print the record to the log file.
- */
-
-static int _print_record(struct job_record *job_ptr, 
-			 time_t time, char *data)
-{ 
-	static int   rc=SLURM_SUCCESS;
-	char *block_id = NULL;
-	if(!job_ptr->details) {
-		error("job_acct: job=%u doesn't exist", job_ptr->job_id);
-		return SLURM_ERROR;
-	}
-	debug2("_print_record, job=%u, \"%s\"",
-	       job_ptr->job_id, data);
-#ifdef HAVE_BG
-	select_g_get_jobinfo(job_ptr->select_jobinfo, 
-			     SELECT_DATA_BLOCK_ID, 
-			     &block_id);
-		
-#endif
-	if(!block_id)
-		block_id = xstrdup("-");
-
-	slurm_mutex_lock( &logfile_lock );
-
-	if (fprintf(LOGFILE,
-		    "%u %s %u %u %d %d %s - %s\n",
-		    job_ptr->job_id, job_ptr->partition,
-		    (int)job_ptr->details->submit_time, (int)time, 
-		    job_ptr->user_id, job_ptr->group_id, block_id, data)
-	    < 0)
-		rc=SLURM_ERROR;
-#ifdef HAVE_FDATSYNC
-	fdatasync(LOGFILE_FD);
-#endif
-	slurm_mutex_unlock( &logfile_lock );
-	xfree(block_id);
-
-	return rc;
-}
-
 /*
  * init() is called when the plugin is loaded, before any other functions
  * are called.  Put global initialization here.
@@ -198,420 +101,61 @@ extern int fini ( void )
 {
 	return SLURM_SUCCESS;
 }
-
 /* 
  * Initialize the database make sure tables are created and in working
  * order
  */
-extern int database_p_jobacct_database_init ()
+extern int database_p_jobacct_database_init()
 {
-	char *log_file = slurm_get_jobacct_loc();	
-	int 		rc = SLURM_SUCCESS;
-	mode_t		prot = 0600;
-	struct stat	statbuf;
-
-	debug2("jobacct_init() called");
-	slurm_mutex_lock( &logfile_lock );
-	if (LOGFILE)
-		fclose(LOGFILE);
-
-	if (*log_file != '/')
-		fatal("JobAcctLogfile must specify an absolute pathname");
-	if (stat(log_file, &statbuf)==0)       /* preserve current file mode */
-		prot = statbuf.st_mode;
-	LOGFILE = fopen(log_file, "a");
-	if (LOGFILE == NULL) {
-		error("open %s: %m", log_file);
-		database_init = 0;
-		xfree(log_file);
-		slurm_mutex_unlock( &logfile_lock );
-		return SLURM_ERROR;
-	} else
-		chmod(log_file, prot); 
-
-	xfree(log_file);
-
-	if (setvbuf(LOGFILE, NULL, _IOLBF, 0))
-		error("setvbuf() failed");
-	LOGFILE_FD = fileno(LOGFILE);
-	slurm_mutex_unlock( &logfile_lock );
-	database_init = 1;
-	return rc;
+	return flatfile_jobacct_init();	
 }
 
 /*
  * finish up database connection
  */
-extern int database_p_jobacct_database_fini ()
+extern int database_p_jobacct_database_fini()
 {
-	if (LOGFILE)
-		fclose(LOGFILE);
-	return SLURM_SUCCESS;
+	return flatfile_jobacct_fini();
 }
 
 /* 
  * load into the database the start of a job
  */
-extern int database_p_jobacct_job_start (struct job_record *job_ptr)
+extern int database_p_jobacct_job_start(struct job_record *job_ptr)
 {
-	int	i,
-		ncpus=0,
-		rc=SLURM_SUCCESS,
-		tmp;
-	char	buf[BUFFER_SIZE], *jname, *account, *nodes;
-	long	priority;
-	int track_steps = 0;
-
-	if(!database_init) {
-		debug("jobacct init was not called or it failed");
-		return SLURM_ERROR;
-	}
-
-	debug2("jobacct_job_start() called");
-	for (i=0; i < job_ptr->num_cpu_groups; i++)
-		ncpus += (job_ptr->cpus_per_node[i])
-			* (job_ptr->cpu_count_reps[i]);
-	priority = (job_ptr->priority == NO_VAL) ?
-		-1L : (long) job_ptr->priority;
-
-	if ((tmp = strlen(job_ptr->name))) {
-		jname = xmalloc(++tmp);
-		for (i=0; i<tmp; i++) {
-			if (isspace(job_ptr->name[i]))
-				jname[i]='_';
-			else
-				jname[i]=job_ptr->name[i];
-		}
-	} else {
-		jname = xstrdup("allocation");
-		track_steps = 1;
-	}
-
-	if (job_ptr->account && job_ptr->account[0])
-		account = job_ptr->account;
-	else
-		account = "(null)";
-	if (job_ptr->nodes && job_ptr->nodes[0])
-		nodes = job_ptr->nodes;
-	else
-		nodes = "(null)";
-
-	if(job_ptr->batch_flag)
-		track_steps = 1;
-
-	job_ptr->requid = -1; /* force to -1 for sacct to know this
-			       * hasn't been set yet */
-
-	tmp = snprintf(buf, BUFFER_SIZE,
-		       "%d %s %d %ld %u %s %s",
-		       JOB_START, jname,
-		       track_steps, priority, job_ptr->num_procs,
-		       nodes, account);
-
-	rc = _print_record(job_ptr, job_ptr->start_time, buf);
-	
-	xfree(jname);
-	return rc;
+	return flatfile_jobacct_job_start(job_ptr);
 }
 
 /* 
  * load into the database the end of a job
  */
-extern int database_p_jobacct_job_complete (struct job_record *job_ptr)
+extern int database_p_jobacct_job_complete(struct job_record *job_ptr)
 {
-	char buf[BUFFER_SIZE];
-	if(!database_init) {
-		debug("jobacct init was not called or it failed");
-		return SLURM_ERROR;
-	}
-	
-	debug2("jobacct_job_complete() called");
-	if (job_ptr->end_time == 0) {
-		debug("jobacct: job %u never started", job_ptr->job_id);
-		return SLURM_ERROR;
-	}
-	/* leave the requid as a %d since we want to see if it is -1
-	   in sacct */
-	snprintf(buf, BUFFER_SIZE, "%d %u %d %d",
-		 JOB_TERMINATED,
-		 (int) (job_ptr->end_time - job_ptr->start_time),
-		 job_ptr->job_state & (~JOB_COMPLETING),
-		 job_ptr->requid);
-	
-	return  _print_record(job_ptr, job_ptr->end_time, buf);
+	return flatfile_jobacct_job_complete(job_ptr);
 }
 
 /* 
  * load into the database the start of a job step
  */
-extern int database_p_jobacct_step_start (struct step_record *step_ptr)
+extern int database_p_jobacct_step_start(struct step_record *step_ptr)
 {
-	char buf[BUFFER_SIZE];
-	int cpus = 0;
-	char node_list[BUFFER_SIZE];
-#ifdef HAVE_BG
-	char *ionodes = NULL;
-#endif
-	float float_tmp = 0;
-	char *account;
-	
-	if(!database_init) {
-		debug("jobacct init was not called or it failed");
-		return SLURM_ERROR;
-	}
-
-#ifdef HAVE_BG
-	cpus = step_ptr->job_ptr->num_procs;
-	select_g_get_jobinfo(step_ptr->job_ptr->select_jobinfo, 
-			     SELECT_DATA_IONODES, 
-			     &ionodes);
-	if(ionodes) {
-		snprintf(node_list, BUFFER_SIZE, 
-			 "%s[%s]", step_ptr->job_ptr->nodes, ionodes);
-		xfree(ionodes);
-	} else
-		snprintf(node_list, BUFFER_SIZE, "%s",
-			 step_ptr->job_ptr->nodes);
-	
-#else
-	if(!step_ptr->step_layout || !step_ptr->step_layout->task_cnt) {
-		cpus = step_ptr->job_ptr->num_procs;
-		snprintf(node_list, BUFFER_SIZE, "%s", step_ptr->job_ptr->nodes);
-	} else {
-		cpus = step_ptr->step_layout->task_cnt;
-		snprintf(node_list, BUFFER_SIZE, "%s", 
-			 step_ptr->step_layout->node_list);
-	}
-#endif
-	if (step_ptr->job_ptr->account && step_ptr->job_ptr->account[0])
-		account = step_ptr->job_ptr->account;
-	else
-		account = "(null)";
-
-	step_ptr->job_ptr->requid = -1; /* force to -1 for sacct to know this
-				     * hasn't been set yet  */
-
-	snprintf(buf, BUFFER_SIZE, _jobstep_format,
-		 JOB_STEP,
-		 step_ptr->step_id,	/* stepid */
-		 JOB_RUNNING,		/* completion status */
-		 0,     		/* completion code */
-		 cpus,          	/* number of tasks */
-		 cpus,                  /* number of cpus */
-		 0,	        	/* elapsed seconds */
-		 0,                    /* total cputime seconds */
-		 0,    		/* total cputime seconds */
-		 0,	/* user seconds */
-		 0,/* user microseconds */
-		 0,	/* system seconds */
-		 0,/* system microsecs */
-		 0,	/* max rss */
-		 0,	/* max ixrss */
-		 0,	/* max idrss */
-		 0,	/* max isrss */
-		 0,	/* max minflt */
-		 0,	/* max majflt */
-		 0,	/* max nswap */
-		 0,	/* total inblock */
-		 0,	/* total outblock */
-		 0,	/* total msgsnd */
-		 0,	/* total msgrcv */
-		 0,	/* total nsignals */
-		 0,	/* total nvcsw */
-		 0,	/* total nivcsw */
-		 0,	/* max vsize */
-		 0,	/* max vsize task */
-		 float_tmp,	/* ave vsize */
-		 0,	/* max rss */
-		 0,	/* max rss task */
-		 float_tmp,	/* ave rss */
-		 0,	/* max pages */
-		 0,	/* max pages task */
-		 float_tmp,	/* ave pages */
-		 float_tmp,	/* min cpu */
-		 0,	/* min cpu task */
-		 float_tmp,	/* ave cpu */
-		 step_ptr->name,    /* step exe name */
-		 node_list,     /* name of nodes step running on */
-		 0,	/* max vsize node */
-		 0,	/* max rss node */
-		 0,	/* max pages node */
-		 0,	/* min cpu node */
-		 account,
-		 step_ptr->job_ptr->requid); /* requester user id */
-		 
-	return _print_record(step_ptr->job_ptr, step_ptr->start_time, buf);
-
+	return flatfile_jobacct_step_start(step_ptr);
 }
 
 /* 
  * load into the database the end of a job step
  */
-extern int database_p_jobacct_step_complete (struct step_record *step_ptr)
+extern int database_p_jobacct_step_complete(struct step_record *step_ptr)
 {
-	char buf[BUFFER_SIZE];
-	time_t now;
-	int elapsed;
-	int comp_status;
-	int cpus = 0;
-	char node_list[BUFFER_SIZE];
-	struct jobacctinfo *jobacct = (struct jobacctinfo *)step_ptr->jobacct;
-#ifdef HAVE_BG
-	char *ionodes = NULL;
-#endif
-	float ave_vsize = 0, ave_rss = 0, ave_pages = 0;
-	float ave_cpu = 0, ave_cpu2 = 0;
-	char *account;
-
-	if(!database_init) {
-		debug("jobacct init was not called or it failed");
-		return SLURM_ERROR;
-	}
-	
-	now = time(NULL);
-	
-	if ((elapsed=now-step_ptr->start_time)<0)
-		elapsed=0;	/* For *very* short jobs, if clock is wrong */
-	if (step_ptr->exit_code)
-		comp_status = JOB_FAILED;
-	else
-		comp_status = JOB_COMPLETE;
-
-#ifdef HAVE_BG
-	cpus = step_ptr->job_ptr->num_procs;
-	select_g_get_jobinfo(step_ptr->job_ptr->select_jobinfo, 
-			     SELECT_DATA_IONODES, 
-			     &ionodes);
-	if(ionodes) {
-		snprintf(node_list, BUFFER_SIZE, 
-			 "%s[%s]", step_ptr->job_ptr->nodes, ionodes);
-		xfree(ionodes);
-	} else
-		snprintf(node_list, BUFFER_SIZE, "%s", 
-			 step_ptr->job_ptr->nodes);
-	
-#else
-	if(!step_ptr->step_layout || !step_ptr->step_layout->task_cnt) {
-		cpus = step_ptr->job_ptr->num_procs;
-		snprintf(node_list, BUFFER_SIZE, "%s", step_ptr->job_ptr->nodes);
-	
-	} else {
-		cpus = step_ptr->step_layout->task_cnt;
-		snprintf(node_list, BUFFER_SIZE, "%s", 
-			 step_ptr->step_layout->node_list);
-	}
-#endif
-	/* figure out the ave of the totals sent */
-	if(cpus > 0) {
-		ave_vsize = jobacct->tot_vsize;
-		ave_vsize /= cpus;
-		ave_rss = jobacct->tot_rss;
-		ave_rss /= cpus;
-		ave_pages = jobacct->tot_pages;
-		ave_pages /= cpus;
-		ave_cpu = jobacct->tot_cpu;
-		ave_cpu /= cpus;	
-		ave_cpu /= 100;
-	}
- 
-	if(jobacct->min_cpu != (uint32_t)NO_VAL) {
-		ave_cpu2 = jobacct->min_cpu;
-		ave_cpu2 /= 100;
-	}
-
-	if (step_ptr->job_ptr->account && step_ptr->job_ptr->account[0])
-		account = step_ptr->job_ptr->account;
-	else
-		account = "(null)";
-
-	snprintf(buf, BUFFER_SIZE, _jobstep_format,
-		 JOB_STEP,
-		 step_ptr->step_id,	/* stepid */
-		 comp_status,		/* completion status */
-		 step_ptr->exit_code,	/* completion code */
-		 cpus,          	/* number of tasks */
-		 cpus,                  /* number of cpus */
-		 elapsed,	        /* elapsed seconds */
-		 /* total cputime seconds */
-		 jobacct->rusage.ru_utime.tv_sec	
-		 + jobacct->rusage.ru_stime.tv_sec,
-		 /* total cputime seconds */
-		 jobacct->rusage.ru_utime.tv_usec	
-		 + jobacct->rusage.ru_stime.tv_usec,
-		 jobacct->rusage.ru_utime.tv_sec,	/* user seconds */
-		 jobacct->rusage.ru_utime.tv_usec,/* user microseconds */
-		 jobacct->rusage.ru_stime.tv_sec,	/* system seconds */
-		 jobacct->rusage.ru_stime.tv_usec,/* system microsecs */
-		 jobacct->rusage.ru_maxrss,	/* max rss */
-		 jobacct->rusage.ru_ixrss,	/* max ixrss */
-		 jobacct->rusage.ru_idrss,	/* max idrss */
-		 jobacct->rusage.ru_isrss,	/* max isrss */
-		 jobacct->rusage.ru_minflt,	/* max minflt */
-		 jobacct->rusage.ru_majflt,	/* max majflt */
-		 jobacct->rusage.ru_nswap,	/* max nswap */
-		 jobacct->rusage.ru_inblock,	/* total inblock */
-		 jobacct->rusage.ru_oublock,	/* total outblock */
-		 jobacct->rusage.ru_msgsnd,	/* total msgsnd */
-		 jobacct->rusage.ru_msgrcv,	/* total msgrcv */
-		 jobacct->rusage.ru_nsignals,	/* total nsignals */
-		 jobacct->rusage.ru_nvcsw,	/* total nvcsw */
-		 jobacct->rusage.ru_nivcsw,	/* total nivcsw */
-		 jobacct->max_vsize,	/* max vsize */
-		 jobacct->max_vsize_id.taskid,	/* max vsize node */
-		 ave_vsize,	/* ave vsize */
-		 jobacct->max_rss,	/* max vsize */
-		 jobacct->max_rss_id.taskid,	/* max rss node */
-		 ave_rss,	/* ave rss */
-		 jobacct->max_pages,	/* max pages */
-		 jobacct->max_pages_id.taskid,	/* max pages node */
-		 ave_pages,	/* ave pages */
-		 ave_cpu2,	/* min cpu */
-		 jobacct->min_cpu_id.taskid,	/* min cpu node */
-		 ave_cpu,	/* ave cpu */
-		 step_ptr->name,      	/* step exe name */
-		 node_list, /* name of nodes step running on */
-		 jobacct->max_vsize_id.nodeid,	/* max vsize task */
-		 jobacct->max_rss_id.nodeid,	/* max rss task */
-		 jobacct->max_pages_id.nodeid,	/* max pages task */
-		 jobacct->min_cpu_id.nodeid,	/* min cpu task */
-		 account,
-		 step_ptr->job_ptr->requid); /* requester user id */
-		 
-	return _print_record(step_ptr->job_ptr, now, buf);	
+	return flatfile_jobacct_step_complete(step_ptr);
 }
 
 /* 
  * load into the database a suspention of a job
  */
-extern int database_p_jobacct_suspend (struct job_record *job_ptr)
+extern int database_p_jobacct_suspend(struct job_record *job_ptr)
 {
-	char buf[BUFFER_SIZE];
-	static time_t	now = 0;
-	static time_t	temp = 0;
-	int elapsed;
-	if(!database_init) {
-		debug("jobacct init was not called or it failed");
-		return SLURM_ERROR;
-	}
-	
-	/* tell what time has passed */
-	if(!now)
-		now = job_ptr->start_time;
-	temp = now;
-	now = time(NULL);
-	
-	if ((elapsed=now-temp) < 0)
-		elapsed=0;	/* For *very* short jobs, if clock is wrong */
-	
-	/* here we are really just going for a marker in time to tell when
-	 * the process was suspended or resumed (check job state), we don't 
-	 * really need to keep track of anything else */
-	snprintf(buf, BUFFER_SIZE, "%d %u %d",
-		 JOB_SUSPEND,
-		 elapsed,
-		 job_ptr->job_state & (~JOB_COMPLETING));/* job status */
-		
-	return _print_record(job_ptr, now, buf);
+	return flatfile_jobacct_suspend(job_ptr);
 }
 
 /* 
@@ -619,8 +163,20 @@ extern int database_p_jobacct_suspend (struct job_record *job_ptr)
  * returns List of job_rec_t *
  * note List needs to be freed when called
  */
-extern List database_p_jobacct_getdata ()
+extern List database_p_jobacct_getdata(List selected_steps,
+				       List selected_parts,
+				       void *params)
 {
-	return NULL;
+	return flatfile_jobacct_getdata(selected_steps, selected_parts,
+					params);
 }
 
+/* 
+ * expire old info from the database 
+ */
+extern void database_p_jobacct_do_expire(List selected_parts,
+					 void *params)
+{
+	flatfile_jobacct_do_expire(selected_parts, params);
+	return;
+}

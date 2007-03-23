@@ -10,7 +10,10 @@ INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common
 pkglib_LTLIBRARIES = database_pgsql.la
 
 # Pgsql database plugin.
-database_pgsql_la_SOURCES = database_pgsql.c
+database_pgsql_la_SOURCES = database_pgsql.c \
+				pgsql_common.c pgsql_common.h \
+				pgsql_jobacct.c pgsql_jobacct.h \
+				pgsql_jobacct_process.c pgsql_jobacct_process.h
 database_pgsql_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
 database_pgsql_la_LIBADD  = $(top_builddir)/src/common/libcommon.la
 

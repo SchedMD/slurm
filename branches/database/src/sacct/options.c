@@ -41,12 +41,6 @@
 #include "sacct.h"
 #include <time.h>
 
-typedef struct expired_rec {  /* table of expired jobs */
-	uint32_t job;
-	time_t job_submit;
-	char *line;
-} expired_rec_t;
-
 void _destroy_parts(void *object);
 void _destroy_steps(void *object);
 void _destroy_exp(void *object);

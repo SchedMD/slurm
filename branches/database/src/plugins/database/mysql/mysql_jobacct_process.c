@@ -1,12 +1,12 @@
 /*****************************************************************************\
- *  node_select.h - Define database plugin functions.
- *
- * $Id: node_select.h 10574 2006-12-15 23:38:29Z jette $
+ *  flatfile_jobacct_process.c - functions the processing of
+ *                               information from the mysql jobacct
+ *                               database.
  *****************************************************************************
- *  Copyright (C) 2004-2006 The Regents of the University of California.
+ *
+ *  Copyright (C) 2004-2007 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Danny Auble <da@llnl.gov>
- *  UCRL-CODE-226842.
  *  
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -35,64 +35,23 @@
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+ *
+ *  This file is patterned after jobcomp_linux.c, written by Morris Jette and
+ *  Copyright (C) 2002 The Regents of the University of California.
 \*****************************************************************************/
 
-#ifndef _SLURM_DATABASE_H 
-#define _SLURM_DATABASE_H
+#include "src/sacct/sacct.h"
 
-#include "src/common/list.h"
-#include "src/slurmctld/slurmctld.h"
-#include <slurm/slurm.h>
-#include <slurm/slurm_errno.h>
+extern List flatfile_jobacct_process_getdata(List selected_steps,
+					     List selected_parts,
+					     sacct_parameters_t *params)
+{
+	return NULL;
+}
 
-/* 
- * Initialize the database make sure tables are created and in working
- * order
- */
-extern int database_g_jobacct_init ();
+extern void flatfile_jobacct_process_do_expire(List selected_parts,
+					       sacct_parameters_t *params)
+{
+	return;
+}
 
-/*
- * finish up database connection
- */
-extern int database_g_jobacct_fini ();
-
-/* 
- * load into the database the start of a job
- */
-extern int database_g_jobacct_job_start (struct job_record *job_ptr);
-
-/* 
- * load into the database the end of a job
- */
-extern int database_g_jobacct_job_complete (struct job_record *job_ptr);
-
-/* 
- * load into the database the start of a job step
- */
-extern int database_g_jobacct_step_start (struct step_record *step_ptr);
-
-/* 
- * load into the database the end of a job step
- */
-extern int database_g_jobacct_step_complete (struct step_record *step_ptr);
-
-/* 
- * load into the database a suspention of a job
- */
-extern int database_g_jobacct_job_suspend (struct job_record *job_ptr);
-
-/* 
- * get info from the database 
- * returns List of job_rec_t *
- * note List needs to be freed when called
- */
-extern List database_g_jobacct_getdata (List selected_steps,
-					List selected_parts,
-					void *params);
-	
-/* 
- * expire old info from the database 
- */
-extern void database_g_jobacct_do_expire(List selected_parts, void *params);
-
-#endif /*_SLURM_DATABASE_H*/

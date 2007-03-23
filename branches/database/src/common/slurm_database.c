@@ -63,7 +63,11 @@ typedef struct slurm_database_ops {
 	int  (*jobacct_step_start)    (struct step_record *step_ptr);
 	int  (*jobacct_step_complete) (struct step_record *step_ptr);
 	int  (*jobacct_job_suspend)   (struct job_record *job_ptr);
-	List (*jobacct_getdata)       ();	
+	List (*jobacct_getdata)       (List selected_steps,
+				       List selected_parts,
+				       void *params);	
+	void (*jobacct_doexpire)      (List selected_parts,
+				       void *params);
 } slurm_database_ops_t;
 
 typedef struct slurm_database_context {
@@ -102,6 +106,7 @@ static slurm_database_ops_t * _database_get_ops(slurm_database_context_t *c)
 		"database_p_jobacct_step_complete",
 		"database_p_jobacct_suspend",
 		"database_p_jobacct_getdata",
+		"database_p_jobacct_do_expire",
 	};
 	int n_syms = sizeof( syms ) / sizeof( char * );
 
@@ -307,9 +312,24 @@ extern int database_g_jobacct_job_suspend (struct job_record *job_ptr)
  * returns List of job_rec_t *
  * note List needs to be freed when called
  */
-extern List database_g_jobacct_getdata ()
+extern List database_g_jobacct_getdata (List selected_steps,
+					List selected_parts,
+					void *params)
 {
 	if (slurm_database_init() < 0)
 		return NULL;
- 	return (*(g_database_context->ops.jobacct_getdata))();
+ 	return (*(g_database_context->ops.jobacct_getdata))(selected_steps,
+							    selected_parts,
+							    params);
+}
+
+/* 
+ * expire old info from the database 
+ */
+extern void database_g_jobacct_do_expire(List selected_parts, void *params)
+{
+	if (slurm_database_init() < 0)
+		return;
+ 	(*(g_database_context->ops.jobacct_doexpire))(selected_parts, params);
+	return;
 }
