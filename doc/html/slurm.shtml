@@ -34,12 +34,15 @@ add functionality.</li>
 including many of the most powerful computers in the world:
 <ul>
 <li><a href="http://www.llnl.gov/asc/computing_resources/bluegenel/bluegene_home.html">BlueGene/L</a> 
-with 65,536 dual-processor compute nodes</li>
+at LLNL with 65,536 dual-processor compute nodes</li>
 <li><a href="http://www.llnl.gov/asc/computing_resources/purple/purple_index.html">ASC Purple</a>
-an IBM SP/AIX cluster with 12,208 Power5 processors and Federation switch</li>
+an IBM SP/AIX cluster at LLNL with 12,208 Power5 processors and a Federation switch</li>
 <li><a href="http://www.bsc.es/plantillaA.php?cat_id=5">MareNostrum</a>
-a Linux cluster with 10,240 PowerPC processors and Myrinet switch</li>
+a Linux cluster at Barcelona Supercomputer Center
+with 10,240 PowerPC processors and a Myrinet switch</li>
 <li>Peloton with 1,152 nodes each having four sockets with dual core Opteron processors and an InfiniBand switch</li>
+<li>An <a href="http://hpc.uky.edu/">IBM Cluster 1350</a> at the University of Kentucky 
+with 1,488 compute nodes and an Infiniband switch</li>
 </ul>
 <p>There are about 200 downloads of SLURM per month from LLNL's FTP server 
 and <a href="https:sourceforge.net">SourceForge.net</a>.
@@ -49,6 +52,6 @@ SLURM is also actively being developed, distributed and supported by
 <a href="http://www.hp.com">Hewlett-Packard</a> and
 <a href="http://www.bull.com">Bull</a>.</p>
 
-<p style="text-align:center;">Last modified 19 March 2007</p>
+<p style="text-align:center;">Last modified 23 March 2007</p>
 
 <!--#include virtual="footer.txt"-->
