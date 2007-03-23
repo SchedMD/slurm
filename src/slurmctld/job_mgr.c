@@ -2934,7 +2934,7 @@ void pack_job(struct job_record *dump_job_ptr, Buf buffer)
 
 	/* other job details are only dumped until the job starts 
 	 * running (at which time they become meaningless) */
-	if (detail_ptr && dump_job_ptr->job_state == JOB_PENDING)
+	if (detail_ptr)
 		_pack_pending_job_details(detail_ptr, buffer);
 	else
 		_pack_pending_job_details(NULL, buffer);
