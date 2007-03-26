@@ -178,12 +178,12 @@ int jobacct_p_unpack(struct jobacctinfo **jobacct, Buf buffer)
 
 int jobacct_p_init_slurmctld(char *job_acct_log)
 {
-	return database_g_jobacct_database_init();
+	return database_g_jobacct_init();
 }
 
 int jobacct_p_fini_slurmctld()
 {
-	return database_g_jobacct_database_init();
+	return database_g_jobacct_init();
 }
 
 int jobacct_p_job_start_slurmctld(struct job_record *job_ptr)

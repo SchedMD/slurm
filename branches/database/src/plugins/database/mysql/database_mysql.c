@@ -165,18 +165,18 @@ extern void database_p_jobacct_get_jobs(List job_list,
 					List selected_parts,
 					void *params)
 {
-	mysql_jobacct_getdata(job_list,
-			      selected_steps, selected_parts,
-			      params);
+	mysql_jobacct_get_jobs(job_list,
+			       selected_steps, selected_parts,
+			       params);
 	return;
 }
 
 /* 
  * expire old info from the database 
  */
-extern void database_p_jobacct_do_expire(List selected_parts,
-					 void *params)
+extern void database_p_jobacct_archive(List selected_parts,
+				       void *params)
 {
-	mysql_jobacct_do_expire(selected_parts, params);
+	mysql_jobacct_archive(selected_parts, params);
 	return;
 }

@@ -625,14 +625,14 @@ extern void database_p_jobacct_get_jobs(List job_list,
 					List selected_parts,
 					void *params)
 {
-	return NULL;
+	return;
 }
 
 /* 
  * expire old info from the database 
  */
-extern void database_p_jobacct_do_archive(List selected_parts,
-					  void *params)
+extern void database_p_jobacct_archive(List selected_parts,
+				       void *params)
 {
 	return;
 }

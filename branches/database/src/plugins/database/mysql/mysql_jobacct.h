@@ -53,7 +53,7 @@ extern int mysql_jobacct_job_complete(struct job_record *job_ptr);
 extern int mysql_jobacct_step_start(struct step_record *step_ptr);
 extern int mysql_jobacct_step_complete(struct step_record *step_ptr);
 extern int mysql_jobacct_suspend(struct job_record *job_ptr);
-extern void mysql_jobacct_get_jobs(List_job_list,
+extern void mysql_jobacct_get_jobs(List job_list,
 				   List selected_steps, List selected_parts,
 				   void *params);
 extern void mysql_jobacct_archive(List selected_parts, void *params);
