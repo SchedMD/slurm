@@ -350,7 +350,7 @@ extern int check_and_set_node_list(List nodes);
 extern char *set_bg_block(List results, int *start, 
 			  int *geometry, int conn_type);
 
-extern int reset_ba_system();
+extern int reset_ba_system(bool track_down_nodes);
 
 extern void init_grid(node_info_msg_t *node_info_ptr);
 /*

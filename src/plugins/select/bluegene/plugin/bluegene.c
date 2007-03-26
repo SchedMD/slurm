@@ -692,7 +692,7 @@ extern bool blocks_overlap(bg_record_t *rec_a, bg_record_t *rec_b)
 	bitstr_t *my_bitmap = NULL;
 
 	if(rec_a->bp_count > 1 && rec_a->bp_count > 1) {
-		reset_ba_system();
+		reset_ba_system(false);
 		check_and_set_node_list(rec_a->bg_block_list);
 		if(check_and_set_node_list(rec_b->bg_block_list)
 		   == SLURM_ERROR) 
@@ -956,7 +956,7 @@ extern int create_defined_blocks(bg_layout_t overlapped)
 	init_wires();
 #endif
 	slurm_mutex_lock(&block_state_mutex);
-	reset_ba_system();
+	reset_ba_system(false);
 	if(bg_list) {
 		itr = list_iterator_create(bg_list);
 		while((bg_record = list_next(itr))) {
@@ -993,7 +993,7 @@ extern int create_defined_blocks(bg_layout_t overlapped)
 			   && bg_record->cpus_per_bp == procs_per_node) {
 				char *name = NULL;
 				if(overlapped == LAYOUT_OVERLAP)
-					reset_ba_system();
+					reset_ba_system(false);
 				for(i=0; i<BA_SYSTEM_DIMENSIONS; i++) 
 					geo[i] = bg_record->geo[i];
 				debug2("adding %s %d%d%d %d%d%d",
@@ -1140,9 +1140,9 @@ extern int create_dynamic_block(ba_request_t *request, List my_block_list)
 	blockreq_t blockreq;
 
 	slurm_mutex_lock(&block_state_mutex);
-	reset_ba_system();
 		
 	if(my_block_list) {
+		reset_ba_system(true);
 		itr = list_iterator_create(my_block_list);
 		while ((bg_record = (bg_record_t *) list_next(itr)) != NULL) {
 			if(!my_bitmap) {
@@ -1181,6 +1181,7 @@ extern int create_dynamic_block(ba_request_t *request, List my_block_list)
 		list_iterator_destroy(itr);
 		FREE_NULL_BITMAP(my_bitmap);
 	} else {
+		reset_ba_system(false);
 		debug("No list was given");
 	}
 
@@ -1432,7 +1433,7 @@ extern int create_full_system_block()
 		rc = SLURM_ERROR;
 		goto no_total;
 	}
-	reset_ba_system();
+	reset_ba_system(false);
 	for(i=0; i<BA_SYSTEM_DIMENSIONS; i++) 
 		geo[i] = bg_record->geo[i];
 	debug2("adding %s %d%d%d %d%d%d",

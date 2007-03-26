@@ -406,7 +406,7 @@ extern int select_p_state_restore(char *dir_name)
 	if(select_g_unpack_node_info(&node_select_ptr, buffer) == SLURM_ERROR) 
 		goto unpack_error;
 	
-	reset_ba_system();
+	reset_ba_system(false);
 
 	node_bitmap = bit_alloc(node_record_count);	
 	ionode_bitmap = bit_alloc(bluegene_numpsets);	
@@ -1086,6 +1086,8 @@ extern int select_p_update_node_state (int index, uint16_t state)
 		}
 	}
 #endif
+	if(bluegene_layout_mode == LAYOUT_DYNAMIC) 
+		remove_from_request_list();
 	return SLURM_ERROR;
 }
 
