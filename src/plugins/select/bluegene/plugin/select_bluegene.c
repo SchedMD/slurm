@@ -456,6 +456,8 @@ extern int select_p_update_node_state (int index, uint16_t state)
 		}
 	}
 #endif
+	if(bluegene_layout_mode == LAYOUT_DYNAMIC) 
+		remove_from_request_list();
 	return SLURM_ERROR;
 }
 

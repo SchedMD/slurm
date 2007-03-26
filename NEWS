@@ -10,6 +10,8 @@ documents those changes that are of interest to users and admins.
  - sched/wiki2 - Report job's node sharing options.
  - sched/wiki2 - If SchedulerPort is in use, retry opening it indefinitely.
  - sched/wiki2 - Add support for changing the size of a pending job.
+ - BLUEGENE - Fix to correctly look at downed/drained nodes with picking 
+   a block to run a job and not confuse it with another running job.
 
 * Changes in SLURM 1.1.32
 =========================

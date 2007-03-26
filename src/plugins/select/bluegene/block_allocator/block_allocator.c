@@ -125,8 +125,8 @@ static int _create_config_even(ba_node_t *grid);
 #endif
 
 /** */
-static void _new_ba_node(ba_node_t *ba_node, 
-		int *coord);
+static void _new_ba_node(ba_node_t *ba_node, int *coord,
+			 bool track_down_nodes);
 /** */
 static int _reset_the_path(ba_switch_t *curr_switch, int source, 
 			   int target, int dim);
@@ -803,8 +803,6 @@ node_info_error:
 
 	_create_ba_system();
 	
-	init_grid(node_info_ptr);
-	
 #ifndef HAVE_BG_FILES
 	_create_config_even(ba_system_ptr->grid);
 #endif
@@ -812,6 +810,7 @@ node_info_error:
 	best_path = list_create(_delete_path_list);
 
 	_initialized = true;
+	init_grid(node_info_ptr);
 }
 
 extern void init_wires()
@@ -1085,7 +1084,7 @@ extern int copy_node_path(List nodes, List dest_nodes)
 			       ba_node->coord[Y],
 			       ba_node->coord[Z]);
 			new_ba_node = ba_copy_node(ba_node);
-			_new_ba_node(new_ba_node, ba_node->coord);
+			_new_ba_node(new_ba_node, ba_node->coord, false);
 			list_push(dest_nodes, new_ba_node);
 			
 		}
@@ -1281,7 +1280,7 @@ end_it:
 	return name;	
 }
 
-extern int reset_ba_system()
+extern int reset_ba_system(bool track_down_nodes)
 {
 	int x;
 #ifdef HAVE_BG
@@ -1297,11 +1296,11 @@ extern int reset_ba_system()
 				coord[Y] = y;
 				coord[Z] = z;
 				_new_ba_node(&ba_system_ptr->grid[x][y][z], 
-					     coord);
+					     coord, track_down_nodes);
 			}
 #else
 		coord[X] = x;
-		_new_ba_node(&ba_system_ptr->grid[x], coord);
+		_new_ba_node(&ba_system_ptr->grid[x], coord, track_down_nodes);
 
 #endif
 	}
@@ -2217,7 +2216,7 @@ static int _copy_the_path(List nodes, ba_switch_t *curr_switch,
 					       grid[mark_node_tar[X]]
 					       [mark_node_tar[Y]]
 					       [mark_node_tar[Z]]);
-			_new_ba_node(ba_node, mark_node_tar);
+			_new_ba_node(ba_node, mark_node_tar, false);
 			list_push(nodes, ba_node);
 			debug3("adding %d%d%d as a pass through",
 			       ba_node->coord[X], 
@@ -2669,15 +2668,15 @@ extern int set_bp_map(void)
 	
 }
 
-static void _new_ba_node(ba_node_t *ba_node, int *coord)
+static void _new_ba_node(ba_node_t *ba_node, int *coord, bool track_down_nodes)
 {
 	int i,j;
 	uint16_t node_base_state = ba_node->state & NODE_STATE_BASE;
 	
-	if((node_base_state != NODE_STATE_DOWN)
-	   && !(ba_node->state & NODE_STATE_DRAIN)) 
+	if(((node_base_state != NODE_STATE_DOWN)
+	   && !(ba_node->state & NODE_STATE_DRAIN)) || !track_down_nodes) 
 		ba_node->used = false;
-	
+
 	for (i=0; i<BA_SYSTEM_DIMENSIONS; i++){
 		ba_node->coord[i] = coord[i];
 		
@@ -2718,12 +2717,12 @@ static void _create_ba_system(void)
 				coord[Y] = y;
 				coord[Z] = z;
 				_new_ba_node(&ba_system_ptr->grid[x][y][z], 
-					     coord);
+					     coord, true);
 			}
 		}
 #else
 		coord[X] = x;
-		_new_ba_node(&ba_system_ptr->grid[x], coord);
+		_new_ba_node(&ba_system_ptr->grid[x], coord, true);
 #endif
 	}
 }
