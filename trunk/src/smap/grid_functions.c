@@ -56,7 +56,7 @@ extern int set_grid(int start, int end, int count)
 				    ||  (ba_system_ptr->grid[x][y][z].state 
 					 & NODE_STATE_DRAIN))
 					continue;
-				
+
 				ba_system_ptr->grid[x][y][z].letter = 
 					letters[count%62];
 				ba_system_ptr->grid[x][y][z].color = 
@@ -102,10 +102,11 @@ extern int set_grid_bg(int *start, int *end, int count, int set)
 		for (y = start[Y]; y <= end[Y]; y++) {
 			for (z = start[Z]; z <= end[Z]; z++) {
 				if(set 
-				   || ((ba_system_ptr->grid[x][y][z].letter
+				   && ((ba_system_ptr->grid[x][y][z].letter
 					== '.')
 				       && (ba_system_ptr->grid[x][y][z].letter 
 					   != '#'))) {
+					
 						ba_system_ptr->
 							grid[x][y][z].letter = 
 							letters[count%62];
