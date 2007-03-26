@@ -916,6 +916,7 @@ void save_all_state(void)
 	schedule_job_save();
 	schedule_part_save();
 	schedule_node_save();
+	schedule_trigger_save();
 	select_g_state_save(slurmctld_conf.state_save_location);
 }
 
