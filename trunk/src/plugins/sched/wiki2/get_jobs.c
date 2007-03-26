@@ -244,9 +244,9 @@ static char *	_dump_job(struct job_record *job_ptr, int state_info)
 			hosts = bitmap2wiki_node_name(
 				job_ptr->node_bitmap);
 		}
-		snprintf(tmp, sizeof(tmp),
-			"TASKLIST=%s;", hosts);
-		xstrcat(buf, tmp);
+		xstrcat(buf, "TASKLIST=");
+		xstrcat(buf, hosts);
+		xstrcat(buf, ";");
 		xfree(hosts);
 	}
 
