@@ -51,8 +51,9 @@ extern int flatfile_jobacct_job_complete(struct job_record *job_ptr);
 extern int flatfile_jobacct_step_start(struct step_record *step_ptr);
 extern int flatfile_jobacct_step_complete(struct step_record *step_ptr);
 extern int flatfile_jobacct_suspend(struct job_record *job_ptr);
-extern List flatfile_jobacct_getdata(List selected_steps, List selected_parts,
-				     void *params);
-extern void flatfile_jobacct_do_expire(List selected_parts, void *params);
+extern void flatfile_jobacct_get_jobs(List job_list, 
+				      List selected_steps, List selected_parts,
+				      void *params);
+extern void flatfile_jobacct_archive(List selected_parts, void *params);
 
 #endif

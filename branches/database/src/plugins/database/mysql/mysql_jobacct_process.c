@@ -42,15 +42,16 @@
 
 #include "src/sacct/sacct.h"
 
-extern List flatfile_jobacct_process_getdata(List selected_steps,
-					     List selected_parts,
-					     sacct_parameters_t *params)
+extern void mysql_jobacct_process_getdata(List job_list,
+					  List selected_steps,
+					  List selected_parts,
+					  sacct_parameters_t *params)
 {
-	return NULL;
+	return;
 }
 
-extern void flatfile_jobacct_process_do_expire(List selected_parts,
-					       sacct_parameters_t *params)
+extern void mysql_jobacct_process_archive(List selected_parts,
+					  sacct_parameters_t *params)
 {
 	return;
 }

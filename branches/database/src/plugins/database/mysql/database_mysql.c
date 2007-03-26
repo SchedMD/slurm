@@ -160,12 +160,15 @@ extern int database_p_jobacct_suspend(struct job_record *job_ptr)
  * returns List of job_rec_t *
  * note List needs to be freed when called
  */
-extern List database_p_jobacct_getdata(List selected_steps,
-				       List selected_parts,
-				       void *params)
+extern void database_p_jobacct_get_jobs(List job_list,
+					List selected_steps,
+					List selected_parts,
+					void *params)
 {
-	return mysql_jobacct_getdata(selected_steps, selected_parts,
-				     params);
+	mysql_jobacct_getdata(job_list,
+			      selected_steps, selected_parts,
+			      params);
+	return;
 }
 
 /* 

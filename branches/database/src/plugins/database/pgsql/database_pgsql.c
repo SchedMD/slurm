@@ -620,9 +620,10 @@ extern int database_p_jobacct_suspend (struct job_record *job_ptr)
  * returns List of job_rec_t *
  * note List needs to be freed when called
  */
-extern List database_p_jobacct_getdata(List selected_steps,
-				       List selected_parts,
-				       void *params)
+extern void database_p_jobacct_get_jobs(List job_list,
+					List selected_steps,
+					List selected_parts,
+					void *params)
 {
 	return NULL;
 }
@@ -630,8 +631,8 @@ extern List database_p_jobacct_getdata(List selected_steps,
 /* 
  * expire old info from the database 
  */
-extern void database_p_jobacct_do_expire(List selected_parts,
-					 void *params)
+extern void database_p_jobacct_do_archive(List selected_parts,
+					  void *params)
 {
 	return;
 }

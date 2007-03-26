@@ -63,10 +63,11 @@ typedef struct slurm_database_ops {
 	int  (*jobacct_step_start)    (struct step_record *step_ptr);
 	int  (*jobacct_step_complete) (struct step_record *step_ptr);
 	int  (*jobacct_job_suspend)   (struct job_record *job_ptr);
-	List (*jobacct_getdata)       (List selected_steps,
+	List (*jobacct_get_jobs)      (List job_list,
+				       List selected_steps,
 				       List selected_parts,
 				       void *params);	
-	void (*jobacct_doexpire)      (List selected_parts,
+	void (*jobacct_archive)       (List selected_parts,
 				       void *params);
 } slurm_database_ops_t;
 
@@ -105,8 +106,8 @@ static slurm_database_ops_t * _database_get_ops(slurm_database_context_t *c)
 		"database_p_jobacct_step_start",
 		"database_p_jobacct_step_complete",
 		"database_p_jobacct_suspend",
-		"database_p_jobacct_getdata",
-		"database_p_jobacct_do_expire",
+		"database_p_jobacct_get_jobs",
+		"database_p_jobacct_archive",
 	};
 	int n_syms = sizeof( syms ) / sizeof( char * );
 
@@ -312,24 +313,27 @@ extern int database_g_jobacct_job_suspend (struct job_record *job_ptr)
  * returns List of job_rec_t *
  * note List needs to be freed when called
  */
-extern List database_g_jobacct_getdata (List selected_steps,
+extern void database_g_jobacct_get_jobs(List job_list,
+					List selected_steps,
 					List selected_parts,
 					void *params)
 {
 	if (slurm_database_init() < 0)
-		return NULL;
- 	return (*(g_database_context->ops.jobacct_getdata))(selected_steps,
-							    selected_parts,
-							    params);
+		return;
+ 	(*(g_database_context->ops.jobacct_get_jobs))(job_list,
+						      selected_steps,
+						      selected_parts,
+						      params);
+	return;
 }
 
 /* 
  * expire old info from the database 
  */
-extern void database_g_jobacct_do_expire(List selected_parts, void *params)
+extern void database_g_jobacct_archive(List selected_parts, void *params)
 {
 	if (slurm_database_init() < 0)
 		return;
- 	(*(g_database_context->ops.jobacct_doexpire))(selected_parts, params);
+ 	(*(g_database_context->ops.jobacct_archive))(selected_parts, params);
 	return;
 }

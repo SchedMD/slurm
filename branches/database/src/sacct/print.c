@@ -830,19 +830,19 @@ void print_status(type_t type, void *object)
 	case JOB:
 		if ( job->status == JOB_CANCELLED) {
 			printf ("%-10s by %6d",
-				decode_status_int(job->status), job->requid);
+				job_state_string(job->status), job->requid);
 		}
 		else {
-			printf("%-20s", decode_status_int(job->status));
+			printf("%-20s", job_state_string(job->status));
 		}
 		break;
 	case JOBSTEP:
 		if ( step->status == JOB_CANCELLED) {
 			printf ("%-10s by %6d",
-				decode_status_int(step->status), step->requid);
+				job_state_string(step->status), step->requid);
 		}
 		else {
-			printf("%-20s", decode_status_int(step->status));
+			printf("%-20s", job_state_string(step->status));
 		}
 		break;
 	} 

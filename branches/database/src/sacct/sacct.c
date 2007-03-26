@@ -145,7 +145,6 @@
 
 #include "sacct.h"
 
-
 void invalidSwitchCombo(char *good, char *bad);
 void _print_header(void);
 
@@ -196,8 +195,6 @@ fields_t fields[] = {{"account", print_account},
 		     {"usercpu", print_usercpu}, 
 		     {"vsize", print_vsize}, 
 		     {NULL, NULL}};
-
-long input_error = 0;		/* Muddle through bad data, but complain! */
 
 List jobs = NULL;
 
