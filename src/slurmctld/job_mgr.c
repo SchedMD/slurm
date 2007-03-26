@@ -604,6 +604,11 @@ static int _load_job_state(Buf buffer)
 		goto unpack_error;
 
 	/* validity test as possible */
+	if (job_id == 0) {
+		verbose("Invalid job_id %u", job_id);
+		goto unpack_error;
+	}
+
 	if (((job_state & (~JOB_COMPLETING)) >= JOB_END) || 
 	    (batch_flag > 2)) {
 		error("Invalid data for job %u: job_state=%u batch_flag=%u",
