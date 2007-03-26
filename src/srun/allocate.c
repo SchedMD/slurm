@@ -682,15 +682,24 @@ create_job_step(srun_job_t *job)
 {
 	job_step_create_request_msg_t  *req  = NULL;
 	job_step_create_response_msg_t *resp = NULL;
+	int i;
 	
 	if (!(req = _step_req_create(job))) {
 		error ("Unable to allocate step request message");
 		return -1;
 	}
 
-	if ((slurm_job_step_create(req, &resp) < 0) || (resp == NULL)) {
-		error ("Unable to create job step: %m");
-		return -1;
+	for (i=0; ;i++) {
+		if ((slurm_job_step_create(req, &resp) == SLURM_SUCCESS)
+		&&  (resp != NULL))
+			break;
+		if (slurm_get_errno() != ESLURM_DISABLED) {
+			error ("Unable to create job step: %m");
+			return -1;
+		}
+		if (i == 0)
+			info("Job step creation temporarily disabled, retrying");
+		sleep(MIN((i*10), 60));
 	}
 	
 	job->stepid  = resp->job_step_id;

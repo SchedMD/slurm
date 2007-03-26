@@ -133,6 +133,7 @@ int slaunch(int argc, char **argv)
 	slurm_step_launch_callbacks_t callbacks[1];
 	char **env;
 	uint32_t job_id, step_id;
+	int i;
 
 	log_init(xbasename(argv[0]), logopt, 0, NULL);
 
@@ -225,11 +226,19 @@ int slaunch(int argc, char **argv)
 	ctx_params->network = opt.network;
 	ctx_params->name = opt.job_name;
 	
-	step_ctx = slurm_step_ctx_create(ctx_params);
-	if (step_ctx == NULL) {
-		error("Failed creating job step context: %m");
-		exit(1);
+	for (i=0; ;i++) {
+		step_ctx = slurm_step_ctx_create(ctx_params);
+		if (step_ctx != NULL)
+			break;
+		if (slurm_get_errno() != ESLURM_DISABLED) {
+			error("Failed creating job step context: %m");
+			exit(1);
+		}
+		if (i == 0)
+			info("Job step creation temporarily disabled, retrying");
+		sleep(MIN((i*10), 60));
 	}
+
 	/* Now we can register a few more signal handlers.  It
 	 * is only safe to have _exit_on_signal call
 	 * slurm_step_launch_abort after the the step context

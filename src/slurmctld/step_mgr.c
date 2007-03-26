@@ -648,6 +648,9 @@ step_create(job_step_create_request_msg_t *step_specs,
 	if (job_ptr == NULL)
 		return ESLURM_INVALID_JOB_ID ;
 
+	if (job_ptr->job_state == JOB_SUSPENDED)
+		return ESLURM_DISABLED;
+
 	if (batch_step) {
 		info("user %u attempting to run batch script within "
 			"an existing job", step_specs->user_id);
