@@ -3,7 +3,7 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 1.2.3
 ========================
- -- task/affinity using cpusets logic added, from Don Albert (Bull) and
+ -- cpuset logic added to  task/affinity, from Don Albert (Bull) and
     Moe Jette (LLNL).  The /dev/cpuset file system must be mounted and 
     set "TaskPluginParam=cpusets" in slurm.conf to enable.
  -- In sched/wiki2, fix possible overflow in job's nodelist, from 
