@@ -344,7 +344,7 @@ static int _create_allocation(char *com, List allocated_blocks)
 		}
 	start_request:
 		if(!strcasecmp(layout_mode,"OVERLAP"))
-			reset_ba_system();
+			reset_ba_system(true);
 	
 		/*
 		  Here is where we do the allocating of the partition. 
