@@ -174,6 +174,13 @@ This script accepts commands <b>start</b>, <b>startclean</b> (ignores
 all saved state), <b>restart</b>, and <b>stop</b>.</p>
 
 <h2>Infrastructure</h2>
+<h3>User and Group Identification</h3>
+<p>There must be a uniform user and group name space across the 
+cluster. 
+It is not necessary to permit user logins to the control hosts
+(<b>ControlMachine</b> or <b>BackupController</b>), but the 
+users and groups must be configured on those hosts.</p>
+ 
 <h3>Authentication of SLURM communications</h3>
 <p>All communications between SLURM components are authenticated. The 
 authentication infrastructure is provided by a dynamically loaded
@@ -368,8 +375,10 @@ be used to build a simple configuration file.</p>
 # 
 # Sample /etc/slurm.conf for mcr.llnl.gov
 #
-ControlMachine=mcri   ControlAddr=emcri
-BackupMachine=mcrj    BackupAddr=emcrj 
+ControlMachine=mcri
+ControlAddr=emcri
+BackupController=mcrj
+BackupAddr=emcrj 
 #
 AuthType=auth/munge
 Epilog=/usr/local/slurm/etc/epilog
@@ -618,6 +627,6 @@ in the NEWS file.
 
 </pre> <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 11 December 2006</p>
+<p style="text-align:center;">Last modified 26 March 2007</p>
 
 <!--#include virtual="footer.txt"-->
