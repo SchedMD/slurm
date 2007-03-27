@@ -453,8 +453,7 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 		 uint32_t min_nodes, uint32_t max_nodes, uint32_t req_nodes)
 {
 	int error_code = SLURM_SUCCESS, i, j, pick_code;
-	int total_nodes = 0;
-	uint16_t total_cpus = 0; 
+	int total_nodes = 0, total_cpus = 0; 
 	uint32_t total_mem = 0; /* total_: total resources configured in
 			      partition */
 	int avail_nodes = 0, avail_cpus = 0;	
@@ -528,6 +527,7 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 				job_ptr->details->req_node_bitmap);
 		if (job_ptr->num_procs != 0) {
 			if (cr_enabled) {
+				uint16_t tmp16;
 				if ((cr_type == CR_MEMORY)
 				    || (cr_type == CR_SOCKET_MEMORY)
 				    || (cr_type == CR_CORE_MEMORY)
@@ -549,12 +549,13 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 					NULL, 
 					job_ptr, 
 					SELECT_CPU_COUNT, 
-					&total_cpus);
+					&tmp16);
 				if (error_code != SLURM_SUCCESS) {
 					FREE_NULL_BITMAP(
 						partially_idle_node_bitmap);
 					return error_code;
 				}
+				total_cpus = (int) tmp16;
 			} else 
 				total_cpus = count_cpus(
 					job_ptr->details->req_node_bitmap);
