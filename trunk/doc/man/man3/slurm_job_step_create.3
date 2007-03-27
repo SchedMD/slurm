@@ -1,4 +1,4 @@
-.TH "Slurm API" "3" "April 2006" "Morris Jette" "Slurm job step initiation functions"
+.TH "Slurm API" "3" "March 2007" "Morris Jette" "Slurm job step initiation functions"
 
 .SH "NAME"
 slurm_free_job_step_create_response_msg, slurm_job_step_create
@@ -57,6 +57,9 @@ On success, zero is returned. On error, \-1 is returned, and Slurm error code is
 .LP
 \fBESLURM_ACCESS_DENIED\fR the requesting user lacks authorization for the requested action (e.g. trying to delete or modify another user's job). 
 .LP
+\fBESLURM_DISABLED\fR the ability to create a job step is currently disabled.
+This is indicative of the job being suspended. Retry the call as desired.
+.LP
 \fBESLURM_INTERCONNECT_FAILURE\fR failed to configure the node interconnect. 
 .LP
 \fBESLURM_BAD_DIST\fR task distribution specification is invalid. 
@@ -70,7 +73,7 @@ which must be linked to your process for use
 (e.g. "cc \-lslurm myprog.c").
 
 .SH "COPYING"
-Copyright (C) 2002 The Regents of the University of California.
+Copyright (C) 2002-2007 The Regents of the University of California.
 Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 UCRL\-CODE\-226842.
 .LP
