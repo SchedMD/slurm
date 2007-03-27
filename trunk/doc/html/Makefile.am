@@ -34,6 +34,7 @@ generated_html = \
 	selectplugins.html \
 	slurm.html \
 	switchplugins.html \
+	taskplugins.html \
 	team.html \
 	testimonials.html \
 	troubleshoot.html
