@@ -3,13 +3,13 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 1.2.3
 ========================
- -- cpuset logic added to  task/affinity, from Don Albert (Bull) and
+ -- Cpuset logic added to  task/affinity, from Don Albert (Bull) and
     Moe Jette (LLNL).  The /dev/cpuset file system must be mounted and 
     set "TaskPluginParam=cpusets" in slurm.conf to enable.
  -- In sched/wiki2, fix possible overflow in job's nodelist, from 
     Ernest Artiaga, BSC.
  -- Defer creation of new job steps until a suspended job is resumed.
- -- select/linear - fix for potential stack corruption bug.
+ -- In select/linear - fix for potential stack corruption bug.
 
 * Changes in SLURM 1.2.2
 ========================
