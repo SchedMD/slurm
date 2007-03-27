@@ -56,8 +56,8 @@
  */
 
 typedef struct slurm_database_ops {
-	int  (*jobacct_database_init) ();
-	int  (*jobacct_database_fini) ();
+	int  (*jobacct_init) ();
+	int  (*jobacct_fini) ();
 	int  (*jobacct_job_start)     (struct job_record *job_ptr);
 	int  (*jobacct_job_complete)  (struct job_record *job_ptr);
 	int  (*jobacct_step_start)    (struct step_record *step_ptr);
@@ -99,8 +99,8 @@ static slurm_database_ops_t * _database_get_ops(slurm_database_context_t *c)
 	 * Must be synchronized with slurm_database_ops_t above.
 	 */
 	static const char *syms[] = {
-		"database_p_jobacct_database_init",
-		"database_p_jobacct_database_fini",
+		"database_p_jobacct_init",
+		"database_p_jobacct_fini",
 		"database_p_jobacct_job_start",
 		"database_p_jobacct_job_complete",
 		"database_p_jobacct_step_start",
@@ -240,21 +240,21 @@ extern int slurm_database_fini(void)
  * Initialize the database make sure tables are created and in working
  * order
  */
-extern int database_g_jobacct_database_init ()
+extern int database_g_jobacct_init ()
 {
 	if (slurm_database_init() < 0)
 		return SLURM_ERROR;
-	return (*(g_database_context->ops.jobacct_database_init))();
+	return (*(g_database_context->ops.jobacct_init))();
 }
 
 /*
  * finish up database connection
  */
-extern int database_g_jobacct_database_fini ()
+extern int database_g_jobacct_fini ()
 {
 	if (slurm_database_init() < 0)
 		return SLURM_ERROR;
-	return (*(g_database_context->ops.jobacct_database_fini))();
+	return (*(g_database_context->ops.jobacct_fini))();
 }
 
 /* 

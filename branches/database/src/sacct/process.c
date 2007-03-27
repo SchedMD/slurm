@@ -87,35 +87,3 @@ void aggregate_sacct(sacct_t *dest, sacct_t *from)
 	}
 	dest->ave_cpu += from->ave_cpu;
 }
-
-void destroy_acct_header(void *object)
-{
-	acct_header_t *header = (acct_header_t *)object;
-	if(header) {
-		xfree(header->partition);
-		xfree(header->blockid);
-	}
-}
-void destroy_job(void *object)
-{
-	job_rec_t *job = (job_rec_t *)object;
-	if (job) {
-		if(job->steps)
-			list_destroy(job->steps);
-		destroy_acct_header(&job->header);
-		xfree(job->jobname);
-		xfree(job->nodes);
-		xfree(job);
-	}
-}
-
-void destroy_step(void *object)
-{
-	step_rec_t *step = (step_rec_t *)object;
-	if (step) {
-		destroy_acct_header(&step->header);
-		xfree(step->stepname);
-		xfree(step->nodes);
-		xfree(step);
-	}
-}

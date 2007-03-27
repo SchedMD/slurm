@@ -203,7 +203,7 @@ extern int fini ( void )
  * Initialize the database make sure tables are created and in working
  * order
  */
-extern int database_p_jobacct_database_init ()
+extern int database_p_jobacct_init ()
 {
 	char *log_file = slurm_get_jobacct_loc();	
 	int 		rc = SLURM_SUCCESS;
@@ -242,7 +242,7 @@ extern int database_p_jobacct_database_init ()
 /*
  * finish up database connection
  */
-extern int database_p_jobacct_database_fini ()
+extern int database_p_jobacct_fini ()
 {
 	if (LOGFILE)
 		fclose(LOGFILE);

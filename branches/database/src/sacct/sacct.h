@@ -57,9 +57,7 @@
 #include "src/common/xstring.h"
 #include "src/common/list.h"
 #include "src/common/hostlist.h"
-
-#include "src/sacct/sacct_stat.h"
-#include "src/sacct/sacct_types.h"
+#include "src/common/slurm_jobacct.h"
 
 #define ERROR 2
 
@@ -157,5 +155,8 @@ void do_list(void);
 void do_stat(void);
 void sacct_init();
 void sacct_fini();
+
+/* sacct_stat.c */
+extern int sacct_stat(uint32_t jobid, uint32_t stepid);
 
 #endif /* !_SACCT_H */

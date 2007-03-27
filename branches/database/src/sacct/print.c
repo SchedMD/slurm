@@ -97,8 +97,8 @@ void print_fields(type_t type, void *object)
 
 void print_cpu(type_t type, void *object)
 {
-	job_rec_t *job = (job_rec_t *)object;
-	step_rec_t *step = (step_rec_t *)object;
+	jobacct_job_rec_t *job = (jobacct_job_rec_t *)object;
+	jobacct_step_rec_t *step = (jobacct_step_rec_t *)object;
 	char str[FORMAT_STRING_SIZE];
 	
 	switch(type) {
@@ -121,8 +121,8 @@ void print_cpu(type_t type, void *object)
 
 void print_elapsed(type_t type, void *object)
 {
-	job_rec_t *job = (job_rec_t *)object;
-	step_rec_t *step = (step_rec_t *)object;
+	jobacct_job_rec_t *job = (jobacct_job_rec_t *)object;
+	jobacct_step_rec_t *step = (jobacct_step_rec_t *)object;
 	char str[FORMAT_STRING_SIZE];
 
 	switch(type) {
@@ -145,8 +145,8 @@ void print_elapsed(type_t type, void *object)
 
 void print_exitcode(type_t type, void *object)
 {
-	job_rec_t *job = (job_rec_t *)object;
-	step_rec_t *step = (step_rec_t *)object;
+	jobacct_job_rec_t *job = (jobacct_job_rec_t *)object;
+	jobacct_step_rec_t *step = (jobacct_step_rec_t *)object;
 
 	switch(type) {
 	case HEADLINE:
@@ -166,8 +166,8 @@ void print_exitcode(type_t type, void *object)
 
 void print_gid(type_t type, void *object)
 { 
-	job_rec_t *job = (job_rec_t *)object;
-	step_rec_t *step = (step_rec_t *)object;
+	jobacct_job_rec_t *job = (jobacct_job_rec_t *)object;
+	jobacct_step_rec_t *step = (jobacct_step_rec_t *)object;
 
 	switch(type) {
 	case HEADLINE:
@@ -187,8 +187,8 @@ void print_gid(type_t type, void *object)
 
 void print_group(type_t type, void *object)
 { 
-	job_rec_t *job = (job_rec_t *)object;
-	step_rec_t *step = (step_rec_t *)object;
+	jobacct_job_rec_t *job = (jobacct_job_rec_t *)object;
+	jobacct_step_rec_t *step = (jobacct_step_rec_t *)object;
 	int gid = -1;
 	char	*tmp="(unknown)";
 	struct	group *gr = NULL;
@@ -216,8 +216,8 @@ void print_group(type_t type, void *object)
 
 void print_idrss(type_t type, void *object)
 {
-	job_rec_t *job = (job_rec_t *)object;
-	step_rec_t *step = (step_rec_t *)object;
+	jobacct_job_rec_t *job = (jobacct_job_rec_t *)object;
+	jobacct_step_rec_t *step = (jobacct_step_rec_t *)object;
 	struct rusage rusage;
 	char outbuf[FORMAT_STRING_SIZE];
 	rusage.ru_idrss = 0;
@@ -244,8 +244,8 @@ void print_idrss(type_t type, void *object)
 
 void print_inblocks(type_t type, void *object)
 {
-	job_rec_t *job = (job_rec_t *)object;
-	step_rec_t *step = (step_rec_t *)object;
+	jobacct_job_rec_t *job = (jobacct_job_rec_t *)object;
+	jobacct_step_rec_t *step = (jobacct_step_rec_t *)object;
 
 	switch(type) {
 	case HEADLINE:
@@ -265,8 +265,8 @@ void print_inblocks(type_t type, void *object)
 
 void print_isrss(type_t type, void *object)
 {
-	job_rec_t *job = (job_rec_t *)object;
-	step_rec_t *step = (step_rec_t *)object;
+	jobacct_job_rec_t *job = (jobacct_job_rec_t *)object;
+	jobacct_step_rec_t *step = (jobacct_step_rec_t *)object;
 
 	switch(type) {
 	case HEADLINE:
@@ -287,8 +287,8 @@ void print_isrss(type_t type, void *object)
 
 void print_ixrss(type_t type, void *object)
 {
-	job_rec_t *job = (job_rec_t *)object;
-	step_rec_t *step = (step_rec_t *)object;
+	jobacct_job_rec_t *job = (jobacct_job_rec_t *)object;
+	jobacct_step_rec_t *step = (jobacct_step_rec_t *)object;
 
 	switch(type) {
 	case HEADLINE:
@@ -309,8 +309,8 @@ void print_ixrss(type_t type, void *object)
 
 void print_job(type_t type, void *object)
 {
-	job_rec_t *job = (job_rec_t *)object;
-	step_rec_t *step = (step_rec_t *)object;
+	jobacct_job_rec_t *job = (jobacct_job_rec_t *)object;
+	jobacct_step_rec_t *step = (jobacct_step_rec_t *)object;
 
 	switch(type) {
 	case HEADLINE:
@@ -330,8 +330,8 @@ void print_job(type_t type, void *object)
 
 void print_name(type_t type, void *object)
 {
-	job_rec_t *job = (job_rec_t *)object;
-	step_rec_t *step = (step_rec_t *)object;
+	jobacct_job_rec_t *job = (jobacct_job_rec_t *)object;
+	jobacct_step_rec_t *step = (jobacct_step_rec_t *)object;
 
 	switch(type) {
 	case HEADLINE:
@@ -362,8 +362,8 @@ void print_name(type_t type, void *object)
 
 void print_jobid(type_t type, void *object)
 {
-	job_rec_t *job = (job_rec_t *)object;
-	step_rec_t *step = (step_rec_t *)object;
+	jobacct_job_rec_t *job = (jobacct_job_rec_t *)object;
+	jobacct_step_rec_t *step = (jobacct_step_rec_t *)object;
 	char outbuf[10];
 
 	switch(type) {
@@ -388,8 +388,8 @@ void print_jobid(type_t type, void *object)
 
 void print_majflt(type_t type, void *object)
 {
-	job_rec_t *job = (job_rec_t *)object;
-	step_rec_t *step = (step_rec_t *)object;
+	jobacct_job_rec_t *job = (jobacct_job_rec_t *)object;
+	jobacct_step_rec_t *step = (jobacct_step_rec_t *)object;
 
 	switch(type) {
 	case HEADLINE:
@@ -409,8 +409,8 @@ void print_majflt(type_t type, void *object)
 
 void print_minflt(type_t type, void *object)
 {
-	job_rec_t *job = (job_rec_t *)object;
-	step_rec_t *step = (step_rec_t *)object;
+	jobacct_job_rec_t *job = (jobacct_job_rec_t *)object;
+	jobacct_step_rec_t *step = (jobacct_step_rec_t *)object;
 
 	switch(type) {
 	case HEADLINE:
@@ -430,8 +430,8 @@ void print_minflt(type_t type, void *object)
 
 void print_msgrcv(type_t type, void *object)
 {
-	job_rec_t *job = (job_rec_t *)object;
-	step_rec_t *step = (step_rec_t *)object;
+	jobacct_job_rec_t *job = (jobacct_job_rec_t *)object;
+	jobacct_step_rec_t *step = (jobacct_step_rec_t *)object;
 
 	switch(type) {
 	case HEADLINE:
@@ -451,8 +451,8 @@ void print_msgrcv(type_t type, void *object)
 
 void print_msgsnd(type_t type, void *object)
 {
-	job_rec_t *job = (job_rec_t *)object;
-	step_rec_t *step = (step_rec_t *)object;
+	jobacct_job_rec_t *job = (jobacct_job_rec_t *)object;
+	jobacct_step_rec_t *step = (jobacct_step_rec_t *)object;
 
 	switch(type) {
 	case HEADLINE:
@@ -472,8 +472,8 @@ void print_msgsnd(type_t type, void *object)
 
 void print_ncpus(type_t type, void *object)
 { 
-	job_rec_t *job = (job_rec_t *)object;
-	step_rec_t *step = (step_rec_t *)object;
+	jobacct_job_rec_t *job = (jobacct_job_rec_t *)object;
+	jobacct_step_rec_t *step = (jobacct_step_rec_t *)object;
 
 	switch(type) {
 	case HEADLINE:
@@ -493,8 +493,8 @@ void print_ncpus(type_t type, void *object)
 
 void print_nivcsw(type_t type, void *object)
 { 
-	job_rec_t *job = (job_rec_t *)object;
-	step_rec_t *step = (step_rec_t *)object;
+	jobacct_job_rec_t *job = (jobacct_job_rec_t *)object;
+	jobacct_step_rec_t *step = (jobacct_step_rec_t *)object;
 
 	switch(type) {
 	case HEADLINE:
@@ -514,7 +514,7 @@ void print_nivcsw(type_t type, void *object)
 
 void print_nodes(type_t type, void *object)
 { 
-	job_rec_t *job = (job_rec_t *)object;
+	jobacct_job_rec_t *job = (jobacct_job_rec_t *)object;
 
 	switch(type) {
 	case HEADLINE:
@@ -534,8 +534,8 @@ void print_nodes(type_t type, void *object)
 
 void print_nsignals(type_t type, void *object)
 { 
-	job_rec_t *job = (job_rec_t *)object;
-	step_rec_t *step = (step_rec_t *)object;
+	jobacct_job_rec_t *job = (jobacct_job_rec_t *)object;
+	jobacct_step_rec_t *step = (jobacct_step_rec_t *)object;
 
 	switch(type) {
 	case HEADLINE:
@@ -555,8 +555,8 @@ void print_nsignals(type_t type, void *object)
 
 void print_nswap(type_t type, void *object)
 { 
-	job_rec_t *job = (job_rec_t *)object;
-	step_rec_t *step = (step_rec_t *)object;
+	jobacct_job_rec_t *job = (jobacct_job_rec_t *)object;
+	jobacct_step_rec_t *step = (jobacct_step_rec_t *)object;
 
 	switch(type) {
 	case HEADLINE:
@@ -576,8 +576,8 @@ void print_nswap(type_t type, void *object)
 
 void print_ntasks(type_t type, void *object)
 { 
-	job_rec_t *job = (job_rec_t *)object;
-	step_rec_t *step = (step_rec_t *)object;
+	jobacct_job_rec_t *job = (jobacct_job_rec_t *)object;
+	jobacct_step_rec_t *step = (jobacct_step_rec_t *)object;
 
 	switch(type) {
 	case HEADLINE:
@@ -597,8 +597,8 @@ void print_ntasks(type_t type, void *object)
 
 void print_nvcsw(type_t type, void *object)
 { 
-	job_rec_t *job = (job_rec_t *)object;
-	step_rec_t *step = (step_rec_t *)object;
+	jobacct_job_rec_t *job = (jobacct_job_rec_t *)object;
+	jobacct_step_rec_t *step = (jobacct_step_rec_t *)object;
 
 	switch(type) {
 	case HEADLINE:
@@ -618,8 +618,8 @@ void print_nvcsw(type_t type, void *object)
 
 void print_outblocks(type_t type, void *object)
 { 
-	job_rec_t *job = (job_rec_t *)object;
-	step_rec_t *step = (step_rec_t *)object;
+	jobacct_job_rec_t *job = (jobacct_job_rec_t *)object;
+	jobacct_step_rec_t *step = (jobacct_step_rec_t *)object;
 
 	switch(type) {
 	case HEADLINE:
@@ -639,8 +639,8 @@ void print_outblocks(type_t type, void *object)
 
 void print_partition(type_t type, void *object)
 { 
-	job_rec_t *job = (job_rec_t *)object;
-	step_rec_t *step = (step_rec_t *)object;
+	jobacct_job_rec_t *job = (jobacct_job_rec_t *)object;
+	jobacct_step_rec_t *step = (jobacct_step_rec_t *)object;
 
 	switch(type) {
 	case HEADLINE:
@@ -672,8 +672,8 @@ void print_partition(type_t type, void *object)
 
 void print_blockid(type_t type, void *object)
 { 
-	job_rec_t *job = (job_rec_t *)object;
-	step_rec_t *step = (step_rec_t *)object;
+	jobacct_job_rec_t *job = (jobacct_job_rec_t *)object;
+	jobacct_step_rec_t *step = (jobacct_step_rec_t *)object;
 
 	switch(type) {
 	case HEADLINE:
@@ -705,8 +705,8 @@ void print_blockid(type_t type, void *object)
 
 void print_pages(type_t type, void *object)
 { 
-	job_rec_t *job = (job_rec_t *)object;
-	step_rec_t *step = (step_rec_t *)object;
+	jobacct_job_rec_t *job = (jobacct_job_rec_t *)object;
+	jobacct_step_rec_t *step = (jobacct_step_rec_t *)object;
 	char outbuf[FORMAT_STRING_SIZE];
 	char buf1[FORMAT_STRING_SIZE];
 	char buf2[FORMAT_STRING_SIZE];
@@ -761,8 +761,8 @@ void print_pages(type_t type, void *object)
 
 void print_rss(type_t type, void *object)
 { 
-	job_rec_t *job = (job_rec_t *)object;
-	step_rec_t *step = (step_rec_t *)object;
+	jobacct_job_rec_t *job = (jobacct_job_rec_t *)object;
+	jobacct_step_rec_t *step = (jobacct_step_rec_t *)object;
 	char outbuf[FORMAT_STRING_SIZE];
 	char buf1[FORMAT_STRING_SIZE];
 	char buf2[FORMAT_STRING_SIZE];
@@ -817,8 +817,8 @@ void print_rss(type_t type, void *object)
 
 void print_status(type_t type, void *object)
 { 
-	job_rec_t *job = (job_rec_t *)object;
-	step_rec_t *step = (step_rec_t *)object;
+	jobacct_job_rec_t *job = (jobacct_job_rec_t *)object;
+	jobacct_step_rec_t *step = (jobacct_step_rec_t *)object;
 
 	switch(type) {
 	case HEADLINE:
@@ -850,8 +850,8 @@ void print_status(type_t type, void *object)
 
 void print_submit(type_t type, void *object)
 { 
-	job_rec_t *job = (job_rec_t *)object;
-	step_rec_t *step = (step_rec_t *)object;
+	jobacct_job_rec_t *job = (jobacct_job_rec_t *)object;
+	jobacct_step_rec_t *step = (jobacct_step_rec_t *)object;
 	char time_str[32];
 		
 	switch(type) {
@@ -878,8 +878,8 @@ void print_submit(type_t type, void *object)
 
 void print_start(type_t type, void *object)
 { 
-	job_rec_t *job = (job_rec_t *)object;
-	step_rec_t *step = (step_rec_t *)object;
+	jobacct_job_rec_t *job = (jobacct_job_rec_t *)object;
+	jobacct_step_rec_t *step = (jobacct_step_rec_t *)object;
 	char time_str[32];
 	
 	switch(type) {
@@ -906,8 +906,8 @@ void print_start(type_t type, void *object)
 
 void print_end(type_t type, void *object)
 { 
-	job_rec_t *job = (job_rec_t *)object;
-	step_rec_t *step = (step_rec_t *)object;
+	jobacct_job_rec_t *job = (jobacct_job_rec_t *)object;
+	jobacct_step_rec_t *step = (jobacct_step_rec_t *)object;
 	char time_str[32];
 	
 	switch(type) {
@@ -934,8 +934,8 @@ void print_end(type_t type, void *object)
 
 void print_systemcpu(type_t type, void *object)
 {
-	job_rec_t *job = (job_rec_t *)object;
-	step_rec_t *step = (step_rec_t *)object;
+	jobacct_job_rec_t *job = (jobacct_job_rec_t *)object;
+	jobacct_step_rec_t *step = (jobacct_step_rec_t *)object;
 	char str[FORMAT_STRING_SIZE];
 
 	switch(type) {
@@ -961,8 +961,8 @@ void print_systemcpu(type_t type, void *object)
 
 void print_uid(type_t type, void *object)
 { 
-	job_rec_t *job = (job_rec_t *)object;
-	step_rec_t *step = (step_rec_t *)object;
+	jobacct_job_rec_t *job = (jobacct_job_rec_t *)object;
+	jobacct_step_rec_t *step = (jobacct_step_rec_t *)object;
 	
 	switch(type) {
 	case HEADLINE:
@@ -982,8 +982,8 @@ void print_uid(type_t type, void *object)
 
 void print_user(type_t type, void *object)
 { 
-	job_rec_t *job = (job_rec_t *)object;
-	step_rec_t *step = (step_rec_t *)object;
+	jobacct_job_rec_t *job = (jobacct_job_rec_t *)object;
+	jobacct_step_rec_t *step = (jobacct_step_rec_t *)object;
 	int uid = -1;
 	char	*tmp="(unknown)";
 	struct	passwd *pw = NULL;
@@ -1011,8 +1011,8 @@ void print_user(type_t type, void *object)
 
 void print_usercpu(type_t type, void *object)
 {
-	job_rec_t *job = (job_rec_t *)object;
-	step_rec_t *step = (step_rec_t *)object;
+	jobacct_job_rec_t *job = (jobacct_job_rec_t *)object;
+	jobacct_step_rec_t *step = (jobacct_step_rec_t *)object;
 	char str[FORMAT_STRING_SIZE];
 	
 	switch(type) {
@@ -1038,8 +1038,8 @@ void print_usercpu(type_t type, void *object)
 
 void print_vsize(type_t type, void *object)
 { 
-	job_rec_t *job = (job_rec_t *)object;
-	step_rec_t *step = (step_rec_t *)object;
+	jobacct_job_rec_t *job = (jobacct_job_rec_t *)object;
+	jobacct_step_rec_t *step = (jobacct_step_rec_t *)object;
 	char outbuf[FORMAT_STRING_SIZE];
 	char buf1[FORMAT_STRING_SIZE];
 	char buf2[FORMAT_STRING_SIZE];
@@ -1093,8 +1093,8 @@ void print_vsize(type_t type, void *object)
 
 void print_cputime(type_t type, void *object)
 { 
-	job_rec_t *job = (job_rec_t *)object;
-	step_rec_t *step = (step_rec_t *)object;
+	jobacct_job_rec_t *job = (jobacct_job_rec_t *)object;
+	jobacct_step_rec_t *step = (jobacct_step_rec_t *)object;
 	char outbuf[FORMAT_STRING_SIZE];
 	char buf1[FORMAT_STRING_SIZE];
 	char buf2[FORMAT_STRING_SIZE];
@@ -1150,8 +1150,8 @@ void print_cputime(type_t type, void *object)
 
 void print_account(type_t type, void *object)
 {
-	job_rec_t *job = (job_rec_t *)object;
-	step_rec_t *step = (step_rec_t *)object;
+	jobacct_job_rec_t *job = (jobacct_job_rec_t *)object;
+	jobacct_step_rec_t *step = (jobacct_step_rec_t *)object;
 
 	switch(type) {
 	case HEADLINE:

@@ -294,6 +294,41 @@ static int _slurm_jobacct_fini(void)
 	return rc;
 }
 
+extern void jobacct_destroy_header(void *object)
+{
+	jobacct_header_t *header = (jobacct_header_t *)object;
+	if(header) {
+		xfree(header->partition);
+		xfree(header->blockid);
+	}
+}
+
+extern void jobacct_destroy_job(void *object)
+{
+	jobacct_job_rec_t *job = (jobacct_job_rec_t *)object;
+	if (job) {
+		if(job->steps)
+			list_destroy(job->steps);
+		jobacct_destroy_header(&job->header);
+		xfree(job->jobname);
+		xfree(job->nodes);
+		xfree(job);
+	}
+}
+
+extern void jobacct_destroy_step(void *object)
+{
+	jobacct_step_rec_t *step = (jobacct_step_rec_t *)object;
+	if (step) {
+		jobacct_destroy_header(&step->header);
+		xfree(step->stepname);
+		xfree(step->nodes);
+		xfree(step);
+	}
+}
+
+
+
 extern int jobacct_g_init_struct(jobacctinfo_t *jobacct, 
 				 jobacct_id_t *jobacct_id)
 {

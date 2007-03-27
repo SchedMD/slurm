@@ -588,5 +588,6 @@ extern void mysql_jobacct_get_jobs(List job_list,
  */
 extern void mysql_jobacct_archive(List selected_parts, void *params)
 {
-	return mysql_jobacct_process_archive(selected_parts, params);
+	mysql_jobacct_process_archive(selected_parts, params);
+	return;
 }

@@ -39,8 +39,13 @@
  *  This file is patterned after jobcomp_linux.c, written by Morris Jette and
  *  Copyright (C) 2002 The Regents of the University of California.
 \*****************************************************************************/
+#include <stdlib.h>
+#include <ctype.h>
+#include <sys/stat.h>
 
-#include "src/sacct/sacct_types.h"
+#include "src/common/xstring.h"
+#include "src/common/xmalloc.h"
+#include "src/common/slurm_jobacct.h"
 /* Map field names to positions */
 
 /* slurmd uses "(uint32_t) -2" to track data for batch allocations
@@ -48,6 +53,7 @@
 #define BATCH_JOB_TIMESTAMP 0
 #define EXPIRE_READ_LENGTH 10
 #define MAX_RECORD_FIELDS 100
+#define BUFFER_SIZE 1024
 
 typedef struct expired_rec {  /* table of expired jobs */
 	uint32_t job;
@@ -343,17 +349,17 @@ static void _do_fdump(char* f[], int lc)
        		printf("%12s: %s\n", type[i-HEADER_LENGTH], f[i]);	
 }
 
-static job_rec_t *_find_job_record(List job_list, acct_header_t header,
+static jobacct_job_rec_t *_find_job_record(List job_list, jobacct_header_t header,
 				   int type)
 {
-	job_rec_t *job = NULL;
+	jobacct_job_rec_t *job = NULL;
 	ListIterator itr = list_iterator_create(job_list);
 
-	while((job = (job_rec_t *)list_next(itr)) != NULL) {
+	while((job = (jobacct_job_rec_t *)list_next(itr)) != NULL) {
 		if (job->header.jobnum == header.jobnum) {
 			if(job->header.job_submit == 0 && type == JOB_START) {
 				list_remove(itr);
-				destroy_job(job);
+				jobacct_destroy_job(job);
 				job = NULL;
 				break;
 			}
@@ -383,14 +389,14 @@ static job_rec_t *_find_job_record(List job_list, acct_header_t header,
 
 static int _remove_job_record(List job_list, uint32_t jobnum)
 {
-	job_rec_t *job = NULL;
+	jobacct_job_rec_t *job = NULL;
 	int rc = SLURM_ERROR;
 	ListIterator itr = list_iterator_create(job_list);
 
-	while((job = (job_rec_t *)list_next(itr)) != NULL) {
+	while((job = (jobacct_job_rec_t *)list_next(itr)) != NULL) {
 		if (job->header.jobnum == jobnum) {
 			list_remove(itr);
-			destroy_job(job);
+			jobacct_destroy_job(job);
 			rc = SLURM_SUCCESS;
 		}
 	}
@@ -398,16 +404,17 @@ static int _remove_job_record(List job_list, uint32_t jobnum)
 	return rc;
 }
 
-static step_rec_t *_find_step_record(job_rec_t *job, long stepnum)
+static jobacct_step_rec_t *_find_step_record(jobacct_job_rec_t *job,
+					     long stepnum)
 {
-	step_rec_t *step = NULL;
+	jobacct_step_rec_t *step = NULL;
 	ListIterator itr = NULL;
 
 	if(!list_count(job->steps))
 		return step;
 	
 	itr = list_iterator_create(job->steps);
-	while((step = (step_rec_t *)list_next(itr)) != NULL) {
+	while((step = (jobacct_step_rec_t *)list_next(itr)) != NULL) {
 		if (step->stepnum == stepnum)
 			break;
 	}
@@ -415,10 +422,10 @@ static step_rec_t *_find_step_record(job_rec_t *job, long stepnum)
 	return step;
 }
 
-static job_rec_t *_init_job_rec(acct_header_t header)
+static jobacct_job_rec_t *_init_job_rec(jobacct_header_t header)
 {
-	job_rec_t *job = xmalloc(sizeof(job_rec_t));
-	memcpy(&job->header, &header, sizeof(acct_header_t));
+	jobacct_job_rec_t *job = xmalloc(sizeof(jobacct_job_rec_t));
+	memcpy(&job->header, &header, sizeof(jobacct_header_t));
 	memset(&job->rusage, 0, sizeof(struct rusage));
 	memset(&job->sacct, 0, sizeof(sacct_t));
 	job->sacct.min_cpu = (float)NO_VAL;
@@ -437,7 +444,7 @@ static job_rec_t *_init_job_rec(acct_header_t header)
 	job->elapsed = 0;
 	job->tot_cpu_sec = 0;
 	job->tot_cpu_usec = 0;
-	job->steps = list_create(destroy_step);
+	job->steps = list_create(jobacct_destroy_step);
 	job->nodes = NULL;
 	job->track_steps = 0;
 	job->account = NULL;
@@ -446,10 +453,10 @@ static job_rec_t *_init_job_rec(acct_header_t header)
       	return job;
 }
 
-static step_rec_t *_init_step_rec(acct_header_t header)
+static jobacct_step_rec_t *_init_step_rec(jobacct_header_t header)
 {
-	step_rec_t *step = xmalloc(sizeof(job_rec_t));
-	memcpy(&step->header, &header, sizeof(acct_header_t));
+	jobacct_step_rec_t *step = xmalloc(sizeof(jobacct_job_rec_t));
+	memcpy(&step->header, &header, sizeof(jobacct_header_t));
 	memset(&step->rusage, 0, sizeof(struct rusage));
 	memset(&step->sacct, 0, sizeof(sacct_t));
 	step->stepnum = (uint32_t)NO_VAL;
@@ -468,7 +475,7 @@ static step_rec_t *_init_step_rec(acct_header_t header)
 	return step;
 }
 
-static int _parse_header(char *f[], acct_header_t *header)
+static int _parse_header(char *f[], jobacct_header_t *header)
 {
 	header->jobnum = atoi(f[F_JOB]);
 	header->partition = xstrdup(f[F_PARTITION]);
@@ -483,9 +490,9 @@ static int _parse_header(char *f[], acct_header_t *header)
 static int _parse_line(char *f[], void **data, int len)
 {
 	int i = atoi(f[F_RECTYPE]);
-	job_rec_t **job = (job_rec_t **)data;
-	step_rec_t **step = (step_rec_t **)data;
-	acct_header_t header;
+	jobacct_job_rec_t **job = (jobacct_job_rec_t **)data;
+	jobacct_step_rec_t **step = (jobacct_step_rec_t **)data;
+	jobacct_header_t header;
 	_parse_header(f, &header);
 		
 	switch(i) {
@@ -617,8 +624,8 @@ static int _parse_line(char *f[], void **data, int len)
 static void _process_start(List job_list, char *f[], int lc,
 			   int show_full, int len)
 {
-	job_rec_t *job = NULL;
-	job_rec_t *temp = NULL;
+	jobacct_job_rec_t *job = NULL;
+	jobacct_job_rec_t *temp = NULL;
 
 	_parse_line(f, (void **)&temp, len);
 	job = _find_job_record(job_list, temp->header, JOB_START);
@@ -632,7 +639,7 @@ static void _process_start(List job_list, char *f[], int lc,
 				"Conflicting JOB_START for job %u at"
 				" line %d -- ignoring it\n",
 				job->header.jobnum, lc);
-			destroy_job(temp);
+			jobacct_destroy_job(temp);
 			return;
 		}
 	}
@@ -648,17 +655,17 @@ static void _process_step(List job_list, char *f[], int lc,
 			  int show_full, int len,
 			  sacct_parameters_t *params)
 {
-	job_rec_t *job = NULL;
+	jobacct_job_rec_t *job = NULL;
 	
-	step_rec_t *step = NULL;
-	step_rec_t *temp = NULL;
+	jobacct_step_rec_t *step = NULL;
+	jobacct_step_rec_t *temp = NULL;
 
 	_parse_line(f, (void **)&temp, len);
 
 	job = _find_job_record(job_list, temp->header, JOB_STEP);
 	
 	if (temp->stepnum == -2) {
-		destroy_step(temp);
+		jobacct_destroy_step(temp);
 		return;
 	}
 	if (!job) {	/* fake it for now */
@@ -674,7 +681,7 @@ static void _process_step(List job_list, char *f[], int lc,
 	if ((step = _find_step_record(job, temp->stepnum))) {
 		
 		if (temp->status == JOB_RUNNING) {
-			destroy_step(temp);
+			jobacct_destroy_step(temp);
 			return;/* if "R" record preceded by F or CD; unusual */
 		}
 		if (step->status != JOB_RUNNING) { /* if not JOB_RUNNING */
@@ -684,7 +691,7 @@ static void _process_step(List job_list, char *f[], int lc,
 				"-- ignoring it\n",
 				step->header.jobnum, 
 				step->stepnum, lc);
-			destroy_step(temp);
+			jobacct_destroy_step(temp);
 			return;
 		}
 		step->status = temp->status;
@@ -701,7 +708,7 @@ static void _process_step(List job_list, char *f[], int lc,
 		xfree(step->stepname);
 		step->stepname = xstrdup(temp->stepname);
 		step->end = temp->header.timestamp;
-		destroy_step(temp);
+		jobacct_destroy_step(temp);
 		goto got_step;
 	}
 	step = temp;
@@ -771,8 +778,8 @@ got_step:
 static void _process_suspend(List job_list, char *f[], int lc,
 			     int show_full, int len)
 {
-	job_rec_t *job = NULL;
-	job_rec_t *temp = NULL;
+	jobacct_job_rec_t *job = NULL;
+	jobacct_job_rec_t *temp = NULL;
 
 	_parse_line(f, (void **)&temp, len);
 	job = _find_job_record(job_list, temp->header, JOB_SUSPEND);
@@ -785,15 +792,15 @@ static void _process_suspend(List job_list, char *f[], int lc,
 
 	//job->header.timestamp = temp->header.timestamp;
 	job->status = temp->status;
-	destroy_job(temp);
+	jobacct_destroy_job(temp);
 }
 	
 static void _process_terminated(List job_list, char *f[], int lc,
 				int show_full, int len,
 				sacct_parameters_t *params)
 {
-	job_rec_t *job = NULL;
-	job_rec_t *temp = NULL;
+	jobacct_job_rec_t *job = NULL;
+	jobacct_job_rec_t *temp = NULL;
 
 	_parse_line(f, (void **)&temp, len);
 	job = _find_job_record(job_list, temp->header, JOB_TERMINATED);
@@ -838,41 +845,8 @@ static void _process_terminated(List job_list, char *f[], int lc,
 	job->show_full = show_full;
 	
 finished:
-	destroy_job(temp);
+	jobacct_destroy_job(temp);
 }
-
-/* static void _destroy_acct_header(void *object) */
-/* { */
-/* 	acct_header_t *header = (acct_header_t *)object; */
-/* 	if(header) { */
-/* 		xfree(header->partition); */
-/* 		xfree(header->blockid); */
-/* 	} */
-/* } */
-
-/* static void _destroy_job(void *object) */
-/* { */
-/* 	job_rec_t *job = (job_rec_t *)object; */
-/* 	if (job) { */
-/* 		if(job->steps) */
-/* 			list_destroy(job->steps); */
-/* 		destroy_acct_header(&job->header); */
-/* 		xfree(job->jobname); */
-/* 		xfree(job->nodes); */
-/* 		xfree(job); */
-/* 	} */
-/* } */
-
-/* static void _destroy_step(void *object) */
-/* { */
-/* 	step_rec_t *step = (step_rec_t *)object; */
-/* 	if (step) { */
-/* 		destroy_acct_header(&step->header); */
-/* 		xfree(step->stepname); */
-/* 		xfree(step->nodes); */
-/* 		xfree(step); */
-/* 	} */
-/* } */
 
 extern void flatfile_jobacct_process_get_jobs(List job_list, 
 					      List selected_steps,
@@ -888,7 +862,7 @@ extern void flatfile_jobacct_process_get_jobs(List job_list,
 	FILE *fd = NULL;
 	int lc = 0;
 	int rec_type = -1;
-	selected_step_t *selected_step = NULL;
+	jobacct_selected_step_t *selected_step = NULL;
 	char *selected_part = NULL;
 	ListIterator itr = NULL;
 	int show_full = 0;
@@ -1147,7 +1121,7 @@ extern void flatfile_jobacct_process_archive(List selected_parts,
 		xfree(logfile_name);
 		goto finished;
 	}
-
+	
 	if (new_file) {  /* By default, the expired file looks like the log */
 		chmod(logfile_name, prot);
 		chown(logfile_name, uid, gid);

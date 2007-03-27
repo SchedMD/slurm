@@ -63,7 +63,115 @@
 
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 #include "src/slurmctld/slurmctld.h"
-#include "src/sacct/sacct_stat.h"
+
+typedef struct {
+	uint16_t taskid; /* contains which task number it was on */
+	uint32_t nodeid; /* contains which node number it was on */	
+} jobacct_id_t;
+
+typedef struct {
+	uint32_t max_vsize; 
+	jobacct_id_t max_vsize_id;
+	float ave_vsize;
+	uint32_t max_rss;
+	jobacct_id_t max_rss_id;
+	float ave_rss;
+	uint32_t max_pages;
+	jobacct_id_t max_pages_id;
+	float ave_pages;
+	float min_cpu;
+	jobacct_id_t min_cpu_id;
+	float ave_cpu;	
+} sacct_t;
+
+typedef struct {
+	int opt_dump;		/* --dump */
+	int opt_dup;		/* --duplicates; +1 = explicitly set */
+	int opt_fdump;		/* --formattted_dump */
+	int opt_stat;		/* --stat */
+	int opt_gid;		/* --gid (-1=wildcard, 0=root) */
+	int opt_header;		/* can only be cleared */
+	int opt_help;		/* --help */
+	int opt_long;		/* --long */
+	int opt_lowmem;		/* --low_memory */
+	int opt_purge;		/* --purge */
+	int opt_total;		/* --total */
+	int opt_uid;		/* --uid (-1=wildcard, 0=root) */
+	int opt_verbose;	/* --verbose */
+	long opt_expire;		/* --expire= */ 
+	char *opt_expire_timespec; /* --expire= */
+	char *opt_field_list;	/* --fields= */
+	char *opt_filein;	/* --file */
+	char *opt_job_list;	/* --jobs */
+	char *opt_partition_list;/* --partitions */
+	char *opt_state_list;	/* --states */
+} sacct_parameters_t;
+
+typedef struct header {
+	uint32_t jobnum;
+	char	*partition;
+	char	*blockid;
+	time_t 	job_submit;
+	time_t	timestamp;
+	uint32_t uid;
+	uint32_t gid;
+	uint16_t rec_type;
+} jobacct_header_t;
+
+typedef struct {
+	uint32_t job_start_seen,		/* useful flags */
+		job_step_seen,
+		job_terminated_seen,
+		jobnum_superseded;	/* older jobnum was reused */
+	jobacct_header_t header;
+	uint16_t show_full;
+	char	*nodes;
+	char	*jobname;
+	uint16_t track_steps;
+	int32_t priority;
+	uint32_t ncpus;
+	uint32_t ntasks;
+	enum job_states	status;
+	int32_t	exitcode;
+	uint32_t elapsed;
+	time_t end;
+	uint32_t tot_cpu_sec;
+	uint32_t tot_cpu_usec;
+	struct rusage rusage;
+	sacct_t sacct;
+	List    steps;
+	char    *account;
+	uint32_t requid;
+} jobacct_job_rec_t;
+
+typedef struct {
+	jobacct_header_t   header;
+	uint32_t	stepnum;	/* job's step number */
+	char	        *nodes;
+	char	        *stepname;
+	enum job_states	status;
+	int32_t	        exitcode;
+	uint32_t	ntasks; 
+	uint32_t        ncpus;
+	uint32_t	elapsed;
+	time_t          end;
+	uint32_t	tot_cpu_sec;
+	uint32_t        tot_cpu_usec;
+	struct rusage   rusage;
+	sacct_t         sacct;
+	char            *account;
+	uint32_t requid;
+} jobacct_step_rec_t;
+
+typedef struct selected_step_t {
+	char *job;
+	char *step;
+} jobacct_selected_step_t;
+
+extern void jobacct_destroy_acct_header(void *object);
+extern void jobacct_destroy_job(void *object);
+extern void jobacct_destroy_step(void *object);
+
 
 /* common */
 extern int jobacct_g_init_struct(jobacctinfo_t *jobacct, 

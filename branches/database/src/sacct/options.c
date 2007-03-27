@@ -44,7 +44,7 @@
 
 void _destroy_parts(void *object);
 void _destroy_steps(void *object);
-void _dump_header(acct_header_t header);
+void _dump_header(jobacct_header_t header);
 void _help_fields_msg(void);
 void _help_msg(void);
 void _usage(void);
@@ -62,7 +62,7 @@ void _destroy_parts(void *object)
 
 void _destroy_steps(void *object)
 {
-	selected_step_t *step = (selected_step_t *)object;
+	jobacct_selected_step_t *step = (jobacct_selected_step_t *)object;
 	if(step) {
 		xfree(step->job);
 		xfree(step->step);
@@ -85,7 +85,7 @@ void _show_rec(char *f[])
  * In:	Index into the jobs table
  * Out: Nothing.
  */
-void _dump_header(acct_header_t header)
+void _dump_header(jobacct_header_t header)
 {
 	struct tm ts;
 	gmtime_r(&header.timestamp, &ts);
@@ -286,8 +286,8 @@ int decode_status_char(char *status)
 
 int get_data(void)
 {
-	job_rec_t *job = NULL;
-	step_rec_t *step = NULL;
+	jobacct_job_rec_t *job = NULL;
+	jobacct_step_rec_t *step = NULL;
 
 	ListIterator itr = NULL;
 	ListIterator itr_step = NULL;
@@ -355,7 +355,7 @@ void parse_command_line(int argc, char **argv)
 	extern int optind;
 	int c, i, optionIndex = 0;
 	char *end = NULL, *start = NULL, *acct_type = NULL;
-	selected_step_t *selected_step = NULL;
+	jobacct_selected_step_t *selected_step = NULL;
 	ListIterator itr = NULL;
 	struct stat stat_buf;
 	char *dot = NULL;
@@ -713,7 +713,7 @@ void parse_command_line(int argc, char **argv)
 				start++;	/* discard whitespace */
 			if(!(int)*start)
 				continue;
-			selected_step = xmalloc(sizeof(selected_step_t));
+			selected_step = xmalloc(sizeof(jobacct_selected_step_t));
 			list_append(selected_steps, selected_step);
 			
 			dot = strstr(start, ".");
@@ -836,8 +836,8 @@ void do_dump(void)
 {
 	ListIterator itr = NULL;
 	ListIterator itr_step = NULL;
-	job_rec_t *job = NULL;
-	step_rec_t *step = NULL;
+	jobacct_job_rec_t *job = NULL;
+	jobacct_step_rec_t *step = NULL;
 	struct tm ts;
 	
 	itr = list_iterator_create(jobs);
@@ -1063,8 +1063,8 @@ void do_list(void)
 	
 	ListIterator itr = NULL;
 	ListIterator itr_step = NULL;
-	job_rec_t *job = NULL;
-	step_rec_t *step = NULL;
+	jobacct_job_rec_t *job = NULL;
+	jobacct_step_rec_t *step = NULL;
 	
 	if (params.opt_total)
 		do_jobsteps = 0;
@@ -1155,7 +1155,7 @@ void do_stat()
 	ListIterator itr = NULL;
 	uint32_t jobid = 0;
 	uint32_t stepid = 0;
-	selected_step_t *selected_step = NULL;
+	jobacct_selected_step_t *selected_step = NULL;
 	
 	itr = list_iterator_create(selected_steps);
 	while((selected_step = list_next(itr))) {
@@ -1171,7 +1171,7 @@ void do_stat()
 void sacct_init()
 {
 	int i=0;
-	jobs = list_create(destroy_job);
+	jobs = list_create(jobacct_destroy_job);
 	selected_parts = list_create(_destroy_parts);
 	selected_steps = list_create(_destroy_steps);
 	for(i=0; i<STATUS_COUNT; i++)

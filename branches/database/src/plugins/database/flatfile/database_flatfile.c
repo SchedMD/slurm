@@ -105,7 +105,7 @@ extern int fini ( void )
  * Initialize the database make sure tables are created and in working
  * order
  */
-extern int database_p_jobacct_database_init()
+extern int database_p_jobacct_init()
 {
 	return flatfile_jobacct_init();	
 }
@@ -113,7 +113,7 @@ extern int database_p_jobacct_database_init()
 /*
  * finish up database connection
  */
-extern int database_p_jobacct_database_fini()
+extern int database_p_jobacct_fini()
 {
 	return flatfile_jobacct_fini();
 }
