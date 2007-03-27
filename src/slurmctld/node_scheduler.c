@@ -453,8 +453,9 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 		 uint32_t min_nodes, uint32_t max_nodes, uint32_t req_nodes)
 {
 	int error_code = SLURM_SUCCESS, i, j, pick_code;
-	int total_nodes = 0, total_cpus = 0; 
-	int total_mem = 0; /* total_: total resources configured in
+	int total_nodes = 0;
+	uint16_t total_cpus = 0; 
+	uint32_t total_mem = 0; /* total_: total resources configured in
 			      partition */
 	int avail_nodes = 0, avail_cpus = 0;	
 	int avail_mem = 0; /* avail_: resources available for use now */
