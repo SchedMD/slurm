@@ -732,17 +732,17 @@ extern int select_p_get_extra_jobinfo (struct node_record *node_ptr,
 	switch (info) {
 	case SELECT_AVAIL_CPUS:
 	{
-		uint32_t *tmp_32 = (uint32_t *) data;
+		uint16_t *tmp_16 = (uint16_t *) data;
 
 		if ((job_ptr->details->cpus_per_task > 1)
 		||  (job_ptr->details->mc_ptr)) {
 			int index = (node_ptr - node_record_table_ptr);
-			*tmp_32 = _get_avail_cpus(job_ptr, index);
+			*tmp_16 = _get_avail_cpus(job_ptr, index);
 		} else {
 			if (slurmctld_conf.fast_schedule) {
-				*tmp_32 = node_ptr->config_ptr->cpus;
+				*tmp_16 = node_ptr->config_ptr->cpus;
 			} else {
-				*tmp_32 = node_ptr->cpus;
+				*tmp_16 = node_ptr->cpus;
 			}
 		}
 		break;

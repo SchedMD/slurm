@@ -9,6 +9,7 @@ documents those changes that are of interest to users and admins.
  -- In sched/wiki2, fix possible overflow in job's nodelist, from 
     Ernest Artiaga, BSC.
  -- Defer creation of new job steps until a suspended job is resumed.
+ -- select/linear - fix for potential stack corruption bug.
 
 * Changes in SLURM 1.2.2
 ========================
