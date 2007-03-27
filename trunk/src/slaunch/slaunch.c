@@ -124,6 +124,7 @@ static void _ignore_signal(int signo);
 static void _exit_on_signal(int signo);
 static int _call_spank_local_user(slurm_step_ctx step_ctx,
 				  slurm_step_launch_params_t *step_params);
+static void  _define_symbols(void);
 
 int slaunch(int argc, char **argv)
 {
@@ -143,8 +144,10 @@ int slaunch(int argc, char **argv)
 	xsignal(SIGUSR2, _ignore_signal);
 	
 	/* Initialize plugin stack, read options from plugins, etc. */
-	if (spank_init(NULL) < 0)
+	if (spank_init(NULL) < 0) {
 		fatal("Plug-in initialization failed");
+		_define_symbols();
+	}
 
 	/* Be sure to call spank_fini when slaunch exits. */
 	if (atexit((void (*) (void)) spank_fini) < 0)
@@ -890,3 +893,14 @@ static void _exit_on_signal(int signo)
 {
 	slurm_step_launch_abort(step_ctx);
 }
+
+/* Plugins must be able to resolve symbols.
+ * Since slaunch statically links with src/api/libslurmhelper rather than
+ * dynamicaly linking with libslurm, we need to reference all needed
+ * symbols within slaunch. None of the functions below are actually
+ * used, but we need to load the symbols. */
+static void _define_symbols(void)
+{
+	slurm_signal_job_step(0,0,0);	/* needed by mvapich and mpichgm */
+}
+
