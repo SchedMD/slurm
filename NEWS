@@ -255,6 +255,11 @@ documents those changes that are of interest to users and admins.
     the code)
  -- Added support for OSX build.
 
+* Changes in SLURM 1.1.34
+=========================
+ - Insure that slurm_signal_job_step() is defined in srun for mvapich
+   and mpichgm error conditions.
+
 * Changes in SLURM 1.1.33
 =========================
  - sched/wiki2 - Do not wait for job completion before permitting 
