@@ -126,6 +126,7 @@ static void  _run_srun_epilog (srun_job_t *job);
 static int   _run_srun_script (srun_job_t *job, char *script);
 static int   _slurm_debug_env_val (void);
 static int   _call_spank_local_user (srun_job_t *job);
+static void  _define_symbols(void);
 
 int srun(int ac, char **av)
 {
@@ -148,8 +149,10 @@ int srun(int ac, char **av)
 
 	/* Initialize plugin stack, read options from plugins, etc.
 	 */
-	if (spank_init(NULL) < 0)
+	if (spank_init(NULL) < 0) {
 		fatal("Plug-in initialization failed");
+		_define_symbols();
+	}
 
 	/* Be sure to call spank_fini when srun exits.
 	 */
@@ -1088,3 +1091,14 @@ static int _run_srun_script (srun_job_t *job, char *script)
 
 	/* NOTREACHED */
 }
+
+/* Plugins must be able to resolve symbols.
+ * Since srun statically links with src/api/libslurmhelper rather than
+ * dynamicaly linking with libslurm, we need to reference all needed
+ * symbols within srun. None of the functions below are actually
+ * used, but we need to load the symbols. */
+static void _define_symbols(void)
+{
+	slurm_signal_job_step(0,0,0);	/* needed by mvapich and mpichgm */
+}
+
