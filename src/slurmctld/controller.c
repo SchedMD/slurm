@@ -329,7 +329,7 @@ int main(int argc, char *argv[])
 		pthread_join(slurmctld_config.thread_id_save, NULL);
 		if (select_g_state_save(slurmctld_conf.state_save_location)
 				!= SLURM_SUCCESS )
-			error("failed to restore node selection state");
+			error("failed to save node selection state");
 		switch_save(slurmctld_conf.state_save_location);
 		if (slurmctld_config.resume_backup == false)
 			break;
