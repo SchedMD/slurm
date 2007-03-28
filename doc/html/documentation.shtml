@@ -43,9 +43,10 @@ Jobs throuh LSF</a></li>
 <li><a href="selectplugins.shtml">Node Selection Plugin Programmer Guide</a></li>
 <li><a href="schedplugins.shtml">Scheduler Plugin Programmer Guide</a></li>
 <li><a href="switchplugins.shtml">Switch (Interconnect) Plugin Programmer Guide</a></li>
+<li><a href="taskplugins.shtml">Task Plugin Programmer Guide</a></li>
 <li><a href="mpiplugins.shtml">MPI Plugin Programmer Guide</a></li>
 </ul>
 
-<p style="text-align:center;">Last modified 31 January 2007</p>
+<p style="text-align:center;">Last modified 27 March 2007</p>
 
 <!--#include virtual="footer.txt"-->
