@@ -77,6 +77,7 @@ strong_alias(_xstrftimecat,	slurm_xstrftimecat);
 strong_alias(_xstrfmtcat,	slurm_xstrfmtcat);
 strong_alias(_xmemcat,		slurm_xmemcat);
 strong_alias(xstrdup,		slurm_xstrdup);
+strong_alias(xstrdup_printf,		slurm_xstrdup_printf);
 strong_alias(xstrndup,		slurm_xstrndup);
 strong_alias(xbasename,		slurm_xbasename);
 strong_alias(_xstrsubstitute,   slurm_xstrsubstitute);
@@ -267,6 +268,38 @@ char * xstrdup(const char *str)
 	xassert(rsiz == siz-1);
 
 	return result;
+}
+
+/*
+ * Give me a copy of the string as if it were printf.
+ *   fmt (IN)		format of string and args if any
+ *   RETURN		copy of formated string
+ */
+char *xstrdup_printf(const char *fmt, ...)
+{
+	/* Start out with a size of 100 bytes. */
+	int n, size = 100;
+	char *p = NULL;
+	va_list ap;
+	
+	if((p = xmalloc(size)) == NULL)
+		return NULL;
+	while(1) {
+		/* Try to print in the allocated space. */
+		va_start(ap, fmt);
+		n = vsnprintf(p, size, fmt, ap);
+		va_end (ap);
+		/* If that worked, return the string. */
+		if (n > -1 && n < size)
+			return p;
+		/* Else try again with more space. */
+		if (n > -1)               /* glibc 2.1 */
+			size = n + 1;           /* precisely what is needed */
+		else                      /* glibc 2.0 */
+			size *= 2;              /* twice the old size */
+		if ((p = xrealloc(p, size)) == NULL)
+			return NULL;
+	}
 }
 
 /*

@@ -43,12 +43,23 @@
 #ifndef _HAVE_MYSQL_JOBACCT_PROCESS_H
 #define _HAVE_MYSQL_JOBACCT_PROCESS_H
 
-#include "src/sacct/sacct.h"
+#include "mysql_common.h"
+#include "mysql_jobacct.h"
+#include "src/common/slurm_jobacct.h"
+
+extern MYSQL *jobacct_mysql_db;
+extern int jobacct_db_init;
+
+extern char *job_index;
+extern char *job_table;
+extern char *step_table;
+extern char *rusage_table;
 
 extern void mysql_jobacct_process_get_jobs(List job_list,
 					   List selected_steps,
 					   List selected_parts,
 					   sacct_parameters_t *params);
+
 extern void mysql_jobacct_process_archive(List selected_parts,
 					  sacct_parameters_t *params);
 

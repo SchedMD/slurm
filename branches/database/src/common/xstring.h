@@ -104,6 +104,11 @@ char *xstrdup(const char *str);
 char *xstrndup(const char *str, size_t n);
 
 /*
+** strndup formatted which uses xmalloc routines
+*/
+char *xstrdup_printf(const char *fmt, ...);
+
+/*
 ** replacement for libc basename
 */
 char *xbasename(char *path);

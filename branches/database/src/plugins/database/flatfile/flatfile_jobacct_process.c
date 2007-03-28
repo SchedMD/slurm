@@ -422,59 +422,6 @@ static jobacct_step_rec_t *_find_step_record(jobacct_job_rec_t *job,
 	return step;
 }
 
-static jobacct_job_rec_t *_init_job_rec(jobacct_header_t header)
-{
-	jobacct_job_rec_t *job = xmalloc(sizeof(jobacct_job_rec_t));
-	memcpy(&job->header, &header, sizeof(jobacct_header_t));
-	memset(&job->rusage, 0, sizeof(struct rusage));
-	memset(&job->sacct, 0, sizeof(sacct_t));
-	job->sacct.min_cpu = (float)NO_VAL;
-	job->job_start_seen = 0;
-	job->job_step_seen = 0;
-	job->job_terminated_seen = 0;
-	job->jobnum_superseded = 0;
-	job->jobname = xstrdup("(unknown)");
-	job->status = JOB_PENDING;
-	job->nodes = NULL;
-	job->jobname = NULL;
-	job->exitcode = 0;
-	job->priority = 0;
-	job->ntasks = 0;
-	job->ncpus = 0;
-	job->elapsed = 0;
-	job->tot_cpu_sec = 0;
-	job->tot_cpu_usec = 0;
-	job->steps = list_create(jobacct_destroy_step);
-	job->nodes = NULL;
-	job->track_steps = 0;
-	job->account = NULL;
-	job->requid = -1;
-
-      	return job;
-}
-
-static jobacct_step_rec_t *_init_step_rec(jobacct_header_t header)
-{
-	jobacct_step_rec_t *step = xmalloc(sizeof(jobacct_job_rec_t));
-	memcpy(&step->header, &header, sizeof(jobacct_header_t));
-	memset(&step->rusage, 0, sizeof(struct rusage));
-	memset(&step->sacct, 0, sizeof(sacct_t));
-	step->stepnum = (uint32_t)NO_VAL;
-	step->nodes = NULL;
-	step->stepname = NULL;
-	step->status = NO_VAL;
-	step->exitcode = NO_VAL;
-	step->ntasks = (uint32_t)NO_VAL;
-	step->ncpus = (uint32_t)NO_VAL;
-	step->elapsed = (uint32_t)NO_VAL;
-	step->tot_cpu_sec = (uint32_t)NO_VAL;
-	step->tot_cpu_usec = (uint32_t)NO_VAL;
-	step->account = NULL;
-	step->requid = -1;
-
-	return step;
-}
-
 static int _parse_header(char *f[], jobacct_header_t *header)
 {
 	header->jobnum = atoi(f[F_JOB]);
@@ -497,7 +444,7 @@ static int _parse_line(char *f[], void **data, int len)
 		
 	switch(i) {
 	case JOB_START:
-		*job = _init_job_rec(header);
+		*job = jobacct_init_job_rec(header);
 		(*job)->jobname = xstrdup(f[F_JOBNAME]);
 		(*job)->track_steps = atoi(f[F_TRACK_STEPS]);
 		(*job)->priority = atoi(f[F_PRIORITY]);
@@ -521,7 +468,7 @@ static int _parse_line(char *f[], void **data, int len)
 		}
 		break;
 	case JOB_STEP:
-		*step = _init_step_rec(header);
+		*step = jobacct_init_step_rec(header);
 		(*step)->stepnum = atoi(f[F_JOBSTEP]);
 		(*step)->status = atoi(f[F_STATUS]);
 		(*step)->exitcode = atoi(f[F_EXITCODE]);
@@ -608,7 +555,7 @@ static int _parse_line(char *f[], void **data, int len)
 		break;
 	case JOB_SUSPEND:
 	case JOB_TERMINATED:
-		*job = _init_job_rec(header);
+		*job = jobacct_init_job_rec(header);
 		(*job)->elapsed = atoi(f[F_TOT_ELAPSED]);
 		(*job)->status = atoi(f[F_STATUS]);		
 		if(len > F_JOB_REQUID) 
@@ -669,7 +616,7 @@ static void _process_step(List job_list, char *f[], int lc,
 		return;
 	}
 	if (!job) {	/* fake it for now */
-		job = _init_job_rec(temp->header);
+		job = jobacct_init_job_rec(temp->header);
 		if (params->opt_verbose > 1) 
 			fprintf(stderr, 
 				"Note: JOB_STEP record %u.%u preceded "
@@ -734,45 +681,6 @@ got_step:
 		job->status = JOB_RUNNING;
 		job->elapsed = step->header.timestamp - job->header.timestamp;
 	}
-	
-	/* we need to do this in sacct not here so go through all the
-	 * steps and aggregate */
-	
-/* 	/\* now aggregate the aggregatable *\/ */
-/* 	job->ncpus = MAX(job->ncpus, step->ncpus); */
-/* 	if(step->status < JOB_COMPLETE) */
-/* 		return; */
-/* 	job->tot_cpu_sec += step->tot_cpu_sec; */
-/* 	job->tot_cpu_usec += step->tot_cpu_usec; */
-/* 	job->rusage.ru_utime.tv_sec += step->rusage.ru_utime.tv_sec; */
-/* 	job->rusage.ru_utime.tv_usec += step->rusage.ru_utime.tv_usec; */
-/* 	job->rusage.ru_stime.tv_sec += step->rusage.ru_stime.tv_sec; */
-/* 	job->rusage.ru_stime.tv_usec += step->rusage.ru_stime.tv_usec; */
-/* 	job->rusage.ru_inblock += step->rusage.ru_inblock; */
-/* 	job->rusage.ru_oublock += step->rusage.ru_oublock; */
-/* 	job->rusage.ru_msgsnd += step->rusage.ru_msgsnd; */
-/* 	job->rusage.ru_msgrcv += step->rusage.ru_msgrcv; */
-/* 	job->rusage.ru_nsignals += step->rusage.ru_nsignals; */
-/* 	job->rusage.ru_nvcsw += step->rusage.ru_nvcsw; */
-/* 	job->rusage.ru_nivcsw += step->rusage.ru_nivcsw; */
-		
-/* 	/\* and finally the maximums for any process *\/ */
-/* 	job->rusage.ru_maxrss = MAX(job->rusage.ru_maxrss,  */
-/* 				    step->rusage.ru_maxrss); */
-/* 	job->rusage.ru_ixrss = MAX(job->rusage.ru_ixrss, */
-/* 				   step->rusage.ru_ixrss); */
-/* 	job->rusage.ru_idrss = MAX(job->rusage.ru_idrss, */
-/* 				   step->rusage.ru_idrss); */
-/* 	job->rusage.ru_isrss = MAX(job->rusage.ru_isrss, */
-/* 				   step->rusage.ru_isrss); */
-/* 	job->rusage.ru_minflt = MAX(job->rusage.ru_minflt, */
-/* 				    step->rusage.ru_minflt); */
-/* 	job->rusage.ru_majflt = MAX(job->rusage.ru_majflt, */
-/* 				    step->rusage.ru_majflt); */
-/* 	job->rusage.ru_nswap = MAX(job->rusage.ru_nswap, */
-/* 				   step->rusage.ru_nswap); */
-	/* get the max for all the sacct_t struct */
-	//_aggregate_sacct(&job->sacct, &step->sacct);
 }
 
 static void _process_suspend(List job_list, char *f[], int lc,
@@ -784,7 +692,7 @@ static void _process_suspend(List job_list, char *f[], int lc,
 	_parse_line(f, (void **)&temp, len);
 	job = _find_job_record(job_list, temp->header, JOB_SUSPEND);
 	if (!job)    
-		job = _init_job_rec(temp->header);
+		job = jobacct_init_job_rec(temp->header);
 	
 	job->show_full = show_full;
 	if (job->status == JOB_SUSPENDED) 
@@ -805,7 +713,7 @@ static void _process_terminated(List job_list, char *f[], int lc,
 	_parse_line(f, (void **)&temp, len);
 	job = _find_job_record(job_list, temp->header, JOB_TERMINATED);
 	if (!job) {	/* fake it for now */
-		job = _init_job_rec(temp->header);
+		job = jobacct_init_job_rec(temp->header);
 		if (params->opt_verbose > 1) 
 			fprintf(stderr, "Note: JOB_TERMINATED record for job "
 				"%u preceded "

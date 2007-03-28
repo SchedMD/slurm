@@ -720,11 +720,14 @@ void parse_command_line(int argc, char **argv)
 			if (dot == NULL) {
 				debug2("No jobstep requested");
 				selected_step->step = NULL;
+				selected_step->stepid = (uint32_t)NO_VAL;
 			} else {
 				*dot++ = 0;
 				selected_step->step = xstrdup(dot);
+				selected_step->stepid = atoi(dot);
 			}
 			selected_step->job = xstrdup(start);
+			selected_step->jobid = atoi(start);
 			start = end + 1;
 		}
 		if (params.opt_verbose) {

@@ -166,8 +166,12 @@ typedef struct {
 typedef struct selected_step_t {
 	char *job;
 	char *step;
+	uint32_t jobid;
+	uint32_t stepid;
 } jobacct_selected_step_t;
 
+extern jobacct_step_rec_t *jobacct_init_step_rec(jobacct_header_t header);
+extern jobacct_job_rec_t *jobacct_init_job_rec(jobacct_header_t header);
 extern void jobacct_destroy_acct_header(void *object);
 extern void jobacct_destroy_job(void *object);
 extern void jobacct_destroy_step(void *object);

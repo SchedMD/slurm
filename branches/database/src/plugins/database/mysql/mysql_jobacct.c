@@ -38,21 +38,19 @@
  *  Copyright (C) 2002 The Regents of the University of California.
 \*****************************************************************************/
 
-#include "mysql_common.h"
-#include "mysql_jobacct.h"
 #include "mysql_jobacct_process.h"
 
-static MYSQL *jobacct_mysql_db = NULL;
-static int jobacct_db_init = 0;
+MYSQL *jobacct_mysql_db = NULL;
+int jobacct_db_init = 0;
 
-static char *job_index = "index_table";
+char *job_index = "index_table";
 /* id jobid partition submit uid gid blockid */
 
-static char *job_table = "job";
+char *job_table = "job";
 /* id start end suspended name track_steps state priority cpus
    nodelist account kill_requid */
 
-static char *step_table = "step";
+char *step_table = "step";
 /* id stepid start end suspended name nodelist state kill_requid
    comp_code cpus
    max_vsize max_vsize_task max_vsize_node ave_vsize
@@ -60,7 +58,7 @@ static char *step_table = "step";
    max_pages max_pages_task max_pages_node ave_pages
    min_cpu min_cpu_task min_cpu_node ave_cpu */
 
-static char *rusage_table = "step_rusage";
+char *rusage_table = "step_rusage";
 /* id stepid cpu_sec cpu_usec user_sec user_usec sys_sec sys_usec
    max_rss max_ixrss max_idrss max_isrss max_minflt max_majflt
    max_nswap inblock outblock msgsnd msgrcv nsignals nvcsw nivcsw */
@@ -173,7 +171,7 @@ extern int mysql_jobacct_init()
 
 	destroy_mysql_db_info(db_info);
 
-	info("Database init finished");
+	debug("Database init finished");
 
 	return rc;
 #else
@@ -184,8 +182,10 @@ extern int mysql_jobacct_init()
 extern int mysql_jobacct_fini()
 {
 #ifdef HAVE_MYSQL
-	if (jobacct_mysql_db)
+	if (jobacct_mysql_db) {
 		mysql_close(jobacct_mysql_db);
+		jobacct_mysql_db = NULL;
+	}
 	return SLURM_SUCCESS;
 #else
 	return SLURM_ERROR;
@@ -203,9 +203,9 @@ extern int mysql_jobacct_job_start(struct job_record *job_ptr)
 	char *block_id = NULL;
 	char query[1024];
 	
-	if(!jobacct_db_init) {
-		debug("mysql_jobacct_init was not called or it failed");
-		return SLURM_ERROR;
+	if(!jobacct_mysql_db) {
+		if(mysql_jobacct_init() == SLURM_ERROR)
+			return SLURM_ERROR;
 	}
 
 	debug2("mysql_jobacct_job_start() called");
@@ -275,9 +275,9 @@ extern int mysql_jobacct_job_complete(struct job_record *job_ptr)
 	char	*account, *nodes;
 	int rc=SLURM_SUCCESS;
 	
-	if(!jobacct_db_init) {
-		debug("mysql_jobacct_init was not called or it failed");
-		return SLURM_ERROR;
+	if(!jobacct_mysql_db) {
+		if(mysql_jobacct_init() == SLURM_ERROR)
+			return SLURM_ERROR;
 	}
 	
 	debug2("mysql_jobacct_job_complete() called");
@@ -323,9 +323,9 @@ extern int mysql_jobacct_step_start(struct step_record *step_ptr)
 #endif
 	char query[1024];
 	
-	if(!jobacct_db_init) {
-		debug("jobacct init was not called or it failed");
-		return SLURM_ERROR;
+	if(!jobacct_mysql_db) {
+		if(mysql_jobacct_init() == SLURM_ERROR)
+			return SLURM_ERROR;
 	}
 
 #ifdef HAVE_BG
@@ -386,10 +386,10 @@ extern int mysql_jobacct_step_complete(struct step_record *step_ptr)
 	char *account;
 	char query[1024];
 	int rc =SLURM_SUCCESS;
-
-	if(!jobacct_db_init) {
-		debug("jobacct init was not called or it failed");
-		return SLURM_ERROR;
+	
+	if(!jobacct_mysql_db) {
+		if(mysql_jobacct_init() == SLURM_ERROR)
+			return SLURM_ERROR;
 	}
 	
 	now = time(NULL);
@@ -540,9 +540,9 @@ extern int mysql_jobacct_suspend(struct job_record *job_ptr)
 	char query[1024];
 	int rc = SLURM_SUCCESS;
 	
-	if(!jobacct_db_init) {
-		debug("jobacct init was not called or it failed");
-		return SLURM_ERROR;
+	if(!jobacct_mysql_db) {
+		if(mysql_jobacct_init() == SLURM_ERROR)
+			return SLURM_ERROR;
 	}
 	
 	if(job_ptr->db_index) {
@@ -577,6 +577,10 @@ extern void mysql_jobacct_get_jobs(List job_list,
 				   List selected_steps, List selected_parts,
 				   void *params)
 {
+	if(!jobacct_mysql_db) {
+		if(mysql_jobacct_init() == SLURM_ERROR)
+			return;
+	}
 	mysql_jobacct_process_get_jobs(job_list,
 				       selected_steps, selected_parts,
 				       params);	
@@ -588,6 +592,10 @@ extern void mysql_jobacct_get_jobs(List job_list,
  */
 extern void mysql_jobacct_archive(List selected_parts, void *params)
 {
+	if(!jobacct_mysql_db) {
+		if(mysql_jobacct_init() == SLURM_ERROR)
+			return;
+	}
 	mysql_jobacct_process_archive(selected_parts, params);
 	return;
 }
