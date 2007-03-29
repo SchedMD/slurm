@@ -426,7 +426,7 @@ _pick_step_nodes (struct job_record  *job_ptr,
 	nodes_avail = bit_copy (job_ptr->node_bitmap);
 	if (nodes_avail == NULL)
 		fatal("bit_copy malloc failure");
-	bit_and (nodes_avail, avail_node_bitmap);
+	bit_and (nodes_avail, up_node_bitmap);
 
 	if ( step_spec->node_count == INFINITE)	/* use all nodes */
 		return nodes_avail;
