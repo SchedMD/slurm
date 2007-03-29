@@ -634,7 +634,7 @@ static int _synchronize_bitmaps(bitstr_t ** partially_idle_bitmap)
 	       bit_size(avail_node_bitmap), bit_size(idle_node_bitmap));
 
 	for (i = 0; i < node_record_count; i++) {
-		int allocated_cpus;
+		uint16_t allocated_cpus;
 		if (bit_test(avail_node_bitmap, i) != 1)
 			continue;
 
