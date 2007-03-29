@@ -870,7 +870,9 @@ _add_node_set_info(struct node_set *node_set_ptr,
 		   int job_id)
 {
         int error_code = SLURM_SUCCESS, i;
-	int this_cpu_cnt, this_mem_cnt, alloc_cpus, alloc_mem;
+	int this_cpu_cnt, this_mem_cnt;
+	uint32_t alloc_mem;
+	uint16_t alloc_cpus;
 
         xassert(node_set_ptr->my_bitmap);
 

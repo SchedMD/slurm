@@ -1,6 +1,11 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins.
 
+* Changes in SLURM 1.2.4
+========================
+ -- In select/cons_res - fix for function argument type mis-match in getting
+    CPU count for a job, from Ernest Artiaga, BSC.
+
 * Changes in SLURM 1.2.3
 ========================
  -- Cpuset logic added to  task/affinity, from Don Albert (Bull) and
