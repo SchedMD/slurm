@@ -305,7 +305,7 @@ extern jobacct_job_rec_t *jobacct_init_job_rec(jobacct_header_t header)
 	job->job_step_seen = 0;
 	job->job_terminated_seen = 0;
 	job->jobnum_superseded = 0;
-	job->jobname = xstrdup("(unknown)");
+	job->jobname = NULL;
 	job->status = JOB_PENDING;
 	job->nodes = NULL;
 	job->jobname = NULL;
@@ -364,6 +364,7 @@ extern void jobacct_destroy_job(void *object)
 			list_destroy(job->steps);
 		jobacct_destroy_header(&job->header);
 		xfree(job->jobname);
+		xfree(job->account);
 		xfree(job->nodes);
 		xfree(job);
 	}
@@ -376,6 +377,7 @@ extern void jobacct_destroy_step(void *object)
 		jobacct_destroy_header(&step->header);
 		xfree(step->stepname);
 		xfree(step->nodes);
+		xfree(step->account);
 		xfree(step);
 	}
 }

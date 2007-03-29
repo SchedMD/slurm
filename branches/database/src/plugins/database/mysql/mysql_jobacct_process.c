@@ -63,6 +63,7 @@ extern void mysql_jobacct_process_get_jobs(List job_list,
 	jobacct_job_rec_t *job = NULL;
 	jobacct_step_rec_t *step = NULL;
 	jobacct_header_t header;
+	time_t now = time(NULL);
 
 	/* if this changes you will need to edit the corresponding 
 	 * enum below also t1 is job_index and t2 is job_table */
@@ -162,7 +163,7 @@ extern void mysql_jobacct_process_get_jobs(List job_list,
 		STEP_REQ_STEPID,
 		STEP_REQ_START,
 		STEP_REQ_END,
-		STEP_REQ_SUSPEND,
+		STEP_REQ_SUSPENDED,
 		STEP_REQ_NAME,
 		STEP_REQ_NODELIST,
 		STEP_REQ_STATE,
@@ -215,8 +216,7 @@ extern void mysql_jobacct_process_get_jobs(List job_list,
 		while((selected_step = list_next(itr))) {
 			if(set) 
 				xstrcat(extra, " || ");
-			tmp = xstrdup_printf("%s.jobid=%d",
-					      job_index,
+			tmp = xstrdup_printf("t1.jobid=%d",
 					      selected_step->jobid);
 			xstrcat(extra, tmp);
 			set = 1;
@@ -233,8 +233,7 @@ extern void mysql_jobacct_process_get_jobs(List job_list,
 		while((selected_part = list_next(itr))) {
 			if(set) 
 				xstrcat(extra, " || ");
-			tmp = xstrdup_printf("%s.partition='%s'",
-					      job_index,
+			tmp = xstrdup_printf("t1.partition='%s'",
 					      selected_part);
 			xstrcat(extra, tmp);
 			set = 1;
@@ -268,20 +267,22 @@ extern void mysql_jobacct_process_get_jobs(List job_list,
 	xfree(query);
 
 	while ((row = mysql_fetch_row(result))) {
+		time_t job_suspended = atoi(row[JOB_REQ_SUSPENDED]);
 		char *id = row[JOB_REQ_ID];
 		header.jobnum = atoi(row[JOB_REQ_JOBID]);
 		header.partition = xstrdup(row[JOB_REQ_PARTITION]);
 		header.job_submit = atoi(row[JOB_REQ_SUBMIT]);
+		header.timestamp = atoi(row[JOB_REQ_START]);
 		header.uid = atoi(row[JOB_REQ_UID]);
 		header.gid = atoi(row[JOB_REQ_GID]);
 		header.blockid = xstrdup(row[JOB_REQ_BLOCKID]);
 
 		job = jobacct_init_job_rec(header);
-		
 		job->jobname = xstrdup(row[JOB_REQ_NAME]);
 		job->track_steps = atoi(row[JOB_REQ_TRACKSTEPS]);
 		job->priority = atoi(row[JOB_REQ_PRIORITY]);
 		job->ncpus = atoi(row[JOB_REQ_CPUS]);
+		job->end = atoi(row[JOB_REQ_END]);
 		job->nodes = xstrdup(row[JOB_REQ_NODELIST]);
 		if (!strcmp(job->nodes, "(null)")) {
 			xfree(job->nodes);
@@ -289,6 +290,7 @@ extern void mysql_jobacct_process_get_jobs(List job_list,
 		}
 		job->account = xstrdup(row[JOB_REQ_ACCOUNT]);
 		list_append(job_list, job);
+
 		if(selected_steps && list_count(selected_steps)) {
 			set = 0;
 			xstrcat(extra, " && (");
@@ -299,8 +301,7 @@ extern void mysql_jobacct_process_get_jobs(List job_list,
 				}
 				if(set) 
 					xstrcat(extra, " || ");
-				tmp = xstrdup_printf("%s.stepid=%d",
-						     step_table,
+				tmp = xstrdup_printf("t1.stepid=%d",
 						     selected_step->stepid);
 				xstrcat(extra, tmp);
 				set = 1;
@@ -335,6 +336,18 @@ extern void mysql_jobacct_process_get_jobs(List job_list,
 		}
 		xfree(query);
 		while ((step_row = mysql_fetch_row(step_result))) {
+			time_t suspended = 0;
+			/* we need to do this here for all the memory
+			   locations so we get new memory that will be
+			   freed later.
+			*/
+			header.partition = xstrdup(row[JOB_REQ_PARTITION]);
+			header.blockid = xstrdup(row[JOB_REQ_BLOCKID]);
+			header.timestamp = atoi(step_row[STEP_REQ_START]);
+			/* set start of job if not set */
+			if(job->header.timestamp < header.timestamp) {
+				job->header.timestamp = header.timestamp;
+			}
 			step = jobacct_init_step_rec(header);
 			list_append(job->steps, step);
 			step->stepnum = atoi(step_row[STEP_REQ_STEPID]);
@@ -342,8 +355,16 @@ extern void mysql_jobacct_process_get_jobs(List job_list,
 			step->exitcode = atoi(step_row[STEP_REQ_COMP_CODE]);
 			step->ntasks = atoi(step_row[STEP_REQ_CPUS]);
 			step->ncpus = atoi(step_row[STEP_REQ_CPUS]);
+			step->end = atoi(step_row[STEP_REQ_END]);
 			/* figure this out by start stop */
-			//step->elapsed = atoi(step_row[STEP_REQ_ELAPSED]);
+			suspended = atoi(step_row[STEP_REQ_SUSPENDED]);
+			if(!step->end) {
+				step->elapsed = now - step->header.timestamp;
+			} else {
+				step->elapsed =
+					step->end - step->header.timestamp;
+			}
+			step->elapsed -= suspended;
 			step->tot_cpu_sec = atoi(step_row[STEP_REQ_CPU_SEC]);
 			step->tot_cpu_usec = atoi(step_row[STEP_REQ_CPU_USEC]);
 			step->rusage.ru_utime.tv_sec = 
@@ -414,7 +435,16 @@ extern void mysql_jobacct_process_get_jobs(List job_list,
 	
 			step->requid = atoi(step_row[STEP_REQ_KILL_REQUID]);
 		}
+		mysql_free_result(step_result);
+
+		if(!job->end) {
+			job->elapsed = now - job->header.timestamp;
+		} else {
+			job->elapsed = job->end - job->header.timestamp;
+		}
+		job->elapsed -= job_suspended;
 	}
+	mysql_free_result(result);
 	return;
 }
 

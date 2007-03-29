@@ -617,6 +617,7 @@ static void _process_step(List job_list, char *f[], int lc,
 	}
 	if (!job) {	/* fake it for now */
 		job = jobacct_init_job_rec(temp->header);
+		job->jobname = xstrdup("(unknown)");
 		if (params->opt_verbose > 1) 
 			fprintf(stderr, 
 				"Note: JOB_STEP record %u.%u preceded "
@@ -691,9 +692,11 @@ static void _process_suspend(List job_list, char *f[], int lc,
 
 	_parse_line(f, (void **)&temp, len);
 	job = _find_job_record(job_list, temp->header, JOB_SUSPEND);
-	if (!job)    
+	if (!job)  {	/* fake it for now */
 		job = jobacct_init_job_rec(temp->header);
-	
+		job->jobname = xstrdup("(unknown)");
+	} 
+			
 	job->show_full = show_full;
 	if (job->status == JOB_SUSPENDED) 
 		job->elapsed -= temp->elapsed;
@@ -714,6 +717,7 @@ static void _process_terminated(List job_list, char *f[], int lc,
 	job = _find_job_record(job_list, temp->header, JOB_TERMINATED);
 	if (!job) {	/* fake it for now */
 		job = jobacct_init_job_rec(temp->header);
+		job->jobname = xstrdup("(unknown)");
 		if (params->opt_verbose > 1) 
 			fprintf(stderr, "Note: JOB_TERMINATED record for job "
 				"%u preceded "
