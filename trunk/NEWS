@@ -5,6 +5,7 @@ documents those changes that are of interest to users and admins.
 ========================
  -- In select/cons_res - fix for function argument type mis-match in getting
     CPU count for a job, from Ernest Artiaga, BSC.
+ -- In sched/wiki2 - Report job's tasks_per_node requirement.
 
 * Changes in SLURM 1.2.3
 ========================

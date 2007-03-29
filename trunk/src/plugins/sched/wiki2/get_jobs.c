@@ -357,6 +357,14 @@ static void	_get_job_comment(struct job_record *job_ptr,
 		field_sep = "?";
 	}
 
+	/* TPN = tasks per node */
+	if (job_ptr->details && (job_ptr->details->ntasks_per_node != 0)) {
+		size += snprintf((buffer + size), (buf_size - size),
+			"%sTPN:%u", field_sep, 
+			job_ptr->details->ntasks_per_node);
+		field_sep = "?";
+	}
+
 	/* COMMENT SET BY MOAB */
 	if (job_ptr->comment && job_ptr->comment[0]) {
 		size += snprintf((buffer + size), (buf_size - size),
