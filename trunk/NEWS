@@ -264,6 +264,8 @@ documents those changes that are of interest to users and admins.
 =========================
  - Insure that slurm_signal_job_step() is defined in srun for mvapich
    and mpichgm error conditions.
+ - Modify /etc/init.d/slurm restart command to wait for daemon to terminate
+   before starting a new one
  - Permit job steps to be started on draining nodes that have already 
    been allocated to that job.
 
