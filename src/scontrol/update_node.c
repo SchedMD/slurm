@@ -121,7 +121,7 @@ scontrol_update_node (int argc, char *argv[])
 						argv[i]);
 					fprintf (stderr, "Request aborted\n");
 					fprintf (stderr, "Valid states are: ");
-					fprintf (stderr, "NoResp DRAIN RES ");
+					fprintf (stderr, "NoResp DRAIN RESUME ");
 					for (k = 0; k < NODE_STATE_END; k++) {
 						fprintf (stderr, "%s ", 
 						         node_state_string(k));

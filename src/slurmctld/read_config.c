@@ -104,7 +104,6 @@ int node_record_count = 0;
  *    also sets values of total_nodes and total_cpus for every partition.
  * RET 0 if no error, errno otherwise
  * Note: Operates on common variables, no arguments
- * global: idle_node_bitmap, avail_node_bitmap, share_node_bitmap 
  *	node_record_count - number of nodes in the system
  *	node_record_table_ptr - pointer to global node table
  *	part_list - pointer to global partition list
@@ -129,12 +128,15 @@ static int _build_bitmaps(void)
 	FREE_NULL_BITMAP(idle_node_bitmap);
 	FREE_NULL_BITMAP(avail_node_bitmap);
 	FREE_NULL_BITMAP(share_node_bitmap);
+	FREE_NULL_BITMAP(up_node_bitmap);
 	idle_node_bitmap  = (bitstr_t *) bit_alloc(node_record_count);
 	avail_node_bitmap = (bitstr_t *) bit_alloc(node_record_count);
 	share_node_bitmap = (bitstr_t *) bit_alloc(node_record_count);
+	up_node_bitmap    = (bitstr_t *) bit_alloc(node_record_count);
 	if ((idle_node_bitmap     == NULL) ||
 	    (avail_node_bitmap    == NULL) ||
-	    (share_node_bitmap    == NULL)) 
+	    (share_node_bitmap    == NULL) ||
+	    (up_node_bitmap       == NULL)) 
 		fatal ("bit_alloc malloc failure");
 
 	/* initialize the configuration bitmaps */
@@ -192,11 +194,12 @@ static int _build_bitmaps(void)
 		if (((base_state == NODE_STATE_IDLE) && (job_cnt == 0))
 		||  (base_state == NODE_STATE_DOWN))
 			bit_set(idle_node_bitmap, i);
-		if (((base_state == NODE_STATE_IDLE)
-		||   (base_state == NODE_STATE_ALLOCATED))
-		&&  (drain_flag == 0)
-		&&  (no_resp_flag == 0))
-			bit_set(avail_node_bitmap, i);
+		if ((base_state == NODE_STATE_IDLE)
+		||  (base_state == NODE_STATE_ALLOCATED)) {
+			if ((drain_flag == 0) && (no_resp_flag == 0))
+				bit_set(avail_node_bitmap, i);
+			bit_set(up_node_bitmap, i);
+		}
 		if (node_record_table_ptr[i].config_ptr)
 			bit_set(node_record_table_ptr[i].config_ptr->
 				node_bitmap, i);

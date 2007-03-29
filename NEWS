@@ -259,6 +259,8 @@ documents those changes that are of interest to users and admins.
 =========================
  - Insure that slurm_signal_job_step() is defined in srun for mvapich
    and mpichgm error conditions.
+ - Permit job steps to be started on draining nodes that have already 
+   been allocated to that job.
 
 * Changes in SLURM 1.1.33
 =========================

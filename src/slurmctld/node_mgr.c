@@ -87,6 +87,7 @@ time_t last_node_update = (time_t) NULL;	/* time of last update to
 bitstr_t *avail_node_bitmap = NULL;	/* bitmap of available nodes */
 bitstr_t *idle_node_bitmap  = NULL;	/* bitmap of idle nodes */
 bitstr_t *share_node_bitmap = NULL;  	/* bitmap of sharable nodes */
+bitstr_t *up_node_bitmap    = NULL;  	/* bitmap of non-down nodes */
 
 static int	_delete_config_record (void);
 static void 	_dump_node_state (struct node_record *dump_node_ptr, 
@@ -1046,9 +1047,12 @@ int update_node ( update_node_msg_t * update_node_msg )
 				node_ptr->node_state &= (~NODE_STATE_DRAIN);
 				bit_set (avail_node_bitmap, node_inx);
 				bit_set (idle_node_bitmap, node_inx);
+				bit_set (up_node_bitmap, node_inx);
 				reset_job_priority();
 			}
 			else if (state_val == NODE_STATE_ALLOCATED) {
+				if (!(node_ptr->node_state & NODE_STATE_DRAIN))
+					bit_set (up_node_bitmap, node_inx);
 				bit_set   (avail_node_bitmap, node_inx);
 				bit_clear (idle_node_bitmap, node_inx);
 			}
@@ -1758,6 +1762,10 @@ static void _sync_bitmaps(struct node_record *node_ptr, int job_count)
 		bit_clear (avail_node_bitmap, node_inx);
 	else
 		bit_set   (avail_node_bitmap, node_inx);
+	if (base_state == NODE_STATE_DOWN)
+		bit_clear (up_node_bitmap, node_inx);
+	else
+		bit_set   (up_node_bitmap, node_inx);
 }
 
 /*
@@ -1828,6 +1836,10 @@ static void _node_did_resp(struct node_record *node_ptr)
 		bit_clear (avail_node_bitmap, node_inx);
 	else
 		bit_set   (avail_node_bitmap, node_inx);
+	if (base_state == NODE_STATE_DOWN)
+		bit_clear (up_node_bitmap, node_inx);
+	else
+		bit_set   (up_node_bitmap, node_inx);
 	return;
 }
 
@@ -2134,6 +2146,7 @@ static void _make_node_down(struct node_record *node_ptr)
 	bit_clear (avail_node_bitmap, inx);
 	bit_set   (idle_node_bitmap,  inx);
 	bit_set   (share_node_bitmap, inx);
+	bit_clear (up_node_bitmap,    inx);
 	select_g_update_node_state(inx, node_ptr->node_state);	
 	trigger_node_down(node_ptr);
 }
@@ -2235,6 +2248,7 @@ void node_fini(void)
 	FREE_NULL_BITMAP(idle_node_bitmap);
 	FREE_NULL_BITMAP(avail_node_bitmap);
 	FREE_NULL_BITMAP(share_node_bitmap);
+	FREE_NULL_BITMAP(up_node_bitmap);
 
 	xfree(node_record_table_ptr);
 	xfree(node_hash_table);

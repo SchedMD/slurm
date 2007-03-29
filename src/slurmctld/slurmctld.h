@@ -218,6 +218,7 @@ extern bitstr_t *avail_node_bitmap;	/* bitmap of available nodes,
 					 * not DOWN, DRAINED or DRAINING */
 extern bitstr_t *idle_node_bitmap;	/* bitmap of idle nodes */
 extern bitstr_t *share_node_bitmap;	/* bitmap of sharable nodes */
+extern bitstr_t *up_node_bitmap;	/* bitmap of up nodes, not DOWN */
 
 /*****************************************************************************\
  *  PARTITION parameters and data structures
