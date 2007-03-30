@@ -66,6 +66,7 @@
 #include "src/slurmctld/slurmctld.h"
 
 static int          _background_process_msg(slurm_msg_t * msg);
+static int          _backup_reconfig(void);
 static void *       _background_rpc_mgr(void *no_data);
 static void *       _background_signal_hand(void *no_data);
 static int          _ping_controller(void);
@@ -226,9 +227,9 @@ static void *_background_signal_hand(void *no_data)
 			 * restart the (possibly new) plugin.
 			 */
 			lock_slurmctld(config_write_lock);
-			rc = read_slurm_conf(0);
+			rc = _backup_reconfig();
 			if (rc)
-				error("read_slurm_conf: %s",
+				error("_backup_reconfig: %s",
 					slurm_strerror(rc));
 			else {
 				/* Leave config lock set through this */
@@ -404,3 +405,17 @@ static int _ping_controller(void)
 	return SLURM_PROTOCOL_SUCCESS;
 }
 
+/*
+ * Reload the slurm.conf parameters without any processing
+ * of the node, partition, or state information.
+ * Specifically, we don't want to purge batch scripts based 
+ * upon old job state information.
+ * This is a stripped down version of read_slurm_conf(0).
+ */
+static int _backup_reconfig(void)
+{
+	slurm_conf_reinit(NULL);
+	update_logging();
+	slurmctld_conf.last_update = time(NULL);
+	return SLURM_SUCCESS;
+}

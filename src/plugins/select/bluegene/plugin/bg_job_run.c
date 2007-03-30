@@ -221,6 +221,8 @@ static void _sync_agent(bg_update_t *bg_update_ptr)
 
 	if(bg_record->state == RM_PARTITION_READY) {
 		if(bg_record->user_uid != bg_update_ptr->uid) {
+			int set_user_rc = SLURM_SUCCESS;
+
 			slurm_mutex_lock(&block_state_mutex);
 			debug("User isn't correct for job %d on %s, "
 			      "fixing...", 
@@ -229,10 +231,11 @@ static void _sync_agent(bg_update_t *bg_update_ptr)
 			xfree(bg_record->target_name);
 			bg_record->target_name = 
 				xstrdup(uid_to_string(bg_update_ptr->uid));
-				
-			set_block_user(bg_record);
-			
+			set_user_rc = set_block_user(bg_record);
 			slurm_mutex_unlock(&block_state_mutex);
+		
+			if(set_user_rc == SLURM_ERROR) 
+				(void) slurm_fail_job(bg_record->job_running);
 		}
 	} else {
 		if(bg_record->state != RM_PARTITION_CONFIGURING) {
@@ -250,7 +253,7 @@ static void _sync_agent(bg_update_t *bg_update_ptr)
 /* Perform job initiation work */
 static void _start_agent(bg_update_t *bg_update_ptr)
 {
-	int rc = 0;
+	int rc, set_user_rc = SLURM_SUCCESS;
 	bg_record_t *bg_record = NULL;
 	bg_record_t *found_record = NULL;
 	ListIterator itr;
@@ -419,7 +422,8 @@ static void _start_agent(bg_update_t *bg_update_ptr)
 			/* wait for the slurmd to begin 
 			   the batch script, slurm_fail_job() 
 			   is a no-op if issued prior 
-			   to the script initiation */
+			   to the script initiation do clean up just
+			   incase the fail job isn't ran */
 			(void) slurm_fail_job(bg_update_ptr->job_id);
 			slurm_mutex_lock(&block_state_mutex);
 			if (remove_from_bg_list(bg_job_block_list, bg_record)
@@ -455,9 +459,26 @@ static void _start_agent(bg_update_t *bg_update_ptr)
 		debug("block %s is ready.",
 		      bg_record->bg_block_id);
 				
-		set_block_user(bg_record); 
+		set_user_rc = set_block_user(bg_record); 
 	}
 	slurm_mutex_unlock(&block_state_mutex);	
+
+	if(set_user_rc == SLURM_ERROR) {
+		sleep(2);	
+		/* wait for the slurmd to begin 
+		   the batch script, slurm_fail_job() 
+		   is a no-op if issued prior 
+		   to the script initiation do clean up just
+		   incase the fail job isn't ran */
+		(void) slurm_fail_job(bg_record->job_running);
+		slurm_mutex_lock(&block_state_mutex);
+		if (remove_from_bg_list(bg_job_block_list, bg_record)
+		    == SLURM_SUCCESS) {
+			num_unused_cpus += bg_record->bp_count
+				*bg_record->cpus_per_bp;
+		}
+		slurm_mutex_unlock(&block_state_mutex);
+	}
 	slurm_mutex_unlock(&job_start_mutex);
 	
 }
