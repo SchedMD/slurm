@@ -109,7 +109,9 @@ void *_forward_thread(void *arg)
 		xfree(fwd_msg->header.forward.nodelist);
 		fwd_msg->header.forward.nodelist = xstrdup(buf);
 		fwd_msg->header.forward.cnt = hostlist_count(hl);
-
+		/* info("sending %d forwards (%s) to %s", */
+/* 		     fwd_msg->header.forward.cnt, */
+/* 		     fwd_msg->header.forward.nodelist, name); */
 		if (fwd_msg->header.forward.nodelist[0]) {
 			debug3("forward: send to %s along with %s",
 			       name, fwd_msg->header.forward.nodelist);
@@ -142,7 +144,7 @@ void *_forward_thread(void *arg)
 			mark_as_failed_forward(&fwd_msg->ret_list, name, 
 					       errno);
 			free(name);
-			if (hostlist_count(hl) > 0) {
+			if(hostlist_count(hl) > 0) {
 				free_buf(buffer);	
 				buffer = init_buf(0);
 				slurm_mutex_unlock(fwd_msg->forward_mutex);
@@ -169,7 +171,7 @@ void *_forward_thread(void *arg)
 			goto cleanup;
 		}
 
-		if(fwd_msg->header.forward.cnt>0) {
+		if(fwd_msg->header.forward.cnt > 0) {
 			steps = (fwd_msg->header.forward.cnt+1) /
 				slurm_get_tree_width();
 			fwd_msg->timeout = (FORWARD_EXTRA_STEP_WAIT_MS*steps);
@@ -178,9 +180,11 @@ void *_forward_thread(void *arg)
 		}	
 		
 		ret_list = slurm_receive_msgs(fd, steps, fwd_msg->timeout);
-
+		/* info("sent %d forwards got %d back", */
+/* 		     fwd_msg->header.forward.cnt, list_count(ret_list)); */
+		     
 		if(!ret_list || (fwd_msg->header.forward.cnt != 0 
-				 && list_count(ret_list) == 0)) {
+				 && list_count(ret_list) <= 1)) {
 			slurm_mutex_lock(fwd_msg->forward_mutex);
 			mark_as_failed_forward(&fwd_msg->ret_list, name, 
 					       errno);
@@ -194,6 +198,52 @@ void *_forward_thread(void *arg)
 				continue;
 			}
 			goto cleanup;			
+		} else if((fwd_msg->header.forward.cnt+1)
+			  != list_count(ret_list)) {
+			/* this should never be called since the above
+			   should catch the failed forwards and pipe
+			   them back down, but this is here so we
+			   never have to worry about a locked
+			   mutex */
+			ListIterator itr = NULL;
+			char *tmp = NULL;
+			int first_node_found = 0;
+			hostlist_iterator_t host_itr
+				= hostlist_iterator_create(hl);
+			error("We shouldn't be here.  We forwarded to %d "
+			      "but only got %d back",
+			      (fwd_msg->header.forward.cnt+1),
+			      list_count(ret_list));
+			while((tmp = hostlist_next(host_itr))) {
+				int node_found = 0;
+				itr = list_iterator_create(ret_list);
+				while((ret_data_info = list_next(itr))) {
+					if(!ret_data_info->node_name) {
+						first_node_found = 1;
+						ret_data_info->node_name =
+							xstrdup(name);
+					}
+					if(!strcmp(tmp,
+						   ret_data_info->node_name)) {
+						node_found = 1;
+						break;
+					}
+				}
+				list_iterator_destroy(itr);
+				if(!node_found) {
+					mark_as_failed_forward(
+						&fwd_msg->ret_list,
+						tmp, 
+						SLURM_ERROR);	
+				}
+				free(tmp);
+			}
+			hostlist_iterator_destroy(host_itr);
+			if(!first_node_found) {
+				mark_as_failed_forward(&fwd_msg->ret_list,
+						       name, 
+						       SLURM_ERROR);
+			}
 		}
 		break;
 	}
