@@ -213,7 +213,7 @@ static void _sync_agent(bg_update_t *bg_update_ptr)
 
 	if(bg_record->state == RM_PARTITION_READY) {
 		if(bg_record->user_uid != bg_update_ptr->uid) {
-			int set_user_error = SLURM_SUCCESS;
+			int set_user_rc = SLURM_SUCCESS;
 
 			slurm_mutex_lock(&block_state_mutex);
 			debug("User isn't correct for job %d on %s, "
