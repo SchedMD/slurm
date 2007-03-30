@@ -933,7 +933,7 @@ List slurm_receive_msgs(slurm_fd fd, int steps, int timeout)
 	slurm_msg_t_init(&msg);
 	msg.conn_fd = fd;
 	
-	if (timeout <= 0) {
+	if(timeout <= 0) {
 		/* convert secs to msec */
                 timeout  = slurm_get_msg_timeout() * 1000; 
 		orig_timeout = timeout;
@@ -964,7 +964,7 @@ List slurm_receive_msgs(slurm_fd fd, int steps, int timeout)
 	 *  length and allocate space on the heap for a buffer containing
 	 *  the message. 
 	 */
-	if (_slurm_msg_recvfrom_timeout(fd, &buf, &buflen, 0, timeout) < 0) {
+	if(_slurm_msg_recvfrom_timeout(fd, &buf, &buflen, 0, timeout) < 0) {
 		forward_init(&header.forward, NULL);
 		rc = errno;		
 		goto total_return;
@@ -981,7 +981,7 @@ List slurm_receive_msgs(slurm_fd fd, int steps, int timeout)
 		goto total_return;
 	}
 	
-	if (check_header_version(&header) < 0) {
+	if(check_header_version(&header) < 0) {
 		free_buf(buffer);
 		rc = SLURM_PROTOCOL_VERSION_ERROR;
 		goto total_return;
@@ -1002,7 +1002,7 @@ List slurm_receive_msgs(slurm_fd fd, int steps, int timeout)
 		      "slurm_receive_and_forward_msgs instead");
 	}
 	
-	if ((auth_cred = g_slurm_auth_unpack(buffer)) == NULL) {
+	if((auth_cred = g_slurm_auth_unpack(buffer)) == NULL) {
 		error( "authentication: %s ",
 			g_slurm_auth_errstr(g_slurm_auth_errno(NULL)));
 		free_buf(buffer);
@@ -1011,9 +1011,9 @@ List slurm_receive_msgs(slurm_fd fd, int steps, int timeout)
 	}
 	rc = g_slurm_auth_verify( auth_cred, NULL, 2 );
 	
-	if (rc != SLURM_SUCCESS) {
-		error( "authentication: %s ",
-		       g_slurm_auth_errstr(g_slurm_auth_errno(auth_cred)));
+	if(rc != SLURM_SUCCESS) {
+		error("authentication: %s ",
+		      g_slurm_auth_errstr(g_slurm_auth_errno(auth_cred)));
 		(void) g_slurm_auth_destroy(auth_cred);
 		free_buf(buffer);
 		rc = SLURM_PROTOCOL_AUTHENTICATION_ERROR;
@@ -1726,7 +1726,7 @@ _send_and_recv_msg(slurm_fd fd, slurm_msg_t *req,
 		/* no need to adjust and timeouts here since we are not
 		   forwarding or expecting anything other than 1 message
 		   and the regular timeout will be altered in
-		   slurm_recieve_msg if it is 0 */
+		   slurm_receive_msg if it is 0 */
 		rc = slurm_receive_msg(fd, resp, timeout);
 	}
 	
