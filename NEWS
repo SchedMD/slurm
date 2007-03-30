@@ -9,6 +9,8 @@ documents those changes that are of interest to users and admins.
    before starting a new one
  - Permit job steps to be started on draining nodes that have already 
    been allocated to that job.
+ - Prevent backup slurmctld from purging pending batch job scripts when a 
+   SIGHUP is received.
 
 * Changes in SLURM 1.1.33
 =========================
