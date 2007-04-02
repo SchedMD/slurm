@@ -50,6 +50,9 @@
 #include <slurm/slurm.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#ifdef HAVE_STRINGS_H
+#  include <strings.h>
+#endif
 
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
