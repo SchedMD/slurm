@@ -6,9 +6,7 @@ INCLUDES = -I$(top_srcdir)
 
 bin_PROGRAMS = sacct
 
-sacct_LDADD =					\
-	$(top_builddir)/src/common/libcommon.la	\
-	$(top_builddir)/src/api/libslurm.la
+sacct_LDADD = $(top_builddir)/src/api/libslurmhelper.la
 
 noinst_HEADERS = sacct.c 
 sacct_SOURCES = sacct.c process.c print.c options.c sacct_stat.c

@@ -76,8 +76,7 @@ binPROGRAMS_INSTALL = $(INSTALL_PROGRAM)
 PROGRAMS = $(bin_PROGRAMS)
 am_scancel_OBJECTS = scancel.$(OBJEXT) opt.$(OBJEXT)
 scancel_OBJECTS = $(am_scancel_OBJECTS)
-scancel_DEPENDENCIES = $(top_builddir)/src/common/libcommon.la \
-	$(top_builddir)/src/api/libslurm.la
+scancel_DEPENDENCIES = $(top_builddir)/src/api/libslurmhelper.la
 DEFAULT_INCLUDES = -I. -I$(srcdir) -I$(top_builddir) -I$(top_builddir)/slurm
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
 am__depfiles_maybe = depfiles
@@ -280,10 +279,7 @@ target_os = @target_os@
 target_vendor = @target_vendor@
 AUTOMAKE_OPTIONS = foreign
 INCLUDES = -I$(top_srcdir)
-scancel_LDADD = \
-	$(top_builddir)/src/common/libcommon.la	\
-	$(top_builddir)/src/api/libslurm.la
-
+scancel_LDADD = $(top_builddir)/src/api/libslurmhelper.la
 noinst_HEADERS = scancel.h
 scancel_SOURCES = scancel.c opt.c
 scancel_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
