@@ -1178,6 +1178,7 @@ static void *_kill_thr(void *args)
 	kill_thread_t *kt = ( kill_thread_t *) args;
 	sleep(kt->secs);
 	pthread_kill(kt->thread_id, SIGKILL);
+	xfree(kt);
 	return NULL;
 }
 
@@ -1185,11 +1186,13 @@ static void _delay_kill_thread(pthread_t thread_id, int secs)
 {
 	pthread_t kill_id;
 	pthread_attr_t attr;
-	kill_thread_t kt = { thread_id, secs };
+	kill_thread_t *kt = xmalloc(sizeof(kill_thread_t));
 
+	kt->thread_id = thread_id;
+	kt->secs = secs;
 	slurm_attr_init(&attr);
 	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
-	pthread_create(&kill_id, &attr, &_kill_thr, (void *) &kt);
+	pthread_create(&kill_id, &attr, &_kill_thr, (void *) kt);
 	slurm_attr_destroy(&attr);
 }
 
