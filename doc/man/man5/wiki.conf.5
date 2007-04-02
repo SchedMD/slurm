@@ -1,4 +1,4 @@
-.TH "wiki.conf" "5" "November 2006" "wiki.conf 1.2" "Slurm configuration file"
+.TH "wiki.conf" "5" "March 2007" "wiki.conf 1.1" "Slurm configuration file"
 .SH "NAME"
 wiki.conf \- Slurm configuration file for wiki and wiki2 scheduler plugins
 .SH "DESCRIPTION"
@@ -61,13 +61,29 @@ Not applicable to wiki plugin, only the wiki2 plugin.
 .TP
 \fBJobPriority\fR
 Controls initial job priority. 
-Default value is "hold".
+The default value is "hold".
 Not applicable to wiki plugin, only the wiki2 plugin.
 .RS
 .TP
-\fBrun\fR: Job permitted to run directly under SLURM's control
+\fBrun\fR
+Job permitted to run directly under SLURM's control
 .TP
-\fBhold\fR: Hold all incomming jobs until Moab or Maui tell them to run
+\fBhold\fR
+Hold all incomming jobs until Moab or Maui tell them to run
+.RE
+
+.TP
+\fBHostFormat\fR
+Controls the format of host lists exchanged between SLURM and Moab.
+The default value is "0".
+.RS
+.TP
+\fB0\fR
+No data compression. Each host name is listed individually.
+.TP
+\fB1\fR
+SLURM hostlist expressions are exchanged (e.g. "tux[0\-16]").
+This is currently experimental.
 .RE
 
 .SH "EXAMPLE"
@@ -110,7 +126,7 @@ EHostBackup=tux1
 JobAggregationTime=15
 
 .SH "COPYING"
-Copyright (C) 2006 The Regents of the University of California.
+Copyright (C) 2006-2007 The Regents of the University of California.
 Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 UCRL\-CODE\-226842.
 .LP
