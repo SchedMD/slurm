@@ -265,6 +265,8 @@ static int mvapich_handle_task (int fd, struct mvapich_info *mvi)
 				return mvapich_get_hostid (mvi);
 			else
 				return mvapich_get_task_info (mvi);
+		case 8:
+			return (0);
 		default:
 			return (error ("mvapich: Unsupported protocol version %d", 
 					protocol_version));
@@ -357,6 +359,220 @@ static void mvapich_bcast_hostids (void)
 	}
 
 	xfree (hostids);
+}
+
+/* Write size bytes from buf into socket for rank */
+static void mvapich_send (void* buf, int size, int rank)
+{
+	struct mvapich_info *mvi = mvarray [rank];
+	if (fd_write_n (mvi->fd, buf, size) < 0)
+		error ("mvapich: write hostid rank %d: %m", mvi->rank);
+}
+
+/* Read size bytes from socket for rank into buf */
+static void mvapich_recv (void* buf, int size, int rank)
+{
+	struct mvapich_info *mvi = mvarray [rank];
+
+	int rc;
+	if ((rc = fd_read_n (mvi->fd, buf, size)) <= 0) {
+		error("mvapich reading from %d", mvi->rank);
+	}
+}
+
+/* Read an integer from socket for rank */
+static int mvapich_recv_int (int rank)
+{
+	int buf;
+	mvapich_recv(&buf, sizeof(buf), rank);
+	return buf;
+}
+
+/* Scatter data in buf to ranks using chunks of size bytes */
+static void mvapich_scatterbcast (void* buf, int size)
+{
+	int i;
+	for (i = 0; i < nprocs; i++)
+		mvapich_send(buf + i*size, size, i);
+}
+
+/* Broadcast buf to each rank, which is size bytes big */
+static void mvapich_allgatherbcast (void* buf, int size)
+{
+	int i;
+	for (i = 0; i < nprocs; i++)
+		mvapich_send(buf, size, i);
+}
+
+/* Perform alltoall using data in buf with elements of size bytes */
+static void mvapich_alltoallbcast (void* buf, int size)
+{
+	int pbufsize = size * nprocs;
+	void* pbuf = xmalloc(pbufsize);	
+
+	int i, src;
+	for (i = 0; i < nprocs; i++) {
+		for (src = 0; src < nprocs; src++) {
+			memcpy( pbuf + size*src,
+				buf + size*(src*nprocs + i),
+				size
+				);
+		}
+		mvapich_send(pbuf, pbufsize, i);
+	}
+	
+	xfree(pbuf);
+}
+
+/* Check that new == curr value if curr has been initialized */
+static int set_current (int curr, int new)
+{
+	if (curr == -1) curr = new;
+	if (new != curr) error("PMGR unexpected value: received %d, expecting %d", new, curr);
+	return curr;
+}
+
+/* 
+ * This function carries out pmgr_collective operations to
+ * bootstrap MPI.  These collective operations are modeled after
+ * MPI collectives -- all tasks must call them in the same order
+ * and with consistent parameters.
+ *
+ * Until a 'CLOSE' or 'ABORT' message is seen, we continuously loop
+ * processing ops
+ *   For each op, we read one packet from each rank (socket)
+ *     A packet consists of an integer OP CODE, followed by variable
+ *     length data depending on the operation
+ *   After reading a packet from each rank, srun completes the
+ *   operation by broadcasting data back to any destinations,
+ *   depending on the operation being performed
+ *
+ * Note: Although there are op codes available for PMGR_OPEN and
+ * PMGR_ABORT, neither is fully implemented and should not be used.
+ */
+static void mvapich_processops ()
+{
+mvapich_debug ("Processing PMGR opcodes");
+	/* Until a 'CLOSE' or 'ABORT' message is seen, we continuously 
+	 *  loop processing ops
+	 */
+	int exit = 0;
+	while (!exit) {
+	int opcode = -1;
+	int root   = -1;
+	int size   = -1;
+	void* buf = NULL;
+
+	// for each process, read in one opcode and its associated data
+	int i;
+	for (i = 0; i < nprocs; i++) {
+		struct mvapich_info *mvi = mvarray [i];
+
+		// read in opcode
+		opcode = set_current(opcode, mvapich_recv_int(i));
+
+		// read in additional data depending on current opcode
+		int rank, code;
+		switch(opcode) {
+		case 0: // PMGR_OPEN (followed by rank)
+			rank = mvapich_recv_int(i);
+			break;
+		case 1: // PMGR_CLOSE (no data, close the socket)
+			close(mvi->fd);
+			break;
+		case 2: // PMGR_ABORT (followed by exit code)
+			code = mvapich_recv_int(i);
+			error("mvapich abort with code %d from rank %d", 
+				code, i);
+			break;
+		case 3: // PMGR_BARRIER (no data)
+			break;
+		case 4: // PMGR_BCAST (root, size of message, 
+			// then message data (from root only))
+			root = set_current(root, mvapich_recv_int(i));
+			size = set_current(size, mvapich_recv_int(i));
+			if (!buf) buf = (void*) xmalloc(size);
+			if (i == root) mvapich_recv(buf, size, i);
+			break;
+		case 5: // PMGR_GATHER (root, size of message, 
+			// then message data)
+			root = set_current(root, mvapich_recv_int(i));
+			size = set_current(size, mvapich_recv_int(i));
+			if (!buf) buf = (void*) xmalloc(size * nprocs);
+			mvapich_recv(buf + size*i, size, i);
+			break;
+		case 6: // PMGR_SCATTER (root, size of message, 
+			// then message data)
+			root = set_current(root, mvapich_recv_int(i));
+			size = set_current(size, mvapich_recv_int(i));
+			if (!buf) buf = (void*) xmalloc(size * nprocs);
+			if (i == root) mvapich_recv(buf, size * nprocs, i);
+			break;
+		case 7: // PMGR_ALLGATHER (size of message, then message data)
+			size = set_current(size, mvapich_recv_int(i));
+			if (!buf) buf = (void*) xmalloc(size * nprocs);
+			mvapich_recv(buf + size*i, size, i);
+			break;
+		case 8: // PMGR_ALLTOALL (size of message, then message data)
+			size = set_current(size, mvapich_recv_int(i));
+			if (!buf) buf = (void*) xmalloc(size * nprocs * nprocs);
+			mvapich_recv(buf + (size*nprocs)*i, size * nprocs, i);
+			break;
+		default:
+			error("Unrecognized PMGR opcode: %d", opcode);
+		}
+	}
+
+	// Complete any operations
+	switch(opcode) {
+		case 0: // PMGR_OPEN
+			mvapich_debug ("Completed PMGR_OPEN");
+			break;
+		case 1: // PMGR_CLOSE
+			mvapich_debug ("Completed PMGR_CLOSE");
+			exit = 1;
+			break;
+		case 2: // PMGR_ABORT
+			mvapich_debug ("Completed PMGR_ABORT");
+			exit = 1;
+			break;
+		case 3: // PMGR_BARRIER (just echo the opcode back)
+			mvapich_debug ("Completing PMGR_BARRIER");
+			mvapich_allgatherbcast (&opcode, sizeof(opcode));
+			mvapich_debug ("Completed PMGR_BARRIER");
+			break;
+		case 4: // PMGR_BCAST
+			mvapich_debug ("Completing PMGR_BCAST");
+			mvapich_allgatherbcast (buf, size);
+			mvapich_debug ("Completed PMGR_BCAST");
+			break;
+		case 5: // PMGR_GATHER
+			mvapich_debug ("Completing PMGR_GATHER");
+			mvapich_send (buf, size * nprocs, root);
+			mvapich_debug ("Completed PMGR_GATHER");
+			break;
+		case 6: // PMGR_SCATTER
+			mvapich_debug ("Completing PMGR_SCATTER");
+			mvapich_scatterbcast (buf, size);
+			mvapich_debug ("Completed PMGR_SCATTER");
+			break;
+		case 7: // PMGR_ALLGATHER
+			mvapich_debug ("Completing PMGR_ALLGATHER");
+			mvapich_allgatherbcast (buf, size * nprocs);
+			mvapich_debug ("Completed PMGR_ALLGATHER");
+			break;
+		case 8: // PMGR_ALLTOALL
+			mvapich_debug ("Completing PMGR_ALLTOALL");
+			mvapich_alltoallbcast (buf, size);
+			mvapich_debug ("Completed PMGR_ALLTOALL");
+			break;
+		default:
+			error("Unrecognized PMGR opcode: %d", opcode);
+	}
+
+	if (buf) { xfree(buf); }
+  } // while(!exit)
+  mvapich_debug ("Completed processing PMGR opcodes");
 }
 
 static void mvapich_bcast (void)
@@ -708,17 +924,21 @@ again:
 		i++;
 	}
 
-	mvapich_debug ("bcasting mvapich info to %d tasks", nprocs);
-	mvapich_bcast ();
+	if (protocol_version == 8) {
+		mvapich_processops();
+	} else {
+		mvapich_debug ("bcasting mvapich info to %d tasks", nprocs);
+		mvapich_bcast ();
 
-	if (mvapich_dual_phase () && protocol_phase == 0) {
-		protocol_phase = 1;
-		goto again;
+		if (mvapich_dual_phase () && protocol_phase == 0) {
+			protocol_phase = 1;
+			goto again;
+		}
+
+		mvapich_debug ("calling mvapich_barrier");
+		mvapich_barrier ();
+		mvapich_debug ("all tasks have checked in");
 	}
-
-	mvapich_debug ("calling mvapich_barrier");
-	mvapich_barrier ();
-	mvapich_debug ("all tasks have checked in");
 
 	do_timings ();
 
