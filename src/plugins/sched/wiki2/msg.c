@@ -200,9 +200,7 @@ static char * _get_wiki_conf_path(void)
 /*****************************************************************************\
  * _parse_wiki_config - Results go into global variables
  * 
- * wiki_conf options
- * JobPriority=hold|run
- * AuthKey=number
+ * See "man wiki.conf" for details.
 \*****************************************************************************/
 static void _parse_wiki_config(void)
 {
@@ -213,6 +211,7 @@ static void _parse_wiki_config(void)
 		{"EPort", S_P_UINT16},
 		{"JobAggregationTime", S_P_UINT16},
 		{"JobPriority", S_P_STRING}, 
+		{"HostFormat", S_P_UINT16},
 		{NULL} };
 	s_p_hashtbl_t *tbl;
 	char *key = NULL, *priority_mode = NULL, *wiki_conf;
@@ -268,6 +267,9 @@ static void _parse_wiki_config(void)
 			error("Invalid value for JobPriority in wiki.conf");	
 		xfree(priority_mode);
 	}
+
+	s_p_get_uint16(&use_host_exp, "HostFormat", tbl);
+
 	s_p_hashtbl_destroy(tbl);
 	xfree(wiki_conf);
 
