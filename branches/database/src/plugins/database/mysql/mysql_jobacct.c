@@ -63,90 +63,246 @@ char *rusage_table = "step_rusage";
    max_rss max_ixrss max_idrss max_isrss max_minflt max_majflt
    max_nswap inblock outblock msgsnd msgrcv nsignals nvcsw nivcsw */
 
+typedef struct {
+	char *name;
+	char *options;
+} database_field_t;
+
 static int _mysql_jobacct_check_tables()
 {
-	char query[1024];
-	snprintf(query, sizeof(query),
-		 "create table if not exists %s"
-		 "(id int not null auto_increment, "
-		 "jobid mediumint unsigned not null, "
-		 "partition tinytext not null, "
-		 "submit int unsigned not null, "
-		 "uid smallint unsigned not null, "
-		 "gid smallint unsigned not null, blockid tinytext, "
-		 "primary key (id))",
-		 job_index);
+	char *query = NULL;
+	char *tmp = NULL;
+	char *next = NULL;
+	int i = 0;
+
+	database_field_t job_index_fields[] = {
+		{ "id", "int not null auto_increment" },
+		{ "jobid ", "mediumint unsigned not null" },
+		{ "partition", "tinytext not null" },
+		{ "submit", "int unsigned not null" },
+		{ "uid", "smallint unsigned not null" },
+		{ "gid", "smallint unsigned not null" },
+		{ "blockid", "tinytext" },
+		{ NULL, NULL}		
+	};
+
+	database_field_t job_table_fields[] = {
+		{ "id", "int not null" },
+		{ "start", "int unsigned default 0" },
+		{ "end", "int unsigned default 0" },
+		{ "suspended", "int unsigned default 0" },
+		{ "name", "tinytext not null" }, 
+		{ "track_steps", "tinyint not null" },
+		{ "state", "smallint not null" }, 
+		{ "priority", "int unsigned not null" },
+		{ "cpus", "mediumint unsigned not null" }, 
+		{ "nodelist", "text" },
+		{ "account", "tinytext" },
+		{ "kill_requid", "smallint" },
+		{ NULL, NULL}
+	};
+
+	database_field_t step_table_fields[] = {
+		{ "id", "int not null" },
+		{ "stepid", "smallint not null" },
+		{ "start", "int unsigned default 0" },
+		{ "end", "int unsigned default 0" },
+		{ "suspended", "int unsigned default 0" },
+		{ "name", "text not null" },
+		{ "nodelist", "text not null" },
+		{ "state", "smallint not null" },
+		{ "kill_requid", "smallint default -1" },
+		{ "comp_code", "smallint default 0" },
+		{ "cpus mediumint", "unsigned not null" },
+		{ "max_vsize", "mediumint unsigned default 0" },
+		{ "max_vsize_task", "smallint unsigned default 0" },
+		{ "max_vsize_node", "mediumint unsigned default 0" },
+		{ "ave_vsize", "float default 0.0" },
+		{ "max_rss", "mediumint unsigned default 0" },
+		{ "max_rss_task", "smallint unsigned default 0" },
+		{ "max_rss_node", "mediumint unsigned default 0" },
+		{ "ave_rss", "float default 0.0" },
+		{ "max_pages", "mediumint unsigned default 0" },
+		{ "max_pages_task", "smallint unsigned default 0" },
+		{ "max_pages_node", "mediumint unsigned default 0" },
+		{ "ave_pages", "float default 0.0" },
+		{ "min_cpu", "mediumint unsigned default 0" },
+		{ "min_cpu_task", "smallint unsigned default 0" },
+		{ "min_cpu_node", "mediumint unsigned default 0" },
+		{ "ave_cpu", "float default 0.0" },
+		{ NULL, NULL}
+	};
+
+	database_field_t step_rusage_fields[] = {
+		{ "id", "int not null" },
+		{ "stepid", "smallint not null" },
+		{ "cpu_sec", "int unsigned default 0" },
+		{ "cpu_usec", "int unsigned default 0" },
+		{ "user_sec", "int unsigned default 0" },
+		{ "user_usec", "int unsigned default 0" },
+		{ "sys_sec", "int unsigned default 0" },
+		{ "sys_usec", "int unsigned default 0" },
+		{ "max_rss", "int unsigned default 0" },
+		{ "max_ixrss", "int unsigned default 0" },
+		{ "max_idrss", "int unsigned default 0" },
+		{ "max_isrss", "int unsigned default 0" },
+		{ "max_minflt", "int unsigned default 0" },
+		{ "max_majflt", "int unsigned default 0" },
+		{ "max_nswap", "int unsigned default 0" },
+		{ "inblock", "int unsigned default 0" },
+		{ "outblock", "int unsigned default 0" },
+		{ "msgsnd", "int unsigned default 0" },
+		{ "msgrcv", "int unsigned default 0" },
+		{ "nsignals", "int unsigned default 0" },
+		{ "nvcsw", "int unsigned default 0" },
+		{ "nivcsw", "int unsigned default 0" },
+		{ NULL, NULL}
+	};
+	query = xstrdup_printf("create table if not exists %s (", job_index);
+	i=0;
+	while(job_index_fields[i].name) {
+		next = xstrdup_printf(" %s %s", job_index_fields[i].name,
+				      job_index_fields[i].options);
+		if(i) 
+			xstrcat(tmp, ",");
+		xstrcat(tmp, next);
+		xfree(next);
+		i++;
+	}
+	xstrcat(query, tmp);
+	xfree(tmp);
+	xstrcat(query, ", primary key (id))");
+	/* snprintf(query, sizeof(query), */
+/* 		 "create table if not exists %s" */
+/* 		 "(id int not null auto_increment, " */
+/* 		 "jobid mediumint unsigned not null, " */
+/* 		 "partition tinytext not null, " */
+/* 		 "submit int unsigned not null, " */
+/* 		 "uid smallint unsigned not null, " */
+/* 		 "gid smallint unsigned not null, blockid tinytext, " */
+/* 		 "primary key (id))", */
+/* 		 job_index); */
+	if(mysql_db_query(jobacct_mysql_db, jobacct_db_init, query)
+	   == SLURM_ERROR) 
+		return SLURM_ERROR;
+	xfree(query);
+
+	query = xstrdup_printf("create table if not exists %s (", job_table);
+	i=0;
+	while(job_table_fields[i].name) {
+		next = xstrdup_printf("%s %s", job_table_fields[i].name,
+				      job_table_fields[i].options);
+		if(i) 
+			xstrcat(tmp, ", ");
+		xstrcat(tmp, next);
+		xfree(next);
+		i++;
+	}
+	xstrcat(query, tmp);
+	xfree(tmp);
+	xstrcat(query, ")");	
+	
+	/* snprintf(query, sizeof(query), */
+/* 		 "create table if not exists %s(id int not null, " */
+/* 		 "start int unsigned default 0, end int unsigned default 0, " */
+/* 		 "suspended int unsigned default 0, " */
+/* 		 "name tinytext not null, track_steps tinyint not null, " */
+/* 		 "state smallint not null, priority int unsigned not null, " */
+/* 		 "cpus mediumint unsigned not null, nodelist text, " */
+/* 		 "account tinytext, kill_requid smallint)", */
+/* 		 job_table); */
+	if(mysql_db_query(jobacct_mysql_db, jobacct_db_init, query)
+	   == SLURM_ERROR) 
+		return SLURM_ERROR;	
+	xfree(query);
+
+	query = xstrdup_printf("create table if not exists %s (", step_table);
+	i=0;
+	while(step_table_fields[i].name) {
+		next = xstrdup_printf("%s %s", step_table_fields[i].name,
+				      step_table_fields[i].options);
+		if(i) 
+			xstrcat(tmp, ", ");
+		xstrcat(tmp, next);
+		xfree(next);
+		i++;
+	}
+	xstrcat(query, tmp);
+	xfree(tmp);
+	xstrcat(query, ")");	
+	
+	/* snprintf(query, sizeof(query), */
+/* 		 "create table if not exists %s(id int not null, " */
+/* 		 "stepid smallint not null, " */
+/* 		 "start int unsigned default 0, end int unsigned default 0, " */
+/* 		 "suspended int unsigned default 0, name text not null, " */
+/* 		 "nodelist text not null, state smallint not null, " */
+/* 		 "kill_requid smallint default -1, " */
+/* 		 "comp_code smallint default 0, " */
+/* 		 "cpus mediumint unsigned not null, " */
+/* 		 "max_vsize mediumint unsigned default 0, " */
+/* 		 "max_vsize_task smallint unsigned default 0, " */
+/* 		 "max_vsize_node mediumint unsigned default 0, " */
+/* 		 "ave_vsize float default 0.0, " */
+/* 		 "max_rss mediumint unsigned default 0, " */
+/* 		 "max_rss_task smallint unsigned default 0, " */
+/* 		 "max_rss_node mediumint unsigned default 0, " */
+/* 		 "ave_rss float default 0.0, " */
+/* 		 "max_pages mediumint unsigned default 0, " */
+/* 		 "max_pages_task smallint unsigned default 0, " */
+/* 		 "max_pages_node mediumint unsigned default 0, " */
+/* 		 "ave_pages float default 0.0, " */
+/* 		 "min_cpu mediumint unsigned default 0, " */
+/* 		 "min_cpu_task smallint unsigned default 0, " */
+/* 		 "min_cpu_node mediumint unsigned default 0, " */
+/* 		 "ave_cpu float default 0.0)", */
+/* 		 step_table); */
 	if(mysql_db_query(jobacct_mysql_db, jobacct_db_init, query)
 	   == SLURM_ERROR) 
 		return SLURM_ERROR;
 	
-	snprintf(query, sizeof(query),
-		 "create table if not exists %s(id int not null, "
-		 "start int unsigned default 0, end int unsigned default 0, "
-		 "suspended int unsigned default 0, "
-		 "name tinytext not null, track_steps tinyint not null, "
-		 "state smallint not null, priority int unsigned not null, "
-		 "cpus mediumint unsigned not null, nodelist text, "
-		 "account tinytext, kill_requid smallint)",
-		 job_table);
-	if(mysql_db_query(jobacct_mysql_db, jobacct_db_init, query)
-	   == SLURM_ERROR) 
-		return SLURM_ERROR;
-	
-	snprintf(query, sizeof(query),
-		 "create table if not exists %s(id int not null, "
-		 "stepid smallint not null, "
-		 "start int unsigned default 0, end int unsigned default 0, "
-		 "suspended int unsigned default 0, name text not null, "
-		 "nodelist text not null, state smallint not null, "
-		 "kill_requid smallint default -1, "
-		 "comp_code smallint default 0, "
-		 "cpus mediumint unsigned not null, "
-		 "max_vsize mediumint unsigned default 0, "
-		 "max_vsize_task smallint unsigned default 0, "
-		 "max_vsize_node mediumint unsigned default 0, "
-		 "ave_vsize float default 0.0, "
-		 "max_rss mediumint unsigned default 0, "
-		 "max_rss_task smallint unsigned default 0, "
-		 "max_rss_node mediumint unsigned default 0, "
-		 "ave_rss float default 0.0, "
-		 "max_pages mediumint unsigned default 0, "
-		 "max_pages_task smallint unsigned default 0, "
-		 "max_pages_node mediumint unsigned default 0, "
-		 "ave_pages float default 0.0, "
-		 "min_cpu mediumint unsigned default 0, "
-		 "min_cpu_task smallint unsigned default 0, "
-		 "min_cpu_node mediumint unsigned default 0, "
-		 "ave_cpu float default 0.0)",
-		 step_table);
-	if(mysql_db_query(jobacct_mysql_db, jobacct_db_init, query)
-	   == SLURM_ERROR) 
-		return SLURM_ERROR;
-	
-	snprintf(query, sizeof(query),
-		 "create table if not exists %s(id int not null, "
-		 "stepid smallint not null, "
-		 "cpu_sec int unsigned default 0, "
-		 "cpu_usec int unsigned default 0, "
-		 "user_sec int unsigned default 0, "
-		 "user_usec int unsigned default 0, "
-		 "sys_sec int unsigned default 0, "
-		 "sys_usec int unsigned default 0, "
-		 "max_rss int unsigned default 0, "
-		 "max_ixrss int unsigned default 0, "
-		 "max_idrss int unsigned default 0, "
-		 "max_isrss int unsigned default 0, "
-		 "max_minflt int unsigned default 0, "
-		 "max_majflt int unsigned default 0, "
-		 "max_nswap int unsigned default 0, "
-		 "inblock int unsigned default 0, "
-		 "outblock int unsigned default 0, "
-		 "msgsnd int unsigned default 0, "
-		 "msgrcv int unsigned default 0, "
-		 "nsignals int unsigned default 0, "
-		 "nvcsw int unsigned default 0, "
-		 "nivcsw int unsigned default 0)",
-		 rusage_table);
+	xfree(query);
+
+	query = xstrdup_printf("create table if not exists %s (", 
+			       rusage_table);
+	i=0;
+	while(step_rusage_fields[i].name) {
+		next = xstrdup_printf("%s %s", step_rusage_fields[i].name,
+				      step_rusage_fields[i].options);
+		if(i) 
+			xstrcat(tmp, ", ");
+		xstrcat(tmp, next);
+		xfree(next);
+		i++;
+	}
+	xstrcat(query, tmp);
+	xfree(tmp);
+	xstrcat(query, ")");	
+
+	/* snprintf(query, sizeof(query), */
+/* 		 "create table if not exists %s(id int not null, " */
+/* 		 "stepid smallint not null, " */
+/* 		 "cpu_sec int unsigned default 0, " */
+/* 		 "cpu_usec int unsigned default 0, " */
+/* 		 "user_sec int unsigned default 0, " */
+/* 		 "user_usec int unsigned default 0, " */
+/* 		 "sys_sec int unsigned default 0, " */
+/* 		 "sys_usec int unsigned default 0, " */
+/* 		 "max_rss int unsigned default 0, " */
+/* 		 "max_ixrss int unsigned default 0, " */
+/* 		 "max_idrss int unsigned default 0, " */
+/* 		 "max_isrss int unsigned default 0, " */
+/* 		 "max_minflt int unsigned default 0, " */
+/* 		 "max_majflt int unsigned default 0, " */
+/* 		 "max_nswap int unsigned default 0, " */
+/* 		 "inblock int unsigned default 0, " */
+/* 		 "outblock int unsigned default 0, " */
+/* 		 "msgsnd int unsigned default 0, " */
+/* 		 "msgrcv int unsigned default 0, " */
+/* 		 "nsignals int unsigned default 0, " */
+/* 		 "nvcsw int unsigned default 0, " */
+/* 		 "nivcsw int unsigned default 0)", */
+/* 		 rusage_table); */
 	if(mysql_db_query(jobacct_mysql_db, jobacct_db_init, query)
 	   == SLURM_ERROR) 
 		return SLURM_ERROR;
