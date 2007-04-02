@@ -1,7 +1,7 @@
 /*****************************************************************************\
  *  mvapich.c - srun support for MPICH-IB (MVAPICH 0.9.4 and 0.9.5,7,8)
  *****************************************************************************
- *  Copyright (C) 2004 The Regents of the University of California.
+ *  Copyright (C) 2004-2007 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).  
  *
  *  UCRL-CODE-217948.
@@ -193,16 +193,17 @@ static int mvapich_get_task_info (struct mvapich_info *mvi)
 	if (!mvapich_requires_pids ())
 		return (0);
 
-	if (fd_read_n (fd, &mvi->pidlen, sizeof (int)) <= 0)
+	if (fd_read_n (fd, &mvi->pidlen, sizeof (int)) <= 0) {
 		return error ("mvapich: Unable to read pidlen for rank %d: %m", 
 				mvi->rank);
-
+	}
 
 	mvi->pid = xmalloc (mvi->pidlen);
 
-	if (fd_read_n (fd, mvi->pid, mvi->pidlen) <= 0)
-		return error ("mvapich: Unable to read pid for rank %d: %m", mvi->rank);
-
+	if (fd_read_n (fd, mvi->pid, mvi->pidlen) <= 0) {
+		return error ("mvapich: Unable to read pid for rank %d: %m", 
+				mvi->rank);
+	}
 
 	mvi->do_poll = 0;
 
@@ -211,14 +212,18 @@ static int mvapich_get_task_info (struct mvapich_info *mvi)
 
 static int mvapich_get_hostid (struct mvapich_info *mvi)
 {
-	if (fd_read_n (mvi->fd, &mvi->hostidlen, sizeof (int)) < 0)
+	if (fd_read_n (mvi->fd, &mvi->hostidlen, sizeof (int)) < 0) {
 		return error ("mvapich: Unable to read hostidlen for rank %d: %m",
 				mvi->rank);
-	if (mvi->hostidlen != sizeof (int))
-		return error ("mvapich: Unexpected size for hostidlen (%d)", mvi->hostidlen);
-	if (fd_read_n (mvi->fd, &mvi->hostid, sizeof (int)) < 0)
+	}
+	if (mvi->hostidlen != sizeof (int)) {
+		return error ("mvapich: Unexpected size for hostidlen (%d)", 
+				mvi->hostidlen);
+	}
+	if (fd_read_n (mvi->fd, &mvi->hostid, sizeof (int)) < 0) {
 		return error ("mvapich: unable to read hostid from rank %d", 
 				mvi->rank);
+	}
 
 	return (0);
 }
@@ -427,8 +432,12 @@ static void mvapich_alltoallbcast (void* buf, int size)
 /* Check that new == curr value if curr has been initialized */
 static int set_current (int curr, int new)
 {
-	if (curr == -1) curr = new;
-	if (new != curr) error("PMGR unexpected value: received %d, expecting %d", new, curr);
+	if (curr == -1)
+		curr = new;
+	if (new != curr) {
+		error("PMGR unexpected value: received %d, expecting %d", 
+			new, curr);
+	}
 	return curr;
 }
 
@@ -570,7 +579,7 @@ mvapich_debug ("Processing PMGR opcodes");
 			error("Unrecognized PMGR opcode: %d", opcode);
 	}
 
-	if (buf) { xfree(buf); }
+	xfree(buf);
   } // while(!exit)
   mvapich_debug ("Completed processing PMGR opcodes");
 }
@@ -796,8 +805,10 @@ static int mvapich_handle_connection (int fd)
 
 		mvarray [rank]->rank = rank;
 
-		if (rank > nprocs - 1) 
-			return (error ("mvapich: task reported invalid rank (%d)", rank));
+		if (rank > nprocs - 1) { 
+			return (error ("mvapich: task reported invalid rank (%d)", 
+					rank));
+		}
 	}
 	else {
 		rank = mvapich_rank_from_fd (fd);
