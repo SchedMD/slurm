@@ -5,7 +5,7 @@
  *  Copyright (C) 2005 Hewlett-Packard Development Company, L.P.
  *  Written by Andy Riebs, <andy.riebs@hp.com>, who borrowed heavily
  *  from other parts of SLURM, and Danny Auble, <da@llnl.gov>
- *  UCRL-CODE-226842.
+ *  UCRL-CODE-217948.
  *  
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -16,7 +16,7 @@
  *  any later version.
  *
  *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under
+ *  to link the code of portions of this program with the OpenSSL library under 
  *  certain conditions as described in each individual source file, and 
  *  distribute linked combinations including the two. You must obey the GNU 
  *  General Public License in all respects for all of the code used other than 
@@ -117,15 +117,6 @@ extern int getprocs(struct procsinfo *procinfo, int, struct fdsinfo *,
  */
 extern int init ( void )
 {
-	char *proctrack = slurm_get_proctrack_type();
-	if(!strcasecmp(proctrack, "proctrack/pgid")) {
-		info("WARNING: We will use a much slower algorithm with "
-		     "proctrack/pgid, use Proctracktype=proctrack/aix "
-		     "with %s", plugin_name);
-		pgid_plugin = true;
-	}
-	xfree(proctrack);
-
 	verbose("%s loaded", plugin_name);
 	return SLURM_SUCCESS;
 }
@@ -277,11 +268,6 @@ int jobacct_p_endpoll()
 	return common_endpoll();
 }
 
-int jobacct_p_set_proctrack_container_id(uint32_t id)
-{
-	return common_set_proctrack_container_id(id);
-}
-
 int jobacct_p_add_task(pid_t pid, jobacct_id_t *jobacct_id)
 {
 	return common_add_task(pid, jobacct_id);
@@ -300,14 +286,9 @@ struct jobacctinfo *jobacct_p_remove_task(pid_t pid)
 	return common_remove_task(pid);
 }
 
-void jobacct_p_suspend_poll()
+void jobacct_p_suspendpoll()
 {
-	common_suspend_poll();
-}
-
-void jobacct_p_resume_poll()
-{
-	common_resume_poll();
+	common_suspendpoll();
 }
 
 #ifdef HAVE_AIX
@@ -374,11 +355,6 @@ static void _get_offspring_data(List prec_list, prec_t *ancestor, pid_t pid)
 static void _get_process_data() 
 {
 	struct procsinfo proc;
-	pid_t *pids = NULL;
-	int npids = 0;
-
-	int i;
-
 	int pid = 0;
 	static int processing = 0;
 	prec_t *prec = NULL;
@@ -387,11 +363,6 @@ static void _get_process_data()
 	ListIterator itr;
 	ListIterator itr2;
 	
-	if(!pgid_plugin && cont_id == (uint32_t)NO_VAL) {
-		debug("cont_id hasn't been set yet not running poll");
-		return;	
-	}
-
 	if(processing) {
 		debug("already running, returning");
 		return;
@@ -399,54 +370,24 @@ static void _get_process_data()
 	
 	processing = 1;
 	prec_list = list_create(_destroy_prec);
-
-	if(!pgid_plugin) {
-		/* get only the processes in the proctrack container */
-		slurm_container_get_pids(cont_id, &pids, &npids);
-		if(!npids) {
-			debug4("no pids in this container %d", cont_id);
-			goto finished;
-		}
-		for (i = 0; i < npids; i++) {
-			pid = pids[i];
-			if(!getprocs(&proc, sizeof(proc), 0, 0, &pid, 1)) 
-				continue; /* Assume the process went away */
-			prec = xmalloc(sizeof(prec_t));
-			list_append(prec_list, prec);
-			prec->pid = proc.pi_pid;
-			prec->ppid = proc.pi_ppid;		
-			prec->usec = proc.pi_ru.ru_utime.tv_sec +
-				proc.pi_ru.ru_utime.tv_usec * 1e-6;
-			prec->ssec = proc.pi_ru.ru_stime.tv_sec +
-				proc.pi_ru.ru_stime.tv_usec * 1e-6;
-			prec->pages = proc.pi_majflt;
-			prec->rss = (proc.pi_trss + proc.pi_drss) * pagesize;
-			//prec->rss *= 1024;
-			prec->vsize = (proc.pi_tsize / 1024);
-			prec->vsize += (proc.pi_dvm * pagesize);
-			//prec->vsize *= 1024;
-			/*  debug("vsize = %f = (%d/1024)+(%d*%d)",   */
+	/* get the whole process table */
+	while(getprocs(&proc, sizeof(proc), 0, 0, &pid, 1) == 1) {
+		prec = xmalloc(sizeof(prec_t));
+		list_append(prec_list, prec);
+		prec->pid = proc.pi_pid;
+		prec->ppid = proc.pi_ppid;		
+		prec->usec = proc.pi_ru.ru_utime.tv_sec +
+			proc.pi_ru.ru_utime.tv_usec * 1e-6;
+		prec->ssec = proc.pi_ru.ru_stime.tv_sec +
+			proc.pi_ru.ru_stime.tv_usec * 1e-6;
+		prec->pages = proc.pi_majflt;
+		prec->rss = (proc.pi_trss + proc.pi_drss) * pagesize;
+		//prec->rss *= 1024;
+		prec->vsize = (proc.pi_tsize / 1024);
+		prec->vsize += (proc.pi_dvm * pagesize);
+		//prec->vsize *= 1024;
+		/*  debug("vsize = %f = (%d/1024)+(%d*%d)",   */
 /*    		      prec->vsize, proc.pi_tsize, proc.pi_dvm, pagesize);  */
-		}
-	} else {
-		while(getprocs(&proc, sizeof(proc), 0, 0, &pid, 1) == 1) {
-			prec = xmalloc(sizeof(prec_t));
-			list_append(prec_list, prec);
-			prec->pid = proc.pi_pid;
-			prec->ppid = proc.pi_ppid;		
-			prec->usec = proc.pi_ru.ru_utime.tv_sec +
-				proc.pi_ru.ru_utime.tv_usec * 1e-6;
-			prec->ssec = proc.pi_ru.ru_stime.tv_sec +
-				proc.pi_ru.ru_stime.tv_usec * 1e-6;
-			prec->pages = proc.pi_majflt;
-			prec->rss = (proc.pi_trss + proc.pi_drss) * pagesize;
-			//prec->rss *= 1024;
-			prec->vsize = (proc.pi_tsize / 1024);
-			prec->vsize += (proc.pi_dvm * pagesize);
-			//prec->vsize *= 1024;
-			/*  debug("vsize = %f = (%d/1024)+(%d*%d)",   */
-/*    		      prec->vsize, proc.pi_tsize, proc.pi_dvm, pagesize);  */
-		}
 	}
 	if(!list_count(prec_list))
 		goto finished;

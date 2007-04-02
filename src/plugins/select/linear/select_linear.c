@@ -8,7 +8,7 @@
  *  Copyright (C) 2004-2006 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
- *  UCRL-CODE-226842.
+ *  UCRL-CODE-217948.
  *  
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -63,11 +63,7 @@
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
-
-#include "src/common/slurm_resource_info.h"
-
 #include "src/slurmctld/slurmctld.h"
-#include "src/slurmctld/proc_req.h"
 
 #define SELECT_DEBUG 0
 
@@ -289,78 +285,6 @@ extern int select_p_block_init(List part_list)
 }
 
 /*
- * _get_avail_cpus - Get the number of "available" cpus on a node
- *	given this number given the number of cpus_per_task and
- *	maximum sockets, cores, threads.  Note that the value of
- *	cpus is the lowest-level logical processor (LLLP).
- * IN job_ptr - pointer to job being scheduled
- * IN index - index of node's configuration information in select_node_ptr
- */
-static uint16_t _get_avail_cpus(struct job_record *job_ptr, int index)
-{
-	struct node_record *node_ptr;
-	uint16_t avail_cpus;
-	uint16_t cpus, sockets, cores, threads;
-	uint16_t cpus_per_task = 1;
-	uint16_t ntasks_per_node = 0, ntasks_per_socket = 0, ntasks_per_core = 0;
-	uint16_t max_sockets = 0xffff, max_cores = 0xffff, max_threads = 0xffff;
-	multi_core_data_t *mc_ptr = NULL;
-	int min_sockets = 0, min_cores = 0;
-
-	if (job_ptr->details) {
-		if (job_ptr->details->cpus_per_task)
-			cpus_per_task = job_ptr->details->cpus_per_task;
-		if (job_ptr->details->ntasks_per_node)
-			ntasks_per_node = job_ptr->details->ntasks_per_node;
-		mc_ptr = job_ptr->details->mc_ptr;
-	}
-	if (mc_ptr) {
-		max_sockets       = job_ptr->details->mc_ptr->max_sockets;
-		max_cores         = job_ptr->details->mc_ptr->max_cores;
-		max_threads       = job_ptr->details->mc_ptr->max_threads;
-		ntasks_per_socket = job_ptr->details->mc_ptr->ntasks_per_socket;
-		ntasks_per_core   = job_ptr->details->mc_ptr->ntasks_per_core;
-	}
-
-	node_ptr = &(select_node_ptr[index]);
-	if (select_fast_schedule) { /* don't bother checking each node */
-		cpus    = node_ptr->config_ptr->cpus;
-		sockets = node_ptr->config_ptr->sockets;
-		cores   = node_ptr->config_ptr->cores;
-		threads = node_ptr->config_ptr->threads;
-	} else {
-		cpus    = node_ptr->cpus;
-		sockets = node_ptr->sockets;
-		cores   = node_ptr->cores;
-		threads = node_ptr->threads;
-	}
-
-#if 0
-	info("host %s User_ sockets %u cores %u threads %u ", 
-	     node_ptr->name, max_sockets, max_cores, max_threads);
-
-	info("host %s HW_ cpus %u sockets %u cores %u threads %u ", 
-	     node_ptr->name, cpus, sockets, cores, threads);
-#endif
-
-	avail_cpus = slurm_get_avail_procs(
-			max_sockets, max_cores, max_threads, 
-			min_sockets, min_cores, cpus_per_task,
-			ntasks_per_node, ntasks_per_socket, ntasks_per_core,
-	    		&cpus, &sockets, &cores, &threads, 
-			(uint16_t) 0, NULL, (uint16_t) 0, 
-			SELECT_TYPE_INFO_NONE,
-			job_ptr->job_id, node_ptr->name);
-
-#if 0
-	debug3("avail_cpus index %d = %d (out of %d %d %d %d)",
-				index, avail_cpus,
-				cpus, sockets, cores, threads);
-#endif
-	return(avail_cpus);
-}
-
-/*
  * select_p_job_test - Given a specification of scheduling requirements, 
  *	identify the nodes which "best" satisfy the request.
  * 	"best" is defined as either single set of consecutive nodes satisfying 
@@ -402,20 +326,9 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	int rem_cpus, rem_nodes;	/* remaining resources desired */
 	int best_fit_nodes, best_fit_cpus, best_fit_req;
 	int best_fit_location = 0, best_fit_sufficient;
-	int avail_cpus;
-	multi_core_data_t *mc_ptr = job_ptr->details->mc_ptr;
+	int cpus_per_task, avail_cpus;
 
 	xassert(bitmap);
-	if (mc_ptr) {
-		debug3("job min-[max]: -N %u-[%u]:%u-[%u]:%u-[%u]:%u-[%u]",
-			job_ptr->details->min_nodes,   job_ptr->details->max_nodes,
-			mc_ptr->min_sockets, mc_ptr->max_sockets,
-			mc_ptr->min_cores,   mc_ptr->max_cores,
-			mc_ptr->min_threads, mc_ptr->max_threads);
-		debug3("job ntasks-per: -node=%u -socket=%u -core=%u",
-			job_ptr->details->ntasks_per_node,
-			mc_ptr->ntasks_per_socket, mc_ptr->ntasks_per_core);
-	}
 
 	consec_index = 0;
 	consec_size  = 50;	/* start allocation for 50 sets of 
@@ -426,6 +339,10 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	consec_end   = xmalloc(sizeof(int) * consec_size);
 	consec_req   = xmalloc(sizeof(int) * consec_size);
 
+	if (job_ptr->details && job_ptr->details->cpus_per_task)
+		cpus_per_task = job_ptr->details->cpus_per_task;
+	else
+		cpus_per_task = 1;
 
 	/* Build table with information about sets of consecutive nodes */
 	consec_cpus[consec_index] = consec_nodes[consec_index] = 0;
@@ -440,9 +357,14 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 		if (bit_test(bitmap, index)) {
 			if (consec_nodes[consec_index] == 0)
 				consec_start[consec_index] = index;
-
-			avail_cpus = _get_avail_cpus(job_ptr, index);
-
+			if (select_fast_schedule)
+				/* don't bother checking each node */
+				i = select_node_ptr[index].
+				    config_ptr->cpus;
+			else
+				i = select_node_ptr[index].cpus;
+			avail_cpus = (i / cpus_per_task) * 
+					cpus_per_task;	/* round down */
 			if (job_ptr->details->req_node_bitmap
 			&&  bit_test(job_ptr->details->req_node_bitmap, index)
 			&&  (max_nodes > 0)) {
@@ -555,7 +477,14 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 				bit_set(bitmap, i);
 				rem_nodes--;
 				max_nodes--;
-				avail_cpus = _get_avail_cpus(job_ptr, i);
+				if (select_fast_schedule)
+					avail_cpus = select_node_ptr[i].
+							config_ptr->cpus;
+				else
+					avail_cpus = select_node_ptr[i].
+							cpus;
+				avail_cpus = (avail_cpus / cpus_per_task) *
+						cpus_per_task;	/* round down */
 				rem_cpus -= avail_cpus;
 			}
 			for (i = (best_fit_req - 1);
@@ -568,7 +497,14 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 				bit_set(bitmap, i);
 				rem_nodes--;
 				max_nodes--;
-				avail_cpus = _get_avail_cpus(job_ptr, i);
+				if (select_fast_schedule)
+					avail_cpus = select_node_ptr[i].
+							config_ptr->cpus;
+				else
+					avail_cpus = select_node_ptr[i].
+							cpus;
+				avail_cpus = (avail_cpus / cpus_per_task) *
+						cpus_per_task;  /* round down */
 				rem_cpus -= avail_cpus;
 			}
 		} else {
@@ -582,7 +518,14 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 				bit_set(bitmap, i);
 				rem_nodes--;
 				max_nodes--;
-				avail_cpus = _get_avail_cpus(job_ptr, i);
+				if (select_fast_schedule)
+					avail_cpus = select_node_ptr[i].
+							config_ptr->cpus;
+				else
+					avail_cpus = select_node_ptr[i].
+							cpus;
+				avail_cpus = (avail_cpus / cpus_per_task) *
+						cpus_per_task;  /* round down */
 				rem_cpus -= avail_cpus;
 			}
 		}
@@ -705,7 +648,8 @@ extern int select_p_get_select_nodeinfo (struct node_record *node_ptr,
        return SLURM_SUCCESS;
 }
 
-extern int select_p_update_nodeinfo (struct job_record *job_ptr)
+extern int select_p_update_nodeinfo (struct job_record *job_ptr,
+                                            enum select_data_info info)
 {
        return SLURM_SUCCESS;
 }
@@ -715,51 +659,18 @@ extern int select_p_update_block (update_part_msg_t *part_desc_ptr)
 	return SLURM_SUCCESS;
 }
 
-extern int select_p_update_sub_node (update_part_msg_t *part_desc_ptr)
-{
-	return SLURM_SUCCESS;
-}
 extern int select_p_get_extra_jobinfo (struct node_record *node_ptr, 
-                                       struct job_record *job_ptr, 
+                                      struct job_record *job_ptr, 
                                        enum select_data_info info,
                                        void *data)
 {
-	int rc = SLURM_SUCCESS;
-
-	xassert(job_ptr);
-	xassert(job_ptr->magic == JOB_MAGIC);
-
-	switch (info) {
-	case SELECT_AVAIL_CPUS:
-	{
-		uint16_t *tmp_16 = (uint16_t *) data;
-
-		if ((job_ptr->details->cpus_per_task > 1)
-		||  (job_ptr->details->mc_ptr)) {
-			int index = (node_ptr - node_record_table_ptr);
-			*tmp_16 = _get_avail_cpus(job_ptr, index);
-		} else {
-			if (slurmctld_conf.fast_schedule) {
-				*tmp_16 = node_ptr->config_ptr->cpus;
-			} else {
-				*tmp_16 = node_ptr->cpus;
-			}
-		}
-		break;
-	}
-	default:
-		error("select_g_get_extra_jobinfo info %d invalid", info);
-		rc = SLURM_ERROR;
-		break;
-	}
-	
-	return rc;
+       return SLURM_SUCCESS;
 }
 
 extern int select_p_get_info_from_plugin (enum select_data_info info,
 					  void *data)
 {
-	return SLURM_SUCCESS;
+       return SLURM_SUCCESS;
 }
 
 extern int select_p_update_node_state (int index, uint16_t state)

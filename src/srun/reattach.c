@@ -5,7 +5,7 @@
  *  Copyright (C) 2002-2006 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Mark Grondona <grondona@llnl.gov>.
- *  UCRL-CODE-226842.
+ *  UCRL-CODE-217948.
  *  
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -61,9 +61,9 @@
 #include "src/srun/srun_job.h"
 #include "src/srun/launch.h"
 #include "src/srun/opt.h"
+#include "src/srun/io.h"
 #include "src/srun/msg.h"
-#include "src/srun/srun.h"
-#include "src/srun/signals.h"
+
 
 
 /* number of active threads */
@@ -80,8 +80,7 @@ typedef struct thd {
         pthread_attr_t	attr;			/* thread attributes */
         state_t		state;      		/* thread state */
 	slurm_msg_t    *msg;
-	srun_job_t     *job;
-	uint32_t        nodeid;
+	srun_job_t          *job;
 } thd_t;
 
 static void		 _p_reattach(slurm_msg_t *req, srun_job_t *job);
@@ -264,8 +263,7 @@ _get_step_info(srun_step_t *s)
 
 	xassert(s->stepid != NO_VAL);
 
-	if (slurm_get_job_steps((time_t) 0, s->jobid, s->stepid, &resp, 1) 
-	    < 0) {
+	if (slurm_get_job_steps((time_t) 0, s->jobid, s->stepid, &resp, 1) < 0) {
 		error("Unable to get step information for %u.%u: %m", 
 		      s->jobid, s->stepid);
 		goto done;
@@ -319,53 +317,46 @@ _attach_to_job(srun_job_t *job)
 	int i;
 	reattach_tasks_request_msg_t *req = NULL;
 	slurm_msg_t *msg = NULL;
-	hostlist_t hl = NULL;
-	char *name = NULL;
-	
+
 	req = xmalloc(job->nhosts * sizeof(reattach_tasks_request_msg_t));
 	msg = xmalloc(job->nhosts * sizeof(slurm_msg_t));
 
 	debug("Going to attach to job %u.%u", job->jobid, job->stepid);
 
-	hl = hostlist_create(job->step_layout->node_list);
 	for (i = 0; i < job->nhosts; i++) {
 		reattach_tasks_request_msg_t *r = &req[i];
 		slurm_msg_t                  *m = &msg[i];
 
 		r->job_id          = job->jobid;
 		r->job_step_id     = job->stepid;
-		r->num_io_port     = 1;
-		r->io_port         = (uint16_t *)xmalloc(sizeof(uint16_t));
-		r->io_port[0]      = job->client_io->listenport[
-					   i%job->client_io->num_listen];
-		r->num_resp_port   = 1;
-		r->resp_port	   = (uint16_t *)xmalloc(sizeof(uint16_t));
-		r->resp_port[0]    = ntohs(job->jaddr[i%job->njfds].sin_port);
+		r->srun_node_id    = (uint32_t) i;
+		r->io_port         = 
+			ntohs(job->
+			      listenport[i%job->num_listen]);
+		r->resp_port       = 
+			ntohs(job->
+			      jaddr[i%job->njfds].sin_port);
 		r->cred            = job->cred;
-		slurm_msg_t_init(m);
+
+
+		/* XXX: redirecting output to files not yet
+		 * supported
+		 */
+		r->ofname          = NULL;
+		r->efname          = NULL;
+		r->ifname          = NULL;
+
 		m->data            = r;
 		m->msg_type        = REQUEST_REATTACH_TASKS;
-		name = hostlist_shift(hl);
-		if(!name) {
-			error("hostlist incomplete for this job request");
-			hostlist_destroy(hl);
-			return SLURM_ERROR;
-		}
-		if(slurm_conf_get_addr(name, &m->address)
-		   == SLURM_ERROR) {
-			error("_init_task_layout: can't get addr for "
-			      "host %s", name);
-			free(name);
-			hostlist_destroy(hl);
-			return SLURM_ERROR;
-		}
-		free(name);
-		/* memcpy(&m->address, &job->step_layout->node_addr[i],  */
-/* 		       sizeof(slurm_addr)); */
-	}
-	hostlist_destroy(hl);
-	_p_reattach(msg, job);
+		forward_init(&m->forward, NULL);
+		m->ret_list = NULL;
+		msg->forward_struct_init = 0;
 	
+		memcpy(&m->address, &job->slurmd_addr[i], sizeof(slurm_addr));
+	}
+
+	_p_reattach(msg, job);
+
 	return SLURM_SUCCESS;
 }
 
@@ -386,7 +377,6 @@ _p_reattach(slurm_msg_t *msg, srun_job_t *job)
 
 		thd[i].msg = &msg[i];
 		thd[i].job = job;
-		thd[i].nodeid = i;
 
 		slurm_attr_init(&thd[i].attr);
 		if (pthread_attr_setdetachstate(&thd[i].attr,
@@ -415,8 +405,9 @@ _p_reattach_task(void *arg)
 {
 	thd_t *t   = (thd_t *) arg;
 	int rc     = 0;
-	char *host = nodelist_nth_host(t->job->step_layout->node_list,
-				       t->nodeid);
+	reattach_tasks_request_msg_t *req = t->msg->data;
+	int nodeid = req->srun_node_id; 
+	char *host = t->job->step_layout->host[nodeid];
 	
 	t->state = THD_ACTIVE;
 	debug3("sending reattach request to %s", host);
@@ -425,12 +416,12 @@ _p_reattach_task(void *arg)
 	if (rc < 0) {
 		error("reattach: %s: %m", host);
 		t->state = THD_FAILED;
-		t->job->host_state[t->nodeid] = SRUN_HOST_REPLIED;
+		t->job->host_state[nodeid] = SRUN_HOST_REPLIED;
 	} else {
 		t->state = THD_DONE;
-		t->job->host_state[t->nodeid] = SRUN_HOST_UNREACHABLE;
+		t->job->host_state[nodeid] = SRUN_HOST_UNREACHABLE;
 	}
-	free(host);
+
 	slurm_mutex_lock(&active_mutex);
 	active--;
 	pthread_cond_signal(&active_cond);
@@ -445,7 +436,6 @@ int reattach()
 	List          steplist = _step_list_create(opt.attach);
 	srun_step_t  *s        = NULL;
 	srun_job_t        *job      = NULL;
-	slurm_step_io_fds_t fds = SLURM_STEP_IO_FDS_INITIALIZER;
 
 	if ((steplist == NULL) || (list_count(steplist) == 0)) {
 		info("No job/steps in attach");
@@ -497,15 +487,10 @@ int reattach()
 		exit(1);
 	}
 
-	srun_set_stdio_fds(job, &fds);
-	job->client_io = client_io_handler_create(fds,
-						  job->step_layout->task_cnt,
-						  job->step_layout->node_cnt,
-						  job->cred,
-						  opt.labelio);
-	if (!job->client_io
-	    || (client_io_handler_start(job->client_io) != SLURM_SUCCESS))
-		job_fatal(job, "failed to start IO handler");
+	if (io_thr_create(job) < 0) {
+		error("Unable to create IO thread: %m");
+		exit(1);
+	}
 
 	if (opt.join && sig_thr_create(job) < 0) {
 		error("Unable to create signals thread: %m");
@@ -532,9 +517,9 @@ int reattach()
 	 *  complete any writing that remains.
 	 */
 	debug("Waiting for IO thread");
-	if (client_io_handler_finish(job->client_io) != SLURM_SUCCESS)
-		error ("IO handler did not finish correctly (reattach): %m");
-	client_io_handler_destroy(job->client_io);
+	eio_signal_shutdown(job->eio);
+	if (pthread_join(job->ioid, NULL) < 0)
+		error ("Waiting on IO: %m");
 
 	/* kill msg server thread */
 	pthread_kill(job->jtid, SIGHUP);

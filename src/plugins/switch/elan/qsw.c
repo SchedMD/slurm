@@ -5,7 +5,7 @@
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Jim Garlick <garlick@llnl.gov>
- *  UCRL-CODE-226842.
+ *  UCRL-CODE-217948.
  *  
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -393,6 +393,7 @@ qsw_init(qsw_libstate_t oldstate)
 	else {
 		new->ls_prognum = QSW_PRG_START + 
 			(lrand48() % (QSW_PRG_END - QSW_PRG_START + 1));
+		new->step_ctx_list = list_create(_step_ctx_del);
 	}
 	qsw_internal_state = new;
 	return 0;
@@ -765,7 +766,7 @@ _free_hwcontext(uint32_t prog_num)
  */
 static int
 _init_elan_capability(ELAN_CAPABILITY *cap, uint32_t prognum, int ntasks, 
-		int nnodes, bitstr_t *nodeset, uint16_t *tasks_per_node,
+		int nnodes, bitstr_t *nodeset, uint32_t *tasks_per_node,
 		int cyclic_alloc, int max_tasks_per_node)
 {
 	int i, node_index;
@@ -865,7 +866,7 @@ _init_elan_capability(ELAN_CAPABILITY *cap, uint32_t prognum, int ntasks,
  */
 int
 qsw_setup_jobinfo(qsw_jobinfo_t j, int ntasks, bitstr_t *nodeset, 
-		uint16_t *tasks_per_node, int cyclic_alloc)
+		uint32_t *tasks_per_node, int cyclic_alloc)
 {
 	int i, max_tasks_per_node = 0;
 	int nnodes = bit_set_count(nodeset);
@@ -1391,7 +1392,7 @@ qsw_gethost_bynodeid(char *buf, int len, int id)
 		goto done;
 	}
 	
-	rc = slurm_strlcpy (buf, hostp, len);
+	rc = strlcpy (buf, hostp, len);
 
     done:
 	_unlock_qsw();

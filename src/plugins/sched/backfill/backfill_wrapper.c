@@ -6,7 +6,7 @@
  *  Copyright (C) 2003 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Jay Windley <jwindley@lnxi.com>, Morris Jette <jette1@llnl.gov>
- *  UCRL-CODE-226842.
+ *  UCRL-CODE-217948.
  *  
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -112,20 +112,12 @@ void fini( void )
 	pthread_mutex_lock( &thread_flag_mutex );
 	if ( backfill_thread ) {
 		verbose( "Backfill scheduler plugin shutting down" );
-		stop_backfill_agent();
 		_cancel_thread( backfill_thread );
 		backfill_thread = false;
 	}
 	pthread_mutex_unlock( &thread_flag_mutex );
 }
 
-/**************************************************************************/
-/* TAG(              slurm_sched_plugin_reconfig                        ) */
-/**************************************************************************/
-int slurm_sched_plugin_reconfig( void )
-{
-       return SLURM_SUCCESS;
-}
 
 /***************************************************************************/
 /*  TAG(                   slurm_sched_plugin_schedule                   ) */

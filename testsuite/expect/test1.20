@@ -8,10 +8,10 @@
 #          "FAILURE: ..." otherwise with an explanation of the failure, OR
 #          anything else indicates a failure mode that must be investigated.
 ############################################################################
-# Copyright (C) 2002-2006 The Regents of the University of California.
+# Copyright (C) 2002 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 # Written by Morris Jette <jette1@llnl.gov>
-# UCRL-CODE-226842.
+# UCRL-CODE-217948.
 # 
 # This file is part of SLURM, a resource management program.
 # For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -38,10 +38,10 @@ set exit_code        0
 print_header $test_id
 
 #
-# Spawn a program via srun with stdout forwarding disabled
+# Spawn a shell via srun with stdout forwarding disabled
 #
 set timeout $max_job_delay
-set srun_pid [spawn $srun --output=none -t1 $bin_id]
+spawn $srun --output=none -t1 $bin_id
 expect {
 	-re "uid=" {
 		send_user "\nFAILURE: srun improperly forwarded stdout\n"
@@ -55,8 +55,9 @@ expect {
 	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
-		slow_kill $srun_pid
+		kill_srun
 		set exit_code 1
+		exp_continue
 	}
 	eof {
 		wait
@@ -64,10 +65,10 @@ expect {
 }
 
 #
-# Spawn a program via srun with stderr forwarding disabled
+# Spawn a shell via srun with stderr forwarding disabled
 #
-set matches 0
-set srun_pid [spawn $srun --error=none -t1 $bin_sleep aaa]
+set srun_exit 0
+spawn $srun --error=none -t1 $bin_sleep aaa
 expect {
 	-re "invalid" {
 		send_user "\nFAILURE: srun improperly forwarded stderr\n"
@@ -76,20 +77,21 @@ expect {
 	}
 	-re "exit code $number" {
 		send_user "This error is expected, no worries\n"
-		set matches 1
+		set srun_exit 1
 		exp_continue
 	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
-		slow_kill $srun_pid
+		kill_srun
 		set exit_code 1
+		exp_continue
 	}
 	eof {
 		wait
 	}
 }
 
-if {$matches != 1} {
+if {$srun_exit == 0} {
 	send_user "\nFAILURE: srun exit code does not indicate error\n"
 	set exit_code 1
 }

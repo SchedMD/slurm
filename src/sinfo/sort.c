@@ -1,11 +1,11 @@
 /*****************************************************************************\
  *  sort.c - sinfo sorting functions
  *****************************************************************************
- *  Copyright (C) 2002-2006 The Regents of the University of California.
+ *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Joey Ekstrom <ekstrom1@llnl.gov>, 
  *             Morris Jette <jette1@llnl.gov>, et. al.
- *  UCRL-CODE-226842.
+ *  UCRL-CODE-217948.
  *  
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -49,10 +49,6 @@ static bool part_order;		/* order same as in part table */
 
 static int _sort_by_avail(void *void1, void *void2);
 static int _sort_by_cpus(void *void1, void *void2);
-static int _sort_by_sct(void *void1, void *void2);
-static int _sort_by_sockets(void *void1, void *void2);
-static int _sort_by_cores(void *void1, void *void2);
-static int _sort_by_threads(void *void1, void *void2);
 static int _sort_by_disk(void *void1, void *void2);
 static int _sort_by_features(void *void1, void *void2);
 static int _sort_by_groups(void *void1, void *void2);
@@ -133,14 +129,6 @@ void sort_sinfo_list(List sinfo_list)
 				list_sort(sinfo_list, _sort_by_state);
 		else if (params.sort[i] == 'w')
 				list_sort(sinfo_list, _sort_by_weight);
-		else if (params.sort[i] == 'X')
-				list_sort(sinfo_list, _sort_by_sockets);
-		else if (params.sort[i] == 'Y')
-				list_sort(sinfo_list, _sort_by_cores);
-		else if (params.sort[i] == 'Z')
-				list_sort(sinfo_list, _sort_by_threads);
-		else if (params.sort[i] == 'z')
-				list_sort(sinfo_list, _sort_by_sct);
 	}
 }
 
@@ -172,68 +160,6 @@ static int _sort_by_cpus(void *void1, void *void2)
 	sinfo_data_t *sinfo2 = (sinfo_data_t *) void2;
 
 	diff = sinfo1->min_cpus - sinfo2->min_cpus;
-
-	if (reverse_order)
-		diff = -diff;
-	return diff;
-}
-
-static int _sort_by_sct(void *void1, void *void2)
-{
-	int diffs, diffc, difft;
-	sinfo_data_t *sinfo1 = (sinfo_data_t *) void1;
-	sinfo_data_t *sinfo2 = (sinfo_data_t *) void2;
-
-	diffs = sinfo1->min_sockets - sinfo2->min_sockets;
-	diffc = sinfo1->min_cores - sinfo2->min_cores;
-	difft = sinfo1->min_threads - sinfo2->min_threads;
-
-	if (reverse_order) {
-		diffs = -diffs;
-		diffc = -diffc;
-		difft = -difft;
-	}
-	if (diffs)
-		return diffs;
-	else if (diffc)
-		return diffc;
-	else
-		return difft;
-}
-
-static int _sort_by_sockets(void *void1, void *void2)
-{
-	int diff;
-	sinfo_data_t *sinfo1 = (sinfo_data_t *) void1;
-	sinfo_data_t *sinfo2 = (sinfo_data_t *) void2;
-
-	diff = sinfo1->min_sockets - sinfo2->min_sockets;
-
-	if (reverse_order)
-		diff = -diff;
-	return diff;
-}
-
-static int _sort_by_cores(void *void1, void *void2)
-{
-	int diff;
-	sinfo_data_t *sinfo1 = (sinfo_data_t *) void1;
-	sinfo_data_t *sinfo2 = (sinfo_data_t *) void2;
-
-	diff = sinfo1->min_cores - sinfo2->min_cores;
-
-	if (reverse_order)
-		diff = -diff;
-	return diff;
-}
-
-static int _sort_by_threads(void *void1, void *void2)
-{
-	int diff;
-	sinfo_data_t *sinfo1 = (sinfo_data_t *) void1;
-	sinfo_data_t *sinfo2 = (sinfo_data_t *) void2;
-
-	diff = sinfo1->min_threads - sinfo2->min_threads;
 
 	if (reverse_order)
 		diff = -diff;
@@ -418,7 +344,7 @@ static int _sort_by_nodes(void *void1, void *void2)
 	sinfo_data_t *sinfo1 = (sinfo_data_t *) void1;
 	sinfo_data_t *sinfo2 = (sinfo_data_t *) void2;
 
-	diff = sinfo1->nodes_total - sinfo2->nodes_total;
+	diff = sinfo1->nodes_tot - sinfo2->nodes_tot;
 
 	if (reverse_order)
 		diff = -diff;

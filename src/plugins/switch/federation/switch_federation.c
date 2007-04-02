@@ -6,7 +6,7 @@
  *  Copyright (C) 2004-2006 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Jason King <jking@llnl.gov>
- *  UCRL-CODE-226842.
+ *  UCRL-CODE-217948.
  *  
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -49,7 +49,6 @@
 #include <stdlib.h>
 
 #include <slurm/slurm_errno.h>
-#include "src/common/macros.h"
 #include "src/common/slurm_xlator.h"
 #include "src/plugins/switch/federation/federation.h"
 
@@ -390,7 +389,7 @@ static char *adapter_name_check(char *network)
 }
 
 int switch_p_build_jobinfo(switch_jobinfo_t switch_job, char *nodelist, 
-			uint16_t *tasks_per_node, int cyclic_alloc, 
+			uint32_t *tasks_per_node, int cyclic_alloc, 
 			char *network) 
 {
 	hostlist_t list = NULL;

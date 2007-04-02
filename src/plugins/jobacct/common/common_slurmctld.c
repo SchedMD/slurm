@@ -4,7 +4,7 @@
  *
  *  Copyright (C) 2005 Hewlett-Packard Development Company, L.P.
  *  Written by Danny Auble, <da@llnl.gov>
- *  UCRL-CODE-226842.
+ *  UCRL-CODE-217948.
  *  
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -15,7 +15,7 @@
  *  any later version.
  *
  *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under
+ *  to link the code of portions of this program with the OpenSSL library under 
  *  certain conditions as described in each individual source file, and 
  *  distribute linked combinations including the two. You must obey the GNU 
  *  General Public License in all respects for all of the code used other than 
@@ -37,9 +37,6 @@
  *  This file is patterned after jobcomp_linux.c, written by Morris Jette and
  *  Copyright (C) 2002 The Regents of the University of California.
 \*****************************************************************************/
-#if HAVE_CONFIG_H
-#  include "config.h"
-#endif
 
 #include "jobacct_common.h"
 
@@ -94,9 +91,7 @@ const char *_jobstep_format =
 "%u "	/* max vsize node */
 "%u "	/* max rss node */
 "%u "	/* max pages node */
-"%u "	/* min cpu node */
-"%s "   /* account */
-"%d";   /* requester user id */
+"%u";	/* min cpu node */
 
 /*
  * Print the record to the log file.
@@ -131,9 +126,7 @@ static int _print_record(struct job_record *job_ptr,
 		    job_ptr->user_id, job_ptr->group_id, block_id, data)
 	    < 0)
 		rc=SLURM_ERROR;
-#ifdef HAVE_FDATSYNC
 	fdatasync(LOGFILE_FD);
-#endif
 	slurm_mutex_unlock( &logfile_lock );
 	xfree(block_id);
 
@@ -184,7 +177,7 @@ extern int common_job_start_slurmctld(struct job_record *job_ptr)
 		ncpus=0,
 		rc=SLURM_SUCCESS,
 		tmp;
-	char	buf[BUFFER_SIZE], *jname, *account, *nodes;
+	char	buf[BUFFER_SIZE], *jname;
 	long	priority;
 	int track_steps = 0;
 
@@ -213,27 +206,15 @@ extern int common_job_start_slurmctld(struct job_record *job_ptr)
 		track_steps = 1;
 	}
 
-	if (job_ptr->account && job_ptr->account[0])
-		account = job_ptr->account;
-	else
-		account = "(null)";
-	if (job_ptr->nodes && job_ptr->nodes[0])
-		nodes = job_ptr->nodes;
-	else
-		nodes = "(null)";
-
 	if(job_ptr->batch_flag)
 		track_steps = 1;
 
-	job_ptr->requid = -1; /* force to -1 for sacct to know this
-			       * hasn't been set yet */
-
 	tmp = snprintf(buf, BUFFER_SIZE,
-		       "%d %s %d %ld %u %s %s",
+		       "%d %s %d %ld %u %s",
 		       JOB_START, jname,
 		       track_steps, priority, job_ptr->num_procs,
-		       nodes, account);
-
+		       job_ptr->nodes);
+	
 	rc = _print_record(job_ptr, job_ptr->start_time, buf);
 	
 	xfree(jname);
@@ -253,13 +234,11 @@ extern int common_job_complete_slurmctld(struct job_record *job_ptr)
 		debug("jobacct: job %u never started", job_ptr->job_id);
 		return SLURM_ERROR;
 	}
-	/* leave the requid as a %d since we want to see if it is -1
-	   in sacct */
-	snprintf(buf, BUFFER_SIZE, "%d %u %d %d",
+	
+	snprintf(buf, BUFFER_SIZE, "%d %u %d",
 		 JOB_TERMINATED,
 		 (int) (job_ptr->end_time - job_ptr->start_time),
-		 job_ptr->job_state & (~JOB_COMPLETING),
-		 job_ptr->requid);
+		 job_ptr->job_state & (~JOB_COMPLETING));
 	
 	return  _print_record(job_ptr, job_ptr->end_time, buf);
 }
@@ -270,10 +249,10 @@ extern int common_step_start_slurmctld(struct step_record *step)
 	int cpus = 0;
 	char node_list[BUFFER_SIZE];
 #ifdef HAVE_BG
-	char *ionodes = NULL;
+	uint16_t quarter = (uint16_t)NO_VAL;
+	uint16_t nodecard = (uint16_t)NO_VAL;
 #endif
 	float float_tmp = 0;
-	char *account;
 	
 	if(!init) {
 		debug("jobacct init was not called or it failed");
@@ -283,40 +262,36 @@ extern int common_step_start_slurmctld(struct step_record *step)
 #ifdef HAVE_BG
 	cpus = step->job_ptr->num_procs;
 	select_g_get_jobinfo(step->job_ptr->select_jobinfo, 
-			     SELECT_DATA_IONODES, 
-			     &ionodes);
-	if(ionodes) {
+			     SELECT_DATA_QUARTER, 
+			     &quarter);
+	select_g_get_jobinfo(step->job_ptr->select_jobinfo, 
+			     SELECT_DATA_NODECARD, 
+			     &nodecard);
+	if(quarter != (uint16_t)NO_VAL 
+	   && nodecard != (uint16_t)NO_VAL)
 		snprintf(node_list, BUFFER_SIZE, 
-			 "%s[%s]", step->job_ptr->nodes, ionodes);
-		xfree(ionodes);
-	} else
-		snprintf(node_list, BUFFER_SIZE, "%s",
-			 step->job_ptr->nodes);
+			 "%s.%d.%d", step->step_node_list, quarter, nodecard);
+	else if(quarter != (uint16_t)NO_VAL)
+		snprintf(node_list, BUFFER_SIZE, 
+			 "%s.%d", step->step_node_list, quarter);
+	else
+		snprintf(node_list, BUFFER_SIZE, "%s", step->step_node_list);
 	
 #else
-	if(!step->step_layout || !step->step_layout->task_cnt) {
+	if(!step->num_cpus)
 		cpus = step->job_ptr->num_procs;
-		snprintf(node_list, BUFFER_SIZE, "%s", step->job_ptr->nodes);
-	} else {
-		cpus = step->step_layout->task_cnt;
-		snprintf(node_list, BUFFER_SIZE, "%s", 
-			 step->step_layout->node_list);
-	}
-#endif
-	if (step->job_ptr->account && step->job_ptr->account[0])
-		account = step->job_ptr->account;
 	else
-		account = "(null)";
-
-	step->job_ptr->requid = -1; /* force to -1 for sacct to know this
-				     * hasn't been set yet  */
-
+		cpus = step->num_cpus;
+	snprintf(node_list, BUFFER_SIZE, "%s", step->step_node_list);
+#endif
+	
+	
 	snprintf(buf, BUFFER_SIZE, _jobstep_format,
 		 JOB_STEP,
 		 step->step_id,	/* stepid */
 		 JOB_RUNNING,		/* completion status */
 		 0,     		/* completion code */
-		 cpus,          	/* number of tasks */
+		 step->num_tasks,	/* number of tasks */
 		 cpus,                  /* number of cpus */
 		 0,	        	/* elapsed seconds */
 		 0,                    /* total cputime seconds */
@@ -356,9 +331,7 @@ extern int common_step_start_slurmctld(struct step_record *step)
 		 0,	/* max vsize node */
 		 0,	/* max rss node */
 		 0,	/* max pages node */
-		 0,	/* min cpu node */
-		 account,
-		 step->job_ptr->requid); /* requester user id */
+		 0);	/* min cpu node */
 		 
 	return _print_record(step->job_ptr, step->start_time, buf);
 }
@@ -373,11 +346,11 @@ extern int common_step_complete_slurmctld(struct step_record *step)
 	char node_list[BUFFER_SIZE];
 	struct jobacctinfo *jobacct = (struct jobacctinfo *)step->jobacct;
 #ifdef HAVE_BG
-	char *ionodes = NULL;
+	uint16_t quarter = (uint16_t)NO_VAL;
+	uint16_t nodecard = (uint16_t)NO_VAL;
 #endif
 	float ave_vsize = 0, ave_rss = 0, ave_pages = 0;
 	float ave_cpu = 0, ave_cpu2 = 0;
-	char *account;
 
 	if(!init) {
 		debug("jobacct init was not called or it failed");
@@ -396,37 +369,38 @@ extern int common_step_complete_slurmctld(struct step_record *step)
 #ifdef HAVE_BG
 	cpus = step->job_ptr->num_procs;
 	select_g_get_jobinfo(step->job_ptr->select_jobinfo, 
-			     SELECT_DATA_IONODES, 
-			     &ionodes);
-	if(ionodes) {
+			     SELECT_DATA_QUARTER, 
+			     &quarter);
+	select_g_get_jobinfo(step->job_ptr->select_jobinfo, 
+			     SELECT_DATA_NODECARD, 
+			     &nodecard);
+	if(quarter != (uint16_t)NO_VAL 
+	   && nodecard != (uint16_t)NO_VAL)
 		snprintf(node_list, BUFFER_SIZE, 
-			 "%s[%s]", step->job_ptr->nodes, ionodes);
-		xfree(ionodes);
-	} else
-		snprintf(node_list, BUFFER_SIZE, "%s", 
-			 step->job_ptr->nodes);
+			 "%s.%d.%d", step->step_node_list, quarter, nodecard);
+	else if(quarter != (uint16_t)NO_VAL)
+		snprintf(node_list, BUFFER_SIZE, 
+			 "%s.%d", step->step_node_list, quarter);
+	else
+		snprintf(node_list, BUFFER_SIZE, "%s", step->step_node_list);
 	
 #else
-	if(!step->step_layout || !step->step_layout->task_cnt) {
+	if(!step->num_cpus)
 		cpus = step->job_ptr->num_procs;
-		snprintf(node_list, BUFFER_SIZE, "%s", step->job_ptr->nodes);
-	
-	} else {
-		cpus = step->step_layout->task_cnt;
-		snprintf(node_list, BUFFER_SIZE, "%s", 
-			 step->step_layout->node_list);
-	}
+	else
+		cpus = step->num_cpus;
+	snprintf(node_list, BUFFER_SIZE, "%s", step->step_node_list);
 #endif
 	/* figure out the ave of the totals sent */
-	if(cpus > 0) {
+	if(step->num_tasks > 0) {
 		ave_vsize = jobacct->tot_vsize;
-		ave_vsize /= cpus;
+		ave_vsize /= step->num_tasks;
 		ave_rss = jobacct->tot_rss;
-		ave_rss /= cpus;
+		ave_rss /= step->num_tasks;
 		ave_pages = jobacct->tot_pages;
-		ave_pages /= cpus;
+		ave_pages /= step->num_tasks;
 		ave_cpu = jobacct->tot_cpu;
-		ave_cpu /= cpus;	
+		ave_cpu /= step->num_tasks;	
 		ave_cpu /= 100;
 	}
  
@@ -435,17 +409,12 @@ extern int common_step_complete_slurmctld(struct step_record *step)
 		ave_cpu2 /= 100;
 	}
 
-	if (step->job_ptr->account && step->job_ptr->account[0])
-		account = step->job_ptr->account;
-	else
-		account = "(null)";
-
 	snprintf(buf, BUFFER_SIZE, _jobstep_format,
 		 JOB_STEP,
 		 step->step_id,	/* stepid */
 		 comp_status,		/* completion status */
 		 step->exit_code,	/* completion code */
-		 cpus,          	/* number of tasks */
+		 step->num_tasks,	/* number of tasks */
 		 cpus,                  /* number of cpus */
 		 elapsed,	        /* elapsed seconds */
 		 /* total cputime seconds */
@@ -489,9 +458,7 @@ extern int common_step_complete_slurmctld(struct step_record *step)
 		 jobacct->max_vsize_id.nodeid,	/* max vsize task */
 		 jobacct->max_rss_id.nodeid,	/* max rss task */
 		 jobacct->max_pages_id.nodeid,	/* max pages task */
-		 jobacct->min_cpu_id.nodeid,	/* min cpu task */
-		 account,
-		 step->job_ptr->requid); /* requester user id */
+		 jobacct->min_cpu_id.nodeid);	/* min cpu task */
 		 
 	return _print_record(step->job_ptr, now, buf);	
 }
@@ -506,7 +473,7 @@ extern int common_suspend_slurmctld(struct job_record *job_ptr)
 		debug("jobacct init was not called or it failed");
 		return SLURM_ERROR;
 	}
-	
+		
 	/* tell what time has passed */
 	if(!now)
 		now = job_ptr->start_time;

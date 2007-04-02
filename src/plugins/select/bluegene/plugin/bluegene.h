@@ -56,29 +56,29 @@
 #include "src/slurmctld/slurmctld.h"
 #include "../block_allocator/block_allocator.h"
 
+typedef int lifecycle_type_t;
+
+enum block_lifecycle {DYNAMIC, STATIC};
+
 typedef enum bg_layout_type {
 	LAYOUT_STATIC,  /* no overlaps, except for full system block
 			   blocks never change */
 	LAYOUT_OVERLAP, /* overlaps permitted, must be defined in 
 			   bluegene.conf file */
 	LAYOUT_DYNAMIC	/* slurm will make all blocks */
-} bg_layout_t;
+}bg_layout_t;
 
 typedef struct bg_record {
 	pm_partition_id_t bg_block_id;	/* ID returned from MMCS	*/
 	char *nodes;			/* String of nodes in block */
-	char *ionodes; 		        /* String of ionodes in block
-					 * NULL if not a small block*/
 	char *user_name;		/* user using the block */
 	char *target_name;		/* when a block is freed this 
 					   is the name of the user we 
 					   want on the block */
-	int full_block;                 /* whether or not block is the full
+	int full_block;                 /* wether or not block is the full
 					   block */
-	int modifying;                  /* flag to say the block is
-					   being modified or not at
-					   job launch usually */
 	uid_t user_uid;   		/* Owner of block uid	*/
+	lifecycle_type_t block_lifecycle;/* either STATIC or DYNAMIC	*/
 	rm_partition_state_t state;   	/* the allocated block   */
 	int start[BA_SYSTEM_DIMENSIONS];/* start node */
 	uint16_t geo[BA_SYSTEM_DIMENSIONS];  /* geometry */
@@ -95,37 +95,45 @@ typedef struct bg_record {
 	int boot_count;                 /* number of attemts boot attempts */
 	bitstr_t *bitmap;               /* bitmap to check the name 
 					   of block */
-	bitstr_t *ionode_bitmap;        /* for small blocks bitmap to
-					   keep track which ionodes we
-					   are on.  NULL if not a small block*/
 	int job_running;                /* job id if there is a job running 
 					   on the block */
 	int cpus_per_bp;                /* count of cpus per base part */
 	uint32_t node_cnt;              /* count of nodes per block */
 	uint16_t quarter;               /* used for small blocks 
 					   determine quarter of BP */
-	uint16_t nodecard;              /* used for small blocks 
-					   determine nodecard of quarter */
-	char *blrtsimage;              /* BlrtsImage for this block */
-	char *linuximage;              /* LinuxImage for this block */
-	char *mloaderimage;            /* mloaderImage for this block */
-	char *ramdiskimage;            /* RamDiskImage for this block */
+	uint16_t nodecard;             /* used for small blocks 
+					  determine nodecard of quarter */
 } bg_record_t;
+
+typedef struct {
+	int source;
+	int target;
+} bg_conn_t;
+
+typedef struct {
+	int dim;
+	List conn_list;
+} bg_switch_t;
+
+typedef struct {
+	int *coord;
+	int used;
+	List switch_list;
+} bg_bp_t;
+
 
 /* Global variables */
 extern rm_BGL_t *bg;
-extern char *default_blrtsimage;
-extern char *default_linuximage;
-extern char *default_mloaderimage;
-extern char *default_ramdiskimage;
+extern char *bluegene_blrts;
+extern char *bluegene_linux;
+extern char *bluegene_mloader;
+extern char *bluegene_ramdisk;
 extern char *bridge_api_file;
 extern bg_layout_t bluegene_layout_mode;
 extern uint16_t bluegene_numpsets;
 extern uint16_t bluegene_bp_node_cnt;
 extern uint16_t bluegene_nodecard_node_cnt;
-extern uint16_t bluegene_nodecard_ionode_cnt;
 extern uint16_t bluegene_quarter_node_cnt;
-extern uint16_t bluegene_quarter_ionode_cnt;
 extern ba_system_t *ba_system_ptr;
 extern time_t last_bg_update;
 
@@ -136,10 +144,6 @@ extern List bg_booted_block_list;  	/* blocks that are booted */
 extern List bg_freeing_list;  	        /* blocks that being freed */
 extern List bg_request_list;  	        /* list of request that can't 
 					   be made just yet */
-extern List bg_blrtsimage_list;
-extern List bg_linuximage_list;
-extern List bg_mloaderimage_list;
-extern List bg_ramdiskimage_list;
 
 extern bool agent_fini;
 extern pthread_mutex_t block_state_mutex;
@@ -173,7 +177,7 @@ extern void fini_bg(void);
 extern void print_bg_record(bg_record_t *record);
 extern void destroy_bg_record(void *object);
 extern int block_exist_in_list(List my_list, bg_record_t *bg_record);
-extern void process_nodes(bg_record_t *bg_reord);
+extern void process_nodes(bg_record_t *bg_record);
 extern void copy_bg_record(bg_record_t *fir_record, bg_record_t *sec_record);
 
 /* return bg_record from a bg_list */
@@ -197,6 +201,7 @@ extern int remove_all_users(char *bg_block_id, char *user_name);
 extern int set_block_user(bg_record_t *bg_record);
 
 /* Return strings representing blue gene data types */
+extern char *convert_lifecycle(lifecycle_type_t lifecycle);
 extern char *convert_conn_type(rm_connection_type_t conn_type);
 extern char *convert_node_use(rm_partition_mode_t pt);
 
@@ -214,7 +219,7 @@ extern void *bluegene_agent(void *args);
  */
 extern int create_defined_blocks(bg_layout_t overlapped);
 extern int create_dynamic_block(ba_request_t *request, List my_block_list);
-extern int create_full_system_block();
+extern int create_full_system_block(int *block_inx);
 
 extern int bg_free_block(bg_record_t *bg_record);
 extern int remove_from_bg_list(List my_bg_list, bg_record_t *bg_record);
@@ -223,8 +228,6 @@ extern void *mult_free_block(void *args);
 extern void *mult_destroy_block(void *args);
 extern int free_block_list(List delete_list);
 extern int read_bg_conf(void);
-extern int set_ionodes(bg_record_t *bg_record);
-extern int add_bg_record(List records, List used_nodes, blockreq_t *blockreq);
 
 /* block_sys.c */
 /*****************************************************/

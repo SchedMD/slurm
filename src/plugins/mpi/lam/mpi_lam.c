@@ -5,7 +5,7 @@
  *  Copyright (C) 2004 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Danny Auble <da@llnl.gov>
- *  UCRL-CODE-226842.
+ *  UCRL-CODE-217948.
  *  
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -79,27 +79,24 @@ const char plugin_name[]        = "mpi LAM plugin";
 const char plugin_type[]        = "mpi/lam";
 const uint32_t plugin_version   = 100;
 
-int p_mpi_hook_slurmstepd_task(const mpi_plugin_task_info_t *job,
-			       char ***env)
+int mpi_p_init(slurmd_job_t *job)
 {
 	debug("Using mpi/lam");
 	return SLURM_SUCCESS;
 }
 
-mpi_plugin_client_state_t *
-p_mpi_hook_client_prelaunch(const mpi_plugin_client_info_t *job, char ***env)
+int mpi_p_thr_create(srun_job_t *job)
 {
 	debug("Using mpi/lam");
-	/* only return NULL on error */
-	return (void *)0xdeadbeef;
+	return SLURM_SUCCESS;
 }
 
-int p_mpi_hook_client_single_task_per_node()
+int mpi_p_single_task()
 {
 	return true;
 }
 
-int p_mpi_hook_client_fini(mpi_plugin_client_state_t *state)
+int mpi_p_exit()
 {
 	return SLURM_SUCCESS;
 }

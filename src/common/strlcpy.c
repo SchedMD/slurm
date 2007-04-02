@@ -27,10 +27,6 @@
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#if HAVE_CONFIG_H
-#  include "config.h"
-#  if (!HAVE_STRLCPY)
-
 #if defined(LIBC_SCCS) && !defined(lint)
 static char *rcsid = "$OpenBSD: strlcpy.c,v 1.5 2001/05/13 15:40:16 deraadt Exp $";
 #endif /* LIBC_SCCS and not lint */
@@ -80,7 +76,3 @@ strlcpy(dst, src, siz)
 
 	return(s - src - 1);	/* count does not include NUL */
 }
-
-#  endif /* !HAVE_STRLCPY */
-#endif /* HAVE_CONFIG_H */
-

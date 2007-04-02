@@ -7,10 +7,10 @@
 #          "FAILURE: ..." otherwise with an explanation of the failure, OR
 #          anything else indicates a failure mode that must be investigated.
 ############################################################################
-# Copyright (C) 2002-2006 The Regents of the University of California.
+# Copyright (C) 2002 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 # Written by Morris Jette <jette1@llnl.gov>
-# UCRL-CODE-226842.
+# UCRL-CODE-217948.
 # 
 # This file is part of SLURM, a resource management program.
 # For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -46,17 +46,12 @@ if {[test_front_end] != 0 && [test_super_user] == 0} {
 #
 set matches 0
 set timeout $max_job_delay
-set srun_pid [spawn $srun -N1 -t1 /bad/bad/bad]
+spawn $srun -N1 -t1 /bad/bad/bad
 expect {
 	-re "No such file" {
 		send_user "\nNo worries, this error is expected\n"
 		set matches 1
 		exp_continue
-	}
-	-re "Unable to run executable" {
-		send_user "\nNo worries, this error is expected\n"
-		set matches 1
-		 exp_continue
 	}
 	-re "job exceeded timelimit" {
 		send_user "\nFAILURE: srun didn't terminate properly\n"
@@ -70,14 +65,15 @@ expect {
 	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
-		slow_kill $srun_pid
+		kill_srun
 		set exit_code 1
+		exp_continue
 	}
 	eof {
 		wait
 	}
 }
-if {$matches == 0} {
+if {$matches != 1} {
 	send_user "\nFAILURE: unexpected output from bad job name\n"
 	set exit_code 1
 }

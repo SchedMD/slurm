@@ -5,7 +5,7 @@
  *  Copyright (C) 2002-2006 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Mark Grondona <mgrondona@llnl.gov>, Danny Auble <da@llnl.gov>.
- *  UCRL-CODE-226842.
+ *  UCRL-CODE-217948.
  *  
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -47,9 +47,9 @@
 #include <unistd.h>
 #include <sys/types.h>
 
-#include "src/common/macros.h"
 #include "slurm/slurm.h"
 #include "src/common/log.h"
+#include "src/common/macros.h"
 #include "src/common/env.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
@@ -61,17 +61,9 @@
  * Define slurm-specific aliases for use by plugins, see slurm_xlator.h 
  * for details. 
  */
-strong_alias(setenvf,			slurm_setenvpf);
-strong_alias(unsetenvp,			slurm_unsetenvp);
-strong_alias(getenvp,			slurm_getenvp);
-strong_alias(env_array_create,		slurm_env_array_create);
-strong_alias(env_array_merge,		slurm_env_array_merge);
-strong_alias(env_array_copy,		slurm_env_array_copy);
-strong_alias(env_array_free,		slurm_env_array_free);
-strong_alias(env_array_append,		slurm_env_array_append);
-strong_alias(env_array_append_fmt,	slurm_env_array_append_fmt);
-strong_alias(env_array_overwrite,	slurm_env_array_overwrite);
-strong_alias(env_array_overwrite_fmt,	slurm_env_array_overwrite_fmt);
+strong_alias(setenvf,		slurm_setenvpf);
+strong_alias(unsetenvp,		slurm_unsetenvp);
+strong_alias(getenvp,		slurm_getenvp);
 
 /*
  *  Return pointer to `name' entry in environment if found, or
@@ -244,7 +236,6 @@ int setup_env(env_t *env)
 {
 	int rc = SLURM_SUCCESS;
 	char *dist = NULL;
-	char *lllp_dist = NULL;
 	char *bgl_part_id = NULL;
 	char addrbuf[INET_ADDRSTRLEN];
 
@@ -270,221 +261,142 @@ int setup_env(env_t *env)
 		rc = SLURM_FAILURE;
 	} 
  
-	if (env->ntasks_per_node 
-	   && setenvf(&env->env, "SLURM_NTASKS_PER_NODE", "%d", 
-		      env->ntasks_per_node) ) {
-		error("Unable to set SLURM_NTASKS_PER_NODE");
-		rc = SLURM_FAILURE;
-	} 
- 
-	if (env->ntasks_per_socket 
-	   && setenvf(&env->env, "SLURM_NTASKS_PER_SOCKET", "%d", 
-		      env->ntasks_per_socket) ) {
-		error("Unable to set SLURM_NTASKS_PER_SOCKET");
-		rc = SLURM_FAILURE;
-	} 
-
-	if (env->ntasks_per_core 
-	   && setenvf(&env->env, "SLURM_NTASKS_PER_CORE", "%d", 
-		      env->ntasks_per_core) ) {
-		error("Unable to set SLURM_NTASKS_PER_CORE");
-		rc = SLURM_FAILURE;
-	} 
-
 	if (env->cpus_on_node 
 	   && setenvf(&env->env, "SLURM_CPUS_ON_NODE", "%d", 
 		      env->cpus_on_node) ) {
 		error("Unable to set SLURM_CPUS_PER_TASK");
 		rc = SLURM_FAILURE;
 	} 
-
-	if (((int)env->distribution >= 0)
-	&&  (env->distribution != SLURM_DIST_UNKNOWN)) {
+	
+	if (env->distribution != SLURM_DIST_UNKNOWN) {
 		switch(env->distribution) {
 		case SLURM_DIST_CYCLIC:
-			dist      = "cyclic";
-			lllp_dist = "";
+			dist = "cyclic";
 			break;
 		case SLURM_DIST_BLOCK:
-			dist      = "block";
-			lllp_dist = "";
-			break;
-		case SLURM_DIST_PLANE:
-			dist      = "plane";
-			lllp_dist = "plane";
+			dist = "block";
 			break;
 		case SLURM_DIST_ARBITRARY:
-			dist      = "arbitrary";
-			lllp_dist = "";
-			break;
-		case SLURM_DIST_CYCLIC_CYCLIC:
-			dist      = "cyclic";
-			lllp_dist = "cyclic";
-			break;
-		case SLURM_DIST_CYCLIC_BLOCK:
-			dist      = "cyclic";
-			lllp_dist = "block";
-			break;
-		case SLURM_DIST_BLOCK_CYCLIC:
-			dist      = "block";
-			lllp_dist = "cyclic";
-			break;
-		case SLURM_DIST_BLOCK_BLOCK:
-			dist      = "block";
-			lllp_dist = "block";
+			dist = "arbitrary";
 			break;
 		default:
-			error("unknown dist, type %d", env->distribution);
-			dist      = "unknown";
-			lllp_dist = "unknown";
-			break;
+			dist = "cyclic";
 		}
-
+		
 		if (setenvf(&env->env, "SLURM_DISTRIBUTION", "%s", dist)) {
 			error("Can't set SLURM_DISTRIBUTION env variable");
 			rc = SLURM_FAILURE;
 		}
-
-		if (setenvf(&env->env, "SLURM_DIST_PLANESIZE", "%d", 
-			    env->plane_size)) {
-			error("Can't set SLURM_DIST_PLANESIZE env variable");
-			rc = SLURM_FAILURE;
-		}
-
-		if (setenvf(&env->env, "SLURM_DIST_LLLP", "%s", lllp_dist)) {
-			error("Can't set SLURM_DIST_LLLP env variable");
-			rc = SLURM_FAILURE;
-		}
-	}
+	} 
 	
 	if (env->cpu_bind_type) {
-		char *str_verbose, *str_bind_type, *str_bind_list;
-		char *str_bind;
-		int len;
-
-		unsetenvp(env->env, "SLURM_CPU_BIND_VERBOSE");
-		unsetenvp(env->env, "SLURM_CPU_BIND_TYPE");
-		unsetenvp(env->env, "SLURM_CPU_BIND_LIST");
-		unsetenvp(env->env, "SLURM_CPU_BIND");
-
-		str_verbose = xstrdup ("");
+		int setstat = 0;
+		unsetenvp(env->env, "SLURM_CPU_BIND");	/* don't propagate SLURM_CPU_BIND */
 		if (env->cpu_bind_type & CPU_BIND_VERBOSE) {
-			xstrcat(str_verbose, "verbose");
+			setstat |= setenvf(&env->env, "SLURM_CPU_BIND_VERBOSE", "verbose");
 		} else {
-			xstrcat(str_verbose, "quiet");
+			setstat |= setenvf(&env->env, "SLURM_CPU_BIND_VERBOSE", "quiet");
 		}
-		if (setenvf(&env->env, "SLURM_CPU_BIND_VERBOSE", str_verbose)) {
+		if (setstat) {
 			error("Unable to set SLURM_CPU_BIND_VERBOSE");
 			rc = SLURM_FAILURE;
 		}
 
-		str_bind_type = xstrdup ("");
-		if (env->cpu_bind_type & CPU_BIND_TO_THREADS) {
-			xstrcat(str_bind_type, "threads,");
-		} else if (env->cpu_bind_type & CPU_BIND_TO_CORES) {
-			xstrcat(str_bind_type, "cores,");
-		} else if (env->cpu_bind_type & CPU_BIND_TO_SOCKETS) {
-			xstrcat(str_bind_type, "sockets,");
-		}
+		setstat = 0;
 		if (env->cpu_bind_type & CPU_BIND_NONE) {
-			xstrcat(str_bind_type, "none");
+			setstat |= setenvf(&env->env, "SLURM_CPU_BIND_TYPE", "none");
 		} else if (env->cpu_bind_type & CPU_BIND_RANK) {
-			xstrcat(str_bind_type, "rank");
-		} else if (env->cpu_bind_type & CPU_BIND_MAP) {
-			xstrcat(str_bind_type, "map_cpu:");
-		} else if (env->cpu_bind_type & CPU_BIND_MASK) {
-			xstrcat(str_bind_type, "mask_cpu:");
+			setstat |= setenvf(&env->env, "SLURM_CPU_BIND_TYPE", "rank");
+		} else if (env->cpu_bind_type & CPU_BIND_MAPCPU) {
+			setstat |= setenvf(&env->env, "SLURM_CPU_BIND_TYPE", "map_cpu:");
+		} else if (env->cpu_bind_type & CPU_BIND_MASKCPU) {
+			setstat |= setenvf(&env->env, "SLURM_CPU_BIND_TYPE", "mask_cpu:");
+		} else if (env->cpu_bind_type & (~CPU_BIND_VERBOSE)) {
+			setstat |= setenvf(&env->env, "SLURM_CPU_BIND_TYPE", "unknown");
+		} else {
+			setstat |= setenvf(&env->env, "SLURM_CPU_BIND_TYPE", "");
 		}
-		len = strlen(str_bind_type);
-		if (len) {		/* remove a possible trailing ',' */
-		    	if (str_bind_type[len-1] == ',') {
-			    	str_bind_type[len-1] = '\0';
-			}
-		}
-		if (setenvf(&env->env, "SLURM_CPU_BIND_TYPE", str_bind_type)) {
+		if (setstat) {
 			error("Unable to set SLURM_CPU_BIND_TYPE");
 			rc = SLURM_FAILURE;
 		}
 
-		str_bind_list = xstrdup ("");
+		setstat = 0;
 		if (env->cpu_bind) {
-			xstrcat(str_bind_list, env->cpu_bind);
+			setstat |= setenvf(&env->env, "SLURM_CPU_BIND_LIST", env->cpu_bind);
+		} else {
+			setstat |= setenvf(&env->env, "SLURM_CPU_BIND_LIST", "");
 		}
-		if (setenvf(&env->env, "SLURM_CPU_BIND_LIST", str_bind_list)) {
+		if (setenvf(&env->env, "SLURM_CPU_BIND_LIST", env->cpu_bind)) {
 			error("Unable to set SLURM_CPU_BIND_LIST");
 			rc = SLURM_FAILURE;
 		}
-
-		str_bind = xstrdup ("");
-		xstrcat(str_bind, str_verbose);
-		if (str_bind[0]) {		/* add ',' if str_verbose */
-			xstrcatchar(str_bind, ',');
-		}
-		xstrcat(str_bind, str_bind_type);
-		xstrcat(str_bind, str_bind_list);
-
-		if (setenvf(&env->env, "SLURM_CPU_BIND", str_bind)) {
-			error("Unable to set SLURM_CPU_BIND");
+	} else {
+		int setstat = 0;
+		unsetenvp(env->env, "SLURM_CPU_BIND");	/* don't propagate SLURM_CPU_BIND */
+		/* set SLURM_CPU_BIND_* env vars to defaults */
+		setstat |= setenvf(&env->env, "SLURM_CPU_BIND_VERBOSE", "quiet");
+		setstat |= setenvf(&env->env, "SLURM_CPU_BIND_TYPE", "");
+		setstat |= setenvf(&env->env, "SLURM_CPU_BIND_LIST", "");
+		if (setstat) {
+			error("Unable to set SLURM_CPU_BIND_*");
 			rc = SLURM_FAILURE;
 		}
 	}
 
 	if (env->mem_bind_type) {
-		char *str_verbose, *str_bind_type, *str_bind_list;
-		char *str_bind;
-
-		unsetenvp(env->env, "SLURM_MEM_BIND_VERBOSE");
-		unsetenvp(env->env, "SLURM_MEM_BIND_TYPE");
-		unsetenvp(env->env, "SLURM_MEM_BIND_LIST");
-		unsetenvp(env->env, "SLURM_MEM_BIND");
-
-		str_verbose = xstrdup ("");
+		unsetenvp(env->env, "SLURM_MEM_BIND");	/* don't propagate SLURM_MEM_BIND */
+		int setstat = 0;
 		if (env->mem_bind_type & MEM_BIND_VERBOSE) {
-			xstrcat(str_verbose, "verbose");
+			setstat |= setenvf(&env->env, "SLURM_MEM_BIND_VERBOSE", "verbose");
 		} else {
-			xstrcat(str_verbose, "quiet");
+			setstat |= setenvf(&env->env, "SLURM_MEM_BIND_VERBOSE", "quiet");
 		}
-		if (setenvf(&env->env, "SLURM_MEM_BIND_VERBOSE", str_verbose)) {
+		if (setstat) {
 			error("Unable to set SLURM_MEM_BIND_VERBOSE");
 			rc = SLURM_FAILURE;
 		}
  
-		str_bind_type = xstrdup ("");
+		setstat = 0;
 		if (env->mem_bind_type & MEM_BIND_NONE) {
-			xstrcat(str_bind_type, "none");
+			setstat |= setenvf(&env->env, "SLURM_MEM_BIND_TYPE", "none");
 		} else if (env->mem_bind_type & MEM_BIND_RANK) {
-			xstrcat(str_bind_type, "rank");
-		} else if (env->mem_bind_type & MEM_BIND_MAP) {
-			xstrcat(str_bind_type, "map_mem:");
-		} else if (env->mem_bind_type & MEM_BIND_MASK) {
-			xstrcat(str_bind_type, "mask_mem:");
-		} else if (env->mem_bind_type & MEM_BIND_LOCAL) {
-			xstrcat(str_bind_type, "local");
+			setstat |= setenvf(&env->env, "SLURM_MEM_BIND_TYPE", "rank");
+		} else if (env->mem_bind_type & MEM_BIND_MAPCPU) {
+			setstat |= setenvf(&env->env, "SLURM_MEM_BIND_TYPE", "map_cpu:");
+		} else if (env->mem_bind_type & MEM_BIND_MASKCPU) {
+			setstat |= setenvf(&env->env, "SLURM_MEM_BIND_TYPE", "mask_cpu:");
+		} else if (env->mem_bind_type & (~MEM_BIND_VERBOSE)) {
+			setstat |= setenvf(&env->env, "SLURM_MEM_BIND_TYPE", "unknown");
+		} else {
+			setstat |= setenvf(&env->env, "SLURM_MEM_BIND_TYPE", "");
 		}
-		if (setenvf(&env->env, "SLURM_MEM_BIND_TYPE", str_bind_type)) {
+		if (setstat) {
 			error("Unable to set SLURM_MEM_BIND_TYPE");
 			rc = SLURM_FAILURE;
 		}
 
-		str_bind_list = xstrdup ("");
+		setstat = 0;
 		if (env->mem_bind) {
-			xstrcat(str_bind_list, env->mem_bind);
+			setstat |= setenvf(&env->env, "SLURM_MEM_BIND_LIST",
+					   env->mem_bind);
+		} else {
+			setstat |= setenvf(&env->env, "SLURM_MEM_BIND_LIST",
+					   "");
 		}
-		if (setenvf(&env->env, "SLURM_MEM_BIND_LIST", str_bind_list)) {
+		if (setstat) {
 			error("Unable to set SLURM_MEM_BIND_LIST");
 			rc = SLURM_FAILURE;
 		}
-
-		str_bind = xstrdup ("");
-		xstrcat(str_bind, str_verbose);
-		if (str_bind[0]) {		/* add ',' if str_verbose */
-			xstrcatchar(str_bind, ',');
-		}
-		xstrcat(str_bind, str_bind_type);
-		xstrcat(str_bind, str_bind_list);
-
-		if (setenvf(&env->env, "SLURM_MEM_BIND", str_bind)) {
-			error("Unable to set SLURM_MEM_BIND");
+	} else {
+		unsetenvp(env->env, "SLURM_MEM_BIND");  /* don't propagate SLURM_MEM_BIND */
+		/* set SLURM_MEM_BIND_* env vars to defaults */
+		int setstat = 0;
+		setstat |= setenvf(&env->env, "SLURM_MEM_BIND_VERBOSE", "quiet");
+		setstat |= setenvf(&env->env, "SLURM_MEM_BIND_TYPE", "");
+		setstat |= setenvf(&env->env, "SLURM_MEM_BIND_LIST", "");
+		if (setstat) {
+			error("Unable to set SLURM_MEM_BIND_*");
 			rc = SLURM_FAILURE;
 		}
 	}
@@ -628,271 +540,6 @@ int setup_env(env_t *env)
 	
 	return SLURM_SUCCESS;
 }
-
-/**********************************************************************
- * From here on are the new environment variable management functions,
- * used by the "new" commands: salloc, sbatch, and the step launch APIs.
- **********************************************************************/
-
-/*
- * Return a string representation of an array of uint16_t elements.
- * Each value in the array is printed in decimal notation and elements
- * are seperated by a comma.  If sequential elements in the array
- * contain the same value, the value is written out just once followed
- * by "(xN)", where "N" is the number of times the value is repeated.
- *
- * Example:
- *   The array "1, 2, 1, 1, 1, 3, 2" becomes the string "1,2,1(x3),3,2"
- *
- * Returns an xmalloc'ed string.  Free with xfree().
- */
-static char *_uint16_array_to_str(int array_len, const uint16_t *array)
-{
-	int i;
-	int previous = 0;
-	char *sep = ",";  /* seperator */
-	char *str = xstrdup("");
-
-	if(array == NULL)
-		return str;
-
-	for (i = 0; i < array_len; i++) {
-		if ((i+1 < array_len)
-		    && (array[i] == array[i+1])) {
-				previous++;
-				continue;
-		}
-
-		if (i == array_len-1) /* last time through loop */
-			sep = "";
-		if (previous > 0) {
-			xstrfmtcat(str, "%u(x%u)%s",
-				   array[i], previous+1, sep);
-		} else {
-			xstrfmtcat(str, "%u%s", array[i], sep);
-		}
-		previous = 0;
-	}
-	
-	return str;
-}
-
-
-/*
- * The cpus-per-node representation in SLURM (and perhaps tasks-per-node
- * in the future) is stored in a compressed format comprised of two
- * equal-length arrays of uint32_t, and an integer holding the array length.
- * In one array an element represents a count (number of cpus, number of tasks,
- * etc.), and the corresponding element in the other array contains the
- * number of times the count is repeated sequentially in the uncompressed
- * something-per-node array.
- *
- * This function returns the string representation of the compressed
- * array.  Free with xfree().
- */
-static char *_uint32_compressed_to_str(uint32_t array_len,
-				       const uint32_t *array,
-				       const uint32_t *array_reps)
-{
-	int i;
-	char *sep = ","; /* seperator */
-	char *str = xstrdup("");
-
-	for (i = 0; i < array_len; i++) {
-		if (i == array_len-1) /* last time through loop */
-			sep = "";
-		if (array_reps[i] > 1) {
-			xstrfmtcat(str, "%u(x%u)%s",
-				   array[i], array_reps[i], sep);
-		} else {
-			xstrfmtcat(str, "%u%s", array[i], sep);
-		}
-	}
-
-	return str;
-}
-
-/*
- * Set in "dest" the environment variables relevant to a SLURM job
- * allocation, overwriting any environment variables of the same name.
- * If the address pointed to by "dest" is NULL, memory will automatically be
- * xmalloc'ed.  The array is terminated by a NULL pointer, and thus is
- * suitable for use by execle() and other env_array_* functions.
- *
- * Sets the variables:
- *	SLURM_JOB_ID
- *	SLURM_JOB_NUM_NODES
- *	SLURM_JOB_NODELIST
- *	SLURM_JOB_CPUS_PER_NODE
- *
- * Sets OBSOLETE variables:
- *	SLURM_JOBID
- *	SLURM_NNODES
- *	SLURM_NODELIST
- *	SLURM_TASKS_PER_NODE <- poorly named, really CPUs per node
- *	? probably only needed for users...
- */
-void
-env_array_for_job(char ***dest, const resource_allocation_response_msg_t *alloc)
-{
-	char *tmp;
-
-	env_array_overwrite_fmt(dest, "SLURM_JOB_ID", "%u", alloc->job_id);
-	env_array_overwrite_fmt(dest, "SLURM_JOB_NUM_NODES", "%u",
-				alloc->node_cnt);
-	env_array_overwrite_fmt(dest, "SLURM_JOB_NODELIST", "%s",
-				alloc->node_list);
-
-	tmp = _uint32_compressed_to_str((uint32_t)alloc->num_cpu_groups,
-					alloc->cpus_per_node,
-					alloc->cpu_count_reps);
-	env_array_overwrite_fmt(dest, "SLURM_JOB_CPUS_PER_NODE", "%s", tmp);
-
-	/* obsolete */
-	env_array_overwrite_fmt(dest, "SLURM_JOBID", "%u", alloc->job_id);
-	env_array_overwrite_fmt(dest, "SLURM_NNODES", "%u", alloc->node_cnt);
-	env_array_overwrite_fmt(dest, "SLURM_NODELIST", "%s", alloc->node_list);
-	env_array_overwrite_fmt(dest, "SLURM_TASKS_PER_NODE", "%s", tmp);
-
-	xfree(tmp);
-}
-
-/*
- * Set in "dest" the environment variables strings relevant to a SLURM batch
- * job allocation, overwriting any environment variables of the same name.
- * If the address pointed to by "dest" is NULL, memory will automatically be
- * xmalloc'ed.  The array is terminated by a NULL pointer, and thus is
- * suitable for use by execle() and other env_array_* functions.
- *
- * Sets the variables:
- *	SLURM_JOB_ID
- *	SLURM_JOB_NUM_NODES
- *	SLURM_JOB_NODELIST
- *	SLURM_JOB_CPUS_PER_NODE
- *      ENVIRONMENT=BATCH
- *
- * Sets OBSOLETE variables:
- *	SLURM_JOBID
- *	SLURM_NNODES
- *	SLURM_NODELIST
- *	SLURM_TASKS_PER_NODE <- poorly named, really CPUs per node
- *	? probably only needed for users...
- */
-void
-env_array_for_batch_job(char ***dest, const batch_job_launch_msg_t *batch)
-{
-	char *tmp;
-	uint32_t num_nodes = 0;
-	int i;
-
-	/* there is no explicit node count in the batch structure,
-	   so we need to calculate the node count */
-	for (i = 0; i < batch->num_cpu_groups; i++) {
-		num_nodes += batch->cpu_count_reps[i];
-	}
-
-	env_array_overwrite_fmt(dest, "SLURM_JOB_ID", "%u", batch->job_id);
-	env_array_overwrite_fmt(dest, "SLURM_JOB_NUM_NODES", "%u", num_nodes);
-	env_array_overwrite_fmt(dest, "SLURM_JOB_NODELIST", "%s", batch->nodes);
-	tmp = _uint32_compressed_to_str((uint32_t)batch->num_cpu_groups,
-					batch->cpus_per_node,
-					batch->cpu_count_reps);
-	env_array_overwrite_fmt(dest, "SLURM_JOB_CPUS_PER_NODE", "%s", tmp);
-	env_array_overwrite_fmt(dest, "ENVIRONMENT", "BATCH");
-
-	/* OBSOLETE */
-	env_array_overwrite_fmt(dest, "SLURM_JOBID", "%u", batch->job_id);
-	env_array_overwrite_fmt(dest, "SLURM_NNODES", "%u", num_nodes);
-	env_array_overwrite_fmt(dest, "SLURM_NODELIST", "%s", batch->nodes);
-	env_array_overwrite_fmt(dest, "SLURM_TASKS_PER_NODE", "%s", tmp);
-
-	xfree(tmp);
-}
-
-/*
- * Set in "dest" the environment variables relevant to a SLURM job step,
- * overwriting any environment variables of the same name.  If the address
- * pointed to by "dest" is NULL, memory will automatically be xmalloc'ed.
- * The array is terminated by a NULL pointer, and thus is suitable for
- * use by execle() and other env_array_* functions.
- *
- * Sets variables:
- *	SLURM_STEP_ID
- *	SLURM_STEP_NUM_NODES
- *	SLURM_STEP_NUM_TASKS
- *	SLURM_STEP_TASKS_PER_NODE
- *	SLURM_STEP_LAUNCHER_HOSTNAME
- *	SLURM_STEP_LAUNCHER_PORT
- *	SLURM_STEP_LAUNCHER_IPADDR
- *
- * Sets OBSOLETE variables:
- *	SLURM_STEPID
- *      SLURM_NNODES
- *	SLURM_NPROCS
- *	SLURM_NODELIST
- *	SLURM_TASKS_PER_NODE
- *	SLURM_SRUN_COMM_HOST
- *	SLURM_SRUN_COMM_PORT
- *	SLURM_LAUNCH_NODE_IPADDR
- *
- */
-void
-env_array_for_step(char ***dest, 
-		   const job_step_create_response_msg_t *step,
-		   const char *launcher_hostname,
-		   uint16_t launcher_port,
-		   const char *ip_addr_str)
-{
-	char *tmp;
-
-	tmp = _uint16_array_to_str(step->step_layout->node_cnt,
-				   step->step_layout->tasks);
-	env_array_overwrite_fmt(dest, "SLURM_STEP_ID", "%u", step->job_step_id);
-	env_array_overwrite_fmt(dest, "SLURM_STEP_NODELIST",
-				"%s", step->step_layout->node_list);
-	env_array_overwrite_fmt(dest, "SLURM_STEP_NUM_NODES",
-			 "%hu", step->step_layout->node_cnt);
-	env_array_overwrite_fmt(dest, "SLURM_STEP_NUM_TASKS",
-			 "%u", step->step_layout->task_cnt);
-	env_array_overwrite_fmt(dest, "SLURM_STEP_TASKS_PER_NODE", "%s", tmp);
-	env_array_overwrite_fmt(dest, "SLURM_STEP_LAUNCHER_HOSTNAME",
-			 "%s", launcher_hostname);
-	env_array_overwrite_fmt(dest, "SLURM_STEP_LAUNCHER_PORT",
-			 "%hu", launcher_port);
-/* 	env_array_overwrite_fmt(dest, "SLURM_STEP_LAUNCHER_IPADDR", */
-/* 			 "%s", ip_addr_str); */
-
-	/* OBSOLETE */
-	env_array_overwrite_fmt(dest, "SLURM_STEPID", "%u", step->job_step_id);
-	env_array_overwrite_fmt(dest, "SLURM_NNODES",
-			 "%hu", step->step_layout->node_cnt);
-	env_array_overwrite_fmt(dest, "SLURM_NPROCS",
-			 "%u", step->step_layout->task_cnt);
-	env_array_overwrite_fmt(dest, "SLURM_TASKS_PER_NODE", "%s", tmp);
-	env_array_overwrite_fmt(dest, "SLURM_SRUN_COMM_HOST",
-			 "%s", launcher_hostname);
-	env_array_overwrite_fmt(dest, "SLURM_SRUN_COMM_PORT",
-			 "%hu", launcher_port);
-/* 	env_array_overwrite_fmt(dest, "SLURM_LAUNCH_NODE_IPADDR", */
-/* 			 "%s", ip_addr_str); */
-
-	xfree(tmp);
-}
-
-/*
- * Enviroment variables set elsewhere
- * ----------------------------------
- *
- * Set by slurmstepd:
- *	SLURM_STEP_NODEID
- *	SLURM_STEP_PROCID
- *	SLURM_STEP_LOCALID
- *
- * OBSOLETE set by slurmstepd:
- *	SLURM_NODEID
- *	SLURM_PROCID
- *	SLURM_LOCALID
- */
 
 /***********************************************************************
  * Environment variable array support functions

@@ -4,7 +4,7 @@
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Kevin Tew <tew1@llnl.gov> et. al.
- *  UCRL-CODE-226842.
+ *  UCRL-CODE-217948.
  *  
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -67,10 +67,9 @@ int check_header_version(header_t * header)
  * IN msg_type - type of message to be send
  * IN flags - message flags to be send
  */
-void init_header(header_t *header, slurm_msg_t *msg,
+void init_header(header_t * header, slurm_msg_t *msg,
 		 uint16_t flags)
 {
-	memset(header, 0, sizeof(header));
 	header->version = SLURM_PROTOCOL_VERSION;
 	header->flags = flags;
 	header->msg_type = msg->msg_type;
@@ -80,6 +79,7 @@ void init_header(header_t *header, slurm_msg_t *msg,
 		header->ret_cnt = list_count(msg->ret_list);
 	else
 		header->ret_cnt = 0;
+	header->srun_node_id = msg->srun_node_id;
 	header->ret_list = msg->ret_list;
 	header->orig_addr = msg->orig_addr;
 }
@@ -96,31 +96,30 @@ void update_header(header_t * header, uint32_t msg_length)
 
 
 /* log the supplied slurm task launch message as debug3() level */
-void slurm_print_launch_task_msg(launch_tasks_request_msg_t *msg, char *name)
+void slurm_print_launch_task_msg(launch_tasks_request_msg_t * msg)
 {
 	int i;
-	int node_id = nodelist_find(msg->complete_nodelist, name);
 
-	debug3("job_id: %u", msg->job_id);
-	debug3("job_step_id: %u", msg->job_step_id);
-	debug3("uid: %u", msg->uid);
-	debug3("gid: %u", msg->gid);
-	debug3("tasks_to_launch: %u", msg->tasks_to_launch);
-	debug3("envc: %u", msg->envc);
+	debug3("job_id: %i", msg->job_id);
+	debug3("job_step_id: %i", msg->job_step_id);
+	debug3("uid: %i", msg->uid);
+	debug3("gid: %i", msg->gid);
+	debug3("tasks_to_launch: %i", msg->tasks_to_launch);
+	debug3("envc: %i", msg->envc);
 	for (i = 0; i < msg->envc; i++) {
-		debug3("env[%d]: %s", i, msg->env[i]);
+		debug3("env[%i]: %s", i, msg->env[i]);
 	}
 	debug3("cwd: %s", msg->cwd);
-	debug3("argc: %u", msg->argc);
+	debug3("argc: %i", msg->argc);
 	for (i = 0; i < msg->argc; i++) {
-		debug3("argv[%d]: %s", i, msg->argv[i]);
+		debug3("argv[%i]: %s", i, msg->argv[i]);
 	}
-	debug3("msg -> resp_port  = %u", msg->resp_port);
-	debug3("msg -> io_port    = %u", msg->io_port);
+	debug3("msg -> resp_port  = %d", msg->resp_port);
+	debug3("msg -> io_port    = %d", msg->io_port);
 	debug3("msg -> task_flags = %x", msg->task_flags);
 
-	for (i = 0; i < msg->tasks_to_launch[node_id]; i++) {
-		debug3("global_task_id[%d]: %u ", i,
-		       msg->global_task_ids[node_id][i]);
+	for (i = 0; i < msg->tasks_to_launch[msg->srun_node_id]; i++) {
+		debug3("global_task_id[%i]: %i ", i,
+		       msg->global_task_ids[msg->srun_node_id][i]);
 	}
 }

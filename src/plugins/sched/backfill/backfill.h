@@ -4,7 +4,7 @@
  *  Copyright (C) 2003 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
- *  UCRL-CODE-226842.
+ *  UCRL-CODE-217948.
  *  
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -37,9 +37,6 @@
 
 /* backfill_agent - detached thread periodically attempts to backfill jobs */
 extern void *backfill_agent(void *args);
-
-/* Terminate backfill_agent */
-extern void stop_backfill_agent(void);
 
 /* trigger the attempt of a backfill */
 extern void run_backfill (void);

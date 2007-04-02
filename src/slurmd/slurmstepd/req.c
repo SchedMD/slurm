@@ -5,7 +5,7 @@
  *  Copyright (C) 2005 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Christopher Morrone <morrone2@llnl.gov>
- *  UCRL-CODE-226842.
+ *  UCRL-CODE-217948.
  *  
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -54,9 +54,9 @@
 #include "src/common/eio.h"
 #include "src/common/slurm_auth.h"
 #include "src/common/slurm_jobacct.h"
-#include "src/common/stepd_api.h"
 
 #include "src/slurmd/slurmd/slurmd.h"
+#include "src/slurmd/common/stepd_api.h"
 #include "src/slurmd/common/proctrack.h"
 #include "src/slurmd/slurmstepd/slurmstepd.h"
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
@@ -79,8 +79,6 @@ static int _handle_resume(int fd, slurmd_job_t *job, uid_t uid);
 static int _handle_terminate(int fd, slurmd_job_t *job, uid_t uid);
 static int _handle_completion(int fd, slurmd_job_t *job, uid_t uid);
 static int _handle_stat_jobacct(int fd, slurmd_job_t *job, uid_t uid);
-static int _handle_task_info(int fd, slurmd_job_t *job);
-static int _handle_list_pids(int fd, slurmd_job_t *job);
 static bool _msg_socket_readable(eio_obj_t *obj);
 static int _msg_socket_accept(eio_obj_t *obj, List objs);
 
@@ -487,14 +485,6 @@ _handle_request(int fd, slurmd_job_t *job, uid_t uid, gid_t gid)
 		debug("Handling MESSAGE_STAT_JOBACCT");
 		rc = _handle_stat_jobacct(fd, job, uid);
 		break;
-	case REQUEST_STEP_TASK_INFO:
-		debug("Handling REQUEST_STEP_TASK_INFO");
-		rc = _handle_task_info(fd, job);
-		break;
-	case REQUEST_STEP_LIST_PIDS:
-		debug("Handling REQUEST_STEP_LIST_PIDS");
-		rc = _handle_list_pids(fd, job);
-		break;
 	default:
 		error("Unrecognized request: %d", req);
 		rc = SLURM_FAILURE;
@@ -522,7 +512,6 @@ _handle_info(int fd, slurmd_job_t *job)
 	safe_write(fd, &job->uid, sizeof(uid_t));
 	safe_write(fd, &job->jobid, sizeof(uint32_t));
 	safe_write(fd, &job->stepid, sizeof(uint32_t));
-	safe_write(fd, &job->nodeid, sizeof(uint32_t));
 
 	return SLURM_SUCCESS;
 rwfail:
@@ -793,13 +782,13 @@ _handle_attach(int fd, slurmd_job_t *job, uid_t uid)
 	debug("_handle_attach for job %u.%u", job->jobid, job->stepid);
 
 	srun       = xmalloc(sizeof(srun_info_t));
-	srun->key  = (srun_key_t *)xmalloc(SLURM_IO_KEY_SIZE);
+	srun->key  = (srun_key_t *)xmalloc(SLURM_CRED_SIGLEN);
 
 	debug("sizeof(srun_info_t) = %d, sizeof(slurm_addr) = %d",
 	      sizeof(srun_info_t), sizeof(slurm_addr));
 	safe_read(fd, &srun->ioaddr, sizeof(slurm_addr));
 	safe_read(fd, &srun->resp_addr, sizeof(slurm_addr));
-	safe_read(fd, srun->key, SLURM_IO_KEY_SIZE);
+	safe_read(fd, srun->key, SLURM_CRED_SIGLEN);
 
 	/*
 	 * Check if jobstep is actually running.
@@ -853,11 +842,9 @@ done:
 		xfree(pids);
 		xfree(gtids);
 
-		for (i = 0; i < job->ntasks; i++) {
-			len = strlen(job->task[i]->argv[0]) + 1;
-			safe_write(fd, &len, sizeof(int));
-			safe_write(fd, job->task[i]->argv[0], len);
-		}
+		len = strlen(job->argv[0]) + 1; /* +1 to include the \0 */
+		safe_write(fd, &len, sizeof(int));
+		safe_write(fd, job->argv[0], len);
 	}
 
 	return SLURM_SUCCESS;
@@ -876,7 +863,12 @@ _handle_pid_in_container(int fd, slurmd_job_t *job)
 
 	safe_read(fd, &pid, sizeof(pid_t));
 	
-	rc = slurm_container_has_pid(job->cont_id, pid);
+	/*
+	 * FIXME - we should add a new call in the proctrack API
+	 *         that simply returns "true" if a pid is in the step
+	 */
+	if (job->cont_id == slurm_container_find(pid))
+		rc = true;
 
 	/* Send the return code */
 	safe_write(fd, &rc, sizeof(bool));
@@ -915,7 +907,7 @@ _handle_suspend(int fd, slurmd_job_t *job, uid_t uid)
 		goto done;
 	}
 
-	jobacct_g_suspend_poll();
+	jobacct_g_suspendpoll();
 
 	/*
 	 * Signal the container
@@ -972,7 +964,7 @@ _handle_resume(int fd, slurmd_job_t *job, uid_t uid)
 		goto done;
 	}
 
-	jobacct_g_resume_poll();
+	jobacct_g_suspendpoll();
 	/*
 	 * Signal the container
 	 */
@@ -1105,52 +1097,4 @@ _handle_stat_jobacct(int fd, slurmd_job_t *job, uid_t uid)
 	return SLURM_SUCCESS;
 rwfail:
 	return SLURM_ERROR;
-}
-
-/* We don't check the uid in this function, anyone may list the task info. */
-static int
-_handle_task_info(int fd, slurmd_job_t *job)
-{
-	int i;
-	slurmd_task_info_t *task;
-
-	debug("_handle_task_info for job %u.%u", job->jobid, job->stepid);
-
-	safe_write(fd, &job->ntasks, sizeof(uint32_t));
-	for (i = 0; i < job->ntasks; i++) {
-		task = job->task[i];
-		safe_write(fd, &task->id, sizeof(int));
-		safe_write(fd, &task->gtid, sizeof(uint32_t));
-		safe_write(fd, &task->pid, sizeof(pid_t));
-		safe_write(fd, &task->exited, sizeof(bool));
-		safe_write(fd, &task->estatus, sizeof(int));
-	}
-
-	return SLURM_SUCCESS;
-rwfail:
-	return SLURM_FAILURE;
-}
-
-/* We don't check the uid in this function, anyone may list the task info. */
-static int
-_handle_list_pids(int fd, slurmd_job_t *job)
-{
-	int i;
-	pid_t *pids = NULL;
-	int npids = 0;
-
-	debug("_handle_list_pids for job %u.%u", job->jobid, job->stepid);
-	slurm_container_get_pids(job->cont_id, &pids, &npids);
-	safe_write(fd, &npids, sizeof(int));
-	for (i = 0; i < npids; i++) {
-		safe_write(fd, &pids[i], sizeof(pid_t));
-	}
-	if (npids > 0)
-		xfree(pids);
-
-	return SLURM_SUCCESS;
-rwfail:
-	if (npids > 0)
-		xfree(pids);
-	return SLURM_FAILURE;
 }

@@ -1,3 +1,4 @@
+# $Id$
 #
 # Makefile for slurmd
 
@@ -13,7 +14,7 @@ slurmd_LDADD = 					   \
         $(top_builddir)/src/common/libcommon.la    \
 	$(top_builddir)/src/common/libdaemonize.la \
 	$(top_builddir)/src/common/libeio.la       \
-	$(PLPA_LIBS) $(SSL_LIBS) 
+	$(SSL_LIBS) 
 
 slurmd_test_LDADD = $(slurmd_LDADD)
 
@@ -30,6 +31,8 @@ SLURMD_SOURCES = \
 	$(top_builddir)/src/slurmd/common/setproctitle.h \
 	$(top_builddir)/src/slurmd/common/slurmstepd_init.c \
 	$(top_builddir)/src/slurmd/common/slurmstepd_init.h \
+	$(top_builddir)/src/slurmd/common/stepd_api.c \
+	$(top_builddir)/src/slurmd/common/stepd_api.h \
 	$(top_builddir)/src/slurmd/common/run_script.c \
 	$(top_builddir)/src/slurmd/common/run_script.h \
 	$(top_builddir)/src/slurmd/common/task_plugin.c \

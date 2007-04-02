@@ -10,7 +10,7 @@
 # Copyright (C) 2002 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 # Written by Morris Jette <jette1@llnl.gov>
-# UCRL-CODE-226842.
+# UCRL-CODE-217948.
 # 
 # This file is part of SLURM, a resource management program.
 # For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -45,7 +45,7 @@ print_header $test_id
 #
 # Spawn three srun batch job, one held
 #
-set srun_pid [spawn $srun --batch -t1 --output=/dev/null --error=/dev/null  $bin_pwd]
+spawn $srun --batch -t1 --output=/dev/null --error=/dev/null  $bin_pwd
 expect {
 	-re "jobid ($number) submitted" {
 		set job_id1 $expect_out(1,string)
@@ -53,14 +53,14 @@ expect {
 	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
-		slow_kill $srun_pid
+		kill_srun
 		exit 1
 	}
 	eof {
 		wait
 	}
 }
-set srun_pid [spawn $srun --batch -t1 --output=/dev/null --error=/dev/null $bin_pwd]
+spawn $srun --batch -t1 --output=/dev/null --error=/dev/null $bin_pwd
 expect {
         -re "jobid ($number) submitted" {
                 set job_id2 $expect_out(1,string)
@@ -68,14 +68,14 @@ expect {
         }
         timeout {
                 send_user "\nFAILURE: srun not responding\n"
-                slow_kill $srun_pid
+                kill_srun
                 exit 1
         }
         eof {
 		wait
         }
 }
-set srun_pid [spawn $srun --batch -t1 --output=/dev/null --error=/dev/null --hold $bin_pwd]
+spawn $srun --batch -t1 --output=/dev/null --error=/dev/null --hold $bin_pwd
 expect {
         -re "jobid ($number) submitted" {
                 set job_id3 $expect_out(1,string)
@@ -83,7 +83,7 @@ expect {
         }
         timeout {
                 send_user "\nFAILURE: srun not responding\n"
-		slow_kill $srun_pid
+                kill_srun
                 exit 1
         }
         eof {

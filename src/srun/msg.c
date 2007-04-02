@@ -5,7 +5,7 @@
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Mark Grondona <mgrondona@llnl.gov>, et. al.
- *  UCRL-CODE-226842.
+ *  UCRL-CODE-217948.
  *  
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -51,7 +51,6 @@
 #include <sys/poll.h>
 #include <sys/wait.h>
 #include <time.h>
-#include <stdlib.h>
 
 #include <slurm/slurm_errno.h>
 
@@ -63,20 +62,22 @@
 #include "src/common/slurm_auth.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_defs.h"
+#include "src/common/slurm_protocol_interface.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/common/mpi.h"
 #include "src/common/forward.h"
-#include "src/api/pmi_server.h"
+#include "src/common/global_srun.h"
 
 #include "src/srun/srun_job.h"
 #include "src/srun/opt.h"
+#include "src/srun/io.h"
 #include "src/srun/msg.h"
+#include "src/srun/pmi.h"
 #include "src/srun/sigstr.h"
 #include "src/srun/attach.h"
 #include "src/srun/allocate.h"
 #include "src/srun/multi_prog.h"
-#include "src/srun/signals.h"
 
 #include "src/common/xstring.h"
 
@@ -162,11 +163,10 @@ static void _handle_update_mpir_proctable(int fd, srun_job_t *job)
 	int len;
 	char *executable = NULL;
 	int i;
-	char *name = NULL;
-	
+
 	/* some initialization */
 	if (MPIR_proctable_size == 0) {
-		MPIR_proctable_size = job->step_layout->task_cnt;
+		MPIR_proctable_size = job->step_layout->num_tasks;
 		MPIR_proctable = xmalloc(sizeof(MPIR_PROCDESC)
 					 * MPIR_proctable_size);
 		totalview_jobid = NULL;
@@ -188,7 +188,6 @@ static void _handle_update_mpir_proctable(int fd, srun_job_t *job)
 			remote_argv[1] = NULL;
 		}
 	}
-	name = nodelist_nth_host(job->step_layout->node_list, nodeid);
 	for (i = 0; i < ntasks; i++) {
 		MPIR_PROCDESC *tv;
 		int taskid, pid;
@@ -197,15 +196,15 @@ static void _handle_update_mpir_proctable(int fd, srun_job_t *job)
 		safe_read(fd, &pid, sizeof(int));
 
 		tv = &MPIR_proctable[taskid];
-		tv->host_name = xstrdup(name);
+		tv->host_name = job->step_layout->host[nodeid];
 		tv->pid = pid;
 		tv->executable_name = executable;
 		tasks_recorded++;
 	}
-	free(name);
+
 	/* if all tasks are now accounted for, set the debug state and
 	   call the Breakpoint */
-	if (tasks_recorded == job->step_layout->task_cnt) {
+	if (tasks_recorded == job->step_layout->num_tasks) {
 		if (opt.multi_prog)
 			set_multi_name(ntasks);
 		MPIR_debug_state = MPIR_DEBUG_SPAWNED;
@@ -213,7 +212,7 @@ static void _handle_update_mpir_proctable(int fd, srun_job_t *job)
 		if (opt.debugger_test)
 			_dump_proctable(job);
 	}
-	
+
 	return;
 
 rwfail:
@@ -226,15 +225,21 @@ static void _update_step_layout(int fd, slurm_step_layout_t *layout,
 {
 	int msg_type = PIPE_UPDATE_STEP_LAYOUT;
 	int dummy = 0xdeadbeef;
+	int len = 0;
 	
 	safe_write(fd, &msg_type, sizeof(int)); /* read by par_thr() */
 	safe_write(fd, &dummy, sizeof(int));    /* read by par_thr() */
 
 	/* the rest are read by _handle_update_step_layout() */
 	safe_write(fd, &nodeid, sizeof(int));
-	safe_write(fd, &layout->node_cnt, sizeof(uint32_t));
-	safe_write(fd, &layout->task_cnt, sizeof(uint32_t));
-	safe_write(fd, &layout->tasks[nodeid], sizeof(uint16_t));
+	safe_write(fd, &layout->num_hosts, sizeof(uint32_t));
+	safe_write(fd, &layout->num_tasks, sizeof(uint32_t));
+
+	len = strlen(layout->host[nodeid]) + 1;
+	safe_write(fd, &len, sizeof(int));
+	safe_write(fd, layout->host[nodeid], len);
+
+	safe_write(fd, &layout->tasks[nodeid], sizeof(uint32_t));
 	safe_write(fd, layout->tids[nodeid],
 		   layout->tasks[nodeid]*sizeof(uint32_t));
 
@@ -247,20 +252,28 @@ rwfail:
 static void _handle_update_step_layout(int fd, slurm_step_layout_t *layout)
 {
 	int nodeid;
-	
+	int len = 0;
+
 	safe_read(fd, &nodeid, sizeof(int));
-	safe_read(fd, &layout->node_cnt, sizeof(uint32_t));
-	safe_read(fd, &layout->task_cnt, sizeof(uint32_t));
-	xassert(nodeid >= 0 && nodeid <= layout->task_cnt);
+	safe_read(fd, &layout->num_hosts, sizeof(uint32_t));
+	safe_read(fd, &layout->num_tasks, sizeof(uint32_t));
+	xassert(nodeid >= 0 && nodeid <= layout->num_tasks);
 
 	/* If this is the first call to this function, then we probably need
 	   to intialize some of the arrays */
+	if (layout->host == NULL)
+		layout->host = xmalloc(layout->num_hosts * sizeof(char *));
 	if (layout->tasks == NULL)
-		layout->tasks = xmalloc(layout->node_cnt * sizeof(uint16_t *));
+		layout->tasks = xmalloc(layout->num_hosts * sizeof(uint32_t *));
 	if (layout->tids == NULL)
-		layout->tids = xmalloc(layout->node_cnt * sizeof(uint32_t *));
+		layout->tids = xmalloc(layout->num_hosts * sizeof(uint32_t *));
 
-	safe_read(fd, &layout->tasks[nodeid], sizeof(uint16_t));
+	safe_read(fd, &len, sizeof(int));
+	/*xassert(layout->host[nodeid] == NULL);*/
+        layout->host[nodeid] = xmalloc(len);
+	safe_read(fd, layout->host[nodeid], len);
+
+	safe_read(fd, &layout->tasks[nodeid], sizeof(uint32_t));
 	xassert(layout->tids[nodeid] == NULL);
 	layout->tids[nodeid] = xmalloc(layout->tasks[nodeid]*sizeof(uint32_t));
 	safe_read(fd, layout->tids[nodeid],
@@ -275,12 +288,12 @@ rwfail:
 static void _dump_proctable(srun_job_t *job)
 {
 	int node_inx, task_inx, taskid;
-	int task_cnt;
+	int num_tasks;
 	MPIR_PROCDESC *tv;
 
 	for (node_inx=0; node_inx<job->nhosts; node_inx++) {
-		task_cnt = job->step_layout->tasks[node_inx];
-		for (task_inx = 0; task_inx < task_cnt; task_inx++) {
+		num_tasks = job->step_layout->tasks[node_inx];
+		for (task_inx = 0; task_inx < num_tasks; task_inx++) {
 			taskid = job->step_layout->tids[node_inx][task_inx];
 			tv = &MPIR_proctable[taskid];
 			if (!tv)
@@ -346,61 +359,25 @@ static void _node_fail_handler(int fd, srun_job_t *job)
 {
 	char *nodelist = NULL;
 	int len = 0;
-	hostset_t fail_nodes, all_nodes;
-	hostlist_iterator_t fail_itr;
-	char *node;
-	int num_node_ids;
-	int *node_ids;
-	int i, j;
-	int node_id, num_tasks;
 
-	/* get the hostlist string of failed nodes from the message thread */
 	safe_read(fd, &len, sizeof(int));
 	nodelist = (char *)xmalloc(len+1);
 	safe_read(fd, nodelist, len);
 	nodelist[len] = '\0';
 
-	/* now process the down nodes and tell the IO client about them */
-	fail_nodes = hostset_create(nodelist);
-	fail_itr = hostset_iterator_create(fail_nodes);
-	num_node_ids = hostset_count(fail_nodes);
-	node_ids = xmalloc(sizeof(int) * num_node_ids);
-
-	all_nodes = hostset_create(job->step_layout->node_list);
-	/* find the index number of each down node */
-	slurm_mutex_lock(&job->task_mutex);
-	for (i = 0; i < num_node_ids; i++) {
-		node = hostlist_next(fail_itr);
-		node_id = node_ids[i] = hostset_find(all_nodes, node);
-		if (job->host_state[node_id] != SRUN_HOST_UNREACHABLE) {
-			error("Node failure: %s.", node);
-			job->host_state[node_id] = SRUN_HOST_UNREACHABLE;
-		}
-		free(node);
-
-		/* find all of the tasks that should run on this failed node
-		 * and mark them as having failed.
-		 */
-		num_tasks = job->step_layout->tasks[node_id];
-		for (j = 0; j < num_tasks; j++) {
-			int gtaskid;
-			debug2("marking task %d done on failed node %d",
-			       job->step_layout->tids[node_id][j], node_id);
-			gtaskid = job->step_layout->tids[node_id][j];
-			job->task_state[gtaskid] = SRUN_TASK_FAILED;
-		}
-	}
-	slurm_mutex_unlock(&job->task_mutex);
-
 	if (!opt.allocate) {
-		client_io_handler_downnodes(job->client_io, node_ids,
-					    num_node_ids);
+		io_node_fail(nodelist, job);
 	}
 
-	if (!opt.no_kill) {
+	if (opt.no_kill) {
+		error("Node failure on %s.", nodelist);
+	} else {
+		error("Node failure on %s, killing job", nodelist);
 		update_job_state(job, SRUN_JOB_FORCETERM);
 		info("sending SIGINT to remaining tasks");
-		fwd_signal(job, SIGINT, opt.max_threads);
+		fwd_signal(job, SIGINT);
+		if (job->ioid)
+			eio_signal_wakeup(job->eio);
 	}
 
 	xfree(nodelist);
@@ -448,28 +425,26 @@ static void
 _process_launch_resp(srun_job_t *job, launch_tasks_response_msg_t *msg)
 {
 	pipe_enum_t pipe_enum = PIPE_HOST_STATE;
-	int nodeid = nodelist_find(job->step_layout->node_list,
-				   msg->node_name);
-
-	if ((nodeid < 0) || (nodeid >= job->nhosts)) {
+	
+	if ((msg->srun_node_id < 0) || (msg->srun_node_id >= job->nhosts)) {
 		error ("Bad launch response from %s", msg->node_name);
 		return;
 	}
 	pthread_mutex_lock(&job->task_mutex);
-	job->host_state[nodeid] = SRUN_HOST_REPLIED;
+	job->host_state[msg->srun_node_id] = SRUN_HOST_REPLIED;
 	pthread_mutex_unlock(&job->task_mutex);
 
 	if(message_thread) {
 		safe_write(job->forked_msg->par_msg->msg_pipe[1],
 			   &pipe_enum, sizeof(int));
 		safe_write(job->forked_msg->par_msg->msg_pipe[1],
-			   &nodeid, sizeof(int));
+			   &msg->srun_node_id, sizeof(int));
 		safe_write(job->forked_msg->par_msg->msg_pipe[1],
-			   &job->host_state[nodeid], sizeof(int));
+			   &job->host_state[msg->srun_node_id], sizeof(int));
 		
 	}
 	_update_mpir_proctable(job->forked_msg->par_msg->msg_pipe[1], job,
-			       nodeid, msg->count_of_pids,
+			       msg->srun_node_id, msg->count_of_pids,
 			       msg->local_pids, remote_argv[0]);
 	_print_pid_list( msg->node_name, msg->count_of_pids, 
 			 msg->local_pids, remote_argv[0]     );
@@ -485,9 +460,9 @@ update_tasks_state(srun_job_t *job, uint32_t nodeid)
 {
 	int i;
 	pipe_enum_t pipe_enum = PIPE_TASK_STATE;
-	slurm_mutex_lock(&job->task_mutex);
-	debug2("updating %u tasks state for node %u", 
+	debug2("updating %d running tasks for node %d", 
 	       job->step_layout->tasks[nodeid], nodeid);
+	slurm_mutex_lock(&job->task_mutex);
 	for (i = 0; i < job->step_layout->tasks[nodeid]; i++) {
 		uint32_t tid = job->step_layout->tids[nodeid][i];
 
@@ -514,7 +489,7 @@ update_running_tasks(srun_job_t *job, uint32_t nodeid)
 {
 	int i;
 	pipe_enum_t pipe_enum = PIPE_TASK_STATE;
-	debug2("updating %u running tasks for node %u", 
+	debug2("updating %d running tasks for node %d", 
 	       job->step_layout->tasks[nodeid], nodeid);
 	slurm_mutex_lock(&job->task_mutex);
 	for (i = 0; i < job->step_layout->tasks[nodeid]; i++) {
@@ -578,12 +553,10 @@ _launch_handler(srun_job_t *job, slurm_msg_t *resp)
 {
 	launch_tasks_response_msg_t *msg = resp->data;
 	pipe_enum_t pipe_enum = PIPE_HOST_STATE;
-	int nodeid = nodelist_find(job->step_layout->node_list, 
-				   msg->node_name);
-		
+	
 	debug3("received launch resp from %s nodeid=%d", 
 	       msg->node_name,
-	       nodeid);
+	       msg->srun_node_id);
 	
 	if (msg->return_code != 0)  {
 
@@ -591,32 +564,32 @@ _launch_handler(srun_job_t *job, slurm_msg_t *resp)
 		      msg->node_name, slurm_strerror(msg->return_code));
 
 		slurm_mutex_lock(&job->task_mutex);
-		job->host_state[nodeid] = SRUN_HOST_REPLIED;
+		job->host_state[msg->srun_node_id] = SRUN_HOST_REPLIED;
 		slurm_mutex_unlock(&job->task_mutex);
 		
 		if(message_thread) {
 			safe_write(job->forked_msg->par_msg->msg_pipe[1],
 				   &pipe_enum, sizeof(int));
 			safe_write(job->forked_msg->par_msg->msg_pipe[1],
-				   &nodeid, sizeof(int));
+				   &msg->srun_node_id, sizeof(int));
 			safe_write(job->forked_msg->par_msg->msg_pipe[1],
-				   &job->host_state[nodeid],
+				   &job->host_state[msg->srun_node_id],
 				   sizeof(int));
 		}
-		update_failed_tasks(job, nodeid);
+		update_failed_tasks(job, msg->srun_node_id);
 
 		/*
 		  if (!opt.no_kill) {
 		  job->rc = 124;
 		  update_job_state(job, SRUN_JOB_WAITING_ON_IO);
 		  } else 
-		  update_failed_tasks(job, nodeid);
+		  update_failed_tasks(job, msg->srun_node_id);
 		*/
 		debugger_launch_failure(job);
 		return;
 	} else {
 		_process_launch_resp(job, msg);
-		update_running_tasks(job, nodeid);
+		update_running_tasks(job, msg->srun_node_id);
 	}
 	return;
 rwfail:
@@ -632,20 +605,15 @@ static void
 _confirm_launch_complete(srun_job_t *job)
 {
 	int i;
-	char *name = NULL;
-
 	printf("job->nhosts %d\n",job->nhosts);
 		
 	for (i=0; i<job->nhosts; i++) {
 		printf("job->nhosts %d\n",job->nhosts);
 		if (job->host_state[i] != SRUN_HOST_REPLIED) {
-			name = nodelist_nth_host(job->step_layout->node_list,
-						 i);
 			error ("Node %s not responding, terminating job step",
-			       name);
-			free(name);
+			       job->step_layout->host[i]);
 			info("sending Ctrl-C to remaining tasks");
-			fwd_signal(job, SIGINT, opt.max_threads);
+			fwd_signal(job, SIGINT);
 			job->rc = 124;
 			update_job_state(job, SRUN_JOB_FAILED);
 			pthread_exit(0);
@@ -663,16 +631,14 @@ _reattach_handler(srun_job_t *job, slurm_msg_t *msg)
 {
 	int i;
 	reattach_tasks_response_msg_t *resp = msg->data;
-	int nodeid = nodelist_find(job->step_layout->node_list, 
-				   resp->node_name);
-		
-	if ((nodeid < 0) || (nodeid >= job->nhosts)) {
+	
+	if ((resp->srun_node_id < 0) || (resp->srun_node_id >= job->nhosts)) {
 		error ("Invalid reattach response received");
 		return;
 	}
 
 	slurm_mutex_lock(&job->task_mutex);
-	job->host_state[nodeid] = SRUN_HOST_REPLIED;
+	job->host_state[resp->srun_node_id] = SRUN_HOST_REPLIED;
 	slurm_mutex_unlock(&job->task_mutex);
 
 	if(message_thread) {
@@ -680,9 +646,9 @@ _reattach_handler(srun_job_t *job, slurm_msg_t *msg)
 		safe_write(job->forked_msg->par_msg->msg_pipe[1],
 			   &pipe_enum, sizeof(int));
 		safe_write(job->forked_msg->par_msg->msg_pipe[1],
-			   &nodeid, sizeof(int));
+			   &resp->srun_node_id, sizeof(int));
 		safe_write(job->forked_msg->par_msg->msg_pipe[1],
-			   &job->host_state[nodeid], sizeof(int));
+			   &job->host_state[resp->srun_node_id], sizeof(int));
 	}
 
 	if (resp->return_code != 0) {
@@ -691,7 +657,7 @@ _reattach_handler(srun_job_t *job, slurm_msg_t *msg)
 			       job->jobid, slurm_strerror(resp->return_code));
 		} else {
 			error ("Unable to attach to step %d.%d on node %d: %s",
-			       job->jobid, job->stepid, nodeid,
+			       job->jobid, job->stepid, resp->srun_node_id,
 			       slurm_strerror(resp->return_code));
 		}
 		job->rc = 1;
@@ -703,38 +669,39 @@ _reattach_handler(srun_job_t *job, slurm_msg_t *msg)
 	/* 
 	 * store global task id information as returned from slurmd
 	 */
-	job->step_layout->tids[nodeid]  = 
+	job->step_layout->tids[resp->srun_node_id]  = 
 		xmalloc( resp->ntasks * sizeof(uint32_t) );
 
-	job->step_layout->tasks[nodeid] = resp->ntasks;
+	job->step_layout->tasks[resp->srun_node_id] = resp->ntasks;
 
 	info ("ntasks = %d\n");
 
 	for (i = 0; i < resp->ntasks; i++) {
-		job->step_layout->tids[nodeid][i] = resp->gtids[i];
+		job->step_layout->tids[resp->srun_node_id][i] = resp->gtids[i];
+		job->step_layout->hostids[resp->gtids[i]] = resp->srun_node_id;
 		info ("setting task%d on hostid %d\n", 
-		      resp->gtids[i], nodeid);
+		      resp->gtids[i], resp->srun_node_id);
 	}
 	_update_step_layout(job->forked_msg->par_msg->msg_pipe[1],
-			    job->step_layout, nodeid);
+			    job->step_layout, resp->srun_node_id);
 
 	/* Build process table for any parallel debugger
          */
-	if ((remote_argc == 0) && (resp->executable_names)) {
+	if ((remote_argc == 0) && (resp->executable_name)) {
 		remote_argc = 1;
 		xrealloc(remote_argv, 2 * sizeof(char *));
-		remote_argv[0] = resp->executable_names[0];
-		resp->executable_names = NULL; /* nothing left to free */
+		remote_argv[0] = resp->executable_name;
+		resp->executable_name = NULL; /* nothing left to free */
 		remote_argv[1] = NULL;
 	}
 	_update_mpir_proctable(job->forked_msg->par_msg->msg_pipe[1], job,
-			       nodeid, resp->ntasks,
+			       resp->srun_node_id, resp->ntasks,
 			       resp->local_pids, remote_argv[0]);
 
 	_print_pid_list(resp->node_name, resp->ntasks, resp->local_pids, 
 			remote_argv[0]);
 
-	update_running_tasks(job, nodeid);
+	update_running_tasks(job, resp->srun_node_id);
 	return;
 rwfail:
 	error("_reattach_handler: "
@@ -745,7 +712,7 @@ rwfail:
 static void 
 _print_exit_status(srun_job_t *job, hostlist_t hl, char *host, int status)
 {
-	char buf[MAXHOSTRANGELEN];
+	char buf[1024];
 	char *corestr = "";
 	bool signaled  = false;
 	void (*print) (const char *, ...) = (void *) &error; 
@@ -828,10 +795,10 @@ _exit_handler(srun_job_t *job, slurm_msg_t *exit_msg)
 	int              status    = msg->return_code;
 	int              i;
 	char             buf[1024];
-	
-	if (!(host = slurm_step_layout_host_name(job->step_layout, task0)))
+
+	if (!(host = step_layout_host_name(job->step_layout, task0)))
 		host = "Unknown host";
-	debug2("exited host %s", host);
+
 	if (!job->etimeout && !tasks_exited) 
 		job->etimeout = time(NULL) + opt.max_exit_timeout;
 
@@ -858,18 +825,17 @@ _exit_handler(srun_job_t *job, slurm_msg_t *exit_msg)
 		slurm_mutex_unlock(&job->task_mutex);
 
 		tasks_exited++;
-		debug2("looking for %d got %d", opt.nprocs, tasks_exited);
 		if ((tasks_exited == opt.nprocs) 
-		    || (mpi_hook_client_single_task_per_node () 
+		    || (slurm_mpi_single_task_per_node () 
 			&& (tasks_exited == job->nhosts))) {
 			debug2("All tasks exited");
+			eio_signal_shutdown(job->eio);
 			update_job_state(job, SRUN_JOB_TERMINATED);
 		}
 	}
-	
-	update_tasks_state(job, slurm_step_layout_host_id(job->step_layout, 
-							  task0));
-		
+
+	update_tasks_state(job, step_layout_host_id(job->step_layout, task0));
+
 	_print_exit_status(job, hl, host, status);
 
 	hostlist_destroy(hl);
@@ -933,21 +899,18 @@ _handle_msg(srun_job_t *job, slurm_msg_t *msg)
 		slurm_send_rc_msg(msg, SLURM_SUCCESS);
 		slurm_free_srun_ping_msg(msg->data);
 		break;
-	case SRUN_JOB_COMPLETE:
-		debug3("job complete received");
-		/* FIXME: do something here */
-		slurm_free_srun_job_complete_msg(msg->data);
-		break;
 	case SRUN_TIMEOUT:
 		verbose("timeout received");
 		to = msg->data;
 		timeout_handler(to->timeout);
+		slurm_send_rc_msg(msg, SLURM_SUCCESS);
 		slurm_free_srun_timeout_msg(msg->data);
 		break;
 	case SRUN_NODE_FAIL:
 		verbose("node_fail received");
 		nf = msg->data;
 		_node_fail_forwarder(nf->nodelist, job);
+		slurm_send_rc_msg(msg, SLURM_SUCCESS);
 		slurm_free_srun_node_fail_msg(msg->data);
 		break;
 	case RESPONSE_RESOURCE_ALLOCATION:
@@ -984,6 +947,7 @@ _accept_msg_connection(srun_job_t *job, int fdnum)
 	unsigned char *uc;
 	short        port;
 	int          timeout = 0;	/* slurm default value */
+	List         ret_list;
 
 	if (fdnum < job->njfds)
 		fd = slurm_accept_msg_conn(job->jfd[fdnum], &cli_addr);
@@ -999,27 +963,38 @@ _accept_msg_connection(srun_job_t *job, int fdnum)
 	   in /etc/hosts. */
 	uc = (unsigned char *)&cli_addr.sin_addr.s_addr;
 	port = cli_addr.sin_port;
-	debug2("got message connection from %u.%u.%u.%u:%hu",
+	debug2("got message connection from %u.%u.%u.%u:%d",
 	       uc[0], uc[1], uc[2], uc[3], ntohs(port));
 
 	msg = xmalloc(sizeof(slurm_msg_t));
-	slurm_msg_t_init(msg);
-		
+	forward_init(&msg->forward, NULL);
+	msg->ret_list = NULL;
+	msg->conn_fd = fd;
+	msg->forward_struct_init = 0;
+	
 	/* multiple jobs (easily induced via no_alloc) and highly
 	 * parallel jobs using PMI sometimes result in slow message 
 	 * responses and timeouts. Raise the default timeout for srun. */
-	timeout = slurm_get_msg_timeout() * 8000;
+	timeout = SLURM_MESSAGE_TIMEOUT_MSEC_STATIC * 8;
 again:
-	if(slurm_receive_msg(fd, msg, timeout) != 0) {
+	ret_list = slurm_receive_msg(fd, msg, timeout);
+	if(!ret_list || errno != SLURM_SUCCESS) {
 		if (errno == EINTR) {
+			list_destroy(ret_list);
 			goto again;
 		}
 		error("slurm_receive_msg[%u.%u.%u.%u]: %m",
 		      uc[0],uc[1],uc[2],uc[3]);
 		goto cleanup;
 	}
-		
-	_handle_msg(job, msg); /* handle_msg frees msg->data */
+	if(list_count(ret_list)>0) {
+		error("_accept_msg_connection: "
+		      "got %d from receive, expecting 0",
+		      list_count(ret_list));
+	}
+	msg->ret_list = ret_list;
+			
+	_handle_msg(job, msg); /* handle_msg frees msg */
 cleanup:
 	if ((msg->conn_fd >= 0) && slurm_close_accepted_conn(msg->conn_fd) < 0)
 		error ("close(%d): %m", msg->conn_fd);
@@ -1401,7 +1376,7 @@ _print_pid_list(const char *host, int ntasks, uint32_t *pid,
 	if (_verbose) {
 		int i;
 		hostlist_t pids = hostlist_create(NULL);
-		char buf[MAXHOSTRANGELEN];
+		char buf[1024];
 		
 		for (i = 0; i < ntasks; i++) {
 			snprintf(buf, sizeof(buf), "pids:%d", pid[i]);

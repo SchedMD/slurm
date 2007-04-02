@@ -1,10 +1,10 @@
 /*****************************************************************************\
  *  state_save.h - Definitions for keeping saved slurmctld state current 
  *****************************************************************************
- *  Copyright (C) 2004-2007 The Regents of the University of California.
+ *  Copyright (C) 2004 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
- *  UCRL-CODE-226842.
+ *  UCRL-CODE-217948.
  *  
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -35,9 +35,6 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef _SLURMCTLD_STATE_SAVE_H
-#define _SLURMCTLD_STATE_SAVE_H
-
 /* Queue saving of job state information */
 extern void schedule_job_save(void);
 
@@ -47,19 +44,14 @@ extern void schedule_node_save(void);
 /* Queue saving of partition state information */
 extern void schedule_part_save(void);
 
-/* Queue saving of trigger state information */
-extern void schedule_trigger_save(void);
-
 /* shutdown the slurmctld_state_save thread */
 extern void shutdown_state_save(void);
 
 /*
  * Run as pthread to keep saving slurmctld state information as needed,
- * Use schedule_job_save(),  schedule_node_save(), schedule_part_save(),
- * schedule_trigger_save() to queue state save of each data structure 
+ * Use schedule_job_save(),  schedule_node_save(), and schedule_part_save()
+ * to queue state save of each data structure 
  * no_data IN - unused
  * RET - NULL
  */
 extern void *slurmctld_state_save(void *no_data);
-
-#endif

@@ -4,7 +4,7 @@
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Kevin Tew <tew1@llnl.gov> et. al.
- *  UCRL-CODE-226842.
+ *  UCRL-CODE-217948.
  *  
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -65,13 +65,6 @@ void fini( void )
 	/* Empty. */
 }
 
-/**************************************************************************/
-/* TAG(              slurm_sched_plugin_reconfig                        ) */
-/**************************************************************************/
-int slurm_sched_plugin_reconfig( void )
-{
-	return SLURM_SUCCESS;
-}
 
 /***************************************************************************/
 /*  TAG(                   slurm_sched_plugin_schedule                   ) */
@@ -79,6 +72,7 @@ int slurm_sched_plugin_reconfig( void )
 int
 slurm_sched_plugin_schedule( void )
 {
+	verbose( "Built-in plugin: schedule() is a NO-OP" );
 	return SLURM_SUCCESS;
 }
 

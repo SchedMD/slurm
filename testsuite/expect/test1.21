@@ -11,7 +11,7 @@
 # Copyright (C) 2002 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 # Written by Morris Jette <jette1@llnl.gov>
-# UCRL-CODE-226842.
+# UCRL-CODE-217948.
 # 
 # This file is part of SLURM, a resource management program.
 # For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -44,7 +44,7 @@ print_header $test_id
 # Spawn a shell via srun with stdout forwarding disabled
 #
 set timeout $max_job_delay
-set srun_pid [spawn $srun --input=$task_id -N1 -n10 -O -v --wait=2 -t1 $bin_bash]
+spawn $srun --input=$task_id -N1 -n10 -O -v --wait=2 -t1 $bin_bash
 expect {
 	-re "launching ($number).0 on host" {
 		set job_id $expect_out(1,string)
@@ -68,8 +68,9 @@ expect {
 	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
-		slow_kill $srun_pid
+		kill_srun
 		set exit_code 1
+		exp_continue
 	}
 	eof {
 		wait

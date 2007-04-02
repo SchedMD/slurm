@@ -7,10 +7,10 @@
 #          "FAILURE: ..." otherwise with an explanation of the failure, OR
 #          anything else indicates a failure mode that must be investigated.
 ############################################################################
-# Copyright (C) 2006-2007 The Regents of the University of California.
+# Copyright (C) 2006 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 # Written by Danny Auble <da@llnl.gov>
-# UCRL-CODE-226842.
+# UCRL-CODE-217948.
 # 
 # This file is part of SLURM, a resource management program.
 # For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -60,9 +60,9 @@ exec $bin_chmod 700 $file_in
 #
 set timeout [expr $max_job_delay + $sleep_time]
 
-# make a 512 cnode block
+# make a 32 cnode block
 
-spawn $srun --batch --output=$file_out --error=$file_err -t2 -N512-512 $file_in
+spawn $srun --batch --output=$file_out --error=$file_err -t2 -N32-32 $file_in
 expect {
 	-re "jobid ($number) submitted" {
 		set job_id $expect_out(1,string)
@@ -85,27 +85,17 @@ if {$job_id == 0} {
 #
 # Wait for job to run
 #
-if {[wait_for_job $job_id "DONE"] != 0} {
+if {[wait_for_job $job_id "RUNNING"] != 0} {
 	send_user "\nFAILURE: waiting for job to run\n"
 	set exit_code 1
 }
 
 set matches 0
-set cpus_per_node 1
 
 spawn $scontrol show job $job_id
 expect {
-	-re "BP_List=$alpha_numeric " {
+	-re "BP_List=$alpha_numeric\.$number\.$number " {
 		incr matches
-		exp_continue
-	}
-	-re "AllocCPUs=($number)" {
-		set cpu_count $expect_out(1,string)
-		set cpus_per_node [expr $cpu_count / 512]
-		if {($cpu_count != 512) && ($cpu_count != 1024)} {
-			send_user "\nFAILURE: Bad node count allocated\n"
-			set exit_code 1
-		}
 		exp_continue
 	}
 	timeout {
@@ -117,11 +107,8 @@ expect {
 	}
 }
 if {$matches != 1} {
-	send_user "\nFAILURE: Blue Gene 512 cnode block not created correctly\n"
+	send_user "\nFAILURE: Blue Gene 32 cnode block not created correctly\n"
 	set exit_code 1
-}
-if {$exit_code != 0} {
-	exit $exit_code
 }
 
 # make a 128 cnode block
@@ -150,7 +137,7 @@ if {$job_id == 0} {
 #
 # Wait for job to run
 #
-if {[wait_for_job $job_id "DONE"] != 0} {
+if {[wait_for_job $job_id "RUNNING"] != 0} {
 	send_user "\nFAILURE: waiting for job to run\n"
 	set exit_code 1
 }
@@ -159,25 +146,8 @@ set matches 0
 
 spawn $scontrol show job $job_id
 expect {
-	-re "BP_List=$alpha_numeric\[$number-$number\] " {
+	-re "BP_List=$alpha_numeric\.$number " {
 		incr matches
-		exp_continue
-	}
-	-re "AllocCPUs=($number)" {
-		set cpu_count $expect_out(1,string)
-		set node_count [expr $cpu_count / $cpus_per_node]
-		if {$node_count != 128} {
-			send_user "\n=======================================\n"
-			send_user "\nFAILURE: Bad node count allocated\n"
-			send_user "This can indicate a low configured value of Numpsets\n"
-			send_user "  in bluegene.conf (few available I/O nodes).\n"
-			send_user "This could indicate Static Bluegene partitioning\n"
-			send_user "  with no small blocks (1/4 of a base partition).\n"
-			send_user "This could also indicate MinNodes for the partition\n"
-			send_user "  being too high for this test.\n"
-			send_user "=======================================\n"
-			set exit_code 1
-		}
 		exp_continue
 	}
 	timeout {
@@ -193,9 +163,9 @@ if {$matches != 1} {
 	set exit_code 1
 }
 
-# make a 32 cnode block
+# make a 512 cnode block
 
-spawn $srun --batch --output=$file_out --error=$file_err -t2 -N32-32 $file_in
+spawn $srun --batch --output=$file_out --error=$file_err -t2 -N512-512 $file_in
 expect {
 	-re "jobid ($number) submitted" {
 		set job_id $expect_out(1,string)
@@ -218,33 +188,17 @@ if {$job_id == 0} {
 #
 # Wait for job to run
 #
-if {[wait_for_job $job_id "DONE"] != 0} {
+if {[wait_for_job $job_id "RUNNING"] != 0} {
 	send_user "\nFAILURE: waiting for job to run\n"
 	set exit_code 1
 }
 
 set matches 0
+
 spawn $scontrol show job $job_id
 expect {
-	-re "BP_List=$alpha_numeric\[$number-$number\]" {
+	-re "BP_List=$alpha_numeric " {
 		incr matches
-		exp_continue
-	}
-	-re "AllocCPUs=($number)" {
-		set cpu_count $expect_out(1,string)
-		set node_count [expr $cpu_count / $cpus_per_node]
-		if {$node_count != 32} {
-			send_user "\n=======================================\n"
-			send_user "FAILURE: Bad node count allocated\n"
-			send_user "This can indicate a low configured value of Numpsets\n"
-			send_user "  in bluegene.conf (few available I/O nodes).\n"
-			send_user "This could indicate Static Bluegene partitioning\n"
-			send_user "  with no small blocks (1/16 of a base partition).\n"
-			send_user "This could also indicate MinNodes for the partition\n"
-			send_user "  being too high for this test.\n"
-			send_user "=======================================\n"
-			set exit_code 1
-		}
 		exp_continue
 	}
 	timeout {
@@ -256,7 +210,7 @@ expect {
 	}
 }
 if {$matches != 1} {
-	send_user "\nFAILURE: Blue Gene 32 cnode block not created correctly\n"
+	send_user "\nFAILURE: Blue Gene 512 cnode block not created correctly\n"
 	set exit_code 1
 }
 

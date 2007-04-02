@@ -5,7 +5,7 @@
  *  Copyright (C) 2003-2006 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov> et. al.
- *  UCRL-CODE-226842.
+ *  UCRL-CODE-217948.
  *  
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -130,25 +130,28 @@ void ping_end (void)
 void ping_nodes (void)
 {
 	static int offset = 0;	/* mutex via node table write lock on entry */
-	int i;
+	int i, pos;
 	time_t now, still_live_time, node_dead_time;
 	static time_t last_ping_time = (time_t) 0;
 	uint16_t base_state, no_resp_flag;
 	bool restart_flag;
+	hostlist_t ping_hostlist = hostlist_create("");
+	hostlist_t reg_hostlist  = hostlist_create("");
 	hostlist_t down_hostlist = NULL;
 	char host_str[MAX_SLURM_NAME];
-	agent_arg_t *ping_agent_args = NULL;
-	agent_arg_t *reg_agent_args = NULL;
+
+	int ping_buf_rec_size = 0;
+	agent_arg_t *ping_agent_args;
+
+	int reg_buf_rec_size = 0;
+	agent_arg_t *reg_agent_args;
 	
 	ping_agent_args = xmalloc (sizeof (agent_arg_t));
 	ping_agent_args->msg_type = REQUEST_PING;
 	ping_agent_args->retry = 0;
-	ping_agent_args->hostlist = hostlist_create("");
-			
 	reg_agent_args = xmalloc (sizeof (agent_arg_t));
 	reg_agent_args->msg_type = REQUEST_NODE_REGISTRATION_STATUS;
 	reg_agent_args->retry = 0;
-	reg_agent_args->hostlist = hostlist_create("");
 	/* gettimeofday(&start_time, NULL); */
 		
 	/*
@@ -194,8 +197,7 @@ void ping_nodes (void)
 				(void) hostlist_push_host(down_hostlist,
 					node_ptr->name);
 			else
-				down_hostlist = 
-					hostlist_create(node_ptr->name);
+				down_hostlist = hostlist_create(node_ptr->name);
 			set_node_down(node_ptr->name, "Not responding");
 			continue;
 		}
@@ -219,8 +221,21 @@ void ping_nodes (void)
 		 * can generate a flood of incomming RPCs. */
 		if ((base_state == NODE_STATE_UNKNOWN) || restart_flag ||
 		    ((i >= offset) && (i < (offset + MAX_REG_THREADS)))) {
-			hostlist_push(reg_agent_args->hostlist, 
-				      node_ptr->name);
+			(void) hostlist_push_host(reg_hostlist, node_ptr->name);
+			if ((reg_agent_args->node_count+1) > 
+						reg_buf_rec_size) {
+				reg_buf_rec_size += 32;
+				xrealloc ((reg_agent_args->slurm_addr), 
+				          (sizeof (struct sockaddr_in) * 
+					  reg_buf_rec_size));
+				xrealloc ((reg_agent_args->node_names), 
+				          (MAX_SLURM_NAME * reg_buf_rec_size));
+			}
+			reg_agent_args->slurm_addr[reg_agent_args->node_count] 
+				= node_ptr->slurm_addr;
+			pos = MAX_SLURM_NAME * reg_agent_args->node_count;
+			strncpy (&reg_agent_args->node_names[pos],
+			         node_ptr->name, MAX_SLURM_NAME);
 			reg_agent_args->node_count++;
 			continue;
 		}
@@ -233,28 +248,39 @@ void ping_nodes (void)
 		if ((no_resp_flag) && (base_state == NODE_STATE_DOWN))
 			continue;
 
-		hostlist_push(ping_agent_args->hostlist, node_ptr->name);
+		(void) hostlist_push_host(ping_hostlist, node_ptr->name);
+		if ((ping_agent_args->node_count+1) > ping_buf_rec_size) {
+			ping_buf_rec_size += 32;
+			xrealloc ((ping_agent_args->slurm_addr), 
+			          (sizeof (struct sockaddr_in) * 
+				  ping_buf_rec_size));
+			xrealloc ((ping_agent_args->node_names), 
+			          (MAX_SLURM_NAME * ping_buf_rec_size));
+		}
+		ping_agent_args->slurm_addr[ping_agent_args->node_count] = 
+					node_ptr->slurm_addr;
+		pos = MAX_SLURM_NAME * ping_agent_args->node_count;
+		strncpy (&ping_agent_args->node_names[pos],
+		         node_ptr->name, MAX_SLURM_NAME);
 		ping_agent_args->node_count++;
 	}
 
-	if (ping_agent_args->node_count == 0) {
-		hostlist_destroy(ping_agent_args->hostlist);
+	if (ping_agent_args->node_count == 0)
 		xfree (ping_agent_args);
-	} else {
-		hostlist_uniq(ping_agent_args->hostlist);
-		hostlist_ranged_string(ping_agent_args->hostlist, 
+	else {
+		hostlist_uniq(ping_hostlist);
+		hostlist_ranged_string(ping_hostlist, 
 			sizeof(host_str), host_str);
 		verbose("Spawning ping agent for %s", host_str);
 		ping_begin();
 		agent_queue_request(ping_agent_args);
 	}
 
-	if (reg_agent_args->node_count == 0) {
-		hostlist_destroy(reg_agent_args->hostlist);
+	if (reg_agent_args->node_count == 0)
 		xfree (reg_agent_args);
-	} else {
-		hostlist_uniq(reg_agent_args->hostlist);
-		hostlist_ranged_string(reg_agent_args->hostlist, 
+	else {
+		hostlist_uniq(reg_hostlist);
+		hostlist_ranged_string(reg_hostlist, 
 			sizeof(host_str), host_str);
 		verbose("Spawning registration agent for %s %d hosts", 
 			host_str, reg_agent_args->node_count);
@@ -269,4 +295,6 @@ void ping_nodes (void)
 		error("Nodes %s not responding, setting DOWN", host_str);
 		hostlist_destroy(down_hostlist);
 	}
+	hostlist_destroy(ping_hostlist);
+	hostlist_destroy(reg_hostlist);
 }

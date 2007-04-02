@@ -7,10 +7,10 @@
 #          "FAILURE: ..." otherwise with an explanation of the failure, OR
 #          anything else indicates a failure mode that must be investigated.
 ############################################################################
-# Copyright (C) 2002-2006 The Regents of the University of California.
+# Copyright (C) 2002 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 # Written by Morris Jette <jette1@llnl.gov>
-# UCRL-CODE-226842.
+# UCRL-CODE-217948.
 # 
 # This file is part of SLURM, a resource management program.
 # For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -37,66 +37,100 @@ set matches          0
 
 print_header $test_id
 
-# These are the variables for which we are checking existence.
-# If the number following a variable name is 1, then we check to make
-# certain that the value of the env variable is greater than 0
-array set good_vars {
-    SLURM_CPUS_ON_NODE 1
-    SLURM_CPUS_PER_TASK 1
-    SLURM_JOBID 1
-    SLURM_LAUNCH_NODE_IPADDR 0
-    SLURM_LOCALID 0
-    SLURM_NNODES 0
-    SLURM_NODEID 0
-    SLURM_NODELIST 0
-    SLURM_NPROCS 1
-    SLURM_PROCID 0
-    SLURM_SRUN_COMM_HOST 0
-    SLURM_SRUN_COMM_PORT 1
-    SLURM_STEPID 0
-    SLURM_TASKS_PER_NODE 1
-    SLURM_TASK_PID 1
-    SLURM_UMASK 0
-}
-
 #
 # Spawn a job via srun to print environment variables
 #
 set timeout $max_job_delay
-set srun_pid [spawn $srun -N1 -n1 -t1 $bin_env]
+spawn $srun -N1 -n1 -t1 $bin_env
 expect {
-	-re "(SLURM_$alpha_under)=($alpha_numeric)" {
-		set found_vars($expect_out(1,string)) "$expect_out(2,string)"
+	-re "SLURM_($alpha_under)=($alpha_numeric)" {
+		if {[string compare $expect_out(1,string) "CPUS_ON_NODE"] == 0
+		&& $expect_out(2,string) > 0} {
+			incr matches
+			exp_continue
+		}
+		if {[string compare $expect_out(1,string) "CPUS_PER_TASK"] == 0
+		&& $expect_out(2,string) > 0} {
+			incr matches
+			exp_continue
+		}
+                if {[string compare $expect_out(1,string) "JOBID"] == 0
+		&& $expect_out(2,string) > 0} {
+			incr matches
+			exp_continue
+		}
+                if {[string compare $expect_out(1,string) "LAUNCH_NODE_IPADDR"] == 0} {
+                        incr matches
+			exp_continue
+                }
+                if {[string compare $expect_out(1,string) "LOCALID"] == 0} {
+                        incr matches
+			exp_continue
+                }
+                if {[string compare $expect_out(1,string) "NNODES"] == 0
+		&& $expect_out(2,string) > 0} {
+                        incr matches
+			exp_continue
+                }
+                if {[string compare $expect_out(1,string) "NODEID"] == 0} {
+                        incr matches
+			exp_continue
+                }
+		if {[string compare $expect_out(1,string) "NODELIST"] == 0} {
+			incr matches
+			exp_continue
+		}
+		if {[string compare $expect_out(1,string) "NPROCS"] == 0
+		&& $expect_out(2,string) > 0} {
+			incr matches
+			exp_continue
+		}
+		if {[string compare $expect_out(1,string) "PROCID"] == 0} {
+			incr matches
+			exp_continue
+		}
+		if {[string compare $expect_out(1,string) "SRUN_COMM_HOST"] == 0} {
+			incr matches
+			exp_continue
+		}
+		if {[string compare $expect_out(1,string) "SRUN_COMM_PORT"] == 0
+		&& $expect_out(2,string) > 0} {
+			incr matches
+			exp_continue
+		}
+		if {[string compare $expect_out(1,string) "STEPID"] == 0} {
+			incr matches
+			exp_continue
+		}
+		if {[string compare $expect_out(1,string) "TASKS_PER_NODE"] == 0
+		&& $expect_out(2,string) > 0} {
+			incr matches
+			exp_continue
+		}
+		if {[string compare $expect_out(1,string) "TASK_PID"] == 0
+		&& $expect_out(2,string) > 0} {
+			incr matches
+			exp_continue
+		}
+		if {[string compare $expect_out(1,string) "UMASK"] == 0} {
+			incr matches
+			exp_continue
+		}
 		exp_continue
 	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
-		slow_kill $srun_pid
+		kill_srun
 		set exit_code 1
+		exp_continue
 	}
 	eof {
 		wait
 	}
 }
 
-set total 0
-set good 0
-send_user "\n"
-foreach {slurm_var check_flag} [array get good_vars] {
-    incr total
-    if {[info exists found_vars($slurm_var)]} {
-	if { $check_flag == 1 && $found_vars($slurm_var) <= 0 } {
-		send_user "FAILURE: Found $slurm_var, but $found_vars($slurm_var) <= 0\n"
-	} else {
-	    incr good
-	}
-    } else {
-	send_user "FAILURE: Variable $slurm_var not found\n"
-    }
-}
-
-if {$good < $total} {
-	send_user "\nFAILURE: Only $good of $total SLURM environment variables set\n"
+if {$matches != 16} {
+	send_user "\nFAILURE: Not all SLURM environment variables set ($matches of 10)\n"
 	set exit_code 1
 }
 

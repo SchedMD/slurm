@@ -6,7 +6,7 @@
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Mark Grondona <mgrondona@llnl.gov>
- *  UCRL-CODE-226842.
+ *  UCRL-CODE-217948.
  *  
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -99,7 +99,6 @@ strong_alias(hostset_count,		slurm_hostset_count);
 strong_alias(hostset_create,		slurm_hostset_create);
 strong_alias(hostset_delete,		slurm_hostset_delete);
 strong_alias(hostset_destroy,		slurm_hostset_destroy);
-strong_alias(hostset_find,		slurm_hostset_find);
 strong_alias(hostset_insert,		slurm_hostset_insert);
 strong_alias(hostset_shift,		slurm_hostset_shift);
 strong_alias(hostset_shift_range,	slurm_hostset_shift_range);
@@ -164,6 +163,9 @@ strong_alias(hostset_nth,		slurm_hostset_nth);
 #ifndef MAXHOSTNAMELEN
 #define MAXHOSTNAMELEN    64
 #endif
+
+/* max size of internal hostrange buffer */
+#define MAXHOSTRANGELEN 1024
 
 /* ----[ Internal Data Structures ]---- */
 
@@ -1810,7 +1812,7 @@ char *hostlist_pop_range(hostlist_t hl)
 char *hostlist_shift_range(hostlist_t hl)
 {
 	int i;
-	char buf[MAXHOSTRANGELEN+1];
+	char buf[1024];
 	hostlist_t hltmp = hostlist_new();
 	if (!hltmp || !hl)
 		return NULL;
@@ -1842,7 +1844,7 @@ char *hostlist_shift_range(hostlist_t hl)
 
 	UNLOCK_HOSTLIST(hl);
 
-	hostlist_ranged_string(hltmp, MAXHOSTRANGELEN, buf);
+	hostlist_ranged_string(hltmp, 1024, buf);
 	hostlist_destroy(hltmp);
 
 	return strdup(buf);
@@ -2816,10 +2818,37 @@ char * hostset_nth(hostset_t set, int n)
 {
 	return hostlist_nth(set->hl, n);
 }
+	
 
-int hostset_find(hostset_t set, const char *hostname)
+int hostset_index(hostset_t set, const char *host, int jobid)
 {
-	return hostlist_find(set->hl, hostname);
+        char *this_host;
+        int retval = -1, j = 0; 
+        int nhosts = hostset_count(set);
+
+        /* Locking isn't an option since host_list_iterator_create,
+           hostlist_next and hostlist_iterator_destroy are locking */
+
+        hostlist_iterator_t iterator = hostlist_iterator_create(set->hl);
+
+        for (j = 0; j < nhosts; j++) {
+                this_host = hostlist_next(iterator);
+                /* Left in here for debugging purposes
+		debug3(" cons_res host_index %u j=%d host %s this_host %s", 
+		        jobid, j, host, this_host); 
+		*/
+                if (strcmp(host, this_host) == 0) {
+                        retval = j; 
+                        free(this_host);
+                        goto done;
+                }
+               free(this_host);
+        }
+
+    done:
+       hostlist_iterator_destroy(iterator);
+
+       return retval;
 }
 
 #if TEST_MAIN 
@@ -2840,7 +2869,7 @@ int hostset_nranges(hostset_t set)
 int iterator_test(char *list)
 {
 	int j;
-	char buf[MAXHOSTRANGELEN+1];
+	char buf[1024];
 	hostlist_t hl = hostlist_create(list);
 	hostset_t set = hostset_create(list);
 
@@ -2849,7 +2878,7 @@ int iterator_test(char *list)
 	hostlist_iterator_t i2 = hostlist_iterator_create(hl);
 	char *host;
 
-	hostlist_ranged_string(hl, MAXHOSTRANGELEN, buf);
+	hostlist_ranged_string(hl, 1024, buf);
 	printf("iterator_test: hl = `%s' passed in `%s'\n", buf, list);
 	host = hostlist_next(i);
 	printf("first host in list hl = `%s'\n", host);
@@ -2941,11 +2970,11 @@ int main(int ac, char **av)
 	printf("hostset  = `%s'\n", buf);
 
 	hostlist_sort(hl1);
-	hostlist_ranged_string(hl1, 10240, buf);
+	hostlist_ranged_string(hl1, 1024, buf);
 	printf("sorted   = `%s'\n", buf);
 
 	hostlist_uniq(hl1);
-	hostlist_ranged_string(hl1, 10240, buf);
+	hostlist_ranged_string(hl1, 1024, buf);
 	printf("uniqed   = `%s'\n", buf);
 
 	hl2 = hostlist_copy(hl1);

@@ -1,3 +1,4 @@
+# $Id$
 #
 # Makefile for squeue
 
@@ -7,7 +8,8 @@ INCLUDES = -I$(top_srcdir)
 
 bin_PROGRAMS = squeue
 
-squeue_LDADD = $(top_builddir)/src/api/libslurmhelper.la
+LDADD = $(top_builddir)/src/common/libcommon.la 	\
+	$(top_builddir)/src/api/libslurm.la
 
 noinst_HEADERS = squeue.h print.h
 squeue_SOURCES = squeue.c print.c opts.c sort.c

@@ -1,3 +1,4 @@
+# $Id$
 # Makefile for select/linear plugin
 
 AUTOMAKE_OPTIONS = foreign
@@ -11,5 +12,3 @@ pkglib_LTLIBRARIES = select_linear.la
 # Linear node selection plugin.
 select_linear_la_SOURCES = select_linear.c
 select_linear_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
-select_linear_la_LIBADD  = $(top_builddir)/src/common/libcommon.la
-

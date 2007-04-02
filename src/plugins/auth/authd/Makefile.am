@@ -1,3 +1,4 @@
+# $Id$
 # Makefile for auth/authd plugin
 
 AUTOMAKE_OPTIONS = foreign

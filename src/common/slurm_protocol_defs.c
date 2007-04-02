@@ -8,7 +8,7 @@
  *  Copyright (C) 2002-2006 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Kevin Tew <tew1@llnl.gov> et. al.
- *  UCRL-CODE-226842.
+ *  UCRL-CODE-217948.
  *  
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -19,7 +19,7 @@
  *  any later version.
  *
  *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under
+ *  to link the code of portions of this program with the OpenSSL library under 
  *  certain conditions as described in each individual source file, and 
  *  distribute linked combinations including the two. You must obey the GNU 
  *  General Public License in all respects for all of the code used other than 
@@ -57,9 +57,9 @@
 #include "src/common/switch.h"
 #include "src/common/xmalloc.h"
 #include "src/common/job_options.h"
-#include "src/common/forward.h"
 
 static void _free_all_job_info (job_info_msg_t *msg);
+static void _slurm_free_job_info_members (job_info_t * job);
 
 static void _free_all_node_info (node_info_msg_t *msg);
 static void _slurm_free_node_info_members (node_info_t * node);
@@ -69,40 +69,6 @@ static void _slurm_free_partition_info_members (partition_info_t * part);
 
 static void _free_all_step_info (job_step_info_response_msg_t *msg);
 static void _slurm_free_job_step_info_members (job_step_info_t * msg);
-
-/*
- * slurm_msg_t_init - initialize a slurm message 
- * OUT msg - pointer to the slurm_msg_t structure which will be initialized
- */
-extern void slurm_msg_t_init(slurm_msg_t *msg)
-{
-	memset(msg, 0, sizeof(slurm_msg_t));
-
-	msg->msg_type = (slurm_msg_type_t)NO_VAL;
-	msg->conn_fd = -1;
-
-	forward_init(&msg->forward, NULL);
-
-	return;	
-}
-
-/*
- * slurm_msg_t_copy - initialize a slurm_msg_t structure "dest" with
- *	values from the "src" slurm_msg_t structure.
- * IN src - Pointer to the initialized message from which "dest" will
- *	be initialized.
- * OUT dest - Pointer to the slurm_msg_t which will be intialized.
- * NOTE: the "dest" structure will contain pointers into the contents of "src".
- */
-extern void slurm_msg_t_copy(slurm_msg_t *dest, slurm_msg_t *src)
-{
-	slurm_msg_t_init(dest);
-	dest->forward = src->forward;
-	dest->ret_list = src->ret_list;
-	dest->forward_struct = src->forward_struct;
-	dest->orig_addr.sin_addr.s_addr = 0; 
-	return;	
-}
 
 
 void slurm_free_last_update_msg(last_update_msg_t * msg)
@@ -115,7 +81,7 @@ void slurm_free_shutdown_msg(shutdown_msg_t * msg)
 	xfree(msg);
 }
 
-void slurm_free_job_alloc_info_msg(job_alloc_info_msg_t * msg)
+void slurm_free_old_job_alloc_msg(old_job_alloc_msg_t * msg)
 {
 	xfree(msg);
 }
@@ -126,11 +92,6 @@ void slurm_free_return_code_msg(return_code_msg_t * msg)
 }
 
 void slurm_free_job_id_msg(job_id_msg_t * msg)
-{
-	xfree(msg);
-}
-
-void slurm_free_job_step_id_msg(job_step_id_msg_t * msg)
 {
 	xfree(msg);
 }
@@ -197,15 +158,9 @@ void slurm_free_job_desc_msg(job_desc_msg_t * msg)
 		xfree(msg->in);
 		xfree(msg->out);
 		xfree(msg->work_dir);
-		xfree(msg->alloc_resp_hostname);
-		xfree(msg->other_hostname);
+		xfree(msg->host);
 		xfree(msg->account);
 		xfree(msg->network);
-		xfree(msg->comment);
-		xfree(msg->blrtsimage);
-		xfree(msg->linuximage);
-		xfree(msg->mloaderimage);
-		xfree(msg->ramdiskimage);
 		xfree(msg);
 	}
 }
@@ -235,7 +190,6 @@ void slurm_free_job_launch_msg(batch_job_launch_msg_t * msg)
 		}
 
 		select_g_free_jobinfo(&msg->select_jobinfo);
-		slurm_cred_destroy(msg->cred);
 
 		xfree(msg);
 	}
@@ -258,8 +212,6 @@ void slurm_free_job_info_members(job_info_t * job)
 		xfree(job->name);
 		xfree(job->alloc_node);
 		xfree(job->node_inx);
-		xfree(job->cpus_per_node);
-		xfree(job->cpu_count_reps);
 		select_g_free_jobinfo(&job->select_jobinfo);
 		xfree(job->features);
 		xfree(job->req_nodes);
@@ -267,12 +219,11 @@ void slurm_free_job_info_members(job_info_t * job)
 		xfree(job->exc_nodes);
 		xfree(job->exc_node_inx);
 		xfree(job->network);
-		xfree(job->comment);
 	}
 }
 
-void slurm_free_node_registration_status_msg(
-	slurm_node_registration_status_msg_t * msg)
+void slurm_free_node_registration_status_msg
+	(slurm_node_registration_status_msg_t * msg)
 {
 	if (msg) {
 		xfree(msg->node_name);
@@ -289,7 +240,6 @@ void slurm_free_update_node_msg(update_node_msg_t * msg)
 {
 	if (msg) {
 		xfree(msg->node_names);
-		xfree(msg->features);
 		xfree(msg->reason);
 		xfree(msg);
 	}
@@ -317,10 +267,10 @@ void slurm_free_job_step_create_request_msg(job_step_create_request_msg_t *
 					    msg)
 {
 	if (msg) {
-		xfree(msg->host);
 		xfree(msg->name);
 		xfree(msg->network);
 		xfree(msg->node_list);
+		xfree(msg->host);
 		xfree(msg);
 	}
 }
@@ -348,7 +298,6 @@ void slurm_free_launch_tasks_response_msg(launch_tasks_response_msg_t *
 	if (msg) {
 		xfree(msg->node_name);
 		xfree(msg->local_pids);
-		xfree(msg->task_ids);
 		xfree(msg);
 	}
 }
@@ -419,7 +368,6 @@ void slurm_free_launch_tasks_request_msg(launch_tasks_request_msg_t * msg)
 
 	xfree(msg->task_prolog);
 	xfree(msg->task_epilog);
-	xfree(msg->complete_nodelist);
 
 	if (msg->switch_job)
 		switch_free_jobinfo(msg->switch_job);
@@ -430,10 +378,30 @@ void slurm_free_launch_tasks_request_msg(launch_tasks_request_msg_t * msg)
 	xfree(msg);
 }
 
-void slurm_free_task_user_managed_io_stream_msg(task_user_managed_io_msg_t *msg)
+void slurm_free_spawn_task_request_msg(spawn_task_request_msg_t * msg)
 {
+	int i;
 	if (msg == NULL)
 		return;
+
+	slurm_cred_destroy(msg->cred);
+
+	if (msg->env) {
+		for (i = 0; i < msg->envc; i++) {
+			xfree(msg->env[i]);
+		}
+		xfree(msg->env);
+	}
+	xfree(msg->cwd);
+	if (msg->argv) {
+		for (i = 0; i < msg->argc; i++) {
+			xfree(msg->argv[i]);
+		}
+		xfree(msg->argv);
+	}
+
+	if (msg->switch_job)
+		switch_free_jobinfo(msg->switch_job);
 
 	xfree(msg);
 }
@@ -441,8 +409,9 @@ void slurm_free_task_user_managed_io_stream_msg(task_user_managed_io_msg_t *msg)
 void slurm_free_reattach_tasks_request_msg(reattach_tasks_request_msg_t *msg)
 {
 	if (msg) {
-		xfree(msg->resp_port);
-		xfree(msg->io_port);
+		xfree(msg->ofname);
+		xfree(msg->efname);
+		xfree(msg->ifname);
 		slurm_cred_destroy(msg->cred);
 		xfree(msg);
 	}
@@ -450,16 +419,11 @@ void slurm_free_reattach_tasks_request_msg(reattach_tasks_request_msg_t *msg)
 
 void slurm_free_reattach_tasks_response_msg(reattach_tasks_response_msg_t *msg)
 {
-	int i;
-
 	if (msg) {
 		xfree(msg->node_name);
+		xfree(msg->executable_name);
 		xfree(msg->local_pids);
 		xfree(msg->gtids);
-		for (i = 0; i < msg->ntasks; i++) {
-			xfree(msg->executable_names[i]);
-		}
-		xfree(msg->executable_names);
 		xfree(msg);
 	}
 }
@@ -476,11 +440,6 @@ void slurm_free_epilog_complete_msg(epilog_complete_msg_t * msg)
 		switch_g_free_node_info(&msg->switch_nodeinfo);
 		xfree(msg);
 	}
-}
-
-void inline slurm_free_srun_job_complete_msg(srun_job_complete_msg_t * msg)
-{
-	xfree(msg);
 }
 
 void inline slurm_free_srun_ping_msg(srun_ping_msg_t * msg)
@@ -527,7 +486,7 @@ void inline slurm_free_suspend_msg(suspend_msg_t *msg)
 }
 
 /* Given a job's reason for waiting, return a descriptive string */
-extern char *job_reason_string(enum job_state_reason inx)
+extern char *job_reason_string(enum job_wait_reason inx)
 {
 	switch (inx) {
 		case WAIT_NO_REASON:
@@ -548,22 +507,6 @@ extern char *job_reason_string(enum job_state_reason inx)
 			return "JobHeld";
 		case WAIT_TIME:
 			return "BeginTime";
-		case FAIL_DOWN_PARTITION:
-			return "PartitionDown";
-		case FAIL_DOWN_NODE:
-			return "NodeDown";
-		case FAIL_BAD_CONSTRAINTS:
-			return "BadConstraints";
-		case FAIL_SYSTEM:
-			return "SystemFailure";
-		case FAIL_LAUNCH:
-			return "JobLaunchFailure";
-		case FAIL_EXIT_CODE:
-			return "NonZeroExitCode";
-		case FAIL_TIMEOUT:
-			return "TimeLimit";
-		case FAIL_INACTIVE_LIMIT:
-			return "InactiveLimit";
 		default:
 			return "?";
 	}
@@ -743,23 +686,6 @@ void slurm_free_resource_allocation_response_msg (
 		xfree(msg->node_list);
 		xfree(msg->cpus_per_node);
 		xfree(msg->cpu_count_reps);
-		xfree(msg);
-	}
-}
-
-/*
- * slurm_free_job_alloc_info_response_msg - free slurm job allocation
- *	                                    info response message
- * IN msg - pointer to job allocation info response message
- * NOTE: buffer is loaded by slurm_allocate_resources
- */
-void slurm_free_job_alloc_info_response_msg(job_alloc_info_response_msg_t *msg)
-{
-	if (msg) {
-		select_g_free_jobinfo(&msg->select_jobinfo);
-		xfree(msg->node_list);
-		xfree(msg->cpus_per_node);
-		xfree(msg->cpu_count_reps);
 		xfree(msg->node_addr);
 		xfree(msg);
 	}
@@ -776,8 +702,8 @@ void slurm_free_job_step_create_response_msg(
 		job_step_create_response_msg_t * msg)
 {
 	if (msg) {
-		slurm_step_layout_destroy(msg->step_layout);
 		slurm_cred_destroy(msg->cred);
+
 		if (msg->switch_job)
 			switch_free_jobinfo(msg->switch_job);
 
@@ -820,7 +746,6 @@ void slurm_free_ctl_conf(slurm_ctl_conf_info_msg_t * config_ptr)
 		xfree(config_ptr->job_comp_type);
 		xfree(config_ptr->job_credential_private_key);
 		xfree(config_ptr->job_credential_public_certificate);
-		xfree(config_ptr->mail_prog);
 		xfree(config_ptr->mpi_default);
 		xfree(config_ptr->plugindir);
 		xfree(config_ptr->proctrack_type);
@@ -869,8 +794,28 @@ static void _free_all_job_info(job_info_msg_t *msg)
 		return;
 
 	for (i = 0; i < msg->record_count; i++)
-		slurm_free_job_info_members (&msg->job_array[i]);
+		_slurm_free_job_info_members (&msg->job_array[i]);
 }
+
+static void _slurm_free_job_info_members(job_info_t * job)
+{
+	if (job) {
+		xfree(job->nodes);
+		xfree(job->partition);
+		xfree(job->account);
+		xfree(job->name);
+		xfree(job->alloc_node);
+		xfree(job->node_inx);
+		select_g_free_jobinfo(&job->select_jobinfo);
+		xfree(job->features);
+		xfree(job->req_nodes);
+		xfree(job->req_node_inx);
+		xfree(job->exc_nodes);
+		xfree(job->exc_node_inx);
+		xfree(job->network);
+	}
+}
+
 
 /*
  * slurm_free_job_step_info_response_msg - free the job step 
@@ -1023,183 +968,3 @@ void inline slurm_free_node_select_msg(
 {
 	xfree(msg);
 }
-void inline slurm_free_trigger_msg(trigger_info_msg_t *msg)
-{
-	int i;
-
-	for (i=0; i<msg->record_count; i++) {
-		xfree(msg->trigger_array[i].res_id);
-		xfree(msg->trigger_array[i].program);
-	}
-	xfree(msg->trigger_array);
-	xfree(msg);
-}
-
-extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
-{
-	switch(type) {
-	case REQUEST_BUILD_INFO:
-		slurm_free_last_update_msg(data);
-		break;
-	case REQUEST_JOB_INFO:
-		slurm_free_job_info_request_msg(data);
-		break;
-	case REQUEST_NODE_INFO:
-		slurm_free_node_info_request_msg(data);
-		break;
-	case REQUEST_PARTITION_INFO:
-		slurm_free_part_info_request_msg(data);
-		break;
-	case MESSAGE_EPILOG_COMPLETE:
-		slurm_free_epilog_complete_msg(data);
-		break;
-	case REQUEST_CANCEL_JOB_STEP:
-		slurm_free_job_step_kill_msg(data);
-		break;
-	case REQUEST_COMPLETE_JOB_ALLOCATION:
-		slurm_free_complete_job_allocation_msg(data);
-		break;
-	case REQUEST_COMPLETE_BATCH_SCRIPT:
-		slurm_free_complete_batch_script_msg(data);
-		break;
-	case REQUEST_JOB_STEP_CREATE:
-		slurm_free_job_step_create_request_msg(data);
-		break;
-	case REQUEST_JOB_STEP_INFO:
-		slurm_free_job_step_info_request_msg(data);
-		break;
-	case REQUEST_RESOURCE_ALLOCATION:
-	case REQUEST_JOB_WILL_RUN:
-	case REQUEST_SUBMIT_BATCH_JOB:
-	case REQUEST_UPDATE_JOB:
-		slurm_free_job_desc_msg(data);
-		break;
-	case MESSAGE_NODE_REGISTRATION_STATUS:
-		slurm_free_node_registration_status_msg(data);
-		break;
-	case REQUEST_JOB_END_TIME:
-	case REQUEST_JOB_ALLOCATION_INFO:
-		slurm_free_job_alloc_info_msg(data);
-		break;
-	case REQUEST_SHUTDOWN:
-		slurm_free_shutdown_msg(data);
-		break;
-	case REQUEST_UPDATE_NODE:
-		slurm_free_update_node_msg(data);
-		break;
-	case REQUEST_UPDATE_PARTITION:
-		slurm_free_update_part_msg(data);
-		break;
-	case REQUEST_DELETE_PARTITION:		
-		slurm_free_delete_part_msg(data);
-		break;
-	case REQUEST_NODE_REGISTRATION_STATUS:
-		slurm_free_node_registration_status_msg(data);
-		break;
-	case REQUEST_CHECKPOINT:
-		slurm_free_checkpoint_msg(data);
-		break;
-	case REQUEST_CHECKPOINT_COMP:
-		slurm_free_checkpoint_comp_msg(data);
-		break;
-	case REQUEST_SUSPEND:
-		slurm_free_suspend_msg(data);
-		break;
-	case REQUEST_JOB_READY:
-		slurm_free_job_id_msg(data);
-		break;
-	case REQUEST_NODE_SELECT_INFO:
-		slurm_free_node_select_msg(data);
-		break;
-	case REQUEST_STEP_COMPLETE:
-		slurm_free_step_complete_msg(data);
-		break;
-	case MESSAGE_STAT_JOBACCT:
-		slurm_free_stat_jobacct_msg(data);
-		break;
-	case REQUEST_BATCH_JOB_LAUNCH:
-		slurm_free_job_launch_msg(data);
-		break;
-	case REQUEST_LAUNCH_TASKS:
-		slurm_free_launch_tasks_request_msg(data);
-		break;
-	case TASK_USER_MANAGED_IO_STREAM:
-		slurm_free_task_user_managed_io_stream_msg(data);
-		break;
-	case REQUEST_SIGNAL_TASKS:
-	case REQUEST_TERMINATE_TASKS:
-		slurm_free_kill_tasks_msg(data);
-		break;
-	case REQUEST_KILL_TIMELIMIT:
-		slurm_free_timelimit_msg(data);
-		break; 
-	case REQUEST_REATTACH_TASKS:
-		slurm_free_reattach_tasks_request_msg(data);
-		break;
-	case RESPONSE_REATTACH_TASKS:
-		slurm_free_reattach_tasks_response_msg(data);
-		break;		
-	case REQUEST_SIGNAL_JOB:
-		slurm_free_signal_job_msg(data);
-		break;
-	case REQUEST_TERMINATE_JOB:
-		slurm_free_kill_job_msg(data);
-		break;
-	case REQUEST_UPDATE_JOB_TIME:
-		slurm_free_update_job_time_msg(data);
-		break;
-	case REQUEST_JOB_ID:
-		slurm_free_job_id_request_msg(data);
-		break;
-	case REQUEST_FILE_BCAST:
-		slurm_free_file_bcast_msg(data);
-		break;
-	case RESPONSE_SLURM_RC:
-		slurm_free_return_code_msg(data);
-		break;
-	case SLURM_SUCCESS:		
-	case REQUEST_PING:		
-	case REQUEST_RECONFIGURE:
-	case REQUEST_CONTROL:
-	case REQUEST_SHUTDOWN_IMMEDIATE:
-	case RESPONSE_FORWARD_FAILED:
-		/* No body to free */
-		break;
-
-	default:
-		error("invalid type trying to be freed %u", type);
-		break; 
-	}
-	return SLURM_SUCCESS;
-}
-
-extern uint32_t slurm_get_return_code(slurm_msg_type_t type, void *data)
-{
-	uint32_t rc = 0;
-
-	switch(type) {
-	case MESSAGE_EPILOG_COMPLETE:
-		rc = ((epilog_complete_msg_t *)data)->return_code;
-		break;
-	case MESSAGE_STAT_JOBACCT:
-		rc = ((stat_jobacct_msg_t *)data)->return_code;
-		break;
-	case RESPONSE_REATTACH_TASKS:
-		rc = ((reattach_tasks_response_msg_t *)data)->return_code;
-		break;
-	case RESPONSE_JOB_ID:
-		rc = ((job_id_response_msg_t *)data)->return_code;
-		break;
-	case RESPONSE_SLURM_RC:
-		rc = ((return_code_msg_t *)data)->return_code;
-		break;
-	case RESPONSE_FORWARD_FAILED:
-		rc = SLURM_ERROR;
-		break;
-	default:
-		error("don't know the rc for type %u returning %u", type, rc);
-		break; 
-	}
-	return rc;
-}
-

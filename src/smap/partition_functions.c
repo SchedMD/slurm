@@ -5,8 +5,8 @@
  *  Copyright (C) 2004-2006 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Danny Auble <da@llnl.gov>
- * 
- *  UCRL-CODE-226842.
+ *
+ *  UCRL-CODE-217948.
  *  
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -17,7 +17,7 @@
  *  any later version.
  *
  *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under
+ *  to link the code of portions of this program with the OpenSSL library under 
  *  certain conditions as described in each individual source file, and 
  *  distribute linked combinations including the two. You must obey the GNU 
  *  General Public License in all respects for all of the code used other than 
@@ -42,19 +42,21 @@
 #include "src/api/node_select_info.h"
 
 #define _DEBUG 0
+DEF_TIMERS;
 
 typedef struct {
 	char *bg_user_name;
 	char *bg_block_name;
 	char *slurm_part_name;
 	char *nodes;
-	char *ionodes;
 	enum connection_type bg_conn_type;
 	enum node_use_type bg_node_use;
 	rm_partition_state_t state;
 	int letter_num;
 	List nodelist;
 	int size;
+	uint16_t quarter;	
+	uint16_t nodecard;	
 	int node_cnt;	
 	bool printed;
 
@@ -70,6 +72,7 @@ static char* _convert_node_use(enum node_use_type node_use);
 static int _marknodes(db2_block_info_t *block_ptr, int count);
 #endif
 static void _print_header_part(void);
+static char *_part_state_str(rm_partition_state_t state);
 static int  _print_text_part(partition_info_t *part_ptr, 
 			     db2_block_info_t *db2_info_ptr);
 #ifdef HAVE_BG
@@ -110,7 +113,7 @@ extern void get_slurm_part()
 					  slurm_strerror(slurm_get_errno()));
 				ba_system_ptr->ycord++;
 			} else {
-				printf("slurm_load_partitions: %s\n",
+				printf("slurm_load_partitions: %s",
 				       slurm_strerror(slurm_get_errno()));
 			}
 		}
@@ -200,7 +203,7 @@ extern void get_bg_part()
 					  slurm_strerror(slurm_get_errno()));
 				ba_system_ptr->ycord++;
 			} else {
-				printf("slurm_load_partitions: %s\n",
+				printf("slurm_load_partitions: %s",
 				       slurm_strerror(slurm_get_errno()));
 			}
 		}
@@ -224,11 +227,11 @@ extern void get_bg_part()
 			if(!params.commandline) {
 				mvwprintw(ba_system_ptr->text_win,
 					  ba_system_ptr->ycord, 1,
-					  "slurm_load_node_select: %s",
+					  "slurm_load_partitions: %s",
 					  slurm_strerror(slurm_get_errno()));
 				ba_system_ptr->ycord++;
 			} else {
-				printf("slurm_load_node_select: %s\n",
+				printf("slurm_load_partitions: %s",
 					  slurm_strerror(slurm_get_errno()));
 			}
 		}
@@ -267,8 +270,10 @@ extern void get_bg_part()
 			= new_bg_ptr->bg_info_array[i].conn_type;
 		block_ptr->bg_node_use 
 			= new_bg_ptr->bg_info_array[i].node_use;
-		block_ptr->ionodes 
-			= xstrdup(new_bg_ptr->bg_info_array[i].ionodes);
+		block_ptr->quarter 
+			= new_bg_ptr->bg_info_array[i].quarter;
+		block_ptr->nodecard 
+			= new_bg_ptr->bg_info_array[i].nodecard;
 		block_ptr->node_cnt 
 			= new_bg_ptr->bg_info_array[i].node_cnt;
 	       
@@ -492,6 +497,33 @@ static void _print_header_part(void)
 	}	
 }
 
+static char *_part_state_str(rm_partition_state_t state)
+{
+	static char tmp[16];
+
+#ifdef HAVE_BG
+	switch (state) {
+		case RM_PARTITION_BUSY: 
+			return "BUSY";
+		case RM_PARTITION_CONFIGURING:
+			return "CONFIG";
+		case RM_PARTITION_DEALLOCATING:
+			return "DEALLOC";
+		case RM_PARTITION_ERROR:
+			return "ERROR";
+		case RM_PARTITION_FREE:
+			return "FREE";
+		case RM_PARTITION_NAV:
+			return "NAV";
+		case RM_PARTITION_READY:
+			return "READY";
+	}
+#endif
+
+	snprintf(tmp, sizeof(tmp), "%d", state);
+	return tmp;
+}
+
 static int _print_text_part(partition_info_t *part_ptr, 
 			    db2_block_info_t *db2_info_ptr)
 {
@@ -504,9 +536,9 @@ static int _print_text_part(partition_info_t *part_ptr,
 	char tmp_cnt[7];
 
 #ifdef HAVE_BG
-	convert_num_unit((float)part_ptr->total_nodes, tmp_cnt, UNIT_NONE);
+	convert_to_kilo(part_ptr->total_nodes, tmp_cnt);
 #else
-	sprintf(tmp_cnt, "%u", part_ptr->total_nodes);
+	sprintf(tmp_cnt, "%d", part_ptr->total_nodes);
 #endif
 
 	if(!params.commandline) {
@@ -566,7 +598,7 @@ static int _print_text_part(partition_info_t *part_ptr,
 				mvwprintw(ba_system_ptr->text_win, 
 					  ba_system_ptr->ycord,
 					  ba_system_ptr->xcord, 
-					  bg_block_state_string(
+					  _part_state_str(
 						  db2_info_ptr->state));
 				ba_system_ptr->xcord += 8;
 				
@@ -654,13 +686,21 @@ static int _print_text_part(partition_info_t *part_ptr,
 			i++;
 		}
 		if((params.display == BGPART) && db2_info_ptr
-		   && (db2_info_ptr->ionodes)) {
-			mvwprintw(ba_system_ptr->text_win, 
-				  ba_system_ptr->ycord,
-				  ba_system_ptr->xcord, "[%s]", 
-				  db2_info_ptr->ionodes);
+		   && (db2_info_ptr->quarter != (uint16_t) NO_VAL)) {
+			if(db2_info_ptr->nodecard != (uint16_t) NO_VAL) {
+				mvwprintw(ba_system_ptr->text_win, 
+					  ba_system_ptr->ycord,
+					  ba_system_ptr->xcord, ".%d.%d", 
+					  db2_info_ptr->quarter,
+					  db2_info_ptr->nodecard);
+			} else {
+				mvwprintw(ba_system_ptr->text_win, 
+					  ba_system_ptr->ycord,
+					  ba_system_ptr->xcord, ".%d", 
+					  db2_info_ptr->quarter);
+			}
 		}
-		
+			
 		ba_system_ptr->xcord = 1;
 		ba_system_ptr->ycord++;
 	} else {
@@ -693,8 +733,7 @@ static int _print_text_part(partition_info_t *part_ptr,
 				printf("%16.16s ",
 				       db2_info_ptr->bg_block_name);
 				printf("%5.5s ", 
-				       bg_block_state_string(
-					       db2_info_ptr->state));
+				       _part_state_str(db2_info_ptr->state));
 				
 				printf("%8.8s ", db2_info_ptr->bg_user_name);
 				
@@ -715,8 +754,14 @@ static int _print_text_part(partition_info_t *part_ptr,
 			nodes = part_ptr->nodes;
 		
 		if((params.display == BGPART) && db2_info_ptr
-		   && (db2_info_ptr->ionodes)) {
-			printf("%s[%s]\n", nodes, db2_info_ptr->ionodes);
+		   && (db2_info_ptr->quarter != (uint16_t) NO_VAL)) {
+			if(db2_info_ptr->nodecard != (uint16_t) NO_VAL)
+				printf("%s.%d.%d\n", nodes, 
+				       db2_info_ptr->quarter,
+				       db2_info_ptr->nodecard);
+			else 
+				printf("%s.%d\n", nodes, 
+				       db2_info_ptr->quarter);
 		} else
 			printf("%s\n",nodes);
 	}
@@ -733,7 +778,6 @@ static void _block_list_del(void *object)
 		xfree(block_ptr->bg_block_name);
 		xfree(block_ptr->slurm_part_name);
 		xfree(block_ptr->nodes);
-		xfree(block_ptr->ionodes);
 		if(block_ptr->nodelist)
 			list_destroy(block_ptr->nodelist);
 		

@@ -4,7 +4,7 @@
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Mark Grondona <mgrondona@llnl.gov>.
- *  UCRL-CODE-226842.
+ *  UCRL-CODE-217948.
  *  
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -15,7 +15,7 @@
  *  any later version.
  *
  *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under
+ *  to link the code of portions of this program with the OpenSSL library under 
  *  certain conditions as described in each individual source file, and 
  *  distribute linked combinations including the two. You must obey the GNU 
  *  General Public License in all respects for all of the code used other than 
@@ -42,23 +42,14 @@
 # include "config.h"
 #endif 
 
-#include "src/srun/srun_job.h"
+#include "src/srun/opt.h"
 
-enum io_t {
-	IO_ALL          = 0, /* multiplex output from all/bcast stdin to all */
-	IO_ONE          = 1, /* output from only one task/stdin to one task  */
-	IO_PER_TASK     = 2, /* separate output/input file per task          */
-	IO_NONE         = 3, /* close output/close stdin                     */
-};
-
-#define format_io_t(t) (t == IO_ONE) ? "one" : (t == IO_ALL) ? \
-                                                     "all" : "per task"
-
-struct io_filename {
+typedef struct io_filename {
 	char      *name;
 	enum io_t  type;
 	int        taskid;  /* taskid for IO if IO_ONE */
-};
+} io_filename_t;
+
 
 /*
  * Create an filename from a (probably user supplied) filename format.

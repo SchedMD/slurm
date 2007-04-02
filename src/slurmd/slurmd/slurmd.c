@@ -2,10 +2,10 @@
  *  src/slurmd/slurmd/slurmd.c - main slurm node server daemon
  *  $Id$
  *****************************************************************************
- *  Copyright (C) 2002-2006 The Regents of the University of California.
+ *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Mark Grondona <mgrondona@llnl.gov>.
- *  UCRL-CODE-226842.
+ *  UCRL-CODE-217948.
  *  
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -58,7 +58,6 @@
 #include "src/common/log.h"
 #include "src/common/pack.h"
 #include "src/common/read_config.h"
-#include "src/common/slurm_auth.h"
 #include "src/common/switch.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
@@ -71,12 +70,11 @@
 #include "src/common/macros.h"
 #include "src/common/fd.h"
 #include "src/common/forward.h"
-#include "src/common/bitstring.h"
-#include "src/common/stepd_api.h"
 
 #include "src/slurmd/slurmd/slurmd.h"
 #include "src/slurmd/slurmd/req.h"
 #include "src/slurmd/slurmd/get_mach_stat.h"
+#include "src/slurmd/common/stepd_api.h"
 #include "src/slurmd/common/setproctitle.h"
 #include "src/slurmd/common/proctrack.h"
 #include "src/slurmd/common/task_plugin.h"
@@ -91,8 +89,11 @@
 
 /* global, copied to STDERR_FILENO in tasks before the exec */
 int devnull = -1;
-slurmd_conf_t * conf;
-extern char *slurm_stepd_path;
+
+typedef struct connection {
+	slurm_fd fd;
+	slurm_addr *cli_addr;
+} conn_t;
 
 /*
  * count of active threads
@@ -102,11 +103,6 @@ static pthread_mutex_t active_mutex   = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t  active_cond    = PTHREAD_COND_INITIALIZER;
 
 static pthread_mutex_t fork_mutex     = PTHREAD_MUTEX_INITIALIZER;
-
-typedef struct connection {
-	slurm_fd fd;
-	slurm_addr *cli_addr;
-} conn_t;
 
 
 
@@ -251,8 +247,6 @@ main (int argc, char *argv[])
 
 	_slurmd_fini();
 	_destroy_conf();
-	info("Slurmd shutdown completing");
-	log_fini();
        	return 0;
 }
 
@@ -305,7 +299,7 @@ _increment_thd_count(void)
 	while (active_threads >= MAX_THREADS) {
 		if (!logged) {
 			info("active_threads == MAX_THREADS(%d)", 
-			     MAX_THREADS);
+				MAX_THREADS);
 			logged = true;
 		}
 		pthread_cond_wait(&active_cond, &active_mutex);
@@ -364,21 +358,32 @@ static void *
 _service_connection(void *arg)
 {
 	conn_t *con = (conn_t *) arg;
+	List ret_list = NULL;
 	slurm_msg_t *msg = xmalloc(sizeof(slurm_msg_t));
-	int rc = SLURM_SUCCESS;
+
 	
 	debug3("in the service_connection");
-	slurm_msg_t_init(msg);
-	if((rc = slurm_receive_msg_and_forward(con->fd, con->cli_addr, msg, 0))
-	   != SLURM_SUCCESS) {
+	msg->conn_fd = con->fd;
+	/* this could change if being forwarded to */
+	memcpy(&msg->orig_addr, con->cli_addr, sizeof(slurm_addr));
+	forward_init(&msg->forward, NULL);
+	msg->ret_list = NULL;
+	
+	ret_list = slurm_receive_msg(con->fd, msg, 0);	
+	if(!ret_list || errno != SLURM_SUCCESS) {
 		error("service_connection: slurm_receive_msg: %m");
-		/* if this fails we need to make sure the nodes we forward
-		   to are taken care of and sent back. This way the control
-		   also has a better idea what happened to us */
-		slurm_send_rc_msg(msg, rc);
 		goto cleanup;
 	}
-	debug2("got this type of message %d", msg->msg_type);
+
+	/* set msg connection fd to accepted fd. This allows 
+	 *  possibility for slurmd_req () to close accepted connection
+	 */
+	/* this always is the connection */
+	memcpy(&msg->address, con->cli_addr, sizeof(slurm_addr));
+
+	debug2("got this type of message %d with %d other responses",
+	     msg->msg_type, list_count(ret_list));
+	msg->ret_list = ret_list;
 	slurmd_req(msg);
 	
 cleanup:
@@ -401,8 +406,12 @@ send_registration_msg(uint32_t status, bool startup)
 	slurm_node_registration_status_msg_t *msg = 
 		xmalloc (sizeof (slurm_node_registration_status_msg_t));
 	
-	slurm_msg_t_init(&req);
-	slurm_msg_t_init(&resp);
+	forward_init(&req.forward, NULL);
+	req.ret_list = NULL;
+	req.forward_struct_init = 0;
+	forward_init(&req.forward, NULL);
+	resp.ret_list = NULL;
+	resp.forward_struct_init = 0;
 	
 	msg->startup = (uint16_t) startup;
 	_fill_registration_msg(msg);
@@ -431,18 +440,16 @@ _fill_registration_msg(slurm_node_registration_status_msg_t *msg)
 	ListIterator i;
 	step_loc_t *stepd;
 	int          n;
+	slurm_ctl_conf_t *cf;
 
 	msg->node_name = xstrdup (conf->node_name);
-	msg->cpus	= conf->cpus;
-	msg->sockets	= conf->sockets;
-	msg->cores	= conf->cores;
-	msg->threads	= conf->threads;
 
-	msg->real_memory_size     = conf->real_memory_size;
-	msg->temporary_disk_space = conf->tmp_disk_space;
-
-	debug3("Procs=%u Sockets=%u Cores=%u Threads=%u Memory=%u TmpDisk=%u",
-	       msg->cpus, msg->sockets, msg->cores, msg->threads,
+	get_procs(&msg->cpus);
+	get_memory(&msg->real_memory_size);
+	cf = slurm_conf_lock();
+	get_tmp_disk(&msg->temporary_disk_space, cf->tmp_fs);
+	slurm_conf_unlock();
+	debug3("Procs=%u RealMemory=%u, TmpDisk=%u", msg->cpus, 
 	       msg->real_memory_size, msg->temporary_disk_space);
 
 	if (msg->startup) {
@@ -505,20 +512,24 @@ _free_and_set(char **confvar, char *newval)
 		return 0;
 }
 
-/* Replace first "%h" in path string with actual hostname.
- * Replace first "%n" in path string with NodeName.
- *
- * Make sure to call _massage_pathname AFTER conf->node_name has been
- * fully initialized.
- */
+/* Replace any "%h" in logfile name with actual hostname */
 static void
-_massage_pathname(char **path)
+_massage_logfile(void)
 {
-	if (conf->logfile == NULL)
+	char *ptr, *new_fname;
+	int new_len;
+
+	if ((conf->logfile == NULL)
+	    ||  (ptr = strstr(conf->logfile, "%h")) == NULL)
 		return;
 
-	xstrsubstitute(*path, "%h", conf->hostname);
-	xstrsubstitute(*path, "%n", conf->node_name);
+	new_len = strlen(conf->logfile) + strlen(conf->hostname);
+	new_fname = xmalloc(new_len);
+	*ptr = '\0';
+	snprintf(new_fname, new_len, "%s%s%s", conf->logfile, conf->hostname, 
+		&ptr[2]);
+	xfree(conf->logfile);
+	conf->logfile = new_fname;
 }
 
 /*
@@ -540,14 +551,11 @@ _read_config()
 
 	conf->slurm_user_id =  cf->slurm_user_id;
 
-	conf->cr_type = cf->select_type_param;
-
-	conf->fast_schedule = cf->fast_schedule;
-
 	path_pubkey = xstrdup(cf->job_credential_public_certificate);
 
 	if (!conf->logfile)
 		conf->logfile = xstrdup(cf->slurmd_logfile);
+	_massage_logfile();	
 
 	slurm_conf_unlock();
 	/* node_name may already be set from a command line parameter */
@@ -558,56 +566,26 @@ _read_config()
 	if (conf->node_name == NULL)
 		fatal("Unable to determine this slurmd's NodeName");
 
-	_massage_pathname(&conf->logfile);
-
 	conf->port = slurm_conf_get_port(conf->node_name);
-	slurm_conf_get_cpus_sct(conf->node_name,
-				&conf->conf_cpus,  &conf->conf_sockets,
-				&conf->conf_cores, &conf->conf_threads);
-
-	/* store hardware properties in slurmd_config */
-	xfree(conf->block_map);
-	xfree(conf->block_map_inv);
-	
-	conf->block_map_size = 0;
-	
-	_update_logging();
-	get_procs(&conf->actual_cpus);
-	get_cpuinfo(conf->actual_cpus,
-		    &conf->actual_sockets,
-		    &conf->actual_cores,
-		    &conf->actual_threads,
-		    &conf->block_map_size,
-		    &conf->block_map, &conf->block_map_inv);
-
-	if (conf->fast_schedule) {
-	    	conf->cpus    = conf->conf_cpus;
-		conf->sockets = conf->conf_sockets;
-		conf->cores   = conf->conf_cores;
-		conf->threads = conf->conf_threads;
-	} else {
-	    	conf->cpus    = conf->actual_cpus;
-		conf->sockets = conf->actual_sockets;
-		conf->cores   = conf->actual_cores;
-		conf->threads = conf->actual_threads;
-	}
-
-	get_memory(&conf->real_memory_size);
 
 	cf = slurm_conf_lock();
-	get_tmp_disk(&conf->tmp_disk_space, cf->tmp_fs);
 	_free_and_set(&conf->epilog,   xstrdup(cf->epilog));
 	_free_and_set(&conf->prolog,   xstrdup(cf->prolog));
 	_free_and_set(&conf->tmpfs,    xstrdup(cf->tmp_fs));
 	_free_and_set(&conf->spooldir, xstrdup(cf->slurmd_spooldir));
-	_massage_pathname(&conf->spooldir);
+#ifdef MULTIPLE_SLURMD
+	/* append the NodeName to the spooldir to make it unique */
+	xstrfmtcat(conf->spooldir, ".%s", conf->node_name);
+#endif
 	_free_and_set(&conf->pidfile,  xstrdup(cf->slurmd_pidfile));
-	_massage_pathname(&conf->pidfile);
+#ifdef MULTIPLE_SLURMD
+	/* append the NodeName to the pidfile name to make it unique */
+	xstrfmtcat(conf->pidfile, ".%s", conf->node_name);
+#endif
 	_free_and_set(&conf->task_prolog, xstrdup(cf->task_prolog));
 	_free_and_set(&conf->task_epilog, xstrdup(cf->task_epilog));
 	_free_and_set(&conf->pubkey,   path_pubkey);
 	
-	conf->propagate_prio = cf->propagate_prio_process;
 	conf->job_acct_freq = cf->job_acct_freq;
 
 	if ( (conf->node_name == NULL) ||
@@ -619,10 +597,7 @@ _read_config()
 	if (cf->slurmctld_port == 0)
 		fatal("Unable to establish controller port");
 	conf->use_pam = cf->use_pam;
-
-	if (cf->task_plugin_param & TASK_PARAM_CPUSETS)
-		conf->use_cpusets = 1;
-
+	
 	slurm_mutex_unlock(&conf->config_mutex);
 	slurm_conf_unlock();
 }
@@ -635,7 +610,7 @@ _reconfigure(void)
 	_reconfig = 0;
 	_read_config();
 	
-	/* _update_logging(); */
+	_update_logging();
 	_print_conf();
 	
 	/*
@@ -659,49 +634,11 @@ static void
 _print_conf()
 {
 	slurm_ctl_conf_t *cf;
-	char *str;
-	int i;
 
 	cf = slurm_conf_lock();
 	debug3("CacheGroups = %d",       cf->cache_groups);
 	debug3("Confile     = `%s'",     conf->conffile);
 	debug3("Debug       = %d",       cf->slurmd_debug);
-	debug3("CPUs        = %-2u (CF: %2u, HW: %2u)",
-	       conf->cpus,
-	       conf->conf_cpus,
-	       conf->actual_cpus);
-	debug3("Sockets     = %-2u (CF: %2u, HW: %2u)",
-	       conf->sockets,
-	       conf->conf_sockets,
-	       conf->actual_sockets);
-	debug3("Cores       = %-2u (CF: %2u, HW: %2u)",
-	       conf->cores,
-	       conf->conf_cores,
-	       conf->actual_cores);
-	debug3("Threads     = %-2u (CF: %2u, HW: %2u)",
-	       conf->threads,
-	       conf->conf_threads,
-	       conf->actual_threads);
-	str = xmalloc(conf->block_map_size*5);
-	str[0] = '\0';
-	for (i = 0; i < conf->block_map_size; i++) {
-		char id[10];	       
-		sprintf(id, "%u,", conf->block_map[i]);
-		strcat(str, id);
-	}
-	str[strlen(str)-1] = '\0';		/* trim trailing "," */
-	debug3("Block Map   = %s", str);
-	str[0] = '\0';
-	for (i = 0; i < conf->block_map_size; i++) {
-		char id[10];	       
-		sprintf(id, "%u,", conf->block_map_inv[i]);
-		strcat(str, id);
-	}
-	str[strlen(str)-1] = '\0';		/* trim trailing "," */
-	debug3("Inverse Map = %s", str);
-	xfree(str);
-	debug3("RealMemory  = %u",       conf->real_memory_size);
-	debug3("TmpDisk     = %u",       conf->tmp_disk_space);
 	debug3("Epilog      = `%s'",     conf->epilog);
 	debug3("Logfile     = `%s'",     cf->slurmd_logfile);
 	debug3("NodeName    = %s",       conf->node_name);
@@ -714,9 +651,6 @@ _print_conf()
 	debug3("Slurm UID   = %u",       conf->slurm_user_id);
 	debug3("TaskProlog  = `%s'",     conf->task_prolog);
 	debug3("TaskEpilog  = `%s'",     conf->task_epilog);
-	debug3("Use CPUSETS = %u",       conf->use_cpusets);
-	debug3("Use PAM     = %u",       conf->use_pam);
-	debug3("Fast Sched  = %u",       conf->fast_schedule);
 	slurm_conf_unlock();
 }
 
@@ -726,18 +660,12 @@ _init_conf()
 	char  host[MAXHOSTNAMELEN];
 	log_options_t lopts = LOG_OPTS_INITIALIZER;
 
-	if (gethostname_short(host, MAXHOSTNAMELEN) < 0) {
+	if (getnodename(host, MAXHOSTNAMELEN) < 0) {
 		error("Unable to get my hostname: %m");
 		exit(1);
 	}
 	conf->hostname    = xstrdup(host);
 	conf->node_name   = NULL;
-	conf->sockets     = 0;
-	conf->cores       = 0;
-	conf->threads     = 0;
-	conf->block_map_size = 0;
-	conf->block_map   = NULL;
-	conf->block_map_inv = NULL;
 	conf->conffile    = NULL;
 	conf->epilog      = NULL;
 	conf->logfile     = NULL;
@@ -745,7 +673,6 @@ _init_conf()
 	conf->prolog      = NULL;
 	conf->task_prolog = NULL;
 	conf->task_epilog = NULL;
-
 	conf->port        =  0;
 	conf->daemonize   =  1;
 	conf->lfd         = -1;
@@ -756,8 +683,6 @@ _init_conf()
 	conf->pidfile     = xstrdup(DEFAULT_SLURMD_PIDFILE);
 	conf->spooldir	  = xstrdup(DEFAULT_SPOOLDIR);
 	conf->use_pam	  =  0;
-	conf->use_cpusets =  0;
-	conf->fast_schedule = 0;
 
 	slurm_mutex_init(&conf->config_mutex);
 	return;
@@ -767,8 +692,6 @@ static void
 _destroy_conf()
 {
 	if(conf) {
-		xfree(conf->block_map);
-		xfree(conf->block_map_inv);
 		xfree(conf->hostname);
 		xfree(conf->node_name);
 		xfree(conf->conffile);
@@ -860,7 +783,6 @@ _slurmd_init()
 {
 	struct rlimit rlim;
 	slurm_ctl_conf_t *cf;
-	struct stat stat_buf;
 
 	/*
 	 * Process commandline arguments first, since one option may be
@@ -880,13 +802,11 @@ _slurmd_init()
 	 * print current configuration (if in debug mode), and 
 	 * load appropriate plugin(s).
 	 */
-	/* _update_logging(); */
+	_update_logging();
 	_print_conf();
 	if (slurm_proctrack_init() != SLURM_SUCCESS)
 		return SLURM_FAILURE;
 	if (slurmd_task_init() != SLURM_SUCCESS)
-		return SLURM_FAILURE;
-	if (slurm_auth_init() != SLURM_SUCCESS)
 		return SLURM_FAILURE;
 
 	if (getrlimit(RLIMIT_NOFILE,&rlim) == 0) {
@@ -942,16 +862,6 @@ _slurmd_init()
 	}
 	fd_set_close_on_exec(devnull);
 
-	/* make sure we have slurmstepd installed */
-	if (stat(slurm_stepd_path, &stat_buf)) {
-		fatal("Unable to find slurmstepd file at %s",
-			slurm_stepd_path);
-	}
-	if (!S_ISREG(stat_buf.st_mode)) {
-		fatal("slurmstepd not a file at %s", 
-			slurm_stepd_path);
-	}
-
 	return SLURM_SUCCESS;
 }
 
@@ -987,37 +897,20 @@ _restore_cred_state(slurm_cred_ctx_t ctx)
 
 	slurm_cred_ctx_unpack(ctx, buffer);
 
-cleanup:
+      cleanup:
 	xfree(file_name);
 	if (buffer)
 		free_buf(buffer);
 	return SLURM_SUCCESS;
 }
 
-/**************************************************************************\
- * To test for memory leaks, set MEMORY_LEAK_DEBUG to 1 using
- * "configure --enable-memory-leak-debug" then execute
- * > valgrind --tool=memcheck --leak-check=yes --num-callers=6
- *    --leak-resolution=med slurmd -D
- *
- * Then exercise the slurmd functionality before executing
- * > scontrol shutdown
- *
- * There should be some definitely lost records from 
- * init_setproctitle (setproctitle.c), but it should otherwise account 
- * for all memory.
-\**************************************************************************/
 static int
 _slurmd_fini()
 {
 	save_cred_state(conf->vctx);
-	int slurm_proctrack_init();
-	switch_fini();
 	slurmd_task_fini(); 
 	slurm_conf_destroy();
-	slurm_proctrack_fini();
-	slurm_auth_fini();
-	slurmd_req(NULL);	/* purge memory allocated by slurmd_req() */
+	
 	return SLURM_SUCCESS;
 }
 
@@ -1061,7 +954,7 @@ int save_cred_state(slurm_cred_ctx_t ctx)
 	(void) link(new_file, reg_file);
 	(void) unlink(new_file);
 
-cleanup:
+      cleanup:
 	slurm_mutex_unlock(&state_mutex);
 	xfree(old_file);
 	xfree(reg_file);
@@ -1168,7 +1061,7 @@ static void _update_logging(void)
 	 */
 	cf = slurm_conf_lock();
 	if ( (conf->debug_level == LOG_LEVEL_INFO)
-	     && (cf->slurmd_debug != (uint16_t) NO_VAL) )
+	    && (cf->slurmd_debug != (uint16_t) NO_VAL) )
 		conf->debug_level = cf->slurmd_debug; 
 	slurm_conf_unlock();
 

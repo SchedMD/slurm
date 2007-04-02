@@ -8,7 +8,7 @@
  *  the SLURM function. By renaming the functions, inappropriate linking 
  *  should be avoided.
  *
- *  All SLURM functions referenced from the switch, auth, and mpi plugins should
+ *  All SLURM functions referenced from the switch and auth plugins should
  *  have aliases established. Functions not referenced from the plugins 
  *  need not be aliased.
  *
@@ -30,7 +30,7 @@
  *  Copyright (C) 2004 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Mark Grondona <grondona1@llnl.gov>, Morris Jette <jette1@llnl.gov>
- *  UCRL-CODE-226842.
+ *  UCRL-CODE-217948.
  *  
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -92,32 +92,18 @@
 #define	bit_or			slurm_bit_or
 #define	bit_set_count		slurm_bit_set_count
 #define	bit_clear_count		slurm_bit_clear_count
-#define	bit_nset_max_count	slurm_bit_nset_max_count
-#define	bit_and_set_count	slurm_bit_and_set_count
-#define	bit_rotate_copy		slurm_bit_rotate_copy
-#define	bit_rotate		slurm_bit_rotate
 #define	bit_fmt			slurm_bit_fmt
-#define bit_unfmt		slurm_bit_unfmt
-#define	bitfmt2int		slurm_bitfmt2int
-#define	bit_fmt_hexmask		slurm_bit_fmt_hexmask
-#define bit_unfmt_hexmask	slurm_bit_unfmt_hexmask
-#define	bit_fmt_binmask		slurm_bit_fmt_binmask
-#define bit_unfmt_binmask	slurm_bit_unfmt_binmask
 #define	bit_fls			slurm_bit_fls
 #define	bit_fill_gaps		slurm_bit_fill_gaps
 #define	bit_super_set		slurm_bit_super_set
 #define	bit_copy		slurm_bit_copy
 #define	bit_pick_cnt		slurm_bit_pick_cnt
+#define	bitfmt2int		slurm_bitfmt2int
 #define bit_nffc		slurm_bit_nffc
 #define bit_noc			slurm_bit_noc
 #define bit_nffs		slurm_bit_nffs
+#define bit_unfmt		slurm_bit_unfmt
 #define bit_copybits		slurm_bit_copybits
-
-/* fd.[ch] functions */
-#define fd_read_n		slurm_fd_read_n
-#define fd_write_n		slurm_fd_write_n
-#define fd_set_blocking		slurm_fd_set_blocking
-#define fd_set_nonblocking	slurm_fd_set_nonblocking
 
 /* hostlist.[ch] functions */
 #define	hostlist_create		slurm_hostlist_create
@@ -209,11 +195,6 @@
  * None exported today. 
  * The header file used only for #define values. */
 
-/* net.[ch] functions */
-#define net_stream_listen	slurm_net_stream_listen
-#define net_accept_stream	slurm_net_accept_stream
-#define net_set_low_water	slurm_net_set_low_water
-
 /* pack.[ch] functions */
 #define	create_buf		slurm_create_buf
 #define	free_buf		slurm_free_buf
@@ -244,15 +225,6 @@
 #define	setenvf 		slurm_setenvpf
 #define	unsetenvp		slurm_unsetenvp
 #define	getenvp			slurm_getenvp
-#define env_array_create	slurm_env_array_create
-#define env_array_merge		slurm_env_array_merge
-#define env_array_copy		slurm_env_array_copy
-#define env_array_free		slurm_env_array_free
-#define env_array_append	slurm_env_array_append
-#define env_array_append_fmt	slurm_env_array_append_fmt
-#define env_array_overwrite	slurm_env_array_overwrite
-#define env_array_overwrite_fmt slurm_env_array_overwrite_fmt
-
 
 /* slurm_auth.[ch] functions
  * None exported today. 

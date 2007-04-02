@@ -12,7 +12,7 @@
 # Copyright (C) 2002 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 # Written by Morris Jette <jette1@llnl.gov>
-# UCRL-CODE-226842.
+# UCRL-CODE-217948.
 # 
 # This file is part of SLURM, a resource management program.
 # For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -46,7 +46,18 @@ set task_cnt    0
 set can_not_run 0
 set timeout $max_job_delay
 
-set srun_pid [spawn $srun -N1-1 -c 1 -l -t1 $bin_printenv SLURM_NODEID]
+if {![test_aix]} {
+	set hostname_arg "--short"
+	set have_arg 1
+} else {
+	set hostname_arg ""
+	set have_arg 0
+}
+if {$have_arg == 0} {
+	spawn $srun -N1-1 -c 1 -l -t1 $bin_hostname
+} else {
+	spawn $srun -N1-1 -c 1 -l -t1 $bin_hostname $hostname_arg
+} 
 expect {
 	-re "(Task count specification invalid|configuration is not available)" {
 		if { [test_front_end] } {
@@ -63,11 +74,6 @@ expect {
 		incr task_cnt
 		exp_continue
 	}
-	timeout {
-		send_user "\nFAILURE: srun not responding\n"
-		slow_kill $srun_pid
-		set exit_code 1
-	}
 	eof {
 		wait
 	}
@@ -77,13 +83,17 @@ if {$can_not_run == 1} {
 }
 
 if {[string compare $host_0 ""] == 0} {
-	send_user "\nFAILURE: Did not get SLURM_NODEID of task 0\n"
+	send_user "\nFAILURE: Did not get hostname of task 0\n"
 	set exit_code   1
 }
 
 set alloc_fail 0
 set task_cnt2  0
-set srun_pid [spawn $srun -N1-1 -w $host_0 -n [expr $task_cnt + 1] -l -t1 $bin_printenv SLURM_NODEID]
+if {$have_arg == 0} {
+	spawn $srun -N1-1 -w $host_0 -n [expr $task_cnt + 1] -l -t1 $bin_hostname
+} else {
+	spawn $srun -N1-1 -w $host_0 -n [expr $task_cnt + 1] -l -t1 $bin_hostname $hostname_arg 
+}
 expect {
 	-re "($number):" {
 		incr task_cnt2
@@ -92,11 +102,6 @@ expect {
 	-re "Unable to allocate resources" {
 		send_user "\nThis error is expected, no worries\n"
 		set alloc_fail 1
-	}
-	timeout {
-		send_user "\nFAILURE: srun not responding\n"
-		slow_kill $srun_pid
-		set exit_code 1
 	}
 	eof {
 		wait
@@ -117,8 +122,11 @@ if { $task_cnt2 != 0 } {
 #
 set host_0      ""
 set host_1      ""
-
-set srun_pid [spawn $srun -N1-1 -l -t1 $bin_printenv SLURM_NODEID]
+if {$have_arg == 0} {
+	spawn $srun -N1-1 -l -t1 $bin_hostname
+} else {
+	spawn $srun -N1-1 -l -t1 $bin_hostname $hostname_arg  
+}
 expect {
 	-re "($number): ($alpha_numeric)" {
 		if {$expect_out(1,string) == 0} {
@@ -131,8 +139,9 @@ expect {
 	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
-		slow_kill $srun_pid
+		kill_srun
 		set exit_code 1
+		exp_continue
 	}
 	eof {
 		wait
@@ -143,7 +152,7 @@ expect {
 # Verify node count
 #
 if {[string compare $host_0 ""] == 0} {
-	send_user "\nFAILURE: Did not get SLURM_NODEID of task 0\n"
+	send_user "\nFAILURE: Did not get hostname of task 0\n"
 	set exit_code   1	
 }
 if {[string compare $host_1 ""] != 0} {
@@ -162,7 +171,11 @@ set host_1      ""
 set host_2      ""
 set host_3      ""
 set timeout $max_job_delay
-set srun_pid [spawn $srun -N1-3 -l -t1 $bin_printenv SLURM_NODEID]
+if {$have_arg == 0} {
+	spawn $srun -N1-3 -l -t1 $bin_hostname
+} else {
+	spawn $srun -N1-3 -l -t1 $bin_hostname $hostname_arg 
+}
 expect {
 	-re "($number): ($alpha_numeric)" {
 		if {$expect_out(1,string) == 0} {
@@ -181,8 +194,9 @@ expect {
 	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
-		slow_kill $srun_pid
+		kill_srun
 		set exit_code 1
+		exp_continue
 	}
 	eof {
 		wait
@@ -193,24 +207,24 @@ expect {
 # Verify node count
 #
 if {[string compare $host_0 ""] == 0} {
-	send_user "\nFAILURE: Did not get SLURM_NODEID of task 0\n"
+	send_user "\nFAILURE: Did not get hostname of task 0\n"
 	set exit_code   1	
 }
 if {[string compare $host_3 ""] != 0} {
 	send_user "\nFAILURE: Started more than three tasks\n"
 	set exit_code   1	
 }
-set dup_host 0
+set dup_hostname 0
 if {[string compare $host_0 $host_1] == 0} {
-	set dup_host 1	
+	set dup_hostname 1	
 }
 if {[string compare $host_0 $host_2] == 0} {
-	set dup_host 1	
+	set dup_hostname 1	
 }
 if {[string compare $host_0 $host_3] == 0} {
-	set dup_host 1	
+	set dup_hostname 1	
 }
-if {$dup_host == 1} {
+if {$dup_hostname == 1} {
 	send_user "\nFAILURE: Re-used a node in the allocation\n"
 	set exit_code   1	
 }
@@ -223,7 +237,11 @@ set host_1      ""
 set host_2      ""
 set host_3      ""
 set timeout $max_job_delay
-set srun_pid [spawn $srun -N2-3 -l -t1 $bin_printenv SLURM_NODEID]
+if {$have_arg == 0} {
+	spawn $srun -N2-3 -l -t1 $bin_hostname
+} else {
+	spawn $srun -N2-3 -l -t1 $bin_hostname $hostname_arg   
+}
 expect {
 	-re "More ($alpha) requested than permitted" {
 		send_user "\nWARNING: can't test srun task distribution\n"
@@ -246,8 +264,9 @@ expect {
 	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
-		slow_kill $srun_pid
+		kill_srun
 		set exit_code 1
+		exp_continue
 	}
 	eof {
 		wait
@@ -258,28 +277,28 @@ expect {
 # Verify node count
 #
 if {[string compare $host_0 ""] == 0} {
-	send_user "\nFAILURE: Did not get SLURM_NODEID of task 0\n"
+	send_user "\nFAILURE: Did not get hostname of task 0\n"
 	set exit_code   1	
 }
 if {[string compare $host_1 ""] == 0} {
-	send_user "\nFAILURE: Did not get SLURM_NODEID of task 1\n"
+	send_user "\nFAILURE: Did not get hostname of task 1\n"
 	set exit_code   1	
 }
 if {[string compare $host_3 ""] != 0} {
 	send_user "\nFAILURE: Started more than three tasks\n"
 	set exit_code   1	
 }
-set dup_host 0
+set dup_hostname 0
 if {[string compare $host_0 $host_1] == 0} {
-	set dup_host 1	
+	set dup_hostname 1	
 }
 if {[string compare $host_0 $host_2] == 0} {
-	set dup_host 1	
+	set dup_hostname 1	
 }
 if {[string compare $host_0 $host_3] == 0} {
-	set dup_host 1	
+	set dup_hostname 1	
 }
-if {$dup_host == 1} {
+if {$dup_hostname == 1} {
 	send_user "\nFAILURE: Re-used a node in the allocation\n"
 	set exit_code   1	
 }

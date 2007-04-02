@@ -6,7 +6,7 @@
  *  Copyright (C) 2006 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Danny Auble <da@llnl.gov>.
- *  UCRL-CODE-226842.
+ *  UCRL-CODE-217948.
  *  
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -43,97 +43,213 @@
 #include "src/common/forward.h"
 #include "src/common/slurm_auth.h"
 
+pthread_mutex_t stat_mutex = PTHREAD_MUTEX_INITIALIZER;	
+pthread_cond_t stat_cond = PTHREAD_COND_INITIALIZER;
 step_rec_t step;
 	
 int thr_finished = 0;
 	
 void *_stat_thread(void *args);
-int _sacct_query(slurm_step_layout_t *step_layout, uint32_t job_id, 
-		 uint32_t step_id);
+int _sacct_query(resource_allocation_response_msg_t *job, uint32_t step_id);
 int _process_results();
 
-
-int _sacct_query(slurm_step_layout_t *step_layout, uint32_t job_id,
-		 uint32_t step_id)
+void *_stat_thread(void *args)
 {
-	slurm_msg_t msg;
-	stat_jobacct_msg_t r;
+	slurm_msg_t *msg = (slurm_msg_t *) args;
+	slurm_msg_t resp_msg;
 	stat_jobacct_msg_t *jobacct_msg = NULL;
 	ListIterator itr;
+	ListIterator data_itr;
 	List ret_list = NULL;
 	sacct_t temp_sacct;
+	sacct_t temp_sacct2;
+	ret_types_t *ret_type = NULL;
 	ret_data_info_t *ret_data_info = NULL;
 	int rc = SLURM_SUCCESS;
 	int ntasks = 0;
 
-	debug("getting the stat of job %d on %d nodes", 
-	      job_id, step_layout->node_cnt);
-
 	memset(&temp_sacct, 0, sizeof(sacct_t));
 	temp_sacct.min_cpu = (float)NO_VAL;
-	memset(&step.sacct, 0, sizeof(sacct_t));
-	step.sacct.min_cpu = (float)NO_VAL;
-
-	step.header.jobnum = job_id;
-	step.header.partition = NULL;
-	step.header.blockid = NULL;
-	step.stepnum = step_id;
-	step.nodes = step_layout->node_list;
-	step.stepname = NULL;
-	step.status = JOB_RUNNING;
-	step.ntasks = 0;
-	slurm_msg_t_init(&msg);
+	memset(&temp_sacct2, 0, sizeof(sacct_t));
+	temp_sacct2.min_cpu = (float)NO_VAL;
 	
-	/* Common message contents */
-	r.job_id      = job_id;
-	r.step_id     = step_id;
-	r.jobacct     = jobacct_g_alloc(NULL);
-	msg.msg_type        = MESSAGE_STAT_JOBACCT;
-	msg.data            = &r;
-	
-	
-	ret_list = slurm_send_recv_msgs(step_layout->node_list, &msg, 0);
-	if (!ret_list) {
-		error("got an error no list returned");
+	ret_list = slurm_send_recv_node_msg(msg, 
+					    &resp_msg, 
+					    msg->forward.timeout);
+	if (!ret_list || !resp_msg.auth_cred) {
+		if(ret_list)
+			list_destroy(ret_list);
+		if(resp_msg.auth_cred)
+			slurm_auth_cred_destroy(resp_msg.auth_cred);
+		error("got an error no list returned or no auth_cred");
 		goto cleanup;
 	}
-	
+	g_slurm_auth_destroy(resp_msg.auth_cred);
+
+	switch (resp_msg.msg_type) {
+	case MESSAGE_STAT_JOBACCT:
+		jobacct_msg = (stat_jobacct_msg_t *)resp_msg.data;
+		if(jobacct_msg) {
+			debug2("got it back for job %d %d tasks\n", 
+			       jobacct_msg->job_id,
+			       jobacct_msg->num_tasks);
+			jobacct_g_2_sacct(&temp_sacct, jobacct_msg->jobacct);
+			ntasks = jobacct_msg->num_tasks;
+			slurm_free_stat_jobacct_msg(jobacct_msg);
+		} else {
+			error("No Jobacct message returned!");
+		}
+		break;
+	case RESPONSE_SLURM_RC:
+		rc = ((return_code_msg_t *) resp_msg.data)->return_code;
+		slurm_free_return_code_msg(resp_msg.data);	
+		error("there was an error with the request rc = %s", 
+		      slurm_strerror(rc));
+		break;
+	default:
+		rc = SLURM_UNEXPECTED_MSG_ERROR;
+		break;
+	}
+
 	itr = list_iterator_create(ret_list);		
-	while((ret_data_info = list_next(itr))) {
-		switch (ret_data_info->type) {
+	while((ret_type = list_next(itr)) != NULL) {
+		switch (ret_type->type) {
 		case MESSAGE_STAT_JOBACCT:
-			jobacct_msg = (stat_jobacct_msg_t *)
-				ret_data_info->data;
-			if(jobacct_msg) {
-				debug2("got it back for job %d", 
-				       jobacct_msg->job_id);
-				jobacct_g_2_sacct(
-					&temp_sacct, 
-					jobacct_msg->jobacct);
-				ntasks += jobacct_msg->num_tasks;
-				aggregate_sacct(&step.sacct, &temp_sacct);
+			data_itr = 
+				list_iterator_create(ret_type->ret_data_list);
+			while((ret_data_info = list_next(data_itr)) != NULL) {
+				jobacct_msg = (stat_jobacct_msg_t *)
+					ret_data_info->data;
+				if(jobacct_msg) {
+					debug2("got it back for job %d", 
+					       jobacct_msg->job_id);
+					jobacct_g_2_sacct(
+						&temp_sacct2, 
+						jobacct_msg->jobacct);
+					ntasks += jobacct_msg->num_tasks;
+					aggregate_sacct(&temp_sacct, 
+							&temp_sacct2);
+				}
 			}
 			break;
 		case RESPONSE_SLURM_RC:
-			rc = slurm_get_return_code(ret_data_info->type, 
-						   ret_data_info->data);
+			rc = ret_type->msg_rc;
 			error("there was an error with the request rc = %s", 
 			      slurm_strerror(rc));
 			break;
 		default:
-			rc = slurm_get_return_code(ret_data_info->type, 
-						   ret_data_info->data);
+			rc = ret_type->msg_rc;
 			error("unknown return given %d rc = %s", 
-			      ret_data_info->type, slurm_strerror(rc));
+			      ret_type->type, slurm_strerror(rc));
 			break;
 		}
 	}
 	list_iterator_destroy(itr);
 	list_destroy(ret_list);
 
+	pthread_mutex_lock(&stat_mutex);
+	aggregate_sacct(&step.sacct, &temp_sacct);
 	step.ntasks += ntasks;		
+	pthread_mutex_unlock(&stat_mutex);
 cleanup:
 	
+	pthread_mutex_lock(&stat_mutex);
+	thr_finished++;
+	pthread_cond_signal(&stat_cond);
+	pthread_mutex_unlock(&stat_mutex);
+	return NULL;
+}
+
+int _sacct_query(resource_allocation_response_msg_t *job, uint32_t step_id)
+{
+	slurm_msg_t *msg_array_ptr;
+	stat_jobacct_msg_t r;
+	int i;
+	int *span = set_span(job->node_cnt, 0);
+	forward_t forward;
+	int thr_count = 0;
+	
+	debug("getting the stat of job %d on %d nodes", 
+	      job->job_id, job->node_cnt);
+
+	memset(&step.sacct, 0, sizeof(sacct_t));
+	step.sacct.min_cpu = (float)NO_VAL;
+	step.header.jobnum = job->job_id;
+	step.header.partition = NULL;
+	step.header.blockid = NULL;
+	step.stepnum = step_id;
+	step.nodes = job->node_list;
+	step.stepname = NULL;
+	step.status = JOB_RUNNING;
+	step.ntasks = 0;
+	msg_array_ptr = xmalloc(sizeof(slurm_msg_t) * job->node_cnt);
+	
+	/* Common message contents */
+	r.job_id      = job->job_id;
+	r.step_id     = step_id;
+	r.jobacct     = jobacct_g_alloc(NULL);
+
+	forward.cnt = job->node_cnt;
+	/* we need this for forwarding, but not really anything else, so 
+	   this can be set to any sting as long as there are the same 
+	   number as hosts we are going to */
+	forward.name = xmalloc(sizeof(char) * (MAX_SLURM_NAME * forward.cnt));
+	for(i=0; i < forward.cnt; i++) {
+		strncpy(&forward.name[i*MAX_SLURM_NAME], "-", MAX_SLURM_NAME);
+	}
+	forward.addr = job->node_addr;
+	forward.node_id = NULL;
+	forward.timeout = 5000;
+	
+	thr_count = 0;
+	for (i = 0; i < job->node_cnt; i++) {
+		pthread_attr_t attr;
+		pthread_t threadid;
+		slurm_msg_t *m = &msg_array_ptr[thr_count];
+		
+		m->srun_node_id    = 0;
+		m->msg_type        = MESSAGE_STAT_JOBACCT;
+		m->data            = &r;
+		m->ret_list = NULL;
+		m->orig_addr.sin_addr.s_addr = 0;
+		
+		memcpy(&m->address, 
+		       &job->node_addr[i], 
+		       sizeof(slurm_addr));
+		
+		forward_set(&m->forward,
+			    span[thr_count],
+			    &i,
+			    &forward);
+		
+		slurm_attr_init(&attr);
+		if (pthread_attr_setdetachstate(&attr,
+						PTHREAD_CREATE_DETACHED))
+			error("pthread_attr_setdetachstate error %m");
+		
+		if(pthread_create(&threadid,
+				   &attr,
+				   _stat_thread,
+				   (void *) m)) {
+			error("pthread_create error %m");
+			exit(0);
+		}
+		slurm_attr_destroy(&attr);
+		thr_count++;
+	}
+	xfree(span);
+	xfree(forward.name);
+	if (!thr_count) {
+		fatal("No threads created!! exiting");
+	}
+	slurm_mutex_lock(&stat_mutex);
+	while(thr_count > thr_finished) {
+		pthread_cond_wait(&stat_cond, &stat_mutex);
+	}
+	slurm_mutex_unlock(&stat_mutex);
+	
+	pthread_cond_destroy(&stat_cond);
+	slurm_mutex_destroy(&stat_mutex);
 	if(step.ntasks) {
 		step.sacct.ave_rss *= 1024;
 		step.sacct.max_rss *= 1024;
@@ -147,6 +263,7 @@ cleanup:
 		step.sacct.ave_vsize /= step.ntasks;
 		step.sacct.ave_pages /= step.ntasks;
 	}
+	xfree(msg_array_ptr);
 	jobacct_g_free(r.jobacct);	
 	return SLURM_SUCCESS;
 }
@@ -161,25 +278,27 @@ int sacct_stat(uint32_t jobid, uint32_t stepid)
 {
 	slurm_msg_t req_msg;
 	slurm_msg_t resp_msg;
-	job_step_id_msg_t req;
-	slurm_step_layout_t *step_layout = NULL;
+	stat_jobacct_msg_t req;
+	resource_allocation_response_msg_t *job = NULL;
 	int rc = SLURM_SUCCESS;
 
-	slurm_msg_t_init(&req_msg);
-	slurm_msg_t_init(&resp_msg);
 	debug("requesting info for job %u.%u", jobid, stepid);
 	req.job_id = jobid;
 	req.step_id = stepid;
-	req_msg.msg_type = REQUEST_STEP_LAYOUT;
+	req.jobacct = jobacct_g_alloc(NULL);
+	req_msg.msg_type = MESSAGE_STAT_JOBACCT;
 	req_msg.data     = &req;
 	
 	if (slurm_send_recv_controller_msg(&req_msg, &resp_msg) < 0) {
+		jobacct_g_free(req.jobacct);
 		return SLURM_ERROR;
 	}
 		
+	jobacct_g_free(req.jobacct);
+	
 	switch (resp_msg.msg_type) {
-	case RESPONSE_STEP_LAYOUT:
-		step_layout = (slurm_step_layout_t *)resp_msg.data;
+	case RESPONSE_RESOURCE_ALLOCATION:
+		job = (resource_allocation_response_msg_t *)resp_msg.data;
 		break;
 	case RESPONSE_SLURM_RC:
 		rc = ((return_code_msg_t *) resp_msg.data)->return_code;
@@ -192,13 +311,13 @@ int sacct_stat(uint32_t jobid, uint32_t stepid)
 		break;
 	}
 		
-	if(!step_layout) {
+	if(!job) {
 		error("didn't get the job record rc = %s", slurm_strerror(rc));
 		return rc;
 	}
 
-	_sacct_query(step_layout, jobid, stepid);
-	slurm_step_layout_destroy(step_layout);	
+	_sacct_query(job, stepid);
+	slurm_free_resource_allocation_response_msg(job);	
 	
 	_process_results();
 	return rc;

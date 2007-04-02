@@ -8,10 +8,10 @@
 #          "FAILURE: ..." otherwise with an explanation of the failure, OR
 #          anything else indicates a failure mode that must be investigated.
 ############################################################################
-# Copyright (C) 2002-2006 The Regents of the University of California.
+# Copyright (C) 2002 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 # Written by Morris Jette <jette1@llnl.gov>
-# UCRL-CODE-226842.
+# UCRL-CODE-217948.
 # 
 # This file is part of SLURM, a resource management program.
 # For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -42,7 +42,7 @@ print_header $test_id
 #
 # Spawn a srun batch job with shared option only
 #
-set srun_pid [spawn $srun --share --hold --batch -t1 $bin_pwd]
+spawn $srun --share --hold --batch -t1 $bin_pwd
 expect {
 	-re "jobid ($number) submitted" {
 		set job_id $expect_out(1,string)
@@ -50,11 +50,11 @@ expect {
 	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
-		slow_kill $srun_pid
+		kill_srun
 		set exit_code 1
+		exp_continue
 	}
 	eof {
-		wait
 	}
 }
 
@@ -80,10 +80,10 @@ if {$job_id != 0} {
 		}
 		timeout {
 			send_user "\nFAILURE: scontrol not responding\n"
+			cancel_job $job_id
 			set exit_code   1
 		}
 		eof {
-			wait
 		}
 	}
 	cancel_job $job_id
@@ -95,7 +95,6 @@ if {$job_id != 0} {
 #
 # Spawn a srun batch job with contiguous option only
 #
-set job_id 0
 spawn $srun --contiguous --hold --batch -t1 $bin_pwd
 expect {
 	-re "jobid ($number) submitted" {
@@ -107,7 +106,6 @@ expect {
 		exit 1
 	}
 	eof {
-		wait
 	}
 }
 
@@ -117,9 +115,9 @@ expect {
 if {$job_id != 0} {
 	spawn $scontrol show job $job_id
 	expect {
-	        -re "Shared=($alpha)" {
+		-re "Shared=($number)" {
 			set shared_val $expect_out(1,string)
-		        if {[string compare $shared_val OK] == 0} {
+			if {$shared_val == 0} {
 				incr matches
 			}
 			exp_continue
@@ -133,10 +131,10 @@ if {$job_id != 0} {
 		}
 		timeout {
 			send_user "\nFAILURE: scontrol not responding\n"
+			cancel_job $job_id
 			set exit_code 1
 		}
 		eof {
-			wait
 		}
 	}
 	cancel_job $job_id

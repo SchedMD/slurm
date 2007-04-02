@@ -49,7 +49,7 @@
  *  Copyright (C) 2005-2006 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
- *  UCRL-CODE-226842.
+ *  UCRL-CODE-217948.
  *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -89,7 +89,6 @@
 #include <slurm/slurm_errno.h>
 
 #include "src/api/slurm_pmi.h"
-#include "src/common/macros.h"
 #include "src/common/malloc.h"
 
 #define KVS_STATE_LOCAL    0
@@ -1124,11 +1123,7 @@ int PMI_KVS_Commit( const char kvsname[] )
 	 * space. We do this by moving the local key-pairs to the 
 	 * head of the list and sending the count of local entries
 	 * rather than the full set. */
-	kvs_set.host_cnt      = 1;
-	kvs_set.kvs_host_ptr  = malloc(sizeof(struct kvs_hosts));
-	kvs_set.kvs_host_ptr->task_id  = pmi_rank;
-	kvs_set.kvs_host_ptr->port     = 0;
-	kvs_set.kvs_host_ptr->hostname = NULL;
+	kvs_set.task_id       = pmi_rank;
 	kvs_set.kvs_comm_recs = 0;
 	kvs_set.kvs_comm_ptr  = NULL;
 
@@ -1173,7 +1168,6 @@ int PMI_KVS_Commit( const char kvsname[] )
 	pthread_mutex_unlock(&kvs_mutex);
 
 	/* Free any temporary storage */
-	free(kvs_set.kvs_host_ptr);
 	for (i=0; i<kvs_set.kvs_comm_recs; i++)
 		free(kvs_set.kvs_comm_ptr[i]);
 	if (kvs_set.kvs_comm_ptr)

@@ -32,7 +32,7 @@
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
-#ifdef HAVE_CONFIG_H
+#if HAVE_CONFIG_H
 #  include "config.h"
 #endif
 
@@ -40,11 +40,11 @@
 #  include <numa.h>
 #endif
 
-#ifdef HAVE_SYS_TYPES_H
+#if HAVE_SYS_TYPES_H
 #  include <sys/types.h>
 #endif
 
-#ifdef HAVE_SYS_PRCTL_H
+#if HAVE_SYS_PRCTL_H
 #  include <sys/prctl.h>
 #endif
 
@@ -52,20 +52,18 @@
 #include <sys/stat.h>
 #include <sys/param.h>
 #include <sys/poll.h>
-#include <sys/stat.h>
-#include <fcntl.h>
+#include <unistd.h>
 #include <pwd.h>
 #include <grp.h>
 #include <stdio.h>
 #include <string.h>
 #include <sys/utsname.h>
-#include <unistd.h>
 
 #define _GNU_SOURCE
 #define __USE_GNU
 #include <sched.h> /* SMB */
 
-#ifdef HAVE_STDLIB_H
+#if HAVE_STDLIB_H
 #  include <stdlib.h>
 #endif
 
@@ -86,25 +84,12 @@
 #include "src/common/xstring.h"
 #include "src/common/xmalloc.h"
 #include "src/common/util-net.h"
-#include "src/common/slurm_resource_info.h"
-
-#define CPUSET_DIR "/dev/cpuset"
 
 /*** from affinity.c ***/
 void	slurm_chkaffinity(cpu_set_t *mask, slurmd_job_t *job, int statval);
 int	get_cpuset(cpu_set_t *mask, slurmd_job_t *job);
 int	slurm_setaffinity(pid_t pid, size_t size, const cpu_set_t *mask);
 int	slurm_getaffinity(pid_t pid, size_t size, cpu_set_t *mask);
-
-/*** from cpuset.c ***/
-#ifdef HAVE_NUMA
-int	slurm_set_memset(char *path, nodemask_t *new_mask);
-int	slurm_memset_available(void);
-#endif
-int	slurm_build_cpuset(char *base, char *path, uid_t uid, gid_t gid);
-int	slurm_get_cpuset(char *path, pid_t pid, size_t size, cpu_set_t *mask);
-int	slurm_set_cpuset(char *base, char *path, pid_t pid, size_t size, 
-		const cpu_set_t *mask);
 
 /*** from numa.c ***/
 #ifdef HAVE_NUMA

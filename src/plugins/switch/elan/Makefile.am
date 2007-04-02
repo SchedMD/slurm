@@ -1,3 +1,4 @@
+# $Id$
 # Makefile for switch/elan plugin
 
 AUTOMAKE_OPTIONS = foreign

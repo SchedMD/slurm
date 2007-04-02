@@ -1,3 +1,4 @@
+# $Id: Makefile.am 3802 2004-07-26 23:43:53Z jette $
 # Makefile for task/none plugin
 
 AUTOMAKE_OPTIONS = foreign

@@ -4,7 +4,7 @@
  *  Copyright (C) 2006 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
- *  UCRL-CODE-226842.
+ *  UCRL-CODE-217948.
  *  
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -232,7 +232,7 @@ static char *	_get_node_state(struct node_record *node_ptr)
 	if (state & NODE_STATE_DRAIN)
 		return "Draining";
 	if (state & NODE_STATE_COMPLETING)
-		return "Running";
+		return "Busy";
 
 	if (base_state == NODE_STATE_DOWN)
 		return "Down";
@@ -241,5 +241,5 @@ static char *	_get_node_state(struct node_record *node_ptr)
 	if (base_state == NODE_STATE_IDLE)
 		return "Idle";
 	
-	return "Down";
+	return "Unknown";
 }

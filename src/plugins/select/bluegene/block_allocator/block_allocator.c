@@ -44,7 +44,6 @@
 #include <stdlib.h>
 #include <math.h>
 #include "block_allocator.h"
-#include "src/common/uid.h"
 
 #define DEBUG_PA
 #define BEST_COUNT_INIT 20
@@ -77,7 +76,7 @@ s_p_options_t bg_conf_file_options[] = {
 	{"BlrtsImage", S_P_STRING}, 
 	{"LinuxImage", S_P_STRING},
 	{"MloaderImage", S_P_STRING},
-	{"RamDiskImage", S_P_STRING},
+	{"LinuxImage", S_P_STRING},
 	{"BridgeAPILogFile", S_P_STRING},
 	{"RamDiskImage", S_P_STRING},
 	{"LayoutMode", S_P_STRING},
@@ -86,12 +85,9 @@ s_p_options_t bg_conf_file_options[] = {
 	{"NodeCardNodeCnt", S_P_UINT16},
 	{"Numpsets", S_P_UINT16},
 	{"BPs", S_P_ARRAY, parse_blockreq, destroy_blockreq},
-	/* these are just going to be put into a list that will be
-	   freed later don't free them after reading them */
-	{"AltBlrtsImage", S_P_ARRAY, parse_image, NULL}, 
-	{"AltLinuxImage", S_P_ARRAY, parse_image, NULL},
-	{"AltMloaderImage", S_P_ARRAY, parse_image, NULL},
-	{"AltRamDiskImage", S_P_ARRAY, parse_image, NULL},
+	{"Type", S_P_IGNORE},
+	{"Nodecards", S_P_IGNORE},
+	{"Quarters", S_P_IGNORE},
 	{NULL}
 };
 
@@ -185,68 +181,27 @@ static int _set_one_dim(int *start, int *end, int *coord);
 /* */
 static void _destroy_geo(void *object);
 
-extern char *bg_block_state_string(rm_partition_state_t state)
-{
-	static char tmp[16];
-
-#ifdef HAVE_BG
-	switch (state) {
-		case RM_PARTITION_BUSY: 
-			return "BUSY";
-		case RM_PARTITION_CONFIGURING:
-			return "CONFIG";
-		case RM_PARTITION_DEALLOCATING:
-			return "DEALLOC";
-		case RM_PARTITION_ERROR:
-			return "ERROR";
-		case RM_PARTITION_FREE:
-			return "FREE";
-		case RM_PARTITION_NAV:
-			return "NAV";
-		case RM_PARTITION_READY:
-			return "READY";
-	}
-#endif
-
-	snprintf(tmp, sizeof(tmp), "%d", state);
-	return tmp;
-}
-
 extern int parse_blockreq(void **dest, slurm_parser_enum_t type,
 			  const char *key, const char *value, 
-			  const char *line, char **leftover)
+			  const char *line)
 {
 	s_p_options_t block_options[] = {
+		{"BPs", S_P_STRING},
 		{"Type", S_P_STRING},
 		{"Nodecards", S_P_UINT16},
 		{"Quarters", S_P_UINT16},
-		{"BlrtsImage", S_P_STRING},
-		{"LinuxImage", S_P_STRING},
-		{"MloaderImage", S_P_STRING},
-		{"RamDiskImage", S_P_STRING},
 		{NULL}
 	};
 	s_p_hashtbl_t *tbl;
 	char *tmp = NULL;
 	blockreq_t *n = NULL;
-	hostlist_t hl = NULL;
-	char temp[BUFSIZE];
-	tbl = s_p_hashtbl_create(block_options);
-	s_p_parse_line(tbl, *leftover, leftover);
-	if(!value) {
-		return 0;
-	}
-	n = xmalloc(sizeof(blockreq_t));
-	hl = hostlist_create(value);
-	hostlist_ranged_string(hl, BUFSIZE, temp);
-	hostlist_destroy(hl);
 
-	n->block = xstrdup(temp);
-	s_p_get_string(&n->blrtsimage, "BlrtsImage", tbl);
-	s_p_get_string(&n->linuximage, "LinuxImage", tbl);
-	s_p_get_string(&n->mloaderimage, "MloaderImage", tbl);
-	s_p_get_string(&n->ramdiskimage, "RamDiskImage", tbl);
+	tbl = s_p_hashtbl_create(block_options);
+	s_p_parse_line(tbl, line);
 	
+	n = xmalloc(sizeof(blockreq_t));
+	s_p_get_string(&n->block, "BPs", tbl);
+
 	s_p_get_string(&tmp, "Type", tbl);
 	if (!tmp || !strcasecmp(tmp,"TORUS"))
 		n->conn_type = SELECT_TORUS;
@@ -272,88 +227,6 @@ extern void destroy_blockreq(void *ptr)
 	blockreq_t *n = (blockreq_t *)ptr;
 	if(n) {
 		xfree(n->block);
-		xfree(n->blrtsimage);
-		xfree(n->linuximage);
-		xfree(n->mloaderimage);
-		xfree(n->ramdiskimage);
-		xfree(n);
-	}
-}
-
-extern int parse_image(void **dest, slurm_parser_enum_t type,
-		       const char *key, const char *value, 
-		       const char *line, char **leftover)
-{
-	s_p_options_t image_options[] = {
-		{"GROUPS", S_P_STRING},
-		{NULL}
-	};
-	s_p_hashtbl_t *tbl = NULL;
-	char *tmp = NULL;
-	image_t *n = NULL;
-	image_group_t *image_group = NULL;
-	int i = 0, j = 0;
-
-	tbl = s_p_hashtbl_create(image_options);
-	s_p_parse_line(tbl, *leftover, leftover);
-	
-	n = xmalloc(sizeof(image_t));
-	n->name = xstrdup(value);
-	n->def = false;
-	debug3("image %s", n->name);
-	n->groups = list_create(destroy_image_group_list);
-	s_p_get_string(&tmp, "Groups", tbl);
-	if(tmp) {
-		for(i=0; i<strlen(tmp); i++) {
-			if(tmp[i] == ':') {
-				image_group = xmalloc(sizeof(image_group));
-				image_group->name = xmalloc(i-j+2);
-				snprintf(image_group->name,
-					 (i-j)+1, "%s", tmp+j);
-				image_group->gid =
-					gid_from_string(image_group->name);
-				debug3("adding group %s %d", image_group->name,
-				       image_group->gid);
-				list_append(n->groups, image_group);
-				j=i;
-				j++;
-			} 		
-		}
-		if(j != i) {
-			image_group = xmalloc(sizeof(image_group));
-			image_group->name = xmalloc(i-j+2);
-			snprintf(image_group->name, (i-j)+1, "%s", tmp+j);
-			image_group->gid = gid_from_string(image_group->name);
-			debug3("adding group %s %d", image_group->name,
-			       image_group->gid);
-			list_append(n->groups, image_group);
-		}
-		xfree(tmp);
-	}
-	s_p_hashtbl_destroy(tbl);
-
-	*dest = (void *)n;
-	return 1;
-}
-
-extern void destroy_image_group_list(void *ptr)
-{
-	image_group_t *image_group = (image_group_t *)ptr;
-	if(image_group) {
-		xfree(image_group->name);
-		xfree(image_group);
-	}
-}
-
-extern void destroy_image(void *ptr)
-{
-	image_t *n = (image_t *)ptr;
-	if(n) {
-		xfree(n->name);
-		if(n->groups) {
-			list_destroy(n->groups);
-			n->groups = NULL;
-		}
 		xfree(n);
 	}
 }
@@ -697,10 +570,6 @@ extern void delete_ba_request(void *arg)
 		xfree(ba_request->save_name);
 		if(ba_request->elongate_geos)
 			list_destroy(ba_request->elongate_geos);
-		xfree(ba_request->blrtsimage);
-		xfree(ba_request->linuximage);
-		xfree(ba_request->mloaderimage);
-		xfree(ba_request->ramdiskimage);
 		
 		xfree(ba_request);
 	}
@@ -874,7 +743,7 @@ node_info_error:
 	}
 #endif
 
-	if ((DIM_SIZE[X]==0) || (DIM_SIZE[Y]==0) || (DIM_SIZE[Z]==0)) {
+	if ((DIM_SIZE[X]==0) || (DIM_SIZE[X]==0) || (DIM_SIZE[X]==0)) {
 		debug("Setting dimensions from slurm.conf file");
 		count = slurm_conf_nodename_array(&ptr_array);
 		if (count == 0)
@@ -993,20 +862,13 @@ extern void ba_fini()
 		return;
 	}
 
-	if (path) {
+	if (path)
 		list_destroy(path);
-		path = NULL;
-	}
-	if (best_path) {
+	if (best_path)
 		list_destroy(best_path);
-		best_path = NULL;
-	}
 #ifdef HAVE_BG_FILES
-	if (bp_map_list) {
+	if (bp_map_list)
 		list_destroy(bp_map_list);
-		bp_map_list = NULL;
-		_bp_map_initialized = false;
-	}
 	bridge_fini();
 #endif
 	_delete_ba_system();
@@ -1276,7 +1138,6 @@ extern int check_and_set_node_list(List nodes)
 			rc = SLURM_ERROR;
 			goto end_it;
 		}
-		
 		if(ba_node->used) 
 			curr_ba_node->used = true;		
 		for(i=0; i<BA_SYSTEM_DIMENSIONS; i++) {
@@ -1349,7 +1210,6 @@ extern char *set_bg_block(List results, int *start,
 			grid[start[X]];	
 #endif
 	
-
 	if(!ba_node)
 		return NULL;
 
@@ -1359,16 +1219,6 @@ extern char *set_bg_block(List results, int *start,
 		send_results = 1;
 		
 	list_append(results, ba_node);
-	if(conn_type == SELECT_SMALL) {
-		/* adding the ba_node and ending */
-		ba_node->used = true;
-		name = xmalloc(4);
-		snprintf(name, 4, "%d%d%d",
-			 ba_node->coord[X],
-			 ba_node->coord[Y],
-			 ba_node->coord[Z]);
-		goto end_it; 
-	}
 	found = _find_x_path(results, ba_node,
 			     ba_node->coord, 
 			     ba_node->coord, 
@@ -3357,16 +3207,13 @@ static char *_set_internal_wires(List nodes, int size, int conn_type)
 	int count=0, i, set=0;
 	int *start = NULL;
 	int *end = NULL;
-	char *name;
+	char *name = xmalloc(BUFSIZE);
 	ListIterator itr;
-	hostlist_t hostlist;
+	hostlist_t hostlist = hostlist_create(NULL);
 	char temp_name[4];
 
 	if(!nodes)
 		return NULL;
-
-	name = xmalloc(BUFSIZE);
-	hostlist = hostlist_create(NULL);
 	itr = list_iterator_create(nodes);
 	while((ba_node[count] = (ba_node_t*) list_next(itr))) {
 		snprintf(temp_name, sizeof(temp_name), "%d%d%d", 
@@ -3387,6 +3234,7 @@ static char *_set_internal_wires(List nodes, int size, int conn_type)
 	for(i=0;i<count;i++) {
 		if(!ba_node[i]->used) {
 			ba_node[i]->used=1;
+			ba_node[i]->conn_type=conn_type;
 			if(ba_node[i]->letter == '.') {
 				ba_node[i]->letter = letters[color_count%62];
 				ba_node[i]->color = colors[color_count%6];

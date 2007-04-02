@@ -26,19 +26,6 @@ AC_CONFIG_HEADERS([slurm/slurm.h])
 
 X_AC_AIX
 
-dnl
-dnl Check to see if this architecture should use slurm_* prefix function
-dnl aliases for plugins.
-dnl
-case "$host" in
-	*-*-aix*) AC_DEFINE(USE_ALIAS, 0, 
-                 	[Define slurm_ prefix function aliases for plusins]) ;;
-	*darwin*) AC_DEFINE(USE_ALIAS, 0,
-                  	[Define slurm_ prefix function aliases for plusins]) ;;
-	*)        AC_DEFINE(USE_ALIAS, 1, 
-			[Define slurm_ prefix function aliases for plugins]) ;;
-esac
-
 dnl Checks for programs.
 dnl
 AC_PROG_CC
@@ -58,9 +45,8 @@ AC_CHECK_HEADERS(mcheck.h values.h socket.h sys/socket.h  \
                  stdbool.h sys/ipc.h sys/shm.h sys/sem.h errno.h \
                  stdlib.h dirent.h pthread.h sys/prctl.h \
                  sysint.h inttypes.h termcap.h netdb.h sys/socket.h  \
-                 sys/systemcfg.h ncurses.h curses.h sys/dr.h sys/vfs.h \
-		 pam/pam_appl.h security/pam_appl.h sys/sysctl.h \
-		)
+                 sys/systemcfg.h ncurses.h curses.h sys/dr.h \
+		 )
 AC_HEADER_SYS_WAIT
 AC_HEADER_TIME
 AC_HEADER_STDC
@@ -77,10 +63,6 @@ X_AC_SLURM_PROGRAM_INVOCATION_NAME
 dnl Check if ptrace takes four or five arguments
 dnl
 X_AC_PTRACE
-
-dnl Check if setpgrp takes zero or two arguments
-dnl
-X_AC_SETPGRP
 
 dnl Check of sched_getaffinity exists and it's argument count
 dnl
@@ -104,18 +86,14 @@ dnl
 AC_FUNC_MALLOC
 AC_FUNC_STRERROR_R
 AC_CHECK_FUNCS( \
-   fdatasync \
    hstrerror \
    strerror  \
    mtrace    \
-   strndup   \
-   strlcpy   \
    strsignal \ 
    inet_aton \
    inet_ntop \
    inet_pton \
    setproctitle \
-   sysctlbyname \
 )
 
 AC_CHECK_DECLS([hstrerror, strsignal, sys_siglist])
@@ -138,9 +116,6 @@ X_AC_SLURM_SEMAPHORE
 X_AC_NCURSES
 AM_CONDITIONAL(HAVE_SOME_CURSES, test "x$ac_have_some_curses" = "xyes")
 AC_SUBST(HAVE_SOME_CURSES)
-
-X_AC_GTK
-AM_CONDITIONAL(HAVE_GTK, test "x$ac_have_gtk" = "xyes")
 
 dnl checks for system services.
 dnl
@@ -240,11 +215,7 @@ AC_CONFIG_FILES([Makefile
 		 src/api/Makefile 
 		 src/common/Makefile
 		 src/sacct/Makefile
-		 src/salloc/Makefile 
-		 src/sbatch/Makefile 
-		 src/sattach/Makefile
 		 src/srun/Makefile 
-		 src/slaunch/Makefile 
 		 src/slurmd/Makefile 
 		 src/slurmd/slurmd/Makefile 
 		 src/slurmd/slurmstepd/Makefile 
@@ -255,8 +226,6 @@ AC_CONFIG_FILES([Makefile
 		 src/squeue/Makefile
 		 src/sinfo/Makefile
 		 src/smap/Makefile
-		 src/strigger/Makefile
-		 src/sview/Makefile
 		 src/plugins/Makefile
 		 src/plugins/auth/Makefile
 		 src/plugins/auth/authd/Makefile
@@ -282,9 +251,9 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/sched/Makefile
 		 src/plugins/sched/backfill/Makefile
 		 src/plugins/sched/builtin/Makefile
-		 src/plugins/sched/gang/Makefile
 		 src/plugins/sched/hold/Makefile
-		 src/plugins/sched/wiki/Makefile
+		 src/plugins/sched/maui/Makefile
+		 src/plugins/sched/maui/wiki/Makefile
 		 src/plugins/sched/wiki2/Makefile
 		 src/plugins/select/Makefile
 		 src/plugins/select/bluegene/Makefile
@@ -301,14 +270,12 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/mpi/mvapich/Makefile
 		 src/plugins/mpi/lam/Makefile
 		 src/plugins/mpi/none/Makefile
-		 src/plugins/mpi/openmpi/Makefile
 		 src/plugins/task/Makefile
 		 src/plugins/task/affinity/Makefile
 		 src/plugins/task/none/Makefile
 		 doc/Makefile
 		 doc/man/Makefile
 		 doc/html/Makefile
-		 doc/html/configurator.html
 		 testsuite/Makefile
 		 testsuite/expect/Makefile
 		 testsuite/slurm_unit/Makefile

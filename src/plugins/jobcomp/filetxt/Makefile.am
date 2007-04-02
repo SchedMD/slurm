@@ -1,3 +1,4 @@
+# $Id$
 # Makefile for jobcomp/filetxt plugin
 
 AUTOMAKE_OPTIONS = foreign

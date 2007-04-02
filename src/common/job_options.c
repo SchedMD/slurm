@@ -5,7 +5,7 @@
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Mark Grondona <grondona1@llnl.gov>.
- *  UCRL-CODE-226842.
+ *  UCRL-CODE-217948.
  *  
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -203,11 +203,9 @@ int job_options_unpack (job_options_t opts, Buf buf)
 	if (unpackstr_xmalloc (&tag, &len, buf) != SLURM_SUCCESS)
 		return (SLURM_ERROR);
 
-	if (strncmp (tag, JOB_OPTIONS_PACK_TAG, len) != 0) {
-		xfree(tag);
+	if (strncmp (tag, JOB_OPTIONS_PACK_TAG, len) != 0)
 		return (-1);
-	}
-	xfree(tag);
+
 	unpack32 (&count, buf);
 
 	for (i = 0; i < count; i++) {

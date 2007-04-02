@@ -1,10 +1,10 @@
 /*****************************************************************************\
  *  slurm_protocol_interface.h - mid-level slurm communication definitions
  *****************************************************************************
- *  Copyright (C) 2002-2006 The Regents of the University of California.
+ *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Chris Dunlap <cdunlap@llnl.gov>, et. al.
- *  UCRL-CODE-226842.
+ *  UCRL-CODE-217948.
  *  
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -75,6 +75,14 @@
 #include "src/common/macros.h"
 #include "src/common/pack.h"
 #include "src/common/slurm_protocol_common.h"
+
+#ifdef MEMORY_LEAK_DEBUG
+#define SLURM_MESSAGE_TIMEOUT_MSEC_STATIC 15000
+#define SLURM_MESSAGE_TIMEOUT_SEC_STATIC 15
+#else
+#define SLURM_MESSAGE_TIMEOUT_MSEC_STATIC 10000
+#define SLURM_MESSAGE_TIMEOUT_SEC_STATIC 10
+#endif
 
 /****************\
  **  Data Types  **

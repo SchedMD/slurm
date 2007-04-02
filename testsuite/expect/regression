@@ -10,7 +10,7 @@
 # Copyright (C) 2002 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 # Written by Morris Jette <jette1@llnl.gov>
-# UCRL-CODE-226842.
+# UCRL-CODE-217948.
 # 
 # This file is part of SLURM, a resource management program.
 # For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -62,11 +62,6 @@ for major in `seq 1 20`; do
 			COMPLETIONS=$((COMPLETIONS+1))
 		else
 			FAILURES=$((FAILURES+1))
-			echo "=============" >& 2
-			echo "$TEST FAILURE" >& 2
-			echo "$TEST FAILURE"
-			grep "$TEST " README >& 2
-			echo "=============" >& 2
 		fi
 		/bin/echo "============================================"
 	done
@@ -81,7 +76,6 @@ echo ""
 echo "Completions:$COMPLETIONS"
 echo "Failures:   $FAILURES"
 echo "Time (sec): $DELTA_TIME"
-echo "Remember to check for mail send by tests" >& 2
 
 if [ $FAILURES -eq 0 ]
 then

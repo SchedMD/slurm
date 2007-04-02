@@ -6,7 +6,7 @@
  *  Copyright (C) 2006 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Danny Auble <da@llnl.gov>.
- *  UCRL-CODE-226842.
+ *  UCRL-CODE-217948.
  *  
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -17,7 +17,7 @@
  *  any later version.
  *
  *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under
+ *  to link the code of portions of this program with the OpenSSL library under 
  *  certain conditions as described in each individual source file, and 
  *  distribute linked combinations including the two. You must obey the GNU 
  *  General Public License in all respects for all of the code used other than 
@@ -105,7 +105,6 @@ enum {	F_JOBNAME = HEADER_LENGTH,
 	F_PRIORITY,	
 	F_NCPUS,		
 	F_NODES,
-	F_JOB_ACCOUNT,
 	JOB_START_LENGTH
 };
 
@@ -154,15 +153,12 @@ enum {	F_JOBSTEP = HEADER_LENGTH,
 	F_MAX_RSS_NODE,
 	F_MAX_PAGES_NODE,
 	F_MIN_CPU_NODE,
-	F_STEP_ACCOUNT,
-	F_STEP_REQUID,
 	JOB_STEP_LENGTH
 };
 
 /* JOB_TERM / JOB_SUSPEND fields */
 enum {	F_TOT_ELAPSED = HEADER_LENGTH,
 	F_TERM_STATUS,
-	F_JOB_REQUID,
 	JOB_TERM_LENGTH
 };
 
@@ -217,8 +213,6 @@ typedef struct job_rec {
 	struct rusage rusage;
 	sacct_t sacct;
 	List    steps;
-	char    *account;
-	uint32_t requid;
 } job_rec_t;
 
 typedef struct step_rec {
@@ -234,10 +228,8 @@ typedef struct step_rec {
 	time_t          end;
 	uint32_t	tot_cpu_sec;
 	uint32_t        tot_cpu_usec;
-	struct rusage   rusage;
-	sacct_t         sacct;
-	char            *account;
-	uint32_t requid;
+	struct rusage rusage;
+	sacct_t sacct;
 } step_rec_t;
 
 typedef struct selected_step_t {
@@ -289,6 +281,7 @@ void process_start(char *f[], int lc, int show_full, int len);
 void process_step(char *f[], int lc, int show_full, int len);
 void process_suspend(char *f[], int lc, int show_full, int len);
 void process_terminated(char *f[], int lc, int show_full, int len);
+void convert_num(float num, char *buf);
 void find_hostname(uint32_t pos, char *hosts, char *host);
 void aggregate_sacct(sacct_t *dest, sacct_t *from);
 void destroy_acct_header(void *object);
@@ -335,7 +328,6 @@ void print_user(type_t type, void *object);
 void print_usercpu(type_t type, void *object);
 void print_vsize(type_t type, void *object);
 void print_cputime(type_t type, void *object);
-void print_account(type_t type, void *object);
 
 /* options.c */
 int decode_status_char(char *status);

@@ -4,7 +4,7 @@
  *  Copyright (C) 2006 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
- *  UCRL-CODE-226842.
+ *  UCRL-CODE-217948.
  *  
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -37,7 +37,6 @@
 
 #include "./msg.h"
 #include "src/slurmctld/slurmctld.h"
-#include "src/slurmctld/locks.h"
 
 /* RET 0 on success, -1 on failure */
 extern int	job_requeue_wiki(char *cmd_ptr, int *err_code, char **err_msg)
@@ -45,10 +44,6 @@ extern int	job_requeue_wiki(char *cmd_ptr, int *err_code, char **err_msg)
 	char *arg_ptr, *tmp_char;
 	uint32_t jobid;
 	static char reply_msg[128];
-	int slurm_rc;
-	/* Write lock on job and node info */
-	slurmctld_lock_t job_write_lock = {
-		NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK };
 
 	arg_ptr = strstr(cmd_ptr, "ARG=");
 	if (arg_ptr == NULL) {
@@ -65,26 +60,12 @@ extern int	job_requeue_wiki(char *cmd_ptr, int *err_code, char **err_msg)
 		return -1;
 	}
 
-	lock_slurmctld(job_write_lock);
-	slurm_rc = job_requeue(0, jobid, -1);
-	if (slurm_rc == SLURM_SUCCESS) {
-		/* We need to clear the required node list here.
-		 * If the job was submitted with srun and a 
-		 * required node list, it gets lost here. */
-		struct job_record *job_ptr;
-		job_ptr = find_job_record(jobid);
-		if (job_ptr && job_ptr->details) {
-			xfree(job_ptr->details->req_nodes);
-			FREE_NULL_BITMAP(job_ptr->details->
-					 req_node_bitmap);
-		}
-	} else {
-		*err_code = -700;
-		*err_msg = slurm_strerror(slurm_rc);
-		error("wiki: Failed to requeue job %u (%m)", jobid);
-		return -1;
-	}
-	unlock_slurmctld(job_write_lock);
+	/* FIXME: To be added in slurm v1.2 */
+	*err_code = -300;
+	*err_msg = "unsupported request type";
+	error("wiki: unrecognized request type: REQUEUEJOB");
+	return -1;
+
 	snprintf(reply_msg, sizeof(reply_msg),
 		"job %u requeued successfully", jobid);
 	*err_msg = reply_msg;

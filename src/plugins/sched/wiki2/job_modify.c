@@ -4,7 +4,7 @@
  *  Copyright (C) 2006-2007 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
- *  UCRL-CODE-226842.
+ *  UCRL-CODE-217948.
  *  
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -82,10 +82,17 @@ static int	_job_modify(uint32_t jobid, char *bank_ptr,
 		last_job_update = time(NULL);
 	}
 	if (bank_ptr) {
-		info("wiki: change job %u bank %s", jobid, bank_ptr);
+#if 1
+		error("wiki: MODIFYJOB does not currently support BANK");
+#else
+		/* for slurm v1.2, wiki currently usses account field 
+		 * as moab "comment" field */
+		info("wiki: change job %u bank %s", 
+			jobid, bank_ptr);
 		xfree(job_ptr->account);
 		job_ptr->account = xstrdup(bank_ptr);
 		last_job_update = time(NULL);
+#endif
 	}
 
 	if (part_name_ptr) {

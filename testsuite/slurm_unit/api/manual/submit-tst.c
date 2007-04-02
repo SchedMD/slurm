@@ -4,7 +4,7 @@
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov> et.al.
- *  UCRL-CODE-226842.
+ *  UCRL-CODE-217948.
  *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -45,9 +45,9 @@ main (int argc, char *argv[])
 	slurm_init_job_desc_msg( &job_mesg );
 	job_mesg. contiguous = 1; 
 	job_mesg. name = ("job01");
-	job_mesg. job_min_procs = 1;
-	job_mesg. job_min_memory = 100;
-	job_mesg. job_min_tmp_disk = 200;
+	job_mesg. min_procs = 1;
+	job_mesg. min_memory = 100;
+	job_mesg. min_tmp_disk = 200;
 	job_mesg. priority = 100;
 	job_mesg. shared = 0;
 	job_mesg. time_limit = 100;
@@ -82,9 +82,9 @@ main (int argc, char *argv[])
 		slurm_init_job_desc_msg( &job_mesg );
 		job_mesg. contiguous = 1; 
 		job_mesg. name = ("job02+");
-		job_mesg. job_min_procs = 1;
-		job_mesg. job_min_memory = 100 + i;
-		job_mesg. job_min_tmp_disk = 200 + i;
+		job_mesg. min_procs = 1;
+		job_mesg. min_memory = 100 + i;
+		job_mesg. min_tmp_disk = 200 + i;
 		job_mesg. priority = 100 + i;
 		job_mesg. script = "/bin/hostname\n";
 		job_mesg. shared = 0;

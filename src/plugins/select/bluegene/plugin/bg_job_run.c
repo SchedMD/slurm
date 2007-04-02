@@ -72,12 +72,8 @@ typedef struct bg_update {
 	enum update_op op;	/* start | terminate | sync */
 	uid_t uid;		/* new user */
 	uint32_t job_id;	/* SLURM job id */	
-	uint16_t reboot;	/* reboot block before starting job */
+	uint16_t node_use;      /* SLURM job node_use */	
 	pm_partition_id_t bg_block_id;
-	char *blrtsimage;       /* BlrtsImage for this block */
-	char *linuximage;       /* LinuxImage for this block */
-	char *mloaderimage;     /* mloaderImage for this block */
-	char *ramdiskimage;     /* RamDiskImage for this block */
 } bg_update_t;
 
 static List bg_update_list = NULL;
@@ -191,10 +187,6 @@ static void _bg_list_del(void *x)
 	bg_update_t *bg_update_ptr = (bg_update_t *) x;
 
 	if (bg_update_ptr) {
-		xfree(bg_update_ptr->blrtsimage);
-		xfree(bg_update_ptr->linuximage);
-		xfree(bg_update_ptr->mloaderimage);
-		xfree(bg_update_ptr->ramdiskimage);
 		xfree(bg_update_ptr->bg_block_id);
 		xfree(bg_update_ptr);
 	}
@@ -258,7 +250,7 @@ static void _start_agent(bg_update_t *bg_update_ptr)
 	bg_record_t *found_record = NULL;
 	ListIterator itr;
 	List delete_list;
-	
+
 	slurm_mutex_lock(&job_start_mutex);
 		
 	bg_record = 
@@ -288,6 +280,8 @@ static void _start_agent(bg_update_t *bg_update_ptr)
 		slurm_mutex_unlock(&block_state_mutex);
 
 	
+	num_block_to_free = 0;
+	num_block_freed = 0;
 	delete_list = list_create(NULL);
 	slurm_mutex_lock(&block_state_mutex);
 	itr = list_iterator_create(bg_list);
@@ -324,97 +318,13 @@ static void _start_agent(bg_update_t *bg_update_ptr)
 		      num_block_freed, 
 		      num_block_to_free);
 	}
-	/* Zero out the values here because we are done with them and
-	   they will be ready for the next job */
-	num_block_to_free = 0;
-	num_block_freed = 0;
 	
-	slurm_mutex_lock(&block_state_mutex);
 	if(bg_record->job_running <= NO_JOB_RUNNING) {
-		slurm_mutex_unlock(&block_state_mutex);
 		slurm_mutex_unlock(&job_start_mutex);
 		debug("job %d already finished before boot",
 		      bg_update_ptr->job_id);
 		return;
 	}
-
-	rc = 0;
-	if(bg_update_ptr->blrtsimage 
-	   && strcasecmp(bg_update_ptr->blrtsimage, bg_record->blrtsimage)) {
-		debug3("changing BlrtsImage from %s to %s",
-		       bg_record->blrtsimage, bg_update_ptr->blrtsimage);
-		xfree(bg_record->blrtsimage);
-		bg_record->blrtsimage = xstrdup(bg_update_ptr->blrtsimage);
-		rc = 1;
-	}
-	if(bg_update_ptr->linuximage
-	   && strcasecmp(bg_update_ptr->linuximage, bg_record->linuximage)) {
-		debug3("changing LinuxImage from %s to %s",
-		       bg_record->linuximage, bg_update_ptr->linuximage);
-		xfree(bg_record->linuximage);
-		bg_record->linuximage = xstrdup(bg_update_ptr->linuximage);
-		rc = 1;
-	}
-	if(bg_update_ptr->mloaderimage
-	   && strcasecmp(bg_update_ptr->mloaderimage,
-			 bg_record->mloaderimage)) {
-		debug3("changing MloaderImage from %s to %s",
-		       bg_record->mloaderimage, bg_update_ptr->mloaderimage);
-		xfree(bg_record->mloaderimage);
-		bg_record->mloaderimage = xstrdup(bg_update_ptr->mloaderimage);
-		rc = 1;
-	}
-	if(bg_update_ptr->ramdiskimage
-	   && strcasecmp(bg_update_ptr->ramdiskimage,
-			 bg_record->ramdiskimage)) {
-		debug3("changing RamDiskImage from %s to %s",
-		       bg_record->ramdiskimage, bg_update_ptr->ramdiskimage);
-		xfree(bg_record->ramdiskimage);
-		bg_record->ramdiskimage = xstrdup(bg_update_ptr->ramdiskimage);
-		rc = 1;
-	}
-	slurm_mutex_unlock(&block_state_mutex);
-
-	if(rc) {
-		slurm_mutex_lock(&block_state_mutex);
-		bg_record->modifying = 1;
-		slurm_mutex_unlock(&block_state_mutex);
-			
-		bg_free_block(bg_record);
-#ifdef HAVE_BG_FILES
-		if ((rc = bridge_modify_block(bg_record->bg_block_id,
-					      RM_MODIFY_BlrtsImg,   
-					      bg_record->blrtsimage))
-		    != STATUS_OK)
-			error("bridge_modify_block(RM_MODIFY_BlrtsImg)",
-			      bg_err_str(rc));
-		
-		if ((rc = bridge_modify_block(bg_record->bg_block_id,
-					      RM_MODIFY_LinuxImg,   
-					      bg_record->linuximage))
-		    != STATUS_OK) 
-			error("bridge_modify_block(RM_MODIFY_LinuxImg)",
-			      bg_err_str(rc));
-		
-		if ((rc = bridge_modify_block(bg_record->bg_block_id,
-					      RM_MODIFY_MloaderImg, 
-					      bg_record->mloaderimage))
-		    != STATUS_OK)
-			error("bridge_modify_block(RM_MODIFY_MloaderImg)", 
-			      bg_err_str(rc));
-		
-		if ((rc = bridge_modify_block(bg_record->bg_block_id,
-					      RM_MODIFY_RamdiskImg, 
-					      bg_record->ramdiskimage))
-		    != STATUS_OK)
-			error("bridge_modify_block(RM_MODIFY_RamdiskImg)", 
-			      bg_err_str(rc));
-#endif
-		slurm_mutex_lock(&block_state_mutex);
-		bg_record->modifying = 0;		
-		slurm_mutex_unlock(&block_state_mutex);		
-	} else if(bg_update_ptr->reboot) 
-		bg_free_block(bg_record);
 	
 	if(bg_record->state == RM_PARTITION_FREE) {
 		if((rc = boot_block(bg_record)) != SLURM_SUCCESS) {
@@ -607,8 +517,8 @@ static void _term_agent(bg_update_t *bg_update_ptr)
 		}
 			
 		slurm_mutex_lock(&block_state_mutex);
-		if(bg_record->job_running > NO_JOB_RUNNING)
-			bg_record->job_running = NO_JOB_RUNNING;
+		
+		bg_record->job_running = NO_JOB_RUNNING;
 		
 		/* remove user from list */
 		
@@ -849,44 +759,7 @@ extern int start_job(struct job_record *job_ptr)
 			     SELECT_DATA_BLOCK_ID, 
 			     &(bg_update_ptr->bg_block_id));
 	select_g_get_jobinfo(job_ptr->select_jobinfo,
-			     SELECT_DATA_BLRTS_IMAGE, 
-			     &(bg_update_ptr->blrtsimage));
-	select_g_get_jobinfo(job_ptr->select_jobinfo,
-			     SELECT_DATA_REBOOT, 
-			     &(bg_update_ptr->reboot));
-	if(!bg_update_ptr->blrtsimage) {
-		bg_update_ptr->blrtsimage = xstrdup(default_blrtsimage);
-		select_g_set_jobinfo(job_ptr->select_jobinfo,
-				     SELECT_DATA_BLRTS_IMAGE, 
-				     bg_update_ptr->blrtsimage);
-	}
-	select_g_get_jobinfo(job_ptr->select_jobinfo,
-			     SELECT_DATA_LINUX_IMAGE, 
-			     &(bg_update_ptr->linuximage));
-	if(!bg_update_ptr->linuximage) {
-		bg_update_ptr->linuximage = xstrdup(default_linuximage);
-		select_g_set_jobinfo(job_ptr->select_jobinfo,
-				     SELECT_DATA_LINUX_IMAGE, 
-				     bg_update_ptr->linuximage);
-	}
-	select_g_get_jobinfo(job_ptr->select_jobinfo,
-			     SELECT_DATA_MLOADER_IMAGE, 
-			     &(bg_update_ptr->mloaderimage));
-	if(!bg_update_ptr->mloaderimage) {
-		bg_update_ptr->mloaderimage = xstrdup(default_mloaderimage);
-		select_g_set_jobinfo(job_ptr->select_jobinfo,
-				     SELECT_DATA_MLOADER_IMAGE, 
-				     bg_update_ptr->mloaderimage);
-	}
-	select_g_get_jobinfo(job_ptr->select_jobinfo,
-			     SELECT_DATA_RAMDISK_IMAGE, 
-			     &(bg_update_ptr->ramdiskimage));
-	if(!bg_update_ptr->ramdiskimage) {
-		bg_update_ptr->ramdiskimage = xstrdup(default_ramdiskimage);
-		select_g_set_jobinfo(job_ptr->select_jobinfo,
-				     SELECT_DATA_RAMDISK_IMAGE, 
-				     bg_update_ptr->ramdiskimage);
-	}
+			     SELECT_DATA_NODE_USE, &(bg_update_ptr->node_use));
 	bg_record = 
 		find_bg_record_in_list(bg_list, bg_update_ptr->bg_block_id);
 	if (bg_record) {
@@ -978,19 +851,7 @@ extern int sync_jobs(List job_list)
 			select_g_get_jobinfo(job_ptr->select_jobinfo,
 					     SELECT_DATA_BLOCK_ID, 
 					     &(bg_update_ptr->bg_block_id));
-			select_g_get_jobinfo(job_ptr->select_jobinfo,
-					     SELECT_DATA_BLRTS_IMAGE, 
-					     &(bg_update_ptr->blrtsimage));
-			select_g_get_jobinfo(job_ptr->select_jobinfo,
-					     SELECT_DATA_LINUX_IMAGE, 
-					     &(bg_update_ptr->linuximage));
-			select_g_get_jobinfo(job_ptr->select_jobinfo,
-					     SELECT_DATA_MLOADER_IMAGE, 
-					     &(bg_update_ptr->mloaderimage));
-			select_g_get_jobinfo(job_ptr->select_jobinfo,
-					     SELECT_DATA_RAMDISK_IMAGE, 
-					     &(bg_update_ptr->ramdiskimage));
-	
+
 			if (bg_update_ptr->bg_block_id == NULL) {
 				error("Running job %u has bgblock==NULL", 
 				      job_ptr->job_id);

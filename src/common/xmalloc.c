@@ -8,7 +8,7 @@
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Jim Garlick <garlick1@llnl.gov> and 
  *	Mark Grondona <mgrondona@llnl.gov>
- *  UCRL-CODE-226842.
+ *  UCRL-CODE-217948.
  *  
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -264,7 +264,6 @@ void slurm_xfree(void **item, const char *file, int line, const char *func)
 		int *p = (int *)*item - 2;
 		/* magic cookie still there? */
 		xmalloc_assert(p[0] == XMALLOC_MAGIC);	
-		p[0] = 0;	/* make sure xfree isn't called twice */
 		MALLOC_LOCK();
 		free(p);
 		MALLOC_UNLOCK();

@@ -5,7 +5,7 @@
  *  Copyright (C) 2003-2006 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Kevin Tew <tew1@llnl.gov>, et. al.
- *  UCRL-CODE-226842.
+ *  UCRL-CODE-217948.
  *  
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -324,7 +324,7 @@ int switch_p_alloc_jobinfo(switch_jobinfo_t *jp)
 }
 
 int switch_p_build_jobinfo ( switch_jobinfo_t switch_job, char *nodelist,
-		uint16_t *tasks_per_node, int cyclic_alloc, char *network)
+		uint32_t *tasks_per_node, int cyclic_alloc, char *network)
 {
 	int node_set_size = QSW_MAX_TASKS; /* overkill but safe */
 	hostlist_t host_list;

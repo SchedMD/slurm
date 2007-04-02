@@ -4,7 +4,7 @@
  *  Copyright (C) 2005 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Mark Grondona <mgrondona@llnl.gov>
- *  UCRL-CODE-226842.
+ *  UCRL-CODE-217948.
  *  
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -76,8 +76,6 @@ typedef jid_t (*waitjid_f)   (jid_t jid, int *status, int options);
 typedef int   (*killjid_f)   (jid_t jid, int sig);
 typedef jid_t (*detachpid_f) (pid_t pid);
 typedef jid_t (*attachpid_f) (pid_t pid, jid_t jid_requested);
-typedef int   (*getpidlist_f)(jid_t jid, pid_t *pid, int bufsize);
-typedef int   (*getpidcnt_f) (jid_t jid);
 
 /*
  *  Handle to libjob.so 
@@ -88,14 +86,12 @@ static void *libjob_handle = NULL;
  *  libjob operations we'll need in this plugin
  */
 static struct job_operations {
-	create_f     create;
-	getjid_f     getjid;
-	waitjid_f    waitjid;
-	killjid_f    killjid;
-	detachpid_f  detachpid;
-	attachpid_f  attachpid;
-	getpidlist_f getpidlist;
-	getpidcnt_f  getpidcnt;
+	create_f    create;
+	getjid_f    getjid;
+	waitjid_f   waitjid;
+	killjid_f   killjid;
+	detachpid_f detachpid;
+	attachpid_f attachpid;
 } job_ops;
 
 
@@ -121,8 +117,6 @@ int init (void)
 	job_ops.killjid   = dlsym (libjob_handle, "job_killjid");
 	job_ops.detachpid = dlsym (libjob_handle, "job_detachpid");
 	job_ops.attachpid = dlsym (libjob_handle, "job_attachpid");
-	job_ops.getpidlist= dlsym (libjob_handle, "job_getpidlist");
-	job_ops.getpidcnt = dlsym (libjob_handle, "job_getpidcnt");
 
 	if (!job_ops.create)
 		error ("Unable to resolve job_create in libjob.so");
@@ -136,10 +130,6 @@ int init (void)
 		error ("Unable to resolve job_detachpid in libjob.so");
 	if (!job_ops.attachpid)
 		error ("Unable to resolve job_attachpid in libjob.so");
-	if (!job_ops.getpidlist)
-		error ("Unable to resolve job_getpidlist in libjob.so");
-	if (!job_ops.getpidcnt)
-		error ("Unable to resolve job_getpidcnt in libjob.so");
 
 	info ("successfully loaded libjob.so");
 	return SLURM_SUCCESS;
@@ -181,15 +171,6 @@ int _job_attachpid (pid_t pid, jid_t jid)
 	return ((*job_ops.attachpid) (pid, jid));
 }
 
-int _job_getpidlist (jid_t jid, pid_t *pid, int bufsize)
-{
-	return ((*job_ops.getpidlist) (jid, pid, bufsize));
-}
-
-int _job_getpidcnt (jid_t jid)
-{
-	return ((*job_ops.getpidcnt) (jid));
-}
 
 int slurm_container_create (slurmd_job_t *job)
 {
@@ -247,59 +228,8 @@ uint32_t slurm_container_find (pid_t pid)
 	jid_t jid;
 
 	if ((jid = _job_getjid (pid)) == (jid_t) -1)
-		return ((uint32_t) 0);
+		return ((uint32_t) 0); /* XXX: What to return on error? */
 	
 	return ((uint32_t) jid);
 }
 
-bool slurm_container_has_pid (uint32_t cont_id, pid_t pid)
-{
-	jid_t jid;
-
-	if ((jid = _job_getjid (pid)) == (jid_t) -1)
-		return false;
-	if ((uint32_t)jid != cont_id)
-		return false;
-
-	return true;
-}
-
-int slurm_container_wait (uint32_t id)
-{
-	if (_job_waitjid ((jid_t) id, NULL, 0) == (jid_t)-1)
-		return SLURM_ERROR;
-
-	return SLURM_SUCCESS;
-}
-
-int slurm_container_get_pids(uint32_t cont_id, pid_t **pids, int *npids)
-{
-	int pidcnt, bufsize;
-	pid_t *p;
-
-	pidcnt = _job_getpidcnt((jid_t)cont_id);
-	if (pidcnt > 0) {
-		/* 
-		 * FIXME - The "+ 128" is a rough attempt to allow for
-		 * the fact that _job_getpidcnt() followed by _job_get_pidlist
-		 * is not atomic.
-		 */
-		bufsize = sizeof(pid_t) * (pidcnt + 128);
-		p = (pid_t *)xmalloc(bufsize);
-		pidcnt = _job_getpidlist((jid_t)cont_id, p, bufsize);
-		if (pidcnt == -1) {
-			error("job_getpidlist() failed: %m");
-			*pids = NULL;
-			*npids = 0;
-			xfree(p);
-			return SLURM_ERROR;
-		}
-		*pids = p;
-		*npids = pidcnt;
-	} else {
-		*pids = NULL;
-		*npids = 0;
-	}
-
-	return SLURM_SUCCESS;
-}

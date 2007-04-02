@@ -4,7 +4,7 @@
  *  Copyright (C) 2005-2006 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>.
- *  UCRL-CODE-226842.
+ *  UCRL-CODE-217948.
  *  
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -58,11 +58,6 @@
 #define PMI_MAX_KVSNAME_LEN 256	/* Maximum size of KVS name */
 #define PMI_MAX_VAL_LEN     256	/* Maximum size of a PMI value */
 
-struct kvs_hosts {
-	uint16_t	task_id;	/* job step's task id */
-	uint16_t	port;		/* communication port */
-	char *		hostname;	/* communication host */
-};
 struct kvs_comm {
 	char *		kvs_name;
 	uint16_t	kvs_cnt;	/* count of key-pairs */
@@ -70,10 +65,8 @@ struct kvs_comm {
 	char **		kvs_values;
 };
 struct kvs_comm_set {
-
-	uint16_t	host_cnt;	/* hosts getting this message */
-	struct kvs_hosts *kvs_host_ptr;	/* host forwarding info */
- 	uint16_t	kvs_comm_recs;	/* count of kvs_comm entries */
+	uint16_t	task_id;	/* job step's task id */
+	uint16_t	kvs_comm_recs;	/* count of kvs_comm entries */
 	struct kvs_comm **kvs_comm_ptr;	/* pointers to kvs_comm entries */
 };
 

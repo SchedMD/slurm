@@ -6,7 +6,7 @@
  *  Copyright (C) 2002-2006 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Joey Ekstrom <ekstrom1@llnl.gov>, Morris Jette <jette1@llnl.gov>
- *  UCRL-CODE-226842.
+ *  UCRL-CODE-217948.
  *  
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -17,7 +17,7 @@
  *  any later version.
  *
  *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under
+ *  to link the code of portions of this program with the OpenSSL library under 
  *  certain conditions as described in each individual source file, and 
  *  distribute linked combinations including the two. You must obey the GNU 
  *  General Public License in all respects for all of the code used other than 
@@ -48,7 +48,7 @@
 #include "src/sinfo/sinfo.h"
 #include "src/sinfo/print.h"
 
-#ifdef HAVE_BG			     
+#ifdef HAVE_BG_FILES
 # include "src/plugins/select/bluegene/wrap_rm_api.h"
 #endif
 
@@ -60,11 +60,10 @@ struct sinfo_parameters params;
 /************
  * Funtions *
  ************/
-static int  _bg_report(node_select_info_msg_t *node_select_ptr);
+static int  _bg_report(void);
 static int  _build_sinfo_data(List sinfo_list, 
-			      partition_info_msg_t *partition_msg,
-			      node_info_msg_t *node_msg,
-			      node_select_info_msg_t *node_select_msg);
+		partition_info_msg_t *partition_msg,
+		node_info_msg_t *node_msg);
 static void _create_sinfo(List sinfo_list, partition_info_t* part_ptr, 
 			  uint16_t part_inx, node_info_t *node_ptr);
 static bool _filter_out(node_info_t *node_ptr);
@@ -75,29 +74,16 @@ static bool _match_node_data(sinfo_data_t *sinfo_ptr,
 static bool _match_part_data(sinfo_data_t *sinfo_ptr, 
                              partition_info_t* part_ptr);
 static int  _query_server(partition_info_msg_t ** part_pptr,
-			  node_info_msg_t ** node_pptr,
-			  node_select_info_msg_t ** node_select_pptr);
+		node_info_msg_t ** node_pptr);
 static void _sort_hostlist(List sinfo_list);
 static int  _strcmp(char *data1, char *data2);
 static void _update_sinfo(sinfo_data_t *sinfo_ptr, node_info_t *node_ptr);
-
-#ifdef HAVE_BG
-static void _update_nodes_for_bg(int node_scaling,
-				 node_info_msg_t *node_msg,
-				 bg_info_record_t *bg_info_record);
-enum {
-	SINFO_BG_IDLE_STATE,
-	SINFO_BG_ERROR_STATE,
-	SINFO_BG_ALLOC_STATE
-};
-#endif
 
 int main(int argc, char *argv[])
 {
 	log_options_t opts = LOG_OPTS_STDERR_ONLY;
 	partition_info_msg_t *partition_msg = NULL;
 	node_info_msg_t *node_msg = NULL;
-	node_select_info_msg_t *node_select_msg = NULL;
 	List sinfo_list = NULL;
 	int rc = 0;
 
@@ -109,15 +95,13 @@ int main(int argc, char *argv[])
 		&&  (params.iterate || params.verbose || params.long_output))
 			print_date();
 
-		if (_query_server(&partition_msg, &node_msg, &node_select_msg)
-		    != 0)
+		if (params.bg_flag)
+			(void) _bg_report();
+		else if (_query_server(&partition_msg, &node_msg) != 0)
 			rc = 1;
-		else if (params.bg_flag)
-			(void) _bg_report(node_select_msg);
 		else {
 			sinfo_list = list_create(_sinfo_list_delete);
-			_build_sinfo_data(sinfo_list, partition_msg,
-					  node_msg, node_select_msg);
+			_build_sinfo_data(sinfo_list, partition_msg, node_msg);
 	 		sort_sinfo_list(sinfo_list);
 			print_sinfo_list(sinfo_list);
 		}
@@ -142,8 +126,6 @@ static char *_conn_type_str(int conn_type)
 			return "MESH";
 		case (SELECT_TORUS):
 			return "TORUS";
-		case (SELECT_SMALL):
-			return "SMALL";
 	}
 	return "?";
 }
@@ -163,7 +145,7 @@ static char *_part_state_str(int state)
 {
 	static char tmp[16];
 
-#ifdef HAVE_BG
+#ifdef HAVE_BG_FILES
 	switch (state) {
 		case RM_PARTITION_BUSY:
 			return "BUSY";
@@ -187,13 +169,27 @@ static char *_part_state_str(int state)
 /*
  * _bg_report - download and print current bgblock state information
  */
-static int _bg_report(node_select_info_msg_t *node_select_ptr)
+static int _bg_report(void)
 {
-	int i;
+	static node_select_info_msg_t *old_bg_ptr = NULL, *new_bg_ptr;
+	int error_code, i;
 
-	if (!node_select_ptr) {
-		slurm_perror("No node_select_ptr given");
-		return SLURM_ERROR;
+	if (old_bg_ptr) {
+		error_code = slurm_load_node_select(old_bg_ptr->last_update, 
+				&new_bg_ptr);
+		if (error_code == SLURM_SUCCESS)
+			select_g_free_node_info(&new_bg_ptr);
+		else if (slurm_get_errno() == SLURM_NO_CHANGE_IN_DATA) {
+			error_code = SLURM_SUCCESS;
+			new_bg_ptr = old_bg_ptr;
+		}
+	} else {
+		error_code = slurm_load_node_select((time_t) NULL, 
+				&new_bg_ptr);
+	}
+	if (error_code) {
+		slurm_perror("slurm_load_node_select");
+		return error_code;
 	}
 
 	if (!params.no_header)
@@ -201,17 +197,14 @@ static int _bg_report(node_select_info_msg_t *node_select_ptr)
 /*                      1234567890123456 123456789012 12345678 12345678 1234567890 12345+ */
 /*                      RMP_22Apr1544018 bg[123x456]  name     READY    TORUS      COPROCESSOR */
 
-	for (i=0; i<node_select_ptr->record_count; i++) {
+	for (i=0; i<new_bg_ptr->record_count; i++) {
 		printf("%-16.16s %-12.12s %-8.8s %-8.8s %-10.10s %s\n",
-		       node_select_ptr->bg_info_array[i].bg_block_id,
-		       node_select_ptr->bg_info_array[i].nodes,
-		       node_select_ptr->bg_info_array[i].owner_name,
-		       _part_state_str(
-			       node_select_ptr->bg_info_array[i].state),
-		       _conn_type_str(
-			       node_select_ptr->bg_info_array[i].conn_type),
-		       _node_use_str(
-			       node_select_ptr->bg_info_array[i].node_use));
+			new_bg_ptr->bg_info_array[i].bg_block_id,
+			new_bg_ptr->bg_info_array[i].nodes,
+			new_bg_ptr->bg_info_array[i].owner_name,
+			_part_state_str(new_bg_ptr->bg_info_array[i].state),
+			_conn_type_str(new_bg_ptr->bg_info_array[i].conn_type),
+			_node_use_str(new_bg_ptr->bg_info_array[i].node_use));
 	}
 
 	return SLURM_SUCCESS;
@@ -225,14 +218,10 @@ static int _bg_report(node_select_info_msg_t *node_select_ptr)
  */
 static int
 _query_server(partition_info_msg_t ** part_pptr,
-	      node_info_msg_t ** node_pptr,
-	      node_select_info_msg_t ** node_select_pptr)
+	      node_info_msg_t ** node_pptr)
 {
 	static partition_info_msg_t *old_part_ptr = NULL, *new_part_ptr;
 	static node_info_msg_t *old_node_ptr = NULL, *new_node_ptr;
-#ifdef HAVE_BG
-	static node_select_info_msg_t *old_bg_ptr = NULL, *new_bg_ptr;
-#endif
 	int error_code;
 	uint16_t show_flags = 0;
 
@@ -281,27 +270,6 @@ _query_server(partition_info_msg_t ** part_pptr,
 	old_node_ptr = new_node_ptr;
 	*node_pptr = new_node_ptr;
 
-#ifdef HAVE_BG
-	if (old_bg_ptr) {
-		error_code = slurm_load_node_select(old_bg_ptr->last_update, 
-						    &new_bg_ptr);
-		if (error_code == SLURM_SUCCESS)
-			select_g_free_node_info(&old_bg_ptr);
-		else if (slurm_get_errno() == SLURM_NO_CHANGE_IN_DATA) {
-			error_code = SLURM_SUCCESS;
-			new_bg_ptr = old_bg_ptr;
-		}
-	} else {
-		error_code = slurm_load_node_select((time_t) NULL, 
-						    &new_bg_ptr);
-	}
-	if (error_code) {
-		slurm_perror("slurm_load_node_select");
-		return error_code;
-	}
-	old_bg_ptr = new_bg_ptr;
-	*node_select_pptr = new_bg_ptr;
-#endif
 	return SLURM_SUCCESS;
 }
 
@@ -311,54 +279,20 @@ _query_server(partition_info_msg_t ** part_pptr,
  * sinfo_list IN/OUT - list of unique sinfo_data records to report
  * partition_msg IN - partition info message
  * node_msg IN - node info message
- * node_select_msg IN - node select info message (used for bluegene systems)
  * RET zero or error code 
  */
 static int _build_sinfo_data(List sinfo_list, 
 			     partition_info_msg_t *partition_msg, 
-			     node_info_msg_t *node_msg,
-			     node_select_info_msg_t *node_select_msg)
+			     node_info_msg_t *node_msg)
 {
 	node_info_t *node_ptr;
 	partition_info_t* part_ptr;
-	ListIterator itr;
+	ListIterator i;
 	int j;
 	hostlist_t hl;
 	sinfo_data_t *sinfo_ptr;
 	char *node_name = NULL;
-#ifdef HAVE_BG
-	int i=0;
-	bg_info_record_t *bg_info_record = NULL;
-	int node_scaling = partition_msg->partition_array[0].node_scaling;
-	char *slurm_user = xstrdup(slurmctld_conf.slurm_user_name);
 
-	for (i=0; i<node_msg->record_count; i++) {
-		node_ptr = &(node_msg->node_array[i]);
-		/* in each node_ptr we overload the threads var
-		 * with the number of cnodes in the used_cpus var
-		 * will be used to tell how many cnodes are
-		 * allocated and the cores will represent the cnodes
-		 * in an error state. So we can get an idle count by
-		 * subtracting those 2 numbers from the total possible
-		 * cnodes (which are the idle cnodes).
-		 */
-		node_ptr->threads = node_scaling;
-		node_ptr->cores = 0;
-		node_ptr->used_cpus = 0;
-	}
-
-	for (i=0; i<node_select_msg->record_count; i++) {
-		bg_info_record = &(node_select_msg->bg_info_array[i]);
-		
-		/* this block is idle we won't mark it */
-		if (bg_info_record->state != RM_PARTITION_ERROR
-		    && !strcmp(slurm_user, bg_info_record->owner_name))
-			continue;
-		_update_nodes_for_bg(node_scaling, node_msg, bg_info_record);
-	}
-	xfree(slurm_user);
-
-#endif
 	/* by default every partition is shown, even if no nodes */
 	if ((!params.node_flag) && params.match_flags.partition_flag) {
 		part_ptr = partition_msg->partition_array;
@@ -377,7 +311,6 @@ static int _build_sinfo_data(List sinfo_list,
 		if (params.filtering && params.partition
 		&&  _strcmp(part_ptr->name, params.partition))
 			continue;
-
 		hl = hostlist_create(part_ptr->nodes);
 		while (1) {
 			if (node_name)
@@ -390,55 +323,11 @@ static int _build_sinfo_data(List sinfo_list,
 				continue;
 			if (params.filtering && _filter_out(node_ptr))
 				continue;
-#ifdef HAVE_BG
-			for(i=0; i<3; i++) {
-				int norm = 0;
-				switch(i) {
-				case SINFO_BG_IDLE_STATE:
-					/* get the idle node count if
-					 * we don't have any error or
-					 * allocated nodes then we set
-					 * the norm flag and add it
-					 * as it's current state 
-					 */
-					node_ptr->threads -=
-						(node_ptr->cores
-						 + node_ptr->used_cpus);
-					if(node_ptr->threads == node_scaling)
-						norm = 1;
-					else
-						node_ptr->node_state =
-							NODE_STATE_IDLE;
-					
-					break;
-				case SINFO_BG_ERROR_STATE:
-					/* get the error node count */
-					if(!node_ptr->cores) 
-						continue;
-					node_ptr->node_state |= 
-						NODE_STATE_DRAIN;
-					node_ptr->threads = node_ptr->cores;
-					break;
-				case SINFO_BG_ALLOC_STATE:
-					/* get the allocated node count */
-					if(!node_ptr->used_cpus) 
-						continue;
-					node_ptr->node_state =
-						NODE_STATE_ALLOCATED;
-					
-					node_ptr->threads =
-						node_ptr->used_cpus;
-					break;
-				default:
-					error("unknown state");
-					break;
-				}
-#endif
-			itr = list_iterator_create(sinfo_list);
-			while ((sinfo_ptr = list_next(itr))) {
+			i = list_iterator_create(sinfo_list);
+			while ((sinfo_ptr = list_next(i))) {
 				if (!_match_part_data(sinfo_ptr, part_ptr))
 					continue;
-				if (sinfo_ptr->nodes_total
+				if (sinfo_ptr->nodes_tot
 				&& (!_match_node_data(sinfo_ptr, node_ptr)))
 					continue;
 				_update_sinfo(sinfo_ptr, node_ptr);
@@ -449,19 +338,11 @@ static int _build_sinfo_data(List sinfo_list,
 				_create_sinfo(sinfo_list, part_ptr, 
 					      (uint16_t) j, node_ptr);
 			}
-			list_iterator_destroy(itr);
-#ifdef HAVE_BG
-			/* if we used the current state of
-			 * the node then we just continue.
-			 */
-			if(norm) 
-				break;
-			}
-#endif
+			list_iterator_destroy(i);
 		}
 		hostlist_destroy(hl);
 	}
-
+		
 	_sort_hostlist(sinfo_list);
 	return SLURM_SUCCESS;
 }
@@ -560,23 +441,8 @@ static bool _match_node_data(sinfo_data_t *sinfo_ptr,
 	 * otherwise check cpus, disk, memory and weigth individually */
 	if (!params.exact_match)
 		return true;
-
 	if (params.match_flags.cpus_flag &&
 	    (node_ptr->cpus        != sinfo_ptr->min_cpus))
-		return false;
-	if (params.match_flags.sockets_flag &&
-	    (node_ptr->sockets     != sinfo_ptr->min_sockets))
-		return false;
-	if (params.match_flags.cores_flag &&
-	    (node_ptr->cores       != sinfo_ptr->min_cores))
-		return false;
-	if (params.match_flags.threads_flag &&
-	    (node_ptr->threads     != sinfo_ptr->min_threads))
-		return false;
-	if (params.match_flags.sct_flag &&
-	    ((node_ptr->sockets     != sinfo_ptr->min_sockets) ||
-	     (node_ptr->cores       != sinfo_ptr->min_cores) ||
-	     (node_ptr->threads     != sinfo_ptr->min_threads)))
 		return false;
 	if (params.match_flags.disk_flag &&
 	    (node_ptr->tmp_disk    != sinfo_ptr->min_disk))
@@ -638,32 +504,17 @@ static bool _match_part_data(sinfo_data_t *sinfo_ptr,
 static void _update_sinfo(sinfo_data_t *sinfo_ptr, node_info_t *node_ptr)
 {
 	uint16_t base_state;
-	int node_scaling;
+	int node_scaling = 1;
 
-#ifdef HAVE_BG
-	node_scaling = node_ptr->threads;
-	if(!node_scaling)
-		return;
-#else
 	if(sinfo_ptr->part_info->node_scaling)
 		node_scaling = sinfo_ptr->part_info->node_scaling;
-	else
-		node_scaling = 1;
-#endif
-	base_state = node_ptr->node_state & NODE_STATE_BASE;
-
-	if (sinfo_ptr->nodes_total == 0) {	/* first node added */
+	
+	if (sinfo_ptr->nodes_tot == 0) {	/* first node added */
 		sinfo_ptr->node_state = node_ptr->node_state;
 		sinfo_ptr->features   = node_ptr->features;
 		sinfo_ptr->reason     = node_ptr->reason;
 		sinfo_ptr->min_cpus   = node_ptr->cpus;
 		sinfo_ptr->max_cpus   = node_ptr->cpus;
-		sinfo_ptr->min_sockets = node_ptr->sockets;
-		sinfo_ptr->max_sockets = node_ptr->sockets;
-		sinfo_ptr->min_cores   = node_ptr->cores;
-		sinfo_ptr->max_cores   = node_ptr->cores;
-		sinfo_ptr->min_threads = node_ptr->threads;
-		sinfo_ptr->max_threads = node_ptr->threads;
 		sinfo_ptr->min_disk   = node_ptr->tmp_disk;
 		sinfo_ptr->max_disk   = node_ptr->tmp_disk;
 		sinfo_ptr->min_mem    = node_ptr->real_memory;
@@ -679,21 +530,6 @@ static void _update_sinfo(sinfo_data_t *sinfo_ptr, node_info_t *node_ptr)
 			sinfo_ptr->min_cpus = node_ptr->cpus;
 		if (sinfo_ptr->max_cpus < node_ptr->cpus)
 			sinfo_ptr->max_cpus = node_ptr->cpus;
-
-		if (sinfo_ptr->min_sockets > node_ptr->sockets)
-			sinfo_ptr->min_sockets = node_ptr->sockets;
-		if (sinfo_ptr->max_sockets < node_ptr->sockets)
-			sinfo_ptr->max_sockets = node_ptr->sockets;
-
-		if (sinfo_ptr->min_cores > node_ptr->cores)
-			sinfo_ptr->min_cores = node_ptr->cores;
-		if (sinfo_ptr->max_cores < node_ptr->cores)
-			sinfo_ptr->max_cores = node_ptr->cores;
-
-		if (sinfo_ptr->min_threads > node_ptr->threads)
-			sinfo_ptr->min_threads = node_ptr->threads;
-		if (sinfo_ptr->max_threads < node_ptr->threads)
-			sinfo_ptr->max_threads = node_ptr->threads;
 
 		if (sinfo_ptr->min_disk > node_ptr->tmp_disk)
 			sinfo_ptr->min_disk = node_ptr->tmp_disk;
@@ -711,6 +547,7 @@ static void _update_sinfo(sinfo_data_t *sinfo_ptr, node_info_t *node_ptr)
 			sinfo_ptr->max_weight = node_ptr->weight;
 	}
 
+	base_state = node_ptr->node_state & NODE_STATE_BASE;
 	if (node_ptr->node_state & NODE_STATE_DRAIN)
 		sinfo_ptr->nodes_other += node_scaling;
 	else if ((base_state == NODE_STATE_ALLOCATED)
@@ -720,61 +557,9 @@ static void _update_sinfo(sinfo_data_t *sinfo_ptr, node_info_t *node_ptr)
 		sinfo_ptr->nodes_idle += node_scaling;
 	else 
 		sinfo_ptr->nodes_other += node_scaling;
-	sinfo_ptr->nodes_total += node_scaling;
-
-	sinfo_ptr->cpus_alloc += node_ptr->used_cpus;
-	sinfo_ptr->cpus_total += node_ptr->cpus;
-	if ((sinfo_ptr->node_state & NODE_STATE_DRAIN) ||
-	    (base_state == NODE_STATE_DOWN)) {
-		sinfo_ptr->cpus_other += node_ptr->cpus -
-					 node_ptr->used_cpus;
-	} else {
-		sinfo_ptr->cpus_idle += node_ptr->cpus -
-					node_ptr->used_cpus;
-	}
-
+	sinfo_ptr->nodes_tot += node_scaling;
 	hostlist_push(sinfo_ptr->nodes, node_ptr->name);
 }
-
-#ifdef HAVE_BG
-
-static void _update_nodes_for_bg(int node_scaling,
-				 node_info_msg_t *node_msg,
-				 bg_info_record_t *bg_info_record)
-{
-	node_info_t *node_ptr = NULL;
-	hostlist_t hl;
-	char *node_name = NULL;
-
-	/* we are using less than one node */
-	if(bg_info_record->conn_type == SELECT_SMALL) 
-		node_scaling = bg_info_record->node_cnt;
-       		   
-	hl = hostlist_create(bg_info_record->nodes);
-	while (1) {
-		if (node_name)
-			free(node_name);
-		node_name = hostlist_shift(hl);
-		if (!node_name)
-			break;
-		node_ptr = _find_node(node_name, node_msg);
-		if (!node_ptr)
-			continue;
-		/* cores is overloaded to be the cnodes in an error
-		 * state and used_cpus is overloaded to be the nodes in
-		 * use.  No block should be sent in here if it isn't
-		 * in use (that doesn't mean in a free state, it means
-		 * the user isn't slurm or the block is in an error state.  
-		 */
-		if(bg_info_record->state == RM_PARTITION_ERROR) 
-			node_ptr->cores += node_scaling;
-		else
-			node_ptr->used_cpus += node_scaling;
-	}
-	hostlist_destroy(hl);
-	
-}
-#endif
 
 /* 
  * _create_sinfo - create an sinfo record for the given node and partition
@@ -792,53 +577,23 @@ static void _create_sinfo(List sinfo_list, partition_info_t* part_ptr,
 	sinfo_ptr = xmalloc(sizeof(sinfo_data_t));
 
 	sinfo_ptr->part_info = part_ptr;
-
+	if(sinfo_ptr->part_info->node_scaling) {
+		node_scaling = sinfo_ptr->part_info->node_scaling;
+	}
 	if (node_ptr) {
 		uint16_t base_state = node_ptr->node_state & 
 			NODE_STATE_BASE;
-#ifdef HAVE_BG
-		node_scaling = node_ptr->threads;
-		if(!node_scaling)
-			return;
-#else
-		if(sinfo_ptr->part_info->node_scaling)
-			node_scaling = sinfo_ptr->part_info->node_scaling;
-		else
-			node_scaling = 1;
-#endif
 		sinfo_ptr->node_state = node_ptr->node_state;
 		if ((base_state == NODE_STATE_ALLOCATED)
 		||  (node_ptr->node_state & NODE_STATE_COMPLETING))
-			sinfo_ptr->nodes_alloc = node_scaling;
+			sinfo_ptr->nodes_alloc += node_scaling;
 		else if (base_state == NODE_STATE_IDLE)
-			sinfo_ptr->nodes_idle = node_scaling;
+			sinfo_ptr->nodes_idle += node_scaling;
 		else 
-			sinfo_ptr->nodes_other = node_scaling;
-		sinfo_ptr->nodes_total = node_scaling;
+			sinfo_ptr->nodes_other += node_scaling;
+		sinfo_ptr->nodes_tot += node_scaling;
 		sinfo_ptr->min_cpus = node_ptr->cpus;
 		sinfo_ptr->max_cpus = node_ptr->cpus;
-
-		sinfo_ptr->cpus_alloc = node_ptr->used_cpus;
-		sinfo_ptr->cpus_total = node_ptr->cpus;
-		if ((sinfo_ptr->node_state & NODE_STATE_DRAIN) ||
-		    (base_state == NODE_STATE_DOWN)) {
-			sinfo_ptr->cpus_idle  = 0;
-			sinfo_ptr->cpus_other = node_ptr->cpus -
-						node_ptr->used_cpus;
-		} else {
-			sinfo_ptr->cpus_idle  = node_ptr->cpus -
-						node_ptr->used_cpus;
-			sinfo_ptr->cpus_other = 0;
-		}
-
-		sinfo_ptr->min_sockets = node_ptr->sockets;
-		sinfo_ptr->max_sockets = node_ptr->sockets;
-
-		sinfo_ptr->min_cores = node_ptr->cores;
-		sinfo_ptr->max_cores = node_ptr->cores;
-
-		sinfo_ptr->min_threads = node_ptr->threads;
-		sinfo_ptr->max_threads = node_ptr->threads;
 
 		sinfo_ptr->min_disk = node_ptr->tmp_disk;
 		sinfo_ptr->max_disk = node_ptr->tmp_disk;

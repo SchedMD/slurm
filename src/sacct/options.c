@@ -6,7 +6,7 @@
  *  Copyright (C) 2006 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Danny Auble <da@llnl.gov>.
- *  UCRL-CODE-226842.
+ *  UCRL-CODE-217948.
  *  
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -514,7 +514,7 @@ int get_data(void)
 		/* Build suitable tables with all the data */
 		switch(rec_type) {
 		case JOB_START:
-			if(i < F_JOB_ACCOUNT) {
+			if(i < JOB_START_LENGTH) {
 				printf("Bad data on a Job Start\n");
 				_show_rec(f);
 			} else 
@@ -1089,15 +1089,14 @@ void do_dump(void)
 					job->header.jobnum);
 			}
 			_dump_header(job->header);
-			printf("JOB_START 1 16 %d %d %s %d %d %d %s %s\n", 
+			printf("JOB_START 1 16 %d %d %s %d %d %d %s\n", 
 			       job->header.uid,
 			       job->header.gid,
 			       job->jobname,
 			       job->track_steps,
 			       job->priority,
 			       job->ncpus,
-			       job->nodes,
-			       job->account);
+			       job->nodes);
 		}
 		/* JOB_STEP */
 		itr_step = list_iterator_create(job->steps);
@@ -1149,7 +1148,7 @@ void do_dump(void)
 			       step->sacct.max_rss/1024);
 			/* Data added in Slurm v1.1 */
 			printf("%u %u %.2f %u %u %.2f %d %u %u %.2f "
-			       "%.2f %u %u %.2f %s %s %s\n",
+			       "%.2f %u %u %.2f %s %s\n",
 			       step->sacct.max_vsize_id.nodeid,
 			       step->sacct.max_vsize_id.taskid,
 			       step->sacct.ave_vsize/1024,
@@ -1165,8 +1164,7 @@ void do_dump(void)
 			       step->sacct.min_cpu_id.taskid,
 			       step->sacct.ave_cpu,
 			       step->stepname,
-			       step->nodes,
-			       job->account);
+			       step->nodes);
 		}
 		list_iterator_destroy(itr_step);
 		/* JOB_TERMINATED */
@@ -1211,7 +1209,7 @@ void do_dump(void)
 			       job->sacct.max_rss/1024);
 			/* Data added in Slurm v1.1 */
 			printf("%u %u %.2f %u %u %.2f %d %u %u %.2f "
-			       "%.2f %u %u %.2f %s %s %s %d\n",
+			       "%.2f %u %u %.2f %s %s\n",
 			       job->sacct.max_vsize_id.nodeid,
 			       job->sacct.max_vsize_id.taskid,
 			       job->sacct.ave_vsize/1024,
@@ -1227,9 +1225,7 @@ void do_dump(void)
 			       job->sacct.min_cpu_id.taskid,
 			       job->sacct.ave_cpu,
 			       "-",
-			       job->nodes,
-			       job->account,
-			       job->requid);			
+			       job->nodes);			
 		}
 	}
 	list_iterator_destroy(itr);		
@@ -1567,7 +1563,6 @@ void do_fdump(char* f[], int lc)
 			    "priority",	 /* F_PRIORITY */
 			    "ncpus",	 /* F_NCPUS */
 			    "nodeList", /* F_NODES */
-				"account",   /* F_JOB_ACCOUNT */
 			    NULL};
 		
 	char	*step[] = {"jobStep",	 /* F_JOBSTEP */
@@ -1614,8 +1609,6 @@ void do_fdump(char* f[], int lc)
 			   "max_rss_node",	 /* F_MAX_RSS_NODE */
 			   "max_pages_node",	 /* F_MAX_PAGES_NODE */
 			   "min_cputime_node",	 /* F_MIN_CPU_NODE */
-			   "account",    /* F_STEP_ACCOUNT */
-			   "requid",     /* F_STEP_REQUID */
 			   NULL};
        
 	char	*suspend[] = {"Suspend/Run time", /* F_TOT_ELAPSED */
@@ -1624,7 +1617,6 @@ void do_fdump(char* f[], int lc)
 
 	char	*term[] = {"totElapsed", /* F_TOT_ELAPSED */
 			   "status",	 /* F_STATUS */ 
-			   "requid",     /* F_JOB_REQUID */
 			   NULL};	 
 		
 	i = atoi(f[F_RECTYPE]);

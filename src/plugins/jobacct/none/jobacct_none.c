@@ -5,7 +5,7 @@
  *
  *  Copyright (C) 2005 Hewlett-Packard Development Company, L.P.
  *  Written by Andy Riebs, <andy.riebs@hp.com>.
- *  UCRL-CODE-226842.
+ *  UCRL-CODE-217948.
  *  
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -16,7 +16,7 @@
  *  any later version.
  *
  *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under
+ *  to link the code of portions of this program with the OpenSSL library under 
  *  certain conditions as described in each individual source file, and 
  *  distribute linked combinations including the two. You must obey the GNU 
  *  General Public License in all respects for all of the code used other than 
@@ -210,11 +210,6 @@ int jobacct_p_endpoll()
 	return SLURM_SUCCESS;
 }
 
-int jobacct_p_set_proctrack_container_id(uint32_t id)
-{
-	return SLURM_SUCCESS;
-}
-
 int jobacct_p_add_task(pid_t pid, jobacct_id_t *jobacct_id)
 {
 	return SLURM_SUCCESS;
@@ -230,12 +225,7 @@ struct jobacctinfo *jobacct_p_remove_task(pid_t pid)
 	return NULL;
 }
 
-void jobacct_p_suspend_poll()
-{
-	return;
-}
-
-void jobacct_p_resume_poll()
+void jobacct_p_suspendpoll()
 {
 	return;
 }

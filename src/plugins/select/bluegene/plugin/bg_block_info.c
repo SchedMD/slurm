@@ -84,10 +84,7 @@ static int _block_is_deallocating(bg_record_t *bg_record)
 {
 	int jobid = bg_record->job_running;
 	char *user_name = NULL;
-
-	if(bg_record->modifying)
-		return SLURM_SUCCESS;
-
+	
 	slurm_conf_lock();
 	user_name = xstrdup(slurmctld_conf.slurm_user_name);
 	if(remove_all_users(bg_record->bg_block_id, NULL) 
@@ -208,7 +205,6 @@ extern int block_ready(struct job_record *job_ptr)
 extern void pack_block(bg_record_t *bg_record, Buf buffer)
 {
 	packstr(bg_record->nodes, buffer);
-	packstr(bg_record->ionodes, buffer);
 	packstr(bg_record->user_name, buffer);
 	packstr(bg_record->bg_block_id, buffer);
 	pack16((uint16_t)bg_record->state, buffer);
@@ -216,13 +212,7 @@ extern void pack_block(bg_record_t *bg_record, Buf buffer)
 	pack16((uint16_t)bg_record->node_use, buffer);	
 	pack16((uint16_t)bg_record->quarter, buffer);	
 	pack16((uint16_t)bg_record->nodecard, buffer);	
-	pack32((uint32_t)bg_record->node_cnt, buffer);
-	pack_bit_fmt(bg_record->bitmap, buffer);
-	pack_bit_fmt(bg_record->ionode_bitmap, buffer);
-	packstr(bg_record->blrtsimage, buffer);
-	packstr(bg_record->linuximage, buffer);
-	packstr(bg_record->mloaderimage, buffer);
-	packstr(bg_record->ramdiskimage, buffer);
+	pack32((uint32_t)bg_record->node_cnt, buffer);	
 }
 
 extern int update_block_list()
@@ -401,10 +391,9 @@ extern int update_block_list()
 				break;
 			default:
 				debug("Hey the state of block "
-				      "%s is %d(%s) doing nothing.",
+				      "%s is %d doing nothing.",
 				      bg_record->bg_block_id,
-				      bg_record->state,
-				      bg_block_state_string(bg_record->state));
+				      bg_record->state);
 				break;
 			}
 		}

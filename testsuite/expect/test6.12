@@ -13,7 +13,7 @@
 # Copyright (C) 2002-2006 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 # Written by Morris Jette <jette1@llnl.gov>
-# UCRL-CODE-226842.
+# UCRL-CODE-217948.
 # 
 # This file is part of SLURM, a resource management program.
 # For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -63,12 +63,12 @@ $srun $bin_sleep 500 &
 trap /bin/true SIGINT
 
 while /bin/true; do
-	wait
-	if \[ \$? -ge 128 \]; then
-		echo \"INTerrupted wait, resuming\"
-	else
-		break
-	fi
+    wait
+    if \[ \$? -ge 128 \]; then
+	echo \"INTerrupted wait, resuming\"
+    else
+	break
+    fi
 done
 "
 
@@ -76,7 +76,7 @@ done
 # Spawn a srun batch job with arguments
 #
 set timeout $max_job_delay
-set srun_pid [spawn $srun --batch --output=$file_out --error=$file_err -t2 $file_in]
+spawn $srun --batch --output=$file_out --error=$file_err -t2 $file_in
 expect {
 	-re "jobid ($number) submitted" {
 		set job_id $expect_out(1,string)
@@ -84,7 +84,7 @@ expect {
 	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
-		slow_kill $srun_pid
+		kill_srun
 		exit 1
 	}
 	eof {
@@ -158,7 +158,7 @@ file delete $file_out $file_err
 make_bash_script $file_in "$bin_sleep 500"
 
 set job_id 0
-set srun_pid [spawn $srun --batch --output=$file_out --error=$file_err -t2 $file_in]
+spawn $srun --batch --output=$file_out --error=$file_err -t2 $file_in
 expect {
 	-re "jobid ($number) submitted" {
 		set job_id $expect_out(1,string)
@@ -166,7 +166,7 @@ expect {
 	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
-		slow_kill $srun_pid
+		kill_srun
 		exit 1
 	}
 	eof {
@@ -236,7 +236,7 @@ set job_id      0
 file delete $file_out $file_err
 make_bash_script $file_in "$srun $bin_sleep 500"
 
-set srun_pid [spawn $srun --batch --output=$file_out --error=$file_err -t2 $file_in]
+spawn $srun --batch --output=$file_out --error=$file_err -t2 $file_in
 expect {
 	-re "jobid ($number) submitted" {
 		set job_id $expect_out(1,string)
@@ -244,7 +244,7 @@ expect {
 	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
-		slow_kill $srun_pid
+		kill_srun
 		exit 1
 	}
 	eof {

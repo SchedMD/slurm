@@ -12,37 +12,21 @@ http://www.clusterresources.com/products/mwm/docs/slurmintegration.shtml</a>.
 <h2>Configuration</h2>
 <p>First, download the Moab scheduler kit from their web site
 <a href="http://www.clusterresources.com/pages/products/moab-cluster-suite.php">
-http://www.clusterresources.com/pages/products/moab-cluster-suite.php</a>.<br> 
-<b>Note:</b> Use Moab version 5.0.0 or higher and SLURM version 1.1.28 
-or higher.</p>
+http://www.clusterresources.com/pages/products/moab-cluster-suite.php</a>. 
+Note: Moab version 4.5.0 or higher and SLURM version 1.1.10 or higher.</p>
 
 <h3>SLURM configuration</h3>
-
-<h4>slurm.conf</h4>
-<p>Set the <i>slurm.conf</i> scheduler parameters as follows:</p>
+<p>Set the <i>slurm.conf</i> scheduler parameters as follows:
 <pre>
-SchedulerType=sched/wiki2
+SchedulerType=sched/wiki2   (NOTE: "sched/wiki" in slurm version 1.2)
 SchedulerPort=7321
 </pre>
-<p>Running multiple jobs per mode can be accomplished in two different 
-ways. 
-The <i>SelectType=select/cons_res</i> parameter can be used to let
-SLURM allocate the individual processors, memory, and other 
-consumable resources (in Slurm version 1.2.1 or higher).
-Alternately, <i>SelectType=select/linear</i> or 
-<i>SelectType=select/bluegene</i> can be used with the 
-<i>Shared=yes</i> or <i>Shared=force</i> parameter in 
-partition configuration specifications.</p>
+Running multiple jobs per mode can be accomplished using the
+<i>Shared=yes</i> parameter on partitions.
+The <i>SelectType=select/cons_res</i> parameter is not compatable
+with the <i>sched/wiki</i> plugin (both would try to schedule the 
+individual processors within a node).</p>
 
-<p>The default value of <i>SchedulerPort</i> is 7321.</p>
-
-<h4>SLURM commands</h4>
-<p> Note that the <i>srun --immediate</i> option is not compatible 
-with Moab. 
-All jobs must wait for Moab to schedule them rather than being 
-scheduled immediately by SLURM.</p>
-
-<a name="wiki.conf"><h4>wiki.conf</h4></a>
 <p>SLURM's wiki configuration is stored in a file 
 specific to the wiki-plugin named <i>wiki.conf</i>. 
 This file should be protected from reading by users. 
@@ -55,12 +39,12 @@ a man page distributed with SLURM.</p>
 <p>The currently supported wiki.conf keywords include:</p>
 
 <p><b>AuthKey</b> is a DES based encryption key used to sign 
-communications between SLURM and Maui or Moab. 
+communctions between SLURM and Maui or Moab. 
 This use of this key is essential to insure that a user 
 not build his own program to cancel other user's jobs in 
 SLURM.
-This should be no more than 32-bit unsigned integer and match 
-the the encryption key in Maui (<i>--with-key</i> on the 
+This should be a numeric value and match the the 
+encryption key in Maui (<i>--with-key</i> on the 
 configure line) or Moab (<i>KEY</i> parameter in the 
 <i>moab-private.cfg</i> file). 
 Note that SLURM's wiki plugin does not include a mechanism 
@@ -74,12 +58,8 @@ to schedule the computer.
 This numeric value should match <i>EPORT</i> configured 
 in the <i>moab.cnf</i> file.</p>
 
-<p><b>EHost</b> is the event notification host for Moab.
-This identifies the computer on which the Moab daemons 
-executes which should be notified of events.</p>
-
 <p><b>JobAggregationTime</b> is used to avoid notifying Moab 
-of large numbers of events occurring about the same time.
+of large numbers of events occuring about the same time.
 If an event occurs within this number of seconds since Moab was
 last notified of an event, another notification is not sent.
 This should be an integer number of seconds.
@@ -102,17 +82,15 @@ Possible values are "hold" and "run" with "hold" being the default.</p>
 # SLURM's wiki plugin configuration file
 #
 # Matches KEY in moab-private.cfg
-AuthKey=123456789
+AuthKey=1234
 #
 # Have Moab control job scheduling
 JobPriority=hold
 #
 # Moab event notification port, matches EPORT in moab.cfg
 EPort=15017
-# Moab event notification host, where the Moab daemon runs
-#EHost=tux0
 #
-# Moab event notification throttle, matches JOBAGGREGATIONTIME
+# Moab event notifcation throttle, matches JOBAGGREGATIONTIME
 # in moab.cfg (integer value in seconds)
 JobAggregationTime=15
 </pre>
@@ -123,17 +101,16 @@ JobAggregationTime=15
 <p>Moab has support for SLURM's WIKI interface by default.
 Specify this interface in the <i>moab.cfg</i> file as follows:</p>
 <pre>
-SCHEDCFG[base]       MODE=NORMAL
-RMCFG[slurm]         TYPE=WIKI:SLURM AUTHTYPE=CHECKSUM
+RMCFG[slurm]         TYPE=wiki:slurm AUTHTYPE=CHECKSUM
 </pre>
 <p>In <i>moab-private.cfg</i> specify the private key as follows:</p>
 <pre>
-CLIENTCFG[RM:slurm] KEY=123456789
+KEY=1234
 </pre>
 <p>Insure that this file is protected from viewing by users. </p>
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 15 March 2007</p>
+<p style="text-align:center;">Last modified 29 September 2006</p>
 
 <!--#include virtual="footer.txt"-->

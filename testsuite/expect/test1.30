@@ -10,7 +10,7 @@
 # Copyright (C) 2002-2006 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 # Written by Morris Jette <jette1@llnl.gov>
-# UCRL-CODE-226842.
+# UCRL-CODE-217948.
 # 
 # This file is part of SLURM, a resource management program.
 # For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -55,7 +55,7 @@ if { [test_bluegene] } {
 #
 set timeout $max_job_delay
 for {set node_cnt 1} {$node_cnt > 0} {set node_cnt [expr $node_cnt * 2]} {
-	set srun_pid [spawn $srun --immediate -N$node_cnt $srun_opts -t2 $bin_hostname]
+	spawn $srun --immediate -N$node_cnt $srun_opts -t2 $bin_hostname
 	expect {
 		-re "Immediate execution impossible" {
 			send_user "This error is expected, no worries\n"
@@ -85,8 +85,9 @@ for {set node_cnt 1} {$node_cnt > 0} {set node_cnt [expr $node_cnt * 2]} {
 		}
 		timeout {
 			send_user "\nFAILURE: srun not responding\n"
-			slow_kill $srun_pid
-			set exit_code 1
+			set exit_code   1
+			kill_srun
+			exp_continue
 		}
 		eof {
 			wait

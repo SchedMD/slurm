@@ -2,10 +2,10 @@
  * src/slurmd/slurmd/slurmd.h - header for slurmd
  * $Id$
  *****************************************************************************
- *  Copyright (C) 2002-2006 The Regents of the University of California.
+ *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Mark Grondona <mgrondona@llnl.gov>.
- *  UCRL-CODE-226842.
+ *  UCRL-CODE-217948.
  *  
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -72,28 +72,8 @@ extern int devnull;
 typedef struct slurmd_config {
 	char         *prog;		/* Program basename		   */
 	char         ***argv;           /* pointer to argument vector      */
-	int          *argc;             /* pointer to argument count       */
-	char         *hostname;	 	/* local hostname		   */
-	uint16_t     cpus;              /* lowest-level logical processors */
-	uint16_t     sockets;           /* sockets count                   */
-	uint16_t     cores;             /* core count                      */
-	uint16_t     threads;           /* thread per core count           */
-	uint16_t     conf_cpus;         /* conf file logical processors    */
-	uint16_t     conf_sockets;      /* conf file sockets count         */
-	uint16_t     conf_cores;        /* conf file core count            */
-	uint16_t     conf_threads;      /* conf file thread per core count */
-	uint16_t     actual_cpus;       /* actual logical processors       */
-	uint16_t     actual_sockets;    /* actual sockets count            */
-	uint16_t     actual_cores;      /* actual core count               */
-	uint16_t     actual_threads;    /* actual thread per core count    */
-	uint32_t     real_memory_size;  /* amount of real memory	   */
-	uint32_t     tmp_disk_space;    /* size of temporary disk	   */
-	uint16_t     block_map_size;	/* size of block map               */
-	uint16_t     *block_map;	/* abstract->machine block map     */
-	uint16_t     *block_map_inv;	/* machine->abstract (inverse) map */
-	uint16_t      cr_type;           /* Consumable Resource Type:       *
-					 * CR_SOCKET, CR_CORE, CR_MEMORY,  *
-					 * CR_DEFAULT, etc.                */
+	int 	     *argc;             /* pointer to argument count       */
+	char         *hostname;		/* local hostname		   */
         char         *node_name;        /* node name                       */
 	char         *conffile;		/* config filename                 */
 	char         *logfile;		/* slurmd logfile, if any          */
@@ -122,12 +102,9 @@ typedef struct slurmd_config {
 	pthread_mutex_t config_mutex;	/* lock for slurmd_config access   */
 	uint16_t        job_acct_freq;
 	uint16_t	use_pam;
-	uint16_t	use_cpusets;	/* Use cpusets, if available       */
-	uint16_t	propagate_prio;	/* PropagatePrioProcess flag       */
-	uint16_t        fast_schedule;	/* use config from file/slurmctld  */
 } slurmd_conf_t;
 
-extern slurmd_conf_t * conf;
+slurmd_conf_t * conf;
 
 /* Send node registration message with status to controller
  * IN status - same values slurm error codes (for node shutdown)

@@ -1,9 +1,10 @@
 /*****************************************************************************\
  *  jobacct_common.c - common functions for almost all jobacct plugins.
  *****************************************************************************
+ *
  *  Copyright (C) 2005 Hewlett-Packard Development Company, L.P.
  *  Written by Danny Auble, <da@llnl.gov>
- *  UCRL-CODE-226842.
+ *  UCRL-CODE-217948.
  *  
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -14,7 +15,7 @@
  *  any later version.
  *
  *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under
+ *  to link the code of portions of this program with the OpenSSL library under 
  *  certain conditions as described in each individual source file, and 
  *  distribute linked combinations including the two. You must obey the GNU 
  *  General Public License in all respects for all of the code used other than 
@@ -43,36 +44,13 @@ bool jobacct_shutdown = false;
 bool suspended = false;
 List task_list = NULL;
 pthread_mutex_t jobacct_lock = PTHREAD_MUTEX_INITIALIZER;
-uint32_t cont_id = (uint32_t)NO_VAL;
-bool pgid_plugin = false;
 
 extern int common_endpoll()
 {
 	jobacct_shutdown = true;
-
+       
 	return SLURM_SUCCESS;
 }
-
-extern int common_set_proctrack_container_id(uint32_t id)
-{
-	if(pgid_plugin)
-		return SLURM_SUCCESS;
-
-	if(cont_id != (uint32_t)NO_VAL) 
-		info("Warning: jobacct: set_proctrack_container_id: "
-		     "cont_id is already set to %d you are setting it to %d",
-		     cont_id, id);
-	if(id <= 0) {
-		error("jobacct: set_proctrack_container_id: "
-		      "I was given most likely an unset cont_id %d",
-		      id);
-		return SLURM_ERROR;
-	}
-	cont_id = id;
-
-	return SLURM_SUCCESS;
-}
-
 extern int common_add_task(pid_t pid, jobacct_id_t *jobacct_id)
 {
 	struct jobacctinfo *jobacct = common_alloc_jobacct(jobacct_id);
@@ -88,7 +66,7 @@ extern int common_add_task(pid_t pid, jobacct_id_t *jobacct_id)
 
 	jobacct->pid = pid;
 	jobacct->min_cpu = 0;
-	debug2("adding task %u pid %d on node %u to jobacct", 
+	debug2("adding task %u pid %d on node %uto jobacct", 
 	       jobacct_id->taskid, pid, jobacct_id->nodeid);
 	list_push(task_list, jobacct);
 	slurm_mutex_unlock(&jobacct_lock);
@@ -159,12 +137,10 @@ error:
 	return ret_jobacct;
 }
 
-extern void common_suspend_poll()
+extern void common_suspendpoll()
 {
-	suspended = true;
-}
-
-extern void common_resume_poll()
-{
-	suspended = false;
+	if(suspended)
+		suspended = false;
+	else
+		suspended = true;
 }

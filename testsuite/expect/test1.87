@@ -12,7 +12,7 @@
 # Copyright (C) 2002 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 # Written by Morris Jette <jette1@llnl.gov>
-# UCRL-CODE-226842.
+# UCRL-CODE-217948.
 # 
 # This file is part of SLURM, a resource management program.
 # For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -45,11 +45,6 @@ if {[test_front_end] != 0} {
 	exit 0
 }
 
-if {[test_multiple_slurmd] != 0} {
-	send_user "\nWARNING: This test is incompatable with multiple slurmd systems\n"
-	exit 0
-}
-
 #
 # Build input script file
 #
@@ -62,7 +57,7 @@ make_bash_script $file_in "
 # Submit a 4 node job
 #
 set timeout $max_job_delay
-set srun_pid [spawn $srun -N4 -A $file_in]
+spawn $srun -N4 -A $file_in
 expect {
 	-re "More ($alpha) requested than permitted" {
 		send_user "\nWARNING: can't test srun task distribution\n"
@@ -71,7 +66,7 @@ expect {
 	}
 	-re "configuration not available" {
 		send_user "WARNING: partition too small for test\n"
-		slow_kill $srun_pid
+		kill_srun
 		exit 0
 	}
 	-re "Unable to contact" {
@@ -83,11 +78,14 @@ expect {
 	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
-		slow_kill $srun_pid
+		kill_srun
+		exec $bin_rm -f $file_in
 		exit 1
 	}
 	eof {
 		send_user "\nFAILURE: srun terminated\n"
+		kill_srun
+		exec $bin_rm -f $file_in
 		exit 1
 	}
 }
@@ -127,7 +125,7 @@ expect {
 	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
-		slow_kill $srun_pid
+		kill_srun
 		exit 1
 	}
 	eof {
@@ -199,7 +197,7 @@ expect {
 	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
-		slow_kill $srun_pid
+		kill_srun
 		exit 1
 	}
 	eof {
@@ -250,7 +248,7 @@ expect {
 	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
-		slow_kill $srun_pid
+		kill_srun
 		exit 1
 	}
 	eof {
@@ -288,7 +286,7 @@ expect {
 	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
-		slow_kill $srun_pid
+		kill_srun
 		exit 1
 	}
 	eof {
@@ -308,7 +306,7 @@ send "exit\n"
 expect {
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
-		slow_kill $srun_pid
+		kill_srun
 		exit 1
 	}
 	eof {

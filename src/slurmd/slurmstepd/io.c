@@ -5,7 +5,7 @@
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Mark Grondona <mgrondona@llnl.gov>.
- *  UCRL-CODE-226842.
+ *  UCRL-CODE-217948.
  *  
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -607,7 +607,7 @@ _task_read(eio_obj_t *obj, List objs)
 
 	xassert(out->magic == TASK_OUT_MAGIC);
 
-	debug4("Entering _task_read for obj %x", obj);
+	debug4("Entering _task_read");
 	len = cbuf_free(out->buf);
 	if (len > 0 && !out->eof) {
 again:
@@ -638,7 +638,7 @@ again:
 	/*
 	 * Send the eof message
 	 */
-	if (cbuf_used(out->buf) == 0 && out->eof && !out->eof_msg_sent) {
+	if (cbuf_used(out->buf) == 0 && out->eof) {
 		_send_eof_msg(out);
 	}
 	
@@ -980,9 +980,6 @@ _io_thr(void *arg)
  * Since this is the first client connection and the IO engine has not
  * yet started, we initialize the msg_queue as an empty list and
  * directly add the eio_obj_t to the eio handle with eio_new_initial_obj.
- *
- * We assume that if the port is zero the client does not wish us to connect
- * an IO stream.
  */
 int
 io_initial_client_connect(srun_info_t *srun, slurmd_job_t *job)
@@ -997,10 +994,6 @@ io_initial_client_connect(srun_info_t *srun, slurmd_job_t *job)
 		char         ip[256];
 		uint16_t     port;
 		slurm_get_ip_str(&srun->ioaddr, &port, ip, sizeof(ip));
-		if (ntohs(port) == 0) {
-			debug3("No IO connection requested");
-			return SLURM_SUCCESS;
-		}
 		debug4("connecting IO back to %s:%d", ip, ntohs(port));
 	} 
 
@@ -1096,7 +1089,7 @@ _send_io_init_msg(int sock, srun_key_t *key, slurmd_job_t *job)
 {
 	struct slurm_io_init_msg msg;
 
-	memcpy(msg.cred_signature, key->data, SLURM_IO_KEY_SIZE);
+	memcpy(msg.cred_signature, key->data, SLURM_CRED_SIGLEN);
 	msg.nodeid = job->nodeid;
 	if (job->stdout_eio_objs == NULL)
 		msg.stdout_objs = 0;
@@ -1330,58 +1323,3 @@ _outgoing_buf_free(slurmd_job_t *job)
 
 	return false;
 }
-
-/**********************************************************************
- * Functions specific to "user managed" IO
- **********************************************************************/
-static int
-_user_managed_io_connect(srun_info_t *srun, uint32_t gtid)
-{
-	int fd;
-	task_user_managed_io_msg_t user_io_msg;
-	slurm_msg_t msg;
-
-	slurm_msg_t_init(&msg);
-	msg.msg_type = TASK_USER_MANAGED_IO_STREAM;
-	msg.data = &user_io_msg;
-	user_io_msg.task_id = gtid;
-
-	fd = slurm_open_msg_conn(&srun->resp_addr);
-	if (fd == -1)
-		return -1;
-
-	if (slurm_send_node_msg(fd, &msg) == -1) {
-		close(fd);
-		return -1;
-	}
-	return fd;
-}
-
-/*
- * This function sets the close-on-exec flag on the socket descriptor.
- * io_dup_stdio will will remove the close-on-exec flag for just one task's
- * file descriptors.
- */
-int
-user_managed_io_client_connect(int ntasks, srun_info_t *srun,
-			       slurmd_task_info_t **tasks)
-{
-	int fd;
-	int i;
-
-	for (i = 0; i < ntasks; i++) {
-		fd = _user_managed_io_connect(srun, tasks[i]->gtid);
-		if (fd == -1)
-			return SLURM_ERROR;
-		fd_set_close_on_exec(fd);
-		tasks[i]->stdin_fd = fd;
-		tasks[i]->to_stdin = -1;
-		tasks[i]->stdout_fd = fd;
-		tasks[i]->from_stdout = -1;
-		tasks[i]->stderr_fd = fd;
-		tasks[i]->from_stderr = -1;
-	}
-
-	return SLURM_SUCCESS;
-}
-

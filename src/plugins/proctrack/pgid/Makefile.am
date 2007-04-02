@@ -1,3 +1,4 @@
+# $Id$
 # Makefile for proctrack/pgid plugin
 
 AUTOMAKE_OPTIONS = foreign

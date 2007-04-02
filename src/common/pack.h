@@ -5,7 +5,7 @@
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Kevin Tew <tew1@llnl.gov>, Morris Jette <jette1@llnl.gov>, et. al.
- *  UCRL-CODE-226842.
+ *  UCRL-CODE-217948.
  *  
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -92,11 +92,8 @@ int	unpack16(uint16_t *valp, Buf buffer);
 void	pack8(uint8_t val, Buf buffer);
 int	unpack8(uint8_t *valp, Buf buffer);
 
-void    pack16_array(uint16_t *valp, uint32_t size_val, Buf buffer);
-int     unpack16_array(uint16_t **valp, uint32_t* size_val, Buf buffer);
-
 void	pack32_array(uint32_t *valp, uint32_t size_val, Buf buffer);
-int	unpack32_array(uint32_t **valp, uint32_t* size_val, Buf buffer);
+int	unpack32_array( uint32_t **valp, uint32_t* size_val, Buf buffer);
 
 void	packmem(char *valp, uint16_t size_val, Buf buffer);
 int	unpackmem(char *valp, uint16_t *size_valp, Buf buffer);
@@ -171,14 +168,6 @@ int	unpackmem_array(char *valp, uint32_t size_valp, Buf buffer);
 	assert(buf->magic == BUF_MAGIC);		\
 	pack32_array(array,size_val,buf);		\
 } while (0)				
-
-#define safe_unpack16_array(valp,size_valp,buf) do {    \
-        assert(valp != NULL);                           \
-        assert(sizeof(*size_valp) == sizeof(uint32_t)); \
-        assert(buf->magic == BUF_MAGIC);                \
-        if (unpack16_array(valp,size_valp,buf))         \
-                goto unpack_error;                      \
-} while (0)
 
 #define safe_unpack32_array(valp,size_valp,buf) do {	\
 	assert(valp != NULL);				\

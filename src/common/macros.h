@@ -5,7 +5,7 @@
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Mark Grondona <mgrondona@llnl.gov>.
- *  UCRL-CODE-226842.
+ *  UCRL-CODE-217948.
  *  
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -75,6 +75,8 @@ typedef enum {false, true} bool;
 #ifndef MIN
 #  define MIN(a,b) ((a) < (b) ? (a) : (b))
 #endif
+
+#define SLURM_CRED_SIGLEN 8
 
 /* Avoid going over 32 bits for a constant to avoid warnings on some systems */
 #  define UINT64_SWAP_LE_BE(val)      ((uint64_t) (                           \
@@ -254,11 +256,6 @@ typedef enum {false, true} bool;
 #    define strong_alias(name, aliasname) \
      extern void aliasname(int name)
 #  endif
-#endif
-
-#ifndef HAVE_STRNDUP
-#  undef  strndup
-#  define strndup(src,size) strdup(src)
 #endif
 
 #endif /* !_MACROS_H */

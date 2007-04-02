@@ -13,7 +13,7 @@
 # Copyright (C) 2002 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 # Written by Morris Jette <jette1@llnl.gov>
-# UCRL-CODE-226842.
+# UCRL-CODE-217948.
 # 
 # This file is part of SLURM, a resource management program.
 # For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -45,7 +45,7 @@ print_header $test_id
 # Change working directory on execute line and then print where jobs runs
 #
 set timeout $max_job_delay
-set srun_pid [spawn $srun --chdir=$tmp_dir -t1 $bin_pwd]
+spawn $srun --chdir=$tmp_dir -t1 $bin_pwd
 expect {
 	-re "$tmp_dir$end_of_line" {
 		set matches 1
@@ -57,8 +57,9 @@ expect {
 	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
-		slow_kill $srun_pid
+		kill_srun
 		set exit_code 1
+		exp_continue
 	}
 	eof {
 		wait

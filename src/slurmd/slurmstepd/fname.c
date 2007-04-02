@@ -5,7 +5,7 @@
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Mark Grondona <mgrondona@llnl.gov>.
- *  UCRL-CODE-226842.
+ *  UCRL-CODE-217948.
  *  
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -94,11 +94,6 @@ fname_create(slurmd_job_t *job, const char *format, int taskid)
 			}
 
 			switch (*p) {
-			case 's':  /* '%s' => step id        */
-				xmemcat(name, q, p - 1);
-				xstrfmtcat(name, "%0*d", wid, job->stepid);
-				q = ++p;
-				break;
 			case 't':  /* '%t' => taskid         */
 				xmemcat(name, q, p - 1);
 				xstrfmtcat(name, "%0*d", wid, taskid);

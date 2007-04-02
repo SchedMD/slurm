@@ -9,11 +9,14 @@
 # Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
 #          "FAILURE: ..." otherwise with an explanation of the failure, OR
 #          anything else indicates a failure mode that must be investigated.
+#
+# Note:    This script generates and then deletes files in the working directory 
+#          named test1.12.input, test1.12.output, and test1.12.error
 ############################################################################
-# Copyright (C) 2002-2006 The Regents of the University of California.
+# Copyright (C) 2002 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 # Written by Morris Jette <jette1@llnl.gov>
-# UCRL-CODE-226842.
+# UCRL-CODE-217948.
 # 
 # This file is part of SLURM, a resource management program.
 # For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -39,10 +42,10 @@ set exit_code   0
 set file_in     "test$test_id.input"
 set job_id      0
 
-set cpu_cnt     1
-set mem_size    13
-set tmp_size    2
-set matches     0
+set cpu_cnt              1
+set mem_size             13
+set tmp_size             2
+set matches              0
 
 print_header $test_id
 
@@ -52,13 +55,13 @@ print_header $test_id
 #
 exec $bin_rm -f $file_in
 make_bash_script $file_in "
-  $bin_sleep 10
+  $srun $bin_sleep 10
 "
 
 #
 # Spawn a srun batch job with constraints and stdout/err
 #
-set srun_pid [spawn $srun --batch --output=none --error=none --mincpus=$cpu_cnt --mem=$mem_size --tmp=$tmp_size --hold -t1 $file_in]
+spawn $srun --batch --output=none --error=none --mincpus=$cpu_cnt --mem=$mem_size --tmp=$tmp_size --hold -t1 $file_in
 expect {
 	-re "jobid ($number) submitted" {
 		set job_id $expect_out(1,string)
@@ -66,8 +69,9 @@ expect {
 	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
-		slow_kill $srun_pid
+		kill_srun
 		set exit_code 1
+		exp_continue
 	}
 	eof {
 		wait
@@ -78,6 +82,7 @@ if {$job_id == 0} {
 	send_user "\nFAILURE: batch submit failure\n"
 	exit 1
 }
+exec $bin_rm -f $file_in
 
 #
 # Confirm constraints are registered and wait for job completion
@@ -123,6 +128,7 @@ expect {
 	}
 	timeout {
 		send_user "\nFAILURE: scontrol not responding\n"
+		cancel_job $job_id
 		set exit_code 1
 	}
 	eof {
@@ -136,7 +142,6 @@ if {$matches != 5} {
 	set exit_code 1
 }
 if {$exit_code == 0} {
-	exec $bin_rm -f $file_in
 	send_user "\nSUCCESS\n"
 }
 exit $exit_code

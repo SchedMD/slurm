@@ -5,7 +5,7 @@
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>.
- *  UCRL-CODE-226842.
+ *  UCRL-CODE-217948.
  *  
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -61,8 +61,10 @@ slurm_complete_job ( uint32_t job_id, uint32_t job_return_code )
 	int rc;
 	slurm_msg_t req_msg;
 	complete_job_allocation_msg_t req;
+	char host[128];
 
-	slurm_msg_t_init(&req_msg);
+	(void) getnodename (host, sizeof(host)) ;
+
 	req.job_id      = job_id;
 	req.job_rc      = job_return_code;
 

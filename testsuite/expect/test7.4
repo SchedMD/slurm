@@ -1,18 +1,20 @@
 #!/usr/bin/expect
 ############################################################################
 # Purpose: Test of SLURM functionality
-#          Test of TotalView operation with srun, with and without bulk
-#          transfer.
+#          Basic test of TotalView operation with SLURM
 #
 # Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
 #          "WARNING: ..." with an explanation of why the test can't be made, OR
 #          "FAILURE: ..." otherwise with an explanation of the failure, OR
 #          anything else indicates a failure mode that must be investigated.
+#
+# Note:    This script generates and then deletes a file in the working 
+#          directory named test7.4.prog
 ############################################################################
-# Copyright (C) 2004-2006 The Regents of the University of California.
+# Copyright (C) 2004 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 # Written by Morris Jette <jette1@llnl.gov> and Dong Ang <dahn@llnl.gov>
-# UCRL-CODE-226842.
+# UCRL-CODE-217948.
 # 
 # This file is part of SLURM, a resource management program.
 # For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -21,17 +23,6 @@
 # the terms of the GNU General Public License as published by the Free
 # Software Foundation; either version 2 of the License, or (at your option)
 # any later version.
-#
-# In addition, as a special exception, the copyright holders give permission
-# to link the code of portions of this program with the OpenSSL library under
-# certain conditions as described in each individual source file, and
-# distribute linked combinations including the two. You must obey the GNU
-# General Public License in all respects for all of the code used other than
-# OpenSSL. If you modify file(s) with this exception, you may extend this
-# exception to your version of the file(s), but you are not obligated to do
-# so. If you do not wish to do so, delete this exception statement from your
-# version.  If you delete this exception statement from all source files in
-# the program, then also delete it here.
 # 
 # SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
 # WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
@@ -49,7 +40,7 @@ set exit_code     0
 set test_prog     "test$test_id.prog"
 
 # Note this appears as a single argv value to totalviewcli
-set bulk "set issue_dgo false; dset TV::bulk_launch_enabled true; dset TV::bulk_launch_string {$srun -N%N -n%N --jobid=%J -w`awk -F. \'BEGIN {ORS=\",\"} {if (NR==%N) ORS=\"\"; print \$1}\' %t1` -l -i /dev/null %B/tvdsvr%K -callback_host %H -callback_ports %L -set_pws %P -verbosity %V -working_directory %D %F}"
+set bulk          "set issue_dgo false; dset TV::bulk_launch_enabled true; dset TV::bulk_launch_string {$srun -N%N -n%N --jobid=`test7.4.sh $squeue %t1` -l --input=none %B/tvdsvr%K -callback_host %H -callback_ports %L -set_pws %P -verbosity %V -working_directory %D %F}"
 set no_bulk       "set issue_dgo false; dset TV::bulk_launch_enabled false"
 
 print_header $test_id
@@ -98,7 +89,7 @@ set matches 0
 set no_capability 0
 set timeout $max_job_delay
 send_user "======================================================================\n"
-send_user "=======================  Run without bulk transfer ===================\n"
+send_user "=======================  Run without bunk transfer ===================\n"
 send_user "======================================================================\n"
 spawn $totalviewcli -verbosity info -e $no_bulk $srun -a --input=none -n4 -N1-2 -O -t1 $test_prog
 expect {
@@ -176,7 +167,7 @@ if {$matches != 12} {
 set matches 0
 set no_capability 0
 send_user "======================================================================\n"
-send_user "=====================  Run with bulk transfer ========================\n"
+send_user "=====================  Run with bunk transfer ========================\n"
 send_user "======================================================================\n"
 spawn $totalviewcli -verbosity info -e $bulk $srun -a --input=none -n4 -N1-2 -O -t1 $test_prog
 expect {

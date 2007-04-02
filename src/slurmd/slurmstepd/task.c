@@ -5,7 +5,7 @@
  *  Copyright (C) 2002-2006 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Mark A. Grondona <mgrondona@llnl.gov>.
- *  UCRL-CODE-226842.
+ *  UCRL-CODE-217948.
  *  
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -84,14 +84,46 @@
 #include "src/slurmd/slurmstepd/ulimits.h"
 #include "src/slurmd/slurmstepd/io.h"
 #include "src/slurmd/slurmstepd/pdebug.h"
+#include "src/slurmd/slurmstepd/task_exec.h"
 
 /*
  * Static prototype definitions.
  */
 static void  _make_tmpdir(slurmd_job_t *job);
+static void  _setup_spawn_io(slurmd_job_t *job);
 static int   _run_script_and_set_env(const char *name, const char *path, 
 				     slurmd_job_t *job);
 static void  _update_env(char *buf, char ***env);
+
+
+static void _setup_spawn_io(slurmd_job_t *job)
+{
+	srun_info_t *srun;
+	int fd = -1;
+
+	srun = list_peek(job->sruns);
+	xassert(srun);
+	if ((fd = (int) slurm_open_stream(&srun->ioaddr)) < 0) {
+		error("connect spawn io stream: %m");
+		exit(1);
+	}
+
+	if (dup2(fd, STDIN_FILENO) == -1) {
+		error("dup2 over STDIN_FILENO: %m");
+		exit(1);
+	}
+	if (dup2(fd, STDOUT_FILENO) == -1) {
+		error("dup2 over STDOUT_FILENO: %m");
+		exit(1);
+	}
+	if (dup2(fd, STDERR_FILENO) == -1) {
+		error("dup2 over STDERR_FILENO: %m");
+		exit(1);
+	}
+		
+	if (fd > 2)
+		(void) close(fd);
+}
 
 /* Search for "export NAME=value" records in buf and 
  * use them to add environment variables to env */
@@ -171,11 +203,7 @@ _run_script_and_set_env(const char *name, const char *path, slurmd_job_t *job)
 		dup(pfd[1]);
 		close(2);
 		close(0);
-#ifdef SETPGRP_TWO_ARGS
-		setpgrp(0, 0);
-#else
 		setpgrp();
-#endif
 		execve(path, argv, job->env);
 		error("execve(): %m");
 		exit(127);
@@ -205,79 +233,6 @@ _run_script_and_set_env(const char *name, const char *path, slurmd_job_t *job)
 	/* NOTREACHED */
 }
 
-/* Given a program name, translate it to a fully qualified pathname
- * as needed based upon the PATH environment variable */
-static char *
-_build_path(char* fname, char **prog_env)
-{
-	int i;
-	char *path_env = NULL, *dir;
-	char *file_name, *file_path;
-	struct stat stat_buf;
-	int len = 256;
-
-	file_name = (char *)xmalloc(len);
-	/* make copy of file name (end at white space) */
-	snprintf(file_name, len, "%s", fname);
-	for (i=0; i < len; i++) {
-		if (file_name[i] == '\0')
-			break;
-		if (!isspace(file_name[i]))
-			continue;
-		file_name[i] = '\0';
-		break;
-	}
-
-	/* check if already absolute path */
-	if (file_name[0] == '/')
-		return file_name;
-
-	/* search for the file using PATH environment variable */
-	for (i=0; ; i++) {
-		if (prog_env[i] == NULL)
-			return file_name;
-		if (strncmp(prog_env[i], "PATH=", 5))
-			continue;
-		path_env = xstrdup(&prog_env[i][5]);
-		break;
-	}
-
-	file_path = (char *)xmalloc(len);
-	dir = strtok(path_env, ":");
-	while (dir) {
-		snprintf(file_path, len, "%s/%s", dir, file_name);
-		if (stat(file_path, &stat_buf) == 0)
-			break;
-		dir = strtok(NULL, ":");
-	}
-	if (dir == NULL)	/* not found */
-		snprintf(file_path, len, "%s", file_name);
-
-	xfree(file_name);
-	xfree(path_env);
-	return file_path;
-}
-
-static void
-_setup_mpi(slurmd_job_t *job, int ltaskid)
-{
-	mpi_plugin_task_info_t info[1];
-
-	info->jobid = job->jobid;
-	info->stepid = job->stepid;
-	info->nnodes = job->nnodes;
-	info->nodeid = job->nodeid;
-	info->ntasks = job->nprocs;
-	info->ltasks = job->ntasks;
-	info->gtaskid = job->task[ltaskid]->gtid;
-	info->ltaskid = job->task[ltaskid]->id;
-	info->self = job->envtp->self;
-	info->client = job->envtp->cli;
-		
-	mpi_hook_slurmstepd_task(info, &job->env);
-}
-
-
 /*
  *  Current process is running as the user when this is called.
  */
@@ -286,9 +241,10 @@ exec_task(slurmd_job_t *job, int i, int waitfd)
 {
 	char c;
 	int rc;
-	slurmd_task_info_t *task = job->task[i];
+	slurmd_task_info_t *t = NULL;
 
-	if (set_user_limits(job) < 0) {
+
+	if ((!job->spawn_task) && (set_user_limits(job) < 0)) {
 		debug("Unable to set user limits");
 		log_fini();
 		exit(5);
@@ -296,6 +252,7 @@ exec_task(slurmd_job_t *job, int i, int waitfd)
 
 	if (i == 0)
 		_make_tmpdir(job);
+
 
         /*
 	 * Stall exec until all tasks have joined the same process group
@@ -312,47 +269,47 @@ exec_task(slurmd_job_t *job, int i, int waitfd)
 	job->envtp->nodeid = job->nodeid;
 	job->envtp->cpus_on_node = job->cpus;
 	job->envtp->env = job->env;
-	job->envtp->procid = task->gtid;
-	job->envtp->localid = task->id;
+	
+	t = job->task[i];
+	job->envtp->procid = t->gtid;
+	job->envtp->localid = t->id;
 	job->envtp->task_pid = getpid();
-	job->envtp->distribution = job->task_dist;
-	job->envtp->plane_size   = job->plane_size;
+
 	job->envtp->cpu_bind = xstrdup(job->cpu_bind);
 	job->envtp->cpu_bind_type = job->cpu_bind_type;
 	job->envtp->mem_bind = xstrdup(job->mem_bind);
 	job->envtp->mem_bind_type = job->mem_bind_type;
-	job->envtp->distribution = -1;
+
+	/* need to take this out in 1.2 */
+	job->envtp->distribution = SLURM_DIST_UNKNOWN;
 	setup_env(job->envtp);
-	setenvf(&job->envtp->env, "SLURMD_NODENAME", "%s", conf->node_name);
+	
 	job->env = job->envtp->env;
 	job->envtp->env = NULL;
 	xfree(job->envtp->task_count);
-
-	if (job->multi_prog) {
-		/*
-		 * Normally the client (srun/slauch) expands the command name
-		 * to a fully qualified path, but in --multi-prog mode it
-		 * is left up to the server to search the PATH for the
-		 * executable.
-		 */
-		task->argv[0] = _build_path(task->argv[0], job->env);
-	}
 	
 	if (!job->batch) {
 		if (interconnect_attach(job->switch_job, &job->env,
 				job->nodeid, (uint32_t) i, job->nnodes,
-				job->nprocs, task->gtid) < 0) {
+				job->nprocs, job->task[i]->gtid) < 0) {
 			error("Unable to attach to interconnect: %m");
 			log_fini();
 			exit(1);
 		}
 
-		_setup_mpi(job, i);
+		slurmd_mpi_init (job, job->task[i]->gtid);
 	
 		pdebug_stop_current(job);
 	}
 
-	io_dup_stdio(task);
+	/* 
+	 * If io_prepare_child() is moved above interconnect_attach()
+	 * this causes EBADF from qsw_attach(). Why?
+	 */
+	if (job->spawn_task)
+		_setup_spawn_io(job);
+	else
+		io_dup_stdio(job->task[i]);
 
 	/* task-specific pre-launch activities */
 
@@ -361,7 +318,6 @@ exec_task(slurmd_job_t *job, int i, int waitfd)
 		exit (1);
 	}
 
-	/* task plugin hook */
 	pre_launch(job);
 	if (conf->task_prolog) {
 		char *my_prolog;
@@ -377,18 +333,16 @@ exec_task(slurmd_job_t *job, int i, int waitfd)
 					job->task_prolog, job); 
 	}
 
-	if (job->env == NULL) {
-		debug("job->env is NULL");
-		job->env = (char **)xmalloc(sizeof(char *));
-		job->env[0] = (char *)NULL;
-	}
-
-	execve(task->argv[0], task->argv, job->env);
+	if (job->multi_prog)
+		task_exec(job->argv[1], job->env,
+			  (int)job->task[i]->gtid);
+	else
+		execve(job->argv[0], job->argv, job->env);
 
 	/* 
-	 * print error message and clean up if execve() returns:
+	 * error() and clean up if execve() returns:
 	 */
-	error("execve(): %s: %m", task->argv[0]); 
+	error("execve(): %s: %m", job->argv[0]); 
 	exit(errno);
 }
 

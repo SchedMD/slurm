@@ -5,7 +5,7 @@
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Mark A. Grondona <mgrondona@llnl.gov>.
- *  UCRL-CODE-226842.
+ *  UCRL-CODE-217948.
  *  
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -57,7 +57,6 @@
 #include "src/common/xmalloc.h"
 
 #define MAX_MSG_LEN 1024
-#define SLURM_IO_KEY_SIZE 8
 
 #define SLURM_IO_STDIN 0
 #define SLURM_IO_STDOUT 1
@@ -66,7 +65,7 @@
 
 struct slurm_io_init_msg {
 	uint16_t      version;
-	unsigned char cred_signature[SLURM_IO_KEY_SIZE]; 
+	unsigned char cred_signature[SLURM_CRED_SIGLEN]; 
 	uint32_t      nodeid;
 	uint32_t      stdout_objs;
 	uint32_t      stderr_objs;

@@ -11,7 +11,7 @@
  *  and
  *  Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>.
- *  UCRL-CODE-226842.
+ *  UCRL-CODE-217948.
  *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -139,14 +139,14 @@ _set_exec_names(char *ranks, char *exec_name, int ntasks)
 
 	for (range = strtok_r(ranks, ",", &ptrptr); range != NULL;
 			range = strtok_r(NULL, ",", &ptrptr)) {
-		p = range;
+		p = ranks;
 		while (*p != '\0' && isdigit (*p))
 			p ++;
 
 		if (*p == '\0') { /* single rank */
 			low_num  = MAX(0, atoi(range));
 			high_num = MIN((ntasks-1), atoi(range));
-			_set_range(low_num, high_num, exec_path);
+			_set_range(low_num, high_num, exec_path);	
 		} else if (*p == '-') { /* lower-upper */
 			upper = ++ p;
 			while (isdigit (*p))

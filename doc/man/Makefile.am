@@ -1,22 +1,17 @@
+# $Id$
 
 EXTRA_DIST = man1 man3 man5 man8 
 
 man1_MANS =            \
 	man1/sacct.1 \
-	man1/salloc.1 \
-	man1/sattach.1 \
-	man1/sbatch.1 \
-	man1/sbcast.1 \
 	man1/scancel.1 \
-	man1/scontrol.1 \
+	man1/scontrol.1\
 	man1/sinfo.1   \
-	man1/slaunch.1 \
+	man1/squeue.1  \
+	man1/srun.1 \
 	man1/slurm.1 \
 	man1/smap.1 \
-	man1/squeue.1 \
-	man1/srun.1 \
-	man1/strigger.1 \
-	man1/sview.1
+	man1/sbcast.1   
 
 man3_MANS = man3/slurm_hostlist_create.3 \
 	man3/slurm_hostlist_destroy.3 \
@@ -52,7 +47,6 @@ man3_MANS = man3/slurm_hostlist_create.3 \
 	man3/slurm_init_job_desc_msg.3 \
 	man3/slurm_init_part_desc_msg.3 \
 	man3/slurm_job_step_create.3 \
-	man3/slurm_job_step_launch_t_init.3 \
 	man3/slurm_job_will_run.3 \
 	man3/slurm_jobinfo_ctx_get.3 \
 	man3/slurm_kill_job.3 \
@@ -74,15 +68,13 @@ man3_MANS = man3/slurm_hostlist_create.3 \
 	man3/slurm_print_partition_info_msg.3 \
 	man3/slurm_reconfigure.3 \
 	man3/slurm_resume.3 \
-	man3/slurm_requeue.3 \
 	man3/slurm_shutdown.3 \
+	man3/slurm_spawn.3 \
+	man3/slurm_spawn_kill.3 \
 	man3/slurm_step_ctx_create.3 \
 	man3/slurm_step_ctx_destroy.3 \
 	man3/slurm_step_ctx_get.3 \
-	man3/slurm_step_launch.3 \
-	man3/slurm_step_launch_abort.3 \
-	man3/slurm_step_launch_wait_finish.3 \
-	man3/slurm_step_launch_wait_start.3 \
+	man3/slurm_step_ctx_set.3 \
 	man3/slurm_strerror.3 \
 	man3/slurm_submit_batch_job.3 \
 	man3/slurm_suspend.3 \

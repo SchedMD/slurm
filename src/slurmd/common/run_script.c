@@ -4,7 +4,7 @@
  *  Copyright (C) 2005 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Christopher Morrone <morrone2@llnl.gov>
- *  UCRL-CODE-226842.
+ *  UCRL-CODE-217948.
  *  
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -34,10 +34,6 @@
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
-
-#if HAVE_CONFIG_H
-#  include "config.h"
-#endif
 
 #include <stdlib.h>
 #include <sys/wait.h>
@@ -89,11 +85,7 @@ run_script(const char *name, const char *path, uint32_t jobid,
 		argv[0] = (char *)xstrdup(path);
 		argv[1] = NULL;
 
-#ifdef SETPGRP_TWO_ARGS
-		setpgrp(0, 0);
-#else
 		setpgrp();
-#endif
 		execve(path, argv, env);
 		error("execve(): %m");
 		exit(127);

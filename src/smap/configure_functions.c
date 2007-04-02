@@ -6,7 +6,7 @@
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Danny Auble <da@llnl.gov>
  *
- *  UCRL-CODE-226842.
+ *  UCRL-CODE-217948.
  *  
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -890,10 +890,6 @@ static int _add_bg_record(blockreq_t *blockreq, List allocated_blocks)
 	int j = 0, number;
 	int len = 0;
 	int x,y,z;
-	
-	start1[X] = 0;
-	start1[Y] = 0;
-	start1[Z] = 0;
 	
 	geo[X] = 0;
 	geo[Y] = 0;

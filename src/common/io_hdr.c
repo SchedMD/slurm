@@ -5,7 +5,7 @@
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Mark A. Grondona <mgrondona@llnl.gov>.
- *  UCRL-CODE-226842.
+ *  UCRL-CODE-217948.
  *  
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -162,7 +162,7 @@ io_init_msg_validate(struct slurm_io_init_msg *msg, const char *sig)
 	}
 
 	if (memcmp((void *)sig, (void *)msg->cred_signature,
-		   SLURM_IO_KEY_SIZE)) {
+		   SLURM_CRED_SIGLEN)) {
 		error("Invalid IO init header signature");
 		return SLURM_ERROR;
 	}
@@ -179,7 +179,7 @@ io_init_msg_packed_size(void)
 
 	len = sizeof(uint16_t)        /* version */
 		+ sizeof(uint32_t)    /* nodeid */
-		+ (SLURM_IO_KEY_SIZE + sizeof(uint16_t))  /* signature */
+		+ (SLURM_CRED_SIGLEN + sizeof(uint16_t))  /* signature */
 		+ sizeof(uint32_t)    /* stdout_objs */
 		+ sizeof(uint32_t);   /* stderr_objs */
 	return len;
@@ -193,7 +193,7 @@ io_init_msg_pack(struct slurm_io_init_msg *hdr, Buf buffer)
 	pack32(hdr->stdout_objs, buffer);
 	pack32(hdr->stderr_objs, buffer);
 	packmem((char *) hdr->cred_signature,
-		(uint16_t) SLURM_IO_KEY_SIZE, buffer);
+		(uint16_t) SLURM_CRED_SIGLEN, buffer);
 }
 
 
@@ -207,7 +207,7 @@ io_init_msg_unpack(struct slurm_io_init_msg *hdr, Buf buffer)
 	safe_unpack32(&hdr->stdout_objs, buffer);
 	safe_unpack32(&hdr->stderr_objs, buffer);
 	safe_unpackmem((char *) hdr->cred_signature, &val, buffer);
-	if (val != SLURM_IO_KEY_SIZE)
+	if (val != SLURM_CRED_SIGLEN)
 		goto unpack_error;
 
 	return SLURM_SUCCESS;

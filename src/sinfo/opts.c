@@ -1,10 +1,10 @@
 /****************************************************************************\
  *  opts.c - sinfo command line option processing functions
  *****************************************************************************
- *  Copyright (C) 2002-2006 The Regents of the University of California.
+ *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Joey Ekstrom <ekstrom1@llnl.gov>, Morris Jette <jette1@llnl.gov>
- *  UCRL-CODE-226842.
+ *  UCRL-CODE-217948.
  *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -15,7 +15,7 @@
  *  any later version.
  *
  *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under
+ *  to link the code of portions of this program with the OpenSSL library under 
  *  certain conditions as described in each individual source file, and 
  *  distribute linked combinations including the two. You must obey the GNU 
  *  General Public License in all respects for all of the code used other than 
@@ -222,16 +222,13 @@ extern void parse_command_line(int argc, char *argv[])
 
 	if ( params.format == NULL ) {
 		if ( params.summarize ) {
-#ifdef HAVE_BG
-			params.format = "%9P %.5a %.10l %.32F  %N";
-#else
 			params.format = "%9P %.5a %.10l %.15F  %N";
-#endif
+
 		} else if ( params.node_flag ) {
 			params.node_field_flag = true;	/* compute size later */
 			params.format = params.long_output ?
-			  "%N %.6D %.9P %.11T %.4c %.8z %.6m %.8d %.6w %.8f %20R" :
-			  "%N %.6D %.9P %6t";
+			  "%N %.5D %.9P %.11T %.4c %.6m %.8d %.6w %.8f %20R" :
+			  "%N %.5D %.9P %6t";
 
 		} else if (params.list_reasons) {
 			params.format = params.long_output ?  
@@ -243,7 +240,7 @@ extern void parse_command_line(int argc, char *argv[])
 
 		} else {
 			params.format = params.long_output ? 
-			  "%9P %.5a %.10l %.10s %.4r %.5h %.10g %.6D %.11T %N" :
+			  "%9P %.5a %.10l %.8s %.4r %.5h %.10g %.5D %.11T %N" :
 			  "%9P %.5a %.10l %.5D %.6t %N";
 		}
 	}
@@ -458,12 +455,6 @@ _parse_format( char* format )
 					field_size, 
 					right_justify, 
 					suffix );
-		} else if (field[0] == 'C') {
-			params.match_flags.cpus_flag = true;
-			format_add_cpus_aiot( params.format_list,
-					field_size,
-					right_justify,
-					suffix );
 		} else if (field[0] == 'd') {
 			params.match_flags.disk_flag = true;
 			format_add_disk( params.format_list, 
@@ -554,30 +545,6 @@ _parse_format( char* format )
 		} else if (field[0] == 'w') {
 			params.match_flags.weight_flag = true;
 			format_add_weight( params.format_list, 
-					field_size, 
-					right_justify, 
-					suffix );
-		} else if (field[0] == 'X') {
-			params.match_flags.sockets_flag = true;
-			format_add_sockets( params.format_list, 
-					field_size, 
-					right_justify, 
-					suffix );
-		} else if (field[0] == 'Y') {
-			params.match_flags.cores_flag = true;
-			format_add_cores( params.format_list, 
-					field_size, 
-					right_justify, 
-					suffix );
-		} else if (field[0] == 'Z') {
-			params.match_flags.threads_flag = true;
-			format_add_threads( params.format_list, 
-					field_size, 
-					right_justify, 
-					suffix );
-		} else if (field[0] == 'z') {
-			params.match_flags.sct_flag = true;
-			format_add_sct( params.format_list, 
 					field_size, 
 					right_justify, 
 					suffix );

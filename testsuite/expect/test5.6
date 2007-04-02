@@ -11,7 +11,7 @@
 # Copyright (C) 2002 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 # Written by Morris Jette <jette1@llnl.gov>
-# UCRL-CODE-226842.
+# UCRL-CODE-217948.
 # 
 # This file is part of SLURM, a resource management program.
 # For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -48,7 +48,7 @@ make_bash_script $file_in "$srun $bin_sleep $max_job_delay"
 #
 # Submit a couple of job so we have something to look at
 #
-set srun_pid [spawn $srun --batch -N1-1 --output=/dev/null --error=/dev/null -t5 $file_in]
+spawn $srun --batch -N1-1 --output=/dev/null --error=/dev/null -t5 $file_in
 expect {
 	-re "jobid ($number) submitted" {
 		set job_id1 $expect_out(1,string)
@@ -56,7 +56,7 @@ expect {
 	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
-		slow_kill $srun_pid
+		kill_srun
 		exit 1
 	}
 	eof {
@@ -65,10 +65,11 @@ expect {
 }
 if {$job_id1 == 0} {
 	send_user "\nFAILURE: srun job submit failure\n"
+	kill_srun
 	exit 1
 }
 
-set srun_pid [spawn $srun --batch -N1-1 --output=/dev/null --error=/dev/null --hold -t5 $file_in]
+spawn $srun --batch -N1-1 --output=/dev/null --error=/dev/null --hold -t5 $file_in
 expect {
 	-re "jobid ($number) submitted" {
 		set job_id2 $expect_out(1,string)
@@ -76,8 +77,7 @@ expect {
 	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
-		slow_kill $srun_pid
-		cancel_job $job_id1
+		kill_srun
 		exit 1
 	}
 	eof {
@@ -86,7 +86,7 @@ expect {
 }
 if {$job_id2 == 0} {
 	send_user "\nFAILURE: srun job submit failure\n"
-	cancel_job $job_id1
+	kill_srun
 	exit 1
 }
 

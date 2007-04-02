@@ -4,7 +4,7 @@
  *  Copyright (C) 2006-2007 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
- *  UCRL-CODE-226842.
+ *  UCRL-CODE-217948.
  *  
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -54,7 +54,7 @@ static int plugin_errno = SLURM_SUCCESS;
 /**************************************************************************/
 extern int init( void )
 {
-	verbose( "Wiki2 scheduler plugin loaded" );
+	verbose( "Wiki scheduler plugin loaded" );
 	return spawn_msg_thread();
 }
 
@@ -98,14 +98,6 @@ extern uint32_t slurm_sched_plugin_initial_priority( uint32_t last_prio )
 void slurm_sched_plugin_job_is_pending( void )
 {
 	/* No action required */
-}
-
-/**************************************************************************/
-/* TAG(              slurm_sched_plugin_reconfig                        ) */
-/**************************************************************************/
-int slurm_sched_plugin_reconfig( void )
-{
-	return parse_wiki_config();
 }
 
 /**************************************************************************/

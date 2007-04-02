@@ -1,3 +1,4 @@
+# $Id$
 #
 
 AUTOMAKE_OPTIONS = foreign
@@ -7,11 +8,13 @@ INCLUDES = -I$(top_srcdir)
 bin_PROGRAMS = srun
 
 srun_SOURCES = \
-	srun.c srun.h \
+	srun.c \
 	opt.c opt.h \
 	srun_job.c srun_job.h \
 	msg.c msg.h \
+	pmi.c pmi.h \
 	signals.c signals.h \
+	io.c io.h   \
 	launch.c    \
 	launch.h    \
 	attach.h    \
@@ -29,7 +32,11 @@ srun_SOURCES = \
 	multi_prog.c multi_prog.h \
 	srun.wrapper.c
 
-convenience_libs = $(top_builddir)/src/api/libslurmhelper.la
+convenience_libs =  \
+	$(top_builddir)/src/common/libcommon.la   \
+	$(top_builddir)/src/common/libspank.la   \
+	$(top_builddir)/src/common/libeio.la      \
+	$(top_builddir)/src/api/libslurm.la
 
 srun_LDADD = \
 	$(convenience_libs) 
@@ -40,8 +47,6 @@ force:
 $(convenience_libs) : force
 	@cd `dirname $@` && $(MAKE) `basename $@`
 
-# debugging information is required for symbols in the attach 
-# module so that a debugger can attach to spawned tasks
 attach.o : attach.c
 	$(COMPILE) -c -g -o attach.o $(srcdir)/attach.c 
 
@@ -51,7 +56,6 @@ install-exec-local:
 	  srcdir=`cd $(top_srcdir) && pwd`; \
 	  /usr/lib/rpm/debugedit -b $$srcdir -d $(pkglibdir) \
 	                         $(DESTDIR)$(bindir)/srun; fi; \
-	mkdir -p -m 755 $(DESTDIR)$(pkglibdir)/src/srun
-	$(INSTALL) -m 644 $(top_srcdir)/src/srun/srun.wrapper.c \
-		$(DESTDIR)$(pkglibdir)/src/srun/srun.wrapper.c
+	$(INSTALL) -D -m 644 $(top_srcdir)/src/srun/srun.wrapper.c \
+	                       $(DESTDIR)$(pkglibdir)/src/srun/srun.wrapper.c
 
