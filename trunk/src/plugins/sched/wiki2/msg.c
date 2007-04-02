@@ -200,7 +200,7 @@ static char * _get_wiki_conf_path(void)
 
 /*****************************************************************************\
  * parse_wiki_config - Results go into global variables
- * RET SLURM_SUCESS or error code
+ * RET SLURM_SUCCESS or error code
  * 
  * See "man wiki.conf" for details.
 \*****************************************************************************/
