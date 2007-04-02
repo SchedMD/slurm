@@ -13,6 +13,8 @@ documents those changes that are of interest to users and admins.
    SIGHUP is received.
  - BLUEGENE - check to make sure set_block_user works when the block
    is in a ready state.
+ - In sched/wiki2 - add wiki.conf paramter HostFormat specifying 
+   format of hostlists exchanged between Slurm and Moab (experimental).
  - Fix to slurmstepd to not user local variables in a pthread create
 
 * Changes in SLURM 1.1.33
