@@ -77,8 +77,7 @@ binPROGRAMS_INSTALL = $(INSTALL_PROGRAM)
 PROGRAMS = $(bin_PROGRAMS)
 am_sbcast_OBJECTS = agent.$(OBJEXT) sbcast.$(OBJEXT) opts.$(OBJEXT)
 sbcast_OBJECTS = $(am_sbcast_OBJECTS)
-sbcast_DEPENDENCIES = $(top_builddir)/src/common/libcommon.la \
-	$(top_builddir)/src/api/libslurm.la
+sbcast_DEPENDENCIES = $(top_builddir)/src/api/libslurmhelper.la
 DEFAULT_INCLUDES = -I. -I$(srcdir) -I$(top_builddir) -I$(top_builddir)/slurm
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
 am__depfiles_maybe = depfiles
@@ -281,10 +280,7 @@ target_os = @target_os@
 target_vendor = @target_vendor@
 AUTOMAKE_OPTIONS = foreign
 INCLUDES = -I$(top_srcdir) $(BG_INCLUDES)
-sbcast_LDADD = \
-	$(top_builddir)/src/common/libcommon.la   \
-	$(top_builddir)/src/api/libslurm.la
-
+sbcast_LDADD = $(top_builddir)/src/api/libslurmhelper.la
 noinst_HEADERS = sbcast.h
 sbcast_SOURCES = agent.c sbcast.c opts.c
 sbcast_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)

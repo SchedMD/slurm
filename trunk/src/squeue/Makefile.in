@@ -78,9 +78,7 @@ PROGRAMS = $(bin_PROGRAMS)
 am_squeue_OBJECTS = squeue.$(OBJEXT) print.$(OBJEXT) opts.$(OBJEXT) \
 	sort.$(OBJEXT)
 squeue_OBJECTS = $(am_squeue_OBJECTS)
-squeue_LDADD = $(LDADD)
-squeue_DEPENDENCIES = $(top_builddir)/src/common/libcommon.la \
-	$(top_builddir)/src/api/libslurm.la
+squeue_DEPENDENCIES = $(top_builddir)/src/api/libslurmhelper.la
 DEFAULT_INCLUDES = -I. -I$(srcdir) -I$(top_builddir) -I$(top_builddir)/slurm
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
 am__depfiles_maybe = depfiles
@@ -283,9 +281,7 @@ target_os = @target_os@
 target_vendor = @target_vendor@
 AUTOMAKE_OPTIONS = foreign
 INCLUDES = -I$(top_srcdir)
-LDADD = $(top_builddir)/src/common/libcommon.la 	\
-	$(top_builddir)/src/api/libslurm.la
-
+squeue_LDADD = $(top_builddir)/src/api/libslurmhelper.la
 noinst_HEADERS = squeue.h print.h
 squeue_SOURCES = squeue.c print.c opts.c sort.c
 squeue_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
