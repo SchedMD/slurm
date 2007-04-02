@@ -54,6 +54,7 @@
 #include <stdio.h>
 #include <slurm/slurm_errno.h>
 #include "src/slurmctld/slurmctld.h"
+#include "src/common/xstring.h"
 
 #ifdef HAVE_MYSQL
 #include <mysql/mysql.h>
@@ -65,6 +66,12 @@ typedef struct {
 	char *user;	
 	char *pass;	
 } mysql_db_info_t;
+
+typedef struct {
+	char *name;
+	char *options;
+} database_field_t;
+
 #endif
 
 extern bool thread_safe;
@@ -88,6 +95,11 @@ extern MYSQL_RES *mysql_db_query_ret(MYSQL *mysql_db, int database_init,
 
 extern int mysql_insert_ret_id(MYSQL *mysql_db, int database_init, 
 			       char *query);
+
+extern int mysql_db_create_table(MYSQL *mysql_db, int database_init, 
+				 char *table_name, database_field_t *fields,
+				 char *ending);
+
 #endif
 
 #endif

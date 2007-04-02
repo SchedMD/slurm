@@ -175,5 +175,41 @@ extern int mysql_insert_ret_id(MYSQL *mysql_db, int database_init, char *query)
 	
 }
 
+extern int mysql_db_create_table(MYSQL *mysql_db, int database_init, 
+				 char *table_name, database_field_t *fields,
+				 char *ending)
+{
+	char *query = NULL;
+	char *tmp = NULL;
+	char *next = NULL;
+	int i = 0;
+
+	query = xstrdup_printf("create table if not exists %s (", table_name);
+	i=0;
+	while(fields && fields->name) {
+		next = xstrdup_printf(" %s %s",
+				      fields->name, 
+				      fields->options);
+		if(i) 
+			xstrcat(tmp, ",");
+		xstrcat(tmp, next);
+		xfree(next);
+		fields++;
+		i++;
+	}
+	xstrcat(query, tmp);
+	xfree(tmp);
+	xstrcat(query, ending);
+
+	if(mysql_db_query(mysql_db, database_init, query)
+	   == SLURM_ERROR) {
+		xfree(query);
+		return SLURM_ERROR;
+	}
+	xfree(query);
+
+	return SLURM_SUCCESS;
+}
+
 #endif
 

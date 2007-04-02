@@ -300,9 +300,9 @@ int get_data(void)
 	
 	itr = list_iterator_create(jobs);
 	while((job = list_next(itr)) != NULL) {
+		//info("got job %d", job->header.jobnum);
 		if(!list_count(job->steps))
 			continue;
-	
 		itr_step = list_iterator_create(job->steps);
 		while((step = list_next(itr)) != NULL) {
 			/* now aggregate the aggregatable */

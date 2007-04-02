@@ -351,6 +351,8 @@ extern void mysql_jobacct_process_get_jobs(List job_list,
 			step = jobacct_init_step_rec(header);
 			list_append(job->steps, step);
 			step->stepnum = atoi(step_row[STEP_REQ_STEPID]);
+			/* info("got step %u.%u", */
+/* 			     job->header.jobnum, step->stepnum); */
 			step->status = atoi(step_row[STEP_REQ_STATE]);
 			step->exitcode = atoi(step_row[STEP_REQ_COMP_CODE]);
 			step->ntasks = atoi(step_row[STEP_REQ_CPUS]);
