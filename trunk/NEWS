@@ -10,6 +10,9 @@ documents those changes that are of interest to users and admins.
     but doesn't ever get the message from the sender (network issue or
     something) also check to make sure if we get something back we make sure
     we account for everything we sent out before we call it good.
+ -- Another fix to make sure steps with requested nodes have correct cpus
+    accounted for and a fix to make sure the user can't allocate more 
+    cpus than the have requested.
 
 * Changes in SLURM 1.2.3
 ========================

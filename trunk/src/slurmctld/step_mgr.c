@@ -525,7 +525,6 @@ _pick_step_nodes (struct job_record  *job_ptr,
 		step_spec->cpu_count = 0;
 	}
 
-	
 	if (step_spec->node_count) {
 		nodes_picked_cnt = bit_set_count(nodes_picked);
 		if (nodes_idle 
@@ -561,6 +560,12 @@ _pick_step_nodes (struct job_record  *job_ptr,
 	
 	if (step_spec->cpu_count) {
 		cpus_picked_cnt = count_cpus(nodes_picked);
+		/* person is requesting more cpus than we got from the
+		   picked nodes we should return with an error */
+		if(step_spec->cpu_count > cpus_picked_cnt) {
+			goto cleanup;
+		}
+		
 		if (nodes_idle
 		    &&  (step_spec->cpu_count > cpus_picked_cnt)) {
 			int first_bit, last_bit;
@@ -701,7 +706,7 @@ step_create(job_step_create_request_msg_t *step_specs,
 	if (nodeset == NULL)
 		return ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE ;
 	node_count = bit_set_count(nodeset);
-	
+
 	if (step_specs->num_tasks == NO_VAL) {
 		if (step_specs->cpu_count != NO_VAL)
 			step_specs->num_tasks = step_specs->cpu_count;
@@ -734,7 +739,7 @@ step_create(job_step_create_request_msg_t *step_specs,
 		xfree(step_specs->node_list);
 		step_specs->node_list = xstrdup(step_node_list);
 	}
-
+	
 	step_ptr->step_node_bitmap = nodeset;
 	
 	switch(step_specs->task_dist) {
@@ -811,27 +816,27 @@ extern slurm_step_layout_t *step_layout_create(struct step_record *step_ptr,
 	int pos = -1;
 	struct job_record *job_ptr = step_ptr->job_ptr;
 	uint32_t node_cnt = job_ptr->cpu_count_reps[inx];
-	
+			
 	/* build the cpus-per-node arrays for the subset of nodes
 	   used by this job step */
 	for (i = 0; i < node_record_count; i++) {
 		if (bit_test(step_ptr->step_node_bitmap, i)) {
-			pos = bit_get_pos_num(step_ptr->step_node_bitmap, i);
+			/* find out the position in the job */
+			pos = bit_get_pos_num(job_ptr->node_bitmap, i);
 			if (pos == -1)
 				return NULL;
 			while(pos >= node_cnt) {
 				node_cnt += 
 					job_ptr->cpu_count_reps[++inx];
 			}
-			debug2("got inx of %d cpus = %d pos = %d", 
-			       inx, job_ptr->cpus_per_node[inx], pos);
+			debug2("%d got inx of %d cpus = %d pos = %d", 
+			       i, inx, job_ptr->cpus_per_node[inx], pos);
 			usable_cpus = job_ptr->cpus_per_node[inx];
 			
 			
 			//if(cpus_per_node[cpu_inx] != usable_cpus) {
 			if ((cpu_inx == -1) ||
-			    (cpus_per_node[cpu_inx] !=
-			     usable_cpus)) {
+			    (cpus_per_node[cpu_inx] != usable_cpus)) {
 				cpu_inx++;
 				
 				cpus_per_node[cpu_inx] = usable_cpus;
