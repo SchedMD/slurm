@@ -87,7 +87,8 @@ cset mpirun	"mpirun"
 cset totalviewcli	"/usr/local/bin/totalviewcli"
 
 # Pattern to match your shell prompt
-cset prompt {(%|#|\$|\]) *$}
+#cset prompt {(%|#|\$|\]) *$}
+cset prompt "(%|#|\\\$|]|\[^>]>) *(|\[^ ]* *)$"
 
 #
 # Specify locations of other executable files used
