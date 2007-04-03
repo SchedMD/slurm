@@ -999,7 +999,7 @@ List slurm_receive_msgs(slurm_fd fd, int steps, int timeout)
 	/* Forward message to other nodes */
 	if(header.forward.cnt > 0) {
 		error("We need to forward this to other nodes use "
-		      "slurm_receive_and_forward_msgs instead");
+		      "slurm_receive_msg_and_forward instead");
 	}
 	
 	if((auth_cred = g_slurm_auth_unpack(buffer)) == NULL) {
@@ -1243,7 +1243,7 @@ total_return:
 		msg->msg_type = RESPONSE_FORWARD_FAILED;
 		msg->auth_cred = (void *) NULL;
 		msg->data = NULL;
-		error("slurm_receive_and_forward_msgs: %s",
+		error("slurm_receive_msg_and_forward: %s",
 		      slurm_strerror(rc));
 	} else {
 		rc = 0;
