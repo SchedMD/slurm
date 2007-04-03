@@ -47,6 +47,7 @@
 #include "mysql_jobacct.h"
 #include "src/common/slurm_jobacct.h"
 
+#ifdef HAVE_MYSQL
 extern MYSQL *jobacct_mysql_db;
 extern int jobacct_db_init;
 
@@ -62,5 +63,6 @@ extern void mysql_jobacct_process_get_jobs(List job_list,
 
 extern void mysql_jobacct_process_archive(List selected_parts,
 					  sacct_parameters_t *params);
+#endif
 
 #endif

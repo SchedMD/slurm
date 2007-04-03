@@ -46,6 +46,7 @@
 #include <mysql/mysqld_error.h>
 #include "src/slurmctld/slurmctld.h"
 
+#ifdef HAVE_MYSQL
 extern int mysql_jobacct_init();
 extern int mysql_jobacct_fini();
 extern int mysql_jobacct_job_start(struct job_record *job_ptr);
@@ -57,6 +58,6 @@ extern void mysql_jobacct_get_jobs(List job_list,
 				   List selected_steps, List selected_parts,
 				   void *params);
 extern void mysql_jobacct_archive(List selected_parts, void *params);
-
+#endif
 
 #endif

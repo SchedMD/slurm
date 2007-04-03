@@ -45,6 +45,7 @@
 #include "src/common/xstring.h"
 #include "mysql_jobacct_process.h"
 
+#ifdef HAVE_MYSQL
 static void _do_fdump(List job_list)
 {
 	info("fdump option not applicable from mysql plugin");
@@ -56,6 +57,7 @@ extern void mysql_jobacct_process_get_jobs(List job_list,
 					   List selected_parts,
 					   sacct_parameters_t *params)
 {
+
 	char *query = NULL;	
 	char *extra = NULL;	
 	char *tmp = NULL;	
@@ -476,4 +478,4 @@ extern void mysql_jobacct_process_archive(List selected_parts,
 	return;
 }
 
-	
+#endif	

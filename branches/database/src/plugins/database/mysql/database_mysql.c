@@ -104,7 +104,11 @@ extern int fini ( void )
  */
 extern int database_p_jobacct_init()
 {
+#ifdef HAVE_MYSQL
 	return mysql_jobacct_init();	
+#else
+	return SLURM_ERROR;
+#endif
 }
 
 /*
@@ -112,7 +116,11 @@ extern int database_p_jobacct_init()
  */
 extern int database_p_jobacct_fini()
 {
+#ifdef HAVE_MYSQL
 	return mysql_jobacct_fini();
+#else
+	return SLURM_ERROR;
+#endif
 }
 
 /* 
@@ -120,7 +128,11 @@ extern int database_p_jobacct_fini()
  */
 extern int database_p_jobacct_job_start(struct job_record *job_ptr)
 {
+#ifdef HAVE_MYSQL
 	return mysql_jobacct_job_start(job_ptr);
+#else
+	return SLURM_ERROR;
+#endif
 }
 
 /* 
@@ -128,7 +140,11 @@ extern int database_p_jobacct_job_start(struct job_record *job_ptr)
  */
 extern int database_p_jobacct_job_complete(struct job_record *job_ptr)
 {
+#ifdef HAVE_MYSQL
 	return mysql_jobacct_job_complete(job_ptr);
+#else
+	return SLURM_ERROR;
+#endif
 }
 
 /* 
@@ -136,7 +152,11 @@ extern int database_p_jobacct_job_complete(struct job_record *job_ptr)
  */
 extern int database_p_jobacct_step_start(struct step_record *step_ptr)
 {
+#ifdef HAVE_MYSQL
 	return mysql_jobacct_step_start(step_ptr);
+#else
+	return SLURM_ERROR;
+#endif
 }
 
 /* 
@@ -144,7 +164,11 @@ extern int database_p_jobacct_step_start(struct step_record *step_ptr)
  */
 extern int database_p_jobacct_step_complete(struct step_record *step_ptr)
 {
+#ifdef HAVE_MYSQL
 	return mysql_jobacct_step_complete(step_ptr);
+#else
+	return SLURM_ERROR;
+#endif
 }
 
 /* 
@@ -152,7 +176,11 @@ extern int database_p_jobacct_step_complete(struct step_record *step_ptr)
  */
 extern int database_p_jobacct_suspend(struct job_record *job_ptr)
 {
+#ifdef HAVE_MYSQL
 	return mysql_jobacct_suspend(job_ptr);
+#else
+	return SLURM_ERROR;
+#endif
 }
 
 /* 
@@ -165,9 +193,11 @@ extern void database_p_jobacct_get_jobs(List job_list,
 					List selected_parts,
 					void *params)
 {
+#ifdef HAVE_MYSQL
 	mysql_jobacct_get_jobs(job_list,
 			       selected_steps, selected_parts,
 			       params);
+#endif
 	return;
 }
 
@@ -177,6 +207,8 @@ extern void database_p_jobacct_get_jobs(List job_list,
 extern void database_p_jobacct_archive(List selected_parts,
 				       void *params)
 {
+#ifdef HAVE_MYSQL
 	mysql_jobacct_archive(selected_parts, params);
+#endif
 	return;
 }

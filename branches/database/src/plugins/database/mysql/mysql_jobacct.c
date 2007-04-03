@@ -40,6 +40,7 @@
 
 #include "mysql_jobacct_process.h"
 
+#ifdef HAVE_MYSQL
 MYSQL *jobacct_mysql_db = NULL;
 int jobacct_db_init = 0;
 
@@ -624,3 +625,4 @@ extern void mysql_jobacct_archive(List selected_parts, void *params)
 	mysql_jobacct_process_archive(selected_parts, params);
 	return;
 }
+#endif
