@@ -404,8 +404,6 @@ static int _init_task_layout(slurm_step_layout_t *step_layout,
 	
 	step_layout->plane_size = plane_size;
 
-/* 	step_layout->node_addr = xmalloc(sizeof(slurm_addr)  */
-/* 				     * step_layout->node_cnt); */
 	step_layout->tasks = xmalloc(sizeof(uint16_t) 
 				     * step_layout->node_cnt);
 	step_layout->tids  = xmalloc(sizeof(uint32_t *) 
@@ -432,19 +430,11 @@ static int _init_task_layout(slurm_step_layout_t *step_layout,
 /* 			error("hostlist incomplete for this job request"); */
 /* 			hostlist_destroy(hl); */
 /* 			return SLURM_ERROR; */
-/* 		} */
-/* 		if(slurm_conf_get_addr(name, &step_layout->node_addr[i]) */
-/* 		   == SLURM_ERROR) { */
-/* 			error("_init_task_layout: can't get addr for " */
-/* 			      "host %s", name); */
-/* 			free(name); */
-/* 			continue; */
-/* 		} */
-							
+/* 		} */							
 /* 		debug2("host %d = %s", i, name); */
 /* 		free(name); */
 		cpus[i] = cpus_per_node[cpu_inx];
-		
+		//info("got %d cpus", cpus[i]);
 		if ((++cpu_cnt) >= cpu_count_reps[cpu_inx]) {
 			/* move to next record */
 			cpu_inx++;
