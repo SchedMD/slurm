@@ -45,10 +45,16 @@
 #include "src/common/xstring.h"
 #include "mysql_jobacct_process.h"
 
+static void _do_fdump(List job_list)
+{
+	info("fdump option not applicable from mysql plugin");
+	return;
+}
+
 extern void mysql_jobacct_process_get_jobs(List job_list,
-					  List selected_steps,
-					  List selected_parts,
-					  sacct_parameters_t *params)
+					   List selected_steps,
+					   List selected_parts,
+					   sacct_parameters_t *params)
 {
 	char *query = NULL;	
 	char *extra = NULL;	
@@ -266,7 +272,7 @@ extern void mysql_jobacct_process_get_jobs(List job_list,
 	}
 	xfree(query);
 
-	while ((row = mysql_fetch_row(result))) {
+	while((row = mysql_fetch_row(result))) {
 		time_t job_suspended = atoi(row[JOB_REQ_SUSPENDED]);
 		char *id = row[JOB_REQ_ID];
 		header.jobnum = atoi(row[JOB_REQ_JOBID]);
@@ -278,6 +284,8 @@ extern void mysql_jobacct_process_get_jobs(List job_list,
 		header.blockid = xstrdup(row[JOB_REQ_BLOCKID]);
 
 		job = jobacct_init_job_rec(header);
+		job->show_full = 1;
+		job->status = atoi(row[JOB_REQ_STATE]);
 		job->jobname = xstrdup(row[JOB_REQ_NAME]);
 		job->track_steps = atoi(row[JOB_REQ_TRACKSTEPS]);
 		job->priority = atoi(row[JOB_REQ_PRIORITY]);
@@ -293,22 +301,31 @@ extern void mysql_jobacct_process_get_jobs(List job_list,
 
 		if(selected_steps && list_count(selected_steps)) {
 			set = 0;
-			xstrcat(extra, " && (");
 			itr = list_iterator_create(selected_steps);
 			while((selected_step = list_next(itr))) {
 				if(selected_step->jobid != header.jobnum) {
 					continue;
+				} else if (selected_step->stepid
+					   == (uint32_t)NO_VAL) {
+					job->show_full = 1;
+					break;
 				}
+				
 				if(set) 
 					xstrcat(extra, " || ");
+				else 
+					xstrcat(extra, " && (");
+			
 				tmp = xstrdup_printf("t1.stepid=%d",
 						     selected_step->stepid);
 				xstrcat(extra, tmp);
 				set = 1;
 				xfree(tmp);
+				job->show_full = 0;
 			}
 			list_iterator_destroy(itr);
-			xstrcat(extra, ")");
+			if(set)
+				xstrcat(extra, ")");
 		}
 		for(i=0; i<STEP_REQ_COUNT; i++) {
 			if(i) 
@@ -447,6 +464,9 @@ extern void mysql_jobacct_process_get_jobs(List job_list,
 		job->elapsed -= job_suspended;
 	}
 	mysql_free_result(result);
+	if (params->opt_fdump) {
+		_do_fdump(job_list);
+	}
 	return;
 }
 

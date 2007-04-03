@@ -263,11 +263,13 @@ try_again:
 	    mysql_insert_ret_id(jobacct_mysql_db, jobacct_db_init, query))) {
 		snprintf(query, sizeof(query),
 			 "insert into %s (id, start, name, track_steps, "
-			 "priority, cpus, nodelist, account) "
-			 "values (%d, %u, '%s', %d, %ld, %u, '%s', '%s')",
+			 "state, priority, cpus, nodelist, account) "
+			 "values (%d, %u, '%s', %d, %d, %ld, %u, '%s', '%s')",
 			 job_table, job_ptr->db_index, 
 			 (int)job_ptr->start_time,
-			 jname, track_steps, priority, job_ptr->num_procs,
+			 jname, track_steps,
+			 job_ptr->job_state & (~JOB_COMPLETING),
+			 priority, job_ptr->num_procs,
 			 nodes, account);
 		rc = mysql_db_query(jobacct_mysql_db, jobacct_db_init, query);
 	} else if(!reinit) {

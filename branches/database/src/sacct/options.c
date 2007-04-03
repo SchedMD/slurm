@@ -299,14 +299,20 @@ int get_data(void)
 	}
 	
 	itr = list_iterator_create(jobs);
-	while((job = list_next(itr)) != NULL) {
-		//info("got job %d", job->header.jobnum);
-		if(!list_count(job->steps))
+	while((job = list_next(itr))) {
+		if(!list_count(job->steps)) 
 			continue;
+		
 		itr_step = list_iterator_create(job->steps);
-		while((step = list_next(itr)) != NULL) {
+		while((step = list_next(itr_step)) != NULL) {
 			/* now aggregate the aggregatable */
 			job->ncpus = MAX(job->ncpus, step->ncpus);
+			if (step->status == JOB_RUNNING &&
+			    job->job_terminated_seen) {
+				step->status = JOB_FAILED;
+				step->exitcode=1;
+			}
+
 			if(step->status < JOB_COMPLETE)
 				continue;
 			job->tot_cpu_sec += step->tot_cpu_sec;
@@ -345,7 +351,9 @@ int get_data(void)
 			/* get the max for all the sacct_t struct */
 			aggregate_sacct(&job->sacct, &step->sacct);
 		}
+		list_iterator_destroy(itr_step);
 	}
+	list_iterator_destroy(itr);
 
 	return SLURM_SUCCESS;
 } 
@@ -892,11 +900,6 @@ void do_dump(void)
 		/* JOB_STEP */
 		itr_step = list_iterator_create(job->steps);
 		while((step = list_next(itr_step))) {
-			if (step->status == JOB_RUNNING &&
-			    job->job_terminated_seen) {
-				step->status = JOB_FAILED;
-				step->exitcode=1;
-			}
 			_dump_header(step->header);
 			if(step->end == 0)
 				step->end = job->end;
@@ -1135,10 +1138,6 @@ void do_list(void)
 		if (do_jobsteps && (job->track_steps || !job->show_full)) {
 			itr_step = list_iterator_create(job->steps);
 			while((step = list_next(itr_step))) {
-				if (step->status == JOB_RUNNING 
-				    && job->job_terminated_seen) {
-					step->status = JOB_FAILED;
-				}
 				if (params.opt_state_list) {
 					if(!selected_status[step->status])
 						continue;

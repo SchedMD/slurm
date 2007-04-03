@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  flatfile_jobacct_process.h - functions the processing of
+ *  flatfile_jobacct_process.c - functions the processing of
  *                               information from the flatfile jobacct
  *                               database.
  *****************************************************************************
