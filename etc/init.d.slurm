@@ -147,9 +147,9 @@ slurmstatus() {
 
 #
 # stop slurm daemons, 
-# wait for termination to complete (up to 10 seconds), then restart
+# wait for termination to complete (up to 10 seconds) before returning
 #
-slurmrestart() {
+slurmstop() {
     for prog in `$BINDIR/scontrol show daemons`; do
        stop $prog
 
@@ -161,9 +161,6 @@ slurmrestart() {
              break
           fi
        done
-
-       optvar=`echo ${prog}_OPTIONS | tr "a-z" "A-Z"`
-       start $prog ${!optvar}
     done
 }
 
@@ -184,9 +181,7 @@ case "$1" in
         startall
         ;;
     stop)
-	for prog in `$BINDIR/scontrol show daemons`; do
-	    stop $prog
-	done
+	slurmstop
         ;;
     status)
 	for prog in `$BINDIR/scontrol show daemons`; do
@@ -194,7 +189,8 @@ case "$1" in
 	done
         ;;
     restart)
-        slurmrestart
+        $0 stop
+        $0 start
         ;;
     condrestart)
         if [ -f /var/lock/subsys/slurm ]; then
