@@ -72,10 +72,10 @@ extern int pgsql_create_db(PGconn *pgsql_db, char *db_name,
 			   pgsql_db_info_t *db_info)
 {
 	char create_line[50];
-	char *connect_line = xstrdup_printf("dbname = postgres host = '%s' ",
+	char *connect_line = xstrdup_printf("dbname = postgres host = '%s' "
 					    "user = '%s' "
 					    "port = '%u'",
-					    db_info->host
+					    db_info->host,
 					    db_info->user,
 					    /* db_info->pass, */
 					    db_info->port);

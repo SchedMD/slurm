@@ -41,9 +41,9 @@
 #ifndef _HAVE_PGSQL_JOBACCT_H
 #define _HAVE_PGSQL_JOBACCT_H
 
-#ifdef HAVE_PGSQL
 #include "src/plugins/jobacct/common/jobacct_common.h"
 #include "src/slurmctld/slurmctld.h"
+#ifdef HAVE_PGSQL
 #include <libpq-fe.h>
 
 extern int pgsql_jobacct_init();
