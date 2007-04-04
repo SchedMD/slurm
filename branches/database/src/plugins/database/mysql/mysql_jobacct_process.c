@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  flatfile_jobacct_process.c - functions the processing of
+ *  mysql_jobacct_process.c - functions the processing of
  *                               information from the mysql jobacct
  *                               database.
  *****************************************************************************

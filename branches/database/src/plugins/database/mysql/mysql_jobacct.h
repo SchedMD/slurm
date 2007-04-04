@@ -41,12 +41,12 @@
 #ifndef _HAVE_MYSQL_JOBACCT_H
 #define _HAVE_MYSQL_JOBACCT_H
 
+#ifdef HAVE_MYSQL
 #include "src/plugins/jobacct/common/jobacct_common.h"
 #include <mysql/mysql.h>
 #include <mysql/mysqld_error.h>
 #include "src/slurmctld/slurmctld.h"
 
-#ifdef HAVE_MYSQL
 extern int mysql_jobacct_init();
 extern int mysql_jobacct_fini();
 extern int mysql_jobacct_job_start(struct job_record *job_ptr);

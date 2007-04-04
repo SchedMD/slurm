@@ -72,12 +72,10 @@ typedef struct {
 	char *options;
 } database_field_t;
 
-#endif
 
 extern bool thread_safe;
 extern pthread_mutex_t mysql_lock;
 
-#ifdef HAVE_MYSQL
 extern mysql_db_info_t *create_mysql_db_info();
 
 extern int *destroy_mysql_db_info(mysql_db_info_t *db_info);
