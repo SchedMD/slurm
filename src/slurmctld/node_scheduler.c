@@ -774,7 +774,16 @@ _add_node_set_info(struct node_set *node_set_ptr,
 
         if (cr_enabled == 0) {
                 *node_cnt += node_set_ptr->nodes;
-                *cpu_cnt  += node_set_ptr->nodes * node_set_ptr->cpus_per_node;
+		if (slurmctld_conf.fast_schedule) {
+			*cpu_cnt  += node_set_ptr->nodes * 
+				node_set_ptr->cpus_per_node;
+		} else {
+			for (i = 0; i < node_record_count; i++) {
+				if (bit_test (node_set_ptr->my_bitmap, i) == 0)
+					continue;
+				*cpu_cnt  += node_record_table_ptr[i].cpus;
+			}
+		}
         } else {
                 for (i = 0; i < node_record_count; i++) {
                         int allocated_cpus;
@@ -786,16 +795,21 @@ _add_node_set_info(struct node_set *node_set_ptr,
 				SELECT_CR_USED_CPUS, 
 				&allocated_cpus);
                         if (error_code != SLURM_SUCCESS) {
-                               error(" cons_res: Invalid Node reference", 
-                                     node_record_table_ptr[i]);
+                               error("cons_res: Invalid Node reference, %s", 
+                                     node_record_table_ptr[i].name);
                                return error_code;
                         }
  
 			*node_cnt += 1;
-			*cpu_cnt  += node_set_ptr->cpus_per_node - 
-					allocated_cpus;                       
+			if (slurmctld_conf.fast_schedule) {
+				*cpu_cnt  += node_set_ptr->cpus_per_node - 
+					allocated_cpus;
+			} else {
+				*cpu_cnt  += node_record_table_ptr[i].cpus -
+					allocated_cpus;
+			}                       
                 }
-		debug3(" cons_res: _add_node_set_info node_cnt %d cpu_cnt %d ",
+		debug3("cons_res: _add_node_set_info node_cnt %d cpu_cnt %d ",
 			*node_cnt, *cpu_cnt);
         }
         return error_code;

@@ -5,6 +5,8 @@ documents those changes that are of interest to users and admins.
 =========================
  - In sched/wiki - Add support for CMD=SIGNALJOB to accept option
    of VALUE=SIGXXX in addition to VALUE=# and VALUE=XXX options
+ - Correct logic for job allocation with task count (srun -n ...) AND
+   FastSchedule=0 AND low CPUs count in Slurm's node configuration.
 
 * Changes in SLURM 1.1.34
 =========================
