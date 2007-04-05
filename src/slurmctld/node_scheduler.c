@@ -885,7 +885,16 @@ _add_node_set_info(struct node_set *node_set_ptr,
 				fatal("bit_copy malloc failure");
 		}
                 *node_cnt += node_set_ptr->nodes;
-                *cpu_cnt  += node_set_ptr->nodes * node_set_ptr->cpus_per_node;
+		if (slurmctld_conf.fast_schedule) {
+			*cpu_cnt  += node_set_ptr->nodes * 
+				node_set_ptr->cpus_per_node;
+		} else {
+			for (i = 0; i < node_record_count; i++) {
+				if (bit_test (node_set_ptr->my_bitmap, i) == 0)
+					continue;
+				*cpu_cnt  += node_record_table_ptr[i].cpus;
+			}
+		}
         } else {
                 for (i = 0; i < node_record_count; i++) {
                         if (bit_test (node_set_ptr->my_bitmap, i) == 0)
@@ -896,8 +905,8 @@ _add_node_set_info(struct node_set *node_set_ptr,
 				SELECT_ALLOC_CPUS, 
 				&alloc_cpus);
                         if (error_code != SLURM_SUCCESS) {
-				error(" cons_res: Invalid Node reference", 
-				      node_record_table_ptr[i]);
+				error("cons_res: Invalid Node reference %s", 
+				      node_record_table_ptr[i].name);
 				return error_code;
 			}
                         alloc_mem = 0;
@@ -906,14 +915,21 @@ _add_node_set_info(struct node_set *node_set_ptr,
 				SELECT_ALLOC_MEMORY, 
 				&alloc_mem);
                         if (error_code != SLURM_SUCCESS) {
-				error(" cons_res: Invalid Node reference", 
-				      node_record_table_ptr[i]);
+				error("cons_res: Invalid Node reference %s", 
+				      node_record_table_ptr[i]. name);
 				return error_code;
 			}
-			this_cpu_cnt = node_set_ptr->cpus_per_node - 
-				alloc_cpus;
-			this_mem_cnt = (node_set_ptr->real_memory - 
-				alloc_mem) - mem_cnt;                       
+			if (slurmctld_conf.fast_schedule) {
+				this_cpu_cnt = node_set_ptr->cpus_per_node - 
+					alloc_cpus;
+				this_mem_cnt = (node_set_ptr->real_memory - 
+					alloc_mem) - mem_cnt;
+			} else {
+				this_cpu_cnt = node_record_table_ptr[i].cpus -
+					alloc_cpus;
+				this_mem_cnt = (node_record_table_ptr[i].real_memory -
+					alloc_mem) - mem_cnt;
+			}                       
 
 			debug3("_add_node_set_info %d %s this_cpu_cnt %d"
 			       " this_mem_cnt %d", job_id, 
