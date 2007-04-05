@@ -89,7 +89,7 @@ static int _mysql_jobacct_check_tables()
 		{ "state", "smallint not null" },
 		{ "kill_requid", "smallint default -1" },
 		{ "comp_code", "smallint default 0" },
-		{ "cpus mediumint", "unsigned not null" },
+		{ "cpus", "mediumint unsigned not null" },
 		{ "max_vsize", "mediumint unsigned default 0" },
 		{ "max_vsize_task", "smallint unsigned default 0" },
 		{ "max_vsize_node", "mediumint unsigned default 0" },

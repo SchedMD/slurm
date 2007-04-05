@@ -51,7 +51,7 @@
 extern PGconn *jobacct_pgsql_db;
 extern int jobacct_db_init;
 
-extern char *job_index;
+extern char *index_table;
 extern char *job_table;
 extern char *step_table;
 extern char *rusage_table;

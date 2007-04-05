@@ -44,36 +44,36 @@
 PGconn *jobacct_pgsql_db = NULL;
 int jobacct_db_init = 0;
 
-char *job_index = "index_table";
+char *index_table = "index_table";
 char *job_table = "job_table";
 char *step_table = "step_table";
 char *rusage_table = "rusage_table";
 
-static int _pgsql_jobacct_check_tables()
+static int _pgsql_jobacct_check_tables(char *user)
 {
-	database_field_t job_index_fields[] = {
-		{ "id", "int not null auto_increment" },
-		{ "jobid ", "mediumint unsigned not null" },
-		{ "partition", "tinytext not null" },
-		{ "submit", "int unsigned not null" },
-		{ "uid", "smallint unsigned not null" },
-		{ "gid", "smallint unsigned not null" },
-		{ "blockid", "tinytext" },
+	database_field_t index_table_fields[] = {
+		{ "id", "serial" },
+		{ "jobid ", "integer not null" },
+		{ "partition", "text not null" },
+		{ "submit", "bigint not null" },
+		{ "uid", "smallint not null" },
+		{ "gid", "smallint not null" },
+		{ "blockid", "text" },
 		{ NULL, NULL}		
 	};
 
 	database_field_t job_table_fields[] = {
 		{ "id", "int not null" },
-		{ "start", "int unsigned default 0" },
-		{ "end", "int unsigned default 0" },
-		{ "suspended", "int unsigned default 0" },
-		{ "name", "tinytext not null" }, 
-		{ "track_steps", "tinyint not null" },
+		{ "start", "bigint default 0" },
+		{ "endtime", "bigint default 0" },
+		{ "suspended", "bigint default 0" },
+		{ "name", "text not null" }, 
+		{ "track_steps", "smallint not null" },
 		{ "state", "smallint not null" }, 
-		{ "priority", "int unsigned not null" },
-		{ "cpus", "mediumint unsigned not null" }, 
+		{ "priority", "bigint not null" },
+		{ "cpus", "integer not null" }, 
 		{ "nodelist", "text" },
-		{ "account", "tinytext" },
+		{ "account", "text" },
 		{ "kill_requid", "smallint" },
 		{ NULL, NULL}
 	};
@@ -81,30 +81,30 @@ static int _pgsql_jobacct_check_tables()
 	database_field_t step_table_fields[] = {
 		{ "id", "int not null" },
 		{ "stepid", "smallint not null" },
-		{ "start", "int unsigned default 0" },
-		{ "end", "int unsigned default 0" },
-		{ "suspended", "int unsigned default 0" },
+		{ "start", "bigint default 0" },
+		{ "endtime", "bigint default 0" },
+		{ "suspended", "bigint default 0" },
 		{ "name", "text not null" },
 		{ "nodelist", "text not null" },
 		{ "state", "smallint not null" },
 		{ "kill_requid", "smallint default -1" },
 		{ "comp_code", "smallint default 0" },
-		{ "cpus mediumint", "unsigned not null" },
-		{ "max_vsize", "mediumint unsigned default 0" },
-		{ "max_vsize_task", "smallint unsigned default 0" },
-		{ "max_vsize_node", "mediumint unsigned default 0" },
+		{ "cpus", "int not null" },
+		{ "max_vsize", "integer default 0" },
+		{ "max_vsize_task", "smallint default 0" },
+		{ "max_vsize_node", "integer default 0" },
 		{ "ave_vsize", "float default 0.0" },
-		{ "max_rss", "mediumint unsigned default 0" },
-		{ "max_rss_task", "smallint unsigned default 0" },
-		{ "max_rss_node", "mediumint unsigned default 0" },
+		{ "max_rss", "integer default 0" },
+		{ "max_rss_task", "smallint default 0" },
+		{ "max_rss_node", "integer default 0" },
 		{ "ave_rss", "float default 0.0" },
-		{ "max_pages", "mediumint unsigned default 0" },
-		{ "max_pages_task", "smallint unsigned default 0" },
-		{ "max_pages_node", "mediumint unsigned default 0" },
+		{ "max_pages", "integer default 0" },
+		{ "max_pages_task", "smallint default 0" },
+		{ "max_pages_node", "integer default 0" },
 		{ "ave_pages", "float default 0.0" },
-		{ "min_cpu", "mediumint unsigned default 0" },
-		{ "min_cpu_task", "smallint unsigned default 0" },
-		{ "min_cpu_node", "mediumint unsigned default 0" },
+		{ "min_cpu", "integer default 0" },
+		{ "min_cpu_task", "smallint default 0" },
+		{ "min_cpu_node", "integer default 0" },
 		{ "ave_cpu", "float default 0.0" },
 		{ NULL, NULL}
 	};
@@ -112,48 +112,82 @@ static int _pgsql_jobacct_check_tables()
 	database_field_t step_rusage_fields[] = {
 		{ "id", "int not null" },
 		{ "stepid", "smallint not null" },
-		{ "cpu_sec", "int unsigned default 0" },
-		{ "cpu_usec", "int unsigned default 0" },
-		{ "user_sec", "int unsigned default 0" },
-		{ "user_usec", "int unsigned default 0" },
-		{ "sys_sec", "int unsigned default 0" },
-		{ "sys_usec", "int unsigned default 0" },
-		{ "max_rss", "int unsigned default 0" },
-		{ "max_ixrss", "int unsigned default 0" },
-		{ "max_idrss", "int unsigned default 0" },
-		{ "max_isrss", "int unsigned default 0" },
-		{ "max_minflt", "int unsigned default 0" },
-		{ "max_majflt", "int unsigned default 0" },
-		{ "max_nswap", "int unsigned default 0" },
-		{ "inblock", "int unsigned default 0" },
-		{ "outblock", "int unsigned default 0" },
-		{ "msgsnd", "int unsigned default 0" },
-		{ "msgrcv", "int unsigned default 0" },
-		{ "nsignals", "int unsigned default 0" },
-		{ "nvcsw", "int unsigned default 0" },
-		{ "nivcsw", "int unsigned default 0" },
+		{ "cpu_sec", "bigint default 0" },
+		{ "cpu_usec", "bigint default 0" },
+		{ "user_sec", "bigint default 0" },
+		{ "user_usec", "bigint default 0" },
+		{ "sys_sec", "bigint default 0" },
+		{ "sys_usec", "bigint default 0" },
+		{ "max_rss", "bigint default 0" },
+		{ "max_ixrss", "bigint default 0" },
+		{ "max_idrss", "bigint default 0" },
+		{ "max_isrss", "bigint default 0" },
+		{ "max_minflt", "bigint default 0" },
+		{ "max_majflt", "bigint default 0" },
+		{ "max_nswap", "bigint default 0" },
+		{ "inblock", "bigint default 0" },
+		{ "outblock", "bigint default 0" },
+		{ "msgsnd", "bigint default 0" },
+		{ "msgrcv", "bigint default 0" },
+		{ "nsignals", "bigint default 0" },
+		{ "nvcsw", "bigint default 0" },
+		{ "nivcsw", "bigint default 0" },
 		{ NULL, NULL}
 	};
 
-	if(pgsql_db_create_table(jobacct_pgsql_db, jobacct_db_init, 
-				 job_index, job_index_fields,
-				 ", primary key (id))") == SLURM_ERROR)
+	int i = 0, index_found = 0, job_found = 0;
+	int step_found = 0, rusage_found = 0;
+	PGresult *result = NULL;
+	char *query = xstrdup_printf("select tablename from pg_tables "
+				     "where tableowner='%s' "
+				     "and tablename !~ '^pg_+'", user);
+
+	if(!(result =
+	     pgsql_db_query_ret(jobacct_pgsql_db, jobacct_db_init, query))) {
+		xfree(query);
 		return SLURM_ERROR;
+	}
+	xfree(query);
+
+	for (i = 0; i < PQntuples(result); i++) {
+		if(!index_found && 
+		   !strcmp(index_table, PQgetvalue(result, i, 0))) 
+			index_found = 1;
+		else if(!job_found &&
+			!strcmp(job_table, PQgetvalue(result, i, 0))) 
+			job_found = 1;
+		else if(!step_found &&
+			!strcmp(step_table, PQgetvalue(result, i, 0))) 
+			step_found = 1;
+		else if(!rusage_found &&
+			!strcmp(rusage_table, PQgetvalue(result, i, 0))) 
+			rusage_found = 1;
+	}
+	PQclear(result);
+
+	if(!index_found)
+		if(pgsql_db_create_table(jobacct_pgsql_db, jobacct_db_init, 
+					 index_table, index_table_fields,
+					 ", primary key (id))") == SLURM_ERROR)
+			return SLURM_ERROR;
 	
-	if(pgsql_db_create_table(jobacct_pgsql_db, jobacct_db_init, 
-				 job_table, job_table_fields,
-				 ")") == SLURM_ERROR)
-		return SLURM_ERROR;
+	if(!job_found)
+		if(pgsql_db_create_table(jobacct_pgsql_db, jobacct_db_init, 
+					 job_table, job_table_fields,
+					 ")") == SLURM_ERROR)
+			return SLURM_ERROR;
 
-	if(pgsql_db_create_table(jobacct_pgsql_db, jobacct_db_init, 
-				 step_table, step_table_fields,
-				 ")") == SLURM_ERROR)
-		return SLURM_ERROR;
+	if(!step_found)
+		if(pgsql_db_create_table(jobacct_pgsql_db, jobacct_db_init, 
+					 step_table, step_table_fields,
+					 ")") == SLURM_ERROR)
+			return SLURM_ERROR;
 
-	if(pgsql_db_create_table(jobacct_pgsql_db, jobacct_db_init, 
-				 rusage_table, step_rusage_fields,
-				 ")") == SLURM_ERROR)
-		return SLURM_ERROR;
+	if(!rusage_found)
+		if(pgsql_db_create_table(jobacct_pgsql_db, jobacct_db_init, 
+					 rusage_table, step_rusage_fields,
+					 ")") == SLURM_ERROR)
+			return SLURM_ERROR;
 
 
 	return SLURM_SUCCESS;
@@ -166,17 +200,19 @@ extern int pgsql_jobacct_init()
 	int 		rc = SLURM_SUCCESS;
 	char *db_name = "slurm_jobacct_db";
 
-	info("pgsql_connect() called");
+	debug3("pgsql_connect() called");
 	
 	pgsql_get_db_connection(&jobacct_pgsql_db, db_name, db_info,
 				&jobacct_db_init);
 
-	_pgsql_jobacct_check_tables();
+	rc = _pgsql_jobacct_check_tables(db_info->user);
 
 	destroy_pgsql_db_info(db_info);
 
-	info("Database init finished");
-
+	if(rc == SLURM_SUCCESS)
+		debug("Database init finished");
+	else
+		error("Database init failed");
 	return rc;
 }
 
@@ -246,14 +282,15 @@ extern int pgsql_jobacct_job_start(struct job_record *job_ptr)
 	snprintf(query, sizeof(query),
 		 "insert into %s (jobid, partition, submit, uid, gid, "
 		 "blockid) values (%u, '%s', %u, %d, %d, '%s')",
-		 job_index, job_ptr->job_id, job_ptr->partition,
+		 index_table, job_ptr->job_id, job_ptr->partition,
 		 (int)job_ptr->details->submit_time, job_ptr->user_id,
 		 job_ptr->group_id, block_id);
 	xfree(block_id);
 
 try_again:
 	if((job_ptr->db_index = pgsql_insert_ret_id(
-		    jobacct_pgsql_db, jobacct_db_init, job_table, query))) {
+		    jobacct_pgsql_db, jobacct_db_init, 
+		    "index_table_id_seq", query))) {
 		snprintf(query, sizeof(query),
 			 "insert into %s (id, start, name, track_steps, "
 			 "state, priority, cpus, nodelist, account) "
@@ -306,7 +343,7 @@ extern int pgsql_jobacct_job_complete(struct job_record *job_ptr)
 
 	if(job_ptr->db_index) {
 		snprintf(query, sizeof(query),
-			 "update %s set start=%u, end=%u, state=%d, "
+			 "update %s set start=%u, endtime=%u, state=%d, "
 			 "nodelist='%s', account='%s', "
 			 "kill_requid=%d where id=%u",
 			 job_table, (int)job_ptr->start_time,
@@ -452,7 +489,7 @@ extern int pgsql_jobacct_step_complete(struct step_record *step_ptr)
 
 	if(step_ptr->job_ptr->db_index) {
 		snprintf(query, sizeof(query),
-			 "update %s set end=%u, state=%d, "
+			 "update %s set endtime=%u, state=%d, "
 			 "kill_requid=%d, "
 			 "max_vsize=%u, max_vsize_task=%u, "
 			 "max_vsize_node=%u, ave_vsize=%.2f, "
@@ -574,7 +611,7 @@ extern int pgsql_jobacct_suspend(struct job_record *job_ptr)
 		if(rc != SLURM_ERROR) {
 			snprintf(query, sizeof(query),
 				 "update %s set suspended=%u-suspended, "
-				 "state=%d where id=%u and end=0",
+				 "state=%d where id=%u and endtime=0",
 				 step_table, (int)job_ptr->suspend_time, 
 				 job_ptr->job_state, job_ptr->db_index);
 			rc = pgsql_db_query(jobacct_pgsql_db, jobacct_db_init,

@@ -49,9 +49,11 @@ extern pgsql_db_info_t *create_pgsql_db_info()
 {
 	pgsql_db_info_t *db_info = xmalloc(sizeof(pgsql_db_info_t));
 	db_info->port = slurm_get_database_port();
-	if(!db_info->port) 
+	/* it turns out it is better if using defaults to let postgres
+	   handle them on it's own terms */
+	if(!db_info->port)
 		db_info->port = 5432;
-	db_info->host = slurm_get_database_host();	
+	db_info->host = slurm_get_database_host();
 	db_info->user = slurm_get_database_user();	
 	db_info->pass = slurm_get_database_pass();	
 	return db_info;
@@ -72,28 +74,31 @@ extern int pgsql_create_db(PGconn *pgsql_db, char *db_name,
 			   pgsql_db_info_t *db_info)
 {
 	char create_line[50];
-	char *connect_line = xstrdup_printf("dbname = postgres host = '%s' "
-					    "user = '%s' "
-					    "port = '%u'",
+	char *connect_line = xstrdup_printf("dbname = 'postgres'"
+					    " host = '%s'"
+					    " port = '%u'"
+					    " user = '%s'"
+					    " password = '%s'",
 					    db_info->host,
+					    db_info->port,
 					    db_info->user,
-					    /* db_info->pass, */
-					    db_info->port);
-	char *port = xstrdup_printf("%u", db_info->port);
+					    db_info->pass);
+
 	pgsql_db = PQconnectdb(connect_line);
 
-	xfree(port);
 	if (PQstatus(pgsql_db) == CONNECTION_OK) {
+		PGresult *result = NULL;
 		snprintf(create_line, sizeof(create_line),
 			 "create database %s", db_name);
-		if(PQexec(pgsql_db, create_line)) {
-			fatal("pgsql_real_query failed: %s\n%s",
-			      PQerrorMessage(pgsql_db), create_line);
+		result = PQexec(pgsql_db, create_line);
+		if (PQresultStatus(result) != PGRES_COMMAND_OK) {
+			fatal("PQexec failed: %d %s\n%s",
+			     PQresultStatus(result), PQerrorMessage(pgsql_db), create_line);
 		}
+		PQclear(result);
 	} else {
-		info("Connection failed to %s",
-		     connect_line);
-		fatal("pgsql_real_connect failed: %d %s",
+		info("Connection failed to %s", connect_line);
+		fatal("Status was: %d %s",
 		      PQstatus(pgsql_db), PQerrorMessage(pgsql_db));
 	}
 	xfree(connect_line);
@@ -105,27 +110,38 @@ extern int pgsql_get_db_connection(PGconn **pgsql_db, char *db_name,
 				   int *database_init)
 {
 	int rc = SLURM_SUCCESS;
-	char *connect_line = xstrdup_printf("dbname = '%s' host = '%s' "
-					    "port = '%u'",
-					    db_name, db_info->host,
-					    /* db_info->user, */
-					    /* db_info->pass, */
-					    db_info->port);
-	
+	char *connect_line = xstrdup_printf("dbname = '%s'"
+					    " host = '%s'"
+					    " port = '%u'"
+					    " user = '%s'"
+					    " password = '%s'",
+					    db_name,
+					    db_info->host,
+					    db_info->port,
+					    db_info->user,
+					    db_info->pass);
+
 	while(!*database_init) {
 		*pgsql_db = PQconnectdb(connect_line);
 		
 		if(PQstatus(*pgsql_db) != CONNECTION_OK) {
-			info("pgsql_real_connect failed: %d %s",
-			     PQstatus(*pgsql_db), PQerrorMessage(*pgsql_db));
-			info("Database %s not created.  "
-			      "Creating", db_name);
-			pgsql_create_db(*pgsql_db, db_name,
-					db_info);
-		} else 
+			if(!strcmp(PQerrorMessage(*pgsql_db),
+				   PQnoPasswordSupplied)) {
+				PQfinish(*pgsql_db);
+				fatal("This Postgres connection needs "
+				      "a password.  It doesn't appear to "
+				      "like blank ones");
+			} 
+			
+			info("Database %s not created. Creating %d", db_name);
+			PQfinish(*pgsql_db);
+			pgsql_create_db(*pgsql_db, db_name, db_info);
+			
+		} else {
 			*database_init = true;
-		
-	} 
+			debug2("connected to %s", db_name);
+		} 
+	}
 	xfree(connect_line);
 	return rc;
 }
@@ -154,9 +170,11 @@ extern PGresult *pgsql_db_query_ret(PGconn *pgsql_db, int database_init,
 
 	result = PQexec(pgsql_db, query);
 
-	if (PQresultStatus(result) != PGRES_COMMAND_OK) {
-		fprintf(stderr, "PQexec failed: %s",
-			PQerrorMessage(pgsql_db));
+	if(PQresultStatus(result) != PGRES_COMMAND_OK
+	   && PQresultStatus(result) != PGRES_TUPLES_OK) {
+		error("PQexec failed: %d %s", PQresultStatus(result), 
+		      PQerrorMessage(pgsql_db));
+		info("query was %s", query);
 		PQclear(result);
 		return NULL;
 	}
@@ -164,22 +182,21 @@ extern PGresult *pgsql_db_query_ret(PGconn *pgsql_db, int database_init,
 }
 
 extern int pgsql_insert_ret_id(PGconn *pgsql_db, int database_init,
-			       char *table, char *query)
+			       char *sequence_name, char *query)
 {
 	int new_id = 0;
 	PGresult *result = NULL;
 
 	if(pgsql_db_query(pgsql_db, database_init, query) != SLURM_ERROR)  {
-		xfree(query);
-		query = xstrdup_printf("select last_value from %s %s_seq",
-				       table, table);
+		char *new_query = xstrdup_printf(
+			"select last_value from %s", sequence_name);
 		
 		if((result = pgsql_db_query_ret(pgsql_db,
-						database_init, query))) {
+						database_init, new_query))) {
 			new_id = atoi(PQgetvalue(result, 0, 0));
 			PQclear(result);		
 		}
-		
+		xfree(new_query);
 		if(!new_id) {
 			/* should have new id */
 			error("We should have gotten a new id: %s", 
@@ -200,7 +217,7 @@ extern int pgsql_db_create_table(PGconn *pgsql_db, int database_init,
 	char *next = NULL;
 	int i = 0;
 
-	query = xstrdup_printf("create table if not exists %s (", table_name);
+	query = xstrdup_printf("create table %s (", table_name);
 	i=0;
 	while(fields && fields->name) {
 		next = xstrdup_printf(" %s %s",

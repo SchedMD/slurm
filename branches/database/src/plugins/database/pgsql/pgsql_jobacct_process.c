@@ -73,14 +73,14 @@ extern void pgsql_jobacct_process_get_jobs(List job_list,
 	time_t now = time(NULL);
 
 	/* if this changes you will need to edit the corresponding 
-	 * enum below also t1 is job_index and t2 is job_table */
+	 * enum below also t1 is index_table and t2 is job_table */
 	char *job_req_inx[] = {
 		"t1.id",
 		"t1.jobid",
 		"t1.partition",
 		"t1.submit",
 		"t2.start",
-		"t2.end",
+		"t2.endtime",
 		"t2.suspended",
 		"t1.uid",
 		"t1.gid",
@@ -100,7 +100,7 @@ extern void pgsql_jobacct_process_get_jobs(List job_list,
 	char *step_req_inx[] = {
 		"t1.stepid",
 		"t1.start",
-		"t1.end",
+		"t1.endtime",
 		"t1.suspended",
 		"t1.name",
 		"t1.nodelist",
@@ -218,11 +218,11 @@ extern void pgsql_jobacct_process_get_jobs(List job_list,
 
 	if(selected_steps && list_count(selected_steps)) {
 		set = 0;
-		xstrcat(extra, " && (");
+		xstrcat(extra, " and (");
 		itr = list_iterator_create(selected_steps);
 		while((selected_step = list_next(itr))) {
 			if(set) 
-				xstrcat(extra, " || ");
+				xstrcat(extra, " or ");
 			tmp = xstrdup_printf("t1.jobid=%d",
 					      selected_step->jobid);
 			xstrcat(extra, tmp);
@@ -235,11 +235,11 @@ extern void pgsql_jobacct_process_get_jobs(List job_list,
 
 	if(selected_parts && list_count(selected_parts)) {
 		set = 0;
-		xstrcat(extra, " && (");
+		xstrcat(extra, " and (");
 		itr = list_iterator_create(selected_parts);
 		while((selected_part = list_next(itr))) {
 			if(set) 
-				xstrcat(extra, " || ");
+				xstrcat(extra, " or ");
 			tmp = xstrdup_printf("t1.partition='%s'",
 					      selected_part);
 			xstrcat(extra, tmp);
@@ -257,7 +257,7 @@ extern void pgsql_jobacct_process_get_jobs(List job_list,
 	}
 	
 	query = xstrdup_printf("select %s from %s t1, %s t2 where t1.id=t2.id",
-			       tmp, job_index, job_table);
+			       tmp, index_table, job_table);
 	xfree(tmp);
 
 	if(extra) {
@@ -318,9 +318,9 @@ extern void pgsql_jobacct_process_get_jobs(List job_list,
 				}
 				
 				if(set) 
-					xstrcat(extra, " || ");
+					xstrcat(extra, " or ");
 				else 
-					xstrcat(extra, " && (");
+					xstrcat(extra, " and (");
 			
 				tmp = xstrdup_printf("t1.stepid=%d",
 						     selected_step->stepid);
@@ -341,8 +341,8 @@ extern void pgsql_jobacct_process_get_jobs(List job_list,
 		
 		query =	xstrdup_printf("select %s from %s t1, "
 				       "%s t2 where t1.id=t2.id "
-				       "&& t1.stepid=t2.stepid "
-				       "&& t1.id=%s",
+				       "and t1.stepid=t2.stepid "
+				       "and t1.id=%s",
 				       tmp, step_table, rusage_table, id);
 		xfree(tmp);
 		

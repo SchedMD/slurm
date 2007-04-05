@@ -1178,6 +1178,7 @@ void sacct_init()
 	selected_steps = list_create(_destroy_steps);
 	for(i=0; i<STATUS_COUNT; i++)
 		selected_status[i] = 0;
+	database_g_jobacct_init();
 }
 
 void sacct_fini()
@@ -1185,4 +1186,5 @@ void sacct_fini()
 	list_destroy(jobs);
 	list_destroy(selected_parts);
 	list_destroy(selected_steps);
+	database_g_jobacct_fini();
 }

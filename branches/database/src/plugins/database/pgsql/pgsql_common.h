@@ -92,7 +92,7 @@ extern PGresult *pgsql_db_query_ret(PGconn *pgsql_db, int database_init,
 				     char *query);
 
 extern int pgsql_insert_ret_id(PGconn *pgsql_db, int database_init, 
-			       char *table, char *query);
+			       char *sequence_name, char *query);
 
 extern int pgsql_db_create_table(PGconn *pgsql_db, int database_init, 
 				 char *table_name, database_field_t *fields,
