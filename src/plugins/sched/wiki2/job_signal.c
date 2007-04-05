@@ -40,6 +40,12 @@
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/slurmctld.h"
 
+/* translate a signal value to the numeric value, sig_ptr value 
+ * can have three different forms:
+ * 1. A number
+ * 2. SIGUSR1 (or other suffix)
+ * 3. USR1
+ */
 static uint16_t _xlate_signal(char *sig_ptr)
 {
 	uint16_t sig_val;
@@ -51,6 +57,9 @@ static uint16_t _xlate_signal(char *sig_ptr)
 			return (uint16_t) 0;
 		return sig_val;
 	}
+
+	if (strncasecmp(sig_ptr, "SIG", 3) == 0)
+		sig_ptr += 3;
 
 	if (strncasecmp(sig_ptr, "HUP", 3) == 0)
 		return SIGHUP;
