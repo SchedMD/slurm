@@ -40,6 +40,12 @@
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/slurmctld.h"
 
+/* translate a signal value to the numeric value, sig_ptr value 
+ * can have three different forms:
+ * 1. A number
+ * 2. SIGUSR1 (or other suffix)
+ * 3. USR1
+ */
 static uint16_t _xlate_signal(char *sig_ptr)
 {
 	uint16_t sig_val;
@@ -51,6 +57,9 @@ static uint16_t _xlate_signal(char *sig_ptr)
 			return (uint16_t) 0;
 		return sig_val;
 	}
+
+	if (strncasecmp(sig_ptr, "SIG", 3) == 0)
+		sig_ptr += 3;
 
 	if (strncasecmp(sig_ptr, "HUP", 3) == 0)
 		return SIGHUP;
@@ -125,20 +134,14 @@ extern int	job_signal_wiki(char *cmd_ptr, int *err_code, char **err_msg)
 		return -1;
 	}
 
-	sig_ptr = strstr(cmd_ptr, "VALUE=SIG");
-	if (sig_ptr)
-		sig_ptr += 9;
-	else {
-		sig_ptr = strstr(cmd_ptr, "VALUE=");
-		if (sig_ptr)
-			sig_ptr += 6;
-		else {
-			*err_code = -300;
-			*err_msg = "SIGNALJOB lacks VALUE=";
-			error("wiki: SIGNALJOB lacks VALUE=");
-			return -1;
-		}
+	sig_ptr = strstr(cmd_ptr, "VALUE=");
+	if (sig_ptr == NULL) {
+		*err_code = -300;
+		*err_msg = "SIGNALJOB lacks VALUE=";
+		error("wiki: SIGNALJOB lacks VALUE=");
+		return -1;
 	}
+	sig_ptr += 6;
 	sig_num = _xlate_signal(sig_ptr);
 	if (sig_num == 0) {
 		*err_code = -300;
