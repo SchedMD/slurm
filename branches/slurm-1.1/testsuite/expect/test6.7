@@ -146,9 +146,12 @@ if {[wait_for_file $file_out] == 0} {
 
 #
 # Variation of above to test signal of batch script processes
+# Note that job termination sends SIGCONT/SIGTERM, hence the 
+# duplicate sleep call
 #
 exec rm -f $file_in $file_out
 make_bash_script $file_in "
+ $bin_sleep 10
  $bin_sleep 10
  echo FINI
 "
@@ -185,7 +188,7 @@ exec $bin_sleep 2
 # Test verbose scancel
 #
 set matches 0
-spawn $scancel --signal=STOP --verbose $job_id
+spawn $scancel --batch --signal=STOP --verbose $job_id
 expect {
 	-re "Signal ($number) to job $job_id" {
 		set sig_num $expect_out(1,string)
