@@ -1,6 +1,10 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins.
 
+* Changes in SLURM 1.2.5
+========================
+ -- Fix nodelist truncation in "scontrol show jobs" output
+
 * Changes in SLURM 1.2.4
 ========================
  -- In select/cons_res - fix for function argument type mis-match in getting
