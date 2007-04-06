@@ -224,9 +224,8 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 		xstrcat(out, "\n   ");
 
 	/****** Line 6 ******/
-	snprintf(tmp_line, sizeof(tmp_line), "%s=%s",
-		 nodelist, job_ptr->nodes);
-	xstrcat(out, tmp_line);
+	xstrfmtcat(out, "%s=", nodelist);
+	xstrcat(out, job_ptr->nodes);
 	if(ionodes) {
 		sprintf(tmp_line, "[%s]", ionodes);
 		xstrcat(out, tmp_line);
