@@ -70,6 +70,7 @@
 /* getopt_long options, integers but not characters */
 #define OPT_LONG_HELP  0x100
 #define OPT_LONG_USAGE 0x101
+#define OPT_LONG_CTLD  0x102
 
 #define SIZE(a) (sizeof(a)/sizeof(a[0]))
 
@@ -218,6 +219,7 @@ static void _print_version (void)
 static void _opt_default()
 {
 	opt.batch	= false;
+	opt.ctld	= false;
 	opt.interactive	= false;
 	opt.job_cnt	= 0;
 	opt.job_name	= NULL;
@@ -308,6 +310,7 @@ static void _opt_args(int argc, char **argv)
 	int option_index;
 	static struct option long_options[] = { 
 		{"batch",	no_argument,       0, 'b'},
+		{"ctld",	no_argument,	   0, OPT_LONG_CTLD},
 		{"interactive", no_argument,       0, 'i'},
 		{"name",        required_argument, 0, 'n'},
 		{"partition",   required_argument, 0, 'p'},
@@ -331,6 +334,9 @@ static void _opt_args(int argc, char **argv)
 				break;
 			case (int)'b':
 				opt.batch = true;
+				break;
+			case OPT_LONG_CTLD:
+				opt.ctld = true;
 				break;
 			case (int)'i':
 				opt.interactive = true;
@@ -459,6 +465,7 @@ static void _opt_list(void)
 	int i;
 
 	info("batch          : %s", tf_(opt.batch));
+	info("ctld           : %s", tf_(opt.ctld));
 	info("interactive    : %s", tf_(opt.interactive));
 	info("job_name       : %s", opt.job_name);
 	info("partition      : %s", opt.partition);
@@ -484,6 +491,7 @@ static void _help(void)
 {
 	printf("Usage: scancel [OPTIONS] [job_id[.step_id]]\n");
 	printf("  -b, --batch                     signal batch shell for specified job\n");
+/*	printf("      --ctld                      route request through slurmctld\n"); */
 	printf("  -i, --interactive               require response from user for each job\n");
 	printf("  -n, --name=job_name             name of job to be signalled\n");
 	printf("  -p, --partition=partition       name of job's partition\n");
