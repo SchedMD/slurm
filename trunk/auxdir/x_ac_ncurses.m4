@@ -24,24 +24,20 @@ AC_DEFUN([X_AC_NCURSES],
    AC_SUBST(NCURSES)
    if test "$ac_have_ncurses" = "yes"; then
       NCURSES="-lncurses"
+      NCURSES_HEADER="ncurses.h"
       ac_have_some_curses="yes"
    elif test "$ac_have_curses" = "yes"; then
       NCURSES="-lcurses"
+      NCURSES_HEADER="curses.h"	
       ac_have_some_curses="yes"
    fi
 
    if test "$ac_have_some_curses" = "yes"; then	
         save_LIBS="$LIBS"
         LIBS="$NCURSES $save_LIBS"
-        AC_TRY_LINK([
-          #include <ncurses.h>
-        ],[
-          int main()
-          {
-            (void) initscr();
-            (void) endwin();
-          }
-        ], , [ac_have_some_curses="no"])
+        AC_TRY_LINK([#include <${NCURSES_HEADER}>],
+                    [(void)initscr(); (void)endwin();],
+                    [], [ac_have_some_curses="no"])
         LIBS="$save_LIBS"
         if test "$ac_have_some_curses" == "yes"; then
             AC_MSG_RESULT([NCURSES test program built properly.])    
