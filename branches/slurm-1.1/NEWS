@@ -7,6 +7,9 @@ documents those changes that are of interest to users and admins.
    of VALUE=SIGXXX in addition to VALUE=# and VALUE=XXX options
  - Correct logic for job allocation with task count (srun -n ...) AND
    FastSchedule=0 AND low CPUs count in Slurm's node configuration.
+ - Add new and undocumented scancel option, --ctld, to route signal 
+   requests through slurmctld rather than directly to slurmd daemons.
+   Useful for testing purposes.
 
 * Changes in SLURM 1.1.34
 =========================
