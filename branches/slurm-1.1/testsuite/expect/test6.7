@@ -149,7 +149,8 @@ if {[wait_for_file $file_out] == 0} {
 #
 exec rm -f $file_in $file_out
 make_bash_script $file_in "
- ./$file_prog
+ $bin_sleep 10
+ echo FINI
 "
 
 #
@@ -184,7 +185,7 @@ exec $bin_sleep 2
 # Test verbose scancel
 #
 set matches 0
-spawn $scancel --signal=USR1 --verbose $job_id
+spawn $scancel --signal=STOP --verbose $job_id
 expect {
 	-re "Signal ($number) to job $job_id" {
 		set sig_num $expect_out(1,string)
@@ -222,25 +223,16 @@ if {[wait_for_job $job_id DONE] != 0} {
 # Test output file
 #
 if {[wait_for_file $file_out] == 0} {
-	set got_signal 0
 	spawn cat $file_out
 	expect {
-		-re "ERROR" {
-			send_user "\nFAILURE: Failure running test program\n"
+		-re "FINI" {
+			send_user "\nFAILURE: Job not stopped\n"
 			set exit_code 1
-			exp_continue
-		}
-		-re "Received SIGUSR1" {
-			set got_signal 1
 			exp_continue
 		}
 		eof {
 			wait
 		}
-	}
-	if {$got_signal != 1} {
-		send_user "\nFAILURE: SIGUSR1 not received\n"
-		set exit_code 1
 	}
 } else {
 	set exit_code 1
