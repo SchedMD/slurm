@@ -592,10 +592,14 @@ extern int _slurm_connect (int __fd, struct sockaddr const * __addr,
 	ufds.events = POLLIN | POLLOUT;
 	ufds.revents = 0;
 
-	rc = poll(&ufds, 1, 5000);
+again:	rc = poll(&ufds, 1, 5000);
 	if (rc == -1) {
 		/* poll failed */
-		error("_slurm_connect poll failed: %m");
+		if (errno == EINTR) {
+			verbose("_slurm_connect poll failed: %m");
+			goto again;
+		} else
+			error("_slurm_connect poll failed: %m");
 		return -1;
 	} else if (rc == 0) {
 		/* poll timed out before any socket events */
