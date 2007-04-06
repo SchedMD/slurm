@@ -231,6 +231,7 @@ extern int slurm_database_fini(void)
 	if (!g_database_context)
 		return SLURM_SUCCESS;
 
+	(*(g_database_context->ops.jobacct_fini))();
 	rc = _database_context_destroy( g_database_context );
 	g_database_context = NULL;
 	return rc;
