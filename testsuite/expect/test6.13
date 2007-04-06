@@ -1,7 +1,8 @@
 #!/usr/bin/expect
 ############################################################################
 # Purpose: Test of SLURM functionality
-#          Test scancel signal option (--signal and --verbose options).
+#          Test routing all signals through slurmctld rather than directly 
+#          to slurmd (undocumented --ctld option).
 #
 # Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
 #          "FAILURE: ..." otherwise with an explanation of the failure, OR
@@ -10,7 +11,7 @@
 # Copyright (C) 2002-2007 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 # Written by Morris Jette <jette1@llnl.gov>
-# UCRL-CODE-226842.
+# UCRL-CODE-217948.
 # 
 # This file is part of SLURM, a resource management program.
 # For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -31,7 +32,7 @@
 ############################################################################
 source ./globals
 
-set test_id      "6.7"
+set test_id      "6.13"
 set exit_code    0
 set file_in      "test$test_id.input"
 set file_out     "test$test_id.output"
@@ -64,6 +65,7 @@ expect {
 		send_user "\nFAILURE: srun not responding\n"
 		slow_kill $srun_pid
 		set exit_code 1
+		exp_continue
 	}
 	eof {
 		wait
@@ -81,7 +83,7 @@ exec $bin_sleep 2
 # Test verbose scancel
 #
 set matches 0
-spawn $scancel --signal=USR1 --verbose $job_id
+spawn $scancel --signal=USR1 --ctld --verbose $job_id
 expect {
 	-re "Signal ($number) to job $job_id" {
 		set sig_num $expect_out(1,string)
@@ -145,7 +147,7 @@ if {[wait_for_file $file_out] == 0} {
 
 #
 # Variation of above to test signal of batch script processes
-# Note that job termination sends SIGCONT/SIGTERM, hence the 
+# Note that job termination sends SIGCONT/SIGTERM, hence the
 # duplicate sleep call
 #
 exec rm -f $file_in $file_out
@@ -167,7 +169,7 @@ expect {
 	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
-		slow_kill srun_pid
+		slow_kill $srun_pid
 		set exit_code 1
 		exp_continue
 	}
@@ -187,7 +189,7 @@ exec $bin_sleep 2
 # Test verbose scancel
 #
 set matches 0
-spawn $scancel --batch --signal=STOP --verbose $job_id
+spawn $scancel --batch --signal=STOP --ctld --verbose $job_id
 expect {
 	-re "Signal ($number) to job $job_id" {
 		set sig_num $expect_out(1,string)

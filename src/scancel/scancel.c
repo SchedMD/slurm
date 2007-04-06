@@ -1,7 +1,7 @@
 /*****************************************************************************\
  *  scancel - cancel specified job(s) and/or job step(s)
  *****************************************************************************
- *  Copyright (C) 2002 The Regents of the University of California.
+ *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
  *  UCRL-CODE-226842.
@@ -230,13 +230,19 @@ _cancel_job_id (uint32_t job_id, uint16_t signal)
 {
 	int error_code = SLURM_SUCCESS, i;
 
+	if (signal == (uint16_t)-1)
+		signal = SIGKILL;
+
 	for (i=0; i<MAX_CANCEL_RETRY; i++) {
-		if ((signal == (uint16_t)-1) || (signal == SIGKILL)) {
+		if (signal == SIGKILL)
 			verbose("Terminating job %u", job_id);
-			error_code = slurm_kill_job (job_id, SIGKILL,
+		else
+			verbose("Signal %u to job %u", signal, job_id);
+
+		if ((signal == SIGKILL) || opt.ctld) {
+			error_code = slurm_kill_job (job_id, signal,
 						     (uint16_t)opt.batch);
 		} else {
-			verbose("Signal %u to job %u", signal, job_id);
 			if (opt.batch)
 				error_code = slurm_signal_job_step(job_id,
 							   SLURM_BATCH_SCRIPT,
@@ -266,17 +272,24 @@ _cancel_step_id (uint32_t job_id, uint32_t step_id, uint16_t signal)
 {
 	int error_code = SLURM_SUCCESS, i;
 
+	if (signal == (uint16_t)-1)
+		signal = SIGKILL;
+
 	for (i=0; i<MAX_CANCEL_RETRY; i++) {
-		if (signal == (uint16_t)-1) {
-			verbose("Terminating step %u.%u",
-				job_id, step_id);
-			error_code = slurm_terminate_job_step(job_id, step_id);
-		} else {
-			verbose("Signal %u to step %u.%u",
+		if (signal == SIGKILL)
+			verbose("Terminating step %u.%u", job_id, step_id);
+		else {
+			verbose("Signal %u to step %u.%u", 
 				signal, job_id, step_id);
+		}
+
+		if (opt.ctld)
+			error_code = slurm_kill_job_step(job_id, step_id, signal);
+		else if (signal == SIGKILL)
+			error_code = slurm_terminate_job_step(job_id, step_id);
+		else
 			error_code = slurm_signal_job_step(job_id, step_id,
 							   signal);
-		}
 		if (error_code == 0
 		    || (errno != ESLURM_TRANSITION_STATE_NO_UPDATE
 			&& errno != ESLURM_JOB_PENDING))
