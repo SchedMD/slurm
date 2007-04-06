@@ -25785,9 +25785,11 @@ fi
 
    if test "$ac_have_ncurses" = "yes"; then
       NCURSES="-lncurses"
+      NCURSES_HEADER="ncurses.h"
       ac_have_some_curses="yes"
    elif test "$ac_have_curses" = "yes"; then
       NCURSES="-lcurses"
+      NCURSES_HEADER="curses.h"
       ac_have_some_curses="yes"
    fi
 
@@ -25800,19 +25802,11 @@ _ACEOF
 cat confdefs.h >>conftest.$ac_ext
 cat >>conftest.$ac_ext <<_ACEOF
 /* end confdefs.h.  */
-
-          #include <ncurses.h>
-
+#include <${NCURSES_HEADER}>
 int
 main ()
 {
-
-          int main()
-          {
-            (void) initscr();
-            (void) endwin();
-          }
-
+(void)initscr(); (void)endwin();
   ;
   return 0;
 }
