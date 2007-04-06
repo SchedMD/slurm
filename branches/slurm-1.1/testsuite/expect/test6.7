@@ -7,7 +7,7 @@
 #          "FAILURE: ..." otherwise with an explanation of the failure, OR
 #          anything else indicates a failure mode that must be investigated.
 ############################################################################
-# Copyright (C) 2002 The Regents of the University of California.
+# Copyright (C) 2002-2007 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 # Written by Morris Jette <jette1@llnl.gov>
 # UCRL-CODE-217948.
@@ -34,23 +34,31 @@ source ./globals
 set test_id      "6.7"
 set exit_code    0
 set file_in      "test$test_id.input"
-set job_id1      0
+set file_out     "test$test_id.output"
+set file_prog    "test$test_id.prog"
+set job_id       0
 set matches      0
 
 print_header $test_id
 
 #
-# Build input script file
+# Delete left-over programs and rebuild them.
+# We use our own program to get ulimit values since the output
+# of the ulimit program is inconsistent across systems.
 #
-make_bash_script $file_in "$srun $bin_sleep 10"
+exec rm -f $file_prog $file_in $file_out
+exec cc -o $file_prog $file_prog.c
+make_bash_script $file_in "
+ ./$file_prog
+"
 
 #
 # Submit a job so we have something to work with
 #
-spawn $srun --batch --output=/dev/null --error=/dev/null -t1 $file_in
+spawn $srun --batch --output=$file_out -t1 $file_in
 expect {
 	-re "jobid ($number) submitted" {
-		set job_id1 $expect_out(1,string)
+		set job_id $expect_out(1,string)
 		exp_continue
 	}
 	timeout {
@@ -63,15 +71,20 @@ expect {
 		wait
 	}
 }
-exec $bin_rm -f $file_in
+
+if {[wait_for_job $job_id RUNNING] != 0} {
+	send_user "\nFAILURE: error on job\n"
+	cancel_job $job_id
+	exit 1
+}
+exec $bin_sleep 2
 
 #
 # Test verbose scancel
 #
-
-spawn $scancel --signal=CONT --verbose $job_id1
+spawn $scancel --signal=USR1 --verbose $job_id
 expect {
-	-re "Signal ($number) to job $job_id1" {
+	-re "Signal ($number) to job $job_id" {
 		set sig_num $expect_out(1,string)
 		if {$sig_num != 9} {
 			incr matches
@@ -97,28 +110,43 @@ if {$matches != 1} {
 	set exit_code 1
 }
 
-set matches 0
-spawn $scancel --verbose $job_id1
-expect {
-	-re "Terminating job" {
-		incr matches
-		exp_continue
+if {[wait_for_job $job_id DONE] != 0} {
+	send_user "\nFAILURE: error on job\n"
+	cancel_job $job_id
+	exit 1
+}
+
+#
+# Test output file
+#
+if {[wait_for_file $file_out] == 0} {
+	set got_signal 0
+	spawn cat $file_out
+	expect {
+		-re "ERROR" {
+			send_user "\nFAILURE: Failure running test program\n"
+			set exit_code 1
+			exp_continue
+		}
+		-re "Received SIGUSR1" {
+			set got_signal 1
+			exp_continue
+		}
+		eof {
+			wait
+		}
 	}
-	timeout {
-		send_user "\nFAILURE: scancel not responding\n"
+	if {$got_signal != 1} {
+		send_user "\nFAILURE: SIGUSR1 not received\n"
 		set exit_code 1
 	}
-	eof {
-		wait
-	}
-}
-if {$matches != 1} {
-	send_user "\nFAILURE: scancel verbose option failed\n"
+} else {
 	set exit_code 1
 }
 
 
 if {$exit_code == 0} {
+	exec rm -f $file_out $file_prog
 	send_user "\nSUCCESS\n"
 }
 exit $exit_code
