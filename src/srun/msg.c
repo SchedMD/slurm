@@ -317,9 +317,6 @@ void debugger_launch_failure(srun_job_t *job)
 				   &pipe_enum, sizeof(int));
 			safe_write(job->forked_msg->par_msg->msg_pipe[1],
 				   &i, sizeof(int));
-		} else if(!job) {
-			error("Hey I don't have a job to write to on the "
-			      "failure of the debugger launch.");
 		}
 	}
 	return;
