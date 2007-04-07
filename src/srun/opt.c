@@ -273,7 +273,8 @@ static enum task_dist_states _verify_dist_type(const char *arg)
 		result = SLURM_DIST_CYCLIC;
 	else if (strncasecmp(arg, "block", len) == 0)
 		result = SLURM_DIST_BLOCK;
-	else if (strncasecmp(arg, "arbitrary", len) == 0)
+	else if ((strncasecmp(arg, "arbitrary", len) == 0) ||
+		 (strncasecmp(arg, "hostfile", len) == 0))
 		result = SLURM_DIST_ARBITRARY;
 
 	return result;
