@@ -71,11 +71,16 @@ extern void get_job()
 
 	if (error_code) {
 		if (quiet_flag != 1) {
-			mvwprintw(ba_system_ptr->text_win,
-				ba_system_ptr->ycord, 1,
-				"slurm_load_job: %s", 
-				slurm_strerror(slurm_get_errno()));
-			ba_system_ptr->ycord++;
+			if(!params.commandline) {
+				mvwprintw(ba_system_ptr->text_win,
+					  ba_system_ptr->ycord, 1,
+					  "slurm_load_job: %s", 
+					  slurm_strerror(slurm_get_errno()));
+				ba_system_ptr->ycord++;
+			} else {
+				printf("slurm_load_job: %s\n",
+				       slurm_strerror(slurm_get_errno()));
+			}
 		}
 	}
 
@@ -169,7 +174,8 @@ extern void get_job()
 	if (params.commandline && params.iterate)
 		printf("\n");
 
-	ba_system_ptr->ycord++;
+	if(!params.commandline)
+		ba_system_ptr->ycord++;
 	
 	job_info_ptr = new_job_ptr;
 	return;
