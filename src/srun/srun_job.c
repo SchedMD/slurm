@@ -344,7 +344,8 @@ job_step_create_allocation(resource_allocation_response_msg_t *resp)
 	/* get the correct number of hosts to run tasks on */
 	if(opt.nodelist) { 
 		hl = hostlist_create(opt.nodelist);
-		hostlist_uniq(hl);
+		if(opt.distribution != SLURM_DIST_ARBITRARY)
+			hostlist_uniq(hl);
 		if(!hostlist_count(hl)) {
 			error("Hostlist is now nothing!  Can not run job.");
 			hostlist_destroy(hl);
@@ -353,11 +354,9 @@ job_step_create_allocation(resource_allocation_response_msg_t *resp)
 		
 		hostlist_ranged_string(hl, sizeof(buf), buf);
 		count = hostlist_count(hl);
-	
 		hostlist_destroy(hl);
 		xfree(opt.nodelist);
 		opt.nodelist = xstrdup(buf);
-		
 	} 
 	
 	if(opt.distribution == SLURM_DIST_ARBITRARY) {
