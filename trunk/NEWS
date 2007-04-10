@@ -7,6 +7,7 @@ documents those changes that are of interest to users and admins.
  -- In mpi/mpichgm, fix potential problem formatting GMPI_PORT, from
     Ernest Artiaga, BSC.
  -- In sched/wiki2 - Report job's account, from Ernest Artiaga, BSC.
+ -- Add sbatch option "--ntasks-per-node".
 
 * Changes in SLURM 1.2.4
 ========================

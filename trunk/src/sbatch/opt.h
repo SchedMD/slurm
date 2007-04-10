@@ -90,6 +90,7 @@ typedef struct sbatch_options {
 	int minthreads;		/* --minthreads=n		*/
 	int realmem;		/* --mem=n			*/
 	long tmpdisk;		/* --tmp=n			*/
+	int ntasks_per_node;	/* --ntasks-per-node=n		*/
 	char *constraints;	/* --constraints=, -C constraint*/
 	bool contiguous;	/* --contiguous			*/
 	char *nodelist;		/* --nodelist=node1,node2,...	*/

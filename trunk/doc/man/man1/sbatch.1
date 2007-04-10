@@ -1,4 +1,4 @@
-.TH "sbatch" "1" "SLURM 1.2" "December 2006" "SLURM Commands"
+.TH "sbatch" "1" "SLURM 1.2" "April 2007" "SLURM Commands"
 .SH "NAME"
 .LP 
 sbatch \- Submit a batch script to SLURM.
@@ -246,6 +246,10 @@ Specifies that the batch job should not be requeued.
 Setting this option will prevent system administrators from being able 
 to restart the job (for example, after a scheduled downtime).
 When a job is requeued, the batch script is initiated from its beginning.
+
+.TP
+\fB\-\-ntasks\-per\-node\fR[=]<\fIn\fR>
+Specify the number of tasks to be launched per node.
 
 .TP
 \fB\-o\fR, \fB\-\-output\fR[=]<\fIfilename pattern\fR>
