@@ -454,7 +454,8 @@ _handle_rc_msg(slurm_msg_t *msg)
  * contact any SLURM daemons.
  *
  * Returns a string representing the hostlist.  Returns NULL if there are fewer
- * than "n" hostnames in the file, or if an error occurs.
+ * than "n" hostnames in the file, or if an error occurs.  If "n" ==
+ * NO_VAL then the entire file is read in
  *
  * Returned string must be freed with free().
  */
@@ -512,7 +513,7 @@ char *slurm_read_hostfile(char *filename, int n)
 		}
 			
 		hostlist_push(hostlist, in_line);
-		if(hostlist_count(hostlist) == n) 
+		if(n != (int)NO_VAL && hostlist_count(hostlist) == n) 
 			break; 
 	}
 	fclose(fp);
