@@ -79,7 +79,7 @@ set node3 0
 set node4 0
 
 set timeout $max_job_delay
-spawn $srun -N$num_nodes -A -v -t1
+spawn $srun -N$num_nodes -A -v
 expect {
 	-re "jobid ($number):" {
 		set job_id $expect_out(1,string)
