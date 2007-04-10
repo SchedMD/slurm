@@ -133,7 +133,7 @@ test1.55   Make certain that srun behaves when its controlling terminal
            disappears.
 test1.56   Test buffered standard IO with really long lines
 test1.57   Test of --jobid option (used by Moab)
-test1.58   Test of hostfile logic for job steps
+test1.59   Test of hostfile logic for job steps
 
 **NOTE**   The following tests attempt to utilize multiple CPUs or partitions,
            The test will print "WARNING" and terminate with an exit code of 
