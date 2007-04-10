@@ -33,7 +33,7 @@
 ############################################################################
 source ./globals
 
-set test_id     "1.58"
+set test_id     "1.59"
 set exit_code   0
 set num_nodes   3
 set node_count  0
