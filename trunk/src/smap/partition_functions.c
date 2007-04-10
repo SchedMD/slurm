@@ -711,8 +711,6 @@ static int _print_text_part(partition_info_t *part_ptr,
 		
 		printf("%5s ", tmp_cnt);
 		
-		tempxcord = ba_system_ptr->xcord;
-		
 		if (params.display == BGPART)
 			nodes = part_ptr->allow_groups;
 		else
