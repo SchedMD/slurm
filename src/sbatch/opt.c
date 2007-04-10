@@ -108,6 +108,7 @@
 #define LONG_OPT_MLOADER_IMAGE   0x142
 #define LONG_OPT_RAMDISK_IMAGE   0x143
 #define LONG_OPT_REBOOT          0x144
+#define LONG_OPT_NTASKSPERNODE   0x145
 
 /*---- global variables, defined in opt.h ----*/
 opt_t opt;
@@ -388,6 +389,7 @@ static void _opt_default()
 	opt.cpus_set = false;
 	opt.min_nodes = 1;
 	opt.max_nodes = 0;
+	opt.ntasks_per_node   = -1;
 	opt.nodes_set = false;
 	opt.time_limit = -1;
 	opt.partition = NULL;
@@ -630,6 +632,7 @@ static struct option long_options[] = {
 	{"mloader-image", required_argument, 0, LONG_OPT_MLOADER_IMAGE},
 	{"ramdisk-image", required_argument, 0, LONG_OPT_RAMDISK_IMAGE},
 	{"reboot",        no_argument,       0, LONG_OPT_REBOOT},
+	{"ntasks-per-node", required_argument,0,LONG_OPT_NTASKSPERNODE}, 
 	{NULL,            0,                 0, 0}
 };
 
@@ -1165,6 +1168,9 @@ static void _set_options(int argc, char **argv)
 		case LONG_OPT_REBOOT:
 			opt.reboot = true;
 			break;
+		case LONG_OPT_NTASKSPERNODE:
+			opt.ntasks_per_node = _get_int(optarg, "ntasks-per-node");
+			break;
 		default:
 			fatal("Unrecognized command line parameter %c",
 			      opt_char);
@@ -1546,6 +1552,7 @@ static void _opt_list()
 	}
 	info("mail_type      : %s", _print_mail_type(opt.mail_type));
 	info("mail_user      : %s", opt.mail_user);
+	info("ntasks-per-node   : %d", opt.ntasks_per_node);
 	str = print_commandline();
 	info("remote command : `%s'", str);
 	xfree(str);
@@ -1570,7 +1577,7 @@ static void _usage(void)
 "              [--mloader-image=path] [--ramdisk-image=path]\n"
 #endif
 "              [--mail-type=type] [--mail-user=user][--nice[=value]]\n"
-"              [--no-requeue]\n"
+"              [--no-requeue] [--ntasks-per-node=n]\n"
 "              [-w hosts...] [-x hosts...] executable [args...]\n");
 }
 
@@ -1583,6 +1590,7 @@ static void _help(void)
 "  -n, --ntasks=ntasks         number of tasks to run\n"
 "  -N, --nodes=N               number of nodes on which to run (N = min[-max])\n"
 "  -c, --cpus-per-task=ncpus   number of cpus required per task\n"
+"      --ntasks-per-node=n     number of tasks to invoke on each node\n"
 "  -i, --input=in              file for batch script's standard input\n"
 "  -o, --output=out            file for batch script's standard output\n"
 "  -e, --error=err             file for batch script's standard error\n"
