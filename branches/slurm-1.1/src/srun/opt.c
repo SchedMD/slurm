@@ -227,36 +227,21 @@ static void _print_version(void)
  */
 static bool _valid_node_list(char **node_list_pptr)
 {
-	FILE *fd;
-	char *node_list;
-	int c;
-	bool last_space;
-
+	char *nodelist = NULL;
+	
 	if (strchr(*node_list_pptr, '/') == NULL)
 		return true;	/* not a file name */
 
-	fd = fopen(*node_list_pptr, "r");
-	if (fd == NULL) {
-		error ("Unable to open file %s: %m", *node_list_pptr);
+	if(opt.nprocs_set)
+		nodelist = slurm_read_hostfile(*node_list_pptr, opt.nprocs);
+	else
+		nodelist = slurm_read_hostfile(*node_list_pptr, NO_VAL);
+
+	if (nodelist == NULL) 
 		return false;
-	}
-
-	node_list = xstrdup("");
-	last_space = false;
-	while ((c = fgetc(fd)) != EOF) {
-		if (isspace(c)) {
-			last_space = true;
-			continue;
-		}
-		if (last_space && (node_list[0] != '\0'))
-			xstrcatchar(node_list, ',');
-		last_space = false;
-		xstrcatchar(node_list, (char)c);
-	}
-	(void) fclose(fd);
-
-        /*  free(*node_list_pptr);	orphanned */
-	*node_list_pptr = node_list;
+	xfree(*node_list_pptr);
+	*node_list_pptr = xstrdup(nodelist);
+	free(nodelist);
 	return true;
 }
 
@@ -1335,8 +1320,6 @@ void set_options(const int argc, char **argv, int first)
 			
 			xfree(opt.nodelist);
 			opt.nodelist = xstrdup(optarg);
-			if (!_valid_node_list(&opt.nodelist))
-				exit(1);
 #ifdef HAVE_BG
 			info("\tThe nodelist option should only be used if\n"
 			     "\tthe block you are asking for can be created.\n"
@@ -1688,6 +1671,10 @@ static bool _opt_verify(void)
 	if ((opt.job_name == NULL) && (remote_argc > 0))
 		opt.job_name = _base_name(remote_argv[0]);
 
+	if(opt.nodelist)
+		if (!_valid_node_list(&opt.nodelist))
+			exit(1);
+
 	if (mode == MODE_ATTACH) {	/* attach to a running job */
 		if (opt.nodes_set || opt.cpus_set || opt.nprocs_set) {
 			error("do not specific a node allocation "
@@ -1731,9 +1718,14 @@ static bool _opt_verify(void)
 		}
 
 		core_format_enable (opt.core_type);
-
 		/* massage the numbers */
-		if (opt.nodes_set && !opt.nprocs_set) {
+		if(opt.distribution == SLURM_DIST_ARBITRARY
+		   && !opt.nprocs_set && opt.nodelist) {
+			hostlist_t hl = hostlist_create(opt.nodelist);
+			opt.nprocs = hostlist_count(hl);
+			hostlist_destroy(hl);
+			opt.nprocs_set = true;
+		} else if (opt.nodes_set && !opt.nprocs_set) {
 			/* 1 proc / node default */
 			opt.nprocs = opt.min_nodes;
 
@@ -1755,7 +1747,6 @@ static bool _opt_verify(void)
 			}
 
 		} /* else if (opt.nprocs_set && !opt.nodes_set) */
-
 	}
 
 	if (opt.max_threads <= 0) {	/* set default */
