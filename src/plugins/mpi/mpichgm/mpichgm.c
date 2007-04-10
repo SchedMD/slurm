@@ -366,7 +366,7 @@ gmpi_thr_create(const mpi_plugin_client_info_t *job, char ***env)
 	}
 	slurm_attr_destroy(&attr);
 
-	env_array_overwrite_fmt(env, "GMPI_PORT",  "%u", port);
+	env_array_overwrite_fmt(env, "GMPI_PORT",  "%hu", port);
 	env_array_overwrite_fmt(env, "GMPI_MAGIC", "%u", job->jobid);
 	env_array_overwrite_fmt(env, "GMPI_NP",    "%d", 
 				job->step_layout->task_cnt);
