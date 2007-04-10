@@ -324,7 +324,8 @@ job_step_create_allocation(uint32_t job_id)
 	/* get the correct number of hosts to run tasks on */
 	if(opt.nodelist) { 
 		hl = hostlist_create(opt.nodelist);
-		hostlist_uniq(hl);
+		if(opt.distribution != SLURM_DIST_ARBITRARY)
+			hostlist_uniq(hl);
 		if(!hostlist_count(hl)) {
 			error("Hostlist is now nothing!  Can not run job.");
 			hostlist_destroy(hl);

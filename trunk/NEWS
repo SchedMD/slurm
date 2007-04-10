@@ -285,6 +285,7 @@ documents those changes that are of interest to users and admins.
  - Add new and undocumented scancel option, --ctld, to route signal 
    requests through slurmctld rather than directly to slurmd daemons.
    Useful for testing purposes.
+ - fixed issue with hostfile support not working in a job step
 
 * Changes in SLURM 1.1.34
 =========================

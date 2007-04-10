@@ -374,8 +374,12 @@ The \fB\-\-label\fR option will prepend lines of output with the remote
 task id.
 
 .TP
+\fB-u\fR, \fB\-\-unbuffered\fR
+do not line buffer stdout from remote tasks. This option cannot be used
+with \fI\-\-label\fR. 
+.TP
 \fB\-m\fR, \fB\-\-distribution\fR=
-(\fIblock\fR|\fIcyclic\fR|\fIhostfile\fR|\fIplane=<options>\fR)
+(\fIblock\fR|\fIcyclic\fR|\fIarbitrary\fR|\fIplane=<options>\fR)
 Specify an alternate distribution method for remote processes.
 .RS
 .TP
@@ -396,6 +400,7 @@ the allocated nodes. That is, process one will be allocated to the first
 node, process two to the second, and so on. This is the default behavior
 if the number of tasks is no larger than the number of nodes requested.
 .TP
+<<<<<<< .working
 .B plane
 The tasks are distributed in blocks of a specified size.
 The options include a number representing the size of the task block.
@@ -407,6 +412,10 @@ http://www.llnl.gov/linux/slurm/dist_plane.html.
 .TP
 .B hostfile
 The hostfile method of distribution will allocate processes in\-order as 
+=======
+.B arbitrary
+The arbitrary method of distribution will allocate processes in-order as 
+>>>>>>> .merge-right.r11340
 listed in file designated by the environment variable SLURM_HOSTFILE.  If
 this variable is listed it will over ride any other method specified. 
 If not set the method will default to block.
