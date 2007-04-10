@@ -6,6 +6,7 @@ documents those changes that are of interest to users and admins.
  -- Fix nodelist truncation in "scontrol show jobs" output
  -- In mpi/mpichgm, fix potential problem formatting GMPI_PORT, from
     Ernest Artiaga, BSC.
+ -- In sched/wiki2 - Report job's account, from Ernest Artiaga, BSC.
 
 * Changes in SLURM 1.2.4
 ========================

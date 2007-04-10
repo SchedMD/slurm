@@ -302,6 +302,12 @@ static char *	_dump_job(struct job_record *job_ptr, int state_info)
 		xstrcat(buf, tmp);
 	}
 
+	if (job_ptr->account) {
+		snprintf(tmp, sizeof(tmp),
+			"ACCOUNT=%s;", job_ptr->account);
+		xstrcat(buf, tmp);
+	}
+
 	if (state_info == SLURM_INFO_VOLITILE)
 		return buf;
 
