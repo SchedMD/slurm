@@ -147,7 +147,11 @@ extern int	job_modify_wiki(char *cmd_ptr, int *err_code, char **err_msg)
 		error("wiki: MODIFYJOB lacks ARG=");
 		return -1;
 	}
-	jobid = strtoul(arg_ptr+4, &tmp_char, 10);
+	/* Change all parsed "=" to ":" then search for remaining "="
+	 * and report results as unrecognized options */
+	arg_ptr[3] = ':';
+	arg_ptr += 4;
+	jobid = strtoul(arg_ptr, &tmp_char, 10);
 	if ((tmp_char[0] != '\0') && (!isspace(tmp_char[0]))) {
 		*err_code = -300;
 		*err_msg = "Invalid ARG value";
@@ -159,20 +163,33 @@ extern int	job_modify_wiki(char *cmd_ptr, int *err_code, char **err_msg)
 	part_ptr  = strstr(cmd_ptr, "PARTITION=");
 	time_ptr  = strstr(cmd_ptr, "TIMELIMIT=");
 	if (bank_ptr) {
+		bank_ptr[4] = ':';
 		bank_ptr += 5;
 		_null_term(bank_ptr);
 	}
 	if (nodes_ptr) {
+		nodes_ptr[5] = ':';
 		nodes_ptr += 6;
 		new_node_cnt = strtoul(nodes_ptr, NULL, 10);
 	}
 	if (part_ptr) {
+		part_ptr[9] = ':';
 		part_ptr += 10;
 		_null_term(part_ptr);
 	}
 	if (time_ptr) {
+		time_ptr[9] = ':';
 		time_ptr += 10;
 		new_time_limit = strtoul(time_ptr, NULL, 10);
+	}
+
+	/* Look for any un-parsed "=" */
+	tmp_char = strchr(cmd_ptr, '=');
+	if (tmp_char) {
+		tmp_char[0] = '\0';
+		while (tmp_char[-1] && (!isspace(tmp_char[-1])))
+			tmp_char--;
+		error("wiki: Invalid MODIFYJOB option %s", tmp_char);
 	}
 
 	lock_slurmctld(job_write_lock);
