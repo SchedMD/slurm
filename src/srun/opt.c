@@ -270,7 +270,7 @@ static bool _valid_node_list(char **node_list_pptr)
 	
 	if (strchr(*node_list_pptr, '/') == NULL)
 		return true;	/* not a file name */
-	
+
 	if(opt.nprocs_set)
 		nodelist = slurm_read_hostfile(*node_list_pptr, opt.nprocs);
 	else
@@ -2178,7 +2178,31 @@ static bool _opt_verify(void)
 	if ((opt.job_name == NULL) && (remote_argc > 0))
 		opt.job_name = _base_name(remote_argv[0]);
 
-	if(opt.nodelist)
+	if(!opt.nodelist) {
+		char *nodelist = NULL;
+		char *hostfile = getenv("SLURM_HOSTFILE");
+		
+		if (hostfile != NULL) {
+			if(opt.nprocs_set)
+				nodelist = slurm_read_hostfile(hostfile,
+							       opt.nprocs);
+			else
+				nodelist = slurm_read_hostfile(hostfile,
+							       NO_VAL);
+
+			if (nodelist == NULL) {
+				error("Failure getting NodeNames from "
+				      "hostfile");
+				/* FIXME - need to fail somehow */
+			} else {
+				debug("loading nodes from hostfile %s",
+				      hostfile);
+				opt.nodelist = xstrdup(nodelist);
+				free(nodelist);
+				opt.distribution = SLURM_DIST_ARBITRARY;
+			}
+		}
+	} else
 		if (!_valid_node_list(&opt.nodelist))
 			exit(1);
 
@@ -2252,30 +2276,29 @@ static bool _opt_verify(void)
 
 		core_format_enable (opt.core_type);
 		/* massage the numbers */
-/* <<<<<<< .working */
-/* 		if (opt.nodelist) { */
-/* 			hl = hostlist_create(opt.nodelist); */
-/* 			if (!hl) */
-/* 				fatal("memory allocation failure"); */
-/* 			hostlist_uniq(hl); */
-/* 			hl_cnt = hostlist_count(hl); */
-/* 			if (opt.nodes_set) */
-/* 				opt.min_nodes = MAX(hl_cnt, opt.min_nodes); */
-/* 			else { */
-/* 				opt.min_nodes = hl_cnt; */
-/* 				opt.nodes_set = true; */
-/* 			} */
-/* 		} */
-/* 		if ((opt.nodes_set || opt.extra_set) && !opt.nprocs_set) { */
-/* ======= */
-		if(opt.distribution == SLURM_DIST_ARBITRARY
-		   && !opt.nprocs_set && opt.nodelist) {
-			hostlist_t hl = hostlist_create(opt.nodelist);
-			opt.nprocs = hostlist_count(hl);
-			hostlist_destroy(hl);
-			opt.nprocs_set = true;
-		} else if (opt.nodes_set && !opt.nprocs_set) {
-/* >>>>>>> .merge-right.r11340 */
+		if (opt.nodelist) {
+			hl = hostlist_create(opt.nodelist);
+			if (!hl)
+				fatal("memory allocation failure");
+			if(opt.distribution == SLURM_DIST_ARBITRARY
+			   && !opt.nprocs_set) {
+				opt.nprocs = hostlist_count(hl);
+				opt.nprocs_set = true;
+			}
+			hostlist_uniq(hl);
+			hl_cnt = hostlist_count(hl);
+			if (opt.nodes_set)
+				opt.min_nodes = MAX(hl_cnt, opt.min_nodes);
+			else {
+				opt.min_nodes = hl_cnt;
+				opt.nodes_set = true;
+			}
+			/* don't destroy hl here since it could be
+			   used later
+			*/
+		}
+
+		if ((opt.nodes_set || opt.extra_set) && !opt.nprocs_set) {
 			/* 1 proc / node default */
 			opt.nprocs = opt.min_nodes;
 
