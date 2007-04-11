@@ -169,28 +169,6 @@ job_step_create_allocation(uint32_t job_id)
 	
 	ai->jobid          = job_id;
 	ai->stepid         = NO_VAL;
-
-	if (opt.nodelist == NULL) {
-		char *nodelist = NULL;
-		char *hostfile = getenv("SLURM_HOSTFILE");
-		
-		if (hostfile != NULL) {
-			nodelist = slurm_read_hostfile(hostfile,
-						       opt.max_nodes);
-			if (nodelist == NULL) {
-				error("Failure getting NodeNames from "
-				      "hostfile");
-				/* FIXME - need to fail somehow */
-			} else {
-				debug("loading nodes from hostfile %s",
-				      hostfile);
-				opt.nodelist = xstrdup(nodelist);
-				free(nodelist);
-				opt.distribution = SLURM_DIST_ARBITRARY;
-			}
-		}
-	}
-
 	ai->nodelist = opt.alloc_nodelist;
 	hl = hostlist_create(ai->nodelist);
 	hostlist_uniq(hl);

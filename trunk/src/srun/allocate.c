@@ -404,26 +404,7 @@ job_desc_msg_create_from_opts (char *script)
 	j->immediate      = opt.immediate;
 	j->name           = opt.job_name;
 	j->req_nodes      = xstrdup(opt.nodelist);
-	if (j->req_nodes == NULL) {
-		char *nodelist = NULL;
-		char *hostfile = getenv("SLURM_HOSTFILE");
-		
-		if (hostfile != NULL) {
-			nodelist = slurm_read_hostfile(hostfile, opt.nprocs);
-			if (nodelist == NULL) {
-				error("Failure getting NodeNames from "
-				      "hostfile");
-				/* FIXME - need to fail somehow */
-			} else {
-				debug("loading nodes from hostfile %s",
-				      hostfile);
-				opt.nodelist = xstrdup(nodelist);
-				j->req_nodes = xstrdup(nodelist);
-				free(nodelist);
-				opt.distribution = SLURM_DIST_ARBITRARY;
-			}
-		}
-	}
+	
 	/* simplify the job allocation nodelist, 
 	  not laying out tasks until step */
 	if(j->req_nodes) {
