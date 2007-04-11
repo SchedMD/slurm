@@ -330,6 +330,7 @@ static void _modify_job(long my_job_id)
 		"TS=%u AUTH=root DT=CMD=MODIFYJOB ARG=%ld "
 		/* "PARTITION=pdebug " */
 		/* "NODES=2 " */
+		/* "DEPEND=afterany:3 " */
 		/* "INVALID=123 " */
 		"TIMELIMIT=10 BANK=test_bank",
 		(uint32_t) now, my_job_id);

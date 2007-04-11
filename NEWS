@@ -3,14 +3,16 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 1.1.35
 =========================
- - In sched/wiki - Add support for CMD=SIGNALJOB to accept option
-   of VALUE=SIGXXX in addition to VALUE=# and VALUE=XXX options
+ - In sched/wiki2: Add support for CMD=SIGNALJOB to accept option
+   of VALUE=SIGXXX in addition to VALUE=# and VALUE=XXX options.
+ - In sched/wiki2: Add support for CMD=MODIFYJOB to accept option of
+   DEPEND=afterany:<jobid>, specify jobid=0 to clear. 
  - Correct logic for job allocation with task count (srun -n ...) AND
    FastSchedule=0 AND low CPUs count in Slurm's node configuration.
  - Add new and undocumented scancel option, --ctld, to route signal 
    requests through slurmctld rather than directly to slurmd daemons.
    Useful for testing purposes.
- - fixed issue with hostfile support not working in a job step
+ - Fixed issue with hostfile support not working in a job step.
 
 * Changes in SLURM 1.1.34
 =========================
