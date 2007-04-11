@@ -108,7 +108,7 @@
 #define LONG_OPT_MLOADER_IMAGE   0x142
 #define LONG_OPT_RAMDISK_IMAGE   0x143
 #define LONG_OPT_REBOOT          0x144
-#define LONG_OPT_NTASKSPERNODE   0x145
+#define LONG_OPT_TASKSPERNODE    0x145
 
 /*---- global variables, defined in opt.h ----*/
 opt_t opt;
@@ -389,7 +389,7 @@ static void _opt_default()
 	opt.cpus_set = false;
 	opt.min_nodes = 1;
 	opt.max_nodes = 0;
-	opt.ntasks_per_node   = -1;
+	opt.tasks_per_node   = -1;
 	opt.nodes_set = false;
 	opt.time_limit = -1;
 	opt.partition = NULL;
@@ -632,7 +632,8 @@ static struct option long_options[] = {
 	{"mloader-image", required_argument, 0, LONG_OPT_MLOADER_IMAGE},
 	{"ramdisk-image", required_argument, 0, LONG_OPT_RAMDISK_IMAGE},
 	{"reboot",        no_argument,       0, LONG_OPT_REBOOT},
-	{"ntasks-per-node", required_argument,0,LONG_OPT_NTASKSPERNODE}, 
+	{"tasks-per-node",  required_argument,0,LONG_OPT_TASKSPERNODE},
+	{"ntasks-per-node", required_argument,0,LONG_OPT_TASKSPERNODE}, 
 	{NULL,            0,                 0, 0}
 };
 
@@ -1168,8 +1169,8 @@ static void _set_options(int argc, char **argv)
 		case LONG_OPT_REBOOT:
 			opt.reboot = true;
 			break;
-		case LONG_OPT_NTASKSPERNODE:
-			opt.ntasks_per_node = _get_int(optarg, "ntasks-per-node");
+		case LONG_OPT_TASKSPERNODE:
+			opt.tasks_per_node = _get_int(optarg, "ntasks-per-node");
 			break;
 		default:
 			fatal("Unrecognized command line parameter %c",
@@ -1552,7 +1553,7 @@ static void _opt_list()
 	}
 	info("mail_type      : %s", _print_mail_type(opt.mail_type));
 	info("mail_user      : %s", opt.mail_user);
-	info("ntasks-per-node   : %d", opt.ntasks_per_node);
+	info("tasks-per-node : %d", opt.tasks_per_node);
 	str = print_commandline();
 	info("remote command : `%s'", str);
 	xfree(str);

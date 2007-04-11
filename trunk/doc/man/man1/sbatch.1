@@ -250,6 +250,7 @@ When a job is requeued, the batch script is initiated from its beginning.
 .TP
 \fB\-\-ntasks\-per\-node\fR[=]<\fIn\fR>
 Specify the number of tasks to be launched per node.
+Equivalent to \fB\-\-tasks\-per\-node\fR.
 
 .TP
 \fB\-o\fR, \fB\-\-output\fR[=]<\fIfilename pattern\fR>
@@ -284,6 +285,11 @@ time limit is the partition's time limit.  When the time limit is reached,
 the each task in each job step is sent SIGTERM followed by SIGKILL. The
 interval between signals is specified by the SLURM configuration parameter
 \fBKillWait\fR.  A time limit of zero represents unlimited time.
+
+.TP
+\fB\-\-tasks\-per\-node\fR[=]<\fIn\fR>
+Specify the number of tasks to be launched per node.
+Equivalent to \fB\-\-ntasks\-per\-node\fR.
 
 .TP
 \fB\-\-tmp\fR[=]<\fIMB\fR>
