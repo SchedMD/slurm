@@ -1,11 +1,18 @@
+This information is meant primarily for the Slurm developers. 
+System administrators should read the instructions at
+http://www.llnl.gov/linux/slurm/quickstart_admin.html
+(also found in the file doc/html/quickstart_admin.shtml).
+The "INSTALL" file contains generic Linux build instructions.
+
 Simple build/install on Linux:
-  ./autogen.sh
   ./configure --enable-debug \
               --prefix=<install-dir> --sysconfdir=<config-dir>
   make
   make install
 
-If you make changes to Makefile.am files, then on _MCR_, run
+If you make changes to any auxdir/* or Makefile.am file, then run
+_snowflake_ (where there are recent versions of autoconf, automake 
+and libtool installed):
  ./autogen.sh
 then check-in the new Makefile.am and Makefile.in files
 
