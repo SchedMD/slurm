@@ -2299,7 +2299,7 @@ _get_boxes(char *buf, int max_len)
 						continue;
 					if ((len+4) >= max_len)
 						break;
-					sprintf(buf+len,"%d%d%d,",
+					sprintf(buf+len,"%c%c%c,",
 						alpha_num[i], alpha_num[j],
 						alpha_num[k]);
 					len += 4;
@@ -2407,15 +2407,16 @@ size_t hostlist_ranged_string(hostlist_t hl, size_t n, char *buf)
 	_clear_grid();
 	for (i=0;i<hl->nranges;i++)
 		_set_grid(hl->hr[i]->lo, hl->hr[i]->hi);
-    if ((axis_min_x == axis_max_x) && (axis_min_y == axis_max_y)
-    &&  (axis_min_z == axis_max_z)) {
-        len += snprintf(buf, n, "%s%c%c%c",
-			hl->hr[0]->prefix,
-			alpha_num[axis_min_x], alpha_num[axis_min_y],
-			alpha_num[axis_min_z]);
-        if ((len < 0) || (len > n))
-            len = n;    /* truncated */
-    } else if (!_test_box()) {
+	if ((axis_min_x == axis_max_x) 
+	    && (axis_min_y == axis_max_y)
+	    &&  (axis_min_z == axis_max_z)) {
+		len += snprintf(buf, n, "%s%c%c%c",
+				hl->hr[0]->prefix,
+				alpha_num[axis_min_x], alpha_num[axis_min_y],
+				alpha_num[axis_min_z]);
+		if ((len < 0) || (len > n))
+			len = n;    /* truncated */
+	} else if (!_test_box()) {
 		sprintf(buf, "%s[", hl->hr[0]->prefix);
 		len = strlen(hl->hr[0]->prefix) + 1;
 		len += _get_boxes(buf + len, (n-len));
@@ -2430,7 +2431,7 @@ size_t hostlist_ranged_string(hostlist_t hl, size_t n, char *buf)
 			len = n;	/* truncated */
 	}
 	box = true;
-
+	
 notbox:
 #endif
 	if (!box) {
