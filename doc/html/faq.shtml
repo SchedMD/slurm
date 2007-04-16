@@ -51,6 +51,8 @@ on the compute node(s) to emulate a larger cluster?</a></li>
 resources than physically exist on the node?</a></li>
 <li><a href="#credential_replayed">What does a "credential
 replayed" error in the <i>SlurmdLogFile</i> indicate?</a></li>
+<li><a href="#large_time">What does a "Warning: Note very large
+processing time" in the <i>SlurmctldLogFile</i> indicate?</a></li>
 </ol>
 
 <h2>For Users</h2>
@@ -532,8 +534,21 @@ value higher than the default 5 seconds.
 In earlier versions of Slurm, the <i>--msg-timeout</i> option 
 of <i>srun</i> serves a similar purpose.
 
+<p><a name="large_time"><b>17. What does a "Warning: Note very large
+processing time" in the <i>SlurmctldLogFile</i> indicate?</b></a><br>
+This error is indicative of some operation taking an unexpectedly
+long time to complete, over one second to be specific.
+Setting the value of <i>SlurmctldDebug</i> configuration parameter 
+a value of six or higher should identify which operation(s) are 
+experiencing long delays.
+This message typically indicates long delays in file system access
+(writing state information or getting user information). 
+Another possibility is that the node on which the slurmctld 
+daemon executes has exhausted memory and is paging. 
+Try running the program <i>top</i> to check for this possibility.
+
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 15 March 2007</p>
+<p style="text-align:center;">Last modified 16 April 2007</p>
 
 <!--#include virtual="footer.txt"-->
