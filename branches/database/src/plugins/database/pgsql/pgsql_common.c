@@ -187,6 +187,7 @@ extern int pgsql_insert_ret_id(PGconn *pgsql_db, int database_init,
 	int new_id = 0;
 	PGresult *result = NULL;
 
+	slurm_mutex_lock(&pgsql_lock);
 	if(pgsql_db_query(pgsql_db, database_init, query) != SLURM_ERROR)  {
 		char *new_query = xstrdup_printf(
 			"select last_value from %s", sequence_name);
@@ -203,7 +204,8 @@ extern int pgsql_insert_ret_id(PGconn *pgsql_db, int database_init,
 			      PQerrorMessage(pgsql_db));
 		}
 	}
-
+	slurm_mutex_unlock(&pgsql_lock);
+	
 	return new_id;
 	
 }
