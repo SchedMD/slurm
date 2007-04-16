@@ -113,7 +113,7 @@ int slurm_sched_plugin_reconfig( void )
 /**************************************************************************/
 void slurm_sched_plugin_partition_change( void )
 {
-	(void) event_notify(1234, "Partition change");
+	(void) event_notify(1235, "Partition change");
 }
 
 /**************************************************************************/
