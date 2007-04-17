@@ -197,8 +197,9 @@ int main(int argc, char *argv[])
 	_init_pidfile();
 
 	/* Initialize supplementary group ID list for SlurmUser */
-	initgroups(slurmctld_conf.slurm_user_name,
-	           gid_from_string(slurmctld_conf.slurm_user_name));
+	if (initgroups(slurmctld_conf.slurm_user_name,
+	               gid_from_string(slurmctld_conf.slurm_user_name)))
+		error("initgroups: %m");
 
 	if ((slurmctld_conf.slurm_user_id) && 
 	    (slurmctld_conf.slurm_user_id != getuid()) &&
