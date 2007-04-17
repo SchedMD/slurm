@@ -65,9 +65,14 @@ set cwd "[$bin_pwd]"
 exec $bin_rm -f $file_in $file_out
 make_bash_script $file_in "$bin_echo RECONFIG >$cwd/$file_out"
 
-set matches 0
+set disabled 0
+set matches  0
 set strigger_pid [spawn $strigger --set -v --reconfig --program=$cwd/$file_in]
 expect {
+	-re "Operation not permitted" {
+		set disabled 1
+		exp_continue
+	}
 	-re "trigger set" {
 		incr matches
 		exp_continue
@@ -80,6 +85,11 @@ expect {
 	eof {
 		wait
 	}
+}
+if {$disabled == 1} {
+	send_user "\nWARNING: Current configuration prevents setting triggers\n"
+	send_user "         Need to run as SlurmUser or make SlurmUser=root\n"
+	exit $exit_code
 }
 if {$matches == 0} {
 	send_user "\nFAILURE: trigger creation failure\n"
