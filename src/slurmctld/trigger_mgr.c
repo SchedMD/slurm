@@ -284,6 +284,7 @@ extern int trigger_set(uid_t uid, gid_t gid, trigger_info_msg_t *msg)
 		 * launched. To prevent the launched program for an arbitrary 
 		 * user being executed as user SlurmUser, disable all other
 		 * users from setting triggers. */
+		info("Attemt to set trigger by uid %u", uid);
 		rc = EPERM;
 		goto fini;
 	}
