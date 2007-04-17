@@ -1,4 +1,4 @@
-.TH SCONTROL "1" "March 2007" "strigger 1.2" "Slurm components"
+.TH SCONTROL "1" "April 2007" "strigger 1.2" "Slurm components"
 
 .SH "NAME"
 strigger \- Used set, get or clear Slurm trigger information.
@@ -19,6 +19,16 @@ script.
 Typical uses include notifying system administrators of node failures 
 and gracefully terminating a job when it's time limit is approaching.
 
+\fBNOTE:\fR This command can only set triggers if run by the 
+user \fISlurmUser\fR unless \fISlurmUser\fR is configured as user root.
+This is required for the \fIslurmctld\fR daemon to set the appropriate
+user and group IDs for the executed program. 
+Also note that the program is executed on the same node that the 
+\fIslurmctld\fR daemon uses rather than some allocated compute node.
+To check the value of \fISlurmUser\fR, run the command:
+
+\fIscontrol show config | grep SlurmUser\fR 
+ 
 .SH "ARGUMENTS"
 .TP
 \fB\-\-block_err\fP
