@@ -45,12 +45,14 @@
 
 #include <errno.h>
 #include <fcntl.h>
+#include <grp.h>
 #include <stdlib.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 
 #include "src/common/bitstring.h"
 #include "src/common/list.h"
+#include "src/common/uid.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 #include "src/slurmctld/locks.h"
@@ -268,11 +270,24 @@ extern int trigger_set(uid_t uid, gid_t gid, trigger_info_msg_t *msg)
 	bitstr_t *bitmap = NULL;
 	trig_mgr_info_t * trig_add;
 	struct job_record *job_ptr;
+	/* Read config and job info */
 	slurmctld_lock_t job_read_lock =
-		{ NO_LOCK, READ_LOCK, NO_LOCK, NO_LOCK };
+		{ READ_LOCK, READ_LOCK, NO_LOCK, NO_LOCK };
 
 	lock_slurmctld(job_read_lock);
 	slurm_mutex_lock(&trigger_mutex);
+
+	if ((slurmctld_conf.slurm_user_id != 0)
+	&&  (slurmctld_conf.slurm_user_id != uid)) {
+		/* If SlurmUser is not root, then it is unable to set the 
+		 * appropriate user id and group id for the program to be 
+		 * launched. To prevent the launched program for an arbitrary 
+		 * user being executed as user SlurmUser, disable all other
+		 * users from setting triggers. */
+		rc = EPERM;
+		goto fini;
+	}
+
 	if (trigger_list == NULL) {
 		trigger_list = list_create(_trig_del);
 	} else if ((uid != 0) &&
@@ -756,7 +771,7 @@ static void _trigger_node_event(trig_mgr_info_t *trig_in, time_t now)
 
 static void _trigger_run_program(trig_mgr_info_t *trig_in)
 {
-	char program[1024], arg0[1024], arg1[1024], *pname;
+	char program[1024], arg0[1024], arg1[1024], user_name[1024], *pname;
 	uid_t uid;
 	gid_t gid;
 	pid_t child;
@@ -771,6 +786,8 @@ static void _trigger_run_program(trig_mgr_info_t *trig_in)
 	strncpy(arg1, trig_in->res_id, sizeof(arg1));
 	uid = trig_in->user_id;
 	gid = trig_in->group_id;
+	snprintf(user_name, sizeof(user_name), "%s", uid_to_string(uid));
+
 	child = fork();
 	if (child > 0) {
 		trig_in->group_id = child;
@@ -782,6 +799,7 @@ static void _trigger_run_program(trig_mgr_info_t *trig_in)
 		setsid();
 		setuid(uid);
 		setgid(gid);
+		initgroups(user_name, -1);
 		execl(program, arg0, arg1, NULL);
 		exit(1);
 	} else
