@@ -44,11 +44,15 @@ print_header $test_id
 # Build input script file
 #
 make_bash_script $file_in "$srun $bin_sleep $max_job_delay"
-
+if { [test_bluegene] } {
+	set node_cnt 512-512
+} else {
+	set node_cnt 1-1
+}
 #
 # Submit a couple of job so we have something to look at
 #
-set srun_pid [spawn $srun --batch -N1-1 --output=/dev/null --error=/dev/null -t5 $file_in]
+set srun_pid [spawn $srun --batch -N$node_cnt --output=/dev/null --error=/dev/null -t5 $file_in]
 expect {
 	-re "jobid ($number) submitted" {
 		set job_id1 $expect_out(1,string)
@@ -68,7 +72,7 @@ if {$job_id1 == 0} {
 	exit 1
 }
 
-set srun_pid [spawn $srun --batch -N1-1 --output=/dev/null --error=/dev/null --hold -t5 $file_in]
+set srun_pid [spawn $srun --batch -N$node_cnt --output=/dev/null --error=/dev/null --hold -t5 $file_in]
 expect {
 	-re "jobid ($number) submitted" {
 		set job_id2 $expect_out(1,string)
