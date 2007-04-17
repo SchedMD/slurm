@@ -388,9 +388,11 @@ static int _find_best_block_match(struct job_record* job_ptr,
 			int len = strlen(tmp_nodes);
 			
 			i = 0;
-			while((tmp_nodes[i] != '[' 
-			       && (tmp_nodes[i] > 57 || tmp_nodes[i] < 48)) 
-			      && (i<len)) 		
+			while(i<len 
+			      && tmp_nodes[i] != '[' 
+			      && (tmp_nodes[i] < '0' || tmp_nodes[i] > 'Z'
+				  || (tmp_nodes[i] > '9'
+				      && tmp_nodes[i] < 'A')))
 				i++;
 			
 			if(i<len) {

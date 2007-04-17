@@ -822,10 +822,10 @@ extern void ba_init(node_info_msg_t *node_info_ptr)
 
 			numeric = node_ptr->name;
 			while (numeric) {
-				if ((numeric[0] < '0')
-				    || ((numeric[0] > '9')
-					&& (numeric[0] < 'A'))
-				    || (numeric[0] > 'Z')) {
+				if (numeric[0] < '0'
+				    || numeric[0] > 'Z'
+				    || (numeric[0] > '9'
+					&& numeric[0] < 'A')) {
 					numeric++;
 					continue;
 				}

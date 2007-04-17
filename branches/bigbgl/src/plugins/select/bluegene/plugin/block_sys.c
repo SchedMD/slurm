@@ -219,12 +219,15 @@ static int _post_allocate(bg_record_t *bg_record)
 	if ((rc = bridge_free_block(bg_record->bg_block)) != STATUS_OK)
 		error("bridge_free_block(): %s", bg_err_str(rc));	
 #else
+	/* We are just looking for a real number here no need for a
+	   base conversion
+	*/
 	static int block_inx = 0;
 	int i=0, temp = 0;
 	if(bg_record->bg_block_id) {
-		while((bg_record->bg_block_id[i] > '9' 
-		       || bg_record->bg_block_id[i] < '0') 
-		      && (bg_record->bg_block_id[i])) 		
+		while(bg_record->bg_block_id[i]
+		      && (bg_record->bg_block_id[i] > '9' 
+			  || bg_record->bg_block_id[i] < '0')) 		
 			i++;
 		if(bg_record->bg_block_id[i]) {
 			temp = atoi(bg_record->bg_block_id+i)+1;

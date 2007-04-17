@@ -342,15 +342,23 @@ extern void process_nodes(bg_record_t *bg_record)
 			    && (bg_record->nodes[j+4] == 'x'
 				|| bg_record->nodes[j+4] == '-')) {
 				j++;
-				number = atoi(bg_record->nodes + j);
-				start[X] = number / 100;
-				start[Y] = (number % 100) / 10;
-				start[Z] = (number % 10);
+				number = strtol(bg_record->nodes + j,
+						NULL, HOSTLIST_BASE);
+				start[X] = number / 
+					(HOSTLIST_BASE * HOSTLIST_BASE);
+				start[Y] = (number % 
+					    (HOSTLIST_BASE * HOSTLIST_BASE))
+					/ HOSTLIST_BASE;
+				start[Z] = (number % HOSTLIST_BASE);
 				j += 4;
-				number = atoi(bg_record->nodes + j);
-				end[X] = number / 100;
-				end[Y] = (number % 100) / 10;
-				end[Z] = (number % 10);
+				number = strtol(bg_record->nodes + j,
+						NULL, HOSTLIST_BASE);
+				end[X] = number /
+					(HOSTLIST_BASE * HOSTLIST_BASE);
+				end[Y] = (number 
+					  % (HOSTLIST_BASE * HOSTLIST_BASE))
+					/ HOSTLIST_BASE;
+				end[Z] = (number % HOSTLIST_BASE);
 				j += 3;
 				if(!bg_record->bp_count) {
 					bg_record->start[X] = start[X];
@@ -371,10 +379,14 @@ extern void process_nodes(bg_record_t *bg_record)
 			} else if((bg_record->nodes[j] < 58 
 				   && bg_record->nodes[j] > 47)) {
 				
-				number = atoi(bg_record->nodes + j);
-				start[X] = number / 100;
-				start[Y] = (number % 100) / 10;
-				start[Z] = (number % 10);
+				number = strtol(bg_record->nodes + j,
+						NULL, HOSTLIST_BASE);
+				start[X] = number / 
+					(HOSTLIST_BASE * HOSTLIST_BASE);
+				start[Y] = (number % 
+					    (HOSTLIST_BASE * HOSTLIST_BASE))
+					/ HOSTLIST_BASE;
+				start[Z] = (number % HOSTLIST_BASE);
 				j+=3;
 				if(!bg_record->bp_count) {
 					bg_record->start[X] = start[X];
@@ -2188,9 +2200,10 @@ extern int add_bg_record(List records, List used_nodes, blockreq_t *blockreq)
 	       convert_conn_type(blockreq->conn_type));
 	len = strlen(blockreq->block);
 	i=0;
-	while((blockreq->block[i] != '[' 
-	       && (blockreq->block[i] > 57 || blockreq->block[i] < 48)) 
-	      && (i<len)) 		
+	while(i<len 
+	      && blockreq->block[i] != '[' 
+	      && (blockreq->block[i] < '0' || blockreq->block[i] > 'Z'
+		  || (blockreq->block[i] > '9' && blockreq->block[i] < 'A')))
 		i++;
 	
 	if(i<len) {
