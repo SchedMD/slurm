@@ -31,7 +31,7 @@
 ############################################################################
 source ./globals
 
-set test_id          "19.5"
+set test_id          "19.6"
 set exit_code        0
 set file_in          "test$test_id.input"
 set file_in_fini     "test$test_id.fini_input"
@@ -97,9 +97,14 @@ if {$job_id == 0} {
 #
 # Now add a couple of triggers for that job
 #
-set matches 0
+set disabled 0
+set matches  0
 set strigger_pid [spawn $strigger --set -v --time --jobid=$job_id --offset=-30 --program=$cwd/$file_in_time]
 expect {
+	-re "Operation not permitted" {
+		set disabled 1
+		exp_continue
+	}
 	-re "trigger set" {
 		incr matches
 		exp_continue
@@ -112,6 +117,12 @@ expect {
 	eof {
 		wait
 	}
+}
+if {$disabled == 1} {
+	send_user "\nWARNING: Current configuration prevents setting triggers\n"
+	send_user "         Need to run as SlurmUser or make SlurmUser=root\n"
+	cancel_job $job_id
+	exit $exit_code
 }
 if {$matches == 0} {
 	send_user "\nFAILURE: trigger creation failure\n"
