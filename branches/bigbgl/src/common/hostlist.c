@@ -573,7 +573,8 @@ static hostname_t hostname_create(const char *hostname)
 	}
 
 	hn->suffix = hn->hostname + idx + 1;
-	hn->num = strtoul(hn->suffix, &p, 10);
+
+	hn->num = strtoul(hn->suffix, &p, HOSTLIST_BASE);
 
 	if (*p == '\0') {
 		if (!(hn->prefix = malloc((idx + 2) * sizeof(char)))) {
@@ -1322,7 +1323,7 @@ hostlist_t _hostlist_create(const char *hostlist, char *sep, char *r_op)
 			tok += pos;
 
 		/* get lower bound */
-		low = strtoul(tok, (char **) &tok, 10);
+		low = strtoul(tok, (char **) &tok, HOSTLIST_BASE);
 
 		if (*tok == range_op) {    /* now get range upper bound */
 			/* push pointer past range op */
@@ -1348,7 +1349,8 @@ hostlist_t _hostlist_create(const char *hostlist, char *sep, char *r_op)
 			for (pos = 0; tok[pos] && isdigit((char) tok[pos]); ++pos) {;}
 
 			if (pos > 0) {    /* we have digits to process */
-				high = strtoul(tok, (char **) &tok, 10);
+				high = strtoul(tok, (char **) &tok,
+					       HOSTLIST_BASE);
 			} else {    /* bad boy, no digits */
 				error = 1;
 			}
@@ -1415,21 +1417,14 @@ static int _parse_single_range(const char *str, struct _range *range)
 		if (*p == '-')     /* do NOT allow negative numbers */
 			goto error;
 	}
-#ifdef HAVE_BG
-	range->lo = strtoul(str, &q, 13);
-#else
-	range->lo = strtoul(str, &q, 10);
-#endif	
+
+	range->lo = strtoul(str, &q, HOSTLIST_BASE);
+
 	if (q == str) 
 		goto error;
 	
-#ifdef HAVE_BG
-	range->hi = (p && *p) ? strtoul(p, &q, 13) : range->lo;
-#else
-	range->hi = (p && *p) ? strtoul(p, &q, 10) : range->lo;
-#endif	
-	info("%s range is %u %u", str, range->lo, range->hi);
-	
+	range->hi = (p && *p) ? strtoul(p, &q, HOSTLIST_BASE) : range->lo;
+		
 	if (q == p || *q != '\0') 
 		goto error;
 	
@@ -2330,9 +2325,9 @@ _clear_grid(void)
 {
 	bzero(axis, sizeof(axis));
 
-	axis_min_x = 10;
-	axis_min_y = 10;
-	axis_min_z = 10;
+	axis_min_x = HOSTLIST_BASE;
+	axis_min_y = HOSTLIST_BASE;
+	axis_min_z = HOSTLIST_BASE;
 
 	axis_max_x = -1;
 	axis_max_y = -1;
@@ -2347,13 +2342,13 @@ _set_grid(unsigned long start, unsigned long end)
 	int x1, y1, z1, x2, y2, z2;
 	int temp, temp1, temp2;
   
-	x1 = (pt1 / 100) % 10;
-	y1 = (pt1 / 10) % 10;
-	z1 = pt1 % 10;
+	x1 = (pt1 / (HOSTLIST_BASE * HOSTLIST_BASE)) % HOSTLIST_BASE;
+	y1 = (pt1 / HOSTLIST_BASE) % HOSTLIST_BASE;
+	z1 = pt1 % HOSTLIST_BASE;
 
-	x2 = (pt2 / 100) % 10;
-	y2 = (pt2 / 10) % 10;
-	z2 = pt2 % 10;
+	x2 = (pt2 / (HOSTLIST_BASE * HOSTLIST_BASE)) % HOSTLIST_BASE;
+	y2 = (pt2 / HOSTLIST_BASE) % HOSTLIST_BASE;
+	z2 = pt2 % HOSTLIST_BASE;
  
 	axis_min_x = MIN(axis_min_x, x1);
 	axis_min_y = MIN(axis_min_y, y1);

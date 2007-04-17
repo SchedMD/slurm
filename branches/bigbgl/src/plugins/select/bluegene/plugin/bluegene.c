@@ -2320,10 +2320,10 @@ static int _addto_node_list(bg_record_t *bg_record, int *start, int *end)
 	if ((end[X] >= DIM_SIZE[X]) || (end[Y] >= DIM_SIZE[Y])
 	||  (end[Z] >= DIM_SIZE[Z])) {
 		fatal("bluegene.conf matrix size exceeds space defined in " 
-			"slurm.conf %d%d%dx%d%d%d => %d%d%d",
-			start[X], start[Y], start[Z], 
-			end[X], end[Y], end[Z], 
-			DIM_SIZE[X], DIM_SIZE[Y], DIM_SIZE[Z]);
+		      "slurm.conf %d%d%dx%d%d%d => %d%d%d",
+		      start[X], start[Y], start[Z], 
+		      end[X], end[Y], end[Z], 
+		      DIM_SIZE[X], DIM_SIZE[Y], DIM_SIZE[Z]);
 	}
 	debug3("bluegene.conf: %d%d%dx%d%d%d",
 		start[X], start[Y], start[Z], end[X], end[Y], end[Z]);

@@ -823,21 +823,23 @@ extern void ba_init(node_info_msg_t *node_info_ptr)
 			numeric = node_ptr->name;
 			while (numeric) {
 				if ((numeric[0] < '0')
-				||  (numeric[0] > '9')) {
+				    || ((numeric[0] > '9')
+					&& (numeric[0] < 'A'))
+				    || (numeric[0] > 'Z')) {
 					numeric++;
 					continue;
 				}
-				start = atoi(numeric);
+				start = strtol(numeric, NULL, HOSTLIST_BASE);
 				break;
 			}
 			
-			temp = start / 100;
+			temp = start / (HOSTLIST_BASE * HOSTLIST_BASE);
 			if (DIM_SIZE[X] < temp)
 				DIM_SIZE[X] = temp;
-			temp = (start / 10) % 10;
+			temp = (start / HOSTLIST_BASE) % HOSTLIST_BASE;
 			if (DIM_SIZE[Y] < temp)
 				DIM_SIZE[Y] = temp;
-			temp = start % 10;
+			temp = start % HOSTLIST_BASE;
 			if (DIM_SIZE[Z] < temp)
 				DIM_SIZE[Z] = temp;
 		}
@@ -898,12 +900,14 @@ node_info_error:
 					continue;
 				}
 				number = strtol(node->nodenames + j,
-						NULL, BG_BASE);
+						NULL, HOSTLIST_BASE);
 				
-				end[X] = number / (BG_BASE * BG_BASE);
-				end[Y] = (number % (BG_BASE * BG_BASE))
-					/ BG_BASE;
-				end[Z] = (number % BG_BASE);
+				end[X] = number 
+					/ (HOSTLIST_BASE * HOSTLIST_BASE);
+				end[Y] = (number 
+					  % (HOSTLIST_BASE * HOSTLIST_BASE))
+					/ HOSTLIST_BASE;
+				end[Z] = (number % HOSTLIST_BASE);
 				DIM_SIZE[X] = MAX(DIM_SIZE[X], end[X]);
 				DIM_SIZE[Y] = MAX(DIM_SIZE[Y], end[Y]);
 				DIM_SIZE[Z] = MAX(DIM_SIZE[Z], end[Z]);
@@ -1582,10 +1586,10 @@ extern char *find_bp_rack_mid(char* xyz)
 	len -= 3;
 	if(len<0)
 		return NULL;
-	number = atoi(&xyz[X]+len);
-	coord[X] = number / 100;
-	coord[Y] = (number % 100) / 10;
-	coord[Z] = (number % 10);
+	number = strtol(&xyz[X]+len, NULL, HOSTLIST_BASE);
+	coord[X] = number / (HOSTLIST_BASE * HOSTLIST_BASE);
+	coord[Y] = (number % (HOSTLIST_BASE * HOSTLIST_BASE)) / HOSTLIST_BASE;
+	coord[Z] = (number % HOSTLIST_BASE);
 	if(!bp_map_list) {
 		if(set_bp_map() == -1)
 			return NULL;
@@ -2798,14 +2802,16 @@ extern int set_bp_map(void)
 		bp_map->coord[X] = bp_loc.X;
 		bp_map->coord[Y] = bp_loc.Y;
 		bp_map->coord[Z] = bp_loc.Z;
-		number = atoi(bp_id+1);		
+		
+		number = strtol(bp_id+1, NULL, HOSTLIST_BASE);
 		if(DIM_SIZE[X] > bp_loc.X
 		   && DIM_SIZE[Y] > bp_loc.Y
 		   && DIM_SIZE[Z] > bp_loc.Z)
 			ba_system_ptr->grid
 				[bp_loc.X]
 				[bp_loc.Y]
-				[bp_loc.Z].phys_x = number / 100;
+				[bp_loc.Z].phys_x =
+				number / (HOSTLIST_BASE * HOSTLIST_BASE);
 		
 		list_push(bp_map_list, bp_map);
 		
