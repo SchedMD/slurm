@@ -375,15 +375,17 @@ static int _marknodes(db2_block_info_t *block_ptr, int count)
 		    && (block_ptr->nodes[j+4] == 'x'
 			|| block_ptr->nodes[j+4] == '-')) {
 			j++;
-			number = strtol(block_ptr->nodes + j,
-						NULL, HOSTLIST_BASE);
+			number = xstrntol(block_ptr->nodes + j,
+					  NULL, BA_SYSTEM_DIMENSIONS, 
+					  HOSTLIST_BASE);
 			start[X] = number / (HOSTLIST_BASE * HOSTLIST_BASE);
 			start[Y] = (number % (HOSTLIST_BASE * HOSTLIST_BASE))
 				/ HOSTLIST_BASE;
 			start[Z] = (number % HOSTLIST_BASE);
 			j += 4;
-			number = strtol(block_ptr->nodes + j,
-					NULL, HOSTLIST_BASE);
+			number = xstrntol(block_ptr->nodes + j,
+					  NULL, BA_SYSTEM_DIMENSIONS, 
+					  HOSTLIST_BASE);
 			end[X] = number / (HOSTLIST_BASE * HOSTLIST_BASE);
 			end[Y] = (number % (HOSTLIST_BASE * HOSTLIST_BASE))
 				/ HOSTLIST_BASE;
@@ -406,8 +408,9 @@ static int _marknodes(db2_block_info_t *block_ptr, int count)
 		} else if((block_ptr->nodes[j] < 58 
 			   && block_ptr->nodes[j] > 47)) {
 					
-			number = strtol(block_ptr->nodes + j,
-						NULL, HOSTLIST_BASE);
+			number = xstrntol(block_ptr->nodes + j,
+					  NULL, BA_SYSTEM_DIMENSIONS, 
+					  HOSTLIST_BASE);
 			start[X] = number / (HOSTLIST_BASE * HOSTLIST_BASE);
 			start[Y] = (number % (HOSTLIST_BASE * HOSTLIST_BASE))
 				/ HOSTLIST_BASE;
@@ -869,14 +872,16 @@ static int _make_nodelist(char *nodes, List nodelist)
 		    && (nodes[j+4] == 'x'
 			|| nodes[j+4] == '-')) {
 			j++;
-			number = strtol(nodes + j, NULL, HOSTLIST_BASE);
+			number = xstrntol(nodes + j, NULL, 
+					  BA_SYSTEM_DIMENSIONS, HOSTLIST_BASE);
 			start[X] = number / (HOSTLIST_BASE * HOSTLIST_BASE);
 			start[Y] = (number % (HOSTLIST_BASE * HOSTLIST_BASE))
 				/ HOSTLIST_BASE;
 			start[Z] = (number % HOSTLIST_BASE);
 			
 			j += 4;
-			number = strtol(nodes + j, NULL, HOSTLIST_BASE);
+			number = xstrntol(nodes + j, NULL,
+					  BA_SYSTEM_DIMENSIONS, HOSTLIST_BASE);
 			end[X] = number / (HOSTLIST_BASE * HOSTLIST_BASE);
 			end[Y] = (number % (HOSTLIST_BASE * HOSTLIST_BASE))
 				/ HOSTLIST_BASE;
@@ -890,7 +895,8 @@ static int _make_nodelist(char *nodes, List nodelist)
 		} else if((nodes[j] < 58 
 			   && nodes[j] > 47)) {
 					
-			number = strtol(nodes + j, NULL, HOSTLIST_BASE);
+			number = xstrntol(nodes + j, NULL,
+					  BA_SYSTEM_DIMENSIONS, HOSTLIST_BASE);
 			start[X] = number / (HOSTLIST_BASE * HOSTLIST_BASE);
 			start[Y] = (number % (HOSTLIST_BASE * HOSTLIST_BASE))
 				/ HOSTLIST_BASE;

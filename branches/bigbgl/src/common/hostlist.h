@@ -44,7 +44,8 @@
 #define MAXHOSTRANGELEN 8192
 
 #ifdef HAVE_BG
-#define HOSTLIST_BASE 10
+#define HOSTLIST_BASE 36
+extern char *alpha_num;
 #else
 #define HOSTLIST_BASE 10
 #endif

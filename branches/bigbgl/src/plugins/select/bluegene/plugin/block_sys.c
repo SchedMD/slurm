@@ -614,9 +614,10 @@ int read_bg_blocks()
 			slurm_conf_lock();
 			snprintf(node_name_tmp, 
 				 sizeof(node_name_tmp),
-				 "%s%d%d%d", 
+				 "%s%c%c%c", 
 				 slurmctld_conf.node_prefix,
-				 coord[X], coord[Y], coord[Z]);
+				 alpha_num[coord[X]], alpha_num[coord[Y]],
+				 alpha_num[coord[Z]]);
 			slurm_conf_unlock();
 			
 			hostlist_push(hostlist, node_name_tmp);

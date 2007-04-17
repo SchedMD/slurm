@@ -168,22 +168,22 @@ static int _find_best_block_match(struct job_record* job_ptr,
 				if ((try_request->start[X] != start[X])
 				    || (try_request->start[Y] != start[Y])
 				    || (try_request->start[Z] != start[Z])) {
-					debug4("got %d%d%d looking for %d%d%d",
-					       try_request->start[X],
-					       try_request->start[Y],
-					       try_request->start[Z],
-					       start[X],
-					       start[Y],
-					       start[Z]);
+					debug4("got %c%c%c looking for %c%c%c",
+					       alpha_num[try_request->start[X]],
+					       alpha_num[try_request->start[Y]],
+					       alpha_num[try_request->start[Z]],
+					       alpha_num[start[X]],
+					       alpha_num[start[Y]],
+					       alpha_num[start[Z]]);
 					continue;
 				}
-				debug3("found %d%d%d looking for %d%d%d",
-				       try_request->start[X],
-				       try_request->start[Y],
-				       try_request->start[Z],
-				       start[X],
-				       start[Y],
-				       start[Z]);
+				debug3("found %c%c%c looking for %c%c%c",
+				       alpha_num[try_request->start[X]],
+				       alpha_num[try_request->start[Y]],
+				       alpha_num[try_request->start[Z]],
+				       alpha_num[start[X]],
+				       alpha_num[start[Y]],
+				       alpha_num[start[Z]]);
 			}
 			if(try_request->procs == req_procs) {
 				debug("already tried to create but "

@@ -342,8 +342,9 @@ extern void process_nodes(bg_record_t *bg_record)
 			    && (bg_record->nodes[j+4] == 'x'
 				|| bg_record->nodes[j+4] == '-')) {
 				j++;
-				number = strtol(bg_record->nodes + j,
-						NULL, HOSTLIST_BASE);
+				number = xstrntol(bg_record->nodes + j,
+						  NULL, BA_SYSTEM_DIMENSIONS,
+						  HOSTLIST_BASE);
 				start[X] = number / 
 					(HOSTLIST_BASE * HOSTLIST_BASE);
 				start[Y] = (number % 
@@ -351,8 +352,8 @@ extern void process_nodes(bg_record_t *bg_record)
 					/ HOSTLIST_BASE;
 				start[Z] = (number % HOSTLIST_BASE);
 				j += 4;
-				number = strtol(bg_record->nodes + j,
-						NULL, HOSTLIST_BASE);
+				number = xstrntol(bg_record->nodes + j,
+						NULL, 3, HOSTLIST_BASE);
 				end[X] = number /
 					(HOSTLIST_BASE * HOSTLIST_BASE);
 				end[Y] = (number 
@@ -364,7 +365,7 @@ extern void process_nodes(bg_record_t *bg_record)
 					bg_record->start[X] = start[X];
 					bg_record->start[Y] = start[Y];
 					bg_record->start[Z] = start[Z];
-					debug2("start is %d%d%d",
+					debug2("start is %dx%dx%d",
 					       bg_record->start[X],
 					       bg_record->start[Y],
 					       bg_record->start[Z]);
@@ -379,8 +380,9 @@ extern void process_nodes(bg_record_t *bg_record)
 			} else if((bg_record->nodes[j] < 58 
 				   && bg_record->nodes[j] > 47)) {
 				
-				number = strtol(bg_record->nodes + j,
-						NULL, HOSTLIST_BASE);
+				number = xstrntol(bg_record->nodes + j,
+						  NULL, BA_SYSTEM_DIMENSIONS,
+						  HOSTLIST_BASE);
 				start[X] = number / 
 					(HOSTLIST_BASE * HOSTLIST_BASE);
 				start[Y] = (number % 
@@ -392,7 +394,7 @@ extern void process_nodes(bg_record_t *bg_record)
 					bg_record->start[X] = start[X];
 					bg_record->start[Y] = start[Y];
 					bg_record->start[Z] = start[Z];
-					debug2("start is %d%d%d",
+					debug2("start is %dx%dx%d",
 					       bg_record->start[X],
 					       bg_record->start[Y],
 					       bg_record->start[Z]);
@@ -419,10 +421,10 @@ extern void process_nodes(bg_record_t *bg_record)
 
 	itr = list_iterator_create(bg_record->bg_block_list);
 	while ((ba_node = list_next(itr)) != NULL) {
-		debug4("%d%d%d is included in this block",
-		       ba_node->coord[X],
-		       ba_node->coord[Y],
-		       ba_node->coord[Z]);
+		debug4("%c%c%c is included in this block",
+		       alpha_num[ba_node->coord[X]],
+		       alpha_num[ba_node->coord[Y]],
+		       alpha_num[ba_node->coord[Z]]);
 		       
 		if(ba_node->coord[X]>end[X]) {
 			bg_record->geo[X]++;
@@ -438,10 +440,10 @@ extern void process_nodes(bg_record_t *bg_record)
 		}
 	}
 	list_iterator_destroy(itr);
-	debug3("geo = %d%d%d bp count is %d\n",
-	       bg_record->geo[X],
-	       bg_record->geo[Y],
-	       bg_record->geo[Z],
+	debug3("geo = %c%c%c bp count is %d\n",
+	       alpha_num[bg_record->geo[X]],
+	       alpha_num[bg_record->geo[Y]],
+	       alpha_num[bg_record->geo[Z]],
 	       bg_record->bp_count);
 
 	if ((bg_record->geo[X] == DIM_SIZE[X])
@@ -1008,14 +1010,14 @@ extern int create_defined_blocks(bg_layout_t overlapped)
 					reset_ba_system(false);
 				for(i=0; i<BA_SYSTEM_DIMENSIONS; i++) 
 					geo[i] = bg_record->geo[i];
-				debug2("adding %s %d%d%d %d%d%d",
+				debug2("adding %s %c%c%c %c%c%c",
 				       bg_record->nodes,
-				       bg_record->start[X],
-				       bg_record->start[Y],
-				       bg_record->start[Z],
-				       geo[X],
-				       geo[Y],
-				       geo[Z]);
+				       alpha_num[bg_record->start[X]],
+				       alpha_num[bg_record->start[Y]],
+				       alpha_num[bg_record->start[Z]],
+				       alpha_num[geo[X]],
+				       alpha_num[geo[Y]],
+				       alpha_num[geo[Z]]);
 				if(bg_record->bg_block_list
 				   && list_count(bg_record->bg_block_list)) {
 					if(check_and_set_node_list(
@@ -1166,14 +1168,14 @@ extern int create_dynamic_block(ba_request_t *request, List my_block_list)
 				bit_or(my_bitmap, bg_record->bitmap);
 				for(i=0; i<BA_SYSTEM_DIMENSIONS; i++) 
 					geo[i] = bg_record->geo[i];
-				debug2("adding %s %d%d%d %d%d%d",
+				debug2("adding %s %c%c%c %c%c%c",
 				       bg_record->nodes,
-				       bg_record->start[X],
-				       bg_record->start[Y],
-				       bg_record->start[Z],
-				       geo[X],
-				       geo[Y],
-				       geo[Z]);
+				       alpha_num[bg_record->start[X]],
+				       alpha_num[bg_record->start[Y]],
+				       alpha_num[bg_record->start[Z]],
+				       alpha_num[geo[X]],
+				       alpha_num[geo[Y]],
+				       alpha_num[geo[Z]]);
 
 				if(check_and_set_node_list(
 					   bg_record->bg_block_list)
@@ -1262,11 +1264,11 @@ extern int create_dynamic_block(ba_request_t *request, List my_block_list)
 				for(i=0; i<BA_SYSTEM_DIMENSIONS; i++) 
 					request->start[i] = 
 						bg_record->start[i];
-				debug2("allocating %s %d%d%d %d",
+				debug2("allocating %s %c%c%c %d",
 				       bg_record->nodes,
-				       request->start[X],
-				       request->start[Y],
-				       request->start[Z],
+				       alpha_num[request->start[X]],
+				       alpha_num[request->start[Y]],
+				       alpha_num[request->start[Z]],
 				       request->size);
 				request->start_req = 1;
 				rc = SLURM_SUCCESS;
@@ -1388,9 +1390,10 @@ extern int create_full_system_block()
 		snprintf(name, i, "%s000",
 			 slurmctld_conf.node_prefix);
 	else
-		snprintf(name, i, "%s[000x%d%d%d]",
+		snprintf(name, i, "%s[000x%c%c%c]",
 			 slurmctld_conf.node_prefix,
-			 geo[X], geo[Y], geo[Z]);
+			 alpha_num[geo[X]], alpha_num[geo[Y]],
+			 alpha_num[geo[Z]]);
 	slurm_conf_unlock();
 			
 	if(bg_found_block_list) {
@@ -1448,14 +1451,14 @@ extern int create_full_system_block()
 	reset_ba_system(false);
 	for(i=0; i<BA_SYSTEM_DIMENSIONS; i++) 
 		geo[i] = bg_record->geo[i];
-	debug2("adding %s %d%d%d %d%d%d",
+	debug2("adding %s %c%c%c %c%c%c",
 	       bg_record->nodes,
-	       bg_record->start[X],
-	       bg_record->start[Y],
-	       bg_record->start[Z],
-	       geo[X],
-	       geo[Y],
-	       geo[Z]);
+	       alpha_num[bg_record->start[X]],
+	       alpha_num[bg_record->start[Y]],
+	       alpha_num[bg_record->start[Z]],
+	       alpha_num[geo[X]],
+	       alpha_num[geo[Y]],
+	       alpha_num[geo[Z]]);
 	results = list_create(NULL);
 	name = set_bg_block(results,
 			    bg_record->start, 
@@ -2328,29 +2331,34 @@ static int _addto_node_list(bg_record_t *bg_record, int *start, int *end)
 
 	if ((start[X] < 0) || (start[Y] < 0) || (start[Z] < 0)) {
 		fatal("bluegene.conf starting coordinate is invalid: %d%d%d",
-			start[X], start[Y], start[Z]);
+		      start[X], start[Y], start[Z]);
 	}
 	if ((end[X] >= DIM_SIZE[X]) || (end[Y] >= DIM_SIZE[Y])
 	||  (end[Z] >= DIM_SIZE[Z])) {
 		fatal("bluegene.conf matrix size exceeds space defined in " 
-		      "slurm.conf %d%d%dx%d%d%d => %d%d%d",
-		      start[X], start[Y], start[Z], 
+		      "slurm.conf %c%c%cx%d%d%d => %c%c%c",
+		      alpha_num[start[X]], alpha_num[start[Y]],
+		      alpha_num[start[Z]], 
 		      end[X], end[Y], end[Z], 
-		      DIM_SIZE[X], DIM_SIZE[Y], DIM_SIZE[Z]);
+		      alpha_num[DIM_SIZE[X]], alpha_num[DIM_SIZE[Y]], 
+		      alpha_num[DIM_SIZE[Z]]);
 	}
-	debug3("bluegene.conf: %d%d%dx%d%d%d",
-		start[X], start[Y], start[Z], end[X], end[Y], end[Z]);
-	debug3("slurm.conf:    %d%d%d",
-		DIM_SIZE[X], DIM_SIZE[Y], DIM_SIZE[Z]); 
+	debug3("bluegene.conf: %c%c%cx%c%c%c",
+	       alpha_num[start[X]], alpha_num[start[Y]], alpha_num[start[Z]],
+	       alpha_num[end[X]], alpha_num[end[Y]], alpha_num[end[Z]]);
+	debug3("slurm.conf:    %c%c%c",
+	       alpha_num[DIM_SIZE[X]], alpha_num[DIM_SIZE[Y]],
+	       alpha_num[DIM_SIZE[Z]]); 
 	
 	for (x = start[X]; x <= end[X]; x++) {
 		for (y = start[Y]; y <= end[Y]; y++) {
 			for (z = start[Z]; z <= end[Z]; z++) {
 				slurm_conf_lock();
 				snprintf(node_name_tmp, sizeof(node_name_tmp),
-					 "%s%d%d%d", 
+					 "%s%c%c%c", 
 					 slurmctld_conf.node_prefix,
-					 x, y, z);		
+					 alpha_num[x], alpha_num[y],
+					 alpha_num[z]);		
 				slurm_conf_unlock();
 				ba_node = ba_copy_node(
 					&ba_system_ptr->grid[x][y][z]);
@@ -2379,10 +2387,10 @@ static int _ba_node_cmpf_inc(ba_node_t *node_a, ba_node_t *node_b)
 	else if (node_a->coord[Z] > node_b->coord[Z])
 		return 1;
 
-	error("You have the node %d%d%d in the list twice",
-	      node_a->coord[X],
-	      node_a->coord[Y],
-	      node_a->coord[Z]); 
+	error("You have the node %c%c%c in the list twice",
+	      alpha_num[node_a->coord[X]],
+	      alpha_num[node_a->coord[Y]],
+	      alpha_num[node_a->coord[Z]]); 
 	return 0;
 }
 #endif //HAVE_BG
@@ -2843,22 +2851,22 @@ static int _breakup_blocks(ba_request_t *request, List my_block_list)
 			if ((request->start[X] != bg_record->start[X])
 			    || (request->start[Y] != bg_record->start[Y])
 			    || (request->start[Z] != bg_record->start[Z])) {
-				debug4("small got %d%d%d looking for %d%d%d",
-				       bg_record->start[X],
-				       bg_record->start[Y],
-				       bg_record->start[Z],
-				       request->start[X],
-				       request->start[Y],
-				       request->start[Z]);
+				debug4("small got %c%c%c looking for %c%c%c",
+				       alpha_num[bg_record->start[X]],
+				       alpha_num[bg_record->start[Y]],
+				       alpha_num[bg_record->start[Z]],
+				       alpha_num[request->start[X]],
+				       alpha_num[request->start[Y]],
+				       alpha_num[request->start[Z]]);
 				continue;
 			}
-			debug3("small found %d%d%d looking for %d%d%d",
-			       bg_record->start[X],
-			       bg_record->start[Y],
-			       bg_record->start[Z],
-			       request->start[X],
-			       request->start[Y],
-			       request->start[Z]);
+			debug3("small found %c%c%c looking for %c%c%c",
+			       alpha_num[bg_record->start[X]],
+			       alpha_num[bg_record->start[Y]],
+			       alpha_num[bg_record->start[Z]],
+			       alpha_num[request->start[X]],
+			       alpha_num[request->start[Y]],
+			       alpha_num[request->start[Z]]);
 		}
 		proc_cnt = bg_record->bp_count * 
 			bg_record->cpus_per_bp;
@@ -2869,10 +2877,10 @@ static int _breakup_blocks(ba_request_t *request, List my_block_list)
 			request->save_name = xmalloc(4);
 			snprintf(request->save_name,
 				 4,
-				 "%d%d%d",
-				 bg_record->start[X],
-				 bg_record->start[Y],
-				 bg_record->start[Z]);
+				 "%c%c%c",
+				 alpha_num[bg_record->start[X]],
+				 alpha_num[bg_record->start[Y]],
+				 alpha_num[bg_record->start[Z]]);
 			rc = SLURM_SUCCESS;
 			goto finished;
 		}
@@ -2891,10 +2899,10 @@ static int _breakup_blocks(ba_request_t *request, List my_block_list)
 				request->save_name = xmalloc(4);
 				snprintf(request->save_name, 
 					 4,
-					 "%d%d%d",
-					 bg_record->start[X],
-					 bg_record->start[Y],
-					 bg_record->start[Z]);
+					 "%c%c%c",
+					 alpha_num[bg_record->start[X]],
+					 alpha_num[bg_record->start[Y]],
+					 alpha_num[bg_record->start[Z]]);
 				if(!my_block_list) {
 					rc = SLURM_SUCCESS;
 					goto finished;	
@@ -2939,22 +2947,22 @@ static int _breakup_blocks(ba_request_t *request, List my_block_list)
 			if ((request->start[X] != bg_record->start[X])
 			    || (request->start[Y] != bg_record->start[Y])
 			    || (request->start[Z] != bg_record->start[Z])) {
-				debug4("small 2 got %d%d%d looking for %d%d%d",
-				       bg_record->start[X],
-				       bg_record->start[Y],
-				       bg_record->start[Z],
-				       request->start[X],
-				       request->start[Y],
-				       request->start[Z]);
+				debug4("small 2 got %c%c%c looking for %c%c%c",
+				       alpha_num[bg_record->start[X]],
+				       alpha_num[bg_record->start[Y]],
+				       alpha_num[bg_record->start[Z]],
+				       alpha_num[request->start[X]],
+				       alpha_num[request->start[Y]],
+				       alpha_num[request->start[Z]]);
 				continue;
 			}
-			debug3("small 2 found %d%d%d looking for %d%d%d",
-			       bg_record->start[X],
-			       bg_record->start[Y],
-			       bg_record->start[Z],
-			       request->start[X],
-			       request->start[Y],
-			       request->start[Z]);
+			debug3("small 2 found %c%c%c looking for %c%c%c",
+			       alpha_num[bg_record->start[X]],
+			       alpha_num[bg_record->start[Y]],
+			       alpha_num[bg_record->start[Z]],
+			       alpha_num[request->start[X]],
+			       alpha_num[request->start[Y]],
+			       alpha_num[request->start[Z]]);
 		}
 				
 		proc_cnt = bg_record->bp_count * bg_record->cpus_per_bp;
@@ -2965,10 +2973,10 @@ static int _breakup_blocks(ba_request_t *request, List my_block_list)
 			request->save_name = xmalloc(4);
 			snprintf(request->save_name,
 				 4,
-				 "%d%d%d",
-				 bg_record->start[X],
-				 bg_record->start[Y],
-				 bg_record->start[Z]);
+				 "%c%c%c",
+				 alpha_num[bg_record->start[X]],
+				 alpha_num[bg_record->start[Y]],
+				 alpha_num[bg_record->start[Z]]);
 			rc = SLURM_SUCCESS;
 			goto finished;
 		} 
@@ -2988,10 +2996,10 @@ static int _breakup_blocks(ba_request_t *request, List my_block_list)
 				request->save_name = xmalloc(4);
 				snprintf(request->save_name,
 					 4,
-					 "%d%d%d",
-					 bg_record->start[X],
-					 bg_record->start[Y],
-					 bg_record->start[Z]);
+					 "%c%c%c",
+					 alpha_num[bg_record->start[X]],
+					 alpha_num[bg_record->start[Y]],
+					 alpha_num[bg_record->start[Z]]);
 				if(!my_block_list) {
 					rc = SLURM_SUCCESS;
 					goto finished;	
@@ -3031,10 +3039,10 @@ found_one:
 		request->save_name = xmalloc(4);
 		snprintf(request->save_name, 
 			 4,
-			 "%d%d%d",
-			 bg_record->start[X],
-			 bg_record->start[Y],
-			 bg_record->start[Z]);
+			 "%c%c%c",
+			 alpha_num[bg_record->start[X]],
+			 alpha_num[bg_record->start[Y]],
+			 alpha_num[bg_record->start[Z]]);
 		if(!my_block_list) {
 			rc = SLURM_SUCCESS;
 			goto finished;	

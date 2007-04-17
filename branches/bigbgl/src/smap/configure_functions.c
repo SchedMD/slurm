@@ -306,8 +306,9 @@ static int _create_allocation(char *com, List allocated_blocks)
 				
 				/* for geometery */
 				request->geometry[X] =
-					strtol(&com[geoi], 
-					       NULL, HOSTLIST_BASE);
+					xstrntol(&com[geoi], 
+						 NULL, BA_SYSTEM_DIMENSIONS, 
+						 HOSTLIST_BASE);
 				geoi++;
 				while(com[geoi-1]!='x' && geoi<len)
 					geoi++;
@@ -315,8 +316,9 @@ static int _create_allocation(char *com, List allocated_blocks)
 					goto geo_error_message;
 				
 				request->geometry[Y] = 
-					strtol(&com[geoi], 
-					       NULL, HOSTLIST_BASE);
+					xstrntol(&com[geoi], 
+						 NULL, BA_SYSTEM_DIMENSIONS, 
+						 HOSTLIST_BASE);
 				geoi++;
 				while(com[geoi-1]!='x' && geoi<len)
 					geoi++;
@@ -324,8 +326,9 @@ static int _create_allocation(char *com, List allocated_blocks)
 					goto geo_error_message;
 				
 				request->geometry[Z] = 
-					strtol(&com[geoi], 
-					       NULL, HOSTLIST_BASE);
+					xstrntol(&com[geoi], 
+						 NULL, BA_SYSTEM_DIMENSIONS,
+						 HOSTLIST_BASE);
 				request->size = -1;
 				break;
 			}
@@ -334,22 +337,25 @@ static int _create_allocation(char *com, List allocated_blocks)
 
 		if(request->start_req) {
 			/* for size */
-			request->start[X] = strtol(&com[starti],
-						   NULL, HOSTLIST_BASE);
+			request->start[X] = xstrntol(&com[starti], NULL,
+						     BA_SYSTEM_DIMENSIONS,
+						     HOSTLIST_BASE);
 			starti++;
 			while(com[starti-1]!='x' && starti<len)
 				starti++;
 			if(starti==len) 
 				goto start_request;
-			request->start[Y] = strtol(&com[starti],
-						   NULL, HOSTLIST_BASE);
+			request->start[Y] = xstrntol(&com[starti], NULL,
+						     BA_SYSTEM_DIMENSIONS,
+						     HOSTLIST_BASE);
 			starti++;
 			while(com[starti-1]!='x' && starti<len)
 				starti++;
 			if(starti==len)
 				goto start_request;
-			request->start[Z] = strtol(&com[starti],
-						   NULL, HOSTLIST_BASE);
+			request->start[Z] = xstrntol(&com[starti], NULL,
+						     BA_SYSTEM_DIMENSIONS,
+						     HOSTLIST_BASE);
 		}
 	start_request:
 		if(!strcasecmp(layout_mode,"OVERLAP"))
@@ -474,8 +480,9 @@ static int _change_state_all_bps(char *com, int state)
 	memset(allnodes,0,50);
 		
 #ifdef HAVE_BG
-	sprintf(allnodes, "000x%d%d%d", 
-		DIM_SIZE[X]-1, DIM_SIZE[Y]-1, DIM_SIZE[Z]-1);
+	sprintf(allnodes, "000x%c%c%c", 
+		alpha_num[DIM_SIZE[X]-1], alpha_num[DIM_SIZE[Y]-1],
+		alpha_num[DIM_SIZE[Z]-1]);
 #else
 	sprintf(allnodes, "0-%d", 
 		DIM_SIZE[X]);
@@ -523,7 +530,8 @@ static int _change_state_bps(char *com, int state)
 			   || (com[i+j] < '0' || com[i+j] > 'Z'
 			       || (com[i+j] > '9' && com[i+j] < 'A'))) 
 				goto error_message2;
-		number = strtol(com + i, NULL, HOSTLIST_BASE);
+		number = xstrntol(com + i, NULL,
+				  BA_SYSTEM_DIMENSIONS, HOSTLIST_BASE);
 		start[X] = number / (HOSTLIST_BASE * HOSTLIST_BASE);
 		start[Y] = (number % (HOSTLIST_BASE * HOSTLIST_BASE))
 			/ HOSTLIST_BASE;
@@ -535,7 +543,8 @@ static int _change_state_bps(char *com, int state)
 			   || (com[i+j] < '0' || com[i+j] > 'Z'
 			       || (com[i+j] > '9' && com[i+j] < 'A'))) 
 				goto error_message2;
-		number = strtol(com + i, NULL, HOSTLIST_BASE);
+		number = xstrntol(com + i, NULL,
+				  BA_SYSTEM_DIMENSIONS, HOSTLIST_BASE);
 		end[X] = number / (HOSTLIST_BASE * HOSTLIST_BASE);
 		end[Y] = (number % (HOSTLIST_BASE * HOSTLIST_BASE))
 			/ HOSTLIST_BASE;
@@ -546,7 +555,8 @@ static int _change_state_bps(char *com, int state)
 			   || (com[i+j] < '0' || com[i+j] > 'Z'
 			       || (com[i+j] > '9' && com[i+j] < 'A')))
 				goto error_message2;
-		number = strtol(com + i, NULL, HOSTLIST_BASE);
+		number = xstrntol(com + i, NULL,
+				  BA_SYSTEM_DIMENSIONS, HOSTLIST_BASE);
 		start[X] = end[X] = number / (HOSTLIST_BASE * HOSTLIST_BASE);
 		start[Y] = end[Y] = (number % (HOSTLIST_BASE * HOSTLIST_BASE))
 			/ HOSTLIST_BASE;
@@ -578,11 +588,15 @@ static int _change_state_bps(char *com, int state)
 #else
 	if ((com[i+3] == 'x')
 	    || (com[i+3] == '-')) {
-		start[X] =  strtol(com + i, NULL, HOSTLIST_BASE);;
+		start[X] =  xstrntol(com + i, NULL,
+				    BA_SYSTEM_DIMENSIONS, HOSTLIST_BASE);;
 		i += 4;
-		end[X] =  strtol(com + i, NULL, HOSTLIST_BASE);
+		end[X] =  xstrntol(com + i, NULL, 
+				   BA_SYSTEM_DIMENSIONS, HOSTLIST_BASE);
 	} else {
-		start[X] = end[X] =  strtol(com + i, NULL, HOSTLIST_BASE);
+		start[X] = end[X] =  xstrntol(com + i, NULL, 
+					      BA_SYSTEM_DIMENSIONS, 
+					      HOSTLIST_BASE);
 	}
 	
 	if((start[X]>end[X])
@@ -603,8 +617,8 @@ error_message:
 	sprintf(error_string, 
 		"Problem with base partitions, "
 		"specified range was %d%d%dx%d%d%d",
-		start[X],start[Y],start[Z],
-		end[X],end[Y],end[Z]);
+		alpha_num[start[X]],alpha_num[start[Y]],alpha_num[start[Z]],
+		alpha_num[end[X]],alpha_num[end[Y]],alpha_num[end[Z]]);
 #else
 	sprintf(error_string, 
 		"Problem with nodes,  specified range was %d-%d",
@@ -954,14 +968,16 @@ static int _add_bg_record(blockreq_t *blockreq, List allocated_blocks)
 		    && (nodes[j+8] == ']' || nodes[j+8] == ',')
 		    && (nodes[j+4] == 'x' || nodes[j+4] == '-')) {
 			j++;
-			number = strtol(nodes + j, NULL, HOSTLIST_BASE);
+			number = xstrntol(nodes + j, NULL, 
+					  BA_SYSTEM_DIMENSIONS, HOSTLIST_BASE);
 			start[X] = number / (HOSTLIST_BASE * HOSTLIST_BASE);
 			start[Y] = (number % (HOSTLIST_BASE * HOSTLIST_BASE))
 				/ HOSTLIST_BASE;
 			start[Z] = (number % HOSTLIST_BASE);
 			
 			j += 4;
-			number = strtol(nodes + j, NULL, HOSTLIST_BASE);
+			number = xstrntol(nodes + j, NULL, 
+					  BA_SYSTEM_DIMENSIONS, HOSTLIST_BASE);
 			end[X] = number / (HOSTLIST_BASE * HOSTLIST_BASE);
 			end[Y] = (number % (HOSTLIST_BASE * HOSTLIST_BASE))
 				/ HOSTLIST_BASE;
@@ -994,7 +1010,8 @@ static int _add_bg_record(blockreq_t *blockreq, List allocated_blocks)
 				break;
 			j--;
 		} else if((nodes[j] < 58 && nodes[j] > 47)) {
-			number = strtol(nodes + j, NULL, HOSTLIST_BASE);
+			number = xstrntol(nodes + j, NULL, 
+					  BA_SYSTEM_DIMENSIONS, HOSTLIST_BASE);
 			start[X] = number / (HOSTLIST_BASE * HOSTLIST_BASE);
 			start[Y] = (number % (HOSTLIST_BASE * HOSTLIST_BASE))
 				/ HOSTLIST_BASE;

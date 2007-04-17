@@ -44,6 +44,7 @@
 
 #include <string.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <errno.h>
 #if 	HAVE_UNISTD_H
 #  include <unistd.h>
@@ -293,6 +294,23 @@ char * xstrndup(const char *str, size_t n)
 	rsiz = strlcpy(result, str, siz);
 
 	return result;
+}
+
+/*
+** strtol which only reads 'n' number of chars in the str to get the number
+*/
+long int xstrntol(const char *str, char **endptr, size_t n, int base)
+{
+	long int number = 0;
+	char *new_str = xstrndup(str, n);
+
+	if(!new_str) 
+		goto end_it;
+	
+	number = strtol(new_str, endptr, base);
+	xfree(new_str);
+end_it:
+	return number;
 }
 
 /* 
