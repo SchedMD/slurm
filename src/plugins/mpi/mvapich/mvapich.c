@@ -1070,7 +1070,7 @@ extern mvapich_state_t *mvapich_thr_create(const mpi_plugin_client_info_t *job,
 	 *  Set some environment variables in current env so they'll get
 	 *   passed to all remote tasks
 	 */
-	env_array_overwrite_fmt(env, "MPIRUN_PORT",   "%d", port);
+	env_array_overwrite_fmt(env, "MPIRUN_PORT",   "%hu", port);
 	env_array_overwrite_fmt(env, "MPIRUN_NPROCS", "%d", st->nprocs);
 	env_array_overwrite_fmt(env, "MPIRUN_ID",     "%d", st->job->jobid);
 	if (st->connect_once) {
