@@ -43,6 +43,10 @@
 /* max size of internal hostrange buffer */
 #define MAXHOSTRANGELEN 8192
 
+#ifdef HAVE_BG
+#define BG_BASE 36
+#endif
+
 /* Notes:
  *
  * If WITH_LSD_FATAL_ERROR_FUNC is defined, the linker will expect to

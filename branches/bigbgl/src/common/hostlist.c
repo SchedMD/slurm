@@ -1409,36 +1409,45 @@ static int _parse_single_range(const char *str, struct _range *range)
 	char *orig = strdup(str);
 	if (!orig) 
 		seterrno_ret(ENOMEM, 0);
-
+	
 	if ((p = strchr(str, '-'))) {
 		*p++ = '\0';
 		if (*p == '-')     /* do NOT allow negative numbers */
 			goto error;
 	}
+#ifdef HAVE_BG
+	range->lo = strtoul(str, &q, 13);
+#else
 	range->lo = strtoul(str, &q, 10);
+#endif	
 	if (q == str) 
 		goto error;
-
+	
+#ifdef HAVE_BG
+	range->hi = (p && *p) ? strtoul(p, &q, 13) : range->lo;
+#else
 	range->hi = (p && *p) ? strtoul(p, &q, 10) : range->lo;
-
+#endif	
+	info("%s range is %u %u", str, range->lo, range->hi);
+	
 	if (q == p || *q != '\0') 
 		goto error;
-
+	
 	if (range->lo > range->hi) 
 		goto error;
-
+	
 	if (range->hi - range->lo + 1 > MAX_RANGE ) {
 		_error(__FILE__, __LINE__, "Too many hosts in range `%s'\n", orig);
 		free(orig);
 		seterrno_ret(ERANGE, 0);
 	}
-
+	
 	free(orig);
 	range->width = strlen(str);
 	return 1;
 	
-  error:
-    errno = EINVAL;
+error:
+	errno = EINVAL;
 	_error(__FILE__, __LINE__, "Invalid range: `%s'", orig);
 	free(orig);
 	return 0;

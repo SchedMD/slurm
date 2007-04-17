@@ -897,10 +897,13 @@ node_info_error:
 					j++;
 					continue;
 				}
-				number = atoi(node->nodenames + j);
-				end[X] = number / 100;
-				end[Y] = (number % 100) / 10;
-				end[Z] = (number % 10);
+				number = strtol(node->nodenames + j,
+						NULL, BG_BASE);
+				
+				end[X] = number / (BG_BASE * BG_BASE);
+				end[Y] = (number % (BG_BASE * BG_BASE))
+					/ BG_BASE;
+				end[Z] = (number % BG_BASE);
 				DIM_SIZE[X] = MAX(DIM_SIZE[X], end[X]);
 				DIM_SIZE[Y] = MAX(DIM_SIZE[Y], end[Y]);
 				DIM_SIZE[Z] = MAX(DIM_SIZE[Z], end[Z]);
@@ -915,7 +918,7 @@ node_info_error:
 		DIM_SIZE[Y]++;
 		DIM_SIZE[Z]++;
 	}
-	debug("DIM_SIZE = %d%d%d", DIM_SIZE[X], DIM_SIZE[Y], DIM_SIZE[Z]);
+	debug("DIM_SIZE = %dx%dx%d", DIM_SIZE[X], DIM_SIZE[Y], DIM_SIZE[Z]);
 	
 #else 
 	if (DIM_SIZE[X]==0) {
