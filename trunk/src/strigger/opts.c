@@ -94,6 +94,7 @@ extern void parse_command_line(int argc, char *argv[])
 		{"down",      no_argument,       0, 'd'},
 		{"fini",      no_argument,       0, 'f'},
 		{"id",        required_argument, 0, 'i'},
+		{"idle",      no_argument,       0, 'I'},
 		{"jobid",     required_argument, 0, 'j'},
 		{"node",      optional_argument, 0, 'n'},
 		{"offset",    required_argument, 0, 'o'},
@@ -116,7 +117,7 @@ extern void parse_command_line(int argc, char *argv[])
 	_init_options();
 
 	optind = 0;
-	while((opt_char = getopt_long(argc, argv, "dfi:j:no:p:qrtuvV",
+	while((opt_char = getopt_long(argc, argv, "dfi:Ij:no:p:qrtuvV",
 			long_options, &option_index)) != -1) {
 		switch (opt_char) {
 		case (int)'?':
@@ -135,6 +136,9 @@ extern void parse_command_line(int argc, char *argv[])
 			break;
 		case (int)'i':
 			params.trigger_id = atoi(optarg);
+			break;
+		case (int)'I':
+			params.node_idle = true;
 			break;
 		case (int)'j':
 			tmp_l = atol(optarg);
@@ -223,6 +227,7 @@ static void _init_options( void )
 
 	params.block_err  = false;
 	params.node_down  = false;
+	params.node_idle  = false;
 	params.trigger_id = 0;
 	params.job_fini   = false;
 	params.job_id     = 0;
@@ -248,6 +253,7 @@ static void _print_options( void )
 	verbose("job_id     = %u", params.job_id);
 	verbose("job_fini   = %s", params.job_fini ? "true" : "false");
 	verbose("node_down  = %s", params.node_down ? "true" : "false");
+	verbose("node_idle  = %s", params.node_idle ? "true" : "false");
 	verbose("node_up    = %s", params.node_up ? "true" : "false");
 	verbose("node       = %s", params.node_id);
 	verbose("offset     = %d secs", params.offset);
@@ -276,7 +282,7 @@ static void _validate_options( void )
 	}
 
 	if (params.mode_set
-	&&  ((params.node_down + params.node_up + params.reconfig +
+	&&  ((params.node_down + params.node_idle + params.node_up + params.reconfig +
 	      params.job_fini  + params.time_limit + params.block_err) == 0)) {
 		error("You must specify a trigger (--block_err, --down, --up, "
 			"--reconfig, --time or --fini)");
@@ -324,7 +330,7 @@ static void _print_version(void)
 
 static void _usage( void )
 {
-	printf("Usage: strigger [--set | --get | --clear | --version] [-dfijnoptuv]\n");
+	printf("Usage: strigger [--set | --get | --clear | --version] [-dfiIjnoptuv]\n");
 }
 
 static void _help( void )
@@ -338,6 +344,7 @@ Usage: strigger [--set | --get | --clear] [OPTIONS]\n\
   -d, --down          trigger event when node goes DOWN\n\
   -f, --fini          trigger event when job finishes\n\
   -i, --id=#          a trigger's ID number\n\
+  -I, --idle          trigger event when node remains IDLE\n\
   -j, --jobid=#       trigger related to specific jobid\n\
   -n, --node[=host]   trigger related to specific node, all nodes by default\n\
   -o, --offset=#      trigger's offset time from event, negative to preceed\n\

@@ -185,6 +185,7 @@ struct node_record {
 					 * NODE_STATE_NO_RESPOND if not 
 					 * responding */
 	time_t last_response;		/* last response from the node */
+	time_t last_idle;		/* time node last become idle */
 	uint16_t cpus;			/* count of processors on the node */
 	uint16_t sockets;		/* number of sockets per node */
 	uint16_t cores;			/* number of cores per CPU */

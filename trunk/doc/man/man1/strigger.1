@@ -59,6 +59,13 @@ Options can be used for filtering purposes.
 Trigger ID number.
 
 .TP
+\fB\-I\fR, \fB\-\-idle\fR
+Trigger an event if the specified node remains in an IDLE state
+for at least the time period specified by the \fB\-\-offset\fR
+option. This can be useful to hibernate a node that remains idle, 
+thus reducing power consumption.
+
+.TP
 \fB\-j\fR, \fB\-\-jobid\fR=\fIid\fR
 Job ID of interest.
 \fBNOTE:\fR The \fB\-\-jobid\fR option can not be used in conjunction 
@@ -150,9 +157,9 @@ Resource ID: job ID or host names or "*" for any host
 
 .TP
 \fBTYPE\fP
-Trigger type: \fItime\fR or \fIfini\R (for jobs only), 
+Trigger type: \fItime\fR or \fIfini\fR (for jobs only), 
 \fIdown\fR or \fIup\fR (for jobs or nodes), or
-\fIreconfig\fR (for nodes only)
+\fIidle\fR or \fIreconfig\fR (for nodes only)
 
 .TP
 \fBOFFSET\fP
@@ -182,6 +189,16 @@ any node in the cluster goes down.
 
 	> strigger --set --node --down \\
 	           --program=/usr/sbin/slurm_admin_notify
+.fi
+
+.PP
+Execute the program "/usr/sbin/slurm_suspend_node" whenever
+any node in the cluster remains in the idle state for at least
+600 seconds.
+
+.nf
+	> strigger --set --node --idle --offset=600 \\
+	           --program=/usr/sbin/slurm_suspend_node
 .fi
 
 .PP

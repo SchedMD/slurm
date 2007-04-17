@@ -946,6 +946,7 @@ typedef struct slurm_step_ctx_struct *slurm_step_ctx;
 #define TRIGGER_TYPE_FINI      0x08
 #define TRIGGER_TYPE_RECONFIG  0x10
 #define TRIGGER_TYPE_BLOCK_ERR 0x20
+#define TRIGGER_TYPE_IDLE      0x40
 
 typedef struct trigger_info {
 	uint32_t trig_id;	/* trigger ID */

@@ -407,7 +407,7 @@ extern int load_all_node_state ( bool state_only )
 	uint32_t real_memory, tmp_disk, data_size = 0;
 	struct node_record *node_ptr;
 	int state_fd;
-	time_t time_stamp;
+	time_t time_stamp, now = time(NULL);
 	Buf buffer;
 	char *ver_str = NULL;
 	uint16_t ver_str_len;
@@ -539,6 +539,7 @@ extern int load_all_node_state ( bool state_only )
 			node_ptr->real_memory   = real_memory;
 			node_ptr->tmp_disk      = tmp_disk;
 			node_ptr->last_response = (time_t) 0;
+			node_ptr->last_idle	= now;
 		}
 		xfree (node_name);
 	}
@@ -986,6 +987,7 @@ int update_node ( update_node_msg_t * update_node_msg )
 	char  *this_node_name = NULL;
 	hostlist_t host_list;
 	uint16_t node_flags = 0, state_val;
+	time_t now = time(NULL);
 
 	if (update_node_msg -> node_names == NULL ) {
 		error ("update_node: invalid node name  %s", 
@@ -1000,7 +1002,7 @@ int update_node ( update_node_msg_t * update_node_msg )
 		return ESLURM_INVALID_NODE_NAME;
 	}
 
-	last_node_update = time (NULL);
+	last_node_update = now;
 	while ( (this_node_name = hostlist_shift (host_list)) ) {
 		int err_code = 0;
 		state_val = update_node_msg->node_state;
@@ -1048,6 +1050,7 @@ int update_node ( update_node_msg_t * update_node_msg )
 				bit_set (avail_node_bitmap, node_inx);
 				bit_set (idle_node_bitmap, node_inx);
 				bit_set (up_node_bitmap, node_inx);
+				node_ptr->last_idle = now;
 				reset_job_priority();
 			}
 			else if (state_val == NODE_STATE_ALLOCATED) {
@@ -1372,11 +1375,12 @@ validate_node_specs (char *node_name, uint16_t cpus,
 	struct node_record *node_ptr;
 	char *reason_down = NULL;
 	uint16_t base_state, node_flags;
+	time_t now = time(NULL);
 
 	node_ptr = find_node_record (node_name);
 	if (node_ptr == NULL)
 		return ENOENT;
-	node_ptr->last_response = time (NULL);
+	node_ptr->last_response = now;
 
 	config_ptr = node_ptr->config_ptr;
 	error_code = 0;
@@ -1491,6 +1495,7 @@ validate_node_specs (char *node_name, uint16_t cpus,
 			} else {
 				node_ptr->node_state = NODE_STATE_IDLE |
 					node_flags;
+				node_ptr->last_idle = now;
 			}
 			xfree(node_ptr->reason);
 		} else if ((base_state == NODE_STATE_DOWN) &&
@@ -1505,6 +1510,7 @@ validate_node_specs (char *node_name, uint16_t cpus,
 			} else {
 				node_ptr->node_state = NODE_STATE_IDLE |
 					node_flags;
+				node_ptr->last_idle = now;
 			}
 			info ("node %s returned to service", node_name);
 			xfree(node_ptr->reason);
@@ -1512,11 +1518,12 @@ validate_node_specs (char *node_name, uint16_t cpus,
 			trigger_node_up(node_ptr);
 		} else if ((base_state == NODE_STATE_ALLOCATED) &&
 			   (job_count == 0)) {	/* job vanished */
-			last_node_update = time (NULL);
+			last_node_update = now;
 			node_ptr->node_state = NODE_STATE_IDLE | node_flags;
+			node_ptr->last_idle = now;
 		} else if ((node_flags & NODE_STATE_COMPLETING) &&
 			   (job_count == 0)) {	/* job already done */
-			last_node_update = time (NULL);
+			last_node_update = now;
 			node_ptr->node_state &= (~NODE_STATE_COMPLETING);
 		}
 		select_g_update_node_state((node_ptr - node_record_table_ptr),
@@ -1675,10 +1682,12 @@ extern int validate_nodes_via_front_end(uint32_t job_count,
 					node_ptr->node_state = 
 						NODE_STATE_ALLOCATED | 
 						node_flags;
-				} else
+				} else {
 					node_ptr->node_state = 
 						NODE_STATE_IDLE |
 						node_flags;
+					node_ptr->last_idle = now;
+				}
 				xfree(node_ptr->reason);
 			} else if ((base_state == NODE_STATE_DOWN) &&
 			           (slurmctld_conf.ret2service == 1)) {
@@ -1691,6 +1700,7 @@ extern int validate_nodes_via_front_end(uint32_t job_count,
 					node_ptr->node_state = 
 						NODE_STATE_IDLE |
 						node_flags;
+					node_ptr->last_idle = now;
 				}
 				if (return_hostlist)
 					(void) hostlist_push_host(
@@ -1705,6 +1715,7 @@ extern int validate_nodes_via_front_end(uint32_t job_count,
 				updated_job = true;
 				node_ptr->node_state = NODE_STATE_IDLE |
 					node_flags;
+				node_ptr->last_idle = now;
 			} else if ((node_flags & NODE_STATE_COMPLETING) &&
 			           (jobs_on_node == 0)) {  /* job already done */
 				updated_job = true;
@@ -1799,27 +1810,30 @@ static void _node_did_resp(struct node_record *node_ptr)
 {
 	int node_inx;
 	uint16_t resp_state, base_state, node_flags;
+	time_t now = time(NULL);
 
 	node_inx = node_ptr - node_record_table_ptr;
-	node_ptr->last_response = time (NULL);
+	node_ptr->last_response = now;
 	resp_state = node_ptr->node_state & NODE_STATE_NO_RESPOND;
 	if (resp_state) {
 		info("Node %s now responding", node_ptr->name);
-		last_node_update = time (NULL);
+		last_node_update = now;
 		reset_job_priority();
 		node_ptr->node_state &= (uint16_t) (~NODE_STATE_NO_RESPOND);
 	}
 	base_state = node_ptr->node_state & NODE_STATE_BASE;
 	node_flags = node_ptr->node_state & NODE_STATE_FLAGS;
 	if (base_state == NODE_STATE_UNKNOWN) {
-		last_node_update = time (NULL);
+		last_node_update = now;
+		node_ptr->last_idle = now;
 		node_ptr->node_state = NODE_STATE_IDLE | node_flags;
 	}
 	if ((base_state == NODE_STATE_DOWN) &&
 	    (slurmctld_conf.ret2service == 1) &&
 	    (node_ptr->reason != NULL) && 
 	    (strncmp(node_ptr->reason, "Not responding", 14) == 0)) {
-		last_node_update = time (NULL);
+		last_node_update = now;
+		node_ptr->last_idle = now;
 		node_ptr->node_state = NODE_STATE_IDLE | node_flags;
 		info("node_did_resp: node %s returned to service", 
 			node_ptr->name);
@@ -2089,9 +2103,10 @@ extern void make_node_comp(struct node_record *node_ptr,
 {
 	int inx = node_ptr - node_record_table_ptr;
 	uint16_t node_flags, base_state;
+	time_t now = time(NULL);
 
 	xassert(node_ptr);
-	last_node_update = time (NULL);
+	last_node_update = now;
 	if (!suspended) {
 		if (node_ptr->run_job_cnt)
 			(node_ptr->run_job_cnt)--;
@@ -2128,8 +2143,10 @@ extern void make_node_comp(struct node_record *node_ptr,
 		       node_ptr->name);
 	} else if (node_ptr->run_job_cnt)
 		node_ptr->node_state = NODE_STATE_ALLOCATED | node_flags;
-	else
+	else {
 		node_ptr->node_state = NODE_STATE_IDLE | node_flags;
+		node_ptr->last_idle = now;
+	}
 }
 
 /* _make_node_down - flag specified node as down */
@@ -2161,12 +2178,13 @@ void make_node_idle(struct node_record *node_ptr,
 {
 	int inx = node_ptr - node_record_table_ptr;
 	uint16_t node_flags, base_state;
-
+	time_t now = time(NULL);
+	
 	xassert(node_ptr);
 	if (job_ptr			/* Specific job completed */
 	&&  (job_ptr->job_state & JOB_COMPLETING)	/* Not a replay */
 	&&  (bit_test(job_ptr->node_bitmap, inx))) {	/* Not a replay */
-		last_job_update = time (NULL);
+		last_job_update = now;
 		bit_clear(job_ptr->node_bitmap, inx);
 		if (job_ptr->node_cnt) {
 			if ((--job_ptr->node_cnt) == 0) {
@@ -2203,7 +2221,7 @@ void make_node_idle(struct node_record *node_ptr,
 		}
 	}
 
-	last_node_update = time (NULL);
+	last_node_update = now;
 	if (node_ptr->comp_job_cnt == 0)
 		node_ptr->node_state &= (~NODE_STATE_COMPLETING);
 	base_state = node_ptr->node_state & NODE_STATE_BASE;
@@ -2219,6 +2237,7 @@ void make_node_idle(struct node_record *node_ptr,
 		bit_clear(avail_node_bitmap, inx);
 		debug3("make_node_idle: Node %s is DRAINED", 
 		       node_ptr->name);
+		node_ptr->last_idle = now;
 	} else if (node_ptr->run_job_cnt) {
 		node_ptr->node_state = NODE_STATE_ALLOCATED | node_flags;
 	} else {
@@ -2226,6 +2245,7 @@ void make_node_idle(struct node_record *node_ptr,
 		if (((node_flags & NODE_STATE_NO_RESPOND) == 0)
 		&&  ((node_flags & NODE_STATE_COMPLETING) == 0))
 			bit_set(idle_node_bitmap, inx);
+		node_ptr->last_idle = now;
 	}
 }
 

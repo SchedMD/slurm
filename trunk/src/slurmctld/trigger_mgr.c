@@ -120,6 +120,8 @@ static char *_trig_type(uint16_t trig_type)
 		return "up";
 	else if (trig_type == TRIGGER_TYPE_DOWN)
 		return "down";
+	else if (trig_type == TRIGGER_TYPE_IDLE)
+		return "idle";
 	else if (trig_type == TRIGGER_TYPE_TIME)
 		return "time";
 	else if (trig_type == TRIGGER_TYPE_FINI)
@@ -360,6 +362,7 @@ extern void trigger_node_down(struct node_record *node_ptr)
 	bit_set(trigger_down_nodes_bitmap, inx);
 	slurm_mutex_unlock(&trigger_mutex);
 }
+
 
 extern void trigger_node_up(struct node_record *node_ptr)
 {
@@ -674,7 +677,7 @@ static void _trigger_job_event(trig_mgr_info_t *trig_in, time_t now)
 	}
 
 	if (trig_in->trig_type & TRIGGER_TYPE_UP) {
-		if (trigger_down_nodes_bitmap
+		if (trigger_up_nodes_bitmap
 		&&  bit_overlap(trig_in->job_ptr->node_bitmap, 
 				trigger_up_nodes_bitmap)) {
 			trig_in->state = 1;
@@ -723,6 +726,48 @@ static void _trigger_node_event(trig_mgr_info_t *trig_in, time_t now)
 					(trig_in->trig_time - 0x8000);
 #if _DEBUG
 			info("trigger[%u] for node %s down",
+				trig_in->trig_id, trig_in->res_id);
+#endif
+			return;
+		}
+	}
+
+	if (trig_in->trig_type & TRIGGER_TYPE_IDLE) {
+		/* We need to determine which (if any) of these 
+		 * nodes have been idle for at least the offset time */
+		time_t min_idle = now - (trig_in->trig_time - 0x8000);
+		int i;
+		uint16_t base_state;
+		struct node_record *node_ptr = node_record_table_ptr;
+		bitstr_t *trigger_idle_node_bitmap;
+
+		trigger_idle_node_bitmap = bit_alloc(node_record_count);
+		for (i = 0; i < node_record_count; i++, node_ptr++) {
+			base_state = node_ptr->node_state & NODE_STATE_BASE;
+			if ((base_state != NODE_STATE_IDLE)
+			||  (node_ptr->last_idle > min_idle))
+				continue;
+			bit_set(trigger_idle_node_bitmap, i);
+		}
+		if (trig_in->nodes_bitmap == NULL) {    /* all nodes */
+			xfree(trig_in->res_id);
+			trig_in->res_id = bitmap2node_name(
+					trigger_idle_node_bitmap);
+			trig_in->state = 1;
+		} else if (bit_overlap(trig_in->nodes_bitmap,
+				trigger_idle_node_bitmap)) {
+			bit_and(trig_in->nodes_bitmap,
+				trigger_idle_node_bitmap);
+			xfree(trig_in->res_id);
+			trig_in->res_id = bitmap2node_name(
+					trig_in->nodes_bitmap);
+			trig_in->state = 1;
+		}
+		bit_free(trigger_idle_node_bitmap);
+		if (trig_in->state == 1) {
+			trig_in->trig_time = now;
+#if _DEBUG
+			info("trigger[%u] for node %s idle",
 				trig_in->trig_id, trig_in->res_id);
 #endif
 			return;
@@ -878,4 +923,6 @@ extern void trigger_fini(void)
 		list_destroy(trigger_list);
 		trigger_list = NULL;
 	}
+	FREE_NULL_BITMAP(trigger_down_nodes_bitmap);
+	FREE_NULL_BITMAP(trigger_up_nodes_bitmap);
 }

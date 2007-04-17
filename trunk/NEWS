@@ -6,6 +6,7 @@ documents those changes that are of interest to users and admins.
  -- Fix MPIRUN_PORT env variable in mvapich plugin
  -- Disable setting triggers by other than user SlurmUser unless SlurmUser
     is root for improved security.
+ -- Add event trigger for IDLE nodes.
 
 * Changes in SLURM 1.2.5
 ========================

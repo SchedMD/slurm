@@ -147,6 +147,8 @@ static int _set_trigger(void)
 		ti.trig_type |= TRIGGER_TYPE_BLOCK_ERR;
 	if (params.node_down)
 		ti.trig_type |= TRIGGER_TYPE_DOWN;
+	if (params.node_idle)
+		ti.trig_type |= TRIGGER_TYPE_IDLE;
 	if (params.node_up)
 		ti.trig_type |= TRIGGER_TYPE_UP;
 	if (params.reconfig)
@@ -211,6 +213,13 @@ static int _get_trigger(void)
 					!= TRIGGER_RES_TYPE_NODE)
 				continue;
 		}
+		if (params.node_idle) {
+			if ((trig_msg->trigger_array[i].res_type
+					!= TRIGGER_RES_TYPE_NODE)
+			||  (trig_msg->trigger_array[i].trig_type
+					!= TRIGGER_TYPE_IDLE))
+				continue;
+		}
 		if (params.node_up) {
 			if ((trig_msg->trigger_array[i].res_type 
 					!= TRIGGER_RES_TYPE_NODE)
@@ -242,7 +251,7 @@ static int _get_trigger(void)
 		}
 		line_no++;
 
-		printf("%7u %-8s %-7s %-9s %6d %-8s %s\n",
+		printf("%7u %-8s %7s %-9s %6d %-8s %s\n",
 			trig_msg->trigger_array[i].trig_id,
 			_res_type(trig_msg->trigger_array[i].res_type),
 			trig_msg->trigger_array[i].res_id,
@@ -272,6 +281,8 @@ static char *_trig_type(uint16_t trig_type)
 		return "up";
 	else if (trig_type == TRIGGER_TYPE_DOWN)
 		return "down";
+	else if (trig_type == TRIGGER_TYPE_IDLE)
+		return "idle";
 	else if (trig_type == TRIGGER_TYPE_TIME)
 		return "time";
 	else if (trig_type == TRIGGER_TYPE_FINI)
