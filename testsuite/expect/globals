@@ -347,14 +347,12 @@ proc wait_for_file { file_name } {
 	global bin_sleep max_file_delay
 
 	for {set my_delay 0} {$my_delay <= $max_file_delay} {incr my_delay} {
-		if {$my_delay > 0} {
-			exec $bin_sleep 1
-		}
 		if [file exists $file_name] {
 #			Add small delay for I/O buffering
-			exec $bin_sleep 1
+			exec $bin_sleep 2
 			return 0
 		}
+		exec $bin_sleep 2
 	}
 	send_user "\nFAILURE: Timeout waiting for file $file_name\n"
 	return 1
