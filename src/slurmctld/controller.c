@@ -48,6 +48,7 @@
 #  include <sys/prctl.h>
 #endif
 
+#include <grp.h>
 #include <errno.h>
 #include <signal.h>
 #include <stdio.h>
@@ -72,6 +73,7 @@
 #include "src/common/slurm_jobcomp.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/switch.h"
+#include "src/common/uid.h"
 #include "src/common/xsignal.h"
 #include "src/common/xstring.h"
 
@@ -195,6 +197,11 @@ int main(int argc, char *argv[])
 	 * able to write a core dump.
 	 */
 	_init_pidfile();
+
+	/* Initialize supplementary group ID list for SlurmUser */
+	if (initgroups(slurmctld_conf.slurm_user_name,
+	               gid_from_string(slurmctld_conf.slurm_user_name)))
+		error("initgroups: %m");
 
 	if ((slurmctld_conf.slurm_user_id) && 
 	    (slurmctld_conf.slurm_user_id != getuid()) &&
