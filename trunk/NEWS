@@ -3,6 +3,7 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 1.2.6
 ========================
+ -- Fix MPIRUN_PORT env variable in mvapich plugin
 
 * Changes in SLURM 1.2.5
 ========================
