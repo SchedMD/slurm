@@ -352,7 +352,7 @@ proc wait_for_file { file_name } {
 			exec $bin_sleep 2
 			return 0
 		}
-		exec $bin_sleep 2
+		exec $bin_sleep 1
 	}
 	send_user "\nFAILURE: Timeout waiting for file $file_name\n"
 	return 1
