@@ -129,6 +129,8 @@ slurmstatus() {
 #           after slurmctld terminates
             if [ "$base" != "slurmctld" ] ; then
                echo $"${base} dead but pid file exists"
+            else
+               echo $"${base} is stopped"
             fi
             return 1
         fi 
