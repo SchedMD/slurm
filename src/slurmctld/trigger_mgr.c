@@ -889,8 +889,9 @@ extern void trigger_process(void)
 #if _DEBUG
 			info("launching program for trigger[%u]",
 				trig_in->trig_id);
-//			info("  program=%s arg=%s", trig_in->program, 
-//				trig_in->res_id);
+			info("  uid=%u gid=%u program=%s arg=%s", 
+				trig_in->user_id, trig_in->group_id,
+				trig_in->program, trig_in->res_id);
 #endif
 			trig_in->state = 2;
 			trig_in->trig_time = now;
