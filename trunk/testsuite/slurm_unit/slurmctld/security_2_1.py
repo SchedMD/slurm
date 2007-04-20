@@ -69,6 +69,7 @@ def main(argv=None):
     files.append(options.prefix+'/bin/salloc')
     files.append(options.prefix+'/bin/sattach')
     files.append(options.prefix+'/bin/sbatch')
+    files.append(options.prefix+'/bin/sbcast')
     files.append(options.prefix+'/bin/scancel')
     files.append(options.prefix+'/bin/scontrol')
     files.append(options.prefix+'/bin/sinfo')
