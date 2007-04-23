@@ -405,8 +405,10 @@ static int _marknodes(db2_block_info_t *block_ptr, int count)
 			if(block_ptr->nodes[j] != ',')
 				break;
 			j--;
-		} else if((block_ptr->nodes[j] < 58 
-			   && block_ptr->nodes[j] > 47)) {
+		} else if((block_ptr->nodes[j] >= '0'
+			   && block_ptr->nodes[j] <= '9')
+			  || (block_ptr->nodes[j] >= 'A'
+			      && block_ptr->nodes[j] <= 'Z')) {
 					
 			number = xstrntol(block_ptr->nodes + j,
 					  NULL, BA_SYSTEM_DIMENSIONS, 
@@ -892,8 +894,8 @@ static int _make_nodelist(char *nodes, List nodelist)
 			if(nodes[j] != ',')
 				break;
 			j--;
-		} else if((nodes[j] < 58 
-			   && nodes[j] > 47)) {
+		} else if((nodes[j] >= '0' && nodes[j] <= '9')
+			  || (nodes[j] >= 'A' && nodes[j] <= 'Z')) {
 					
 			number = xstrntol(nodes + j, NULL,
 					  BA_SYSTEM_DIMENSIONS, HOSTLIST_BASE);
