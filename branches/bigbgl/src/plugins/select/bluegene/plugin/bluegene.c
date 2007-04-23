@@ -377,8 +377,10 @@ extern void process_nodes(bg_record_t *bg_record)
 				if(bg_record->nodes[j] != ',')
 					break;
 				j--;
-			} else if((bg_record->nodes[j] < 58 
-				   && bg_record->nodes[j] > 47)) {
+			} else if((bg_record->nodes[j] >= '0'
+				   && bg_record->nodes[j] <= '9')
+				  || (bg_record->nodes[j] >= 'A'
+				      && bg_record->nodes[j] <= 'Z')) {
 				
 				number = xstrntol(bg_record->nodes + j,
 						  NULL, BA_SYSTEM_DIMENSIONS,
@@ -2136,20 +2138,25 @@ extern int set_ionodes(bg_record_t *bg_record)
 	}
 
 	start_bit = bluegene_quarter_ionode_cnt*bg_record->quarter;
-		
-	if(bg_record->nodecard != (uint16_t)NO_VAL) {
+	
+	if(bg_record->nodecard != (uint16_t)NO_VAL
+	   && bluegene_nodecard_ionode_cnt) {
 		start_bit += bluegene_nodecard_ionode_cnt*bg_record->nodecard;
 		size = bluegene_nodecard_ionode_cnt;
 	} else
 		size = bluegene_quarter_ionode_cnt;
 	size += start_bit;
 
+	if(size == start_bit) {
+		error("start bit is the same as the end bit %d", size);
+		return SLURM_ERROR;
+	}
 	for(i=start_bit; i<size; i++)
 		bit_set(bg_record->ionode_bitmap, i);
 	
 	bit_fmt(bitstring, BITSIZE, bg_record->ionode_bitmap);
 	bg_record->ionodes = xstrdup(bitstring);
-	
+
 	return SLURM_SUCCESS;
 }
 
@@ -2194,7 +2201,7 @@ extern int add_bg_record(List records, List used_nodes, blockreq_t *blockreq)
 	bg_record->quarter = (uint16_t)NO_VAL;
 	bg_record->nodecard = (uint16_t)NO_VAL;
 	if(set_ionodes(bg_record) == SLURM_ERROR) {
-		error("add_bg_record: problem creating ionodes");
+		fatal("add_bg_record: problem creating ionodes");
 	}
 	/* bg_record->boot_state = 0; 	Implicit */
 	/* bg_record->state = 0;	Implicit */
@@ -2263,11 +2270,18 @@ extern int add_bg_record(List records, List used_nodes, blockreq_t *blockreq)
 		}
 	} else {
 		debug("adding a small block");
+		/* if the ionode cnt for nodecards is 0 then don't
+		   allow a nodecard allocation 
+		*/
+		if(!bluegene_nodecard_ionode_cnt)
+			blockreq->nodecards = 0;
+
 		if(blockreq->nodecards==0 && blockreq->quarters==0) {
 			info("No specs given for this small block, "
 			     "I am spliting this block into 4 quarters");
 			blockreq->quarters=4;
-		}
+		}		
+
 		i = (blockreq->nodecards*bluegene_nodecard_node_cnt) + 
 			(blockreq->quarters*bluegene_quarter_node_cnt);
 		if(i != bluegene_bp_node_cnt)

@@ -775,14 +775,16 @@ extern void ba_init(node_info_msg_t *node_info_ptr)
 #ifdef HAVE_BG_FILES
 	bridge_init();
 #endif	
-	y = 65;
+	/* make the letters array only contain letters upper and lower
+	 * (62) */
+	y = 'A';
 	for (x = 0; x < 62; x++) {
-		if (y == 91)
-			y = 97;
-		else if(y == 123)
-			y = 48;
-		else if(y == 58)
-			y = 65;
+		if (y == '[')
+			y = 'a';
+		else if(y == '{')
+			y = '0';
+		else if(y == ':')
+			y = 'A';
 		letters[x] = y;
 		y++;
 	}
@@ -822,9 +824,8 @@ extern void ba_init(node_info_msg_t *node_info_ptr)
 			printf("name = %s\n", node_ptr->name);
 			numeric = node_ptr->name;
 			while (numeric) {
-				if (numeric[0] < '0'
-				    || numeric[0] > 'Z'
-				    || (numeric[0] > '9'
+				if (numeric[0] < '0' || numeric[0] > 'Z'
+				    || (numeric[0] > '9' 
 					&& numeric[0] < 'A')) {
 					numeric++;
 					continue;
@@ -896,8 +897,14 @@ node_info_error:
 				    && (node->nodenames[j+4] == 'x'
 					|| node->nodenames[j+4] == '-')) {
 					j+=5;
-				} else if((node->nodenames[j] < 58 
-					   && node->nodenames[j] > 47)) {
+				} else if((node->nodenames[j] >= '0'
+					   && node->nodenames[j] <= '9')
+					  || (node->nodenames[j] >= 'A'
+					      && node->nodenames[j] <= 'Z')) {
+					/* suppose to be blank, just
+					   making sure this is the
+					   correct alpha num
+					*/
 				} else {
 					j++;
 					continue;
