@@ -532,10 +532,14 @@ static size_t host_prefix_end(const char *hostname)
 	size_t idx; 
 	if (!hostname)
 		return -1;
+#ifdef HAVE_BG
+	idx = strlen(hostname) - 4;
+#else
 	idx = strlen(hostname) - 1;
 
 	while (idx >= 0 && isdigit((char) hostname[idx])) 
 		idx--;
+#endif
 	return idx;
 }
 
@@ -1331,7 +1335,10 @@ hostlist_t _hostlist_create(const char *hostlist, char *sep, char *r_op)
 
 	if (hostlist == NULL)
 		return new;
-
+#ifdef HAVE_BG
+	fatal("WANT_RECKLESS_HOSTRANGE_EXPANSION does not work on "
+	      "bluegene systems!!!!");
+#endif
 	orig = str = strdup(hostlist);
 	
 	/* return an empty list if an empty string was passed in */
@@ -1737,12 +1744,12 @@ int hostlist_push_host(hostlist_t hl, const char *str)
 
 	hn = hostname_create(str);
 
-	if (hostname_suffix_is_valid(hn)) {
+	if (hostname_suffix_is_valid(hn)) 
 		hr = hostrange_create(hn->prefix, hn->num, hn->num,
-			hostname_suffix_width(hn));
-	} else
+				      hostname_suffix_width(hn));
+	else 
 		hr = hostrange_create_single(str);
-
+	
 	hostlist_push_range(hl, hr);
 
 	hostrange_destroy(hr);
@@ -2425,9 +2432,9 @@ _set_grid(unsigned long start, unsigned long end)
 	x2 = pt2 / (HOSTLIST_BASE * HOSTLIST_BASE);
 	y2 = (pt2 % (HOSTLIST_BASE * HOSTLIST_BASE)) / HOSTLIST_BASE;
 	z2 = pt2 % HOSTLIST_BASE;
-	printf("new %c%c%c %c%c%c\n",
-	       alpha_num[x1],alpha_num[y1],alpha_num[z1],
-	       alpha_num[x2],alpha_num[y2],alpha_num[z2]);
+/* 	printf("new %c%c%c %c%c%c\n", */
+/* 	       alpha_num[x1],alpha_num[y1],alpha_num[z1], */
+/* 	       alpha_num[x2],alpha_num[y2],alpha_num[z2]); */
 			
 	axis_min_x = MIN(axis_min_x, x1);
 	axis_min_y = MIN(axis_min_y, y1);
@@ -2436,11 +2443,11 @@ _set_grid(unsigned long start, unsigned long end)
 	axis_max_x = MAX(axis_max_x, x2);
 	axis_max_y = MAX(axis_max_y, y2);
 	axis_max_z = MAX(axis_max_z, z2);
-	printf("max %c%c%c %c%c%c\n",
-	       alpha_num[axis_min_x],alpha_num[axis_min_y],
-	       alpha_num[axis_min_z],
-	       alpha_num[axis_max_x],alpha_num[axis_max_y],
-	       alpha_num[axis_max_z]);
+/* 	printf("max %c%c%c %c%c%c\n", */
+/* 	       alpha_num[axis_min_x],alpha_num[axis_min_y], */
+/* 	       alpha_num[axis_min_z], */
+/* 	       alpha_num[axis_max_x],alpha_num[axis_max_y], */
+/* 	       alpha_num[axis_max_z]); */
 	
 	for (temp=x1; temp<=x2; temp++) {
 		for (temp1=y1; temp1<=y2; temp1++) {
@@ -2491,8 +2498,12 @@ size_t hostlist_ranged_string(hostlist_t hl, size_t n, char *buf)
 #ifdef HAVE_BG		/* logic for block node description */
 	if (hl->nranges < 1)
 		goto notbox;	/* no data */
-	/* if (hl->hr[0]->width != 3) */
-/* 		goto notbox;	/\* not Blue Gene format *\/ */
+	if (hl->hr[0]->width != 3) {
+		error("This node is not in bluegene format.  "
+		      "The suffix was %d chars in length",
+		      hl->hr[0]->width);	/* not Bluegene format */
+		goto notbox; 
+	}
 	_clear_grid();
 	for (i=0;i<hl->nranges;i++)
 		_set_grid(hl->hr[i]->lo, hl->hr[i]->hi);
@@ -2516,7 +2527,6 @@ size_t hostlist_ranged_string(hostlist_t hl, size_t n, char *buf)
 				alpha_num[axis_min_z],
 				alpha_num[axis_max_x], alpha_num[axis_max_y],
 				alpha_num[axis_max_z]);
-		printf("got %s\n", buf); 
 		if ((len < 0) || (len > n))
 			len = n;	/* truncated */
 	}

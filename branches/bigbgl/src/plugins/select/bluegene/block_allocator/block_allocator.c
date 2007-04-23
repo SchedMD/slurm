@@ -836,16 +836,13 @@ extern void ba_init(node_info_msg_t *node_info_ptr)
 			}
 			
 			temp = start / (HOSTLIST_BASE * HOSTLIST_BASE);
-			printf("X = %d %c\n", temp, alpha_num[temp]);
 			if (DIM_SIZE[X] < temp)
 				DIM_SIZE[X] = temp;
 			temp = (start % (HOSTLIST_BASE * HOSTLIST_BASE))
 				/ HOSTLIST_BASE;
-			printf("Y = %d %c\n", temp, alpha_num[temp]);
 			if (DIM_SIZE[Y] < temp)
 				DIM_SIZE[Y] = temp;
 			temp = start % HOSTLIST_BASE;
-			printf("Z = %d %c\n", temp, alpha_num[temp]);
 			if (DIM_SIZE[Z] < temp)
 				DIM_SIZE[Z] = temp;
 		}
@@ -929,7 +926,7 @@ node_info_error:
 		DIM_SIZE[Y]++;
 		DIM_SIZE[Z]++;
 	}
-	printf("DIM_SIZE = %c%c%c\n", alpha_num[DIM_SIZE[X]],
+	debug("DIM_SIZE = %c%c%c\n", alpha_num[DIM_SIZE[X]],
 	      alpha_num[DIM_SIZE[Y]], alpha_num[DIM_SIZE[Z]]);
 	
 #else 
