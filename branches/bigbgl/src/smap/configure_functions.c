@@ -237,7 +237,8 @@ static int _create_allocation(char *com, List allocated_blocks)
 			i+=5;					
 		} else if(request->start_req 
 			  && starti<0 
-			  && (com[i] < 58 && com[i] > 47)) {
+			  && ((com[i] >= '0' && com[i] <= '9')
+			      || (com[i] >= 'A' && com[i] <= 'Z'))) {
 			starti=i;
 			i++;
 		} else if(nodecards == 0 && (com[i] < 58 && com[i] > 47)) {
@@ -246,7 +247,8 @@ static int _create_allocation(char *com, List allocated_blocks)
 		} else if(quarters == 0 && (com[i] < 58 && com[i] > 47)) {
 			quarters=i;
 			i++;
-		} else if(geoi<0 && (com[i] < 58 && com[i] > 47)) {
+		} else if(geoi<0 && ((com[i] >= '0' && com[i] <= '9')
+				     || (com[i] >= 'A' && com[i] <= 'Z'))) {
 			geoi=i;
 			i++;
 		} else {
@@ -1009,7 +1011,8 @@ static int _add_bg_record(blockreq_t *blockreq, List allocated_blocks)
 			if(nodes[j] != ',')
 				break;
 			j--;
-		} else if((nodes[j] < 58 && nodes[j] > 47)) {
+		} else if((nodes[j] >= '0' && nodes[j] <= '9')
+			  || (nodes[j] >= 'A' && nodes[j] <= 'Z')) {
 			number = xstrntol(nodes + j, NULL, 
 					  BA_SYSTEM_DIMENSIONS, HOSTLIST_BASE);
 			start[X] = number / (HOSTLIST_BASE * HOSTLIST_BASE);
