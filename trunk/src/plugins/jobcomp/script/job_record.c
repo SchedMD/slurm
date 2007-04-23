@@ -58,8 +58,10 @@
  * Create a new job_record containing the job completion information
  */
 job_record job_record_create(uint32_t job_id, uint32_t user_id, char *job_name,
-    char *job_state, char *partition, uint32_t limit, time_t start, time_t end,
-    time_t submit, uint16_t batch_flag, char *node_list)
+	char *job_state, char *partition, 
+	uint32_t limit, time_t start, time_t end, time_t submit, 
+	uint16_t batch_flag, char *node_list, uint32_t num_procs, 
+	char *account)
 {
 	job_record ret;
 
@@ -75,6 +77,10 @@ job_record job_record_create(uint32_t job_id, uint32_t user_id, char *job_name,
 	ret->batch_flag = batch_flag;
 	ret->end = end;
 	ret->node_list = xstrdup(node_list);
+	ret->num_procs = num_procs;
+	if (account)
+		ret->account = xstrdup(account);
+
 	return ret;
 }
 
@@ -83,10 +89,14 @@ job_record job_record_create(uint32_t job_id, uint32_t user_id, char *job_name,
  */
 void job_record_destroy(void *job) {
 	job_record j = job;
-	if (j == NULL) return;
+
+	if (j == NULL)
+		return;
+
 	xfree(j->job_name);
 	xfree(j->partition);
 	xfree(j->node_list);
 	xfree(j->job_state);
+	xfree(j->account);
 	xfree(j);
 }

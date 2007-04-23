@@ -40,25 +40,29 @@
 
 /* Structure to contain job completion information */
 struct job_record_ {
-    uint32_t job_id;
-    uint32_t user_id;
-    char *job_name;
-    char *job_state;
-    char *partition;
-    uint32_t limit;
-    uint16_t batch_flag;
-    time_t submit;
-    time_t start;
-    time_t end;
-    char *node_list;
+	uint32_t job_id;
+	uint32_t user_id;
+	char *job_name;
+	char *job_state;
+	char *partition;
+	uint32_t limit;
+	uint16_t batch_flag;
+	uint32_t num_procs;
+	time_t submit;
+	time_t start;
+	time_t end;
+	char *node_list;
+	char *account;
 };
 
 typedef struct job_record_ * job_record;
 
 /* Create a job record */
 job_record job_record_create(uint32_t job_id, uint32_t user_id, char *job_name,
-    char *job_state, char *partition, uint32_t limit, time_t start, time_t end,
-    time_t submit, uint16_t batch_flag, char *node_list);
+	char *job_state, char *partition, 
+	uint32_t limit, time_t start, time_t end, time_t submit, 
+	uint16_t batch_flag, char *node_list, uint32_t num_procs, 
+	char *account);
 
 /* Destroy a job record */
 void job_record_destroy(void *j);

@@ -155,118 +155,61 @@ _check_script_permissions(char * location)
 	return error("jobcomp/script script is not executable");
 }
 
+/* Write "name=value" to dest, returns pointer to after that key-pair string, 
+ * where the next key-pair (if any) should be written. */
+static char *_add_env(char *dest, char *name, char *value)
+{
+	int len;
+
+	len = sprintf(dest, "%s=%s", name, value);
+	return dest + len + 1;
+}
 
 /* Create a new environment pointer containing information from 
  * slurm_jobcomp_log_record so that the script can access it.
  */
 static char ** _create_environment(char *job, char *user, char *job_name,
-	char *job_state, char *partition, char *limit, char* start, char * end,
-	char * submit, char * batch, char *node_list)
+	char *job_state, char *partition, char *limit, 
+	char* start, char * end, char * submit, 
+	char * batch, char *node_list, char *procs, char *account) 
 {
 	int len = 0;
 	char ** envptr;
-	char *ptr;
 
-	len += strlen(job)+7;
-	len += strlen(user)+5;
-	len += strlen(job_name)+9;
-	len += strlen(job_state)+10;
-	len += strlen(partition)+11;
-	len += strlen(limit)+7;
-	len += strlen(start)+7;
-	len += strlen(end)+5;
-	len += strlen(node_list)+7;
-        len += strlen(submit)+7;
-        len += strlen(batch)+6;
-	/* Add new entries here as need and increase ENV_COUNT */
-#define ENV_COUNT 13
-#ifdef _PATH_STDPATH
-	len += strlen(_PATH_STDPATH)+6;
-#endif
-	len += (ENV_COUNT * sizeof(char *));
+	/* Increase ENV_COUNT if new environment variables are added */
+#define ENV_COUNT 15
 
-	if(!(envptr = (char **)try_xmalloc(len)))
+	/* Add strlen() of any sizable fields added to the array */
+	len = strlen(job_name) + strlen(partition) + strlen(node_list) +
+		strlen(account) + strlen(_PATH_STDPATH) + 1024;
+
+	if (!(envptr = (char **)try_xmalloc(len)))
 		return NULL;
+	envptr[0]  = (char *)envptr + (ENV_COUNT * sizeof(char *));
 
-	ptr = (char *)envptr + (ENV_COUNT * sizeof(char *));
-
-	envptr[0] = ptr;
-	memcpy(ptr,"JOBID=",6);
-	ptr += 6;
-	memcpy(ptr,job,strlen(job)+1);
-	ptr += strlen(job)+1;
-	
-	envptr[1] = ptr;
-	memcpy(ptr,"UID=",4);
-	ptr += 4;
-	memcpy(ptr,user,strlen(user)+1);
-	ptr += strlen(user)+1;
-	
-	envptr[2] = ptr;
-	memcpy(ptr,"JOBNAME=",8);
-	ptr += 8;
-	memcpy(ptr,job_name,strlen(job_name)+1);
-	ptr += strlen(job_name)+1;
-	
-	envptr[3] = ptr;
-	memcpy(ptr,"JOBSTATE=",9);
-	ptr += 9;
-	memcpy(ptr,job_state,strlen(job_state)+1);
-	ptr += strlen(job_state)+1;
-
-	envptr[4] = ptr;
-	memcpy(ptr,"PARTITION=",10);
-	ptr += 10;
-	memcpy(ptr,partition,strlen(partition)+1);
-	ptr += strlen(partition)+1;
-
-	envptr[5] = ptr;
-	memcpy(ptr,"LIMIT=",6);
-	ptr += 6;
-	memcpy(ptr,limit,strlen(limit)+1);
-	ptr += strlen(limit)+1;
-
-	envptr[6] = ptr;
-	memcpy(ptr,"START=",6);
-	ptr += 6;
-	memcpy(ptr,start,strlen(start)+1);
-	ptr += strlen(start)+1;
-
-	envptr[7] = ptr;
-	memcpy(ptr,"END=",4);
-	ptr += 4;
-	memcpy(ptr,end,strlen(end)+1);
-	ptr += strlen(end)+1;
-
-	envptr[8] = ptr;
-	memcpy(ptr,"NODES=",6);
-	ptr += 6;
-	memcpy(ptr,node_list,strlen(node_list)+1);
-	ptr += strlen(node_list)+1;
-
-	envptr[9] = ptr;
-	memcpy(ptr,"SUBMIT=",7);
-	ptr += 7;
-	memcpy(ptr,submit,strlen(submit)+1);
-	ptr += strlen(submit)+1;
-
-	envptr[10] = ptr;
-	memcpy(ptr, "BATCH=",6);
-	ptr += 6;
-	memcpy(ptr,batch,strlen(batch)+1);
-	ptr += strlen(batch)+1;
+/*	NEXT_DEST  =  ADD_ENV(DEST,        NAME=VALUE) */
+	envptr[1]  = _add_env(envptr[0],  "JOBID", job);
+	envptr[2]  = _add_env(envptr[1],  "UID", user);
+	envptr[3]  = _add_env(envptr[2],  "JOBNAME", job_name);
+	envptr[4]  = _add_env(envptr[3],  "JOBSTATE", job_state);
+	envptr[5]  = _add_env(envptr[4],  "PARTITION", partition);
+	envptr[6]  = _add_env(envptr[5],  "LIMIT", limit);
+	envptr[7]  = _add_env(envptr[6],  "START", start);
+	envptr[8]  = _add_env(envptr[7],  "END", end);
+	envptr[9]  = _add_env(envptr[8],  "NODES", node_list);
+	envptr[10] = _add_env(envptr[9],  "SUBMIT", submit);
+	envptr[11] = _add_env(envptr[10], "BATCH", batch);
+	envptr[12] = _add_env(envptr[11], "PROCS", procs);
+	envptr[13] = _add_env(envptr[12], "ACCOUNT", account);
 
 #ifdef _PATH_STDPATH
-	envptr[11] = ptr;
-	memcpy(ptr,"PATH=",5);
-	ptr += 5;
-	memcpy(ptr,_PATH_STDPATH,strlen(_PATH_STDPATH)+1);
-	ptr += strlen(_PATH_STDPATH)+1;
-
-	envptr[12] = NULL;
+	_add_env(envptr[13], "PATH", _PATH_STDPATH);
 #else
-	envptr[11] = NULL;
+	envptr[13] = NULL;
 #endif
+	/* envptr[14] through envptr[ENV_COUNT] are NULL from xmalloc.
+	 * Since last entry must be NULL, add new records between 
+	 * "ACCOUNT" and "PATH" above. */
 	
 	return envptr;
 }
@@ -278,10 +221,10 @@ void *script_agent (void *args) {
 	pid_t pid = -1;
 	char user_id_str[32],job_id_str[32], nodes_cache[1];
 	char start_str[32], end_str[32], lim_str[32];
-	char submit_str[32], *batch_str;
+	char submit_str[32], procs_str[32], account_str[128];
 	char * argvp[] = {script, NULL};
 	int status;
-	char ** envp, * nodes;
+	char ** envp, *nodes, *batch_str;
 	job_record job;
 
 	while(1) {
@@ -317,18 +260,27 @@ void *script_agent (void *args) {
 				(unsigned long) job->limit);
 		}
 	
-		if(job->node_list == NULL) {
+		if (job->node_list == NULL) {
 			nodes = nodes_cache;
 		} else {
 			nodes = job->node_list;
 		}
 
-		/*Setup environment*/
+		snprintf(procs_str, sizeof(procs_str), "%lu",
+				(unsigned long) job->num_procs);
+		if (job->account) {
+			snprintf(account_str, sizeof(account_str), "%s",
+				job->account);
+		} else
+			account_str[0] = '\0';
+
+		/* Setup environment*/
 		envp = _create_environment(job_id_str,user_id_str,
 					job->job_name, job->job_state,
 					job->partition, lim_str,
-					start_str,end_str,submit_str,
-					batch_str,nodes);
+					start_str, end_str, submit_str,
+					batch_str, nodes, procs_str, 
+					account_str);
 
 		if(envp == NULL) {
 			plugin_errno = ENOMEM;
@@ -441,7 +393,8 @@ int slurm_jobcomp_log_record ( struct job_record *job_ptr )
 				job_state_string(job_state), 
 				job_ptr->partition, job_ptr->time_limit,
 				job_ptr->start_time, job_ptr->end_time,
-				submit, job_ptr->batch_flag, job_ptr->nodes);
+				submit, job_ptr->batch_flag, job_ptr->nodes,
+				job_ptr->num_procs, job_ptr->account);
 	pthread_mutex_lock(&comp_list_mutex);
 	list_append(comp_list,(void *)job);
 	pthread_mutex_unlock(&comp_list_mutex);
