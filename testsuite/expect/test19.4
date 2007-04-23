@@ -67,7 +67,7 @@ make_bash_script $file_in "$bin_echo RECONFIG >$cwd/$file_out"
 
 set disabled 0
 set matches  0
-set strigger_pid [spawn $strigger --set -v --reconfig --program=$cwd/$file_in]
+set strigger_pid [spawn $strigger --set -v -offset=0 --reconfig --program=$cwd/$file_in]
 expect {
 	-re "Operation not permitted" {
 		set disabled 1
