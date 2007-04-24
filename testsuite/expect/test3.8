@@ -74,12 +74,17 @@ make_bash_script $file_in "
     fi
     $srun -n4 -O -l $bin_sleep 20
 "
+if { [test_bluegene] } {
+	set node_cnt 512-2048
+} else {
+	set node_cnt 1-4
+}
 
 #
 # Spawn a srun batch job that uses stdout/err and confirm their contents
 #
 set timeout $max_job_delay
-set srun_pid [spawn $srun -N1-4 --batch --output=$file_out --error=$file_err -t1 $file_in]
+set srun_pid [spawn $srun -N$node_cnt --batch --output=$file_out --error=$file_err -t1 $file_in]
 expect {
 	-re "jobid ($number) submitted" {
 		set job_id $expect_out(1,string)

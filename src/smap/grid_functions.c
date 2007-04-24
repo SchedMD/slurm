@@ -101,8 +101,12 @@ extern int set_grid_bg(int *start, int *end, int count, int set)
 	for (x = start[X]; x <= end[X]; x++) {
 		for (y = start[Y]; y <= end[Y]; y++) {
 			for (z = start[Z]; z <= end[Z]; z++) {
+				/* set the color and letter of the
+				   block if the set flag is specified
+				   or if the letter hasn't been set yet
+				*/
 				if(set 
-				   && ((ba_system_ptr->grid[x][y][z].letter
+				   || ((ba_system_ptr->grid[x][y][z].letter
 					== '.')
 				       && (ba_system_ptr->grid[x][y][z].letter 
 					   != '#'))) {

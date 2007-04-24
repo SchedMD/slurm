@@ -39,6 +39,13 @@ set matches     0
 set tasks       8
 
 print_header $test_id
+if { [test_bluegene] } {
+	set tasks       1
+	set node_cnt 1-512
+} else {
+	set tasks       8
+	set node_cnt 1-$tasks
+}
 
 #
 # Delete left-over program and rebuild it
@@ -51,7 +58,7 @@ exec $bin_chmod 700 $file_prog
 # Spawn initial program via srun
 #
 set timeout $max_job_delay
-set srun_pid [spawn $srun -N1-$tasks -n$tasks -O -v -t5 -l $file_prog]
+set srun_pid [spawn $srun -N$node_cnt -n$tasks -O -v -t5 -l $file_prog]
 set init_id $spawn_id
 expect {
         -i $init_id

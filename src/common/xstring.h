@@ -104,6 +104,11 @@ char *xstrdup(const char *str);
 char *xstrndup(const char *str, size_t n);
 
 /*
+** strtol which only reads 'n' number of chars in the str to get the number
+*/
+long int xstrntol(const char *str, char **endptr, size_t n, int base);
+
+/*
 ** replacement for libc basename
 */
 char *xbasename(char *path);

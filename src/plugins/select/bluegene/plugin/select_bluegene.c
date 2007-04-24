@@ -419,7 +419,8 @@ extern int select_p_state_restore(char *dir_name)
 		
 		j = 0;
 		while(bg_info_record->ionode_inx[j] >= 0) {
-			if (bg_info_record->ionode_inx[j+1] >= bluegene_numpsets) {
+			if (bg_info_record->ionode_inx[j+1]
+			    >= bluegene_numpsets) {
 				fatal("Job state recovered incompatable with "
 					"bluegene.conf. ionodes=%u state=%d",
 					bluegene_numpsets,
@@ -430,20 +431,7 @@ extern int select_p_state_restore(char *dir_name)
 				 bg_info_record->ionode_inx[j+1]);
 			j += 2;
 		}		
-		j = 0;
-		while(bg_info_record->bp_inx[j] >= 0) {
-			if (bg_info_record->ionode_inx[j+1] >= bluegene_numpsets) {
-				fatal("Job state recovered incompatable with "
-					"bluegene.conf. ionodes=%u state=%d",
-					bluegene_numpsets,
-					bg_info_record->ionode_inx[j+1]);
-			}
-			bit_nset(node_bitmap,
-				 bg_info_record->bp_inx[j],
-				 bg_info_record->bp_inx[j+1]);
-			j += 2;
-		}
-			
+					
 		while((bg_record = list_next(itr))) {
 			if(bit_equal(bg_record->bitmap, node_bitmap)
 			   && bit_equal(bg_record->ionode_bitmap,
@@ -493,8 +481,14 @@ extern int select_p_state_restore(char *dir_name)
 				bg_record->job_running = NO_JOB_RUNNING;
 			bg_record->bp_count = bit_size(node_bitmap);
 			bg_record->node_cnt = bg_info_record->node_cnt;
-			ionodes = bluegene_bp_node_cnt / bg_record->node_cnt;
-			bg_record->cpus_per_bp = procs_per_node / ionodes;
+			if(bluegene_bp_node_cnt > bg_record->node_cnt) {
+				ionodes = bluegene_bp_node_cnt 
+					/ bg_record->node_cnt;
+				bg_record->cpus_per_bp =
+					procs_per_node / ionodes;
+			} else {
+				bg_record->cpus_per_bp = procs_per_node;
+			}
 			bg_record->node_use = bg_info_record->node_use;
 			bg_record->conn_type = bg_info_record->conn_type;
 			bg_record->boot_state = 0;
@@ -827,8 +821,10 @@ extern int select_p_update_sub_node (update_part_msg_t *part_desc_ptr)
 				goto end_it;
 			}
 			i = j++;
-			if((part_desc_ptr->name[j] >= 58 
-			   && part_desc_ptr->name[j] <= 47)) {
+			if((part_desc_ptr->name[j] < '0'
+			    || part_desc_ptr->name[j] > 'Z'
+			    || (part_desc_ptr->name[j] > '9' 
+				&& part_desc_ptr->name[j] < 'A'))) {
 				error("update_sub_node: sub part is empty");
 				rc = SLURM_ERROR;
 				goto end_it;
@@ -848,15 +844,19 @@ extern int select_p_update_sub_node (update_part_msg_t *part_desc_ptr)
 			strncpy(ionodes, part_desc_ptr->name+j, i-j); 
 			set++;
 			break;
-		} else if((part_desc_ptr->name[j] < 58 
-			   && part_desc_ptr->name[j] > 47)) {
+		} else if((part_desc_ptr->name[j] >= '0'
+			   && part_desc_ptr->name[j] <= '9')
+			  || (part_desc_ptr->name[j] >= 'A'
+			      && part_desc_ptr->name[j] <= 'Z')) {
 			if(set) {
 				rc = SLURM_ERROR;
 				goto end_it;
 			}
 			for(i = 0; i < BA_SYSTEM_DIMENSIONS; i++) {
-				if((part_desc_ptr->name[i] >= 58)
-				    || (part_desc_ptr->name[i] <= 47)) {
+				if((part_desc_ptr->name[i] >= '0'
+				    && part_desc_ptr->name[i] <= '9')
+				   || (part_desc_ptr->name[i] >= 'A'
+				      && part_desc_ptr->name[i] <= 'Z')) {
 					error("update_sub_node: "
 					      "misformatted name given %s",
 					      part_desc_ptr->name);

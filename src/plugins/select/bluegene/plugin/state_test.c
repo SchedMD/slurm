@@ -120,9 +120,10 @@ static void _configure_node_down(rm_bp_id_t bp_id, rm_BGL_t *bg)
 			continue;
 		}
 		slurm_conf_lock();
-		snprintf(bg_down_node, sizeof(bg_down_node), "%s%d%d%d", 
+		snprintf(bg_down_node, sizeof(bg_down_node), "%s%c%c%c", 
 			 slurmctld_conf.node_prefix,
-			 bp_loc.X, bp_loc.Y, bp_loc.Z);
+			 alpha_num[bp_loc.X], alpha_num[bp_loc.Y],
+			 alpha_num[bp_loc.Z]);
 		slurm_conf_unlock();
 	
 		if (node_already_down(bg_down_node))
@@ -212,9 +213,10 @@ static void _test_down_nodes(rm_BGL_t *bg)
 		}
 
 		slurm_conf_lock();
-		snprintf(bg_down_node, sizeof(bg_down_node), "%s%d%d%d", 
+		snprintf(bg_down_node, sizeof(bg_down_node), "%s%c%c%c", 
 			 slurmctld_conf.node_prefix,
-			 bp_loc.X, bp_loc.Y, bp_loc.Z);
+			 alpha_num[bp_loc.X], alpha_num[bp_loc.Y],
+			 alpha_num[bp_loc.Z]);
 		slurm_conf_unlock();
 	
 		if (node_already_down(bg_down_node))
@@ -423,9 +425,10 @@ extern int check_block_bp_states(char *bg_block_id)
 		}
 		free(bpid);
 		slurm_conf_lock();
-		snprintf(bg_down_node, sizeof(bg_down_node), "%s%d%d%d", 
+		snprintf(bg_down_node, sizeof(bg_down_node), "%s%c%c%c", 
 			 slurmctld_conf.node_prefix,
-			 coord[X], coord[Y], coord[Z]);
+			 alpha_num[coord[X]], alpha_num[coord[Y]],
+			 alpha_num[coord[Z]]);
 		slurm_conf_unlock();
 	
 		if (node_already_down(bg_down_node))
