@@ -375,15 +375,21 @@ static int _marknodes(db2_block_info_t *block_ptr, int count)
 		    && (block_ptr->nodes[j+4] == 'x'
 			|| block_ptr->nodes[j+4] == '-')) {
 			j++;
-			number = atoi(block_ptr->nodes + j);
-			start[X] = number / 100;
-			start[Y] = (number % 100) / 10;
-			start[Z] = (number % 10);
+			number = xstrntol(block_ptr->nodes + j,
+					  NULL, BA_SYSTEM_DIMENSIONS, 
+					  HOSTLIST_BASE);
+			start[X] = number / (HOSTLIST_BASE * HOSTLIST_BASE);
+			start[Y] = (number % (HOSTLIST_BASE * HOSTLIST_BASE))
+				/ HOSTLIST_BASE;
+			start[Z] = (number % HOSTLIST_BASE);
 			j += 4;
-			number = atoi(block_ptr->nodes + j);
-			end[X] = number / 100;
-			end[Y] = (number % 100) / 10;
-			end[Z] = (number % 10);
+			number = xstrntol(block_ptr->nodes + j,
+					  NULL, BA_SYSTEM_DIMENSIONS, 
+					  HOSTLIST_BASE);
+			end[X] = number / (HOSTLIST_BASE * HOSTLIST_BASE);
+			end[Y] = (number % (HOSTLIST_BASE * HOSTLIST_BASE))
+				/ HOSTLIST_BASE;
+			end[Z] = (number % HOSTLIST_BASE);
 			j += 3;
 			
 			if(block_ptr->state != RM_PARTITION_FREE) 
@@ -399,13 +405,18 @@ static int _marknodes(db2_block_info_t *block_ptr, int count)
 			if(block_ptr->nodes[j] != ',')
 				break;
 			j--;
-		} else if((block_ptr->nodes[j] < 58 
-			   && block_ptr->nodes[j] > 47)) {
+		} else if((block_ptr->nodes[j] >= '0'
+			   && block_ptr->nodes[j] <= '9')
+			  || (block_ptr->nodes[j] >= 'A'
+			      && block_ptr->nodes[j] <= 'Z')) {
 					
-			number = atoi(block_ptr->nodes + j);
-			start[X] = number / 100;
-			start[Y] = (number % 100) / 10;
-			start[Z] = (number % 10);
+			number = xstrntol(block_ptr->nodes + j,
+					  NULL, BA_SYSTEM_DIMENSIONS, 
+					  HOSTLIST_BASE);
+			start[X] = number / (HOSTLIST_BASE * HOSTLIST_BASE);
+			start[Y] = (number % (HOSTLIST_BASE * HOSTLIST_BASE))
+				/ HOSTLIST_BASE;
+			start[Z] = (number % HOSTLIST_BASE);
 			j+=3;
 			block_ptr->size += set_grid_bg(start, 
 							start, 
@@ -863,27 +874,35 @@ static int _make_nodelist(char *nodes, List nodelist)
 		    && (nodes[j+4] == 'x'
 			|| nodes[j+4] == '-')) {
 			j++;
-			number = atoi(nodes + j);
-			start[X] = number / 100;
-			start[Y] = (number % 100) / 10;
-			start[Z] = (number % 10);
+			number = xstrntol(nodes + j, NULL, 
+					  BA_SYSTEM_DIMENSIONS, HOSTLIST_BASE);
+			start[X] = number / (HOSTLIST_BASE * HOSTLIST_BASE);
+			start[Y] = (number % (HOSTLIST_BASE * HOSTLIST_BASE))
+				/ HOSTLIST_BASE;
+			start[Z] = (number % HOSTLIST_BASE);
+			
 			j += 4;
-			number = atoi(nodes + j);
-			end[X] = number / 100;
-			end[Y] = (number % 100) / 10;
-			end[Z] = (number % 10);
+			number = xstrntol(nodes + j, NULL,
+					  BA_SYSTEM_DIMENSIONS, HOSTLIST_BASE);
+			end[X] = number / (HOSTLIST_BASE * HOSTLIST_BASE);
+			end[Y] = (number % (HOSTLIST_BASE * HOSTLIST_BASE))
+				/ HOSTLIST_BASE;
+			end[Z] = (number % HOSTLIST_BASE);
+			
 			j += 3;
 			_addto_nodelist(nodelist, start, end);
 			if(nodes[j] != ',')
 				break;
 			j--;
-		} else if((nodes[j] < 58 
-			   && nodes[j] > 47)) {
+		} else if((nodes[j] >= '0' && nodes[j] <= '9')
+			  || (nodes[j] >= 'A' && nodes[j] <= 'Z')) {
 					
-			number = atoi(nodes + j);
-			start[X] = number / 100;
-			start[Y] = (number % 100) / 10;
-			start[Z] = (number % 10);
+			number = xstrntol(nodes + j, NULL,
+					  BA_SYSTEM_DIMENSIONS, HOSTLIST_BASE);
+			start[X] = number / (HOSTLIST_BASE * HOSTLIST_BASE);
+			start[Y] = (number % (HOSTLIST_BASE * HOSTLIST_BASE))
+				/ HOSTLIST_BASE;
+			start[Z] = (number % HOSTLIST_BASE);
 			j+=3;
 			_addto_nodelist(nodelist, start, start);
 			if(nodes[j] != ',')

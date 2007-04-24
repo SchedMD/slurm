@@ -219,12 +219,15 @@ static int _post_allocate(bg_record_t *bg_record)
 	if ((rc = bridge_free_block(bg_record->bg_block)) != STATUS_OK)
 		error("bridge_free_block(): %s", bg_err_str(rc));	
 #else
+	/* We are just looking for a real number here no need for a
+	   base conversion
+	*/
 	static int block_inx = 0;
 	int i=0, temp = 0;
 	if(bg_record->bg_block_id) {
-		while((bg_record->bg_block_id[i] > '9' 
-		       || bg_record->bg_block_id[i] < '0') 
-		      && (bg_record->bg_block_id[i])) 		
+		while(bg_record->bg_block_id[i]
+		      && (bg_record->bg_block_id[i] > '9' 
+			  || bg_record->bg_block_id[i] < '0')) 		
 			i++;
 		if(bg_record->bg_block_id[i]) {
 			temp = atoi(bg_record->bg_block_id+i)+1;
@@ -611,9 +614,10 @@ int read_bg_blocks()
 			slurm_conf_lock();
 			snprintf(node_name_tmp, 
 				 sizeof(node_name_tmp),
-				 "%s%d%d%d", 
+				 "%s%c%c%c", 
 				 slurmctld_conf.node_prefix,
-				 coord[X], coord[Y], coord[Z]);
+				 alpha_num[coord[X]], alpha_num[coord[Y]],
+				 alpha_num[coord[Z]]);
 			slurm_conf_unlock();
 			
 			hostlist_push(hostlist, node_name_tmp);

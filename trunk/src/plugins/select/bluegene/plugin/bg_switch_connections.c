@@ -279,10 +279,10 @@ static int _used_switches(ba_node_t* ba_node)
 	int i = 0, j = 0, switch_count = 0;
 	int source = 0;
 	
-	debug4("checking node %d%d%d",
-	       ba_node->coord[X], 
-	       ba_node->coord[Y], 
-	       ba_node->coord[Z]);
+	debug4("checking node %c%c%c",
+	       alpha_num[ba_node->coord[X]], 
+	       alpha_num[ba_node->coord[Y]], 
+	       alpha_num[ba_node->coord[Z]]);
 	for(i=0; i<BA_SYSTEM_DIMENSIONS; i++) {
 		debug4("dim %d", i);
 		ba_switch = &ba_node->axis_switch[i];
@@ -558,16 +558,16 @@ extern int configure_block_switches(bg_record_t * bg_record)
 		}
 #endif
 		if(!ba_node->used) {
-			debug3("%d%d%d is a passthrough, "
+			debug3("%c%c%c is a passthrough, "
 			       "not including in request",
-			       ba_node->coord[X], 
-			       ba_node->coord[Y], 
-			       ba_node->coord[Z]);			
+			       alpha_num[ba_node->coord[X]], 
+			       alpha_num[ba_node->coord[Y]], 
+			       alpha_num[ba_node->coord[Z]]);
 		} else {
-			debug2("using node %d%d%d",
-			       ba_node->coord[X], 
-			       ba_node->coord[Y], 
-			       ba_node->coord[Z]);
+			debug2("using node %c%c%c",
+			       alpha_num[ba_node->coord[X]], 
+			       alpha_num[ba_node->coord[Y]], 
+			       alpha_num[ba_node->coord[Z]]);
 #ifdef HAVE_BG_FILES
 			if (first_bp){
 				if ((rc = bridge_set_data(bg_record->bg_block,

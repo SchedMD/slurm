@@ -171,10 +171,11 @@ strong_alias(hostset_nth,		slurm_hostset_nth);
 #ifdef HAVE_BG		
 /* logic for block node description */
 /* We allocate space for three digits, 
- * each with values 0 to 9 even if they are not all used */
-bool axis[10][10][10];
+ * each with values 0 to Z even if they are not all used */
+bool axis[HOSTLIST_BASE][HOSTLIST_BASE][HOSTLIST_BASE];
 int axis_min_x, axis_min_y, axis_min_z;
 int axis_max_x, axis_max_y, axis_max_z;
+char *alpha_num = "0123456789ABCDEFGHIJKLMNOPQRSTUZWXYZ";
 
 static int _get_boxes(char *buf, int max_len);
 static void _clear_grid(void);
@@ -531,10 +532,14 @@ static size_t host_prefix_end(const char *hostname)
 	size_t idx; 
 	if (!hostname)
 		return -1;
+#ifdef HAVE_BG
+	idx = strlen(hostname) - 4;
+#else
 	idx = strlen(hostname) - 1;
 
 	while (idx >= 0 && isdigit((char) hostname[idx])) 
 		idx--;
+#endif
 	return idx;
 }
 
@@ -572,7 +577,8 @@ static hostname_t hostname_create(const char *hostname)
 	}
 
 	hn->suffix = hn->hostname + idx + 1;
-	hn->num = strtoul(hn->suffix, &p, 10);
+
+	hn->num = strtoul(hn->suffix, &p, HOSTLIST_BASE);
 
 	if (*p == '\0') {
 		if (!(hn->prefix = malloc((idx + 2) * sizeof(char)))) {
@@ -851,7 +857,9 @@ static char *hostrange_pop(hostrange_t hr)
 {
 	size_t size = 0;
 	char *host = NULL;
-
+#ifdef HAVE_BG
+	int coord[3];
+#endif
 	assert(hr != NULL);
 
 	if (hr->singlehost) {
@@ -861,8 +869,20 @@ static char *hostrange_pop(hostrange_t hr)
 		size = strlen(hr->prefix) + hr->width + 16;    
 		if (!(host = (char *) malloc(size * sizeof(char))))
 			out_of_memory("hostrange pop");
+#ifdef HAVE_BG
+		coord[0] = hr->hi / (HOSTLIST_BASE * HOSTLIST_BASE);
+		coord[1] = (hr->hi % (HOSTLIST_BASE * HOSTLIST_BASE))
+			/ HOSTLIST_BASE;
+		coord[2] = (hr->hi % HOSTLIST_BASE);
+		
+		snprintf(host, size, "%s%c%c%c", hr->prefix, 
+			 alpha_num[coord[0]], alpha_num[coord[1]],
+			 alpha_num[coord[2]]);
+		hr->hi--;
+#else
 		snprintf(host, size, "%s%0*lu", hr->prefix, 
-		hr->width, hr->hi--);
+			 hr->width, hr->hi--);
+#endif
 	}
 
 	return host;
@@ -873,6 +893,9 @@ static char *hostrange_shift(hostrange_t hr)
 {
 	size_t size = 0;
 	char *host = NULL;
+#ifdef HAVE_BG
+	int coord[3];
+#endif
 
 	assert(hr != NULL);
 
@@ -884,8 +907,19 @@ static char *hostrange_shift(hostrange_t hr)
 		size = strlen(hr->prefix) + hr->width + 16;
 		if (!(host = (char *) malloc(size * sizeof(char))))
 			out_of_memory("hostrange shift");
+#ifdef HAVE_BG
+		coord[0] = hr->lo / (HOSTLIST_BASE * HOSTLIST_BASE);
+		coord[1] = (hr->lo % (HOSTLIST_BASE * HOSTLIST_BASE))
+			/ HOSTLIST_BASE;
+		coord[2] = (hr->lo % HOSTLIST_BASE);
+		snprintf(host, size, "%s%c%c%c", hr->prefix, 
+			 alpha_num[coord[0]], alpha_num[coord[1]],
+			 alpha_num[coord[2]]);
+		hr->lo++;
+#else		
 		snprintf(host, size, "%s%0*lu", hr->prefix,
 			hr->width, hr->lo++);
+#endif
 	}
 
 	return host;
@@ -1006,8 +1040,20 @@ hostrange_to_string(hostrange_t hr, size_t n, char *buf, char *separator)
 
 	for (i = hr->lo; i <= hr->hi; i++) {
 		size_t m = (n - len) <= n ? n - len : 0; /* check for < 0 */
-		int ret = snprintf(buf + len, m, "%s%0*lu",
-			hr->prefix, hr->width, i);
+		int ret = 0;
+#ifdef HAVE_BG
+		int coord[3];
+		coord[0] = i / (HOSTLIST_BASE * HOSTLIST_BASE);
+		coord[1] = (i % (HOSTLIST_BASE * HOSTLIST_BASE))
+			/ HOSTLIST_BASE;
+		coord[2] = (i % HOSTLIST_BASE);
+		ret = snprintf(buf + len, m, "%s%c%c%c", hr->prefix, 
+				alpha_num[coord[0]], alpha_num[coord[1]],
+				alpha_num[coord[2]]);
+#else		
+		ret = snprintf(buf + len, m, "%s%0*lu",
+			       hr->prefix, hr->width, i);
+#endif
 		if (ret < 0 || ret >= m) {
 			len = n;
 			truncated = 1;
@@ -1033,6 +1079,9 @@ hostrange_to_string(hostrange_t hr, size_t n, char *buf, char *separator)
 static size_t hostrange_numstr(hostrange_t hr, size_t n, char *buf)
 {
 	int len = 0;
+#ifdef HAVE_BG
+	int coord[3];
+#endif
 
 	assert(buf != NULL);
 	assert(hr != NULL);
@@ -1040,10 +1089,30 @@ static size_t hostrange_numstr(hostrange_t hr, size_t n, char *buf)
 	if (hr->singlehost || n == 0)
 		return 0;
 
+#ifdef HAVE_BG
+	coord[0] = hr->lo / (HOSTLIST_BASE * HOSTLIST_BASE);
+	coord[1] = (hr->lo % (HOSTLIST_BASE * HOSTLIST_BASE)) / HOSTLIST_BASE;
+	coord[2] = (hr->lo % HOSTLIST_BASE);
+	len = snprintf(buf, n, "%c%c%c",  
+		       alpha_num[coord[0]], alpha_num[coord[1]],
+		       alpha_num[coord[2]]);	
+#else		
 	len = snprintf(buf, n, "%0*lu", hr->width, hr->lo);
+#endif
 
 	if ((len >= 0) && (len < n) && (hr->lo < hr->hi)) {
-		int len2 = snprintf(buf+len, n-len, "-%0*lu", hr->width, hr->hi);
+		int len2 = 0;
+#ifdef HAVE_BG
+		coord[0] = hr->hi / (HOSTLIST_BASE * HOSTLIST_BASE);
+		coord[1] = (hr->hi % (HOSTLIST_BASE * HOSTLIST_BASE))
+			/ HOSTLIST_BASE;
+		coord[2] = (hr->hi % HOSTLIST_BASE);
+		len2 = snprintf(buf+len, n-len, "-%c%c%c",  
+				alpha_num[coord[0]], alpha_num[coord[1]],
+				alpha_num[coord[2]]);	
+#else				
+		len2 = snprintf(buf+len, n-len, "-%0*lu", hr->width, hr->hi);
+#endif
 		if (len2 < 0) 
 			len = -1;
 		else
@@ -1266,7 +1335,10 @@ hostlist_t _hostlist_create(const char *hostlist, char *sep, char *r_op)
 
 	if (hostlist == NULL)
 		return new;
-
+#ifdef HAVE_BG
+	fatal("WANT_RECKLESS_HOSTRANGE_EXPANSION does not work on "
+	      "bluegene systems!!!!");
+#endif
 	orig = str = strdup(hostlist);
 	
 	/* return an empty list if an empty string was passed in */
@@ -1321,7 +1393,7 @@ hostlist_t _hostlist_create(const char *hostlist, char *sep, char *r_op)
 			tok += pos;
 
 		/* get lower bound */
-		low = strtoul(tok, (char **) &tok, 10);
+		low = strtoul(tok, (char **) &tok, HOSTLIST_BASE);
 
 		if (*tok == range_op) {    /* now get range upper bound */
 			/* push pointer past range op */
@@ -1347,7 +1419,8 @@ hostlist_t _hostlist_create(const char *hostlist, char *sep, char *r_op)
 			for (pos = 0; tok[pos] && isdigit((char) tok[pos]); ++pos) {;}
 
 			if (pos > 0) {    /* we have digits to process */
-				high = strtoul(tok, (char **) &tok, 10);
+				high = strtoul(tok, (char **) &tok,
+					       HOSTLIST_BASE);
 			} else {    /* bad boy, no digits */
 				error = 1;
 			}
@@ -1408,36 +1481,38 @@ static int _parse_single_range(const char *str, struct _range *range)
 	char *orig = strdup(str);
 	if (!orig) 
 		seterrno_ret(ENOMEM, 0);
-
+	
 	if ((p = strchr(str, '-'))) {
 		*p++ = '\0';
 		if (*p == '-')     /* do NOT allow negative numbers */
 			goto error;
 	}
-	range->lo = strtoul(str, &q, 10);
+
+	range->lo = strtoul(str, &q, HOSTLIST_BASE);
+
 	if (q == str) 
 		goto error;
-
-	range->hi = (p && *p) ? strtoul(p, &q, 10) : range->lo;
-
+	
+	range->hi = (p && *p) ? strtoul(p, &q, HOSTLIST_BASE) : range->lo;
+		
 	if (q == p || *q != '\0') 
 		goto error;
-
+	
 	if (range->lo > range->hi) 
 		goto error;
-
+	
 	if (range->hi - range->lo + 1 > MAX_RANGE ) {
 		_error(__FILE__, __LINE__, "Too many hosts in range `%s'\n", orig);
 		free(orig);
 		seterrno_ret(ERANGE, 0);
 	}
-
+	
 	free(orig);
 	range->width = strlen(str);
 	return 1;
 	
-  error:
-    errno = EINVAL;
+error:
+	errno = EINVAL;
 	_error(__FILE__, __LINE__, "Invalid range: `%s'", orig);
 	free(orig);
 	return 0;
@@ -1456,31 +1531,36 @@ static int _parse_single_range(const char *str, struct _range *range)
  */
 static int _parse_box_range(char *str, struct _range *ranges, int len, int *count)
 {
-	int a1, a2, a3, b1, b2, b3, i1, i2;
+	int a[3], b[3], i1, i2, i;
 	char new_str[8];
 
-	a1 = str[0] - '0';
-	a2 = str[1] - '0';
-	a3 = str[2] - '0';
-	b1 = str[4] - '0';
-	b2 = str[5] - '0';
-	b3 = str[6] - '0';
-	if ((a1 < 0) || (a1 > 9) ||
-	    (a2 < 0) || (a2 > 9) ||
-	    (a3 < 0) || (a3 > 9) ||
-	    (str[3] != 'x') ||
-	    (b1 < 0) || (b1 > 9) || (b1 < a1) ||
-	    (b2 < 0) || (b2 > 9) || (b2 < a2) ||
-	    (b3 < 0) || (b3 > 9) || (b3 < a3) ||
-	    (str[7] != '\0'))
+	if((str[3] != 'x') || (str[7] != '\0')) 
 		return 0;
 
-	for (i1=a1; i1 <= b1; i1++) {
-		for (i2=a2; i2 <=b2; i2++) {
+	for(i = 0; i<3; i++) {
+		a[i] = str[i] - '0';
+		/* Remove the extra chars inbetween the 9 and A */
+		if(a[i] > 9) 
+			a[i] -= 7;
+		if ((a[i] < 0) || (a[i] > 36)) 
+			return 0;
+		
+		b[i] = str[i+4] - '0';
+		/* Remove the extra chars inbetween the 9 and A */
+		if(b[i] > 9) 
+			b[i] -= 7;
+		if ((b[i] < 0) || (b[i] > 36)) 
+			return 0;
+	}
+
+	for (i1=a[0]; i1 <= b[0]; i1++) {
+		for (i2=a[1]; i2 <=b[1]; i2++) {
 			if (*count == len)
 				return -1;
-			snprintf(new_str, 8, "%d%d%d-%d%d%d", 
-				i1, i2, a3, i1, i2, b3);
+			snprintf(new_str, 8, "%c%c%c-%c%c%c", 
+				 alpha_num[i1], alpha_num[i2], alpha_num[a[2]],
+				 alpha_num[i1], alpha_num[i2], 
+				 alpha_num[b[2]]);
 			if (!_parse_single_range(new_str,&ranges[*count]))
 				return -1;
 			(*count)++;
@@ -1664,12 +1744,12 @@ int hostlist_push_host(hostlist_t hl, const char *str)
 
 	hn = hostname_create(str);
 
-	if (hostname_suffix_is_valid(hn)) {
+	if (hostname_suffix_is_valid(hn)) 
 		hr = hostrange_create(hn->prefix, hn->num, hn->num,
-			hostname_suffix_width(hn));
-	} else
+				      hostname_suffix_width(hn));
+	else 
 		hr = hostrange_create_single(str);
-
+	
 	hostlist_push_range(hl, hr);
 
 	hostrange_destroy(hr);
@@ -1891,9 +1971,22 @@ _hostrange_string(hostrange_t hr, int depth)
 	char buf[MAXHOSTNAMELEN + 16];
 	int  len = snprintf(buf, MAXHOSTNAMELEN + 15, "%s", hr->prefix);
 
-	if (!hr->singlehost)
+	if (!hr->singlehost) {
+#ifdef HAVE_BG
+		int coord[3];
+		int temp = hr->lo+depth;
+		coord[0] = temp / (HOSTLIST_BASE * HOSTLIST_BASE);
+		coord[1] = (temp % (HOSTLIST_BASE * HOSTLIST_BASE))
+			/ HOSTLIST_BASE;
+		coord[2] = (temp % HOSTLIST_BASE);
+		snprintf(buf+len, MAXHOSTNAMELEN+15 - len, "%c%c%c",
+			 alpha_num[coord[0]], alpha_num[coord[1]],
+			 alpha_num[coord[2]]);
+#else
 		snprintf(buf+len, MAXHOSTNAMELEN+15 - len, "%0*lu", 
-			hr->width, hr->lo + depth);
+			 hr->width, hr->lo + depth);
+#endif
+	}
 	return strdup(buf);
 }
 
@@ -2277,9 +2370,11 @@ _get_boxes(char *buf, int max_len)
 		}
 		if (((len+8) < max_len) && (start_box != -1)
 		    && ((is_box == 0) || (i == axis_max_x))) {
-			sprintf(buf+len,"%d%d%dx%d%d%d,",
-				start_box, axis_min_y, axis_min_z,
-				end_box, axis_max_y, axis_max_z);
+			sprintf(buf+len,"%c%c%cx%c%c%c,",
+				alpha_num[start_box], alpha_num[axis_min_y],
+				alpha_num[axis_min_z],
+				alpha_num[end_box], alpha_num[axis_max_y],
+				alpha_num[axis_max_z]);
 			len += 8;
 			start_box = -1;
 			end_box = -1;
@@ -2291,8 +2386,9 @@ _get_boxes(char *buf, int max_len)
 						continue;
 					if ((len+4) >= max_len)
 						break;
-					sprintf(buf+len,"%d%d%d,",
-						i, j, k);
+					sprintf(buf+len,"%c%c%c,",
+						alpha_num[i], alpha_num[j],
+						alpha_num[k]);
 					len += 4;
 				}
 			}
@@ -2312,9 +2408,9 @@ _clear_grid(void)
 {
 	bzero(axis, sizeof(axis));
 
-	axis_min_x = 10;
-	axis_min_y = 10;
-	axis_min_z = 10;
+	axis_min_x = HOSTLIST_BASE;
+	axis_min_y = HOSTLIST_BASE;
+	axis_min_z = HOSTLIST_BASE;
 
 	axis_max_x = -1;
 	axis_max_y = -1;
@@ -2329,14 +2425,17 @@ _set_grid(unsigned long start, unsigned long end)
 	int x1, y1, z1, x2, y2, z2;
 	int temp, temp1, temp2;
   
-	x1 = (pt1 / 100) % 10;
-	y1 = (pt1 / 10) % 10;
-	z1 = pt1 % 10;
+	x1 = pt1 / (HOSTLIST_BASE * HOSTLIST_BASE);
+	y1 = (pt1 % (HOSTLIST_BASE * HOSTLIST_BASE)) / HOSTLIST_BASE;
+	z1 = pt1 % HOSTLIST_BASE;
 
-	x2 = (pt2 / 100) % 10;
-	y2 = (pt2 / 10) % 10;
-	z2 = pt2 % 10;
- 
+	x2 = pt2 / (HOSTLIST_BASE * HOSTLIST_BASE);
+	y2 = (pt2 % (HOSTLIST_BASE * HOSTLIST_BASE)) / HOSTLIST_BASE;
+	z2 = pt2 % HOSTLIST_BASE;
+/* 	printf("new %c%c%c %c%c%c\n", */
+/* 	       alpha_num[x1],alpha_num[y1],alpha_num[z1], */
+/* 	       alpha_num[x2],alpha_num[y2],alpha_num[z2]); */
+			
 	axis_min_x = MIN(axis_min_x, x1);
 	axis_min_y = MIN(axis_min_y, y1);
 	axis_min_z = MIN(axis_min_z, z1);
@@ -2344,6 +2443,12 @@ _set_grid(unsigned long start, unsigned long end)
 	axis_max_x = MAX(axis_max_x, x2);
 	axis_max_y = MAX(axis_max_y, y2);
 	axis_max_z = MAX(axis_max_z, z2);
+/* 	printf("max %c%c%c %c%c%c\n", */
+/* 	       alpha_num[axis_min_x],alpha_num[axis_min_y], */
+/* 	       alpha_num[axis_min_z], */
+/* 	       alpha_num[axis_max_x],alpha_num[axis_max_y], */
+/* 	       alpha_num[axis_max_z]); */
+	
 	for (temp=x1; temp<=x2; temp++) {
 		for (temp1=y1; temp1<=y2; temp1++) {
 			for (temp2=z1; temp2<=z2; temp2++) {
@@ -2393,32 +2498,40 @@ size_t hostlist_ranged_string(hostlist_t hl, size_t n, char *buf)
 #ifdef HAVE_BG		/* logic for block node description */
 	if (hl->nranges < 1)
 		goto notbox;	/* no data */
-	if (hl->hr[0]->width != 3)
-		goto notbox;	/* not Blue Gene format */
+	if (hl->hr[0]->width != 3) {
+		error("This node is not in bluegene format.  "
+		      "The suffix was %d chars in length",
+		      hl->hr[0]->width);	/* not Bluegene format */
+		goto notbox; 
+	}
 	_clear_grid();
 	for (i=0;i<hl->nranges;i++)
 		_set_grid(hl->hr[i]->lo, hl->hr[i]->hi);
-    if ((axis_min_x == axis_max_x) && (axis_min_y == axis_max_y)
-    &&  (axis_min_z == axis_max_z)) {
-        len += snprintf(buf, n, "%s%d%d%d",
-                hl->hr[0]->prefix,
-                axis_min_x, axis_min_y, axis_min_z);
-        if ((len < 0) || (len > n))
-            len = n;    /* truncated */
-    } else if (!_test_box()) {
+	if ((axis_min_x == axis_max_x) 
+	    && (axis_min_y == axis_max_y)
+	    &&  (axis_min_z == axis_max_z)) {
+		len += snprintf(buf, n, "%s%c%c%c",
+				hl->hr[0]->prefix,
+				alpha_num[axis_min_x], alpha_num[axis_min_y],
+				alpha_num[axis_min_z]);
+		if ((len < 0) || (len > n))
+			len = n;    /* truncated */
+	} else if (!_test_box()) {
 		sprintf(buf, "%s[", hl->hr[0]->prefix);
 		len = strlen(hl->hr[0]->prefix) + 1;
 		len += _get_boxes(buf + len, (n-len));
 	} else {
-		len += snprintf(buf, n, "%s[%d%d%dx%d%d%d]", 
+		len += snprintf(buf, n, "%s[%c%c%cx%c%c%c]", 
 				hl->hr[0]->prefix,
-				axis_min_x, axis_min_y, axis_min_z,
-				axis_max_x, axis_max_y, axis_max_z);
+				alpha_num[axis_min_x], alpha_num[axis_min_y],
+				alpha_num[axis_min_z],
+				alpha_num[axis_max_x], alpha_num[axis_max_y],
+				alpha_num[axis_max_z]);
 		if ((len < 0) || (len > n))
 			len = n;	/* truncated */
 	}
 	box = true;
-
+	
 notbox:
 #endif
 	if (!box) {
@@ -2560,9 +2673,22 @@ char *hostlist_next(hostlist_iterator_t i)
 	}
 
 	len = snprintf(buf, MAXHOSTNAMELEN + 15, "%s", i->hr->prefix);
-	if (!i->hr->singlehost)
+	if (!i->hr->singlehost) {
+#ifdef HAVE_BG
+		int coord[3];
+		int temp = i->hr->lo + i->depth;
+		coord[0] = temp / (HOSTLIST_BASE * HOSTLIST_BASE);
+		coord[1] = (temp % (HOSTLIST_BASE * HOSTLIST_BASE))
+			/ HOSTLIST_BASE;
+		coord[2] = (temp % HOSTLIST_BASE);
+		snprintf(buf + len, MAXHOSTNAMELEN + 15 - len, "%c%c%c",
+			 alpha_num[coord[0]], alpha_num[coord[1]],
+			 alpha_num[coord[2]]);
+#else
 		snprintf(buf + len, MAXHOSTNAMELEN + 15 - len, "%0*lu",
 			i->hr->width, i->hr->lo + i->depth);
+#endif
+	}
 	UNLOCK_HOSTLIST(i->hl);
 	return strdup(buf);
 }

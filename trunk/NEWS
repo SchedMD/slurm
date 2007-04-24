@@ -3,7 +3,9 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 1.2.7
 ========================
-
+ -- BLUEGENE - code to make it so you can make a 36x36x36 system.  
+    The wiring isn't correct on the X axis for anything over 8 though.
+    But that is only in emulation mode.
 
 * Changes in SLURM 1.2.6
 ========================
