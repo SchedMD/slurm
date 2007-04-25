@@ -398,8 +398,8 @@ static int _jobcomp_exec_child (char *script, char **env)
  */
 static void * _script_agent (void *args) 
 {
-	info ("_jobcomp_script_strerror (137) = %s\n", 
-			_jobcomp_script_strerror (137));
+//	info ("_jobcomp_script_strerror (137) = %s\n", 
+//			_jobcomp_script_strerror (137));
 
 	while (1) {
 		struct jobcomp_info *job;
