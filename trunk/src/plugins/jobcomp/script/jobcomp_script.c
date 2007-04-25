@@ -128,7 +128,7 @@ static struct jobcomp_errno {
 /*
  *  Return string representation of plugin errno
  */
-static const char * jobcomp_script_strerror (int errnum)
+static const char * _jobcomp_script_strerror (int errnum)
 {
 	struct jobcomp_errno *ep = errno_table;
 
@@ -158,7 +158,7 @@ struct jobcomp_info {
 	char *account;
 };
 
-struct jobcomp_info * jobcomp_info_create (struct job_record *job)
+static struct jobcomp_info * _jobcomp_info_create (struct job_record *job)
 {
 	enum job_states state;
 	struct jobcomp_info * j = xmalloc (sizeof (*j));
@@ -188,7 +188,7 @@ struct jobcomp_info * jobcomp_info_create (struct job_record *job)
 	return (j);
 }
 
-void jobcomp_info_destroy (struct jobcomp_info *j)
+static void _jobcomp_info_destroy (struct jobcomp_info *j)
 {
 	if (j == NULL)
 		return;
@@ -291,7 +291,7 @@ static char ** _create_environment (struct jobcomp_info *job)
 	_env_append_fmt (&env, "START", "%lu", job->start);
 	_env_append_fmt (&env, "END",   "%lu", job->end);
 	_env_append_fmt (&env, "SUBMIT","%lu", job->submit);
-	_env_append_fmt (&env, "PROCS", "%u", job->nprocs);
+	_env_append_fmt (&env, "PROCS", "%u",  job->nprocs);
 
 	_env_append (&env, "BATCH", (job->batch_flag ? "yes" : "no"));
 	_env_append (&env, "NODES",     job->nodes);
@@ -303,7 +303,7 @@ static char ** _create_environment (struct jobcomp_info *job)
 	if (job->limit == INFINITE)
 		_env_append (&env, "LIMIT", "UNLIMITED");
 	else 
-		_env_append_fmt (&env, "LIMIT", "%u", job->limit);
+		_env_append_fmt (&env, "LIMIT", "%lu", job->limit);
 
 #ifdef _PATH_STDPATH
 	_env_append (&env, "PATH", _PATH_STDPATH);
@@ -313,7 +313,7 @@ static char ** _create_environment (struct jobcomp_info *job)
 	return (env);
 }
 
-static int redirect_stdio (void)
+static int _redirect_stdio (void)
 {
 	int devnull;
 	if ((devnull = open ("/dev/null", O_RDWR)) < 0)
@@ -328,7 +328,7 @@ static int redirect_stdio (void)
 	return (0);
 }
 
-static void jobcomp_child (char * script, char **env)
+static void _jobcomp_child (char * script, char **env)
 {
 	char * args[] = {script, NULL};
 	const char *tmpdir;
@@ -345,7 +345,7 @@ static void jobcomp_child (char * script, char **env)
 	 */
 	log_reinit ();
 
-	if (redirect_stdio () < 0)
+	if (_redirect_stdio () < 0)
 		exit (1);
 
 	if (chdir (tmpdir) != 0) {
@@ -362,7 +362,7 @@ static void jobcomp_child (char * script, char **env)
 	exit (1);
 }
 
-static int jobcomp_exec_child (char *script, char **env)
+static int _jobcomp_exec_child (char *script, char **env)
 {
 	pid_t pid;
 	int status = 0;
@@ -376,7 +376,7 @@ static int jobcomp_exec_child (char *script, char **env)
 	}
 
 	if (pid == 0)
-		jobcomp_child (script, env);
+		_jobcomp_child (script, env);
 
 	/*
 	 *  Parent continues
@@ -396,10 +396,10 @@ static int jobcomp_exec_child (char *script, char **env)
 /*
  * Thread function that executes a script
  */
-void * script_agent (void *args) 
+static void * _script_agent (void *args) 
 {
-	info ("jobcomp_script_strerror (137) = %s\n", 
-			jobcomp_script_strerror (137));
+	info ("_jobcomp_script_strerror (137) = %s\n", 
+			_jobcomp_script_strerror (137));
 
 	while (1) {
 		struct jobcomp_info *job;
@@ -420,15 +420,15 @@ void * script_agent (void *args)
 
 			if ((envp = _create_environment (job)) == NULL) {
 				error ("jobcomp/script: create env failed!");
-				jobcomp_info_destroy (job);
+				_jobcomp_info_destroy (job);
 				continue;
 			}
 
-			if (jobcomp_exec_child (script, envp) < 0)
+			if (_jobcomp_exec_child (script, envp) < 0)
 				error ("jobcomp/script: %s failed");
 
 			xfree(envp);
-			jobcomp_info_destroy (job);
+			_jobcomp_info_destroy (job);
 		}
 
 		/*
@@ -445,7 +445,7 @@ void * script_agent (void *args)
  * init() is called when the plugin is loaded, before any other functions
  * are called.  Put global initialization here.
  */
-int init (void)
+extern int init (void)
 {
 	pthread_attr_t attr;
 
@@ -453,8 +453,12 @@ int init (void)
 
 	pthread_mutex_lock(&thread_flag_mutex);
 
-	if (!(comp_list = list_create((ListDelF) jobcomp_info_destroy)))
+	if (comp_list)
+		error("Creating duplicate comp_list, possible memory leak");
+	if (!(comp_list = list_create((ListDelF) _jobcomp_info_destroy))) {
+		pthread_mutex_unlock(&thread_flag_mutex);
 		return SLURM_ERROR;
+	}
 
 	if (script_thread) {
 		debug2( "Script thread already running, not starting another");
@@ -464,7 +468,7 @@ int init (void)
 
 	slurm_attr_init(&attr);
 	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
-	pthread_create(&script_thread, &attr, script_agent, NULL);
+	pthread_create(&script_thread, &attr, _script_agent, NULL);
 	
 	pthread_mutex_unlock(&thread_flag_mutex);
 	slurm_attr_destroy(&attr);
@@ -473,7 +477,7 @@ int init (void)
 }
 
 /* Set the location of the script to run*/
-int slurm_jobcomp_set_location (char * location)
+extern int slurm_jobcomp_set_location (char * location)
 {
 	if (location == NULL) {
 		plugin_errno = EACCES;
@@ -495,7 +499,7 @@ int slurm_jobcomp_log_record (struct job_record *record)
 
 	debug3("Entering slurm_jobcomp_log_record");
 
-	if ((job = jobcomp_info_create (record))) 
+	if (!(job = _jobcomp_info_create (record))) 
 		return error ("jobcomp/script: Failed to create job info!");
 
 	pthread_mutex_lock(&comp_list_mutex);
@@ -508,15 +512,15 @@ int slurm_jobcomp_log_record (struct job_record *record)
 }
 
 /* Return the error code of the plugin*/
-int slurm_jobcomp_get_errno(void)
+extern int slurm_jobcomp_get_errno(void)
 {
 	return plugin_errno;
 }
 
 /* Return a string representation of the error */
-const char * slurm_jobcomp_strerror(int errnum)
+extern const char * slurm_jobcomp_strerror(int errnum)
 {
-	return jobcomp_script_strerror (errnum);
+	return _jobcomp_script_strerror (errnum);
 }
 
 static int _wait_for_thread (pthread_t thread_id)
@@ -539,7 +543,7 @@ static int _wait_for_thread (pthread_t thread_id)
 }
 
 /* Called when script unloads */
-int fini ( void )
+extern int fini ( void )
 {
 	int rc = SLURM_SUCCESS;
 
@@ -557,6 +561,7 @@ int fini ( void )
 	if (rc == SLURM_SUCCESS) {
 		pthread_mutex_lock(&comp_list_mutex);
 		list_destroy(comp_list);
+		comp_list = NULL;
 		pthread_mutex_unlock(&comp_list_mutex);
 	}
 

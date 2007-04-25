@@ -9,7 +9,7 @@ END:       The end time of the job (seconds since Epoch)
 JOBID:     The job id of the slurm job
 JOBNAME:   The name of the job
 JOBSTATE:  The state of the job when it ended
-LIMIT:     The time limit of the job (seconds or "UNLIMITED")
+LIMIT:     The time limit of the job (minutes or "UNLIMITED")
 NODES:     The nodes the job ran on or an empty string if it wasn't assigned
 PARTITION: The partiton the job ran on
 PROCS:     Number of processors allocated to the job
