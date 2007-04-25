@@ -19,7 +19,7 @@ documents those changes that are of interest to users and admins.
  - Set supplimental groups for SlurmUser in slurmctld daemon, from
    Anne Marie Wunderlin, Bull.
  - In jobcomp/script: Add ACCOUNT and PROCS (count) to enviromnemt 
-   variables set. Fix bug that prevented UPD and JOBID from being 
+   variables set. Fix bug that prevented UID and JOBID from being 
    overwritten.
 
 * Changes in SLURM 1.1.34
