@@ -45,10 +45,11 @@
 
 #ifdef HAVE_BG
 #define HOSTLIST_BASE 36
-extern char *alpha_num;
 #else
 #define HOSTLIST_BASE 10
 #endif
+
+extern char *alpha_num;
 
 /* Notes:
  *

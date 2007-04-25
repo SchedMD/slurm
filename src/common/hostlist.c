@@ -168,6 +168,8 @@ strong_alias(hostset_nth,		slurm_hostset_nth);
 /* ----[ Internal Data Structures ]---- */
 
 
+char *alpha_num = "0123456789ABCDEFGHIJKLMNOPQRSTUZWXYZ";
+
 #ifdef HAVE_BG		
 /* logic for block node description */
 /* We allocate space for three digits, 
@@ -175,7 +177,6 @@ strong_alias(hostset_nth,		slurm_hostset_nth);
 bool axis[HOSTLIST_BASE][HOSTLIST_BASE][HOSTLIST_BASE];
 int axis_min_x, axis_min_y, axis_min_z;
 int axis_max_x, axis_max_y, axis_max_z;
-char *alpha_num = "0123456789ABCDEFGHIJKLMNOPQRSTUZWXYZ";
 
 static int _get_boxes(char *buf, int max_len);
 static void _clear_grid(void);
