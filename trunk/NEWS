@@ -291,6 +291,9 @@ documents those changes that are of interest to users and admins.
     the code)
  -- Added support for OSX build.
 
+* Changes in SLURM 1.1.36
+=========================
+
 * Changes in SLURM 1.1.35
 =========================
  - In sched/wiki2: Add support for CMD=SIGNALJOB to accept option
