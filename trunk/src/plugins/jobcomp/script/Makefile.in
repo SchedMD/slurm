@@ -78,7 +78,7 @@ am__installdirs = "$(DESTDIR)$(pkglibdir)"
 pkglibLTLIBRARIES_INSTALL = $(INSTALL)
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
 jobcomp_script_la_LIBADD =
-am_jobcomp_script_la_OBJECTS = job_record.lo jobcomp_script.lo
+am_jobcomp_script_la_OBJECTS = jobcomp_script.lo
 jobcomp_script_la_OBJECTS = $(am_jobcomp_script_la_OBJECTS)
 DEFAULT_INCLUDES = -I. -I$(srcdir) -I$(top_builddir) -I$(top_builddir)/slurm
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
@@ -285,7 +285,7 @@ INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common
 pkglib_LTLIBRARIES = jobcomp_script.la
 
 # Text file job completion logging plugin.
-jobcomp_script_la_SOURCES = job_record.c job_record.h jobcomp_script.c
+jobcomp_script_la_SOURCES = jobcomp_script.c
 jobcomp_script_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
 all: all-am
 
@@ -356,7 +356,6 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/job_record.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/jobcomp_script.Plo@am__quote@
 
 .c.o:
