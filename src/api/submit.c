@@ -5,7 +5,7 @@
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>.
- *  UCRL-CODE-226842.
+ *  UCRL-CODE-217948.
  *  
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -71,10 +71,6 @@ slurm_submit_batch_job (job_desc_msg_t *req,
 	bool host_set = false;
 	char host[64];
 
-	slurm_msg_t_init(&req_msg);
-	slurm_msg_t_init(&resp_msg);
-
-
 	/* 
 	 * set Node and session id for this request
 	 */
@@ -82,7 +78,7 @@ slurm_submit_batch_job (job_desc_msg_t *req,
 		req->alloc_sid = getsid(0);
 
 	if ( (req->alloc_node == NULL)
-	    && (gethostname_short(host, sizeof(host)) == 0) ) {
+	    && (getnodename(host, sizeof(host)) == 0) ) {
 		req->alloc_node = host;
 		host_set  = true;
 	}

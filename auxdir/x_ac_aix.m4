@@ -5,7 +5,7 @@
 #    Morris Jette <jette@llnl.gov>
 #
 #  SYNOPSIS:
-#    X_AC_AIX
+#    AC_AIX
 #
 #  DESCRIPTION:
 #    Check for AIX operating system and sets parameters accordingly, 
@@ -31,9 +31,11 @@ AC_DEFUN([X_AC_AIX],
             ac_have_aix="yes"
             ac_with_readline="no"
             AC_DEFINE(HAVE_AIX, 1, [Define to 1 for AIX operating system])
-            ;;
+            AC_DEFINE(USE_ALIAS, 0, 
+                      [Define slurm_ prefix function aliases for plusins]) ;;
       *)    ac_have_aix="no"
-            ;;
+            AC_DEFINE(USE_ALIAS, 1, 
+                      [Define slurm_ prefix function aliases for plugins]) ;;
    esac
 
    AC_SUBST(CMD_LDFLAGS)
@@ -47,21 +49,12 @@ AC_DEFUN([X_AC_AIX],
          AS_HELP_STRING(--with-proctrack=PATH,Specify path to proctrack sources),
          [ PROCTRACKDIR="$withval" ]
       )
-      if test -f "$PROCTRACKDIR/lib/proctrackext.exp"; then
-         CPPFLAGS="-I$PROCTRACKDIR/include $CPPFLAGS"
-         PROCTRACKDIR="$PROCTRACKDIR/lib"
-         AC_SUBST(PROCTRACKDIR)
-         AC_CHECK_HEADERS(proctrack.h)
-         ac_have_aix_proctrack="yes"
-      elif test -f "$prefix/lib/proctrackext.exp"; then
-         PROCTRACKDIR="$prefix/lib"
-         AC_SUBST(PROCTRACKDIR)
-         CPPFLAGS="$CPPFLAGS -I$prefix/include"
-	 AC_CHECK_HEADERS(proctrack.h)
-         ac_have_aix_proctrack="yes"
-      else
+      if test ! -d "$PROCTRACKDIR" -o ! -f "$PROCTRACKDIR/proctrackext.exp"; then
          AC_MSG_WARN([proctrackext.exp is required for AIX proctrack support, specify location with --with-proctrack])
          ac_have_aix_proctrack="no"
+      else
+         AC_SUBST(PROCTRACKDIR)
+         ac_have_aix_proctrack="yes"
       fi
    else
       ac_have_aix_proctrack="no"

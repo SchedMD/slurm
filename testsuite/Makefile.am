@@ -1,3 +1,4 @@
+# $Id$
 
 AUTOMAKE_OPTIONS = dejagnu
 #RUNTESTDEFAULTFLAGS = --srcdir $$srcdir/testsuite

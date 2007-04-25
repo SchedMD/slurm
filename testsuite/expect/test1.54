@@ -11,7 +11,7 @@
 # Copyright (C) 2006 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 # Written by Morris Jette <jette1@llnl.gov>
-# UCRL-CODE-226842.
+# UCRL-CODE-217948.
 # 
 # This file is part of SLURM, a resource management program.
 # For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -40,7 +40,6 @@ print_header $test_id
 
 if {[test_front_end] != 0} {
         send_user "\nThis test is incompatable with front-end systems\n"
-	exit 0
 }
 
 #
@@ -61,7 +60,7 @@ exec $bin_chmod 700 $file_in
 #
 set matches 0
 set timeout $max_job_delay
-set srun_pid [spawn $srun -N1 -n4 --overcommit -l -t1 --multi-prog ./$file_in]
+spawn $srun -N1 -n4 --overcommit -l -t1 --multi-prog $file_in  
 expect {
 	-re "($number): task:($number):offset:($number)" {
 		set label       $expect_out(1,string)
@@ -83,8 +82,9 @@ expect {
 	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
-		slow_kill $srun_pid
+		kill_srun
 		set exit_code 1
+		exp_continue
 	}
 	eof {
 		wait
@@ -118,7 +118,8 @@ close $file
 exec $bin_chmod 700 $file_in
 
 set matches   0
-set srun_pid [spawn $srun -N1 -n4 --overcommit -l -t1 --multi-prog --debugger-test ./$file_in]
+set timed_out 0
+spawn $srun -N1 -n4 --overcommit -l -t1 --multi-prog --debugger-test $file_in
 expect {
 	-re "executable:(/bin/)($alpha)" {
 		if {[string compare $expect_out(2,string) "date"] != 0} {
@@ -127,19 +128,20 @@ expect {
 		if {[string compare $expect_out(2,string) "hostname"] != 0} {
 			incr matches
 		}
-		if {$matches == 4} {
-			slow_kill $srun_pid
-		}
 		exp_continue
 	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
-		slow_kill $srun_pid
+		kill_srun
 		set exit_code 1
+		exp_continue
 	}
 	eof {
 		wait
 	}
+}
+if {$timed_out == 1} {
+	send_user "\nEarly termination is expected, no worries.\n"
 }
 if {$matches != 4} {
 	send_user "\nFAILURE: did not generate full list of executables.\n"
@@ -147,7 +149,7 @@ if {$matches != 4} {
 }
 
 if {$exit_code == 0} {
-	exec $bin_rm -f $file_in
+	exec $bin_rm $file_in
 	send_user "\nSUCCESS\n"
 }
 exit $exit_code

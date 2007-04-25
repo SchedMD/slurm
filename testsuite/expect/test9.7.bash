@@ -7,7 +7,7 @@
 # Copyright (C) 2002 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 # Written by Morris Jette <jette1@llnl.gov>
-# UCRL-CODE-226842.
+# UCRL-CODE-217948.
 # 
 # This file is part of SLURM, a resource management program.
 # For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -75,9 +75,9 @@ do
 	fi
 	sleep $sleep_time
 	if [ $bluegene ]; then
-		$exec2 --job-name=test9.7 -N1-512 -n1 -s -l hostname         >>$log 2>&1
+		$exec2 -N1-512 -n1 -s -l hostname         >>$log 2>&1
 	else
-		$exec2 --job-name=test9.7 -N1-$inx -n$inx -O -s -l hostname  >>$log 2>&1
+		$exec2 -N1-$inx -n$inx -O -s -l hostname  >>$log 2>&1
 	fi
 	rc=$?
 	if [ $rc -ne 0 ]; then

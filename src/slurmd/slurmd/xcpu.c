@@ -4,7 +4,7 @@
  *  Copyright (C) 2006 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>.
- *  UCRL-CODE-226842.
+ *  UCRL-CODE-217948.
  *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -48,8 +48,6 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <dirent.h>
-#include <stdlib.h>
-#include <unistd.h>
 
 #include "src/common/hostlist.h"
 #include "src/common/log.h"
@@ -116,7 +114,7 @@ extern int xcpu_signal(int sig, char *nodes)
 		_sig_name(sig));
 
 	/* For each node, look for processes */
-	while ((node = hostlist_shift(hl))) {
+	while (node = hostlist_shift(hl)) {
 		snprintf(dir_path, sizeof(dir_path), 
 			"%s/%s/xcpu",
 			XCPU_DIR, node);

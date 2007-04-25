@@ -4,7 +4,7 @@
  *  Copyright (C) 2002-2006 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette@llnl.gov>, Kevin Tew <tew1@llnl.gov>, et. al.
- *  UCRL-CODE-226842.
+ *  UCRL-CODE-217948.
  *  
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -125,7 +125,7 @@ void run_backup(void)
 		/* Lock of slurmctld_conf below not important */
 		if (slurmctld_conf.slurmctld_timeout
 		&&  (difftime(time(NULL), last_ping) <
-		     (slurmctld_conf.slurmctld_timeout / 3)))
+		     (slurmctld_conf.slurmctld_timeout / 2)))
 			continue;
 
 		last_ping = time(NULL);
@@ -272,7 +272,8 @@ static void *_background_rpc_mgr(void *no_data)
 	slurm_addr cli_addr;
 	slurm_msg_t *msg = NULL;
 	int error_code;
-	
+	List ret_list = NULL;
+
 	/* Read configuration only */
 	slurmctld_lock_t config_read_lock = { 
 		READ_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
@@ -313,16 +314,21 @@ static void *_background_rpc_mgr(void *no_data)
 		}
 
 		msg = xmalloc(sizeof(slurm_msg_t));
-		slurm_msg_t_init(msg);
-		if(slurm_receive_msg(newsockfd, msg, 0) != 0)
+		msg->conn_fd = newsockfd;
+		ret_list = slurm_receive_msg(newsockfd, msg, 0);
+		if(ret_list) {
+			if(list_count(ret_list)>0) 
+				error("Got %d, expecting 0 from "
+				      "message received",
+				      list_count(ret_list));
+			error_code = _background_process_msg(msg);
+			if ((error_code == SLURM_SUCCESS)
+			&&  (msg->msg_type == REQUEST_SHUTDOWN_IMMEDIATE)
+			&&  (slurmctld_config.shutdown_time == 0))
+				slurmctld_config.shutdown_time = time(NULL);
+			list_destroy(ret_list);
+		} else if(errno != SLURM_SUCCESS) 
 			error("slurm_receive_msg: %m");
-		
-		error_code = _background_process_msg(msg);
-		if ((error_code == SLURM_SUCCESS)
-		    &&  (msg->msg_type == REQUEST_SHUTDOWN_IMMEDIATE)
-		    &&  (slurmctld_config.shutdown_time == 0))
-			slurmctld_config.shutdown_time = time(NULL);
-		
 		slurm_free_msg(msg);
 
 		/* close should only be called when the socket 
@@ -358,7 +364,6 @@ static int _background_process_msg(slurm_msg_t * msg)
 		} else if (super_user && 
 			   (msg->msg_type == REQUEST_CONTROL)) {
 			debug3("Ignoring RPC: REQUEST_CONTROL");
-			error_code = ESLURM_DISABLED;
 		} else {
 			error("Invalid RPC received %d while in standby mode", 
 			      msg->msg_type);
@@ -383,7 +388,6 @@ static int _ping_controller(void)
 	/* 
 	 *  Set address of controller to ping
 	 */
-	slurm_msg_t_init(&req);
 	lock_slurmctld(config_read_lock);
 	debug3("pinging slurmctld at %s", slurmctld_conf.control_addr);
 	slurm_set_addr(&req.address, slurmctld_conf.slurmctld_port, 

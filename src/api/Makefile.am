@@ -1,4 +1,3 @@
-#
 # Makefile for slurm API library
 
 AUTOMAKE_OPTIONS = foreign
@@ -40,20 +39,10 @@ current = $(SLURM_API_CURRENT)
 age     = $(SLURM_API_AGE)
 rev     = $(SLURM_API_REVISION)
 
-lib_LTLIBRARIES = libslurm.la libpmi.la
+lib_LTLIBRARIES = libslurm.la \
+	libpmi.la
 
-# BUILT_SOURCES tells automake that when "make" is called, these targets
-# need to be built before anything else.  For instance, this takes care
-# of libpmi.la's dependency on libslurm.la, as long as you use "make"
-# and NOT "make libpmi.la".
-BUILT_SOURCES = $(VERSION_SCRIPT) libslurm.la
-
-# Note that libslurmhelper is mostly the same as libslurm, except that
-# it exports ALL symbols, including those from libcommon, libeio, etc.
-# Also, libslurmhelper is a convenience library, it is not installed.
-noinst_LTLIBRARIES = libslurmhelper.la
-
-slurmapi_src =           \
+libslurm_la_SOURCES =    \
 	allocate.c       \
 	cancel.c         \
 	checkpoint.c     \
@@ -67,57 +56,36 @@ slurmapi_src =           \
 	partition_info.c \
 	signal.c         \
 	slurm_pmi.c slurm_pmi.h	\
-	step_ctx.c step_ctx.h \
-	step_io.c step_io.h \
-	step_launch.c step_launch.h \
-	pmi_server.c pmi_server.h \
+	spawn.c          \
 	submit.c         \
 	suspend.c        \
-	triggers.c       \
 	reconfigure.c    \
-	update_config.c
-
-common_dir = $(top_builddir)/src/common
-
-slurmapi_add = 				\
-	$(common_dir)/libcommon.la	\
-	$(common_dir)/libspank.la       \
-	$(common_dir)/libeio.la		\
-	-lpthread
-
-libslurm_la_SOURCES = $(slurmapi_src)
-libslurm_la_LIBADD = $(slurmapi_add)
-libslurm_la_LDFLAGS        = \
-	$(LIB_LDFLAGS) \
-	-version-info $(current):$(rev):$(age) \
-	$(OTHER_FLAGS)
-
-libslurmhelper_la_SOURCES = $(slurmapi_src)
-libslurmhelper_la_LIBADD = $(slurmapi_add)
-libslurmhelper_la_LDFLAGs = \
-	$(LIB_LDFLAGS) \
-	-version-info $(current):$(rev):$(age)
+	update_config.c  
 
 libpmi_la_SOURCES = pmi.c
-libpmi_la_LIBADD = $(top_builddir)/src/api/libslurm.la
+
+BUILT_SOURCES = 	\
+	$(VERSION_SCRIPT)
+
+libslurm_la_LIBADD	= $(top_builddir)/src/common/libcommon.la -lpthread
+libpmi_la_LIBADD	= $(top_builddir)/src/api/libslurm.la -lslurm
+
+libslurm_la_LDFLAGS        = \
+	$(LIB_LDFLAGS)       \
+	-version-info $(current):$(rev):$(age) \
+	$(OTHER_FLAGS)
 libpmi_la_LDFLAGS = $(LIB_LDFLAGS)
 
 force:
 $(libslurm_la_LIBADD) : force
 	@cd `dirname $@` && $(MAKE) `basename $@`
 
-# FIXME - don't export the client_io_handler_ symbols once srun is no longer
-#         calling them directly
 $(VERSION_SCRIPT) :
 	(echo "{ global:";   \
 	 echo "   islurm_*;"; \
 	 echo "   slurm_*;"; \
-	 echo "   client_io_handler_*;"; \
 	 echo "  local: *;"; \
 	 echo "};") > $(VERSION_SCRIPT)
-
-CLEANFILES = \
-	$(VERSION_SCRIPT)
 
 DISTCLEANFILES = \
 	$(VERSION_SCRIPT)

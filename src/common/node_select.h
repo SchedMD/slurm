@@ -6,7 +6,7 @@
  *  Copyright (C) 2004-2006 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
- *  UCRL-CODE-226842.
+ *  UCRL-CODE-217948.
  *  
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -92,21 +92,18 @@ extern int select_g_get_select_nodeinfo (struct node_record *node_ptr,
 
 /* 
  * Update select data for a specific node record for a specific job 
+ * IN cr_info   - type of data to update for a given job record
  * IN job_ptr - current job record
  */
-extern int select_g_update_nodeinfo (struct job_record *job_ptr);
+extern int select_g_update_nodeinfo (struct job_record *job_ptr, 
+				     enum select_data_info cr_info);
 
 /* 
  * Update specific block (usually something has gone wrong)  
+ * IN cr_info   - type of data to update for a given job record
  * IN part_desc_ptr - information about the block
  */
 extern int select_g_update_block (update_part_msg_t *part_desc_ptr);
-
-/* 
- * Update specific sub nodes (usually something has gone wrong)  
- * IN part_desc_ptr - information about the block
- */
-extern int select_g_update_sub_node (update_part_msg_t *part_desc_ptr);
 
 /* 
  * Get select data from a plugin

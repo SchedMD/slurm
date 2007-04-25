@@ -6,7 +6,7 @@
  *  Copyright (C) 2004-2006 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Dan Phung <phung4@llnl.gov> Danny Auble <da@llnl.gov>
- *  UCRL-CODE-226842.
+ *  UCRL-CODE-217948.
  *  
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -38,14 +38,9 @@
 \*****************************************************************************/
 
 #include "bluegene.h"
-#include "src/slurmctld/trigger_mgr.h"
-#include <fcntl.h>
- 
+
 #define HUGE_BUF_SIZE (1024*16)
 
-/* Change BLOCK_STATE_VERSION value when changing the state save
- * format i.e. pack_block() */
-#define BLOCK_STATE_VERSION      "VER000"
 
 /* global */
 int procs_per_node = 512;
@@ -232,352 +227,12 @@ extern int fini ( void )
 /* We rely upon DB2 to save and restore BlueGene state */
 extern int select_p_state_save(char *dir_name)
 {
-	ListIterator itr;
-	bg_record_t *bg_record = NULL;
-	int error_code = 0, log_fd;
-	char *old_file, *new_file, *reg_file;
-	uint32_t blocks_packed = 0, tmp_offset, block_offset;
-	Buf buffer = init_buf(BUF_SIZE);
-	DEF_TIMERS;
-
-	START_TIMER;
-	/* write header: time */
-	packstr(BLOCK_STATE_VERSION, buffer);
-	block_offset = get_buf_offset(buffer);
-	pack32(blocks_packed, buffer);
-	pack_time(time(NULL), buffer);
-
-	/* write block records to buffer */
-	slurm_mutex_lock(&block_state_mutex);
-	itr = list_iterator_create(bg_list);
-	while((bg_record = list_next(itr))) {
-		/* on real bgl systems we only want to keep track of
-		 * the blocks in an error state
-		 */
-#ifdef HAVE_BG_FILES
-		if(bg_record->state != RM_PARTITION_ERROR)
-			continue;
-#endif
-		xassert(bg_record->bg_block_id != NULL);
-				
-		pack_block(bg_record, buffer);
-		blocks_packed++;
-	}
-	list_iterator_destroy(itr);
-	slurm_mutex_unlock(&block_state_mutex);
-	tmp_offset = get_buf_offset(buffer);
-	set_buf_offset(buffer, block_offset);
-	pack32(blocks_packed, buffer);
-	set_buf_offset(buffer, tmp_offset);
-	/* Maintain config read lock until we copy state_save_location *\
-	\* unlock_slurmctld(part_read_lock);          - see below      */
-
-	/* write the buffer to file */
-	old_file = xstrdup(slurmctld_conf.state_save_location);
-	xstrcat(old_file, "/block_state.old");
-	reg_file = xstrdup(slurmctld_conf.state_save_location);
-	xstrcat(reg_file, "/block_state");
-	new_file = xstrdup(slurmctld_conf.state_save_location);
-	xstrcat(new_file, "/block_state.new");
-	log_fd = creat(new_file, 0600);
-	if (log_fd == 0) {
-		error("Can't save state, error creating file %s, %m",
-		      new_file);
-		error_code = errno;
-	} else {
-		int pos = 0, nwrite = get_buf_offset(buffer), amount;
-		char *data = (char *)get_buf_data(buffer);
-
-		while (nwrite > 0) {
-			amount = write(log_fd, &data[pos], nwrite);
-			if ((amount < 0) && (errno != EINTR)) {
-				error("Error writing file %s, %m", new_file);
-				error_code = errno;
-				break;
-			}
-			nwrite -= amount;
-			pos    += amount;
-		}
-		fsync(log_fd);
-		close(log_fd);
-	}
-	if (error_code)
-		(void) unlink(new_file);
-	else {			/* file shuffle */
-		(void) unlink(old_file);
-		(void) link(reg_file, old_file);
-		(void) unlink(reg_file);
-		(void) link(new_file, reg_file);
-		(void) unlink(new_file);
-	}
-	xfree(old_file);
-	xfree(reg_file);
-	xfree(new_file);
-
-	free_buf(buffer);
-	END_TIMER;
-	debug3("select_p_state_save %s", TIME_STR);
 	return SLURM_SUCCESS;
 }
 
 extern int select_p_state_restore(char *dir_name)
 {
-	int error_code = SLURM_SUCCESS;
-	int state_fd, i, j=0;
-	char *state_file = NULL;
-	Buf buffer = NULL;
-	char *data = NULL;
-	int data_size = 0;
-	node_select_info_msg_t *node_select_ptr = NULL;
-	ListIterator itr;
-	bg_record_t *bg_record = NULL;
-	bg_info_record_t *bg_info_record = NULL;
-	bitstr_t *node_bitmap = NULL, *ionode_bitmap = NULL;
-	int geo[BA_SYSTEM_DIMENSIONS];
-	char temp[256];
-	List results = NULL;
-	int data_allocated, data_read = 0;
-	char *ver_str = NULL;
-	uint16_t ver_str_len;
-	struct passwd *pw_ent = NULL;
-	int blocks = 0;
-
-	debug("bluegene: select_p_state_restore");
-
-	if(!dir_name) {
-		debug2("Starting bluegene with clean slate");
-		return SLURM_SUCCESS;
-	}
-	state_file = xstrdup(dir_name);
-	xstrcat(state_file, "/block_state");
-	state_fd = open(state_file, O_RDONLY);
-	if(state_fd < 0) {
-		error("No block state file (%s) to recover", state_file);
-		xfree(state_file);
-		return SLURM_SUCCESS;
-	} else {
-		data_allocated = BUF_SIZE;
-		data = xmalloc(data_allocated);
-		while (1) {
-			data_read = read(state_fd, &data[data_size],
-					 BUF_SIZE);
-			if (data_read < 0) {
-				if (errno == EINTR)
-					continue;
-				else {
-					error("Read error on %s: %m", 
-					      state_file);
-					break;
-				}
-			} else if (data_read == 0)	/* eof */
-				break;
-			data_size      += data_read;
-			data_allocated += data_read;
-			xrealloc(data, data_allocated);
-		}
-		close(state_fd);
-	}
-	xfree(state_file);
-
-	buffer = create_buf(data, data_size);
-
-	/*
-	 * Check the data version so that when the format changes, we 
-	 * we don't try to unpack data using the wrong format routines
-	 */
-	if(size_buf(buffer)
-	   >= sizeof(uint16_t) + strlen(BLOCK_STATE_VERSION)) {
-	        char *ptr = get_buf_data(buffer);
-		
-	        if (!memcmp(&ptr[sizeof(uint16_t)], BLOCK_STATE_VERSION, 3)) {
-		        safe_unpackstr_xmalloc(&ver_str, &ver_str_len, buffer);
-		        debug3("Version string in block_state header is %s",
-			       ver_str);
-		}
-	}
-	if (ver_str && (strcmp(ver_str, BLOCK_STATE_VERSION) != 0)) {
-		error("Can not recover block state, "
-		      "data version incompatable");
-		xfree(ver_str);
-		free_buf(buffer);
-		return EFAULT;
-	}
-	xfree(ver_str);
-	if(select_g_unpack_node_info(&node_select_ptr, buffer) == SLURM_ERROR) 
-		goto unpack_error;
-	
-	reset_ba_system(false);
-
-	node_bitmap = bit_alloc(node_record_count);	
-	ionode_bitmap = bit_alloc(bluegene_numpsets);	
-	itr = list_iterator_create(bg_list);
-	for (i=0; i<node_select_ptr->record_count; i++) {
-		bg_info_record = &(node_select_ptr->bg_info_array[i]);
-		
-		bit_nclear(node_bitmap, 0, bit_size(node_bitmap) - 1);
-		bit_nclear(ionode_bitmap, 0, bit_size(ionode_bitmap) - 1);
-		
-		j = 0;
-		while(bg_info_record->ionode_inx[j] >= 0) {
-			if (bg_info_record->ionode_inx[j+1]
-			    >= bluegene_numpsets) {
-				fatal("Job state recovered incompatable with "
-					"bluegene.conf. ionodes=%u state=%d",
-					bluegene_numpsets,
-					bg_info_record->ionode_inx[j+1]);
-			}
-			bit_nset(ionode_bitmap,
-				 bg_info_record->ionode_inx[j],
-				 bg_info_record->ionode_inx[j+1]);
-			j += 2;
-		}		
-					
-		while((bg_record = list_next(itr))) {
-			if(bit_equal(bg_record->bitmap, node_bitmap)
-			   && bit_equal(bg_record->ionode_bitmap,
-					ionode_bitmap)) 
-				break;			
-		}
-		list_iterator_reset(itr);
-		if(bg_record) {
-			slurm_mutex_lock(&block_state_mutex);
-			if(bg_info_record->state == RM_PARTITION_ERROR)
-				bg_record->job_running = BLOCK_ERROR_STATE;
-			bg_record->state = bg_info_record->state;
-			slurm_mutex_unlock(&block_state_mutex);
-			blocks++;
-		} else {
-			int ionodes = 0;
-			char *name = NULL;
-			/* make the record that wasn't there (only for
-			 * dynamic systems that are in emulation mode */
-#ifdef HAVE_BG_FILES
-			error("Previous block %s is gone, not adding.",
-			      bg_info_record->bg_block_id);
-			continue;
-#endif
-			if(bluegene_layout_mode != LAYOUT_DYNAMIC) {
-				error("Only adding state save blocks in "
-				      "Dynamic block creation Mode not "
-				      "adding %s",
-				      bg_info_record->bg_block_id);
-				continue;
-			}
-	
-			bg_record = xmalloc(sizeof(bg_record_t));
-			bg_record->bg_block_id =
-				xstrdup(bg_info_record->bg_block_id);
-			bg_record->nodes =
-				xstrdup(bg_info_record->nodes);
-			bg_record->ionodes =
-				xstrdup(bg_info_record->ionodes);
-			bg_record->ionode_bitmap = bit_copy(ionode_bitmap);
-			bg_record->state = bg_info_record->state;
-			bg_record->quarter = bg_info_record->quarter;
-			bg_record->nodecard = bg_info_record->nodecard;
-			if(bg_info_record->state == RM_PARTITION_ERROR)
-				bg_record->job_running = BLOCK_ERROR_STATE;
-			else
-				bg_record->job_running = NO_JOB_RUNNING;
-			bg_record->bp_count = bit_size(node_bitmap);
-			bg_record->node_cnt = bg_info_record->node_cnt;
-			if(bluegene_bp_node_cnt > bg_record->node_cnt) {
-				ionodes = bluegene_bp_node_cnt 
-					/ bg_record->node_cnt;
-				bg_record->cpus_per_bp =
-					procs_per_node / ionodes;
-			} else {
-				bg_record->cpus_per_bp = procs_per_node;
-			}
-			bg_record->node_use = bg_info_record->node_use;
-			bg_record->conn_type = bg_info_record->conn_type;
-			bg_record->boot_state = 0;
-
-			process_nodes(bg_record);
-
-			slurm_conf_lock();
-			bg_record->target_name = 
-				xstrdup(slurmctld_conf.slurm_user_name);
-			bg_record->user_name = 
-				xstrdup(slurmctld_conf.slurm_user_name);
-			slurm_conf_unlock();
-			if((pw_ent = getpwnam(bg_record->user_name)) 
-			   == NULL) {
-				error("getpwnam(%s): %m", 
-				      bg_record->user_name);
-			} else {
-				bg_record->user_uid = pw_ent->pw_uid;
-			} 
-				
-			bg_record->blrtsimage =
-				xstrdup(bg_info_record->blrtsimage);
-			bg_record->linuximage = 
-				xstrdup(bg_info_record->linuximage);
-			bg_record->mloaderimage =
-				xstrdup(bg_info_record->mloaderimage);
-			bg_record->ramdiskimage =
-				xstrdup(bg_info_record->ramdiskimage);
-
-			for(j=0; j<BA_SYSTEM_DIMENSIONS; j++) 
-				geo[j] = bg_record->geo[j];
-				
-			results = list_create(NULL);
-			name = set_bg_block(results,
-					    bg_record->start, 
-					    geo, 
-					    bg_record->conn_type);
-			if(!name) {
-				error("I was unable to "
-				      "make the "
-				      "requested block.");
-				list_destroy(results);
-				destroy_bg_record(bg_record);
-				continue;
-			}
-
-			slurm_conf_lock();
-			snprintf(temp, sizeof(temp), "%s%s",
-				 slurmctld_conf.node_prefix,
-				 name);
-			slurm_conf_unlock();
-
-			xfree(name);
-			if(strcmp(temp, bg_record->nodes)) {
-				fatal("given list of %s "
-				      "but allocated %s, "
-				      "your order might be "
-				      "wrong in the "
-				      "bluegene.conf",
-				      bg_record->nodes,
-				      temp);
-			}
-			if(bg_record->bg_block_list)
-				list_destroy(bg_record->bg_block_list);
-			bg_record->bg_block_list =
-				list_create(destroy_ba_node);
-			copy_node_path(results, bg_record->bg_block_list);
-			list_destroy(results);			
-			
-			configure_block(bg_record);
-			blocks++;
-			list_push(bg_list, bg_record);		
-		}
-	}
-	FREE_NULL_BITMAP(ionode_bitmap);
-	FREE_NULL_BITMAP(node_bitmap);
-	list_iterator_destroy(itr);
-
-	sort_bg_record_inc_size(bg_list);
-		
-	info("Recovered %d blocks", blocks);
-	select_g_free_node_info(&node_select_ptr);
-	free_buf(buffer);
-	return error_code;
-
-unpack_error:
-	error("Incomplete block data checkpoint file");
-	free_buf(buffer);
-	return SLURM_FAILURE;
+	return SLURM_SUCCESS;
 }
 
 /* Sync BG blocks to currently active jobs */
@@ -694,28 +349,11 @@ extern int select_p_pack_node_info(time_t last_query_time, Buf *buffer_ptr)
 			error("select_p_pack_node_info: no bg_list");
 			return SLURM_ERROR;
 		}
-		/*
-		 * get all the blocks we are freeing since they have
-		 * been moved here
-		 */
-		if(bg_freeing_list) {
-			slurm_mutex_lock(&block_state_mutex);
-			itr = list_iterator_create(bg_freeing_list);
-			while ((bg_record = (bg_record_t *) list_next(itr)) 
-			       != NULL) {
-				xassert(bg_record->bg_block_id != NULL);
-				
-				pack_block(bg_record, buffer);
-				blocks_packed++;
-			}
-			list_iterator_destroy(itr);
-			slurm_mutex_unlock(&block_state_mutex);
-		} 
 		tmp_offset = get_buf_offset(buffer);
 		set_buf_offset(buffer, 0);
 		pack32(blocks_packed, buffer);
 		set_buf_offset(buffer, tmp_offset);
-		
+
 		*buffer_ptr = buffer;
 	}
 
@@ -730,7 +368,8 @@ extern int select_p_get_select_nodeinfo (struct node_record *node_ptr,
        return SLURM_SUCCESS;
 }
 
-extern int select_p_update_nodeinfo (struct job_record *job_ptr)
+extern int select_p_update_nodeinfo (struct job_record *job_ptr,
+				     enum select_data_info info)
 {
        return SLURM_SUCCESS;
 }
@@ -763,7 +402,6 @@ extern int select_p_update_block (update_part_msg_t *part_desc_ptr)
 		bg_record->job_running = BLOCK_ERROR_STATE;
 		bg_record->state = RM_PARTITION_ERROR;
 		slurm_mutex_unlock(&block_state_mutex);
-		trigger_block_error();
 	} else if(part_desc_ptr->state_up){
 		slurm_mutex_lock(&block_state_mutex);
 		bg_record->job_running = NO_JOB_RUNNING;
@@ -774,274 +412,6 @@ extern int select_p_update_block (update_part_msg_t *part_desc_ptr)
 	}
 	info("%s",reason);
 	last_bg_update = time(NULL);
-	return rc;
-}
-
-extern int select_p_update_sub_node (update_part_msg_t *part_desc_ptr)
-{
-	int rc = SLURM_SUCCESS;
-	bg_record_t *bg_record = NULL, *found_record = NULL;
-	time_t now;
-	char reason[128], tmp[64], time_str[32];
-	blockreq_t blockreq; 
-	int i = 0, j = 0;
-	char coord[BA_SYSTEM_DIMENSIONS];
-	char ionodes[128];
-	int set = 0;
-	int set_error = 0;
-	bitstr_t *ionode_bitmap = NULL;
-	List requests = NULL;
-	List delete_list = NULL;
-	ListIterator itr;
-	
-	if(bluegene_layout_mode != LAYOUT_DYNAMIC) {
-		info("You can't use this call unless you are on a Dynamically "
-		     "allocated system.  Please use update BlockName instead");
-		rc = SLURM_ERROR;
-		goto end_it;
-	}
-
-	memset(coord, -1, BA_SYSTEM_DIMENSIONS);
-	memset(ionodes, 0, 128);
-	if(!part_desc_ptr->name) {
-		error("update_sub_node: No name specified");
-		rc = SLURM_ERROR;
-		goto end_it;
-				
-	}
-
-	now = time(NULL);
-	slurm_make_time_str(&now, time_str, sizeof(time_str));
-	snprintf(tmp, sizeof(tmp), "[SLURM@%s]", time_str);
-			
-	while (part_desc_ptr->name[j] != '\0') {
-		if (part_desc_ptr->name[j] == '[') {
-			if(set<1) {
-				rc = SLURM_ERROR;
-				goto end_it;
-			}
-			i = j++;
-			if((part_desc_ptr->name[j] < '0'
-			    || part_desc_ptr->name[j] > 'Z'
-			    || (part_desc_ptr->name[j] > '9' 
-				&& part_desc_ptr->name[j] < 'A'))) {
-				error("update_sub_node: sub part is empty");
-				rc = SLURM_ERROR;
-				goto end_it;
-			}
-			while(part_desc_ptr->name[i] != '\0') {
-				if(part_desc_ptr->name[i] == ']') 
-					break;
-				i++;
-			}
-			if(part_desc_ptr->name[i] != ']') {
-				error("update_sub_node: "
-				      "No close (']') on sub part");
-				rc = SLURM_ERROR;
-				goto end_it;
-			}
-			
-			strncpy(ionodes, part_desc_ptr->name+j, i-j); 
-			set++;
-			break;
-		} else if((part_desc_ptr->name[j] >= '0'
-			   && part_desc_ptr->name[j] <= '9')
-			  || (part_desc_ptr->name[j] >= 'A'
-			      && part_desc_ptr->name[j] <= 'Z')) {
-			if(set) {
-				rc = SLURM_ERROR;
-				goto end_it;
-			}
-			for(i = 0; i < BA_SYSTEM_DIMENSIONS; i++) {
-				if((part_desc_ptr->name[i] >= '0'
-				    && part_desc_ptr->name[i] <= '9')
-				   || (part_desc_ptr->name[i] >= 'A'
-				      && part_desc_ptr->name[i] <= 'Z')) {
-					error("update_sub_node: "
-					      "misformatted name given %s",
-					      part_desc_ptr->name);
-					rc = SLURM_ERROR;
-					goto end_it;
-				}
-			}
-			strncpy(coord, part_desc_ptr->name+j,
-				BA_SYSTEM_DIMENSIONS); 
-			
-			j += BA_SYSTEM_DIMENSIONS-1;
-			set++;
-		}
-		j++;
-	}
-	
-	if(set != 2) {
-		error("update_sub_node: "
-		      "I didn't get the base partition and the sub part.");
-		rc = SLURM_ERROR;
-		goto end_it;
-	}
-	ionode_bitmap = bit_alloc(bluegene_numpsets);
-	bit_unfmt(ionode_bitmap, ionodes);		
-
-	requests = list_create(destroy_bg_record);
-	
-	blockreq.block = coord;
-	blockreq.blrtsimage = NULL;
-	blockreq.linuximage = NULL;
-	blockreq.mloaderimage = NULL;
-	blockreq.ramdiskimage = NULL;
-	blockreq.conn_type = SELECT_SMALL;
-	blockreq.nodecards = 16;
-	blockreq.quarters = 0;
-	add_bg_record(requests, NULL, &blockreq);
-	
-	delete_list = list_create(NULL);
-	while((bg_record = list_pop(requests))) {
-		set_error = 0;
-		if(bit_overlap(bg_record->ionode_bitmap, ionode_bitmap))
-			set_error = 1;
-		
-		slurm_mutex_lock(&block_state_mutex);
-		itr = list_iterator_create(bg_list);
-		while((found_record = list_next(itr))) {
-			if(!found_record || (bg_record == found_record))
-				continue;
-			if(bit_equal(bg_record->bitmap, found_record->bitmap)
-			   && bit_equal(bg_record->ionode_bitmap, 
-					found_record->ionode_bitmap)) {
-				debug2("block %s[%s] already there",
-				       found_record->nodes, 
-				       found_record->ionodes);
-				/* we don't need to set this error, it
-				   doesn't overlap
-				*/
-				if(!set_error)
-					break;
-				
-				snprintf(reason, sizeof(reason),
-					 "update_sub_node: "
-					 "Admin set block %s state to %s %s",
-					 found_record->bg_block_id, 
-					 _block_state_str(
-						 part_desc_ptr->state_up),
-					 tmp); 
-				info("%s",reason);
-				if(found_record->job_running 
-				   > NO_JOB_RUNNING) {
-					slurm_fail_job(
-						found_record->job_running);
-				}
-			
-				if(!part_desc_ptr->state_up) {
-					found_record->job_running =
-						BLOCK_ERROR_STATE;
-					found_record->state =
-						RM_PARTITION_ERROR;
-					trigger_block_error();
-				} else if(part_desc_ptr->state_up){
-					found_record->job_running =
-						NO_JOB_RUNNING;
-					found_record->state =
-						RM_PARTITION_FREE;
-				} else {
-					error("update_sub_node: "
-					      "Unknown state %d given",
-					      part_desc_ptr->state_up);
-					rc = SLURM_ERROR;
-					break;
-				}	
-				break;
-			} else if(!set_error
-				  && bit_equal(bg_record->bitmap,
-					       found_record->bitmap)
-				  && bit_overlap(
-					  bg_record->ionode_bitmap, 
-					  found_record->ionode_bitmap)) {
-				break;
-			}
-			
-		}
-		list_iterator_destroy(itr);
-		slurm_mutex_unlock(&block_state_mutex);
-		/* we already found an existing record */
-		if(found_record) {
-			destroy_bg_record(bg_record);
-			continue;
-		}
-		/* we need to add this record since it doesn't exist */
-		if(configure_block(bg_record) == SLURM_ERROR) {
-			destroy_bg_record(bg_record);
-			error("update_sub_node: "
-			      "unable to configure block in api");
-		}
-		debug2("adding block %s to fill in small blocks "
-		       "around bad blocks",
-		       bg_record->bg_block_id);
-		print_bg_record(bg_record);
-		slurm_mutex_lock(&block_state_mutex);
-		list_append(bg_list, bg_record);
-		slurm_mutex_unlock(&block_state_mutex);
-		
-		/* We are just adding the block not deleting any or
-		   setting this one to an error state.
-		*/
-		if(!set_error)
-			continue;
-				
-		if(!part_desc_ptr->state_up) {
-			bg_record->job_running = BLOCK_ERROR_STATE;
-			bg_record->state = RM_PARTITION_ERROR;
-			trigger_block_error();
-		} else if(part_desc_ptr->state_up){
-			bg_record->job_running = NO_JOB_RUNNING;
-			bg_record->state = RM_PARTITION_FREE;
-		} else {
-			error("update_sub_node: Unknown state %d given",
-			      part_desc_ptr->state_up);
-			rc = SLURM_ERROR;
-			continue;
-		}
-		snprintf(reason, sizeof(reason),
-			 "update_sub_node: "
-			 "Admin set block %s state to %s %s",
-			 bg_record->bg_block_id, 
-			 _block_state_str(part_desc_ptr->state_up),
-			 tmp); 
-		info("%s",reason);
-				
-		/* remove overlapping blocks */
-		slurm_mutex_lock(&block_state_mutex);
-		itr = list_iterator_create(bg_list);
-		while((found_record = list_next(itr))) {
-			if ((!found_record) || (bg_record == found_record))
-				continue;
-			if(!blocks_overlap(bg_record, found_record)) {
-				debug2("block %s isn't part of %s",
-				       found_record->bg_block_id, 
-				       bg_record->bg_block_id);
-				continue;
-			}
-			debug2("removing block %s because there is something "
-			       "wrong with part of the base partition",
-			       found_record->bg_block_id);
-			if(found_record->job_running > NO_JOB_RUNNING) {
-				slurm_fail_job(found_record->job_running);
-			}
-			list_push(delete_list, found_record);
-			list_remove(itr);
-			num_block_to_free++;
-		}		
-		list_iterator_destroy(itr);
-		free_block_list(delete_list);
-		slurm_mutex_unlock(&block_state_mutex);		
-	}
-	list_destroy(delete_list);
-	FREE_NULL_BITMAP(ionode_bitmap);
-		
-	/* This only works for the error state, not free */
-	
-	last_bg_update = time(NULL);
-	
-end_it:	
 	return rc;
 }
 
@@ -1130,7 +500,7 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 				     SELECT_DATA_MAX_PROCS, 
 				     &tmp);
 	
-		if(job_desc->min_nodes == (uint32_t) NO_VAL)
+		if(job_desc->min_nodes == NO_VAL)
 			return SLURM_SUCCESS;
 		select_g_get_jobinfo(job_desc->select_jobinfo,
 				     SELECT_DATA_GEOMETRY, &req_geometry);
@@ -1170,8 +540,7 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 			job_desc->min_nodes = tmp;
 			job_desc->num_procs = procs_per_node * tmp;
 		} else { 
-			if(job_desc->min_nodes <= bluegene_nodecard_node_cnt
-			   && bluegene_nodecard_ionode_cnt)
+			if(job_desc->min_nodes <= bluegene_nodecard_node_cnt)
 				job_desc->min_nodes = 
 					bluegene_nodecard_node_cnt;
 			else if(job_desc->min_nodes 
@@ -1188,7 +557,7 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 			job_desc->min_nodes = 1;
 		}
 		
-		if(job_desc->max_nodes == (uint32_t) NO_VAL) 
+		if(job_desc->max_nodes == NO_VAL) 
 			return SLURM_SUCCESS;
 		
 		if(job_desc->max_nodes > bluegene_bp_node_cnt) {
@@ -1202,8 +571,7 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 			job_desc->max_nodes = tmp;
 			tmp = NO_VAL;
 		} else {
-			if(job_desc->max_nodes <= bluegene_nodecard_node_cnt
-			   && bluegene_nodecard_ionode_cnt)
+			if(job_desc->max_nodes <= bluegene_nodecard_node_cnt)
 				job_desc->max_nodes = 
 					bluegene_nodecard_node_cnt;
 			else if(job_desc->max_nodes 

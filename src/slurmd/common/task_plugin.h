@@ -4,7 +4,7 @@
  *  Copyright (C) 2005 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
- *  UCRL-CODE-226842.
+ *  UCRL-CODE-217948.
  *  
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -59,35 +59,6 @@ extern int slurmd_task_fini(void);
  *                          P L U G I N   C A L L S                       *
  **************************************************************************
  */
-
-/*
- * Slurmd has received a launch request.
- *
- * RET - slurm error code
- */
-extern int slurmd_launch_request( uint32_t job_id, launch_tasks_request_msg_t *req, uint32_t node_id );
-
-/*
- * Slurmd is reserving resources for the task.
- *
- * RET - slurm error code
- */
-extern int slurmd_reserve_resources( uint32_t job_id, launch_tasks_request_msg_t *req, uint32_t node_id );
-
-/*
- * Slurmd is releasing resources for the task.
- *
- * RET - slurm error code
- */
-extern int slurmd_release_resources( uint32_t job_id );
-
-/*
- * Note that a task launch is about to occur.
- * Run before setting UID to the user.
- *
- * RET - slurm error code
- */
-extern int pre_setuid(slurmd_job_t *job);
 
 /*
  * Note that a task launch is about to occur.

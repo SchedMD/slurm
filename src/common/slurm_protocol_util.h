@@ -4,7 +4,7 @@
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Kevin Tew <tew1@llnl.gov> et. al.
- *  UCRL-CODE-226842.
+ *  UCRL-CODE-217948.
  *  
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -86,7 +86,6 @@ update_header(header_t * header, uint32_t msg_length);
 
 
 /* log the supplied slurm task launch message as debug3() level */
-extern void slurm_print_launch_task_msg(launch_tasks_request_msg_t * msg,
-					char *name);
+extern void slurm_print_launch_task_msg(launch_tasks_request_msg_t * msg);
 
 #endif /* !_SLURM_PROTOCOL_UTIL_H */

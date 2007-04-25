@@ -1,18 +1,11 @@
-This information is meant primarily for the Slurm developers. 
-System administrators should read the instructions at
-http://www.llnl.gov/linux/slurm/quickstart_admin.html
-(also found in the file doc/html/quickstart_admin.shtml).
-The "INSTALL" file contains generic Linux build instructions.
-
 Simple build/install on Linux:
+  ./autogen.sh
   ./configure --enable-debug \
               --prefix=<install-dir> --sysconfdir=<config-dir>
   make
   make install
 
-If you make changes to any auxdir/* or Makefile.am file, then run
-_snowflake_ (where there are recent versions of autoconf, automake 
-and libtool installed):
+If you make changes to Makefile.am files, then on _MCR_, run
  ./autogen.sh
 then check-in the new Makefile.am and Makefile.in files
 
@@ -33,7 +26,8 @@ Linux cluster (See BlueGene and AIX specific notes below for some differences).
    svn copy https://eris.llnl.gov/svn/slurm/trunk \
      https://eris.llnl.gov/svn/slurm/tags/slurm-1-2-0-0-pre3 \
      -m "description"
-3. Use the rpm make target to create the new RPMs. This requires a .rpmmacros (.rpmrc for newer versions of rpmbuild) file containing:
+3. Use the rpm make target to create the new RPMs. This requires a .rpmmacros
+   (.rpmrc for newer versions of rpmbuild) file containing:
 	%_slurm_sysconfdir      /etc/slurm
 	%_enable_debug    "--enable-debug"
    I usually build with using the following syntax:
@@ -51,14 +45,14 @@ Linux cluster (See BlueGene and AIX specific notes below for some differences).
    ncftp upload.sf.net
    cd upload
    put filename
-   Use SourceForge admin tool to add new release, including changelog.
+   Use SourceForge admin tool to ad new release, including changelog.
 
 BlueGene build notes:
 3. Use the rpm make target to create the new RPMs. This requires a .rpmmacros
    (.rpmrc for newer versions of rpmbuild) file containing:
 	%_slurm_sysconfdir      /etc/slurm
 	%_enable_debug         "--enable-debug"
-	%with_cflags		CFLAGS=-m64
+	%with_cflags		CFLAGS=-m64 CXX="g++ -m64"
    Build on Service Node with using the following syntax
    build -s https://eris.llnl.gov/svn/slurm/tags/slurm-1-2-0-0-pre3
  4. Copy RPMs to /usr/admin/sles/llnl/RPMS-SLES9
@@ -67,6 +61,7 @@ BlueGene build notes:
 
 To build and run on AIX:
 0. svn co https://eris.llnl.gov/svn/slurm/trunk slurm
+   svn co https://eris.llnl.gov/svn/slurm/private/proctrack-aix/trunk proctrack
    svn co https://eris.llnl.gov/svn/buildfarm/trunk buildfarm
    put the buildfarm directory in your search path
    Also, you will need two commands to appear FIRST in your PATH:
@@ -76,11 +71,11 @@ To build and run on AIX:
 
    I do this by making symlinks to those commands in the buildfarm directory,
    then making the buildfarm directory the first one in my PATH.
-   Also, make certain that the "proctrack" rpm is installed.
 1. export OBJECT_MODE=32
 2. Build with:
    ./configure --enable-debug --prefix=/opt/freeware \
 	--sysconfdir=/opt/freeware/etc/slurm
+        --with-proctrack=<your directory>/proctrack \
 	--with-ssl=/opt/freeware --with-munge=/opt/freeware
    make
    make uninstall  # remove old shared libraries, aix caches them
@@ -97,9 +92,10 @@ To build and run on AIX:
         %_defaultdocdir         %{_prefix}/doc
 
 	%_enable_debug    "--enable-debug"
+	%with_proctrack   "--with-proctrack=<your directory>/proctrack"
 	%with_ssl         "--with-ssl=/opt/freeware"
 	%with_munge       "--with-munge=/opt/freeware"
-   CC=/usr/bin/gcc build -s https://eris.llnl.gov/svn/slurm/tags/slurm-1-2-0-0-pre3
+   build -s https://eris.llnl.gov/svn/slurm/tags/slurm-1-2-0-0-pre3
 4. export MP_RMLIB=./slurm_ll_api.so
    export CHECKPOINT=yes
 5. poe hostname -rmpool debug
@@ -135,12 +131,11 @@ Configuration file update procedures:
   - then run "dist_local slurm" on SN and FENs to update /etc/slurm
 
 Some RPM commands:
-  rpm -qa | grep slurm                  (determine what is installed)
-  rpm -qpl slurm-1.1.9-1.rpm            (check contents of an rpm)
-  rpm -e slurm-1.1.8-1                  (erase an rpm
-  rpm -i --ignoresize slurm-1.1.9-1.rpm (install a new rpm)
+  - rpm -querry --all | grep slurm
+  - rpm --erase package_name
+  - rpm --install --ignoresize file_name
 For main SLURM plugin installation on BGL service node:
-  rpm -i --force --nodeps --ignoresize slurm-1.1.9-1.rpm
+  - rpm --install --force --nodeps --ignoresize slurm-#.rpm
 
 
 To clear a wedged job:
@@ -157,9 +152,6 @@ Patches:
   - Run the patch command with epilog_complete.patch as stdin:
     patch -p[path_level_to_filter] [--dry-run] < epilog_complete.patch
 
-To get the process and job IDs with proctrack/sgi_job:
-  - jstat -p
-
 CVS and gnats:
 Include "gnats:<id> e.g. "(gnats:123)" as part of cvs commit to
 automatically record that update in gnats database. NOTE: Does
@@ -169,14 +161,4 @@ with the bug.
 For memory leaks (for AIX use zerofault, zf; for linux use valgrind)
  valgrind --tool=memcheck --leak-check=yes --num-callers=6 --leak-resolution=med ./slurmctld
 
-Before new major release:
- - Test on ia64, i386, x86_64, BGL, AIX, OSX, XCPU
- - Test on Elan and IB switches
- - Test fail-over of slurmctld
- - Test for memory leaks in slurmctld and slurmd
- - Change API version number
- - Review and release web pages
- - Review and release code
- - Run "make check"
- - Test that the prolog and epilog run
- - Run the test suite with SlurmUser NOT being self 
+Remember to test on ia64, i386, BGL, and AIX.

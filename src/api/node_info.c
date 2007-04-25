@@ -2,10 +2,10 @@
  *  node_info.c - get/print the node state information of slurm
  *  $Id$
  *****************************************************************************
- *  Copyright (C) 2002-2006 The Regents of the University of California.
+ *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov> et. al.
- *  UCRL-CODE-226842.
+ *  UCRL-CODE-217948.
  *  
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -16,7 +16,7 @@
  *  any later version.
  *
  *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under
+ *  to link the code of portions of this program with the OpenSSL library under 
  *  certain conditions as described in each individual source file, and 
  *  distribute linked combinations including the two. You must obey the GNU 
  *  General Public License in all respects for all of the code used other than 
@@ -53,8 +53,6 @@
 
 #include "src/common/parse_time.h"
 #include "src/common/slurm_protocol_api.h"
-#include "src/common/xmalloc.h"
-#include "src/common/xstring.h"
 
 /*
  * slurm_print_node_info_msg - output information about all Slurm nodes
@@ -92,26 +90,8 @@ slurm_print_node_info_msg ( FILE * out, node_info_msg_t * node_info_msg_ptr,
 void
 slurm_print_node_table ( FILE * out, node_info_t * node_ptr, int one_liner )
 {
-	char *print_this = slurm_sprint_node_table(node_ptr, one_liner);
-	fprintf ( out, "%s", print_this);
-	xfree(print_this);
-}
-
-/*
- * slurm_sprint_node_table - output information about a specific Slurm nodes
- *	based upon message as loaded using slurm_load_node
- * IN node_ptr - an individual node information record pointer
- * IN one_liner - print as a single line if true
- * RET out - char * containing formatted output (must be freed after call)
- *           NULL is returned on failure.
- */
-char *
-slurm_sprint_node_table (node_info_t * node_ptr, int one_liner )
-{
 	uint16_t my_state = node_ptr->node_state;
 	char *comp_str = "", *drain_str = "";
-	char tmp_line[512];
-	char *out = NULL;
 
 	if (my_state & NODE_STATE_COMPLETING) {
 		my_state &= (~NODE_STATE_COMPLETING);
@@ -123,29 +103,21 @@ slurm_sprint_node_table (node_info_t * node_ptr, int one_liner )
 	}
 
 	/****** Line 1 ******/
-	snprintf(tmp_line, sizeof(tmp_line),
-		"NodeName=%s State=%s%s%s CPUs=%u AllocCPUs=%u "
-		"RealMemory=%u TmpDisk=%u",
+	fprintf ( out, "NodeName=%s State=%s%s%s CPUs=%u ", 
 		node_ptr->name, node_state_string(my_state),
-		comp_str, drain_str, node_ptr->cpus, node_ptr->used_cpus,
+		comp_str, drain_str, node_ptr->cpus);
+	fprintf ( out, "RealMemory=%u TmpDisk=%u", 
 		node_ptr->real_memory, node_ptr->tmp_disk);
-	xstrcat(out, tmp_line);
 	if (one_liner)
-		xstrcat(out, " ");
+		fprintf ( out, " ");
 	else
-		xstrcat(out, "\n   ");
+		fprintf ( out, "\n   ");
 
 	/****** Line 2 ******/
-	snprintf(tmp_line, sizeof(tmp_line),
-		"Sockets=%u Cores=%u Threads=%u "
-		"Weight=%u Features=%s Reason=%s" ,
-		node_ptr->sockets, node_ptr->cores, node_ptr->threads,
-		node_ptr->weight, node_ptr->features,
-		node_ptr->reason);
-	xstrcat(out, tmp_line);
-	xstrcat(out, "\n");
-
-	return out;
+	fprintf ( out, "Weight=%u Features=%s " , 
+		node_ptr->weight, node_ptr->features);
+	fprintf ( out, "Reason=%s", node_ptr->reason);
+	fprintf ( out, "\n");
 }
 
 
@@ -166,8 +138,6 @@ extern int slurm_load_node (time_t update_time,
         slurm_msg_t resp_msg;
         node_info_request_msg_t req;
 	
-	slurm_msg_t_init(&req_msg);
-	slurm_msg_t_init(&resp_msg);
         req.last_update  = update_time;
 	req.show_flags   = show_flags;
         req_msg.msg_type = REQUEST_NODE_INFO;

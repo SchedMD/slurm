@@ -5,7 +5,7 @@
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Danny Auble <da@llnl.gov>
  *
- *  UCRL-CODE-226842.
+ *  UCRL-CODE-217948.
  *  
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -16,7 +16,7 @@
  *  any later version.
  *
  *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under
+ *  to link the code of portions of this program with the OpenSSL library under 
  *  certain conditions as described in each individual source file, and 
  *  distribute linked combinations including the two. You must obey the GNU 
  *  General Public License in all respects for all of the code used other than 
@@ -71,16 +71,11 @@ extern void get_job()
 
 	if (error_code) {
 		if (quiet_flag != 1) {
-			if(!params.commandline) {
-				mvwprintw(ba_system_ptr->text_win,
-					  ba_system_ptr->ycord, 1,
-					  "slurm_load_job: %s", 
-					  slurm_strerror(slurm_get_errno()));
-				ba_system_ptr->ycord++;
-			} else {
-				printf("slurm_load_job: %s\n",
-				       slurm_strerror(slurm_get_errno()));
-			}
+			mvwprintw(ba_system_ptr->text_win,
+				ba_system_ptr->ycord, 1,
+				"slurm_load_job: %s", 
+				slurm_strerror(slurm_get_errno()));
+			ba_system_ptr->ycord++;
 		}
 	}
 
@@ -132,7 +127,11 @@ extern void get_job()
 				} 
 			} else {
 				job.num_procs = (int)letters[count%62];
+				wattron(ba_system_ptr->text_win,
+					COLOR_PAIR(colors[count%6]));
 				_print_text_job(&job);
+				wattroff(ba_system_ptr->text_win,
+					 COLOR_PAIR(colors[count%6]));
 			}
 			count++;			
 		}
@@ -162,7 +161,11 @@ extern void get_job()
 		} else {
 			job.nodes = "waiting...";
 			job.num_procs = (int) letters[count%62];
+			wattron(ba_system_ptr->text_win,
+				COLOR_PAIR(colors[count%6]));
 			_print_text_job(&job);
+			wattroff(ba_system_ptr->text_win,
+				 COLOR_PAIR(colors[count%6]));
 			printed_jobs++;
 		}
 		count++;			
@@ -174,8 +177,7 @@ extern void get_job()
 	if (params.commandline && params.iterate)
 		printf("\n");
 
-	if(!params.commandline)
-		ba_system_ptr->ycord++;
+	ba_system_ptr->ycord++;
 	
 	job_info_ptr = new_job_ptr;
 	return;
@@ -252,24 +254,28 @@ static int _print_text_job(job_info_t * job_ptr)
 	char time_buf[20];
 	char tmp_cnt[7];
 	uint32_t node_cnt = 0;
-	char *ionodes = NULL;
+	uint16_t quarter = (uint16_t) NO_VAL;
+	uint16_t nodecard = (uint16_t) NO_VAL;
 	
 #ifdef HAVE_BG
 	select_g_get_jobinfo(job_ptr->select_jobinfo, 
-			     SELECT_DATA_IONODES, 
-			     &ionodes);
+			     SELECT_DATA_QUARTER, 
+			     &quarter);
+	select_g_get_jobinfo(job_ptr->select_jobinfo, 
+			     SELECT_DATA_NODECARD, 
+			     &nodecard);
 	select_g_get_jobinfo(job_ptr->select_jobinfo, 
 			     SELECT_DATA_NODE_CNT, 
 			     &node_cnt);
 	if(!strcasecmp(job_ptr->nodes,"waiting...")) 
-		xfree(ionodes);
+		quarter = (uint16_t) NO_VAL;
 #else
 	node_cnt = job_ptr->num_nodes;
 #endif
 	if ((node_cnt  == 0) || (node_cnt == NO_VAL))
 		node_cnt = _get_node_cnt(job_ptr);
 #ifdef HAVE_BG
-	convert_num_unit((float)node_cnt, tmp_cnt, UNIT_NONE);
+	convert_to_kilo(node_cnt, tmp_cnt);
 #else
 	sprintf(tmp_cnt, "%d", node_cnt);
 #endif
@@ -328,10 +334,8 @@ static int _print_text_job(job_info_t * job_ptr)
 			if ((printed = mvwaddch(ba_system_ptr->text_win,
 						ba_system_ptr->ycord, 
 						ba_system_ptr->xcord,
-						job_ptr->nodes[i])) < 0) {
-				xfree(ionodes);
+						job_ptr->nodes[i])) < 0)
 				return printed;
-			}
 			ba_system_ptr->xcord++;
 			width = ba_system_ptr->text_win->_maxx 
 				- ba_system_ptr->xcord;
@@ -344,13 +348,21 @@ static int _print_text_job(job_info_t * job_ptr)
 			}
 			i++;
 		}
-		if(ionodes) {
-			mvwprintw(ba_system_ptr->text_win, 
-				  ba_system_ptr->ycord,
-				  ba_system_ptr->xcord, "[%s]", 
-				  ionodes);
-			ba_system_ptr->xcord += strlen(ionodes)+2;
-			xfree(ionodes);
+		if(quarter != (uint16_t) NO_VAL) {
+			if(nodecard != (uint16_t) NO_VAL) {
+				mvwprintw(ba_system_ptr->text_win, 
+					  ba_system_ptr->ycord,
+					  ba_system_ptr->xcord, ".%d.%d", 
+					  quarter,
+					  nodecard);
+				ba_system_ptr->xcord += 4;
+			} else {
+				mvwprintw(ba_system_ptr->text_win, 
+					  ba_system_ptr->ycord,
+					  ba_system_ptr->xcord, ".%d", 
+					  quarter);
+				ba_system_ptr->xcord += 2;
+			}
 		}
 
 		ba_system_ptr->xcord = 1;
@@ -381,9 +393,11 @@ static int _print_text_job(job_info_t * job_ptr)
 		printf("%5s ", tmp_cnt);
 		
 		printf("%s", job_ptr->nodes);
-		if(ionodes) {
-			printf("[%s]", ionodes);
-			xfree(ionodes);
+		if(quarter != (uint16_t) NO_VAL) {
+			if(nodecard != (uint16_t) NO_VAL)
+				printf(".%d.%d", quarter, nodecard);
+			else
+				printf(".%d", quarter);
 		}
 
 		printf("\n");

@@ -4,7 +4,7 @@
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Kevin Tew <tew1@llnl.gov>.
- *  UCRL-CODE-226842.
+ *  UCRL-CODE-217948.
  *  
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -125,7 +125,7 @@ extern int unpack_msg ( slurm_msg_t * msgi , Buf buffer );
  * IN/OUT buffer - destination of the pack, contains pointers that are 
  *			automatically updated
  */
-/* void pack_job_step_info ( job_step_info_t* step, Buf buffer ); */
+void pack_job_step_info ( job_step_info_t* step, Buf buffer );
 
 /* pack_job_step_info_members
  * pack selected fields of the description of a job into a buffer
@@ -133,12 +133,9 @@ extern int unpack_msg ( slurm_msg_t * msgi , Buf buffer );
  * IN/OUT buffer - destination of the pack, contains pointers that are 
  *			automatically updated
  */ 
-/* void pack_job_step_info_members( uint32_t job_id, uint16_t step_id,  */
-/* 		uint32_t user_id, uint32_t num_tasks, time_t start_time,  */
-/* 		char *partition, char *nodes, char *name, char *network, */
-/* 		Buf buffer ); */
-
-extern void pack_multi_core_data (multi_core_data_t *multi_core, Buf buffer);
-extern int unpack_multi_core_data (multi_core_data_t **multi_core, Buf buffer);
+void pack_job_step_info_members( uint32_t job_id, uint16_t step_id, 
+		uint32_t user_id, uint32_t num_tasks, time_t start_time, 
+		char *partition, char *nodes, char *name, char *network,
+		Buf buffer );
 
 #endif

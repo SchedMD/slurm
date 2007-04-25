@@ -1,3 +1,4 @@
+# $Id: Makefile.am 6669 2005-11-21 22:41:16Z da $
 #
 # Makefile for sbcast
 
@@ -6,7 +7,9 @@ AUTOMAKE_OPTIONS = foreign
 INCLUDES = -I$(top_srcdir) $(BG_INCLUDES)
 bin_PROGRAMS = sbcast
 
-sbcast_LDADD = $(top_builddir)/src/api/libslurmhelper.la
+sbcast_LDADD =					  \
+	$(top_builddir)/src/common/libcommon.la   \
+	$(top_builddir)/src/api/libslurm.la
 
 noinst_HEADERS = sbcast.h
 sbcast_SOURCES = agent.c sbcast.c opts.c

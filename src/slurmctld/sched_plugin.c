@@ -4,7 +4,7 @@
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Jay Windley <jwindley@lnxi.com>.
- *  UCRL-CODE-226842.
+ *  UCRL-CODE-217948.
  *  
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -51,9 +51,8 @@
 /* ************************************************************************ */
 typedef struct slurm_sched_ops {
 	int		(*schedule)		( void );
-	uint32_t	(*initial_priority)	( uint32_t );
+	u_int32_t	(*initial_priority)	( u_int32_t );
 	void            (*job_is_pending)     	( void );
-	int		(*reconfig)		( void );
 	void            (*partition_change)    	( void );
 	int		(*get_errno)		( void );
 	char *		(*strerror)		( int );
@@ -88,7 +87,6 @@ slurm_sched_get_ops( slurm_sched_context_t *c )
 		"slurm_sched_plugin_schedule",
 		"slurm_sched_plugin_initial_priority",
 		"slurm_sched_plugin_job_is_pending",
-		"slurm_sched_plugin_reconfig",
 		"slurm_sched_plugin_partition_change",
 		"slurm_sched_get_errno",
 		"slurm_sched_strerror"
@@ -235,18 +233,6 @@ slurm_sched_fini( void )
 
 
 /* *********************************************************************** */
-/*  TAG(                        slurm_sched_reconfig                    )  */
-/* *********************************************************************** */
-extern int
-slurm_sched_reconfig( void )
-{
-	if ( slurm_sched_init() < 0 )
-		return SLURM_ERROR;
-
-	return (*(g_sched_context->ops.reconfig))();
-}
-
-/* *********************************************************************** */
 /*  TAG(                        slurm_sched_schedule                    )  */
 /* *********************************************************************** */
 int
@@ -262,7 +248,7 @@ slurm_sched_schedule( void )
 /* *********************************************************************** */
 /*  TAG(                   slurm_sched_initital_priority                )  */
 /* *********************************************************************** */
-uint32_t
+u_int32_t
 slurm_sched_initial_priority( u_int32_t last_prio )
 {
 	if ( slurm_sched_init() < 0 )

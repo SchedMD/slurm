@@ -1,3 +1,4 @@
+# $Id$
 #
 # Makefile for sinfo
 
@@ -6,7 +7,9 @@ AUTOMAKE_OPTIONS = foreign
 INCLUDES = -I$(top_srcdir) $(BG_INCLUDES)
 bin_PROGRAMS = sinfo
 
-sinfo_LDADD = $(top_builddir)/src/api/libslurmhelper.la
+sinfo_LDADD =					  \
+	$(top_builddir)/src/common/libcommon.la   \
+	$(top_builddir)/src/api/libslurm.la
 
 noinst_HEADERS = sinfo.h print.h
 sinfo_SOURCES = sinfo.c opts.c print.c sort.c

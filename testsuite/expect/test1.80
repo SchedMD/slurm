@@ -12,7 +12,7 @@
 # Copyright (C) 2002-2006 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 # Written by Morris Jette <jette1@llnl.gov>
-# UCRL-CODE-226842.
+# UCRL-CODE-217948.
 # 
 # This file is part of SLURM, a resource management program.
 # For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -38,33 +38,45 @@ set exit_code   0
 
 print_header $test_id
 
-if { [test_front_end] } {
-	send_user "\nWARNING: This test is incompatable with front end systems\n"
+if { [test_xcpu] } {
+	send_user "\nWARNING: This test is incompatable with XCPU systems\n"
 	exit 0
 }
 
 #
 # Submit a two node job with block distribution
 #
+set host_0      ""
+set host_1      ""
+set host_2      ""
+set host_3      ""
 set timeout $max_job_delay
-set expected_layout [list 0 0 1 1]
-set tested_layout [list -1 -1 -1 -1] 
-set srun_pid [spawn $srun -O -N2 -n4 -l --distribution=block -t1 $bin_printenv SLURM_NODEID]
+spawn $srun -N2 -n4 -l --distribution=block -t1 $bin_hostname  
 expect {
 	-re "More ($alpha) requested than permitted" {
 		send_user "\nWARNING: can't test srun task distribution\n"
 		exit 0
 	}
-	-re "($number): ($number)" {
-		set index $expect_out(1,string)
-		set value $expect_out(2,string)
-		lset tested_layout $index $value
+	-re "(\[0-3\]): ($alpha_numeric)" {
+		if { $expect_out(1,string) == 0 } {
+			set host_0 $expect_out(2,string)
+		}
+		if { $expect_out(1,string) == 1 } {
+			set host_1 $expect_out(2,string)
+		}
+		if { $expect_out(1,string) == 2 } {
+			set host_2 $expect_out(2,string)
+		}
+		if { $expect_out(1,string) == 3 } {
+			set host_3 $expect_out(2,string)
+		}
 		exp_continue
 	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
-		slow_kill $srun_pid
+		kill_srun
 		set exit_code 1
+		exp_continue
 	}
 	eof {
 		wait
@@ -74,13 +86,30 @@ expect {
 #
 # Verify block distribution of tasks
 #
-send_user "Expected layout was: $expected_layout\n"
-send_user "Tested layout was  : $tested_layout\n"
-if {[string compare $expected_layout $tested_layout] != 0} {
-	send_user "\FAILURE: failed to distribute tasks in block fashion\n"
-	set exit_code 1
+if {[string compare $host_0 ""] == 0} {
+	send_user "\nFAILURE: Did not get hostname of task 0\n"
+	set exit_code   1	
 }
-
+if {[string compare $host_1 ""] == 0} {
+	send_user "\nFAILURE: Did not get hostname of task 1\n"
+	set exit_code   1	
+}
+set dup_hostname 0
+if {[string compare $host_0 $host_1] == 0} {
+	set dup_hostname 1	
+}
+if {[string compare $host_0 $host_2] == 0} {
+	set dup_hostname 1	
+}
+if {[string compare $host_0 $host_3] == 0} {
+	set dup_hostname 1	
+}
+if {$dup_hostname == 1} {
+	if {[string compare $host_0 $host_1] != 0} {
+		send_user "\nFAILURE: failed to distributed tasks by block\n"
+		set exit_code   1	
+	}
+}
 if {[test_front_end] != 0} {
 	send_user "\nWARNING: Additional testing is incompatable with front-end systems\n"
 	exit $exit_code
@@ -89,25 +118,37 @@ if {[test_front_end] != 0} {
 #
 # Submit a two node job with cyclic distribution
 #
+set host_0      ""
+set host_1      ""
+set host_2      ""
+set host_3      ""
 set timeout $max_job_delay
-set expected_layout [list 0 1 0 1]
-set tested_layout [list -1 -1 -1 -1] 
-set srun_pid [spawn $srun -O -N2 -n4 -l --distribution=cyclic -t1 $bin_printenv SLURM_NODEID]
+spawn $srun -N2 -n4 -l --distribution=cyclic -t1 $bin_hostname  
 expect {
 	-re "More ($alpha) requested than permitted" {
 		send_user "\nWARNING: can't test srun task distribution\n"
 		exit 0
 	}
-	-re "($number): ($number)" {
-		set index $expect_out(1,string)
-		set value $expect_out(2,string)
-		lset tested_layout $index $value
+	-re "(\[0-3\]): ($alpha_numeric)" {
+		if { $expect_out(1,string) == 0 } {
+			set host_0 $expect_out(2,string)
+		}
+		if { $expect_out(1,string) == 1 } {
+			set host_1 $expect_out(2,string)
+		}
+		if { $expect_out(1,string) == 2 } {
+			set host_2 $expect_out(2,string)
+		}
+		if { $expect_out(1,string) == 3 } {
+			set host_3 $expect_out(2,string)
+		}
 		exp_continue
 	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
-		slow_kill $srun_pid
+		kill_srun
 		set exit_code 1
+		exp_continue
 	}
 	eof {
 		wait
@@ -117,11 +158,17 @@ expect {
 #
 # Verify cyclic distribution of tasks
 #
-send_user "Expected layout was: $expected_layout\n"
-send_user "Tested layout was  : $tested_layout\n"
-if {[string compare $expected_layout $tested_layout] != 0} {
-	send_user "\FAILURE: failed to distribute tasks in cyclic fashion\n"
-	set exit_code 1
+if {[string compare $host_0 ""] == 0} {
+	send_user "\nFAILURE: Did not get hostname of task 0\n"
+	set exit_code   1	
+}
+if {[string compare $host_1 ""] == 0} {
+	send_user "\nFAILURE: Did not get hostname of task 1\n"
+	set exit_code   1	
+}
+if {[string compare $host_0 $host_1] == 0} {
+	send_user "\nFAILURE: failed to distributed tasks cyclic\n"
+	set exit_code   1	
 }
 
 if {$exit_code == 0} {

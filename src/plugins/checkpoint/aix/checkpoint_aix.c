@@ -5,7 +5,7 @@
  *  Copyright (C) 2004 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
- *  UCRL-CODE-226842.
+ *  UCRL-CODE-217948.
  *  
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -349,7 +349,9 @@ static void _send_sig(uint32_t job_id, uint32_t step_id, uint16_t signal,
 	agent_args->msg_type		= REQUEST_SIGNAL_TASKS;
 	agent_args->retry		= 1;
 	agent_args->msg_args		= kill_tasks_msg;
-	agent_args->hostlist = hostlist_create(node_name);
+	agent_args->slurm_addr		= xmalloc(sizeof(slurm_addr));
+	agent_args->slurm_addr[0]	= node_addr;
+	agent_args->node_names		= xstrdup(node_name);
 	agent_args->node_count		= 1;
 
 	agent_queue_request(agent_args);

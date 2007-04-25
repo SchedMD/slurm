@@ -4,7 +4,7 @@
  *  Copyright (C) 2006 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
- *  UCRL-CODE-226842.
+ *  UCRL-CODE-217948.
  *  
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -52,7 +52,7 @@ extern int	job_will_run(char *cmd_ptr, int *err_code, char **err_msg)
 	char *arg_ptr, *task_ptr, *node_ptr, *tmp_char;
 	int i;
 	uint32_t jobid;
-	char host_string[MAXHOSTRANGELEN];
+	char host_string[1024];
 
 	arg_ptr = strstr(cmd_ptr, "ARG=");
 	if (arg_ptr == NULL) {

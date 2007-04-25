@@ -1,9 +1,9 @@
 .TH "wiki.conf" "5" "March 2007" "wiki.conf 1.1" "Slurm configuration file"
 .SH "NAME"
-wiki.conf \- Slurm configuration file for wiki and wiki2 scheduler plugins
+wiki.conf \- Slurm configuration file for wiki scheduler plugin
 .SH "DESCRIPTION"
-\fB/etc/wiki.conf\fP is an ASCII file which describes wiki and wiki2 
-scheduler specific SLURM configuration information. 
+\fB/etc/wiki.conf\fP is an ASCII file which describes wiki scheduler 
+specific SLURM configuration information. 
 .LP
 Paramter names are case insensitive.
 Any text following a "#" in the configuration file is treated 
@@ -18,9 +18,8 @@ The overall configuration parameters available include:
 .TP
 \fBAuthKey\fR
 Authentication key for communications. 
-This should be no more than a 32\-bit unsigned integer and match the 
-KEY configured in the \fBmoab\-private.cnf\fR file (for the Moab Scheduler) 
-or the \fB\-\-with-key=\fR value used to configure the Maui Scheduler.
+This numeric value should match KEY configured in the 
+\fBmoab-private.cnf\fR file.
 
 .TP
 \fBEHost\fR
@@ -28,7 +27,6 @@ Name the computer on which Moab server executes.
 It is used in establishing a communications path for event notification. 
 By default \fBEHost\fR will be identical in value to the 
 \fBControlAddr\fR configured in slurm.conf.
-Not applicable to wiki plugin, only the wiki2 plugin.
 
 .TP
 \fBEHostBackup\fR
@@ -36,7 +34,6 @@ Name the computer on which the backup Moab server executes.
 It is used in establishing a communications path for event notification.
 By default \fBEHostBackup\fR will be identical in value to the
 \fBBackupAddr\fR configured in slurm.conf.
-Not applicable to wiki plugin, only the wiki2 plugin.
 
 .TP
 \fBEPort\fR
@@ -44,7 +41,6 @@ Port to be used to notify Moab of events (job submitted to Slurm,
 job terminates, etc.). 
 This numeric value should match EPORT configured in the
 \fBmoab.cnf\fR file.
-Not applicable to wiki plugin, only the wiki2 plugin.
 
 .TP
 \fBJobAggregationTime\fR
@@ -56,13 +52,11 @@ This should be an integer number of seconds.
 The default value is 10 seconds.
 The value should match JOBAGGREGATIONTIME configured in the 
 \fBmoab.cnf\fR file.
-Not applicable to wiki plugin, only the wiki2 plugin.
 
 .TP
 \fBJobPriority\fR
 Controls initial job priority. 
 The default value is "hold".
-Not applicable to wiki plugin, only the wiki2 plugin.
 .RS
 .TP
 \fBrun\fR
@@ -103,7 +97,7 @@ JobPriority=hold
 .br
 #
 .br
-# Moab encryption key, matches KEY in moab\-private.cfg
+# Moab encryption key, matches KEY in moab-private.cfg
 .br
 AuthKey=1234
 .br
@@ -128,7 +122,7 @@ JobAggregationTime=15
 .SH "COPYING"
 Copyright (C) 2006-2007 The Regents of the University of California.
 Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
-UCRL\-CODE\-226842.
+UCRL-CODE-217948.
 .LP
 This file is part of SLURM, a resource management program.
 For details, see <http://www.llnl.gov/linux/slurm/>.

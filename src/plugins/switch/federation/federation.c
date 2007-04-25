@@ -5,7 +5,7 @@
  *  Copyright (C) 2004 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Jason King <jking@llnl.gov>
- *  UCRL-CODE-226842.
+ *  UCRL-CODE-217948.
  *  
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -160,7 +160,7 @@ typedef struct {
 fed_libstate_t *fed_state = NULL;
 pthread_mutex_t global_lock = PTHREAD_MUTEX_INITIALIZER;
 
-/* slurmd/slurmstepd global variables */
+/* slurmd/slurmd_step global variables */
 hostlist_t adapter_list;
 static fed_cache_entry_t lid_cache[FED_MAXADAPTERS];
 
@@ -325,7 +325,7 @@ char *fed_sprint_jobinfo(fed_jobinfo_t *j, char *buf,
  * _init_cache() simply initializes the cache to sane values and 
  * needs to be called before any other cache functions are called.
  *
- * Used by: slurmd/slurmstepd
+ * Used by: slurmd/slurmd_step
  */
 static void
 _init_adapter_cache(void)
@@ -341,7 +341,7 @@ _init_adapter_cache(void)
 
 /* Use ntbl_adapter_resources to cache information about local adapters.
  *
- * Used by: slurmstepd
+ * Used by: slurmd_step
  */
 static int
 _fill_in_adapter_cache(void)
@@ -1122,7 +1122,7 @@ _print_libstate(const fed_libstate_t *l)
  *
  * Used by: _unpack_nodeinfo
  */
-static int _fake_unpack_adapters(Buf buf)
+static void _fake_unpack_adapters(Buf buf)
 {
 	uint32_t adapter_count;
 	uint32_t window_count;
@@ -1135,8 +1135,6 @@ static int _fake_unpack_adapters(Buf buf)
 	for (i = 0; i < adapter_count; i++) {
 		/* no copy, just advances buf counters */
 		unpackmem_ptr(&dummyptr, &dummy16, buf);
-		if (dummy16 != FED_ADAPTERNAME_LEN)
-			goto unpack_error;
 		safe_unpack16(&dummy16, buf);
 		safe_unpack16(&dummy16, buf);
 		safe_unpack32(&dummy32, buf);
@@ -1146,14 +1144,11 @@ static int _fake_unpack_adapters(Buf buf)
 		for (j = 0; j < window_count; j++) {
 			safe_unpack16(&dummy16, buf);
 			safe_unpack32(&dummy32, buf);
-			safe_unpack16(&dummy16, buf);
 		}
 	}
 
-	return SLURM_SUCCESS;
-
 unpack_error:
-	return SLURM_ERROR;
+	return;
 }
 
 
@@ -1173,7 +1168,7 @@ _unpack_nodeinfo(fed_nodeinfo_t *n, Buf buf, bool believe_window_status)
 	fed_window_t *tmp_w = NULL;
 	uint16_t size;
 	fed_nodeinfo_t *tmp_n = NULL;
-	char *name_ptr, name[FED_HOSTLEN];
+	char name[FED_HOSTLEN];
 	int magic;
 
 	/* NOTE!  We don't care at this point whether n is valid.
@@ -1186,28 +1181,9 @@ _unpack_nodeinfo(fed_nodeinfo_t *n, Buf buf, bool believe_window_status)
 	safe_unpack32(&magic, buf);
 	if(magic != FED_NODEINFO_MAGIC)
 		slurm_seterrno_ret(EBADMAGIC_FEDNODEINFO);
-	unpackmem_ptr(&name_ptr, &size, buf);
+	unpackmem(name, &size, buf);
 	if(size != FED_HOSTLEN)
 		goto unpack_error;
-	memcpy(name, name_ptr, size);
-
-	/* When the slurmctld is in normal operating mode (NOT backup mode),
-	 * the global fed_state structure should NEVER be NULL at the time that
-	 * this function is called.  Therefore, if fed_state is NULL here,
-	 * we assume that the controller is in backup mode.  In backup mode,
-	 * the slurmctld only unpacks RPCs to find out their identity.
-	 * Most of the RPCs, including the one calling this function, are
-	 * simply ignored.
-	 * 
-	 * So, here we just do a fake unpack to advance the buffer pointer.
-	 */
-	if (fed_state == NULL) {
-		if (_fake_unpack_adapters(buf) != SLURM_SUCCESS) {
-			slurm_seterrno_ret(EUNPACK);
-		} else {
-			return SLURM_SUCCESS;
-		}
-	}
 
 	/* If we already have nodeinfo for this node, we ignore this message.
 	 * The slurmctld's view of window allocation is always better than
@@ -1217,11 +1193,8 @@ _unpack_nodeinfo(fed_nodeinfo_t *n, Buf buf, bool believe_window_status)
 	if (name != NULL) {
 		tmp_n = _find_node(fed_state, name);
 		if (tmp_n != NULL) {
-			if (_fake_unpack_adapters(buf) != SLURM_SUCCESS) {
-				slurm_seterrno_ret(EUNPACK);
-			} else {
-				goto copy_node;
-			}
+			_fake_unpack_adapters(buf);
+			goto copy_node;
 		}
 	}
 
@@ -1234,10 +1207,9 @@ _unpack_nodeinfo(fed_nodeinfo_t *n, Buf buf, bool believe_window_status)
 	safe_unpack32(&tmp_n->adapter_count, buf);
 	for(i = 0; i < tmp_n->adapter_count; i++) {
 		tmp_a = tmp_n->adapter_list + i;
-		unpackmem_ptr(&name_ptr, &size, buf);
+		unpackmem(tmp_a->name, &size, buf);
 		if(size != FED_ADAPTERNAME_LEN)
 			goto unpack_error;
-		memcpy(tmp_a->name, name_ptr, size);
 		safe_unpack16(&tmp_a->lid, buf);
 		safe_unpack16(&tmp_a->network_id, buf);
 		safe_unpack32(&tmp_a->max_winmem, buf);
@@ -1258,7 +1230,6 @@ _unpack_nodeinfo(fed_nodeinfo_t *n, Buf buf, bool believe_window_status)
 			}
 		}
 		tmp_a->window_list = tmp_w;
-		tmp_w = NULL;	/* don't free on unpack error of next adapter */
 	}
 	
 copy_node:
@@ -1274,7 +1245,9 @@ copy_node:
 	return SLURM_SUCCESS;
 	
 unpack_error:
-	xfree(tmp_w);
+	/* FIX ME!  Add code here to free allocated memory */
+	if(tmp_w)
+		xfree(tmp_w);
 	slurm_seterrno_ret(EUNPACK);
 }
 
@@ -1763,18 +1736,9 @@ fed_job_step_complete(fed_jobinfo_t *jp, hostlist_t hl)
 	hi = hostlist_iterator_create(uniq_hl);
 
 	_lock();
-	if (fed_state != NULL) {
-		while((nodename = hostlist_next(hi)) != NULL) {
-			_free_windows_by_job_key(jp->job_key, nodename);
-			free(nodename);
-		}
-	} else { /* fed_state == NULL */
-		/* If there is no state at all, the job is already cleaned
-		 * up. :)  This should really only happen when the backup
-		 * controller is calling job_fini() just before it takes over
-		 * the role of active controller.
-		 */
-		debug("fed_job_step_complete called when fed_state == NULL");
+	while((nodename = hostlist_next(hi)) != NULL) {
+		_free_windows_by_job_key(jp->job_key, nodename);
+		free(nodename);
 	}
 	_unlock();
 	
@@ -1960,12 +1924,10 @@ fed_pack_jobinfo(fed_jobinfo_t *j, Buf buf)
 	return SLURM_SUCCESS;
 }
 
-/* return 0 on success, -1 on failure */
-static int
+void
 _unpack_tableinfo(fed_tableinfo_t *tableinfo, Buf buf)
 {
 	uint16_t size;
-	char *name_ptr;
 	int i;
 
 	safe_unpack32(&tableinfo->table_length, buf);
@@ -1978,15 +1940,15 @@ _unpack_tableinfo(fed_tableinfo_t *tableinfo, Buf buf)
 		safe_unpack16(&tableinfo->table[i]->lid, buf);
 		safe_unpack16(&tableinfo->table[i]->window_id, buf);
 	}
-	unpackmem_ptr(&name_ptr, &size, buf);
+	unpackmem(tableinfo->adapter_name, &size, buf);
 	if (size != FED_ADAPTERNAME_LEN)
-		goto unpack_error;
-	memcpy(tableinfo->adapter_name, name_ptr, size);
-	return 0;
+		error("adapter_name unpack error");
+
+	return;
 
 unpack_error: /* safe_unpackXX are macros which jump to unpack_error */
 	error("unpack error in _unpack_tableinfo");
-	return -1;
+	return;
 }
 
 /* Used by: all */
@@ -1994,7 +1956,7 @@ int
 fed_unpack_jobinfo(fed_jobinfo_t *j, Buf buf)
 {
 	uint16_t size;
-	int i, k;
+	int i;
 	
 	assert(j);
 	assert(j->magic == FED_JOBINFO_MAGIC);
@@ -2015,22 +1977,19 @@ fed_unpack_jobinfo(fed_jobinfo_t *j, Buf buf)
 	if(!j->tableinfo)
 		slurm_seterrno_ret(ENOMEM);
 	for (i = 0; i < j->tables_per_task; i++) {
-		if (_unpack_tableinfo(&j->tableinfo[i], buf) != 0)
-			goto unpack_error;
+		_unpack_tableinfo(&j->tableinfo[i], buf);
 	}
 
 	return SLURM_SUCCESS;
 	
 unpack_error:
-	error("fed_unpack_jobinfo error");
-	if (j->tableinfo) {
-		for (i = 0; i < j->tables_per_task; i++) {
-			for (k=0; k<j->tableinfo[i].table_length; k++)
-				xfree(j->tableinfo[i].table[k]);
-			xfree(j->tableinfo[i].table);
-		}
-		xfree(j->tableinfo);
-	}
+	/* FIX ME! Potential memory leak if we don't free 
+	 * tmp_table's elements.
+ 	 */
+/* 	if(tmp_table) */
+/* 		free(tmp_table); */
+/* 	if(tmp_index) */
+/* 		free(tmp_index); */
 	slurm_seterrno_ret(EUNPACK);
 	return SLURM_ERROR;
 }

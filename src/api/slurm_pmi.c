@@ -4,7 +4,7 @@
  *  Copyright (C) 2005-2006 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>.
- *  UCRL-CODE-226842.
+ *  UCRL-CODE-217948.
  *  
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -42,11 +42,11 @@
 #include "src/api/slurm_pmi.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_defs.h"
+#include "src/common/slurm_protocol_interface.h"
 #include "src/common/forward.h"
 #include "src/common/read_config.h"
 #include "src/common/xmalloc.h"
 #include "src/common/fd.h"
-#include "src/common/slurm_auth.h"
 
 #define MAX_RETRIES 5
 #define PMI_TIME    500	/* spacing between RPCs, usec */
@@ -54,9 +54,6 @@
 int pmi_fd = -1;
 uint16_t srun_port = 0;
 slurm_addr srun_addr;
-
-static int _forward_comm_set(struct kvs_comm_set *kvs_set_ptr);
-static int _get_addr(void);
 
 static int _get_addr(void)
 {
@@ -88,10 +85,12 @@ int slurm_send_kvs_comm_set(struct kvs_comm_set *kvs_set_ptr,
 	if ((rc = _get_addr()) != SLURM_SUCCESS)
 		return rc; 
 
-	slurm_msg_t_init(&msg_send);
 	msg_send.address = srun_addr;
 	msg_send.msg_type = PMI_KVS_PUT_REQ;
 	msg_send.data = (void *) kvs_set_ptr;
+	forward_init(&msg_send.forward, NULL);
+	msg_send.ret_list = NULL;
+	msg_send.forward_struct_init = 0;
 	
 	/* Send the RPC to the local srun communcation manager.
 	 * Since the srun can be sent thousands of messages at 
@@ -103,11 +102,11 @@ int slurm_send_kvs_comm_set(struct kvs_comm_set *kvs_set_ptr,
 	 * 10 secs). */
 	usleep(pmi_rank * PMI_TIME);
 	if      (pmi_size > 1000)	/* 100 secs */
-		timeout = slurm_get_msg_timeout() * 10000;
+		timeout = SLURM_MESSAGE_TIMEOUT_MSEC_STATIC * 10;
 	else if (pmi_size > 100)	/* 50 secs */
-		timeout = slurm_get_msg_timeout() * 5000;
+		timeout = SLURM_MESSAGE_TIMEOUT_MSEC_STATIC * 5;
 	else if (pmi_size > 10)		/* 20 secs */
-		timeout = slurm_get_msg_timeout() * 2000;
+		timeout = SLURM_MESSAGE_TIMEOUT_MSEC_STATIC * 2;
 
 	while (slurm_send_recv_rc_msg_only_one(&msg_send, &rc, timeout) < 0) {
 		if (retries++ > MAX_RETRIES) {
@@ -131,7 +130,8 @@ int  slurm_get_kvs_comm_set(struct kvs_comm_set **kvs_set_ptr,
 	uint16_t port;
 	kvs_get_msg_t data;
 	char *env_pmi_ifhn;
-	
+	List ret_list = NULL;
+
 	if (kvs_set_ptr == NULL)
 		return EINVAL;
 
@@ -157,17 +157,20 @@ int  slurm_get_kvs_comm_set(struct kvs_comm_set **kvs_set_ptr,
 		strncpy(hostname, env_pmi_ifhn, sizeof(hostname));
 		hostname[sizeof(hostname)-1] = 0;
 	} else
-		gethostname_short(hostname, sizeof(hostname));
+		getnodename(hostname, sizeof(hostname));
 
 	data.task_id = pmi_rank;
 	data.size = pmi_size;
 	data.port = port;
 	data.hostname = hostname;
-	slurm_msg_t_init(&msg_send);
-	slurm_msg_t_init(&msg_rcv);
 	msg_send.address = srun_addr;
 	msg_send.msg_type = PMI_KVS_GET_REQ;
 	msg_send.data = &data;
+
+	/* Send the RPC to the srun communcation manager */
+	forward_init(&msg_send.forward, NULL);
+	msg_send.ret_list = NULL;
+	msg_send.forward_struct_init = 0;
 
 	/* Send the RPC to the local srun communcation manager.
 	 * Since the srun can be sent thousands of messages at 
@@ -179,12 +182,11 @@ int  slurm_get_kvs_comm_set(struct kvs_comm_set **kvs_set_ptr,
 	 * 10 secs). */
 	usleep(pmi_rank * PMI_TIME);
 	if      (pmi_size > 1000)	/* 100 secs */
-		timeout = slurm_get_msg_timeout() * 10000;
+		timeout = SLURM_MESSAGE_TIMEOUT_MSEC_STATIC * 10;
 	else if (pmi_size > 100)	/* 50 secs */
-		timeout = slurm_get_msg_timeout() * 5000;
+		timeout = SLURM_MESSAGE_TIMEOUT_MSEC_STATIC * 5;
 	else if (pmi_size > 10)		/* 20 secs */
-		timeout = slurm_get_msg_timeout() * 2000;
-
+		timeout = SLURM_MESSAGE_TIMEOUT_MSEC_STATIC * 2;
 	while (slurm_send_recv_rc_msg_only_one(&msg_send, &rc, timeout) < 0) {
 		if (retries++ > MAX_RETRIES) {
 			error("slurm_get_kvs_comm_set: %m");
@@ -204,16 +206,22 @@ int  slurm_get_kvs_comm_set(struct kvs_comm_set **kvs_set_ptr,
 		return errno;
 	}
 
-	while ((rc = slurm_receive_msg(srun_fd, &msg_rcv, timeout)) != 0) {
+	while ((ret_list = slurm_receive_msg(srun_fd, &msg_rcv, 0)) == NULL) {
 		if (errno == EINTR)
 			continue;
 		error("slurm_receive_msg: %m");
 		slurm_close_accepted_conn(srun_fd);
 		return errno;
 	}
-	if(msg_rcv.auth_cred)
-		(void)g_slurm_auth_destroy(msg_rcv.auth_cred);
-	
+	if(ret_list) {
+		if(list_count(ret_list)>0) {
+			error("We didn't do things correctly "
+			      "got %d responses didn't expect any",
+			      list_count(ret_list));
+		}
+		list_destroy(ret_list);
+	}
+	msg_rcv.conn_fd = srun_fd;
 	if (msg_rcv.msg_type != PMI_KVS_GET_RESP) {
 		error("slurm_get_kvs_comm_set msg_type=%d", msg_rcv.msg_type);
 		slurm_close_accepted_conn(srun_fd);
@@ -221,44 +229,9 @@ int  slurm_get_kvs_comm_set(struct kvs_comm_set **kvs_set_ptr,
 	}
 	if (slurm_send_rc_msg(&msg_rcv, SLURM_SUCCESS) < 0)
 		error("slurm_send_rc_msg: %m");
-	
 	slurm_close_accepted_conn(srun_fd);
 	*kvs_set_ptr = msg_rcv.data;
-
-	rc = _forward_comm_set(*kvs_set_ptr);
-	return rc;
-}
-
-/* Forward keypair info to other tasks as required.
-* Clear message forward structure upon completion. */
-static int _forward_comm_set(struct kvs_comm_set *kvs_set_ptr)
-{
-	int i, rc = SLURM_SUCCESS;
-	int tmp_host_cnt = kvs_set_ptr->host_cnt;
-	slurm_msg_t msg_send;
-	int msg_rc;
-
-	kvs_set_ptr->host_cnt = 0;
-	for (i=0; i<tmp_host_cnt; i++) {
-		if (kvs_set_ptr->kvs_host_ptr[i].port == 0)
-			continue;	/* empty */
-		slurm_msg_t_init(&msg_send);
-		msg_send.msg_type = PMI_KVS_GET_RESP;
-		msg_send.data = (void *) kvs_set_ptr;
-		slurm_set_addr(&msg_send.address,
-			kvs_set_ptr->kvs_host_ptr[i].port,
-			kvs_set_ptr->kvs_host_ptr[i].hostname);
-		if (slurm_send_recv_rc_msg_only_one(&msg_send,
-				&msg_rc, 0) < 0) {
-			error("Could not forward msg to %s",
-				kvs_set_ptr->kvs_host_ptr[i].hostname);
-			msg_rc = 1;
-		}
-		rc = MAX(rc, msg_rc);
-		xfree(kvs_set_ptr->kvs_host_ptr[i].hostname);
-	}
-	xfree(kvs_set_ptr->kvs_host_ptr);
-	return rc;
+	return SLURM_SUCCESS;
 }
 
 static void _free_kvs_comm(struct kvs_comm *kvs_comm_ptr)
@@ -285,10 +258,6 @@ void slurm_free_kvs_comm_set(struct kvs_comm_set *kvs_set_ptr)
 
 	if (kvs_set_ptr == NULL)
 		return;
-
-	for (i=0; i<kvs_set_ptr->host_cnt; i++)
-		xfree(kvs_set_ptr->kvs_host_ptr[i].hostname);
-	xfree(kvs_set_ptr->kvs_host_ptr);
 
 	for (i=0; i<kvs_set_ptr->kvs_comm_recs; i++)
 		_free_kvs_comm(kvs_set_ptr->kvs_comm_ptr[i]);

@@ -4,7 +4,7 @@
  *  Copyright (C) 2005 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Danny Auble <da@llnl.gov>
- *  UCRL-CODE-226842.
+ *  UCRL-CODE-217948.
  *  
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -50,7 +50,7 @@
 typedef enum slurmd_step_tupe {
 	LAUNCH_BATCH_JOB = 0,
 	LAUNCH_TASKS,
-	DEFUNCT_SPAWN_TASKS /* DEFUNCT */
+	SPAWN_TASKS
 } slurmd_step_type_t;
 
 /*

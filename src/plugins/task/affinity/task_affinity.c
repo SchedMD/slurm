@@ -7,7 +7,7 @@
  *  Copyright (C) 2005 The Regents of the University of California and
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  task_none.c Written by Morris Jette <jette1@llnl.gov>. 
- *  UCRL-CODE-226842.
+ *  UCRL-CODE-217948.
  *  
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -46,7 +46,6 @@
 #include <sys/types.h>
 
 #include "affinity.h"
-#include "dist_tasks.h"
 
 /*
  * These variables are required by the generic plugin interface.  If they
@@ -85,7 +84,6 @@ const uint32_t plugin_version   = 100;
  */
 int init ( void )
 {
-	lllp_ctx_alloc();
 	verbose("%s loaded", plugin_name);
 	return SLURM_SUCCESS;
 }
@@ -96,74 +94,7 @@ int init ( void )
  */
 int fini ( void )
 {
-	lllp_ctx_destroy();
 	verbose("%s unloaded", plugin_name);
-	return SLURM_SUCCESS;
-}
-
-/*
- * task_slurmd_launch_request()
- */
-int task_slurmd_launch_request ( uint32_t job_id,
-			launch_tasks_request_msg_t *req, uint32_t node_id)
-{
-	int hw_sockets, hw_cores, hw_threads;
-
-	debug("task_slurmd_launch_request: %u %u", job_id, node_id);
-	hw_sockets = conf->sockets;
-	hw_cores   = conf->cores;
-	hw_threads = conf->threads;
-
-	if (((hw_sockets >= 1) && ((hw_cores > 1) || (hw_threads > 1))) 
-	    || (!(req->cpu_bind_type & CPU_BIND_NONE)))	
-		lllp_distribution(req, node_id);
-	/* Remove the slurm msg timeout needs to be investigated some more */
-	/* req->cpu_bind_type = CPU_BIND_NONE; */ 
-
-	return SLURM_SUCCESS;
-}
-
-/*
- * task_slurmd_reserve_resources()
- */
-int task_slurmd_reserve_resources ( uint32_t job_id,
-			launch_tasks_request_msg_t *req, uint32_t node_id)
-{
-	debug("task_slurmd_reserve_resources: %u",
-		job_id);
-	cr_reserve_lllp(job_id, req, node_id);
-	return SLURM_SUCCESS;
-}
-
-/*
- * task_slurmd_release_resources()
- */
-int task_slurmd_release_resources ( uint32_t job_id )
-{
-	debug("task_slurmd_release_resources: %u",
-		job_id);
-	cr_release_lllp(job_id);
-	return SLURM_SUCCESS;
-}
-
-/*
- * task_pre_setuid() is called before setting the UID for the 
- * user to launch his jobs. Use this to create the CPUSET directory
- * and set the owner appropriately.
- */
-int task_pre_setuid ( slurmd_job_t *job )
-{
-	char path[PATH_MAX];
-
-	if (!conf->use_cpusets)
-		return SLURM_SUCCESS;
-
-	if (snprintf(path, PATH_MAX, "%s/slurm%u",
-			CPUSET_DIR, job->jobid) > PATH_MAX) {
-		error("cpuset path too long");
-		return SLURM_ERROR;
-	}
-	slurm_build_cpuset(CPUSET_DIR, path, job->uid, job->gid);
 	return SLURM_SUCCESS;
 }
 
@@ -174,26 +105,8 @@ int task_pre_setuid ( slurmd_job_t *job )
  */
 int task_pre_launch ( slurmd_job_t *job )
 {
-	char base[PATH_MAX], path[PATH_MAX];
-
 	debug("affinity task_pre_launch: %u.%u, task %d", 
 		job->jobid, job->stepid, job->envtp->procid);
-
-	if (conf->use_cpusets) {
-		info("Using cpuset affinity for tasks");
-		if (snprintf(base, PATH_MAX, "%s/slurm%u",
-				CPUSET_DIR, job->jobid) > PATH_MAX) {
-			error("cpuset path too long");
-			return SLURM_ERROR;
-		}
-		if (snprintf(path, PATH_MAX, "%s/slurm%u.%u_%d",
-				base, job->jobid, job->stepid,
-				job->envtp->localid) > PATH_MAX) {
-			error("cpuset path too long");
-			return SLURM_ERROR;
-		}
-	} else
-		info("Using sched_affinity for tasks");
 
 	/*** CPU binding support ***/
 	if (job->cpu_bind_type) {	
@@ -203,51 +116,32 @@ int task_pre_launch ( slurmd_job_t *job )
 		int setval = 0;
 		slurm_getaffinity(mypid, sizeof(cur_mask), &cur_mask);
 
-		if (get_cpuset(&new_mask, job)
-		&&  (!(job->cpu_bind_type & CPU_BIND_NONE))) {
-			if (conf->use_cpusets) {
-				setval = slurm_set_cpuset(base, path, mypid,
-						sizeof(new_mask), 
-						&new_mask);
-				slurm_get_cpuset(path, mypid,
-						sizeof(cur_mask), 
-						&cur_mask);
-			} else {
+		if (get_cpuset(&new_mask, job)) {
+			if (!(job->cpu_bind_type & CPU_BIND_NONE)) {
 				setval = slurm_setaffinity(mypid,
-						sizeof(new_mask), 
-						&new_mask);
+						sizeof(new_mask), &new_mask);
 				slurm_getaffinity(mypid,
-						sizeof(cur_mask), 
-						&cur_mask);
+						sizeof(cur_mask), &cur_mask);
 			}
 		}
-		slurm_chkaffinity(setval ? &new_mask : &cur_mask, 
-					job, setval);
+		slurm_chkaffinity(setval ? &new_mask : &cur_mask, job, setval);
 	}
 
 #ifdef HAVE_NUMA
-	if (conf->use_cpusets && (slurm_memset_available() >= 0)) {
+	if (job->mem_bind_type && (numa_available() >= 0)) {
 		nodemask_t new_mask, cur_mask;
 
 		cur_mask = numa_get_membind();
-		if (get_memset(&new_mask, job)
-		&&  (!(job->mem_bind_type & MEM_BIND_NONE))) {
-			slurm_set_memset(path, &new_mask);
-			cur_mask = new_mask;
-		}
-		slurm_chk_memset(&cur_mask, job);
-	} else if (job->mem_bind_type && (numa_available() >= 0)) {
-		nodemask_t new_mask, cur_mask;
-
-		cur_mask = numa_get_membind();
-		if (get_memset(&new_mask, job)
-		&&  (!(job->mem_bind_type & MEM_BIND_NONE))) {
-			numa_set_membind(&new_mask);
-			cur_mask = new_mask;
+		if (get_memset(&new_mask, job)) {
+			if (!(job->mem_bind_type & MEM_BIND_NONE)) {
+				numa_set_membind(&new_mask);
+				cur_mask = new_mask;
+			}
 		}
 		slurm_chk_memset(&cur_mask, job);
 	}
 #endif
+
 	return SLURM_SUCCESS;
 }
 

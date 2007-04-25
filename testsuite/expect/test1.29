@@ -13,7 +13,7 @@
 # Copyright (C) 2002 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 # Written by Morris Jette <jette1@llnl.gov>
-# UCRL-CODE-226842.
+# UCRL-CODE-217948.
 # 
 # This file is part of SLURM, a resource management program.
 # For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -44,7 +44,7 @@ set job_id           0
 set limit_core       943
 set limit_fsize      274515
 set limit_nofile     1016
-set limit_nproc      345
+set limit_nproc      123
 set limit_stack      2021
 set matches          0
 
@@ -133,7 +133,7 @@ make_bash_script $file_in "
 
 
 set timeout $max_job_delay
-set srun_pid [spawn $srun --batch --output=$file_out --error=$file_err -t1 ./$file_in]
+spawn $srun --batch --output=$file_out --error=$file_err -t1 ./$file_in
 expect {
 	-re "jobid ($number) submitted" {
 		set job_id $expect_out(1,string)
@@ -141,8 +141,9 @@ expect {
 	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
-		slow_kill $srun_pid
+		kill_srun
 		set exit_code 1
+		exp_continue
 	}
 	eof {
 		wait

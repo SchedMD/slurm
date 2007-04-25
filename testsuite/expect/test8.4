@@ -14,7 +14,7 @@
 # Copyright (C) 2004 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 # Written by Morris Jette <jette1@llnl.gov>
-# UCRL-CODE-226842.
+# UCRL-CODE-217948.
 # 
 # This file is part of SLURM, a resource management program.
 # For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -89,7 +89,7 @@ exec $bin_chmod 700 $file_in
 #
 set timeout $max_job_delay
 set no_start 0
-set srun_pid [spawn $srun -N1-1 --batch --output=$file_out --error=$file_err -t4 $file_in]
+spawn $srun -N1-1 --batch --output=$file_out --error=$file_err -t4 $file_in
 expect {
 	-re "jobid ($number) submitted" {
 		set job_id $expect_out(1,string)
@@ -105,8 +105,9 @@ expect {
 	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
-		slow_kill $srun_pid
+		kill_srun
 		set exit_code 1
+		exp_continue
 	}
 	eof {
 		wait

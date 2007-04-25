@@ -5,7 +5,7 @@
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Mark Grondona <mgrondona@llnl.gov>.
- *  UCRL-CODE-226842.
+ *  UCRL-CODE-217948.
  *  
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -100,12 +100,5 @@ int io_dup_stdio(slurmd_task_info_t *t);
 void io_close_task_fds(slurmd_job_t *job);
 
 void io_close_all(slurmd_job_t *job);
-
-/*
- *  Initialize "user managed" IO, where each task has a single TCP
- *  socket end point shared on stdin, stdout, and stderr.
- */
-int user_managed_io_client_connect(int ntasks, srun_info_t *srun,
-				   slurmd_task_info_t **tasks);
 
 #endif /* !_IO_H */

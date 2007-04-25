@@ -4,7 +4,7 @@
  *  Copyright (C) 2006-2007 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
- *  UCRL-CODE-226842.
+ *  UCRL-CODE-217948.
  *  
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -40,8 +40,6 @@
 #include "src/common/uid.h"
 #include <sys/poll.h>
 
-#define _DEBUG 0
-
 static bool thread_running = false;
 static bool thread_shutdown = false;
 static pthread_mutex_t thread_flag_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -62,6 +60,7 @@ uint16_t use_host_exp = 0;
 static char *	_get_wiki_conf_path(void);
 static void *	_msg_thread(void *no_data);
 static int	_parse_msg(char *msg, char **req);
+static void	_parse_wiki_config(void);
 static void	_proc_msg(slurm_fd new_fd, char *msg);
 static size_t	_read_bytes(int fd, char *buf, const size_t size);
 static char *	_recv_msg(slurm_fd new_fd);
@@ -83,7 +82,7 @@ extern int spawn_msg_thread(void)
 		return SLURM_ERROR;
 	}
 
-	parse_wiki_config();
+	_parse_wiki_config();
 	slurm_attr_init(&thread_attr_msg);
 	if (pthread_create(&msg_thread_id, &thread_attr_msg, 
 			_msg_thread, NULL))
@@ -199,12 +198,11 @@ static char * _get_wiki_conf_path(void)
 }
 
 /*****************************************************************************\
- * parse_wiki_config - Results go into global variables
- * RET SLURM_SUCCESS or error code
+ * _parse_wiki_config - Results go into global variables
  * 
  * See "man wiki.conf" for details.
 \*****************************************************************************/
-extern int parse_wiki_config(void)
+static void _parse_wiki_config(void)
 {
 	s_p_options_t options[] = {
 		{"AuthKey", S_P_STRING},
@@ -234,7 +232,7 @@ extern int parse_wiki_config(void)
 	if ((wiki_conf == NULL) || (stat(wiki_conf, &buf) == -1)) {
 		debug("No wiki.conf file (%s)", wiki_conf);
 		xfree(wiki_conf);
-		return SLURM_SUCCESS;
+		return;
 	}
 
 	debug("Reading wiki.conf file (%s)",wiki_conf);
@@ -275,7 +273,7 @@ extern int parse_wiki_config(void)
 	s_p_hashtbl_destroy(tbl);
 	xfree(wiki_conf);
 
-#if _DEBUG
+#if 0
 	info("AuthKey            = %s", auth_key);
 	info("EHost              = %s", e_host);
 	info("EHostBackup        = %s", e_host_bu);
@@ -284,7 +282,7 @@ extern int parse_wiki_config(void)
 	info("JobPriority        = %s", init_prio_mode ? "run" : "hold");
 	info("KillWait           = %u sec", kill_wait);      
 #endif
-	return SLURM_SUCCESS;
+	return;
 }
 
 static size_t	_read_bytes(int fd, char *buf, const size_t size)

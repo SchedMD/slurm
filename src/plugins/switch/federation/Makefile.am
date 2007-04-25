@@ -1,3 +1,4 @@
+# $Id$
 # Makefile for switch/federation plugin
 
 CPPFLAGS =  -DFEDERATION_CONFIG_FILE=\"$(sysconfdir)/federation.conf\"

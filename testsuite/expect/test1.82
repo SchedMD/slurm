@@ -12,7 +12,7 @@
 # Copyright (C) 2002-2006 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 # Written by Morris Jette <jette1@llnl.gov>
-# UCRL-CODE-226842.
+# UCRL-CODE-217948.
 # 
 # This file is part of SLURM, a resource management program.
 # For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -64,7 +64,7 @@ if {$available < $node_cnt} {
     exit $exit_code
 }
 
-set srun_pid [spawn $srun -N$node_cnt -l -t1 $bin_printenv SLURMD_NODENAME]
+spawn $srun -N$node_cnt -l -t1 $bin_hostname  
 expect {
 	-re "More ($alpha) requested than permitted" {
 		send_user "\nWARNING: can't test srun task distribution\n"
@@ -72,7 +72,7 @@ expect {
 	}
 	-re "configuration not available" {
 		send_user "WARNING: partition too small for test\n"
-		slow_kill $srun_pid
+		kill_srun
 		exit 0
 	}
 	-re "($number): ($alpha_numeric)" {
@@ -92,7 +92,7 @@ expect {
 	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
-		slow_kill $srun_pid
+		kill_srun
 		exit 1
 	}
 	eof {
@@ -127,10 +127,10 @@ if {[string compare $host_3 ""] != 0} {
 
 set dup_hostname 0
 if {[string compare $host_0 $host_1] == 0} {
-	incr dup_hostname 	
+	set dup_hostname 1	
 }
 if {[string compare $host_0 $host_2] == 0} {
-	incr dup_hostname 1	
+	set dup_hostname 1	
 }
 if {$dup_hostname == 1} {
 	send_user "\nFAILURE: Re-used a node in the allocation\n"
@@ -146,15 +146,8 @@ set host_0      ""
 set host_1      ""
 set host_2      ""
 set timeout $max_job_delay
-set srun_pid [spawn $srun -N2 -l --exclude=$exclude_node -t1 $bin_printenv SLURMD_NODENAME]  
+spawn $srun -N2 -l --exclude=$exclude_node -t1 $bin_hostname  
 expect {
-	-re "Invalid node name specified" {
-		send_user "\nWARNING: Appears you are using "
-		send_user "multiple slurmd testing.\n"
-		send_user "This test won't work in that fashion.\n"
-		exit 0	
-	}
-		
 	-re "($number): ($alpha_numeric)" {
 		if {$expect_out(1,string) == 0} {
 			set host_0 $expect_out(2,string)
@@ -169,7 +162,7 @@ expect {
 	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
-		slow_kill $srun_pid
+		kill_srun
 		exit 1
 	}
 	eof {
@@ -210,7 +203,7 @@ if {$dup_hostname == 1} {
 set host_0      ""
 set host_1      ""
 set timeout $max_job_delay
-set srun_pid [spawn $srun -N1 -l --nodelist=$include_node -t1 $bin_printenv SLURMD_NODENAME]
+spawn $srun -N1 -l --nodelist=$include_node -t1 $bin_hostname  
 expect {
 	-re "($number): ($alpha_numeric)" {
 		if {$expect_out(1,string) == 0} {
@@ -223,11 +216,11 @@ expect {
 	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
-		slow_kill $srun_pid
+		kill_srun
 		set exit_code 1
+		exp_continue
 	}
 	eof {
-		wait
 	}
 }
 

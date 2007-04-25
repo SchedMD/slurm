@@ -5,7 +5,7 @@
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Mark Grondona <grondona1@llnl.gov>, Kevin Tew <tew1@llnl.gov>,
  *  et. al.
- *  UCRL-CODE-226842.
+ *  UCRL-CODE-217948.
  *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -39,18 +39,11 @@
 #ifndef _NET_H
 #define _NET_H
 
-#include <stdint.h>
-
-#include "src/common/macros.h"
-
 /* open a stream socket on an ephemereal port and put it into 
  * the listen state. fd and port are filled in with the new
  * socket's file descriptor and port #.
- *
- * OUT fd - listening socket file descriptor number
- * OUT port - TCP port number in host byte order
  */
-int net_stream_listen(int *fd, short *port);
+int net_stream_listen(int *fd, int *port);
 
 /* accept the incoming connection on the stream socket fd
  */

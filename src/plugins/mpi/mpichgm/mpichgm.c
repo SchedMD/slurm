@@ -5,7 +5,7 @@
  *  Copyright (C) 2004 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Takao Hatazaki <takao.hatazaki@hp.com>
- *  UCRL-CODE-226842.
+ *  UCRL-CODE-217948.
  *  
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -16,7 +16,7 @@
  *  any later version.
  *
  *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under
+ *  to link the code of portions of this program with the OpenSSL library under 
  *  certain conditions as described in each individual source file, and 
  *  distribute linked combinations including the two. You must obey the GNU 
  *  General Public License in all respects for all of the code used other than 
@@ -51,11 +51,10 @@
 #include <netinet/in.h>
 #include <strings.h>
 
-#include "src/common/slurm_xlator.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 #include "src/common/net.h"
-#include "src/common/mpi.h"
+#include "src/common/global_srun.h"
 
 #include "src/plugins/mpi/mpichgm/mpichgm.h"
 
@@ -71,13 +70,10 @@ typedef struct {
 
 #define GMPI_RECV_BUF_LEN 65536
 
-struct gmpi_state {
-	pthread_t tid;
-	int fd; /* = -1 */
-	mpi_plugin_client_info_t *job;
-};
 
-static int _gmpi_parse_init_recv_msg(mpi_plugin_client_info_t *job, char *rbuf,
+static int gmpi_fd = -1;
+
+static int _gmpi_parse_init_recv_msg(srun_job_t *job, char *rbuf,
 				     gm_slave_t *slave_data, int *ii)
 {
 	unsigned int magic, id, port_board_id, unique_high_id,
@@ -97,7 +93,7 @@ static int _gmpi_parse_init_recv_msg(mpi_plugin_client_info_t *job, char *rbuf,
 		error("GMPI master received invalid magic number");
 		return -1;
 	}
-	if (id >= job->step_layout->task_cnt)
+	if (id >= opt.nprocs)
 		fatal("GMPI id is out of range");
 	if (port_board_id == 0)
 		fatal("MPI id=%d was unable to open a GM port", id);
@@ -123,9 +119,8 @@ static int _gmpi_parse_init_recv_msg(mpi_plugin_client_info_t *job, char *rbuf,
 }
 
 
-static int _gmpi_establish_map(gmpi_state_t *st)
+static int _gmpi_establish_map(srun_job_t *job)
 {
-	mpi_plugin_client_info_t *job = st->job;
 	struct sockaddr_in addr;
 	in_addr_t *iaddrs;
 	socklen_t addrlen;
@@ -139,9 +134,9 @@ static int _gmpi_establish_map(gmpi_state_t *st)
 	 * Collect info from slaves.
 	 * Will never finish unless slaves are GMPI processes.
 	 */
-	accfd = st->fd;
+	accfd = gmpi_fd;
 	addrlen = sizeof(addr);
-	nprocs = job->step_layout->task_cnt;
+	nprocs = opt.nprocs;
 	iaddrs = (in_addr_t *)xmalloc(sizeof(*iaddrs)*nprocs);
 	slave_data = (gm_slave_t *)xmalloc(sizeof(*slave_data)*nprocs);
 	for (i=0; i<nprocs; i++)
@@ -245,9 +240,9 @@ static int _gmpi_establish_map(gmpi_state_t *st)
 	return 0;
 }
 
-static void _gmpi_wait_abort(gmpi_state_t *st)
+
+static void _gmpi_wait_abort(srun_job_t *job)
 {
-	mpi_plugin_client_info_t *job = st->job;
 	struct sockaddr_in addr;
 	socklen_t addrlen;
 	int newfd, rlen;
@@ -257,7 +252,7 @@ static void _gmpi_wait_abort(gmpi_state_t *st)
 	rbuf = (char *)xmalloc(GMPI_RECV_BUF_LEN);
 	addrlen = sizeof(addr);
 	while (1) {
-		newfd = accept(st->fd, (struct sockaddr *)&addr,
+		newfd = accept(gmpi_fd, (struct sockaddr *)&addr,
 			       &addrlen);
 		if (newfd == -1) {
 			fatal("GMPI master failed to accept (abort-wait)");
@@ -282,7 +277,7 @@ static void _gmpi_wait_abort(gmpi_state_t *st)
 		}
 		close(newfd);
 		debug("Received ABORT message from an MPI process.");
-		slurm_signal_job_step(job->jobid, job->stepid, SIGKILL);
+		fwd_signal(job, SIGKILL);
 #if 0
 		xfree(rbuf);
 		close(jgmpi_fd);
@@ -295,49 +290,25 @@ static void _gmpi_wait_abort(gmpi_state_t *st)
 
 static void *_gmpi_thr(void *arg)
 {
-	gmpi_state_t *st;
-	mpi_plugin_client_info_t *job;
+	srun_job_t *job;
 
-	st = (gmpi_state_t *) arg;
-	job = st->job;
+	job = (srun_job_t *) arg;
 
 	debug3("GMPI master thread pid=%lu", (unsigned long) getpid());
-	_gmpi_establish_map(st);
+	_gmpi_establish_map(job);
 	
 	debug3("GMPI master thread is waiting for ABORT message.");
-	_gmpi_wait_abort(st);
+	_gmpi_wait_abort(job);
 
 	return (void *)0;
 }
 
-static gmpi_state_t *
-gmpi_state_create(const mpi_plugin_client_info_t *job)
+
+extern int gmpi_thr_create(srun_job_t *job)
 {
-	gmpi_state_t *state;
-
-	state = (gmpi_state_t *)xmalloc(sizeof(gmpi_state_t));
-
-	state->tid = (pthread_t)-1;
-	state->fd  = -1;
-	state->job = (mpi_plugin_client_info_t *) job;
-
-	return state;
-}
-
-static void
-gmpi_state_destroy(gmpi_state_t *st)
-{
-	xfree(st);
-}
-
-extern gmpi_state_t *
-gmpi_thr_create(const mpi_plugin_client_info_t *job, char ***env)
-{
-	short port;
+	int port;
 	pthread_attr_t attr;
-	gmpi_state_t *st = NULL;
-
-	st = gmpi_state_create(job);
+	pthread_t gtid;
 
 	/*
 	 * It is possible for one to modify the mpirun command in
@@ -346,12 +317,11 @@ gmpi_thr_create(const mpi_plugin_client_info_t *job, char ***env)
 	 * should not override envs nor open the master port.
 	 */
 	if (getenv("GMPI_PORT"))
-		return st;
+		return (0);
 
-	if (net_stream_listen (&st->fd, &port) < 0) {
+	if (net_stream_listen (&gmpi_fd, &port) < 0) {
 		error ("Unable to create GMPI listen port: %m");
-		gmpi_state_destroy(st);
-		return NULL;
+		return -1;
 	}
 
 	/*
@@ -359,34 +329,19 @@ gmpi_thr_create(const mpi_plugin_client_info_t *job, char ***env)
 	 */
 	slurm_attr_init(&attr);
 	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
-	if (pthread_create(&st->tid, &attr, &_gmpi_thr, (void *)st)) {
+	if (pthread_create(&gtid, &attr, &_gmpi_thr, (void *)job)) {
 		slurm_attr_destroy(&attr);
-		gmpi_state_destroy(st);
-		return NULL;
+		return -1;
 	}
 	slurm_attr_destroy(&attr);
-
-	env_array_overwrite_fmt(env, "GMPI_PORT",  "%hu", port);
-	env_array_overwrite_fmt(env, "GMPI_MAGIC", "%u", job->jobid);
-	env_array_overwrite_fmt(env, "GMPI_NP",    "%d", 
-				job->step_layout->task_cnt);
-	env_array_overwrite_fmt(env, "GMPI_SHMEM", "1");
+	setenvf (NULL, "GMPI_PORT",  "%u", ntohs (port));
+	setenvf (NULL, "GMPI_MAGIC", "%u", job->jobid);
+	setenvf (NULL, "GMPI_NP",    "%d", opt.nprocs);
+	setenvf (NULL, "GMPI_SHMEM", "1");
 	/* FIXME for multi-board config. */
-	env_array_overwrite_fmt(env, "GMPI_BOARD", "-1");
+	setenvf (NULL, "GMPI_BOARD", "-1");
 
-	debug("Started GMPI master thread (%lu)", (unsigned long) st->tid);
+	debug("Started GMPI master thread (%lu)", (unsigned long) gtid);
 
-	return st;
-}
-
-extern int gmpi_thr_destroy(gmpi_state_t *st)
-{
-	if (st != NULL) {
-		if (st->tid != (pthread_t)-1) {
-			pthread_cancel(st->tid);
-			pthread_join(st->tid, NULL);
-		}
-		gmpi_state_destroy(st);
-	}
-	return SLURM_SUCCESS;
+	return 0;
 }

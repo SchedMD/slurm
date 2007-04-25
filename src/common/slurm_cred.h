@@ -2,10 +2,10 @@
  *  src/common/slurm_cred.h  - SLURM job credential operations
  *  $Id$
  *****************************************************************************
- *  Copyright (C) 2002-2006 The Regents of the University of California.
+ *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Mark Grondona <grondona1@llnl.gov>.
- *  UCRL-CODE-226842.
+ *  UCRL-CODE-217948.
  *  
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -131,8 +131,8 @@ typedef struct {
 	uint32_t stepid;
 	uid_t    uid;
 	char    *hostlist;
-	uint32_t alloc_lps_cnt;
-        uint32_t *alloc_lps;
+        uint32_t ntask_cnt;
+        uint32_t *ntask;
 } slurm_cred_arg_t;
 
 /*
@@ -163,13 +163,7 @@ slurm_cred_t slurm_cred_faker(slurm_cred_arg_t *arg);
 /*
  * Verify the signed credential `cred,' and return cred contents in
  * the cred_arg structure. The credential is cached and cannot be reused.
- *
- * Will perform at least the following checks:
- *   - Credential signature is valid
- *   - Credential has not expired
- *   - If credential is reissue will purge the old credential
- *   - Credential has not been revoked
- *   - Credential has not been replayed
+ * 
  */
 int slurm_cred_verify(slurm_cred_ctx_t ctx, slurm_cred_t cred, 
 		      slurm_cred_arg_t *arg);
@@ -182,29 +176,15 @@ int slurm_cred_verify(slurm_cred_ctx_t ctx, slurm_cred_t cred,
 int slurm_cred_rewind(slurm_cred_ctx_t ctx, slurm_cred_t cred);
 
 /*
- * Check to see if this credential is a reissue of an existing credential
- * (this can happen, for instance, with "scontrol restart").  If
- * this credential is a reissue, then the old credential is cleared
- * from the cred context "ctx".
- */
-void slurm_cred_handle_reissue(slurm_cred_ctx_t ctx, slurm_cred_t cred);
-
-/*
  * Revoke all credentials for job id jobid
- * time IN - the time the job terminiation was requested by slurmctld
- *           (local time from slurmctld server)
  */
-int slurm_cred_revoke(slurm_cred_ctx_t ctx, uint32_t jobid, time_t time);
+int slurm_cred_revoke(slurm_cred_ctx_t ctx, uint32_t jobid);
 
 /*
  * Report if a all credentials for a give job id have been 
  * revoked (i.e. has the job been killed)
- * 
- * If we are re-running the job, the new job credential is newer
- * than the revoke time, see "scontrol requeue", purge the old 
- * job record and make like it never existed
  */
-bool slurm_cred_revoked(slurm_cred_ctx_t ctx, slurm_cred_t cred);
+bool slurm_cred_revoked(slurm_cred_ctx_t ctx, uint32_t jobid);
 
 /*
  * Begin expiration period for the revocation of credentials

@@ -2,11 +2,11 @@
  *  partition_info.c - get/print the partition state information of slurm
  *  $Id$
  *****************************************************************************
- *  Copyright (C) 2002-2006 The Regents of the University of California.
+ *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov> et. al.
- *  UCRL-CODE-226842.
- *   
+ *  UCRL-CODE-217948.
+ *  
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.llnl.gov/linux/slurm/>.
  *  
@@ -49,8 +49,6 @@
 #include "src/api/job_info.h"
 #include "src/common/parse_time.h"
 #include "src/common/slurm_protocol_api.h"
-#include "src/common/xmalloc.h"
-#include "src/common/xstring.h"
 
 /*
  * slurm_print_partition_info_msg - output information about all Slurm 
@@ -87,140 +85,100 @@ void slurm_print_partition_info_msg ( FILE* out,
 void slurm_print_partition_info ( FILE* out, partition_info_t * part_ptr, 
 				  int one_liner )
 {
-	char *print_this = slurm_sprint_partition_info(part_ptr, one_liner);
-	fprintf ( out, "%s", print_this);
-	xfree(print_this);
-}
-
-
-/*
- * slurm_sprint_partition_info - output information about a specific Slurm 
- *	partition based upon message as loaded using slurm_load_partitions
- * IN part_ptr - an individual partition information record pointer
- * IN one_liner - print as a single line if true
- * RET out - char * containing formatted output (must be freed after call)
- *           NULL is returned on failure.
- */
-char *slurm_sprint_partition_info ( partition_info_t * part_ptr, 
-				    int one_liner )
-{
 	int j;
-	char tmp1[7], tmp2[7];
-	char tmp_line[MAXHOSTRANGELEN];
-	char *out = NULL;
+	char tmp1[7];
 
 	/****** Line 1 ******/
-#ifdef HAVE_BG
-	convert_num_unit((float)part_ptr->total_nodes, tmp1, UNIT_NONE);
-#else
-	sprintf(tmp1, "%u", part_ptr->total_nodes);
-#endif
-	convert_num_unit((float)part_ptr->total_cpus, tmp2, UNIT_NONE);
-	snprintf(tmp_line, sizeof(tmp_line),
-		 "PartitionName=%s TotalNodes=%s TotalCPUs=%s ", 
-		 part_ptr->name, tmp1, tmp2);
-	xstrcat(out, tmp_line);
+	fprintf ( out, "PartitionName=%s ", part_ptr->name);
 
+#ifdef HAVE_BG
+	convert_to_kilo(part_ptr->total_nodes, tmp1);
+#else
+	sprintf(tmp1, "%d", part_ptr->total_nodes);
+#endif
+	fprintf ( out, "TotalNodes=%s ", tmp1);
+
+	convert_to_kilo(part_ptr->total_cpus, tmp1);
+	fprintf ( out, "TotalCPUs=%s ", tmp1);
 	if (part_ptr->root_only)
-		sprintf(tmp_line, "RootOnly=YES");
+		fprintf ( out, "RootOnly=YES");
 	else
-		sprintf(tmp_line, "RootOnly=NO");
-	xstrcat(out, tmp_line);
+		fprintf ( out, "RootOnly=NO");
 	if (one_liner)
-		xstrcat(out, " ");
+		fprintf ( out, " ");
 	else
-		xstrcat(out, "\n   ");
-	
+		fprintf ( out, "\n   ");
+
 	/****** Line 2 ******/
 	if (part_ptr->default_part)
-		sprintf(tmp_line, "Default=YES ");
+		fprintf ( out, "Default=YES ");
 	else
-		sprintf(tmp_line, "Default=NO ");
-	xstrcat(out, tmp_line);
+		fprintf ( out, "Default=NO ");
 	if (part_ptr->shared == SHARED_NO)
-		sprintf(tmp_line, "Shared=NO ");
+		fprintf ( out, "Shared=NO ");
 	else if (part_ptr->shared == SHARED_YES)
-		sprintf(tmp_line, "Shared=YES ");
+		fprintf ( out, "Shared=YES ");
 	else
-		sprintf(tmp_line, "Shared=FORCE ");
-	xstrcat(out, tmp_line);
+		fprintf ( out, "Shared=FORCE ");
 	if (part_ptr->state_up)
-		sprintf(tmp_line, "State=UP ");
+		fprintf ( out, "State=UP ");
 	else
-		sprintf(tmp_line, "State=DOWN ");
-	xstrcat(out, tmp_line);
+		fprintf ( out, "State=DOWN ");
 	if (part_ptr->max_time == INFINITE)
-		sprintf(tmp_line, "MaxTime=UNLIMITED ");
+		fprintf ( out, "MaxTime=UNLIMITED ");
 	else
-		sprintf(tmp_line, "MaxTime=%u ", part_ptr->max_time);
-	xstrcat(out, tmp_line);
+		fprintf ( out, "MaxTime=%u ", part_ptr->max_time);
 	if (part_ptr->hidden)
-		sprintf(tmp_line, "Hidden=YES");
+		fprintf ( out, "Hidden=YES");
 	else
-		sprintf(tmp_line, "Hidden=NO");
-	xstrcat(out, tmp_line);
+		fprintf ( out, "Hidden=NO");
 	if (one_liner)
-		xstrcat(out, " ");
+		fprintf ( out, " ");
 	else
-		xstrcat(out, "\n   ");
-	
+		fprintf ( out, "\n   ");
+
 	/****** Line 3 ******/
-
 #ifdef HAVE_BG
-	convert_num_unit((float)part_ptr->min_nodes, tmp1, UNIT_NONE);
+	convert_to_kilo(part_ptr->min_nodes, tmp1);
 #else
-	sprintf(tmp1, "%u", part_ptr->min_nodes);
+	sprintf(tmp1, "%d", part_ptr->min_nodes);
 #endif
-	sprintf(tmp_line, "MinNodes=%s ", tmp1);
-	xstrcat(out, tmp_line);
-
+	fprintf ( out, "MinNodes=%s ", tmp1);
 	if (part_ptr->max_nodes == INFINITE)
-		sprintf(tmp_line, "MaxNodes=UNLIMITED ");
+		fprintf ( out, "MaxNodes=UNLIMITED ");
 	else {
 #ifdef HAVE_BG
-		convert_num_unit((float)part_ptr->max_nodes, tmp1, UNIT_NONE);
+		convert_to_kilo(part_ptr->max_nodes, tmp1);
 #else
-		sprintf(tmp1, "%u", part_ptr->max_nodes);
+		sprintf(tmp1, "%d", part_ptr->max_nodes);
 #endif
-		sprintf(tmp_line, "MaxNodes=%s ", tmp1);
+		fprintf ( out, "MaxNodes=%s ", tmp1);
 	}
-	xstrcat(out, tmp_line);
 	if ((part_ptr->allow_groups == NULL) || 
 	    (part_ptr->allow_groups[0] == '\0'))
-		sprintf(tmp_line, "AllowGroups=ALL");
-	else {
-		snprintf(tmp_line, sizeof(tmp_line), 
-			"AllowGroups=%s", part_ptr->allow_groups);
-	}
-	xstrcat(out, tmp_line);
-	if (one_liner)
-		xstrcat(out, " ");
+		fprintf ( out, "AllowGroups=ALL");
 	else
-		xstrcat(out, "\n   ");
-	
+		fprintf ( out, "AllowGroups=%s", part_ptr->allow_groups);
+	if (one_liner)
+		fprintf ( out, " ");
+	else
+		fprintf ( out, "\n   ");
+
 	/****** Line 4 ******/
 #ifdef HAVE_BG
-	snprintf(tmp_line, sizeof(tmp_line), "BasePartitions=%s BPIndices=", 
-		part_ptr->nodes);
+	fprintf ( out, "BasePartitions=%s BPIndices=", part_ptr->nodes);
 #else
-	snprintf(tmp_line, sizeof(tmp_line), "Nodes=%s NodeIndices=", 
-		part_ptr->nodes);
+	fprintf ( out, "Nodes=%s NodeIndices=", part_ptr->nodes);
 #endif
-	xstrcat(out, tmp_line);
-	for (j = 0; (part_ptr->node_inx && (part_ptr->node_inx[j] != -1)); 
-				j+=2) {
+	for (j = 0; part_ptr->node_inx; j++) {
 		if (j > 0)
-			xstrcat(out, ",");
-		sprintf(tmp_line, "%d-%d", part_ptr->node_inx[j],
-			part_ptr->node_inx[j+1]);
-		xstrcat(out, tmp_line);
+			fprintf( out, ",%d", part_ptr->node_inx[j]);
+		else
+			fprintf( out, "%d", part_ptr->node_inx[j]);
+		if (part_ptr->node_inx[j] == -1)
+			break;
 	}
-	if (one_liner)
-		xstrcat(out, "\n");
-	else
-		xstrcat(out, "\n\n");
-	
-	return out;
+	fprintf( out, "\n\n");
 }
 
 
@@ -242,9 +200,6 @@ extern int slurm_load_partitions (time_t update_time,
         slurm_msg_t req_msg;
         slurm_msg_t resp_msg;
         part_info_request_msg_t req;
-
-	slurm_msg_t_init(&req_msg);
-	slurm_msg_t_init(&resp_msg);
 
         req.last_update  = update_time;
 	req.show_flags   = show_flags;

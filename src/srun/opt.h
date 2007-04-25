@@ -5,7 +5,7 @@
  *  Copyright (C) 2002-2006 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Mark Grondona <grondona1@llnl.gov>, et. al.
- *  UCRL-CODE-226842.
+ *  UCRL-CODE-217948.
  *  
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -16,7 +16,7 @@
  *  any later version.
  *
  *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under
+ *  to link the code of portions of this program with the OpenSSL library under 
  *  certain conditions as described in each individual source file, and 
  *  distribute linked combinations including the two. You must obey the GNU 
  *  General Public License in all respects for all of the code used other than 
@@ -50,17 +50,15 @@
 #include "src/common/macros.h" /* true and false */
 #include "src/srun/core-format.h"
 #include "src/common/env.h"
-#include "src/srun/fname.h"
 
 #define MAX_THREADS	60
 #define MAX_USERNAME	9
 
-#define INT_UNASSIGNED ((int)-1)
 
 /* global variables relating to user options */
-extern char **remote_argv;
-extern int remote_argc;
-extern int _verbose;
+char **remote_argv;
+int remote_argc;
+int _verbose;
 
 /* mutually exclusive modes for srun */
 enum modes {
@@ -72,17 +70,23 @@ enum modes {
 	MODE_BATCH	= 5
 };
 
-extern enum modes mode;
+enum modes mode;
 
 #define format_task_dist_states(t) (t == SLURM_DIST_BLOCK) ? "block" :   \
 		                 (t == SLURM_DIST_CYCLIC) ? "cyclic" : \
-		                 (t == SLURM_DIST_PLANE) ? "plane" : \
-		                 (t == SLURM_DIST_CYCLIC_CYCLIC) ? "cyclic:cyclic" : \
-		                 (t == SLURM_DIST_CYCLIC_BLOCK) ? "cyclic:block" : \
-		                 (t == SLURM_DIST_BLOCK_CYCLIC) ? "block:cyclic" : \
-		                 (t == SLURM_DIST_BLOCK_BLOCK) ? "block:block" : \
 			         (t == SLURM_DIST_ARBITRARY) ? "arbitrary" : \
 			         "unknown"
+
+enum io_t {
+	IO_ALL		= 0, /* multiplex output from all/bcast stdin to all */
+	IO_ONE 	        = 1, /* output from only one task/stdin to one task  */
+	IO_PER_TASK	= 2, /* separate output/input file per task          */
+	IO_NONE		= 3, /* close output/close stdin                     */
+};
+
+#define format_io_t(t) (t == IO_ONE) ? "one" : (t == IO_ALL) ? \
+                                                     "all" : "per task"
+//typedef struct srun_job fname_job_t;
 
 typedef struct srun_options {
 
@@ -101,40 +105,26 @@ typedef struct srun_options {
 	bool nprocs_set;	/* true if nprocs explicitly set */
 	int  cpus_per_task;	/* --cpus-per-task=n, -c n	*/
 	bool cpus_set;		/* true if cpus_per_task explicitly set */
-	int32_t max_threads;	/* --threads, -T (threads in srun) */
-	int32_t min_nodes;	/* --nodes=n,       -N n	*/ 
-	int32_t max_nodes;	/* --nodes=x-n,       -N x-n	*/ 
-	int32_t min_sockets_per_node; /* --sockets-per-node=n      */
-	int32_t max_sockets_per_node; /* --sockets-per-node=x-n    */
-	int32_t min_cores_per_socket; /* --cores-per-socket=n      */
-	int32_t max_cores_per_socket; /* --cores-per-socket=x-n    */
-	int32_t min_threads_per_core; /* --threads-per-core=n      */
-	int32_t max_threads_per_core; /* --threads-per-core=x-n    */
-	int32_t ntasks_per_node;   /* --ntasks-per-node=n	*/
-	int32_t ntasks_per_socket; /* --ntasks-per-socket=n	*/
-	int32_t ntasks_per_core;   /* --ntasks-per-core=n	*/
+	int  max_threads;	/* --threads, -T (threads in srun) */
+	int  min_nodes;		/* --nodes=n,       -N n	*/ 
+	int  max_nodes;		/* --nodes=x-n,       -N x-n	*/ 
 	cpu_bind_type_t cpu_bind_type; /* --cpu_bind=           */
 	char *cpu_bind;		/* binding map for map/mask_cpu */
 	mem_bind_type_t mem_bind_type; /* --mem_bind=		*/
 	char *mem_bind;		/* binding map for map/mask_mem	*/
 	bool nodes_set;		/* true if nodes explicitly set */
-	bool extra_set;		/* true if extra node info explicitly set */
 	int  time_limit;	/* --time,   -t			*/
 	char *partition;	/* --partition=n,   -p n   	*/
 	enum task_dist_states
-	        distribution;	/* --distribution=, -m dist	*/
-        uint32_t plane_size;    /* lllp distribution -> plane_size for
-				 * when -m plane=<# of lllp per
-				 * plane> */      
+		distribution;	/* --distribution=, -m dist	*/
 	char *job_name;		/* --job-name=,     -J name	*/
 	bool job_name_set;	/* true if job_name explicitly set */
 	unsigned int jobid;     /* --jobid=jobid                */
-	bool jobid_set;		/* true if jobid explicitly set */
+	bool jobid_set;		/* true of jobid explicitly set */
 	char *mpi_type;		/* --mpi=type			*/
 	unsigned int dependency;/* --dependency, -P jobid	*/
 	int nice;		/* --nice			*/
 	char *account;		/* --account, -U acct_name	*/
-	char *comment;		/* --comment			*/
 
 	char *ofname;		/* --output -o filename         */
 	char *ifname;		/* --input  -i filename         */
@@ -160,8 +150,7 @@ typedef struct srun_options {
 	bool batch;		/* --batch,   -b		*/
 	bool no_kill;		/* --no-kill, -k		*/
 	bool kill_bad_exit;	/* --kill-on-bad-exit, -K	*/
-	bool no_requeue;	/* --no-requeue			*/
-	uint16_t shared;	/* --share,   -s		*/
+	bool share;		/* --share,   -s		*/
 	int  max_wait;		/* --wait,    -W		*/
 	bool quit_on_intr;      /* --quit-on-interrupt, -q      */
 	bool disable_status;    /* --disable-status, -X         */
@@ -174,37 +163,24 @@ typedef struct srun_options {
 	char *task_prolog;	/* --task-prolog=		*/
 
 	/* constraint options */
-	int32_t job_min_cpus;	/* --mincpus=n			*/
-	int32_t job_min_sockets;/* --minsockets=n		*/
-	int32_t job_min_cores;	/* --mincores=n			*/
-	int32_t job_min_threads;/* --minthreads=n		*/
-	int32_t job_min_memory;	/* --mem=n			*/
-	int32_t job_max_memory;	/* --job-mem=n			*/
-	long job_min_tmp_disk;	/* --tmp=n			*/
+	int mincpus;		/* --mincpus=n			*/
+	int realmem;		/* --mem=n			*/
+	long tmpdisk;		/* --tmp=n			*/
 	char *constraints;	/* --constraints=, -C constraint*/
 	bool contiguous;	/* --contiguous			*/
 	char *nodelist;		/* --nodelist=node1,node2,...	*/
-	char *alloc_nodelist;   /* grabbed from the environment */
 	char *exc_nodes;	/* --exclude=node1,node2,... -x	*/
-	int  relative;		/* --relative -r N              */
-	bool relative_set;
+	char *relative;		/* --relative -r N              */
 	bool no_alloc;		/* --no-allocate, -Z		*/
 	int  max_launch_time;   /* Undocumented                 */
 	int  max_exit_timeout;  /* Undocumented                 */
 	int  msg_timeout;       /* Undocumented                 */
 	char *network;		/* --network=			*/
+        bool exclusive;         /* --exclusive                  */
 
-	/* BLUEGENE SPECIFIC */
 	uint16_t geometry[SYSTEM_DIMENSIONS]; /* --geometry, -g	*/
-	bool reboot;		/* --reboot			*/
 	bool no_rotate;		/* --no_rotate, -R		*/
-	uint16_t conn_type;	/* --conn-type 			*/
-	char *blrtsimage;       /* --blrtsimage BlrtsImage for block */
-	char *linuximage;       /* --linuximage LinuxImage for block */
-	char *mloaderimage;     /* --mloaderimage mloaderImage for block */
-	char *ramdiskimage;     /* --ramdiskimage RamDiskImage for block */
-	/*********************/
-
+	int16_t conn_type;	/* --conn-type 			*/
 	char *prolog;           /* --prolog                     */
 	char *epilog;           /* --epilog                     */
 	time_t begin;		/* --begin			*/
@@ -214,20 +190,14 @@ typedef struct srun_options {
 	bool get_user_env;	/* --get-user-env		*/
 } opt_t;
 
-extern opt_t opt;
+opt_t opt;
 
 /* return whether any constraints were specified by the user 
  * (if new constraints are added above, might want to add them to this
  *  macro or move this to a function if it gets a little complicated)
  */
-#define constraints_given() opt.job_min_cpus     != NO_VAL ||\
-			    opt.job_min_memory   != NO_VAL ||\
-			    opt.job_max_memory   != NO_VAL ||\
-			    opt.job_min_tmp_disk != NO_VAL ||\
-			    opt.job_min_sockets  != NO_VAL ||\
-			    opt.job_min_cores    != NO_VAL ||\
-			    opt.job_min_threads  != NO_VAL ||\
-			    opt.contiguous   
+#define constraints_given() opt.mincpus != -1 || opt.realmem != -1 ||\
+                            opt.tmpdisk != -1 || opt.contiguous   
 
 /* process options:
  * 1. set defaults

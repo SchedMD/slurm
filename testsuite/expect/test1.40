@@ -11,7 +11,7 @@
 # Copyright (C) 2002 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 # Written by Morris Jette <jette1@llnl.gov>
-# UCRL-CODE-226842.
+# UCRL-CODE-217948.
 # 
 # This file is part of SLURM, a resource management program.
 # For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -42,7 +42,7 @@ print_header $test_id
 # Submit a slurm allocate job
 #
 set timeout $max_job_delay
-set srun_pid [spawn $srun --allocate -t1 --no-shell]
+spawn $srun --allocate -t1 --no-shell
 expect {
 	-re "SLURM_JOBID=($number).*" {
 		set job_id $expect_out(1,string)
@@ -50,8 +50,9 @@ expect {
 	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
-		slow_kill $srun_pid
+		kill_srun
 		set exit_code 1
+		exp_continue
 	}
 	eof {
 		wait
@@ -88,13 +89,13 @@ if { $found_job == 0 } {
 #
 # Kill the job
 #
-cancel_job $job_id
+exec $scancel --quiet $job_id
 
 #
 # Create a job allocation as some other user, namely root
 #
 set job_id 0
-set srun_pid [spawn $srun --allocate -t1 --no-shell --uid=0]
+spawn $srun --allocate -t1 --no-shell --uid=0
 expect {
 	-re "SLURM_JOBID=($number).*" {
 		set job_id $expect_out(1,string)
@@ -106,8 +107,9 @@ expect {
 	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
-		slow_kill $srun_pid
+		kill_srun
 		set exit_code 1
+		exp_continue
 	}
 	eof {
 		wait
@@ -143,7 +145,10 @@ if { $job_id == -1 } {
 		send_user "\nFAILURE: job $job_id not in run state\n"
 		exit 1
 	}
-	cancel_job $job_id
+#
+#	Kill the job
+#
+	exec $scancel --quiet $job_id
 }
 
 if { $exit_code == 0 } {

@@ -5,7 +5,7 @@
  *  Copyright (C) 2005 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
- *  UCRL-CODE-226842.
+ *  UCRL-CODE-217948.
  *  
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -93,46 +93,6 @@ int init ( void )
  *	storage here.
  */
 int fini ( void )
-{
-	return SLURM_SUCCESS;
-}
-
-/*
- * task_slurmd_launch_request()
- */
-int task_slurmd_launch_request ( uint32_t job_id, launch_tasks_request_msg_t *req, uint32_t node_id)
-{
-	debug("task_slurmd_launch_request: %u %u", 
-		job_id, node_id);
-	return SLURM_SUCCESS;
-}
-
-/*
- * task_slurmd_reserve_resources()
- */
-int task_slurmd_reserve_resources ( uint32_t job_id, launch_tasks_request_msg_t *req, uint32_t node_id )
-{
-	debug("task_slurmd_reserve_resources: %u %u",
-		job_id, node_id);
-	return SLURM_SUCCESS;
-}
-
-/*
- * task_slurmd_release_resources()
- */
-int task_slurmd_release_resources ( uint32_t job_id )
-{
-	debug("task_slurmd_release_resources: %u",
-		job_id);
-	return SLURM_SUCCESS;
-}
-
-/*
- * task_pre_setuid() is called before setting the UID for the
- * user to launch his jobs. Use this to create the CPUSET directory
- * and set the owner appropriately.
- */
-int task_pre_setuid ( slurmd_job_t *job )
 {
 	return SLURM_SUCCESS;
 }

@@ -4,7 +4,7 @@
  *  Copyright (C) 2002-2006 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Jim Garlick <garlick@llnl.gov>, et. al.
- *  UCRL-CODE-226842.
+ *  UCRL-CODE-217948.
  *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -66,7 +66,7 @@ typedef struct {
 static slurm_errtab_t slurm_errtab[] = {
 	{0, "No error"},
 	{-1, "Unspecified error"},
-	{EINPROGRESS, "Operation now in progress"},
+	{EINPROGRESS, "Operation already in progress"},
 
 	/*General Message error codes */
 	{ SLURM_UNEXPECTED_MSG_ERROR, 
@@ -87,10 +87,6 @@ static slurm_errtab_t slurm_errtab[] = {
           "Protocol authentication error"                       },
         { SLURM_PROTOCOL_INSANE_MSG_LENGTH,
           "Insane message length"                               },
-	{ SLURM_MPI_PLUGIN_NAME_INVALID,
-	  "Invalid MPI plugin name"                             },
-	{ SLURM_MPI_PLUGIN_PRELAUNCH_SETUP_FAILED,
-	  "MPI plugin's pre-launch setup failed"                },
 
 	/* communication failures to/from slurmctld */
 	{ SLURMCTLD_COMMUNICATIONS_CONNECTION_ERROR,
@@ -189,11 +185,7 @@ static slurm_errtab_t slurm_errtab[] = {
 	{ ESLURM_DEPENDENCY,
 	  "Immediate execution impossible, job dependency problem"},
  	{ ESLURM_BATCH_ONLY,
-	  "Only batch jobs are accepted or processed"		},
-	{ ESLURM_TASKDIST_ARBITRARY_UNSUPPORTED,
-	  "Current SwitchType does not permit arbitrary task distribution"},
-	{ ESLURM_TASKDIST_REQUIRES_OVERCOMMIT,
-	  "Requested more tasks than available processors"	},
+	  "Only batch jobs are accepted"			},
 	{ ESLURM_JOB_HELD,
 	  "Job is in held state, pending scheduler release"	},
 

@@ -5,7 +5,7 @@
  *  Copyright (C) 2006 The Regents of the University of California and
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>.
- *  UCRL-CODE-226842.
+ *  UCRL-CODE-217948.
  *  
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -102,50 +102,54 @@ static int _str_to_memset(nodemask_t *mask, const char* str)
 void slurm_chk_memset(nodemask_t *mask, slurmd_job_t *job)
 {
 	char bind_type[42];
-	char action[42];
 	char status[42];
+	char prefix[42];
+	char suffix[42];
 	char mstr[1 + NUMA_NUM_NODES / 4];
-	int task_gid = job->envtp->procid;
-	int task_lid = job->envtp->localid;
+	int task_id = job->envtp->procid;
 	pid_t mypid = job->envtp->task_pid;
 
 	if (!(job->mem_bind_type & MEM_BIND_VERBOSE))
 		return;
 
-	action[0] = '\0';
 	status[0] = '\0';
+	prefix[0] = '\0';
+	suffix[0] = '\0';
 
 	if (job->mem_bind_type & MEM_BIND_NONE) {
-		strcpy(action, "");
-		strcpy(bind_type, "=NONE");
+		strcpy(bind_type, "set to NO");
+		strcpy(prefix, "current ");
+		sprintf(suffix, "is mask 0x");
 	} else {
-		strcpy(action, " set");
+		strcpy(prefix, "setting ");
+		sprintf(suffix, "to mask 0x");
 		if (job->mem_bind_type & MEM_BIND_RANK) {
-			strcpy(bind_type, "=RANK");
+			strcpy(bind_type, "set to RANK");
 		} else if (job->mem_bind_type & MEM_BIND_LOCAL) {
-			strcpy(bind_type, "=LOC ");
-		} else if (job->mem_bind_type & MEM_BIND_MAP) {
-			strcpy(bind_type, "=MAP ");
-		} else if (job->mem_bind_type & MEM_BIND_MASK) {
-			strcpy(bind_type, "=MASK");
+			strcpy(bind_type, "set to LOCAL");
+		} else if (job->mem_bind_type & MEM_BIND_MAPCPU) {
+			strcpy(bind_type, "set to MAP_MEM");
+		} else if (job->mem_bind_type & MEM_BIND_MASKCPU) {
+			strcpy(bind_type, "set to MASK_MEM");
 		} else if (job->mem_bind_type & (~MEM_BIND_VERBOSE)) {
-			strcpy(bind_type, "=UNK ");
+			strcpy(bind_type, "set to UNKNOWN");
 		} else {
-			strcpy(action, "");
-			strcpy(bind_type, "=NULL");
+			strcpy(bind_type, "not set");
+			strcpy(prefix, "current ");
+			sprintf(suffix, "is mask 0x");
 		}
 	}
 
-	fprintf(stderr, "mem_bind%s - "
-			"%s, task %2u %2u [%u]: mask 0x%s%s%s\n",
+	fprintf(stderr, "SLURM_MEM_BIND_TYPE %s, "
+			"%s%saffinity of task %u pid %u on host %s %s%s\n",
 			bind_type,
-			conf->hostname,
-			task_gid,
-			task_lid,
+			status,
+			prefix,
+			task_id,
 			mypid,
-			_memset_to_str(mask, mstr),
-			action,
-			status);
+			conf->hostname,
+			suffix,
+			_memset_to_str(mask, mstr));
 }
 
 int get_memset(nodemask_t *mask, slurmd_job_t *job)
@@ -215,7 +219,7 @@ int get_memset(nodemask_t *mask, slurmd_job_t *job)
 		*curstr++ = *selstr++;
 	*curstr = '\0';
 
-	if (job->mem_bind_type & MEM_BIND_MASK) {
+	if (job->mem_bind_type & MEM_BIND_MASKCPU) {
 		/* convert mask string into nodemask_t mask */
 		if (_str_to_memset(mask, mstr) < 0) {
 			error("_str_to_memset %s", mstr);
@@ -224,7 +228,7 @@ int get_memset(nodemask_t *mask, slurmd_job_t *job)
 		return true;
 	}
 
-	if (job->mem_bind_type & MEM_BIND_MAP) {
+	if (job->mem_bind_type & MEM_BIND_MAPCPU) {
 		unsigned int my_node = 0;
 		if (strncmp(mstr, "0x", 2) == 0) {
 			my_node = strtoul (&(mstr[2]), NULL, 16);

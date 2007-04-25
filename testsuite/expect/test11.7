@@ -9,10 +9,10 @@
 #          anything else indicates a failure mode that must be investigated.
 #
 ############################################################################
-# Copyright (C) 2002-2006 The Regents of the University of California.
+# Copyright (C) 2002 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 # Written by Danny Auble <da@llnl.gov>
-# UCRL-CODE-226842.
+# UCRL-CODE-217948.
 # 
 # This file is part of SLURM, a resource management program.
 # For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -51,10 +51,6 @@ if { ![file exists $poe] } {
 	send_user "WARNING: poe must be installed on the\
 	    system to run this test.\n"
 	exit $exit_code
-}
-
-if { [string length $partition] == 0 } {
-	set partition [default_partition]
 }
 
 #find out if we have enough nodes to test functionality
@@ -118,7 +114,7 @@ for {set i 0} {$i<2} {incr i} {
 		}
 		timeout {
 			send_user "\nFAILURE: poe not responding\n"
-			cancel_job $job_id
+			exec $scancel --quiet $job_id
 			set exit_code 1
 		}
 		eof {

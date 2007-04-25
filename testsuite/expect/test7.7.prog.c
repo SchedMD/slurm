@@ -1,10 +1,10 @@
 /*****************************************************************************\
- *  test7.7.prog.c - Test of sched/wiki2 plugin
+ *  test7.7.prog.c - Test of sched/wiki plugin
  *****************************************************************************
  *  Copyright (C) 2006-2007 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
- *  UCRL-CODE-226842.
+ *  UCRL-CODE-217948.
  *  
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -329,7 +329,7 @@ static void _modify_job(long my_job_id)
 	snprintf(out_msg, sizeof(out_msg),
 		"TS=%u AUTH=root DT=CMD=MODIFYJOB ARG=%ld "
 		/* "PARTITION=pdebug " */
-		/* "NODES=2 " */ 
+		/* "NODES=2 " */
 		/* "DEPEND=afterany:3 " */
 		/* "INVALID=123 " */
 		"TIMELIMIT=10 BANK=test_bank",
@@ -343,17 +343,6 @@ static void _resume_job(long my_job_id)
 
 	snprintf(out_msg, sizeof(out_msg),
 		"TS=%u AUTH=root DT=CMD=RESUMEJOB ARG=%ld",
-		(uint32_t) now, my_job_id);
-	_xmit(out_msg);
-}
-
-static void _job_requeue(long my_job_id)
-{
-	time_t now = time(NULL);
-	char out_msg[128];
-
-	snprintf(out_msg, sizeof(out_msg),
-		"TS=%u AUTH=root DT=CMD=REQUEUEJOB ARG=%ld",
 		(uint32_t) now, my_job_id);
 	_xmit(out_msg);
 }
@@ -404,7 +393,6 @@ int main(int argc, char * argv[])
 	_modify_job(job_id);
 	_get_jobs();
 	_start_job(job_id);
-	_get_jobs();
 	_suspend_job(job_id);
 	_resume_job(job_id);
 	_signal_job(job_id);
@@ -412,12 +400,9 @@ int main(int argc, char * argv[])
 		_event_mgr();
 	else {
 		printf("READY\n");
-		sleep(3);
+		sleep(1);
 	}
 	_cancel_job(job_id+1);
-	_job_requeue(job_id);	/* Put job back into HELD state */
-	sleep(5);
-	_start_job(job_id);
 	_get_jobs();
 
 	printf("SUCCESS\n");

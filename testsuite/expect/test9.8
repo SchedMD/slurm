@@ -13,7 +13,7 @@
 # Copyright (C) 2002-2006 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 # Written by Morris Jette <jette1@llnl.gov>
-# UCRL-CODE-226842.
+# UCRL-CODE-217948.
 # 
 # This file is part of SLURM, a resource management program.
 # For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -39,7 +39,6 @@ set exit_code    0
 set file_in      "test$test_id.input"
 set job_cnt      10
 set delay        5
-set job_name     "test$test_id"
 set sleep_time   300
 set task_cnt     60
 
@@ -73,7 +72,7 @@ $srun $bin_sleep $sleep_time
 set start_cnt 0
 set timeout $delay
 for {set inx 0} {$inx < $job_cnt} {incr inx} {
-	set srun_pid [spawn $srun --job-name=$job_name --batch --output=/dev/null --error=/dev/null -t5 $file_in]
+	spawn $srun --batch --output=/dev/null --error=/dev/null -t5 $file_in
 	expect {
 		-re "jobid ($number) submitted" {
 			incr start_cnt
@@ -85,7 +84,7 @@ for {set inx 0} {$inx < $job_cnt} {incr inx} {
 		}
 		timeout {
 			send_user "\nFAILURE: srun not responding\n"
-			slow_kill $srun_pid
+			kill_srun
 			exit 1
 		}
 		eof {

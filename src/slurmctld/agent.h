@@ -8,7 +8,7 @@
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette@llnl.gov>, et. al.
  *  Derived from dsh written by Jim Garlick <garlick1@llnl.gov>
- *  UCRL-CODE-226842.
+ *  UCRL-CODE-217948.
  *  
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -59,10 +59,9 @@ typedef struct agent_arg {
 	uint32_t	node_count;	/* number of nodes to communicate 
 					 * with */
 	uint16_t	retry;		/* if set, keep trying */
-	slurm_addr      *addr;          /* if set will send to this
-					   addr not hostlist */
-	hostlist_t	hostlist;	/* hostlist containing the
-					 * nodes we are sending to */
+	slurm_addr	*slurm_addr;	/* array of network addresses */
+	char		*node_names;	/* array with MAX_SLURM_NAME bytes
+					 * per node */
 	slurm_msg_type_t msg_type;	/* RPC to be issued */
 	void		*msg_args;	/* RPC data to be transmitted */
 } agent_arg_t;
@@ -71,8 +70,8 @@ typedef struct agent_arg {
  * agent - party responsible for transmitting an common RPC in parallel 
  *	across a set of nodes. agent_queue_request() if immediate 
  *	execution is not essential.
- * IN pointer to agent_arg_t, which is xfree'd (including addr,
- *	hostlist and msg_args) upon completion if AGENT_IS_THREAD is set
+ * IN pointer to agent_arg_t, which is xfree'd (including slurm_addr, 
+ *	node_names and msg_args) upon completion if AGENT_IS_THREAD is set
  * RET always NULL (function format just for use as pthread)
  */
 extern void *agent (void *args);

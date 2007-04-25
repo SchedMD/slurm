@@ -6,7 +6,7 @@
  *  Copyright (C) 2006 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Danny Auble <da@llnl.gov>.
- *  UCRL-CODE-226842.
+ *  UCRL-CODE-217948.
  *  
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -17,7 +17,7 @@
  *  any later version.
  *
  *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under
+ *  to link the code of portions of this program with the OpenSSL library under 
  *  certain conditions as described in each individual source file, and 
  *  distribute linked combinations including the two. You must obey the GNU 
  *  General Public License in all respects for all of the code used other than 
@@ -142,8 +142,6 @@ job_rec_t *_init_job_rec(acct_header_t header)
 	job->steps = list_create(destroy_step);
 	job->nodes = NULL;
 	job->track_steps = 0;
-	job->account = NULL;
-	job->requid = -1;
 
       	return job;
 }
@@ -164,9 +162,7 @@ step_rec_t *_init_step_rec(acct_header_t header)
 	step->elapsed = (uint32_t)NO_VAL;
 	step->tot_cpu_sec = (uint32_t)NO_VAL;
 	step->tot_cpu_usec = (uint32_t)NO_VAL;
-	step->account = NULL;
-	step->requid = -1;
-
+	
 	return step;
 }
 
@@ -198,21 +194,12 @@ int _parse_line(char *f[], void **data, int len)
 		(*job)->priority = atoi(f[F_PRIORITY]);
 		(*job)->ncpus = atoi(f[F_NCPUS]);
 		(*job)->nodes = xstrdup(f[F_NODES]);
-		for (i=0; (*job)->nodes[i]; i++) { /* discard trailing <CR> */
+		for (i=0; (*job)->nodes[i]; i++)  /* discard trailing <CR> */
 			if (isspace((*job)->nodes[i]))
-				(*job)->nodes[i] = '\0';
-		}
+				(*job)->nodes[i] = 0;
 		if (!strcmp((*job)->nodes, "(null)")) {
 			xfree((*job)->nodes);
 			(*job)->nodes = xstrdup("(unknown)");
-		}
-		if (len > F_JOB_ACCOUNT) {
-			(*job)->account = xstrdup(f[F_JOB_ACCOUNT]);
-			for (i=0; (*job)->account[i]; i++) {
-				/* discard trailing <CR> */
-				if (isspace((*job)->account[i]))
-					(*job)->account[i] = '\0';
-			}
 		}
 		break;
 	case JOB_STEP:
@@ -244,7 +231,7 @@ int _parse_line(char *f[], void **data, int len)
 		(*step)->rusage.ru_nvcsw = atoi(f[F_NVCSW]);
 		(*step)->rusage.ru_nivcsw = atoi(f[F_NIVCSW]);
 		(*step)->sacct.max_vsize = atoi(f[F_MAX_VSIZE]) * 1024;
-		if(len > F_STEPNODES) {
+		if(len >= F_STEPNODES) {
 			(*step)->sacct.max_vsize_id.taskid = 
 				atoi(f[F_MAX_VSIZE_TASK]);
 			(*step)->sacct.ave_vsize = atof(f[F_AVE_VSIZE]) * 1024;
@@ -277,7 +264,7 @@ int _parse_line(char *f[], void **data, int len)
 			(*step)->stepname = NULL;
 			(*step)->nodes = NULL;
 		}
-		if(len > F_MIN_CPU_NODE) {
+		if(len >= F_MIN_CPU_NODE) {
 			(*step)->sacct.max_vsize_id.nodeid = 
 				atoi(f[F_MAX_VSIZE_NODE]);
 			(*step)->sacct.max_rss_id.nodeid = 
@@ -296,18 +283,12 @@ int _parse_line(char *f[], void **data, int len)
 			(*step)->sacct.min_cpu_id.nodeid = 
 				(uint32_t)NO_VAL;
 		}
-		if(len > F_STEP_ACCOUNT)
-			(*step)->account = xstrdup(f[F_STEP_ACCOUNT]);
-		if(len > F_STEP_REQUID)
-			(*step)->requid = atoi(f[F_STEP_REQUID]);
 		break;
 	case JOB_SUSPEND:
 	case JOB_TERMINATED:
 		*job = _init_job_rec(header);
 		(*job)->elapsed = atoi(f[F_TOT_ELAPSED]);
 		(*job)->status = atoi(f[F_STATUS]);		
-		if(len > F_JOB_REQUID) 
-			(*job)->requid = atoi(f[F_JOB_REQUID]);
 		break;
 	default:
 		printf("UNKOWN TYPE %d",i);
@@ -395,8 +376,6 @@ void process_step(char *f[], int lc, int show_full, int len)
 		step->elapsed = temp->elapsed;
 		step->tot_cpu_sec = temp->tot_cpu_sec;
 		step->tot_cpu_usec = temp->tot_cpu_usec;
-		job->requid = temp->requid;
-		step->requid = temp->requid;
 		memcpy(&step->rusage, &temp->rusage, sizeof(struct rusage));
 		memcpy(&step->sacct, &temp->sacct, sizeof(sacct_t));
 		xfree(step->stepname);
@@ -528,13 +507,28 @@ void process_terminated(char *f[], int lc, int show_full, int len)
 	job->elapsed = temp->elapsed;
 	job->end = temp->header.timestamp;
 	job->status = temp->status;
-	job->requid = temp->requid;
 	if(list_count(job->steps) > 1)
 		job->track_steps = 1;
 	job->show_full = show_full;
 	
 finished:
 	destroy_job(temp);
+}
+
+void convert_num(float num, char *buf)
+{
+	char *unit = "\0KMGP";
+	int count = 0;
+	if(num == (float)NO_VAL) {
+		snprintf(buf, 20, "'N/A'");
+		return;
+	}
+		
+	while(num>1024) {
+		num /= 1024;
+		count++;
+	}
+	snprintf(buf, 20, "%.2f%c", num, unit[count]);
 }
 
 void find_hostname(uint32_t pos, char *hosts, char *host)

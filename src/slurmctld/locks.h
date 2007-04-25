@@ -4,7 +4,7 @@
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette@llnl.gov>, Randy Sanchez <rsancez@llnl.gov>
- *  UCRL-CODE-226842.
+ *  UCRL-CODE-217948.
  *  
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -83,9 +83,6 @@
  * would look like this: "{ NO_LOCK, READ_LOCK, READ_LOCK, WRITE_LOCK }"
 \*****************************************************************************/
 
-#ifndef _SLURMCTLD_LOCKS_H
-#define _SLURMCTLD_LOCKS_H
-
 /* levels of locking required for each data structure */
 typedef enum {
 	NO_LOCK,
@@ -147,4 +144,3 @@ extern void unlock_slurmctld (slurmctld_lock_t lock_levels);
 extern void inline lock_state_files ( void );
 extern void inline unlock_state_files ( void );
 
-#endif

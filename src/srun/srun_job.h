@@ -5,7 +5,7 @@
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Mark Grondona <mgrondona@llnl.gov>.
- *  UCRL-CODE-226842.
+ *  UCRL-CODE-217948.
  *  
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -16,7 +16,7 @@
  *  any later version.
  *
  *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under
+ *  to link the code of portions of this program with the OpenSSL library under 
  *  certain conditions as described in each individual source file, and 
  *  distribute linked combinations including the two. You must obey the GNU 
  *  General Public License in all respects for all of the code used other than 
@@ -51,9 +51,24 @@
 #include "src/common/macros.h"
 #include "src/common/node_select.h"
 #include "src/common/slurm_protocol_defs.h"
-#include "src/api/step_io.h"
+#include "src/common/dist_tasks.h"
+//#include "src/common/global_srun.h"
 
-//#include "src/srun/fname.h"
+#include "src/srun/signals.h"
+#include "src/srun/fname.h"
+
+typedef enum { 
+	PIPE_NONE = 0, 
+	PIPE_JOB_STATE, 
+	PIPE_TASK_STATE, 
+	PIPE_TASK_EXITCODE,
+	PIPE_HOST_STATE, 
+	PIPE_SIGNALED,
+	PIPE_MPIR_DEBUG_STATE,
+	PIPE_UPDATE_MPIR_PROCTABLE,
+	PIPE_UPDATE_STEP_LAYOUT,
+	PIPE_NODE_FAIL
+} pipe_enum_t;
 
 typedef enum {
 	SRUN_JOB_INIT = 0,         /* Job's initial state                   */
@@ -81,23 +96,10 @@ typedef enum {
 	SRUN_TASK_INIT = 0,
 	SRUN_TASK_RUNNING,
 	SRUN_TASK_FAILED,
-	SRUN_TASK_IO_WAIT,/* this state deprecated with new eio stdio engine */
+	SRUN_TASK_IO_WAIT, /* this state deprecated with new eio stdio engine */
 	SRUN_TASK_EXITED,
 	SRUN_TASK_ABNORMAL_EXIT
 } srun_task_state_t;
-
-typedef enum { 
-	PIPE_NONE = 0, 
-	PIPE_JOB_STATE, 
-	PIPE_TASK_STATE, 
-	PIPE_TASK_EXITCODE,
-	PIPE_HOST_STATE, 
-	PIPE_SIGNALED,
-	PIPE_MPIR_DEBUG_STATE,
-	PIPE_UPDATE_MPIR_PROCTABLE,
-	PIPE_UPDATE_STEP_LAYOUT,
-	PIPE_NODE_FAIL
-} pipe_enum_t;
 
 /* For Message thread */
 typedef struct forked_msg_pipe {
@@ -110,8 +112,6 @@ typedef struct forked_message {
 	forked_msg_pipe_t *          msg_par;
 	enum job_states	*	     job_state;
 } forked_msg_t;
-
-typedef struct io_filename io_filename_t;
 
 typedef struct srun_job {
 	slurm_step_layout_t *step_layout; /* holds info about how the task is 
@@ -133,14 +133,40 @@ typedef struct srun_job {
 	slurm_cred_t  cred;     /* Slurm job credential    */
 	char *nodelist;		/* nodelist in string form */
 
+	slurm_addr *slurmd_addr;/* slurm_addr vector to slurmd's */
+
 	pthread_t sigid;	/* signals thread tid		  */
 
 	pthread_t jtid;		/* job control thread id 	  */
 	slurm_fd *jfd;		/* job control info fd   	  */
 	
+	pthread_t ioid;		/* stdio thread id 		  */
+	int *listensock;	/* Array of stdio listen sockets  */
+	eio_handle_t *eio;      /* Event IO handle                */
+	int ioservers_ready;    /* Number of servers that established contact */
+	eio_obj_t **ioserver;	/* Array of nhosts pointers to eio_obj_t */
+	eio_obj_t *stdin_obj;   /* stdin eio_obj_t                */
+	eio_obj_t *stdout_obj;  /* stdout eio_obj_t               */
+	eio_obj_t *stderr_obj;  /* stderr eio_obj_t               */
+	List free_incoming;     /* List of free struct io_buf * for incoming
+				 * traffic. "incoming" means traffic from srun
+				 * to the tasks.
+				 */
+	List free_outgoing;     /* List of free struct io_buf * for outgoing
+				 * traffic "outgoing" means traffic from the
+				 * tasks to srun.
+				 */
+	int incoming_count;     /* Count of total incoming message buffers
+			         * including free_incoming buffers and
+			         * buffers in use.
+			         */
+	int outgoing_count;     /* Count of total incoming message buffers
+			         * including free_incoming buffers and
+			         * buffers in use.
+			         */
+
 	pthread_t lid;		  /* launch thread id */
 
-	client_io_t *client_io;
 	time_t    ltimeout;       /* Time by which all tasks must be running */
 	time_t    etimeout;       /* exit timeout (see opt.max_wait          */
 
@@ -159,6 +185,8 @@ typedef struct srun_job {
 	pthread_mutex_t task_mutex;
 	int njfds;		/* number of job control info fds */
 	slurm_addr *jaddr;	/* job control info ports 	  */
+	int num_listen;		/* Number of stdio listen sockets */
+	int *listenport;	/* Array of stdio listen ports 	  */
 	int thr_count;  	/* count of threads in job launch */
 
 	/* Output streams and stdin fileno */
@@ -174,7 +202,8 @@ void    job_force_termination(srun_job_t *job);
 srun_job_state_t job_state(srun_job_t *job);
 
 extern srun_job_t * job_create_noalloc(void);
-extern srun_job_t *job_step_create_allocation(uint32_t job_id);
+extern srun_job_t *job_step_create_allocation(
+	resource_allocation_response_msg_t *resp);
 extern srun_job_t * job_create_allocation(
 	resource_allocation_response_msg_t *resp);
 extern srun_job_t * job_create_structure(
@@ -215,7 +244,15 @@ void    report_job_status(srun_job_t *job);
  */
 int    job_rc(srun_job_t *job);
 
-void   fwd_signal(srun_job_t *job, int signal, int max_threads);
-int    job_active_tasks_on_host(srun_job_t *job, int hostid);
+/*
+ * To run a job step on existing allocation, modify the 
+ * existing_allocation() response to remove nodes as needed 
+ * for the job step request (for --excluded nodes or reduced 
+ * --nodes count). This is a temporary fix for slurm 0.2.
+ * resp IN/OUT - existing_allocation() response message
+ * RET - zero or fatal error code
+ */
+
+int    job_resp_hack_for_step(resource_allocation_response_msg_t *resp);
 
 #endif /* !_HAVE_JOB_H */

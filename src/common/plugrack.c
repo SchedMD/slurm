@@ -4,7 +4,7 @@
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Jay Windley <jwindley@lnxi.com>.
- *  UCRL-CODE-226842.
+ *  UCRL-CODE-217948.
  *  
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -209,6 +209,101 @@ accept_path_paranoia( plugrack_t rack,
 }
 
 
+/*
+ * Check a file to see if its permissions and location are appropriate
+ * for a plugin.  This checks both a file and its parent directory for
+ * correct ownership and writability.
+ *
+ * The permissions and ownerships to check are given in the paranoia
+ * policy of the plugin rack.
+ *
+ * Returns nonzero if the plugin is acceptable.
+ */
+static int
+accept_paranoia( plugrack_t rack, const char *fq_path )
+{
+        char *local;
+        char *p;
+	int rc;
+  
+        xassert( rack );
+        xassert( fq_path );
+
+        /* Trivial accept. */
+        if ( ! rack->paranoia ) return 1;
+  
+        /* Make a local copy of the path name so we can write into it. */
+        local = xmalloc( strlen( fq_path ) + 1 );
+        strcpy( local, fq_path );
+
+        if ( ! accept_path_paranoia( rack,
+                                     local,
+                                     rack->paranoia & 
+				     PLUGRACK_PARANOIA_FILE_OWN,
+                                     rack->paranoia & 
+				     PLUGRACK_PARANOIA_FILE_WRITABLE ) ) {
+		xfree( local );
+                return 0;
+        }
+
+        /*
+         * Find the directory name by chopping off the last path element.
+         * This also helps weed out malformed file names.  We specify that
+         * plugins be specified by fully-qualified pathnames and that means
+         * it should have at least one delimiter.
+         */
+        if ( ( p = strrchr( local, '/' ) ) == NULL ) {
+		free( local );
+                return 0;
+        }
+        if ( p != local ) *p = 0;
+
+        rc = accept_path_paranoia( rack,
+                                   local,
+                                   rack->paranoia & 
+				   PLUGRACK_PARANOIA_DIR_OWN,
+                                   rack->paranoia & 
+				   PLUGRACK_PARANOIA_DIR_WRITABLE );
+	xfree( local );
+	return rc;
+}
+
+#if 0
+/* Vestigial */
+/*
+ * Load a plugin.  Check its type, but not any of the onwership or
+ * writability.  It is presumed that those have already been checked.
+ */
+static plugin_handle_t
+plugrack_open_plugin( plugrack_t rack, const char *fq_path )
+{
+        plugin_handle_t plug;
+
+        if ( ! rack ) return PLUGIN_INVALID_HANDLE;
+        if ( ! fq_path ) return PLUGIN_INVALID_HANDLE;
+  
+        /* See if we can actually load the plugin. */
+        plug = plugin_load_from_file( fq_path );
+        if ( plug == PLUGIN_INVALID_HANDLE ) {
+		debug3( "plugrack_open_plugin: can't open %s", fq_path );
+		return PLUGIN_INVALID_HANDLE;
+	}
+
+        /* Now see if this is the right type. */
+        if (   rack->major_type 
+	       && ( strncmp( rack->major_type,
+			     plugin_get_type( plug ),
+			     strlen( rack->major_type ) ) != 0 ) ) {
+		debug3( "plugrack_open_plugin: %s is of wrong type", fq_path );
+                plugin_unload( plug );
+                return PLUGIN_INVALID_HANDLE;
+        }
+
+        return plug;
+}
+#endif
+
+
 plugrack_t plugrack_create( void )
 {
         plugrack_t rack = (plugrack_t) xmalloc( sizeof( struct _plugrack ) );
@@ -259,13 +354,12 @@ plugrack_destroy( plugrack_t rack )
 int
 plugrack_set_major_type( plugrack_t rack, const char *type )
 {
-	if ( ! rack )
-		return SLURM_ERROR;
-	if ( ! type )
-		return SLURM_ERROR;
+        if ( ! rack ) return SLURM_ERROR;
+        if ( ! type ) return SLURM_ERROR;
 
-	/* Free any pre-existing type. */
-	xfree( rack->major_type );
+        /* Free any pre-existing type. */
+        if ( rack->major_type ) xfree( rack->major_type );
+        rack->major_type = NULL;
 
         /* Install a new one. */
         if ( type != NULL ) {
@@ -286,8 +380,7 @@ plugrack_set_paranoia( plugrack_t rack,
                        const uid_t uid )
 
 {
-	if ( ! rack )
-		return SLURM_ERROR;
+        if ( ! rack ) return SLURM_ERROR;
 
         rack->paranoia = flags;
         if ( flags ) {
@@ -319,6 +412,41 @@ plugrack_add_plugin_path( plugrack_t rack,
 }
 
   
+int
+plugrack_add_plugin_file( plugrack_t rack, const char *fq_path )
+{
+	static const size_t type_len = 64;
+	char plugin_type[ type_len ];
+
+        if ( ! rack ) return SLURM_ERROR;
+        if ( ! fq_path ) return SLURM_ERROR;
+
+        /*
+         * See if we should open this plugin.  Paranoia checks must
+         * always be done first since code can be executed in the plugin
+         * simply by opening it.
+         */
+        if ( ! accept_paranoia( rack, fq_path ) ) return SLURM_ERROR;
+
+	/* Test the type. */
+	if ( plugin_peek( fq_path,
+			  plugin_type,
+			  type_len,
+			  NULL ) == SLURM_ERROR ) {
+		return SLURM_ERROR;
+	}
+	if (   rack->major_type 
+	       && ( strncmp( rack->major_type,
+			     plugin_type,
+			     strlen( rack->major_type ) ) != 0 ) ) {
+		return SLURM_ERROR;
+        }
+
+        /* Add it to the list. */
+        return plugrack_add_plugin_path( rack, plugin_type, fq_path );
+}
+
+
 /* test for the plugin in the various colon separated directories */
 int
 plugrack_read_dir( plugrack_t rack, const char *dir )
@@ -352,7 +480,7 @@ plugrack_read_dir( plugrack_t rack, const char *dir )
 	return rc;
 }
 
-static int
+int
 _plugrack_read_single_dir( plugrack_t rack, char *dir )
 {
         char *fq_path;
@@ -404,8 +532,7 @@ _plugrack_read_single_dir( plugrack_t rack, char *dir )
   
         while ( 1 ) {
                 e = readdir( dirp );
-                if ( e == NULL )
-			break;
+                if ( e == NULL ) break;
 
                 /*
                  * Compose file name.  Where NAME_MAX is defined it represents 
@@ -416,14 +543,12 @@ _plugrack_read_single_dir( plugrack_t rack, char *dir )
                 strcpy( tail, e->d_name );
 		
                 /* Check only regular files. */
-		if ( (strncmp(e->d_name, ".", 1) == 0)
-		||   (stat( fq_path, &st ) < 0)
-		||   (! S_ISREG(st.st_mode)) )
-			continue;
+		if ( strncmp(e->d_name, ".", 1) == 0) continue;
+                if ( stat( fq_path, &st ) < 0 ) continue;
+                if ( ! S_ISREG( st.st_mode ) ) continue;
 
-		/* Check only shared object files */
-		if (! _so_file(e->d_name))
-			continue;
+		/* Check only shared object files. */
+		if ( ! _so_file( e->d_name) ) continue;
 
 		/* file's prefix must match specified major_type
 		 * to avoid having some program try to open a 
@@ -494,10 +619,6 @@ static bool
 _match_major ( const char *path_name, const char *major_type )
 {
 	char *head = (char *)path_name;
-
-	/* Special case for BlueGene systems */
-	if (strncmp(head, "libsched_if", 11) == 0)
-		return FALSE;
 
 	if (strncmp(head, "lib", 3) == 0)
 		head += 3;
@@ -642,6 +763,5 @@ plugrack_print_all_plugin(plugrack_t rack)
 	while ((e = list_next(itr)) != NULL ) {
 		info("%s",e->full_type);
 	}
-	list_iterator_destroy(itr);
 	return SLURM_SUCCESS;
 }

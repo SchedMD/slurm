@@ -2,11 +2,11 @@
  *  src/slurmd/slurmstepd/slurmstepd.c - SLURM job-step manager.
  *  $Id$
  *****************************************************************************
- *  Copyright (C) 2002-2006 The Regents of the University of California.
+ *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Danny Auble <da@llnl.gov> 
  *  and Christopher Morrone <morrone2@llnl.gov>.
- *  UCRL-CODE-226842.
+ *  UCRL-CODE-217948.
  *  
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -49,10 +49,10 @@
 #include "src/common/xsignal.h"
 #include "src/common/slurm_jobacct.h"
 #include "src/common/switch.h"
-#include "src/common/stepd_api.h"
 
 #include "src/slurmd/slurmd/slurmd.h"
 #include "src/slurmd/common/slurmstepd_init.h"
+#include "src/slurmd/common/stepd_api.h"
 #include "src/slurmd/common/setproctitle.h"
 #include "src/slurmd/common/proctrack.h"
 #include "src/slurmd/slurmstepd/slurmstepd.h"
@@ -74,9 +74,6 @@ int slurmstepd_blocked_signals[] = {
 	SIGPIPE, 0
 };
 
-/* global variable */
-slurmd_conf_t * conf;
-
 int 
 main (int argc, char *argv[])
 {
@@ -92,7 +89,11 @@ main (int argc, char *argv[])
 	conf = xmalloc(sizeof(*conf));
 	conf->argv = &argv;
 	conf->argc = &argc;
+	conf->task_prolog = slurm_get_task_prolog();
+	conf->task_epilog = slurm_get_task_epilog();
 	init_setproctitle(argc, argv);
+	if (slurm_proctrack_init() != SLURM_SUCCESS)
+		return SLURM_FAILURE;
 
 	_init_from_slurmd(STDIN_FILENO, argv, &cli, &self, &msg,
 			  &ngids, &gids);
@@ -212,6 +213,7 @@ _init_from_slurmd(int sock, char **argv,
 	conf->log_opts.stderr_level = conf->debug_level;
 	conf->log_opts.logfile_level = conf->debug_level;
 	conf->log_opts.syslog_level = conf->debug_level;
+	/* forward the log options to slurmstepd */
 	//log_alter(conf->log_opts, 0, NULL);
 	/*
 	 * If daemonizing, turn off stderr logging -- also, if
@@ -227,7 +229,7 @@ _init_from_slurmd(int sock, char **argv,
 	} else
 		conf->log_opts.syslog_level  = LOG_LEVEL_QUIET;
 
-	log_init(argv[0], conf->log_opts, LOG_DAEMON, conf->logfile);
+	log_init(argv[0],conf->log_opts, LOG_DAEMON, conf->logfile);
 	/* acct info */
 	jobacct_g_startpoll(conf->job_acct_freq);
 	
@@ -275,8 +277,6 @@ _init_from_slurmd(int sock, char **argv,
 	buffer = create_buf(incoming_buffer,len);
 
 	msg = xmalloc(sizeof(slurm_msg_t));
-	slurm_msg_t_init(msg);
-
 	switch(step_type) {
 	case LAUNCH_BATCH_JOB:
 		msg->msg_type = REQUEST_BATCH_JOB_LAUNCH;
@@ -284,8 +284,11 @@ _init_from_slurmd(int sock, char **argv,
 	case LAUNCH_TASKS:
 		msg->msg_type = REQUEST_LAUNCH_TASKS;
 		break;
+	case SPAWN_TASKS:
+		msg->msg_type = REQUEST_SPAWN_TASK;
+		break;
 	default:
-		fatal("Unrecognized launch RPC");
+		fatal("Unrecognized launch/spawn RPC");
 		break;
 	}
 	if(unpack_msg(msg, buffer) == SLURM_ERROR) 
@@ -333,12 +336,13 @@ _step_setup(slurm_addr *cli, slurm_addr *self, slurm_msg_t *msg)
 		debug2("setup for a launch_task");
 		job = mgr_launch_tasks_setup(msg->data, cli, self);
 		break;
-	default:
-		fatal("handle_launch_message: Unrecognized launch RPC");
+	case REQUEST_SPAWN_TASK:
+		debug2("setup for a spawn_task");
+		job = mgr_spawn_task_setup(msg->data, cli, self);
 		break;
-	}
-	if(!job) {
-		fatal("_step_setup: no job returned");
+	default:
+		fatal("handle_launch_message: Unrecognized launch/spawn RPC");
+		break;
 	}
 	job->jmgr_pid = getpid();
 	job->jobacct = jobacct_g_alloc(NULL);
@@ -364,8 +368,11 @@ _step_cleanup(slurmd_job_t *job, slurm_msg_t *msg, int rc)
 	case REQUEST_LAUNCH_TASKS:
 		slurm_free_launch_tasks_request_msg(msg->data);
 		break;
+	case REQUEST_SPAWN_TASK:
+		slurm_free_spawn_task_request_msg(msg->data);
+		break;
 	default:
-		fatal("handle_launch_message: Unrecognized launch RPC");
+		fatal("handle_launch_message: Unrecognized launch/spawn RPC");
 		break;
 	}
 	jobacct_g_free(step_complete.jobacct);

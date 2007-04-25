@@ -4,7 +4,7 @@
  *  Copyright (C) 2005 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>.
- *  UCRL-CODE-226842.
+ *  UCRL-CODE-217948.
  *  
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -53,10 +53,6 @@ typedef struct slurm_proctrack_ops {
 	int		(*signal)	( uint32_t id, int signal );
 	int		(*destroy)	( uint32_t id );
 	uint32_t	(*find_cont)	( pid_t pid );
-	bool		(*has_pid)	( uint32_t id, pid_t pid );
-	int		(*wait)		( uint32_t id );
-	int		(*get_pids)	( uint32_t id, pid_t **pids,
-					  int *npids);
 } slurm_proctrack_ops_t;
 
 
@@ -89,10 +85,7 @@ _proctrack_get_ops( slurm_proctrack_context_t *c )
 		"slurm_container_add",
 		"slurm_container_signal",
 		"slurm_container_destroy",
-		"slurm_container_find",
-		"slurm_container_has_pid",
-		"slurm_container_wait",
-		"slurm_container_get_pids"
+		"slurm_container_find"
 	};
 	int n_syms = sizeof( syms ) / sizeof( char * );
 
@@ -303,9 +296,9 @@ slurm_container_destroy(uint32_t cont_id)
 }
 
 /*
- * Get container ID for given process ID
+ * Get container ID for give process ID
  *
- * Returns zero if no container found for the given pid.
+ * Returns a SLURM errno.
  */
 extern uint32_t 
 slurm_container_find(pid_t pid)
@@ -316,55 +309,3 @@ slurm_container_find(pid_t pid)
 	return (*(g_proctrack_context->ops.find_cont))( pid );
 }
 
-/*
- * Return "true" if the container "cont_id" contains the process with
- * ID "pid".
- */
-extern bool
-slurm_container_has_pid(uint32_t cont_id, pid_t pid)
-{
-	if ( slurm_proctrack_init() < 0 )
-		return SLURM_ERROR;
-
-	return (*(g_proctrack_context->ops.has_pid))( cont_id, pid );
-}
-
-/*
- * Wait for all processes within a container to exit.
- *
- * When slurm_container_wait returns SLURM_SUCCESS, the container is considered
- * destroyed.  There is no need to call slurm_container_destroy after
- * a successful call to slurm_container_wait, and in fact it will trigger
- * undefined behavior.
- *
- * Return SLURM_SUCCESS or SLURM_ERROR.
- */
-extern int
-slurm_container_wait(uint32_t cont_id)
-{
-	if ( slurm_proctrack_init() < 0 )
-		return SLURM_ERROR;
-
-	return (*(g_proctrack_context->ops.wait))( cont_id );
-}
-
-/*
- * Get all process IDs within a container.
- *
- * IN cont_id - Container ID.
- * OUT pids - a pointer to an xmalloc'ed array of process ids, of
- *	length "npids".  Caller must free array with xfree().
- * OUT npids - number of process IDs in the returned "pids" array.
- *
- * Return SLURM_SUCCESS if container exists (npids may be zero, and
- *   pids NULL), return SLURM_ERROR if container does not exist, or
- *   plugin does not implement the call.
- */
-extern int
-slurm_container_get_pids(uint32_t cont_id, pid_t **pids, int *npids)
-{
-	if ( slurm_proctrack_init() < 0 )
-		return SLURM_ERROR;
-
-	return (*(g_proctrack_context->ops.get_pids))(cont_id, pids, npids);
-}

@@ -1,10 +1,10 @@
 /*****************************************************************************\
  *  srun_comm.h - definitions srun communications
  *****************************************************************************
- *  Copyright (C) 2002-2006 The Regents of the University of California.
+ *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette@llnl.gov> et. al.
- *  UCRL-CODE-226842.
+ *  UCRL-CODE-217948.
  *  
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -48,12 +48,6 @@
  * IN job_id - id of the job allocated resource
  */
 extern void srun_allocate (uint32_t job_id);
-
-/*
- * srun_complete - notify srun of a job's termination
- * IN job_ptr - pointer to the slurmctld job record
- */
-extern void srun_complete (struct job_record *job_ptr);
 
 /*
  * srun_node_fail - notify srun of a node's failure

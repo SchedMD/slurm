@@ -3,7 +3,7 @@
 # Copyright (C) 2006 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 # Written by Christopher J. Morrone <morrone2@llnl.gov>
-# UCRL-CODE-226842.
+# UCRL-CODE-217948.
 # 
 # This file is part of SLURM, a resource management program.
 # For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -62,7 +62,7 @@ def main(argv=None):
 
     # Sanity check
     if not os.path.isfile('globals'):
-        print >>sys.stderr, 'ERROR: "globals" not here as needed'
+        print >>sys.stderr, 'ERROR: copy "globals.example" to "globals" and modify as needed'
         return -1
 
     # Read the current working directory and build a sorted list

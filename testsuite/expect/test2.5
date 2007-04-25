@@ -11,7 +11,7 @@
 # Copyright (C) 2002 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 # Written by Morris Jette <jette1@llnl.gov>
-# UCRL-CODE-226842.
+# UCRL-CODE-217948.
 # 
 # This file is part of SLURM, a resource management program.
 # For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -63,14 +63,9 @@ expect {
 		wait
 	}
 }
-
 if {$matches != 3} {
-	if {$matches == 2} {
-		send_user "\nWARNING: it appears you are running with multiple slurmds.\n"
-	} else {
-		send_user "\nFAILURE: scontrol show config command failed\n"
-		set exit_code 1
-	}
+	send_user "\nFAILURE: scontrol show config command failed\n"
+	set exit_code 1
 }
 
 #

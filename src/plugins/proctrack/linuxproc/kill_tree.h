@@ -5,7 +5,7 @@
  *  Copyright (C) 2004 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Takao Hatazaki <takao.hatazaki@hp.com>
- *  UCRL-CODE-226842.
+ *  UCRL-CODE-217948.
  *  
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -48,7 +48,5 @@ extern pid_t find_ancestor(pid_t process, char *process_name);
  * (e.g. GMPI processes).  So, find out the process tree,
  * then kill all that subtree.
  */
-
-extern int proctrack_linuxproc_get_pids(pid_t top, pid_t **pids, int *npids);
 
 #endif  /* _HAVE_KILL_TREE_H */

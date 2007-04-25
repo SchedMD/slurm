@@ -10,7 +10,7 @@
 # Copyright (C) 2005-2006 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 # Written by Morris Jette <jette1@llnl.gov>
-# UCRL-CODE-226842.
+# UCRL-CODE-217948.
 # 
 # This file is part of SLURM, a resource management program.
 # For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -81,7 +81,7 @@ expect {
 log_user 1
 if {$step_delay == 0} {
 	send_user "\nWARNING: not running compatable switch, this test is not applicable\n"
-	exit $exit_code
+	exit 0
 }
 
 #
@@ -92,7 +92,7 @@ set timeout $max_job_delay
 set job_id 0
 set matches 0
 
-set srun_pid [spawn $srun --allocate -N1 --verbose -t2]
+spawn $srun --allocate -N1 --verbose -t2
 expect -re "jobid ($number).*"
 set job_id $expect_out(1,string)
 
@@ -114,8 +114,8 @@ for {set inx 0} {$inx < $windows_iterations} {incr inx} {
 		}
 		timeout {
 			send_user "\nFAILURE: srun (from --allocate) not responding\n"
-			slow_kill $srun_pid
-			exit 1
+			kill_srun
+			set exit_code 1
 		}
 		eof {
 			send_user "\nFAILURE: srun aborted\n"
@@ -139,8 +139,8 @@ expect {
 	}
 	timeout {
 		send_user "\nFAILURE: srun (from --allocate) not responding\n"
-		slow_kill $srun_pid
-		exit 1
+		kill_srun
+		set exit_code 1
 	}
 	eof {
 		wait

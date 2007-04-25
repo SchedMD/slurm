@@ -5,7 +5,7 @@
  *  Copyright (C) 2004 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Danny Auble <da@llnl.gov>
- *  UCRL-CODE-226842.
+ *  UCRL-CODE-217948.
  *  
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -76,43 +76,41 @@
  * minimum versions for their plugins as this API matures.
  */
 const char plugin_name[]        = "mpi MPICH-GM plugin";
-const char plugin_type[]        = "mpi/mpichgm";
+const char plugin_type[]        = "mpi/mpich-gm";
 const uint32_t plugin_version   = 100;
 
-int p_mpi_hook_slurmstepd_task(const mpi_plugin_task_info_t *job,
-			       char ***env)
+int mpi_p_init(slurmd_job_t *job, int rank)
 {
 	char addrbuf[1024];
 	char *p;
-	char *addr = getenvp(*env, "SLURM_LAUNCH_NODE_IPADDR");
+	char *addr = getenvp (job->env, "SLURM_LAUNCH_NODE_IPADDR");
 	
 	debug("Using mpi/mpich-gm");
-	slurm_print_slurm_addr (job->self, addrbuf, sizeof(addrbuf));
+	slurm_print_slurm_addr (job->envtp->self, addrbuf, sizeof(addrbuf));
 	
 	if ((p = strchr (addrbuf, ':')) != NULL)
 		*p = '\0';
 		
-	env_array_overwrite_fmt(env, "GMPI_MASTER", "%s", addr);
-	env_array_overwrite_fmt(env, "GMPI_SLAVE",  "%s", addrbuf);
-	env_array_overwrite_fmt(env, "GMPI_ID",  "%u", job->gtaskid);
-	debug2("init for mpi rank %u\n", job->gtaskid);
+	setenvf (&job->env, "GMPI_MASTER", "%s", addr);
+	setenvf (&job->env, "GMPI_SLAVE",  "%s", addrbuf);
+	setenvf (&job->env, "GMPI_ID",  "%d", rank);
+	debug2("init for mpi rank %d\n", rank);
 	
 	return SLURM_SUCCESS;
 }
 
-mpi_plugin_client_state_t *
-p_mpi_hook_client_prelaunch(mpi_plugin_client_info_t *job, char ***env)
+int mpi_p_thr_create(srun_job_t *job)
 {
 	debug("Using mpi/mpich-gm");
-	return (mpi_plugin_client_state_t *)gmpi_thr_create(job, env);
+	return gmpi_thr_create(job);
 }
 
-int p_mpi_hook_client_single_task_per_node()
+int mpi_p_single_task()
 {
 	return false;
 }
 
-int p_mpi_hook_client_fini(mpi_plugin_client_state_t *state)
+int mpi_p_exit()
 {
-	return gmpi_thr_destroy((gmpi_state_t *)state);
+	return SLURM_SUCCESS;
 }

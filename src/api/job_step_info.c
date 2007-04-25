@@ -2,11 +2,11 @@
  *  job_step_info.c - get/print the job step state information of slurm
  *  $Id$
  *****************************************************************************
- *  Copyright (C) 2002-2006 The Regents of the University of California.
+ *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>, 
  *             Joey Ekstrom <ekstrom1@llnl.gov>,  et. al.
- *  UCRL-CODE-226842.
+ *  UCRL-CODE-217948.
  *  
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -50,8 +50,6 @@
 #include "src/api/job_info.h"
 #include "src/common/parse_time.h"
 #include "src/common/slurm_protocol_api.h"
-#include "src/common/xmalloc.h"
-#include "src/common/xstring.h"
 
 /*
  * slurm_print_job_step_info_msg - output information about all Slurm 
@@ -92,48 +90,23 @@ void
 slurm_print_job_step_info ( FILE* out, job_step_info_t * job_step_ptr, 
 			    int one_liner )
 {
-	char *print_this = slurm_sprint_job_step_info(job_step_ptr, one_liner);
-	fprintf ( out, "%s", print_this);
-	xfree(print_this);
-}
-
-/*
- * slurm_sprint_job_step_info - output information about a specific Slurm 
- *	job step based upon message as loaded using slurm_get_job_steps
- * IN job_ptr - an individual job step information record pointer
- * IN one_liner - print as a single line if true
- * RET out - char * containing formatted output (must be freed after call)
- *           NULL is returned on failure.
- */
-char *
-slurm_sprint_job_step_info ( job_step_info_t * job_step_ptr, 
-			    int one_liner )
-{
 	char time_str[32];
-	char tmp_line[128];
-	char *out = NULL;
 
 	/****** Line 1 ******/
 	slurm_make_time_str ((time_t *)&job_step_ptr->start_time, time_str,
 		sizeof(time_str));
-	snprintf(tmp_line, sizeof(tmp_line),
-		"StepId=%u.%u UserId=%u Tasks=%u StartTime=%s", 
+	fprintf ( out, "StepId=%u.%u UserId=%u Tasks=%u StartTime=%s", 
 		job_step_ptr->job_id, job_step_ptr->step_id, 
 		job_step_ptr->user_id, job_step_ptr->num_tasks, time_str);
-	out = xstrdup(tmp_line);
 	if (one_liner)
-		xstrcat(out, " ");
+		fprintf ( out, " ");
 	else
-		xstrcat(out, "\n   ");
+		fprintf ( out, "\n   ");
 
 	/****** Line 2 ******/
-	snprintf(tmp_line, sizeof(tmp_line),
-		"Partition=%s Nodes=%s Name=%s Network=%s\n\n", 
+	fprintf ( out, "Partition=%s Nodes=%s Name=%s Network=%s\n\n", 
 		job_step_ptr->partition, job_step_ptr->nodes,
 		job_step_ptr->name, job_step_ptr->network);
-	xstrcat(out, tmp_line);
-
-	return out;
 }
 
 /*
@@ -158,9 +131,6 @@ slurm_get_job_steps (time_t update_time, uint32_t job_id, uint32_t step_id,
 	slurm_msg_t req_msg;
 	slurm_msg_t resp_msg;
 	job_step_info_request_msg_t req;
-
-	slurm_msg_t_init(&req_msg);
-	slurm_msg_t_init(&resp_msg);
 
 	req.last_update  = update_time;
 	req.job_id	= job_id;
@@ -191,41 +161,3 @@ slurm_get_job_steps (time_t update_time, uint32_t job_id, uint32_t step_id,
 	return SLURM_PROTOCOL_SUCCESS;
 }
 
-extern slurm_step_layout_t *
-slurm_job_step_layout_get(uint32_t job_id, uint32_t step_id)
-{
-	job_step_id_msg_t data;
-	slurm_msg_t req, resp;
-	int errnum;
-
-	slurm_msg_t_init(&req);
-	slurm_msg_t_init(&resp);
-
-	req.msg_type = REQUEST_STEP_LAYOUT;
-	req.data = &data;
-	data.job_id = job_id;
-	data.step_id = step_id;
-
-	if (slurm_send_recv_controller_msg(&req, &resp) < 0) {
-		return NULL;
-	}
-
-	switch (resp.msg_type) {
-	case RESPONSE_STEP_LAYOUT:
-		return (slurm_step_layout_t *)resp.data;
-	case RESPONSE_SLURM_RC:
-		errnum = ((return_code_msg_t *)resp.data)->return_code;
-		slurm_free_return_code_msg(resp.data);
-		errno = errnum;
-		return NULL;
-	default:
-		errno = SLURM_UNEXPECTED_MSG_ERROR;
-		return NULL;
-	}
-}
-
-void
-slurm_job_step_layout_free(slurm_step_layout_t *layout)
-{
-	slurm_step_layout_destroy(layout);
-}

@@ -5,7 +5,7 @@
  *  Copyright (C) 2002-2006 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Mark Grondona <mgrondona@llnl.gov>.
- *  UCRL-CODE-226842.
+ *  UCRL-CODE-217948.
  *  
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -52,24 +52,22 @@
 #include "src/common/eio.h"
 #include "src/common/switch.h"
 #include "src/common/env.h"
-#include "src/common/io_hdr.h"
 #include "src/common/job_options.h"
-#include "src/common/stepd_api.h"
+
+#include "src/slurmd/common/stepd_api.h"
 
 #ifndef MAXHOSTNAMELEN
 #define MAXHOSTNAMELEN	64
 #endif
 
 typedef struct srun_key {
-	unsigned char data[SLURM_IO_KEY_SIZE];
+	unsigned char data[SLURM_CRED_SIGLEN];
 } srun_key_t;
 
 typedef struct srun_info {
 	srun_key_t *key;	   /* srun key for IO verification         */
 	slurm_addr resp_addr;	   /* response addr for task exit msg      */
-	slurm_addr ioaddr;         /* Address to connect on for normal I/O.
-				      Spawn IO uses messages to the normal
-				      resp_addr. */
+	slurm_addr ioaddr;         /* Address to connect on for I/O        */
 } srun_info_t;
 
 typedef enum task_state {
@@ -103,9 +101,6 @@ typedef struct task_info {
 	bool            esent;      /* true if exit status has been sent    */
 	bool            exited;     /* true if task has exited              */
 	int             estatus;    /* this task's exit status              */
-
-	int		argc;
-	char	      **argv;
 } slurmd_task_info_t;
 
 typedef struct slurmd_job {
@@ -122,10 +117,6 @@ typedef struct slurmd_job {
 	char         **env;    /* job environment                           */
 	char         **argv;   /* job argument vector                       */
 	char          *cwd;    /* path to current working directory         */
-       	task_dist_states_t task_dist;/* -m distribution                     */
-        uint32_t       plane_size; /* -m plane=plane_size                   */
-	char          *node_name; /* node name of node running job
-				   * needed for front-end systems           */
 	cpu_bind_type_t cpu_bind_type; /* --cpu_bind=                       */
 	char          *cpu_bind;       /* binding map for map/mask_cpu      */
 	mem_bind_type_t mem_bind_type; /* --mem_bind=                       */
@@ -137,7 +128,7 @@ typedef struct slurmd_job {
 	gid_t        *gids;    /* array of gids for user specified in uid   */
 	bool           batch;      /* true if this is a batch job           */
 	bool           run_prolog; /* true if need to run prolog            */
-	bool           user_managed_io;
+	bool           spawn_task; /* stand-alone task                      */
 	time_t         timelimit;  /* time at which job must stop           */
 	char          *task_prolog; /* per-task prolog                      */
 	char          *task_epilog; /* per-task epilog                      */
@@ -182,7 +173,6 @@ typedef struct slurmd_job {
 
 	uint16_t       task_flags; 
 	uint16_t       multi_prog;
-	uint16_t       overcommit;
 	env_t          *envtp;
 	uint32_t       cont_id;
 
@@ -193,8 +183,9 @@ typedef struct slurmd_job {
 } slurmd_job_t;
 
 
-slurmd_job_t * job_create(launch_tasks_request_msg_t *msg);
+slurmd_job_t * job_create(launch_tasks_request_msg_t *msg, slurm_addr *client);
 slurmd_job_t * job_batch_job_create(batch_job_launch_msg_t *msg);
+slurmd_job_t * job_spawn_create(spawn_task_request_msg_t *msg, slurm_addr *client);
 
 void job_kill(slurmd_job_t *job, int signal);
 
@@ -207,5 +198,7 @@ void  srun_info_destroy(struct srun_info *srun);
 
 slurmd_task_info_t * task_info_create(int taskid, int gtaskid,
 				      char *ifname, char *ofname, char *efname);
+
+void task_info_destroy(slurmd_task_info_t *t);
 
 #endif /* !_SLURMSTEPD_JOB_H */

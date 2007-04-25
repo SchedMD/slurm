@@ -13,12 +13,9 @@ Group: System Environment/Base
 Source: %{name}-%{version}-%{release}.tgz
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}
 URL: http://www.llnl.gov/linux/slurm
+Requires: openssl >= 0.9.6
 %ifos linux
-BuildRequires: python openssl-devel >= 0.9.6
-%endif
-%ifos aix5.3
-Requires: openssl >= 0.9.6 munge-libs proctrack >= 3
-BuildRequires: openssl-devel >= 0.9.6 munge-libs munge-devel proctrack >= 3
+BuildRequires: gcc-c++ python openssl-devel >= 0.9.6
 %endif
 
 #
@@ -73,6 +70,11 @@ Summary: SLURM interfaces to IBM Blue Gene system
 Group: System Environment/Base
 Requires: slurm
 
+%package sched-wiki
+Summary: SLURM scheduling plugin for the Maui scheduler.
+Group: System Environment/Base
+Requires: slurm
+
 %package switch-elan
 Summary: SLURM switch plugin for Quadrics Elan3 or Elan4.
 Group: System Environment/Base
@@ -109,6 +111,9 @@ SLURM authentication module for Chris Dunlap's Munge
 
 %description bluegene
 SLURM plugin interfaces to IBM Blue Gene system
+
+%description sched-wiki
+SLURM scheduling plugin for the Maui scheduler.
 
 %description switch-elan
 SLURM switch plugin for Quadrics Elan3 or Elan4.
@@ -149,11 +154,6 @@ rm -rf "$RPM_BUILD_ROOT"
 mkdir -p "$RPM_BUILD_ROOT"
 DESTDIR="$RPM_BUILD_ROOT" make install
 
-%ifos aix5.3
-mv ${RPM_BUILD_ROOT}%{_bindir}/srun ${RPM_BUILD_ROOT}%{_sbindir}
-mv ${RPM_BUILD_ROOT}%{_bindir}/slaunch ${RPM_BUILD_ROOT}%{_sbindir}
-%endif
-
 if [ -d /etc/init.d ]; then
    install -D -m755 etc/init.d.slurm $RPM_BUILD_ROOT/etc/init.d/slurm
 fi
@@ -175,12 +175,18 @@ test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/task_affinity.so &&
    echo %{_libdir}/slurm/task_affinity.so >> $LIST
 
 # Build file lists for optional plugin packages
-for plugin in auth_munge auth_authd; do
+for plugin in auth_munge auth_authd sched_wiki; do
    LIST=./${plugin}.files
    touch $LIST
    test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/${plugin}.so &&
      echo %{_libdir}/slurm/${plugin}.so > $LIST
 done
+
+# Temporary, until wiki2 becomes wiki (see code above)
+LIST=./sched_wiki.files
+test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/sched_wiki.so &&
+  echo %{_libdir}/slurm/sched_wiki2.so            >> $LIST
+echo "%{_mandir}/man5/wiki.*"                     >> $LIST
 
 LIST=./switch_elan.files
 touch $LIST
@@ -236,15 +242,10 @@ rm -rf $RPM_BUILD_ROOT
 %{_sbindir}/slurmctld
 %{_sbindir}/slurmd
 %{_sbindir}/slurmstepd
-%ifos aix5.3
-%{_sbindir}/srun
-%{_sbindir}/slaunch
-%endif
 %{_libdir}/*.so*
 %{_libdir}/slurm/src/*
 %{_mandir}/man1/*
 %{_mandir}/man5/slurm.*
-%{_mandir}/man5/wiki.*
 %{_mandir}/man8/*
 %dir %{_sysconfdir}
 %dir %{_libdir}/slurm
@@ -259,9 +260,6 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/slurm/sched_backfill.so
 %{_libdir}/slurm/sched_builtin.so
 %{_libdir}/slurm/sched_hold.so
-%{_libdir}/slurm/sched_gang.so
-%{_libdir}/slurm/sched_wiki.so
-%{_libdir}/slurm/sched_wiki2.so
 %{_libdir}/slurm/select_cons_res.so
 %{_libdir}/slurm/select_linear.so
 %{_libdir}/slurm/switch_none.so
@@ -300,6 +298,10 @@ rm -rf $RPM_BUILD_ROOT
 #############################################################################
 
 %files -f bluegene.files bluegene
+%defattr(-,root,root)
+#############################################################################
+
+%files -f sched_wiki.files sched-wiki
 %defattr(-,root,root)
 #############################################################################
 

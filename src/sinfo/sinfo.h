@@ -3,10 +3,10 @@
  *
  *  $Id$
  *****************************************************************************
- *  Copyright (C) 2002-2006 The Regents of the University of California.
+ *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Joey Ekstrom <ekstrom1@llnl.gov>, Morris Jette <jette1@llnl.gov>
- *  UCRL-CODE-226842.
+ *  UCRL-CODE-217948.
  *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -17,7 +17,7 @@
  *  any later version.
  *
  *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under
+ *  to link the code of portions of this program with the OpenSSL library under 
  *  certain conditions as described in each individual source file, and 
  *  distribute linked combinations including the two. You must obey the GNU 
  *  General Public License in all respects for all of the code used other than 
@@ -75,21 +75,9 @@ typedef struct {
 	uint32_t nodes_alloc;
 	uint32_t nodes_idle;
 	uint32_t nodes_other;
-	uint32_t nodes_total;
-
-	uint32_t cpus_alloc;
-	uint32_t cpus_idle;
-	uint32_t cpus_other;
-	uint32_t cpus_total;
-
+	uint32_t nodes_tot;
 	uint32_t min_cpus;
 	uint32_t max_cpus;
-	uint32_t min_sockets;
-	uint32_t max_sockets;
-	uint32_t min_cores;
-	uint32_t max_cores;
-	uint32_t min_threads;
-	uint32_t max_threads;
 	uint32_t min_disk;
 	uint32_t max_disk;
 	uint32_t min_mem;
@@ -101,9 +89,7 @@ typedef struct {
 	char *reason;
 
 	hostlist_t nodes;
-#ifdef HAVE_BG
-	hostlist_t ionodes;
-#endif
+
 	/* part_info contains partition, avail, max_time, job_size, 
 	 * root, share, groups */
 	partition_info_t* part_info;
@@ -115,10 +101,6 @@ typedef struct {
 struct sinfo_match_flags {
 	bool avail_flag;
 	bool cpus_flag;
-	bool sockets_flag;
-	bool cores_flag;
-	bool threads_flag;
-	bool sct_flag;
 	bool disk_flag;
 	bool features_flag;
 	bool groups_flag;

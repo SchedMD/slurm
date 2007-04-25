@@ -7,7 +7,7 @@
  *  Written by Jim Garlick <garlick@llnl.gov>
  *             Mark Grondona <grondona@llnl.gov>, et al.
  *	
- *  UCRL-CODE-226842.
+ *  UCRL-CODE-217948.
  *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -44,7 +44,6 @@
 
 #include <string.h>
 #include <stdio.h>
-#include <stdlib.h>
 #include <errno.h>
 #if 	HAVE_UNISTD_H
 #  include <unistd.h>
@@ -55,7 +54,6 @@
 #endif
 
 #include <stdarg.h>
-#include <ctype.h>
 
 #include <slurm/slurm_errno.h>
 
@@ -80,9 +78,6 @@ strong_alias(_xmemcat,		slurm_xmemcat);
 strong_alias(xstrdup,		slurm_xstrdup);
 strong_alias(xstrndup,		slurm_xstrndup);
 strong_alias(xbasename,		slurm_xbasename);
-strong_alias(_xstrsubstitute,   slurm_xstrsubstitute);
-strong_alias(xshort_hostname,   slurm_xshort_hostname);
-strong_alias(xstring_is_whitespace, slurm_xstring_is_whitespace);
 
 /*
  * Ensure that a string has enough space to add 'needed' characters.
@@ -295,98 +290,3 @@ char * xstrndup(const char *str, size_t n)
 
 	return result;
 }
-
-/*
-** strtol which only reads 'n' number of chars in the str to get the number
-*/
-long int xstrntol(const char *str, char **endptr, size_t n, int base)
-{
-	long int number = 0;
-	char *new_str = xstrndup(str, n);
-
-	if(!new_str) 
-		goto end_it;
-	
-	number = strtol(new_str, endptr, base);
-	xfree(new_str);
-end_it:
-	return number;
-}
-
-/* 
- * Find the first instance of a sub-string "pattern" in the string "str",
- * and replace it with the string "replacement".
- *   str (IN/OUT)	target string (pointer to in case of expansion)
- *   pattern (IN)	substring to look for in str
- *   replacement (IN)   string with which to replace the "pattern" string
- */
-void _xstrsubstitute(char **str, const char *pattern, const char *replacement)
-{
-	int pat_len, rep_len;
-	char *ptr, *end_copy;
-	int pat_offset;
-
-	if (*str == NULL || pattern == NULL || pattern[0] == '\0')
-		return;
-
-	if ((ptr = strstr(*str, pattern)) == NULL)
-		return;
-	pat_offset = ptr - (*str);
-	pat_len = strlen(pattern);
-	if (replacement == NULL)
-		rep_len = 0;
-	else
-		rep_len = strlen(replacement);
-
-	end_copy = xstrdup(ptr + pat_len);
-	if (rep_len != 0) {
-		makespace(str, rep_len-pat_len);
-		strcpy((*str)+pat_offset, replacement);
-	}
-	strcpy((*str)+pat_offset+rep_len, end_copy);
-	xfree(end_copy);
-}
-
-/* xshort_hostname
- *   Returns an xmalloc'd string containing the hostname
- *   of the local machine.  The hostname contains only
- *   the short version of the hostname (e.g. "linux123.foo.bar"
- *   becomes "linux123") 
- *
- *   Returns NULL on error.
- */
-char *xshort_hostname(void)
-{
-	int error_code;
-	char *dot_ptr, path_name[1024];
-
-	error_code = gethostname (path_name, sizeof(path_name));
-	if (error_code)
-		return NULL;
-
-	dot_ptr = strchr (path_name, '.');
-	if (dot_ptr == NULL)
-		dot_ptr = path_name + strlen(path_name);
-	else
-		dot_ptr[0] = '\0';
-
-	return xstrdup(path_name);
-}
-
-/* Returns true if all characters in a string are whitespace characters,
- * otherwise returns false;
- */
-bool xstring_is_whitespace(const char *str)
-{
-	int i, len;
-
-	len = strlen(str);
-	for (i = 0; i < len; i++) {
-		if (!isspace(str[i])) {
-			return false;
-		}
-	}
-
-	return true;
-}
-

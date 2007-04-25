@@ -10,10 +10,10 @@
 #          anything else indicates a failure mode that must be investigated.
 #
 ############################################################################
-# Copyright (C) 2002-2006 The Regents of the University of California.
+# Copyright (C) 2002 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 # Written by Danny Auble <da@llnl.gov>
-# UCRL-CODE-226842.
+# UCRL-CODE-217948.
 # 
 # This file is part of SLURM, a resource management program.
 # For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -48,10 +48,6 @@ if { ![file exists $poe] } {
 	exit $exit_code
 }
 
-if { [string length $partition] == 0 } {
-	set partition [default_partition]
-}
-
 set protocols { "mpi" "lapi" "mpi_lapi" }
     
 foreach proto $protocols {
@@ -78,7 +74,7 @@ foreach proto $protocols {
 		}
 		timeout {
 			send_user "\nFAILURE: poe not responding\n"
-			cancel_job $job_id
+			exec $scancel --quiet $job_id
 			set exit_code 1
 		}
 		eof {

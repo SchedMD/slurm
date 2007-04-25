@@ -1,3 +1,4 @@
+# $Id: Makefile.am,v 1.1 2005/11/04 02:17:53 palermo Exp $
 # Makefile for task/affinity plugin
 
 AUTOMAKE_OPTIONS = foreign
@@ -9,20 +10,18 @@ INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common
 if HAVE_SCHED_SETAFFINITY
 pkglib_LTLIBRARIES = task_affinity.la
 task_affinity_la_SOURCES = 	\
-	affinity.c affinity.h \
-	cpuset.c \
-	dist_tasks.c dist_tasks.h \
+	affinity.c \
+	affinity.h \
 	numa.c \
 	schedutils.c \
 	task_affinity.c
-task_affinity_la_LDFLAGS = $(SO_LDFLAGS) $(NUMA_LIBS) $(PLPA_LIBS) $(PLUGIN_FLAGS)
-task_affinity_la_LIBADD  = $(top_builddir)/src/common/libcommon.la
+task_affinity_la_LDFLAGS = $(SO_LDFLAGS) $(NUMA_LIBS) $(PLUGIN_FLAGS)
+
 else
 pkglib_LTLIBRARIES =
 EXTRA_task_affinity_la_SOURCES = \
-	affinity.c affinity.h \
-	cpuset.c \
-	dist_tasks.c dist_tasks.h \
+	affinity.c \
+	affinity.h \
 	numa.c \
 	schedutils.c \
 	task_affinity.c

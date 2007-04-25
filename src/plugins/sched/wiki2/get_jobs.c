@@ -4,7 +4,7 @@
  *  Copyright (C) 2006-2007 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
- *  UCRL-CODE-226842.
+ *  UCRL-CODE-217948.
  *  
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -82,7 +82,6 @@ static char *	_full_task_list(struct job_record *job_ptr);
  *	[HOSTLIST=<node1:node2>;]	list of required nodes, if any
  *	[STARTDATE=<uts>;]		earliest start time, if any
  *	[TASKLIST=<node1:node2>;]	nodes in use, if running or completing
- *	[REJMESSAGE=<str>;]		reason job is not running, if any
  *	UPDATETIME=<uts>;		time last active
  *	[FLAGS=INTERACTIVE;]		set if interactive (not batch) job
  *	WCLIMIT=<secs>;			wall clock time limit, seconds
@@ -250,13 +249,6 @@ static char *	_dump_job(struct job_record *job_ptr, int state_info)
 		xfree(hosts);
 	}
 
-	if (job_ptr->job_state == JOB_FAILED) {
-		snprintf(tmp, sizeof(tmp),
-			"REJMESSAGE=\"%s\";",
-			job_reason_string(job_ptr->state_reason));
-		xstrcat(buf, tmp);
-	}
-
 	if (job_ptr->batch_flag == 0)
 		xstrcat(buf, "FLAGS=INTERACTIVE;");
 
@@ -302,12 +294,6 @@ static char *	_dump_job(struct job_record *job_ptr, int state_info)
 		xstrcat(buf, tmp);
 	}
 
-	if (job_ptr->account) {
-		snprintf(tmp, sizeof(tmp),
-			"ACCOUNT=%s;", job_ptr->account);
-		xstrcat(buf, tmp);
-	}
-
 	if (state_info == SLURM_INFO_VOLITILE)
 		return buf;
 
@@ -346,7 +332,7 @@ static void	_get_job_comment(struct job_record *job_ptr,
 		cr_test = 1;
 	}
 	if (cr_enabled)	{			/* consumable resources */
-		if (job_ptr->details && (job_ptr->details->shared != 0))
+		if (job_ptr->details && (!job_ptr->details->exclusive))
 			sharing = 1;
 	} else if (job_ptr->part_ptr) {			/* partition with */
 		if (job_ptr->part_ptr->shared == 2)	/* forced sharing */
@@ -363,18 +349,11 @@ static void	_get_job_comment(struct job_record *job_ptr,
 		field_sep = "?";
 	}
 
-	/* TPN = tasks per node */
-	if (job_ptr->details && (job_ptr->details->ntasks_per_node != 0)) {
-		size += snprintf((buffer + size), (buf_size - size),
-			"%sTPN:%u", field_sep, 
-			job_ptr->details->ntasks_per_node);
-		field_sep = "?";
-	}
-
 	/* COMMENT SET BY MOAB */
-	if (job_ptr->comment && job_ptr->comment[0]) {
+	/* Uses SLURM's job account field in version 1.1 only */
+	if (job_ptr->account && job_ptr->account[0]) {
 		size += snprintf((buffer + size), (buf_size - size),
-			"%s%s", field_sep, job_ptr->comment);
+			"%s%s", field_sep, job_ptr->account);
 		field_sep = "?";
 	}
 
@@ -384,7 +363,7 @@ static void	_get_job_comment(struct job_record *job_ptr,
 static uint32_t _get_job_min_mem(struct job_record *job_ptr)
 {
 	if (job_ptr->details)
-		return job_ptr->details->job_min_memory;
+		return job_ptr->details->min_memory;
 	return (uint32_t) 0;
 }
 
@@ -392,7 +371,7 @@ static uint32_t _get_job_min_disk(struct job_record *job_ptr)
 	
 {
 	if (job_ptr->details)
-		return job_ptr->details->job_min_tmp_disk;
+		return job_ptr->details->min_tmp_disk;
 	return (uint32_t) 0;
 }
 
@@ -540,15 +519,15 @@ static char * _full_task_list(struct job_record *job_ptr)
 		return buf;
 	}
 
-	for (i=0; i<job_ptr->alloc_lps_cnt; i++) {
+	for (i=0; i<job_ptr->ntask_cnt; i++) {
 		host = hostlist_shift(hl);
 		if (host == NULL) {
-			error("bad alloc_lps_cnt for job %u (%s, %d)", 
+			error("bad ntask_cnt for job %u (%s, %d)", 
 				job_ptr->job_id, job_ptr->nodes,
-				job_ptr->alloc_lps_cnt);
+				job_ptr->ntask_cnt);
 			break;
 		}
-		for (j=0; j<job_ptr->alloc_lps[i]; j++) {
+		for (j=0; j<job_ptr->ntask[i]; j++) {
 			if (buf)
 				xstrcat(buf, ":");
 			xstrcat(buf, host);

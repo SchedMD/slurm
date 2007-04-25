@@ -4,7 +4,7 @@
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>.
- *  UCRL-CODE-226842.
+ *  UCRL-CODE-217948.
  *  
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -62,7 +62,6 @@
 #include "src/common/xstring.h"
 #include "src/common/node_select.h"
 #include "src/common/slurm_jobacct.h"
-#include "src/common/slurm_rlimits_info.h"
 
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/node_scheduler.h"
@@ -70,7 +69,10 @@
 #include "src/slurmctld/read_config.h"
 #include "src/slurmctld/sched_plugin.h"
 #include "src/slurmctld/slurmctld.h"
-#include "src/slurmctld/trigger_mgr.h"
+
+#include "src/common/slurm_rlimits_info.h"
+
+#define BUFFER_SIZE	1024
 
 static int  _build_bitmaps(void);
 static int  _init_all_slurm_conf(void);
@@ -78,8 +80,6 @@ static void _purge_old_node_state(struct node_record *old_node_table_ptr,
 				int old_node_record_count);
 static void _restore_node_state(struct node_record *old_node_table_ptr, 
 				int old_node_record_count);
-static int  _preserve_select_type_param(slurm_ctl_conf_t * ctl_conf_ptr, 
-					select_type_plugin_info_t old_select_type_p);
 static int  _preserve_plugins(slurm_ctl_conf_t * ctl_conf_ptr, 
 				char *old_auth_type, char *old_checkpoint_type,
 				char *old_sched_type, char *old_select_type,
@@ -340,7 +340,7 @@ static void _set_node_prefix(const char *nodenames, slurm_ctl_conf_t *conf)
 }
 #endif /* HAVE_BG */
 /* 
- * _build_single_nodeline_info - From the slurm.conf reader, build table,
+ * _build_single_nodeline_info - rom the slurm.conf reader, build table,
  * 	and set values
  * RET 0 if no error, error code otherwise
  * Note: Operates on common variables
@@ -551,14 +551,13 @@ static int _build_all_nodeline_info(slurm_ctl_conf_t *conf)
 		config_ptr = create_config_record();
 		config_ptr->nodes = xstrdup(node->nodenames);
 		config_ptr->cpus = node->cpus;
-		config_ptr->sockets = node->sockets;
-		config_ptr->cores = node->cores;
-		config_ptr->threads = node->threads;
 		config_ptr->real_memory = node->real_memory;
 		config_ptr->tmp_disk = node->tmp_disk;
 		config_ptr->weight = node->weight;
-		if (node->feature)
+		if (node->feature) {
+			xfree(config_ptr->feature);
 			config_ptr->feature = xstrdup(node->feature);
+		}
 
 		_build_single_nodeline_info(node, config_ptr, conf);
 	}
@@ -671,7 +670,7 @@ static int _build_all_partitionline_info()
  * IN recover - replace job, node and/or partition data with last saved 
  *              state information depending upon value
  *              0 = use no saved state information
- *              1 = recover saved job and trigger state, 
+ *              1 = recover saved job state, 
  *                  node DOWN/DRAIN state and reason information
  *              2 = recover all state saved from last slurmctld shutdown
  * RET 0 if no error, otherwise an error code
@@ -680,7 +679,7 @@ static int _build_all_partitionline_info()
 int read_slurm_conf(int recover)
 {
 	DEF_TIMERS;
-	int error_code, i;
+	int error_code;
 	int old_node_record_count;
 	struct node_record *old_node_table_ptr;
 	char *old_auth_type       = xstrdup(slurmctld_conf.authtype);
@@ -690,22 +689,13 @@ int read_slurm_conf(int recover)
 	char *old_switch_type     = xstrdup(slurmctld_conf.switch_type);
 	char *state_save_dir      = xstrdup(slurmctld_conf.state_save_location);
 	slurm_ctl_conf_t *conf;
-	select_type_plugin_info_t old_select_type_p = 
-		(select_type_plugin_info_t) slurmctld_conf.select_type_param;
 
 	/* initialization */
 	START_TIMER;
-
-	/* save node states for reconfig RPC */
 	old_node_record_count = node_record_count;
-	old_node_table_ptr    = node_record_table_ptr;
-	for (i=0; i<node_record_count; i++) {
-		xfree(old_node_table_ptr[i].features);
-		old_node_table_ptr[i].features = xstrdup(
-			old_node_table_ptr[i].config_ptr->feature);
-	}
+	old_node_table_ptr = 
+		node_record_table_ptr;  /* save node states for reconfig RPC */
 	node_record_table_ptr = NULL;
-	node_record_count = 0;
 
 	conf = slurm_conf_lock();
 	if (recover == 0) {
@@ -735,7 +725,8 @@ int read_slurm_conf(int recover)
 
 	if (node_record_count < 1) {
 		error("read_slurm_conf: no nodes configured.");
-		_purge_old_node_state(old_node_table_ptr, old_node_record_count);
+		xfree(old_node_table_ptr);
+		xfree(state_save_dir);
 		return EINVAL;
 	}
 
@@ -757,14 +748,13 @@ int read_slurm_conf(int recover)
 					    old_node_record_count);
 		}
 		reset_first_job_id();
-		(void) slurm_sched_reconfig();
 		xfree(state_save_dir);
 	}
 
 	if ((select_g_node_init(node_record_table_ptr, node_record_count)
 			!= SLURM_SUCCESS) 
 	    || (select_g_block_init(part_list) != SLURM_SUCCESS) 
-	    || (select_g_state_restore(state_save_dir) != SLURM_SUCCESS) 
+	    || (select_g_state_restore(state_save_dir) != SLURM_SUCCESS)
 	    || (select_g_job_init(job_list) != SLURM_SUCCESS)) {
 		error("failed to initialize node selection plugin state");
 		abort();
@@ -778,15 +768,11 @@ int read_slurm_conf(int recover)
 
 	if ((error_code = _build_bitmaps()))
 		return error_code;
-	restore_node_features();
 #ifdef 	HAVE_ELAN
 	_validate_node_proc_count();
 #endif
 	(void) _sync_nodes_to_comp_job();/* must follow select_g_node_init() */
 	load_part_uid_allow_list(1);
-
-	if (recover >= 1)
-		(void) trigger_state_restore();
 
 	/* sort config_list by weight for scheduling */
 	list_sort(config_list, &list_compare_config);
@@ -796,11 +782,6 @@ int read_slurm_conf(int recover)
 			old_auth_type, old_checkpoint_type,
 			old_sched_type, old_select_type,
 			old_switch_type);
-
-	/* Update plugin parameters as possible */
-	error_code = _preserve_select_type_param(
-		        &slurmctld_conf,
-			old_select_type_p);
 
 	slurmctld_conf.last_update = time(NULL);
 	END_TIMER;
@@ -825,20 +806,12 @@ static void _restore_node_state(struct node_record *old_node_table_ptr,
 		node_ptr->node_state    = old_node_table_ptr[i].node_state;
 		node_ptr->last_response = old_node_table_ptr[i].last_response;
 		node_ptr->cpus          = old_node_table_ptr[i].cpus;
-		node_ptr->sockets       = old_node_table_ptr[i].sockets;
-		node_ptr->cores         = old_node_table_ptr[i].cores;
-		node_ptr->threads       = old_node_table_ptr[i].threads;
 		node_ptr->real_memory   = old_node_table_ptr[i].real_memory;
 		node_ptr->tmp_disk      = old_node_table_ptr[i].tmp_disk;
 		if(node_ptr->reason == NULL) {
 			/* Recover only if not explicitly set in slurm.conf */
 			node_ptr->reason	= old_node_table_ptr[i].reason;
 			old_node_table_ptr[i].reason = NULL;
-		}
-		if (old_node_table_ptr[i].features) {
-			xfree(node_ptr->features);
-			node_ptr->features = old_node_table_ptr[i].features;
-			old_node_table_ptr[i].features = NULL;
 		}
 	}
 }
@@ -851,33 +824,9 @@ static void _purge_old_node_state(struct node_record *old_node_table_ptr,
 
 	for (i = 0; i < old_node_record_count; i++) {
 		xfree(old_node_table_ptr[i].part_pptr);
-		xfree(old_node_table_ptr[i].features);
 		xfree(old_node_table_ptr[i].reason);
 	}
 	xfree(old_node_table_ptr);
-}
-
-
-/*
- * _preserve_select_type_param - preserve original plugin parameters.
- *	Daemons and/or commands must be restarted for some 
- *	select plugin value changes to take effect.
- * RET zero or error code
- */
-static int  _preserve_select_type_param(slurm_ctl_conf_t *ctl_conf_ptr, 
-		   select_type_plugin_info_t old_select_type_p)
-{
-	int rc = SLURM_SUCCESS;
-	
-        /* SelectTypeParameters cannot change */ 
-	if (old_select_type_p) {
-		if (old_select_type_p != ctl_conf_ptr->select_type_param) {
-			ctl_conf_ptr->select_type_param = (uint16_t) 
-				old_select_type_p;
-			rc =  ESLURM_INVALID_SELECTTYPE_CHANGE;
-		}
-	}
-	return rc;
 }
 
 /*
@@ -1030,7 +979,6 @@ static int _sync_nodes_to_active_job(struct job_record *job_ptr)
 			job_ptr->job_state = JOB_NODE_FAIL | JOB_COMPLETING;
 			job_ptr->end_time = MIN(job_ptr->end_time, now);
 			job_ptr->exit_code = MAX(job_ptr->exit_code, 1);
-			job_ptr->state_reason = FAIL_DOWN_NODE;
 			job_completion_logger(job_ptr);
 			cnt++;
 		} else if ((base_state == NODE_STATE_UNKNOWN) || 

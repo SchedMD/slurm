@@ -5,7 +5,7 @@
  *  Copyright (C) 2002-2006 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov> and Kevin Tew <tew1@llnl.gov>.
- *  UCRL-CODE-226842.
+ *  UCRL-CODE-217948.
  *  
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -16,7 +16,7 @@
  *  any later version.
  *
  *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under
+ *  to link the code of portions of this program with the OpenSSL library under 
  *  certain conditions as described in each individual source file, and 
  *  distribute linked combinations including the two. You must obey the GNU 
  *  General Public License in all respects for all of the code used other than 
@@ -60,45 +60,6 @@ extern long slurm_api_version (void)
 	return (long) SLURM_API_VERSION;
 }
 
-static char *
-_select_info(uint16_t select_type_param)
-{
-	switch (select_type_param) {
-		case SELECT_TYPE_INFO_NONE:
-			return "NONE";
-		case CR_CPU:
-			return "CR_CPU";
-		case CR_SOCKET:
-			return "CR_SOCKET";
-		case CR_CORE:
-			return "CR_CORE";
-		case CR_MEMORY:
-			return "CR_MEMORY";
-		case CR_SOCKET_MEMORY:
-			return "CR_SOCKET_MEMORY";
-		case CR_CORE_MEMORY:
-			return "CR_CORE_MEMORY";
-		case CR_CPU_MEMORY:
-			return "CR_CPU_MEMORY";
-		default:
-			return "unknown";
-	}
-}
-
-static char *_task_plugin_param(uint16_t task_plugin_param)
-{
-	switch(task_plugin_param) {
-		case TASK_PARAM_NONE:
-			return "none";
-		case TASK_PARAM_CPUSETS:
-			return "cpusets";
-		case TASK_PARAM_SCHED:
-			return "sched";
-		default:
-			return "unknown";
-	}
-}
-
 /*
  * slurm_print_ctl_conf - output the contents of slurm control configuration 
  *	message as loaded using slurm_load_ctl_conf
@@ -136,14 +97,11 @@ void slurm_print_ctl_conf ( FILE* out,
 		slurm_ctl_conf_ptr->fast_schedule);
 	fprintf(out, "FirstJobId        = %u\n", 
 		slurm_ctl_conf_ptr->first_job_id);
-#ifdef HAVE_XCPU
-	fprintf(out, "HAVE_XCPU         = %d\n", HAVE_XCPU);
-#endif
 	fprintf(out, "InactiveLimit     = %u\n", 
 		slurm_ctl_conf_ptr->inactive_limit);
 	fprintf(out, "JobAcctLogFile    = %s\n", 
 		slurm_ctl_conf_ptr->job_acct_logfile);
-	fprintf(out, "JobAcctFrequency  = %u\n",
+	fprintf(out, "JobAcctFrequency  = %d\n",
 		slurm_ctl_conf_ptr->job_acct_freq);
 	fprintf(out, "JobAcctType       = %s\n", 
 		slurm_ctl_conf_ptr->job_acct_type);
@@ -157,21 +115,12 @@ void slurm_print_ctl_conf ( FILE* out,
 		slurm_ctl_conf_ptr->job_credential_public_certificate);
 	fprintf(out, "KillWait          = %u\n", 
 		slurm_ctl_conf_ptr->kill_wait);
-	fprintf(out, "MailProg          = %s\n",
-		slurm_ctl_conf_ptr->mail_prog);
 	fprintf(out, "MaxJobCount       = %u\n", 
 		slurm_ctl_conf_ptr->max_job_cnt);
-	fprintf(out, "MessageTimeout    = %u\n",
-		slurm_ctl_conf_ptr->msg_timeout);
 	fprintf(out, "MinJobAge         = %u\n", 
 		slurm_ctl_conf_ptr->min_job_age);
 	fprintf(out, "MpiDefault        = %s\n",
 		slurm_ctl_conf_ptr->mpi_default);
-#ifdef MULTIPLE_SLURMD
-	fprintf(out, "MULTIPLE_SLURMD   = %d\n", MULTIPLE_SLURMD);
-#endif
-	fprintf(out, "NEXT_JOB_ID       = %u\n",
-		slurm_ctl_conf_ptr->next_job_id);
 	fprintf(out, "PluginDir         = %s\n", 
 		slurm_ctl_conf_ptr->plugindir);
 	fprintf(out, "PlugStackConfig   = %s\n",
@@ -188,6 +137,8 @@ void slurm_print_ctl_conf ( FILE* out,
                 slurm_ctl_conf_ptr->propagate_rlimits_except);
 	fprintf(out, "ReturnToService   = %u\n", 
 		slurm_ctl_conf_ptr->ret2service);
+	fprintf(out, "SchedulerAuth     = %s\n",
+		slurm_ctl_conf_ptr->schedauth);
 	fprintf(out, "SchedulerPort     = %u\n",
 		slurm_ctl_conf_ptr->schedport);
 	fprintf(out, "SchedulerRootFilter = %u\n",
@@ -196,11 +147,6 @@ void slurm_print_ctl_conf ( FILE* out,
 		slurm_ctl_conf_ptr->schedtype);
 	fprintf(out, "SelectType        = %s\n",
 		slurm_ctl_conf_ptr->select_type);
-	if (slurm_ctl_conf_ptr->select_type_param) {
-		fprintf(out, "SelectTypeParameters = %s\n",
-			_select_info(slurm_ctl_conf_ptr->
-			select_type_param));
-	}
 	fprintf(out, "SlurmUser         = %s(%u)\n", 
 		slurm_ctl_conf_ptr->slurm_user_name,
 		slurm_ctl_conf_ptr->slurm_user_id);
@@ -243,8 +189,6 @@ void slurm_print_ctl_conf ( FILE* out,
 		slurm_ctl_conf_ptr->task_epilog);
 	fprintf(out, "TaskPlugin        = %s\n",
 		 slurm_ctl_conf_ptr->task_plugin);
-	fprintf(out, "TaskPluginParam   = %s\n",
-		_task_plugin_param(slurm_ctl_conf_ptr->task_plugin_param));
 	fprintf(out, "TaskProlog        = %s\n",
 		slurm_ctl_conf_ptr->task_prolog);
 	fprintf(out, "TmpFS             = %s\n", 
@@ -274,9 +218,6 @@ slurm_load_ctl_conf (time_t update_time, slurm_ctl_conf_t **confp)
 	slurm_msg_t resp_msg;
         last_update_msg_t req; 
 	
-	slurm_msg_t_init(&req_msg);
-	slurm_msg_t_init(&resp_msg);
-
 	req.last_update  = update_time;
 	req_msg.msg_type = REQUEST_BUILD_INFO;
 	req_msg.data     = &req;

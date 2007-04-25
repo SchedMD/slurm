@@ -1,3 +1,4 @@
+# $Id: Makefile.am 7041 2006-01-17 16:36:04Z jette $
 
 htmldir = ${prefix}/share/doc/@PACKAGE@-@VERSION@/html
 
@@ -8,7 +9,6 @@ generated_html = \
 	bluegene.html \
 	checkpoint_plugins.html \
 	cons_res.html \
-	dist_plane.html \
 	documentation.html \
 	download.html \
 	faq.html \
@@ -18,7 +18,6 @@ generated_html = \
 	jobcompplugins.html \
 	mail.html \
 	maui.html \
-	mc_support.html \
 	moab.html \
 	mpiplugins.html \
 	news.html \
@@ -34,10 +33,8 @@ generated_html = \
 	selectplugins.html \
 	slurm.html \
 	switchplugins.html \
-	taskplugins.html \
-	team.html \
-	testimonials.html \
-	troubleshoot.html
+ 	team.html \
+ 	testimonials.html
 
 html_DATA = \
 	${generated_html} \
@@ -45,21 +42,12 @@ html_DATA = \
 	configurator.html \
 	coding_style.pdf \
 	entities.gif \
-	lci.7.tutorial.pdf \
 	lll.gif \
-	mc_support.gif \
-	nnsa_doe_uc_comp.gif \
-	plane_ex1.gif \
-	plane_ex2.gif \
-	plane_ex3.gif \
-	plane_ex4.gif \
-	plane_ex5.gif \
-	plane_ex6.gif \
-	plane_ex7.gif \
-	slurm_banner.gif \
+	slurm_banner_filler.jpg \
+	slurm_banner_left.jpg \
+	slurm_banner_right.jpg \
 	slurm_design.pdf \
-	slurmstyles.css \
-	linuxstyles.css
+	slurmstyles.css
 
 MOSTLYCLEANFILES = ${generated_html}
 

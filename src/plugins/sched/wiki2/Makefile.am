@@ -1,4 +1,4 @@
-# Makefile for wiki2 scheduler plugin
+# Makefile for wiki scheduler plugin
 
 AUTOMAKE_OPTIONS = foreign
 

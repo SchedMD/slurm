@@ -1,3 +1,4 @@
+# $Id$
 #
 # Makefile for slurmctld
 
@@ -33,14 +34,13 @@ slurmctld_SOURCES = 	\
 	read_config.h	\
 	sched_plugin.c	\
 	sched_plugin.h	\
+	sched_upcalls.c	\
 	slurmctld.h	\
 	srun_comm.c	\
 	srun_comm.h	\
 	state_save.c	\
 	state_save.h	\
-	step_mgr.c	\
-	trigger_mgr.c	\
-	trigger_mgr.h
+	step_mgr.c
 
 slurmctld_LDFLAGS = -export-dynamic $(CMD_LDFLAGS) \
 			$(FEDERATION_LDFLAGS)	

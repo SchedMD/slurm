@@ -1,11 +1,11 @@
 /*****************************************************************************\
- *  src/srun/signals.c - signal handling for srun
+ * src/srun/signals.c - signal handling for srun
  *****************************************************************************
- *  Copyright (C) 2002-2006 The Regents of the University of California.
+ *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Mark Grondona <mgrondona@llnl.gov>, and
  *             Morris Jette  <jette1@llnl.gov>
- *  UCRL-CODE-226842.
+ *  UCRL-CODE-217948.
  *  
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -16,7 +16,7 @@
  *  any later version.
  *
  *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under
+ *  to link the code of portions of this program with the OpenSSL library under 
  *  certain conditions as described in each individual source file, and 
  *  distribute linked combinations including the two. You must obey the GNU 
  *  General Public License in all respects for all of the code used other than 
@@ -54,12 +54,10 @@
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/xmalloc.h"
-#include "src/common/xstring.h"
 #include "src/common/xsignal.h"
+#include "src/common/global_srun.h"
 
-#include "src/srun/opt.h"
 #include "src/srun/srun_job.h"
-#include "src/srun/signals.h"
 
 #define MAX_RETRIES 3
 
@@ -70,6 +68,13 @@ static int srun_sigarray[] = {
 	SIGINT,  SIGQUIT, /*SIGTSTP,*/ SIGCONT, SIGTERM,
 	SIGALRM, SIGUSR1, SIGUSR2, SIGPIPE, 0
 };
+
+typedef struct task_info {
+	slurm_msg_t *req_ptr;
+	srun_job_t *job_ptr;
+	int host_inx;
+} task_info_t;
+
 
 /* 
  * Static prototypes
@@ -128,6 +133,7 @@ sig_thr_create(srun_job_t *job)
 }
 
 
+
 static void
 _sigterm_handler(int signum)
 {
@@ -157,7 +163,7 @@ _handle_intr(srun_job_t *job, time_t *last_intr, time_t *last_intr_sent)
 
 			info("sending Ctrl-C to job");
 			*last_intr_sent = time(NULL);
-			fwd_signal(job, SIGINT, opt.max_threads);
+			fwd_signal(job, SIGINT);
 
 		} else {
 			job_force_termination(job);
@@ -201,7 +207,7 @@ _sig_thr(void *arg)
 			job_force_termination(job);
 			break;
 		  default:
-			fwd_signal(job, signo, opt.max_threads);
+			fwd_signal(job, signo);
 			break;
 		}
 	}

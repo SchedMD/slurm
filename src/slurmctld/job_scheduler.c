@@ -2,10 +2,10 @@
  * job_scheduler.c - manage the scheduling of pending jobs in priority order
  *	Note there is a global job list (job_list)
  *****************************************************************************
- *  Copyright (C) 2002-2006 The Regents of the University of California.
+ *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
- *  UCRL-CODE-226842.
+ *  UCRL-CODE-217948.
  *  
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -161,7 +161,8 @@ int schedule(void)
 	slurmctld_lock_t job_write_lock =
 	    { READ_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK };
 #ifdef HAVE_BG
-	char *ionodes = NULL;
+	uint16_t quarter = (uint16_t) NO_VAL;
+	uint16_t nodecard = (uint16_t) NO_VAL;
 	char tmp_char[256];
 #endif
 	static bool wiki_sched = false;
@@ -232,18 +233,29 @@ int schedule(void)
 			last_job_update = time(NULL);
 #ifdef HAVE_BG
 			select_g_get_jobinfo(job_ptr->select_jobinfo, 
-					     SELECT_DATA_IONODES, 
-					     &ionodes);
-			if(ionodes) {
-				sprintf(tmp_char,"%s[%s]",
+					     SELECT_DATA_QUARTER, 
+					     &quarter);
+			select_g_get_jobinfo(job_ptr->select_jobinfo, 
+					     SELECT_DATA_NODECARD, 
+					     &nodecard);
+			if(quarter != (uint16_t)NO_VAL) {
+				if(nodecard != (uint16_t)NO_VAL) {
+					sprintf(tmp_char,"%s.%d.%d",
 						job_ptr->nodes,
-						ionodes);
+						quarter,
+						nodecard);
+				} else {
+					sprintf(tmp_char,"%s.%d",
+						job_ptr->nodes,
+						quarter);
+				}
 			} else {
 				sprintf(tmp_char,"%s",job_ptr->nodes);
 			}
 			info("schedule: JobId=%u BPList=%s",
 			     job_ptr->job_id, tmp_char);
-			xfree(ionodes);
+			quarter = (uint16_t) NO_VAL;
+			nodecard = (uint16_t) NO_VAL;
 #else
 			info("schedule: JobId=%u NodeList=%s",
 			     job_ptr->job_id, job_ptr->nodes);
@@ -261,7 +273,6 @@ int schedule(void)
 			last_job_update = time(NULL);
 			job_ptr->job_state = JOB_FAILED;
 			job_ptr->exit_code = 1;
-			job_ptr->state_reason = FAIL_BAD_CONSTRAINTS;
 			job_ptr->start_time = job_ptr->end_time = time(NULL);
 			job_completion_logger(job_ptr);
 			delete_job_details(job_ptr);
@@ -327,22 +338,8 @@ static void _launch_job(struct job_record *job_ptr)
 	launch_msg_ptr->step_id = NO_VAL;
 	launch_msg_ptr->uid = job_ptr->user_id;
 	launch_msg_ptr->gid = job_ptr->group_id;
-	launch_msg_ptr->nprocs = job_ptr->details->num_tasks;
+	launch_msg_ptr->nprocs = job_ptr->details->req_tasks;
 	launch_msg_ptr->nodes = xstrdup(job_ptr->nodes);
-	launch_msg_ptr->overcommit = job_ptr->details->overcommit;
-
-	if (make_batch_job_cred(launch_msg_ptr)) {
-		error("aborting batch job %u", job_ptr->job_id);
-		/* FIXME: This is a kludge, but this event indicates a serious
-		 * problem with OpenSSH and should never happen. We are
-		 * too deep into the job launch to gracefully clean up. */
-		job_ptr->end_time    = time(NULL);
-		job_ptr->time_limit = 0;
-		xfree(launch_msg_ptr->nodes);
-		xfree(launch_msg_ptr);
-		return;
-	}
-
 	launch_msg_ptr->err = xstrdup(job_ptr->details->err);
 	launch_msg_ptr->in = xstrdup(job_ptr->details->in);
 	launch_msg_ptr->out = xstrdup(job_ptr->details->out);
@@ -370,7 +367,10 @@ static void _launch_job(struct job_record *job_ptr)
 	agent_arg_ptr = (agent_arg_t *) xmalloc(sizeof(agent_arg_t));
 	agent_arg_ptr->node_count = 1;
 	agent_arg_ptr->retry = 0;
-	agent_arg_ptr->hostlist = hostlist_create(node_ptr->name);
+	agent_arg_ptr->slurm_addr = xmalloc(sizeof(slurm_addr));
+	memcpy(agent_arg_ptr->slurm_addr,
+	       &(node_ptr->slurm_addr), sizeof(slurm_addr));
+	agent_arg_ptr->node_names = xstrdup(node_ptr->name);
 	agent_arg_ptr->msg_type = REQUEST_BATCH_JOB_LAUNCH;
 	agent_arg_ptr->msg_args = (void *) launch_msg_ptr;
 
@@ -391,30 +391,4 @@ _xduparray(uint16_t size, char ** array)
 	for (i=0; i<size; i++)
 		result[i] = xstrdup(array[i]);
 	return result;
-}
-
-/*
- * make_batch_job_cred - add a job credential to the batch_job_launch_msg
- * IN/OUT launch_msg_ptr - batch_job_launch_msg in which job_id, step_id, 
- *                         uid and nodes have already been set 
- * RET 0 or error code
- */
-extern int make_batch_job_cred(batch_job_launch_msg_t *launch_msg_ptr)
-{
-	slurm_cred_arg_t cred_arg;
-
-	cred_arg.jobid     = launch_msg_ptr->job_id;
-	cred_arg.stepid    = launch_msg_ptr->step_id;
-	cred_arg.uid       = launch_msg_ptr->uid;
-	cred_arg.hostlist  = launch_msg_ptr->nodes;
-	cred_arg.alloc_lps_cnt = 0;
-	cred_arg.alloc_lps = NULL;
-
-	launch_msg_ptr->cred = slurm_cred_create(slurmctld_config.cred_ctx,
-			 &cred_arg);
-
-	if (launch_msg_ptr->cred)
-		return SLURM_SUCCESS;
-	error("slurm_cred_create failure for batch job %u", cred_arg.jobid);
-	return SLURM_ERROR;
 }

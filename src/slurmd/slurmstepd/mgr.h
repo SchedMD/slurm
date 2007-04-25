@@ -4,7 +4,7 @@
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Mark Grondona <mgrondona@llnl.gov>.
- *  UCRL-CODE-226842.
+ *  UCRL-CODE-217948.
  *  
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -45,6 +45,12 @@
 
 #include "src/slurmd/slurmd/slurmd.h"
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
+
+/*
+ * Initialize a slurmd_job_t structure for a spawn task
+ */
+slurmd_job_t *mgr_spawn_task_setup(spawn_task_request_msg_t *msg,
+				   slurm_addr *client, slurm_addr *self);
 
 /*
  * Initialize a slurmd_job_t structure for a launch tasks

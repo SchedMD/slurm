@@ -4,7 +4,7 @@
  *  Copyright (C) 2006-2007 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
- *  UCRL-CODE-226842.
+ *  UCRL-CODE-217948.
  *  
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -75,10 +75,10 @@
 #include "src/common/read_config.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_interface.h"
-#include "src/common/uid.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xsignal.h"
 #include "src/common/xstring.h"
+#include "src/slurmctld/sched_plugin.h"
 
 /* Global configuration parameters */
 #define E_HOST_SIZE  256
@@ -111,7 +111,6 @@ extern int	job_release_task(char *cmd_ptr, int *err_code, char **err_msg);
 extern int	job_requeue_wiki(char *cmd_ptr, int *err_code, char **err_msg);
 extern int	job_signal_wiki(char *cmd_ptr, int *err_code, char **err_msg);
 extern int	job_will_run(char *cmd_ptr, int *err_code, char **err_msg);
-extern int	parse_wiki_config(void);
 extern int	start_job(char *cmd_ptr, int *err_code, char **err_msg);
 extern int	suspend_job(char *cmd_ptr, int *err_code, char **err_msg);
 extern int	resume_job(char *cmd_ptr, int *err_code, char **err_msg);

@@ -1,3 +1,4 @@
+# $Id: Makefile.am 7555 2006-03-21 18:00:02Z da $
 # Makefile for jobacct/aix plugin
 
 AUTOMAKE_OPTIONS = foreign
@@ -12,8 +13,5 @@ pkglib_LTLIBRARIES = jobacct_aix.la
 jobacct_aix_la_SOURCES = jobacct_aix.c \
 	$(top_builddir)/src/plugins/jobacct/common/jobacct_common.c \
 	$(top_builddir)/src/plugins/jobacct/common/common_slurmctld.c \
-	$(top_builddir)/src/plugins/jobacct/common/common_slurmstepd.c \
-	$(top_builddir)/src/slurmd/common/proctrack.c \
-	$(top_builddir)/src/slurmd/common/proctrack.h 
-
+	$(top_builddir)/src/plugins/jobacct/common/common_slurmstepd.c
 jobacct_aix_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)

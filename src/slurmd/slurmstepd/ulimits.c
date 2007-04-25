@@ -5,7 +5,7 @@
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Mark Grondona <mgrondona@llnl.gov>.
- *  UCRL-CODE-226842.
+ *  UCRL-CODE-217948.
  *  
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -105,7 +105,7 @@ _set_umask(char **env)
 	char *val;
 	
 	if (!(val = getenvp(env, "SLURM_UMASK"))) {
-		debug("Couldn't find SLURM_UMASK in environment");
+		error("Couldn't find SLURM_UMASK in environment");
 		return SLURM_ERROR;
 	}
 
@@ -133,7 +133,7 @@ _set_limit(char **env, slurm_rlimits_info_t *rli)
 	strcpy( &env_name[sizeof("SLURM_RLIMIT_")-1], rli->name );
 
 	if (_get_env_val( env, env_name, &env_value, &u_req_propagate )){
-		debug( "Couldn't find %s in environment", env_name );
+		error( "Couldn't find %s in environment", env_name );
 		return SLURM_ERROR;
 	}
 
@@ -174,17 +174,13 @@ _set_limit(char **env, slurm_rlimits_info_t *rli)
 		/*
 		 * Report an error only if the user requested propagate 
 		 */
-		if (u_req_propagate) {
+		if (u_req_propagate)
 			error( "Can't propagate %s of %s from submit host: %m",
 				rlimit_name,
 				r.rlim_cur == RLIM_INFINITY ? "'unlimited'" :
 				rlim_to_string( r.rlim_cur, cur, sizeof(cur)));
-		} else {
-			verbose("Can't propagate %s of %s from submit host: %m",
-				rlimit_name,
-				r.rlim_cur == RLIM_INFINITY ? "'unlimited'" :
-				rlim_to_string( r.rlim_cur, cur, sizeof(cur)));
-		}
+		debug2( "_set_limit: %s setrlimit %s failed: %m",
+				u_req_propagate?"user":"conf", rlimit_name );
 		return SLURM_ERROR;
 	}
 	debug2( "_set_limit: %s setrlimit %s succeeded",

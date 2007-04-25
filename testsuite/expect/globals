@@ -14,7 +14,7 @@
 # Copyright (C) 2002-2006 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 # Written by Morris Jette <jette1@llnl.gov>
-# UCRL-CODE-226842.
+# UCRL-CODE-217948.
 # 
 # This file is part of SLURM, a resource management program.
 # For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -34,18 +34,18 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 ############################################################################
 
-global sacct salloc sattach sbatch sbcast scancel scontrol sinfo slaunch smap squeue srun
+global sacct sbcast scancel scontrol sinfo smap squeue srun
 
 # Conditional set.  Only set variable if variable does not yet exist.
 proc cset {name value} {
-	if {![uplevel 1 info exists $name]} {
-		upvar $name tmp
-		set tmp $value
-	}
+    if {![uplevel 1 info exists $name]} {
+	upvar $name tmp
+	set tmp $value
+    }
 }
 
 if [file exists globals.local] {
-	source globals.local
+    source globals.local
 }
 
 #
@@ -54,23 +54,15 @@ if [file exists globals.local] {
 #
 cset slurm_dir   "/usr"
 cset sacct       "${slurm_dir}/bin/sacct"
-cset salloc      "${slurm_dir}/bin/salloc"
-cset sattach     "${slurm_dir}/bin/sattach"
-cset sbatch      "${slurm_dir}/bin/sbatch"
 cset sbcast      "${slurm_dir}/bin/sbcast"
 cset scancel     "${slurm_dir}/bin/scancel"
 cset scontrol    "${slurm_dir}/bin/scontrol"
 cset sinfo       "${slurm_dir}/bin/sinfo"
-cset slaunch     "${slurm_dir}/bin/slaunch"
 cset smap        "${slurm_dir}/bin/smap"
 cset squeue      "${slurm_dir}/bin/squeue"
 cset srun        "${slurm_dir}/bin/srun"
-cset strigger    "${slurm_dir}/bin/strigger"
 
-# If length of string partition is zero, use output of function 
-#	default_partition, otherwise use the partition explicitly 
-#	named in your globals.local file (or below) for poe commands
-cset partition ""
+cset partition "pdebug"
 
 # If using MPICH-2 or other version of MPI requiring pmi libary, use this
 #cset mpicc	"/home/jette/mpich2-install/bin/mpicc"
@@ -87,21 +79,19 @@ cset mpirun	"mpirun"
 cset totalviewcli	"/usr/local/bin/totalviewcli"
 
 # Pattern to match your shell prompt
-#cset prompt {(%|#|\$|\]) *$}
-cset prompt "(%|#|\\\$|]|\[^>]>) *(|\[^ ]* *)$"
+cset prompt {(%|#|\$) *$}
 
 #
 # Specify locations of other executable files used
 # Only the shell names (e.g. bin_bash) must be full pathnames
 #
 cset bin_awk 	"awk"
-cset bin_bash   [exec which bash | tail -1]
+if {![info exists bin_bash]} {set bin_bash [exec which bash]}
 cset bin_cat	"cat"
 cset bin_cc	"gcc"
 cset bin_chmod	"chmod"
 cset bin_cmp	"cmp"
 cset bin_cp	"cp"
-cset bin_date	"date"
 cset bin_diff	"diff"
 cset bin_echo	"echo"
 cset bin_env	"env"
@@ -111,18 +101,16 @@ cset bin_grep    "grep"
 cset bin_hostname "hostname"
 cset bin_kill	"kill"
 cset bin_make	"make"
-cset bin_od     "od"
 cset bin_pkill	"pkill"
 cset bin_ps	"ps"
 cset bin_pwd	"pwd"
 cset bin_rm	"rm"
-cset bin_sleep  "sleep"
-cset bin_sort   "sort"
-cset bin_touch  "touch"
+cset bin_sleep   "sleep"
+cset bin_sort    "sort"
+cset bin_touch   "touch"
 cset bin_uname	"uname"
-cset bin_usleep "usleep"
+cset bin_usleep  "usleep"
 cset bin_wc	"wc"
-cset bin_printenv "printenv"
 
 #
 # Let the commands complete without expect timing out waiting for a 
@@ -139,19 +127,9 @@ cset max_job_delay 120
 cset max_file_delay 60
 
 #
-# Desired job state must be reached within this number of seconds.
-#
-cset max_job_state_delay 360
-
-#
 # Specify the maximum number of tasks to use in the stress tests.
 #
 cset max_stress_tasks 4
-
-#
-# The error message that the "sleep" command prints when we run "sleep aaa".
-#
-cset sleep_error_message "(invalid time interval)|(bad character in argument)"
 
 # Other common variables
 set alpha                "\[a-zA-Z\]+"
@@ -220,65 +198,6 @@ proc get_line_cnt { file_name } {
 
 ################################################################
 #
-# Proc: slow_kill
-#
-# Purpose:  Kill a process slowly, first trying SIGINT, pausing for
-#       a second, then sending SIGKILL.
-#
-# Returns: A non-zero return code indicates a failure.
-#
-################################################################
-
-proc slow_kill { pid } {
-	global bin_kill
-
-	catch {exec $bin_kill -INT $pid}
-	catch {exec $bin_kill -INT $pid}
-	sleep  1
-	catch {exec $bin_kill -KILL $pid}
-
-	return 0
-}
-
-
-################################################################
-#
-# Proc: kill_salloc
-#
-# Purpose:  Kill all salloc commands associated with this user.
-#	Issue two SIGINT, sleep 1 and a SIGKILL
-#
-# Returns: A non-zero return code indicates a failure.
-#
-# NOTE: Use slow_kill instead of kill_salloc if you can capture 
-#       the process id
-#
-################################################################
-
-proc kill_salloc {  } {
-	global bin_id bin_pkill bin_sleep bin_usleep number
-
-	spawn $bin_id -u
-	expect {
-		-re "($number)" {
-			set uid $expect_out(1,string)
-			exp_continue
-		}
-		eof {
-			wait
-		}
-	}
-	catch {exec $bin_pkill -INT -u $uid salloc}
-	catch {exec $bin_pkill -INT -u $uid salloc}
-	sleep  1
-	catch {exec $bin_pkill -KILL -u $uid salloc}
-
-	return 0
-}
-
-
-################################################################
-#
 # Proc: kill_srun
 #
 # Purpose:  Kill all srun commands associated with this user.
@@ -286,8 +205,9 @@ proc kill_salloc {  } {
 #
 # Returns: A non-zero return code indicates a failure.
 #
-# NOTE: Use slow_kill instead of kill_srun if you can capture 
-#       the process id
+# Note: usleep is used to avoid pkill race error message (the
+# processes terminate after the process table is read and before
+# the signal is sent to the detected processses)
 #
 ################################################################
 
@@ -304,10 +224,27 @@ proc kill_srun {  } {
 			wait
 		}
 	}
-	catch {exec $bin_pkill -INT -u $uid srun}
-	catch {exec $bin_pkill -INT -u $uid srun}
-	sleep  1
-	catch {exec $bin_pkill -KILL -u $uid srun}
+
+	spawn $bin_pkill -INT -u $uid srun
+	expect {
+		eof {
+			wait
+		}
+	}
+	exec $bin_usleep 1000
+	spawn $bin_pkill -INT -u $uid srun
+	expect {
+		eof {
+			wait
+		}
+	}
+	exec $bin_sleep  1
+	spawn $bin_pkill -KILL -u $uid srun
+	expect {
+		eof {
+			wait
+		}
+	}
 
 	return 0
 }
@@ -347,12 +284,14 @@ proc wait_for_file { file_name } {
 	global bin_sleep max_file_delay
 
 	for {set my_delay 0} {$my_delay <= $max_file_delay} {incr my_delay} {
+		if {$my_delay > 0} {
+			exec $bin_sleep 1
+		}
 		if [file exists $file_name] {
 #			Add small delay for I/O buffering
-			exec $bin_sleep 2
+			exec $bin_sleep 1
 			return 0
 		}
-		exec $bin_sleep 1
 	}
 	send_user "\nFAILURE: Timeout waiting for file $file_name\n"
 	return 1
@@ -381,72 +320,63 @@ proc wait_for_file { file_name } {
 ################################################################
 
 proc wait_for_job { job_id desired_state } {
-	global scontrol max_job_state_delay
+    global scontrol
 
-	# First verify that desired_state is supported
-	switch $desired_state {
-		"DONE" {}
-		"RUNNING" {}
-		default {
-			send_user "Unsupported desired state: $desired_state\n"
-			return 1
-		}
+    # First verify that desired_state is supported
+    switch $desired_state {
+	"DONE" {}
+	"RUNNING" {}
+	default {
+	    send_user "Unsupported desired state: $desired_state\n"
+	    return 1
+	}
+    }
+
+    set sleep_time  1
+    while 1 {
+	set fd [open "|$scontrol -o show job $job_id"]
+	gets $fd line
+	catch {close $fd}
+	if {[regexp {JobState\s*=\s*(\w+)} $line foo state] != 1} {
+	    set state "NOT_FOUND"
 	}
 
-	set sleep_time  1
-	set my_delay    0
-	while 1 {
-		set fd [open "|$scontrol -o show job $job_id"]
-		gets $fd line
-		catch {close $fd}
-		if {[regexp {JobState\s*=\s*(\w+)} $line foo state] != 1} {
-			set state "NOT_FOUND"
+	switch $state {
+	    "NOT_FOUND" -
+	    "CANCELLED" -
+	    "FAILED" -
+	    "TIMEOUT" -
+	    "NODE_FAIL" -
+	    "COMPLETED" {
+		if {[string compare $desired_state "DONE"] == 0} {
+		    send_user "Job $job_id is DONE\n"
+		    sleep 2
+		    return 0
+		} else {
+		    if {[string compare $desired_state "RUNNING"] == 0} {
+			send_user "Job $job_id is $state, but we wanted RUNNING\n"
+		    }
+		    return 1
 		}
-
-		switch $state {
-			"NOT_FOUND" -
-			"CANCELLED" -
-			"FAILED" -
-			"TIMEOUT" -
-			"NODE_FAIL" -
-			"COMPLETED" {
-				if {[string compare $desired_state "DONE"] == 0} {
-					send_user "Job $job_id is DONE\n"
-					sleep 2
-					return 0
-				}
-				if {[string compare $desired_state "RUNNING"] == 0} {
-					send_user "Job $job_id is $state, "
-					send_user "but we wanted RUNNING\n"
-				}
-				return 1
-			}
-			"RUNNING" {
-				if {[string compare $desired_state "RUNNING"] == 0} {
-					send_user "Job $job_id is RUNNING\n"
-					return 0
-				}
-				send_user "Job $job_id is in state $state, "
-				send_user "desire $desired_state\n"
-			}
-			default {
-				send_user "Job $job_id is in state $state, "
-				send_user "desire $desired_state\n"
-			}
+	    }
+	    "RUNNING" {
+		if {[string compare $desired_state "RUNNING"] == 0} {
+		    send_user "Job $job_id is RUNNING\n"
+		    return 0
 		}
-
-		if { $my_delay > $max_job_state_delay } {
-			send_user "FAILURE: Timeout waiting for job state $state\n"
-			return 1
-		}
-
-		exec sleep $sleep_time
-		set my_delay [expr $my_delay + $sleep_time]
-		set sleep_time  [expr $sleep_time * 2]
-		if { $sleep_time > 10 } {
-			set sleep_time 10
-		}
+		send_user "Job $job_id is in state $state, desire $desired_state\n"
+	    }
+	    default {
+		send_user "Job $job_id is in state $state, desire $desired_state\n"
+	    }
 	}
+
+	sleep $sleep_time
+	set sleep_time  [expr $sleep_time * 2]
+	if { $sleep_time > 10 } {
+	    set sleep_time 10
+	}
+    }
 }
 
 ################################################################
@@ -463,18 +393,18 @@ proc wait_for_job { job_id desired_state } {
 ################################################################
 
 proc test_front_end { } {
-	global scontrol
+	global scontrol bin_bash bin_grep xcpu_dir
+
+	if [file exists $xcpu_dir] {
+		return 1
+	}
 
 	log_user 0
-	set front_end 0
-	spawn $scontrol show config
+	set bluegene 0
+	spawn -noecho $bin_bash -c "exec $scontrol show config | $bin_grep SelectType"
 	expect {
-		"HAVE_XCPU" {
-			set front_end 1
-			exp_continue
-		}
 		"select/bluegene" {
-			set front_end 1
+			set bluegene 1
 			exp_continue
 		}
 		eof {
@@ -483,37 +413,8 @@ proc test_front_end { } {
 	}
 	log_user 1
 	
-	return $front_end
+	return $bluegene
 }
-
-################################################################
-#
-# Proc: test_multiple_slurmd
-#
-# Returns 1 if running multple slurmd per node
-#
-################################################################
-
-proc test_multiple_slurmd { } {
-        global scontrol
-
-        log_user 0
-        set multiple_slurmd 0
-        spawn $scontrol show config
-        expect {
-                "MULTIPLE_SLURMD" {
-                        set multiple_slurmd 1
-                        exp_continue
-                }
-                eof {
-                        wait
-                }
-        }
-        log_user 1
-
-        return $multiple_slurmd
-}
-
 
 ################################################################
 #
@@ -526,23 +427,13 @@ proc test_multiple_slurmd { } {
 ################################################################
 
 proc test_xcpu { } {
-	global scontrol
+	global xcpu_dir
 
-	log_user 0
-	set have_xcpu 0
-	spawn $scontrol show config
-	expect {
-		"HAVE_XCPU" {
-			set have_xcpu 1
-			exp_continue
-		}
-		eof {
-			wait
-		}
+	if [file exists $xcpu_dir] {
+		return 1
 	}
-	log_user 1
 
-	return $have_xcpu
+	return 0
 }
 
 ################################################################
@@ -586,14 +477,14 @@ proc test_bluegene { } {
 ################################################################
 
 proc test_aix {} {
-	set fd [open "|uname"]
-	gets $fd line
-	close $fd
-	if {[string compare $line AIX] == 0} {
-		return 1
-	} else {
-		return 0
-	}
+    set fd [open "|uname"]
+    gets $fd line
+    close $fd
+    if {[string compare $line AIX] == 0} {
+	return 1
+    } else {
+	return 0
+    }
 }
 
 ################################################################
@@ -703,15 +594,14 @@ proc dec2hex16 {value} {
 ################################################################
 
 proc available_nodes { partition } {
-	global sinfo
+    global sinfo
 
-	set available -1
-	send_user "$sinfo --noheader --partition $partition --state idle,alloc,comp --format %D\n"
-	set fd [open "|$sinfo --noheader --partition $partition --state idle,alloc,comp --format %D"]
-	gets $fd line
-	catch {close $fd}
-	regexp {\d+} $line available
-	return $available
+    set available -1
+    set fd [open "|$sinfo --noheader --partition $partition --state idle,alloc,comp --format %D"]
+    gets $fd line
+    catch {close $fd}
+    regexp {\d+} $line available
+    return $available
 }
 
 
@@ -726,53 +616,23 @@ proc available_nodes { partition } {
 ################################################################
 
 proc default_partition {} {
-	global scontrol
+    global scontrol
 
-	set name ""
-	set fd [open "|$scontrol --all --oneliner show partition"]
-	while {[gets $fd line] != -1} {
-		if {[regexp {^PartitionName=(\w+).*Default=YES} $line frag name]
-				== 1} {
-			break
-		}
+    set name ""
+    set fd [open "|$scontrol --all --oneliner show partition"]
+    while {[gets $fd line] != -1} {
+	if {[regexp {^PartitionName=(\w+).*Default=YES} $line frag name]
+	    == 1} {
+	    break
 	}
-	catch {close $fd}
+    }
+    catch {close $fd}
 
-	if {[string length $name] == 0} {
-		send_user "ERROR: could not identify the default partition\n"
-	}
+    if {[string length $name] == 0} {
+	send_user "ERROR: could not identify the default partition"
+    }
 
-	return $name
-}
-
-################################################################
-#
-# Proc: switch_type
-#
-# Purpose: Use scontrol to determine the switch type
-#
-# Returns: Name of SwitchType
-#
-################################################################
-
-proc switch_type {} {
-	global scontrol
-
-	set name ""
-	set fd [open "|$scontrol show config"]
-	while {[gets $fd line] != -1} {
-		if {[regexp {^SwitchType *= switch/(\w+)} $line frag name]
-				== 1} {
-			break
-		}
-	}
-	catch {close $fd}
-
-	if {[string length $name] == 0} {
-		send_user "ERROR: could not identify the switch type"
-	}
-
-	return $name
+    return $name
 }
 
 
@@ -796,14 +656,14 @@ proc switch_type {} {
 ################################################################
 
 proc make_bash_script { script_name script_contents } {
-	global bin_bash bin_chmod
+    global bin_bash bin_chmod
 
-	file delete $script_name
-	set fd [open $script_name "w"]
-	puts $fd "#!$bin_bash"
-	puts $fd $script_contents
-	close $fd
-	exec $bin_chmod 700 $script_name
+    file delete $script_name
+    set fd [open $script_name "w"]
+    puts $fd "#!$bin_bash"
+    puts $fd $script_contents
+    close $fd
+    exec $bin_chmod 700 $script_name
 }
 
 ################################################################

@@ -4,7 +4,7 @@
  *  Copyright (C) 2005-2006 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
- *  UCRL-CODE-226842.
+ *  UCRL-CODE-217948.
  *  
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -40,7 +40,6 @@
 
 #include <slurm/slurm.h>
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
-#include <stdbool.h>
 
 /*
  * Initialize the process tracking plugin.
@@ -104,44 +103,16 @@ extern int slurm_container_signal(uint32_t cont_id, int signal);
 extern int slurm_container_destroy(uint32_t cont_id);
 
 /*
- * Get container ID for given process ID
+ * Get container ID for give process ID
  *
  * Returns zero if no container found for the given pid.
  */
 extern uint32_t slurm_container_find(pid_t pid);
 
-/*
- * Return "true" if the container "cont_id" contains the process with
- * ID "pid".
- */
-extern bool slurm_container_has_pid(uint32_t cont_id, pid_t pid);
-
-/*
- * Wait for all processes within a container to exit.
- *
- * When slurm_container_wait returns SLURM_SUCCESS, the container is considered
- * destroyed.  There is no need to call slurm_container_destroy after
- * a successful call to slurm_container_wait, and in fact it will trigger
- * undefined behavior.
- *
- * Return SLURM_SUCCESS or SLURM_ERROR.
- */
-extern int slurm_container_wait(uint32_t cont_id);
-
-/*
- * Get all process IDs within a container.
- *
- * IN cont_id - Container ID.
- * OUT pids - a pointer to an xmalloc'ed array of process ids, of
- *	length "npids".  If not NULL, caller must free array with xfree().
- * OUT npids - number of process IDs in the returned "pids" array.
- *
- * Return SLURM_SUCCESS if container exists (npids may be zero, and
- *   pids NULL), return SLURM_ERROR if container does not exist, or
- *   plugin does not implement the call.
- */
-extern int slurm_container_get_pids(uint32_t cont_id, pid_t **pids, int *npids);
-
+/* Wait for all processes within a container to exit */
+/* Add process to a container */
+/* Get process IDs within a container */
+/* Get container ID for give process ID */
 /* Collect accounting information for all processes within a container */
 
 #endif /*__PROC_TRACK_H__*/

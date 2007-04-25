@@ -4,7 +4,7 @@
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Jay Windley <jwindley@lnxi.com>.
- *  UCRL-CODE-226842.
+ *  UCRL-CODE-217948.
  *  
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -108,6 +108,16 @@ int plugrack_set_major_type( plugrack_t rack, const char *type );
 int plugrack_set_paranoia( plugrack_t rack,
 			   const uint32_t paranoia_flags,
 			   const uid_t uid );
+
+/*
+ * Add a plugin to a rack by giving the pathname to the plugin.
+ *
+ * If a type has been set for this rack, the plugin's major type must
+ * match or an error results.
+ *
+ * Returns a SLURM errno.
+ */
+int plugrack_add_plugin_file( plugrack_t rack, const char *fq_path );
 
 /*
  * Add plugins to a rack by scanning the given directory.  If a

@@ -6,7 +6,7 @@
  *  Copyright (C) 2002-2006 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Joey Ekstrom <ekstrom1@llnl.gov>, Morris Jette <jette1@llnl.gov>
- *  UCRL-CODE-226842.
+ *  UCRL-CODE-217948.
  *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -241,7 +241,7 @@ parse_command_line( int argc, char* argv[] )
 		if (strcasecmp("localhost", params.node) == 0) {
 			xfree(params.node);
 			params.node = xmalloc(128);
-			gethostname_short(params.node, 128);
+			getnodename(params.node, 128);
 		}
 		name1 = slurm_conf_get_nodename(params.node);
 		if (name1) {
@@ -484,30 +484,15 @@ extern int parse_format( char* format )
 				                       field_size, 
 				                       right_justify, 
 				                       suffix );
-			else if (field[0] == 'H')
-				job_format_add_min_sockets( params.format_list, 
-				                           field_size, 
-				                           right_justify, 
-				                           suffix );
 			else if (field[0] == 'i')
 				job_format_add_job_id( params.format_list, 
 				                       field_size, 
 				                       right_justify, 
 				                       suffix );
-			else if (field[0] == 'I')
-				job_format_add_min_cores( params.format_list, 
-				                           field_size, 
-				                           right_justify, 
-				                           suffix );
 			else if (field[0] == 'j')
 				job_format_add_name( params.format_list, 
 				                     field_size, 
 				                     right_justify, suffix );
-			else if (field[0] == 'J')
-				job_format_add_min_threads( params.format_list, 
-				                           field_size, 
-				                           right_justify, 
-				                           suffix );
 			else if (field[0] == 'l')
 				job_format_add_time_limit( params.format_list, 
 				                           field_size, 
@@ -598,26 +583,6 @@ extern int parse_format( char* format )
 				                          field_size, 
 				                          right_justify, 
 				                          suffix );
-			else if (field[0] == 'X')
-				job_format_add_num_sockets( params.format_list, 
-				                           field_size, 
-				                           right_justify, 
-				                           suffix );
-			else if (field[0] == 'Y')
-				job_format_add_num_cores( params.format_list, 
-				                           field_size, 
-				                           right_justify, 
-				                           suffix );
-			else if (field[0] == 'Z')
-				job_format_add_num_threads( params.format_list, 
-				                           field_size, 
-				                           right_justify, 
-				                           suffix );
-			else if (field[0] == 'z')
-				job_format_add_num_sct( params.format_list, 
-				                           field_size, 
-				                           right_justify, 
-				                           suffix );
 			else 
 				error( "Invalid job format specification: %c", 
 				       field[0] );

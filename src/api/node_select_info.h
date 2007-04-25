@@ -10,7 +10,7 @@
  *  Copyright (C) 2005 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
- *  UCRL-CODE-226842.
+ *  UCRL-CODE-217948.
  *  
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -21,7 +21,7 @@
  *  any later version.
  *
  *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under
+ *  to link the code of portions of this program with the OpenSSL library under 
  *  certain conditions as described in each individual source file, and 
  *  distribute linked combinations including the two. You must obey the GNU 
  *  General Public License in all respects for all of the code used other than 
@@ -49,7 +49,6 @@
 
 typedef struct {
 	char *nodes;
-	char *ionodes;
 	char *owner_name;
 	char *bg_block_id;
 	int state;
@@ -58,17 +57,6 @@ typedef struct {
 	int quarter;
 	int nodecard;
 	int node_cnt;
-	int *bp_inx;            /* list index pairs into node_table for *nodes:
-				 * start_range_1, end_range_1,
-				 * start_range_2, .., -1  */
-	int *ionode_inx;        /* list index pairs for ionodes in the
-				 * node listed for *ionodes:
-				 * start_range_1, end_range_1,
-				 * start_range_2, .., -1  */
-	char *blrtsimage;       /* BlrtsImage for this block */
-	char *linuximage;       /* LinuxImage for this block */
-	char *mloaderimage;     /* mloaderImage for this block */
-	char *ramdiskimage;     /* RamDiskImage for this block */
 } bg_info_record_t;
 
 typedef struct {

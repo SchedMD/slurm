@@ -5,7 +5,7 @@
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Mark Grondona <grondona1@llnl.gov>, Kevin Tew <tew1@llnl.gov>, 
  *  et. al.
- *  UCRL-CODE-226842.
+ *  UCRL-CODE-217948.
  *  
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -48,28 +48,15 @@
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
-#include <stdint.h>
 
-#include "src/common/macros.h"
 #include "src/common/log.h"
 #include "src/common/net.h"
-
-/*
- * Define slurm-specific aliases for use by plugins, see slurm_xlator.h 
- * for details. 
- */
-strong_alias(net_stream_listen,		slurm_net_stream_listen);
-strong_alias(net_accept_stream,		slurm_net_accept_stream);
-strong_alias(net_set_low_water,		slurm_net_set_low_water);
 
 #ifndef NET_DEFAULT_BACKLOG
 #  define NET_DEFAULT_BACKLOG	1024
 #endif 
 
-/*
- * Returns the port number in host byte order.
- */
-static short _sock_bind_wild(int sockfd)
+static int _sock_bind_wild(int sockfd)
 {
 	socklen_t len;
 	struct sockaddr_in sin;
@@ -84,17 +71,12 @@ static short _sock_bind_wild(int sockfd)
 	len = sizeof(sin);
 	if (getsockname(sockfd, (struct sockaddr *) &sin, &len) < 0)
 		return (-1);
-	return ntohs(sin.sin_port);
+	return (sin.sin_port);
 }
 
-/* open a stream socket on an ephemereal port and put it into 
- * the listen state. fd and port are filled in with the new
- * socket's file descriptor and port #.
- *
- * OUT fd - listening socket file descriptor number
- * OUT port - TCP port number in host byte order
- */
-int net_stream_listen(int *fd, short *port)
+
+
+int net_stream_listen(int *fd, int *port)
 {
 	int rc, val;
 
@@ -107,6 +89,8 @@ int net_stream_listen(int *fd, short *port)
 		goto cleanup;
 
 	*port = _sock_bind_wild(*fd);
+	if (*port < 0)
+		goto cleanup;
 #undef SOMAXCONN
 #define SOMAXCONN	1024
 	rc = listen(*fd, NET_DEFAULT_BACKLOG);
@@ -121,7 +105,7 @@ int net_stream_listen(int *fd, short *port)
 }
 
 
-int net_accept_stream(int fd)
+int accept_stream(int fd)
 {
 	int sd;
 
@@ -137,6 +121,7 @@ int net_accept_stream(int fd)
 
 	return sd;
 }
+
 
 int readn(int fd, void *buf, size_t nbytes)
 {

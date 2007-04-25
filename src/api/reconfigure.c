@@ -6,7 +6,7 @@
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov> et. al.
- *  UCRL-CODE-226842.
+ *  UCRL-CODE-217948.
  *  
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -50,7 +50,6 @@
 
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/forward.h"
-#include "src/common/xmalloc.h"
 
 static int _send_message_controller (	enum controller_id dest, 
 					slurm_msg_t *request_msg );
@@ -65,8 +64,6 @@ slurm_reconfigure ( void )
 {
 	int rc;
 	slurm_msg_t req;
-
-	slurm_msg_t_init(&req);
 
 	req.msg_type = REQUEST_RECONFIGURE;
 	
@@ -90,7 +87,6 @@ slurm_ping (int primary)
 	int rc ;
 	slurm_msg_t request_msg ;
 
-	slurm_msg_t_init(&request_msg);
 	request_msg.msg_type = REQUEST_PING ;
 
 	if (primary == 1)
@@ -118,7 +114,6 @@ slurm_shutdown (uint16_t core)
 	slurm_msg_t req_msg;
 	shutdown_msg_t shutdown_msg;
 
-	slurm_msg_t_init(&req_msg);
 	shutdown_msg.core = core;
 	req_msg.msg_type  = REQUEST_SHUTDOWN;
 	req_msg.data      = &shutdown_msg;
@@ -136,30 +131,41 @@ _send_message_controller (enum controller_id dest, slurm_msg_t *req)
 {
 	int rc = SLURM_PROTOCOL_SUCCESS;
 	slurm_fd fd = -1;
-	slurm_msg_t *resp_msg = NULL;
-		
+	slurm_msg_t resp_msg;
+
+	List ret_list = NULL;
+	
 	/*always only going to 1 node */
+	forward_init(&req->forward, NULL);
+	req->ret_list = NULL;
+	req->forward_struct_init = 0;
+		
 	if ((fd = slurm_open_controller_conn_spec(dest)) < 0)
 		slurm_seterrno_ret(SLURMCTLD_COMMUNICATIONS_CONNECTION_ERROR);
 
 	if (slurm_send_node_msg(fd, req) < 0) 
 		slurm_seterrno_ret(SLURMCTLD_COMMUNICATIONS_SEND_ERROR);
-	resp_msg = xmalloc(sizeof(slurm_msg_t));
-	slurm_msg_t_init(resp_msg);
 	
-	if((rc = slurm_receive_msg(fd, resp_msg, 0)) != 0) {
-		return SLURMCTLD_COMMUNICATIONS_RECEIVE_ERROR;
+	ret_list = slurm_receive_msg(fd, &resp_msg, 0);
+	if(!ret_list)
+		return SLURM_ERROR;
+	if(list_count(ret_list)>0) {
+		error("_send_message_controller: expected 0 back, but got %d",
+		      list_count(ret_list));
 	}
-	
+	list_destroy(ret_list);
+	rc = errno;
+	if(rc < 0) {
+		rc = SLURMCTLD_COMMUNICATIONS_RECEIVE_ERROR;
+	}
 	if (slurm_shutdown_msg_conn(fd) != SLURM_SUCCESS)
 		rc = SLURMCTLD_COMMUNICATIONS_SHUTDOWN_ERROR;
-	else if (resp_msg->msg_type != RESPONSE_SLURM_RC)
-		rc = SLURM_UNEXPECTED_MSG_ERROR;
-	else
-		rc = slurm_get_return_code(resp_msg->msg_type,
-					   resp_msg->data);
-	slurm_free_msg(resp_msg);
+	
+	if (resp_msg.msg_type != RESPONSE_SLURM_RC)
+			rc = SLURM_UNEXPECTED_MSG_ERROR;
 
+	rc = ((return_code_msg_t *) resp_msg.data)->return_code;
+	
 	if (rc) slurm_seterrno_ret(rc);
 
         return rc;

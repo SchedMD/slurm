@@ -6,8 +6,8 @@
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Joey Ekstrom <ekstrom1@llnl.gov>, 
  *             Morris Jette <jette1@llnl.gov>, et. al.
- *  UCRL-CODE-226842.
- *    
+ *  UCRL-CODE-217948.
+ *  
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.llnl.gov/linux/slurm/>.
  *  
@@ -17,7 +17,7 @@
  *  any later version.
  *
  *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under
+ *  to link the code of portions of this program with the OpenSSL library under 
  *  certain conditions as described in each individual source file, and 
  *  distribute linked combinations including the two. You must obey the GNU 
  *  General Public License in all respects for all of the code used other than 
@@ -187,9 +187,9 @@ static int _print_str(char *str, int width, bool right, bool cut_output)
 int _print_nodes(char *nodes, int width, bool right, bool cut)
 {
 	hostlist_t hl = hostlist_create(nodes);
-	char buf[MAXHOSTRANGELEN];
+	char buf[2048];
 	int retval;
-	hostlist_ranged_string(hl, MAXHOSTRANGELEN, buf);
+	hostlist_ranged_string(hl, sizeof(buf), buf);
 	retval = _print_str(buf, width, right, false);
 	hostlist_destroy(hl);
 	return retval;
@@ -339,7 +339,7 @@ int _print_job_reason(job_info_t * job, int width, bool right, char* suffix)
 	else {
 		char id[FORMAT_STRING_SIZE];
 		snprintf(id, FORMAT_STRING_SIZE, "%s", 
-			job_reason_string(job->state_reason));
+			job_reason_string(job->wait_reason));
 		_print_str(id, width, right, true);
 	}
 	if (suffix)
@@ -547,7 +547,8 @@ int _print_job_nodes(job_info_t * job, int width, bool right, char* suffix)
 int _print_job_reason_list(job_info_t * job, int width, bool right, 
 		char* suffix)
 {
-	char *ionodes = NULL;
+	uint16_t quarter = (uint16_t) NO_VAL;
+	uint16_t nodecard = (uint16_t) NO_VAL;
 	char tmp_char[6];
 	
 	if (job == NULL) {	/* Print the Header instead */
@@ -556,29 +557,32 @@ int _print_job_reason_list(job_info_t * job, int width, bool right,
 #else
 		_print_str("NODELIST(REASON)", width, right, false);
 #endif
-	} else if ((job->job_state == JOB_PENDING)
-	||         (job->job_state == JOB_TIMEOUT)
-	||         (job->job_state == JOB_FAILED)) {
+	} else if (job->job_state == JOB_PENDING) {
 		char id[FORMAT_STRING_SIZE];
 		snprintf(id, FORMAT_STRING_SIZE, "(%s)", 
-			job_reason_string(job->state_reason));
+			job_reason_string(job->wait_reason));
 		_print_str(id, width, right, true);
 	} else {
 #ifdef HAVE_BG
 		select_g_get_jobinfo(job->select_jobinfo, 
-				     SELECT_DATA_IONODES, 
-				     &ionodes);
+				     SELECT_DATA_QUARTER, 
+				     &quarter);
+		select_g_get_jobinfo(job->select_jobinfo, 
+				     SELECT_DATA_NODECARD, 
+				     &nodecard);
 #endif
 		
 		_print_nodes(job->nodes, width, right, false);
-		if(ionodes) {
-			sprintf(tmp_char, "[%s]", ionodes);
+		if(quarter != (uint16_t) NO_VAL) {
+			if(nodecard != (uint16_t) NO_VAL) 
+				sprintf(tmp_char,".%d.%d",quarter,nodecard);
+			else
+				sprintf(tmp_char,".%d",quarter);
 			_print_str(tmp_char, width, right, false);
 		}
 	}
 	if (suffix)
 		printf("%s", suffix);
-	xfree(ionodes);
 	return SLURM_SUCCESS;
 }
 
@@ -609,7 +613,7 @@ int _print_job_num_procs(job_info_t * job, int width, bool right, char* suffix)
 	if (job == NULL)	/* Print the Header instead */
 		_print_str("CPUS", width, right, true);
 	else {
-		convert_num_unit((float)job->num_procs, tmp_char, UNIT_NONE);
+		convert_to_kilo(job->num_procs, tmp_char);
 		_print_str(tmp_char, width, right, true);
 	}
 	if (suffix)
@@ -633,9 +637,8 @@ int _print_job_num_nodes(job_info_t * job, int width, bool right_justify,
 #endif
 		if ((node_cnt == 0) || (node_cnt == NO_VAL))
 			node_cnt = _get_node_cnt(job);
-
 #ifdef HAVE_BG
-		convert_num_unit((float)node_cnt, tmp_char, UNIT_NONE);
+		convert_to_kilo(node_cnt, tmp_char);
 #else
 		sprintf(tmp_char, "%d", node_cnt);
 #endif
@@ -661,78 +664,6 @@ static int _get_node_cnt(job_info_t * job)
 	} else
 		node_cnt = _nodes_in_list(job->nodes);
 	return node_cnt;
-}
-
-int _print_job_num_sct(job_info_t * job, int width, bool right_justify, 
-			 char* suffix)
-{
-	char sockets[10];
-	char cores[10];
-	char threads[10];
-	char sct[(10+1)*3];
-	if (job) {
-		convert_num_unit((float)job->min_sockets, sockets, UNIT_NONE);
-		convert_num_unit((float)job->min_cores, cores, UNIT_NONE);
-		convert_num_unit((float)job->min_threads, threads, UNIT_NONE);
-		sct[0] = '\0';
-		strcat(sct, sockets);
-		strcat(sct, ":");
-		strcat(sct, cores);
-		strcat(sct, ":");
-		strcat(sct, threads);
-		_print_str(sct, width, right_justify, true);
-	} else {
-		_print_str("S:C:T", width, right_justify, true);
-	}
-
-	if (suffix)
-		printf("%s", suffix);
-	return SLURM_SUCCESS;
-}
-
-int _print_job_num_sockets(job_info_t * job, int width, bool right_justify, 
-			 char* suffix)
-{
-	char tmp_char[10];
-	if (job == NULL)	/* Print the Header instead */
-		_print_str("SOCKETS", width, right_justify, true);
-	else {
-		convert_num_unit((float)job->min_sockets, tmp_char, UNIT_NONE);
-		_print_str(tmp_char, width, right_justify, true);
-	}
-	if (suffix)
-		printf("%s", suffix);
-	return SLURM_SUCCESS;
-}
-
-int _print_job_num_cores(job_info_t * job, int width, bool right_justify, 
-			 char* suffix)
-{
-	char tmp_char[10];
-	if (job == NULL)	/* Print the Header instead */
-		_print_str("CORES", width, right_justify, true);
-	else {
-		convert_num_unit((float)job->min_cores, tmp_char, UNIT_NONE);
-		_print_str(tmp_char, width, right_justify, true);
-	}
-	if (suffix)
-		printf("%s", suffix);
-	return SLURM_SUCCESS;
-}
-
-int _print_job_num_threads(job_info_t * job, int width, bool right_justify, 
-			 char* suffix)
-{
-	char tmp_char[10];
-	if (job == NULL)	/* Print the Header instead */
-		_print_str("THREADS", width, right_justify, true);
-	else {
-		convert_num_unit((float)job->min_threads, tmp_char, UNIT_NONE);
-		_print_str(tmp_char, width, right_justify, true);
-	}
-	if (suffix)
-		printf("%s", suffix);
-	return SLURM_SUCCESS;
 }
 
 static int _nodes_in_list(char *node_list)
@@ -790,57 +721,10 @@ int _print_job_min_procs(job_info_t * job, int width, bool right_justify,
 	if (job == NULL)	/* Print the Header instead */
 		_print_str("MIN_PROCS", width, right_justify, true);
 	else {
-		convert_num_unit((float)job->job_min_procs, tmp_char, UNIT_NONE);
+		convert_to_kilo(job->min_procs, tmp_char);
 		_print_str(tmp_char, width, right_justify, true);
 	}
-	if (suffix)
-		printf("%s", suffix);
-	return SLURM_SUCCESS;
-}
-
-int _print_job_min_sockets(job_info_t * job, int width, bool right_justify, 
-			 char* suffix)
-{
-	char tmp_char[6];
-	
-	if (job == NULL)	/* Print the Header instead */
-		_print_str("MIN_SOCKETS", width, right_justify, true);
-	else {
-		convert_num_unit((float)job->job_min_sockets, tmp_char, UNIT_NONE);
-		_print_str(tmp_char, width, right_justify, true);
-	}
-	if (suffix)
-		printf("%s", suffix);
-	return SLURM_SUCCESS;
-}
-
-int _print_job_min_cores(job_info_t * job, int width, bool right_justify, 
-			 char* suffix)
-{
-	char tmp_char[6];
-	
-	if (job == NULL)	/* Print the Header instead */
-		_print_str("MIN_CORES", width, right_justify, true);
-	else {
-		convert_num_unit((float)job->job_min_cores, tmp_char, UNIT_NONE);
-		_print_str(tmp_char, width, right_justify, true);
-	}
-	if (suffix)
-		printf("%s", suffix);
-	return SLURM_SUCCESS;
-}
-
-int _print_job_min_threads(job_info_t * job, int width, bool right_justify, 
-			 char* suffix)
-{
-	char tmp_char[6];
-
-	if (job == NULL)	/* Print the Header instead */
-		_print_str("MIN_THREADS", width, right_justify, true);
-	else {
-		convert_num_unit((float)job->job_min_threads, tmp_char, UNIT_NONE);
-		_print_str(tmp_char, width, right_justify, true);
-	}
+		
 	if (suffix)
 		printf("%s", suffix);
 	return SLURM_SUCCESS;
@@ -849,21 +733,12 @@ int _print_job_min_threads(job_info_t * job, int width, bool right_justify,
 int _print_job_min_memory(job_info_t * job, int width, bool right_justify, 
 			  char* suffix)
 {
-	char min_mem[10];
-	char max_mem[10];
-	char tmp_char[21];
+	char tmp_char[6];
 	
 	if (job == NULL)	/* Print the Header instead */
 		_print_str("MIN_MEMORY", width, right_justify, true);
 	else {
-	    	tmp_char[0] = '\0';
-		if (job->job_max_memory < job->job_min_memory) {
-			convert_num_unit((float)job->job_max_memory, max_mem, UNIT_NONE);
-			strcat(tmp_char, max_mem);
-			strcat(tmp_char, "-");
-		}
-		convert_num_unit((float)job->job_min_memory, min_mem, UNIT_NONE);
-		strcat(tmp_char, min_mem);
+		convert_to_kilo(job->min_memory, tmp_char);
 		_print_str(tmp_char, width, right_justify, true);
 	}
 	
@@ -881,8 +756,7 @@ _print_job_min_tmp_disk(job_info_t * job, int width, bool right_justify,
 	if (job == NULL)	/* Print the Header instead */
 		_print_str("MIN_TMP_DISK", width, right_justify, true);
 	else {
-		convert_num_unit((float)job->job_min_tmp_disk, 
-				 tmp_char, UNIT_NONE);
+		convert_to_kilo(job->min_tmp_disk, tmp_char);
 		_print_str(tmp_char, width, right_justify, true);
 	}
 		
@@ -1154,7 +1028,7 @@ int _print_step_time_used(job_step_info_t * step, int width, bool right,
 	if (step == NULL)	/* Print the Header instead */
 		_print_str("TIME", width, right, true);
 	else {
-		long delta_t = step->run_time;
+		long delta_t = difftime(time(NULL), step->start_time);
 		_print_secs(delta_t, width, right, false);
 	}
 	if (suffix)

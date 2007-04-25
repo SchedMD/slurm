@@ -6,7 +6,7 @@
  *  Copyright (C) 2006 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
- *  UCRL-CODE-226842.
+ *  UCRL-CODE-217948.
  *  
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -64,7 +64,7 @@
 int fd;						/* source file descriptor */
 struct sbcast_parameters params;		/* program parameters */
 struct stat f_stat;				/* source file stats */
-job_alloc_info_response_msg_t *alloc_resp;	/* job specification */
+resource_allocation_response_msg_t *alloc_resp;	/* job specification */
 
 static void _bcast_file(void);
 static void _get_job_info(void);
@@ -185,7 +185,8 @@ static void _bcast_file(void)
 
 	/* NOTE: packmem() uses 16 bits to express a block size, 
 	 * buf_size must be no larger than 64k - 1 */
-	buf_size = MIN((63 * 1024), f_stat.st_size);
+	buf_size = MIN(SSIZE_MAX, (63 * 1024));
+	buf_size = MIN(buf_size, f_stat.st_size);
 
 	bcast_msg.fname		= params.dst_fname;
 	bcast_msg.block_no	= 1;

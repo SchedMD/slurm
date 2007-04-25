@@ -3,7 +3,7 @@
  *****************************************************************************
  *  Copyright (C) 2005 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  UCRL-CODE-226842.
+ *  UCRL-CODE-217948.
  *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -51,10 +51,9 @@
 #include "src/common/read_config.h"
 #include "src/common/plugstack.h"
 #include "src/common/optz.h"
-#include "src/common/job_options.h"
 
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
-/*#include "src/srun/srun_job.h"*/
+#include "src/srun/srun_job.h"
 
 #include <slurm/spank.h>
 
@@ -1227,7 +1226,7 @@ spank_err_t spank_get_item(spank_t spank, spank_item_t item, ...)
 	case S_JOB_NNODES:
 		p2uint32 = va_arg(vargs, uint32_t *);
 		if (spank->type == S_TYPE_LOCAL)
-			*p2uint32 = launcher_job->step_layout->node_cnt;
+			*p2uint32 = launcher_job->step_layout->num_hosts;
 		else
 			*p2uint32 = slurmd_job->nnodes;
 		break;
@@ -1242,7 +1241,7 @@ spank_err_t spank_get_item(spank_t spank, spank_item_t item, ...)
 	case S_JOB_TOTAL_TASK_COUNT:
 		p2uint32 = va_arg(vargs, uint32_t *);
 		if (spank->type == S_TYPE_LOCAL)
-			*p2uint32 = launcher_job->step_layout->task_cnt;
+			*p2uint32 = launcher_job->step_layout->num_tasks;
 		else
 			*p2uint32 = slurmd_job->nprocs;
 		break;

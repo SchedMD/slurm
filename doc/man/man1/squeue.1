@@ -1,4 +1,4 @@
-.TH SQUEUE "1" "December 2006" "squeue 1.2" "Slurm components"
+.TH SQUEUE "1" "December 2006" "squeue 1.1" "Slurm components"
 
 .SH "NAME"
 squeue \- view information about jobs located in the SLURM scheduling queue.
@@ -10,52 +10,47 @@ squeue \- view information about jobs located in the SLURM scheduling queue.
 \fBsqueue\fR is used to view job and job step information for jobs managed by 
 SLURM. 
 
-.SH "OPTIONS"
-
+.TP
+OPTIONS
 .TP
 \fB\-a\fR, \fB\-\-all\fR
 Display information about jobs and job steps in all partions. 
 This causes information to be displayed about partitions that are configured as 
 hidden and partitions that are unavailable to user's group.
-
-.TP
-\fB\-h\fR, \fB\-\-noheader\fR
-Do not print a header on the output.
-
 .TP
 \fB\-\-help\fR
 Print a help message describing all options \fBsqueue\fR.
-
 .TP
 \fB\-\-hide\fR
 Do not display information about jobs and job steps in all partions. By default, 
 information about partitions that are configured as hidden or are not available 
 to the user's group will not be displayed (i.e. this is the default behavior).
-
+.TP
+\fB\-\-usage\fR
+Print a brief help message listing the \fBsqueue\fR options.
+.TP
+\fB\-h\fR, \fB\-\-noheader\fR
+Do not print a header on the output.
 .TP
 \fB\-i <seconds>\fR, \fB\-\-iterate=<seconds>\fR
 Repeatedly gather and report the requested information at the interval
 specified (in seconds).
 By default, prints a time stamp with the header.
-
 .TP
 \fB\-j\fR, \fB\-\-jobs\fR
 Specify the jobs to view.  This flag indicates that a comma separated list 
 of jobs to view follows without an equal sign (see examples).
 Defaults to all jobs.
-
 .TP
 \fB\-l\fR, \fB\-\-long\fR
 Report more of the available information for the selected jobs or job steps, 
 subject to any constraints specified.
-
 .TP
 \fB\-n <node_name>\fR, \fB\-\-node=<node_name>\fR
 Report only on jobs allocated to the specified node.
 This may either be the \fBNodeName\fR or \fBNodeHostname\fR
 as defined in \fBslurm.conf(5)\fR in the event that they differ.
 A node_name of \fBlocalhost\fR is mapped to the current host name.
-
 .TP
 \fB\-o <output_format>\fR, \fB\-\-format=<output_format>\fR
 Specify the information to be displayed.  
@@ -128,23 +123,11 @@ Group ID
 \fB%h\fR
 Can the nodes allocated to the job be shared with other jobs
 .TP
-\fB%H\fR 
-Minimum number of sockets per node requested by the job.
-This reports the value of the \fBsrun \-\-minsockets\fR option.
-.TP
 \fB%i\fR
 Job or job step id
 .TP
-\fB%I\fR 
-Minimum number of cores per socket requested by the job.
-This reports the value of the \fBsrun \-\-mincores\fR option.
-.TP
 \fB%j\fR
 Job or job step name
-.TP
-\fB%J\fR 
-Minimum number of threads per core requested by the job.
-This reports the value of the \fBsrun \-\-minthreads\fR option.
 .TP
 \fB%l\fR
 Time limit of the job in days\-hours:minutes:seconds. 
@@ -182,15 +165,13 @@ Priority of the job (converted to a floating point number between 0.0 and 1.0
 Partition of the job or job step
 .TP
 \fB%r\fR
-The reason a job is in its current state.
+The reason a job is waiting for execution.
 See the \fBJOB REASON CODES\fR section below for more information.
 .TP
 \fB%R\fR
+For running or completed jobs: the list of allocate nodes.
 For pending jobs: the reason a job is waiting for execution 
-is printed within parenthesis.
-For terminated jobs with failure: an explanation as to why the 
-job failed is printed within parenthesis.
-For all other job states: the list of allocate nodes. 
+is printed within parenthesis. 
 See the \fBJOB REASON CODES\fR section below for more information.
 .TP
 \fB%s\fR 
@@ -225,36 +206,24 @@ User ID
 \fB%x\fR 
 List of node names explicitly excluded by the job
 .TP
-\fB%X\fR 
-Number of requested sockets per node
-.TP
-\fB%Y\fR 
-Number of requested cores per socket
-.TP
-\fB%Z\fR 
-Number of requested threads per core
-.TP
-\fB%z\fR 
-Extended processor information: number of requested sockets, cores, threads (S:C:T) per node
-.TP
 \fB%.<*>\fR 
 right justification of the field
 .TP
 \fB%<Number><*>\fR 
 size of field
 .RE
-
+.TP
+\fB\-v\fR
+Display all job information.
 .TP
 \fB\-p <part_list>\fR, \fB\-\-partition=<part_list>\fR
 Specify the partitions of the jobs or steps to view. Accepts a comma separated 
 list of partition names.
-
 .TP
 \fB\-s\fR, \fB\-\-steps\fR
 Specify the job steps to view.  This flag indicates that a comma separated list 
 of job steps to view follows without an equal sign (see examples).
 The job step format is "job_id.step_id". Defaults to all job steps.
-
 .TP
 \fB\-S <sort_list>\fR, \fB\-\-sort=<sort_list>\fR
 Specification of the order in which records should be reported.
@@ -270,7 +239,6 @@ name then within a given partition by increasing node state and then
 decreasing priority).
 The default value of sort for job steps is "P,i" (increasing partition 
 name then within a given partition by increasing step id).
-
 .TP
 \fB\-t <state_list>\fR, \fB\-\-states=<state_list>\fR
 Specify the states of jobs to view.  Accepts a comma separated list of
@@ -282,20 +250,13 @@ COMPLETING (CG), COMPLETED (CD), CANCELLED (CA),
 FAILED (F), TIMEOUT (TO), and NODE_FAIL (NF). Note the \fB<state_list>\fR
 supplied is case insensitve ("pd" and "PD" work the same).
 See the \fBJOB STATE CODES\fR section below for more information.
-
 .TP
 \fB\-u <user_list>\fR, \fB\-\-user=<user_list>\fR
 Specifies a comma separated list of users whose jobs or job steps are to be
 reported. The list can consist of user names or user id numbers.
-
-.TP
-\fB\-\-usage\fR
-Print a brief help message listing the \fBsqueue\fR options.
-
 .TP
 \fB\-v\fR, \fB\-\-verbose\fR
 Report details of squeues actions.
-
 .TP
 \fB\-V\fR , \fB\-\-version\fR
 Print version information and exit.
@@ -326,28 +287,6 @@ One or more higher priority jobs exist for this partition.
 .TP
 \fBResources\fR
 The job is waiting for resources to become availble.
-.TP
-\fBNodeDown\fR
-A node required by the job is down.
-.TP
-\fBBadConstraints\fR
-The job's constraints can not be satisfied.
-.TP
-\fBSystemFailure\fR
-Failure of the SLURM system, a file system, the network, etc.
-.TP
-\fBJobLaunchFailure\fR
-The job could not be launched. 
-This may be due to a file system problem, invalid program name, etc.
-.TP
-\fBNonZeroExitCode\fR
-The job terminated with a non\-zero exit code.
-.TP
-\fBTimeLimit\fR
-The job exhausted its time limit.
-.TP
-\fBInactiveLimit\fR
-The job reached the system InactiveLimit.
 
 .SH "JOB STATE CODES"
 Jobs typically pass through several states in the course of their 
@@ -466,9 +405,9 @@ Print information only about job step 65552.1:
 .ec
 
 .SH "COPYING"
-Copyright (C) 2002\-2007 The Regents of the University of California.
+Copyright (C) 2002\-2006 The Regents of the University of California.
 Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
-UCRL\-CODE\-226842.
+UCRL-CODE-217948.
 .LP
 This file is part of SLURM, a resource management program.
 For details, see <http://www.llnl.gov/linux/slurm/>.

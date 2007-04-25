@@ -1,3 +1,4 @@
+# $Id$
 # Makefile.am for bluegene_block_allocator
 
 AUTOMAKE_OPTIONS = foreign

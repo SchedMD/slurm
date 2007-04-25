@@ -4,10 +4,22 @@
 
 <h2>Index</h2>
 <ul>
+<li><a href="#06">SLURM Version 0.6, September 2005</a></li>
 <li><a href="#10">SLURM Version 1.0, January 2006</a></li>
 <li><a href="#11">SLURM Version 1.1, May 2006</a></li>
-<li><a href="#12">SLURM Version 1.2, February 2007</a></li>
+<li><a href="#12">SLURM Version 1.2, late 2006</a></li>
 <li><a href="#13">SLURM Version 1.3 and beyond</a></li>
+</ul>
+
+<h2><a name="06">Major Updates in SLURM Version 0.6</a></h2>
+<p>SLURM Version 0.6 became available in September 2005.
+Major enhancements include:
+<ul>
+<li>Support for Infiniband</li>
+<li>Support for configurable resource limit propagation.</li>
+<li>MPI support moved into plugin (substantive configuration changes required for MPICH-GM).</li>
+<li>Srun options can be specified in job script (#SLURM ...)</li>
+<li>Names (not just numbers) for job step identification.</li>
 </ul>
 
 <h2><a name="10">Major Updates in SLURM Version 1.0</a></h2>
@@ -59,25 +71,18 @@ rather than base partition counts.</li>
 </ul>
 
 <h2><a name="12">Major Updates in SLURM Version 1.2</a></h2>
-<p>SLURM Version 1.2 became available in February 2007.
+<p>We expect to make SLURM Version 1.2 available late in 2006.
 Major enhancements include:
 <ul>
 <li>More complete support for resource management down to the core level
 on a node.</li>
 <li>Treat memory as a consumable resource on a compute node.</li>
-<li>New graphical user interface provided, <i>sview</i>.</li>
-<li>Added support for OS X.</li>
+<li>Perl API to SLURM available.</li>
+<li>Graphical User Interfaces provided.</li>
 <li>Permit batch jobs to be requeued.</li>
 <li>Expanded support of Moab and Maui schedulers.</li>
 <li><i>Srun</i> command augmented by new commands for each operation:
-<i>salloc</i>, <i>sbatch</i>, and <i>sattach</i>.</li>
-<li>Sched/wiki plugin (for Moab and Maui Schedulers) rewritten to 
-provide vastly improved integration.</li>
-<li>BlueGene plugin permits use of different boot images per job 
-specification.</li>
-<li>Added event trigger mechanism with new tool <i>strigger</i>.</li>
-<li>Added support for task binding to CPUs or memory via <i>cpuset</i>
-mechanism.</li>
+<i>salloc</i>, <i>slaunch</i>, <i>sbatch</i>, and <i>sattach</i>.</li>
 </ul>
 
 <h2><a name="13">Major Updates in SLURM Version 1.3 and beyond</a></h2>
@@ -86,15 +91,13 @@ not been finalized. Anyone desiring to perform SLURM development should notify
 <a href="mailto:slurm-dev@lists.llnl.gov">slurm-dev@lists.llnl.gov</a>
 to coordinate activies. Future development plans includes:
 <ul>
-<li>Job accounting data can (optionally) stored in a database.</li>
-<li>Gang scheduling of jobs (without external scheduler).</li>
-<li>Support of BlueGene/P systems.</li>
 <li>Permit resource allocations (jobs) to change size.</li>
+<li>Convert state save functions to plugins for use of various databases.</li>
 <li>Add Kerberos credential support including credential forwarding 
 and refresh.</li>
 </ul>
 
 
-<p style="text-align:center;">Last modified 22 March 2007</p>
+<p style="text-align:center;">Last modified 31 August 2006</p>
 
 <!--#include virtual="footer.txt"-->

@@ -8,7 +8,7 @@
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Jim Garlick <garlick@llnl.gov>, Morris Jette <jette1@llnl.gov>
- *  UCRL-CODE-226842.
+ *  UCRL-CODE-217948.
  *  
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -19,7 +19,7 @@
  *  any later version.
  *
  *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under
+ *  to link the code of portions of this program with the OpenSSL library under 
  *  certain conditions as described in each individual source file, and 
  *  distribute linked combinations including the two. You must obey the GNU 
  *  General Public License in all respects for all of the code used other than 
@@ -167,26 +167,14 @@ void	bit_not(bitstr_t *b);
 void	bit_or(bitstr_t *b1, bitstr_t *b2);
 int	bit_set_count(bitstr_t *b);
 int	bit_clear_count(bitstr_t *b);
-int	bit_nset_max_count(bitstr_t *b);
-int	int_and_set_count(int *i1, int ilen, bitstr_t *b2);
-bitstr_t *bit_rotate_copy(bitstr_t *b1, int n, bitoff_t nbits);
-void	bit_rotate(bitstr_t *b1, int n);
 char	*bit_fmt(char *str, int len, bitstr_t *b);
 int 	bit_unfmt(bitstr_t *b, char *str);
-int 	*bitfmt2int (char *bit_str_ptr);
-char	*bit_fmt_hexmask(bitstr_t *b);
-int 	bit_unfmt_hexmask(bitstr_t *b, const char *str);
-char	*bit_fmt_binmask(bitstr_t *b);
-int 	bit_unfmt_binmask(bitstr_t *b, const char *str);
 bitoff_t bit_fls(bitstr_t *b);
 void	bit_fill_gaps(bitstr_t *b);
 int	bit_super_set(bitstr_t *b1, bitstr_t *b2);
-int     bit_overlap(bitstr_t *b1, bitstr_t *b2);
 int     bit_equal(bitstr_t *b1, bitstr_t *b2);
 void    bit_copybits(bitstr_t *dest, bitstr_t *src);
 bitstr_t *bit_copy(bitstr_t *b);
 bitstr_t *bit_pick_cnt(bitstr_t *b, bitoff_t nbits);
-bitoff_t bit_get_bit_num(bitstr_t *b, int pos);
-int      bit_get_pos_num(bitstr_t *b, bitoff_t pos);
-
+int 	*bitfmt2int (char *bit_str_ptr);
 #endif /* !_BITSTRING_H_ */

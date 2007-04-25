@@ -9,10 +9,10 @@
 #          "FAILURE: ..." otherwise with an explanation of the failure, OR
 #          anything else indicates a failure mode that must be investigated.
 ############################################################################
-# Copyright (C) 2002-2006 The Regents of the University of California.
+# Copyright (C) 2002-5 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 # Written by Morris Jette <jette1@llnl.gov>
-# UCRL-CODE-226842.
+# UCRL-CODE-217948.
 # 
 # This file is part of SLURM, a resource management program.
 # For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -45,11 +45,6 @@ if {[test_front_end] != 0} {
 	exit 0
 }
 
-if {[test_multiple_slurmd] != 0} {
-	send_user "\nWARNING: This test is incompatable with multiple slurmd systems\n"
-	exit 0
-}
-
 #
 # Build input script file
 #
@@ -62,7 +57,7 @@ make_bash_script $file_in "
 # Submit a 2 node job
 #
 set timeout $max_job_delay
-set srun_pid [spawn $srun -N2 -A $file_in]
+spawn $srun -N2 -A $file_in
 expect {
 	-re "More ($alpha) requested than permitted" {
 		send_user "\nWARNING: can't test srun task distribution\n"
@@ -78,12 +73,15 @@ expect {
 	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
-		slow_kill $srun_pid
+		kill_srun
+		exec $bin_rm -f $file_in
 		exit 1
 	}
 	eof {
 		wait
 		send_user "\nFAILURE: srun terminated\n"
+		kill_srun
+		exec $bin_rm -f $file_in
 		exit 1
 	}
 }
@@ -111,11 +109,11 @@ expect {
 		exit 1
 	}
 	"$prompt" {
-		send_user "srun completed\n\n"
+		send_user "srun completed\n"
 	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
-		slow_kill $srun_pid
+		kill_srun
 		exit 1
 	}
 	eof {
@@ -159,11 +157,11 @@ expect {
 		exit 1
 	}
 	"$prompt" {
-		send_user "srun completed\n\n"
+		send_user "srun completed\n"
 	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
-		slow_kill $srun_pid
+		kill_srun
 		exit 1
 	}
 	eof {
@@ -196,11 +194,11 @@ expect {
 		exit 1
 	}
 	"$prompt" {
-		send_user "srun completed\n\n"
+		send_user "srun completed\n"
 	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
-		slow_kill $srun_pid
+		kill_srun
 		exit 1
 	}
 	eof {
@@ -219,13 +217,6 @@ if {$matches == 0} {
 set matches 0
 send "$srun -l -N1 -n1 --nodelist=$host_0 $bin_hostname\n"
 expect {
-	-re "Requested node configuration is not available" {
-		send_user "\nWARNING: Appears you are using "
-		send_user "multiple slurmd testing.\n"
-		send_user "This test won't work in that fashion.\n"
-		send "exit\n"
-		exit 0	
-	}
 	-re "0: ($alpha_numeric)" {
 		if {[string compare $expect_out(1,string) $host_0] == 0} {
 			incr matches
@@ -240,11 +231,11 @@ expect {
 		exit 1
 	}
 	"$prompt" {
-		send_user "srun completed\n\n"
+		send_user "srun completed\n"
 	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
-		slow_kill $srun_pid
+		kill_srun
 		exit 1
 	}
 	eof {
@@ -277,11 +268,11 @@ expect {
 		exit 1
 	}
 	"$prompt" {
-		send_user "srun completed\n\n"
+		send_user "srun completed\n"
 	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
-		slow_kill $srun_pid
+		kill_srun
 		exit 1
 	}
 	eof {
@@ -300,7 +291,7 @@ if {$matches == 0} {
 #	lines, so we use two send commands for this  execute line
 #
 set matches 0
-send "$srun -l -N1 -n1 --nodelist=$host_0 "
+send "$srun -l -N1 -n1 --nodelist=$host_0"
 send " --exclude=$host_0 $bin_hostname\n"
 expect {
 	-re "0: ($alpha_numeric)" {
@@ -314,11 +305,11 @@ expect {
 		exp_continue
 	}
 	"$prompt" {
-		send_user "srun completed\n\n"
+		send_user "srun completed\n"
 	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
-		slow_kill $srun_pid
+		kill_srun
 		exit 1
 	}
 	eof {
@@ -348,11 +339,11 @@ expect {
 		exp_continue
 	}
 	"$prompt" {
-		send_user "srun completed\n\n"
+		send_user "srun completed\n"
 	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
-		slow_kill $srun_pid
+		kill_srun
 		exit 1
 	}
 	eof {
@@ -387,11 +378,11 @@ expect {
 		exit 1
 	}
 	"$prompt" {
-		send_user "srun completed\n\n"
+		send_user "srun completed\n"
 	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
-		slow_kill $srun_pid
+		kill_srun
 		exit 1
 	}
 	eof {
@@ -419,11 +410,11 @@ expect {
 		exit 1
 	}
 	"$prompt" {
-		send_user "srun completed\n\n"
+		send_user "srun completed\n"
 	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
-		slow_kill $srun_pid
+		kill_srun
 		exit 1
 	}
 	eof {
@@ -444,11 +435,11 @@ expect {
 		exp_continue
 	}
 	"$prompt" {
-		send_user "srun completed\n\n"
+		send_user "srun completed\n"
 	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
-		slow_kill $srun_pid
+		kill_srun
 		exit 1
 	}
 	eof {
@@ -474,7 +465,7 @@ expect {
 	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
-		slow_kill $srun_pid
+		kill_srun
 		exit 1
 	}
 	eof {

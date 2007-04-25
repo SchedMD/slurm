@@ -1,11 +1,13 @@
 /*****************************************************************************
  *  read_config.h - definitions for reading the overall slurm configuration 
  *  file
+ *
+ *  $Id$
  *****************************************************************************
  *  Copyright (C) 2002-2006 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Mette <jette1@llnl.gov>.
- *  UCRL-CODE-226842.
+ *  UCRL-CODE-217948.
  *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -60,11 +62,9 @@ extern char *default_plugstack;
 #define DEFAULT_JOB_COMP_TYPE       "jobcomp/none"
 #define DEFAULT_KILL_TREE           0
 #define DEFAULT_KILL_WAIT           30
-#define DEFAULT_MAIL_PROG           "/bin/mail"
 #define DEFAULT_MAX_JOB_COUNT       2000
 #define DEFAULT_MIN_JOB_AGE         300
 #define DEFAULT_MPI_DEFAULT         "none"
-#define DEFAULT_MSG_TIMEOUT         5
 #ifdef HAVE_AIX		/* AIX specific default configuration parameters */
 #  define DEFAULT_CHECKPOINT_TYPE   "checkpoint/aix"
 #  define DEFAULT_PROCTRACK_TYPE    "proctrack/aix"
@@ -99,10 +99,7 @@ typedef struct slurm_conf_node {
 	char *addresses;
 	char *feature;		/* arbitrary list of features associated */
 	uint16_t port;
-	uint16_t cpus;		/* count of cpus running on the node */
-	uint16_t sockets;       /* number of sockets per node */
-	uint16_t cores;         /* number of cores per CPU */
-	uint16_t threads;       /* number of threads per core */
+	uint32_t cpus;		/* count of cpus running on the node */
 	uint32_t real_memory;	/* MB real memory on the node */
 	char *reason;
 	char *state;
@@ -226,18 +223,12 @@ extern int slurm_conf_downnodes_array(slurm_conf_downnodes_t **ptr_array[]);
 /*
  * slurm_conf_get_hostname - Return the NodeHostname for given NodeName
  *
- * Returned string was allocated with xmalloc(), and must be freed by
- * the caller using xfree().
- *
  * NOTE: Caller must NOT be holding slurm_conf_lock().
  */
 extern char *slurm_conf_get_hostname(const char *node_name);
 
 /*
  * slurm_conf_get_nodename - Return the NodeName for given NodeHostname
- *
- * Returned string was allocated with xmalloc(), and must be freed by
- * the caller using xfree().
  *
  * NOTE: Caller must NOT be holding slurm_conf_lock().
  */
@@ -259,17 +250,6 @@ extern uint16_t slurm_conf_get_port(const char *node_name);
  */
 extern int slurm_conf_get_addr(const char *node_name, slurm_addr *address);
 
-/*
- * slurm_conf_get_cpus_sct -
- * Return the cpus, sockets, cores, and threads configured for a given NodeName
- * Returns SLURM_SUCCESS on success, SLURM_FAILURE on failure.
- *
- * NOTE: Caller must NOT be holding slurm_conf_lock().
- */
-extern int slurm_conf_get_cpus_sct(const char *node_name,
-				   uint16_t *procs, uint16_t *sockets,
-				   uint16_t *cores, uint16_t *threads);
-
 /* 
  * init_slurm_conf - initialize or re-initialize the slurm configuration 
  *	values defaults (NULL or NO_VAL). Note that the configuration
@@ -288,23 +268,13 @@ extern void free_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr,
 			     bool purge_node_hash);
 
 /*
- * gethostname_short - equivalent to gethostname(), but return only the first 
+ * getnodename - equivalent to gethostname(), but return only the first 
  *      component of the fully qualified name (e.g. "linux123.foo.bar" 
  *      becomes "linux123") 
  * NOTE: NodeName in the config may be different from real hostname.
  *       Use get_conf_node_name() to get the former.
  */
-extern int gethostname_short (char *name, size_t len);
+extern int getnodename (char *name, size_t len);
 
-/*
- * Replace first "%h" in path string with NodeHostname.
- * Replace first "%n" in path string with NodeName.
- *
- * NOTE: Caller should be holding slurm_conf_lock() when calling this function.
- *
- * Returns an xmalloc()ed string which the caller must free with xfree().
- */
-extern char *slurm_conf_expand_slurmd_path(const char *path,
-					   const char *node_name);
 
 #endif /* !_READ_CONFIG_H */

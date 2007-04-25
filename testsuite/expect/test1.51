@@ -11,7 +11,7 @@
 # Copyright (C) 2005 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 # Written by Morris Jette <jette1@llnl.gov>
-# UCRL-CODE-226842.
+# UCRL-CODE-217948.
 # 
 # This file is part of SLURM, a resource management program.
 # For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -58,7 +58,7 @@ make_bash_script $file_script "
 # Set umask and confirm it is propagated
 #
 set matches 0
-set srun_pid [spawn ./$file_script]
+spawn ./$file_script
 expect {
 	-re (0123|123) {
 		set matches 1
@@ -66,7 +66,7 @@ expect {
 	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
-		slow_kill [expr 0 - $srun_pid]
+		kill_srun
 		exit 1
 	}
 	eof {

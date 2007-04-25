@@ -4,7 +4,7 @@
  *  Copyright (C) 2002-2006 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>.
- *  UCRL-CODE-226842.
+ *  UCRL-CODE-217948.
  *  
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -62,7 +62,7 @@ typedef struct slurm_switch_ops {
 	int          (*alloc_jobinfo)     ( switch_jobinfo_t *jobinfo );
 	int          (*build_jobinfo)     ( switch_jobinfo_t jobinfo,
 						char *nodelist,
-						uint16_t *tasks_per_node, 
+						uint32_t *tasks_per_node, 
 						int cyclic_alloc, 
 						char *network);
 	switch_jobinfo_t (*copy_jobinfo)  ( switch_jobinfo_t jobinfo );
@@ -347,7 +347,7 @@ extern int  switch_alloc_jobinfo(switch_jobinfo_t *jobinfo)
 }
 
 extern int  switch_build_jobinfo(switch_jobinfo_t jobinfo, 
-		char *nodelist, uint16_t *tasks_per_node, 
+		char *nodelist, uint32_t *tasks_per_node, 
 		int cyclic_alloc, char *network)
 {
 	if ( switch_init() < 0 )

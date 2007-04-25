@@ -1,3 +1,4 @@
+# $Id$
 # Makefile for common library 
 
 AUTOMAKE_OPTIONS = foreign
@@ -24,6 +25,8 @@ libcommon_la_SOURCES = 			\
 	xstring.c xstring.h		\
 	xsignal.c xsignal.h		\
 	forward.c forward.h     	\
+	global_srun.c                   \
+	global_srun.h                   \
 	strlcpy.c strlcpy.h		\
 	list.c list.h 			\
 	net.c net.h                     \
@@ -69,18 +72,13 @@ libcommon_la_SOURCES = 			\
 	malloc.c malloc.h		\
 	getopt.h getopt.c getopt1.c     \
 	$(build_unsetenv_src)		\
-	slurm_selecttype_info.c 	\
-	slurm_resource_info.c 		\
-	slurm_resource_info.h		\
 	hostlist.c hostlist.h		\
-	slurm_step_layout.c slurm_step_layout.h	\
+	dist_tasks.c dist_tasks.h	\
 	checkpoint.c checkpoint.h	\
 	parse_time.c parse_time.h	\
 	job_options.c job_options.h	\
 	global_defaults.c		\
-	timers.c timers.h		\
-	slurm_xlator.h			\
-	stepd_api.c stepd_api.h		
+	slurm_xlator.h
 
 EXTRA_libcommon_la_SOURCES = 	\
 	$(extra_unsetenv_src)

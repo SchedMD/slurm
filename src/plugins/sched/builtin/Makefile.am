@@ -1,3 +1,4 @@
+# $Id$
 # Makefile for builtin scheduler plugin
 
 AUTOMAKE_OPTIONS = foreign

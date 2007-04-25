@@ -1,293 +1,8 @@
 This file describes changes in recent versions of SLURM. It primarily
-documents those changes that are of interest to users and admins.
+documents those changes that are of interest to users and admins. 
 
-* Changes in SLURM 1.2.7
-========================
- -- BLUEGENE - code to make it so you can make a 36x36x36 system.  
-    The wiring isn't correct on the X axis for anything over 8 though.
-    But that is only in emulation mode.
-
-* Changes in SLURM 1.2.6
-========================
- -- Fix MPIRUN_PORT env variable in mvapich plugin
- -- Disable setting triggers by other than user SlurmUser unless SlurmUser
-    is root for improved security.
- -- Add event trigger for IDLE nodes.
-
-* Changes in SLURM 1.2.5
-========================
- -- Fix nodelist truncation in "scontrol show jobs" output
- -- In mpi/mpichgm, fix potential problem formatting GMPI_PORT, from
-    Ernest Artiaga, BSC.
- -- In sched/wiki2 - Report job's account, from Ernest Artiaga, BSC.
- -- Add sbatch option "--ntasks-per-node".
-
-* Changes in SLURM 1.2.4
-========================
- -- In select/cons_res - fix for function argument type mis-match in getting
-    CPU count for a job, from Ernest Artiaga, BSC.
- -- In sched/wiki2 - Report job's tasks_per_node requirement.
- -- In forward logic fix to check if the forwarding node recieves a connection
-    but doesn't ever get the message from the sender (network issue or
-    something) also check to make sure if we get something back we make sure
-    we account for everything we sent out before we call it good.
- -- Another fix to make sure steps with requested nodes have correct cpus
-    accounted for and a fix to make sure the user can't allocate more 
-    cpus than the have requested.
-
-* Changes in SLURM 1.2.3
-========================
- -- Cpuset logic added to  task/affinity, from Don Albert (Bull) and
-    Moe Jette (LLNL).  The /dev/cpuset file system must be mounted and 
-    set "TaskPluginParam=cpusets" in slurm.conf to enable.
- -- In sched/wiki2, fix possible overflow in job's nodelist, from 
-    Ernest Artiaga, BSC.
- -- Defer creation of new job steps until a suspended job is resumed.
- -- In select/linear - fix for potential stack corruption bug.
-
-* Changes in SLURM 1.2.2
-========================
- -- Added new command "strigger" for event trigger management, a new 
-    capability. See "man strigger" for details.
- -- srun --get-user-env now sends su's stderr to /dev/null
- -- Fix in node_scheduling logic with multiple node_sets, from 
-    Ernest Artiaga, BSC.
- -- In select/cons_res, fix for function argument type mis-match in getting 
-    CPU count for a job.
-
-* Changes in SLURM 1.2.1
-========================
- -- MPICHGM support bug fixes from Ernest Artiaga, BSC.
- -- Support longer hostlist strings, from Ernest Artiaga, BSC.
-
-* Changes in SLURM 1.2.0
-========================
- -- Srun to use env vars for SLURM_PROLOG, SLURM_EPILOG, SLURM_TASK_PROLOG, 
-    and SLURM_TASK_EPILOG. patch.1.2.0-pre11.070201.envproepilog from 
-    Dan Palermo, HP.
- -- Documenation update. patch.1.2.0-pre11.070201.mchtml from Dan Palermo, HP.
- -- Set SLURM_DIST_CYCLIC = 1 (needed for HP MPI, slurm.hp.env.patch).
- 
-* Changes in SLURM 1.2.0-pre15
-==============================
- -- Fix for another spot where the backup controller calls switch/federation
-    code before switch/federation is initialized.
-
-* Changes in SLURM 1.2.0-pre14
-==============================
- -- In sched/wiki2, clear required nodes list when a job is requeued.
-    Note that the required node list is set to every node used when 
-    a job is started via sched/wiki2.
- -- BLUEGENE - Added display of deallocating blocks to smap and other tools. 
- -- Make slurmctld's working directory be same as SlurmctldLogFile (if any),
-    otherwise StateSaveDir (which is likely a shared directory, possibly 
-    making core file identification more difficult).
- -- Fix bug in switch/federation that results in the backup controller
-    aborting if it receives an epilog-complete message.
-
-* Changes in SLURM 1.2.0-pre13
-==============================
- -- Fix for --get-user-env.
-
-* Changes in SLURM 1.2.0-pre12
-==============================
- -- BLUEGENE - Added correct node info for sinfo and sview for viewing
-    allocated nodes in a partition.
- -- BLUEGENE - Added state save on slurmctld shutdown of blocks in an error 
-    state on real systems and total block config on emulation systems.
- -- Major update to Slurm's PMI internal logic for better scalability.
-    Communications now supported directly between application tasks via 
-    Slurm's PMI library. Srun sends single message to one task on each node
-    and that tasks forwards key-pairs to other tasks on that nodes. The old 
-    code sent key-pairs directly to each task. 
-    NOTE: PMI applications must re-link with this new library.
- -- For multi-core support: Fix task distribution bug and add automated 
-    tests, patch.1.2.0-pre11.070111.plane from Dan Palermo (HP).
-
-* Changes in SLURM 1.2.0-pre11
-==============================
- -- Add multi-core options to slurm_step_launch API.
- -- Add man pages for slurm_step_launch() and related functions.
- -- Jobacct plugin only looks at the proctrack list instead of the entire
-    list of processes running on the node. Cutting down a lot of unnecessary
-    file opens in linux and cutting down the time to query the procs by
-    more than half.
- -- Multi-core bug fix, mask re-use with multiple job steps,
-    patch.1.2.0-pre10.061214.affinity_stepid from Dan Palermo (HP).
- -- Modify jobacct/linux plugin to completely eliminate open /proc files.
- -- Added slurm_sched_plugin_reconfig() function to re-read config files.
- -- BLUEGENE - --reboot option to srun, salloc, and sbatch actually works.
- -- Modified step context and step launch APIs.
-
-* Changes in SLURM 1.2.0-pre10
-==============================
- -- Fix for sinfo node state counts by state (%A and %F output options).
- -- Add ability to change a node's features via "scontrol update". NOTE: 
-    Update slurm.conf also to preserve changes over slurmctld restart or 
-    reconfig.
-    NOTE: Job and node state information can not be preserved from earlier 
-          versions.
- -- Added new slurm.conf parameter TaskPluginParam.
- -- Fix for job requeue and credential revoke logic from Hongjia Cao (NUDT).
- -- Fix for incorrectly generated masks for task/affinity plugin,
-    patch.1.2.0-pre9.061207.bitfmthex from Dan Palermo (HP).
- -- Make mask_cpu options of srun and slaunch commands not requeue prefix
-    of "0x". patch.1.2.0-pre9.061208.srun_maskparse from Dan Palermo (HP).
- -- Add -c support to the -B automatic mask generation for multi-core 
-    support, patch.1.2.0-pre9.061208.mcore_cpuspertask from Dan Palermo (HP).
- -- Fix bug in MASK_CPU calculation, 
-    patch.1.2.0-pre9.061211.avail_cpuspertask from Dan Palermo (HP).
- -- BLUEGENE - Added --reboot option to srun, salloc, and sbatch commands.
- -- Add "scontrol listpids [JOBID[.STEPID]]" support.
- -- Multi-core support patches, fixed SEGV and clean up output for large 
-    task counts, patch.1.2.0-pre9.061212.cpubind_verbose from Dan Palermo (HP).
- -- Make sure jobacct plugin files are closed before exec of user tasks to 
-    prevent problems with job checkpoint/restart (based on work by 
-    Hongjia Cao, NUDT).
-
-* Changes in SLURM 1.2.0-pre9
-=============================
- -- Fix for select/cons_res state preservation over slurmctld restart,
-    patch.1.2.0-pre7.061130.cr_state from Dan Palermo.
- -- Validate product of socket*core*thread count on node registration rather 
-    than individual values. Correct values will need to be specified in slurm.conf 
-    with FastSchedule=1 for correct multi-core scheduling behavior.
-
-* Changes in SLURM 1.2.0-pre8
-=============================
- -- Modity job state "reason" field to report why a job failed (previously 
-    previously reported only reason waiting to run). Requires cold-start of 
-    slurmctld (-c option).
- -- For sched/wiki2 job state request, return REJMESSAGE= with reason for 
-    a job's failure.
- -- New FastSchedule configuration parameter option "2" means to base 
-    scheduling decisions upon the node's configuration as specified in 
-    slurm.conf and ignore the node's actual hardware configuration. This 
-    can be useful for testing. 
- -- Add sinfo output format option "%C" for CPUs (active/idle/other/total).
-    Based upon work by Anne-Marie Wunderlin (BULL).
- -- Assorted multi-core bug fixes (patch1.2.0-pre7.061128.mcorefixes).
- -- Report SelectTypeParameters from "scontrol show config".
- -- Build sched/wiki plugin for Maui Scheduler (based upon new sched/wiki2 
-    code for Moab Scheduler).
- -- BLUEGENE - changed way of keeping track of smaller partitions using 
-    ionode range instead of quarter nodecard notation. 
-    (i.e. bgl000[0-3] instead of bgl000.0.0)
- -- Patch from Hongjia Cao (EINPROGRESS error message change)
- -- Fix for correct requid for jobacct plugin
- -- Added subsec timing display for sacct
-
-* Changes in SLURM 1.2.0-pre7
-=============================
- -- BLUEGENE - added configurable images for bluegene block creation.
- -- Plug a bunch of memory leaks.
- -- Support processors, core, and physical IDs that are not in numeric 
-    order (in slurmd to gathering node state information, based on patch
-    by Don Albert, Bull).
- -- Fixed bug with aix not looking in the correct dir for the proctrack
-    include files
- -- Removed global_srun.* from common merged it into srun proper
- -- Added bluegene section to troubleshooting guide (web page). 
- -- NOTE: Requires cold-start when moving from 1.2.0-pre6, save state 
-    info for jobs changed.
- -- BLUEGENE - Changed logic for wiring bgl blocks to be more maintainable.
-    (Haven't tested on large system yet, works on 2 base partition system)
- -- Do not read the select/cons_res state save file if slurmctld is 
-    cold-started (with the "-c" option).
-
-* Changes in SLURM 1.2.0-pre6
-=============================
- -- Maintain actually job step run time with suspend/resume use.
- -- Allow slurm.conf options to appear multiple times.  SLURM will use the
-    last instance of any particular option.
- -- Add version number to node state save file. Will not recover node 
-    state information on restart from older version.
- -- Add logic to save/restore multi-core state information.
- -- Updated multi-core logic to use types uint16_t and uint32_t instead 
-    of just type int.
- -- Race condition for forwarding logic fix from Hongjia Cao
- -- Add support for Portable Linux Processor Affinity (PLPA, see
-    http://www.open-mpi.org/software/plpa).
- -- When a job epilog completes on all non-DOWN nodes, immediately purge
-    it's job steps that lack switch windows. Needed for LSF operation. 
-    Based upon slurm.hp.node_fail.patch.
- -- Modify srun to ignore entries on --nodelist for job step creation 
-    if their count exceeds the task count. Based on slurm.hp.srun.patch.
-
-* Changes in SLURM 1.2.0-pre5
-=============================
- -- Patch from HP patch.1.2.0.pre4.061017.crcore_hints, supports cores as 
-    consumable resource.
-
-* Changes in SLURM 1.2.0-pre4
-=============================
- -- Added node_inx to job_step_info_t to get the node indecies for mapping out
-    steps in a job by nodes.
- -- sview grid added
- -- BLUEGENE node_inx added to blocks for reference.
- -- Automatic CPU_MASK generation for task launch, new srun option -B.
- -- Automatic logical to physical processor identification and mapping.
- -- Added new srun options to --cpu_bind: sockets, cores, and threads
- -- Updated select/cons_res to operate as socket granularity.
- -- New srun task distribution options to -m: plane
- -- Multi-core support in sinfo, squeue, and scontrol.
- -- Memory can be treated as a consumable resource.
- -- New srun options --ntasks-per-[node|socket|core].
-
-* Changes in SLURM 1.2.0-pre3
-=============================
- -- Remove configuration parameter ShedulerAuth (defunct).
- -- Add NextJobId to "scontrol show config" output.
- -- Add new slurm.conf parameter MailProg.
- -- New forwarding logic.  New recieve_msg functions depending on what you
-    are expecting to get back.  No srun_node_id anymore passed around in
-    a slurm_msg_t
- -- Remove sched/wiki plugin (use sched/wiki2 for now)
- -- Disable pthread_create() for PMI_send when TotalView is running for 
-    better performance.
- -- Fixed certain tests in test suite to not run with bluegene or front-end 
-    systems
- -- Removed addresses from slurm_step_layout_t
- -- Added new job field, "comment". Set by srun, salloc and sbatch. See 
-    with "scontrol show job". Used in sched/wiki2.
- -- Report a job's exit status in "scontrol show job".
- -- In sched/wiki2: add support for JOBREQUEUE command.
- 
-* Changes in SLURM 1.2.0-pre2
-=============================
- -- Added function slurm_init_slurm_msg to be used to init any slurm_msg_t
-    you no longer need do any other type of initialization to the type.
-
-* Changes in SLURM 1.2.0-pre2
-=============================
- -- Fixed task dist to work with hostfile and warn about asking for more tasks 
-    than you have nodes for in arbitray mode.
- -- Added "account" field to job and step accounting information and sacct output.
- -- Moved task layout to slurmctld instead of srun.  Job step create returns
-    step_layout structure with hostnames and addresses that corrisponds 
-    to those nodes. 
- -- Changed api slurm_lookup_allocation params, 
-    resource_allocation_response_msg_t changed to job_alloc_info_response_msg_t
-    this structure is being renamed so contents are the same.
- -- alter resource_allocation_response_msg_t see slurm.h.in
- -- remove old_job_alloc_msg_t and function slurm_confirm_alloc	
- -- Slurm configuration files now support an "Include" directive to
-    include other files inline.
- -- BLUEGENE New --enable-bluegene-emulation configure parameter to allow 
-    running system in bluegene emulation mode.  Only
-    really useful for developers.
- -- New added new tool sview GUI for displaying slurm info.
- -- fixed bug in step layout to lay out tasks correctly
-
-* Changes in SLURM 1.2.0-pre1
-=============================
- -- Fix bug that could run a job's prolog more than once
- -- Permit batch jobs to be requeued, scontrol requeue <jobid>
- -- Send overcommit flag from srun in RPCs and have slurmd set SLURM_OVERCOMMIT
-    flag at batch job launch time.
- -- Added new configuration parameter MessageTimeout (replaces #define in 
-    the code)
- -- Added support for OSX build.
+* Changes in SLURM 1.1.36
+=========================
 
 * Changes in SLURM 1.1.35
 =========================
@@ -602,12 +317,12 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 1.1.8
 ========================
- -- Added bug fixes (fault-tolerance and memory leaks) from Hongjia Cao 
+ -- added bug fixes (fault-tolerance and memory leaks) from Hongjia Cao 
     <hjcao@nudt.edu.cn>
- -- Gixed some potential BLUEGENE issues with the bridge log file not having
+ -- fixed some potential BLUEGENE issues with the bridge log file not having
     a mutex around the fclose and fopen.
  -- BLUEGENE - srun -n procs now regristers correctly
- -- Fixed problem with reattach double allocating step_layout->tids
+ -- fixed problem with reattach double allocating step_layout->tids
  -- BLUEGENE - fix race condition where job is finished before it starts.
 
 * Changes in SLURM 1.1.7
@@ -629,8 +344,8 @@ documents those changes that are of interest to users and admins.
     specified (e.g. "srun -N1-4 ...")
  -- Made slurmctld_conf.node_prefix only be set on Bluegene systems.
  -- Fixed a race condition in the controller to make it so a plugin thread
-    wouldn't be able to access the slurmctld_conf structure before it was 
-    filled.
+    wouldn't be able to access the slurmctld_conf 
+    structure before it was filled.
 
 * Changes in SLURM 1.1.5
 ========================
@@ -2415,7 +2130,7 @@ documents those changes that are of interest to users and admins.
  
 * Changes in SLURM 0.2.0-pre2
 =============================
-  
+
  -- Fix for reconfigure when public/private key path is changed.
  -- Shared memory fixes in slurmd. 
    - fix for infinite semaphore incrementation bug.
@@ -2424,5 +2139,5 @@ documents those changes that are of interest to users and admins.
  -- Fixed reattach bug when tasks have exited.
  -- Change directory to /tmp in slurmd if daemonizing.
  -- Logfiles are reopened on reconfigure.
- 
+
 $Id$

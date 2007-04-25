@@ -1,11 +1,11 @@
 /*****************************************************************************\
- *  src/common/slurm_cred.c - SLURM job credential functions
- *  $Id$
+ * src/common/slurm_cred.c - SLURM job credential functions
+ * $Id$
  *****************************************************************************
- *  Copyright (C) 2002-2006 The Regents of the University of California.
+ *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Mark A. Grondona <mgrondona@llnl.gov>.
- *  UCRL-CODE-226842.
+ *  UCRL-CODE-217948.
  *  
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -64,7 +64,6 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xassert.h"
 #include "src/common/xstring.h"
-#include "src/common/io_hdr.h"
 
 #include "src/common/slurm_cred.h"
 
@@ -92,9 +91,9 @@ typedef struct {
  */
 typedef struct {
 	uint32_t jobid;         
-	time_t   revoked;       /* Time at which credentials were revoked   */
+	bool     revoked;       /* True if all creds for jobid are revoked  */
 	time_t   ctime;         /* Time that this entry was created         */
-	time_t   expiration;    /* Time at which credentials can be purged  */
+	time_t   expiration;    /* Time at which credentials were revoked   */
 } job_state_t;
 
 
@@ -143,8 +142,8 @@ struct slurm_job_credential {
 	uid_t    uid;          /* user for which this cred is valid         */
 	time_t   ctime;        /* time of credential creation               */
 	char    *nodes;        /* list of hostnames for which the cred is ok*/
-        uint32_t alloc_lps_cnt;    /* Number of hosts in the list above     */
-        uint32_t *alloc_lps;       /* Number of tasks on each host          */
+        uint32_t ntask_cnt;    /* Number of hosts in the list above         */
+        uint32_t *ntask;       /* Number of tasks on each host              */
 
 	unsigned char *signature; /* credential signature                   */
 	unsigned int siglen;      /* signature length in bytes              */
@@ -376,11 +375,11 @@ slurm_cred_create(slurm_cred_ctx_t ctx, slurm_cred_arg_t *arg)
 	cred->stepid = arg->stepid;
 	cred->uid    = arg->uid;
 	cred->nodes  = xstrdup(arg->hostlist);
-        cred->alloc_lps_cnt = arg->alloc_lps_cnt;
-        cred->alloc_lps  = NULL;
-        if (cred->alloc_lps_cnt > 0) {
-                cred->alloc_lps =  xmalloc(cred->alloc_lps_cnt * sizeof(int));
-                memcpy(cred->alloc_lps, arg->alloc_lps, cred->alloc_lps_cnt * sizeof(int));
+        cred->ntask_cnt = arg->ntask_cnt;
+        cred->ntask  = NULL;
+        if (cred->ntask_cnt > 0) {
+                cred->ntask =  xmalloc(cred->ntask_cnt * sizeof(int));
+                memcpy(cred->ntask, arg->ntask, cred->ntask_cnt * sizeof(int));
         }
 	cred->ctime  = time(NULL);
 
@@ -420,12 +419,12 @@ slurm_cred_copy(slurm_cred_t cred)
 	rcred->stepid = cred->stepid;
 	rcred->uid    = cred->uid;
 	rcred->nodes  = xstrdup(cred->nodes);
-	rcred->alloc_lps_cnt = cred->alloc_lps_cnt;
-	rcred->alloc_lps  = NULL;
-	if (rcred->alloc_lps_cnt > 0) {
-		rcred->alloc_lps =  xmalloc(rcred->alloc_lps_cnt * sizeof(int));
-		memcpy(rcred->alloc_lps, cred->alloc_lps, 
-		rcred->alloc_lps_cnt * sizeof(int));
+	rcred->ntask_cnt = cred->ntask_cnt;
+	rcred->ntask  = NULL;
+	if (rcred->ntask_cnt > 0) {
+		rcred->ntask =  xmalloc(rcred->ntask_cnt * sizeof(int));
+		memcpy(rcred->ntask, cred->ntask, 
+		rcred->ntask_cnt * sizeof(int));
 	}
 	rcred->ctime  = cred->ctime;
 	rcred->signature = (unsigned char *)xstrdup((char *)cred->signature);
@@ -452,14 +451,14 @@ slurm_cred_faker(slurm_cred_arg_t *arg)
 	cred->stepid = arg->stepid;
         cred->uid    = arg->uid;
 	cred->nodes  = xstrdup(arg->hostlist);
-        cred->alloc_lps_cnt = arg->alloc_lps_cnt;
-        cred->alloc_lps  = NULL;
-        if (cred->alloc_lps_cnt > 0) {
-                 cred->alloc_lps =  xmalloc(cred->alloc_lps_cnt * sizeof(int));
-                 memcpy(cred->alloc_lps, arg->alloc_lps, cred->alloc_lps_cnt * sizeof(int));
+        cred->ntask_cnt = arg->ntask_cnt;
+        cred->ntask  = NULL;
+        if (cred->ntask_cnt > 0) {
+                 cred->ntask =  xmalloc(cred->ntask_cnt * sizeof(int));
+                 memcpy(cred->ntask, arg->ntask, cred->ntask_cnt * sizeof(int));
         }
 	cred->ctime  = time(NULL);
-	cred->siglen = SLURM_IO_KEY_SIZE;
+	cred->siglen = SLURM_CRED_SIGLEN;
 
 	cred->signature = xmalloc(cred->siglen * sizeof(char));
 
@@ -489,7 +488,6 @@ slurm_cred_verify(slurm_cred_ctx_t ctx, slurm_cred_t cred,
 		  slurm_cred_arg_t *arg)
 {
 	time_t now = time(NULL);
-	int errnum;
 
 	xassert(ctx  != NULL);
 	xassert(cred != NULL);
@@ -512,8 +510,6 @@ slurm_cred_verify(slurm_cred_ctx_t ctx, slurm_cred_t cred,
 		goto error;
 	}
 
-	slurm_cred_handle_reissue(ctx, cred);
-
 	if (_credential_revoked(ctx, cred)) {
 		slurm_seterrno(ESLURMD_CREDENTIAL_REVOKED);
 		goto error;
@@ -533,11 +529,11 @@ slurm_cred_verify(slurm_cred_ctx_t ctx, slurm_cred_t cred,
 	arg->stepid   = cred->stepid;
 	arg->uid      = cred->uid;
 	arg->hostlist = xstrdup(cred->nodes);
-        arg->alloc_lps_cnt = cred->alloc_lps_cnt;
-        arg->alloc_lps     = NULL;
-        if (arg->alloc_lps_cnt > 0) {
-                arg->alloc_lps =  xmalloc(arg->alloc_lps_cnt * sizeof(int));
-                memcpy(arg->alloc_lps, cred->alloc_lps, arg->alloc_lps_cnt * sizeof(int));
+        arg->ntask_cnt = cred->ntask_cnt;
+        arg->ntask     = NULL;
+        if (arg->ntask_cnt > 0) {
+                arg->ntask =  xmalloc(arg->ntask_cnt * sizeof(int));
+                memcpy(arg->ntask, cred->ntask, arg->ntask_cnt * sizeof(int));
         }
 
 	slurm_mutex_unlock(&cred->mutex);
@@ -545,10 +541,8 @@ slurm_cred_verify(slurm_cred_ctx_t ctx, slurm_cred_t cred,
 	return SLURM_SUCCESS;
 
     error:
-	errnum = slurm_get_errno();
 	slurm_mutex_unlock(&ctx->mutex);
 	slurm_mutex_unlock(&cred->mutex);
-	slurm_seterrno(errnum);
 	return SLURM_ERROR;
 }
 
@@ -563,7 +557,7 @@ slurm_cred_destroy(slurm_cred_t cred)
 
 	slurm_mutex_lock(&cred->mutex);
 	xfree(cred->nodes);
-	xfree(cred->alloc_lps);
+	xfree(cred->ntask);
 	xfree(cred->signature);
 	xassert(cred->magic = ~CRED_MAGIC);
 
@@ -634,7 +628,7 @@ slurm_cred_rewind(slurm_cred_ctx_t ctx, slurm_cred_t cred)
 }
 
 int
-slurm_cred_revoke(slurm_cred_ctx_t ctx, uint32_t jobid, time_t time)
+slurm_cred_revoke(slurm_cred_ctx_t ctx, uint32_t jobid)
 {
 	job_state_t  *j = NULL;
 
@@ -656,12 +650,12 @@ slurm_cred_revoke(slurm_cred_ctx_t ctx, uint32_t jobid, time_t time)
 		j = _insert_job_state(ctx, jobid);
 	}
 
-	if (j->revoked) {
+	if (j->revoked == true) {
 		slurm_seterrno(EEXIST);
 		goto error;
 	}
 
-	j->revoked = time;
+	j->revoked = true;
 
 	slurm_mutex_unlock(&ctx->mutex);
 	return SLURM_SUCCESS;
@@ -763,9 +757,9 @@ slurm_cred_unpack(Buf buffer)
 	safe_unpack32(          &tmpint,             buffer);
 	cred->uid = tmpint;
 	safe_unpackstr_xmalloc( &cred->nodes, &len,  buffer);
-	safe_unpack32(          &cred->alloc_lps_cnt,     buffer);
-        if (cred->alloc_lps_cnt > 0)
-                safe_unpack32_array(&cred->alloc_lps, &tmpint,  buffer);
+	safe_unpack32(          &cred->ntask_cnt,     buffer);
+        if (cred->ntask_cnt > 0)
+                safe_unpack32_array(&cred->ntask, &tmpint,  buffer);
 	safe_unpack_time(       &cred->ctime,        buffer);
 	safe_unpackmem_xmalloc( sigp,         &len,  buffer);
 
@@ -830,10 +824,10 @@ slurm_cred_print(slurm_cred_t cred)
 	info("Cred: Stepid  %u",  cred->jobid         );
 	info("Cred: UID     %lu", (u_long) cred->uid  );
 	info("Cred: Nodes   %s",  cred->nodes         );
-	info("Cred: alloc_lps_cnt %d", cred->alloc_lps_cnt     ); 
-        info("Cred: alloc_lps: ");                            
-        for (i=0; i<cred->alloc_lps_cnt; i++)                 
-                info("alloc_lps[%d] = %d ", i, cred->alloc_lps[i]);
+	info("Cred: ntask_cnt %d", cred->ntask_cnt     ); 
+        info("Cred: ntask: ");                            
+        for (i=0; i<cred->ntask_cnt; i++)                 
+                info("ntask[%d] = %d ", i, cred->ntask[i]);
 	info("Cred: ctime   %s",  ctime(&cred->ctime) );
 	info("Cred: siglen  %d",  cred->siglen        );
 	slurm_mutex_unlock(&cred->mutex);
@@ -1007,8 +1001,8 @@ _slurm_cred_alloc(void)
 	cred->stepid    = 0;
 	cred->uid       = (uid_t) -1;
 	cred->nodes     = NULL;
-        cred->alloc_lps_cnt  = 0; 
-	cred->alloc_lps     = NULL;
+        cred->ntask_cnt  = 0; 
+	cred->ntask     = NULL;
 	cred->signature = NULL;
 	cred->siglen    = 0;
 
@@ -1119,9 +1113,9 @@ _pack_cred(slurm_cred_t cred, Buf buffer)
 	pack32(           cred->stepid, buffer);
 	pack32((uint32_t) cred->uid,    buffer);
 	packstr(          cred->nodes,  buffer);
-	pack32(           cred->alloc_lps_cnt, buffer);
-        if (cred->alloc_lps_cnt > 0)
-                pack32_array( cred->alloc_lps, cred->alloc_lps_cnt, buffer);
+	pack32(           cred->ntask_cnt, buffer);
+        if (cred->ntask_cnt > 0)
+                pack32_array( cred->ntask, cred->ntask_cnt, buffer);
 	pack_time(        cred->ctime,  buffer);
 }
 
@@ -1174,36 +1168,12 @@ static char * timestr (const time_t *tp, char *buf, size_t n)
 	return (buf);
 }
 
-extern void
-slurm_cred_handle_reissue(slurm_cred_ctx_t ctx, slurm_cred_t cred)
-{
-	job_state_t  *j = _find_job_state(ctx, cred->jobid);
-
-	if (j != NULL && j->revoked && cred->ctime > j->revoked) {
-		/* The credential has been reissued.  Purge the
-		   old record so that "cred" will look like a new
-		   credential to any ensuing commands. */
-		info("reissued job credential for job %u", j->jobid);
-
-		/* Setting j->expiration to zero will make
-		   _clear_expired_job_states() remove this job credential
-		   from the cred context. */
-		j->expiration = 0;
-		_clear_expired_job_states(ctx);
-	}
-}
-
 extern bool
-slurm_cred_revoked(slurm_cred_ctx_t ctx, slurm_cred_t cred)
+slurm_cred_revoked(slurm_cred_ctx_t ctx, uint32_t jobid)
 {
-	job_state_t  *j = _find_job_state(ctx, cred->jobid);
-
-	if ((j == NULL) || (j->revoked == (time_t)0))
-		return false;
-
-	if (cred->ctime <= j->revoked)
+	job_state_t  *j = _find_job_state(ctx, jobid);
+	if (j && j->revoked)
 		return true;
-
 	return false;
 }
 
@@ -1214,12 +1184,9 @@ _credential_revoked(slurm_cred_ctx_t ctx, slurm_cred_t cred)
 
 	_clear_expired_job_states(ctx);
 
-	if (!(j = _find_job_state(ctx, cred->jobid))) {
+	if (!(j = _find_job_state(ctx, cred->jobid))) 
 		(void) _insert_job_state(ctx, cred->jobid);
-		return false;
-	}
-
-	if (cred->ctime <= j->revoked) {
+	else if (j->revoked) {
 		char buf[64];
 		debug ("cred for %d revoked. expires at %s", 
                        j->jobid, timestr (&j->expiration, buf, 64));
@@ -1263,7 +1230,7 @@ _job_state_create(uint32_t jobid)
 	job_state_t *j = xmalloc(sizeof(*j));
 
 	j->jobid      = jobid;
-	j->revoked    = (time_t) 0;
+	j->revoked    = false;
 	j->ctime      = time(NULL);
 	j->expiration = (time_t) MAX_TIME;
 
@@ -1281,7 +1248,7 @@ _job_state_destroy(job_state_t *j)
 static void
 _clear_expired_job_states(slurm_cred_ctx_t ctx)
 {
-	char          t1[64], t2[64], t3[64];
+	char          t1[64], t2[64];
 	time_t        now = time(NULL);
 	ListIterator  i   = NULL;
 	job_state_t  *j   = NULL;
@@ -1289,20 +1256,11 @@ _clear_expired_job_states(slurm_cred_ctx_t ctx)
 	i = list_iterator_create(ctx->job_list);
 
 	while ((j = list_next(i))) {
-		if (j->revoked) {
-			strcpy(t2, " revoked:");
-			timestr(&j->revoked, (t2+9), (64-9));
-		} else {
-			t2[0] = '\0';
-		}
-		if (j->expiration) {
-			strcpy(t3, " expires:");
-			timestr(&j->revoked, (t3+9), (64-9));
-		} else {
-			t3[0] = '\0';
-		}
-		debug3("job state %u: ctime:%s%s%s",
-		        j->jobid, timestr(&j->ctime, t1, 64), t2, t3);
+		debug3 ("job state %u: ctime:%s%s%s",
+		        j->jobid, timestr (&j->ctime, t1, 64),
+			j->revoked ? " revoked:" : " expires:",
+		        timestr (&j->ctime, t1, 64),
+			j->revoked ? timestr (&j->expiration, t2, 64) : "");
 
 		if (j->revoked && (now > j->expiration)) {
 			list_delete(i);
@@ -1387,7 +1345,7 @@ static void
 _job_state_pack_one(job_state_t *j, Buf buffer)
 {
 	pack32(j->jobid, buffer);
-	pack_time(j->revoked, buffer);
+	pack16((uint16_t) j->revoked, buffer);
 	pack_time(j->ctime, buffer);
 	pack_time(j->expiration, buffer);
 }
@@ -1396,33 +1354,27 @@ _job_state_pack_one(job_state_t *j, Buf buffer)
 static job_state_t *
 _job_state_unpack_one(Buf buffer)
 {
-	char         t1[64], t2[64], t3[64];
+	char         buf1[64], buf2[64];
+	uint16_t     revoked = 0;
 	job_state_t *j = xmalloc(sizeof(*j));
 
 	safe_unpack32(    &j->jobid,      buffer);
-	safe_unpack_time( &j->revoked,    buffer);
+	safe_unpack16(    &revoked,       buffer);
 	safe_unpack_time( &j->ctime,      buffer);
 	safe_unpack_time( &j->expiration, buffer);
 
-	if (j->revoked) {
-		strcpy(t2, " revoked:");
-		timestr(&j->revoked, (t2+9), (64-9));
-	} else {
-		t2[0] = '\0';
-	}
-	if (j->expiration) {
-		strcpy(t3, " expires:");
-		timestr(&j->revoked, (t3+9), (64-9));
-	} else {
-		t3[0] = '\0';
-	}
-	debug3("cred_unpack: job %u ctime:%s%s%s",
-               j->jobid, timestr (&j->ctime, t1, 64), t2, t3); 
+	debug3("cred_unpack:job %d ctime:%s%s%s",
+               j->jobid, 
+	       timestr (&j->ctime, buf1, 64), 
+	       (revoked ? " revoked:" : " expires:"),
+	       revoked ? timestr (&j->expiration, buf2, 64) : "");
 
-	if ((j->revoked) && (j->expiration == (time_t) MAX_TIME)) {
-		info ("Warning: revoke on job %u has no expiration", 
-		      j->jobid);
-		j->expiration = j->revoked + 600;
+	if (revoked) {
+		j->revoked = true;
+		if (j->expiration == (time_t) MAX_TIME) {
+			info ("Warning: revoke on job %d has no expiration", 
+			      j->jobid);
+		}
 	}
 
 	return j;

@@ -1,3 +1,4 @@
+# $Id$
 # Makefile for checkpoint/aix plugin
 
 AUTOMAKE_OPTIONS = foreign

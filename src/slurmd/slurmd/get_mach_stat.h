@@ -4,7 +4,7 @@
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov> et. al.
- *  UCRL-CODE-226842.
+ *  UCRL-CODE-217948.
  *  
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -51,11 +51,7 @@
 #  include <inttypes.h>
 #endif  /*  HAVE_CONFIG_H */
 
-extern int get_procs(uint16_t *procs);
-extern int get_cpuinfo(uint16_t numproc,
-		       uint16_t *sockets, uint16_t *cores, uint16_t *threads,
-		       uint16_t *block_map_size,
-		       uint16_t **block_map, uint16_t **block_map_inv);
+extern int get_procs(uint32_t *procs);
 extern int get_mach_name(char *node_name);
 extern int get_memory(uint32_t *real_memory);
 extern int get_tmp_disk(uint32_t *tmp_disk, char *tmp_fs);

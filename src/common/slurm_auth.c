@@ -4,7 +4,7 @@
  *  Copyright (C) 2002-2006 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Jay Windley <jwindley@lnxi.com>
- *  UCRL-CODE-226842.
+ *  UCRL-CODE-217948.
  *  
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -286,7 +286,7 @@ _slurm_auth_context_destroy( slurm_auth_context_t c )
         return SLURM_SUCCESS;
 }
 
-int inline
+int
 slurm_auth_init( void )
 {
         int retval = SLURM_SUCCESS;
@@ -301,6 +301,7 @@ slurm_auth_init( void )
 	if (strcmp(auth_type, "auth/dummy") == 0) {
 		info( "warning: %s plugin selected", auth_type);
 		auth_dummy = true;
+		xfree(auth_type);
 		goto done;
 	}
 
@@ -308,6 +309,7 @@ slurm_auth_init( void )
         if ( g_context == NULL ) {
                 error( "cannot create a context for %s", auth_type );
                 retval = SLURM_ERROR;
+		xfree(auth_type);
                 goto done;
         }
         
@@ -318,9 +320,9 @@ slurm_auth_init( void )
                 g_context = NULL;
                 retval = SLURM_ERROR;
         }
+	xfree(auth_type);
 
  done:
-	xfree(auth_type);
         slurm_mutex_unlock( &context_lock );
         return retval;
 }

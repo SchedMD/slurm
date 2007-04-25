@@ -5,7 +5,7 @@
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Mark Grondona <mgrondona@llnl.gov>.
- *  UCRL-CODE-226842.
+ *  UCRL-CODE-217948.
  *  
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -42,8 +42,6 @@
 
 /* Process request contained in slurm message `msg' from client at
  * msg->orig_addr
- *
- * If msg == NULL, then purge allocated memory.
  */
 void slurmd_req(slurm_msg_t *msg);
 

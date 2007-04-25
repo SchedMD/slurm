@@ -5,7 +5,7 @@
  *  Copyright (C) 2004 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Danny Auble <da@llnl.gov>
- *  UCRL-CODE-226842.
+ *  UCRL-CODE-217948.
  *  
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -39,8 +39,8 @@
 #  include "config.h"
 #endif
 
-#include "src/common/slurm_xlator.h"
-#include "src/common/mpi.h"
+#include "src/srun/srun_job.h"
+#include "src/slurmd/slurmstepd/slurmstepd_job.h"
 #include "src/common/env.h"
 
-//extern int lam_thr_create(mpi_plugin_client_info_t *job);
+//extern int lam_thr_create(srun_job_t *job);

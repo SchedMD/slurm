@@ -3,7 +3,7 @@
  *****************************************************************************
  *  Copyright (C) 2005 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  UCRL-CODE-226842.
+ *  UCRL-CODE-217948.
  *  
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -50,6 +50,7 @@
 
 #include "src/common/job_options.h"
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
+#include "src/common/dist_tasks.h" /* for slurm_step_layout_t */
 
 struct spank_launcher_job_info {
 	uid_t       uid;

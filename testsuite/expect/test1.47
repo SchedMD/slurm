@@ -6,11 +6,14 @@
 # Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
 #          "FAILURE: ..." otherwise with an explanation of the failure, OR
 #          anything else indicates a failure mode that must be investigated.
+#
+# Note:    This script generates and then deletes files in the working directory
+#          named test1.47.input and test1.47.output
 ############################################################################
 # Copyright (C) 2005-2006 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 # Written by Danny Auble <da@llnl.gov>
-# UCRL-CODE-226842.
+# UCRL-CODE-217948.
 # 
 # This file is part of SLURM, a resource management program.
 # For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -49,7 +52,7 @@ make_bash_script $file_in "
 
 set timeout $max_job_delay
 set job_id 0
-set srun_pid [spawn $srun -o $file_out -b $file_in]
+spawn $srun -o $file_out -b $file_in
 expect {
 	-re "jobid ($number) submitted" {
 		set job_id $expect_out(1,string)
@@ -57,7 +60,7 @@ expect {
 	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
-		slow_kill $srun_pid
+		kill_srun
 		set exit_code 1
 		exp_continue
 	}
@@ -106,7 +109,7 @@ make_bash_script $file_in "
 "
 
 set matches 0
-set srun_pid [spawn $srun -o $file_out -b $file_in]
+spawn $srun -o $file_out -b $file_in
 expect {
 	-re "More .* requested than permitted" {	
 		send_user "This error was expected, no worries\n\n"
@@ -115,8 +118,9 @@ expect {
 	}	
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
-		slow_kill $srun_pid
+		kill_srun
 		set exit_code 1
+		exp_continue
 	}
 	eof {
 		wait
@@ -132,7 +136,7 @@ make_bash_script $file_in "
   $bin_sleep $delay
 "
 
-set srun_pid [spawn $srun -N1 -o $file_out -b $file_in]
+spawn $srun -N1 -o $file_out -b $file_in
 expect {
 	-re "More nodes requested than permitted" {
 		send_user "\nFAILURE: srun read from the batch file options"
@@ -142,8 +146,9 @@ expect {
 	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
-		slow_kill $srun_pid
+		kill_srun
 		set exit_code 1
+		exp_continue
 	}
 	eof {
 		wait
@@ -154,7 +159,8 @@ expect {
 # Post-processing
 #
 if {$exit_code == 0} {
-	exec $bin_rm -f $file_in $file_out
+	exec $bin_rm -f $file_in
+	exec $bin_rm -f $file_out
 	send_user "\nSUCCESS\n"
 }
 exit $exit_code
