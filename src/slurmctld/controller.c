@@ -103,7 +103,7 @@
 /**************************************************************************\
  * To test for memory leaks, set MEMORY_LEAK_DEBUG to 1 using 
  * "configure --enable-memory-leak-debug" then execute
- * > valgrind --tool=memcheck --leak-check=yes --num-callers=6 
+ * > valgrind --tool=memcheck --leak-check=yes --num-callers=6 \ 
  *    --leak-resolution=med slurmctld -D
  *
  * Then exercise the slurmctld functionality before executing
