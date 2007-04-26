@@ -268,7 +268,8 @@ test7.8    Test of sched/wiki plugin. This is intended to execute in the
            operation of the plugin.
 test7.9    Test that no files are open in spawned tasks (except stdin,
            stdout, and stderr) to insure successful checkpoint/restart.
-
+test7.10   Test if we can trick SLURM into using the wrong user ID 
+           through an LD_PRELOAD option.
 
 test8.#    Test of Blue Gene specific functionality.
 =================================================
