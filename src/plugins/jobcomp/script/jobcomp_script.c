@@ -256,13 +256,24 @@ static int _env_append (char ***envp, const char *name, const char *val)
 
 	snprintf (buf, sizeof (buf) - 1, "%s=%s", name, val);
 
-	if (!(entry = strdup (buf)))
+	if (!(entry = xstrdup (buf)))
 		return (-1);
 
 	ep = _extend_env (envp);
 	*ep = entry;
 
 	return (0);
+}
+
+static void _clear_env(char **envp)
+{
+	int i;
+
+	if (envp) {
+		for (i=0; envp[i]; i++)
+			xfree(envp[i]);
+		xfree(envp);
+	}
 }
 
 
@@ -398,9 +409,6 @@ static int _jobcomp_exec_child (char *script, char **env)
  */
 static void * _script_agent (void *args) 
 {
-//	info ("_jobcomp_script_strerror (137) = %s\n", 
-//			_jobcomp_script_strerror (137));
-
 	while (1) {
 		struct jobcomp_info *job;
 
@@ -427,7 +435,7 @@ static void * _script_agent (void *args)
 			if (_jobcomp_exec_child (script, envp) < 0)
 				error ("jobcomp/script: %s failed");
 
-			xfree(envp);
+			_clear_env(envp);
 			_jobcomp_info_destroy (job);
 		}
 
