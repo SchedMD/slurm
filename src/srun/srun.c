@@ -421,6 +421,7 @@ int srun(int ac, char **av)
 	
 	/* have to check if job was cancelled here just to make sure 
 	   state didn't change when we were waiting for the message thread */
+	exitcode = set_job_rc(job);
 	if (job->state == SRUN_JOB_CANCELLED) {
 		info("Cancelling job");
 		srun_job_destroy(job, NO_VAL);
@@ -428,7 +429,7 @@ int srun(int ac, char **av)
 		info("Terminating job");
 		srun_job_destroy(job, job->rc);
 	} else 
-		srun_job_destroy(job, 0);
+		srun_job_destroy(job, job->rc);
 		
 	/* wait for launch thread */
 	if (pthread_join(job->lid, NULL) < 0)
@@ -455,7 +456,6 @@ int srun(int ac, char **av)
 	/* 
 	 *  Let exit() clean up remaining threads.
 	 */
-	exitcode = job_rc(job);
 	log_fini();
 	exit(exitcode);
 }

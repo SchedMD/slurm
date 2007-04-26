@@ -211,9 +211,10 @@ void    report_task_status(srun_job_t *job);
 void    report_job_status(srun_job_t *job);
 
 /*
+ * Sets job->rc to highest task exit value.
  * Returns job return code (for srun exit status)
  */
-int    job_rc(srun_job_t *job);
+int    set_job_rc(srun_job_t *job);
 
 void   fwd_signal(srun_job_t *job, int signal, int max_threads);
 int    job_active_tasks_on_host(srun_job_t *job, int hostid);
