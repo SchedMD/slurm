@@ -556,32 +556,29 @@ job_force_termination(srun_job_t *job)
 
 
 int
-job_rc(srun_job_t *job)
+set_job_rc(srun_job_t *job)
 {
-	int i;
-	int rc = 0;
-
-	if (job->rc >= 0) return(job->rc);
+	int i, rc = 0, task_failed = 0;
 
 	/*
-	 *  return (1) if any tasks failed launch
+	 *  return code set to at least one if any tasks failed launch
 	 */
 	for (i = 0; i < opt.nprocs; i++) {
-		if (job->task_state[i] == SRUN_TASK_FAILED) 
-			return (job->rc = 1);
-	}
-
-	for (i = 0; i < opt.nprocs; i++) {
+		if (job->task_state[i] == SRUN_TASK_FAILED)
+			task_failed = 1; 
 		if (job->rc < job->tstatus[i])
 			job->rc = job->tstatus[i];
 	}
+	if (task_failed && (job->rc <= 0)) {
+		job->rc = 1;
+		return 1;
+	}
 
 	if ((rc = WEXITSTATUS(job->rc)))
-		job->rc = rc;
-	else if (WIFSIGNALED(job->rc))
-		job->rc = 128 + WTERMSIG(job->rc);
-
-	return(job->rc);
+		return rc;
+	if (WIFSIGNALED(job->rc))
+		return (128 + WTERMSIG(job->rc));
+	return job->rc;
 }
 
 
