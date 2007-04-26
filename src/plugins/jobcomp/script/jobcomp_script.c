@@ -265,18 +265,6 @@ static int _env_append (char ***envp, const char *name, const char *val)
 	return (0);
 }
 
-static void _clear_env(char **envp)
-{
-	int i;
-
-	if (envp) {
-		for (i=0; envp[i]; i++)
-			xfree(envp[i]);
-		xfree(envp);
-	}
-}
-
-
 static int _env_append_fmt (char ***envp, const char *name, 
 		const char *fmt, ...)
 {
@@ -339,17 +327,17 @@ static int _redirect_stdio (void)
 	return (0);
 }
 
-static void _jobcomp_child (char * script, char **env)
+static void _jobcomp_child (char * script, struct jobcomp_info *job)
 {
 	char * args[] = {script, NULL};
 	const char *tmpdir;
+	char **env;
 
 #ifdef _PATH_TMP
 	tmpdir = _PATH_TMP;
 #else
 	tmpdir = "/tmp";
 #endif
-
 	/*
 	 * Reinitialize log so we can log any errors for 
 	 *  diagnosis
@@ -364,6 +352,11 @@ static void _jobcomp_child (char * script, char **env)
 		exit(1);
 	}
 
+	if (!(env = _create_environment (job))) {
+		error ("jobcomp/script: Failed to create env!");
+		exit (1);
+	}
+
 	execve(script, args, env);
 
 	/*
@@ -373,12 +366,12 @@ static void _jobcomp_child (char * script, char **env)
 	exit (1);
 }
 
-static int _jobcomp_exec_child (char *script, char **env)
+static int _jobcomp_exec_child (char *script, struct jobcomp_info *job)
 {
 	pid_t pid;
 	int status = 0;
 
-	if (script == NULL || env == NULL)
+	if (script == NULL || job == NULL)
 		return (-1);
 
 	if ((pid = fork()) < 0) {
@@ -387,7 +380,7 @@ static int _jobcomp_exec_child (char *script, char **env)
 	}
 
 	if (pid == 0)
-		_jobcomp_child (script, env);
+		_jobcomp_child (script, job);
 
 	/*
 	 *  Parent continues
@@ -424,18 +417,8 @@ static void * _script_agent (void *args)
 		pthread_mutex_unlock(&comp_list_mutex);
 
 		if ((job = list_pop(comp_list))) {
-			char **envp;
-
-			if ((envp = _create_environment (job)) == NULL) {
-				error ("jobcomp/script: create env failed!");
-				_jobcomp_info_destroy (job);
-				continue;
-			}
-
-			if (_jobcomp_exec_child (script, envp) < 0)
+			if (_jobcomp_exec_child (script, job) < 0)
 				error ("jobcomp/script: %s failed");
-
-			_clear_env(envp);
 			_jobcomp_info_destroy (job);
 		}
 
