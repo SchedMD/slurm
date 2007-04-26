@@ -38,6 +38,11 @@ set ld_preload           "ld_preload"
 
 print_header $test_id
 
+if {[test_aix] == 1} {
+	send_user "WARNING: Test is incompatible with AIX\n"
+	exit 0
+}
+
 #
 # Build a shared object that emulates getuid/getgid functions
 #
