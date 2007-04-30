@@ -125,7 +125,7 @@ static void _layout_node_record(GtkTreeView *treeview,
 				   lower);
 	xfree(lower);
 	
-	convert_num_unit((float)node_ptr->cpus, tmp_cnt, UNIT_MEGA);
+	convert_num_unit((float)node_ptr->cpus, tmp_cnt, UNIT_NONE);
 	add_display_treestore_line(update, treestore, &iter, 
 				   find_col_name(display_data_node,
 						 SORTID_CPUS),
@@ -399,7 +399,8 @@ extern List create_node_info_list(node_info_msg_t *node_info_ptr, int changed)
 	
 		sview_node_info_ptr = xmalloc(sizeof(sview_node_info_t));
 		list_append(info_list, sview_node_info_ptr);
-		sview_node_info_ptr->node_ptr = node_ptr;		
+		sview_node_info_ptr->node_ptr = node_ptr;
+		
 	}
 update_color:
 	

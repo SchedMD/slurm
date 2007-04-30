@@ -699,9 +699,9 @@ extern int setup_grid_table(GtkTable *table, List button_list, List node_list)
 	 * instead of laying these out in a nice X fashion
 	 */
 	for (x=0; x<DIM_SIZE[X]; x++) {
-		y_offset = 0;
+		y_offset = (DIM_SIZE[Z] * DIM_SIZE[Y]);
 		for (y=0; y<DIM_SIZE[Y]; y++) {
-			coord_y = y + y_offset;
+			coord_y = y_offset - y;
 			x_offset = DIM_SIZE[Z] - 1;
 			for (z=0; z<DIM_SIZE[Z]; z++){
 				coord_x = x + x_offset;
@@ -719,6 +719,7 @@ extern int setup_grid_table(GtkTable *table, List button_list, List node_list)
 						grid_button->inx);
 					goto end_it;
 				}
+			
 				grid_button->node_name = xstrdup(
 					sview_node_info_ptr->node_ptr->name);
 				
@@ -743,7 +744,7 @@ extern int setup_grid_table(GtkTable *table, List button_list, List node_list)
 				coord_y++;
 				x_offset--;
 			}
-			y_offset += DIM_SIZE[Z];			
+			y_offset -= DIM_SIZE[Z];			
 		}
 		gtk_table_set_row_spacing(table, coord_y-1, 5);
 	}
