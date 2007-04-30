@@ -1618,7 +1618,7 @@ extern int get_new_info_part(partition_info_msg_t **part_ptr, int force)
 {
 	static partition_info_msg_t *part_info_ptr = NULL;
 	static partition_info_msg_t *new_part_ptr = NULL;
-	int error_code = SLURM_SUCCESS;
+	int error_code = SLURM_NO_CHANGE_IN_DATA;
 	time_t now = time(NULL);
 	static time_t last;
 		
@@ -1857,15 +1857,14 @@ extern void get_info_part(GtkTable *table, display_data_t *display_data)
 	if(display_widget && toggled) {
 		gtk_widget_destroy(display_widget);
 		display_widget = NULL;
+		g_print("got here\n");
 		goto display_it;
 	}
 	
 	if((part_error_code = get_new_info_part(&part_info_ptr, force_refresh))
 	   == SLURM_NO_CHANGE_IN_DATA) { 
-		goto get_node;
-	}
-	
-	if (part_error_code != SLURM_SUCCESS) {
+		// just goto the new info node 
+	} else 	if (part_error_code != SLURM_SUCCESS) {
 		if(view == ERROR_VIEW)
 			goto end_it;
 		if(display_widget)
@@ -1880,15 +1879,10 @@ extern void get_info_part(GtkTable *table, display_data_t *display_data)
 		goto end_it;
 	}
 
-get_node:
 	if((node_error_code = get_new_info_node(&node_info_ptr, force_refresh))
 	   == SLURM_NO_CHANGE_IN_DATA) { 
-		if((!display_widget || view == ERROR_VIEW)
-		   || (part_error_code != SLURM_NO_CHANGE_IN_DATA))
-			goto get_node_select;
-	}
-
-	if (node_error_code != SLURM_SUCCESS) {
+		// just goto the new info node select
+	} else if (node_error_code != SLURM_SUCCESS) {
 		if(view == ERROR_VIEW)
 			goto end_it;
 		if(display_widget)
@@ -1903,19 +1897,16 @@ get_node:
 		goto end_it;
 	}
 
-get_node_select:
 	if((block_error_code = get_new_info_node_select(&node_select_ptr, 
 							force_refresh))
 	   == SLURM_NO_CHANGE_IN_DATA) { 
 		if((!display_widget || view == ERROR_VIEW) 
 		   || (part_error_code != SLURM_NO_CHANGE_IN_DATA)
-		   || (node_error_code != SLURM_NO_CHANGE_IN_DATA))
+		   || (node_error_code != SLURM_NO_CHANGE_IN_DATA)) {
 			goto display_it;
+		}
 		changed = 0;
-		goto display_it;
-	}
-
-	if (block_error_code != SLURM_SUCCESS) {
+	} else if (block_error_code != SLURM_SUCCESS) {
 		if(view == ERROR_VIEW)
 			goto end_it;
 		view = ERROR_VIEW;
@@ -2017,10 +2008,8 @@ extern void specific_info_part(popup_info_t *popup_win)
 	if((part_error_code = get_new_info_part(&part_info_ptr, 
 						popup_win->force_refresh))
 	   == SLURM_NO_CHANGE_IN_DATA)  {
-		goto get_node;
-	}
 		
-	if (part_error_code != SLURM_SUCCESS) {
+	} else if (part_error_code != SLURM_SUCCESS) {
 		if(spec_info->view == ERROR_VIEW)
 			goto end_it;
 		if(spec_info->display_widget) {
@@ -2036,17 +2025,12 @@ extern void specific_info_part(popup_info_t *popup_win)
 		gtk_widget_show(label);			
 		goto end_it;
 	}
-get_node:
+
 	if((node_error_code = get_new_info_node(&node_info_ptr, 
 						popup_win->force_refresh))
 	   == SLURM_NO_CHANGE_IN_DATA) { 
-		if((!spec_info->display_widget 
-		    || spec_info->view == ERROR_VIEW)
-		   || (part_error_code != SLURM_NO_CHANGE_IN_DATA))
-			goto get_node_select;
-	}
-
-	if (node_error_code != SLURM_SUCCESS) {
+					
+	} else if (node_error_code != SLURM_SUCCESS) {
 		if(spec_info->view == ERROR_VIEW)
 			goto end_it;
 		if(spec_info->display_widget)
@@ -2061,7 +2045,6 @@ get_node:
 		goto end_it;
 	}
 
-get_node_select:
 	if((block_error_code = get_new_info_node_select(&node_select_ptr, 
 							force_refresh))
 	   == SLURM_NO_CHANGE_IN_DATA) { 
@@ -2071,10 +2054,7 @@ get_node_select:
 		   || (node_error_code != SLURM_NO_CHANGE_IN_DATA))
 			goto display_it;
 		changed = 0;
-		goto display_it;
-	}
-
-	if (block_error_code != SLURM_SUCCESS) {
+	} else if (block_error_code != SLURM_SUCCESS) {
 		if(spec_info->view == ERROR_VIEW)
 			goto end_it;
 		if(spec_info->display_widget)

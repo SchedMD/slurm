@@ -352,12 +352,10 @@ extern char *change_grid_color(List button_list, int start, int end,
 	itr = list_iterator_create(button_list);
 	color_inx %= sview_colors_cnt;
 	gdk_color_parse(sview_colors[color_inx], &color);
-		
 	while((grid_button = list_next(itr))) {
 		if ((grid_button->inx < start)
 		    ||  (grid_button->inx > end)) 
 			continue;
-		
 		node_base_state = grid_button->state & NODE_STATE_BASE;
 		if (node_base_state == NODE_STATE_DOWN) {
 			_put_button_as_down(grid_button, NODE_STATE_DOWN);
@@ -634,9 +632,7 @@ extern int get_system_stats(GtkTable *table)
 	if((error_code = get_new_info_node(&node_info_ptr, force_refresh))
 	   == SLURM_NO_CHANGE_IN_DATA) { 
 		changed = 0;
-		goto update_it;
-	} 
-	if (error_code != SLURM_SUCCESS) {		
+	} else if (error_code != SLURM_SUCCESS) {		
 		snprintf(error_char, 100, "slurm_load_node: %s\n",
 			 slurm_strerror(error_code));
 		label = gtk_label_new(error_char);
@@ -645,7 +641,7 @@ extern int get_system_stats(GtkTable *table)
 		
 		return SLURM_ERROR;
 	}
-update_it:
+
 	ba_init(node_info_ptr);	
 	if(grid_button_list)
 		return SLURM_SUCCESS;
@@ -825,10 +821,10 @@ extern void sview_init_grid()
 	if((error_code = get_new_info_node(&node_info_ptr, force_refresh))
 	   == SLURM_NO_CHANGE_IN_DATA) { 
 		return;
-	} 
-	if (error_code != SLURM_SUCCESS) {
+	} else if (error_code != SLURM_SUCCESS) {
 		return;
 	}
+
 	if(!grid_button_list) {
 		g_print("you need to run get_system_stats() first\n");
 		exit(0);
