@@ -101,7 +101,7 @@ static void _close_fd(void)
  * event_notify - Notify Moab of some event
  * event_code IN - message code to send Moab
  *          1234 - job state change
- *          TBD  - partition state change
+ *          1235  - partition state change
  * desc IN - event description
  * RET 0 on success, -1 on failure
  */
@@ -116,15 +116,15 @@ extern int	event_notify(int event_code, char *desc)
 		return 0;
 	}
 
-	if (event_code == 1234) {
+	if (event_code == 1234) {		/* job change */
 		if (job_aggregation_time
 		&&  (difftime(now, last_notify_time) < job_aggregation_time)) {
 			debug("wiki event notification already sent recently");
 			return 0;
 		}
-		event_msg = "1234\0";
-	} else if (event_code == 5) {	/* actual value TBD */
-		event_msg = "5\0";	/* actual value TBD */
+		event_msg = "1234";
+	} else if (event_code == 1235) {	/* configuration change */
+		event_msg = "1235";
 	} else {
 		error("event_notify: invalid event code: %d", event_code);
 		return -1;

@@ -199,12 +199,15 @@ int main(int argc, char *argv[])
 	_init_pidfile();
 
 	/* Initialize supplementary group ID list for SlurmUser */
-	if (initgroups(slurmctld_conf.slurm_user_name,
-	               gid_from_string(slurmctld_conf.slurm_user_name)))
+	if ((getuid() == 0)
+	&&  (slurmctld_conf.slurm_user_id != getuid())
+	&&  initgroups(slurmctld_conf.slurm_user_name,
+			gid_from_string(slurmctld_conf.slurm_user_name))) {
 		error("initgroups: %m");
+	}
 
-	if ((slurmctld_conf.slurm_user_id != getuid()) &&
-	    (setuid(slurmctld_conf.slurm_user_id))) {
+	if ((slurmctld_conf.slurm_user_id != getuid())
+	&&  (setuid(slurmctld_conf.slurm_user_id))) {
 		fatal("Can not set uid to SlurmUser(%d): %m", 
 			slurmctld_conf.slurm_user_id);
 	}
