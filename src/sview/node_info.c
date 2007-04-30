@@ -411,7 +411,7 @@ extern int get_new_info_node(node_info_msg_t **info_ptr, int force)
 {
 	static node_info_msg_t *node_info_ptr = NULL, *new_node_ptr = NULL;
 	uint16_t show_flags = 0;
-	int error_code = SLURM_SUCCESS;
+	int error_code = SLURM_NO_CHANGE_IN_DATA;
 	time_t now = time(NULL);
 	static time_t last;
 		
@@ -745,10 +745,7 @@ extern void get_info_node(GtkTable *table, display_data_t *display_data)
 		if(!display_widget || view == ERROR_VIEW)
 			goto display_it;
 		changed = 0;
-		goto display_it;
-	} 
-
-	if (error_code != SLURM_SUCCESS) {
+	} else if (error_code != SLURM_SUCCESS) {
 		if(view == ERROR_VIEW)
 			goto end_it;
 		view = ERROR_VIEW;
@@ -839,10 +836,7 @@ extern void specific_info_node(popup_info_t *popup_win)
 		if(!spec_info->display_widget || spec_info->view == ERROR_VIEW)
 			goto display_it;
 		changed = 0;
-		goto display_it;
-	}  
-			
-	if (error_code != SLURM_SUCCESS) {
+	} else if(error_code != SLURM_SUCCESS) {
 		if(spec_info->view == ERROR_VIEW)
 			goto end_it;
 		spec_info->view = ERROR_VIEW;

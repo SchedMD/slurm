@@ -567,7 +567,7 @@ extern void refresh_block(GtkAction *action, gpointer user_data)
 extern int get_new_info_node_select(node_select_info_msg_t **node_select_ptr,
 				    int force)
 {
-	int error_code = SLURM_SUCCESS;
+	int error_code = SLURM_NO_CHANGE_IN_DATA;
 #ifdef HAVE_BG
 	static node_select_info_msg_t *bg_info_ptr = NULL;
 	static node_select_info_msg_t *new_bg_ptr = NULL;
@@ -595,8 +595,6 @@ extern int get_new_info_node_select(node_select_info_msg_t **node_select_ptr,
 
 	bg_info_ptr = new_bg_ptr;
 	*node_select_ptr = new_bg_ptr;
-#else
-	error_code = SLURM_NO_CHANGE_IN_DATA;
 #endif
 	return error_code;
 }
@@ -764,10 +762,8 @@ extern void get_info_block(GtkTable *table, display_data_t *display_data)
 	
 	if((part_error_code = get_new_info_part(&part_info_ptr, force_refresh))
 	   == SLURM_NO_CHANGE_IN_DATA) { 
-		goto get_node_select;
-	}
 		
-	if (part_error_code != SLURM_SUCCESS) {
+	} else if (part_error_code != SLURM_SUCCESS) {
 		if(view == ERROR_VIEW)
 			goto end_it;
 		view = ERROR_VIEW;
@@ -784,7 +780,6 @@ extern void get_info_block(GtkTable *table, display_data_t *display_data)
 		goto end_it;
 	}
 
-get_node_select:
 	if((block_error_code = get_new_info_node_select(&node_select_ptr, 
 							force_refresh))
 	   == SLURM_NO_CHANGE_IN_DATA) { 
@@ -792,10 +787,7 @@ get_node_select:
 		   || (part_error_code != SLURM_NO_CHANGE_IN_DATA))
 			goto display_it;
 		changed = 0;
-		goto display_it;
-	}
-
-	if (block_error_code != SLURM_SUCCESS) {
+	} else if (block_error_code != SLURM_SUCCESS) {
 		if(view == ERROR_VIEW)
 			goto end_it;
 		view = ERROR_VIEW;
@@ -813,7 +805,7 @@ get_node_select:
 	}
 		
 display_it:
-	
+
 	block_list = _create_block_list(part_info_ptr, node_select_ptr,
 					changed);
 	if(!block_list)
@@ -895,10 +887,8 @@ extern void specific_info_block(popup_info_t *popup_win)
 	if((part_error_code = get_new_info_part(&part_info_ptr, 
 						popup_win->force_refresh))
 	   == SLURM_NO_CHANGE_IN_DATA) { 
-		goto get_node_select;
-	}
-	
-	if (part_error_code != SLURM_SUCCESS) {
+		
+	} else if (part_error_code != SLURM_SUCCESS) {
 		if(spec_info->view == ERROR_VIEW)
 			goto end_it;
 		spec_info->view = ERROR_VIEW;
@@ -915,7 +905,6 @@ extern void specific_info_block(popup_info_t *popup_win)
 		goto end_it;
 	}
 
-get_node_select:
 	if((block_error_code = 
 	    get_new_info_node_select(&node_select_ptr,
 				     popup_win->force_refresh))
@@ -926,10 +915,8 @@ get_node_select:
 			goto display_it;
 		}
 		changed = 0;
-		goto display_it;
-	}
-	
-	if (block_error_code != SLURM_SUCCESS) {
+		
+	} else if (block_error_code != SLURM_SUCCESS) {
 		if(spec_info->view == ERROR_VIEW)
 			goto end_it;
 		spec_info->view = ERROR_VIEW;

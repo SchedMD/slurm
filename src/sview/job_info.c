@@ -2297,7 +2297,7 @@ extern int get_new_info_job(job_info_msg_t **info_ptr,
 {
 	static job_info_msg_t *job_info_ptr = NULL, *new_job_ptr = NULL;
 	uint16_t show_flags = 0;
-	int error_code = SLURM_SUCCESS;
+	int error_code = SLURM_NO_CHANGE_IN_DATA;
 	time_t now = time(NULL);
 	static time_t last;
 		
@@ -2331,7 +2331,7 @@ extern int get_new_info_job_step(job_step_info_response_msg_t **info_ptr,
 	static job_step_info_response_msg_t *old_step_ptr = NULL;
 	static job_step_info_response_msg_t *new_step_ptr = NULL;
 	uint16_t show_flags = 0;
-	int error_code = SLURM_SUCCESS;
+	int error_code = SLURM_NO_CHANGE_IN_DATA;
 	time_t now = time(NULL);
 	static time_t last;
 		
@@ -2573,10 +2573,8 @@ extern void get_info_job(GtkTable *table, display_data_t *display_data)
 
 	if((job_error_code = get_new_info_job(&job_info_ptr, force_refresh))
 	   == SLURM_NO_CHANGE_IN_DATA){
-		goto get_steps;
-	}
-
-	if (job_error_code != SLURM_SUCCESS) {
+		
+	} else if (job_error_code != SLURM_SUCCESS) {
 		if(view == ERROR_VIEW)
 			goto end_it;
 		if(display_widget)
@@ -2590,7 +2588,7 @@ extern void get_info_job(GtkTable *table, display_data_t *display_data)
 		display_widget = gtk_widget_ref(GTK_WIDGET(label));
 		goto end_it;
 	}
-get_steps:
+
 	if((step_error_code = get_new_info_job_step(&step_info_ptr, 
 						    force_refresh))
 	   == SLURM_NO_CHANGE_IN_DATA){
@@ -2598,10 +2596,7 @@ get_steps:
 		   || (job_error_code != SLURM_NO_CHANGE_IN_DATA))
 			goto display_it;
 		changed = 0;
-		goto display_it;
-	}
-
-	if (step_error_code != SLURM_SUCCESS) {
+	} else if (step_error_code != SLURM_SUCCESS) {
 		if(view == ERROR_VIEW)
 			goto end_it;
 		if(display_widget)
@@ -2621,7 +2616,7 @@ display_it:
 					  changed, 0);
 	if(!info_list)
 		return;
-	i=0;
+
 	/* set up the grid */
 	itr = list_iterator_create(info_list);
 	while ((sview_job_info_ptr = list_next(itr))) {
@@ -2701,10 +2696,8 @@ extern void specific_info_job(popup_info_t *popup_win)
 	if((job_error_code =
 	    get_new_info_job(&job_info_ptr, popup_win->force_refresh))
 	   == SLURM_NO_CHANGE_IN_DATA) {
-		goto get_steps;
-	}
-	
-	if (job_error_code != SLURM_SUCCESS) {
+		
+	} else if (job_error_code != SLURM_SUCCESS) {
 		if(spec_info->view == ERROR_VIEW)
 			goto end_it;
 		spec_info->view = ERROR_VIEW;
@@ -2721,7 +2714,7 @@ extern void specific_info_job(popup_info_t *popup_win)
 		spec_info->display_widget = gtk_widget_ref(GTK_WIDGET(label));
 		goto end_it;
 	}
-get_steps:
+
 	if((step_error_code = 
 	    get_new_info_job_step(&step_info_ptr, popup_win->force_refresh))
 	   == SLURM_NO_CHANGE_IN_DATA) {
@@ -2730,10 +2723,7 @@ get_steps:
 		   || (job_error_code != SLURM_NO_CHANGE_IN_DATA)) 
 			goto display_it;
 		changed = 0;
-		goto display_it;
-	}
-			
-	if (step_error_code != SLURM_SUCCESS) {
+	} else if (step_error_code != SLURM_SUCCESS) {
 		if(spec_info->view == ERROR_VIEW)
 			goto end_it;
 		if(spec_info->display_widget)
