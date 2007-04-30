@@ -204,8 +204,7 @@ int main(int argc, char *argv[])
 		error("initgroups: %m");
 	}
 
-	if ((slurmctld_conf.slurm_user_id) 
-	&&  (slurmctld_conf.slurm_user_id != getuid())
+	if ((slurmctld_conf.slurm_user_id != getuid())
 	&&  (setuid(slurmctld_conf.slurm_user_id))) {
 		fatal("Can not set uid to SlurmUser(%d): %m", 
 			slurmctld_conf.slurm_user_id);
