@@ -53,6 +53,8 @@ resources than physically exist on the node?</a></li>
 replayed" error in the <i>SlurmdLogFile</i> indicate?</a></li>
 <li><a href="#large_time">What does a "Warning: Note very large
 processing time" in the <i>SlurmctldLogFile</i> indicate?</a></li>
+<li><a href="#lightweight_core">How can I add support for lightweight
+core files?</a></li>
 </ol>
 
 <h2>For Users</h2>
@@ -547,8 +549,21 @@ Another possibility is that the node on which the slurmctld
 daemon executes has exhausted memory and is paging. 
 Try running the program <i>top</i> to check for this possibility.
 
+<p><a name="lightweight_core"><b>18. How can I add support for 
+lightweight core files?</b></a><br>
+SLURM supports lightweight core files by setting environment variables
+based upon the <i>srun --core</i> option. Of particular note, it 
+sets the <i>LD_PRELOAD</i> environment variable to load new functions
+used to process a core dump. 
+>First you will need to acquire and install a shared object 
+library with the appropriate functions.
+Then edit the SLURM code in <i>src/srun/core-format.c</i> to 
+specify a name for the core file type, 
+add a test for the existence of the library, 
+and set environment variables appropriately when it is used.
+ 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 16 April 2007</p>
+<p style="text-align:center;">Last modified 30 April 2007</p>
 
 <!--#include virtual="footer.txt"-->
