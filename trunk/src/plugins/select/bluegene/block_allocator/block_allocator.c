@@ -821,7 +821,7 @@ extern void ba_init(node_info_msg_t *node_info_ptr)
 				DIM_SIZE[Z] = 0;
 				goto node_info_error;
 			}
-			printf("name = %s\n", node_ptr->name);
+
 			numeric = node_ptr->name;
 			while (numeric) {
 				if (numeric[0] < '0' || numeric[0] > 'Z'
