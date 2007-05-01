@@ -288,9 +288,13 @@ slurm_allocate_resources_blocking (const job_desc_msg_t *user_req,
 int slurm_job_will_run (job_desc_msg_t *req)
 {
 	slurm_msg_t req_msg;
+	char host[64];
 	int rc;
 
 	/* req.immediate = true;    implicit */
+	if ((req->alloc_node == NULL)
+	&&  (gethostname_short(host, sizeof(host)) == 0))
+		req->alloc_node = host;
 	slurm_msg_t_init(&req_msg);
 	req_msg.msg_type = REQUEST_JOB_WILL_RUN;
 	req_msg.data     = req; 
