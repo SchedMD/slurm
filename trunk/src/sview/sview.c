@@ -633,7 +633,6 @@ int main(int argc, char *argv[])
 			 0, 0);
 	gtk_table_attach_defaults(GTK_TABLE(table), main_notebook, 1, 2, 0, 1);
 	
-
 	gtk_box_pack_start(GTK_BOX(GTK_DIALOG(main_window)->vbox), 
 			   table, TRUE, TRUE, 0);	
 	gtk_box_pack_start(GTK_BOX(GTK_DIALOG(main_window)->vbox),
@@ -647,8 +646,7 @@ int main(int argc, char *argv[])
 		create_page(GTK_NOTEBOOK(main_notebook), 
 			    &main_display_data[i]);
 	}
-		
-	
+
 	/* tell signal we are done adding */
 	adding = 0;
 	popup_list = list_create(destroy_popup_info);

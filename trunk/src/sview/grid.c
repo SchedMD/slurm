@@ -803,7 +803,7 @@ extern int setup_grid_table(GtkTable *table, List button_list, List node_list)
 end_it:
 	list_iterator_destroy(itr);
 	list_sort(button_list, (ListCmpF) _sort_button_inx);
-
+	
 	return error_code;
 }
 
@@ -877,8 +877,9 @@ extern void sview_reset_grid()
 	while((grid_button = list_next(itr))) {
 		node_base_state = grid_button->state & NODE_STATE_BASE;
 		if ((node_base_state == NODE_STATE_DOWN)
-		    || (grid_button->state & NODE_STATE_DRAIN))
+		    || (grid_button->state & NODE_STATE_DRAIN)) {
 			continue;
+		}
 		gtk_widget_modify_bg(grid_button->button, 
 				     GTK_STATE_NORMAL, &color);
 	}

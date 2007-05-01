@@ -2616,7 +2616,7 @@ display_it:
 					  changed, 0);
 	if(!info_list)
 		return;
-
+	i=0;
 	/* set up the grid */
 	itr = list_iterator_create(info_list);
 	while ((sview_job_info_ptr = list_next(itr))) {
@@ -2645,7 +2645,6 @@ display_it:
 		gtk_table_attach_defaults(GTK_TABLE(table), 
 					  GTK_WIDGET(tree_view),
 					  0, 1, 0, 1); 
-		gtk_widget_show(GTK_WIDGET(tree_view));
 		/* since this function sets the model of the tree_view 
 		   to the treestore we don't really care about 
 		   the return value */
