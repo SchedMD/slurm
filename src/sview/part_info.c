@@ -1857,7 +1857,6 @@ extern void get_info_part(GtkTable *table, display_data_t *display_data)
 	if(display_widget && toggled) {
 		gtk_widget_destroy(display_widget);
 		display_widget = NULL;
-		g_print("got here\n");
 		goto display_it;
 	}
 	
@@ -1968,7 +1967,7 @@ display_it:
 	_update_info_part(info_list, GTK_TREE_VIEW(display_widget));
 end_it:
 	toggled = FALSE;
-	force_refresh = 0;
+	force_refresh = FALSE;
 	
 	return;
 }
