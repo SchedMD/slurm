@@ -536,13 +536,6 @@ job_desc_msg_create_from_opts (char *script)
 	 * message as all other messages */
 	j->alloc_resp_port = slurmctld_comm_addr.port;
 	j->other_port = slurmctld_comm_addr.port;
-	if (slurmctld_comm_addr.hostname) {
-		j->alloc_resp_hostname = xstrdup(slurmctld_comm_addr.hostname);
-		j->other_hostname = xstrdup(slurmctld_comm_addr.hostname);
-	} else {
-		j->alloc_resp_hostname = NULL;
-		j->other_hostname = NULL;
-	}
 
 	if (script) {
 		/*
@@ -583,8 +576,6 @@ job_desc_msg_destroy(job_desc_msg_t *j)
 	if (j) {
 		xfree(j->account);
 		xfree(j->comment);
-		xfree(j->alloc_resp_hostname);
-		xfree(j->other_hostname);
 		xfree(j);
 	}
 }

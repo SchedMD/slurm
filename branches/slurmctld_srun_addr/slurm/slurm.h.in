@@ -502,14 +502,15 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 				 * slurm_allocate* function */
 
 	/* If the requested allocation is not immediately available,
-	 * The controller sends the RESPONSE_RESOURCE_ALLOCATION message to
-	 * the address designated by the alloc_hostname and alloc_port.
-	 * All other messages (SRUN_PING, SRUN_TIMEOUT, etc.) are sent to
-	 * the address designated by other_hostname/other_port.
+	 * The controller sends the RESPONSE_RESOURCE_ALLOCATION message
+	 * to resp_addr/alloc_port.
+	 * All other messages (SRUN_PING, SRUN_TIMEOUT, etc.) are sent 
+	 * to resp_addr/other_port.
+	 * The value of resp_addr is the host address to which message 
+	 * are sent. Its value is set internally by SLURM.
 	 */
-	char    *alloc_resp_hostname;
+	slurm_addr *resp_addr;	/* NOTE: Set by slurmctld */
 	uint16_t alloc_resp_port;
-	char    *other_hostname;
 	uint16_t other_port;
 
 	uint32_t dependency;	/* defer until specified job completes */
