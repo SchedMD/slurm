@@ -77,7 +77,8 @@ extern void srun_allocate (uint32_t job_id)
 	struct job_record *job_ptr = find_job_record (job_id);
 
 	xassert(job_ptr);
-	if (job_ptr && job_ptr->alloc_resp_port) {
+	if (job_ptr && job_ptr->alloc_resp_port && job_ptr->alloc_node
+	&&  job_ptr->resp_host) {
 		slurm_addr * addr;
 		resource_allocation_response_msg_t *msg_arg;
 
@@ -128,7 +129,7 @@ extern void srun_node_fail (uint32_t job_id, char *node_name)
 		return;
 	bit_position = node_ptr - node_record_table_ptr;
 
-	if (job_ptr->other_port) {
+	if (job_ptr->other_port && job_ptr->alloc_node && job_ptr->resp_host) {
 		addr = xmalloc(sizeof(struct sockaddr_in));
 		slurm_set_addr(addr, job_ptr->other_port, job_ptr->resp_host);
 		msg_arg = xmalloc(sizeof(srun_node_fail_msg_t));
@@ -180,7 +181,8 @@ extern void srun_ping (void)
 		
 		if (job_ptr->job_state != JOB_RUNNING)
 			continue;
-		if ((job_ptr->time_last_active <= old) && job_ptr->other_port) {
+		if ((job_ptr->time_last_active <= old) && job_ptr->other_port
+		&&  job_ptr->alloc_node && job_ptr->resp_host) {
 			addr = xmalloc(sizeof(struct sockaddr_in));
 			slurm_set_addr(addr, job_ptr->other_port,
 				job_ptr->resp_host);
@@ -210,7 +212,7 @@ extern void srun_timeout (struct job_record *job_ptr)
 	if (job_ptr->job_state != JOB_RUNNING)
 		return;
 
-	if (job_ptr->other_port) {
+	if (job_ptr->other_port && job_ptr->alloc_node && job_ptr->resp_host) {
 		addr = xmalloc(sizeof(struct sockaddr_in));
 		slurm_set_addr(addr, job_ptr->other_port, job_ptr->resp_host);
 		msg_arg = xmalloc(sizeof(srun_timeout_msg_t));
@@ -253,7 +255,7 @@ extern void srun_complete (struct job_record *job_ptr)
 	struct step_record *step_ptr;
 
 	xassert(job_ptr);
-	if (job_ptr->other_port) {
+	if (job_ptr->other_port && job_ptr->alloc_node && job_ptr->resp_host) {
 		addr = xmalloc(sizeof(struct sockaddr_in));
 		slurm_set_addr(addr, job_ptr->other_port, job_ptr->resp_host);
 		msg_arg = xmalloc(sizeof(srun_timeout_msg_t));

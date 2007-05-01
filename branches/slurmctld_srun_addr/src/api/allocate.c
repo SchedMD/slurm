@@ -559,12 +559,9 @@ static listen_t *_create_allocation_response_socket(char *interface_hostname)
 	listen_t *listen = NULL;
 
 	listen = xmalloc(sizeof(listen_t));
-	if (listen == NULL)
-		return NULL;
 
 	/* port "0" lets the operating system pick any port */
-	slurm_set_addr(&listen->address, 0, interface_hostname);
-	if ((listen->fd = slurm_init_msg_engine(&listen->address)) < 0) {
+	if ((listen->fd = slurm_init_msg_engine_port(0)) < 0) {
 		error("slurm_init_msg_engine_port error %m");
 		return NULL;
 	}
