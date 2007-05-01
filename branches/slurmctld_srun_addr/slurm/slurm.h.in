@@ -509,7 +509,7 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 	 * The value of resp_addr is the host address to which message 
 	 * are sent. Its value is set internally by SLURM.
 	 */
-	slurm_addr *resp_addr;	/* NOTE: Set by slurmctld */
+	slurm_addr resp_addr;	/* NOTE: Set by slurmctld */
 	uint16_t alloc_resp_port;
 	uint16_t other_port;
 

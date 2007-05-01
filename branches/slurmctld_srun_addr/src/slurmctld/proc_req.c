@@ -463,14 +463,20 @@ static void _slurm_rpc_allocate_resources(slurm_msg_t * msg)
 	debug2("Processing RPC: REQUEST_RESOURCE_ALLOCATION");
 
 	/* do RPC call */
-	dump_job_desc(job_desc_msg);
 	uid = g_slurm_auth_get_uid(msg->auth_cred);
-	if ( (uid != job_desc_msg->user_id) && (!_is_super_user(uid)) ) {
+	if ((uid != job_desc_msg->user_id) && (!_is_super_user(uid))) {
 		error_code = ESLURM_USER_ID_MISSING;
 		error("Security violation, RESOURCE_ALLOCATE from uid=%u",
-		      (unsigned int) uid);
+			(unsigned int) uid);
 	}
-
+	if ((job_desc_msg->alloc_node == NULL)
+	||  (job_desc_msg->alloc_node[0] == '\0')) {
+		error_code = ESLURM_INVALID_NODE_NAME;
+		error("REQUEST_RESOURCE_ALLOCATE lacks alloc_node from uid=%u",
+			(unsigned int) uid);
+	}
+	slurm_get_peer_addr(msg->conn_fd, &job_desc_msg->resp_addr);
+	dump_job_desc(job_desc_msg);
 	if (error_code == SLURM_SUCCESS) {
 		do_unlock = true;
 		lock_slurmctld(job_write_lock);
@@ -1135,14 +1141,20 @@ static void _slurm_rpc_job_will_run(slurm_msg_t * msg)
 	debug2("Processing RPC: REQUEST_JOB_WILL_RUN");
 
 	/* do RPC call */
-	dump_job_desc(job_desc_msg);
 	uid = g_slurm_auth_get_uid(msg->auth_cred);
 	if ( (uid != job_desc_msg->user_id) && (!_is_super_user(uid)) ) {
 		error_code = ESLURM_USER_ID_MISSING;
 		error("Security violation, JOB_WILL_RUN RPC from uid=%u",
-		      (unsigned int) uid);
+			(unsigned int) uid);
 	}
-
+	if ((job_desc_msg->alloc_node == NULL)
+	||  (job_desc_msg->alloc_node[0] == '\0')) {
+		error_code = ESLURM_INVALID_NODE_NAME;
+		error("REQUEST_JOB_WILL_RUN lacks alloc_node from uid=%u",
+			(unsigned int) uid);
+	}
+	slurm_get_peer_addr(msg->conn_fd, &job_desc_msg->resp_addr);
+	dump_job_desc(job_desc_msg);
 	if (error_code == SLURM_SUCCESS) {
 		lock_slurmctld(job_write_lock);
 		error_code = job_allocate(job_desc_msg, 
@@ -1692,13 +1704,19 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t * msg)
 
 	slurm_msg_t_init(&response_msg);
 	/* do RPC call */
-	dump_job_desc(job_desc_msg);
 	uid = g_slurm_auth_get_uid(msg->auth_cred);
 	if ( (uid != job_desc_msg->user_id) && (!_is_super_user(uid)) ) {
 		error_code = ESLURM_USER_ID_MISSING;
 		error("Security violation, SUBMIT_JOB from uid=%u",
-		      (unsigned int) uid);
+			(unsigned int) uid);
 	}
+	if ((job_desc_msg->alloc_node == NULL)
+	||  (job_desc_msg->alloc_node[0] == '\0')) {
+		error_code = ESLURM_INVALID_NODE_NAME;
+		error("REQUEST_SUBMIT_BATCH_JOB lacks alloc_node from uid=%u",
+			(unsigned int) uid);
+	}
+	dump_job_desc(job_desc_msg);
 	if (error_code == SLURM_SUCCESS) {
 		lock_slurmctld(job_write_lock);
 		if (job_desc_msg->job_id != SLURM_BATCH_SCRIPT) {
