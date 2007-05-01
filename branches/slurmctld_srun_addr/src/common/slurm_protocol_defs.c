@@ -200,6 +200,7 @@ void slurm_free_job_desc_msg(job_desc_msg_t * msg)
 		xfree(msg->account);
 		xfree(msg->network);
 		xfree(msg->comment);
+		xfree(msg->resp_host);
 		xfree(msg->blrtsimage);
 		xfree(msg->linuximage);
 		xfree(msg->mloaderimage);

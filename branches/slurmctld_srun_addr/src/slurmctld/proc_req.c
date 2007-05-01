@@ -458,6 +458,8 @@ static void _slurm_rpc_allocate_resources(slurm_msg_t * msg)
 	bool do_unlock = false;
 	bool job_waiting = false;
 	struct job_record *job_ptr;
+	uint16_t port;	/* dummy value */
+	slurm_addr resp_addr;
 
 	START_TIMER;
 	debug2("Processing RPC: REQUEST_RESOURCE_ALLOCATION");
@@ -475,7 +477,9 @@ static void _slurm_rpc_allocate_resources(slurm_msg_t * msg)
 		error("REQUEST_RESOURCE_ALLOCATE lacks alloc_node from uid=%u",
 			(unsigned int) uid);
 	}
-	slurm_get_peer_addr(msg->conn_fd, &job_desc_msg->resp_addr);
+	slurm_get_peer_addr(msg->conn_fd, &resp_addr);
+	job_desc_msg->resp_host = xmalloc(16);
+	slurm_get_ip_str(&resp_addr, &port, job_desc_msg->resp_host, 16);
 	dump_job_desc(job_desc_msg);
 	if (error_code == SLURM_SUCCESS) {
 		do_unlock = true;
@@ -1136,6 +1140,8 @@ static void _slurm_rpc_job_will_run(slurm_msg_t * msg)
 	slurmctld_lock_t job_write_lock = { 
 		NO_LOCK, WRITE_LOCK, READ_LOCK, READ_LOCK };
 	uid_t uid;
+	uint16_t port;	/* dummy value */
+	slurm_addr resp_addr;
 
 	START_TIMER;
 	debug2("Processing RPC: REQUEST_JOB_WILL_RUN");
@@ -1153,7 +1159,9 @@ static void _slurm_rpc_job_will_run(slurm_msg_t * msg)
 		error("REQUEST_JOB_WILL_RUN lacks alloc_node from uid=%u",
 			(unsigned int) uid);
 	}
-	slurm_get_peer_addr(msg->conn_fd, &job_desc_msg->resp_addr);
+	slurm_get_peer_addr(msg->conn_fd, &resp_addr);
+	job_desc_msg->resp_host = xmalloc(16);
+	slurm_get_ip_str(&resp_addr, &port, job_desc_msg->resp_host, 16);
 	dump_job_desc(job_desc_msg);
 	if (error_code == SLURM_SUCCESS) {
 		lock_slurmctld(job_write_lock);

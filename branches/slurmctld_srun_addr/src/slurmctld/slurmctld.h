@@ -354,7 +354,7 @@ struct job_record {
 	slurm_addr *node_addr;		/* addresses of the nodes allocated to 
 					 * job */
 	List step_list;			/* list of job's steps */
-	slurm_addr resp_addr;		/* address for srun communications */
+	char *resp_host;		/* host for srun communications */
 	uint16_t alloc_resp_port;	/* RESPONSE_RESOURCE_ALLOCATION port */
 	uint16_t other_port;		/* port for client communications */
 	char *account;			/* account number to charge */

@@ -82,8 +82,8 @@ extern void srun_allocate (uint32_t job_id)
 		resource_allocation_response_msg_t *msg_arg;
 
 		addr = xmalloc(sizeof(struct sockaddr_in));
-		memcpy(addr, &job_ptr->resp_addr, sizeof(struct sockaddr_in));
-		addr->sin_port = job_ptr->alloc_resp_port;
+		slurm_set_addr(addr, job_ptr->alloc_resp_port, 
+			job_ptr->resp_host);
 		msg_arg = xmalloc(sizeof(resource_allocation_response_msg_t));
 		msg_arg->job_id 	= job_ptr->job_id;
 		msg_arg->node_list	= xstrdup(job_ptr->nodes);
@@ -130,8 +130,7 @@ extern void srun_node_fail (uint32_t job_id, char *node_name)
 
 	if (job_ptr->other_port) {
 		addr = xmalloc(sizeof(struct sockaddr_in));
-		memcpy(addr, &job_ptr->resp_addr, sizeof(struct sockaddr_in));
-		addr->sin_port = job_ptr->other_port;
+		slurm_set_addr(addr, job_ptr->other_port, job_ptr->resp_host);
 		msg_arg = xmalloc(sizeof(srun_node_fail_msg_t));
 		msg_arg->job_id   = job_id;
 		msg_arg->step_id  = NO_VAL;
@@ -183,9 +182,8 @@ extern void srun_ping (void)
 			continue;
 		if ((job_ptr->time_last_active <= old) && job_ptr->other_port) {
 			addr = xmalloc(sizeof(struct sockaddr_in));
-			memcpy(addr, &job_ptr->resp_addr, 
-				sizeof(struct sockaddr_in));
-			addr->sin_port = job_ptr->other_port;
+			slurm_set_addr(addr, job_ptr->other_port,
+				job_ptr->resp_host);
 			msg_arg = xmalloc(sizeof(srun_ping_msg_t));
 			msg_arg->job_id  = job_ptr->job_id;
 			msg_arg->step_id = NO_VAL;
@@ -214,8 +212,7 @@ extern void srun_timeout (struct job_record *job_ptr)
 
 	if (job_ptr->other_port) {
 		addr = xmalloc(sizeof(struct sockaddr_in));
-		memcpy(addr, &job_ptr->resp_addr, sizeof(struct sockaddr_in));
-		addr->sin_port = job_ptr->other_port;
+		slurm_set_addr(addr, job_ptr->other_port, job_ptr->resp_host);
 		msg_arg = xmalloc(sizeof(srun_timeout_msg_t));
 		msg_arg->job_id   = job_ptr->job_id;
 		msg_arg->step_id  = NO_VAL;
@@ -258,8 +255,7 @@ extern void srun_complete (struct job_record *job_ptr)
 	xassert(job_ptr);
 	if (job_ptr->other_port) {
 		addr = xmalloc(sizeof(struct sockaddr_in));
-		memcpy(addr, &job_ptr->resp_addr, sizeof(struct sockaddr_in));
-		addr->sin_port = job_ptr->other_port;
+		slurm_set_addr(addr, job_ptr->other_port, job_ptr->resp_host);
 		msg_arg = xmalloc(sizeof(srun_timeout_msg_t));
 		msg_arg->job_id   = job_ptr->job_id;
 		msg_arg->step_id  = NO_VAL;

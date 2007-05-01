@@ -506,10 +506,10 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 	 * to resp_addr/alloc_port.
 	 * All other messages (SRUN_PING, SRUN_TIMEOUT, etc.) are sent 
 	 * to resp_addr/other_port.
-	 * The value of resp_addr is the host address to which message 
+	 * The value of resp_host is the host address to which message 
 	 * are sent. Its value is set internally by SLURM.
 	 */
-	slurm_addr resp_addr;	/* NOTE: Set by slurmctld */
+	char *resp_host;	/* NOTE: Set by slurmctld */
 	uint16_t alloc_resp_port;
 	uint16_t other_port;
 
