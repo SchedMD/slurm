@@ -247,6 +247,11 @@ Possible values are"YES" and "NO".
 Defer job's initiation until specified job_id completes.
 Cancel dependency with job_id value of "0", "Depedency=0".
 .TP
+\fIExcNodeList\fP=<nodes>
+Set the job's list of excluded node. Multiple node names may be 
+specified using simple node range expressions (e.g. "lx[10\-20]"). 
+Value may be cleared with blank data value, "ExcNodeList=".
+.TP
 \fIExitCode\fP=<exit>:<sig>
 Exit status reported for the job by the wait() function.
 The first number is the exit code, typically as set by the exit() function.
@@ -262,17 +267,20 @@ Value may be cleared with blank data value, "Features=".
 \fIJobId\fP=<id>
 Identify the job to be updated. This specification is required.
 .TP
+\fIMinCores\fP=<count>
+Set the job's minimum number of cores per socket to the specified value.
+.TP
 \fIMinMemory\fP=<megabytes>
 Set the job's minimum real memory required per nodes to the specified value.
+.TP
+\fIMinNodes\fP=<min_count>[-<max_count>]
+Set the job's minimum and optionally maximum count of nodes to be allocated.
 .TP
 \fIMinProcs\fP=<count>
 Set the job's minimum number of processors per nodes to the specified value.
 .TP
 \fIMinSockets\fP=<count>
 Set the job's minimum number of sockets per node to the specified value.
-.TP
-\fIMinCores\fP=<count>
-Set the job's minimum number of cores per socket to the specified value.
 .TP
 \fIMinThreads\fP=<count>
 Set the job's minimum number of threads per core to the specified value.

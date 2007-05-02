@@ -8,6 +8,8 @@ documents those changes that are of interest to users and admins.
     But that is only in emulation mode.
  -- Major re-write of jobcomp/script plugin: fix memory leak and 
     general code clean-up.
+ -- Add ability to change MaxNodes and ExcNodeList for pending job 
+    using scontrol.
 
 * Changes in SLURM 1.2.6
 ========================

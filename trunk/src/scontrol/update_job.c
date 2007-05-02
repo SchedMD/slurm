@@ -249,9 +249,20 @@ scontrol_update_job (int argc, char *argv[])
 		}
 		else if ((strncasecmp(argv[i], "MinNodes=", 9) == 0) ||
 		         (strncasecmp(argv[i], "ReqNodes=", 9) == 0)) {
+			char *tmp;
 			job_msg.min_nodes = 
 				(uint32_t) strtol(&argv[i][9],
-						 (char **) NULL, 10);
+						 &tmp, 10);
+			if (tmp[0] == '-') {
+				job_msg.max_nodes = (uint32_t)
+					strtol(&tmp[1], (char **) NULL, 10);
+				if (job_msg.max_nodes < job_msg.min_nodes) {
+					error("Maximum node count less than "
+						"minimum value (%u < %u)",
+						job_msg.max_nodes,
+						job_msg.min_nodes);
+				}
+			}
 			update_cnt++;
 		}
 		else if (strncasecmp(argv[i], "ReqSockets=", 11) == 0) {
@@ -336,6 +347,10 @@ scontrol_update_job (int argc, char *argv[])
 				job_msg.contiguous = 
 					(uint16_t) strtol(&argv[i][11], 
 							(char **) NULL, 10);
+			update_cnt++;
+		}
+		else if (strncasecmp(argv[i], "ExcNodeList=", 12) == 0) {
+			job_msg.exc_nodes = &argv[i][12];
 			update_cnt++;
 		}
 		else if (strncasecmp(argv[i], "ReqNodeList=", 12) == 0) {
