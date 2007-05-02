@@ -633,8 +633,9 @@ char *job_state_string_compact(enum job_states inx)
 
 char *node_state_string(enum node_states inx)
 {
-	bool drain_flag   = (inx & NODE_STATE_DRAIN);
 	bool comp_flag    = (inx & NODE_STATE_COMPLETING);
+	bool drain_flag   = (inx & NODE_STATE_DRAIN);
+	bool fail_flag    = (inx & NODE_STATE_FAIL);
 	bool no_resp_flag = (inx & NODE_STATE_NO_RESPOND);
 
 	inx = (uint16_t) (inx & NODE_STATE_BASE);
@@ -648,6 +649,17 @@ char *node_state_string(enum node_states inx)
 			if (no_resp_flag)
 				return "DRAINED*";
 			return "DRAINED";
+		}
+	}
+	if (fail_flag) {
+		if (comp_flag || (inx == NODE_STATE_ALLOCATED)) {
+			if (no_resp_flag)
+				return "FAILING*";
+			return "FAILING";
+		} else {
+			if (no_resp_flag)
+				return "FAIL*";
+			return "FAIL";
 		}
 	}
 	if (inx == NODE_STATE_DOWN) {
@@ -682,8 +694,9 @@ char *node_state_string(enum node_states inx)
 
 char *node_state_string_compact(enum node_states inx)
 {
-	bool drain_flag   = (inx & NODE_STATE_DRAIN);
 	bool comp_flag    = (inx & NODE_STATE_COMPLETING);
+	bool drain_flag   = (inx & NODE_STATE_DRAIN);
+	bool fail_flag    = (inx & NODE_STATE_FAIL);
 	bool no_resp_flag = (inx & NODE_STATE_NO_RESPOND);
 
 	inx = (uint16_t) (inx & NODE_STATE_BASE);
@@ -697,6 +710,17 @@ char *node_state_string_compact(enum node_states inx)
 			if (no_resp_flag)
 				return "DRAIN*";
 			return "DRAIN";
+		}
+	}
+	if (fail_flag) {
+		if (comp_flag || (inx == NODE_STATE_ALLOCATED)) {
+			if (no_resp_flag)
+				return "FAILG*";
+			return "FAILG";
+		} else {
+			if (no_resp_flag)
+				return "FAIL*";
+			return "FAIL";
 		}
 	}
 	if (inx == NODE_STATE_DOWN) {

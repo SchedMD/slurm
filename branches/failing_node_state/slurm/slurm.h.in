@@ -369,13 +369,15 @@ enum node_states {
 };
 #define NODE_STATE_BASE       0x00ff
 #define NODE_STATE_FLAGS      0xff00
-#define NODE_RESUME           0x0100	/* Restore a DRAINED, DRAINING, or 
-					 * DOWN node to service (e.g. IDLE or 
-					 * ALLOCATED). Used in 
+#define NODE_RESUME           0x0100	/* Restore a DRAINED, DRAINING, DOWN 
+					 * or FAILING node to service (e.g. 
+					 * IDLE or ALLOCATED). Used in 
 					 * slurm_update_node() request */
-#define NODE_STATE_DRAIN      0x0200	/* node not be be allocated work */
+#define NODE_STATE_DRAIN      0x0200	/* node do not new allocated work */
 #define NODE_STATE_COMPLETING 0x0400	/* node is completing allocated job */
 #define NODE_STATE_NO_RESPOND 0x0800	/* node is not responding */
+#define NODE_STATE_FAIL       0x1000	/* node is failing, do not allocate
+					 * new work */
 
 /* used to define the size of the credential.signature size
  * used to define the key size of the io_stream_header_t

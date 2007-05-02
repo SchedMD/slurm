@@ -514,6 +514,9 @@ extern int load_all_node_state ( bool state_only )
 				if (node_state & NODE_STATE_DRAIN)
 					 node_ptr->node_state =
 						 NODE_STATE_DRAIN;
+				else if (node_state & NODE_STATE_FAIL)
+					node_ptr->node_state =
+						NODE_STATE_FAIL;
 				else if (base_state == NODE_STATE_DOWN)
 					node_ptr->node_state = NODE_STATE_DOWN;
 			}
@@ -1031,6 +1034,7 @@ int update_node ( update_node_msg_t * update_node_msg )
 		if (state_val != (uint16_t) NO_VAL) {
 			if (state_val == NODE_RESUME) {
 				node_ptr->node_state &= (~NODE_STATE_DRAIN);
+				node_ptr->node_state &= (~NODE_STATE_FAIL);
 				base_state &= NODE_STATE_BASE;
 				if (base_state == NODE_STATE_DOWN)
 					state_val = NODE_STATE_IDLE;
@@ -1045,8 +1049,10 @@ int update_node ( update_node_msg_t * update_node_msg )
 							       false);
 			}
 			else if (state_val == NODE_STATE_IDLE) {
-				/* assume they want to clear DRAIN flag too */
+				/* assume they want to clear DRAIN and
+				 * FAIL flags too */
 				node_ptr->node_state &= (~NODE_STATE_DRAIN);
+				node_ptr->node_state &= (~NODE_STATE_FAIL);
 				bit_set (avail_node_bitmap, node_inx);
 				bit_set (idle_node_bitmap, node_inx);
 				bit_set (up_node_bitmap, node_inx);
@@ -1054,7 +1060,8 @@ int update_node ( update_node_msg_t * update_node_msg )
 				reset_job_priority();
 			}
 			else if (state_val == NODE_STATE_ALLOCATED) {
-				if (!(node_ptr->node_state & NODE_STATE_DRAIN))
+				if (!(node_ptr->node_state & (NODE_STATE_DRAIN
+						| NODE_STATE_FAIL)))
 					bit_set (up_node_bitmap, node_inx);
 				bit_set   (avail_node_bitmap, node_inx);
 				bit_clear (idle_node_bitmap, node_inx);
@@ -1063,6 +1070,11 @@ int update_node ( update_node_msg_t * update_node_msg )
 				bit_clear (avail_node_bitmap, node_inx);
 				state_val = node_ptr->node_state |
 					NODE_STATE_DRAIN;
+			}
+			else if (state_val == NODE_STATE_FAIL) {
+				bit_clear (avail_node_bitmap, node_inx);
+				state_val = node_ptr->node_state |
+					NODE_STATE_FAIL;
 			}
 			else {
 				info ("Invalid node state specified %d", 
@@ -1095,7 +1107,8 @@ int update_node ( update_node_msg_t * update_node_msg )
 
 		base_state = node_ptr->node_state & NODE_STATE_BASE;
 		if ((base_state != NODE_STATE_DOWN)
-		&&  ((node_ptr->node_state & NODE_STATE_DRAIN) == 0))
+		&&  ((node_ptr->node_state & (NODE_STATE_DRAIN |
+				NODE_STATE_FAIL)) == 0))
 			xfree(node_ptr->reason);
 
 		free (this_node_name);
@@ -1319,6 +1332,7 @@ static bool _valid_node_state_change(uint16_t old, uint16_t new)
 	switch (new) {
 		case NODE_STATE_DOWN:
 		case NODE_STATE_DRAIN:
+		case NODE_STATE_FAIL:
 			return true;
 			break;
 
@@ -1326,7 +1340,8 @@ static bool _valid_node_state_change(uint16_t old, uint16_t new)
 			if (base_state == NODE_STATE_UNKNOWN)
 				return false;
 			if ((base_state == NODE_STATE_DOWN)
-			||  (node_flags & NODE_STATE_DRAIN))
+			||  (node_flags & NODE_STATE_DRAIN)
+			||  (node_flags & NODE_STATE_FAIL))
 				return true;
 			break;
 
@@ -1477,7 +1492,7 @@ validate_node_specs (char *node_name, uint16_t cpus,
 		set_node_down(node_name, reason_down);
 		_sync_bitmaps(node_ptr, job_count);
 	} else if (status == ESLURMD_PROLOG_FAILED) {
-		if ((node_flags & NODE_STATE_DRAIN) == 0) {
+		if ((node_flags & (NODE_STATE_DRAIN | NODE_STATE_FAIL)) == 0) {
 			last_node_update = time (NULL);
 			error ("Prolog failure on node %s, state to DOWN",
 				node_name);
@@ -1656,7 +1671,8 @@ extern int validate_nodes_via_front_end(uint32_t job_count,
 		}
 
 		if (status == ESLURMD_PROLOG_FAILED) {
-			if (!(node_ptr->node_state & NODE_STATE_DRAIN)) {
+			if (!(node_ptr->node_state & (NODE_STATE_DRAIN | 
+						      NODE_STATE_FAIL))) {
 				updated_job = true;
 				if (prolog_hostlist)
 					(void) hostlist_push_host(
@@ -1769,7 +1785,7 @@ static void _sync_bitmaps(struct node_record *node_ptr, int job_count)
 	}
 	base_state = node_ptr->node_state & NODE_STATE_BASE;
 	if ((base_state == NODE_STATE_DOWN)
-	||  (node_ptr->node_state & NODE_STATE_DRAIN))
+	||  (node_ptr->node_state & (NODE_STATE_DRAIN | NODE_STATE_FAIL)))
 		bit_clear (avail_node_bitmap, node_inx);
 	else
 		bit_set   (avail_node_bitmap, node_inx);
@@ -1846,7 +1862,7 @@ static void _node_did_resp(struct node_record *node_ptr)
 		bit_set (share_node_bitmap, node_inx);
 	}
 	if ((base_state == NODE_STATE_DOWN)
-	||  (node_flags & NODE_STATE_DRAIN))
+	||  (node_flags & (NODE_STATE_DRAIN | NODE_STATE_FAIL)))
 		bit_clear (avail_node_bitmap, node_inx);
 	else
 		bit_set   (avail_node_bitmap, node_inx);
@@ -1910,8 +1926,8 @@ static void _node_not_resp (struct node_record *node_ptr, time_t msg_time)
 }
 
 /*
- * set_node_down - make the specified node's state DOWN if possible
- *	(not in a DRAIN state), kill jobs as needed 
+ * set_node_down - make the specified node's state DOWN and
+ *	kill jobs as needed 
  * IN name - name of the node 
  * IN reason - why the node is DOWN
  */
@@ -2229,7 +2245,7 @@ void make_node_idle(struct node_record *node_ptr,
 	if (base_state == NODE_STATE_DOWN) {
 		debug3("make_node_idle: Node %s being left DOWN",
 			node_ptr->name);
-	} else if ((node_ptr->node_state & NODE_STATE_DRAIN) &&
+	} else if ((node_flags & (NODE_STATE_DRAIN | NODE_STATE_FAIL)) &&
 	           (node_ptr->run_job_cnt == 0) &&
 	           (node_ptr->comp_job_cnt == 0)) {
 		node_ptr->node_state = NODE_STATE_IDLE | node_flags;
