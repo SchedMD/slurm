@@ -299,10 +299,11 @@ static int _state_str2int(const char *state_str)
 			break;
 		}
 	}
-	if ((i == 0) && (strncasecmp("DRAIN", state_str, 5) == 0))
+	if ((i >= NODE_STATE_END)
+	&&  (strncasecmp("DRAIN", state_str, 5) == 0))
 		state_val = NODE_STATE_IDLE | NODE_STATE_DRAIN;
 	if (state_val == NO_VAL) {
-		error("invalid state %s", state_str);
+		error("invalid node state %s", state_str);
 		errno = EINVAL;
 	}
 	return state_val;
