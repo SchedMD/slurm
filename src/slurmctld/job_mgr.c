@@ -5,7 +5,7 @@
  *
  *  $Id$
  *****************************************************************************
- *  Copyright (C) 2002-2006 The Regents of the University of California.
+ *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
  *  UCRL-CODE-226842.
@@ -3322,7 +3322,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 	struct job_record *job_ptr;
 	struct job_details *detail_ptr;
 	struct part_record *tmp_part_ptr;
-	bitstr_t *req_bitmap = NULL;
+	bitstr_t *exc_bitmap = NULL, *req_bitmap = NULL;
 	time_t now = time(NULL);
 	multi_core_data_t *mc_ptr = NULL;
 
@@ -3525,6 +3525,22 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 		}
 	}
 
+	if (job_specs->max_nodes != NO_VAL) {
+		if ((!IS_JOB_PENDING(job_ptr)) || (detail_ptr == NULL))
+			error_code = ESLURM_DISABLED;
+		else if (super_user
+			 || (detail_ptr->max_nodes > job_specs->max_nodes)) {
+			detail_ptr->max_nodes = job_specs->max_nodes;
+			info("update_job: setting max_nodes to %u for "
+			     "job_id %u", job_specs->max_nodes, 
+			     job_specs->job_id);
+		} else {
+			error("Attempt to increase max_nodes for job %u",
+			      job_specs->job_id);
+			error_code = ESLURM_ACCESS_DENIED;
+		}
+	}
+
 	if (job_specs->min_sockets != (uint16_t) NO_VAL) {
 		if ((!IS_JOB_PENDING(job_ptr)) || (mc_ptr == NULL))
 			error_code = ESLURM_DISABLED;
@@ -3634,19 +3650,46 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 		}
 	}
 
+	if (job_specs->exc_nodes) {
+		if ((!IS_JOB_PENDING(job_ptr)) || (detail_ptr == NULL))
+			error_code = ESLURM_DISABLED;
+		else if (job_specs->exc_nodes[0] == '\0') {
+			xfree(detail_ptr->exc_nodes);
+			FREE_NULL_BITMAP(detail_ptr->exc_node_bitmap);
+		} else {
+			if (node_name2bitmap(job_specs->exc_nodes, false, 
+					     &exc_bitmap)) {
+				error("Invalid node list for job_update: %s",
+				      job_specs->exc_nodes);
+				FREE_NULL_BITMAP(exc_bitmap);
+				error_code = ESLURM_INVALID_NODE_NAME;
+			}
+			if (exc_bitmap) {
+				xfree(detail_ptr->exc_nodes);
+				detail_ptr->exc_nodes =
+					job_specs->exc_nodes;
+				FREE_NULL_BITMAP(detail_ptr->exc_node_bitmap);
+				detail_ptr->exc_node_bitmap = exc_bitmap;
+				info("update_job: setting exc_nodes to %s "
+				     "for job_id %u", job_specs->exc_nodes, 
+				     job_specs->job_id);
+				job_specs->exc_nodes = NULL;
+			}
+		}
+	}
+
 	if (job_specs->req_nodes) {
 		if ((!IS_JOB_PENDING(job_ptr)) || (detail_ptr == NULL))
 			error_code = ESLURM_DISABLED;
 		else if (job_specs->req_nodes[0] == '\0') {
 			xfree(detail_ptr->req_nodes);
 			FREE_NULL_BITMAP(detail_ptr->req_node_bitmap);
-		} else if (super_user) {
+		} else {
 			if (node_name2bitmap(job_specs->req_nodes, false, 
 					     &req_bitmap)) {
 				error("Invalid node list for job_update: %s",
 				      job_specs->req_nodes);
 				FREE_NULL_BITMAP(req_bitmap);
-				req_bitmap = NULL;
 				error_code = ESLURM_INVALID_NODE_NAME;
 			}
 			if (req_bitmap) {
@@ -3660,10 +3703,6 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 				     job_specs->job_id);
 				job_specs->req_nodes = NULL;
 			}
-		} else {
-			error("Attempt to change req_nodes for job %u",
-			      job_specs->job_id);
-			error_code = ESLURM_ACCESS_DENIED;
 		}
 	}
 
