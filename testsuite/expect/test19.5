@@ -172,7 +172,11 @@ if {$matches < 2} {
 	set exit_code 1
 }
 
-
+if {[wait_for_job $job_id DONE] != 0} {
+	send_user "\nFAILURE: error completing job $job_id\n"
+	cancel_job $job_id
+	exit 1
+}
 if {[wait_for_file $file_out_time] != 0} {
 	send_user "\nFAILURE: file $file_out_time is missing\n"
 	set exit_code 1
@@ -218,7 +222,8 @@ if {[wait_for_file $file_out_fini] != 0} {
 
 cancel_job $job_id
 if {$exit_code == 0} {
-	exec $bin_rm -f $file_in $file_in_fini $file_in_time $file_out_fini $file_out_time
+	exec $bin_rm -f $file_in $file_in_fini $file_in_time 
+	exec $bin_rm -f $file_out_fini $file_out_time
 	send_user "\nSUCCESS\n"
 }
 exit $exit_code
