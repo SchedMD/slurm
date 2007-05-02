@@ -1,4 +1,4 @@
-.TH SMAP "1" "March 2006" "smap 1.1" "Slurm components"
+.TH SMAP "1" "May 2007" "smap 1.3" "Slurm components"
 
 .SH "NAME"
 smap \- graphically view information about SLURM jobs, partitions, and set 
@@ -26,8 +26,8 @@ views and displaying a corresponding node chart. While in any
 display a user can switch by typing a different view letter.  This is true in
 all modes except for 'configure mode' user can type 'quit' to exit just 
 configure mode.  Typing 'exit' will end the configuration mode and exit smap.
-Note that unallocated nodes are indicated by a '.' and DOWN or DRAINED 
-nodes by a '#'.
+Note that unallocated nodes are indicated by a '.' and nodes in the 
+DOWN, DRAINED or FAIL state by a '#'.
 .RS
 .TP 15
 .I "j"
@@ -126,11 +126,13 @@ F (failed), TO (timeout), and NF (node failure). See
 \fBJOB STATE CODES\fR section below for more information.
 .TP
 \fBSTATE\fR
-State of the nodes. Possible states include: down, unknown,
-idle, allocated, drained, draining, completing and their
-abbreviated forms: down, unk, idle, alloc, drain, drng, and
-comp respectively.  Note that the suffix "*" identifies nodes
-that are presently not responding.
+State of the nodes. 
+Possible states include: allocated, completing, down, 
+drained, draining, fail, failing, idle, and unknown plus
+their abbreviated forms: alloc, comp, donw, drain, drng, 
+fail, failg, idle, and unk respectively.
+Note that the suffix "*" identifies nodes that are presently 
+not responding.
 See \fBNODE STATE CODES\fR section below for more information.
 .TP
 \fBTIMELIMIT\fR
@@ -326,7 +328,9 @@ If the node state code is followed by "*", this indicates the
 node is presently not responding and will not be allocated
 any new work.  If the node remains non\-responsive, it will
 be placed in the \fBDOWN\fR state (except in the case of
-\fBDRAINED\fR, \fBDRAINING\fR, or \fBCOMPLETING\fR nodes).
+\fBCOMPLETING\fR, \fBDRAINED\fR, \fBDRAINING\fR,
+\fBFAIL\fR, \fBFAILING\fR nodes).
+
 .TP 12
 \fBALLOCATED\fR
 The node has been allocated to one or more jobs.
@@ -365,6 +369,18 @@ to additional jobs. The node state will be changed to state
 this state per system administrator request. See the \fBupdate
 node\fR command in the \fBscontrol\fR(1) man page or the
 \fBslurm.conf\fR(5) man page for more information.
+.TP
+\fBFAIL\fR
+The node is expected to fail soon and is unavailable for 
+use per system administrator request.  
+See the \fBupdate node\fR command in the \fBscontrol\fR(1) 
+man page or the \fBslurm.conf\fR(5) man page for more information.
+.TP
+\fBFAILING\fR
+The node is currently executing a job, but is expected to fail 
+soon and is unavailable for use per system administrator request.  
+See the \fBupdate node\fR command in the \fBscontrol\fR(1) 
+man page or the \fBslurm.conf\fR(5) man page for more information.
 .TP
 \fBIDLE\fR
 The node is not allocated to any jobs and is available for use.
