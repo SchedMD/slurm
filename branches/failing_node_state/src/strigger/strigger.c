@@ -147,6 +147,8 @@ static int _set_trigger(void)
 		ti.trig_type |= TRIGGER_TYPE_BLOCK_ERR;
 	if (params.node_down)
 		ti.trig_type |= TRIGGER_TYPE_DOWN;
+	if (params.node_fail)
+		ti.trig_type |= TRIGGER_TYPE_FAIL;
 	if (params.node_idle)
 		ti.trig_type |= TRIGGER_TYPE_IDLE;
 	if (params.node_up)
@@ -206,6 +208,13 @@ static int _get_trigger(void)
 					!= TRIGGER_RES_TYPE_NODE)
 			||  (trig_msg->trigger_array[i].trig_type 
 					!= TRIGGER_TYPE_DOWN))
+				continue;
+		}
+		if (params.node_fail) {
+			if ((trig_msg->trigger_array[i].res_type  
+					!= TRIGGER_RES_TYPE_NODE)
+			||  (trig_msg->trigger_array[i].trig_type 
+					!= TRIGGER_TYPE_FAIL))
 				continue;
 		}
 		if (params.node_id) {
@@ -281,6 +290,8 @@ static char *_trig_type(uint16_t trig_type)
 		return "up";
 	else if (trig_type == TRIGGER_TYPE_DOWN)
 		return "down";
+	else if (trig_type == TRIGGER_TYPE_FAIL)
+		return "fail";
 	else if (trig_type == TRIGGER_TYPE_IDLE)
 		return "idle";
 	else if (trig_type == TRIGGER_TYPE_TIME)

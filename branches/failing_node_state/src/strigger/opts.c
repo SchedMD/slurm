@@ -92,6 +92,7 @@ extern void parse_command_line(int argc, char *argv[])
 	static struct option long_options[] = {
 		{"block_err", no_argument,       0, OPT_LONG_BLOCK_ERR},
 		{"down",      no_argument,       0, 'd'},
+		{"fail",      no_argument,       0, 'F'},
 		{"fini",      no_argument,       0, 'f'},
 		{"id",        required_argument, 0, 'i'},
 		{"idle",      no_argument,       0, 'I'},
@@ -117,7 +118,7 @@ extern void parse_command_line(int argc, char *argv[])
 	_init_options();
 
 	optind = 0;
-	while((opt_char = getopt_long(argc, argv, "dfi:Ij:no:p:qrtuvV",
+	while((opt_char = getopt_long(argc, argv, "dFfi:Ij:no:p:qrtuvV",
 			long_options, &option_index)) != -1) {
 		switch (opt_char) {
 		case (int)'?':
@@ -130,6 +131,9 @@ extern void parse_command_line(int argc, char *argv[])
 			break;
 		case (int)'d':
 			params.node_down = true;
+			break;
+		case (int)'F':
+			params.node_fail = true;
 			break;
 		case (int)'f':
 			params.job_fini = true;
@@ -227,6 +231,7 @@ static void _init_options( void )
 
 	params.block_err  = false;
 	params.node_down  = false;
+	params.node_fail  = false;
 	params.node_idle  = false;
 	params.trigger_id = 0;
 	params.job_fini   = false;
@@ -253,6 +258,7 @@ static void _print_options( void )
 	verbose("job_id     = %u", params.job_id);
 	verbose("job_fini   = %s", params.job_fini ? "true" : "false");
 	verbose("node_down  = %s", params.node_down ? "true" : "false");
+	verbose("node_fail  = %s", params.node_fail ? "true" : "false");
 	verbose("node_idle  = %s", params.node_idle ? "true" : "false");
 	verbose("node_up    = %s", params.node_up ? "true" : "false");
 	verbose("node       = %s", params.node_id);
@@ -282,7 +288,8 @@ static void _validate_options( void )
 	}
 
 	if (params.mode_set
-	&&  ((params.node_down + params.node_idle + params.node_up + params.reconfig +
+	&&  ((params.node_down + params.node_fail + params.node_idle + params.node_up + 
+	      params.reconfig +
 	      params.job_fini  + params.time_limit + params.block_err) == 0)) {
 		error("You must specify a trigger (--block_err, --down, --up, "
 			"--reconfig, --time or --fini)");
@@ -342,6 +349,7 @@ Usage: strigger [--set | --get | --clear] [OPTIONS]\n\
       --clear         delete a trigger\n\n\
       --block_err     trigger event on BlueGene block error\n\
   -d, --down          trigger event when node goes DOWN\n\
+  -F, --fail          trigger event when node is expected to FAIL\n\
   -f, --fini          trigger event when job finishes\n\
   -i, --id=#          a trigger's ID number\n\
   -I, --idle          trigger event when node remains IDLE\n\

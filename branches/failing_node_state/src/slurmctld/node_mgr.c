@@ -1075,6 +1075,7 @@ int update_node ( update_node_msg_t * update_node_msg )
 				bit_clear (avail_node_bitmap, node_inx);
 				state_val = node_ptr->node_state |
 					NODE_STATE_FAIL;
+				trigger_node_failing(node_ptr);
 			}
 			else {
 				info ("Invalid node state specified %d", 

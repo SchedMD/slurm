@@ -64,7 +64,7 @@
 #define MAX_PROG_TIME 300	/* maximum run time for program */
 
 /* Change TRIGGER_STATE_VERSION value when changing the state save format */
-#define TRIGGER_STATE_VERSION      "VER001"
+#define TRIGGER_STATE_VERSION      "VER002"
 
 /* TRIG_IS_JOB_FINI differs from IS_JOB_FINISHED by considering 
  * completing jobs as not really finished */
@@ -75,13 +75,14 @@ List trigger_list;
 uint32_t next_trigger_id = 1;
 static pthread_mutex_t trigger_mutex = PTHREAD_MUTEX_INITIALIZER;
 bitstr_t *trigger_down_nodes_bitmap = NULL;
+bitstr_t *trigger_fail_nodes_bitmap = NULL;
 bitstr_t *trigger_up_nodes_bitmap   = NULL;
 static bool trigger_block_err = false;
 static bool trigger_node_reconfig = false;
 
 typedef struct trig_mgr_info {
 	uint32_t trig_id;	/* trigger ID */
-	uint8_t  res_type;	/* TRIGGER_RES_TYPE_* */
+	uint16_t res_type;	/* TRIGGER_RES_TYPE_* */
 	char *   res_id;	/* node name or job_id (string) */
 	bitstr_t *nodes_bitmap;	/* bitmap of requested nodes (if applicable) */
 	uint32_t job_id;	/* job ID (if applicable) */
@@ -104,7 +105,7 @@ void _trig_del(void *x) {
 }
 
 #if _DEBUG
-static char *_res_type(uint8_t res_type)
+static char *_res_type(uint16_t res_type)
 {
 	if      (res_type == TRIGGER_RES_TYPE_JOB)
 		return "job";
@@ -120,6 +121,8 @@ static char *_trig_type(uint16_t trig_type)
 		return "up";
 	else if (trig_type == TRIGGER_TYPE_DOWN)
 		return "down";
+	else if (trig_type == TRIGGER_TYPE_FAIL)
+		return "fail";
 	else if (trig_type == TRIGGER_TYPE_IDLE)
 		return "idle";
 	else if (trig_type == TRIGGER_TYPE_TIME)
@@ -363,6 +366,17 @@ extern void trigger_node_down(struct node_record *node_ptr)
 	slurm_mutex_unlock(&trigger_mutex);
 }
 
+extern void trigger_node_failing(struct node_record *node_ptr)
+{
+	int inx = node_ptr - node_record_table_ptr;
+
+	slurm_mutex_lock(&trigger_mutex);
+	if (trigger_fail_nodes_bitmap == NULL)
+		trigger_fail_nodes_bitmap = bit_alloc(node_record_count);
+	bit_set(trigger_fail_nodes_bitmap, inx);
+	slurm_mutex_unlock(&trigger_mutex);
+}
+
 
 extern void trigger_node_up(struct node_record *node_ptr)
 {
@@ -392,7 +406,7 @@ extern void trigger_block_error(void)
 static void _dump_trigger_state(trig_mgr_info_t *trig_ptr, Buf buffer)
 {
 	pack32   (trig_ptr->trig_id,   buffer);
-	pack8    (trig_ptr->res_type,  buffer);
+	pack16   (trig_ptr->res_type,  buffer);
 	packstr  (trig_ptr->res_id,    buffer);
 	/* rebuild nodes_bitmap as needed from res_id */
 	/* rebuild job_id as needed from res_id */
@@ -412,7 +426,7 @@ static int _load_trigger_state(Buf buffer)
 
 	trig_ptr = xmalloc(sizeof(trig_mgr_info_t));
 	safe_unpack32   (&trig_ptr->trig_id,   buffer);
-	safe_unpack8    (&trig_ptr->res_type,  buffer);
+	safe_unpack16   (&trig_ptr->res_type,  buffer);
 	safe_unpackstr_xmalloc(&trig_ptr->res_id, &str_len, buffer);
 	/* rebuild nodes_bitmap as needed from res_id */
 	/* rebuild job_id as needed from res_id */
@@ -676,6 +690,21 @@ static void _trigger_job_event(trig_mgr_info_t *trig_in, time_t now)
 		}
 	}
 
+	if (trig_in->trig_type & TRIGGER_TYPE_FAIL) {
+		if (trigger_fail_nodes_bitmap
+		&&  bit_overlap(trig_in->job_ptr->node_bitmap, 
+				trigger_fail_nodes_bitmap)) {
+#if _DEBUG
+			info("trigger[%u] for job %u node fail",
+				trig_in->trig_id, trig_in->job_id);
+#endif
+			trig_in->state = 1;
+			trig_in->trig_time = now + 
+					(trig_in->trig_time - 0x8000);
+			return;
+		}
+	}
+
 	if (trig_in->trig_type & TRIGGER_TYPE_UP) {
 		if (trigger_up_nodes_bitmap
 		&&  bit_overlap(trig_in->job_ptr->node_bitmap, 
@@ -726,6 +755,34 @@ static void _trigger_node_event(trig_mgr_info_t *trig_in, time_t now)
 					(trig_in->trig_time - 0x8000);
 #if _DEBUG
 			info("trigger[%u] for node %s down",
+				trig_in->trig_id, trig_in->res_id);
+#endif
+			return;
+		}
+	}
+
+	if ((trig_in->trig_type & TRIGGER_TYPE_FAIL)
+	&&   trigger_fail_nodes_bitmap
+	&&   (bit_ffs(trigger_fail_nodes_bitmap) != -1)) {
+		if (trig_in->nodes_bitmap == NULL) {	/* all nodes */
+			xfree(trig_in->res_id);
+			trig_in->res_id = bitmap2node_name(
+					trigger_fail_nodes_bitmap);
+			trig_in->state = 1;
+		} else if (bit_overlap(trig_in->nodes_bitmap, 
+					trigger_fail_nodes_bitmap)) {
+			bit_and(trig_in->nodes_bitmap, 
+					trigger_fail_nodes_bitmap);
+			xfree(trig_in->res_id);
+			trig_in->res_id = bitmap2node_name(
+					trig_in->nodes_bitmap);
+			trig_in->state = 1;
+		}
+		if (trig_in->state == 1) {
+			trig_in->trig_time = now + 
+					(trig_in->trig_time - 0x8000);
+#if _DEBUG
+			info("trigger[%u] for node %s fail",
 				trig_in->trig_id, trig_in->res_id);
 #endif
 			return;
@@ -925,5 +982,6 @@ extern void trigger_fini(void)
 		trigger_list = NULL;
 	}
 	FREE_NULL_BITMAP(trigger_down_nodes_bitmap);
+	FREE_NULL_BITMAP(trigger_fail_nodes_bitmap);
 	FREE_NULL_BITMAP(trigger_up_nodes_bitmap);
 }
