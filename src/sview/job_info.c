@@ -533,7 +533,7 @@ static void _set_active_combo_job(GtkComboBox *combo,
 		break;
 #endif
 	default:
-		break;
+		break
 	}
 	g_free(temp_char);
 end_it:
@@ -614,6 +614,14 @@ static const char *_set_job_msg(job_desc_msg_t *job_msg, const char *new_text,
 			goto return_error;
 		job_msg->min_nodes = (uint32_t)temp_int;
 		break;
+	case SORTID_MAX_NODES:
+		temp_int = strtol(new_text, (char **)NULL, 10);
+
+		type = "max nodes";
+		if(temp_int <= 0)
+			goto return_error;
+		job_msg->max_nodes = (uint32_t)temp_int;
+		break;
 	case SORTID_MIN_PROCS:
 		temp_int = strtol(new_text, (char **)NULL, 10);
 		
@@ -670,6 +678,10 @@ static const char *_set_job_msg(job_desc_msg_t *job_msg, const char *new_text,
 		job_msg->req_nodes = xstrdup(new_text);
 		type = "requested nodelist";
 		break;
+	case SORTID_EXC_NODELIST:
+		job_mgr->exc_nodes = xstrdup(new_text);
+		type = "excluded nodelist";
+		break
 	case SORTID_FEATURES:		
 		job_msg->features = xstrdup(new_text);
 		type = "features";
