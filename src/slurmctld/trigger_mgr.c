@@ -213,6 +213,8 @@ extern int trigger_clear(uid_t uid, trigger_info_msg_t *msg)
 		if (trig_in->user_id
 		&&  (trig_in->user_id != trig_test->user_id))
 			continue;
+		if (trig_test->state == 2)	/* wait for proc termination */
+			continue;
 		list_delete(trig_iter);
 		rc = SLURM_SUCCESS;
 	}
@@ -900,13 +902,32 @@ extern void trigger_process(void)
 		} else if ((trig_in->state == 2) && 
 			   (difftime(now, trig_in->trig_time) > 
 					MAX_PROG_TIME)) {
+			bool purge;
+
+			if (trig_in->group_id != 0) {
+				pid_t rc;
+
+				killpg(trig_in->group_id, SIGKILL);
+				rc = waitpid(trig_in->group_id, NULL, WNOHANG);
+				if ((rc == trig_in->group_id)
+				||  ((rc == -1) && (errno == ECHILD)))
+					purge = true;
+				else
+					purge = false;
+			} else	/* No PID to wait for */
+				purge = true;
+
+			if (purge) {
 #if _DEBUG
-			info("purging trigger[%u]", trig_in->trig_id);
+				info("purging trigger[%u]", trig_in->trig_id);
 #endif
-			if (trig_in->group_id != 0)
-				kill(-trig_in->group_id, SIGKILL);
-			list_delete(trig_iter);
-			state_change = true;
+				list_delete(trig_iter);
+				state_change = true;
+			}
+		} else if (trig_in->state == 2) {
+			/* Elimiate zombie processes right away.
+			 * Purge trigger entry above MAX_PROG_TIME later */
+			waitpid(trig_in->group_id, NULL, WNOHANG);
 		}
 	}
 	list_iterator_destroy(trig_iter);
