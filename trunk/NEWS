@@ -10,6 +10,7 @@ documents those changes that are of interest to users and admins.
     general code clean-up.
  -- Add ability to change MaxNodes and ExcNodeList for pending job 
     using scontrol.
+ -- Purge zombie processes spawned via event triggers.
 
 * Changes in SLURM 1.2.6
 ========================
