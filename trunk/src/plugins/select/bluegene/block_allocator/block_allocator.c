@@ -121,10 +121,10 @@ static int _find_yz_path(ba_node_t *ba_node, int *first,
 #ifndef HAVE_BG_FILES
 #ifdef HAVE_BG
 /* */
-static int _create_config_even(ba_node_t ***grid);
+static int _emulate_ext_wiring(ba_node_t ***grid);
 #else
 /* */
-static int _create_config_even(ba_node_t *grid);
+static int _emulate_ext_wiring(ba_node_t *grid);
 #endif
 #endif
 
@@ -954,7 +954,7 @@ node_info_error:
 	_create_ba_system();
 	
 #ifndef HAVE_BG_FILES
-	_create_config_even(ba_system_ptr->grid);
+	_emulate_ext_wiring(ba_system_ptr->grid);
 #endif
 	path = list_create(_delete_path_list);
 	best_path = list_create(_delete_path_list);
@@ -2569,9 +2569,9 @@ static int _find_yz_path(ba_node_t *ba_node, int *first,
 #ifndef HAVE_BG_FILES
 /** */
 #ifdef HAVE_BG
-static int _create_config_even(ba_node_t ***grid)
+static int _emulate_ext_wiring(ba_node_t ***grid)
 #else
-static int _create_config_even(ba_node_t *grid)
+static int _emulate_ext_wiring(ba_node_t *grid)
 #endif
 {
 	int x;
@@ -3321,57 +3321,164 @@ static int _set_external_wires(int dim, int count, ba_node_t* source,
 		_switch_config(source, source, dim, 4, 4);
 		return 1;
 	}
-	/* always 2->5 of next. If it is the last
-		   it will go to the first.*/
-		
 	
 #ifdef HAVE_BG
+	/* set up x */
+	/* always 2->5 of next. If it is the last it will go to the first.*/
 	_switch_config(source, target, dim, 2, 5);
-	if(count == 0 || count==4) {
-		/* 0 and 4th Node */
-		/* 3->4 of next */
-		_switch_config(source, target, dim, 3, 4);
-		/* 4 is not in use */
-		//_switch_config(source, source, dim, 4, 4);
-	} else if( count == 1 || count == 5) {
-		/* 1st and 5th Node */
-		/* 3 is not in use */
-		//_switch_config(source, source, dim, 3, 3);
-	} else if(count == 2) {
-		/* 2nd Node */
-		/* make sure target is the last node */
-		target = &ba_system_ptr->grid[DIM_SIZE[X]-1]
-			[source->coord[Y]]
-			[source->coord[Z]];
-		/* 3->4 of last */
-		_switch_config(source, target, dim, 3, 4);
-		/* 4->3 of last */
-		_switch_config(source, target, dim, 4, 3);
-	} else if(count == 3) {
-		/* 3rd Node */
-		/* make sure target is the next to last node */
-		target = &ba_system_ptr->grid[DIM_SIZE[X]-2]
-			[source->coord[Y]]
-			[source->coord[Z]];
-		/* 3->4 of next to last */
-		_switch_config(source, target, dim, 3, 4);
-		/* 4->3 of next to last */
-		_switch_config(source, target, dim, 4, 3);
-	}
 
-	if(DIM_SIZE[X] <= 4) {
+	/* set up split x */
+	if(DIM_SIZE[X] == 1) {
+	} else if(DIM_SIZE[X] == 5) {
 		/* 4 X dim fixes for wires */
-		
-		if(count == 2) {
-			/* 2 not in use */
-			_switch_config(source, source, dim, 2, 2);
-		} else if(count == 3) {
-			/* 5 not in use */
-			_switch_config(source, source, dim, 5, 5);
+		switch(count) {
+		case 0:
+		case 2:
+			/* 0th and 2nd node */
+			/* Only the 2-5 is used here
+			   so nothing else */
+			break;
+		case 1:
+			/* 1st node */
+			/* change target to 4th node */
+			target = &ba_system_ptr->grid[4]
+				[source->coord[Y]]
+				[source->coord[Z]];
+			/* 3->4 of 4th */
+			_switch_config(source, target, dim, 3, 4);
+			break;
+		case 3:
+			/* 3rd node */
+			/* change target to 2th node */
+			target = &ba_system_ptr->grid[2]
+				[source->coord[Y]]
+				[source->coord[Z]];
+			/* 3->4 of 2nd */
+			_switch_config(source, target, dim, 3, 4);
+			break;
+		case 4:
+			/* 4th node */
+			/* change target to 1st node */
+			target = &ba_system_ptr->grid[1]
+				[source->coord[Y]]
+				[source->coord[Z]];
+			/* 3->4 of 2nd */
+			_switch_config(source, target, dim, 3, 4);
+			
+			break;
+		default:
+			fatal("got %d for a count on a %d X-dim system",
+			      count, DIM_SIZE[X]);
+			break;
 		}
-	}/*  else if(DIM_SIZE[X] != 8) { */
-/* 		fatal("Do don't have a config to do this BG system."); */
-/* 	} */
+	} else if(DIM_SIZE[X] == 8) {
+		switch(count) {
+		case 0:
+		case 4:
+			/* 0 and 4th Node */
+			/* nothing */
+			break;
+		case 1:
+		case 5:
+			/* 1st Node */
+			target = &ba_system_ptr->grid[count-1]
+				[source->coord[Y]]
+				[source->coord[Z]];
+			/* 3->4 of previous */
+			_switch_config(source, target, dim, 3, 4);
+			break;	
+		case 2:
+			/* 2nd Node */
+			target = &ba_system_ptr->grid[7]
+				[source->coord[Y]]
+				[source->coord[Z]];
+			/* 3->4 of last */
+			_switch_config(source, target, dim, 3, 4);
+			break;
+		case 3:
+			/* 3rd Node */
+			target = &ba_system_ptr->grid[6]
+				[source->coord[Y]]
+				[source->coord[Z]];
+			/* 3->4 of 6th */
+			_switch_config(source, target, dim, 3, 4);
+			break;
+		case 6:
+			/* 6th Node */
+			target = &ba_system_ptr->grid[3]
+				[source->coord[Y]]
+				[source->coord[Z]];
+			/* 3->4 of 3rd */
+			_switch_config(source, target, dim, 3, 4);	
+			break;
+		case 7:
+			/* 7th Node */
+			target = &ba_system_ptr->grid[2]
+				[source->coord[Y]]
+				[source->coord[Z]];
+			/* 3->4 of 2nd */
+			_switch_config(source, target, dim, 3, 4);	
+			break;
+		default:
+			fatal("got %d for a count on a %d X-dim system",
+			      count, DIM_SIZE[X]);
+			break;
+		}
+	} else if(DIM_SIZE[X] == 13) {
+		int temp_num = 0;
+
+		switch(count) {
+		case 0:
+		case 6:
+			/* 0 and 4th Node no split */
+		case 8:
+		case 9:
+		case 10:
+		case 11:
+		case 12:
+			/* already taken care of in the next case so
+			 * do nothing
+			 */
+			break;
+		case 1:
+		case 2:
+		case 3:
+		case 4:
+		case 5:
+			/* get the node count - 1 then subtract it
+			 * from 12 to get the new target and then go
+			 * from 3->4 and back again
+			 */
+			temp_num = 12 - (count - 1);
+			if(temp_num < 5) 
+				fatal("node %d shouldn't go to %d",
+				      count, temp_num);
+			
+			target = &ba_system_ptr->grid[temp_num]
+				[source->coord[Y]]
+				[source->coord[Z]];
+			/* 3->4 */
+			_switch_config(source, target, dim, 3, 4);
+			/* and back 3->4 */
+			_switch_config(target, source, dim, 3, 4);
+			break;
+		case 7:
+			/* 7th Node */
+			target = &ba_system_ptr->grid[count-1]
+				[source->coord[Y]]
+				[source->coord[Z]];
+			/* 3->4 of previous */
+			_switch_config(source, target, dim, 3, 4);
+			break;	
+		default:
+			fatal("got %d for a count on a %d X-dim system",
+			      count, DIM_SIZE[X]);
+			break;
+		}
+	} else {
+		fatal("Do don't have a config to do a BG system with %d "
+		      "in the X-dim.", DIM_SIZE[X]);
+	}
 #else
 	if(count == 0)
 		_switch_config(source, source, dim, 5, 5);
