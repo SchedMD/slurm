@@ -636,6 +636,7 @@ char *node_state_string(enum node_states inx)
 	bool drain_flag   = (inx & NODE_STATE_DRAIN);
 	bool comp_flag    = (inx & NODE_STATE_COMPLETING);
 	bool no_resp_flag = (inx & NODE_STATE_NO_RESPOND);
+	bool power_flag   = (inx & NODE_STATE_POWER_SAVE);
 
 	inx = (uint16_t) (inx & NODE_STATE_BASE);
 
@@ -670,6 +671,8 @@ char *node_state_string(enum node_states inx)
 	if (inx == NODE_STATE_IDLE) {
 		if (no_resp_flag)
 			return "IDLE*";
+		if (power_flag)
+			return "IDLE~";
 		return "IDLE";
 	}
 	if (inx == NODE_STATE_UNKNOWN) {
@@ -685,6 +688,7 @@ char *node_state_string_compact(enum node_states inx)
 	bool drain_flag   = (inx & NODE_STATE_DRAIN);
 	bool comp_flag    = (inx & NODE_STATE_COMPLETING);
 	bool no_resp_flag = (inx & NODE_STATE_NO_RESPOND);
+	bool power_flag   = (inx & NODE_STATE_POWER_SAVE);
 
 	inx = (uint16_t) (inx & NODE_STATE_BASE);
 
@@ -719,6 +723,8 @@ char *node_state_string_compact(enum node_states inx)
 	if (inx == NODE_STATE_IDLE) {
 		if (no_resp_flag)
 			return "IDLE*";
+		if (power_flag)
+			return "IDLE~";
 		return "IDLE";
 	}
 	if (inx == NODE_STATE_UNKNOWN) {

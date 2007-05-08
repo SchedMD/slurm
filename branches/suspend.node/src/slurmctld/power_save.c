@@ -48,8 +48,10 @@
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/slurmctld.h"
 
-#include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <stdlib.h>
 #include <unistd.h>
 
 /* NOTE: These paramters will be moved into the slurm.conf file in version 1.3
@@ -58,12 +60,14 @@
 
 /* Node becomes elligible for power saving mode after being idle for
  * this number of seconds. A negative disables power saving mode. */
-#define DEFAULT_IDLE_TIME	60
+#define DEFAULT_IDLE_TIME	10
 
 /* Maximum number of nodes to be placed into or removed from power saving mode
  * per minute. Use this to prevent rapid changing in power requirements.
- * A value of zero results in no limits being imposed */
-#define DEFAULT_SUSPEND_RATE	100
+ * Note that up to DEFAULT_SUSPEND_RATE + DEFAULT_RESUME_RATE processes may 
+ * be created at the same time, so use reasonable limits. A value of zero 
+ * results in no limits being imposed. */
+#define DEFAULT_SUSPEND_RATE	60
 #define DEFAULT_RESUME_RATE	60
 
 /* Programs to be executed to place nodes or out of power saving mode. These 
@@ -82,10 +86,142 @@ int idle_time, suspend_rate, resume_rate;
 char *suspend_prog = NULL, *resume_prog = NULL;
 char *exc_nodes = NULL, *exc_parts = NULL;
 
-bitstr_t *exc_node_bitmap = NULL;
 
-static int  _init_power_config(void);
-static bool _valid_prog(char *file_name);
+bitstr_t *exc_node_bitmap = NULL;
+int suspend_cnt, resume_cnt;
+
+static void  _do_power_work(void);
+static void  _do_resume(char *host);
+static void  _do_suspend(char *host);
+static int   _init_power_config(void);
+static void  _kill_zombies(void);
+static pid_t _run_prog(char *prog, char *arg);
+static bool  _valid_prog(char *file_name);
+
+/* Perform any power change work to nodes */
+static void _do_power_work(void)
+{
+	int i, wake_cnt = 0, sleep_cnt = 0, susp_total = 0;
+	time_t now = time(NULL), last_work_scan = 0, last_log = 0, delta_t;
+	uint16_t base_state, susp_state;
+	bitstr_t *wake_node_bitmap = NULL, *sleep_node_bitmap = NULL;
+	struct node_record *node_ptr;
+
+	/* Build bitmaps identifying each node which should change state */
+	for (i=0; i<node_record_count; i++) {
+		node_ptr = &node_record_table_ptr[i];
+		base_state = node_ptr->node_state & NODE_STATE_BASE;
+		susp_state = node_ptr->node_state & NODE_STATE_POWER_SAVE;
+
+		if (susp_state)
+			susp_total++;
+		if (susp_state
+		&&  ((base_state == NODE_STATE_ALLOCATED)
+		||   (node_ptr->last_idle > (now - idle_time)))) {
+			if (wake_cnt == 0)
+				wake_node_bitmap = bit_alloc(node_record_count);
+			wake_cnt++;
+			bit_set(wake_node_bitmap, i);
+		}
+		if ((susp_state == 0)
+		&&  (base_state == NODE_STATE_IDLE)
+		&&  (node_ptr->last_idle < (now - idle_time))
+		&&  ((exc_node_bitmap == NULL) || 
+		     (bit_test(exc_node_bitmap, i) == 0))) {
+			if (sleep_cnt == 0)
+				sleep_node_bitmap = bit_alloc(node_record_count);
+			sleep_cnt++;
+			bit_set(sleep_node_bitmap, i);
+		}
+	}
+	if ((susp_total > 0) && ((now - last_log) > 300))
+		info("Power save mode %d nodes", susp_total);
+	if ((wake_cnt == 0) && (sleep_cnt == 0))
+		goto fini;		/* No work to be done now */
+/* FIXME: Consider re-running wake command on nodes just in case
+ * some wake requests failed. This is the place to do such work. */
+
+	/* Set limit on counts of nodes to have state changed */
+	delta_t = now - last_work_scan;
+	if (delta_t >= 60) {
+		suspend_cnt = 0;
+		resume_cnt  = 0;
+	} else {
+		float rate = (60 - delta_t) / 60.0;
+		suspend_cnt *= rate;
+		resume_cnt  *= rate;
+	}
+	last_work_scan = now;
+
+	/* Perform work up to limits */
+	for (i=0; i<node_record_count; i++) {
+		node_ptr = &node_record_table_ptr[i];
+		if ((suspend_cnt <= suspend_rate)
+		&&  sleep_node_bitmap
+		&&  bit_test(sleep_node_bitmap, i)) {
+			_do_suspend(node_ptr->name);
+			node_ptr->node_state |= NODE_STATE_POWER_SAVE;
+			last_node_update = now;
+		}
+		if ((resume_cnt <= resume_rate)
+		&&  wake_node_bitmap
+		&&  bit_test(wake_node_bitmap, i)) {
+			_do_resume(node_ptr->name);
+			node_ptr->node_state &= (~NODE_STATE_POWER_SAVE);
+			last_node_update = now;
+		}
+	}
+
+fini:	FREE_NULL_BITMAP(wake_node_bitmap);
+	FREE_NULL_BITMAP(sleep_node_bitmap);
+}
+static void _do_resume(char *host)
+{
+	info("power_save: waking node %s", host);
+	_run_prog(resume_prog, host);	
+}
+
+static void _do_suspend(char *host)
+{
+	info("power_save: suspending node %s", host);
+	_run_prog(suspend_prog, host);	
+}
+
+static pid_t _run_prog(char *prog, char *arg)
+{
+	char program[1024], arg0[1024], arg1[1024], *pname;
+	pid_t child;
+
+	strncpy(program, prog, sizeof(program));
+	pname = strrchr(program, '/');
+	if (pname == NULL)
+		pname = program;
+	else
+		pname++;
+	strncpy(arg0, pname, sizeof(arg0));
+	strncpy(arg1, arg, sizeof(arg1));
+
+	child = fork();
+	if (child == 0) {
+		int i;
+		for (i=0; i<128; i++)
+			close(i);
+		execl(program, arg0, arg1, NULL);
+		exit(1);
+	} else if (child < 0)
+		error("fork: %m");
+	return child;
+}
+
+/* We don't bother to track individual process IDs, 
+ * just clean everything up here. We could capture 
+ * the value of "child" in _run_prog() if we want 
+ * to track each process. */
+static void  _kill_zombies(void)
+{
+	while (waitpid(-1, NULL, WNOHANG) > 0)
+		;
+}
 
 /* Initialize power_save module paramters.
  * Return 0 on valid configuration to run power saving,
@@ -213,6 +349,7 @@ extern void *init_power_save(void *arg)
         slurmctld_lock_t node_write_lock = {
                 NO_LOCK, READ_LOCK, WRITE_LOCK, READ_LOCK };
 	int rc;
+	time_t now, last_power_scan = 0;
 
 	lock_slurmctld(config_read_lock);
 	rc = _init_power_config();
@@ -221,11 +358,21 @@ extern void *init_power_save(void *arg)
 		goto fini;
 
 	while (slurmctld_config.shutdown_time == 0) {
-		sleep(5);
+		sleep(1);
+		_kill_zombies();
+
+		/* Only run every 60 seconds or after
+		 * a node state change, whichever 
+		 * happens first */
+		now = time(NULL);
+		if ((last_node_update < last_power_scan)
+		&&  (now < (last_power_scan + 60)))
+			continue;
 
 		lock_slurmctld(node_write_lock);
-		/* Do work here */
+		_do_power_work();
 		unlock_slurmctld(node_write_lock);
+		last_power_scan = now;
 	}
 
 fini:	/* Free all allocated memory */
