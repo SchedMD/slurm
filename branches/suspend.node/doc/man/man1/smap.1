@@ -327,6 +327,9 @@ node is presently not responding and will not be allocated
 any new work.  If the node remains non\-responsive, it will
 be placed in the \fBDOWN\fR state (except in the case of
 \fBDRAINED\fR, \fBDRAINING\fR, or \fBCOMPLETING\fR nodes).
+If the node state code is followed by "~", this indicates
+the node is presently in a power saving mode (typically
+running at reduced frequency).
 .TP 12
 \fBALLOCATED\fR
 The node has been allocated to one or more jobs.
