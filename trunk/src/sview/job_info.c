@@ -197,7 +197,7 @@ static display_data_t display_data_job[] = {
 	{G_TYPE_STRING, SORTID_SUSPEND_TIME, "Suspended Time", FALSE,
 	 -1, refresh_job,
 	 create_model_job, admin_edit_job},
-	{G_TYPE_STRING, SORTID_TIMELIMIT, "Time limit", FALSE, 1, refresh_job,
+	{G_TYPE_STRING, SORTID_TIMELIMIT, "Time Limit", FALSE, 1, refresh_job,
 	 create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_NODES, "Nodes", TRUE, -1, refresh_job,
 	 create_model_job, admin_edit_job},
