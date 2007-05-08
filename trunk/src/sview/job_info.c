@@ -190,7 +190,7 @@ static display_data_t display_data_job[] = {
 	 -1, refresh_job,
 	 create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_START_TIME, "Start Time", FALSE,
-	 -1, refresh_job,
+	 1, refresh_job,
 	 create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_END_TIME, "End Time", FALSE, -1, refresh_job,
 	 create_model_job, admin_edit_job},
@@ -214,7 +214,7 @@ static display_data_t display_data_job[] = {
 	{G_TYPE_STRING, SORTID_REQ_NODELIST, "Requested NodeList", 
 	 FALSE, 1, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_EXC_NODELIST, "Excluded NodeList", 
-	 FALSE, -1, refresh_job, create_model_job, admin_edit_job},
+	 FALSE, 1, refresh_job, create_model_job, admin_edit_job},
 #endif
 	{G_TYPE_STRING, SORTID_CONTIGUOUS, "Contiguous", FALSE, 0, 
 	 refresh_job, create_model_job, admin_edit_job},
@@ -237,7 +237,7 @@ static display_data_t display_data_job[] = {
 	{G_TYPE_STRING, SORTID_MIN_NODES, "Min Nodes", 
 	 FALSE, 1, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_MAX_NODES, "Max Nodes", 
-	 FALSE, -1, refresh_job, create_model_job, admin_edit_job},
+	 FALSE, 1, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_MIN_PROCS, "Min Procs", 
 	 FALSE, 1, refresh_job, create_model_job, admin_edit_job},
 #ifdef HAVE_BG
@@ -1193,7 +1193,11 @@ static void _layout_job_record(GtkTreeView *treeview,
 						 SORTID_NODES), 
 				   tmp_char);
 
+#ifdef HAVE_BG
 	convert_num_unit((float)job_ptr->num_procs, tmp_char, UNIT_NONE);
+#else
+	sprintf(tmp_char, "%u", job_ptr->num_procs);
+#endif
 	add_display_treestore_line(update, treestore, &iter, 
 				   find_col_name(display_data_job,
 						 SORTID_NUM_PROCS),
@@ -1318,44 +1322,64 @@ static void _layout_job_record(GtkTreeView *treeview,
 						 SORTID_SHARED),
 				   tmp_char);
 	
-	convert_num_unit((float)job_ptr->cpus_per_task, tmp_char, UNIT_NONE);
+	if(job_ptr->cpus_per_task > 0) 
+		sprintf(tmp_char, "%u", job_ptr->cpus_per_task);
+	else 
+		sprintf(tmp_char, " ");
 	add_display_treestore_line(update, treestore, &iter, 
 				   find_col_name(display_data_job,
 						 SORTID_CPUS_PER_TASK),
 				   tmp_char);
 	
-	convert_num_unit((float)job_ptr->job_min_procs, tmp_char, UNIT_NONE);
+	if(job_ptr->job_min_procs > 0) 
+		sprintf(tmp_char, "%u", job_ptr->job_min_procs);
+	else 
+		sprintf(tmp_char, " ");
 	add_display_treestore_line(update, treestore, &iter, 
 				   find_col_name(display_data_job,
 						 SORTID_MIN_PROCS),
 				   tmp_char);
 	
-	convert_num_unit((float)job_ptr->job_min_sockets, tmp_char, UNIT_NONE);
+	if(job_ptr->job_min_sockets > 0) 
+		sprintf(tmp_char, "%u", job_ptr->job_min_sockets);
+	else 
+		sprintf(tmp_char, " ");
 	add_display_treestore_line(update, treestore, &iter, 
 				   find_col_name(display_data_job,
 						 SORTID_MIN_SOCKETS),
 				   tmp_char);
 	
-	convert_num_unit((float)job_ptr->job_min_cores, tmp_char, UNIT_NONE);
+	if(job_ptr->job_min_cores > 0) 
+		sprintf(tmp_char, "%u", job_ptr->job_min_cores);
+	else 
+		sprintf(tmp_char, " ");
 	add_display_treestore_line(update, treestore, &iter, 
 				   find_col_name(display_data_job,
 						 SORTID_MIN_CORES),
 				   tmp_char);
 	
-	convert_num_unit((float)job_ptr->job_min_threads, tmp_char, UNIT_NONE);
+	if(job_ptr->job_min_threads > 0) 
+		sprintf(tmp_char, "%u", job_ptr->job_min_threads);
+	else 
+		sprintf(tmp_char, " ");
 	add_display_treestore_line(update, treestore, &iter, 
 				   find_col_name(display_data_job,
 						 SORTID_MIN_THREADS),
 				   tmp_char);
 	
-	convert_num_unit((float)job_ptr->job_min_memory, tmp_char, UNIT_NONE);
+	if(job_ptr->job_min_memory > 0) 
+		sprintf(tmp_char, "%u", job_ptr->job_min_memory);
+	else 
+		sprintf(tmp_char, " ");
 	add_display_treestore_line(update, treestore, &iter, 
 				   find_col_name(display_data_job,
 						 SORTID_MIN_MEM),
 				   tmp_char);
 	
-	convert_num_unit((float)job_ptr->job_min_tmp_disk, 
-			 tmp_char, UNIT_NONE);
+	if(job_ptr->job_min_tmp_disk > 0) 
+		sprintf(tmp_char, "%u", job_ptr->job_min_tmp_disk);
+	else 
+		sprintf(tmp_char, " ");
 	add_display_treestore_line(update, treestore, &iter, 
 				   find_col_name(display_data_job,
 						 SORTID_TMP_DISK),
@@ -1366,7 +1390,10 @@ static void _layout_job_record(GtkTreeView *treeview,
 						 SORTID_FEATURES),
 				   job_ptr->features);
 	
-	sprintf(tmp_char, "%u", job_ptr->dependency);
+	if(job_ptr->dependency > 0) 
+		sprintf(tmp_char, "%u", job_ptr->dependency);
+	else 
+		sprintf(tmp_char, " ");
 	add_display_treestore_line(update, treestore, &iter, 
 				   find_col_name(display_data_job,
 						 SORTID_DEPENDENCY),
@@ -1578,7 +1605,11 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 	gtk_tree_store_set(treestore, iter, 
 			   SORTID_NODES, tmp_char, -1);
 
+#ifdef HAVE_BG
 	convert_num_unit((float)job_ptr->num_procs, tmp_char, UNIT_NONE);
+#else
+	sprintf(tmp_char, "%u", job_ptr->num_procs);
+#endif
 	gtk_tree_store_set(treestore, iter, 
 			   SORTID_NUM_PROCS, tmp_char, -1);
 	
@@ -1609,54 +1640,77 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 	gtk_tree_store_set(treestore, iter, 
 			   SORTID_BATCH, tmp_char, -1);
 	
-	convert_num_unit((float)job_ptr->cpus_per_task, tmp_char, UNIT_NONE);
+	sprintf(tmp_char, "%u", job_ptr->num_nodes);
 	gtk_tree_store_set(treestore, iter, 
-			   SORTID_CPUS_PER_TASK, tmp_char, -1);
-	
-	convert_num_unit((float)job_ptr->job_min_procs, tmp_char, UNIT_NONE);
+			   SORTID_MIN_NODES, tmp_char, -1);
+	if(job_ptr->max_nodes > 0) {
+		sprintf(tmp_char, "%u", job_ptr->max_nodes);
+		gtk_tree_store_set(treestore, iter, 
+				   SORTID_MAX_NODES, tmp_char, -1);
+	}
+	if(job_ptr->cpus_per_task > 0) {
+		//convert_num_unit((float)job_ptr->cpus_per_task,
+		//                 tmp_char, UNIT_NONE);
+		sprintf(tmp_char, "%u", job_ptr->cpus_per_task);
+		gtk_tree_store_set(treestore, iter, 
+				   SORTID_CPUS_PER_TASK, tmp_char, -1);
+	}
+	//convert_num_unit((float)job_ptr->job_min_procs, tmp_char, UNIT_NONE);
+	sprintf(tmp_char, "%u", job_ptr->job_min_procs);
 	gtk_tree_store_set(treestore, iter,
 			   SORTID_REQ_PROCS, tmp_char, -1);
 
-	convert_num_unit((float)job_ptr->min_sockets, tmp_char, UNIT_NONE);
+	//convert_num_unit((float)job_ptr->min_sockets, tmp_char, UNIT_NONE);
+	sprintf(tmp_char, "%u", job_ptr->min_sockets);
 	gtk_tree_store_set(treestore, iter,
 			   SORTID_MIN_SOCKETS, tmp_char, -1);
-	convert_num_unit((float)job_ptr->max_sockets, tmp_char, UNIT_NONE);
+	//convert_num_unit((float)job_ptr->max_sockets, tmp_char, UNIT_NONE);
+	sprintf(tmp_char, "%u", job_ptr->max_sockets);
 	gtk_tree_store_set(treestore, iter,
 			   SORTID_MAX_SOCKETS, tmp_char, -1);
 	
-	convert_num_unit((float)job_ptr->min_cores, tmp_char, UNIT_NONE);
+	//convert_num_unit((float)job_ptr->min_cores, tmp_char, UNIT_NONE);
+	sprintf(tmp_char, "%u", job_ptr->min_cores);
 	gtk_tree_store_set(treestore, iter,
 			   SORTID_MIN_CORES, tmp_char, -1);
-	convert_num_unit((float)job_ptr->max_cores, tmp_char, UNIT_NONE);
+	//convert_num_unit((float)job_ptr->max_cores, tmp_char, UNIT_NONE);
+	sprintf(tmp_char, "%u", job_ptr->max_cores);
 	gtk_tree_store_set(treestore, iter,
 			   SORTID_MAX_CORES, tmp_char, -1);
 	
-	convert_num_unit((float)job_ptr->min_threads, tmp_char, UNIT_NONE);
+	//convert_num_unit((float)job_ptr->min_threads, tmp_char, UNIT_NONE);
+	sprintf(tmp_char, "%u", job_ptr->min_threads);
 	gtk_tree_store_set(treestore, iter,
 			   SORTID_MIN_THREADS, tmp_char, -1);
-	convert_num_unit((float)job_ptr->max_threads, tmp_char, UNIT_NONE);
+	//convert_num_unit((float)job_ptr->max_threads, tmp_char, UNIT_NONE);
+	sprintf(tmp_char, "%u", job_ptr->max_threads);
 	gtk_tree_store_set(treestore, iter,
 			   SORTID_MAX_THREADS, tmp_char, -1);
 	
-	convert_num_unit((float)job_ptr->job_min_memory, tmp_char, UNIT_NONE);
+	//convert_num_unit((float)job_ptr->job_min_memory,
+	//                 tmp_char, UNIT_NONE);
+	sprintf(tmp_char, "%u", job_ptr->job_min_memory);
 	gtk_tree_store_set(treestore, iter,
 			   SORTID_MIN_MEM, tmp_char, -1);
-	convert_num_unit((float)job_ptr->job_max_memory, tmp_char, UNIT_NONE);
+	//convert_num_unit((float)job_ptr->job_max_memory,
+	//                 tmp_char, UNIT_NONE);
+	sprintf(tmp_char, "%u", job_ptr->job_max_memory);
 	gtk_tree_store_set(treestore, iter,
 			   SORTID_MAX_MEM, tmp_char, -1);
 	
-	convert_num_unit((float)job_ptr->job_min_tmp_disk, 
-			 tmp_char, UNIT_NONE);
+	//convert_num_unit((float)job_ptr->job_min_tmp_disk, 
+	//		   tmp_char, UNIT_NONE);
+	sprintf(tmp_char, "%u", job_ptr->job_min_tmp_disk);
 	gtk_tree_store_set(treestore, iter,
 			   SORTID_TMP_DISK, tmp_char, -1);
 
 	gtk_tree_store_set(treestore, iter,
 			   SORTID_ACCOUNT, job_ptr->account, -1);
-	
-	sprintf(tmp_char, "%u", job_ptr->dependency);
-	gtk_tree_store_set(treestore, iter,
-			   SORTID_DEPENDENCY, tmp_char, -1);
-	
+	if(job_ptr->dependency > 0) {
+		sprintf(tmp_char, "%u", job_ptr->dependency);
+		gtk_tree_store_set(treestore, iter,
+				   SORTID_DEPENDENCY, tmp_char, -1);
+	}
 	sprintf(tmp_char, "%u", job_ptr->priority);
 	gtk_tree_store_set(treestore, iter,
 			   SORTID_PRIORITY, tmp_char, -1);
