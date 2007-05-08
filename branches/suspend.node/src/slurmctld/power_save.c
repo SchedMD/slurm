@@ -60,7 +60,7 @@
 
 /* Node becomes elligible for power saving mode after being idle for
  * this number of seconds. A negative disables power saving mode. */
-#define DEFAULT_IDLE_TIME	10
+#define DEFAULT_IDLE_TIME	-1
 
 /* Maximum number of nodes to be placed into or removed from power saving mode
  * per minute. Use this to prevent rapid changing in power requirements.
@@ -177,13 +177,13 @@ fini:	FREE_NULL_BITMAP(wake_node_bitmap);
 }
 static void _do_resume(char *host)
 {
-	info("power_save: waking node %s", host);
+	debug("power_save: waking node %s", host);
 	_run_prog(resume_prog, host);	
 }
 
 static void _do_suspend(char *host)
 {
-	info("power_save: suspending node %s", host);
+	debug("power_save: suspending node %s", host);
 	_run_prog(suspend_prog, host);	
 }
 
