@@ -56,8 +56,8 @@
  */
 
 typedef struct slurm_database_ops {
-	int  (*jobacct_init) ();
-	int  (*jobacct_fini) ();
+	int  (*jobacct_init)          ();
+	int  (*jobacct_fini)          ();
 	int  (*jobacct_job_start)     (struct job_record *job_ptr);
 	int  (*jobacct_job_complete)  (struct job_record *job_ptr);
 	int  (*jobacct_step_start)    (struct step_record *step_ptr);
@@ -69,6 +69,12 @@ typedef struct slurm_database_ops {
 				       void *params);	
 	void (*jobacct_archive)       (List selected_parts,
 				       void *params);
+	
+	int (*jobcomp_init)           ();
+	int (*jobcomp_fini)           ();
+	int (*jobcomp_set_location)   (char * location);
+	int (*jobcomp_log_record)     (struct job_record *job_ptr);
+	char *(*jobcomp_strerror)     (int errnum);
 } slurm_database_ops_t;
 
 typedef struct slurm_database_context {
@@ -108,6 +114,11 @@ static slurm_database_ops_t * _database_get_ops(slurm_database_context_t *c)
 		"database_p_jobacct_suspend",
 		"database_p_jobacct_get_jobs",
 		"database_p_jobacct_archive",
+		"database_p_jobcomp_init",
+		"database_p_jobcomp_fini",
+		"database_p_jobcomp_set_location",
+		"database_p_jobcomp_log_record",
+		"database_p_jobcomp_strerror"
 	};
 	int n_syms = sizeof( syms ) / sizeof( char * );
 
@@ -338,3 +349,41 @@ extern void database_g_jobacct_archive(List selected_parts, void *params)
  	(*(g_database_context->ops.jobacct_archive))(selected_parts, params);
 	return;
 }
+
+
+/* job comp */
+extern int database_g_jobcomp_init(void)
+{
+	if (slurm_database_init() < 0)
+		return;
+ 	return (*(g_database_context->ops.jobcomp_init))();
+}
+
+extern int database_g_jobcomp_fini(void)
+{
+	if (slurm_database_init() < 0)
+		return;
+ 	return (*(g_database_context->ops.jobcomp_fini))();
+}
+
+extern int database_g_jobcomp_set_location(char * location)
+{
+	if (slurm_database_init() < 0)
+		return;
+ 	return (*(g_database_context->ops.jobcomp_set_location))(location);
+}
+
+extern int database_g_jobcomp_log_record(struct job_record *job_ptr)
+{
+	if (slurm_database_init() < 0)
+		return;
+ 	return (*(g_database_context->ops.jobcomp_log_record))(job_ptr);
+}
+
+extern char *database_g_jobcomp_strerror(int errnum)
+{
+	if (slurm_database_init() < 0)
+		return;
+ 	return (*(g_database_context->ops.jobcomp_seterror))(errnum);
+}
+

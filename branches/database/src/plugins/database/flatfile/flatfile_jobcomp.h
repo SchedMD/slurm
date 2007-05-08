@@ -1,10 +1,9 @@
 /*****************************************************************************\
- *  src/common/parse_time.h - time parsing utility functions
- *  $Id$
+ *  flatfile_jobcomp.h - text file slurm job completion logging plugin.
  *****************************************************************************
- *  Copyright (C) 2005-2006 The Regents of the University of California.
+ *  Copyright (C) 2003 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Morris Jette <jette1@llnl.gov>.
+ *  Written by Morris Jette <jette1@llnl.gov> et. al.
  *  UCRL-CODE-226842.
  *  
  *  This file is part of SLURM, a resource management program.
@@ -36,33 +35,14 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef _PARSE_TIME_H_
-#define _PARSE_TIME_H_
+#ifndef _FLATFILE_JOBCOMP_H_
+#define _FLATFILE_JOBCOMP_H_
 
-#include <time.h>
 
-/* Convert string to equivalent time value
- * input formats:
- *   today or tomorrow
- *   midnight, noon, teatime (4PM)
- *   HH:MM [AM|PM]
- *   MMDDYY or MM/DD/YY or MM.DD.YY
- *   now + count [minutes | hours | days | weeks]
- *
- * Invalid input results in message to stderr and return value of zero
- */
-extern time_t parse_time(char *time_str);
-
-/*
- * slurm_make_time_str - convert time_t to string with a format of
- *	"month/date hour:min:sec"
- *
- * IN time - a time stamp
- * OUT string - pointer user defined buffer
- * IN size - length of string buffer, we recommend a size of 32 bytes to
- *	easily support different site-specific formats
- */
-extern void
-slurm_make_time_str (time_t *time, char *string, int size);
+extern int flatfile_jobcomp_set_location(char * location);
+extern int flatfile_jobcomp_log_record(struct job_record *job_ptr);
+extern char *flatfile_jobcomp_strerror(int errnum);
+extern int flatfile_jobcomp_init(void);
+extern int flatfile_jobcomp_fini(void);
 
 #endif

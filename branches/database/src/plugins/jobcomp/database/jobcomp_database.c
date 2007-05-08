@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  jobcomp_filetxt.c - text file slurm job completion logging plugin.
+ *  jobcomp_database.c - text file slurm job completion logging plugin.
  *****************************************************************************
  *  Copyright (C) 2003 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -64,7 +64,21 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 #include "src/slurmctld/slurmctld.h"
-#include "src/plugins/database/flatfile/flatfile_jobcomp.h"
+#include "src/common/slurm_database.h"
+
+#define JOB_FORMAT "JobId=%lu UserId=%s(%lu) Name=%s JobState=%s Partition=%s "\
+		"TimeLimit=%s StartTime=%s EndTime=%s NodeList=%s NodeCnt=%u %s\n"
+ 
+/* Type for error string table entries */
+typedef struct {
+	int xe_number;
+	char *xe_message;
+} slurm_errtab_t;
+
+static slurm_errtab_t slurm_errtab[] = {
+	{0, "No error"},
+	{-1, "Unspecified error"}
+};
 
 /*
  * These variables are required by the generic plugin interface.  If they
@@ -95,8 +109,8 @@
  * minimum versions for their plugins as the job completion logging API 
  * matures.
  */
-const char plugin_name[]       	= "Job completion text file logging plugin";
-const char plugin_type[]       	= "jobcomp/filetxt";
+const char plugin_name[]       	= "Job completion database logging plugin";
+const char plugin_type[]       	= "jobcomp/database";
 const uint32_t plugin_version	= 90;
 
 /* A plugin-global errno. */
@@ -112,7 +126,7 @@ static int              job_comp_fd = -1;
  */
 int init ( void )
 {
-	return database_g_jobcomp_init();
+	return flatfile_jobcomp_init();
 }
 
 /*
@@ -122,12 +136,12 @@ int init ( void )
 
 extern int slurm_jobcomp_set_location ( char * location )
 {
-	return database_g_jobcomp_set_location(location);
+	return flatfile_jobcomp_set_location(location);
 }
 
 extern int slurm_jobcomp_log_record ( struct job_record *job_ptr )
 {
-	return database_g_jobcomp_log_record(job_ptr);
+	return flatfile_jobcomp_log_record(job_ptr);
 }
 
 extern int slurm_jobcomp_get_errno( void )
@@ -137,10 +151,10 @@ extern int slurm_jobcomp_get_errno( void )
 
 extern char *slurm_jobcomp_strerror( int errnum )
 {
-	return database_g_jobcomp_log_record(errnum);
+	return flatfile_jobcomp_log_record(errnum);
 }
 
 int fini ( void )
 {
-	return database_g_jobcomp_fini();
+	return flatfile_jobcomp_fini();
 }

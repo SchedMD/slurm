@@ -77,7 +77,7 @@ LTLIBRARIES = $(pkglib_LTLIBRARIES)
 database_pgsql_la_DEPENDENCIES =  \
 	$(top_builddir)/src/common/libcommon.la
 am_database_pgsql_la_OBJECTS = database_pgsql.lo pgsql_common.lo \
-	pgsql_jobacct.lo pgsql_jobacct_process.lo
+	pgsql_jobacct.lo pgsql_jobcomp.lo pgsql_jobacct_process.lo
 database_pgsql_la_OBJECTS = $(am_database_pgsql_la_OBJECTS)
 database_pgsql_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
@@ -267,6 +267,7 @@ pkglib_LTLIBRARIES = database_pgsql.la
 database_pgsql_la_SOURCES = database_pgsql.c \
 				pgsql_common.c pgsql_common.h \
 				pgsql_jobacct.c pgsql_jobacct.h \
+				pgsql_jobcomp.c pgsql_jobcomp.h \
 				pgsql_jobacct_process.c pgsql_jobacct_process.h
 
 database_pgsql_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
@@ -344,6 +345,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pgsql_common.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pgsql_jobacct.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pgsql_jobacct_process.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pgsql_jobcomp.Plo@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<

@@ -96,4 +96,15 @@ extern void database_g_jobacct_get_jobs(List job_list,
  */
 extern void database_g_jobacct_archive(List selected_parts, void *params);
 
+/*
+ * jobcomp functions
+ */
+extern int database_g_jobcomp_set_location(char * location);
+extern int database_g_jobcomp_log_record(struct job_record *job_ptr);
+extern char *database_g_jobcomp_strerror(int errnum);
+extern int database_g_jobcomp_init(void);
+extern int database_g_jobcomp_fini(void);
+
+
+
 #endif /*_SLURM_DATABASE_H*/

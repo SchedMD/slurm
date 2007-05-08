@@ -77,7 +77,7 @@ LTLIBRARIES = $(pkglib_LTLIBRARIES)
 database_mysql_la_DEPENDENCIES =  \
 	$(top_builddir)/src/common/libcommon.la
 am_database_mysql_la_OBJECTS = database_mysql.lo mysql_common.lo \
-	mysql_jobacct.lo mysql_jobacct_process.lo
+	mysql_jobacct.lo mysql_jobcomp.lo mysql_jobacct_process.lo
 database_mysql_la_OBJECTS = $(am_database_mysql_la_OBJECTS)
 database_mysql_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
@@ -267,6 +267,7 @@ pkglib_LTLIBRARIES = database_mysql.la
 database_mysql_la_SOURCES = database_mysql.c \
 				mysql_common.c mysql_common.h \
 				mysql_jobacct.c mysql_jobacct.h \
+				mysql_jobcomp.c mysql_jobcomp.h \
 				mysql_jobacct_process.c mysql_jobacct_process.h
 
 database_mysql_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
@@ -344,6 +345,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mysql_common.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mysql_jobacct.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mysql_jobacct_process.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mysql_jobcomp.Plo@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
