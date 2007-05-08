@@ -2775,12 +2775,6 @@ display_it:
 				 SORTID_CNT);
 	}
 
-	spec_info->view = INFO_VIEW;
-	if(spec_info->type == INFO_PAGE) {
-		_display_info_job(info_list, popup_win);
-		goto end_it;
-	}
-
 	if(popup_win->grid_button_list) {
 		list_destroy(popup_win->grid_button_list);
 	}	       
@@ -2790,6 +2784,13 @@ display_it:
 #else
 	popup_win->grid_button_list = list_create(destroy_grid_button);
 #endif	
+
+	spec_info->view = INFO_VIEW;
+	if(spec_info->type == INFO_PAGE) {
+		_display_info_job(info_list, popup_win);
+		goto end_it;
+	}
+
 	
 	/* just linking to another list, don't free the inside, just
 	   the list */
