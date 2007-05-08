@@ -77,7 +77,7 @@ am_slurmctld_OBJECTS = agent.$(OBJEXT) backup.$(OBJEXT) \
 	controller.$(OBJEXT) job_mgr.$(OBJEXT) job_scheduler.$(OBJEXT) \
 	locks.$(OBJEXT) node_mgr.$(OBJEXT) node_scheduler.$(OBJEXT) \
 	partition_mgr.$(OBJEXT) ping_nodes.$(OBJEXT) \
-	proc_req.$(OBJEXT) read_config.$(OBJEXT) \
+	power_save.$(OBJEXT) proc_req.$(OBJEXT) read_config.$(OBJEXT) \
 	sched_plugin.$(OBJEXT) srun_comm.$(OBJEXT) \
 	state_save.$(OBJEXT) step_mgr.$(OBJEXT) trigger_mgr.$(OBJEXT)
 slurmctld_OBJECTS = $(am_slurmctld_OBJECTS)
@@ -303,6 +303,7 @@ slurmctld_SOURCES = \
 	partition_mgr.c \
 	ping_nodes.c	\
 	ping_nodes.h	\
+	power_save.c	\
 	proc_req.c	\
 	proc_req.h	\
 	read_config.c	\
@@ -402,6 +403,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/node_scheduler.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/partition_mgr.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ping_nodes.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/power_save.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/proc_req.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/read_config.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sched_plugin.Po@am__quote@

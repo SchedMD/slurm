@@ -3,7 +3,7 @@
  *
  *  $Id$
  *****************************************************************************
- *  Copyright (C) 2002-2006 The Regents of the University of California.
+ *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov> et. al.
  *  UCRL-CODE-226842.
@@ -141,12 +141,14 @@ typedef struct slurmctld_config {
 	pthread_t thread_id_main;
 	pthread_t thread_id_save;
 	pthread_t thread_id_sig;
+	pthread_t thread_id_power;
 	pthread_t thread_id_rpc;
 #else
 	int thread_count_lock;
 	int thread_id_main;
 	int thread_id_save;
 	int thread_id_sig;
+	int thread_id_power;
 	int thread_id_rpc;
 #endif
 } slurmctld_config_t;
@@ -674,6 +676,13 @@ extern int init_node_conf ();
  *         part_list - global partition list
  */
 extern int init_part_conf (void);
+
+/*
+ * init_power_save - initialize the power save module. Started as a 
+ *	pthread. Terminates automatically at slurmctld shutdown time.
+ *	Input and output are unused.
+ */
+extern void *init_power_save(void *arg);
 
 /*
  * is_node_down - determine if the specified node's state is DOWN
