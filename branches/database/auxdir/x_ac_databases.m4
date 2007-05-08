@@ -52,8 +52,8 @@ AC_DEFUN([X_AC_DATABASES],
 	#Check for PostgreSQL
 	ac_have_pgsql="no"
 	### Check for pkg-config program
-    	AC_PATH_PROG(HAVEPGCONFIG, pg_config, $PATH)
-	if test -z "$HAVEPGCONFIG"; then
+    	AC_PATH_PROG(HAVEPGCONFIG, pg_config, no)
+	if test x$HAVEPGCONFIG = xno; then
         	AC_MSG_WARN([*** pg_config not found. Evidently no PostgreSQL install on system.])
 	else
 		PGSQL_INCLUDEDIR=`$HAVEPGCONFIG --includedir`
