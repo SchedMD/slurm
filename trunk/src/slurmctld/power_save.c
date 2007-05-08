@@ -63,7 +63,7 @@
 #define DEFAULT_IDLE_TIME	-1
 
 /* Maximum number of nodes to be placed into or removed from power saving mode
- * per minute. Use this to prevent rapid changing in power requirements.
+ * per minute. Use this to prevent rapid changes in power requirements.
  * Note that up to DEFAULT_SUSPEND_RATE + DEFAULT_RESUME_RATE processes may 
  * be created at the same time, so use reasonable limits. A value of zero 
  * results in no limits being imposed. */
@@ -95,6 +95,7 @@ static void  _do_resume(char *host);
 static void  _do_suspend(char *host);
 static int   _init_power_config(void);
 static void  _kill_zombies(void);
+static void  _re_wake(void);
 static pid_t _run_prog(char *prog, char *arg);
 static bool  _valid_prog(char *file_name);
 
@@ -136,10 +137,10 @@ static void _do_power_work(void)
 	}
 	if ((susp_total > 0) && ((now - last_log) > 300))
 		info("Power save mode %d nodes", susp_total);
-	if ((wake_cnt == 0) && (sleep_cnt == 0))
+	if ((wake_cnt == 0) && (sleep_cnt == 0)) {
+		_re_wake();
 		goto fini;		/* No work to be done now */
-/* FIXME: Consider re-running wake command on nodes just in case
- * some wake requests failed. This is the place to do such work. */
+	}
 
 	/* Set limit on counts of nodes to have state changed */
 	delta_t = now - last_work_scan;
@@ -175,6 +176,29 @@ static void _do_power_work(void)
 fini:	FREE_NULL_BITMAP(wake_node_bitmap);
 	FREE_NULL_BITMAP(sleep_node_bitmap);
 }
+
+/* Just in case some resume calls failed, re-issue the requests
+ * periodically for active nodes. We do not increment resume_cnt
+ * since there should be no change in power requirements. */
+static void _re_wake(void)
+{
+	static int last_inx = 0;
+	struct node_record *node_ptr;
+	int i;	/* count of re-issued wake requests */
+	int lim = MIN(node_record_count, 10);
+
+	for (i=0; i<lim; i++) {
+		node_ptr = &node_record_table_ptr[last_inx];
+		if ((node_ptr->node_state & NODE_STATE_POWER_SAVE) == 0)
+			_do_resume(node_ptr->name);
+
+		last_inx++;
+		if (last_inx >= node_record_count)
+			last_inx = 0;
+	}
+		
+}
+
 static void _do_resume(char *host)
 {
 	debug("power_save: waking node %s", host);
