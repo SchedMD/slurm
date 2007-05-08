@@ -174,7 +174,7 @@ typedef struct connection_arg {
 int main(int argc, char *argv[])
 {
 	int error_code;
-	pthread_attr_t thread_attr_save, thread_attr_sig, thread_attr_rpc;
+	pthread_attr_t thread_attr;
 	struct stat stat_buf;
 
 	/*
@@ -324,31 +324,41 @@ int main(int argc, char *argv[])
 		slurm_mutex_lock(&slurmctld_config.thread_count_lock);
 		slurmctld_config.server_thread_count++;
 		slurm_mutex_unlock(&slurmctld_config.thread_count_lock);
-		slurm_attr_init(&thread_attr_rpc);
+		slurm_attr_init(&thread_attr);
 		if (pthread_create(&slurmctld_config.thread_id_rpc, 
-				&thread_attr_rpc,_slurmctld_rpc_mgr, NULL))
+				&thread_attr,_slurmctld_rpc_mgr, NULL))
 			fatal("pthread_create error %m");
-		slurm_attr_destroy(&thread_attr_rpc);
+		slurm_attr_destroy(&thread_attr);
 
 		/*
 		 * create attached thread for signal handling
 		 */
-		slurm_attr_init(&thread_attr_sig);
+		slurm_attr_init(&thread_attr);
 		if (pthread_create(&slurmctld_config.thread_id_sig,
-				 &thread_attr_sig, _slurmctld_signal_hand,
+				 &thread_attr, _slurmctld_signal_hand,
 				 NULL))
 			fatal("pthread_create %m");
-		slurm_attr_destroy(&thread_attr_sig);
+		slurm_attr_destroy(&thread_attr);
 
 		/*
 		 * create attached thread for state save
 		 */
-		slurm_attr_init(&thread_attr_save);
+		slurm_attr_init(&thread_attr);
 		if (pthread_create(&slurmctld_config.thread_id_save,
-				&thread_attr_save, slurmctld_state_save,
+				&thread_attr, slurmctld_state_save,
 				NULL))
 			fatal("pthread_create %m");
-		slurm_attr_destroy(&thread_attr_save);
+		slurm_attr_destroy(&thread_attr);
+
+		/*
+		 * create attached thread for node power management
+		 */
+		slurm_attr_init(&thread_attr);
+		if (pthread_create(&slurmctld_config.thread_id_power,
+				&thread_attr, init_power_save,
+				NULL))
+			fatal("pthread_create %m");
+		slurm_attr_destroy(&thread_attr);
 
 		/*
 		 * process slurm background activities, could run as pthread
@@ -360,6 +370,7 @@ int main(int argc, char *argv[])
 		pthread_join(slurmctld_config.thread_id_sig,  NULL);
 		pthread_join(slurmctld_config.thread_id_rpc,  NULL);
 		pthread_join(slurmctld_config.thread_id_save, NULL);
+		pthread_join(slurmctld_config.thread_id_power,NULL);
 		if (select_g_state_save(slurmctld_conf.state_save_location)
 				!= SLURM_SUCCESS )
 			error("failed to save node selection state");
