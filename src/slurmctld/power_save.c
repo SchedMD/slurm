@@ -54,19 +54,19 @@
 #include <stdlib.h>
 #include <unistd.h>
 
+#define _DEBUG 0
+
 /* NOTE: These paramters will be moved into the slurm.conf file in version 1.3
  * Directly modify the default values here in order to enable this capability
  * in SLURM version 1.2. */
 
 /* Node becomes elligible for power saving mode after being idle for
- * this number of seconds. A negative disables power saving mode. */
+ * this number of seconds. A negative number disables power saving mode. */
 #define DEFAULT_IDLE_TIME	-1
 
 /* Maximum number of nodes to be placed into or removed from power saving mode
  * per minute. Use this to prevent rapid changes in power requirements.
- * Note that up to DEFAULT_SUSPEND_RATE + DEFAULT_RESUME_RATE processes may 
- * be created at the same time, so use reasonable limits. A value of zero 
- * results in no limits being imposed. */
+ * A value of zero results in no limits being imposed. */
 #define DEFAULT_SUSPEND_RATE	60
 #define DEFAULT_RESUME_RATE	60
 
@@ -108,40 +108,6 @@ static void _do_power_work(void)
 	bitstr_t *wake_node_bitmap = NULL, *sleep_node_bitmap = NULL;
 	struct node_record *node_ptr;
 
-	/* Build bitmaps identifying each node which should change state */
-	for (i=0; i<node_record_count; i++) {
-		node_ptr = &node_record_table_ptr[i];
-		base_state = node_ptr->node_state & NODE_STATE_BASE;
-		susp_state = node_ptr->node_state & NODE_STATE_POWER_SAVE;
-
-		if (susp_state)
-			susp_total++;
-		if (susp_state
-		&&  ((base_state == NODE_STATE_ALLOCATED)
-		||   (node_ptr->last_idle > (now - idle_time)))) {
-			if (wake_cnt == 0)
-				wake_node_bitmap = bit_alloc(node_record_count);
-			wake_cnt++;
-			bit_set(wake_node_bitmap, i);
-		}
-		if ((susp_state == 0)
-		&&  (base_state == NODE_STATE_IDLE)
-		&&  (node_ptr->last_idle < (now - idle_time))
-		&&  ((exc_node_bitmap == NULL) || 
-		     (bit_test(exc_node_bitmap, i) == 0))) {
-			if (sleep_cnt == 0)
-				sleep_node_bitmap = bit_alloc(node_record_count);
-			sleep_cnt++;
-			bit_set(sleep_node_bitmap, i);
-		}
-	}
-	if ((now - last_log) > 300)
-		info("Power save mode %d nodes", susp_total);
-	if ((wake_cnt == 0) && (sleep_cnt == 0)) {
-		_re_wake();
-		goto fini;		/* No work to be done now */
-	}
-
 	/* Set limit on counts of nodes to have state changed */
 	delta_t = now - last_work_scan;
 	if (delta_t >= 60) {
@@ -154,27 +120,66 @@ static void _do_power_work(void)
 	}
 	last_work_scan = now;
 
-	/* Perform work up to limits */
+	/* Build bitmaps identifying each node which should change state */
 	for (i=0; i<node_record_count; i++) {
 		node_ptr = &node_record_table_ptr[i];
-		if ((suspend_cnt <= suspend_rate)
-		&&  sleep_node_bitmap
-		&&  bit_test(sleep_node_bitmap, i)) {
-			_do_suspend(node_ptr->name);
+		base_state = node_ptr->node_state & NODE_STATE_BASE;
+		susp_state = node_ptr->node_state & NODE_STATE_POWER_SAVE;
+
+		if (susp_state)
+			susp_total++;
+		if (susp_state
+		&&  (suspend_cnt <= suspend_rate)
+		&&  ((base_state == NODE_STATE_ALLOCATED)
+		||   (node_ptr->last_idle > (now - idle_time)))) {
+			if (wake_node_bitmap == NULL)
+				wake_node_bitmap = bit_alloc(node_record_count);
+			wake_cnt++;
+			suspend_cnt++;
 			node_ptr->node_state |= NODE_STATE_POWER_SAVE;
-			last_node_update = now;
+			bit_set(wake_node_bitmap, i);
 		}
-		if ((resume_cnt <= resume_rate)
-		&&  wake_node_bitmap
-		&&  bit_test(wake_node_bitmap, i)) {
-			_do_resume(node_ptr->name);
+		if ((susp_state == 0)
+		&&  (resume_cnt <= resume_rate)
+		&&  (base_state == NODE_STATE_IDLE)
+		&&  (node_ptr->last_idle < (now - idle_time))
+		&&  ((exc_node_bitmap == NULL) || 
+		     (bit_test(exc_node_bitmap, i) == 0))) {
+			if (sleep_node_bitmap == NULL)
+				sleep_node_bitmap = bit_alloc(node_record_count);
+			sleep_cnt++;
+			resume_cnt++;
 			node_ptr->node_state &= (~NODE_STATE_POWER_SAVE);
-			last_node_update = now;
+			bit_set(sleep_node_bitmap, i);
 		}
 	}
+	if ((now - last_log) > 600)
+		info("Power save mode %d nodes", susp_total);
 
-fini:	FREE_NULL_BITMAP(wake_node_bitmap);
-	FREE_NULL_BITMAP(sleep_node_bitmap);
+	if ((wake_cnt == 0) && (sleep_cnt == 0))
+		_re_wake();	/* No work to be done now */
+
+	if (sleep_node_bitmap) {
+		char *nodes;
+		nodes = bitmap2node_name(sleep_node_bitmap);
+		if (nodes)
+			_do_suspend(nodes);
+		else
+			error("power_save: bitmap2nodename");
+		xfree(nodes);
+		bit_free(sleep_node_bitmap);
+	}
+
+	if (wake_node_bitmap) {
+		char *nodes;
+		nodes = bitmap2node_name(wake_node_bitmap);
+		if (nodes)
+			_do_resume(nodes);
+		else
+			error("power_save: bitmap2nodename");
+		xfree(nodes);
+		bit_free(wake_node_bitmap);
+	}
 }
 
 /* Just in case some resume calls failed, re-issue the requests
@@ -184,30 +189,51 @@ static void _re_wake(void)
 {
 	static int last_inx = 0;
 	struct node_record *node_ptr;
-	int i;	/* count of re-issued wake requests */
-	int lim = MIN(node_record_count, 10);
+	bitstr_t *wake_node_bitmap = NULL;
+	int i, lim = MIN(node_record_count, 20);
 
 	for (i=0; i<lim; i++) {
 		node_ptr = &node_record_table_ptr[last_inx];
-		if ((node_ptr->node_state & NODE_STATE_POWER_SAVE) == 0)
-			_do_resume(node_ptr->name);
-
+		if ((node_ptr->node_state & NODE_STATE_POWER_SAVE) == 0) {
+			if (wake_node_bitmap == NULL)
+				wake_node_bitmap = bit_alloc(node_record_count);
+			bit_set(wake_node_bitmap, last_inx);
+		}
 		last_inx++;
 		if (last_inx >= node_record_count)
 			last_inx = 0;
 	}
-		
+
+	if (wake_node_bitmap) {
+		char *nodes;
+		nodes = bitmap2node_name(wake_node_bitmap);
+		if (nodes) {
+			debug("power_save: rewaking nodes %s", nodes);
+			_run_prog(resume_prog, nodes);	
+		} else
+			error("power_save: bitmap2nodename");
+		xfree(nodes);
+		bit_free(wake_node_bitmap);
+	}		
 }
 
 static void _do_resume(char *host)
 {
-	debug("power_save: waking node %s", host);
+#if _DEBUG
+	info("power_save: waking nodes %s", host);
+#else
+	debug("power_save: waking nodes %s", host);
+#endif
 	_run_prog(resume_prog, host);	
 }
 
 static void _do_suspend(char *host)
 {
-	debug("power_save: suspending node %s", host);
+#if _DEBUG
+	info("power_save: suspending nodes %s", host);
+#else
+	debug("power_save: suspending nodes %s", host);
+#endif
 	_run_prog(suspend_prog, host);	
 }
 
