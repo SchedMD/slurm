@@ -73,8 +73,8 @@
 /* Programs to be executed to place nodes or out of power saving mode. These 
  * are run as user SlurmUser. The hostname of the node to be modified will be
  * passed as an argument to the program. */
-#define DEFAULT_SUSPEND_PROGRAM	"/home/jette/slurm.way/sbin/slurm.node.suspend"
-#define DEFAULT_RESUME_PROGRAM	"/home/jette/slurm.way/sbin/slurm.node.resume"
+#define DEFAULT_SUSPEND_PROGRAM	"/home/jette/slurm.mdev/sbin/slurm.node.suspend"
+#define DEFAULT_RESUME_PROGRAM	"/home/jette/slurm.mdev/sbin/slurm.node.resume"
 
 /* Individual nodes or all nodes in selected partitions can be excluded from
  * being placed into power saving mode. SLURM hostlist expressions can be used.
@@ -102,8 +102,9 @@ static bool  _valid_prog(char *file_name);
 /* Perform any power change work to nodes */
 static void _do_power_work(void)
 {
+	static time_t last_log = 0, last_work_scan = 0;
 	int i, wake_cnt = 0, sleep_cnt = 0, susp_total = 0;
-	time_t now = time(NULL), last_work_scan = 0, last_log = 0, delta_t;
+	time_t now = time(NULL), delta_t;
 	uint16_t base_state, susp_state;
 	bitstr_t *wake_node_bitmap = NULL, *sleep_node_bitmap = NULL;
 	struct node_record *node_ptr;
@@ -136,7 +137,7 @@ static void _do_power_work(void)
 				wake_node_bitmap = bit_alloc(node_record_count);
 			wake_cnt++;
 			suspend_cnt++;
-			node_ptr->node_state |= NODE_STATE_POWER_SAVE;
+			node_ptr->node_state &= (~NODE_STATE_POWER_SAVE);
 			bit_set(wake_node_bitmap, i);
 		}
 		if ((susp_state == 0)
@@ -149,12 +150,14 @@ static void _do_power_work(void)
 				sleep_node_bitmap = bit_alloc(node_record_count);
 			sleep_cnt++;
 			resume_cnt++;
-			node_ptr->node_state &= (~NODE_STATE_POWER_SAVE);
+			node_ptr->node_state |= NODE_STATE_POWER_SAVE;
 			bit_set(sleep_node_bitmap, i);
 		}
 	}
-	if ((now - last_log) > 600)
+	if ((now - last_log) > 600) {
 		info("Power save mode %d nodes", susp_total);
+		last_log = now;
+	}
 
 	if ((wake_cnt == 0) && (sleep_cnt == 0))
 		_re_wake();	/* No work to be done now */
@@ -168,6 +171,7 @@ static void _do_power_work(void)
 			error("power_save: bitmap2nodename");
 		xfree(nodes);
 		bit_free(sleep_node_bitmap);
+		last_node_update = now;
 	}
 
 	if (wake_node_bitmap) {
@@ -179,6 +183,7 @@ static void _do_power_work(void)
 			error("power_save: bitmap2nodename");
 		xfree(nodes);
 		bit_free(wake_node_bitmap);
+		last_node_update = now;
 	}
 }
 
@@ -187,10 +192,17 @@ static void _do_power_work(void)
  * since there should be no change in power requirements. */
 static void _re_wake(void)
 {
+	static time_t last_wakeup = 0;
 	static int last_inx = 0;
+	time_t now = time(NULL);
 	struct node_record *node_ptr;
 	bitstr_t *wake_node_bitmap = NULL;
 	int i, lim = MIN(node_record_count, 20);
+
+	/* Run at most once per minute */
+	if ((now - last_wakeup) < 60)
+		return;
+	last_wakeup = now;
 
 	for (i=0; i<lim; i++) {
 		node_ptr = &node_record_table_ptr[last_inx];
@@ -208,7 +220,11 @@ static void _re_wake(void)
 		char *nodes;
 		nodes = bitmap2node_name(wake_node_bitmap);
 		if (nodes) {
+#if _DEBUG
+			info("power_save: rewaking nodes %s", nodes);
+#else
 			debug("power_save: rewaking nodes %s", nodes);
+#endif
 			_run_prog(resume_prog, nodes);	
 		} else
 			error("power_save: bitmap2nodename");
