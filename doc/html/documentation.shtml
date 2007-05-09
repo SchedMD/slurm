@@ -22,6 +22,7 @@
 <li><a href="lci.7.tutorial.pdf">Resource Management Using SLURM, 
 (Tutorial, The 7th International Conference on Linux Clusters, May 2006)</li>
 <li><a href="big_sys.shtml">Large Cluster Administration Guide</a></li>
+<li><a href="power_save.shtml">Power Saving Guide</a></li>
 <li><a href="cons_res.shtml">Consumable Resources Guide</a></li>
 <li><a href="bluegene.shtml">Blue Gene User and Administrator Guide</a></li>
 <li><a href="ibm.shtml">IBM AIX User and Administrator Guide</a></li>
@@ -49,6 +50,6 @@ Jobs throuh LSF</a></li>
 <li><a href="mpiplugins.shtml">MPI Plugin Programmer Guide</a></li>
 </ul>
 
-<p style="text-align:center;">Last modified 24 April 2007</p>
+<p style="text-align:center;">Last modified 9 May 2007</p>
 
 <!--#include virtual="footer.txt"-->

@@ -49,9 +49,11 @@ on a node.</li>
 provide vastly improved integration.</li>
 <li>BlueGene plugin permits use of different boot images per job 
 specification.</li>
-<li>Added event trigger mechanism with new tool <i>strigger</i>.</li>
+<li>Event trigger mechanism added with new tool <i>strigger</i>.</li>
 <li>Added support for task binding to CPUs or memory via <i>cpuset</i>
 mechanism.</li>
+<li>Added support for configurable 
+<a href="power_save.html">power savings</a> on idle nodes.</li>
 </ul>
 
 <h2><a name="13">Major Updates in SLURM Version 1.3 and beyond</a></h2>
@@ -69,6 +71,6 @@ and refresh.</li>
 </ul>
 
 
-<p style="text-align:center;">Last modified 1 May 2007</p>
+<p style="text-align:center;">Last modified 9 May 2007</p>
 
 <!--#include virtual="footer.txt"-->
