@@ -7,8 +7,8 @@ documents those changes that are of interest to users and admins.
 * Changes in SLURM 1.2.7
 ========================
  -- BLUEGENE - code to make it so you can make a 36x36x36 system.  
-    The wiring isn't correct on the X axis for anything over 8 though.
-    But that is only in emulation mode.
+    The wiring should be correct for a system with x-dim of 1,2,4,5,8,13
+    in emulation mode.  It will work with any real system no matter the size.
  -- Major re-write of jobcomp/script plugin: fix memory leak and 
     general code clean-up.
  -- Add ability to change MaxNodes and ExcNodeList for pending job 
