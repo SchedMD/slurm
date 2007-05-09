@@ -747,6 +747,10 @@ env_array_for_job(char ***dest, const resource_allocation_response_msg_t *alloc)
 					alloc->cpus_per_node,
 					alloc->cpu_count_reps);
 	env_array_overwrite_fmt(dest, "SLURM_JOB_CPUS_PER_NODE", "%s", tmp);
+#ifdef HAVE_AIX
+	/* this puts the "poe" command into batch mode */
+	env_array_overwrite(dest, "LOADLBATCH", "yes");
+#endif
 
 	/* obsolete */
 	env_array_overwrite_fmt(dest, "SLURM_JOBID", "%u", alloc->job_id);
