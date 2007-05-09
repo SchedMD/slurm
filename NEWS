@@ -11,8 +11,9 @@ documents those changes that are of interest to users and admins.
  -- Add ability to change MaxNodes and ExcNodeList for pending job 
     using scontrol.
  -- Purge zombie processes spawned via event triggers.
- -- Add support for power saving mode (experimental code to reduce
-    clock on nodes that stay in the IDLE state).
+ -- Add support for power saving mode (experimental code to reduce voltage
+    and frequency on nodes that stay in the IDLE state, for more information 
+    see http://www.llnl.gov/linux/slurm/power_save.html).
 
 * Changes in SLURM 1.2.6
 ========================
