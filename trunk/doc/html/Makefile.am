@@ -25,6 +25,7 @@ generated_html = \
 	overview.html \
 	platforms.html \
 	plugins.html \
+	power_save.html \
 	proctrack_plugins.html \
 	programmer_guide.html \
 	publications.html \
