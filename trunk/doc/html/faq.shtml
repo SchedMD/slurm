@@ -55,6 +55,8 @@ replayed" error in the <i>SlurmdLogFile</i> indicate?</a></li>
 processing time" in the <i>SlurmctldLogFile</i> indicate?</a></li>
 <li><a href="#lightweight_core">How can I add support for lightweight
 core files?</a></li>
+<li><a href="#limit_propagation">Is resource limit propagation
+useful on a homogeneous cluster?</a></li>
 </ol>
 
 <h2>For Users</h2>
@@ -561,9 +563,24 @@ Then edit the SLURM code in <i>src/srun/core-format.c</i> to
 specify a name for the core file type, 
 add a test for the existence of the library, 
 and set environment variables appropriately when it is used.
- 
+
+<p><a name="limit_propagation"><b>19. Is resource limit propagation
+useful on a homogeneous cluster?</b></a><br>
+Resource limit propagation permits a user to modify resource limits
+and submit a job with those limits.
+By default, SLURM automatically propagates all resource limits in 
+effect at the time of job submission to the tasks spawned as part 
+of that job. 
+System administrators can utilize the <i>PropagateResourceLimits</i>
+and <i>PropagateResourceLimitsExcept</i> configuration parameters to 
+change this behavior.
+Users can override defaults using the <i>srun --propagate</i> 
+option. 
+See <i>"man slurm.conf"</i> and <i>"man srun"</i> for more information 
+about these options.
+
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 30 April 2007</p>
+<p style="text-align:center;">Last modified 9 May 2007</p>
 
 <!--#include virtual="footer.txt"-->
