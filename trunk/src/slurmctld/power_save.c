@@ -141,7 +141,7 @@ static void _do_power_work(void)
 			bit_set(wake_node_bitmap, i);
 		}
 		if ((susp_state == 0)
-		&&  (resume_rate == 0) || (resume_cnt <= resume_rate))
+		&&  ((resume_rate == 0) || (resume_cnt <= resume_rate))
 		&&  (base_state == NODE_STATE_IDLE)
 		&&  (node_ptr->last_idle < (now - idle_time))
 		&&  ((exc_node_bitmap == NULL) || 
@@ -257,6 +257,9 @@ static pid_t _run_prog(char *prog, char *arg)
 {
 	char program[1024], arg0[1024], arg1[1024], *pname;
 	pid_t child;
+
+	if (prog == NULL)	/* disabled, useful for testing */
+		return -1;
 
 	strncpy(program, prog, sizeof(program));
 	pname = strrchr(program, '/');
