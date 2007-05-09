@@ -37,6 +37,7 @@
 \*****************************************************************************/
 
 #include "pgsql_jobacct.h"
+#include "pgsql_jobcomp.h"
 #include "pgsql_common.h"
 
 /*
@@ -90,10 +91,10 @@ extern int fini ( void )
  * Initialize the database make sure tables are created and in working
  * order
  */
-extern int database_p_jobacct_init()
+extern int database_p_jobacct_init(char *location)
 {
 #ifdef HAVE_PGSQL
-	return pgsql_jobacct_init();	
+	return pgsql_jobacct_init(location);	
 #else
 	return SLURM_ERROR;
 #endif
@@ -199,4 +200,49 @@ extern void database_p_jobacct_archive(List selected_parts,
 	pgsql_jobacct_archive(selected_parts, params);
 #endif
 	return;
+}
+
+extern int database_p_jobcomp_init(char *location)
+{
+#ifdef HAVE_PGSQL
+	return pgsql_jobcomp_init(location);
+#else
+	return SLURM_ERROR;
+#endif 
+}
+
+extern int database_p_jobcomp_fini()
+{
+#ifdef HAVE_PGSQL
+	return pgsql_jobcomp_fini();
+#else
+	return SLURM_ERROR;
+#endif 
+}
+
+extern int database_p_jobcomp_log_record(struct job_record *job_ptr)
+{
+#ifdef HAVE_PGSQL
+	return pgsql_jobcomp_log_record(job_ptr);
+#else
+	return SLURM_ERROR;
+#endif 
+}
+
+extern int database_p_jobcomp_get_errno()
+{
+#ifdef HAVE_PGSQL
+	return pgsql_jobcomp_get_errno();
+#else
+	return SLURM_ERROR;
+#endif 
+}
+
+extern char *database_p_jobcomp_strerror(int errnum)
+{
+#ifdef HAVE_PGSQL
+	return pgsql_jobcomp_strerror(errnum);
+#else
+	return NULL;
+#endif 
 }

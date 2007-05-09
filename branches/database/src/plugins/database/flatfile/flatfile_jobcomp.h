@@ -38,11 +38,12 @@
 #ifndef _FLATFILE_JOBCOMP_H_
 #define _FLATFILE_JOBCOMP_H_
 
+#include "src/slurmctld/slurmctld.h"
 
-extern int flatfile_jobcomp_set_location(char * location);
+extern int flatfile_jobcomp_init(char * location);
+extern int flatfile_jobcomp_fini();
+extern int flatfile_jobcomp_get_errno();
 extern int flatfile_jobcomp_log_record(struct job_record *job_ptr);
 extern char *flatfile_jobcomp_strerror(int errnum);
-extern int flatfile_jobcomp_init(void);
-extern int flatfile_jobcomp_fini(void);
 
 #endif

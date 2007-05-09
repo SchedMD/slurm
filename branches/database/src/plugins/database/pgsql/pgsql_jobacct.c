@@ -41,6 +41,9 @@
 #include "pgsql_jobacct_process.h"
 
 #ifdef HAVE_PGSQL
+
+#define DEFAULT_JOBACCT_DB "slurm_jobacct_db"
+
 PGconn *jobacct_pgsql_db = NULL;
 int jobacct_db_init = 0;
 
@@ -194,13 +197,34 @@ static int _pgsql_jobacct_check_tables(char *user)
 }
 
 
-extern int pgsql_jobacct_init()
+extern int pgsql_jobacct_init(char *location)
 {
 	pgsql_db_info_t *db_info = create_pgsql_db_info();
-	int 		rc = SLURM_SUCCESS;
-	char *db_name = "slurm_jobacct_db";
+	int rc = SLURM_SUCCESS;
+	char *db_name = NULL;
 
-	debug3("pgsql_connect() called");
+	if(jobacct_db_init) 
+		return SLURM_ERROR;
+	
+	if(!location)
+		db_name = DEFAULT_JOBACCT_DB;
+	else {
+		int i = 0;
+		while(location[i]) {
+			if(location[i] == '.' || location[i] == '/') {
+				debug("%s doesn't look like a database "
+				      "name using %s",
+				      location, DEFAULT_JOBACCT_DB);
+				break;
+			}
+			i++;
+		}
+		if(location[i]) 
+			db_name = DEFAULT_JOBACCT_DB;
+		else
+			db_name = location;
+	}
+	debug2("pgsql_connect() called for db %s", db_name);
 	
 	pgsql_get_db_connection(&jobacct_pgsql_db, db_name, db_info,
 				&jobacct_db_init);
@@ -239,8 +263,12 @@ extern int pgsql_jobacct_job_start(struct job_record *job_ptr)
 	int reinit = 0;
 
 	if(!jobacct_pgsql_db) {
-		if(pgsql_jobacct_init() == SLURM_ERROR)
+		char *loc = slurm_get_jobacct_loc();
+		if(pgsql_jobacct_init(loc) == SLURM_ERROR) {
+			xfree(loc);
 			return SLURM_ERROR;
+		}
+		xfree(loc);
 	}
 
 	debug2("pgsql_jobacct_job_start() called");
@@ -303,10 +331,12 @@ try_again:
 			 nodes, account);
 		rc = pgsql_db_query(jobacct_pgsql_db, jobacct_db_init, query);
 	} else if(!reinit) {
+		char *loc = slurm_get_jobacct_loc();
 		error("It looks like the database has gone "
 		      "away trying to reconnect");
 		pgsql_jobacct_fini();
-		pgsql_jobacct_init();		
+		pgsql_jobacct_init(loc);
+		xfree(loc);
 		reinit = 1;
 		goto try_again;
 	} else
@@ -322,8 +352,12 @@ extern int pgsql_jobacct_job_complete(struct job_record *job_ptr)
 	int rc=SLURM_SUCCESS;
 	
 	if(!jobacct_pgsql_db) {
-		if(pgsql_jobacct_init() == SLURM_ERROR)
+		char *loc = slurm_get_jobacct_loc();
+		if(pgsql_jobacct_init(loc) == SLURM_ERROR) {
+			xfree(loc);
 			return SLURM_ERROR;
+		}
+		xfree(loc);
 	}
 	
 	debug2("pgsql_jobacct_job_complete() called");
@@ -370,8 +404,12 @@ extern int pgsql_jobacct_step_start(struct step_record *step_ptr)
 	char query[1024];
 	
 	if(!jobacct_pgsql_db) {
-		if(pgsql_jobacct_init() == SLURM_ERROR)
+		char *loc = slurm_get_jobacct_loc();
+		if(pgsql_jobacct_init(loc) == SLURM_ERROR) {
+			xfree(loc);
 			return SLURM_ERROR;
+		}
+		xfree(loc);
 	}
 
 #ifdef HAVE_BG
@@ -442,8 +480,12 @@ extern int pgsql_jobacct_step_complete(struct step_record *step_ptr)
 	int rc =SLURM_SUCCESS;
 	
 	if(!jobacct_pgsql_db) {
-		if(pgsql_jobacct_init() == SLURM_ERROR)
+		char *loc = slurm_get_jobacct_loc();
+		if(pgsql_jobacct_init(loc) == SLURM_ERROR) {
+			xfree(loc);
 			return SLURM_ERROR;
+		}
+		xfree(loc);
 	}
 	
 	now = time(NULL);
@@ -596,8 +638,12 @@ extern int pgsql_jobacct_suspend(struct job_record *job_ptr)
 	int rc = SLURM_SUCCESS;
 	
 	if(!jobacct_pgsql_db) {
-		if(pgsql_jobacct_init() == SLURM_ERROR)
+		char *loc = slurm_get_jobacct_loc();
+		if(pgsql_jobacct_init(loc) == SLURM_ERROR) {
+			xfree(loc);
 			return SLURM_ERROR;
+		}
+		xfree(loc);
 	}
 	
 	if(job_ptr->db_index) {
@@ -633,9 +679,14 @@ extern void pgsql_jobacct_get_jobs(List job_list,
 				   void *params)
 {
 	if(!jobacct_pgsql_db) {
-		if(pgsql_jobacct_init() == SLURM_ERROR)
+		char *loc = slurm_get_jobacct_loc();
+		if(pgsql_jobacct_init(loc) == SLURM_ERROR) {
+			xfree(loc);
 			return;
+		}
+		xfree(loc);
 	}
+
 	pgsql_jobacct_process_get_jobs(job_list,
 				       selected_steps, selected_parts,
 				       params);	
@@ -648,9 +699,14 @@ extern void pgsql_jobacct_get_jobs(List job_list,
 extern void pgsql_jobacct_archive(List selected_parts, void *params)
 {
 	if(!jobacct_pgsql_db) {
-		if(pgsql_jobacct_init() == SLURM_ERROR)
+		char *loc = slurm_get_jobacct_loc();
+		if(pgsql_jobacct_init(loc) == SLURM_ERROR) {
+			xfree(loc);
 			return;
+		}
+		xfree(loc);
 	}
+
 	pgsql_jobacct_process_archive(selected_parts, params);
 	return;
 }

@@ -454,6 +454,21 @@ char *slurm_get_jobcomp_type(void)
 	return jobcomp_type;
 }
 
+/* slurm_get_jobcomp_loc
+ * returns the job completion loc from slurmctld_conf object
+ * RET char *    - job completion location,  MUST be xfreed by caller
+ */
+char *slurm_get_jobcomp_loc(void)
+{
+	char *jobcomp_loc;
+	slurm_ctl_conf_t *conf;
+
+	conf = slurm_conf_lock();
+	jobcomp_loc = xstrdup(conf->job_comp_loc);
+	slurm_conf_unlock();
+	return jobcomp_loc;	
+}
+
 /* slurm_get_proctrack_type
  * get ProctrackType from slurmctld_conf object
  * RET char *   - proctrack type, MUST be xfreed by caller

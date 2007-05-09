@@ -46,7 +46,7 @@
 #ifdef HAVE_PGSQL
 #include <libpq-fe.h>
 
-extern int pgsql_jobacct_init();
+extern int pgsql_jobacct_init(char *location);
 extern int pgsql_jobacct_fini();
 extern int pgsql_jobacct_job_start(struct job_record *job_ptr);
 extern int pgsql_jobacct_job_complete(struct job_record *job_ptr);

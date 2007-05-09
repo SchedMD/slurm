@@ -49,7 +49,7 @@
  * Initialize the database make sure tables are created and in working
  * order
  */
-extern int database_g_jobacct_init ();
+extern int database_g_jobacct_init (char *location);
 
 /*
  * finish up database connection
@@ -99,11 +99,11 @@ extern void database_g_jobacct_archive(List selected_parts, void *params);
 /*
  * jobcomp functions
  */
-extern int database_g_jobcomp_set_location(char * location);
+extern int database_g_jobcomp_init(char * location);
+extern int database_g_jobcomp_fini();
+extern int database_g_jobcomp_get_errno();
 extern int database_g_jobcomp_log_record(struct job_record *job_ptr);
 extern char *database_g_jobcomp_strerror(int errnum);
-extern int database_g_jobcomp_init(void);
-extern int database_g_jobcomp_fini(void);
 
 
 

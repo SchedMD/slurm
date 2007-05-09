@@ -212,6 +212,12 @@ uint32_t slurm_get_database_port(void);
  */
 char *slurm_get_jobcomp_type(void);
 
+/* slurm_get_jobcomp_loc
+ * returns the job completion loc from slurmctld_conf object
+ * RET char *    - job completion location,  MUST be xfreed by caller
+ */
+char *slurm_get_jobcomp_loc(void);
+
 /* slurm_get_propagate_prio_process
  * return the PropagatePrioProcess flag from slurmctld_conf object
  */

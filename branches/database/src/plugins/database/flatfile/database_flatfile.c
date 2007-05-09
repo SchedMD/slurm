@@ -53,6 +53,7 @@
 
 #include "src/slurmctld/slurmctld.h"
 #include "flatfile_jobacct.h"
+#include "flatfile_jobcomp.h"
 
 /*
  * These variables are required by the generic plugin interface.  If they
@@ -183,3 +184,29 @@ extern void database_p_jobacct_archive(List selected_parts,
 	flatfile_jobacct_archive(selected_parts, params);
 	return;
 }
+
+extern int database_p_jobcomp_init(char * location)
+{
+	return flatfile_jobcomp_init(location);
+}
+
+extern int database_p_jobcomp_fini()
+{
+	return flatfile_jobcomp_fini();
+}
+
+extern int database_p_jobcomp_log_record(struct job_record *job_ptr)
+{
+	return flatfile_jobcomp_log_record(job_ptr);
+}
+
+extern int database_p_jobcomp_get_errno(void)
+{
+	return flatfile_jobcomp_get_errno();
+}
+
+extern char *database_p_jobcomp_strerror(int errnum)
+{
+	return flatfile_jobcomp_strerror(errnum);
+}
+

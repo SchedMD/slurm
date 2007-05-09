@@ -64,7 +64,6 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 #include "src/common/parse_time.h"
-#include "src/slurmctld/slurmctld.h"
 
 #define JOB_FORMAT "JobId=%lu UserId=%s(%lu) Name=%s JobState=%s Partition=%s "\
 		"TimeLimit=%s StartTime=%s EndTime=%s NodeList=%s NodeCnt=%u %s\n"
@@ -79,6 +78,9 @@ static slurm_errtab_t slurm_errtab[] = {
 	{0, "No error"},
 	{-1, "Unspecified error"}
 };
+
+/* A plugin-global errno. */
+static int plugin_errno = SLURM_SUCCESS;
 
 /* File descriptor used for logging */
 static pthread_mutex_t  file_lock = PTHREAD_MUTEX_INITIALIZER;
@@ -125,7 +127,7 @@ static char *_lookup_slurm_api_errtab(int errnum)
 	return res;
 }
 
-extern int flatfile_jobcomp_set_location ( char * location )
+extern int flatfile_jobcomp_init(char *location)
 {
 	int rc = SLURM_SUCCESS;
 
@@ -148,6 +150,19 @@ extern int flatfile_jobcomp_set_location ( char * location )
 		fchmod(job_comp_fd, 0644);
 	slurm_mutex_unlock( &file_lock );
 	return rc;
+}
+
+extern int flatfile_jobcomp_fini ( void )
+{
+	if (job_comp_fd >= 0)
+		close(job_comp_fd);
+	xfree(log_name);
+	return SLURM_SUCCESS;
+}
+
+extern int flatfile_jobcomp_get_errno( void )
+{
+	return plugin_errno;
 }
 
 extern int flatfile_jobcomp_log_record ( struct job_record *job_ptr )
@@ -217,15 +232,3 @@ extern char *flatfile_jobcomp_strerror( int errnum )
 	return (res ? res : strerror(errnum));
 }
 
-extern int flatfile_jobcomp_init ( void )
-{
-	return SLURM_SUCCESS;
-}
-
-extern int flatfile_jobcomp_fini ( void )
-{
-	if (job_comp_fd >= 0)
-		close(job_comp_fd);
-	xfree(log_name);
-	return SLURM_SUCCESS;
-}

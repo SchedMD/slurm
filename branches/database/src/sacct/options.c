@@ -1173,12 +1173,14 @@ void do_stat()
 void sacct_init()
 {
 	int i=0;
+	char *loc = slurm_get_jobacct_loc();
 	jobs = list_create(jobacct_destroy_job);
 	selected_parts = list_create(_destroy_parts);
 	selected_steps = list_create(_destroy_steps);
 	for(i=0; i<STATUS_COUNT; i++)
 		selected_status[i] = 0;
-	database_g_jobacct_init();
+	database_g_jobacct_init(loc);
+	xfree(loc);
 }
 
 void sacct_fini()

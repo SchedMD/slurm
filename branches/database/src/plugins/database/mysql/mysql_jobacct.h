@@ -47,7 +47,7 @@
 #include <mysql/mysql.h>
 #include <mysql/mysqld_error.h>
 
-extern int mysql_jobacct_init();
+extern int mysql_jobacct_init(char *location);
 extern int mysql_jobacct_fini();
 extern int mysql_jobacct_job_start(struct job_record *job_ptr);
 extern int mysql_jobacct_job_complete(struct job_record *job_ptr);

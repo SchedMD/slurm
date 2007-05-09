@@ -74,7 +74,6 @@ am__strip_dir = `echo $$p | sed -e 's|^.*/||'`;
 am__installdirs = "$(DESTDIR)$(pkglibdir)"
 pkglibLTLIBRARIES_INSTALL = $(INSTALL)
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
-jobcomp_database_la_LIBADD =
 am_jobcomp_database_la_OBJECTS = jobcomp_database.lo
 jobcomp_database_la_OBJECTS = $(am_jobcomp_database_la_OBJECTS)
 jobcomp_database_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
@@ -263,7 +262,13 @@ pkglib_LTLIBRARIES = jobcomp_database.la
 
 # Database job completion logging plugin.
 jobcomp_database_la_SOURCES = jobcomp_database.c
+jobcomp_database_la_LIBADD = \
+	$(top_builddir)/src/common/libcommon.la -lpthread
+
 jobcomp_database_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
+jobcomp_database_la_DEPENDENCIES = \
+	$(top_builddir)/src/common/libcommon.la
+
 all: all-am
 
 .SUFFIXES:

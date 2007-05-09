@@ -37,6 +37,7 @@
 \*****************************************************************************/
 
 #include "mysql_jobacct.h"
+#include "mysql_jobcomp.h"
 #include "mysql_common.h"
 
 /*
@@ -81,7 +82,7 @@ extern int init ( void )
 {
 #ifdef HAVE_MYSQL
 	if(!mysql_thread_safe()) {
-		debug("MySQL database not treadsafe only one connection "
+		debug2("MySQL database not treadsafe only one connection "
 		      "to the database will be allowed.");
 		thread_safe = false;
 	}
@@ -102,10 +103,10 @@ extern int fini ( void )
  * Initialize the database make sure tables are created and in working
  * order
  */
-extern int database_p_jobacct_init()
+extern int database_p_jobacct_init(char *job_acct_log)
 {
 #ifdef HAVE_MYSQL
-	return mysql_jobacct_init();	
+	return mysql_jobacct_init(job_acct_log);	
 #else
 	return SLURM_ERROR;
 #endif
@@ -211,4 +212,49 @@ extern void database_p_jobacct_archive(List selected_parts,
 	mysql_jobacct_archive(selected_parts, params);
 #endif
 	return;
+}
+
+extern int database_p_jobcomp_init(char *location)
+{
+#ifdef HAVE_MYSQL
+	return mysql_jobcomp_init(location);
+#else
+	return SLURM_ERROR;
+#endif 
+}
+
+extern int database_p_jobcomp_fini(void)
+{
+#ifdef HAVE_MYSQL
+	return mysql_jobcomp_fini();
+#else
+	return SLURM_ERROR;
+#endif 
+}
+
+extern int database_p_jobcomp_log_record(struct job_record *job_ptr)
+{
+#ifdef HAVE_MYSQL
+	return mysql_jobcomp_log_record(job_ptr);
+#else
+	return SLURM_ERROR;
+#endif 
+}
+
+extern int database_p_jobcomp_get_errno(void)
+{
+#ifdef HAVE_MYSQL
+	return mysql_jobcomp_get_errno();
+#else
+	return SLURM_ERROR;
+#endif 
+}
+
+extern char *database_p_jobcomp_strerror(int errnum)
+{
+#ifdef HAVE_MYSQL
+	return mysql_jobcomp_strerror(errnum);
+#else
+	return NULL;
+#endif 
 }

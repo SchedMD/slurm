@@ -56,7 +56,7 @@
  */
 
 typedef struct slurm_database_ops {
-	int  (*jobacct_init)          ();
+	int  (*jobacct_init)          (char *location);
 	int  (*jobacct_fini)          ();
 	int  (*jobacct_job_start)     (struct job_record *job_ptr);
 	int  (*jobacct_job_complete)  (struct job_record *job_ptr);
@@ -70,9 +70,9 @@ typedef struct slurm_database_ops {
 	void (*jobacct_archive)       (List selected_parts,
 				       void *params);
 	
-	int (*jobcomp_init)           ();
+	int (*jobcomp_init)           (char * location);
 	int (*jobcomp_fini)           ();
-	int (*jobcomp_set_location)   (char * location);
+	int (*jobcomp_get_errno)      ();
 	int (*jobcomp_log_record)     (struct job_record *job_ptr);
 	char *(*jobcomp_strerror)     (int errnum);
 } slurm_database_ops_t;
@@ -116,7 +116,7 @@ static slurm_database_ops_t * _database_get_ops(slurm_database_context_t *c)
 		"database_p_jobacct_archive",
 		"database_p_jobcomp_init",
 		"database_p_jobcomp_fini",
-		"database_p_jobcomp_set_location",
+		"database_p_jobcomp_get_errno",
 		"database_p_jobcomp_log_record",
 		"database_p_jobcomp_strerror"
 	};
@@ -252,11 +252,11 @@ extern int slurm_database_fini(void)
  * Initialize the database make sure tables are created and in working
  * order
  */
-extern int database_g_jobacct_init ()
+extern int database_g_jobacct_init (char *location)
 {
 	if (slurm_database_init() < 0)
 		return SLURM_ERROR;
-	return (*(g_database_context->ops.jobacct_init))();
+	return (*(g_database_context->ops.jobacct_init))(location);
 }
 
 /*
@@ -352,38 +352,39 @@ extern void database_g_jobacct_archive(List selected_parts, void *params)
 
 
 /* job comp */
-extern int database_g_jobcomp_init(void)
+extern int database_g_jobcomp_init(char * location)
 {
 	if (slurm_database_init() < 0)
-		return;
- 	return (*(g_database_context->ops.jobcomp_init))();
+		return SLURM_ERROR;
+ 	return (*(g_database_context->ops.jobcomp_init))(location);
 }
 
-extern int database_g_jobcomp_fini(void)
+extern int database_g_jobcomp_fini()
 {
 	if (slurm_database_init() < 0)
-		return;
+		return SLURM_ERROR;
  	return (*(g_database_context->ops.jobcomp_fini))();
 }
 
-extern int database_g_jobcomp_set_location(char * location)
+extern int database_g_jobcomp_get_errno()
 {
 	if (slurm_database_init() < 0)
-		return;
- 	return (*(g_database_context->ops.jobcomp_set_location))(location);
+		return SLURM_ERROR;
+ 	return (*(g_database_context->ops.jobcomp_get_errno))();
+
 }
 
 extern int database_g_jobcomp_log_record(struct job_record *job_ptr)
 {
 	if (slurm_database_init() < 0)
-		return;
+		return SLURM_ERROR;
  	return (*(g_database_context->ops.jobcomp_log_record))(job_ptr);
 }
 
 extern char *database_g_jobcomp_strerror(int errnum)
 {
 	if (slurm_database_init() < 0)
-		return;
- 	return (*(g_database_context->ops.jobcomp_seterror))(errnum);
+		return NULL;
+ 	return (*(g_database_context->ops.jobcomp_strerror))(errnum);
 }
 

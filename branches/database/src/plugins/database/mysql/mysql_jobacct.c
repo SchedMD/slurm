@@ -41,6 +41,9 @@
 #include "mysql_jobacct_process.h"
 
 #ifdef HAVE_MYSQL
+
+#define DEFAULT_JOBACCT_DB "slurm_jobacct_db"
+
 MYSQL *jobacct_mysql_db = NULL;
 int jobacct_db_init = 0;
 
@@ -160,14 +163,34 @@ static int _mysql_jobacct_check_tables()
 }
 
 
-extern int mysql_jobacct_init()
+extern int mysql_jobacct_init(char *location)
 {
-#ifdef HAVE_MYSQL
 	mysql_db_info_t *db_info = create_mysql_db_info();
-	int 		rc = SLURM_SUCCESS;
-	char *db_name = "slurm_jobacct_db";
-
-	debug2("mysql_connect() called");
+	int rc = SLURM_SUCCESS;
+	char *db_name = NULL;
+	
+	if(jobacct_db_init) 
+		return SLURM_ERROR;
+	
+	if(!location)
+		db_name = DEFAULT_JOBACCT_DB;
+	else {
+		int i = 0;
+		while(location[i]) {
+			if(location[i] == '.' || location[i] == '/') {
+				debug("%s doesn't look like a database "
+				      "name using %s",
+				      location, DEFAULT_JOBACCT_DB);
+				break;
+			}
+			i++;
+		}
+		if(location[i]) 
+			db_name = DEFAULT_JOBACCT_DB;
+		else
+			db_name = location;
+	}
+	debug2("mysql_connect() called for db %s", db_name);
 	
 	mysql_get_db_connection(&jobacct_mysql_db, db_name, db_info,
 				&jobacct_db_init);
@@ -176,26 +199,19 @@ extern int mysql_jobacct_init()
 
 	destroy_mysql_db_info(db_info);
 
-	debug("Database init finished");
+	debug("Jobacct database init finished");
 
 	return rc;
-#else
-	return SLURM_ERROR;
-#endif
 }
 
 extern int mysql_jobacct_fini()
 {
-#ifdef HAVE_MYSQL
 	if (jobacct_mysql_db) {
 		mysql_close(jobacct_mysql_db);
 		jobacct_mysql_db = NULL;
 	}
 	jobacct_db_init = 0;
 	return SLURM_SUCCESS;
-#else
-	return SLURM_ERROR;
-#endif
 }
 
 extern int mysql_jobacct_job_start(struct job_record *job_ptr)
@@ -211,8 +227,12 @@ extern int mysql_jobacct_job_start(struct job_record *job_ptr)
 	int reinit = 0;
 
 	if(!jobacct_mysql_db) {
-		if(mysql_jobacct_init() == SLURM_ERROR)
+		char *loc = slurm_get_jobacct_loc();
+		if(mysql_jobacct_init(loc) == SLURM_ERROR) {
+			xfree(loc);
 			return SLURM_ERROR;
+		}
+		xfree(loc);
 	}
 
 	debug2("mysql_jobacct_job_start() called");
@@ -274,10 +294,12 @@ try_again:
 			 nodes, account);
 		rc = mysql_db_query(jobacct_mysql_db, jobacct_db_init, query);
 	} else if(!reinit) {
+		char *loc = slurm_get_jobacct_loc();
 		error("It looks like the database has gone "
 		      "away trying to reconnect");
 		mysql_jobacct_fini();
-		mysql_jobacct_init();		
+		mysql_jobacct_init(loc);
+		xfree(loc);
 		reinit = 1;
 		goto try_again;
 	} else
@@ -293,8 +315,12 @@ extern int mysql_jobacct_job_complete(struct job_record *job_ptr)
 	int rc=SLURM_SUCCESS;
 	
 	if(!jobacct_mysql_db) {
-		if(mysql_jobacct_init() == SLURM_ERROR)
+		char *loc = slurm_get_jobacct_loc();
+		if(mysql_jobacct_init(loc) == SLURM_ERROR) {
+			xfree(loc);
 			return SLURM_ERROR;
+		}
+		xfree(loc);
 	}
 	
 	debug2("mysql_jobacct_job_complete() called");
@@ -341,8 +367,12 @@ extern int mysql_jobacct_step_start(struct step_record *step_ptr)
 	char query[1024];
 	
 	if(!jobacct_mysql_db) {
-		if(mysql_jobacct_init() == SLURM_ERROR)
+		char *loc = slurm_get_jobacct_loc();
+		if(mysql_jobacct_init(loc) == SLURM_ERROR) {
+			xfree(loc);
 			return SLURM_ERROR;
+		}
+		xfree(loc);
 	}
 
 #ifdef HAVE_BG
@@ -413,8 +443,12 @@ extern int mysql_jobacct_step_complete(struct step_record *step_ptr)
 	int rc =SLURM_SUCCESS;
 	
 	if(!jobacct_mysql_db) {
-		if(mysql_jobacct_init() == SLURM_ERROR)
+		char *loc = slurm_get_jobacct_loc();
+		if(mysql_jobacct_init(loc) == SLURM_ERROR) {
+			xfree(loc);
 			return SLURM_ERROR;
+		}
+		xfree(loc);
 	}
 	
 	now = time(NULL);
@@ -567,8 +601,12 @@ extern int mysql_jobacct_suspend(struct job_record *job_ptr)
 	int rc = SLURM_SUCCESS;
 	
 	if(!jobacct_mysql_db) {
-		if(mysql_jobacct_init() == SLURM_ERROR)
+		char *loc = slurm_get_jobacct_loc();
+		if(mysql_jobacct_init(loc) == SLURM_ERROR) {
+			xfree(loc);
 			return SLURM_ERROR;
+		}
+		xfree(loc);
 	}
 	
 	if(job_ptr->db_index) {
@@ -604,8 +642,12 @@ extern void mysql_jobacct_get_jobs(List job_list,
 				   void *params)
 {
 	if(!jobacct_mysql_db) {
-		if(mysql_jobacct_init() == SLURM_ERROR)
+		char *loc = slurm_get_jobacct_loc();
+		if(mysql_jobacct_init(loc) == SLURM_ERROR) {
+			xfree(loc);
 			return;
+		}
+		xfree(loc);
 	}
 	mysql_jobacct_process_get_jobs(job_list,
 				       selected_steps, selected_parts,
@@ -619,8 +661,12 @@ extern void mysql_jobacct_get_jobs(List job_list,
 extern void mysql_jobacct_archive(List selected_parts, void *params)
 {
 	if(!jobacct_mysql_db) {
-		if(mysql_jobacct_init() == SLURM_ERROR)
+		char *loc = slurm_get_jobacct_loc();
+		if(mysql_jobacct_init(loc) == SLURM_ERROR) {
+			xfree(loc);
 			return;
+		}
+		xfree(loc);
 	}
 	mysql_jobacct_process_archive(selected_parts, params);
 	return;

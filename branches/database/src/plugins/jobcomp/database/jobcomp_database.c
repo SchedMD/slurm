@@ -15,7 +15,7 @@
  *  any later version.
  *
  *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under 
+ *  to link the code of portions of this program with the OpenSSL library under
  *  certain conditions as described in each individual source file, and 
  *  distribute linked combinations including the two. You must obey the GNU 
  *  General Public License in all respects for all of the code used other than 
@@ -46,39 +46,8 @@
 #  include <inttypes.h>
 #endif
 
-#include <fcntl.h>
-#include <pthread.h>
-#include <pwd.h>
-#include <slurm/slurm.h>
-#include <slurm/slurm_errno.h>
-#include <string.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <unistd.h>
-
-#include "src/common/macros.h"
-#include "src/common/node_select.h"
-#include "src/common/slurm_protocol_defs.h"
-#include "src/common/slurm_jobcomp.h"
-#include "src/common/uid.h"
-#include "src/common/xmalloc.h"
-#include "src/common/xstring.h"
 #include "src/slurmctld/slurmctld.h"
 #include "src/common/slurm_database.h"
-
-#define JOB_FORMAT "JobId=%lu UserId=%s(%lu) Name=%s JobState=%s Partition=%s "\
-		"TimeLimit=%s StartTime=%s EndTime=%s NodeList=%s NodeCnt=%u %s\n"
- 
-/* Type for error string table entries */
-typedef struct {
-	int xe_number;
-	char *xe_message;
-} slurm_errtab_t;
-
-static slurm_errtab_t slurm_errtab[] = {
-	{0, "No error"},
-	{-1, "Unspecified error"}
-};
 
 /*
  * These variables are required by the generic plugin interface.  If they
@@ -111,22 +80,20 @@ static slurm_errtab_t slurm_errtab[] = {
  */
 const char plugin_name[]       	= "Job completion database logging plugin";
 const char plugin_type[]       	= "jobcomp/database";
-const uint32_t plugin_version	= 90;
+const uint32_t plugin_version	= 10;
 
-/* A plugin-global errno. */
-static int plugin_errno = SLURM_SUCCESS;
-
-/* File descriptor used for logging */
-static pthread_mutex_t  file_lock = PTHREAD_MUTEX_INITIALIZER;
-static char *           log_name  = NULL;
-static int              job_comp_fd = -1;
 /*
  * init() is called when the plugin is loaded, before any other functions
  * are called.  Put global initialization here.
  */
 int init ( void )
 {
-	return flatfile_jobcomp_init();
+	return SLURM_SUCCESS;
+}
+
+int fini ( void )
+{
+	return database_g_jobcomp_fini();
 }
 
 /*
@@ -136,25 +103,21 @@ int init ( void )
 
 extern int slurm_jobcomp_set_location ( char * location )
 {
-	return flatfile_jobcomp_set_location(location);
+	return database_g_jobcomp_init(location);
 }
 
 extern int slurm_jobcomp_log_record ( struct job_record *job_ptr )
 {
-	return flatfile_jobcomp_log_record(job_ptr);
+	return database_g_jobcomp_log_record(job_ptr);
 }
 
 extern int slurm_jobcomp_get_errno( void )
 {
-	return plugin_errno;
+	return database_g_jobcomp_get_errno();
 }
 
 extern char *slurm_jobcomp_strerror( int errnum )
 {
-	return flatfile_jobcomp_log_record(errnum);
+	return database_g_jobcomp_strerror(errnum);
 }
 
-int fini ( void )
-{
-	return flatfile_jobcomp_fini();
-}
