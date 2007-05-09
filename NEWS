@@ -1,6 +1,9 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins.
 
+* Changes in SLURM 1.2.8
+========================
+
 * Changes in SLURM 1.2.7
 ========================
  -- BLUEGENE - code to make it so you can make a 36x36x36 system.  
