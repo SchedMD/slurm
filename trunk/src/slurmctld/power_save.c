@@ -135,7 +135,7 @@ static void _do_power_work(void)
 			bit_set(sleep_node_bitmap, i);
 		}
 	}
-	if ((susp_total > 0) && ((now - last_log) > 300))
+	if ((now - last_log) > 300)
 		info("Power save mode %d nodes", susp_total);
 	if ((wake_cnt == 0) && (sleep_cnt == 0)) {
 		_re_wake();
