@@ -130,7 +130,7 @@ static void _do_power_work(void)
 		if (susp_state)
 			susp_total++;
 		if (susp_state
-		&&  (suspend_cnt <= suspend_rate)
+		&&  ((suspend_rate == 0) || (suspend_cnt <= suspend_rate))
 		&&  ((base_state == NODE_STATE_ALLOCATED)
 		||   (node_ptr->last_idle > (now - idle_time)))) {
 			if (wake_node_bitmap == NULL)
@@ -141,7 +141,7 @@ static void _do_power_work(void)
 			bit_set(wake_node_bitmap, i);
 		}
 		if ((susp_state == 0)
-		&&  (resume_cnt <= resume_rate)
+		&&  (resume_rate == 0) || (resume_cnt <= resume_rate))
 		&&  (base_state == NODE_STATE_IDLE)
 		&&  (node_ptr->last_idle < (now - idle_time))
 		&&  ((exc_node_bitmap == NULL) || 
