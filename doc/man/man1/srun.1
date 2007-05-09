@@ -1,6 +1,6 @@
 \." $Id$
 .\"
-.TH SRUN "1" "January 2007" "srun 1.2" "slurm components"
+.TH SRUN "1" "May 2007" "srun 1.2" "slurm components"
 
 .SH "NAME"
 srun \- run parallel jobs
@@ -775,10 +775,11 @@ initiation and higher system utilization, but lower application performance.
 
 .TP
 \fB\-T\fR, \fB\-\-threads\fR=\fInthreads\fR
-Request that 
-.B srun
+Request that \fBsrun\fR
 use \fInthreads\fR to initiate and control the parallel job. The 
-default value is the smaller of 32 or the number of nodes allocated.
+default value is the smaller of 60 or the number of nodes allocated.
+This should only be used to set a low thread count for testing on 
+very small memory computers.
 
 .TP
 \fB\-t\fR, \fB\-\-time\fR=\fIminutes\fR
