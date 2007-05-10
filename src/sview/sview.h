@@ -109,6 +109,11 @@ enum { DISPLAY_NAME,
        DISPLAY_VALUE 
 };
 
+enum { EDIT_NONE,
+       EDIT_MODEL,
+       EDIT_TEXTBOX	
+};
+
 typedef enum { SEARCH_JOB_ID = 1,
 	       SEARCH_JOB_USER,
 	       SEARCH_JOB_STATE,

@@ -100,64 +100,64 @@ enum {
 };
 
 static display_data_t display_data_part[] = {
-	{G_TYPE_INT, SORTID_POS, NULL, FALSE, -1, refresh_part},
-	{G_TYPE_STRING, SORTID_NAME, "Partition", TRUE, -1, refresh_part,
-	 create_model_part, admin_edit_part},
-	{G_TYPE_STRING, SORTID_DEFAULT, "Default", TRUE, 0, refresh_part,
-	 create_model_part, admin_edit_part},
-	{G_TYPE_STRING, SORTID_HIDDEN, "Hidden", FALSE, 0, refresh_part,
-	 create_model_part, admin_edit_part},
-	{G_TYPE_STRING, SORTID_AVAIL, "Availablity", TRUE, 0, refresh_part,
-	 create_model_part, admin_edit_part},
+	{G_TYPE_INT, SORTID_POS, NULL, FALSE, EDIT_NONE, refresh_part},
+	{G_TYPE_STRING, SORTID_NAME, "Partition", TRUE,
+	 EDIT_NONE, refresh_part, create_model_part, admin_edit_part},
+	{G_TYPE_STRING, SORTID_DEFAULT, "Default", TRUE,
+	 EDIT_MODEL, refresh_part, create_model_part, admin_edit_part},
+	{G_TYPE_STRING, SORTID_HIDDEN, "Hidden", FALSE,
+	 EDIT_MODEL, refresh_part, create_model_part, admin_edit_part},
+	{G_TYPE_STRING, SORTID_AVAIL, "Availablity", TRUE,
+	 EDIT_MODEL, refresh_part, create_model_part, admin_edit_part},
 	{G_TYPE_STRING, SORTID_TIMELIMIT, "Time Limit", 
-	 TRUE, 1, refresh_part, create_model_part, admin_edit_part},
-	{G_TYPE_STRING, SORTID_NODES, "Nodes", TRUE, -1, refresh_part,
+	 TRUE, EDIT_TEXTBOX, refresh_part, create_model_part, admin_edit_part},
+	{G_TYPE_STRING, SORTID_NODES, "Nodes", TRUE, EDIT_NONE, refresh_part,
 	 create_model_part, admin_edit_part},
-	{G_TYPE_STRING, SORTID_STATE, "State", TRUE, 0, refresh_part,
+	{G_TYPE_STRING, SORTID_STATE, "State", TRUE, EDIT_MODEL, refresh_part,
 	 create_model_part, admin_edit_part},
 #ifdef HAVE_BG
-	{G_TYPE_STRING, SORTID_NODELIST, "BP List", TRUE, 1, refresh_part,
-	 create_model_part, admin_edit_part},
+	{G_TYPE_STRING, SORTID_NODELIST, "BP List", TRUE,
+	 EDIT_TEXTBOX, refresh_part, create_model_part, admin_edit_part},
 #else
-	{G_TYPE_STRING, SORTID_NODELIST, "NodeList", TRUE, 1, refresh_part,
-	 create_model_part, admin_edit_part},
+	{G_TYPE_STRING, SORTID_NODELIST, "NodeList", TRUE,
+	 EDIT_TEXTBOX, refresh_part, create_model_part, admin_edit_part},
 #endif
-	{G_TYPE_STRING, SORTID_JOB_SIZE, "Job Size", FALSE, -1, refresh_part,
+	{G_TYPE_STRING, SORTID_JOB_SIZE, "Job Size", FALSE,
+	 EDIT_NONE, refresh_part, create_model_part, admin_edit_part},
+	{G_TYPE_STRING, SORTID_MIN_NODES, "Min Nodes", FALSE,
+	 EDIT_TEXTBOX, refresh_part, create_model_part, admin_edit_part},
+	{G_TYPE_STRING, SORTID_MAX_NODES, "Max Nodes", FALSE,
+	 EDIT_TEXTBOX, refresh_part, create_model_part, admin_edit_part},
+	{G_TYPE_STRING, SORTID_ROOT, "Root", FALSE, EDIT_MODEL, refresh_part,
 	 create_model_part, admin_edit_part},
-	{G_TYPE_STRING, SORTID_MIN_NODES, "Min Nodes", FALSE, 1, refresh_part,
+	{G_TYPE_STRING, SORTID_SHARE, "Share", FALSE, EDIT_MODEL, refresh_part,
 	 create_model_part, admin_edit_part},
-	{G_TYPE_STRING, SORTID_MAX_NODES, "Max Nodes", FALSE, 1, refresh_part,
+	{G_TYPE_STRING, SORTID_GROUPS, "Groups", FALSE,
+	 EDIT_TEXTBOX, refresh_part, create_model_part, admin_edit_part},
+	{G_TYPE_STRING, SORTID_CPUS, "CPUs", FALSE, EDIT_NONE, refresh_part,
 	 create_model_part, admin_edit_part},
-	{G_TYPE_STRING, SORTID_ROOT, "Root", FALSE, 0, refresh_part,
+	{G_TYPE_STRING, SORTID_TMP_DISK, "Temp Disk", FALSE,
+	 EDIT_NONE, refresh_part, create_model_part, admin_edit_part},
+	{G_TYPE_STRING, SORTID_MEM, "Memory", FALSE, EDIT_NONE, refresh_part,
 	 create_model_part, admin_edit_part},
-	{G_TYPE_STRING, SORTID_SHARE, "Share", FALSE, 0, refresh_part,
+	{G_TYPE_STRING, SORTID_WEIGHT, "Weight", FALSE,
+	 EDIT_NONE, refresh_part, create_model_part, admin_edit_part},
+	{G_TYPE_STRING, SORTID_FEATURES, "Features", FALSE,
+	 EDIT_TEXTBOX, refresh_part, create_model_part, admin_edit_part},
+	{G_TYPE_STRING, SORTID_REASON, "Reason", FALSE,
+	 EDIT_NONE, refresh_part, create_model_part, admin_edit_part},
+	{G_TYPE_INT, SORTID_STATE_NUM, NULL, FALSE, EDIT_NONE, refresh_part,
 	 create_model_part, admin_edit_part},
-	{G_TYPE_STRING, SORTID_GROUPS, "Groups", FALSE, 0, refresh_part,
+	{G_TYPE_INT, SORTID_ONLY_LINE, NULL, FALSE, EDIT_NONE, refresh_part,
 	 create_model_part, admin_edit_part},
-	{G_TYPE_STRING, SORTID_CPUS, "CPUs", FALSE, -1, refresh_part,
-	 create_model_part, admin_edit_part},
-	{G_TYPE_STRING, SORTID_TMP_DISK, "Temp Disk", FALSE, -1, refresh_part,
-	 create_model_part, admin_edit_part},
-	{G_TYPE_STRING, SORTID_MEM, "Memory", FALSE, -1, refresh_part,
-	 create_model_part, admin_edit_part},
-	{G_TYPE_STRING, SORTID_WEIGHT, "Weight", FALSE, -1, refresh_part,
-	 create_model_part, admin_edit_part},
-	{G_TYPE_STRING, SORTID_FEATURES, "Features", FALSE, 1, refresh_part,
-	 create_model_part, admin_edit_part},
-	{G_TYPE_STRING, SORTID_REASON, "Reason", FALSE, -1, refresh_part,
-	 create_model_part, admin_edit_part},
-	{G_TYPE_INT, SORTID_STATE_NUM, NULL, FALSE, -1, refresh_part,
-	 create_model_part, admin_edit_part},
-	{G_TYPE_INT, SORTID_ONLY_LINE, NULL, FALSE, -1, refresh_part,
-	 create_model_part, admin_edit_part},
-	{G_TYPE_INT, SORTID_UPDATED, NULL, FALSE, -1, refresh_part,
+	{G_TYPE_INT, SORTID_UPDATED, NULL, FALSE, EDIT_NONE, refresh_part,
 	 create_model_part, admin_edit_part},
 
-	{G_TYPE_NONE, -1, NULL, FALSE, -1}
+	{G_TYPE_NONE, -1, NULL, FALSE, EDIT_NONE}
 };
 
 static display_data_t options_data_part[] = {
-	{G_TYPE_INT, SORTID_POS, NULL, FALSE, -1},
+	{G_TYPE_INT, SORTID_POS, NULL, FALSE, EDIT_NONE},
 	{G_TYPE_STRING, INFO_PAGE, "Full Info", TRUE, PART_PAGE},
 #ifdef HAVE_BG
 	{G_TYPE_STRING, PART_PAGE, "Drain Base Partitions", TRUE, ADMIN_PAGE},
@@ -186,7 +186,7 @@ static display_data_t options_data_part[] = {
 	{G_TYPE_STRING, NODE_PAGE, "Nodes", TRUE, PART_PAGE},
 #endif
 	{G_TYPE_STRING, SUBMIT_PAGE, "Job Submit", FALSE, PART_PAGE},
-	{G_TYPE_NONE, -1, NULL, FALSE, -1}
+	{G_TYPE_NONE, -1, NULL, FALSE, EDIT_NONE}
 };
 
 #ifdef HAVE_BG
@@ -537,7 +537,7 @@ static GtkWidget *_admin_full_edit_part(update_part_msg_t *part_msg,
 	gtk_table_set_homogeneous(table, FALSE);	
 
 	for(i = 0; i < SORTID_CNT; i++) {
-		if(display_data_part[i].extra == 0) {
+		if(display_data_part[i].extra == EDIT_MODEL) {
 			/* edittable items that can only be known
 			   values */
 			model2 = GTK_TREE_MODEL(
@@ -564,7 +564,7 @@ static GtkWidget *_admin_full_edit_part(update_part_msg_t *part_msg,
 						   renderer, TRUE);
 			gtk_cell_layout_add_attribute(GTK_CELL_LAYOUT(entry),
 						      renderer, "text", 0);
-		} else if(display_data_part[i].extra == 1) {
+		} else if(display_data_part[i].extra == EDIT_TEXTBOX) {
 			/* other edittable items that are unknown */
 			entry = create_entry();
 			gtk_tree_model_get(model, iter,
@@ -1533,6 +1533,8 @@ void _display_info_part(List info_list,	popup_info_t *popup_win)
 		//info = xstrdup("No pointer given!");
 		goto finished;
 	}
+	if(!list_count(popup_win->grid_button_list)) 
+		first_time = 1;
 
 need_refresh:
 	if(!spec_info->display_widget) {

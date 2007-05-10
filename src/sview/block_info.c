@@ -72,42 +72,42 @@ enum {
 };
 
 static display_data_t display_data_block[] = {
-	{G_TYPE_INT, SORTID_POS, NULL, FALSE, -1, refresh_block,
+	{G_TYPE_INT, SORTID_POS, NULL, FALSE, EDIT_NONE, refresh_block,
 	 create_model_block, admin_edit_block},
 	{G_TYPE_STRING, SORTID_BLOCK, "Bluegene Block", 
-	 TRUE, -1, refresh_block,
+	 TRUE, EDIT_NONE, refresh_block,
 	 create_model_block, admin_edit_block},
-	{G_TYPE_STRING, SORTID_STATE, "State", TRUE, 0, refresh_block,
+	{G_TYPE_STRING, SORTID_STATE, "State", TRUE, EDIT_MODEL, refresh_block,
 	 create_model_block, admin_edit_block},
-	{G_TYPE_STRING, SORTID_USER, "User", TRUE, -1, refresh_block,
+	{G_TYPE_STRING, SORTID_USER, "User", TRUE, EDIT_NONE, refresh_block,
 	 create_model_block, admin_edit_block},
-	{G_TYPE_STRING, SORTID_NODES, "Nodes", TRUE, -1, refresh_block,
+	{G_TYPE_STRING, SORTID_NODES, "Nodes", TRUE, EDIT_NONE, refresh_block,
 	 create_model_block, admin_edit_block},
 	{G_TYPE_STRING, SORTID_CONN, "Connection Type", 
-	 TRUE, -1, refresh_block,
+	 TRUE, EDIT_NONE, refresh_block,
 	 create_model_block, admin_edit_block},
-	{G_TYPE_STRING, SORTID_USE, "Node Use", TRUE, -1, refresh_block,
+	{G_TYPE_STRING, SORTID_USE, "Node Use", TRUE, EDIT_NONE, refresh_block,
 	 create_model_block, admin_edit_block},
-	{G_TYPE_STRING, SORTID_NODELIST, "BP List", TRUE, -1, refresh_block,
+	{G_TYPE_STRING, SORTID_NODELIST, "BP List", TRUE, EDIT_NONE, refresh_block,
 	 create_model_block, admin_edit_block},
 	{G_TYPE_STRING, SORTID_PARTITION, "Partition", 
-	 TRUE, -1, refresh_block,
+	 TRUE, EDIT_NONE, refresh_block,
 	 create_model_block, admin_edit_block},
 	{G_TYPE_STRING, SORTID_BLRTSIMAGE, "Blrts Image",
-	 FALSE, -1, refresh_block, create_model_block, admin_edit_block},
+	 FALSE, EDIT_NONE, refresh_block, create_model_block, admin_edit_block},
 	{G_TYPE_STRING, SORTID_LINUXIMAGE, "linux Image",
-	 FALSE, -1, refresh_block, create_model_block, admin_edit_block},
+	 FALSE, EDIT_NONE, refresh_block, create_model_block, admin_edit_block},
 	{G_TYPE_STRING, SORTID_MLOADERIMAGE, "Mloader Image",
-	 FALSE, -1, refresh_block, create_model_block, admin_edit_block},
+	 FALSE, EDIT_NONE, refresh_block, create_model_block, admin_edit_block},
 	{G_TYPE_STRING, SORTID_RAMDISKIMAGE, "Ramdisk Image",
-	 FALSE, -1, refresh_block, create_model_block, admin_edit_block},
-	{G_TYPE_INT, SORTID_UPDATED, NULL, FALSE, -1, refresh_block,
+	 FALSE, EDIT_NONE, refresh_block, create_model_block, admin_edit_block},
+	{G_TYPE_INT, SORTID_UPDATED, NULL, FALSE, EDIT_NONE, refresh_block,
 	 create_model_block, admin_edit_block},
-	{G_TYPE_NONE, -1, NULL, FALSE, -1}
+	{G_TYPE_NONE, -1, NULL, FALSE, EDIT_NONE}
 };
 
 static display_data_t options_data_block[] = {
-	{G_TYPE_INT, SORTID_POS, NULL, FALSE, -1},
+	{G_TYPE_INT, SORTID_POS, NULL, FALSE, EDIT_NONE},
 	{G_TYPE_STRING, INFO_PAGE, "Full Info", TRUE, BLOCK_PAGE},
 	{G_TYPE_STRING, BLOCK_PAGE, "Put block in error state",
 	 TRUE, ADMIN_PAGE},
@@ -117,7 +117,7 @@ static display_data_t options_data_block[] = {
 	{G_TYPE_STRING, PART_PAGE, "Partition", TRUE, BLOCK_PAGE},
 	{G_TYPE_STRING, NODE_PAGE, "Base Partitions", TRUE, BLOCK_PAGE},
 	{G_TYPE_STRING, SUBMIT_PAGE, "Job Submit", FALSE, BLOCK_PAGE},
-	{G_TYPE_NONE, -1, NULL, FALSE, -1}
+	{G_TYPE_NONE, -1, NULL, FALSE, EDIT_NONE}
 };
 
 static display_data_t *local_display_data = NULL;
