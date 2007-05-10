@@ -43,11 +43,10 @@
 #define _DEBUG           0	/* non-zero for extra KVS logging */
 #define PMI_FANOUT      32	/* max fanout for PMI msg forwarding */
 
-/* Global variables */
-pthread_mutex_t kvs_mutex = PTHREAD_MUTEX_INITIALIZER;
-int kvs_comm_cnt = 0;
-int kvs_updated = 0;
-struct kvs_comm **kvs_comm_ptr = NULL;
+static pthread_mutex_t kvs_mutex = PTHREAD_MUTEX_INITIALIZER;
+static int kvs_comm_cnt = 0;
+static int kvs_updated = 0;
+static struct kvs_comm **kvs_comm_ptr = NULL;
 
 struct barrier_resp {
 	uint16_t port;

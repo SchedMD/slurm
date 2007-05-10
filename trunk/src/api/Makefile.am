@@ -99,7 +99,7 @@ libslurmhelper_la_LDFLAGs = \
 	-version-info $(current):$(rev):$(age)
 
 libpmi_la_SOURCES = pmi.c
-libpmi_la_LIBADD = $(top_builddir)/src/api/libslurm.la
+libpmi_la_LIBADD = $(top_builddir)/src/api/libslurmhelper.la
 libpmi_la_LDFLAGS = $(LIB_LDFLAGS)
 
 force:

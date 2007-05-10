@@ -125,7 +125,7 @@ int pmi_spawned;
 int pmi_rank;
 int pmi_debug;
 
-pthread_mutex_t kvs_mutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_mutex_t kvs_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 int kvs_rec_cnt = 0;
 struct kvs_rec *kvs_recs;
