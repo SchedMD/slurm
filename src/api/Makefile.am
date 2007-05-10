@@ -98,13 +98,18 @@ libslurmhelper_la_LDFLAGs = \
 	$(LIB_LDFLAGS) \
 	-version-info $(current):$(rev):$(age)
 
+convenience_libs = $(top_builddir)/src/api/libslurmhelper.la
+
 libpmi_la_SOURCES = pmi.c
-libpmi_la_LIBADD = $(top_builddir)/src/api/libslurmhelper.la
+libpmi_la_LIBADD = $(convenience_libs)
 libpmi_la_LDFLAGS = $(LIB_LDFLAGS)
 
 force:
 $(libslurm_la_LIBADD) : force
 	@cd `dirname $@` && $(MAKE) `basename $@`
+$(convenience_libs) : force
+	@cd `dirname $@` && $(MAKE) `basename $@`
+
 
 # FIXME - don't export the client_io_handler_ symbols once srun is no longer
 #         calling them directly
