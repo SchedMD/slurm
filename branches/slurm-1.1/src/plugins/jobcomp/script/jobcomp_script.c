@@ -178,14 +178,17 @@ static char ** _create_environment(char *job, char *user, char *job_name,
 	len += strlen(node_list)+7;
         len += strlen(submit)+7;
         len += strlen(batch)+6;
+	/* Add new entries here as need and increase ENV_COUNT */
+#define ENV_COUNT 13
 #ifdef _PATH_STDPATH
 	len += strlen(_PATH_STDPATH)+6;
 #endif
-	len += (13*sizeof(char *));
+	len += (ENV_COUNT * sizeof(char *));
 
-	if(!(envptr = (char **)try_xmalloc(len))) return NULL;
+	if(!(envptr = (char **)try_xmalloc(len)))
+		return NULL;
 
-	ptr = (char *)envptr + (11*sizeof(char *));
+	ptr = (char *)envptr + (ENV_COUNT * sizeof(char *));
 
 	envptr[0] = ptr;
 	memcpy(ptr,"JOBID=",6);
