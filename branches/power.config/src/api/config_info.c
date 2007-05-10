@@ -186,6 +186,10 @@ void slurm_print_ctl_conf ( FILE* out,
                 slurm_ctl_conf_ptr->propagate_rlimits);
         fprintf(out, "PropagateResourceLimitsExcept = %s\n", 
                 slurm_ctl_conf_ptr->propagate_rlimits_except);
+	fprintf(out, "ResumeProgram     = %s\n", 
+		slurm_ctl_conf_ptr->resume_program);
+	fprintf(out, "ResumeRate        = %u\n", 
+		slurm_ctl_conf_ptr->resume_rate);
 	fprintf(out, "ReturnToService   = %u\n", 
 		slurm_ctl_conf_ptr->ret2service);
 	fprintf(out, "SchedulerPort     = %u\n",
@@ -237,6 +241,16 @@ void slurm_print_ctl_conf ( FILE* out,
 		slurm_ctl_conf_ptr->srun_epilog);
 	fprintf(out, "StateSaveLocation = %s\n", 
 		slurm_ctl_conf_ptr->state_save_location);
+	fprintf(out, "SuspendExcNodes   = %s\n", 
+		slurm_ctl_conf_ptr->suspend_exc_nodes);
+	fprintf(out, "SuspendExcParts   = %s\n", 
+		slurm_ctl_conf_ptr->suspend_exc_parts);
+	fprintf(out, "SuspendProgram     = %s\n", 
+		slurm_ctl_conf_ptr->suspend_program);
+	fprintf(out, "SuspendRate        = %u\n", 
+		slurm_ctl_conf_ptr->suspend_rate);
+	fprintf(out, "SuspendTime        = %d\n", 
+		((int)slurm_ctl_conf_ptr->suspend_time - 1));
 	fprintf(out, "SwitchType        = %s\n",
 		slurm_ctl_conf_ptr->switch_type);
 	fprintf(out, "TaskEpilog        = %s\n",

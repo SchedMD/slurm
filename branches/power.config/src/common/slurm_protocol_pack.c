@@ -2087,21 +2087,21 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer)
 	packstr(build_ptr->control_addr, buffer);
 	packstr(build_ptr->control_machine, buffer);
 	packstr(build_ptr->epilog, buffer);
-	pack16((uint16_t)build_ptr->fast_schedule, buffer);
-	pack32((uint32_t)build_ptr->first_job_id, buffer);
-	pack16((uint16_t)build_ptr->inactive_limit, buffer);
+	pack16(build_ptr->fast_schedule, buffer);
+	pack32(build_ptr->first_job_id, buffer);
+	pack16(build_ptr->inactive_limit, buffer);
 	packstr(build_ptr->job_acct_logfile, buffer);
 	pack16(build_ptr->job_acct_freq, buffer);
 	packstr(build_ptr->job_acct_type, buffer);
 	packstr(build_ptr->job_comp_loc, buffer);
 	packstr(build_ptr->job_comp_type, buffer);
-	pack16((uint16_t)build_ptr->kill_wait, buffer);
+	pack16(build_ptr->kill_wait, buffer);
 	packstr(build_ptr->mail_prog, buffer);
-	pack16((uint16_t)build_ptr->max_job_cnt, buffer);
-	pack16((uint16_t)build_ptr->min_job_age, buffer);
+	pack16(build_ptr->max_job_cnt, buffer);
+	pack16(build_ptr->min_job_age, buffer);
 	packstr(build_ptr->mpi_default, buffer);
-	pack16((uint16_t)build_ptr->msg_timeout, buffer);
-	pack32((uint32_t)build_ptr->next_job_id, buffer);
+	pack16(build_ptr->msg_timeout, buffer);
+	pack32(build_ptr->next_job_id, buffer);
 	packstr(build_ptr->plugindir, buffer);
 	packstr(build_ptr->plugstack, buffer);
 	packstr(build_ptr->proctrack_type, buffer);
@@ -2109,42 +2109,49 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer)
 	pack16(build_ptr->propagate_prio_process, buffer);
         packstr(build_ptr->propagate_rlimits, buffer);
         packstr(build_ptr->propagate_rlimits_except, buffer);
-	pack16((uint16_t)build_ptr->ret2service, buffer);
-	pack16((uint16_t)build_ptr->schedport, buffer);
-	pack16((uint16_t)build_ptr->schedrootfltr, buffer);
+	packstr(build_ptr->resume_program, buffer);
+	pack16(build_ptr->resume_rate, buffer);
+	pack16(build_ptr->ret2service, buffer);
+	pack16(build_ptr->schedport, buffer);
+	pack16(build_ptr->schedrootfltr, buffer);
 	packstr(build_ptr->schedtype, buffer);
 	packstr(build_ptr->select_type, buffer);
-	pack16((uint16_t)build_ptr->select_type_param, buffer);
-	pack32((uint32_t)build_ptr->slurm_user_id, buffer);
+	pack16(build_ptr->select_type_param, buffer);
+	pack32(build_ptr->slurm_user_id, buffer);
 	packstr(build_ptr->slurm_user_name, buffer);
-	pack16((uint16_t)build_ptr->slurmctld_debug, buffer);
+	pack16(build_ptr->slurmctld_debug, buffer);
 	packstr(build_ptr->slurmctld_logfile, buffer);
 	packstr(build_ptr->slurmctld_pidfile, buffer);
-	pack32((uint32_t)build_ptr->slurmctld_port, buffer);
-	pack16((uint16_t)build_ptr->slurmctld_timeout, buffer);
-	pack16((uint16_t)build_ptr->slurmd_debug, buffer);
+	pack32(build_ptr->slurmctld_port, buffer);
+	pack16(build_ptr->slurmctld_timeout, buffer);
+	pack16(build_ptr->slurmd_debug, buffer);
 	packstr(build_ptr->slurmd_logfile, buffer);
 	packstr(build_ptr->slurmd_pidfile, buffer);
 #ifndef MULTIPLE_SLURMD
-	pack32((uint32_t)build_ptr->slurmd_port, buffer);
+	pack32(build_ptr->slurmd_port, buffer);
 #endif
 	packstr(build_ptr->slurmd_spooldir, buffer);
-	pack16((uint16_t)build_ptr->slurmd_timeout, buffer);
+	pack16(build_ptr->slurmd_timeout, buffer);
 	packstr(build_ptr->slurm_conf, buffer);
 	packstr(build_ptr->state_save_location, buffer);
+	packstr(build_ptr->suspend_exc_nodes, buffer);
+	packstr(build_ptr->suspend_exc_parts, buffer);
+	packstr(build_ptr->suspend_program, buffer);
+	pack16(build_ptr->suspend_rate, buffer);
+	pack16(build_ptr->suspend_time, buffer);
 	packstr(build_ptr->switch_type, buffer);
 	packstr(build_ptr->task_epilog, buffer);
 	packstr(build_ptr->task_prolog, buffer);
 	packstr(build_ptr->task_plugin, buffer);
 	pack16(build_ptr->task_plugin_param, buffer);
 	packstr(build_ptr->tmp_fs, buffer);
-	pack16((uint16_t)build_ptr->wait_time, buffer);
+	pack16(build_ptr->wait_time, buffer);
 	packstr(build_ptr->job_credential_private_key, buffer);
 	packstr(build_ptr->job_credential_public_certificate, buffer);
 	packstr(build_ptr->srun_prolog, buffer);
 	packstr(build_ptr->srun_epilog, buffer);
 	packstr(build_ptr->node_prefix, buffer);
-	pack16((uint16_t)build_ptr->tree_width, buffer);
+	pack16(build_ptr->tree_width, buffer);
 	pack16(build_ptr->use_pam, buffer);
 }
 
@@ -2199,6 +2206,9 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **
                                &uint16_tmp, buffer);
         safe_unpackstr_xmalloc(&build_ptr->propagate_rlimits_except,
                                &uint16_tmp, buffer);
+	safe_unpackstr_xmalloc(&build_ptr->resume_program,
+			       &uint16_tmp, buffer);
+	safe_unpack16(&build_ptr->resume_rate, buffer);
 	safe_unpack16(&build_ptr->ret2service, buffer);
 	safe_unpack16(&build_ptr->schedport, buffer);
 	safe_unpack16(&build_ptr->schedrootfltr, buffer);
@@ -2229,6 +2239,14 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **
 	safe_unpackstr_xmalloc(&build_ptr->slurm_conf, &uint16_tmp, buffer);
 	safe_unpackstr_xmalloc(&build_ptr->state_save_location,
 			       &uint16_tmp, buffer);
+	safe_unpackstr_xmalloc(&build_ptr->suspend_exc_nodes,
+			       &uint16_tmp, buffer);
+	safe_unpackstr_xmalloc(&build_ptr->suspend_exc_parts,
+			       &uint16_tmp, buffer);
+	safe_unpackstr_xmalloc(&build_ptr->suspend_program,
+			       &uint16_tmp, buffer);
+	safe_unpack16(&build_ptr->suspend_rate, buffer);
+	safe_unpack16(&build_ptr->suspend_time, buffer);
 	safe_unpackstr_xmalloc(&build_ptr->switch_type, &uint16_tmp, buffer);
 	safe_unpackstr_xmalloc(&build_ptr->task_epilog, &uint16_tmp, buffer);
 	safe_unpackstr_xmalloc(&build_ptr->task_prolog, &uint16_tmp, buffer);
@@ -2271,6 +2289,7 @@ unpack_error:
 	xfree(build_ptr->prolog);
 	xfree(build_ptr->propagate_rlimits);
 	xfree(build_ptr->propagate_rlimits_except);
+	xfree(build_ptr->resume_program);
 	xfree(build_ptr->schedtype);
 	xfree(build_ptr->select_type);
 	xfree(build_ptr->slurm_conf);
@@ -2281,6 +2300,9 @@ unpack_error:
 	xfree(build_ptr->slurmd_pidfile);
 	xfree(build_ptr->slurmd_spooldir);
 	xfree(build_ptr->state_save_location);
+	xfree(build_ptr->suspend_exc_nodes);
+	xfree(build_ptr->suspend_exc_parts);
+	xfree(build_ptr->suspend_program);
 	xfree(build_ptr->switch_type);
 	xfree(build_ptr->task_epilog);
 	xfree(build_ptr->task_prolog);

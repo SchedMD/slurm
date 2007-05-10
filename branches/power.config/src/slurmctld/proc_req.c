@@ -339,6 +339,8 @@ void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
         conf_ptr->propagate_rlimits   = xstrdup(conf->propagate_rlimits);
         conf_ptr->propagate_rlimits_except = xstrdup(conf->
 						     propagate_rlimits_except);
+        conf_ptr->resume_program      = xstrdup(conf->resume_program);
+	conf_ptr->resume_rate         = conf->resume_rate;
 	conf_ptr->ret2service         = conf->ret2service;
 	conf_ptr->schedport           = conf->schedport;
 	conf_ptr->schedrootfltr       = conf->schedrootfltr;
@@ -360,6 +362,11 @@ void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
 	conf_ptr->slurmd_timeout      = conf->slurmd_timeout;
 	conf_ptr->slurm_conf          = xstrdup(conf->slurm_conf);
 	conf_ptr->state_save_location = xstrdup(conf->state_save_location);
+        conf_ptr->suspend_exc_nodes   = xstrdup(conf->suspend_exc_nodes);
+        conf_ptr->suspend_exc_parts   = xstrdup(conf->suspend_exc_parts);
+        conf_ptr->suspend_program     = xstrdup(conf->suspend_program);
+	conf_ptr->suspend_rate        = conf->suspend_rate;
+	conf_ptr->suspend_time        = conf->suspend_time;
 	conf_ptr->switch_type         = xstrdup(conf->switch_type);
 	conf_ptr->task_epilog         = xstrdup(conf->task_epilog);
 	conf_ptr->task_prolog         = xstrdup(conf->task_prolog);

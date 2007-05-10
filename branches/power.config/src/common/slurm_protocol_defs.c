@@ -5,7 +5,7 @@
  *
  *  $Id$
  *****************************************************************************
- *  Copyright (C) 2002-2006 The Regents of the University of California.
+ *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Kevin Tew <tew1@llnl.gov> et. al.
  *  UCRL-CODE-226842.
@@ -831,6 +831,7 @@ void slurm_free_ctl_conf(slurm_ctl_conf_info_msg_t * config_ptr)
 		xfree(config_ptr->plugindir);
 		xfree(config_ptr->proctrack_type);
 		xfree(config_ptr->prolog);
+		xfree(config_ptr->resume_program);
 		xfree(config_ptr->slurm_user_name);
 		xfree(config_ptr->slurmctld_pidfile);
 		xfree(config_ptr->slurmctld_logfile);
@@ -841,6 +842,9 @@ void slurm_free_ctl_conf(slurm_ctl_conf_info_msg_t * config_ptr)
 		xfree(config_ptr->state_save_location);
 		xfree(config_ptr->srun_epilog);
 		xfree(config_ptr->srun_prolog);
+		xfree(config_ptr->suspend_exc_nodes);
+		xfree(config_ptr->suspend_exc_parts);
+		xfree(config_ptr->suspend_program);
 		xfree(config_ptr->task_epilog);
 		xfree(config_ptr->task_prolog);
 		xfree(config_ptr->task_plugin);
