@@ -58,6 +58,8 @@ enum possible_allocation_states allocation_state = NOT_GRANTED;
 pthread_mutex_t allocation_state_lock = PTHREAD_MUTEX_INITIALIZER;
 
 static bool exit_flag = false;
+static bool allocation_interrupted = false;
+static uint32_t pending_job_id = 0;
 
 static int fill_job_desc_from_opts(job_desc_msg_t *desc);
 static void ring_terminal_bell(void);
@@ -65,6 +67,7 @@ static int fork_command(char **command);
 static void _pending_callback(uint32_t job_id);
 static void _ignore_signal(int signo);
 static void _exit_on_signal(int signo);
+static void _signal_while_allocating(int signo);
 
 int main(int argc, char *argv[])
 {
@@ -74,19 +77,11 @@ int main(int argc, char *argv[])
 	time_t before, after;
 	salloc_msg_thread_t *msg_thr;
 	char **env = NULL;
-	int status;
+	int status = 0;
 	int errnum = 0;
 	pid_t pid;
 	pid_t rc_pid = 0;
 	int rc = 0;
-
-	xsignal(SIGHUP, _exit_on_signal);
-	xsignal(SIGINT, _ignore_signal);
-	xsignal(SIGQUIT, _ignore_signal);
-	xsignal(SIGPIPE, _ignore_signal);
-	xsignal(SIGTERM, _ignore_signal);
-	xsignal(SIGUSR1, _ignore_signal);
-	xsignal(SIGUSR2, _ignore_signal);
 
 	log_init(xbasename(argv[0]), logopt, 0, NULL);
 	if (initialize_and_process_args(argc, argv) < 0) {
@@ -112,11 +107,21 @@ int main(int argc, char *argv[])
 	msg_thr = msg_thr_create(&desc.other_port);
 	desc.other_hostname = xshort_hostname();
 
+	xsignal(SIGHUP, _signal_while_allocating);
+	xsignal(SIGINT, _signal_while_allocating);
+	xsignal(SIGQUIT, _signal_while_allocating);
+	xsignal(SIGPIPE, _signal_while_allocating);
+	xsignal(SIGTERM, _signal_while_allocating);
+	xsignal(SIGUSR1, _signal_while_allocating);
+	xsignal(SIGUSR2, _signal_while_allocating);
+
 	before = time(NULL);
 	alloc = slurm_allocate_resources_blocking(&desc, opt.max_wait,
 						  _pending_callback);
 	if (alloc == NULL) {
-		if (errno == EINTR) {
+		if (allocation_interrupted) {
+			/* cancelled by signal */
+		} else if (errno == EINTR) {
 			error("Interrupted by signal."
 			      "  Allocation request rescinded.");
 		} else {
@@ -125,7 +130,15 @@ int main(int argc, char *argv[])
 		exit(1);
 	}
 	after = time(NULL);
-	
+
+	xsignal(SIGHUP, _exit_on_signal);
+	xsignal(SIGINT, _ignore_signal);
+	xsignal(SIGQUIT, _ignore_signal);
+	xsignal(SIGPIPE, _ignore_signal);
+	xsignal(SIGTERM, _ignore_signal);
+	xsignal(SIGUSR1, _ignore_signal);
+	xsignal(SIGUSR2, _ignore_signal);
+
 	/*
 	 * Allocation granted!
 	 */
@@ -134,6 +147,14 @@ int main(int argc, char *argv[])
 	    || (opt.bell == BELL_AFTER_DELAY
 		&& ((after - before) > DEFAULT_BELL_DELAY))) {
 		ring_terminal_bell();
+	}
+	if (allocation_interrupted) {
+		/* salloc process received a signal after
+		 * slurm_allocate_resources_blocking returned with the
+		 * allocation, but before the new signal handlers were
+		 * registered.
+		 */
+		goto relinquish;
 	}
 
 	/*
@@ -172,6 +193,7 @@ int main(int argc, char *argv[])
 	/*
 	 * Relinquish the job allocation (if not already revoked).
 	 */
+relinquish:
 	pthread_mutex_lock(&allocation_state_lock);
 	if (allocation_state != REVOKED) {
 		info("Relinquishing job allocation %d", alloc->job_id);
@@ -303,6 +325,15 @@ static pid_t fork_command(char **command)
 static void _pending_callback(uint32_t job_id)
 {
 	info("Pending job allocation %u", job_id);
+	pending_job_id = job_id;
+}
+
+static void _signal_while_allocating(int signo)
+{
+	allocation_interrupted = true;
+	if (pending_job_id != 0) {
+		slurm_complete_job(pending_job_id, 0);
+	}
 }
 
 static void _ignore_signal(int signo)

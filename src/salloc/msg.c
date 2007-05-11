@@ -231,8 +231,15 @@ static void _handle_job_complete(slurm_msg_t *msg)
 	debug3("job complete message received");
 
 	if (comp->step_id == NO_VAL) {
-		info("Job allocation %u has been revoked.", comp->job_id);
 		pthread_mutex_lock(&allocation_state_lock);
+		if (allocation_state != REVOKED) {
+			/* If the allocation_state is already REVOKED, then
+			 * no need to print this message.  We probably
+			 * relinquished the allocation ourself.
+			 */
+			info("Job allocation %u has been revoked.",
+			     comp->job_id);
+		}
 		if (allocation_state == GRANTED
 		    && command_pid > -1
 		    && opt.kill_command_signal_set) {
