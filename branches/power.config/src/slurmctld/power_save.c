@@ -59,11 +59,12 @@
 int idle_time, suspend_rate, resume_rate;
 char *suspend_prog = NULL, *resume_prog = NULL;
 char *exc_nodes = NULL, *exc_parts = NULL;
-
+time_t last_config = (time_t) 0;
 
 bitstr_t *exc_node_bitmap = NULL;
 int suspend_cnt, resume_cnt;
 
+static void  _clear_power_config(void);
 static void  _do_power_work(void);
 static void  _do_resume(char *host);
 static void  _do_suspend(char *host);
@@ -266,6 +267,16 @@ static void  _kill_zombies(void)
 		;
 }
 
+/* Free all allocated memory */
+static void _clear_power_config(void)
+{
+	xfree(suspend_prog);
+	xfree(resume_prog);
+	xfree(exc_nodes);
+	xfree(exc_parts);
+	FREE_NULL_BITMAP(exc_node_bitmap);
+}
+
 /* Initialize power_save module paramters.
  * Return 0 on valid configuration to run power saving,
  * otherwise log the problem and return -1 */
@@ -273,9 +284,11 @@ static int _init_power_config(void)
 {
 	slurm_ctl_conf_t *conf = slurm_conf_lock();
 
+	last_config   = slurmctld_conf.last_update;
 	idle_time     = conf->suspend_time;
 	suspend_rate  = conf->suspend_rate;
 	resume_rate   = conf->resume_rate;
+	_clear_power_config();
 	if (conf->suspend_program)
 		suspend_prog = xstrdup(conf->suspend_program);
 	if (conf->resume_program)
@@ -331,8 +344,8 @@ static int _init_power_config(void)
 			part_ptr = find_part_record(one_part);
 			if (!part_ptr) {
 				error("power_save module disabled, "
-					"invalid excluded partition %s",
-					part_ptr);
+					"invalid excluded partitions %s",
+					exc_parts);
 				rc = -1;
 				break;
 			}
@@ -400,6 +413,10 @@ extern void *init_power_save(void *arg)
 		sleep(1);
 		_kill_zombies();
 
+		if ((last_config != slurmctld_conf.last_update)
+		&&  (_init_power_config()))
+			goto fini;
+
 		/* Only run every 60 seconds or after
 		 * a node state change, whichever 
 		 * happens first */
@@ -414,11 +431,6 @@ extern void *init_power_save(void *arg)
 		last_power_scan = now;
 	}
 
-fini:	/* Free all allocated memory */
-	xfree(suspend_prog);
-	xfree(resume_prog);
-	xfree(exc_nodes);
-	xfree(exc_parts);
-	FREE_NULL_BITMAP(exc_node_bitmap);
+fini:	_clear_power_config();
 	return NULL;
 }
