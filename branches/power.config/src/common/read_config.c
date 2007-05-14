@@ -192,7 +192,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"SuspendExcParts", S_P_STRING},
 	{"SuspendProgram", S_P_STRING},
 	{"SuspendRate", S_P_UINT16},
-	{"SuspendTime", S_P_UINT16},
+	{"SuspendTime", S_P_LONG},
 	{"SwitchType", S_P_STRING},
 	{"TaskEpilog", S_P_STRING},
 	{"TaskProlog", S_P_STRING},
@@ -1380,6 +1380,7 @@ static void
 validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 {
 	char *temp_str = NULL;
+	long long_suspend_time;
 	bool truth;
 
 	if (s_p_get_string(&conf->backup_controller, "BackupController",
@@ -1551,7 +1552,7 @@ validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 
 	s_p_get_string(&conf->resume_program, "ResumeProgram", hashtbl);
 	if (!s_p_get_uint16(&conf->resume_rate, "ResumeRate", hashtbl))
-		conf->suspend_rate = DEFAULT_RESUME_RATE;
+		conf->resume_rate = DEFAULT_RESUME_RATE;
 
 	if (s_p_get_uint16(&conf->schedport, "SchedulerPort", hashtbl)) {
 		if (conf->schedport == 0) {
@@ -1652,10 +1653,13 @@ validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 
 	s_p_get_string(&conf->suspend_exc_nodes, "SuspendExcNodes", hashtbl);
 	s_p_get_string(&conf->suspend_exc_parts, "SuspendExcParts", hashtbl);
-	s_p_get_string(&conf->suspend_program, "SuspendProg", hashtbl);
+	s_p_get_string(&conf->suspend_program, "SuspendProgram", hashtbl);
 	if (!s_p_get_uint16(&conf->suspend_rate, "SuspendRate", hashtbl))
 		conf->suspend_rate = DEFAULT_SUSPEND_RATE;
-	s_p_get_uint16(&conf->suspend_time, "SuspendTime", hashtbl);
+	if (s_p_get_long(&long_suspend_time, "SuspendTime", hashtbl))
+		conf->suspend_time = long_suspend_time + 1;
+	else
+		conf->suspend_time = 0;
 
 	/* see above for switch_type, order dependent */
 

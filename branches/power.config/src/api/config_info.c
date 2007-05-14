@@ -245,11 +245,11 @@ void slurm_print_ctl_conf ( FILE* out,
 		slurm_ctl_conf_ptr->suspend_exc_nodes);
 	fprintf(out, "SuspendExcParts   = %s\n", 
 		slurm_ctl_conf_ptr->suspend_exc_parts);
-	fprintf(out, "SuspendProgram     = %s\n", 
+	fprintf(out, "SuspendProgram    = %s\n", 
 		slurm_ctl_conf_ptr->suspend_program);
-	fprintf(out, "SuspendRate        = %u\n", 
+	fprintf(out, "SuspendRate       = %u\n", 
 		slurm_ctl_conf_ptr->suspend_rate);
-	fprintf(out, "SuspendTime        = %d\n", 
+	fprintf(out, "SuspendTime       = %d\n", 
 		((int)slurm_ctl_conf_ptr->suspend_time - 1));
 	fprintf(out, "SwitchType        = %s\n",
 		slurm_ctl_conf_ptr->switch_type);
