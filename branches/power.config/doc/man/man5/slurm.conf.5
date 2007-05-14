@@ -402,15 +402,21 @@ See \fBPropagateResourceLimits\fR above for a list of valid limit names.
 
 .TP
 \fBResumeProgram\fR
-SLURM supports a mechanism to reduce power consumption on nodes that remain
-idle for an extended period of time. 
+SLURM supports a mechanism to reduce power consumption on nodes that 
+remain idle for an extended period of time. 
 This is typically accomplished by reducing voltage and frequency. 
 \fBResumeProgram\fR is the program that will be executed when a node 
 in power save mode is assigned work to perform.
+The program executes as \fBSlurmUser\fR.
+The argument to the program will be the names of nodes to
+be removed from power savings mode (using SLURM's hostlist
+expression format).
 By default no program is run.
 Related configuration options include \fBResumeRate\fR, \fBSuspendRate\fR,
 \fBSuspendTime\fR, \fBSuspendProgram\fR, \fBSuspendExcNodes\fR, and
 \fBSuspendExcParts\fR.
+More information is available at the SLURM web site
+(http://www.llnl.gov/linux/slurm/power_save.html).
 
 .TP
 \fBResumeRate\fR
@@ -419,6 +425,7 @@ operation by \fBResumeProgram\fR.
 The value is number of nodes per minute and it can be used to prevent 
 power surges if a large number of nodes in power save mode are 
 assigned work at the same time (e.g. a large job starts).
+A value of zero results in no limits being imposed.
 The default value is 60 nodes per minute.
 Related configuration options include \fBResumeProgram\fR, \fBSuspendRate\fR,
 \fBSuspendTime\fR, \fBSuspendProgram\fR, \fBSuspendExcNodes\fR, and
@@ -686,6 +693,10 @@ Related configuration options include \fBResumeProgram\fR, \fBResumeRate\fR,
 \fBSuspendProgram\fR is the program that will be executed when a node
 remains idle for an extended period of time.
 This program is expected to place the node into some power save mode.
+The program executes as \fBSlurmUser\fR.
+The argument to the program will be the names of nodes to
+be placed into power savings mode (using SLURM's hostlist
+expression format).
 By default no program is run.
 Related configuration options include \fBResumeProgram\fR, \fBResumeRate\fR,
 \fBSuspendRate\fR, \fBSuspendTime\fR, \fBSuspendExcNodes\fR, and
@@ -696,6 +707,7 @@ Related configuration options include \fBResumeProgram\fR, \fBResumeRate\fR,
 The rate at which nodes are place into power save mode by \fBSuspendProgram\fR.
 The value is number of nodes per minute and it can be used to prevent
 a large drop in power power consumption (e.g. after a large job completes).
+A value of zero results in no limits being imposed.
 The default value is 60 nodes per minute.
 Related configuration options include \fBResumeProgram\fR, \fBResumeRate\fR,
 \fBSuspendProgram\fR, \fBSuspendTime\fR, \fBSuspendExcNodes\fR, and
