@@ -2267,7 +2267,7 @@ extern void convert_num_unit(float num, char *buf, int orig_type)
 	int i = (int)num % 512;
 	
 	if(i > 0 || (int)num == 0) {
-		sprintf(buf, "%d", (int)num);
+		sprintf(buf, "%d%c", (int)num, unit[orig_type]);
 		return;
 	}
 	

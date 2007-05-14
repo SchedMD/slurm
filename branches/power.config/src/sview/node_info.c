@@ -34,46 +34,58 @@
 enum { 
 	SORTID_POS = POS_LOC,
 	SORTID_CPUS, 
+	SORTID_CORES,
 	SORTID_DISK, 
 	SORTID_FEATURES, 
 	SORTID_MEMORY, 
 	SORTID_NAME, 
 	SORTID_REASON,
+	SORTID_SOCKETS,
 	SORTID_STATE,
 	SORTID_STATE_NUM,
+	SORTID_THREADS,
 	SORTID_UPDATED, 
+	SORTID_USED_CPUS, 
 	SORTID_WEIGHT, 
 	SORTID_CNT
 };
 
 static display_data_t display_data_node[] = {
-	{G_TYPE_INT, SORTID_POS, NULL, FALSE, -1, refresh_node,
+	{G_TYPE_INT, SORTID_POS, NULL, FALSE, EDIT_NONE, refresh_node,
 	 create_model_node, admin_edit_node},
-	{G_TYPE_STRING, SORTID_NAME, "Name", TRUE, -1, refresh_node,
+	{G_TYPE_STRING, SORTID_NAME, "Name", TRUE, EDIT_NONE, refresh_node,
 	 create_model_node, admin_edit_node},
-	{G_TYPE_STRING, SORTID_STATE, "State", TRUE, 0, refresh_node,
+	{G_TYPE_STRING, SORTID_STATE, "State", TRUE, EDIT_MODEL, refresh_node,
 	 create_model_node, admin_edit_node},
-	{G_TYPE_INT, SORTID_STATE_NUM, NULL, FALSE, -1, refresh_node,
+	{G_TYPE_INT, SORTID_STATE_NUM, NULL, FALSE, EDIT_NONE, refresh_node,
 	 create_model_node, admin_edit_node},
-	{G_TYPE_INT, SORTID_CPUS, "CPU Count", TRUE, -1, refresh_node,
+	{G_TYPE_INT, SORTID_CPUS, "CPU Count", TRUE, EDIT_NONE, refresh_node,
 	 create_model_node, admin_edit_node},
-	{G_TYPE_STRING, SORTID_MEMORY, "Real Memory", TRUE, -1, refresh_node,
+	{G_TYPE_INT, SORTID_USED_CPUS, "Used CPU Count", TRUE,
+	 EDIT_NONE, refresh_node, create_model_node, admin_edit_node},
+	{G_TYPE_INT, SORTID_CORES, "Cores", TRUE,
+	 EDIT_NONE, refresh_node, create_model_node, admin_edit_node},
+	{G_TYPE_INT, SORTID_SOCKETS, "Sockets", TRUE,
+	 EDIT_NONE, refresh_node, create_model_node, admin_edit_node},
+	{G_TYPE_INT, SORTID_THREADS, "Threads", TRUE,
+	 EDIT_NONE, refresh_node, create_model_node, admin_edit_node},
+	{G_TYPE_STRING, SORTID_MEMORY, "Real Memory", TRUE, 
+	 EDIT_NONE, refresh_node, create_model_node, admin_edit_node},
+	{G_TYPE_STRING, SORTID_DISK, "Tmp Disk", TRUE, EDIT_NONE, refresh_node,
 	 create_model_node, admin_edit_node},
-	{G_TYPE_STRING, SORTID_DISK, "Tmp Disk", TRUE, -1, refresh_node,
+	{G_TYPE_INT, SORTID_WEIGHT,"Weight", FALSE, EDIT_NONE, refresh_node,
 	 create_model_node, admin_edit_node},
-	{G_TYPE_INT, SORTID_WEIGHT,"Weight", FALSE, -1, refresh_node,
+	{G_TYPE_STRING, SORTID_FEATURES, "Features", FALSE, 
+	 EDIT_TEXTBOX, refresh_node, create_model_node, admin_edit_node},
+	{G_TYPE_STRING, SORTID_REASON, "Reason", FALSE,
+	 EDIT_NONE, refresh_node, create_model_node, admin_edit_node},
+	{G_TYPE_INT, SORTID_UPDATED, NULL, FALSE, EDIT_NONE, refresh_node,
 	 create_model_node, admin_edit_node},
-	{G_TYPE_STRING, SORTID_FEATURES, "Features", FALSE, 1, refresh_node,
-	 create_model_node, admin_edit_node},
-	{G_TYPE_STRING, SORTID_REASON, "Reason", FALSE, -1, refresh_node,
-	 create_model_node, admin_edit_node},
-	{G_TYPE_INT, SORTID_UPDATED, NULL, FALSE, -1, refresh_node,
-	 create_model_node, admin_edit_node},
-	{G_TYPE_NONE, -1, NULL, FALSE, -1}
+	{G_TYPE_NONE, -1, NULL, FALSE, EDIT_NONE}
 };
 
 static display_data_t options_data_node[] = {
-	{G_TYPE_INT, SORTID_POS, NULL, FALSE, -1},
+	{G_TYPE_INT, SORTID_POS, NULL, FALSE, EDIT_NONE},
 	{G_TYPE_STRING, INFO_PAGE, "Full Info", TRUE, NODE_PAGE},
 #ifdef HAVE_BG
 	{G_TYPE_STRING, NODE_PAGE, "Drain Base Partition", TRUE, ADMIN_PAGE},
@@ -95,7 +107,7 @@ static display_data_t options_data_node[] = {
 #endif
 	{G_TYPE_STRING, PART_PAGE, "Partition", TRUE, NODE_PAGE},
 	{G_TYPE_STRING, SUBMIT_PAGE, "Job Submit", FALSE, NODE_PAGE},
-	{G_TYPE_NONE, -1, NULL, FALSE, -1}
+	{G_TYPE_NONE, -1, NULL, FALSE, EDIT_NONE}
 };
 
 static display_data_t *local_display_data = NULL;
@@ -129,6 +141,30 @@ static void _layout_node_record(GtkTreeView *treeview,
 	add_display_treestore_line(update, treestore, &iter, 
 				   find_col_name(display_data_node,
 						 SORTID_CPUS),
+				   tmp_cnt);
+
+	convert_num_unit((float)node_ptr->used_cpus, tmp_cnt, UNIT_NONE);
+	add_display_treestore_line(update, treestore, &iter, 
+				   find_col_name(display_data_node,
+						 SORTID_USED_CPUS),
+				   tmp_cnt);
+
+	convert_num_unit((float)node_ptr->cores, tmp_cnt, UNIT_NONE);
+	add_display_treestore_line(update, treestore, &iter, 
+				   find_col_name(display_data_node,
+						 SORTID_CORES),
+				   tmp_cnt);
+
+	convert_num_unit((float)node_ptr->sockets, tmp_cnt, UNIT_NONE);
+	add_display_treestore_line(update, treestore, &iter, 
+				   find_col_name(display_data_node,
+						 SORTID_SOCKETS),
+				   tmp_cnt);
+
+	convert_num_unit((float)node_ptr->threads, tmp_cnt, UNIT_NONE);
+	add_display_treestore_line(update, treestore, &iter, 
+				   find_col_name(display_data_node,
+						 SORTID_THREADS),
 				   tmp_cnt);
 
 	convert_num_unit((float)node_ptr->real_memory, tmp_cnt, UNIT_MEGA);
@@ -174,7 +210,13 @@ static void _update_node_record(node_info_t *node_ptr,
 	gtk_tree_store_set(treestore, iter, SORTID_STATE_NUM, 
 			   node_ptr->node_state, -1);
 	gtk_tree_store_set(treestore, iter, SORTID_CPUS, node_ptr->cpus, -1);
-
+	gtk_tree_store_set(treestore, iter, SORTID_USED_CPUS,
+			   node_ptr->used_cpus, -1);
+	gtk_tree_store_set(treestore, iter, SORTID_CORES, node_ptr->cpus, -1);
+	gtk_tree_store_set(treestore, iter, SORTID_SOCKETS,
+			   node_ptr->sockets, -1);
+	gtk_tree_store_set(treestore, iter, SORTID_THREADS,
+			   node_ptr->threads, -1);
 	convert_num_unit((float)node_ptr->real_memory, tmp_cnt, UNIT_MEGA);
 	gtk_tree_store_set(treestore, iter, SORTID_MEMORY, tmp_cnt, -1);
 	convert_num_unit((float)node_ptr->tmp_disk, tmp_cnt, UNIT_MEGA);
@@ -400,7 +442,6 @@ extern List create_node_info_list(node_info_msg_t *node_info_ptr, int changed)
 		sview_node_info_ptr = xmalloc(sizeof(sview_node_info_t));
 		list_append(info_list, sview_node_info_ptr);
 		sview_node_info_ptr->node_ptr = node_ptr;
-		
 	}
 update_color:
 	

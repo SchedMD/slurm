@@ -344,8 +344,8 @@ static int _init_power_config(void)
 			part_ptr = find_part_record(one_part);
 			if (!part_ptr) {
 				error("power_save module disabled, "
-					"invalid excluded partitions %s",
-					exc_parts);
+					"invalid excluded partition %s",
+					one_part);
 				rc = -1;
 				break;
 			}

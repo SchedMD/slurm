@@ -155,7 +155,7 @@ static void _add_col_to_treeview(GtkTreeView *tree_view,
 	GtkTreeViewColumn *col = gtk_tree_view_column_new();
 	GtkListStore *model = (display_data->create_model)(display_data->id);
 	GtkCellRenderer *renderer = NULL;
-	if(model && display_data->extra != -1) {
+	if(model && display_data->extra != EDIT_NONE) {
 		renderer = gtk_cell_renderer_combo_new();
 		g_object_set(renderer,
 			     "model", model,
@@ -163,7 +163,7 @@ static void _add_col_to_treeview(GtkTreeView *tree_view,
 			     "has-entry", display_data->extra,
 			     "editable", TRUE,
 			     NULL);
-	} else if(display_data->extra == 1) {
+	} else if(display_data->extra == EDIT_TEXTBOX) {
 		renderer = gtk_cell_renderer_text_new();
 		g_object_set(renderer,
 			     "editable", TRUE,
