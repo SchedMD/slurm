@@ -1,4 +1,4 @@
-.TH "slurm.conf" "5" "December 2006" "slurm.conf 1.2" "Slurm configuration file"
+.TH "slurm.conf" "5" "May 2007" "slurm.conf 1.2" "Slurm configuration file"
 .SH "NAME"
 slurm.conf \- Slurm configuration file 
 .SH "DESCRIPTION"
@@ -27,6 +27,7 @@ and then a file name, that file will be included inline with the current
 configuration file.
 .LP
 The overall configuration parameters available include:
+
 .TP
 \fBAuthType\fR
 Define the authentication method for communications between SLURM 
@@ -45,6 +46,7 @@ see "http://www.llnl.gov/linux/munge/" for more information).
 All SLURM daemons and commands must be terminated prior to changing 
 the value of \fBAuthType\fR and later restarted (SLURM jobs can be 
 preserved).
+
 .TP
 \fBBackupAddr\fR
 Name that \fBBackupController\fR should be referred to in 
@@ -72,6 +74,7 @@ If set to 1, the slurmd daemon will  cache /etc/groups entries.
 This can improve performance for highly parallel jobs if NIS servers
 are used and unable to respond very quickly.
 The default value is 0 to disable caching group data.
+
 .TP
 \fBCheckpointType\fR
 Define the system\-initiated checkpoint method to be used for user jobs. 
@@ -80,6 +83,7 @@ to take effect.
 Acceptable values at present include "checkpoint/none" and "checkpoint/aix"
 (only on AIX systems). 
 The default value is "checkpoint/none".
+
 .TP
 \fBControlAddr\fR
 Name that \fBControlMachine\fR should be referred to in 
@@ -140,11 +144,7 @@ specific requested value. Job id values generated will incremented by 1
 for each subsequent job. This may be used to provide a meta\-scheduler 
 with a job id space which is disjoint from the interactive jobs. 
 The default value is 1.
-.TP
-\fBHeartbeatInterval\fR
-Defunct paramter. 
-Interval of heartbeat for slurmd daemon is half of \fBSlurmdTimeout\fR. 
-Interval of heartbeat for  slurmctld daemon is half of \fBSlurmctldTimeout\fR.
+
 .TP
 \fBInactiveLimit\fR
 The interval, in seconds, a job or job step is permitted to be inactive
@@ -163,6 +163,7 @@ This limit is ignored for jobs running in partitions with the
 responsible for the job).
 The default value is unlimited (zero). 
 May not exceed 65533.
+
 .TP
 \fBJobAcctType\fR
 Define the job accounting mechanism type.
@@ -172,20 +173,24 @@ system), "jobacct/linux" (for Linux operating system) and "jobacct/none"
 The default value is "jobacct/none".
 In order to use the \fBsacct\fR tool, "jobacct/aix" or "jobacct/linux" 
 must be configured.
+
 .TP
 \fBJobAcctLogFile\fR
 Define the location where job accounting logs are to be written.
 For jobacct/none this parameter is ignored.
 For jobacct/linux this is the fully\-qualified file name for the data file.
+
 .TP
 \fBJobAcctFrequency\fR
 Define the polling frequencys to pass to the job accounting plugin.
 For jobacct/none this parameter is ignored.
 For jobacct/linux the parameter is a number is seconds between polls.
+
 .TP
 \fBJobCompLoc\fR
 The interpretation of this value depends upon the logging mechanism 
 specified by the \fBJobCompType\fR parameter. 
+
 .TP
 \fBJobCompType\fR
 Define the job completion logging mechanism type.
@@ -198,18 +203,22 @@ written to a text file specified by the \fBJobCompLoc\fR parameter.
 The value "jobcomp/script" indicates that a script specified by the 
 \fBJobCompLoc\fR parameter is to be executed with environment variables 
 indicating the job information.
+
 .TP
 \fBJobCredentialPrivateKey\fR
 Fully qualified pathname of a file containing a private key used for 
 authentication by Slurm daemons.
+
 .TP
 \fBJobCredentialPublicCertificate\fR
 Fully qualified pathname of a file containing a public key used for 
 authentication by Slurm daemons.
+
 .TP
 \fBKillTree\fR
 This option is mapped to "ProctrackType=proctrack/linuxproc". 
 It will be removed from a future release.
+
 .TP
 \fBKillWait\fR
 The interval, in seconds, given to a job's processes between the 
@@ -218,6 +227,7 @@ If the job fails to terminate gracefully
 in the interval specified, it will be forcably terminated. 
 The default value is 30 seconds.
 May not exceed 65533.
+
 .TP
 \fBMaxJobCount\fR
 The maximum number of jobs SLURM can have in its active database 
@@ -259,6 +269,7 @@ Identifies the places in which to look for SLURM plugins.
 This is a colon\-separated list of directories, like the PATH 
 environment variable. 
 The default value is "/usr/local/lib/slurm".
+
 .TP
 \fBPlugStackConfig\fR
 Location of the config file for SLURM stackable plugins that use
@@ -268,6 +279,7 @@ be called before and/or after execution of each task spawned as
 part of a user's job step.  Default location is "plugstack.conf"
 in the same directory as the system slurm.conf. For more information
 on SPANK plugins, see the \fBspank\fR(8) manual.
+
 .TP
 \fBProctrackType\fR
 Identifies the plugin to be used for process tracking. 
@@ -316,6 +328,7 @@ run the Prolog immediately when an allocation is granted.  If no job steps
 from an allocation are run on a node, it will never run the Prolog for that
 allocation.  The Epilog, on the other hand, always runs on every node of an
 allocation when the allocation is released.
+
 .TP
 \fBPropagatePrioProcess\fR
 Setting \fBPropagatePrioProcess\fR to "1", will cause a users job to run
@@ -388,6 +401,30 @@ resource limits to propagate with the srun commands "\-\-propagate" option.
 See \fBPropagateResourceLimits\fR above for a list of valid limit names.
 
 .TP
+\fBResumeProgram\fR
+SLURM supports a mechanism to reduce power consumption on nodes that remain
+idle for an extended period of time. 
+This is typically accomplished by reducing voltage and frequency. 
+\fBResumeProgram\fR is the program that will be executed when a node 
+in power save mode is assigned work to perform.
+By default no program is run.
+Related configuration options include \fBResumeRate\fR, \fBSuspendRate\fR,
+\fBSuspendTime\fR, \fBSuspendProgram\fR, \fBSuspendExcNodes\fR, and
+\fBSuspendExcParts\fR.
+
+.TP
+\fBResumeRate\fR
+The rate at which nodes in power save mode are returned to normal 
+operation by \fBResumeProgram\fR. 
+The value is number of nodes per minute and it can be used to prevent 
+power surges if a large number of nodes in power save mode are 
+assigned work at the same time (e.g. a large job starts).
+The default value is 60 nodes per minute.
+Related configuration options include \fBResumeProgram\fR, \fBSuspendRate\fR,
+\fBSuspendTime\fR, \fBSuspendProgram\fR, \fBSuspendExcNodes\fR, and
+\fBSuspendExcParts\fR.
+
+.TP
 \fBReturnToService\fR
 If set to 1, then a non\-responding (DOWN) node will become available 
 for use upon registration. Note that DOWN node's state will be changed 
@@ -397,6 +434,7 @@ failure, etc.), its state will not automatically be changed.  The
 default value is 0, which means that a node will remain in the 
 DOWN state until a system administrator explicitly changes its state
 (even if the slurmd daemon registers and resumes communications).
+
 .TP
 \fBSchedulerRootFilter\fR
 If set to '1' then scheduler will filter and avoid \fBRootOnly\fR 
@@ -404,10 +442,12 @@ partitions (let root user or process schedule these partitions).
 Otherwise scheduler will treat \fBRootOnly\fR partitions as any 
 other standard partition.
 Currently only supported by sched/backfill schedululer plugin.
+
 .TP
 \fBSchedulerPort\fR
 The port number on which slurmctld should listen for connection requests.
 This value is only used by the Maui Scheduler (see \fBSchedulerType\fR).
+
 .TP
 \fBSchedulerRootFilter\fR
 Identifies whether or not \fBRootOnly\fR partitions should be filtered from
@@ -416,6 +456,7 @@ are treated like any other partition. If set to 1, then \fBRootOnly\fR
 partitions are exempt from any external scheduling activities. The
 default value is 1. Currently only used by the built\-in backfill
 scheduling module "sched/backfill" (see \fBSchedulerType\fR).
+
 .TP
 \fBSchedulerType\fR
 Identifies the type of scheduler to be used. Acceptable values include 
@@ -440,6 +481,7 @@ should have their priority change from zero to some large number.
 The \fBscontrol\fR command can be used to change job priorities.
 The \fBslurmctld\fR daemon must be restarted for a change in 
 scheduler type to become effective.
+
 .TP
 \fBSelectType\fR
 Identifies the type of resource selection algorithm to be used. 
@@ -502,22 +544,26 @@ NOTE: This implies \fIShared=Yes\fR for all partitions.
 The name of the user that the \fBslurmctld\fR daemon executes as. 
 For security purposes, a user other than "root" is recommended.
 The default value is "root". 
+
 .TP
 \fBSlurmctldDebug\fR
 The level of detail to provide \fBslurmctld\fR daemon's logs. 
 Values from 0 to 7 are legal, with `0' being "quiet" operation and `7' 
 being insanely verbose.
 The default value is 3.
+
 .TP
 \fBSlurmctldLogFile\fR
 Fully qualified pathname of a file into which the \fBslurmctld\fR daemon's 
 logs are written.
 The default value is none (performs logging via syslog).
+
 .TP
 \fBSlurmctldPidFile\fR
 Fully qualified pathname of a file into which the  \fBslurmctld\fR daemon 
 may write its process id. This may be used for automated signal processing.
 The default value is "/var/run/slurmctld.pid".
+
 .TP
 \fBSlurmctldPort\fR
 The port number that the SLURM controller, \fBslurmctld\fR, listens 
@@ -526,18 +572,21 @@ build time. If none is explicitly specified, it will be set to 6817.
 NOTE: Either \fBslurmctld\fR and \fBslurmd\fR daemons must not 
 execute on the same nodes or the values of \fBSlurmctldPort\fR and 
 \fBSlurmdPort\fR must be different.
+
 .TP
 \fBSlurmctldTimeout\fR
 The interval, in seconds, that the backup controller waits for the 
 primary controller to respond before assuming control. 
 The default value is 120 seconds.
 May not exceed 65533.
+
 .TP
 \fBSlurmdDebug\fR
 The level of detail to provide \fBslurmd\fR daemon's logs. 
 Values from 0 to 7 are legal, with `0' being "quiet" operation and `7' being 
 insanely verbose.
 The default value is 3.
+
 .TP
 \fBSlurmdLogFile\fR
 Fully qualified pathname of a file into which the  \fBslurmd\fR daemon's 
@@ -545,11 +594,13 @@ logs are written.
 The default value is none (performs logging via syslog).
 Any "%h" within the name is replaced with the hostname on which the 
 \fBslurmd\fR is running.
+
 .TP
 \fBSlurmdPidFile\fR
 Fully qualified pathname of a file into which the  \fBslurmd\fR daemon may write 
 its process id. This may be used for automated signal processing.
 The default value is "/var/run/slurmd.pid".
+
 .TP
 \fBSlurmdPort\fR
 The port number that the SLURM compute node daemon, \fBslurmd\fR, listens 
@@ -558,6 +609,7 @@ build time. If none is explicitly specified, its value will be 6818.
 NOTE: Either slurmctld and slurmd daemons must not execute
 on the same nodes or the values of \fBSlurmctldPort\fR and \fBSlurmdPort\fR
 must be different.
+
 .TP
 \fBSlurmdSpoolDir\fR
 Fully qualified pathname of a directory into which the \fBslurmd\fR
@@ -570,6 +622,7 @@ shared memory lockfile, and \fBshould not be changed\fR unless the system
 is being cleanly restarted. If the location of \fBSlurmdSpoolDir\fR is
 changed and \fBslurmd\fR is restarted, the new daemon will attach to a
 different shared memory region and lose track of any running jobs.
+
 .TP
 \fBSlurmdTimeout\fR
 The interval, in seconds, that the SLURM controller waits for \fBslurmd\fR 
@@ -581,6 +634,7 @@ a DOWN state indicating a non\-responsive \fBslurmd\fR, and some other tool
 will take responsibility for monitoring the state of each compute node 
 and its \fBslurmd\fR daemon.
 The value may not exceed 65533.
+
 .TP
 \fBStateSaveLocation\fR
 Fully qualified pathname of a directory into which the SLURM controller, 
@@ -592,18 +646,70 @@ readable and writable by both systems.
 The default value is "/tmp".
 If any slurm daemons terminate abnormally, their core files will also be written 
 into this directory.
+
 .TP
 \fBSrunEpilog\fR
 Fully qualified pathname of an executable to be run by srun following the
 completion of a job step.  The command line arguments for the executable will
 be the command and arguments of the job step.  This configuration parameter
 may be overridden by srun's \fB\-\-epilog\fR parameter.
+
 .TP
 \fBSrunProlog\fR
 Fully qualified pathname of an executable to be run by srun prior to the
 launch of a job step.  The command line arguments for the executable will
 be the command and arguments of the job step.  This configuration parameter
 may be overridden by srun's \fB\-\-prolog\fR parameter.
+
+.TP
+\fBSuspendExcNodes\fR
+Specifies the nodes which are to not be placed in power save mode, even 
+if the node remains idle for an extended period of time.
+Use SLURM's hostlist expression to identify nodes.
+By default no nodes are exclueded.
+Related configuration options include \fBResumeProgram\fR, \fBResumeRate\fR,
+\fBSuspendProgram\fR, \fBSuspendRate\fR, \fBSuspendTime\fR and
+\fBSuspendExcParts\fR.
+
+.TP
+\fBSuspendExcParts\fR
+Specifies the partitions whose nodes are to not be placed in power save 
+mode, even if the node remains idle for an extended period of time.
+Multiple partitions can be identified and separated by commas.
+By default no nodes are exclueded.
+Related configuration options include \fBResumeProgram\fR, \fBResumeRate\fR,
+\fBSuspendProgram\fR, \fBSuspendRate\fR, \fBSuspendTime\fR and
+\fBSuspendExcNodes\fR.
+
+.TP
+\fBSuspendProgram\fR
+\fBSuspendProgram\fR is the program that will be executed when a node
+remains idle for an extended period of time.
+This program is expected to place the node into some power save mode.
+By default no program is run.
+Related configuration options include \fBResumeProgram\fR, \fBResumeRate\fR,
+\fBSuspendRate\fR, \fBSuspendTime\fR, \fBSuspendExcNodes\fR, and
+\fBSuspendExcParts\fR.
+
+.TP
+\fBSuspendRate\fR
+The rate at which nodes are place into power save mode by \fBSuspendProgram\fR.
+The value is number of nodes per minute and it can be used to prevent
+a large drop in power power consumption (e.g. after a large job completes).
+The default value is 60 nodes per minute.
+Related configuration options include \fBResumeProgram\fR, \fBResumeRate\fR,
+\fBSuspendProgram\fR, \fBSuspendTime\fR, \fBSuspendExcNodes\fR, and
+\fBSuspendExcParts\fR.
+
+.TP
+\fBSuspendTime\fR
+Nodes which remain idle for this number of seconds will be placed into 
+power save mode by \fBSuspendProgram\fR,
+A value of -1 disables power save mode and is the default.
+Related configuration options include \fBResumeProgram\fR, \fBResumeRate\fR,
+\fBSuspendProgram\fR, \fBSuspendRate\fR, \fBSuspendExcNodes\fR, and
+\fBSuspendExcParts\fR.
+
 .TP
 \fBSwitchType\fR
 Identifies the type of switch or interconnect used for application
@@ -617,11 +723,13 @@ All SLURM daemons, commands and running jobs must be restarted for a
 change in \fBSwitchType\fR to take effect.
 If running jobs exist at the time \fBslurmctld\fR is restarted with a new 
 value of \fBSwitchType\fR, records of all jobs in any state may be lost.
+
 .TP
 \fBTaskEpilog\fR
 Fully qualified pathname of a program to be execute as the slurm job's
 owner after termination of each task.
 See \fBTaskPlugin\fR for execution order details.
+
 .TP
 \fBTaskPlugin\fR
 Identifies the type of task launch plugin, typically used to provide 
@@ -684,6 +792,7 @@ Standard output from this program of the form
 "export NAME=value" will be used to set environment variables 
 for the task being spawned. 
 See \fBTaskPlugin\fR for execution order details.
+
 .TP
 \fBTmpFS\fR
 Fully qualified pathname of the file system available to user jobs for 
@@ -730,6 +839,7 @@ session     required      pam_unix.so
 .br
 For sites configuring PAM with a general configuration file, the appropriate
 lines (see above), where \fBslurm\fR is the service\-name, should be added.
+
 .TP
 \fBWaitTime\fR
 Specifies how many seconds the srun command should by default wait after 
@@ -802,6 +912,7 @@ See BlueGene documentation for more details.
 Presently the numeric range must be the last characters in the 
 node name (e.g. "unit[0\-31]rack1" is invalid). 
 The node configuration specified the following information:
+
 .TP
 \fBNodeName\fR
 Name that SLURM uses to refer to a node (or base partition for 
@@ -818,6 +929,7 @@ nodes will be considered consecutive in the order defined.
 For example, if the configuration for "NodeName=charlie" immediately 
 follows the configuration for "NodeName=baker" they will be 
 considered adjacent in the computer.
+
 .TP
 \fBNodeHostname\fR
 The string that "/bin/hostname \-s" returns. 
@@ -827,6 +939,7 @@ If an expression is used, the number of nodes identified by
 be identical to the number of nodes identified by \fBNodeName\fR.
 By default, the \fBNodeHostname\fR will be identical in value to 
 \fBNodeName\fR.
+
 .TP
 \fBNodeAddr\fR
 Name that a node should be referred to in establishing 
@@ -839,6 +952,7 @@ they must exactly match the entries in the \fBNodeName\fR
 \fBNodeAddr\fR may also contain IP addresses.
 By default, the \fBNodeAddr\fR will be identical in value to 
 \fBNodeName\fR.
+
 .TP
 \fBFeature\fR
 A comma delimited list of arbitrary strings indicative of some 
@@ -848,16 +962,19 @@ either has a feature or it does not.
 If desired a feature may contain a numeric component indicating, 
 for example, processor speed. 
 By default a node has no features.
+
 .TP
 \fBRealMemory\fR
 Size of real memory on the node in MegaBytes (e.g. "2048").
 The default value is 1.
+
 .TP
 \fBProcs\fR
 Number of logical processors on the node (e.g. "2").
 If Procs is omitted, it will be inferred from
 \fBSockets\fR, \fBCoresPerSocket\fR, and \fBThreadsPerCore\fR.
 The default value is 1. 
+
 .TP
 \fBSockets\fR
 Number of physical processor sockets/chips on the node (e.g. "2").
@@ -866,6 +983,7 @@ If Sockets is omitted, it will be inferred from
 \fBNOTE\fR: If you have multi\-core processors, you will likely 
 need to specify these parameters.
 The default value is 1.
+
 .TP
 \fBCoresPerSocket\fR
 Number of cores in a single physical processor socket (e.g. "2").
@@ -874,15 +992,18 @@ logical number of processors per socket.
 \fBNOTE\fR: If you have multi\-core processors, you will likely
 need to specify this parameter.
 The default value is 1.
+
 .TP
 \fBThreadsPerCore\fR
 Number of logical threads in a single physical core (e.g. "2").
 The default value is 1.
+
 .TP
 \fBReason\fR
 Identifies the reason for a node being in state "DOWN" or "DRAINED" 
 or "DRAINING". Use quotes to enclose a reason having more than one 
 word.
+
 .TP
 \fBState\fR
 State of the node with respect to the initiation of user jobs. 
@@ -899,6 +1020,7 @@ has none at present
 "UNKNOWN" indicates the node's state is undefined, but will be 
 established when the \fBslurmd\fR daemon on that node registers.
 The default value is "UNKNOWN".
+
 .TP
 \fBTmpDisk\fR
 Total size of temporary disk storage in \fBTmpFS\fR in MegaBytes 
@@ -912,6 +1034,7 @@ most of this space.
 The Prolog and/or Epilog programs (specified in the configuration file) 
 might be used to insure the file system is kept clean. 
 The default value is 1.
+
 .TP
 \fBWeight\fR
 The priority of the node for scheduling purposes. 
@@ -930,14 +1053,17 @@ Weight is an integer value with a default value of 1.
 The "DownNodes=" configuration permits you to mark certain nodes as in a 
 DOWN or DRAINED state without altering the permanent configuration
 information listed under a "NodeName=" specification.
+
 .TP
 \fBDownNodes\fR
 Any node name, or list of node names, from the "NodeName=" specifications.
+
 .TP
 \fBReason\fR
 Identifies the reason for a node being in state "DOWN" or "DRAINED" 
 or "DRAINING". Use quotes to enclose a reason having more than one 
 word.
+
 .TP
 \fBState\fR
 State of the node with respect to the initiation of user jobs. 
@@ -974,6 +1100,7 @@ describing the configuration of partitions.
 Each line of partition configuration information should 
 represent a different partition.
 The partition configuration file contains the following information:
+
 .TP
 \fBAllowGroups\fR
 Comma separated list of group IDs which may execute jobs in the partition. 
@@ -985,12 +1112,14 @@ If user root attempts to execute a job as another user (e.g. using
 srun's \-\-uid option), this other user must be in one of groups 
 identified by AllowGroups for the job to succesfully execute.
 The default value is "ALL". 
+
 .TP
 \fBDefault\fR
 If this keyword is set, jobs submitted without a partition 
 specification will utilize this partition.
 Possible values are "YES" and "NO". 
 The default value is "NO".
+
 .TP
 \fBHidden\fR
 Specifies if the partition and its jobs are to be hidden by default. 
@@ -998,6 +1127,7 @@ Hidden partitions will by default not be reported by the SLURM
 APIs or commands.
 Possible values are "YES" and "NO". 
 The default value is "NO".
+
 .TP
 \fBRootOnly\fR
 Specifies if only user ID zero (i.e. user \fIroot\fR) may allocate resources 
@@ -1008,27 +1138,32 @@ external entity (e.g. a higher\-level job manager) and prevents
 users from directly using those resources.
 Possible values are "YES" and "NO". 
 The default value is "NO".
+
 .TP
 \fBMailProg\fR
 Fully qualified pathname to the program used to send email per user request.
 The default value is "/bin/mail".
+
 .TP
 \fBMaxNodes\fR
 Maximum count of nodes (or base partitions for BlueGene systems) which 
 may be allocated to any single job.
 The default value is "UNLIMITED", which is represented internally as \-1.
 This limit does not apply to jobs executed by SlurmUser or user root.
+
 .TP
 \fBMaxTime\fR
 Maximum wall\-time limit for any job in minutes. The default 
 value is "UNLIMITED", which is represented internally as \-1.
 This limit does not apply to jobs executed by SlurmUser or user root.
+
 .TP
 \fBMinNodes\fR
 Minimum count of nodes (or base partitions for BlueGene systems) which 
 may be allocated to any single job.
 The default value is 1.
 This limit does not apply to jobs executed by SlurmUser or user root.
+
 .TP
 \fBNodes\fR
 Comma separated list of nodes (or base partitions for BlueGene systems) 
@@ -1037,6 +1172,7 @@ Node names may be specified using the node range expression syntax
 described above. A blank list of nodes 
 (i.e. "Nodes= ") can be used if one wants a partition to exist, 
 but have no resources (possibly on a temporary basis).
+
 .TP
 \fBPartitionName\fR
 Name by which the partition may be referenced (e.g. "Interactive"). 
@@ -1045,6 +1181,7 @@ If the \fBPartitionName\fR is "DEFAULT", the values specified
 with that record will apply to subsequent partition specifications
 unless explicitly set to other values in that partition record or
 replaced with a different set of default values.
+
 .TP
 \fBShared\fR
 Ability of the partition to execute more than one job at a 
@@ -1059,6 +1196,7 @@ only if the individual jobs permit sharing (see the srun
 "\-\-share" option).
 "NO" makes nodes unavailable for sharing under all circumstances. 
 The default value is "NO".
+
 .TP
 \fBState\fR
 State of partition or availability for use.  Possible values 
@@ -1203,7 +1341,7 @@ PartitionName=batch Nodes=dev[9\-17]  MinNodes=4
 PartitionName=long Nodes=dev[9\-17] MaxTime=120 AllowGroups=admin
 
 .SH "COPYING"
-Copyright (C) 2002\-2006 The Regents of the University of California.
+Copyright (C) 2002\-2007 The Regents of the University of California.
 Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 UCRL\-CODE\-226842.
 .LP
