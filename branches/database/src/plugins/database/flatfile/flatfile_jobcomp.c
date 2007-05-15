@@ -65,6 +65,8 @@
 #include "src/common/xstring.h"
 #include "src/common/parse_time.h"
 
+#include "flatfile_jobcomp_process.h"
+
 #define JOB_FORMAT "JobId=%lu UserId=%s(%lu) Name=%s JobState=%s Partition=%s "\
 		"TimeLimit=%s StartTime=%s EndTime=%s NodeList=%s NodeCnt=%u %s\n"
  
@@ -232,3 +234,28 @@ extern char *flatfile_jobcomp_strerror( int errnum )
 	return (res ? res : strerror(errnum));
 }
 
+
+/* 
+ * get info from the database 
+ * in/out job_list List of job_rec_t *
+ * note List needs to be freed when called
+ */
+extern void flatfile_jobcomp_get_jobs(List job_list, 
+				      List selected_steps, List selected_parts,
+				      void *params)
+{
+	flatfile_jobcomp_process_get_jobs(job_list, 
+					  selected_steps, selected_parts,
+					  params);	
+	return;
+}
+
+/* 
+ * expire old info from the database 
+ */
+extern void flatfile_jobcomp_archive(List selected_parts,
+				     void *params)
+{
+	flatfile_jobcomp_process_archive(selected_parts, params);
+	return;
+}

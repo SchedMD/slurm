@@ -210,3 +210,27 @@ extern char *database_p_jobcomp_strerror(int errnum)
 	return flatfile_jobcomp_strerror(errnum);
 }
 
+/* 
+ * get info from the database 
+ * in/out job_list List of job_rec_t *
+ * note List needs to be freed when called
+ */
+extern void database_p_jobcomp_get_jobs(List job_list, 
+					List selected_steps,
+					List selected_parts,
+					void *params)
+{
+	flatfile_jobcomp_get_jobs(job_list, 
+				  selected_steps, selected_parts,
+				  params);	
+	return;
+}
+
+/* 
+ * expire old info from the database 
+ */
+extern void database_p_jobcomp_archive(List selected_parts, void *params)
+{
+	flatfile_jobacct_archive(selected_parts, params);
+	return;
+}

@@ -1,10 +1,12 @@
 /*****************************************************************************\
- *  flatfile_jobcomp.h - text file slurm job completion logging plugin.
+ *  flatfile_jobcomp_process.h - functions the processing of
+ *                               information from the flatfile jobcomp
+ *                               database.
  *****************************************************************************
- *  Copyright (C) 2003 The Regents of the University of California.
+ *
+ *  Copyright (C) 2004-2007 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Morris Jette <jette1@llnl.gov> et. al.
- *  UCRL-CODE-226842.
+ *  Written by Danny Auble <da@llnl.gov>
  *  
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -33,22 +35,21 @@
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+ *
+ *  This file is patterned after jobcomp_linux.c, written by Morris Jette and
+ *  Copyright (C) 2002 The Regents of the University of California.
 \*****************************************************************************/
 
-#ifndef _FLATFILE_JOBCOMP_H_
-#define _FLATFILE_JOBCOMP_H_
+#ifndef _HAVE_FLATFILE_JOBCOMP_PROCESS_H
+#define _HAVE_FLATFILE_JOBCOMP_PROCESS_H
 
-#include "src/slurmctld/slurmctld.h"
+#include "src/sacct/sacct.h"
 
-extern int flatfile_jobcomp_init(char * location);
-extern int flatfile_jobcomp_fini();
-extern int flatfile_jobcomp_get_errno();
-extern int flatfile_jobcomp_log_record(struct job_record *job_ptr);
-extern char *flatfile_jobcomp_strerror(int errnum);
-extern void flatfile_jobcomp_get_jobs(List job_list, 
-				      List selected_steps,
-				      List selected_parts,
-				      void *params);
-extern void flatfile_jobcomp_archive(List selected_parts, void *params);
+extern void flatfile_jobcomp_process_get_jobs(List job_list, 
+					      List selected_steps,
+					      List selected_parts,
+					      sacct_parameters_t *params);
+extern void flatfile_jobcomp_process_archive(List selected_parts,
+					     sacct_parameters_t *params);
 
 #endif

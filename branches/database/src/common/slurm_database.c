@@ -75,6 +75,12 @@ typedef struct slurm_database_ops {
 	int (*jobcomp_get_errno)      ();
 	int (*jobcomp_log_record)     (struct job_record *job_ptr);
 	char *(*jobcomp_strerror)     (int errnum);
+	List (*jobcomp_get_jobs)      (List job_list,
+				       List selected_steps,
+				       List selected_parts,
+				       void *params);	
+	void (*jobcomp_archive)       (List selected_parts,
+				       void *params);
 } slurm_database_ops_t;
 
 typedef struct slurm_database_context {
@@ -118,7 +124,9 @@ static slurm_database_ops_t * _database_get_ops(slurm_database_context_t *c)
 		"database_p_jobcomp_fini",
 		"database_p_jobcomp_get_errno",
 		"database_p_jobcomp_log_record",
-		"database_p_jobcomp_strerror"
+		"database_p_jobcomp_strerror",
+		"database_p_jobcomp_get_jobs",
+		"database_p_jobcomp_archive"
 	};
 	int n_syms = sizeof( syms ) / sizeof( char * );
 
@@ -388,3 +396,27 @@ extern char *database_g_jobcomp_strerror(int errnum)
  	return (*(g_database_context->ops.jobcomp_strerror))(errnum);
 }
 
+extern void database_g_jobcomp_get_jobs(List job_list,
+					List selected_steps,
+					List selected_parts,
+					void *params)
+{
+	if (slurm_database_init() < 0)
+		return;
+ 	(*(g_database_context->ops.jobcomp_get_jobs))(job_list,
+						      selected_steps,
+						      selected_parts,
+						      params);
+	return;
+}
+
+/* 
+ * expire old info from the database 
+ */
+extern void database_g_jobcomp_archive(List selected_parts, void *params)
+{
+	if (slurm_database_init() < 0)
+		return;
+ 	(*(g_database_context->ops.jobcomp_archive))(selected_parts, params);
+	return;
+}

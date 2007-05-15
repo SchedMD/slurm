@@ -78,7 +78,7 @@ database_flatfile_la_DEPENDENCIES =  \
 	$(top_builddir)/src/common/libcommon.la
 am_database_flatfile_la_OBJECTS = database_flatfile.lo \
 	flatfile_jobacct.lo flatfile_jobcomp.lo \
-	flatfile_jobacct_process.lo
+	flatfile_jobacct_process.lo flatfile_jobcomp_process.lo
 database_flatfile_la_OBJECTS = $(am_database_flatfile_la_OBJECTS)
 database_flatfile_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
@@ -266,10 +266,10 @@ pkglib_LTLIBRARIES = database_flatfile.la
 
 # Flatfile database plugin.
 database_flatfile_la_SOURCES = database_flatfile.c \
-				flatfile_jobacct.c flatfile_jobacct.h \
-				flatfile_jobcomp.c flatfile_jobcomp.h \
-				flatfile_jobacct_process.c \
-				flatfile_jobacct_process.h
+		flatfile_jobacct.c flatfile_jobacct.h \
+		flatfile_jobcomp.c flatfile_jobcomp.h \
+		flatfile_jobacct_process.c flatfile_jobacct_process.h \
+		flatfile_jobcomp_process.c flatfile_jobcomp_process.h
 
 database_flatfile_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
 database_flatfile_la_LIBADD = $(top_builddir)/src/common/libcommon.la
@@ -346,6 +346,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/flatfile_jobacct.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/flatfile_jobacct_process.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/flatfile_jobcomp.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/flatfile_jobcomp_process.Plo@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<

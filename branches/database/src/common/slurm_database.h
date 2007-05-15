@@ -104,6 +104,11 @@ extern int database_g_jobcomp_fini();
 extern int database_g_jobcomp_get_errno();
 extern int database_g_jobcomp_log_record(struct job_record *job_ptr);
 extern char *database_g_jobcomp_strerror(int errnum);
+extern void database_g_jobcomp_get_jobs(List job_list,
+					List selected_steps,
+					List selected_parts,
+					void *params);
+extern void database_g_jobcomp_archive(List selected_parts, void *params);
 
 
 

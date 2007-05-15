@@ -146,6 +146,8 @@ void _help_msg(void)
 	       "-b, --brief\n"
 	       "    Equivalent to \"--fields=jobstep,status,error\". This option\n"
 	       "    has no effect if --dump is specified.\n"
+	       "-c, --completion\n"
+	       "    Use job completion instead of accounting data.\n"
 	       "-d, --dump\n"
 	       "    Dump the raw data records\n"
 	       "--duplicates\n"
@@ -241,6 +243,7 @@ void _usage(void)
 
 void _init_params()
 {
+	params.opt_completion = 0;	/* --completion */
 	params.opt_dump = 0;		/* --dump */
 	params.opt_dup = -1;		/* --duplicates; +1 = explicitly set */
 	params.opt_fdump = 0;		/* --formattted_dump */
@@ -292,8 +295,12 @@ int get_data(void)
 	ListIterator itr = NULL;
 	ListIterator itr_step = NULL;
 
-	database_g_jobacct_get_jobs(jobs, selected_steps,
-				    selected_parts, &params);
+	if(params.opt_completion) 
+		database_g_jobcomp_get_jobs(jobs, selected_steps,
+					    selected_parts, &params);
+	else
+		database_g_jobacct_get_jobs(jobs, selected_steps,
+					    selected_parts, &params);
 	if (params.opt_fdump) {
 		return SLURM_SUCCESS;
 	}
@@ -371,6 +378,7 @@ void parse_command_line(int argc, char **argv)
 	static struct option long_options[] = {
 		{"all", 0,0, 'a'},
 		{"brief", 0, 0, 'b'},
+		{"completion", 0, &params.opt_completion, 'c'},
 		{"duplicates", 0, &params.opt_dup, 1},
 		{"dump", 0, 0, 'd'},
 		{"expire", 1, 0, 'e'},
@@ -406,7 +414,7 @@ void parse_command_line(int argc, char **argv)
 	opterr = 1;		/* Let getopt report problems to the user */
 
 	while (1) {		/* now cycle through the command line */
-		c = getopt_long(argc, argv, "abde:F:f:g:hj:J:lOPp:s:StUu:Vv",
+		c = getopt_long(argc, argv, "abcde:F:f:g:hj:J:lOPp:s:StUu:Vv",
 				long_options, &optionIndex);
 		if (c == -1)
 			break;
@@ -422,6 +430,10 @@ void parse_command_line(int argc, char **argv)
 					 sizeof(BRIEF_FIELDS)+1);
 			strcat(params.opt_field_list, BRIEF_FIELDS);
 			strcat(params.opt_field_list, ",");
+			break;
+
+		case 'c':
+			params.opt_completion = 1;
 			break;
 
 		case 'd':
@@ -640,6 +652,7 @@ void parse_command_line(int argc, char **argv)
 
 	if (params.opt_verbose) {
 		fprintf(stderr, "Options selected:\n"
+			"\topt_completion=%d\n"
 			"\topt_dump=%d\n"
 			"\topt_dup=%d\n"
 			"\topt_expire=%s (%lu seconds)\n"
@@ -658,6 +671,7 @@ void parse_command_line(int argc, char **argv)
 			"\topt_total=%d\n"
 			"\topt_uid=%d\n"
 			"\topt_verbose=%d\n",
+			params.opt_completion,
 			params.opt_dump,
 			params.opt_dup,
 			params.opt_expire_timespec, params.opt_expire,
@@ -679,15 +693,34 @@ void parse_command_line(int argc, char **argv)
 	}
 
 	/* check if we have accounting data to view */
-	if (params.opt_filein == NULL)
-		params.opt_filein = slurm_get_jobacct_loc();
-	acct_type = slurm_get_jobacct_type();
-	if ((strcmp(acct_type, "jobacct/none") == 0)
-	    &&  (stat(params.opt_filein, &stat_buf) != 0)) {
-		fprintf(stderr, "SLURM accounting is disabled\n");
-		exit(1);
+	if (params.opt_filein == NULL) {
+		if(params.opt_completion) 
+			params.opt_filein = slurm_get_jobcomp_loc();
+		else
+			params.opt_filein = slurm_get_jobacct_loc();	
 	}
-	xfree(acct_type);
+
+	if(params.opt_completion) {
+		database_g_jobcomp_init(params.opt_filein);
+
+		acct_type = slurm_get_jobcomp_type();
+		if ((strcmp(acct_type, "jobcomp/none") == 0)
+		    &&  (stat(params.opt_filein, &stat_buf) != 0)) {
+			fprintf(stderr, "SLURM job completion is disabled\n");
+			exit(1);
+		}
+		xfree(acct_type);
+	} else {
+		database_g_jobacct_init(params.opt_filein);
+		
+		acct_type = slurm_get_jobacct_type();
+		if ((strcmp(acct_type, "jobacct/none") == 0)
+		    &&  (stat(params.opt_filein, &stat_buf) != 0)) {
+			fprintf(stderr, "SLURM accounting is disabled\n");
+			exit(1);
+		}
+		xfree(acct_type);
+	}
 
 	/* specific partitions requested? */
 	if (params.opt_partition_list) {
@@ -1033,7 +1066,10 @@ void do_dump(void)
 
 void do_expire(void)
 {
-	database_g_jobacct_archive(selected_parts, &params);
+	if(params.opt_completion) 
+		database_g_jobcomp_archive(selected_parts, &params);
+	else
+		database_g_jobacct_archive(selected_parts, &params);
 }
 
 void do_help(void)
@@ -1173,14 +1209,11 @@ void do_stat()
 void sacct_init()
 {
 	int i=0;
-	char *loc = slurm_get_jobacct_loc();
 	jobs = list_create(jobacct_destroy_job);
 	selected_parts = list_create(_destroy_parts);
 	selected_steps = list_create(_destroy_steps);
 	for(i=0; i<STATUS_COUNT; i++)
 		selected_status[i] = 0;
-	database_g_jobacct_init(loc);
-	xfree(loc);
 }
 
 void sacct_fini()
@@ -1188,5 +1221,8 @@ void sacct_fini()
 	list_destroy(jobs);
 	list_destroy(selected_parts);
 	list_destroy(selected_steps);
-	database_g_jobacct_fini();
+	if(params.opt_completion)
+		database_g_jobcomp_fini();
+	else
+		database_g_jobacct_fini();
 }
