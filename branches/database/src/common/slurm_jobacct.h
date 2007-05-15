@@ -146,6 +146,27 @@ typedef struct {
 } jobacct_job_rec_t;
 
 typedef struct {
+	uint32_t jobid;
+	char *partition;
+	char *blockid;
+	char *start_time;
+	char *end_time;
+	char *uid;
+	char *gid;
+	uint32_t node_cnt;
+	char *nodelist;
+	char *jobname;
+	char *state;
+	char *timelimit;
+	char *connection;
+	char *reboot;
+	char *rotate;
+	uint32_t max_procs;
+	char *geo;
+	char *bg_start_point;
+} jobcomp_job_rec_t;
+
+typedef struct {
 	jobacct_header_t   header;
 	uint32_t	stepnum;	/* job's step number */
 	char	        *nodes;
