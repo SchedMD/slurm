@@ -45,8 +45,7 @@ are not responding even if they are not in any partition?</a></li>
 controller?</a></li>
 <li><a href="#multi_slurm">Can multiple SLURM systems be run in 
 parallel for testing purposes?</a></li>
-<li><a href="#multi_slurmd">Can multiple slurmd daemons be run
-on the compute node(s) to emulate a larger cluster?</a></li>
+<li><a href="#multi_slurmd">Can slurm emulate a larger cluster?</a></li>
 <li><a href="#extra_procs">Can SLURM emulate nodes with more 
 resources than physically exist on the node?</a></li>
 <li><a href="#credential_replayed">What does a "credential
@@ -477,10 +476,13 @@ a different set of nodes for the different SLURM systems.
 That will permit both systems to allocate switch windows without 
 conflicts.
 
-<p><a name="multi_slurmd"><b>14. Can multiple slurmd daemons be run 
-on the compute node(s) to emulate a larger cluster?</b></a><br>
+<p><a name="multi_slurmd"><b>14. Can slurm emulate a larger 
+cluster?</b></a><br>
 Yes, this can be useful for testing purposes. 
 It has also been used to partition "fat" nodes into multiple SLURM nodes.
+There are two ways to do this.
+The best method for most conditins is to run one <i>slurmd</i> 
+daemon per emulated node in the cluster as follows.
 <ol>
 <li>When executing the <i>configure</i> program, use the option 
 <i>--multiple-slurmd</i> (or add that option to your <i>~/.rpmmacros</i>
@@ -502,24 +504,59 @@ for this due to it's improved support for multiple slurmd daemons.
 See the
 <a href="programmer_guide.shtml#multiple_slurmd_support">Programmers Guide</a>
 for more details about configuring multiple slurmd support.
+
 <p>In order to emulate a really large cluster, it can be more 
 convenient to use a single <i>slurmd</i> daemon. 
 That daemon will not be able to launch many tasks, but can 
 suffice for developing or testing scheduling software.
+Do not run job steps with more than a couple of tasks each
+or execute more than a few jobs at any given time.
+Doing so may result in the <i>slurmd</i> daemon exhausting its 
+memory and failing. 
+<b>Use this method with caution.</b>
 <ol>
 <li>Execute the <i>configure</i> program with your normal options.</li>
-<li>Add the line "<i>#define HAVE_FRONT_END 1</i>" to the resulting
+<li>Append the line "<i>#define HAVE_FRONT_END 1</i>" to the resulting
 <i>config.h</i> file.</li>
 <li>Build and install SLURM in the usual manner.</li>
 <li>In <i>slurm.conf</i> define the desired node names (arbitrary
 names used only by SLURM) as <i>NodeName</i> along with the actual
-address of the <b>one</b> physical node in <i>NodeHostname</i>.
+name and address of the <b>one</b> physical node in <i>NodeHostName</i>
+and <i>NodeAddr</i>.
 Up to 64k nodes can be configured in this virtual cluster.</li>
-<li>Start your <i>slurmctld</i> and one <i>slurmd</i> daemon.</li>
-<li>Create job allocations as desired, but <b>do not run job steps
-with more than a couple of tasks.</b> Doing so may result in the 
-<i>slurmd</i> daemon exhausting its memory and failing.</li>
+<li>Start your <i>slurmctld</i> and one <i>slurmd</i> daemon.
+It is advisable to use the "-c" option to start the daemons without 
+trying to preserve any state files from previous executions. 
+Be sure to use the "-c" option when switch from this mode too.</li>
+<li>Create job allocations as desired, but do not run job steps
+with more than a couple of tasks.</li>
 </ol>
+<pre>
+$ ./configure --enable-debug --prefix=... --sysconfdir=...
+$ echo "#define HAVE_FRONT_END 1" >>config.h
+$ make install
+$ grep NodeHostName slurm.conf
+<i>NodeName=dummy[1-1200] NodeHostName=localhost NodeAddr=127.0.0.1</i>
+$ slurmctld -c
+$ slurmd -c
+$ sinfo
+<i>PARTITION AVAIL  TIMELIMIT NODES  STATE NODELIST</i>
+<i>pdebug*      up      30:00  1200   idle dummy[1-1200]</i>
+$ cat tmp
+<i>#!/bin/bash</i>
+<i>sleep 30</i>
+$ srun -N200 -b tmp
+<i>srun: jobid 65537 submitted</i>
+$ srun -N200 -b tmp
+<i>srun: jobid 65538 submitted</i>
+$ srun -N800 -b tmp
+<i>srun: jobid 65539 submitted</i>
+$ squeue
+<i>JOBID PARTITION  NAME   USER  ST  TIME  NODES NODELIST(REASON)</i>
+<i>65537    pdebug   tmp  jette   R  0:03    200 dummy[1-200]</i>
+<i>65538    pdebug   tmp  jette   R  0:03    200 dummy[201-400]</i>
+<i>65539    pdebug   tmp  jette   R  0:02    800 dummy[401-1200]</i>
+</pre>
 
 <p><a name="extra_procs"><b>15. Can SLURM emulate nodes with more
 resources than physically exist on the node?</b></a><br>
@@ -599,6 +636,6 @@ about these options.
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 14 May 2007</p>
+<p style="text-align:center;">Last modified 15 May 2007</p>
 
 <!--#include virtual="footer.txt"-->
