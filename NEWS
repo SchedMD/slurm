@@ -304,6 +304,8 @@ documents those changes that are of interest to users and admins.
 * Changes in SLURM 1.1.36
 =========================
  - Permit node state specification of DRAIN in slurm.conf.
+ - In jobcomp/script - fix bug that prevented UID and JOBID environment 
+   variables from being set.
 
 * Changes in SLURM 1.1.35
 =========================
