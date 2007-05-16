@@ -650,10 +650,25 @@ mvapich_print_abort_message (mvapich_state_t *st, int rank,
 {
 	slurm_step_layout_t *sl = st->job->step_layout;
 	char *host;
+	char *msgstr;
 
 	if (!mvapich_abort_sends_rank (st)) {
 		info ("mvapich: Received ABORT message from an MPI process.");
 		return;
+	}
+
+	if (msg && (msglen > 0)) {
+		/* 
+		 *  Remove trailing newline if it exists (syslog will add newline)
+		 */
+		if (msg [msglen - 1] == '\n')
+			msg [msglen - 1] = '\0';
+
+		msgstr = msg;
+	} 
+	else {
+		msgstr = "";
+		msglen = 0;
 	}
 
 	host = slurm_step_layout_host_name(
@@ -662,27 +677,34 @@ mvapich_print_abort_message (mvapich_state_t *st, int rank,
 	if (dest >= 0) {
 		const char *dsthost = slurm_step_layout_host_name (sl, dest);
 
-		if (msg [msglen - 1] == '\n')
-			msg [msglen - 1] = '\0';
-
 		info ("mvapich: %M: ABORT from MPI rank %d [on %s] dest rank %d [on %s]",
 		      rank, host, dest, dsthost);
 
 		/*
-		 *  If we got a message from MVAPICH, log it to syslog
+		 *  Log the abort event to syslog
 		 *   so that system administrators know about possible HW events.
 		 */
-		if (msglen > 0) {
-			openlog ("srun", 0, LOG_USER);
-			syslog (LOG_WARNING, 
-					"MVAPICH ABORT [jobid=%u.%u src=%d(%s) dst=%d(%s)]: %s",
-					st->job->jobid, st->job->stepid, rank, host, dest, dsthost, msg);
-			closelog();
-		}
+		openlog ("srun", 0, LOG_USER);
+		syslog (LOG_WARNING, 
+				"MVAPICH ABORT [jobid=%u.%u src=%d(%s) dst=%d(%s)]: %s",
+				st->job->jobid, st->job->stepid, 
+				rank, host, dest, dsthost, msgstr);
+		closelog();
 	}
 	else {
 		info ("mvapich: %M: ABORT from MPI rank %d [on %s]", 
 				rank, host);
+		/*
+		 *  Log the abort event to syslog
+		 *   so that system administrators know about possible HW events.
+		 */
+		openlog ("srun", 0, LOG_USER);
+		syslog (LOG_WARNING, 
+				"MVAPICH ABORT [jobid=%u.%u src=%d(%s) dst=-1()]: %s",
+				st->job->jobid, st->job->stepid, 
+				rank, host, msgstr);
+		closelog();
+
 	}
 	return;
 }
