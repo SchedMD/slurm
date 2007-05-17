@@ -64,9 +64,9 @@
 #define MAX_CANCEL_RETRY 10
 
 static void _cancel_jobs (void);
-static void _cancel_job_id (uint32_t job_id, uint16_t signal);
+static void _cancel_job_id (uint32_t job_id, uint16_t sig);
 static void _cancel_step_id (uint32_t job_id, uint32_t step_id, 
-			     uint16_t signal);
+			     uint16_t sig);
 static int  _confirmation (int i, uint32_t step_id);
 static void _filter_job_records (void);
 static void _load_job_records (void);
@@ -226,29 +226,29 @@ _cancel_jobs (void)
 }
 
 static void
-_cancel_job_id (uint32_t job_id, uint16_t signal)
+_cancel_job_id (uint32_t job_id, uint16_t sig)
 {
 	int error_code = SLURM_SUCCESS, i;
 
-	if (signal == (uint16_t)-1)
-		signal = SIGKILL;
+	if (sig == (uint16_t)-1)
+		sig = SIGKILL;
 
 	for (i=0; i<MAX_CANCEL_RETRY; i++) {
-		if (signal == SIGKILL)
+		if (sig == SIGKILL)
 			verbose("Terminating job %u", job_id);
 		else
-			verbose("Signal %u to job %u", signal, job_id);
+			verbose("Signal %u to job %u", sig, job_id);
 
-		if ((signal == SIGKILL) || opt.ctld) {
-			error_code = slurm_kill_job (job_id, signal,
+		if ((sig == SIGKILL) || opt.ctld) {
+			error_code = slurm_kill_job (job_id, sig,
 						     (uint16_t)opt.batch);
 		} else {
 			if (opt.batch)
 				error_code = slurm_signal_job_step(job_id,
 							   SLURM_BATCH_SCRIPT,
-							   signal);
+							   sig);
 			else
-				error_code = slurm_signal_job (job_id, signal);
+				error_code = slurm_signal_job (job_id, sig);
 		}
 		if (error_code == 0
 		    || (errno != ESLURM_TRANSITION_STATE_NO_UPDATE
@@ -268,28 +268,28 @@ _cancel_job_id (uint32_t job_id, uint16_t signal)
 }
 
 static void
-_cancel_step_id (uint32_t job_id, uint32_t step_id, uint16_t signal)
+_cancel_step_id (uint32_t job_id, uint32_t step_id, uint16_t sig)
 {
 	int error_code = SLURM_SUCCESS, i;
 
-	if (signal == (uint16_t)-1)
-		signal = SIGKILL;
+	if (sig == (uint16_t)-1)
+		sig = SIGKILL;
 
 	for (i=0; i<MAX_CANCEL_RETRY; i++) {
-		if (signal == SIGKILL)
+		if (sig == SIGKILL)
 			verbose("Terminating step %u.%u", job_id, step_id);
 		else {
 			verbose("Signal %u to step %u.%u", 
-				signal, job_id, step_id);
+				sig, job_id, step_id);
 		}
 
 		if (opt.ctld)
-			error_code = slurm_kill_job_step(job_id, step_id, signal);
-		else if (signal == SIGKILL)
+			error_code = slurm_kill_job_step(job_id, step_id, sig);
+		else if (sig == SIGKILL)
 			error_code = slurm_terminate_job_step(job_id, step_id);
 		else
 			error_code = slurm_signal_job_step(job_id, step_id,
-							   signal);
+							   sig);
 		if (error_code == 0
 		    || (errno != ESLURM_TRANSITION_STATE_NO_UPDATE
 			&& errno != ESLURM_JOB_PENDING))
