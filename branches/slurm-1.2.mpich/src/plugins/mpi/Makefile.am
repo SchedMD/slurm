@@ -1,3 +1,3 @@
 # Makefile for mpi plugins
 
-SUBDIRS = mpichgm mvapich none lam openmpi
+SUBDIRS = mpich1 mpichgm mvapich none lam openmpi
