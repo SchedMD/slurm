@@ -174,7 +174,22 @@ batch          1 DOWN         2      3448       82306 adev8
 
 <h2>MPI</h2>
 <p>MPI use depends upon the type of MPI being used. 
-Instructions for using several varieties of MPI with SLURM are
+There are three fundamentally different modes of operation used 
+by these various MPI implementation.
+<ol>
+<li>SLURM directly launches the tasks and performs initialization 
+of communications (Quadrics MPI, MPICH2, MVAPICH and MVAPICH2).</li>
+<li>SLURM creates a resource allocation for the job and then
+mpirun launches tasks using SLURM's infrastructure (OpenMPI,
+LAM/MPI and HP-MPI).</li>
+<li>SLURM creates a resource allocation for the job and then 
+mpirun launches tasks using some mechanism other than SLURM, 
+such as SSH or RSH (BlueGene MPI and MPICH1). 
+These tasks initiated outside of SLURM's monitoring 
+or control. SLURM's epilog should be configured to purge 
+these tasks when the job's allocation is relinquished. </li>
+</ol>
+<p>Instructions for using several varieties of MPI with SLURM are
 provided below.</p> 
 
 <p> <a href="http://www.open-mpi.org/"><b>Open MPI</b></a> relies upon
@@ -183,7 +198,7 @@ tasks. For example:
 <pre>
 $ salloc -n4	# allocates four processors and spawns shell for job
 &gt; mpirun -np 4 a.out
-&gt; exit          # exits shell spawned by initial srun command
+&gt; exit          # exits shell spawned by initial salloc command
 </pre>
 <p>Note that any direct use of <span class="commandline">srun</span>
 will only launch one task per node when the LAM/MPI plugin is used.
@@ -285,11 +300,11 @@ upon SLURM to create the resource allocation and then uses the native
 Build a job script containing one or more invocations of the 
 <span class="commandline">mpirun</span> command. Then submit 
 the script to SLURM using <span class="commandline">srun</span>
-command with the <b>--batch</b> option. For example:
+command with the <b>--batch</b> option. For example:</p>
 <pre>
 $ srun -N2 --batch my.script
 </pre>
-Note that the node count specified with the <i>-N</i> option indicates
+<p>Note that the node count specified with the <i>-N</i> option indicates
 the base partition count.
 See <a href="bluegene.html">BlueGene User and Administrator Guide</a> 
 for more information.</p>
@@ -299,11 +314,7 @@ relies upon the SLURM <span class="commandline">salloc</span> or
 <span class="commandline">sbatch</span> command to allocate.
 In either case, specify the maximum number of tasks required for the job.
 You will then need to build a list of hosts to be used and use that 
-as an argument to the mpirun command. Note that mpirun uses 
-ssh to launch tasks, so they are outside of SLURM's monitoring 
-or control.
-Work is currently underway for MPICH1 to launch tasks directly 
-through SLURM in order to elimiate this problem.
+as an argument to the mpirun command. 
 For example:
 <pre>
 $ cat mpich.sh
