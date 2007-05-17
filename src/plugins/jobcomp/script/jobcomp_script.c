@@ -176,14 +176,15 @@ static char ** _create_environment(char *job, char *user, char *job_name,
 	len += strlen(start)+7;
 	len += strlen(end)+5;
 	len += strlen(node_list)+7;
-        len += strlen(submit)+7;
-        len += strlen(batch)+6;
+        len += strlen(submit)+8;
+        len += strlen(batch)+7;
 	/* Add new entries here as need and increase ENV_COUNT */
 #define ENV_COUNT 13
 #ifdef _PATH_STDPATH
 	len += strlen(_PATH_STDPATH)+6;
 #endif
 	len += (ENV_COUNT * sizeof(char *));
+	len += 16;	/* some extra, just to be safe */
 
 	if(!(envptr = (char **)try_xmalloc(len)))
 		return NULL;
@@ -359,6 +360,7 @@ void *script_agent (void *args) {
 		
 			/*Exec Script*/
 			execve(script,argvp,envp);
+			exit(0);
 		} else {
 			xfree(envp);
 			job_record_destroy((void *)job);
