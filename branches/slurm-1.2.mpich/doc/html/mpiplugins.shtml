@@ -17,9 +17,11 @@ The major type must be &quot;mpi.&quot; The minor type can be any recognizable
 abbreviation for the type of node selection algorithm. We recommend, for example:</p>
 <ul>
 <li><b>lam</b>&#151;For use with LAM MPI and Open MPI.</li>
+<li><b>mpich1</b>&#151;For use with MPICH1.</li>
 <li><b>mpich-gm</b>&#151;For use with Myrinet.</li>
 <li><b>mvapich</b>&#151;For use with Infiniband.</li>
-<li><b>none</b>&#151;For use with most other versions of MPI.</li>
+<li><b>none</b>&#151;For use with most other versions of MPI including 
+MPICH2 and MVAPCIH2.</li>
 </ul>
 <p>The <span class="commandline">plugin_name</span> and 
 <span class="commandline">plugin_version</span> 

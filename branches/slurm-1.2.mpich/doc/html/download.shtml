@@ -71,6 +71,7 @@ hostnames to Elan IDs. The libelanhosts source is available from
 <li><a href="http://www.mpi-softtech.com/">ChaMPIon, MPI Software Technology</a></li>
 <li><a href="http://www.hp.com/go/mpi">HP-MPI</a></li>
 <li><a href="http://www.lam-mpi.org/">LAM/MPI</a></li>
+<li><a href="http://www-unix.mcs.anl.gov/mpi/mpich1/">MPICH1</a></li>
 <li><a href="http://www-unix.mcs.anl.gov/mpi/mpich2/">MPICH2</a></li>
 <li><a href="http://www.myri.com/scs/">MPICH-GM</a></li>
 <li><a href="http://nowlab.cse.ohio-state.edu/projects/mpi-iba">MVAPICH</a></li>

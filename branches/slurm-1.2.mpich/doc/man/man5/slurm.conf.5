@@ -1,4 +1,4 @@
-.TH "slurm.conf" "5" "December 2006" "slurm.conf 1.2" "Slurm configuration file"
+.TH "slurm.conf" "5" "May 2007" "slurm.conf 1.2" "Slurm configuration file"
 .SH "NAME"
 slurm.conf \- Slurm configuration file 
 .SH "DESCRIPTION"
@@ -248,10 +248,11 @@ May not exceed 65533.
 Identifies the default type of MPI to be used. 
 Srun may override this configuration parameter in any case.
 Currently supported versions include: 
+\fBmpich1\fR,
 \fBmpichgm\fR, 
 \fBmvapich\fR,
 \fBnone\fR (default, which works for many other versions of MPI including 
-LAM MPI and Open MPI).
+LAM MPI, Open MPI, MPICH1 and MVAPICH2).
 
 .TP
 \fBPluginDir\fR

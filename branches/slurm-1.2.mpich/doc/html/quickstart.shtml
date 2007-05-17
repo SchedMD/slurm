@@ -178,7 +178,7 @@ There are three fundamentally different modes of operation used
 by these various MPI implementation.
 <ol>
 <li>SLURM directly launches the tasks and performs initialization 
-of communications (Quadrics MPI, MPICH2, MVAPICH and MVAPICH2).</li>
+of communications (Quadrics MPI, MPICH1, MPICH2, MVAPICH and MVAPICH2).</li>
 <li>SLURM creates a resource allocation for the job and then
 mpirun launches tasks using SLURM's infrastructure (OpenMPI,
 LAM/MPI and HP-MPI).</li>
@@ -310,20 +310,13 @@ See <a href="bluegene.html">BlueGene User and Administrator Guide</a>
 for more information.</p>
 
 <p><a href="http://www-unix.mcs.anl.gov/mpi/mpich1/"><b>MPICH1</b></a>
-relies upon the SLURM <span class="commandline">salloc</span> or 
-<span class="commandline">sbatch</span> command to allocate.
-In either case, specify the maximum number of tasks required for the job.
-You will then need to build a list of hosts to be used and use that 
-as an argument to the mpirun command. 
-For example:
+jobs can be launched directly by <b>srun</b> command.
+SLURM's <i>mpich1</i> MPI plugin must be used to establish communications
+between the laucnhed tasks. This can be accomplished either using the SLURM
+configuration parameter <i>MpiDefault=mpich1</i> in <b>slurm.conf</b>
+or srun's <i>--mpi=mpich1</i> option.  For example:
 <pre>
-$ cat mpich.sh
-#!/bin/bash
-srun hostname -s | sort -u >slurm.hosts
-mpirun [options] -machinefile slurm.hosts a.out
-rm -f slurm.hosts
-$ sbatch -n16 mpich.sh
-sbatch: Submitted batch job 1234
+srun -n16 --mpi=mpich1 a.out
 </pre>
 
 <p style="text-align:center;">Last modified 17 May 2007</p>

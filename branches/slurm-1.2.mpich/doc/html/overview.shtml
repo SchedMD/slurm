@@ -54,7 +54,7 @@ building block approach. These plugins presently include:
 <li><a href="jobcompplugins.html">Job completion logging</a>: text file, 
 arbitrary script, or none (default).</li>
 
-<li><a href="mpiplugins.html">MPI</a>: LAM, MPICH-GM, MVAPICH, 
+<li><a href="mpiplugins.html">MPI</a>: LAM, MPICH1, MPICH-GM, MVAPICH, 
 and none (default, for most other versions of MPI.</li>
 
 <li><a href="selectplugins.html">Node selection</a>: 
@@ -149,6 +149,6 @@ PartitionName=class Nodes=lx[0031-0040] AllowGroups=students
 PartitionName=batch Nodes=lx[0041-9999] MaxTime=UNLIMITED MaxNodes=4096
 </pre>
 
-<p style="text-align:center;">Last modified 8 November 2006</p>
+<p style="text-align:center;">Last modified 17 May 2007</p>
 
 <!--#include virtual="footer.txt"-->
