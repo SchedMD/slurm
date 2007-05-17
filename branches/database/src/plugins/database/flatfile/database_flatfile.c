@@ -231,6 +231,6 @@ extern void database_p_jobcomp_get_jobs(List job_list,
  */
 extern void database_p_jobcomp_archive(List selected_parts, void *params)
 {
-	flatfile_jobacct_archive(selected_parts, params);
+	flatfile_jobcomp_archive(selected_parts, params);
 	return;
 }

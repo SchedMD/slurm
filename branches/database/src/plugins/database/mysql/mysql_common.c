@@ -44,6 +44,47 @@ bool thread_safe = true;
 pthread_mutex_t mysql_lock = PTHREAD_MUTEX_INITIALIZER;
 
 #ifdef HAVE_MYSQL
+
+static int _mysql_make_table_current(MYSQL *mysql_db, int database_init, 
+				     char *table_name,
+				     database_field_t *fields)
+{
+	char *query = NULL;
+	char *tmp = NULL;
+	char *next = NULL;
+	int i = 0, j=0;
+	int found = 0;
+	database_field_t *field = fields;
+	MYSQL_RES *result = NULL;
+	MYSQL_FIELD *curr_fields = NULL;
+	int num_fields = 0;
+
+	while(fields[i].name) {
+		query = xstrdup_printf("alter table %s modify %s %s",
+				       table_name, fields[i].name,
+				       fields[i].options);
+		if(mysql_db_query(mysql_db, database_init, query)) {
+			info("adding column %s after %s", fields[i].name,
+			     fields[i-1].name);
+			xfree(query);
+			query = xstrdup_printf(
+				"alter table %s add %s %s after %s",
+				table_name, fields[i].name,
+				fields[i].options,
+				fields[i-1].name);
+			if(mysql_db_query(mysql_db, database_init, query)) {
+				xfree(query);
+				return SLURM_ERROR;
+			}
+
+		}
+		xfree(query);
+		i++;
+	}
+	
+	return SLURM_SUCCESS;
+}
+
 extern mysql_db_info_t *create_mysql_db_info()
 {
 	mysql_db_info_t *db_info = xmalloc(sizeof(mysql_db_info_t));
@@ -183,7 +224,8 @@ extern int mysql_db_create_table(MYSQL *mysql_db, int database_init,
 	char *tmp = NULL;
 	char *next = NULL;
 	int i = 0;
-
+	database_field_t *first_field = fields;
+	
 	query = xstrdup_printf("create table if not exists %s (", table_name);
 	i=0;
 	while(fields && fields->name) {
@@ -206,9 +248,10 @@ extern int mysql_db_create_table(MYSQL *mysql_db, int database_init,
 		xfree(query);
 		return SLURM_ERROR;
 	}
-	xfree(query);
-
-	return SLURM_SUCCESS;
+	xfree(query);	
+	
+	return _mysql_make_table_current(mysql_db, database_init, 
+					 table_name, first_field);
 }
 
 #endif

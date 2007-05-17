@@ -45,5 +45,10 @@ extern int mysql_jobcomp_fini();
 extern int mysql_jobcomp_get_errno();
 extern int mysql_jobcomp_log_record(struct job_record *job_ptr);
 extern char *mysql_jobcomp_strerror(int errnum);
+extern void mysql_jobcomp_get_jobs(List job_list, 
+				   List selected_steps,
+				   List selected_parts,
+				   void *params);
+extern void mysql_jobcomp_archive(List selected_parts, void *params);
 
 #endif

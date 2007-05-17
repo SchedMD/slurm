@@ -47,7 +47,7 @@
 #endif
 
 #include "mysql_common.h"
-#include "mysql_jobcomp.h"
+#include "mysql_jobcomp_process.h"
 #include <pwd.h>
 #include <sys/types.h>
 #include "src/common/parse_time.h"
@@ -60,6 +60,30 @@ MYSQL *jobcomp_mysql_db = NULL;
 int jobcomp_db_init = 0;
 
 char *jobcomp_table = "jobcomp_table";
+database_field_t jobcomp_table_fields[] = {
+	{ "jobid", "int not null" },
+	{ "uid", "smallint unsigned not null" },
+	{ "user_name", "tinytext not null" },
+	{ "gid", "smallint unsigned not null" },
+	{ "group_name", "tinytext not null" },
+	{ "name", "tinytext not null" },
+	{ "state", "smallint not null" },
+	{ "partition", "tinytext not null" }, 
+	{ "timelimit", "tinytext not null" },
+	{ "starttime", "int unsigned default 0" }, 
+	{ "endtime", "int unsigned default 0" },
+	{ "nodelist", "text" }, 
+	{ "nodecnt", "mediumint unsigned not null" },
+	{ "connection", "tinytext" },
+	{ "reboot", "tinytext" },
+	{ "rotate", "tinytext" },
+	{ "maxprocs", "tinytext" },
+	{ "geometry", "tinytext" },
+	{ "start", "tinytext" },
+	{ "blockid", "tinytext" },
+	{ NULL, NULL}
+};
+
 
 /* Type for error string table entries */
 typedef struct {
@@ -81,28 +105,6 @@ static pthread_mutex_t  jobcomp_lock = PTHREAD_MUTEX_INITIALIZER;
 
 static int _mysql_jobcomp_check_tables()
 {
-	database_field_t jobcomp_table_fields[] = {
-		{ "jobid", "int not null" },
-		{ "uid", "smallint unsigned not null" },
-		{ "user_name", "tinytext not null" },
-		{ "name", "tinytext not null" },
-		{ "state", "smallint not null" },
-		{ "partition", "tinytext not null" }, 
-		{ "timelimit", "tinytext not null" },
-		{ "starttime", "int unsigned default 0" }, 
-		{ "endtime", "int unsigned default 0" },
-		{ "nodelist", "text" }, 
-		{ "nodecnt", "mediumint unsigned not null" },
-		{ "connection", "tinytext" },
-		{ "reboot", "tinytext" },
-		{ "rotate", "tinytext" },
-		{ "maxprocs", "tinytext" },
-		{ "geometry", "tinytext" },
-		{ "start", "tinytext" },
-		{ "blockid", "tinytext" },
-		{ NULL, NULL}
-	};
-
 	if(mysql_db_create_table(jobcomp_mysql_db, jobcomp_db_init, 
 				 jobcomp_table, jobcomp_table_fields,
 				 ")") == SLURM_ERROR)
@@ -296,6 +298,31 @@ extern char *mysql_jobcomp_strerror( int errnum )
 {
 	char *res = _lookup_slurm_api_errtab(errnum);
 	return (res ? res : strerror(errnum));
+}
+
+/* 
+ * get info from the database 
+ * in/out job_list List of job_rec_t *
+ * note List needs to be freed when called
+ */
+extern void mysql_jobcomp_get_jobs(List job_list, 
+				      List selected_steps, List selected_parts,
+				      void *params)
+{
+	mysql_jobcomp_process_get_jobs(job_list, 
+					  selected_steps, selected_parts,
+					  params);	
+	return;
+}
+
+/* 
+ * expire old info from the database 
+ */
+extern void mysql_jobcomp_archive(List selected_parts,
+				     void *params)
+{
+	mysql_jobcomp_process_archive(selected_parts, params);
+	return;
 }
 
 #endif
