@@ -1,9 +1,8 @@
 /*****************************************************************************\
  **  mpi_mvapich.c - Library routines for initiating jobs on with mvapich
  **  type mpi. 
- **  $Id: mpi_gmpi.c,v 1.7 2005/06/07 18:25:32 morrone Exp $
  *****************************************************************************
- *  Copyright (C) 2004 The Regents of the University of California.
+ *  Copyright (C) 2004-2007 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Danny Auble <da@llnl.gov>
  *  UCRL-CODE-226842.
