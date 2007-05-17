@@ -94,6 +94,7 @@ int     setup_env(env_t *env);
  *	SLURM_JOB_NUM_NODES
  *	SLURM_JOB_NODELIST
  *	SLURM_JOB_CPUS_PER_NODE
+ *	LOADLBATCH (AIX only)
  *
  * Sets OBSOLETE variables:
  *	? probably only needed for users...
@@ -113,6 +114,8 @@ void env_array_for_job(char ***dest,
  *	SLURM_JOB_NUM_NODES
  *	SLURM_JOB_NODELIST
  *	SLURM_JOB_CPUS_PER_NODE
+ *	ENVIRONMENT=BATCH
+ *	LOADLBATCH (AIX only)
  *
  * Sets OBSOLETE variables:
  *	SLURM_JOBID
