@@ -120,7 +120,7 @@ static jobcomp_job_rec_t *_parse_line(List job_info_list)
 		} else if(!strcasecmp("Userid", jobcomp_info->name)) {
 			temp = strstr(jobcomp_info->val, "(");
 			if(!temp) 
-				job->uid = xstrdup(jobcomp_info->val);
+				job->uid = atoi(jobcomp_info->val);
 			*temp++ = 0; 
 			temp2 = temp;
 			temp = strstr(temp, ")");
@@ -129,13 +129,13 @@ static jobcomp_job_rec_t *_parse_line(List job_info_list)
 				      jobcomp_info->val);
 			} else {
 				*temp = 0;
-				job->uid = xstrdup(temp2);
-				info("got uid of %s", job->uid);
+				job->uid = atoi(temp2);
+				job->uid_name = xstrdup(jobcomp_info->val);
 			}
 		} else if(!strcasecmp("GroupId", jobcomp_info->name)) {
 			temp = strstr(jobcomp_info->val, "(");
 			if(!temp) 
-				job->gid = xstrdup(jobcomp_info->val);
+				job->gid = atoi(jobcomp_info->val);
 			*temp++ = 0; 
 			temp2 = temp;
 			temp = strstr(temp, ")");
@@ -144,7 +144,8 @@ static jobcomp_job_rec_t *_parse_line(List job_info_list)
 				      jobcomp_info->val);
 			} else {
 				*temp = 0;
-				job->gid = xstrdup(temp2);
+				job->gid = atoi(temp2);
+				job->gid_name = xstrdup(jobcomp_info->val);
 			}
 		} else if(!strcasecmp("Block_Id", jobcomp_info->name)) {
 			job->blockid = xstrdup(jobcomp_info->val);
@@ -278,7 +279,7 @@ extern void flatfile_jobcomp_process_get_jobs(List job_list,
 		job = _parse_line(job_info_list);
 		
 		if(job)
-			list_push(job_list, job);
+			list_append(job_list, job);
 	}
 	if(job_info_list) 
 		list_destroy(job_info_list);

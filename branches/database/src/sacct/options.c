@@ -295,12 +295,17 @@ int get_data(void)
 	ListIterator itr = NULL;
 	ListIterator itr_step = NULL;
 
-	if(params.opt_completion) 
+	if(params.opt_completion) {
+		jobs = list_create(jobcomp_destroy_job);
 		database_g_jobcomp_get_jobs(jobs, selected_steps,
 					    selected_parts, &params);
-	else
+		return SLURM_SUCCESS;
+	} else {
+		jobs = list_create(jobacct_destroy_job);
 		database_g_jobacct_get_jobs(jobs, selected_steps,
 					    selected_parts, &params);
+	}
+
 	if (params.opt_fdump) {
 		return SLURM_SUCCESS;
 	}
@@ -374,6 +379,7 @@ void parse_command_line(int argc, char **argv)
 	ListIterator itr = NULL;
 	struct stat stat_buf;
 	char *dot = NULL;
+	bool brief_output = FALSE, long_output = FALSE;
 
 	static struct option long_options[] = {
 		{"all", 0,0, 'a'},
@@ -423,15 +429,8 @@ void parse_command_line(int argc, char **argv)
 			params.opt_uid = -1;
 			break;
 		case 'b':
-			params.opt_field_list =
-				xrealloc(params.opt_field_list,
-					 (params.opt_field_list==NULL? 0 :
-					  sizeof(params.opt_field_list)) +
-					 sizeof(BRIEF_FIELDS)+1);
-			strcat(params.opt_field_list, BRIEF_FIELDS);
-			strcat(params.opt_field_list, ",");
+			brief_output = true;
 			break;
-
 		case 'c':
 			params.opt_completion = 1;
 			break;
@@ -543,13 +542,7 @@ void parse_command_line(int argc, char **argv)
 			break;
 
 		case 'l':
-			params.opt_field_list =
-				xrealloc(params.opt_field_list,
-					 (params.opt_field_list==NULL? 0 :
-					  strlen(params.opt_field_list)) +
-					 sizeof(LONG_FIELDS)+1);
-			strcat(params.opt_field_list, LONG_FIELDS);
-			strcat(params.opt_field_list, ",");
+			long_output = true;
 			break;
 
 		case 'O':
@@ -816,13 +809,48 @@ void parse_command_line(int argc, char **argv)
 	}
 
 	/* select the output fields */
+	if(brief_output) {
+		if(params.opt_completion)
+			dot = BRIEF_COMP_FIELDS;
+		else
+			dot = BRIEF_FIELDS;
+		
+		params.opt_field_list =
+			xrealloc(params.opt_field_list,
+				 (params.opt_field_list==NULL? 0 :
+				  sizeof(params.opt_field_list)) +
+				 strlen(dot)+1);
+		strcat(params.opt_field_list, dot);
+		strcat(params.opt_field_list, ",");
+	} 
+
+	if(long_output) {
+		if(params.opt_completion)
+			dot = LONG_COMP_FIELDS;
+		else
+			dot = LONG_FIELDS;
+		
+		params.opt_field_list =
+			xrealloc(params.opt_field_list,
+				 (params.opt_field_list==NULL? 0 :
+				  strlen(params.opt_field_list)) +
+				 strlen(dot)+1);
+		strcat(params.opt_field_list, dot);
+		strcat(params.opt_field_list, ",");
+	} 
+	
 	if (params.opt_field_list==NULL) {
 		if (params.opt_dump || params.opt_expire)
 			goto endopt;
-		params.opt_field_list = xmalloc(sizeof(DEFAULT_FIELDS)+1);
-		strcpy(params.opt_field_list, DEFAULT_FIELDS); 
+		if(params.opt_completion)
+			dot = DEFAULT_COMP_FIELDS;
+		else
+			dot = DEFAULT_FIELDS;
+		params.opt_field_list = xmalloc(strlen(dot)+1);
+		strcpy(params.opt_field_list, dot); 
 		strcat(params.opt_field_list, ",");
 	}
+
 	start = params.opt_field_list;
 	while ((end = strstr(start, ","))) {
 		*end = 0;
@@ -1061,6 +1089,26 @@ void do_dump(void)
 	list_iterator_destroy(itr);		
 }
 
+void do_dump_completion(void)
+{
+	ListIterator itr = NULL;
+	jobcomp_job_rec_t *job = NULL;
+		
+	itr = list_iterator_create(jobs);
+	while((job = list_next(itr))) {
+		printf("JOB %u %s %s %s %u(%s) %u(%s) %u %s %s %s %s",
+		       job->jobid, job->partition, job->start_time,
+		       job->end_time, job->uid, job->uid_name, job->gid,
+		       job->gid_name, job->node_cnt, job->nodelist, 
+		       job->jobname, job->state, job->timelimit);
+		printf(" %s %s %s %s %u %s %s",
+		       job->blockid, job->connection, job->reboot, job->rotate,
+		       job->max_procs, job->geo, job->bg_start_point);
+		printf("\n");
+	}
+	list_iterator_destroy(itr);
+}
+
 /* do_expire() -- purge expired data from the accounting log file
  */
 
@@ -1110,7 +1158,7 @@ void do_list(void)
 	
 	if (params.opt_total)
 		do_jobsteps = 0;
-	
+
 	itr = list_iterator_create(jobs);
 	while((job = list_next(itr))) {
 		if (!params.opt_dup)
@@ -1188,6 +1236,30 @@ void do_list(void)
 	list_iterator_destroy(itr);
 }
 
+/* do_list_completion() -- List the assembled data
+ *
+ * In:	Nothing explicit.
+ * Out:	void.
+ *
+ * At this point, we have already selected the desired data,
+ * so we just need to print it for the user.
+ */
+void do_list_completion(void)
+{
+	ListIterator itr = NULL;
+	jobcomp_job_rec_t *job = NULL;
+	
+	itr = list_iterator_create(jobs);
+	while((job = list_next(itr))) {
+		if (params.opt_uid >= 0 && (job->uid != params.opt_uid))
+			continue;
+		if (params.opt_gid >= 0 && (job->gid != params.opt_gid))
+			continue;
+		print_fields(JOBCOMP, job);
+	}
+	list_iterator_destroy(itr);
+}
+
 void do_stat()
 {
 	ListIterator itr = NULL;
@@ -1209,7 +1281,6 @@ void do_stat()
 void sacct_init()
 {
 	int i=0;
-	jobs = list_create(jobacct_destroy_job);
 	selected_parts = list_create(_destroy_parts);
 	selected_steps = list_create(_destroy_steps);
 	for(i=0; i<STATUS_COUNT; i++)

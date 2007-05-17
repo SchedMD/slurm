@@ -151,8 +151,10 @@ typedef struct {
 	char *blockid;
 	char *start_time;
 	char *end_time;
-	char *uid;
-	char *gid;
+	uint32_t uid;
+	char *uid_name;
+	uint32_t gid;
+	char *gid_name;
 	uint32_t node_cnt;
 	char *nodelist;
 	char *jobname;
@@ -197,6 +199,7 @@ extern jobacct_job_rec_t *jobacct_init_job_rec(jobacct_header_t header);
 extern void jobacct_destroy_acct_header(void *object);
 extern void jobacct_destroy_job(void *object);
 extern void jobacct_destroy_step(void *object);
+extern void jobcomp_destroy_job(void *object);
 
 
 /* common */

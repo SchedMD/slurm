@@ -62,9 +62,17 @@
 #define ERROR 2
 
 #define BRIEF_FIELDS "jobid,status,exitcode"
+#define BRIEF_COMP_FIELDS "jobid,uid,status"
 #define DEFAULT_FIELDS "jobid,jobname,partition,ncpus,status,exitcode"
+#define DEFAULT_COMP_FIELDS "jobid,uid,jobname,partition,nnodes,nodes,status,end"
 #define STAT_FIELDS "jobid,vsize,rss,pages,cputime,ntasks,status"
 #define LONG_FIELDS "jobid,jobname,partition,vsize,rss,pages,cputime,ntasks,ncpus,elapsed,status,exitcode"
+
+#ifdef HAVE_BG
+#define LONG_COMP_FIELDS "jobid,uid,jobname,partition,blockid,nnodes,nodes,status,start,end,timelimit,connection,reboot,rotate,max_procs,geo,bg_start_point"
+#else
+#define LONG_COMP_FIELDS "jobid,uid,jobname,partition,nnodes,nodes,status,start,end,timelimit"
+#endif
 
 #define BUFFER_SIZE 4096
 #define STATUS_COUNT 10
@@ -80,7 +88,8 @@
 typedef enum {	HEADLINE,
 		UNDERSCORE,
 		JOB,
-		JOBSTEP
+		JOBSTEP,
+		JOBCOMP
 } type_t;
 
 
@@ -122,6 +131,7 @@ void print_msgsnd(type_t type, void *object);
 void print_ncpus(type_t type, void *object);
 void print_nivcsw(type_t type, void *object);
 void print_nodes(type_t type, void *object);
+void print_nnodes(type_t type, void *object);
 void print_nsignals(type_t type, void *object);
 void print_nswap(type_t type, void *object);
 void print_ntasks(type_t type, void *object);
@@ -136,6 +146,7 @@ void print_submit(type_t type, void *object);
 void print_start(type_t type, void *object);
 void print_end(type_t type, void *object);
 void print_systemcpu(type_t type, void *object);
+void print_timelimit(type_t type, void *object);
 void print_uid(type_t type, void *object);
 void print_user(type_t type, void *object);
 void print_usercpu(type_t type, void *object);
@@ -143,15 +154,26 @@ void print_vsize(type_t type, void *object);
 void print_cputime(type_t type, void *object);
 void print_account(type_t type, void *object);
 
+#ifdef HAVE_BG
+void print_connection(type_t type, void *object);
+void print_geo(type_t type, void *object);
+void print_max_procs(type_t type, void *object);
+void print_reboot(type_t type, void *object);
+void print_rotate(type_t type, void *object);
+void print_bg_start_point(type_t type, void *object);
+#endif
+
 /* options.c */
 int decode_status_char(char *status);
 char *decode_status_int(int status);
 int get_data(void);
 void parse_command_line(int argc, char **argv);
 void do_dump(void);
+void do_dump_completion(void);
 void do_expire(void);
 void do_help(void);
 void do_list(void);
+void do_list_completion(void);
 void do_stat(void);
 void sacct_init();
 void sacct_fini();
