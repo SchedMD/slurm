@@ -362,7 +362,7 @@ The location of a directory where slurmd saves state should also be defined.
 This must be a unique directory on each compute server (local disk).
 <P>
 <input type="text" name="state_save_location" value="/tmp"> <B>StateSaveLocation</B>:
-Slurmctld state save directory
+Slurmctld state save directory <B>Must be writable by both ControlMachine and BackupController</B>
 <P>
 <input type="text" name="slurmd_spool_dir" value="/tmp/slurmd"> <B>SlurmdSpoolDir</B>:
 Slurmd state save directory
@@ -644,6 +644,6 @@ before terminating all remaining tasks. A value of zero indicates unlimited wait
 </FORM>
 <HR>
 <p class="footer">UCRL-WEB-225274<br>
-Last modified 22 March 2007</p>
+Last modified 17 May 2007</p>
 </BODY>
 
