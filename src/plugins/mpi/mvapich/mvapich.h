@@ -1,9 +1,8 @@
 /*****************************************************************************\
- **  mpi_mvapich.c - Library routines for initiating jobs on with mvapich
+ **  mpi_mvapich.h - Library routines for initiating jobs on with mvapich
  **  type mpi. 
- **  $Id: mpi_gmpi.c,v 1.7 2005/06/07 18:25:32 morrone Exp $
  *****************************************************************************
- *  Copyright (C) 2004 The Regents of the University of California.
+ *  Copyright (C) 2004-2007 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Danny Auble <da@llnl.gov>
  *  UCRL-CODE-226842.
@@ -36,6 +35,10 @@
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
+
+#ifndef _HAVE_MPI_MVAPICH_H
+#define _HAVE_MPI_MVAPICH_H
+
 #if HAVE_CONFIG_H
 #  include "config.h"
 #endif
@@ -49,3 +52,5 @@ typedef struct mvapich_state mvapich_state_t;
 extern mvapich_state_t *mvapich_thr_create(const mpi_plugin_client_info_t *job,
 					   char ***env);
 extern int mvapich_thr_destroy(mvapich_state_t *state);
+
+#endif	/* !_HAVE_MPI_MVAPICH_H */
