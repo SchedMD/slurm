@@ -181,7 +181,7 @@ provided below.</p>
 SLURM to allocate resources for the job and then mpirun to initiate the 
 tasks. For example:
 <pre>
-$ srun -n4 -A	# allocates four processors and spawns shell for job
+$ salloc -n4	# allocates four processors and spawns shell for job
 &gt; mpirun -np 4 a.out
 &gt; exit          # exits shell spawned by initial srun command
 </pre>
@@ -196,13 +196,12 @@ allocate resources for the job and <span class="commandline">srun</span>
 to initiate the tasks. One would build the MPI program in the normal manner 
 then initiate it using a command line of this sort:</p>
 <pre>
-$ srun [OPTIONS] &lt;program&gt; [program args]
+$ srun [options] &lt;program&gt; [program args]
 </pre>
 
 <p> <a href="http://www.lam-mpi.org/"><b>LAM/MPI</b></a> relies upon the SLURM 
-<span class="commandline">srun</span> command to allocate resources using 
-either the <span class="commandline">--allocate</span> or the 
-<span class="commandline">--batch</span> option. In either case, specify 
+<span class="commandline">salloc</span> or <span class="commandline">sbatch</span>
+command to allocate. In either case, specify 
 the maximum number of tasks required for the job. Then execute the 
 <span class="commandline">lamboot</span> command to start lamd daemons. 
 <span class="commandline">lamboot</span> utilizes SLURM's 
@@ -210,7 +209,7 @@ the maximum number of tasks required for the job. Then execute the
 Do not directly execute the <span class="commandline">srun</span> command 
 to launch LAM/MPI tasks. For example: 
 <pre>
-$ srun -n16 -A     # allocates 16 processors and spawns shell for job
+$ salloc -n16     # allocates 16 processors and spawns shell for job
 &gt; lamboot
 &gt; mpirun -np 16 foo args
 1234 foo running on adev0 (o)
@@ -295,6 +294,27 @@ the base partition count.
 See <a href="bluegene.html">BlueGene User and Administrator Guide</a> 
 for more information.</p>
 
-<p style="text-align:center;">Last modified 29 September 2006</p>
+<p><a href="http://www-unix.mcs.anl.gov/mpi/mpich1/"><b>MPICH1</b></a>
+relies upon the SLURM <span class="commandline">salloc</span> or 
+<span class="commandline">sbatch</span> command to allocate.
+In either case, specify the maximum number of tasks required for the job.
+You will then need to build a list of hosts to be used and use that 
+as an argument to the mpirun command. Note that mpirun uses 
+ssh to launch tasks, so they are outside of SLURM's monitoring 
+or control.
+Work is currently underway for MPICH1 to launch tasks directly 
+through SLURM in order to elimiate this problem.
+For example:
+<pre>
+$ cat mpich.sh
+#!/bin/bash
+srun hostname -s | sort -u >slurm.hosts
+mpirun [options] -machinefile slurm.hosts a.out
+rm -f slurm.hosts
+$ sbatch -n16 mpich.sh
+sbatch: Submitted batch job 1234
+</pre>
+
+<p style="text-align:center;">Last modified 17 May 2007</p>
 
 <!--#include virtual="footer.txt"-->
