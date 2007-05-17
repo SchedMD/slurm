@@ -1,6 +1,5 @@
 /*****************************************************************************\
- **  mpi_mvapich.h - Library routines for initiating jobs on with mvapich
- **  type mpi. 
+ **  mpich1.h - Library routines for initiating jobs on with mpich.
  *****************************************************************************
  *  Copyright (C) 2004-2007 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -36,8 +35,8 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef _HAVE_MPI_MVAPICH_H
-#define _HAVE_MPI_MVAPICH_H
+#ifndef _HAVE_MPI_MPICH1_H
+#define _HAVE_MPI_MPICH1_H
 
 #if HAVE_CONFIG_H
 #  include "config.h"
@@ -47,10 +46,10 @@
 #include "src/common/mpi.h"
 #include "src/common/env.h"
 
-typedef struct mvapich_state mvapich_state_t;
+typedef struct mpich1_state mpich1_state_t;
 
-extern mvapich_state_t *mvapich_thr_create(const mpi_plugin_client_info_t *job,
+extern mpich1_state_t *mpich1_thr_create(const mpi_plugin_client_info_t *job,
 					   char ***env);
-extern int mvapich_thr_destroy(mvapich_state_t *state);
+extern int mpich1_thr_destroy(mpich1_state_t *state);
 
-#endif	/* !_HAVE_MPI_MVAPICH_H */
+#endif	/* !_HAVE_MPI_MPICH1_H */

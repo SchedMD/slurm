@@ -1,6 +1,5 @@
 /*****************************************************************************\
- **  mpi_mvapich.c - Library routines for initiating jobs on with mvapich
- **  type mpi. 
+ **  mpi_mpich1.c - Library routines for initiating jobs on with mpich1
  *****************************************************************************
  *  Copyright (C) 2004-2007 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -46,7 +45,7 @@
 
 #include <slurm/slurm_errno.h>
 #include "src/common/slurm_xlator.h"
-#include "src/plugins/mpi/mvapich/mvapich.h"
+#include "src/plugins/mpi/mpich1/mpich1.h"
 
 /*
  * These variables are required by the generic plugin interface.  If they
@@ -75,8 +74,8 @@
  * as 100 or 1000.  Various SLURM versions will likely require a certain
  * minimum versions for their plugins as this API matures.
  */
-const char plugin_name[]        = "mpi MVAPICH plugin";
-const char plugin_type[]        = "mpi/mvapich";
+const char plugin_name[]        = "mpi MPICH1 plugin";
+const char plugin_type[]        = "mpi/mpich1";
 const uint32_t plugin_version   = 100;
 
 int p_mpi_hook_slurmstepd_task (const mpi_plugin_task_info_t *job,
@@ -86,10 +85,11 @@ int p_mpi_hook_slurmstepd_task (const mpi_plugin_task_info_t *job,
 	char *processes = NULL;
 	char *addr = getenvp (*env, "SLURM_LAUNCH_NODE_IPADDR");
 
-	debug("Using mpi/mvapich");
-	env_array_overwrite_fmt(env, "MPIRUN_HOST", "%s", addr);
-	env_array_overwrite_fmt(env, "MPIRUN_RANK", "%u", job->gtaskid);
-	env_array_overwrite_fmt(env, "MPIRUN_MPD", "0");
+	debug("Using mpi/mpich1");
+	env_array_overwrite_fmt(env, "MPIRUN_HOST",     "%s", addr);
+	env_array_overwrite_fmt(env, "MPIRUN_RANK",     "%u", job->gtaskid);
+	env_array_overwrite_fmt(env, "MPIRUN_NPROCS",   "%u", job->ntasks);
+	env_array_overwrite_fmt(env, "MPIRUN_ID",       "%u", job->jobid);
 
 	debug2("init for mpi rank %u\n", job->gtaskid);
 	/*
@@ -98,22 +98,7 @@ int p_mpi_hook_slurmstepd_task (const mpi_plugin_task_info_t *job,
 	 */
 	for (i = 0; i < job->ntasks; i++)
 		xstrcat (processes, "x:");
-	
 	env_array_overwrite_fmt(env, "MPIRUN_PROCESSES", "%s", processes);
-
-	/* 
-	 * Some mvapich versions will ignore MPIRUN_PROCESSES If
-	 *  the following env var is set.
-	 */
-	env_array_overwrite_fmt(env, "NOT_USE_TOTALVIEW", "1");
-
-	/*
-	 * Set VIADEV_ENABLE_AFFINITY=0 so that mvapich doesn't 
-	 *  override SLURM's CPU affinity. (Unless this var is
-	 *  already set in user env)
-	 */
-	if (!getenvp (*env, "VIADEV_ENABLE_AFFINITY"))
-		env_array_overwrite_fmt(env, "VIADEV_ENABLE_AFFINITY", "0");
 
 	return SLURM_SUCCESS;
 }
@@ -121,8 +106,8 @@ int p_mpi_hook_slurmstepd_task (const mpi_plugin_task_info_t *job,
 mpi_plugin_client_state_t *
 p_mpi_hook_client_prelaunch(mpi_plugin_client_info_t *job, char ***env)
 {
-	debug("Using mpi/mvapich");
-	return (mpi_plugin_client_state_t *)mvapich_thr_create(job, env);
+	debug("Using mpi/mpich1");
+	return (mpi_plugin_client_state_t *)mpich1_thr_create(job, env);
 }
 
 int p_mpi_hook_client_single_task_per_node()
@@ -132,5 +117,5 @@ int p_mpi_hook_client_single_task_per_node()
 
 int p_mpi_hook_client_fini(mpi_plugin_client_state_t *state)
 {
-	return mvapich_thr_destroy((mvapich_state_t *)state);
+	return mpich1_thr_destroy((mpich1_state_t *)state);
 }
