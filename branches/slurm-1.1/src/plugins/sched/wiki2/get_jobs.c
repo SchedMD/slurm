@@ -306,7 +306,7 @@ static char *	_dump_job(struct job_record *job_ptr, int state_info)
 	xstrcat(buf, tmp);
 
 	snprintf(tmp, sizeof(tmp),
-		"NAME=%s;", job_ptr->name);
+		"NAME=\"%s\";", job_ptr->name);
 	xstrcat(buf, tmp);
 
 	return buf;
