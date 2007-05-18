@@ -1,6 +1,10 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins. 
 
+* Changes in SLURM 1.1.37
+=========================
+ - In sched/wiki2: Add NAME to job record.
+
 * Changes in SLURM 1.1.36
 =========================
  - Permit node state specification of DRAIN in slurm.conf.
