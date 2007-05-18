@@ -98,6 +98,7 @@ static char *	_full_task_list(struct job_record *job_ptr);
  *	[SUSPENDTIME=<secs>;]		seconds that job has been suspended
  *	UNAME=<user_name>;		user name
  *	GNAME=<group_name>;		group name
+ *	NAME=<job_name>;		job name
  * [#<JOBID>;...];			additional jobs, if any
  *
  */
@@ -316,6 +317,10 @@ static char *	_dump_job(struct job_record *job_ptr, int state_info)
 		"UNAME=%s;GNAME=%s;",
 		uid_to_string((uid_t) job_ptr->user_id),
 		_get_group_name(job_ptr->group_id));
+	xstrcat(buf, tmp);
+
+	snprintf(tmp, sizeof(tmp),
+		"NAME=%s;", job_ptr->name);
 	xstrcat(buf, tmp);
 
 	return buf;
