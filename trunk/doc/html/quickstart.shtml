@@ -194,10 +194,12 @@ provided below.</p>
 
 <p> <a href="http://www.open-mpi.org/"><b>Open MPI</b></a> relies upon
 SLURM to allocate resources for the job and then mpirun to initiate the 
-tasks. For example:
+tasks. When using <span class="commandline">salloc</span> command, 
+<span class="commandline">mpirun</span>'s -nolocal option is recommended. 
+For example:
 <pre>
 $ salloc -n4	# allocates four processors and spawns shell for job
-&gt; mpirun -np 4 a.out
+&gt; mpirun -np 4 -nolocal a.out
 &gt; exit          # exits shell spawned by initial salloc command
 </pre>
 <p>Note that any direct use of <span class="commandline">srun</span>
