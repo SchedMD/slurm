@@ -178,7 +178,7 @@ There are three fundamentally different modes of operation used
 by these various MPI implementation.
 <ol>
 <li>SLURM directly launches the tasks and performs initialization 
-of communications (Quadrics MPI, MPICH2, MVAPICH and MVAPICH2).</li>
+of communications (Quadrics MPI, MPICH2, MPICH-GM, MVAPICH and MVAPICH2).</li>
 <li>SLURM creates a resource allocation for the job and then
 mpirun launches tasks using SLURM's infrastructure (OpenMPI,
 LAM/MPI and HP-MPI).</li>
@@ -268,6 +268,17 @@ libary integrated with SLURM</li>
 of 1 or higher for the PMI libary to print debugging information</li>
 </ul></p>
 
+<p><a href="http://www.myri.com/scs/download-mpichgm.html"><b>MPICH-GM</b></a>
+jobs can be launched directly by <b>srun</b> command.
+SLURM's <i>mpichgm</i> MPI plugin must be used to establish communications 
+between the laucnhed tasks. This can be accomplished either using the SLURM 
+configuration parameter <i>MpiDefault=mpichgm</i> in <b>slurm.conf</b>
+or srun's <i>--mpi=mpichgm</i> option.
+<pre>
+$ mpicc ...
+$ srun -n16 --mpi=mpichgm a.out
+</pre>
+
 <p><a href="http://nowlab.cse.ohio-state.edu/projects/mpi-iba"><b>MVAPICH</b></a>
 jobs can be launched directly by <b>srun</b> command.
 SLURM's <i>mvapich</i> MPI plugin must be used to establish communications 
@@ -326,6 +337,6 @@ $ sbatch -n16 mpich.sh
 sbatch: Submitted batch job 1234
 </pre>
 
-<p style="text-align:center;">Last modified 17 May 2007</p>
+<p style="text-align:center;">Last modified 18 May 2007</p>
 
 <!--#include virtual="footer.txt"-->
