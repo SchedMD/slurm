@@ -825,10 +825,13 @@ extern slurm_step_layout_t *step_layout_create(struct step_record *step_ptr,
 	uint32_t cpu_count_reps[node_count];
 	int cpu_inx = -1;
 	int usable_cpus = 0, i;
+	int set_nodes = 0;
 	int inx = 0;
 	int pos = -1;
 	struct job_record *job_ptr = step_ptr->job_ptr;
-	uint32_t node_cnt = job_ptr->cpu_count_reps[inx];
+
+	/* node_pos is the position in the node in the job */
+	uint32_t node_pos = job_ptr->cpu_count_reps[inx];
 			
 	/* build the cpus-per-node arrays for the subset of nodes
 	   used by this job step */
@@ -838,16 +841,16 @@ extern slurm_step_layout_t *step_layout_create(struct step_record *step_ptr,
 			pos = bit_get_pos_num(job_ptr->node_bitmap, i);
 			if (pos == -1)
 				return NULL;
-			while(pos >= node_cnt) {
-				node_cnt += 
+			/* need to get the correct num of cpus on the
+			   node */
+			while(pos >= node_pos) {
+				node_pos += 
 					job_ptr->cpu_count_reps[++inx];
 			}
 			debug2("%d got inx of %d cpus = %d pos = %d", 
 			       i, inx, job_ptr->cpus_per_node[inx], pos);
 			usable_cpus = job_ptr->cpus_per_node[inx];
 			
-			
-			//if(cpus_per_node[cpu_inx] != usable_cpus) {
 			if ((cpu_inx == -1) ||
 			    (cpus_per_node[cpu_inx] != usable_cpus)) {
 				cpu_inx++;
@@ -856,7 +859,8 @@ extern slurm_step_layout_t *step_layout_create(struct step_record *step_ptr,
 				cpu_count_reps[cpu_inx] = 1;
 			} else
 				cpu_count_reps[cpu_inx]++;
-			if(pos == node_count)
+			set_nodes++;
+			if(set_nodes == node_count)
 				break;
 		}
 	}
