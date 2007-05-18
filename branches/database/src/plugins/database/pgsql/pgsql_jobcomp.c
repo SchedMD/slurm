@@ -47,7 +47,7 @@
 #endif
 
 #include "pgsql_common.h"
-#include "pgsql_jobcomp.h"
+#include "pgsql_jobcomp_process.h"
 #include <pwd.h>
 #include <sys/types.h>
 #include "src/common/parse_time.h"
@@ -60,6 +60,29 @@ PGconn *jobcomp_pgsql_db = NULL;
 int jobcomp_db_init = 0;
 
 char *jobcomp_table = "jobcomp_table";
+database_field_t jobcomp_table_fields[] = {
+	{ "jobid", "integer not null" },
+	{ "uid", "smallint not null" },
+	{ "user_name", "text not null" },
+	{ "gid", "smallint not null" },
+	{ "group_name", "text not null" },
+	{ "name", "text not null" },
+	{ "state", "smallint not null" },
+	{ "partition", "text not null" }, 
+	{ "timelimit", "text not null" },
+	{ "starttime", "bigint default 0" }, 
+	{ "endtime", "bigint default 0" },
+	{ "nodelist", "text" }, 
+	{ "nodecnt", "integer not null" },
+	{ "connection", "text" },
+	{ "reboot", "text" },
+	{ "rotate", "text" },
+	{ "maxprocs", "integer default 0" },
+	{ "geometry", "text" },
+	{ "start", "text" },
+	{ "blockid", "text" },
+	{ NULL, NULL}
+};
 
 /* Type for error string table entries */
 typedef struct {
@@ -81,27 +104,6 @@ static pthread_mutex_t  jobcomp_lock = PTHREAD_MUTEX_INITIALIZER;
 
 static int _pgsql_jobcomp_check_tables(char *user)
 {
-	database_field_t jobcomp_table_fields[] = {
-		{ "jobid", "integer not null" },
-		{ "uid", "smallint not null" },
-		{ "user_name", "text not null" },
-		{ "name", "text not null" },
-		{ "state", "smallint not null" },
-		{ "partition", "text not null" }, 
-		{ "timelimit", "text not null" },
-		{ "starttime", "bigint default 0" }, 
-		{ "endtime", "bigint unsigned default 0" },
-		{ "nodelist", "text" }, 
-		{ "nodecnt", "integer unsigned not null" },
-		{ "connection", "text" },
-		{ "reboot", "text" },
-		{ "rotate", "text" },
-		{ "maxprocs", "text" },
-		{ "geometry", "text" },
-		{ "start", "text" },
-		{ "blockid", "text" },
-		{ NULL, NULL}
-	};
 
 	int i = 0, job_found = 0;
 	PGresult *result = NULL;
@@ -297,7 +299,7 @@ extern int pgsql_jobcomp_log_record(struct job_record *job_ptr)
 		 ") values (%u, %u, '%s', '%s', %d, '%s', '%s', %u, %u, "
 		 "'%s', %u"
 #ifdef HAVE_BG
-		 ", '%s', '%s', '%s', '%s', '%s', '%s', '%s'"
+		 ", '%s', '%s', '%s', %s, '%s', '%s', '%s'"
 #endif
 		 ")",
 		 jobcomp_table, job_ptr->job_id, job_ptr->user_id, usr_str,
@@ -319,6 +321,31 @@ extern char *pgsql_jobcomp_strerror( int errnum )
 {
 	char *res = _lookup_slurm_api_errtab(errnum);
 	return (res ? res : strerror(errnum));
+}
+
+/* 
+ * get info from the database 
+ * in/out job_list List of job_rec_t *
+ * note List needs to be freed when called
+ */
+extern void pgsql_jobcomp_get_jobs(List job_list, 
+				   List selected_steps, List selected_parts,
+				   void *params)
+{
+	pgsql_jobcomp_process_get_jobs(job_list, 
+				       selected_steps, selected_parts,
+				       params);	
+	return;
+}
+
+/* 
+ * expire old info from the database 
+ */
+extern void pgsql_jobcomp_archive(List selected_parts,
+				     void *params)
+{
+	pgsql_jobcomp_process_archive(selected_parts, params);
+	return;
 }
 
 #endif

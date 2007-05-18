@@ -77,7 +77,7 @@ database_field_t jobcomp_table_fields[] = {
 	{ "connection", "tinytext" },
 	{ "reboot", "tinytext" },
 	{ "rotate", "tinytext" },
-	{ "maxprocs", "tinytext" },
+	{ "maxprocs", "mediumint unsigned default 0" },
 	{ "geometry", "tinytext" },
 	{ "start", "tinytext" },
 	{ "blockid", "tinytext" },
@@ -189,12 +189,14 @@ extern int mysql_jobcomp_init(char *location)
 	mysql_get_db_connection(&jobcomp_mysql_db, db_name, db_info,
 				&jobcomp_db_init);
 	
-	_mysql_jobcomp_check_tables();
+	rc = _mysql_jobcomp_check_tables();
 
 	destroy_mysql_db_info(db_info);
 
-	debug("Jobcomp database init finished");
-
+	if(rc == SLURM_SUCCESS) 
+		debug("Jobcomp database init finished");
+	else
+		debug("Jobcomp database init failed");
 	return rc;
 }
 
@@ -276,7 +278,7 @@ extern int mysql_jobcomp_log_record(struct job_record *job_ptr)
 		 ") values (%u, %u, '%s', '%s', %d, '%s', '%s', %u, %u, "
 		 "'%s', %u"
 #ifdef HAVE_BG
-		 ", '%s', '%s', '%s', '%s', '%s', '%s', '%s'"
+		 ", '%s', '%s', '%s', %s, '%s', '%s', '%s'"
 #endif
 		 ")",
 		 jobcomp_table, job_ptr->job_id, job_ptr->user_id, usr_str,
@@ -288,6 +290,7 @@ extern int mysql_jobcomp_log_record(struct job_record *job_ptr)
 		 start, blockid
 #endif
 		 );
+	info("query = %s", query);
 	rc = mysql_db_query(jobcomp_mysql_db, jobcomp_db_init, query);
 	xfree(usr_str);
 
@@ -306,12 +309,12 @@ extern char *mysql_jobcomp_strerror( int errnum )
  * note List needs to be freed when called
  */
 extern void mysql_jobcomp_get_jobs(List job_list, 
-				      List selected_steps, List selected_parts,
-				      void *params)
+				   List selected_steps, List selected_parts,
+				   void *params)
 {
 	mysql_jobcomp_process_get_jobs(job_list, 
-					  selected_steps, selected_parts,
-					  params);	
+				       selected_steps, selected_parts,
+				       params);	
 	return;
 }
 

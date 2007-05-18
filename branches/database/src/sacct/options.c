@@ -1096,14 +1096,17 @@ void do_dump_completion(void)
 		
 	itr = list_iterator_create(jobs);
 	while((job = list_next(itr))) {
-		printf("JOB %u %s %s %s %u(%s) %u(%s) %u %s %s %s %s",
+		printf("JOB %u %s %s %s %s(%u) %u(%s) %u %s %s %s %s",
 		       job->jobid, job->partition, job->start_time,
-		       job->end_time, job->uid, job->uid_name, job->gid,
+		       job->end_time, job->uid_name, job->uid, job->gid,
 		       job->gid_name, job->node_cnt, job->nodelist, 
-		       job->jobname, job->state, job->timelimit);
-		printf(" %s %s %s %s %u %s %s",
-		       job->blockid, job->connection, job->reboot, job->rotate,
-		       job->max_procs, job->geo, job->bg_start_point);
+		       job->jobname, job->state,
+		       job->timelimit);
+		if(job->blockid)
+			printf(" %s %s %s %s %u %s %s",
+			       job->blockid, job->connection, job->reboot,
+			       job->rotate, job->max_procs, job->geo,
+			       job->bg_start_point);
 		printf("\n");
 	}
 	list_iterator_destroy(itr);
@@ -1289,7 +1292,8 @@ void sacct_init()
 
 void sacct_fini()
 {
-	list_destroy(jobs);
+	if(jobs)
+		list_destroy(jobs);
 	list_destroy(selected_parts);
 	list_destroy(selected_steps);
 	if(params.opt_completion)

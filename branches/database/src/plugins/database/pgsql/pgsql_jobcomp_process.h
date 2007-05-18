@@ -51,10 +51,35 @@
 extern PGconn *jobcomp_pgsql_db;
 extern int jobcomp_db_init;
 
-extern char *index_table;
-extern char *job_table;
-extern char *step_table;
-extern char *rusage_table;
+extern char *jobcomp_table;
+/* This variable and the following enum are related so if you change
+   the jobcomp_table_fields defined in mysql_jobcomp.c you must update
+   this enum accordingly.
+*/
+extern database_field_t jobcomp_table_fields[];
+enum {
+	JOBCOMP_REQ_JOBID,
+	JOBCOMP_REQ_UID,
+	JOBCOMP_REQ_USER_NAME,
+	JOBCOMP_REQ_GID,
+	JOBCOMP_REQ_GROUP_NAME,
+	JOBCOMP_REQ_NAME,
+	JOBCOMP_REQ_STATE,
+	JOBCOMP_REQ_PARTITION,
+	JOBCOMP_REQ_TIMELIMIT,
+	JOBCOMP_REQ_STARTTIME,
+	JOBCOMP_REQ_ENDTIME,
+	JOBCOMP_REQ_NODELIST,
+	JOBCOMP_REQ_NODECNT,
+	JOBCOMP_REQ_CONNECTION,
+	JOBCOMP_REQ_REBOOT,
+	JOBCOMP_REQ_ROTATE,
+	JOBCOMP_REQ_MAXPROCS,
+	JOBCOMP_REQ_GEOMETRY,
+	JOBCOMP_REQ_START,
+	JOBCOMP_REQ_BLOCKID,
+	JOBCOMP_REQ_COUNT		
+};
 
 extern void pgsql_jobcomp_process_get_jobs(List job_list,
 					   List selected_steps,

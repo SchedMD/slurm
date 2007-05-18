@@ -141,58 +141,34 @@ extern void mysql_jobcomp_process_get_jobs(List job_list,
 
 	while((row = mysql_fetch_row(result))) {
 		lc++;
-		if (list_count(selected_steps)) {
-			if(!row[JOBCOMP_REQ_JOBID]) 
-				continue;
-			itr = list_iterator_create(selected_steps);
-			while((selected_step = list_next(itr))) {
-				if (strcmp(selected_step->job,
-					   row[JOBCOMP_REQ_JOBID]))
-					continue;
-				/* job matches */
-				list_iterator_destroy(itr);
-				goto foundjob;
-			}
-			list_iterator_destroy(itr);
-			continue;	/* no match */
-		}
-				
-	foundjob:
-		
-		if (list_count(selected_parts)) {
-			if(!row[JOBCOMP_REQ_PARTITION]) 
-				continue;
-			itr = list_iterator_create(selected_parts);
-			while((selected_part = list_next(itr))) 
-				if (!strcasecmp(selected_part, 
-						row[JOBCOMP_REQ_PARTITION])) {
-					list_iterator_destroy(itr);
-					goto foundp;
-				}
-			list_iterator_destroy(itr);
-			continue;	/* no match */
-		}
-	foundp:
-		
+
 		if (params->opt_fdump) {
 			_do_fdump(row, lc);
 			continue;
 		}
 		job = xmalloc(sizeof(jobcomp_job_rec_t));
-		job->jobid = atoi(row[JOBCOMP_REQ_JOBID]);
+		if(row[JOBCOMP_REQ_JOBID])
+			job->jobid = atoi(row[JOBCOMP_REQ_JOBID]);
 		job->partition = xstrdup(row[JOBCOMP_REQ_PARTITION]);
 		job->start_time = xstrdup(row[JOBCOMP_REQ_STARTTIME]);
 		job->end_time = xstrdup(row[JOBCOMP_REQ_ENDTIME]);
-		job->uid = atoi(row[JOBCOMP_REQ_UID]);
+		if(row[JOBCOMP_REQ_UID])
+			job->uid = atoi(row[JOBCOMP_REQ_UID]);
 		job->uid_name = xstrdup(row[JOBCOMP_REQ_USER_NAME]);
-		job->gid = atoi(row[JOBCOMP_REQ_GID]);
+		if(row[JOBCOMP_REQ_GID])
+			job->gid = atoi(row[JOBCOMP_REQ_GID]);
 		job->gid_name = xstrdup(row[JOBCOMP_REQ_GROUP_NAME]);
 		job->blockid = xstrdup(row[JOBCOMP_REQ_BLOCKID]);
 		job->jobname = xstrdup(row[JOBCOMP_REQ_NAME]);
 		job->nodelist = xstrdup(row[JOBCOMP_REQ_NODELIST]);
-		job->node_cnt = atoi(row[JOBCOMP_REQ_NODECNT]);
-		job->max_procs = atoi(row[JOBCOMP_REQ_MAXPROCS]);
-		job->state = xstrdup(row[JOBCOMP_REQ_STATE]);
+		if(row[JOBCOMP_REQ_NODECNT])
+			job->node_cnt = atoi(row[JOBCOMP_REQ_NODECNT]);
+		if(row[JOBCOMP_REQ_MAXPROCS])
+			job->max_procs = atoi(row[JOBCOMP_REQ_MAXPROCS]);
+		if(row[JOBCOMP_REQ_STATE]) {
+			i = atoi(row[JOBCOMP_REQ_STATE]);
+			job->state = xstrdup(job_state_string(i));
+		}
 		job->timelimit = xstrdup(row[JOBCOMP_REQ_TIMELIMIT]);
 		job->connection = xstrdup(row[JOBCOMP_REQ_CONNECTION]);
 		job->reboot = xstrdup(row[JOBCOMP_REQ_REBOOT]);
@@ -201,6 +177,7 @@ extern void mysql_jobcomp_process_get_jobs(List job_list,
 		job->bg_start_point = xstrdup(row[JOBCOMP_REQ_START]);
 		list_append(job_list, job);
 	}
+		
 	mysql_free_result(result);
 	
 	return;

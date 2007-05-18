@@ -45,5 +45,10 @@ extern int pgsql_jobcomp_fini();
 extern int pgsql_jobcomp_get_errno();
 extern int pgsql_jobcomp_log_record(struct job_record *job_ptr);
 extern char *pgsql_jobcomp_strerror(int errnum);
+extern void pgsql_jobcomp_get_jobs(List job_list, 
+				   List selected_steps,
+				   List selected_parts,
+				   void *params);
+extern void pgsql_jobcomp_archive(List selected_parts, void *params);
 
 #endif

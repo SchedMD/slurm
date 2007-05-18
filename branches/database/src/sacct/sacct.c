@@ -294,10 +294,10 @@ int main(int argc, char **argv)
 	switch (op) {
 	case DUMP:
 		get_data();
-	if(params.opt_completion) 
-		do_dump_completion();
-	else 
-		do_dump();
+		if(params.opt_completion) 
+			do_dump_completion();
+		else 
+			do_dump();
 		break;
 	case EXPIRE:
 		do_expire();
