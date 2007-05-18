@@ -1,5 +1,8 @@
 /*****************************************************************************\
  **  mpi_mpich1.c - Library routines for initiating jobs on with mpich1
+ **
+ **  There are actually several different modes of operation depending upon
+ **  the architecture. See MPI_ARCH in mpich1.h.
  *****************************************************************************
  *  Copyright (C) 2004-2007 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -78,6 +81,36 @@ const char plugin_name[]        = "mpi MPICH1 plugin";
 const char plugin_type[]        = "mpi/mpich1";
 const uint32_t plugin_version   = 100;
 
+#if (MPI_ARCH == MPI_SMP)
+int p_mpi_hook_slurmstepd_task (const mpi_plugin_task_info_t *job,
+				char ***env)
+{
+	debug("Using mpi/mpich1");
+	env_array_overwrite_fmt(env, "MPICH_NP",   "%u", job->ntasks);
+
+	return SLURM_SUCCESS;
+}
+
+mpi_plugin_client_state_t *
+p_mpi_hook_client_prelaunch(mpi_plugin_client_info_t *job, char ***env)
+{
+	debug("Using mpi/mpich1");
+	/* only return NULL on error */
+	return (void *)0xdeadbeef;
+}
+
+int p_mpi_hook_client_single_task_per_node()
+{
+	return true;
+}
+
+int p_mpi_hook_client_fini(mpi_plugin_client_state_t *state)
+{
+	return SLURM_SUCCESS;
+}
+#endif
+
+#if (MPI_ARCH == MPI_MVAPICH)
 int p_mpi_hook_slurmstepd_task (const mpi_plugin_task_info_t *job,
 				char ***env)
 {
@@ -86,11 +119,15 @@ int p_mpi_hook_slurmstepd_task (const mpi_plugin_task_info_t *job,
 	char *addr = getenvp (*env, "SLURM_LAUNCH_NODE_IPADDR");
 
 	debug("Using mpi/mpich1");
-	env_array_overwrite_fmt(env, "MPIRUN_HOST",     "%s", addr);
-	env_array_overwrite_fmt(env, "MPIRUN_RANK",     "%u", job->gtaskid);
-	env_array_overwrite_fmt(env, "MPIRUN_NPROCS",   "%u", job->ntasks);
-	env_array_overwrite_fmt(env, "MPIRUN_ID",       "%u", job->jobid);
-
+//	env_array_overwrite_fmt(env, "MPIRUN_HOST",     "%s", addr);
+//	env_array_overwrite_fmt(env, "MPIRUN_RANK",     "%u", job->gtaskid);
+//	env_array_overwrite_fmt(env, "MPIRUN_NPROCS",   "%u", job->ntasks);
+//	env_array_overwrite_fmt(env, "MPIRUN_ID",       "%u", job->jobid);
+// This is all we need for shmem version of mpich
+// only problem is we need to only start one task on the node, 
+// not one for each task requested
+env_array_overwrite_fmt(env, "MPICH_NP",   "%u", job->ntasks);
+//env_array_overwrite_fmt(env, "MPIRUN_DEVICE", "%s", "ch_shmem");
 	debug2("init for mpi rank %u\n", job->gtaskid);
 	/*
 	 * Fake MPIRUN_PROCESSES env var -- we don't need this for
@@ -112,10 +149,11 @@ p_mpi_hook_client_prelaunch(mpi_plugin_client_info_t *job, char ***env)
 
 int p_mpi_hook_client_single_task_per_node()
 {
-	return false;
+	return true;
 }
 
 int p_mpi_hook_client_fini(mpi_plugin_client_state_t *state)
 {
 	return mpich1_thr_destroy((mpich1_state_t *)state);
 }
+#endif

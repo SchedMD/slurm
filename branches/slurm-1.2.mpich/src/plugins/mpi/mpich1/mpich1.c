@@ -72,6 +72,7 @@
 	} while (0)
 #endif
 
+#if (MPI_ARCH == MPI_MVAPICH)
 /*
  *  Information read from each MPICH1 process
  */
@@ -1101,3 +1102,4 @@ extern int mpich1_thr_destroy(mpich1_state_t *st)
 	}
 	return SLURM_SUCCESS;
 }
+#endif

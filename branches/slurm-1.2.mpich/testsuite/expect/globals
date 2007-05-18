@@ -83,7 +83,7 @@ cset use_pmi	0
 cset xcpu_dir	"/mnt/xcpu"
 
 cset poe		"/usr/bin/poe"
-cset mpirun	"mpirun"
+cset mpirun		[exec which mpirun | tail -1]
 cset totalviewcli	"/usr/local/bin/totalviewcli"
 
 # Pattern to match your shell prompt

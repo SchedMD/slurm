@@ -46,10 +46,15 @@
 #include "src/common/mpi.h"
 #include "src/common/env.h"
 
-typedef struct mpich1_state mpich1_state_t;
+#define MPI_SMP       1
+#define MPI_MVAPICH   2
 
+#define MPI_ARCH      MPI_SMP
+
+#if (MPI_ARCH == MPI_MVAPICH)
+typedef struct mpich1_state mpich1_state_t;
 extern mpich1_state_t *mpich1_thr_create(const mpi_plugin_client_info_t *job,
-					   char ***env);
 extern int mpich1_thr_destroy(mpich1_state_t *state);
+#endif
 
 #endif	/* !_HAVE_MPI_MPICH1_H */

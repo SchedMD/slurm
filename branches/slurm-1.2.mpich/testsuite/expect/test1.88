@@ -8,7 +8,7 @@
 #          "FAILURE: ..." otherwise with an explanation of the failure, OR
 #          anything else indicates a failure mode that must be investigated.
 ############################################################################
-# Copyright (C) 2002 The Regents of the University of California.
+# Copyright (C) 2002-2007 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 # Written by Morris Jette <jette1@llnl.gov>
 # UCRL-CODE-226842.
@@ -58,6 +58,19 @@ if {[test_front_end] != 0} {
         exit 0
 }
 
+# dummy initial value
+set srun_opts "--time=1"
+spawn $bin_grep DEFAULT_MACHINE $mpirun
+expect {
+	-re "DEFAULT_MACHINE=smp" {
+		set srun_opts "--mpi=mpich1"
+		exp_continue
+	}
+	eof {
+		wait
+	}
+}
+
 #
 # Delete left-over program and rebuild it
 #
@@ -79,19 +92,19 @@ file delete $file_out $file_err
 make_bash_script $file_in "
   $bin_date
   $bin_echo test1_N3_n6_cyclic
-  $srun -n6 --distribution=cyclic $test_prog
+  $srun -n6 --distribution=cyclic $srun_opts $test_prog
 
   $bin_date
   $bin_echo test2_n6_block
-  $srun -n6 --distribution=block  $test_prog
+  $srun -n6 --distribution=block  $srun_opts $test_prog
 
   $bin_date
   $bin_echo test3_n4_cyclic
-  $srun -n4 --distribution=cyclic $test_prog
+  $srun -n4 --distribution=cyclic $srun_opts $test_prog
 
   $bin_date
   $bin_echo test4_n4_block
-  $srun -n4 --distribution=block  $test_prog
+  $srun -n4 --distribution=block  $srun_opts $test_prog
 
   $bin_date
   $bin_echo TEST_COMPLETE
@@ -102,7 +115,7 @@ make_bash_script $file_in "
 #
 set timeout $max_job_delay
 set no_start 0
-set srun_pid [spawn $srun -N3 -n6 --batch --output=$file_out --error=$file_err -t1 $file_in]
+set srun_pid [spawn $srun -N1 -n6 --batch --output=$file_out --error=$file_err -t1 $file_in]
 expect {
 	-re "jobid ($number) submitted" {
 		set job_id $expect_out(1,string)
