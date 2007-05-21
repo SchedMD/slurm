@@ -1,0 +1,90 @@
+/*
+ *  (C) 2001 by Argonne National Laboratory
+ *      See COPYRIGHT in top-level directory.
+ */
+
+/*
+ *  @author  Anthony Chan
+ */
+
+Multiple Images
+-------- ------
+
+Assume there are 3 different images, NumImages, in the view object 
+of the viewport.  Each image is an integral multiple wider than viewport,
+i.e. each image is NumViewsPerImage multiple of width of viewport.
+
+Define the following quantities:
+
+W_v = width of viewport( visible part of the view ) in pixel
+
+n_v = number of views per image, i.e. NumViewsPerImage.
+W_i = width of one image
+    = n_v * W_v
+
+n_i = number of images
+W_t = the overall width of all images
+    = n_i * W_i
+    = n_i * n_v * W_v
+
+Define the __current__ image to be the one when the viewport is __totally__ 
+within it.  Since viewport.getViewPosition() returns view.getValue()
+which starts at the 1st image.
+
+
+          imgs[prev]               imgs[curr]              imgs[next]
+   +-----------------------+-------***********-----+-----------------------+
+   |                       |       *         *     |                       |
+   |                       |       *  vport  *     |                       |
+   |                       |       *         *     |                       |
+   |                       |       *         *     |                       |
+   |                       |       *         *     |                       |
+   +-----------------------+-------***********-----+-----------------------+
+   ^                       ^       ^         ^ 
+   !<-------- W_i -------->|       !<- W_v ->! 
+   !                       |       !
+   !                       |       !
+   !                       +-sbPos-+
+   !                               !
+   !                               !
+   !<------ view.getValue() ------>!
+
+
+Where sbPos = LongScrollBar.getValue()
+
+The 2 methods componentResized() and checkToRedrawImage() are related.
+Whatever strategy/criteria that checkToRedrawImage() adopts to redraw
+one of the images will affect how componentResized() works, vice versa.
+
+checkToRedrawImage()
+--------------------
+Since image is considered __current_image__ when the viewport is __totally__ 
+within the image, so checkToRedrawImage() should be called after the check  
+for current_image has been changed.  This probably should be done in the
+viewport code.  1st, there should be a variable called current image index,
+say cur_img_idx.   If there are 3 images used as circular image buffer[], 
+labeled as 0, 1 & 2, cur_img_idx should be initialized to the middle index,
+i.e. 1.  In principle, the number of images used in the circular image 
+buffer[] is required to be an odd number, i.e. 1, 3, 5, ....  The viewport 
+should be set at the middle of the middle image initially.  Using more
+than 3 images allows more time for the image to be redrawn before user
+notices the existence of image buffer[] if the redraw is done on a separate 
+thread.  The cost of too many images used in the buffer[] is longer 
+initialization process and long resizing time.  The tView_init/tView_final 
+of the viewport should be set to tGlobal_init/tGlobal_final respectively.  
+2nd, when the scrollbar is moved by the user, the tView_init/tView_final 
+should be checked constantly to see if they have __completely__ moved out 
+of the _current_image_( this should probably be done by either a 
+ChangeListener or LongAdjustmentListener of the time_model ).  If tView_init
+and tView_final are both moved out of the current_image completely, the index 
+cur_img_idx should be updated to reflect the change.  Then one of the multiple
+images should be redrawn.  The image being redrawn should be at the other 
+end of where the viewport is moved to.
+
+componentResized()
+------------------
+Because of how checkToRedrawImage() should work, componenetResized() may
+need one more variable( compared to 1 image buffer case ) to recreate the
+image buffer[] when the component listener(i.e. the one implements
+componentResized()) is invoked.  The extra variable specifies the relative
+location of the viewport in the _current_image_.

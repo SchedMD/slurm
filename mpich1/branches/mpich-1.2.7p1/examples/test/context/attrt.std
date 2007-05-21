@@ -1,0 +1,9 @@
+*** Testing attributes ***
+*** Communicators ***
+    Comm_create
+    Comm_dup
+    Comm_split
+    Comm_compare
+    Comm_free
+All processes completed test
+*** Testing attributes ***

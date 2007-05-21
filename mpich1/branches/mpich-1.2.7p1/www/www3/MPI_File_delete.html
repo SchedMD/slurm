@@ -1,0 +1,30 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML3.2 EN">
+<HTML>
+<HEAD>
+<META NAME="GENERATOR" CONTENT="DOCTEXT">
+<TITLE>MPI_File_delete</TITLE>
+</HEAD>
+<BODY BGCOLOR="FFFFFF">
+<A NAME="MPI_File_delete"><H1>MPI_File_delete</H1></A>
+Deletes a file 
+<H2>Synopsis</H2>
+<PRE>
+int MPI_File_delete(char *filename, MPI_Info info)
+</PRE>
+<H2>Input Parameters</H2>
+<DL><DT><B>filename </B> <DD> name of file to delete (string)
+</DL>
+<DL><DT><B>info </B> <DD> info object (handle)
+</DL>
+<P>
+<H2>Notes for Fortran</H2>
+All MPI routines in Fortran (except for <TT>MPI_WTIME</TT> and <TT>MPI_WTICK</TT>) have
+an additional argument <TT>ierr</TT> at the end of the argument list.  <TT>ierr
+</TT>is an integer and has the same meaning as the return value of the routine
+in C.  In Fortran, MPI routines are subroutines, and are invoked with the
+<TT>call</TT> statement.
+<P>
+All MPI objects (e.g., <TT>MPI_Datatype</TT>, <TT>MPI_Comm</TT>) are of type <TT>INTEGER
+</TT>in Fortran.
+<P><B>Location:</B>delete.c<P>
+</BODY></HTML>

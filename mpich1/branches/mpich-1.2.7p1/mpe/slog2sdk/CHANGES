@@ -1,0 +1,75 @@
+This is SLOG-2 Standard Development Kit 
+
+This version also contains a prototype Jumpshot, and sample implementation
+of TRACE-API in trace_sample/
+
+5/6/03 added Join method support in Jumpshot for AIX's UTE converted
+       slog2 file, so disconnected bebit states can be connected in
+       connected view as 1 state.
+
+5/6/03 added an extra filter in traceTOslog2 and clogTOslog2 to remove
+       unused categories
+
+6/9/03 fixed some bugs related to the Join method.
+
+6/9/03 modified slog2print so it is scalable.  It used to be slog2print
+       read in the whole logfile recursively, this requires huge amount
+       of memory.  The updated slog2print uses a new iterator to read in
+       the logfile in a more scalable fashion.
+
+6/9/03 added OverlapRatios PREVIEW_STATE_DISPLAY view and
+       removed the DecreLegend view.  Added CumulativeExclusion tag
+       but it is not implemented yet.
+
+6/9/03 duplicate the control on PREVIEW_STATE_DISPLAY inside the Timeline
+       window.  It is an active control.
+
+6/23/03 replace the name for OverlapRatios by OverlapInclusionRatio, i.e.
+        the original ratio stored in Preview state is renamed as InclusionRatio.
+
+6/23/03 added the support of ExclusionRatio in the logfile format reader
+        as well all traceTOslog2 convertor.
+
+6/23/03 added the support of statistics collecton defined by the duration.
+        The statistics is computed for both InclusionRatio and ExclusiveRatio.
+        The statistics will be sent to the stdout for now.
+        
+6/23/03 updated the popup menu of the legend name in the Legend window.
+        The new sort menu should be more intuitive. 
+
+8/15/03 added a zoomable window to display statistics collected by
+        right dragging a duration.
+
+9/9/03  added a GUI logfile convertor to convert non-slog2 file.  The 
+        supported logfile formats for the logfile convertor are clog and rlog.
+
+10/1/03 added a jumpshot launcher.  It is mainly designed with MS windows user
+        in mind.  The launcher will launch jumpshot with some better option
+        than JVM's standard options.  User can modify those options in 
+        $HOME/.jumpshot_launcher.conf
+
+10/19/03 force jumpshot launcher to use javaw.exe instead of java.exe to launch
+         jumpshot.
+
+11/1/03  added more forgiving features in logfile convertors.  The new features
+         will allow logfile to be viewable by jumpshot even when the
+         corresponding category is undefined.  In that case, the category is
+         assumed to be a State category with name UnknownType-INDEX where INDEX
+         is the category index that defines the drawable.
+
+2/8/05  Added the support for Event drawable.
+
+3/16/05 Added 4 basic iterator orders: INCRE_STARTTIME, DECRE_STARTTIME,
+        INCRE_FINALTIME, DECRE_FINALTIME for TimeBoundingBox as well as
+        Drawable.  The 4 iterator orders forms the foundation of different
+        iterators allowed by logformat.slog2's input and output APIs.
+
+3/19/05 Added slog2filter that removes undesirable categories of drawables
+        as well as alters the slog2 file structure
+
+5/20/05 Updated SLOG-2 format from version 2.0.5 to 2.0.6 which contains
+        count of real drawables in the preview drawable.  The counts are
+        also available in the category table.
+
+6/2/05 added slog2updater that updates the older slog2 format to the latest
+       one.

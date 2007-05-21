@@ -1,0 +1,75 @@
+Wrappergen
+Written by Ed Karrels
+Copyright Argonne National Laboratory, 1994
+
+
+Function prototype file
+-----------------------
+The function prototype file has continually been a problem.  Initially,
+wrappergen parsed the actual source code for all the MPI functions,
+depending on the fact that they were formatted in the 'doctext' style.
+This took up 75% of the code for wrappergen, and 75% of runtime, and still
+didn't parse stuff list 'int *x[][3]' correctly.  So, since the MPI functions
+aren't going to be changing everyday, I created a format that was really
+simple to parse, and converted the old wrappergen to read the 'doctext'
+source code and write out this really simple format.  The simple format
+consists of:
+
+  if n is the number of functions, and a(i) is the number of arguments
+  for function i:
+                                     for example:
+  n                                  128
+  <function 0 return type>           int
+  <function 0 name>                  MPI_Group_range_excl
+  <a(0)>                             4
+  <function 0 arg 0 type prefix>     MPI_Group
+  <function 0 arg 0 name>            group
+  <function 0 arg 0 type suffix>     
+  <function 0 arg 1 type prefix>     int
+  <function 0 arg 1 name>            n
+  <function 0 arg 1 type suffix>     
+  <function 0 arg 2 type prefix>     int
+  <function 0 arg 2 name>            ranges
+  <function 0 arg 2 type suffix>     [][3]
+  <function 0 arg 3 type prefix>     MPI_Group *
+  <function 0 arg 3 name>            newgroup
+  <function 0 arg 3 type suffix>     
+              ...
+  <function 0 return type>           int
+  <function 0 name>                  MPI_Group_range_incl
+  <a(0)>                             4
+  <function 0 arg 0 type prefix>     MPI_Group
+  <function 0 arg 0 name>            group
+  ...
+
+Since the file shouldn't have to updated very often, I opted for something
+quick, dirty, and simple to parse.  If it does need to be recreated,
+use write_proto.
+
+  write_proto - write prof_wrapper prototype file given doctext functions
+
+    write_proto <fn. list> <output file> <function declaration files...>
+
+  Fn. list should be the name of a file that contains a whitespace
+  separated, case insensitive list of names of the functions for which
+  you wish to write wrappers.
+
+  Output file the the file to which the prototypes will be written.
+
+  Function declaration files will be something like mpich/src/*/*.c.
+
+Warning:  write_proto doesn't handle pointers-to-pointers or multi-
+dimensional arrays correctly.  I've create a patch file (proto_patch)
+that patches the problems in the current function declarations.
+
+So, doing the following should give you a valid prototype file:
+
+  make write_proto
+  write_proto mpifn proto ../../src/*/*.c
+  patch < proto_patch
+  mv proto mpi_proto
+
+Hopefully, you won't have to worry about this, though.
+
+Ed Karrels
+karrels@mcs.anl.gov

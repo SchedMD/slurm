@@ -1,0 +1,260 @@
+#include "mpi.h"
+#include <stdlib.h>
+#include <string.h>
+#include <stdio.h>
+
+/* tests various miscellaneous functions. */
+#define VERBOSE 0
+
+void handle_error(int errcode, char *str);
+
+void handle_error(int errcode, char *str) 
+{
+	char msg[MPI_MAX_ERROR_STRING];
+	int resultlen;
+	MPI_Error_string(errcode, msg, &resultlen);
+	fprintf(stderr, "%s: %s\n", str, msg);
+}
+
+int main(int argc, char **argv)
+{
+    int buf[1024], amode, flag, mynod, len, i;
+    int errs = 0, toterrs;
+    MPI_File fh;
+    MPI_Status status;
+    MPI_Datatype newtype;
+    MPI_Offset disp, offset;
+    MPI_Group group;
+    MPI_Datatype etype, filetype;
+    char datarep[25], *filename;
+    int errcode=0;
+
+    MPI_Init(&argc,&argv);
+    MPI_Comm_rank(MPI_COMM_WORLD, &mynod);
+
+/* process 0 takes the file name as a command-line argument and 
+   broadcasts it to other processes */
+    if (!mynod) {
+	i = 1;
+	while ((i < argc) && strcmp("-fname", *argv)) {
+	    i++;
+	    argv++;
+	}
+	if (i >= argc) {
+	    fprintf(stderr, "\n*#  Usage: misc -fname filename\n\n");
+	    MPI_Abort(MPI_COMM_WORLD, 1);
+	}
+	argv++;
+	len = strlen(*argv);
+	filename = (char *) malloc(len+1);
+	strcpy(filename, *argv);
+	MPI_Bcast(&len, 1, MPI_INT, 0, MPI_COMM_WORLD);
+	MPI_Bcast(filename, len+1, MPI_CHAR, 0, MPI_COMM_WORLD);
+    }
+    else {
+	MPI_Bcast(&len, 1, MPI_INT, 0, MPI_COMM_WORLD);
+	filename = (char *) malloc(len+1);
+	MPI_Bcast(filename, len+1, MPI_CHAR, 0, MPI_COMM_WORLD);
+    }
+
+
+    errcode = MPI_File_open(MPI_COMM_WORLD, filename, 
+		    MPI_MODE_CREATE | MPI_MODE_RDWR, MPI_INFO_NULL, &fh);
+    if (errcode != MPI_SUCCESS) {
+	    handle_error(errcode, "MPI_File_open");
+    }
+
+    errcode = MPI_File_write(fh, buf, 1024, MPI_INT, &status);
+    if (errcode != MPI_SUCCESS) {
+	    handle_error(errcode, "MPI_File_write");
+    }
+
+    errcode = MPI_File_sync(fh);
+    if (errcode != MPI_SUCCESS) {
+	    handle_error(errcode, "MPI_File_sync");
+    }
+
+    errcode = MPI_File_get_amode(fh, &amode);
+    if (errcode != MPI_SUCCESS) {
+	    handle_error(errcode, "MPI_File_get_amode");
+    }
+#if VERBOSE
+    if (!mynod) fprintf(stderr, "testing MPI_File_get_amode\n");
+#endif
+    if (amode != (MPI_MODE_CREATE | MPI_MODE_RDWR)) {
+	errs++;
+	fprintf(stderr, "amode is %d, should be %d\n\n", 
+		amode, MPI_MODE_CREATE | MPI_MODE_RDWR);
+    }
+
+    errcode = MPI_File_get_atomicity(fh, &flag);
+    if (errcode != MPI_SUCCESS) {
+	    handle_error(errcode, "MPI_File_get_atomicity");
+    }
+    if (flag) {
+	errs++;
+	fprintf(stderr, "atomicity is %d, should be 0\n", flag);
+    }
+#if VERBOSE
+    if (!mynod) fprintf(stderr, "setting atomic mode\n");
+#endif
+    errcode = MPI_File_set_atomicity(fh, 1);
+    if (errcode != MPI_SUCCESS) {
+	    handle_error(errcode, "MPI_File_set_atomicity");
+    }
+    errcode = MPI_File_get_atomicity(fh, &flag);
+    if (errcode != MPI_SUCCESS) {
+	    handle_error(errcode, "MPI_File_get_atomicity");
+    }
+    if (!flag) {
+	errs++;
+	fprintf(stderr, "atomicity is %d, should be 1\n", flag);
+    }
+    errcode = MPI_File_set_atomicity(fh, 0);
+    if (errcode != MPI_SUCCESS) {
+	    handle_error(errcode, "MPI_File_set_atomicity");
+    }
+#if VERBOSE
+    if (!mynod) fprintf(stderr, "reverting back to nonatomic mode\n");
+#endif
+
+    MPI_Type_vector(10, 10, 20, MPI_INT, &newtype);
+    MPI_Type_commit(&newtype);
+
+    errcode = MPI_File_set_view(fh, 1000, MPI_INT, newtype, "native", MPI_INFO_NULL);
+    if (errcode != MPI_SUCCESS) {
+	    handle_error(errcode, "MPI_File_set_view");
+    }
+#if VERBOSE
+    if (!mynod) fprintf(stderr, "testing MPI_File_get_view\n");
+#endif
+    errcode = MPI_File_get_view(fh, &disp, &etype, &filetype, datarep);
+    if (errcode != MPI_SUCCESS) {
+	    handle_error(errcode, "MPI_File_get_view");
+    }
+    if ((disp != 1000) || strcmp(datarep, "native")) {
+	errs++;
+	fprintf(stderr, "disp = %@LL@, datarep = %s, should be 1000, native\n\n", disp, datarep);
+    }
+#if VERBOSE
+    if (!mynod) fprintf(stderr, "testing MPI_File_get_byte_offset\n");
+#endif
+    errcode = MPI_File_get_byte_offset(fh, 10, &disp);
+    if (errcode != MPI_SUCCESS) {
+	    handle_error(errcode, "MPI_File_get_byte_offset");
+    }
+    if (disp != (1000+20*sizeof(int))) {
+	errs++;
+	fprintf(stderr, "byte offset = %@LL@, should be %d\n\n", 
+		disp, (int) (1000+20*sizeof(int)));
+    }
+
+    errcode = MPI_File_get_group(fh, &group);
+    if (errcode != MPI_SUCCESS) {
+	    handle_error(errcode, "MPI_File_get_group");
+    }
+
+#if VERBOSE
+    if (!mynod) fprintf(stderr, "testing MPI_File_set_size\n");
+#endif
+    errcode = MPI_File_set_size(fh, 1000+15*sizeof(int));
+    if (errcode != MPI_SUCCESS) {
+	    handle_error(errcode, "MPI_File_set_size");
+    }
+    MPI_Barrier(MPI_COMM_WORLD);
+    errcode = MPI_File_sync(fh);
+    if (errcode != MPI_SUCCESS) {
+	    handle_error(errcode, "MPI_File_sync");
+    }
+    errcode = MPI_File_get_size(fh, &disp);
+    if (errcode != MPI_SUCCESS) {
+	    handle_error(errcode, "MPI_File_get_size");
+    }
+    if (disp != 1000+15*sizeof(int)) {
+	errs++;
+	fprintf(stderr, "file size = %@LL@, should be %d\n\n", 
+		disp, (int) (1000+15*sizeof(int)));
+    }
+
+#if VERBOSE
+    if (!mynod) fprintf(stderr, "seeking to eof and testing MPI_File_get_position\n");
+#endif
+    errcode = MPI_File_seek(fh, 0, MPI_SEEK_END);
+    if (errcode != MPI_SUCCESS) {
+	    handle_error(errcode, "MPI_File_seek");
+    }
+    errcode = MPI_File_get_position(fh, &disp);
+    if (errcode != MPI_SUCCESS) {
+	    handle_error(errcode, "MPI_File_get_position");
+    }
+    if (disp != 10) {
+	errs++;
+	fprintf(stderr, "file pointer posn = %@LL@, should be 10\n\n", disp);
+    }
+
+#if VERBOSE
+    if (!mynod) fprintf(stderr, "testing MPI_File_get_byte_offset\n");
+#endif
+    errcode = MPI_File_get_byte_offset(fh, disp, &offset);
+    if (errcode != MPI_SUCCESS) {
+	    handle_error(errcode, "MPI_File_get_byte_offset");
+    }
+    if (offset != (1000+20*sizeof(int))) {
+	errs++;
+	fprintf(stderr, "byte offset = %@LL@, should be %d\n\n", 
+		offset, (int) (1000+20*sizeof(int)));
+    }
+    MPI_Barrier(MPI_COMM_WORLD);
+
+#if VERBOSE
+    if (!mynod) fprintf(stderr, "testing MPI_File_seek with MPI_SEEK_CUR\n");
+#endif
+    errcode = MPI_File_seek(fh, -10, MPI_SEEK_CUR);
+    if (errcode != MPI_SUCCESS) {
+	    handle_error(errcode, "MPI_File_seek");
+    }
+    errcode = MPI_File_get_position(fh, &disp);
+    if (errcode != MPI_SUCCESS) {
+	    handle_error(errcode, "MPI_File_get_position");
+    }
+    errcode = MPI_File_get_byte_offset(fh, disp, &offset);
+    if (errcode != MPI_SUCCESS) {
+	    handle_error(errcode, "MPI_File_get_byte_offset");
+    }
+    if (offset != 1000) {
+	errs++;
+	fprintf(stderr, "file pointer posn in bytes = %@LL@, should be 1000\n\n", offset);
+    }
+
+#if VERBOSE
+    if (!mynod) fprintf(stderr, "preallocating disk space up to 8192 bytes\n");
+#endif
+    errcode = MPI_File_preallocate(fh, 8192);
+    if (errcode != MPI_SUCCESS) {
+	    handle_error(errcode, "MPI_File_Preallocate");
+    }
+
+#if VERBOSE
+    if (!mynod) fprintf(stderr, "closing the file and deleting it\n");
+#endif
+    MPI_File_close(&fh);
+    
+    MPI_Barrier(MPI_COMM_WORLD);
+    if (!mynod) MPI_File_delete(filename, MPI_INFO_NULL);
+
+    MPI_Allreduce( &errs, &toterrs, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD );
+    if (mynod == 0) {
+	if( toterrs > 0) {
+	    fprintf( stderr, "Found %d errors\n", toterrs );
+	}
+	else {
+	    fprintf( stdout, " No Errors\n" );
+	}
+    }
+    MPI_Type_free(&newtype);
+    MPI_Type_free(&filetype);
+    MPI_Group_free(&group);
+    free(filename);
+    MPI_Finalize(); 
+    return 0;
+}

@@ -1,0 +1,998 @@
+% \documentstyle[11pt,psfig]{article}
+\documentstyle[11pt]{article}
+\hoffset=-.7in
+\voffset=-.6in
+\textwidth=6.5in
+\textheight=8.5in
+\begin{document}
+\vspace*{-1in}
+\thispagestyle{empty}
+\begin{center}
+ARGONNE NATIONAL LABORATORY \\
+9700 South Cass Avenue \\
+Argonne, IL 60439
+\end{center}
+\vskip .5 in
+\begin{center}
+\rule{1.75in}{.01in} \\
+\vspace{.1in}
+
+ANL/MCS-TM-234 \\
+
+\rule{1.75in}{.01in} \\
+
+\vskip 1.3 in
+{\Large\bf Users Guide for ROMIO: A High-Performance, \\ [1ex]
+Portable MPI-IO Implementation} \\ [4ex]
+by \\ [2ex]
+{\large\it Rajeev Thakur, Robert Ross, Ewing Lusk, and William Gropp}
+\vspace{1in}
+
+Mathematics and Computer Science Division
+
+\bigskip
+
+Technical Memorandum No.\ 234
+
+
+\vspace{1.4in}
+Revised May 2004
+
+\end{center}
+
+\vfill
+
+{\small
+\noindent
+This work was supported by the Mathematical, Information, and
+Computational Sciences Division subprogram of the Office of Advanced
+Scientific Computing Research, U.S. Department of Energy, under
+Contract W-31-109-Eng-38; and by the Scalable I/O Initiative, a
+multiagency project funded by the Defense Advanced Research Projects
+Agency (Contract DABT63-94-C-0049), the Department of Energy, the
+National Aeronautics and Space Administration, and the National
+Science Foundation.}
+
+\newpage
+
+
+%%  Line Spacing (e.g., \ls{1} for single, \ls{2} for double, even \ls{1.5})
+%%
+
+\newcommand{\ls}[1]
+   {\dimen0=\fontdimen6\the\font 
+    \lineskip=#1\dimen0
+    \advance\lineskip.5\fontdimen5\the\font
+    \advance\lineskip-\dimen0
+    \lineskiplimit=.9\lineskip
+    \baselineskip=\lineskip
+    \advance\baselineskip\dimen0
+    \normallineskip\lineskip
+    \normallineskiplimit\lineskiplimit
+    \normalbaselineskip\baselineskip
+    \ignorespaces
+   }
+\renewcommand{\baselinestretch}{1}
+\newcommand {\ix} {\hspace*{2em}}
+\newcommand {\mc} {\multicolumn}
+
+
+\tableofcontents
+\thispagestyle{empty}
+\newpage
+
+\pagenumbering{arabic}
+\setcounter{page}{1}
+\begin{center}
+{\bf Users Guide for ROMIO:  A High-Performance,\\[1ex]
+Portable MPI-IO Implementation} \\ [2ex]
+by \\ [2ex]
+{\it Rajeev Thakur, Robert Ross, Ewing Lusk, and William Gropp}
+
+\end{center}
+\addcontentsline{toc}{section}{Abstract}
+\begin{abstract}
+\noindent
+ROMIO is a high-performance, portable implementation of MPI-IO (the
+I/O chapter in \mbox{MPI-2}). This document describes how to install and use
+ROMIO version~1.2.4 on various machines.
+\end{abstract}
+
+\section{Introduction} 
+
+ROMIO\footnote{\tt http://www.mcs.anl.gov/romio} is a
+high-performance, portable implementation of MPI-IO (the I/O chapter in 
+MPI-2~\cite{mpi97a}). This document describes how to install and use
+ROMIO version~1.2.4 on various machines.
+
+
+%
+% MAJOR CHANGES IN THIS VERSION
+%
+\section{Major Changes in This Version}
+\begin{itemize}
+\item Added section describing ROMIO \texttt{MPI\_FILE\_SYNC} and
+      \texttt{MPI\_FILE\_CLOSE} behavior to User's Guide
+\item Bug removed from PVFS ADIO implementation regarding resize operations
+\item Added support for PVFS listio operations (see Section \ref{sec:hints})
+\item Added the following working hints:
+      \texttt{romio\_pvfs\_listio\_read}, \texttt{romio\_pvfs\_listio\_write}
+\end{itemize}
+
+%
+% GENERAL INFORMATION
+%
+\section{General Information}
+
+This version of ROMIO includes everything defined in the MPI-2 I/O
+chapter except support for file interoperability (\S~9.5 of MPI-2) and
+user-defined error handlers for files (\S~4.13.3).  The subarray and
+distributed array datatype constructor functions from Chapter 4
+(\S~4.14.4 \& \S~4.14.5) have been implemented. They are useful for
+accessing arrays stored in files. The functions {\tt MPI\_File\_f2c}
+and {\tt MPI\_File\_c2f} (\S~4.12.4) are also implemented.  C,
+Fortran, and profiling interfaces are provided for all functions that
+have been implemented.
+
+This version of ROMIO runs on at least the following machines: IBM SP; Intel
+Paragon; HP Exemplar; SGI Origin2000; Cray T3E; NEC SX-4; other
+symmetric multiprocessors from HP, SGI, DEC, Sun, and IBM; and networks of
+workstations (Sun, SGI, HP, IBM, DEC, Linux, and FreeBSD).
+Supported file systems are IBM PIOFS, Intel PFS, HP/Convex
+HFS, SGI XFS, NEC SFS, PVFS, NFS, NTFS, and any Unix file system (UFS).
+
+This version of ROMIO is included in MPICH 1.2.4; an earlier version
+is included in at least the following MPI implementations: LAM, HP
+MPI, SGI MPI, and NEC MPI. 
+
+Note that proper I/O error codes and classes are returned and the status
+variable is filled only when used with MPICH revision 1.2.1 or later.
+
+You can open files on multiple file systems in the same program. The
+only restriction is that the directory where the file is to be opened
+must be accessible from the process opening the file. For example, a
+process running on one workstation may not be able to access a
+directory on the local disk of another workstation, and therefore
+ROMIO will not be able to open a file in such a directory. NFS-mounted
+files can be accessed.
+
+An MPI-IO file created by ROMIO is no different from any other file
+created by the underlying file system. Therefore, you may use any of
+the commands provided by the file system to access the file, for example,
+{\tt ls}, {\tt mv}, {\tt cp}, {\tt rm}, {\tt ftp}.
+
+Please read the limitations of this version of ROMIO that are listed
+in Section~\ref{sec:limit} of this document (e.g., {\tt MPIO\_Request}
+object, restriction to homogeneous environments). 
+
+\subsection{ROMIO Optimizations}
+\label{sec:opt}
+
+ROMIO implements two I/O optimization techniques that in general
+result in improved performance for applications.  The first of these
+is \emph{data sieving}~\cite{choudhary:passion}.  Data sieving is a
+technique for efficiently accessing noncontiguous regions of data in files
+when noncontiguous accesses are not provided as a file system primitive.
+The naive approach to accessing noncontiguous regions is to use a separate
+I/O call for each contiguous region in the file.  This results in a large
+number of I/O operations, each of which is often for a very small amount
+of data.  The added network cost of performing an I/O operation across the
+network, as in parallel I/O systems, is often high because of latency.
+Thus, this naive approach typically performs very poorly because of
+the overhead of multiple operations.  
+% 
+In the data sieving technique, a number of noncontiguous regions are
+accessed by reading a block of data containing all of the regions,
+including the unwanted data between them (called ``holes'').  The regions
+of interest are then extracted from this large block by the client.
+This technique has the advantage of a single I/O call, but additional
+data is read from the disk and passed across the network.
+
+There are four hints that can be used to control the application of
+data sieving in ROMIO: \texttt{ind\_rd\_buffer\_size},
+\texttt{ind\_wr\_buffer\_size}, \texttt{romio\_ds\_read},
+and \texttt{romio\_ds\_write}.  These are discussed in
+Section~\ref{sec:hints}.
+
+The second optimization is \emph{two-phase
+I/O}~\cite{bordawekar:primitives}.  Two-phase I/O, also called collective
+buffering, is an optimization that only applies to collective I/O
+operations.  In two-phase I/O, the collection of independent I/O operations
+that make up the collective operation are analyzed to determine what
+data regions must be transferred (read or written).  These regions are
+then split up amongst a set of aggregator processes that will actually
+interact with the file system.  In the case of a read, these aggregators
+first read their regions from disk and redistribute the data to the
+final locations, while in the case of a write, data is first collected
+from the processes before being written to disk by the aggregators.
+
+There are five hints that can be used to control the application
+of two-phase I/O: \texttt{cb\_config\_list}, \texttt{cb\_nodes},
+\texttt{cb\_buffer\_size}, \texttt{romio\_cb\_read},
+and \texttt{romio\_cb\_write}.  These are discussed in
+Subsection~\ref{sec:hints}.
+
+\subsection{Hints}
+\label{sec:hints}
+
+The following hints control the data sieving optimization and are
+applicable to all file system types:
+\begin{itemize}
+\item \texttt{ind\_rd\_buffer\_size} -- Controls the size (in bytes) of the
+intermediate buffer used by ROMIO when performing data sieving during
+read operations.  Default is \texttt{4194304} (4~Mbytes).
+\item \texttt{ind\_wr\_buffer\_size} -- Controls the size (in bytes) of the
+intermediate buffer used by ROMIO when performing data sieving during
+write operations.  Default is \texttt{524288} (512~Kbytes).
+\item \texttt{romio\_ds\_read} -- 
+Determines when ROMIO will choose to perform data sieving.
+Valid values are \texttt{enable}, \texttt{disable}, or \texttt{automatic}.
+Default value is \texttt{automatic}.  In \texttt{automatic} mode ROMIO
+may choose to enable or disable data sieving based on heuristics.
+\item \texttt{romio\_ds\_write} -- Currently this hint is ignored.
+\end{itemize}
+
+The following hints control the two-phase (collective buffering)
+optimization and are applicable to all file system types:
+\begin{itemize}
+\item \texttt{cb\_buffer\_size} -- Controls the size (in bytes) of the
+intermediate buffer used in two-phase collective I/O.  If the amount
+of data that an aggregator will transfer is larger than this value,
+then multiple operations are used.  The default is \texttt{4194304} (4~Mbytes).
+\item \texttt{cb\_nodes} -- Controls the maximum number of aggregators
+to be used.  By default this is set to the number of unique hosts in the
+communicator used when opening the file.
+\item \texttt{romio\_cb\_read} -- Controls when collective buffering is
+applied to collective read operations.  Valid values are
+\texttt{enable}, \texttt{disable}, and \texttt{automatic}.  Default is
+\texttt{automatic}.  When enabled, all collective reads will use
+collective buffering.  When disabled, all collective reads will be
+serviced with individual operations by each process.  When set to
+\texttt{automatic}, ROMIO will use heuristics to determine when to
+enable the optimization.
+\item \texttt{romio\_cb\_write} -- Controls when collective buffering is
+applied to collective write operations.  Valid values are 
+\texttt{enable}, \texttt{disable}, and \texttt{automatic}.  Default is 
+\texttt{automatic}.  See the description of \texttt{romio\_cb\_read} for
+an explanation of the values.
+\item \texttt{romio\_no\_indep\_rw} -- This hint controls when ``deferred
+open'' is used.  When set to \texttt{true}, ROMIO will make an effort to avoid
+performing any file operation on non-aggregator nodes.  The application is
+expected to use only collective operations.  This is discussed in further
+detail below.
+\item \texttt{cb\_config\_list} -- Provides explicit control over 
+aggregators.  This is discussed in further detail below.
+\end{itemize}
+
+For some systems configurations, more control is needed to specify which
+hardware resources (processors or nodes in an SMP) are preferred for
+collective I/O, either for performance reasons or because only certain
+resources have access to storage.  The additional MPI\_Info key name
+\texttt{cb\_config\_list} specifies a comma-separated list of strings,
+each string specifying a particular node and an optional limit on the
+number of processes to be used for collective buffering on this node.
+
+This refers to the same processes that \texttt{cb\_nodes} refers to,
+but specifies the available nodes more precisely.
+
+The format of the value of \texttt{cb\_config\_list} is given by the
+following BNF:
+\begin{verbatim}
+cb_config_list => hostspec [ ',' cb_config_list ]
+hostspec => hostname [ ':' maxprocesses ]
+hostname => <alphanumeric string>
+         |  '*' 
+maxprocesses => <digits>
+         |  '*'
+\end{verbatim}
+
+The value \texttt{hostname} identifies a processor. This name must match
+the name returned by \texttt{MPI\_Get\_processor\_name}~\footnote{The
+MPI standard requires that the output from this routine identify a
+particular piece of hardware; some MPI implementations may not conform
+to this requirement. MPICH does conform to the MPI standard.}
+%
+for the specified hardware. The value \texttt{*} as a hostname matches all
+processors. The value of maxprocesses may be any nonnegative integer
+(zero is allowed).
+
+The value \texttt{maxprocesses} specifies the maximum number of
+processes that may be used for collective buffering on the specified
+host. If no value is specified, the value one is assumed. If \texttt{*}
+is specified for the number of processes, then all MPI processes with
+this same hostname will be used..
+
+Leftmost components of the info value take precedence.
+
+Note: Matching of processor names to \texttt{cb\_config\_list} entries
+is performed with string matching functions and is independent of the
+listing of machines that the user provides to mpirun/mpiexec.  In other
+words, listing the same machine multiple times in the list of hosts to
+run on will not cause a \texttt{*:1} to assign the same host four
+aggregators, because the matching code will see that the processor name
+is the same for all four and will assign exactly one aggregator to the
+processor.
+
+The value of this info key must be the same for all processes (i.e., the
+call is collective and each process must receive the same hint value for
+these collective buffering hints).  Further, in the ROMIO implementation
+the hint is only recognized at \texttt{MPI\_File\_open} time.
+
+The set of hints used with a file is available through the routine
+\texttt{MPI\_File\_get\_info}, as documented in the MPI-2 standard. 
+As an additional feature in the ROMIO implementation, wildcards will
+be expanded to indicate the precise configuration used with the file,
+with the hostnames in the rank order used for the collective buffering
+algorithm (\emph{this is not implemented at this time}).
+
+Here are some examples of how this hint might be used:
+\begin{itemize}
+\item \texttt{*:1} One process per hostname (i.e., one process per node)
+\item \texttt{box12:30,*:0} Thirty processes on one machine, namely
+      \texttt{box12}, and none anywhere else.
+\item \texttt{n01,n11,n21,n31,n41} One process on each of these specific
+      nodes only.
+\end{itemize}
+
+When the values specified by \texttt{cb\_config\_list} conflict with
+other hints (e.g., the number of collective buffering nodes specified by
+\texttt{cb\_nodes}), the implementation is encouraged to take the minimum
+of the two values.  In other words, if \texttt{cb\_config\_list} specifies
+ten processors on which I/O should be performed, but \texttt{cb\_nodes}
+specifies a smaller number, then an implementation is encouraged to use
+only \texttt{cb\_nodes} total aggregators. If \texttt{cb\_config\_list}
+specifies fewer processes than \texttt{cb\_nodes}, no more than the
+number in \texttt{cb\_config\_list} should be used.
+
+The implementation is also encouraged to assign processes in the order
+that they are listed in \texttt{cb\_config\_list}.
+
+The following hint controls the deferred open feature of romio and are also
+applicable to all file system types: 
+\begin{itemize}
+\item \texttt{no\_indep\_rw} -- If the application plans on performing only 
+   collecitve operations and this hint is set to ``true'', then ROMIO can
+   have just the aggregators open a file.   The \texttt{cb\_config\_list} and
+   \texttt{cb\_nodes} hints can be given to further control which nodes are
+   aggregators.  
+\end{itemize}
+
+For PVFS, PIOFS, and PFS:
+\begin{itemize}
+\item \texttt{striping\_factor} -- Controls the number of I/O devices to
+stripe across.  The default is file system dependent, but for PVFS it is
+\texttt{-1}, indicating that the file should be striped across all I/O
+devices.
+\item \texttt{striping\_unit} --  Controls the striping unit (in bytes).
+For PVFS the default will be the PVFS file system default strip size.
+\item \texttt{start\_iodevice} -- Determines what I/O device data will
+first be written to.  This is a number in the range of 0 ...
+striping\_factor - 1.
+\end{itemize}
+
+Also for PFS:
+\begin{itemize}
+\item \texttt{pfs\_svr\_buf} -- Turns on PFS server buffering.  Valid
+values are \texttt{true} and \texttt{false}.  Default is \texttt{false}.
+\end{itemize}
+
+For XFS control is provided for the direct I/O optimization:
+\begin{itemize}
+\item \texttt{direct\_read} -- Controls direct I/O for reads.  Valid
+values are \texttt{true} and \texttt{false}.  Default is \texttt{false}.
+\item \texttt{direct\_write} -- Controls direct I/O for writes.  Valid
+values are \texttt{true} and \texttt{false}.  Default is \texttt{false}.
+\end{itemize}
+
+For PVFS control is provided for the use of the listio interface.  This
+interface to PVFS allows for a collection of noncontiguous regions to be
+requested (for reading or writing) with a single operation.  This can result
+in substantially higher performance when accessing noncontiguous regions.
+Support for these operations in PVFS exists after version 1.5.4, but has not
+been heavily tested, so use of the interface is disabled in ROMIO by default
+at this time.  The hints to control listio use are:
+\begin{itemize}
+\item \texttt{romio\_pvfs\_listio\_read} -- Controls use of listio for reads.
+Valid values are \texttt{enable}, \texttt{disable}, and \texttt{automatic}.
+Default is \texttt{disable}.
+\item \texttt{romio\_pvfs\_listio\_write} -- Controls use of listio for writes.
+Valid values are \texttt{enable}, \texttt{disable}, and \texttt{automatic}.
+Default is \texttt{disable}.
+\end{itemize}
+
+If ROMIO doesn't understand a hint, or if the value is invalid, the hint
+will be ignored. The values of hints being used by ROMIO for a file
+can be obtained at any time via {\tt MPI\_File\_get\_info}.
+
+\subsection{Using ROMIO on NFS}
+
+It is worth first mentioning that in no way do we encourage the use
+of ROMIO on NFS volumes.  NFS is not a high-performance protocol, nor
+are NFS servers typically very good at handling the types of concurrent
+access seen from MPI-IO applications.  Nevertheless, NFS is a very popular
+mechanism for providing access to a shared space, and ROMIO does support
+MPI-IO to NFS volumes, provided that they are configured properly.
+
+To use ROMIO on NFS, file locking with {\tt fcntl} must work correctly
+on the NFS installation. On some installations, fcntl locks don't
+work.  To get them to work, you need to use Version~3 of NFS, ensure
+that the lockd daemon is running on all the machines, and have the system
+administrator mount the NFS file system with the ``{\tt noac}'' option
+(no attribute caching). Turning off attribute caching may reduce
+performance, but it is necessary for correct behavior.
+
+The following are some instructions we received from Ian Wells of HP
+for setting the {\tt noac} option on NFS. We have not tried them
+ourselves. We are including them here because you may find 
+them useful. Note that some of the steps may be specific to HP
+systems, and you may need root permission to execute some of the
+commands. 
+
+\begin{verbatim}   
+   >1. first confirm you are running nfs version 3
+   >
+   >rpcnfo -p `hostname` | grep nfs
+   >
+   >ie 
+   >    goedel >rpcinfo -p goedel | grep nfs
+   >    100003    2   udp   2049  nfs
+   >    100003    3   udp   2049  nfs
+   >
+   >
+   >2. then edit /etc/fstab for each nfs directory read/written by MPIO
+   >   on each  machine used for multihost MPIO.
+   >
+   >    Here is an example of a correct fstab entry for /epm1:
+   >
+   >   ie grep epm1 /etc/fstab
+   > 
+   >      ROOOOT 11>grep epm1 /etc/fstab
+   >      gershwin:/epm1 /rmt/gershwin/epm1 nfs bg,intr,noac 0 0
+   >
+   >   if the noac option is not present, add it 
+   >   and then remount this directory
+   >   on each of the machines that will be used to share MPIO files
+   >
+   >ie
+   >
+   >ROOOOT >umount /rmt/gershwin/epm1
+   >ROOOOT >mount  /rmt/gershwin/epm1
+   >
+   >3. Confirm that the directory is mounted noac:
+   >
+   >ROOOOT >grep gershwin /etc/mnttab 
+   >gershwin:/epm1 /rmt/gershwin/epm1 nfs
+   >noac,acregmin=0,acregmax=0,acdirmin=0,acdirmax=0 0 0 899911504
+\end{verbatim}
+
+\subsubsection{ROMIO, NFS, and Synchronization}
+
+NFS has a ``sync'' option that specifies that the server should put data on
+the disk before replying that an operation is complete.  This means that
+the actual I/O cost on the server side cannot be hidden with caching,
+etc. when this option is selected.
+                                                                                
+In the ``async'' mode the server can get the data into a buffer (and
+perhaps put it in the write queue; this depends on the implementation)
+and reply right away.  Obviously if the server were to go down after the
+reply was sent but before the data was written, the system would be in
+a strange state, which is why so many articles suggest the "sync" option.
+
+Some systems default to ``sync'', while others default to ``async'',
+and the default can change from version to version of the NFS software.  If
+you find that access to an NFS volume through MPI-IO is particularly slow,
+this is one thing to check out.
+
+
+\subsection{Using testfs}
+The testfs ADIO implementation provides a harness for testing components
+of ROMIO or discovering the underlying I/O access patterns of an
+application.  When testfs is specified as the file system type, no
+actual files will be opened.  Instead debugging information will be
+displayed on the processes opening the file.  Subsequent I/O operations
+on this testfs file will provide additional debugging information.
+
+The intention of the testfs implementation is that it serve as a
+starting point for further instrumentation when debugging new features
+or applications.  As such it is expected that users will want to modify
+the ADIO implementation in order to get the specific output they desire.
+
+\subsection{ROMIO and {\tt MPI\_FILE\_SYNC}}
+
+The MPI-2 specification notes that a call to {\tt MPI\_FILE\_SYNC} ``causes
+all previous writes to {\tt fh} by the calling process to be transferred to
+the storage device.''  Likewise, calls to {\tt MPI\_FILE\_CLOSE} have this
+same semantic.  Further, ``if all processes have made updates to the storage
+device, then all such updates become visible to subsequent reads of {\tt fh}
+by the calling process.''
+
+The intended use of {\tt MPI\_FILE\_SYNC} is to allow all processes in the
+communicator used to open the file to see changes made to the file by each
+other (the second part of the specification).  The definition of ``storage
+device'' in the specification is vague, and it isn't necessarily the case that
+calling {\tt MPI\_FILE\_SYNC} will force data out to permanent storage.
+
+Since users often use {\tt MPI\_FILE\_SYNC} to attempt to force data out to
+permanent storage (i.e. disk), the ROMIO implementation of this call enforces
+stronger semantics for most underlying file systems by calling the appropriate
+file sync operation when {\tt MPI\_FILE\_SYNC} is called (e.g. {\tt fsync}).
+However, it is still unwise to assume that the data has all made it to disk
+because some file systems (e.g. NFS) may not force data to disk when a client
+system makes a sync call.
+
+For performance reasons we do \emph{not} make this same file system call at
+{\tt MPI\_FILE\_CLOSE} time.  At close time ROMIO ensures any data has been
+written out to the ``storage device'' (file system) as defined in the
+standard, but does not try to push the data beyond this and into physical
+storage. Users should call {\tt MPI\_FILE\_SYNC} before the close if they wish
+to encourage the underlying file system to push data to permanent storage.
+
+\subsection{ROMIO and {\tt MPI\_FILE\_SET\_SIZE}}
+
+{\tt MPI\_FILE\_SET\_SIZE} is a collective routine used to resize a file.  It
+is important to remember that a MPI-IO routine being collective does not imply
+that the routine synchronizes the calling processes in any way (unless this is
+specified explicitly).
+
+As of 1.2.4, ROMIO implements {\tt MPI\_FILE\_SET\_SIZE} by calling {\tt
+ftruncate} from all processes.  Since different processes may call the
+function at different times, it means that unless external synchronization is
+used, a resize operation mixed in with writes or reads could have unexpected
+results.
+
+In short, if synchronization after a set size is needed, the user should add a
+barrier or similar operation to ensure the set size has completed.
+
+
+%
+% INSTALLATION INSTRUCTIONS
+%
+\section{Installation Instructions}
+Since ROMIO is included in MPICH, LAM, HP MPI, SGI MPI, and NEC MPI, you don't
+need to install it separately if you are using any of these MPI
+implementations. If you are using some other MPI, you
+can configure and build ROMIO as follows: 
+
+Untar the tar file as
+\begin{verbatim}
+    gunzip -c romio.tar.gz | tar xvf -
+\end{verbatim}
+{\noindent or}
+\begin{verbatim}
+    zcat romio.tar.Z | tar xvf -
+\end{verbatim}
+
+{\noindent then}
+
+\begin{verbatim}
+    cd romio
+    ./configure
+    make
+\end{verbatim}
+
+Some example programs and a Makefile are provided in the {\tt romio/test}
+directory.  Run the examples as you would run any MPI program. Each
+program takes the filename as a command-line argument ``{\tt -fname
+filename}''.
+
+The {\tt configure} script by default configures ROMIO for the file
+systems most likely 
+to be used on the given machine. If you wish, you can explicitly specify the file
+systems by using the ``{\tt -file\_system}'' option to configure. Multiple file
+systems can be specified by using `+' as a separator, e.g., \\
+\hspace*{.4in} {\tt ./configure -file\_system=xfs+nfs} \\
+For the entire list of options to configure, do\\ 
+\hspace*{.4in} {\tt ./configure -h | more} \\
+After building a specific version, you can install it in a
+particular directory with \\
+\hspace*{.4in} {\tt make install PREFIX=/usr/local/romio    (or whatever directory you like)} \\
+or just\\
+\hspace*{.4in} {\tt make install          (if you used -prefix at configure time)}
+
+If you intend to leave ROMIO where you built it, you should {\it not}
+install it; {\tt make install} is used only to move the necessary
+parts of a built ROMIO to another location. The installed copy will
+have the include files, libraries, man pages, and a few other odds and
+ends, but not the whole source tree.  It will have a {\tt test}
+directory for testing the installation and a location-independent
+Makefile built during installation, which users can copy and modify to
+compile and link against the installed copy.
+
+To rebuild ROMIO with a different set of configure options, do\\
+\hspace*{.4in} {\tt make distclean}\\
+to clean everything, including the Makefiles created by {\tt
+configure}.  Then run {\tt configure} again with the new options,
+followed by {\tt make}.
+
+\subsection{Configuring for Linux and Large Files }
+
+32-bit systems running linux kernel version 2.4.0 or newer and glibc
+version 2.2.0 or newer can support files greater than 2 GBytes in size.
+This support is not automatic, however.  
+
+The two macros {\tt\_FILE\_OFFSET\_BITS=64} and
+{\tt\_LARGEFILE64\_SOURCE} tell gnu libc it's ok to support large files
+on 32 bit platforms.  The former changes the size of {\tt off\_t} (no
+need to change source.  might affect interoperability with libraries
+compiled with a different size of {\tt off\_t}).   The latter exposes
+the gnu libc functions open64(), write64(), read64(), etc.   ROMIO does
+not make use of the 64 bit system calls directly at this time, but we
+add this flag for good measure.  
+
+If your linux system is relatively new, there is an excellent chance it
+is running kernel 2.4.0 or newer and glibc-2.2.0 or newer.  Add the
+string
+\begin{verbatim}
+"-D_FILE_OFFSET_BITS=64 -D_LARGEFILE64_SOURCE"
+\end{verbatim}
+to your CFLAGS environment variable before runnint {\tt./configure}
+
+%
+% TESTING ROMIO
+%
+\section{Testing ROMIO}
+To test if the installation works, do\\
+\hspace*{.4in} {\tt make testing}\\
+in the {\tt romio/test} directory. This calls a script that runs the test
+programs and compares the results with what they should be. By
+default, {\tt make testing} causes the test programs to create files in
+the current directory and use whatever file system that corresponds
+to. To test with other file systems, you need to specify a filename in
+a directory corresponding to that file system as follows:\\
+\hspace*{.4in} {\tt make testing TESTARGS="-fname=/foo/piofs/test"}
+
+
+%
+% COMPILING AND RUNNING MPI-IO PROGRAMS
+%
+\section{Compiling and Running MPI-IO Programs}
+If ROMIO is not already included in the MPI implementation, you need
+to include the file {\tt mpio.h} for C or {\tt mpiof.h} for Fortran in
+your MPI-IO program.  
+
+Note that on HP machines running HPUX and on NEC SX-4, you need to
+compile Fortran programs with {\tt mpif90}, becuase {\tt mpif77} does
+not support 8-byte integers. 
+
+With MPICH, HP MPI, or NEC MPI, you can compile MPI-IO programs as \\
+\hspace*{.4in} {\tt mpicc foo.c}\\
+or \\
+\hspace*{.4in} {\tt mpif77 foo.f }\\
+or\\
+\hspace*{.4in} {\tt mpif90 foo.f}\\
+
+As mentioned above, mpif90 is preferred over mpif77 on HPUX and NEC
+because the f77 compilers on those machines do not support 8-byte integers.
+
+With SGI MPI, you can compile MPI-IO programs as \\
+\hspace*{.4in} {\tt cc foo.c -lmpi}\\
+or \\
+\hspace*{.4in} {\tt f77 foo.f -lmpi}\\
+or \\
+\hspace*{.4in} {\tt f90 foo.f -lmpi}\\
+
+With LAM, you can compile MPI-IO programs as \\
+\hspace*{.4in} {\tt hcc foo.c -lmpi}\\
+or \\
+\hspace*{.4in} {\tt hf77 foo.f -lmpi}\\
+
+If you have built ROMIO with some other MPI implementation, you can
+compile MPI-IO programs by explicitly giving the path to the include
+file mpio.h or mpiof.h and explicitly specifying the path to the
+library libmpio.a, which is located in {\tt \$(ROMIO\_HOME)/lib/\$(ARCH)/libmpio.a}.
+
+Run the program as you would run any MPI program on the machine.
+If you use {\tt mpirun}, make sure you use the correct {\tt mpirun}
+for the MPI implementation you are using. For example, if you
+are using MPICH on an SGI machine, make sure that you use MPICH's
+{\tt mpirun} and not SGI's {\tt mpirun}.
+
+
+%
+% LIMITATIONS
+%
+\section{Limitations of This Version of ROMIO \label{sec:limit}}
+
+\begin{itemize}
+\item When used with any MPI implementation other than MPICH revision
+1.2.1 or later, the {\tt status} argument is not filled in any MPI-IO
+function. Consequently, {\tt MPI\_Get\_count} and\linebreak {\tt
+MPI\_Get\_elements} will not work when passed the {\tt status} object
+from an MPI-IO operation.
+
+\item Additionally, when used with any MPI implementation other than MPICH
+revision 1.2.1 or later, all MPI-IO functions return only two possible
+error codes---{\tt MPI\_SUCCESS} on success and {\tt MPI\_ERR\_UNKNOWN}
+on failure.
+
+\item All nonblocking I/O functions use a ROMIO-defined {\tt MPIO\_Request}
+object instead of the usual {\tt MPI\_Request} object. Accordingly, two
+functions, {\tt MPIO\_Test} and {\tt MPIO\_Wait}, are provided to test
+and wait on these {\tt MPIO\_Request} objects. They have the same
+semantics as {\tt MPI\_Test} and {\tt MPI\_Wait}.\\
+\hspace*{.4in} {\tt int MPIO\_Test(MPIO\_Request *request, int *flag, MPI\_Status *status);}\\
+\hspace*{.4in} {\tt int MPIO\_Wait(MPIO\_Request *request, MPI\_Status *status);}\\
+The usual functions {\tt MPI\_Test}, {\tt MPI\_Wait}, {\tt MPI\_Testany},
+and so forth, will not work for nonblocking I/O. 
+
+\item This version works only on a homogeneous cluster of machines,
+and only the ``native'' file data representation is supported.
+
+\item Shared file pointers are not supported on PVFS and IBM PIOFS
+file systems because they don't support {\tt fcntl} file locks,
+and ROMIO uses that feature to implement shared file pointers.
+
+\item On HP machines running HPUX and on NEC SX-4, you need to compile
+Fortran programs with {\tt mpif90} instead of {\tt mpif77}, because
+the {\tt f77} compilers on these machines don't support 8-byte integers.
+
+\item The file-open mode {\tt MPI\_MODE\_EXCL} does not work on Intel
+PFS file system, due to a bug in PFS.
+
+\end{itemize}
+
+
+%
+% USAGE TIPS
+%
+\section{Usage Tips}
+\begin{itemize}
+\item When using ROMIO with SGI MPI, you may
+sometimes get an error message from SGI MPI: ``MPI has run out of
+internal datatype entries. Please set the environment variable
+{\tt MPI\_TYPE\_MAX} for additional space.'' If you get this error message,
+add the following line to your {\tt .cshrc} file:\\
+\hspace*{.4in} {\tt setenv MPI\_TYPE\_MAX 65536}\\
+Use a larger number if you still get the error message.
+\item If a Fortran program uses a file handle created using ROMIO's C
+interface, or vice versa, you must use the functions {\tt MPI\_File\_c2f} 
+or {\tt MPI\_File\_f2c} (see \S~4.12.4 in~\cite{mpi97a}). Such a
+situation occurs, for example, if a Fortran program uses an I/O
+library written in C 
+with MPI-IO calls. Similar functions {\tt MPIO\_Request\_f2c} and
+{\tt MPIO\_Request\_c2f} are also provided.
+\item For Fortran programs on the Intel Paragon, you may need
+to provide the complete path to {\tt mpif.h} in the {\tt include}
+statement, e.g., \\
+\hspace*{.4in} {\tt include '/usr/local/mpich/include/mpif.h'}\\
+instead of \\
+\hspace*{.4in} {\tt include 'mpif.h'}\\ 
+This is because the {\tt -I}
+option to the Paragon Fortran compiler {\tt if77} doesn't work
+correctly. It always looks in the default directories first and,
+therefore, picks up Intel's {\tt mpif.h}, which is actually the {\tt
+mpif.h} of an older version of MPICH.
+
+\end{itemize}
+
+%
+% MAILING LIST
+%
+\section{ROMIO Users Mailing List}
+Please register your copy of ROMIO with us by sending e-mail
+to {\tt majordomo@mcs.anl.gov} with the message
+
+{\tt subscribe romio-users}
+
+{\noindent This} will enable us to notify you of new releases of ROMIO
+as well as bug fixes.
+
+
+%
+% REPORTING BUGS
+%
+\section{Reporting Bugs}
+If you have trouble, first check the users guide. Then check if there
+is a list of known bugs and patches on the ROMIO web page at {\tt http://www.mcs.anl.gov/romio}.
+Finally, if you still have problems, send a detailed message containing:\\
+\hspace*{.2in}$\bullet$ the type of system (often {\tt uname -a}),\\
+\hspace*{.2in}$\bullet$ the output of {\tt configure},\\
+\hspace*{.2in}$\bullet$ the output of {\tt make}, and \\
+\hspace*{.2in}$\bullet$ any programs or tests\\
+to {\tt romio-maint@mcs.anl.gov}.
+
+
+%
+% ROMIO INTERNALS
+%
+\section{ROMIO Internals}
+A key component of ROMIO that enables such a portable MPI-IO
+implementation is an internal abstract I/O device layer called
+ADIO~\cite{thak96e}. Most users of ROMIO will not need to deal with
+the ADIO layer at all. However, ADIO is useful to those who want to
+port ROMIO to some other file system. The ROMIO source code and the
+ADIO paper~\cite{thak96e} will help you get started.
+
+MPI-IO implementation issues are discussed in~\cite{thak99b}. All
+ROMIO-related papers are available online at {\tt
+http://www.mcs.anl.gov/romio}.
+
+
+\section{Learning MPI-IO}
+The book {\em Using MPI-2: Advanced Features of the Message-Passing
+Interface}~\cite{grop99a}, published by MIT Press, provides a tutorial
+introduction to all aspects of MPI-2, including parallel I/O. It has
+lots of example programs. See {\tt
+http://www.mcs.anl.gov/mpi/usingmpi2} for further information about
+the book.
+
+%
+% MAJOR CHANGES IN PREVIOUS RELEASES
+%
+\section{Major Changes in Previous Releases}
+
+\subsection{Major Changes in Version 1.2.3}
+\begin{itemize}
+\item Added explicit control over aggregators for collective operations
+      (see description of \texttt{cb\_config\_list}).
+\item Added the following working hints: \texttt{cb\_config\_list},
+      \texttt{romio\_cb\_read}, \texttt{romio\_cb\_write},\newline
+      \texttt{romio\_ds\_read}.  These additional hints have
+      been added but are currently ignored by the implementation:
+      \texttt{romio\_ds\_write}, \texttt{romio\_no\_indep\_rw}.
+\item Added NTFS ADIO implementation.
+\item Added testfs ADIO implementation for use in debugging.
+\item Added delete function to ADIO interface so that file systems that
+      need to use their own delete function may do so (e.g. PVFS).
+\item Changed version numbering to match version number of MPICH release.
+\end{itemize}
+
+\subsection{Major Changes in Version 1.0.3}
+\begin{itemize}
+\item When used with MPICH 1.2.1, the MPI-IO functions return proper
+error codes and classes, and the status object is filled in.
+
+\item On SGI's XFS file system, ROMIO can use direct I/O even if the
+user's request does not meet the various restrictions needed to use
+direct I/O. ROMIO does this by doing part of the request with buffered
+I/O (until all the restrictions are met) and doing the rest with
+direct I/O. (This feature hasn't been tested rigorously. Please check
+for errors.)
+
+By default, ROMIO will use only buffered I/O. Direct I/O can be
+enabled either by setting the environment variables {\tt
+MPIO\_DIRECT\_READ} and/or {\tt MPIO\_DIRECT\_WRITE} to {\tt TRUE}, or
+on a per-file basis by using the info keys {\tt direct\_read} and {\tt
+direct\_write}.
+
+Direct I/O will result in higher performance only if you are accessing
+a high-bandwidth disk system. Otherwise, buffered I/O is better and is
+therefore used as the default.
+
+\item Miscellaneous bug fixes.
+\end{itemize}
+
+\subsection{Major Changes in Version 1.0.2}
+\begin{itemize}
+\item Implemented the shared file pointer functions (\S~9.4.4 of MPI-2) and 
+  split collective I/O functions (\S~9.4.5). Therefore, the main
+   components of the MPI-2 I/O chapter not yet implemented are 
+  file interoperability and error handling.
+
+\item Added support for using ``direct I/O'' on SGI's XFS file system. 
+  Direct I/O is an optional feature of XFS in which data is moved
+  directly between the user's buffer and the storage devices, bypassing 
+  the file-system cache. This can improve performance significantly on 
+  systems with high disk bandwidth. Without high disk bandwidth,
+  regular I/O (that uses the file-system cache) perfoms better.
+  ROMIO, therefore, does not use direct I/O by default. The user can
+  turn on direct I/O (separately for reading and writing) either by
+  using environment variables or by using MPI's hints mechanism (info). 
+  To use the environment-variables method, do
+\begin{verbatim}
+       setenv MPIO_DIRECT_READ TRUE
+       setenv MPIO_DIRECT_WRITE TRUE
+\end{verbatim}
+  To use the hints method, the two keys are {\tt direct\_read} and {\tt
+  direct\_write}.  By default their values are {\tt false}. To turn on
+  direct I/O, set the values to {\tt true}. The environment variables
+  have priority over the info keys.  In other words, if the environment
+  variables are set to {\tt TRUE}, direct I/O will be used even if the
+  info keys say {\tt false}, and vice versa.  Note that direct I/O must be
+  turned on separately for reading and writing.  The environment-variables
+  method assumes that the environment variables can be read by each
+  process in the MPI job. This is not guaranteed by the MPI Standard,
+  but it works with SGI's MPI and the {\tt ch\_shmem} device of MPICH.
+
+\item Added support (new ADIO device, {\tt ad\_pvfs}) for the PVFS parallel 
+  file system for Linux clusters, developed at Clemson University
+  (see {\tt http://www.parl.clemson.edu/pvfs}). To use it, you
+  must first install PVFS and then when configuring ROMIO, specify
+  {\tt -file\_system=pvfs} in addition to any other options to {\tt
+  configure}. (As usual, you can configure for multiple file systems by
+  using ``{\tt +}''; for example, {\tt -file\_system=pvfs+ufs+nfs}.) You
+  will need to specify the path to the PVFS include files via the {\tt
+  -cflags} option to {\tt configure}, for example, \newline {\tt configure
+  -cflags=-I/usr/pvfs/include}. You will also need to specify the full
+  path name of the PVFS library. The best way to do this is via the {\tt
+  -lib} option to MPICH's {\tt configure} script (assuming you are using
+  ROMIO from within MPICH).
+
+\item Uses weak symbols (where available) for building the profiling version,
+  i.e., the PMPI routines. As a result, the size of the library is reduced
+  considerably. 
+
+\item The Makefiles use {\em virtual paths} if supported by the make
+  utility. GNU {\tt make}
+  supports it, for example. This feature allows you to untar the
+  distribution in some directory, say a slow NFS directory,
+  and compile the library (create the .o files) in another 
+  directory, say on a faster local disk. For example, if the tar file
+  has been untarred in an NFS directory called {\tt /home/thakur/romio},
+  one can compile it in a different directory, say {\tt /tmp/thakur}, as
+  follows:
+\begin{verbatim}
+        cd /tmp/thakur
+        /home/thakur/romio/configure
+        make
+\end{verbatim}
+  The .o files will be created in {\tt /tmp/thakur}; the library will be created in\newline
+  {\tt /home/thakur/romio/lib/\$ARCH/libmpio.a}.
+  This method works only if the {\tt make} utility supports {\em
+  virtual paths}. 
+  If the default {\tt make} utility does not, you can install GNU {\tt
+  make} which does, and specify it to {\tt configure} as
+\begin{verbatim}
+       /home/thakur/romio/configure -make=/usr/gnu/bin/gmake (or whatever)
+\end{verbatim}
+
+\item Lots of miscellaneous bug fixes and other enhancements.
+
+\item This version is included in MPICH 1.2.0. If you are using MPICH, you
+  need not download ROMIO separately; it gets built as part of MPICH.
+  The previous version of ROMIO is included in LAM, HP MPI, SGI MPI, and 
+  NEC MPI. NEC has also implemented the MPI-IO functions missing 
+  in ROMIO, and therefore NEC MPI has a complete implementation of MPI-IO.
+\end{itemize}
+
+
+\subsection{Major Changes in Version 1.0.1}
+
+\begin{itemize}
+\item This version is included in MPICH 1.1.1 and HP MPI 1.4.
+
+\item Added support for NEC SX-4 and created a new device {\tt ad\_sfs} for
+NEC SFS file system.
+
+\item New devices {\tt ad\_hfs} for HP HFS file system and {\tt
+ad\_xfs} for SGI XFS file system.
+
+\item Users no longer need to prefix the filename with the type of 
+file system; ROMIO determines the file-system type on its own.
+
+\item Added support for 64-bit file sizes on IBM PIOFS, SGI XFS,
+HP HFS, and NEC SFS file systems.
+
+\item {\tt MPI\_Offset} is an 8-byte integer on machines that support
+8-byte integers. It is of type {\tt long long} in C and {\tt
+integer*8} in Fortran. With a Fortran 90 compiler, you can use either
+{\tt integer*8} or  {\tt integer(kind=MPI\_OFFSET\_KIND)}. 
+If you {\tt printf} an {\tt MPI\_Offset} in C, remember to use {\tt \%lld} 
+or {\tt \%ld} as required by your compiler. (See what is used in the test 
+program {\tt romio/test/misc.c}).
+On some machines, ROMIO detects at configure time that {\tt long long} is 
+either not supported by the C compiler or it doesn't work properly.
+In such cases, configure sets {\tt MPI\_Offset} to {\tt long} in C and {\tt
+integer} in Fortran. This happens on Intel Paragon, Sun4, and FreeBSD.
+
+\item Added support for passing hints to the implementation via the
+{\tt MPI\_Info} parameter. ROMIO understands the following hints (keys
+in {\tt MPI\_Info} object):
+\texttt{cb\_buffer\_size},
+\texttt{cb\_nodes},\newline
+\texttt{ind\_rd\_buffer\_size},
+\texttt{ind\_wr\_buffer\_size} (on all but IBM PIOFS),
+\texttt{striping\_factor} (on PFS and PIOFS),
+\texttt{striping\_unit} (on PFS and PIOFS),
+\texttt{start\_iodevice} (on PFS and PIOFS),
+and \texttt{pfs\_svr\_buf} (on PFS only).
+      
+\end{itemize}
+\newpage
+
+\addcontentsline{toc}{section}{References}
+\bibliographystyle{plain}
+%\bibliography{/home/beumer/THAKUR/TM234/papers}
+\bibliography{/home/thakur/tex/bib/papers}
+
+\end{document}
