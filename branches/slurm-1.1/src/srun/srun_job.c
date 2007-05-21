@@ -204,26 +204,6 @@ job_step_create_allocation(resource_allocation_response_msg_t *resp)
 	ai->addrs          = resp->node_addr;
 	ai->select_jobinfo = select_g_copy_jobinfo(resp->select_jobinfo);
 
-	if (opt.nodelist == NULL) {
-		char *nodelist = NULL;
-		char *hostfile = getenv("SLURM_HOSTFILE");
-		
-		if (hostfile != NULL) {
-			nodelist = slurm_read_hostfile(hostfile, opt.nprocs);
-			if (nodelist == NULL) {
-				error("Failure getting NodeNames from "
-				      "hostfile");
-				/* FIXME - need to fail somehow */
-			} else {
-				debug("loading nodes from hostfile %s",
-				      hostfile);
-				opt.nodelist = xstrdup(nodelist);
-				free(nodelist);
-				opt.distribution = SLURM_DIST_ARBITRARY;
-			}
-		}
-	}
-	
 	if (opt.exc_nodes) {
 		hostlist_t exc_hl = hostlist_create(opt.exc_nodes);
 		hostlist_t inc_hl = NULL;

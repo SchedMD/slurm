@@ -232,11 +232,21 @@ static bool _valid_node_list(char **node_list_pptr)
 	if (strchr(*node_list_pptr, '/') == NULL)
 		return true;	/* not a file name */
 
-	if(opt.nprocs_set)
+	/* If we are using Arbitrary and we specified the number of
+	   procs to use then we need exactly this many since we are
+	   saying, lay it out this way!  Other than that just read in
+	   the number the user said either max_nodes or
+	   min_nodes. Default of NO_VAL shouldn't ever really be used
+	   since min_nodes is always set here */
+	if(opt.nprocs_set && opt.distribution == SLURM_DIST_ARBITRARY) 
 		nodelist = slurm_read_hostfile(*node_list_pptr, opt.nprocs);
+	else if(opt.max_nodes)
+		nodelist = slurm_read_hostfile(*node_list_pptr, opt.max_nodes);
+	else if(opt.min_nodes)
+		nodelist = slurm_read_hostfile(*node_list_pptr, opt.min_nodes);
 	else
 		nodelist = slurm_read_hostfile(*node_list_pptr, NO_VAL);
-
+		
 	if (nodelist == NULL) 
 		return false;
 	xfree(*node_list_pptr);
@@ -1671,7 +1681,18 @@ static bool _opt_verify(void)
 	if ((opt.job_name == NULL) && (remote_argc > 0))
 		opt.job_name = _base_name(remote_argv[0]);
 
-	if(opt.nodelist)
+	if(!opt.nodelist) {
+		if((opt.nodelist = xstrdup(getenv("SLURM_HOSTFILE")))) {
+			if (!_valid_node_list(&opt.nodelist)) {
+				error("Failure getting NodeNames from "
+				      "hostfile");
+				exit(1);
+			} else 
+				debug("loaded nodes (%s) from hostfile",
+				      opt.nodelist);
+			
+		}
+	} else
 		if (!_valid_node_list(&opt.nodelist))
 			exit(1);
 
