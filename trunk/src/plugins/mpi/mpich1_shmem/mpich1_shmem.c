@@ -83,7 +83,7 @@ int p_mpi_hook_slurmstepd_task(const mpi_plugin_task_info_t *job,
 			       char ***env)
 {
 	debug("Using mpi/mpich1_shmem");
-	env_array_overwrite_fmt(env, "MPIRUN_NP", "%u", job->ntasks);
+	env_array_overwrite_fmt(env, "MPICH_NP", "%u", job->ntasks);
 	return SLURM_SUCCESS;
 }
 

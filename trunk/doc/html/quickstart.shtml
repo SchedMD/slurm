@@ -324,8 +324,8 @@ for more information.</p>
 
 <p><a href="http://www-unix.mcs.anl.gov/mpi/mpich1/"><b>MPICH1</b></a>
 has several different programming models. If you are using the shared
-memory model (DEFAULT_DEVICE=ch_shmem in the mpirun script), then 
-initiated the tasks using the <span class="commandline">srun</span> command 
+memory model (<i>DEFAULT_DEVICE=ch_shmem</i> in the mpirun script), then 
+initiate the tasks using the <span class="commandline">srun</span> command 
 with the <i>--mpi=mpich1_shmem</i> option.</p>
 <pre>
 $ srun -n16 --mpi=mpich1_shmem a.out
@@ -333,7 +333,7 @@ $ srun -n16 --mpi=mpich1_shmem a.out
 
 <p>Other MPICH1 programming models current rely upon the SLURM 
 <span class="commandline">salloc</span> or 
-<span class="commandline">sbatch</span> command to allocate.
+<span class="commandline">sbatch</span> command to allocate resources.
 In either case, specify the maximum number of tasks required for the job.
 You will then need to build a list of hosts to be used and use that 
 as an argument to the mpirun command. 
