@@ -54,7 +54,7 @@ extern char *default_plugstack;
 #define DEFAULT_FIRST_JOB_ID        1
 /* NOTE: DEFAULT_INACTIVE_LIMIT must be 0 for Blue Gene/L systems */
 #define DEFAULT_INACTIVE_LIMIT      0
-#define DEFAULT_JOB_ACCT_LOGFILE    "/var/log/slurm_accounting.log"
+#define DEFAULT_JOB_ACCT_LOC        "/var/log/slurm_accounting.log"
 #define DEFAULT_JOB_ACCT_FREQ       30
 #define DEFAULT_JOB_ACCT_TYPE       "jobacct/none"
 #define DEFAULT_DATABASE_TYPE       "database/flatfile"

@@ -143,6 +143,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"HeartbeatInterval", S_P_LONG, defunct_option},
 	{"InactiveLimit", S_P_UINT16},
 	{"JobAcctLogFile", S_P_STRING},
+	{"JobAcctLoc", S_P_STRING},
 	{"JobAcctFrequency", S_P_UINT16},
 	{"JobAcctType", S_P_STRING},
 	{"DatabaseType", S_P_STRING},
@@ -1041,7 +1042,7 @@ free_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr, bool purge_node_hash)
 	xfree (ctl_conf_ptr->control_addr);
 	xfree (ctl_conf_ptr->control_machine);
 	xfree (ctl_conf_ptr->epilog);
-	xfree (ctl_conf_ptr->job_acct_logfile);
+	xfree (ctl_conf_ptr->job_acct_loc);
 	xfree (ctl_conf_ptr->job_acct_type);
 	xfree (ctl_conf_ptr->database_type);
 	xfree (ctl_conf_ptr->database_user);
@@ -1104,7 +1105,7 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	ctl_conf_ptr->fast_schedule		= (uint16_t) NO_VAL;
 	ctl_conf_ptr->first_job_id		= (uint32_t) NO_VAL;
 	ctl_conf_ptr->inactive_limit		= (uint16_t) NO_VAL;
-	xfree (ctl_conf_ptr->job_acct_logfile);
+	xfree (ctl_conf_ptr->job_acct_loc);
 	ctl_conf_ptr->job_acct_freq             = 0;
 	xfree (ctl_conf_ptr->job_acct_type);
 	xfree (ctl_conf_ptr->database_type);
@@ -1465,9 +1466,12 @@ validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 		conf->inactive_limit = DEFAULT_INACTIVE_LIMIT;
 	}
 
-	if (!s_p_get_string(&conf->job_acct_logfile, 
-			    "JobAcctLogFile", hashtbl))
-		conf->job_acct_logfile = xstrdup(DEFAULT_JOB_ACCT_LOGFILE);
+	/* Keep logfile around for backwards compatiblity */
+	if (!s_p_get_string(&conf->job_acct_loc, 
+			    "JobAcctLoc", hashtbl)
+	    || !s_p_get_string(&conf->job_acct_loc, 
+			       "JobAcctLogFile", hashtbl))
+		conf->job_acct_loc = xstrdup(DEFAULT_JOB_ACCT_LOC);
 
 	if (!s_p_get_uint16(&conf->job_acct_freq, "JobAcctFrequency", hashtbl))
 		conf->job_acct_freq = DEFAULT_JOB_ACCT_FREQ;

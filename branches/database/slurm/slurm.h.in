@@ -855,7 +855,7 @@ typedef struct slurm_ctl_conf {
 				 * (only check configuration file, faster) */
 	uint16_t inactive_limit;/* seconds of inactivity before a
 				 * inactive resource allocation is released */
-	char *job_acct_logfile;	/* job accounting log location */
+	char *job_acct_loc;	/* job accounting log location */
 	uint16_t job_acct_freq; /* poll frequency for job accounting plugins */
 	char *job_acct_type;	/* job accounting type */
 	char *database_type;	/* database type */

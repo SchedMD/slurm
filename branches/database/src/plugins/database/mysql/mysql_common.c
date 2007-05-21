@@ -50,14 +50,7 @@ static int _mysql_make_table_current(MYSQL *mysql_db, int database_init,
 				     database_field_t *fields)
 {
 	char *query = NULL;
-	char *tmp = NULL;
-	char *next = NULL;
-	int i = 0, j=0;
-	int found = 0;
-	database_field_t *field = fields;
-	MYSQL_RES *result = NULL;
-	MYSQL_FIELD *curr_fields = NULL;
-	int num_fields = 0;
+	int i = 0;
 
 	while(fields[i].name) {
 		query = xstrdup_printf("alter table %s modify %s %s",

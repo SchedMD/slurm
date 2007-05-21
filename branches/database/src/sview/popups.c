@@ -266,8 +266,8 @@ static void _layout_ctl_conf(GtkTreeStore *treestore,
 			    "InactiveLimit", 
 			    temp_str);
 	add_display_treestore_line(update, treestore, &iter, 
-			    "JobAcctLogFile", 
-			    slurm_ctl_conf_ptr->job_acct_logfile);
+			    "JobAcctLoc", 
+			    slurm_ctl_conf_ptr->job_acct_loc);
 	snprintf(temp_str, sizeof(temp_str), "%u", 
 		 slurm_ctl_conf_ptr->job_acct_freq);
 	add_display_treestore_line(update, treestore, &iter, 
