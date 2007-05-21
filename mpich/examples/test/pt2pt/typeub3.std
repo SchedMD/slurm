@@ -1,0 +1,6 @@
+**** Checking the type routines: MPI_UB(3) ****
+hindexed ok
+indexed ok
+hvector ok
+vector ok
+**** Checking the type routines: MPI_UB(3) ****

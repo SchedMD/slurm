@@ -1,0 +1,17 @@
+/*
+ *  (C) 2001 by Argonne National Laboratory
+ *      See COPYRIGHT in top-level directory.
+ */
+
+/*
+ *  @author  Anthony Chan
+ */
+
+- Swing's DefaultBoundedRangeModel uses __int__ as type to represent
+  min, max, value and extent.  This also affects model_time which is
+  extended from DefaultBoundedRangeModel.  Approximately, if the
+  tZoomFactor is 2.0 and zoomIn is called over ~ 22 times, there is
+  risk of overflow in the represenatation of min, max in
+  DefaultBoundedRangeModel.
+
+  Solution, temporary!  Use DefaultLongBoundedRangeModel instead.

@@ -1,0 +1,72 @@
+/*
+ *  (C) 2001 by Argonne National Laboratory
+ *      See COPYRIGHT in top-level directory.
+ */
+
+/*
+ *  @author  Anthony Chan
+ */
+
+Propagation of GUI events related to the "Time" axis
+----------------------------------------------------
+
+
+   adj   = AdjustmentEvent ( LongAdjustmentEvent )
+   act   = ActionEvent, e.g. through ActionListener of action_zoom_in
+   chg   = ChangeEvent
+   time  = time_event
+   paint = viewport calls functions defined in the view to paint the view
+
+/*
+  Propagation of AdjustmentEvent originating from scroller:
+
+  ( scroller -----> time_model ) -----> viewport -----> view
+           /  adj       |         time     |     paint
+          /             v          |       v
+     update        Adjustment--->--+   time_listener
+  Pixel-Coords      Listener
+                        |
+                        v
+                 update Time-Coords
+                        +
+             invoke viewport's timeChanged()
+
+   viewport is between time_model and view because
+   viewport is what user sees.  
+*/
+
+
+/*
+  Zoom In/Out/Home Operations:
+  
+  zoom_btn -----> ( time_model -----> scroller ) -----> viewport -----> view
+            act  |               |                adj      |     paint
+                 |               |                         |
+                 v               v                         v
+               update          update                 time_listener
+             Time-Coords    Pixel-Coords
+*/
+
+
+/*
+  Resize Operation:  Each top-level component resizes itself.
+
+                               setBlockIncrement
+  -----> viewport -----> view -------------------> scrollbar
+   cmp      |      cmp    |
+            v             v
+         Component      Component
+         Listener       Listener
+
+
+   cmp   = ComponentEvent { componentResized() }
+*/
+
+
+/*
+  Time Display Operation: 
+
+  model_time -----> model_time_panel -->-+
+              time         |             |
+                           +------<------+
+*/

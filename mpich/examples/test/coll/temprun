@@ -1,0 +1,269 @@
+#!/bin/sh
+# This version puts the output from each program into a separate file.
+# -mvhome is needed for the ANL SP, and is ignored by others
+args="-pg -mvhome"
+#
+runtests=1
+makeeach=0
+for arg in "$@" ; do
+    case $arg in 
+	-checkonly )
+	runtests=0
+	;;
+        -margs=*)
+	margs=`echo $arg | sed 's/-margs=//'`
+	args="$args $margs"
+	;;
+	-small)
+	makeeach=1
+	;;
+	-help|-u)
+	echo "runtests [-checkonly] [-margs='...']"
+	echo "run tests in this directory.  If -checkonly set, just run"
+	echo "the differences check (do NO rerun the test programs)."
+	echo "If -margs is used, these options are passed to mpirun."
+	echo "If -small is used, the examples are built, run, and deleted."
+	exit 1
+	;;
+	*)
+	if test -n "$arg" ; then
+   	    echo "runtests: Unknown argument ($arg)"
+	    exit 1
+        fi
+	;;
+    esac
+done
+
+MakeExe() {
+    if [ $makeeach = 1 -o ! -x $1 ] ; then
+	make $1
+    fi
+}
+CleanExe() {
+    if [ $makeeach = 1 ] ; then
+	/bin/rm -f $1 $1.o
+    fi
+}
+
+# If the programs are not available, run make.
+if [ ! -x coll1 -a $makeeach = 0 ] ; then
+    make 
+fi
+
+testfiles=""
+if [ $runtests = 1 ] ; then
+echo '**** Testing MPI Collective routines ****'
+
+testfiles="$testfiles barrier.out"
+/bin/rm -f barrier.out barrier-0.out
+MakeExe barrier
+echo '*** Barrier Test ***' >> barrier.out
+echo '**** Barrier Test ****'
+mpirun $args -np 4 -mvback "barrier-0.out" barrier $* >> barrier.out
+cat barrier-0.out >> barrier.out
+/bin/rm -f barrier-[01234].out
+echo '*** Barrier Test ***' >> barrier.out
+CleanExe barrier
+
+testfiles="$testfiles bcast.out"
+/bin/rm -f bcast.out bcast-[0-3].out
+MakeExe bcast
+echo '**** Broadcast Test ****'
+echo '*** Broadcast Test ***' >> bcast.out
+mpirun $args -np 4 \
+   -mvback "bcast-0.out bcast-1.out bcast-2.out bcast-3.out" \
+	bcast $* >> bcast.out
+cat bcast-[0123].out >> bcast.out
+/bin/rm -f bcast-[0123].out
+echo '*** Broadcast Test ***' >> bcast.out
+CleanExe bcast
+
+testfiles="$testfiles coll1.out"
+/bin/rm -f coll1.out
+MakeExe coll1
+echo '**** coll1 ****'
+echo '*** coll1 ***' >> coll1.out
+mpirun $args -np 4 coll1 $* >> coll1.out
+echo '*** coll1 ***' >> coll1.out
+CleanExe coll1
+
+testfiles="$testfiles coll2.out"
+/bin/rm -f coll2.out
+MakeExe coll2
+echo '**** coll2 ****'
+echo '*** coll2 ***' >> coll2.out
+# mpirun $args -np 5 coll2 $* >> coll2.out
+echo '*** coll2 ***' >> coll2.out
+CleanExe coll2
+
+testfiles="$testfiles coll3.out"
+/bin/rm -f coll3.out
+MakeExe coll3
+echo '**** coll3 ****'
+echo '*** coll3 ***' >> coll3.out
+mpirun $args -np 5 coll3 $* >> coll3.out
+echo '*** coll3 ***' >> coll3.out
+CleanExe coll3
+
+testfiles="$testfiles coll4.out"
+/bin/rm -f coll4.out
+MakeExe coll4
+echo '**** coll4 ****'
+echo '*** coll4 ***' >> coll4.out
+mpirun $args -np 4 coll4 $* >> coll4.out
+echo '*** coll4 ***' >> coll4.out
+CleanExe coll4
+
+testfiles="$testfiles coll5.out"
+/bin/rm -f coll5.out
+MakeExe coll5
+echo '**** coll5 ****'
+echo '*** coll5 ***' >> coll5.out
+mpirun $args -np 4 coll5 $* >> coll5.out
+echo '*** coll5 ***' >> coll5.out
+CleanExe coll5
+
+testfiles="$testfiles coll6.out"
+/bin/rm -f coll6.out
+MakeExe coll6
+echo '**** coll6 ****'
+echo '*** coll6 ***' >> coll6.out
+mpirun $args -np 5 coll6 $* >> coll6.out
+echo '*** coll6 ***' >> coll6.out
+CleanExe coll6
+
+testfiles="$testfiles coll7.out"
+/bin/rm -f coll7.out
+MakeExe coll7
+echo '**** coll7 ****'
+echo '*** coll7 ***' >> coll7.out
+mpirun $args -np 5 coll7 $* >> coll7.out
+echo '*** coll7 ***' >> coll7.out
+CleanExe coll7
+
+testfiles="$testfiles coll8.out"
+/bin/rm -f coll8.out
+MakeExe coll8
+echo '**** coll8 ****'
+echo '*** coll8 ***' >> coll8.out
+mpirun $args -np 4 coll8 $* >> coll8.out
+echo '*** coll8 ***' >> coll8.out
+CleanExe coll8
+
+testfiles="$testfiles coll9.out"
+/bin/rm -f coll9.out
+MakeExe coll9
+echo '**** coll9 ****'
+echo '*** coll9 ***' >> coll9.out
+mpirun $args -np 4 coll9 $* >>  coll9.out
+echo '*** coll9 ***' >> coll9.out
+CleanExe coll9
+
+testfiles="$testfiles coll10.out"
+/bin/rm -f coll10.out
+MakeExe coll10
+echo '**** coll10 ****'
+echo '*** coll10 ***' >> coll10.out
+mpirun -np 4 $args coll10 $* >> coll10.out
+echo '*** coll10 ***' >> coll10.out
+CleanExe coll10
+
+testfiles="$testfiles coll11.out"
+/bin/rm -f coll11.out
+MakeExe coll11
+echo '**** coll11 ****'
+echo '*** coll11 ***' >> coll11.out
+mpirun -np 4 $args coll11 $* >> coll11.out
+echo '*** coll11 ***' >> coll11.out
+CleanExe coll11
+
+testfiles="$testfiles coll12.out"
+/bin/rm -f coll12.out
+MakeExe coll12
+echo '**** coll12 ****'
+echo '*** coll12 ***' >> coll12.out
+mpirun -np 4 $args coll12 $* >> coll12.out
+echo '*** coll12 ***' >> coll12.out
+CleanExe coll12
+
+testfiles="$testfiles coll13.out"
+/bin/rm -f coll13.out
+MakeExe coll13
+echo '**** coll13 ****'
+echo '*** coll13 ***' >> coll13.out
+mpirun -np 4 $args coll13 $* >> coll13.out
+echo '*** coll13 ***' >> coll13.out
+CleanExe coll13
+
+testfiles="$testfiles grouptest.out"
+/bin/rm -f grouptest.out
+MakeExe grouptest
+echo '*** Grouptest ***'
+echo '*** grouptest ***' >> grouptest.out
+mpirun $args -np 4 grouptest  $* >> grouptest.out
+echo '*** grouptest ***' >> grouptest.out
+CleanExe grouptest
+
+testfiles="$testfiles allred.out"
+/bin/rm -f allred.out
+MakeExe allred
+echo '*** Allred ***'
+echo '*** Allred ***' >> allred.out
+mpirun $args -np 4 allred  $* >> allred.out
+echo '*** Allred ***' >> allred.out
+CleanExe allred
+
+testfiles="$testfiles scatterv.out"
+/bin/rm -f scatterv.out
+MakeExe scatterv
+echo '*** Scatterv ***'
+echo '*** Scatterv ***' >> scatterv.out
+mpirun $args -np 4 scatterv  $* >> scatterv.out
+echo '*** Scatterv ***' >> scatterv.out
+CleanExe scatterv
+
+#
+# Run Fortran tests ONLY if Fortran available
+if [ 1 = 1 ] ; then 
+    echo "FORTRAN TESTS"
+    #
+    testfiles="$testfiles allredf.out"
+    /bin/rm -f allredf.out
+    MakeExe allredf
+    echo '*** Testing allreduce from Fortran ***'
+    echo '*** Testing allreduce from Fortran ***' >> allredf.out
+    mpirun $args -np 4 allredf "$@" >> allredf.out
+    echo '*** Testing allreduce from Fortran ***' >> allredf.out
+    CleanExe allredf
+    #
+    echo "END OF FORTRAN TESTS"
+fi
+
+else
+    # Just run checks
+    testfiles=`echo *.out`
+    if test "$testfiles" = "*.out" ; then
+	echo "No output files remain from previous test!"
+	exit 1
+    fi
+fi
+
+echo '*** Differences from expected output ***'
+/bin/rm -f coll.diff
+for file in $testfiles ; do
+    stdfile=`basename $file .out`.std
+    if [ -s $stdfile ] ; then
+        if diff -b $file `basename $file .out`.std > /dev/null ; then
+	    true
+  	else
+	    echo "Differences in `basename $file .out`" >> coll.diff
+	    diff -b $file `basename $file .out`.std >> coll.diff
+	fi
+    else
+        echo "Can not find file $stdfile to compare against for test `basename $file .out`"
+    fi
+done
+if [ -s coll.diff ] ; then
+   cat coll.diff
+fi
+exit 0

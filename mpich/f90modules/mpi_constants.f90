@@ -1,0 +1,3 @@
+        MODULE MPI_CONSTANTS
+        INCLUDE 'mpif.h'
+        END MODULE MPI_CONSTANTS

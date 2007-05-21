@@ -1,0 +1,13 @@
+#
+# We allow these routines for the romio test programs 
+%romioTestRoutines = ( 
+	'printf' => sys, 'fprintf' => sys , 'sprintf' => sys, 'vprintf' => sys,
+	'strcpy' => sys, 'strncpy' => sys, 'strcat' => sys, 
+	'malloc' => sys, 'free' => sys, 'calloc' => sys, 'strdup' => sys,
+	'assert' => sys, 'snprintf' => sys, 
+	);
+if (defined(&PushAllowFuncNames)) {
+    &PushAllowFuncNames( "romioTestRoutines", "tree", "add" );
+}
+
+1;

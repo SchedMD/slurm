@@ -1,0 +1,42 @@
+Details on wrappergen:
+
+The information that used to be in this file has been incorporated into
+the Users' Guide, which can be found in the mpich/doc directory.
+
+There are some known bugs:
+
+(From Rob Cunningham <rkc@tremor.mi.ll.mit.edu>)
+
+	1. Wrappergen infinite loops when I have a bug in the wrapper and call
+it with the -f option and no space between the -f and the name.
+	% wrappergen -w LL_bug.w -fllfn_proto -o LL_wrapper.c
+	No function list file.  Assuming all functions profiled.
+	No function prototype file.  Assuming /seismic3/acp/mpi/mpich/profiling/wrappergen/mpi_proto.
+	Unrecognized escape '{{this_fn_name}}' in file LL_bug.w, line 10.
+	Unrecognized escape '{{this_fn_name}}' in file LL_bug.w, line 10.
+	...
+/* LL_bug.w */
+#include <stdio.h>
+#include <stdarg.h>
+#include "mpi.h"
+
+{{forallfn fn_name}}
+int {{fn_name}}_ncalls_{{fileno}};
+{{endforallfn}}
+
+{{fnall fn_name }}
+  MPE_Log_event({{this_fn_name}}_start,{{fn_name}}_ncalls_{{fileno}},
+		"{{fn_name}} Start");
+  {{callfn}}
+  MPE_Log_event({{fn_name}}_end,{{fn_name}}_ncalls_{{fileno}}++,
+		"{{fn_name}} End");
+{{endfnall}}
+/* LL_bug.w */
+
+	2. Callfn doesn't do the right thing when the function returns a void.
+	{{callfn}} seems to always tries to return a value.
+
+	3. wrappergen doesn't work properly for Ansii C code, because it
+	defines the wrapper routines using K&R style C, which has different
+	variable promotion rules than Ansii C.
+

@@ -1,0 +1,24 @@
+set "jobinfo($w,name)" {Parallel Mandelbrot}
+set "jobinfo($w,guiargs)" {}
+set "jobinfo($w,args)" {-height 300 -width 300}
+set "jobinfo($w,nexecs)" {1}
+set "jobinfo($w,machineFile)" {}
+set "jobinfo($w,arch)" {sun4}
+set "jobinfo($w,anotherMachineFile)" {0}
+set "jobinfo($w,localproc0)" {0}
+set "jobinfo($w,useexecer)" {0}
+set "jobinfo($w,savepg)" {1}
+set "jobinfo($w,testing)" {0}
+set "jobinfo($w,verbose)" {0}
+set "jobinfo($w,background)" {1}
+set "jobinfo($w,c_sources)" {{/home/lusk/mpich/mpe/contrib/mandel/args.c {/home/lusk/mpich/mpe/contrib/mandel/args.h /home/lusk/mpich/mpe/contrib/mandel/lists.h}} {/home/lusk/mpich/mpe/contrib/mandel/fract_gen.c {/home/lusk/mpich/mpe/contrib/mandel/fract_gen.h /home/lusk/mpich/mpe/contrib/mandel/pmandel.h}} {/home/lusk/mpich/mpe/contrib/mandel/lists.c /home/lusk/mpich/mpe/contrib/mandel/lists.h} {/home/lusk/mpich/mpe/contrib/mandel/pm_genproc.c /home/lusk/mpich/mpe/contrib/mandel/pmandel.h} {/home/lusk/mpich/mpe/contrib/mandel/pm_separate_rect.c {/home/lusk/mpich/mpe/contrib/mandel/pm_genproc.h /home/lusk/mpich/mpe/contrib/mandel/pmandel.h}} {/home/lusk/mpich/mpe/contrib/mandel/pmandel.c {/home/lusk/mpich/mpe/contrib/mandel/lists.h /home/lusk/mpich/mpe/contrib/mandel/pmandel.h}}}
+set "jobinfo($w,f77_sources)" {}
+set "jobinfo($w,cpp_sources)" {{asdf.cc {}} {b.cc {}} {bcpl.cc {}} {c.cc {}}}
+set "jobinfo($w,other_objs)" {}
+set "jobinfo($w,whichFileListWin)" {c_sources}
+set "jobinfo($w,wrapperlist)" {{Log all calls} {Visual Messages}}
+set "jobinfo($w,fnlist)" {{Point to Point functions}}
+set "jobinfo($w,whichFileList)" {C Sources}
+set "jobinfo($w,0,exec)" {~lusk/mpich/mpe/contrib/mandel/pmandel}
+set "jobinfo($w,0,mach)" {p4}
+set "jobinfo($w,0,np)" {3}

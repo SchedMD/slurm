@@ -1,0 +1,1 @@
+* do not let MPICH's MPI_TAG_UB be greater than VMPI's MPI_TAG_UB

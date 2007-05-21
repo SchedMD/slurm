@@ -1,0 +1,55 @@
+# Here are names that at least at one point were used within ROMIO.
+# We should look at these and decide which we wish to allow and which 
+# should be replaced with something more ROMIO-specific.
+%romioDefines = ( 'ROMIO_[A-Za-z0-9_]+' => romio, 
+	'PROFILE' => romio, 
+	'PRINT_ERR_MSG' => romio, 
+	'HPUX' => romio,
+	'SPPUX'=> romio,
+	'SX4'=> romio,
+	'AIO_SUN'=> romio,
+	'AIO_HANDLE_IN_AIOCB'=> romio,
+	'NO_FD_IN_AIOCB'=> romio,
+	'NO_AIO'=> romio,
+	'AIO_PRIORITY_DEFAULT'=> romio,
+	'AIO_SIGNOTIFY_NONE'=> romio,
+	'MPISGI'=> romio,
+	'CRAY'=> romio,
+	'PARAGON'=> romio,
+	'FREEBSD'=> romio,
+	'LINUX'=> romio,
+	'tflops'=> romio,
+	'NFS'=> romio,
+	'XFS'=> romio,
+	'CB_CONFIG_LIST_DEBUG'=> romio,
+	'SFS'=> romio,
+	'HFS'=> romio,
+	'UFS'=> romio,
+	'PVFS_.+' => romio,
+	'MPI_hpux'=> romio,
+	'FORTRANCAPS'=> romio,
+	'MPILAM'=> romio,
+	'NEEDS_ADIOCB_T'=> romio,
+	'AGG_DEBUG'=> romio,
+	'SOLARIS'=> romio,
+	'IRIX'=> romio,
+	'AIX'=> romio,
+	'DEC'=> romio,
+	'NEEDS_MPI_TEST'=> romio,
+	'PFS'=> romio,
+	'PIOFS'=> romio,
+	'MPICH'=> romio,
+	'MPICH2' => romio,
+	'MPI_OFFSET_IS_INT'=> romio,
+	'MPI_COMBINER_NAMED'=> romio,
+	'_UNICOS'=> romio,
+	'MPIHP'=> romio,
+	);
+
+# Only invoke this function if the function is defined (in case the
+# user removed the cpp defines check with -rmchecks=cppdefines)
+if (defined(&PushDefinesNames)) {
+   &PushDefinesNames( "romioDefines", "tree", "add" );
+}
+	
+1;

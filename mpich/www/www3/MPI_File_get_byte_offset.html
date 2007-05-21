@@ -1,0 +1,36 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML3.2 EN">
+<HTML>
+<HEAD>
+<META NAME="GENERATOR" CONTENT="DOCTEXT">
+<TITLE>MPI_File_get_byte_offset</TITLE>
+</HEAD>
+<BODY BGCOLOR="FFFFFF">
+<A NAME="MPI_File_get_byte_offset"><H1>MPI_File_get_byte_offset</H1></A>
+Returns the absolute byte position in  the file corresponding to "offset" etypes relative to the current view 
+<H2>Synopsis</H2>
+<PRE>
+int MPI_File_get_byte_offset(MPI_File mpi_fh,
+                           MPI_Offset offset,
+                           MPI_Offset *disp)
+</PRE>
+<H2>Input Parameters</H2>
+<DL><DT><B>fh </B> <DD> file handle (handle)
+</DL>
+<DL><DT><B>offset </B> <DD> offset (nonnegative integer)
+</DL>
+<P>
+<H2>Output Parameters</H2>
+<DL><DT><B>disp </B> <DD> absolute byte position of offset (nonnegative integer)
+</DL>
+<P>
+<H2>Notes for Fortran</H2>
+All MPI routines in Fortran (except for <TT>MPI_WTIME</TT> and <TT>MPI_WTICK</TT>) have
+an additional argument <TT>ierr</TT> at the end of the argument list.  <TT>ierr
+</TT>is an integer and has the same meaning as the return value of the routine
+in C.  In Fortran, MPI routines are subroutines, and are invoked with the
+<TT>call</TT> statement.
+<P>
+All MPI objects (e.g., <TT>MPI_Datatype</TT>, <TT>MPI_Comm</TT>) are of type <TT>INTEGER
+</TT>in Fortran.
+<P><B>Location:</B>get_bytoff.c<P>
+</BODY></HTML>
