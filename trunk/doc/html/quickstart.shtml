@@ -323,7 +323,16 @@ See <a href="bluegene.html">BlueGene User and Administrator Guide</a>
 for more information.</p>
 
 <p><a href="http://www-unix.mcs.anl.gov/mpi/mpich1/"><b>MPICH1</b></a>
-relies upon the SLURM <span class="commandline">salloc</span> or 
+has several different programming models. If you are using the shared
+memory model (DEFAULT_DEVICE=ch_shmem in the mpirun script), then 
+initiated the tasks using the <span class="commandline">srun</span> command 
+with the <i>--mpi=mpich1_shmem</i> option.</p>
+<pre>
+$ srun -n16 --mpi=mpich1_shmem a.out
+</pre>
+
+<p>Other MPICH1 programming models current rely upon the SLURM 
+<span class="commandline">salloc</span> or 
 <span class="commandline">sbatch</span> command to allocate.
 In either case, specify the maximum number of tasks required for the job.
 You will then need to build a list of hosts to be used and use that 
@@ -339,6 +348,6 @@ $ sbatch -n16 mpich.sh
 sbatch: Submitted batch job 1234
 </pre>
 
-<p style="text-align:center;">Last modified 18 May 2007</p>
+<p style="text-align:center;">Last modified 21 May 2007</p>
 
 <!--#include virtual="footer.txt"-->

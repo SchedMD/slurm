@@ -3,6 +3,7 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 1.2.8
 ========================
+ -- Added mpi/mpich1_shmem plugin.
 
 * Changes in SLURM 1.2.7
 ========================

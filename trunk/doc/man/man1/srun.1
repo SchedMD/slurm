@@ -400,7 +400,6 @@ the allocated nodes. That is, process one will be allocated to the first
 node, process two to the second, and so on. This is the default behavior
 if the number of tasks is no larger than the number of nodes requested.
 .TP
-<<<<<<< .working
 .B plane
 The tasks are distributed in blocks of a specified size.
 The options include a number representing the size of the task block.
@@ -410,12 +409,8 @@ For more details (including examples and diagrams), please see
 http://www.llnl.gov/linux/slurm/mc_support.html and
 http://www.llnl.gov/linux/slurm/dist_plane.html.
 .TP
-.B hostfile
-The hostfile method of distribution will allocate processes in\-order as 
-=======
 .B arbitrary
-The arbitrary method of distribution will allocate processes in-order as 
->>>>>>> .merge-right.r11340
+The arbitrary method of distribution will allocate processes in\-order as 
 listed in file designated by the environment variable SLURM_HOSTFILE.  If
 this variable is listed it will over ride any other method specified. 
 If not set the method will default to block.
@@ -545,6 +540,10 @@ Lists avaliable mpi types to choose from.
 .B lam
 Initiates one 'lamd' process per node and establishes necessary
 environment variables for LAM/MPI.
+.TP
+.B mpich1_shmem
+Initiates one process per node and establishes necessary
+environment variables for mpich1 shared memory model.
 .TP
 .B mpichgm
 For use with Myrinet.
