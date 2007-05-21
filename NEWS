@@ -304,6 +304,8 @@ documents those changes that are of interest to users and admins.
 * Changes in SLURM 1.1.37
 =========================
  - In sched/wiki2: Add NAME to job record.
+ - Changed -w (--nodelist) option to only read in number of nodes specified
+   by -N option unless nprocs was set and in Arbitrary layout mode.
 
 * Changes in SLURM 1.1.36
 =========================
