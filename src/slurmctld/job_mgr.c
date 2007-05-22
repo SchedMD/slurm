@@ -1841,11 +1841,15 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 			error_code = ESLURM_REQUESTED_NODES_NOT_IN_PARTITION;
 			goto cleanup;
 		}
+		
 		i = bit_set_count(req_bitmap);
 		if (i > job_desc->min_nodes)
 			job_desc->min_nodes = i;
 		if (i > job_desc->num_procs)
 			job_desc->num_procs = i;
+		if(job_desc->max_nodes
+		   && job_desc->min_nodes > job_desc->max_nodes) 
+			job_desc->max_nodes = job_desc->min_nodes;
 	}
 	if (job_desc->exc_nodes) {
 		error_code = node_name2bitmap(job_desc->exc_nodes, false,
@@ -1915,7 +1919,8 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 	}
 	if (job_desc->max_nodes && 
 	    (job_desc->max_nodes < job_desc->min_nodes)) {
-		info("Job's max_nodes < min_nodes");
+		info("Job's max_nodes(%u) < min_nodes(%u)",
+		     job_desc->max_nodes, job_desc->min_nodes);
 		error_code = ESLURM_TOO_MANY_REQUESTED_NODES;
 		goto cleanup;
 	}
