@@ -234,10 +234,8 @@ static bool _valid_node_list(char **node_list_pptr)
 
 	/* If we are using Arbitrary and we specified the number of
 	   procs to use then we need exactly this many since we are
-	   saying, lay it out this way!  Other than that just read in
-	   the number the user said either max_nodes or
-	   min_nodes. Default of NO_VAL shouldn't ever really be used
-	   since min_nodes is always set here */
+	   saying, lay it out this way!  Same for max and min nodes.  
+	   Other than that just read in as many in the hostfile */
 	if(opt.distribution == SLURM_DIST_ARBITRARY) {
 		if(opt.nprocs_set) 
 			nodelist = slurm_read_hostfile(*node_list_pptr,
