@@ -413,7 +413,9 @@ http://www.llnl.gov/linux/slurm/dist_plane.html.
 The arbitrary method of distribution will allocate processes in\-order as 
 listed in file designated by the environment variable SLURM_HOSTFILE.  If
 this variable is listed it will over ride any other method specified. 
-If not set the method will default to block.
+If not set the method will default to block.  Inside the hostfile must
+contain at minimum the number of hosts requested.  If requesting tasks
+(-n) your tasks will be laid out on the nodes in the order of the file.
 .RE
 
 .TP
@@ -866,7 +868,9 @@ Request a specific list of hosts. The job will contain \fIat least\fR
 these hosts. The list may be specified as a comma\-separated list of
 hosts, a range of hosts (host[1\-5,7,...] for example), or a filename.
 The host list will be assumed to be a filename if it contains a "/"
-character.
+character. If you specify a max node count (-N1-2) if there are more
+than 2 hosts in the file only the first 2 nodes will be used in the
+request list.
 
 .TP
 \fB\-X\fR, \fB\-\-disable\-status\fR
@@ -1186,7 +1190,7 @@ Same as \fB\-X, \-\-disable\-status\fR
 Same as \fB\-m plane\fR
 .TP
 \fBSLURM_DISTRIBUTION\fR
-Same as \fB\-m, \-\-distribution\fR=(\fIblock|cyclic|hostfile\fR)
+Same as \fB\-m, \-\-distribution\fR=(\fIblock|cyclic|arbitrary\fR)
 .TP
 \fBSLURM_EPILOG\fR
 Same as \fB\-\-epilog\fR=\fIexecutable\fR
