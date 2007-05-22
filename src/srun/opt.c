@@ -1685,14 +1685,15 @@ static bool _opt_verify(void)
 
 	if(!opt.nodelist) {
 		if((opt.nodelist = xstrdup(getenv("SLURM_HOSTFILE")))) {
+			opt.distribution = SLURM_DIST_ARBITRARY;
 			if (!_valid_node_list(&opt.nodelist)) {
 				error("Failure getting NodeNames from "
 				      "hostfile");
 				exit(1);
-			} else 
+			} else {
 				debug("loaded nodes (%s) from hostfile",
 				      opt.nodelist);
-			
+			}
 		}
 	} else
 		if (!_valid_node_list(&opt.nodelist))
