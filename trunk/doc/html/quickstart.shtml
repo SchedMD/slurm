@@ -198,7 +198,7 @@ tasks. When using <span class="commandline">salloc</span> command,
 <span class="commandline">mpirun</span>'s -nolocal option is recommended. 
 For example:
 <pre>
-$ salloc -n4	# allocates four processors and spawns shell for job
+$ salloc -n4 sh    # allocates four processors and spawns shell for job
 &gt; mpirun -np 4 -nolocal a.out
 &gt; exit          # exits shell spawned by initial salloc command
 </pre>
@@ -226,7 +226,7 @@ the maximum number of tasks required for the job. Then execute the
 Do not directly execute the <span class="commandline">srun</span> command 
 to launch LAM/MPI tasks. For example: 
 <pre>
-$ salloc -n16     # allocates 16 processors and spawns shell for job
+$ salloc -n16 sh      # allocates 16 processors and spawns shell for job
 &gt; lamboot
 &gt; mpirun -np 16 foo args
 1234 foo running on adev0 (o)
@@ -348,6 +348,6 @@ $ sbatch -n16 mpich.sh
 sbatch: Submitted batch job 1234
 </pre>
 
-<p style="text-align:center;">Last modified 21 May 2007</p>
+<p style="text-align:center;">Last modified 22 May 2007</p>
 
 <!--#include virtual="footer.txt"-->
