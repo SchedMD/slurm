@@ -273,17 +273,19 @@ static bool _valid_node_list(char **node_list_pptr)
 
 	/* If we are using Arbitrary and we specified the number of
 	   procs to use then we need exactly this many since we are
-	   saying, lay it out this way!  Other than that just read in
-	   the number the user said either max_nodes or
-	   min_nodes. Default of NO_VAL shouldn't ever really be used
-	   since min_nodes is always set here */
-	if(opt.nprocs_set && opt.distribution == SLURM_DIST_ARBITRARY) 
-		nodelist = slurm_read_hostfile(*node_list_pptr, opt.nprocs);
-	else if(opt.max_nodes)
-		nodelist = slurm_read_hostfile(*node_list_pptr, opt.max_nodes);
-	else if(opt.min_nodes)
-		nodelist = slurm_read_hostfile(*node_list_pptr, opt.min_nodes);
-	else
+	   saying, lay it out this way!  Same for max and min nodes.  
+	   Other than that just read in as many in the hostfile */
+	if(opt.distribution == SLURM_DIST_ARBITRARY) {
+		if(opt.nprocs_set) 
+			nodelist = slurm_read_hostfile(*node_list_pptr,
+						       opt.nprocs);
+		else if(opt.max_nodes)
+			nodelist = slurm_read_hostfile(*node_list_pptr,
+						       opt.max_nodes);
+		else if(opt.min_nodes)
+			nodelist = slurm_read_hostfile(*node_list_pptr,
+						       opt.min_nodes);
+	 } else
 		nodelist = slurm_read_hostfile(*node_list_pptr, NO_VAL);
 		
 	if (nodelist == NULL) 
@@ -2202,6 +2204,34 @@ static bool _opt_verify(void)
 	} else
 		if (!_valid_node_list(&opt.nodelist))
 			exit(1);
+	
+	/* now if max is set make sure we have <= max_nodes in the
+	 * nodelist but only if it isn't arbitrary since the user has
+	 * laid it out how it should be so don't mess with it print an
+	 * error later if it doesn't work the way they wanted */
+	if(opt.max_nodes && opt.nodelist
+	   && opt.distribution != SLURM_DIST_ARBITRARY) {
+		hostlist_t hl = hostlist_create(opt.nodelist);
+		int count = hostlist_count(hl);
+		if(count > opt.max_nodes) {
+			int i = 0;
+			char buf[8192];
+			count -= opt.max_nodes;
+			while(i<count) {
+				char *name = hostlist_pop(hl);
+				if(name)
+					free(name);
+				else 
+					break;
+				i++;
+			}
+			hostlist_ranged_string(hl, sizeof(buf), buf);
+			xfree(opt.nodelist);
+			opt.nodelist = xstrdup(buf);
+		}
+		hostlist_destroy(hl);
+	} 
+
 
 	if (mode == MODE_ATTACH) {	/* attach to a running job */
 		if (opt.nodes_set || opt.cpus_set || opt.nprocs_set) {
