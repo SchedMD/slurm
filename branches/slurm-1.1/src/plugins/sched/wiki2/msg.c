@@ -88,7 +88,7 @@ extern int spawn_msg_thread(void)
 			_msg_thread, NULL))
 		fatal("pthread_create %m");
 
-	(void) event_notify(1234, "Slurm startup");
+	(void) event_notify(1235, "Slurm startup");
 	slurm_attr_destroy(&thread_attr_msg);
 	thread_running = true;
 	pthread_mutex_unlock(&thread_flag_mutex);
