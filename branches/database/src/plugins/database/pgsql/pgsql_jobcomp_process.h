@@ -46,6 +46,7 @@
 #include "pgsql_common.h"
 #include "pgsql_jobcomp.h"
 #include "src/common/slurm_jobacct.h"
+#include "src/common/slurm_jobcomp.h"
 
 #ifdef HAVE_PGSQL
 extern PGconn *jobcomp_pgsql_db;

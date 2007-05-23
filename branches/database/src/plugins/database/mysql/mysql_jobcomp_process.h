@@ -46,6 +46,7 @@
 #include "mysql_common.h"
 #include "mysql_jobcomp.h"
 #include "src/common/slurm_jobacct.h"
+#include "src/common/slurm_jobcomp.h"
 
 #ifdef HAVE_MYSQL
 extern MYSQL *jobcomp_mysql_db;

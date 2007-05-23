@@ -45,12 +45,11 @@
 
 #include "src/common/xstring.h"
 #include "src/common/xmalloc.h"
-#include "src/common/slurm_jobacct.h"
+#include "flatfile_jobcomp_process.h"
 /* Map field names to positions */
 
 /* slurmd uses "(uint32_t) -2" to track data for batch allocations
  * which have no logical jobsteps. */
-#define BUFFER_SIZE 1024
 
 typedef struct {
 	char *name;

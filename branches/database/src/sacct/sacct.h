@@ -58,6 +58,7 @@
 #include "src/common/list.h"
 #include "src/common/hostlist.h"
 #include "src/common/slurm_jobacct.h"
+#include "src/common/slurm_jobcomp.h"
 
 #define ERROR 2
 

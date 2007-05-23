@@ -41,7 +41,6 @@
 \*****************************************************************************/
 
 #include <stdlib.h>
-#include "src/common/slurm_jobacct.h"
 #include "src/common/xstring.h"
 #include "mysql_jobcomp_process.h"
 

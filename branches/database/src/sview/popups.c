@@ -250,9 +250,11 @@ static void _layout_ctl_conf(GtkTreeStore *treestore,
 	add_display_treestore_line(update, treestore, &iter, 
 				   "DatabaseHost", 
 				   slurm_ctl_conf_ptr->database_host);
+	snprintf(temp_str, sizeof(temp_str), "%u", 
+		 slurm_ctl_conf_ptr->database_port);
 	add_display_treestore_line(update, treestore, &iter, 
 				   "DatabasePort", 
-				   slurm_ctl_conf_ptr->database_port);
+				   temp_str);
 	add_display_treestore_line(update, treestore, &iter, 
 				   "DatabaseUser", 
 				   slurm_ctl_conf_ptr->database_user);
