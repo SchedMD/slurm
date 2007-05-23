@@ -146,29 +146,6 @@ typedef struct {
 } jobacct_job_rec_t;
 
 typedef struct {
-	uint32_t jobid;
-	char *partition;
-	char *blockid;
-	char *start_time;
-	char *end_time;
-	uint32_t uid;
-	char *uid_name;
-	uint32_t gid;
-	char *gid_name;
-	uint32_t node_cnt;
-	char *nodelist;
-	char *jobname;
-	char *state;
-	char *timelimit;
-	char *connection;
-	char *reboot;
-	char *rotate;
-	uint32_t max_procs;
-	char *geo;
-	char *bg_start_point;
-} jobcomp_job_rec_t;
-
-typedef struct {
 	jobacct_header_t   header;
 	uint32_t	stepnum;	/* job's step number */
 	char	        *nodes;
@@ -199,8 +176,6 @@ extern jobacct_job_rec_t *jobacct_init_job_rec(jobacct_header_t header);
 extern void jobacct_destroy_acct_header(void *object);
 extern void jobacct_destroy_job(void *object);
 extern void jobacct_destroy_step(void *object);
-extern void jobcomp_destroy_job(void *object);
-
 
 /* common */
 extern int jobacct_g_init_struct(jobacctinfo_t *jobacct, 

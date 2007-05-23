@@ -130,6 +130,14 @@ void slurm_print_ctl_conf ( FILE* out,
 		slurm_ctl_conf_ptr->control_addr);
 	fprintf(out, "ControlMachine    = %s\n", 
 		slurm_ctl_conf_ptr->control_machine);
+	fprintf(out, "DatabaseType      = %s\n", 
+		slurm_ctl_conf_ptr->database_type);
+	fprintf(out, "DatabaseHost      = %s\n", 
+		slurm_ctl_conf_ptr->database_host);
+	fprintf(out, "DatabasePort      = %s\n", 
+		slurm_ctl_conf_ptr->database_port);
+	fprintf(out, "DatabaseUser      = %s\n", 
+		slurm_ctl_conf_ptr->database_user);
 	fprintf(out, "Epilog            = %s\n", 
 		slurm_ctl_conf_ptr->epilog);
 	fprintf(out, "FastSchedule      = %u\n", 

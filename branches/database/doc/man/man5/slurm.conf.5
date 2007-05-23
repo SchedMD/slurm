@@ -98,6 +98,32 @@ This value must be specified.
 See  the \fBRELOCATING CONTROLLERS\fR section if you change this.
 
 .TP
+\fBDatabaseType\fR
+Define the type of database to be used for various plugins that will
+write to the database. 
+The slurmctld daemon must be restarted for a change in DatabaseType 
+to take effect. 
+Acceptable values at present include "database/flatfile",
+"database/mysql", and "database/pgsql". 
+The default value is "database/flatfile".
+.TP
+\fBDatabaseHost\fR
+Define the Host the database server is running on.
+For database/flatfile this parameter is ignored.
+.TP
+\fBDatabasePort\fR
+Define the Port of the database server to connect to.
+For database/flatfile this parameter is ignored.
+.TP
+\fBDatabasePass\fR
+Define the Password to use to connect to the database server.
+For database/flatfile this parameter is ignored.
+.TP
+\fBDatabaseUser\fR
+Define the User to use to connect to the database server.
+For database/flatfile this parameter is ignored.
+
+.TP
 \fBEpilog\fR
 Fully qualified pathname of a script to execute as user root on every 
 node when a user's job completes (e.g. "/usr/local/slurm/epilog"). This may 
@@ -173,8 +199,9 @@ The default value is "jobacct/none".
 In order to use the \fBsacct\fR tool, "jobacct/aix" or "jobacct/linux" 
 must be configured.
 .TP
-\fBJobAcctLogFile\fR
-Define the location where job accounting logs are to be written.
+\fBJobAcctLoc\fR
+Define the location where job accounting logs are to be written either
+a filename or a database name.
 For jobacct/none this parameter is ignored.
 For jobacct/linux this is the fully\-qualified file name for the data file.
 .TP
@@ -185,16 +212,20 @@ For jobacct/linux the parameter is a number is seconds between polls.
 .TP
 \fBJobCompLoc\fR
 The interpretation of this value depends upon the logging mechanism 
-specified by the \fBJobCompType\fR parameter. 
+specified by the \fBJobCompType\fR parameter either a filename or a 
+database name. 
 .TP
 \fBJobCompType\fR
 Define the job completion logging mechanism type.
 Acceptable values at present include "jobcomp/none", "jobcomp/filetxt", 
-and "jobcomp/script".
+"jobcomp/database", and "jobcomp/script".
 The default value is "jobcomp/none", which means that upon job completion 
 the record of the job is purged from the system. 
 The value "jobcomp/filetxt" indicates that a record of the job should be 
 written to a text file specified by the \fBJobCompLoc\fR parameter.
+The value "jobcomp/database" indicates that a record of the job should be 
+written to a database specified by the \fBJobCompLoc\fR parameter, the
+database type must be set up by the \fBDatabaseType\fR parameter.
 The value "jobcomp/script" indicates that a script specified by the 
 \fBJobCompLoc\fR parameter is to be executed with environment variables 
 indicating the job information.
