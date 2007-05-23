@@ -266,7 +266,8 @@ bool slurm_container_has_pid (uint32_t cont_id, pid_t pid)
 
 int slurm_container_wait (uint32_t id)
 {
-	if (_job_waitjid ((jid_t) id, NULL, 0) == (jid_t)-1)
+	int status;
+	if (_job_waitjid ((jid_t) id, &status, 0) == (jid_t)-1)
 		return SLURM_ERROR;
 
 	return SLURM_SUCCESS;
