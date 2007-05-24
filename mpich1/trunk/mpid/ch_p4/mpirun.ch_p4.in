@@ -225,12 +225,23 @@ else
     fi
     #
     # Add rsh'ery if requested
+    # Or use srun on SLURM systems
     #
     if [ "$nolocal" = 1 ] ; then
-        if [ "$stdinfile" = "/dev/null" ] ; then
-            doitall="$doitall $rshcmd -n $machinehead"
+        if [ ${SLURM_JOBID}x != x ] ; then
+            doitall="$doitall srun -N1 -w $machinehead"
+            if [ ${stdinfile}x == x ] ; then
+                doitall="$doitall --input=/dev/null"
+            else
+                doitall="$doitall --input=${stdinfile}"
+                unset stdinfile
+            fi
         else
-            doitall="$doitall $rshcmd $machinehead"
+            if [ "$stdinfile" = "/dev/null" ] ; then
+                doitall="$doitall $rshcmd -n $machinehead"
+            else
+                doitall="$doitall $rshcmd $machinehead"
+            fi
         fi
 	if [ "$move_pgfile_to_master" = "yes" ] ; then
 	    $rcpcmd $p4pgfile $machinehead:$p4pgfile_master
