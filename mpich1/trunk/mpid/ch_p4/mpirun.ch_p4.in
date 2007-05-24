@@ -228,12 +228,12 @@ else
     # Or use srun on SLURM systems
     #
     if [ "$nolocal" = 1 ] ; then
-        if [ ${SLURM_JOBID}x != x ] ; then
+        if [ -n "$SLURM_JOBID" ] ; then
             doitall="$doitall srun -N1 -w $machinehead"
-            if [ ${stdinfile}x == x ] ; then
+            if [ -z "$stdinfile" ] ; then
                 doitall="$doitall --input=/dev/null"
             else
-                doitall="$doitall --input=${stdinfile}"
+                doitall="$doitall --input=$stdinfile"
                 unset stdinfile
             fi
         else
