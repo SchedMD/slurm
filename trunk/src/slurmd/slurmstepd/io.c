@@ -72,6 +72,7 @@
 #include "src/slurmd/slurmd/slurmd.h"
 #include "src/slurmd/slurmstepd/io.h"
 #include "src/slurmd/slurmstepd/fname.h"
+#include "src/slurmd/slurmstepd/slurmstepd.h"
 
 /**********************************************************************
  * IO client socket declarations
@@ -781,17 +782,25 @@ int
 io_thread_start(slurmd_job_t *job) 
 {
 	pthread_attr_t attr;
+	int rc = 0, retries = 0;
 
 	slurm_attr_init(&attr);
 
-	if (pthread_create(&job->ioid, &attr, &_io_thr, (void *)job) != 0)
-		fatal("pthread_create: %m");
+	while (pthread_create(&job->ioid, &attr, &_io_thr, (void *)job)) {
+		error("io_thread_start: pthread_create error %m");
+		if (++retries > MAX_RETRIES) {
+			error("io_thread_start: Can't create pthread");
+			rc = -1;
+			break;
+		}
+		usleep(10);	/* sleep and again */
+	}
 	
 	slurm_attr_destroy(&attr);
 	
 	/*fatal_add_cleanup(&_fatal_cleanup, (void *) job);*/
 
-	return 0;
+	return rc;
 }
 
 
