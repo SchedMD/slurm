@@ -83,7 +83,7 @@ main (int argc, char *argv[])
 	slurmd_job_t *job;
 	int ngids;
 	gid_t *gids;
-	int rc;
+	int rc = 0;
 
 	xsignal_block(slurmstepd_blocked_signals);
 	conf = xmalloc(sizeof(*conf));
@@ -92,9 +92,10 @@ main (int argc, char *argv[])
 	conf->task_prolog = slurm_get_task_prolog();
 	conf->task_epilog = slurm_get_task_epilog();
 	init_setproctitle(argc, argv);
-	if (slurm_proctrack_init() != SLURM_SUCCESS)
+	if (slurm_proctrack_init() != SLURM_SUCCESS) {
+		error("we were unable to init proctrack");
 		return SLURM_FAILURE;
-
+	}
 	_init_from_slurmd(STDIN_FILENO, argv, &cli, &self, &msg,
 			  &ngids, &gids);
 
@@ -112,7 +113,8 @@ main (int argc, char *argv[])
 	/* sets job->msg_handle and job->msgid */
 	if (msg_thr_create(job) == SLURM_ERROR) {
 		_send_fail_to_slurmd(STDOUT_FILENO);
-		return -1;
+		rc = SLURM_FAILURE;
+		goto ending;
 	}
 
 	_send_ok_to_slurmd(STDOUT_FILENO);
@@ -128,6 +130,7 @@ main (int argc, char *argv[])
 	eio_signal_shutdown(job->msg_handle);
 	pthread_join(job->msgid, NULL);
 
+ending:
 	_step_cleanup(job, msg, rc);
 
 	xfree(cli);
@@ -138,7 +141,7 @@ main (int argc, char *argv[])
 	xfree(conf->logfile);
 	xfree(conf);
 	info("done with job");
-	return 0;
+	return rc;
 }
 
 static void

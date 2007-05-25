@@ -363,6 +363,12 @@ int srun(int ac, char **av)
 		srun_job_destroy(job, NO_VAL);
 		exit(1);
 	} else if (job->state == SRUN_JOB_FAILED) {
+		/* This check here is to check if the job failed
+		   because we (srun or slurmd or slurmstepd wasn't
+		   able to fork or make a thread or something we still
+		   need the job failed check below incase the job
+		   failed on it's own.
+		*/
 		info("Job Failed");
 		srun_job_destroy(job, NO_VAL);
 		exit(1);
