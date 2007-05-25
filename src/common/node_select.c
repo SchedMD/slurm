@@ -381,7 +381,7 @@ extern int select_g_block_init(List block_list)
  * IN/OUT data  - the data to get from node record
  */
 extern int select_g_get_extra_jobinfo (struct node_record *node_ptr, 
-                                      struct job_record *job_ptr, 
+				       struct job_record *job_ptr, 
                                        enum select_data_info cr_info,
                                        void *data)
 {

@@ -256,7 +256,7 @@ _send_slurmstepd_init(int fd, slurmd_step_type_t type, void *req,
 		      hostset_t step_hset)
 {
 	int len = 0;
-	Buf buffer;
+	Buf buffer = NULL;
 	slurm_msg_t msg;
 	uid_t uid = (uid_t)-1;
 	struct passwd *pw = NULL;
@@ -413,6 +413,8 @@ _send_slurmstepd_init(int fd, slurmd_step_type_t type, void *req,
 	return 0;
 
 rwfail:
+	if(buffer)
+		free_buf(buffer);
 	error("_send_slurmstepd_init failed");
 	return -1;
 }
@@ -486,15 +488,19 @@ _forkexec_slurmstepd(slurmd_step_type_t type, void *req,
 		return rc;
 	} else {
 		char *const argv[2] = { slurm_stepd_path, NULL};
+		int failed = 0;
 		/*
 		 * Child forks and exits
 		 */
-		if (setsid() < 0)
+		if (setsid() < 0) {
 			error("_forkexec_slurmstepd: setsid: %m");
-		if ((pid = fork()) < 0)
+			failed = 1;
+		}
+		if ((pid = fork()) < 0) {
 			error("_forkexec_slurmstepd: "
 			      "Unable to fork grandchild: %m");
-		else if (pid > 0) { /* child */
+			failed = 2;
+		} else if (pid > 0) { /* child */
 			exit(0);
 		}
 
@@ -523,9 +529,10 @@ _forkexec_slurmstepd(slurmd_step_type_t type, void *req,
 		}
 		fd_set_noclose_on_exec(STDERR_FILENO);
 		log_fini();
-		execvp(argv[0], argv);
-
-		fatal("exec of slurmstepd failed: %m");
+		if(!failed) {
+			execvp(argv[0], argv);
+			error("exec of slurmstepd failed: %m");
+		}
 		exit(2);
 	}
 }
