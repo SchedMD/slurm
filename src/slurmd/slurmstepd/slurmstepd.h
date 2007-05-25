@@ -42,6 +42,7 @@
 #include "src/common/bitstring.h"
 
 #define STEPD_MESSAGE_COMP_WAIT 15 /* seconds */
+#define MAX_RETRIES    3
 
 extern int slurmstepd_blocked_signals[];
 

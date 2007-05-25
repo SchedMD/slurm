@@ -891,13 +891,11 @@ _fork_all_tasks(slurmd_job_t *job)
 	 */
 	for (i = 0; i < job->ntasks; i++) {
 		pid_t pid;
-
 		if ((pid = fork ()) < 0) {
-			error("fork: %m");
+			error("child fork: %m");
 			goto fail2;
 		} else if (pid == 0)  { /* child */
 			int j;
-
 #ifdef HAVE_AIX
 			(void) mkcrid(0);
 #endif
@@ -1007,6 +1005,9 @@ _fork_all_tasks(slurmd_job_t *job)
 fail2:
 	_reclaim_privileges (&sprivs);
 fail1:
+	xfree(writefds);
+	xfree(readfds);
+
 	pam_finish();
 	return SLURM_ERROR;
 }
@@ -1203,7 +1204,8 @@ _kill_running_tasks(slurmd_job_t *job)
 		slurm_container_signal(job->cont_id, SIGKILL);
 
 		/* Spin until the container is successfully destroyed */
-		while (slurm_container_destroy(job->cont_id) != SLURM_SUCCESS) {
+		while (slurm_container_destroy(job->cont_id)
+		       != SLURM_SUCCESS) {
 			slurm_container_signal(job->cont_id, SIGKILL);
 			sleep(delay);
 			if (delay < 120) {
@@ -1232,12 +1234,20 @@ static void _delay_kill_thread(pthread_t thread_id, int secs)
 	pthread_t kill_id;
 	pthread_attr_t attr;
 	kill_thread_t *kt = xmalloc(sizeof(kill_thread_t));
+	int retries = 0;
 
 	kt->thread_id = thread_id;
 	kt->secs = secs;
 	slurm_attr_init(&attr);
 	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
-	pthread_create(&kill_id, &attr, &_kill_thr, (void *) kt);
+	while (pthread_create(&kill_id, &attr, &_kill_thr, (void *) kt)) {
+		error("_delay_kill_thread: pthread_create: %m");
+		if (++retries > MAX_RETRIES) {
+			error("_delay_kill_thread: Can't create pthread");
+			break;
+		}
+		usleep(10);	/* sleep and again */
+	}
 	slurm_attr_destroy(&attr);
 }
 
