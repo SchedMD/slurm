@@ -362,7 +362,11 @@ int srun(int ac, char **av)
 		info("Cancelling job");
 		srun_job_destroy(job, NO_VAL);
 		exit(1);
-	} 
+	} else if (job->state == SRUN_JOB_FAILED) {
+		info("Job Failed");
+		srun_job_destroy(job, NO_VAL);
+		exit(1);
+	}
 
 	/*
 	 *  We want to make sure we get the correct state of the job

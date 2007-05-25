@@ -331,20 +331,20 @@ static void _join_attached_threads (int nthreads, thd_t *th)
 static void _spawn_launch_thr(thd_t *th)
 {
 	pthread_attr_t attr;
-	int err = 0;
+	int retries = 0;
 
 	slurm_attr_init (&attr);
 	_set_attr_detached (&attr);
-
-	err = pthread_create(&th->thread, &attr, _p_launch_task, (void *)th);
-	slurm_attr_destroy(&attr);
-	if (err) {
-		error ("pthread_create: %s", slurm_strerror(err));
-
-		/* just run it under this thread */
-		_p_launch_task((void *) th);
+	while(pthread_create(&th->thread, &attr, _p_launch_task, (void *)th)) {
+		if (++retries > MAX_RETRIES) {
+			error ("pthread_create: %m");
+			/* just run it under this thread */
+			_p_launch_task((void *) th);
+		}
+		sleep(1);	/* sleep and try again */
 	}
-
+	slurm_attr_destroy(&attr);
+	
 	return;
 }
 
