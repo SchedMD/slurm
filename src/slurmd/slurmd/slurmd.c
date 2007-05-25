@@ -285,7 +285,8 @@ static void
 _decrement_thd_count(void)
 {
 	slurm_mutex_lock(&active_mutex);
-	active_threads--;
+	if(active_threads>0)
+		active_threads--;
 	pthread_cond_signal(&active_cond);
 	slurm_mutex_unlock(&active_mutex);
 }
@@ -327,6 +328,7 @@ _handle_connection(slurm_fd fd, slurm_addr *cli)
 	pthread_attr_t attr;
 	pthread_t      id;
 	conn_t         *arg = xmalloc(sizeof(conn_t));
+	int            retries = 0;
 
 	arg->fd       = fd;
 	arg->cli_addr = cli;
@@ -344,13 +346,20 @@ _handle_connection(slurm_fd fd, slurm_addr *cli)
 	fd_set_close_on_exec(fd);
 
 	_increment_thd_count();
-	rc = pthread_create(&id, &attr, &_service_connection, (void *) arg);
-	slurm_attr_destroy(&attr);
-	if (rc != 0) {
-		error("msg_engine: pthread_create: %s", slurm_strerror(rc));
-		_service_connection((void *) arg);
-		return;
+	while (pthread_create(&id, &attr, &_service_connection, (void *)arg)) {
+		error("msg_engine: pthread_create: %m");
+		if (++retries > 3) {
+			error("running service_connection without starting "
+			      "a new thread slurmd will be "
+			      "unresponsive until done");
+			
+			_service_connection((void *) arg);
+			info("slurmd should be responsive now");
+			break;
+		}
+		usleep(10);	/* sleep and again */
 	}
+	
 	return;
 }
 
