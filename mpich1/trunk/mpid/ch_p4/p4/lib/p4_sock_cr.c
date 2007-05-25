@@ -601,7 +601,23 @@ int net_create_slave( int serv_port, int serv_fd, char *host, char *pgm,
 		    */
 		}
 
-		rc = execlp(remote_shell, remote_shell,
+		p4_dprintf("host=%s pgm=%s myhostname=%s username=%s\n",
+			 host, pgm, myhostname, username);
+		p4_dprintf("serv_port=%s am_slave=%s rm_rank=%s\n", 
+			serv_port_c, am_slave_c, rm_rank_str);
+if (getenv("SLURM_JOBID2")) {
+   // If we sleep here and manually execute srun, it works fine
+   // If we execlp(srun,...), that fails.
+   sleep(600);
+}
+		if (getenv("SLURM_JOBID1")) {
+		    rc = execlp("srun", "srun", "-N1", "-w", host,
+			    "--input=/dev/null", pgm,
+			    myhostname, serv_port_c, am_slave_c, 
+			    "-p4yourname", host, "-p4rmrank", rm_rank_str,
+			    NULL);
+		} else {
+		    rc = execlp(remote_shell, remote_shell,
 			    host, 
 #if !defined(RSH_HAS_NO_L)
 			    "-l", username, 
@@ -614,6 +630,7 @@ int net_create_slave( int serv_port, int serv_fd, char *host, char *pgm,
 			    "-p4yourname", host, "-p4rmrank", rm_rank_str,
 #endif
 			    NULL);
+		}
 #endif /* RSH_NEEDS_OPTS */
 #endif /* Short_circuit_localhost */
 		/* host,"-n","cluster","5",pgm,myhostname,serv_port_c,0); for butterfly */
