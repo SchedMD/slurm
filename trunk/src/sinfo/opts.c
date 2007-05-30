@@ -475,7 +475,9 @@ _parse_format( char* format )
 					field_size, 
 					right_justify, 
 					suffix );
-		} else if (field[0] == 'f') {
+		}
+/*		else if (field[0] == 'E') see 'R' below */
+		else if (field[0] == 'f') {
 			params.match_flags.features_flag = true;
 			format_add_features( params.format_list, 
 					field_size, 
@@ -527,7 +529,7 @@ _parse_format( char* format )
 					field_size, 
 					right_justify, 
 					suffix );
-		} else if (field[0] == 'R') {
+		} else if ((field[0] == 'E') || (field[0] == 'R')) {
 			params.match_flags.reason_flag = true;
 			format_add_reason( params.format_list, 
 					field_size, 
