@@ -179,5 +179,17 @@ actions are taken if SLURM_JOBID is set.
 1. It gets a list of allocated nodes by running "srun hostname | sort -u"
    and uses that as a mpirun machinefile.
 2. It uses srun to launch tasks rather than rsh.
+
+To use, make a SLURM resource allocation then execute mpirun within it.
+For example:
+  $ salloc -N4 bash
+  $ mpirun -np 4 a.out
+  $ exit      # release the SLURM allocation
+Or for a batch job submission:
+  $ cat my.script
+  #!/bin/bash
+  mpirun -np 4 a.out
+  $ sbatch -N4 my.script
+
 NOTE: This code is very definitely not optimized for SLURM. We'll work on 
 that later.
