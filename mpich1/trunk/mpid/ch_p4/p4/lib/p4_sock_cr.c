@@ -601,19 +601,17 @@ int net_create_slave( int serv_port, int serv_fd, char *host, char *pgm,
 		    */
 		}
 
-		p4_dprintf("host=%s pgm=%s myhostname=%s username=%s\n",
-			 host, pgm, myhostname, username);
-		p4_dprintf("serv_port=%s am_slave=%s rm_rank=%s\n", 
-			serv_port_c, am_slave_c, rm_rank_str);
-if (getenv("SLURM_JOBID2")) {
-   // If we sleep here and manually execute srun, it works fine
-   // If we execlp(srun,...), that fails.
-   sleep(600);
-}
-		if (getenv("SLURM_JOBID1")) {
+		/*
+		p4_dprintf("srun -N1 -w %s --input=/dev/null --unbuffered %s\n",
+			host, pgm);
+		p4_dprintf("  %s %s %s -p4yourname %s -p4rmrank %s\n",
+			myhostname, serv_port_c, am_slave_c,
+			host, rm_rank_str);
+		*/
+		if (getenv("SLURM_JOBID")) {
 		    rc = execlp("srun", "srun", "-N1", "-w", host,
-			    "--input=/dev/null", pgm,
-			    myhostname, serv_port_c, am_slave_c, 
+			    "--input=/dev/null", "--unbuffered", pgm,
+			    myhostname, serv_port_c, "-p4amslave", 
 			    "-p4yourname", host, "-p4rmrank", rm_rank_str,
 			    NULL);
 		} else {
