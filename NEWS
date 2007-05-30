@@ -317,6 +317,7 @@ documents those changes that are of interest to users and admins.
  - Added some loops around pthread creates incase they fail and also fixed an
    issue in srun to fail job has failed instead of waiting around for threads
    that will never end.
+ - Added fork handlers in the slurmstepd
 
 * Changes in SLURM 1.1.36
 =========================
