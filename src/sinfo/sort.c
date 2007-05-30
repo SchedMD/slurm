@@ -1,7 +1,7 @@
 /*****************************************************************************\
  *  sort.c - sinfo sorting functions
  *****************************************************************************
- *  Copyright (C) 2002-2006 The Regents of the University of California.
+ *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Joey Ekstrom <ekstrom1@llnl.gov>, 
  *             Morris Jette <jette1@llnl.gov>, et. al.
@@ -64,6 +64,7 @@ static int _sort_by_nodes_ai(void *void1, void *void2);
 static int _sort_by_nodes(void *void1, void *void2);
 static int _sort_by_partition(void *void1, void *void2);
 static int _sort_by_reason(void *void1, void *void2);
+static int _sort_by_reason_time(void *void1, void *void2);
 static int _sort_by_root(void *void1, void *void2);
 static int _sort_by_share(void *void1, void *void2);
 static int _sort_by_state(void *void1, void *void2);
@@ -105,6 +106,8 @@ void sort_sinfo_list(List sinfo_list)
 				list_sort(sinfo_list, _sort_by_disk);
 		else if (params.sort[i] == 'D')
 				list_sort(sinfo_list, _sort_by_nodes);
+		else if (params.sort[i] == 'E')
+				list_sort(sinfo_list, _sort_by_reason_time);
 		else if (params.sort[i] == 'f')
 				list_sort(sinfo_list, _sort_by_features);
 		else if (params.sort[i] == 'F')
@@ -458,6 +461,39 @@ static int _sort_by_reason(void *void1, void *void2)
 		val1 = sinfo1->reason;
 	if (sinfo2->reason)
 		val2 = sinfo2->reason;
+	diff = strcmp(val1, val2);
+
+	if (reverse_order)
+		diff = -diff;
+	return diff;
+}
+
+/* Sort by the time associated with the reason (if any).
+ * If no time, sort by the "reason" string.
+ * "reason" is of the format "<reason[<user>@MM/DD-HH:MM_SS]" 
+ * or (ISO8601)              "<reason[<user>@YYYY-MM-DDTHH:MM:SS]"
+ * In either case a simple string compare sort order the records. */
+static int _sort_by_reason_time(void *void1, void *void2)
+{
+	int diff;
+	sinfo_data_t *sinfo1 = (sinfo_data_t *) void1;
+	sinfo_data_t *sinfo2 = (sinfo_data_t *) void2;
+	char *tmp, *val1 = "", *val2 = "";
+
+	if (sinfo1->reason) {
+		tmp = strrchr(sinfo1->reason, '@');
+		if (tmp)
+			val1 = tmp + 1;
+		else
+			val1 = sinfo1->reason;
+	}
+	if (sinfo2->reason) {
+		tmp = strrchr(sinfo2->reason, '@');
+		if (tmp)
+			val2 = tmp + 1;
+		else
+			val2 = sinfo2->reason;
+	}
 	diff = strcmp(val1, val2);
 
 	if (reverse_order)

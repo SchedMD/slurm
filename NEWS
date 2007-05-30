@@ -3,7 +3,8 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 1.2.9
 ========================
-
+ -- Add new sinfo field to sort by "%E" sorts by the time associated with a 
+    node's state (from Prashanth Tamraparni, HP).
 
 * Changes in SLURM 1.2.8
 ========================
