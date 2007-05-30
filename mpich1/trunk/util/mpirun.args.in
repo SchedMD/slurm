@@ -263,7 +263,7 @@ while [ 1 -le $# ] ; do
 	shift
 	;;
     -machinefile)
-	if [ -n $SLURM_JOBID ] ; then
+        if [ -n $SLURM_JOBID ] ; then
            echo "error: machinefile incompatible with SLURM"
            exit 1
         fi
