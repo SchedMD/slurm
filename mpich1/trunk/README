@@ -171,3 +171,13 @@ to mpi-bugs@mcs.anl.gov .  Please don't use the newsgroup comp.parallel.mpi ;
 this newsgroup is for discussions about MPI, not any particular implementation
 of MPI.
 
+
+SLURM:
+
+This patch makes use of SLURM's srun command to launch tasks. The following 
+actions are taken if SLURM_JOBID is set.
+1. It gets a list of allocated nodes by running "srun hostname | sort -u"
+   and uses that as a mpirun machinefile.
+2. It uses srun to launch tasks rather than rsh.
+NOTE: This code is very definitely not optimized for SLURM. We'll work on 
+that later.
