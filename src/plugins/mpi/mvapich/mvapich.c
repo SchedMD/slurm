@@ -766,7 +766,7 @@ static void mvapich_wait_for_abort(srun_job_t *job)
 		 *   read an error message. If this fails, msglen will
 		 *   stay zero and no message will be printed.
 		 */
-		if (ranks[1] >= 0) {
+		if (n == sizeof (ranks)) {
 			dst = ranks[0];
 			src = ranks[1];
 			fd_read_n (newfd, &msglen, sizeof (int));
