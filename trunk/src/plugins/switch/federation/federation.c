@@ -2516,7 +2516,9 @@ void
 fed_libstate_save(Buf buffer, bool free_flag)
 {
 	_lock();
-	_pack_libstate(fed_state, buffer);
+
+	if (fed_state != NULL)
+                _pack_libstate(fed_state, buffer);
 
 	/* Clean up fed_state since backup slurmctld can repeatedly 
 	 * save and restore state */
