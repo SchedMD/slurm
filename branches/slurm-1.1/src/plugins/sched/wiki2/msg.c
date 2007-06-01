@@ -122,7 +122,7 @@ extern void term_msg_thread(void)
 \*****************************************************************************/
 static void *_msg_thread(void *no_data)
 {
-	slurm_fd sock_fd, new_fd;
+	slurm_fd sock_fd = -1, new_fd;
 	slurm_addr cli_addr;
 	uint16_t sched_port;
 	char *msg;
@@ -135,7 +135,7 @@ static void *_msg_thread(void *no_data)
 	/* If SchedulerPort is already taken, keep trying to open it
 	 * once per minute. Slurmctld will continue to function
 	 * during this interval even if nothing can be scheduled. */
-	for (i=0; ; i++) {
+	for (i=0; (!thread_shutdown); i++) {
 		if (i > 0)
 			sleep(60);
 		sock_fd = slurm_init_msg_engine_port(sched_port);
@@ -165,7 +165,8 @@ static void *_msg_thread(void *no_data)
 		xfree(msg);
 		slurm_close_accepted_conn(new_fd);
 	}
-	(void) slurm_shutdown_msg_engine(sock_fd);
+	if (sock_fd > 0)
+		(void) slurm_shutdown_msg_engine(sock_fd);
 	pthread_exit((void *) 0);
 	return NULL;
 }
