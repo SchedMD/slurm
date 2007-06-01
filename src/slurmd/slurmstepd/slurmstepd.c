@@ -69,9 +69,6 @@ static void _send_fail_to_slurmd(int sock);
 static slurmd_job_t *_step_setup(slurm_addr *cli, slurm_addr *self,
 				 slurm_msg_t *msg);
 static void _step_cleanup(slurmd_job_t *job, slurm_msg_t *msg, int rc);
-static void _install_fork_handlers(void);
-
-static pthread_mutex_t fork_mutex     = PTHREAD_MUTEX_INITIALIZER;
 
 int slurmstepd_blocked_signals[] = {
 	SIGPIPE, 0
@@ -108,7 +105,6 @@ main (int argc, char *argv[])
 	job->ngids = ngids;
 	job->gids = gids;
 
-	_install_fork_handlers();
 	list_install_fork_handlers();
 	slurm_conf_install_fork_handlers();
 	/* sets job->msg_handle and job->msgid */
@@ -377,30 +373,3 @@ _step_cleanup(slurmd_job_t *job, slurm_msg_t *msg, int rc)
 	
 	xfree(msg);
 }
-
-/*
- *  Lock the fork mutex to protect fork-critical regions
- */
-static void _atfork_prepare(void)
-{
-	slurm_mutex_lock(&fork_mutex);
-}
-
-/*
- *  Unlock  fork mutex to allow fork-critical functions to continue
- */
-static void _atfork_final(void)
-{
-	slurm_mutex_unlock(&fork_mutex);
-}
-
-static void _install_fork_handlers(void) 
-{
-	int err;
-
-	err = pthread_atfork(&_atfork_prepare, &_atfork_final, &_atfork_final);
-	if (err) error ("pthread_atfork: %m");
-
-	return;
-}
-
