@@ -10,6 +10,7 @@ documents those changes that are of interest to users and admins.
    issue in srun to fail job has failed instead of waiting around for threads
    that will never end.
  - Added fork handlers in the slurmstepd
+ - In sched/wiki2: fix logic for restarting backup slurmctld.
 
 * Changes in SLURM 1.1.36
 =========================
