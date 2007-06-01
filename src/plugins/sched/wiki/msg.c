@@ -134,17 +134,27 @@ extern void term_msg_thread(void)
 \*****************************************************************************/
 static void *_msg_thread(void *no_data)
 {
-	slurm_fd sock_fd, new_fd;
+	slurm_fd sock_fd = -1, new_fd;
 	slurm_addr cli_addr;
 	char *msg;
 	slurm_ctl_conf_t *conf = slurm_conf_lock();
+	int i;
 
 	sched_port = conf->schedport;
 	slurm_conf_unlock();
-	if ((sock_fd = slurm_init_msg_engine_port(sched_port)) 
-			== SLURM_SOCKET_ERROR) {
-		fatal("wiki: slurm_init_msg_engine_port %u %m",
+
+	/* If SchedulerPort is already taken, keep trying to open it
+	 * once per minute. Slurmctld will continue to function
+	 * during this interval even if nothing can be scheduled. */
+	for (i=0; (!thread_shutdown); i++) {
+		if (i > 0)
+			sleep(60);
+		sock_fd = slurm_init_msg_engine_port(sched_port);
+		if (sock_fd != SLURM_SOCKET_ERROR)
+			break;
+		error("wiki: slurm_init_msg_engine_port %u %m",
 			sched_port);
+		error("wiki: Unable to communicate with Moab");
 	}
 
 	/* Process incoming RPCs until told to shutdown */
@@ -170,7 +180,8 @@ static void *_msg_thread(void *no_data)
 		xfree(msg);
 		slurm_close_accepted_conn(new_fd);
 	}
-	(void) slurm_shutdown_msg_engine(sock_fd);
+	if (sock_fd > 0)
+		(void) slurm_shutdown_msg_engine(sock_fd);
 	pthread_exit((void *) 0);
 	return NULL;
 }
