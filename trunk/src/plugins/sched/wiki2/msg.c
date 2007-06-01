@@ -48,6 +48,7 @@ static pthread_mutex_t thread_flag_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_t msg_thread_id;
 static char *err_msg;
 static int   err_code;
+static uint16_t sched_port;
 
 /* Global configuration parameters */
 char     auth_key[KEY_SIZE] = "";
@@ -103,17 +104,29 @@ extern void term_msg_thread(void)
 {
 	pthread_mutex_lock(&thread_flag_mutex);
 	if (thread_running) {
-		int i;
+		int fd;
+                slurm_addr addr;
+
 		thread_shutdown = true;
-		for (i=0; i<4; i++) {
-			if (pthread_cancel(msg_thread_id)) {
-				msg_thread_id = 0;
-				break;
-			}
-			usleep(1000);
-		}
-		if (msg_thread_id)
-			error("Cound not kill wiki msg pthread");
+
+                /* Open and close a connection to the wiki listening port.
+                 * Allows slurm_accept_msg_conn() to return in 
+                 * _msg_thread() so that it can check the thread_shutdown
+                 * flag.
+                 */
+                slurm_set_addr(&addr, sched_port, "localhost");
+                fd = slurm_open_stream(&addr);
+                if (fd != -1) {
+                        /* we don't care if the open failed */
+                        slurm_close_stream(fd);
+                }
+
+                debug2("waiting for sched/wiki2 thread to exit");
+                pthread_join(msg_thread_id, NULL);
+                msg_thread_id = 0;
+                thread_shutdown = false;
+                thread_running = false;
+                debug2("join of sched/wiki2 thread was successful");
 	}
 	pthread_mutex_unlock(&thread_flag_mutex);
 }
@@ -125,7 +138,6 @@ static void *_msg_thread(void *no_data)
 {
 	slurm_fd sock_fd, new_fd;
 	slurm_addr cli_addr;
-	uint16_t sched_port;
 	char *msg;
 	slurm_ctl_conf_t *conf = slurm_conf_lock();
 	int i;
@@ -155,6 +167,10 @@ static void *_msg_thread(void *no_data)
 				error("wiki: slurm_accept_msg_conn %m");
 			continue;
 		}
+                if (thread_shutdown) {
+                        close(new_fd);
+                        break;
+                }
 		/* It would be nice to create a pthread for each new 
 		 * RPC, but that leaks memory on some systems when 
 		 * done from a plugin.
