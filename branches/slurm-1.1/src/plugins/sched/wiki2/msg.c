@@ -120,12 +120,12 @@ extern void term_msg_thread(void)
 			slurm_close_stream(fd);
 		}
 
-		debug2("waiting for sched/wiki thread to exit");
+		debug2("waiting for sched/wiki2 thread to exit");
 		pthread_join(msg_thread_id, NULL);
 		msg_thread_id = 0;
 		thread_shutdown = false;
 		thread_running = false;
-		debug2("join of sched/wiki thread was successful");
+		debug2("join of sched/wiki2 thread was successful");
 	}
 	pthread_mutex_unlock(&thread_flag_mutex);
 }
