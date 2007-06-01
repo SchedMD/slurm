@@ -66,6 +66,7 @@
 #include "src/sacct/sacct_stat.h"
 
 /* common */
+extern int jobacct_init(void); /* load the plugin */
 extern int jobacct_g_init_struct(jobacctinfo_t *jobacct, 
 				 jobacct_id_t *jobacct_id);
 /* must free jobacctinfo_t if not NULL */

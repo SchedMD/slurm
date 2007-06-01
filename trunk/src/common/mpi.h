@@ -74,7 +74,19 @@ typedef struct {
  **********************************************************************/
 
 /*
- * Load the plugin and call the plugin p_mpi_hook_slurmstepd_task() function.
+ * Just load the requested plugin.  No explicit calls into the plugin
+ * once loaded (just the implicit call to the plugin's init() function).
+ *
+ * The MPI module type is passed through an environment variable
+ * SLURM_MPI_TYPE from the client.  There is no more official protocol.
+ * This function will remove SLURM_MPI_TYPE from the environment variable
+ * array "env", if it exists.
+ */
+int mpi_hook_slurmstepd_init (char ***env);
+
+/*
+ * Load the plugin (if not already loaded) and call the plugin
+ * p_mpi_hook_slurmstepd_task() function.
  *
  * This function is called from within each process that will exec() a
  * task.  The process will be running as the user of the job step at that
