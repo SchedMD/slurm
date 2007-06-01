@@ -112,7 +112,7 @@ extern void term_msg_thread(void)
 			usleep(1000);
 		}
 		if (msg_thread_id)
-			error("Cound not kill wiki msg pthread");
+			error("Could not kill wiki msg pthread");
 	}
 	pthread_mutex_unlock(&thread_flag_mutex);
 }
