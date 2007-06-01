@@ -236,9 +236,8 @@ done:
 	return retval;
 }
 
-
-int mpi_hook_slurmstepd_task (const mpi_plugin_task_info_t *job, char ***env)
-{   
+int mpi_hook_slurmstepd_init (char ***env)
+{
 	char *mpi_type = getenvp (*env, "SLURM_MPI_TYPE");
 	
 	debug("mpi type = %s", mpi_type);
@@ -247,6 +246,15 @@ int mpi_hook_slurmstepd_task (const mpi_plugin_task_info_t *job, char ***env)
 		return SLURM_ERROR;
 	
 	unsetenvp (*env, "SLURM_MPI_TYPE");
+
+	return SLURM_SUCCESS;
+}
+
+int mpi_hook_slurmstepd_task (const mpi_plugin_task_info_t *job, char ***env)
+{   
+	if (mpi_hook_slurmstepd_init(env) == SLURM_ERROR)
+		return SLURM_ERROR;
+
 	return (*(g_context->ops.slurmstepd_init))(job, env);
 }
 

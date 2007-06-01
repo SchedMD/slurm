@@ -294,6 +294,14 @@ static int _slurm_jobacct_fini(void)
 	return rc;
 }
 
+extern int jobacct_init(void)
+{
+	if (_slurm_jobacct_init() < 0)
+		return SLURM_ERROR;
+
+	return SLURM_SUCCESS;
+}
+
 extern int jobacct_g_init_struct(jobacctinfo_t *jobacct, 
 				 jobacct_id_t *jobacct_id)
 {

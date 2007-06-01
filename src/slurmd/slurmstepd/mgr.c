@@ -647,7 +647,14 @@ job_manager(slurmd_job_t *job)
 
 	debug3("Entered job_manager for %u.%u pid=%lu",
 	       job->jobid, job->stepid, (unsigned long) job->jmgr_pid);
-	if (slurm_proctrack_init() != SLURM_SUCCESS) {
+	/*
+	 * Preload plugins.
+	 */
+	if (switch_init() != SLURM_SUCCESS
+	    || slurmd_task_init() != SLURM_SUCCESS
+	    || mpi_hook_slurmstepd_init(&job->env) != SLURM_SUCCESS
+	    || slurm_proctrack_init() != SLURM_SUCCESS
+	    || jobacct_init() != SLURM_SUCCESS) {
 		rc = SLURM_FAILURE;
 		goto fail1;
 	}
