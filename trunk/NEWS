@@ -6,6 +6,9 @@ documents those changes that are of interest to users and admins.
  -- Add new sinfo field to sort by "%E" sorts by the time associated with a 
     node's state (from Prashanth Tamraparni, HP).
  -- In sched/wiki: fix logic for restarting backup slurmctld.
+ -- Preload SLURM plugins early in the slurmstepd operation to avoid
+    multiple dlopens after forking (and to avoid a glibc bug
+    that leaves dlopen locks in a bad state after a fork).
 
 * Changes in SLURM 1.2.8
 ========================
