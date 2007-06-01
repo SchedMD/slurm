@@ -1,0 +1,42 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML3.2 EN">
+<HTML>
+<HEAD>
+<META NAME="GENERATOR" CONTENT="DOCTEXT">
+<TITLE>MPI_File_read_at_all</TITLE>
+</HEAD>
+<BODY BGCOLOR="FFFFFF">
+<A NAME="MPI_File_read_at_all"><H1>MPI_File_read_at_all</H1></A>
+Collective read using explict offset 
+<H2>Synopsis</H2>
+<PRE>
+int MPI_File_read_at_all(MPI_File mpi_fh, MPI_Offset offset, void *buf,
+                         int count, MPI_Datatype datatype, 
+                         MPI_Status *status)
+</PRE>
+<H2>Input Parameters</H2>
+<DL><DT><B>fh </B> <DD> file handle (handle)
+</DL>
+<DL><DT><B>offset </B> <DD> file offset (nonnegative integer)
+</DL>
+<DL><DT><B>count </B> <DD> number of elements in buffer (nonnegative integer)
+</DL>
+<DL><DT><B>datatype </B> <DD> datatype of each buffer element (handle)
+</DL>
+<P>
+<H2>Output Parameters</H2>
+<DL><DT><B>buf </B> <DD> initial address of buffer (choice)
+</DL>
+<DL><DT><B>status </B> <DD> status object (Status)
+</DL>
+<P>
+<H2>Notes for Fortran</H2>
+All MPI routines in Fortran (except for <TT>MPI_WTIME</TT> and <TT>MPI_WTICK</TT>) have
+an additional argument <TT>ierr</TT> at the end of the argument list.  <TT>ierr
+</TT>is an integer and has the same meaning as the return value of the routine
+in C.  In Fortran, MPI routines are subroutines, and are invoked with the
+<TT>call</TT> statement.
+<P>
+All MPI objects (e.g., <TT>MPI_Datatype</TT>, <TT>MPI_Comm</TT>) are of type <TT>INTEGER
+</TT>in Fortran.
+<P><B>Location:</B>read_atall.c<P>
+</BODY></HTML>

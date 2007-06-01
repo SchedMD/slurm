@@ -1,0 +1,169 @@
+#!/bin/sh
+
+PREFIX="old_"
+
+for arg in "$@" ; do
+    case $arg in
+        -echo)
+            addarg=no
+            set -x
+            ;;
+        -show)
+            addarg=no
+            Show=echo
+            ;;
+        -prefix=)
+            addarg=no
+            PREFIX=`echo "X$arg" | sed -e 's%X-prefix=%%g'`
+            ;;
+        -help|-u|-usage|-h)
+cat <<EOF
+
+   Rename configure.in, Makefile.in's, and *.java in the provided
+   old java slog2sdk's src directory to avoid namespace collision
+   with the existing slog2sdk's src directory.
+
+Usage:
+      rename_oldsrc <old_slog2sdk_src_dir>
+
+-h|-help         - Display this message.
+-echo            - Do set -x.
+-show            - Print out the commands to be executed, no actual action.
+-prefix          - Set new prefix, default is "old_"
+EOF
+            exit 1
+            ;;
+        # -----------------------------------------------------------------
+        # Other arguments.  We are careful to handle arguments with
+        # quotes (we try to quote all arguments in case they include
+        # any spaces)
+        *\"*)
+            addarg=yes
+            qarg="'"$arg"'"
+            ;;
+        *\'*)
+            addarg=yes
+            qarg='\"'"$arg"'\"'
+            ;;
+        *)
+            addarg=yes
+            qarg=$arg
+            ;;
+    esac
+    if [ $addarg = yes ] ; then
+        allargs="$allargs $qarg"
+    fi
+done
+
+# Removing the leading blank spaces.
+OLD_SRC_DIR=`echo $allargs | sed -e 's%^[ ]*%%g'`
+
+
+# Assume srcbuild_dir is created already, named like ${PREFIX}src in build_dir.
+# Configure will be run from srcbuild_dir.
+
+#   XXX is one of the elements of the set {base, logformat, viewer}
+
+#   XXX -> ${PREFIX}XXX
+#   libbuild_dir=.../lib -> libbuild_dir=.../${PREFIX}lib
+#    -e "s%^libbuild_dir=\(.*\)lib%libbuild_dir=\1${PREFIX}lib%g" \
+FixConfigureIn()
+{
+    sed \
+    -e "s%base%${PREFIX}base%g" \
+    -e "s%logformat%${PREFIX}logformat%g" \
+    -e "s%viewer%${PREFIX}viewer%g" \
+    -e "s%images%${PREFIX}images%g" \
+    $1 > $2
+}
+
+#   " XXX."    -> " ${PREFIX}XXX."  to avoid HTMLviewer.java
+#   "XXX/"     -> "${PREFIX}XXX/"
+#   "images/"  -> "${PREFIX}images/"
+#   "XXX.jar"  -> "${PREFIX}XXX.jar"
+FixMakefileIn()
+{
+    sed \
+    -e "s% base\.% ${PREFIX}base\.%g" \
+    -e "s% logformat\.% ${PREFIX}logformat\.%g" \
+    -e "s% viewer\.% ${PREFIX}viewer\.%g" \
+    -e "s%base/%${PREFIX}base/%g" \
+    -e "s%logformat/%${PREFIX}logformat/%g" \
+    -e "s%viewer/%${PREFIX}viewer/%g" \
+    -e "s%images/%${PREFIX}images/%g" \
+    -e "s%\(.*\)/\([^/]*\)\.jar%\1\/${PREFIX}\2\.jar%g" \
+    $1 > $2
+}
+
+#   " XXX.[a-z]"   -> " ${PREFIX}XXX.[a-z]" to avoid HTMLviewer and "...viewer."
+#   "images/"      -> "${PREFIX}images/"
+FixJavaFile() {
+    sed \
+    -e "s% base\.\([a-z]\)% ${PREFIX}base\.\1%g" \
+    -e "s% logformat\.\([a-z]\)% ${PREFIX}logformat\.\1%g" \
+    -e "s% viewer\.\([a-z]\)% ${PREFIX}viewer\.\1%g" \
+    -e "s%images/%${PREFIX}images/%g" \
+    $1 > $2
+}
+
+# The parent directory of where this script is located
+saved_wd=`pwd`
+cd `dirname $0`/.. && master_dir=`pwd`
+cd $saved_wd
+
+# change to the working directory
+if cd $master_dir/$OLD_SRC_DIR ; then
+    echo "Changed to working directory $master_dir/$OLD_SRC_DIR"
+else
+    echo "Fail to change to $master_dir/$OLD_SRC_DIR, exiting...."
+    exit 1
+fi
+
+# Fixup configure.in
+file="configure.in"
+echo "Fixing $file ...."
+$Show mv ${file} ${file}~
+$Show FixConfigureIn ${file}~ ${file} 
+$Show diff ${file}~ ${file}
+echo
+
+# Fixup ./Makefile.in
+file="Makefile.in"
+echo "Fixing $file ...."
+$Show mv ${file} ${file}~
+$Show FixMakefileIn ${file}~ ${file}
+$Show diff ${file}~ ${file}
+echo
+
+
+# Rename images/ directory
+dir=images
+echo "Renaming $dir to ${PREFIX}$dir"
+$Show mv $dir ${PREFIX}$dir
+echo
+
+for dir in base logformat viewer ; do
+
+    echo "Renaming $dir to ${PREFIX}$dir"
+    $Show mv $dir ${PREFIX}$dir
+    echo
+
+    makefiles=`find ${PREFIX}$dir -name Makefile.in`
+    for file in $makefiles ; do
+        echo "Fixing $file ...."
+        $Show mv ${file} ${file}~
+        $Show FixMakefileIn ${file}~ ${file}
+        $Show diff ${file}~ ${file}
+        echo
+    done
+
+    javafiles=`find ${PREFIX}$dir -name \*.java`
+    for file in $javafiles ; do
+        echo "Fixing $file ...."
+        $Show mv ${file} ${file}~
+        $Show FixJavaFile ${file}~ ${file}
+        $Show diff ${file}~ ${file}
+        echo
+    done
+
+done

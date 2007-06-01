@@ -1,0 +1,15 @@
+
+cd /home/chan/slog2/slog2sdk
+mkdir src_205
+
+cp -a /home/chan/slog2/slog2sdk-032705/src/* /home/chan/slog2/slog2sdk/src_205
+maint/rename_oldsrc src_205
+maint/updatefiles
+
+cd /home/chan/slog2/build
+/home/chan/slog2/slog2sdk/configure --with-oldsource=src_205 \
+                                    --with-java=/pkgs/lang/java/j2sdk1.4.2
+make
+
+cd src/logformat/slog2/update
+make   /* to create slog2updateXXXtoYYY.jar */
