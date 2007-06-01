@@ -1,0 +1,114 @@
+#! /bin/sh
+# set -x
+#
+#  Returns the arch of the machine. This file is from MPICH.
+#
+# First, try some special cases:
+if [ -d "/dev/elan" ] ; then
+  FARCH="meiko"
+elif [ -f /usr/bin/uxpm ] && /usr/bin/uxpm ; then
+  FARCH="UXPM"
+elif [ -f /usr/bin/uxpv ] && /usr/bin/uxpv ; then
+  FARCH="uxpv"
+fi
+if [ -n "$FARCH" ] ; then
+    echo $FARCH
+    exit 0
+fi
+#
+# Try to find uname
+for dir in /bin /usr/bin /usr/local/bin ; do
+    if [ -x $dir/uname ] ; then
+	UNAME="$dir/uname"
+        break
+    fi
+done
+#
+# Get uname -s, uname -m, and arch values
+#
+if [ -n "$UNAME" ] ; then
+    ARCHLIST="`uname -s`"
+    ARCHLIST="$ARCHLIST `uname -m`"
+fi
+#
+# Get ARCH variable name
+if [ -n "$ARCH" ] ; then
+    ARCHLIST="$ARCHLIST $ARCH"
+fi
+#
+# Get arch command
+if [ -x /bin/arch ] ; then
+    ARCHLIST="$ARCHLIST `/bin/arch`"
+elif [ -x /usr/local/bin/arch ] ; then
+    ARCHLIST="$ARCHLIST `/usr/local/bin/arch`"
+fi
+#
+# GARCH is a guess if we don't find something better
+GARCH=
+# Now, weed through all of these values until we find something useful.
+for LARCH in $ARCHLIST ; do
+   # Remove blanks
+   LARCH=`echo $LARCH | sed 's/ //g'`
+   # Get the first 4 characters (you'd be surprised)
+   #   LARCH4=`expr "$LARCH" : "\(....\)"`
+   #   LARCH6=`expr "$LARCH" : "\(......\)"`
+   case $LARCH in
+        SUPER-UX) FARCH=SX4; break ;;
+	AIX|RIOS) FARCH=rs6000; break ;;
+	HP-UX) 
+ 	if [ -a /dev/kmem ] ; then
+ 	    FARCH=hpux ;
+ 	else
+ 	    FARCH=sppux ;
+ 	fi
+        break ;;
+	IRIX64|IRIX) FARCH=$LARCH ; break ;;
+	Linux)  FARCH=LINUX ; break ;;
+	i586|i486|i86pc)
+	    GARCH=$LARCH ;;
+	sun4*)
+	Version=`$UNAME -r`
+        # In "improving" SunOS, the useful feature of "substr" was withdrawn 
+        # from expr.  Can't let the users have life too easy, can we?  This 
+        # means that we can't just use 
+        #   set MajorVersion = `expr substr $Version 1 1`
+        # because it won't work on Solaris systems.  The following should work
+        # on both:
+        MajorVersion=`expr "$Version" : "\(.\)"`
+        if [ "$MajorVersion" -ge 5 ] ; then
+            FARCH=solaris
+	else
+	    FARCH=sun4
+	fi
+	break ;;
+	hp9000*|hp7000*)
+ 	if [ -a /dev/kmem ] ; then
+ 	    FARCH=hpux ;
+ 	else
+ 	    FARCH=sppux ;
+ 	fi
+ 	break ;;
+	mips|dec-5000)   FARCH=dec5000 ; break ;;
+        IP12|iris-4d)    GARCH=IRIX ;;
+        cray|CRAY*)      GARCH=CRAY ;;
+        next)            FARCH=NeXT ; break ;;	
+	KSR1|KSR2)       FARCH=ksr ; break ;;	
+        FreeBSD)         FARCH=freebsd ; break ;;
+        OpenBSD)         FARCH=openbsd ; break ;;
+        NetBSD)          FARCH=netbsd ; break ;;
+	i386)            GARCH=ipsc2 ;;
+	ULTRIX|RISC)     GARCH=dec5000 ;;
+   esac
+   LLARCH=$LARCH
+done
+if [ -z "$FARCH" ] ; then
+    FARCH=$GARCH
+    if [ -z "$FARCH" ] ; then
+	FARCH=$LLARCH
+    fi
+    if [ -z "$FARCH" ] ; then
+	FARCH=unknown
+    fi
+fi
+echo $FARCH
+exit 0

@@ -1,0 +1,225 @@
+#! /bin/sh
+#
+# Run some of the tests.  If any arguments are provided, pass them to the
+# test programs.
+#
+# -mvhome is needed for the ANL SP, and is ignored by others
+args=@MPIRUNARGS@
+device=@DEVICE@
+top_srcdir=@top_srcdir@
+srcdir=@srcdir@
+MPICH_VERSION=@MPICH_VERSION@
+STOPFILE=${MPITEST_STOPTEST:-"$HOME/.stopmpichtests"}
+mpirun=${MPIRUN:-"@MPIRUN@"}
+MAKE="@MAKE@"
+#
+# Load basic procedures
+. ${top_srcdir}/runbase
+#
+# Set mpirun to the name/path of the mpirun program
+FindMPIRUN
+#
+quiet=0
+runtests=1
+makeeach=0
+writesummaryfile=no
+MAKE="@MAKE@"
+for arg in "$@" ; do
+    case $arg in 
+	-checkonly )
+	runtests=0
+	;;
+        -margs=*)
+	margs=`echo $arg | sed 's/-margs=//'`
+	args="$args $margs"
+	;;
+	-summaryfile=*)
+	writesummaryfile=yes
+	summaryfile=`echo A$arg | sed 's/A-summaryfile=//'`
+	;;
+	-small)
+	makeeach=1
+	shift
+	;;
+	-quiet)
+	shift
+	quiet=1
+	;;
+	-help|-u)
+	echo "runtests [-checkonly] [-margs='...']"
+	echo "run tests in this directory.  If -checkonly set, just run"
+	echo "the differences check (do NO rerun the test programs)."
+	echo "If -margs is used, these options are passed to mpirun."
+	echo "If -small is used, the examples are built, run, and deleted."
+	exit 1
+	;;
+	*)
+	if test -n "$arg" ; then
+   	    echo "runtests: Unknown argument ($arg)"
+	    exit 1
+        fi
+	;;
+    esac
+done
+
+# If the programs are not available, run make.
+if [ ! -x timers -a $makeeach = 0 -a $runtests = 1 ] ; then
+    $MAKE default
+fi
+#
+testfiles=""
+if [ $runtests = 1 ] ; then
+
+RunTest timers 1 "*** Timer tests ***"
+
+RunTest init 2 "*** MPI_Initialized tests ***"
+
+RunTest baseattr 1 "*** Basic attributes ***"
+
+RunTest gtime 1 "*** WTIME_IS_GLOBAL ***"
+
+RunTest errhand 1 "*** Tests of error handling ***"
+
+RunTest errhand2 1 "*** Tests of error handling reference counting ***"
+
+# Do not run sigchk by default because it generates warnings that are not
+# errors, and the basic test should be clean
+if [ "$MPICH_TESTS_SIGCHK" = yes ] ; then
+    RunTest sigchk 1 "*** Tests of signals used ***"
+fi
+
+RunTest getproc 1 "*** Test Get Processor Name ***"
+
+OutTime
+testfiles="$testfiles cmdline.out"
+rm -f cmdline.out
+MakeExe cmdline
+echo "*** Tests of command line handling ***"
+echo "*** Tests of command line handling ***" >> cmdline.out
+$mpirun $args -np 2 ./cmdline a "b c" "d'e" 'f"g" h' $* </dev/null l>> cmdline.out 2>&1
+echo "*** Tests of command line handling ***" >> cmdline.out
+CleanExe cmdline
+if [ ! -s cmdline.stdo ] ; then
+    cat >cmdline.stdo <<EOF
+*** Tests of command line handling ***
+ No Errors
+*** Tests of command line handling ***
+EOF
+fi
+
+#
+# If there was a Unix standard interface to ps, we could check for orphaned
+# processes...
+if ps -fwu $LOGNAME > /dev/null 2>&1 ; then
+   # This is a better choice than ps aux because it restricts the list of 
+   # processes to those of the running user.  The w is needed on some
+   # systems to get a long output for the command
+   PSPGM="ps -fwu $LOGNAME"
+elif ps -fu $LOGNAME > /dev/null 2>&1 ; then
+   # This is a better choice than ps aux because it restricts the list of 
+   # processes to those of the running user.
+   PSPGM="ps -fu $LOGNAME"
+else
+   PSPGM="ps auxww"
+fi
+OutTime
+testfiles="$testfiles aborttest.out"
+rm -f aborttest.out aborttest.p1 aborttest.p2 aborttest.out2
+MakeExe aborttest
+echo "*** Tests of MPI_Abort ***"
+echo "*** Tests of MPI_Abort ***" >> aborttest.out
+# We also remove lines that look like build lines in case this system
+# is being used for other tests.  This is incomplete, but
+# it may help reduce false positives
+$PSPGM | grep $LOGNAME | grep -v grep | grep -v runtests | \
+    grep -v 'make ' | grep -v ' /ld' | grep -v 'gcc' | \
+    grep -v 'collect2' > aborttest.p1
+# Send the output of aborttest to a file in case there is a problem
+$mpirun $args -np 2 ./aborttest $* < /dev/null >> aborttest.out2 2>&1
+# allow some time for processes to exit
+sleep 5
+$PSPGM | grep $LOGNAME | grep -v grep | grep -v runtests | \
+    grep -v 'make ' | grep -v ' /ld' | grep -v 'gcc' | \
+    grep -v 'collect2' > aborttest.p2
+# If there was a consistant format, we could process it ...
+ndiff="`cat aborttest.p1 | wc -l` - `cat aborttest.p2 | wc -l`"
+ndiff=`expr $ndiff`
+if test "$ndiff" = 0 ; then
+    echo "All processes aborted" >> aborttest.out    
+else
+    echo "Suspicious processes remain" >> aborttest.out
+    #echo "Processes before" >> aborttest.out
+    #cat aborttest.p1 >> aborttest.out
+    #echo "Processes after" >> aborttest.out
+    #cat aborttest.p2 >> aborttest.out
+    echo "Differences are" >> aborttest.out
+    diff -b aborttest.p1 aborttest.p2 >> aborttest.out
+    if [ -s aborttest.out2 ] ; then
+        echo "Output from mpirun was"
+        cat aborttest.out2 >> aborttest.out
+    fi
+    # Try to kill them
+    $PSPGM | grep $LOGNAME | grep aborttest | awk '{ print "kill ", $2 }' | sh
+fi
+echo "*** Tests of MPI_Abort ***" >> aborttest.out
+rm -f aborttest.p1 aborttest.p2 aborttest.out2
+
+OutTime
+rm -f aborttest.p1 aborttest.p2 aborttest.out2
+echo "*** Tests of MPI_Abort (alt) ***"
+echo "*** Tests of MPI_Abort (alt) ***" >> aborttest.out
+$PSPGM | grep $LOGNAME | grep -v grep | grep -v runtests | \
+    grep -v 'make ' | grep -v ' /ld' | grep -v 'gcc' | \
+    grep -v 'collect2' > aborttest.p1
+$mpirun $args -np 2 ./aborttest -altmaster $* >aborttest.out2 2>&1
+sleep 5
+$PSPGM | grep $LOGNAME | grep -v grep | grep -v runtests | \
+    grep -v 'make ' | grep -v ' /ld' | grep -v 'gcc' | \
+    grep -v 'collect2' > aborttest.p2
+ndiff="`cat aborttest.p1 | wc -l` - `cat aborttest.p2 | wc -l`"
+ndiff=`expr $ndiff`
+if test "$ndiff" = 0 ; then
+    echo "All processes aborted" >> aborttest.out    
+else
+    echo "Suspicious processes remain" >> aborttest.out
+    #echo "Processes before" >> aborttest.out
+    #cat aborttest.p1 >> aborttest.out
+    #echo "Processes after" >> aborttest.out
+    #cat aborttest.p2 >> aborttest.out
+    echo "Differences are" >> aborttest.out
+    diff -b aborttest.p1 aborttest.p2 >> aborttest.out
+    if [ -s aborttest.out2 ] ; then
+        echo "Output from mpirun was"
+        cat aborttest.out2 >> aborttest.out
+    fi
+    # Try to kill them
+    $PSPGM | grep $LOGNAME | grep aborttest | awk '{ print "kill ", $2 }' | sh
+fi
+echo "*** Tests of MPI_Abort (alt) ***" >> aborttest.out
+rm -f aborttest.p1 aborttest.p2 aborttest.out2
+CleanExe aborttest
+
+#
+# Run Fortran tests ONLY if Fortran available
+if [ @HAS_FORTRAN@ = 1 ] ; then 
+
+    RunTest errstringsf 1 "*** Tests of Fortran error strings ***"
+
+    RunTest getprocf 1 "*** Test MPI_Get_processor_name in Fortran ***"
+
+    RunTest errhandf 1 "*** Tests of error handling in Fortran ***"
+fi
+
+else
+    # Just run checks
+    testfiles=*.out
+    if test "$testfiles" eq "*.out" ; then
+	echo "No output files remain from previous test!"
+	exit 1
+    fi
+fi
+
+#
+echo '*** Checking for differences from expected output ***'
+CheckAllOutput env.diff
+exit 0

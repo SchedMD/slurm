@@ -1,0 +1,36 @@
+#!/bin/sh
+
+JVM=@JVM@
+JVMFLAGS=@JVMFLAGS@
+
+# Set PATH to the shared library of the TRACE-API implementation
+TRACE_LIBDIR=@libbuild_dir@
+
+# Set PATH to the jar needed by the program
+GUI_LIBDIR=@gui_libbuild_dir@
+GUI_HOME=${GUI_LIBDIR}/..
+MAIN_LIB=${GUI_LIBDIR}/traceTOslog2.jar
+
+
+if [ -z "${GUI_LIBDIR}" -o "${GUI_LIBDIR}" = "/lib" ]; then
+    echo "GUI_LIBDIR is NOT set!"
+    exit 1
+else
+    echo "GUI_LIBDIR is set. GUI_LIBDIR = "${GUI_LIBDIR}
+fi
+
+if [ -z "${TRACE_LIBDIR}" -o "${TRACE_LIBDIR}" = "/lib" ]; then
+    echo "TRACE_LIBDIR is NOT set!"
+    exit 1
+else
+    echo "TRACE_LIBDIR is set. TRACE_LIBDIR = "${TRACE_LIBDIR}
+fi
+
+if [ -z "`echo $JVMFLAGS | grep '\-Xms'`" ] ; then
+    JVMFLAGS="-Xms32m $JVMFLAGS"
+fi
+if [ -z "`echo $JVMFLAGS | grep '\-Xmx'`" ] ; then
+    JVMFLAGS="-Xmx64m $JVMFLAGS"
+fi
+
+${JVM} -Djava.library.path=@JPATH_START@${TRACE_LIBDIR}@JPATH_FINAL@ ${JVMFLAGS} -jar @JPATH_START@${MAIN_LIB}@JPATH_FINAL@ "$@"

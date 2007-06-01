@@ -1,0 +1,64 @@
+
+Here is a brief account on what I did with the mastermind program.
+
+ 1. I speeded up the search. When a guess is found to be inconsistent with
+    the board, an attempt is made to identify the leftmost column which
+    needs changing. Consequently the search continues with this column
+    incremented (and all subsequent columns set to 0s). This seems to be
+    resulting in a significant improvement in speed, which means that
+    simpler configurations run in a blink of eye :-(, and only the ones
+    with 10 colours and 8 or 9 columns take an observable time.
+
+ 2. I've slightly changed the communication scheme. Slaves now poll for
+    NEW_INFO messages (this now makes sense, as more info may speed up
+    their search). When they submit a guess, they still wait for an answer
+    (ACCEPTED, NEW_INFO (which means their guess was rejected), EXIT or WON
+    (which is just a variant of EXIT, to enable the worker to display the
+    last successful guess)).
+
+
+ 3. I've improved the graphics. The screen now looks like the following:
+
+	<secret code>         ||        <color scale>
+    ==========================||=======================
+     W  <guess_1>  <score_1>  || W  <search_state_1>
+			      ||  
+	 ....                 ||  .........
+			      ||  
+			      ||  
+			      || W  <search_state_n>
+			      ||  
+			      ||  
+
+    On the left hand side you see the secret code and the board as
+    mainained by the master. W denotes the color-coded indication of which
+    worker (slave) submitted the given guess. The top right part contains a
+    <color scale> showing all the colors in search order.
+
+    The rest of the right hand side displays the state of the slaves 1...n.
+    <search_state_i> shows the current guess being processed by the ith
+    slave.  Below that you see a black line showing the progress of the
+    slave in its portion of the search space (the full width of the guess
+    is equal to the full search space of the slave). You may see short
+    lines perpendicular to this line: the black ones downwards show points
+    in the search space when the worker submitted a guess which wasn't
+    accepted. The double height lines upwards (of the worker's own colour)
+    show points when the worker submitted a guess which was
+    accepted. Shorter coloured lines upwards show points when guesses
+    accepted from other workers were brought to this slave's attention,
+    their color shows from whom these guesses originated.
+
+I enclose the new version below. Have a look at it if you have some time
+and please let me know your comments.
+
+I hope to be able to do some further work on this in:
+
+	- overcoming the limitation that columns**colors < 2**31
+	- performance analysis
+	- improving the communication model
+
+Best regards,
+
+Peter
+
+

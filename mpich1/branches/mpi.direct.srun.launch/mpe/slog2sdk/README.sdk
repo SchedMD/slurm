@@ -1,0 +1,246 @@
+/*
+ *  (C) 2001 by Argonne National Laboratory
+ *      See COPYRIGHT in top-level directory.
+ */
+
+/*
+ *  @author  Anthony Chan
+ */
+
+
+This package provides both the Runtime and the Software Development
+environment for SLOG-2.  The runtime environment includes a visualization
+tool for slog2 file, i.e. Jumpshot-4, and some utility programs like
+slog2print, slog2navigator, and logformat converter like clogTOslog2 
+or some other trace format to slog2 converter.  The development environment
+consists of a Java implementation of SLOG-2 Input/Output APIs, a Java 
+implementation of TRACE-API for CLOG, a reference C implementation of 
+TRACE-API and the JNI interface of TRACE-API and its Java counterparts.
+The development environment is mainly designed for TRACE-API implementors.
+
+For typical end users of SLOG-2, the runtime environment is what you
+are looking for.   The runtime includes the following utility programs
+which are located in the bin/ directory after the package is configured
+and installed.  The programs are 
+
+jumpshot:        A visualization tool for SLOG-2 file.
+logconvertor     A GUI front end for all the logfile convertor.
+slog2filter      A SLOG-2 formating and filtering program.
+slog2updater     A SLOG-2 format update program.
+slog2print:      A SLOG-2 serial printing program, i.e. scalable.
+slog2navigator:  Another SLOG-2 printing program with navigation feature.
+                 aka. baby jumpshot.
+
+clogprint:       A CLOG printing program.
+clogTOslog2:     A CLOG to SLOG-2 converter.
+
+traceprint:      A custom TRACE printing program.
+traceTOslog2:    A custom TRACE to SLOG-2 converter, this is created only
+                 if configure option --with-trace-libdir is used.
+
+Each of the programs has a "-h" option to show its usage.
+
+The Development environment includes the RunTime environment and the
+extra directories: src/, trace_sample/ and possibly other trace_xxx/.
+The doc/ directory contains both the documentation for the runtime and
+development environment.  The Development environment is Unix based
+but can be used under Windows's cygwin environment.
+
+For MS Windows user: As long as a Java2 runtime environment is installed,
+                     Jumpshot can be launched with better JVM option by
+                     clicking jumpshot_launcher.jar.
+
+
+
+To TRACE-API implementor:
+-------------------------
+The most helpful directory could be trace_sample/ which contains a 
+reference implementation of TRACE-API written in C.  The custom 
+TRACE-API implementation converts ASCII definition of drawables
+(let's call it textlog) and passes those information through TRACE-API.
+There are 4 programs generated from this package. They are:
+
+textlog_print(.exe):           C version of textlog print program
+textlogprint:                  Java version of textlog print and time order
+                               checking program( with -tc option ).
+textlog_check_timeorder(.exe): C version of textlog time order checking
+                               program.
+textlogTOslog2:                textlog to SLOG-2 convertor
+
+As shown, the subpackage contains two version of TRACE printing
+programs.  One is written in C and the other is written in Java.
+They are trace_print.c and Print.java.  Both of them are in 
+src/logformat/trace.  Each program prints out the content of the trace
+file specified in the command line when the program is invoked.  The C
+version of TRACE printing program aims to help TRACE-API implementor
+to debug their TRACE-API implementation.  The Java print program invokes
+the Java interface of TRACE-API, i.e. JNI, and then calls the actual C
+implementation of TRACE-API through the JNI code in 
+src/logformat/trace/logformat_trace_InputLog.c.  So failure of using
+the Java printing program indicates incompatibility between the 
+implementation and the JNI code provided here.  Also the Java version
+of printing program has a command line option, -tc, which turns on the
+endtime-order checking code.  Since the order of the drawables is passed
+to TRACE-API is cruical in visualization accuracy of the slog2 file, the
+time order checking code further makes sure that the TRACE-API 
+implementation is being done correctly.  There is no similar option in C
+version of TRACE printing program.  Instead the functionality is provided
+through another C program, trace_check_timeorder.c.
+
+In order to avoid duplication of source and ease of maintainence
+and support, trace_sample is arranged in a way that only the TRACE-API
+implementation code is located in trace_sample/src.  All the files
+that are needed to build a TRACE-API shared library( needed by Java )
+and utility programs remain in src/logformat/trace.  The Makefile
+uses make's VPATH feature to achieve its goal.  These files are
+trace_API.h, logformat_trace_InputLog.c, trace_print.c and
+trace_check_timeorder.c.  In general, developer of TRACE-API only
+needs to modify variable IMPL_CSRC in trace_sample/src/Makefile.in.
+IMPL_CSRC defines the C programs needed to build a TRACE-API implementation.
+If you are interested to modify the name of the utility program like
+traceprint and traceTOslog2 to something more meaningful, you need
+to change TRACE_NAME define configure.in.  The TRACE_NAME replaces
+the prefix "trace" in traceprint and traceTOslog2.  Remember to run
+autoconf afterward.  If you need to add extra system header files to
+be checked by autoconf, e.g. through AC_CHECK_HEAEDERS, you need to
+run autoheader before running autoconf.  Since the configure uses 
+libtool to generate shared library, using the suggested infrastructure 
+should increases portability(as well as ease of support from the author)
+of your TRACE-API implementation.
+
+traceprint.jar and traceTOslog2.jar require libTraceInput.so(for Unix)
+or TraceInput.dll(for Windows) to run.  The name of the shared library,
+TraceInput, has been hardwired into the jar files.  That means the shared
+library has to be named "TraceInput".  For more details, see
+trace_sample/src/Makefile.in(or Makefile).  Essentially, libTraceInput.so
+or TraceInput.dll is created by linking
+src/logformat/trace/logformat_trace_InputLog.o with the object files of the
+TRACE-API implementation.
+
+
+Recommended Directory structure for custom TRACE-API implementation:
+--------------------------------------------------------------------
+It is recommended for all TRACE-API implementors to create a separate 
+directory to develop their TRACE-API implementation, i.e. don't write
+any code in any SLOG-2 and Jumpshot directories, i.e. src/.  The suggested
+directory structure is to create new directory, say trace_myformat/, at
+the same level at the top level directory, i.e. at the same level as
+as this README.  Under trace_myformat/, there should be subdirectories like 
+src/, include/, bin/, lib/, logfiles/.  A reference Makefile, which is 
+located trace_sample/src, serves as a template to interact with the JNI 
+code provided in src/logformat/trace.  As usual, all source files, .c
+and .h, go to src/, or .h files go to include/, all executables built 
+go to bin/, all libraries go to lib/.  Any logfiles created should be 
+stored in logfiles/.   After the code is fully debugged, and you don't
+need any support from the author, you can move your custom TRACE-API code 
+anywhere you want.
+
+
+Directory structure of the Java code:
+-------------------------------------
+Main Java source directories are (all of them are under src/):
+logformat/clog, logformat/clogTOdrawable, logformat/trace, logformat/slog2
+and base/drawable and viewer/timelines.
+
+logformat/clog:           this directory contains a CLOG parser.
+logformat/clogTOdrawable: this directory contains a CLOG to Drawable converter.
+
+logformat/trace: this directory contains Java Native Interface to TRACE-API,
+                  i.e. all the required Java and C code to interface between
+                  C implementation of TRACE-API and the Java SLOG-2 code.
+
+logformat/slog2: this directory contains both the Input and Output API for 
+                 SLOG-2.  Both ClogToSlog2 and TraceToSlog2 converter are 
+                 defined here.  It also defines a SLOG-2 navigator and 
+                 print programs.
+
+base/drawable: this directory contains all the definitions of drawable 
+               related classes.  The Java interface of TRACE-API is 
+               defined here and is in file src/base/drawable/InputAPI.java
+
+viewer/*: this directories are the bulk of the new Jumpshot for SLOG-2.
+
+
+The next important directory is probably the top level lib/ directory
+where all the executable jar files are located.  The utility programs
+mentioned above has its bytecode archived by the following jar file
+of the same name.  They are
+
+slog2filter.jar: executable jar file that filters or modifies the content
+                 of the slog2 file, e.g. removal of undesirable categories
+                 and their drawables.
+
+slog2updater.jar: executable jar file that updates the file with older slog2 
+                  format to the latest slog2 format.
+
+slog2print.jar: executable jar file prints the slog2 file
+                usage: java -jar slog2print.jar slog2filename
+
+slog2navigator.jar: executable jar file that navigates in the slog2 file
+                    usage: java -jar slog2navigator slog2filename
+ 
+traceprint.jar: executable jar file prints the trace file
+                usage: java -Djava.library.path=<location_to_libTraceInput.so>
+                       -jar traceprint.jar tracefilename
+
+traceTOslog2.jar: executable jar file converts trace to slog2 file
+                  usage: java -Djava.library.path=<location_to_libTraceInput.so>
+                         -jar traceTOslog2.jar tracefilename
+
+clogprint.jar: executable jar file prints the clog file
+               usage: java -jar traceprint.jar clogfilename
+
+clogTOslog2.jar: executable jar file converts clog to slog2 file
+                 usage: java -jar traceTOslog2.jar clogfilename
+
+jumpshot.jar: executable jar file that visualizes slog2 file and convert
+              clog, rlog and ute files to slog2 file.
+              usage: java -Xms64m -Xmx256m -jar jumpshot.jar [filename]
+
+jumpshot_launcher.jar: executable jar file that launchs jumpshot.jar
+                       usage:java -jar jumpshot_launcher
+
+
+Using SLOG2 command line utility programs
+-----------------------------------------
+1) Modifocation of SLOG2 File's Structure:
+   slog2filter that can reconfigure slog2 treenode features,
+   like tree leaf size and number of child nodes per parent node through
+   command like
+
+   e.g. slog2filter -ls 128k flash2.slog2
+
+   which will create a flash2.slog2.slog2 file with slog2 leaf size = 128k
+   instead of the default 64k.  This is useful to readjust the number of
+   preview bands in Jumpshot if the default one does not produce a desirable
+   view in Jumpshot.
+
+2) Print Specific Information of SLOG2 File:
+   a) slog2print prints drawables in the 4 time orders as listed by
+      "slog2print -h".
+   b) Also, slog2print can print specific features of slog2 file,
+      like CategoryMap, DirectoryTree, Y-Coordinate Map....
+
+   e.g. slog2print -c flash2.slog2
+
+   which prints the CategoryMap of flash2.slog2
+
+3) Removal of Undesirable Categories of Drawables:
+   slog2filter can delete specific categories of drawables.
+   i.e. using "slog2print -c" to identify the category indexes of undesirable
+   drawables, say id1,id2,...idN.  Then do
+
+   slog2repair -r id1,id2,...idN -o new_flash2.slog2 flash2.slog2
+
+   which will create a new_flash2.slog2 file that does not have drawables
+   with category indexes, id1,id2,...idN, and with similar file structure
+   as the original one.
+
+4) Format Updater:
+   slog2updater updates the logfile with older slog2 format to the latest one.
+
+   slog2filter -o fpilog_new.slog2 fpilog_old.slog2
+
+   which converts the fpilog_old.slog2 with older slog2 format to the
+   latest one named fpilog_new.slog2.
+

@@ -1,0 +1,57 @@
+ -rmin -.8  -rmax -.7  -imin .05  -imax .15  -maxiter 1000
+#crack
+
+ -rcenter 0 -icenter 0 -radius 2 -maxiter 100
+#plain old boring
+
+-rmin -0.78270040000000007 -imin 0.14599959999999998 -rmax -0.78070120000000010 -imax 0.14799879999999999
+#comet
+
+-rmin -0.74153488005713408 -imin 0.10702688557231872 -rmax -0.74153487333913670 -imax 0.10702689229031616 -maxiter 1200
+
+-rmin -0.36705586003000001 -imin 0.63196462272000009 -rmax -0.36704045581000000 -imax 0.63198018528000000
+#odd tentacles
+
+
+-rmin -.27063 -imin .62688 -rmax -.26382 -imax .63376
+
+-rmin .251350437 -imin .00008203 -rmax .251354358 -imax .00007811
+
+  -rmin -.75 -rmax -.74 -imin .095 -imax .105 -maxiter 1000
+#right wall
+
+  -rmin -.743025 -rmax -.742475 -imin .0996875 -imax .1002375 -maxiter 1000
+#NW crack
+
+-rmin -0.06661093186739318 -imin 0.66584839707015930 -rmax -0.06661087654348632 -imax 0.66584845239406609 -maxiter 1000
+#double spiral 
+
+ -rmin -.7455 -rmax -.7505 -imin .0975 -imax .1025 -maxiter 500
+#spiderweb
+
+ -rmin -.50059 -rmax -.49804 -imin .52241 -imax .52433 -maxiter 1000
+#whirlpool
+
+ -rmin -.6625 -rmax -.655 -imin .403 -imax .41
+#foot
+
+ -rcenter -1.25 -radius .2
+#head lump
+
+ -rcenter -1.245 -radius .02 -icenter .115 -maxiter 5000
+#glob
+
+ -icenter .957 -rcenter -.1 -radius .01
+#Y
+
+-rcenter -.152895 -icenter 1.0398 -radius .00075
+#lightning bolt
+
+-rcenter -.15293014 -icenter 1.039856115 -radius .00001249 -maxiter 200
+#octopus
+
+-rcenter -.30049 -icenter .84511 -radius .01229
+#coathook
+
+-rcenter .397027 -icenter .60407 -radius .0075
+#bug on a wire

@@ -1,0 +1,636 @@
+%% TeX macros to handle latexinfo files
+%% \include{ 5 page GNU copyleft here }
+%   Copyright (C) 1985, 1986 Richard M. Stallman
+%   Copyleft  (0) 1988, 1989 Michael E. Clarkson
+
+\def\latexinfoversion{1.2}
+\message{Loading Latexinfo package [Version \latexinfoversion]:}
+\message{}
+
+\setcounter{tocdepth}{2}
+\setcounter{secnumdepth}{3}
+
+\def\oddfoot#1{\def\@oddfoot{#1}}
+\def\evenfoot#1{\def\@evenfoot{#1}}
+
+% Save some parts of plain tex whose names we will redefine.
+
+\let\ptexlbrace=\{
+\let\ptexrbrace=\}
+\let\ptexdot=\.
+\let\ptexstar=\*
+\let\ptexend=\end
+\let\ptexbullet=\bullet
+\let\ptexb=\b
+\let\ptexc=\c
+\let\ptexi=\i
+\let\ptext=\t
+\let\ptexl=\l
+\let\ptexL=\L
+\def\pline{\hbox to\hsize}
+\def\pleftline#1{\pline{#1\hss}}
+\def\prightline#1{\pline{\hss#1}}
+
+\def\centerline#1{\pline{\hss#1\hss}}
+
+\def\tie{\penalty 10000\ }     % Save plain tex definition of ~.
+
+\let\normal=\normalsize
+
+\message{Basics,}
+\chardef\other=12
+
+\hyphenation{ap-pen-dix}
+\hyphenation{mini-buf-fer mini-buf-fers}
+
+% Parse an argument, then pass it to #1.
+% The argument can be delimited with [...] or with "..." or braces
+% or it can be a whole line.
+% #1 should be a macro which expects
+% an ordinary undelimited TeX argument.
+
+\def\parsearg #1{\let\next=#1\begingroup\obeylines\futurelet\temp\parseargx}
+
+\def\parseargx{%
+\ifx \obeyedspace\temp \aftergroup\parseargdiscardspace \else%
+\aftergroup \parseargline %
+\fi \endgroup}
+
+{\obeyspaces %
+\gdef\parseargdiscardspace {\begingroup\obeylines\futurelet\temp\parseargx}}
+
+\gdef\obeyedspace{\ }
+
+\def\parseargline{\begingroup \obeylines \parsearglinex}
+{\obeylines %
+\gdef\parsearglinex #1^^M{\endgroup \next {#1}}}
+
+\def\flushcr{\ifx\par\lisppar \def\next##1{}\else \let\next=\relax \fi \next}
+
+% Single-spacing is done by various environments.
+
+\newskip\singlespaceskip
+\singlespaceskip = \baselineskip
+\def\singlespace{%
+{\advance \baselineskip by -\singlespaceskip
+\kern \baselineskip}%
+\baselineskip=\singlespaceskip
+}
+
+\def\arrow{$\rightarrow$}
+
+% Used to generate quoted braces.
+
+\def\mylbrace {{\tt \char '173}}
+\def\myrbrace {{\tt \char '175}}
+\let\{=\mylbrace
+\let\}=\myrbrace
+
+% \: forces normal size whitespace following.
+\def\:{\spacefactor=1000 }
+
+% \* forces a line break.
+\def\*{\hfil\break}
+
+% \. is an end-of-sentence period.
+\def\.{.\spacefactor=3000 }
+
+% \w prevents a word break
+\def\w#1{\hbox{#1}}
+
+% \br   forces paragraph break
+
+\let\br = \par
+
+% \dots{}  output some dots
+
+\def\dots{$\ldots$}
+
+% \page    forces the start of a new page
+%\def\page{\clearpage}
+
+% \exdent text....
+% outputs text on separate line in roman font, starting at standard page margin
+
+\def\exdent{\errmessage{@exdent in filled text}}
+  % \lisp, etc, define \exdent locally from \internalexdent
+
+{\obeyspaces
+\gdef\internalexdent{\parsearg\exdentzzz}}
+
+\def\exdentzzz #1{{\advance \leftskip by -\lispnarrowing
+\advance \hsize by -\leftskip
+\advance \hsize by -\rightskip
+\leftline{{\rm#1}}}}
+
+% \sp n   outputs n lines of vertical space
+\def\sp#1{\par\vskip #1\baselineskip\relax}
+
+% \comment ...line which is ignored...
+% \c is the same as @comment
+% \begin{ignore} ... \end{ignore}  is another way to write a comment
+\def\comment{\parsearg \commentxxx}
+
+\def\commentxxx #1{}
+
+\let\c=\comment
+
+% Some texinfo constructs that are trivial in tex
+\newenvironment{iftex}{}{}
+
+\catcode`@=11
+
+\message{menus,}
+{\catcode`\^^M=13 \gdef\@gobblecr{\@ifnextchar
+{\@gobble}{\ignorespaces}}}
+
+\chardef\active=13
+
+{\catcode`\ =\active\gdef\@vobeyspaces{\catcode`\ \active \let \@xobeysp}}
+ 
+\begingroup \catcode `|=0 \catcode `[= 1
+\catcode`]=2 \catcode `\{=12 \catcode `\}=12
+\catcode`\\=12 
+|gdef|@xmenu#1\end{menu}[|end[menu]]
+|gdef|@xifinfo#1\end{ifinfo}[|end[ifinfo]]
+|gdef|@xignore#1\end{ignore}[|end[ignore]]
+|endgroup
+
+\def\@menu{\begingroup
+\@tempswafalse 
+\def\par{\if@tempswa\hbox{}\fi\@tempswatrue\@@par}
+\obeylines \let\do\@makeother \dospecials}
+
+\def\menu{\@menu\@xmenu }
+\let\endmenu=\endgroup
+\def\ifinfo{\@menu\@xifinfo }
+\let\endifinfo=\endgroup
+\def\ignore{\@menu\@xignore }
+\let\endignore=\endgroup
+
+\def\node{\parsearg\nodezzz}
+\def\nodezzz#1{\nodexxx [#1,]}
+\def\nodexxx[#1,#2]{\gdef\lastnode{#1}}
+%\def\node#1#2#3#4{\gdef\lastnode{#1}}
+\let\lastnode=\relax
+
+
+\let\refill=\relax
+
+\let\setfilename=\comment
+
+\def\inforef #1{\inforefzzz #1,,,,**}
+\def\inforefzzz #1,#2,#3,#4**{See Info file \file{\losespace#3{}}, node `\losespace#1{}'}
+\def\losespace #1{#1}
+
+\message{fonts,}
+
+% Font-change commands.
+
+\def\li{\sf}
+
+%% Add scribe-like font environments, plus \l for inline lisp (usually sans
+%% serif) and \ii for TeX italic
+
+\def\i#1{{\sl #1}}
+\let\var=\i
+\let\dfn=\i
+\let\emph=\i
+
+\def\b#1{{\bf #1}}
+\let\strong=\b
+
+\def\t#1{{\tt \rawbackslash #1}\null}
+\let\ttfont=\t
+\let\kbd=\t
+\let\code=\t
+\def\samp#1{`{\tt \rawbackslash #1}'\null}
+\def\key#1{{\tt \uppercase{#1}}\null}
+\def\ctrl#1{$\uparrow${\tt #1}}
+
+\let\file=\samp
+
+\def\l#1{{\li #1}\null}
+
+\def\r#1{{\rm #1}}
+\def\s#1{{\sc #1}}
+\def\ii#1{{\it #1}}
+
+\def\bullet{$\ptexbullet$}
+\def\labelitemi{$\ptexbullet$}
+
+\def\minus{$-$}
+
+% Make altmode in file print out right
+
+\catcode `\^^[=\active \def^^[{$\diamondsuit$}
+
+\message{indexing,}
+% Index generation facilities
+
+% Define the texinfo user-accessible indexing commands for backwrds 
+% compatability.
+
+\def\findex{\fnindex}
+\def\kindex{\kyindex}
+\def\cindex{\cpindex}
+\def\vindex{\vrindex}
+\def\tindex{\tpindex}
+\def\pindex{\pgindex}
+\def\cindex{\cpindex}
+
+
+% \newindex {foo} defines an index named foo.
+% It automatically defines \fooindex such that
+% \fooindex ...rest of line... puts an entry in the index foo.
+% It also defines \fooindfile to be the number of the output channel for
+% the file that	accumulates this index.  The file's extension is foo.
+% The name of an index should be no more than 2 characters long
+% for the sake of vms.
+
+\def\newindex#1{\csname newindex#1\endcsname}
+
+% Yes I know this could be done shorter, but safer??
+
+\def\newindexcp{\if@filesw \newwrite\@cpindexfile
+  \immediate\openout\@cpindexfile=\jobname.cp
+  \def\cpindex{\@bsphack\begingroup
+             \def\protect####1{\string####1\space}\@sanitize
+             \@wrindex\@cpindexfile}%
+  \def\cpsubindex{\@bsphack\begingroup
+             \def\protect####1{\string####1\space}\@sanitize
+             \@wrsubindex\@cpindexfile}%
+  \def\cpindexbold{\@bsphack\begingroup
+             \def\protect####1{\string####1\space}\@sanitize
+             \@wrindexbold\@cpindexfile}
+   \typeout{Writing concepts index file \jobname.cp }%
+   \fi}
+
+\def\cpindex{\@bsphack\begingroup \@sanitize\@index}
+\def\cpsubindex{\@bsphack\begingroup \@sanitize\@index}
+\def\cpindexbold{\@bsphack\begingroup \@sanitize\@index}
+
+\def\@wrindex#1#2{\let\thepage\relax
+   \xdef\@gtempa{\write#1{\string \entry{#2}{\thepage}{#2}}}\endgroup\@gtempa
+   \if@nobreak \ifvmode\nobreak\fi\fi\@esphack}
+
+\def\@wrindexbold#1#2{\let\thepage\relax \let\bf\relax
+   \xdef\@gtempa{\write#1{\string \entry{#2}{\b{\thepage}}{#2}}}\endgroup\@gtempa
+   \if@nobreak \ifvmode\nobreak\fi\fi\@esphack}
+
+\def\@wrsubindex#1#2#3{\let\thepage\relax
+	\xdef\@gtempa{\write#1{\string \entry{#2 #3}{\thepage}{#2}{#3}}}\endgroup%
+	\@gtempa
+   \if@nobreak \ifvmode\nobreak\fi\fi\@esphack}
+
+\def\@index#1{\endgroup\@esphack}
+
+\def\pgindex{\@bsphack\begingroup \@sanitize\@index}
+\def\newindexpg{\if@filesw \newwrite\@pgindexfile
+  \immediate\openout\@pgindexfile=\jobname.pg
+  \def\pgindex{\@bsphack\begingroup
+             \def\protect####1{\string####1\space}\@sanitize
+             \@wrindex\@pgindexfile}\typeout{Writing index file \jobname.pg }\fi}
+
+\def\newindexvr{\if@filesw \newwrite\@vrindexfile
+  \immediate\openout\@vrindexfile=\jobname.vr
+  \def\vrindex{\@bsphack\begingroup
+             \def\protect####1{\string####1\space}\@sanitize
+             \@wrindex\@vrindexfile}
+  \def\vrindexbold{\@bsphack\begingroup
+             \def\protect####1{\string####1\space}\@sanitize
+             \@wrindexbold\@vrindexfile}
+	\typeout{Writing variable index file \jobname.vr }\fi}
+
+\def\vrindex{\@bsphack\begingroup \@sanitize\@index}
+\def\vrindexbold{\@bsphack\begingroup \@sanitize\@index}
+
+\def\newindextp{\if@filesw \newwrite\@tpindexfile
+  \immediate\openout\@tpindexfile=\jobname.tp
+  \def\tpindex{\@bsphack\begingroup
+             \def\protect####1{\string####1\space}\@sanitize
+             \@wrindex\@tpindexfile}
+	\typeout{Writing datatype index file \jobname.tp }\fi}
+
+\def\tpindex{\@bsphack\begingroup \@sanitize\@index}
+
+\def\newindexky{\if@filesw \newwrite\@kyindexfile
+  \immediate\openout\@kyindexfile=\jobname.ky
+  \def\kyindex{\@bsphack\begingroup
+             \def\protect####1{\string####1\space}\@sanitize
+             \@wrindex\@kyindexfile}\typeout{Writing key index file \jobname.ky }\fi}
+
+\def\kyindex{\@bsphack\begingroup \@sanitize\@index}
+
+\def\newindexfn{\if@filesw \newwrite\@fnindexfile
+  \immediate\openout\@fnindexfile=\jobname.fn
+  \def\fnindex{\@bsphack\begingroup
+             \def\protect####1{\string####1\space}\@sanitize
+             \@wrindex\@fnindexfile}
+  \def\fnindexbold{\@bsphack\begingroup
+             \def\protect####1{\string####1\space}\@sanitize
+             \@wrindexbold\@fnindexfile}
+	\typeout{Writing function index file \jobname.fn }\fi}
+
+\def\fnindex{\@bsphack\begingroup \@sanitize\@index}
+
+
+% \synindex{foo}{bar}    makes index foo feed into index bar.
+\def\synindex#1#2{\expandafter\xdef \csname @#1index\endcsname{%
+	\noexpand\csname @#2index\endcsname}%
+\expandafter \chardef \csname @#1indfile\endcsname=\csname @#2indfile\endcsname}
+
+
+% Define the macros used in formatting output of the sorted index material.
+% This is what you call to cause a particular index to get printed.
+% Write
+% \section*{Function Index}
+% \printindex{fn}
+
+\newskip\secondaryindent
+\secondaryindent=0.5cm
+
+%\catcode`\%=\other\catcode`\&=\other\catcode`\#=\other
+%\catcode`\@=\other\catcode`\$=\other\catcode`\_=\other
+%\catcode`\~=\other\catcode`\^=\other
+%\tex %
+%\catcode`\%=\other\catcode`\&=\other\catcode`\#=\other
+%\catcode`\@=\other\catcode`\$=\other\catcode`\_=\other
+%\catcode`\~=\other\catcode`\^=\other
+
+\def\printindex#1{
+\def\indexbackslash{\rawbackslashxx}
+\tolerance=9500 \advance\baselineskip -1pt
+\openin 1 \jobname.#1s
+\ifeof 1 \else \closein 1 \input \jobname.#1s
+\fi
+}
+
+% These macros are used by the sorted index file itself.
+% Change them to control the appearance of the index.
+
+\def\Dotsbox{\hbox to 1em{\hss.\hss}} % Used by index macros
+
+\def\initial#1{%
+{\bigbreak\pline{\large\bf#1\hfill}\kern 2pt\penalty3000}}
+
+\def\entry #1#2{
+{\parfillskip=0in \parskip=0in \parindent=0in \small
+\hangindent=1in \hangafter=1%
+\noindent\hbox{#1}\leaders\Dotsbox\hskip 0pt plus 1filll\relax #2\par
+}}
+
+\def\primary #1{\pline{\small#1\hfil}}
+
+\def\secondary #1#2{
+{\parfillskip=0in \parskip=0in \small
+\hangindent =1in \hangafter=1
+\noindent\hskip\secondaryindent\hbox{#1}\leaders\Dotsbox\hskip 0pt plus 1filll#2\par
+}}
+
+%%% Args are the skip and penalty (usually negative)
+\def\dobreak#1#2{\par\ifdim\lastskip<#1\removelastskip\penalty#2\vskip#1\fi}
+
+\message{environments,}
+
+% \begin{tex} ... \end{tex}    escapes into raw Tex temporarily.
+
+\def\tex{\begingroup
+\catcode `\\=0 \catcode `\{=1 \catcode `\}=2
+\catcode `\$=3 \catcode `\&=4 \catcode `\#=6
+\catcode `\^=7 \catcode `\_=8 \catcode `\~=13 \let~=\tie
+\catcode `\%=14
+\catcode`\"=12
+\catcode`\|=12
+\catcode`\<=12
+\catcode`\>=12
+
+\let\{=\ptexlbrace
+\let\}=\ptexrbrace
+\let\.=\ptexdot
+\let\*=\ptexstar
+\let\bullet=\ptexbullet
+\let\b=\ptexb \let\c=\ptexc \let\i=\ptexi \let\t=\ptext \let\l=\ptexl
+\let\L=\ptexL
+
+\let\endtex=\endgroup}
+
+% Define \lisp ... \endlisp.
+% \lisp does a \begingroup so it can rebind things,
+% including the definition of \endlisp (which normally is erroneous).
+
+% Amount to narrow the margins by for \lisp.
+\newskip\lispnarrowing \lispnarrowing=\parindent
+
+% This is the definition that ^M gets inside \lisp
+% phr: changed space to \null, to avoid overfull hbox problems.
+{\obeyspaces%
+\gdef\lisppar{\null\endgraf}}
+
+% Cause \obeyspaces to make each Space cause a word-separation
+% rather than the default which is that it acts punctuation.
+% This is because space in tt font looks funny.
+{\obeyspaces %
+\gdef\sepspaces{\def {\ }}}
+
+\newskip\aboveenvskipamount \aboveenvskipamount= 0pt
+\def\aboveenvbreak{{\advance\aboveenvskipamount by \parskip
+\endgraf \ifdim\lastskip<\aboveenvskipamount
+\removelastskip \penalty-50 \vskip\aboveenvskipamount \fi}}
+
+\def\afterenvbreak{\endgraf \ifdim\lastskip<\aboveenvskipamount
+\removelastskip \penalty-50 \vskip\aboveenvskipamount \fi}
+
+\newenvironment{example}{\aboveenvbreak
+	\hfuzz=12truept % Don't be fussy
+	\sepspaces % Make spaces be word-separators rather than space tokens.
+	\singlespace % Single space lines
+	% The following causes blank lines not to be ignored
+	% by adding a space to the end of each line.
+	\let\par=\lisppar
+	\parskip=0pt \advance \rightskip by \lispnarrowing 
+	\advance \leftskip by \lispnarrowing
+	\parindent=0pt
+	\let\exdent=\internalexdent
+	\obeyspaces \obeylines \tt \rawbackslash \bgroup\samepage
+	\def\next##1{}\next}{\egroup\afterenvbreak}
+
+%same is the same as an enclosed \samepage
+\newenvironment{same}{\bgroup\samepage}{\egroup}
+
+% This is \begin{display}; same as \begin{lisp} except use roman font.
+
+\newenvironment{display}{\aboveenvbreak
+	% Make spaces be word-separators rather than space tokens.
+	\sepspaces %
+	% Single space lines
+	\singlespace %
+	% The following causes blank lines not to be ignored
+	% by adding a space to the end of each line.
+	\let\par=\lisppar
+	\parskip=0pt \advance \rightskip by \lispnarrowing 
+	\advance \leftskip by \lispnarrowing
+	\parindent=0pt
+	\let\exdent=\internalexdent
+	\obeyspaces \obeylines
+		\def\next##1{}\next}{\afterenvbreak}
+
+% This is \format; same as \lisp except use roman font and don't narrow margins
+
+\newenvironment{format}{\aboveenvbreak
+	% Make spaces be word-separators rather than space tokens.
+	\sepspaces %
+	\singlespace %
+	% The following causes blank lines not to be ignored
+	% by adding a space to the end of each line.
+	\let\par=\lisppar
+	\parskip=0pt \parindent=0pt
+	\obeyspaces \obeylines
+	\def\next##1{}\next}{\afterenvbreak}
+
+\message{cross reference,}
+% Define cross-reference macros
+
+% \xref and \pxref generate cross references to specified points.
+
+\def\pxref #1{see \xrefX [#1,,,,,,,]}
+\def\xref #1{See \xrefX [#1,,,,,,,]}
+
+%\def\xrefX [#1,#2,#3,#4,#5,#6]{section \ref{#1} [%
+%{\setbox0=\hbox{\losespace#3{}}%
+%\ifdim \wd0 =0pt \losespace#1{}\else\unhbox0\fi}],
+%page\tie \pageref{#1}}
+
+\def\xrefX [#1,#2,#3,#4,#5,#6]{%
+\setbox1=\hbox{\i{\losespace#5{}}}%
+\setbox0=\hbox{\losespace#3{}}%
+\ifdim \wd0 =0pt \setbox0=\hbox{\losespace#1{}}\fi%
+\ifdim \wd1 >0pt%
+section \unhbox0{} in \unhbox1%
+\else%
+\ref{#1} [\unhbox0], page\tie \pageref{#1}%
+\fi }
+
+\message{sectioning,}
+% Define chapters, sections, etc.
+
+\def\@chapter[#1]#2{\ifnum \c@secnumdepth >\m@ne
+ \refstepcounter{chapter}
+\ifx\lastnode\relax\else\label{\lastnode}\fi
+\let\lastnode=\relax
+ \typeout{\@chapapp\space\thechapter.}
+ \addcontentsline{toc}{chapter}{\protect
+ \numberline{\thechapter}#1}\else
+ \addcontentsline{toc}{chapter}{#1}\fi
+ \chaptermark{#1}
+ \addtocontents{lof}{\protect\addvspace{10pt}}
+\addtocontents{lot}{\protect\addvspace{10pt}} \if@twocolumn
+\@topnewpage[\@makechapterhead{#2}] 
+ \else \@makechapterhead{#2}
+ \@afterheading \fi} 
+\def\@schapter#1{\if@twocolumn \@topnewpage[\@makeschapterhead{#1}]
+ \else \@makeschapterhead{#1} 
+ \@afterheading\fi}
+
+\def\@sect#1#2#3#4#5#6[#7]#8{\ifnum #2>\c@secnumdepth
+     \def\@svsec{}\else 
+     \refstepcounter{#1}
+\ifx\lastnode\relax\else\label{\lastnode}\fi
+\let\lastnode=\relax
+	\edef\@svsec{\csname the#1\endcsname\hskip 1em }\fi
+     \@tempskipa #5\relax
+      \ifdim \@tempskipa>\z@ 
+        \begingroup #6\relax
+          \@hangfrom{\hskip #3\relax\@svsec}{\interlinepenalty \@M #8\par}
+        \endgroup
+       \csname #1mark\endcsname{#7}\addcontentsline
+         {toc}{#1}{\ifnum #2>\c@secnumdepth \else
+                      \protect\numberline{\csname the#1\endcsname}\fi
+                    #7}\else
+        \def\@svsechd{#6\hskip #3\@svsec #8\csname #1mark\endcsname
+                      {#7}\addcontentsline
+                           {toc}{#1}{\ifnum #2>\c@secnumdepth \else
+                             \protect\numberline{\csname the#1\endcsname}\fi
+                       #7}}\fi
+     \@xsect{#5}}
+
+\def\smallbook{
+\global\lispnarrowing = 0.3in
+\global\baselineskip 12pt
+\global\parskip 3pt plus 1pt
+\global\hsize = 5in
+\global\doublecolumnhsize=2.4in \global\doublecolumnvsize=15.0in
+\global\vsize=7.5in
+\global\tolerance=700
+\global\hfuzz=1pt
+
+\global\pagewidth=\hsize
+\global\pageheight=\vsize
+\global\font\ninett=cmtt9
+
+\global\let\smalllisp=\smalllispx
+\global\let\smallexample=\smalllispx
+\global\def\Esmallexample{\Esmalllisp}
+}
+
+%% For a final copy, take out the rectangles
+%% that mark overfull boxes (in case you have decided
+%% that the text looks ok even though it passes the margin).
+\def\finalout{\overfullrule=0pt}
+
+\message{and turning on texinfo input format.}
+
+{\catcode`\@=0
+
+% \rawbackslashxx output one backslash character in current font
+{\catcode`\\=\other
+@gdef@rawbackslashxx{\}}
+
+% \rawbackslash redefines \ as input to do \rawbackslashxx.
+{\catcode`\\=\active
+@gdef@rawbackslash{@let\=@rawbackslashxx }}
+}
+
+% \back outputs one backslash in fixed width font.
+\gdef\back{\tt\rawbackslashxx\ignorespaces}
+
+\def\document{\endgroup
+  \@colht\textheight  \@colroom\textheight \vsize\textheight
+   \columnwidth\textwidth \@clubpenalty\clubpenalty
+   \if@twocolumn \advance\columnwidth -\columnsep 
+      \divide\columnwidth\tw@ \hsize\columnwidth \@firstcolumntrue 
+   \fi
+  \hsize\columnwidth \linewidth\hsize
+  \begingroup\@floatplacement\@dblfloatplacement
+   \makeatletter\let\@writefile\@gobbletwo
+   \@input{\jobname.aux}\endgroup 
+  \if@filesw \immediate\openout\@mainaux=\jobname.aux
+    \immediate\write\@mainaux{\relax}\fi
+  \def\do##1{\let ##1\@notprerr}
+  \@preamblecmds
+  \let\do\noexpand
+\@normalsize\everypar{}\nospecials}
+
+
+% Here is a list of the characters that have been specially catcoded:
+\def\dosomespecials{\do\$\do\&\do\#\do\%\do\~\do\^}
+
+{\catcode`\"=\active
+\catcode`\>=\active
+\catcode`\<=\active
+\catcode`\_=\active
+\gdef\nospecials{
+\catcode`\"=\active
+\gdef\activedoublequote{{\tt \char '042}}
+\let"=\activedoublequote
+\catcode`\>=\active
+\gdef\activegtr{{\tt \char '076}}
+\let>=\activegtr
+\catcode`\<=\active
+\gdef\activeless{{\tt \char '074}}
+\let<=\activeless
+\catcode`\_=\active
+\gdef\activeunderscore{{\tt \char '137}}
+\let_=\activeunderscore
+\@noligs\let\do\@makeother \dosomespecials}
+}

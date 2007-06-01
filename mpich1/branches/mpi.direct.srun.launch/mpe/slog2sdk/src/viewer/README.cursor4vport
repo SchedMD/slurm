@@ -1,0 +1,62 @@
+/*
+ *  (C) 2001 by Argonne National Laboratory
+ *      See COPYRIGHT in top-level directory.
+ */
+
+/*
+ *  @author  Anthony Chan
+ */
+
+
+The containment hierarchy of a zoomable winodw, e.g. TimelineFrame.
+
+                    Containment Hierarchy                     setCursor()
+
+                        TimelineFrame                        Wait    Normal
+                             |
+           +-----------------+--------------+------------+   
+           |                 |              |            |
+   ViewportTimePanel   ScrollbarTime  ViewportTimePanel ...  Wait    Normal
+           |                                |
+   ViewportTimeYaxis                    ViewportTime         Wait    ZoomPlus
+           |                                |                        HandOpen
+           |                                |
+    CanvasTimeline                       RulerTime           null      null
+
+
+- Both CanvasTimeline and RulerTime are ScrollableObject.
+- ViewportTimeYaxis is subclass of ViewportTime.
+
+Since the goal of changing the cursor in TimelineFrame is to show user
+the current status of the program and also what each component in the
+Frame can do.  
+
+ViewportTime has 4 different statuses that indicate what it can do by
+their corresponding cursors which are ZoomPlus/ZoomMinus/HandOpen/HandClose.
+In no case, Viewport uses default cursor, i.e. Normal.  These 4 cursors are
+only valid in the ViewportTime's and their view objects, but not in any
+other components in TimelineFrame.  Since JViewport has only one child in
+its containment hierarchy (its only child is its view object), so the
+cursor set in view object affects that of JViewport, and vice versa.
+The default cursor for the other components in TimelineFrame except
+ViewportTime's is always the system default, i.e. Normal.
+
+The view object needs to do some pretty time consuming operations like
+reading data from the disk, and rendering of numerous drawables.  So
+view object need to have its cursor turned to hourly glass, i.e Wait cursor,
+to indicate it is doing some expensive operation.  Since there are several
+components in the zoomable window that can cause these expensive operations
+like zoom in/out buttons in TimelineToolBar, ScrollbarTime and even scrolling
+of the RulerTime.  So turning to Wait cursor needs to be on all children
+components under TimelineFrame including ViewportTime and its view object.
+
+In order to achieve all of the above, we override the Component.setCursor()
+in ScrollableObject, i.e. RulerTime and CanvasTimeline, so the cursor of
+ScrollableObject is always null.  This allows the cursor of the
+ScrollableObject's parent, ViewportTime, to be used as the cursor of
+ScrollableObject.   We also override the Component.setCursor() in
+ViewportTime, so when the new cursor is Normal, Viewport's cursor should
+be either ZoomOpen or HandOpen depending on the LeftMouse mode.  That way
+subclass of ScrollableObject, i.e. RulerTime/CanvasTimeline, can use
+setCursor(Wait) and setCursor(Normal) recursively decending from the top
+container, TimelineFrame, to set appropriate cursors on all the components.

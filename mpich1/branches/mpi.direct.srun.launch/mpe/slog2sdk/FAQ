@@ -1,0 +1,59 @@
+
+Frequent Asked Question and Anwser:
+
+1, Why rectangles, states, are NOT properly nested sometimes ?  It seems
+   They are nested correctly in some frames but not always.  Also, the 
+   incorrect nesting is sometimes fixed by doing zoom in/out.   In some
+   occasions, the incorrect nesting is displayed across an invisible
+   vertical line during scrolling.
+
+   All these symptoms can be explained if the states are NOT arranged
+   strictly in endtime order in the slog2 file.  Contact your TRACE-API
+   implementator for further support on this issue. ( TRACE-API is the
+   interface used to create the SLOG-2 file ).  To make sure that
+   all drawables inside the slog2 file is arranged in correct endtime
+   order is to run traceTOslog2( or its variant like rlogTOslog2..)
+   on the original trace with option -tc which turns on the time order
+   checking code.
+
+2, Why the color of some states in Timeline window is different from
+   those in Legend window ?
+
+   SLOG-2 allows transparency in defining color of any drawables.
+   If the TRACE-API implementation that you use to generate SLOG-2 file
+   uses transparency (instead of using opaque), the effect is that when
+   there are several states nested together, the color of the state  
+   on top of other states may have altered because of mixing of
+   alpha channel of state's color with that of others.  This effect
+   can be easily seen when the background is black, i.e. all states 
+   may appear to be darker.
+   
+3, How can launch Jumpshot-4 in native Windows enviroment ?
+
+   First install Java2 runtime enviroment on Windows, i.e. jre 1.2.2 to 1.4.2
+   or up, then launch Jumpshot-4 in native Windows environment by clicking
+   on the lib/jumpshot_launcher.jar.  The Java Virtual Machine's launch 
+   parameters can be modified in $HOME/.jumpshot_launcher.conf.
+
+4, When I view my logfile in Jumpshot-4, I see there are legend entries named
+   as UnknownType-INDEX.  What do these legends stand for ?
+
+   Legends that are named as UnknownType-INDEX are Category of drawables
+   that are undefined in the logfile.  If it is a clog converted slog2 file,
+   the unknown categories could correspond to MPI states if MPI_Finalize()
+   did not exit/finish correctly during profiling.  If you do see all the
+   MPI categories defined in the Legend window, then the unknown categories
+   would most likely refer to the user-defined states whose definitions
+   are supplied in the user code.
+
+5, The exclusion ratios reported by Jumpshot or SLOG-2 printing program 
+   for large SLOG-2 file seem to be less than what it should be ?
+
+   The exclusion ratio computed in SLOG-2 is less than or equal to what
+   it should be. This artifact is due to the fact that preview state is
+   used in the determination of exclusion region. The nesting level of
+   preview state is approximate by construction. This approximate nature
+   of the preview state may exclude more region in the enclosing state than
+   what the appropriate shares of its enclosed states should be.
+   Nevertheless, even with this limitation, the innermost state's exclusion
+   ratio is still correct.
