@@ -106,6 +106,8 @@ extern void term_msg_thread(void)
 		int fd;
 		slurm_addr addr;
 
+		thread_shutdown = true;
+
 		/* Open and close a connection to the wiki listening port.
 		 * Allows slurm_accept_msg_conn() to return in
 		 * _msg_thread() so that it can check the thread_shutdown
