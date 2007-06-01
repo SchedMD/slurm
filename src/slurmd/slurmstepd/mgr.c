@@ -90,6 +90,7 @@
 #include "src/common/util-net.h"
 #include "src/common/forward.h"
 #include "src/common/plugstack.h"
+#include "src/common/mpi.h"
 
 #include "src/slurmd/slurmd/slurmd.h"
 
