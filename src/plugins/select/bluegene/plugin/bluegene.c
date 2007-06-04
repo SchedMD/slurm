@@ -1008,8 +1008,10 @@ extern int create_defined_blocks(bg_layout_t overlapped)
 			   && !bg_record->full_block
 			   && bg_record->cpus_per_bp == procs_per_node) {
 				char *name = NULL;
-				if(overlapped == LAYOUT_OVERLAP)
+				if(overlapped == LAYOUT_OVERLAP) {
 					reset_ba_system(false);
+					set_all_bps_except(bg_record->nodes);
+				}
 				for(i=0; i<BA_SYSTEM_DIMENSIONS; i++) 
 					geo[i] = bg_record->geo[i];
 				debug2("adding %s %c%c%c %c%c%c",
