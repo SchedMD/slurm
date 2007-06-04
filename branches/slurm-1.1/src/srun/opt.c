@@ -1685,6 +1685,15 @@ static bool _opt_verify(void)
 
 	if(!opt.nodelist) {
 		if((opt.nodelist = xstrdup(getenv("SLURM_HOSTFILE")))) {
+			/* make sure the file being read in has a / in
+			   it to make sure it is a file in the
+			   valid_node_list function */
+			if(!strstr(opt.nodelist, "/")) {
+				char *add_slash = xstrdup("./");
+				xstrcat(add_slash, opt.nodelist);
+				xfree(opt.nodelist);
+				opt.nodelist = add_slash;
+			}
 			opt.distribution = SLURM_DIST_ARBITRARY;
 			if (!_valid_node_list(&opt.nodelist)) {
 				error("Failure getting NodeNames from "
