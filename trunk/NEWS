@@ -1,6 +1,10 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins.
 
+* Changes in SLURM 1.2.10
+=========================
+
+
 * Changes in SLURM 1.2.9
 ========================
  -- Add new sinfo field to sort by "%E" sorts by the time associated with a 
