@@ -152,20 +152,20 @@ adev0: srun -b my.sleeper
 srun: jobid 473 submitted
 
 adev0: squeue
-  JobId Partition Name     User     St TimeLimit Prio Nodes                        
-    473 batch     my.sleep jette    R  UNLIMITED 0.99 adev9 
-                       
+  JobId Partition Name     User     St TimeLimit Prio Nodes
+    473 batch     my.sleep jette    R  UNLIMITED 0.99 adev9
+ 
 adev0: scancel 473
 
 adev0: squeue
-  JobId Partition Name     User     St TimeLimit Prio Nodes            
+  JobId Partition Name     User     St TimeLimit Prio Nodes
 </pre>
 
 <p>Get the SLURM partition and node status.</p>
 <pre>
 adev0: sinfo
 PARTITION  NODES STATE     CPUS    MEMORY    TMP_DISK NODES
---------------------------------------------------------------------------------
+----------------------------------------------------------------
 debug          8 IDLE         2      3448       82306 adev[0-7]
 batch          1 DOWN         2      3448       82306 adev8
                7 IDLE         2 3448-3458       82306 adev[9-15]
@@ -178,13 +178,14 @@ There are three fundamentally different modes of operation used
 by these various MPI implementation.
 <ol>
 <li>SLURM directly launches the tasks and performs initialization 
-of communications (Quadrics MPI, MPICH2, MPICH-GM, MVAPICH and MVAPICH2).</li>
+of communications (Quadrics MPI, MPICH2, MPICH-GM, MVAPICH, MVAPICH2
+and some MPICH1 modes).</li>
 <li>SLURM creates a resource allocation for the job and then
 mpirun launches tasks using SLURM's infrastructure (OpenMPI,
-LAM/MPI and HP-MPI).</li>
+LAM/MPI, HP-MPI and some MPICH1 modes).</li>
 <li>SLURM creates a resource allocation for the job and then 
 mpirun launches tasks using some mechanism other than SLURM, 
-such as SSH or RSH (BlueGene MPI and MPICH1). 
+such as SSH or RSH (BlueGene MPI and some MPICH1 modes). 
 These tasks initiated outside of SLURM's monitoring 
 or control. SLURM's epilog should be configured to purge 
 these tasks when the job's allocation is relinquished. </li>
@@ -198,7 +199,7 @@ tasks. When using <span class="commandline">salloc</span> command,
 <span class="commandline">mpirun</span>'s -nolocal option is recommended. 
 For example:
 <pre>
-$ salloc -n4 sh    # allocates four processors and spawns shell for job
+$ salloc -n4 sh    # allocates 4 processors and spawns shell for job
 &gt; mpirun -np 4 -nolocal a.out
 &gt; exit          # exits shell spawned by initial salloc command
 </pre>
@@ -226,7 +227,7 @@ the maximum number of tasks required for the job. Then execute the
 Do not directly execute the <span class="commandline">srun</span> command 
 to launch LAM/MPI tasks. For example: 
 <pre>
-$ salloc -n16 sh      # allocates 16 processors and spawns shell for job
+$ salloc -n16 sh  # allocates 16 processors and spawns shell for job
 &gt; lamboot
 &gt; mpirun -np 16 foo args
 1234 foo running on adev0 (o)
@@ -234,7 +235,7 @@ $ salloc -n16 sh      # allocates 16 processors and spawns shell for job
 etc.
 &gt; lamclean
 &gt; lamhalt
-&gt; exit             # exits shell spawned by initial srun command
+&gt; exit         # exits shell spawned by initial srun command
 </pre>
 <p>Note that any direct use of <span class="commandline">srun</span> 
 will only launch one task per node when the LAM/MPI plugin is configured
@@ -323,9 +324,12 @@ See <a href="bluegene.html">BlueGene User and Administrator Guide</a>
 for more information.</p>
 
 <p><a href="http://www-unix.mcs.anl.gov/mpi/mpich1/"><b>MPICH1</b></a>
-has several different programming models. If you are using the shared
-memory model (<i>DEFAULT_DEVICE=ch_shmem</i> in the mpirun script), then 
-initiate the tasks using the <span class="commandline">srun</span> command 
+development ceased in 2005. It is recommended that you convert to 
+MPICH2 or some other MPI implementation. 
+If you still want to use MPICH1, note that it has several different 
+programming models. If you are using the shared memory model 
+(<i>DEFAULT_DEVICE=ch_shmem</i> in the mpirun script), then initiate 
+the tasks using the <span class="commandline">srun</span> command 
 with the <i>--mpi=mpich1_shmem</i> option.</p>
 <pre>
 $ srun -n16 --mpi=mpich1_shmem a.out
@@ -335,7 +339,7 @@ $ srun -n16 --mpi=mpich1_shmem a.out
 <span class="commandline">salloc</span> or 
 <span class="commandline">sbatch</span> command to allocate resources.
 In either case, specify the maximum number of tasks required for the job.
-You will then need to build a list of hosts to be used and use that 
+You may then need to build a list of hosts to be used and use that 
 as an argument to the mpirun command. 
 For example:
 <pre>
@@ -347,7 +351,28 @@ rm -f slurm.hosts
 $ sbatch -n16 mpich.sh
 sbatch: Submitted batch job 1234
 </pre>
+<p>Note that in this example, mpirun uses the rsh command to launch 
+tasks. These tasks are not managed by SLURM since they are launched 
+outside of its control. The SLURM distribution contains a patch which 
+can be applied to the mpich1 distribution to eliminate this problem
+for the P4 model (<i>DEFAULT_DEVICE=ch_p4</i> in the mpirun script).
+The patch within SLURM's distribution in the file 
+<i>etc/mpich1.slurm.patch</i>.  This patch serves two purposes. 
+First, it automatically generates and later purges the machinefile 
+used as an mpirun argument above. 
+Second, it uses the srun command rather than rsh to launch tasks. 
+This places all of the processes directly under SLURM's control.
+Once this patch is applied, user applications should be re-linked 
+with the new mpich1 library. 
+Applications can then be launched as shown below.
+<pre>
+$ cat mpich.sh
+#!/bin/bash
+mpirun [options] a.out
+$ sbatch -n16 mpich.sh
+sbatch: Submitted batch job 1235
+</pre>
 
-<p style="text-align:center;">Last modified 22 May 2007</p>
+<p style="text-align:center;">Last modified 4 June 2007</p>
 
 <!--#include virtual="footer.txt"-->

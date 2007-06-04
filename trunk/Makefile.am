@@ -10,6 +10,7 @@ EXTRA_DIST =			\
 	etc/slurm.epilog.clean	\
 	etc/init.d.slurm	\
 	etc/ptrace.patch	\
+	etc/mpich1.slurm.patch	\
 	autogen.sh		\
 	slurm.spec		\
 	README			\
