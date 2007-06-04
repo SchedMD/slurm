@@ -163,7 +163,7 @@ for {set i 0} {$i<4} {incr i} {
 	#
 	# execute srun with a specific node count
 	#
-	send "$srun -l $extra $bin_hostname\n"
+	send "$srun -l $extra -O $bin_hostname\n"
 	expect {
 		-re "($number): ($alpha_numeric)" {
 			set task_id $expect_out(1,string)
