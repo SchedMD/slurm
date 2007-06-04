@@ -1382,30 +1382,28 @@ is for this put the \fBsrun\fR command into a mode where various special
 actions may be invoked.
 
 .SH "MPI SUPPORT"
-LAM/MPI version 7.0.4 or higher is well intergated with SLURM. 
-The \fBlamboot\fR command will acquire a SLURM resource allocation 
-and uses the \fBsrun\fR command to launch its \fBlamd\fR daemons on 
-each allocated node.  See \fIhttp://www.lam\-mpi.org/\fR for more 
-information.
+MPI use depends upon the type of MPI being used.
+There are three fundamentally different modes of operation used
+by these various MPI implementation.
 
-On computers with a Quadrics interconnect, \fBsrun\fR directly supports
-the Quadrics version of MPI without modification. Applications build
-using the Quadrics MPI library will communicate directly over the
-Quadrics interconnect without any special \fBsrun\fR options.
+1. SLURM directly launches the tasks and performs initialization
+of communications (Quadrics MPI, MPICH2, MPICH-GM, MVAPICH, MVAPICH2
+and some MPICH1 modes). For example: "srun -n16 a.out".
 
-Users may also use MPICH on any computer where that is available. 
-The \fBmpirun\fR command may need to be provided with information 
-on its command line identifying the resources to be used. The 
-installer of the MPICH software may configure it to perform these 
-steps automatically. At worst, you must specify two parameters:
-.TP
-\fB\-np SLURM_NPROCS\fR
-number of processors to run on
-.TP
-\fB\-machinefile <machinefile>\fR
-list of computers on which to execute. This list can be constructed 
-executing the command \fBsrun /bin/hostname\fR and writing its standard 
-output to the desired file. Execute \fBmpirun \-\-help\fR for more options.
+2. SLURM creates a resource allocation for the job and then
+mpirun launches tasks using SLURM's infrastructure (OpenMPI,
+LAM/MPI, HP-MPI and some MPICH1 modes). 
+
+3. SLURM creates a resource allocation for the job and then
+mpirun launches tasks using some mechanism other than SLURM,
+such as SSH or RSH (BlueGene MPI and some MPICH1 modes).
+These tasks initiated outside of SLURM's monitoring
+or control. SLURM's epilog should be configured to purge
+these tasks when the job's allocation is relinquished.
+
+See \fIhttp://www.linux.gov/linux/slurm/quickstart.html#mpi\fR 
+for more information on use of these various MPI implementation 
+with SLURM.
 
 .SH "MULTIPLE PROGRAM CONFIGURATION"
 Comments in the configuration file must have a "#" in column one.
