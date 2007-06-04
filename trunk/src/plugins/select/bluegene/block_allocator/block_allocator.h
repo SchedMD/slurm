@@ -351,6 +351,7 @@ extern char *set_bg_block(List results, int *start,
 			  int *geometry, int conn_type);
 
 extern int reset_ba_system(bool track_down_nodes);
+extern int set_all_bps_except(char *bps);
 
 extern void init_grid(node_info_msg_t *node_info_ptr);
 /*

@@ -10,8 +10,11 @@ documents those changes that are of interest to users and admins.
     multiple dlopens after forking (and to avoid a glibc bug
     that leaves dlopen locks in a bad state after a fork).
  -- Added MPICH1_P4 patch to launch tasks using srun rather than rsh and
-    automatically generate mpirun's machinefile based upon the job's allocation.
-    See "etc/mpich1.slurm.patch".
+    automatically generate mpirun's machinefile based upon the job's 
+    allocation.    See "etc/mpich1.slurm.patch".
+ -- BLUEGENE - fix for overlap mode to mark all other base partitions as used
+    when creating a new block from the file to insure we only use the base 
+    partitions we are asking for.
 
 * Changes in SLURM 1.2.8
 ========================

@@ -1476,6 +1476,80 @@ extern int reset_ba_system(bool track_down_nodes)
 				
 	return 1;
 }
+
+extern int set_all_bps_except(char *bps)
+{
+	int x;
+#ifdef HAVE_BG
+	int y, z;
+#endif
+	hostlist_t hl = hostlist_create(bps);
+	char *host = NULL, *numeric = NULL;
+	int start, temp;
+
+	while((host = hostlist_shift(hl))){
+		numeric = host;
+		start = 0;
+		while (numeric) {
+			if (numeric[0] < '0' || numeric[0] > 'Z'
+			    || (numeric[0] > '9' 
+				&& numeric[0] < 'A')) {
+				numeric++;
+				continue;
+			}
+			start = xstrntol(numeric, NULL, 
+					 BA_SYSTEM_DIMENSIONS,
+					 HOSTLIST_BASE);
+			break;
+		}
+		
+		temp = start / (HOSTLIST_BASE * HOSTLIST_BASE);
+		x = temp;
+#ifdef HAVE_BG
+		temp = (start % (HOSTLIST_BASE * HOSTLIST_BASE))
+			/ HOSTLIST_BASE;
+		y = temp;
+		temp = start % HOSTLIST_BASE;
+		z = temp;
+		ba_system_ptr->grid[x][y][z].state = NODE_STATE_END;
+#else
+		ba_system_ptr->grid[x].state = NODE_STATE_END;
+#endif
+		free(host);
+	}
+	hostlist_destroy(hl);
+
+	for (x = 0; x < DIM_SIZE[X]; x++) {
+#ifdef HAVE_BG
+		for (y = 0; y < DIM_SIZE[Y]; y++)
+			for (z = 0; z < DIM_SIZE[Z]; z++) {
+				if(ba_system_ptr->grid[x][y][z].state
+				   == NODE_STATE_END) {
+					ba_system_ptr->grid[x][y][z].state = 
+						NODE_STATE_IDLE;
+					ba_system_ptr->grid[x][y][z].used = 
+						false;
+				} else {
+					ba_system_ptr->grid[x][y][z].state = 
+						NODE_STATE_IDLE;
+					ba_system_ptr->grid[x][y][z].used = 
+						true;
+				}
+			}
+#else
+		if(ba_system_ptr->grid[x].state != NODE_STATE_END) {
+			ba_system_ptr->grid[x].state = NODE_STATE_IDLE;
+			ba_system_ptr->grid[x].used = false;
+		} else {
+			ba_system_ptr->grid[x].state = NODE_STATE_IDLE;
+			ba_system_ptr->grid[x].used = true;
+		}
+#endif
+	}
+				
+	return 1;
+}
+
 /* init_grid - set values of every grid point */
 extern void init_grid(node_info_msg_t * node_info_ptr)
 {
