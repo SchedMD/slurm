@@ -171,7 +171,7 @@ for {set i 0} {$i<4} {incr i} {
 	#
 	# execute srun with a specific node count
 	#
-	send "$srun -l $extra -0 $bin_printenv SLURMD_NODENAME\n"
+	send "$srun -l $extra -O $bin_printenv SLURMD_NODENAME\n"
 	expect {
 		-re "($number): ($alpha_numeric)" {
 			set task_id $expect_out(1,string)
