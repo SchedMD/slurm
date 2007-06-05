@@ -2851,6 +2851,10 @@ extern void pack_all_jobs(char **buffer_ptr, int *buffer_size,
 		    (job_ptr->part_ptr->hidden))
 			continue;
 
+		if (slurmctld_conf.private_data
+		&&  (job_ptr->user_id != uid) && !validate_super_user(uid))
+			continue;
+
 		pack_job(job_ptr, buffer);
 		jobs_packed++;
 	}
@@ -4066,6 +4070,9 @@ job_alloc_info(uint32_t uid, uint32_t job_id, struct job_record **job_pptr)
 		return ESLURM_INVALID_JOB_ID;
 	if ((job_ptr->user_id != uid) && 
 	    (uid != 0) && (uid != slurmctld_conf.slurm_user_id))
+		return ESLURM_ACCESS_DENIED;
+	if (slurmctld_conf.private_data
+	&&  (job_ptr->user_id != uid) && !validate_super_user(uid))
 		return ESLURM_ACCESS_DENIED;
 	if (IS_JOB_PENDING(job_ptr))
 		return ESLURM_JOB_PENDING;

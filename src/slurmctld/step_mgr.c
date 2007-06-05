@@ -947,6 +947,12 @@ extern int pack_ctld_job_step_info_response_msg(uint32_t job_id,
 			    (job_ptr->part_ptr) && 
 			    (job_ptr->part_ptr->hidden))
 				continue;
+
+			if (slurmctld_conf.private_data
+			&&  (job_ptr->user_id != uid) 
+			&&  !validate_super_user(uid))
+				continue;
+
 			step_iterator =
 			    list_iterator_create(job_ptr->step_list);
 			while ((step_ptr =
@@ -966,6 +972,10 @@ extern int pack_ctld_job_step_info_response_msg(uint32_t job_id,
 		    (job_ptr->part_ptr) && 
 		    (job_ptr->part_ptr->hidden))
 			job_ptr = NULL;
+		else if (slurmctld_conf.private_data
+		&&  (job_ptr->user_id != uid) && !validate_super_user(uid))
+			job_ptr = NULL;
+
 		if (job_ptr) {
 			step_iterator = 
 				list_iterator_create(job_ptr->step_list);
@@ -986,6 +996,10 @@ extern int pack_ctld_job_step_info_response_msg(uint32_t job_id,
 		&&  (job_ptr->part_ptr) 
 		&&  (job_ptr->part_ptr->hidden))
 			job_ptr = NULL;
+		else if (slurmctld_conf.private_data
+		&&  (job_ptr->user_id != uid) && !validate_super_user(uid))
+			job_ptr = NULL;
+
 		step_ptr = find_step_record(job_ptr, step_id);
 		if (step_ptr == NULL)
 			error_code = ESLURM_INVALID_JOB_ID;
