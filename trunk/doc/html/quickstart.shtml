@@ -19,8 +19,10 @@ work.</p>
 each compute node and a central <b>slurmctld</b> daemon running on a management node 
 (with optional fail-over twin). 
 The <b>slurmd</b> daemons provide fault-tolerant hierarchical communciations.
-The user commands include: <b>srun</b>, <b>sbcast</b>, <b>scancel</b>, 
-<b>sinfo</b>, <b>srun</b>, <b>smap</b>, <b>squeue</b>, and <b>scontrol</b>.  
+The user commands include: <b>sacct</b>, <b>salloc</b>, <b>sattach</b>,
+<b>sbatch</b>, <b>sbcast</b>, <b>scancel</b>, <b>scontrol</b>,  
+<b>sinfo</b>, <b>smap</b>, <b>squeue</b>, <b>srun</b>, <b>strigger</b> 
+and <b>sview</b>.  
 All of the commands can run anywhere in the cluster.</p>
 
 <div class="figure">
@@ -53,41 +55,58 @@ or several job steps may independently use a portion of the allocation.</p>
 <p>Man pages exist for all SLURM daemons, commands, and API functions. The command 
 option <span class="commandline">--help</span> also provides a brief summary of 
 options. Note that the command options are all case insensitive.</p>
-<p><span class="commandline"><b>srun</b></span> is used to submit a job for execution, 
-allocate resources, attach to an existing allocation, or initiate job steps. Jobs 
-can be submitted for immediate or later execution (e.g., batch). <span class="commandline">srun</span> 
-has a wide variety of options to specify resource requirements, including: minimum 
-and maximum node count, processor count, specific nodes to use or not use, and 
-specific node characteristics (so much memory, disk space, certain required features, 
-etc.). Besides securing a resource allocation, <span class="commandline">srun</span> 
-is used to initiate job steps. These job steps can execute sequentially or in 
-parallel on independent or shared nodes within the job's node allocation.</p>
+
+<p><span class="commandline"><b>sacct</b></span> is used to report job or job
+step accounting information about active or completed jobs.</p>
+
+<p><span class="commandline"><b>salloc</b></span> is used to allocate resources. 
+These resources would typically be subsequently used for jobs steps launched 
+using <b>srun</b>.</p>
+
+<p><span class="commandline"><b>salloc</b></span> is used to attach standard 
+input, output and error to an existing job or job step.</p>
+
+<p><span class="commandline"><b>sbatch</b></span> is used to queue a job 
+for later execution.</p>
 
 <p><span class="commandline"><b>sbcast</b></span> is used to transfer a file
-from local disk to local disk on the nodes allocated to a job. This can be 
-used to effectively use diskless compute nodes or provide improved performance 
+from local disk to local disk on the nodes allocated to a job. This can be
+used to effectively use diskless compute nodes or provide improved performance
 relative to a shared file system.</p>
 
-<p><span class="commandline"><b>scancel</b></span> is used to cancel a pending 
-or running job or job step. It can also be used to send an arbitrary signal to 
+<p><span class="commandline"><b>scancel</b></span> is used to cancel a pending
+or running job or job step. It can also be used to send an arbitrary signal to
 all processes associated with a running job or job step.</p>
 
-<p><span class="commandline"><b>scontrol</b></span> is the administrative tool 
-used to view and/or modify SLURM state. Note that many <span class="commandline">scontrol</span> 
+<p><span class="commandline"><b>scontrol</b></span> is the administrative tool
+used to view and/or modify SLURM state. Note that many <span class="commandline">scontrol</span>
 commands can only be executed as user root.</p>
 
-<p><span class="commandline"><b>sinfo</b></span> reports the state of partitions 
-and nodes managed by SLURM. It has a wide variety of filtering, sorting, and formatting 
+<p><span class="commandline"><b>sinfo</b></span> reports the state of partitions
+and nodes managed by SLURM. It has a wide variety of filtering, sorting, and formatting
 options.</p>
 
-<p><span class="commandline"><b>squeue</b></span> reports the state of jobs or 
-job steps. It has a wide variety of filtering, sorting, and formatting options. 
-By default, it reports the running jobs in priority order and then the pending 
+<p><span class="commandline"><b>smap</b></span> reports state information for
+jobs, partitions, and nodes managed by SLURM, but graphically displays the
+information to reflect network topology.</p>
+
+<p><span class="commandline"><b>squeue</b></span> reports the state of jobs or
+job steps. It has a wide variety of filtering, sorting, and formatting options.
+By default, it reports the running jobs in priority order and then the pending
 jobs in priority order.</p>
 
-<p><span class="commandline"><b>smap</b></span> reports state information for 
-jobs, partitions, and nodes managed by SLURM, but graphically displays the 
-information to reflect network topology.</p>
+<p><span class="commandline"><b>srun</b></span> is used to submit a job 
+for execution.  It can allocate resources (if necessary) and initiate job steps. 
+<span class="commandline">srun</span> has a wide variety of options to specify 
+resource requirements, including: minimum and maximum node count, processor count, 
+specific nodes to use or not use, and specific node characteristics (so much memory, 
+disk space, certain required features, etc.). 
+Job steps can execute sequentially or in parallel on independent or shared 
+nodes within the job's node allocation.</p>
+
+<p><span class="commandline"><b>strigger</b></span> is used to set, get or 
+view event triggers. Event triggers include things such as nodes going down
+or jobs approaching their time limit.</p>
 
 <p><span class="commandline"><b>sview</b></span> is a graphical user interface to 
 get and update state information for jobs, partitions, and nodes managed by SLURM.</p>
@@ -373,6 +392,6 @@ $ sbatch -n16 mpich.sh
 sbatch: Submitted batch job 1235
 </pre>
 
-<p style="text-align:center;">Last modified 4 June 2007</p>
+<p style="text-align:center;">Last modified  June 2007</p>
 
 <!--#include virtual="footer.txt"-->
