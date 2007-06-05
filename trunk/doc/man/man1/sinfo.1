@@ -1,4 +1,4 @@
-.TH SINFO "1" "May 2007" "sinfo 1.2" "Slurm components"
+.TH SINFO "1" "May 2007" "sinfo 1.3" "Slurm components"
 
 .SH "NAME"
 sinfo \- view information about SLURM nodes and partitions.
@@ -166,7 +166,8 @@ Partition name
 Only user root may initiate jobs, "yes" or "no"
 .TP
 \fB%R\fR 
-The reason a node is unavailable (down, drained, or draining states)
+The reason a node is unavailable (down, drained, draining, 
+fail or failing states)
 .TP
 \fB%s\fR 
 Maximum job size in nodes
@@ -209,15 +210,17 @@ If set only report state information for responding nodes.
 
 .TP
 \fB\-R\fR, \fB\-\-list\-reasons\fR
-List reasons nodes are down or drained. When nodes are in
-these states SLURM supports optional inclusion of a "reason"
-string by an administrator. This option will display the first
-35 characters of the reason field and list of nodes with that
-reason for all nodes that are, by default, down, drained, or
-draining. This option may be used with other node filtering
-options (e.g. \fB\-r\fR, \fB\-d\fR, \fB\-t\fR, \fB\-n\fR),
-however, combinations of these options that result in a list of
-nodes that are not down or drained will not produce any output.
+List reasons nodes are in the down, drained, fail or failing state. 
+When nodes are in these states SLURM supports optional inclusion 
+of a "reason" string by an administrator. 
+This option will display the first 35 characters of the reason 
+field and list of nodes with that reason for all nodes that are, 
+by default, down, drained, draining or failing. 
+This option may be used with other node filtering options 
+(e.g. \fB\-r\fR, \fB\-d\fR, \fB\-t\fR, \fB\-n\fR),
+however, combinations of these options that result in a 
+list of nodes that are not down or drained or failing will 
+not produce any output.
 When used with \fB\-l\fR the output additionally includes
 the current node state.
 
@@ -248,11 +251,12 @@ default sort value is "N" (increasing node name).
 List nodes only having the given state(s).  Multiple states
 may be comma separated and the comparison is case insensitive.
 Possible values include (case insensitive): ALLOC, ALLOCATED,
-COMP, COMPLETING, DOWN, DRAIN, DRAINED, DRNG, DRAINING, IDLE, 
-UNK, and UNKNOWN.  By default nodes in the specified state are
-reported whether they are responding or not.  The \fB\-\-dead\fR 
-and \fB\-\-responding\fR options may be used to filtering nodes by 
-the responding flag.
+COMP, COMPLETING, DOWN, DRAIN, DRAINED, DRNG, DRAINING, FAIL, 
+FAILING, IDLE, UNK, and UNKNOWN.  
+By default nodes in the specified state are reported whether 
+they are responding or not.  
+The \fB\-\-dead\fR and \fB\-\-responding\fR options may be 
+used to filtering nodes by the responding flag.
 
 .TP
 \fB\-\-usage\fR
@@ -335,11 +339,13 @@ shared.  \fByes\fR indicates resource may be shared or not
 per job's resource allocation.
 .TP
 \fBSTATE\fR
-State of the nodes. Possible states include: down, unknown,
-idle, allocated, drained, draining, completing and their
-abbreviated forms: down, unk, idle, alloc, drain, drng, and
-comp respectively.  Note that the suffix "*" identifies nodes
-that are presently not responding.
+State of the nodes. 
+Possible states include: allocated, completing, down, 
+drained, draining, fail, failing, idle, and unknown plus
+their abbreviated forms: alloc, comp, donw, drain, drng, 
+fail, failg, idle, and unk respectively.
+Note that the suffix "*" identifies nodes that are presently 
+not responding.
 .TP
 \fBTMP_DISK\fR
 Size of temporary disk space in megabytes on these nodes.
@@ -351,7 +357,8 @@ If the node state code is followed by "*", this indicates the
 node is presently not responding and will not be allocated
 any new work.  If the node remains non\-responsive, it will
 be placed in the \fBDOWN\fR state (except in the case of
-\fBDRAINED\fR, \fBDRAINING\fR, or \fBCOMPLETING\fR nodes).
+\fBCOMPLETING\fR, \fBDRAINED\fR, \fBDRAINING\fR,
+\fBFAIL\fR, \fBFAILING\fR nodes).
 If the node state code is followed by "~", this indicates
 the node is presently in a power saving mode (typically
 running at reduced frequency).
@@ -393,6 +400,18 @@ to additional jobs. The node state will be changed to state
 this state per system administrator request. See the \fBupdate
 node\fR command in the \fBscontrol\fR(1) man page or the
 \fBslurm.conf\fR(5) man page for more information.
+.TP
+\fBFAIL\fR
+The node is expected to fail soon and is unavailable for 
+use per system administrator request.  
+See the \fBupdate node\fR command in the \fBscontrol\fR(1) 
+man page or the \fBslurm.conf\fR(5) man page for more information.
+.TP
+\fBFAILING\fR
+The node is currently executing a job, but is expected to fail 
+soon and is unavailable for use per system administrator request.  
+See the \fBupdate node\fR command in the \fBscontrol\fR(1) 
+man page or the \fBslurm.conf\fR(5) man page for more information.
 .TP
 \fBIDLE\fR
 The node is not allocated to any jobs and is available for use.

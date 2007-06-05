@@ -1,7 +1,7 @@
 /*****************************************************************************\
  *  update_node.c - node update function for scontrol.
  *****************************************************************************
- *  Copyright (C) 2002-2006 The Regents of the University of California.
+ *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
  *  UCRL-CODE-226842.
@@ -103,6 +103,10 @@ scontrol_update_node (int argc, char *argv[])
 			node_msg.node_state = NODE_STATE_DRAIN;
 			update_cnt++;
 		}
+		else if (strncasecmp(argv[i], "State=FAIL", 10) == 0) {
+			node_msg.node_state = NODE_STATE_FAIL;
+			update_cnt++;
+		}
 		else if (strncasecmp(argv[i], "State=RES", 9) == 0) {
 			node_msg.node_state = NODE_RESUME;
 			update_cnt++;
@@ -121,7 +125,7 @@ scontrol_update_node (int argc, char *argv[])
 						argv[i]);
 					fprintf (stderr, "Request aborted\n");
 					fprintf (stderr, "Valid states are: ");
-					fprintf (stderr, "NoResp DRAIN RESUME ");
+					fprintf (stderr, "NoResp DRAIN FAIL RESUME ");
 					for (k = 0; k < NODE_STATE_END; k++) {
 						fprintf (stderr, "%s ", 
 						         node_state_string(k));
@@ -141,8 +145,9 @@ scontrol_update_node (int argc, char *argv[])
 		}
 	}
 
-	if ((node_msg.node_state == NODE_STATE_DRAIN)  &&
-	    (node_msg.reason == NULL)) {
+	if (((node_msg.node_state == NODE_STATE_DRAIN)
+	||   (node_msg.node_state == NODE_STATE_FAIL))
+	&&  (node_msg.reason == NULL)) {
 		fprintf (stderr, "You must specify a reason when DRAINING a "
 			"node\nRequest aborted\n");
 		goto done;

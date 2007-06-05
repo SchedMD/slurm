@@ -1,4 +1,4 @@
-.TH "slurm.conf" "5" "December 2006" "slurm.conf 1.2" "Slurm configuration file"
+.TH "slurm.conf" "5" "May 2007" "slurm.conf 1.3" "Slurm configuration file"
 .SH "NAME"
 slurm.conf \- Slurm configuration file 
 .SH "DESCRIPTION"
@@ -777,8 +777,8 @@ node specifications should be place in this file in consecutive order.
 No single node name may be listed more than once in the configuration
 file.
 Use "DownNodes=" to record the state of nodes which are temporarily 
-in a DOWN or DRAINED state without altering permanent configuration 
-information.
+in a DOWN, DRAINED or FAILING state without altering permanent 
+configuration information.
 A job step's tasks are allocated to nodes in order the nodes appear 
 in the configuration file. There is presently no capability within 
 SLURM to arbitarily order a job step's tasks.
@@ -880,20 +880,27 @@ Number of logical threads in a single physical core (e.g. "2").
 The default value is 1.
 .TP
 \fBReason\fR
-Identifies the reason for a node being in state "DOWN" or "DRAINED" 
-or "DRAINING". Use quotes to enclose a reason having more than one 
-word.
+Identifies the reason for a node being in state "DOWN", "DRAINED" 
+"DRAINING", "FAIL" or "FAILING". 
+Use quotes to enclose a reason having more than one word.
 .TP
 \fBState\fR
 State of the node with respect to the initiation of user jobs. 
-Acceptable values are "BUSY", "DOWN", "DRAINED", "DRAINING", "IDLE", 
-and "UNKNOWN". "BUSY" indicates the node has been allocated work 
+Acceptable values are "BUSY", "DOWN", "DRAINED", "DRAINING", 
+"FAIL", "FAILING", "IDLE", and "UNKNOWN". 
+"BUSY" indicates the node has been allocated work 
 and should not be used in the configuration file.
 "DOWN" indicates the node failed and is unavailable to be allocated work.
 "DRAINED" indicates the node was configured unavailable to be 
 allocated work and is presently not performing any work.
 "DRAINING" indicates the node is unavailable to be allocated new 
 work, but is completing the processing of a job.
+"FAIL" indicates the node is expected to fail soon, has 
+no jobs allocated to it, and will not be allocated 
+to any new jobs.
+"FAILING" indicates the node is expected to fail soon, has 
+one or more jobs allocated to it, but will not be allocated 
+to any new jobs.
 "IDLE" indicates the node available to be allocated work, but 
 has none at present
 "UNKNOWN" indicates the node's state is undefined, but will be 
@@ -928,27 +935,34 @@ disk space, higher processor speed, etc.
 Weight is an integer value with a default value of 1.
 .LP
 The "DownNodes=" configuration permits you to mark certain nodes as in a 
-DOWN or DRAINED state without altering the permanent configuration
-information listed under a "NodeName=" specification.
+DOWN, DRAINED, FAIL, or FAILING state without altering the permanent 
+configuration information listed under a "NodeName=" specification.
 .TP
 \fBDownNodes\fR
 Any node name, or list of node names, from the "NodeName=" specifications.
 .TP
 \fBReason\fR
-Identifies the reason for a node being in state "DOWN" or "DRAINED" 
-or "DRAINING". Use quotes to enclose a reason having more than one 
-word.
+Identifies the reason for a node being in state "DOWN", "DRAINED", 
+"DRAINING", "FAIL" or "FAILING. 
+\Use quotes to enclose a reason having more than one word.
 .TP
 \fBState\fR
 State of the node with respect to the initiation of user jobs. 
-Acceptable values are "BUSY", "DOWN", "DRAINED", "DRAINING", "IDLE", 
-and "UNKNOWN". "BUSY" indicates the node has been allocated work 
+Acceptable values are "BUSY", "DOWN", "DRAINED", "DRAINING", "FAIL",
+"FAILING, "IDLE", and "UNKNOWN". 
+"BUSY" indicates the node has been allocated work 
 and should not be used in the configuration file.
 "DOWN" indicates the node failed and is unavailable to be allocated work.
 "DRAINED" indicates the node was configured unavailable to be 
 allocated work and is presently not performing any work.
 "DRAINING" indicates the node is unavailable to be allocated new 
 work, but is completing the processing of a job.
+"FAIL" indicates the node is expected to fail soon, has
+no jobs allocated to it, and will not be allocated
+to any new jobs.
+"FAILING" indicates the node is expected to fail soon, has
+one or more jobs allocated to it, but will not be allocated
+to any new jobs.
 "IDLE" indicates the node available to be allocated work, but 
 has none at present
 "UNKNOWN" indicates the node's state is undefined, but will be 
@@ -1203,7 +1217,7 @@ PartitionName=batch Nodes=dev[9\-17]  MinNodes=4
 PartitionName=long Nodes=dev[9\-17] MaxTime=120 AllowGroups=admin
 
 .SH "COPYING"
-Copyright (C) 2002\-2006 The Regents of the University of California.
+Copyright (C) 2002\-2007 The Regents of the University of California.
 Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 UCRL\-CODE\-226842.
 .LP
