@@ -36,11 +36,11 @@
 \*****************************************************************************/
 
 #include "./msg.h"
+#include "src/common/xstring.h"
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/state_save.h"
 
-static char *	_copy_nodelist_no_dup(char *node_list);
 static int	_start_job(uint32_t jobid, char *hostlist, 
 			int *err_code, char **err_msg);
 
@@ -141,7 +141,7 @@ static int	_start_job(uint32_t jobid, char *hostlist,
 		goto fini;
 	}
 
-	new_node_list = _copy_nodelist_no_dup(hostlist);
+	new_node_list = xstrdup(hostlist);
 	if (hostlist && (new_node_list == NULL)) {
 		*err_code = -700;
 		*err_msg = "Invalid TASKLIST";
@@ -224,23 +224,3 @@ static int	_start_job(uint32_t jobid, char *hostlist,
 	}
 	return rc;
 }
-
-static char *	_copy_nodelist_no_dup(char *node_list)
-{
-	int   new_size = 128;
-	char *new_str;
-	hostlist_t hl = hostlist_create( node_list );
-
-	if (hl == NULL)
-		return NULL;
-
-	hostlist_uniq(hl);
-	new_str = xmalloc(new_size);
-	while (hostlist_ranged_string(hl, new_size, new_str) == -1) {
-		new_size *= 2;
-		xrealloc(new_str, new_size);
-	}
-	hostlist_destroy(hl);
-	return new_str;
-}
-
