@@ -202,7 +202,8 @@ static int _create_allocation(char *com, List allocated_blocks)
 	int len = strlen(com);
 	allocated_block_t *allocated_block = NULL;
 	ba_request_t *request = (ba_request_t*) xmalloc(sizeof(ba_request_t)); 
-	
+	int diff=0;
+
 	request->geometry[0] = (uint16_t)NO_VAL;
 	request->conn_type=SELECT_TORUS;
 	request->rotate = false;
@@ -305,32 +306,57 @@ static int _create_allocation(char *com, List allocated_blocks)
 				break;
 			}
 			if(com[i2]=='x') {
-				
+				diff = i2-geoi;
 				/* for geometery */
-				request->geometry[X] =
-					xstrntol(&com[geoi], 
-						 NULL, BA_SYSTEM_DIMENSIONS, 
-						 HOSTLIST_BASE);
-				geoi++;
+				if(diff>1) {
+					request->geometry[X] =
+						xstrntol(&com[geoi], 
+							 NULL, diff, 
+							 10);
+				} else {
+					request->geometry[X] =
+						xstrntol(&com[geoi], 
+							 NULL, diff, 
+							 HOSTLIST_BASE);
+				}
+				geoi += diff;
+				diff = geoi;
+				
 				while(com[geoi-1]!='x' && geoi<len)
 					geoi++;
 				if(geoi==len)
 					goto geo_error_message;
-				
-				request->geometry[Y] = 
-					xstrntol(&com[geoi], 
-						 NULL, BA_SYSTEM_DIMENSIONS, 
-						 HOSTLIST_BASE);
-				geoi++;
+				diff = geoi - diff;
+				if(diff>1) {
+					request->geometry[Y] =
+						xstrntol(&com[geoi], 
+							 NULL, diff, 
+							 10);
+				} else {
+					request->geometry[Y] = 
+						xstrntol(&com[geoi], 
+							 NULL, diff, 
+							 HOSTLIST_BASE);
+				}
+				geoi += diff;
+				diff = geoi;
 				while(com[geoi-1]!='x' && geoi<len)
 					geoi++;
 				if(geoi==len)
 					goto geo_error_message;
+				diff = geoi - diff;
 				
-				request->geometry[Z] = 
-					xstrntol(&com[geoi], 
-						 NULL, BA_SYSTEM_DIMENSIONS,
-						 HOSTLIST_BASE);
+				if(diff>1) {
+					request->geometry[Z] =
+						xstrntol(&com[geoi], 
+							 NULL, diff, 
+							 10);
+				} else {
+					request->geometry[Z] = 
+						xstrntol(&com[geoi], 
+							 NULL, diff,
+							 HOSTLIST_BASE);
+				}
 				request->size = -1;
 				break;
 			}
@@ -338,26 +364,57 @@ static int _create_allocation(char *com, List allocated_blocks)
 		}
 
 		if(request->start_req) {
-			/* for size */
-			request->start[X] = xstrntol(&com[starti], NULL,
-						     BA_SYSTEM_DIMENSIONS,
-						     HOSTLIST_BASE);
-			starti++;
-			while(com[starti-1]!='x' && starti<len)
-				starti++;
+			i2 = starti;
+			while(com[i2]!='x' && i2<len)
+				i2++;
+			diff = i2-starti;
+			if(diff>1) {
+				request->start[X] = xstrntol(&com[starti],
+							     NULL, diff,
+							     10);
+			} else {
+				request->start[X] = xstrntol(&com[starti],
+							     NULL, diff,
+							     HOSTLIST_BASE);
+			}
+			starti += diff;
 			if(starti==len) 
 				goto start_request;
-			request->start[Y] = xstrntol(&com[starti], NULL,
-						     BA_SYSTEM_DIMENSIONS,
-						     HOSTLIST_BASE);
+			
 			starti++;
-			while(com[starti-1]!='x' && starti<len)
-				starti++;
-			if(starti==len)
+			i2 = starti;
+			while(com[i2]!='x' && i2<len)
+				i2++;
+			diff = i2-starti;
+			
+			if(diff>1) {
+				request->start[Y] = xstrntol(&com[starti],
+							     NULL, diff,
+							     10);
+			} else {
+				request->start[Y] = xstrntol(&com[starti],
+							     NULL, diff,
+							     HOSTLIST_BASE);
+			}
+			starti += diff;
+			if(starti==len) 
 				goto start_request;
-			request->start[Z] = xstrntol(&com[starti], NULL,
-						     BA_SYSTEM_DIMENSIONS,
-						     HOSTLIST_BASE);
+			
+			starti++;
+			i2 = starti;
+			while(com[i2]!=' ' && i2<len)
+				i2++;
+			diff = i2-starti;
+						
+			if(diff>1) {
+				request->start[Z] = xstrntol(&com[starti],
+							     NULL, diff,
+							     10);
+			} else {
+				request->start[Z] = xstrntol(&com[starti],
+							     NULL, diff,
+							     HOSTLIST_BASE);
+			}
 		}
 	start_request:
 		if(!strcasecmp(layout_mode,"OVERLAP"))
