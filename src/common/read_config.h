@@ -74,6 +74,7 @@ extern char *default_plugstack;
 #endif
 #define DEFAULT_PROPAGATE_PRIO_PROCESS 0
 #define DEFAULT_RETURN_TO_SERVICE   0
+#define DEFAULT_RESUME_RATE         60
 #define DEFAULT_SAVE_STATE_LOC      "/tmp"
 #define DEFAULT_SCHEDROOTFILTER     1
 #define DEFAULT_SCHEDTYPE           "sched/builtin"
@@ -87,6 +88,8 @@ extern char *default_plugstack;
 #define DEFAULT_SLURMD_PIDFILE      "/var/run/slurmd.pid"
 #define DEFAULT_SLURMD_TIMEOUT      300
 #define DEFAULT_SPOOLDIR            "/var/spool/slurmd"
+#define DEFAULT_SUSPEND_RATE        60
+#define DEFAULT_SUSPEND_TIME        0
 #define DEFAULT_SWITCH_TYPE         "switch/none"
 #define DEFAULT_TASK_PLUGIN         "task/none"
 #define DEFAULT_TMP_FS              "/tmp"

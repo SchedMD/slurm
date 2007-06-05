@@ -56,40 +56,15 @@
 
 #define _DEBUG 0
 
-/* NOTE: These paramters will be moved into the slurm.conf file in version 1.3
- * Directly modify the default values here in order to enable this capability
- * in SLURM version 1.2. */
-
-/* Node becomes elligible for power saving mode after being idle for
- * this number of seconds. A negative number disables power saving mode. */
-#define DEFAULT_IDLE_TIME	-1
-
-/* Maximum number of nodes to be placed into or removed from power saving mode
- * per minute. Use this to prevent rapid changes in power requirements.
- * A value of zero results in no limits being imposed. */
-#define DEFAULT_SUSPEND_RATE	60
-#define DEFAULT_RESUME_RATE	60
-
-/* Programs to be executed to place nodes or out of power saving mode. These 
- * are run as user SlurmUser. The hostname of the node to be modified will be
- * passed as an argument to the program. */
-#define DEFAULT_SUSPEND_PROGRAM	"/home/jette/slurm.mdev/sbin/slurm.node.suspend"
-#define DEFAULT_RESUME_PROGRAM	"/home/jette/slurm.mdev/sbin/slurm.node.resume"
-
-/* Individual nodes or all nodes in selected partitions can be excluded from
- * being placed into power saving mode. SLURM hostlist expressions can be used.
- * Multiple partitions may be listed with a comma separator. */
-#define DEFAULT_EXCLUDE_SUSPEND_NODES		NULL
-#define DEFAULT_EXCLUDE_SUSPEND_PARTITIONS	NULL
-
 int idle_time, suspend_rate, resume_rate;
 char *suspend_prog = NULL, *resume_prog = NULL;
 char *exc_nodes = NULL, *exc_parts = NULL;
-
+time_t last_config = (time_t) 0;
 
 bitstr_t *exc_node_bitmap = NULL;
 int suspend_cnt, resume_cnt;
 
+static void  _clear_power_config(void);
 static void  _do_power_work(void);
 static void  _do_resume(char *host);
 static void  _do_suspend(char *host);
@@ -292,22 +267,37 @@ static void  _kill_zombies(void)
 		;
 }
 
+/* Free all allocated memory */
+static void _clear_power_config(void)
+{
+	xfree(suspend_prog);
+	xfree(resume_prog);
+	xfree(exc_nodes);
+	xfree(exc_parts);
+	FREE_NULL_BITMAP(exc_node_bitmap);
+}
+
 /* Initialize power_save module paramters.
  * Return 0 on valid configuration to run power saving,
  * otherwise log the problem and return -1 */
 static int _init_power_config(void)
 {
-	idle_time     = DEFAULT_IDLE_TIME;
-	suspend_rate  = DEFAULT_SUSPEND_RATE;
-	resume_rate   = DEFAULT_RESUME_RATE;
-	if (DEFAULT_SUSPEND_PROGRAM)
-		suspend_prog = xstrdup(DEFAULT_SUSPEND_PROGRAM);
-	if (DEFAULT_RESUME_PROGRAM)
-		resume_prog = xstrdup(DEFAULT_RESUME_PROGRAM);
-	if (DEFAULT_EXCLUDE_SUSPEND_NODES)
-		exc_nodes = xstrdup(DEFAULT_EXCLUDE_SUSPEND_NODES);
-	if (DEFAULT_EXCLUDE_SUSPEND_PARTITIONS)
-		exc_parts = xstrdup(DEFAULT_EXCLUDE_SUSPEND_PARTITIONS);
+	slurm_ctl_conf_t *conf = slurm_conf_lock();
+
+	last_config   = slurmctld_conf.last_update;
+	idle_time     = conf->suspend_time;
+	suspend_rate  = conf->suspend_rate;
+	resume_rate   = conf->resume_rate;
+	_clear_power_config();
+	if (conf->suspend_program)
+		suspend_prog = xstrdup(conf->suspend_program);
+	if (conf->resume_program)
+		resume_prog = xstrdup(conf->resume_program);
+	if (conf->suspend_exc_nodes)
+		exc_nodes = xstrdup(conf->suspend_exc_nodes);
+	if (conf->suspend_exc_parts)
+		exc_parts = xstrdup(conf->suspend_exc_parts);
+	slurm_conf_unlock();
 
 	if (idle_time < 0) {	/* not an error */
 		debug("power_save module disabled, idle_time < 0");
@@ -411,24 +401,21 @@ static bool _valid_prog(char *file_name)
  */
 extern void *init_power_save(void *arg)
 {
-        /* Locks: Read config, node, and partitions */
-        slurmctld_lock_t config_read_lock = {
-                READ_LOCK, NO_LOCK, READ_LOCK, READ_LOCK };
         /* Locks: Write node, read jobs and partitions */
         slurmctld_lock_t node_write_lock = {
                 NO_LOCK, READ_LOCK, WRITE_LOCK, READ_LOCK };
-	int rc;
 	time_t now, last_power_scan = 0;
 
-	lock_slurmctld(config_read_lock);
-	rc = _init_power_config();
-	unlock_slurmctld(config_read_lock);
-	if (rc)
+	if (_init_power_config())
 		goto fini;
 
 	while (slurmctld_config.shutdown_time == 0) {
 		sleep(1);
 		_kill_zombies();
+
+		if ((last_config != slurmctld_conf.last_update)
+		&&  (_init_power_config()))
+			goto fini;
 
 		/* Only run every 60 seconds or after
 		 * a node state change, whichever 
@@ -444,11 +431,6 @@ extern void *init_power_save(void *arg)
 		last_power_scan = now;
 	}
 
-fini:	/* Free all allocated memory */
-	xfree(suspend_prog);
-	xfree(resume_prog);
-	xfree(exc_nodes);
-	xfree(exc_parts);
-	FREE_NULL_BITMAP(exc_node_bitmap);
+fini:	_clear_power_config();
 	return NULL;
 }

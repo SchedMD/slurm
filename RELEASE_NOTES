@@ -22,6 +22,8 @@ CONFIGURATION FILE CHANGES
 * Added new parameter "PrivateData" which can be used to prevent users 
   from being able to view jobs or job steps belonging to other users.
 * See "man slurm.conf" for more information.
+* Added configuration parameters for node power save mode: ResumeProgram
+  ResumeRate, SuspendExcNodes, SuspendExcParts, SuspendProgram and SuspendRate.
 
 OTHER CHANGES
 
