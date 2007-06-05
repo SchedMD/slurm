@@ -3035,10 +3035,10 @@ static int _find_match(ba_request_t *ba_request, List results)
 	if(startx == -1)
 		startx = DIM_SIZE[X]-1;
 	if(ba_request->start_req) {
-		if(ba_request->start[X]>DIM_SIZE[X] 
+		if(ba_request->start[X]>=DIM_SIZE[X] 
 #ifdef HAVE_BG
-		   || ba_request->start[Y]>DIM_SIZE[Y]
-		   || ba_request->start[Z]>DIM_SIZE[Z]
+		   || ba_request->start[Y]>=DIM_SIZE[Y]
+		   || ba_request->start[Z]>=DIM_SIZE[Z]
 #endif
 			)
 			return 0;
