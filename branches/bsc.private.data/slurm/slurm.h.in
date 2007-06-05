@@ -871,6 +871,7 @@ typedef struct slurm_ctl_conf {
 	uint16_t msg_timeout;	/* message timeout */
 	char *plugindir;	/* pathname to plugins */
 	char *plugstack;        /* pathname to plugin stack config file */
+	uint16_t private_data;	/* block viewing of other user jobs */
 	char *proctrack_type;	/* process tracking plugin type */
 	char *prolog;		/* pathname of job prolog */
 	uint16_t propagate_prio_process; /* 1 if process priority should

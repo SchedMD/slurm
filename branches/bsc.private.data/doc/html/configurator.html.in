@@ -137,6 +137,7 @@ function displayfile()
    "ReturnToService=" + get_radio_value(document.config.return_to_service) + "<br>" +
    "#MaxJobCount= <br>" +
    "#PlugStackConfig= <br>" +
+   "#Privatedata= <br>" +
    "#PropagatePrioProcess= <br>" +
    "#PropagateResourceLimits= <br>" +
    "#PropagateResourceLimitsExcept= <br>" +

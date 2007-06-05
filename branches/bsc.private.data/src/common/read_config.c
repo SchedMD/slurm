@@ -1,7 +1,7 @@
 /*****************************************************************************\
  *  read_config.c - read the overall slurm configuration file
  *****************************************************************************
- *  Copyright (C) 2002-2006 The Regents of the University of California.
+ *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>.
  *  UCRL-CODE-226842.
@@ -159,6 +159,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"MpiDefault", S_P_STRING},
 	{"PluginDir", S_P_STRING},
 	{"PlugStackConfig", S_P_STRING},
+	{"PrivateData", S_P_UINT16},
 	{"ProctrackType", S_P_STRING},
 	{"Prolog", S_P_STRING},
 	{"PropagatePrioProcess", S_P_UINT16},
@@ -1111,6 +1112,7 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	ctl_conf_ptr->next_job_id		= (uint32_t) NO_VAL;
 	xfree (ctl_conf_ptr->plugindir);
 	xfree (ctl_conf_ptr->plugstack);
+	ctl_conf_ptr->private_data              = 0;
 	xfree (ctl_conf_ptr->proctrack_type);
 	xfree (ctl_conf_ptr->prolog);
 	ctl_conf_ptr->propagate_prio_process	= (uint16_t) NO_VAL;
@@ -1505,6 +1507,8 @@ validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	if ((!strcmp(conf->switch_type, "switch/elan"))
 	    && (!strcmp(conf->proctrack_type,"proctrack/linuxproc")))
 		fatal("proctrack/linuxproc is incompatable with switch/elan");
+
+	s_p_get_uint16(&conf->private_data, "PrivateData", hashtbl);
 
 	s_p_get_string(&conf->prolog, "Prolog", hashtbl);
 

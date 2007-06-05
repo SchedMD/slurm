@@ -80,7 +80,6 @@
 #include "src/slurmctld/trigger_mgr.h"
 
 static void         _fill_ctld_conf(slurm_ctl_conf_t * build_ptr);
-static inline bool 	_is_super_user(uid_t uid);
 static void         _kill_job_on_msg_fail(uint32_t job_id);
 static int 	    _launch_batch_step(job_desc_msg_t *job_desc_msg,
 					uid_t uid, uint32_t *step_id);
@@ -332,6 +331,7 @@ void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
 	conf_ptr->next_job_id         = get_next_job_id();
 	conf_ptr->plugindir           = xstrdup(conf->plugindir);
 	conf_ptr->plugstack           = xstrdup(conf->plugstack);
+	conf_ptr->private_data        = conf->private_data;
 	conf_ptr->proctrack_type      = xstrdup(conf->proctrack_type);
 	conf_ptr->prolog              = xstrdup(conf->prolog);
 	conf_ptr->propagate_prio_process = 
@@ -377,16 +377,15 @@ void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
 	return;
 }
 
-/* return true if supplied uid is a super-user: root, self, or SlurmUser */
-static inline bool _is_super_user(uid_t uid)
+/*
+ * validate_super_user - validate that the uid is authorized to see 
+ *      privileged data (either user root or SlurmUser)
+ * IN uid - user to validate
+ * RET true if permitted to run, false otherwise
+ */
+extern bool validate_super_user(uid_t uid)
 {
-	/* READ lock_slurmctld config would be ideal here, but 
-	 * that value should be identical to getuid() anyway.
-	 * privileged calls should be coming from user root too, 
-	 * so we forgo the overhead here. */
-	if ( (uid == 0) || 
-	     (uid == slurmctld_conf.slurm_user_id) ||
-	     (uid == getuid()) )
+	if ((uid == 0) || (uid == getuid()))
 		return true;
 	else
 		return false;
@@ -465,7 +464,7 @@ static void _slurm_rpc_allocate_resources(slurm_msg_t * msg)
 	/* do RPC call */
 	dump_job_desc(job_desc_msg);
 	uid = g_slurm_auth_get_uid(msg->auth_cred);
-	if ( (uid != job_desc_msg->user_id) && (!_is_super_user(uid)) ) {
+	if ( (uid != job_desc_msg->user_id) && (!validate_super_user(uid)) ) {
 		error_code = ESLURM_USER_ID_MISSING;
 		error("Security violation, RESOURCE_ALLOCATE from uid=%u",
 		      (unsigned int) uid);
@@ -578,9 +577,9 @@ static void _slurm_rpc_dump_jobs(slurm_msg_t * msg)
 	slurm_msg_t response_msg;
 	job_info_request_msg_t *job_info_request_msg =
 	    (job_info_request_msg_t *) msg->data;
-	/* Locks: Read job, write node (for hiding) */
+	/* Locks: Read config job, write node (for hiding) */
 	slurmctld_lock_t job_read_lock = { 
-		NO_LOCK, READ_LOCK, NO_LOCK, WRITE_LOCK };
+		READ_LOCK, READ_LOCK, NO_LOCK, WRITE_LOCK };
 
 	START_TIMER;
 	debug2("Processing RPC: REQUEST_JOB_INFO");
@@ -657,12 +656,18 @@ static void _slurm_rpc_dump_nodes(slurm_msg_t * msg)
 	/* Locks: Read config, read node, write node (for hiding) */
 	slurmctld_lock_t node_read_lock = { 
 		READ_LOCK, NO_LOCK, READ_LOCK, WRITE_LOCK };
+        uid_t uid;
 
 	START_TIMER;
 	debug2("Processing RPC: REQUEST_NODE_INFO");
 	lock_slurmctld(node_read_lock);
 
-	if ((node_req_msg->last_update - 1) >= last_node_update) {
+	uid = g_slurm_auth_get_uid(msg->auth_cred);
+	if (!validate_super_user(uid)) {
+		unlock_slurmctld(node_read_lock);
+		error("Security violation, REQUEST_NODE_INFO RPC from uid=%d", uid);
+		slurm_send_rc_msg(msg, ESLURM_USER_ID_MISSING);
+	} else if ((node_req_msg->last_update - 1) >= last_node_update) {
 		unlock_slurmctld(node_read_lock);
 		debug2("_slurm_rpc_dump_nodes, no change");
 		slurm_send_rc_msg(msg, SLURM_NO_CHANGE_IN_DATA);
@@ -694,16 +699,23 @@ static void _slurm_rpc_dump_partitions(slurm_msg_t * msg)
 	char *dump;
 	int dump_size;
 	slurm_msg_t response_msg;
-	part_info_request_msg_t  *part_req_msg = (part_info_request_msg_t  *) msg->data;
-	/* Locks: Read partition */
+	part_info_request_msg_t  *part_req_msg = 
+			(part_info_request_msg_t  *) msg->data;
+	/* Locks: Read configureatin and partition */
 	slurmctld_lock_t part_read_lock = { 
-		NO_LOCK, NO_LOCK, NO_LOCK, READ_LOCK };
+		READ_LOCK, NO_LOCK, NO_LOCK, READ_LOCK };
+	uid_t uid;
 
 	START_TIMER;
 	debug2("Processing RPC: REQUEST_PARTITION_INFO");
 	lock_slurmctld(part_read_lock);
 
-	if ((part_req_msg->last_update - 1) >= last_part_update) {
+	uid = g_slurm_auth_get_uid(msg->auth_cred);
+	if (slurmctld_conf.private_data && !validate_super_user(uid)) {
+		unlock_slurmctld(part_read_lock);
+		debug2("Security violation, PARTITION_INFO RPC from uid=%d", uid);
+		slurm_send_rc_msg(msg, ESLURM_USER_ID_MISSING);
+	} else if ((part_req_msg->last_update - 1) >= last_part_update) {
 		unlock_slurmctld(part_read_lock);
 		debug2("_slurm_rpc_dump_partitions, no change");
 		slurm_send_rc_msg(msg, SLURM_NO_CHANGE_IN_DATA);
@@ -733,9 +745,9 @@ static void _slurm_rpc_dump_partitions(slurm_msg_t * msg)
 static void  _slurm_rpc_epilog_complete(slurm_msg_t * msg)
 {
 	DEF_TIMERS;
-	/* Locks: Write job, write node */
+	/* Locks: Read configuration, write job, write node */
 	slurmctld_lock_t job_write_lock = { 
-		NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK };
+		READ_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK };
 	uid_t uid;
 	epilog_complete_msg_t *epilog_msg = 
 		(epilog_complete_msg_t *) msg->data;
@@ -744,13 +756,14 @@ static void  _slurm_rpc_epilog_complete(slurm_msg_t * msg)
 	START_TIMER;
 	debug2("Processing RPC: MESSAGE_EPILOG_COMPLETE");
 	uid = g_slurm_auth_get_uid(msg->auth_cred);
-	if (!_is_super_user(uid)) {
+	lock_slurmctld(job_write_lock);
+	if (slurmctld_conf.private_data && !validate_super_user(uid)) {
+		unlock_slurmctld(job_write_lock);
 		error("Security violation, EPILOG_COMPLETE RPC from uid=%u",
 		      (unsigned int) uid);
 		return;
 	}
 
-	lock_slurmctld(job_write_lock);
 	if (job_epilog_complete(epilog_msg->job_id, epilog_msg->node_name, 
 	                        epilog_msg->return_code))
 		run_scheduler = true;
@@ -911,7 +924,7 @@ static void _slurm_rpc_complete_batch_script(slurm_msg_t * msg)
 	       comp_msg->job_id);
 	uid = g_slurm_auth_get_uid(msg->auth_cred);
 
-	if (!_is_super_user(uid)) {
+	if (!validate_super_user(uid)) {
 		/* Only the slurmstepd can complete a batch script */
 		END_TIMER;
 		return;
@@ -997,7 +1010,7 @@ static void _slurm_rpc_job_step_create(slurm_msg_t * msg)
 
 	dump_step_desc(req_step_msg);
 	uid = g_slurm_auth_get_uid(msg->auth_cred);
-	if ( (uid != req_step_msg->user_id) && (!_is_super_user(uid)) ) {
+	if ( (uid != req_step_msg->user_id) && (!validate_super_user(uid)) ) {
 		error("Security violation, JOB_STEP_CREATE RPC from uid=%u",
 			(unsigned int) uid);
 		slurm_send_rc_msg(msg, ESLURM_USER_ID_MISSING);
@@ -1007,7 +1020,7 @@ static void _slurm_rpc_job_step_create(slurm_msg_t * msg)
 #ifdef HAVE_FRONT_END	/* Limited job step support */
 	/* Non-super users not permitted to run job steps on front-end.
 	 * A single slurmd can not handle a heavy load. */
-	if (!_is_super_user(uid)) {
+	if (!validate_super_user(uid)) {
 		info("Attempt to execute job step by uid=%u",
 			(unsigned int) uid);
 		slurm_send_rc_msg(msg, ESLURM_BATCH_ONLY);
@@ -1067,9 +1080,9 @@ static void _slurm_rpc_job_step_get_info(slurm_msg_t * msg)
 	int error_code = SLURM_SUCCESS;
 	job_step_info_request_msg_t *request =
 	    (job_step_info_request_msg_t *) msg->data;
-	/* Locks: Read job, write partition (for filtering) */
+	/* Locks: Read config, job, write partition (for filtering) */
 	slurmctld_lock_t job_read_lock = { 
-		NO_LOCK, READ_LOCK, NO_LOCK, WRITE_LOCK };
+		READ_LOCK, READ_LOCK, NO_LOCK, WRITE_LOCK };
 
 	START_TIMER;
 	debug2("Processing RPC: REQUEST_JOB_STEP_INFO");
@@ -1137,7 +1150,7 @@ static void _slurm_rpc_job_will_run(slurm_msg_t * msg)
 	/* do RPC call */
 	dump_job_desc(job_desc_msg);
 	uid = g_slurm_auth_get_uid(msg->auth_cred);
-	if ( (uid != job_desc_msg->user_id) && (!_is_super_user(uid)) ) {
+	if ( (uid != job_desc_msg->user_id) && (!validate_super_user(uid)) ) {
 		error_code = ESLURM_USER_ID_MISSING;
 		error("Security violation, JOB_WILL_RUN RPC from uid=%u",
 		      (unsigned int) uid);
@@ -1179,7 +1192,7 @@ static void _slurm_rpc_node_registration(slurm_msg_t * msg)
 	START_TIMER;
 	debug2("Processing RPC: MESSAGE_NODE_REGISTRATION_STATUS");
 	uid = g_slurm_auth_get_uid(msg->auth_cred);
-	if (!_is_super_user(uid)) {
+	if (!validate_super_user(uid)) {
 		error_code = ESLURM_USER_ID_MISSING;
 		error("Security violation, NODE_REGISTER RPC from uid=%u",
 		      (unsigned int) uid);
@@ -1236,9 +1249,9 @@ static void _slurm_rpc_job_alloc_info(slurm_msg_t * msg)
 	job_alloc_info_msg_t *job_info_msg =
 	    (job_alloc_info_msg_t *) msg->data;
 	job_alloc_info_response_msg_t job_info_resp_msg;
-	/* Locks: Read job, read node */
+	/* Locks: Read config, job, read node */
 	slurmctld_lock_t job_read_lock = { 
-		NO_LOCK, READ_LOCK, READ_LOCK, NO_LOCK };
+		READ_LOCK, READ_LOCK, READ_LOCK, NO_LOCK };
 	uid_t uid;
 	bool do_unlock = false;
 
@@ -1311,9 +1324,9 @@ static void _slurm_rpc_job_alloc_info_lite(slurm_msg_t * msg)
 	job_alloc_info_msg_t *job_info_msg =
 	    (job_alloc_info_msg_t *) msg->data;
 	resource_allocation_response_msg_t job_info_resp_msg;
-	/* Locks: Read job, read node */
+	/* Locks: Read config, job, read node */
 	slurmctld_lock_t job_read_lock = { 
-		NO_LOCK, READ_LOCK, READ_LOCK, NO_LOCK };
+		READ_LOCK, READ_LOCK, READ_LOCK, NO_LOCK };
 	uid_t uid;
 	bool do_unlock = false;
 
@@ -1397,7 +1410,7 @@ static void _slurm_rpc_reconfigure_controller(slurm_msg_t * msg)
 	START_TIMER;
 	debug2("Processing RPC: REQUEST_RECONFIGURE");
 	uid = g_slurm_auth_get_uid(msg->auth_cred);
-	if (!_is_super_user(uid)) {
+	if (!validate_super_user(uid)) {
 		error("Security violation, RECONFIGURE RPC from uid=%u",
 		      (unsigned int) uid);
 		error_code = ESLURM_USER_ID_MISSING;
@@ -1448,7 +1461,7 @@ static void _slurm_rpc_shutdown_controller(slurm_msg_t * msg)
 		NO_LOCK, NO_LOCK, READ_LOCK, NO_LOCK };
 
 	uid = g_slurm_auth_get_uid(msg->auth_cred);
-	if (!_is_super_user(uid)) {
+	if (!validate_super_user(uid)) {
 		error("Security violation, SHUTDOWN RPC from uid=%u",
 		      (unsigned int) uid);
 		error_code = ESLURM_USER_ID_MISSING;
@@ -1515,7 +1528,7 @@ static void _slurm_rpc_shutdown_controller_immediate(slurm_msg_t * msg)
 	uid_t uid;
 
 	uid = g_slurm_auth_get_uid(msg->auth_cred);
-	if (!_is_super_user(uid)) {
+	if (!validate_super_user(uid)) {
 		error
 		    ("Security violation, SHUTDOWN_IMMEDIATE RPC from uid=%u",
 		     (unsigned int) uid);
@@ -1551,7 +1564,7 @@ static void _slurm_rpc_step_complete(slurm_msg_t *msg)
 		req->job_id, req->job_step_id,
 		req->range_first, req->range_last, req->step_rc);
 	uid = g_slurm_auth_get_uid(msg->auth_cred);
-	if (!_is_super_user(uid)) {
+	if (!validate_super_user(uid)) {
 		/* Don't trust RPC, it is not from slurmstepd */
 		error("Invalid user %d attempted REQUEST_STEP_COMPLETE",
 		      uid);
@@ -1627,9 +1640,9 @@ static void _slurm_rpc_step_layout(slurm_msg_t *msg)
 	DEF_TIMERS;
 	job_step_id_msg_t *req = (job_step_id_msg_t *)msg->data;
 	slurm_step_layout_t *step_layout = NULL;
-	/* Locks: Write job, write node */
+	/* Locks: Read config job, write node */
 	slurmctld_lock_t job_read_lock = { 
-		NO_LOCK, READ_LOCK, READ_LOCK, NO_LOCK };
+		READ_LOCK, READ_LOCK, READ_LOCK, NO_LOCK };
 	uid_t uid = g_slurm_auth_get_uid(msg->auth_cred);
 	struct job_record *job_ptr = NULL;
 	struct step_record *step_ptr = NULL;
@@ -1694,7 +1707,7 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t * msg)
 	/* do RPC call */
 	dump_job_desc(job_desc_msg);
 	uid = g_slurm_auth_get_uid(msg->auth_cred);
-	if ( (uid != job_desc_msg->user_id) && (!_is_super_user(uid)) ) {
+	if ( (uid != job_desc_msg->user_id) && (!validate_super_user(uid)) ) {
 		error_code = ESLURM_USER_ID_MISSING;
 		error("Security violation, SUBMIT_JOB from uid=%u",
 		      (unsigned int) uid);
@@ -1712,7 +1725,7 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t * msg)
 #ifdef HAVE_FRONT_END	/* Limited job step support */
 			/* Non-super users not permitted to run job steps on front-end.
 	 		 * A single slurmd can not handle a heavy load. */
-			if (!_is_super_user(uid)) {
+			if (!validate_super_user(uid)) {
 				info("Attempt to execute batch job step by uid=%u",
 					(unsigned int) uid);
 				slurm_send_rc_msg(msg, ESLURM_BATCH_ONLY);
@@ -1880,7 +1893,7 @@ static void _slurm_rpc_update_node(slurm_msg_t * msg)
 	START_TIMER;
 	debug2("Processing RPC: REQUEST_UPDATE_NODE");
 	uid = g_slurm_auth_get_uid(msg->auth_cred);
-	if (!_is_super_user(uid)) {
+	if (!validate_super_user(uid)) {
 		error_code = ESLURM_USER_ID_MISSING;
 		error("Security violation, UPDATE_NODE RPC from uid=%u",
 		      (unsigned int) uid);
@@ -1929,7 +1942,7 @@ static void _slurm_rpc_update_partition(slurm_msg_t * msg)
 	START_TIMER;
 	debug2("Processing RPC: REQUEST_UPDATE_PARTITION");
 	uid = g_slurm_auth_get_uid(msg->auth_cred);
-	if (!_is_super_user(uid)) {
+	if (!validate_super_user(uid)) {
 		error_code = ESLURM_USER_ID_MISSING;
 		error
 		    ("Security violation, UPDATE_PARTITION RPC from uid=%u",
@@ -1984,7 +1997,7 @@ static void _slurm_rpc_delete_partition(slurm_msg_t * msg)
 	START_TIMER;
 	debug2("Processing RPC: REQUEST_DELETE_PARTITION");
 	uid = g_slurm_auth_get_uid(msg->auth_cred);
-	if (!_is_super_user(uid)) {
+	if (!validate_super_user(uid)) {
 		error_code = ESLURM_USER_ID_MISSING;
 		error
 		    ("Security violation, DELETE_PARTITION RPC from uid=%u",
@@ -2053,12 +2066,27 @@ static void  _slurm_rpc_node_select_info(slurm_msg_t * msg)
 	node_info_select_request_msg_t *sel_req_msg =
 		(node_info_select_request_msg_t *) msg->data;
 	slurm_msg_t response_msg;
+	/* Locks: read config */
+	slurmctld_lock_t config_read_lock = { 
+		READ_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
 	DEF_TIMERS;
+	uid_t uid;
 
 	START_TIMER;
 	debug2("Processing RPC: REQUEST_NODE_SELECT_INFO");
-	error_code = select_g_pack_node_info(sel_req_msg->last_update,
-					     &buffer);
+	uid = g_slurm_auth_get_uid(msg->auth_cred);
+	lock_slurmctld(config_read_lock);
+	if (slurmctld_conf.private_data && !validate_super_user(uid)) {
+		error_code = ESLURM_USER_ID_MISSING;
+		error("Security violation, NODE_SELECT_INFO RPC from uid=u",
+			(unsigned int) uid);
+	} 
+	unlock_slurmctld(config_read_lock);
+	if (error_code == SLURM_SUCCESS) {
+		error_code = select_g_pack_node_info(
+					sel_req_msg->last_update,
+					&buffer);
+	}
 	END_TIMER;
 
 	if (error_code) {
