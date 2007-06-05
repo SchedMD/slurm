@@ -285,7 +285,7 @@ static int _init_power_config(void)
 	slurm_ctl_conf_t *conf = slurm_conf_lock();
 
 	last_config   = slurmctld_conf.last_update;
-	idle_time     = conf->suspend_time;
+	idle_time     = conf->suspend_time - 1;
 	suspend_rate  = conf->suspend_rate;
 	resume_rate   = conf->resume_rate;
 	_clear_power_config();
