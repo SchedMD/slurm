@@ -55,6 +55,7 @@ struct strigger_parameters {
 	bool     mode_clear;
 	bool     node_down;
 	char *   node_id;
+	bool     node_fail;
 	bool     node_idle;
 	bool     node_up;
 	int      offset;

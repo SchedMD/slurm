@@ -185,7 +185,7 @@ static int _build_bitmaps(void)
 		base_state = node_record_table_ptr[i].node_state & 
 				NODE_STATE_BASE;
 		drain_flag = node_record_table_ptr[i].node_state &
-				NODE_STATE_DRAIN; 
+				(NODE_STATE_DRAIN | NODE_STATE_FAIL);
 		no_resp_flag = node_record_table_ptr[i].node_state & 
 				NODE_STATE_NO_RESPOND;
 		job_cnt = node_record_table_ptr[i].run_job_cnt +
@@ -299,9 +299,12 @@ static int _state_str2int(const char *state_str)
 			break;
 		}
 	}
-	if ((i >= NODE_STATE_END)
-	&&  (strncasecmp("DRAIN", state_str, 5) == 0))
-		state_val = NODE_STATE_IDLE | NODE_STATE_DRAIN;
+	if (i >= NODE_STATE_END) {
+		if (strncasecmp("DRAIN", state_str, 5) == 0)
+			state_val = NODE_STATE_IDLE | NODE_STATE_DRAIN;
+		else if (strncasecmp("FAIL", state_str, 4) == 0)
+			state_val = NODE_STATE_IDLE | NODE_STATE_FAIL;
+	}
 	if (state_val == NO_VAL) {
 		error("invalid node state %s", state_str);
 		errno = EINVAL;
@@ -673,7 +676,7 @@ static int _build_all_partitionline_info()
  *              state information depending upon value
  *              0 = use no saved state information
  *              1 = recover saved job and trigger state, 
- *                  node DOWN/DRAIN state and reason information
+ *                  node DOWN/DRAIN/FAIL state and reason information
  *              2 = recover all state saved from last slurmctld shutdown
  * RET 0 if no error, otherwise an error code
  * Note: Operates on common variables only

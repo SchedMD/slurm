@@ -3915,7 +3915,7 @@ static void _pack_trigger_msg(trigger_info_msg_t *msg , Buf buffer)
 	pack32(msg->record_count, buffer);
 	for (i=0; i<msg->record_count; i++) {
 		pack32 (msg->trigger_array[i].trig_id,   buffer);
-		pack8  (msg->trigger_array[i].res_type,  buffer);
+		pack16 (msg->trigger_array[i].res_type,  buffer);
 		packstr(msg->trigger_array[i].res_id,    buffer);
 		pack16 (msg->trigger_array[i].trig_type, buffer);
 		pack16 (msg->trigger_array[i].offset,    buffer);
@@ -3935,7 +3935,7 @@ static int  _unpack_trigger_msg(trigger_info_msg_t ** msg_ptr , Buf buffer)
 			msg->record_count);
 	for (i=0; i<msg->record_count; i++) {
 		safe_unpack32(&msg->trigger_array[i].trig_id,   buffer);
-		safe_unpack8 (&msg->trigger_array[i].res_type,  buffer);
+		safe_unpack16(&msg->trigger_array[i].res_type,  buffer);
 		safe_unpackstr_xmalloc(&msg->trigger_array[i].res_id, 
 				&uint16_tmp, buffer);
 		safe_unpack16(&msg->trigger_array[i].trig_type, buffer);
