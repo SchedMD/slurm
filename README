@@ -58,71 +58,10 @@ quick description of the subdirectories of the SLURM distribution follows:
 COMPILING AND INSTALLING THE DISTRIBUTION
 -----------------------------------------
 
-Please the the INSTALL file for basic instructions. You will need a
-working installation of OpenSSL.
-
-SLURM does not use reserved ports to authenticate communication
-between components. You will need to have at least one "auth"
-plugin. Currently, only three authentication plugins are available:
-"auth/none," "auth/authd," and "auth/munge." The "auth/none" plugin is
-built and used by default, but one of either Brent Chun's authd, or Chris
-Dunlap's Munge should be installed in order to get properly authenticated
-communications.  The configure script in the top-level directory of this
-distribution will determine which authentication plugins may be built.
-
-
-OpenSSL:
-http://www.openssl.org
-
-AUTHD:
-http://www.theether.org/authd/
-
-MUNGE:
-http://www.llnl.gov/linux/munge/
-
-
-CONFIGURATION
--------------
-
-An annotated sample configuration file for SLURM is provided with this
-distribution as etc/slurm.conf.example. Edit this config file to suit
-your site and cluster, then copy it to `$sysconfdir/slurm.conf,' where
-sysconfdir defaults to PREFIX/etc unless explicitly overwritten in the
-`configure' or `make' steps.
-
-Once the config file is installed in the proper location, you'll need
-to create the keys for SLURM job credential creation and verification.
-The following openssl commands should be used:
-
- > openssl genrsa -out /path/to/private/key 1024
- > openssl rsa -in /path/to/private/key -pubout -out /path/to/public/key
-
-The private key and public key locations should be those specified by
-JobCredentialPrivateKey and JobCredentialPublicCertificate in the SLURM
-config file.
-
-
-RUNNING SLURM
--------------
-
-Once a valid configuration has been set up and installed, the SLURM
-controller, slurmctld, should be started on the primary and backup
-control machines, and the SLURM compute node daemon, slurmd, should be
-started on each compute server.
-
-The slurmd daemons need to run as root for production use, but may be
-run as a user for testing purposes (obviously no jobs may be run as
-any other user in that configuration). The SLURM controller, slurmctld,
-need to be run as the configured SlurmUser (see your config file).
-
-Man pages are the best source of information about SLURM commands and
-daemons. Please see: slurmctld(8), slurmd(8), scontrol(1), sinfo(1),
-squeue(1), scancel(1), and srun(1).
-
-Also, take a look at the Quickstart Guide to get acquainted with
-running and managing jobs with SLURM: doc/html/quickstart_admin.html
-or PREFIX/share/doc/quickstart_admin.html.
-
+Please see the instructions at 
+  http://www.llnl.gov/linux/slurm/quickstart_admin.html
+Extensive documentation is available from our home page at 
+  http://www.llnl.gov/linux/slurm
 
 PROBLEMS
 --------
