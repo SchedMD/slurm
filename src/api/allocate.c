@@ -212,7 +212,6 @@ slurm_allocate_resources_blocking (const job_desc_msg_t *user_req,
 			xfree(req);
 			return NULL;
 		}
-		req->alloc_resp_hostname = listen->hostname;
 		req->alloc_resp_port = listen->port;
 	}
 
@@ -289,9 +288,13 @@ slurm_allocate_resources_blocking (const job_desc_msg_t *user_req,
 int slurm_job_will_run (job_desc_msg_t *req)
 {
 	slurm_msg_t req_msg;
+	char host[64];
 	int rc;
 
 	/* req.immediate = true;    implicit */
+	if ((req->alloc_node == NULL)
+	&&  (gethostname_short(host, sizeof(host)) == 0))
+		req->alloc_node = host;
 	slurm_msg_t_init(&req_msg);
 	req_msg.msg_type = REQUEST_JOB_WILL_RUN;
 	req_msg.data     = req; 
@@ -556,12 +559,9 @@ static listen_t *_create_allocation_response_socket(char *interface_hostname)
 	listen_t *listen = NULL;
 
 	listen = xmalloc(sizeof(listen_t));
-	if (listen == NULL)
-		return NULL;
 
 	/* port "0" lets the operating system pick any port */
-	slurm_set_addr(&listen->address, 0, interface_hostname);
-	if ((listen->fd = slurm_init_msg_engine(&listen->address)) < 0) {
+	if ((listen->fd = slurm_init_msg_engine_port(0)) < 0) {
 		error("slurm_init_msg_engine_port error %m");
 		return NULL;
 	}

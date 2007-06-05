@@ -8,6 +8,8 @@ documents those changes that are of interest to users and admins.
     prevent a user from seeing jobs or job steps belonging to other users.
  -- Added configuration parameters for node power save mode: ResumeProgram
     ResumeRate, SuspendExcNodes, SuspendExcParts, SuspendProgram and SuspendRate.
+ -- Slurmctld maintains the IP address (rather than hostname) for srun 
+    communications. This fixes some possible network routing issues.
 
 * Changes in SLURM 1.2.10
 =========================

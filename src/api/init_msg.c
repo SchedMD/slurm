@@ -111,9 +111,7 @@ void slurm_init_job_desc_msg(job_desc_msg_t * job_desc_msg)
 	job_desc_msg->user_id     = NO_VAL;
 	job_desc_msg->group_id    = NO_VAL;
 	job_desc_msg->work_dir    = NULL;
-	job_desc_msg->alloc_resp_hostname = NULL;
-	job_desc_msg->alloc_resp_port        = 0;
-	job_desc_msg->other_hostname = NULL;
+	job_desc_msg->alloc_resp_port = 0;
 	job_desc_msg->other_port  = 0;
 	job_desc_msg->mail_type   = 0;
 	job_desc_msg->mail_user   = NULL;
