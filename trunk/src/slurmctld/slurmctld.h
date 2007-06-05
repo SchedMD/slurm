@@ -1401,4 +1401,12 @@ extern int validate_nodes_via_front_end(uint32_t job_count,
 			uint32_t *job_id_ptr, uint16_t *step_id_ptr,
 			uint32_t status);
 
+/*
+ * validate_super_user - validate that the uid is authorized to see 
+ *      privileged data (either user root or SlurmUser)
+ * IN uid - user to validate
+ * RET true if permitted to run, false otherwise
+ */
+extern bool validate_super_user (uid_t uid);
+
 #endif /* !_HAVE_SLURMCTLD_H */
