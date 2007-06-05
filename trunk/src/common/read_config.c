@@ -165,6 +165,8 @@ s_p_options_t slurm_conf_options[] = {
 	{"PropagatePrioProcess", S_P_UINT16},
 	{"PropagateResourceLimitsExcept", S_P_STRING},
 	{"PropagateResourceLimits", S_P_STRING},
+	{"ResumeProgram", S_P_STRING},
+	{"ResumeRate", S_P_UINT16},
 	{"ReturnToService", S_P_UINT16},
 	{"SchedulerAuth", S_P_STRING},
 	{"SchedulerPort", S_P_UINT16},
@@ -187,6 +189,11 @@ s_p_options_t slurm_conf_options[] = {
 	{"SrunEpilog", S_P_STRING},
 	{"SrunProlog", S_P_STRING},
 	{"StateSaveLocation", S_P_STRING},
+	{"SuspendExcNodes", S_P_STRING},
+	{"SuspendExcParts", S_P_STRING},
+	{"SuspendProgram", S_P_STRING},
+	{"SuspendRate", S_P_UINT16},
+	{"SuspendTime", S_P_LONG},
 	{"SwitchType", S_P_STRING},
 	{"TaskEpilog", S_P_STRING},
 	{"TaskProlog", S_P_STRING},
@@ -1118,6 +1125,8 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	ctl_conf_ptr->propagate_prio_process	= (uint16_t) NO_VAL;
 	xfree (ctl_conf_ptr->propagate_rlimits_except);
 	xfree (ctl_conf_ptr->propagate_rlimits);
+	xfree (ctl_conf_ptr->resume_program);
+	ctl_conf_ptr->resume_rate		= (uint16_t) NO_VAL;
 	ctl_conf_ptr->ret2service		= (uint16_t) NO_VAL;
 	ctl_conf_ptr->schedport			= (uint16_t) NO_VAL;
 	ctl_conf_ptr->schedrootfltr		= (uint16_t) NO_VAL;
@@ -1138,6 +1147,11 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	xfree (ctl_conf_ptr->slurmd_spooldir);
 	ctl_conf_ptr->slurmd_timeout		= (uint16_t) NO_VAL;
 	xfree (ctl_conf_ptr->state_save_location);
+	xfree (ctl_conf_ptr->suspend_exc_nodes);
+	xfree (ctl_conf_ptr->suspend_exc_parts);
+	xfree (ctl_conf_ptr->suspend_program);
+	ctl_conf_ptr->suspend_rate		= (uint16_t) NO_VAL;
+	ctl_conf_ptr->suspend_time		= (uint16_t) NO_VAL;
 	xfree (ctl_conf_ptr->switch_type);
 	xfree (ctl_conf_ptr->task_epilog);
 	xfree (ctl_conf_ptr->task_prolog);
@@ -1368,6 +1382,7 @@ static void
 validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 {
 	char *temp_str = NULL;
+	long long_suspend_time;
 	bool truth;
 
 	if (s_p_get_string(&conf->backup_controller, "BackupController",
@@ -1539,6 +1554,10 @@ validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	if (!s_p_get_uint16(&conf->ret2service, "ReturnToService", hashtbl))
 		conf->ret2service = DEFAULT_RETURN_TO_SERVICE;
 
+	s_p_get_string(&conf->resume_program, "ResumeProgram", hashtbl);
+	if (!s_p_get_uint16(&conf->resume_rate, "ResumeRate", hashtbl))
+		conf->resume_rate = DEFAULT_RESUME_RATE;
+
 	if (s_p_get_uint16(&conf->schedport, "SchedulerPort", hashtbl)) {
 		if (conf->schedport == 0) {
 			error("SchedulerPort=0 is invalid");
@@ -1635,6 +1654,16 @@ validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	if (!s_p_get_string(&conf->state_save_location,
 			    "StateSaveLocation", hashtbl))
 		conf->state_save_location = xstrdup(DEFAULT_SAVE_STATE_LOC);
+
+	s_p_get_string(&conf->suspend_exc_nodes, "SuspendExcNodes", hashtbl);
+	s_p_get_string(&conf->suspend_exc_parts, "SuspendExcParts", hashtbl);
+	s_p_get_string(&conf->suspend_program, "SuspendProgram", hashtbl);
+	if (!s_p_get_uint16(&conf->suspend_rate, "SuspendRate", hashtbl))
+		conf->suspend_rate = DEFAULT_SUSPEND_RATE;
+	if (s_p_get_long(&long_suspend_time, "SuspendTime", hashtbl))
+		conf->suspend_time = long_suspend_time + 1;
+	else
+		conf->suspend_time = 0;
 
 	/* see above for switch_type, order dependent */
 

@@ -6,6 +6,8 @@ documents those changes that are of interest to users and admins.
  -- Add new node state FAILING plus trigger for when node enters that state.
  -- Add new configuration paramter "PrivateData". This can be used to 
     prevent a user from seeing jobs or job steps belonging to other users.
+ -- Added configuration parameters for node power save mode: ResumeProgram
+    ResumeRate, SuspendExcNodes, SuspendExcParts, SuspendProgram and SuspendRate.
 
 * Changes in SLURM 1.2.10
 =========================

@@ -22,51 +22,53 @@ SLURM's support to increase power demands in a gradual fashion.</p>
 
 
 <h2>Configuration</h2>
-<p>Rather than changing SLURM's configuration file (and data 
-structures) after SLURM version 1.2 was released, we decided to 
-temporarily put the configuration parameters directly in the 
-<i>src/slurmctld/power_save.c</i> file.
-These paramters will all be moved into the <i>slurm.conf</i>
-configuration file when SLURM version 1.3 is released.
-Until that time, pleased directly edit the code to use this feature.
+<p>A great deal of flexibility is offered in terms of when and 
+how idle nodes are put into or removed from power save mode.
 The following configuration paramters are available:
 <ul>
-<li><b>IdleTime</b>:
+
+<li><b>SuspendTime</b>:
 Nodes becomes elligible for power saving mode after being idle 
 for this number of seconds. 
 A negative number disables power saving mode.
 The default value is -1 (disabled).</li>
+
 <li><b>SuspendRate</b>:
 Maximum number of nodes to be placed into power saving mode 
 per minute. 
 A value of zero results in no limits being imposed.
 The default value is 60.
 Use this to prevent rapid drops in power requirements.</li>
+
 <li><b>ResumeRate</b>:
 Maximum number of nodes to be placed into power saving mode 
 per minute. 
 A value of zero results in no limits being imposed.
 The default value is 60.
 Use this to prevent rapid increasses in power requirements.</li>
+
 <li><b>SuspendProgram</b>:
 Program to be executed to place nodes into power saving mode.
 The program executes as <i>SlurmUser</i> (as configured in
-<i>slurm.conf</i>. 
+<i>slurm.conf</i>). 
 The argument to the program will be the names of nodes to 
 be placed into power savings mode (using SLURM's hostlist 
 expression format).</li>
+
 <li><b>ResumeProgram</b>:
 Program to be executed to remove nodes from power saving mode.
 The program executes as <i>SlurmUser</i> (as configured in
-<i>slurm.conf</i>. 
+<i>slurm.conf</i>). 
 The argument to the program will be the names of nodes to 
 be removed from power savings mode (using SLURM's hostlist 
 expression format).</li>
-<li><b>ExcludeSuspendNodes</b>:
+
+<li><b>SuspendExcNodes</b>:
 List of nodes to never place in power saving mode. 
 Use SLURM's hostlist expression format.
 By default, no nodes are excluded.</li>
-<li><b>ExcludeSuspendPartitions</b>:
+
+<li><b>SuspendExcParts</b>:
 List of partitions with nodes to never place in power saving mode. 
 Multiple partitions may be specified using a comma separator.
 By default, no nodes are excluded.</li>
@@ -115,6 +117,6 @@ nodes are in power save mode using messages of this sort:
 You can also configure SLURM without SuspendProgram or ResumeProgram values
 to assess the potential impact of power saving mode before enabling it.</p>
 
-<p style="text-align:center;">Last modified 9 May 2007</p>
+<p style="text-align:center;">Last modified 14 May 2007</p>
 
 <!--#include virtual="footer.txt"-->
