@@ -40,9 +40,11 @@ an IBM SP/AIX cluster at LLNL with 12,208 Power5 processors and a Federation swi
 <li><a href="http://www.bsc.es/plantillaA.php?cat_id=5">MareNostrum</a>
 a Linux cluster at Barcelona Supercomputer Center
 with 10,240 PowerPC processors and a Myrinet switch</li>
-<li>Peloton with 1,152 nodes each having four sockets with dual core Opteron processors and an InfiniBand switch</li>
-<li>An <a href="http://hpc.uky.edu/">IBM Cluster 1350</a> at the University of Kentucky 
-with 1,488 compute nodes and an Infiniband switch</li>
+<li>Peloton with 1,152 nodes each having four sockets with dual-core Opteron processors and an InfiniBand switch</li>
+<li>An <a href="http://hpc.uky.edu/">IBM HPC Server</a> at the University of Kentucky.
+This is a heterogeneous cluster with 128 Power5+ processors and
+340 HS21 Blades each with dual-socket and dual-core Intel Woodcrest processors 
+for a total of 1,488 cores connected with Infiniband switch</li>
 </ul>
 <p>There are about 200 downloads of SLURM per month from LLNL's FTP server 
 and <a href="https:sourceforge.net">SourceForge.net</a>.
@@ -52,6 +54,6 @@ SLURM is also actively being developed, distributed and supported by
 <a href="http://www.hp.com">Hewlett-Packard</a> and
 <a href="http://www.bull.com">Bull</a>.</p>
 
-<p style="text-align:center;">Last modified 23 March 2007</p>
+<p style="text-align:center;">Last modified 4 June 2007</p>
 
 <!--#include virtual="footer.txt"-->
