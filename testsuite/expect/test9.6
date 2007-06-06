@@ -107,14 +107,15 @@ for {set inx 0} {$inx < $cycle_count} {incr inx} {
 	}
 	if {$stdout_lines != $stdout_target} {
 		send_user "\nFAILURE:stdout is missing output\n"
+		set cycle_count $inx
 		set exit_code 1
 	} else {
 		incr success_cnt
 	}
 }
-exec $bin_rm -f $file_in $file_out
 
 if {$exit_code == 0} {
+	exec $bin_rm -f $file_in $file_out
 	send_user "\nSUCCESS\n"
 } else {
 	send_user "\nFAILURE: Only $success_cnt of $cycle_count hostname"
