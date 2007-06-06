@@ -290,7 +290,7 @@ extern int mysql_jobcomp_log_record(struct job_record *job_ptr)
 		 start, blockid
 #endif
 		 );
-	info("query = %s", query);
+//	info("query = %s", query);
 	rc = mysql_db_query(jobcomp_mysql_db, jobcomp_db_init, query);
 	xfree(usr_str);
 
