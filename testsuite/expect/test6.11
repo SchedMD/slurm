@@ -41,15 +41,15 @@ print_header $test_id
 #
 # Submit a job so we have something to work with
 #
-set srun_pid [spawn $srun --batch --output=/dev/null --error=/dev/null --hold -t1 $bin_id]
+set sbatch_pid [spawn $sbatch --output=/dev/null --error=/dev/null --hold -t1 $bin_id]
 expect {
-	-re "jobid ($number) submitted" {
+	-re "Submitted batch job ($number)" {
 		set job_id $expect_out(1,string)
 		exp_continue
 	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
-		slow_kill $srun_pid
+		slow_kill $sbatch_pid
 		set exit_code 1
 	}
 	eof {

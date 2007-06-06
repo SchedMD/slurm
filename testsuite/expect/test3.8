@@ -84,15 +84,15 @@ if { [test_bluegene] } {
 # Spawn a srun batch job that uses stdout/err and confirm their contents
 #
 set timeout $max_job_delay
-set srun_pid [spawn $srun -N$node_cnt --batch --output=$file_out --error=$file_err -t1 $file_in]
+set sbatch_pid [spawn $sbatch -N$node_cnt --output=$file_out --error=$file_err -t1 $file_in]
 expect {
-	-re "jobid ($number) submitted" {
+	-re "Submitted batch job ($number)" {
 		set job_id $expect_out(1,string)
 		exp_continue
 	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
-		slow_kill $srun_pid
+		slow_kill $sbatch_pid
 		set exit_code 1
 	}
 	eof {
@@ -184,15 +184,15 @@ set job_id        0
 
 exec $bin_rm -f $file_flag_1 $file_flag_2 $file_flag_3 $file_flag_4
 
-set srun_pid [spawn $srun --no-requeue --batch --output=$file_out --error=$file_err -t1 $file_in]
+set sbatch_pid [spawn $sbatch --no-requeue --output=$file_out --error=$file_err -t1 $file_in]
 expect {
-	-re "jobid ($number) submitted" {
+	-re "Submitted batch job ($number)" {
 		set job_id $expect_out(1,string)
 		exp_continue
 	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
-		slow_kill $srun_pid
+		slow_kill $sbatch_pid
 		set exit_code 1
 	}
 	eof {

@@ -52,15 +52,15 @@ if { [test_bluegene] } {
 #
 # Submit a couple of job so we have something to look at
 #
-set srun_pid [spawn $srun --batch -N$node_cnt --output=/dev/null --error=/dev/null -t5 $file_in]
+set sbatch_pid [spawn $sbatch -N$node_cnt --output=/dev/null --error=/dev/null -t5 $file_in]
 expect {
-	-re "jobid ($number) submitted" {
+	-re "Submitted batch job ($number)" {
 		set job_id1 $expect_out(1,string)
 		exp_continue
 	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
-		slow_kill $srun_pid
+		slow_kill $sbatch_pid
 		exit 1
 	}
 	eof {
@@ -72,15 +72,15 @@ if {$job_id1 == 0} {
 	exit 1
 }
 
-set srun_pid [spawn $srun --batch -N$node_cnt --output=/dev/null --error=/dev/null --hold -t5 $file_in]
+set sbatch_pid [spawn $sbatch -N$node_cnt --output=/dev/null --error=/dev/null --hold -t5 $file_in]
 expect {
-	-re "jobid ($number) submitted" {
+	-re "Submitted batch job ($number)" {
 		set job_id2 $expect_out(1,string)
 		exp_continue
 	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
-		slow_kill $srun_pid
+		slow_kill $sbatch_pid
 		cancel_job $job_id1
 		exit 1
 	}
