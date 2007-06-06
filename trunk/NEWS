@@ -14,6 +14,8 @@ documents those changes that are of interest to users and admins.
     ResumeRate, SuspendExcNodes, SuspendExcParts, SuspendProgram and SuspendRate.
  -- Slurmctld maintains the IP address (rather than hostname) for srun 
     communications. This fixes some possible network routing issues.
+ -- Added global database plugin.  Job accounting and Job completion are the 
+    first to use it.  Follow documentation to add more to the plugin.
 
 * Changes in SLURM 1.2.10
 =========================
