@@ -1455,7 +1455,7 @@ void print_max_procs(type_t type, void *object)
 		printf("%-9s", "---------");
 		break;
 	case JOBCOMP:
-		printf("%-9s", job->max_procs);
+		printf("%-9d", job->max_procs);
 		break;
 	default:
 		printf("%-9s", "n/a");
