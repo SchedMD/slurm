@@ -41,6 +41,7 @@
 \*****************************************************************************/
 
 #include <stdlib.h>
+#include "src/common/parse_time.h"
 #include "src/common/xstring.h"
 #include "pgsql_jobcomp_process.h"
 
@@ -74,6 +75,8 @@ extern void pgsql_jobcomp_process_get_jobs(List job_list,
 	PGresult *result = NULL;
 	int i;
 	jobcomp_job_rec_t *job = NULL;
+	char time_str[32];
+	time_t temp_time;
 
 	if(selected_steps && list_count(selected_steps)) {
 		set = 0;
@@ -148,10 +151,18 @@ extern void pgsql_jobcomp_process_get_jobs(List job_list,
 				atoi(PQgetvalue(result, i, JOBCOMP_REQ_JOBID));
 		job->partition =
 			xstrdup(PQgetvalue(result, i, JOBCOMP_REQ_PARTITION));
-		job->start_time =
-			xstrdup(PQgetvalue(result, i, JOBCOMP_REQ_STARTTIME));
-		job->end_time =
-			xstrdup(PQgetvalue(result, i, JOBCOMP_REQ_ENDTIME));
+		temp_time = atoi(PQgetvalue(result, i, JOBCOMP_REQ_STARTTIME));
+		slurm_make_time_str(&temp_time, 
+				    time_str, 
+				    sizeof(time_str));
+		job->start_time = xstrdup(time_str);
+		
+		temp_time = atoi(PQgetvalue(result, i, JOBCOMP_REQ_ENDTIME));
+		slurm_make_time_str(&temp_time, 
+				    time_str, 
+				    sizeof(time_str));
+		job->end_time = xstrdup(time_str);
+		
 		if(PQgetvalue(result, i, JOBCOMP_REQ_UID))
 			job->uid =
 				atoi(PQgetvalue(result, i, JOBCOMP_REQ_UID));

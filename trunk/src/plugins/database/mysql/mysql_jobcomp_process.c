@@ -41,6 +41,7 @@
 \*****************************************************************************/
 
 #include <stdlib.h>
+#include "src/common/parse_time.h"
 #include "src/common/xstring.h"
 #include "mysql_jobcomp_process.h"
 
@@ -75,6 +76,8 @@ extern void mysql_jobcomp_process_get_jobs(List job_list,
 	int i;
 	int lc = 0;
 	jobcomp_job_rec_t *job = NULL;
+	char time_str[32];
+	time_t temp_time;
 
 	if(selected_steps && list_count(selected_steps)) {
 		set = 0;
@@ -149,8 +152,18 @@ extern void mysql_jobcomp_process_get_jobs(List job_list,
 		if(row[JOBCOMP_REQ_JOBID])
 			job->jobid = atoi(row[JOBCOMP_REQ_JOBID]);
 		job->partition = xstrdup(row[JOBCOMP_REQ_PARTITION]);
-		job->start_time = xstrdup(row[JOBCOMP_REQ_STARTTIME]);
-		job->end_time = xstrdup(row[JOBCOMP_REQ_ENDTIME]);
+		temp_time = atoi(row[JOBCOMP_REQ_STARTTIME]);
+		slurm_make_time_str(&temp_time, 
+				    time_str, 
+				    sizeof(time_str));
+		
+		job->start_time = xstrdup(time_str);
+		temp_time = atoi(row[JOBCOMP_REQ_ENDTIME]);
+		slurm_make_time_str(&temp_time, 
+				    time_str, 
+				    sizeof(time_str));
+		
+		job->end_time = xstrdup(time_str);
 		if(row[JOBCOMP_REQ_UID])
 			job->uid = atoi(row[JOBCOMP_REQ_UID]);
 		job->uid_name = xstrdup(row[JOBCOMP_REQ_USER_NAME]);
