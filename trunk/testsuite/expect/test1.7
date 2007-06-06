@@ -171,59 +171,6 @@ if {$completions != 1} {
 	set exit_code 1
 }
 
-#
-# Spawn a srun batch job with arguments
-#
-set timeout $max_job_delay
-set srun_pid [spawn $srun --batch --output=$file_out --error=$file_err -t4 ./$file_in]
-expect {
-	-re "jobid ($number) submitted" {
-		set job_id $expect_out(1,string)
-		exp_continue
-	}
-	timeout {
-		send_user "\nFAILURE: srun not responding\n"
-		slow_kill $srun_pid
-		set exit_code 1
-	}
-	eof {
-		wait
-	}
-}
-
-if {$job_id == 0} {
-	send_user "\nFAILURE: batch submit failure\n"
-	exit 1
-}
-
-#
-# Wait for job to complete and check output
-#
-set output_fini 0
-if {[wait_for_job $job_id "DONE"] != 0} {
-	send_user "\nFAILURE: waiting for job to complete\n"
-	set exit_code 1
-}
-
-if {[wait_for_file $file_out] == 0} {
-	spawn $bin_cat $file_out
-	expect {
-		-re "FINI" {
-			set output_fini 1
-			exp_continue
-		}
-		eof {
-			wait
-		}
-	}
-}
-
-if {$output_fini == 0} {
-	send_user "\nFAILURE: Unexpected batch job output, "
-	send_user "possible premature job termination\n"
-	set exit_code 1
-}
-
 if {$exit_code == 0} {
 	exec $bin_rm -f $file_in $file_out $file_err
 	send_user "\nSUCCESS\n"

@@ -83,7 +83,7 @@
 #include "src/api/pmi_server.h"
 
 #include "src/srun/opt.h"
-#include "src/srun/attach.h"
+#include "src/srun/debugger.h"
 #include "src/common/mpi.h"
 
 /* generic OPT_ definitions -- mainly for use with env vars  */
@@ -121,7 +121,6 @@
 #define LONG_OPT_GID         0x10b
 #define LONG_OPT_MPI         0x10c
 #define LONG_OPT_CORE	     0x10e
-#define LONG_OPT_NOSHELL     0x10f
 #define LONG_OPT_DEBUG_TS    0x110
 #define LONG_OPT_CONNTYPE    0x111
 #define LONG_OPT_TEST_ONLY   0x113
@@ -140,7 +139,6 @@
 #define LONG_OPT_MEM_BIND    0x120
 #define LONG_OPT_CTRL_COMM_IFHN 0x121
 #define LONG_OPT_MULTI       0x122
-#define LONG_OPT_NO_REQUEUE  0x123
 #define LONG_OPT_COMMENT     0x124
 #define LONG_OPT_SOCKETSPERNODE  0x130
 #define LONG_OPT_CORESPERSOCKET	 0x131
@@ -161,10 +159,7 @@
 #define LONG_OPT_GET_USER_ENV    0x145
 
 /*---- global variables, defined in opt.h ----*/
-char **remote_argv;
-int remote_argc;
 int _verbose;
-enum modes mode;
 opt_t opt;
 
 /*---- forward declarations of static functions  ----*/
@@ -228,10 +223,10 @@ static bool  _verify_hint(const char *arg,
 					   int *min_threads, int  *max_threads,
 					   cpu_bind_type_t *cpu_bind_type);
 static int   _verify_cpu_bind(const char *arg, char **cpu_bind,
-			      cpu_bind_type_t *cpu_bind_type);
+			      cpu_bind_type_t *flags);
 static int   _verify_geometry(const char *arg, uint16_t *geometry);
 static int   _verify_mem_bind(const char *arg, char **mem_bind,
-			      mem_bind_type_t *mem_bind_type);
+			      mem_bind_type_t *flags);
 static int   _verify_conn_type(const char *arg);
 
 /*---[ end forward declarations of static functions ]---------------------*/
@@ -246,6 +241,9 @@ int initialize_and_process_args(int argc, char *argv[])
 
 	/* initialize options with argv */
 	_opt_args(argc, argv);
+
+	if (!_opt_verify())
+		exit(1);
 
 	if (_verbose > 3)
 		_opt_list();
@@ -427,40 +425,18 @@ static int _isvalue(char *arg) {
 }
 
 /*
- * verify cpu_bind arguments
- * returns -1 on error, 0 otherwise
+ * First clear all of the bits in "*data" which are set in "clear_mask".
+ * Then set all of the bits in "*data" that are set in "set_mask".
  */
-static int _verify_cpu_bind(const char *arg, char **cpu_bind, 
-			    cpu_bind_type_t *cpu_bind_type)
+static void clear_then_set(int *data, int clear_mask, int set_mask)
 {
-	char *buf, *p, *tok;
-	if (!arg) {
-	    	return 0;
-	}
-	/* we support different launch policy names
-	 * we also allow a verbose setting to be specified
-	 *     --cpu_bind=threads
-	 *     --cpu_bind=cores
-	 *     --cpu_bind=sockets
-	 *     --cpu_bind=v
-	 *     --cpu_bind=rank,v
-	 *     --cpu_bind=rank
-	 *     --cpu_bind={MAP_CPU|MASK_CPU}:0,1,2,3,4
-	 */
-    	buf = xstrdup(arg);
-    	p = buf;
-	/* change all ',' delimiters not followed by a digit to ';'  */
-	/* simplifies parsing tokens while keeping map/mask together */
-	while (p[0] != '\0') {
-	    	if ((p[0] == ',') && (!_isvalue(&(p[1]))))
-			p[0] = ';';
-		p++;
-	}
+	*data &= ~clear_mask;
+	*data |= set_mask;
+}
 
-	p = buf;
-	while ((tok = strsep(&p, ";"))) {
-		if (strcasecmp(tok, "help") == 0) {
-			printf(
+static void _print_cpu_bind_help()
+{
+	printf(
 "CPU bind options:\n"
 "    --cpu_bind=         Bind tasks to CPUs\n"
 "        q[uiet]         quietly bind before task runs (default)\n"
@@ -475,104 +451,37 @@ static int _verify_cpu_bind(const char *arg, char **cpu_bind,
 "        cores           auto-generated masks bind to cores\n"
 "        threads         auto-generated masks bind to threads\n"
 "        help            show this help message\n");
-			return 1;
-		} else if ((strcasecmp(tok, "q") == 0) ||
-			   (strcasecmp(tok, "quiet") == 0)) {
-		        *cpu_bind_type &= ~CPU_BIND_VERBOSE;
-		} else if ((strcasecmp(tok, "v") == 0) ||
-			   (strcasecmp(tok, "verbose") == 0)) {
-		        *cpu_bind_type |= CPU_BIND_VERBOSE;
-		} else if ((strcasecmp(tok, "no") == 0) ||
-			   (strcasecmp(tok, "none") == 0)) {
-			*cpu_bind_type |=  CPU_BIND_NONE;
-			*cpu_bind_type &= ~CPU_BIND_RANK;
-			*cpu_bind_type &= ~CPU_BIND_MAP;
-			*cpu_bind_type &= ~CPU_BIND_MASK;
-			xfree(*cpu_bind);
-		} else if (strcasecmp(tok, "rank") == 0) {
-			*cpu_bind_type &= ~CPU_BIND_NONE;
-			*cpu_bind_type |=  CPU_BIND_RANK;
-			*cpu_bind_type &= ~CPU_BIND_MAP;
-			*cpu_bind_type &= ~CPU_BIND_MASK;
-			xfree(*cpu_bind);
-		} else if ((strncasecmp(tok, "map_cpu", 7) == 0) ||
-		           (strncasecmp(tok, "mapcpu", 6) == 0)) {
-			char *list;
-			list = strsep(&tok, ":=");
-			list = strsep(&tok, ":=");
-			*cpu_bind_type &= ~CPU_BIND_NONE;
-			*cpu_bind_type &= ~CPU_BIND_RANK;
-			*cpu_bind_type |=  CPU_BIND_MAP;
-			*cpu_bind_type &= ~CPU_BIND_MASK;
-			xfree(*cpu_bind);
-			if (list && *list) {
-				*cpu_bind = xstrdup(list);
-			} else {
-				error("missing list for \"--cpu_bind=map_cpu:<list>\"");
-				xfree(buf);
-				return 1;
-			}
-		} else if ((strncasecmp(tok, "mask_cpu", 8) == 0) ||
-		           (strncasecmp(tok, "maskcpu", 7) == 0)) {
-			char *list;
-			list = strsep(&tok, ":=");
-			list = strsep(&tok, ":=");
-			*cpu_bind_type &= ~CPU_BIND_NONE;
-			*cpu_bind_type &= ~CPU_BIND_RANK;
-			*cpu_bind_type &= ~CPU_BIND_MAP;
-			*cpu_bind_type |=  CPU_BIND_MASK;
-			xfree(*cpu_bind);
-			if (list && *list) {
-				*cpu_bind = xstrdup(list);
-			} else {
-				error("missing list for \"--cpu_bind=mask_cpu:<list>\"");
-				xfree(buf);
-				return 1;
-			}
-		} else if ((strcasecmp(tok, "socket") == 0) ||
-		           (strcasecmp(tok, "sockets") == 0)) {
-			*cpu_bind_type |=  CPU_BIND_TO_SOCKETS;
-			*cpu_bind_type &= ~CPU_BIND_TO_CORES;
-			*cpu_bind_type &= ~CPU_BIND_TO_THREADS;
-		} else if ((strcasecmp(tok, "core") == 0) ||
-		           (strcasecmp(tok, "cores") == 0)) {
-			*cpu_bind_type &= ~CPU_BIND_TO_SOCKETS;
-			*cpu_bind_type |=  CPU_BIND_TO_CORES;
-			*cpu_bind_type &= ~CPU_BIND_TO_THREADS;
-		} else if ((strcasecmp(tok, "thread") == 0) ||
-		           (strcasecmp(tok, "threads") == 0)) {
-			*cpu_bind_type &= ~CPU_BIND_TO_SOCKETS;
-			*cpu_bind_type &= ~CPU_BIND_TO_CORES;
-			*cpu_bind_type |=  CPU_BIND_TO_THREADS;
-		} else {
-			error("unrecognized --cpu_bind argument \"%s\"", tok);
-			xfree(buf);
-			return 1;
-		}
-	}
-
-	xfree(buf);
-	return 0;
 }
 
 /*
- * verify mem_bind arguments
+ * verify cpu_bind arguments
+ *
+ * we support different launch policy names
+ * we also allow a verbose setting to be specified
+ *     --cpu_bind=threads
+ *     --cpu_bind=cores
+ *     --cpu_bind=sockets
+ *     --cpu_bind=v
+ *     --cpu_bind=rank,v
+ *     --cpu_bind=rank
+ *     --cpu_bind={MAP_CPU|MASK_CPU}:0,1,2,3,4
+ *
+ *
  * returns -1 on error, 0 otherwise
  */
-static int _verify_mem_bind(const char *arg, char **mem_bind, 
-			    mem_bind_type_t *mem_bind_type)
+static int _verify_cpu_bind(const char *arg, char **cpu_bind, 
+			    cpu_bind_type_t *flags)
 {
 	char *buf, *p, *tok;
-	if (!arg) {
+	int bind_bits =
+		CPU_BIND_NONE|CPU_BIND_RANK|CPU_BIND_MAP|CPU_BIND_MASK;
+	int bind_to_bits =
+		CPU_BIND_TO_SOCKETS|CPU_BIND_TO_CORES|CPU_BIND_TO_THREADS;
+
+	if (arg == NULL) {
 	    	return 0;
 	}
-	/* we support different memory binding names
-	 * we also allow a verbose setting to be specified
-	 *     --mem_bind=v
-	 *     --mem_bind=rank,v
-	 *     --mem_bind=rank
-	 *     --mem_bind={MAP_MEM|MASK_MEM}:0,1,2,3,4
-	 */
+
     	buf = xstrdup(arg);
     	p = buf;
 	/* change all ',' delimiters not followed by a digit to ';'  */
@@ -586,6 +495,74 @@ static int _verify_mem_bind(const char *arg, char **mem_bind,
 	p = buf;
 	while ((tok = strsep(&p, ";"))) {
 		if (strcasecmp(tok, "help") == 0) {
+			_print_cpu_bind_help();
+			return 1;
+		} else if ((strcasecmp(tok, "q") == 0) ||
+			   (strcasecmp(tok, "quiet") == 0)) {
+		        *flags &= ~CPU_BIND_VERBOSE;
+		} else if ((strcasecmp(tok, "v") == 0) ||
+			   (strcasecmp(tok, "verbose") == 0)) {
+		        *flags |= CPU_BIND_VERBOSE;
+		} else if ((strcasecmp(tok, "no") == 0) ||
+			   (strcasecmp(tok, "none") == 0)) {
+			clear_then_set((int *)flags, bind_bits, CPU_BIND_NONE);
+			xfree(*cpu_bind);
+		} else if (strcasecmp(tok, "rank") == 0) {
+			clear_then_set((int *)flags, bind_bits, CPU_BIND_RANK);
+			xfree(*cpu_bind);
+		} else if ((strncasecmp(tok, "map_cpu", 7) == 0) ||
+		           (strncasecmp(tok, "mapcpu", 6) == 0)) {
+			char *list;
+			list = strsep(&tok, ":=");
+			list = strsep(&tok, ":=");
+			clear_then_set((int *)flags, bind_bits, CPU_BIND_MAP);
+			xfree(*cpu_bind);
+			if (list && *list) {
+				*cpu_bind = xstrdup(list);
+			} else {
+				error("missing list for \"--cpu_bind=map_cpu:<list>\"");
+				xfree(buf);
+				return 1;
+			}
+		} else if ((strncasecmp(tok, "mask_cpu", 8) == 0) ||
+		           (strncasecmp(tok, "maskcpu", 7) == 0)) {
+			char *list;
+			list = strsep(&tok, ":=");
+			list = strsep(&tok, ":=");
+			clear_then_set((int *)flags, bind_bits, CPU_BIND_MASK);
+			xfree(*cpu_bind);
+			if (list && *list) {
+				*cpu_bind = xstrdup(list);
+			} else {
+				error("missing list for \"--cpu_bind=mask_cpu:<list>\"");
+				xfree(buf);
+				return 1;
+			}
+		} else if ((strcasecmp(tok, "socket") == 0) ||
+		           (strcasecmp(tok, "sockets") == 0)) {
+			clear_then_set((int *)flags, bind_to_bits,
+				       CPU_BIND_TO_SOCKETS);
+		} else if ((strcasecmp(tok, "core") == 0) ||
+		           (strcasecmp(tok, "cores") == 0)) {
+			clear_then_set((int *)bind, bind_to_bits,
+				       CPU_BIND_TO_CORES);
+		} else if ((strcasecmp(tok, "thread") == 0) ||
+		           (strcasecmp(tok, "threads") == 0)) {
+			clear_then_set((int *)flags, bind_to_bits,
+				       CPU_BIND_TO_THREADS);
+		} else {
+			error("unrecognized --cpu_bind argument \"%s\"", tok);
+			xfree(buf);
+			return 1;
+		}
+	}
+
+	xfree(buf);
+	return 0;
+}
+
+static void _print_mem_bind_help()
+{
 			printf(
 "Memory bind options:\n"
 "    --mem_bind=         Bind memory to locality domains (ldom)\n"
@@ -599,46 +576,69 @@ static int _verify_mem_bind(const char *arg, char **mem_bind,
 "        mask_mem:<list> specify a memory binding mask for each tasks\n"
 "                        where <list> is <mask1>,<mask2>,...<maskN>\n"
 "        help            show this help message\n");
+}
+
+/*
+ * verify mem_bind arguments
+ *
+ * we support different memory binding names
+ * we also allow a verbose setting to be specified
+ *     --mem_bind=v
+ *     --mem_bind=rank,v
+ *     --mem_bind=rank
+ *     --mem_bind={MAP_MEM|MASK_MEM}:0,1,2,3,4
+ *
+ * returns -1 on error, 0 otherwise
+ */
+static int _verify_mem_bind(const char *arg, char **mem_bind, 
+			    mem_bind_type_t *flags)
+{
+	char *buf, *p, *tok;
+	int bind_bits = MEM_BIND_NONE|MEM_BIND_RANK|MEM_BIND_LOCAL|
+		MEM_BIND_MAP|MEM_BIND_MASK;
+
+	if (arg == NULL) {
+	    	return 0;
+	}
+
+    	buf = xstrdup(arg);
+    	p = buf;
+	/* change all ',' delimiters not followed by a digit to ';'  */
+	/* simplifies parsing tokens while keeping map/mask together */
+	while (p[0] != '\0') {
+	    	if ((p[0] == ',') && (!_isvalue(&(p[1]))))
+			p[0] = ';';
+		p++;
+	}
+
+	p = buf;
+	while ((tok = strsep(&p, ";"))) {
+		if (strcasecmp(tok, "help") == 0) {
+			_print_mem_bind_help();
 			return 1;
 			
 		} else if ((strcasecmp(tok, "q") == 0) ||
 			   (strcasecmp(tok, "quiet") == 0)) {
-		        *mem_bind_type &= ~MEM_BIND_VERBOSE;
+		        *flags &= ~MEM_BIND_VERBOSE;
 		} else if ((strcasecmp(tok, "v") == 0) ||
 			   (strcasecmp(tok, "verbose") == 0)) {
-		        *mem_bind_type |= MEM_BIND_VERBOSE;
+		        *flags |= MEM_BIND_VERBOSE;
 		} else if ((strcasecmp(tok, "no") == 0) ||
 			   (strcasecmp(tok, "none") == 0)) {
-			*mem_bind_type |=  MEM_BIND_NONE;
-			*mem_bind_type &= ~MEM_BIND_RANK;
-			*mem_bind_type &= ~MEM_BIND_LOCAL;
-			*mem_bind_type &= ~MEM_BIND_MAP;
-			*mem_bind_type &= ~MEM_BIND_MASK;
+			clear_then_set((int *)flags, bind_bits, MEM_BIND_NONE);
 			xfree(*mem_bind);
 		} else if (strcasecmp(tok, "rank") == 0) {
-			*mem_bind_type &= ~MEM_BIND_NONE;
-			*mem_bind_type |=  MEM_BIND_RANK;
-			*mem_bind_type &= ~MEM_BIND_LOCAL;
-			*mem_bind_type &= ~MEM_BIND_MAP;
-			*mem_bind_type &= ~MEM_BIND_MASK;
+			clear_then_set((int *)flags, bind_bits, MEM_BIND_RANK);
 			xfree(*mem_bind);
 		} else if (strcasecmp(tok, "local") == 0) {
-			*mem_bind_type &= ~MEM_BIND_NONE;
-			*mem_bind_type &= ~MEM_BIND_RANK;
-			*mem_bind_type |=  MEM_BIND_LOCAL;
-			*mem_bind_type &= ~MEM_BIND_MAP;
-			*mem_bind_type &= ~MEM_BIND_MASK;
+			clear_then_set((int *)flags, bind_bits, MEM_BIND_LOCAL);
 			xfree(*mem_bind);
 		} else if ((strncasecmp(tok, "map_mem", 7) == 0) ||
 		           (strncasecmp(tok, "mapmem", 6) == 0)) {
 			char *list;
 			list = strsep(&tok, ":=");
 			list = strsep(&tok, ":=");
-			*mem_bind_type &= ~MEM_BIND_NONE;
-			*mem_bind_type &= ~MEM_BIND_RANK;
-			*mem_bind_type &= ~MEM_BIND_LOCAL;
-			*mem_bind_type |=  MEM_BIND_MAP;
-			*mem_bind_type &= ~MEM_BIND_MASK;
+			clear_then_set((int *)flags, bind_bits, MEM_BIND_MAP);
 			xfree(*mem_bind);
 			if (list && *list) {
 				*mem_bind = xstrdup(list);
@@ -652,11 +652,7 @@ static int _verify_mem_bind(const char *arg, char **mem_bind,
 			char *list;
 			list = strsep(&tok, ":=");
 			list = strsep(&tok, ":=");
-			*mem_bind_type &= ~MEM_BIND_NONE;
-			*mem_bind_type &= ~MEM_BIND_RANK;
-			*mem_bind_type &= ~MEM_BIND_LOCAL;
-			*mem_bind_type &= ~MEM_BIND_MAP;
-			*mem_bind_type |=  MEM_BIND_MASK;
+			clear_then_set((int *)flags, bind_bits, MEM_BIND_MASK);
 			xfree(*mem_bind);
 			if (list && *list) {
 				*mem_bind = xstrdup(list);
@@ -966,17 +962,12 @@ static void _opt_default()
 	opt.labelio = false;
 	opt.unbuffered = false;
 	opt.overcommit = false;
-	opt.batch = false;
 	opt.shared = (uint16_t)NO_VAL;
 	opt.no_kill = false;
 	opt.kill_bad_exit = false;
 
 	opt.immediate	= false;
-	opt.no_requeue	= false;
 
-	opt.allocate	= false;
-	opt.noshell	= false;
-	opt.attach	= NULL;
 	opt.join	= false;
 	opt.max_wait	= slurm_get_wait_time();
 
@@ -1026,8 +1017,6 @@ static void _opt_default()
 
 	opt.task_prolog     = NULL;
 	opt.task_epilog     = NULL;
-
-	mode	= MODE_NORMAL;
 
 	gethostname_short(hostname, sizeof(hostname));
 	opt.ctrl_comm_ifhn  = xstrdup(hostname);
@@ -1086,7 +1075,6 @@ env_vars_t env_vars[] = {
 {"SLURM_NSOCKETS_PER_NODE",OPT_NSOCKETS,NULL,               NULL             },
 {"SLURM_NCORES_PER_SOCKET",OPT_NCORES,  NULL,               NULL             },
 {"SLURM_NTHREADS_PER_CORE",OPT_NTHREADS,NULL,               NULL             },
-{"SLURM_NO_REQUEUE",    OPT_INT,        &opt.no_requeue,    NULL             },
 {"SLURM_NO_ROTATE",     OPT_NO_ROTATE,  NULL,               NULL             },
 {"SLURM_NPROCS",        OPT_INT,        &opt.nprocs,        &opt.nprocs_set  },
 {"SLURM_OVERCOMMIT",    OPT_OVERCOMMIT, NULL,               NULL             },
@@ -1319,14 +1307,11 @@ _get_resource_range(const char *arg, const char *what, int* min, int *max,
 	return true;
 }
 
-void set_options(const int argc, char **argv, int first)
+static void set_options(const int argc, char **argv)
 {
 	int opt_char, option_index = 0;
 	struct utsname name;
 	static struct option long_options[] = {
-		{"attach",        required_argument, 0, 'a'},
-		{"allocate",      no_argument,       0, 'A'},
-		{"batch",         no_argument,       0, 'b'},
 		{"extra-node-info", required_argument, 0, 'B'},
 		{"cpus-per-task", required_argument, 0, 'c'},
 		{"constraint",    required_argument, 0, 'C'},
@@ -1378,7 +1363,6 @@ void set_options(const int argc, char **argv, int first)
 		{"job-mem",          required_argument, 0, LONG_OPT_JOBMEM},
 		{"hint",             required_argument, 0, LONG_OPT_HINT},
 		{"mpi",              required_argument, 0, LONG_OPT_MPI},
-		{"no-shell",         no_argument,       0, LONG_OPT_NOSHELL},
 		{"tmp",              required_argument, 0, LONG_OPT_TMP},
 		{"jobid",            required_argument, 0, LONG_OPT_JOBID},
 		{"msg-timeout",      required_argument, 0, LONG_OPT_TIMEO},
@@ -1403,7 +1387,6 @@ void set_options(const int argc, char **argv, int first)
 		{"nice",             optional_argument, 0, LONG_OPT_NICE},
 		{"ctrl-comm-ifhn",   required_argument, 0, LONG_OPT_CTRL_COMM_IFHN},
 		{"multi-prog",       no_argument,       0, LONG_OPT_MULTI},
-		{"no-requeue",       no_argument,       0, LONG_OPT_NO_REQUEUE},
 		{"comment",          required_argument, 0, LONG_OPT_COMMENT},
 		{"sockets-per-node", required_argument, 0, LONG_OPT_SOCKETSPERNODE},
 		{"cores-per-socket", required_argument, 0, LONG_OPT_CORESPERSOCKET},
@@ -1419,7 +1402,7 @@ void set_options(const int argc, char **argv, int first)
 		{"get-user-env",     no_argument,       0, LONG_OPT_GET_USER_ENV},
 		{NULL,               0,                 0, 0}
 	};
-	char *opt_string = "+a:AbB:c:C:d:D:e:g:Hi:IjJ:kKlm:n:N:"
+	char *opt_string = "+B:c:C:d:D:e:g:Hi:IjJ:kKlm:n:N:"
 		"o:Op:P:qQr:R:st:T:uU:vVw:W:x:XZ";
 
 	struct option *optz = spank_option_table_create (long_options);
@@ -1431,68 +1414,19 @@ void set_options(const int argc, char **argv, int first)
 
 	if(opt.progname == NULL)
 		opt.progname = xbasename(argv[0]);
-	else if(!first)
-		argv[0] = opt.progname;
 	else
-		error("opt.progname is set but it is the first time through.");
+		error("opt.progname is already set.");
 	optind = 0;		
 	while((opt_char = getopt_long(argc, argv, opt_string,
 				      optz, &option_index)) != -1) {
 		switch (opt_char) {
 
 		case (int)'?':
-			if(first) {
-				fprintf(stderr, "Try \"srun --help\" for more "
-					"information\n");
-				exit(1);
-			} 
-			break;
-		case (int)'a':
-			if(first) {
-				if (opt.allocate || opt.batch) {
-					error("can only specify one mode: "
-					      "allocate, attach or batch.");
-					exit(1);
-				}
-				mode = MODE_ATTACH;
-				opt.attach = strdup(optarg);
-			} else {
-				error("Option '%c' can only be set "
-				      "from srun commandline.", opt_char);
-			}
-			break;
-		case (int)'A':
-			if(first) {
-				if (opt.attach || opt.batch) {
-					error("can only specify one mode: "
-					      "allocate, attach or batch.");
-					exit(1);
-				}
-				mode = MODE_ALLOCATE;
-				opt.allocate = true;
-			} else {
-				error("Option '%c' can only be set "
-				      "from srun commandline.", opt_char);
-			}
-			break;
-		case (int)'b':
-			if(first) {
-				if (opt.allocate || opt.attach) {
-					error("can only specify one mode: "
-					      "allocate, attach or batch.");
-					exit(1);
-				}
-				mode = MODE_BATCH;
-				opt.batch = true;
-			} else {
-				error("Option '%c' can only be set "
-				      "from srun commandline.", opt_char);
-			}
+			fprintf(stderr,
+				"Try \"srun --help\" for more information\n");
+			exit(1);
 			break;
 		case (int)'B':
-			if(!first && opt.extra_set)
-				break;
-
 			opt.extra_set = _verify_socket_core_thread_count(
 				optarg,
 				&opt.min_sockets_per_node,
@@ -1511,37 +1445,24 @@ void set_options(const int argc, char **argv, int first)
 			}
 			break;
 		case (int)'c':
-			if(!first && opt.cpus_set)
-				break;
 			opt.cpus_set = true;
 			opt.cpus_per_task = 
 				_get_int(optarg, "cpus-per-task", true);
 			break;
 		case (int)'C':
-			if(!first && opt.constraints)
-				break;
 			xfree(opt.constraints);
 			opt.constraints = xstrdup(optarg);
 			break;
 		case (int)'d':
-			if(!first && opt.slurmd_debug)
-				break;
-			
 			opt.slurmd_debug = 
 				_get_int(optarg, "slurmd-debug", false);
 			break;
 		case (int)'D':
-			if(!first && opt.cwd_set)
-				break;
-
 			opt.cwd_set = true;
 			xfree(opt.cwd);
 			opt.cwd = xstrdup(optarg);
 			break;
 		case (int)'e':
-			if(!first && opt.efname)
-				break;
-			
 			xfree(opt.efname);
 			if (strncasecmp(optarg, "none", (size_t) 4) == 0)
 				opt.efname = xstrdup("/dev/null");
@@ -1549,8 +1470,6 @@ void set_options(const int argc, char **argv, int first)
 				opt.efname = xstrdup(optarg);
 			break;
 		case (int)'g':
-			if(!first && opt.geometry)
-				break;
 			if (_verify_geometry(optarg, opt.geometry))
 				exit(1);
 			break;
@@ -1558,9 +1477,6 @@ void set_options(const int argc, char **argv, int first)
 			opt.hold = true;
 			break;
 		case (int)'i':
-			if(!first && opt.ifname)
-				break;
-			
 			xfree(opt.ifname);
 			if (strncasecmp(optarg, "none", (size_t) 4) == 0)
 				opt.ifname = xstrdup("/dev/null");
@@ -1574,9 +1490,6 @@ void set_options(const int argc, char **argv, int first)
 			opt.join = true;
 			break;
 		case (int)'J':
-			if(!first && opt.job_name_set)
-				break;
-
 			opt.job_name_set = true;
 			xfree(opt.job_name);
 			opt.job_name = xstrdup(optarg);
@@ -1591,8 +1504,6 @@ void set_options(const int argc, char **argv, int first)
 			opt.labelio = true;
 			break;
 		case (int)'m':
-			if(!first && opt.distribution)
-				break;
 			opt.distribution = _verify_dist_type(optarg, 
 							     &opt.plane_size);
 			if (opt.distribution == SLURM_DIST_UNKNOWN) {
@@ -1602,17 +1513,11 @@ void set_options(const int argc, char **argv, int first)
 			}
 			break;
 		case (int)'n':
-			if(!first && opt.nprocs_set)
-				break;
-						
 			opt.nprocs_set = true;
 			opt.nprocs = 
 				_get_int(optarg, "number of tasks", true);
 			break;
 		case (int)'N':
-			if(!first && opt.nodes_set)
-				break;
-						
 			opt.nodes_set = 
 				_get_resource_range(optarg, 
 						    "requested node count",
@@ -1626,9 +1531,6 @@ void set_options(const int argc, char **argv, int first)
 			}
 			break;
 		case (int)'o':
-			if(!first && opt.ofname)
-				break;			
-			
 			xfree(opt.ofname);
 			if (strncasecmp(optarg, "none", (size_t) 4) == 0)
 				opt.ofname = xstrdup("/dev/null");
@@ -1639,32 +1541,19 @@ void set_options(const int argc, char **argv, int first)
 			opt.overcommit = true;
 			break;
 		case (int)'p':
-			if(!first && opt.partition)
-				break;
-						
 			xfree(opt.partition);
 			opt.partition = xstrdup(optarg);
 			break;
 		case (int)'P':
-			if(!first && opt.dependency)
-				break;
-						
 			opt.dependency = _get_int(optarg, "dependency", true);
 			break;
 		case (int)'q':
 			opt.quit_on_intr = true;
 			break;
 		case (int) 'Q':
-			if(!first && opt.quiet)
-				break;
-			
 			opt.quiet++;
 			break;
 		case (int)'r':
-			if(!first && opt.relative)
-				break;
-			
-			//xfree(opt.relative);
 			opt.relative = _get_int(optarg, "relative", false);
 			opt.relative_set = true;
 			break;
@@ -1675,15 +1564,9 @@ void set_options(const int argc, char **argv, int first)
 			opt.shared = 1;
 			break;
 		case (int)'t':
-			if(!first && opt.time_limit)
-				break;
-			
 			opt.time_limit = _get_int(optarg, "time", true);
 			break;
 		case (int)'T':
-			if(!first && opt.max_threads)
-				break;
-			
 			opt.max_threads = 
 				_get_int(optarg, "max_threads", true);
 			pmi_server_max_threads(opt.max_threads);
@@ -1692,15 +1575,10 @@ void set_options(const int argc, char **argv, int first)
 			opt.unbuffered = true;
 			break;
 		case (int)'U':
-			if(!first && opt.account)
-				break;
 			xfree(opt.account);
 			opt.account = xstrdup(optarg);
 			break;
 		case (int)'v':
-			if(!first && _verbose)
-				break;
-			
 			_verbose++;
 			break;
 		case (int)'V':
@@ -1708,9 +1586,6 @@ void set_options(const int argc, char **argv, int first)
 			exit(0);
 			break;
 		case (int)'w':
-			if(!first && opt.nodelist)
-				break;
-			
 			xfree(opt.nodelist);
 			opt.nodelist = xstrdup(optarg);
 #ifdef HAVE_BG
@@ -1797,9 +1672,6 @@ void set_options(const int argc, char **argv, int first)
 				      "--mpi=list for acceptable types.",
 				      optarg);
 			}
-			break;
-		case LONG_OPT_NOSHELL:
-			opt.noshell = true;
 			break;
 		case LONG_OPT_TMP:
 			opt.job_min_tmp_disk = _to_bytes(optarg);
@@ -1915,12 +1787,7 @@ void set_options(const int argc, char **argv, int first)
 		case LONG_OPT_MULTI:
 			opt.multi_prog = true;
 			break;
-		case LONG_OPT_NO_REQUEUE:
-			opt.no_requeue = true;
-			break;
 		case LONG_OPT_COMMENT:
-			if(!first && opt.comment)
-				break;
 			xfree(opt.comment);
 			opt.comment = xstrdup(optarg);
 			break;
@@ -1964,26 +1831,18 @@ void set_options(const int argc, char **argv, int first)
 				true);
 			break;
 		case LONG_OPT_BLRTS_IMAGE:
-			if(!first && opt.blrtsimage)
-				break;			
 			xfree(opt.blrtsimage);
 			opt.blrtsimage = xstrdup(optarg);
 			break;
 		case LONG_OPT_LINUX_IMAGE:
-			if(!first && opt.linuximage)
-				break;			
 			xfree(opt.linuximage);
 			opt.linuximage = xstrdup(optarg);
 			break;
 		case LONG_OPT_MLOADER_IMAGE:
-			if(!first && opt.mloaderimage)
-				break;			
 			xfree(opt.mloaderimage);
 			opt.mloaderimage = xstrdup(optarg);
 			break;
 		case LONG_OPT_RAMDISK_IMAGE:
-			if(!first && opt.ramdiskimage)
-				break;			
 			xfree(opt.ramdiskimage);
 			opt.ramdiskimage = xstrdup(optarg);
 			break;
@@ -1998,13 +1857,6 @@ void set_options(const int argc, char **argv, int first)
 				exit (1);
 			}
 		}
-	}
-
-	if (!first) {
-		if (!_opt_verify())
-			exit(1);
-		if (_verbose > 3)
-			_opt_list();
 	}
 
 	spank_option_table_destroy (optz);
@@ -2059,7 +1911,7 @@ static void _opt_args(int argc, char **argv)
 	int i;
 	char **rest = NULL;
 
-	set_options(argc, argv, 1);	
+	set_options(argc, argv);
 
         /* When CR with memory as a CR is enabled we need to assign
 	   adequate value or check the value to opt.mem */
@@ -2104,38 +1956,33 @@ static void _opt_args(int argc, char **argv)
 	}
 #endif
 
-	remote_argc = 0;
+	opt.argc = 0;
 	if (optind < argc) {
 		rest = argv + optind;
-		while (rest[remote_argc] != NULL)
-			remote_argc++;
+		while (rest[opt.argc] != NULL)
+			opt.argc++;
 	}
-	remote_argv = (char **) xmalloc((remote_argc + 1) * sizeof(char *));
-	for (i = 0; i < remote_argc; i++)
-		remote_argv[i] = xstrdup(rest[i]);
-	remote_argv[i] = NULL;	/* End of argv's (for possible execv) */
+	opt.argv = (char **) xmalloc((opt.argc + 1) * sizeof(char *));
+	for (i = 0; i < opt.argc; i++)
+		opt.argv[i] = xstrdup(rest[i]);
+	opt.argv[i] = NULL;	/* End of argv's (for possible execv) */
 
 	if (opt.multi_prog) {
-		if (remote_argc < 1) {
+		if (opt.argc < 1) {
 			error("configuration file not specified");
 			exit(1);
 		}
-		_load_multi(&remote_argc, remote_argv);
+		_load_multi(&opt.argc, opt.argv);
 
 	}
-	else if (remote_argc > 0) {
+	else if (opt.argc > 0) {
 		char *fullpath;
-		char *cmd       = remote_argv[0];
-		bool search_cwd = (opt.batch || opt.allocate);
-		int  mode       = (search_cwd) ? R_OK : R_OK | X_OK;
 
-		if ((fullpath = _search_path(cmd, search_cwd, mode))) {
-			xfree(remote_argv[0]);
-			remote_argv[0] = fullpath;
+		if ((fullpath = _search_path(opt.argv[0], false, R_OK|X_OK))) {
+			xfree(opt.argv[0]);
+			opt.argv[0] = fullpath;
 		} 
 	}
-	if (!_opt_verify())
-		exit(1);
 }
 
 /* 
@@ -2187,8 +2034,8 @@ static bool _opt_verify(void)
 	if (opt.job_min_cpus < opt.cpus_per_task)
 		opt.job_min_cpus = opt.cpus_per_task;
 
-	if ((opt.job_name == NULL) && (remote_argc > 0))
-		opt.job_name = _base_name(remote_argv[0]);
+	if ((opt.job_name == NULL) && (opt.argc > 0))
+		opt.job_name = _base_name(opt.argv[0]);
 
 	if(!opt.nodelist) {
 		if((opt.nodelist = xstrdup(getenv("SLURM_HOSTFILE")))) {
@@ -2211,9 +2058,10 @@ static bool _opt_verify(void)
 				      opt.nodelist);
 			}
 		}
-	} else
+	} else {
 		if (!_valid_node_list(&opt.nodelist))
 			exit(1);
+	}
 	
 	/* now if max is set make sure we have <= max_nodes in the
 	 * nodelist but only if it isn't arbitrary since the user has
@@ -2243,72 +2091,89 @@ static bool _opt_verify(void)
 	} 
 
 
-	if (mode == MODE_ATTACH) {	/* attach to a running job */
-		if (opt.nodes_set || opt.cpus_set || opt.nprocs_set) {
-			error("do not specific a node allocation "
-			      "with --attach (-a)");
-			verified = false;
-		}
+	if (opt.argc == 0) {
+		error("must supply remote command");
+		verified = false;
+	}
 
-		/* if (constraints_given()) {
-		 *	error("do not specify any constraints with "
-		 *	      "--attach (-a)");
-		 *	verified = false;
-		 *}
+	/* check for realistic arguments */
+	if (opt.nprocs <= 0) {
+		error("%s: invalid number of processes (-n %d)",
+		      opt.progname, opt.nprocs);
+		verified = false;
+	}
+
+	if (opt.cpus_per_task <= 0) {
+		error("%s: invalid number of cpus per task (-c %d)\n",
+		      opt.progname, opt.cpus_per_task);
+		verified = false;
+	}
+
+	if ((opt.min_nodes <= 0) || (opt.max_nodes < 0) || 
+	    (opt.max_nodes && (opt.min_nodes > opt.max_nodes))) {
+		error("%s: invalid number of nodes (-N %d-%d)\n",
+		      opt.progname, opt.min_nodes, opt.max_nodes);
+		verified = false;
+	}
+
+	/* bound max_threads/cores from ntasks_cores/sockets */ 
+	if ((opt.max_threads_per_core <= 0) &&
+	    (opt.ntasks_per_core > 0)) {
+		opt.max_threads_per_core = opt.ntasks_per_core;
+		/* if cpu_bind_type doesn't already have a auto pref,
+		 * choose the level based on the level of ntasks
 		 */
-
-	} else { /* mode != MODE_ATTACH */
-
-		if ((remote_argc == 0) && (mode != MODE_ALLOCATE)) {
-			error("must supply remote command");
-			verified = false;
+		if (!(opt.cpu_bind_type & (CPU_BIND_TO_SOCKETS |
+					   CPU_BIND_TO_CORES |
+					   CPU_BIND_TO_THREADS))) {
+			opt.cpu_bind_type |= CPU_BIND_TO_CORES;
 		}
-
-
-		/* check for realistic arguments */
-		if (opt.nprocs <= 0) {
-			error("%s: invalid number of processes (-n %d)",
-			      opt.progname, opt.nprocs);
-			verified = false;
+	}
+	if ((opt.max_cores_per_socket <= 0) &&
+	    (opt.ntasks_per_socket > 0)) {
+		opt.max_cores_per_socket = opt.ntasks_per_socket;
+		/* if cpu_bind_type doesn't already have a auto pref,
+		 * choose the level based on the level of ntasks
+		 */
+		if (!(opt.cpu_bind_type & (CPU_BIND_TO_SOCKETS |
+					   CPU_BIND_TO_CORES |
+					   CPU_BIND_TO_THREADS))) {
+			opt.cpu_bind_type |= CPU_BIND_TO_SOCKETS;
 		}
+	}
 
-		if (opt.cpus_per_task <= 0) {
-			error("%s: invalid number of cpus per task (-c %d)\n",
-			      opt.progname, opt.cpus_per_task);
-			verified = false;
-		}
+	core_format_enable (opt.core_type);
 
-		if ((opt.min_nodes <= 0) || (opt.max_nodes < 0) || 
-		    (opt.max_nodes && (opt.min_nodes > opt.max_nodes))) {
-			error("%s: invalid number of nodes (-N %d-%d)\n",
-			      opt.progname, opt.min_nodes, opt.max_nodes);
-			verified = false;
+	/* massage the numbers */
+	if (opt.nodelist) {
+		hl = hostlist_create(opt.nodelist);
+		if (!hl)
+			fatal("memory allocation failure");
+		hostlist_uniq(hl);
+		hl_cnt = hostlist_count(hl);
+		if (opt.nodes_set)
+			opt.min_nodes = MAX(hl_cnt, opt.min_nodes);
+		else {
+			opt.min_nodes = hl_cnt;
+			opt.nodes_set = true;
 		}
+	}
+	if ((opt.nodes_set || opt.extra_set) && !opt.nprocs_set) {
+		/* 1 proc / node default */
+		opt.nprocs = opt.min_nodes;
 
-		/* bound max_threads/cores from ntasks_cores/sockets */ 
-		if ((opt.max_threads_per_core <= 0) &&
-		    (opt.ntasks_per_core > 0)) {
-			opt.max_threads_per_core = opt.ntasks_per_core;
-			/* if cpu_bind_type doesn't already have a auto pref,
-			 * choose the level based on the level of ntasks
-			 */
-			if (!(opt.cpu_bind_type & (CPU_BIND_TO_SOCKETS |
-						CPU_BIND_TO_CORES |
-						CPU_BIND_TO_THREADS))) {
-				opt.cpu_bind_type |= CPU_BIND_TO_CORES;
-			}
+		/* 1 proc / min_[socket * core * thread] default */
+		if (opt.min_sockets_per_node > 0) {
+			opt.nprocs *= opt.min_sockets_per_node;
+			opt.nprocs_set = true;
 		}
-		if ((opt.max_cores_per_socket <= 0) &&
-		    (opt.ntasks_per_socket > 0)) {
-			opt.max_cores_per_socket = opt.ntasks_per_socket;
-			/* if cpu_bind_type doesn't already have a auto pref,
-			 * choose the level based on the level of ntasks
-			 */
-			if (!(opt.cpu_bind_type & (CPU_BIND_TO_SOCKETS |
-						CPU_BIND_TO_CORES |
-						CPU_BIND_TO_THREADS))) {
-				opt.cpu_bind_type |= CPU_BIND_TO_SOCKETS;
-			}
+		if (opt.min_cores_per_socket > 0) {
+			opt.nprocs *= opt.min_cores_per_socket;
+			opt.nprocs_set = true;
+		}
+		if (opt.min_threads_per_core > 0) {
+			opt.nprocs *= opt.min_threads_per_core;
+			opt.nprocs_set = true;
 		}
 
 		core_format_enable (opt.core_type);
@@ -2334,54 +2199,36 @@ static bool _opt_verify(void)
 			   used later
 			*/
 		}
+	} else if (opt.nodes_set && opt.nprocs_set) {
 
-		if ((opt.nodes_set || opt.extra_set) && !opt.nprocs_set) {
-			/* 1 proc / node default */
-			opt.nprocs = opt.min_nodes;
+		/* 
+		 *  make sure # of procs >= min_nodes 
+		 */
+		if (opt.nprocs < opt.min_nodes) {
 
-			/* 1 proc / min_[socket * core * thread] default */
-			if (opt.min_sockets_per_node > 0) {
-				opt.nprocs *= opt.min_sockets_per_node;
-				opt.nprocs_set = true;
-			}
-			if (opt.min_cores_per_socket > 0) {
-				opt.nprocs *= opt.min_cores_per_socket;
-				opt.nprocs_set = true;
-			}
-			if (opt.min_threads_per_core > 0) {
-				opt.nprocs *= opt.min_threads_per_core;
-				opt.nprocs_set = true;
-			}
-		} else if (opt.nodes_set && opt.nprocs_set) {
+			info ("Warning: can't run %d processes on %d " 
+			      "nodes, setting nnodes to %d", 
+			      opt.nprocs, opt.min_nodes, opt.nprocs);
 
-			/* 
-			 *  make sure # of procs >= min_nodes 
-			 */
-			if (opt.nprocs < opt.min_nodes) {
-
-				info ("Warning: can't run %d processes on %d " 
-				      "nodes, setting nnodes to %d", 
-				      opt.nprocs, opt.min_nodes, opt.nprocs);
-
-				opt.min_nodes = opt.nprocs;
-				if (opt.max_nodes 
-				&&  (opt.min_nodes > opt.max_nodes) )
-					opt.max_nodes = opt.min_nodes;
-				if (hl_cnt > opt.min_nodes) {
-					int del_cnt, i;
-					char *host;
-					del_cnt = hl_cnt - opt.min_nodes;
-					for (i=0; i<del_cnt; i++) {
-						host = hostlist_pop(hl);
-						free(host);
-					}
-					hostlist_ranged_string(hl, strlen(opt.nodelist)+1, 
-							       opt.nodelist);
+			opt.min_nodes = opt.nprocs;
+			if (opt.max_nodes 
+			    &&  (opt.min_nodes > opt.max_nodes) )
+				opt.max_nodes = opt.min_nodes;
+			if (hl_cnt > opt.min_nodes) {
+				int del_cnt, i;
+				char *host;
+				del_cnt = hl_cnt - opt.min_nodes;
+				for (i=0; i<del_cnt; i++) {
+					host = hostlist_pop(hl);
+					free(host);
 				}
+				hostlist_ranged_string(hl, strlen(opt.nodelist)+1, 
+						       opt.nodelist);
 			}
+		}
 
-		} /* else if (opt.nprocs_set && !opt.nodes_set) */
-	}
+	} /* else if (opt.nprocs_set && !opt.nodes_set) */
+
 	if (hl)
 		hostlist_destroy(hl);
 
@@ -2417,11 +2264,6 @@ static bool _opt_verify(void)
 
         if ((opt.egid != (gid_t) -1) && (opt.egid != opt.gid))
 	        opt.gid = opt.egid;
-
-	if (opt.noshell && !opt.allocate) {
-		error ("--no-shell only valid with -A (--allocate)");
-		verified = false;
-	}
 
 	if (opt.propagate && parse_rlimits( opt.propagate, PROPAGATE_RLIMITS)) {
 		error( "--propagate=%s is not valid.", opt.propagate );
@@ -2589,8 +2431,8 @@ print_commandline()
 	char buf[256];
 
 	buf[0] = '\0';
-	for (i = 0; i < remote_argc; i++)
-		snprintf(buf, 256,  "%s", remote_argv[i]);
+	for (i = 0; i < opt.argc; i++)
+		snprintf(buf, 256,  "%s", opt.argv[i]);
 	return xstrdup(buf);
 }
 
@@ -2654,13 +2496,9 @@ static void _opt_list()
 	info("verbose        : %d", _verbose);
 	info("slurmd_debug   : %d", opt.slurmd_debug);
 	info("immediate      : %s", tf_(opt.immediate));
-	info("no-requeue     : %s", tf_(opt.no_requeue));
 	info("label output   : %s", tf_(opt.labelio));
 	info("unbuffered IO  : %s", tf_(opt.unbuffered));
-	info("allocate       : %s", tf_(opt.allocate));
-	info("attach         : `%s'", opt.attach);
 	info("overcommit     : %s", tf_(opt.overcommit));
-	info("batch          : %s", tf_(opt.batch));
 	info("threads        : %d", opt.max_threads);
 	if (opt.time_limit == INFINITE)
 		info("time_limit     : INFINITE");
@@ -2736,8 +2574,8 @@ static void _usage(void)
 "            [-c ncpus] [-r n] [-p partition] [--hold] [-t minutes]\n"
 "            [-D path] [--immediate] [--overcommit] [--no-kill]\n"
 "            [--share] [--label] [--unbuffered] [-m dist] [-J jobname]\n"
-"            [--jobid=id] [--batch] [--verbose] [--slurmd_debug=#]\n"
-"            [--core=type] [-T threads] [-W sec] [--attach] [--join] \n"
+"            [--jobid=id] [--verbose] [--slurmd_debug=#]\n"
+"            [--core=type] [-T threads] [-W sec] \n"
 "            [--contiguous] [--mincpus=n] [--mem=MB] [--tmp=MB] [-C list]\n"
 "            [--mpi=type] [--account=name] [--dependency=jobid]\n"
 "            [--kill-on-bad-exit] [--propagate[=rlimits] [--comment=name]\n"
@@ -2752,7 +2590,7 @@ static void _usage(void)
 		"            [--mail-type=type] [--mail-user=user] [--nice[=value]]\n"
 		"            [--prolog=fname] [--epilog=fname]\n"
 		"            [--task-prolog=fname] [--task-epilog=fname]\n"
-		"            [--ctrl-comm-ifhn=addr] [--multi-prog] [--no-requeue]\n"
+		"            [--ctrl-comm-ifhn=addr] [--multi-prog]\n"
 		"            [-w hosts...] [-x hosts...] executable [args...]\n");
 }
 
@@ -2817,16 +2655,6 @@ static void _help(void)
 "      --multi-prog            if set the program name specified is the\n"
 "                              configuration specification for multiple programs\n"
 "      --get-user-env          used by Moab.  See srun man page.\n"
-"      --no-requeue            if set, do not permit the job to be requeued\n"
-"\n"
-"Allocate only:\n"
-"  -A, --allocate              allocate resources and spawn a shell\n"
-"      --no-shell              don't spawn shell in allocate mode\n"
-"\n"
-"Attach to running job:\n"
-"  -a, --attach=jobid          attach to running job with specified id\n"
-"  -j, --join                  when used with --attach, allow forwarding of\n"
-"                              signals and stdin.\n"
 "\n"
 "Constraint options:\n"
 "      --mincpus=n             minimum number of cpus per node\n"

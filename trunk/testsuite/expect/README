@@ -68,18 +68,14 @@ test1.8    Confirm that basic srun stdin, stdout, and stderr options work
            (--input, --output, and --error option respectively). 
 test1.9    Test of srun verbose mode (--verbose option).
 test1.10   Test of srun/slurmd debug mode (--debug option).
-test1.11   Test of batch job and job name options (--batch and --job-name 
-           options).
-test1.12   Test of processors, memory, and temporary disk space 
-           constraints options (--mincpus, --mem, and --tmp options).
-           Also test that priority zero job is not started (--hold option).
+test1.11   Test job name option (--job-name).
+test1.12   REMOVED
 test1.13   Test of immediate allocation option (--immediate option).
-test1.14   Test of shared and contiguous options (--shared and --contiguous).
-           Also uses --batch and --hold options. Also see test1.53.
+test1.14   REMOVED
 test1.15   Test of wait option (--wait option).
 test1.16   Confirm that srun buffering can be disabled (--unbuffered option).
-test1.17   Confirm that srun allocation mode (--allocate option).
-test1.18   Test of srun attach to existing job (--attach and --join options).
+test1.17   REMOVED
+test1.18   REMOVED
 test1.19   Test srun stdout/err file name formatting (--output and --error 
            options with %j, %J, %n, %s and %t specifications).
 test1.20   Test srun stdout/err disabling (--output and --error options with 
@@ -104,31 +100,28 @@ test1.31   Verify that SLURM directed environment variables are processed:
            SLURM_STDOUTMODE.
 test1.32   Test of srun signal forwarding
 test1.33   Test of srun application exit code reporting
-test1.34   Verify that command arguments get forwarded to job script 
-           (--batch option).
+test1.34   REMOVED
 test1.35   Test of batch job with multiple concurrent job steps
 test1.36   Test parallel launch of srun (e.g. "srun srun hostname")
-test1.37   Confirm that node sharing flags are respected  (--nodelist and 
-           --share options).
+test1.37   REMOVED
 test1.38   Test srun handling of SIGINT to get task status or kill the job
            (--quit-on-interrupt option).
 test1.39   Test of linux light-weight core files.
-test1.40   Test of stand-alone srun resource allocation (--uid and --no-shell
-           options).
+test1.40   REMOVED
 test1.41   Validate SLURM debugger infrastructure (--debugger-test option).
-test1.42   Test of account number and job dependencies (--account, --begin 
+test1.42   Test of account number and job dependencies (--account,
            and --depedency options).
 test1.43   Test of slurm_job_will_run API, (srun --test-only option).
 test1.44   Read srun's stdout slowly and test for lost data.   
-test1.45   Test the launch of a batch job within an existing job allocation.
+test1.45   REMOVED
 test1.46   Test srun option --kill-on-bad-exit
-test1.47   Tests #SLURM entry functionality in a batch script.
+test1.47   REMOVED
 test1.48   Test of srun mail options (--mail-type and --mail-user options).
 test1.49   Test of srun task-prolog and task-epilog options.
 test1.50   Test of running non-existant job, confirm timely termination.
 test1.51   Test propagation of umask to spawned tasks.
 test1.52   Test of hostfile logic
-test1.53   Test of nice value specification (--nice option).
+test1.53   REMOVED
 test1.54   Test of running different executables with different arguments
            for each task (--multi-prog option).
 test1.55   Make certain that srun behaves when its controlling terminal
@@ -151,8 +144,7 @@ test1.83   Test of contiguous option with multiple nodes (--contiguous option).
            Also see test1.14.
 test1.84   Test of cpus-per-task option on a single node (--cpus-per-task  
            option).
-test1.85   Test of partition specification on job submission (--partition  
-           option).
+test1.85   REMOVE
 test1.86   Confirm node selection from within a job step on existing allocation
            (--nodelist, --exclude, --nodes and --nprocs options).
 test1.87   Confirm node selection from within a job step on existing allocation

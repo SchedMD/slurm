@@ -75,7 +75,7 @@
 #include "src/common/mpi.h"
 #include "src/api/pmi_server.h"
 
-#include "src/slaunch/attach.h"
+#include "src/slaunch/debugger.h"
 
 /* generic OPT_ definitions -- mainly for use with env vars  */
 #define OPT_NONE	0x00
@@ -160,9 +160,9 @@ static char *_search_path(char *, int);
 
 static void  _usage(void);
 static int   _verify_cpu_bind(const char *arg, char **cpu_bind,
-			      cpu_bind_type_t *cpu_bind_type);
+			      cpu_bind_type_t *flags);
 static int   _verify_mem_bind(const char *arg, char **mem_bind,
-			      mem_bind_type_t *mem_bind_type);
+			      mem_bind_type_t *flags);
 static task_dist_states_t _verify_dist_type(const char *arg, uint32_t *psize);
 
 /*---[ end forward declarations of static functions ]---------------------*/
@@ -177,6 +177,9 @@ int initialize_and_process_args(int argc, char *argv[])
 
 	/* initialize options with argv */
 	_opt_args(argc, argv);
+
+	if (!_opt_verify())
+		exit(1);
 
 	if (opt.verbose > 1)
 		_opt_list();
@@ -210,40 +213,18 @@ static int _isvalue(char *arg) {
 }
 
 /*
- * verify cpu_bind arguments
- * returns -1 on error, 0 otherwise
+ * First clear all of the bits in "*data" which are set in "clear_mask".
+ * Then set all of the bits in "*data" that are set in "set_mask".
  */
-static int _verify_cpu_bind(const char *arg, char **cpu_bind, 
-			    cpu_bind_type_t *cpu_bind_type)
+static void clear_then_set(int *data, int clear_mask, int set_mask)
 {
-	char *buf, *p, *tok;
-	if (!arg) {
-	    	return 0;
-	}
-	/* we support different launch policy names
-	 * we also allow a verbose setting to be specified
-	 *     --cpu_bind=threads
-	 *     --cpu_bind=cores
-	 *     --cpu_bind=sockets
-	 *     --cpu_bind=v
-	 *     --cpu_bind=rank,v
-	 *     --cpu_bind=rank
-	 *     --cpu_bind={MAP_CPU|MASK_CPU}:0,1,2,3,4
-	 */
-    	buf = xstrdup(arg);
-    	p = buf;
-	/* change all ',' delimiters not followed by a digit to ';'  */
-	/* simplifies parsing tokens while keeping map/mask together */
-	while (p[0] != '\0') {
-	    	if ((p[0] == ',') && (!_isvalue(&(p[1]))))
-			p[0] = ';';
-		p++;
-	}
+	*data &= ~clear_mask;
+	*data |= set_mask;
+}
 
-	p = buf;
-	while ((tok = strsep(&p, ";"))) {
-		if (strcasecmp(tok, "help") == 0) {
-			printf(
+static void _print_cpu_bind_help()
+{
+	printf(
 "CPU bind options:\n"
 "    --cpu_bind=         Bind tasks to CPUs\n"
 "        q[uiet]         quietly bind before task runs (default)\n"
@@ -258,104 +239,37 @@ static int _verify_cpu_bind(const char *arg, char **cpu_bind,
 "        cores           auto-generated masks bind to cores\n"
 "        threads         auto-generated masks bind to threads\n"
 "        help            show this help message\n");
-			return 1;
-		} else if ((strcasecmp(tok, "q") == 0) ||
-			   (strcasecmp(tok, "quiet") == 0)) {
-		        *cpu_bind_type &= ~CPU_BIND_VERBOSE;
-		} else if ((strcasecmp(tok, "v") == 0) ||
-			   (strcasecmp(tok, "verbose") == 0)) {
-		        *cpu_bind_type |= CPU_BIND_VERBOSE;
-		} else if ((strcasecmp(tok, "no") == 0) ||
-			   (strcasecmp(tok, "none") == 0)) {
-			*cpu_bind_type |=  CPU_BIND_NONE;
-			*cpu_bind_type &= ~CPU_BIND_RANK;
-			*cpu_bind_type &= ~CPU_BIND_MAP;
-			*cpu_bind_type &= ~CPU_BIND_MASK;
-			xfree(*cpu_bind);
-		} else if (strcasecmp(tok, "rank") == 0) {
-			*cpu_bind_type &= ~CPU_BIND_NONE;
-			*cpu_bind_type |=  CPU_BIND_RANK;
-			*cpu_bind_type &= ~CPU_BIND_MAP;
-			*cpu_bind_type &= ~CPU_BIND_MASK;
-			xfree(*cpu_bind);
-		} else if ((strncasecmp(tok, "map_cpu", 7) == 0) ||
-		           (strncasecmp(tok, "mapcpu", 6) == 0)) {
-			char *list;
-			list = strsep(&tok, ":=");
-			list = strsep(&tok, ":=");
-			*cpu_bind_type &= ~CPU_BIND_NONE;
-			*cpu_bind_type &= ~CPU_BIND_RANK;
-			*cpu_bind_type |=  CPU_BIND_MAP;
-			*cpu_bind_type &= ~CPU_BIND_MASK;
-			xfree(*cpu_bind);
-			if (list && *list) {
-				*cpu_bind = xstrdup(list);
-			} else {
-				error("missing list for \"--cpu_bind=map_cpu:<list>\"");
-				xfree(buf);
-				return 1;
-			}
-		} else if ((strncasecmp(tok, "mask_cpu", 8) == 0) ||
-		           (strncasecmp(tok, "maskcpu", 7) == 0)) {
-			char *list;
-			list = strsep(&tok, ":=");
-			list = strsep(&tok, ":=");
-			*cpu_bind_type &= ~CPU_BIND_NONE;
-			*cpu_bind_type &= ~CPU_BIND_RANK;
-			*cpu_bind_type &= ~CPU_BIND_MAP;
-			*cpu_bind_type |=  CPU_BIND_MASK;
-			xfree(*cpu_bind);
-			if (list && *list) {
-				*cpu_bind = xstrdup(list);
-			} else {
-				error("missing list for \"--cpu_bind=mask_cpu:<list>\"");
-				xfree(buf);
-				return 1;
-			}
-		} else if ((strcasecmp(tok, "socket") == 0) ||
-		           (strcasecmp(tok, "sockets") == 0)) {
-			*cpu_bind_type |=  CPU_BIND_TO_SOCKETS;
-			*cpu_bind_type &= ~CPU_BIND_TO_CORES;
-			*cpu_bind_type &= ~CPU_BIND_TO_THREADS;
-		} else if ((strcasecmp(tok, "core") == 0) ||
-		           (strcasecmp(tok, "cores") == 0)) {
-			*cpu_bind_type &= ~CPU_BIND_TO_SOCKETS;
-			*cpu_bind_type |=  CPU_BIND_TO_CORES;
-			*cpu_bind_type &= ~CPU_BIND_TO_THREADS;
-		} else if ((strcasecmp(tok, "thread") == 0) ||
-		           (strcasecmp(tok, "threads") == 0)) {
-			*cpu_bind_type &= ~CPU_BIND_TO_SOCKETS;
-			*cpu_bind_type &= ~CPU_BIND_TO_CORES;
-			*cpu_bind_type |=  CPU_BIND_TO_THREADS;
-		} else {
-			error("unrecognized --cpu_bind argument \"%s\"", tok);
-			xfree(buf);
-			return 1;
-		}
-	}
-
-	xfree(buf);
-	return 0;
 }
 
 /*
- * verify mem_bind arguments
+ * verify cpu_bind arguments
+ *
+ * we support different launch policy names
+ * we also allow a verbose setting to be specified
+ *     --cpu_bind=threads
+ *     --cpu_bind=cores
+ *     --cpu_bind=sockets
+ *     --cpu_bind=v
+ *     --cpu_bind=rank,v
+ *     --cpu_bind=rank
+ *     --cpu_bind={MAP_CPU|MASK_CPU}:0,1,2,3,4
+ *
+ *
  * returns -1 on error, 0 otherwise
  */
-static int _verify_mem_bind(const char *arg, char **mem_bind, 
-			    mem_bind_type_t *mem_bind_type)
+static int _verify_cpu_bind(const char *arg, char **cpu_bind, 
+			    cpu_bind_type_t *flags)
 {
 	char *buf, *p, *tok;
-	if (!arg) {
+	int bind_bits =
+		CPU_BIND_NONE|CPU_BIND_RANK|CPU_BIND_MAP|CPU_BIND_MASK;
+	int bind_to_bits =
+		CPU_BIND_TO_SOCKETS|CPU_BIND_TO_CORES|CPU_BIND_TO_THREADS;
+
+	if (arg == NULL) {
 	    	return 0;
 	}
-	/* we support different memory binding names
-	 * we also allow a verbose setting to be specified
-	 *     --mem_bind=v
-	 *     --mem_bind=rank,v
-	 *     --mem_bind=rank
-	 *     --mem_bind={MAP_MEM|MASK_MEM}:0,1,2,3,4
-	 */
+
     	buf = xstrdup(arg);
     	p = buf;
 	/* change all ',' delimiters not followed by a digit to ';'  */
@@ -369,6 +283,74 @@ static int _verify_mem_bind(const char *arg, char **mem_bind,
 	p = buf;
 	while ((tok = strsep(&p, ";"))) {
 		if (strcasecmp(tok, "help") == 0) {
+			_print_cpu_bind_help();
+			return 1;
+		} else if ((strcasecmp(tok, "q") == 0) ||
+			   (strcasecmp(tok, "quiet") == 0)) {
+		        *flags &= ~CPU_BIND_VERBOSE;
+		} else if ((strcasecmp(tok, "v") == 0) ||
+			   (strcasecmp(tok, "verbose") == 0)) {
+		        *flags |= CPU_BIND_VERBOSE;
+		} else if ((strcasecmp(tok, "no") == 0) ||
+			   (strcasecmp(tok, "none") == 0)) {
+			clear_then_set((int *)flags, bind_bits, CPU_BIND_NONE);
+			xfree(*cpu_bind);
+		} else if (strcasecmp(tok, "rank") == 0) {
+			clear_then_set((int *)flags, bind_bits, CPU_BIND_RANK);
+			xfree(*cpu_bind);
+		} else if ((strncasecmp(tok, "map_cpu", 7) == 0) ||
+		           (strncasecmp(tok, "mapcpu", 6) == 0)) {
+			char *list;
+			list = strsep(&tok, ":=");
+			list = strsep(&tok, ":=");
+			clear_then_set((int *)flags, bind_bits, CPU_BIND_MAP);
+			xfree(*cpu_bind);
+			if (list && *list) {
+				*cpu_bind = xstrdup(list);
+			} else {
+				error("missing list for \"--cpu_bind=map_cpu:<list>\"");
+				xfree(buf);
+				return 1;
+			}
+		} else if ((strncasecmp(tok, "mask_cpu", 8) == 0) ||
+		           (strncasecmp(tok, "maskcpu", 7) == 0)) {
+			char *list;
+			list = strsep(&tok, ":=");
+			list = strsep(&tok, ":=");
+			clear_then_set((int *)flags, bind_bits, CPU_BIND_MASK);
+			xfree(*cpu_bind);
+			if (list && *list) {
+				*cpu_bind = xstrdup(list);
+			} else {
+				error("missing list for \"--cpu_bind=mask_cpu:<list>\"");
+				xfree(buf);
+				return 1;
+			}
+		} else if ((strcasecmp(tok, "socket") == 0) ||
+		           (strcasecmp(tok, "sockets") == 0)) {
+			clear_then_set((int *)flags, bind_to_bits,
+				       CPU_BIND_TO_SOCKETS);
+		} else if ((strcasecmp(tok, "core") == 0) ||
+		           (strcasecmp(tok, "cores") == 0)) {
+			clear_then_set((int *)bind, bind_to_bits,
+				       CPU_BIND_TO_CORES);
+		} else if ((strcasecmp(tok, "thread") == 0) ||
+		           (strcasecmp(tok, "threads") == 0)) {
+			clear_then_set((int *)flags, bind_to_bits,
+				       CPU_BIND_TO_THREADS);
+		} else {
+			error("unrecognized --cpu_bind argument \"%s\"", tok);
+			xfree(buf);
+			return 1;
+		}
+	}
+
+	xfree(buf);
+	return 0;
+}
+
+static void _print_mem_bind_help()
+{
 			printf(
 "Memory bind options:\n"
 "    --mem_bind=         Bind memory to locality domains (ldom)\n"
@@ -382,46 +364,69 @@ static int _verify_mem_bind(const char *arg, char **mem_bind,
 "        mask_mem:<list> specify a memory binding mask for each tasks\n"
 "                        where <list> is <mask1>,<mask2>,...<maskN>\n"
 "        help            show this help message\n");
+}
+
+/*
+ * verify mem_bind arguments
+ *
+ * we support different memory binding names
+ * we also allow a verbose setting to be specified
+ *     --mem_bind=v
+ *     --mem_bind=rank,v
+ *     --mem_bind=rank
+ *     --mem_bind={MAP_MEM|MASK_MEM}:0,1,2,3,4
+ *
+ * returns -1 on error, 0 otherwise
+ */
+static int _verify_mem_bind(const char *arg, char **mem_bind, 
+			    mem_bind_type_t *flags)
+{
+	char *buf, *p, *tok;
+	int bind_bits = MEM_BIND_NONE|MEM_BIND_RANK|MEM_BIND_LOCAL|
+		MEM_BIND_MAP|MEM_BIND_MASK;
+
+	if (arg == NULL) {
+	    	return 0;
+	}
+
+    	buf = xstrdup(arg);
+    	p = buf;
+	/* change all ',' delimiters not followed by a digit to ';'  */
+	/* simplifies parsing tokens while keeping map/mask together */
+	while (p[0] != '\0') {
+	    	if ((p[0] == ',') && (!_isvalue(&(p[1]))))
+			p[0] = ';';
+		p++;
+	}
+
+	p = buf;
+	while ((tok = strsep(&p, ";"))) {
+		if (strcasecmp(tok, "help") == 0) {
+			_print_mem_bind_help();
 			return 1;
 			
 		} else if ((strcasecmp(tok, "q") == 0) ||
 			   (strcasecmp(tok, "quiet") == 0)) {
-		        *mem_bind_type &= ~MEM_BIND_VERBOSE;
+		        *flags &= ~MEM_BIND_VERBOSE;
 		} else if ((strcasecmp(tok, "v") == 0) ||
 			   (strcasecmp(tok, "verbose") == 0)) {
-		        *mem_bind_type |= MEM_BIND_VERBOSE;
+		        *flags |= MEM_BIND_VERBOSE;
 		} else if ((strcasecmp(tok, "no") == 0) ||
 			   (strcasecmp(tok, "none") == 0)) {
-			*mem_bind_type |=  MEM_BIND_NONE;
-			*mem_bind_type &= ~MEM_BIND_RANK;
-			*mem_bind_type &= ~MEM_BIND_LOCAL;
-			*mem_bind_type &= ~MEM_BIND_MAP;
-			*mem_bind_type &= ~MEM_BIND_MASK;
+			clear_then_set((int *)flags, bind_bits, MEM_BIND_NONE);
 			xfree(*mem_bind);
 		} else if (strcasecmp(tok, "rank") == 0) {
-			*mem_bind_type &= ~MEM_BIND_NONE;
-			*mem_bind_type |=  MEM_BIND_RANK;
-			*mem_bind_type &= ~MEM_BIND_LOCAL;
-			*mem_bind_type &= ~MEM_BIND_MAP;
-			*mem_bind_type &= ~MEM_BIND_MASK;
+			clear_then_set((int *)flags, bind_bits, MEM_BIND_RANK);
 			xfree(*mem_bind);
 		} else if (strcasecmp(tok, "local") == 0) {
-			*mem_bind_type &= ~MEM_BIND_NONE;
-			*mem_bind_type &= ~MEM_BIND_RANK;
-			*mem_bind_type |=  MEM_BIND_LOCAL;
-			*mem_bind_type &= ~MEM_BIND_MAP;
-			*mem_bind_type &= ~MEM_BIND_MASK;
+			clear_then_set((int *)flags, bind_bits, MEM_BIND_LOCAL);
 			xfree(*mem_bind);
 		} else if ((strncasecmp(tok, "map_mem", 7) == 0) ||
 		           (strncasecmp(tok, "mapmem", 6) == 0)) {
 			char *list;
 			list = strsep(&tok, ":=");
 			list = strsep(&tok, ":=");
-			*mem_bind_type &= ~MEM_BIND_NONE;
-			*mem_bind_type &= ~MEM_BIND_RANK;
-			*mem_bind_type &= ~MEM_BIND_LOCAL;
-			*mem_bind_type |=  MEM_BIND_MAP;
-			*mem_bind_type &= ~MEM_BIND_MASK;
+			clear_then_set((int *)flags, bind_bits, MEM_BIND_MAP);
 			xfree(*mem_bind);
 			if (list && *list) {
 				*mem_bind = xstrdup(list);
@@ -435,11 +440,7 @@ static int _verify_mem_bind(const char *arg, char **mem_bind,
 			char *list;
 			list = strsep(&tok, ":=");
 			list = strsep(&tok, ":=");
-			*mem_bind_type &= ~MEM_BIND_NONE;
-			*mem_bind_type &= ~MEM_BIND_RANK;
-			*mem_bind_type &= ~MEM_BIND_LOCAL;
-			*mem_bind_type &= ~MEM_BIND_MAP;
-			*mem_bind_type |=  MEM_BIND_MASK;
+			clear_then_set((int *)flags, bind_bits, MEM_BIND_MASK);
 			xfree(*mem_bind);
 			if (list && *list) {
 				*mem_bind = xstrdup(list);
@@ -1547,9 +1548,6 @@ static void _opt_args(int argc, char **argv)
 			opt.argv[0] = fullpath;
 		} 
 	}
-
-	if (!_opt_verify())
-		exit(1);
 }
 
 static bool

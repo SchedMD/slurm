@@ -86,31 +86,6 @@ typedef enum {
 	SRUN_TASK_ABNORMAL_EXIT
 } srun_task_state_t;
 
-typedef enum { 
-	PIPE_NONE = 0, 
-	PIPE_JOB_STATE, 
-	PIPE_TASK_STATE, 
-	PIPE_TASK_EXITCODE,
-	PIPE_HOST_STATE, 
-	PIPE_SIGNALED,
-	PIPE_MPIR_DEBUG_STATE,
-	PIPE_UPDATE_MPIR_PROCTABLE,
-	PIPE_UPDATE_STEP_LAYOUT,
-	PIPE_NODE_FAIL
-} pipe_enum_t;
-
-/* For Message thread */
-typedef struct forked_msg_pipe {
-	int msg_pipe[2];
-	int pid;
-} forked_msg_pipe_t;
-
-typedef struct forked_message {
-	forked_msg_pipe_t *          par_msg;
-	forked_msg_pipe_t *          msg_par;
-	enum job_states	*	     job_state;
-} forked_msg_t;
-
 typedef struct io_filename io_filename_t;
 
 typedef struct srun_job {
@@ -135,7 +110,7 @@ typedef struct srun_job {
 
 	pthread_t sigid;	/* signals thread tid		  */
 
-	pthread_t jtid;		/* job control thread id 	  */
+	pthread_t msg_tid;	/* message thread id 	  	  */
 	slurm_fd *jfd;		/* job control info fd   	  */
 	
 	pthread_t lid;		  /* launch thread id */
@@ -153,7 +128,6 @@ typedef struct srun_job {
 	io_filename_t *ifname;
 	io_filename_t *ofname;
 	io_filename_t *efname;
-	forked_msg_t *forked_msg;
 	char *task_epilog;	/* task-epilog */
 	char *task_prolog;	/* task-prolog */
 	pthread_mutex_t task_mutex;

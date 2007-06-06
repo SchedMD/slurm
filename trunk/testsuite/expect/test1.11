@@ -36,10 +36,6 @@
 source ./globals
 
 set test_id     "1.11"
-set file_in     "test$test_id.input"
-set file_out    "test$test_id.output"
-set file_err    "test$test_id.error"
-set job_name    "jobname$test_id"
 set name_read   ""
 
 set complete_flag        0
@@ -52,125 +48,6 @@ set got_job_grps         0
 set got_login_grps       0
 
 print_header $test_id
-
-#
-# Delete left-over input script plus stdout/err files
-# Build input script file that runs two job steps
-#
-exec $bin_rm -f $file_in $file_out $file_err
-make_bash_script $file_in "
-    $bin_id
-    $srun $bin_sleep 1
-    $srun $bin_sleep 1
-"
-
-#
-# Spawn a srun batch job that uses stdout/err and confirm their contents
-#
-set timeout $max_job_delay
-set srun_pid [spawn $srun --batch --output=$file_out --error=$file_err --job-name=$job_name -t1 $file_in]
-expect {
-	-re "jobid ($number) submitted" {
-		set job_id $expect_out(1,string)
-		exp_continue
-	}
-	timeout {
-		send_user "\nFAILURE: srun not responding\n"
-		slow_kill $srun_pid
-		set exit_code 1
-	}
-	eof {
-		wait
-	}
-}
-
-if {$job_id == 0} {
-	send_user "\nFAILURE: batch submit failure\n"
-	exit 1
-}
-
-#
-# Wait for job to complete
-#
-if {[wait_for_job $job_id "DONE"] != 0} {
-	send_user "\nFAILURE: waiting for job to complete\n"
-	set exit_code 1
-}
-
-spawn $scontrol show job $job_id
-expect {
-	-re "Name=$job_name" {
-		set name_flag 1
-		exp_continue
-	}
-	-re "JobState=COMPLETE" {
-		set complete_flag 1
-		exp_continue
-	}
-	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
-		set exit_code 1
-	}
-	eof {
-		wait
-	}
-}
-
-if {$name_flag == 0} {
-	send_user "\nFAILURE: batch job name failure\n"
-	set exit_code 1
-}
-
-if {$complete_flag == 0} {
-	send_user "\nFAILURE: batch job termination failure\n"
-	set exit_code 1
-} 
-
-#
-# Check user id and group id in stdout
-#
-spawn $bin_id
-expect {
-	-re "(uid=.*\n)" {
-		set login_grp_info $expect_out(1,string)
-		set got_login_grps 1
-		exp_continue
-	}
-	eof {
-		wait
-	}
-}
-
-if {[wait_for_file $file_out] == 0} {
-	spawn $bin_cat $file_out
-	expect {
-		-re "(uid=.*\n)" {
-			set job_grp_info $expect_out(1,string)
-			set got_job_grps 1
-			exp_continue
-		}
-		eof {
-			wait
-		}
-	}
-}
-
-if {$got_login_grps == 0} {
-	send_user "\nFAILURE: Unable to get user and group ID info\n"
-	set exit_code 1
-}
-if {$got_job_grps == 0} {
-	send_user "\nFAILURE: User and group ID info missing from stdout\n"
-	set exit_code 1
-}
-if {[string compare $login_grp_info $job_grp_info] != 0} {
-	send_user "\nFAILURE: Login and slurm user info mismatch\n"
-	set exit_code 1
-}
-
-if {$exit_code == 0} {
-	exec $bin_rm -f $file_in $file_out $file_err
-}
 
 #
 # Spawn a srun job with a really long name and confirm it is accepted or truncated
