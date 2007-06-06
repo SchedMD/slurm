@@ -51,6 +51,7 @@
 #include <pwd.h>
 #include <sys/types.h>
 #include "src/common/parse_time.h"
+#include "src/common/node_select.h"
 
 #ifdef HAVE_PGSQL
 
