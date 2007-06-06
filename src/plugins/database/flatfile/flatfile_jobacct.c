@@ -143,14 +143,20 @@ static int _print_record(struct job_record *job_ptr,
  * Initialize the database make sure tables are created and in working
  * order
  */
-extern int flatfile_jobacct_init ()
+extern int flatfile_jobacct_init (char *location)
 {
-	char *log_file = slurm_get_jobacct_loc();	
+	char *log_file = NULL;	
 	int 		rc = SLURM_SUCCESS;
 	mode_t		prot = 0600;
 	struct stat	statbuf;
 
 	debug2("jobacct_init() called");
+	if(!location) {
+		log_file = xstrdup(DEFAULT_JOB_ACCT_LOC);
+	} else {
+		log_file = xstrdup(location);
+	}
+
 	slurm_mutex_lock( &logfile_lock );
 	if (LOGFILE)
 		fclose(LOGFILE);

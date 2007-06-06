@@ -44,7 +44,7 @@
 #include "src/plugins/jobacct/common/jobacct_common.h"
 #include "src/slurmctld/slurmctld.h"
 
-extern int flatfile_jobacct_init();
+extern int flatfile_jobacct_init(char *location);
 extern int flatfile_jobacct_fini();
 extern int flatfile_jobacct_job_start(struct job_record *job_ptr);
 extern int flatfile_jobacct_job_complete(struct job_record *job_ptr);

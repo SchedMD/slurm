@@ -80,6 +80,7 @@ const uint32_t plugin_version = 100;
  */
 extern int init ( void )
 {
+	static int first = 1;
 #ifdef HAVE_MYSQL
 	if(!mysql_thread_safe()) {
 		debug2("MySQL database not treadsafe only one connection "
@@ -90,7 +91,15 @@ extern int init ( void )
 	fatal("No MySQL database was found on the machine. "
 	      "Please check the configure ran and run again.");
 #endif
-	verbose("%s loaded", plugin_name);
+	if(first) {
+		/* since this can be loaded from many different places
+		   only tell us once. */
+		verbose("%s loaded", plugin_name);
+		first = 0;
+	} else {
+		debug4("%s loaded", plugin_name);
+	}
+	
 	return SLURM_SUCCESS;
 }
 
