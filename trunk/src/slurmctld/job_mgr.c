@@ -2747,6 +2747,7 @@ static void _list_delete_job(void *job_entry)
 	xfree(job_ptr->cpu_count_reps);
 	xfree(job_ptr->node_addr);
 	xfree(job_ptr->account);
+	xfree(job_ptr->resp_host);
 	xfree(job_ptr->mail_user);
 	xfree(job_ptr->network);
 	xfree(job_ptr->alloc_lps);
