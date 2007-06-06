@@ -427,7 +427,7 @@ static void *_ckpt_agent_thr(void *arg)
 			info("checkpoint timeout for %u.%u", 
 				rec->job_id, rec->step_id);
 			_ckpt_signal_step(rec);
-			list_delete(iter);
+			list_delete_item(iter);
 		}
 		slurm_mutex_unlock(&ckpt_agent_mutex);
 		list_iterator_destroy(iter);
@@ -493,7 +493,7 @@ static void _ckpt_dequeue_timeout(uint32_t job_id, uint32_t step_id,
 		||  (start_time && (rec->start_time != start_time)))
 			continue;
 		/* debug("dequeue %u.%u", job_id, step_id); */
-		list_delete(iter);
+		list_delete_item(iter);
 		break;
 	}
 	list_iterator_destroy(iter);

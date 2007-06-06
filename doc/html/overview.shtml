@@ -49,6 +49,8 @@ building block approach. These plugins presently include:
 
 <li><a href="checkpoint_plugins.html">Checkpoint</a>: AIX or none.</li>
 
+<li><a href="databaseplugins.html">Database type</a>: Flatfile, MySQL,
+or PGSQL</li>
 <li><a href="jobacctplugins.html">Job accounting</a>: AIX, Linux or none</li>
 
 <li><a href="jobcompplugins.html">Job completion logging</a>: text file, 

@@ -1,3 +1,3 @@
 # Makefile for jobcomp plugins
 
-SUBDIRS = filetxt none script
+SUBDIRS = filetxt none script database

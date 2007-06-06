@@ -365,7 +365,7 @@ extern int common_step_start_slurmctld(struct step_record *step)
 
 extern int common_step_complete_slurmctld(struct step_record *step)
 {
-		char buf[BUFFER_SIZE];
+	char buf[BUFFER_SIZE];
 	time_t now;
 	int elapsed;
 	int comp_status;

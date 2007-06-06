@@ -142,6 +142,8 @@ AC_SUBST(HAVE_SOME_CURSES)
 X_AC_GTK
 AM_CONDITIONAL(HAVE_GTK, test "x$ac_have_gtk" = "xyes")
 
+X_AC_DATABASES
+
 dnl checks for system services.
 dnl
 
@@ -273,6 +275,7 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/jobcomp/filetxt/Makefile
 		 src/plugins/jobcomp/none/Makefile
 		 src/plugins/jobcomp/script/Makefile
+		 src/plugins/jobcomp/database/Makefile
 		 src/plugins/proctrack/Makefile
 		 src/plugins/proctrack/aix/Makefile
 		 src/plugins/proctrack/pgid/Makefile
@@ -306,6 +309,10 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/task/Makefile
 		 src/plugins/task/affinity/Makefile
 		 src/plugins/task/none/Makefile
+		 src/plugins/database/Makefile
+		 src/plugins/database/flatfile/Makefile
+		 src/plugins/database/mysql/Makefile
+		 src/plugins/database/pgsql/Makefile
 		 doc/Makefile
 		 doc/man/Makefile
 		 doc/html/Makefile

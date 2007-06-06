@@ -1,12 +1,12 @@
 /*****************************************************************************\
- *  sacct_stat.h - header file for sacct
- *
- *  $Id: sacct.h 7541 2006-03-18 01:44:58Z da $
+ *  pgsql_jobcomp_process.h - functions the processing of
+ *                               information from the pgsql jobcomp
+ *                               database.
  *****************************************************************************
- *  Copyright (C) 2006 The Regents of the University of California.
+ *
+ *  Copyright (C) 2004-2007 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Danny Auble <da@llnl.gov>.
- *  UCRL-CODE-226842.
+ *  Written by Danny Auble <da@llnl.gov>
  *  
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -17,7 +17,7 @@
  *  any later version.
  *
  *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under 
+ *  to link the code of portions of this program with the OpenSSL library under
  *  certain conditions as described in each individual source file, and 
  *  distribute linked combinations including the two. You must obey the GNU 
  *  General Public License in all respects for all of the code used other than 
@@ -35,32 +35,60 @@
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+ *
+ *  This file is patterned after jobcomp_linux.c, written by Morris Jette and
+ *  Copyright (C) 2002 The Regents of the University of California.
 \*****************************************************************************/
-#ifndef _SACCT_STAT_H
-#define _SACCT_STAT_H
 
-#include "src/common/slurm_protocol_api.h"
+#ifndef _HAVE_PGSQL_JOBCOMP_PROCESS_H
+#define _HAVE_PGSQL_JOBCOMP_PROCESS_H
 
-typedef struct {
-	uint16_t taskid; /* contains which task number it was on */
-	uint32_t nodeid; /* contains which node number it was on */	
-} jobacct_id_t;
+#include "pgsql_common.h"
+#include "pgsql_jobcomp.h"
+#include "src/common/slurm_jobacct.h"
+#include "src/common/slurm_jobcomp.h"
 
-typedef struct sacct_struct {
-	uint32_t max_vsize; 
-	jobacct_id_t max_vsize_id;
-	float ave_vsize;
-	uint32_t max_rss;
-	jobacct_id_t max_rss_id;
-	float ave_rss;
-	uint32_t max_pages;
-	jobacct_id_t max_pages_id;
-	float ave_pages;
-	float min_cpu;
-	jobacct_id_t min_cpu_id;
-	float ave_cpu;	
-} sacct_t;
+#ifdef HAVE_PGSQL
+extern PGconn *jobcomp_pgsql_db;
+extern int jobcomp_db_init;
 
-extern int sacct_stat(uint32_t jobid, uint32_t stepid);
+extern char *jobcomp_table;
+/* This variable and the following enum are related so if you change
+   the jobcomp_table_fields defined in mysql_jobcomp.c you must update
+   this enum accordingly.
+*/
+extern database_field_t jobcomp_table_fields[];
+enum {
+	JOBCOMP_REQ_JOBID,
+	JOBCOMP_REQ_UID,
+	JOBCOMP_REQ_USER_NAME,
+	JOBCOMP_REQ_GID,
+	JOBCOMP_REQ_GROUP_NAME,
+	JOBCOMP_REQ_NAME,
+	JOBCOMP_REQ_STATE,
+	JOBCOMP_REQ_PARTITION,
+	JOBCOMP_REQ_TIMELIMIT,
+	JOBCOMP_REQ_STARTTIME,
+	JOBCOMP_REQ_ENDTIME,
+	JOBCOMP_REQ_NODELIST,
+	JOBCOMP_REQ_NODECNT,
+	JOBCOMP_REQ_CONNECTION,
+	JOBCOMP_REQ_REBOOT,
+	JOBCOMP_REQ_ROTATE,
+	JOBCOMP_REQ_MAXPROCS,
+	JOBCOMP_REQ_GEOMETRY,
+	JOBCOMP_REQ_START,
+	JOBCOMP_REQ_BLOCKID,
+	JOBCOMP_REQ_COUNT		
+};
+
+extern void pgsql_jobcomp_process_get_jobs(List job_list,
+					   List selected_steps,
+					   List selected_parts,
+					   sacct_parameters_t *params);
+
+extern void pgsql_jobcomp_process_archive(List selected_parts,
+					  sacct_parameters_t *params);
+#endif
 
 #endif

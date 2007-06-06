@@ -313,7 +313,12 @@ void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
 	conf_ptr->fast_schedule       = conf->fast_schedule;
 	conf_ptr->first_job_id        = conf->first_job_id;
 	conf_ptr->inactive_limit      = conf->inactive_limit;
-	conf_ptr->job_acct_logfile    = xstrdup(conf->job_acct_logfile);
+	conf_ptr->job_acct_loc        = xstrdup(conf->job_acct_loc);
+	conf_ptr->database_type       = xstrdup(conf->database_type);
+	conf_ptr->database_user       = xstrdup(conf->database_user);
+	conf_ptr->database_host       = xstrdup(conf->database_host);
+	conf_ptr->database_pass       = xstrdup(conf->database_pass);
+	conf_ptr->database_port       = conf->database_port;
 	conf_ptr->job_acct_freq       = conf->job_acct_freq;
 	conf_ptr->job_acct_type       = xstrdup(conf->job_acct_type);
 	conf_ptr->job_comp_loc        = xstrdup(conf->job_comp_loc);

@@ -54,7 +54,32 @@
 
 #include "src/slurmctld/slurmctld.h"
 
+typedef struct {
+	uint32_t jobid;
+	char *partition;
+	char *blockid;
+	char *start_time;
+	char *end_time;
+	uint32_t uid;
+	char *uid_name;
+	uint32_t gid;
+	char *gid_name;
+	uint32_t node_cnt;
+	char *nodelist;
+	char *jobname;
+	char *state;
+	char *timelimit;
+	char *connection;
+	char *reboot;
+	char *rotate;
+	uint32_t max_procs;
+	char *geo;
+	char *bg_start_point;
+} jobcomp_job_rec_t;
+
 typedef struct slurm_jobcomp_context * slurm_jobcomp_context_t;
+
+extern void jobcomp_destroy_job(void *object);
 
 /* initialization of job completion logging */
 extern int g_slurm_jobcomp_init(char *jobcomp_loc);

@@ -1,2 +1,2 @@
 
-SUBDIRS = auth checkpoint jobacct jobcomp mpi proctrack sched select switch task
+SUBDIRS = auth checkpoint database jobacct jobcomp mpi proctrack sched select switch task

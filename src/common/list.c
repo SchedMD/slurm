@@ -80,7 +80,7 @@ strong_alias(list_next,		slurm_list_next);
 strong_alias(list_insert,	slurm_list_insert);
 strong_alias(list_find,		slurm_list_find);
 strong_alias(list_remove,	slurm_list_remove);
-strong_alias(list_delete,	slurm_list_delete);
+strong_alias(list_delete_item,	slurm_list_delete_item);
 strong_alias(list_install_fork_handlers, slurm_list_install_fork_handlers);
 /*********************
  *  lsd_fatal_error  *
@@ -697,7 +697,7 @@ list_remove (ListIterator i)
 
 
 int
-list_delete (ListIterator i)
+list_delete_item (ListIterator i)
 {
     void *v;
 

@@ -15,17 +15,21 @@ The major type must be &quot;jobcomp.&quot; The minor type can be any recognizab
 abbreviation for the type of scheduler. We recommend, for example:</p>
 <ul>
 <li><b>none</b>&#151;No job logging.</li>
+<li><b>database</b>&#151;Job completion is written to a database
+decided by the <a href=databaseplugins.html>Database plugin</a>.</li>
 <li><b>filetxt</b>&#151;Log job information to a text file.</li>
 <li><b>script</b>&#151;Execute a script passing in job information in environment variables.</li>
 </ul>
+The <b>sacct</b> program with option <b>-c</b> can be used to display
+gathered data from database and filetxt plugins.
 <p>The <span class="commandline">plugin_name</span> and 
 <span class="commandline">plugin_version</span> 
 symbols required by the SLURM Plugin API require no specialization for 
 job completion logging support. 
 Note carefully, however, the versioning discussion below.</p>
 <p>The programmer is urged to study 
-<span class="commandline">src/plugins/jobcomp/jobcomp_filetxt.c</span> and
-<span class="commandline">src/plugins/jobcomp/jobcomp_none.c</span> 
+<span class="commandline">src/plugins/jobcomp/filetxt/jobcomp_filetxt.c</span> and
+<span class="commandline">src/plugins/jobcomp/none/jobcomp_none.c</span> 
 for sample implementations of a SLURM job completion logging plugin.</p>
 <p class="footer"><a href="#top">top</a></p>
 
@@ -98,6 +102,6 @@ releases of SLURM may revise this API. A job completion plugin conveys its abili
 to implement a particular API version using the mechanism outlined for SLURM plugins.</p>
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 10 July 2005</p>
+<p style="text-align:center;">Last modified 21 May 2007</p>
 
 <!--#include virtual="footer.txt"-->

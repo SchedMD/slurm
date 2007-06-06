@@ -387,6 +387,8 @@ struct job_record {
 					 * wait call) */
 	uint16_t state_reason;		/* reason job still pending or failed
 					 * see slurm.h:enum job_wait_reason */
+	uint32_t db_index;              /* used only for database
+					   plugins */
 };
 
 struct 	step_record {

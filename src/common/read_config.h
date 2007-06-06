@@ -16,7 +16,7 @@
  *  any later version.
  *
  *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under 
+ *  to link the code of portions of this program with the OpenSSL library under
  *  certain conditions as described in each individual source file, and 
  *  distribute linked combinations including the two. You must obey the GNU 
  *  General Public License in all respects for all of the code used other than 
@@ -54,9 +54,14 @@ extern char *default_plugstack;
 #define DEFAULT_FIRST_JOB_ID        1
 /* NOTE: DEFAULT_INACTIVE_LIMIT must be 0 for Blue Gene/L systems */
 #define DEFAULT_INACTIVE_LIMIT      0
-#define DEFAULT_JOB_ACCT_LOGFILE    "/var/log/slurm_accounting.log"
+#define DEFAULT_JOB_ACCT_LOC        "/var/log/slurm_accounting.log"
 #define DEFAULT_JOB_ACCT_FREQ       30
 #define DEFAULT_JOB_ACCT_TYPE       "jobacct/none"
+#define DEFAULT_DATABASE_TYPE       "database/flatfile"
+#define DEFAULT_DATABASE_HOST       "localhost"
+#define DEFAULT_DATABASE_USER       "root"
+#define DEFAULT_DATABASE_PASS       ""
+#define DEFAULT_DATABASE_PORT       0
 #define DEFAULT_JOB_COMP_TYPE       "jobcomp/none"
 #define DEFAULT_KILL_TREE           0
 #define DEFAULT_KILL_WAIT           30
