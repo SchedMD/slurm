@@ -51,7 +51,7 @@ exit 0
 #
 # Create an allocation
 #
-set srun_pid [spawn $srun --allocate -N2 --verbose -t2]
+set srun_pid [spawn $salloc -N2 --verbose -t2 bash]
 expect {
 	-re "More ($alpha) requested than permitted" {
 		send_user "\nWARNING: can't test srun task distribution\n"

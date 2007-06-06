@@ -47,7 +47,7 @@
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
-#include "src/slaunch/attach.h"
+#include "src/slaunch/debugger.h"
 
 /* Given a program name, translate it to a fully qualified pathname
  * as needed based upon the PATH environment variable */

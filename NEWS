@@ -3,6 +3,10 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 1.3.0-pre1
 =============================
+ -- !!! SRUN CHANGES !!!
+    The srun options -A/--allocate, -b/--batch, and -a/--attach have been
+    removed!  That functionality is now available in the separate commands
+    salloc, sbatch, and sattach, respectively.
  -- Add new node state FAILING plus trigger for when node enters that state.
  -- Add new configuration paramter "PrivateData". This can be used to 
     prevent a user from seeing jobs or job steps belonging to other users.

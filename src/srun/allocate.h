@@ -61,10 +61,10 @@ int allocate_test(void);
 
 /*
  * Create a job_desc_msg_t object, filled in from the current srun options
- * (see opt.h), if script != NULL then this is a batch job.
+ * (see opt.h)
  * The resulting memory must be freed with  job_desc_msg_destroy()
  */
-job_desc_msg_t * job_desc_msg_create_from_opts (char *script);
+job_desc_msg_t * job_desc_msg_create_from_opts ();
 
 /* 
  * Destroy (free memory from) a job_desc_msg_t object allocated with

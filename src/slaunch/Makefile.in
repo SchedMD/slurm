@@ -68,9 +68,10 @@ CONFIG_CLEAN_FILES =
 am__installdirs = "$(DESTDIR)$(bindir)"
 binPROGRAMS_INSTALL = $(INSTALL_PROGRAM)
 PROGRAMS = $(bin_PROGRAMS)
-am_slaunch_OBJECTS = slaunch.$(OBJEXT) opt.$(OBJEXT) attach.$(OBJEXT) \
-	fname.$(OBJEXT) sigstr.$(OBJEXT) core-format.$(OBJEXT) \
-	multi_prog.$(OBJEXT) slaunch.wrapper.$(OBJEXT)
+am_slaunch_OBJECTS = slaunch.$(OBJEXT) opt.$(OBJEXT) \
+	debugger.$(OBJEXT) fname.$(OBJEXT) sigstr.$(OBJEXT) \
+	core-format.$(OBJEXT) multi_prog.$(OBJEXT) \
+	slaunch.wrapper.$(OBJEXT)
 slaunch_OBJECTS = $(am_slaunch_OBJECTS)
 slaunch_DEPENDENCIES = $(convenience_libs)
 slaunch_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
@@ -253,8 +254,8 @@ INCLUDES = -I$(top_srcdir)
 slaunch_SOURCES = \
 	slaunch.c slaunch.h \
 	opt.c opt.h \
-	attach.h    \
-	attach.c    \
+	debugger.h    \
+	debugger.c    \
 	fname.c     \
 	fname.h     \
 	sigstr.c    \
@@ -340,8 +341,8 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/attach.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/core-format.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/debugger.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/fname.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/multi_prog.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/opt.Po@am__quote@

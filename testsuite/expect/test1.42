@@ -1,8 +1,8 @@
 #!/usr/bin/expect
 ############################################################################
 # Purpose: Test of SLURM functionality
-#          Test of account number and job dependencies (--account, --begin
-#          and --depedency options).
+#          Test of account number and job dependencies (--account, and
+#          --depedency options).
 #
 # Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
 #          "FAILURE: ..." otherwise with an explanation of the failure, OR
@@ -52,9 +52,9 @@ make_bash_script $file_in "$bin_sleep 5"
 # Spawn a srun batch job that just sleeps for a while
 #
 set timeout $max_job_delay
-set srun_pid [spawn $srun --batch --output=/dev/null --error=/dev/null --account=MY_ACCT -t1 $file_in]
+set srun_pid [spawn $sbatch --output=/dev/null --error=/dev/null --account=MY_ACCT -t1 $file_in]
 expect {
-	-re "jobid ($number) submitted" {
+	-re "Submitted batch job ($number)" {
 		set job_id1 $expect_out(1,string)
 		exp_continue
 	}
@@ -139,100 +139,6 @@ if {$match_acct == 0} {
 }
 if {$match_jobid != $job_id1} {
 	send_user "\nFAILURE: Dependency information not processed\n"
-	set exit_code 1
-}
-
-#
-# Submit a job to run at noon tomorrow
-#
-set job_id1 0
-set srun_pid [spawn $srun --batch --output=/dev/null --error=/dev/null --begin=noon-tomorrow $file_in]
-expect {
-	-re "jobid ($number) submitted" {
-		set job_id1 $expect_out(1,string)
-		exp_continue
-	}
-	timeout {
-		send_user "\nFAILURE: srun not responding\n"
-		slow_kill $srun_pid
-		set exit_code 1
-	}
-	eof {
-		wait
-	}
-}
-if {$job_id1 == 0} {
-	send_user "\nFAILURE: batch submit failure\n"
-	exit 1
-}
-exec $bin_sleep 5
-set match 0
-spawn $scontrol show job $job_id1
-expect {
-	-re "JobState=PENDING" {
-		incr match
-		exp_continue
-	}
-	-re "StartTime=($number)/($number)-12:00:00" {
-		incr match
-		exp_continue
-	}
-	-re "StartTime=($number)-($number)-($number)T12:00:00" {
-		incr match
-		exp_continue
-	}
-	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
-		set exit_code 1
-		exp_continue
-	}
-	eof {
-		wait
-	}
-}
-if {$match != 2} {
-	send_user "\nFAILURE: unexpected JobState or StartTime\n"
-	set exit_code 1
-}
-# Reset start time and test for completion
-spawn $scontrol update JobId=$job_id1 StartTime=now
-expect {
-	timeout {
-		send_user "\nFAILURE: scontrol not responding\n"
-		set exit_code 1
-		exp_continue
-	}
-	eof {
-		wait
-	}
-}
-set delayed 0
-set is_done 0
-while { $delayed < $max_job_delay } {
-	exec $bin_sleep 10
-	incr delayed +10
-	spawn $scontrol show job $job_id1
-	expect {
-		-re "JobState=COMPLETED" {
-			set is_done 1
-			exp_continue
-		}
-		timeout {
-			send_user "\nFAILURE: scontrol not responding\n"
-			set exit_code 1
-			exp_continue
-		}
-		eof {
-			wait
-		}
-	}
-	if {$is_done == 1} {
-		break
-	}
-}
-if {$is_done == 0} {
-	send_user "\nFAILURE: unexpected JobState\n"
-	cancel_job $job_id1
 	set exit_code 1
 }
 

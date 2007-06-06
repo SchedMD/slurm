@@ -1,5 +1,5 @@
 /****************************************************************************\
- *  attach.h - definitions needed for TotalView interactions
+ *  debugger.h - definitions needed for TotalView interactions
  *****************************************************************************
  *  This file was supplied by James Cownie <jcownie@etnus.com> and provides 
  *  information required to interface Slurm to the TotalView debugger from 
@@ -7,7 +7,7 @@
  *  http://www.etnus.com/
 \*****************************************************************************/
 
-/*  $Id$
+/*  $Id: debugger.h 11149 2007-03-14 20:53:19Z morrone $
  */
 
 /* This file contains support for bringing processes up stopped, so that
@@ -19,8 +19,8 @@
  * Nov 27 1996 jcownie@dolphinics.com: Added the executable_name to MPIR_PROCDESC
  */
 
-#ifndef _ATTACH_INCLUDE
-#define _ATTACH_INCLUDE
+#ifndef _SLAUNCH_DEBUGGER_INCLUDE
+#define _SLAUNCH_DEBUGGER_INCLUDE
 
 #ifndef VOLATILE
 #if defined(__STDC__) || defined(__cplusplus)
@@ -29,7 +29,7 @@
 #define VOLATILE
 #endif
 #endif
-#include "src/srun/srun_job.h"
+
 /*****************************************************************************
 *                                DEBUGGING SUPPORT                           *
 *****************************************************************************/
@@ -75,7 +75,6 @@ extern int MPIR_i_am_starter;
 extern int MPIR_acquired_pre_main;
 
 extern void MPIR_Breakpoint(void);
-extern void debugger_launch_failure(srun_job_t *job);
 
 /* Value for totalview %J expansion in bulk launch string
  */

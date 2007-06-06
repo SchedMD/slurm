@@ -133,9 +133,9 @@ make_bash_script $file_in "
 
 
 set timeout $max_job_delay
-set srun_pid [spawn $srun --batch --output=$file_out --error=$file_err -t1 ./$file_in]
+set srun_pid [spawn $sbatch --output=$file_out --error=$file_err -t1 ./$file_in]
 expect {
-	-re "jobid ($number) submitted" {
+	-re "Submitted batch job ($number)" {
 		set job_id $expect_out(1,string)
 		exp_continue
 	}

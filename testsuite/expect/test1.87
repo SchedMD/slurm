@@ -57,7 +57,7 @@ make_bash_script $file_in "
 # Submit a 4 node job
 #
 set timeout $max_job_delay
-set srun_pid [spawn $srun -N4 -A $file_in]
+set srun_pid [spawn $salloc -N4 ./$file_in]
 expect {
 	-re "More ($alpha) requested than permitted" {
 		send_user "\nWARNING: can't test srun task distribution\n"

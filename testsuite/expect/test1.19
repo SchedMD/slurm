@@ -241,9 +241,9 @@ if { [test_bluegene] } {
 }
 
 set job_id   0
-set srun_pid [spawn $srun --batch --output=/dev/null -N$node_cnt -n$task_cnt -O -t1 $file_in]
+set srun_pid [spawn $sbatch --output=/dev/null -N$node_cnt -n$task_cnt -t1 $file_in]
 expect {
-	-re "jobid ($number) submitted" {
+	-re "Submitted batch job ($number)" {
 		set job_id $expect_out(1,string)
 		exp_continue
 	}

@@ -58,19 +58,7 @@
 #define INT_UNASSIGNED ((int)-1)
 
 /* global variables relating to user options */
-extern char **remote_argv;
-extern int remote_argc;
 extern int _verbose;
-
-/* mutually exclusive modes for srun */
-enum modes {
-	MODE_UNKNOWN	= 0,
-	MODE_NORMAL	= 1,
-	MODE_IMMEDIATE	= 2,
-	MODE_ATTACH	= 3,
-	MODE_ALLOCATE	= 4,
-	MODE_BATCH	= 5
-};
 
 extern enum modes mode;
 
@@ -142,7 +130,6 @@ typedef struct srun_options {
 
 	int  slurmd_debug;	/* --slurmd-debug, -D           */
 	core_format_t core_type;/* --core= 	        	*/
-	char *attach;		/* --attach=id	    -a id	*/ 
 	bool join;		/* --join, 	    -j		*/
 
 	/* no longer need these, they are set globally : 	*/
@@ -154,13 +141,9 @@ typedef struct srun_options {
 	bool hold;		/* --hold, -H			*/
 	bool labelio;		/* --label-output, -l		*/
 	bool unbuffered;        /* --unbuffered,   -u           */
-	bool allocate;		/* --allocate, 	   -A		*/
-	bool noshell;		/* --noshell                    */
 	bool overcommit;	/* --overcommit,   -O		*/
-	bool batch;		/* --batch,   -b		*/
 	bool no_kill;		/* --no-kill, -k		*/
 	bool kill_bad_exit;	/* --kill-on-bad-exit, -K	*/
-	bool no_requeue;	/* --no-requeue			*/
 	uint16_t shared;	/* --share,   -s		*/
 	int  max_wait;		/* --wait,    -W		*/
 	bool quit_on_intr;      /* --quit-on-interrupt, -q      */
@@ -212,6 +195,8 @@ typedef struct srun_options {
 	char *mail_user;	/* --mail-user			*/
 	char *ctrl_comm_ifhn;	/* --ctrl-comm-ifhn		*/
 	bool get_user_env;	/* --get-user-env		*/
+	int argc;		/* length of argv array		*/
+	char **argv;		/* left over on command line	*/
 } opt_t;
 
 extern opt_t opt;
@@ -236,9 +221,5 @@ extern opt_t opt;
  * 4. perform some verification that options are reasonable
  */
 int initialize_and_process_args(int argc, char *argv[]);
-
-/* set options based upon commandline args */
-void set_options(const int argc, char **argv, int first);
-
 
 #endif	/* _HAVE_OPT_H */

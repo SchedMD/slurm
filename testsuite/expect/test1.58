@@ -42,10 +42,10 @@ set timeout $max_job_delay
 # Run an srun to grab a single node allocation, but not start any
 # job steps.
 #
-set srun_alloc_pid [spawn $srun -v -N1 -n1 -A $bin_sleep 600]
+set srun_alloc_pid [spawn $salloc -v -N1 -n1 $bin_sleep 600]
 set srun_alloc_sid $spawn_id
 expect {
-	-re "srun: jobid ($number)" {
+	-re "salloc: Granted job allocation ($number)" {
 		set jobid $expect_out(1,string)
 	}
 	timeout {
@@ -90,7 +90,7 @@ if {$got_pattern == 0} {
 }
 
 #
-# Release the allocation by killing the first srun (really it kills the "sleep")
+# Release the allocation by killing salloc (really it kills the "sleep")
 #
 cancel_job $jobid
 set spawn_id $srun_alloc_sid
