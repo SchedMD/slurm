@@ -171,3 +171,15 @@ to mpi-bugs@mcs.anl.gov .  Please don't use the newsgroup comp.parallel.mpi ;
 this newsgroup is for discussions about MPI, not any particular implementation
 of MPI.
 
+
+SLURM:
+
+This patch makes use of SLURM's srun command to launch all tasks:
+  srun --mpi=mpich_p4 [srun_options...] <progname> [options...]
+The srun command opens a socket connection and passes that number
+to all tasks via the SLURM_MPICH1_P4_PORT environment variable. Task 
+zero connects and writes its hostname and port number. The other 
+tasks connect and get that hostname and port number. This avoid the 
+requirement of having task zero launch all subsequent tasks and 
+also launches all tasks under the direct control of SLURM (for 
+process management and accounting).

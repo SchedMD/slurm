@@ -54,6 +54,122 @@ P4VOID process_args(int *argc, char **argv)
     execer_mastport = 0;
     execer_pg = NULL;
 
+    /*
+     * For SLURM based job initiations (from srun command), get the
+     * parameters from environment variables as needed. This allows
+     * for a truly parallel job launch using the existing "execer"
+     * mode of operation with slight modification.
+     */
+    if (getenv("SLURM_JOBID")) {
+	int i;
+	char *tmp, *hostlist, *host2, *tasks_per_node, *task2;
+
+	execer_starting_remotes = P4_TRUE;
+	strcpy(execer_id, "mpiexec");
+
+	if ((tmp = getenv("SLURMD_NODENAME")))
+	    strcpy(execer_myhost, tmp);
+	else {
+	    printf("SLURMD_NODENAME environment variable missing\n");
+	    exit(-1);
+	}
+
+	if ((tmp = getenv("SLURM_NODEID")))
+	    execer_mynodenum = atoi(tmp);
+	else {
+	    printf("SLURM_NODEID environment variable missing\n");
+	    exit(-1);
+	}
+
+	if ((tmp = getenv("SLURM_NNODES")))
+	    execer_numtotnodes = atoi(tmp);
+	else {
+	    printf("SLURM_NNODES environment variable missing\n");
+	    exit(-1);
+	}
+
+	if ((tmp = getenv("SLURM_MPICH1_P4_PORT")))
+	    execer_mastport = atoi(tmp);
+	else {
+	    printf("SLURM_MPICH1_P4_PORT environment variable missing\n");
+//FIXME	    exit(-1);
+	}
+
+//FIXME: MPICH1_P4 plugin to reformat SLURM_NODELIST and SLURM_TASKS_PER_NODE
+	if (!(tmp = getenv("SLURM_NODELIST"))) {
+	    printf("SLURM_NODELIST environment variable missing\n");
+	    exit(-1);
+	}
+	i = strlen(tmp) + 1;
+	hostlist = malloc(i);
+	bcopy(tmp, hostlist, i);
+	tmp = strtok_r(hostlist, ",", &host2);
+	if (!tmp) {
+	    printf("SLURM_NODELIST environment variable invalid\n");
+	    exit(-1);
+	}
+	strcpy(execer_masthost, tmp);
+
+	if (!(tmp = getenv("SLURM_TASKS_PER_NODE"))) {
+	    printf("SLURM_TASKS_PER_NODE environment variable missing\n");
+	    exit(-1);
+	}
+	i = strlen(tmp) + 1;
+	tasks_per_node = malloc(i);
+	bcopy(tmp, tasks_per_node, i);
+	tmp = strtok_r(tasks_per_node, ",", &task2);
+	if (!tmp) {
+	    printf("SLURM_TASKS_PER_NODE environment variable invalid\n");
+	    exit(-1);
+	}
+	execer_mynumprocs = atoi(tmp);
+
+	if (execer_mynodenum == 0) {
+	    execer_pg = p4_alloc_procgroup();
+	    pe = execer_pg->entries;
+	    strcpy(pe->host_name, execer_myhost);
+	    pe->numslaves_in_group = execer_mynumprocs - 1;
+	    strcpy(pe->slave_full_pathname, argv[0]);
+	    pe->username[0] = '\0'; /* unused */
+	    execer_pg->num_entries++;
+	    for (i=0; i<(execer_numtotnodes-1); i++) {
+		pe++;
+		tmp = strtok_r(NULL, ",", &host2);
+		if (!tmp) {
+		    printf("SLURM_NODELIST environment variable invalid\n");
+		    exit(-1);
+		}
+		strcpy(pe->host_name, tmp);
+		 tmp = strtok_r(NULL, ",", &task2);
+		if (!tmp) {
+		    printf("SLURM_TASKS_PER_NODE environment variable invalid\n");
+		    exit(-1);
+		}
+		pe->numslaves_in_group = atoi(tmp);
+#if 1
+		printf("host[%d] name:%s tasks:%d\n", 
+			pe->host_name, pe->numslaves_in_group);
+#endif
+		*pe->slave_full_pathname = 0;
+		pe->username[0] = '\0'; /* unused */
+		execer_pg->num_entries++;
+	    }
+	} else {
+	    //FIXME: Use execer_mastport to get task zero's port
+	}
+	free(hostlist);
+	free(tasks_per_node);
+#if 1
+	printf("execer_id:%s\n", execer_id);
+	printf("execer_myhost:%s\n", execer_myhost);
+	printf("execer_mynodenum:%d\n", execer_mynodenum);
+	printf("execer_numtotnodes:%d\n", execer_numtotnodes);
+	printf("execer_mastport:%d\n", execer_mastport);
+	printf("execer_masthost:%s\n", execer_masthost);
+	printf("execer_mynumprocs:%d\n", execer_mynumprocs);
+#endif
+    }
+
     /* Move to last argument, so that we can go backwards. */
     a = &argv[*argc - 1];
 
