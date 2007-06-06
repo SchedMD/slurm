@@ -94,7 +94,15 @@ const uint32_t plugin_version = 100;
  */
 extern int init ( void )
 {
-	verbose("%s loaded", plugin_name);
+	static int first = 1;
+	if(first) {
+		/* since this can be loaded from many different places
+		   only tell us once. */
+		verbose("%s loaded", plugin_name);
+		first = 0;
+	} else {
+		debug4("%s loaded", plugin_name);
+	}
 	return SLURM_SUCCESS;
 }
 
@@ -106,9 +114,9 @@ extern int fini ( void )
  * Initialize the database make sure tables are created and in working
  * order
  */
-extern int database_p_jobacct_init()
+extern int database_p_jobacct_init(char *job_acct_log)
 {
-	return flatfile_jobacct_init();	
+	return flatfile_jobacct_init(job_acct_log);	
 }
 
 /*

@@ -79,7 +79,16 @@ const uint32_t plugin_version = 100;
  */
 extern int init ( void )
 {
-	verbose("%s loaded", plugin_name);
+	static int first = 1;
+	if(first) {
+		/* since this can be loaded from many different places
+		   only tell us once. */
+		verbose("%s loaded", plugin_name);
+		first = 0;
+	} else {
+		debug4("%s loaded", plugin_name);
+	}
+
 	return SLURM_SUCCESS;
 }
 

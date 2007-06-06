@@ -1483,13 +1483,6 @@ validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 		conf->inactive_limit = DEFAULT_INACTIVE_LIMIT;
 	}
 
-	/* Keep logfile around for backwards compatiblity */
-	if (!s_p_get_string(&conf->job_acct_loc, 
-			    "JobAcctLoc", hashtbl)
-	    || !s_p_get_string(&conf->job_acct_loc, 
-			       "JobAcctLogFile", hashtbl))
-		conf->job_acct_loc = xstrdup(DEFAULT_JOB_ACCT_LOC);
-
 	if (!s_p_get_uint16(&conf->job_acct_freq, "JobAcctFrequency", hashtbl))
 		conf->job_acct_freq = DEFAULT_JOB_ACCT_FREQ;
 
