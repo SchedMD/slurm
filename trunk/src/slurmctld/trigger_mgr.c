@@ -218,7 +218,7 @@ extern int trigger_clear(uid_t uid, trigger_info_msg_t *msg)
 			continue;
 		if (trig_test->state == 2)	/* wait for proc termination */
 			continue;
-		list_delete(trig_iter);
+		list_delete_item(trig_iter);
 		rc = SLURM_SUCCESS;
 	}
 	list_iterator_destroy(trig_iter);
@@ -978,7 +978,7 @@ extern void trigger_process(void)
 #if _DEBUG
 				info("purging trigger[%u]", trig_in->trig_id);
 #endif
-				list_delete(trig_iter);
+				list_delete_item(trig_iter);
 				state_change = true;
 			}
 		} else if (trig_in->state == 2) {

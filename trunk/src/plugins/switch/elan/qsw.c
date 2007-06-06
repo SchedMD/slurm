@@ -747,7 +747,7 @@ _free_hwcontext(uint32_t prog_num)
 			if (prog_num != step_ctx_p->st_prognum)
 				continue;
 			_dump_step_ctx("_free_hwcontext", step_ctx_p);
-			list_delete(iter);
+			list_delete_item(iter);
 			break;
 		}
 		if (!step_ctx_p) {

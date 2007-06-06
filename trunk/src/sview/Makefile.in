@@ -49,6 +49,7 @@ am__aclocal_m4_deps = $(top_srcdir)/auxdir/acx_pthread.m4 \
 	$(top_srcdir)/auxdir/x_ac_affinity.m4 \
 	$(top_srcdir)/auxdir/x_ac_aix.m4 \
 	$(top_srcdir)/auxdir/x_ac_bluegene.m4 \
+	$(top_srcdir)/auxdir/x_ac_databases.m4 \
 	$(top_srcdir)/auxdir/x_ac_debug.m4 \
 	$(top_srcdir)/auxdir/x_ac_elan.m4 \
 	$(top_srcdir)/auxdir/x_ac_federation.m4 \
@@ -88,7 +89,8 @@ am__EXTRA_sview_SOURCES_DIST = sview.h sview.c popups.c grid.c \
 	part_info.c job_info.c block_info.c node_info.c submit_info.c \
 	admin_info.c common.c
 sview_OBJECTS = $(am_sview_OBJECTS)
-@HAVE_GTK_TRUE@sview_DEPENDENCIES = $(top_builddir)/src/plugins/select/bluegene/block_allocator/libbluegene_block_allocator.la
+@HAVE_GTK_TRUE@sview_DEPENDENCIES = $(top_builddir)/src/plugins/select/bluegene/block_allocator/libbluegene_block_allocator.la \
+@HAVE_GTK_TRUE@	$(top_builddir)/src/api/libslurm.la
 sview_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CCLD) $(sview_CFLAGS) $(CFLAGS) $(sview_LDFLAGS) \
 	$(LDFLAGS) -o $@
@@ -148,6 +150,7 @@ FFLAGS = @FFLAGS@
 GREP = @GREP@
 GTK2_CFLAGS = @GTK2_CFLAGS@
 GTK2_LIBS = @GTK2_LIBS@
+HAVEPGCONFIG = @HAVEPGCONFIG@
 HAVEPKGCONFIG = @HAVEPKGCONFIG@
 HAVE_AIX = @HAVE_AIX@
 HAVE_ELAN = @HAVE_ELAN@
@@ -171,6 +174,7 @@ MKDIR_P = @MKDIR_P@
 MUNGE_CPPFLAGS = @MUNGE_CPPFLAGS@
 MUNGE_LDFLAGS = @MUNGE_LDFLAGS@
 MUNGE_LIBS = @MUNGE_LIBS@
+MYSQL_LIBS = @MYSQL_LIBS@
 NCURSES = @NCURSES@
 NUMA_LIBS = @NUMA_LIBS@
 OBJEXT = @OBJEXT@
@@ -182,6 +186,8 @@ PACKAGE_TARNAME = @PACKAGE_TARNAME@
 PACKAGE_VERSION = @PACKAGE_VERSION@
 PAM_LIBS = @PAM_LIBS@
 PATH_SEPARATOR = @PATH_SEPARATOR@
+PGSQL_CFLAGS = @PGSQL_CFLAGS@
+PGSQL_LIBS = @PGSQL_LIBS@
 PLPA_LIBS = @PLPA_LIBS@
 PROCTRACKDIR = @PROCTRACKDIR@
 PROJECT = @PROJECT@
@@ -270,7 +276,8 @@ top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
 INCLUDES = -I$(top_srcdir) $(BG_INCLUDES)
 @HAVE_GTK_TRUE@sview_LDADD = \
-@HAVE_GTK_TRUE@	$(top_builddir)/src/plugins/select/bluegene/block_allocator/libbluegene_block_allocator.la 
+@HAVE_GTK_TRUE@	$(top_builddir)/src/plugins/select/bluegene/block_allocator/libbluegene_block_allocator.la  \
+@HAVE_GTK_TRUE@	$(top_builddir)/src/api/libslurm.la
 
 @HAVE_GTK_TRUE@noinst_HEADERS = sview.h
 @HAVE_GTK_TRUE@sview_SOURCES = sview.c popups.c grid.c part_info.c job_info.c \

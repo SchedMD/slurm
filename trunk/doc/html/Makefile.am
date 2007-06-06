@@ -9,6 +9,7 @@ generated_html = \
 	checkpoint_plugins.html \
 	cons_res.html \
 	dist_plane.html \
+	databaseplugins.html \
 	documentation.html \
 	download.html \
 	faq.html \

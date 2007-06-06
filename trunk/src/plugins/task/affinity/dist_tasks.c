@@ -1148,7 +1148,7 @@ _remove_lllp_job_state(uint32_t jobid)
         i = list_iterator_create(lllp_ctx->job_list);
         while ((j = list_next(i)) && (j->jobid != jobid)) {;}
 	if (j) {
-	    	list_delete(i);
+	    	list_delete_item(i);
 	}
         list_iterator_destroy(i);
 }
@@ -1673,7 +1673,7 @@ void cr_release_lllp(uint32_t job_id)
 					cpu_bind_type, cpu_bind, numtasks);
 
 			/* done with saved state, remove entry */
-			list_delete(i);
+			list_delete_item(i);
 		}
 	}
 	list_iterator_destroy(i);

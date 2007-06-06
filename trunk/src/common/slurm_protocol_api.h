@@ -176,11 +176,47 @@ uint16_t slurm_get_jobacct_freq(void);
  */
 char *slurm_get_jobacct_type(void);
 
+/* slurm_get_database_type
+ * returns the database type from slurmctld_conf object
+ * RET char *    - database type,  MUST be xfreed by caller
+ */
+char *slurm_get_database_type(void);
+
+/* slurm_get_database_user
+ * returns the database user from slurmctld_conf object
+ * RET char *    - database user,  MUST be xfreed by caller
+ */
+char *slurm_get_database_user(void);
+
+/* slurm_get_database_host
+ * returns the database host from slurmctld_conf object
+ * RET char *    - database host,  MUST be xfreed by caller
+ */
+char *slurm_get_database_host(void);
+
+/* slurm_get_database_pass
+ * returns the database password from slurmctld_conf object
+ * RET char *    - database password,  MUST be xfreed by caller
+ */
+char *slurm_get_database_pass(void);
+
+/* slurm_get_database_port
+ * returns the database port from slurmctld_conf object
+ * RET uint32_t   - database port
+ */
+uint32_t slurm_get_database_port(void);
+
 /* slurm_get_jobcomp_type
  * returns the job completion logger type from slurmctld_conf object
  * RET char *    - job completion type,  MUST be xfreed by caller
  */
 char *slurm_get_jobcomp_type(void);
+
+/* slurm_get_jobcomp_loc
+ * returns the job completion loc from slurmctld_conf object
+ * RET char *    - job completion location,  MUST be xfreed by caller
+ */
+char *slurm_get_jobcomp_loc(void);
 
 /* slurm_get_propagate_prio_process
  * return the PropagatePrioProcess flag from slurmctld_conf object

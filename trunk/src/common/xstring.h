@@ -99,6 +99,11 @@ void _xmemcat(char **str, char *start, char *end);
 char *xstrdup(const char *str);
 
 /*
+** strdup formatted which uses xmalloc routines
+*/
+char *xstrdup_printf(const char *fmt, ...);
+
+/*
 ** strndup which uses xmalloc routines
 */
 char *xstrndup(const char *str, size_t n);

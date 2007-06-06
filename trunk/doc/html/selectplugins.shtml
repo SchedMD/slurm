@@ -154,9 +154,10 @@ the plugin should return SLURM_ERROR.</p>
 <p class="commandline">int select_p_pack_node_info (time_t last_query_time, Buf *buffer_ptr);</p>
 <p style="margin-left:.2in"><b>Description</b>: pack node specific information into a buffer.</p>
 <p style="margin-left:.2in"><b>Arguments</b>:
-<span class="commandline"> last_query_time</span>&nbsp;&nbsp;&nbsp;(input) time that the data
-was last saved. If it has not changed since this time, return SLURM_NO_CHANGE_IN_DATA. <br>
-<span class="commandline"> buffer_ptre</span>&nbsp;&nbsp;&nbsp;(input/output) buffer into 
+<span class="commandline">
+last_query_time</span>&nbsp;&nbsp;&nbsp;(input) time that the data was
+last saved.<br>
+<span class="commandline"> buffer_ptr</span>&nbsp;&nbsp;&nbsp;(input/output) buffer into 
 which the node data is appended.</p>
 <p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful, 
 SLURM_NO_CHANGE_IN_DATA if data has not changed since last packed, otherwise SLURM_ERROR</p>

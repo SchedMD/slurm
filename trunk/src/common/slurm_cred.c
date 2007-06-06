@@ -1305,7 +1305,7 @@ _clear_expired_job_states(slurm_cred_ctx_t ctx)
 		        j->jobid, timestr(&j->ctime, t1, 64), t2, t3);
 
 		if (j->revoked && (now > j->expiration)) {
-			list_delete(i);
+			list_delete_item(i);
 		}
 	}
 
@@ -1324,7 +1324,7 @@ _clear_expired_credential_states(slurm_cred_ctx_t ctx)
 
 	while ((s = list_next(i))) {
 		if (now > s->expiration)
-			list_delete(i);
+			list_delete_item(i);
 	}
 
 	list_iterator_destroy(i);

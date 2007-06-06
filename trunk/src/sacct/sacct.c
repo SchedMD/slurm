@@ -145,7 +145,6 @@
 
 #include "sacct.h"
 
-
 void invalidSwitchCombo(char *good, char *bad);
 void _print_header(void);
 
@@ -177,6 +176,7 @@ fields_t fields[] = {{"account", print_account},
 		     {"ncpus", print_ncpus}, 
 		     {"nivcsw", print_nivcsw}, 
 		     {"nodes", print_nodes}, 
+		     {"nnodes", print_nnodes}, 
 		     {"nprocs", print_ntasks},
 		     {"nsignals", print_nsignals},
 		     {"nswap", print_nswap}, 
@@ -189,15 +189,23 @@ fields_t fields[] = {{"account", print_account},
 		     {"start", print_start}, 
 		     {"status", print_status}, 
 		     {"submit", print_submit}, 
+		     {"timelimit", print_timelimit}, 
 		     {"submitted", print_submit},	/* Defunct name */
 		     {"systemcpu", print_systemcpu}, 
 		     {"uid", print_uid}, 
 		     {"user", print_user}, 
 		     {"usercpu", print_usercpu}, 
 		     {"vsize", print_vsize}, 
+#ifdef HAVE_BG
+		     {"blockid", print_blockid}, 
+		     {"connection", print_connection}, 
+		     {"geo", print_geo}, 
+		     {"max_procs", print_max_procs}, 
+		     {"reboot", print_reboot}, 
+		     {"rotate", print_rotate}, 
+		     {"bg_start_point", print_bg_start_point}, 		     
+#endif
 		     {NULL, NULL}};
-
-long input_error = 0;		/* Muddle through bad data, but complain! */
 
 List jobs = NULL;
 
@@ -286,7 +294,10 @@ int main(int argc, char **argv)
 	switch (op) {
 	case DUMP:
 		get_data();
-		do_dump();
+		if(params.opt_completion) 
+			do_dump_completion();
+		else 
+			do_dump();
 		break;
 	case EXPIRE:
 		do_expire();
@@ -298,7 +309,10 @@ int main(int argc, char **argv)
 		if (params.opt_header) 	/* give them something to look */
 			_print_header();/* at while we think...        */
 		get_data();
-		do_list();
+		if(params.opt_completion) 
+			do_list_completion();
+		else 
+			do_list();
 		break;
 	case STAT:
 		if (params.opt_header) 	/* give them something to look */

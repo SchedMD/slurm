@@ -17,3 +17,5 @@ jobacct_aix_la_SOURCES = jobacct_aix.c \
 	$(top_builddir)/src/slurmd/common/proctrack.h 
 
 jobacct_aix_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
+jobacct_aix_la_LIBADD  =  \
+	$(top_builddir)/src/common/libcommon.la -lpthread 

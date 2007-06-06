@@ -18,8 +18,8 @@ AC_DEFUN([X_AC_GTK],
     ac_have_gtk="yes"
 
 ### Check for pkg-config program
-    AC_PATH_PROG(HAVEPKGCONFIG, pkg-config, $PATH)
-    if test -z "$HAVEPKGCONFIG"; then
+    AC_PATH_PROG(HAVEPKGCONFIG, pkg-config, no)
+    if test x$HAVEPKGCONFIG = xno; then
         AC_MSG_WARN([*** pkg-config not found. Cannot probe for libglade-2.0 or gtk+-2.0.])
         ac_have_gtk="no"
     fi
