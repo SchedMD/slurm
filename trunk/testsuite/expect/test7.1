@@ -42,48 +42,50 @@ set prio3                -1
 
 print_header $test_id
 
+make_bash_script "pwd_script" { $bin_pwd }
+
 #
-# Spawn three srun batch job, one held
+# Spawn three sbatch job, one held
 #
-set srun_pid [spawn $srun --batch -t1 --output=/dev/null --error=/dev/null  $bin_pwd]
+set sbatch_pid [spawn $sbatch -t1 --output=/dev/null --error=/dev/null  pwd_script]
 expect {
-	-re "jobid ($number) submitted" {
+	-re "Submitted batch job ($number)" {
 		set job_id1 $expect_out(1,string)
 		exp_continue
 	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
-		slow_kill $srun_pid
+		slow_kill $sbatch_pid
 		exit 1
 	}
 	eof {
 		wait
 	}
 }
-set srun_pid [spawn $srun --batch -t1 --output=/dev/null --error=/dev/null $bin_pwd]
+set sbatch_pid [spawn $sbatch -t1 --output=/dev/null --error=/dev/null pwd_script]
 expect {
-        -re "jobid ($number) submitted" {
+	-re "Submitted batch job ($number)" {
                 set job_id2 $expect_out(1,string)
                 exp_continue
         }
         timeout {
                 send_user "\nFAILURE: srun not responding\n"
-                slow_kill $srun_pid
+                slow_kill $sbatch_pid
                 exit 1
         }
         eof {
 		wait
         }
 }
-set srun_pid [spawn $srun --batch -t1 --output=/dev/null --error=/dev/null --hold $bin_pwd]
+set sbatch_pid [spawn $sbatch -t1 --output=/dev/null --error=/dev/null --hold pwd_script]
 expect {
-        -re "jobid ($number) submitted" {
+	-re "Submitted batch job ($number)" {
                 set job_id3 $expect_out(1,string)
                 exp_continue
         }
         timeout {
                 send_user "\nFAILURE: srun not responding\n"
-		slow_kill $srun_pid
+		slow_kill $sbatch_pid
                 exit 1
         }
         eof {
