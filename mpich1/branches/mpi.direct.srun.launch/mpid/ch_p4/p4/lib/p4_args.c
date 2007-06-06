@@ -88,16 +88,15 @@ P4VOID process_args(int *argc, char **argv)
 	    exit(-1);
 	}
 
-	if ((tmp = getenv("SLURM_MPICH1_P4_PORT")))
+	if ((tmp = getenv("SLURM_MPICH_PORT")))
 	    execer_mastport = atoi(tmp);
 	else {
-	    printf("SLURM_MPICH1_P4_PORT environment variable missing\n");
-//FIXME	    exit(-1);
+	    printf("SLURM_MPICH_PORT environment variable missing\n");
+	    exit(-1);
 	}
 
-//FIXME: MPICH1_P4 plugin to reformat SLURM_NODELIST and SLURM_TASKS_PER_NODE
-	if (!(tmp = getenv("SLURM_NODELIST"))) {
-	    printf("SLURM_NODELIST environment variable missing\n");
+	if (!(tmp = getenv("SLURM_MPICH_NODELIST"))) {
+	    printf("SLURM_MPICH_NODELIST environment variable missing\n");
 	    exit(-1);
 	}
 	i = strlen(tmp) + 1;
@@ -105,13 +104,13 @@ P4VOID process_args(int *argc, char **argv)
 	bcopy(tmp, hostlist, i);
 	tmp = strtok_r(hostlist, ",", &host2);
 	if (!tmp) {
-	    printf("SLURM_NODELIST environment variable invalid\n");
+	    printf("SLURM_MPICH_NODELIST environment variable invalid\n");
 	    exit(-1);
 	}
 	strcpy(execer_masthost, tmp);
 
-	if (!(tmp = getenv("SLURM_TASKS_PER_NODE"))) {
-	    printf("SLURM_TASKS_PER_NODE environment variable missing\n");
+	if (!(tmp = getenv("SLURM_MPICH_TASKS"))) {
+	    printf("SLURM_MPICH_TASKS environment variable missing\n");
 	    exit(-1);
 	}
 	i = strlen(tmp) + 1;
@@ -119,7 +118,7 @@ P4VOID process_args(int *argc, char **argv)
 	bcopy(tmp, tasks_per_node, i);
 	tmp = strtok_r(tasks_per_node, ",", &task2);
 	if (!tmp) {
-	    printf("SLURM_TASKS_PER_NODE environment variable invalid\n");
+	    printf("SLURM_MPICH_TASKS environment variable invalid\n");
 	    exit(-1);
 	}
 	execer_mynumprocs = atoi(tmp);
@@ -136,19 +135,19 @@ P4VOID process_args(int *argc, char **argv)
 		pe++;
 		tmp = strtok_r(NULL, ",", &host2);
 		if (!tmp) {
-		    printf("SLURM_NODELIST environment variable invalid\n");
+		    printf("SLURM_MPICH_NODELIST environment variable invalid\n");
 		    exit(-1);
 		}
 		strcpy(pe->host_name, tmp);
 		 tmp = strtok_r(NULL, ",", &task2);
 		if (!tmp) {
-		    printf("SLURM_TASKS_PER_NODE environment variable invalid\n");
+		    printf("SLURM_MPICH_TASKS environment variable invalid\n");
 		    exit(-1);
 		}
 		pe->numslaves_in_group = atoi(tmp);
 #if 1
 		printf("host[%d] name:%s tasks:%d\n", 
-			pe->host_name, pe->numslaves_in_group);
+			i, pe->host_name, pe->numslaves_in_group);
 #endif
 		*pe->slave_full_pathname = 0;
 		pe->username[0] = '\0'; /* unused */
