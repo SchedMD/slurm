@@ -47,7 +47,7 @@ exec $bin_rm -f $file_in
 make_bash_script $file_in "$bin_hostname"
 
 #
-# Spawn a srun batch job that uses stdout/err and confirm their contents
+# Spawn a batch job that uses stdout/err and confirm their contents
 #
 set timeout $max_job_delay
 if { [test_bluegene] } {
@@ -60,7 +60,7 @@ if { [test_bluegene] } {
 	}
 }
 
-set srun_pid [spawn $srun -N$node_cnt -A -v -t1]
+set srun_pid [spawn $salloc -N$node_cnt -v -t1 bash]
 expect {
 	-re "jobid ($number):" {
 		set job_id_1 $expect_out(1,string)

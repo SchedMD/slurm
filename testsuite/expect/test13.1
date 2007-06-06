@@ -92,8 +92,8 @@ set timeout $max_job_delay
 set job_id 0
 set matches 0
 
-set srun_pid [spawn $srun --allocate -N1 --verbose -t2]
-expect -re "jobid ($number).*"
+set srun_pid [spawn $salloc -N1 --verbose -t2 bash]
+expect -re "Granted job allocation ($number)"
 set job_id $expect_out(1,string)
 
 # start initial job step to claim some switch windows

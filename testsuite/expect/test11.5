@@ -50,16 +50,16 @@ make_bash_script $file_in "
 #
 # Submit a job so we have something to work with
 #
-set srun_pid [spawn $srun --batch --output=/dev/null --error=/dev/null -t2 $file_in]
+set sbatch_pid [spawn $sbatch --output=/dev/null --error=/dev/null -t2 $file_in]
 expect {
-	-re "jobid ($number) submitted" {
+	-re "Submitted batch job ($number)" {
 		set job_id $expect_out(1,string)
 		exp_continue
 	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
 		if {$job_id == 0} {
-			slow_kill $srun_pid
+			slow_kill $sbatch_pid
 		} else {
 			cancel_job $job_id
 		}

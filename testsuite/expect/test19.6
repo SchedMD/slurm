@@ -74,9 +74,9 @@ make_bash_script $file_in_down     "sleep 1"
 make_bash_script $file_in_reconfig "sleep 1"
 
 set job_id 0
-spawn $srun --batch --output=/dev/null -t1 $file_in
+spawn $sbatch --output=/dev/null -t1 $file_in
 expect {
-	-re "jobid ($number) submitted" {
+	-re "Submitted batch job ($number)" {
 		set job_id $expect_out(1,string)
 		exp_continue
 	}
