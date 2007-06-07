@@ -3,7 +3,8 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 1.2.10
 =========================
-
+ -- fix race condititon in jobacct/linux with use of proctrack/pgid and a
+    realloc issue inside proctrack/linux
 
 * Changes in SLURM 1.2.9
 ========================
