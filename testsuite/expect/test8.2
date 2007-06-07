@@ -1,7 +1,7 @@
 #!/usr/bin/expect
 ############################################################################
 # Purpose: Test of SLURM functionality
-#          Test of Blue Gene specific srun environment variables
+#          Test of Blue Gene specific sbatch environment variables
 #
 # Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
 #          "FAILURE: ..." otherwise with an explanation of the failure, OR
@@ -65,15 +65,15 @@ exec $bin_chmod 700 $file_in
 # Spawn a job via srun using these environment variables
 #
 set timeout $max_job_delay
-set srun_pid [spawn $srun --batch --output=$file_out --error=/dev/null $file_in]
+set sbatch_pid [spawn $sbatch --output=$file_out --error=/dev/null $file_in]
 expect {
-	-re "jobid ($number) submitted" {
+	-re "Submitted batch job ($number)" {
 		set job_id $expect_out(1,string)
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
-		slow_kill $srun_pid
+		send_user "\nFAILURE: sbatch not responding\n"
+		slow_kill $sbatch_pid
 		exit 1
 	}
 	eof {

@@ -86,7 +86,7 @@ expect {
 # Confirm the job_ids match.
 #
 if { $job_id == 0 } {
-	send_user "\nFAILURE: salloc --allocate failure\n"
+	send_user "\nFAILURE: salloc  failure\n"
 	set exit_code 1
 } else {
 	if { $job_id != $slurm_jobid } {

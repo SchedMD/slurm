@@ -106,15 +106,15 @@ make_bash_script $file_in "
 
 set job_id1 0
 set job_id2 0
-set srun_pid [spawn $srun -N1-6 --output=$file_out --comment=test --batch -t1 $file_in]
+set sbatch_pid [spawn $sbatch -N1-6 --output=$file_out --comment=test -t1 $file_in]
 expect {
-	-re "jobid ($number) submitted" {
+	-re "Submitted batch job ($number) submitted" {
 		set job_id1 $expect_out(1,string)
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
-		catch {exec $bin_kill -KILL $srun_pid}
+		send_user "\nFAILURE: sbatch not responding\n"
+		catch {exec $bin_kill -KILL $sbatch_pid}
 		set exit_code 1
 	}
 	eof {
@@ -126,15 +126,15 @@ if {$job_id1 == 0} {
 	exit 1
 }
 
-set srun_pid [spawn $srun -N1-6 --output=$file_out --comment=test --batch -t1 $file_in]
+set sbatch_pid [spawn $sbatch -N1-6 --output=$file_out --comment=test -t1 $file_in]
 expect {
-	-re "jobid ($number) submitted" {
+	-re "Submitted batch job ($number)" {
 		set job_id2 $expect_out(1,string)
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
-		catch {exec $bin_kill -KILL $srun_pid}
+		send_user "\nFAILURE: sbatch not responding\n"
+		catch {exec $bin_kill -KILL $sbatch_pid}
 		set exit_code 1
 	}
 	eof {

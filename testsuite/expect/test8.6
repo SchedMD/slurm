@@ -73,7 +73,7 @@ proc run_batch_jobs { node_cnt job_cnt file_in } {
 	global srun number kill_srun
 	set start_cnt 0	
 	for {set inx 0} {$inx < $job_cnt} {incr inx} {
-		set srun_pid [spawn $srun --batch --output=/dev/null -t2 -N$node_cnt-$node_cnt $file_in]
+		set sbatch_pid [spawn $sbatch --output=/dev/null -t2 -N$node_cnt-$node_cnt $file_in]
 		expect {
 			-re "More processors requested than permitted"
 			{
@@ -90,8 +90,8 @@ proc run_batch_jobs { node_cnt job_cnt file_in } {
 				exp_continue
 			}
 			timeout {
-				send_user "\nFAILURE: srun not responding\n"
-				slow_kill $srun_pid
+				send_user "\nFAILURE: sbatch not responding\n"
+				slow_kill $sbatch_pid
 				return 0
 			}
 			eof {

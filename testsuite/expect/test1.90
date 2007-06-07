@@ -80,7 +80,7 @@ exec $bin_chmod 700 $file_prog
 #
 # Create an allocation
 #
-set srun_pid [spawn $srun --allocate -N1 --verbose -t2]
+set salloc_pid [spawn $salloc -N1 --verbose -t2 $bin_bash]
 
 #
 # Run a job step to get allocated processor count and affinity
@@ -101,7 +101,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun (from --allocate) not responding "
+		send_user "\nFAILURE: salloc not responding "
 		send_user "or failure to recognize prompt\n"
 		set exit_code 1
 	}
@@ -126,7 +126,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun (from --allocate) not responding "
+		send_user "\nFAILURE: salloc not responding "
 		send_user "or failure to recognize prompt\n"
 		set exit_code 1
 	}
@@ -154,7 +154,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun (from --allocate) not responding "
+		send_user "\nFAILURE: salloc not responding "
 		send_user "or failure to recognize prompt\n"
 		set exit_code 1
 	}
@@ -177,7 +177,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun (from --allocate) not responding "
+		send_user "\nFAILURE: salloc not responding "
 		send_user "or failure to recognize prompt\n"
 		set exit_code 1
 	}
@@ -206,7 +206,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun (from --allocate) not responding "
+		send_user "\nFAILURE: salloc not responding "
 		send_user "or failure to recognize prompt\n"
 		set exit_code 1
 		exp_continue
@@ -233,7 +233,7 @@ while {$cpu_cnt < $task_cnt} {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: srun (from --allocate) not "
+			send_user "\nFAILURE: salloc not "
 			send_user "responding or failure to recognize prompt\n"
 			set exit_code 1
 			exp_continue
@@ -267,7 +267,7 @@ while {$cpu_cnt < $task_cnt} {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: srun (from --allocate) not "
+			send_user "\nFAILURE: salloc not "
 			send_user "responding or failure to recognize prompt\n"
 			set exit_code 1
 			exp_continue
@@ -343,7 +343,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun (from --allocate) not responding "
+		send_user "\nFAILURE: salloc not responding "
 		send_user "or failure to recognize prompt\n"
 		set exit_code 1
 		exp_continue
@@ -371,7 +371,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun (from --allocate) not responding "
+		send_user "\nFAILURE: salloc not responding "
 		send_user "or failure to recognize prompt\n"
 		set exit_code 1
 		exp_continue
@@ -399,7 +399,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun (from --allocate) not responding "
+		send_user "\nFAILURE: salloc not responding "
 		send_user "or failure to recognize prompt\n"
 		set exit_code 1
 		exp_continue
@@ -427,7 +427,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun (from --allocate) not responding "
+		send_user "\nFAILURE: salloc not responding "
 		send_user "or failure to recognize prompt\n"
 		set exit_code 1
 		exp_continue
@@ -455,7 +455,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun (from --allocate) not responding "
+		send_user "\nFAILURE: salloc not responding "
 		send_user "or failure to recognize prompt\n"
 		set exit_code 1
 		exp_continue
@@ -483,7 +483,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun (from --allocate) not responding "
+		send_user "\nFAILURE: salloc not responding "
 		send_user "or failure to recognize prompt\n"
 		set exit_code 1
 		exp_continue
@@ -505,9 +505,9 @@ expect {
 		set exit_code 1
 	}
 	timeout {
-		send_user "\nFAILURE: srun (from --allocate) not responding "
+		send_user "\nFAILURE: salloc not responding "
 		send_user "or failure to recognize prompt\n"
-		slow_kill $srun_pid
+		slow_kill $salloc_pid
 		set exit_code 1
 	}
 	eof {
