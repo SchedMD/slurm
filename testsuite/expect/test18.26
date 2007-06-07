@@ -61,7 +61,7 @@ exec $bin_chmod 700 $file_in
 set job_id  0
 set matches 0
 set timeout $max_job_delay
-set salloc_pid [spawn $salloc -N1 -t1 $slaunch -n4 --overcommit -l --multi-prog $file_in]
+set salloc_pid [spawn $salloc -N1 -t1 $slaunch -n4 --overcommit -l --multi-prog ./$file_in]
 expect {
 	-re "Granted job allocation ($number)" {
 		set job_id $expect_out(1,string)
@@ -127,7 +127,7 @@ exec $bin_chmod 700 $file_in
 set job_id    0
 set matches   0
 set timed_out 0
-set salloc_pid [spawn $salloc -N1 -t1 $slaunch -n4 --overcommit -l --multi-prog --debugger-test $file_in]
+set salloc_pid [spawn $salloc -N1 -t1 $slaunch -n4 --overcommit -l --multi-prog --debugger-test ./$file_in]
 expect {
 	-re "Granted job allocation ($number)" {
 		set job_id $expect_out(1,string)

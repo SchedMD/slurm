@@ -71,7 +71,7 @@ make_bash_script $script_name {
     printenv SLURM_JOB_CPUS_PER_NODE
     sleep 600
 }
-set salloc_pid [spawn $salloc -N $node_cnt $slaunch -n 1 $script_name]
+set salloc_pid [spawn $salloc -N $node_cnt $slaunch -n 1 ./$script_name]
 set salloc_spawn_id $spawn_id
 expect {
 	-re "Granted job allocation ($number)" {
