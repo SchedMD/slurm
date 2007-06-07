@@ -82,7 +82,7 @@ if { [test_bluegene] } {
 	set node_cnt 1
 }
 
-set salloc_pid [spawn $salloc -N$node_cnt -t1 $slaunch -n$tasks --overcommit --task-prolog=$task_prolog --task-epilog=$task_epilog $file_in]
+set salloc_pid [spawn $salloc -N$node_cnt -t1 $slaunch -n$tasks --overcommit --task-prolog=$task_prolog --task-epilog=$task_epilog ./$file_in]
 expect {
 	-re "Granted job allocation ($number)" {
 		set job_id $expect_out(1,string)

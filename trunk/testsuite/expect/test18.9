@@ -55,7 +55,7 @@ make_bash_script $file_in "
 # Spawn tasks via slaunch and immediately exit task 1 only
 #
 set timeout $max_job_delay
-set salloc_pid [spawn $salloc -N1 -t2 $slaunch -n10 --overcommit -W2 $file_in]
+set salloc_pid [spawn $salloc -N1 -t2 $slaunch -n10 --overcommit -W2 ./$file_in]
 expect {
 	-re "Granted job allocation ($number)" {
 		set job_id $expect_out(1,string)

@@ -93,7 +93,7 @@ exec $mpicc -o $test_prog ${test_prog}.c
 #
 # Create a slurm job step
 #
-set salloc_pid [spawn $salloc -N1-2 -t1 $slaunch --input=none -n4 --overcommit $test_prog]
+set salloc_pid [spawn $salloc -N1-2 -t1 $slaunch --input=none -n4 --overcommit ./$test_prog]
 expect {
 	-re "Granted job allocation ($number)" {
 		set job_id $expect_out(1,string)

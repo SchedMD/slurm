@@ -75,7 +75,7 @@ exec $bin_chmod 700 $file_in
 #
 set timeout $max_job_delay
 set job_id  0
-set salloc_pid [spawn $salloc -t1 -N1 $slaunch -n10 --overcommit --kill-on-bad-exit $file_in]
+set salloc_pid [spawn $salloc -t1 -N1 $slaunch -n10 --overcommit --kill-on-bad-exit ./$file_in]
 expect {
 	-re "Granted job allocation ($number)" {
 		set job_id $expect_out(1,string)

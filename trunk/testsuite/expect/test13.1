@@ -92,7 +92,7 @@ set timeout $max_job_delay
 set job_id 0
 set matches 0
 
-set srun_pid [spawn $salloc -N1 --verbose -t2 bash]
+set srun_pid [spawn $salloc -N1 --verbose -t2 $bin_bash]
 expect -re "Granted job allocation ($number)"
 set job_id $expect_out(1,string)
 

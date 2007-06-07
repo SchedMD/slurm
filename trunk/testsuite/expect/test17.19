@@ -60,7 +60,7 @@ if { [test_bluegene] } {
 	}
 }
 
-set srun_pid [spawn $salloc -N$node_cnt -v -t1 bash]
+set srun_pid [spawn $salloc -N$node_cnt -v -t1 $bin_bash]
 expect {
 	-re "jobid ($number):" {
 		set job_id_1 $expect_out(1,string)
