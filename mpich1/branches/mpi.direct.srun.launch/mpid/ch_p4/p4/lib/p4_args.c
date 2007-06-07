@@ -93,6 +93,7 @@ P4VOID process_args(int *argc, char **argv)
 
 	if (!(tmp = getenv("SLURM_MPICH_NODELIST"))) {
 	    printf("SLURM_MPICH_NODELIST environment variable missing\n");
+	    printf("  SLURM's mpich1_p4 plugin likely not in use\n");
 	    exit(-1);
 	}
 	i = strlen(tmp) + 1;
