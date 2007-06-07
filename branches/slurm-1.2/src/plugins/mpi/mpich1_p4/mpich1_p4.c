@@ -51,6 +51,7 @@
 #include "src/common/hostlist.h"
 #include "src/common/mpi.h"
 #include "src/common/net.h"
+#include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
 /*
@@ -81,7 +82,7 @@
  * minimum versions for their plugins as this API matures.
  */
 const char plugin_name[]        = "mpi MPICH1_P4 plugin";
-const char plugin_type[]        = "mpi/mpich_pr";
+const char plugin_type[]        = "mpi/mpich1_p4";
 const uint32_t plugin_version   = 100;
 
 /* communication for master port info */ 
@@ -156,7 +157,7 @@ static void *mpich1_thr(void *arg)
 	socklen_t cli_len;
 	char in_buf[128];
 
-	info("waiting for p4 communication");
+	debug("waiting for p4 communication");
 	if ((flags = fcntl(p4_fd1, F_GETFL)) < 0) {
 		error("mpich_p4: fcntl: %m");
 		return NULL;
@@ -262,7 +263,7 @@ p_mpi_hook_client_prelaunch(mpi_plugin_client_info_t *job, char ***env)
 	slurm_attr_destroy(&attr);
 	env_array_overwrite_fmt(env, "SLURM_MPICH_PORT1", "%hu", port1);
 	env_array_overwrite_fmt(env, "SLURM_MPICH_PORT2", "%hu", port2);
-	info("mpich_p4 plugin listening on fd=%d,%d ports=%d,%d", 
+	debug("mpich_p4 plugin listening on fd=%d,%d ports=%d,%d", 
 		p4_fd1, p4_fd2, port1, port2);
 
 	/* only return NULL on error */
