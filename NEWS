@@ -11,6 +11,8 @@ documents those changes that are of interest to users and admins.
    that will never end.
  - Added fork handlers in the slurmstepd
  - In sched/wiki2: fix logic for restarting backup slurmctld.
+ - In sched/wiki2: if job has no time limit specified, return the partition's 
+   time limit (which is the default for the job) rather than 365 days.
 
 * Changes in SLURM 1.1.36
 =========================
