@@ -62,15 +62,15 @@ set timeout [expr $max_job_delay + $sleep_time]
 
 # make a 512 cnode block
 
-spawn $srun --batch --output=$file_out --error=$file_err -t2 -N512-512 $file_in
+set sbatch_pid [spawn $sbatch --output=$file_out --error=$file_err -t2 -N512-512 $file_in]
 expect {
-	-re "jobid ($number) submitted" {
+	-re "Submitted batch job ($number)" {
 		set job_id $expect_out(1,string)
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
-		kill_srun
+		send_user "\nFAILURE: sbatch not responding\n"
+		slow_kill $sbatch_pid
 		exit 1
 	}
 	eof {
@@ -127,15 +127,15 @@ if {$exit_code != 0} {
 # make a 128 cnode block
 
 
-spawn $srun --batch --output=$file_out --error=$file_err -t2 -N128-128 $file_in
+set sbatch_pid [spawn $sbatch --output=$file_out --error=$file_err -t2 -N128-128 $file_in]
 expect {
-	-re "jobid ($number) submitted" {
+	-re "Submitted batch job ($number)" {
 		set job_id $expect_out(1,string)
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
-		kill_srun
+		send_user "\nFAILURE: sbatch not responding\n"
+		slow_kill $sbatch_pid
 		exit 1
 	}
 	eof {
@@ -195,15 +195,15 @@ if {$matches != 1} {
 
 # make a 32 cnode block
 
-spawn $srun --batch --output=$file_out --error=$file_err -t2 -N32-32 $file_in
+set sbatch_pid [spawn $sbatch --output=$file_out --error=$file_err -t2 -N32-32 $file_in]
 expect {
-	-re "jobid ($number) submitted" {
+	-re "Submitted batch job ($number)" {
 		set job_id $expect_out(1,string)
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
-		kill_srun
+		send_user "\nFAILURE: sbatch not responding\n"
+		slow_kill $sbatch_pid
 		exit 1
 	}
 	eof {

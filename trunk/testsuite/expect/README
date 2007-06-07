@@ -265,8 +265,8 @@ test7.10   Test if we can trick SLURM into using the wrong user ID
 
 test8.#    Test of Blue Gene specific functionality.
 =================================================
-test8.1    Test of Blue Gene specific srun command line options
-test8.2    Test of Blue Gene specific srun environment variables
+test8.1    Test of Blue Gene specific sbatch command line options
+test8.2    Test of Blue Gene specific sbatch environment variables
 test8.3    Test of Blue Gene specific job geometry support
 test8.4    Test of Blue Gene MPI job execution
 test8.5    Confirm we can make a 32, 128, and 512 cnode block.

@@ -113,7 +113,7 @@ for {set inx 0} {$inx < $windows_iterations} {incr inx} {
 			send "$srun -N1 -O -n$windows_used true\n"
 		}
 		timeout {
-			send_user "\nFAILURE: srun (from --allocate) not responding\n"
+			send_user "\nFAILURE: salloc not responding\n"
 			slow_kill $srun_pid
 			exit 1
 		}
@@ -138,7 +138,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun (from --allocate) not responding\n"
+		send_user "\nFAILURE: salloc not responding\n"
 		slow_kill $srun_pid
 		exit 1
 	}

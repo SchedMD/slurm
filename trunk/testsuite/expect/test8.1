@@ -1,7 +1,7 @@
 #!/usr/bin/expect
 ############################################################################
 # Purpose: Test of SLURM functionality
-#          Test of Blue Gene specific srun command line options
+#          Test of Blue Gene specific sbatch command line options
 #
 # Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
 #          "FAILURE: ..." otherwise with an explanation of the failure, OR
@@ -58,14 +58,14 @@ exec echo "$bin_sleep 1 &"     >>$file_in
 exec $bin_chmod 700 $file_in
 
 #
-# Submit a slurm job using various srun options for blue gene
+# Submit a slurm job using various sbatch options for blue gene
 #
 set timeout $max_job_delay
 
 for {set inx 0} {$inx < $cycle_count} {incr inx} {
-	set srun_pid [spawn $srun -N$num_nodes --geometry=$geometry --no-rotate --conn-type=$connection --batch --output=/dev/null --error=/dev/null $file_in]
+	set sbatch_pid [spawn $sbatch -N$num_nodes --geometry=$geometry --no-rotate --conn-type=$connection --output=/dev/null --error=/dev/null $file_in]
 	expect {
-		-re "jobid ($number) submitted" {
+		-re "Submitted batch job ($number)" {
 			set job_id $expect_out(1,string)
 			set inx $cycle_count
 			exp_continue
@@ -76,8 +76,8 @@ for {set inx 0} {$inx < $cycle_count} {incr inx} {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: srun not responding\n"
-			slow_kill $srun_pid
+			send_user "\nFAILURE: sbatch not responding\n"
+			slow_kill $sbatch_pid
 			exit 1
 		}
 		eof {
@@ -133,15 +133,15 @@ cancel_job $job_id
 #
 set job_id      0
 set timeout $max_job_delay
-set srun_pid [spawn $srun -N$num_nodes --geometry=$geometry --no-rotate --conn-type=$connection --batch --output=/dev/null --error=/dev/null $file_in]
+set sbatch_pid [spawn $sbatch -N$num_nodes --geometry=$geometry --no-rotate --conn-type=$connection --output=/dev/null --error=/dev/null $file_in]
 expect {
 	-re "jobid ($number) submitted" {
 		set job_id $expect_out(1,string)
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
-		slow_kill $srun_pid
+		send_user "\nFAILURE: sbatch not responding\n"
+		slow_kill $sbatch_pid
 		exit 1
 	}
 	eof {
