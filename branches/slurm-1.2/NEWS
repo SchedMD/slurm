@@ -1,12 +1,16 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins.
 
+* Changes in SLURM 1.2.11
+=========================
+
 * Changes in SLURM 1.2.10
 =========================
  -- Fix race condititon in jobacct/linux with use of proctrack/pgid and a
     realloc issue inside proctrack/linux
  -- Added MPICH1_P4 plugin for direct launch of mpich1/p4 tasks using srun
     and a patched version of the mpi library. See "etc/mpich1.slurm.patch".
+    NOTE: This is still under development and not ready for production use.
 
 * Changes in SLURM 1.2.9
 ========================
