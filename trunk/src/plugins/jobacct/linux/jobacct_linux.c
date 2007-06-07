@@ -88,6 +88,7 @@ typedef struct prec {	/* process record */
 
 static int freq = 0;
 static DIR  *slash_proc = NULL;
+static pthread_mutex_t reading_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 /* Finally, pre-define all local routines. */
 
@@ -267,9 +268,11 @@ int jobacct_p_endpoll()
 	task_list = NULL;
 	slurm_mutex_unlock(&jobacct_lock);
 	
-	if (slash_proc)
+	if (slash_proc) {
+		slurm_mutex_lock(&reading_mutex);
 		(void) closedir(slash_proc);
-
+		slurm_mutex_unlock(&reading_mutex);
+	}
 	return common_endpoll();
 }
 
@@ -423,12 +426,15 @@ static void _get_process_data() {
 			fclose(stat_fp);
 		}
 	} else {
+		slurm_mutex_lock(&reading_mutex);
+	
 		if (slash_proc_open) {
 			rewinddir(slash_proc);
 		} else {
 			slash_proc=opendir("/proc");
 			if (slash_proc == NULL) {
 				perror("opening /proc");
+				slurm_mutex_unlock(&reading_mutex);
 				goto finished;
 			}
 			slash_proc_open=1;
@@ -485,6 +491,8 @@ static void _get_process_data() {
 				xfree(prec);
 			fclose(stat_fp);
 		}
+		slurm_mutex_unlock(&reading_mutex);
+	
 	}
 		
 	if (!list_count(prec_list)) {
