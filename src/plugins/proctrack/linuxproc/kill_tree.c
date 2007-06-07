@@ -364,7 +364,7 @@ extern int proctrack_linuxproc_get_pids(pid_t top, pid_t **pids, int *npids)
 		if (ptr->is_usercmd) { /* don't include the slurmstepd */
 			if (i >= len-1) {
 				len *= 2;
-				xrealloc(p, len);
+				xrealloc(p, (sizeof(pid_t) * len));
 			}
 			p[i] = ptr->pid;
 			i++;

@@ -19,7 +19,8 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 1.2.10
 =========================
-
+ -- fix race condititon in jobacct/linux with use of proctrack/pgid and a
+    realloc issue inside proctrack/linux
 
 * Changes in SLURM 1.2.9
 ========================
@@ -349,6 +350,8 @@ documents those changes that are of interest to users and admins.
    that will never end.
  - Added fork handlers in the slurmstepd
  - In sched/wiki2: fix logic for restarting backup slurmctld.
+ - In sched/wiki2: if job has no time limit specified, return the partition's 
+   time limit (which is the default for the job) rather than 365 days.
 
 * Changes in SLURM 1.1.36
 =========================
