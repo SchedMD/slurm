@@ -1418,13 +1418,16 @@ P4VOID put_execer_port(int port)
     struct sockaddr_in s_in;
     int len = sizeof(s_in);
     int fd, cc;
-
+    char *ip_addr;
     /* send my local listening number to execer_mastport */
     fd = socket(PF_INET, SOCK_DGRAM, 0);
     if (fd < 0)
         p4_error("put_execer_port: socket", errno);
     s_in.sin_family = AF_INET;
-    s_in.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+    if ((ip_addr = getenv("SLURM_LAUNCH_NODE_IPADDR")))
+	inet_pton(AF_INET, ip_addr, (void *) &s_in.sin_addr);
+    else
+	s_in.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
     s_in.sin_port = htons(execer_mastport);
     cc = sendto(fd, &port, sizeof(port), 0, (struct sockaddr *)&s_in, len);
     if (cc < 0)

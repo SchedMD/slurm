@@ -5,6 +5,9 @@
  */
 #include "p4.h"
 #include "p4_sys.h"
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <arpa/inet.h>
 
 /* Macro used to see if an arg is not following the correct format. */
 #define bad_arg(a)    ( ((a)==NULL) || ((*(a)) == '-') )
@@ -88,13 +91,6 @@ P4VOID process_args(int *argc, char **argv)
 	    exit(-1);
 	}
 
-	if ((tmp = getenv("SLURM_MPICH_PORT")))
-	    execer_mastport = atoi(tmp);
-	else {
-	    printf("SLURM_MPICH_PORT environment variable missing\n");
-	    exit(-1);
-	}
-
 	if (!(tmp = getenv("SLURM_MPICH_NODELIST"))) {
 	    printf("SLURM_MPICH_NODELIST environment variable missing\n");
 	    exit(-1);
@@ -124,6 +120,12 @@ P4VOID process_args(int *argc, char **argv)
 	execer_mynumprocs = atoi(tmp);
 
 	if (execer_mynodenum == 0) {
+	    if ((tmp = getenv("SLURM_MPICH_PORT1")))
+		execer_mastport = atoi(tmp);
+	    else {
+		printf("SLURM_MPICH_PORT1 environment variable missing\n");
+		exit(-1);
+	    }	
 	    execer_pg = p4_alloc_procgroup();
 	    pe = execer_pg->entries;
 	    strcpy(pe->host_name, execer_myhost);
@@ -145,7 +147,7 @@ P4VOID process_args(int *argc, char **argv)
 		    exit(-1);
 		}
 		pe->numslaves_in_group = atoi(tmp);
-#if 1
+#if 0
 		printf("host[%d] name:%s tasks:%d\n", 
 			i, pe->host_name, pe->numslaves_in_group);
 #endif
@@ -154,11 +156,44 @@ P4VOID process_args(int *argc, char **argv)
 		execer_pg->num_entries++;
 	    }
 	} else {
-	    //FIXME: Use execer_mastport to get task zero's port
+	    int p4_fd2, cc;
+	    short new_port;
+	    struct sockaddr_in serv_addr;
+	    socklen_t serv_len;
+	    /* Read the correct port to use from srun */
+	    if ((tmp = getenv("SLURM_MPICH_PORT2")))
+		execer_mastport = atoi(tmp);
+	    else {
+		printf("SLURM_MPICH_PORT2 environment variable missing\n");
+		exit(-1);
+	    }
+	    if ((p4_fd2 = socket(PF_INET, SOCK_STREAM, 0)) < 0) {
+		perror("socket");
+		exit(-1);
+	    }
+	    bzero((char *) &serv_addr, sizeof(serv_addr));
+	    serv_addr.sin_family = PF_INET;
+	    serv_addr.sin_port = htons(execer_mastport);
+	    inet_pton(AF_INET, getenv("SLURM_LAUNCH_NODE_IPADDR"),
+			(void *) &serv_addr.sin_addr);
+	    serv_len = sizeof(serv_addr);
+	    /* stagger the requests */
+	    usleep(2000 + execer_mynodenum * 300);
+	    if (connect(p4_fd2, (struct sockaddr *) &serv_addr, serv_len) < 0) {
+		perror("connect");
+		exit(-1);
+	    }
+	    write(p4_fd2, "GET", 4);
+	    cc = read(p4_fd2, &new_port, sizeof(new_port)); 
+	    close(p4_fd2);
+	    if (cc == sizeof(new_port))
+		execer_mastport = new_port;
+	    else
+		execer_mastport = 0;
 	}
 	free(hostlist);
 	free(tasks_per_node);
-#if 1
+#if 0
 	printf("execer_id:%s\n", execer_id);
 	printf("execer_myhost:%s\n", execer_myhost);
 	printf("execer_mynodenum:%d\n", execer_mynodenum);
