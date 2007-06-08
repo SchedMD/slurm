@@ -3,6 +3,8 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 1.2.11
 =========================
+ -- Updated "etc/mpich1.slurm.patch" for direct srun launch of MPICH1_P4
+    tasks. See the "README" portion of the patch for details.
 
 * Changes in SLURM 1.2.10
 =========================
