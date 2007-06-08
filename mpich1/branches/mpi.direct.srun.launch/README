@@ -183,9 +183,14 @@ memory when building MPICH with the following configure line:
 Applications must be rebuilt with this new library to function 
 with SLURM launch. The "--mpi=mpich1_p4" srun option MUST be 
 used to launch the tasks (it sets a bunch of environment variables 
-and launches only one task per node (the MPICH library launches 
-the other tasks on the node. Here is a sample execute line:  
+and launches only one task per node, the MPICH library launches 
+the other tasks on the node). Here is a sample execute line:  
    srun --mpi=mpich1_p4 [srun_options...] <progname> [options...]
+
+The only real anomaly is that all output from all spawned tasks 
+on a node appear to slurm as coming from the one task that it
+launched. If the srun --label option is used, the task ID labels 
+will be misleading.
 
 DETAILS: The srun command opens two socket connections and passes 
 their ports to all tasks via the SLURM_MPICH1_P4_PORT1 and 
