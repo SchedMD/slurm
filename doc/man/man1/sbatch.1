@@ -387,6 +387,13 @@ Default from \fIblugene.conf\fR if not set.
 \fB\-\-reboot\fR
 Force the allocated nodes to reboot before starting the job.
 
+.TP
+\fB\-\-wrap\fR[=]<\fIcommand string\fR>
+Sbatch will wrap the specified command string in a simple "sh" shell script,
+and submit that script to the slurm controller.  When --wrap is used,
+a script name and arguments may not be specified on the command line; instead
+the sbatch-generated wrapper script is used.
+
 .SH "INPUT ENVIRONMENT VARIABLES"
 .PP
 Upon startup, sbatch will read and handle the options set in the following
