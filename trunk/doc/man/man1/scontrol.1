@@ -1,4 +1,4 @@
-.TH SCONTROL "1" "May 2007" "scontrol 1.3" "Slurm components"
+.TH SCONTROL "1" "June 2007" "scontrol 1.3" "Slurm components"
 
 .SH "NAME"
 scontrol \- Used view and modify Slurm configuration and state.
@@ -180,11 +180,12 @@ Requeue a running or pending SLURM batch job.
 \fBshow\fP \fIENTITY\fP \fIID\fP
 Display the state of the specified entity with the specified identification.
 \fIENTITY\fP may be \fIconfig\fP, \fIdaemons\fP, \fIjob\fP, \fInode\fP, 
-\fIpartition\fP or \fIstep\fP.
+\fIpartition\fP, \fIstep\fP or \fIhosts\fP (also \fIblock\fP or \fIsubbp\fP 
+on BlueGene systems).
 \fIID\fP can be used to identify a specific element of the identified 
 entity: the configuration parameter name, job ID, node name, partition name, 
-or job step ID for entities \fIconfig\fP, \fIjob\fP, \fInode\fP, \fIpartition\fP, 
-and \fIstep\fP respectively. 
+job step ID, or hostlist for entities \fIconfig\fP, \fIjob\fP, \fInode\fP, 
+\fIpartition\fP, \fIstep\fP, or \fIhostlist\fP respectively. 
 Multiple node names may be specified using simple node range expressions 
 (e.g. "lx[10\-20]"). All other \fIID\fP values must identify a single 
 element. The job step ID is of the form "job_id.step_id", (e.g. "1234.1").
@@ -483,7 +484,7 @@ Commandline options will always override these settings.)
 \fBSLURM_CONF\fR
 The location of the SLURM configuration file.
 
-.SH "EXAMPLE"
+.SH "EXAMPLES"
 .eo
 .br 
 # scontrol
@@ -516,6 +517,14 @@ JobId=65539 UserId=1500 JobState=PENDING TimeLimit=100
 .br 
 scontrol: update JobId=65539 TimeLimit=200 Priority=500
 .br 
+scontrol: show hosts tux[1-3]
+.br
+tux1
+.br
+tux2
+.br
+tux3
+.br
 scontrol: quit
 .ec
 

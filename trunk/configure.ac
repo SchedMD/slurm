@@ -300,6 +300,7 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/switch/none/Makefile
 		 src/plugins/switch/federation/Makefile
 		 src/plugins/mpi/Makefile
+		 src/plugins/mpi/mpich1_p4/Makefile
 		 src/plugins/mpi/mpich1_shmem/Makefile
 		 src/plugins/mpi/mpichgm/Makefile
 		 src/plugins/mpi/mvapich/Makefile

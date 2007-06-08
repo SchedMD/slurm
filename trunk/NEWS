@@ -17,10 +17,22 @@ documents those changes that are of interest to users and admins.
  -- Added global database plugin.  Job accounting and Job completion are the 
     first to use it.  Follow documentation to add more to the plugin.
 
+* Changes in SLURM 1.2.11
+=========================
+ -- Updated "etc/mpich1.slurm.patch" for direct srun launch of MPICH1_P4
+    tasks. See the "README" portion of the patch for details.
+ -- Added new scontrol command "show nodes <list>", returns a list of
+    of nodes (one node per line) from SLURM hostlist expression or from
+    SLURM_NODELIST environment variable if no hostlist specified.
+ -- Add the sbatch option "--wrap".
+
 * Changes in SLURM 1.2.10
 =========================
- -- fix race condititon in jobacct/linux with use of proctrack/pgid and a
+ -- Fix race condititon in jobacct/linux with use of proctrack/pgid and a
     realloc issue inside proctrack/linux
+ -- Added MPICH1_P4 plugin for direct launch of mpich1/p4 tasks using srun
+    and a patched version of the mpi library. See "etc/mpich1.slurm.patch".
+    NOTE: This is still under development and not ready for production use.
 
 * Changes in SLURM 1.2.9
 ========================

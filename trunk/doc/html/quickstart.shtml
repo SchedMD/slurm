@@ -201,7 +201,7 @@ of communications (Quadrics MPI, MPICH2, MPICH-GM, MVAPICH, MVAPICH2
 and some MPICH1 modes).</li>
 <li>SLURM creates a resource allocation for the job and then
 mpirun launches tasks using SLURM's infrastructure (OpenMPI,
-LAM/MPI, HP-MPI and some MPICH1 modes).</li>
+LAM/MPI and HP-MPI).</li>
 <li>SLURM creates a resource allocation for the job and then 
 mpirun launches tasks using some mechanism other than SLURM, 
 such as SSH or RSH (BlueGene MPI and some MPICH1 modes). 
@@ -354,6 +354,25 @@ with the <i>--mpi=mpich1_shmem</i> option.</p>
 $ srun -n16 --mpi=mpich1_shmem a.out
 </pre>
 
+<p>If you are using MPICH P4 (<i>DEFAULT_DEVICE=ch_shmem</i> in 
+the mpirun script) and SLURM version 1.2.11 or newer, 
+then it is recommended that you apply the patch in the SLURM 
+distribution's file <i>etc/mpich1.slurm.patch</i>. 
+Follow directions within the file to rebuild MPICH. 
+Initiate tasks using the 
+<span class="commandline">srun</span> command with the 
+<i>--mpi=mpich1_p4</i> option.</p>
+<pre>
+$ srun -n16 --mpi=mpich1_p4 a.out
+</pre>
+<p>Note that SLURM launches one task per node and the MPICH 
+library linked within your applications launches the other 
+tasks with shared memory used for communications between them.
+The only real anomaly is that all output from all spawned tasks
+on a node appear to SLURM as coming from the one task that it
+launched. If the srun --label option is used, the task ID labels
+will be misleading.</p>
+ 
 <p>Other MPICH1 programming models current rely upon the SLURM 
 <span class="commandline">salloc</span> or 
 <span class="commandline">sbatch</span> command to allocate resources.
@@ -372,26 +391,8 @@ sbatch: Submitted batch job 1234
 </pre>
 <p>Note that in this example, mpirun uses the rsh command to launch 
 tasks. These tasks are not managed by SLURM since they are launched 
-outside of its control. The SLURM distribution contains a patch which 
-can be applied to the mpich1 distribution to eliminate this problem
-for the P4 model (<i>DEFAULT_DEVICE=ch_p4</i> in the mpirun script).
-The patch within SLURM's distribution in the file 
-<i>etc/mpich1.slurm.patch</i>.  This patch serves two purposes. 
-First, it automatically generates and later purges the machinefile 
-used as an mpirun argument above. 
-Second, it uses the srun command rather than rsh to launch tasks. 
-This places all of the processes directly under SLURM's control.
-Once this patch is applied, user applications should be re-linked 
-with the new mpich1 library. 
-Applications can then be launched as shown below.
-<pre>
-$ cat mpich.sh
-#!/bin/bash
-mpirun [options] a.out
-$ sbatch -n16 mpich.sh
-sbatch: Submitted batch job 1235
-</pre>
-
-<p style="text-align:center;">Last modified  June 2007</p>
+outside of its control.</p>
+ 
+<p style="text-align:center;">Last modified 8 June 2007</p>
 
 <!--#include virtual="footer.txt"-->

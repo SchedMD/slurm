@@ -103,6 +103,7 @@
 #define LONG_OPT_NICE        0x115
 #define LONG_OPT_NO_REQUEUE  0x116
 #define LONG_OPT_COMMENT     0x117
+#define LONG_OPT_WRAP        0x118
 #define LONG_OPT_BLRTS_IMAGE     0x140
 #define LONG_OPT_LINUX_IMAGE     0x141
 #define LONG_OPT_MLOADER_IMAGE   0x142
@@ -634,6 +635,7 @@ static struct option long_options[] = {
 	{"reboot",        no_argument,       0, LONG_OPT_REBOOT},
 	{"tasks-per-node",  required_argument,0,LONG_OPT_TASKSPERNODE},
 	{"ntasks-per-node", required_argument,0,LONG_OPT_TASKSPERNODE}, 
+	{"wrap",          required_argument, 0, LONG_OPT_WRAP},
 	{NULL,            0,                 0, 0}
 };
 
@@ -692,6 +694,9 @@ char *process_options_first_pass(int argc, char **argv)
 			_print_version();
 			exit(0);
 			break;
+		case LONG_OPT_WRAP:
+			opt.wrap = xstrdup(optarg);
+			break;
 		default:
 			/* will be parsed in second pass function */
 			break;
@@ -699,6 +704,10 @@ char *process_options_first_pass(int argc, char **argv)
 	}
 	xfree(str);
 
+	if (argc > optind && opt.wrap != NULL) {
+		fatal("Script arguments are not permitted with the"
+		      " --wrap option.");
+	}
 	if (argc > optind) {
 		int i;
 		char **leftover;
@@ -1171,6 +1180,9 @@ static void _set_options(int argc, char **argv)
 			break;
 		case LONG_OPT_TASKSPERNODE:
 			opt.tasks_per_node = _get_int(optarg, "ntasks-per-node");
+			break;
+		case LONG_OPT_WRAP:
+			/* handled in process_options_first_pass() */
 			break;
 		default:
 			fatal("Unrecognized command line parameter %c",
