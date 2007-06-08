@@ -2,7 +2,7 @@
  *  scontrol.c - administration tool for slurm. 
  *	provides interface to read, write, update, and configurations.
  *****************************************************************************
- *  Copyright (C) 2002-2006 The Regents of the University of California.
+ *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
  *  UCRL-CODE-226842.
@@ -647,6 +647,12 @@ _process_command (int argc, char *argv[])
 			else
 				scontrol_print_job (NULL);
 		}
+		else if (strncasecmp (argv[1], "hosts", 4) == 0) {
+			if (argc > 2)
+				scontrol_print_hosts(argv[2]);
+			else
+				scontrol_print_hosts(getenv("SLURM_NODELIST"));
+		}
 		else if (strncasecmp (argv[1], "nodes", 3) == 0) {
 			if (argc > 2)
 				scontrol_print_node_list (argv[2]);
@@ -978,10 +984,10 @@ scontrol [<OPTION>] [<COMMAND>]                                            \n\
      !!                       Repeat the last command entered.             \n\
                                                                            \n\
   <ENTITY> may be \"config\", \"daemons\", \"job\", \"node\", \"partition\"\n\
-           \"block\", \"subbp\" or \"step\".                               \n\
+           \"hosts\", \"block\", \"subbp\" or \"step\".                    \n\
                                                                            \n\
-  <ID> may be a configuration parameter name , job id, node name, partition\n\
-       name or job step id.                                                \n\
+  <ID> may be a configuration parameter name, job id, node name, partition \n\
+       name, job step id, or hostlist expression.                          \n\
                                                                            \n\
   Node names may be specified using simple range expressions,              \n\
   (e.g. \"lx[10-20]\" corresponsds to lx10, lx11, lx12, ...)               \n\

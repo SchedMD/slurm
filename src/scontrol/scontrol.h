@@ -1,7 +1,7 @@
 /*****************************************************************************\
  *  scontrol.h - definitions for all scontrol modules
  *****************************************************************************
- *  Copyright (C) 2002-2006 The Regents of the University of California.
+ *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
  *  UCRL-CODE-226842.
@@ -108,6 +108,7 @@ extern void	scontrol_print_completing (void);
 extern void	scontrol_print_completing_job(job_info_t *job_ptr, 
 				node_info_msg_t *node_info_msg);
 extern void	scontrol_print_job (char * job_id_str);
+extern void	scontrol_print_hosts (char * node_list);
 extern void	scontrol_print_node (char *node_name, 
 			node_info_msg_t *node_info_ptr);
 extern void	scontrol_print_node_list (char *node_list);

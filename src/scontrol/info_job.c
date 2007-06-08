@@ -1,7 +1,7 @@
 /*****************************************************************************\
  *  info_job.c - job information functions for scontrol.
  *****************************************************************************
- *  Copyright (C) 2002-2006 The Regents of the University of California.
+ *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
  *  UCRL-CODE-226842.
@@ -580,4 +580,30 @@ scontrol_list_pids(const char *jobid_str, const char *node_name)
 	} else {
 		_list_pids_all_steps(node_name, jobid);
 	}
+}
+
+/*
+ * scontrol_print_hosts - given a node list expression, return
+ *	a list of nodes, one per line
+ */
+extern void
+scontrol_print_hosts (char * node_list)
+{
+	hostlist_t hl;
+	char *host;
+
+	if (!node_list) {
+		error("host list is empty");
+		return;
+	}
+	hl = hostlist_create(node_list);
+	if (!hl) {
+		slurm_perror("hostlist_create");
+		return;
+	}
+	while ((host = slurm_hostlist_shift(hl))) {
+		printf("%s\n", host);
+		free(host);
+	}
+	hostlist_destroy(hl);
 }
