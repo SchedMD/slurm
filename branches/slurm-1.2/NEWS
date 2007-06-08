@@ -5,6 +5,9 @@ documents those changes that are of interest to users and admins.
 =========================
  -- Updated "etc/mpich1.slurm.patch" for direct srun launch of MPICH1_P4
     tasks. See the "README" portion of the patch for details.
+ -- Added new scontrol command "show nodes <list>", returns a list of
+    of nodes (one node per line) from SLURM hostlist expression or from
+    SLURM_NODELIST environment variable if no hostlist specified.
 
 * Changes in SLURM 1.2.10
 =========================
