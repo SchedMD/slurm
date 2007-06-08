@@ -82,6 +82,7 @@ typedef struct sbatch_options {
 	uint16_t shared;	/* --share,   -s		*/
 	int  quiet;
 	int  verbose;
+	char *wrap;
 
 	/* constraint options */
 	int mincpus;		/* --mincpus=n			*/
