@@ -5,6 +5,7 @@
  */
 #include "p4.h"
 #include "p4_sys.h"
+#include <sys/poll.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
@@ -161,6 +162,7 @@ P4VOID process_args(int *argc, char **argv)
 	    short new_port;
 	    struct sockaddr_in serv_addr;
 	    socklen_t serv_len;
+	    struct pollfd ufds;
 
 	    if (strcmp(execer_myhost, execer_masthost)) {
 		/* look up correct task count */
@@ -199,13 +201,56 @@ P4VOID process_args(int *argc, char **argv)
 		perror("connect");
 		exit(-1);
 	    }
-	    write(p4_fd2, "GET", 4);
-	    cc = read(p4_fd2, &new_port, sizeof(new_port)); 
+	    ufds.fd = p4_fd2;
+	    ufds.events = POLLOUT | POLLERR | POLLHUP;
+	    ufds.revents = 0;
+poll1:	    cc = poll(&ufds, 1, 10000);		/* wait 10 secs max */
+	    if (cc == 0) {
+		printf("p4 startup, poll1 timeout\n");
+		exit(-1);
+	    } else if (cc < 0) {
+		if (errno == EINTR) goto poll1;
+		perror("poll1");
+		exit(-1);
+	    } else if ((ufds.revents & POLLOUT) == 0) {
+		printf("p4 startup, poll1 failure\n");
+		exit(-1);
+	    }
+write1:	    cc = write(p4_fd2, "GET", 4);
+	    if (cc < 0) {
+		if (errno == EINTR) goto write1;
+		perror("write");
+		exit(-1);
+	    } else if (cc < 4) {
+		printf("p4 startup, partitial write\n");
+		exit(-1);
+	    }
+	    ufds.fd = p4_fd2;
+	    ufds.events = POLLIN | POLLERR | POLLHUP;
+	    ufds.revents = 0;
+poll2:	    cc = poll(&ufds, 1, 10000);		/* wait 10 secs max */
+	    if (cc == 0) {
+		printf("p4 startup, poll2 timeout\n");
+		exit(-1);
+	    } else if (cc < 0) {
+		if (errno == EINTR) goto poll2;
+		perror("poll2");
+		exit(-1);
+	    } else if ((ufds.revents & POLLIN) == 0) {
+		printf("p4 startup, poll2 failure\n");
+		exit(-1);
+	    }
+read2:	    cc = read(p4_fd2, &new_port, sizeof(new_port)); 
+	    if (cc < 0) {
+		if (errno == EINTR) goto read2;
+		perror("read2");
+		exit(-1);
+	    } else if (cc != sizeof(new_port)) {
+		printf("p4 startup, partitial read\n");
+		exit(-1);
+	    }
 	    close(p4_fd2);
-	    if (cc == sizeof(new_port))
-		execer_mastport = new_port;
-	    else
-		execer_mastport = 0;
+	    execer_mastport = new_port;
 	}
 	free(hostlist);
 	free(tasks_per_node);
