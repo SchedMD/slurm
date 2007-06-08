@@ -142,7 +142,7 @@ P4VOID process_args(int *argc, char **argv)
 		    exit(-1);
 		}
 		strcpy(pe->host_name, tmp);
-		 tmp = strtok_r(NULL, ",", &task2);
+		tmp = strtok_r(NULL, ",", &task2);
 		if (!tmp) {
 		    printf("SLURM_MPICH_TASKS environment variable invalid\n");
 		    exit(-1);
@@ -161,6 +161,21 @@ P4VOID process_args(int *argc, char **argv)
 	    short new_port;
 	    struct sockaddr_in serv_addr;
 	    socklen_t serv_len;
+
+	    if (strcmp(execer_myhost, execer_masthost)) {
+		/* look up correct task count */
+		for (i=0; i<execer_numtotnodes; i++) {
+		    tmp = strtok_r(NULL, ",", &host2);
+		    if (!tmp) break;
+		    cc = strcmp(execer_myhost, tmp);
+		    tmp = strtok_r(NULL, ",", &task2);
+		    if (!tmp) break;
+		    if (cc) continue;
+		    execer_mynumprocs = atoi(tmp);
+		    break;
+		}
+	    }
+
 	    /* Read the correct port to use from srun */
 	    if ((tmp = getenv("SLURM_MPICH_PORT2")))
 		execer_mastport = atoi(tmp);
