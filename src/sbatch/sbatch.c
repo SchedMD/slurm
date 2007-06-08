@@ -48,6 +48,7 @@
 static int fill_job_desc_from_opts(job_desc_msg_t *desc);
 static void *get_script_buffer(const char *filename, int *size);
 static int set_umask_env(void);
+static char *script_wrap(char *command_string);
 
 int main(int argc, char *argv[])
 {
@@ -68,7 +69,11 @@ int main(int argc, char *argv[])
 		log_alter(logopt, 0, NULL);
 	}
 
-	script_body = get_script_buffer(script_name, &script_size);
+	if (opt.wrap != NULL) {
+		script_body = script_wrap(opt.wrap);
+	} else {
+		script_body = get_script_buffer(script_name, &script_size);
+	}
 	if (script_body == NULL)
 		exit(1);
 
@@ -317,4 +322,17 @@ fail:
 	xfree(buf);
 	*size = 0;
 	return NULL;
+}
+
+/* Wrap a single command string in a simple shell script */
+static char *script_wrap(char *command_string)
+{
+	char *script = NULL;
+
+	xstrcat(script, "#!/bin/sh\n");
+	xstrcat(script, "# This script was created by sbatch --wrap.\n\n");
+	xstrcat(script, command_string);
+	xstrcat(script, "\n");
+
+	return script;
 }
