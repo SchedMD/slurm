@@ -25,6 +25,7 @@ documents those changes that are of interest to users and admins.
     of nodes (one node per line) from SLURM hostlist expression or from
     SLURM_NODELIST environment variable if no hostlist specified.
  -- Add the sbatch option "--wrap".
+ -- Add the sbatch option "--get-user-env".
 
 * Changes in SLURM 1.2.10
 =========================
