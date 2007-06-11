@@ -126,7 +126,7 @@ extern int pgsql_get_db_connection(PGconn **pgsql_db, char *db_name,
 		
 		if(PQstatus(*pgsql_db) != CONNECTION_OK) {
 			if(!strcmp(PQerrorMessage(*pgsql_db),
-				   PQnoPasswordSupplied)) {
+				   "no password supplied")) {
 				PQfinish(*pgsql_db);
 				fatal("This Postgres connection needs "
 				      "a password.  It doesn't appear to "
