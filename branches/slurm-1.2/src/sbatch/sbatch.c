@@ -30,6 +30,7 @@
 #  include "config.h"
 #endif
 
+#include <pwd.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -186,8 +187,18 @@ static int fill_job_desc_from_opts(job_desc_msg_t *desc)
 		desc->time_limit = opt.time_limit;
 	desc->shared = opt.shared;
 
-	desc->environment = environ;
-	desc->env_size = envcount (environ);
+	desc->environment = NULL;
+	if (opt.get_user_env) {
+		struct passwd *pw = NULL;
+		pw = getpwuid(opt.uid);
+		if (pw != NULL) {
+			desc->environment = env_array_user_default(pw->pw_name);
+			/* FIXME - should we abort if j->environment
+			 * is NULL? */
+		}
+	}
+	env_array_merge(&desc->environment, (const char **)environ);
+	desc->env_size = envcount (desc->environment);
 	desc->argv = opt.script_argv;
 	desc->argc = opt.script_argc;
 	desc->err  = opt.efname;
