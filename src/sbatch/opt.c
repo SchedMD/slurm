@@ -110,6 +110,7 @@
 #define LONG_OPT_RAMDISK_IMAGE   0x143
 #define LONG_OPT_REBOOT          0x144
 #define LONG_OPT_TASKSPERNODE    0x145
+#define LONG_OPT_GET_USER_ENV    0x146
 
 /*---- global variables, defined in opt.h ----*/
 opt_t opt;
@@ -437,6 +438,7 @@ static void _opt_default()
 	opt.ifname = xstrdup("/dev/null");
 	opt.ofname = NULL;
 	opt.efname = NULL;
+	opt.get_user_env = false;
 }
 
 /*---[ env var processing ]-----------------------------------------------*/
@@ -636,6 +638,7 @@ static struct option long_options[] = {
 	{"tasks-per-node",  required_argument,0,LONG_OPT_TASKSPERNODE},
 	{"ntasks-per-node", required_argument,0,LONG_OPT_TASKSPERNODE}, 
 	{"wrap",          required_argument, 0, LONG_OPT_WRAP},
+	{"get-user-env",  no_argument,       0, LONG_OPT_GET_USER_ENV},
 	{NULL,            0,                 0, 0}
 };
 
@@ -1184,6 +1187,9 @@ static void _set_options(int argc, char **argv)
 		case LONG_OPT_WRAP:
 			/* handled in process_options_first_pass() */
 			break;
+		case LONG_OPT_GET_USER_ENV:
+			opt.get_user_env = true;
+			break;
 		default:
 			fatal("Unrecognized command line parameter %c",
 			      opt_char);
@@ -1625,6 +1631,7 @@ static void _help(void)
 "      --comment=name          arbitrary comment\n"
 "      --mail-type=type        notify on state change: BEGIN, END, FAIL or ALL\n"
 "      --mail-user=user        who to send email notification for job state changes\n"
+"      --get-user-env          used by Moab.  See srun man page.\n"
 "      --no-requeue            if set, do not permit the job to be requeued\n"
 "\n"
 "Constraint options:\n"
