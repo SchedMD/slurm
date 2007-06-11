@@ -34,6 +34,9 @@
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 
 #include "scontrol.h"
 #include "src/common/stepd_api.h"
@@ -607,3 +610,73 @@ scontrol_print_hosts (char * node_list)
 	}
 	hostlist_destroy(hl);
 }
+
+/* Replace '\n' with ',', remove duplicate comma */
+static void
+_reformat_hostlist(char *hostlist)
+{
+	int i, o;
+	for (i=0; (hostlist[i] != '\0'); i++) {
+		if (hostlist[i] == '\n')
+			hostlist[i] = ','; 
+	}
+
+	o = 0;
+	for (i=0; (hostlist[i] != '\0'); i++) {
+		while ((hostlist[i] == ',') && (hostlist[i+1] == ','))
+			i++;
+		hostlist[o++] = hostlist[i];
+	}
+	hostlist[o] = '\0';
+}
+
+/*
+ * scontrol_encode_hostlist - given a list of hostnames or the pathname 
+ *	of a file containing hostnames, translate them into a hostlist
+ *	expression
+ */
+extern int
+scontrol_encode_hostlist(char *hostlist)
+{
+	char *io_buf = NULL, *tmp_list, *ranged_string;
+	int buf_size = 0;
+	hostlist_t hl;
+
+	if (!hostlist) {
+		fprintf(stderr, "Hostlist is NULL\n");
+		return SLURM_ERROR;
+	}
+
+	if (hostlist[0] == '/') {
+		ssize_t buf_read;
+		int fd = open(hostlist, O_RDONLY);
+		if (fd < 0) {
+			fprintf(stderr, "Can not open %s\n", hostlist);
+			return SLURM_ERROR;
+		}
+		buf_size = 1024 * 1024;
+		io_buf = xmalloc(buf_size);
+		buf_read = read(fd, io_buf, buf_size);
+		close(fd);
+		if (buf_read >= buf_size) {
+			/* If over 1MB, the file is almost certainly invalid */
+			fprintf(stderr, "File %s is too large\n", hostlist);
+			return SLURM_ERROR;
+		}
+		io_buf[buf_read] = '\0';
+		_reformat_hostlist(io_buf);
+		tmp_list = io_buf;
+	} else
+		tmp_list = hostlist;
+
+	buf_size = strlen(tmp_list) + 1;
+	ranged_string = xmalloc(buf_size);
+	hl = hostlist_create(tmp_list);
+	hostlist_ranged_string(hl, buf_size, ranged_string);
+	printf("%s\n", ranged_string);
+	hostlist_destroy(hl);
+	xfree(ranged_string);
+	xfree(io_buf);
+	return SLURM_SUCCESS;
+}
+
