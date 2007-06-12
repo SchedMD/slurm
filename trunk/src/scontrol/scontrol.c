@@ -647,11 +647,19 @@ _process_command (int argc, char *argv[])
 			else
 				scontrol_print_job (NULL);
 		}
-		else if (strncasecmp (argv[1], "hosts", 4) == 0) {
+		else if (strncasecmp (argv[1], "hostnames", 5) == 0) {
 			if (argc > 2)
 				scontrol_print_hosts(argv[2]);
 			else
 				scontrol_print_hosts(getenv("SLURM_NODELIST"));
+		}
+		else if (strncasecmp (argv[1], "hostlist", 5) == 0) {
+			if (argc != 3) {
+				exit_code = 1;
+				fprintf(stderr, "invalid encode argument\n");
+				_usage();
+			} else if (scontrol_encode_hostlist(argv[2]))
+				exit_code = 1;
 		}
 		else if (strncasecmp (argv[1], "nodes", 3) == 0) {
 			if (argc > 2)
@@ -984,10 +992,14 @@ scontrol [<OPTION>] [<COMMAND>]                                            \n\
      !!                       Repeat the last command entered.             \n\
                                                                            \n\
   <ENTITY> may be \"config\", \"daemons\", \"job\", \"node\", \"partition\"\n\
-           \"hosts\", \"block\", \"subbp\" or \"step\".                    \n\
+           \"hostlist\", \"hostnames\", \"block\", \"subbp\" or \"step\".  \n\
                                                                            \n\
   <ID> may be a configuration parameter name, job id, node name, partition \n\
-       name, job step id, or hostlist expression.                          \n\
+       name, job step id, or hostlist or pathname to a list of host names. \n\
+                                                                           \n\
+  <HOSTLIST> may either be a comma separated list of host names or the     \n\
+       absolute pathname of a file (with leading '/' containing host names \n\
+       either separated by commas or new-lines                             \n\
                                                                            \n\
   Node names may be specified using simple range expressions,              \n\
   (e.g. \"lx[10-20]\" corresponsds to lx10, lx11, lx12, ...)               \n\

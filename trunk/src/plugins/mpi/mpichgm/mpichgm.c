@@ -374,6 +374,20 @@ gmpi_thr_create(const mpi_plugin_client_info_t *job, char ***env)
 	/* FIXME for multi-board config. */
 	env_array_overwrite_fmt(env, "GMPI_BOARD", "-1");
 
+
+	/* For new MX version */
+	env_array_overwrite_fmt(env, "MXMPI_PORT",  "%hu", port);
+	env_array_overwrite_fmt(env, "MXMPI_MAGIC", "%u", job->jobid);
+	env_array_overwrite_fmt(env, "MXMPI_NP",    "%d",
+				job->step_layout->task_cnt);
+	/* FIXME for multi-board config. */
+	env_array_overwrite_fmt(env, "MXMPI_BOARD", "-1");
+ 
+
+	/* for MACOSX to override default malloc */
+	env_array_overwrite_fmt(env, "DYLD_FORCE_FLAT_NAMESPACE", "1");
+
+
 	debug("Started GMPI master thread (%lu)", (unsigned long) st->tid);
 
 	return st;

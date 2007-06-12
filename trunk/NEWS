@@ -21,11 +21,14 @@ documents those changes that are of interest to users and admins.
 =========================
  -- Updated "etc/mpich1.slurm.patch" for direct srun launch of MPICH1_P4
     tasks. See the "README" portion of the patch for details.
- -- Added new scontrol command "show nodes <list>", returns a list of
-    of nodes (one node per line) from SLURM hostlist expression or from
-    SLURM_NODELIST environment variable if no hostlist specified.
+ -- Added new scontrol command "show hostlist <hostnames>" to translate a list 
+    of hostnames into a hostlist expression (e.g. "tux1,tux2" -> "tux[1-2]")
+    and "show hostnames <list>", returns a list of of nodes (one node per line) 
+    from SLURM hostlist expression or from SLURM_NODELIST environment variable 
+    if no hostlist specified.
  -- Add the sbatch option "--wrap".
  -- Add the sbatch option "--get-user-env".
+ -- Added support for mpich-mx (use the mpichgm plugin).
 
 * Changes in SLURM 1.2.10
 =========================
