@@ -172,14 +172,16 @@ batch          1 DOWN         2      3448       82306 adev8
 </pre>
 <p class="footer"><a href="#top">top</a></p>
 
+
+
 <h2><a name="mpi">MPI</a></h2>
 <p>MPI use depends upon the type of MPI being used. 
 There are three fundamentally different modes of operation used 
 by these various MPI implementation.
 <ol>
 <li>SLURM directly launches the tasks and performs initialization 
-of communications (Quadrics MPI, MPICH2, MPICH-GM, MVAPICH, MVAPICH2
-and some MPICH1 modes).</li>
+of communications (Quadrics MPI, MPICH2, MPICH-GM, MPICH-MX, 
+MVAPICH, MVAPICH2 and some MPICH1 modes).</li>
 <li>SLURM creates a resource allocation for the job and then
 mpirun launches tasks using SLURM's infrastructure (OpenMPI,
 LAM/MPI and HP-MPI).</li>
@@ -272,6 +274,7 @@ of 1 or higher for the PMI libary to print debugging information</li>
 </ul></p>
 
 <p><a href="http://www.myri.com/scs/download-mpichgm.html"><b>MPICH-GM</b></a>
+and <a href="http://www.myri.com/scs/download-mpichmx.html"><b>MPICH-MX</b></a>
 jobs can be launched directly by <b>srun</b> command.
 SLURM's <i>mpichgm</i> MPI plugin must be used to establish communications 
 between the laucnhed tasks. This can be accomplished either using the SLURM 
@@ -340,6 +343,7 @@ the mpirun script) and SLURM version 1.2.11 or newer,
 then it is recommended that you apply the patch in the SLURM 
 distribution's file <i>etc/mpich1.slurm.patch</i>. 
 Follow directions within the file to rebuild MPICH. 
+Applications must be relinked with the new library.
 Initiate tasks using the 
 <span class="commandline">srun</span> command with the 
 <i>--mpi=mpich1_p4</i> option.</p>
@@ -374,6 +378,6 @@ sbatch: Submitted batch job 1234
 tasks. These tasks are not managed by SLURM since they are launched 
 outside of its control.</p>
  
-<p style="text-align:center;">Last modified 8 June 2007</p>
+<p style="text-align:center;">Last modified 12 June 2007</p>
 
 <!--#include virtual="footer.txt"-->
