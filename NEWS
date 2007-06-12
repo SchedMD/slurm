@@ -12,6 +12,7 @@ documents those changes that are of interest to users and admins.
     if no hostlist specified.
  -- Add the sbatch option "--wrap".
  -- Add the sbatch option "--get-user-env".
+ -- Added support for mpich-mx (use the mpichgm plugin).
 
 * Changes in SLURM 1.2.10
 =========================
