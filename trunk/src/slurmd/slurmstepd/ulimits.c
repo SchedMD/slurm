@@ -63,7 +63,6 @@
 static int _get_env_val(char **env, const char *name, unsigned long *valp,
 		bool *u_req_propagate);
 static int _set_limit(char **env, slurm_rlimits_info_t *rli);
-static int _set_umask(char **env);
 
 /*
  * Set user resource limits using the values of the environment variables
@@ -81,7 +80,6 @@ int set_user_limits(slurmd_job_t *job)
 	for (rli = get_slurm_rlimits_info(); rli->name; rli++)
 		_set_limit( job->env, rli );
 
-	_set_umask(job->env);
 	return SLURM_SUCCESS;
 }
 
@@ -98,13 +96,13 @@ static char * rlim_to_string (unsigned long rlim, char *buf, size_t n)
 }
 
 /* Set umask using value of env var SLURM_UMASK */
-static int
-_set_umask(char **env)
+extern int
+set_umask(slurmd_job_t *job)
 {
 	mode_t mask;
 	char *val;
 	
-	if (!(val = getenvp(env, "SLURM_UMASK"))) {
+	if (!(val = getenvp(job->env, "SLURM_UMASK"))) {
 		debug("Couldn't find SLURM_UMASK in environment");
 		return SLURM_ERROR;
 	}

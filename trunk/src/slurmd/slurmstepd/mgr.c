@@ -107,6 +107,7 @@
 #include "src/slurmd/slurmstepd/pdebug.h"
 #include "src/slurmd/slurmstepd/req.h"
 #include "src/slurmd/slurmstepd/pam_ses.h"
+#include "src/slurmd/slurmstepd/ulimits.h"
 
 #define RETRY_DELAY 15		/* retry every 15 seconds */
 #define MAX_RETRY   240		/* retry 240 times (one hour max) */
@@ -666,6 +667,7 @@ job_manager(slurmd_job_t *job)
 		goto fail1;
 	}
 	
+	set_umask(job);		/* set umask for stdout/err files */
 	if (job->user_managed_io)
 		rc = _setup_user_managed_io(job);
 	else
