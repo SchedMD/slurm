@@ -604,7 +604,7 @@ scontrol_print_hosts (char * node_list)
 		slurm_perror("hostlist_create");
 		return;
 	}
-	while ((host = slurm_hostlist_shift(hl))) {
+	while ((host = hostlist_shift(hl))) {
 		printf("%s\n", host);
 		free(host);
 	}
