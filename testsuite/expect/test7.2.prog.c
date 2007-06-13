@@ -413,7 +413,12 @@ main (int argc, char **argv)
 		delta_t  = (tv2.tv_sec  - tv1.tv_sec) * 1000000;
 		delta_t +=  tv2.tv_usec - tv1.tv_usec;
 		snprintf(tv_str, sizeof(tv_str), "usec=%ld", delta_t);
-		printf("PMI test ran successfully, for task %d, %s\n", pmi_rank, tv_str);
+		printf("PMI test ran successfully, for task %d, %s\n", 
+			pmi_rank, tv_str);
+	}
+	if (pmi_rank == 0) {
+		printf("NOTE: All failures, ");
+		printf("but only first four successes reported\n");
 	}
 	exit(0);
 }
