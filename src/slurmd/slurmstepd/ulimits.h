@@ -47,4 +47,10 @@
  */
 int set_user_limits(slurmd_job_t *job);
 
+/*
+ * Set user ulimit based upon SLURM_ULIMIT envirionment variable
+ * contained in job->env
+ */
+int set_umask(slurmd_job_t *job);
+
 #endif /* !_SLURMD_ULIMITS_H */
