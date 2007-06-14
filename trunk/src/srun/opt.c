@@ -1312,6 +1312,9 @@ static void set_options(const int argc, char **argv)
 	int opt_char, option_index = 0;
 	struct utsname name;
 	static struct option long_options[] = {
+		{"attach",        no_argument,       0, 'a'},
+		{"allocate",      no_argument,       0, 'A'},
+		{"batch",         no_argument,       0, 'b'},
 		{"extra-node-info", required_argument, 0, 'B'},
 		{"cpus-per-task", required_argument, 0, 'c'},
 		{"constraint",    required_argument, 0, 'C'},
@@ -1402,7 +1405,7 @@ static void set_options(const int argc, char **argv)
 		{"get-user-env",     no_argument,       0, LONG_OPT_GET_USER_ENV},
 		{NULL,               0,                 0, 0}
 	};
-	char *opt_string = "+B:c:C:d:D:e:g:Hi:IjJ:kKlm:n:N:"
+	char *opt_string = "+aAbB:c:C:d:D:e:g:Hi:IjJ:kKlm:n:N:"
 		"o:Op:P:qQr:R:st:T:uU:vVw:W:x:XZ";
 
 	struct option *optz = spank_option_table_create (long_options);
@@ -1426,6 +1429,18 @@ static void set_options(const int argc, char **argv)
 				"Try \"srun --help\" for more information\n");
 			exit(1);
 			break;
+		case (int)'a':
+			error("Please use the \"sattach\" command instead of "
+			      "\"srun -a/--attach\".");
+			exit(1);
+		case (int)'A':
+			error("Please use the \"salloc\" command instead of "
+			      "\"srun -A/--allocate\".");
+			exit(1);
+		case (int)'b':
+			error("Please use the \"sbatch\" command instead of "
+			      "\"srun -b/--batch\".");
+			exit(1);
 		case (int)'B':
 			opt.extra_set = _verify_socket_core_thread_count(
 				optarg,
