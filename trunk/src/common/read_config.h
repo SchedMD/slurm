@@ -82,6 +82,7 @@ extern char *default_plugstack;
 #define DEFAULT_RESUME_RATE         60
 #define DEFAULT_SAVE_STATE_LOC      "/tmp"
 #define DEFAULT_SCHEDROOTFILTER     1
+#define DEFAULT_SCHEDULER_PORT      7321
 #define DEFAULT_SCHEDTYPE           "sched/builtin"
 #ifdef HAVE_BG		/* Blue Gene specific default configuration parameters */
 #  define DEFAULT_SELECT_TYPE       "select/bluegene"
