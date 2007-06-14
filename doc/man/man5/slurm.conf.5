@@ -102,30 +102,34 @@ This value must be specified.
 See  the \fBRELOCATING CONTROLLERS\fR section if you change this.
 
 .TP
-\fBDatabaseType\fR
-Define the type of database to be used for various plugins that will
-write to the database. 
-The slurmctld daemon must be restarted for a change in DatabaseType 
-to take effect. 
-Acceptable values at present include "database/flatfile",
-"database/mysql", and "database/pgsql". 
-The default value is "database/flatfile".
-.TP
 \fBDatabaseHost\fR
 Define the Host the database server is running on.
-For database/flatfile this parameter is ignored.
-.TP
-\fBDatabasePort\fR
-Define the Port of the database server to connect to.
-For database/flatfile this parameter is ignored.
+For "DatabaseType=database/flatfile" this parameter is ignored.
+
 .TP
 \fBDatabasePass\fR
 Define the Password to use to connect to the database server.
-For database/flatfile this parameter is ignored.
+For "DatabaseType=database/flatfile" this parameter is ignored.
+
+.TP
+\fBDatabasePort\fR
+Define the Port of the database server to connect to.
+For "DatabaseType=database/flatfile" this parameter is ignored.
+
+.TP
+\fBDatabaseType\fR
+Define the type of database to be used for various plugins that will
+write to the database.
+The slurmctld daemon must be restarted for a change in DatabaseType
+to take effect.
+Acceptable values at present include "database/flatfile",
+"database/mysql", and "database/pgsql".
+The default value is "database/flatfile".
+
 .TP
 \fBDatabaseUser\fR
 Define the User to use to connect to the database server.
-For database/flatfile this parameter is ignored.
+For "DatabaseType=database/flatfile" this parameter is ignored.
 
 .TP
 \fBEpilog\fR
