@@ -34,6 +34,7 @@
 #include <sys/un.h>
 #include <sys/types.h>
 #include <signal.h>
+#include <pthread.h>
 
 #include <slurm/slurm.h>
 
@@ -46,6 +47,7 @@
 #include "src/common/xmalloc.h"
 #include "src/common/slurm_auth.h"
 #include "src/common/eio.h"
+#include "src/common/xsignal.h"
 
 #include "src/salloc/salloc.h"
 #include "src/salloc/opt.h"
@@ -60,6 +62,8 @@ static uid_t slurm_uid;
 static void _handle_msg(slurm_msg_t *msg);
 static bool _message_socket_readable(eio_obj_t *obj);
 static int _message_socket_accept(eio_obj_t *obj, List objs);
+static pthread_mutex_t msg_thr_start_lock = PTHREAD_MUTEX_INITIALIZER;
+static pthread_cond_t msg_thr_start_cond = PTHREAD_COND_INITIALIZER;
 static struct io_operations message_socket_ops = {
 	readable:	&_message_socket_readable,
 	handle_read:	&_message_socket_accept
@@ -67,7 +71,14 @@ static struct io_operations message_socket_ops = {
 
 static void *_msg_thr_internal(void *arg)
 {
+	int signals[] = {SIGHUP, SIGINT, SIGQUIT, SIGPIPE, SIGTERM,
+			 SIGUSR1, SIGUSR2, 0};
+
 	debug("Entering _msg_thr_internal");
+	xsignal_block(signals);
+	pthread_mutex_lock(&msg_thr_start_lock);
+	pthread_cond_signal(&msg_thr_start_cond);
+	pthread_mutex_unlock(&msg_thr_start_lock);
 	eio_handle_mainloop((eio_handle_t *)arg);
 	debug("Leaving _msg_thr_internal");
 
@@ -95,6 +106,7 @@ extern salloc_msg_thread_t *msg_thr_create(uint16_t *port)
 
 	msg_thr->handle = eio_handle_create();
 	eio_new_initial_obj(msg_thr->handle, obj);
+	pthread_mutex_lock(&msg_thr_start_lock);
 	if (pthread_create(&msg_thr->id, NULL,
 			   _msg_thr_internal, (void *)msg_thr->handle) != 0) {
 		error("pthread_create of message thread: %m");
@@ -102,6 +114,10 @@ extern salloc_msg_thread_t *msg_thr_create(uint16_t *port)
 		xfree(msg_thr);
 		return NULL;
 	}
+	/* Wait until the message thread has blocked signals
+	   before continuing. */
+	pthread_cond_wait(&msg_thr_start_cond, &msg_thr_start_lock);
+	pthread_mutex_unlock(&msg_thr_start_lock);
 
 	return msg_thr;
 }
