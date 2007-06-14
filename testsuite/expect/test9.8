@@ -178,11 +178,11 @@ exec $bin_sleep 10
 set completing_jobs 0
 spawn $squeue --noheader --user $user_name
 expect {
-	-re "$user_name *CG" {
+	-re "test9.8.*$user_name *CG" {
 		incr completing_jobs
 		exp_continue
 	}
-	-re "$user_name" {
+	-re "test9.8.*$user_name" {
 		send_user "\nFAILURE: jobs not all gone\n"
 		set exit_code 1
 	}
