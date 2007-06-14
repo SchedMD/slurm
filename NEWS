@@ -15,6 +15,8 @@ documents those changes that are of interest to users and admins.
  -- Added support for mpich-mx (use the mpichgm plugin).
  -- Make job's stdout and stderr file access rights be based upon user's umask
     at job submit time.
+ -- Add support for additional PMI functions: PMI_Parse_option, PMI_Args_to_keyval,
+    PMI_Free_keyvals and PMI_Get_options (from Puenlap Lee and Nancy Kritkausky, Bull).
 
 * Changes in SLURM 1.2.10
 =========================
