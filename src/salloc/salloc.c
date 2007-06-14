@@ -126,6 +126,7 @@ int main(int argc, char *argv[])
 		} else {
 			error("Failed to allocate resources: %m");
 		}
+		msg_thr_destroy(msg_thr);
 		exit(1);
 	}
 	after = time(NULL);
