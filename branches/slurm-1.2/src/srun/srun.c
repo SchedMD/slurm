@@ -881,7 +881,12 @@ _build_script (const char *argv0, char *fname, int file_type)
 static int _set_umask_env(void)
 {
 	char mask_char[5];
-	mode_t mask = (int)umask(0);
+	mode_t mask;
+
+	if (getenv("SLURM_UMASK"))	/* use this value */
+		return SLURM_SUCCESS;
+
+	mask = (int)umask(0);
 	umask(mask);
 
 	sprintf(mask_char, "0%d%d%d", 

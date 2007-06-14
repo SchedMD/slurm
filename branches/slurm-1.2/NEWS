@@ -18,6 +18,8 @@ documents those changes that are of interest to users and admins.
  -- Add support for additional PMI functions: PMI_Parse_option, PMI_Args_to_keyval,
     PMI_Free_keyvals and PMI_Get_options (from Puenlap Lee and Nancy Kritkausky, Bull).
  -- Make default value of SchedulerPort (configuration parameter) be 7321.
+ -- Use SLURM_UMASK environment variable (if set) at job submit time as umask 
+    for spawned job.
 
 * Changes in SLURM 1.2.10
 =========================
