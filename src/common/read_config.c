@@ -1583,8 +1583,10 @@ validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	if (s_p_get_uint16(&conf->schedport, "SchedulerPort", hashtbl)) {
 		if (conf->schedport == 0) {
 			error("SchedulerPort=0 is invalid");
-			conf->schedport = (uint16_t)NO_VAL;
+			conf->schedport = DEFAULT_SCHEDULER_PORT;
 		}
+	} else {
+		conf->schedport = DEFAULT_SCHEDULER_PORT;
 	}
 
 	if (!s_p_get_uint16(&conf->schedrootfltr,

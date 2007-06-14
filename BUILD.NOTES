@@ -110,9 +110,9 @@ To build and run on AIX:
 7. If you update proctrack, be sure to run "slibclean" to clear cached
    version.
 8. Install the rpms slurm-*.ppc.rpm, slurm-aix-federation-*.ppc.rpm,
-   slurm-auth-munge-*.ppc.rpm, slurm-devel-*.ppc.rpm, and
-   slurm-sched-wiki-*.ppc.rpm in /usr/admin/inst.image/slurm/aix5.3 on an
-   OCF AIX machine (pdev is a good choice).
+   slurm-auth-munge-*.ppc.rpm and slurm-devel-*.ppc.rpm in 
+   /usr/admin/inst.image/slurm/aix5.3 on an OCF AIX machine 
+   (pdev is a good choice).
 
 AIX/Federation switch window problems
 To clean switch windows:     ntblclean =w 8 -a sni0
