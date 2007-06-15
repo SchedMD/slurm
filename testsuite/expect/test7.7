@@ -170,6 +170,7 @@ if {$job_id1 == 0} {
 #
 # Start our Moab emulator ($test_prog) to manage the job
 #
+set timeout 60
 exec $bin_rm -f $test_prog
 exec $bin_make -f /dev/null $test_prog
 set success 0
