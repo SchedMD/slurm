@@ -71,8 +71,10 @@ hostnames to Elan IDs. The libelanhosts source is available from
 <li><a href="http://www.mpi-softtech.com/">ChaMPIon, MPI Software Technology</a></li>
 <li><a href="http://www.hp.com/go/mpi">HP-MPI</a></li>
 <li><a href="http://www.lam-mpi.org/">LAM/MPI</a></li>
+<li><a href="http://www-unix.mcs.anl.gov/mpi/mpich1/">MPICH1</a></li>
 <li><a href="http://www-unix.mcs.anl.gov/mpi/mpich2/">MPICH2</a></li>
-<li><a href="http://www.myri.com/scs/">MPICH-GM</a></li>
+<li><a href="http://www.myri.com/scs/download-mpichgm.html">MPICH-GM</a></li>
+<li><a href="http://www.myri.com/scs/download-mpichmx.html">MPICH-MX</a></li>
 <li><a href="http://nowlab.cse.ohio-state.edu/projects/mpi-iba">MVAPICH</a></li>
 <li><a href="http://nowlab.cse.ohio-state.edu/projects/mpi-iba">MVAPICH2</a></li>
 <li><a href="http://www.open-mpi.org">Open MPI</a></li>
@@ -96,6 +98,6 @@ Portable Linux Processor Affinity (PLPA)</a></li>
 
 </ul>
 
-<p style="text-align:center;">Last modified 5 March 2007</p>
+<p style="text-align:center;">Last modified 15 June 2007</p>
 
 <!--#include virtual="footer.txt"-->
