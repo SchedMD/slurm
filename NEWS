@@ -21,6 +21,7 @@ documents those changes that are of interest to users and admins.
  -- Make default value of SchedulerPort (configuration parameter) be 7321.
  -- Use SLURM_UMASK environment variable (if set) at job submit time as umask 
     for spawned job.
+ -- Correct some format issues in the man pages (from Gennero Oliva, ICAR).
 
 * Changes in SLURM 1.2.10
 =========================
