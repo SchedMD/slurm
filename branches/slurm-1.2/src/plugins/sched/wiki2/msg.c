@@ -364,7 +364,7 @@ static size_t	_write_bytes(int fd, char *buf, size_t size)
 		if (bytes_written <= 0)
 			break;
 		bytes_remaining -= bytes_written;
-		size += bytes_read;
+		size += bytes_written;
 		ptr += bytes_written;
 	}
 
