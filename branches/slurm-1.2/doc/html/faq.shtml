@@ -18,6 +18,10 @@ job?</a></li>
 <li><a href="#multi_batch">How can I run a job within an existing job allocation?</a></li>
 <li><a href="#user_env">How does SLURM establish the environment for my job?</a></li>
 <li><a href="#prompt">How can I get shell prompts in interactive mode?</a></li>
+<li><a href="#batch_out">How can I get the task ID in the output or error file
+name for a batch job?</a></li>
+<li><a href="#parallel_make">Can the <i>make</i> command utilize the resources 
+allocated to a SLURM job?</a></li>
 </ol>
 <h2>For Administrators</h2>
 <ol>
@@ -282,6 +286,59 @@ mode?</b></a><br>
 <i>srun -u bash -i</i><br>
 Srun's <i>-u</i> option turns off buffering of stdout.
 Bash's <i>-i</i> option tells it to run in interactive mode (with prompts).
+
+<p><a name="batch_out"><b>14. How can I get the task ID in the output 
+or error file name for a batch job?</b></a><br>
+The <i>srun -b</i> or <i>sbatch</i> commands are meant to accept a 
+script rather than a command line. If you specify a command line 
+rather than a script, it gets translated to a simple script of this
+sort:</p>
+<pre>
+#!/bin/sh
+srun hostname
+</pre>
+<p>You will note that the srun command lacks the output file specification.
+It's output (for all tasks) becomes the output of the job. If you
+want separate output by task, you will need to build a script containing
+this specification. For example:</p>
+<pre>
+$ cat test
+#!/bin/sh
+echo begin_test
+srun -o out_%j_%t hostname
+
+$ sbatch -n7 -o out_%j test
+sbatch: Submitted batch job 65541
+
+$ ls -l out*
+-rw-rw-r--  1 jette jette 11 Jun 15 09:15 out_65541
+-rw-rw-r--  1 jette jette  6 Jun 15 09:15 out_65541_0
+-rw-rw-r--  1 jette jette  6 Jun 15 09:15 out_65541_1
+-rw-rw-r--  1 jette jette  6 Jun 15 09:15 out_65541_2
+-rw-rw-r--  1 jette jette  6 Jun 15 09:15 out_65541_3
+-rw-rw-r--  1 jette jette  6 Jun 15 09:15 out_65541_4
+-rw-rw-r--  1 jette jette  6 Jun 15 09:15 out_65541_5
+-rw-rw-r--  1 jette jette  6 Jun 15 09:15 out_65541_6
+
+$ cat out_65541
+begin_test
+
+$ cat out_65541_2
+tdev2
+</pre>
+
+<p><a name="parallel_make"><b>15. Can the <i>make</i> command
+utilize the resources allocated to a SLURM job?</b></a><br>
+Yes. There is a patch available for GNU make version 3.81 
+available as part of the SLURM distribution in the file 
+<i>etc/make.slurm.patch</i>. 
+This patch will use SLURM to launch tasks across a job's current resource
+allocation. Depending upon the size of modules to be compiled, this may
+or may not improve performance. If most modules are thousands of lines
+long, the use of additional resources should more than compensate for the
+overhead of SLURM's task launch. Use with make's <i>-j</i> option within an
+existing SLURM allocation. Outside of a SLURM allocation, make's behavior
+will be unchanged.</p>
 
 <p class="footer"><a href="#top">top</a></p>
 
@@ -636,6 +693,6 @@ about these options.
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 15 May 2007</p>
+<p style="text-align:center;">Last modified 15 June 2007</p>
 
 <!--#include virtual="footer.txt"-->
