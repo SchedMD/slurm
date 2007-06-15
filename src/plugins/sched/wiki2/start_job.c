@@ -193,18 +193,6 @@ static int	_start_job(uint32_t jobid, int task_cnt, char *hostlist,
 			uint16_t wait_reason = 0;
 			char *wait_string;
 
-			/* restore job state */
-			job_ptr->priority = 0;
-			job_ptr->num_procs = old_task_cnt;
-			if (job_ptr->details) {
-				/* Details get cleared on job abort; happens 
-				 * if the request is sufficiently messed up.
-				 * This happens when Moab tries to start a
-				 * a job on invalid nodes (wrong partition). */ 
-				xfree(job_ptr->details->req_nodes);
-				FREE_NULL_BITMAP(job_ptr->details->
-						 req_node_bitmap);
-			}
 			if (job_ptr->job_state == JOB_FAILED)
 				wait_string = "Invalid request, job aborted";
 			else {
@@ -219,10 +207,24 @@ static int	_start_job(uint32_t jobid, int task_cnt, char *hostlist,
 			}
 			*err_code = -910 - wait_reason;
 			snprintf(tmp_msg, sizeof(tmp_msg),
-				"Could not start job %u: %s",
-				jobid, wait_string);
+				"Could not start job %u(%s): %s",
+				jobid, new_node_list, wait_string);
 			*err_msg = tmp_msg;
 			error("wiki: %s", tmp_msg);
+
+			/* restore job state *after* printing 
+			 * new_node_list (job_ptr->details->req_nodes) */
+			job_ptr->priority = 0;
+			job_ptr->num_procs = old_task_cnt;
+			if (job_ptr->details) {
+				/* Details get cleared on job abort; happens 
+				 * if the request is sufficiently messed up.
+				 * This happens when Moab tries to start a
+				 * a job on invalid nodes (wrong partition). */ 
+				xfree(job_ptr->details->req_nodes);
+				FREE_NULL_BITMAP(job_ptr->details->
+						 req_node_bitmap);
+			}
 			rc = -1;
 		}
 		unlock_slurmctld(job_write_lock);
