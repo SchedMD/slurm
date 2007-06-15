@@ -6,6 +6,7 @@ SUBDIRS    = auxdir src testsuite doc
 EXTRA_DIST =			\
 	etc/bluegene.conf.example \
 	etc/federation.conf.example \
+	etc/make.slurm.patch	\
 	etc/slurm.conf.example	\
 	etc/slurm.epilog.clean	\
 	etc/init.d.slurm	\

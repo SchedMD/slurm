@@ -22,6 +22,8 @@ documents those changes that are of interest to users and admins.
  -- Use SLURM_UMASK environment variable (if set) at job submit time as umask 
     for spawned job.
  -- Correct some format issues in the man pages (from Gennero Oliva, ICAR).
+ -- Added support for parallel make across an existing SLURM allocation
+    based upon GNU make-3.81. Patch is in "etc/make.slurm.patch".
 
 * Changes in SLURM 1.2.10
 =========================
