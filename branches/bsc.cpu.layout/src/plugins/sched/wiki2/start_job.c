@@ -36,13 +36,14 @@
 \*****************************************************************************/
 
 #include "./msg.h"
+#include "src/common/node_select.h"
 #include "src/common/xstring.h"
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/state_save.h"
 
 static int	_start_job(uint32_t jobid, int task_cnt, char *hostlist, 
-			int *err_code, char **err_msg);
+			char *node_ptr, int *err_code, char **err_msg);
 
 /* RET 0 on success, -1 on failure */
 extern int	start_job(char *cmd_ptr, int *err_code, char **err_msg)
@@ -104,7 +105,7 @@ extern int	start_job(char *cmd_ptr, int *err_code, char **err_msg)
 			host_string);
 		return -1;
 	}
-	if (_start_job(jobid, task_cnt, host_string, err_code, err_msg) != 0)
+	if (_start_job(jobid, task_cnt, host_string, node_ptr, err_code, err_msg) != 0)
 		return -1;
 
 	snprintf(reply_msg, sizeof(reply_msg), 
@@ -113,7 +114,7 @@ extern int	start_job(char *cmd_ptr, int *err_code, char **err_msg)
 	return 0;
 }
 
-static int	_start_job(uint32_t jobid, int task_cnt, char *hostlist,
+static int	_start_job(uint32_t jobid, int task_cnt, char *hostlist, char *node_ptr,
 			int *err_code, char **err_msg)
 {
 	int rc = 0, old_task_cnt = 1;
@@ -124,6 +125,17 @@ static int	_start_job(uint32_t jobid, int task_cnt, char *hostlist,
 	char *new_node_list;
 	static char tmp_msg[128];
 	bitstr_t *new_bitmap;
+	bitoff_t i, bsize;
+	int ll; /* layout info index */
+	char *node_name, *node_idx, *node_cur;
+	size_t node_name_len;
+	static uint32_t cr_test = 0, cr_enabled = 0;
+
+	if (cr_test == 0) {
+		select_g_get_info_from_plugin(SELECT_CR_PLUGIN,
+						&cr_enabled);
+		cr_test = 1;
+	}
 
 	lock_slurmctld(job_write_lock);
 	job_ptr = find_job_record(jobid);
@@ -165,9 +177,13 @@ static int	_start_job(uint32_t jobid, int task_cnt, char *hostlist,
 		goto fini;
 	}
 
+	xfree(job_ptr->details->req_node_layout);
+	job_ptr->details->req_node_layout = (uint16_t *) 
+			xmalloc(bit_set_count(new_bitmap) * sizeof(uint16_t));
+
 	/* User excluded node list incompatable with Wiki
 	 * Exclude all nodes not explicitly requested */
-	if (job_ptr->cr_enabled && task_cnt) {
+	if (cr_enabled && task_cnt) {
 		FREE_NULL_BITMAP(job_ptr->details->exc_node_bitmap);
 		job_ptr->details->exc_node_bitmap = bit_copy(new_bitmap);
 		bit_not(job_ptr->details->exc_node_bitmap);
@@ -181,6 +197,34 @@ static int	_start_job(uint32_t jobid, int task_cnt, char *hostlist,
 	old_task_cnt = job_ptr->num_procs;
 	job_ptr->num_procs = MAX(task_cnt, old_task_cnt); 
 	job_ptr->priority = 100000000;
+
+	/* build layout information from node_ptr (assuming that moab
+	 * sends a non-bracketed list of nodes, repeated as many times
+	 * as cpus should be used per node); at this point, node names
+	 * are comma-separated */
+	bsize = bit_size(new_bitmap);
+	for (i = 0, ll = -1; i < bsize; i++) {
+		if (!bit_test(new_bitmap, i))
+			continue;
+		ll++;
+		node_name = node_record_table_ptr[i].name;
+		node_name_len  = strlen(node_name);
+		if (node_name_len == 0)
+			continue;
+		node_cur = node_ptr;
+		while (*node_cur) {
+			if ((node_idx = strstr(node_cur, node_name))) {
+				if (node_idx[node_name_len] == ',' ||
+				    node_idx[node_name_len] == '\0') {
+					job_ptr->details->req_node_layout[ll]++;
+				}
+				node_cur = strchr(node_idx, ',');
+				if (node_cur)
+					continue;
+			}
+			break;
+		}
+	}
 
  fini:	unlock_slurmctld(job_write_lock);
 	if (rc == 0) {	/* New job to start ASAP */
@@ -224,6 +268,7 @@ static int	_start_job(uint32_t jobid, int task_cnt, char *hostlist,
 				xfree(job_ptr->details->req_nodes);
 				FREE_NULL_BITMAP(job_ptr->details->
 						 req_node_bitmap);
+				xfree(job_ptr->details->req_node_layout);
 			}
 			rc = -1;
 		}
