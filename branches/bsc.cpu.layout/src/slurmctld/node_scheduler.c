@@ -464,7 +464,7 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 	int max_feature, min_feature;
 	bool runable_ever  = false;	/* Job can ever run */
 	bool runable_avail = false;	/* Job can run with available nodes */
-	int cr_enabled = 0;
+	uint32_t cr_enabled = 0;
 	int shared = 0;
 	select_type_plugin_info_t cr_type = SELECT_TYPE_INFO_NONE; 
 
@@ -1138,6 +1138,10 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 	select_bitmap = NULL;	/* nothing left to free */
 	allocate_nodes(job_ptr);
 	build_node_details(job_ptr);
+	if (select_g_update_nodeinfo(job_ptr) != SLURM_SUCCESS) {
+		error("select_g_update_nodeinfo(%u): %m", job_ptr->job_id);
+		/* not critical ... by now */
+	}
 	job_ptr->job_state = JOB_RUNNING;
 	job_ptr->start_time = job_ptr->time_last_active = time(NULL);
 	if (job_ptr->time_limit == NO_VAL)
@@ -1395,9 +1399,10 @@ extern void build_node_details(struct job_record *job_ptr)
 	hostlist_t host_list = NULL;
 	struct node_record *node_ptr;
 	char *this_node_name;
-        int error_code = SLURM_SUCCESS, cr_enabled = 0;
+        int error_code = SLURM_SUCCESS;
 	int node_inx = 0, cpu_inx = -1;
         int cr_count = 0;
+	static uint32_t cr_enabled = 0, cr_test = 0;
 
 	if ((job_ptr->node_bitmap == NULL) || (job_ptr->nodes == NULL)) {
 		/* No nodes allocated, we're done... */
@@ -1409,6 +1414,13 @@ extern void build_node_details(struct job_record *job_ptr)
 		job_ptr->alloc_lps_cnt = 0;
 		xfree(job_ptr->alloc_lps);
 		return;
+	}
+
+        /* Is Consumable Resources enabled? */
+	if (cr_test == 0) {
+		select_g_get_info_from_plugin (SELECT_CR_PLUGIN,
+						&cr_enabled);
+		cr_test = 1;
 	}
 
 	job_ptr->num_cpu_groups = 0;
@@ -1428,8 +1440,7 @@ extern void build_node_details(struct job_record *job_ptr)
 
         job_ptr->alloc_lps_cnt = 0;
         xfree(job_ptr->alloc_lps);
-        if (job_ptr->cr_enabled) {
-                cr_enabled = job_ptr->cr_enabled;
+        if (cr_enabled) {
                 job_ptr->alloc_lps = xmalloc(job_ptr->node_cnt * sizeof(uint32_t));
                 job_ptr->alloc_lps_cnt = job_ptr->node_cnt;
         }
@@ -1497,13 +1508,6 @@ extern void build_node_details(struct job_record *job_ptr)
 		      job_ptr->job_id, job_ptr->node_cnt, node_inx);
 	}
 	job_ptr->num_cpu_groups = cpu_inx + 1;
-	if ((cr_enabled) && (error_code == SLURM_SUCCESS)) {
-                /* Update cr node structure with this job's allocated resources */
-                error_code = select_g_update_nodeinfo(job_ptr);
-                if(error_code != SLURM_SUCCESS)
-                      fatal("Unable to update nodeinfo JobId=%u",
-                            job_ptr->job_id);
-        }
 }
 
 /*

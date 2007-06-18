@@ -549,10 +549,10 @@ static void _append_to_job_list(struct select_cr_job *new_job)
 /*
  * _count_cpus - report how many cpus are available with the identified nodes 
  */
-static void _count_cpus(unsigned *bitmap, uint16_t sum)
+static void _count_cpus(unsigned *bitmap, uint16_t *sum)
 {
 	int i, allocated_lps;
-	sum = 0;
+	*sum = 0;
 
 	for (i = 0; i < node_record_count; i++) {
 		struct node_cr_record *this_node;
@@ -564,7 +564,7 @@ static void _count_cpus(unsigned *bitmap, uint16_t sum)
 		if (this_node == NULL) {
 			error(" cons_res: Invalid Node reference %s ",
 			      node_record_table_ptr[i].name);
-			sum = 0;
+			*sum = 0;
 			return;
 		}
 
@@ -572,12 +572,12 @@ static void _count_cpus(unsigned *bitmap, uint16_t sum)
 		case CR_SOCKET:
 		case CR_SOCKET_MEMORY:
 			if (slurmctld_conf.fast_schedule) {
-				sum += (node_record_table_ptr[i].config_ptr->sockets -
+				(*sum) += (node_record_table_ptr[i].config_ptr->sockets -
 					this_node->alloc_sockets) * 
 					node_record_table_ptr[i].config_ptr->cores *
 					node_record_table_ptr[i].config_ptr->threads;
 			} else {
-				sum += (node_record_table_ptr[i].sockets - 
+				(*sum) += (node_record_table_ptr[i].sockets - 
 					this_node->alloc_sockets) 
 					* node_record_table_ptr[i].cores
 					* node_record_table_ptr[i].threads;
@@ -591,12 +591,12 @@ static void _count_cpus(unsigned *bitmap, uint16_t sum)
 			for (i = 0; i < this_node->node_ptr->sockets; i++)
 				core_cnt += this_node->alloc_cores[i];
 			if (slurmctld_conf.fast_schedule) {
-				sum += ((node_record_table_ptr[i].config_ptr->sockets
+				(*sum) += ((node_record_table_ptr[i].config_ptr->sockets
 					 * node_record_table_ptr[i].config_ptr->cores)
 					- core_cnt)
 					* node_record_table_ptr[i].config_ptr->threads;
 			} else {
-				sum += ((node_record_table_ptr[i].sockets 
+				(*sum) += ((node_record_table_ptr[i].sockets 
 					 * node_record_table_ptr[i].cores) 
 					- core_cnt)
 					* node_record_table_ptr[i].threads;
@@ -605,19 +605,19 @@ static void _count_cpus(unsigned *bitmap, uint16_t sum)
 		}
 		case CR_MEMORY:
 			if (slurmctld_conf.fast_schedule) {
-				sum += node_record_table_ptr[i].config_ptr->cpus;
+				(*sum) += node_record_table_ptr[i].config_ptr->cpus;
 			} else {
-				sum += node_record_table_ptr[i].cpus;
+				(*sum) += node_record_table_ptr[i].cpus;
 			}
 			break;
 		case CR_CPU:
 		case CR_CPU_MEMORY:
 		default:
 			if (slurmctld_conf.fast_schedule) {
-				sum += node_record_table_ptr[i].config_ptr->cpus -
+				(*sum) += node_record_table_ptr[i].config_ptr->cpus -
 					this_node->alloc_lps; 
 			} else {
-				sum += node_record_table_ptr[i].cpus -
+				(*sum) += node_record_table_ptr[i].cpus -
 					this_node->alloc_lps; 
 			}
 			break;
@@ -1224,12 +1224,18 @@ static void _cr_restore_node_data(void)
 		debug2("recovered cons_res node data for %s",
 				    select_node_ptr[i].name);
 		
-		select_node_ptr[i].alloc_lps
-			= prev_select_node_ptr[prev_i].alloc_lps;
-		select_node_ptr[i].alloc_sockets
-			= prev_select_node_ptr[prev_i].alloc_sockets;
-		select_node_ptr[i].alloc_memory
-			= prev_select_node_ptr[prev_i].alloc_memory;
+		/* set alloc_lps/sockets/memory/cores to 0, and let
+		 * select_p_update_nodeinfo to recover the current info
+		 * from jobs (update_nodeinfo is called from reset_job_bitmaps) */
+		select_node_ptr[i].alloc_lps = 0;
+		select_node_ptr[i].alloc_sockets = 0;
+		select_node_ptr[i].alloc_memory = 0;
+		/* select_node_ptr[i].alloc_lps */
+		/*	= prev_select_node_ptr[prev_i].alloc_lps; */
+		/* select_node_ptr[i].alloc_sockets */
+		/*	= prev_select_node_ptr[prev_i].alloc_sockets; */
+		/* select_node_ptr[i].alloc_memory */
+		/*	= prev_select_node_ptr[prev_i].alloc_memory; */
 		if (select_node_ptr[i].alloc_cores &&
 			prev_select_node_ptr[prev_i].alloc_cores) {
 			chk_resize_node(&(select_node_ptr[i]),
@@ -1237,8 +1243,9 @@ static void _cr_restore_node_data(void)
 			select_node_ptr[i].num_sockets = 
 			    prev_select_node_ptr[prev_i].num_sockets;
 			for (j = 0; j < select_node_ptr[i].num_sockets; j++) {
-				select_node_ptr[i].alloc_cores[j]
-					 = prev_select_node_ptr[prev_i].alloc_cores[j];
+				select_node_ptr[i].alloc_cores[j] = 0;
+				/* select_node_ptr[i].alloc_cores[j] */
+				/*	 = prev_select_node_ptr[prev_i].alloc_cores[j]; */
 			}
 		}
 	}
@@ -1338,8 +1345,14 @@ extern int select_p_state_restore(char *dir_name)
 		job = xmalloc(sizeof(struct select_cr_job));
 		if (_cr_unpack_job(job, buffer) != 0)
 			goto unpack_error;
-		list_append(select_cr_job_list, job);
-		debug2("recovered cons_res job data for job %u", job->job_id);
+		if (find_job_record(job->job_id) != NULL) {
+			list_append(select_cr_job_list, job);
+			debug2("recovered cons_res job data for job %u", job->job_id);
+		} else {
+			debug2("recovered cons_res job data for unexistent job %u", 
+				job->job_id);
+			_xfree_select_cr_job(job);
+		}
 	}
 
 	/*** unpack the node_cr_record array ***/
@@ -2093,11 +2106,15 @@ extern int select_p_get_extra_jobinfo(struct node_record *node_ptr,
 			for (i = 0; i < node_record_count; i++) {
 				if (bit_test(job_ptr->details->req_node_bitmap, i) != 1)
 					continue;
+				/* req_node_layout info is not supported for
+				 * socket/core/threads/cpus_per task, but
+				 * probably there should be something in
+				 * here... */
 				*tmp_16 += _get_avail_lps(job_ptr, i, false);
 			}
 		} else {
 			_count_cpus(job_ptr->details->
-				    req_node_bitmap, *tmp_16);
+				    req_node_bitmap, tmp_16);
 		}
 		break;
 	}
