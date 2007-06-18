@@ -24,6 +24,8 @@ documents those changes that are of interest to users and admins.
  -- Correct some format issues in the man pages (from Gennero Oliva, ICAR).
  -- Added support for parallel make across an existing SLURM allocation
     based upon GNU make-3.81. Patch is in "etc/make.slurm.patch".
+ -- In sched/wiki2 and select/cons_res: insure that Slurm's CPU allocation 
+    is identical to Moab's (from Ernest Artiaga and Asier Roa, BSC).
 
 * Changes in SLURM 1.2.10
 =========================
