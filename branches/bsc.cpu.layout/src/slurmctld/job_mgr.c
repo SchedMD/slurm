@@ -3089,7 +3089,8 @@ void reset_job_bitmaps(void)
 						 * cpu_count_reps, node_cnt, 
 						 * cpus_per_node, node_addr */
 		if (select_g_update_nodeinfo(job_ptr) != SLURM_SUCCESS) {
-			error("select_g_update_nodeinfo(%u): %m", job_ptr->job_id);
+			error("select_g_update_nodeinfo(%u): %m", 
+				job_ptr->job_id);
 			/* not critical ... ? */
 			/* probably job_fail should be set here */
 		}
