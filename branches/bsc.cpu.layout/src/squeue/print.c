@@ -518,9 +518,9 @@ int _print_job_priority(job_info_t * job, int width, bool right, char* suffix)
 	if (job == NULL)	/* Print the Header instead */
 		_print_str("PRIORITY", width, right, true);
 	else {
-		double prio = (double) job->priority / 
-		              (double) ((uint32_t) 0xffffffff);
-		sprintf(temp, "%16.14f", prio);
+		float prio = (float) job->priority / 
+		             (float) ((uint32_t) 0xffffffff);
+		sprintf(temp, "%f", prio);
 		_print_str(temp, width, right, true);
 	}
 	if (suffix)
