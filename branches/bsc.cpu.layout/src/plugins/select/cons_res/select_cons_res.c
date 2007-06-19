@@ -2017,6 +2017,13 @@ extern int select_p_job_suspend(struct job_record *job_ptr)
 					      this_node->node_ptr->name);
 					rc = SLURM_ERROR;
 				}
+				if (this_node->alloc_memory >= job->alloc_memory[i])
+					this_node->alloc_memory -= job->alloc_memory[i];
+				else {
+					error("cons_res: alloc_memory underflow on %s",
+					      this_node->node_ptr->name);
+					rc = SLURM_ERROR;  
+				}
 				if (rc == SLURM_ERROR) {
 					this_node->alloc_lps = 0;
 					this_node->alloc_sockets = 0;
@@ -2046,12 +2053,29 @@ extern int select_p_job_suspend(struct job_record *job_ptr)
 						rc = SLURM_ERROR;
 					}
 				}
+				if (this_node->alloc_memory >= job->alloc_memory[i])
+					this_node->alloc_memory -= job->alloc_memory[i];
+				else {
+					error("cons_res: alloc_memory underflow on %s",
+					      this_node->node_ptr->name);
+					rc = SLURM_ERROR;  
+				}
 				if (rc == SLURM_ERROR) {
 					this_node->alloc_lps = 0;
 					for (j =0; j < this_node->num_sockets; j++) {
 						this_node->alloc_cores[j] = 0;
 					}
 					this_node->alloc_memory = 0;
+				}
+				break;
+			case CR_MEMORY:
+				if (this_node->alloc_memory >= job->alloc_memory[i])
+					this_node->alloc_memory -= job->alloc_memory[i];
+				else {
+					error("cons_res: alloc_memory underflow on %s",
+					      this_node->node_ptr->name);
+					this_node->alloc_memory = 0;
+					rc = SLURM_ERROR;  
 				}
 				break;
 			case CR_CPU:
@@ -2062,6 +2086,17 @@ extern int select_p_job_suspend(struct job_record *job_ptr)
 					error("cons_res: alloc_lps underflow on %s",
 					      this_node->node_ptr->name);
 					this_node->alloc_lps = 0;
+					rc = SLURM_ERROR;  
+				}
+				if (cr_type == CR_CPU)
+					break;
+
+				if (this_node->alloc_memory >= job->alloc_memory[i])
+					this_node->alloc_memory -= job->alloc_memory[i];
+				else {
+					error("cons_res: alloc_memory underflow on %s",
+					      this_node->node_ptr->name);
+					this_node->alloc_memory = 0;
 					rc = SLURM_ERROR;  
 				}
 				break;
@@ -2121,6 +2156,7 @@ extern int select_p_job_resume(struct job_record *job_ptr)
 				this_node->alloc_lps += job->alloc_lps[i];
 				this_node->alloc_sockets += 
 						job->alloc_sockets[i];
+				this_node->alloc_memory += job->alloc_memory[i];
 				break;
 			case CR_CORE:
 			case CR_CORE_MEMORY:
@@ -2132,10 +2168,17 @@ extern int select_p_job_resume(struct job_record *job_ptr)
 					this_node->alloc_cores[j] += 
 							job->alloc_cores[i][j];
 				}
+				this_node->alloc_memory += job->alloc_memory[i];
+				break;
+			case CR_MEMORY:
+				this_node->alloc_memory += job->alloc_memory[i];
 				break;
 			case CR_CPU:
 			case CR_CPU_MEMORY:
 				this_node->alloc_lps += job->alloc_lps[i];
+				if (cr_type == CR_CPU)
+					break;
+				this_node->alloc_memory += job->alloc_memory[i];
 				break;
 			default:
 				break;
