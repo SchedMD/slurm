@@ -1138,11 +1138,11 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 	select_bitmap = NULL;	/* nothing left to free */
 	allocate_nodes(job_ptr);
 	build_node_details(job_ptr);
+	job_ptr->job_state = JOB_RUNNING;
 	if (select_g_update_nodeinfo(job_ptr) != SLURM_SUCCESS) {
 		error("select_g_update_nodeinfo(%u): %m", job_ptr->job_id);
 		/* not critical ... by now */
 	}
-	job_ptr->job_state = JOB_RUNNING;
 	job_ptr->start_time = job_ptr->time_last_active = time(NULL);
 	if (job_ptr->time_limit == NO_VAL)
 		job_ptr->time_limit = part_ptr->max_time;

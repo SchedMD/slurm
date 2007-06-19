@@ -693,7 +693,7 @@ static int _clear_select_jobinfo(struct job_record *job_ptr)
 			struct node_cr_record *this_node;
 			this_node = find_cr_node_record(job->host[i]);
 			if (this_node == NULL) {
-				error(" cons_res: could not find node %s",
+				error("cons_res: could not find node %s",
 				      job->host[i]);
 				rc = SLURM_ERROR; 
 				goto out;
@@ -706,21 +706,21 @@ static int _clear_select_jobinfo(struct job_record *job_ptr)
 				if (this_node->alloc_lps >= job->alloc_lps[i])
 					this_node->alloc_lps -= job->alloc_lps[i];
 				else {
-					error("alloc_lps underflow on %s",
+					error("cons_res: alloc_lps underflow on %s",
 					      this_node->node_ptr->name);
 					rc = SLURM_ERROR;
 				}
 				if (this_node->alloc_sockets >= job->alloc_sockets[i])
 					this_node->alloc_sockets -= job->alloc_sockets[i];
 				else {
-					error("alloc_sockets underflow on %s",
+					error("cons_res: alloc_sockets underflow on %s",
 					      this_node->node_ptr->name);
 					rc = SLURM_ERROR;
 				}
 				if (this_node->alloc_memory >= job->alloc_memory[i])
 					this_node->alloc_memory -= job->alloc_memory[i];
 				else {
-					error("alloc_memory underflow on %s",
+					error("cons_res: alloc_memory underflow on %s",
 					      this_node->node_ptr->name);
 					rc = SLURM_ERROR;  
 				}
@@ -736,7 +736,7 @@ static int _clear_select_jobinfo(struct job_record *job_ptr)
 				if (this_node->alloc_lps >= job->alloc_lps[i])
 					this_node->alloc_lps -= job->alloc_lps[i];
 				else {
-					error("alloc_lps underflow on %s",
+					error("cons_res: alloc_lps underflow on %s",
 					      this_node->node_ptr->name);
 					rc = SLURM_ERROR;
 				}
@@ -746,7 +746,7 @@ static int _clear_select_jobinfo(struct job_record *job_ptr)
 					if (this_node->alloc_cores[j] >= job->alloc_cores[i][j])
 						this_node->alloc_cores[j] -= job->alloc_cores[i][j];
 					else {
-						error("alloc_cores underflow on %s",
+						error("cons_res: alloc_cores underflow on %s",
 						      this_node->node_ptr->name);
 						rc = SLURM_ERROR;
 					}
@@ -754,7 +754,7 @@ static int _clear_select_jobinfo(struct job_record *job_ptr)
 				if (this_node->alloc_memory >= job->alloc_memory[i])
 					this_node->alloc_memory -= job->alloc_memory[i];
 				else {
-					error("alloc_memory underflow on %s",
+					error("cons_res: alloc_memory underflow on %s",
 					      this_node->node_ptr->name);
 					rc = SLURM_ERROR;  
 				}
@@ -771,7 +771,7 @@ static int _clear_select_jobinfo(struct job_record *job_ptr)
 				if (this_node->alloc_memory >= job->alloc_memory[i])
 					this_node->alloc_memory -= job->alloc_memory[i];
 				else {
-					error("alloc_memory underflow on %s",
+					error("cons_res: alloc_memory underflow on %s",
 					      this_node->node_ptr->name);
 					this_node->alloc_memory = 0;
 					rc = SLURM_ERROR;  
@@ -783,7 +783,7 @@ static int _clear_select_jobinfo(struct job_record *job_ptr)
 				if (this_node->alloc_lps >= job->alloc_lps[i])
 					this_node->alloc_lps -= job->alloc_lps[i];
 				else {
-					error("alloc_lps underflow on %s",
+					error("cons_res: alloc_lps underflow on %s",
 					      this_node->node_ptr->name);
 					this_node->alloc_lps = 0;
 					rc = SLURM_ERROR;  
@@ -795,7 +795,7 @@ static int _clear_select_jobinfo(struct job_record *job_ptr)
 				if (this_node->alloc_memory >= job->alloc_memory[i])
 					this_node->alloc_memory -= job->alloc_memory[i];
 				else {
-					error("alloc_memory underflow on %s",
+					error("cons_res: alloc_memory underflow on %s",
 					      this_node->node_ptr->name);
 					this_node->alloc_memory = 0;
 					rc = SLURM_ERROR;  
@@ -1976,7 +1976,7 @@ extern int select_p_job_suspend(struct job_record *job_ptr)
 		if (job->job_id != job_ptr->job_id)
 			continue;
 		if (job->state & CR_JOB_STATE_SUSPENDED) {
-			error("select: job %u already suspended",
+			error("cons_res: job %u already suspended",
 				job->job_id);
 			break;
 		}
@@ -1985,7 +1985,7 @@ extern int select_p_job_suspend(struct job_record *job_ptr)
 		        struct node_cr_record *this_node_ptr;
    		        this_node_ptr = find_cr_node_record (job->host[i]);
 			if (this_node_ptr == NULL) {
-				error(" cons_res: could not find node %s",
+				error("cons_res: could not find node %s",
 					job->host[i]);
 				rc = SLURM_ERROR; 
 				goto cleanup;
@@ -1993,7 +1993,7 @@ extern int select_p_job_suspend(struct job_record *job_ptr)
 			if (this_node_ptr->alloc_lps >= job->alloc_lps[i])
 				this_node_ptr->alloc_lps -= job->alloc_lps[i];
 			else {
-			        error("cons_res: alloc_lps underflow on %s",
+				error("cons_res: alloc_lps underflow on %s",
 				       this_node_ptr->node_ptr->name);
 				this_node_ptr->alloc_lps = 0;
 				rc = SLURM_ERROR; 
@@ -2263,6 +2263,11 @@ extern int select_p_update_nodeinfo(struct job_record *job_ptr)
 
 	xassert(job_ptr);
 	xassert(job_ptr->magic == JOB_MAGIC);
+
+	if ((job_ptr->job_state != JOB_RUNNING)
+	&&  (job_ptr->job_state != JOB_SUSPENDED))
+		return rc;
+
 	job_id = job_ptr->job_id;
 
 	iterator = list_iterator_create(select_cr_job_list);
@@ -2270,10 +2275,15 @@ extern int select_p_update_nodeinfo(struct job_record *job_ptr)
 	       != NULL) {
 		if (job->job_id != job_id)
 			continue;
-		if (job->state & CR_JOB_STATE_SUSPENDED)
+
+		if (job_ptr->job_state == JOB_SUSPENDED) {
+			job->state |= CR_JOB_STATE_SUSPENDED;
 			nodes = 0;
-		else
+		} else {
+			job->state &= (~CR_JOB_STATE_SUSPENDED);
 			nodes = job->nhosts;
+		}
+
 		for (i = 0; i < nodes; i++) {
 			struct node_cr_record *this_node;
 			this_node = find_cr_node_record (job->host[i]);
@@ -2345,6 +2355,7 @@ extern int select_p_update_nodeinfo(struct job_record *job_ptr)
 					     this_node->alloc_cores[j]);
 #endif
 		}
+		break;
 	}
  cleanup:
 	list_iterator_destroy(iterator);
