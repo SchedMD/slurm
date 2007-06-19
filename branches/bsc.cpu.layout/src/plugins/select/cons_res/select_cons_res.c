@@ -740,11 +740,14 @@ static int _clear_select_jobinfo(struct job_record *job_ptr)
 					      this_node->node_ptr->name);
 					rc = SLURM_ERROR;
 				}
-				chk_resize_node(this_node, this_node->node_ptr->sockets);
+				chk_resize_node(this_node, 
+						this_node->node_ptr->sockets);
 				chk_resize_job(job, i, this_node->num_sockets);
 				for (j =0; j < this_node->num_sockets; j++) {
-					if (this_node->alloc_cores[j] >= job->alloc_cores[i][j])
-						this_node->alloc_cores[j] -= job->alloc_cores[i][j];
+					if (this_node->alloc_cores[j] >= 
+							job->alloc_cores[i][j])
+						this_node->alloc_cores[j] -= 
+								job->alloc_cores[i][j];
 					else {
 						error("cons_res: alloc_cores underflow on %s",
 						      this_node->node_ptr->name);
@@ -1964,7 +1967,7 @@ extern int select_p_job_suspend(struct job_record *job_ptr)
 {
 	ListIterator job_iterator;
 	struct select_cr_job *job;
-	int i, rc = ESLURM_INVALID_JOB_ID;
+	int i, j, rc = ESLURM_INVALID_JOB_ID;
  
 	xassert(job_ptr);
 	xassert(select_cr_job_list);
@@ -1980,30 +1983,96 @@ extern int select_p_job_suspend(struct job_record *job_ptr)
 				job->job_id);
 			break;
 		}
+
+		rc = SLURM_SUCCESS;
+		last_cr_update_time = time(NULL);
 		job->state |= CR_JOB_STATE_SUSPENDED;
 		for (i = 0; i < job->nhosts; i++) {
-		        struct node_cr_record *this_node_ptr;
-   		        this_node_ptr = find_cr_node_record (job->host[i]);
-			if (this_node_ptr == NULL) {
+			struct node_cr_record *this_node;
+			this_node = find_cr_node_record(job->host[i]);
+			if (this_node == NULL) {
 				error("cons_res: could not find node %s",
-					job->host[i]);
+				      job->host[i]);
 				rc = SLURM_ERROR; 
-				goto cleanup;
+				break;
 			}
-			if (this_node_ptr->alloc_lps >= job->alloc_lps[i])
-				this_node_ptr->alloc_lps -= job->alloc_lps[i];
-			else {
-				error("cons_res: alloc_lps underflow on %s",
-				       this_node_ptr->node_ptr->name);
-				this_node_ptr->alloc_lps = 0;
-				rc = SLURM_ERROR; 
-				goto cleanup;
+			
+			/* Updating this node allocated resources */
+			switch(cr_type) {
+			case CR_SOCKET:
+			case CR_SOCKET_MEMORY:
+				if (this_node->alloc_lps >= job->alloc_lps[i])
+					this_node->alloc_lps -= job->alloc_lps[i];
+				else {
+					error("cons_res: alloc_lps underflow on %s",
+					      this_node->node_ptr->name);
+					rc = SLURM_ERROR;
+				}
+				if (this_node->alloc_sockets >= 
+						job->alloc_sockets[i]) {
+					this_node->alloc_sockets -= 
+						job->alloc_sockets[i];
+				} else {
+					error("cons_res: alloc_sockets underflow on %s",
+					      this_node->node_ptr->name);
+					rc = SLURM_ERROR;
+				}
+				if (rc == SLURM_ERROR) {
+					this_node->alloc_lps = 0;
+					this_node->alloc_sockets = 0;
+					this_node->alloc_memory = 0;
+				}
+				break;
+			case CR_CORE:
+			case CR_CORE_MEMORY:
+				if (this_node->alloc_lps >= job->alloc_lps[i])
+					this_node->alloc_lps -= job->alloc_lps[i];
+				else {
+					error("cons_res: alloc_lps underflow on %s",
+					      this_node->node_ptr->name);
+					rc = SLURM_ERROR;
+				}
+				chk_resize_node(this_node, 
+						this_node->node_ptr->sockets);
+				chk_resize_job(job, i, this_node->num_sockets);
+				for (j =0; j < this_node->num_sockets; j++) {
+					if (this_node->alloc_cores[j] >= 
+							job->alloc_cores[i][j]) {
+						this_node->alloc_cores[j] -= 
+								job->alloc_cores[i][j];
+					} else {
+						error("cons_res: alloc_cores underflow on %s",
+						      this_node->node_ptr->name);
+						rc = SLURM_ERROR;
+					}
+				}
+				if (rc == SLURM_ERROR) {
+					this_node->alloc_lps = 0;
+					for (j =0; j < this_node->num_sockets; j++) {
+						this_node->alloc_cores[j] = 0;
+					}
+					this_node->alloc_memory = 0;
+				}
+				break;
+			case CR_CPU:
+			case CR_CPU_MEMORY:
+				if (this_node->alloc_lps >= job->alloc_lps[i])
+					this_node->alloc_lps -= job->alloc_lps[i];
+				else {
+					error("cons_res: alloc_lps underflow on %s",
+					      this_node->node_ptr->name);
+					this_node->alloc_lps = 0;
+					rc = SLURM_ERROR;  
+				}
+				break;
+			default:
+				break;
 			}
+			break;
 		}
 		rc = SLURM_SUCCESS;
 		break;
 	}
-     cleanup:
 	list_iterator_destroy(job_iterator);
 
 	return rc;
@@ -2013,7 +2082,7 @@ extern int select_p_job_resume(struct job_record *job_ptr)
 {
 	ListIterator job_iterator;
 	struct select_cr_job *job;
-	int i, rc = ESLURM_INVALID_JOB_ID;
+	int i, j, rc = ESLURM_INVALID_JOB_ID;
 
 	xassert(job_ptr);
 	xassert(select_cr_job_list);
@@ -2021,6 +2090,7 @@ extern int select_p_job_resume(struct job_record *job_ptr)
 	job_iterator = list_iterator_create(select_cr_job_list);
 	if (job_iterator == NULL)
 		fatal("list_iterator_create: %m");
+
 	while ((job = (struct select_cr_job *) list_next(job_iterator))) {
 		if (job->job_id != job_ptr->job_id)
 			continue;
@@ -2029,22 +2099,52 @@ extern int select_p_job_resume(struct job_record *job_ptr)
 				job->job_id);
 			break;
 		}
+
+		rc = SLURM_SUCCESS;
+		last_cr_update_time = time(NULL);
 		job->state &= (~CR_JOB_STATE_SUSPENDED);
+
 		for (i = 0; i < job->nhosts; i++) {
-		        struct node_cr_record *this_node;
-		        this_node = find_cr_node_record (job->host[i]);
+			struct node_cr_record *this_node;
+			this_node = find_cr_node_record(job->host[i]);
 			if (this_node == NULL) {
-			        error(" cons_res: could not find node %s",
-				        job->host[i]);
-				rc = SLURM_ERROR;
-				goto cleanup;
+				error("cons_res: could not find node %s",
+				      job->host[i]);
+				rc = SLURM_ERROR; 
+				break;
 			}
-			this_node->alloc_lps += job->alloc_lps[i];
+			
+			/* Updating this node allocated resources */
+			switch(cr_type) {
+			case CR_SOCKET:
+			case CR_SOCKET_MEMORY:
+				this_node->alloc_lps += job->alloc_lps[i];
+				this_node->alloc_sockets += 
+						job->alloc_sockets[i];
+				break;
+			case CR_CORE:
+			case CR_CORE_MEMORY:
+				this_node->alloc_lps += job->alloc_lps[i];
+				chk_resize_node(this_node, 
+						this_node->node_ptr->sockets);
+				chk_resize_job(job, i, this_node->num_sockets);
+				for (j =0; j < this_node->num_sockets; j++) {
+					this_node->alloc_cores[j] += 
+							job->alloc_cores[i][j];
+				}
+				break;
+			case CR_CPU:
+			case CR_CPU_MEMORY:
+				this_node->alloc_lps += job->alloc_lps[i];
+				break;
+			default:
+				break;
+			}
+			break;
 		}
 		rc = SLURM_SUCCESS;
 		break;
 	}
-     cleanup:
 	list_iterator_destroy(job_iterator);
 
 	return rc;
