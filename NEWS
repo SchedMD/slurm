@@ -7,7 +7,7 @@ documents those changes that are of interest to users and admins.
     tasks. See the "README" portion of the patch for details.
  -- Added new scontrol command "show hostlist <hostnames>" to translate a list 
     of hostnames into a hostlist expression (e.g. "tux1,tux2" -> "tux[1-2]")
-    and "show hostnames <list>", returns a list of of nodes (one node per line) 
+    and "show hostnames <list>", returns a list of of nodes (one node per line)
     from SLURM hostlist expression or from SLURM_NODELIST environment variable 
     if no hostlist specified.
  -- Add the sbatch option "--wrap".
@@ -24,6 +24,8 @@ documents those changes that are of interest to users and admins.
  -- Correct some format issues in the man pages (from Gennero Oliva, ICAR).
  -- Added support for parallel make across an existing SLURM allocation
     based upon GNU make-3.81. Patch is in "etc/make.slurm.patch".
+ -- Added '-b' option to sbatch for easy MOAB trasition to sbatch instead of
+    srun.  Option does nothing in sbatch.
 
 * Changes in SLURM 1.2.10
 =========================

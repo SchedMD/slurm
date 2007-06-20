@@ -585,6 +585,10 @@ _process_env_var(env_vars_t *e, const char *val)
 /*---[ command line option processing ]-----------------------------------*/
 
 static struct option long_options[] = {
+	{"batch",         no_argument,       0, 'b'}, /* batch option
+							 is only here for
+							 moab tansition
+							 doesn't do anything */
 	{"cpus-per-task", required_argument, 0, 'c'},
 	{"constraint",    required_argument, 0, 'C'},
 	{"dependency",    required_argument, 0, 'd'},
@@ -643,7 +647,7 @@ static struct option long_options[] = {
 };
 
 static char *opt_string =
-	"+a:c:C:d:D:e:F:g:hHi:IJ:kn:N:o:Op:qR:st:uU:vVw:x:";
+	"+a:bc:C:d:D:e:F:g:hHi:IJ:kn:N:o:Op:qR:st:uU:vVw:x:";
 
 
 /*
@@ -933,6 +937,10 @@ static void _set_options(int argc, char **argv)
 		switch (opt_char) {
 		case '?':
 			fatal("Try \"sbatch --help\" for more information");
+			break;
+		case 'b':
+			/* Only here for Moab transition not suppose
+			   to do anything */
 			break;
 		case 'c':
 			opt.cpus_set = true;
