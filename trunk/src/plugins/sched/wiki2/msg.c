@@ -64,11 +64,11 @@ static char *	_get_wiki_conf_path(void);
 static void *	_msg_thread(void *no_data);
 static int	_parse_msg(char *msg, char **req);
 static void	_proc_msg(slurm_fd new_fd, char *msg);
-static size_t	_read_bytes(int fd, char *buf, const size_t size);
+static size_t	_read_bytes(int fd, char *buf, size_t size);
 static char *	_recv_msg(slurm_fd new_fd);
 static size_t	_send_msg(slurm_fd new_fd, char *buf, size_t size);
 static void	_send_reply(slurm_fd new_fd, char *response);
-static size_t	_write_bytes(int fd, char *buf, const size_t size);
+static size_t	_write_bytes(int fd, char *buf, size_t size);
 
 /*****************************************************************************\
  * spawn message hander thread
@@ -182,6 +182,7 @@ static void *_msg_thread(void *no_data)
 		xfree(msg);
 		slurm_close_accepted_conn(new_fd);
 	}
+	verbose("wiki: message engine shutdown");
 	if (sock_fd > 0)
 		(void) slurm_shutdown_msg_engine(sock_fd);
 	pthread_exit((void *) 0);
@@ -304,25 +305,40 @@ extern int parse_wiki_config(void)
 	return SLURM_SUCCESS;
 }
 
-static size_t	_read_bytes(int fd, char *buf, const size_t size)
+static size_t	_read_bytes(int fd, char *buf, size_t size)
 {
 	size_t bytes_remaining, bytes_read;
 	char *ptr;
+	struct pollfd ufds;
+	int rc;
 
 	bytes_remaining = size;
+	size = 0;
+	ufds.fd = fd;
+	ufds.events = POLLIN;
 	ptr = buf;
 	while (bytes_remaining > 0) {
+		rc = poll(&ufds, 1, 10000);	/* 10 sec timeout */
+		if (rc == 0)		/* timed out */
+			break;
+		if ((rc == -1) 		/* some error */
+		&&  ((errno== EINTR) || (errno == EAGAIN)))
+			continue;
+		if ((ufds.revents & POLLIN) == 0) /* some poll error */
+			break;
+	
 		bytes_read = read(fd, ptr, bytes_remaining);
 		if (bytes_read <= 0)
-			return 0;
+			break;
 		bytes_remaining -= bytes_read;
+		size += bytes_read;
 		ptr += bytes_read;
 	}
 	
 	return size;
 }
 
-static size_t	_write_bytes(int fd, char *buf, const size_t size)
+static size_t	_write_bytes(int fd, char *buf, size_t size)
 {
 	size_t bytes_remaining, bytes_written;
 	char *ptr;
@@ -330,6 +346,7 @@ static size_t	_write_bytes(int fd, char *buf, const size_t size)
 	int rc;
 
 	bytes_remaining = size;
+	size = 0;
 	ptr = buf;
 	ufds.fd = fd;
 	ufds.events = POLLOUT;
@@ -337,18 +354,20 @@ static size_t	_write_bytes(int fd, char *buf, const size_t size)
 		rc = poll(&ufds, 1, 10000);	/* 10 sec timeout */
 		if (rc == 0)		/* timed out */
 			break;
-		if ((rc == -1) && 	/* some error */
-		    ((errno== EINTR) || (errno == EAGAIN)))
+		if ((rc == -1)  	/* some error */
+		&&  ((errno== EINTR) || (errno == EAGAIN)))
 			continue;
 		if ((ufds.revents & POLLOUT) == 0) /* some poll error */
 			break;
 
 		bytes_written = write(fd, ptr, bytes_remaining);
 		if (bytes_written <= 0)
-			return (size - bytes_remaining);
+			break;
 		bytes_remaining -= bytes_written;
+		size += bytes_written;
 		ptr += bytes_written;
 	}
+
 	return size;
 }
 

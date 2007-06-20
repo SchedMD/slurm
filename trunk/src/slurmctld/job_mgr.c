@@ -4306,9 +4306,11 @@ extern bool job_epilog_complete(uint32_t job_id, char *node_name,
 			if (job_ptr->details) {
 				/* the time stamp on the new batch launch 
 				 * credential must be larger than the time 
-				 * stamp on the revoke request, so delay 
-				 * for at least two seconds. */
-				job_ptr->details->begin_time = time(NULL) + 2;
+				 * stamp on the revoke request. Also the 
+				 * I/O must be all cleared out and the 
+				 * named socket purged, so delay for at 
+				 * least ten seconds. */
+				job_ptr->details->begin_time = time(NULL) + 10;
 			}
 		}
 		return true;
