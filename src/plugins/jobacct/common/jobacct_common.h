@@ -111,15 +111,6 @@ extern void common_2_sacct(sacct_t *sacct, struct jobacctinfo *jobacct);
 extern void common_pack(struct jobacctinfo *jobacct, Buf buffer);
 extern int common_unpack(struct jobacctinfo **jobacct, Buf buffer);
 
-/* in common_slurmctld.c */
-extern int common_init_slurmctld(char *job_acct_log);
-extern int common_fini_slurmctld();
-extern int common_job_start_slurmctld(struct job_record *job_ptr);
-extern int common_job_complete_slurmctld(struct job_record *job_ptr);
-extern int common_step_start_slurmctld(struct step_record *step);
-extern int common_step_complete_slurmctld(struct step_record *step);
-extern int common_suspend_slurmctld(struct job_record *job_ptr);
-
 /* in common_slurmstepd.c */
 extern int common_endpoll();
 extern int common_set_proctrack_container_id(uint32_t id);

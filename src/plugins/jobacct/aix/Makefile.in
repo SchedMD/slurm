@@ -76,7 +76,7 @@ pkglibLTLIBRARIES_INSTALL = $(INSTALL)
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
 jobacct_aix_la_DEPENDENCIES = $(top_builddir)/src/common/libcommon.la
 am_jobacct_aix_la_OBJECTS = jobacct_aix.lo jobacct_common.lo \
-	common_slurmctld.lo common_slurmstepd.lo proctrack.lo
+	common_slurmstepd.lo proctrack.lo
 jobacct_aix_la_OBJECTS = $(am_jobacct_aix_la_OBJECTS)
 jobacct_aix_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
@@ -265,7 +265,6 @@ pkglib_LTLIBRARIES = jobacct_aix.la
 # Null job completion logging plugin.
 jobacct_aix_la_SOURCES = jobacct_aix.c \
 	$(top_builddir)/src/plugins/jobacct/common/jobacct_common.c \
-	$(top_builddir)/src/plugins/jobacct/common/common_slurmctld.c \
 	$(top_builddir)/src/plugins/jobacct/common/common_slurmstepd.c \
 	$(top_builddir)/src/slurmd/common/proctrack.c \
 	$(top_builddir)/src/slurmd/common/proctrack.h 
@@ -343,7 +342,6 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/common_slurmctld.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/common_slurmstepd.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/jobacct_aix.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/jobacct_common.Plo@am__quote@
@@ -376,13 +374,6 @@ jobacct_common.lo: $(top_builddir)/src/plugins/jobacct/common/jobacct_common.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(top_builddir)/src/plugins/jobacct/common/jobacct_common.c' object='jobacct_common.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o jobacct_common.lo `test -f '$(top_builddir)/src/plugins/jobacct/common/jobacct_common.c' || echo '$(srcdir)/'`$(top_builddir)/src/plugins/jobacct/common/jobacct_common.c
-
-common_slurmctld.lo: $(top_builddir)/src/plugins/jobacct/common/common_slurmctld.c
-@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT common_slurmctld.lo -MD -MP -MF $(DEPDIR)/common_slurmctld.Tpo -c -o common_slurmctld.lo `test -f '$(top_builddir)/src/plugins/jobacct/common/common_slurmctld.c' || echo '$(srcdir)/'`$(top_builddir)/src/plugins/jobacct/common/common_slurmctld.c
-@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/common_slurmctld.Tpo $(DEPDIR)/common_slurmctld.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(top_builddir)/src/plugins/jobacct/common/common_slurmctld.c' object='common_slurmctld.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o common_slurmctld.lo `test -f '$(top_builddir)/src/plugins/jobacct/common/common_slurmctld.c' || echo '$(srcdir)/'`$(top_builddir)/src/plugins/jobacct/common/common_slurmctld.c
 
 common_slurmstepd.lo: $(top_builddir)/src/plugins/jobacct/common/common_slurmstepd.c
 @am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT common_slurmstepd.lo -MD -MP -MF $(DEPDIR)/common_slurmstepd.Tpo -c -o common_slurmstepd.lo `test -f '$(top_builddir)/src/plugins/jobacct/common/common_slurmstepd.c' || echo '$(srcdir)/'`$(top_builddir)/src/plugins/jobacct/common/common_slurmstepd.c
