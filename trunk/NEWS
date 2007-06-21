@@ -16,6 +16,8 @@ documents those changes that are of interest to users and admins.
     communications. This fixes some possible network routing issues.
  -- Added global database plugin.  Job accounting and Job completion are the 
     first to use it.  Follow documentation to add more to the plugin.
+ -- Removed no-longer-needed jobacct/common/common_slurmctld.c since that is
+    replaced by the database plugin.
 
 * Changes in SLURM 1.2.11
 =========================
