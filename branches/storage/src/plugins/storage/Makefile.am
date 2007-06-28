@@ -1,3 +1,3 @@
-# Makefile for database plugins
+# Makefile for storage plugins
 
-SUBDIRS = flatfile mysql pgsql
+SUBDIRS = flatfile mysql pgsql script 
