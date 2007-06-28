@@ -179,37 +179,37 @@ int jobacct_p_unpack(struct jobacctinfo **jobacct, Buf buffer)
 
 int jobacct_p_init_slurmctld(char *job_acct_log)
 {
-	return database_g_jobacct_init(job_acct_log);
+	return storage_g_jobacct_init(job_acct_log);
 }
 
 int jobacct_p_fini_slurmctld()
 {
-	return database_g_jobacct_fini();
+	return storage_g_jobacct_fini();
 }
 
 int jobacct_p_job_start_slurmctld(struct job_record *job_ptr)
 {
-	return database_g_jobacct_job_start(job_ptr);
+	return storage_g_jobacct_job_start(job_ptr);
 }
 
 int jobacct_p_job_complete_slurmctld(struct job_record *job_ptr) 
 {
-	return database_g_jobacct_job_complete(job_ptr);
+	return storage_g_jobacct_job_complete(job_ptr);
 }
 
 int jobacct_p_step_start_slurmctld(struct step_record *step)
 {
-	return database_g_jobacct_step_start(step);	
+	return storage_g_jobacct_step_start(step);	
 }
 
 int jobacct_p_step_complete_slurmctld(struct step_record *step)
 {
-	return database_g_jobacct_step_complete(step);	
+	return storage_g_jobacct_step_complete(step);	
 }
 
 int jobacct_p_suspend_slurmctld(struct job_record *job_ptr)
 {
-	return database_g_jobacct_job_suspend(job_ptr);
+	return storage_g_jobacct_job_suspend(job_ptr);
 }
 
 /*

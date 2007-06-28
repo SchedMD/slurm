@@ -57,11 +57,11 @@ extern char *default_plugstack;
 #define DEFAULT_JOB_ACCT_LOC        "/var/log/slurm_accounting.log"
 #define DEFAULT_JOB_ACCT_FREQ       30
 #define DEFAULT_JOB_ACCT_TYPE       "jobacct/none"
-#define DEFAULT_DATABASE_TYPE       "database/flatfile"
-#define DEFAULT_DATABASE_HOST       "localhost"
-#define DEFAULT_DATABASE_USER       "root"
-#define DEFAULT_DATABASE_PASS       ""
-#define DEFAULT_DATABASE_PORT       0
+#define DEFAULT_STORAGE_TYPE       "storage/flatfile"
+#define DEFAULT_STORAGE_HOST       "localhost"
+#define DEFAULT_STORAGE_USER       "root"
+#define DEFAULT_STORAGE_PASS       ""
+#define DEFAULT_STORAGE_PORT       0
 #define DEFAULT_JOB_COMP_TYPE       "jobcomp/none"
 #define DEFAULT_KILL_TREE           0
 #define DEFAULT_KILL_WAIT           30

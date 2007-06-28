@@ -46,7 +46,7 @@
 #  include <inttypes.h>
 #endif
 
-#include "src/plugins/database/flatfile/flatfile_jobcomp.h"
+#include "src/plugins/storage/flatfile/flatfile_jobcomp.h"
 
 /*
  * These variables are required by the generic plugin interface.  If they

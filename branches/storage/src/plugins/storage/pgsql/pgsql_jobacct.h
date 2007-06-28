@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  pgsql_jobacct.h - functions the pgsql jobacct database.
+ *  pgsql_jobacct.h - functions the pgsql jobacct storage.
  *****************************************************************************
  *
  *  Copyright (C) 2004-2007 The Regents of the University of California.

@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  flatfile_jobacct.h - functions the flatfile jobacct database.
+ *  script_jobacct.h - functions the script jobacct storage.
  *****************************************************************************
  *
  *  Copyright (C) 2004-2007 The Regents of the University of California.
@@ -38,22 +38,22 @@
  *  Copyright (C) 2002 The Regents of the University of California.
 \*****************************************************************************/
 
-#ifndef _HAVE_FLATFILE_JOBACCT_H
-#define _HAVE_FLATFILE_JOBACCT_H
+#ifndef _HAVE_SCRIPT_JOBACCT_H
+#define _HAVE_SCRIPT_JOBACCT_H
 
 #include "src/plugins/jobacct/common/jobacct_common.h"
 #include "src/slurmctld/slurmctld.h"
 
-extern int flatfile_jobacct_init(char *location);
-extern int flatfile_jobacct_fini();
-extern int flatfile_jobacct_job_start(struct job_record *job_ptr);
-extern int flatfile_jobacct_job_complete(struct job_record *job_ptr);
-extern int flatfile_jobacct_step_start(struct step_record *step_ptr);
-extern int flatfile_jobacct_step_complete(struct step_record *step_ptr);
-extern int flatfile_jobacct_suspend(struct job_record *job_ptr);
-extern void flatfile_jobacct_get_jobs(List job_list, 
+extern int script_jobacct_init(char *location);
+extern int script_jobacct_fini();
+extern int script_jobacct_job_start(struct job_record *job_ptr);
+extern int script_jobacct_job_complete(struct job_record *job_ptr);
+extern int script_jobacct_step_start(struct step_record *step_ptr);
+extern int script_jobacct_step_complete(struct step_record *step_ptr);
+extern int script_jobacct_suspend(struct job_record *job_ptr);
+extern void script_jobacct_get_jobs(List job_list, 
 				      List selected_steps, List selected_parts,
 				      void *params);
-extern void flatfile_jobacct_archive(List selected_parts, void *params);
+extern void script_jobacct_archive(List selected_parts, void *params);
 
 #endif

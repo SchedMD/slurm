@@ -314,6 +314,7 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/storage/flatfile/Makefile
 		 src/plugins/storage/mysql/Makefile
 		 src/plugins/storage/pgsql/Makefile
+		 src/plugins/storage/script/Makefile
 		 doc/Makefile
 		 doc/man/Makefile
 		 doc/html/Makefile

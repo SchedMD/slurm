@@ -146,11 +146,11 @@ s_p_options_t slurm_conf_options[] = {
 	{"JobAcctLoc", S_P_STRING},
 	{"JobAcctFrequency", S_P_UINT16},
 	{"JobAcctType", S_P_STRING},
-	{"DatabaseType", S_P_STRING},
-	{"DatabaseHost", S_P_STRING},
-	{"DatabaseUser", S_P_STRING},
-	{"DatabasePass", S_P_STRING},
-	{"DatabasePort", S_P_UINT32},
+	{"StorageType", S_P_STRING},
+	{"StorageHost", S_P_STRING},
+	{"StorageUser", S_P_STRING},
+	{"StoragePass", S_P_STRING},
+	{"StoragePort", S_P_UINT32},
 	{"JobCompLoc", S_P_STRING},
 	{"JobCompType", S_P_STRING},
 	{"JobCredentialPrivateKey", S_P_STRING},
@@ -1052,10 +1052,10 @@ free_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr, bool purge_node_hash)
 	xfree (ctl_conf_ptr->epilog);
 	xfree (ctl_conf_ptr->job_acct_loc);
 	xfree (ctl_conf_ptr->job_acct_type);
-	xfree (ctl_conf_ptr->database_type);
-	xfree (ctl_conf_ptr->database_user);
-	xfree (ctl_conf_ptr->database_host);
-	xfree (ctl_conf_ptr->database_pass);
+	xfree (ctl_conf_ptr->storage_type);
+	xfree (ctl_conf_ptr->storage_user);
+	xfree (ctl_conf_ptr->storage_host);
+	xfree (ctl_conf_ptr->storage_pass);
 	xfree (ctl_conf_ptr->job_comp_loc);
 	xfree (ctl_conf_ptr->job_comp_type);
 	xfree (ctl_conf_ptr->job_credential_private_key);
@@ -1116,11 +1116,11 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	xfree (ctl_conf_ptr->job_acct_loc);
 	ctl_conf_ptr->job_acct_freq             = 0;
 	xfree (ctl_conf_ptr->job_acct_type);
-	xfree (ctl_conf_ptr->database_type);
-	xfree (ctl_conf_ptr->database_user);
-	xfree (ctl_conf_ptr->database_host);
-	xfree (ctl_conf_ptr->database_pass);
-	ctl_conf_ptr->database_port             = 0;
+	xfree (ctl_conf_ptr->storage_type);
+	xfree (ctl_conf_ptr->storage_user);
+	xfree (ctl_conf_ptr->storage_host);
+	xfree (ctl_conf_ptr->storage_pass);
+	ctl_conf_ptr->storage_port             = 0;
 	xfree (ctl_conf_ptr->job_comp_loc);
 	xfree (ctl_conf_ptr->job_comp_type);
 	xfree (ctl_conf_ptr->job_credential_private_key);
@@ -1489,16 +1489,16 @@ validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	if (!s_p_get_string(&conf->job_acct_type, "JobAcctType", hashtbl))
 		conf->job_acct_type = xstrdup(DEFAULT_JOB_ACCT_TYPE);
 
-	if (!s_p_get_string(&conf->database_type, "DatabaseType", hashtbl))
-		conf->database_type = xstrdup(DEFAULT_DATABASE_TYPE);
-	if (!s_p_get_string(&conf->database_host, "DatabaseHost", hashtbl))
-		conf->database_host = xstrdup(DEFAULT_DATABASE_HOST);
-	if (!s_p_get_string(&conf->database_user, "DatabaseUser", hashtbl))
-		conf->database_user = xstrdup(DEFAULT_DATABASE_USER);
-	if (!s_p_get_string(&conf->database_pass, "DatabasePass", hashtbl))
-		conf->database_pass = xstrdup(DEFAULT_DATABASE_PASS);
-	if (!s_p_get_uint32(&conf->database_port, "DatabasePort", hashtbl))
-		conf->database_port = DEFAULT_DATABASE_PORT;
+	if (!s_p_get_string(&conf->storage_type, "StorageType", hashtbl))
+		conf->storage_type = xstrdup(DEFAULT_STORAGE_TYPE);
+	if (!s_p_get_string(&conf->storage_host, "StorageHost", hashtbl))
+		conf->storage_host = xstrdup(DEFAULT_STORAGE_HOST);
+	if (!s_p_get_string(&conf->storage_user, "StorageUser", hashtbl))
+		conf->storage_user = xstrdup(DEFAULT_STORAGE_USER);
+	if (!s_p_get_string(&conf->storage_pass, "StoragePass", hashtbl))
+		conf->storage_pass = xstrdup(DEFAULT_STORAGE_PASS);
+	if (!s_p_get_uint32(&conf->storage_port, "StoragePort", hashtbl))
+		conf->storage_port = DEFAULT_STORAGE_PORT;
 
 	s_p_get_string(&conf->job_comp_loc, "JobCompLoc", hashtbl);
 

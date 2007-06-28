@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  pgsql_common.h - common functions for the the pgsql database plugin.
+ *  pgsql_common.h - common functions for the the pgsql storage plugin.
  *****************************************************************************
  *
  *  Copyright (C) 2004-2007 The Regents of the University of California.
@@ -69,7 +69,7 @@ typedef struct {
 typedef struct {
 	char *name;
 	char *options;
-} database_field_t;
+} storage_field_t;
 
 
 extern bool thread_safe;
@@ -84,18 +84,18 @@ extern int pgsql_create_db(PGconn *pgsql_db, char *db_name,
 
 extern int pgsql_get_db_connection(PGconn **pgsql_db, char *db_name,
 				   pgsql_db_info_t *db_info,
-				   int *database_init);
+				   int *storage_init);
 
-extern int pgsql_db_query(PGconn *pgsql_db, int database_init, char *query);
+extern int pgsql_db_query(PGconn *pgsql_db, int storage_init, char *query);
 
-extern PGresult *pgsql_db_query_ret(PGconn *pgsql_db, int database_init,
+extern PGresult *pgsql_db_query_ret(PGconn *pgsql_db, int storage_init,
 				     char *query);
 
-extern int pgsql_insert_ret_id(PGconn *pgsql_db, int database_init, 
+extern int pgsql_insert_ret_id(PGconn *pgsql_db, int storage_init, 
 			       char *sequence_name, char *query);
 
-extern int pgsql_db_create_table(PGconn *pgsql_db, int database_init, 
-				 char *table_name, database_field_t *fields,
+extern int pgsql_db_create_table(PGconn *pgsql_db, int storage_init, 
+				 char *table_name, storage_field_t *fields,
 				 char *ending);
 
 #endif

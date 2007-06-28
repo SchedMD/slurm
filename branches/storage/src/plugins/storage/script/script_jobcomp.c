@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  flatfile_jobcomp.c - text file slurm job completion logging plugin.
+ *  script_jobcomp.c - text file slurm job completion logging plugin.
  *****************************************************************************
  *  Copyright (C) 2003 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -65,7 +65,7 @@
 #include "src/common/xstring.h"
 #include "src/common/parse_time.h"
 
-#include "flatfile_jobcomp_process.h"
+#include "script_jobcomp_process.h"
 
 #define JOB_FORMAT "JobId=%lu UserId=%s(%lu) Name=%s JobState=%s Partition=%s "\
 		"TimeLimit=%s StartTime=%s EndTime=%s NodeList=%s NodeCnt=%u %s\n"
@@ -129,7 +129,7 @@ static char *_lookup_slurm_api_errtab(int errnum)
 	return res;
 }
 
-extern int flatfile_jobcomp_init(char *location)
+extern int script_jobcomp_init(char *location)
 {
 	int rc = SLURM_SUCCESS;
 
@@ -154,7 +154,7 @@ extern int flatfile_jobcomp_init(char *location)
 	return rc;
 }
 
-extern int flatfile_jobcomp_fini ( void )
+extern int script_jobcomp_fini ( void )
 {
 	if (job_comp_fd >= 0)
 		close(job_comp_fd);
@@ -162,12 +162,12 @@ extern int flatfile_jobcomp_fini ( void )
 	return SLURM_SUCCESS;
 }
 
-extern int flatfile_jobcomp_get_errno( void )
+extern int script_jobcomp_get_errno( void )
 {
 	return plugin_errno;
 }
 
-extern int flatfile_jobcomp_log_record ( struct job_record *job_ptr )
+extern int script_jobcomp_log_record ( struct job_record *job_ptr )
 {
 	int rc = SLURM_SUCCESS;
 	char job_rec[512+MAX_JOBNAME_LEN];
@@ -228,7 +228,7 @@ extern int flatfile_jobcomp_log_record ( struct job_record *job_ptr )
 	return rc;
 }
 
-extern char *flatfile_jobcomp_strerror( int errnum )
+extern char *script_jobcomp_strerror( int errnum )
 {
 	char *res = _lookup_slurm_api_errtab(errnum);
 	return (res ? res : strerror(errnum));
@@ -236,26 +236,26 @@ extern char *flatfile_jobcomp_strerror( int errnum )
 
 
 /* 
- * get info from the database 
+ * get info from the storage 
  * in/out job_list List of job_rec_t *
  * note List needs to be freed when called
  */
-extern void flatfile_jobcomp_get_jobs(List job_list, 
+extern void script_jobcomp_get_jobs(List job_list, 
 				      List selected_steps, List selected_parts,
 				      void *params)
 {
-	flatfile_jobcomp_process_get_jobs(job_list, 
+	script_jobcomp_process_get_jobs(job_list, 
 					  selected_steps, selected_parts,
 					  params);	
 	return;
 }
 
 /* 
- * expire old info from the database 
+ * expire old info from the storage 
  */
-extern void flatfile_jobcomp_archive(List selected_parts,
+extern void script_jobcomp_archive(List selected_parts,
 				     void *params)
 {
-	flatfile_jobcomp_process_archive(selected_parts, params);
+	script_jobcomp_process_archive(selected_parts, params);
 	return;
 }

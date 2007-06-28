@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  mysql_jobacct.h - functions the mysql jobacct database.
+ *  mysql_jobacct.h - functions the mysql jobacct storage.
  *****************************************************************************
  *
  *  Copyright (C) 2004-2007 The Regents of the University of California.

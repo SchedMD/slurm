@@ -236,7 +236,7 @@ extern char *flatfile_jobcomp_strerror( int errnum )
 
 
 /* 
- * get info from the database 
+ * get info from the storage 
  * in/out job_list List of job_rec_t *
  * note List needs to be freed when called
  */
@@ -251,7 +251,7 @@ extern void flatfile_jobcomp_get_jobs(List job_list,
 }
 
 /* 
- * expire old info from the database 
+ * expire old info from the storage 
  */
 extern void flatfile_jobcomp_archive(List selected_parts,
 				     void *params)

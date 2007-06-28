@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  flatfile_jobacct.c - functions the flatfile jobacct database.
+ *  flatfile_jobacct.c - functions the flatfile jobacct storage.
  *****************************************************************************
  *
  *  Copyright (C) 2004-2007 The Regents of the University of California.
@@ -46,7 +46,7 @@
 static FILE *		LOGFILE;
 static int		LOGFILE_FD;
 static pthread_mutex_t  logfile_lock = PTHREAD_MUTEX_INITIALIZER;
-static int              database_init;
+static int              storage_init;
 /* Format of the JOB_STEP record */
 const char *_jobstep_format = 
 "%d "
@@ -140,7 +140,7 @@ static int _print_record(struct job_record *job_ptr,
 }
 
 /* 
- * Initialize the database make sure tables are created and in working
+ * Initialize the storage make sure tables are created and in working
  * order
  */
 extern int flatfile_jobacct_init (char *location)
@@ -168,7 +168,7 @@ extern int flatfile_jobacct_init (char *location)
 	LOGFILE = fopen(log_file, "a");
 	if (LOGFILE == NULL) {
 		error("open %s: %m", log_file);
-		database_init = 0;
+		storage_init = 0;
 		xfree(log_file);
 		slurm_mutex_unlock( &logfile_lock );
 		return SLURM_ERROR;
@@ -181,12 +181,12 @@ extern int flatfile_jobacct_init (char *location)
 		error("setvbuf() failed");
 	LOGFILE_FD = fileno(LOGFILE);
 	slurm_mutex_unlock( &logfile_lock );
-	database_init = 1;
+	storage_init = 1;
 	return rc;
 }
 
 /*
- * finish up database connection
+ * finish up storage connection
  */
 extern int flatfile_jobacct_fini ()
 {
@@ -196,7 +196,7 @@ extern int flatfile_jobacct_fini ()
 }
 
 /* 
- * load into the database the start of a job
+ * load into the storage the start of a job
  */
 extern int flatfile_jobacct_job_start (struct job_record *job_ptr)
 {
@@ -208,7 +208,7 @@ extern int flatfile_jobacct_job_start (struct job_record *job_ptr)
 	long	priority;
 	int track_steps = 0;
 
-	if(!database_init) {
+	if(!storage_init) {
 		debug("jobacct init was not called or it failed");
 		return SLURM_ERROR;
 	}
@@ -261,12 +261,12 @@ extern int flatfile_jobacct_job_start (struct job_record *job_ptr)
 }
 
 /* 
- * load into the database the end of a job
+ * load into the storage the end of a job
  */
 extern int flatfile_jobacct_job_complete (struct job_record *job_ptr)
 {
 	char buf[BUFFER_SIZE];
-	if(!database_init) {
+	if(!storage_init) {
 		debug("jobacct init was not called or it failed");
 		return SLURM_ERROR;
 	}
@@ -288,7 +288,7 @@ extern int flatfile_jobacct_job_complete (struct job_record *job_ptr)
 }
 
 /* 
- * load into the database the start of a job step
+ * load into the storage the start of a job step
  */
 extern int flatfile_jobacct_step_start (struct step_record *step_ptr)
 {
@@ -301,7 +301,7 @@ extern int flatfile_jobacct_step_start (struct step_record *step_ptr)
 	float float_tmp = 0;
 	char *account;
 	
-	if(!database_init) {
+	if(!storage_init) {
 		debug("jobacct init was not called or it failed");
 		return SLURM_ERROR;
 	}
@@ -391,7 +391,7 @@ extern int flatfile_jobacct_step_start (struct step_record *step_ptr)
 }
 
 /* 
- * load into the database the end of a job step
+ * load into the storage the end of a job step
  */
 extern int flatfile_jobacct_step_complete (struct step_record *step_ptr)
 {
@@ -409,7 +409,7 @@ extern int flatfile_jobacct_step_complete (struct step_record *step_ptr)
 	float ave_cpu = 0, ave_cpu2 = 0;
 	char *account;
 
-	if(!database_init) {
+	if(!storage_init) {
 		debug("jobacct init was not called or it failed");
 		return SLURM_ERROR;
 	}
@@ -527,7 +527,7 @@ extern int flatfile_jobacct_step_complete (struct step_record *step_ptr)
 }
 
 /* 
- * load into the database a suspention of a job
+ * load into the storage a suspention of a job
  */
 extern int flatfile_jobacct_suspend (struct job_record *job_ptr)
 {
@@ -535,7 +535,7 @@ extern int flatfile_jobacct_suspend (struct job_record *job_ptr)
 	static time_t	now = 0;
 	static time_t	temp = 0;
 	int elapsed;
-	if(!database_init) {
+	if(!storage_init) {
 		debug("jobacct init was not called or it failed");
 		return SLURM_ERROR;
 	}
@@ -561,7 +561,7 @@ extern int flatfile_jobacct_suspend (struct job_record *job_ptr)
 }
 
 /* 
- * get info from the database 
+ * get info from the storage 
  * in/out job_list List of job_rec_t *
  * note List needs to be freed when called
  */
@@ -576,7 +576,7 @@ extern void flatfile_jobacct_get_jobs(List job_list,
 }
 
 /* 
- * expire old info from the database 
+ * expire old info from the storage 
  */
 extern void flatfile_jobacct_archive(List selected_parts,
 				     void *params)

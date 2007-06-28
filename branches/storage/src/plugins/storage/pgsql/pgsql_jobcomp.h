@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  pgsql_jobcomp.h - pgsql database slurm job completion logging plugin.
+ *  pgsql_jobcomp.h - pgsql storage slurm job completion logging plugin.
  *****************************************************************************
  *  Copyright (C) 2003 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).

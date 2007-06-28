@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  node_select.h - Define database plugin functions.
+ *  node_select.h - Define storage plugin functions.
  *
  * $Id: node_select.h 10574 2006-12-15 23:38:29Z jette $
  *****************************************************************************
@@ -37,8 +37,8 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef _SLURM_DATABASE_H 
-#define _SLURM_DATABASE_H
+#ifndef _SLURM_STORAGE_H 
+#define _SLURM_STORAGE_H
 
 #include "src/common/list.h"
 #include "src/slurmctld/slurmctld.h"
@@ -46,70 +46,70 @@
 #include <slurm/slurm_errno.h>
 
 /* 
- * Initialize the database make sure tables are created and in working
+ * Initialize the storage make sure tables are created and in working
  * order
  */
-extern int database_g_jobacct_init (char *location);
+extern int storage_g_jobacct_init (char *location);
 
 /*
- * finish up database connection
+ * finish up storage connection
  */
-extern int database_g_jobacct_fini ();
+extern int storage_g_jobacct_fini ();
 
 /* 
- * load into the database the start of a job
+ * load into the storage the start of a job
  */
-extern int database_g_jobacct_job_start (struct job_record *job_ptr);
+extern int storage_g_jobacct_job_start (struct job_record *job_ptr);
 
 /* 
- * load into the database the end of a job
+ * load into the storage the end of a job
  */
-extern int database_g_jobacct_job_complete (struct job_record *job_ptr);
+extern int storage_g_jobacct_job_complete (struct job_record *job_ptr);
 
 /* 
- * load into the database the start of a job step
+ * load into the storage the start of a job step
  */
-extern int database_g_jobacct_step_start (struct step_record *step_ptr);
+extern int storage_g_jobacct_step_start (struct step_record *step_ptr);
 
 /* 
- * load into the database the end of a job step
+ * load into the storage the end of a job step
  */
-extern int database_g_jobacct_step_complete (struct step_record *step_ptr);
+extern int storage_g_jobacct_step_complete (struct step_record *step_ptr);
 
 /* 
- * load into the database a suspention of a job
+ * load into the storage a suspention of a job
  */
-extern int database_g_jobacct_job_suspend (struct job_record *job_ptr);
+extern int storage_g_jobacct_job_suspend (struct job_record *job_ptr);
 
 /* 
- * get info from the database 
+ * get info from the storage 
  * in/out job_list List of job_rec_t *
  * note List needs to be freed when called
  */
-extern void database_g_jobacct_get_jobs(List job_list,
+extern void storage_g_jobacct_get_jobs(List job_list,
 					List selected_steps,
 					List selected_parts,
 					void *params);
 
 /* 
- * expire old info from the database 
+ * expire old info from the storage 
  */
-extern void database_g_jobacct_archive(List selected_parts, void *params);
+extern void storage_g_jobacct_archive(List selected_parts, void *params);
 
 /*
  * jobcomp functions
  */
-extern int database_g_jobcomp_init(char * location);
-extern int database_g_jobcomp_fini();
-extern int database_g_jobcomp_get_errno();
-extern int database_g_jobcomp_log_record(struct job_record *job_ptr);
-extern char *database_g_jobcomp_strerror(int errnum);
-extern void database_g_jobcomp_get_jobs(List job_list,
+extern int storage_g_jobcomp_init(char * location);
+extern int storage_g_jobcomp_fini();
+extern int storage_g_jobcomp_get_errno();
+extern int storage_g_jobcomp_log_record(struct job_record *job_ptr);
+extern char *storage_g_jobcomp_strerror(int errnum);
+extern void storage_g_jobcomp_get_jobs(List job_list,
 					List selected_steps,
 					List selected_parts,
 					void *params);
-extern void database_g_jobcomp_archive(List selected_parts, void *params);
+extern void storage_g_jobcomp_archive(List selected_parts, void *params);
 
 
 
-#endif /*_SLURM_DATABASE_H*/
+#endif /*_SLURM_STORAGE_H*/

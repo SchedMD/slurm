@@ -1,7 +1,7 @@
 /*****************************************************************************\
- *  database_mysql.c - Store/Get all information in a mysql database.
+ *  storage_mysql.c - Store/Get all information in a mysql storage.
  *
- *  $Id: database_mysql.c 10893 2007-01-29 21:53:48Z da $
+ *  $Id: storage_mysql.c 10893 2007-01-29 21:53:48Z da $
  *****************************************************************************
  *  Copyright (C) 2004-2007 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -69,8 +69,8 @@
  * minimum versions for their plugins as the job accounting API 
  * matures.
  */
-const char plugin_name[] = "Database MYSQL plugin";
-const char plugin_type[] = "database/mysql";
+const char plugin_name[] = "Storage MYSQL plugin";
+const char plugin_type[] = "storage/mysql";
 const uint32_t plugin_version = 100;
 
 
@@ -83,12 +83,12 @@ extern int init ( void )
 	static int first = 1;
 #ifdef HAVE_MYSQL
 	if(!mysql_thread_safe()) {
-		debug2("MySQL database not treadsafe only one connection "
-		      "to the database will be allowed.");
+		debug2("MySQL storage not treadsafe only one connection "
+		      "to the storage will be allowed.");
 		thread_safe = false;
 	}
 #else
-	fatal("No MySQL database was found on the machine. "
+	fatal("No MySQL storage was found on the machine. "
 	      "Please check the configure ran and run again.");
 #endif
 	if(first) {
@@ -109,10 +109,10 @@ extern int fini ( void )
 }
 
 /* 
- * Initialize the database make sure tables are created and in working
+ * Initialize the storage make sure tables are created and in working
  * order
  */
-extern int database_p_jobacct_init(char *job_acct_log)
+extern int storage_p_jobacct_init(char *job_acct_log)
 {
 #ifdef HAVE_MYSQL
 	return mysql_jobacct_init(job_acct_log);	
@@ -122,9 +122,9 @@ extern int database_p_jobacct_init(char *job_acct_log)
 }
 
 /*
- * finish up database connection
+ * finish up storage connection
  */
-extern int database_p_jobacct_fini()
+extern int storage_p_jobacct_fini()
 {
 #ifdef HAVE_MYSQL
 	return mysql_jobacct_fini();
@@ -134,9 +134,9 @@ extern int database_p_jobacct_fini()
 }
 
 /* 
- * load into the database the start of a job
+ * load into the storage the start of a job
  */
-extern int database_p_jobacct_job_start(struct job_record *job_ptr)
+extern int storage_p_jobacct_job_start(struct job_record *job_ptr)
 {
 #ifdef HAVE_MYSQL
 	return mysql_jobacct_job_start(job_ptr);
@@ -146,9 +146,9 @@ extern int database_p_jobacct_job_start(struct job_record *job_ptr)
 }
 
 /* 
- * load into the database the end of a job
+ * load into the storage the end of a job
  */
-extern int database_p_jobacct_job_complete(struct job_record *job_ptr)
+extern int storage_p_jobacct_job_complete(struct job_record *job_ptr)
 {
 #ifdef HAVE_MYSQL
 	return mysql_jobacct_job_complete(job_ptr);
@@ -158,9 +158,9 @@ extern int database_p_jobacct_job_complete(struct job_record *job_ptr)
 }
 
 /* 
- * load into the database the start of a job step
+ * load into the storage the start of a job step
  */
-extern int database_p_jobacct_step_start(struct step_record *step_ptr)
+extern int storage_p_jobacct_step_start(struct step_record *step_ptr)
 {
 #ifdef HAVE_MYSQL
 	return mysql_jobacct_step_start(step_ptr);
@@ -170,9 +170,9 @@ extern int database_p_jobacct_step_start(struct step_record *step_ptr)
 }
 
 /* 
- * load into the database the end of a job step
+ * load into the storage the end of a job step
  */
-extern int database_p_jobacct_step_complete(struct step_record *step_ptr)
+extern int storage_p_jobacct_step_complete(struct step_record *step_ptr)
 {
 #ifdef HAVE_MYSQL
 	return mysql_jobacct_step_complete(step_ptr);
@@ -182,9 +182,9 @@ extern int database_p_jobacct_step_complete(struct step_record *step_ptr)
 }
 
 /* 
- * load into the database a suspention of a job
+ * load into the storage a suspention of a job
  */
-extern int database_p_jobacct_suspend(struct job_record *job_ptr)
+extern int storage_p_jobacct_suspend(struct job_record *job_ptr)
 {
 #ifdef HAVE_MYSQL
 	return mysql_jobacct_suspend(job_ptr);
@@ -194,11 +194,11 @@ extern int database_p_jobacct_suspend(struct job_record *job_ptr)
 }
 
 /* 
- * get info from the database 
+ * get info from the storage 
  * returns List of job_rec_t *
  * note List needs to be freed when called
  */
-extern void database_p_jobacct_get_jobs(List job_list,
+extern void storage_p_jobacct_get_jobs(List job_list,
 					List selected_steps,
 					List selected_parts,
 					void *params)
@@ -212,9 +212,9 @@ extern void database_p_jobacct_get_jobs(List job_list,
 }
 
 /* 
- * expire old info from the database 
+ * expire old info from the storage 
  */
-extern void database_p_jobacct_archive(List selected_parts,
+extern void storage_p_jobacct_archive(List selected_parts,
 				       void *params)
 {
 #ifdef HAVE_MYSQL
@@ -223,7 +223,7 @@ extern void database_p_jobacct_archive(List selected_parts,
 	return;
 }
 
-extern int database_p_jobcomp_init(char *location)
+extern int storage_p_jobcomp_init(char *location)
 {
 #ifdef HAVE_MYSQL
 	return mysql_jobcomp_init(location);
@@ -232,7 +232,7 @@ extern int database_p_jobcomp_init(char *location)
 #endif 
 }
 
-extern int database_p_jobcomp_fini(void)
+extern int storage_p_jobcomp_fini(void)
 {
 #ifdef HAVE_MYSQL
 	return mysql_jobcomp_fini();
@@ -241,7 +241,7 @@ extern int database_p_jobcomp_fini(void)
 #endif 
 }
 
-extern int database_p_jobcomp_log_record(struct job_record *job_ptr)
+extern int storage_p_jobcomp_log_record(struct job_record *job_ptr)
 {
 #ifdef HAVE_MYSQL
 	return mysql_jobcomp_log_record(job_ptr);
@@ -250,7 +250,7 @@ extern int database_p_jobcomp_log_record(struct job_record *job_ptr)
 #endif 
 }
 
-extern int database_p_jobcomp_get_errno(void)
+extern int storage_p_jobcomp_get_errno(void)
 {
 #ifdef HAVE_MYSQL
 	return mysql_jobcomp_get_errno();
@@ -259,7 +259,7 @@ extern int database_p_jobcomp_get_errno(void)
 #endif 
 }
 
-extern char *database_p_jobcomp_strerror(int errnum)
+extern char *storage_p_jobcomp_strerror(int errnum)
 {
 #ifdef HAVE_MYSQL
 	return mysql_jobcomp_strerror(errnum);
@@ -269,11 +269,11 @@ extern char *database_p_jobcomp_strerror(int errnum)
 }
 
 /* 
- * get info from the database 
+ * get info from the storage 
  * in/out job_list List of job_rec_t *
  * note List needs to be freed when called
  */
-extern void database_p_jobcomp_get_jobs(List job_list, 
+extern void storage_p_jobcomp_get_jobs(List job_list, 
 					List selected_steps,
 					List selected_parts,
 					void *params)
@@ -287,9 +287,9 @@ extern void database_p_jobcomp_get_jobs(List job_list,
 }
 
 /* 
- * expire old info from the database 
+ * expire old info from the storage 
  */
-extern void database_p_jobcomp_archive(List selected_parts, void *params)
+extern void storage_p_jobcomp_archive(List selected_parts, void *params)
 {
 #ifdef HAVE_MYSQL
 	mysql_jobcomp_archive(selected_parts, params);

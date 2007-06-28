@@ -1,7 +1,7 @@
 /*****************************************************************************\
  *  pgsql_jobcomp_process.c - functions the processing of
  *                               information from the pgsql jobcomp
- *                               database.
+ *                               storage.
  *****************************************************************************
  *
  *  Copyright (C) 2004-2007 The Regents of the University of California.

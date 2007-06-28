@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  pgsql_jobacct.c - functions the pgsql jobacct database.
+ *  pgsql_jobacct.c - functions the pgsql jobacct storage.
  *****************************************************************************
  *
  *  Copyright (C) 2004-2007 The Regents of the University of California.
@@ -54,7 +54,7 @@ char *rusage_table = "rusage_table";
 
 static int _pgsql_jobacct_check_tables(char *user)
 {
-	database_field_t index_table_fields[] = {
+	storage_field_t index_table_fields[] = {
 		{ "id", "serial" },
 		{ "jobid ", "integer not null" },
 		{ "partition", "text not null" },
@@ -65,7 +65,7 @@ static int _pgsql_jobacct_check_tables(char *user)
 		{ NULL, NULL}		
 	};
 
-	database_field_t job_table_fields[] = {
+	storage_field_t job_table_fields[] = {
 		{ "id", "int not null" },
 		{ "start", "bigint default 0" },
 		{ "endtime", "bigint default 0" },
@@ -81,7 +81,7 @@ static int _pgsql_jobacct_check_tables(char *user)
 		{ NULL, NULL}
 	};
 
-	database_field_t step_table_fields[] = {
+	storage_field_t step_table_fields[] = {
 		{ "id", "int not null" },
 		{ "stepid", "smallint not null" },
 		{ "start", "bigint default 0" },
@@ -112,7 +112,7 @@ static int _pgsql_jobacct_check_tables(char *user)
 		{ NULL, NULL}
 	};
 
-	database_field_t step_rusage_fields[] = {
+	storage_field_t step_rusage_fields[] = {
 		{ "id", "int not null" },
 		{ "stepid", "smallint not null" },
 		{ "cpu_sec", "bigint default 0" },
@@ -234,9 +234,9 @@ extern int pgsql_jobacct_init(char *location)
 	destroy_pgsql_db_info(db_info);
 
 	if(rc == SLURM_SUCCESS)
-		debug("Database init finished");
+		debug("Storage init finished");
 	else
-		error("Database init failed");
+		error("Storage init failed");
 	return rc;
 }
 
@@ -332,7 +332,7 @@ try_again:
 		rc = pgsql_db_query(jobacct_pgsql_db, jobacct_db_init, query);
 	} else if(!reinit) {
 		char *loc = slurm_get_jobacct_loc();
-		error("It looks like the database has gone "
+		error("It looks like the storage has gone "
 		      "away trying to reconnect");
 		pgsql_jobacct_fini();
 		pgsql_jobacct_init(loc);
@@ -670,7 +670,7 @@ extern int pgsql_jobacct_suspend(struct job_record *job_ptr)
 }
 
 /* 
- * get info from the database 
+ * get info from the storage 
  * returns List of job_rec_t *
  * note List needs to be freed when called
  */
@@ -694,7 +694,7 @@ extern void pgsql_jobacct_get_jobs(List job_list,
 }
 
 /* 
- * expire old info from the database 
+ * expire old info from the storage 
  */
 extern void pgsql_jobacct_archive(List selected_parts, void *params)
 {

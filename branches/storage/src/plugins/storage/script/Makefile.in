@@ -14,7 +14,7 @@
 
 @SET_MAKE@
 
-# Makefile for database/flatfile plugin
+# Makefile for storage/script plugin
 
 VPATH = @srcdir@
 pkgdatadir = $(datadir)/@PACKAGE@
@@ -35,7 +35,7 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
-subdir = src/plugins/database/flatfile
+subdir = src/plugins/storage/script
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/auxdir/acx_pthread.m4 \
@@ -74,15 +74,15 @@ am__strip_dir = `echo $$p | sed -e 's|^.*/||'`;
 am__installdirs = "$(DESTDIR)$(pkglibdir)"
 pkglibLTLIBRARIES_INSTALL = $(INSTALL)
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
-database_flatfile_la_DEPENDENCIES =  \
+storage_script_la_DEPENDENCIES =  \
 	$(top_builddir)/src/common/libcommon.la
-am_database_flatfile_la_OBJECTS = database_flatfile.lo \
-	flatfile_jobacct.lo flatfile_jobcomp.lo \
-	flatfile_jobacct_process.lo flatfile_jobcomp_process.lo
-database_flatfile_la_OBJECTS = $(am_database_flatfile_la_OBJECTS)
-database_flatfile_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
+am_storage_script_la_OBJECTS = storage_script.lo script_jobacct.lo \
+	script_jobcomp.lo script_jobacct_process.lo \
+	script_jobcomp_process.lo
+storage_script_la_OBJECTS = $(am_storage_script_la_OBJECTS)
+storage_script_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
-	$(database_flatfile_la_LDFLAGS) $(LDFLAGS) -o $@
+	$(storage_script_la_LDFLAGS) $(LDFLAGS) -o $@
 DEFAULT_INCLUDES = -I. -I$(top_builddir) -I$(top_builddir)/slurm@am__isrc@
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
 am__depfiles_maybe = depfiles
@@ -95,8 +95,8 @@ CCLD = $(CC)
 LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
-SOURCES = $(database_flatfile_la_SOURCES)
-DIST_SOURCES = $(database_flatfile_la_SOURCES)
+SOURCES = $(storage_script_la_SOURCES)
+DIST_SOURCES = $(storage_script_la_SOURCES)
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -262,17 +262,17 @@ top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
 PLUGIN_FLAGS = -module -avoid-version --export-dynamic 
 INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common
-pkglib_LTLIBRARIES = database_flatfile.la
+pkglib_LTLIBRARIES = storage_script.la
 
-# Flatfile database plugin.
-database_flatfile_la_SOURCES = database_flatfile.c \
-		flatfile_jobacct.c flatfile_jobacct.h \
-		flatfile_jobcomp.c flatfile_jobcomp.h \
-		flatfile_jobacct_process.c flatfile_jobacct_process.h \
-		flatfile_jobcomp_process.c flatfile_jobcomp_process.h
+# Script storage plugin.
+storage_script_la_SOURCES = storage_script.c \
+		script_jobacct.c script_jobacct.h \
+		script_jobcomp.c script_jobcomp.h \
+		script_jobacct_process.c script_jobacct_process.h \
+		script_jobcomp_process.c script_jobcomp_process.h
 
-database_flatfile_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
-database_flatfile_la_LIBADD = $(top_builddir)/src/common/libcommon.la
+storage_script_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
+storage_script_la_LIBADD = $(top_builddir)/src/common/libcommon.la
 all: all-am
 
 .SUFFIXES:
@@ -286,9 +286,9 @@ $(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.am  $(am__confi
 	      exit 1;; \
 	  esac; \
 	done; \
-	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign  src/plugins/database/flatfile/Makefile'; \
+	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign  src/plugins/storage/script/Makefile'; \
 	cd $(top_srcdir) && \
-	  $(AUTOMAKE) --foreign  src/plugins/database/flatfile/Makefile
+	  $(AUTOMAKE) --foreign  src/plugins/storage/script/Makefile
 .PRECIOUS: Makefile
 Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
 	@case '$?' in \
@@ -333,8 +333,8 @@ clean-pkglibLTLIBRARIES:
 	  echo "rm -f \"$${dir}/so_locations\""; \
 	  rm -f "$${dir}/so_locations"; \
 	done
-database_flatfile.la: $(database_flatfile_la_OBJECTS) $(database_flatfile_la_DEPENDENCIES) 
-	$(database_flatfile_la_LINK) -rpath $(pkglibdir) $(database_flatfile_la_OBJECTS) $(database_flatfile_la_LIBADD) $(LIBS)
+storage_script.la: $(storage_script_la_OBJECTS) $(storage_script_la_DEPENDENCIES) 
+	$(storage_script_la_LINK) -rpath $(pkglibdir) $(storage_script_la_OBJECTS) $(storage_script_la_LIBADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -342,11 +342,11 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/database_flatfile.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/flatfile_jobacct.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/flatfile_jobacct_process.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/flatfile_jobcomp.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/flatfile_jobcomp_process.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/script_jobacct.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/script_jobacct_process.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/script_jobcomp.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/script_jobcomp_process.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/storage_script.Plo@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<

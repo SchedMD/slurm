@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  mysql_common.h - common functions for the the mysql database plugin.
+ *  mysql_common.h - common functions for the the mysql storage plugin.
  *****************************************************************************
  *
  *  Copyright (C) 2004-2007 The Regents of the University of California.
@@ -70,7 +70,7 @@ typedef struct {
 typedef struct {
 	char *name;
 	char *options;
-} database_field_t;
+} storage_field_t;
 
 
 extern bool thread_safe;
@@ -85,17 +85,17 @@ extern int mysql_create_db(MYSQL *mysql_db, char *db_name,
 
 extern int mysql_get_db_connection(MYSQL **mysql_db, char *db_name,
 				   mysql_db_info_t *db_info,
-				   int *database_init);
-extern int mysql_db_query(MYSQL *mysql_db, int database_init, char *query);
+				   int *storage_init);
+extern int mysql_db_query(MYSQL *mysql_db, int storage_init, char *query);
 
-extern MYSQL_RES *mysql_db_query_ret(MYSQL *mysql_db, int database_init,
+extern MYSQL_RES *mysql_db_query_ret(MYSQL *mysql_db, int storage_init,
 				     char *query);
 
-extern int mysql_insert_ret_id(MYSQL *mysql_db, int database_init, 
+extern int mysql_insert_ret_id(MYSQL *mysql_db, int storage_init, 
 			       char *query);
 
-extern int mysql_db_create_table(MYSQL *mysql_db, int database_init, 
-				 char *table_name, database_field_t *fields,
+extern int mysql_db_create_table(MYSQL *mysql_db, int storage_init, 
+				 char *table_name, storage_field_t *fields,
 				 char *ending);
 
 #endif

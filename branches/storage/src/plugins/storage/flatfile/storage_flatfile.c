@@ -1,7 +1,7 @@
 /*****************************************************************************\
- *  database_flatfile.c - Store/Get all information in a flatfile.
+ *  storage_flatfile.c - Store/Get all information in a flatfile.
  *
- *  $Id: database_flatfile.c 10893 2007-01-29 21:53:48Z da $
+ *  $Id: storage_flatfile.c 10893 2007-01-29 21:53:48Z da $
  *****************************************************************************
  *  Copyright (C) 2004-2007 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -84,8 +84,8 @@
  * minimum versions for their plugins as the job accounting API 
  * matures.
  */
-const char plugin_name[] = "Database FLATFILE plugin";
-const char plugin_type[] = "database/flatfile";
+const char plugin_name[] = "Storage FLATFILE plugin";
+const char plugin_type[] = "storage/flatfile";
 const uint32_t plugin_version = 100;
 
 /*
@@ -111,68 +111,68 @@ extern int fini ( void )
 	return SLURM_SUCCESS;
 }
 /* 
- * Initialize the database make sure tables are created and in working
+ * Initialize the storage make sure tables are created and in working
  * order
  */
-extern int database_p_jobacct_init(char *job_acct_log)
+extern int storage_p_jobacct_init(char *job_acct_log)
 {
 	return flatfile_jobacct_init(job_acct_log);	
 }
 
 /*
- * finish up database connection
+ * finish up storage connection
  */
-extern int database_p_jobacct_fini()
+extern int storage_p_jobacct_fini()
 {
 	return flatfile_jobacct_fini();
 }
 
 /* 
- * load into the database the start of a job
+ * load into the storage the start of a job
  */
-extern int database_p_jobacct_job_start(struct job_record *job_ptr)
+extern int storage_p_jobacct_job_start(struct job_record *job_ptr)
 {
 	return flatfile_jobacct_job_start(job_ptr);
 }
 
 /* 
- * load into the database the end of a job
+ * load into the storage the end of a job
  */
-extern int database_p_jobacct_job_complete(struct job_record *job_ptr)
+extern int storage_p_jobacct_job_complete(struct job_record *job_ptr)
 {
 	return flatfile_jobacct_job_complete(job_ptr);
 }
 
 /* 
- * load into the database the start of a job step
+ * load into the storage the start of a job step
  */
-extern int database_p_jobacct_step_start(struct step_record *step_ptr)
+extern int storage_p_jobacct_step_start(struct step_record *step_ptr)
 {
 	return flatfile_jobacct_step_start(step_ptr);
 }
 
 /* 
- * load into the database the end of a job step
+ * load into the storage the end of a job step
  */
-extern int database_p_jobacct_step_complete(struct step_record *step_ptr)
+extern int storage_p_jobacct_step_complete(struct step_record *step_ptr)
 {
 	return flatfile_jobacct_step_complete(step_ptr);
 }
 
 /* 
- * load into the database a suspention of a job
+ * load into the storage a suspention of a job
  */
-extern int database_p_jobacct_suspend(struct job_record *job_ptr)
+extern int storage_p_jobacct_suspend(struct job_record *job_ptr)
 {
 	return flatfile_jobacct_suspend(job_ptr);
 }
 
 /* 
- * get info from the database 
+ * get info from the storage 
  * in/out job_list List of job_rec_t *
  * note List needs to be freed when called
  */
-extern void database_p_jobacct_get_jobs(List job_list, 
+extern void storage_p_jobacct_get_jobs(List job_list, 
 					List selected_steps,
 					List selected_parts,
 					void *params)
@@ -184,46 +184,46 @@ extern void database_p_jobacct_get_jobs(List job_list,
 }
 
 /* 
- * expire old info from the database 
+ * expire old info from the storage 
  */
-extern void database_p_jobacct_archive(List selected_parts,
+extern void storage_p_jobacct_archive(List selected_parts,
 				       void *params)
 {
 	flatfile_jobacct_archive(selected_parts, params);
 	return;
 }
 
-extern int database_p_jobcomp_init(char * location)
+extern int storage_p_jobcomp_init(char * location)
 {
 	return flatfile_jobcomp_init(location);
 }
 
-extern int database_p_jobcomp_fini()
+extern int storage_p_jobcomp_fini()
 {
 	return flatfile_jobcomp_fini();
 }
 
-extern int database_p_jobcomp_log_record(struct job_record *job_ptr)
+extern int storage_p_jobcomp_log_record(struct job_record *job_ptr)
 {
 	return flatfile_jobcomp_log_record(job_ptr);
 }
 
-extern int database_p_jobcomp_get_errno(void)
+extern int storage_p_jobcomp_get_errno(void)
 {
 	return flatfile_jobcomp_get_errno();
 }
 
-extern char *database_p_jobcomp_strerror(int errnum)
+extern char *storage_p_jobcomp_strerror(int errnum)
 {
 	return flatfile_jobcomp_strerror(errnum);
 }
 
 /* 
- * get info from the database 
+ * get info from the storage 
  * in/out job_list List of job_rec_t *
  * note List needs to be freed when called
  */
-extern void database_p_jobcomp_get_jobs(List job_list, 
+extern void storage_p_jobcomp_get_jobs(List job_list, 
 					List selected_steps,
 					List selected_parts,
 					void *params)
@@ -235,9 +235,9 @@ extern void database_p_jobcomp_get_jobs(List job_list,
 }
 
 /* 
- * expire old info from the database 
+ * expire old info from the storage 
  */
-extern void database_p_jobcomp_archive(List selected_parts, void *params)
+extern void storage_p_jobcomp_archive(List selected_parts, void *params)
 {
 	flatfile_jobcomp_archive(selected_parts, params);
 	return;

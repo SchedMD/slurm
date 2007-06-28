@@ -1,7 +1,7 @@
 /*****************************************************************************\
- *  flatfile_jobcomp_process.c - functions the processing of
- *                               information from the flatfile jobcomp
- *                               database.
+ *  script_jobcomp_process.c - functions the processing of
+ *                               information from the script jobcomp
+ *                               storage.
  *****************************************************************************
  *
  *  Copyright (C) 2004-2007 The Regents of the University of California.
@@ -45,7 +45,7 @@
 
 #include "src/common/xstring.h"
 #include "src/common/xmalloc.h"
-#include "flatfile_jobcomp_process.h"
+#include "script_jobcomp_process.h"
 /* Map field names to positions */
 
 /* slurmd uses "(uint32_t) -2" to track data for batch allocations
@@ -54,13 +54,13 @@
 typedef struct {
 	char *name;
 	char *val;
-} flatfile_jobcomp_info_t;
+} script_jobcomp_info_t;
 
 
-static void _destroy_flatfile_jobcomp_info(void *object)
+static void _destroy_script_jobcomp_info(void *object)
 {
-	flatfile_jobcomp_info_t *jobcomp_info =
-		(flatfile_jobcomp_info_t *)object;
+	script_jobcomp_info_t *jobcomp_info =
+		(script_jobcomp_info_t *)object;
 	if(jobcomp_info) {
 		xfree(jobcomp_info);
 	}
@@ -89,7 +89,7 @@ static FILE *_open_log_file(char *logfile)
 
 static void _do_fdump(List job_info_list, int lc)
 {
-	flatfile_jobcomp_info_t *jobcomp_info = NULL;
+	script_jobcomp_info_t *jobcomp_info = NULL;
 	ListIterator itr = list_iterator_create(job_info_list);
 
 	printf("\n------- Line %d -------\n", lc);
@@ -101,7 +101,7 @@ static void _do_fdump(List job_info_list, int lc)
 static jobcomp_job_rec_t *_parse_line(List job_info_list)
 {
 	ListIterator itr = NULL;
-	flatfile_jobcomp_info_t *jobcomp_info = NULL;
+	script_jobcomp_info_t *jobcomp_info = NULL;
 	jobcomp_job_rec_t *job = xmalloc(sizeof(jobcomp_job_rec_t));
 	char *temp = NULL;
 	char *temp2 = NULL;
@@ -180,7 +180,7 @@ static jobcomp_job_rec_t *_parse_line(List job_info_list)
 	return job;
 }
 
-extern void flatfile_jobcomp_process_get_jobs(List job_list, 
+extern void script_jobcomp_process_get_jobs(List job_list, 
 					      List selected_steps,
 					      List selected_parts,
 					      sacct_parameters_t *params)
@@ -196,7 +196,7 @@ extern void flatfile_jobcomp_process_get_jobs(List job_list,
 	char *selected_part = NULL;
 	ListIterator itr = NULL;
 	List job_info_list = NULL;
-	flatfile_jobcomp_info_t *jobcomp_info = NULL;
+	script_jobcomp_info_t *jobcomp_info = NULL;
 
 	fd = _open_log_file(params->opt_filein);
 	
@@ -208,10 +208,10 @@ extern void flatfile_jobcomp_process_get_jobs(List job_list,
 			list_destroy(job_info_list);
 		jobid = NULL;
 		partition = NULL;
-		job_info_list = list_create(_destroy_flatfile_jobcomp_info);
+		job_info_list = list_create(_destroy_script_jobcomp_info);
 		while(fptr) {
 			jobcomp_info =
-				xmalloc(sizeof(flatfile_jobcomp_info_t));
+				xmalloc(sizeof(script_jobcomp_info_t));
 			list_append(job_info_list, jobcomp_info);
 			jobcomp_info->name = fptr;
 			fptr = strstr(fptr, "=");
@@ -292,7 +292,7 @@ extern void flatfile_jobcomp_process_get_jobs(List job_list,
 	return;
 }
 
-extern void flatfile_jobcomp_process_archive(List selected_parts,
+extern void script_jobcomp_process_archive(List selected_parts,
 					     sacct_parameters_t *params)
 {
 	info("No code to archive jobcomp.");

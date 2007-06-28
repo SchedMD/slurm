@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  mysql_jobcomp.h - mysql database slurm job completion logging plugin.
+ *  mysql_jobcomp.h - mysql storage slurm job completion logging plugin.
  *****************************************************************************
  *  Copyright (C) 2003 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).

@@ -1,7 +1,7 @@
 /*****************************************************************************\
- *  flatfile_jobacct_process.c - functions the processing of
- *                               information from the flatfile jobacct
- *                               database.
+ *  script_jobacct_process.c - functions the processing of
+ *                               information from the script jobacct
+ *                               storage.
  *****************************************************************************
  *
  *  Copyright (C) 2004-2007 The Regents of the University of California.
@@ -760,7 +760,7 @@ finished:
 	jobacct_destroy_job(temp);
 }
 
-extern void flatfile_jobacct_process_get_jobs(List job_list, 
+extern void script_jobacct_process_get_jobs(List job_list, 
 					      List selected_steps,
 					      List selected_parts,
 					      sacct_parameters_t *params)
@@ -901,7 +901,7 @@ extern void flatfile_jobacct_process_get_jobs(List job_list,
 	return;
 }
 
-extern void flatfile_jobacct_process_archive(List selected_parts,
+extern void script_jobacct_process_archive(List selected_parts,
 					     sacct_parameters_t *params)
 {
 	char	line[BUFFER_SIZE],

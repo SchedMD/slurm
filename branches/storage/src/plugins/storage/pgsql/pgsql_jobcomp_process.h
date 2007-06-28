@@ -1,7 +1,7 @@
 /*****************************************************************************\
  *  pgsql_jobcomp_process.h - functions the processing of
  *                               information from the pgsql jobcomp
- *                               database.
+ *                               storage.
  *****************************************************************************
  *
  *  Copyright (C) 2004-2007 The Regents of the University of California.
@@ -57,7 +57,7 @@ extern char *jobcomp_table;
    the jobcomp_table_fields defined in mysql_jobcomp.c you must update
    this enum accordingly.
 */
-extern database_field_t jobcomp_table_fields[];
+extern storage_field_t jobcomp_table_fields[];
 enum {
 	JOBCOMP_REQ_JOBID,
 	JOBCOMP_REQ_UID,

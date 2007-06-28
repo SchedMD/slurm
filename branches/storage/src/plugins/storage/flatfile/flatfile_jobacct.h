@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  flatfile_jobacct.h - functions the flatfile jobacct database.
+ *  flatfile_jobacct.h - functions the flatfile jobacct storage.
  *****************************************************************************
  *
  *  Copyright (C) 2004-2007 The Regents of the University of California.

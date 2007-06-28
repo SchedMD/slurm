@@ -245,19 +245,19 @@ static void _layout_ctl_conf(GtkTreeStore *treestore,
 				   "ControlMachine", 
 				   slurm_ctl_conf_ptr->control_machine);
 	add_display_treestore_line(update, treestore, &iter, 
-				   "DatabaseType", 
-				   slurm_ctl_conf_ptr->database_type);
+				   "StorageType", 
+				   slurm_ctl_conf_ptr->storage_type);
 	add_display_treestore_line(update, treestore, &iter, 
-				   "DatabaseHost", 
-				   slurm_ctl_conf_ptr->database_host);
+				   "StorageHost", 
+				   slurm_ctl_conf_ptr->storage_host);
 	snprintf(temp_str, sizeof(temp_str), "%u", 
-		 slurm_ctl_conf_ptr->database_port);
+		 slurm_ctl_conf_ptr->storage_port);
 	add_display_treestore_line(update, treestore, &iter, 
-				   "DatabasePort", 
+				   "StoragePort", 
 				   temp_str);
 	add_display_treestore_line(update, treestore, &iter, 
-				   "DatabaseUser", 
-				   slurm_ctl_conf_ptr->database_user);
+				   "StorageUser", 
+				   slurm_ctl_conf_ptr->storage_user);
 	add_display_treestore_line(update, treestore, &iter, 
 				   "Epilog", 
 				   slurm_ctl_conf_ptr->epilog);

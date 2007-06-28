@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  jobcomp_database.c - text file slurm job completion logging plugin.
+ *  jobcomp_storage.c - text file slurm job completion logging plugin.
  *****************************************************************************
  *  Copyright (C) 2003 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -47,7 +47,7 @@
 #endif
 
 #include "src/slurmctld/slurmctld.h"
-#include "src/common/slurm_database.h"
+#include "src/common/slurm_storage.h"
 
 /*
  * These variables are required by the generic plugin interface.  If they
@@ -93,7 +93,7 @@ int init ( void )
 
 int fini ( void )
 {
-	return database_g_jobcomp_fini();
+	return storage_g_jobcomp_fini();
 }
 
 /*
@@ -103,21 +103,21 @@ int fini ( void )
 
 extern int slurm_jobcomp_set_location ( char * location )
 {
-	return database_g_jobcomp_init(location);
+	return storage_g_jobcomp_init(location);
 }
 
 extern int slurm_jobcomp_log_record ( struct job_record *job_ptr )
 {
-	return database_g_jobcomp_log_record(job_ptr);
+	return storage_g_jobcomp_log_record(job_ptr);
 }
 
 extern int slurm_jobcomp_get_errno( void )
 {
-	return database_g_jobcomp_get_errno();
+	return storage_g_jobcomp_get_errno();
 }
 
 extern char *slurm_jobcomp_strerror( int errnum )
 {
-	return database_g_jobcomp_strerror(errnum);
+	return storage_g_jobcomp_strerror(errnum);
 }
 

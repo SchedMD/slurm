@@ -1,7 +1,7 @@
 /*****************************************************************************\
- *  flatfile_jobcomp_process.h - functions the processing of
- *                               information from the flatfile jobcomp
- *                               database.
+ *  script_jobcomp_process.h - functions the processing of
+ *                               information from the script jobcomp
+ *                               storage.
  *****************************************************************************
  *
  *  Copyright (C) 2004-2007 The Regents of the University of California.
@@ -40,16 +40,16 @@
  *  Copyright (C) 2002 The Regents of the University of California.
 \*****************************************************************************/
 
-#ifndef _HAVE_FLATFILE_JOBCOMP_PROCESS_H
-#define _HAVE_FLATFILE_JOBCOMP_PROCESS_H
+#ifndef _HAVE_SCRIPT_JOBCOMP_PROCESS_H
+#define _HAVE_SCRIPT_JOBCOMP_PROCESS_H
 
 #include "src/sacct/sacct.h"
 
-extern void flatfile_jobcomp_process_get_jobs(List job_list, 
+extern void script_jobcomp_process_get_jobs(List job_list, 
 					      List selected_steps,
 					      List selected_parts,
 					      sacct_parameters_t *params);
-extern void flatfile_jobcomp_process_archive(List selected_parts,
+extern void script_jobcomp_process_archive(List selected_parts,
 					     sacct_parameters_t *params);
 
 #endif

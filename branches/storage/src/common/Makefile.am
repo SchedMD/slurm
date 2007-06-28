@@ -63,7 +63,7 @@ libcommon_la_SOURCES = 			\
 	slurm_auth.c slurm_auth.h	\
 	slurm_jobacct.c slurm_jobacct.h \
 	slurm_jobcomp.c slurm_jobcomp.h	\
-	slurm_database.c slurm_database.h \
+	slurm_storage.c slurm_storage.h \
 	switch.c switch.h		\
 	arg_desc.c arg_desc.h		\
 	macros.h			\

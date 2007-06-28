@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  mysql_jobacct.c - functions the mysql jobacct database.
+ *  mysql_jobacct.c - functions the mysql jobacct storage.
  *****************************************************************************
  *
  *  Copyright (C) 2004-2007 The Regents of the University of California.
@@ -54,7 +54,7 @@ char *rusage_table = "rusage_table";
 
 static int _mysql_jobacct_check_tables()
 {
-	database_field_t job_index_fields[] = {
+	storage_field_t job_index_fields[] = {
 		{ "id", "int not null auto_increment" },
 		{ "jobid ", "mediumint unsigned not null" },
 		{ "partition", "tinytext not null" },
@@ -65,7 +65,7 @@ static int _mysql_jobacct_check_tables()
 		{ NULL, NULL}		
 	};
 
-	database_field_t job_table_fields[] = {
+	storage_field_t job_table_fields[] = {
 		{ "id", "int not null" },
 		{ "start", "int unsigned default 0" },
 		{ "end", "int unsigned default 0" },
@@ -81,7 +81,7 @@ static int _mysql_jobacct_check_tables()
 		{ NULL, NULL}
 	};
 
-	database_field_t step_table_fields[] = {
+	storage_field_t step_table_fields[] = {
 		{ "id", "int not null" },
 		{ "stepid", "smallint not null" },
 		{ "start", "int unsigned default 0" },
@@ -112,7 +112,7 @@ static int _mysql_jobacct_check_tables()
 		{ NULL, NULL}
 	};
 
-	database_field_t step_rusage_fields[] = {
+	storage_field_t step_rusage_fields[] = {
 		{ "id", "int not null" },
 		{ "stepid", "smallint not null" },
 		{ "cpu_sec", "int unsigned default 0" },
@@ -199,7 +199,7 @@ extern int mysql_jobacct_init(char *location)
 
 	destroy_mysql_db_info(db_info);
 
-	debug("Jobacct database init finished");
+	debug("Jobacct storage init finished");
 
 	return rc;
 }
@@ -295,7 +295,7 @@ try_again:
 		rc = mysql_db_query(jobacct_mysql_db, jobacct_db_init, query);
 	} else if(!reinit) {
 		char *loc = slurm_get_jobacct_loc();
-		error("It looks like the database has gone "
+		error("It looks like the storage has gone "
 		      "away trying to reconnect");
 		mysql_jobacct_fini();
 		mysql_jobacct_init(loc);
@@ -633,7 +633,7 @@ extern int mysql_jobacct_suspend(struct job_record *job_ptr)
 }
 
 /* 
- * get info from the database 
+ * get info from the storage 
  * returns List of job_rec_t *
  * note List needs to be freed when called
  */
@@ -656,7 +656,7 @@ extern void mysql_jobacct_get_jobs(List job_list,
 }
 
 /* 
- * expire old info from the database 
+ * expire old info from the storage 
  */
 extern void mysql_jobacct_archive(List selected_parts, void *params)
 {

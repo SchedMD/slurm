@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  pgsql_common.c - common functions for the the pgsql database plugin.
+ *  pgsql_common.c - common functions for the the pgsql storage plugin.
  *****************************************************************************
  *
  *  Copyright (C) 2004-2007 The Regents of the University of California.
@@ -48,14 +48,14 @@ pthread_mutex_t pgsql_lock = PTHREAD_MUTEX_INITIALIZER;
 extern pgsql_db_info_t *create_pgsql_db_info()
 {
 	pgsql_db_info_t *db_info = xmalloc(sizeof(pgsql_db_info_t));
-	db_info->port = slurm_get_database_port();
+	db_info->port = slurm_get_storage_port();
 	/* it turns out it is better if using defaults to let postgres
 	   handle them on it's own terms */
 	if(!db_info->port)
 		db_info->port = 5432;
-	db_info->host = slurm_get_database_host();
-	db_info->user = slurm_get_database_user();	
-	db_info->pass = slurm_get_database_pass();	
+	db_info->host = slurm_get_storage_host();
+	db_info->user = slurm_get_storage_user();	
+	db_info->pass = slurm_get_storage_pass();	
 	return db_info;
 }
 
@@ -107,7 +107,7 @@ extern int pgsql_create_db(PGconn *pgsql_db, char *db_name,
 
 extern int pgsql_get_db_connection(PGconn **pgsql_db, char *db_name,
 				   pgsql_db_info_t *db_info,
-				   int *database_init)
+				   int *storage_init)
 {
 	int rc = SLURM_SUCCESS;
 	char *connect_line = xstrdup_printf("dbname = '%s'"
@@ -121,7 +121,7 @@ extern int pgsql_get_db_connection(PGconn **pgsql_db, char *db_name,
 					    db_info->user,
 					    db_info->pass);
 
-	while(!*database_init) {
+	while(!*storage_init) {
 		*pgsql_db = PQconnectdb(connect_line);
 		
 		if(PQstatus(*pgsql_db) != CONNECTION_OK) {
@@ -138,7 +138,7 @@ extern int pgsql_get_db_connection(PGconn **pgsql_db, char *db_name,
 			pgsql_create_db(*pgsql_db, db_name, db_info);
 			
 		} else {
-			*database_init = true;
+			*storage_init = true;
 			debug2("connected to %s", db_name);
 		} 
 	}
@@ -146,27 +146,27 @@ extern int pgsql_get_db_connection(PGconn **pgsql_db, char *db_name,
 	return rc;
 }
 
-extern int pgsql_db_query(PGconn *pgsql_db, int database_init, char *query)
+extern int pgsql_db_query(PGconn *pgsql_db, int storage_init, char *query)
 {
 	PGresult *result = NULL;
 	
-	if(!database_init)
-		fatal("You haven't inited this database yet.");
+	if(!storage_init)
+		fatal("You haven't inited this storage yet.");
 	
-	if(!(result = pgsql_db_query_ret(pgsql_db, database_init, query))) 
+	if(!(result = pgsql_db_query_ret(pgsql_db, storage_init, query))) 
 		return SLURM_ERROR;
 	
 	PQclear(result);
 	return SLURM_SUCCESS;
 }
 
-extern PGresult *pgsql_db_query_ret(PGconn *pgsql_db, int database_init,
+extern PGresult *pgsql_db_query_ret(PGconn *pgsql_db, int storage_init,
 				    char *query)
 {
 	PGresult *result = NULL;
 	
-	if(!database_init)
-		fatal("You haven't inited this database yet.");
+	if(!storage_init)
+		fatal("You haven't inited this storage yet.");
 
 	result = PQexec(pgsql_db, query);
 
@@ -181,19 +181,19 @@ extern PGresult *pgsql_db_query_ret(PGconn *pgsql_db, int database_init,
 	return result;
 }
 
-extern int pgsql_insert_ret_id(PGconn *pgsql_db, int database_init,
+extern int pgsql_insert_ret_id(PGconn *pgsql_db, int storage_init,
 			       char *sequence_name, char *query)
 {
 	int new_id = 0;
 	PGresult *result = NULL;
 
 	slurm_mutex_lock(&pgsql_lock);
-	if(pgsql_db_query(pgsql_db, database_init, query) != SLURM_ERROR)  {
+	if(pgsql_db_query(pgsql_db, storage_init, query) != SLURM_ERROR)  {
 		char *new_query = xstrdup_printf(
 			"select last_value from %s", sequence_name);
 		
 		if((result = pgsql_db_query_ret(pgsql_db,
-						database_init, new_query))) {
+						storage_init, new_query))) {
 			new_id = atoi(PQgetvalue(result, 0, 0));
 			PQclear(result);		
 		}
@@ -210,8 +210,8 @@ extern int pgsql_insert_ret_id(PGconn *pgsql_db, int database_init,
 	
 }
 
-extern int pgsql_db_create_table(PGconn *pgsql_db, int database_init, 
-				 char *table_name, database_field_t *fields,
+extern int pgsql_db_create_table(PGconn *pgsql_db, int storage_init, 
+				 char *table_name, storage_field_t *fields,
 				 char *ending)
 {
 	char *query = NULL;
@@ -236,7 +236,7 @@ extern int pgsql_db_create_table(PGconn *pgsql_db, int database_init,
 	xfree(tmp);
 	xstrcat(query, ending);
 
-	if(pgsql_db_query(pgsql_db, database_init, query) == SLURM_ERROR) {
+	if(pgsql_db_query(pgsql_db, storage_init, query) == SLURM_ERROR) {
 		xfree(query);
 		return SLURM_ERROR;
 	}

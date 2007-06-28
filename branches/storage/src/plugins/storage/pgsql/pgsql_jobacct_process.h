@@ -1,7 +1,7 @@
 /*****************************************************************************\
  *  pgsql_jobacct_process.h - functions the processing of
  *                               information from the pgsql jobacct
- *                               database.
+ *                               storage.
  *****************************************************************************
  *
  *  Copyright (C) 2004-2007 The Regents of the University of California.

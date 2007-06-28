@@ -1,7 +1,7 @@
 /*****************************************************************************\
  *  flatfile_jobacct_process.c - functions the processing of
  *                               information from the flatfile jobacct
- *                               database.
+ *                               storage.
  *****************************************************************************
  *
  *  Copyright (C) 2004-2007 The Regents of the University of California.

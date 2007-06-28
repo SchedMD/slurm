@@ -61,7 +61,7 @@ MYSQL *jobcomp_mysql_db = NULL;
 int jobcomp_db_init = 0;
 
 char *jobcomp_table = "jobcomp_table";
-database_field_t jobcomp_table_fields[] = {
+storage_field_t jobcomp_table_fields[] = {
 	{ "jobid", "int not null" },
 	{ "uid", "smallint unsigned not null" },
 	{ "user_name", "tinytext not null" },
@@ -305,7 +305,7 @@ extern char *mysql_jobcomp_strerror( int errnum )
 }
 
 /* 
- * get info from the database 
+ * get info from the storage 
  * in/out job_list List of job_rec_t *
  * note List needs to be freed when called
  */
@@ -320,7 +320,7 @@ extern void mysql_jobcomp_get_jobs(List job_list,
 }
 
 /* 
- * expire old info from the database 
+ * expire old info from the storage 
  */
 extern void mysql_jobcomp_archive(List selected_parts,
 				     void *params)

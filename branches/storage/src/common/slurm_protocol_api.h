@@ -176,35 +176,35 @@ uint16_t slurm_get_jobacct_freq(void);
  */
 char *slurm_get_jobacct_type(void);
 
-/* slurm_get_database_type
- * returns the database type from slurmctld_conf object
- * RET char *    - database type,  MUST be xfreed by caller
+/* slurm_get_storage_type
+ * returns the storage type from slurmctld_conf object
+ * RET char *    - storage type,  MUST be xfreed by caller
  */
-char *slurm_get_database_type(void);
+char *slurm_get_storage_type(void);
 
-/* slurm_get_database_user
- * returns the database user from slurmctld_conf object
- * RET char *    - database user,  MUST be xfreed by caller
+/* slurm_get_storage_user
+ * returns the storage user from slurmctld_conf object
+ * RET char *    - storage user,  MUST be xfreed by caller
  */
-char *slurm_get_database_user(void);
+char *slurm_get_storage_user(void);
 
-/* slurm_get_database_host
- * returns the database host from slurmctld_conf object
- * RET char *    - database host,  MUST be xfreed by caller
+/* slurm_get_storage_host
+ * returns the storage host from slurmctld_conf object
+ * RET char *    - storage host,  MUST be xfreed by caller
  */
-char *slurm_get_database_host(void);
+char *slurm_get_storage_host(void);
 
-/* slurm_get_database_pass
- * returns the database password from slurmctld_conf object
- * RET char *    - database password,  MUST be xfreed by caller
+/* slurm_get_storage_pass
+ * returns the storage password from slurmctld_conf object
+ * RET char *    - storage password,  MUST be xfreed by caller
  */
-char *slurm_get_database_pass(void);
+char *slurm_get_storage_pass(void);
 
-/* slurm_get_database_port
- * returns the database port from slurmctld_conf object
- * RET uint32_t   - database port
+/* slurm_get_storage_port
+ * returns the storage port from slurmctld_conf object
+ * RET uint32_t   - storage port
  */
-uint32_t slurm_get_database_port(void);
+uint32_t slurm_get_storage_port(void);
 
 /* slurm_get_jobcomp_type
  * returns the job completion logger type from slurmctld_conf object
