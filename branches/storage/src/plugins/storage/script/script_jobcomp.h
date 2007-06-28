@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  flatfile_jobcomp.h - text file slurm job completion logging plugin.
+ *  script_jobcomp.h - text file slurm job completion logging plugin.
  *****************************************************************************
  *  Copyright (C) 2003 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -35,20 +35,20 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef _FLATFILE_JOBCOMP_H_
-#define _FLATFILE_JOBCOMP_H_
+#ifndef _SCRIPT_JOBCOMP_H_
+#define _SCRIPT_JOBCOMP_H_
 
 #include "src/slurmctld/slurmctld.h"
 
-extern int flatfile_jobcomp_init(char * location);
-extern int flatfile_jobcomp_fini();
-extern int flatfile_jobcomp_get_errno();
-extern int flatfile_jobcomp_log_record(struct job_record *job_ptr);
-extern char *flatfile_jobcomp_strerror(int errnum);
-extern void flatfile_jobcomp_get_jobs(List job_list, 
+extern int script_jobcomp_init(char * location);
+extern int script_jobcomp_fini();
+extern int script_jobcomp_get_errno();
+extern int script_jobcomp_log_record(struct job_record *job_ptr);
+extern char *script_jobcomp_strerror(int errnum);
+extern void script_jobcomp_get_jobs(List job_list, 
 				      List selected_steps,
 				      List selected_parts,
 				      void *params);
-extern void flatfile_jobcomp_archive(List selected_parts, void *params);
+extern void script_jobcomp_archive(List selected_parts, void *params);
 
 #endif
