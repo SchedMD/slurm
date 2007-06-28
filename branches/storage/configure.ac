@@ -310,10 +310,10 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/task/Makefile
 		 src/plugins/task/affinity/Makefile
 		 src/plugins/task/none/Makefile
-		 src/plugins/database/Makefile
-		 src/plugins/database/flatfile/Makefile
-		 src/plugins/database/mysql/Makefile
-		 src/plugins/database/pgsql/Makefile
+		 src/plugins/storage/Makefile
+		 src/plugins/storage/flatfile/Makefile
+		 src/plugins/storage/mysql/Makefile
+		 src/plugins/storage/pgsql/Makefile
 		 doc/Makefile
 		 doc/man/Makefile
 		 doc/html/Makefile
