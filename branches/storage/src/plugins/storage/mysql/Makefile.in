@@ -14,7 +14,7 @@
 
 @SET_MAKE@
 
-# Makefile for database/mysql plugin
+# Makefile for storage/mysql plugin
 
 VPATH = @srcdir@
 pkgdatadir = $(datadir)/@PACKAGE@
@@ -74,15 +74,15 @@ am__strip_dir = `echo $$p | sed -e 's|^.*/||'`;
 am__installdirs = "$(DESTDIR)$(pkglibdir)"
 pkglibLTLIBRARIES_INSTALL = $(INSTALL)
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
-database_mysql_la_DEPENDENCIES =  \
+storage_mysql_la_DEPENDENCIES =  \
 	$(top_builddir)/src/common/libcommon.la
-am_database_mysql_la_OBJECTS = database_mysql.lo mysql_common.lo \
+am_storage_mysql_la_OBJECTS = storage_mysql.lo mysql_common.lo \
 	mysql_jobacct.lo mysql_jobcomp.lo mysql_jobacct_process.lo \
 	mysql_jobcomp_process.lo
-database_mysql_la_OBJECTS = $(am_database_mysql_la_OBJECTS)
-database_mysql_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
+storage_mysql_la_OBJECTS = $(am_storage_mysql_la_OBJECTS)
+storage_mysql_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
-	$(database_mysql_la_LDFLAGS) $(LDFLAGS) -o $@
+	$(storage_mysql_la_LDFLAGS) $(LDFLAGS) -o $@
 DEFAULT_INCLUDES = -I. -I$(top_builddir) -I$(top_builddir)/slurm@am__isrc@
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
 am__depfiles_maybe = depfiles
@@ -95,8 +95,8 @@ CCLD = $(CC)
 LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
-SOURCES = $(database_mysql_la_SOURCES)
-DIST_SOURCES = $(database_mysql_la_SOURCES)
+SOURCES = $(storage_mysql_la_SOURCES)
+DIST_SOURCES = $(storage_mysql_la_SOURCES)
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -262,18 +262,18 @@ top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
 PLUGIN_FLAGS = -module -avoid-version --export-dynamic $(MYSQL_LIBS)
 INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common
-pkglib_LTLIBRARIES = database_mysql.la
+pkglib_LTLIBRARIES = storage_mysql.la
 
-# Mysql database plugin.
-database_mysql_la_SOURCES = database_mysql.c \
+# Mysql storage plugin.
+storage_mysql_la_SOURCES = storage_mysql.c \
 		mysql_common.c mysql_common.h \
 		mysql_jobacct.c mysql_jobacct.h \
 		mysql_jobcomp.c mysql_jobcomp.h \
 		mysql_jobacct_process.c mysql_jobacct_process.h \
 		mysql_jobcomp_process.c mysql_jobcomp_process.h
 
-database_mysql_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
-database_mysql_la_LIBADD = $(top_builddir)/src/common/libcommon.la
+storage_mysql_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
+storage_mysql_la_LIBADD = $(top_builddir)/src/common/libcommon.la
 all: all-am
 
 .SUFFIXES:
@@ -334,8 +334,8 @@ clean-pkglibLTLIBRARIES:
 	  echo "rm -f \"$${dir}/so_locations\""; \
 	  rm -f "$${dir}/so_locations"; \
 	done
-database_mysql.la: $(database_mysql_la_OBJECTS) $(database_mysql_la_DEPENDENCIES) 
-	$(database_mysql_la_LINK) -rpath $(pkglibdir) $(database_mysql_la_OBJECTS) $(database_mysql_la_LIBADD) $(LIBS)
+storage_mysql.la: $(storage_mysql_la_OBJECTS) $(storage_mysql_la_DEPENDENCIES) 
+	$(storage_mysql_la_LINK) -rpath $(pkglibdir) $(storage_mysql_la_OBJECTS) $(storage_mysql_la_LIBADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -343,12 +343,12 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/database_mysql.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mysql_common.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mysql_jobacct.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mysql_jobacct_process.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mysql_jobcomp.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mysql_jobcomp_process.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/storage_mysql.Plo@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
