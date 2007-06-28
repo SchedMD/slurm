@@ -203,7 +203,7 @@ static char *	_get_node_state(struct node_record *node_ptr)
 	if (state & NODE_STATE_DRAIN)
 		return "Draining";
 	if (state & NODE_STATE_COMPLETING)
-		return "Running";
+		return "Busy";
 
 	if (base_state == NODE_STATE_DOWN)
 		return "Down";
@@ -212,5 +212,5 @@ static char *	_get_node_state(struct node_record *node_ptr)
 	if (base_state == NODE_STATE_IDLE)
 		return "Idle";
 	
-	return "Down";
+	return "Unknown";
 }
