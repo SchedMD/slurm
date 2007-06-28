@@ -394,7 +394,8 @@ _find_alias_node_record (char *name)
  * load_all_node_state - Load the node state from file, recover on slurmctld 
  *	restart. Execute this after loading the configuration file data.
  *	Data goes into common storage.
- * IN state_only - if true over-write only node state, features and reason
+ * IN state_only - if true, overwrite only node state, features and reason
+ *	Use this to overwrite the "UNKNOWN state typically used in slurm.conf
  * RET 0 or error code
  * NOTE: READ lock_slurmctld config before entry
  */
@@ -509,16 +510,21 @@ extern int load_all_node_state ( bool state_only )
 			xfree(features);
 			xfree(reason);
 		} else if (state_only) {
+			uint16_t orig_base, orig_flags;
+			orig_base  = node_ptr->node_state & NODE_STATE_BASE;
+			orig_flags = node_ptr->node_state & NODE_STATE_FLAGS;
 			node_cnt++;
-			if (node_ptr->node_state == NODE_STATE_UNKNOWN) {
+			if (orig_base == NODE_STATE_UNKNOWN) {
+				if (base_state == NODE_STATE_DOWN) {
+					node_ptr->node_state = NODE_STATE_DOWN
+						| orig_flags;
+				}
 				if (node_state & NODE_STATE_DRAIN)
-					 node_ptr->node_state =
+					 node_ptr->node_state |=
 						 NODE_STATE_DRAIN;
-				else if (node_state & NODE_STATE_FAIL)
-					node_ptr->node_state =
+				if (node_state & NODE_STATE_FAIL)
+					node_ptr->node_state |=
 						NODE_STATE_FAIL;
-				else if (base_state == NODE_STATE_DOWN)
-					node_ptr->node_state = NODE_STATE_DOWN;
 			}
 			if (node_ptr->reason == NULL)
 				node_ptr->reason = reason;
@@ -1500,7 +1506,7 @@ validate_node_specs (char *node_name, uint16_t cpus,
 			set_node_down(node_name, "Prolog failed");
 		}
 	} else {
-		if (node_ptr->node_state == NODE_STATE_UNKNOWN) {
+		if (base_state == NODE_STATE_UNKNOWN) {
 			last_node_update = time (NULL);
 			reset_job_priority();
 			debug("validate_node_specs: node %s has registered", 
