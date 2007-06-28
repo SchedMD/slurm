@@ -301,7 +301,7 @@ static int _state_str2int(const char *state_str)
 	}
 	if ((i >= NODE_STATE_END)
 	&&  (strncasecmp("DRAIN", state_str, 5) == 0))
-		state_val = NODE_STATE_IDLE | NODE_STATE_DRAIN;
+		state_val = NODE_STATE_UNKNOWN | NODE_STATE_DRAIN;
 	if (state_val == NO_VAL) {
 		error("invalid node state %s", state_str);
 		errno = EINVAL;
@@ -812,7 +812,8 @@ int read_slurm_conf(int recover)
 }
 
 
-/* Restore node state and size information from saved records */
+/* Restore node state and size information from saved records.
+ * If a node was re-configured to be down or drained, we set those states */
 static void _restore_node_state(struct node_record *old_node_table_ptr, 
 				int old_node_record_count)
 {
@@ -820,10 +821,23 @@ static void _restore_node_state(struct node_record *old_node_table_ptr,
 	int i;
 
 	for (i = 0; i < old_node_record_count; i++) {
+		uint16_t drain_flag = false, down_flag = false;
 		node_ptr  = find_node_record(old_node_table_ptr[i].name);
 		if (node_ptr == NULL)
 			continue;
-		node_ptr->node_state    = old_node_table_ptr[i].node_state;
+
+		if ((node_ptr->node_state & NODE_STATE_BASE) == NODE_STATE_DOWN)
+			down_flag = true;
+		if (node_ptr->node_state & NODE_STATE_DRAIN)
+			drain_flag = true;
+		node_ptr->node_state = old_node_table_ptr[i].node_state;
+		if (down_flag) {
+			node_ptr->node_state &= NODE_STATE_FLAGS;
+			node_ptr->node_state |= NODE_STATE_DOWN;
+		}
+		if (drain_flag)
+			node_ptr->node_state |= NODE_STATE_DRAIN; 
+			
 		node_ptr->last_response = old_node_table_ptr[i].last_response;
 		node_ptr->cpus          = old_node_table_ptr[i].cpus;
 		node_ptr->sockets       = old_node_table_ptr[i].sockets;
@@ -831,7 +845,7 @@ static void _restore_node_state(struct node_record *old_node_table_ptr,
 		node_ptr->threads       = old_node_table_ptr[i].threads;
 		node_ptr->real_memory   = old_node_table_ptr[i].real_memory;
 		node_ptr->tmp_disk      = old_node_table_ptr[i].tmp_disk;
-		if(node_ptr->reason == NULL) {
+		if (node_ptr->reason == NULL) {
 			/* Recover only if not explicitly set in slurm.conf */
 			node_ptr->reason	= old_node_table_ptr[i].reason;
 			old_node_table_ptr[i].reason = NULL;
