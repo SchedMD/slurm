@@ -99,6 +99,8 @@ To build and run on AIX:
 	%_enable_debug    "--enable-debug"
 	%with_ssl         "--with-ssl=/opt/freeware"
 	%with_munge       "--with-munge=/opt/freeware"
+   Log in to the machine "uP".  uP is currently the lowest-common-denominator
+     AIX machine.
    CC=/usr/bin/gcc build -s https://eris.llnl.gov/svn/slurm/tags/slurm-1-2-0-0-pre3
 4. export MP_RMLIB=./slurm_ll_api.so
    export CHECKPOINT=yes

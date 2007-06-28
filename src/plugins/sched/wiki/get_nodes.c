@@ -198,12 +198,12 @@ static char *	_dump_node(struct node_record *node_ptr, int state_info)
 static char *	_get_node_state(struct node_record *node_ptr)
 {
 	uint16_t state = node_ptr->node_state;
-	uint16_t base_state = state & (~NODE_STATE_FLAGS);
+	uint16_t base_state = state & NODE_STATE_BASE;
 
 	if (state & NODE_STATE_DRAIN)
 		return "Draining";
 	if (state & NODE_STATE_COMPLETING)
-		return "Running";
+		return "Busy";
 
 	if (base_state == NODE_STATE_DOWN)
 		return "Down";
@@ -212,5 +212,5 @@ static char *	_get_node_state(struct node_record *node_ptr)
 	if (base_state == NODE_STATE_IDLE)
 		return "Idle";
 	
-	return "Down";
+	return "Unknown";
 }
