@@ -752,7 +752,7 @@ Return values:
 @*/
 int PMI_Abort(int exit_code, const char error_msg[])
 {
-	if (pmi_debug) {
+	if ((pmi_debug) || (error_msg != NULL)) {
 		if (error_msg == NULL)
 			error_msg = "NULL";
 		fprintf(stderr, "In: PMI_Abort(%d, %s)\n", exit_code, error_msg);
