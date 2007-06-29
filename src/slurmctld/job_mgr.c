@@ -429,7 +429,9 @@ int load_all_job_state(void)
 		}
 	}
 	if (ver_str && (strcmp(ver_str, JOB_STATE_VERSION) != 0)) {
-		error("Can not recover job state, data version incompatable");
+		error("***********************************************");
+		error("Can not recover job state, incompatable version");
+		error("***********************************************");
 		xfree(ver_str);
 		free_buf(buffer);
 		return EFAULT;
