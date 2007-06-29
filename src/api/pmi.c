@@ -758,6 +758,10 @@ int PMI_Abort(int exit_code, const char error_msg[])
 		fprintf(stderr, "In: PMI_Abort(%d, %s)\n", exit_code, error_msg);
 	}
 
+	if (pmi_init) {
+		slurm_kill_job_step((uint32_t) pmi_jobid, (uint32_t) pmi_stepid,
+				SIG_KILL);
+	}
 	exit(exit_code);
 }
 
@@ -1661,14 +1665,17 @@ int PMI_Args_to_keyval(int *argcp, char *((*argvp)[]), PMI_keyval_t **keyvalp,
 
 	while (cnt) {
 		if (argv[i][0] == '-') {
-			temp[j].key = (char *) malloc((strlen(argv[i])+1) * sizeof (char));
+			temp[j].key = (char *) malloc((strlen(argv[i])+1) * 
+					sizeof (char));
 			if (temp[j].key == NULL)
 				return PMI_FAIL;
 			strcpy(temp[j].key, argv[i]);
 			++i;
 			--cnt;
 			if ((cnt) && (argv[i][0] != '-')){
-				temp[j].val = (char *) malloc((strlen(argv[i])+1) * sizeof (char));
+				temp[j].val = (char *) malloc(
+						(strlen(argv[i])+1) * 
+						sizeof (char));
 				if (temp[j].val == NULL)
 					return PMI_FAIL;
 				strcpy(temp[j].val, argv[i]);
