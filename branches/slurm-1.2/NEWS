@@ -4,7 +4,7 @@ documents those changes that are of interest to users and admins.
 * Changes in SLURM 1.2.12
 =========================
  -- Increase maximum message size from 1MB to 16MB, from Ernest Artiaga, BSC. 
- -- In PMI_Abort(), log the event.
+ -- In PMI_Abort(), log the event and abort the entire job step.
 
 * Changes in SLURM 1.2.11
 =========================
