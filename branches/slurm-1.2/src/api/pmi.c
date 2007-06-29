@@ -82,10 +82,12 @@
 #define _GNU_SOURCE
 
 #include <pthread.h>
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <slurm/pmi.h>
+#include <slurm/slurm.h>
 #include <slurm/slurm_errno.h>
 
 #include "src/api/slurm_pmi.h"
@@ -760,7 +762,7 @@ int PMI_Abort(int exit_code, const char error_msg[])
 
 	if (pmi_init) {
 		slurm_kill_job_step((uint32_t) pmi_jobid, (uint32_t) pmi_stepid,
-				SIG_KILL);
+				SIGKILL);
 	}
 	exit(exit_code);
 }
