@@ -31,8 +31,8 @@ documents those changes that are of interest to users and admins.
     based upon GNU make-3.81. Patch is in "etc/make.slurm.patch".
  -- Added '-b' option to sbatch for easy MOAB trasition to sbatch instead of
     srun.  Option does nothing in sbatch.
- -- Changed wiki2's handling of a node state in Completiting to return 'busy' 
-    instead of 'running' which is already there in slurm1.1
+ -- Changed wiki2's handling of a node state in Completing to return 'busy' 
+    instead of 'running' which matches slurm version 1.1
 
 * Changes in SLURM 1.2.10
 =========================
