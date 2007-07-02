@@ -1483,14 +1483,14 @@ static int _parse_single_range(const char *str, struct _range *range)
 	if (!orig) 
 		seterrno_ret(ENOMEM, 0);
 	
+	if ((p = strchr(str, 'x'))) {
+		goto error; /* do NOT allow boxes in here */
+	}
+
 	if ((p = strchr(str, '-'))) {
 		*p++ = '\0';
 		if (*p == '-')     /* do NOT allow negative numbers */
 			goto error;
-	}
-
-	if ((p = strchr(str, 'x'))) {
-		goto error; /* do NOT allow boxes in here */
 	}
 
 	range->lo = strtoul(str, &q, HOSTLIST_BASE);
