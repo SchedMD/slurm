@@ -133,7 +133,6 @@ static pthread_mutex_t kvs_mutex = PTHREAD_MUTEX_INITIALIZER;
 int kvs_rec_cnt = 0;
 struct kvs_rec *kvs_recs;
 int kvs_name_sequence = 0;
-struct slurmd_task_info_t *task;
 
 static char *pmi_opt_str =
   "pmi command line options \n"
@@ -741,7 +740,7 @@ mechanisms.
 int PMI_Get_clique_ranks( char ranks[], int length )
 {
 	char *env;
-	int i;
+
 	if (pmi_debug)
 		fprintf(stderr, "In: PMI_Get_clique_ranks\n");
 
@@ -749,7 +748,7 @@ int PMI_Get_clique_ranks( char ranks[], int length )
 		return PMI_ERR_INVALID_ARG;
 
 	env = getenv("SLURM_GTIDS");
-	if (env){
+	if (env) {
 		strcpy(ranks, env);
 		return PMI_SUCCESS;
 	}

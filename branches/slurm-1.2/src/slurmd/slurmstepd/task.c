@@ -286,7 +286,7 @@ void
 exec_task(slurmd_job_t *job, int i, int waitfd)
 {
 	char c;
-	int	*gtids;			/* pointer to arrary of ranks */
+	uint32_t *gtids;		/* pointer to arrary of ranks */
 	int j;
 	int rc;
 	slurmd_task_info_t *task = job->task[i];
@@ -310,13 +310,11 @@ exec_task(slurmd_job_t *job, int i, int waitfd)
 	}
 	close(waitfd);
 
-	gtids = xmalloc(job->ntasks * sizeof(int));
-	for(j = 0; j < job->ntasks; j++){
+	gtids = xmalloc(job->ntasks * sizeof(uint32_t));
+	for (j = 0; j < job->ntasks; j++)
 		gtids[j] = job->task[j]->gtid;
-	}
-	job->envtp->sgtids = _uint32_array_to_str(job->ntasks, (uint32_t *)gtids);
-	if(gtids)
-		xfree(gtids);
+	job->envtp->sgtids = _uint32_array_to_str(job->ntasks, gtids);
+	xfree(gtids);
 
 	job->envtp->jobid = job->jobid;
 	job->envtp->stepid = job->stepid;
