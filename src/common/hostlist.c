@@ -1489,13 +1489,17 @@ static int _parse_single_range(const char *str, struct _range *range)
 			goto error;
 	}
 
+	if ((p = strchr(str, 'x'))) {
+		goto error; /* do NOT allow boxes in here */
+	}
+
 	range->lo = strtoul(str, &q, HOSTLIST_BASE);
 
 	if (q == str) 
 		goto error;
 	
 	range->hi = (p && *p) ? strtoul(p, &q, HOSTLIST_BASE) : range->lo;
-		
+
 	if (q == p || *q != '\0') 
 		goto error;
 	
@@ -1586,6 +1590,7 @@ static int _parse_range_list(char *str, struct _range *ranges, int len)
 			return -1;
 		if ((p = strchr(str, ',')))
 			*p++ = '\0';
+
 		if ((str[3] == 'x') && (strlen(str) == 7)) {
 			if (!_parse_box_range(str, ranges, len, &count)) 
 				return -1;  
