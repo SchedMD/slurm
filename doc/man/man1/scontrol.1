@@ -451,9 +451,9 @@ Specify if only allocation requests initiated by user root will be satisfied.
 This can be used to restrict control of the partition to some meta\-scheduler. 
 Possible values are"YES" and "NO".
 .TP
-\fIShared\fP=<yes|no|force>
+\fIShared\fP=<yes|no|exclusive|force>
 Specify if nodes in this partition can be shared by multiple jobs. 
-Possible values are"YES", "NO" and "FORCE".
+Possible values are"YES", "NO", "EXCLUSIVE" and "FORCE".
 .TP
 \fIState\fP=<up|down>
 Specify if jobs can be allocated nodes in this partition. 

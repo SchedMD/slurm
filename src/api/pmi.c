@@ -82,15 +82,18 @@
 #define _GNU_SOURCE
 
 #include <pthread.h>
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <slurm/pmi.h>
+#include <slurm/slurm.h>
 #include <slurm/slurm_errno.h>
 
 #include "src/api/slurm_pmi.h"
 #include "src/common/macros.h"
 #include "src/common/malloc.h"
+#include "src/slurmd/slurmstepd/slurmstepd_job.h"
 
 #define KVS_STATE_LOCAL    0
 #define KVS_STATE_DEFUNCT  1
@@ -695,13 +698,19 @@ mechanisms (e.g., shared memory) and other network mechanisms.
 @*/
 int PMI_Get_clique_size( int *size )
 {
+	char *env;
+
 	if (pmi_debug)
-		fprintf(stderr, "In: PMI_Get_clique_size - NOT SUPPORTED\n");
+		fprintf(stderr, "In: PMI_Get_clique_size\n");
 
 	if (size == NULL)
 		return PMI_ERR_INVALID_ARG;
 
-	/* FIXME */
+	env = getenv("SLURM_CPUS_ON_NODE");
+	if (env) {
+		*size = atoi(env);
+		return PMI_SUCCESS;
+	}
 	return PMI_FAIL;
 }
 
@@ -728,15 +737,22 @@ communicate through IPC mechanisms (e.g., shared memory) and other network
 mechanisms.
 
 @*/
-int PMI_Get_clique_ranks( int ranks[], int length )
+int PMI_Get_clique_ranks( char ranks[], int length )
 {
+	char *env;
+
 	if (pmi_debug)
-		fprintf(stderr, "In: PMI_Get_clique_ranks - NOT SUPPORTED\n");
+		fprintf(stderr, "In: PMI_Get_clique_ranks\n");
 
 	if (ranks == NULL)
 		return PMI_ERR_INVALID_ARG;
 
-	/* FIXME */
+	env = getenv("SLURM_GTIDS");
+	if (env) {
+		strcpy(ranks, env);
+		return PMI_SUCCESS;
+	}
+
 	return PMI_FAIL;
 }
 
@@ -752,12 +768,16 @@ Return values:
 @*/
 int PMI_Abort(int exit_code, const char error_msg[])
 {
-	if (pmi_debug) {
+	if ((pmi_debug) || (error_msg != NULL)) {
 		if (error_msg == NULL)
 			error_msg = "NULL";
 		fprintf(stderr, "In: PMI_Abort(%d, %s)\n", exit_code, error_msg);
 	}
 
+	if (pmi_init) {
+		slurm_kill_job_step((uint32_t) pmi_jobid, (uint32_t) pmi_stepid,
+				SIGKILL);
+	}
 	exit(exit_code);
 }
 
@@ -1661,14 +1681,17 @@ int PMI_Args_to_keyval(int *argcp, char *((*argvp)[]), PMI_keyval_t **keyvalp,
 
 	while (cnt) {
 		if (argv[i][0] == '-') {
-			temp[j].key = (char *) malloc((strlen(argv[i])+1) * sizeof (char));
+			temp[j].key = (char *) malloc((strlen(argv[i])+1) * 
+					sizeof (char));
 			if (temp[j].key == NULL)
 				return PMI_FAIL;
 			strcpy(temp[j].key, argv[i]);
 			++i;
 			--cnt;
 			if ((cnt) && (argv[i][0] != '-')){
-				temp[j].val = (char *) malloc((strlen(argv[i])+1) * sizeof (char));
+				temp[j].val = (char *) malloc(
+						(strlen(argv[i])+1) * 
+						sizeof (char));
 				if (temp[j].val == NULL)
 					return PMI_FAIL;
 				strcpy(temp[j].val, argv[i]);

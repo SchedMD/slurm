@@ -602,6 +602,12 @@ int setup_env(env_t *env)
 		setenvf (&env->env, "SLURM_LAUNCH_NODE_IPADDR", "%s", addrbuf);
 	}
 
+	if (env->sgtids
+	   && setenvf(&env->env, "SLURM_GTIDS", "%s", env->sgtids)) {
+		error("Unable to set SLURM_GTIDS environment variable");
+		rc = SLURM_FAILURE;
+	} 
+	
 #ifdef HAVE_AIX
 	{
 		char res_env[128];

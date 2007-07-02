@@ -392,10 +392,13 @@ _resolve_shared_status(uint16_t user_flag, uint16_t part_enum,
 	if (cons_res_flag) {
 		/*
 		 * Consumable resources will always share nodes by default,
-		 * the user has to explicitly disable sharing to
+		 * the partition or user has to explicitly disable sharing to
 		 * get exclusive nodes.
 		 */
-		shared = (user_flag == 0) ? 0 : 1;
+		if ((part_enum == SHARED_EXCLUSIVE) || (user_flag == 0))
+			shared = 0;
+		else
+			shared = 1;
 	} else {
 		/* The partition sharing option is only used if
 		 * the consumable resources plugin is NOT in use.

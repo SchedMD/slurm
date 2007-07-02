@@ -92,6 +92,7 @@ static void  _make_tmpdir(slurmd_job_t *job);
 static int   _run_script_and_set_env(const char *name, const char *path, 
 				     slurmd_job_t *job);
 static void  _update_env(char *buf, char ***env);
+static char *_uint32_array_to_str(int array_len, const uint32_t *array);
 
 /* Search for "export NAME=value" records in buf and 
  * use them to add environment variables to env */
@@ -285,6 +286,8 @@ void
 exec_task(slurmd_job_t *job, int i, int waitfd)
 {
 	char c;
+	uint32_t *gtids;		/* pointer to arrary of ranks */
+	int j;
 	int rc;
 	slurmd_task_info_t *task = job->task[i];
 
@@ -306,6 +309,12 @@ exec_task(slurmd_job_t *job, int i, int waitfd)
 		exit(1);
 	}
 	close(waitfd);
+
+	gtids = xmalloc(job->ntasks * sizeof(uint32_t));
+	for (j = 0; j < job->ntasks; j++)
+		gtids[j] = job->task[j]->gtid;
+	job->envtp->sgtids = _uint32_array_to_str(job->ntasks, gtids);
+	xfree(gtids);
 
 	job->envtp->jobid = job->jobid;
 	job->envtp->stepid = job->stepid;
@@ -405,3 +414,31 @@ _make_tmpdir(slurmd_job_t *job)
 
 	return;
 }
+
+/*
+ * Return a string representation of an array of uint32_t elements.
+ * Each value in the array is printed in decimal notation and elements
+ * are seperated by a comma.  
+ * 
+ * Returns an xmalloc'ed string.  Free with xfree().
+ */
+static char *_uint32_array_to_str(int array_len, const uint32_t *array)
+{
+	int i;
+	char *sep = ",";  /* seperator */
+	char *str = xstrdup("");
+
+	if(array == NULL)
+		return str;
+
+	for (i = 0; i < array_len; i++) {
+  
+		if (i == array_len-1) /* last time through loop */
+			sep = "";
+		xstrfmtcat(str, "%u%s", array[i], sep);
+	}
+	
+	return str;
+}
+
+

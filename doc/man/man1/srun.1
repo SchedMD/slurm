@@ -1,6 +1,6 @@
 \." $Id$
 .\"
-.TH SRUN "1" "May 2007" "srun 1.2" "slurm components"
+.TH SRUN "1" "July 2007" "srun 1.2" "slurm components"
 
 .SH "NAME"
 srun \- run parallel jobs
@@ -1151,6 +1151,11 @@ jobs, so the value indicates the total count of CPUs on the node.
 The select/cons_res plugin allocates individual processors 
 to jobs, so this number indicates the number of processors 
 on this node allocated to the job.
+
+.TP
+\fBSLURM_GTIDS\fR
+Global task IDs running on this node.
+Zero origin and comma separated.
 
 .TP
 \fBSLURM_JOBID\fR

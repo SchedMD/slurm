@@ -450,7 +450,7 @@ int load_all_part_state(void)
 		/* validity test as possible */
 		if ((def_part_flag > 1) ||
 		    (root_only > 1) || (hidden > 1) ||
-		    (shared > SHARED_FORCE) || (state_up > 1)) {
+		    (shared > SHARED_EXCLUSIVE) || (state_up > 1)) {
 			error("Invalid data for partition %s: def_part_flag=%u, "
 				"hidden=%u root_only=%u, shared=%u, state_up=%u",
 				part_name, def_part_flag, hidden, root_only, shared,

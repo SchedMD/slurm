@@ -241,8 +241,7 @@ struct part_record {
 	uint32_t max_offset;	/* select plugin max offset */
 	uint16_t root_only;	/* 1 if allocate/submit RPC can only be 
 				   issued by user root */
-	uint16_t shared;	/* 1 if job can share a node,
-				   2 if sharing required */
+	uint16_t shared;	/* See part_shared in slurm.h */
 	uint16_t state_up;	/* 1 if state is up, 0 if down */
 	char *nodes;		/* comma delimited list names of nodes */
 	char *allow_groups;	/* comma delimited list of groups, 
