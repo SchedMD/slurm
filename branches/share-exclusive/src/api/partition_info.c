@@ -141,6 +141,8 @@ char *slurm_sprint_partition_info ( partition_info_t * part_ptr,
 		sprintf(tmp_line, "Shared=NO ");
 	else if (part_ptr->shared == SHARED_YES)
 		sprintf(tmp_line, "Shared=YES ");
+	else if (part_ptr->shared == SHARED_EXCLUSIVE)
+		sprintf(tmp_line, "Shared=EXCLUSIVE ");
 	else
 		sprintf(tmp_line, "Shared=FORCE ");
 	xstrcat(out, tmp_line);
