@@ -1,4 +1,4 @@
-.TH SINFO "1" "May 2007" "sinfo 1.2" "Slurm components"
+.TH SINFO "1" "July 2007" "sinfo 1.2" "Slurm components"
 
 .SH "NAME"
 sinfo \- view information about SLURM nodes and partitions.
@@ -329,9 +329,13 @@ restricted to user root, \fByes\fR or \fBno\fR.
 .TP
 \fBSHARE\fR
 Will jobs allocated resources in this partition share those
-resources.  \fBno\fR indicates resources are never shared.
-\fBforce\fR indicates resources are always available to be
-shared.  \fByes\fR indicates resource may be shared or not
+resources.  
+\fBno\fR indicates resources are never shared.
+\fBexclusive\fR indicates whole nodes are dedicated to jobs
+(equivalent to srun \-\-exclusive option, may be used even 
+with shared/cons_res managing individual processors).
+\fBforce\fR indicates resources are always available to be shared.  
+\fByes\fR indicates resource may be shared or not
 per job's resource allocation.
 .TP
 \fBSTATE\fR

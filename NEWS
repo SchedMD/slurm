@@ -9,6 +9,8 @@ documents those changes that are of interest to users and admins.
     PMI_Get_clique_size (from Chuck Clouston, Bull).
  -- Report an error when a hostlist comes in appearing to be a box but not 
     formatted in XYZxXYZ format.
+ -- Add support for partition configuration "Shared=exclusive". This is 
+    equivalent to "srun --exclusive" when select/cons_res is configured.
 
 * Changes in SLURM 1.2.11
 =========================

@@ -77,12 +77,6 @@ enum task_flag_vals {
 	TASK_UNUSED2 = 0x4
 };
 
-enum part_shared {
-	SHARED_NO,		/* Nodes never shared in partition */
-	SHARED_YES,		/* Nodes possible to share in partition */
-	SHARED_FORCE		/* Nodes always shares in partition */
-};
-
 enum suspend_opts {
 	SUSPEND_JOB,		/* Suspend a job now */
 	RESUME_JOB		/* Resume a job now */

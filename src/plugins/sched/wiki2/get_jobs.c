@@ -351,13 +351,15 @@ static void	_get_job_comment(struct job_record *job_ptr,
 		cr_test = 1;
 	}
 	if (cr_enabled)	{			/* consumable resources */
-		if (job_ptr->details && (job_ptr->details->shared != 0))
+		if (job_ptr->part_ptr->shared == SHARED_EXCLUSIVE)
+			sharing = 0;
+		else if (job_ptr->details && (job_ptr->details->shared != 0))
 			sharing = 1;
 	} else if (job_ptr->part_ptr) {			/* partition with */
-		if (job_ptr->part_ptr->shared == 2)	/* forced sharing */
+		if (job_ptr->part_ptr->shared == SHARED_FORCE)
 			sharing = 1;
-		if ((job_ptr->part_ptr->shared == 1)	/* optional sharing */
-		&&  (job_ptr->details)
+		else if ((job_ptr->part_ptr->shared == SHARED_YES)
+		&&  (job_ptr->details)			/* optional for partition */
 		&&  (job_ptr->details->shared))		/* with job to share */
 			sharing = 1;
 	}

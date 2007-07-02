@@ -1,5 +1,5 @@
 <!--
-Copyright (C) 2005-2006 The Regents of the University of California.
+Copyright (C) 2005-2007 The Regents of the University of California.
 Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 Written by Morris Jette <jette1@llnl.gov> and Danny Auble <da@llnl.gov>
 
@@ -451,8 +451,7 @@ individual processors and memory<BR>
 	when CR_CPU or CR_CPU_MEMORY is selected. 
 	They are considered to compute the total number of 
 	tasks when -n is not specified
-    <DD> Note: All CR_s assume Shared=No or Shared=Force EXCEPT for 
-	CR_MEMORY which assumes Shared=Yes
+    <DD> Note: CR_MEMORY assumes Shared=Yes
 <DT> <input type="radio" name="cons_res_params" value="CR_CPU" checked
 	    onClick="javascript:set_select_type(this, 'cons_res')">
     <B>CR_CPU</B>: (default)
@@ -644,6 +643,6 @@ before terminating all remaining tasks. A value of zero indicates unlimited wait
 </FORM>
 <HR>
 <p class="footer">UCRL-WEB-225274<br>
-Last modified 17 May 2007</p>
+Last modified 2 July 2007</p>
 </BODY>
 
