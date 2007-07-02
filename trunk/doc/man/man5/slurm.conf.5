@@ -1,4 +1,4 @@
-.TH "slurm.conf" "5" "June 2007" "slurm.conf 1.3" "Slurm configuration file"
+.TH "slurm.conf" "5" "July 2007" "slurm.conf 1.3" "Slurm configuration file"
 .SH "NAME"
 slurm.conf \- Slurm configuration file 
 .SH "DESCRIPTION"
@@ -547,9 +547,9 @@ This is the default value for non\-BlueGene systems.
 \fBselect/cons_res\fR
 The resources within a node are individually allocated as
 consumable resources. 
-Implies \fIShared=No\fR or \fIShared=Force\fR for all partitions 
-except as noted below. 
-\fBSelectTypeParameters\fR for more information.
+Note that whole nodes can be allocated to jobs for selected 
+partitions by using the \fIShared=EXCLUSIVE\fR option.
+See the partition \fBShared\fR parameter for more information.
 .TP
 \fBselect/bluegene\fR
 for a three\-dimentional BlueGene system. 
@@ -1244,7 +1244,11 @@ Ability of the partition to execute more than one job at a
 time on each node. Shared nodes will offer unpredictable performance 
 for application programs, but can provide higher system utilization 
 and responsiveness than otherwise possible. 
-Possible values are "FORCE", "YES", and "NO".
+Possible values are "EXCLUSIVE", "FORCE", "YES", and "NO".
+"EXCLUSIVE" allocates entire nodes to jobs even with 
+select/cons_res configured.
+This can be used to allocate whole nodes in some partitions 
+and individual processors in other partitions. 
 "FORCE" makes all nodes in the partition available for sharing 
 without user means of disabling it.
 "YES" makes nodes in the partition available for sharing if and 

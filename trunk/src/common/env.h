@@ -69,6 +69,7 @@ typedef struct env_options {
 	int ntasks_per_core;	/* --ntasks-per-core=n		*/
 	int cpus_on_node;
 	pid_t task_pid;
+	char *sgtids;		/* global ranks array of integers */	
 } env_t;
 
 

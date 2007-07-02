@@ -136,6 +136,8 @@ scontrol_update_part (int argc, char *argv[])
 				part_msg.shared = SHARED_NO;
 			else if (strcasecmp(&argv[i][7], "YES") == 0)
 				part_msg.shared = SHARED_YES;
+			else if (strcasecmp(&argv[i][7], "EXCLUSIVE") == 0)
+				part_msg.shared = SHARED_EXCLUSIVE;
 			else if (strcasecmp(&argv[i][7], "FORCE") == 0)
 				part_msg.shared = SHARED_FORCE;
 			else {

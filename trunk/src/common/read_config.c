@@ -532,6 +532,8 @@ static int parse_partitionname(void **dest, slurm_parser_enum_t type,
 			/* Only "Shared=NO" is valid on XCPU systems */
 			else if (strcasecmp(tmp, "YES") == 0)
 				p->shared = SHARED_YES;
+			else if (strcasecmp(tmp, "EXCLUSIVE") == 0)
+				p->shared = SHARED_EXCLUSIVE;
 			else if (strcasecmp(tmp, "FORCE") == 0)
 				p->shared = SHARED_FORCE;
 #endif
