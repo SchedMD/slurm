@@ -7,6 +7,8 @@ documents those changes that are of interest to users and admins.
  -- In PMI_Abort(), log the event and abort the entire job step.
  -- Add support for additional PMI functions: PMI_Get_clique_ranks and 
     PMI_Get_clique_size (from Chuck Clouston, Bull).
+ -- Report an error when a hostlist comes in appearing to be a box but not 
+    formatted in XYZxXYZ format.
 
 * Changes in SLURM 1.2.11
 =========================
