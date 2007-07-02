@@ -5,6 +5,8 @@ documents those changes that are of interest to users and admins.
 =========================
  -- Increase maximum message size from 1MB to 16MB, from Ernest Artiaga, BSC. 
  -- In PMI_Abort(), log the event and abort the entire job step.
+ -- Add support for additional PMI functions: PMI_Get_clique_ranks and 
+    PMI_Get_clique_size (from Chuck Clouston, Bull).
 
 * Changes in SLURM 1.2.11
 =========================
