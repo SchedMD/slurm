@@ -11,6 +11,8 @@ documents those changes that are of interest to users and admins.
     formatted in XYZxXYZ format.
  -- Add support for partition configuration "Shared=exclusive". This is 
     equivalent to "srun --exclusive" when select/cons_res is configured.
+ -- In sched/wiki2, report the reason for a node being unavailable for the 
+    GETNODES command using the CAT="<reason>" field
 
 * Changes in SLURM 1.2.11
 =========================
