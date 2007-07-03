@@ -217,7 +217,7 @@ void *agent(void *args)
 	/* info("I am here and agent_cnt is %d of %d with type %d", */
 /* 	     agent_cnt, MAX_AGENT_CNT, agent_arg_ptr->msg_type); */
 	slurm_mutex_lock(&agent_cnt_mutex);
-	while (1) {
+	while (slurmctld_config.shutdown_time == 0) {
 		if (agent_cnt < MAX_AGENT_CNT) {
 			agent_cnt++;
 			break;
@@ -226,6 +226,8 @@ void *agent(void *args)
 		}
 	}
 	slurm_mutex_unlock(&agent_cnt_mutex);
+	if (slurmctld_config.shutdown_time)
+		return NULL;
 	
 	/* basic argument value tests */
 	begin_time = time(NULL);

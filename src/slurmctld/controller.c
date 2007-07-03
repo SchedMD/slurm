@@ -391,18 +391,19 @@ int main(int argc, char *argv[])
 {
 	/* This should purge all allocated memory,   *\
 	\*   Anything left over represents a leak.   */
-	int i;
+	int i, cnt;
 
-	/* Give running agents a chance to complete and purge */
-	sleep(1);
-	agent_purge();
-	for (i=0; i<4; i++) {
-		if (get_agent_count() == 0)
-			break;
-		sleep(5);
+	/* Give running agents a chance to complete and free memory.
+	 * Wait up to 30 seconds (3 seconds * 10) */
+	for (i=0; i<10; i++) {
 		agent_purge();
+		sleep(3);
+		cnt = get_agent_count();
+		if (cnt == 0)
+			break;
 	}
-	
+	if (i >= 10)
+		error("Left %d agent threads active", cnt);
 
 	/* Purge our local data structures */
 	job_fini();
