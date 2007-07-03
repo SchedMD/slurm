@@ -37,8 +37,10 @@ subdir = .
 DIST_COMMON = README $(am__configure_deps) $(pkginclude_HEADERS) \
 	$(srcdir)/Makefile.am $(srcdir)/Makefile.in \
 	$(srcdir)/config.h.in $(srcdir)/config.xml.in \
-	$(top_srcdir)/configure $(top_srcdir)/slurm/slurm.h.in AUTHORS \
-	COPYING ChangeLog INSTALL NEWS
+	$(top_srcdir)/configure \
+	$(top_srcdir)/contribs/perlapi/libslurm-perl/Makefile.PL.in \
+	$(top_srcdir)/slurm/slurm.h.in AUTHORS COPYING ChangeLog \
+	INSTALL NEWS
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/auxdir/acx_pthread.m4 \
 	$(top_srcdir)/auxdir/slurm.m4 \
@@ -67,7 +69,8 @@ am__CONFIG_DISTCLEAN_FILES = config.status config.cache config.log \
  configure.lineno config.status.lineno
 mkinstalldirs = $(install_sh) -d
 CONFIG_HEADER = config.h $(top_builddir)/slurm/slurm.h
-CONFIG_CLEAN_FILES = config.xml
+CONFIG_CLEAN_FILES = config.xml \
+	contribs/perlapi/libslurm-perl/Makefile.PL
 SOURCES =
 DIST_SOURCES =
 RECURSIVE_TARGETS = all-recursive check-recursive dvi-recursive \
@@ -259,7 +262,7 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
 ACLOCAL_AMFLAGS = -I auxdir
-SUBDIRS = auxdir src testsuite doc 
+SUBDIRS = auxdir src testsuite doc
 EXTRA_DIST = \
 	etc/bluegene.conf.example \
 	etc/federation.conf.example \
@@ -361,6 +364,8 @@ slurm/stamp-h2: $(top_srcdir)/slurm/slurm.h.in $(top_builddir)/config.status
 distclean-hdr:
 	-rm -f config.h stamp-h1 slurm/slurm.h slurm/stamp-h2
 config.xml: $(top_builddir)/config.status $(srcdir)/config.xml.in
+	cd $(top_builddir) && $(SHELL) ./config.status $@
+contribs/perlapi/libslurm-perl/Makefile.PL: $(top_builddir)/config.status $(top_srcdir)/contribs/perlapi/libslurm-perl/Makefile.PL.in
 	cd $(top_builddir) && $(SHELL) ./config.status $@
 
 mostlyclean-libtool:
@@ -785,6 +790,16 @@ mrproper: distclean-local clean
 	-(cd $(top_srcdir)/slurm  && rm -rf stamp-h2 slurm.h)
 	-find $(top_srcdir)/src -name "Makefile" -exec rm {} \;
 	-find $(top_srcdir) -depth -name ".deps" -exec rm -rf {} \;
+
+contrib:
+	@cd contribs && \
+	$(MAKE) && \
+	cd ..;
+
+install-contrib:
+	@cd contribs && \
+	$(MAKE) DESTDIR=$(DESTDIR) install && \
+	cd ..;
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.
 .NOEXPORT:

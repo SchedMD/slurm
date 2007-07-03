@@ -48,6 +48,12 @@ BuildRequires: openssl-devel >= 0.9.6 munge-libs munge-devel proctrack >= 3
 %{!?_slurm_sysconfdir: %define _slurm_sysconfdir /etc/slurm}
 %define _sysconfdir %_slurm_sysconfdir
 
+%define _perldir %(perl -e 'use Config; $T=$Config{installsitearch}; print $T;')
+%package contrib
+Summary: Contributions for further enhancement of SLURM.
+Group: Development/System
+Requires: slurm
+
 %package devel
 Summary: Development package for SLURM.
 Group: Development/System
@@ -93,6 +99,10 @@ SLURM is an open source, fault-tolerant, and highly
 scalable cluster management and job scheduling system for Linux clusters
 containing up to thousands of nodes. Components include machine status,
 partition management, job management, and scheduling modules.
+
+%description contrib
+Contributions package for SLURM.  This package includes APIs and other helpful
+interfaces with things outside of SLURM such as Perl.
 
 %description devel
 Development package for SLURM.  This package includes the header files
@@ -148,6 +158,7 @@ fi
 rm -rf "$RPM_BUILD_ROOT"
 mkdir -p "$RPM_BUILD_ROOT"
 DESTDIR="$RPM_BUILD_ROOT" make install
+DESTDIR="$RPM_BUILD_ROOT" make install-contrib
 
 %ifos aix5.3
 mv ${RPM_BUILD_ROOT}%{_bindir}/srun ${RPM_BUILD_ROOT}%{_sbindir}
@@ -198,6 +209,14 @@ test -f  $RPM_BUILD_ROOT/%{_libdir}/slurm/proctrack_aix.so &&
 test -f  $RPM_BUILD_ROOT/%{_libdir}/slurm/checkpoint_aix.so &&
   echo %{_libdir}/slurm/checkpoint_aix.so         >> $LIST
 echo "%config %{_sysconfdir}/federation.conf.example" >> $LIST
+
+LIST=./contrib.files
+touch $LIST
+test -f $RPM_BUILD_ROOT/%{_perldir}/Slurm.pm &&
+  echo "%{_perldir}/Slurm.pm"      >> $LIST
+test -f $RPM_BUILD_ROOT/%{_perldir}/auto/Slurm/Slurm.so &&
+  echo "%{_perldir}/auto/Slurm/Slurm.so"      >> $LIST
+
 
 LIST=./bluegene.files
 touch $LIST
@@ -302,6 +321,10 @@ rm -rf $RPM_BUILD_ROOT
 #############################################################################
 
 %files -f bluegene.files bluegene
+%defattr(-,root,root)
+#############################################################################
+
+%files -f contrib.files contrib
 %defattr(-,root,root)
 #############################################################################
 
