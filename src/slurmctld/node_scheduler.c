@@ -1405,13 +1405,11 @@ extern void build_node_details(struct job_record *job_ptr)
 	xrealloc(job_ptr->node_addr, 
 		(sizeof(slurm_addr) * job_ptr->node_cnt));	
 
-        job_ptr->alloc_lps_cnt = 0;
-        xfree(job_ptr->alloc_lps);
-        if (job_ptr->cr_enabled) {
-                cr_enabled = job_ptr->cr_enabled;
-                job_ptr->alloc_lps = xmalloc(job_ptr->node_cnt * sizeof(uint32_t));
-                job_ptr->alloc_lps_cnt = job_ptr->node_cnt;
-        }
+	job_ptr->alloc_lps_cnt = job_ptr->node_cnt;
+	xrealloc(job_ptr->alloc_lps,
+		(sizeof(uint32_t) * job_ptr->node_cnt));
+	if (job_ptr->cr_enabled)
+		cr_enabled = job_ptr->cr_enabled;
 
 	while ((this_node_name = hostlist_shift(host_list))) {
 		node_ptr = find_node_record(this_node_name);
@@ -1435,15 +1433,13 @@ extern void build_node_details(struct job_record *job_ptr)
 				node_ptr, job_ptr, SELECT_AVAIL_CPUS, 
 				&usable_lps);
 			if (error_code == SLURM_SUCCESS) {
-				if (cr_enabled && job_ptr->alloc_lps) {
+				if (job_ptr->alloc_lps) {
 					job_ptr->alloc_lps[cr_count++] =
 								usable_lps;
 				}
 			} else {
-				if (cr_enabled) {
-					xfree(job_ptr->alloc_lps); 
-					job_ptr->alloc_lps_cnt = 0;
-				}
+				xfree(job_ptr->alloc_lps); 
+				job_ptr->alloc_lps_cnt = 0;
 				error("Unable to get extra jobinfo "
 				      "from JobId=%u", job_ptr->job_id);
 			}
