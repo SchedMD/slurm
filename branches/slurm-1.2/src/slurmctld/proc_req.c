@@ -423,9 +423,10 @@ static int _make_step_cred(struct step_record *step_rec,
         else
                 cred_arg.alloc_lps_cnt = step_rec->job_ptr->alloc_lps_cnt;
         if (cred_arg.alloc_lps_cnt > 0) {
-                cred_arg.alloc_lps = xmalloc(cred_arg.alloc_lps_cnt * sizeof(int));
+                cred_arg.alloc_lps = xmalloc(cred_arg.alloc_lps_cnt * 
+				sizeof(uint32_t));
                 memcpy(cred_arg.alloc_lps, step_rec->job_ptr->alloc_lps, 
-                       cred_arg.alloc_lps_cnt*sizeof(int));
+                       cred_arg.alloc_lps_cnt*sizeof(uint32_t));
         } else
 		cred_arg.alloc_lps = NULL;
 
