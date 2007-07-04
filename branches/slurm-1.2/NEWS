@@ -15,6 +15,7 @@ documents those changes that are of interest to users and admins.
     GETNODES command using the CAT="<reason>" field.
  -- In sched/wiki2 with select/linear, duplicate hostnames in HOSTLIST, one
     per allocated processor.
+ -- Fix bug in scancel with specific signal and job lacks active steps.
 
 * Changes in SLURM 1.2.11
 =========================
