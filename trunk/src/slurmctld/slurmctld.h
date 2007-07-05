@@ -374,11 +374,11 @@ struct job_record {
                                          * linear plugins 
                                          * 0 if cr is NOT enabled, 
                                          * 1 if cr is enabled */
-        uint32_t alloc_lps_cnt;        /* number of hosts in alloc_lps
-					  or 0 if alloc_lps is not needed
-					  for the credentials */
-        uint32_t *alloc_lps;           /* number of logical processors
-					* allocated for this job */
+        uint32_t alloc_lps_cnt;		/* number of hosts in alloc_lps
+					 * or 0 if alloc_lps is not needed
+					 * for the credentials */
+        uint32_t *alloc_lps;		/* number of logical processors
+					 * allocated for this job */
 	uint16_t mail_type;		/* see MAIL_JOB_* in slurm.h */
 	char *mail_user;		/* user to get e-mail notification */
 	uint32_t requid;            	/* requester user ID */

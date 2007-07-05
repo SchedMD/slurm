@@ -107,6 +107,7 @@ extern int 	get_nodes(char *cmd_ptr, int *err_code, char **err_msg);
 extern int	initialize_wiki(char *cmd_ptr, int *err_code, char **err_msg);
 extern int	job_add_task(char *cmd_ptr, int *err_code, char **err_msg);
 extern int	job_modify_wiki(char *cmd_ptr, int *err_code, char **err_msg);
+extern int	job_notify_wiki(char *cmd_ptr, int *err_code, char **err_msg);
 extern int	job_release_task(char *cmd_ptr, int *err_code, char **err_msg);
 extern int	job_requeue_wiki(char *cmd_ptr, int *err_code, char **err_msg);
 extern int	job_signal_wiki(char *cmd_ptr, int *err_code, char **err_msg);

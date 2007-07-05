@@ -622,6 +622,9 @@ again:	rc = poll(&ufds, 1, 5000);
 done:
 	fcntl(__fd, F_SETFL, flags);
 
+	/* NOTE: Connection refused is typically reported for
+	 * non-responsived nodes plus attempts to communicate
+	 * with terminated srun commands. */
 	if (err) {
 		slurm_seterrno(err);
 		debug2("_slurm_connect failed: %m");

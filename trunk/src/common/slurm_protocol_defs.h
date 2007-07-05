@@ -183,6 +183,7 @@ typedef enum {
 	SRUN_TIMEOUT,
 	SRUN_NODE_FAIL,
 	SRUN_JOB_COMPLETE,
+	SRUN_USER_MSG,
 
 	PMI_KVS_PUT_REQ = 7201,
 	PMI_KVS_PUT_RESP,
@@ -593,6 +594,11 @@ typedef struct suspend_msg {
 	uint32_t job_id;        /* slurm job_id */
 } suspend_msg_t;
 
+typedef struct srun_user_msg {
+	uint32_t job_id;	/* slurm job_id */
+	char *msg;		/* message to user's srun */
+} srun_user_msg_t;
+
 typedef struct kvs_get_msg {
 	uint16_t task_id;	/* job step's task id */
 	uint16_t size;		/* count of tasks in job */
@@ -743,6 +749,7 @@ void inline slurm_free_srun_job_complete_msg(srun_job_complete_msg_t * msg);
 void inline slurm_free_srun_ping_msg(srun_ping_msg_t * msg);
 void inline slurm_free_srun_node_fail_msg(srun_node_fail_msg_t * msg);
 void inline slurm_free_srun_timeout_msg(srun_timeout_msg_t * msg);
+void inline slurm_free_srun_user_msg(srun_user_msg_t * msg);
 void inline slurm_free_checkpoint_msg(checkpoint_msg_t *msg);
 void inline slurm_free_checkpoint_comp_msg(checkpoint_comp_msg_t *msg);
 void inline slurm_free_checkpoint_resp_msg(checkpoint_resp_msg_t *msg);
