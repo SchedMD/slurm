@@ -128,7 +128,7 @@ static int _waiter_complete (uint32_t jobid);
 
 static bool _steps_completed_now(uint32_t jobid);
 static void _wait_state_completed(uint32_t jobid, int max_delay);
-static uid_t _get_job_uid(uint32_t jobid);
+static long _get_job_uid(uint32_t jobid);
 
 static gids_t *_gids_cache_lookup(char *user, gid_t gid);
 
@@ -1131,7 +1131,7 @@ _rpc_stat_jobacct(slurm_msg_t *msg)
 	stat_jobacct_msg_t *resp = NULL;
 	int fd;
 	uid_t req_uid;
-	uid_t job_uid;
+	long job_uid;
 	
 	debug3("Entering _rpc_stat_jobacct");
 	/* step completion messages are only allowed from other slurmstepd,
@@ -1139,20 +1139,28 @@ _rpc_stat_jobacct(slurm_msg_t *msg)
 	req_uid = g_slurm_auth_get_uid(msg->auth_cred);
 	
 	job_uid = _get_job_uid(req->job_id);
+	if (job_uid < 0) {
+		error("stat_jobacct for invalid job_id: %u",
+			req->job_id);
+		if (msg->conn_fd >= 0)
+			slurm_send_rc_msg(msg, ESLURM_INVALID_JOB_ID);
+		return  ESLURM_INVALID_JOB_ID;
+	}
+
 	/* 
 	 * check that requesting user ID is the SLURM UID or root
 	 */
 	if ((req_uid != job_uid) && (!_slurm_authorized_user(req_uid))) {
 		error("stat_jobacct from uid %ld for job %u "
 		      "owned by uid %ld",
-		      (long) req_uid, req->job_id, 
-		      (long) job_uid);       
+		      (long) req_uid, req->job_id, job_uid);       
 		
 		if (msg->conn_fd >= 0) {
 			slurm_send_rc_msg(msg, ESLURM_USER_ID_MISSING);
 			return ESLURM_USER_ID_MISSING;/* or bad in this case */
 		}
-	} 
+	}
+ 
 	resp = xmalloc(sizeof(stat_jobacct_msg_t));
 	slurm_msg_t_copy(&resp_msg, msg);
 	resp->job_id = req->job_id;
@@ -1463,7 +1471,7 @@ done:
 	slurm_free_reattach_tasks_response_msg(resp);
 }
 
-static uid_t 
+static long 
 _get_job_uid(uint32_t jobid)
 {
 	List steps;
@@ -1471,7 +1479,7 @@ _get_job_uid(uint32_t jobid)
 	step_loc_t *stepd;
 	slurmstepd_info_t *info = NULL;
 	int fd;
-	uid_t uid = 0;
+	long uid = -1;
 
 	steps = stepd_available(conf->spooldir, conf->node_name);
 	i = list_iterator_create(steps);
@@ -1496,7 +1504,7 @@ _get_job_uid(uint32_t jobid)
 			      stepd->jobid, stepd->stepid);
 			continue;
 		}
-		uid = (uid_t)info->uid;
+		uid = (long)info->uid;
 		break;
 	}
 	list_iterator_destroy(i);
@@ -1745,7 +1753,7 @@ _rpc_signal_job(slurm_msg_t *msg)
 {
 	signal_job_msg_t *req = msg->data;
 	uid_t req_uid = g_slurm_auth_get_uid(msg->auth_cred);
-	uid_t job_uid;
+	long job_uid;
 	List steps;
 	ListIterator i;
 	step_loc_t *stepd = NULL;
@@ -1768,6 +1776,9 @@ _rpc_signal_job(slurm_msg_t *msg)
 
 	debug("_rpc_signal_job, uid = %d, signal = %d", req_uid, req->signal);
 	job_uid = _get_job_uid(req->job_id);
+	if (job_uid < 0)
+		goto no_job;
+
 	/* 
 	 * check that requesting user ID is the SLURM UID or root
 	 */
@@ -1798,8 +1809,10 @@ _rpc_signal_job(slurm_msg_t *msg)
 			continue;
 		}
 
-		if (stepd->stepid == SLURM_BATCH_SCRIPT)
+		if (stepd->stepid == SLURM_BATCH_SCRIPT) {
+			debug2("batch script itself not signalled");
 			continue;
+		}
 
 		step_cnt++;
 
@@ -1819,9 +1832,12 @@ _rpc_signal_job(slurm_msg_t *msg)
 	}
 	list_iterator_destroy(i);
 	list_destroy(steps);
-	if (step_cnt == 0)
+
+ no_job:
+	if (step_cnt == 0) {
 		debug2("No steps in jobid %u to send signal %d",
 		       req->job_id, req->signal);
+	}
 
 	/*
 	 *  At this point, if connection still open, we send controller
@@ -1844,7 +1860,7 @@ _rpc_suspend_job(slurm_msg_t *msg)
 {
 	suspend_msg_t *req = msg->data;
 	uid_t req_uid = g_slurm_auth_get_uid(msg->auth_cred);
-	uid_t job_uid;
+	long job_uid;
 	List steps;
 	ListIterator i;
 	step_loc_t *stepd;
@@ -1859,6 +1875,8 @@ _rpc_suspend_job(slurm_msg_t *msg)
 	debug("_rpc_suspend_job jobid=%u uid=%d", 
 		req->job_id, req_uid);
 	job_uid = _get_job_uid(req->job_id);
+	if (job_uid < 0)
+		goto no_job;
 	/* 
 	 * check that requesting user ID is the SLURM UID or root
 	 */
@@ -1908,8 +1926,12 @@ _rpc_suspend_job(slurm_msg_t *msg)
 	}
 	list_iterator_destroy(i);
 	list_destroy(steps);
-	if (step_cnt == 0)
-		debug2("No steps in jobid %u to suspend/resume", req->job_id);
+
+ no_job:
+	if (step_cnt == 0) {
+		debug2("No steps in jobid %u to suspend/resume", 
+			req->job_id);
+	}
 
 	/*
 	 *  At this point, if connection still open, we send controller

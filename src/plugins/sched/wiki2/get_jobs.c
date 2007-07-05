@@ -239,12 +239,7 @@ static char *	_dump_job(struct job_record *job_ptr, int state_info)
 		}
 	} else if (!IS_JOB_FINISHED(job_ptr)) {
 		char *hosts;
-		if (job_ptr->cr_enabled) {
-			hosts = _full_task_list(job_ptr);
-		} else {
-			hosts = bitmap2wiki_node_name(
-				job_ptr->node_bitmap);
-		}
+		hosts = _full_task_list(job_ptr);
 		xstrcat(buf, "TASKLIST=");
 		xstrcat(buf, hosts);
 		xstrcat(buf, ";");

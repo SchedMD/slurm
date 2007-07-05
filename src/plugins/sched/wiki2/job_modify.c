@@ -82,7 +82,7 @@ static int	_job_modify(uint32_t jobid, char *bank_ptr,
 		return ESLURM_INVALID_JOB_ID;
 	}
 	if (IS_JOB_FINISHED(job_ptr)) {
-		error("wiki: MODIFYJOB jobid %d is finished", jobid);
+		error("wiki: MODIFYJOB jobid %u is finished", jobid);
 		return ESLURM_DISABLED;
 	}
 
@@ -144,7 +144,10 @@ static int	_job_modify(uint32_t jobid, char *bank_ptr,
 	return SLURM_SUCCESS;
 }
 
-/* RET 0 on success, -1 on failure */
+/* Modify a job:
+ *	CMD=MODIFYJOB ARG=<jobid> PARTITION=<name> NODES=<number>
+ *		DEPEND=afterany:<jobid> TIMELIMT=<seconds> BANK=<name>
+ * RET 0 on success, -1 on failure */
 extern int	job_modify_wiki(char *cmd_ptr, int *err_code, char **err_msg)
 {
 	char *arg_ptr, *bank_ptr, *depend_ptr, *nodes_ptr;

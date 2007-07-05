@@ -15,7 +15,7 @@ be printed and the job will not be signaled.
 
 .TP
 \fB\-b\fR, \fB\-\-batch\fR
-Signal only the batch job shell.
+Signal the batch job shell and its child processes.
 
 .TP
 \fB\-\-help\fR
@@ -61,17 +61,22 @@ Print additional logging. Multiple v's increase logging detail.
 This option is incompatible with the \fB\-\-quiet\fR option.
 .TP
 \fB\-V\fR, \fB\-\-Version\fR
-Print the version number of the scontrol command. 
+Print the version number of the scancel command. 
+
 .TP
 ARGUMENTS
 .TP
 \fIjob_id\fP
-The Slurm job ID of the job to have one or more of its steps signaled.
+The Slurm job ID to be signaled.
+If no step_id is specified and the \fB\-\-batch\fR option is not used, 
+then all jobs steps associated with the provided job_id will be signaled.
+If no job steps are active then no processes will be signalled.
+Any batch script which spawned the job steps will only be signalled if 
+the \fB\-\-batch\fR option is used.
 .TP
 \fIstep_id\fP
-The step ID of the job step to be signaled. If none is provided and the 
-\fB\-\-batch\fR option is not used, then all jobs steps associated with 
-the provided job_id will be signaled.
+The step ID of the job step to be signaled. 
+
 .SH "ENVIRONMENT VARIABLES"
 .PP
 Some \fBscancel\fR options may be set via environment variables. These 

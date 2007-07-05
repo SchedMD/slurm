@@ -336,6 +336,19 @@ static void _modify_job(long my_job_id)
 		(uint32_t) now, my_job_id);
 	_xmit(out_msg);
 }
+
+static void _notify_job(long my_job_id)
+{
+	time_t now = time(NULL);
+	char out_msg[256];
+
+	snprintf(out_msg, sizeof(out_msg),
+		"TS=%u AUTH=root DT=CMD=NOTIFYJOB ARG=%ld "
+		"MSG=this is a test",
+		(uint32_t) now, my_job_id);
+	_xmit(out_msg);
+}
+
 static void _resume_job(long my_job_id)
 {
 	time_t now = time(NULL);
@@ -402,6 +415,7 @@ int main(int argc, char * argv[])
 	_get_nodes();
 	_job_will_run(job_id);
 	_modify_job(job_id);
+	/* _notify_job(65544); */
 	_get_jobs();
 	_start_job(job_id);
 	_get_jobs();
