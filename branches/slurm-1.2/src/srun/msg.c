@@ -901,6 +901,7 @@ _handle_msg(srun_job_t *job, slurm_msg_t *msg)
 	int rc;
 	srun_timeout_msg_t *to;
 	srun_node_fail_msg_t *nf;
+	srun_user_msg_t *um;
 	
 	if ((req_uid != slurm_uid) && (req_uid != 0) && (req_uid != uid)) {
 		error ("Security violation, slurm message from uid %u", 
@@ -940,6 +941,11 @@ _handle_msg(srun_job_t *job, slurm_msg_t *msg)
 		to = msg->data;
 		timeout_handler(to->timeout);
 		slurm_free_srun_timeout_msg(msg->data);
+		break;
+	case SRUN_USER_MSG:
+		um = msg->data;
+		info("%s", um->msg);
+		slurm_free_srun_user_msg(msg->data);
 		break;
 	case SRUN_NODE_FAIL:
 		verbose("node_fail received");

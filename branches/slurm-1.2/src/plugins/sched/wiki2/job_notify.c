@@ -1,9 +1,9 @@
 /*****************************************************************************\
- *  srun_comm.h - definitions srun communications
+ *  job_notify.c - Process Wiki job notify request
  *****************************************************************************
- *  Copyright (C) 2002-2006 The Regents of the University of California.
+ *  Copyright (C) 2006-2007 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Morris Jette <jette@llnl.gov> et. al.
+ *  Written by Morris Jette <jette1@llnl.gov>
  *  UCRL-CODE-226842.
  *  
  *  This file is part of SLURM, a resource management program.
@@ -35,52 +35,72 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef _HAVE_SRUN_COMM_H
-#define _HAVE_SRUN_COMM_H
-
-#include <sys/types.h>
-#include <time.h>
-
+#include "./msg.h"
+#include <strings.h>
+#include "src/slurmctld/locks.h"
 #include "src/slurmctld/slurmctld.h"
+#include "src/slurmctld/srun_comm.h"
 
-/*
- * srun_allocate - notify srun of a resource allocation
- * IN job_id - id of the job allocated resource
- */
-extern void srun_allocate (uint32_t job_id);
+static int	_job_notify(uint32_t jobid, char *msg_ptr)
+{
+	struct job_record *job_ptr;
 
-/*
- * srun_complete - notify srun of a job's termination
- * IN job_ptr - pointer to the slurmctld job record
- */
-extern void srun_complete (struct job_record *job_ptr);
+	job_ptr = find_job_record(jobid);
+	if (job_ptr == NULL) {
+		error("wiki: NOTIFYJOB has invalid jobid %u", jobid);
+		return ESLURM_INVALID_JOB_ID;
+	}
+	if (IS_JOB_FINISHED(job_ptr)) {
+		error("wiki: NOTIFYJOB jobid %u is finished", jobid);
+		return ESLURM_INVALID_JOB_ID;
+	}
+	srun_user_message(job_ptr, msg_ptr);
+	return SLURM_SUCCESS;
+}
 
-/*
- * srun_node_fail - notify srun of a node's failure
- * IN job_id    - id of job to notify
- * IN node_name - name of failed node
- */
-extern void srun_node_fail (uint32_t job_id, char *node_name);
+/* Notify a job via arbitrary message: 
+ *	CMD=NOTIFYJOB ARG=<jobid> MSG=<string>
+ * RET 0 on success, -1 on failure */
+extern int	job_notify_wiki(char *cmd_ptr, int *err_code, char **err_msg)
+{
+	char *arg_ptr, *msg_ptr;
+	int slurm_rc;
+	uint32_t jobid;
+	static char reply_msg[128];
+	/* Locks: read job */
+	slurmctld_lock_t job_read_lock = {
+		NO_LOCK, READ_LOCK, NO_LOCK, NO_LOCK };
 
-/* srun_ping - ping all srun commands that have not been heard from recently */
-extern void srun_ping (void);
+	arg_ptr = strstr(cmd_ptr, "ARG=");
+	if (arg_ptr == NULL) {
+		*err_code = -300;
+		*err_msg = "NOTIFYJOB lacks ARG=";
+		error("wiki: NOTIFYJOB lacks ARG=");
+		return -1;
+	}
+	arg_ptr += 4;
+	jobid = atol(arg_ptr);
+	msg_ptr = strstr(cmd_ptr, "MSG=");
+	if (msg_ptr == NULL) {
+		*err_code = -300;
+		*err_msg = "NOTIFYJOB lacks MSG=";
+		error("wiki: NOTIFYJOB lacks MSG=");
+		return -1;
+	}
+	msg_ptr += 4;
 
-/*
- * srun_response - note that srun has responded
- * IN job_id  - id of job responding
- * IN step_id - id of step responding or NO_VAL if not a step
- */
-extern void srun_response(uint32_t job_id, uint32_t step_id);
+	lock_slurmctld(job_read_lock);
+	slurm_rc = _job_notify(jobid, msg_ptr);
+	unlock_slurmctld(job_read_lock);
+	if (slurm_rc != SLURM_SUCCESS) {
+		*err_code = -700;
+		*err_msg = slurm_strerror(slurm_rc);
+		error("wiki: Failed to notify job %u (%m)", jobid);
+		return -1;
+	}
 
-/*
- * srun_timeout - notify srun of a job's timeout
- * IN job_ptr - pointer to the slurmctld job record
- */
-extern void srun_timeout (struct job_record *job_ptr);
-
-/*
- * srun_user_message - Send arbitrary message to an srun job (no job steps)
- */
-extern void srun_user_message(struct job_record *job_ptr, char *msg);
-
-#endif /* !_HAVE_SRUN_COMM_H */
+	snprintf(reply_msg, sizeof(reply_msg),
+		"job %u notified successfully", jobid);
+	*err_msg = reply_msg;
+	return 0;
+}

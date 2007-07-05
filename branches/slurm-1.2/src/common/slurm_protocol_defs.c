@@ -501,6 +501,14 @@ void inline slurm_free_srun_timeout_msg(srun_timeout_msg_t * msg)
 	xfree(msg);
 }
 
+void inline slurm_free_srun_user_msg(srun_user_msg_t * user_msg)
+{
+	if (user_msg) {
+		xfree(user_msg->msg);
+		xfree(user_msg);
+	}
+}
+
 void inline slurm_free_checkpoint_msg(checkpoint_msg_t *msg)
 {
 	xfree(msg);

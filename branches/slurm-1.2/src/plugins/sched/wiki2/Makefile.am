@@ -20,6 +20,7 @@ sched_wiki2_la_SOURCES = \
 	initialize.c	\
 	job_add_task.c	\
 	job_modify.c	\
+	job_notify.c	\
 	job_release_task.c \
 	job_requeue.c	\
 	job_signal.c	\

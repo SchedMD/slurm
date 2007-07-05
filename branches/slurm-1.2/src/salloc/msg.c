@@ -241,6 +241,15 @@ static void _handle_timeout(slurm_msg_t *msg)
 	slurm_free_srun_timeout_msg(msg->data);
 }
 
+static void _handle_user_msg(slurm_msg_t *msg)
+{
+	srun_user_msg_t *um;
+
+	um = msg->data;
+	info("%s", um->msg);
+	slurm_free_srun_user_msg(msg->data);
+}
+
 static void _handle_job_complete(slurm_msg_t *msg)
 {
 	srun_job_complete_msg_t *comp = (srun_job_complete_msg_t *)msg->data;
@@ -296,6 +305,9 @@ _handle_msg(slurm_msg_t *msg)
 		break;
 	case SRUN_TIMEOUT:
 		_handle_timeout(msg);
+		break;
+	case SRUN_USER_MSG:
+		_handle_user_msg(msg);
 		break;
 	case SRUN_NODE_FAIL:
 		_handle_node_fail(msg);
