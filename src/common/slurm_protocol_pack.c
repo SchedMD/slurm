@@ -280,8 +280,11 @@ static int  _unpack_srun_node_fail_msg(srun_node_fail_msg_t ** msg_ptr,
 				       Buf buffer);
 
 static void _pack_srun_timeout_msg(srun_timeout_msg_t * msg, Buf buffer);
-static int  
-_unpack_srun_timeout_msg(srun_timeout_msg_t ** msg_ptr, Buf buffer);
+static int  _unpack_srun_timeout_msg(srun_timeout_msg_t ** msg_ptr, 
+					Buf buffer);
+
+static void _pack_srun_user_msg(srun_user_msg_t * msg, Buf buffer);
+static int  _unpack_srun_user_msg(srun_user_msg_t ** msg_ptr, Buf buffer);
 
 static void _pack_checkpoint_msg(checkpoint_msg_t *msg, Buf buffer);
 static int  _unpack_checkpoint_msg(checkpoint_msg_t **msg_ptr, Buf buffer);
@@ -622,6 +625,9 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 	case SRUN_TIMEOUT:
 		_pack_srun_timeout_msg((srun_timeout_msg_t *)msg->data, buffer);
 		break;
+	case SRUN_USER_MSG:
+		_pack_srun_user_msg((srun_user_msg_t *)msg->data, buffer);
+		break;
 	case REQUEST_CHECKPOINT:
 		_pack_checkpoint_msg((checkpoint_msg_t *)msg->data, buffer);
 		break;
@@ -932,6 +938,10 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 	case SRUN_TIMEOUT:
 		rc = _unpack_srun_timeout_msg((srun_timeout_msg_t **)
 					      & msg->data, buffer);
+		break;
+	case SRUN_USER_MSG:
+		rc = _unpack_srun_user_msg((srun_user_msg_t **)
+						& msg->data, buffer);
 		break;
 	case REQUEST_CHECKPOINT:
 		rc = _unpack_checkpoint_msg((checkpoint_msg_t **)
@@ -3712,6 +3722,33 @@ _unpack_srun_timeout_msg(srun_timeout_msg_t ** msg_ptr, Buf buffer)
 unpack_error:
 	*msg_ptr = NULL;
 	xfree(msg);
+	return SLURM_ERROR;
+}
+
+static void
+_pack_srun_user_msg(srun_user_msg_t * msg, Buf buffer)
+{
+        xassert ( msg != NULL );
+
+	pack32((uint32_t)msg->job_id,  buffer);
+	packstr(msg->msg, buffer);
+}
+
+static int
+_unpack_srun_user_msg(srun_user_msg_t ** msg_ptr, Buf buffer)
+{
+	uint16_t uint16_tmp;
+	srun_user_msg_t * msg_user;
+	xassert ( msg_ptr != NULL );
+
+	msg_user = xmalloc(sizeof (srun_user_msg_t)) ;
+	*msg_ptr = msg_user;
+
+	safe_unpack32(&msg_user->job_id, buffer);
+	safe_unpackstr_xmalloc(&msg_user->msg, &uint16_tmp, buffer);
+	return SLURM_SUCCESS;
+
+unpack_error:
 	return SLURM_ERROR;
 }
 

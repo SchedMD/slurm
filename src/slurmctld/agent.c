@@ -381,6 +381,7 @@ static agent_info_t *_make_agent_info(agent_arg_t *agent_arg_ptr)
 	&&  (agent_arg_ptr->msg_type != REQUEST_RECONFIGURE)
 	&&  (agent_arg_ptr->msg_type != SRUN_TIMEOUT)
 	&&  (agent_arg_ptr->msg_type != SRUN_NODE_FAIL)
+	&&  (agent_arg_ptr->msg_type != SRUN_USER_MSG)
 	&&  (agent_arg_ptr->msg_type != SRUN_JOB_COMPLETE)) {
 		agent_info_ptr->get_reply = true;
 		span = set_span(agent_arg_ptr->node_count, 0);
@@ -496,6 +497,7 @@ static void *_wdog(void *args)
 	if ( (agent_ptr->msg_type == SRUN_JOB_COMPLETE)
 	||   (agent_ptr->msg_type == SRUN_PING)
 	||   (agent_ptr->msg_type == SRUN_TIMEOUT)
+	||   (agent_ptr->msg_type == SRUN_USER_MSG)
 	||   (agent_ptr->msg_type == RESPONSE_RESOURCE_ALLOCATION)
 	||   (agent_ptr->msg_type == SRUN_NODE_FAIL) )
 		srun_agent = true;
@@ -579,7 +581,8 @@ static void _notify_slurmctld_jobs(agent_info_t *agent_ptr)
 			*agent_ptr->msg_args_pptr;
 		job_id  = msg->job_id;
 		step_id = NO_VAL;
-	} else if (agent_ptr->msg_type == SRUN_JOB_COMPLETE) {
+	} else if ((agent_ptr->msg_type == SRUN_JOB_COMPLETE)
+	||         (agent_ptr->msg_type == SRUN_USER_MSG)) {
 		return;		/* no need to note srun response */
 	} else if (agent_ptr->msg_type == SRUN_NODE_FAIL) {
 		return;		/* no need to note srun response */
@@ -755,9 +758,6 @@ static void *_thread_per_group_rpc(void *args)
 	/* Locks: Write job, write node */
 	slurmctld_lock_t job_write_lock = { 
 		NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK };
-	/* Locks: Read job */
-	slurmctld_lock_t job_read_lock = {
-		NO_LOCK, READ_LOCK, NO_LOCK, NO_LOCK };
 #endif
 	xassert(args != NULL);
 	xsignal(SIGUSR1, _sig_handler);
@@ -767,40 +767,11 @@ static void *_thread_per_group_rpc(void *args)
 	srun_agent = (	(msg_type == SRUN_PING)    ||
 			(msg_type == SRUN_JOB_COMPLETE) ||
 			(msg_type == SRUN_TIMEOUT) ||
+			(msg_type == SRUN_USER_MSG) ||
 			(msg_type == RESPONSE_RESOURCE_ALLOCATION) ||
 			(msg_type == SRUN_NODE_FAIL) );
 
 	thread_ptr->start_time = time(NULL);
-
-#if AGENT_IS_THREAD
-	if (srun_agent) {
-		uint32_t          job_id   = 0;
-		enum job_states    state   = JOB_END;
-		struct job_record *job_ptr = NULL;
-
-		if ((msg_type == SRUN_PING)
-		|| (msg_type == SRUN_JOB_COMPLETE)) {
-			srun_ping_msg_t *msg = task_ptr->msg_args_ptr;
-			job_id  = msg->job_id;
-		} else if (msg_type == SRUN_TIMEOUT) {
-			srun_timeout_msg_t *msg = task_ptr->msg_args_ptr;
-			job_id  = msg->job_id;
-		} else if (msg_type == SRUN_NODE_FAIL) {
-			srun_node_fail_msg_t *msg = task_ptr->msg_args_ptr;
-			job_id  = msg->job_id;
-		} else if (msg_type == RESPONSE_RESOURCE_ALLOCATION) {
-			resource_allocation_response_msg_t *msg = 
-				task_ptr->msg_args_ptr;
-			job_id  = msg->job_id;
-		}
-		lock_slurmctld(job_read_lock);
-		if (job_id)
-			job_ptr = find_job_record(job_id);
-		if (job_ptr)
-			state = job_ptr->job_state;	
-		unlock_slurmctld(job_read_lock);
-	}
-#endif
 
 	slurm_mutex_lock(thread_mutex_ptr);
 	thread_ptr->state = DSH_ACTIVE;
@@ -1305,6 +1276,8 @@ static void _purge_agent_args(agent_arg_t *agent_arg_ptr)
 		else if ((agent_arg_ptr->msg_type == REQUEST_TERMINATE_JOB)
 		||       (agent_arg_ptr->msg_type == REQUEST_KILL_TIMELIMIT))
 			slurm_free_kill_job_msg(agent_arg_ptr->msg_args);
+		else if (agent_arg_ptr->msg_type == SRUN_USER_MSG)
+			slurm_free_srun_user_msg(agent_arg_ptr->msg_args);
 		else
 			xfree(agent_arg_ptr->msg_args);
 	}

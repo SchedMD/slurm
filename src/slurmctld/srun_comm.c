@@ -246,6 +246,32 @@ extern void srun_timeout (struct job_record *job_ptr)
 	list_iterator_destroy(step_iterator);
 }
 
+
+/*
+ * srun_user_message - Send arbitrary message to an srun job (no job steps)
+ */
+extern void srun_user_message(struct job_record *job_ptr, char *msg)
+{
+	slurm_addr * addr;
+	srun_user_msg_t *msg_arg;
+
+	xassert(job_ptr);
+	if ((job_ptr->job_state != JOB_PENDING)
+	&&  (job_ptr->job_state != JOB_RUNNING))
+		return;
+
+	if (job_ptr->other_port
+	&&  job_ptr->other_host && job_ptr->other_host[0]) {
+		addr = xmalloc(sizeof(struct sockaddr_in));
+		slurm_set_addr(addr, job_ptr->other_port, job_ptr->other_host);
+		msg_arg = xmalloc(sizeof(srun_user_msg_t));
+		msg_arg->job_id = job_ptr->job_id;
+		msg_arg->msg    = xstrdup(msg);
+		_srun_agent_launch(addr, job_ptr->other_host, SRUN_USER_MSG,
+				   msg_arg);
+	}
+}
+
 /*
  * srun_complete - notify srun of a job's termination
  * IN job_ptr - pointer to the slurmctld job record
