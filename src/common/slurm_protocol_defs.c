@@ -857,6 +857,20 @@ void slurm_free_ctl_conf(slurm_ctl_conf_info_msg_t * config_ptr)
 	}
 }
 
+/*
+ * slurm_free_slurmd_status - free slurmd state information
+ * IN msg - pointer to slurmd state information
+ * NOTE: buffer is loaded by slurm_load_slurmd_status
+ */
+extern void slurm_free_slurmd_status(slurmd_status_t* slurmd_status_ptr)
+{
+	if (slurmd_status_ptr) {
+		xfree(slurmd_status_ptr->job_list);
+		xfree(slurmd_status_ptr->slurmd_logfile);
+		xfree(slurmd_status_ptr->version);
+		xfree(slurmd_status_ptr);
+	}
+}
 
 /*
  * slurm_free_job_info - free the job information response message
@@ -1177,6 +1191,7 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 	case REQUEST_CONTROL:
 	case REQUEST_SHUTDOWN_IMMEDIATE:
 	case RESPONSE_FORWARD_FAILED:
+	case REQUEST_DAEMON_STATUS:
 		/* No body to free */
 		break;
 

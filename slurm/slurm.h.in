@@ -927,6 +927,15 @@ typedef struct slurm_ctl_conf {
 	uint16_t use_pam;	/* enable/disable PAM support */
 } slurm_ctl_conf_t;
 
+typedef struct slurmd_status_msg {
+	time_t booted;			/* when daemon was started */
+	time_t last_slurmctld_msg;	/* time of last slurmctld message */
+	uint16_t slurmd_debug;		/* logging level */
+	char *slurmd_logfile;		/* where slurmd error log gets written */
+	char *job_list;			/* list of active jobs */
+	char *version;			/* version running */
+} slurmd_status_t;
+
 typedef struct submit_response_msg {
 	uint32_t job_id;	/* job ID */
 	uint32_t step_id;	/* step ID */
@@ -1323,6 +1332,31 @@ extern void slurm_free_ctl_conf PARAMS((slurm_ctl_conf_t* slurm_ctl_conf_ptr));
 extern void slurm_print_ctl_conf PARAMS((
 	FILE * out, slurm_ctl_conf_t* slurm_ctl_conf));
 
+/*
+ * slurm_load_slurmd_status - issue RPC to get the status of slurmd 
+ *	daemon on this machine
+ * IN slurmd_status_ptr - place to store slurmd status information
+ * RET 0 or -1 on error
+ * NOTE: free the response using slurm_free_slurmd_status()
+ */
+extern int slurm_load_slurmd_status(slurmd_status_t **slurmd_status_ptr);
+
+/*
+ * slurm_free_slurmd_status - free slurmd state information
+ * IN msg - pointer to slurmd state information
+ * NOTE: buffer is loaded by slurm_load_slurmd_status
+ */
+extern void slurm_free_slurmd_status PARAMS((
+		slurmd_status_t* slurmd_status_ptr));
+
+/*
+ * slurm_print_slurmd_status - output the contents of slurmd status 
+ *	message as loaded using slurm_load_slurmd_status
+ * IN out - file to write to
+ * IN slurmd_status_ptr - slurmd status pointer
+ */
+void slurm_print_slurmd_status PARAMS((
+		FILE* out, slurmd_status_t * slurmd_status_ptr));
 
 /*****************************************************************************\
  *	SLURM JOB CONTROL CONFIGURATION READ/PRINT/UPDATE FUNCTIONS

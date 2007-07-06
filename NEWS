@@ -3,7 +3,7 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 1.2.12
 =========================
- -- Increase maximum message size from 1MB to 16MB, from Ernest Artiaga, BSC. 
+ -- Increase maximum message size from 1MB to 16MB (from Ernest Artiaga, BSC). 
  -- In PMI_Abort(), log the event and abort the entire job step.
  -- Add support for additional PMI functions: PMI_Get_clique_ranks and 
     PMI_Get_clique_size (from Chuck Clouston, Bull).
@@ -21,6 +21,7 @@ documents those changes that are of interest to users and admins.
  -- salloc will now set SLURM_NPROCS to improve srun's behavior under salloc.
  -- In sched/wiki2 and select/cons_res: insure that Slurm's CPU allocation
     is identical to Moab's (from Ernest Artiaga and Asier Roa, BSC).
+ -- Added "scontrol show slurmd" command to status local slurmd daemon.
 
 * Changes in SLURM 1.2.11
 =========================
