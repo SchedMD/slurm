@@ -147,7 +147,7 @@ int slurm_get_avail_procs(const uint16_t mxsockets,
 				*cpus -= alloc_lps;
 			else {
 				*cpus = 0;
-				error(" cons_res: *cpus < 0");
+				error("cons_res: *cpus underflow");
 			}
 			break;
 		default:
@@ -168,7 +168,7 @@ int slurm_get_avail_procs(const uint16_t mxsockets,
 			*cpus -= alloc_lps;
 		else {
 			*cpus = 0;
-			error(" cons_res: *cpus < 0");
+			error("cons_res: *cpus underflow");
 		}
 		if (alloc_lps > 0) {
 			max_avail_cpus = 0;
@@ -224,13 +224,13 @@ int slurm_get_avail_procs(const uint16_t mxsockets,
 			*sockets -= alloc_sockets; /* sockets count */
 		else {
 			*sockets = 0;
-			error(" cons_res: *sockets < 0");
+			error("cons_res: *sockets underflow");
 		}
 		if (*cpus >= alloc_lps)
 			*cpus -= alloc_lps;
 		else {
 			*cpus = 0;
-			error(" cons_res: *cpus < 0");
+			error("cons_res: *cpus underflow");
 		}
 
 		/*** honor socket/core/thread maximums ***/

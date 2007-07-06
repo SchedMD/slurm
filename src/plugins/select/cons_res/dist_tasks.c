@@ -95,6 +95,7 @@ int compute_c_b_task_dist(struct select_cr_job *job,
 					avail_cpus = this_node->node_ptr->cpus;
 				}
 				avail_cpus -= this_node->alloc_lps;
+				avail_cpus = MIN(job->cpus[i], avail_cpus);
 				break;
 			case CR_SOCKET:
 			case CR_SOCKET_MEMORY:
