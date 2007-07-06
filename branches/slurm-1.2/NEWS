@@ -18,6 +18,7 @@ documents those changes that are of interest to users and admins.
  -- Fix bug in scancel with specific signal and job lacks active steps.
  -- In sched/wiki2, add support for NOTIFYJOB ARG=<jobid> MSG=<message>.
     This sends a message to an active srun command.
+ -- salloc will now set SLURM_NPROCS to improve srun's behavior under salloc.
 
 * Changes in SLURM 1.2.11
 =========================
