@@ -275,6 +275,7 @@ struct job_details {
 	char *req_nodes;		/* required nodes */
 	char *exc_nodes;		/* excluded nodes */
 	bitstr_t *req_node_bitmap;	/* bitmap of required nodes */
+	uint16_t *req_node_layout;	/* task layout for required nodes */
 	bitstr_t *exc_node_bitmap;	/* bitmap of excluded nodes */
 	char *features;			/* required features */
 	uint16_t shared;		/* 1 if job can share nodes,
