@@ -67,6 +67,8 @@ static char *	_full_task_list(struct job_record *job_ptr);
 #define SLURM_INFO_VOLITILE	1
 #define SLURM_INFO_STATE	2
 
+static uint32_t cr_enabled = 0, cr_test = 0;
+
 /*
  * get_jobs - get information on specific job(s) changed since some time
  * cmd_ptr IN - CMD=GETJOBS ARG=[<UPDATETIME>:<JOBID>[:<JOBID>]...]
@@ -111,6 +113,12 @@ extern int	get_jobs(char *cmd_ptr, int *err_code, char **err_msg)
 	slurmctld_lock_t job_read_lock = {
 		NO_LOCK, READ_LOCK, NO_LOCK, READ_LOCK };
 	int job_rec_cnt = 0, buf_size = 0, state_info;
+
+	if (cr_test == 0) {
+		select_g_get_info_from_plugin(SELECT_CR_PLUGIN,
+					      &cr_enabled);
+		cr_test = 1;
+	}
 
 	arg_ptr = strstr(cmd_ptr, "ARG=");
 	if (arg_ptr == NULL) {
@@ -326,7 +334,6 @@ static void	_get_job_comment(struct job_record *job_ptr,
 {
 	int size, sharing = 0;
 	char *field_sep = "";
-	static int cr_enabled = 0, cr_test = 0;
 
 	/* HEADER */
 	size = snprintf(buffer, buf_size, "COMMENT=\"");
@@ -340,11 +347,6 @@ static void	_get_job_comment(struct job_record *job_ptr,
 	}
 
 	/* SHARED NODES */
-	if (cr_test == 0) {
-		select_g_get_info_from_plugin(SELECT_CR_PLUGIN,
-					      &cr_enabled);
-		cr_test = 1;
-	}
 	if (cr_enabled)	{			/* consumable resources */
 		if (job_ptr->part_ptr->shared == SHARED_EXCLUSIVE)
 			sharing = 0;
