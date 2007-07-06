@@ -54,6 +54,7 @@ static void     _ping_slurmctld(char *control_machine, char *backup_controller);
 static void	_print_config (char *config_param);
 static void     _print_daemons (void);
 static void	_print_ping (void);
+static void	_print_slurmd(char *hostlist);
 static void     _print_version( void );
 static int	_process_command (int argc, char *argv[]);
 static void	_update_it (int argc, char *argv[]);
@@ -311,6 +312,22 @@ _print_config (char *config_param)
 	if (slurm_ctl_conf_ptr)
 		_ping_slurmctld (slurm_ctl_conf_ptr->control_machine,
 				 slurm_ctl_conf_ptr->backup_controller);
+}
+
+/* Print slurmd status on localhost. 
+ * Parse hostlist in the future */
+static void _print_slurmd(char *hostlist)
+{
+	slurmd_status_t *slurmd_status;
+
+	if (slurm_load_slurmd_status(&slurmd_status)) {
+		exit_code = 1;
+		if (quiet_flag != 1)
+			slurm_perror("slurm_load_slurmd_status");
+	} else {
+		slurm_print_slurmd_status(stdout, slurmd_status);
+		slurm_free_slurmd_status(slurmd_status);
+	}
 }
 
 /* Print state of controllers only */
@@ -673,6 +690,12 @@ _process_command (int argc, char *argv[])
 			else
 				scontrol_print_part (NULL);
 		}
+		else if (strncasecmp (argv[1], "slurmd", 6) == 0) {
+			if (argc > 2)
+				_print_slurmd(argv[2]);
+			else
+				_print_slurmd(NULL);
+		}
 		else if (strncasecmp (argv[1], "steps", 3) == 0) {
 			if (argc > 2)
 				scontrol_print_step (argv[2]);
@@ -992,7 +1015,8 @@ scontrol [<OPTION>] [<COMMAND>]                                            \n\
      !!                       Repeat the last command entered.             \n\
                                                                            \n\
   <ENTITY> may be \"config\", \"daemons\", \"job\", \"node\", \"partition\"\n\
-           \"hostlist\", \"hostnames\", \"block\", \"subbp\" or \"step\".  \n\
+           \"hostlist\", \"hostnames\", \"slurmd\",                        \n\
+           (for BlueGene only: \"block\", \"subbp\" or \"step\").          \n\
                                                                            \n\
   <ID> may be a configuration parameter name, job id, node name, partition \n\
        name, job step id, or hostlist or pathname to a list of host names. \n\

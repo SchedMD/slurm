@@ -47,6 +47,7 @@
 
 #include "src/api/job_info.h"
 #include "src/common/parse_time.h"
+#include "src/common/slurm_auth.h"
 #include "src/common/slurm_protocol_api.h"
 
 /*
@@ -301,3 +302,95 @@ slurm_load_ctl_conf (time_t update_time, slurm_ctl_conf_t **confp)
         return SLURM_PROTOCOL_SUCCESS;
 }
 
+/*
+ * slurm_load_slurmd_status - issue RPC to get the status of slurmd 
+ *	daemon on this machine
+ * IN slurmd_info_ptr - place to store slurmd status information
+ * RET 0 or -1 on error
+ * NOTE: free the response using slurm_free_slurmd_status()
+ */
+extern int
+slurm_load_slurmd_status(slurmd_status_t **slurmd_status_ptr)
+{
+	int rc;
+	slurm_msg_t req_msg;
+	slurm_msg_t resp_msg;
+	
+	slurm_msg_t_init(&req_msg);
+	slurm_msg_t_init(&resp_msg);
+
+	/*
+	 *  Set request message address to slurmd on localhost
+	 */
+	slurm_set_addr(&req_msg.address, (uint16_t)slurm_get_slurmd_port(), 
+		       "localhost");
+
+	req_msg.msg_type = REQUEST_DAEMON_STATUS;
+	req_msg.data     = NULL;
+	
+	rc = slurm_send_recv_node_msg(&req_msg, &resp_msg, 0);
+
+	if ((rc != 0) || !resp_msg.auth_cred) {
+		error("slurm_slurmd_info: %m");
+		if (resp_msg.auth_cred)
+			g_slurm_auth_destroy(resp_msg.auth_cred);
+		return SLURM_ERROR;
+	}
+	if (resp_msg.auth_cred)
+		g_slurm_auth_destroy(resp_msg.auth_cred);
+
+	switch (resp_msg.msg_type) {
+	case RESPONSE_SLURMD_STATUS:
+		*slurmd_status_ptr = (slurmd_status_t *) resp_msg.data;
+		break;
+	case RESPONSE_SLURM_RC:
+	        rc = ((return_code_msg_t *) resp_msg.data)->return_code;
+		slurm_free_return_code_msg(resp_msg.data);	
+		if (rc) 
+			slurm_seterrno_ret(rc);
+		break;
+	default:
+		slurm_seterrno_ret(SLURM_UNEXPECTED_MSG_ERROR);
+		break;
+	}
+
+	return SLURM_PROTOCOL_SUCCESS;
+}
+
+/*
+ * slurm_print_slurmd_status - output the contents of slurmd status 
+ *	message as loaded using slurm_load_slurmd_status
+ * IN out - file to write to
+ * IN slurmd_status_ptr - slurmd status pointer
+ */
+void slurm_print_slurmd_status (FILE* out, 
+				slurmd_status_t * slurmd_status_ptr)
+{
+	char time_str[32];
+
+	if (slurmd_status_ptr == NULL )
+		return ;
+
+	fprintf(out, "Active Jobs              = %s\n",
+		slurmd_status_ptr->job_list);
+
+	slurm_make_time_str ((time_t *)&slurmd_status_ptr->booted, 
+			     time_str, sizeof(time_str));
+	fprintf(out, "Boot time                = %s\n", time_str);
+
+	if (slurmd_status_ptr->last_slurmctld_msg) {
+		slurm_make_time_str ((time_t *)
+				&slurmd_status_ptr->last_slurmctld_msg, 
+				time_str, sizeof(time_str));
+		fprintf(out, "Last slurmctld msg time  = %s\n", time_str);
+	} else 
+		fprintf(out, "Last slurmctld msg time  = NONE\n");
+
+	fprintf(out, "Slurmd Debug             = %u\n",
+		slurmd_status_ptr->slurmd_debug);
+	fprintf(out, "Slurmd Logfile           = %s\n",
+		slurmd_status_ptr->slurmd_logfile);
+	fprintf(out, "Version                  = %s\n",
+		slurmd_status_ptr->version);
+	return;
+}

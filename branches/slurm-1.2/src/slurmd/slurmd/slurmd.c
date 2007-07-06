@@ -263,6 +263,7 @@ _msg_engine()
 	slurm_fd sock;
 
 	msg_pthread = pthread_self();
+	slurmd_req(NULL);	/* initialize timer */
 	while (!_shutdown) {
 		slurm_addr *cli = xmalloc (sizeof (slurm_addr));
 		if ((sock = slurm_accept_msg_conn(conf->lfd, cli)) >= 0) {

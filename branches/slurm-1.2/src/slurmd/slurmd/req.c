@@ -118,6 +118,7 @@ static int  _rpc_file_bcast(slurm_msg_t *msg);
 static int  _rpc_ping(slurm_msg_t *);
 static int  _rpc_step_complete(slurm_msg_t *msg);
 static int  _rpc_stat_jobacct(slurm_msg_t *msg);
+static int  _rpc_daemon_status(slurm_msg_t *msg);
 static int  _run_prolog(uint32_t jobid, uid_t uid, char *bg_part_id);
 static int  _run_epilog(uint32_t jobid, uid_t uid, char *bg_part_id);
 
@@ -138,6 +139,8 @@ static gids_t *_gids_cache_lookup(char *user, gid_t gid);
 static List waiters;
 
 static pthread_mutex_t launch_mutex = PTHREAD_MUTEX_INITIALIZER;
+static time_t booted = 0;
+static time_t last_slurmctld_msg = 0;
 
 void
 slurmd_req(slurm_msg_t *msg)
@@ -145,9 +148,12 @@ slurmd_req(slurm_msg_t *msg)
 	int rc;
 
 	if (msg == NULL) {
-		if (waiters)
+		if (booted == 0)
+			booted = time(NULL);
+		if (waiters) {
 			list_destroy(waiters);
-		waiters = NULL;
+			waiters = NULL;
+		}
 		return;
 	}
 
@@ -157,6 +163,7 @@ slurmd_req(slurm_msg_t *msg)
 		 * very slow prolog on Blue Gene system. Only batch 
 		 * jobs are supported on Blue Gene (no job steps). */
 		_rpc_batch_job(msg);
+		last_slurmctld_msg = time(NULL);
 		slurm_free_job_launch_msg(msg->data);
 		break;
 	case REQUEST_LAUNCH_TASKS:
@@ -178,6 +185,7 @@ slurmd_req(slurm_msg_t *msg)
 		break;
 	case REQUEST_KILL_TIMELIMIT:
 		debug2("Processing RPC: REQUEST_KILL_TIMELIMIT");
+		last_slurmctld_msg = time(NULL);
 		_rpc_timelimit(msg);
 		slurm_free_timelimit_msg(msg->data);
 		break; 
@@ -193,15 +201,18 @@ slurmd_req(slurm_msg_t *msg)
 		break;
 	case REQUEST_SUSPEND:
 		_rpc_suspend_job(msg);
+		last_slurmctld_msg = time(NULL);
 		slurm_free_suspend_msg(msg->data);
 		break;
 	case REQUEST_TERMINATE_JOB:
 		debug2("Processing RPC: REQUEST_TERMINATE_JOB");
+		last_slurmctld_msg = time(NULL);
 		_rpc_terminate_job(msg);
 		slurm_free_kill_job_msg(msg->data);
 		break;
 	case REQUEST_UPDATE_JOB_TIME:
 		_rpc_update_time(msg);
+		last_slurmctld_msg = time(NULL);
 		slurm_free_update_job_time_msg(msg->data);
 		break;
 	case REQUEST_SHUTDOWN:
@@ -210,11 +221,13 @@ slurmd_req(slurm_msg_t *msg)
 		break;
 	case REQUEST_RECONFIGURE:
 		_rpc_reconfig(msg);
+		last_slurmctld_msg = time(NULL);
 		/* No body to free */
 		break;
 	case REQUEST_NODE_REGISTRATION_STATUS:
 		/* Treat as ping (for slurmctld agent, just return SUCCESS) */
 		rc = _rpc_ping(msg);
+		last_slurmctld_msg = time(NULL);
 		/* No body to free */
 		/* Then initiate a separate node registration */
 		if (rc == SLURM_SUCCESS)
@@ -222,6 +235,7 @@ slurmd_req(slurm_msg_t *msg)
 		break;
 	case REQUEST_PING:
 		_rpc_ping(msg);
+		last_slurmctld_msg = time(NULL);
 		/* No body to free */
 		break;
 	case REQUEST_JOB_ID:
@@ -240,6 +254,10 @@ slurmd_req(slurm_msg_t *msg)
 	case MESSAGE_STAT_JOBACCT:
 		rc = _rpc_stat_jobacct(msg);
 		slurm_free_stat_jobacct_msg(msg->data);
+		break;
+	case REQUEST_DAEMON_STATUS:
+		_rpc_daemon_status(msg);
+		/* No body to free */
 		break;
 	default:
 		error("slurmd_req: invalid request msg type %d\n",
@@ -1101,7 +1119,7 @@ _rpc_step_complete(slurm_msg_t *msg)
 		goto done;
 	}
 
-	/* step completion messages are only allowed from other slurmstepd,
+	/* step completionmessages are only allowed from other slurmstepd,
 	   so only root or SlurmUser is allowed here */
 	req_uid = g_slurm_auth_get_uid(msg->auth_cred);
 	if (!_slurm_authorized_user(req_uid)) {
@@ -1121,6 +1139,43 @@ done:
 	slurm_send_rc_msg(msg, rc);
 
 	return rc;
+}
+
+static int
+_rpc_daemon_status(slurm_msg_t *msg)
+{
+	slurm_msg_t      resp_msg;
+	slurmd_status_t *resp = NULL;
+	uid_t req_uid;
+
+	/*
+	 * check that requesting user ID is the SLURM UID or root
+	 */
+	req_uid = g_slurm_auth_get_uid(msg->auth_cred);
+	if (!_slurm_authorized_user(req_uid)) {
+		error("daemon_info request from invalid job_id: %ld",
+			(long) req_uid);
+		if (msg->conn_fd >= 0)
+			slurm_send_rc_msg(msg, ESLURM_INVALID_JOB_ID);
+		return  ESLURM_INVALID_JOB_ID;
+	}
+
+	resp = xmalloc(sizeof(slurmd_status_t));
+	resp->booted             = booted;
+	resp->last_slurmctld_msg = last_slurmctld_msg;
+	resp->slurmd_debug       = conf->debug_level;
+	resp->slurmd_logfile     = xstrdup(conf->logfile);
+	resp->job_list           = xstrdup("FIXME");
+	resp->version            = xstrdup(SLURM_VERSION);
+/* Also add conf->actual_cpus, actual_sockets, actual_cores, 
+ * actual_threads, real_memory_size, tmp_disk_space, pid */
+
+	slurm_msg_t_copy(&resp_msg, msg);
+	resp_msg.msg_type = RESPONSE_SLURMD_STATUS;
+	resp_msg.data     = resp;
+	slurm_send_node_msg(msg->conn_fd, &resp_msg);
+	slurm_free_slurmd_status(resp);
+	return SLURM_SUCCESS; 
 }
 
 static int
