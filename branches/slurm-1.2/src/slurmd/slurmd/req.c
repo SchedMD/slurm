@@ -1141,6 +1141,52 @@ done:
 	return rc;
 }
 
+/* Get list of active jobs and steps, xfree returned value */
+static char *
+_get_step_list(void)
+{
+	char tmp[64];
+	char *step_list = NULL;
+	List steps;
+	ListIterator i;
+	step_loc_t *stepd;
+
+	steps = stepd_available(conf->spooldir, conf->node_name);
+	i = list_iterator_create(steps);
+	while ((stepd = list_next(i))) {
+		int fd;
+		fd = stepd_connect(stepd->directory, stepd->nodename,
+				stepd->jobid, stepd->stepid);
+		if (fd == -1)
+			continue;
+		if (stepd_state(fd) == SLURMSTEPD_NOT_RUNNING) {
+			debug("stale domain socket for stepd %u.%u ",
+				stepd->jobid, stepd->stepid);
+			close(fd);
+			continue;
+		}
+		close(fd);
+
+		if (step_list)
+			xstrcat(step_list, ", ");
+		if (stepd->stepid == NO_VAL) {
+			snprintf(tmp, sizeof(tmp), "%u", 
+				stepd->jobid);
+			xstrcat(step_list, tmp);
+		} else {
+			snprintf(tmp, sizeof(tmp), "%u.%u",
+				stepd->jobid, stepd->stepid);
+			xstrcat(step_list, tmp);
+		}
+	}
+	list_iterator_destroy(i);
+	list_destroy(steps);
+
+	if (step_list == NULL)
+		xstrcat(step_list, "NONE");
+	return step_list;
+}
+
 static int
 _rpc_daemon_status(slurm_msg_t *msg)
 {
@@ -1161,14 +1207,20 @@ _rpc_daemon_status(slurm_msg_t *msg)
 	}
 
 	resp = xmalloc(sizeof(slurmd_status_t));
+	resp->actual_cpus        = conf->actual_cpus;
+	resp->actual_sockets     = conf->actual_sockets;
+	resp->actual_cores       = conf->actual_cores;
+	resp->actual_threads     = conf->actual_threads;
+	resp->actual_real_mem    = conf->real_memory_size;
+	resp->actual_tmp_disk    = conf->tmp_disk_space;
 	resp->booted             = booted;
+	resp->hostname           = xstrdup(conf->node_name);
+	resp->step_list          = _get_step_list();
 	resp->last_slurmctld_msg = last_slurmctld_msg;
+	resp->pid                = conf->pid;
 	resp->slurmd_debug       = conf->debug_level;
 	resp->slurmd_logfile     = xstrdup(conf->logfile);
-	resp->job_list           = xstrdup("FIXME");
 	resp->version            = xstrdup(SLURM_VERSION);
-/* Also add conf->actual_cpus, actual_sockets, actual_cores, 
- * actual_threads, real_memory_size, tmp_disk_space, pid */
 
 	slurm_msg_t_copy(&resp_msg, msg);
 	resp_msg.msg_type = RESPONSE_SLURMD_STATUS;

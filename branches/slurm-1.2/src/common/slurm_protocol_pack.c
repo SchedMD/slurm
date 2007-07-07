@@ -4210,10 +4210,20 @@ static void _pack_slurmd_status(slurmd_status_t *msg, Buf buffer)
 
 	pack_time(msg->booted, buffer);
 	pack_time(msg->last_slurmctld_msg, buffer);
-	pack16(msg->slurmd_debug, buffer);
 
+	pack16(msg->slurmd_debug, buffer);
+	pack16(msg->actual_cpus, buffer);
+	pack16(msg->actual_sockets, buffer);
+	pack16(msg->actual_cores, buffer);
+	pack16(msg->actual_threads, buffer);
+
+	pack32(msg->actual_real_mem, buffer);
+	pack32(msg->actual_tmp_disk, buffer);
+	pack32(msg->pid, buffer);
+
+	packstr(msg->hostname, buffer);
 	packstr(msg->slurmd_logfile, buffer);
-	packstr(msg->job_list, buffer);
+	packstr(msg->step_list, buffer);
 	packstr(msg->version, buffer);
 }
 
@@ -4228,18 +4238,29 @@ static int _unpack_slurmd_status(slurmd_status_t **msg_ptr, Buf buffer)
 
 	safe_unpack_time(&msg->booted, buffer);
 	safe_unpack_time(&msg->last_slurmctld_msg, buffer);
-	safe_unpack16(&msg->slurmd_debug, buffer);
 
+	safe_unpack16(&msg->slurmd_debug, buffer);
+	safe_unpack16(&msg->actual_cpus, buffer);
+	safe_unpack16(&msg->actual_sockets, buffer);
+	safe_unpack16(&msg->actual_cores, buffer);
+	safe_unpack16(&msg->actual_threads, buffer);
+
+	safe_unpack32(&msg->actual_real_mem, buffer);
+	safe_unpack32(&msg->actual_tmp_disk, buffer);
+	safe_unpack32(&msg->pid, buffer);
+
+	safe_unpackstr_xmalloc(&msg->hostname, &uint16_tmp, buffer);
 	safe_unpackstr_xmalloc(&msg->slurmd_logfile, &uint16_tmp, buffer);
-	safe_unpackstr_xmalloc(&msg->job_list, &uint16_tmp, buffer);
+	safe_unpackstr_xmalloc(&msg->step_list, &uint16_tmp, buffer);
 	safe_unpackstr_xmalloc(&msg->version, &uint16_tmp, buffer);
 
 	*msg_ptr = msg;
 	return SLURM_SUCCESS;
 
 unpack_error:
+	xfree(msg->hostname);
 	xfree(msg->slurmd_logfile);
-	xfree(msg->job_list);
+	xfree(msg->step_list);
 	xfree(msg->version);
 	xfree(msg);
 	*msg_ptr = NULL;

@@ -931,8 +931,16 @@ typedef struct slurmd_status_msg {
 	time_t booted;			/* when daemon was started */
 	time_t last_slurmctld_msg;	/* time of last slurmctld message */
 	uint16_t slurmd_debug;		/* logging level */
-	char *slurmd_logfile;		/* where slurmd error log gets written */
-	char *job_list;			/* list of active jobs */
+	uint16_t actual_cpus;		/* actual logical processor count */
+	uint16_t actual_sockets;	/* actual sockets count */
+	uint16_t actual_cores;		/* actual core count */
+	uint16_t actual_threads;	/* actual thread per core count */
+	uint32_t actual_real_mem;	/* actual real memory in MB */
+	uint32_t actual_tmp_disk;	/* actual temp disk space in MB */
+	uint32_t pid;			/* process ID */
+	char *hostname;			/* local hostname */
+	char *slurmd_logfile;		/* slurmd log file location */
+	char *step_list;		/* list of active job steps */
 	char *version;			/* version running */
 } slurmd_status_t;
 

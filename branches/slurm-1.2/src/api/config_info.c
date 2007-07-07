@@ -371,12 +371,28 @@ void slurm_print_slurmd_status (FILE* out,
 	if (slurmd_status_ptr == NULL )
 		return ;
 
-	fprintf(out, "Active Jobs              = %s\n",
-		slurmd_status_ptr->job_list);
+	fprintf(out, "Active Steps             = %s\n",
+		slurmd_status_ptr->step_list);
+
+	fprintf(out, "Actual CPUs              = %u\n",
+		slurmd_status_ptr->actual_cpus);
+	fprintf(out, "Actual sockets           = %u\n",
+		slurmd_status_ptr->actual_sockets);
+	fprintf(out, "Actual cores             = %u\n",
+		slurmd_status_ptr->actual_cores);
+	fprintf(out, "Actual threads per core  = %u\n",
+		slurmd_status_ptr->actual_threads);
+	fprintf(out, "Actual real memory       = %u MB\n",
+		slurmd_status_ptr->actual_real_mem);
+	fprintf(out, "Actual temp disk space   = %u MB\n",
+		slurmd_status_ptr->actual_tmp_disk);
 
 	slurm_make_time_str ((time_t *)&slurmd_status_ptr->booted, 
 			     time_str, sizeof(time_str));
 	fprintf(out, "Boot time                = %s\n", time_str);
+
+	fprintf(out, "Hostname                 = %s\n",
+		slurmd_status_ptr->hostname);
 
 	if (slurmd_status_ptr->last_slurmctld_msg) {
 		slurm_make_time_str ((time_t *)
@@ -386,6 +402,8 @@ void slurm_print_slurmd_status (FILE* out,
 	} else 
 		fprintf(out, "Last slurmctld msg time  = NONE\n");
 
+	fprintf(out, "Slurmd PID               = %u\n",
+		slurmd_status_ptr->pid);
 	fprintf(out, "Slurmd Debug             = %u\n",
 		slurmd_status_ptr->slurmd_debug);
 	fprintf(out, "Slurmd Logfile           = %s\n",

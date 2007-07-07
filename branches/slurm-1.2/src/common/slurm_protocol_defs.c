@@ -865,8 +865,9 @@ void slurm_free_ctl_conf(slurm_ctl_conf_info_msg_t * config_ptr)
 extern void slurm_free_slurmd_status(slurmd_status_t* slurmd_status_ptr)
 {
 	if (slurmd_status_ptr) {
-		xfree(slurmd_status_ptr->job_list);
+		xfree(slurmd_status_ptr->hostname);
 		xfree(slurmd_status_ptr->slurmd_logfile);
+		xfree(slurmd_status_ptr->step_list);
 		xfree(slurmd_status_ptr->version);
 		xfree(slurmd_status_ptr);
 	}
