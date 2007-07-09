@@ -132,6 +132,10 @@ expect {
 	}
 }
 if {$invalid == 0} {
+#	Add delay for slurmctld to process triggers (every 15 secs)
+	exec sleep 15
+
+#	Plus time for cross-platform NSF delays
 	if {[wait_for_file $file_out] != 0} {
 		send_user "\nFAILURE: file $file_out is missing\n"
 		set exit_code 1
