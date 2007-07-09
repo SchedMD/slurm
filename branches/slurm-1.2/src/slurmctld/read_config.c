@@ -392,8 +392,8 @@ static int _build_single_nodeline_info(slurm_conf_node_t *node_ptr,
 
 	/* some sanity checks */
 #ifdef HAVE_FRONT_END
-	if (hostlist_count(hostname_list) != 1
-	    || hostlist_count(address_list) != 1) {
+	if ((hostlist_count(hostname_list) != 1) ||
+	    (hostlist_count(address_list)  != 1)) {
 		error("Only one hostname and address allowed "
 		      "in FRONT_END mode");
 		goto cleanup;
@@ -708,7 +708,6 @@ int read_slurm_conf(int recover)
 	node_record_table_ptr = NULL;
 	node_record_count = 0;
 
-	conf = slurm_conf_lock();
 	if (recover == 0) {
 		/* in order to re-use job state information,
 		 * update nodes_completing string (based on node_bitmap) */
@@ -716,13 +715,13 @@ int read_slurm_conf(int recover)
 	}
 	if ((error_code = _init_all_slurm_conf())) {
 		node_record_table_ptr = old_node_table_ptr;
-		slurm_conf_unlock();
 		return error_code;
 	}
+	conf = slurm_conf_lock();
 	_build_all_nodeline_info(conf);
+	slurm_conf_unlock();
 	_handle_all_downnodes();
 	_build_all_partitionline_info();
-	slurm_conf_unlock();
 
 	update_logging();
 	jobacct_g_init_slurmctld(slurmctld_conf.job_acct_logfile);
