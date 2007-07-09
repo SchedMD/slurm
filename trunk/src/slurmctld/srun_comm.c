@@ -258,13 +258,13 @@ extern void srun_user_message(struct job_record *job_ptr, char *msg)
 		return;
 
 	if (job_ptr->other_port
-	&&  job_ptr->other_host && job_ptr->other_host[0]) {
+	&&  job_ptr->resp_host && job_ptr->resp_host[0]) {
 		addr = xmalloc(sizeof(struct sockaddr_in));
-		slurm_set_addr(addr, job_ptr->other_port, job_ptr->other_host);
+		slurm_set_addr(addr, job_ptr->other_port, job_ptr->resp_host);
 		msg_arg = xmalloc(sizeof(srun_user_msg_t));
 		msg_arg->job_id = job_ptr->job_id;
 		msg_arg->msg    = xstrdup(msg);
-		_srun_agent_launch(addr, job_ptr->other_host, SRUN_USER_MSG,
+		_srun_agent_launch(addr, job_ptr->resp_host, SRUN_USER_MSG,
 				   msg_arg);
 	}
 }
