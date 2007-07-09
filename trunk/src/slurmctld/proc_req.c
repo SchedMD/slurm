@@ -305,6 +305,7 @@ void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
 	conf_ptr->authtype            = xstrdup(conf->authtype);
 	conf_ptr->backup_addr         = xstrdup(conf->backup_addr);
 	conf_ptr->backup_controller   = xstrdup(conf->backup_controller);
+	conf_ptr->boot_time           = slurmctld_config.boot_time;
 	conf_ptr->cache_groups        = conf->cache_groups;
 	conf_ptr->checkpoint_type     = xstrdup(conf->checkpoint_type);
 	conf_ptr->control_addr        = xstrdup(conf->control_addr);
