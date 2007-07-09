@@ -196,6 +196,23 @@ if {$exit_code == 0} {
 	exec $bin_rm -f $file_in $file_out $file_err $test_prog ${test_prog}.o
 	send_user "\nSUCCESS\n"
 } else {
-	send_user "Check contents of $file_err\n"
+	set matches
+	spawn head $file_err
+	expect {
+		-re "Error creating CQ" {
+			incr matches
+			exp_continue
+		}
+		eof {
+			wait
+		}
+	}
+	if {$matches != 0} {
+		send_user "WARNING: If using MVAPICH then\n"
+		send_user "         Configure \"PropagateResourceLimitsExcept=MEMLOCK\"\n"
+		send_user "         Also start slurmd with \"ulimit -l unlimited\"\n"
+	} else {
+		send_user "Check contents of $file_err\n"
+	}
 }
 exit $exit_code
