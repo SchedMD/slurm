@@ -152,13 +152,18 @@ between the control machine and the DOWN node using the command
 NodeAddr values configured in <i>slurm.conf</i>. 
 If ping fails, then fix the network or addressses in <i>slurm.conf</i>.</li>
 
-<li>Next login to a node that SLURM considers to be in a DOWN 
+<li>Next, login to a node that SLURM considers to be in a DOWN 
 state and check if the slurmd daemon is running with the command
 "<i>ps -el | grep slurmd</i>".
 If slurmd is not running, restart it (typically as user root
 using the command "<i>/etc/init.d/slurm start</i>").
 You should check the log file (<i>SlurmdLog</i> in the
 <i>slurm.conf</i> file) for an indication of why it failed.
+You can get the status of the running slurmd daemon by 
+executing the command "<i>scontrol show slurmd</i>" on 
+the node of interest.
+Check the value of "Last slurmctld msg time" to determine 
+if the slurmctld is able to communicate with the slurmd. 
 If it keeps failing, you should contact the slurm team for help at
 <a href="mailto:slurm-dev@lists.llnl.gov">slurm-dev@lists.llnl.gov</a>.</li>
 
@@ -291,6 +296,6 @@ partition 000.
 </ol>
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 23 January 2007</p>
+<p style="text-align:center;">Last modified 7 July 2007</p>
 
 <!--#include virtual="footer.txt"-->

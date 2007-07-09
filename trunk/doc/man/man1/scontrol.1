@@ -180,7 +180,7 @@ Requeue a running or pending SLURM batch job.
 \fBshow\fP \fIENTITY\fP \fIID\fP
 Display the state of the specified entity with the specified identification.
 \fIENTITY\fP may be \fIconfig\fP, \fIdaemons\fP, \fIjob\fP, \fInode\fP, 
-\fIpartition\fP, \fIstep\fP, \fIhostlist\fP or \fIhostnames\fP 
+\fIpartition\fP, \fIslurmd\fP, \fIstep\fP, \fIhostlist\fP or \fIhostnames\fP 
 (also \fIblock\fP or \fIsubbp\fP on BlueGene systems).
 \fIID\fP can be used to identify a specific element of the identified 
 entity: the configuration parameter name, job ID, node name, partition name, 
@@ -198,6 +198,9 @@ expression for them (the inverse of \fIhostnames\fP).
 Multiple node names may be specified using simple node range expressions 
 (e.g. "lx[10\-20]"). All other \fIID\fP values must identify a single 
 element. The job step ID is of the form "job_id.step_id", (e.g. "1234.1").
+\fIslurmd\fP reports the current status of the slurmd daemon executing 
+on the same node from which the scontrol command is executed (the 
+local host). It can be useful to diagnose problems.
 By default, all elements of the entity type specified are printed.
 
 .TP
