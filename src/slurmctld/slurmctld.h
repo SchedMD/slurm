@@ -132,6 +132,7 @@
 typedef struct slurmctld_config {
 	int	daemonize;
 	bool	resume_backup;
+	time_t	boot_time;
 	time_t	shutdown_time;
 	int	server_thread_count;
 
