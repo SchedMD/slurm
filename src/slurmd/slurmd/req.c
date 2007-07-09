@@ -1192,19 +1192,6 @@ _rpc_daemon_status(slurm_msg_t *msg)
 {
 	slurm_msg_t      resp_msg;
 	slurmd_status_t *resp = NULL;
-	uid_t req_uid;
-
-	/*
-	 * check that requesting user ID is the SLURM UID or root
-	 */
-	req_uid = g_slurm_auth_get_uid(msg->auth_cred);
-	if (!_slurm_authorized_user(req_uid)) {
-		error("daemon_info request from invalid job_id: %ld",
-			(long) req_uid);
-		if (msg->conn_fd >= 0)
-			slurm_send_rc_msg(msg, ESLURM_INVALID_JOB_ID);
-		return  ESLURM_INVALID_JOB_ID;
-	}
 
 	resp = xmalloc(sizeof(slurmd_status_t));
 	resp->actual_cpus        = conf->actual_cpus;
