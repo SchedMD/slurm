@@ -1,7 +1,7 @@
 /*****************************************************************************\
  *  $Id$
  *****************************************************************************
- *  $LSDId: hostlist.h,v 1.4 2003/09/19 21:37:34 grondo Exp $
+ *  $LSDId: hostlist.h 2925 2003-09-19 21:37:34Z grondo $
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -54,10 +54,7 @@
  * A hostlist is a list of hostnames optimized for a prefixXXXX style 
  * naming convention, where XXXX  is a decimal, numeric suffix.
  */
-#ifndef   __hostlist_t_defined
-#  define __hostlist_t_defined
-   typedef struct hostlist * hostlist_t;
-#endif
+typedef struct hostlist * hostlist_t;
 
 /* A hostset is a special case of a hostlist. It:
  *

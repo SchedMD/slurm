@@ -49,5 +49,3 @@ tags: *.[ch]
 
 .o.so:
 	$(CC) -nostdlib -shared -o $*.so $(OBJECTS) $(LIBS)
-
-include Make-rpm.mk
