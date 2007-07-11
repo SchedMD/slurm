@@ -800,6 +800,8 @@ int read_slurm_conf(int recover)
 			old_auth_type, old_checkpoint_type,
 			old_crypto_type, old_sched_type, 
 			old_select_type, old_switch_type);
+	if (error_code)
+		return error_code;
 
 	/* Update plugin parameters as possible */
 	error_code = _preserve_select_type_param(
