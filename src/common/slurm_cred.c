@@ -379,8 +379,8 @@ slurm_cred_create(slurm_cred_ctx_t ctx, slurm_cred_arg_t *arg)
         cred->alloc_lps_cnt = arg->alloc_lps_cnt;
         cred->alloc_lps  = NULL;
         if (cred->alloc_lps_cnt > 0) {
-                cred->alloc_lps =  xmalloc(cred->alloc_lps_cnt * sizeof(int));
-                memcpy(cred->alloc_lps, arg->alloc_lps, cred->alloc_lps_cnt * sizeof(int));
+                cred->alloc_lps =  xmalloc(cred->alloc_lps_cnt * sizeof(uint32_t));
+                memcpy(cred->alloc_lps, arg->alloc_lps, cred->alloc_lps_cnt * sizeof(uint32_t));
         }
 	cred->ctime  = time(NULL);
 
@@ -423,9 +423,9 @@ slurm_cred_copy(slurm_cred_t cred)
 	rcred->alloc_lps_cnt = cred->alloc_lps_cnt;
 	rcred->alloc_lps  = NULL;
 	if (rcred->alloc_lps_cnt > 0) {
-		rcred->alloc_lps =  xmalloc(rcred->alloc_lps_cnt * sizeof(int));
+		rcred->alloc_lps =  xmalloc(rcred->alloc_lps_cnt * sizeof(uint32_t));
 		memcpy(rcred->alloc_lps, cred->alloc_lps, 
-		rcred->alloc_lps_cnt * sizeof(int));
+		rcred->alloc_lps_cnt * sizeof(uint32_t));
 	}
 	rcred->ctime  = cred->ctime;
 	rcred->signature = (unsigned char *)xstrdup((char *)cred->signature);
@@ -455,8 +455,8 @@ slurm_cred_faker(slurm_cred_arg_t *arg)
         cred->alloc_lps_cnt = arg->alloc_lps_cnt;
         cred->alloc_lps  = NULL;
         if (cred->alloc_lps_cnt > 0) {
-                 cred->alloc_lps =  xmalloc(cred->alloc_lps_cnt * sizeof(int));
-                 memcpy(cred->alloc_lps, arg->alloc_lps, cred->alloc_lps_cnt * sizeof(int));
+                 cred->alloc_lps =  xmalloc(cred->alloc_lps_cnt * sizeof(uint32_t));
+                 memcpy(cred->alloc_lps, arg->alloc_lps, cred->alloc_lps_cnt * sizeof(uint32_t));
         }
 	cred->ctime  = time(NULL);
 	cred->siglen = SLURM_IO_KEY_SIZE;
@@ -536,8 +536,8 @@ slurm_cred_verify(slurm_cred_ctx_t ctx, slurm_cred_t cred,
         arg->alloc_lps_cnt = cred->alloc_lps_cnt;
         arg->alloc_lps     = NULL;
         if (arg->alloc_lps_cnt > 0) {
-                arg->alloc_lps =  xmalloc(arg->alloc_lps_cnt * sizeof(int));
-                memcpy(arg->alloc_lps, cred->alloc_lps, arg->alloc_lps_cnt * sizeof(int));
+                arg->alloc_lps =  xmalloc(arg->alloc_lps_cnt * sizeof(uint32_t));
+                memcpy(arg->alloc_lps, cred->alloc_lps, arg->alloc_lps_cnt * sizeof(uint32_t));
         }
 
 	slurm_mutex_unlock(&cred->mutex);
@@ -833,9 +833,9 @@ slurm_cred_print(slurm_cred_t cred)
 	info("Cred: alloc_lps_cnt %d", cred->alloc_lps_cnt     ); 
         info("Cred: alloc_lps: ");                            
         for (i=0; i<cred->alloc_lps_cnt; i++)                 
-                info("alloc_lps[%d] = %d ", i, cred->alloc_lps[i]);
+                info("alloc_lps[%d] = %u ", i, cred->alloc_lps[i]);
 	info("Cred: ctime   %s",  ctime(&cred->ctime) );
-	info("Cred: siglen  %d",  cred->siglen        );
+	info("Cred: siglen  %u",  cred->siglen        );
 	slurm_mutex_unlock(&cred->mutex);
 
 }
