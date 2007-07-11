@@ -136,6 +136,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"BackupController", S_P_STRING},
 	{"ControlAddr", S_P_STRING},
 	{"ControlMachine", S_P_STRING},
+	{"CryptoType", S_P_STRING},
 	{"Epilog", S_P_STRING},
 	{"FastSchedule", S_P_UINT16},
 	{"FirstJobId", S_P_UINT32},
@@ -1463,7 +1464,7 @@ validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	if (!s_p_get_string(&conf->checkpoint_type, "CheckpointType", hashtbl))
 		conf->checkpoint_type = xstrdup(DEFAULT_CHECKPOINT_TYPE);
 
-	if (!s_p_get_string(&conf->checkpoint_type, "CryptoType", hashtbl))
+	if (!s_p_get_string(&conf->crypto_type, "CryptoType", hashtbl))
 		 conf->crypto_type = xstrdup(DEFAULT_CRYPTO_TYPE);
 
 	s_p_get_string(&conf->epilog, "Epilog", hashtbl);
