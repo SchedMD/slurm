@@ -173,6 +173,8 @@ static slurm_errtab_t slurm_errtab[] = {
 	  "AuthType change requires restart of all SLURM daemons and commands"},
 	{ ESLURM_INVALID_CHECKPOINT_TYPE_CHANGE,
 	  "Invalid change in CheckpointType requested"		},
+	{ ESLURM_INVALID_CRYPTO_TYPE_CHANGE,
+	  "Invalid change in CryptoType requested"		},
 	{ ESLURM_INVALID_SCHEDTYPE_CHANGE,
 	  "Invalid change in SchedulerType requested"		},
 	{ ESLURM_INVALID_SELECTTYPE_CHANGE,

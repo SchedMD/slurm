@@ -859,6 +859,7 @@ typedef struct slurm_ctl_conf {
 	char *checkpoint_type;	/* checkpoint plugin type */
 	char *control_addr;	/* comm path of slurmctld primary server */
 	char *control_machine;	/* name of slurmctld primary server */
+	char *crypto_type;	/* cryptographic signature plugin */
 	char *epilog;		/* pathname of job epilog */
 	uint32_t first_job_id;	/* first slurm generated job_id to assign */
 	uint32_t next_job_id;	/* next slurm generated job_id to assign */

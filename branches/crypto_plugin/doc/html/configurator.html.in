@@ -122,6 +122,7 @@ function displayfile()
    "AuthType=auth/" + get_radio_value(document.config.auth_type) + "<br>" +
    get_field("JobCredentialPrivateKey", document.config.private_key) + "<br>" +
    get_field("JobCredentialPublicCertificate", document.config.public_key) + "<br>" +
+   "#CryptoType=crypto/openssl <br>" +
    "StateSaveLocation=" + document.config.state_save_location.value + "<br>" +
    "SlurmdSpoolDir=" + document.config.slurmd_spool_dir.value + "<br>" +
    "SwitchType=switch/" + get_radio_value(document.config.switch_type) + "<br>" +
@@ -653,6 +654,6 @@ before terminating all remaining tasks. A value of zero indicates unlimited wait
 </FORM>
 <HR>
 <p class="footer">UCRL-WEB-225274<br>
-Last modified 2 July 2007</p>
+Last modified 11 July 2007</p>
 </BODY>
 
