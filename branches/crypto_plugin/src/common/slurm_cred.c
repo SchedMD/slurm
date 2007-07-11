@@ -118,13 +118,13 @@ struct slurm_cred_context {
 	pthread_mutex_t mutex;
 #endif
 	enum ctx_type  type;       /* type of context (creator or verifier) */
-	EVP_PKEY      *key;        /* private or public key                 */
+	void          *key;        /* private or public key                 */
 	List           job_list;   /* List of used jobids (for verifier)    */
 	List           state_list; /* List of cred states (for verifier)    */
 
-	int   expiry_window;       /* expiration window for cached creds    */
+	int         expiry_window; /* expiration window for cached creds    */
 
-	EVP_PKEY      *exkey;      /* Old public key if key is updated      */
+	void          *exkey;      /* Old public key if key is updated      */
 	time_t         exkey_exp;  /* Old key expiration time               */
 };
 
@@ -182,8 +182,8 @@ static void _verifier_ctx_init(slurm_cred_ctx_t ctx);
 static bool _credential_replayed(slurm_cred_ctx_t ctx, slurm_cred_t cred);
 static bool _credential_revoked(slurm_cred_ctx_t ctx, slurm_cred_t cred);
 
-static EVP_PKEY * _read_private_key(const char *path);
-static EVP_PKEY * _read_public_key(const char  *path);
+static void * _read_private_key(const char *path);
+static void * _read_public_key(const char  *path);
 
 static int _slurm_cred_sign(slurm_cred_ctx_t ctx, slurm_cred_t cred);
 static int _slurm_cred_verify_signature(slurm_cred_ctx_t ctx, slurm_cred_t c);
@@ -265,7 +265,7 @@ slurm_cred_ctx_destroy(slurm_cred_ctx_t ctx)
 	xassert(ctx->magic == CRED_CTX_MAGIC);
 
 	if (ctx->key)
-		EVP_PKEY_free(ctx->key);
+		EVP_PKEY_free((EVP_PKEY *) ctx->key);
 	if (ctx->job_list)
 		list_destroy(ctx->job_list);
 	if (ctx->state_list)
@@ -843,7 +843,7 @@ slurm_cred_print(slurm_cred_t cred)
 }
 
 
-static EVP_PKEY *
+static void *
 _read_private_key(const char *path)
 {
 	FILE     *fp = NULL;
@@ -861,11 +861,11 @@ _read_private_key(const char *path)
 
 	fclose(fp);
 
-	return pk;
+	return (void *) pk;
 }
 
 
-static EVP_PKEY *
+static void *
 _read_public_key(const char *path)
 {
 	FILE     *fp = NULL;
@@ -883,7 +883,7 @@ _read_public_key(const char *path)
 
 	fclose(fp);
 
-	return pk;
+	return (void *) pk;
 }
 
 
@@ -904,8 +904,8 @@ _verifier_ctx_init(slurm_cred_ctx_t ctx)
 static int
 _ctx_update_private_key(slurm_cred_ctx_t ctx, const char *path)
 {
-	EVP_PKEY *pk   = NULL;
-	EVP_PKEY *tmpk = NULL;
+	void *pk   = NULL;
+	void *tmpk = NULL;
 
 	xassert(ctx != NULL);
 
@@ -922,7 +922,7 @@ _ctx_update_private_key(slurm_cred_ctx_t ctx, const char *path)
 
 	slurm_mutex_unlock(&ctx->mutex);
 
-	EVP_PKEY_free(tmpk);
+	EVP_PKEY_free((EVP_PKEY *) tmpk);
 
 	return SLURM_SUCCESS;
 }
@@ -931,7 +931,7 @@ _ctx_update_private_key(slurm_cred_ctx_t ctx, const char *path)
 static int
 _ctx_update_public_key(slurm_cred_ctx_t ctx, const char *path)
 {
-	EVP_PKEY *pk   = NULL;
+	void *pk   = NULL;
 
 	xassert(ctx != NULL);
 
@@ -944,7 +944,7 @@ _ctx_update_public_key(slurm_cred_ctx_t ctx, const char *path)
 	xassert(ctx->type  == SLURM_CRED_VERIFIER);
 
 	if (ctx->exkey) 
-		EVP_PKEY_free(ctx->exkey);
+		EVP_PKEY_free((EVP_PKEY *) ctx->exkey);
 
 	ctx->exkey = ctx->key;
 	ctx->key   = pk;
@@ -967,7 +967,7 @@ _exkey_is_valid(slurm_cred_ctx_t ctx)
 	
 	if (time(NULL) > ctx->exkey_exp) {
 		debug2("old job credential key slurmd expired");
-		EVP_PKEY_free(ctx->exkey);
+		EVP_PKEY_free((EVP_PKEY *) ctx->exkey);
 		ctx->exkey = NULL;
 		return false;
 	}
@@ -980,16 +980,12 @@ static slurm_cred_ctx_t
 _slurm_cred_ctx_alloc(void)
 {
 	slurm_cred_ctx_t ctx = xmalloc(sizeof(*ctx));
+	/* Contents initialized to zero */
 
 	slurm_mutex_init(&ctx->mutex);
 	slurm_mutex_lock(&ctx->mutex);
 
-	ctx->key           = NULL;
-	ctx->job_list      = NULL;
-	ctx->state_list    = NULL;
 	ctx->expiry_window = DEFAULT_EXPIRATION_WINDOW;
-
-	ctx->exkey         = NULL;
 	ctx->exkey_exp     = (time_t) -1;
 
 	xassert(ctx->magic = CRED_CTX_MAGIC);
@@ -1034,11 +1030,11 @@ _print_data(char *data, int datalen)
 static int
 _slurm_cred_sign(slurm_cred_ctx_t ctx, slurm_cred_t cred)
 {
-	EVP_MD_CTX ectx;
+	EVP_MD_CTX    ectx;
 	Buf           buffer;
 	int           rc    = SLURM_SUCCESS;
 	unsigned int *lenp  = &cred->siglen;
-	int           ksize = EVP_PKEY_size(ctx->key);
+	int           ksize = EVP_PKEY_size((EVP_PKEY *) ctx->key);
 
 	/*
 	 * Allocate memory for signature: at most EVP_PKEY_size() bytes
@@ -1051,7 +1047,7 @@ _slurm_cred_sign(slurm_cred_ctx_t ctx, slurm_cred_t cred)
 	EVP_SignInit(&ectx, EVP_sha1());
 	EVP_SignUpdate(&ectx, get_buf_data(buffer), get_buf_offset(buffer));
 
-	if (!(EVP_SignFinal(&ectx, cred->signature, lenp, ctx->key))) {
+	if (!(EVP_SignFinal(&ectx, cred->signature, lenp, (EVP_PKEY *) ctx->key))) {
 		ERR_print_errors_fp(log_fp());
 		rc = SLURM_ERROR;
 	}
@@ -1082,12 +1078,12 @@ _slurm_cred_verify_signature(slurm_cred_ctx_t ctx, slurm_cred_t cred)
 	EVP_VerifyInit(&ectx, EVP_sha1());
 	EVP_VerifyUpdate(&ectx, get_buf_data(buffer), get_buf_offset(buffer));
 
-	if (!(rc = EVP_VerifyFinal(&ectx, sig, siglen, ctx->key))) {
+	if (!(rc = EVP_VerifyFinal(&ectx, sig, siglen, (EVP_PKEY *) ctx->key))) {
 		/*
 		 * Check against old key if one exists and is valid
 		 */
 		if (_exkey_is_valid(ctx))
-			rc = EVP_VerifyFinal(&ectx, sig, siglen, ctx->exkey);
+			rc = EVP_VerifyFinal(&ectx, sig, siglen, (EVP_PKEY *) ctx->exkey);
 	}
 
 	if (!rc) {
@@ -1177,7 +1173,7 @@ slurm_cred_handle_reissue(slurm_cred_ctx_t ctx, slurm_cred_t cred)
 {
 	job_state_t  *j = _find_job_state(ctx, cred->jobid);
 
-	if (j != NULL && j->revoked && cred->ctime > j->revoked) {
+	if (j != NULL && j->revoked && (cred->ctime > j->revoked)) {
 		/* The credential has been reissued.  Purge the
 		   old record so that "cred" will look like a new
 		   credential to any ensuing commands. */
@@ -1219,7 +1215,7 @@ _credential_revoked(slurm_cred_ctx_t ctx, slurm_cred_t cred)
 
 	if (cred->ctime <= j->revoked) {
 		char buf[64];
-		debug ("cred for %d revoked. expires at %s", 
+		debug ("cred for %u revoked. expires at %s", 
                        j->jobid, timestr (&j->expiration, buf, 64));
 		return true;
 	}
