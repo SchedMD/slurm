@@ -106,6 +106,9 @@ enum ctx_type {
 	SLURM_CRED_VERIFIER
 };
 
+/*
+ * Credential context, slurm_cred_ctx_t:
+ */
 struct slurm_cred_context {
 #ifndef NDEBUG
 #  define CRED_CTX_MAGIC 0x0c0c0c
@@ -127,8 +130,7 @@ struct slurm_cred_context {
 
 
 /*
- * Completion of slurm job credential type:
- *
+ * Completion of slurm job credential type, slurm_cred_t:
  */
 struct slurm_job_credential {
 #ifndef NDEBUG
@@ -143,8 +145,8 @@ struct slurm_job_credential {
 	uid_t    uid;          /* user for which this cred is valid         */
 	time_t   ctime;        /* time of credential creation               */
 	char    *nodes;        /* list of hostnames for which the cred is ok*/
-        uint32_t alloc_lps_cnt;    /* Number of hosts in the list above     */
-        uint32_t *alloc_lps;       /* Number of tasks on each host          */
+	uint32_t alloc_lps_cnt;   /* Number of hosts in the list above      */
+	uint32_t *alloc_lps;      /* Number of tasks on each host           */
 
 	unsigned char *signature; /* credential signature                   */
 	unsigned int siglen;      /* signature length in bytes              */
@@ -1000,17 +1002,10 @@ static slurm_cred_t
 _slurm_cred_alloc(void)
 {
 	slurm_cred_t cred = xmalloc(sizeof(*cred));
+	/* Contents initialized to zero */
 
 	slurm_mutex_init(&cred->mutex);
-
-	cred->jobid     = 0;
-	cred->stepid    = 0;
-	cred->uid       = (uid_t) -1;
-	cred->nodes     = NULL;
-        cred->alloc_lps_cnt  = 0; 
-	cred->alloc_lps     = NULL;
-	cred->signature = NULL;
-	cred->siglen    = 0;
+	cred->uid = (uid_t) -1;
 
 	xassert(cred->magic = CRED_MAGIC);
 
@@ -1146,7 +1141,8 @@ _credential_replayed(slurm_cred_ctx_t ctx, slurm_cred_t cred)
 	/*
 	 * If we found a match, this credential is being replayed.
 	 */
-	if (s) return true; 
+	if (s)
+		return true; 
 
 	/*
 	 * Otherwise, save the credential state
@@ -1165,8 +1161,10 @@ static char * timestr (const time_t *tp, char *buf, size_t n)
 	struct tm tmval;
 #ifdef DISABLE_LOCALTIME
 	static int disabled = 0;
-	if (buf == NULL) disabled=1;
-	if (disabled) return NULL;
+	if (buf == NULL)
+		disabled=1;
+	if (disabled)
+		return NULL;
 #endif
 	if (!localtime_r (tp, &tmval))
 		error ("localtime_r: %m");
@@ -1237,7 +1235,10 @@ _find_job_state(slurm_cred_ctx_t ctx, uint32_t jobid)
 	job_state_t  *j = NULL;
 
 	i = list_iterator_create(ctx->job_list);
-	while ((j = list_next(i)) && (j->jobid != jobid)) {;}
+	while ((j = list_next(i))) {
+		if (j->jobid == jobid)
+			break;
+	}
 	list_iterator_destroy(i);
 	return j;
 }
