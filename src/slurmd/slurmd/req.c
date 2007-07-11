@@ -894,6 +894,12 @@ _rpc_batch_job(slurm_msg_t *msg)
 		else
 			(void) _abort_step(req->job_id, req->step_id);
 	}
+
+	/*
+	 *  If job prolog failed, indicate failure to slurmctld
+	 */
+	if (rc == ESLURMD_PROLOG_FAILED)
+		send_registration_msg(rc, false);
 }
 
 static int
