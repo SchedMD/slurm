@@ -40,6 +40,7 @@ documents those changes that are of interest to users and admins.
  -- In sched/wiki2 and select/cons_res: insure that Slurm's CPU allocation
     is identical to Moab's (from Ernest Artiaga and Asier Roa, BSC).
  -- Added "scontrol show slurmd" command to status local slurmd daemon.
+ -- Set node DOWN if prolog fails on node zero of batch job launch.
 
 * Changes in SLURM 1.2.11
 =========================

@@ -314,6 +314,12 @@ or srun's <i>--mpi=mvapich</i> option.
 $ mpicc ...
 $ srun -n16 --mpi=mvapich a.out
 </pre>
+<p><b>Note for system administrators:</b> Configure
+<i>PropagateResourceLimitsExcept=MEMLOCK</i> in <b>slurm.conf</b> and 
+start the <i>slurmd</i> daemons with an unlimited locked memory limit.
+For more details, see 
+<a href="http://mvapich.cse.ohio-state.edu/support/mvapich_user_guide.html#x1-420007.2.3">MVAPICH</a> 
+documentation for "CQ or QP Creation failure".</p>
 
 <p><a href="http://nowlab.cse.ohio-state.edu/projects/mpi-iba"><b>MVAPICH2</b></a>
 jobs can be launched directly by <b>srun</b> command.
@@ -397,6 +403,6 @@ sbatch: Submitted batch job 1234
 tasks. These tasks are not managed by SLURM since they are launched 
 outside of its control.</p>
  
-<p style="text-align:center;">Last modified 15 June 2007</p>
+<p style="text-align:center;">Last modified 9 July 2007</p>
 
 <!--#include virtual="footer.txt"-->
