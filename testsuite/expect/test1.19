@@ -240,8 +240,10 @@ if { [test_bluegene] } {
 	set task_cnt 4
 }
 
+# Note: Task count is in the script for each srun
+#	There is not oversubscribe option for sbatch.
 set job_id   0
-set srun_pid [spawn $sbatch --output=/dev/null -N$node_cnt -n$task_cnt -t1 $file_in]
+set srun_pid [spawn $sbatch --output=/dev/null -N$node_cnt -t1 $file_in]
 expect {
 	-re "Submitted batch job ($number)" {
 		set job_id $expect_out(1,string)
