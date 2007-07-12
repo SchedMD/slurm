@@ -3,7 +3,7 @@
  *****************************************************************************
  *  Copyright (C) 2007 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Morris Jette <jette1@llnl.gov>.
+ *  Written by Mark A. Grondona <mgrondona@llnl.gov>.
  *  UCRL-CODE-226842.
  *  
  *  This file is part of SLURM, a resource management program.
@@ -143,11 +143,19 @@ crypto_read_public_key(const char *path)
 extern char *
 crypto_str_error(void)
 {
+	static int loaded = 0;
+
+	if (loaded == 0) {
+		ERR_load_crypto_strings();
+		loaded = 1;
+	}
+
 	return (char *) ERR_reason_error_string(ERR_get_error()); 
 }
 
 extern int
-crypto_sign(void * key, char *buffer, int buf_size, char **sig_pp, unsigned int *sig_size_p) 
+crypto_sign(void * key, char *buffer, int buf_size, char **sig_pp, 
+		unsigned int *sig_size_p) 
 {
 	EVP_MD_CTX    ectx;
 	int           rc    = 0;
@@ -161,8 +169,10 @@ crypto_sign(void * key, char *buffer, int buf_size, char **sig_pp, unsigned int 
 	EVP_SignInit(&ectx, EVP_sha1());
 	EVP_SignUpdate(&ectx, buffer, buf_size);
 
-	if (!(EVP_SignFinal(&ectx, (unsigned char *)*sig_pp, sig_size_p, (EVP_PKEY *) key)))
+	if (!(EVP_SignFinal(&ectx, (unsigned char *)*sig_pp, sig_size_p, 
+			(EVP_PKEY *) key))) {
 		rc = -1;
+	}
 
 #ifdef HAVE_EVP_MD_CTX_CLEANUP
 	/* Note: Likely memory leak if this function is absent */
@@ -173,7 +183,8 @@ crypto_sign(void * key, char *buffer, int buf_size, char **sig_pp, unsigned int 
 }
 
 extern int
-crypto_verify_sign(void * key, char *buffer, unsigned int buf_size, char *signature, int sig_size)
+crypto_verify_sign(void * key, char *buffer, unsigned int buf_size, 
+		char *signature, int sig_size)
 {
 	EVP_MD_CTX     ectx;
 	int            rc = 0;
@@ -181,7 +192,8 @@ crypto_verify_sign(void * key, char *buffer, unsigned int buf_size, char *signat
 	EVP_VerifyInit(&ectx, EVP_sha1());
 	EVP_VerifyUpdate(&ectx, buffer, buf_size);
 
-	rc = EVP_VerifyFinal(&ectx, (const unsigned char *) signature, sig_size, (EVP_PKEY *) key);
+	rc = EVP_VerifyFinal(&ectx, (unsigned char *) signature, 
+		sig_size, (EVP_PKEY *) key);
 	if (!rc)
 		rc = -1;
 

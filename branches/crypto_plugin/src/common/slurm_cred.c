@@ -4,7 +4,7 @@
  *****************************************************************************
  *  Copyright (C) 2002-2006 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Mark A. Grondona <mgrondona@llnl.gov>.
+ *  Written by Morris Jette <jette1@llnl.gov>.
  *  UCRL-CODE-226842.
  *  
  *  This file is part of SLURM, a resource management program.
@@ -47,24 +47,21 @@
 #include <stdlib.h>
 #include <sys/time.h>
 
-/*
- * OpenSSL includes
- */
-#include <openssl/evp.h>
-#include <openssl/pem.h>
-#include <openssl/err.h>
-
 #if WITH_PTHREADS
 #  include <pthread.h>
 #endif /* WITH_PTHREADS */
 
-#include "src/common/macros.h"
+#include "src/common/io_hdr.h"
 #include "src/common/list.h"
 #include "src/common/log.h"
+#include "src/common/macros.h"
+#include "src/common/plugin.h"
+#include "src/common/plugrack.h"
+#include "src/common/slurm_protocol_api.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xassert.h"
 #include "src/common/xstring.h"
-#include "src/common/io_hdr.h"
+
 
 #include "src/common/slurm_cred.h"
 
@@ -140,18 +137,52 @@ struct slurm_job_credential {
 #ifdef  WITH_PTHREADS
 	pthread_mutex_t mutex;
 #endif
-	uint32_t jobid;        /* Job ID associated with this credential    */
-	uint32_t stepid;       /* Job step ID for this credential           */
-	uid_t    uid;          /* user for which this cred is valid         */
-	time_t   ctime;        /* time of credential creation               */
-	char    *nodes;        /* list of hostnames for which the cred is ok*/
-	uint32_t alloc_lps_cnt;   /* Number of hosts in the list above      */
-	uint32_t *alloc_lps;      /* Number of tasks on each host           */
+	uint32_t jobid;		/* Job ID associated with this cred	*/
+	uint32_t stepid;	/* Job step ID for this credential	*/
+	uid_t    uid;		/* user for which this cred is valid	*/
+	time_t   ctime;		/* time of credential creation		*/
+	char    *nodes;		/* hostnames for which the cred is ok	*/
+	uint32_t alloc_lps_cnt;	/* Number of hosts in the list above	*/
+	uint32_t *alloc_lps;	/* Number of tasks on each host		*/
 
-	unsigned char *signature; /* credential signature                   */
-	unsigned int siglen;      /* signature length in bytes              */
+	char *signature; 	/* credential signature			*/
+	unsigned int siglen;	/* signature length in bytes		*/
 };
 
+/*
+ * WARNING:  Do not change the order of these fields or add additional
+ * fields at the beginning of the structure.  If you do, job accounting
+ * plugins will stop working.  If you need to add fields, add them 
+ * at the end of the structure.
+ */
+typedef struct slurm_crypto_ops {
+	void *(*crypto_read_private_key)	(const char *path);
+	void *(*crypto_read_public_key)		(const char *path);
+	void  (*crypto_destroy_key)		(void *key);
+	int   (*crypto_sign)			(void * key, char *buffer, 
+						 int buf_size, char **sig_pp, 
+						 unsigned int *sig_size_p);
+	int   (*crypto_verify_sign)		(void * key, char *buffer, 
+						 unsigned int buf_size, 
+						 char *signature, int sig_size);
+	char *(*crypto_str_error)		(void);
+} slurm_crypto_ops_t;
+
+/*
+ * A global cryptographic context.  "Global" in the sense that there's
+ * only one, with static bindings.  We don't export it.
+ */
+
+typedef struct slurm_crypto_context {
+	char 			*crypto_type;
+	plugrack_t		plugin_list;
+	plugin_handle_t		cur_plugin;
+	int			crypto_errno;
+	slurm_crypto_ops_t	ops;
+} slurm_crypto_context_t;
+
+static slurm_crypto_context_t *g_crypto_context = NULL;
+static pthread_mutex_t      g_crypto_context_lock = PTHREAD_MUTEX_INITIALIZER;
 
 
 /*
@@ -182,11 +213,11 @@ static void _verifier_ctx_init(slurm_cred_ctx_t ctx);
 static bool _credential_replayed(slurm_cred_ctx_t ctx, slurm_cred_t cred);
 static bool _credential_revoked(slurm_cred_ctx_t ctx, slurm_cred_t cred);
 
-static void * _read_private_key(const char *path);
-static void * _read_public_key(const char  *path);
-
 static int _slurm_cred_sign(slurm_cred_ctx_t ctx, slurm_cred_t cred);
 static int _slurm_cred_verify_signature(slurm_cred_ctx_t ctx, slurm_cred_t c);
+
+static int _slurm_crypto_init(void);
+static int _slurm_crypto_fini(void);
 
 static job_state_t  * _job_state_unpack_one(Buf buffer);
 static cred_state_t * _cred_state_unpack_one(Buf buffer);
@@ -203,20 +234,194 @@ static void _cred_state_pack_one(cred_state_t *s, Buf buffer);
 static char * timestr (const time_t *tp, char *buf, size_t n);
 #endif
 
+
+static slurm_crypto_context_t *
+_slurm_crypto_context_create( const char *crypto_type)
+{
+	slurm_crypto_context_t *c;
+
+	if ( crypto_type == NULL ) {
+		error( "_slurm_crypto_context_create: no crypto type" );
+		return NULL;
+	}
+
+	c = xmalloc( sizeof( struct slurm_crypto_context ) );
+
+	c->crypto_errno = SLURM_SUCCESS;
+
+	/* Copy the job completion job completion type. */
+	c->crypto_type = xstrdup( crypto_type );
+	if ( c->crypto_type == NULL ) {
+		error( "can't make local copy of crypto type" );
+		xfree( c );
+		return NULL; 
+	}
+
+	/* Plugin rack is demand-loaded on first reference. */
+	c->plugin_list = NULL; 
+	c->cur_plugin = PLUGIN_INVALID_HANDLE; 
+	c->crypto_errno	= SLURM_SUCCESS;
+
+	return c;
+}
+
+static int
+_slurm_crypto_context_destroy( slurm_crypto_context_t *c )
+{
+	/*
+	 * Must check return code here because plugins might still
+	 * be loaded and active.
+	 */
+	if ( c->plugin_list ) {
+		if ( plugrack_destroy( c->plugin_list ) != SLURM_SUCCESS ) {
+			 return SLURM_ERROR;
+		}
+	}
+
+	xfree( c->crypto_type );
+	xfree( c );
+
+	return SLURM_SUCCESS;
+}
+
+/*
+ * Resolve the operations from the plugin.
+ */
+static slurm_crypto_ops_t *
+_slurm_crypto_get_ops( slurm_crypto_context_t *c )
+{
+	/*
+	 * These strings must be in the same order as the fields declared
+	 * for slurm_crypto_ops_t.
+	 */
+	static const char *syms[] = {
+		"crypto_read_private_key",
+		"crypto_read_public_key",
+		"crypto_destroy_key",
+		"crypto_sign",
+		"crypto_verify_sign",
+		"crypto_str_error"
+	};
+	int n_syms = sizeof( syms ) / sizeof( char * );
+	int rc = 0;
+        /* Get the plugin list, if needed. */
+        if ( c->plugin_list == NULL ) {
+		char *plugin_dir;
+                c->plugin_list = plugrack_create();
+                if ( c->plugin_list == NULL ) {
+                        error( "Unable to create a plugin manager" );
+                        return NULL;
+                }
+
+                plugrack_set_major_type( c->plugin_list, "crypto" );
+                plugrack_set_paranoia( c->plugin_list, 
+				       PLUGRACK_PARANOIA_NONE, 
+				       0 );
+		plugin_dir = slurm_get_plugin_dir();
+                plugrack_read_dir( c->plugin_list, plugin_dir );
+		xfree(plugin_dir);
+        }
+  
+        /* Find the correct plugin. */
+        c->cur_plugin = 
+		plugrack_use_by_type( c->plugin_list, c->crypto_type );
+        if ( c->cur_plugin == PLUGIN_INVALID_HANDLE ) {
+                error( "can't find a plugin for type %s", c->crypto_type );
+                return NULL;
+        }  
+
+        /* Dereference the API. */
+        if ( (rc = plugin_get_syms( c->cur_plugin,
+				    n_syms,
+				    syms,
+				    (void **) &c->ops )) < n_syms ) {
+                error( "incomplete crypto plugin detected only "
+		       "got %d out of %d",
+		       rc, n_syms);
+                return NULL;
+        }
+
+        return &c->ops;
+}
+
+static int _slurm_crypto_init(void)
+{
+	char	*crypto_type = NULL;
+	int	retval=SLURM_SUCCESS;
+
+	slurm_mutex_lock( &g_crypto_context_lock );
+	if ( g_crypto_context )
+		goto done;
+
+	crypto_type = slurm_get_crypto_type();
+	g_crypto_context = _slurm_crypto_context_create( crypto_type );
+	if ( g_crypto_context == NULL ) {
+		error( "cannot create a context for %s", crypto_type );
+		retval = SLURM_ERROR;
+		goto done;
+	}
+	
+	if ( _slurm_crypto_get_ops( g_crypto_context ) == NULL ) {
+		error( "cannot resolve job accounting plugin operations" );
+		_slurm_crypto_context_destroy( g_crypto_context );
+		g_crypto_context = NULL;
+		retval = SLURM_ERROR;
+	}
+
+  done:
+	slurm_mutex_unlock( &g_crypto_context_lock );
+	xfree(crypto_type);
+
+	return(retval);
+}
+
+static int _slurm_crypto_fini(void)
+{
+	int rc;
+
+	if (!g_crypto_context)
+		return SLURM_SUCCESS;
+
+	rc = _slurm_crypto_context_destroy(g_crypto_context);
+	g_crypto_context = NULL;
+	return rc;
+}
+
+extern int slurm_cred_fini()
+{
+	int retval = SLURM_SUCCESS;
+	if (_slurm_crypto_init() < 0)
+		return SLURM_ERROR;
+
+#if 0
+	slurm_mutex_lock( &g_crypto_context_lock );
+	if ( g_crypto_context ) 
+		retval = (*(g_crypto_context->ops.crypto_fini))();
+	slurm_mutex_unlock( &g_jcrypto_context_lock );
+#endif
+
+	if (_slurm_crypto_fini() < 0)
+		return SLURM_ERROR;
+	return retval;
+}
+
 slurm_cred_ctx_t 
 slurm_cred_creator_ctx_create(const char *path)
 {
 	slurm_cred_ctx_t ctx = NULL;
 	
 	xassert(path != NULL);
+	if (_slurm_crypto_init() < 0)
+		return NULL;
 
 	ctx = _slurm_cred_ctx_alloc();
 	slurm_mutex_lock(&ctx->mutex);
 
 	ctx->type = SLURM_CRED_CREATOR;
 
-	if (!(ctx->key = _read_private_key(path))) 
-		goto fail;
+	ctx->key = (*(g_crypto_context->ops.crypto_read_private_key))(path);
+	if (!ctx->key)
+ 		goto fail;
 
 	slurm_mutex_unlock(&ctx->mutex);
 	return ctx;
@@ -234,13 +439,16 @@ slurm_cred_verifier_ctx_create(const char *path)
 	slurm_cred_ctx_t ctx = NULL;
 
 	xassert(path != NULL);
+	if (_slurm_crypto_init() < 0)
+		return NULL;
 
 	ctx = _slurm_cred_ctx_alloc();
 	slurm_mutex_lock(&ctx->mutex);
 
 	ctx->type = SLURM_CRED_VERIFIER;
 
-	if (!(ctx->key = _read_public_key(path)))
+	ctx->key = (*(g_crypto_context->ops.crypto_read_public_key))(path);
+	if (!ctx->key)
 		goto fail;
 
 	_verifier_ctx_init(ctx);
@@ -260,12 +468,14 @@ slurm_cred_ctx_destroy(slurm_cred_ctx_t ctx)
 {
 	if (ctx == NULL)
 		return;
+	if (_slurm_crypto_init() < 0)
+		return;
 
 	slurm_mutex_lock(&ctx->mutex);
 	xassert(ctx->magic == CRED_CTX_MAGIC);
 
 	if (ctx->key)
-		EVP_PKEY_free((EVP_PKEY *) ctx->key);
+		(*(g_crypto_context->ops.crypto_destroy_key))(ctx->key);
 	if (ctx->job_list)
 		list_destroy(ctx->job_list);
 	if (ctx->state_list)
@@ -346,6 +556,9 @@ slurm_cred_ctx_get(slurm_cred_ctx_t ctx, slurm_cred_opt_t opt, ...)
 int 
 slurm_cred_ctx_key_update(slurm_cred_ctx_t ctx, const char *path)
 {
+	if (_slurm_crypto_init() < 0)
+		return SLURM_ERROR;
+
 	if (ctx->type == SLURM_CRED_CREATOR)
 		return _ctx_update_private_key(ctx, path);
 	else
@@ -360,6 +573,8 @@ slurm_cred_create(slurm_cred_ctx_t ctx, slurm_cred_arg_t *arg)
 
 	xassert(ctx != NULL);
 	xassert(arg != NULL);
+	if (_slurm_crypto_init() < 0)
+		return NULL;
 
 	slurm_mutex_lock(&ctx->mutex);
 
@@ -382,7 +597,8 @@ slurm_cred_create(slurm_cred_ctx_t ctx, slurm_cred_arg_t *arg)
         cred->alloc_lps  = NULL;
         if (cred->alloc_lps_cnt > 0) {
                 cred->alloc_lps =  xmalloc(cred->alloc_lps_cnt * sizeof(uint32_t));
-                memcpy(cred->alloc_lps, arg->alloc_lps, cred->alloc_lps_cnt * sizeof(uint32_t));
+                memcpy(cred->alloc_lps, arg->alloc_lps, 
+			cred->alloc_lps_cnt * sizeof(uint32_t));
         }
 	cred->ctime  = time(NULL);
 
@@ -458,7 +674,8 @@ slurm_cred_faker(slurm_cred_arg_t *arg)
         cred->alloc_lps  = NULL;
         if (cred->alloc_lps_cnt > 0) {
                  cred->alloc_lps =  xmalloc(cred->alloc_lps_cnt * sizeof(uint32_t));
-                 memcpy(cred->alloc_lps, arg->alloc_lps, cred->alloc_lps_cnt * sizeof(uint32_t));
+                 memcpy(cred->alloc_lps, arg->alloc_lps, 
+			cred->alloc_lps_cnt * sizeof(uint32_t));
         }
 	cred->ctime  = time(NULL);
 	cred->siglen = SLURM_IO_KEY_SIZE;
@@ -496,6 +713,8 @@ slurm_cred_verify(slurm_cred_ctx_t ctx, slurm_cred_t cred,
 	xassert(ctx  != NULL);
 	xassert(cred != NULL);
 	xassert(arg  != NULL);
+	if (_slurm_crypto_init() < 0)
+		return SLURM_ERROR;
 
 	slurm_mutex_lock(&ctx->mutex);
 	slurm_mutex_lock(&cred->mutex);
@@ -539,7 +758,8 @@ slurm_cred_verify(slurm_cred_ctx_t ctx, slurm_cred_t cred,
         arg->alloc_lps     = NULL;
         if (arg->alloc_lps_cnt > 0) {
                 arg->alloc_lps =  xmalloc(arg->alloc_lps_cnt * sizeof(uint32_t));
-                memcpy(arg->alloc_lps, cred->alloc_lps, arg->alloc_lps_cnt * sizeof(uint32_t));
+                memcpy(arg->alloc_lps, cred->alloc_lps, 
+			arg->alloc_lps_cnt * sizeof(uint32_t));
         }
 
 	slurm_mutex_unlock(&cred->mutex);
@@ -843,50 +1063,6 @@ slurm_cred_print(slurm_cred_t cred)
 }
 
 
-static void *
-_read_private_key(const char *path)
-{
-	FILE     *fp = NULL;
-	EVP_PKEY *pk = NULL;
-
-	xassert(path != NULL);
-
-	if (!(fp = fopen(path, "r"))) {
-		error ("can't open key file '%s' : %m", path);
-		return NULL;
-	}
-
-	if (!PEM_read_PrivateKey(fp, &pk, NULL, NULL))
-		error ("PEM_read_PrivateKey [%s]: %m", path);
-
-	fclose(fp);
-
-	return (void *) pk;
-}
-
-
-static void *
-_read_public_key(const char *path)
-{
-	FILE     *fp = NULL;
-	EVP_PKEY *pk = NULL;
-
-	xassert(path != NULL);
-
-	if ((fp = fopen(path, "r")) == NULL) {
-		error ("can't open public key '%s' : %m ", path);
-		return NULL;
-	}
-
-	if (!PEM_read_PUBKEY(fp, &pk, NULL, NULL)) 
-		error("PEM_read_PUBKEY[%s]: %m", path);
-
-	fclose(fp);
-
-	return (void *) pk;
-}
-
-
 static void 
 _verifier_ctx_init(slurm_cred_ctx_t ctx)
 {
@@ -909,7 +1085,8 @@ _ctx_update_private_key(slurm_cred_ctx_t ctx, const char *path)
 
 	xassert(ctx != NULL);
 
-	if (!(pk = _read_private_key(path)))
+	pk = (*(g_crypto_context->ops.crypto_read_private_key))(path);
+	if (!pk)
 		return SLURM_ERROR;
 
 	slurm_mutex_lock(&ctx->mutex);
@@ -922,7 +1099,7 @@ _ctx_update_private_key(slurm_cred_ctx_t ctx, const char *path)
 
 	slurm_mutex_unlock(&ctx->mutex);
 
-	EVP_PKEY_free((EVP_PKEY *) tmpk);
+	(*(g_crypto_context->ops.crypto_destroy_key))(tmpk);
 
 	return SLURM_SUCCESS;
 }
@@ -934,8 +1111,8 @@ _ctx_update_public_key(slurm_cred_ctx_t ctx, const char *path)
 	void *pk   = NULL;
 
 	xassert(ctx != NULL);
-
-	if (!(pk = _read_public_key(path)))
+	pk = (*(g_crypto_context->ops.crypto_read_public_key))(path);
+	if (!pk)
 		return SLURM_ERROR;
 
 	slurm_mutex_lock(&ctx->mutex);
@@ -943,8 +1120,8 @@ _ctx_update_public_key(slurm_cred_ctx_t ctx, const char *path)
 	xassert(ctx->magic == CRED_CTX_MAGIC);
 	xassert(ctx->type  == SLURM_CRED_VERIFIER);
 
-	if (ctx->exkey) 
-		EVP_PKEY_free((EVP_PKEY *) ctx->exkey);
+	if (ctx->exkey)
+		(*(g_crypto_context->ops.crypto_destroy_key))(ctx->exkey);
 
 	ctx->exkey = ctx->key;
 	ctx->key   = pk;
@@ -967,7 +1144,7 @@ _exkey_is_valid(slurm_cred_ctx_t ctx)
 	
 	if (time(NULL) > ctx->exkey_exp) {
 		debug2("old job credential key slurmd expired");
-		EVP_PKEY_free((EVP_PKEY *) ctx->exkey);
+		(*(g_crypto_context->ops.crypto_destroy_key))(ctx->exkey);
 		ctx->exkey = NULL;
 		return false;
 	}
@@ -1008,11 +1185,6 @@ _slurm_cred_alloc(void)
 	return cred;
 }
 
-static const char *
-_ssl_error(void)
-{
-	return ERR_reason_error_string(ERR_get_error()); 
-}
 
 #ifdef EXTREME_DEBUG
 static void
@@ -1030,32 +1202,14 @@ _print_data(char *data, int datalen)
 static int
 _slurm_cred_sign(slurm_cred_ctx_t ctx, slurm_cred_t cred)
 {
-	EVP_MD_CTX    ectx;
 	Buf           buffer;
 	int           rc    = SLURM_SUCCESS;
 	unsigned int *lenp  = &cred->siglen;
-	int           ksize = EVP_PKEY_size((EVP_PKEY *) ctx->key);
-
-	/*
-	 * Allocate memory for signature: at most EVP_PKEY_size() bytes
-	 */
-	cred->signature = xmalloc(ksize * sizeof(unsigned char));
 
 	buffer = init_buf(4096);
 	_pack_cred(cred, buffer);
-
-	EVP_SignInit(&ectx, EVP_sha1());
-	EVP_SignUpdate(&ectx, get_buf_data(buffer), get_buf_offset(buffer));
-
-	if (!(EVP_SignFinal(&ectx, cred->signature, lenp, (EVP_PKEY *) ctx->key))) {
-		ERR_print_errors_fp(log_fp());
-		rc = SLURM_ERROR;
-	}
-
-#ifdef HAVE_EVP_MD_CTX_CLEANUP
-	/* Note: Likely memory leak if this function is absent */
-	EVP_MD_CTX_cleanup(&ectx);
-#endif
+	(*(g_crypto_context->ops.crypto_sign))(ctx->key, get_buf_data(buffer), 
+			get_buf_offset(buffer), &cred->signature, lenp);
 	free_buf(buffer);
 
 	return rc;
@@ -1064,41 +1218,30 @@ _slurm_cred_sign(slurm_cred_ctx_t ctx, slurm_cred_t cred)
 static int
 _slurm_cred_verify_signature(slurm_cred_ctx_t ctx, slurm_cred_t cred)
 {
-	EVP_MD_CTX     ectx;
 	Buf            buffer;
 	int            rc;
-	unsigned char *sig    = cred->signature;
-	int            siglen = cred->siglen; 
 
+	debug("Checking credential with %d bytes of sig data", cred->siglen);
 	buffer = init_buf(4096);
 	_pack_cred(cred, buffer);
 
-	debug("Checking credential with %d bytes of sig data", siglen);
-
-	EVP_VerifyInit(&ectx, EVP_sha1());
-	EVP_VerifyUpdate(&ectx, get_buf_data(buffer), get_buf_offset(buffer));
-
-	if (!(rc = EVP_VerifyFinal(&ectx, sig, siglen, (EVP_PKEY *) ctx->key))) {
-		/*
-		 * Check against old key if one exists and is valid
-		 */
-		if (_exkey_is_valid(ctx))
-			rc = EVP_VerifyFinal(&ectx, sig, siglen, (EVP_PKEY *) ctx->exkey);
+	rc = (*(g_crypto_context->ops.crypto_verify_sign))(ctx->key, 
+			get_buf_data(buffer), get_buf_offset(buffer),
+			cred->signature, cred->siglen);
+	if (!rc && _exkey_is_valid(ctx)) {
+		rc = (*(g_crypto_context->ops.crypto_verify_sign))(ctx->key, 
+			get_buf_data(buffer), get_buf_offset(buffer),
+			cred->signature, cred->siglen);
 	}
 
 	if (!rc) {
-		ERR_load_crypto_strings();
-		info("Credential signature check: %s", _ssl_error());
+		info("Credential signature check: %s", 
+			(*(g_crypto_context->ops.crypto_str_error))());
 		rc = SLURM_ERROR;
 	} else
 		rc = SLURM_SUCCESS;
 
-#ifdef HAVE_EVP_MD_CTX_CLEANUP
-	/* Note: Likely memory leak if this function is absent */
-	EVP_MD_CTX_cleanup(&ectx);
-#endif
 	free_buf(buffer);
-
 	return rc;
 }
 
