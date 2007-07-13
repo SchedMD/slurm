@@ -174,7 +174,8 @@ void    job_force_termination(srun_job_t *job);
 srun_job_state_t job_state(srun_job_t *job);
 
 extern srun_job_t * job_create_noalloc(void);
-extern srun_job_t *job_step_create_allocation(uint32_t job_id);
+extern srun_job_t *job_step_create_allocation(
+	resource_allocation_response_msg_t *resp);
 extern srun_job_t * job_create_allocation(
 	resource_allocation_response_msg_t *resp);
 extern srun_job_t * job_create_structure(
