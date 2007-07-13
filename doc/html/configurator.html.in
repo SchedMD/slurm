@@ -122,6 +122,7 @@ function displayfile()
    "AuthType=auth/" + get_radio_value(document.config.auth_type) + "<br>" +
    get_field("JobCredentialPrivateKey", document.config.private_key) + "<br>" +
    get_field("JobCredentialPublicCertificate", document.config.public_key) + "<br>" +
+   "CryptoType=" + get_radio_value(document.config.crypto_type) + "<br>" +
    "StateSaveLocation=" + document.config.state_save_location.value + "<br>" +
    "SlurmdSpoolDir=" + document.config.slurmd_spool_dir.value + "<br>" +
    "SwitchType=switch/" + get_radio_value(document.config.switch_type) + "<br>" +
@@ -347,7 +348,7 @@ fails by using an interal default set at SLURM build time.
 <input type="text" name="slurmd_port" value="6818"> <B>SlurmdPort</B>
 <P>
 
-<H2>Authentication</H2>
+<H2>Authentication and Security</H2>
 Define the method used for authenticating communicating between SLURM components.<BR>
 Select one value for <B>AuthType</B>:<BR>
 <input type="radio" name="auth_type" value="none"> <B>None</B>: No authentication, 
@@ -362,6 +363,11 @@ Specify fully qualified pathnames. Both values are required.
 <input type="text" name="private_key"> <B>JobCredentialPrivateKey</B>
 <P>
 <input type="text" name="public_key"> <B>JobCredentialPublicCertificate</B>
+<P>
+Library used for job step cryptographic signature generation.<BR>
+Select one value for <B>CryptoType</B>:<BR>
+<input type="radio" name="crypto_type" value="gnupg"> <B>GnuPG</B>: Gnu Privacy Guard<BR>
+<input type="radio" name="crypto_type" value="openssl" checked> <B>OpenSSL</B>
 <P>
 
 <H2>State Preservation</H2>
@@ -653,6 +659,6 @@ before terminating all remaining tasks. A value of zero indicates unlimited wait
 </FORM>
 <HR>
 <p class="footer">UCRL-WEB-225274<br>
-Last modified 2 July 2007</p>
+Last modified 11 July 2007</p>
 </BODY>
 

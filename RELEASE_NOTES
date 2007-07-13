@@ -26,6 +26,8 @@ CONFIGURATION FILE CHANGES
 * Job accounting and termination data can be written to a database as specified 
   by these new parameters: DatabaseType (flatfile, mysql, and pgsql), 
   DatabaseHost, DatabasePass, DatabasePort, and DatabaseUser.
+* Added new paramter "CryptoType" to specify digital signature plugin to 
+  be used. Currenly only supports crypto/openssl.
 * See "man slurm.conf" for more information.
 
 OTHER CHANGES

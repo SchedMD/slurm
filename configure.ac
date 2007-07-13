@@ -189,7 +189,8 @@ X_AC_READLINE
 dnl 
 dnl
 X_AC_SLURM_WITH_SSL
-
+AM_CONDITIONAL(HAVE_OPENSSL, test "x$ac_have_openssl" = "xyes")
+AC_SUBST(HAVE_OPENSSL)
 
 dnl
 dnl Check for compilation of SLURM auth modules:
@@ -267,6 +268,8 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/checkpoint/Makefile
 		 src/plugins/checkpoint/aix/Makefile
 		 src/plugins/checkpoint/none/Makefile
+		 src/plugins/crypto/Makefile
+		 src/plugins/crypto/openssl/Makefile
 		 src/plugins/jobacct/Makefile
 		 src/plugins/jobacct/linux/Makefile
 		 src/plugins/jobacct/aix/Makefile

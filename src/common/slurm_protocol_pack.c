@@ -2109,6 +2109,7 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer)
 	packstr(build_ptr->checkpoint_type, buffer);
 	packstr(build_ptr->control_addr, buffer);
 	packstr(build_ptr->control_machine, buffer);
+	packstr(build_ptr->crypto_type, buffer);
 	packstr(build_ptr->epilog, buffer);
 	pack16(build_ptr->fast_schedule, buffer);
 	pack32(build_ptr->first_job_id, buffer);
@@ -2208,6 +2209,8 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **
 			       buffer);
 	safe_unpackstr_xmalloc(&build_ptr->control_addr, &uint16_tmp, buffer);
 	safe_unpackstr_xmalloc(&build_ptr->control_machine, &uint16_tmp,
+			       buffer);
+	safe_unpackstr_xmalloc(&build_ptr->crypto_type, &uint16_tmp,
 			       buffer);
 	safe_unpackstr_xmalloc(&build_ptr->epilog, &uint16_tmp, buffer);
 	safe_unpack16(&build_ptr->fast_schedule, buffer);
@@ -2310,6 +2313,7 @@ unpack_error:
 	xfree(build_ptr->checkpoint_type);
 	xfree(build_ptr->control_addr);
 	xfree(build_ptr->control_machine);
+	xfree(build_ptr->crypto_type);
 	xfree(build_ptr->epilog);
 	xfree(build_ptr->job_acct_loc);
 	xfree(build_ptr->job_acct_type);

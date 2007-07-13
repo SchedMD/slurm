@@ -102,6 +102,7 @@ make_bash_script $file_in "
   for ((i=0; i<$iterations; i++)) ; do
     $srun $file_prog
   done
+  $bin_echo 'fini'
 "
 
 set job_id 0
@@ -134,11 +135,16 @@ if {[wait_for_job $job_id "DONE"] != 0} {
 if {[wait_for_file $file_out] != 0} {
 	exit 1
 }
+set fini    0
 set matches 0
 spawn $bin_cat $file_out
 expect {
 	-re "FAILED" {
 		incr matches
+		exp_continue
+	}
+	-re "fini" {
+		set fini 1
 		exp_continue
 	}
 	timeout {
@@ -148,6 +154,10 @@ expect {
 	eof {
 		wait
 	}
+}
+if {$fini != 1} {
+	send_user "\nFAILURE: script never completed\n"
+	set exit_code 1
 }
 if {$matches != 0} {
 	set tot [expr $iterations + 1]

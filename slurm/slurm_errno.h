@@ -150,6 +150,7 @@ enum {
 	ESLURM_TASKDIST_ARBITRARY_UNSUPPORTED,
 	ESLURM_TASKDIST_REQUIRES_OVERCOMMIT,
 	ESLURM_JOB_HELD,
+	ESLURM_INVALID_CRYPTO_TYPE_CHANGE,
 
 	/* switch specific error codes, specific values defined in plugin module */
 	ESLURM_SWITCH_MIN = 3000,

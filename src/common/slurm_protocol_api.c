@@ -243,6 +243,21 @@ char *slurm_get_auth_type(void)
 	return auth_type;
 }
 
+/* slurm_get_crypto_type
+ * returns the crypto_type from slurmctld_conf object
+ * RET char *    - crypto type, MUST be xfreed by caller
+ */
+extern char *slurm_get_crypto_type(void)
+{
+	char *crypto_type;
+	slurm_ctl_conf_t *conf;
+
+	conf = slurm_conf_lock();
+	crypto_type = xstrdup(conf->crypto_type);
+	slurm_conf_unlock();
+	return crypto_type;
+}
+
 /* slurm_get_propagate_prio_process
  * return the PropagatePrioProcess flag from slurmctld_conf object
  */

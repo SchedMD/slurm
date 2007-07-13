@@ -32,7 +32,8 @@
 #include <time.h>
 #include <unistd.h>
 
-#define _DEBUG 0
+#define _DEBUG         0
+#define _EXTREME_DEBUG 0
 
 main (int argc, char **argv) 
 {
@@ -51,16 +52,17 @@ main (int argc, char **argv)
 		printf("FAILED: File descriptor %d is open\n", i);
 #if _DEBUG
 {
-		char data[64];
-		int j;
-		size_t data_size;
-
 		printf("  st_mode:    0%o\n",(int) buf.st_mode);
 		printf("  st_uid:     %d\n", (int) buf.st_uid);
 		printf("  st_gid:     %d\n", (int) buf.st_gid);
 		printf("  st_size:    %d\n", (int) buf.st_size);
 		printf("  st_ino:     %d\n", (int) buf.st_ino);
 		printf("  st_dev:     %d\n", (int) buf.st_dev);
+#if _EXTREME_DEBUG
+	{
+		char data[64];
+		int j;
+		size_t data_size;
 
 		lseek(i, 0, SEEK_SET);
 		data_size = read(i, data, 64);
@@ -71,6 +73,8 @@ main (int argc, char **argv)
 			for (j=0; j<data_size; j++)
 				printf("  data[%d]:0x%x\n", j, data[j]);
 		}
+	}
+#endif
 }
 #endif
 	}

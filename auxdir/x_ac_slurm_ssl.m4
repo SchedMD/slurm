@@ -97,17 +97,17 @@ AC_DEFUN([X_AC_SLURM_WITH_SSL], [
   	return(RAND_status() <= 0);
   }
   			]])],[
-  				found_crypto=1
+  				ac_have_openssl="yes"
   				break;
   			],[
   		],[])
   
-  		if test ! -z "$found_crypto" ; then
+  		if test ! -z "$ac_have_openssl" ; then
   			break;
   		fi
   	done
   
-  	if test -z "$found_crypto" ; then
+  	if test -z "$ac_have_openssl" ; then
   		AC_MSG_ERROR([Could not find working OpenSSL library, download from www.openssl.org])
   	fi
   	if test -z "$ssldir" ; then

@@ -78,7 +78,7 @@ The default value is 0 to disable caching group data.
 .TP
 \fBCheckpointType\fR
 Define the system\-initiated checkpoint method to be used for user jobs. 
-The slurmctld daemon must be restarted for a change in CheckpointType 
+The slurmctld daemon must be restarted for a change in \fBCheckpointType\fR 
 to take effect. 
 Acceptable values at present include "checkpoint/none" and "checkpoint/aix"
 (only on AIX systems). 
@@ -100,6 +100,15 @@ The name of the machine where SLURM control functions are executed.
 This should be a node name without the full domain name (e.g. "lx0001"). 
 This value must be specified.
 See  the \fBRELOCATING CONTROLLERS\fR section if you change this.
+
+.TP
+\fBCryptoType\fR
+Define the cryptographic signature tool to be used in the creation of 
+job step credentials.
+The slurmctld daemon must be restarted for a change in \fBCryptoType\fR
+to take effect.
+Acceptable values at present include "crypto/openssl".
+The default value is "crypto/openssl".
 
 .TP
 \fBDatabaseHost\fR
