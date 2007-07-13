@@ -344,7 +344,7 @@ with the <i>--mpi=mpich1_shmem</i> option.</p>
 $ srun -n16 --mpi=mpich1_shmem a.out
 </pre>
 
-<p>If you are using MPICH P4 (<i>DEFAULT_DEVICE=ch_shmem</i> in 
+<p>If you are using MPICH P4 (<i>DEFAULT_DEVICE=ch_p4</i> in 
 the mpirun script) and SLURM version 1.2.11 or newer, 
 then it is recommended that you apply the patch in the SLURM 
 distribution's file <i>etc/mpich1.slurm.patch</i>. 
