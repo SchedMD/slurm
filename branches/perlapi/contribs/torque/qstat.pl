@@ -368,6 +368,10 @@ sub hhmm
 {
 	my ($hhmmss) = @_;
 
+	if ($hhmmss == INFINITE) {
+		return "Infinite";
+	}
+	
 	# Convert hhmmss to duration in minutes
 	$hhmmss = 0 unless $hhmmss;
 	$hhmmss =~ /(?:(\d+):)?(?:(\d+):)?([\d\.]+)/;
