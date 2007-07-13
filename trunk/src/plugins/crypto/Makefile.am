@@ -1,3 +1,3 @@
 # Makefile for crypto plugins
 
-SUBDIRS = openssl
+SUBDIRS = munge openssl

@@ -366,7 +366,7 @@ Specify fully qualified pathnames. Both values are required.
 <P>
 Library used for job step cryptographic signature generation.<BR>
 Select one value for <B>CryptoType</B>:<BR>
-<input type="radio" name="crypto_type" value="gnupg"> <B>GnuPG</B>: Gnu Privacy Guard<BR>
+<input type="radio" name="crypto_type" value="munge"> <B>Munge</B><BR>
 <input type="radio" name="crypto_type" value="openssl" checked> <B>OpenSSL</B>
 <P>
 

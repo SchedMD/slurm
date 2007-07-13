@@ -19,8 +19,9 @@ documents those changes that are of interest to users and admins.
     first to use it.  Follow documentation to add more to the plugin.
  -- Removed no-longer-needed jobacct/common/common_slurmctld.c since that is
     replaced by the database plugin.
- -- Moved digital signature logic into new plugin: crypto/openssl.
-    Added new configuration parameter: CryptoType
+ -- Added new configuration parameter: CryptoType.
+    Moved existing digital signature logic into new plugin: crypto/openssl.
+    Added new support for crypto/munge (available with GPL license).
 
 * Changes in SLURM 1.2.12
 =========================

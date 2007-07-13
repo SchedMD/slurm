@@ -107,7 +107,11 @@ Define the cryptographic signature tool to be used in the creation of
 job step credentials.
 The slurmctld daemon must be restarted for a change in \fBCryptoType\fR
 to take effect.
-Acceptable values at present include "crypto/openssl".
+Acceptable values at present include "crypto/munge" and "crypto/openssl".
+OpenSSL offers the best performance and is available with an 
+Apache style open source license.
+Munge is a little slower, but is availble under the Gnu General Public 
+License (GPL).
 The default value is "crypto/openssl".
 
 .TP
