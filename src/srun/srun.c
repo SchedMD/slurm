@@ -204,9 +204,8 @@ int srun(int ac, char **av)
 		if (opt.alloc_nodelist == NULL)
                        opt.alloc_nodelist = xstrdup(resp->node_list);
 
+		job = job_step_create_allocation(resp);
 		slurm_free_resource_allocation_response_msg(resp);
-
-		job = job_step_create_allocation(job_id);
 
 		if(!job)
 			exit(1);
