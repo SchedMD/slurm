@@ -82,8 +82,8 @@ static int  _preserve_select_type_param(slurm_ctl_conf_t * ctl_conf_ptr,
 					select_type_plugin_info_t old_select_type_p);
 static int  _preserve_plugins(slurm_ctl_conf_t * ctl_conf_ptr, 
 				char *old_auth_type, char *old_checkpoint_type,
-				char *old_sched_type, char *old_select_type,
-				char *old_switch_type);
+				char *old_crypto_type, char *old_sched_type, 
+				char *old_select_type, char *old_switch_type);
 static int  _sync_nodes_to_comp_job(void);
 static int  _sync_nodes_to_jobs(void);
 static int  _sync_nodes_to_active_job(struct job_record *job_ptr);
@@ -689,6 +689,7 @@ int read_slurm_conf(int recover)
 	struct node_record *old_node_table_ptr;
 	char *old_auth_type       = xstrdup(slurmctld_conf.authtype);
 	char *old_checkpoint_type = xstrdup(slurmctld_conf.checkpoint_type);
+	char *old_crypto_type     = xstrdup(slurmctld_conf.crypto_type);
 	char *old_sched_type      = xstrdup(slurmctld_conf.schedtype);
 	char *old_select_type     = xstrdup(slurmctld_conf.select_type);
 	char *old_switch_type     = xstrdup(slurmctld_conf.switch_type);
@@ -797,8 +798,10 @@ int read_slurm_conf(int recover)
 	/* Update plugins as possible */
 	error_code = _preserve_plugins(&slurmctld_conf,
 			old_auth_type, old_checkpoint_type,
-			old_sched_type, old_select_type,
-			old_switch_type);
+			old_crypto_type, old_sched_type, 
+			old_select_type, old_switch_type);
+	if (error_code)
+		return error_code;
 
 	/* Update plugin parameters as possible */
 	error_code = _preserve_select_type_param(
@@ -905,8 +908,8 @@ static int  _preserve_select_type_param(slurm_ctl_conf_t *ctl_conf_ptr,
  */
 static int  _preserve_plugins(slurm_ctl_conf_t * ctl_conf_ptr, 
 		char *old_auth_type, char *old_checkpoint_type,
-		char *old_sched_type, char *old_select_type, 
-		char *old_switch_type)
+		char *old_crypto_type, char *old_sched_type, 
+		char *old_select_type, char *old_switch_type)
 {
 	int rc = SLURM_SUCCESS;
 
@@ -927,6 +930,16 @@ static int  _preserve_plugins(slurm_ctl_conf_t * ctl_conf_ptr,
 			rc =  ESLURM_INVALID_CHECKPOINT_TYPE_CHANGE;
 		} else  /* free duplicate value */
 			xfree(old_checkpoint_type);
+	}
+
+	if (old_crypto_type) {
+		if (strcmp(old_crypto_type,
+				ctl_conf_ptr->crypto_type)) {
+			xfree(ctl_conf_ptr->crypto_type);
+			ctl_conf_ptr->crypto_type = old_crypto_type;
+			rc = ESLURM_INVALID_CRYPTO_TYPE_CHANGE;
+		} else
+			xfree(old_crypto_type);
 	}
 
 	if (old_sched_type) {

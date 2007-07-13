@@ -173,6 +173,8 @@ if [ -d /etc/init.d ]; then
 fi
 test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/task_affinity.so &&
    echo %{_libdir}/slurm/task_affinity.so >> $LIST
+test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/crypto_openssl.so &&
+   echo %{_libdir}/slurm/crypto_openssl.so >> $LIST
 
 # Build file lists for optional plugin packages
 for plugin in auth_munge auth_authd; do

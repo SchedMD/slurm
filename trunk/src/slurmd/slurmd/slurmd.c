@@ -1027,6 +1027,7 @@ _slurmd_fini()
 	slurm_conf_destroy();
 	slurm_proctrack_fini();
 	slurm_auth_fini();
+	slurm_crypto_fini();
 	slurmd_req(NULL);	/* purge memory allocated by slurmd_req() */
 	return SLURM_SUCCESS;
 }

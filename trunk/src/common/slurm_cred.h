@@ -135,6 +135,9 @@ typedef struct {
         uint32_t *alloc_lps;
 } slurm_cred_arg_t;
 
+/* Terminate the plugin and release all memory. */
+int slurm_crypto_fini(void);
+
 /*
  * Create a slurm credential using the values in `arg.'
  * The credential is signed using the creators public key.

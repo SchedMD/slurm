@@ -143,6 +143,12 @@ extern char *slurm_get_auth_type(void);
  */
 extern int slurm_set_auth_type(char *auth_type);
 
+/* slurm_get_crypto_type
+ * returns the crypto_type from slurmctld_conf object
+ * RET char *    - crypto type, MUST be xfreed by caller
+ */
+extern char *slurm_get_crypto_type(void);
+
 /* slurm_get_fast_schedule
  * returns the value of fast_schedule in slurmctld_conf object
  */

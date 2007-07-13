@@ -135,6 +135,8 @@ void slurm_print_ctl_conf ( FILE* out,
 		slurm_ctl_conf_ptr->control_addr);
 	fprintf(out, "ControlMachine    = %s\n", 
 		slurm_ctl_conf_ptr->control_machine);
+	fprintf(out, "CryptoType        = %s\n",
+		slurm_ctl_conf_ptr->crypto_type);
 	fprintf(out, "DatabaseType      = %s\n", 
 		slurm_ctl_conf_ptr->database_type);
 	fprintf(out, "DatabaseHost      = %s\n", 
