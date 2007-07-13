@@ -14,7 +14,7 @@ Source: %{name}-%{version}-%{release}.tgz
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}
 URL: http://www.llnl.gov/linux/slurm
 %ifos linux
-BuildRequires: python openssl-devel >= 0.9.6
+BuildRequires: python
 %endif
 %ifos aix5.3
 Requires: openssl >= 0.9.6 munge-libs proctrack >= 3
@@ -63,8 +63,8 @@ Summary: SLURM auth implementation using Brent Chun's authd
 Group: System Environment/Base
 Requires: slurm authd
 
-%package auth-munge
-Summary: SLURM auth implementation using Chris Dunlap's Munge
+%package munge
+Summary: SLURM authentication and crypto implementation using Munge
 Group: System Environment/Base
 Requires: slurm munge
 
@@ -104,7 +104,7 @@ SLURM NULL authentication module
 %description auth-authd
 SLURM authentication module for Brent Chun's authd
 
-%description auth-munge
+%description munge
 SLURM authentication module for Chris Dunlap's Munge
 
 %description bluegene
@@ -177,12 +177,19 @@ test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/crypto_openssl.so &&
    echo %{_libdir}/slurm/crypto_openssl.so >> $LIST
 
 # Build file lists for optional plugin packages
-for plugin in auth_munge auth_authd; do
+for plugin in auth_authd; do
    LIST=./${plugin}.files
    touch $LIST
    test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/${plugin}.so &&
      echo %{_libdir}/slurm/${plugin}.so > $LIST
 done
+
+LIST=./munge.files
+touch $LIST
+test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/auth_munge.so   &&
+  echo %{_libdir}/slurm/auth_munge.so             >> $LIST
+test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/crypto_munge.so &&
+  echo %{_libdir}/slurm/crypto_munge.so           >> $LIST
 
 LIST=./switch_elan.files
 touch $LIST
@@ -300,7 +307,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/slurm/auth_none.so
 #############################################################################
 
-%files -f auth_munge.files auth-munge
+%files -f munge.files munge
 %defattr(-,root,root)
 #############################################################################
 
