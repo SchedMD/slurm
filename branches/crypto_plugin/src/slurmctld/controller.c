@@ -419,6 +419,7 @@ int main(int argc, char *argv[])
 	slurm_select_fini();
 	checkpoint_fini();
 	slurm_auth_fini();
+	slurm_crypto_fini();
 	switch_fini();
 
 	/* purge remaining data structures */

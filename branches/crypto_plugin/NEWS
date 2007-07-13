@@ -11,13 +11,16 @@ documents those changes that are of interest to users and admins.
  -- Add new configuration paramter "PrivateData". This can be used to 
     prevent a user from seeing jobs or job steps belonging to other users.
  -- Added configuration parameters for node power save mode: ResumeProgram
-    ResumeRate, SuspendExcNodes, SuspendExcParts, SuspendProgram and SuspendRate.
+    ResumeRate, SuspendExcNodes, SuspendExcParts, SuspendProgram and 
+    SuspendRate.
  -- Slurmctld maintains the IP address (rather than hostname) for srun 
     communications. This fixes some possible network routing issues.
  -- Added global database plugin.  Job accounting and Job completion are the 
     first to use it.  Follow documentation to add more to the plugin.
  -- Removed no-longer-needed jobacct/common/common_slurmctld.c since that is
     replaced by the database plugin.
+ -- Moved digital signature logic into new plugin: crypto/openssl.
+    Added new configuration parameter: CryptoType
 
 * Changes in SLURM 1.2.12
 =========================

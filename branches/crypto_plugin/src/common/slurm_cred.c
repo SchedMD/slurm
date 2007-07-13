@@ -119,7 +119,7 @@ struct slurm_cred_context {
 	List           job_list;   /* List of used jobids (for verifier)    */
 	List           state_list; /* List of cred states (for verifier)    */
 
-	int         expiry_window; /* expiration window for cached creds    */
+	int          expiry_window;/* expiration window for cached creds    */
 
 	void          *exkey;      /* Old public key if key is updated      */
 	time_t         exkey_exp;  /* Old key expiration time               */
@@ -137,15 +137,15 @@ struct slurm_job_credential {
 #ifdef  WITH_PTHREADS
 	pthread_mutex_t mutex;
 #endif
-	uint32_t jobid;		/* Job ID associated with this cred	*/
-	uint32_t stepid;	/* Job step ID for this credential	*/
-	uid_t    uid;		/* user for which this cred is valid	*/
-	time_t   ctime;		/* time of credential creation		*/
-	char    *nodes;		/* hostnames for which the cred is ok	*/
-	uint32_t alloc_lps_cnt;	/* Number of hosts in the list above	*/
+	uint32_t  jobid;	/* Job ID associated with this cred	*/
+	uint32_t  stepid;	/* Job step ID for this credential	*/
+	uid_t     uid;		/* user for which this cred is valid	*/
+	time_t    ctime;	/* time of credential creation		*/
+	char     *nodes;	/* hostnames for which the cred is ok	*/
+	uint32_t  alloc_lps_cnt;/* Number of hosts in the list above	*/
 	uint32_t *alloc_lps;	/* Number of tasks on each host		*/
 
-	char *signature; 	/* credential signature			*/
+	char     *signature; 	/* credential signature			*/
 	unsigned int siglen;	/* signature length in bytes		*/
 };
 
@@ -387,22 +387,13 @@ static int _slurm_crypto_fini(void)
 	return rc;
 }
 
-extern int slurm_cred_fini()
+/* Terminate the plugin and release all memory. */
+extern int slurm_crypto_fini(void)
 {
-	int retval = SLURM_SUCCESS;
-	if (_slurm_crypto_init() < 0)
-		return SLURM_ERROR;
-
-#if 0
-	slurm_mutex_lock( &g_crypto_context_lock );
-	if ( g_crypto_context ) 
-		retval = (*(g_crypto_context->ops.crypto_fini))();
-	slurm_mutex_unlock( &g_jcrypto_context_lock );
-#endif
-
 	if (_slurm_crypto_fini() < 0)
 		return SLURM_ERROR;
-	return retval;
+
+	return SLURM_SUCCESS;
 }
 
 slurm_cred_ctx_t 
@@ -429,6 +420,7 @@ slurm_cred_creator_ctx_create(const char *path)
     fail:
 	slurm_mutex_unlock(&ctx->mutex);
 	slurm_cred_ctx_destroy(ctx);
+	error("Can not open data encryption key file %s", path);
 	return NULL;
 }
 
@@ -459,6 +451,7 @@ slurm_cred_verifier_ctx_create(const char *path)
     fail:
 	slurm_mutex_unlock(&ctx->mutex);
 	slurm_cred_ctx_destroy(ctx);
+	error("Can not open data encryption key file %s", path);
 	return NULL;
 }
 
@@ -646,6 +639,9 @@ slurm_cred_copy(slurm_cred_t cred)
 		rcred->alloc_lps_cnt * sizeof(uint32_t));
 	}
 	rcred->ctime  = cred->ctime;
+	rcred->siglen = cred->siglen;
+	/* Assumes signature is a string,
+	 * otherwise use xmalloc and strcpy here */
 	rcred->signature = (unsigned char *)xstrdup((char *)cred->signature);
 	
 	slurm_mutex_unlock(&cred->mutex);
@@ -1203,16 +1199,18 @@ static int
 _slurm_cred_sign(slurm_cred_ctx_t ctx, slurm_cred_t cred)
 {
 	Buf           buffer;
-	int           rc    = SLURM_SUCCESS;
-	unsigned int *lenp  = &cred->siglen;
+	int           rc;
 
 	buffer = init_buf(4096);
 	_pack_cred(cred, buffer);
-	(*(g_crypto_context->ops.crypto_sign))(ctx->key, get_buf_data(buffer), 
-			get_buf_offset(buffer), &cred->signature, lenp);
+	rc = (*(g_crypto_context->ops.crypto_sign))(ctx->key, 
+			get_buf_data(buffer), get_buf_offset(buffer), 
+			&cred->signature, &cred->siglen);
 	free_buf(buffer);
 
-	return rc;
+	if (rc)
+		return SLURM_ERROR;
+	return SLURM_SUCCESS;
 }
 
 static int
@@ -1228,21 +1226,19 @@ _slurm_cred_verify_signature(slurm_cred_ctx_t ctx, slurm_cred_t cred)
 	rc = (*(g_crypto_context->ops.crypto_verify_sign))(ctx->key, 
 			get_buf_data(buffer), get_buf_offset(buffer),
 			cred->signature, cred->siglen);
-	if (!rc && _exkey_is_valid(ctx)) {
+	if (rc && _exkey_is_valid(ctx)) {
 		rc = (*(g_crypto_context->ops.crypto_verify_sign))(ctx->key, 
 			get_buf_data(buffer), get_buf_offset(buffer),
 			cred->signature, cred->siglen);
 	}
+	free_buf(buffer);
 
-	if (!rc) {
+	if (rc) {
 		info("Credential signature check: %s", 
 			(*(g_crypto_context->ops.crypto_str_error))());
-		rc = SLURM_ERROR;
-	} else
-		rc = SLURM_SUCCESS;
-
-	free_buf(buffer);
-	return rc;
+		return SLURM_ERROR;
+	}
+	return SLURM_SUCCESS;
 }
 
 
@@ -1318,13 +1314,13 @@ slurm_cred_handle_reissue(slurm_cred_ctx_t ctx, slurm_cred_t cred)
 
 	if (j != NULL && j->revoked && (cred->ctime > j->revoked)) {
 		/* The credential has been reissued.  Purge the
-		   old record so that "cred" will look like a new
-		   credential to any ensuing commands. */
+		 * old record so that "cred" will look like a new
+		 * credential to any ensuing commands. */
 		info("reissued job credential for job %u", j->jobid);
 
 		/* Setting j->expiration to zero will make
-		   _clear_expired_job_states() remove this job credential
-		   from the cred context. */
+		 * _clear_expired_job_states() remove this
+		 * job credential from the cred context. */
 		j->expiration = 0;
 		_clear_expired_job_states(ctx);
 	}

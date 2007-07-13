@@ -153,6 +153,7 @@ crypto_str_error(void)
 	return (char *) ERR_reason_error_string(ERR_get_error()); 
 }
 
+/* NOTE: Caller must xfree the signature returned by sig_pp */
 extern int
 crypto_sign(void * key, char *buffer, int buf_size, char **sig_pp, 
 		unsigned int *sig_size_p) 
