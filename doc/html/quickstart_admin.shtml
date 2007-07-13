@@ -200,40 +200,8 @@ auth/munge plugin for communication, the clocks on all nodes will need to
 be synchronized. </p>
 
 <h3>MPI support</h3>
-<p>Quadrics MPI works directly with SLURM on systems having Quadrics 
-interconnects and is the preferred version of MPI for those systems.
-Set the <b>MpiDefault=none</b> configuration parameter in slurm.conf.</p>
-
-<p>For <a href="http://www.myricom.com/">Myrinet</a> systems, MPICH-GM
-is preferred. In order to use MPICH-GM, set <b>MpiDefault=mpichgm</b> and 
-<b>ProctrackType=proctrack/linuxproc</b> configuration parameters in 
-slurm.conf.</p>
-
-<p>HP customers would be well served by using 
-<a href="http://www.hp.com/go/mpi">HP-MPI</a>.</p>
-
-<p>A good open-source MPI for use with SLURM is 
-<a href="http://www.lam-mpi.org/">LAM MPI</a>. LAM MPI uses the command 
-<i>lamboot</i> to initiate job-specific daemons on each node using SLURM's 
-<span class="commandline">srun</span> 
-command. This places all MPI processes in a process-tree under the control of 
-the <b>slurmd</b> daemon. LAM/MPI version 7.1 or higher contains support for 
-SLURM. 
-Set the <b>MpiDefault=none</b> configuration parameters in slurm.conf.
-LAM MPI will explicitly set the mpi plugin type to "lam" on the  
-<span class="commandline">srun</span> execute line as needed.</p>
-
-<p>Another good open-source MPI for use with SLURM is
-<a href="http://www.open-mpi.org/">Open MPI</a>. Open MPI initiates its 
-processes using SLURM's <span class="commandline">srun</span> 
-command. 
-Set the <b>MpiDefault=none</b> configuration parameters in slurm.conf.
-Open MPI will explicitly set the mpi plugin type to "lam" on the
-<span class="commandline">srun</span> execute line as needed.</p>
-
-<p>Note that the ordering of tasks within an job's allocation matches that of 
-nodes in the slurm.conf configuration file. SLURM presently lacks the ability 
-to arbitrarily order tasks across nodes.</p> 
+<p>SLURM supports many different SLURM implementations. 
+For more information, see <a href="quickstart.html#mpi">MPI</a>.
 
 <h3>Scheduler support</h3>
 <p>The scheduler used by SLURM is controlled by the <b>SchedType</b> configuration 
