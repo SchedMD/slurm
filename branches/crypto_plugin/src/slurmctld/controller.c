@@ -419,11 +419,11 @@ int main(int argc, char *argv[])
 	slurm_select_fini();
 	checkpoint_fini();
 	slurm_auth_fini();
-	slurm_crypto_fini();
 	switch_fini();
 
 	/* purge remaining data structures */
 	slurm_cred_ctx_destroy(slurmctld_config.cred_ctx);
+	slurm_crypto_fini();	/* must be after ctx_destroy */
 	slurm_conf_destroy();
 	slurm_api_clear_config();
 	sleep(2);
