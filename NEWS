@@ -23,7 +23,9 @@ documents those changes that are of interest to users and admins.
     is identical to Moab's (from Ernest Artiaga and Asier Roa, BSC).
  -- Added "scontrol show slurmd" command to status local slurmd daemon.
  -- Set node DOWN if prolog fails on node zero of batch job launch.
-
+ -- Properly handle "srun --cpus-per-task" within a job allocation when 
+    SLURM_TASKS_PER_NODE environment varable is not set.
+ 
 * Changes in SLURM 1.2.11
 =========================
  -- Updated "etc/mpich1.slurm.patch" for direct srun launch of MPICH1_P4

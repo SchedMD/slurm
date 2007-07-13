@@ -261,14 +261,15 @@ int srun(int ac, char **av)
 		if (opt.alloc_nodelist == NULL)
                        opt.alloc_nodelist = xstrdup(resp->node_list);
 
-		slurm_free_resource_allocation_response_msg(resp);
 		if (opt.allocate) {
 			error("job %u already has an allocation",
 			      job_id);
+			slurm_free_resource_allocation_response_msg(resp);
 			exit(1);
 		}
 
-		job = job_step_create_allocation(job_id);
+		job = job_step_create_allocation(resp);
+		slurm_free_resource_allocation_response_msg(resp);
 
 		if(!job)
 			exit(1);
