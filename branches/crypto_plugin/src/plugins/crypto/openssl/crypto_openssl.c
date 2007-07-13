@@ -57,6 +57,7 @@
 #include <openssl/pem.h>
 #include <openssl/err.h>
 
+#include <slurm/slurm_errno.h>
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 
@@ -91,6 +92,26 @@
 const char plugin_name[]        = "OpenSSL cryptographic signature plugin";
 const char plugin_type[]        = "crypto/openssl";
 const uint32_t plugin_version   = 90;
+
+/*
+ * init() is called when the plugin is loaded, before any other functions
+ * are called.  Put global initialization here.
+ */
+extern int init ( void )
+{
+	verbose("%s loaded", plugin_name);
+	return SLURM_SUCCESS;
+}
+
+/*
+ * fini() is called when the plugin is unloaded, 
+ * free any global memory allocations here to avoid memory leaks.
+ */
+extern int fini ( void )
+{
+	verbose("%s unloaded", plugin_name);
+	return SLURM_SUCCESS;
+}
 
 extern void
 crypto_destroy_key(void *key)
@@ -159,7 +180,7 @@ crypto_sign(void * key, char *buffer, int buf_size, char **sig_pp,
 		unsigned int *sig_size_p) 
 {
 	EVP_MD_CTX    ectx;
-	int           rc    = 0;
+	int           rc    = SLURM_SUCCESS;
 	int           ksize = EVP_PKEY_size((EVP_PKEY *) key);
 
 	/*
@@ -172,7 +193,7 @@ crypto_sign(void * key, char *buffer, int buf_size, char **sig_pp,
 
 	if (!(EVP_SignFinal(&ectx, (unsigned char *)*sig_pp, sig_size_p, 
 			(EVP_PKEY *) key))) {
-		rc = -1;
+		rc = SLURM_ERROR;
 	}
 
 #ifdef HAVE_EVP_MD_CTX_CLEANUP
@@ -188,7 +209,7 @@ crypto_verify_sign(void * key, char *buffer, unsigned int buf_size,
 		char *signature, int sig_size)
 {
 	EVP_MD_CTX     ectx;
-	int            rc = 0;
+	int            rc = SLURM_SUCCESS;
 
 	EVP_VerifyInit(&ectx, EVP_sha1());
 	EVP_VerifyUpdate(&ectx, buffer, buf_size);
@@ -196,7 +217,7 @@ crypto_verify_sign(void * key, char *buffer, unsigned int buf_size,
 	rc = EVP_VerifyFinal(&ectx, (unsigned char *) signature, 
 		sig_size, (EVP_PKEY *) key);
 	if (!rc)
-		rc = -1;
+		rc = SLURM_ERROR;
 
 #ifdef HAVE_EVP_MD_CTX_CLEANUP
 	/* Note: Likely memory leak if this function is absent */
