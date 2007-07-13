@@ -26096,13 +26096,9 @@ fi
   if test "x$prefix" != "xNONE" ; then
   	tryssldir="$tryssldir $prefix"
   fi
-  if test "x$tryssldir" == "xno" ; then
-     { { echo "$as_me:$LINENO: error: OpenSSL libary is required for SLURM operation, download from www.openssl.org" >&5
-echo "$as_me: error: OpenSSL libary is required for SLURM operation, download from www.openssl.org" >&2;}
-   { (exit 1); exit 1; }; }
-  fi
 
-  { echo "$as_me:$LINENO: checking for OpenSSL directory" >&5
+  if test "x$tryssldir" != "xno" ; then
+    { echo "$as_me:$LINENO: checking for OpenSSL directory" >&5
 echo $ECHO_N "checking for OpenSSL directory... $ECHO_C" >&6; }
 if test "${ac_cv_openssldir+set}" = set; then
   echo $ECHO_N "(cached) $ECHO_C" >&6
@@ -26211,11 +26207,6 @@ fi
   		fi
   	done
 
-  	if test -z "$ac_have_openssl" ; then
-  		{ { echo "$as_me:$LINENO: error: Could not find working OpenSSL library, download from www.openssl.org" >&5
-echo "$as_me: error: Could not find working OpenSSL library, download from www.openssl.org" >&2;}
-   { (exit 1); exit 1; }; }
-  	fi
   	if test -z "$ssldir" ; then
   		ssldir="(system)"
   	fi
@@ -26225,8 +26216,10 @@ echo "$as_me: error: Could not find working OpenSSL library, download from www.o
 fi
 { echo "$as_me:$LINENO: result: $ac_cv_openssldir" >&5
 echo "${ECHO_T}$ac_cv_openssldir" >&6; }
+  fi
 
-  if (test ! -z "$ac_cv_openssldir" && test "x$ac_cv_openssldir" != "x(system)") ; then
+  if test ! -z "$ac_have_openssl" ; then
+    if (test ! -z "$ac_cv_openssldir" && test "x$ac_cv_openssldir" != "x(system)") ; then
   	  	ssldir=$ac_cv_openssldir
   	if test ! -z "$ssldir" -a "x$ssldir" != "x/usr"; then
   		# Try to use $ssldir/lib if it exists, otherwise
@@ -26244,9 +26237,9 @@ echo "${ECHO_T}$ac_cv_openssldir" >&6; }
   			SSL_CPPFLAGS="-I$ssldir"
   		fi
   	fi
-  fi
+    fi
 
-  cat >conftest.$ac_ext <<_ACEOF
+    cat >conftest.$ac_ext <<_ACEOF
 /* confdefs.h.  */
 _ACEOF
 cat confdefs.h >>conftest.$ac_ext
@@ -26293,6 +26286,7 @@ fi
 
 rm -f core conftest.err conftest.$ac_objext conftest_ipa8_conftest.oo \
       conftest$ac_exeext conftest.$ac_ext
+  fi
 
   LIBS="$saved_LIBS"
   CPPFLAGS="$saved_CPPFLAGS"

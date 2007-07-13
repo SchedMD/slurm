@@ -46,11 +46,9 @@ AC_DEFUN([X_AC_SLURM_WITH_SSL], [
   if test "x$prefix" != "xNONE" ; then
   	tryssldir="$tryssldir $prefix"
   fi
-  if test "x$tryssldir" == "xno" ; then
-     AC_MSG_ERROR([OpenSSL libary is required for SLURM operation, download from www.openssl.org])
-  fi
-  
-  AC_CACHE_CHECK([for OpenSSL directory], ac_cv_openssldir, [
+
+  if test "x$tryssldir" != "xno" ; then
+    AC_CACHE_CHECK([for OpenSSL directory], ac_cv_openssldir, [
   	for ssldir in $tryssldir "" $ssl_default_dirs; do 
   		CPPFLAGS="$saved_CPPFLAGS"
   		LDFLAGS="$saved_LDFLAGS"
@@ -107,17 +105,16 @@ AC_DEFUN([X_AC_SLURM_WITH_SSL], [
   		fi
   	done
   
-  	if test -z "$ac_have_openssl" ; then
-  		AC_MSG_ERROR([Could not find working OpenSSL library, download from www.openssl.org])
-  	fi
   	if test -z "$ssldir" ; then
   		ssldir="(system)"
   	fi
   
   	ac_cv_openssldir=$ssldir
-  ])
-  
-  if (test ! -z "$ac_cv_openssldir" && test "x$ac_cv_openssldir" != "x(system)") ; then
+    ])
+  fi
+
+  if test ! -z "$ac_have_openssl" ; then
+    if (test ! -z "$ac_cv_openssldir" && test "x$ac_cv_openssldir" != "x(system)") ; then
   	dnl Need to recover ssldir - test above runs in subshell
   	ssldir=$ac_cv_openssldir
   	if test ! -z "$ssldir" -a "x$ssldir" != "x/usr"; then
@@ -136,10 +133,11 @@ AC_DEFUN([X_AC_SLURM_WITH_SSL], [
   			SSL_CPPFLAGS="-I$ssldir"
   		fi
   	fi
-  fi
+    fi
   
-  AC_LINK_IFELSE([AC_LANG_PROGRAM([[#include <openssl/evp.h>]], [[EVP_MD_CTX_cleanup(NULL);]])],[AC_DEFINE(HAVE_EVP_MD_CTX_CLEANUP, 1,
+    AC_LINK_IFELSE([AC_LANG_PROGRAM([[#include <openssl/evp.h>]], [[EVP_MD_CTX_cleanup(NULL);]])],[AC_DEFINE(HAVE_EVP_MD_CTX_CLEANUP, 1,
                [Define to 1 if function EVP_MD_CTX_cleanup exists.])],[])
+  fi
   
   LIBS="$saved_LIBS"
   CPPFLAGS="$saved_CPPFLAGS"
