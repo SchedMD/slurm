@@ -157,15 +157,15 @@ job_create_noalloc(void)
  * (i.e. inside an allocation)
  */
 srun_job_t *
-job_step_create_allocation(uint32_t job_id)
+job_step_create_allocation(resource_allocation_response_msg_t *resp)
 {
+	uint32_t job_id = resp->job_id;
 	srun_job_t *job = NULL;
 	allocation_info_t *ai = xmalloc(sizeof(*ai));
 	hostlist_t hl = NULL;
 	char buf[8192];
 	int count = 0;
 	uint32_t alloc_count = 0;
-	char *tasks_per_node = xstrdup(getenv("SLURM_TASKS_PER_NODE"));
 	
 	ai->jobid          = job_id;
 	ai->stepid         = NO_VAL;
@@ -336,63 +336,9 @@ job_step_create_allocation(uint32_t job_id)
 		goto error;
 	}
 
-	if(tasks_per_node) {
-		int i = 0;
-		
-		ai->num_cpu_groups = 0;
-		ai->cpus_per_node = xmalloc(sizeof(uint32_t) * alloc_count);
-		ai->cpu_count_reps = xmalloc(sizeof(uint32_t) * alloc_count);
-		
-		while(tasks_per_node[i]
-		      && (ai->num_cpu_groups < alloc_count)) {
-			if(tasks_per_node[i] >= '0' 
-			   && tasks_per_node[i] <= '9')
-				ai->cpus_per_node[ai->num_cpu_groups] =
-					atoi(&tasks_per_node[i]);
-			else {
-				error("problem with tasks_per_node %s", 
-				      tasks_per_node);
-				goto error;
-			}
-			while(tasks_per_node[i]!='x' 
-			      && tasks_per_node[i]!=',' 
-			      && tasks_per_node[i])
-				i++;
-
-			if(tasks_per_node[i] == ',' || !tasks_per_node[i]) {
-				if(tasks_per_node[i])
-					i++;	
-				ai->cpu_count_reps[ai->num_cpu_groups] = 1;
-				ai->num_cpu_groups++;
-				continue;
-			}
-
-			i++;
-			if(tasks_per_node[i] >= '0' 
-			   && tasks_per_node[i] <= '9')
-				ai->cpu_count_reps[ai->num_cpu_groups] = 
-					atoi(&tasks_per_node[i]);
-			else {
-				error("1 problem with tasks_per_node %s", 
-				      tasks_per_node);
-				goto error;
-			}
-				
-			while(tasks_per_node[i]!=',' && tasks_per_node[i])
-				i++;
-			if(tasks_per_node[i] == ',') {
-				i++;	
-			}
-			ai->num_cpu_groups++;
-		}
-		xfree(tasks_per_node);
-	} else {
-		uint32_t cpn = (opt.nprocs + alloc_count - 1) / alloc_count;
-		debug("SLURM_TASKS_PER_NODE not set! "
-		      "Guessing %d cpus per node", cpn);
-		ai->cpus_per_node  = &cpn;
-		ai->cpu_count_reps = &alloc_count;
-	}
+	ai->num_cpu_groups = resp->num_cpu_groups;
+	ai->cpus_per_node  = resp->cpus_per_node;
+	ai->cpu_count_reps = resp->cpu_count_reps;
 
 /* 	info("looking for %d nodes out of %s with a must list of %s", */
 /* 	     ai->nnodes, ai->nodelist, opt.nodelist); */

@@ -549,6 +549,23 @@ IBM systems see \fIpoe\fR documenation on the environment variables
 \fBMP_EUIDEVICE\fR and \fBMP_USE_BULK_XFER\fR.
 
 .TP
+\fB\-\-nice\fR[=\fIadjustment]\fR
+Run the job with an adjusted scheduling priority. 
+With no adjustment value the scheduling priority is decreased 
+by 100. The adjustment range is from \-10000 (highest priority)
+to 10000 (lowest priority). Only privileged users can specify 
+a negative adjustment. NOTE: This option is presently 
+ignored if \fISchedulerType=sched/maui\fR.
+
+.TP
+\fB\-\-no\-requeue\fR
+Specifies that the batch job is not requeue. 
+Setting this option will prevent system administrators from being able 
+to restart the job (for example, after a scheduled downtime).
+When a job is requeued, the batch script is initiated from its beginning.
+This option is only applicable to batch job submission (see \fB\-\-batch\fR).
+
+.TP
 \fB\-\-ntasks\-per\-core\fR=\fIntasks\fR
 Request that no more than \fIntasks\fR be invoked on each core.
 Similar to \fB\-\-ntasks\-per\-node\fR except at the core level
@@ -567,15 +584,6 @@ to bind the tasks to specific sockets unless \fB\-\-cpu_bind=none\fR
 is specified.
 NOTE: This option is not supported unless \fISelectType=CR_Socket\fR 
 or \fISelectType=CR_Socket_Memory\fR is configured.
-
-.TP
-\fB\-\-nice\fR[=\fIadjustment]\fR
-Run the job with an adjusted scheduling priority. 
-With no adjustment value the scheduling priority is decreased 
-by 100. The adjustment range is from \-10000 (highest priority)
-to 10000 (lowest priority). Only privileged users can specify 
-a negative adjustment. NOTE: This option is presently 
-ignored if \fISchedulerType=sched/maui\fR.
 
 .TP
 \fB\-\-ntasks\-per\-node\fR=\fIntasks\fR

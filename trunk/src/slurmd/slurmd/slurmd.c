@@ -147,8 +147,15 @@ static void      _install_fork_handlers(void);
 int 
 main (int argc, char *argv[])
 {
-	int pidfd;
+	int i, pidfd;
 	int blocked_signals[] = {SIGPIPE, 0};
+
+	/*
+	 * Make sure we have no extra open files which 
+	 * would be propagated to spawned tasks.
+	 */
+	for (i=3; i<256; i++)
+		(void) close(i);
 
 	/*
 	 * Create and set default values for the slurmd global

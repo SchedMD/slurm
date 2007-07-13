@@ -200,40 +200,8 @@ auth/munge plugin for communication, the clocks on all nodes will need to
 be synchronized. </p>
 
 <h3>MPI support</h3>
-<p>Quadrics MPI works directly with SLURM on systems having Quadrics 
-interconnects and is the preferred version of MPI for those systems.
-Set the <b>MpiDefault=none</b> configuration parameter in slurm.conf.</p>
-
-<p>For <a href="http://www.myricom.com/">Myrinet</a> systems, MPICH-GM
-is preferred. In order to use MPICH-GM, set <b>MpiDefault=mpichgm</b> and 
-<b>ProctrackType=proctrack/linuxproc</b> configuration parameters in 
-slurm.conf.</p>
-
-<p>HP customers would be well served by using 
-<a href="http://www.hp.com/go/mpi">HP-MPI</a>.</p>
-
-<p>A good open-source MPI for use with SLURM is 
-<a href="http://www.lam-mpi.org/">LAM MPI</a>. LAM MPI uses the command 
-<i>lamboot</i> to initiate job-specific daemons on each node using SLURM's 
-<span class="commandline">srun</span> 
-command. This places all MPI processes in a process-tree under the control of 
-the <b>slurmd</b> daemon. LAM/MPI version 7.1 or higher contains support for 
-SLURM. 
-Set the <b>MpiDefault=none</b> configuration parameters in slurm.conf.
-LAM MPI will explicitly set the mpi plugin type to "lam" on the  
-<span class="commandline">srun</span> execute line as needed.</p>
-
-<p>Another good open-source MPI for use with SLURM is
-<a href="http://www.open-mpi.org/">Open MPI</a>. Open MPI initiates its 
-processes using SLURM's <span class="commandline">srun</span> 
-command. 
-Set the <b>MpiDefault=none</b> configuration parameters in slurm.conf.
-Open MPI will explicitly set the mpi plugin type to "lam" on the
-<span class="commandline">srun</span> execute line as needed.</p>
-
-<p>Note that the ordering of tasks within an job's allocation matches that of 
-nodes in the slurm.conf configuration file. SLURM presently lacks the ability 
-to arbitrarily order tasks across nodes.</p> 
+<p>SLURM supports many different SLURM implementations. 
+For more information, see <a href="quickstart.html#mpi">MPI</a>.
 
 <h3>Scheduler support</h3>
 <p>The scheduler used by SLURM is controlled by the <b>SchedType</b> configuration 
@@ -411,10 +379,23 @@ NodeName=mcr[0-1151] NodeAddr=emcr[0-1151]
 PartitionName=DEFAULT State=UP    
 PartitionName=pdebug Nodes=mcr[0-191] MaxTime=30 MaxNodes=32 Default=YES
 PartitionName=pbatch Nodes=mcr[192-1151]
-</pre> 
+</pre>
+ 
 <h2>Security</h2>
-<p>You will should create unique job credential keys for your site
-using the program <a href="http://www.openssl.org/">openssl</a>. 
+<p>The use of <a href="http://www.openssl.org/">OpenSSL</a> is 
+recommended to provide a digital signature on job step credentials.
+<a href="http://home.gna.org/munge/">Munge</a> can alternately
+be used with somewhat slower performance.
+This signature is used by <i>slurmctld</i> to construct a job step
+credential, which is sent to <i>srun</i> and then forwarded to
+<i>slurmd</i> to initiate job steps.
+This design offers improved performance by removing much of the 
+job step initiation overhead from the <i> slurmctld </i> daemon.
+The mechanism to be used is controlled through the <b>CryptoType</b>
+configuration parameter.</p>
+
+<p>If using OpenSSL, you will should create unique job credential 
+keys for your site using the program openssl. 
 <b>You must use openssl and not ssh-genkey to construct these keys.</b>
 An example of how to do this is shown below. Specify file names that 
 match the values of <b>JobCredentialPrivateKey</b> and 
@@ -423,10 +404,11 @@ The <b>JobCredentialPrivateKey</b> file must be readable only by <b>SlurmUser</b
 The <b>JobCredentialPublicCertificate</b> file must be readable by all users.
 Note that you should build the key files one one node and then distribute 
 them to all nodes in the cluster.
-This insures that all nodes have a consistent set of encryption keys.
-These keys are used by <i>slurmctld</i> to construct a job credential, 
-which is sent to <i>srun</i> and then forwarded to <i>slurmd</i> to 
-initiate job steps.</p>
+This insures that all nodes have a consistent set of digital signature 
+keys.
+These keys are used by <i>slurmctld</i> to construct a job step 
+credential, which is sent to <i>srun</i> and then forwarded to 
+<i>slurmd</i> to initiate job steps.</p>
 
 <p class="commandline" style="margin-left:.2in">
 <i>openssl genrsa -out &lt;sysconfdir&gt;/slurm.key 1024</i><br>
@@ -434,10 +416,13 @@ initiate job steps.</p>
 </p>
 <p>Authentication of communications from SLURM commands to the daemons 
 or between the daemons uses a different security mechanism that is configurable.
-You must specify one &quot;auth&quot; plugin for this purpose. 
-Currently, only three 
-authentication plugins are supported: <b>auth/none</b>, <b>auth/authd</b>, and 
-<b>auth/munge</b>. The auth/none plugin is built and used by default, but either 
+Authentication means that SLURM can positively identify the user who originated 
+the communication.
+You must specify a plugin for this purpose using the <b>AuthType</b> configuration 
+paramter. 
+Currently, only three authentication plugins are supported: 
+<b>auth/none</b>, <b>auth/authd</b>, and <b>auth/munge</b>. 
+The auth/none plugin is built and used by default, but either 
 Brent Chun's <a href="http://www.theether.org/authd/">authd</a>, or Chris Dunlap's 
 <a href="http://home.gna.org/munge/">munge</a> should be installed in order to 
 get properly authenticated communications. 

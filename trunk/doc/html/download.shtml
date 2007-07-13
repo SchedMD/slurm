@@ -40,7 +40,7 @@ The latest stable release is version 1.4.</p>
 <h1>Related Software</h1>
 <ul>
 
-<li><b>OpenSSL</b> is required for secure communications between SLURM 
+<li><b>OpenSSL</b> is recommended for secure communications between SLURM 
 components. Download it from 
 <a href="http://www.openssl.org/">http://www.openssl.org/</a>.
 </li>
@@ -98,6 +98,6 @@ Portable Linux Processor Affinity (PLPA)</a></li>
 
 </ul>
 
-<p style="text-align:center;">Last modified 15 June 2007</p>
+<p style="text-align:center;">Last modified 13 July 2007</p>
 
 <!--#include virtual="footer.txt"-->
