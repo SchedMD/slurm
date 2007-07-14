@@ -209,7 +209,7 @@ crypto_verify_sign(void * key, char *buffer, unsigned int buf_size,
 		char *signature, int sig_size)
 {
 	EVP_MD_CTX     ectx;
-	int            rc = SLURM_SUCCESS;
+	int            rc;
 
 	EVP_VerifyInit(&ectx, EVP_sha1());
 	EVP_VerifyUpdate(&ectx, buffer, buf_size);
@@ -218,6 +218,8 @@ crypto_verify_sign(void * key, char *buffer, unsigned int buf_size,
 		sig_size, (EVP_PKEY *) key);
 	if (!rc)
 		rc = SLURM_ERROR;
+	else
+		rc = SLURM_SUCCESS;
 
 #ifdef HAVE_EVP_MD_CTX_CLEANUP
 	/* Note: Likely memory leak if this function is absent */
