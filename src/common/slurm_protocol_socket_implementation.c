@@ -280,6 +280,13 @@ int _slurm_send_timeout(slurm_fd fd, char *buf, size_t size,
 			}
                 }
 
+		/*
+		 * Check here to make sure the socket really is there.
+		 * If not then exit out and notify the sender.  This
+ 		 * is here since a write doesn't always tell you the
+		 * socket is gone, but getting 0 back from a
+		 * nonblocking read means just that. 
+		 */
 		rc = _slurm_recv(fd, &temp, 1, flags);
 		if (rc == 0) {
 			debug2("_slurm_send_timeout: Socket no longer there.");
