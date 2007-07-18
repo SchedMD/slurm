@@ -3,7 +3,6 @@
 #
 # qstat - queries slurm jobs in familar pbs format.
 #
-#              Copyright (c) 2006, 2007 Cluster Resources, Inc.
 #
 ###############################################################################
 #  Copyright (C) 2007 The Regents of the University of California.
