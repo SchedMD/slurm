@@ -372,6 +372,8 @@ void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
 	conf_ptr->node_prefix         = xstrdup(conf->node_prefix);
 	conf_ptr->tree_width          = conf->tree_width;
 	conf_ptr->use_pam             = conf->use_pam;
+	conf_ptr->unkillable_program  = xstrdup(conf->unkillable_program);
+	conf_ptr->unkillable_timeout  = conf->unkillable_timeout;
 
 	slurm_conf_unlock();
 	return;
