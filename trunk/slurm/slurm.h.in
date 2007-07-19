@@ -943,6 +943,11 @@ typedef struct slurm_ctl_conf {
 				   bluegene clusters NULL otherwise */
 	uint16_t tree_width;    /* number of threads per node to span */
 	uint16_t use_pam;	/* enable/disable PAM support */
+	char *unkillable_program; /* program run by the slurmstepd when
+                                   * processes in a job step are unkillable */
+	uint16_t unkillable_timeout; /* time in seconds, after processes in a
+                                      * job step have been signalled, before
+                                      * they are considered "unkillable". */
 } slurm_ctl_conf_t;
 
 typedef struct slurmd_status_msg {

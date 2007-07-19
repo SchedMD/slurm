@@ -248,7 +248,7 @@ int _slurm_send_timeout(slurm_fd fd, char *buf, size_t size,
         struct pollfd ufds;
         struct timeval tstart;
         int timeleft = timeout;
-
+	char temp[2];
         ufds.fd     = fd;
         ufds.events = POLLOUT;
 
@@ -279,6 +279,22 @@ int _slurm_send_timeout(slurm_fd fd, char *buf, size_t size,
 				goto done;
 			}
                 }
+
+		/*
+		 * Check here to make sure the socket really is there.
+		 * If not then exit out and notify the sender.  This
+ 		 * is here since a write doesn't always tell you the
+		 * socket is gone, but getting 0 back from a
+		 * nonblocking read means just that. 
+		 */
+		rc = _slurm_recv(fd, &temp, 1, flags);
+		if (rc == 0) {
+			debug2("_slurm_send_timeout: Socket no longer there.");
+			slurm_seterrno(ENOTCONN);
+			sent = SLURM_ERROR;
+			goto done;			
+		}
+
                 rc = _slurm_send(fd, &buf[sent], (size - sent), flags);
                 if (rc < 0) {
  			if (errno == EINTR)

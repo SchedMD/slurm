@@ -1446,7 +1446,7 @@ int slurm_send_node_msg(slurm_fd fd, slurm_msg_t * msg)
 	rc = _slurm_msg_sendto( fd, get_buf_data(buffer), 
 				get_buf_offset(buffer),
 				SLURM_PROTOCOL_NO_SEND_RECV_FLAGS );
-
+	
 	if (rc < 0) 
 		error("slurm_msg_sendto: %m");
 		
@@ -1796,8 +1796,10 @@ int slurm_send_rc_msg(slurm_msg_t *msg, int rc)
 	slurm_msg_t resp_msg;
 	return_code_msg_t rc_msg;
 	
-	if (msg->conn_fd < 0)
-		return (ENOTCONN);
+	if (msg->conn_fd < 0) {
+		slurm_seterrno(ENOTCONN);
+		return SLURM_ERROR;
+	}
 	rc_msg.return_code = rc;
 
 	resp_msg.address  = msg->address;
