@@ -284,6 +284,10 @@ void slurm_print_ctl_conf ( FILE* out,
 		slurm_ctl_conf_ptr->tree_width);
 	fprintf(out, "UsePam            = %u\n",
 		slurm_ctl_conf_ptr->use_pam);
+	fprintf(out, "UnkillableStepProgram = %s\n",
+		slurm_ctl_conf_ptr->unkillable_program);
+	fprintf(out, "UnkillableStepTimeout = %u\n",
+		slurm_ctl_conf_ptr->unkillable_timeout);
 	fprintf(out, "WaitTime          = %u\n", 
 		slurm_ctl_conf_ptr->wait_time);
 }

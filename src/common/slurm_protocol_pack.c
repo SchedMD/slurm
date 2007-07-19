@@ -2183,6 +2183,8 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer)
 	packstr(build_ptr->node_prefix, buffer);
 	pack16(build_ptr->tree_width, buffer);
 	pack16(build_ptr->use_pam, buffer);
+	packstr(build_ptr->unkillable_program, buffer);
+	pack16(build_ptr->unkillable_timeout, buffer);
 }
 
 static int
@@ -2303,6 +2305,9 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **
 	safe_unpackstr_xmalloc(&build_ptr->node_prefix, &uint16_tmp, buffer);
 	safe_unpack16(&build_ptr->tree_width, buffer);
 	safe_unpack16(&build_ptr->use_pam, buffer);
+	safe_unpackstr_xmalloc(&build_ptr->unkillable_program,
+			       &uint16_tmp, buffer);
+	safe_unpack16(&build_ptr->unkillable_timeout, buffer);
 
 	return SLURM_SUCCESS;
 
@@ -2355,6 +2360,7 @@ unpack_error:
 	xfree(build_ptr->srun_prolog);
 	xfree(build_ptr->srun_epilog);
 	xfree(build_ptr->node_prefix);
+	xfree(build_ptr->unkillable_program);
 	xfree(build_ptr);
 	*build_buffer_ptr = NULL;
 	return SLURM_ERROR;
