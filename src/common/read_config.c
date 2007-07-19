@@ -208,6 +208,8 @@ s_p_options_t slurm_conf_options[] = {
 	{"TaskPluginParam", S_P_STRING},
 	{"TmpFS", S_P_STRING},
 	{"TreeWidth", S_P_UINT16},
+	{"UnkillableStepProgram", S_P_STRING},
+	{"UnkillableStepTimeout", S_P_UINT16},
 	{"UsePAM", S_P_BOOLEAN},
 	{"WaitTime", S_P_UINT16},
 
@@ -1091,6 +1093,7 @@ free_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr, bool purge_node_hash)
 	xfree (ctl_conf_ptr->srun_prolog);
 	xfree (ctl_conf_ptr->srun_epilog);
 	xfree (ctl_conf_ptr->node_prefix);
+	xfree (ctl_conf_ptr->unkillable_program);
 
 	if (purge_node_hash)
 		_free_name_hashtbl();
@@ -1183,7 +1186,9 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	xfree (ctl_conf_ptr->node_prefix);
 	ctl_conf_ptr->tree_width       		= (uint16_t) NO_VAL;
 	ctl_conf_ptr->use_pam			= 0;
-	
+	xfree (ctl_conf_ptr->unkillable_program);
+	ctl_conf_ptr->unkillable_timeout        = (uint16_t) NO_VAL;
+
 	_free_name_hashtbl();
 	_init_name_hashtbl();
 
@@ -1737,6 +1742,12 @@ validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	} else {
 		conf->use_pam = 0;
 	}
+
+	s_p_get_string(&conf->unkillable_program,
+		       "UnkillableStepProgram", hashtbl);
+	if (!s_p_get_uint16(&conf->unkillable_timeout,
+			    "UnkillableStepTimeout", hashtbl))
+		conf->unkillable_timeout = DEFAULT_UNKILLABLE_TIMEOUT;
 }
 
 /*

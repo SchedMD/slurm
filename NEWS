@@ -47,6 +47,11 @@ documents those changes that are of interest to users and admins.
  -- Set node DOWN if prolog fails on node zero of batch job launch.
  -- Properly handle "srun --cpus-per-task" within a job allocation when 
     SLURM_TASKS_PER_NODE environment varable is not set.
+ -- Fixed return of slurm_send_rc_msg if msg->conn_fd is < 0 set errno ENOTCONN
+    and return SLURM_ERROR instead of return ENOTCONN
+ -- Added read before we send anything down a socket to make sure the socket
+    is still there.
+ -- Add slurm.conf variables UnkillableStepProgram and UnkillableStepTimeout.
  
 * Changes in SLURM 1.2.11
 =========================
