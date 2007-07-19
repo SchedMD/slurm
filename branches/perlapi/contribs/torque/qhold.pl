@@ -91,30 +91,40 @@ Main:
     {
         pod2usage(2);
     }
-    my $reason = "user";
 
-    switch($hold) {
-	    case ['u'] { $reason = "user" }
-	    case ['s'] { $reason = "system" }
-	    case ['o'] { $reason = "batch" }
-	    base ['n'] { $reason = "" }
-    }
-    
+    my $reason = "user held (qhold)";
 
-    # Display and log error output
-    if ($output =~ /invalid job specified \(([^\(\)]+)\)/)
-    {
-        logWarn("qhold: Unknown Job Id $1\n");
-    }
-    elsif ($rc)
-    {
-        logWarn($output);
-    }
-    else
-    {
-        logPrint("Subcommand output:>\n$output") if $logLevel >= 3;
+    if($hold) {
+	    switch($hold) {
+		    case ['u'] { $reason = "user held (qhold)" }
+		    case ['s'] { $reason = "system held (qhold)" }
+		    case ['o'] { $reason = "batch held (qhold)" }
+		    case ['n'] { $reason = "" }
+	    }
     }
 
+    my $rc = 0;
+    foreach my $jobid (@jobIds) {
+	    my $err = 0;
+	    my $resp = 0;	    
+	    my %update = ();
+
+	    $update{job_id} = $jobid;
+	    if($reason) {
+		    $update{priority} = 0;
+		    $update{comment} = $reason; #doesn't do anything in 1.2
+	    } else {
+		    $update{priority} = -1;  
+		    $update{comment} = "None"; #doesn't do anything in 1.2
+	    }
+	    
+	    if(Slurm->update_job(\%update)) {
+		    $err = Slurm->get_errno(); 
+		    $rc++;
+		    printf("qhold: Error on job id %d: %s\n",
+			   $jobid, Slurm->strerror($err));
+	    }
+    }
     exit $rc;
 }
 
