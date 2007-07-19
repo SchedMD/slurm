@@ -73,9 +73,9 @@ am_slurmstepd_OBJECTS = slurmstepd.$(OBJEXT) mgr.$(OBJEXT) \
 	task.$(OBJEXT) slurmstepd_job.$(OBJEXT) io.$(OBJEXT) \
 	fname.$(OBJEXT) ulimits.$(OBJEXT) pdebug.$(OBJEXT) \
 	pam_ses.$(OBJEXT) req.$(OBJEXT) multi_prog.$(OBJEXT) \
-	proctrack.$(OBJEXT) setproctitle.$(OBJEXT) \
-	slurmstepd_init.$(OBJEXT) run_script.$(OBJEXT) \
-	task_plugin.$(OBJEXT)
+	step_terminate_monitor.$(OBJEXT) proctrack.$(OBJEXT) \
+	setproctitle.$(OBJEXT) slurmstepd_init.$(OBJEXT) \
+	run_script.$(OBJEXT) task_plugin.$(OBJEXT)
 slurmstepd_OBJECTS = $(am_slurmstepd_OBJECTS)
 am__DEPENDENCIES_1 =
 slurmstepd_DEPENDENCIES = $(top_builddir)/src/common/libcommon.la \
@@ -279,6 +279,7 @@ slurmstepd_SOURCES = \
 	pam_ses.c pam_ses.h		\
 	req.c req.h			\
 	multi_prog.c multi_prog.h	\
+	step_terminate_monitor.c step_terminate_monitor.h \
 	$(top_builddir)/src/slurmd/common/proctrack.c \
 	$(top_builddir)/src/slurmd/common/proctrack.h \
 	$(top_builddir)/src/slurmd/common/setproctitle.c \
@@ -380,6 +381,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurmstepd.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurmstepd_init.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurmstepd_job.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/step_terminate_monitor.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/task.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/task_plugin.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ulimits.Po@am__quote@

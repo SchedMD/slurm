@@ -706,6 +706,24 @@ systems having no more than 2500 nodes or the cube root for larger
 systems.
 
 .TP
+\fBUnkillableStepProgram\fR
+If the processes in a job step are determined to be unkillable for a period
+of time specified by the UnkillableStepTimeout variable, the program
+specified by the UnkillableStepProgram string will be executed.  This 
+program can be used to take special actions to clean up the unkillable
+processes.  The program will be run as the same user as the slurmd (usually
+"root").  NOTE: This variable does not appear in the output of the command
+"scontrol show config" in versions of SLURM less than version 1.3.
+
+.TP
+\fBUnkillableStepTimeout\fR
+The lenght of time, in seconds, that SLURM will wait before deciding that
+processes in a job step are unkillable (after they have been signalled with
+SIGKILL).  The default timeout value is 60 seconds.  NOTE: This variable does
+not appear in the output of the command "scontrol show config" in versions
+of SLURM less than version 1.3.
+
+.TP
 \fBUsePAM\fR
 If set to 1, PAM (Pluggable Authentication Modules for Linux) will be enabled.
 PAM is used to establish the upper bounds for resource limits. With PAM support
