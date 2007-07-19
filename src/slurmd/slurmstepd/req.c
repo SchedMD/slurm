@@ -63,6 +63,7 @@
 #include "src/slurmd/slurmstepd/req.h"
 #include "src/slurmd/slurmstepd/io.h"
 #include "src/slurmd/slurmstepd/mgr.h"
+#include "src/slurmd/slurmstepd/step_terminate_monitor.h"
 
 static void *_handle_accept(void *arg);
 static int _handle_request(int fd, slurmd_job_t *job, uid_t uid, gid_t gid);
@@ -749,6 +750,7 @@ _handle_terminate(int fd, slurmd_job_t *job, uid_t uid)
 
 	debug("_handle_terminate for job %u.%u",
 	      job->jobid, job->stepid);
+	step_terminate_monitor_start(job->jobid, job->stepid);
 
 	debug3("  uid = %d", uid);
 	if (uid != job->uid && !_slurm_authorized_user(uid)) {

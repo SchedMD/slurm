@@ -29,6 +29,7 @@ documents those changes that are of interest to users and admins.
     and return SLURM_ERROR instead of return ENOTCONN
  -- Added read before we send anything down a socket to make sure the socket
     is still there.
+ -- Add slurm.conf variables UnkillableStepProgram and UnkillableStepTimeout.
  
 * Changes in SLURM 1.2.11
 =========================

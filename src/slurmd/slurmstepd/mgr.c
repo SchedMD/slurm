@@ -108,6 +108,7 @@
 #include "src/slurmd/slurmstepd/req.h"
 #include "src/slurmd/slurmstepd/pam_ses.h"
 #include "src/slurmd/slurmstepd/ulimits.h"
+#include "src/slurmd/slurmstepd/step_terminate_monitor.h"
 
 #define RETRY_DELAY 15		/* retry every 15 seconds */
 #define MAX_RETRY   240		/* retry 240 times (one hour max) */
@@ -746,10 +747,12 @@ job_manager(slurmd_job_t *job)
 	 * terminated before the switch window can be released by
 	 * interconnect_postfini().
 	 */
+	step_terminate_monitor_start(job->jobid, job->stepid);
 	if (job->cont_id != 0) {
 		slurm_container_signal(job->cont_id, SIGKILL);
 		slurm_container_wait(job->cont_id);
 	}
+	step_terminate_monitor_stop();
 	if (!job->batch) {
 		if (interconnect_postfini(job->switch_job, job->jmgr_pid,
 				job->jobid, job->stepid) < 0)
