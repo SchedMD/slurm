@@ -256,11 +256,13 @@ indicating the job information.
 \fBJobCredentialPrivateKey\fR
 Fully qualified pathname of a file containing a private key used for 
 authentication by Slurm daemons.
+This parameter is ignored if \fBCryptType=munge\fR.
 
 .TP
 \fBJobCredentialPublicCertificate\fR
 Fully qualified pathname of a file containing a public key used for 
 authentication by Slurm daemons.
+This parameter is ignored if \fBCryptType=munge\fR.
 
 .TP
 \fBKillTree\fR
