@@ -68,6 +68,7 @@ void step_terminate_monitor_start(uint32_t jobid, uint32_t stepid)
 	if (conf->unkillable_program == NULL) {
 		/* do nothing */
 		slurm_conf_unlock();
+		pthread_mutex_unlock(&lock);
 		return;
 	}
 	timeout = conf->unkillable_timeout;
