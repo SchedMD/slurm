@@ -206,7 +206,7 @@ crypto_sign(void * key, char *buffer, int buf_size, char **sig_pp,
 
 extern int
 crypto_verify_sign(void * key, char *buffer, unsigned int buf_size, 
-		char *signature, int sig_size)
+		char *signature, unsigned int sig_size)
 {
 	EVP_MD_CTX     ectx;
 	int            rc;
