@@ -1,6 +1,6 @@
 <!--#include virtual="header.txt"-->
 
-<h1><a name="top">SLURM Job Checkpoint Plugin API</a></h1>
+<h1><a name="top">SLURM Job Checkpoint Plugin Programmer Guide</a></h1>
 
 <h2> Overview</h2>
 <p> This document describes SLURM job checkpoint plugins and the API that defines 
@@ -13,7 +13,8 @@ The plugins must conform to the SLURM Plugin API with the following specificatio
 
 <p><span class="commandline">const char plugin_type[]</span><br>
 The major type must be &quot;checkpoint.&quot; The minor type can be any recognizable 
-abbreviation for the type of scheduler. We recommend, for example:</p>
+abbreviation for the type of checkpoint mechanism. 
+We recommend, for example:</p>
 <ul>
 <li><b>none</b>&#151;No job checkpoint.</li>
 <li><b>aix</b>&#151;AIX system checkpoint.</li>
@@ -141,11 +142,12 @@ appropriate value to indicate the reason for failure.</p>
                                                                                                                        
 
 <h2>Versioning</h2>
-<p> This document describes version 0 of the SLURM checkpoint API. Future 
-releases of SLURM may revise this API. A scheduler plugin conveys its ability 
-to implement a particular API version using the mechanism outlined for SLURM plugins.</p>
+<p> This document describes version 0 of the SLURM checkpoint API. 
+Future releases of SLURM may revise this API. 
+A checkpoint plugin conveys its ability to implement a particular API 
+version using the mechanism outlined for SLURM plugins.</p>
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 10 July 2005</p>
+<p style="text-align:center;">Last modified 24 July 2007</p>
 
 <!--#include virtual="footer.txt"-->
