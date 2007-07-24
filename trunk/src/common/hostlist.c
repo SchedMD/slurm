@@ -1644,6 +1644,10 @@ _hostlist_create_bracketed(const char *hostlist, char *sep, char *r_op)
 			*p++ = '\0';
 
 			if ((q = strchr(p, ']'))) {
+				if ((q[1] != ',') && (q[1] != '\0')) {
+					errno = EINVAL; /* Invalid suffix */
+					goto error;
+				}
 				*q = '\0';
 				nr = _parse_range_list(p, ranges, MAX_RANGES);
 				if (nr < 0) 
@@ -1651,8 +1655,12 @@ _hostlist_create_bracketed(const char *hostlist, char *sep, char *r_op)
 				_push_range_list(new, prefix, ranges, nr);
 
                 
-			} else
+			} else {
+				/* The hostname itself contains a '['
+				 * (no ']' found). 
+				 * Not likely what the user wanted. */
 				hostlist_push_host(new, cur_tok);
+			}
 
 		} else
 			hostlist_push_host(new, cur_tok);

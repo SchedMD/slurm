@@ -52,6 +52,7 @@ documents those changes that are of interest to users and admins.
  -- Added read before we send anything down a socket to make sure the socket
     is still there.
  -- Add slurm.conf variables UnkillableStepProgram and UnkillableStepTimeout.
+ -- Enable nice file propagation from sbatch command.
  
 * Changes in SLURM 1.2.11
 =========================
