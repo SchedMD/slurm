@@ -48,7 +48,8 @@
 
 static int fill_job_desc_from_opts(job_desc_msg_t *desc);
 static void *get_script_buffer(const char *filename, int *size);
-static int set_umask_env(void);
+static void  set_prio_process_env(void);
+static int   set_umask_env(void);
 static char *script_wrap(char *command_string);
 
 int main(int argc, char *argv[])
@@ -83,6 +84,7 @@ int main(int argc, char *argv[])
 		fatal("sbatch parameter parsing");
 	}
 
+	set_prio_process_env();
 	set_umask_env();
 	slurm_init_job_desc_msg(&desc);
 	if (fill_job_desc_from_opts(&desc) == -1) {
@@ -230,6 +232,34 @@ static int set_umask_env(void)
 	}
 	debug ("propagating UMASK=%s", mask_char); 
 	return SLURM_SUCCESS;
+}
+
+/*
+ * set_prio_process_env
+ *
+ * Set the internal SLURM_PRIO_PROCESS environment variable to support
+ * the propagation of the users nice value and the "PropagatePrioProcess"
+ * config keyword.
+ */
+static void  set_prio_process_env(void)
+{
+	int retval;
+
+	errno = 0; /* needed to detect a real failure since prio can be -1 */
+
+	if ((retval = getpriority (PRIO_PROCESS, 0)) == -1)  {
+		if (errno) {
+			error ("getpriority(PRIO_PROCESS): %m");
+			return;
+		}
+	}
+
+	if (setenvf (NULL, "SLURM_PRIO_PROCESS", "%d", retval) < 0) {
+		error ("unable to set SLURM_PRIO_PROCESS in environment");
+		return;
+	}
+
+	debug ("propagating SLURM_PRIO_PROCESS=%d", retval);
 }
 
 /*
