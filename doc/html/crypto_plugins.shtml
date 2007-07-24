@@ -109,7 +109,8 @@ be signed.<br>
 size of buffer, in bytes.<br>
 <span class="commandline"> sig_pp</span>&nbsp; &nbsp;&nbsp;(input/output)
 Location in which to store the signature. NOTE: The storage for 
-sig_pp should be allocated using malloc() and will be freed using free().<br>
+sig_pp should be allocated using xmalloc() and will be freed by 
+the caller using xfree().<br>
 <span class="commandline"> sig_size_p</span>&nbsp; &nbsp;&nbsp;(input/output)
 Location in which to store the size of the signature (sig_pp).</p>
 <p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. 

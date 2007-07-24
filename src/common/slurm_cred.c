@@ -164,7 +164,8 @@ typedef struct slurm_crypto_ops {
 						 unsigned int *sig_size_p);
 	int   (*crypto_verify_sign)		(void * key, char *buffer, 
 						 unsigned int buf_size, 
-						 char *signature, int sig_size);
+						 char *signature, 
+						 unsigned int sig_size);
 	char *(*crypto_str_error)		(void);
 } slurm_crypto_ops_t;
 
