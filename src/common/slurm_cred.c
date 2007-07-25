@@ -643,7 +643,7 @@ slurm_cred_copy(slurm_cred_t cred)
 	rcred->siglen = cred->siglen;
 	/* Assumes signature is a string,
 	 * otherwise use xmalloc and strcpy here */
-	rcred->signature = (unsigned char *)xstrdup((char *)cred->signature);
+	rcred->signature = xstrdup(cred->signature);
 	
 	slurm_mutex_unlock(&cred->mutex);
 	slurm_mutex_unlock(&rcred->mutex);
