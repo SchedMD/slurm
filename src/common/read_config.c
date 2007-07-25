@@ -149,6 +149,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"JobCompType", S_P_STRING},
 	{"JobCredentialPrivateKey", S_P_STRING},
 	{"JobCredentialPublicCertificate", S_P_STRING},
+	{"JobFileAppend", S_P_UINT16},
 	{"KillTree", S_P_UINT16, defunct_option},
 	{"KillWait", S_P_UINT16},
 	{"MailProg", S_P_STRING},
@@ -1107,6 +1108,7 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	xfree (ctl_conf_ptr->job_comp_type);
 	xfree (ctl_conf_ptr->job_credential_private_key);
 	xfree (ctl_conf_ptr->job_credential_public_certificate);
+	ctl_conf_ptr->job_file_append		= (uint16_t) NO_VAL;
 	ctl_conf_ptr->kill_wait			= (uint16_t) NO_VAL;
 	xfree (ctl_conf_ptr->mail_prog);
 	ctl_conf_ptr->max_job_cnt		= (uint16_t) NO_VAL;
@@ -1472,6 +1474,9 @@ validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 
 	if (!s_p_get_string(&conf->job_comp_type, "JobCompType", hashtbl))
 		conf->job_comp_type = xstrdup(DEFAULT_JOB_COMP_TYPE);
+
+	if (!s_p_get_uint16(&conf->job_file_append, "JobFileAppend", hashtbl))
+		conf->job_file_append = 0;
 
 	if (!s_p_get_uint16(&conf->kill_wait, "KillWait", hashtbl))
 		conf->kill_wait = DEFAULT_KILL_WAIT;
