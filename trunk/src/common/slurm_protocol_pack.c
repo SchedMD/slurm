@@ -188,7 +188,7 @@ static int _unpack_task_exit_msg(task_exit_msg_t ** msg_ptr, Buf buffer);
 
 static void _pack_job_alloc_info_msg(job_alloc_info_msg_t * job_desc_ptr,
 				     Buf buffer);
-static int 
+static int
 _unpack_job_alloc_info_msg(job_alloc_info_msg_t **job_desc_buffer_ptr, 
 			   Buf buffer);
 
@@ -2101,36 +2101,52 @@ static void
 _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer)
 {
 	pack_time(build_ptr->last_update, buffer);
+
 	packstr(build_ptr->authtype, buffer);
+
 	packstr(build_ptr->backup_addr, buffer);
 	packstr(build_ptr->backup_controller, buffer);
 	pack_time(build_ptr->boot_time, buffer);
-	pack16((uint16_t)build_ptr->cache_groups, buffer);
+
+	pack16(build_ptr->cache_groups, buffer);
 	packstr(build_ptr->checkpoint_type, buffer);
 	packstr(build_ptr->control_addr, buffer);
 	packstr(build_ptr->control_machine, buffer);
 	packstr(build_ptr->crypto_type, buffer);
+
+	packstr(build_ptr->database_host, buffer);
+	packstr(build_ptr->database_pass, buffer);
+	pack32(build_ptr->database_port, buffer);
+	packstr(build_ptr->database_type, buffer);
+	packstr(build_ptr->database_user, buffer);
+
 	packstr(build_ptr->epilog, buffer);
+
 	pack16(build_ptr->fast_schedule, buffer);
 	pack32(build_ptr->first_job_id, buffer);
+
 	pack16(build_ptr->inactive_limit, buffer);
+
 	packstr(build_ptr->job_acct_loc, buffer);
 	pack16(build_ptr->job_acct_freq, buffer);
 	packstr(build_ptr->job_acct_type, buffer);
-	packstr(build_ptr->database_type, buffer);
-	packstr(build_ptr->database_user, buffer);
-	packstr(build_ptr->database_host, buffer);
-	packstr(build_ptr->database_pass, buffer);
-	pack32((uint32_t)build_ptr->database_port, buffer);
 	packstr(build_ptr->job_comp_loc, buffer);
 	packstr(build_ptr->job_comp_type, buffer);
+	packstr(build_ptr->job_credential_private_key, buffer);
+	packstr(build_ptr->job_credential_public_certificate, buffer);
+	pack16(build_ptr->job_file_append, buffer);
+
 	pack16(build_ptr->kill_wait, buffer);
+
 	packstr(build_ptr->mail_prog, buffer);
 	pack16(build_ptr->max_job_cnt, buffer);
 	pack16(build_ptr->min_job_age, buffer);
 	packstr(build_ptr->mpi_default, buffer);
 	pack16(build_ptr->msg_timeout, buffer);
+
 	pack32(build_ptr->next_job_id, buffer);
+	packstr(build_ptr->node_prefix, buffer);
+
 	packstr(build_ptr->plugindir, buffer);
 	packstr(build_ptr->plugstack, buffer);
 	pack16(build_ptr->private_data, buffer);
@@ -2139,9 +2155,11 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer)
 	pack16(build_ptr->propagate_prio_process, buffer);
         packstr(build_ptr->propagate_rlimits, buffer);
         packstr(build_ptr->propagate_rlimits_except, buffer);
+
 	packstr(build_ptr->resume_program, buffer);
 	pack16(build_ptr->resume_rate, buffer);
 	pack16(build_ptr->ret2service, buffer);
+
 	pack16(build_ptr->schedport, buffer);
 	pack16(build_ptr->schedrootfltr, buffer);
 	packstr(build_ptr->schedtype, buffer);
@@ -2163,6 +2181,8 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer)
 	packstr(build_ptr->slurmd_spooldir, buffer);
 	pack16(build_ptr->slurmd_timeout, buffer);
 	packstr(build_ptr->slurm_conf, buffer);
+	packstr(build_ptr->srun_epilog, buffer);
+	packstr(build_ptr->srun_prolog, buffer);
 	packstr(build_ptr->state_save_location, buffer);
 	packstr(build_ptr->suspend_exc_nodes, buffer);
 	packstr(build_ptr->suspend_exc_parts, buffer);
@@ -2170,21 +2190,19 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer)
 	pack16(build_ptr->suspend_rate, buffer);
 	pack16(build_ptr->suspend_time, buffer);
 	packstr(build_ptr->switch_type, buffer);
+
 	packstr(build_ptr->task_epilog, buffer);
 	packstr(build_ptr->task_prolog, buffer);
 	packstr(build_ptr->task_plugin, buffer);
 	pack16(build_ptr->task_plugin_param, buffer);
 	packstr(build_ptr->tmp_fs, buffer);
-	pack16(build_ptr->wait_time, buffer);
-	packstr(build_ptr->job_credential_private_key, buffer);
-	packstr(build_ptr->job_credential_public_certificate, buffer);
-	packstr(build_ptr->srun_prolog, buffer);
-	packstr(build_ptr->srun_epilog, buffer);
-	packstr(build_ptr->node_prefix, buffer);
 	pack16(build_ptr->tree_width, buffer);
+
 	pack16(build_ptr->use_pam, buffer);
 	packstr(build_ptr->unkillable_program, buffer);
 	pack16(build_ptr->unkillable_timeout, buffer);
+
+	pack16(build_ptr->wait_time, buffer);
 }
 
 static int
@@ -2201,11 +2219,14 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **
 	/* load the data values */
 	/* unpack timestamp of snapshot */
 	safe_unpack_time(&build_ptr->last_update, buffer);
+
 	safe_unpackstr_xmalloc(&build_ptr->authtype, &uint16_tmp, buffer);
+
 	safe_unpackstr_xmalloc(&build_ptr->backup_addr, &uint16_tmp, buffer);
 	safe_unpackstr_xmalloc(&build_ptr->backup_controller, &uint16_tmp,
 			       buffer);
 	safe_unpack_time(&build_ptr->boot_time, buffer);
+
 	safe_unpack16(&build_ptr->cache_groups, buffer);
 	safe_unpackstr_xmalloc(&build_ptr->checkpoint_type, &uint16_tmp,
 			       buffer);
@@ -2214,28 +2235,44 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **
 			       buffer);
 	safe_unpackstr_xmalloc(&build_ptr->crypto_type, &uint16_tmp,
 			       buffer);
+
+	safe_unpackstr_xmalloc(&build_ptr->database_host, &uint16_tmp, buffer);
+	safe_unpackstr_xmalloc(&build_ptr->database_pass, &uint16_tmp, buffer);
+	safe_unpack32(&build_ptr->database_port, buffer);
+	safe_unpackstr_xmalloc(&build_ptr->database_type, &uint16_tmp, buffer);
+	safe_unpackstr_xmalloc(&build_ptr->database_user, &uint16_tmp, buffer);
+
 	safe_unpackstr_xmalloc(&build_ptr->epilog, &uint16_tmp, buffer);
+
 	safe_unpack16(&build_ptr->fast_schedule, buffer);
 	safe_unpack32(&build_ptr->first_job_id, buffer);
+
 	safe_unpack16(&build_ptr->inactive_limit, buffer);
+
 	safe_unpackstr_xmalloc(&build_ptr->job_acct_loc, &uint16_tmp, 
 			       buffer);
 	safe_unpack16(&build_ptr->job_acct_freq, buffer);
 	safe_unpackstr_xmalloc(&build_ptr->job_acct_type, &uint16_tmp, buffer);
-	safe_unpackstr_xmalloc(&build_ptr->database_type, &uint16_tmp, buffer);
-	safe_unpackstr_xmalloc(&build_ptr->database_user, &uint16_tmp, buffer);
-	safe_unpackstr_xmalloc(&build_ptr->database_host, &uint16_tmp, buffer);
-	safe_unpackstr_xmalloc(&build_ptr->database_pass, &uint16_tmp, buffer);
-	safe_unpack32(&build_ptr->database_port, buffer);
 	safe_unpackstr_xmalloc(&build_ptr->job_comp_loc, &uint16_tmp, buffer);
 	safe_unpackstr_xmalloc(&build_ptr->job_comp_type, &uint16_tmp, buffer);
+	safe_unpackstr_xmalloc(&build_ptr->job_credential_private_key,
+			       &uint16_tmp, buffer);
+	safe_unpackstr_xmalloc(&build_ptr->
+			       job_credential_public_certificate,
+			       &uint16_tmp, buffer);
+	safe_unpack16(&build_ptr->job_file_append, buffer);
+
 	safe_unpack16(&build_ptr->kill_wait, buffer);
+
 	safe_unpackstr_xmalloc(&build_ptr->mail_prog, &uint16_tmp, buffer);
 	safe_unpack16(&build_ptr->max_job_cnt, buffer);
 	safe_unpack16(&build_ptr->min_job_age, buffer);
 	safe_unpackstr_xmalloc(&build_ptr->mpi_default, &uint16_tmp, buffer);
 	safe_unpack16(&build_ptr->msg_timeout, buffer);
+
 	safe_unpack32(&build_ptr->next_job_id, buffer);
+	safe_unpackstr_xmalloc(&build_ptr->node_prefix, &uint16_tmp, buffer);
+
 	safe_unpackstr_xmalloc(&build_ptr->plugindir, &uint16_tmp, buffer);
 	safe_unpackstr_xmalloc(&build_ptr->plugstack, &uint16_tmp, buffer);
 	safe_unpack16(&build_ptr->private_data, buffer);
@@ -2247,10 +2284,12 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **
                                &uint16_tmp, buffer);
         safe_unpackstr_xmalloc(&build_ptr->propagate_rlimits_except,
                                &uint16_tmp, buffer);
+
 	safe_unpackstr_xmalloc(&build_ptr->resume_program,
 			       &uint16_tmp, buffer);
 	safe_unpack16(&build_ptr->resume_rate, buffer);
 	safe_unpack16(&build_ptr->ret2service, buffer);
+
 	safe_unpack16(&build_ptr->schedport, buffer);
 	safe_unpack16(&build_ptr->schedrootfltr, buffer);
 	safe_unpackstr_xmalloc(&build_ptr->schedtype, &uint16_tmp, buffer);
@@ -2278,6 +2317,8 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **
 			       buffer);
 	safe_unpack16(&build_ptr->slurmd_timeout, buffer);
 	safe_unpackstr_xmalloc(&build_ptr->slurm_conf, &uint16_tmp, buffer);
+	safe_unpackstr_xmalloc(&build_ptr->srun_epilog, &uint16_tmp, buffer);
+	safe_unpackstr_xmalloc(&build_ptr->srun_prolog, &uint16_tmp, buffer);
 	safe_unpackstr_xmalloc(&build_ptr->state_save_location,
 			       &uint16_tmp, buffer);
 	safe_unpackstr_xmalloc(&build_ptr->suspend_exc_nodes,
@@ -2289,25 +2330,20 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **
 	safe_unpack16(&build_ptr->suspend_rate, buffer);
 	safe_unpack16(&build_ptr->suspend_time, buffer);
 	safe_unpackstr_xmalloc(&build_ptr->switch_type, &uint16_tmp, buffer);
+
 	safe_unpackstr_xmalloc(&build_ptr->task_epilog, &uint16_tmp, buffer);
 	safe_unpackstr_xmalloc(&build_ptr->task_prolog, &uint16_tmp, buffer);
 	safe_unpackstr_xmalloc(&build_ptr->task_plugin, &uint16_tmp, buffer);
 	safe_unpack16(&build_ptr->task_plugin_param, buffer);
 	safe_unpackstr_xmalloc(&build_ptr->tmp_fs, &uint16_tmp, buffer);
-	safe_unpack16(&build_ptr->wait_time, buffer);
-	safe_unpackstr_xmalloc(&build_ptr->job_credential_private_key,
-			       &uint16_tmp, buffer);
-	safe_unpackstr_xmalloc(&build_ptr->
-			       job_credential_public_certificate,
-			       &uint16_tmp, buffer);
-	safe_unpackstr_xmalloc(&build_ptr->srun_prolog, &uint16_tmp, buffer);
-	safe_unpackstr_xmalloc(&build_ptr->srun_epilog, &uint16_tmp, buffer);
-	safe_unpackstr_xmalloc(&build_ptr->node_prefix, &uint16_tmp, buffer);
 	safe_unpack16(&build_ptr->tree_width, buffer);
+
 	safe_unpack16(&build_ptr->use_pam, buffer);
 	safe_unpackstr_xmalloc(&build_ptr->unkillable_program,
 			       &uint16_tmp, buffer);
 	safe_unpack16(&build_ptr->unkillable_timeout, buffer);
+
+	safe_unpack16(&build_ptr->wait_time, buffer);
 
 	return SLURM_SUCCESS;
 
