@@ -66,6 +66,7 @@
 #include "src/common/macros.h"
 #include "src/common/fd.h"
 #include "src/common/list.h"
+#include "src/common/read_config.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xsignal.h"
 
@@ -658,6 +659,17 @@ again:
 static int
 _init_task_stdio_fds(slurmd_task_info_t *task, slurmd_job_t *job)
 {
+	slurm_ctl_conf_t *conf;
+	int file_flags;
+
+	/* set files for opening stdout/err */
+	conf = slurm_conf_lock();
+	if (conf->job_file_append)
+		file_flags = O_CREAT|O_WRONLY|O_APPEND;
+	else
+		file_flags = O_CREAT|O_WRONLY|O_APPEND|O_TRUNC;
+	slurm_conf_unlock();
+
 	/*
 	 *  Initialize stdin
 	 */
@@ -693,8 +705,7 @@ _init_task_stdio_fds(slurmd_task_info_t *task, slurmd_job_t *job)
 	if (task->ofname != NULL) {
 		/* open file on task's stdout */
 		debug5("  stdout file name = %s", task->ofname);
-		task->stdout_fd = open(task->ofname,
-				    O_CREAT|O_WRONLY|O_TRUNC|O_APPEND, 0666);
+		task->stdout_fd = open(task->ofname, file_flags, 0666);
 		if (task->stdout_fd == -1) {
 			error("Could not open stdout file: %m");
 			xfree(task->ofname);
@@ -731,8 +742,7 @@ _init_task_stdio_fds(slurmd_task_info_t *task, slurmd_job_t *job)
 	if (task->efname != NULL) {
 		/* open file on task's stdout */
 		debug5("  stderr file name = %s", task->efname);
-		task->stderr_fd = open(task->efname,
-				    O_CREAT|O_WRONLY|O_TRUNC|O_APPEND, 0666);
+		task->stderr_fd = open(task->efname, file_flags, 0666);
 		if (task->stderr_fd == -1) {
 			error("Could not open stderr file: %m");
 			xfree(task->efname);

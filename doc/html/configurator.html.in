@@ -116,6 +116,7 @@ function displayfile()
    get_field("BackupController",document.config.backup_controller) + "<br>" +
    get_field("BackupAddr",document.config.backup_addr) + "<br>" +
    "# <br>" +
+   "#JobFileAppend=0 <br>" +
    "SlurmUser=" + document.config.slurm_user.value + "<br>" +
    "SlurmctldPort=" + document.config.slurmctld_port.value + "<br>" +
    "SlurmdPort=" + document.config.slurmd_port.value + "<br>" +
@@ -128,15 +129,15 @@ function displayfile()
    "SwitchType=switch/" + get_radio_value(document.config.switch_type) + "<br>" +
    "#MailProg=/bin/mail <br>" +
    "MpiDefault=" + get_radio_value(document.config.mpi_default) + "<br>" +
-   "#MessageTimeout= <br>" +
+   "#MessageTimeout=5 <br>" +
    "SlurmctldPidFile=" + document.config.slurmctld_pid_file.value + "<br>" +
    "SlurmdPidFile=" + document.config.slurmd_pid_file.value + "<br>" +
    "ProctrackType=proctrack/" + get_radio_value(document.config.proctrack_type) + "<br>" +
    "#PluginDir= <br>" +
    "CacheGroups=" + get_radio_value(document.config.cache_groups) + "<br>" +
-   "#FirstJobId= <br>" +
+   "#FirstJobId=1 <br>" +
    "ReturnToService=" + get_radio_value(document.config.return_to_service) + "<br>" +
-   "#MaxJobCount= <br>" +
+   "#MaxJobCount=2000 <br>" +
    "#PlugStackConfig= <br>" +
    "#Privatedata= <br>" +
    "#PropagatePrioProcess= <br>" +
@@ -150,7 +151,7 @@ function displayfile()
    get_field("TaskEpilog",document.config.task_epilog) + "<br>" +
    "TaskPlugin=task/" + get_radio_value(document.config.task_plugin) + "<br>" +
    get_task_plugin_param() + "<br>" +
-   "#TmpFs= <br>" +
+   "#TmpFs=/tmp <br>" +
    "#UsePAM= <br>" +
    "# <br>" +
    "# TIMERS <br>" +
@@ -160,7 +161,7 @@ function displayfile()
    "MinJobAge=" + document.config.min_job_age.value + "<br>" +
    "KillWait=" + document.config.kill_wait.value + "<br>" +
    "#UnkillableStepProgram= <br>" +
-   "#UnkillableStepTimeout= <br>" +
+   "#UnkillableStepTimeout=60 <br>" +
    "Waittime=" + document.config.wait_time.value + "<br>" +
    "# <br>" +
    "# SCHEDULING<br>" +
