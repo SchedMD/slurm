@@ -1,6 +1,10 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins.
 
+* Changes in SLURM 1.2.13
+=========================
+ -- Add slurm.conf parameter JobFileAppend.
+
 * Changes in SLURM 1.2.12
 =========================
  -- Increase maximum message size from 1MB to 16MB (from Ernest Artiaga, BSC). 
