@@ -74,7 +74,9 @@ am__strip_dir = `echo $$p | sed -e 's|^.*/||'`;
 am__installdirs = "$(DESTDIR)$(pkglibdir)"
 pkglibLTLIBRARIES_INSTALL = $(INSTALL)
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
+am__DEPENDENCIES_1 =
 @HAVE_OPENSSL_TRUE@crypto_openssl_la_DEPENDENCIES =  \
+@HAVE_OPENSSL_TRUE@	$(am__DEPENDENCIES_1) \
 @HAVE_OPENSSL_TRUE@	$(top_builddir)/src/api/libslurm.la
 am__crypto_openssl_la_SOURCES_DIST = crypto_openssl.c
 @HAVE_OPENSSL_TRUE@am_crypto_openssl_la_OBJECTS = crypto_openssl.lo
@@ -268,7 +270,7 @@ AUTOMAKE_OPTIONS = foreign
 @HAVE_OPENSSL_FALSE@openssl_lib = 
 @HAVE_OPENSSL_TRUE@openssl_lib = crypto_openssl.la
 PLUGIN_FLAGS = -module -avoid-version --export-dynamic 
-INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common
+INCLUDES = -I$(top_srcdir) $(SSL_CPPFLAGS) -I$(top_srcdir)/src/common
 pkglib_LTLIBRARIES = $(openssl_lib)
 @HAVE_OPENSSL_TRUE@crypto_openssl_la_SOURCES = \
 @HAVE_OPENSSL_TRUE@	crypto_openssl.c
@@ -276,7 +278,7 @@ pkglib_LTLIBRARIES = $(openssl_lib)
 
 # Add libslurm to switch_elan to provide some symbols that are not
 #  available in slurmctld (slurm_setenvpf)
-@HAVE_OPENSSL_TRUE@crypto_openssl_la_LIBADD = $(OPEN_LIBS) \
+@HAVE_OPENSSL_TRUE@crypto_openssl_la_LIBADD = $(SSL_LIBS) \
 @HAVE_OPENSSL_TRUE@			$(top_builddir)/src/api/libslurm.la
 
 @HAVE_OPENSSL_TRUE@crypto_openssl_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
