@@ -22,6 +22,7 @@ job?</a></li>
 name for a batch job?</a></li>
 <li><a href="#parallel_make">Can the <i>make</i> command utilize the resources 
 allocated to a SLURM job?</a></li>
+<li><a href="#terminal">Can tasks be launched with a remote terminal?</a></li>
 </ol>
 <h2>For Administrators</h2>
 <ol>
@@ -339,6 +340,33 @@ long, the use of additional resources should more than compensate for the
 overhead of SLURM's task launch. Use with make's <i>-j</i> option within an
 existing SLURM allocation. Outside of a SLURM allocation, make's behavior
 will be unchanged.</p>
+
+<p><a name="terminal"><b>16. Can tasks be launched with a remote 
+terminal?</b></a><br>
+SLURM does not directly support a remote pseudo terminal for spawned 
+tasks, but you can accomplish this by starting an appropriate program 
+or script. In the simplest case (X11 over TCP with the DISPLAY 
+environment already set), <i>srun xterm</i> may suffice. In the more 
+general case, the following script should work. Execute it from within 
+an existing allocation (e.g. <i>salloc script.name</i>).
+
+<pre>
+#!/bin/bash
+#
+# Written by P&auml;r Andersson
+# National Supercomputer Centre, Sweden
+#
+node=`srun -N1 hostname -s`
+echo "Starting interactive shell on $node"
+# Clean out old screen
+srun -w$node -N1 screen -wipe &>/dev/null
+# Start a new detached screen, don't fork
+srun -w$node -N1 screen -Dm &
+# Give the screen a few seconds to start
+sleep 1s
+# SSH to the node and attach to the screen
+exec ssh -t $node screen -rd
+</pre>
 
 <p class="footer"><a href="#top">top</a></p>
 
@@ -693,6 +721,6 @@ about these options.
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 15 June 2007</p>
+<p style="text-align:center;">Last modified 26 July 2007</p>
 
 <!--#include virtual="footer.txt"-->
