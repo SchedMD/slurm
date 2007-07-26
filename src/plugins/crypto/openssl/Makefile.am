@@ -10,7 +10,7 @@ endif
 
 PLUGIN_FLAGS = -module -avoid-version --export-dynamic 
 
-INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common
+INCLUDES = -I$(top_srcdir) $(SSL_CPPFLAGS) -I$(top_srcdir)/src/common
 
 pkglib_LTLIBRARIES = $(openssl_lib)
 
@@ -21,7 +21,7 @@ crypto_openssl_la_SOURCES =	\
 # Add libslurm to switch_elan to provide some symbols that are not
 #  available in slurmctld (slurm_setenvpf)
 
-crypto_openssl_la_LIBADD  = $(OPEN_LIBS) \
+crypto_openssl_la_LIBADD  = $(SSL_LIBS) \
 			$(top_builddir)/src/api/libslurm.la
 
 crypto_openssl_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
