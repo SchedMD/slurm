@@ -180,6 +180,7 @@ SSL_CPPFLAGS = @SSL_CPPFLAGS@
 SSL_LDFLAGS = @SSL_LDFLAGS@
 SSL_LIBS = @SSL_LIBS@
 STRIP = @STRIP@
+UTIL_LIBS = @UTIL_LIBS@
 VERSION = @VERSION@
 abs_builddir = @abs_builddir@
 abs_srcdir = @abs_srcdir@
@@ -243,7 +244,7 @@ generated_html = \
 	bluegene.html \
 	checkpoint_plugins.html \
 	cons_res.html \
-	crypto_plugins.html \
+	crypto_plugins_html \
 	dist_plane.html \
 	databaseplugins.html \
 	documentation.html \
