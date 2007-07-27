@@ -437,6 +437,7 @@ typedef struct launch_tasks_request_msg {
 	
 	uint16_t user_managed_io; /* 0 for "normal" IO,
 				     1 for "user manged" IO */
+	uint8_t pty;		/* use pseudo tty */
 
 	/********** START "normal" IO only options **********/
 	/* These options are ignored if user_managed_io is 1 */

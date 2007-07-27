@@ -43,6 +43,7 @@
 #include <sys/wait.h>
 #include <sys/stat.h>
 #include <sys/param.h>
+#include <sys/poll.h>
 #include <unistd.h>
 #include <pwd.h>
 #include <grp.h>
@@ -60,6 +61,14 @@
 
 #ifdef HAVE_AIX
 #  include <sys/checkpnt.h>
+#endif
+
+#ifdef HAVE_PTY_H
+#  include <pty.h>
+#endif
+
+#ifdef HAVE_UTMP_H
+#  include <utmp.h>
 #endif
 
 #include <sys/resource.h>
@@ -88,6 +97,14 @@
 /*
  * Static prototype definitions.
  */
+static int pty_master = -1;
+static pid_t pty_pid;
+
+static void  _check_for_slave_exit (void);
+static int   _pty_task_init (void);
+static void  _process_pty (void);
+static void  _process_stdin (void);
+
 static void  _make_tmpdir(slurmd_job_t *job);
 static int   _run_script_and_set_env(const char *name, const char *path, 
 				     slurmd_job_t *job);
@@ -370,6 +387,9 @@ exec_task(slurmd_job_t *job, int i, int waitfd)
 		exit (1);
 	}
 
+	if (job->pty && (task->gtid == 0))
+		_pty_task_init();
+
 	/* task plugin hook */
 	pre_launch(job);
 	if (conf->task_prolog) {
@@ -441,4 +461,102 @@ static char *_uint32_array_to_str(int array_len, const uint32_t *array)
 	return str;
 }
 
+static void _process_pty (void)
+{
+	unsigned char buf [4096];
+	int len;
+
+	if ((len = read (pty_master, buf, sizeof (buf))) < 0) {
+		if (errno == EAGAIN)
+			return;
+		if (errno == EIO) /* Why do we get this sometimes */
+			return;
+		error ("read (pty master): %m\n");
+		exit (1);
+	}
+	else if (len == 0) {
+		close (STDOUT_FILENO);
+		close (pty_master);
+		pty_master = -1;
+		return;
+	}
+
+	write (STDOUT_FILENO, buf, len);
+}
+
+static void _process_stdin (void)
+{
+	unsigned char buf [4096];
+	int len;
+
+	if ((len = read (STDIN_FILENO, buf, sizeof (buf))) < 0) {
+		error ("stdin read: %m\n");
+		exit (1);
+	}
+	else if (len == 0) {
+		close (STDOUT_FILENO);
+		pty_master = -1;
+		return;
+	}
+
+	write (pty_master, buf, len);
+}
+
+static void _check_for_slave_exit (void)
+{
+	int status = 0;
+
+	if (waitpid (pty_pid, &status, WNOHANG) <= 0)
+		return;
+
+	if (WIFEXITED (status)) 
+		exit (status);
+}
+
+static int  _pty_task_init (void)
+{
+	if ((pty_pid = forkpty (&pty_master, NULL, NULL, NULL)) < 0) {
+		error ("Failed to allocate a pty for rank 0: %m\n");
+		return (0);
+	}
+	else if (pty_pid == 0) {
+		/* Child. Continue with SLURM code */
+		return (0);
+	} 
+
+	/* Parent: process data from client */
+
+	while (1) {
+		struct pollfd fds[2];
+		int rc;
+
+		fd_set_nonblocking (pty_master);
+		fd_set_nonblocking (STDIN_FILENO);
+
+		fds[0].fd = pty_master;
+		fds[1].fd = STDIN_FILENO;
+		fds[0].events = POLLIN | POLLERR;
+		fds[1].events = POLLIN | POLLERR;
+
+		if ((rc = poll (fds, 2, -1)) < 0) {
+			error ("poll: %m\n");
+			exit (1);
+		}
+
+		if (fds[0].revents & POLLERR) {
+			_check_for_slave_exit ();
+			continue;
+		}
+
+		if (fds[0].revents & POLLIN) 
+			_process_pty ();
+
+		if (fds[1].revents & POLLIN)
+			_process_stdin ();
+
+		_check_for_slave_exit ();
+	}
+
+	return (0);
+}
 

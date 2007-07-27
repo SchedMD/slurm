@@ -259,7 +259,8 @@ job_create(launch_tasks_request_msg_t *msg)
 	job->multi_prog  = msg->multi_prog;
 	job->timelimit   = (time_t) -1;
 	job->task_flags  = msg->task_flags;
-	job->switch_job = msg->switch_job;
+	job->switch_job  = msg->switch_job;
+	job->pty         = msg->pty;
 
 	job->options =    msg->options;
 	

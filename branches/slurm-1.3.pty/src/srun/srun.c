@@ -65,6 +65,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <signal.h>
+#include <termios.h>
 #include <unistd.h>
 #include <fcntl.h>
 #include <grp.h>
@@ -99,6 +100,7 @@
 #define	TYPE_SCRIPT	2
 
 mpi_plugin_client_info_t mpi_job_info[1];
+static struct termios termdefaults;
 
 /*
  * forward declaration of static funcs
@@ -117,6 +119,7 @@ static int   _change_rlimit_rss(void);
 static int   _slurm_debug_env_val (void);
 static int   _call_spank_local_user (srun_job_t *job);
 static void  _define_symbols(void);
+static void  _pty_restore(void);
 
 int srun(int ac, char **av)
 {
@@ -309,6 +312,22 @@ int srun(int ac, char **av)
 						  job->step_layout->node_cnt,
 						  job->cred,
 						  opt.labelio);
+
+	if (opt.pty) {
+		struct termios term;
+		int fd = STDIN_FILENO;
+
+		/* Save terminal settings for restore */
+		tcgetattr(fd, &termdefaults); 
+
+		atexit(&_pty_restore);
+
+		tcgetattr(fd, &term);
+		/* Set raw mode on local tty */
+		cfmakeraw(&term);
+		tcsetattr(fd, TCSANOW, &term);
+	}
+
 	if (!job->client_io
 	    || (client_io_handler_start(job->client_io)	!= SLURM_SUCCESS))
 		job_fatal(job, "failed to start IO handler");
@@ -814,4 +833,11 @@ srun_set_stdio_fds(srun_job_t *job, slurm_step_io_fds_t *cio_fds)
 static void _define_symbols(void)
 {
 	slurm_signal_job_step(0,0,0);	/* needed by mvapich and mpichgm */
+}
+
+static void _pty_restore(void)
+{
+	/* STDIN is probably closed by now */
+	if (tcsetattr(STDOUT_FILENO, TCSANOW, &termdefaults) < 0)
+		fprintf(stderr, "tcsetattr: %s\n", strerror(errno));
 }
