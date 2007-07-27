@@ -316,10 +316,6 @@ The \fB\-\-label\fR option will prepend lines of output with the remote
 task id.
 
 .TP
-\fB-u\fR, \fB\-\-unbuffered\fR
-do not line buffer stdout from remote tasks. This option cannot be used
-with \fI\-\-label\fR. 
-.TP
 \fB\-m\fR, \fB\-\-distribution\fR=
 (\fIblock\fR|\fIcyclic\fR|\fIarbitrary\fR|\fIplane=<options>\fR)
 Specify an alternate distribution method for remote processes.
@@ -687,6 +683,13 @@ The maximum resident set size
 \fBSTACK\fR
 The maximum stack size
 .RE
+
+.TP
+\fB\-\-pty\fR
+Execute task zero in pseudo terminal.
+Implicitly sets \fB\-\-unbuffered\fR.
+Implicitly sets \fB\-\-error\fR and \fB\-\-output\fR to /dev/null 
+for all tasks except task zero.
 
 .TP
 \fB\-Q\fR, \fB\-\-quiet\fR

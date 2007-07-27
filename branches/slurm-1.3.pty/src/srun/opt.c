@@ -157,6 +157,7 @@
 #define LONG_OPT_RAMDISK_IMAGE   0x143
 #define LONG_OPT_REBOOT          0x144
 #define LONG_OPT_GET_USER_ENV    0x145
+#define LONG_OPT_PTY             0x146
 
 /*---- global variables, defined in opt.h ----*/
 int _verbose;
@@ -1032,6 +1033,7 @@ static void _opt_default()
 	}
 	
 	opt.get_user_env = false;
+	opt.pty = false;
 }
 
 /*---[ env var processing ]-----------------------------------------------*/
@@ -1403,6 +1405,7 @@ static void set_options(const int argc, char **argv)
 		{"ramdisk-image",    required_argument, 0, LONG_OPT_RAMDISK_IMAGE},
 		{"reboot",           no_argument,       0, LONG_OPT_REBOOT},            
 		{"get-user-env",     no_argument,       0, LONG_OPT_GET_USER_ENV},
+		{"pty",              no_argument,       0, LONG_OPT_PTY},
 		{NULL,               0,                 0, 0}
 	};
 	char *opt_string = "+aAbB:c:C:d:D:e:g:Hi:IjJ:kKlm:n:N:"
@@ -1866,6 +1869,10 @@ static void set_options(const int argc, char **argv)
 			break;
 		case LONG_OPT_GET_USER_ENV:
 			opt.get_user_env = true;
+			break;
+		case LONG_OPT_PTY:
+			opt.pty = true;
+			opt.unbuffered = true;	/* implicit */
 			break;
 		default:
 			if (spank_process_option (opt_char, optarg) < 0) {
@@ -2670,6 +2677,7 @@ static void _help(void)
 "      --multi-prog            if set the program name specified is the\n"
 "                              configuration specification for multiple programs\n"
 "      --get-user-env          used by Moab.  See srun man page.\n"
+"      --pty                   run task zero in pseudo terminal\n"
 "\n"
 "Constraint options:\n"
 "      --mincpus=n             minimum number of cpus per node\n"
