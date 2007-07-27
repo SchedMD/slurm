@@ -69,6 +69,7 @@
 #include "src/common/read_config.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xsignal.h"
+#include "src/common/xstring.h"
 
 #include "src/slurmd/slurmd/slurmd.h"
 #include "src/slurmd/slurmstepd/io.h"
@@ -676,8 +677,7 @@ _init_task_stdio_fds(slurmd_task_info_t *task, slurmd_job_t *job)
 	 *  Initialize stdin
 	 */
 	if (job->pty) {
-		if (task->gtid == 0) {
-			/* create pipe and eio object */
+		if (1 || task->gtid == 0) {
 			int pin[2];
 			debug("  stdin uses a pty object");
 			if (pipe(pin) < 0) {
@@ -692,6 +692,8 @@ _init_task_stdio_fds(slurmd_task_info_t *task, slurmd_job_t *job)
 			task->in = _create_task_in_eio(task->to_stdin, job);
 			eio_new_initial_obj(job->eio, (void *)task->in);
 		} else {
+			xfree(task->ifname);
+			task->ifname = xstrdup("/dev/null");
 			task->stdin_fd = open("/dev/null", O_RDONLY);
 			fd_set_close_on_exec(task->stdin_fd);
 			task->to_stdin = -1;  /* not used */
@@ -726,8 +728,7 @@ _init_task_stdio_fds(slurmd_task_info_t *task, slurmd_job_t *job)
 	 *  Initialize stdout
 	 */
 	if (job->pty) {
-		if (task->gtid == 0) {
-			/* create pipe and eio object */
+		if (1 || task->gtid == 0) {
 			int pout[2];
 			debug("  stdout uses a pty object");
 			if (pipe(pout) < 0) {
@@ -744,6 +745,8 @@ _init_task_stdio_fds(slurmd_task_info_t *task, slurmd_job_t *job)
 			list_append(job->stdout_eio_objs, (void *)task->out);
 			eio_new_initial_obj(job->eio, (void *)task->out);
 		} else {
+			xfree(task->ofname);
+			task->ofname = xstrdup("/dev/null");
 			task->stdout_fd = open("/dev/null", O_WRONLY);
 			fd_set_close_on_exec(task->stdout_fd);
 			task->from_stdout = -1;  /* not used */
@@ -756,8 +759,7 @@ _init_task_stdio_fds(slurmd_task_info_t *task, slurmd_job_t *job)
 			error("Could not open stdout file: %m");
 			xfree(task->ofname);
 			task->ofname = fname_create(job, "slurm-%J.out", 0);
-			task->stdout_fd = open(task->ofname, 
-				O_CREAT|O_WRONLY|O_TRUNC|O_APPEND, 0666);
+			task->stdout_fd = open(task->ofname, file_flags, 0666);
 			if (task->stdout_fd == -1)
 				return SLURM_ERROR;
 		}
@@ -786,8 +788,7 @@ _init_task_stdio_fds(slurmd_task_info_t *task, slurmd_job_t *job)
 	 *  Initialize stderr
 	 */
 	if (job->pty) {
-		if (task->gtid == 0) {
-			/* create pipe and eio object */
+		if (1 || task->gtid == 0) {
 			int perr[2];
 			debug("  stderr uses a pty object");
 			if (pipe(perr) < 0) {
@@ -804,6 +805,8 @@ _init_task_stdio_fds(slurmd_task_info_t *task, slurmd_job_t *job)
 			list_append(job->stderr_eio_objs, (void *)task->err);
 			eio_new_initial_obj(job->eio, (void *)task->err);
 		} else {
+			xfree(task->efname);
+			task->efname = xstrdup("/dev/null");
 			task->stderr_fd = open("/dev/null", O_WRONLY);
 			fd_set_close_on_exec(task->stderr_fd);
 			task->from_stderr = -1;  /* not used */
@@ -816,8 +819,7 @@ _init_task_stdio_fds(slurmd_task_info_t *task, slurmd_job_t *job)
 			error("Could not open stderr file: %m");
 			xfree(task->efname);
 			task->efname = fname_create(job, "slurm-%J.err", 0);
-			task->stderr_fd = open(task->efname,
-				O_CREAT|O_WRONLY|O_TRUNC|O_APPEND, 0666);
+			task->stderr_fd = open(task->efname, file_flags, 0666);
 			if (task->stderr_fd == -1)
 				return SLURM_ERROR;
 		}
