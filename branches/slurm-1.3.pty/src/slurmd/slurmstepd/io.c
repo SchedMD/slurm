@@ -301,7 +301,8 @@ _client_read(eio_obj_t *obj, List objs)
 	if (client->header.length == 0) { /* zero length is an eof message */
 		debug5("  got stdin eof message!");
 	} else {
-		buf = client->in_msg->data + (client->in_msg->length - client->in_remaining);
+		buf = client->in_msg->data + 
+			(client->in_msg->length - client->in_remaining);
 	again:
 		if ((n = read(obj->fd, buf, client->in_remaining)) < 0) {
 			if (errno == EINTR)
@@ -392,7 +393,8 @@ _client_write(eio_obj_t *obj, List objs)
 			debug5("_client_write: nothing in the queue");
 			return SLURM_SUCCESS;
 		}
-		debug5("  dequeue successful, client->out_msg->length = %d", client->out_msg->length);
+		debug5("  dequeue successful, client->out_msg->length = %d", 
+			client->out_msg->length);
 		client->out_remaining = client->out_msg->length;
 	}
 
