@@ -728,7 +728,7 @@ _init_task_stdio_fds(slurmd_task_info_t *task, slurmd_job_t *job)
 	 *  Initialize stdout
 	 */
 	if (job->pty) {
-		if (1 || task->gtid == 0) {
+		if (task->gtid == 0) {
 			int pout[2];
 			debug("  stdout uses a pty object");
 			if (pipe(pout) < 0) {
@@ -788,7 +788,7 @@ _init_task_stdio_fds(slurmd_task_info_t *task, slurmd_job_t *job)
 	 *  Initialize stderr
 	 */
 	if (job->pty) {
-		if (1 || task->gtid == 0) {
+		if (task->gtid == 0) {
 			int perr[2];
 			debug("  stderr uses a pty object");
 			if (pipe(perr) < 0) {
