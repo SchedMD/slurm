@@ -329,7 +329,8 @@ static void _opt_args(int argc, char **argv)
 			long_options, &option_index)) != -1) {
 		switch (opt_char) {
 			case (int)'?':
-				fprintf(stderr, "Try \"scancel --help\" for more information\n");
+				fprintf(stderr, 
+					"Try \"scancel --help\" for more information\n");
 				exit(1);
 				break;
 			case (int)'b':
