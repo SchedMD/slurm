@@ -478,14 +478,21 @@ rwfail:
 	
 }
 
+/* This typically signifies the job was cancelled by scancel */
 static void
 _job_step_complete(srun_job_t *job, slurm_msg_t *msg)
 {
 	srun_job_complete_msg_t *step_msg = msg->data;
 
-	/* FIXME: Do something here */
-	info("Complete job step %u.%u", 
-	     step_msg->job_id, step_msg->step_id);
+	if (step_msg->step_id == NO_VAL) {
+		verbose("Complete job %u received",
+			step_msg->job_id);
+	} else {
+		verbose("Complete job step %u.%u received",
+			step_msg->job_id, step_msg->step_id);
+	}
+	update_job_state(job, SRUN_JOB_FORCETERM);
+	job->removed = true;
 }
 
 static void
@@ -943,7 +950,6 @@ _handle_msg(srun_job_t *job, slurm_msg_t *msg)
 		slurm_free_srun_ping_msg(msg->data);
 		break;
 	case SRUN_JOB_COMPLETE:
-		debug3("job complete received");
 		_job_step_complete(job, msg);
 		slurm_free_srun_job_complete_msg(msg->data);
 		break;
