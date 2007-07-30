@@ -65,6 +65,7 @@
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/node_scheduler.h"
 #include "src/slurmctld/slurmctld.h"
+#include "src/slurmctld/srun_comm.h"
 
 #define MAX_RETRIES 10
 
@@ -293,8 +294,10 @@ int job_step_signal(uint32_t job_id, uint32_t step_id,
 	}
 	
 	/* save user ID of the one who requested the job be cancelled */
-	if(signal == SIGKILL)
+	if (signal == SIGKILL) {
 		step_ptr->job_ptr->requid = uid;
+		srun_step_complete(step_ptr);
+	}
 
 	signal_step_tasks(step_ptr, signal);
 	return SLURM_SUCCESS;
