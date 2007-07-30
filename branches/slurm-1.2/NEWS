@@ -6,6 +6,8 @@ documents those changes that are of interest to users and admins.
  -- Add slurm.conf parameter JobFileAppend.
  -- Fix for segv in "scontrol listpids" on nodes not in SLURM config.
  -- Add support for SCANCEL_CTLD env var.
+ -- In mpi/mvapich plugin, add startup timeout logic. Time based upon 
+    SLURM_MVAPICH_TIMEOUT (value in seconds).
 
 * Changes in SLURM 1.2.12
 =========================
