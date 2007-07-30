@@ -254,6 +254,9 @@ static void _opt_env()
 				val);
 	}
 
+	if (getenv("SCANCEL_CTLD"))
+		opt.ctld = true;
+
 	if ( (val=getenv("SCANCEL_INTERACTIVE")) ) {
 		if (strcasecmp(val, "true") == 0)
 			opt.interactive = true;
