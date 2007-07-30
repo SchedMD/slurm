@@ -499,10 +499,10 @@ _list_pids_all_steps(const char *node_name, uint32_t jobid)
 	int count = 0;
 
 	steps = stepd_available(NULL, node_name);
-	if (list_count(steps) == 0) {
-		fprintf(stderr, "Job %u does not exist on this node.\n",
-			jobid);
-		list_destroy(steps);
+	if (!steps || list_count(steps) == 0) {
+		fprintf(stderr, "Job %u does not exist on this node.\n", jobid);
+		if (steps) 
+			list_destroy(steps);
 		exit_code = 1;
 		return;
 	}
@@ -533,9 +533,10 @@ _list_pids_all_jobs(const char *node_name)
 	step_loc_t *stepd;
 
 	steps = stepd_available(NULL, node_name);
-	if (list_count(steps) == 0) {
+	if (!steps || list_count(steps) == 0) {
 		fprintf(stderr, "No job steps exist on this node.\n");
-		list_destroy(steps);
+		if (steps)
+			list_destroy(steps);
 		exit_code = 1;
 		return;
 	}

@@ -4,6 +4,7 @@ documents those changes that are of interest to users and admins.
 * Changes in SLURM 1.2.13
 =========================
  -- Add slurm.conf parameter JobFileAppend.
+ -- Fix for segv in "scontrol listpids" on nodes not in SLURM config.
 
 * Changes in SLURM 1.2.12
 =========================

@@ -162,7 +162,7 @@ _guess_nodename()
 	char host[256];
 	char *nodename = NULL;
 
-	if (gethostname_short(host, 256) != 0)
+	if (gethostname_short(host, 256) != 0) 
 		return NULL;
 
 	nodename = slurm_conf_get_nodename(host);
@@ -483,7 +483,8 @@ stepd_available(const char *directory, const char *nodename)
 	struct stat stat_buf;
 
 	if (nodename == NULL) {
-		nodename = _guess_nodename();
+		if (!(nodename = _guess_nodename()))
+			return NULL;
 	}
 	if (directory == NULL) {
 		slurm_ctl_conf_t *cf;
