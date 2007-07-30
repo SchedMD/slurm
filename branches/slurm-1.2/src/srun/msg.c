@@ -97,6 +97,7 @@ static void 	_exit_handler(srun_job_t *job, slurm_msg_t *exit_msg);
 static void	_handle_msg(srun_job_t *job, slurm_msg_t *msg);
 static inline bool _job_msg_done(srun_job_t *job);
 static void	_launch_handler(srun_job_t *job, slurm_msg_t *resp);
+static void	_job_step_complete(srun_job_t *job, slurm_msg_t *msg);
 static void     _do_poll_timeout(srun_job_t *job);
 static int      _get_next_timeout(srun_job_t *job);
 static void 	_msg_thr_poll(srun_job_t *job);
@@ -475,6 +476,16 @@ rwfail:
 	error("_process_launch_resp: "
 	      "write from srun message-handler process failed");
 	
+}
+
+static void
+_job_step_complete(srun_job_t *job, slurm_msg_t *msg)
+{
+	srun_job_complete_msg_t *step_msg = msg->data;
+
+	/* FIXME: Do something here */
+	info("Complete job step %u.%u", 
+	     step_msg->job_id, step_msg->step_id);
 }
 
 static void
@@ -933,7 +944,7 @@ _handle_msg(srun_job_t *job, slurm_msg_t *msg)
 		break;
 	case SRUN_JOB_COMPLETE:
 		debug3("job complete received");
-		/* FIXME: do something here */
+		_job_step_complete(job, msg);
 		slurm_free_srun_job_complete_msg(msg->data);
 		break;
 	case SRUN_TIMEOUT:
