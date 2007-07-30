@@ -177,8 +177,6 @@ static int mvapich_requires_pids (mvapich_state_t *st)
 static int mvapich_terminate_job (mvapich_state_t *st)
 {
 	slurm_kill_job_step (st->job->jobid, st->job->stepid, SIGKILL);
-	/* Use SIGQUIT to tell srun to force terminate job */
-	kill (0, SIGQUIT);
 	/* Give srun a chance to terminate job */
 	sleep (5);
 	/* exit forcefully */
