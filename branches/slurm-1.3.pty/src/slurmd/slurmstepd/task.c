@@ -389,6 +389,11 @@ exec_task(slurmd_job_t *job, int i, int waitfd)
 
 	if (job->pty && (task->gtid == 0))
 		_pty_task_init();
+	if (job->pty && (task->gtid > 0)) {
+		close(0);
+		close(1);
+		close(2);
+	}
 /**********************************************************/
 
 	/* task plugin hook */
