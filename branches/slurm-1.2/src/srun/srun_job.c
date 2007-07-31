@@ -407,6 +407,11 @@ _job_create_structure(allocation_info_t *ainfo)
 	if(opt.min_nodes > job->nhosts) {
 		error("Only allocated %d nodes asked for %d",
 		      job->nhosts, opt.min_nodes);
+		if (opt.exc_nodes) {
+			/* When resources are pre-allocated and some nodes
+			 * are explicitly excluded, this error can occur. */
+			error("Are required nodes explicitly excluded?");
+		}
 		return NULL;
 	}	
 #endif
