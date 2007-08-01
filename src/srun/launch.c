@@ -223,11 +223,11 @@ launch(void *arg)
 		
 		if(nodeid >= job->step_layout->node_cnt) {
 			/* Make sure we aren't trying to mark
-			something we haven't requested but was
-			included in the nodelist.  This should never
-			happen */
-			error("got a problem with a non requested "
-			      "node %s(%d): %s",
+			 * something we haven't requested but was
+			 * included in the nodelist.  This should never
+			 * happen */
+			error("Job step allocation has more nodes than "
+			      "expected, ignoring node %s(%d): %s",
 			      ret_data->node_name, nodeid, 
 			      slurm_strerror(rc));
 		} else if (rc != SLURM_SUCCESS) {
