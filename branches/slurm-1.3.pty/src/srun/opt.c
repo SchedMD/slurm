@@ -1481,6 +1481,8 @@ static void set_options(const int argc, char **argv)
 			opt.cwd = xstrdup(optarg);
 			break;
 		case (int)'e':
+			if (opt.pty)
+				fatal("--error incompatable with --pty option");
 			xfree(opt.efname);
 			if (strncasecmp(optarg, "none", (size_t) 4) == 0)
 				opt.efname = xstrdup("/dev/null");
@@ -1495,6 +1497,8 @@ static void set_options(const int argc, char **argv)
 			opt.hold = true;
 			break;
 		case (int)'i':
+			if (opt.pty)
+				fatal("--input incompatable with --pty option");
 			xfree(opt.ifname);
 			if (strncasecmp(optarg, "none", (size_t) 4) == 0)
 				opt.ifname = xstrdup("/dev/null");
@@ -1549,6 +1553,8 @@ static void set_options(const int argc, char **argv)
 			}
 			break;
 		case (int)'o':
+			if (opt.pty)
+				fatal("--output incompatable with --pty option");
 			xfree(opt.ofname);
 			if (strncasecmp(optarg, "none", (size_t) 4) == 0)
 				opt.ofname = xstrdup("/dev/null");
@@ -1873,6 +1879,12 @@ static void set_options(const int argc, char **argv)
 		case LONG_OPT_PTY:
 			opt.pty = true;
 			opt.unbuffered = true;	/* implicit */
+			if (opt.ifname)
+				fatal("--input incompatable with --pty option");
+			if (opt.ofname)
+				fatal("--output incompatable with --pty option");
+			if (opt.efname)
+				fatal("--error incompatable with --pty option");
 			break;
 		default:
 			if (spank_process_option (opt_char, optarg) < 0) {
