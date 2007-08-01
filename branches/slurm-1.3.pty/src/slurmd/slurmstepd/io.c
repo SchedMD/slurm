@@ -685,7 +685,10 @@ _init_task_stdio_fds(slurmd_task_info_t *task, slurmd_job_t *job)
 	 *  Initialize stdin
 	 */
 	if (job->pty) {
-		if (1 || task->gtid == 0) {
+		/* All of the stdin fails unless EVERY
+		 * task gets an eio object for stdin.
+		 * Its not clear why that is. */
+		if (task->gtid == 0) {
 			int amaster, aslave;
 			debug("  stdin uses a pty object");
 			if (openpty(&amaster, &aslave, NULL, NULL, NULL) < 0) {
@@ -702,9 +705,12 @@ _init_task_stdio_fds(slurmd_task_info_t *task, slurmd_job_t *job)
 		} else {
 			xfree(task->ifname);
 			task->ifname = xstrdup("/dev/null");
-			task->stdin_fd = open("/dev/null", O_RDONLY);
+			task->stdin_fd = open("/dev/null", O_RDWR);
 			fd_set_close_on_exec(task->stdin_fd);
-			task->to_stdin = -1;  /* not used */
+			task->to_stdin = dup(task->stdin_fd);
+			fd_set_nonblocking(task->to_stdin);
+			task->in = _create_task_in_eio(task->to_stdin, job);
+			eio_new_initial_obj(job->eio, (void *)task->in);
 		}
 	} else if (task->ifname != NULL) {
 		/* open file on task's stdin */
@@ -749,7 +755,7 @@ _init_task_stdio_fds(slurmd_task_info_t *task, slurmd_job_t *job)
 		} else {
 			xfree(task->ofname);
 			task->ofname = xstrdup("/dev/null");
-			task->stdout_fd = open("/dev/null", O_WRONLY);
+			task->stdout_fd = open("/dev/null", O_RDWR);
 			fd_set_close_on_exec(task->stdout_fd);
 			task->from_stdout = -1;  /* not used */
 		}
@@ -803,7 +809,7 @@ _init_task_stdio_fds(slurmd_task_info_t *task, slurmd_job_t *job)
 		} else {
 			xfree(task->efname);
 			task->efname = xstrdup("/dev/null");
-			task->stderr_fd = open("/dev/null", O_WRONLY);
+			task->stderr_fd = open("/dev/null", O_RDWR);
 			fd_set_close_on_exec(task->stderr_fd);
 			task->from_stderr = -1;  /* not used */
 		}
