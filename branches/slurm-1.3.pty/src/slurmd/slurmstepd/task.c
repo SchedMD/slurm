@@ -370,10 +370,6 @@ exec_task(slurmd_job_t *job, int i, int waitfd)
 		exit (1);
 	}
 
-	if (job->pty && (task->gtid > 0)) {
-		close(0);
-	}
-
 	/* task plugin hook */
 	pre_launch(job);
 	if (conf->task_prolog) {
