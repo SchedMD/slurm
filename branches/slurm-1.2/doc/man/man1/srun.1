@@ -585,6 +585,8 @@ allocated to the job. See the \fBENVIRONMENT VARIABLES \fR section
 for more information.  If \fB\-N\fR is not specified, the default
 behaviour is to allocate enough nodes to satisfy the requirements of
 the \fB\-n\fR and \fB\-c\fR options.
+The job will be allocated as many nodes as possible within the range specified 
+and without delaying the initiation of the job.
 
 .TP
 \fB\-n\fR, \fB\-\-ntasks\fR=\fIntasks\fR

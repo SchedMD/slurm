@@ -233,6 +233,8 @@ the min or max options may be omitted.  For instance, "\-N 10\-" means
 "no fewer than 10 nodes", and "\-N \-20" means "no more than 20 nodes".  The
 default value of this option is one node, but other command line options
 may implicitly set the default node count to a higher value.
+The job will be allocated as many nodes as possible within the range specified 
+and without delaying the initiation of the job.
 
 .TP
 \fB\-n\fR, \fB\-\-tasks\fR[=]<\fInumber\fR>
