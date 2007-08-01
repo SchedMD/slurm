@@ -52,6 +52,14 @@
 #  include <stdlib.h>
 #endif
 
+#ifdef HAVE_PTY_H
+#  include <pty.h>
+#endif
+
+#ifdef HAVE_UTMP_H
+#  include <utmp.h>
+#endif
+
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
@@ -678,15 +686,15 @@ _init_task_stdio_fds(slurmd_task_info_t *task, slurmd_job_t *job)
 	 */
 	if (job->pty) {
 		if (1 || task->gtid == 0) {
-			int pin[2];
+			int amaster, aslave;
 			debug("  stdin uses a pty object");
-			if (pipe(pin) < 0) {
-				error("stdin pipe: %m");
+			if (openpty(&amaster, &aslave, NULL, NULL, NULL) < 0) {
+				error("stdin oepnpty: %m");
 				return SLURM_ERROR;
 			}
-			task->stdin_fd = pin[0];
+			task->stdin_fd = aslave;
 			fd_set_close_on_exec(task->stdin_fd);
-			task->to_stdin = pin[1];
+			task->to_stdin = amaster;
 			fd_set_close_on_exec(task->to_stdin);
 			fd_set_nonblocking(task->to_stdin);
 			task->in = _create_task_in_eio(task->to_stdin, job);
@@ -729,15 +737,9 @@ _init_task_stdio_fds(slurmd_task_info_t *task, slurmd_job_t *job)
 	 */
 	if (job->pty) {
 		if (task->gtid == 0) {
-			int pout[2];
-			debug("  stdout uses a pty object");
-			if (pipe(pout) < 0) {
-				error("stdout pipe: %m");
-				return SLURM_ERROR;
-			}
-			task->stdout_fd = pout[1];
+			task->stdout_fd = dup(task->stdin_fd);
 			fd_set_close_on_exec(task->stdout_fd);
-			task->from_stdout = pout[0];
+			task->from_stdout = dup(task->to_stdin);
 			fd_set_close_on_exec(task->from_stdout);
 			fd_set_nonblocking(task->from_stdout);
 			task->out = _create_task_out_eio(task->from_stdout,
@@ -789,15 +791,9 @@ _init_task_stdio_fds(slurmd_task_info_t *task, slurmd_job_t *job)
 	 */
 	if (job->pty) {
 		if (task->gtid == 0) {
-			int perr[2];
-			debug("  stderr uses a pty object");
-			if (pipe(perr) < 0) {
-				error("stderr pipe: %m");
-				return SLURM_ERROR;
-			}
-			task->stderr_fd = perr[1];
+			task->stderr_fd = dup(task->stdin_fd);
 			fd_set_close_on_exec(task->stderr_fd);
-			task->from_stderr = perr[0];
+			task->from_stderr = dup(task->to_stdin);
 			fd_set_close_on_exec(task->from_stderr);
 			fd_set_nonblocking(task->from_stderr);
 			task->err = _create_task_out_eio(task->from_stderr,
