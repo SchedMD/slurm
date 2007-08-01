@@ -47,6 +47,7 @@
 #include "src/common/xstring.h"
 #include "src/slurmctld/agent.h"
 #include "src/slurmctld/slurmctld.h"
+#include "src/slurmctld/srun_comm.h"
 
 #define SRUN_LAUNCH_MSG 0
 
@@ -270,10 +271,10 @@ extern void srun_user_message(struct job_record *job_ptr, char *msg)
 }
 
 /*
- * srun_complete - notify srun of a job's termination
+ * srun_job_complete - notify srun of a job's termination
  * IN job_ptr - pointer to the slurmctld job record
  */
-extern void srun_complete (struct job_record *job_ptr)
+extern void srun_job_complete (struct job_record *job_ptr)
 {
 	slurm_addr * addr;
 	srun_job_complete_msg_t *msg_arg;
@@ -294,20 +295,32 @@ extern void srun_complete (struct job_record *job_ptr)
 
 	step_iterator = list_iterator_create(job_ptr->step_list);
 	while ((step_ptr = (struct step_record *) list_next(step_iterator))) {
-		if ( (step_ptr->port    == 0)    || 
-		     (step_ptr->host    == NULL) ||
-		     (step_ptr->batch_step)      ||
-		     (step_ptr->host[0] == '\0') )
+		if (step_ptr->batch_step)	/* batch script itself */
 			continue;
+		srun_step_complete(step_ptr);
+	}	
+	list_iterator_destroy(step_iterator);
+}
+
+/*
+ * srun_step_complete - notify srun of a job step's termination
+ * IN step_ptr - pointer to the slurmctld job step record
+ */
+extern void srun_step_complete (struct step_record *step_ptr)
+{
+	slurm_addr * addr;
+	srun_job_complete_msg_t *msg_arg;
+
+	xassert(step_ptr);
+	if (step_ptr->port && step_ptr->host && step_ptr->host[0]) {
 		addr = xmalloc(sizeof(struct sockaddr_in));
 		slurm_set_addr(addr, step_ptr->port, step_ptr->host);
 		msg_arg = xmalloc(sizeof(srun_timeout_msg_t));
-		msg_arg->job_id   = job_ptr->job_id;
+		msg_arg->job_id   = step_ptr->job_ptr->job_id;
 		msg_arg->step_id  = step_ptr->step_id;
-		_srun_agent_launch(addr, step_ptr->host, SRUN_JOB_COMPLETE, 
+		_srun_agent_launch(addr, step_ptr->host, SRUN_JOB_COMPLETE,
 				   msg_arg);
-	}	
-	list_iterator_destroy(step_iterator);
+	}
 }
 
 /*

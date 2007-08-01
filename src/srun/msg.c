@@ -96,6 +96,7 @@ static void	_dump_proctable(srun_job_t *job);
 static void 	_exit_handler(srun_job_t *job, slurm_msg_t *exit_msg);
 static void	_handle_msg(srun_job_t *job, slurm_msg_t *msg);
 static inline bool _job_msg_done(srun_job_t *job);
+static void	_job_step_complete(srun_job_t *job, slurm_msg_t *msg);
 static void	_launch_handler(srun_job_t *job, slurm_msg_t *resp);
 static void     _do_poll_timeout(srun_job_t *job);
 static int      _get_next_timeout(srun_job_t *job);
@@ -575,8 +576,7 @@ _handle_msg(srun_job_t *job, slurm_msg_t *msg)
 		slurm_free_srun_ping_msg(msg->data);
 		break;
 	case SRUN_JOB_COMPLETE:
-		debug3("job complete received");
-		/* FIXME: do something here */
+		_job_step_complete(job, msg);
 		slurm_free_srun_job_complete_msg(msg->data);
 		break;
 	case SRUN_TIMEOUT:
@@ -907,4 +907,19 @@ extern slurm_fd slurmctld_msg_init(void)
 	return slurmctld_fd;
 }
 
+/* This typically signifies the job was cancelled by scancel */
+static void
+_job_step_complete(srun_job_t *job, slurm_msg_t *msg)
+{
+	srun_job_complete_msg_t *step_msg = msg->data;
 
+	if (step_msg->step_id == NO_VAL) {
+		verbose("Complete job %u received",
+			step_msg->job_id);
+	} else {
+		verbose("Complete job step %u.%u received",
+			step_msg->job_id, step_msg->step_id);
+	}
+	update_job_state(job, SRUN_JOB_FORCETERM);
+	job->removed = true;
+}

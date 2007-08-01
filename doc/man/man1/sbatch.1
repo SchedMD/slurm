@@ -9,7 +9,8 @@ sbatch [\fIoptions\fP] \fIscript\fP [\fIargs\fP...]
 .LP 
 sbatch submits a batch script to SLURM.  The batch script may be given to
 sbatch through a file name on the command line, or if no file name is specified,
-sbatch will read in a script from standard input.
+sbatch will read in a script from standard input. The batch script may contain
+options preceeded with "#SBATCH" before any executable commands in the script.
 
 sbatch exits immediately after the script is successfully transferred to the
 SLURM controller and assigned a SLURM job ID.  The batch script is not
@@ -233,6 +234,8 @@ the min or max options may be omitted.  For instance, "\-N 10\-" means
 "no fewer than 10 nodes", and "\-N \-20" means "no more than 20 nodes".  The
 default value of this option is one node, but other command line options
 may implicitly set the default node count to a higher value.
+The job will be allocated as many nodes as possible within the range specified 
+and without delaying the initiation of the job.
 
 .TP
 \fB\-n\fR, \fB\-\-tasks\fR[=]<\fInumber\fR>
@@ -491,18 +494,25 @@ Do not free a block on Blue Gene systems only.
 The block name on Blue Gene systems only.
 
 .SH "EXAMPLES"
-.LP 
-Specify a batch script by filename on the command line:
+.LP
+Specify a batch script by filename on the command line.
+The batch script specifies a 1 minute time limit for the job.
 .IP 
 $ cat myscript
 .br
 #!/bin/sh
 .br
+#SBATCH --time=1
+.br
 srun hostname |sort
+.br
+
 .br
 $ sbatch \-N4 myscript
 .br
 salloc: Granted job allocation 65537
+.br
+
 .br
 $ cat slurm\-65537.out
 .br
@@ -526,6 +536,8 @@ morrone:~$ sbatch \-N4 <<EOF
 > EOF
 .br
 sbatch: Submitted batch job 65541
+.br
+
 .br
 $ cat slurm\-65541.out
 .br

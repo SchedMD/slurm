@@ -59,15 +59,17 @@ options. Note that the command options are all case insensitive.</p>
 <p><span class="commandline"><b>sacct</b></span> is used to report job or job
 step accounting information about active or completed jobs.</p>
 
-<p><span class="commandline"><b>salloc</b></span> is used to allocate resources. 
-These resources would typically be subsequently used for jobs steps launched 
-using <b>srun</b>.</p>
+<p><span class="commandline"><b>salloc</b></span> is used to allocate resources 
+for a job in real time. Typically this is used to allocate resources and spawn a shell. 
+The shell is then used to execute srun commands to launch parallel tasks.</p>
 
-<p><span class="commandline"><b>salloc</b></span> is used to attach standard 
-input, output and error to an existing job or job step.</p>
+<p><span class="commandline"><b>sattach</b></span> is used to attach standard 
+input, output, and error plus signal capabilities to a currently running 
+job or job step. One can attach to and detach from jobs multiple times.</p>
 
-<p><span class="commandline"><b>sbatch</b></span> is used to queue a job 
-for later execution.</p>
+<p><span class="commandline"><b>sbatch</b></span> is used to submit a job script 
+for later execution. The script will typically contain one or more srun commands 
+to launch parallel tasks.</p>
 
 <p><span class="commandline"><b>sbcast</b></span> is used to transfer a file
 from local disk to local disk on the nodes allocated to a job. This can be
@@ -95,14 +97,19 @@ job steps. It has a wide variety of filtering, sorting, and formatting options.
 By default, it reports the running jobs in priority order and then the pending
 jobs in priority order.</p>
 
-<p><span class="commandline"><b>srun</b></span> is used to submit a job 
-for execution.  It can allocate resources (if necessary) and initiate job steps. 
-<span class="commandline">srun</span> has a wide variety of options to specify 
-resource requirements, including: minimum and maximum node count, processor count, 
-specific nodes to use or not use, and specific node characteristics (so much memory, 
-disk space, certain required features, etc.). 
-Job steps can execute sequentially or in parallel on independent or shared 
-nodes within the job's node allocation.</p>
+<p><span class="commandline"><b>srun</b></span> is used to submit a job for
+execution or initiate job steps in real time.
+<span class="commandline">srun</span>
+has a wide variety of options to specify resource requirements, including: minimum
+and maximum node count, processor count, specific nodes to use or not use, and
+specific node characteristics (so much memory, disk space, certain required 
+features, etc.).
+A job can contain multiple job steps executing sequentially or in parallel on
+independent or shared nodes within the job's node allocation.</p>
+
+<p><span class="commandline"><b>smap</b></span> reports state information for 
+jobs, partitions, and nodes managed by SLURM, but graphically displays the 
+information to reflect network topology.</p>
 
 <p><span class="commandline"><b>strigger</b></span> is used to set, get or 
 view event triggers. Event triggers include things such as nodes going down
@@ -134,24 +141,33 @@ adev0: srun -n4 -l /bin/hostname
 1: adev9
 2: adev10
 3: adev10
-</pre> <p>Submit the script my.script for later execution (<span class="commandline">-b</span>). 
-Explicitly use the nodes adev9 and adev10 (<span class="commandline">-w "adev[9-10]"</span>; 
-note the use of a node range expression). One processor per task will be used 
-by default. The output will appear in the file my.stdout (<span class="commandline">-o 
-my.stdout</span>). By default, one task will be initiated per processor on the 
-nodes. Note that my.script contains the command <span class="commandline">/bin/hostname</span> 
+</pre> <p>Submit the script my.script for later execution.
+Explicitly use the nodes adev9 and adev10 ("-w "adev[9-10]", note the use of a 
+node range expression). 
+We also explicitly state that the subsequent job steps will spawn four tasks 
+each, which will insure that our allocation contains at least four processors
+(one processor per task to be launched).
+The output will appear in the file my.stdout ("-o my.stdout").
+This script contains a timelimit for the job embedded within itself.
+Other options can be supplied as desired by using a prefix of "#SBATCH" followed
+by the option at the beginning of the script (before any commands to be executed
+in the script).
+Options supplied on the command line would override any options specified within
+the script.
+Note that my.script contains the command <span class="commandline">/bin/hostname</span> 
 that executed on the first node in the allocation (where the script runs) plus 
 two job steps initiated using the <span class="commandline">srun</span> command 
 and executed sequentially.</p>
 <pre>
 adev0: cat my.script
 #!/bin/sh
+#SBATCH --time=1
 /bin/hostname
 srun -l /bin/hostname
 srun -l /bin/pwd
 
-adev0: srun -w &quot;adev[9-10]&quot; -o my.stdout -b my.script
-srun: jobid 469 submitted
+adev0: sbatch -n4 -w &quot;adev[9-10]&quot; -o my.stdout my.script
+sbatch: Submitted batch job 469
 
 adev0: cat my.stdout
 adev9
@@ -167,27 +183,27 @@ adev9
 
 <p>Submit a job, get its status, and cancel it. </p>
 <pre>
-adev0: srun -b my.sleeper
+adev0: sbatch my.sleeper
 srun: jobid 473 submitted
 
 adev0: squeue
-  JobId Partition Name     User     St TimeLimit Prio Nodes
-    473 batch     my.sleep jette    R  UNLIMITED 0.99 adev9
+  JOBID PARTITION NAME     USER  ST TIME  NODES NODELIST(REASON)
+    473 batch     my.sleep jette R  00:00 1     adev9
  
 adev0: scancel 473
 
 adev0: squeue
-  JobId Partition Name     User     St TimeLimit Prio Nodes
+  JOBID PARTITION NAME     USER  ST TIME  NODES NODELIST(REASON)
 </pre>
 
 <p>Get the SLURM partition and node status.</p>
 <pre>
 adev0: sinfo
-PARTITION  NODES STATE     CPUS    MEMORY    TMP_DISK NODES
-----------------------------------------------------------------
-debug          8 IDLE         2      3448       82306 adev[0-7]
-batch          1 DOWN         2      3448       82306 adev8
-               7 IDLE         2 3448-3458       82306 adev[9-15]
+PARTITION AVAIL  TIMELIMIT NODES  STATE NODELIST
+debug     up     00:30:00      8   idle adev[0-7]
+batch     up     12:00:00      1   down adev8
+                 12:00:00      7   idle adev[9-15]
+
 </pre>
 <p class="footer"><a href="#top">top</a></p>
 
@@ -403,6 +419,6 @@ sbatch: Submitted batch job 1234
 tasks. These tasks are not managed by SLURM since they are launched 
 outside of its control.</p>
  
-<p style="text-align:center;">Last modified 9 July 2007</p>
+<p style="text-align:center;">Last modified 1 August 2007</p>
 
 <!--#include virtual="footer.txt"-->

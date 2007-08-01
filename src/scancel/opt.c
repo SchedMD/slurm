@@ -254,6 +254,9 @@ static void _opt_env()
 				val);
 	}
 
+	if (getenv("SCANCEL_CTLD"))
+		opt.ctld = true;
+
 	if ( (val=getenv("SCANCEL_INTERACTIVE")) ) {
 		if (strcasecmp(val, "true") == 0)
 			opt.interactive = true;
@@ -329,7 +332,8 @@ static void _opt_args(int argc, char **argv)
 			long_options, &option_index)) != -1) {
 		switch (opt_char) {
 			case (int)'?':
-				fprintf(stderr, "Try \"scancel --help\" for more information\n");
+				fprintf(stderr, 
+					"Try \"scancel --help\" for more information\n");
 				exit(1);
 				break;
 			case (int)'b':
