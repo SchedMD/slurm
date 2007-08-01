@@ -52,6 +52,9 @@ CR_Core_Memory, CR_Socket, or CR_Socket_Memory.
 
 .TP
 \fB\-b\fR, \fB\-\-batch\fR
+\fBNOTE: This functionality has been moved to a new command, sbatch
+This option will be removed from srun at a later date.\fR
+.br
 Submit in "batch mode." \fBsrun\fR will make a copy of the \fIexecutable\fR 
 file (a script) and submit the request for execution when resouces are 
 available. \fBsrun\fR will terminate after the request has been submitted. 
@@ -889,8 +892,8 @@ allocated to this job. The host list will be assumed to be a filename
 if it contains a "/"character.
 
 .PP
-Allocate options. NOTE: This functionality has been moved to a new command,
-salloc. These options will be removed from srun at a later date.
+Allocate options. \fBNOTE: This functionality has been moved to a new command,
+salloc. This option will be removed from srun at a later date.\fR
 
 .TP
 \fB\-A\fR, \fB\-\-allocate\fR
@@ -905,8 +908,8 @@ immediately exit after allocating resources instead of spawning a
 shell when used with the \fB\-A\fR, \fB\-\-allocate\fR option.
 
 .PP
-Attach to running job. NOTE: This functionality has been moved to a new 
-command, sattach. These options will be removed from srun at a later date.
+Attach to running job. \fBNOTE: This functionality has been moved to a new 
+command, sattach. This option will be removed from srun at a later date.\fR
 
 .TP
 \fB\-a\fR, \fB\-\-attach\fR=\fIid\fR
