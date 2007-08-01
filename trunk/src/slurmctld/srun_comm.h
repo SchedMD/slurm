@@ -50,10 +50,16 @@
 extern void srun_allocate (uint32_t job_id);
 
 /*
- * srun_complete - notify srun of a job's termination
+ * srun_job_complete - notify srun of a job's termination
  * IN job_ptr - pointer to the slurmctld job record
  */
-extern void srun_complete (struct job_record *job_ptr);
+extern void srun_job_complete (struct job_record *job_ptr);
+
+/*
+ * srun_step_complete - notify srun of a job step's termination
+ * IN step_ptr - pointer to the slurmctld job step record
+ */
+extern void srun_step_complete (struct step_record *step_ptr);
 
 /*
  * srun_node_fail - notify srun of a node's failure
