@@ -59,7 +59,8 @@ AC_CHECK_HEADERS(mcheck.h values.h socket.h sys/socket.h  \
                  stdlib.h dirent.h pthread.h sys/prctl.h \
                  sysint.h inttypes.h termcap.h netdb.h sys/socket.h  \
                  sys/systemcfg.h ncurses.h curses.h sys/dr.h sys/vfs.h \
-		 pam/pam_appl.h security/pam_appl.h sys/sysctl.h \
+                 pam/pam_appl.h security/pam_appl.h sys/sysctl.h \
+                 pty.h utmp.h \
 		)
 AC_HEADER_SYS_WAIT
 AC_HEADER_TIME
@@ -229,6 +230,12 @@ AC_SUBST(AUTHD_CFLAGS)
 AM_CONDITIONAL(WITH_AUTHD, test "x$have_authd" = "xyes")
 LIBS="$savedLIBS"
 CFLAGS="$savedCFLAGS"
+
+savedLIBS="$LIBS"
+LIBS="-lutil $LIBS"
+AC_CHECK_LIB(util, openpty, [UTIL_LIBS="-lutil"], [])
+AC_SUBST(UTIL_LIBS)
+LIBS="$savedLIBS"
 
 dnl Add LSD-Tools defines:
 AC_DEFINE(WITH_LSD_FATAL_ERROR_FUNC, 1, [Have definition of lsd_fatal_error()])

@@ -52,6 +52,14 @@
 #  include <stdlib.h>
 #endif
 
+#ifdef HAVE_PTY_H
+#  include <pty.h>
+#endif
+
+#ifdef HAVE_UTMP_H
+#  include <utmp.h>
+#endif
+
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
@@ -69,6 +77,7 @@
 #include "src/common/read_config.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xsignal.h"
+#include "src/common/xstring.h"
 
 #include "src/slurmd/slurmd/slurmd.h"
 #include "src/slurmd/slurmstepd/io.h"
@@ -301,7 +310,8 @@ _client_read(eio_obj_t *obj, List objs)
 	if (client->header.length == 0) { /* zero length is an eof message */
 		debug5("  got stdin eof message!");
 	} else {
-		buf = client->in_msg->data + (client->in_msg->length - client->in_remaining);
+		buf = client->in_msg->data + 
+			(client->in_msg->length - client->in_remaining);
 	again:
 		if ((n = read(obj->fd, buf, client->in_remaining)) < 0) {
 			if (errno == EINTR)
@@ -392,7 +402,8 @@ _client_write(eio_obj_t *obj, List objs)
 			debug5("_client_write: nothing in the queue");
 			return SLURM_SUCCESS;
 		}
-		debug5("  dequeue successful, client->out_msg->length = %d", client->out_msg->length);
+		debug5("  dequeue successful, client->out_msg->length = %d", 
+			client->out_msg->length);
 		client->out_remaining = client->out_msg->length;
 	}
 
@@ -673,7 +684,35 @@ _init_task_stdio_fds(slurmd_task_info_t *task, slurmd_job_t *job)
 	/*
 	 *  Initialize stdin
 	 */
-	if (task->ifname != NULL) {
+	if (job->pty) {
+		/* All of the stdin fails unless EVERY
+		 * task gets an eio object for stdin.
+		 * Its not clear why that is. */
+		if (task->gtid == 0) {
+			int amaster, aslave;
+			debug("  stdin uses a pty object");
+			if (openpty(&amaster, &aslave, NULL, NULL, NULL) < 0) {
+				error("stdin oepnpty: %m");
+				return SLURM_ERROR;
+			}
+			task->stdin_fd = aslave;
+			fd_set_close_on_exec(task->stdin_fd);
+			task->to_stdin = amaster;
+			fd_set_close_on_exec(task->to_stdin);
+			fd_set_nonblocking(task->to_stdin);
+			task->in = _create_task_in_eio(task->to_stdin, job);
+			eio_new_initial_obj(job->eio, (void *)task->in);
+		} else {
+			xfree(task->ifname);
+			task->ifname = xstrdup("/dev/null");
+			task->stdin_fd = open("/dev/null", O_RDWR);
+			fd_set_close_on_exec(task->stdin_fd);
+			task->to_stdin = dup(task->stdin_fd);
+			fd_set_nonblocking(task->to_stdin);
+			task->in = _create_task_in_eio(task->to_stdin, job);
+			eio_new_initial_obj(job->eio, (void *)task->in);
+		}
+	} else if (task->ifname != NULL) {
 		/* open file on task's stdin */
 		debug5("  stdin file name = %s", task->ifname);
 		if ((task->stdin_fd = open(task->ifname, O_RDONLY)) == -1) {
@@ -702,7 +741,25 @@ _init_task_stdio_fds(slurmd_task_info_t *task, slurmd_job_t *job)
 	/*
 	 *  Initialize stdout
 	 */
-	if (task->ofname != NULL) {
+	if (job->pty) {
+		if (task->gtid == 0) {
+			task->stdout_fd = dup(task->stdin_fd);
+			fd_set_close_on_exec(task->stdout_fd);
+			task->from_stdout = dup(task->to_stdin);
+			fd_set_close_on_exec(task->from_stdout);
+			fd_set_nonblocking(task->from_stdout);
+			task->out = _create_task_out_eio(task->from_stdout,
+						 SLURM_IO_STDOUT, job, task);
+			list_append(job->stdout_eio_objs, (void *)task->out);
+			eio_new_initial_obj(job->eio, (void *)task->out);
+		} else {
+			xfree(task->ofname);
+			task->ofname = xstrdup("/dev/null");
+			task->stdout_fd = open("/dev/null", O_RDWR);
+			fd_set_close_on_exec(task->stdout_fd);
+			task->from_stdout = -1;  /* not used */
+		}
+	} else if (task->ofname != NULL) {
 		/* open file on task's stdout */
 		debug5("  stdout file name = %s", task->ofname);
 		task->stdout_fd = open(task->ofname, file_flags, 0666);
@@ -710,8 +767,7 @@ _init_task_stdio_fds(slurmd_task_info_t *task, slurmd_job_t *job)
 			error("Could not open stdout file: %m");
 			xfree(task->ofname);
 			task->ofname = fname_create(job, "slurm-%J.out", 0);
-			task->stdout_fd = open(task->ofname, 
-				O_CREAT|O_WRONLY|O_TRUNC|O_APPEND, 0666);
+			task->stdout_fd = open(task->ofname, file_flags, 0666);
 			if (task->stdout_fd == -1)
 				return SLURM_ERROR;
 		}
@@ -739,7 +795,25 @@ _init_task_stdio_fds(slurmd_task_info_t *task, slurmd_job_t *job)
 	/*
 	 *  Initialize stderr
 	 */
-	if (task->efname != NULL) {
+	if (job->pty) {
+		if (task->gtid == 0) {
+			task->stderr_fd = dup(task->stdin_fd);
+			fd_set_close_on_exec(task->stderr_fd);
+			task->from_stderr = dup(task->to_stdin);
+			fd_set_close_on_exec(task->from_stderr);
+			fd_set_nonblocking(task->from_stderr);
+			task->err = _create_task_out_eio(task->from_stderr,
+						 SLURM_IO_STDERR, job, task);
+			list_append(job->stderr_eio_objs, (void *)task->err);
+			eio_new_initial_obj(job->eio, (void *)task->err);
+		} else {
+			xfree(task->efname);
+			task->efname = xstrdup("/dev/null");
+			task->stderr_fd = open("/dev/null", O_RDWR);
+			fd_set_close_on_exec(task->stderr_fd);
+			task->from_stderr = -1;  /* not used */
+		}
+	} else if (task->efname != NULL) {
 		/* open file on task's stdout */
 		debug5("  stderr file name = %s", task->efname);
 		task->stderr_fd = open(task->efname, file_flags, 0666);
@@ -747,8 +821,7 @@ _init_task_stdio_fds(slurmd_task_info_t *task, slurmd_job_t *job)
 			error("Could not open stderr file: %m");
 			xfree(task->efname);
 			task->efname = fname_create(job, "slurm-%J.err", 0);
-			task->stderr_fd = open(task->efname,
-				O_CREAT|O_WRONLY|O_TRUNC|O_APPEND, 0666);
+			task->stderr_fd = open(task->efname, file_flags, 0666);
 			if (task->stderr_fd == -1)
 				return SLURM_ERROR;
 		}

@@ -157,6 +157,7 @@
 #define LONG_OPT_RAMDISK_IMAGE   0x143
 #define LONG_OPT_REBOOT          0x144
 #define LONG_OPT_GET_USER_ENV    0x145
+#define LONG_OPT_PTY             0x146
 
 /*---- global variables, defined in opt.h ----*/
 int _verbose;
@@ -1032,6 +1033,7 @@ static void _opt_default()
 	}
 	
 	opt.get_user_env = false;
+	opt.pty = false;
 }
 
 /*---[ env var processing ]-----------------------------------------------*/
@@ -1403,6 +1405,7 @@ static void set_options(const int argc, char **argv)
 		{"ramdisk-image",    required_argument, 0, LONG_OPT_RAMDISK_IMAGE},
 		{"reboot",           no_argument,       0, LONG_OPT_REBOOT},            
 		{"get-user-env",     no_argument,       0, LONG_OPT_GET_USER_ENV},
+		{"pty",              no_argument,       0, LONG_OPT_PTY},
 		{NULL,               0,                 0, 0}
 	};
 	char *opt_string = "+aAbB:c:C:d:D:e:g:Hi:IjJ:kKlm:n:N:"
@@ -1478,6 +1481,8 @@ static void set_options(const int argc, char **argv)
 			opt.cwd = xstrdup(optarg);
 			break;
 		case (int)'e':
+			if (opt.pty)
+				fatal("--error incompatable with --pty option");
 			xfree(opt.efname);
 			if (strncasecmp(optarg, "none", (size_t) 4) == 0)
 				opt.efname = xstrdup("/dev/null");
@@ -1492,6 +1497,8 @@ static void set_options(const int argc, char **argv)
 			opt.hold = true;
 			break;
 		case (int)'i':
+			if (opt.pty)
+				fatal("--input incompatable with --pty option");
 			xfree(opt.ifname);
 			if (strncasecmp(optarg, "none", (size_t) 4) == 0)
 				opt.ifname = xstrdup("/dev/null");
@@ -1546,6 +1553,8 @@ static void set_options(const int argc, char **argv)
 			}
 			break;
 		case (int)'o':
+			if (opt.pty)
+				fatal("--output incompatable with --pty option");
 			xfree(opt.ofname);
 			if (strncasecmp(optarg, "none", (size_t) 4) == 0)
 				opt.ofname = xstrdup("/dev/null");
@@ -1866,6 +1875,16 @@ static void set_options(const int argc, char **argv)
 			break;
 		case LONG_OPT_GET_USER_ENV:
 			opt.get_user_env = true;
+			break;
+		case LONG_OPT_PTY:
+			opt.pty = true;
+			opt.unbuffered = true;	/* implicit */
+			if (opt.ifname)
+				fatal("--input incompatable with --pty option");
+			if (opt.ofname)
+				fatal("--output incompatable with --pty option");
+			if (opt.efname)
+				fatal("--error incompatable with --pty option");
 			break;
 		default:
 			if (spank_process_option (opt_char, optarg) < 0) {
@@ -2670,6 +2689,7 @@ static void _help(void)
 "      --multi-prog            if set the program name specified is the\n"
 "                              configuration specification for multiple programs\n"
 "      --get-user-env          used by Moab.  See srun man page.\n"
+"      --pty                   run task zero in pseudo terminal\n"
 "\n"
 "Constraint options:\n"
 "      --mincpus=n             minimum number of cpus per node\n"
