@@ -83,7 +83,8 @@ slurmstepd_DEPENDENCIES = $(top_builddir)/src/common/libcommon.la \
 	$(top_builddir)/src/common/libdaemonize.la \
 	$(top_builddir)/src/common/libeio.la \
 	$(top_builddir)/src/common/libspank.la $(am__DEPENDENCIES_1) \
-	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
+	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
+	$(am__DEPENDENCIES_1)
 slurmstepd_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
 	$(slurmstepd_LDFLAGS) $(LDFLAGS) -o $@
@@ -208,6 +209,7 @@ SSL_CPPFLAGS = @SSL_CPPFLAGS@
 SSL_LDFLAGS = @SSL_LDFLAGS@
 SSL_LIBS = @SSL_LIBS@
 STRIP = @STRIP@
+UTIL_LIBS = @UTIL_LIBS@
 VERSION = @VERSION@
 abs_builddir = @abs_builddir@
 abs_srcdir = @abs_srcdir@
@@ -271,7 +273,7 @@ slurmstepd_LDADD = \
 	$(top_builddir)/src/common/libdaemonize.la \
 	$(top_builddir)/src/common/libeio.la       \
 	$(top_builddir)/src/common/libspank.la     \
-	$(PLPA_LIBS) $(SSL_LIBS) $(PAM_LIBS) 
+	$(PLPA_LIBS) $(SSL_LIBS) $(PAM_LIBS) $(UTIL_LIBS) 
 
 slurmstepd_SOURCES = \
 	slurmstepd.c slurmstepd.h	\

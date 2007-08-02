@@ -143,6 +143,9 @@
 /* Define to 1 if you have the `ptrace64' function. */
 #undef HAVE_PTRACE64
 
+/* Define to 1 if you have the <pty.h> header file. */
+#undef HAVE_PTY_H
+
 /* Define if you are compiling with readline. */
 #undef HAVE_READLINE
 
@@ -238,6 +241,9 @@
 
 /* Define to 1 if you have the `unsetenv' function. */
 #undef HAVE_UNSETENV
+
+/* Define to 1 if you have the <utmp.h> header file. */
+#undef HAVE_UTMP_H
 
 /* Define to 1 if you have the <values.h> header file. */
 #undef HAVE_VALUES_H

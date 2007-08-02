@@ -2965,6 +2965,7 @@ _pack_launch_tasks_request_msg(launch_tasks_request_msg_t * msg, Buf buffer)
 	switch_pack_jobinfo(msg->switch_job, buffer);
 	job_options_pack(msg->options, buffer);
 	packstr(msg->complete_nodelist, buffer);
+	pack8(msg->pty, buffer);
 }
 
 static int
@@ -3058,6 +3059,7 @@ _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **
 		goto unpack_error;
 	}
 	safe_unpackstr_xmalloc(&msg->complete_nodelist, &uint16_tmp, buffer);	
+	safe_unpack8(&msg->pty, buffer);
 	return SLURM_SUCCESS;
 
 unpack_error:

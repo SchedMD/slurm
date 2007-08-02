@@ -153,7 +153,8 @@ launch(void *arg)
 	r.efname  = fname_remote_string (job->efname);
 	r.ifname  = fname_remote_string (job->ifname);
 	r.buffered_stdio = !opt.unbuffered;
-	
+	r.pty     = opt.pty;
+
 	r.task_flags = 0;
 	if (opt.parallel_debug)
 		r.task_flags |= TASK_PARALLEL_DEBUG;
@@ -187,8 +188,6 @@ launch(void *arg)
 	for (i = 0; i < r.num_io_port; i++) {
 		r.io_port[i] = job->client_io->listenport[i];
 	}
-
-	
 	
 	//hostlist = hostlist_create(job->nodelist);
 	debug("sending to list %s", job->step_layout->node_list);
