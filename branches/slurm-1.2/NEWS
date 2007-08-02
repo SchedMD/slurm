@@ -8,6 +8,8 @@ documents those changes that are of interest to users and admins.
  -- Add support for SCANCEL_CTLD env var.
  -- In mpi/mvapich plugin, add startup timeout logic. Time based upon 
     SLURM_MVAPICH_TIMEOUT (value in seconds).
+ -- Fixed pick_step_node logic to only pick the number of nodes requested
+    from the user when excluding nodes, to avoid an error message.
 
 * Changes in SLURM 1.2.12
 =========================
