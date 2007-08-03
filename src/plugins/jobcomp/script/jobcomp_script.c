@@ -210,7 +210,7 @@ _check_script_permissions(char * path)
 
 	if (stat(path, &st) < 0) {
 		plugin_errno = errno;
-		return error("jobcomp/script: %s does not exist", path);
+		return error("jobcomp/script: failed to stat %s: %m", path);
 	}
 
 	if (!(st.st_mode & S_IFREG)) {
