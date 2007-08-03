@@ -36,7 +36,6 @@
 \*****************************************************************************/
 
 #include "./msg.h"
-#include "slurm/slurm_errno.h"
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/node_scheduler.h"
