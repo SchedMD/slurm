@@ -1,26 +1,57 @@
 #! /usr/bin/perl -w
-################################################################################
+###############################################################################
 #
-# pbsnodes - queries moab nodes in familar pbs format.
+# pbsnodes - queries slurm nodes in familar pbs format.
 #
-#                 Copyright (c) 2006 Cluster Resources, Inc.
 #
-################################################################################
+###############################################################################
+#  Copyright (C) 2007 The Regents of the University of California.
+#  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+#  Written by Danny Auble <auble1@llnl.gov>.
+#  UCRL-CODE-226842.
+#  
+#  This file is part of SLURM, a resource management program.
+#  For details, see <http://www.llnl.gov/linux/slurm/>.
+#  
+#  SLURM is free software; you can redistribute it and/or modify it under
+#  the terms of the GNU General Public License as published by the Free
+#  Software Foundation; either version 2 of the License, or (at your option)
+#  any later version.
+#
+#  In addition, as a special exception, the copyright holders give permission 
+#  to link the code of portions of this program with the OpenSSL library under
+#  certain conditions as described in each individual source file, and 
+#  distribute linked combinations including the two. You must obey the GNU 
+#  General Public License in all respects for all of the code used other than 
+#  OpenSSL. If you modify file(s) with this exception, you may extend this 
+#  exception to your version of the file(s), but you are not obligated to do 
+#  so. If you do not wish to do so, delete this exception statement from your
+#  version.  If you delete this exception statement from all source files in 
+#  the program, then also delete it here.
+#  
+#  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+#  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+#  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+#  details.
+#  
+#  You should have received a copy of the GNU General Public License along
+#  with SLURM; if not, write to the Free Software Foundation, Inc.,
+#  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+#  
+#  Based off code with permission copyright 2006, 2007 Cluster Resources, Inc.
+###############################################################################
+
 
 use strict;
 use FindBin;
 use Getopt::Long 2.24 qw(:config no_ignore_case);
-use lib "${FindBin::Bin}/../tools";
-use Moab::Tools;    # Required before including config to set $homeDir
+use lib "${FindBin::Bin}/../lib/perl";
 use autouse 'Pod::Usage' => qw(pod2usage);
-use XML::LibXML;
-BEGIN { require "config.moab.pl"; }
-our ($logLevel, $mdiag);
+use Slurm ':all';
+use Switch;
 
 Main:
 {
-    logPrint("Command line arguments: @ARGV\n") if $logLevel;
-
     # Parse Command Line Arguments
     my ($all, $help, $man);
     GetOptions(
@@ -52,140 +83,90 @@ Main:
     # Use sole remaining argument as nodeIds
     my @nodeIds = @ARGV;
 
-    # Build command
-    my $cmd = "$mdiag -n --format=xml";
-    logPrint("Invoking subcommand: $cmd\n") if $logLevel >= 2;
 
-    my $output = `$cmd 2>&1`;
-    my $rc     = $?;
-
-    if ($rc)
-    {
-        logDie("Unable to query moab nodes ($cmd) [rc=$rc]: $output\n");
+    my $resp = Slurm->load_node(1);
+    if(!$resp) {
+	    die "Problem loading jobs.\n";
     }
 
-    logPrint("Subcommand output:>\n$output") if $logLevel >= 3;
+     
+    foreach my $node (@{$resp->{node_array}}) {
+	    my $nodeId    = $node->{'name'};
+	    my $rCProc    = $node->{'cpus'};
+	    my $features  = $node->{'features'};
+	    my $rAMem     = $node->{'real_memory'};
+	    my $rAProc    = ($node->{'cpus'}) - ($node->{'used_cpus'});
+	    my $state = lc(Slurm::node_state_string($node->{'node_state'}));
 
-    # Parse the response
-    $output =~ s/^\s+//;    # Remove leading whitespace
-    $output =~ s/\s+$//;    # Remove trailing whitespace
-    my $parser = new XML::LibXML();
-    my $doc    = $parser->parse_string($output);
-    my $root   = $doc->getDocumentElement();
+#these aren't really defined in slurm, so I am not sure what to get them from
+	    my $os        = $node->{'OS'};
+	    my $load      = $node->{'LOAD'};
+	    my $arch      = $node->{'ARCH'};
+#
+	    
+	    # Filter nodes according to options and arguments
+	    if (@nodeIds) {
+		    next unless grep /^$nodeId/, @nodeIds;
+	    }
+	    
+	    # Prepare variables
+	    
+	    my @status = ();
+	    push @status, "opsys=$os" if $os;
+	    push @status, "loadave=" . sprintf("%.2f", $load) if defined $load;
+	    push @status, "state=$state";
 
-    my @nodes     = ();
-    my @nodeNodes = $root->getChildrenByTagName("node");
-    foreach my $nodeNode (@nodeNodes)
-    {
-        my %nodeAttr  = ();
-        my @nodeAttrs = $nodeNode->attributes();
-        foreach my $attr (@nodeAttrs)
-        {
-            my $name  = $attr->nodeName;
-            my $value = $attr->nodeValue;
-            $nodeAttr{$name} = $value;
-        }
-
-        my @xloads     = ();
-        my @xloadNodes = $nodeNode->getChildrenByTagName("XLOAD");
-        foreach my $xloadNode (@xloadNodes)
-        {
-            my %xloadAttr  = ();
-            my @xloadAttrs = $xloadNode->attributes();
-            foreach my $attr (@xloadAttrs)
-            {
-                my $name  = $attr->nodeName;
-                my $value = $attr->nodeValue;
-                $xloadAttr{$name} = $value;
-            }
-            push @xloads, \%xloadAttr;
-        }
-        $nodeAttr{'xloads'} = \@xloads;
-        push @nodes, \%nodeAttr;
-    }
-
-    # Display output
-    exit 0 unless @nodes;
-
-    foreach my $node (@nodes)
-    {
-        my $nodeId    = $node->{'NODEID'};
-        my $rCProc    = $node->{'RCPROC'};
-        my $nodeState = $node->{'NODESTATE'};
-        my $features  = $node->{'FEATURES'};
-        my $os        = $node->{'OS'};
-        my $load      = $node->{'LOAD'};
-        my $arch      = $node->{'ARCH'};
-        my $rAMem     = $node->{'RAMEM'};
-        my $rAProc    = $node->{'RAPROC'};
-
-        # Filter nodes according to options and arguments
-        if (@nodeIds)
-        {
-            next unless grep /^$nodeId/, @nodeIds;
-        }
-
-        # Prepare variables
-        my $state = "unknown";
-        if    ($nodeState =~ /Down/i)              { $state = "down"; }
-        elsif ($nodeState =~ /Busy|Idle|Running/i) { $state = "free"; }
-        elsif ($nodeState =~ /Draining/i)          { $state = "offline"; }
-        elsif ($nodeState =~ /Unknown/i)           { $state = "unknown"; }
-        my @status = ();
-        push @status, "opsys=$os" if $os;
-        push @status, "loadave=" . sprintf("%.2f", $load) if defined $load;
-        push @status, "state=$state";
-
-        # Print the node attributes
-        printf "%s\n",             $nodeId;
-        printf "    state = %s\n", $state;
-        printf "    pcpus = %s\n", $rCProc if $rCProc;
-        printf "    properties = %s\n", join(' ', split(/:/, $features))
-          if $features;
-        printf "    status = %s\n", join(',', @status) if @status;
-        printf "    resources_available.arch = %s\n", $arch if $arch;
-        printf "    resources_available.mem = %smb\n", $rAMem if $rAMem;
-        printf "    resources_available.ncpus = %s\n", $rAProc if $rAProc;
-        print "\n";
+	    # Print the node attributes
+	    printf "%s\n",             $nodeId;
+	    printf "    state = %s\n", $state;
+	    printf "    pcpus = %s\n", $rCProc if $rCProc;
+	    printf "    properties = %s\n", join(' ', split(/:/, $features))
+		    if $features;
+	    printf "    status = %s\n", join(',', @status) if @status;
+	    printf "    resources_available.arch = %s\n", $arch if $arch;
+	    printf "    resources_available.mem = %smb\n", $rAMem if defined $rAMem;
+	    printf "    resources_available.ncpus = %s\n", $rAProc if defined $rAProc;
+	    print "\n";
     }
 
     # Exit with status code
     exit 0;
 }
 
+
 ##############################################################################
 
 __END__
 
-=head1 NAME
+	=head1 NAME
 
-B<pbsnodes> - display host information in a familiar pbs format
+	B<pbsnodes> - display host information in a familiar pbs format
 
-=head1 SYNOPSIS
+	=head1 SYNOPSIS
 
-B<pbsnodes> [B<-a>] [I<node_id>...]
+	B<pbsnodes> [B<-a>] [I<node_id>...]
 
-=head1 DESCRIPTION
+	=head1 DESCRIPTION
 
-The B<pbsnodes> command displays information about nodes.
+	The B<pbsnodes> command displays information about nodes.
 
-=head1 OPTIONS
+	=head1 OPTIONS
 
-=over 4
+	=over 4
 
-=item B<-a>
+	=item B<-a>
 
-Display information for all nodes. This is the default if no node name is specified.
+	Display information for all nodes. This is the default if no node name is specified.
 
-=item B<-? | --help>
+	=item B<-? | --help>
 
-brief help message
+	brief help message
 
-=item B<--man>
+	=item B<--man>
 
-full documentation
+	full documentation
 
-=back
+	=back
 
-=cut
+	=cut
 

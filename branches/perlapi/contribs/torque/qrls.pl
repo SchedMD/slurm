@@ -1,21 +1,52 @@
 #! /usr/bin/perl -w
 ################################################################################
 #
-# qrls - releases a hold on moab jobs in familar pbs format.
+# qrls - releases a hold on slurm jobs in familar pbs format.
 #
-#                 Copyright (c) 2006 Cluster Resources, Inc.
 #
-################################################################################
+###############################################################################
+#  Copyright (C) 2007 The Regents of the University of California.
+#  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+#  Written by Danny Auble <auble1@llnl.gov>.
+#  UCRL-CODE-226842.
+#  
+#  This file is part of SLURM, a resource management program.
+#  For details, see <http://www.llnl.gov/linux/slurm/>.
+#  
+#  SLURM is free software; you can redistribute it and/or modify it under
+#  the terms of the GNU General Public License as published by the Free
+#  Software Foundation; either version 2 of the License, or (at your option)
+#  any later version.
+#
+#  In addition, as a special exception, the copyright holders give permission 
+#  to link the code of portions of this program with the OpenSSL library under
+#  certain conditions as described in each individual source file, and 
+#  distribute linked combinations including the two. You must obey the GNU 
+#  General Public License in all respects for all of the code used other than 
+#  OpenSSL. If you modify file(s) with this exception, you may extend this 
+#  exception to your version of the file(s), but you are not obligated to do 
+#  so. If you do not wish to do so, delete this exception statement from your
+#  version.  If you delete this exception statement from all source files in 
+#  the program, then also delete it here.
+#  
+#  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+#  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+#  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+#  details.
+#  
+#  You should have received a copy of the GNU General Public License along
+#  with SLURM; if not, write to the Free Software Foundation, Inc.,
+#  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+#  
+#  Based off code with permission copyright 2006, 2007 Cluster Resources, Inc.
+##############################################################################
 
 use strict;
 use FindBin;
 use Getopt::Long 2.24 qw(:config no_ignore_case);
-use lib "${FindBin::Bin}/../tools";
-use Moab::Tools;    # Required before including config to set $homeDir
+use lib "${FindBin::Bin}/../lib/perl";
 use autouse 'Pod::Usage' => qw(pod2usage);
-use XML::LibXML;
-BEGIN { require "config.moab.pl"; }
-our ($logLevel, $mjobctl);
+use Slurm ':all';
 
 Main:
 {
@@ -60,40 +91,25 @@ Main:
         pod2usage(2);
     }
 
-    # Build command
-    my $cmd = "$mjobctl -u ";
-    if ($hold)
-    {
-        if    ($hold eq "u") { $cmd .= "user "; }
-        elsif ($hold eq "s") { $cmd .= "system "; }
-        elsif ($hold eq "o") { $cmd .= "batch "; }
-        elsif ($hold eq "a") { $cmd .= "all "; }
-        elsif ($hold eq "n") { exit 0; }
-    }
-    else
-    {
-        $cmd .= "user ";
-    }
-    $cmd .= join ' ', @jobIds;
-    logPrint("Invoking subcommand: $cmd\n") if $logLevel >= 2;
+    my $rc = 0;
+    foreach my $jobid (@jobIds) {
+	    my $err = 0;
+	    my $resp = 0;	    
+	    my %update = ();
 
-    my $output = `$cmd 2>&1`;
-    my $rc     = $?;
-
-    # Display and log error output
-    if ($output =~ /invalid job specified \(([^\(\)]+)\)/)
-    {
-        logWarn("qrls: Unknown Job Id $1\n");
+	    $update{job_id} = $jobid;
+	   
+	    $update{priority} = -1;  
+	    $update{comment} = "None"; #doesn't do anything in 1.2
+	    
+	    
+	    if(Slurm->update_job(\%update)) {
+		    $err = Slurm->get_errno(); 
+		    $rc++;
+		    printf("qrls: Error on job id %d: %s\n",
+			   $jobid, Slurm->strerror($err));
+	    }
     }
-    elsif ($rc)
-    {
-        logWarn($output);
-    }
-    else
-    {
-        logPrint("Subcommand output:>\n$output") if $logLevel >= 3;
-    }
-
     exit $rc;
 }
 

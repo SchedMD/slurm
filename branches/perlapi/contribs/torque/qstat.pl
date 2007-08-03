@@ -112,7 +112,7 @@ chomp $hostname;
 #unsupportedOption("-B", DIE) if $serverStatus;
 
 # Build command
-my $resp = Slurm->load_jobs();
+my $resp = Slurm->load_jobs(1);
 if(!$resp) {
 	die "Problem loading jobs.\n";
 }
@@ -323,12 +323,9 @@ sub get_exec_host
 	if ($job->{'nodes'}) {
 		my @allocNodes = ();
 		my $hl = Slurm::Hostlist::create($job->{'nodes'});
-		#Slurm::Hostlist->push($resp, $nodes);
-		my $count = Slurm::Hostlist::count($hl);
 		my $inx = 0;
 		my $cpu_cnt = 0;
-		for(my $i=0; $i<$count; $i++) {
-			my $host = Slurm::Hostlist::shift($hl);
+		while((my $host = Slurm::Hostlist::shift($hl))) {
 			push(@allocNodes,
 			     "$host/" . $job->{'cpus_per_node'}[$inx]);
 			
