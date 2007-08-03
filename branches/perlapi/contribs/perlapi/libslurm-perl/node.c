@@ -23,6 +23,7 @@ node_info_to_hv(node_info_t* node_info, HV* hv)
 	}
 	STORE_FIELD(hv, node_info, node_state, uint16_t);
 	STORE_FIELD(hv, node_info, cpus, uint16_t);
+	STORE_FIELD(hv, node_info, used_cpus, uint16_t);
 	STORE_FIELD(hv, node_info, sockets, uint16_t);
 	STORE_FIELD(hv, node_info, cores, uint16_t);
 	STORE_FIELD(hv, node_info, real_memory, uint32_t);
