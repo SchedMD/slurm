@@ -36,7 +36,6 @@
 \*****************************************************************************/
 
 #include <stdio.h>
-#include <slurm/slurm_errno.h>
 
 #include "src/common/plugin.h"
 #include "src/common/log.h"

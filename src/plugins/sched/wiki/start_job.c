@@ -135,7 +135,7 @@ static int	_start_job(uint32_t jobid, char *hostlist,
 	||  (job_ptr->job_state != JOB_PENDING)) {
 		*err_code = -700;
 		*err_msg = "Job not pending, can't update";
-		error("wiki: Attempt to change state of non-pending job %u",
+		error("wiki: Attempt to start non-pending job %u",
 			jobid);
 		rc = -1;
 		goto fini;

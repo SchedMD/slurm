@@ -37,6 +37,7 @@
 
 #include "./msg.h"
 #include "src/common/node_select.h"
+#include "src/common/slurm_protocol_defs.h"
 #include "src/common/xstring.h"
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/slurmctld.h"
@@ -150,9 +151,9 @@ static int	_start_job(uint32_t jobid, int task_cnt, char *hostlist, char *node_p
 	if ((job_ptr->details == NULL)
 	||  (job_ptr->job_state != JOB_PENDING)) {
 		*err_code = -700;
-		*err_msg = "Job not pending, can't update";
-		error("wiki: Attempt to change state of non-pending job %u",
-			jobid);
+		*err_msg = "Job not pending, can't start";
+		error("wiki: Attempt to start job %u in state %s",
+			jobid, job_state_string(job_ptr->job_state));
 		rc = -1;
 		goto fini;
 	}
