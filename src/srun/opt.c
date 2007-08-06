@@ -1877,6 +1877,7 @@ static void set_options(const int argc, char **argv)
 			opt.get_user_env = true;
 			break;
 		case LONG_OPT_PTY:
+#ifdef HAVE_PTY_H
 			opt.pty = true;
 			opt.unbuffered = true;	/* implicit */
 			if (opt.ifname)
@@ -1885,6 +1886,9 @@ static void set_options(const int argc, char **argv)
 				fatal("--output incompatable with --pty option");
 			if (opt.efname)
 				fatal("--error incompatable with --pty option");
+#else
+			error("--pty not currently supported on this system type");
+#endif
 			break;
 		default:
 			if (spank_process_option (opt_char, optarg) < 0) {
@@ -2689,7 +2693,9 @@ static void _help(void)
 "      --multi-prog            if set the program name specified is the\n"
 "                              configuration specification for multiple programs\n"
 "      --get-user-env          used by Moab.  See srun man page.\n"
+#ifdef HAVE_PTY_H
 "      --pty                   run task zero in pseudo terminal\n"
+#endif
 "\n"
 "Constraint options:\n"
 "      --mincpus=n             minimum number of cpus per node\n"
