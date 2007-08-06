@@ -692,7 +692,7 @@ _init_task_stdio_fds(slurmd_task_info_t *task, slurmd_job_t *job)
 			int amaster, aslave;
 			debug("  stdin uses a pty object");
 			if (openpty(&amaster, &aslave, NULL, NULL, NULL) < 0) {
-				error("stdin oepnpty: %m");
+				error("stdin openpty: %m");
 				return SLURM_ERROR;
 			}
 			task->stdin_fd = aslave;
