@@ -108,7 +108,8 @@ static int	_cancel_job(uint32_t jobid, int *err_code, char **err_msg)
 	if (slurm_rc != SLURM_SUCCESS) {
 		*err_code = -700;
 		*err_msg = slurm_strerror(slurm_rc);
-		error("wiki: Failed to signal job %u (%m)", jobid);
+		error("wiki: Failed to cancel job %u: %s", 
+			jobid, slurm_strerror(slurm_rc));
 		rc = -1;
 		goto fini;
 	}
