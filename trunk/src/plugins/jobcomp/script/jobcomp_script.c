@@ -210,7 +210,7 @@ _check_script_permissions(char * path)
 
 	if (stat(path, &st) < 0) {
 		plugin_errno = errno;
-		return error("jobcomp/script: %s does not exist", path);
+		return error("jobcomp/script: failed to stat %s: %m", path);
 	}
 
 	if (!(st.st_mode & S_IFREG)) {
@@ -417,8 +417,7 @@ static void * _script_agent (void *args)
 		pthread_mutex_unlock(&comp_list_mutex);
 
 		if ((job = list_pop(comp_list))) {
-			if (_jobcomp_exec_child (script, job) < 0)
-				error ("jobcomp/script: %s failed");
+			_jobcomp_exec_child (script, job);
 			_jobcomp_info_destroy (job);
 		}
 
