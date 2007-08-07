@@ -866,6 +866,7 @@ static void _set_winsize(srun_job_t *job)
 	return;
 }
 
+/* SIGWINCH should already be blocked by srun/signal.c */
 static void  _block_sigwinch(void)
 {
 	xsignal_block(pty_sigarray);
@@ -886,7 +887,6 @@ static void  _pty_thread_create(srun_job_t *job)
 static void  _handle_sigwinch(int sig)
 {
 	winch = 1;
-info("in _handle_sigwinch");
 	xsignal(SIGWINCH, _handle_sigwinch);
 }
 
@@ -896,7 +896,6 @@ static void *_pty_thread(void *arg)
 
 	xsignal_unblock(pty_sigarray);
 	xsignal(SIGWINCH, _handle_sigwinch);
-info("_pty_thread started");
 	while (job->state <= SRUN_JOB_RUNNING) {
 info("_pty_thread poll");
 		poll(NULL, 0, -1);

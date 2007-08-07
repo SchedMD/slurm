@@ -72,8 +72,12 @@ static int srun_sigarray[] = {
 };
 
 /*
- *  Static list of signals to process here:
- *  SIGWINCH processed in srun.c: _pty_thread()
+ *  Static list of signals to process here.
+ *  SIGWINCH processed is in srun.c:_pty_thread()
+ *  It would be nice to process everything here, 
+ *  but sigwait() does not work with SIGWINCH on
+ *  on some operating systems (lots of references
+ *  to bug this on the web).
  */
 static int srun_sigarray2[] = {
 	SIGINT,  SIGQUIT, /*SIGTSTP,*/ SIGCONT, SIGTERM,
