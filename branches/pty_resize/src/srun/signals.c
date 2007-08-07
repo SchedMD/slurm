@@ -68,6 +68,15 @@
  */
 static int srun_sigarray[] = {
 	SIGINT,  SIGQUIT, /*SIGTSTP,*/ SIGCONT, SIGTERM,
+	SIGALRM, SIGUSR1, SIGUSR2, SIGPIPE, SIGWINCH, 0
+};
+
+/*
+ *  Static list of signals to process here:
+ *  SIGWINCH processed in srun.c: _pty_thread()
+ */
+static int srun_sigarray2[] = {
+	SIGINT,  SIGQUIT, /*SIGTSTP,*/ SIGCONT, SIGTERM,
 	SIGALRM, SIGUSR1, SIGUSR2, SIGPIPE, 0
 };
 
@@ -176,7 +185,7 @@ _sig_thr(void *arg)
 
 	while (!_sig_thr_done(job)) {
 
-		xsignal_sigset_create(srun_sigarray, &set);
+		xsignal_sigset_create(srun_sigarray2, &set);
 
 		if ((err = sigwait(&set, &signo)) != 0) {
 			if (err != EINTR) 
