@@ -138,35 +138,35 @@ Main:
 
 __END__
 
-	=head1 NAME
+=head1 NAME
 
-	B<pbsnodes> - display host information in a familiar pbs format
+B<pbsnodes> - display host information in a familiar pbs format
 
-	=head1 SYNOPSIS
+=head1 SYNOPSIS
 
-	B<pbsnodes> [B<-a>] [I<node_id>...]
+B<pbsnodes> [B<-a>] [I<node_id>...]
 
-	=head1 DESCRIPTION
+=head1 DESCRIPTION
 
-	The B<pbsnodes> command displays information about nodes.
+The B<pbsnodes> command displays information about nodes.
 
-	=head1 OPTIONS
+=head1 OPTIONS
 
-	=over 4
+=over 4
 
-	=item B<-a>
+=item B<-a>
 
-	Display information for all nodes. This is the default if no node name is specified.
+Display information for all nodes. This is the default if no node name is specified.
 
-	=item B<-? | --help>
+=item B<-? | --help>
 
-	brief help message
+brief help message
 
-	=item B<--man>
+=item B<--man>
 
-	full documentation
+full documentation
 
-	=back
+=back
 
-	=cut
+=cut
 

@@ -481,136 +481,136 @@ sub print_full
 
 __END__
 
-	=head1 NAME
+=head1 NAME
 
-	B<qstat> - display job information in a familiar pbs format
+B<qstat> - display job information in a familiar pbs format
 
-	=head1 SYNOPSIS
+=head1 SYNOPSIS
 
-	B<qstat> [B<-f>] [B<-a>|B<-i>|B<-r>] [B<-n> [B<-1>]] [B<-G>|B<-M>] [B<-u> I<user_list>] [B<-? | --help>] [B<--man>] [I<job_id>...]
+B<qstat> [B<-f>] [B<-a>|B<-i>|B<-r>] [B<-n> [B<-1>]] [B<-G>|B<-M>] [B<-u> I<user_list>] [B<-? | --help>] [B<--man>] [I<job_id>...]
 
-	=head1 DESCRIPTION
+=head1 DESCRIPTION
 
-	The B<qstat> command displays information about jobs.
+The B<qstat> command displays information about jobs.
 
-	=head1 OPTIONS
+=head1 OPTIONS
 
-	=over 4
+=over 4
 
-	=item B<-a>
+=item B<-a>
 
-	Displays all jobs in a single-line format. See the STANDARD OUTPUT section for format details.
+Displays all jobs in a single-line format. See the STANDARD OUTPUT section for format details.
 
-	=item B<-i>
+=item B<-i>
 
-	Displays information about idle jobs. This includes jobs which are queued or held.
+Displays information about idle jobs. This includes jobs which are queued or held.
 
-	=item B<-f>
+=item B<-f>
 
-	Displays the full information for each selected job in a multi-line format. See the STANDARD OUTPUT section for format details.
+Displays the full information for each selected job in a multi-line format. See the STANDARD OUTPUT section for format details.
 
-	=item B<-G>
+=item B<-G>
 
-	Display size information in gigabytes.
+Display size information in gigabytes.
 
-	=item B<-M>
+=item B<-M>
 
-	Show size information, disk or memory in mega-words.  A word is considered to be 8 bytes.
+Show size information, disk or memory in mega-words.  A word is considered to be 8 bytes.
 
-	=item B<-n>
+=item B<-n>
 
-	Displays nodes allocated to a job in addition to the basic information.
+Displays nodes allocated to a job in addition to the basic information.
 
-	=item B<-1>
+=item B<-1>
 
-	In combination with -n, the -1 option puts all of the nodes on the same line as the job id.
+In combination with -n, the -1 option puts all of the nodes on the same line as the job id.
 
-	=item B<-r>
+=item B<-r>
 
-	Displays information about running jobs. This includes jobs which are running or suspended.
+Displays information about running jobs. This includes jobs which are running or suspended.
 
-	=item B<-u> I<user_list>
+=item B<-u> I<user_list>
 
-	Display job information for all jobs owned by the specified user(s). The format of I<user_list> is: I<user_name>[,I<user_name>...].
+Display job information for all jobs owned by the specified user(s). The format of I<user_list> is: I<user_name>[,I<user_name>...].
 
-	=item B<-? | --help>
+=item B<-? | --help>
 
-	brief help message
+brief help message
 
-	=item B<--man>
+=item B<--man>
 
-	full documentation
+full documentation
 
-	=back
+=back
 
-	=head1 STANDARD OUTPUT
+=head1 STANDARD OUTPUT
 
-	Displaying Job Status
+Displaying Job Status
 
-	If the -a, -i, -f, -r, -u, -n, -G, and -M options are not specified, the brief single-line display format is used. The following items are displayed on a single line, in the specified order, separated by white space:
+If the -a, -i, -f, -r, -u, -n, -G, and -M options are not specified, the brief single-line display format is used. The following items are displayed on a single line, in the specified order, separated by white space:
 
-	=over 4
+=over 4
 
-	=item the job id
+=item the job id
 
-	=item the job name
+=item the job name
 
-	=item the job owner
+=item the job owner
 
-	=item the cpu time used
+=item the cpu time used
 
-	=item the job state
+=item the job state
 
-	C -  Job is completed after having run
-	E -  Job is exiting after having run.
-	H -  Job is held.
-	Q -  job is queued, eligible to run or routed.
-	R -  job is running.
-	T -  job is being moved to new location.
-	W -  job is waiting for its execution time
-	(-a option) to be reached.
-	S -  job is suspended.
+C -  Job is completed after having run
+E -  Job is exiting after having run.
+H -  Job is held.
+Q -  job is queued, eligible to run or routed.
+R -  job is running.
+T -  job is being moved to new location.
+W -  job is waiting for its execution time
+(-a option) to be reached.
+S -  job is suspended.
 
-	=item the queue that the job is in
+=item the queue that the job is in
 
-	=back
+=back
 
-	If the -f option is specified, the multi-line display format is used. The output for each job consists of the header line:
-	B<Job Id>:  job identifier
-	followed by one line per job attribute of the form:
-	B<attribute_name = value>
+If the -f option is specified, the multi-line display format is used. The output for each job consists of the header line:
+B<Job Id>:  job identifier
+followed by one line per job attribute of the form:
+B<attribute_name = value>
 
-	If any of the options -a, -i, -r, -u, -n, -G or -M are specified, the normal single-line display format is used. The following items are displayed on a single line, in the specified order, separated by white space:
+If any of the options -a, -i, -r, -u, -n, -G or -M are specified, the normal single-line display format is used. The following items are displayed on a single line, in the specified order, separated by white space:
 
-	=over 4
+=over 4
 
-	=item the job id
+=item the job id
 
-	=item the job owner
+=item the job owner
 
-	=item the queue the job is in
+=item the queue the job is in
 
-	=item the job name
+=item the job name
 
-	=item the session id (if the job is running)
+=item the session id (if the job is running)
 
-	=item the number of nodes requested by the job
+=item the number of nodes requested by the job
 
-	=item the number of cpus or tasks requested by the job
+=item the number of cpus or tasks requested by the job
 
-	=item the amount of memory requested by the job
+=item the amount of memory requested by the job
 
-	=item either the cpu time, if specified, or wall time requested  by the job, (in hh:mm)
+=item either the cpu time, if specified, or wall time requested  by the job, (in hh:mm)
 
-	=item the job state
+=item the job state
 
-	=item The amount of cpu time or wall time used by the job (in hh:mm)
+=item The amount of cpu time or wall time used by the job (in hh:mm)
 
-	=back
+=back
 
-	=head1 EXIT STATUS
+=head1 EXIT STATUS
 
-	On success, B<qstat> will exit with a value of zero. On failure, B<qstat> will exit with a value greater than zero.
+On success, B<qstat> will exit with a value of zero. On failure, B<qstat> will exit with a value greater than zero.
 
-	=cut
+=cut
 

@@ -50,7 +50,6 @@ use Slurm ':all';
 
 Main:
 {
-    logPrint("Command line arguments: @ARGV\n") if $logLevel;
 
     # Parse Command Line Arguments
     my ($help, $hold, $man);
