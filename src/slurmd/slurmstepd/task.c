@@ -366,7 +366,7 @@ exec_task(slurmd_job_t *job, int i, int waitfd)
 	/* task-specific pre-launch activities */
 
 	if (spank_user_task (job, i) < 0) {
-		error ("Failed to invoke task plugin stack\n");
+		error ("Failed to invoke task plugin stack");
 		exit (1);
 	}
 

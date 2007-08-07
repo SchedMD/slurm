@@ -335,7 +335,7 @@ _setup_normal_io(slurmd_job_t *job)
 
 	/*
 	 * Temporarily drop permissions, initialize task stdio file
-	 * decriptors (which may be connected to files), then
+	 * descriptors (which may be connected to files), then
 	 * reclaim privileges.
 	 */
 	if (_drop_privileges(job, true, &sprivs) < 0)
