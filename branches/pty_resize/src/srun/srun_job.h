@@ -137,7 +137,12 @@ typedef struct srun_job {
 
 	/* Output streams and stdin fileno */
 	select_jobinfo_t select_jobinfo;
-	
+
+	/* Pseudo terminial support */
+	pthread_t pty_id;	/* pthread to communicate window size changes */
+	uint16_t pty_port;	/* used to communicate window size changes */
+	uint8_t ws_col;		/* window size, columns */
+	uint8_t ws_row;		/* window size, row count */
 } srun_job_t;
 
 extern int message_thread;
