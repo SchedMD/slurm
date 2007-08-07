@@ -957,9 +957,19 @@ _fork_all_tasks(slurmd_job_t *job)
 		/*
                  * Put this task in the step process group
                  */
-                if (setpgid (job->task[i]->pid, job->pgid) < 0)
-                        error ("Unable to put task %d (pid %ld) into pgrp %ld",
-                               i, job->task[i]->pid, job->pgid);
+                if (setpgid (job->task[i]->pid, job->pgid) < 0) {
+			if (job->pty) {
+				/* login_tty() must put task zero in its own 
+				 * session, causing setpgid() to fail */
+				info("Unable to put task %d (pid %ld) into "
+					"pgrp %ld: %m",
+					i, job->task[i]->pid, job->pgid);
+                        } else {
+				error("Unable to put task %d (pid %ld) into "
+					"pgrp %ld: %m",
+					i, job->task[i]->pid, job->pgid);
+			}
+		}
 
                 if (slurm_container_add(job, job->task[i]->pid) == SLURM_ERROR) {
                         error("slurm_container_create: %m");

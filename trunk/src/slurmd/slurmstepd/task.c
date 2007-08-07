@@ -62,6 +62,14 @@
 #  include <sys/checkpnt.h>
 #endif
 
+#ifdef HAVE_PTY_H
+#  include <pty.h>
+#endif
+
+#ifdef HAVE_UTMP_H
+#  include <utmp.h>
+#endif
+
 #include <sys/resource.h>
 
 #include <slurm/slurm_errno.h>
@@ -291,6 +299,16 @@ exec_task(slurmd_job_t *job, int i, int waitfd)
 	int rc;
 	slurmd_task_info_t *task = job->task[i];
 
+#ifdef HAVE_PTY_H
+	/* Execute login_tty() before setpgid() calls */
+	if (job->pty && (task->gtid == 0)) {
+		if (login_tty(task->stdin_fd))
+			error("login_tty: %m");
+		else
+			info("login_tty good");
+	}
+#endif
+
 	if (set_user_limits(job) < 0) {
 		debug("Unable to set user limits");
 		log_fini();
@@ -361,7 +379,12 @@ exec_task(slurmd_job_t *job, int i, int waitfd)
 		pdebug_stop_current(job);
 	}
 
-	io_dup_stdio(task);
+	if (job->pty && (task->gtid == 0)) {
+		/* Need to perform the login_tty() before all tasks
+		 * register and the process groups are reset, otherwise
+		 * login_tty() gets disabled */
+	} else
+		io_dup_stdio(task);
 
 	/* task-specific pre-launch activities */
 
