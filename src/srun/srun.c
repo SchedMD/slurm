@@ -308,12 +308,14 @@ int srun(int ac, char **av)
 
 	srun_set_stdio_fds(job, &fds);
 
+	job->client_io = client_io_handler_create(fds,
+				job->step_layout->task_cnt,
+				job->step_layout->node_cnt,
+				job->cred, opt.labelio);
 	if (opt.pty) {
 		struct termios term;
 		int fd = STDIN_FILENO;
 
-		job->client_io = client_io_handler_create(fds, 1, 1, 
-					job->cred, opt.labelio);
 		/* Save terminal settings for restore */
 		tcgetattr(fd, &termdefaults); 
 
@@ -323,11 +325,6 @@ int srun(int ac, char **av)
 		/* Set raw mode on local tty */
 		cfmakeraw(&term);
 		tcsetattr(fd, TCSANOW, &term);
-	} else {
-		 job->client_io = client_io_handler_create(fds,
-					job->step_layout->task_cnt,
-					job->step_layout->node_cnt,
-					job->cred, opt.labelio);
 	}
 
 	if (!job->client_io
