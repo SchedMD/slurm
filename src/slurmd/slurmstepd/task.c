@@ -379,11 +379,13 @@ exec_task(slurmd_job_t *job, int i, int waitfd)
 		pdebug_stop_current(job);
 	}
 
+#ifdef HAVE_PTY_H
 	if (job->pty && (task->gtid == 0)) {
 		/* Need to perform the login_tty() before all tasks
 		 * register and the process groups are reset, otherwise
 		 * login_tty() gets disabled */
 	} else
+#endif
 		io_dup_stdio(task);
 
 	/* task-specific pre-launch activities */
