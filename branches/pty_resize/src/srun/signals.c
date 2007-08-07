@@ -46,6 +46,8 @@
 
 #include <signal.h>
 #include <string.h>
+#include <sys/ioctl.h>
+#include <sys/poll.h>
 
 #include <slurm/slurm_errno.h>
 
@@ -72,10 +74,8 @@ static int srun_sigarray[] = {
 };
 
 /*
- *  Static list of signals to process here.
- *  SIGWINCH processed is in srun.c:_pty_thread()
- *  It would be nice to process everything here, 
- *  but sigwait() does not work with SIGWINCH on
+ *  Static list of signals to process by _sig_thr().
+ *  NOTE: sigwait() does not work with SIGWINCH on
  *  on some operating systems (lots of references
  *  to bug this on the web).
  */
@@ -84,11 +84,17 @@ static int srun_sigarray2[] = {
 	SIGALRM, SIGUSR1, SIGUSR2, SIGPIPE, 0
 };
 
+/*  Processed by pty_thr() */
+static int pty_sigarray[] = { SIGWINCH, 0 };
+static int winch;
+
 /* 
  * Static prototypes
  */
 static void   _sigterm_handler(int);
 static void   _handle_intr(srun_job_t *, time_t *, time_t *); 
+static void   _handle_sigwinch(int sig);
+static void * _pty_thread(void *arg);
 static void * _sig_thr(void *);
 
 static inline bool 
@@ -222,5 +228,59 @@ _sig_thr(void *arg)
 	return NULL;
 }
 
+void set_winsize(srun_job_t *job)
+{
+	struct winsize ws;
+	if (ioctl(STDIN_FILENO, TIOCGWINSZ, &ws))
+		error("ioctl(TIOCGWINSZ): %m");
+	else {
+		job->ws_row = ws.ws_row;
+		job->ws_col = ws.ws_col;
+		info("winsize %u:%u", job->ws_row, job->ws_col);
+	}
+	return;
+}
+
+/* SIGWINCH should already be blocked by srun/signal.c */
+void block_sigwinch(void)
+{
+	xsignal_block(pty_sigarray);
+}
+
+void pty_thread_create(srun_job_t *job)
+{
+	/* open a port and set in job->pty_port */
+	pthread_attr_t attr;
+
+	slurm_attr_init(&attr);
+	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
+	if ((pthread_create(&job->pty_id, &attr, &_pty_thread, (void *) job)))
+		error("pthread_create(pty_thread): %m");
+	slurm_attr_destroy(&attr);
+}
+
+static void  _handle_sigwinch(int sig)
+{
+	winch = 1;
+	xsignal(SIGWINCH, _handle_sigwinch);
+}
+
+static void *_pty_thread(void *arg)
+{
+	srun_job_t *job = (srun_job_t *) arg;
+
+	xsignal_unblock(pty_sigarray);
+	xsignal(SIGWINCH, _handle_sigwinch);
+	while (job->state <= SRUN_JOB_RUNNING) {
+info("_pty_thread poll");
+		poll(NULL, 0, -1);
+		if (winch) {
+			info("SIGWINCH occurred");
+			set_winsize(job);
+		}
+		winch = 0;
+	}
+	return NULL;
+}
 
 

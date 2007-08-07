@@ -52,8 +52,6 @@
 #  include "src/common/unsetenv.h"
 #endif
 
-#include <sys/ioctl.h>
-#include <sys/poll.h>
 #include <sys/resource.h>
 #include <sys/stat.h>
 #include <sys/time.h>
@@ -103,8 +101,6 @@
 
 mpi_plugin_client_info_t mpi_job_info[1];
 static struct termios termdefaults;
-static int winch;
-static int pty_sigarray[] = { SIGWINCH, 0 };
 
 /*
  * forward declaration of static funcs
@@ -123,12 +119,7 @@ static int   _change_rlimit_rss(void);
 static int   _slurm_debug_env_val (void);
 static int   _call_spank_local_user (srun_job_t *job);
 static void  _define_symbols(void);
-static void  _block_sigwinch(void);
-static void  _handle_sigwinch(int sig);
 static void  _pty_restore(void);
-static void  _pty_thread_create(srun_job_t *job);
-static void *_pty_thread(void *arg);
-static void  _set_winsize(srun_job_t *job);
 
 int srun(int ac, char **av)
 {
@@ -334,9 +325,9 @@ int srun(int ac, char **av)
 		tcsetattr(fd, TCSANOW, &term);
 		atexit(&_pty_restore);
 }{
-		_set_winsize(job);
-		_block_sigwinch();
-		_pty_thread_create(job);
+		set_winsize(job);
+		block_sigwinch();
+		pty_thread_create(job);
 	}
 
 	if (!job->client_io
@@ -851,59 +842,4 @@ static void _pty_restore(void)
 	/* STDIN is probably closed by now */
 	if (tcsetattr(STDOUT_FILENO, TCSANOW, &termdefaults) < 0)
 		fprintf(stderr, "tcsetattr: %s\n", strerror(errno));
-}
-
-static void _set_winsize(srun_job_t *job)
-{
-	struct winsize ws;
-	if (ioctl(STDIN_FILENO, TIOCGWINSZ, &ws))
-		error("ioctl(TIOCGWINSZ): %m");
-	else {
-		job->ws_row = ws.ws_row;
-		job->ws_col = ws.ws_col;
-		info("winsize %u:%u", job->ws_row, job->ws_col);
-	}
-	return;
-}
-
-/* SIGWINCH should already be blocked by srun/signal.c */
-static void  _block_sigwinch(void)
-{
-	xsignal_block(pty_sigarray);
-}
-
-static void  _pty_thread_create(srun_job_t *job)
-{
-	/* open a port and set in job->pty_port */
-	pthread_attr_t attr;
-
-	slurm_attr_init(&attr);
-	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
-	if ((pthread_create(&job->pty_id, &attr, &_pty_thread, (void *) job)))
-		error("pthread_create(pty_thread): %m");
-	slurm_attr_destroy(&attr);
-}
-
-static void  _handle_sigwinch(int sig)
-{
-	winch = 1;
-	xsignal(SIGWINCH, _handle_sigwinch);
-}
-
-static void *_pty_thread(void *arg)
-{
-	srun_job_t *job = (srun_job_t *) arg;
-
-	xsignal_unblock(pty_sigarray);
-	xsignal(SIGWINCH, _handle_sigwinch);
-	while (job->state <= SRUN_JOB_RUNNING) {
-info("_pty_thread poll");
-		poll(NULL, 0, -1);
-		if (winch) {
-			info("SIGWINCH occurred");
-			_set_winsize(job);
-		}
-		winch = 0;
-	}
-	return NULL;
 }
