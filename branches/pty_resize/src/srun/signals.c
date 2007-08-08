@@ -231,7 +231,8 @@ _sig_thr(void *arg)
 void set_winsize(srun_job_t *job)
 {
 	struct winsize ws;
-	if (ioctl(STDIN_FILENO, TIOCGWINSZ, &ws))
+
+	if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws))
 		error("ioctl(TIOCGWINSZ): %m");
 	else {
 		job->ws_row = ws.ws_row;
@@ -276,19 +277,42 @@ static void  _handle_sigwinch(int sig)
 	xsignal(SIGWINCH, _handle_sigwinch);
 }
 
+static void _notify_winsize_change(int fd, srun_job_t *job)
+{
+	pty_winsz_t winsz;
+	int len;
+
+	winsz.cols = htons(job->ws_col);
+	winsz.rows = htons(job->ws_row);
+
+	if (fd < 0) {
+		error("pty: no file to write window size changes to");
+		return;
+	}
+	len = write(fd, &winsz, sizeof(winsz));
+	if (len < sizeof(winsz))
+		error("pty: window size change notification error: %m");
+}
+
 static void *_pty_thread(void *arg)
 {
+	int fd = -1;
 	srun_job_t *job = (srun_job_t *) arg;
 
-/* wait for connection from srun task zero, used to notify of window size changes */
 	xsignal_unblock(pty_sigarray);
 	xsignal(SIGWINCH, _handle_sigwinch);
+#if 0
+	if ((fd = slurm_accept_msg_conn(job->pty_fd, &slurm_addr)) < 0) {
+		error("pty: accept: %m");
+		return NULL;
+	}
+#endif
 	while (job->state <= SRUN_JOB_RUNNING) {
-info("_pty_thread poll");
 		poll(NULL, 0, -1);
 		if (winch) {
 			info("SIGWINCH occurred");
 			set_winsize(job);
+			_notify_winsize_change(fd, job);
 		}
 		winch = 0;
 	}
