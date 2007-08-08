@@ -158,48 +158,46 @@ if($interactive) {
 } else {
 	$command = "$sbatch";
 	
-	$command .= " -N$node_opts{node_cnt}" if $node_opts{node_cnt};
-	$command .= " -n$node_opts{task_cnt}" if $node_opts{task_cnt};
-	$command .= " -w$node_opts{hostlist}" if $node_opts{hostlist};
-
-	if($res_opts{walltime}) {
-		$command .= " -t$res_opts{walltime}";
-	} elsif($res_opts{cput}) {
-		$command .= " -t$res_opts{cput}";
-	} elsif($res_opts{pcput}) {
-		$command .= " -t$res_opts{pcput}";
-	}
-
-	$command .= " --tmp=$res_opts{file}" if $res_opts{file};
-	$command .= " --mem=$res_opts{mem}" if $res_opts{mem};
-	$command .= " --nice=$res_opts{nice}" if $res_opts{nice};
-
-
-	$command .= " --begin=$start_time" if $start_time;
-	$command .= " --account=$account" if $account;
 	$command .= " -D $directive_prefix" if $directive_prefix;
 	$command .= " -e $err_path" if $err_path;
-	$command .= " -H" if $hold;
-	
-	if($mail_options) {
-		$command .= " --mail-type=FAIL" if $mail_options =~ /a/;
-		$command .= " --mail-type=BEGIN" if $mail_options =~ /b/;
-		$command .= " --mail-type=END" if $mail_options =~ /e/;
-	}
-	$command .= " --mail-user=$mail_user_list" if $mail_user_list;
-	$command .= " -J $job_name" if $job_name;
 	$command .= " -o $out_path" if $out_path;
-	$command .= " -p $destination" if $destination;
-	$command .= " -C $additional_attributes" if $additional_attributes;
-	
-
 }
 
+$command .= " -N$node_opts{node_cnt}" if $node_opts{node_cnt};
+$command .= " -n$node_opts{task_cnt}" if $node_opts{task_cnt};
+$command .= " -w$node_opts{hostlist}" if $node_opts{hostlist};
 
+if($res_opts{walltime}) {
+	$command .= " -t$res_opts{walltime}";
+} elsif($res_opts{cput}) {
+	$command .= " -t$res_opts{cput}";
+} elsif($res_opts{pcput}) {
+	$command .= " -t$res_opts{pcput}";
+}
+
+$command .= " --tmp=$res_opts{file}" if $res_opts{file};
+$command .= " --mem=$res_opts{mem}" if $res_opts{mem};
+$command .= " --nice=$res_opts{nice}" if $res_opts{nice};
+
+
+$command .= " --begin=$start_time" if $start_time;
+$command .= " --account=$account" if $account;
+$command .= " -H" if $hold;
+
+if($mail_options) {
+	$command .= " --mail-type=FAIL" if $mail_options =~ /a/;
+	$command .= " --mail-type=BEGIN" if $mail_options =~ /b/;
+	$command .= " --mail-type=END" if $mail_options =~ /e/;
+}
+$command .= " --mail-user=$mail_user_list" if $mail_user_list;
+$command .= " -J $job_name" if $job_name;
+$command .= " -p $destination" if $destination;
+$command .= " -C $additional_attributes" if $additional_attributes;
 
 
 $command .= " $script";
-print "$command\n";
+
+system($command);
 
 
 sub parse_resource_list {

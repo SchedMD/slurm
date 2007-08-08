@@ -1,1 +1,1 @@
-SUBDIRS = perlapi
+SUBDIRS = perlapi torque
