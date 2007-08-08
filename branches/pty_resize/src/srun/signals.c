@@ -289,7 +289,7 @@ static void _notify_winsize_change(int fd, srun_job_t *job)
 		error("pty: no file to write window size changes to");
 		return;
 	}
-	len = write(fd, &winsz, sizeof(winsz));
+	len = slurm_write_stream(fd, &winsz, sizeof(winsz));
 	if (len < sizeof(winsz))
 		error("pty: window size change notification error: %m");
 }

@@ -60,6 +60,7 @@
 #  include <utmp.h>
 #endif
 
+#include <sys/poll.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
@@ -679,12 +680,26 @@ static void *_window_manager(void *arg)
 	pty_winsz_t winsz;
 	size_t len;
 	struct winsize ws;
+	struct pollfd ufds;
 
 	info("in _window_manager");
-/* switch to slurm read/write functions */
+	ufds.fd = win_info->pty_fd;
+	ufds.events = POLLIN;
 /* read/write buffer, not struct for heterogeneous clusters */
 	while (1) {
-		len = read(win_info->pty_fd, &winsz, sizeof(winsz));
+		if (poll(&ufds, 1, -1) <= 0) {
+			if (errno == EINTR)
+				continue;
+			error("poll(pty): %m");
+			break;
+		}
+		if (!(ufds.revents & POLLIN)) {
+			/* ((ufds.revents & POLLHUP) ||
+			 *  (ufds.revents & POLLERR)) */
+			break;
+		}
+		len = slurm_read_stream(win_info->pty_fd, (char *)&winsz, 
+			sizeof(winsz));
 		if ((len == -1) && ((errno == EINTR) || (errno == EAGAIN)))
 			continue;
 		if (len < sizeof(winsz)) {
