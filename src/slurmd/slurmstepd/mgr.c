@@ -960,7 +960,7 @@ _fork_all_tasks(slurmd_job_t *job)
 		 * session, causing setpgid() to fail, setsid()
 		 * has already set its process group as desired
 		 */
-		if (((job->pty == 0) || (job->task[i]->gtid != 0))
+		if ((job->pty == 0)
 		&&  (setpgid (job->task[i]->pid, job->pgid) < 0)) {
 			error("Unable to put task %d (pid %ld) into "
 				"pgrp %ld: %m",
