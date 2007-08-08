@@ -681,11 +681,12 @@ static void *_window_manager(void *arg)
 	size_t len;
 	struct winsize ws;
 	struct pollfd ufds;
+	char buf[4];
 
 	info("in _window_manager");
 	ufds.fd = win_info->pty_fd;
 	ufds.events = POLLIN;
-/* read/write buffer, not struct for heterogeneous clusters */
+
 	while (1) {
 		if (poll(&ufds, 1, -1) <= 0) {
 			if (errno == EINTR)
@@ -698,14 +699,15 @@ static void *_window_manager(void *arg)
 			 *  (ufds.revents & POLLERR)) */
 			break;
 		}
-		len = slurm_read_stream(win_info->pty_fd, (char *)&winsz, 
-			sizeof(winsz));
+		len = slurm_read_stream(win_info->pty_fd, buf, 4);
 		if ((len == -1) && ((errno == EINTR) || (errno == EAGAIN)))
 			continue;
-		if (len < sizeof(winsz)) {
+		if (len < 4) {
 			error("read window size error: %m");
 			return NULL;
 		}
+		memcpy(&winsz.cols, buf, 2);
+		memcpy(&winsz.rows, buf+2, 2);
 		ws.ws_col = ntohs(winsz.cols);
 		ws.ws_row = ntohs(winsz.rows);
 		info("new pty size %u:%u", ws.ws_row, ws.ws_col);

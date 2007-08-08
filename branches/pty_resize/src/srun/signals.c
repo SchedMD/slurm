@@ -281,15 +281,18 @@ static void _notify_winsize_change(int fd, srun_job_t *job)
 {
 	pty_winsz_t winsz;
 	int len;
-
-	winsz.cols = htons(job->ws_col);
-	winsz.rows = htons(job->ws_row);
+	char buf[4];
 
 	if (fd < 0) {
 		error("pty: no file to write window size changes to");
 		return;
 	}
-	len = slurm_write_stream(fd, &winsz, sizeof(winsz));
+
+	winsz.cols = htons(job->ws_col);
+	winsz.rows = htons(job->ws_row);
+	memcpy(buf, &winsz.cols, 2);
+	memcpy(buf+2, &winsz.rows, 2);
+	len = slurm_write_stream(fd, buf, 4);
 	if (len < sizeof(winsz))
 		error("pty: window size change notification error: %m");
 }
