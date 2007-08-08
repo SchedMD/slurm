@@ -681,7 +681,6 @@ static void *_window_manager(void *arg)
 	struct winsize ws;
 
 	info("in _window_manager");
-/* initialize window size */
 /* switch to slurm read/write functions */
 /* read/write buffer, not struct for heterogeneous clusters */
 	while (1) {
@@ -708,7 +707,7 @@ static void *_window_manager(void *arg)
 static void
 _spawn_window_manager(slurmd_task_info_t *task, slurmd_job_t *job)
 {
-	char *host, *port;
+	char *host, *port, *rows, *cols;
 	slurm_fd pty_fd;
 	slurm_addr pty_addr;
 	uint16_t port_u;
@@ -730,6 +729,19 @@ _spawn_window_manager(slurmd_task_info_t *task, slurmd_job_t *job)
 	if (!(port = getenvp(job->env, "SLURM_PTY_PORT"))) {
 		error("SLURM_PTY_PORT env var not set");
 		return;
+	}
+	if (!(cols = getenvp(job->env, "SLURM_PTY_WIN_COL")))
+		error("SLURM_PTY_WIN_COL env var not set");
+	if (!(rows = getenvp(job->env, "SLURM_PTY_WIN_ROW")))
+		error("SLURM_PTY_WIN_ROW env var not set");
+
+	if (rows && cols) {
+		struct winsize ws;
+		ws.ws_col = atoi(cols);
+		ws.ws_row = atoi(rows);
+		info("init pty size %u:%u", ws.ws_row, ws.ws_col);
+		if (ioctl(task->to_stdin, TIOCSWINSZ, &ws))
+			error("ioctl(TIOCSWINSZ): %s");
 	}
 
 	port_u = atoi(port);
@@ -788,12 +800,12 @@ _init_task_stdio_fds(slurmd_task_info_t *task, slurmd_job_t *job)
 				error("stdin openpty: %m");
 				return SLURM_ERROR;
 			}
-			_spawn_window_manager(task, job);
 			task->stdin_fd = aslave;
 			fd_set_close_on_exec(task->stdin_fd);
 			task->to_stdin = amaster;
 			fd_set_close_on_exec(task->to_stdin);
 			fd_set_nonblocking(task->to_stdin);
+			_spawn_window_manager(task, job);
 			task->in = _create_task_in_eio(task->to_stdin, job);
 			eio_new_initial_obj(job->eio, (void *)task->in);
 		} else {
