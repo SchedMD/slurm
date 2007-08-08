@@ -954,6 +954,8 @@ _fork_all_tasks(slurmd_job_t *job)
 	jobacct_g_set_proctrack_container_id(job->cont_id);
 
 	for (i = 0; i < job->ntasks; i++) {
+		if (job->pty && (job->task[i]->gtid == 0))
+			continue;
 		/*
                  * Put this task in the step process group
                  */

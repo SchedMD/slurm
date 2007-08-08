@@ -714,6 +714,8 @@ static void *_window_manager(void *arg)
 		if (ioctl(win_info->task->to_stdin, TIOCSWINSZ, &ws))
 			error("ioctl(TIOCSWINSZ): %s");
 		if (kill(win_info->task->pid, SIGWINCH)) {
+			if (errno == ESRCH)
+				break;
 			error("kill(%d, SIGWINCH): %m", 
 				(int)win_info->task->pid);
 		}
