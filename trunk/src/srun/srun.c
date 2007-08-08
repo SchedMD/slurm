@@ -300,7 +300,7 @@ int srun(int ac, char **av)
 		cfmakeraw(&term);
 		tcsetattr(fd, TCSANOW, &term);
 		atexit(&_pty_restore);
-}{
+
 		set_winsize(job);
 		block_sigwinch();
 		pty_thread_create(job);
