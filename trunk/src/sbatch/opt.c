@@ -1284,6 +1284,17 @@ static bool _opt_verify(void)
         if ((opt.egid != (gid_t) -1) && (opt.egid != opt.gid))
 	        opt.gid = opt.egid;
 
+	if (opt.immediate) {
+		char *sched_name = slurm_get_sched_type();
+		if ((strcmp(sched_name, "sched/wiki") == 0)
+		||  (strcmp(sched_name, "sched/wiki2") == 0)) {
+			info("WARNING: Ignoring the -I/--immediate option "
+				"(not supported by Moab)");
+			opt.immediate = false;
+		}
+		xfree(sched_name);
+	}
+
 	return verified;
 }
 
