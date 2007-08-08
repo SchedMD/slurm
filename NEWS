@@ -10,6 +10,8 @@ documents those changes that are of interest to users and admins.
     SLURM_MVAPICH_TIMEOUT (value in seconds).
  -- Fixed pick_step_node logic to only pick the number of nodes requested
     from the user when excluding nodes, to avoid an error message.
+ -- Disable salloc, sbatch and srun -I/--immediate options with 
+    Moab scheduler.
 
 * Changes in SLURM 1.2.12
 =========================

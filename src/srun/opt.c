@@ -2428,6 +2428,17 @@ static bool _opt_verify(void)
 		verified = false;
 	}
 
+	if (opt.immediate) {
+		char *sched_name = slurm_get_sched_type();
+		if ((strcmp(sched_name, "sched/wiki") == 0)
+		||  (strcmp(sched_name, "sched/wiki2") == 0)) {
+			info("WARNING: Ignoring the -I/--immediate option "
+				"(not supported by Moab)");
+			opt.immediate = false;
+		}
+		xfree(sched_name);
+	}
+
 	return verified;
 }
 
