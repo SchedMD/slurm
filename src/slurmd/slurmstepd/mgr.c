@@ -960,8 +960,9 @@ _fork_all_tasks(slurmd_job_t *job)
                 if (setpgid (job->task[i]->pid, job->pgid) < 0) {
 			if (job->pty) {
 				/* login_tty() must put task zero in its own 
-				 * session, causing setpgid() to fail */
-				info("Unable to put task %d (pid %ld) into "
+				 * session, causing setpgid() to fail, setsid()
+				 * has already set its process group as desired */
+				debug("Unable to put task %d (pid %ld) into "
 					"pgrp %ld: %m",
 					i, job->task[i]->pid, job->pgid);
                         } else {

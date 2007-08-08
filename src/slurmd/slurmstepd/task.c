@@ -305,7 +305,7 @@ exec_task(slurmd_job_t *job, int i, int waitfd)
 		if (login_tty(task->stdin_fd))
 			error("login_tty: %m");
 		else
-			info("login_tty good");
+			debug3("login_tty good");
 	}
 #endif
 

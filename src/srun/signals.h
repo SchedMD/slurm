@@ -38,9 +38,14 @@
 #ifndef _SIGNALS_H
 #define _SIGNALS_H
 
+#include "src/srun/srun_job.h"
+
 typedef struct srun_job signal_job_t;
 
-int sig_setup_sigmask(void);
+void block_sigwinch(void);
+void pty_thread_create(srun_job_t *job);
+void set_winsize(srun_job_t *job);
+int  sig_setup_sigmask(void);
 int  sig_unblock_signals(void);
 int  sig_thr_create(signal_job_t *job);
 

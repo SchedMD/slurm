@@ -70,6 +70,9 @@ typedef struct env_options {
 	int cpus_on_node;
 	pid_t task_pid;
 	char *sgtids;		/* global ranks array of integers */	
+	uint16_t pty_port;	/* used to communicate window size changes */
+	uint8_t ws_col;		/* window size, columns */
+	uint8_t ws_row;		/* window size, row count */
 } env_t;
 
 
