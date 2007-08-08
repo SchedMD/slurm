@@ -87,7 +87,7 @@ Requires: slurm qsnetlibs
 %package torque
 Summary: Torque wrappers for trasitition from Torque to SLURM.
 Group: Development/System
-Requires: slurm slurm-contrib
+Requires: slurm
 
 %package aix-federation
 Summary: SLURM interfaces to IBM AIX and Federation switch.
