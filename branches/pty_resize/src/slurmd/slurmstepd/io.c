@@ -170,6 +170,17 @@ struct task_read_info {
 };
 
 /**********************************************************************
+ * Pseudo terminal declarations
+ **********************************************************************/
+struct window_info {
+	slurmd_task_info_t *task;
+	slurmd_job_t *job;
+	slurm_fd pty_fd;
+};
+static void  _spawn_window_manager(slurmd_task_info_t *task, slurmd_job_t *job);
+static void *_window_manager(void *arg);
+
+/**********************************************************************
  * General declarations
  **********************************************************************/
 static void *_io_thr(void *);
@@ -660,8 +671,31 @@ again:
 }
 
 /**********************************************************************
- * General fuctions
+ * Pseudo terminal functions
  **********************************************************************/
+static void *_window_manager(void *arg)
+{
+	struct window_info *win_info = (struct window_info *) arg;
+	pty_winsz_t winsz;
+	size_t len;
+	struct winsize ws;
+
+	info("in _window_manager");
+/* do this in loop */
+/* switch to slurm read/write functions */
+/* read/write buffer, not struct for heterogeneous clusters */
+	len = read(win_info->pty_fd, &winsz, sizeof(winsz));
+	if (len < sizeof(winsz)) {
+		error("read window size error: %m");
+		return NULL;
+	}
+	ws.ws_col = ntohs(winsz.cols);
+	ws.ws_row = ntohs(winsz.rows);
+	info("new pty size %u:%u", ws.ws_row, ws.ws_col);
+/* set pty here */
+	return NULL;
+}
+
 static void
 _spawn_window_manager(slurmd_task_info_t *task, slurmd_job_t *job)
 {
@@ -669,6 +703,9 @@ _spawn_window_manager(slurmd_task_info_t *task, slurmd_job_t *job)
 	slurm_fd pty_fd;
 	slurm_addr pty_addr;
 	uint16_t port_u;
+	struct window_info *win_info;
+	pthread_attr_t attr;
+	pthread_t win_id;
 
 #if 0
 	/* NOTE: SLURM_LAUNCH_NODE_IPADDR is not available at this point */
@@ -695,9 +732,19 @@ _spawn_window_manager(slurmd_task_info_t *task, slurmd_job_t *job)
 		return;
 	}
 
-/* ready to connect back here and spawn pthread to handle resize */
-info("ready to roll!");
+	win_info = xmalloc(sizeof(struct window_info));
+	win_info->task   = task;
+	win_info->job    = job;
+	win_info->pty_fd = pty_fd;
+	slurm_attr_init(&attr);
+	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
+	if (pthread_create(&win_id, &attr, &_window_manager, (void *) win_info))
+		error("pthread_create(pty_conn): %m");
 }
+
+/**********************************************************************
+ * General fuctions
+ **********************************************************************/
 
 /*
  * This function sets the close-on-exec flag on all opened file descriptors.

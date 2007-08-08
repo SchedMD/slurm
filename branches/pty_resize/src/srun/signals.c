@@ -237,7 +237,7 @@ void set_winsize(srun_job_t *job)
 	else {
 		job->ws_row = ws.ws_row;
 		job->ws_col = ws.ws_col;
-		info("winsize %u:%u", job->ws_row, job->ws_col);
+		debug2("winsize %u:%u", job->ws_row, job->ws_col);
 	}
 	return;
 }
@@ -262,7 +262,7 @@ void pty_thread_create(srun_job_t *job)
 		return;
 	}
 	job->pty_port = ntohs(((struct sockaddr_in) pty_addr).sin_port);
-	info("initialized job control port %hu\n", job->pty_port);
+	debug2("initialized job control port %hu\n", job->pty_port);
 
 	slurm_attr_init(&attr);
 	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
@@ -309,7 +309,7 @@ static void *_pty_thread(void *arg)
 	}
 
 	while (job->state <= SRUN_JOB_RUNNING) {
-		info("waiting for SIGWINCH");
+		debug2("waiting for SIGWINCH");
 		poll(NULL, 0, -1);
 		if (winch) {
 			set_winsize(job);
