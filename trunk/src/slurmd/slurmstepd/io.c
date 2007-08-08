@@ -60,6 +60,7 @@
 #  include <utmp.h>
 #endif
 
+#include <sys/poll.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
@@ -168,6 +169,17 @@ struct task_read_info {
 	bool		 eof;
 	bool		 eof_msg_sent;
 };
+
+/**********************************************************************
+ * Pseudo terminal declarations
+ **********************************************************************/
+struct window_info {
+	slurmd_task_info_t *task;
+	slurmd_job_t *job;
+	slurm_fd pty_fd;
+};
+static void  _spawn_window_manager(slurmd_task_info_t *task, slurmd_job_t *job);
+static void *_window_manager(void *arg);
 
 /**********************************************************************
  * General declarations
@@ -412,7 +424,8 @@ _client_write(eio_obj_t *obj, List objs)
 	/*
 	 * Write message to socket.
 	 */
-	buf = client->out_msg->data + (client->out_msg->length - client->out_remaining);
+	buf = client->out_msg->data + 
+		(client->out_msg->length - client->out_remaining);
 again:
 	if ((n = write(obj->fd, buf, client->out_remaining)) < 0) {
 		if (errno == EINTR) {
@@ -659,6 +672,115 @@ again:
 }
 
 /**********************************************************************
+ * Pseudo terminal functions
+ **********************************************************************/
+static void *_window_manager(void *arg)
+{
+	struct window_info *win_info = (struct window_info *) arg;
+	pty_winsz_t winsz;
+	size_t len;
+	struct winsize ws;
+	struct pollfd ufds;
+	char buf[4];
+
+	info("in _window_manager");
+	ufds.fd = win_info->pty_fd;
+	ufds.events = POLLIN;
+
+	while (1) {
+		if (poll(&ufds, 1, -1) <= 0) {
+			if (errno == EINTR)
+				continue;
+			error("poll(pty): %m");
+			break;
+		}
+		if (!(ufds.revents & POLLIN)) {
+			/* ((ufds.revents & POLLHUP) ||
+			 *  (ufds.revents & POLLERR)) */
+			break;
+		}
+		len = slurm_read_stream(win_info->pty_fd, buf, 4);
+		if ((len == -1) && ((errno == EINTR) || (errno == EAGAIN)))
+			continue;
+		if (len < 4) {
+			error("read window size error: %m");
+			return NULL;
+		}
+		memcpy(&winsz.cols, buf, 2);
+		memcpy(&winsz.rows, buf+2, 2);
+		ws.ws_col = ntohs(winsz.cols);
+		ws.ws_row = ntohs(winsz.rows);
+		debug("new pty size %u:%u", ws.ws_row, ws.ws_col);
+		if (ioctl(win_info->task->to_stdin, TIOCSWINSZ, &ws))
+			error("ioctl(TIOCSWINSZ): %s");
+		if (kill(win_info->task->pid, SIGWINCH)) {
+			error("kill(%d, SIGWINCH): %m", 
+				(int)win_info->task->pid);
+		}
+	}
+	return NULL;
+}
+
+static void
+_spawn_window_manager(slurmd_task_info_t *task, slurmd_job_t *job)
+{
+	char *host, *port, *rows, *cols;
+	slurm_fd pty_fd;
+	slurm_addr pty_addr;
+	uint16_t port_u;
+	struct window_info *win_info;
+	pthread_attr_t attr;
+	pthread_t win_id;
+
+#if 0
+	/* NOTE: SLURM_LAUNCH_NODE_IPADDR is not available at this point */
+	if (!(ip_addr = getenvp(job->env, "SLURM_LAUNCH_NODE_IPADDR"))) {
+		error("SLURM_LAUNCH_NODE_IPADDR env var not set");
+		return;
+	}
+#endif
+	if (!(host = getenvp(job->env, "SLURM_SRUN_COMM_HOST"))) {
+		error("SLURM_SRUN_COMM_HOST env var not set");
+		return;
+	}
+	if (!(port = getenvp(job->env, "SLURM_PTY_PORT"))) {
+		error("SLURM_PTY_PORT env var not set");
+		return;
+	}
+	if (!(cols = getenvp(job->env, "SLURM_PTY_WIN_COL")))
+		error("SLURM_PTY_WIN_COL env var not set");
+	if (!(rows = getenvp(job->env, "SLURM_PTY_WIN_ROW")))
+		error("SLURM_PTY_WIN_ROW env var not set");
+
+	if (rows && cols) {
+		struct winsize ws;
+		ws.ws_col = atoi(cols);
+		ws.ws_row = atoi(rows);
+		debug("init pty size %u:%u", ws.ws_row, ws.ws_col);
+		if (ioctl(task->to_stdin, TIOCSWINSZ, &ws))
+			error("ioctl(TIOCSWINSZ): %s");
+	}
+
+	port_u = atoi(port);
+	slurm_set_addr(&pty_addr, port_u, host);
+	pty_fd = slurm_open_msg_conn(&pty_addr);
+	if (pty_fd < 0) {
+		error("slurm_open_msg_conn(pty_conn) %s,%u: %m",
+			host, port_u);
+		return;
+	}
+
+	win_info = xmalloc(sizeof(struct window_info));
+	win_info->task   = task;
+	win_info->job    = job;
+	win_info->pty_fd = pty_fd;
+	slurm_attr_init(&attr);
+	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
+	if (pthread_create(&win_id, &attr, &_window_manager, (void *) win_info))
+		error("pthread_create(pty_conn): %m");
+}
+
+/**********************************************************************
  * General fuctions
  **********************************************************************/
 
@@ -700,6 +822,7 @@ _init_task_stdio_fds(slurmd_task_info_t *task, slurmd_job_t *job)
 			task->to_stdin = amaster;
 			fd_set_close_on_exec(task->to_stdin);
 			fd_set_nonblocking(task->to_stdin);
+			_spawn_window_manager(task, job);
 			task->in = _create_task_in_eio(task->to_stdin, job);
 			eio_new_initial_obj(job->eio, (void *)task->in);
 		} else {

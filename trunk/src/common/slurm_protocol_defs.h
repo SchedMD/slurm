@@ -648,6 +648,11 @@ typedef struct multi_core_data {
 	uint16_t plane_size;        /* plane size when task_dist = SLURM_DIST_PLANE */
 } multi_core_data_t;
 
+typedef struct pty_winsz {
+	uint16_t cols;
+	uint16_t rows;
+} pty_winsz_t;
+
 /*****************************************************************************\
  * Slurm API Message Types
 \*****************************************************************************/
