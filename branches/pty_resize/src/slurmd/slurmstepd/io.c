@@ -412,7 +412,8 @@ _client_write(eio_obj_t *obj, List objs)
 	/*
 	 * Write message to socket.
 	 */
-	buf = client->out_msg->data + (client->out_msg->length - client->out_remaining);
+	buf = client->out_msg->data + 
+		(client->out_msg->length - client->out_remaining);
 again:
 	if ((n = write(obj->fd, buf, client->out_remaining)) < 0) {
 		if (errno == EINTR) {
@@ -661,6 +662,42 @@ again:
 /**********************************************************************
  * General fuctions
  **********************************************************************/
+static void
+_spawn_window_manager(slurmd_task_info_t *task, slurmd_job_t *job)
+{
+	char *host, *port;
+	slurm_fd pty_fd;
+	slurm_addr pty_addr;
+	uint16_t port_u;
+
+#if 0
+	/* NOTE: SLURM_LAUNCH_NODE_IPADDR is not available at this point */
+	if (!(ip_addr = getenvp(job->env, "SLURM_LAUNCH_NODE_IPADDR"))) {
+		error("SLURM_LAUNCH_NODE_IPADDR env var not set");
+		return;
+	}
+#endif
+	if (!(host = getenvp(job->env, "SLURM_SRUN_COMM_HOST"))) {
+		error("SLURM_SRUN_COMM_HOST env var not set");
+		return;
+	}
+	if (!(port = getenvp(job->env, "SLURM_PTY_PORT"))) {
+		error("SLURM_PTY_PORT env var not set");
+		return;
+	}
+
+	port_u = atoi(port);
+	slurm_set_addr(&pty_addr, port_u, host);
+	pty_fd = slurm_open_msg_conn(&pty_addr);
+	if (pty_fd < 0) {
+		error("slurm_open_msg_conn(pty_conn) %s,%u: %m",
+			host, port_u);
+		return;
+	}
+
+/* ready to connect back here and spawn pthread to handle resize */
+info("ready to roll!");
+}
 
 /*
  * This function sets the close-on-exec flag on all opened file descriptors.
@@ -695,6 +732,7 @@ _init_task_stdio_fds(slurmd_task_info_t *task, slurmd_job_t *job)
 				error("stdin openpty: %m");
 				return SLURM_ERROR;
 			}
+			_spawn_window_manager(task, job);
 			task->stdin_fd = aslave;
 			fd_set_close_on_exec(task->stdin_fd);
 			task->to_stdin = amaster;
