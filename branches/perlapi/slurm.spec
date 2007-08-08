@@ -234,6 +234,9 @@ test -f $RPM_BUILD_ROOT/%{_perldir}/Slurm.pm &&
   echo "%{_perldir}/Slurm.pm"                 >> $LIST
 test -f $RPM_BUILD_ROOT/%{_perldir}/auto/Slurm/Slurm.so &&
   echo "%{_perldir}/auto/Slurm/Slurm.so"      >> $LIST
+
+LIST=./torque.files
+touch $LIST
 echo "%{_sbindir}/pbsnodes"                    >> $LIST
 echo "%{_sbindir}/qdel"                        >> $LIST
 echo "%{_sbindir}/qhold"                       >> $LIST
@@ -354,6 +357,10 @@ rm -rf $RPM_BUILD_ROOT
 #############################################################################
 
 %files -f switch_elan.files switch-elan
+%defattr(-,root,root)
+#############################################################################
+
+%files -f torque.files torque
 %defattr(-,root,root)
 #############################################################################
 
