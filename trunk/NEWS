@@ -5,6 +5,8 @@ documents those changes that are of interest to users and admins.
 =============================
  -- Added new srun option --pty to start job with pseudo terminal attached 
     to task 0 (all other tasks have I/O discarded)
+ -- Disable user specifying jobid when sched/wiki2 configured (needed for 
+    Moab releases until early 2007).
 
 * Changes in SLURM 1.3.0-pre1
 =============================

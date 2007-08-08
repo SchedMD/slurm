@@ -2603,12 +2603,13 @@ static int _validate_job_desc(job_desc_msg_t * job_desc_msg, int allocate,
 	static bool wiki_sched = false;
 	static bool wiki_sched_test = false;
 
-	/* Permit normal user to specify job id only for sched/wiki
-	 * and sched/wiki2 */
+	/* Permit normal user to specify job id only for sched/wiki 
+	 * (Maui scheduler). This was also required with earlier
+	 * versions of the Moab scheduler (wiki2), but was fixed 
+	 * in early 2007 to submit jobs as user root */
 	if (!wiki_sched_test) {
 		char *sched_type = slurm_get_sched_type();
-		if ((strcmp(sched_type, "sched/wiki") == 0)
-		||  (strcmp(sched_type, "sched/wiki2") == 0))
+		if (strcmp(sched_type, "sched/wiki") == 0)
 			wiki_sched = true;
 		xfree(sched_type);
 		wiki_sched_test = true;
