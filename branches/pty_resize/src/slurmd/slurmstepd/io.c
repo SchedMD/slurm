@@ -681,18 +681,27 @@ static void *_window_manager(void *arg)
 	struct winsize ws;
 
 	info("in _window_manager");
-/* do this in loop */
+/* initialize window size */
 /* switch to slurm read/write functions */
 /* read/write buffer, not struct for heterogeneous clusters */
-	len = read(win_info->pty_fd, &winsz, sizeof(winsz));
-	if (len < sizeof(winsz)) {
-		error("read window size error: %m");
-		return NULL;
+	while (1) {
+		len = read(win_info->pty_fd, &winsz, sizeof(winsz));
+		if ((len == -1) && ((errno == EINTR) || (errno == EAGAIN)))
+			continue;
+		if (len < sizeof(winsz)) {
+			error("read window size error: %m");
+			return NULL;
+		}
+		ws.ws_col = ntohs(winsz.cols);
+		ws.ws_row = ntohs(winsz.rows);
+		info("new pty size %u:%u", ws.ws_row, ws.ws_col);
+		if (ioctl(win_info->task->to_stdin, TIOCSWINSZ, &ws))
+			error("ioctl(TIOCSWINSZ): %s");
+		if (kill(win_info->task->pid, SIGWINCH)) {
+			error("kill(%d, SIGWINCH): %m", 
+				(int)win_info->task->pid);
+		}
 	}
-	ws.ws_col = ntohs(winsz.cols);
-	ws.ws_row = ntohs(winsz.rows);
-	info("new pty size %u:%u", ws.ws_row, ws.ws_col);
-/* set pty here */
 	return NULL;
 }
 
