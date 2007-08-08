@@ -710,7 +710,7 @@ static void *_window_manager(void *arg)
 		memcpy(&winsz.rows, buf+2, 2);
 		ws.ws_col = ntohs(winsz.cols);
 		ws.ws_row = ntohs(winsz.rows);
-		info("new pty size %u:%u", ws.ws_row, ws.ws_col);
+		debug("new pty size %u:%u", ws.ws_row, ws.ws_col);
 		if (ioctl(win_info->task->to_stdin, TIOCSWINSZ, &ws))
 			error("ioctl(TIOCSWINSZ): %s");
 		if (kill(win_info->task->pid, SIGWINCH)) {
@@ -756,7 +756,7 @@ _spawn_window_manager(slurmd_task_info_t *task, slurmd_job_t *job)
 		struct winsize ws;
 		ws.ws_col = atoi(cols);
 		ws.ws_row = atoi(rows);
-		info("init pty size %u:%u", ws.ws_row, ws.ws_col);
+		debug("init pty size %u:%u", ws.ws_row, ws.ws_col);
 		if (ioctl(task->to_stdin, TIOCSWINSZ, &ws))
 			error("ioctl(TIOCSWINSZ): %s");
 	}
