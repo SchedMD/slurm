@@ -954,24 +954,17 @@ _fork_all_tasks(slurmd_job_t *job)
 	jobacct_g_set_proctrack_container_id(job->cont_id);
 
 	for (i = 0; i < job->ntasks; i++) {
-		if (job->pty && (job->task[i]->gtid == 0))
-			continue;
 		/*
-                 * Put this task in the step process group
-                 */
-                if (setpgid (job->task[i]->pid, job->pgid) < 0) {
-			if (job->pty) {
-				/* login_tty() must put task zero in its own 
-				 * session, causing setpgid() to fail, setsid()
-				 * has already set its process group as desired */
-				debug("Unable to put task %d (pid %ld) into "
-					"pgrp %ld: %m",
-					i, job->task[i]->pid, job->pgid);
-                        } else {
-				error("Unable to put task %d (pid %ld) into "
-					"pgrp %ld: %m",
-					i, job->task[i]->pid, job->pgid);
-			}
+		 * Put this task in the step process group
+		 * login_tty() must put task zero in its own
+		 * session, causing setpgid() to fail, setsid()
+		 * has already set its process group as desired
+		 */
+		if (((job->pty == 0) || (job->task[i]->gtid != 0))
+		&&  (setpgid (job->task[i]->pid, job->pgid) < 0)) {
+			error("Unable to put task %d (pid %ld) into "
+				"pgrp %ld: %m",
+				i, job->task[i]->pid, job->pgid);
 		}
 
                 if (slurm_container_add(job, job->task[i]->pid) == SLURM_ERROR) {

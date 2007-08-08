@@ -678,7 +678,7 @@ static void *_window_manager(void *arg)
 {
 	struct window_info *win_info = (struct window_info *) arg;
 	pty_winsz_t winsz;
-	size_t len;
+	ssize_t len;
 	struct winsize ws;
 	struct pollfd ufds;
 	char buf[4];
