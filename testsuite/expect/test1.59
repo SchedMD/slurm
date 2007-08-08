@@ -260,7 +260,7 @@ expect {
 }
 		
 # try with commandline -w option
-for {set i 0} {$i<4} {incr i} {
+for {set i 0} {$i<5} {incr i} {
 	set extra ""
 	
 	if { $i==1 } {
@@ -292,18 +292,27 @@ for {set i 0} {$i<4} {incr i} {
 		set 2node4 $node0
 		set extra " -m arbitrary -w $node1,$node0,$node0,$node0,$node0"
 	} elseif { $i==3 } {
+		if { $node1 == 0 } {
+			send_user "\nFAILURE: node names not set from \
+				previous srun\n"
+			exit 1
+		}
+		set 4node0 $node1
+		set extra " -w $node1"
+	} elseif { $i==4 } {
 		if { $node0 == 0 || $node1 == 0 || $node2 == 0 } {
 			send_user "\nFAILURE: node names not set from \
 				previous srun\n"
 			exit 1
 		}
-		set 3node0 $node1
-		set 3node1 $node0
-		set 3node2 $node0
-		set 3node3 $node0
-		set 3node4 0
+		set 4node0 $node1
+		set 4node1 $node0
+		set 4node2 $node0
+		set 4node3 $node0
+		set 4node4 0
 		set extra " -m arbitrary -w $node1,$node0,$node0,$node0,$node0 -n4"
 	}
+	
 	set node0 0
 	set node1 0
 	set node2 0
@@ -335,8 +344,10 @@ for {set i 0} {$i<4} {incr i} {
 			exp_continue
 		}
 		-re "error" {
-			if { $i == 3 } {
+			if { $i == 4 } {
 				send_user "\nThis error is expected, no worries\n"
+			} else {
+				set exit_code 1
 			}
 			exp_continue
 		}	
@@ -383,6 +394,11 @@ for {set i 0} {$i<4} {incr i} {
 			send_user "\nFAILURE: tasks not distributed by hostfile\n"
 			set exit_code 1
 		}
+	} elseif { $i == 3 } {
+		if { [string compare $node2 $4node0] } {
+			send_user "\nFAILURE: we only asked for 1 node in the allocation and we were unable to get it\n"
+			set exit_code 1
+		} 
 	}
 }
 

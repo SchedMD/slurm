@@ -436,6 +436,7 @@ _pick_step_nodes (struct job_record  *job_ptr,
 
 	if (step_spec->node_list) {
 		bitstr_t *selected_nodes = NULL;
+/* 		info("selected nodelist is %s", step_spec->node_list); */
 		error_code = node_name2bitmap(step_spec->node_list, false, 
 					      &selected_nodes);
 		
@@ -476,13 +477,30 @@ _pick_step_nodes (struct job_record  *job_ptr,
 		if (selected_nodes) {
 			/* use selected nodes to run the job and
 			 * make them unavailable for future use */
-
-			nodes_picked = bit_alloc(bit_size(nodes_avail));
-			if (nodes_picked == NULL)
-				fatal("bit_alloc malloc failure");
-			bit_free(nodes_avail);
-			nodes_avail = selected_nodes;
-			selected_nodes = NULL;
+			
+			/* If we have selected more than we requested
+			 * make the available nodes equal to the
+			 * selected nodes and we will pick from that
+			 * list later on in the function.
+			 * Other than that copy the nodes selected as
+			 * the nodes we want.
+			 */ 
+			if (step_spec->node_count 
+			    && (bit_set_count(selected_nodes)
+				> step_spec->node_count)) {
+				nodes_picked =
+					bit_alloc(bit_size(nodes_avail));
+				if (nodes_picked == NULL)
+					fatal("bit_alloc malloc failure");
+				bit_free(nodes_avail);
+				nodes_avail = selected_nodes;
+				selected_nodes = NULL;
+			} else {
+				nodes_picked = bit_copy(selected_nodes);
+				bit_not(selected_nodes);
+				bit_and(nodes_avail, selected_nodes);
+				bit_free(selected_nodes);
+			}
 		}
 	} else {
 		nodes_picked = bit_alloc(bit_size(nodes_avail));
