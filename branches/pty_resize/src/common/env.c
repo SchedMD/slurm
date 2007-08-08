@@ -631,8 +631,24 @@ int setup_env(env_t *env)
 		setenvf(&env->env, "LOADL_ACTIVE", "3.2.0");
 	}
 #endif
-	
-	return SLURM_SUCCESS;
+
+	if (env->pty_port
+	&&  setenvf(&env->env, "SLURM_PTY_PORT", "%hu", env->pty_port)) {
+		error("Can't set SLURM_PTY_PORT env variable");
+		rc = SLURM_FAILURE;
+	}
+	if (env->ws_col
+	&&  setenvf(&env->env, "SLURM_PTY_WIN_COL", "%hu", env->ws_col)) {
+		error("Can't set SLURM_PTY_WIN_COL env variable");
+		rc = SLURM_FAILURE;
+	}
+	if (env->ws_row
+	&&  setenvf(&env->env, "SLURM_PTY_WIN_ROW", "%hu", env->ws_row)) {
+		error("Can't set SLURM_PTY_WIN_ROW env variable");
+		rc = SLURM_FAILURE;
+	}
+
+	return rc;
 }
 
 /**********************************************************************

@@ -289,6 +289,25 @@ int srun(int ac, char **av)
 		env->jobid = job->jobid;
 		env->stepid = job->stepid;
 	}
+	if (opt.pty) {
+		struct termios term;
+		int fd = STDIN_FILENO;
+
+		/* Save terminal settings for restore */
+		tcgetattr(fd, &termdefaults); 
+		tcgetattr(fd, &term);
+		/* Set raw mode on local tty */
+		cfmakeraw(&term);
+		tcsetattr(fd, TCSANOW, &term);
+		atexit(&_pty_restore);
+}{
+		set_winsize(job);
+		block_sigwinch();
+		pty_thread_create(job);
+		env->pty_port = job->pty_port;
+		env->ws_col   = job->ws_col;
+		env->ws_row   = job->ws_row;
+	}
 	setup_env(env);
 	xfree(env->task_count);
 	xfree(env);
@@ -313,22 +332,6 @@ int srun(int ac, char **av)
 				job->step_layout->node_cnt,
 				job->cred, opt.labelio);
 /*******************************************************************************/
-	if (opt.pty) {
-		struct termios term;
-		int fd = STDIN_FILENO;
-
-		/* Save terminal settings for restore */
-		tcgetattr(fd, &termdefaults); 
-		tcgetattr(fd, &term);
-		/* Set raw mode on local tty */
-		cfmakeraw(&term);
-		tcsetattr(fd, TCSANOW, &term);
-		atexit(&_pty_restore);
-}{
-		set_winsize(job);
-		block_sigwinch();
-		pty_thread_create(job);
-	}
 
 	if (!job->client_io
 	    || (client_io_handler_start(job->client_io)	!= SLURM_SUCCESS))

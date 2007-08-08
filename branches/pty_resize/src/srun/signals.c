@@ -249,8 +249,19 @@ void block_sigwinch(void)
 
 void pty_thread_create(srun_job_t *job)
 {
-	/* open a port and set in job->pty_port */
+	slurm_addr pty_addr;
 	pthread_attr_t attr;
+
+	if ((job->pty_fd = slurm_init_msg_engine_port(0)) < 0) {
+		error("init_msg_engine_port: %m");
+		return;
+	}
+	if (slurm_get_stream_addr(job->pty_fd, &pty_addr) < 0) {
+		error("slurm_get_stream_addr: %m");
+		return;
+	}
+	job->pty_port = ntohs(((struct sockaddr_in) pty_addr).sin_port);
+	info("initialized job control port %hu\n", job->pty_port);
 
 	slurm_attr_init(&attr);
 	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
@@ -269,6 +280,7 @@ static void *_pty_thread(void *arg)
 {
 	srun_job_t *job = (srun_job_t *) arg;
 
+/* wait for connection from srun task zero, used to notify of window size changes */
 	xsignal_unblock(pty_sigarray);
 	xsignal(SIGWINCH, _handle_sigwinch);
 	while (job->state <= SRUN_JOB_RUNNING) {
