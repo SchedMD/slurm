@@ -173,16 +173,6 @@ mv ${RPM_BUILD_ROOT}%{_bindir}/srun ${RPM_BUILD_ROOT}%{_sbindir}
 mv ${RPM_BUILD_ROOT}%{_bindir}/slaunch ${RPM_BUILD_ROOT}%{_sbindir}
 %endif
 
-# Move torque commands from the main bin to be in the torque rpm
-# instead of the main one.
-mv ${RPM_BUILD_ROOT}%{_bindir}/pbsnodes ${RPM_BUILD_ROOT}%{_sbindir}
-mv ${RPM_BUILD_ROOT}%{_bindir}/qdel ${RPM_BUILD_ROOT}%{_sbindir}
-mv ${RPM_BUILD_ROOT}%{_bindir}/qhold ${RPM_BUILD_ROOT}%{_sbindir}
-mv ${RPM_BUILD_ROOT}%{_bindir}/qrls ${RPM_BUILD_ROOT}%{_sbindir}
-mv ${RPM_BUILD_ROOT}%{_bindir}/qstat ${RPM_BUILD_ROOT}%{_sbindir}
-mv ${RPM_BUILD_ROOT}%{_bindir}/qsub ${RPM_BUILD_ROOT}%{_sbindir}
-mv ${RPM_BUILD_ROOT}%{_bindir}/mpiexec ${RPM_BUILD_ROOT}%{_sbindir}
-
 if [ -d /etc/init.d ]; then
    install -D -m755 etc/init.d.slurm $RPM_BUILD_ROOT/etc/init.d/slurm
 fi
@@ -237,13 +227,13 @@ test -f $RPM_BUILD_ROOT/%{_perldir}/auto/Slurm/Slurm.so &&
 
 LIST=./torque.files
 touch $LIST
-echo "%{_sbindir}/pbsnodes"                    >> $LIST
-echo "%{_sbindir}/qdel"                        >> $LIST
-echo "%{_sbindir}/qhold"                       >> $LIST
-echo "%{_sbindir}/qrls"                        >> $LIST
-echo "%{_sbindir}/qstat"                       >> $LIST
-echo "%{_sbindir}/qsub"                        >> $LIST
-echo "%{_sbindir}/mpiexec"                     >> $LIST
+echo "%{_bindir}/pbsnodes"                    >> $LIST
+echo "%{_bindir}/qdel"                        >> $LIST
+echo "%{_bindir}/qhold"                       >> $LIST
+echo "%{_bindir}/qrls"                        >> $LIST
+echo "%{_bindir}/qstat"                       >> $LIST
+echo "%{_bindir}/qsub"                        >> $LIST
+echo "%{_bindir}/mpiexec"                     >> $LIST
 
 
 LIST=./bluegene.files
@@ -279,7 +269,7 @@ rm -rf $RPM_BUILD_ROOT
 %doc COPYING
 %doc etc/slurm.conf.example
 %doc doc/html
-%{_bindir}/*
+%{_bindir}/s*
 %{_sbindir}/slurmctld
 %{_sbindir}/slurmd
 %{_sbindir}/slurmstepd
