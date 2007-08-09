@@ -183,7 +183,7 @@ int compute_c_b_task_dist(struct select_cr_job *job,
 
 #if (CR_DEBUG)	
 	for (i = 0; i < job->nhosts; i++) {
-		info("cons_res _c_b_task_dist %u host %s nprocs %u maxtasks %u alloc_ lps %u", 
+		info("cons_res _c_b_task_dist %u host %s nprocs %u maxtasks %u alloc_lps %u", 
 		     job->job_id, job->host[i], job->nprocs, 
 		     maxtasks, job->alloc_lps[i]);
 	}
@@ -692,7 +692,7 @@ int cr_plane_dist(struct select_cr_job *job,
 
 #if(CR_DEBUG)	
 	for (i = 0; i < job->nhosts; i++) {
-		info("cons_res _cr_plane_dist %u host %s alloc_ lps %u ", 
+		info("cons_res _cr_plane_dist %u host %s alloc_lps %u ", 
 		     job->job_id, job->host[i],  job->alloc_lps[i]);
 	}
 #endif
