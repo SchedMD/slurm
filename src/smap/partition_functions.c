@@ -104,11 +104,11 @@ extern void get_slurm_part()
 	if (error_code) {
 		if (quiet_flag != 1) {
 			if(!params.commandline) {
-				mvwprintw(ba_system_ptr->text_win,
-					  ba_system_ptr->ycord, 1,
+				mvwprintw(text_win,
+					  main_ycord, 1,
 					  "slurm_load_partitions: %s",
 					  slurm_strerror(slurm_get_errno()));
-				ba_system_ptr->ycord++;
+				main_ycord++;
 			} else {
 				printf("slurm_load_partitions: %s\n",
 				       slurm_strerror(slurm_get_errno()));
@@ -125,7 +125,7 @@ extern void get_slurm_part()
 	else
 		recs = 0;
 	if (!params.commandline)
-		if((recs - text_line_cnt) < (ba_system_ptr->text_win->_maxy-3))
+		if((recs - text_line_cnt) < (text_win->_maxy-3))
 			text_line_cnt--;
 
 	for (i = 0; i < recs; i++) {
@@ -144,10 +144,10 @@ extern void get_slurm_part()
 		if(!params.commandline) {
 			if(i>=text_line_cnt) {
 				part.root_only = (int) letters[count%62];
-				wattron(ba_system_ptr->text_win,
+				wattron(text_win,
 					COLOR_PAIR(colors[count%6]));
 				_print_text_part(&part, NULL);
-				wattroff(ba_system_ptr->text_win,
+				wattroff(text_win,
 					 COLOR_PAIR(colors[count%6]));
 			}
 		} else {
@@ -198,11 +198,11 @@ extern void get_bg_part()
 	if (error_code) {
 		if (quiet_flag != 1) {
 			if(!params.commandline) {
-				mvwprintw(ba_system_ptr->text_win,
-					  ba_system_ptr->ycord, 1,
+				mvwprintw(text_win,
+					  main_ycord, 1,
 					  "slurm_load_partitions: %s",
 					  slurm_strerror(slurm_get_errno()));
-				ba_system_ptr->ycord++;
+				main_ycord++;
 			} else {
 				printf("slurm_load_partitions: %s\n",
 				       slurm_strerror(slurm_get_errno()));
@@ -226,11 +226,11 @@ extern void get_bg_part()
 	if (error_code) {
 		if (quiet_flag != 1) {
 			if(!params.commandline) {
-				mvwprintw(ba_system_ptr->text_win,
-					  ba_system_ptr->ycord, 1,
+				mvwprintw(text_win,
+					  main_ycord, 1,
 					  "slurm_load_node_select: %s",
 					  slurm_strerror(slurm_get_errno()));
-				ba_system_ptr->ycord++;
+				main_ycord++;
 			} else {
 				printf("slurm_load_node_select: %s\n",
 					  slurm_strerror(slurm_get_errno()));
@@ -250,7 +250,7 @@ extern void get_bg_part()
 	}
 	if (!params.commandline)
 		if((new_bg_ptr->record_count - text_line_cnt) 
-		   < (ba_system_ptr->text_win->_maxy-3))
+		   < (text_win->_maxy-3))
 			text_line_cnt--;
 	
 	for (i=0; i<new_bg_ptr->record_count; i++) {
@@ -434,57 +434,57 @@ static int _marknodes(db2_block_info_t *block_ptr, int count)
 static void _print_header_part(void)
 {
 	if(!params.commandline) {
-		mvwprintw(ba_system_ptr->text_win, ba_system_ptr->ycord,
-			  ba_system_ptr->xcord, "ID");
-		ba_system_ptr->xcord += 4;
-		mvwprintw(ba_system_ptr->text_win, ba_system_ptr->ycord,
-			  ba_system_ptr->xcord, "PARTITION");
-		ba_system_ptr->xcord += 10;
+		mvwprintw(text_win, main_ycord,
+			  main_xcord, "ID");
+		main_xcord += 4;
+		mvwprintw(text_win, main_ycord,
+			  main_xcord, "PARTITION");
+		main_xcord += 10;
 	
 		if (params.display != BGPART) {
-			mvwprintw(ba_system_ptr->text_win, 
-				  ba_system_ptr->ycord,
-				  ba_system_ptr->xcord, "AVAIL");
-			ba_system_ptr->xcord += 7;
-			mvwprintw(ba_system_ptr->text_win, 
-				  ba_system_ptr->ycord,
-				  ba_system_ptr->xcord, "TIMELIMIT");
-			ba_system_ptr->xcord += 11;
+			mvwprintw(text_win, 
+				  main_ycord,
+				  main_xcord, "AVAIL");
+			main_xcord += 7;
+			mvwprintw(text_win, 
+				  main_ycord,
+				  main_xcord, "TIMELIMIT");
+			main_xcord += 11;
 		} else {
-			mvwprintw(ba_system_ptr->text_win, 
-				  ba_system_ptr->ycord,
-				  ba_system_ptr->xcord, "BG_BLOCK");
-			ba_system_ptr->xcord += 18;
-			mvwprintw(ba_system_ptr->text_win, 
-				  ba_system_ptr->ycord,
-				  ba_system_ptr->xcord, "STATE");
-			ba_system_ptr->xcord += 8;
-			mvwprintw(ba_system_ptr->text_win, 
-				  ba_system_ptr->ycord,
-				  ba_system_ptr->xcord, "USER");
-			ba_system_ptr->xcord += 12;
-			mvwprintw(ba_system_ptr->text_win, 
-				  ba_system_ptr->ycord,
-				  ba_system_ptr->xcord, "CONN");
-			ba_system_ptr->xcord += 7;
-			mvwprintw(ba_system_ptr->text_win, 
-				  ba_system_ptr->ycord,
-				  ba_system_ptr->xcord, "NODE_USE");
-			ba_system_ptr->xcord += 10;
+			mvwprintw(text_win, 
+				  main_ycord,
+				  main_xcord, "BG_BLOCK");
+			main_xcord += 18;
+			mvwprintw(text_win, 
+				  main_ycord,
+				  main_xcord, "STATE");
+			main_xcord += 8;
+			mvwprintw(text_win, 
+				  main_ycord,
+				  main_xcord, "USER");
+			main_xcord += 12;
+			mvwprintw(text_win, 
+				  main_ycord,
+				  main_xcord, "CONN");
+			main_xcord += 7;
+			mvwprintw(text_win, 
+				  main_ycord,
+				  main_xcord, "NODE_USE");
+			main_xcord += 10;
 		}
 
-		mvwprintw(ba_system_ptr->text_win, ba_system_ptr->ycord,
-			  ba_system_ptr->xcord, "NODES");
-		ba_system_ptr->xcord += 7;
+		mvwprintw(text_win, main_ycord,
+			  main_xcord, "NODES");
+		main_xcord += 7;
 #ifdef HAVE_BG
-		mvwprintw(ba_system_ptr->text_win, ba_system_ptr->ycord,
-			  ba_system_ptr->xcord, "BP_LIST");
+		mvwprintw(text_win, main_ycord,
+			  main_xcord, "BP_LIST");
 #else
-		mvwprintw(ba_system_ptr->text_win, ba_system_ptr->ycord,
-			  ba_system_ptr->xcord, "NODELIST");
+		mvwprintw(text_win, main_ycord,
+			  main_xcord, "NODELIST");
 #endif
-		ba_system_ptr->xcord = 1;
-		ba_system_ptr->ycord++;
+		main_xcord = 1;
+		main_ycord++;
 	} else {
 		printf("PARTITION ");
 		if (params.display != BGPART) {
@@ -525,30 +525,30 @@ static int _print_text_part(partition_info_t *part_ptr,
 #endif
 
 	if(!params.commandline) {
-		mvwprintw(ba_system_ptr->text_win, 
-			  ba_system_ptr->ycord,
-			  ba_system_ptr->xcord, "%c", 
+		mvwprintw(text_win, 
+			  main_ycord,
+			  main_xcord, "%c", 
 			  part_ptr->root_only);
-		ba_system_ptr->xcord += 4;
+		main_xcord += 4;
 
 		if (part_ptr->name) {
-			mvwprintw(ba_system_ptr->text_win, 
-				  ba_system_ptr->ycord,
-				  ba_system_ptr->xcord, "%.9s", 
+			mvwprintw(text_win, 
+				  main_ycord,
+				  main_xcord, "%.9s", 
 				  part_ptr->name);
-			ba_system_ptr->xcord += 10;
+			main_xcord += 10;
 			if (params.display != BGPART) {
 				if (part_ptr->state_up)
-					mvwprintw(ba_system_ptr->text_win, 
-						  ba_system_ptr->ycord,
-						  ba_system_ptr->xcord, 
+					mvwprintw(text_win, 
+						  main_ycord,
+						  main_xcord, 
 						  "up");
 				else
-					mvwprintw(ba_system_ptr->text_win, 
-						  ba_system_ptr->ycord,
-						  ba_system_ptr->xcord, 
+					mvwprintw(text_win, 
+						  main_ycord,
+						  main_xcord, 
 						  "down");
-				ba_system_ptr->xcord += 7;
+				main_xcord += 7;
 			
 				if (part_ptr->max_time == INFINITE)
 					snprintf(time_buf, sizeof(time_buf), 
@@ -561,79 +561,79 @@ static int _print_text_part(partition_info_t *part_ptr,
 				}
 			
 				width = strlen(time_buf);
-				mvwprintw(ba_system_ptr->text_win, 
-					  ba_system_ptr->ycord,
-					  ba_system_ptr->xcord + (9 - width), 
+				mvwprintw(text_win, 
+					  main_ycord,
+					  main_xcord + (9 - width), 
 					  "%s", 
 					  time_buf);
-				ba_system_ptr->xcord += 11;
+				main_xcord += 11;
 			} 
 		} else
-			ba_system_ptr->xcord += 10;
+			main_xcord += 10;
 
 		if (params.display == BGPART) {
 			if (db2_info_ptr) {
-				mvwprintw(ba_system_ptr->text_win, 
-					  ba_system_ptr->ycord,
-					  ba_system_ptr->xcord, "%.16s", 
+				mvwprintw(text_win, 
+					  main_ycord,
+					  main_xcord, "%.16s", 
 					  db2_info_ptr->bg_block_name);
-				ba_system_ptr->xcord += 18;
-				mvwprintw(ba_system_ptr->text_win, 
-					  ba_system_ptr->ycord,
-					  ba_system_ptr->xcord, 
+				main_xcord += 18;
+				mvwprintw(text_win, 
+					  main_ycord,
+					  main_xcord, 
 					  bg_block_state_string(
 						  db2_info_ptr->state));
-				ba_system_ptr->xcord += 8;
+				main_xcord += 8;
 				
-				mvwprintw(ba_system_ptr->text_win, 
-					  ba_system_ptr->ycord,
-					  ba_system_ptr->xcord, "%.11s", 
+				mvwprintw(text_win, 
+					  main_ycord,
+					  main_xcord, "%.11s", 
 					  db2_info_ptr->bg_user_name);
-				ba_system_ptr->xcord += 12;
+				main_xcord += 12;
 			
-				mvwprintw(ba_system_ptr->text_win, 
-					  ba_system_ptr->ycord,
-					  ba_system_ptr->xcord, "%.5s", 
+				mvwprintw(text_win, 
+					  main_ycord,
+					  main_xcord, "%.5s", 
 					  _convert_conn_type(
 						  db2_info_ptr->
 						  bg_conn_type));
-				ba_system_ptr->xcord += 7;
-				mvwprintw(ba_system_ptr->text_win,
-					  ba_system_ptr->ycord,
-					  ba_system_ptr->xcord, "%.9s",
+				main_xcord += 7;
+				mvwprintw(text_win,
+					  main_ycord,
+					  main_xcord, "%.9s",
 					  _convert_node_use(
 						  db2_info_ptr->bg_node_use));
-				ba_system_ptr->xcord += 10;
+				main_xcord += 10;
 			} else {
-				mvwprintw(ba_system_ptr->text_win, 
-					  ba_system_ptr->ycord,
-					  ba_system_ptr->xcord, "?");
-				ba_system_ptr->xcord += 12;
-				mvwprintw(ba_system_ptr->text_win, 
-					  ba_system_ptr->ycord,
-					  ba_system_ptr->xcord, "?");
-				ba_system_ptr->xcord += 8;
-				mvwprintw(ba_system_ptr->text_win, 
-					  ba_system_ptr->ycord,
-					  ba_system_ptr->xcord, "?");
-				ba_system_ptr->xcord += 12;
-				mvwprintw(ba_system_ptr->text_win, 
-					  ba_system_ptr->ycord,
-					  ba_system_ptr->xcord, "?");
-				ba_system_ptr->xcord += 6;
-				mvwprintw(ba_system_ptr->text_win, 
-					  ba_system_ptr->ycord,
-					  ba_system_ptr->xcord, "?");
-				ba_system_ptr->xcord += 10;
+				mvwprintw(text_win, 
+					  main_ycord,
+					  main_xcord, "?");
+				main_xcord += 12;
+				mvwprintw(text_win, 
+					  main_ycord,
+					  main_xcord, "?");
+				main_xcord += 8;
+				mvwprintw(text_win, 
+					  main_ycord,
+					  main_xcord, "?");
+				main_xcord += 12;
+				mvwprintw(text_win, 
+					  main_ycord,
+					  main_xcord, "?");
+				main_xcord += 6;
+				mvwprintw(text_win, 
+					  main_ycord,
+					  main_xcord, "?");
+				main_xcord += 10;
 			}
 		}
-		mvwprintw(ba_system_ptr->text_win, 
-			  ba_system_ptr->ycord,
-			  ba_system_ptr->xcord, "%5s", tmp_cnt);
+		mvwprintw(text_win, 
+			  main_ycord,
+			  main_xcord, "%5s", tmp_cnt);
 			  
-		ba_system_ptr->xcord += 7;
+		main_xcord += 7;
 
-		tempxcord = ba_system_ptr->xcord;
+		tempxcord = main_xcord;
 		
 		if (params.display == BGPART)
 			nodes = part_ptr->allow_groups;
@@ -642,42 +642,42 @@ static int _print_text_part(partition_info_t *part_ptr,
 		i=0;
 		prefixlen = i;
 		while (nodes && nodes[i]) {
-			width = ba_system_ptr->text_win->_maxx 
-				- ba_system_ptr->xcord;
+			width = text_win->_maxx 
+				- main_xcord;
 
 			if (!prefixlen && nodes[i] == '[' 
 			    && nodes[i - 1] == ',')
 				prefixlen = i + 1;
 
 			if (nodes[i - 1] == ',' && (width - 12) <= 0) {
-				ba_system_ptr->ycord++;
-				ba_system_ptr->xcord = tempxcord + prefixlen;
-			} else if (ba_system_ptr->xcord >
-				   ba_system_ptr->text_win->_maxx) {
-				ba_system_ptr->ycord++;
-				ba_system_ptr->xcord = tempxcord + prefixlen;
+				main_ycord++;
+				main_xcord = tempxcord + prefixlen;
+			} else if (main_xcord >
+				   text_win->_maxx) {
+				main_ycord++;
+				main_xcord = tempxcord + prefixlen;
 			}
 
 
-			if ((printed = mvwaddch(ba_system_ptr->text_win,
-						ba_system_ptr->ycord, 
-						ba_system_ptr->xcord,
+			if ((printed = mvwaddch(text_win,
+						main_ycord, 
+						main_xcord,
 						nodes[i])) < 0)
 				return printed;
-			ba_system_ptr->xcord++;
+			main_xcord++;
 
 			i++;
 		}
 		if((params.display == BGPART) && db2_info_ptr
 		   && (db2_info_ptr->ionodes)) {
-			mvwprintw(ba_system_ptr->text_win, 
-				  ba_system_ptr->ycord,
-				  ba_system_ptr->xcord, "[%s]", 
+			mvwprintw(text_win, 
+				  main_ycord,
+				  main_xcord, "[%s]", 
 				  db2_info_ptr->ionodes);
 		}
 		
-		ba_system_ptr->xcord = 1;
-		ba_system_ptr->ycord++;
+		main_xcord = 1;
+		main_ycord++;
 	} else {
 		if (part_ptr->name) {
 			printf("%9.9s ", part_ptr->name);
@@ -820,10 +820,10 @@ static int _print_rest(db2_block_info_t *block_ptr)
 	part.allow_groups = block_ptr->nodes;
 	part.root_only = (int) letters[block_ptr->letter_num%62];
 	if(!params.commandline) {
-		wattron(ba_system_ptr->text_win, 
+		wattron(text_win, 
 			COLOR_PAIR(colors[block_ptr->letter_num%6]));
 		_print_text_part(&part, block_ptr);
-		wattroff(ba_system_ptr->text_win,
+		wattroff(text_win,
 			 COLOR_PAIR(colors[block_ptr->letter_num%6]));
 	} else {
 		_print_text_part(&part, block_ptr);			

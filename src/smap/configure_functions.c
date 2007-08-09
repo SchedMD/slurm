@@ -528,7 +528,7 @@ resolve_error:
 			sprintf(error_string, 
 				"Must be on BG SN to resolve.\n"); 
 #endif
-	wnoutrefresh(ba_system_ptr->text_win);
+	wnoutrefresh(text_win);
 	doupdate();
 
 	return 1;
@@ -909,9 +909,9 @@ static int _save_allocation(char *com, List allocated_blocks)
 			}
 		}
 	if(filename[0]=='\0') {
-		ba_system_ptr->now_time = time(NULL);		
+		time_t now_time = time(NULL);		
 		sprintf(filename,"bluegene.conf.%ld",
-			(long int) ba_system_ptr->now_time);
+			(long int) now_time);
 	}
 	file_ptr = fopen(filename,"w");
 	if (file_ptr!=NULL) {
@@ -1186,102 +1186,102 @@ static int _load_configuration(char *com, List allocated_blocks)
 
 static void _print_header_command(void)
 {
-	ba_system_ptr->ycord=2;
-	mvwprintw(ba_system_ptr->text_win, ba_system_ptr->ycord,
-		  ba_system_ptr->xcord, "ID");
-	ba_system_ptr->xcord += 4;
-	mvwprintw(ba_system_ptr->text_win, ba_system_ptr->ycord,
-		  ba_system_ptr->xcord, "TYPE");
-	ba_system_ptr->xcord += 7;
-	mvwprintw(ba_system_ptr->text_win, ba_system_ptr->ycord,
-		  ba_system_ptr->xcord, "ROTATE");
-	ba_system_ptr->xcord += 7;
-	mvwprintw(ba_system_ptr->text_win, ba_system_ptr->ycord,
-		  ba_system_ptr->xcord, "ELONG");
-	ba_system_ptr->xcord += 7;
+	main_ycord=2;
+	mvwprintw(text_win, main_ycord,
+		  main_xcord, "ID");
+	main_xcord += 4;
+	mvwprintw(text_win, main_ycord,
+		  main_xcord, "TYPE");
+	main_xcord += 7;
+	mvwprintw(text_win, main_ycord,
+		  main_xcord, "ROTATE");
+	main_xcord += 7;
+	mvwprintw(text_win, main_ycord,
+		  main_xcord, "ELONG");
+	main_xcord += 7;
 #ifdef HAVE_BG
-	mvwprintw(ba_system_ptr->text_win, ba_system_ptr->ycord,
-		  ba_system_ptr->xcord, "BP_COUNT");
+	mvwprintw(text_win, main_ycord,
+		  main_xcord, "BP_COUNT");
 #else
-	mvwprintw(ba_system_ptr->text_win, ba_system_ptr->ycord,
-		  ba_system_ptr->xcord, "NODES");
+	mvwprintw(text_win, main_ycord,
+		  main_xcord, "NODES");
 #endif
-	ba_system_ptr->xcord += 10;
-	mvwprintw(ba_system_ptr->text_win, ba_system_ptr->ycord,
-		  ba_system_ptr->xcord, "NODECARDS");
-	ba_system_ptr->xcord += 11;
-	mvwprintw(ba_system_ptr->text_win, ba_system_ptr->ycord,
-		  ba_system_ptr->xcord, "QUARTERS");
-	ba_system_ptr->xcord += 10;
+	main_xcord += 10;
+	mvwprintw(text_win, main_ycord,
+		  main_xcord, "NODECARDS");
+	main_xcord += 11;
+	mvwprintw(text_win, main_ycord,
+		  main_xcord, "QUARTERS");
+	main_xcord += 10;
 #ifdef HAVE_BG
-	mvwprintw(ba_system_ptr->text_win, ba_system_ptr->ycord,
-		  ba_system_ptr->xcord, "BP_LIST");
+	mvwprintw(text_win, main_ycord,
+		  main_xcord, "BP_LIST");
 #else
-	mvwprintw(ba_system_ptr->text_win, ba_system_ptr->ycord,
-		  ba_system_ptr->xcord, "NODELIST");
+	mvwprintw(text_win, main_ycord,
+		  main_xcord, "NODELIST");
 #endif
-	ba_system_ptr->xcord = 1;
-	ba_system_ptr->ycord++;
+	main_xcord = 1;
+	main_ycord++;
 }
 
 static void _print_text_command(allocated_block_t *allocated_block)
 {
-	wattron(ba_system_ptr->text_win,
+	wattron(text_win,
 		COLOR_PAIR(allocated_block->color));
 			
-	mvwprintw(ba_system_ptr->text_win, ba_system_ptr->ycord,
-		  ba_system_ptr->xcord, "%c",allocated_block->letter);
-	ba_system_ptr->xcord += 4;
+	mvwprintw(text_win, main_ycord,
+		  main_xcord, "%c",allocated_block->letter);
+	main_xcord += 4;
 	if(allocated_block->request->conn_type==SELECT_TORUS) 
-		mvwprintw(ba_system_ptr->text_win, ba_system_ptr->ycord,
-			  ba_system_ptr->xcord, "TORUS");
+		mvwprintw(text_win, main_ycord,
+			  main_xcord, "TORUS");
 	else if (allocated_block->request->conn_type==SELECT_MESH)
-		mvwprintw(ba_system_ptr->text_win, ba_system_ptr->ycord,
-			  ba_system_ptr->xcord, "MESH");
+		mvwprintw(text_win, main_ycord,
+			  main_xcord, "MESH");
 	else 
-		mvwprintw(ba_system_ptr->text_win, ba_system_ptr->ycord,
-			  ba_system_ptr->xcord, "SMALL");
-	ba_system_ptr->xcord += 7;
+		mvwprintw(text_win, main_ycord,
+			  main_xcord, "SMALL");
+	main_xcord += 7;
 				
 	if(allocated_block->request->rotate)
-		mvwprintw(ba_system_ptr->text_win, ba_system_ptr->ycord,
-			  ba_system_ptr->xcord, "Y");
+		mvwprintw(text_win, main_ycord,
+			  main_xcord, "Y");
 	else
-		mvwprintw(ba_system_ptr->text_win, ba_system_ptr->ycord,
-			  ba_system_ptr->xcord, "N");
-	ba_system_ptr->xcord += 7;
+		mvwprintw(text_win, main_ycord,
+			  main_xcord, "N");
+	main_xcord += 7;
 				
 	if(allocated_block->request->elongate)
-		mvwprintw(ba_system_ptr->text_win, ba_system_ptr->ycord,
-			  ba_system_ptr->xcord, "Y");
+		mvwprintw(text_win, main_ycord,
+			  main_xcord, "Y");
 	else
-		mvwprintw(ba_system_ptr->text_win, ba_system_ptr->ycord,
-			  ba_system_ptr->xcord, "N");
-	ba_system_ptr->xcord += 7;
+		mvwprintw(text_win, main_ycord,
+			  main_xcord, "N");
+	main_xcord += 7;
 
-	mvwprintw(ba_system_ptr->text_win, ba_system_ptr->ycord,
-		  ba_system_ptr->xcord, "%d",allocated_block->request->size);
-	ba_system_ptr->xcord += 10;
+	mvwprintw(text_win, main_ycord,
+		  main_xcord, "%d",allocated_block->request->size);
+	main_xcord += 10;
 	
 	if(allocated_block->request->conn_type == SELECT_SMALL) {
-		mvwprintw(ba_system_ptr->text_win, ba_system_ptr->ycord,
-			  ba_system_ptr->xcord, "%d", 
+		mvwprintw(text_win, main_ycord,
+			  main_xcord, "%d", 
 			  allocated_block->request->nodecards);
-		ba_system_ptr->xcord += 11;
-		mvwprintw(ba_system_ptr->text_win, ba_system_ptr->ycord,
-			  ba_system_ptr->xcord, "%d", 
+		main_xcord += 11;
+		mvwprintw(text_win, main_ycord,
+			  main_xcord, "%d", 
 			  allocated_block->request->quarters);
-		ba_system_ptr->xcord += 10;
+		main_xcord += 10;
 		
 	} else
-		ba_system_ptr->xcord += 21;
+		main_xcord += 21;
 	
-	mvwprintw(ba_system_ptr->text_win, ba_system_ptr->ycord,
-		  ba_system_ptr->xcord, "%s",
+	mvwprintw(text_win, main_ycord,
+		  main_xcord, "%s",
 		  allocated_block->request->save_name);
-	ba_system_ptr->xcord = 1;
-	ba_system_ptr->ycord++;
-	wattroff(ba_system_ptr->text_win,
+	main_xcord = 1;
+	main_ycord++;
+	wattroff(text_win,
 		 COLOR_PAIR(allocated_block->color));
 	return;
 }
@@ -1308,17 +1308,17 @@ void get_command(void)
 	init_wires();
 	allocated_blocks = list_create(NULL);
 				
-	text_width = ba_system_ptr->text_win->_maxx;	
-	text_startx = ba_system_ptr->text_win->_begx;
+	text_width = text_win->_maxx;	
+	text_startx = text_win->_begx;
 	command_win = newwin(3, text_width - 1, LINES - 4, text_startx + 1);
 	echo();
 	
 	while (strcmp(com, "quit")) {
-		clear_window(ba_system_ptr->grid_win);
+		clear_window(grid_win);
 		print_grid(0);
-		clear_window(ba_system_ptr->text_win);
-		box(ba_system_ptr->text_win, 0, 0);
-		box(ba_system_ptr->grid_win, 0, 0);
+		clear_window(text_win);
+		box(text_win, 0, 0);
+		box(grid_win, 0, 0);
 		
 		if (!params.no_header)
 			_print_header_command();
@@ -1327,25 +1327,25 @@ void get_command(void)
 			i=0;
 			while(error_string[i]!='\0') {
 				if(error_string[i]=='\n') {
-					ba_system_ptr->ycord++;
-					ba_system_ptr->xcord=1;
+					main_ycord++;
+					main_xcord=1;
 					i++;
 				}
-				mvwprintw(ba_system_ptr->text_win, 
-					  ba_system_ptr->ycord,
-					  ba_system_ptr->xcord, 
+				mvwprintw(text_win, 
+					  main_ycord,
+					  main_xcord, 
 					  "%c",
 					  error_string[i++]);
-				ba_system_ptr->xcord++;
+				main_xcord++;
 			}
-			ba_system_ptr->ycord++;
-			ba_system_ptr->xcord=1;	
+			main_ycord++;
+			main_xcord=1;	
 			memset(error_string,0,255);			
 		}
 		results_i = list_iterator_create(allocated_blocks);
 		
 		count = list_count(allocated_blocks) 
-			- (LINES-(ba_system_ptr->ycord+5)); 
+			- (LINES-(main_ycord+5)); 
 		
 		if(count<0)
 			count=0;
@@ -1357,8 +1357,8 @@ void get_command(void)
 		}
 		list_iterator_destroy(results_i);		
 		
-		wnoutrefresh(ba_system_ptr->text_win);
-		wnoutrefresh(ba_system_ptr->grid_win);
+		wnoutrefresh(text_win);
+		wnoutrefresh(grid_win);
 		doupdate();
 		clear_window(command_win);
 		
@@ -1386,13 +1386,13 @@ void get_command(void)
 			   !strncasecmp(com, "r ", 2)) {
 			_resolve(com);
 		} else if (!strncasecmp(com, "resume", 6)) {
-			mvwprintw(ba_system_ptr->text_win,
-				ba_system_ptr->ycord,
-				ba_system_ptr->xcord, "%s", com);
+			mvwprintw(text_win,
+				main_ycord,
+				main_xcord, "%s", com);
 		} else if (!strncasecmp(com, "drain", 5)) {
-			mvwprintw(ba_system_ptr->text_win, 
-				ba_system_ptr->ycord, 
-				ba_system_ptr->xcord, "%s", com);
+			mvwprintw(text_win, 
+				main_ycord, 
+				main_xcord, "%s", com);
 		} else if (!strncasecmp(com, "alldown", 7)) {
 			_change_state_all_bps(com, NODE_STATE_DOWN);
 		} else if (!strncasecmp(com, "down", 4)) {
@@ -1430,9 +1430,9 @@ void get_command(void)
 	params.display = 0;
 	noecho();
 	
-	clear_window(ba_system_ptr->text_win);
-	ba_system_ptr->xcord = 1;
-	ba_system_ptr->ycord = 1;
+	clear_window(text_win);
+	main_xcord = 1;
+	main_ycord = 1;
 	print_date();
 	get_job(0);
 	return;

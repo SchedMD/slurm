@@ -186,16 +186,7 @@ typedef struct {
 } ba_node_t;
 
 typedef struct {
-	int xcord;
-	int ycord;
 	int num_of_proc;
-	int resize_screen;
-
-#ifdef HAVE_CURSES_H
- 	WINDOW *grid_win;
-	WINDOW *text_win;
-#endif
-	time_t now_time;
 
 	/* made to hold info about a system, which right now is only a grid of ba_nodes*/
 #ifdef HAVE_BG

@@ -49,16 +49,6 @@
 #  include "config.h"
 #endif
 
-#if HAVE_CURSES_H
-#  include <curses.h>
-#endif
-#if HAVE_NCURSES_H
-#  include <ncurses.h>
-#  ifndef HAVE_CURSES_H
-#     define HAVE_CURSES_H
-#  endif
-#endif
-
 #include "src/api/node_select_info.h"
 #include "src/common/read_config.h"
 #include "src/common/parse_spec.h"
