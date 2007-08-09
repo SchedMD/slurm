@@ -16,7 +16,7 @@ int
 trigger_info_to_hv(trigger_info_t* trigger_info, HV* hv)
 {
 	STORE_FIELD(hv, trigger_info, trig_id, uint32_t);
-	STORE_FIELD(hv, trigger_info, res_type, uint8_t);
+	STORE_FIELD(hv, trigger_info, res_type, uint16_t);
 	if(trigger_info->res_id)
 		STORE_FIELD(hv, trigger_info, res_id, charp);
 	STORE_FIELD(hv, trigger_info, trig_type, uint16_t);

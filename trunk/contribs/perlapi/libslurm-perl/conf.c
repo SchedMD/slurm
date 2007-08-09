@@ -23,6 +23,7 @@ slurm_ctl_conf_to_hv(slurm_ctl_conf_t* conf, HV* hv)
 		STORE_FIELD(hv, conf, backup_addr, charp);
 	if(conf->backup_controller)
 		STORE_FIELD(hv, conf, backup_controller, charp);
+	STORE_FIELD(hv, conf, boot_time, time_t);
 	STORE_FIELD(hv, conf, cache_groups, uint16_t);
 	if(conf->checkpoint_type)
 		STORE_FIELD(hv, conf, checkpoint_type, charp);
@@ -30,17 +31,28 @@ slurm_ctl_conf_to_hv(slurm_ctl_conf_t* conf, HV* hv)
 		STORE_FIELD(hv, conf, control_addr, charp);
 	if(conf->control_machine)
 		STORE_FIELD(hv, conf, control_machine, charp);
+	if(conf->crypto_type)
+		STORE_FIELD(hv, conf, crypto_type, charp);
 	if(conf->epilog)
 		STORE_FIELD(hv, conf, epilog, charp);
 	STORE_FIELD(hv, conf, first_job_id, uint32_t);
 	STORE_FIELD(hv, conf, next_job_id, uint32_t);
 	STORE_FIELD(hv, conf, fast_schedule, uint16_t);
 	STORE_FIELD(hv, conf, inactive_limit, uint16_t);
-	if(conf->job_acct_logfile)
-		STORE_FIELD(hv, conf, job_acct_logfile, charp);
+	if(conf->job_acct_loc)
+		STORE_FIELD(hv, conf, job_acct_loc, charp);
 	STORE_FIELD(hv, conf, job_acct_freq, uint16_t);
 	if(conf->job_acct_type)
 		STORE_FIELD(hv, conf, job_acct_type, charp);
+	if(conf->database_type)
+		STORE_FIELD(hv, conf, database_type, charp);
+	if(conf->database_user)
+		STORE_FIELD(hv, conf, database_user, charp);
+	if(conf->database_host)
+		STORE_FIELD(hv, conf, database_host, charp);
+	if(conf->database_pass)
+		STORE_FIELD(hv, conf, database_pass, charp);
+	STORE_FIELD(hv, conf, database_port, uint32_t);
 	if(conf->job_comp_type)
 		STORE_FIELD(hv, conf, job_comp_type, charp);
 	if(conf->job_comp_loc)
@@ -57,6 +69,7 @@ slurm_ctl_conf_to_hv(slurm_ctl_conf_t* conf, HV* hv)
 		STORE_FIELD(hv, conf, plugindir, charp);
 	if(conf->plugstack)
 		STORE_FIELD(hv, conf, plugstack, charp);
+	STORE_FIELD(hv, conf, private_data, uint16_t);
 	if(conf->proctrack_type)
 		STORE_FIELD(hv, conf, proctrack_type, charp);
 	if(conf->prolog)
@@ -67,6 +80,9 @@ slurm_ctl_conf_to_hv(slurm_ctl_conf_t* conf, HV* hv)
 	if(conf->propagate_rlimits_except)
 		STORE_FIELD(hv, conf, propagate_rlimits_except, charp);
 	STORE_FIELD(hv, conf, ret2service, uint16_t);
+	STORE_FIELD(hv, conf, resume_rate, uint16_t);
+	if(conf->resume_program)
+		STORE_FIELD(hv, conf, resume_program, charp);
 	if(conf->schedtype)
 		STORE_FIELD(hv, conf, schedtype, charp);
 	STORE_FIELD(hv, conf, schedport, uint16_t);
@@ -97,6 +113,14 @@ slurm_ctl_conf_to_hv(slurm_ctl_conf_t* conf, HV* hv)
 		STORE_FIELD(hv, conf, slurm_conf, charp);
 	if(conf->state_save_location)
 		STORE_FIELD(hv, conf, state_save_location, charp);
+	if(conf->suspend_exc_nodes)
+		STORE_FIELD(hv, conf, suspend_exc_nodes, charp);
+	if(conf->suspend_exc_parts)
+		STORE_FIELD(hv, conf, suspend_exc_parts, charp);
+	if(conf->suspend_program)
+		STORE_FIELD(hv, conf, suspend_program, charp);
+	STORE_FIELD(hv, conf, suspend_rate, uint16_t);
+	STORE_FIELD(hv, conf, suspend_time, uint16_t);
 	if(conf->switch_type)
 		STORE_FIELD(hv, conf, switch_type, charp);
 	if(conf->task_epilog)
