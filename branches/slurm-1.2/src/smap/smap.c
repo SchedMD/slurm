@@ -58,6 +58,12 @@ smap_parameters_t params;
 int quiet_flag = 0;
 int grid_line_cnt = 0;
 int max_display;
+int resize_screen = 0;
+
+int main_xcord = 1;
+int main_ycord = 1;
+WINDOW *grid_win = NULL;
+WINDOW *text_win = NULL;
 		
 /************
  * Functions *
@@ -185,13 +191,9 @@ part_fini:
 		start_color();
 		_set_pairs();
 		
-		ba_system_ptr->grid_win = newwin(height, 
-						 width, 
-						 starty, 
-						 startx);
-		max_display = ba_system_ptr->grid_win->_maxy
-			*ba_system_ptr->grid_win->_maxx;
-		//scrollok(ba_system_ptr->grid_win, TRUE);
+		grid_win = newwin(height, width, starty, startx);
+		max_display = grid_win->_maxy * grid_win->_maxx;
+		//scrollok(grid_win, TRUE);
 		
 #ifdef HAVE_BG
 		startx = width;
@@ -205,23 +207,20 @@ part_fini:
 		
 #endif
 		
-		ba_system_ptr->text_win = newwin(height, 
-						 width, 
-						 starty, 
-						 startx);
+		text_win = newwin(height, width, starty, startx);
         }
 	while (!end) {
 		if(!params.commandline) {
 			_get_option();
 		redraw:
 			
-			clear_window(ba_system_ptr->text_win);
-			clear_window(ba_system_ptr->grid_win);
+			clear_window(text_win);
+			clear_window(grid_win);
 			move(0,0);
 			
 			init_grid(new_node_ptr);
-			ba_system_ptr->xcord = 1;
-			ba_system_ptr->ycord = 1;
+			main_xcord = 1;
+			main_ycord = 1;
 		}
 		print_date();
 		switch (params.display) {
@@ -235,7 +234,7 @@ part_fini:
 		case COMMANDS:
 			if(!mapset) {
 				mapset = set_bp_map();
-				wclear(ba_system_ptr->text_win);
+				wclear(text_win);
 				//doupdate();
 				//move(0,0);
 			}
@@ -255,14 +254,13 @@ part_fini:
 		}
 			
 		if(!params.commandline) {
-			//wscrl(ba_system_ptr->grid_win,-1);
-			box(ba_system_ptr->text_win, 0, 0);
-			wnoutrefresh(ba_system_ptr->text_win);
+			//wscrl(grid_win,-1);
+			box(text_win, 0, 0);
+			wnoutrefresh(text_win);
 			
-			print_grid(grid_line_cnt*
-				     (ba_system_ptr->grid_win->_maxx-1));
-			box(ba_system_ptr->grid_win, 0, 0);
-			wnoutrefresh(ba_system_ptr->grid_win);
+			print_grid(grid_line_cnt * (grid_win->_maxx-1));
+			box(grid_win, 0, 0);
+			wnoutrefresh(grid_win);
 			
 			doupdate();
 			
@@ -286,13 +284,13 @@ part_fini:
 			if (error_code && (quiet_flag != 1)) {
 				if(!params.commandline) {
 					mvwprintw(
-						ba_system_ptr->text_win,
-						ba_system_ptr->ycord, 
+						text_win,
+						main_ycord, 
 						1,
 						"slurm_load_node: %s",
 						slurm_strerror(
 							slurm_get_errno()));
-					ba_system_ptr->ycord++;
+					main_ycord++;
 				} else {
 					printf("slurm_load_node: %s",
 					       slurm_strerror(
@@ -308,10 +306,8 @@ part_fini:
 				if(!params.commandline) {
 					if ((rc = _get_option()) == 1)
 						goto redraw;
-					else if (ba_system_ptr->
-						 resize_screen) {
-						ba_system_ptr->
-							resize_screen = 0;
+					else if (resize_screen) {
+						resize_screen = 0;
 						goto redraw;
 					}
 				}
@@ -393,7 +389,7 @@ static int _get_option()
 	case 'd':
 	case KEY_DOWN:
 		grid_line_cnt++;
-		if((((grid_line_cnt-2)*(ba_system_ptr->grid_win->_maxx-1)) + 
+		if((((grid_line_cnt-2) * (grid_win->_maxx-1)) + 
 		    max_display) > DIM_SIZE[X]) {
 			grid_line_cnt--;
 			return 0;		
@@ -416,14 +412,14 @@ static void *_resize_handler(int sig)
 {
 	int startx=0, starty=0;
 	int height, width;
-	ba_system_ptr->ycord = 1;
+	main_ycord = 1;
 	
 	/* clear existing data and update to avoid ghost during resize */
-	clear_window(ba_system_ptr->text_win);
-	clear_window(ba_system_ptr->grid_win);
+	clear_window(text_win);
+	clear_window(grid_win);
 	doupdate();
-	delwin(ba_system_ptr->grid_win);
-	delwin(ba_system_ptr->text_win);
+	delwin(grid_win);
+	delwin(text_win);
 	
 	endwin();
 	COLS=0;
@@ -452,9 +448,8 @@ static void *_resize_handler(int sig)
 		exit(0);
 	}
         
-	ba_system_ptr->grid_win = newwin(height, width, starty, startx);
-	max_display = ba_system_ptr->grid_win->_maxy*
-		ba_system_ptr->grid_win->_maxx;
+	grid_win = newwin(height, width, starty, startx);
+	max_display = grid_win->_maxy * grid_win->_maxx;
 		
 #ifdef HAVE_BG
 	startx = width;
@@ -468,7 +463,7 @@ static void *_resize_handler(int sig)
 	
 #endif
 	
-	ba_system_ptr->text_win = newwin(height, width, starty, startx);
+	text_win = newwin(height, width, starty, startx);
 	
 	print_date();
 	switch (params.display) {
@@ -488,13 +483,13 @@ static void *_resize_handler(int sig)
 #endif
 	}
 
-	print_grid(grid_line_cnt*(ba_system_ptr->grid_win->_maxx-1));
-	box(ba_system_ptr->text_win, 0, 0);
-	box(ba_system_ptr->grid_win, 0, 0);
-	wnoutrefresh(ba_system_ptr->text_win);
-	wnoutrefresh(ba_system_ptr->grid_win);
+	print_grid(grid_line_cnt * (grid_win->_maxx-1));
+	box(text_win, 0, 0);
+	box(grid_win, 0, 0);
+	wnoutrefresh(text_win);
+	wnoutrefresh(grid_win);
 	doupdate();
-	ba_system_ptr->resize_screen = 1;
+	resize_screen = 1;
 	return NULL;
 }
 

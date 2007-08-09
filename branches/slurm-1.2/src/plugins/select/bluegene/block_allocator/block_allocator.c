@@ -804,10 +804,7 @@ extern void ba_init(node_info_msg_t *node_info_ptr)
 	
 	ba_system_ptr = (ba_system_t *) xmalloc(sizeof(ba_system_t));
 	
-	ba_system_ptr->xcord = 1;
-	ba_system_ptr->ycord = 1;
 	ba_system_ptr->num_of_proc = 0;
-	ba_system_ptr->resize_screen = 0;
 	
 	if(node_info_ptr!=NULL) {
 #ifdef HAVE_BG

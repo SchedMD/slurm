@@ -17,6 +17,8 @@ documents those changes that are of interest to users and admins.
     slurm proper such as a different api or such.
  -- In sched/wiki2: add support for tasklist with node name expressions 
     and task counts (e.g. TASKLIST=tux[1-4]*2:tux[12-14]*4")
+ -- Removed all curses info from the bluegene plugin putting it into smap
+    where it belongs.  
 
 * Changes in SLURM 1.2.12
 =========================
