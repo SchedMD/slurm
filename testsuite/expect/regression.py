@@ -140,19 +140,23 @@ def main(argv=None):
         sys.stdout.flush()
 
 def test_cmp(testA, testB):
-    if testA[0] < testB[0]:
-        return -1
-    elif testA[0] > testB[0]:
-        return 1
-    else:
-        if testA[1] < testB[1]:
-            return -1
-        elif testA[1] > testB[1]:
-            return 1
-        else:
-            return 0
+    rc = cmp(testA[0], testB[0])
+    if rc != 0:
+        return rc
+    return cmp(testA[1], testB[1])
 
 def test_in_list(major, minor, test_list):
+    '''Test for whether a test numbered major.minor is in test_list.
+
+    "major" and "minor" must be integers.  "test_list" is a list of
+    tuples, each tuple representing one test.  The tuples are of the
+    form:
+
+       (major, minor, filename)
+
+    Returns True if the test is in the list, and False otherwise.
+    '''
+
     if not test_list:
         return False
     for test in test_list:
@@ -162,15 +166,38 @@ def test_in_list(major, minor, test_list):
     return False
 
 def test_parser(option, opt_str, value, parser):
-    splitter = re.compile('[,\s]+')
-    # On error: raise OptionValueError
-    # parser.values.exclude
-    # setattr(parser.values, option.dest, 1)
+    '''Option callback function for the optparse.OptionParser class.
+
+    Will take a string representing one or more test names and append
+    a tuple representing the test into a list in the options's destination
+    variable.
+
+    A string representing test names must patch the regular expression
+    named "test_re" below.  Some examples of exceptable options are:
+
+        '1.5'
+        'test9.8'
+        '2.6 test3.1 14.2'
+        '3.4,6.7,8.3'
+        '1.*'
+        '*.2'
+        '1.*,3.8,9.2'
+
+    Raises OptionValueError on error.
+    '''
+
+    # Initialize the option's destination array, if is does not already exist.
     if not hasattr(parser.values, option.dest):
         setattr(parser.values, option.dest, [])
     if getattr(parser.values, option.dest) is None:
         setattr(parser.values, option.dest, [])
+
+    # Get a pointer to the option's destination array.
     l = getattr(parser.values, option.dest)
+
+    # Split the user's option string into a series of tuples that represent
+    # each test, and add each tuple to the destination array.
+    splitter = re.compile('[,\s]+')
     val = splitter.split(value)
     test_re = re.compile('(test)?((\d+)|\*)\.((\d+)|\*)$')
     for v in val:
@@ -186,6 +213,13 @@ def test_parser(option, opt_str, value, parser):
         l.append((major, minor))
 
 class poor_Popen_substitute:
+    '''subprocess.Popen work-alike function.
+
+    The subprocess module and its subprocess.Popen class were
+    added in Python 2.4.  This function is provided to supply the
+    subset of Popen functionality need by this program if run under
+    older python interpreters.
+    '''
     def __init__(self, args, shell=False, stdout=None, stderr=None):
         if shell is not False:
             raise Exception("This substitute Popen only supports shell=True")
