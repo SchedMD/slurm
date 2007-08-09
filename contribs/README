@@ -1,0 +1,17 @@
+This is the contribs dir for SLURM.  
+
+SOURCE DISTRIBUTION HIERARCHY
+-----------------------------
+
+Subdirectories contain the source-code for the various contributations for
+SLURM as their documentation. A quick description of the subdirectories
+of the SLURM contribs distribution follows:
+
+  perlapi/        [ Perl API to SLURM source ]
+     API to SLURM using perl.  Making available all SLURM command that exist
+     in the SLURM proper API.
+
+  torque/         [ Wrapper Scripts for Torque migration to SLURM ]
+     Helpful scripts to make transition to SLURM easier from PBS or Torque.  
+     These scripts are easily updatable if there is functionality missing.
+

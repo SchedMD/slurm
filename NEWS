@@ -12,6 +12,9 @@ documents those changes that are of interest to users and admins.
     from the user when excluding nodes, to avoid an error message.
  -- Disable salloc, sbatch and srun -I/--immediate options with 
     Moab scheduler.
+ -- Added contribs dir with a perl api and torque wrappers for torque to slurm
+    migration.  This dir should be used to put anything that is outside of 
+    slurm proper such as a different api or such.
 
 * Changes in SLURM 1.2.12
 =========================
