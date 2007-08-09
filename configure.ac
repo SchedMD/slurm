@@ -246,6 +246,10 @@ dnl All slurm Makefiles:
 AC_CONFIG_FILES([Makefile
 		 config.xml 
 		 auxdir/Makefile
+		 contribs/Makefile
+		 contribs/perlapi/Makefile
+		 contribs/perlapi/libslurm-perl/Makefile.PL
+		 contribs/torque/Makefile
 		 src/Makefile 
 		 src/api/Makefile 
 		 src/common/Makefile
@@ -341,4 +345,3 @@ AC_CONFIG_FILES([Makefile
 )
 
 AC_OUTPUT
-
