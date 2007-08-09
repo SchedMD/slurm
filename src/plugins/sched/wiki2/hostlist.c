@@ -35,10 +35,24 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#if HAVE_CONFIG_H
+#  include "config.h"
+#  if HAVE_INTTYPES_H
+#    include <inttypes.h>
+#  else
+#    if HAVE_STDINT_H
+#      include <stdint.h>
+#    endif
+#  endif  /* HAVE_INTTYPES_H */
+#else   /* !HAVE_CONFIG_H */
+#  include <inttypes.h>
+#endif  /*  HAVE_CONFIG_H */
+
 #include <stdlib.h>
 #include <string.h>
 
 #include "src/common/hostlist.h"
+#include "src/common/node_select.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
@@ -48,7 +62,8 @@
  * Moab format 1: tux0:tux0:tux1:tux1:tux2   (list host for each cpu)
  * Moab format 2: tux[0-1]*2:tux2            (list cpu count after host name)
  *
- * SLURM format:  tux0,tux0,tux1,tux1,tux2
+ * SLURM format:  tux0,tux0,tux1,tux1,tux2   (if consumable resources enabled)
+ * SLURM format:  tux0,tux1,tux2             (if consumable resources disabled)
  *
  * NOTE: returned string must be released with xfree()
  */
@@ -57,6 +72,13 @@ extern char * moab2slurm_task_list(char *moab_tasklist, int *task_cnt)
 	char *slurm_tasklist, *host, *tmp1, *tmp2, *tok, *tok_p;
 	int i, reps;
 	hostlist_t hl;
+	static uint32_t cr_test = 0, cr_enabled = 0;
+
+	if (cr_test == 0) {
+		select_g_get_info_from_plugin(SELECT_CR_PLUGIN,
+						&cr_enabled);
+		cr_test = 1;
+	}
 
 	*task_cnt = 0;
 	tmp1 = strchr(moab_tasklist, (int) '*');
@@ -86,6 +108,9 @@ extern char * moab2slurm_task_list(char *moab_tasklist, int *task_cnt)
 			tmp2[0] = '\0';
 		} else
 			reps = 1;
+		(*task_cnt) += reps;
+		if (!cr_enabled)
+			reps = 1;
 
 		/* find host expression */
 		hl = hostlist_create(tok);
@@ -94,7 +119,6 @@ extern char * moab2slurm_task_list(char *moab_tasklist, int *task_cnt)
 				if (*task_cnt)
 					xstrcat(slurm_tasklist, ",");
 				xstrcat(slurm_tasklist, host);
-				(*task_cnt)++;
 			}
 			free(host);
 		}

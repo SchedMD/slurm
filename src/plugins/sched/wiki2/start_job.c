@@ -120,8 +120,7 @@ extern int	start_job(char *cmd_ptr, int *err_code, char **err_msg)
  * task_cnt  (IN) - total count of tasks to start
  * hostlist  (IN) - SLURM hostlist expression with no repeated hostnames
  * tasklist  (IN/OUT) - comma separated list of hosts with tasks to be started,
- *                  list hostname once per task to start, string is altered by
- *                  strtok_r().
+ *                  list hostname once per task to start
  * err_code (OUT) - Moab error code
  * err_msg  (OUT) - Moab error message
  */
@@ -194,7 +193,7 @@ static int	_start_job(uint32_t jobid, int task_cnt, char *hostlist,
 
 	/* User excluded node list incompatable with Wiki
 	 * Exclude all nodes not explicitly requested */
-	if (cr_enabled && task_cnt) {
+	if (task_cnt) {
 		FREE_NULL_BITMAP(job_ptr->details->exc_node_bitmap);
 		job_ptr->details->exc_node_bitmap = bit_copy(new_bitmap);
 		bit_not(job_ptr->details->exc_node_bitmap);
@@ -203,29 +202,32 @@ static int	_start_job(uint32_t jobid, int task_cnt, char *hostlist,
 	/* Build layout information from tasklist (assuming that Moab
 	 * sends a non-bracketed list of nodes, repeated as many times
 	 * as cpus should be used per node); at this point, node names
-	 * are comma-separated. Code is optimized for repeated node
-	 * names being adjacent in tasklist. */
-	bsize = bit_size(new_bitmap);
-	for (i = 0, ll = -1; i < bsize; i++) {
-		if (!bit_test(new_bitmap, i))
-			continue;
-		ll++;
-		node_name = node_record_table_ptr[i].name;
-		node_name_len  = strlen(node_name);
-		if (node_name_len == 0)
-			continue;
-		node_cur = tasklist;
-		while (*node_cur) {
-			if ((node_idx = strstr(node_cur, node_name))) {
-				if (node_idx[node_name_len] == ',' ||
-				    node_idx[node_name_len] == '\0') {
-					job_ptr->details->req_node_layout[ll]++;
+	 * are comma-separated. This is _not_ a fast algorithm as it
+	 * performs many string compares. */
+	if (cr_enabled) {
+		bsize = bit_size(new_bitmap);
+		for (i = 0, ll = -1; i < bsize; i++) {
+			if (!bit_test(new_bitmap, i))
+				continue;
+			ll++;
+			node_name = node_record_table_ptr[i].name;
+			node_name_len  = strlen(node_name);
+			if (node_name_len == 0)
+				continue;
+			node_cur = tasklist;
+			while (*node_cur) {
+				if ((node_idx = strstr(node_cur, node_name))) {
+					if ((node_idx[node_name_len] == ',') ||
+				 	    (node_idx[node_name_len] == '\0')) {
+						job_ptr->details->
+							req_node_layout[ll]++;
+					}
+					node_cur = strchr(node_idx, ',');
+					if (node_cur)
+						continue;
 				}
-				node_cur = strchr(node_idx, ',');
-				if (node_cur)
-					continue;
+				break;
 			}
-			break;
 		}
 	}
 
