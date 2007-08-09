@@ -53,7 +53,11 @@ quick description of the subdirectories of the SLURM distribution follows:
   auxdir/     [ autotools directory ]
      Directory for autotools scripts and files used to configure and
      build SLURM
-
+  
+  contribs/   [ helpful tools outside of SLURM proper ]
+     Directory for anything that is outside of slurm proper such as a
+     different api or such.  To have this build you need to do a 
+     make contrib/install-contrib.
 
 COMPILING AND INSTALLING THE DISTRIBUTION
 -----------------------------------------
