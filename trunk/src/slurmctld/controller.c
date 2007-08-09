@@ -852,12 +852,19 @@ static void *_slurmctld_background(void *no_data)
 			unlock_slurmctld(job_write_lock);
 		}
 
-		if ((difftime(now, last_ping_node_time) >= ping_interval)
-		&&  (is_ping_done())) {
-			last_ping_node_time = now;
-			lock_slurmctld(node_write_lock);
-			ping_nodes();
-			unlock_slurmctld(node_write_lock);
+		if (difftime(now, last_ping_node_time) >= ping_interval) {
+			static bool msg_sent = false;
+			if (is_ping_done()) {
+				msg_sent = false;
+				last_ping_node_time = now;
+				lock_slurmctld(node_write_lock);
+				ping_nodes();
+				unlock_slurmctld(node_write_lock);
+			} else if (!msg_sent) {
+				/* log failure once per ping_nodes() call */
+				error("Node ping may be hung");
+				msg_sent = true;
+			}
 		}
 
 		if (slurmctld_conf.inactive_limit &&

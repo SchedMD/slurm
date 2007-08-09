@@ -39,6 +39,9 @@ documents those changes that are of interest to users and admins.
     SLURM_MVAPICH_TIMEOUT (value in seconds).
  -- Fixed pick_step_node logic to only pick the number of nodes requested
     from the user when excluding nodes, to avoid an error message.
+ -- Added contribs dir with a perl api and torque wrappers for torque to slurm
+    migration.  This dir should be used to put anything that is outside of 
+    slurm proper such as a different api or such.
 
 * Changes in SLURM 1.2.12
 =========================
