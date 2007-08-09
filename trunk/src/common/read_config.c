@@ -1498,6 +1498,14 @@ validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 		conf->inactive_limit = DEFAULT_INACTIVE_LIMIT;
 	}
 
+	/* JobAcctLoc replaces JobAcctLogFile since it now represents
+	 * the database name also depending on the storage type you
+	 * use so we still check JobAcctLogFile for the same thing
+	 */
+	if (!s_p_get_string(&conf->job_acct_loc, "JobAcctLoc", hashtbl)
+	    && !s_p_get_string(&conf->job_acct_loc, "JobAcctLogFile", hashtbl))
+		conf->job_acct_loc = xstrdup(DEFAULT_JOB_ACCT_LOC);
+	
 	if (!s_p_get_uint16(&conf->job_acct_freq, "JobAcctFrequency", hashtbl))
 		conf->job_acct_freq = DEFAULT_JOB_ACCT_FREQ;
 
