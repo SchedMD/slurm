@@ -112,9 +112,8 @@ hv_to_job_desc_msg(HV* hv, job_desc_msg_t* job_desc_msg)
 	FETCH_FIELD(hv, job_desc_msg, work_dir, charp, FALSE);
 	FETCH_FIELD(hv, job_desc_msg, alloc_node, charp, FALSE);
 	FETCH_FIELD(hv, job_desc_msg, alloc_sid, uint32_t, FALSE);
-	FETCH_FIELD(hv, job_desc_msg, alloc_resp_hostname, charp, FALSE);
+	FETCH_FIELD(hv, job_desc_msg, resp_host, charp, FALSE);
 	FETCH_FIELD(hv, job_desc_msg, alloc_resp_port, uint16_t, FALSE);
-	FETCH_FIELD(hv, job_desc_msg, other_hostname, charp, FALSE);
 	FETCH_FIELD(hv, job_desc_msg, other_port, uint16_t, FALSE);
 	FETCH_FIELD(hv, job_desc_msg, dependency, uint32_t, FALSE);
 	FETCH_FIELD(hv, job_desc_msg, overcommit, uint16_t, FALSE);
