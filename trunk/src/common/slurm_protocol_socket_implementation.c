@@ -614,7 +614,7 @@ again:	rc = poll(&ufds, 1, 5000);
 		/* poll failed */
 		if (errno == EINTR) {
 			/* NOTE: connect() is non-interruptible in Linux */
-			verbose("_slurm_connect poll failed: %m");
+			debug2("_slurm_connect poll failed: %m");
 			goto again;
 		} else
 			error("_slurm_connect poll failed: %m");
