@@ -108,19 +108,19 @@ extern char * moab2slurm_task_list(char *moab_tasklist, int *task_cnt)
 			tmp2[0] = '\0';
 		} else
 			reps = 1;
-		(*task_cnt) += reps;
-		if (!cr_enabled)
-			reps = 1;
 
 		/* find host expression */
 		hl = hostlist_create(tok);
 		while ((host = hostlist_shift(hl))) {
 			for (i=0; i<reps; i++) {
-				if (*task_cnt)
+				if (slurm_tasklist[0])
 					xstrcat(slurm_tasklist, ",");
 				xstrcat(slurm_tasklist, host);
+				if (!cr_enabled)
+					break;
 			}
 			free(host);
+			(*task_cnt) += reps;
 		}
 		hostlist_destroy(hl);
 
