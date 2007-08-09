@@ -331,7 +331,6 @@ int srun(int ac, char **av)
 				job->step_layout->task_cnt,
 				job->step_layout->node_cnt,
 				job->cred, opt.labelio);
-/*******************************************************************************/
 
 	if (!job->client_io
 	    || (client_io_handler_start(job->client_io)	!= SLURM_SUCCESS))
