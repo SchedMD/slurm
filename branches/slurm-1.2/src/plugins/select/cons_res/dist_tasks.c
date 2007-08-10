@@ -166,6 +166,7 @@ int compute_c_b_task_dist(struct select_cr_job *job,
 				return SLURM_ERROR;
 				break;
 			}
+			avail_cpus = MIN(avail_cpus, job->cpus[i]);
 			if ((j < avail_cpus) || over_subscribe) {
 				taskid++;
 				job->alloc_lps[i]++;
@@ -515,7 +516,8 @@ int cr_dist(struct select_cr_job *job, int cyclic,
 						   cr_type,
 						   job->job_id,
 						   this_cr_node->node_ptr->name);
-		
+		avail_cpus = MIN(avail_cpus, job->cpus[job_index]);
+
 #if(CR_DEBUG)
 		info("cons_res: _cr_dist %u avail_s %u _c %u _t %u"
 		     " alloc_s %d lps %u",
@@ -612,7 +614,7 @@ int cr_dist(struct select_cr_job *job, int cyclic,
 		     job->alloc_sockets[job_index], job->alloc_lps[job_index]);
 		if ((cr_type == CR_CORE) || (cr_type == CR_CORE_MEMORY))
 			for(i=0; i<usable_sockets;i++)
-				info("cons_res _cr_dist: %u alloc_cores[%d][%d] = %u", 
+				info("cons_res: _cr_dist: %u alloc_cores[%d][%d] = %u", 
 				     job->job_id, i, job_index, 
 				     job->alloc_cores[job_index][i]);
 #endif
@@ -741,7 +743,7 @@ int cr_plane_dist(struct select_cr_job *job,
 						   cr_type,
 						   job->job_id,
 						   this_cr_node->node_ptr->name);
-
+		avail_cpus = MIN(avail_cpus, job->cpus[job_index]);
 		if (avail_cpus == 0) {
 			error(" cons_res: no available cpus on node %s", 
 			      node_record_table_ptr[host_index].name);
