@@ -44,6 +44,14 @@ documents those changes that are of interest to users and admins.
  -- Added contribs dir with a perl api and torque wrappers for torque to slurm
     migration.  This dir should be used to put anything that is outside of 
     slurm proper such as a different api or such.
+ -- In sched/wiki2: add support for tasklist with node name expressions 
+    and task counts (e.g. TASKLIST=tux[1-4]*2:tux[12-14]*4").
+ -- In select/cons_res with sched/wiki2: fix bug in task layout logic.
+ -- Removed all curses info from the bluegene plugin putting it into smap
+    where it belongs.  
+ -- Add support for job time limit specification formats: min, min:sec, 
+    hour:min:sec, and days-hour:min:sec (formerly only supported minutes).
+    Applies to salloc, sbatch, and srun commands.
 
 * Changes in SLURM 1.2.12
 =========================

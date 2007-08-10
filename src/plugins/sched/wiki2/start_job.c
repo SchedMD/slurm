@@ -44,15 +44,15 @@
 #include "src/slurmctld/state_save.h"
 
 static int	_start_job(uint32_t jobid, int task_cnt, char *hostlist, 
-			char *node_ptr, int *err_code, char **err_msg);
+			char *tasklist, int *err_code, char **err_msg);
 
 /* RET 0 on success, -1 on failure */
 extern int	start_job(char *cmd_ptr, int *err_code, char **err_msg)
 {
-	char *arg_ptr, *task_ptr, *node_ptr, *tmp_char;
-	int i, task_cnt = 0;
+	char *arg_ptr, *task_ptr, *tasklist, *tmp_char;
+	int i, rc, task_cnt;
 	uint32_t jobid;
-	hostlist_t hl;
+	hostlist_t hl = (hostlist_t) NULL;
 	char host_string[MAXHOSTRANGELEN];
 	static char reply_msg[128];
 
@@ -78,24 +78,19 @@ extern int	start_job(char *cmd_ptr, int *err_code, char **err_msg)
 		error("wiki: STARTJOB lacks TASKLIST");
 		return -1;
 	}
-	node_ptr = task_ptr + 9;
-	if (node_ptr[0])
-		task_cnt = 1;
-	for (i=0; node_ptr[i]!='\0'; i++) {
-		if (node_ptr[i] == ':') {
-			node_ptr[i] = ',';
-			task_cnt++;
-		}
-	}
-	hl = hostlist_create(node_ptr);
-	if (hl == NULL) {
+	task_ptr += 9;	/* skip over "TASKLIST=" */
+	tasklist = moab2slurm_task_list(task_ptr, &task_cnt);
+	if (tasklist)
+		hl = hostlist_create(tasklist);
+	if ((tasklist == NULL) || (hl == NULL)) {
 		*err_code = -300;
 		*err_msg = "STARTJOB TASKLIST is invalid";
 		error("wiki: STARTJOB TASKLIST is invalid: %s",
-			node_ptr);
+			task_ptr);
+		xfree(tasklist);
 		return -1;
 	}
-	hostlist_uniq(hl);	/* for now, don't worry about task layout */
+	hostlist_uniq(hl);
 	hostlist_sort(hl);
 	i = hostlist_ranged_string(hl, sizeof(host_string), host_string);
 	hostlist_destroy(hl);
@@ -104,19 +99,33 @@ extern int	start_job(char *cmd_ptr, int *err_code, char **err_msg)
 		*err_msg = "STARTJOB has invalid TASKLIST";
 		error("wiki: STARTJOB has invalid TASKLIST: %s",
 			host_string);
+		xfree(tasklist);
 		return -1;
 	}
-	if (_start_job(jobid, task_cnt, host_string, node_ptr, err_code, err_msg) != 0)
-		return -1;
 
-	snprintf(reply_msg, sizeof(reply_msg), 
-		"job %u started successfully", jobid);
-	*err_msg = reply_msg;
-	return 0;
+	rc = _start_job(jobid, task_cnt, host_string, tasklist, 
+			err_code, err_msg);
+	xfree(tasklist);
+	if (rc == 0) {
+		snprintf(reply_msg, sizeof(reply_msg), 
+			"job %u started successfully", jobid);
+		*err_msg = reply_msg;
+	}
+	return rc;
 }
 
-static int	_start_job(uint32_t jobid, int task_cnt, char *hostlist, char *node_ptr,
-			int *err_code, char **err_msg)
+/*
+ * Attempt to start a job
+ * jobid     (IN) - job id
+ * task_cnt  (IN) - total count of tasks to start
+ * hostlist  (IN) - SLURM hostlist expression with no repeated hostnames
+ * tasklist  (IN/OUT) - comma separated list of hosts with tasks to be started,
+ *                  list hostname once per task to start
+ * err_code (OUT) - Moab error code
+ * err_msg  (OUT) - Moab error message
+ */
+static int	_start_job(uint32_t jobid, int task_cnt, char *hostlist, 
+			char *tasklist, int *err_code, char **err_msg)
 {
 	int rc = 0, old_task_cnt = 1;
 	struct job_record *job_ptr;
@@ -184,13 +193,45 @@ static int	_start_job(uint32_t jobid, int task_cnt, char *hostlist, char *node_p
 
 	/* User excluded node list incompatable with Wiki
 	 * Exclude all nodes not explicitly requested */
-	if (cr_enabled && task_cnt) {
+	if (task_cnt) {
 		FREE_NULL_BITMAP(job_ptr->details->exc_node_bitmap);
 		job_ptr->details->exc_node_bitmap = bit_copy(new_bitmap);
 		bit_not(job_ptr->details->exc_node_bitmap);
 	}
 
-	/* start it now */
+	/* Build layout information from tasklist (assuming that Moab
+	 * sends a non-bracketed list of nodes, repeated as many times
+	 * as cpus should be used per node); at this point, node names
+	 * are comma-separated. This is _not_ a fast algorithm as it
+	 * performs many string compares. */
+	if (cr_enabled) {
+		bsize = bit_size(new_bitmap);
+		for (i = 0, ll = -1; i < bsize; i++) {
+			if (!bit_test(new_bitmap, i))
+				continue;
+			ll++;
+			node_name = node_record_table_ptr[i].name;
+			node_name_len  = strlen(node_name);
+			if (node_name_len == 0)
+				continue;
+			node_cur = tasklist;
+			while (*node_cur) {
+				if ((node_idx = strstr(node_cur, node_name))) {
+					if ((node_idx[node_name_len] == ',') ||
+				 	    (node_idx[node_name_len] == '\0')) {
+						job_ptr->details->
+							req_node_layout[ll]++;
+					}
+					node_cur = strchr(node_idx, ',');
+					if (node_cur)
+						continue;
+				}
+				break;
+			}
+		}
+	}
+
+	/* get job ready to start now */
 	xfree(job_ptr->details->req_nodes);
 	job_ptr->details->req_nodes = new_node_list;
 	FREE_NULL_BITMAP(job_ptr->details->req_node_bitmap);
@@ -199,83 +240,57 @@ static int	_start_job(uint32_t jobid, int task_cnt, char *hostlist, char *node_p
 	job_ptr->num_procs = MAX(task_cnt, old_task_cnt); 
 	job_ptr->priority = 100000000;
 
-	/* build layout information from node_ptr (assuming that moab
-	 * sends a non-bracketed list of nodes, repeated as many times
-	 * as cpus should be used per node); at this point, node names
-	 * are comma-separated */
-	bsize = bit_size(new_bitmap);
-	for (i = 0, ll = -1; i < bsize; i++) {
-		if (!bit_test(new_bitmap, i))
-			continue;
-		ll++;
-		node_name = node_record_table_ptr[i].name;
-		node_name_len  = strlen(node_name);
-		if (node_name_len == 0)
-			continue;
-		node_cur = node_ptr;
-		while (*node_cur) {
-			if ((node_idx = strstr(node_cur, node_name))) {
-				if (node_idx[node_name_len] == ',' ||
-				    node_idx[node_name_len] == '\0') {
-					job_ptr->details->req_node_layout[ll]++;
-				}
-				node_cur = strchr(node_idx, ',');
-				if (node_cur)
-					continue;
-			}
-			break;
-		}
-	}
-
  fini:	unlock_slurmctld(job_write_lock);
-	if (rc == 0) {	/* New job to start ASAP */
-		(void) schedule();	/* provides own locking */
-		/* Check to insure the job was actually started */
-		lock_slurmctld(job_write_lock);
-		/* job_ptr = find_job_record(jobid);	don't bother */
-		if ((job_ptr->job_id == jobid)
-		&&  (job_ptr->job_state != JOB_RUNNING)) {
-			uint16_t wait_reason = 0;
-			char *wait_string;
+	if (rc)
+		return rc;
 
-			if (job_ptr->job_state == JOB_FAILED)
-				wait_string = "Invalid request, job aborted";
-			else {
-				wait_reason = job_ptr->state_reason;
-				if (wait_reason == WAIT_HELD) {
-					/* some job is completing, slurmctld did
-					 * not even try to schedule this job */
-					wait_reason = WAIT_RESOURCES;
-				}
-				wait_string = job_reason_string(wait_reason);
-				job_ptr->state_reason = WAIT_HELD;
-			}
-			*err_code = -910 - wait_reason;
-			snprintf(tmp_msg, sizeof(tmp_msg),
-				"Could not start job %u(%s): %s",
-				jobid, new_node_list, wait_string);
-			*err_msg = tmp_msg;
-			error("wiki: %s", tmp_msg);
+	/* No errors so far */
+	(void) schedule();	/* provides own locking */
+	/* Check to insure the job was actually started */
+	lock_slurmctld(job_write_lock);
+	/* job_ptr = find_job_record(jobid);	don't bother */
+	if ((job_ptr->job_id == jobid)
+	&&  (job_ptr->job_state != JOB_RUNNING)) {
+		uint16_t wait_reason = 0;
+		char *wait_string;
 
-			/* restore job state *after* printing 
-			 * new_node_list (job_ptr->details->req_nodes) */
-			job_ptr->priority = 0;
-			job_ptr->num_procs = old_task_cnt;
-			if (job_ptr->details) {
-				/* Details get cleared on job abort; happens 
-				 * if the request is sufficiently messed up.
-				 * This happens when Moab tries to start a
-				 * a job on invalid nodes (wrong partition). */ 
-				xfree(job_ptr->details->req_nodes);
-				FREE_NULL_BITMAP(job_ptr->details->
-						 req_node_bitmap);
-				xfree(job_ptr->details->req_node_layout);
+		if (job_ptr->job_state == JOB_FAILED)
+			wait_string = "Invalid request, job aborted";
+		else {
+			wait_reason = job_ptr->state_reason;
+			if (wait_reason == WAIT_HELD) {
+				/* some job is completing, slurmctld did
+				 * not even try to schedule this job */
+				wait_reason = WAIT_RESOURCES;
 			}
-			rc = -1;
+			wait_string = job_reason_string(wait_reason);
+			job_ptr->state_reason = WAIT_HELD;
 		}
-		unlock_slurmctld(job_write_lock);
-		schedule_node_save();	/* provides own locking */
-		schedule_job_save();	/* provides own locking */
+		*err_code = -910 - wait_reason;
+		snprintf(tmp_msg, sizeof(tmp_msg),
+			"Could not start job %u(%s): %s",
+			jobid, new_node_list, wait_string);
+		*err_msg = tmp_msg;
+		error("wiki: %s", tmp_msg);
+
+		/* restore job state *after* printing 
+		 * new_node_list (job_ptr->details->req_nodes) */
+		job_ptr->priority = 0;
+		job_ptr->num_procs = old_task_cnt;
+		if (job_ptr->details) {
+			/* Details get cleared on job abort; happens 
+			 * if the request is sufficiently messed up.
+			 * This happens when Moab tries to start a
+			 * a job on invalid nodes (wrong partition). */ 
+			xfree(job_ptr->details->req_nodes);
+			FREE_NULL_BITMAP(job_ptr->details->
+					 req_node_bitmap);
+			xfree(job_ptr->details->req_node_layout);
+		}
+		rc = -1;
 	}
+	unlock_slurmctld(job_write_lock);
+	schedule_node_save();	/* provides own locking */
+	schedule_job_save();	/* provides own locking */
 	return rc;
 }

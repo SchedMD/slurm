@@ -97,7 +97,10 @@ struct select_cr_job {
 	uint32_t nprocs;	/* --nprocs=n,      -n n               */
 	uint16_t nhosts;	/* number of hosts allocated to job    */
 	char **host;		/* hostname vector                     */
-	uint16_t *cpus;		/* number of processors on each host   */
+	uint16_t *cpus;		/* number of processors on each host,
+				 * if using Moab scheduler (sched/wiki2)
+				 * then this will be initialized to the
+				 * number of CPUs desired on the node	*/
 	uint16_t *alloc_lps;	/* number of allocated threads/lps on
 				 * each host */
 	uint16_t *alloc_sockets;/* number of allocated sockets on each

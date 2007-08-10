@@ -62,7 +62,8 @@ typedef struct salloc_options {
 	int  min_nodes;		/* --nodes=n,       -N n	*/ 
 	int  max_nodes;		/* --nodes=x-n,       -N x-n	*/ 
 	bool nodes_set;		/* true if nodes explicitly set */
-	int  time_limit;	/* --time,   -t			*/
+	int  time_limit;	/* --time,   -t	(int minutes)	*/
+	char *time_limit_str;	/* --time,   -t (string)	*/
 	char *partition;	/* --partition=n,   -p n   	*/
 	enum task_dist_states
 		distribution;	/* --distribution=, -m dist	*/

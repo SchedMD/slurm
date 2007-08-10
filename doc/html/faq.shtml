@@ -332,7 +332,7 @@ tdev2
 utilize the resources allocated to a SLURM job?</b></a><br>
 Yes. There is a patch available for GNU make version 3.81 
 available as part of the SLURM distribution in the file 
-<i>etc/make.slurm.patch</i>. 
+<i>contribs/make.slurm.patch</i>. 
 This patch will use SLURM to launch tasks across a job's current resource
 allocation. Depending upon the size of modules to be compiled, this may
 or may not improve performance. If most modules are thousands of lines

@@ -426,3 +426,60 @@ slurm_make_time_str (time_t *time, char *string, int size)
 	}
 }
 
+/* Convert a string to an equivalent time value
+ * input formats:
+ *   min
+ *   min:sec
+ *   hr:min:sec
+ *   days-hr:min:sec
+ * output:
+ *   minutes  (or -1 on error)
+ */
+extern int time_str2mins(char *string)
+{
+	int days = -1, hr = -1, min = -1, sec = -1;
+	int i, tmp = 0, res = 0;
+
+	if ((string == NULL) || (string[0] == '\0'))
+		return -1;	/* invalid input */
+
+	for (i=0; ; i++) {
+		if ((string[i] >= '0') && (string[i] <= '9')) {
+			tmp = (tmp * 10) + (string[i] - '0');
+		} else if (string[i] == '-') {
+			if (days != -1)
+				return -1;	/* invalid input */
+			days = tmp;
+			tmp = 0;
+		} else if ((string[i] == ':') || (string[i] == '\0')) {
+			if (min == -1) {
+				min = tmp;
+			} else if (sec == -1) {
+				sec = tmp;
+			} else if (hr == -1) {
+				hr = min;
+				min = sec;
+				sec = tmp;
+			} else
+				return -1;	/* invalid input */
+			tmp = 0;
+		} else
+			return -1;		/* invalid input */
+
+		if (string[i] == '\0')
+			break;
+	}
+
+	if (days == -1)
+		days = 0;
+	if (hr == -1)
+		hr = 0;
+	if (min == -1)
+		min = 0;
+	if (sec == -1)
+		sec = 0;
+	res = (((days * 24) + hr) * 60) + min;
+	if (sec > 0)
+		res++;	/* round up */
+	return res;
+}

@@ -78,6 +78,7 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 #include "src/common/slurm_rlimits_info.h"
+#include "src/common/parse_time.h"
 #include "src/common/plugstack.h"
 #include "src/common/optz.h"
 #include "src/api/pmi_server.h"
@@ -937,6 +938,7 @@ static void _opt_default()
 	opt.mem_bind_type = 0;
 	opt.mem_bind = NULL;
 	opt.time_limit = NO_VAL;
+	opt.time_limit_str = NULL;
 	opt.partition = NULL;
 	opt.max_threads = MAX_THREADS;
 	pmi_server_max_threads(opt.max_threads);
@@ -1086,7 +1088,7 @@ env_vars_t env_vars[] = {
 {"SLURM_STDERRMODE",    OPT_STRING,     &opt.efname,        NULL             },
 {"SLURM_STDINMODE",     OPT_STRING,     &opt.ifname,        NULL             },
 {"SLURM_STDOUTMODE",    OPT_STRING,     &opt.ofname,        NULL             },
-{"SLURM_TIMELIMIT",     OPT_INT,        &opt.time_limit,    NULL             },
+{"SLURM_TIMELIMIT",     OPT_STRING,     &opt.time_limit_str,NULL             },
 {"SLURM_WAIT",          OPT_INT,        &opt.max_wait,      NULL             },
 {"SLURM_DISABLE_STATUS",OPT_INT,        &opt.disable_status,NULL             },
 {"SLURM_MPI_TYPE",      OPT_MPI,        NULL,               NULL             },
@@ -1588,7 +1590,8 @@ static void set_options(const int argc, char **argv)
 			opt.shared = 1;
 			break;
 		case (int)'t':
-			opt.time_limit = _get_int(optarg, "time", true);
+			xfree(opt.time_limit_str);
+			opt.time_limit_str = xstrdup(optarg);
 			break;
 		case (int)'T':
 			opt.max_threads = 
@@ -2291,7 +2294,13 @@ static bool _opt_verify(void)
 	if (opt.max_wait)
 		opt.max_exit_timeout = opt.max_wait;
 
-	if (opt.time_limit == 0)
+	if (opt.time_limit_str) {
+		opt.time_limit = time_str2mins(opt.time_limit_str);
+		if (opt.time_limit < 0) {
+			error("Invalid time limit specification");
+			exit(1);
+		}
+	} else
 		opt.time_limit = INFINITE;
 
 	if ((opt.euid != (uid_t) -1) && (opt.euid != opt.uid)) 

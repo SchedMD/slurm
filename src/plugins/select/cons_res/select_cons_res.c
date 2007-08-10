@@ -109,10 +109,6 @@
 #define CR_DEBUG 1
 #endif
 
-#if 0
-#define CR_DEBUG 1
-#endif
-
 /*
  * These variables are required by the generic plugin interface.  If they
  * are not found in the plugin, the plugin loader will ignore it.

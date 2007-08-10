@@ -165,14 +165,14 @@ extern void print_grid(int dir)
 						  grid[x][y][z].color, 
                                                   7);
 
-				wattron(ba_system_ptr->grid_win,
+				wattron(grid_win,
 					COLOR_PAIR(ba_system_ptr->
 						   grid[x][y][z].color));
 
-				mvwprintw(ba_system_ptr->grid_win,
+				mvwprintw(grid_win,
 					  grid_ycord, grid_xcord, "%c",
 					  ba_system_ptr->grid[x][y][z].letter);
-				wattroff(ba_system_ptr->grid_win,
+				wattroff(grid_win,
 					 COLOR_PAIR(ba_system_ptr->
 						    grid[x][y][z].color));
 				grid_xcord++;
@@ -196,21 +196,21 @@ extern void print_grid(int dir)
 				  ba_system_ptr->grid[x].color, 
 				  7);
 		
-		wattron(ba_system_ptr->grid_win,
+		wattron(grid_win,
 			COLOR_PAIR(ba_system_ptr->grid[x].color));
 		
-		mvwprintw(ba_system_ptr->grid_win,
+		mvwprintw(grid_win,
 			  grid_ycord, grid_xcord, "%c",
 			  ba_system_ptr->grid[x].letter);
-		wattroff(ba_system_ptr->grid_win,
+		wattroff(grid_win,
 			 COLOR_PAIR(ba_system_ptr->grid[x].color));
 		
 		grid_xcord++;
-		if(grid_xcord==ba_system_ptr->grid_win->_maxx) {
+		if(grid_xcord==grid_win->_maxx) {
 			grid_xcord=1;
 			grid_ycord++;
 		}
-		if(grid_ycord==ba_system_ptr->grid_win->_maxy) {
+		if(grid_ycord==grid_win->_maxy) {
 			break;
 		}
 	}

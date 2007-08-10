@@ -248,7 +248,6 @@ extern void print_grid(int dir);
 
 extern void parse_command_line(int argc, char *argv[]);
 extern void print_date();
-extern void clear_window(WINDOW *win);
 
 //sview.c
 extern void refresh_main(GtkAction *action, gpointer user_data);
