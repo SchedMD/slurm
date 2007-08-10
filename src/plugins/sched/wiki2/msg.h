@@ -79,6 +79,7 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xsignal.h"
 #include "src/common/xstring.h"
+#include "src/slurmctld/slurmctld.h"
 
 /* Global configuration parameters */
 #define E_HOST_SIZE  256
@@ -114,6 +115,7 @@ extern int	job_signal_wiki(char *cmd_ptr, int *err_code, char **err_msg);
 extern int	job_will_run(char *cmd_ptr, int *err_code, char **err_msg);
 extern char * 	moab2slurm_task_list(char *moab_tasklist, int *task_cnt);
 extern int	parse_wiki_config(void);
+extern char *	slurm_job2moab_task_list(struct job_record *job_ptr);
 extern int	start_job(char *cmd_ptr, int *err_code, char **err_msg);
 extern int	suspend_job(char *cmd_ptr, int *err_code, char **err_msg);
 extern int	resume_job(char *cmd_ptr, int *err_code, char **err_msg);

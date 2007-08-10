@@ -56,6 +56,8 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
+#define MOAB_FORMAT1 1
+
 /*
  * Convert Moab supplied TASKLIST expression into a SLURM hostlist expression
  *
@@ -129,4 +131,119 @@ extern char * moab2slurm_task_list(char *moab_tasklist, int *task_cnt)
 	}
 	xfree(tmp1);
 	return slurm_tasklist;
+}
+
+#ifndef MOAB_FORMAT1
+/* Append to buf a compact tasklist expression (e.g. "tux[0-1]*2")
+ * Prepend ":" to expression as needed */
+static void _append_hl_buf(char **buf, hostlist_t *hl_tmp, int *reps)
+{
+	int host_str_len = 4096;
+	char *host_str, rep_str[8];
+
+	host_str = xmalloc(host_str_len);
+	hostlist_uniq(*hl_tmp);
+	while (hostlist_ranged_string(*hl_tmp, host_str_len, host_str) < 0) {
+		host_str_len *= 2;
+		xrealloc(*host_str, host_str_len);
+	}
+	if (*buf)
+		xstrcat(*buf, ":");
+	xstrcat(*buf, host_str);
+	snprintf(rep_str, 8, "*%d", *reps);
+	xstrcat(*buf, rep_str);
+	xfree(host_str);
+	hostlist_destroy(*hl_tmp);
+	*hl_tmp = (hostlist_t) NULL;
+	*reps = 0;
+}
+#endif
+
+/*
+ * Report a job's tasks a a MOAB TASKLIST expression
+ *
+ * Moab format 1: tux0:tux0:tux1:tux1:tux2   (list host for each cpu)
+ * Moab format 2: tux[0-1]*2:tux2            (list cpu count after host name)
+ *
+ * NOTE: returned string must be released with xfree()
+ */
+extern char * slurm_job2moab_task_list(struct job_record *job_ptr)
+{
+#ifdef MOAB_FORMAT1
+	/*
+	 * Moab format 1: tux0:tux0:tux1:tux1:tux2
+	 */
+	int i, j;
+	char *buf = NULL, *host;
+	hostlist_t hl = hostlist_create(job_ptr->nodes);
+
+	if (hl == NULL) {
+		error("hostlist_create error for job %u, %s",
+			job_ptr->job_id, job_ptr->nodes);
+		return buf;
+	}
+
+	for (i=0; i<job_ptr->alloc_lps_cnt; i++) {
+		host = hostlist_shift(hl);
+		if (host == NULL) {
+			error("bad alloc_lps_cnt for job %u (%s, %d)", 
+				job_ptr->job_id, job_ptr->nodes,
+				job_ptr->alloc_lps_cnt);
+			break;
+		}
+		for (j=0; j<job_ptr->alloc_lps[i]; j++) {
+			if (buf)
+				xstrcat(buf, ":");
+			xstrcat(buf, host);
+		}
+		free(host);
+	}
+	hostlist_destroy(hl);
+	return buf;
+#else
+	/*
+	 * Moab format 2: tux[0-1]*2:tux2
+	 */
+	int i, reps = -1;
+	char *buf = NULL, *host;
+	hostlist_t hl = hostlist_create(job_ptr->nodes);
+	hostlist_t hl_tmp = (hostlist_t) NULL;
+
+	if (hl == NULL) {
+		error("hostlist_create error for job %u, %s",
+			job_ptr->job_id, job_ptr->nodes);
+		return buf;
+	}
+
+	for (i=0; i<job_ptr->alloc_lps_cnt; i++) {
+		host = hostlist_shift(hl);
+		if (host == NULL) {
+			error("bad alloc_lps_cnt for job %u (%s, %d)", 
+				job_ptr->job_id, job_ptr->nodes,
+				job_ptr->alloc_lps_cnt);
+			break;
+		}
+
+		if (reps == job_ptr->alloc_lps[i]) {
+			/* append to existing hostlist record */
+			if (hostlist_push(hl_tmp, host))
+				error("hostlist_push failure");
+		} else {
+			if (hl_tmp)
+				_append_hl_buf(&buf, &hl_tmp, &reps);
+
+			/* start new hostlist record */
+			hl_tmp = hostlist_create(host);
+			if (hl_tmp)
+				reps = job_ptr->alloc_lps[i];
+			else
+				error("hostlist_create failure");
+		}
+		free(host);
+	}
+	hostlist_destroy(hl);
+	if (hl_tmp)
+		_append_hl_buf(&buf, &hl_tmp, &reps);
+	return buf;
+#endif
 }
