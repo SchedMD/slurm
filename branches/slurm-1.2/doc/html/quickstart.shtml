@@ -370,7 +370,7 @@ $ srun -n16 --mpi=mpich1_shmem a.out
 <p>If you are using MPICH P4 (<i>DEFAULT_DEVICE=ch_p4</i> in 
 the mpirun script) and SLURM version 1.2.11 or newer, 
 then it is recommended that you apply the patch in the SLURM 
-distribution's file <i>etc/mpich1.slurm.patch</i>. 
+distribution's file <i>contribs/mpich1.slurm.patch</i>. 
 Follow directions within the file to rebuild MPICH. 
 Applications must be relinked with the new library.
 Initiate tasks using the 
