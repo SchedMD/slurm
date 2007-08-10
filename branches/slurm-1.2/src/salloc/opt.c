@@ -425,7 +425,8 @@ static void _opt_default()
 	opt.min_nodes = 1;
 	opt.max_nodes = 0;
 	opt.nodes_set = false;
-	opt.time_limit = -1;
+	opt.time_limit = 0;
+	opt.time_limit_str = NULL;
 	opt.partition = NULL;
 
 	opt.job_name = NULL;
@@ -498,7 +499,7 @@ env_vars_t env_vars[] = {
   {"SALLOC_JOBID",         OPT_JOBID,      NULL,               NULL           },
   {"SALLOC_NO_ROTATE",     OPT_NO_ROTATE,  NULL,               NULL           },
   {"SALLOC_PARTITION",     OPT_STRING,     &opt.partition,     NULL           },
-  {"SALLOC_TIMELIMIT",     OPT_INT,        &opt.time_limit,    NULL           },
+  {"SALLOC_TIMELIMIT",     OPT_STRING,     &opt.time_limit_str,NULL           },
   {"SALLOC_WAIT",          OPT_INT,        &opt.max_wait,      NULL           },
   {"SALLOC_BELL",          OPT_BELL,       NULL,               NULL           },
   {"SALLOC_NO_BELL",       OPT_NO_BELL,    NULL,               NULL           },
@@ -785,7 +786,8 @@ void set_options(const int argc, char **argv)
 			opt.shared = 1;
 			break;
 		case 't':
-			opt.time_limit = _get_int(optarg, "time");
+			xfree(opt.time_limit_str);
+			opt.time_limit_str = xstrdup(optarg);
 			break;
 		case 'u':
 			_usage();
@@ -1030,7 +1032,13 @@ static bool _opt_verify(void)
 
 	} /* else if (opt.nprocs_set && !opt.nodes_set) */
 
-	if (opt.time_limit == 0)
+	if (opt.time_limit_str) {
+		opt.time_limit = time_str2mins(opt.time_limit_str);
+		if (opt.time_limit < 0) {
+			error("Invalid time limit specification");
+			exit(1);
+		}
+	} else
 		opt.time_limit = INFINITE;
 
 	if ((opt.euid != (uid_t) -1) && (opt.euid != opt.uid)) 

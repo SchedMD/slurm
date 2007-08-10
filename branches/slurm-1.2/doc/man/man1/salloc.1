@@ -240,14 +240,16 @@ option was not set and allow higher system utilization, but application
 performance will likely suffer due to competition for resources within a node.
 
 .TP
-\fB\-t\fR, \fB\-\-time\fR[=]<\fIminutes\fR>
-Set a  limit, in minites, on the total run time of the job allocation.
+\fB\-t\fR, \fB\-\-time\fR=\fItime\fR
+Set a limit on the total run time of the job allocation.
 If the requested time limit exceeds the partition's time limit, the 
 job will be left in a PENDING state (possibly indefinitely).  The default
 time limit is the partition's time limit.  When the time limit is reached,
 the each task in each job step is sent SIGTERM followed by SIGKILL. The
 interval between signals is specified by the SLURM configuration parameter
 \fBKillWait\fR.  A time limit of zero represents unlimited time.
+Acceptable time formats include "minutes", "minutes:seconds", 
+"hours:minutes:seconds" and "days-hours:minutes:seconds".
 
 .TP
 \fB\-\-tmp\fR[=]<\fIMB\fR>

@@ -20,6 +20,9 @@ documents those changes that are of interest to users and admins.
  -- In select/cons_res with sched/wiki2: fix bug in task layout logic.
  -- Removed all curses info from the bluegene plugin putting it into smap
     where it belongs.  
+ -- Add support for job time limit specification formats: min, min:sec, 
+    hour:min:sec, and days-hour:min:sec (formerly only supported minutes).
+    Applies to salloc, sbatch, and srun commands.
 
 * Changes in SLURM 1.2.12
 =========================
