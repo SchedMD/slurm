@@ -239,6 +239,12 @@ target_vendor = @target_vendor@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 SUBDIRS = perlapi torque
+EXTRA_DIST = \
+	make.slurm.patch	\
+	mpich1.slurm.patch	\
+	ptrace.patch		\
+	README
+
 all: all-recursive
 
 .SUFFIXES:

@@ -525,9 +525,10 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 	if (job_ptr->details->req_node_bitmap) {  /* specific nodes required */
 		/* we have already confirmed that all of these nodes have a
 		 * usable configuration and are in the proper partition */
-		if (min_nodes != 0)
+		if (min_nodes != 0) {
 			total_nodes = bit_set_count(
 				job_ptr->details->req_node_bitmap);
+		}
 		if (job_ptr->num_procs != 0) {
 			if (cr_enabled) {
 				uint16_t tmp16;
@@ -559,9 +560,10 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 					return error_code;
 				}
 				total_cpus = (int) tmp16;
-			} else 
+			} else { 
 				total_cpus = count_cpus(
 					job_ptr->details->req_node_bitmap);
+			}
 		}
 		if (total_nodes > max_nodes) {
 			/* exceeds node limit */
@@ -760,7 +762,10 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 		/* try to get req_nodes now for this feature */
 		if ((req_nodes   >  min_nodes) && 
 		    (avail_nodes >= min_nodes) &&
-		    (avail_nodes <  req_nodes)) {
+		    (avail_nodes <  req_nodes) &&
+		    ((job_ptr->details->req_node_bitmap == NULL) ||
+		     bit_super_set(job_ptr->details->req_node_bitmap, 
+                                        avail_bitmap))) {
 			pick_code = select_g_job_test(job_ptr, avail_bitmap, 
 						      min_nodes, max_nodes,
 						      req_nodes, false);

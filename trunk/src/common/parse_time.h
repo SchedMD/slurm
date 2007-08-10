@@ -65,4 +65,15 @@ extern time_t parse_time(char *time_str);
 extern void
 slurm_make_time_str (time_t *time, char *string, int size);
 
+/* Convert a string to an equivalent time value
+ * input formats:
+ *   min
+ *   min:sec
+ *   hr:min:sec
+ *   days-hr:min:sec
+ * output:
+ *   minutes
+ */
+extern int time_str2mins(char *string);
+
 #endif
