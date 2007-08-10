@@ -44,7 +44,6 @@
 #include "src/common/node_select.h"
 #include "src/common/uid.h"
 #include "src/slurmctld/locks.h"
-#include "src/slurmctld/slurmctld.h"
 
 static char *	_dump_all_jobs(int *job_cnt, int state_info);
 static char *	_dump_job(struct job_record *job_ptr, int state_info);
@@ -61,7 +60,6 @@ static uint32_t	_get_job_submit_time(struct job_record *job_ptr);
 static uint32_t	_get_job_suspend_time(struct job_record *job_ptr);
 static uint32_t	_get_job_tasks(struct job_record *job_ptr);
 static uint32_t	_get_job_time_limit(struct job_record *job_ptr);
-static char *	_full_task_list(struct job_record *job_ptr);
 
 #define SLURM_INFO_ALL		0
 #define SLURM_INFO_VOLITILE	1
@@ -247,7 +245,7 @@ static char *	_dump_job(struct job_record *job_ptr, int state_info)
 		}
 	} else if (!IS_JOB_FINISHED(job_ptr)) {
 		char *hosts;
-		hosts = _full_task_list(job_ptr);
+		hosts = slurm_job2moab_task_list(job_ptr);
 		xstrcat(buf, "TASKLIST=");
 		xstrcat(buf, hosts);
 		xstrcat(buf, ";");
@@ -536,37 +534,4 @@ static uint32_t	_get_job_suspend_time(struct job_record *job_ptr)
 	return (uint32_t) 0;
 }
 
-/* Return a job's task list. 
- * List hostname once for each allocated CPU on that node. 
- * NOTE: xfree the return value.  */
-static char * _full_task_list(struct job_record *job_ptr)
-{
-	int i, j;
-	char *buf = NULL, *host;
-	hostlist_t hl = hostlist_create(job_ptr->nodes);
-
-	if (hl == NULL) {
-		error("hostlist_create error for job %u, %s",
-			job_ptr->job_id, job_ptr->nodes);
-		return buf;
-	}
-
-	for (i=0; i<job_ptr->alloc_lps_cnt; i++) {
-		host = hostlist_shift(hl);
-		if (host == NULL) {
-			error("bad alloc_lps_cnt for job %u (%s, %d)", 
-				job_ptr->job_id, job_ptr->nodes,
-				job_ptr->alloc_lps_cnt);
-			break;
-		}
-		for (j=0; j<job_ptr->alloc_lps[i]; j++) {
-			if (buf)
-				xstrcat(buf, ":");
-			xstrcat(buf, host);
-		}
-		free(host);
-	}
-	hostlist_destroy(hl);
-	return buf;
-}
 
