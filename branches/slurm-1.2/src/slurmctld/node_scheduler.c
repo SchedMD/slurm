@@ -763,7 +763,8 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 		if ((req_nodes   >  min_nodes) && 
 		    (avail_nodes >= min_nodes) &&
 		    (avail_nodes <  req_nodes) &&
-		    (bit_super_set(job_ptr->details->req_node_bitmap, 
+		    ((job_ptr->details->req_node_bitmap == NULL) ||
+		     bit_super_set(job_ptr->details->req_node_bitmap, 
                                         avail_bitmap))) {
 			pick_code = select_g_job_test(job_ptr, avail_bitmap, 
 						      min_nodes, max_nodes,
