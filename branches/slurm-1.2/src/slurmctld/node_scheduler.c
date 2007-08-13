@@ -659,24 +659,9 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 			/* shared needs to be checked before cr_enabled
 			 * to make sure that CR_MEMORY works correctly. */ 
 			if (shared) {
-#ifdef HAVE_BG
-				/* If any nodes which can be used have jobs in 
-				 * COMPLETING state then do not schedule the  
-				 * job, this give time to insure Epilog 
-				 * completes before possibly scheduling another
-				 * job to the same bgblock. We also want to 
-				 * route the job to the smallest usable block*/
-				int ni;
 				bit_and(node_set_ptr[i].my_bitmap,
 					share_node_bitmap);
-				for (ni = 0; ni < node_record_count; ni++) {
-					if (node_record_table_ptr[ni].
-					    node_state & NODE_STATE_COMPLETING)
-						continue;
-				}
-#else
-				bit_and(node_set_ptr[i].my_bitmap,
-					share_node_bitmap);
+#ifndef HAVE_BG
 				pick_light_load = true;
 #endif
 			} else if (cr_enabled) {
