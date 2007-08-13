@@ -51,6 +51,11 @@ The \fIlist\fR of constraints may include multiple features separated
 by ampersand (AND) and/or vertical bar (OR) operators.
 For example: \fB\-\-constraint="opteron&video"\fR or 
 \fB\-\-constraint="fast|faster"\fR.
+If only one of a set of possible options should be used for all allocated 
+nodes, then use the OR operator and enclose the options within square brackets. 
+For example: "\fB\-\-constraint="[rack1|rack2|rack3|rack4]"\fR might 
+be used to specify that all nodes must be allocated on a single rack of 
+the cluster, but any of those four racks can be used.
 If no nodes have the requested features, then the job will be rejected 
 by the slurm job manager.
 
