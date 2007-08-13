@@ -63,6 +63,9 @@
 #include "src/slurmctld/sched_plugin.h"
 #include "src/slurmctld/slurmctld.h"
 
+#define FEATURE_OP_OR  0
+#define FEATURE_OP_AND 1
+
 #define MAX_RETRIES 10
 
 struct node_set {		/* set of nodes with same configuration */
@@ -1516,15 +1519,16 @@ static int _valid_features(char *requested, char *available)
 	tmp_requested = xstrdup(requested);
 	bracket = option = position = 0;
 	str_ptr1 = tmp_requested;	/* start of feature name */
-	result = last_op = 1;	/* assume good for now */
+	result = 1;			/* assume good for now */
+	last_op = FEATURE_OP_AND;
 	for (i = 0;; i++) {
 		if (tmp_requested[i] == (char) NULL) {
 			if (strlen(str_ptr1) == 0)
 				break;
 			found = _match_feature(str_ptr1, available);
-			if (last_op == 1)	/* and */
+			if (last_op == FEATURE_OP_AND)
 				result &= found;
-			else	/* or */
+			else	/* FEATURE_OP_OR */
 				result |= found;
 			break;
 		}
@@ -1538,12 +1542,12 @@ static int _valid_features(char *requested, char *available)
 			}
 			tmp_requested[i] = (char) NULL;
 			found = _match_feature(str_ptr1, available);
-			if (last_op == 1)	/* and */
+			if (last_op == FEATURE_OP_AND)
 				result &= found;
-			else	/* or */
+			else	/* FEATURE_OP_OR */
 				result |= found;
 			str_ptr1 = &tmp_requested[i + 1];
-			last_op = 1;	/* and */
+			last_op = FEATURE_OP_AND;
 
 		} else if (tmp_requested[i] == '|') {
 			tmp_requested[i] = (char) NULL;
@@ -1553,19 +1557,20 @@ static int _valid_features(char *requested, char *available)
 					option = position;
 				position++;
 			}
-			if (last_op == 1)	/* and */
+			if (last_op == FEATURE_OP_AND)
 				result &= found;
-			else	/* or */
+			else	/* FEATURE_OP_OR */
 				result |= found;
 			str_ptr1 = &tmp_requested[i + 1];
-			last_op = 0;	/* or */
+			last_op = FEATURE_OP_OR;
 
 		} else if (tmp_requested[i] == '[') {
 			bracket++;
 			position = 1;
 			save_op = last_op;
 			save_result = result;
-			last_op = result = 1;
+			last_op = FEATURE_OP_AND;
+			result = 1;
 			str_ptr1 = &tmp_requested[i + 1];
 
 		} else if (tmp_requested[i] == ']') {
@@ -1574,17 +1579,17 @@ static int _valid_features(char *requested, char *available)
 			if (found)
 				option = position;
 			result |= found;
-			if (save_op == 1)	/* and */
+			if (save_op == FEATURE_OP_AND)
 				result &= save_result;
-			else	/* or */
+			else	/* FEATURE_OP_OR */
 				result |= save_result;
 			if ((tmp_requested[i + 1] == '&')
 			    && (bracket == 1)) {
-				last_op = 1;
+				last_op = FEATURE_OP_AND;
 				str_ptr1 = &tmp_requested[i + 2];
 			} else if ((tmp_requested[i + 1] == '|')
 				   && (bracket == 1)) {
-				last_op = 0;
+				last_op = FEATURE_OP_OR;
 				str_ptr1 = &tmp_requested[i + 2];
 			} else if ((tmp_requested[i + 1] == (char) NULL)
 				   && (bracket == 1)) {
