@@ -132,15 +132,15 @@ hv_to_job_desc_msg(HV* hv, job_desc_msg_t* job_desc_msg)
 	/* geometry */
 #if SYSTEM_DIMENSIONS
 	if((svp = hv_fetch(hv, "geometry", 8, FALSE))) {
-		SV *avp;
+		AV *avp;
 		if (!SvROK(*svp) || SvTYPE(SvRV(*svp)) != SVt_PVAV) {
 			Perl_warn(aTHX_ "`geometry' is not an array reference in job descriptor");
 			free_job_desc_msg_memory(job_desc_msg);
 			return -1;
 		}
-		avp = SvRV(*svp);
+		avp = (AV*)SvRV(*svp);
 		for(i = 0; i < SYSTEM_DIMENSIONS; i ++) {
-			if(! (svp = av_fetch(avp, i, 0))) {
+			if(! (svp = av_fetch(avp, i, FALSE))) {
 				Perl_warn(aTHX_ "geometry of dimension %s missing in job descriptor", i);
 				free_job_desc_msg_memory(job_desc_msg);
 				return -1;
