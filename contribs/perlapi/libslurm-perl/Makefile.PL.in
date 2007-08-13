@@ -27,6 +27,15 @@ WriteMakefile(
 	PM                => {'Slurm.pm' => '$(INST_LIBDIR)/Slurm.pm'},
 );
 
+# MakeMaker prior to 6.11 doesn't support DESTDIR which is needed for
+# packaging with builddir!=destdir. See bug 2388.
+$mm_knows_destdir    = $ExtUtils::MakeMaker::Recognized_Att_Keys{DESTDIR};
+$mm_has_good_destdir = $mm_version >= 6.11;
+# Add DESTDIR hack only if it's requested (and necessary)
+$mm_needs_destdir    = $opt{'destdir'} && !$mm_has_good_destdir;
+$mm_has_destdir      = $mm_knows_destdir || $mm_needs_destdir;
+push(@ATT_KEYS, 'DESTDIR') if $mm_needs_destdir;
+
 if (eval {require ExtUtils::Constant; 1}) {
 	my $macros = [qw /
 		INFINITE
