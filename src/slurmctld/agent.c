@@ -725,6 +725,26 @@ static inline int _comm_err(char *node_name)
 	return rc;
 }
 
+/* return a value for wihc WEXITSTATUS returns 1 */
+static int _wif_status(void)
+{
+	static int rc = 0;
+	int i;
+
+	if (rc)
+		return rc;
+
+	rc = 1;
+	for (i=0; i<64; i++) {
+		if (WEXITSTATUS(rc))
+			return rc;
+		rc = rc << 1;
+	}
+	error("Could not identify WEXITSTATUS");
+	rc = 1;
+	return rc;
+}
+
 /*
  * _thread_per_group_rpc - thread to issue an RPC for a group of nodes
  *                         sending message out to one and forwarding it to
@@ -859,7 +879,7 @@ static void *_thread_per_group_rpc(void *args)
 			thread_state = DSH_DONE;
 			ret_data_info->err = thread_state;
 			lock_slurmctld(job_write_lock);
-			job_complete(job_id, 0, false, 1);
+			job_complete(job_id, 0, false, _wif_status());
 			unlock_slurmctld(job_write_lock);
 			continue;
 		}
