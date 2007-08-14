@@ -38,9 +38,10 @@ The value may be changed after job submission using the
 
 .TP 
 \fB\-\-bell\fR
-Force salloc to ring the terminal bell when the job allocation is granted.
-By default, salloc only rings the bell if the allocation is pending for more
-than ten seconds. Also see the option \fB\-\-no\-bell\fR.
+Force salloc to ring the terminal bell when the job allocation is granted
+(and only if stdout is a tty).  By default, salloc only rings the bell
+if the allocation is pending for more than ten seconds (and only if stdout
+is a tty). Also see the option \fB\-\-no\-bell\fR.
 
 .TP
 \fB\-C\fR, \fB\-\-constraint\fR[=]<\fIlist\fR>
