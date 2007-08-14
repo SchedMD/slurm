@@ -2005,6 +2005,7 @@ _unpack_job_info_members(job_info_t * job, Buf buffer)
 	safe_unpackstr_xmalloc(&job->account, &uint16_tmp, buffer);
 	safe_unpackstr_xmalloc(&job->network, &uint16_tmp, buffer);
 	safe_unpackstr_xmalloc(&job->comment, &uint16_tmp, buffer);
+
 	safe_unpack32(&job->dependency, buffer);
 	safe_unpack32(&job->exit_code, buffer);
 
@@ -2029,6 +2030,9 @@ _unpack_job_info_members(job_info_t * job, Buf buffer)
 
 	/*** unpack default job details ***/
 	safe_unpackstr_xmalloc(&job->features, &uint16_tmp, buffer);
+	safe_unpackstr_xmalloc(&job->work_dir, &uint16_tmp, buffer);
+	safe_unpackstr_xmalloc(&job->command,  &uint16_tmp, buffer);
+
 	safe_unpack32(&job->num_nodes, buffer);
 	safe_unpack32(&job->max_nodes, buffer);
 

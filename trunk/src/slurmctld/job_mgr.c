@@ -2928,6 +2928,7 @@ void pack_job(struct job_record *dump_job_ptr, Buf buffer)
 	packstr(dump_job_ptr->account, buffer);
 	packstr(dump_job_ptr->network, buffer);
 	packstr(dump_job_ptr->comment, buffer);
+
 	pack32(dump_job_ptr->dependency, buffer);
 	pack32(dump_job_ptr->exit_code, buffer);
 
@@ -2964,10 +2965,17 @@ static void _pack_default_job_details(struct job_details *detail_ptr,
 {
 	if (detail_ptr) {
 		packstr(detail_ptr->features, buffer);
+		packstr(detail_ptr->work_dir, buffer);
+		if (detail_ptr->argv)
+			packstr(detail_ptr->argv[0], buffer);
+		else
+			packnull(buffer);
 
 		pack32(detail_ptr->min_nodes, buffer);
 		pack32(detail_ptr->max_nodes, buffer);
 	} else {
+		packnull(buffer);
+		packnull(buffer);
 		packnull(buffer);
 
 		pack32((uint32_t) 0, buffer);
