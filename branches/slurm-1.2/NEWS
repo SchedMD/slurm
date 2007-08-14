@@ -26,6 +26,7 @@ documents those changes that are of interest to users and admins.
  -- Improve scheduling support for exclusive constraint list, nodes can 
     now be in more than one constraint specific exclusively for a job
     (e.g. "srun -C [rack1|rack2|rack3|rowB] srun")
+ -- Create separate MPICH/MX plugin (split out from MPICH/GM plugin)
 
 * Changes in SLURM 1.2.12
 =========================
