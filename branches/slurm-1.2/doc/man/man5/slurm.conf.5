@@ -243,7 +243,9 @@ May not exceed 65533.
 .TP
 \fBMessageTimeout\fR
 Time permitted for a round\-trip communication to complete
-in seconds. Default value is 5 seconds.
+in seconds. Default value is 10 seconds. For systems with 
+shared nodes, the slurmd daemon could be paged out and 
+necessitate higher values.
 
 .TP
 \fBMinJobAge\fR
