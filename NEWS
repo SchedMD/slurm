@@ -27,6 +27,7 @@ documents those changes that are of interest to users and admins.
     now be in more than one constraint specific exclusively for a job
     (e.g. "srun -C [rack1|rack2|rack3|rowB] srun")
  -- Create separate MPICH/MX plugin (split out from MPICH/GM plugin)
+ -- Increase default MessageTimeout (in slurm.conf) from 5 to 10 secs.
 
 * Changes in SLURM 1.2.12
 =========================
