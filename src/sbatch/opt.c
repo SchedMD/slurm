@@ -1611,8 +1611,8 @@ static void _usage(void)
 "              [-c ncpus] [-r n] [-p partition] [--hold] [-t minutes]\n"
 "              [-D path] [--immediate] [--no-kill]\n"
 "              [--input file] [--output file] [--error file]\n"
-"              [--share] [-m dist] [-J jobname]\n"
-"              [--jobid=id] [--verbose]\n"
+"              [--workdir=directory] [--share] [-m dist] [-J jobname]\n"
+"              [--jobid=id] [--verbose] [--gid=group] [--uid=user]\n"
 "              [-W sec] [--minsockets=n] [--mincores=n] [--minthreads=n]\n"
 "              [--contiguous] [--mincpus=n] [--mem=MB] [--tmp=MB] [-C list]\n"
 "              [--account=name] [--dependency=jobid] [--comment=name]\n"
@@ -1623,7 +1623,8 @@ static void _usage(void)
 #endif
 "              [--mail-type=type] [--mail-user=user][--nice[=value]]\n"
 "              [--no-requeue] [--ntasks-per-node=n]\n"
-"              [-w hosts...] [-x hosts...] executable [args...]\n");
+"              [--nodefile=file] [--nodelist=hosts] [--exclude=hosts]\n"
+"              executable [args...]\n");
 }
 
 static void _help(void)
@@ -1651,12 +1652,15 @@ static void _help(void)
 "  -v, --verbose               verbose mode (multiple -v's increase verbosity)\n"
 "  -q, --quiet                 quiet mode (suppress informational messages)\n"
 "  -d, --dependency=jobid      defer job until specified jobid completes\n"
+"  -D, --workdir=directory     set working directory for batch script\n"
 "      --nice[=value]          decrease secheduling priority by value\n"
 "  -U, --account=name          charge job to specified account\n"
 "      --begin=time            defer job until HH:MM DD/MM/YY\n"
 "      --comment=name          arbitrary comment\n"
 "      --mail-type=type        notify on state change: BEGIN, END, FAIL or ALL\n"
 "      --mail-user=user        who to send email notification for job state changes\n"
+"      --gid=group_id          group ID to run job as (user root only)\n"
+"      --uid=user_id           user ID to run job as (user root only)\n"
 "      --get-user-env          used by Moab.  See srun man page.\n"
 "      --no-requeue            if set, do not permit the job to be requeued\n"
 "\n"
@@ -1669,6 +1673,7 @@ static void _help(void)
 "      --tmp=MB                minimum amount of temporary disk\n"
 "      --contiguous            demand a contiguous range of nodes\n"
 "  -C, --constraint=list       specify a list of constraints\n"
+"  -F, --nodefile=filename     request a specific list of hosts\n"
 "  -w, --nodelist=hosts...     request a specific list of hosts\n"
 "  -x, --exclude=hosts...      exclude a specific list of hosts\n"
 "\n"
