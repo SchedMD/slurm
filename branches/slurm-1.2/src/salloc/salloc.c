@@ -302,8 +302,10 @@ static int fill_job_desc_from_opts(job_desc_msg_t *desc)
 
 static void ring_terminal_bell(void)
 {
-	fprintf(stdout, "\a");
-	fflush(stdout);
+        if (isatty(STDOUT_FILENO)) {
+                fprintf(stdout, "\a");
+                fflush(stdout);
+        }
 }
 
 /* returns the pid of the forked command, or <0 on error */

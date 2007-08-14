@@ -1329,6 +1329,8 @@ static void _help(void)
 "      --comment=name          arbitrary comment\n"
 "      --mail-type=type        notify on state change: BEGIN, END, FAIL or ALL\n"
 "      --mail-user=user        who to send email notification for job state changes\n"
+"      --bell                  ring the terminal bell when the job is allocated\n"
+"      --no-bell               do NOT ring the terminal bell\n"
 "\n"
 "Constraint options:\n"
 "      --mincpus=n             minimum number of cpus per node\n"
