@@ -38,9 +38,10 @@ The value may be changed after job submission using the
 
 .TP 
 \fB\-\-bell\fR
-Force salloc to ring the terminal bell when the job allocation is granted.
-By default, salloc only rings the bell if the allocation is pending for more
-than ten seconds. Also see the option \fB\-\-no\-bell\fR.
+Force salloc to ring the terminal bell when the job allocation is granted
+(and only if stdout is a tty).  By default, salloc only rings the bell
+if the allocation is pending for more than ten seconds (and only if stdout
+is a tty). Also see the option \fB\-\-no\-bell\fR.
 
 .TP
 \fB\-C\fR, \fB\-\-constraint\fR[=]<\fIlist\fR>
@@ -51,6 +52,11 @@ The \fIlist\fR of constraints may include multiple features separated
 by ampersand (AND) and/or vertical bar (OR) operators.
 For example: \fB\-\-constraint="opteron&video"\fR or 
 \fB\-\-constraint="fast|faster"\fR.
+If only one of a set of possible options should be used for all allocated 
+nodes, then use the OR operator and enclose the options within square brackets. 
+For example: "\fB\-\-constraint="[rack1|rack2|rack3|rack4]"\fR might 
+be used to specify that all nodes must be allocated on a single rack of 
+the cluster, but any of those four racks can be used.
 If no nodes have the requested features, then the job will be rejected 
 by the slurm job manager.
 
@@ -76,11 +82,6 @@ cluster is comprised of quad\-processors nodes and we simply ask for
 the \-\-cpus\-per\-task=3 options, the controller knows that each task requires
 3 processors on the same node, and the controller will grant an allocation
 of 4 nodes, one for each of the 4 tasks.
-
-.TP 
-\fB\-D\fR, \fB\-\-workdir\fR[=]<\fIdirectory\fR>
-Set the working directory of the batch script to \fIdirectory\fR before
-it it executed.
 
 .TP 
 \fB\-d\fR, \fB\-\-dependency\fR[=]<\fIjobid\fR>

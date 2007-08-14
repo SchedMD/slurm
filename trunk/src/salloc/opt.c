@@ -1290,7 +1290,7 @@ static void _usage(void)
 "              [[-c cpus-per-node] [-r n] [-p partition] [--hold] [-t minutes]\n"
 "              [--immediate] [--no-kill]\n"
 "              [--share] [-J jobname] [--jobid=id]\n"
-"              [--verbose]\n"
+"              [--verbose] [--gid=group] [--uid=user]\n"
 "              [-W sec] [--minsockets=n] [--mincores=n] [--minthreads=n]\n"
 "              [--contiguous] [--mincpus=n] [--mem=MB] [--tmp=MB] [-C list]\n"
 "              [--account=name] [--dependency=jobid] [--comment=name]\n"
@@ -1298,7 +1298,9 @@ static void _usage(void)
 "              [--geometry=XxYxZ] [--conn-type=type] [--no-rotate] [ --reboot]\n"
 #endif
 "              [--mail-type=type] [--mail-user=user][--nice[=value]]\n"
-"              [-w hosts...] [-x hosts...] executable [args...]\n");
+"              [--bell] [--no-bell] [--kill-command[=signal]]\n"
+"              [--nodefile=file] [--nodelist=hosts] [--exclude=hosts]\n"
+"              executable [args...]\n");
 }
 
 static void _help(void)
@@ -1308,13 +1310,14 @@ static void _help(void)
 "\n"
 "Parallel run options:\n"
 "  -N, --nodes=N               number of nodes on which to run (N = min[-max])\n"
-"  -n, --procs=N               number of processors required\n"
+"  -n, --tasks=N               number of processors required\n"
 "  -c, --cpus-per-task=ncpus   number of cpus required per task\n"
 "  -p, --partition=partition   partition requested\n"
 "  -H, --hold                  submit job in held state\n"
 "  -t, --time=minutes          time limit\n"
 "  -I, --immediate             exit if resources are not immediately available\n"
 "  -k, --no-kill               do not kill job on node failure\n"
+"  -K, --kill-command[=signal] signal to send terminating job\n"
 "  -s, --share                 share nodes with other jobs\n"
 "  -J, --job-name=jobname      name of job\n"
 "      --jobid=id              specify jobid to use\n"
@@ -1329,6 +1332,10 @@ static void _help(void)
 "      --comment=name          arbitrary comment\n"
 "      --mail-type=type        notify on state change: BEGIN, END, FAIL or ALL\n"
 "      --mail-user=user        who to send email notification for job state changes\n"
+"      --bell                  ring the terminal bell when the job is allocated\n"
+"      --no-bell               do NOT ring the terminal bell\n"
+"      --gid=group_id          group ID to run job as (user root only)\n"
+"      --uid=user_id           user ID to run job as (user root only)\n"
 "\n"
 "Constraint options:\n"
 "      --mincpus=n             minimum number of cpus per node\n"
@@ -1339,6 +1346,7 @@ static void _help(void)
 "      --tmp=MB                minimum amount of temporary disk\n"
 "      --contiguous            demand a contiguous range of nodes\n"
 "  -C, --constraint=list       specify a list of constraints\n"
+"  -F, --nodefile=filename     request a specific list of hosts\n"
 "  -w, --nodelist=hosts...     request a specific list of hosts\n"
 "  -x, --exclude=hosts...      exclude a specific list of hosts\n"
 "\n"

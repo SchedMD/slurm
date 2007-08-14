@@ -52,6 +52,10 @@ documents those changes that are of interest to users and admins.
  -- Add support for job time limit specification formats: min, min:sec, 
     hour:min:sec, and days-hour:min:sec (formerly only supported minutes).
     Applies to salloc, sbatch, and srun commands.
+ -- Improve scheduling support for exclusive constraint list, nodes can 
+    now be in more than one constraint specific exclusively for a job
+    (e.g. "srun -C [rack1|rack2|rack3|rowB] srun")
+ -- Create separate MPICH/MX plugin (split out from MPICH/GM plugin)
 
 * Changes in SLURM 1.2.12
 =========================
