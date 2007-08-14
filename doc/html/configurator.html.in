@@ -129,7 +129,7 @@ function displayfile()
    "SwitchType=switch/" + get_radio_value(document.config.switch_type) + "<br>" +
    "#MailProg=/bin/mail <br>" +
    "MpiDefault=" + get_radio_value(document.config.mpi_default) + "<br>" +
-   "#MessageTimeout=5 <br>" +
+   "#MessageTimeout=10 <br>" +
    "SlurmctldPidFile=" + document.config.slurmctld_pid_file.value + "<br>" +
    "SlurmdPidFile=" + document.config.slurmd_pid_file.value + "<br>" +
    "ProctrackType=proctrack/" + get_radio_value(document.config.proctrack_type) + "<br>" +
