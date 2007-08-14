@@ -65,8 +65,8 @@
 
 #define FEATURE_OP_OR  0
 #define FEATURE_OP_AND 1
-
-#define MAX_RETRIES 10
+#define MAX_FEATURES  32	/* max exclusive features "[fs1|fs2]"=2 */
+#define MAX_RETRIES   10
 
 struct node_set {		/* set of nodes with same configuration */
 	uint32_t cpus_per_node;	/* NOTE: This is the minimum count,
@@ -77,7 +77,7 @@ struct node_set {		/* set of nodes with same configuration */
 	uint32_t real_memory;
 	uint32_t nodes;
 	uint32_t weight;
-	int feature;
+	bitstr_t *feature_bits;
 	bitstr_t *my_bitmap;
 };
 
@@ -107,7 +107,7 @@ static int _pick_best_nodes(struct node_set *node_set_ptr,
 			    struct part_record *part_ptr,
 			    uint32_t min_nodes, uint32_t max_nodes,
 			    uint32_t req_nodes);
-static int _valid_features(char *requested, char *available);
+static bitstr_t *_valid_features(char *requested, char *available);
 
 
 /*
@@ -502,7 +502,8 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 			job_ptr->details->job_max_memory = 0;
 		}
 
-                debug3("Job %u in exclusive mode? %d cr_enabled %d CR type %d num_procs %d", 
+                debug3("Job %u in exclusive mode? "
+		     "%d cr_enabled %d CR type %d num_procs %d", 
 		     job_ptr->job_id, 
 		     job_ptr->details->shared ? 0 : 1,
 		     cr_enabled,
@@ -620,21 +621,23 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 		total_nodes = total_cpus = 0;	/* reinitialize */
 	}
 
-	/* identify how many feature sets we have (e.g. "[fs1|fs2|fs3|fs4]" */
-	max_feature = min_feature = node_set_ptr[0].feature;
-	for (i = 1; i < node_set_size; i++) {
-		if (node_set_ptr[i].feature > max_feature)
-			max_feature = node_set_ptr[i].feature;
-		if (node_set_ptr[i].feature < min_feature)
-			min_feature = node_set_ptr[i].feature;
+	/* identify the min and max feature values for exclusive OR */
+	max_feature = -1;
+	min_feature = MAX_FEATURES;
+	for (i = 0; i < node_set_size; i++) {
+		j = bit_ffs(node_set_ptr[i].feature_bits);
+		if ((j >= 0) && (j < min_feature))
+			min_feature = j;
+		j = bit_fls(node_set_ptr[i].feature_bits);
+		if ((j >= 0) && (j > max_feature))
+			max_feature = j;
 	}
-	
+		
 	for (j = min_feature; j <= max_feature; j++) {
 		for (i = 0; i < node_set_size; i++) {
 			bool pick_light_load = false;
-			if (node_set_ptr[i].feature != j)
+			if (!bit_test(node_set_ptr[i].feature_bits, j))
 				continue;
-			
 			if (!runable_ever) {
 				int cr_disabled = 0;
 				total_mem = 0;
@@ -745,13 +748,14 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 				FREE_NULL_BITMAP(avail_bitmap);
 				avail_bitmap = backup_bitmap;
 			}
-		}
+		} /* for (i = 0; i < node_set_size; i++) */
 
 		/* try to get req_nodes now for this feature */
-		if ((req_nodes   >  min_nodes) && 
-		    (avail_nodes >= min_nodes) &&
-		    (avail_nodes <  req_nodes) &&
-		    ((job_ptr->details->req_node_bitmap == NULL) ||
+		if (avail_bitmap
+		&&  (req_nodes   >  min_nodes) 
+		&&  (avail_nodes >= min_nodes)
+		&&  (avail_nodes <  req_nodes)
+		&&  ((job_ptr->details->req_node_bitmap == NULL) ||
 		     bit_super_set(job_ptr->details->req_node_bitmap, 
                                         avail_bitmap))) {
 			pick_code = select_g_job_test(job_ptr, avail_bitmap, 
@@ -773,12 +777,13 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 		/* determine if job could possibly run (if all configured 
 		 * nodes available) */
 
-		if ((!runable_ever || !runable_avail)
-		    &&  (total_nodes >= min_nodes)
-		    &&  ((slurmctld_conf.fast_schedule == 0) ||
-			 (total_cpus >= job_ptr->num_procs))
-		    &&  ((job_ptr->details->req_node_bitmap == NULL) ||
-			 (bit_super_set(job_ptr->details->req_node_bitmap, 
+		if (total_bitmap
+		&&  (!runable_ever || !runable_avail)
+		&&  (total_nodes >= min_nodes)
+		&&  ((slurmctld_conf.fast_schedule == 0) ||
+		     (total_cpus >= job_ptr->num_procs))
+		&&  ((job_ptr->details->req_node_bitmap == NULL) ||
+		     (bit_super_set(job_ptr->details->req_node_bitmap, 
 					total_bitmap)))) {
 			if (!runable_avail) {
 				FREE_NULL_BITMAP(avail_bitmap);
@@ -1157,8 +1162,10 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 	else
 		FREE_NULL_BITMAP(select_bitmap);
 	if (node_set_ptr) {
-		for (i = 0; i < node_set_size; i++)
+		for (i = 0; i < node_set_size; i++) {
 			FREE_NULL_BITMAP(node_set_ptr[i].my_bitmap);
+			FREE_NULL_BITMAP(node_set_ptr[i].feature_bits);
+		}
 		xfree(node_set_ptr);
 	}
 	return error_code;
@@ -1180,10 +1187,11 @@ static int _build_node_list(struct job_record *job_ptr,
 	struct config_record *config_ptr;
 	struct part_record *part_ptr = job_ptr->part_ptr;
 	ListIterator config_iterator;
-	int tmp_feature, check_node_config, config_filter = 0;
+	int check_node_config, config_filter = 0;
 	struct job_details *detail_ptr = job_ptr->details;
 	bitstr_t *exc_node_mask = NULL;
 	multi_core_data_t *mc_ptr = detail_ptr->mc_ptr;
+	bitstr_t *tmp_feature;
 
 	node_set_inx = 0;
 	node_set_ptr = (struct node_set *) 
@@ -1202,10 +1210,6 @@ static int _build_node_list(struct job_record *job_ptr,
 
 	while ((config_ptr = (struct config_record *) 
 			list_next(config_iterator))) {
-		tmp_feature = _valid_features(job_ptr->details->features,
-					      config_ptr->feature);
-		if (tmp_feature == 0)
-			continue;
 
 		config_filter = 0;
 		if ((detail_ptr->job_min_procs    > config_ptr->cpus       )
@@ -1234,32 +1238,42 @@ static int _build_node_list(struct job_record *job_ptr,
 			check_node_config = 0;
 
 		node_set_ptr[node_set_inx].my_bitmap =
-		    bit_copy(config_ptr->node_bitmap);
+			bit_copy(config_ptr->node_bitmap);
 		if (node_set_ptr[node_set_inx].my_bitmap == NULL)
 			fatal("bit_copy malloc failure");
 		bit_and(node_set_ptr[node_set_inx].my_bitmap,
 			part_ptr->node_bitmap);
-		if (exc_node_mask)
+		if (exc_node_mask) {
 			bit_and(node_set_ptr[node_set_inx].my_bitmap,
 				exc_node_mask);
+		}
 		node_set_ptr[node_set_inx].nodes =
 			bit_set_count(node_set_ptr[node_set_inx].my_bitmap);
-		if (check_node_config && 
-		    (node_set_ptr[node_set_inx].nodes != 0))
+		if (check_node_config 
+		&&  (node_set_ptr[node_set_inx].nodes != 0)) {
 			_filter_nodes_in_set(&node_set_ptr[node_set_inx], 
 					     detail_ptr);
-
+		}
 		if (node_set_ptr[node_set_inx].nodes == 0) {
 			FREE_NULL_BITMAP(node_set_ptr[node_set_inx].my_bitmap);
 			continue;
 		}
+
+		tmp_feature = _valid_features(job_ptr->details->features,
+					      config_ptr->feature);
+		if (tmp_feature == NULL) {
+			FREE_NULL_BITMAP(node_set_ptr[node_set_inx].my_bitmap);
+			continue;
+		}
+		/* NOTE: Must bit_free(tmp_feature) to avoid memory leak */
+
 		node_set_ptr[node_set_inx].cpus_per_node =
 			config_ptr->cpus;
 		node_set_ptr[node_set_inx].real_memory =
 			config_ptr->real_memory;		
 		node_set_ptr[node_set_inx].weight =
 		    config_ptr->weight;
-		node_set_ptr[node_set_inx].feature = tmp_feature;
+		node_set_ptr[node_set_inx].feature_bits = tmp_feature;
 		debug2("found %d usable nodes from config containing %s",
 		       node_set_ptr[node_set_inx].nodes, config_ptr->nodes);
 
@@ -1271,6 +1285,7 @@ static int _build_node_list(struct job_record *job_ptr,
 	list_iterator_destroy(config_iterator);
 	/* eliminate last (incomplete) node_set record */
 	FREE_NULL_BITMAP(node_set_ptr[node_set_inx].my_bitmap);
+	FREE_NULL_BITMAP(node_set_ptr[node_set_inx].feature_bits);
 	FREE_NULL_BITMAP(exc_node_mask);
 
 	if (node_set_inx == 0) {
@@ -1504,24 +1519,28 @@ extern void build_node_details(struct job_record *job_ptr)
  *	slurm administrator and user guides for details. returns 1 if 
  *	requirements are satisfied without mutually exclusive feature list.
  */
-static int _valid_features(char *requested, char *available)
+static bitstr_t *_valid_features(char *requested, char *available)
 {
 	char *tmp_requested, *str_ptr1;
-	int bracket, found, i, option, position, result;
+	int bracket, found, i, position, result;
 	int last_op;		/* last operation 0 for or, 1 for and */
 	int save_op = 0, save_result = 0;	/* for bracket support */
+	bitstr_t *result_bits = (bitstr_t *) NULL;
 
-	if (requested == NULL)
-		return 1;	/* no constraints */
-	if (available == NULL)
-		return 0;	/* no features */
+	if (requested == NULL) {		/* no constraints */
+		result_bits = bit_alloc(MAX_FEATURES);
+		bit_set(result_bits, 0);
+		return result_bits;
+	}
+	if (available == NULL)			/* no features */
+		return result_bits;
 
 	tmp_requested = xstrdup(requested);
-	bracket = option = position = 0;
+	bracket = position = 0;
 	str_ptr1 = tmp_requested;	/* start of feature name */
 	result = 1;			/* assume good for now */
 	last_op = FEATURE_OP_AND;
-	for (i = 0;; i++) {
+	for (i=0; ; i++) {
 		if (tmp_requested[i] == (char) NULL) {
 			if (strlen(str_ptr1) == 0)
 				break;
@@ -1553,8 +1572,14 @@ static int _valid_features(char *requested, char *available)
 			tmp_requested[i] = (char) NULL;
 			found = _match_feature(str_ptr1, available);
 			if (bracket != 0) {
-				if (found)
-					option = position;
+				if (found) {
+					if (!result_bits)
+						result_bits = bit_alloc(MAX_FEATURES);
+					if (position < MAX_FEATURES)
+						bit_set(result_bits, (position-1));
+					else
+						error("_valid_features: overflow");
+				}
 				position++;
 			}
 			if (last_op == FEATURE_OP_AND)
@@ -1576,8 +1601,15 @@ static int _valid_features(char *requested, char *available)
 		} else if (tmp_requested[i] == ']') {
 			tmp_requested[i] = (char) NULL;
 			found = _match_feature(str_ptr1, available);
-			if (found)
-				option = position;
+			if (found) {
+				if (!result_bits)
+					result_bits = bit_alloc(MAX_FEATURES);
+				if (position < MAX_FEATURES)
+					bit_set(result_bits, (position-1));
+				else
+					error("_valid_features: overflow");
+			}
+			position++;
 			result |= found;
 			if (save_op == FEATURE_OP_AND)
 				result &= save_result;
@@ -1603,11 +1635,18 @@ static int _valid_features(char *requested, char *available)
 			bracket = 0;
 		}
 	}
-
-	if (position)
-		result *= option;
 	xfree(tmp_requested);
-	return result;
+
+	if (result) {
+		if (!result_bits) {
+			result_bits = bit_alloc(MAX_FEATURES);
+			bit_set(result_bits, 0);
+		}
+	} else {
+		FREE_NULL_BITMAP(result_bits);
+	}
+
+	return result_bits;
 }
 
 /*
