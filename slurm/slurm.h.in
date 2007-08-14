@@ -626,6 +626,8 @@ typedef struct job_info {
 				 * slurm.h:enum job_state_reason */
 	char *network;		/* network specification */
 	char *comment;		/* arbitrary comment (used by Moab scheduler) */
+	char *work_dir;		/* pathname of working directory */
+	char *command;		/* command to be executed */
 	select_jobinfo_t select_jobinfo; /* opaque data type,
 			* process using select_g_get_jobinfo() */
 } job_info_t;

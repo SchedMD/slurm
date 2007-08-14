@@ -267,6 +267,8 @@ void slurm_free_job_info_members(job_info_t * job)
 		xfree(job->exc_node_inx);
 		xfree(job->network);
 		xfree(job->comment);
+		xfree(job->work_dir);
+		xfree(job->command);
 	}
 }
 

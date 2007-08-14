@@ -426,7 +426,18 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 		  time_str, (long int)job_ptr->pre_sus_time);
 	xstrcat(out, tmp_line);
 
-	/****** Line 15 (optional) ******/
+	/****** Line 15 (optional, batch only) ******/
+	if (job_ptr->batch_flag) {
+		if (one_liner)
+			xstrcat(out, " ");
+		else
+			xstrcat(out, "\n   ");
+		sprintf(tmp_line, "Command=%s WorkDir=%s",
+			job_ptr->command, job_ptr->work_dir);
+		xstrcat(out, tmp_line);
+	}
+
+	/****** Line 16 (optional) ******/
 	if (job_ptr->comment) {
 		if (one_liner)
 			xstrcat(out, " ");
@@ -436,7 +447,7 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 		xstrcat(out, tmp_line);
 	}
 
-	/****** Line 16 (optional) ******/
+	/****** Line 17 (optional) ******/
 	select_g_sprint_jobinfo(job_ptr->select_jobinfo,
 				select_buf, sizeof(select_buf),
 				SELECT_PRINT_MIXED);
@@ -447,7 +458,7 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 			xstrcat(out, "\n   ");
 		xstrcat(out, select_buf);
 	}
-	/****** Line 17 (optional) ******/
+	/****** Line 18 (optional) ******/
 	select_g_sprint_jobinfo(job_ptr->select_jobinfo,
 				select_buf, sizeof(select_buf),
 				SELECT_PRINT_BLRTS_IMAGE);
@@ -460,7 +471,7 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 			 "BlrtsImage=%s", select_buf);
 		xstrcat(out, tmp_line);
 	}
-	/****** Line 18 (optional) ******/
+	/****** Line 19 (optional) ******/
 	select_g_sprint_jobinfo(job_ptr->select_jobinfo,
 				select_buf, sizeof(select_buf),
 				SELECT_PRINT_LINUX_IMAGE);
@@ -473,7 +484,7 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 			 "LinuxImage=%s", select_buf);
 		xstrcat(out, tmp_line);
 	}
-	/****** Line 19 (optional) ******/
+	/****** Line 20 (optional) ******/
 	select_g_sprint_jobinfo(job_ptr->select_jobinfo,
 				select_buf, sizeof(select_buf),
 				SELECT_PRINT_MLOADER_IMAGE);
@@ -486,7 +497,7 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 			 "MloaderImage=%s", select_buf);
 		xstrcat(out, tmp_line);
 	}
-	/****** Line 20 (optional) ******/
+	/****** Line 21 (optional) ******/
 	select_g_sprint_jobinfo(job_ptr->select_jobinfo,
 				select_buf, sizeof(select_buf),
 				SELECT_PRINT_RAMDISK_IMAGE);
