@@ -2963,12 +2963,21 @@ void pack_job(struct job_record *dump_job_ptr, Buf buffer)
 static void _pack_default_job_details(struct job_details *detail_ptr,
 				      Buf buffer)
 {
+	int i;
+	char *cmd_line = NULL;
+
 	if (detail_ptr) {
 		packstr(detail_ptr->features, buffer);
 		packstr(detail_ptr->work_dir, buffer);
-		if (detail_ptr->argv)
-			packstr(detail_ptr->argv[0], buffer);
-		else
+		if (detail_ptr->argv) {
+			for (i=0; detail_ptr->argv[i]; i++) {
+				if (cmd_line)
+					xstrcat(cmd_line, " ");
+				xstrcat(cmd_line, detail_ptr->argv[i]);
+			}
+			packstr(cmd_line, buffer);
+			xfree(cmd_line);
+		} else
 			packnull(buffer);
 
 		pack32(detail_ptr->min_nodes, buffer);
