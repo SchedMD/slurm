@@ -305,7 +305,8 @@ the each task in each job step is sent SIGTERM followed by SIGKILL. The
 interval between signals is specified by the SLURM configuration parameter
 \fBKillWait\fR.  A time limit of zero represents unlimited time.
 Acceptable time formats include "minutes", "minutes:seconds", 
-"hours:minutes:seconds" and "days-hours:minutes:seconds".
+"hours:minutes:seconds", "days\-hours", "days\-hours:minutes" and 
+"days\-hours:minutes:seconds".
 
 .TP
 \fB\-\-tasks\-per\-node\fR[=]<\fIn\fR>
