@@ -869,8 +869,8 @@ static void *_thread_per_group_rpc(void *args)
 		}
 			
 		/* SPECIAL CASE: Kill non-startable batch job */
-		if ((msg_type == REQUEST_BATCH_JOB_LAUNCH)
-		    && rc) {
+		if ((msg_type == REQUEST_BATCH_JOB_LAUNCH) && rc &&
+		    (ret_data_info->type != RESPONSE_FORWARD_FAILED)) {
 			batch_job_launch_msg_t *launch_msg_ptr = 
 				task_ptr->msg_args_ptr;
 			uint32_t job_id = launch_msg_ptr->job_id;
@@ -932,12 +932,12 @@ static void *_thread_per_group_rpc(void *args)
 			else if(ret_data_info->type == RESPONSE_FORWARD_FAILED)
 				/* check if a forward failed */
 				thread_state = DSH_NO_RESP;
-			else /* some will fail that don't mean anything went 
-				bad like a job term request on a job that is
-				already finished, we will just exit on those
-				cases
-			     */
+			else {	/* some will fail that don't mean anything went
+				 * bad like a job term request on a job that is
+				 * already finished, we will just exit on those
+				 * cases */
 				thread_state = DSH_DONE;
+			}
 		}	
 		ret_data_info->err = thread_state;
 	}
