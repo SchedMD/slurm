@@ -91,13 +91,12 @@ static int  _build_node_list(struct job_record *job_ptr,
 			     int *node_set_size);
 static void _filter_nodes_in_set(struct node_set *node_set_ptr,
 				 struct job_details *detail_ptr);
+static int _job_count_bitmap(bitstr_t * bitmap, bitstr_t * jobmap,
+			     int job_cnt); 
 static int _match_feature(char *seek, char *available);
 static int _nodes_in_sets(bitstr_t *req_bitmap, 
 			  struct node_set * node_set_ptr, 
 			  int node_set_size);
-static void _node_load_bitmaps(bitstr_t * bitmap, bitstr_t ** no_load_bit, 
-			       bitstr_t ** light_load_bit, 
-			       bitstr_t ** heavy_load_bit);
 static int _pick_best_load(struct job_record *job_ptr, bitstr_t * bitmap, 
 			uint32_t min_nodes, uint32_t max_nodes, 
 			uint32_t req_nodes, bool test_only);
@@ -289,90 +288,53 @@ _pick_best_load(struct job_record *job_ptr, bitstr_t * bitmap,
 		uint32_t min_nodes, uint32_t max_nodes, 
 		uint32_t req_nodes, bool test_only)
 {
-	bitstr_t *no_load_bit, *light_load_bit, *heavy_load_bit;
-	int error_code;
+	bitstr_t *basemap;
+	int i, error_code, node_cnt, prev_cnt = 0, equal = 0;
 	
-	_node_load_bitmaps(bitmap, &no_load_bit, &light_load_bit, 
-			&heavy_load_bit);
-
-	/* always include required nodes or selection algorithm fails,
-	 * note that we have already confirmed these nodes are available
-	 * to this job */
-	if (job_ptr->details && job_ptr->details->req_node_bitmap)
-		 bit_or(no_load_bit, job_ptr->details->req_node_bitmap);
-
-	/* NOTE: select_g_job_test() is destructive of  bitmap */
-
-	/* first try to use idle nodes */
-	bit_and(bitmap, no_load_bit);
-	error_code = select_g_job_test(job_ptr, bitmap, 
-				       min_nodes, max_nodes, 
-				       req_nodes, test_only);
-
-	/* now try to use idle and lightly loaded nodes */
-	if (error_code) {
-		bit_nclear(bitmap, 0, (node_record_count-1));
-		bit_or(bitmap, no_load_bit);
-		bit_or(bitmap, light_load_bit);
+	basemap = bit_copy(bitmap);
+	if (basemap == NULL)
+		fatal("bit_copy malloc failure");
+	
+	for (i = 0; 1; i++) {
+		node_cnt = _job_count_bitmap(basemap, bitmap, i);
+		if ((node_cnt == 0) || (node_cnt == prev_cnt))
+			continue;
+		if ((node_cnt < min_nodes) ||
+		    ((req_nodes > min_nodes) && (node_cnt < req_nodes)))
+			continue;
+		equal = bit_equal(basemap, bitmap);
 		error_code = select_g_job_test(job_ptr, bitmap, 
 					       min_nodes, max_nodes, 
 					       req_nodes, test_only);
-	} 
-
-	/* now try to use all possible nodes */
-	if (error_code) {
-		bit_nclear(bitmap, 0, (node_record_count-1));
-		bit_or(bitmap, no_load_bit);
-		bit_or(bitmap, light_load_bit);
-		bit_or(bitmap, heavy_load_bit);
-		error_code = select_g_job_test(job_ptr, bitmap, 
-					       min_nodes, max_nodes, 
-					       req_nodes, test_only);
+		if (!error_code || equal)
+			break;
+		prev_cnt = node_cnt;
 	}
-	FREE_NULL_BITMAP(no_load_bit);
-	FREE_NULL_BITMAP(light_load_bit);
-	FREE_NULL_BITMAP(heavy_load_bit);
 
+	FREE_NULL_BITMAP(basemap);
 	return error_code;
 }
 
-/* 
- * _node_load_bitmaps - given a bitmap of nodes, create three new bitmaps
- *	indicative of the load on those nodes
- * IN bitmap             - map of nodes to test
- * OUT no_load_bitmap    - nodes from bitmap with no jobs
- * OUT light_load_bitmap - nodes from bitmap with one job
- * OUT heavy_load_bitmap - nodes from bitmap with two or more jobs
- * NOTE: caller must free the created bitmaps
+/*
+ * Set the bits in 'jobmap' that correspond to bits in the 'bitmap'
+ * that are running 'job_cnt' jobs or less, and clear the rest.
  */
-static void
-_node_load_bitmaps(bitstr_t * bitmap, bitstr_t ** no_load_bit, 
-		bitstr_t ** light_load_bit, bitstr_t ** heavy_load_bit)
+static int
+_job_count_bitmap(bitstr_t * bitmap, bitstr_t * jobmap, int job_cnt) 
 {
-	int i, load;
+	int i, count = 0;
 	bitoff_t size = bit_size(bitmap);
-	bitstr_t *bitmap0 = bit_alloc(size);
-	bitstr_t *bitmap1 = bit_alloc(size);
-	bitstr_t *bitmap2 = bit_alloc(size);
-
-	if ((bitmap0 == NULL) || (bitmap1 == NULL) || (bitmap2 == NULL))
-		fatal("bit_alloc malloc failure");
 
 	for (i = 0; i < size; i++) {
-		if (!bit_test(bitmap, i))
-			continue;
-		load = node_record_table_ptr[i].run_job_cnt;
-		if      (load == 0)
-			bit_set(bitmap0, i);
-		else if (load == 1)
-			bit_set(bitmap1, i);
-		else
-			bit_set(bitmap2, i);
+		if (bit_test(bitmap, i) &&
+		    (node_record_table_ptr[i].run_job_cnt <= job_cnt)) {
+			bit_set(jobmap, i);
+			count++;
+		} else {
+			bit_clear(jobmap, i);
+		}
 	}
-	
-	*no_load_bit    = bitmap0;
-	*light_load_bit = bitmap1;
-	*heavy_load_bit = bitmap2;
+	return count;
 }
 
 /*

@@ -45,7 +45,8 @@ documents those changes that are of interest to users and admins.
     Moab scheduler.
  -- Added contribs dir with a perl api and torque wrappers for torque to slurm
     migration.  This dir should be used to put anything that is outside of 
-    slurm proper such as a different api or such.
+    slurm proper such as a different api or such. Perl APIs contributed by
+    Hongjia Cao (NUDT).
  -- In sched/wiki2: add support for tasklist with node name expressions 
     and task counts (e.g. TASKLIST=tux[1-4]*2:tux[12-14]*4").
  -- In select/cons_res with sched/wiki2: fix bug in task layout logic.
@@ -59,7 +60,11 @@ documents those changes that are of interest to users and admins.
     (e.g. "srun -C [rack1|rack2|rack3|rowB] srun")
  -- Create separate MPICH/MX plugin (split out from MPICH/GM plugin)
  -- Increase default MessageTimeout (in slurm.conf) from 5 to 10 secs.
-
+ -- Fix bug in batch job requeue if node zero of allocation fails to respond 
+    to task launch request.
+ -- Improve load leveling logic to more evenly distribute the workload. 
+    Contributed by Chris Holmes (HP).
+ 
 * Changes in SLURM 1.2.12
 =========================
  -- Increase maximum message size from 1MB to 16MB (from Ernest Artiaga, BSC). 
