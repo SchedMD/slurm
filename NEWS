@@ -43,10 +43,10 @@ documents those changes that are of interest to users and admins.
     from the user when excluding nodes, to avoid an error message.
  -- Disable salloc, sbatch and srun -I/--immediate options with 
     Moab scheduler.
- -- Added contribs dir with a perl api and torque wrappers for torque to slurm
-    migration.  This dir should be used to put anything that is outside of 
-    slurm proper such as a different api or such. Perl APIs contributed by
-    Hongjia Cao (NUDT).
+ -- Added "contribs" directory with a Perl API and Torque wrappers for Torque 
+    to SLURM migration.  This directory should be used to put anything that 
+    is outside of SLURM proper such as a different API. Perl APIs contributed 
+    by Hongjia Cao (NUDT).
  -- In sched/wiki2: add support for tasklist with node name expressions 
     and task counts (e.g. TASKLIST=tux[1-4]*2:tux[12-14]*4").
  -- In select/cons_res with sched/wiki2: fix bug in task layout logic.

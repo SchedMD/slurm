@@ -432,6 +432,7 @@ slurm_make_time_str (time_t *time, char *string, int size)
  *   min:sec
  *   hr:min:sec
  *   days-hr:min:sec
+ *   days-hr
  * output:
  *   minutes  (or -1 on error)
  */
@@ -468,6 +469,13 @@ extern int time_str2mins(char *string)
 
 		if (string[i] == '\0')
 			break;
+	}
+
+	if ((days != -1) && (hr == -1) && (min != 0)) {
+		/* format was "days-hr" or "days-hr:min" */
+		hr = min;
+		min = sec;
+		sec = 0;
 	}
 
 	if (days == -1)
