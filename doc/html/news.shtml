@@ -57,6 +57,7 @@ mechanism.</li>
 <a href="power_save.html">power savings</a> on idle nodes.</li>
 <li>Support for MPICH-MX, MPICH1/shmem and MPICH1/p4 added with 
 task launch directly from the <i>srun</i> command.</li>
+<li>Perl APIs and wrappers for mpiexec and the Torque/PBS commands.</li>
 </ul>
 
 <h2><a name="13">Major Updates in SLURM Version 1.3</a></h2>
@@ -83,6 +84,6 @@ to coordinate activies. Future development plans includes:
 and refresh.</li>
 </ul>
 
-<p style="text-align:center;">Last modified 15 June 2007</p>
+<p style="text-align:center;">Last modified 15 August 2007</p>
 
 <!--#include virtual="footer.txt"-->
