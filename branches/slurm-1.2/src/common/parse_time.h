@@ -71,6 +71,7 @@ slurm_make_time_str (time_t *time, char *string, int size);
  *   min:sec
  *   hr:min:sec
  *   days-hr:min:sec
+ *   days-hr
  * output:
  *   minutes
  */
