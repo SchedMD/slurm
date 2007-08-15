@@ -52,6 +52,7 @@ make_bash_script $file_in "
 #
 # Submit a slurm job that will execute 'sleep'
 # Use scontrol to confirm time limit
+# Time format is "minutes"
 #
 set job_id 0
 spawn $sbatch -N1 --output=none --error=none --time=$time_set $file_in
@@ -85,6 +86,94 @@ expect {
 	}
 }
 if {$time_set != $time_get} {
+	send_user "\nFAILURE: sbatch failed to set time limit\n"
+	set exit_code 1
+}
+cancel_job $job_id
+
+#
+# Submit another slurm job that will execute 'sleep'
+# Use scontrol to confirm time limit
+# Time format is "hours:minutes:seconds"
+#
+set job_id 0
+set time_get 0
+set time_set "2:01:00"
+spawn $sbatch -N1 --output=none --error=none --time=$time_set $file_in
+expect {
+	-re "Submitted batch job ($number)" {
+		set job_id $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sbatch not responding\n"
+		set exit_code 1
+		exp_continue
+	}
+	eof {
+		wait
+	}
+}
+if { $job_id == 0 } {
+	send_user "\nFAILURE: failed to submit job\n"
+	exit 1
+}
+
+spawn $scontrol show job $job_id
+expect {
+	-re "TimeLimit=($number)" {
+		set time_get $expect_out(1,string)
+		exp_continue
+	}
+	eof {
+		wait
+	}
+}
+if {$time_get != 121} {
+	send_user "\nFAILURE: sbatch failed to set time limit\n"
+	set exit_code 1
+}
+cancel_job $job_id
+
+#
+# Submit another slurm job that will execute 'sleep'
+# Use scontrol to confirm time limit
+# Time format is "days-hours"
+#
+set job_id 0
+set time_get 0
+set time_set "1-1"
+spawn $sbatch -N1 --output=none --error=none --time=$time_set $file_in
+expect {
+	-re "Submitted batch job ($number)" {
+		set job_id $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sbatch not responding\n"
+		set exit_code 1
+		exp_continue
+	}
+	eof {
+		wait
+	}
+}
+if { $job_id == 0 } {
+	send_user "\nFAILURE: failed to submit job\n"
+	exit 1
+}
+
+spawn $scontrol show job $job_id
+expect {
+	-re "TimeLimit=($number)" {
+		set time_get $expect_out(1,string)
+		exp_continue
+	}
+	eof {
+		wait
+	}
+}
+if {$time_get != 1500} {
 	send_user "\nFAILURE: sbatch failed to set time limit\n"
 	set exit_code 1
 }
