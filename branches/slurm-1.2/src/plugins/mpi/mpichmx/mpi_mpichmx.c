@@ -41,6 +41,7 @@
 
 #include <fcntl.h>
 #include <signal.h>
+#include <stdlib.h>
 #include <sys/types.h>
 
 #include <slurm/slurm_errno.h>
@@ -74,8 +75,8 @@
  * as 100 or 1000.  Various SLURM versions will likely require a certain
  * minimum versions for their plugins as this API matures.
  */
-const char plugin_name[]        = "mpi MPICH-GM plugin";
-const char plugin_type[]        = "mpi/mpichgm";
+const char plugin_name[]        = "mpi MPICH-MX plugin";
+const char plugin_type[]        = "mpi/mpichmx";
 const uint32_t plugin_version   = 100;
 
 int p_mpi_hook_slurmstepd_task(const mpi_plugin_task_info_t *job,
@@ -94,8 +95,16 @@ int p_mpi_hook_slurmstepd_task(const mpi_plugin_task_info_t *job,
 	env_array_overwrite_fmt(env, "GMPI_MASTER", "%s", addr);
 	env_array_overwrite_fmt(env, "GMPI_SLAVE",  "%s", addrbuf);
 	env_array_overwrite_fmt(env, "GMPI_ID",  "%u", job->gtaskid);
+	if (!getenv("GMPI_RECV")) {
+		env_array_overwrite_fmt(env, "GMPI_RECV",  "%u", "hybrid");
+	}
+
 	env_array_overwrite_fmt(env, "MXMPI_MASTER", "%s", addr);
 	env_array_overwrite_fmt(env, "MXMPI_ID", "%u", job->gtaskid);
+	env_array_overwrite_fmt(env, "MXMPI_SLAVE", "%s", addrbuf);
+	if (!getenv("MXMPI_RECV")) {
+		env_array_overwrite_fmt(env, "MXMPI_RECV",  "%u", "hybrid");
+	}
 	debug2("init for mpi rank %u\n", job->gtaskid);
 	
 	return SLURM_SUCCESS;
