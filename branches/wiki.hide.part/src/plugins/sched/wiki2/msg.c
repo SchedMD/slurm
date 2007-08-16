@@ -55,6 +55,8 @@ char     auth_key[KEY_SIZE] = "";
 char     e_host[E_HOST_SIZE] = "";
 char     e_host_bu[E_HOST_SIZE] = "";
 uint16_t e_port = 0;
+struct   part_record *exclude_part_ptr[EXC_PART_CNT];
+uint32_t first_job_id;
 uint16_t job_aggregation_time = 10;	/* Default value is 10 seconds */
 int      init_prio_mode = PRIO_HOLD;
 uint16_t kill_wait;
@@ -229,11 +231,13 @@ extern int parse_wiki_config(void)
 		{"EHost", S_P_STRING},
 		{"EHostBackup", S_P_STRING},
 		{"EPort", S_P_UINT16},
-		{"JobAggregationTime", S_P_UINT16},
-		{"JobPriority", S_P_STRING}, 
+		{"ExcludePartitions", S_P_STRING},
 		{"HostFormat", S_P_UINT16},
+		{"JobAggregationTime", S_P_UINT16},
+		{"JobPriority", S_P_STRING},
 		{NULL} };
 	s_p_hashtbl_t *tbl;
+	char *exclude_partitions;
 	char *key = NULL, *priority_mode = NULL, *wiki_conf;
 	struct stat buf;
 	slurm_ctl_conf_t *conf;
@@ -246,6 +250,7 @@ extern int parse_wiki_config(void)
 			sizeof(e_host));
 	} 
 	kill_wait = conf->kill_wait;
+	first_job_id = conf->first_job_id;
 	slurm_conf_unlock();
 
 	wiki_conf = _get_wiki_conf_path();
@@ -278,6 +283,25 @@ extern int parse_wiki_config(void)
 	s_p_get_uint16(&e_port, "EPort", tbl);
 	s_p_get_uint16(&job_aggregation_time, "JobAggregationTime", tbl); 
 
+	if (s_p_get_string(&exclude_partitions, "ExcludePartitions", tbl)) {
+		int i = 0;
+		char *tok, *tok_p;
+		tok = strtok_r(exclude_partitions, ",", &tok_p);
+		while (tok) {
+			if (i >= EXC_PART_CNT) {
+				error("ExcludePartitions has too many entries "
+				      "skipping %s and later entries");
+				break;
+			}	
+			exclude_part_ptr[i] = find_part_record(tok);
+			if (exclude_part_ptr[i])
+				i++;
+			else
+				error("ExcludePartitions %s not found", tok);
+			tok = strtok_r(NULL, ",", &tok_p);
+		}
+	}
+
 	if (s_p_get_string(&priority_mode, "JobPriority", tbl)) {
 		if (strcasecmp(priority_mode, "hold") == 0)
 			init_prio_mode = PRIO_HOLD;
@@ -298,6 +322,7 @@ extern int parse_wiki_config(void)
 	info("EHost              = %s", e_host);
 	info("EHostBackup        = %s", e_host_bu);
 	info("EPort              = %u", e_port);
+	info("HostFormat         = %u", use_host_exp);
 	info("JobAggregationTime = %u sec", job_aggregation_time);
 	info("JobPriority        = %s", init_prio_mode ? "run" : "hold");
 	info("KillWait           = %u sec", kill_wait);      

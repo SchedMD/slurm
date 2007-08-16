@@ -1,6 +1,11 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins.
 
+* Changes in SLURM 1.2.14
+=========================
+ -- Add wiki.conf parameter ExcludePartitions for selected partitions to 
+    be directly schedule by Slurm without Moab control
+
 * Changes in SLURM 1.2.13
 =========================
  -- Add slurm.conf parameter JobFileAppend.
