@@ -48,7 +48,10 @@ BuildRequires: openssl-devel >= 0.9.6 munge-libs munge-devel proctrack >= 3
 %{!?_slurm_sysconfdir: %define _slurm_sysconfdir /etc/slurm}
 %define _sysconfdir %_slurm_sysconfdir
 
-%define _perldir %(perl -e 'use Config; $T=$Config{installsitearch}; print $T;')
+%define _perlarch %(perl -e 'use Config; $T=$Config{installsitearch}; $P=$Config{installprefix}; $T =~ s/$P//; print $T;') 
+
+%define _perldir %{_prefix}%{_perlarch}
+
 %package perlapi
 Summary: Perl API to SLURM.
 Group: Development/System
@@ -224,6 +227,8 @@ test -f $RPM_BUILD_ROOT/%{_perldir}/Slurm.pm &&
   echo "%{_perldir}/Slurm.pm"                 >> $LIST
 test -f $RPM_BUILD_ROOT/%{_perldir}/auto/Slurm/Slurm.so &&
   echo "%{_perldir}/auto/Slurm/Slurm.so"      >> $LIST
+test -f $RPM_BUILD_ROOT/%{_mandir}/man3/Slurm.3 &&
+echo "%{_mandir}/man3/Slurm.3"                 >> $LIST
 
 LIST=./torque.files
 touch $LIST
