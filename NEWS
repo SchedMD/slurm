@@ -4,6 +4,7 @@ documents those changes that are of interest to users and admins.
 * Changes in SLURM 1.2.14
 =========================
  -- Fix a couple of bugs in MPICH/MX support (from Asier Roa, BSC).
+ -- Fix perl api for AIX
 
 * Changes in SLURM 1.2.13
 =========================
