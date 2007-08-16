@@ -28,7 +28,7 @@ SchedulerPort=7321
 ways. 
 The <i>SelectType=select/cons_res</i> parameter can be used to let
 SLURM allocate the individual processors, memory, and other 
-consumable resources (in Slurm version 1.2.1 or higher).
+consumable resources (in SLURM version 1.2.1 or higher).
 Alternately, <i>SelectType=select/linear</i> or 
 <i>SelectType=select/bluegene</i> can be used with the 
 <i>Shared=yes</i> or <i>Shared=force</i> parameter in 
@@ -78,6 +78,12 @@ in the <i>moab.cnf</i> file.</p>
 This identifies the computer on which the Moab daemons 
 executes which should be notified of events.</p>
 
+<p><b>ExcludePartitions</b> is used to identify partitions
+whose jobs are to be scheduled directly by SLURM on a 
+First-Come-First-Served basis.
+Moab will record and monitor the jobs, but their initiation
+will be outside of Moab's control.</p>
+
 <p><b>JobAggregationTime</b> is used to avoid notifying Moab 
 of large numbers of events occurring about the same time.
 If an event occurs within this number of seconds since Moab was
@@ -103,6 +109,9 @@ Possible values are "hold" and "run" with "hold" being the default.</p>
 #
 # Matches KEY in moab-private.cfg
 AuthKey=123456789
+#
+# Slurm directly schedules jobs in the debug partitions
+ExcludePartitions=debug
 #
 # Have Moab control job scheduling
 JobPriority=hold
@@ -134,6 +143,6 @@ CLIENTCFG[RM:slurm] KEY=123456789
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 15 March 2007</p>
+<p style="text-align:center;">Last modified 16 August 2007</p>
 
 <!--#include virtual="footer.txt"-->

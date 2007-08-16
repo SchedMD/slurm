@@ -39,6 +39,7 @@
 #define __SLURM_CONTROLLER_SCHED_PLUGIN_API_H__
 
 #include <slurm/slurm.h>
+#include <src/slurmctld/slurmctld.h>
 
 /*
  * Initialize the external scheduler adapter.
@@ -73,7 +74,8 @@ int slurm_sched_schedule( void );
 /*
  * Supply the initial SLURM priority for a newly-submitted job.
  */
-uint32_t slurm_sched_initial_priority( uint32_t max_prio );
+uint32_t slurm_sched_initial_priority( uint32_t max_prio, 
+				       struct job_record *job_ptr );
 
 /*
  * Note that some job is pending.

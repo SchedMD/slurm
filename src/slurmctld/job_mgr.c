@@ -3247,7 +3247,8 @@ static void _set_job_prio(struct job_record *job_ptr)
 {
 	xassert(job_ptr);
 	xassert (job_ptr->magic == JOB_MAGIC);
-	job_ptr->priority = slurm_sched_initial_priority(maximum_prio);
+	job_ptr->priority = slurm_sched_initial_priority(maximum_prio,
+							 job_ptr);
 	if (job_ptr->priority > 0)
 		maximum_prio = MIN(job_ptr->priority, maximum_prio);
 }

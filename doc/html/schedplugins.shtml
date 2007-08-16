@@ -5,7 +5,7 @@
 <h2> Overview</h2>
 <p> This document describes SLURM scheduler plugins and the API that defines 
 them. It is intended as a resource to programmers wishing to write their own SLURM 
-scheduler plugins. This is version 1 of the API.</p>
+scheduler plugins. This is version 100 of the API.</p>
 
 <p>It is noteworthy that two different models are used for job scheduling.
 The <b>backfill</b> scheduler lets SLURM establish the initial job priority
@@ -92,14 +92,20 @@ to indicate the reason for failure.</p>
 the plugin should return SLURM_ERROR and set the errno to an appropriate value 
 to indicate the reason for failure.</p>
 
-<p class="commandline">uint32_t slurm_sched_plugin_initial_priority (uint32_t last_prio);</p>
+<p class="commandline">uint32_t slurm_sched_plugin_initial_priority (
+uint32_t last_prio, struct job_record *job_ptr);</p>
 <p style="margin-left:.2in"><b>Description</b>: Establish the initial priority of a new job.</p>
-<p style="margin-left:.2in"><b>Arguments</b>:<span class="commandline"> last_prio</span>&nbsp; 
-&nbsp;&nbsp;(input) default priority of the previously submitted job. This can be used to 
-provide First-In-First-Out scheduling by assigning the new job a priority lower than this value.
-This could also be used to establish an initial priority of zero for all jobs, representing a 
-"held" state. The scheduler plugin can then decide where and when to initiate pending jobs 
-by altering their priority and (optionally) list of required nodes.</p>
+<p style="margin-left:.2in"><b>Arguments</b>:<br>
+<b>last_prio</b> (input) default priority of the previously submitted job. 
+This can be used to provide First-In-First-Out scheduling by assigning the 
+new job a priority lower than this value.
+This could also be used to establish an initial priority of zero for all jobs, 
+representing a "held" state. 
+The scheduler plugin can then decide where and when to initiate pending jobs 
+by altering their priority and (optionally) list of required nodes.<br>
+<b>job_ptr</b> (input) 
+Pointer to the slurmctld job structure. This can be used to get partition, 
+resource requirements, time limit, etc.</p>
 <p style="margin-left:.2in"><b>Returns</b>: The priority to be assigned to this job.</p>
 
 <p class="commandline">void slurm_sched_plugin_job_is_pending (void);</p>
@@ -124,19 +130,19 @@ the scheduler plugin.</p>
 <p class="commandline"><a name="strerror">const char *slurm_sched_strerror(int errnum);</a></p>
 <p style="margin-left:.2in"><b>Description</b>: Return a string description of a scheduler
 specific error code.</p>
-<p style="margin-left:.2in"><b>Arguments</b>:
-<span class="commandline"> errnum</span>&nbsp; &nbsp;&nbsp;(input) a scheduler
+<p style="margin-left:.2in"><b>Arguments</b>:<br>
+<b>errnum</b> (input) a scheduler
 specific error code.</p>
 <p style="margin-left:.2in"><b>Returns</b>: Pointer to string describing the error
 or NULL if no description found in this plugin.</p>
 <p class="footer"><a href="#top">top</a></p>
 
 <h2>Versioning</h2>
-<p> This document describes version 1 of the SLURM Scheduler API. Future 
+<p> This document describes version 100 of the SLURM Scheduler API. Future 
 releases of SLURM may revise this API. A scheduler plugin conveys its ability 
 to implement a particular API version using the mechanism outlined for SLURM plugins.</p>
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 20 March 2007</p>
+<p style="text-align:center;">Last modified 16 August 2007</p>
 
 <!--#include virtual="footer.txt"-->

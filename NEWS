@@ -5,6 +5,8 @@ documents those changes that are of interest to users and admins.
 =========================
  -- Fix a couple of bugs in MPICH/MX support (from Asier Roa, BSC).
  -- Fix perl api for AIX
+ -- Add wiki.conf parameter ExcludePartitions for selected partitions to 
+    be directly schedule by Slurm without Moab control
 
 * Changes in SLURM 1.2.13
 =========================
