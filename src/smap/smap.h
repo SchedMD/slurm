@@ -79,6 +79,7 @@
 #ifdef lines
 #  undef lines
 #endif
+
 #include <stdlib.h>
 #include <pwd.h>
 #include <ctype.h>
