@@ -1,7 +1,7 @@
 /*****************************************************************************\
  *  sched_plugin.c - scheduler plugin stub.
  *****************************************************************************
- *  Copyright (C) 2002 The Regents of the University of California.
+ *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Jay Windley <jwindley@lnxi.com>.
  *  UCRL-CODE-226842.
@@ -44,6 +44,7 @@
 #include "src/common/xstring.h"
 
 #include "src/slurmctld/sched_plugin.h"
+#include "src/slurmctld/slurmctld.h"
 
 
 /* ************************************************************************ */
@@ -51,7 +52,8 @@
 /* ************************************************************************ */
 typedef struct slurm_sched_ops {
 	int		(*schedule)		( void );
-	uint32_t	(*initial_priority)	( uint32_t );
+	uint32_t	(*initial_priority)	( uint32_t, 
+						  struct job_record * );
 	void            (*job_is_pending)     	( void );
 	int		(*reconfig)		( void );
 	void            (*partition_change)    	( void );
@@ -263,12 +265,14 @@ slurm_sched_schedule( void )
 /*  TAG(                   slurm_sched_initital_priority                )  */
 /* *********************************************************************** */
 uint32_t
-slurm_sched_initial_priority( u_int32_t last_prio )
+slurm_sched_initial_priority( u_int32_t last_prio, 
+			      struct job_record *job_ptr )
 {
 	if ( slurm_sched_init() < 0 )
 		return SLURM_ERROR;
 
-	return (*(g_sched_context->ops.initial_priority))( last_prio );
+	return (*(g_sched_context->ops.initial_priority))( last_prio, 
+							   job_ptr );
 }
 
 /* *********************************************************************** */
