@@ -74,6 +74,13 @@ DESTDIR_BUG
        warn $error;
 }
 
+# AIX has problems with not always having the correct
+# flags so we have to add some :)
+my $os = lc(`uname`);
+my $other_ld_flags = "";
+$other_ld_flags = "-brtl -G -bnoentry -bgcbypass:1000 -bexpfull"
+	if $os =~ "aix";
+
 WriteMakefile(
 	NAME              => 'Slurm',
 	VERSION_FROM      => 'Slurm.pm', # finds $VERSION
@@ -88,6 +95,7 @@ WriteMakefile(
 	OBJECT            => '$(O_FILES)', # link all the C files too
 	CCFLAGS           => '-g',
 	PM                => {'Slurm.pm' => '$(INST_LIBDIR)/Slurm.pm'},
+	dynamic_lib       => {'OTHERLDFLAGS' => $other_ld_flags},
 );
 
 if (eval {require ExtUtils::Constant; 1}) {
