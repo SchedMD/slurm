@@ -241,8 +241,11 @@ extern int parse_wiki_config(void)
 	char *key = NULL, *priority_mode = NULL, *wiki_conf;
 	struct stat buf;
 	slurm_ctl_conf_t *conf;
+	int i;
 
 	/* Set default values */
+	for (i=0; i<EXC_PART_CNT; i++)
+		exclude_part_ptr[i] = NULL;
 	conf = slurm_conf_lock();
 	strncpy(e_host, conf->control_addr, sizeof(e_host));
 	if (conf->backup_addr) {
@@ -284,9 +287,9 @@ extern int parse_wiki_config(void)
 	s_p_get_uint16(&job_aggregation_time, "JobAggregationTime", tbl); 
 
 	if (s_p_get_string(&exclude_partitions, "ExcludePartitions", tbl)) {
-		int i = 0;
 		char *tok, *tok_p;
 		tok = strtok_r(exclude_partitions, ",", &tok_p);
+		i = 0;
 		while (tok) {
 			if (i >= EXC_PART_CNT) {
 				error("ExcludePartitions has too many entries "
