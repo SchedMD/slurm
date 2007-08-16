@@ -1,6 +1,9 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins.
 
+* Changes in SLURM 1.3.0-pre3
+=============================
+
 * Changes in SLURM 1.3.0-pre2
 =============================
  -- Added new srun option --pty to start job with pseudo terminal attached 
