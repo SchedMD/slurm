@@ -79,10 +79,19 @@ This identifies the computer on which the Moab daemons
 executes which should be notified of events.</p>
 
 <p><b>ExcludePartitions</b> is used to identify partitions
-whose jobs are to be scheduled directly by SLURM on a 
-First-Come-First-Served basis.
-Moab will record and monitor the jobs, but their initiation
-will be outside of Moab's control.</p>
+whose jobs are to be scheduled directly by SLURM rather 
+than Moab. 
+This only effects jobs which are submitted using Slurm 
+commands (i.e. srun, salloc or sbatch, NOT msub from Moab).
+These jobs will be scheduled on a First-Come-First-Served 
+basis. 
+This may provide faster response times than Moab scheduling. 
+Moab will account for and report the jobs, but their initiation
+will be outside of Moab's control.
+Note that Moab controls for resource reservation, fair share 
+scheduling, etc. will not apply to the initiation of these jobs.
+If more than one partition is to be scheduled directly be 
+Slurm, use a comma separator between their names.</p>
 
 <p><b>JobAggregationTime</b> is used to avoid notifying Moab 
 of large numbers of events occurring about the same time.
