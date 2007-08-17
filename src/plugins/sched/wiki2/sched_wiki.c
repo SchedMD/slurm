@@ -43,7 +43,7 @@
 
 const char		plugin_name[]	= "Wiki (Maui and Moab) Scheduler plugin";
 const char		plugin_type[]	= "sched/wiki2";
-const uint32_t		plugin_version	= 90;
+const uint32_t		plugin_version	= 100;
 
 /* A plugin-global errno. */
 static int plugin_errno = SLURM_SUCCESS;
@@ -79,16 +79,36 @@ extern int slurm_sched_plugin_schedule( void )
 /**************************************************************************/
 /* TAG(                   slurm_sched_plugin_initial_priority           ) */ 
 /**************************************************************************/
-extern uint32_t slurm_sched_plugin_initial_priority( uint32_t last_prio )
+extern uint32_t 
+slurm_sched_plugin_initial_priority( uint32_t last_prio, 
+				     struct job_record *job_ptr )
 {
 	(void) event_notify(1234, "Job submit");
+
+	if ((job_ptr->job_id >= first_job_id) && exclude_part_ptr[0]) {
+		/* Interactive job (initiated by srun) in partition
+		 * excluded from Moab scheduling */
+		int i;
+		static int exclude_prio = 100000000;
+		for (i=0; i<EXC_PART_CNT; i++) {
+			if (exclude_part_ptr[i] == NULL)
+				break;
+			if (exclude_part_ptr[i] == job_ptr->part_ptr) {
+				debug("Scheduiling job %u directly (no Moab)", 
+					job_ptr->job_id);
+				return (exclude_prio--);
+			}
+		}
+		return 0;
+	}
+
 	if (init_prio_mode == PRIO_DECREMENT) {
 		if (last_prio >= 2)
 			return (last_prio - 1);
 		else
 			return 1;
-	} else 
-		return 0;
+	}
+	return 0;
 }
 
 /**************************************************************************/
