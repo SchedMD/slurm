@@ -90,7 +90,7 @@ Moab will account for and report the jobs, but their initiation
 will be outside of Moab's control.
 Note that Moab controls for resource reservation, fair share 
 scheduling, etc. will not apply to the initiation of these jobs.
-If more than one partition is to be scheduled directly be 
+If more than one partition is to be scheduled directly by
 Slurm, use a comma separator between their names.</p>
 
 <p><b>JobAggregationTime</b> is used to avoid notifying Moab 
