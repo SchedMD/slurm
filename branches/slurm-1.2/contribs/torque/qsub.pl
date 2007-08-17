@@ -126,7 +126,9 @@ if ($man) {
 # Use sole remaining argument as jobIds
 my $script;
 if ($ARGV[0]) {
-        $script = $ARGV[0];
+	foreach (@ARGV) {
+	        $script .= "$_ ";
+	}
 } else {
         pod2usage(2);
 }

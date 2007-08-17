@@ -42,7 +42,7 @@
 
 use strict;
 use FindBin;
-use Getopt::Long 2.24 qw(:config no_ignore_case);
+use Getopt::Long 2.24 qw(:config no_ignore_case require_order);
 use lib "${FindBin::Bin}/../lib/perl";
 use autouse 'Pod::Usage' => qw(pod2usage);
 use Slurm ':all';
@@ -50,10 +50,57 @@ use Switch;
 
 my $srun = "${FindBin::Bin}/srun";
 
-my ($nprocs, $hostname, $help, $man);
+my ($nprocs, $hostname, $verbose, $nostdin, $allstdin, $nostdout, $pernode,
+    $perif, $no_shem, $gige, $kill_it, $tv, $config_file, $help, $man);
+
+sub get_new_config() {
+
+	my @file_parts = split(/\//, $config_file);
+	my $new_config = "/tmp/$file_parts[$#file_parts].slurm";
+	my $task_cnt = 0;
+	my $end_cnt = 0;
+
+	open OLD_FILE, "$config_file" or
+		die "$config_file doesn't exsist!";
+	open FILE, ">$new_config" or
+		die "Can't open $new_config";
+	
+	foreach my $line (<OLD_FILE>) {
+		my @parts = split(/\:/, $line);
+		if(!$parts[0] || !$parts[1]
+		   || ($parts[0] eq "")
+		   || ($parts[1] eq "")
+		   || ($parts[0] =~ '#')) {
+			next;
+		} elsif ($parts[0] =~ '\-n *(\d)') {
+			$end_cnt = $task_cnt+$1-1;
+			print FILE "$task_cnt-$end_cnt\t$parts[1]";
+			$task_cnt = $end_cnt+1;
+		} else {
+			print "We don't have support for hostname task layout in a config file right now.\nPlease use srun with the -m arbitrary mode to layout tasks on specific nodes.\n";
+		}		
+	}
+	
+	close FILE;
+	close OLD_FILE;
+	
+	return ($new_config, $task_cnt); 
+}
+
 
 GetOptions('n=i'      => \$nprocs,
-	   'host=s'      => \$hostname,
+	   'host=s'   => \$hostname,
+	   'verbose+'  => \$verbose,
+	   'nostdin'  => \$nostdin,
+	   'allstdin' => \$allstdin,
+	   'nostdout' => \$nostdout,
+	   'pernode'  => \$pernode,
+	   'perif'    => \$perif, # n/a
+	   'no-shmem' => \$no_shem, # n/a
+	   'gige'     => \$gige, # n/a
+	   'kill'     => \$kill_it, # n/a
+	   'tv|totalview' => \$tv, # n/a
+	   'config=s' => \$config_file,
 	   'help|?'   => \$help,
 	   'man'      => \$man
 	   ) or pod2usage(2);
@@ -78,14 +125,43 @@ if ($man) {
 # Use sole remaining argument as jobIds
 my $script;
 if ($ARGV[0]) {
-        $script = $ARGV[0];
-} else {
+	foreach (@ARGV) {
+	        $script .= "$_ ";
+	}
+} elsif(!$config_file) {
         pod2usage(2);
 }
 
+my $new_config;
+
+
 my $command = "$srun";
 
-$command .= " -n$nprocs" if $nprocs;
-$command .= " -w$hostname" if $hostname;
+# write stdout and err to files instead of stdout
+$command .= " -o job.o\%j -e job.e\%j" if $nostdout; 
+$command .= " -inone" if $nostdin; 
+$command .= " -i0" if !$allstdin; #default only send stdin to first node
+$command .= " -n$nprocs" if $nprocs; # number of tasks
+$command .= " -w$hostname" if $hostname; # Hostlist provided
+if($verbose) {
+	$command .= " -"; # verbose
+	for(my $i=0; $i<$verbose; $i++) {
+		$command .= "v";
+	}
+}
 
+if($config_file) {
+	($new_config, my $new_nprocs) = get_new_config();
+	$command .= " -n$new_nprocs" if !$nprocs;
+	$command .= " --multi-prog $new_config";
+} else {
+	$command .= " $script";
+}
+
+#print "$command\n";
 system($command);
+
+system("rm -f $new_config") if($new_config);
+
+
+
