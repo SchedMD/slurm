@@ -7,6 +7,8 @@ documents those changes that are of interest to users and admins.
  -- Fix perl api for AIX
  -- Add wiki.conf parameter ExcludePartitions for selected partitions to 
     be directly schedule by Slurm without Moab control
+ -- Optimize load leveling for shared nodes (alloc.patch, contributed 
+    by Chris Holmes, HP).
 
 * Changes in SLURM 1.2.13
 =========================
@@ -38,8 +40,8 @@ documents those changes that are of interest to users and admins.
  -- Increase default MessageTimeout (in slurm.conf) from 5 to 10 secs.
  -- Fix bug in batch job requeue if node zero of allocation fails to respond 
     to task launch request.
- -- Improve load leveling logic to more evenly distribute the workload. 
-    Contributed by Chris Holmes (HP).
+ -- Improve load leveling logic to more evenly distribute the workload 
+    (best_load.patch, contributed by Chris Holmes, HP).
  
 * Changes in SLURM 1.2.12
 =========================
