@@ -227,8 +227,6 @@ test -f $RPM_BUILD_ROOT/%{_perldir}/Slurm.pm &&
   echo "%{_perldir}/Slurm.pm"                 >> $LIST
 test -f $RPM_BUILD_ROOT/%{_perldir}/auto/Slurm/Slurm.so &&
   echo "%{_perldir}/auto/Slurm/Slurm.so"      >> $LIST
-test -f $RPM_BUILD_ROOT/%{_mandir}/man3/Slurm.3 &&
-echo "%{_mandir}/man3/Slurm.3"                 >> $LIST
 
 LIST=./torque.files
 touch $LIST
