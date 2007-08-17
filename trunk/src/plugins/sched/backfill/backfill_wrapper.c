@@ -45,11 +45,12 @@
 #include "src/common/plugin.h"
 #include "src/common/log.h"
 #include "src/common/macros.h"
+#include "src/slurmctld/slurmctld.h"
 #include "backfill.h"
 
 const char		plugin_name[]	= "SLURM Backfill Scheduler plugin";
 const char		plugin_type[]	= "sched/backfill";
-const uint32_t		plugin_version	= 90;
+const uint32_t		plugin_version	= 100;
 
 /* A plugin-global errno. */
 static int plugin_errno = SLURM_SUCCESS;
@@ -141,7 +142,8 @@ slurm_sched_plugin_schedule( void )
 /* TAG(                   slurm_sched_plugin_initial_priority           ) */
 /**************************************************************************/
 u_int32_t
-slurm_sched_plugin_initial_priority( u_int32_t last_prio )
+slurm_sched_plugin_initial_priority( u_int32_t last_prio, 
+				     struct job_record *job_ptr )
 {
 	if (last_prio >= 2)
 		return (last_prio - 1);

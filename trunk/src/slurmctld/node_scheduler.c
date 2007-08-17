@@ -432,6 +432,7 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 	int max_feature, min_feature;
 	bool runable_ever  = false;	/* Job can ever run */
 	bool runable_avail = false;	/* Job can run with available nodes */
+	bool pick_light_load = false;
 	uint32_t cr_enabled = 0;
 	int shared = 0;
 	select_type_plugin_info_t cr_type = SELECT_TYPE_INFO_NONE; 
@@ -583,6 +584,11 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 		total_nodes = total_cpus = 0;	/* reinitialize */
 	}
 
+#ifndef HAVE_BG
+	if (shared)
+		pick_light_load = true;
+#endif
+		
 	/* identify the min and max feature values for exclusive OR */
 	max_feature = -1;
 	min_feature = MAX_FEATURES;
@@ -597,7 +603,7 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 		
 	for (j = min_feature; j <= max_feature; j++) {
 		for (i = 0; i < node_set_size; i++) {
-			bool pick_light_load = false;
+
 			if (!bit_test(node_set_ptr[i].feature_bits, j))
 				continue;
 			if (!runable_ever) {
@@ -629,9 +635,6 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 			if (shared) {
 				bit_and(node_set_ptr[i].my_bitmap,
 					share_node_bitmap);
-#ifndef HAVE_BG
-				pick_light_load = true;
-#endif
 			} else if (cr_enabled) {
 				bit_and(node_set_ptr[i].my_bitmap,
 					partially_idle_node_bitmap);
@@ -659,6 +662,8 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 				FREE_NULL_BITMAP(possible_bitmap);
 				return error_code;
 			}
+			if (pick_light_load)
+				continue; /* Keep accumulating */
 			if (avail_nodes == 0)
 				continue; /* Keep accumulating */
 			if ((job_ptr->details->req_node_bitmap) &&
@@ -675,21 +680,12 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 			/* NOTE: select_g_job_test() is destructive of
 			 * avail_bitmap, so save a backup copy */
 			backup_bitmap = bit_copy(avail_bitmap);
-			if (pick_light_load) {
-				pick_code = _pick_best_load(job_ptr, 
-							    avail_bitmap, 
-							    min_nodes, 
-							    max_nodes,
-							    req_nodes,
-							    false);
-			} else {
-				pick_code = select_g_job_test(job_ptr, 
-							      avail_bitmap, 
-							      min_nodes, 
-							      max_nodes,
-							      req_nodes,
-							      false);
-			}
+			pick_code = select_g_job_test(job_ptr, 
+						      avail_bitmap, 
+						      min_nodes, 
+						      max_nodes,
+						      req_nodes,
+						      false);
 
 			if (pick_code == SLURM_SUCCESS) {
 				FREE_NULL_BITMAP(backup_bitmap);
@@ -711,6 +707,36 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 				avail_bitmap = backup_bitmap;
 			}
 		} /* for (i = 0; i < node_set_size; i++) */
+
+		/* try picking the lightest load from all
+		   available nodes with this feature set */
+		if (pick_light_load) {
+			backup_bitmap = bit_copy(avail_bitmap);
+			pick_code = _pick_best_load(job_ptr, 
+						    avail_bitmap, 
+						    min_nodes, 
+						    max_nodes,
+						    req_nodes,
+						    false);
+			if (pick_code == SLURM_SUCCESS) {
+				FREE_NULL_BITMAP(backup_bitmap);
+				if (bit_set_count(avail_bitmap) > max_nodes) {
+					avail_nodes = 0; 
+				} else {
+					FREE_NULL_BITMAP(total_bitmap);
+					FREE_NULL_BITMAP(possible_bitmap);
+					if (cr_enabled) {
+						FREE_NULL_BITMAP(
+						    partially_idle_node_bitmap);
+					}
+					*select_bitmap = avail_bitmap;
+					return SLURM_SUCCESS;
+				}
+			} else {
+				FREE_NULL_BITMAP(avail_bitmap);
+				avail_bitmap = backup_bitmap;
+			}
+		}
 
 		/* try to get req_nodes now for this feature */
 		if (avail_bitmap

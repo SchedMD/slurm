@@ -77,13 +77,9 @@ scontrol_update_part (int argc, char *argv[])
 			update_cnt++;
 		}
 		else if (strncasecmp(argv[i], "MinNodes=", 9) == 0) {
-			if ((strcasecmp(&argv[i][9],"UNLIMITED") == 0) ||
-			    (strcasecmp(&argv[i][8],"INFINITE") == 0))
-				part_msg.min_nodes = (uint32_t) INFINITE;
-			else
-				part_msg.min_nodes = 
-					(uint32_t) strtol(&argv[i][9], 
-						(char **) NULL, 10);
+			part_msg.min_nodes = 
+				(uint32_t) strtol(&argv[i][9], 
+					(char **) NULL, 10);
 			update_cnt++;
 		}
 		else if (strncasecmp(argv[i], "Default=", 8) == 0) {

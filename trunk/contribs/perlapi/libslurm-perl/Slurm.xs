@@ -61,6 +61,7 @@ free_slurm(void)
 }
 
 typedef uint16_t signo_t;
+/* This function doesn't appear to be used commenting out just to make sure
 static signo_t
 signame_to_no(char* signame)
 {
@@ -84,7 +85,7 @@ signame_to_no(char* signame)
 	}
 	return 0;
 }
-
+*/
 
 static SV* sarb_cb_sv = NULL;
 static void
@@ -137,7 +138,10 @@ PROTOTYPES: ENABLE
 # 	MISC FUNCTIONS
 ######################################################################
 slurm_t 
-get_slurm(slurm_t self, char *conf_file=NULL)
+get_slurm(self, char *conf_file=NULL)
+		slurm_t	RETVAL = NULL;
+		slurm_t	self = NULL;
+
 	CODE:
 		if(conf_file) {
 			slurm_api_set_conf_file(conf_file);
@@ -178,7 +182,8 @@ slurm_strerror(slurm_t self, int errnum = 0)
 # 	RESOURCE ALLOCATION FUNCTIONS
 ######################################################################
 HV*
-slurm_allocate_resources(slurm_t self, HV* job_req)
+slurm_allocate_resources(slurm_t self, job_req)
+		HV* job_req = NULL;
 	PREINIT:
 		job_desc_msg_t job_desc_msg;
 		resource_allocation_response_msg_t* resp_msg = NULL;
@@ -201,7 +206,8 @@ slurm_allocate_resources(slurm_t self, HV* job_req)
 		RETVAL
 
 HV*
-slurm_allocate_resources_blocking(slurm_t self, HV* job_req, time_t timeout = 0, SV* callback = NULL)
+slurm_allocate_resources_blocking(slurm_t self, job_req, time_t timeout = 0, SV* callback = NULL)
+		HV* job_req = NULL;
 	PREINIT:
 		job_desc_msg_t job_desc_msg;
 		resource_allocation_response_msg_t *resp_msg = NULL;
@@ -279,7 +285,8 @@ slurm_read_hostfile(slurm_t self, char* filename, int n)
 		RETVAL
 
 HV*
-slurm_submit_batch_job(slurm_t self, HV* job_req)
+slurm_submit_batch_job(slurm_t self, job_req)
+		HV* job_req = NULL;
 	PREINIT:
 		job_desc_msg_t job_desc_msg;
 		submit_response_msg_t* resp_msg = NULL;
@@ -302,7 +309,8 @@ slurm_submit_batch_job(slurm_t self, HV* job_req)
 		RETVAL
 	
 int
-slurm_job_will_run(slurm_t self, HV* job_req)
+slurm_job_will_run(slurm_t self, job_req)
+		HV* job_req = NULL;
 	PREINIT:
 		job_desc_msg_t job_desc_msg;
 	CODE:
@@ -318,22 +326,26 @@ slurm_job_will_run(slurm_t self, HV* job_req)
 #	JOB/STEP SIGNALING FUNCTIONS
 ######################################################################
 int
-slurm_kill_job(slurm_t self, U32 jobid, signo_t signal, U16 batch_flag = 0)
+slurm_kill_job(slurm_t self, U32 jobid, signal, U16 batch_flag = 0)
+		signo_t signal = 0;
 	C_ARGS:
 		jobid, signal, batch_flag
 
 int
-slurm_kill_job_step(slurm_t self, U32 jobid, U32 stepid, signo_t signal)
+slurm_kill_job_step(slurm_t self, U32 jobid, U32 stepid, signal)
+		signo_t signal = 0;
 	C_ARGS:
 		jobid, stepid, signal
 
 int
-slurm_signal_job(slurm_t self, U32 jobid, signo_t signal)
+slurm_signal_job(slurm_t self, U32 jobid, signal)
+		signo_t signal = 0;
 	C_ARGS:
 		jobid, signal
 		
 int
-slurm_signal_job_step(slurm_t self, U32 jobid, U32 stepid, signo_t signal)
+slurm_signal_job_step(slurm_t self, U32 jobid, U32 stepid, signal)
+		signo_t signal = 0;
 	C_ARGS:
 		jobid, stepid, signal
 
@@ -372,7 +384,8 @@ slurm_api_version(slurm_t self, OUTLIST int major, OUTLIST int minor, OUTLIST in
 		micro = SLURM_VERSION_MICRO(version);
 
 HV*
-slurm_load_ctl_conf(slurm_t self)
+slurm_load_ctl_conf(self)
+		slurm_t self = NULL;
 	PREINIT:
 		slurm_ctl_conf_t *new_ctl_conf;
 		int rc;
@@ -400,7 +413,8 @@ slurm_load_ctl_conf(slurm_t self)
 #	SLURM JOB CONTROL CONFIGURATION READ/PRINT/UPDATE FUNCTIONS
 ######################################################################
 HV*
-slurm_load_jobs(slurm_t self, U16 show_flags = 0)
+slurm_load_jobs(self, U16 show_flags = 0)
+		slurm_t self = NULL;
 	PREINIT:
 		job_info_msg_t* new_job_info_msg = NULL;
 		int rc;
@@ -459,7 +473,8 @@ slurm_pid2jobid(slurm_t self, U32 pid)
 		RETVAL
 
 int
-slurm_update_job(slurm_t self, HV* job_info)
+slurm_update_job(slurm_t self, job_info)
+		HV* job_info = NULL;
 	PREINIT:
 		job_desc_msg_t job_msg;
 	CODE:
@@ -479,7 +494,8 @@ slurm_update_job(slurm_t self, HV* job_info)
 #	SLURM JOB STEP CONFIGURATION READ/PRINT/UPDATE FUNCTIONS
 ######################################################################
 HV*
-slurm_get_job_steps(slurm_t self, U16 show_flags = 0, U32 jobid = 0, U32 stepid = 0)
+slurm_get_job_steps(self, U16 show_flags = 0, U32 jobid = 0, U32 stepid = 0)
+		slurm_t self = NULL;
 	PREINIT:
 		int rc;
 		job_step_info_response_msg_t* resp_msg;
@@ -527,7 +543,8 @@ slurm_job_step_layout_get(slurm_t self, U32 jobid, U32 stepid)
 #	SLURM NODE CONFIGURATION READ/PRINT/UPDATE FUNCTIONS
 ######################################################################
 HV*
-slurm_load_node(slurm_t self, U16 show_flags = 0)
+slurm_load_node(self, U16 show_flags = 0)
+		slurm_t self = NULL;
 	PREINIT:
 		node_info_msg_t* new_node_info_msg = NULL;
 		int rc;
@@ -553,7 +570,8 @@ slurm_load_node(slurm_t self, U16 show_flags = 0)
 # slurm_sprint_node_table
 
 int
-slurm_update_node(slurm_t self, HV* update_req)
+slurm_update_node(slurm_t self, update_req)
+		HV* update_req = NULL;
 	PREINIT:
 		update_node_msg_t node_msg;
 	INIT:
@@ -567,7 +585,8 @@ slurm_update_node(slurm_t self, HV* update_req)
 #	SLURM PARTITION CONFIGURATION READ/PRINT/UPDATE FUNCTIONS
 ######################################################################
 HV*
-slurm_load_partitions(slurm_t self, U16 show_flags = 0)
+slurm_load_partitions(self, U16 show_flags = 0)
+		slurm_t self = NULL;
 	PREINIT:
 		partition_info_msg_t* new_part_info_msg;
 		int rc;
@@ -593,7 +612,8 @@ slurm_load_partitions(slurm_t self, U16 show_flags = 0)
 # slurm_sprint_partition_info
 
 int
-slurm_update_partition(slurm_t self, HV* part_info)
+slurm_update_partition(slurm_t self, part_info)
+		HV* part_info = NULL;
 	PREINIT:
 		update_part_msg_t update_msg;
 	INIT:
@@ -696,7 +716,7 @@ slurm_checkpoint_error(slurm_t self, U32 jobid, U32 stepid, OUTLIST U32 error_co
 		char* err_msg = NULL;
 	CODE:
 		error_code = SLURM_SUCCESS;
-		RETVAL = slurm_checkpoint_error(jobid, stepid, &error_code, &err_msg);
+		RETVAL = slurm_checkpoint_error(jobid, stepid, (uint32_t *)&error_code, &err_msg);
 		Newz(0, error_msg, strlen(err_msg), char);
 		Copy(err_msg, error_msg, strlen(err_msg), char);
 		xfree(err_msg);
@@ -706,7 +726,8 @@ slurm_checkpoint_error(slurm_t self, U32 jobid, U32 stepid, OUTLIST U32 error_co
 ######################################################################
 #	SLURM TRIGGER FUNCTIONS
 ######################################################################
-int slurm_set_trigger(slurm_t self, HV* trigger_info)
+int slurm_set_trigger(slurm_t self, trigger_info)
+		HV* trigger_info = NULL;
 	PREINIT:
 		trigger_info_t trigger_set;
 	INIT:
@@ -716,7 +737,8 @@ int slurm_set_trigger(slurm_t self, HV* trigger_info)
 	C_ARGS:
 		&trigger_set
 
-int slurm_clear_trigger(slurm_t self, HV* trigger_info)
+int slurm_clear_trigger(slurm_t self, trigger_info)
+		HV* trigger_info = NULL;
 	PREINIT:
 		trigger_info_t trigger_clear;
 	INIT:
@@ -753,19 +775,32 @@ hostlist_t
 slurm_hostlist_create(char* hostlist)
 
 int
-slurm_hostlist_count(hostlist_t hl)
+slurm_hostlist_count(hl)
+		hostlist_t hl=NULL;
+	OUTPUT:
+		RETVAL
+	
+int
+slurm_hostlist_push(hl, char* hosts)
+		hostlist_t hl=NULL;
+	OUTPUT:
+		RETVAL
 
 int
-slurm_hostlist_push(hostlist_t hl, char* hosts)
+slurm_hostlist_push_host(hl, char* host)
+		hostlist_t hl=NULL;
+	OUTPUT:
+		RETVAL
 
 int
-slurm_hostlist_push_host(hostlist_t hl, char* host)
-
-int
-slurm_hostlist_find(hostlist_t hl, char* hostname)
+slurm_hostlist_find(hl, char* hostname)
+		hostlist_t hl=NULL;
+	OUTPUT:
+		RETVAL
 
 char*
-slurm_hostlist_shift(hostlist_t hl)
+slurm_hostlist_shift(hl)
+		hostlist_t hl=NULL;
 	PREINIT:
 		char *host = NULL;
 	CODE:
@@ -780,7 +815,8 @@ slurm_hostlist_shift(hostlist_t hl)
 		RETVAL
 
 char*
-slurm_hostlist_ranged_string(hostlist_t hl)
+slurm_hostlist_ranged_string(hl)
+		hostlist_t hl=NULL;
 	PREINIT:
 		size_t size = 1024;
 		int rc = 0;
@@ -794,7 +830,8 @@ slurm_hostlist_ranged_string(hostlist_t hl)
 		RETVAL
 
 void
-DESTROY(hostlist_t hl)
+DESTROY(hl)
+		hostlist_t hl=NULL;
 	CODE:
 		slurm_hostlist_destroy(hl);
 
@@ -808,7 +845,8 @@ DESTROY(hostlist_t hl)
 MODULE=Slurm PACKAGE=Slurm::Stepctx PREFIX=slurm_step_ctx_
 
 slurm_step_ctx
-slurm_step_ctx_create(slurm_step_ctx ctx = NO_INIT, HV* req)
+slurm_step_ctx_create(slurm_step_ctx ctx = NO_INIT, req)
+		HV* req = NULL;
 	PREINIT:
 		slurm_step_ctx_params_t params;
 	CODE:
@@ -824,7 +862,8 @@ slurm_step_ctx_create(slurm_step_ctx ctx = NO_INIT, HV* req)
 
 # XXX: slurm_step_ctx_get is divided into the following methods
 U32
-slurm_step_ctx_get_jobid(slurm_step_ctx ctx)
+slurm_step_ctx_get_jobid(ctx)
+		slurm_step_ctx ctx = NULL;
 	CODE:
 		if(slurm_step_ctx_get(ctx, SLURM_STEP_CTX_JOBID, &RETVAL) != SLURM_SUCCESS) {
 			XSRETURN_UNDEF;
@@ -833,7 +872,8 @@ slurm_step_ctx_get_jobid(slurm_step_ctx ctx)
 		RETVAL
 
 U32
-slurm_step_ctx_get_stepid(slurm_step_ctx ctx)
+slurm_step_ctx_get_stepid(ctx)
+		slurm_step_ctx ctx = NULL;
 	CODE:
 		if(slurm_step_ctx_get(ctx, SLURM_STEP_CTX_STEPID, &RETVAL) != SLURM_SUCCESS) {
 			XSRETURN_UNDEF;
@@ -842,7 +882,8 @@ slurm_step_ctx_get_stepid(slurm_step_ctx ctx)
 		RETVAL
 
 U32
-slurm_step_ctx_get_num_hosts(slurm_step_ctx ctx)
+slurm_step_ctx_get_num_hosts(ctx)
+		slurm_step_ctx ctx = NULL;
 	PREINIT:
 		uint32_t num_hosts;
 	CODE:
@@ -854,7 +895,8 @@ slurm_step_ctx_get_num_hosts(slurm_step_ctx ctx)
 		RETVAL
 
 AV*
-slurm_step_ctx_get_tasks(slurm_step_ctx ctx)
+slurm_step_ctx_get_tasks(ctx)
+		slurm_step_ctx ctx = NULL;
 	PREINIT:
 		int i;
 		uint32_t num_hosts;
@@ -877,7 +919,8 @@ slurm_step_ctx_get_tasks(slurm_step_ctx ctx)
 		RETVAL
 
 AV*
-slurm_step_ctx_get_tid(slurm_step_ctx ctx, U32 index)
+slurm_step_ctx_get_tid(ctx, U32 index)
+		slurm_step_ctx ctx = NULL;
 	PREINIT:
 		int i;
 		uint16_t *tasks;
@@ -904,7 +947,8 @@ slurm_step_ctx_get_tid(slurm_step_ctx ctx, U32 index)
 
 # XXX: the returned value is no longer valid if ctx goes away
 slurm_cred_t
-slurm_step_ctx_get_cred(slurm_step_ctx ctx)
+slurm_step_ctx_get_cred(ctx)
+		slurm_step_ctx ctx = NULL;
 	CODE:
 		if(slurm_step_ctx_get(ctx, SLURM_STEP_CTX_CRED, &RETVAL) != SLURM_SUCCESS) {
 			XSRETURN_UNDEF;
@@ -914,7 +958,8 @@ slurm_step_ctx_get_cred(slurm_step_ctx ctx)
 
 # XXX: the returned value is no longer valid if ctx goes away
 switch_jobinfo_t
-slurm_step_ctx_get_switch_job(slurm_step_ctx ctx)
+slurm_step_ctx_get_switch_job(ctx)
+		slurm_step_ctx ctx = NULL;
 	CODE:
 		if(slurm_step_ctx_get(ctx, SLURM_STEP_CTX_SWITCH_JOB, &RETVAL) != SLURM_SUCCESS) {
 			XSRETURN_UNDEF;
@@ -923,7 +968,8 @@ slurm_step_ctx_get_switch_job(slurm_step_ctx ctx)
 		RETVAL
 
 char*
-slurm_step_ctx_get_host(slurm_step_ctx ctx, U32 index)
+slurm_step_ctx_get_host(ctx, U32 index)
+		slurm_step_ctx ctx = NULL;
 	CODE:
 		if(slurm_step_ctx_get(ctx, SLURM_STEP_CTX_HOST, index, &RETVAL) != SLURM_SUCCESS) {
 			XSRETURN_UNDEF;
@@ -932,7 +978,8 @@ slurm_step_ctx_get_host(slurm_step_ctx ctx, U32 index)
 		RETVAL
 
 AV*
-slurm_step_ctx_get_user_managed_sockets(slurm_step_ctx ctx)
+slurm_step_ctx_get_user_managed_sockets(ctx)
+		slurm_step_ctx ctx = NULL;
 	PREINIT:
 		int i;
 		int tasks_requested;
@@ -953,7 +1000,8 @@ slurm_step_ctx_get_user_managed_sockets(slurm_step_ctx ctx)
 
 
 int
-slurm_step_ctx_daemon_per_node_hack(slurm_step_ctx ctx);
+slurm_step_ctx_daemon_per_node_hack(ctx);
+		slurm_step_ctx ctx = NULL;
 	C_ARGS:
 		ctx
 
@@ -964,7 +1012,8 @@ slurm_step_ctx_daemon_per_node_hack(slurm_step_ctx ctx);
 #		job_info, data_type, data
 
 void
-DESTROY(slurm_step_ctx ctx)
+DESTROY(ctx)
+		slurm_step_ctx ctx = NULL;
 	CODE:
 		if(slurm_step_ctx_destroy(ctx) != SLURM_SUCCESS) {
 			Perl_croak(aTHX_ "Failed to destory slurm_step_ctx");
@@ -973,7 +1022,9 @@ DESTROY(slurm_step_ctx ctx)
 
 MODULE=Slurm PACKAGE=Slurm::Stepctx PREFIX=slurm_step_
 int
-slurm_step_launch(slurm_step_ctx ctx, HV* hv, SV* start_cb = NULL, SV* finish_cb = NULL)
+slurm_step_launch(ctx, hv, SV* start_cb = NULL, SV* finish_cb = NULL)
+		HV* hv = NULL;
+		slurm_step_ctx ctx = NULL;
 	PREINIT:
 		slurm_step_launch_callbacks_t callbacks = {NULL, NULL};
 		slurm_step_launch_params_t params;
@@ -996,18 +1047,21 @@ slurm_step_launch(slurm_step_ctx ctx, HV* hv, SV* start_cb = NULL, SV* finish_cb
 
 
 int
-slurm_step_launch_wait_start(slurm_step_ctx ctx)
+slurm_step_launch_wait_start(ctx)
+		slurm_step_ctx ctx = NULL;
 	C_ARGS:
 		ctx
 
 
 void
-slurm_step_launch_wait_finish(slurm_step_ctx ctx)
+slurm_step_launch_wait_finish(ctx)
+		slurm_step_ctx ctx = NULL;
 	C_ARGS:
 		ctx
 
 void
-slurm_step_launch_abort(slurm_step_ctx ctx)
+slurm_step_launch_abort(ctx)
+		slurm_step_ctx ctx = NULL;
 	C_ARGS:
 		ctx
 

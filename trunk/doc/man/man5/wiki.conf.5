@@ -1,4 +1,4 @@
-.TH "wiki.conf" "5" "March 2007" "wiki.conf 1.1" "Slurm configuration file"
+.TH "wiki.conf" "5" "August 2007" "wiki.conf 1.2" "Slurm configuration file"
 .SH "NAME"
 wiki.conf \- Slurm configuration file for wiki and wiki2 scheduler plugins
 .SH "DESCRIPTION"
@@ -45,6 +45,22 @@ job terminates, etc.).
 This numeric value should match EPORT configured in the
 \fBmoab.cnf\fR file.
 Not applicable to wiki plugin, only the wiki2 plugin.
+
+.TP
+\fBExcludePartitions\fR
+Identifies partitions whose jobs are to be scheduled directly 
+by SLURM rather than Moab. 
+This only effects jobs which are submitted using Slurm 
+commands (i.e. srun, salloc or sbatch, NOT msub from Moab).
+These jobs will be scheduled on a First\-Come\-First\-Served 
+basis. 
+This may provide faster response times than Moab scheduling. 
+Moab will account for and report the jobs, but their initiation
+will be outside of Moab's control.
+Note that Moab controls for resource reservation, fair share 
+scheduling, etc. will not apply to the initiation of these jobs.
+If more than one partition is to be scheduled directly be 
+Slurm, use a comma separator between their names.
 
 .TP
 \fBJobAggregationTime\fR
@@ -100,6 +116,10 @@ This is currently experimental.
 # Hold all incoming jobs until Moab tells them to run
 .br
 JobPriority=hold
+.br
+# Slurm directly schedules jobs in the debug and test partitions
+.br
+ExcludePartitions=debug,test
 .br
 #
 .br
