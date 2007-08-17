@@ -176,7 +176,7 @@ static void *_msg_thread(void *no_data)
 		/* It would be nice to create a pthread for each new 
 		 * RPC, but that leaks memory on some systems when 
 		 * done from a plugin.
-		 * FIXME: Maintain a pool of and reuse them. */
+		 * FIXME: Maintain a pool of pthreads and reuse them. */
 		err_code = 0;
 		err_msg = "";
 		msg = _recv_msg(new_fd);
