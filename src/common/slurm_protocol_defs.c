@@ -1224,7 +1224,7 @@ extern uint32_t slurm_get_return_code(slurm_msg_type_t type, void *data)
 		rc = ((return_code_msg_t *)data)->return_code;
 		break;
 	case RESPONSE_FORWARD_FAILED:
-		rc = SLURM_ERROR;
+		rc = SLURM_COMMUNICATIONS_CONNECTION_ERROR;
 		break;
 	default:
 		error("don't know the rc for type %u returning %u", type, rc);
