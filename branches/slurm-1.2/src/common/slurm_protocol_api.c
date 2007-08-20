@@ -82,6 +82,7 @@
 static slurm_protocol_config_t proto_conf_default;
 static slurm_protocol_config_t *proto_conf = &proto_conf_default;
 /* static slurm_ctl_conf_t slurmctld_conf; */
+static int message_timeout = -1;
 
 /* STATIC FUNCTIONS */
 static void _remap_slurmctld_errno(void);
@@ -939,8 +940,10 @@ List slurm_receive_msgs(slurm_fd fd, int steps, int timeout)
 		orig_timeout = timeout;
 	}
 	if(steps) {
+		if (message_timeout < 0)
+			message_timeout = slurm_get_msg_timeout() * 1000;
 		orig_timeout = (timeout -
-				(FORWARD_EXTRA_STEP_WAIT_MS*(steps-1)))/steps;
+				(message_timeout*(steps-1)))/steps;
 		steps--;
 	} 
 
@@ -1771,13 +1774,14 @@ _send_and_recv_msgs(slurm_fd fd, slurm_msg_t *req, int timeout)
 	if(slurm_send_node_msg(fd, req) >= 0) {
 		if(req->forward.cnt>0) {
 			/* figure out where we are in the tree and set
-			   the timeout for to wait for our childern
-			   correctly
-			   (timeout+FORWARD_EXTRA_STEP_WAIT_MS sec per step)
-			   to let the child timeout */
-	
+			 * the timeout for to wait for our childern
+			 * correctly
+			 * (timeout+message_timeout sec per step)
+			 * to let the child timeout */
+			if (message_timeout < 0)
+				message_timeout = slurm_get_msg_timeout() * 1000;
 			steps = (req->forward.cnt+1)/slurm_get_tree_width();
-			timeout = (FORWARD_EXTRA_STEP_WAIT_MS*steps);
+			timeout = (message_timeout*steps);
 			steps++;
 			
 			timeout += (req->forward.timeout*steps);
