@@ -9,6 +9,8 @@ documents those changes that are of interest to users and admins.
     be directly schedule by Slurm without Moab control
  -- Optimize load leveling for shared nodes (alloc.patch, contributed 
     by Chris Holmes, HP).
+ -- Added PMI_TIME environment variable for user to control how PMI 
+    communications are spread out in time. See "man srun" for details.
 
 * Changes in SLURM 1.2.13
 =========================

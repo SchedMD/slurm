@@ -1169,6 +1169,13 @@ These environment variables, along with their corresponding options,
 are listed below.
 Note: Command line options will always override these settings.
 .TP 22
+\fBPMI_TIME\fR
+This is used exclusively with PMI (MPICH2 and MVAPICH2) and 
+controls how the much the communications from the tasks to the 
+srun are spread out in time in order to avoid overwhelming the 
+srun command with work. The default value is 500 (microseconds)
+per task. On relatively slow processors, higher values may be required.
+.TP
 \fBSLURM_CONF\fR
 The location of the SLURM configuration file.
 .TP
