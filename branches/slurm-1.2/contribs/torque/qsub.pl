@@ -62,7 +62,7 @@ my ($start_time,
     $mail_user_list,
     $job_name,
     $out_path,
-#    $priority,
+    $priority,
     $destination,
 #    $rerunable,
 #    $script_path,
@@ -92,7 +92,7 @@ GetOptions('a=s'      => \$start_time,
 	   'M=s'      => \$mail_user_list,
 	   'N=s'      => \$job_name,
 	   'o=s'      => \$out_path,
-#	   'p=i'      => \$priority,
+	   'p=i'      => \$priority,
 	   'q=s'      => \$destination,
 #	   'r=s'      => \$rerunable,
 #	   'S=s'      => \$script_path,
@@ -193,6 +193,7 @@ if($mail_options) {
 }
 $command .= " --mail-user=$mail_user_list" if $mail_user_list;
 $command .= " -J $job_name" if $job_name;
+$command .= " --nice=$priority" if $priority;
 $command .= " -p $destination" if $destination;
 $command .= " -C $additional_attributes" if $additional_attributes;
 
