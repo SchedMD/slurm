@@ -49,14 +49,15 @@
 #include "src/common/slurm_auth.h"
 
 #define MAX_RETRIES 5
-#define PMI_TIME    500	/* spacing between RPCs, usec */
 
 int pmi_fd = -1;
+int pmi_time = 0;
 uint16_t srun_port = 0;
 slurm_addr srun_addr;
 
 static int _forward_comm_set(struct kvs_comm_set *kvs_set_ptr);
 static int _get_addr(void);
+static void _set_pmi_time(void);
 
 static int _get_addr(void)
 {
@@ -75,6 +76,26 @@ static int _get_addr(void)
 	return SLURM_SUCCESS;
 }
 
+static void _set_pmi_time(void)
+{
+	char *tmp, *endptr;
+
+	if (pmi_time)
+		return;
+
+	tmp = getenv("PMI_TIME");
+	if (tmp == NULL) {
+		pmi_time = 500;
+		return;
+	}
+
+	pmi_time = strtol(tmp, &endptr, 10);
+	if ((pmi_time < 0) || (endptr[0] != '\0')) {
+		error("Invalid PMI_TIME: %s", tmp);
+		pmi_time = 500;
+	}
+}
+
 /* Transmit PMI Keyval space data */
 int slurm_send_kvs_comm_set(struct kvs_comm_set *kvs_set_ptr, 
 		int pmi_rank, int pmi_size)
@@ -87,6 +108,7 @@ int slurm_send_kvs_comm_set(struct kvs_comm_set *kvs_set_ptr,
 
 	if ((rc = _get_addr()) != SLURM_SUCCESS)
 		return rc; 
+	_set_pmi_time();
 
 	slurm_msg_t_init(&msg_send);
 	msg_send.address = srun_addr;
@@ -101,7 +123,7 @@ int slurm_send_kvs_comm_set(struct kvs_comm_set *kvs_set_ptr,
 	 * command is very overloaded.
 	 * We also increase the timeout (default timeout is
 	 * 10 secs). */
-	usleep(pmi_rank * PMI_TIME);
+	usleep(pmi_rank * pmi_time);
 	if      (pmi_size > 1000)	/* 100 secs */
 		timeout = slurm_get_msg_timeout() * 10000;
 	else if (pmi_size > 100)	/* 50 secs */
@@ -114,7 +136,7 @@ int slurm_send_kvs_comm_set(struct kvs_comm_set *kvs_set_ptr,
 			error("slurm_send_kvs_comm_set: %m");
 			return SLURM_ERROR;
 		}
-		usleep(pmi_rank * PMI_TIME);
+		usleep(pmi_rank * pmi_time);
 	}
 
 	return rc;
@@ -139,6 +161,9 @@ int  slurm_get_kvs_comm_set(struct kvs_comm_set **kvs_set_ptr,
 		error("_get_addr: %m");
 		return rc;
 	}
+
+	_set_pmi_time();
+
 	if (pmi_fd < 0) {
 		if ((pmi_fd = slurm_init_msg_engine_port(0)) < 0) {
 			error("slurm_init_msg_engine_port: %m");
@@ -177,7 +202,7 @@ int  slurm_get_kvs_comm_set(struct kvs_comm_set **kvs_set_ptr,
 	 * command is very overloaded.
 	 * We also increase the timeout (default timeout is
 	 * 10 secs). */
-	usleep(pmi_rank * PMI_TIME);
+	usleep(pmi_rank * pmi_time);
 	if      (pmi_size > 1000)	/* 100 secs */
 		timeout = slurm_get_msg_timeout() * 10000;
 	else if (pmi_size > 100)	/* 50 secs */
@@ -190,7 +215,7 @@ int  slurm_get_kvs_comm_set(struct kvs_comm_set **kvs_set_ptr,
 			error("slurm_get_kvs_comm_set: %m");
 			return SLURM_ERROR;
 		}
-		usleep(pmi_rank * PMI_TIME);
+		usleep(pmi_rank * pmi_time);
 	}
 	if (rc != SLURM_SUCCESS) {
 		error("slurm_get_kvs_comm_set error_code=%d", rc);
