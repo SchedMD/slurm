@@ -1224,6 +1224,9 @@ extern uint32_t slurm_get_return_code(slurm_msg_type_t type, void *data)
 		rc = ((return_code_msg_t *)data)->return_code;
 		break;
 	case RESPONSE_FORWARD_FAILED:
+		/* There may be other reasons for the failure, but
+		 * this may be a slurm_msg_t data type lacking the
+		 * err field found in ret_data_info_t data type */
 		rc = SLURM_COMMUNICATIONS_CONNECTION_ERROR;
 		break;
 	default:
