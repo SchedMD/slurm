@@ -2021,7 +2021,7 @@ List slurm_send_recv_msgs(const char *nodelist, slurm_msg_t *msg,
 			error("slurm_send_recv_msgs: can't get addr for "
 			      "host %s", name);
 			mark_as_failed_forward(&tmp_ret_list, name, 
-					       SLURM_SOCKET_ERROR);
+					       SLURM_COMMUNICATIONS_CONNECTION_ERROR);
 			free(name);
 			continue;
 		}
@@ -2030,7 +2030,7 @@ List slurm_send_recv_msgs(const char *nodelist, slurm_msg_t *msg,
 			error("slurm_send_recv_msgs to %s: %m", name);
 
 			mark_as_failed_forward(&tmp_ret_list, name, 
-					       SLURM_SOCKET_ERROR);
+					       SLURM_COMMUNICATIONS_CONNECTION_ERROR);
 			free(name);
 			continue;
 		}
@@ -2099,7 +2099,7 @@ List slurm_send_addr_recv_msgs(slurm_msg_t *msg, char *name, int timeout)
 
 	if ((fd = slurm_open_msg_conn(&msg->address)) < 0) {
 		mark_as_failed_forward(&ret_list, name, 
-				       SLURM_SOCKET_ERROR);
+				       SLURM_COMMUNICATIONS_CONNECTION_ERROR);
 		return ret_list;
 	}
 
