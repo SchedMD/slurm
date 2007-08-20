@@ -42,7 +42,7 @@
 
 use strict;
 use FindBin;
-use Getopt::Long 2.24 qw(:config no_ignore_case);
+use Getopt::Long 2.24 qw(:config no_ignore_case require_order);
 use lib "${FindBin::Bin}/../lib/perl";
 use autouse 'Pod::Usage' => qw(pod2usage);
 use Slurm ':all';
