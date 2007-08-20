@@ -1189,8 +1189,8 @@ int slurm_receive_msg_and_forward(slurm_fd fd, slurm_addr *orig_addr,
 		msg->forward_struct->ret_list = msg->ret_list;
 		/* take out the amount of timeout from this hop */
 		msg->forward_struct->timeout = header.forward.timeout;
-		if(msg->forward_struct->timeout < 0)
-			msg->forward_struct->timeout = 0;
+		if(msg->forward_struct->timeout <= 0)
+			msg->forward_struct->timeout = message_timeout;
 		msg->forward_struct->fwd_cnt = header.forward.cnt;
 
 		debug3("forwarding messages to %u nodes with timeout of %d", 
