@@ -12,6 +12,7 @@ documents those changes that are of interest to users and admins.
  -- Added PMI_TIME environment variable for user to control how PMI 
     communications are spread out in time. See "man srun" for details.
  -- Added PMI timing information to srun debug mode to aid in tuning.
+ -- Added checkpoint/ompi (OpenMPI) plugin. Still under development.
 
 * Changes in SLURM 1.2.13
 =========================
