@@ -231,6 +231,10 @@ sub parse_resource_list {
 	if($opt{cput}) {
 		$opt{cput} = get_minutes($opt{cput});
 	}
+
+	if($opt{mem}) {
+		$opt{mem} = convert_mb_format($opt{mem});
+	}
 	
 	return \%opt;
 }
@@ -279,7 +283,7 @@ sub parse_node_opts {
 	if($opt{task_cnt}) {
 		$opt{task_cnt} *= $opt{node_cnt};
 	}
-
+	
 	return \%opt;
 }
 
@@ -306,10 +310,27 @@ sub get_minutes {
 }
 
 sub convert_mb_format {
-	my ($amount) = @_;
-	
+	my ($value) = @_;
+	my ($amount, $suffix) = $value =~ /(\d+)($|[KMGT])/i;
 	return if !$amount;
+	$suffix = lc($suffix); 
 
+	if (!$suffix) {
+		$amount /= 1048576;
+	} elsif ($suffix eq "k") {
+		$amount /= 1024;
+	} elsif ($suffix eq "m") {
+		#do nothing this is what we want.
+	} elsif ($suffix eq "g") {
+		$amount *= 1024;
+	} elsif ($suffix eq "t") {
+		$amount *= 1048576;
+	} else { 
+		print "don't know what to do with suffix $suffix\n";
+		return;
+	}
+
+	return $amount;
 }
 ##############################################################################
 
