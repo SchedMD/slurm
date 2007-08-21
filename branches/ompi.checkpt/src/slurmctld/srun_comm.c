@@ -344,7 +344,7 @@ extern void srun_exec(struct step_record *step_ptr, char **argv)
 
 	if (step_ptr->port && step_ptr->host && step_ptr->host[0]) {
 		for (i=0; argv[i]; i++)
-			cnt++;
+			cnt++;	/* start at 1 to include trailing NULL */
 		addr = xmalloc(sizeof(struct sockaddr_in));
 		slurm_set_addr(addr, step_ptr->port, step_ptr->host);
 		msg_arg = xmalloc(sizeof(srun_exec_msg_t));
@@ -354,7 +354,6 @@ extern void srun_exec(struct step_record *step_ptr, char **argv)
 		msg_arg->argv    = xmalloc(sizeof(char *) * cnt);
 		for (i=0; i<cnt ; i++)
 			msg_arg->argv[i] = xstrdup(argv[i]);
-		msg_arg->argv[i] = NULL;
 		_srun_agent_launch(addr, step_ptr->host, SRUN_EXEC,
 				   msg_arg);
 	} else {
