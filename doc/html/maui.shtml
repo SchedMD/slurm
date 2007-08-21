@@ -113,7 +113,15 @@ is <b>AuthKey</b>, which should match the key used to configure
 Maui at build time.
 Note that SLURM's wiki plugin does not include a mechanism
 to submit new jobs, so even without this key nobody could
-run jobs as another user.</p>
+run jobs as another user.
+Note that Maui's use of an authentication key with SLURM 
+is still under development. 
+If that support is not in place and SLURM is configured 
+with an <b>AuthKey</b> then communications between Maui 
+and SLURM will fail and the SlurmctldLog file will contain 
+errors of this sort: <i>error: wiki: request lacks AUTH=</i>.
+If you see this error, remove <b>AuthKey</b> from SLURM's 
+configuration.</p>
 
 <p>Here is a sample <i>wiki.conf</i> file</p>
 <pre>
@@ -127,6 +135,6 @@ AuthKey=42
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 18 December 2006</p>
+<p style="text-align:center;">Last modified 21 August 2007</p>
 
 <!--#include virtual="footer.txt"-->
