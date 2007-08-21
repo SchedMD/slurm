@@ -417,7 +417,7 @@ main (int argc, char **argv)
 			pmi_rank, tv_str);
 	}
 	if (pmi_rank == 0) {
-		printf("NOTE: All failures, ");
+		printf("NOTE: All failures reported, ");
 		printf("but only first four successes reported\n");
 	}
 	exit(0);
