@@ -49,9 +49,12 @@
 #include <signal.h>
 #include <string.h>
 #include <sys/poll.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 #include <sys/wait.h>
 #include <time.h>
 #include <stdlib.h>
+#include <unistd.h>
 
 #include <slurm/slurm_errno.h>
 
@@ -484,16 +487,50 @@ rwfail:
 static void
 _exec_prog(slurm_msg_t *msg)
 {
+	pid_t child;
+	int pfd[2], status;
+	ssize_t len;
+	char buf[256];
 	srun_exec_msg_t *exec_msg = msg->data;
 
-	if (exec_msg->argc == 1) {
-		info("Exec '%s' for %u.%u", 
-			exec_msg->argv[0], 
-			exec_msg->job_id, exec_msg->step_id);
-	} else {
+	if (exec_msg->argc > 2) {
 		info("Exec '%s %s' for %u.%u", 
 			exec_msg->argv[0], exec_msg->argv[1],
 			exec_msg->job_id, exec_msg->step_id);
+	} else {
+		info("Exec '%s' for %u.%u", 
+			exec_msg->argv[0], 
+			exec_msg->job_id, exec_msg->step_id);
+	}
+
+	if (pipe(pfd) == -1) {
+		error("pipe: %m");
+		return;
+	}
+
+	child = fork();
+	if (child == 0) {
+		int fd = open("/dev/null", O_RDONLY);
+		dup2(fd, 0);		/* stdin from /dev/null */
+		dup2(pfd[1], 1);	/* stdout to pipe */
+		dup2(pfd[1], 2);	/* stderr to pipe */
+		close(pfd[0]);
+		close(pfd[1]);
+		execvp(exec_msg->argv[0], exec_msg->argv);
+		error("execvp(%s): %m", exec_msg->argv[0]);
+	} else if (child < 0) {
+		error("fork: %m");
+		/* send slurmctld checkpoint complete RPC */
+		return;
+	} else {
+		close(pfd[1]);
+		len = read(pfd[0], buf, sizeof(buf));
+		close(pfd[0]);
+info("exec out: %s", buf);
+		/* send stdout to srun stdout */
+		waitpid(child, &status, 0);
+		/* evaluate WEXITSTATUS(status) */
+		/* send stdout to slurmctld as checkpoint complete RPC */
 	}
 }
 
