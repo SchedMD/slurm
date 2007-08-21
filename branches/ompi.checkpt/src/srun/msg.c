@@ -93,6 +93,7 @@ static slurm_fd slurmctld_fd   = (slurm_fd) NULL;
 static void	_accept_msg_connection(srun_job_t *job, int fdnum);
 static void	_confirm_launch_complete(srun_job_t *job);
 static void	_dump_proctable(srun_job_t *job);
+static void	_exec_prog(slurm_msg_t *msg);
 static void 	_exit_handler(srun_job_t *job, slurm_msg_t *exit_msg);
 static void	_handle_msg(srun_job_t *job, slurm_msg_t *msg);
 static inline bool _job_msg_done(srun_job_t *job);
@@ -476,6 +477,24 @@ rwfail:
 	error("_process_launch_resp: "
 	      "write from srun message-handler process failed");
 	
+}
+
+/* This is used to initiate an OpenMPI checkpoint program, 
+ * but is written to be general purpose */
+static void
+_exec_prog(slurm_msg_t *msg)
+{
+	srun_exec_msg_t *exec_msg = msg->data;
+
+	if (exec_msg->argc == 1) {
+		info("Exec '%s' for %u.%u", 
+			exec_msg->argv[0], 
+			exec_msg->job_id, exec_msg->step_id);
+	} else {
+		info("Exec '%s %s' for %u.%u", 
+			exec_msg->argv[0], exec_msg->argv[1],
+			exec_msg->job_id, exec_msg->step_id);
+	}
 }
 
 /* This typically signifies the job was cancelled by scancel */
@@ -948,6 +967,10 @@ _handle_msg(srun_job_t *job, slurm_msg_t *msg)
 		debug3("slurmctld ping received");
 		slurm_send_rc_msg(msg, SLURM_SUCCESS);
 		slurm_free_srun_ping_msg(msg->data);
+		break;
+	case SRUN_EXEC:
+		_exec_prog(msg);
+		slurm_free_srun_exec_msg(msg->data);
 		break;
 	case SRUN_JOB_COMPLETE:
 		_job_step_complete(job, msg);

@@ -4,7 +4,7 @@
  *
  *  $Id$
  *****************************************************************************
- *  Copyright (C) 2002-2006 The Regents of the University of California.
+ *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>, et. al.
  *  Derived from pdsh written by Jim Garlick <garlick1@llnl.gov>
@@ -379,6 +379,7 @@ static agent_info_t *_make_agent_info(agent_arg_t *agent_arg_ptr)
 	
 	if ((agent_arg_ptr->msg_type != REQUEST_SHUTDOWN)
 	&&  (agent_arg_ptr->msg_type != REQUEST_RECONFIGURE)
+	&&  (agent_arg_ptr->msg_type != SRUN_EXEC)
 	&&  (agent_arg_ptr->msg_type != SRUN_TIMEOUT)
 	&&  (agent_arg_ptr->msg_type != SRUN_NODE_FAIL)
 	&&  (agent_arg_ptr->msg_type != SRUN_USER_MSG)
@@ -495,6 +496,7 @@ static void *_wdog(void *args)
 	ret_data_info_t *ret_data_info = NULL;
 
 	if ( (agent_ptr->msg_type == SRUN_JOB_COMPLETE)
+	||   (agent_ptr->msg_type == SRUN_EXEC)
 	||   (agent_ptr->msg_type == SRUN_PING)
 	||   (agent_ptr->msg_type == SRUN_TIMEOUT)
 	||   (agent_ptr->msg_type == SRUN_USER_MSG)
@@ -582,6 +584,7 @@ static void _notify_slurmctld_jobs(agent_info_t *agent_ptr)
 		job_id  = msg->job_id;
 		step_id = NO_VAL;
 	} else if ((agent_ptr->msg_type == SRUN_JOB_COMPLETE)
+	||         (agent_ptr->msg_type == SRUN_EXEC)
 	||         (agent_ptr->msg_type == SRUN_USER_MSG)) {
 		return;		/* no need to note srun response */
 	} else if (agent_ptr->msg_type == SRUN_NODE_FAIL) {
@@ -785,6 +788,7 @@ static void *_thread_per_group_rpc(void *args)
 	is_kill_msg = (	(msg_type == REQUEST_KILL_TIMELIMIT) ||
 			(msg_type == REQUEST_TERMINATE_JOB) );
 	srun_agent = (	(msg_type == SRUN_PING)    ||
+			(msg_type == SRUN_EXEC)    ||
 			(msg_type == SRUN_JOB_COMPLETE) ||
 			(msg_type == SRUN_TIMEOUT) ||
 			(msg_type == SRUN_USER_MSG) ||
@@ -1298,6 +1302,8 @@ static void _purge_agent_args(agent_arg_t *agent_arg_ptr)
 			slurm_free_kill_job_msg(agent_arg_ptr->msg_args);
 		else if (agent_arg_ptr->msg_type == SRUN_USER_MSG)
 			slurm_free_srun_user_msg(agent_arg_ptr->msg_args);
+		else if (agent_arg_ptr->msg_type == SRUN_EXEC)
+			slurm_free_srun_exec_msg(agent_arg_ptr->msg_args);
 		else
 			xfree(agent_arg_ptr->msg_args);
 	}

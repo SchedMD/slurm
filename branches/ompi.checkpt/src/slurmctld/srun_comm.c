@@ -1,7 +1,7 @@
 /*****************************************************************************\
  *  srun_comm.c - srun communications
  *****************************************************************************
- *  Copyright (C) 2002-2006 The Regents of the University of California.
+ *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
  *  UCRL-CODE-226842.
@@ -320,11 +320,46 @@ extern void srun_step_complete (struct step_record *step_ptr)
 	if (step_ptr->port && step_ptr->host && step_ptr->host[0]) {
 		addr = xmalloc(sizeof(struct sockaddr_in));
 		slurm_set_addr(addr, step_ptr->port, step_ptr->host);
-		msg_arg = xmalloc(sizeof(srun_timeout_msg_t));
+		msg_arg = xmalloc(sizeof(srun_job_complete_msg_t));
 		msg_arg->job_id   = step_ptr->job_ptr->job_id;
 		msg_arg->step_id  = step_ptr->step_id;
 		_srun_agent_launch(addr, step_ptr->host, SRUN_JOB_COMPLETE,
 				   msg_arg);
+	}
+}
+
+/*
+ * srun_exec - request that srun execute a specific command
+ *	and route it's output to stdout
+ * IN step_ptr - pointer to the slurmctld job step record
+ * IN argv - command and arguments to execute
+ */
+extern void srun_exec(struct step_record *step_ptr, char **argv)
+{
+	slurm_addr * addr;
+	srun_exec_msg_t *msg_arg;
+	int cnt = 1, i;
+
+	xassert(step_ptr);
+
+	if (step_ptr->port && step_ptr->host && step_ptr->host[0]) {
+		for (i=0; argv[i]; i++)
+			cnt++;
+		addr = xmalloc(sizeof(struct sockaddr_in));
+		slurm_set_addr(addr, step_ptr->port, step_ptr->host);
+		msg_arg = xmalloc(sizeof(srun_exec_msg_t));
+		msg_arg->job_id  = step_ptr->job_ptr->job_id;
+		msg_arg->step_id = step_ptr->step_id;
+		msg_arg->argc    = cnt;
+		msg_arg->argv    = xmalloc(sizeof(char *) * cnt);
+		for (i=0; i<cnt ; i++)
+			msg_arg->argv[i] = xstrdup(argv[i]);
+		msg_arg->argv[i] = NULL;
+		_srun_agent_launch(addr, step_ptr->host, SRUN_EXEC,
+				   msg_arg);
+	} else {
+		error("srun_exec %u.%u lacks communication channel",
+			step_ptr->job_ptr->job_id, step_ptr->step_id);
 	}
 }
 

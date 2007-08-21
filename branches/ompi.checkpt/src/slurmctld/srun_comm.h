@@ -1,7 +1,7 @@
 /*****************************************************************************\
  *  srun_comm.h - definitions srun communications
  *****************************************************************************
- *  Copyright (C) 2002-2006 The Regents of the University of California.
+ *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette@llnl.gov> et. al.
  *  UCRL-CODE-226842.
@@ -48,6 +48,15 @@
  * IN job_id - id of the job allocated resource
  */
 extern void srun_allocate (uint32_t job_id);
+
+/*
+ * srun_exec - request that srun execute a specific command
+ *	and route it's output to stdout
+ * IN step_ptr - pointer to the slurmctld job step record
+ * IN argv - command and arguments to execute
+ */
+extern void srun_exec(struct step_record *step_ptr, char **argv);
+
 
 /*
  * srun_job_complete - notify srun of a job's termination

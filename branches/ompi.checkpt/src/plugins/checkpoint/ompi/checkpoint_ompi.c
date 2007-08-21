@@ -55,6 +55,7 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 #include "src/slurmctld/slurmctld.h"
+#include "src/slurmctld/srun_comm.h"
 
 struct check_job_info {
 	uint16_t disabled;	/* counter, checkpointable only if zero */
@@ -273,6 +274,7 @@ static int _ckpt_step(struct step_record * step_ptr, uint16_t wait, int vacate)
 {
 	struct check_job_info *check_ptr;
 	struct job_record *job_ptr;
+	char *argv[3];
 
 	xassert(step_ptr);
 	check_ptr = (struct check_job_info *) step_ptr->check_job;
@@ -286,12 +288,16 @@ static int _ckpt_step(struct step_record * step_ptr, uint16_t wait, int vacate)
 	if (check_ptr->disabled)
 		return ESLURM_DISABLED;
 
-/* FIXME: Need to send RPC to srun command to execute 
- * ompi_checkpoint [--term] and capture the output (snapshot) 
- * Save the command's output in job's stdout. */
+	argv[0] = "ompi_checkpoint";
+	if (vacate) {
+		argv[1] = "--term";
+		argv[2] = NULL;
+	} else
+		argv[1] = NULL;
+	srun_exec(step_ptr, argv);
 	check_ptr->time_stamp = time(NULL);
 	check_ptr->wait_time  = wait;
 	info("checkpoint requested for job %u.%u", 
 		job_ptr->job_id, step_ptr->step_id);
-	return ESLURM_NOT_SUPPORTED;
+	return SLURM_SUCCESS;
 }
