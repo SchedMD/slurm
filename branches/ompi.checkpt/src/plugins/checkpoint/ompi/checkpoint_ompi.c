@@ -288,7 +288,7 @@ static int _ckpt_step(struct step_record * step_ptr, uint16_t wait, int vacate)
 	if (check_ptr->disabled)
 		return ESLURM_DISABLED;
 
-	argv[0] = "ompi_checkpoint";
+	argv[0] = "ompi-checkpoint";
 	if (vacate) {
 		argv[1] = "--term";
 		argv[2] = NULL;
