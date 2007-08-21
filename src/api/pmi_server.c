@@ -36,6 +36,7 @@
 #include "src/common/macros.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_defs.h"
+#include "src/common/timers.h"
 #include "src/common/xsignal.h"
 #include "src/common/xstring.h"
 #include "src/common/xmalloc.h"
@@ -47,6 +48,12 @@ static pthread_mutex_t kvs_mutex = PTHREAD_MUTEX_INITIALIZER;
 static int kvs_comm_cnt = 0;
 static int kvs_updated = 0;
 static struct kvs_comm **kvs_comm_ptr = NULL;
+
+/* Track time to process kvs put requests
+ * This can be used to tune PMI_TIME environment variable */
+static int min_time_kvs_put = 1000000;
+static int max_time_kvs_put = 0;
+static int tot_time_kvs_put = 0;
 
 struct barrier_resp {
 	uint16_t port;
@@ -95,6 +102,15 @@ static void _kvs_xmit_tasks(void)
 #if _DEBUG
 	info("All tasks at barrier, transmit KVS keypairs now");
 #endif
+
+	/* Target KVS_TIME should be about ave processing time */
+	debug("kvs_put processing time min=%d, max=%d ave=%d (usec)",
+		min_time_kvs_put, max_time_kvs_put, 
+		(tot_time_kvs_put / barrier_cnt));
+	min_time_kvs_put = 1000000;
+	max_time_kvs_put = 0;
+	tot_time_kvs_put = 0;
+
 	/* reset barrier info */
 	args = xmalloc(sizeof(struct agent_arg));
 	args->barrier_xmit_ptr = barrier_ptr;
@@ -356,12 +372,14 @@ static void _print_kvs(void)
 
 extern int pmi_kvs_put(struct kvs_comm_set *kvs_set_ptr)
 {
-	int i;
+	int i, usec_timer;
 	struct kvs_comm *kvs_ptr;
+	DEF_TIMERS;
 
 	/* Merge new data with old.
 	 * NOTE: We just move pointers rather than copy data where 
 	 * possible for improved performance */
+	START_TIMER;
 	pthread_mutex_lock(&kvs_mutex);
 	for (i=0; i<kvs_set_ptr->kvs_comm_recs; i++) {
 		kvs_ptr = _find_kvs_by_name(kvs_set_ptr->
@@ -378,6 +396,12 @@ extern int pmi_kvs_put(struct kvs_comm_set *kvs_set_ptr)
 	_print_kvs();
 	kvs_updated = 1;
 	pthread_mutex_unlock(&kvs_mutex);
+	END_TIMER;
+	usec_timer = DELTA_TIMER;
+	min_time_kvs_put = MIN(min_time_kvs_put, usec_timer);
+	max_time_kvs_put = MAX(max_time_kvs_put, usec_timer);
+	tot_time_kvs_put += usec_timer;
+
 	return SLURM_SUCCESS;
 }
 
