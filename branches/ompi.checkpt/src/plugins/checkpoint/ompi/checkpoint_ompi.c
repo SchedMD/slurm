@@ -50,7 +50,22 @@
 #include <slurm/slurm.h>
 #include <slurm/slurm_errno.h>
 
+#include "src/common/pack.h"
+#include "src/common/xassert.h"
+#include "src/common/xmalloc.h"
+#include "src/common/xstring.h"
 #include "src/slurmctld/slurmctld.h"
+
+struct check_job_info {
+	uint16_t disabled;	/* counter, checkpointable only if zero */
+	uint16_t reply_cnt;
+	uint16_t wait_time;
+	time_t   time_stamp;	/* begin or end checkpoint time */
+	uint32_t error_code;
+	char    *error_msg;
+};
+
+static int _ckpt_step(struct step_record * step_ptr, uint16_t wait, int vacate);
 
 /*
  * These variables are required by the generic plugin interface.  If they
@@ -90,6 +105,9 @@ const uint32_t plugin_version	= 90;
  */
 extern int init ( void )
 {
+	/* We can add a pthread here to handle timeout of pending checkpoint
+	 * requests. If a CHECK_VACATE request, we can just abort the job.
+	 * see checkpoint_aix.c for an example of how to do this. */
 	return SLURM_SUCCESS;
 }
 
@@ -106,31 +124,174 @@ extern int slurm_ckpt_op ( uint16_t op, uint16_t data,
 		struct step_record * step_ptr, time_t * event_time,
 		uint32_t *error_code, char **error_msg )
 {
-	return ESLURM_NOT_SUPPORTED;
+	int rc = SLURM_SUCCESS;
+	struct check_job_info *check_ptr;
+
+	xassert(step_ptr);
+	check_ptr = (struct check_job_info *) step_ptr->check_job;
+	xassert(check_ptr);
+
+	switch (op) {
+		case CHECK_ABLE:
+			if (check_ptr->disabled)
+				rc = ESLURM_DISABLED;
+			else {
+				if ((check_ptr->reply_cnt < 1) && event_time) {
+					/* Return time of last event */
+					*event_time = check_ptr->time_stamp;
+				}
+				rc = SLURM_SUCCESS;
+			}
+			break;
+		case CHECK_DISABLE:
+			check_ptr->disabled++;
+			break;
+		case CHECK_ENABLE:
+			check_ptr->disabled--;
+			break;
+		case CHECK_CREATE:
+			check_ptr->time_stamp = time(NULL);
+			check_ptr->reply_cnt = 0;
+			check_ptr->error_code = 0;
+			xfree(check_ptr->error_msg);
+			rc = _ckpt_step(step_ptr, data, 0);
+			break;
+		case CHECK_VACATE:
+			check_ptr->time_stamp = time(NULL);
+			check_ptr->reply_cnt = 0;
+			check_ptr->error_code = 0;
+			xfree(check_ptr->error_msg);
+			rc = _ckpt_step(step_ptr, data, 1);
+			break;
+		case CHECK_RESTART:
+			/* Lots of work is required in Slurm to restart a
+			 * checkpointed job. For now the user can submit a
+			 * new job and execute "ompi_restart <snapshot>" */
+			rc = ESLURM_NOT_SUPPORTED;
+			break;
+		case CHECK_ERROR:
+			xassert(error_code);
+			xassert(error_msg);
+			*error_code = check_ptr->error_code;
+			xfree(*error_msg);
+			*error_msg = xstrdup(check_ptr->error_msg);
+			break;
+		default:
+			error("Invalid checkpoint operation: %d", op);
+			rc = EINVAL;
+	}
+
+	return rc;
 }
 
-extern int slurm_ckpt_comp ( struct step_record * step_ptr, time_t event_time,
+extern int slurm_ckpt_comp (struct step_record * step_ptr, time_t event_time,
 		uint32_t error_code, char *error_msg)
 {
-	return ESLURM_NOT_SUPPORTED;
+/* FIXME: How do we tell when checkpoint completes? 
+ * Add another RPC from srun to slurmctld?
+ * Where is this called from? */
+	struct check_job_info *check_ptr;
+	time_t now;
+	long delay;
+
+	xassert(step_ptr);
+	check_ptr = (struct check_job_info *) step_ptr->check_job;
+	xassert(check_ptr);
+
+	if (event_time && (event_time != check_ptr->time_stamp))
+		return ESLURM_ALREADY_DONE;
+
+	if (error_code > check_ptr->error_code) {
+		info("slurm_ckpt_comp error %u: %s", error_code, error_msg);
+		check_ptr->error_code = error_code;
+		xfree(check_ptr->error_msg);
+		check_ptr->error_msg = xstrdup(error_msg);
+		return SLURM_SUCCESS;
+	}
+
+	now = time(NULL);
+	delay = difftime(now, check_ptr->time_stamp);
+	info("Checkpoint complete for job %u.%u in %ld seconds",
+		step_ptr->job_ptr->job_id, step_ptr->step_id,
+		delay);
+	check_ptr->reply_cnt++;
+	check_ptr->time_stamp = now;
+
+	return SLURM_SUCCESS; 
 }
 
 extern int slurm_ckpt_alloc_job(check_jobinfo_t *jobinfo)
 {
+	*jobinfo = (check_jobinfo_t) xmalloc(sizeof(struct check_job_info));
 	return SLURM_SUCCESS;
 }
 
 extern int slurm_ckpt_free_job(check_jobinfo_t jobinfo)
 {
+	xfree(jobinfo);
 	return SLURM_SUCCESS;
 }
 
 extern int slurm_ckpt_pack_job(check_jobinfo_t jobinfo, Buf buffer)
 {
+	struct check_job_info *check_ptr = 
+		(struct check_job_info *)jobinfo;
+ 
+	pack16(check_ptr->disabled, buffer);
+	pack16(check_ptr->reply_cnt, buffer);
+	pack16(check_ptr->wait_time, buffer);
+
+	pack32(check_ptr->error_code, buffer);
+	packstr(check_ptr->error_msg, buffer);
+	pack_time(check_ptr->time_stamp, buffer);
+
 	return SLURM_SUCCESS;
 }
 
 extern int slurm_ckpt_unpack_job(check_jobinfo_t jobinfo, Buf buffer)
 {
-	return SLURM_SUCCESS;
+	uint16_t uint16_tmp;
+	struct check_job_info *check_ptr =
+		(struct check_job_info *)jobinfo;
+
+	safe_unpack16(&check_ptr->disabled, buffer);
+	safe_unpack16(&check_ptr->reply_cnt, buffer);
+	safe_unpack16(&check_ptr->wait_time, buffer);
+
+	safe_unpack32(&check_ptr->error_code, buffer);
+	safe_unpackstr_xmalloc(&check_ptr->error_msg, &uint16_tmp, buffer);
+	safe_unpack_time(&check_ptr->time_stamp, buffer);
+	
+	return SLURM_SUCCESS; 
+
+    unpack_error:
+	xfree(check_ptr->error_msg);
+	return SLURM_ERROR;
+}
+
+static int _ckpt_step(struct step_record * step_ptr, uint16_t wait, int vacate)
+{
+	struct check_job_info *check_ptr;
+	struct job_record *job_ptr;
+
+	xassert(step_ptr);
+	check_ptr = (struct check_job_info *) step_ptr->check_job;
+	xassert(check_ptr);
+	job_ptr = step_ptr->job_ptr;
+	xassert(job_ptr);
+
+	if (IS_JOB_FINISHED(job_ptr))
+		return ESLURM_ALREADY_DONE;
+
+	if (check_ptr->disabled)
+		return ESLURM_DISABLED;
+
+/* FIXME: Need to send RPC to srun command to execute 
+ * ompi_checkpoint [--term] and capture the output (snapshot) 
+ * Save the command's output in job's stdout. */
+	check_ptr->time_stamp = time(NULL);
+	check_ptr->wait_time  = wait;
+	info("checkpoint requested for job %u.%u", 
+		job_ptr->job_id, step_ptr->step_id);
+	return ESLURM_NOT_SUPPORTED;
 }

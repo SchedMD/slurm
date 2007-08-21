@@ -192,8 +192,11 @@ extern int slurm_ckpt_op ( uint16_t op, uint16_t data,
 			if (check_ptr->disabled)
 				rc = ESLURM_DISABLED;
 			else {
-				if (check_ptr->reply_cnt < check_ptr->node_cnt)
+				if ((check_ptr->reply_cnt < check_ptr->node_cnt)
+				    && event_time) {
+					/* Return time of last event */
 					*event_time = check_ptr->time_stamp;
+				}
 				rc = SLURM_SUCCESS;
 			}
 			break;
