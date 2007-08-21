@@ -382,8 +382,6 @@ static int _step_sig(struct step_record * step_ptr, uint16_t wait,
 			continue;
 		if (check_ptr->node_cnt++ > 0)
 			continue;
-		check_ptr->time_stamp = time(NULL);
-		check_ptr->wait_time  = wait;
 		_send_sig(step_ptr->job_ptr->job_id, step_ptr->step_id,
 			signal, node_record_table_ptr[i].name,
 			node_record_table_ptr[i].slurm_addr);
@@ -398,6 +396,9 @@ static int _step_sig(struct step_record * step_ptr, uint16_t wait,
 			step_ptr->step_id);
 		return ESLURM_INVALID_NODE_NAME;
 	}
+
+	check_ptr->time_stamp = time(NULL);
+	check_ptr->wait_time  = wait;
 
 	info("checkpoint requested for job %u.%u", job_ptr->job_id,
 		step_ptr->step_id);
