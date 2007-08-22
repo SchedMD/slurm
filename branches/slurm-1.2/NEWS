@@ -13,6 +13,7 @@ documents those changes that are of interest to users and admins.
     communications are spread out in time. See "man srun" for details.
  -- Added PMI timing information to srun debug mode to aid in tuning.
     Use "srun -vv ..." to see the information.
+ -- Added checkpoint/ompi (OpenMPI) plugin (still under development).
 
 * Changes in SLURM 1.2.13
 =========================

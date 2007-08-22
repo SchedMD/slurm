@@ -15,8 +15,9 @@ The plugins must conform to the SLURM Plugin API with the following specificatio
 The major type must be &quot;checkpoint.&quot; The minor type can be any recognizable 
 abbreviation for the type of scheduler. We recommend, for example:</p>
 <ul>
-<li><b>none</b>&#151;No job checkpoint.</li>
 <li><b>aix</b>&#151;AIX system checkpoint.</li>
+<li><b>none</b>&#151;No job checkpoint.</li>
+<li><b>ompi</b>&#151;OpenMPI checkpoint (requires OpenMPI version 1.3 or higher).</li>
 </ul></p>
 
 <p>The <span class="commandline">plugin_name</span> and 
@@ -55,8 +56,8 @@ be stubbed.</p>
 <p class="commandline">int slurm_ckpt_alloc_job (check_jobinfo_t *jobinfo);</p>
 <p style="margin-left:.2in"><b>Description</b>: Allocate storage for job-step specific
 checkpoint data.</p>
-<p style="margin-left:.2in"><b>Argument</b>:<span class="commandline"> jobinfo</span>&nbsp; 
-&nbsp;&nbsp;(output) returns pointer to the allocated storage.</p>
+<p style="margin-left:.2in"><b>Argument</b>:
+<b>jobinfo</b> (output) returns pointer to the allocated storage.</p>
 <p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On failure, 
 the plugin should return SLURM_ERROR and set the errno to an appropriate value 
 to indicate the reason for failure.</p>
@@ -64,8 +65,8 @@ to indicate the reason for failure.</p>
 <p class="commandline">int slurm_ckpt_free_job (check_jobinfo_t jobinfo);</p>
 <p style="margin-left:.2in"><b>Description</b>: Release storage for job-step specific
 checkpoint data that was previously allocated by slurm_ckpt_alloc_job.</p>
-<p style="margin-left:.2in"><b>Argument</b>:<span class="commandline"> jobinfo</span>&nbsp;
-&nbsp;&nbsp;(input) pointer to the previously allocated storage.</p> 
+<p style="margin-left:.2in"><b>Argument</b>:
+<b>jobinfo</b> (input) pointer to the previously allocated storage.</p> 
 <p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On failure,
 the plugin should return SLURM_ERROR and set the errno to an appropriate value
 to indicate the reason for failure.</p>
@@ -74,10 +75,8 @@ to indicate the reason for failure.</p>
 <p style="margin-left:.2in"><b>Description</b>: Store job-step specific checkpoint data 
 into a buffer.</p>
 <p style="margin-left:.2in"><b>Arguments</b>:<br>
-<span class="commandline"> jobinfo</span>&nbsp;
-&nbsp;&nbsp;(input) pointer to the previously allocated storage.<br>
-<span class="commandline">Buf</span>&nbsp; &nbsp;&nbsp;(input/output) buffer to which 
-jobinfo has been appended.</p>
+<b>jobinfo</b> (input) pointer to the previously allocated storage.<br>
+<b>Buf</b> (input/output) buffer to which jobinfo has been appended.</p>
 <p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On failure,
 the plugin should return SLURM_ERROR and set the errno to an appropriate value
 to indicate the reason for failure.</p>
@@ -86,10 +85,8 @@ to indicate the reason for failure.</p>
 <p style="margin-left:.2in"><b>Description</b>: Retrieve job-step specific checkpoint data
 from a buffer.</p>
 <p style="margin-left:.2in"><b>Arguments</b>:</br>
-<span class="commandline"> jobinfo</span>&nbsp;
-&nbsp;&nbsp;(output) pointer to the previously allocated storage.<br>
-<span class="commandline">Buf</span>&nbsp; &nbsp;&nbsp;(input/output) buffer from which
-jobinfo has been removed.</p>
+<b>jobinfo</b> (output) pointer to the previously allocated storage.<br>
+<b>Buf</b> (input/output) buffer from which jobinfo has been removed.</p>
 <p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On failure,
 the plugin should return SLURM_ERROR and set the errno to an appropriate value
 to indicate the reason for failure.</p>
@@ -100,26 +97,25 @@ uint32_t *error_code, char **error_msg );</p>
 <p style="margin-left:.2in"><b>Description</b>: Perform some checkpoint operation on a 
 specific job step.</p>
 <p style="margin-left:.2in"><b>Arguments</b>:<br>
-<span class="commandline"> op</span>&nbsp;
-&nbsp;&nbsp;(input) specifies the operation to be performed. Currently supported 
-operations include CHECK_ABLE (is job step currently able to be checkpointed),
+<b>op</b> (input) specifies the operation to be performed. 
+Currently supported operations include 
+CHECK_ABLE (is job step currently able to be checkpointed),
 CHECK_DISABLE (disable checkpoints for this job step), 
 CHECK_ENABLE (enable checkpoints for this job step),
 CHECK_CREATE (create a checkpoint for this job step and continue its execution),
 CHECK_VACATE (create a checkpoint for this job step and terminate it),
 CHECK_RESTART (restart this previously checkpointed job step), and
 CHECK_ERROR (return checkpoint-specific error information for this job step).<br>
-<span class="commandline">data</span>&nbsp; &nbsp;&nbsp;(input) operation-specific
-data.</br>
-<span class="commandline">step_ptr</span>&nbsp;&nbsp;&nbsp;(input/output) identifies 
-the job step to be operated upon.</br>
-<span class="commandline">event_time</span>&nbsp;&nbsp;&nbsp; (output) identifies 
-the time of a checkpoint or restart operation.</br>
-<span class="commandline">error_code</span>&nbsp;&nbsp;&nbsp; (output) returns 
-checkpoint-specific error code associated with an operation.</br>
-<span class="commandline">error_msg</span>&nbsp;&nbsp;&nbsp; (output) identifies 
-checkpoint-specific error message associated with an operation.</p>
-<p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On failure,
+<b>data</b> (input) operation-specific data.</br>
+<b>step_ptr</b> (input/output) identifies the job step to be operated upon.</br>
+<b>event_time</b> (output) identifies the time of a checkpoint or restart 
+operation.</br>
+<b>error_code</b> (output) returns checkpoint-specific error code 
+associated with an operation.</br>
+<b>error_msg</b> (output) identifies checkpoint-specific error message 
+associated with an operation.</p>
+<p style="margin-left:.2in"><b>Returns</b>: <br>
+SLURM_SUCCESS if successful. On failure,
 the plugin should return SLURM_ERROR and set the error_code and error_msg to an 
 appropriate value to indicate the reason for failure.</p>
 
@@ -127,14 +123,13 @@ appropriate value to indicate the reason for failure.</p>
 uint32_t error_code, char *error_msg );</p>
 <p style="margin-left:.2in"><b>Description</b>: Note the completion of a checkpoint operation.</p>
 <p style="margin-left:.2in"><b>Arguments</b>:<br>
-<span class="commandline">step_ptr</span>&nbsp;&nbsp;&nbsp;(input/output) identifies
-the job step to be operated upon.</br>
-<span class="commandline">event_time</span>&nbsp;&nbsp;&nbsp; (input) identifies
-the time that the checkpoint operation began.</br>
-<span class="commandline">error_code</span>&nbsp;&nbsp;&nbsp; (input) 
-checkpoint-specific error code associated with an operation.</br>
-<span class="commandline">error_msg</span>&nbsp;&nbsp;&nbsp; (input) 
-checkpoint-specific error message associated with an operation.</p>
+<b>step_ptr</b> (input/output) identifies the job step to be operated upon.</br>
+<b>event_time</b> (input) identifies the time that the checkpoint operation 
+began.</br>
+<b>error_code</b> (input) checkpoint-specific error code associated 
+with an operation.</br>
+<b>error_msg</b> (input) checkpoint-specific error message associated 
+with an operation.</p>
 <p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On failure,
 the plugin should return SLURM_ERROR and set the error_code and error_msg to an
 appropriate value to indicate the reason for failure.</p>
@@ -146,6 +141,6 @@ releases of SLURM may revise this API. A scheduler plugin conveys its ability
 to implement a particular API version using the mechanism outlined for SLURM plugins.</p>
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 10 July 2005</p>
+<p style="text-align:center;">Last modified 21 August 2007</p>
 
 <!--#include virtual="footer.txt"-->

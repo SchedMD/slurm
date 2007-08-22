@@ -49,9 +49,12 @@
 #include <signal.h>
 #include <string.h>
 #include <sys/poll.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 #include <sys/wait.h>
 #include <time.h>
 #include <stdlib.h>
+#include <unistd.h>
 
 #include <slurm/slurm_errno.h>
 
@@ -77,6 +80,7 @@
 #include "src/srun/allocate.h"
 #include "src/srun/multi_prog.h"
 #include "src/srun/signals.h"
+#include "src/srun/srun.h"
 
 #include "src/common/xstring.h"
 
@@ -93,6 +97,7 @@ static slurm_fd slurmctld_fd   = (slurm_fd) NULL;
 static void	_accept_msg_connection(srun_job_t *job, int fdnum);
 static void	_confirm_launch_complete(srun_job_t *job);
 static void	_dump_proctable(srun_job_t *job);
+static void	_exec_prog(slurm_msg_t *msg);
 static void 	_exit_handler(srun_job_t *job, slurm_msg_t *exit_msg);
 static void	_handle_msg(srun_job_t *job, slurm_msg_t *msg);
 static inline bool _job_msg_done(srun_job_t *job);
@@ -476,6 +481,92 @@ rwfail:
 	error("_process_launch_resp: "
 	      "write from srun message-handler process failed");
 	
+}
+
+/* This is used to initiate an OpenMPI checkpoint program, 
+ * but is written to be general purpose */
+static void
+_exec_prog(slurm_msg_t *msg)
+{
+	pid_t child;
+	int pfd[2], status, exit_code = 0, i;
+	ssize_t len;
+	char *argv[4], buf[256] = "";
+	time_t now = time(NULL);
+	bool checkpoint = false;
+	srun_exec_msg_t *exec_msg = msg->data;
+
+	if (exec_msg->argc > 2) {
+		verbose("Exec '%s %s' for %u.%u", 
+			exec_msg->argv[0], exec_msg->argv[1],
+			exec_msg->job_id, exec_msg->step_id);
+	} else {
+		verbose("Exec '%s' for %u.%u", 
+			exec_msg->argv[0], 
+			exec_msg->job_id, exec_msg->step_id);
+	}
+
+	if (strcmp(exec_msg->argv[0], "ompi-checkpoint") == 0)
+		checkpoint = true;
+	if (checkpoint) {
+		/* OpenMPI specific checkpoint support */
+		info("Checkpoint started at %s", ctime(&now));
+		for (i=0; (exec_msg->argv[i] && (i<2)); i++) {
+			argv[i] = exec_msg->argv[i];
+		}
+		snprintf(buf, sizeof(buf), "%ld", (long) srun_ppid);
+		argv[i] = buf;
+		argv[i+1] = NULL;
+	}
+
+	if (pipe(pfd) == -1) {
+		snprintf(buf, sizeof(buf), "pipe: %s", strerror(errno));
+		error("%s", buf);
+		exit_code = errno;
+		goto fini;
+	}
+
+/* FIXME: Add mpirun PID to arguments, that's parent of parent PID */
+	child = fork();
+	if (child == 0) {
+		int fd = open("/dev/null", O_RDONLY);
+		dup2(fd, 0);		/* stdin from /dev/null */
+		dup2(pfd[1], 1);	/* stdout to pipe */
+		dup2(pfd[1], 2);	/* stderr to pipe */
+		close(pfd[0]);
+		close(pfd[1]);
+		if (checkpoint)
+			execvp(exec_msg->argv[0], argv);
+		else
+			execvp(exec_msg->argv[0], exec_msg->argv);
+		error("execvp(%s): %m", exec_msg->argv[0]);
+	} else if (child < 0) {
+		snprintf(buf, sizeof(buf), "fork: %s", strerror(errno));
+		error("%s", buf);
+		exit_code = errno;
+		goto fini;
+	} else {
+		close(pfd[1]);
+		len = read(pfd[0], buf, sizeof(buf));
+		close(pfd[0]);
+		waitpid(child, &status, 0);
+		exit_code = WEXITSTATUS(status);
+	}
+
+fini:	if (checkpoint) {
+		now = time(NULL);
+		if (exit_code) {
+			info("Checkpoint completion code %d at %s", 
+				exit_code, ctime(&now));
+		} else {
+			info("Checkpoint completed successfully at %s",
+				ctime(&now));
+		}
+		if (buf[0])
+			info("Checkpoint location: %s", buf);
+		slurm_checkpoint_complete(exec_msg->job_id, exec_msg->step_id,
+			time(NULL), (uint32_t) exit_code, buf);
+	}
 }
 
 /* This typically signifies the job was cancelled by scancel */
@@ -948,6 +1039,10 @@ _handle_msg(srun_job_t *job, slurm_msg_t *msg)
 		debug3("slurmctld ping received");
 		slurm_send_rc_msg(msg, SLURM_SUCCESS);
 		slurm_free_srun_ping_msg(msg->data);
+		break;
+	case SRUN_EXEC:
+		_exec_prog(msg);
+		slurm_free_srun_exec_msg(msg->data);
 		break;
 	case SRUN_JOB_COMPLETE:
 		_job_step_complete(job, msg);
