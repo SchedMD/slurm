@@ -511,7 +511,8 @@ _exec_prog(slurm_msg_t *msg)
 		info("Checkpoint started at %s", ctime(&now));
 
 	if (pipe(pfd) == -1) {
-		error("pipe: %m");
+		snprintf(buf, sizeof(buf), "pipe: %s", strerror(errno));
+		error("%s", buf);
 		exit_code = errno;
 		goto fini;
 	}
@@ -528,7 +529,8 @@ _exec_prog(slurm_msg_t *msg)
 		execvp(exec_msg->argv[0], exec_msg->argv);
 		error("execvp(%s): %m", exec_msg->argv[0]);
 	} else if (child < 0) {
-		error("fork: %m");
+		snprintf(buf, sizeof(buf), "fork: %s", strerror(errno));
+		error("%s", buf);
 		exit_code = errno;
 		goto fini;
 	} else {
@@ -546,7 +548,8 @@ fini:	if (checkpoint) {
 			exit_code, ctime(&now));
 		if (buf[0])
 			info("Checkpoint location: %s", buf);
-/* FIXME: Send checkpoint complete RPC to slurmctld */
+		slurm_checkpoint_complete(exec_msg->job_id, exec_msg->step_id,
+			time(NULL), (uint32_t) exit_code, buf);
 	}
 }
 

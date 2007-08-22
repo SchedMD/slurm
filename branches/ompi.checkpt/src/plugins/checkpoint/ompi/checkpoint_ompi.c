@@ -199,11 +199,14 @@ extern int slurm_ckpt_comp (struct step_record * step_ptr, time_t event_time,
 	check_ptr = (struct check_job_info *) step_ptr->check_job;
 	xassert(check_ptr);
 
-	if (event_time && (event_time != check_ptr->time_stamp))
+	/* We ignore event_time here, just key off reply_cnt */
+	if (check_ptr->reply_cnt)
 		return ESLURM_ALREADY_DONE;
 
 	if (error_code > check_ptr->error_code) {
-		info("slurm_ckpt_comp error %u: %s", error_code, error_msg);
+		info("slurm_ckpt_comp for step %u.%u error %u: %s", 
+			step_ptr->job_ptr->job_id, step_ptr->step_id,
+			error_code, error_msg);
 		check_ptr->error_code = error_code;
 		xfree(check_ptr->error_msg);
 		check_ptr->error_msg = xstrdup(error_msg);
@@ -212,9 +215,12 @@ extern int slurm_ckpt_comp (struct step_record * step_ptr, time_t event_time,
 
 	now = time(NULL);
 	delay = difftime(now, check_ptr->time_stamp);
-	info("Checkpoint complete for job %u.%u in %ld seconds",
+	info("slurm_ckpt_comp for step %u.%u in %ld secs: %s",
 		step_ptr->job_ptr->job_id, step_ptr->step_id,
-		delay);
+		delay, error_msg);
+	check_ptr->error_code = error_code;
+	xfree(check_ptr->error_msg);
+	check_ptr->error_msg = xstrdup(error_msg);
 	check_ptr->reply_cnt++;
 	check_ptr->time_stamp = now;
 
