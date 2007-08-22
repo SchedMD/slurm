@@ -483,6 +483,18 @@ void inline slurm_free_srun_job_complete_msg(srun_job_complete_msg_t * msg)
 	xfree(msg);
 }
 
+void inline slurm_free_srun_exec_msg(srun_exec_msg_t *msg)
+{
+	int i;
+
+	if (msg) {
+		for (i = 0; i < msg->argc; i++)
+			xfree(msg->argv[i]);
+		xfree(msg->argv);
+		xfree(msg);
+	}
+}
+
 void inline slurm_free_srun_ping_msg(srun_ping_msg_t * msg)
 {
 	xfree(msg);

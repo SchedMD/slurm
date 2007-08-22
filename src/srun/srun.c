@@ -100,6 +100,7 @@
 #define	TYPE_SCRIPT	2
 
 mpi_plugin_client_info_t mpi_job_info[1];
+pid_t srun_ppid = 0;
 
 /*
  * forward declaration of static funcs
@@ -169,7 +170,7 @@ int srun(int ac, char **av)
 		error ("srun initialization failed");
 		exit (1);
 	}
-
+	srun_ppid = getppid();
 	
 	/* reinit log with new verbosity (if changed by command line)
 	 */
