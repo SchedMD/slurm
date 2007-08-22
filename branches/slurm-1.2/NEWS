@@ -14,6 +14,8 @@ documents those changes that are of interest to users and admins.
  -- Added PMI timing information to srun debug mode to aid in tuning.
     Use "srun -vv ..." to see the information.
  -- Added checkpoint/ompi (OpenMPI) plugin (still under development).
+ -- Fix bug in load leveling logic added to v1.2.13 which can cause an 
+    infinite loop and hang slurmctld when sharing nodes between jobs.
 
 * Changes in SLURM 1.2.13
 =========================
