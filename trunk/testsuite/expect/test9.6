@@ -107,8 +107,9 @@ for {set inx 0} {$inx < $cycle_count} {incr inx} {
 	}
 	if {$stdout_lines != $stdout_target} {
 		send_user "\nFAILURE:stdout is missing output\n"
-		set cycle_count $inx
+		set cycle_count [expr $inx + 1]
 		set exit_code 1
+		break
 	} else {
 		incr success_cnt
 	}
