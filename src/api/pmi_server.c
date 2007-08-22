@@ -183,9 +183,11 @@ static void *_agent(void *x)
 	int msg_sent = 0, max_forward = 0;
 	pthread_t msg_id;
 	pthread_attr_t attr;
+	DEF_TIMERS;
 
 	/* only send one message to each host, 
 	 * build table of the ports on each host */
+	START_TIMER;
 	slurm_attr_init(&attr);
 	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
 	kvs_set = xmalloc(sizeof(struct kvs_comm_set) * args->barrier_xmit_cnt);
@@ -275,6 +277,9 @@ static void *_agent(void *x)
 	}
 	xfree(args->kvs_xmit_ptr);
 	xfree(args);
+
+	END_TIMER;
+	debug("kvs_xmit time %ld usec", DELTA_TIMER);
 	return NULL;
 }
 
