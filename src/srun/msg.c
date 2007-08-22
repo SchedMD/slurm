@@ -526,7 +526,6 @@ _exec_prog(slurm_msg_t *msg)
 		goto fini;
 	}
 
-/* FIXME: Add mpirun PID to arguments, that's parent of parent PID */
 	child = fork();
 	if (child == 0) {
 		int fd = open("/dev/null", O_RDONLY);
