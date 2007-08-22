@@ -145,6 +145,7 @@ static int call_external_program(void)
 	int status, rc, opt;
 	pid_t cpid;
 	int max_wait = 300; /* seconds */
+	int time_remaining;
 
 	debug("step_terminate_monitor: unkillable after %d sec, calling: %s",
 	     timeout, program_name);
@@ -189,6 +190,7 @@ static int call_external_program(void)
 	}
 
 	opt = WNOHANG;
+	time_remaining = max_wait;
 	while (1) {
 		rc = waitpid(cpid, &status, opt);
 		if (rc < 0) {
@@ -200,7 +202,7 @@ static int call_external_program(void)
 			return 0;
 		} else if (rc == 0) {
 			sleep(1);
-			if ((--max_wait) == 0) {
+			if ((--time_remaining) == 0) {
 				error("step_terminate_monitor: %s still running"
 				      " after %d seconds.  Killing.",
 				      program_name, max_wait);

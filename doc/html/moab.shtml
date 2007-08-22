@@ -76,7 +76,15 @@ in the <i>moab.cnf</i> file.</p>
 
 <p><b>EHost</b> is the event notification host for Moab.
 This identifies the computer on which the Moab daemons 
-executes which should be notified of events.</p>
+executes which should be notified of events.
+By default EHost will be identical in value to the 
+ControlAddr configured in slurm.conf.</p>
+
+<p><b>EHostBackup</b> is the event notification backup host for Moab.
+Names the computer on which the backup Moab server executes.
+It is used in establishing a communications path for event notification.
+By default EHostBackup will be identical in value to the
+BackupAddr configured in slurm.conf.</p>
 
 <p><b>ExcludePartitions</b> is used to identify partitions
 whose jobs are to be scheduled directly by SLURM rather 
@@ -90,8 +98,16 @@ Moab will account for and report the jobs, but their initiation
 will be outside of Moab's control.
 Note that Moab controls for resource reservation, fair share 
 scheduling, etc. will not apply to the initiation of these jobs.
-If more than one partition is to be scheduled directly be 
+If more than one partition is to be scheduled directly by
 Slurm, use a comma separator between their names.</p>
+
+<p><b>HostFormat</b> controls the format of job task lists built 
+by Slurm and reported to Moab.
+The default value is "0", for which each host name is listed 
+individually, once per processor (e.g. "tux0:tux0:tux1:tux1:...").
+A value of "1" uses Slurm hostlist expressions with processor 
+counts (e.g. "tux[0-16]*2").
+This is currently experimental.
 
 <p><b>JobAggregationTime</b> is used to avoid notifying Moab 
 of large numbers of events occurring about the same time.
@@ -152,6 +168,6 @@ CLIENTCFG[RM:slurm] KEY=123456789
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 16 August 2007</p>
+<p style="text-align:center;">Last modified 17 August 2007</p>
 
 <!--#include virtual="footer.txt"-->

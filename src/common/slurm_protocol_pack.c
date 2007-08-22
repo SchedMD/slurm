@@ -272,6 +272,9 @@ static void _pack_job_step_kill_msg(job_step_kill_msg_t * msg, Buf buffer);
 static int  _unpack_job_step_kill_msg(job_step_kill_msg_t ** msg_ptr, 
 				      Buf buffer);
 
+static void _pack_srun_exec_msg(srun_exec_msg_t * msg, Buf buffer);
+static int  _unpack_srun_exec_msg(srun_exec_msg_t ** msg_ptr, Buf buffer);
+
 static void _pack_srun_ping_msg(srun_ping_msg_t * msg, Buf buffer);
 static int  _unpack_srun_ping_msg(srun_ping_msg_t ** msg_ptr, Buf buffer);
 
@@ -618,6 +621,9 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 			(job_id_response_msg_t *)msg->data,
 			buffer);
 		break;
+	case SRUN_EXEC:
+		_pack_srun_exec_msg((srun_exec_msg_t *)msg->data, buffer);
+		break;
 	case SRUN_JOB_COMPLETE:
 	case SRUN_PING:
 		_pack_srun_ping_msg((srun_ping_msg_t *)msg->data, buffer);
@@ -933,6 +939,10 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 		rc = _unpack_job_id_response_msg(
 			(job_id_response_msg_t **) & msg->data,
 			buffer);
+		break;
+	case SRUN_EXEC:
+		rc = _unpack_srun_exec_msg((srun_exec_msg_t **) & msg->data, 
+					   buffer);
 		break;
 	case SRUN_JOB_COMPLETE:
 	case SRUN_PING:
@@ -3701,6 +3711,36 @@ _unpack_job_id_response_msg(job_id_response_msg_t ** msg, Buf buffer)
 unpack_error:
 	xfree(tmp_ptr);
 	*msg = NULL;
+	return SLURM_ERROR;
+}
+
+static void
+_pack_srun_exec_msg(srun_exec_msg_t * msg, Buf buffer)
+{
+	xassert ( msg != NULL );
+
+	pack32(msg ->job_id  , buffer ) ;
+	pack32(msg ->step_id , buffer ) ;
+	packstr_array(msg->argv, msg->argc, buffer);
+}
+
+static int  
+_unpack_srun_exec_msg(srun_exec_msg_t ** msg_ptr, Buf buffer)
+{
+	srun_exec_msg_t * msg;
+	xassert ( msg_ptr != NULL );
+
+	msg = xmalloc ( sizeof (srun_exec_msg_t) ) ;
+	*msg_ptr = msg;
+
+	safe_unpack32(&msg->job_id  , buffer ) ;
+	safe_unpack32(&msg->step_id , buffer ) ;
+	safe_unpackstr_array(&msg->argv, &msg->argc, buffer);
+	return SLURM_SUCCESS;
+
+unpack_error:
+	*msg_ptr = NULL;
+	xfree(msg);
 	return SLURM_ERROR;
 }
 

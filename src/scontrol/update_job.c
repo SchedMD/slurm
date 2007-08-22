@@ -80,7 +80,7 @@ scontrol_checkpoint(char *op, char *job_step_id_str)
 					sizeof(time_str));
 				snprintf(buf, sizeof(buf), 
 					"Began at %s\n", time_str); 
-				printf(time_str);
+				printf(buf);
 			} else
 				printf("Yes\n");
 		} else if (slurm_get_errno() == ESLURM_DISABLED) {

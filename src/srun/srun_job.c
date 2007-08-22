@@ -683,7 +683,6 @@ fwd_signal(srun_job_t *job, int signo, int max_threads)
 			error("%s: signal: %s", 
 			      ret_data_info->node_name, 
 			      slurm_strerror(rc));
-			destroy_data_info(ret_data_info);
 		}
 	}
 	list_iterator_destroy(itr);

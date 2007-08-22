@@ -31,8 +31,13 @@
 #  include "config.h"
 #endif
 
+#include <sys/types.h>
+#include <unistd.h>
+
 #include "src/api/step_io.h"
 #include "src/srun/srun_job.h"
+
+extern pid_t srun_ppid;		/* required for OpenMPI checkpoint */
 
 void srun_set_stdio_fds(srun_job_t *job, slurm_step_io_fds_t *cio_fds);
 

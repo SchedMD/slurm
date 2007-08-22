@@ -82,6 +82,7 @@
 static slurm_protocol_config_t proto_conf_default;
 static slurm_protocol_config_t *proto_conf = &proto_conf_default;
 /* static slurm_ctl_conf_t slurmctld_conf; */
+static int message_timeout = -1;
 
 /* STATIC FUNCTIONS */
 static void _remap_slurmctld_errno(void);
@@ -1045,8 +1046,10 @@ List slurm_receive_msgs(slurm_fd fd, int steps, int timeout)
 		orig_timeout = timeout;
 	}
 	if(steps) {
+		if (message_timeout < 0)
+			message_timeout = slurm_get_msg_timeout() * 1000;
 		orig_timeout = (timeout -
-				(FORWARD_EXTRA_STEP_WAIT_MS*(steps-1)))/steps;
+				(message_timeout*(steps-1)))/steps;
 		steps--;
 	} 
 
@@ -1292,8 +1295,8 @@ int slurm_receive_msg_and_forward(slurm_fd fd, slurm_addr *orig_addr,
 		msg->forward_struct->ret_list = msg->ret_list;
 		/* take out the amount of timeout from this hop */
 		msg->forward_struct->timeout = header.forward.timeout;
-		if(msg->forward_struct->timeout < 0)
-			msg->forward_struct->timeout = 0;
+		if(msg->forward_struct->timeout <= 0)
+			msg->forward_struct->timeout = message_timeout;
 		msg->forward_struct->fwd_cnt = header.forward.cnt;
 
 		debug3("forwarding messages to %u nodes with timeout of %d", 
@@ -1877,13 +1880,14 @@ _send_and_recv_msgs(slurm_fd fd, slurm_msg_t *req, int timeout)
 	if(slurm_send_node_msg(fd, req) >= 0) {
 		if(req->forward.cnt>0) {
 			/* figure out where we are in the tree and set
-			   the timeout for to wait for our childern
-			   correctly
-			   (timeout+FORWARD_EXTRA_STEP_WAIT_MS sec per step)
-			   to let the child timeout */
-	
+			 * the timeout for to wait for our childern
+			 * correctly
+			 * (timeout+message_timeout sec per step)
+			 * to let the child timeout */
+			if (message_timeout < 0)
+				message_timeout = slurm_get_msg_timeout() * 1000;
 			steps = (req->forward.cnt+1)/slurm_get_tree_width();
-			timeout = (FORWARD_EXTRA_STEP_WAIT_MS*steps);
+			timeout = (message_timeout*steps);
 			steps++;
 			
 			timeout += (req->forward.timeout*steps);
@@ -2127,7 +2131,7 @@ List slurm_send_recv_msgs(const char *nodelist, slurm_msg_t *msg,
 			error("slurm_send_recv_msgs: can't get addr for "
 			      "host %s", name);
 			mark_as_failed_forward(&tmp_ret_list, name, 
-					       SLURM_SOCKET_ERROR);
+					       SLURM_COMMUNICATIONS_CONNECTION_ERROR);
 			free(name);
 			continue;
 		}
@@ -2136,7 +2140,7 @@ List slurm_send_recv_msgs(const char *nodelist, slurm_msg_t *msg,
 			error("slurm_send_recv_msgs to %s: %m", name);
 
 			mark_as_failed_forward(&tmp_ret_list, name, 
-					       SLURM_SOCKET_ERROR);
+					       SLURM_COMMUNICATIONS_CONNECTION_ERROR);
 			free(name);
 			continue;
 		}
@@ -2205,7 +2209,7 @@ List slurm_send_addr_recv_msgs(slurm_msg_t *msg, char *name, int timeout)
 
 	if ((fd = slurm_open_msg_conn(&msg->address)) < 0) {
 		mark_as_failed_forward(&ret_list, name, 
-				       SLURM_SOCKET_ERROR);
+				       SLURM_COMMUNICATIONS_CONNECTION_ERROR);
 		return ret_list;
 	}
 

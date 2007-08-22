@@ -484,6 +484,18 @@ void inline slurm_free_srun_job_complete_msg(srun_job_complete_msg_t * msg)
 	xfree(msg);
 }
 
+void inline slurm_free_srun_exec_msg(srun_exec_msg_t *msg)
+{
+	int i;
+
+	if (msg) {
+		for (i = 0; i < msg->argc; i++)
+			xfree(msg->argv[i]);
+		xfree(msg->argv);
+		xfree(msg);
+	}
+}
+
 void inline slurm_free_srun_ping_msg(srun_ping_msg_t * msg)
 {
 	xfree(msg);
@@ -1255,7 +1267,10 @@ extern uint32_t slurm_get_return_code(slurm_msg_type_t type, void *data)
 		rc = ((return_code_msg_t *)data)->return_code;
 		break;
 	case RESPONSE_FORWARD_FAILED:
-		rc = SLURM_ERROR;
+		/* There may be other reasons for the failure, but
+		 * this may be a slurm_msg_t data type lacking the
+		 * err field found in ret_data_info_t data type */
+		rc = SLURM_COMMUNICATIONS_CONNECTION_ERROR;
 		break;
 	default:
 		error("don't know the rc for type %u returning %u", type, rc);

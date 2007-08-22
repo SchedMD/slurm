@@ -83,7 +83,7 @@ void *_forward_thread(void *arg)
 			      name);
 			slurm_mutex_lock(fwd_msg->forward_mutex);
 			mark_as_failed_forward(&fwd_msg->ret_list, name,
-					       SLURM_SOCKET_ERROR);
+					       SLURM_COMMUNICATIONS_CONNECTION_ERROR);
  			free(name);
 			if (hostlist_count(hl) > 0) {
 				slurm_mutex_unlock(fwd_msg->forward_mutex);
@@ -96,7 +96,7 @@ void *_forward_thread(void *arg)
 
 			slurm_mutex_lock(fwd_msg->forward_mutex);
 			mark_as_failed_forward(&fwd_msg->ret_list, name,
-					       SLURM_SOCKET_ERROR);
+					       SLURM_COMMUNICATIONS_CONNECTION_ERROR);
 			free(name);
 			if (hostlist_count(hl) > 0) {
 				slurm_mutex_unlock(fwd_msg->forward_mutex);
@@ -172,9 +172,12 @@ void *_forward_thread(void *arg)
 		}
 
 		if(fwd_msg->header.forward.cnt > 0) {
+			static int message_timeout = -1;
+			if (message_timeout < 0)
+				message_timeout = slurm_get_msg_timeout() * 1000;
 			steps = (fwd_msg->header.forward.cnt+1) /
 				slurm_get_tree_width();
-			fwd_msg->timeout = (FORWARD_EXTRA_STEP_WAIT_MS*steps);
+			fwd_msg->timeout = (message_timeout*steps);
 			steps++;
 			fwd_msg->timeout += (start_timeout*steps);
 		}	
@@ -234,7 +237,7 @@ void *_forward_thread(void *arg)
 					mark_as_failed_forward(
 						&fwd_msg->ret_list,
 						tmp, 
-						SLURM_ERROR);	
+						SLURM_COMMUNICATIONS_CONNECTION_ERROR);	
 				}
 				free(tmp);
 			}
@@ -242,7 +245,7 @@ void *_forward_thread(void *arg)
 			if(!first_node_found) {
 				mark_as_failed_forward(&fwd_msg->ret_list,
 						       name, 
-						       SLURM_ERROR);
+						       SLURM_COMMUNICATIONS_CONNECTION_ERROR);
 			}
 		}
 		break;
