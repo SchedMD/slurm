@@ -488,26 +488,35 @@ static void
 _exec_prog(slurm_msg_t *msg)
 {
 	pid_t child;
-	int pfd[2], status;
+	int pfd[2], status, exit_code = 0;
 	ssize_t len;
-	char buf[256];
+	char buf[256] = "";
+	time_t now = time(NULL);
+	bool checkpoint = false;
 	srun_exec_msg_t *exec_msg = msg->data;
 
 	if (exec_msg->argc > 2) {
-		info("Exec '%s %s' for %u.%u", 
+		verbose("Exec '%s %s' for %u.%u", 
 			exec_msg->argv[0], exec_msg->argv[1],
 			exec_msg->job_id, exec_msg->step_id);
 	} else {
-		info("Exec '%s' for %u.%u", 
+		verbose("Exec '%s' for %u.%u", 
 			exec_msg->argv[0], 
 			exec_msg->job_id, exec_msg->step_id);
 	}
 
+	if (strcmp(exec_msg->argv[0], "ompi-checkpoint") == 0)
+		checkpoint = true;
+	if (checkpoint)
+		info("Checkpoint started at %s", ctime(&now));
+
 	if (pipe(pfd) == -1) {
 		error("pipe: %m");
-		return;
+		exit_code = errno;
+		goto fini;
 	}
 
+/* FIXME: Add mpirun PID to arguments, that's parent of parent PID */
 	child = fork();
 	if (child == 0) {
 		int fd = open("/dev/null", O_RDONLY);
@@ -520,17 +529,24 @@ _exec_prog(slurm_msg_t *msg)
 		error("execvp(%s): %m", exec_msg->argv[0]);
 	} else if (child < 0) {
 		error("fork: %m");
-		/* send slurmctld checkpoint complete RPC */
-		return;
+		exit_code = errno;
+		goto fini;
 	} else {
 		close(pfd[1]);
 		len = read(pfd[0], buf, sizeof(buf));
 		close(pfd[0]);
-info("exec out: %s", buf);
-		/* send stdout to srun stdout */
 		waitpid(child, &status, 0);
-		/* evaluate WEXITSTATUS(status) */
-		/* send stdout to slurmctld as checkpoint complete RPC */
+		exit_code = WEXITSTATUS(status);
+	}
+
+fini:	if (checkpoint) {
+/* FIXME: Write to stdout file too */
+		now = time(NULL);
+		info("Checkpoint completion code %d at %s", 
+			exit_code, ctime(&now));
+		if (buf[0])
+			info("Checkpoint location: %s", buf);
+/* FIXME: Send checkpoint complete RPC to slurmctld */
 	}
 }
 
