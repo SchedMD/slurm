@@ -80,6 +80,7 @@
 #include "src/srun/allocate.h"
 #include "src/srun/multi_prog.h"
 #include "src/srun/signals.h"
+#include "src/srun/srun.h"
 
 #include "src/common/xstring.h"
 
@@ -488,9 +489,9 @@ static void
 _exec_prog(slurm_msg_t *msg)
 {
 	pid_t child;
-	int pfd[2], status, exit_code = 0;
+	int pfd[2], status, exit_code = 0, i;
 	ssize_t len;
-	char buf[256] = "";
+	char *argv[4], buf[256] = "";
 	time_t now = time(NULL);
 	bool checkpoint = false;
 	srun_exec_msg_t *exec_msg = msg->data;
@@ -507,8 +508,16 @@ _exec_prog(slurm_msg_t *msg)
 
 	if (strcmp(exec_msg->argv[0], "ompi-checkpoint") == 0)
 		checkpoint = true;
-	if (checkpoint)
+	if (checkpoint) {
+		/* OpenMPI specific checkpoint support */
 		info("Checkpoint started at %s", ctime(&now));
+		for (i=0; (exec_msg->argv[i] && (i<2)); i++) {
+			argv[i] = exec_msg->argv[i];
+		}
+		snprintf(buf, sizeof(buf), "%ld", (long) srun_ppid);
+		argv[i] = buf;
+		argv[i+1] = NULL;
+	}
 
 	if (pipe(pfd) == -1) {
 		snprintf(buf, sizeof(buf), "pipe: %s", strerror(errno));
@@ -526,7 +535,10 @@ _exec_prog(slurm_msg_t *msg)
 		dup2(pfd[1], 2);	/* stderr to pipe */
 		close(pfd[0]);
 		close(pfd[1]);
-		execvp(exec_msg->argv[0], exec_msg->argv);
+		if (checkpoint)
+			execvp(exec_msg->argv[0], argv);
+		else
+			execvp(exec_msg->argv[0], exec_msg->argv);
 		error("execvp(%s): %m", exec_msg->argv[0]);
 	} else if (child < 0) {
 		snprintf(buf, sizeof(buf), "fork: %s", strerror(errno));
