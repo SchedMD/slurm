@@ -162,6 +162,7 @@ set alpha_under          "\[A-Z_\]+"
 set end_of_line          "\[\r\n\]"
 set number               "\[0-9\]+"
 set float                "\[0-9\]+\\.?\[0-9\]+"
+set whitespace		 "\[ \t\n\r\f\v\]+"
 
 #
 # Cache SlurmUser to check for SuperUser requests

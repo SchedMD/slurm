@@ -2467,6 +2467,7 @@ static uint16_t _parse_mail_type(const char *arg)
 
 	return rc;
 }
+
 static char *_print_mail_type(const uint16_t type)
 {
 	if (type == 0)
@@ -2478,7 +2479,7 @@ static char *_print_mail_type(const uint16_t type)
 		return "END";
 	if (type == MAIL_JOB_FAIL)
 		return "FAIL";
-	if (type == (MAIL_JOB_BEGIN |  MAIL_JOB_END |  MAIL_JOB_FAIL))
+	if (type == (MAIL_JOB_BEGIN | MAIL_JOB_END | MAIL_JOB_FAIL))
 		return "ALL";
 
 	return "MULTIPLE";
