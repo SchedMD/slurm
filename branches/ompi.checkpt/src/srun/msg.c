@@ -554,10 +554,14 @@ _exec_prog(slurm_msg_t *msg)
 	}
 
 fini:	if (checkpoint) {
-/* FIXME: Write to stdout file too */
 		now = time(NULL);
-		info("Checkpoint completion code %d at %s", 
-			exit_code, ctime(&now));
+		if (exit_code) {
+			info("Checkpoint completion code %d at %s", 
+				exit_code, ctime(&now));
+		} else {
+			info("Checkpoint completed successfully at %s",
+				ctime(&now));
+		}
 		if (buf[0])
 			info("Checkpoint location: %s", buf);
 		slurm_checkpoint_complete(exec_msg->job_id, exec_msg->step_id,
