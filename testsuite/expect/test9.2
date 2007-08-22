@@ -96,8 +96,9 @@ for {set inx 0} {$inx < $cycle_count} {incr inx} {
 	}
 	if {$stdout_lines != $task_cnt} {
 		send_user "\nFAILURE:stdout is incomplete\n"
-		set cycle_count $inx
+		set cycle_count [expr $inx + 1]
 		set exit_code 1
+		break
 	} else {
 		incr success_cnt
 	}
