@@ -51,12 +51,15 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "./msg.h"
 #include "src/common/hostlist.h"
 #include "src/common/node_select.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
-#define MOAB_FORMAT1 1
+static void   _append_hl_buf(char **buf, hostlist_t *hl_tmp, int *reps);
+static char * _task_list(struct job_record *job_ptr);
+static char * _task_list_exp(struct job_record *job_ptr);
 
 /*
  * Convert Moab supplied TASKLIST expression into a SLURM hostlist expression
@@ -133,32 +136,6 @@ extern char * moab2slurm_task_list(char *moab_tasklist, int *task_cnt)
 	return slurm_tasklist;
 }
 
-#ifndef MOAB_FORMAT1
-/* Append to buf a compact tasklist expression (e.g. "tux[0-1]*2")
- * Prepend ":" to expression as needed */
-static void _append_hl_buf(char **buf, hostlist_t *hl_tmp, int *reps)
-{
-	int host_str_len = 4096;
-	char *host_str, rep_str[8];
-
-	host_str = xmalloc(host_str_len);
-	hostlist_uniq(*hl_tmp);
-	while (hostlist_ranged_string(*hl_tmp, host_str_len, host_str) < 0) {
-		host_str_len *= 2;
-		xrealloc(*host_str, host_str_len);
-	}
-	if (*buf)
-		xstrcat(*buf, ":");
-	xstrcat(*buf, host_str);
-	snprintf(rep_str, 8, "*%d", *reps);
-	xstrcat(*buf, rep_str);
-	xfree(host_str);
-	hostlist_destroy(*hl_tmp);
-	*hl_tmp = (hostlist_t) NULL;
-	*reps = 0;
-}
-#endif
-
 /*
  * Report a job's tasks a a MOAB TASKLIST expression
  *
@@ -169,10 +146,15 @@ static void _append_hl_buf(char **buf, hostlist_t *hl_tmp, int *reps)
  */
 extern char * slurm_job2moab_task_list(struct job_record *job_ptr)
 {
-#ifdef MOAB_FORMAT1
-	/*
-	 * Moab format 1: tux0:tux0:tux1:tux1:tux2
-	 */
+	if (use_host_exp)
+		return _task_list_exp(job_ptr);
+	else
+		return _task_list(job_ptr);
+}
+
+/* Return task list in Moab format 1: tux0:tux0:tux1:tux1:tux2 */
+static char * _task_list(struct job_record *job_ptr)
+{
 	int i, j;
 	char *buf = NULL, *host;
 	hostlist_t hl = hostlist_create(job_ptr->nodes);
@@ -200,10 +182,35 @@ extern char * slurm_job2moab_task_list(struct job_record *job_ptr)
 	}
 	hostlist_destroy(hl);
 	return buf;
-#else
-	/*
-	 * Moab format 2: tux[0-1]*2:tux2
-	 */
+}
+
+/* Append to buf a compact tasklist expression (e.g. "tux[0-1]*2")
+ * Prepend ":" to expression as needed */
+static void _append_hl_buf(char **buf, hostlist_t *hl_tmp, int *reps)
+{
+	int host_str_len = 4096;
+	char *host_str, rep_str[8];
+
+	host_str = xmalloc(host_str_len);
+	hostlist_uniq(*hl_tmp);
+	while (hostlist_ranged_string(*hl_tmp, host_str_len, host_str) < 0) {
+		host_str_len *= 2;
+		xrealloc(*host_str, host_str_len);
+	}
+	if (*buf)
+		xstrcat(*buf, ":");
+	xstrcat(*buf, host_str);
+	snprintf(rep_str, 8, "*%d", *reps);
+	xstrcat(*buf, rep_str);
+	xfree(host_str);
+	hostlist_destroy(*hl_tmp);
+	*hl_tmp = (hostlist_t) NULL;
+	*reps = 0;
+}
+
+/* Return task list in Moab format 2: tux[0-1]*2:tux2 */
+static char * _task_list_exp(struct job_record *job_ptr)
+{
 	int i, reps = -1;
 	char *buf = NULL, *host;
 	hostlist_t hl = hostlist_create(job_ptr->nodes);
@@ -245,5 +252,4 @@ extern char * slurm_job2moab_task_list(struct job_record *job_ptr)
 	if (hl_tmp)
 		_append_hl_buf(&buf, &hl_tmp, &reps);
 	return buf;
-#endif
 }

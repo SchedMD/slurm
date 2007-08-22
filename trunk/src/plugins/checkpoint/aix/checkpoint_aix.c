@@ -192,8 +192,11 @@ extern int slurm_ckpt_op ( uint16_t op, uint16_t data,
 			if (check_ptr->disabled)
 				rc = ESLURM_DISABLED;
 			else {
-				if (check_ptr->reply_cnt < check_ptr->node_cnt)
+				if ((check_ptr->reply_cnt < check_ptr->node_cnt)
+				    && event_time) {
+					/* Return time of last event */
 					*event_time = check_ptr->time_stamp;
+				}
 				rc = SLURM_SUCCESS;
 			}
 			break;
@@ -260,7 +263,9 @@ extern int slurm_ckpt_comp ( struct step_record * step_ptr, time_t event_time,
 		return ESLURM_ALREADY_DONE;
 
 	if (error_code > check_ptr->error_code) {
-		info("slurm_ckpt_comp error %u: %s", error_code, error_msg);
+		info("slurm_ckpt_comp for step %u.%u error %u: %s", 
+			step_ptr->job_ptr->job_id, step_ptr->step_id,
+			error_code, error_msg);
 		check_ptr->error_code = error_code;
 		xfree(check_ptr->error_msg);
 		check_ptr->error_msg = xstrdup(error_msg);
@@ -272,7 +277,7 @@ extern int slurm_ckpt_comp ( struct step_record * step_ptr, time_t event_time,
 	if (check_ptr->reply_cnt++ == check_ptr->node_cnt) {
 		time_t now = time(NULL);
 		long delay = (long) difftime(now, check_ptr->time_stamp);
-		info("Checkpoint complete for job %u.%u in %ld seconds",
+		info("slurm_ckpt_comp for step %u.%u in %ld secs",
 			step_ptr->job_ptr->job_id, step_ptr->step_id,
 			delay);
 		check_ptr->time_stamp = now;
@@ -382,8 +387,6 @@ static int _step_sig(struct step_record * step_ptr, uint16_t wait,
 			continue;
 		if (check_ptr->node_cnt++ > 0)
 			continue;
-		check_ptr->time_stamp = time(NULL);
-		check_ptr->wait_time  = wait;
 		_send_sig(step_ptr->job_ptr->job_id, step_ptr->step_id,
 			signal, node_record_table_ptr[i].name,
 			node_record_table_ptr[i].slurm_addr);
@@ -398,6 +401,9 @@ static int _step_sig(struct step_record * step_ptr, uint16_t wait,
 			step_ptr->step_id);
 		return ESLURM_INVALID_NODE_NAME;
 	}
+
+	check_ptr->time_stamp = time(NULL);
+	check_ptr->wait_time  = wait;
 
 	info("checkpoint requested for job %u.%u", job_ptr->job_id,
 		step_ptr->step_id);

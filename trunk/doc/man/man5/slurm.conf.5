@@ -80,7 +80,10 @@ The default value is 0 to disable caching group data.
 Define the system\-initiated checkpoint method to be used for user jobs. 
 The slurmctld daemon must be restarted for a change in \fBCheckpointType\fR 
 to take effect. 
-Acceptable values at present include "checkpoint/none" and "checkpoint/aix"
+Acceptable values at present include
+"checkpoint/aix" (only on AIX systems),
+"checkpoint/ompi" (requires OpenMPI version 1.3 or higher), and
+"checkpoint/none".
 (only on AIX systems). 
 The default value is "checkpoint/none".
 

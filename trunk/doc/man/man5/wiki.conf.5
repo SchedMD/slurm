@@ -59,8 +59,24 @@ Moab will account for and report the jobs, but their initiation
 will be outside of Moab's control.
 Note that Moab controls for resource reservation, fair share 
 scheduling, etc. will not apply to the initiation of these jobs.
-If more than one partition is to be scheduled directly be 
+If more than one partition is to be scheduled directly by
 Slurm, use a comma separator between their names.
+Not applicable to wiki plugin, only the wiki2 plugin.
+
+.TP
+\fBHostFormat\fR
+Controls the format of host lists exchanged between SLURM and Moab.
+The default value is "0".
+.RS
+.TP
+\fB0\fR
+No data compression. Each host name is listed individually.
+.TP
+\fB1\fR
+SLURM hostlist expressions are exchanged with task counts
+(e.g. "tux[0\-16]*2").
+This is currently experimental.
+.RE
 
 .TP
 \fBJobAggregationTime\fR
@@ -86,20 +102,6 @@ Job permitted to run directly under SLURM's control
 .TP
 \fBhold\fR
 Hold all incomming jobs until Moab or Maui tell them to run
-.RE
-
-.TP
-\fBHostFormat\fR
-Controls the format of host lists exchanged between SLURM and Moab.
-The default value is "0".
-.RS
-.TP
-\fB0\fR
-No data compression. Each host name is listed individually.
-.TP
-\fB1\fR
-SLURM hostlist expressions are exchanged (e.g. "tux[0\-16]").
-This is currently experimental.
 .RE
 
 .SH "EXAMPLE"

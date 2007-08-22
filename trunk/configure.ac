@@ -279,6 +279,7 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/checkpoint/Makefile
 		 src/plugins/checkpoint/aix/Makefile
 		 src/plugins/checkpoint/none/Makefile
+		 src/plugins/checkpoint/ompi/Makefile
 		 src/plugins/crypto/Makefile
 		 src/plugins/crypto/munge/Makefile
 		 src/plugins/crypto/openssl/Makefile

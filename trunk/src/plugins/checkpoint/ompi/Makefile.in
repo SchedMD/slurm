@@ -14,7 +14,7 @@
 
 @SET_MAKE@
 
-# Makefile for mpi/mx plugin
+# Makefile for checkpoint/ompi plugin
 
 VPATH = @srcdir@
 pkgdatadir = $(datadir)/@PACKAGE@
@@ -35,7 +35,7 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
-subdir = src/plugins/mpi/mpichmx
+subdir = src/plugins/checkpoint/ompi
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/auxdir/acx_pthread.m4 \
@@ -74,12 +74,12 @@ am__strip_dir = `echo $$p | sed -e 's|^.*/||'`;
 am__installdirs = "$(DESTDIR)$(pkglibdir)"
 pkglibLTLIBRARIES_INSTALL = $(INSTALL)
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
-mpi_mpichmx_la_LIBADD =
-am_mpi_mpichmx_la_OBJECTS = mpi_mpichmx.lo mpichmx.lo
-mpi_mpichmx_la_OBJECTS = $(am_mpi_mpichmx_la_OBJECTS)
-mpi_mpichmx_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
+checkpoint_ompi_la_LIBADD =
+am_checkpoint_ompi_la_OBJECTS = checkpoint_ompi.lo
+checkpoint_ompi_la_OBJECTS = $(am_checkpoint_ompi_la_OBJECTS)
+checkpoint_ompi_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
-	$(mpi_mpichmx_la_LDFLAGS) $(LDFLAGS) -o $@
+	$(checkpoint_ompi_la_LDFLAGS) $(LDFLAGS) -o $@
 DEFAULT_INCLUDES = -I. -I$(top_builddir) -I$(top_builddir)/slurm@am__isrc@
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
 am__depfiles_maybe = depfiles
@@ -92,8 +92,8 @@ CCLD = $(CC)
 LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
-SOURCES = $(mpi_mpichmx_la_SOURCES)
-DIST_SOURCES = $(mpi_mpichmx_la_SOURCES)
+SOURCES = $(checkpoint_ompi_la_SOURCES)
+DIST_SOURCES = $(checkpoint_ompi_la_SOURCES)
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -261,13 +261,11 @@ top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
 PLUGIN_FLAGS = -module -avoid-version --export-dynamic 
 INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common
-pkglib_LTLIBRARIES = mpi_mpichmx.la
+pkglib_LTLIBRARIES = checkpoint_ompi.la
 
-# Null switch plugin.
-mpi_mpichmx_la_SOURCES = mpi_mpichmx.c mpichmx.c mpichmx.h\
-			  $(top_srcdir)/src/common/mpi.h
-
-mpi_mpichmx_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
+# OpenMPI checkpoint plugin.
+checkpoint_ompi_la_SOURCES = checkpoint_ompi.c
+checkpoint_ompi_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
 all: all-am
 
 .SUFFIXES:
@@ -281,9 +279,9 @@ $(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.am  $(am__confi
 	      exit 1;; \
 	  esac; \
 	done; \
-	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign  src/plugins/mpi/mpichmx/Makefile'; \
+	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign  src/plugins/checkpoint/ompi/Makefile'; \
 	cd $(top_srcdir) && \
-	  $(AUTOMAKE) --foreign  src/plugins/mpi/mpichmx/Makefile
+	  $(AUTOMAKE) --foreign  src/plugins/checkpoint/ompi/Makefile
 .PRECIOUS: Makefile
 Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
 	@case '$?' in \
@@ -328,8 +326,8 @@ clean-pkglibLTLIBRARIES:
 	  echo "rm -f \"$${dir}/so_locations\""; \
 	  rm -f "$${dir}/so_locations"; \
 	done
-mpi_mpichmx.la: $(mpi_mpichmx_la_OBJECTS) $(mpi_mpichmx_la_DEPENDENCIES) 
-	$(mpi_mpichmx_la_LINK) -rpath $(pkglibdir) $(mpi_mpichmx_la_OBJECTS) $(mpi_mpichmx_la_LIBADD) $(LIBS)
+checkpoint_ompi.la: $(checkpoint_ompi_la_OBJECTS) $(checkpoint_ompi_la_DEPENDENCIES) 
+	$(checkpoint_ompi_la_LINK) -rpath $(pkglibdir) $(checkpoint_ompi_la_OBJECTS) $(checkpoint_ompi_la_LIBADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -337,8 +335,7 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mpi_mpichmx.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mpichmx.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/checkpoint_ompi.Plo@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<

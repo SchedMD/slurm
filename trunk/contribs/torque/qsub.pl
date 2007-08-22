@@ -42,7 +42,7 @@
 
 use strict;
 use FindBin;
-use Getopt::Long 2.24 qw(:config no_ignore_case);
+use Getopt::Long 2.24 qw(:config no_ignore_case require_order);
 use lib "${FindBin::Bin}/../lib/perl";
 use autouse 'Pod::Usage' => qw(pod2usage);
 use Slurm ':all';
@@ -62,7 +62,7 @@ my ($start_time,
     $mail_user_list,
     $job_name,
     $out_path,
-#    $priority,
+    $priority,
     $destination,
 #    $rerunable,
 #    $script_path,
@@ -92,7 +92,7 @@ GetOptions('a=s'      => \$start_time,
 	   'M=s'      => \$mail_user_list,
 	   'N=s'      => \$job_name,
 	   'o=s'      => \$out_path,
-#	   'p=i'      => \$priority,
+	   'p=i'      => \$priority,
 	   'q=s'      => \$destination,
 #	   'r=s'      => \$rerunable,
 #	   'S=s'      => \$script_path,
@@ -126,7 +126,9 @@ if ($man) {
 # Use sole remaining argument as jobIds
 my $script;
 if ($ARGV[0]) {
-        $script = $ARGV[0];
+	foreach (@ARGV) {
+	        $script .= "$_ ";
+	}
 } else {
         pod2usage(2);
 }
@@ -191,6 +193,7 @@ if($mail_options) {
 }
 $command .= " --mail-user=$mail_user_list" if $mail_user_list;
 $command .= " -J $job_name" if $job_name;
+$command .= " --nice=$priority" if $priority;
 $command .= " -p $destination" if $destination;
 $command .= " -C $additional_attributes" if $additional_attributes;
 
@@ -227,6 +230,10 @@ sub parse_resource_list {
 	}
 	if($opt{cput}) {
 		$opt{cput} = get_minutes($opt{cput});
+	}
+
+	if($opt{mem}) {
+		$opt{mem} = convert_mb_format($opt{mem});
 	}
 	
 	return \%opt;
@@ -276,7 +283,7 @@ sub parse_node_opts {
 	if($opt{task_cnt}) {
 		$opt{task_cnt} *= $opt{node_cnt};
 	}
-
+	
 	return \%opt;
 }
 
@@ -303,10 +310,27 @@ sub get_minutes {
 }
 
 sub convert_mb_format {
-	my ($amount) = @_;
-	
+	my ($value) = @_;
+	my ($amount, $suffix) = $value =~ /(\d+)($|[KMGT])/i;
 	return if !$amount;
+	$suffix = lc($suffix); 
 
+	if (!$suffix) {
+		$amount /= 1048576;
+	} elsif ($suffix eq "k") {
+		$amount /= 1024;
+	} elsif ($suffix eq "m") {
+		#do nothing this is what we want.
+	} elsif ($suffix eq "g") {
+		$amount *= 1024;
+	} elsif ($suffix eq "t") {
+		$amount *= 1048576;
+	} else { 
+		print "don't know what to do with suffix $suffix\n";
+		return;
+	}
+
+	return $amount;
 }
 ##############################################################################
 
