@@ -1,4 +1,4 @@
-# Makefile for storage/pgsql plugin
+# Makefile for jobacct_storage/pgsql plugin
 
 CPPFLAGS = $(PGSQL_CFLAGS)
 AUTOMAKE_OPTIONS = foreign
@@ -7,15 +7,12 @@ PLUGIN_FLAGS = -module -avoid-version --export-dynamic $(PGSQL_LIBS)
 
 INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common
 
-pkglib_LTLIBRARIES = storage_pgsql.la
+pkglib_LTLIBRARIES = jobacct_storage_pgsql.la
 
 # Pgsql storage plugin.
-storage_pgsql_la_SOURCES = storage_pgsql.c \
-		pgsql_common.c pgsql_common.h \
+storage_pgsql_la_SOURCES = jobacct_storage_pgsql.c \
 		pgsql_jobacct.c pgsql_jobacct.h \
-		pgsql_jobcomp.c pgsql_jobcomp.h \
-		pgsql_jobacct_process.c pgsql_jobacct_process.h \
-		pgsql_jobcomp_process.c pgsql_jobcomp_process.h
+		pgsql_jobacct_process.c pgsql_jobacct_process.h 
 storage_pgsql_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
 storage_pgsql_la_LIBADD  = $(top_builddir)/src/common/libcommon.la
 
