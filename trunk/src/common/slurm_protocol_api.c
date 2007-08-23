@@ -244,6 +244,21 @@ char *slurm_get_auth_type(void)
 	return auth_type;
 }
 
+/* slurm_get_checkpoint_type
+ * returns the checkpoint_type from slurmctld_conf object
+ * RET char *    - checkpoint type, MUST be xfreed by caller
+ */
+extern char *slurm_get_checkpoint_type(void)
+{
+	char *checkpoint_type;
+	slurm_ctl_conf_t *conf;
+
+	conf = slurm_conf_lock();
+	checkpoint_type = xstrdup(conf->checkpoint_type);
+	slurm_conf_unlock();
+	return checkpoint_type;
+}
+
 /* slurm_get_crypto_type
  * returns the crypto_type from slurmctld_conf object
  * RET char *    - crypto type, MUST be xfreed by caller

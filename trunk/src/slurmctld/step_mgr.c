@@ -806,6 +806,7 @@ step_create(job_step_create_request_msg_t *step_specs,
 	step_ptr->host = xstrdup(step_specs->host);
 	step_ptr->batch_step = batch_step;
 	step_ptr->ckpt_interval = step_specs->ckpt_interval;
+	step_ptr->ckpt_time = now;
 	step_ptr->exit_code = NO_VAL;
 
 	/* step's name and network default to job's values if not 
@@ -1494,6 +1495,8 @@ extern void dump_job_step_state(struct step_record *step_ptr, Buf buffer)
 
 	pack_time(step_ptr->start_time, buffer);
 	pack_time(step_ptr->pre_sus_time, buffer);
+	pack_time(step_ptr->ckpt_time, buffer);
+
 	packstr(step_ptr->host,  buffer);
 	packstr(step_ptr->name, buffer);
 	packstr(step_ptr->network, buffer);
@@ -1516,7 +1519,7 @@ extern int load_step_state(struct job_record *job_ptr, Buf buffer)
 	uint16_t step_id, cyclic_alloc, name_len, port, batch_step, bit_cnt;
 	uint16_t ckpt_interval;
 	uint32_t exit_code;
-	time_t start_time, pre_sus_time;
+	time_t start_time, pre_sus_time, ckpt_time;
 	char *host = NULL;
 	char *name = NULL, *network = NULL, *bit_fmt = NULL;
 	switch_jobinfo_t switch_tmp = NULL;
@@ -1536,6 +1539,8 @@ extern int load_step_state(struct job_record *job_ptr, Buf buffer)
 	
 	safe_unpack_time(&start_time, buffer);
 	safe_unpack_time(&pre_sus_time, buffer);
+	safe_unpack_time(&ckpt_time, buffer);
+
 	safe_unpackstr_xmalloc(&host, &name_len, buffer);
 	safe_unpackstr_xmalloc(&name, &name_len, buffer);
 	safe_unpackstr_xmalloc(&network, &name_len, buffer);
@@ -1576,6 +1581,7 @@ extern int load_step_state(struct job_record *job_ptr, Buf buffer)
 	host                   = NULL;  /* re-used, nothing left to free */
 	step_ptr->start_time   = start_time;
 	step_ptr->pre_sus_time = pre_sus_time;
+	step_ptr->ckpt_time    = ckpt_time;
 
 	slurm_step_layout_destroy(step_ptr->step_layout);
 	step_ptr->step_layout  = step_layout;
@@ -1616,4 +1622,47 @@ extern int load_step_state(struct job_record *job_ptr, Buf buffer)
 		switch_free_jobinfo(switch_tmp);
 	slurm_step_layout_destroy(step_layout);
 	return SLURM_FAILURE;
+}
+
+/* Perform periodic job step checkpoints (per user request) */
+extern void step_checkpoint(void)
+{
+	static int ckpt_run = -1;
+	time_t now = time(NULL), ckpt_due;
+	ListIterator job_iterator;
+	struct job_record *job_ptr;
+	ListIterator step_iterator;
+	struct step_record *step_ptr;
+
+	/* Exit if "checkpoint/none" is configured */
+	if (ckpt_run == -1) {
+		char *ckpt_type = slurm_get_checkpoint_type();
+		if (strcasecmp(ckpt_type, "checkpoint/none"))
+			ckpt_run = 1;
+		else
+			ckpt_run = 0;
+		xfree(ckpt_type);
+	}
+	if (ckpt_run == 0)
+		return;
+
+	job_iterator = list_iterator_create(job_list);
+	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
+		if (job_ptr->job_state != JOB_RUNNING)
+			continue;
+		step_iterator = list_iterator_create (job_ptr->step_list);
+		while ((step_ptr = (struct step_record *) 
+				list_next (step_iterator))) {
+			if (step_ptr->ckpt_interval == 0)
+				continue;
+			ckpt_due = step_ptr->ckpt_time +
+				(step_ptr->ckpt_interval * 60);
+			if (ckpt_due > now) 
+				continue;
+info("checkpoint %u.%u now", job_ptr->job_id, step_ptr->step_id);
+			step_ptr->ckpt_time = now;
+		}
+		list_iterator_destroy (step_iterator);
+	}
+	list_iterator_destroy(job_iterator);
 }
