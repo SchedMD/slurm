@@ -159,6 +159,7 @@
 #define LONG_OPT_REBOOT          0x144
 #define LONG_OPT_GET_USER_ENV    0x145
 #define LONG_OPT_PTY             0x146
+#define LONG_OPT_CHECKPOINT      0x147
 
 /*---- global variables, defined in opt.h ----*/
 int _verbose;
@@ -939,6 +940,8 @@ static void _opt_default()
 	opt.mem_bind = NULL;
 	opt.time_limit = NO_VAL;
 	opt.time_limit_str = NULL;
+	opt.ckpt_interval = 0;
+	opt.ckpt_interval_str = NULL;
 	opt.partition = NULL;
 	opt.max_threads = MAX_THREADS;
 	pmi_server_max_threads(opt.max_threads);
@@ -1089,6 +1092,7 @@ env_vars_t env_vars[] = {
 {"SLURM_STDINMODE",     OPT_STRING,     &opt.ifname,        NULL             },
 {"SLURM_STDOUTMODE",    OPT_STRING,     &opt.ofname,        NULL             },
 {"SLURM_TIMELIMIT",     OPT_STRING,     &opt.time_limit_str,NULL             },
+{"SLURM_CHECKPOINT",    OPT_STRING,     &opt.ckpt_interval_str, NULL         },
 {"SLURM_WAIT",          OPT_INT,        &opt.max_wait,      NULL             },
 {"SLURM_DISABLE_STATUS",OPT_INT,        &opt.disable_status,NULL             },
 {"SLURM_MPI_TYPE",      OPT_MPI,        NULL,               NULL             },
@@ -1408,6 +1412,7 @@ static void set_options(const int argc, char **argv)
 		{"reboot",           no_argument,       0, LONG_OPT_REBOOT},            
 		{"get-user-env",     no_argument,       0, LONG_OPT_GET_USER_ENV},
 		{"pty",              no_argument,       0, LONG_OPT_PTY},
+		{"checkpoint",       required_argument, 0, LONG_OPT_CHECKPOINT},
 		{NULL,               0,                 0, 0}
 	};
 	char *opt_string = "+aAbB:c:C:d:D:e:g:Hi:IjJ:kKlm:n:N:"
@@ -1893,6 +1898,10 @@ static void set_options(const int argc, char **argv)
 			error("--pty not currently supported on this system type");
 #endif
 			break;
+		case LONG_OPT_CHECKPOINT:
+			xfree(opt.ckpt_interval_str);
+			opt.ckpt_interval_str = xstrdup(optarg);
+			break;
 		default:
 			if (spank_process_option (opt_char, optarg) < 0) {
 				exit (1);
@@ -2303,6 +2312,14 @@ static bool _opt_verify(void)
 	} else
 		opt.time_limit = INFINITE;
 
+	if (opt.ckpt_interval_str) {
+		opt.ckpt_interval = time_str2mins(opt.ckpt_interval_str);
+		if (opt.ckpt_interval < 0) {
+			error("Invalid checkpoint interval specification");
+			exit(1);
+		}
+	} 
+
 	if ((opt.euid != (uid_t) -1) && (opt.euid != opt.uid)) 
 		opt.uid = opt.euid;
 
@@ -2561,6 +2578,8 @@ static void _opt_list()
 		info("time_limit     : INFINITE");
 	else
 		info("time_limit     : %d", opt.time_limit);
+	if (opt.ckpt_interval)
+		info("checkpoint     : %d secs", opt.ckpt_interval);
 	info("wait           : %d", opt.max_wait);
 	if (opt.nice)
 		info("nice           : %d", opt.nice);
@@ -2632,7 +2651,7 @@ static void _usage(void)
 "            [-D path] [--immediate] [--overcommit] [--no-kill]\n"
 "            [--share] [--label] [--unbuffered] [-m dist] [-J jobname]\n"
 "            [--jobid=id] [--verbose] [--slurmd_debug=#]\n"
-"            [--core=type] [-T threads] [-W sec] \n"
+"            [--core=type] [-T threads] [-W sec] [--checkpoint=time]\n"
 "            [--contiguous] [--mincpus=n] [--mem=MB] [--tmp=MB] [-C list]\n"
 "            [--mpi=type] [--account=name] [--dependency=jobid]\n"
 "            [--kill-on-bad-exit] [--propagate[=rlimits] [--comment=name]\n"
@@ -2712,6 +2731,7 @@ static void _help(void)
 "      --multi-prog            if set the program name specified is the\n"
 "                              configuration specification for multiple programs\n"
 "      --get-user-env          used by Moab.  See srun man page.\n"
+"      --checkpoint=time       job step checkpoint interval\n"
 #ifdef HAVE_PTY_H
 "      --pty                   run task zero in pseudo terminal\n"
 #endif

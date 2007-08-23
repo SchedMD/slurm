@@ -2,7 +2,7 @@
  *  step_mgr.c - manage the job step information of slurm
  *  $Id$
  *****************************************************************************
- *  Copyright (C) 2002-2006 The Regents of the University of California.
+ *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>, et. al.
  *  UCRL-CODE-226842.
@@ -214,9 +214,9 @@ dump_step_desc(job_step_create_request_msg_t *step_spec)
 	debug3("   num_tasks=%u relative=%u task_dist=%u node_list=%s", 
 		step_spec->num_tasks, step_spec->relative, 
 		step_spec->task_dist, step_spec->node_list);
-	debug3("   host=%s port=%u name=%s network=%s", 
+	debug3("   host=%s port=%u name=%s network=%s checkpoint=%u", 
 		step_spec->host, step_spec->port, step_spec->name,
-		step_spec->network);
+		step_spec->network, step_spec->ckpt_interval);
 }
 
 
@@ -805,6 +805,7 @@ step_create(job_step_create_request_msg_t *step_specs,
 	step_ptr->port = step_specs->port;
 	step_ptr->host = xstrdup(step_specs->host);
 	step_ptr->batch_step = batch_step;
+	step_ptr->ckpt_interval = step_specs->ckpt_interval;
 	step_ptr->exit_code = NO_VAL;
 
 	/* step's name and network default to job's values if not 
@@ -926,6 +927,7 @@ static void _pack_ctld_job_step_info(struct step_record *step_ptr, Buf buffer)
 	}
 	pack32(step_ptr->job_ptr->job_id, buffer);
 	pack16(step_ptr->step_id, buffer);
+	pack16(step_ptr->ckpt_interval, buffer);
 	pack32(step_ptr->job_ptr->user_id, buffer);
 	pack32(task_cnt, buffer);
 
@@ -1481,6 +1483,8 @@ extern void dump_job_step_state(struct step_record *step_ptr, Buf buffer)
 	pack16(step_ptr->step_id, buffer);
 	pack16(step_ptr->cyclic_alloc, buffer);
 	pack16(step_ptr->port, buffer);
+	pack16(step_ptr->ckpt_interval, buffer);
+
 	pack32(step_ptr->exit_code, buffer);
 	if (step_ptr->exit_code != NO_VAL) {
 		pack_bit_fmt(step_ptr->exit_node_bitmap, buffer);
@@ -1510,6 +1514,7 @@ extern int load_step_state(struct job_record *job_ptr, Buf buffer)
 {
 	struct step_record *step_ptr = NULL;
 	uint16_t step_id, cyclic_alloc, name_len, port, batch_step, bit_cnt;
+	uint16_t ckpt_interval;
 	uint32_t exit_code;
 	time_t start_time, pre_sus_time;
 	char *host = NULL;
@@ -1521,6 +1526,8 @@ extern int load_step_state(struct job_record *job_ptr, Buf buffer)
 	safe_unpack16(&step_id, buffer);
 	safe_unpack16(&cyclic_alloc, buffer);
 	safe_unpack16(&port, buffer);
+	safe_unpack16(&ckpt_interval, buffer);
+
 	safe_unpack32(&exit_code, buffer);
 	if (exit_code != NO_VAL) {
 		safe_unpackstr_xmalloc(&bit_fmt, &name_len, buffer);
@@ -1563,6 +1570,7 @@ extern int load_step_state(struct job_record *job_ptr, Buf buffer)
 	step_ptr->name         = name;
 	step_ptr->network      = network;
 	step_ptr->port         = port;
+	step_ptr->ckpt_interval= ckpt_interval;
 	step_ptr->host         = host;
 	step_ptr->batch_step   = batch_step;
 	host                   = NULL;  /* re-used, nothing left to free */
@@ -1570,7 +1578,7 @@ extern int load_step_state(struct job_record *job_ptr, Buf buffer)
 	step_ptr->pre_sus_time = pre_sus_time;
 
 	slurm_step_layout_destroy(step_ptr->step_layout);
-	step_ptr->step_layout = step_layout;
+	step_ptr->step_layout  = step_layout;
 	
 	step_ptr->switch_job   = switch_tmp;
 	step_ptr->check_job    = check_tmp;

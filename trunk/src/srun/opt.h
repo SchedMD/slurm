@@ -109,6 +109,8 @@ typedef struct srun_options {
 	bool extra_set;		/* true if extra node info explicitly set */
 	int  time_limit;	/* --time,   -t	(int minutes)	*/
 	char *time_limit_str;	/* --time,   -t (string)	*/
+	int  ckpt_interval;	/* --checkpoint (int minutes)	*/
+	char *ckpt_interval_str;/* --checkpoint (string)	*/
 	char *partition;	/* --partition=n,   -p n   	*/
 	enum task_dist_states
 	        distribution;	/* --distribution=, -m dist	*/
