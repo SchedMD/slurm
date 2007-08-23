@@ -691,7 +691,7 @@ static void _slurm_rpc_dump_nodes(slurm_msg_t * msg)
 	lock_slurmctld(node_read_lock);
 
 	uid = g_slurm_auth_get_uid(msg->auth_cred);
-	if (!validate_super_user(uid)) {
+	if (slurmctld_conf.private_data && !validate_super_user(uid)) {
 		unlock_slurmctld(node_read_lock);
 		error("Security violation, REQUEST_NODE_INFO RPC from uid=%d", uid);
 		slurm_send_rc_msg(msg, ESLURM_USER_ID_MISSING);
