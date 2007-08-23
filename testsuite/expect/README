@@ -69,7 +69,8 @@ test1.8    Confirm that basic srun stdin, stdout, and stderr options work
 test1.9    Test of srun verbose mode (--verbose option).
 test1.10   Test of srun/slurmd debug mode (--debug option).
 test1.11   Test job name option (--job-name).
-test1.12   REMOVED
+test1.12   Test of --checkpoint option. This does not validate the 
+           checkpoint file itself.
 test1.13   Test of immediate allocation option (--immediate option).
 test1.14   REMOVED
 test1.15   Test of wait option (--wait option).
