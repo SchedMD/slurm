@@ -1,4 +1,4 @@
-.TH SCANCEL "1" "July 2007" "scancel 1.2" "Slurm components"
+.TH SCANCEL "1" "August 2007" "scancel 1.2" "Slurm components"
 .SH "NAME"
 scancel \- Used to signal jobs or job steps that are under the control of Slurm.
 .SH "SYNOPSIS"
@@ -16,6 +16,7 @@ be printed and the job will not be signaled.
 .TP
 \fB\-b\fR, \fB\-\-batch\fR
 Signal the batch job shell and its child processes.
+This is not applicable if \fIstep_id\fR is specified.
 
 .TP
 \fB-\-ctld\fR
@@ -64,23 +65,28 @@ Print a brief help message listing the \fBscancel\fR options.
 \fB\-v\fR, \fB\-\-verbose\fR
 Print additional logging. Multiple v's increase logging detail.
 This option is incompatible with the \fB\-\-quiet\fR option.
+
 .TP
 \fB\-V\fR, \fB\-\-Version\fR
 Print the version number of the scancel command. 
 
 .TP
 ARGUMENTS
+
 .TP
 \fIjob_id\fP
 The Slurm job ID to be signaled.
-If no step_id is specified and the \fB\-\-batch\fR option is not used, 
-then all jobs steps associated with the provided job_id will be signaled.
-If no job steps are active then no processes will be signalled.
-Any batch script which spawned the job steps will only be signalled if 
-the \fB\-\-batch\fR option is used.
+
 .TP
 \fIstep_id\fP
 The step ID of the job step to be signaled. 
+If not specified, the operation is performed at the level of a job.
+A "KILL" (the default) signal applied to a job cancels the job and
+all of its steps.
+For other signals, when \fB\-\-batch\fR is used, the batch shell 
+processes will be signalled.
+Otherwise the processes associated with all job steps, but not the 
+batch script itself, will be signalled.
 
 .SH "ENVIRONMENT VARIABLES"
 .PP
@@ -117,24 +123,33 @@ The location of the SLURM configuration file.
 
 .SH "NOTES"
 .LP
-If multiple filters are supplied (e.g. \fB\-\-partition\fR and \fB\-\-name\fR) only the 
-jobs satisfying all of the filtering options will be signaled.
+If multiple filters are supplied (e.g. \fB\-\-partition\fR and \fB\-\-name\fR) 
+only the jobs satisfying all of the filtering options will be signaled.
 .LP
-If a signal value of "KILL" (the default value) is to be sent to an entire job, this will 
-result in the job's termination and its resource allocation being released.
+If a signal value of "KILL" (the default value) is to be sent to an entire 
+job, this will result in the job's termination and its resource allocation 
+being released.
 .LP
 Cancelling a job step will not result in a job being terminated. 
 The job must be cancelled to release a resource allocation. 
+
 .SH "EXAMPLES"
 .TP
 Send SIGTERM to steps 1 and 3 of job 1234:
 scancel \-\-signal=TERM 1234.1 1234.3
+
 .TP
 Cancel job 1234 along with all of its steps:
 scancel 1234
+
+.TP
+Send SIGUSR1 to the batch shell processes of job 1235:
+scancel \-\-signal=USR1 \-\-batch 1235
+
 .TP
 Cancel job all pending jobs belonging to user "bob" in partition "debug":
 scancel \-\-state=PENDING \-\-user=bob \-\-partition=debug
+
 .SH "COPYING"
 Copyright (C) 2002-2007 The Regents of the University of California.
 Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
