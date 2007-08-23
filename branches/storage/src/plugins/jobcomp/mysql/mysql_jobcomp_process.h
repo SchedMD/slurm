@@ -1,10 +1,12 @@
 /*****************************************************************************\
- *  flatfile_jobcomp.h - text file slurm job completion logging plugin.
+ *  mysql_jobcomp_process.h - functions the processing of
+ *                               information from the mysql jobcomp
+ *                               storage.
  *****************************************************************************
- *  Copyright (C) 2003 The Regents of the University of California.
+ *
+ *  Copyright (C) 2004-2007 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Morris Jette <jette1@llnl.gov> et. al.
- *  UCRL-CODE-226842.
+ *  Written by Danny Auble <da@llnl.gov>
  *  
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -33,22 +35,60 @@
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+ *
+ *  This file is patterned after jobcomp_linux.c, written by Morris Jette and
+ *  Copyright (C) 2002 The Regents of the University of California.
 \*****************************************************************************/
 
-#ifndef _FLATFILE_JOBCOMP_H_
-#define _FLATFILE_JOBCOMP_H_
+#ifndef _HAVE_MYSQL_JOBCOMP_PROCESS_H
+#define _HAVE_MYSQL_JOBCOMP_PROCESS_H
 
-#include "src/slurmctld/slurmctld.h"
+#include "mysql_common.h"
+#include "mysql_jobcomp.h"
+#include "src/common/slurm_jobacct.h"
+#include "src/common/slurm_jobcomp.h"
 
-extern int flatfile_jobcomp_init(char * location);
-extern int flatfile_jobcomp_fini();
-extern int flatfile_jobcomp_get_errno();
-extern int flatfile_jobcomp_log_record(struct job_record *job_ptr);
-extern char *flatfile_jobcomp_strerror(int errnum);
-extern void flatfile_jobcomp_get_jobs(List job_list, 
-				      List selected_steps,
-				      List selected_parts,
-				      void *params);
-extern void flatfile_jobcomp_archive(List selected_parts, void *params);
+#ifdef HAVE_MYSQL
+extern MYSQL *jobcomp_mysql_db;
+extern int jobcomp_db_init;
+
+extern char *jobcomp_table;
+/* This variable and the following enum are related so if you change
+   the jobcomp_table_fields defined in mysql_jobcomp.c you must update
+   this enum accordingly.
+*/
+extern storage_field_t jobcomp_table_fields[];
+enum {
+	JOBCOMP_REQ_JOBID,
+	JOBCOMP_REQ_UID,
+	JOBCOMP_REQ_USER_NAME,
+	JOBCOMP_REQ_GID,
+	JOBCOMP_REQ_GROUP_NAME,
+	JOBCOMP_REQ_NAME,
+	JOBCOMP_REQ_STATE,
+	JOBCOMP_REQ_PARTITION,
+	JOBCOMP_REQ_TIMELIMIT,
+	JOBCOMP_REQ_STARTTIME,
+	JOBCOMP_REQ_ENDTIME,
+	JOBCOMP_REQ_NODELIST,
+	JOBCOMP_REQ_NODECNT,
+	JOBCOMP_REQ_CONNECTION,
+	JOBCOMP_REQ_REBOOT,
+	JOBCOMP_REQ_ROTATE,
+	JOBCOMP_REQ_MAXPROCS,
+	JOBCOMP_REQ_GEOMETRY,
+	JOBCOMP_REQ_START,
+	JOBCOMP_REQ_BLOCKID,
+	JOBCOMP_REQ_COUNT		
+};
+
+extern void mysql_jobcomp_process_get_jobs(List job_list,
+					   List selected_steps,
+					   List selected_parts,
+					   sacct_parameters_t *params);
+
+extern void mysql_jobcomp_process_archive(List selected_parts,
+					  sacct_parameters_t *params);
+#endif
 
 #endif
