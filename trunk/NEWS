@@ -4,6 +4,8 @@ documents those changes that are of interest to users and admins.
 * Changes in SLURM 1.3.0-pre3
 =============================
  -- Remove slaunch command
+ -- Added srun option "--checkpoint=time" for job step to automatically be 
+    checkpointed on a period basis.
 
 * Changes in SLURM 1.3.0-pre2
 =============================
