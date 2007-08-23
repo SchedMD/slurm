@@ -1,2 +1,2 @@
 
-SUBDIRS = auth checkpoint jobacct-read jobacct-write jobcomp mpi proctrack sched select storage switch task
+SUBDIRS = auth checkpoint jobacct-gather jobacct-storage jobcomp mpi proctrack sched select storage switch task
