@@ -1,7 +1,7 @@
 #!/usr/bin/expect
 ############################################################################
 # Purpose: Test of SLURM functionality
-#          Verify environment variables controlling sallocare processed:
+#          Verify environment variables controlling salloc are processed:
 #          SALLOC_ACCOUNT, SALLOC_DEBUG and SALLOC_TIMELIMIT
 #
 # Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
@@ -48,7 +48,7 @@ set env(SALLOC_DEBUG)         2
 set env(SALLOC_TIMELIMIT)     2
 
 #
-# Spawn a job via slaunch using these environment variables
+# Spawn a job via salloc using these environment variables
 #
 set matches 0
 set salloc_pid [spawn $salloc -N1 $bin_bash]

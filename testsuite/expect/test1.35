@@ -52,7 +52,6 @@ make_bash_script $file_in "
   for ((i = 0; i < $steps_started; i++)); do
     j=`expr $steps_started + 10 - \$i`
     $srun $bin_sleep \$j &
-#    $slaunch $bin_sleep \$j &
     $bin_sleep 1
   done
   $bin_sleep 2

@@ -51,7 +51,7 @@ close $fd
 make_bash_script $file_script "$bin_cat"
 
 #
-# Spawn a job via slaunch using these environment variables
+# Spawn a job via sbatch using these environment variables
 #
 set matches 0
 spawn $sbatch -N1 --input=$file_in --output=$file_out $file_script

@@ -76,7 +76,7 @@ if {$job_id1 == 0} {
 #
 set match_acct  0
 set match_state 0
-set salloc_pid [spawn $salloc --dependency=$job_id1 $slaunch $scontrol show job $job_id1]
+set salloc_pid [spawn $salloc --dependency=$job_id1 $srun $scontrol show job $job_id1]
 expect {
 	-re "Granted job allocation ($number)" {
 		set job_id2 $expect_out(1,string)

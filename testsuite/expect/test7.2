@@ -1,8 +1,8 @@
 #!/usr/bin/expect
 ############################################################################
 # Purpose: Test of SLURM functionality
-#          Test of PMI functions available via API library. Uses srun and 
-#          slaunch. Tests --pmi-threads option in both commands.
+#          Test of PMI functions available via API library. Tests 
+#          --pmi-threads option in srun command.
 #
 # Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
 #          "FAILURE: ..." otherwise with an explanation of the failure, OR
@@ -66,7 +66,7 @@ if { [test_bluegene] } {
 	}
 }
 
-# First test uses srun based task launch
+# Test uses srun based task launch
 # Adjust time limits as needed for large task counts */
 #                   times are here  vv 
 set timeout [expr $max_job_delay +  60]
@@ -92,39 +92,6 @@ expect {
 	}
 }
 
-# Second test uses slaunch based task launch
-# Adjust time limits as needed for large task counts */
-#                   times are here  vv 
-set timeout [expr $max_job_delay +  60]
-set job_id 0
-set salloc_pid [spawn $salloc -N$node_cnt -t1 $slaunch -n8 --overcommit -l --pmi-threads=3 $file_prog_get]
-expect {
-	-re "Granted job allocation ($number)" {
-		set job_id $expect_out(1,string)
-		exp_continue
-	}
-	-re "FAILURE" {
-		send_user "\nFAILURE: some error occured\n"
-		set exit_code 1
-		exp_continue
-	}
-	-re "error" {
-		send_user "\nFAILURE: some error occured\n"
-		set exit_code 1
-		exp_continue
-	}
-	timeout {
-		send_user "\nFAILURE: salloc not responding\n"
-		if {$job_id != 0} {
-			cancel_job $job_id
-		}
-		slow_kill [expr 0 - $salloc_pid]
-		set exit_code 1
-	}
-	eof {
-		wait
-	}
-}
 if {$exit_code == 0} {
 	send_user "\nSUCCESS\n"
         exec $bin_rm -f $file_prog_get
