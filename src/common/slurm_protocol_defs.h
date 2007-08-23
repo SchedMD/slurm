@@ -382,6 +382,7 @@ typedef struct job_step_specs {
 	uint16_t plane_size;	/* plane size when task_dist =
 				   SLURM_DIST_PLANE */
 	uint16_t port;		/* port to contact initiating srun */
+	uint16_t ckpt_interval;	/* checkpoint creation interval (minutes) */
 	char *host;		/* host to contact initiating srun */
 	char *node_list;	/* list of required nodes */
 	char *network;		/* network use spec */

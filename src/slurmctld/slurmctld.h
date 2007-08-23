@@ -407,6 +407,7 @@ struct 	step_record {
 	uint16_t port;			/* port for srun communications */
 	char *host;			/* host for srun communications */
 	uint16_t batch_step;		/* 1 if batch job step, 0 otherwise */
+	uint16_t ckpt_interval;		/* checkpoint interval in minutes */
 	switch_jobinfo_t switch_job;	/* switch context, opaque */
 	check_jobinfo_t check_job;	/* checkpoint context, opaque */
 	char *name;			/* name of job step */

@@ -1510,6 +1510,7 @@ _pack_job_step_create_request_msg(job_step_create_request_msg_t
 	pack16(msg->task_dist, buffer);
 	pack16(msg->plane_size, buffer);
 	pack16(msg->port, buffer);
+	pack16(msg->ckpt_interval, buffer);
 
 	packstr(msg->host, buffer);
 	packstr(msg->name, buffer);
@@ -1541,6 +1542,7 @@ _unpack_job_step_create_request_msg(job_step_create_request_msg_t ** msg,
 	safe_unpack16(&(tmp_ptr->task_dist), buffer);
 	safe_unpack16(&(tmp_ptr->plane_size), buffer);
 	safe_unpack16(&(tmp_ptr->port), buffer);
+	safe_unpack16(&(tmp_ptr->ckpt_interval), buffer);
 
 	safe_unpackstr_xmalloc(&(tmp_ptr->host), &uint16_tmp, buffer);
 	safe_unpackstr_xmalloc(&(tmp_ptr->name), &uint16_tmp, buffer);
@@ -1885,6 +1887,7 @@ _unpack_job_step_info_members(job_step_info_t * step, Buf buffer)
 
 	safe_unpack32(&step->job_id, buffer);
 	safe_unpack16(&step->step_id, buffer);
+	safe_unpack16(&step->ckpt_interval, buffer);
 	safe_unpack32(&step->user_id, buffer);
 	safe_unpack32(&step->num_tasks, buffer);
 
