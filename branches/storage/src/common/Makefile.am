@@ -33,9 +33,11 @@ libcommon_la_SOURCES = 			\
 	safeopen.c safeopen.h		\
 	bitstring.c bitstring.h 	\
 	mpi.c mpi.h                     \
+	mysql_common.c mysql_common.h   \
 	pack.c pack.h			\
 	parse_config.c parse_config.h	\
 	parse_spec.c parse_spec.h	\
+	pgsql_common.c pgsql_common.h   \
 	plugin.c plugin.h		\
 	plugrack.c plugrack.h		\
 	read_config.c read_config.h	\
@@ -61,9 +63,9 @@ libcommon_la_SOURCES = 			\
 	uid.c uid.h			\
 	util-net.c util-net.h		\
 	slurm_auth.c slurm_auth.h	\
-	slurm_jobacct.c slurm_jobacct.h \
+	slurm_jobacct_gather.c slurm_jobacct_gather.h \
+	slurm_jobacct_storage.c slurm_jobacct_storage.h \
 	slurm_jobcomp.c slurm_jobcomp.h	\
-	slurm_storage.c slurm_storage.h \
 	switch.c switch.h		\
 	arg_desc.c arg_desc.h		\
 	macros.h			\

@@ -2090,16 +2090,20 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer)
 	pack16(build_ptr->fast_schedule, buffer);
 	pack32(build_ptr->first_job_id, buffer);
 	pack16(build_ptr->inactive_limit, buffer);
-	packstr(build_ptr->job_acct_loc, buffer);
-	pack16(build_ptr->job_acct_freq, buffer);
-	packstr(build_ptr->job_acct_type, buffer);
-	packstr(build_ptr->storage_type, buffer);
-	packstr(build_ptr->storage_user, buffer);
-	packstr(build_ptr->storage_host, buffer);
-	packstr(build_ptr->storage_pass, buffer);
-	pack32((uint32_t)build_ptr->storage_port, buffer);
+	pack16(build_ptr->job_acct_gather_freq, buffer);
+	packstr(build_ptr->job_acct_gather_type, buffer);
+	packstr(build_ptr->job_acct_storage_loc, buffer);
+	packstr(build_ptr->job_acct_storage_type, buffer);
+	packstr(build_ptr->job_acct_storage_user, buffer);
+	packstr(build_ptr->job_acct_storage_host, buffer);
+	packstr(build_ptr->job_acct_storage_pass, buffer);
+	pack32((uint32_t)build_ptr->job_acct_storage_port, buffer);
 	packstr(build_ptr->job_comp_loc, buffer);
 	packstr(build_ptr->job_comp_type, buffer);
+	packstr(build_ptr->job_comp_user, buffer);
+	packstr(build_ptr->job_comp_host, buffer);
+	packstr(build_ptr->job_comp_pass, buffer);
+	pack32((uint32_t)build_ptr->job_comp_port, buffer);
 	pack16(build_ptr->kill_wait, buffer);
 	packstr(build_ptr->mail_prog, buffer);
 	pack16(build_ptr->max_job_cnt, buffer);
@@ -2189,17 +2193,27 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **
 	safe_unpack16(&build_ptr->fast_schedule, buffer);
 	safe_unpack32(&build_ptr->first_job_id, buffer);
 	safe_unpack16(&build_ptr->inactive_limit, buffer);
-	safe_unpackstr_xmalloc(&build_ptr->job_acct_loc, &uint16_tmp, 
-			       buffer);
-	safe_unpack16(&build_ptr->job_acct_freq, buffer);
-	safe_unpackstr_xmalloc(&build_ptr->job_acct_type, &uint16_tmp, buffer);
-	safe_unpackstr_xmalloc(&build_ptr->storage_type, &uint16_tmp, buffer);
-	safe_unpackstr_xmalloc(&build_ptr->storage_user, &uint16_tmp, buffer);
-	safe_unpackstr_xmalloc(&build_ptr->storage_host, &uint16_tmp, buffer);
-	safe_unpackstr_xmalloc(&build_ptr->storage_pass, &uint16_tmp, buffer);
-	safe_unpack32(&build_ptr->storage_port, buffer);
+	safe_unpack16(&build_ptr->job_acct_gather_freq, buffer);
+	safe_unpackstr_xmalloc(&build_ptr->job_acct_gather_type,
+			       &uint16_tmp, buffer);
+	safe_unpackstr_xmalloc(&build_ptr->job_acct_storage_loc,
+			       &uint16_tmp, buffer);
+	safe_unpackstr_xmalloc(&build_ptr->job_acct_storage_type,
+			       &uint16_tmp, buffer);
+	safe_unpackstr_xmalloc(&build_ptr->job_acct_storage_user,
+			       &uint16_tmp, buffer);
+	safe_unpackstr_xmalloc(&build_ptr->job_acct_storage_host,
+			       &uint16_tmp, buffer);
+	safe_unpackstr_xmalloc(&build_ptr->job_acct_storage_pass,
+			       &uint16_tmp, buffer);
+	safe_unpack32(&build_ptr->job_acct_storage_port, buffer);
 	safe_unpackstr_xmalloc(&build_ptr->job_comp_loc, &uint16_tmp, buffer);
 	safe_unpackstr_xmalloc(&build_ptr->job_comp_type, &uint16_tmp, buffer);
+	safe_unpackstr_xmalloc(&build_ptr->job_comp_type, &uint16_tmp, buffer);
+	safe_unpackstr_xmalloc(&build_ptr->job_comp_user, &uint16_tmp, buffer);
+	safe_unpackstr_xmalloc(&build_ptr->job_comp_host, &uint16_tmp, buffer);
+	safe_unpackstr_xmalloc(&build_ptr->job_comp_pass, &uint16_tmp, buffer);
+	safe_unpack32(&build_ptr->job_comp_port, buffer);
 	safe_unpack16(&build_ptr->kill_wait, buffer);
 	safe_unpackstr_xmalloc(&build_ptr->mail_prog, &uint16_tmp, buffer);
 	safe_unpack16(&build_ptr->max_job_cnt, buffer);
@@ -2287,14 +2301,17 @@ unpack_error:
 	xfree(build_ptr->control_addr);
 	xfree(build_ptr->control_machine);
 	xfree(build_ptr->epilog);
-	xfree(build_ptr->job_acct_loc);
-	xfree(build_ptr->job_acct_type);
-	xfree(build_ptr->storage_type);
-	xfree(build_ptr->storage_user);
-	xfree(build_ptr->storage_host);
-	xfree(build_ptr->storage_pass);
+	xfree(build_ptr->job_acct_gather_type);
+	xfree(build_ptr->job_acct_storage_loc);
+	xfree(build_ptr->job_acct_storage_type);
+	xfree(build_ptr->job_acct_storage_user);
+	xfree(build_ptr->job_acct_storage_host);
+	xfree(build_ptr->job_acct_storage_pass);
 	xfree(build_ptr->job_comp_loc);
 	xfree(build_ptr->job_comp_type);
+	xfree(build_ptr->job_comp_user);
+	xfree(build_ptr->job_comp_host);
+	xfree(build_ptr->job_comp_pass);
 	xfree(build_ptr->job_credential_private_key);
 	xfree(build_ptr->job_credential_public_certificate);
 	xfree(build_ptr->mail_prog);

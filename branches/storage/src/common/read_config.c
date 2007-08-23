@@ -1483,27 +1483,65 @@ validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 		conf->inactive_limit = DEFAULT_INACTIVE_LIMIT;
 	}
 
-	if (!s_p_get_uint16(&conf->job_acct_freq, "JobAcctFrequency", hashtbl))
-		conf->job_acct_freq = DEFAULT_JOB_ACCT_FREQ;
+	if (!s_p_get_uint16(&conf->job_acct_freq, "JobAcctFrequency", hashtbl)
+	    && !s_p_get_string(&conf->job_acct_loc, "JobAcctGatherFrequency",
+			       hashtbl))
+		conf->job_acct_gather_freq = DEFAULT_JOB_ACCT_GATHER_FREQ;
 
-	if (!s_p_get_string(&conf->job_acct_type, "JobAcctType", hashtbl))
-		conf->job_acct_type = xstrdup(DEFAULT_JOB_ACCT_TYPE);
+	if (!s_p_get_string(&conf->job_acct_type, "JobAcctType", hashtbl)
+	    && !s_p_get_string(&conf->job_acct_loc, "JobAcctGatherType",
+			       hashtbl))
+		conf->job_acct_gather_type =
+			xstrdup(DEFAULT_JOB_ACCT_GATHER_TYPE);
 
-	if (!s_p_get_string(&conf->storage_type, "StorageType", hashtbl))
-		conf->storage_type = xstrdup(DEFAULT_STORAGE_TYPE);
-	if (!s_p_get_string(&conf->storage_host, "StorageHost", hashtbl))
-		conf->storage_host = xstrdup(DEFAULT_STORAGE_HOST);
-	if (!s_p_get_string(&conf->storage_user, "StorageUser", hashtbl))
-		conf->storage_user = xstrdup(DEFAULT_STORAGE_USER);
-	if (!s_p_get_string(&conf->storage_pass, "StoragePass", hashtbl))
-		conf->storage_pass = xstrdup(DEFAULT_STORAGE_PASS);
-	if (!s_p_get_uint32(&conf->storage_port, "StoragePort", hashtbl))
-		conf->storage_port = DEFAULT_STORAGE_PORT;
-
-	s_p_get_string(&conf->job_comp_loc, "JobCompLoc", hashtbl);
+	/* JobAcctStorageLoc replaces JobAcctLogFile since it now represents
+	 * the database name also depending on the storage type you
+	 * use so we still check JobAcctLogFile for the same thing
+	 */
+	if (!s_p_get_string(&conf->job_acct_loc, "JobAcctStorageLoc", hashtbl)
+	    && !s_p_get_string(&conf->job_acct_loc, "JobAcctLogFile", hashtbl))
+		conf->job_acct_storage_loc = xstrdup(DEFAULT_JOB_ACCT_LOC);
+	
+	if (!s_p_get_string(&conf->storage_type, "JobAcctStorageType",
+			    hashtbl))
+		conf->job_acct_storage_type =
+			xstrdup(DEFAULT_JOB_ACCT_STORAGE_TYPE);
+	if (!s_p_get_string(&conf->storage_host, "JobAcctStorageHost",
+			    hashtbl))
+		conf->job_acct_storage_host =
+			xstrdup(DEFAULT_JOB_ACCT_STORAGE_HOST);
+	if (!s_p_get_string(&conf->storage_user, "JobAcctStorageUser",
+			    hashtbl))
+		conf->job_acct_storage_user =
+			xstrdup(DEFAULT_JOB_ACCT_STORAGE_USER);
+	if (!s_p_get_string(&conf->storage_pass, "JobAcctStoragePass",
+			    hashtbl))
+		conf->job_acct_storage_pass =
+			xstrdup(DEFAULT_JOB_ACCT_STORAGE_PASS);
+	if (!s_p_get_uint32(&conf->storage_port, "JobAcctStoragePort",
+			    hashtbl))
+		conf->job_acct_storage_port =
+			DEFAULT_JOB_ACCT_STORAGE_PORT;
 
 	if (!s_p_get_string(&conf->job_comp_type, "JobCompType", hashtbl))
 		conf->job_comp_type = xstrdup(DEFAULT_JOB_COMP_TYPE);
+
+	if (!s_p_get_string(&conf->job_comp_loc, "JobCompLoc", hashtbl))
+		conf->job_comp_loc = xstrdup(DEFAULT_JOB_COMP_LOC);
+
+	if (!s_p_get_string(&conf->storage_host, "JobCompHost",
+			    hashtbl))
+		conf->job_comp_host = xstrdup(DEFAULT_JOB_COMP_HOST);
+	if (!s_p_get_string(&conf->storage_user, "JobCompUser",
+			    hashtbl))
+		conf->job_comp_user = xstrdup(DEFAULT_JOB_COMP_USER);
+	if (!s_p_get_string(&conf->storage_pass, "JobCompPass",
+			    hashtbl))
+		conf->job_comp_pass = xstrdup(DEFAULT_JOB_COMP_PASS);
+	if (!s_p_get_uint32(&conf->storage_port, "JobCompPort",
+			    hashtbl))
+		conf->job_comp_port = DEFAULT_JOB_COMP_PORT;
+
 
 	if (!s_p_get_uint16(&conf->kill_wait, "KillWait", hashtbl))
 		conf->kill_wait = DEFAULT_KILL_WAIT;
