@@ -71,7 +71,7 @@ if {$got_login_grps == 0} {
 #
 set timeout $max_job_delay
 set job_id 0
-set salloc_pid [spawn $salloc -N1 -t1 $slaunch $bin_id]
+set salloc_pid [spawn $salloc -N1 -t1 $srun $bin_id]
 expect {
 	-re "Granted job allocation ($number)" {
 		set job_id $expect_out(1,string)

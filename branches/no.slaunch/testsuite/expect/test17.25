@@ -56,7 +56,7 @@ make_bash_script $file_in "
 "
 
 #
-# Spawn a job via slaunch using these environment variables
+# Spawn a job via sbatch using these environment variables
 #
 set matches 0
 spawn $sbatch -N1 --output=none $file_in

@@ -56,7 +56,7 @@ exec $bin_chmod 700 $file_prog
 # Spawn initial program via srun
 #
 set timeout $max_job_delay
-set salloc_pid [spawn $salloc -N1-4 -t2 $slaunch -n4 --overcommit $file_prog]
+set salloc_pid [spawn $salloc -N1-4 -t2 $srun -n4 --overcommit $file_prog]
 set init_id $spawn_id
 expect {
         -i $init_id
