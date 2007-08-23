@@ -1633,6 +1633,9 @@ extern void step_checkpoint(void)
 	struct job_record *job_ptr;
 	ListIterator step_iterator;
 	struct step_record *step_ptr;
+	time_t event_time;
+	uint32_t error_code;
+	char *error_msg;
 
 	/* Exit if "checkpoint/none" is configured */
 	if (ckpt_run == -1) {
@@ -1659,8 +1662,11 @@ extern void step_checkpoint(void)
 				(step_ptr->ckpt_interval * 60);
 			if (ckpt_due > now) 
 				continue;
-info("checkpoint %u.%u now", job_ptr->job_id, step_ptr->step_id);
 			step_ptr->ckpt_time = now;
+			last_job_update = now;
+			(void) checkpoint_op(CHECK_CREATE, 0, 
+				(void *)step_ptr, &event_time, 
+				&error_code, &error_msg);
 		}
 		list_iterator_destroy (step_iterator);
 	}
