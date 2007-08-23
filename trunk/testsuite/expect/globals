@@ -34,7 +34,7 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 ############################################################################
 
-global sacct salloc sattach sbatch sbcast scancel scontrol sinfo slaunch smap squeue srun
+global sacct salloc sattach sbatch sbcast scancel scontrol sinfo smap squeue srun
 
 # Conditional set.  Only set variable if variable does not yet exist.
 proc cset {name value} {
@@ -61,7 +61,6 @@ cset sbcast      "${slurm_dir}/bin/sbcast"
 cset scancel     "${slurm_dir}/bin/scancel"
 cset scontrol    "${slurm_dir}/bin/scontrol"
 cset sinfo       "${slurm_dir}/bin/sinfo"
-cset slaunch     "${slurm_dir}/bin/slaunch"
 cset smap        "${slurm_dir}/bin/smap"
 cset squeue      "${slurm_dir}/bin/squeue"
 cset srun        "${slurm_dir}/bin/srun"

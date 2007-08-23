@@ -10,7 +10,6 @@ man1_MANS =            \
 	man1/scancel.1 \
 	man1/scontrol.1 \
 	man1/sinfo.1   \
-	man1/slaunch.1 \
 	man1/slurm.1 \
 	man1/smap.1 \
 	man1/squeue.1 \

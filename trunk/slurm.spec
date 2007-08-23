@@ -173,7 +173,6 @@ DESTDIR="$RPM_BUILD_ROOT" make install-contrib
 
 %ifos aix5.3
 mv ${RPM_BUILD_ROOT}%{_bindir}/srun ${RPM_BUILD_ROOT}%{_sbindir}
-mv ${RPM_BUILD_ROOT}%{_bindir}/slaunch ${RPM_BUILD_ROOT}%{_sbindir}
 %endif
 
 if [ -d /etc/init.d ]; then
@@ -289,7 +288,6 @@ rm -rf $RPM_BUILD_ROOT
 %{_sbindir}/slurmstepd
 %ifos aix5.3
 %{_sbindir}/srun
-%{_sbindir}/slaunch
 %endif
 %{_libdir}/*.so*
 %{_libdir}/slurm/src/*
