@@ -2435,7 +2435,7 @@ int _launch_batch_step(job_desc_msg_t *job_desc_msg, uid_t uid,
 	req_step_msg.name = job_desc_msg->name;
 	req_step_msg.network = NULL;
 	req_step_msg.node_list = NULL;
-	req_step_msg.ckpt_interval = (uint16_t) NO_VAL;
+	req_step_msg.ckpt_interval = 0;
 
 	error_code = step_create(&req_step_msg, &step_rec, false, true);
 	xfree(req_step_msg.node_list);	/* may be set by step_create */
