@@ -38,6 +38,9 @@ documents those changes that are of interest to users and admins.
     Moved existing digital signature logic into new plugin: crypto/openssl.
     Added new support for crypto/munge (available with GPL license).
 
+* Changes in SLURM 1.2.15
+=========================
+
 * Changes in SLURM 1.2.14
 =========================
  -- Fix a couple of bugs in MPICH/MX support (from Asier Roa, BSC).
@@ -53,6 +56,7 @@ documents those changes that are of interest to users and admins.
  -- Added checkpoint/ompi (OpenMPI) plugin (still under development).
  -- Fix bug in load leveling logic added to v1.2.13 which can cause an 
     infinite loop and hang slurmctld when sharing nodes between jobs.
+ -- Added support for sbatch to read in #PBS options from a script
 
 * Changes in SLURM 1.2.13
 =========================

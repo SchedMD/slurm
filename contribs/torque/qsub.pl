@@ -235,6 +235,10 @@ sub parse_resource_list {
 	if($opt{mem}) {
 		$opt{mem} = convert_mb_format($opt{mem});
 	}
+
+	if($opt{file}) {
+		$opt{file} = convert_mb_format($opt{file});
+	}
 	
 	return \%opt;
 }
@@ -251,9 +255,9 @@ sub parse_node_opts {
 
 	my $hl = Slurm::Hostlist::create("");
 
-	my @parts = split(/:/, $node_string);
+	my @parts = split(/\+/, $node_string);
 	foreach my $part (@parts) {
-		my @sub_parts = split(/\+/, $part);
+		my @sub_parts = split(/:/, $part);
 		foreach my $sub_part (@sub_parts) {
 			if($sub_part =~ /ppn=(\d+)/) {
 				next;
@@ -329,6 +333,8 @@ sub convert_mb_format {
 		print "don't know what to do with suffix $suffix\n";
 		return;
 	}
+
+	$amount .= "M";
 
 	return $amount;
 }
