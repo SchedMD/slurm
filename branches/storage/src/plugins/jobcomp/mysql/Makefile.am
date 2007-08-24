@@ -9,9 +9,9 @@ INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common
 pkglib_LTLIBRARIES = jobcomp_mysql.la
 
 # Mysql storage plugin.
-storage_mysql_la_SOURCES = jobcomp_mysql.c \
+jobcomp_mysql_la_SOURCES = jobcomp_mysql.c \
 		mysql_jobcomp.c mysql_jobcomp.h \
 		mysql_jobcomp_process.c mysql_jobcomp_process.h
-storage_mysql_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
-storage_mysql_la_LIBADD  = $(top_builddir)/src/common/libcommon.la
+jobcomp_mysql_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
+jobcomp_mysql_la_LIBADD  = $(top_builddir)/src/common/libcommon.la
 

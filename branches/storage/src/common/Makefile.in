@@ -72,8 +72,9 @@ am__libcommon_la_SOURCES_DIST = xmalloc.c xmalloc.h xassert.c \
 	xassert.h xstring.c xstring.h xsignal.c xsignal.h forward.c \
 	forward.h strlcpy.c strlcpy.h list.c list.h net.c net.h fd.c \
 	fd.h log.c log.h cbuf.c cbuf.h safeopen.c safeopen.h \
-	bitstring.c bitstring.h mpi.c mpi.h pack.c pack.h \
-	parse_config.c parse_config.h parse_spec.c parse_spec.h \
+	bitstring.c bitstring.h mpi.c mpi.h mysql_common.c \
+	mysql_common.h pack.c pack.h parse_config.c parse_config.h \
+	parse_spec.c parse_spec.h pgsql_common.c pgsql_common.h \
 	plugin.c plugin.h plugrack.c plugrack.h read_config.c \
 	read_config.h node_select.c node_select.h env.c env.h \
 	slurm_cred.h slurm_cred.c slurm_errno.c slurm_protocol_api.c \
@@ -84,11 +85,12 @@ am__libcommon_la_SOURCES_DIST = xmalloc.c xmalloc.h xassert.c \
 	slurm_protocol_interface.h slurm_protocol_defs.c \
 	slurm_protocol_defs.h slurm_rlimits_info.h \
 	slurm_rlimits_info.c uid.c uid.h util-net.c util-net.h \
-	slurm_auth.c slurm_auth.h slurm_jobacct.c slurm_jobacct.h \
-	slurm_jobcomp.c slurm_jobcomp.h slurm_storage.c \
-	slurm_storage.h switch.c switch.h arg_desc.c arg_desc.h \
-	macros.h malloc.c malloc.h getopt.h getopt.c getopt1.c \
-	unsetenv.c unsetenv.h slurm_selecttype_info.c \
+	slurm_auth.c slurm_auth.h jobacct_common.c jobacct_common.h \
+	slurm_jobacct_gather.c slurm_jobacct_gather.h \
+	slurm_jobacct_storage.c slurm_jobacct_storage.h \
+	slurm_jobcomp.c slurm_jobcomp.h switch.c switch.h arg_desc.c \
+	arg_desc.h macros.h malloc.c malloc.h getopt.h getopt.c \
+	getopt1.c unsetenv.c unsetenv.h slurm_selecttype_info.c \
 	slurm_resource_info.c slurm_resource_info.h hostlist.c \
 	hostlist.h slurm_step_layout.c slurm_step_layout.h \
 	checkpoint.c checkpoint.h parse_time.c parse_time.h \
@@ -97,14 +99,15 @@ am__libcommon_la_SOURCES_DIST = xmalloc.c xmalloc.h xassert.c \
 @HAVE_UNSETENV_FALSE@am__objects_1 = unsetenv.lo
 am_libcommon_la_OBJECTS = xmalloc.lo xassert.lo xstring.lo xsignal.lo \
 	forward.lo strlcpy.lo list.lo net.lo fd.lo log.lo cbuf.lo \
-	safeopen.lo bitstring.lo mpi.lo pack.lo parse_config.lo \
-	parse_spec.lo plugin.lo plugrack.lo read_config.lo \
-	node_select.lo env.lo slurm_cred.lo slurm_errno.lo \
-	slurm_protocol_api.lo slurm_protocol_pack.lo \
+	safeopen.lo bitstring.lo mpi.lo mysql_common.lo pack.lo \
+	parse_config.lo parse_spec.lo pgsql_common.lo plugin.lo \
+	plugrack.lo read_config.lo node_select.lo env.lo slurm_cred.lo \
+	slurm_errno.lo slurm_protocol_api.lo slurm_protocol_pack.lo \
 	slurm_protocol_util.lo slurm_protocol_socket_implementation.lo \
 	slurm_protocol_defs.lo slurm_rlimits_info.lo uid.lo \
-	util-net.lo slurm_auth.lo slurm_jobacct.lo slurm_jobcomp.lo \
-	slurm_storage.lo switch.lo arg_desc.lo malloc.lo getopt.lo \
+	util-net.lo slurm_auth.lo jobacct_common.lo \
+	slurm_jobacct_gather.lo slurm_jobacct_storage.lo \
+	slurm_jobcomp.lo switch.lo arg_desc.lo malloc.lo getopt.lo \
 	getopt1.lo $(am__objects_1) slurm_selecttype_info.lo \
 	slurm_resource_info.lo hostlist.lo slurm_step_layout.lo \
 	checkpoint.lo parse_time.lo job_options.lo global_defaults.lo \
@@ -331,9 +334,11 @@ libcommon_la_SOURCES = \
 	safeopen.c safeopen.h		\
 	bitstring.c bitstring.h 	\
 	mpi.c mpi.h                     \
+	mysql_common.c mysql_common.h   \
 	pack.c pack.h			\
 	parse_config.c parse_config.h	\
 	parse_spec.c parse_spec.h	\
+	pgsql_common.c pgsql_common.h   \
 	plugin.c plugin.h		\
 	plugrack.c plugrack.h		\
 	read_config.c read_config.h	\
@@ -359,9 +364,10 @@ libcommon_la_SOURCES = \
 	uid.c uid.h			\
 	util-net.c util-net.h		\
 	slurm_auth.c slurm_auth.h	\
-	slurm_jobacct.c slurm_jobacct.h \
+	jobacct_common.c jobacct_common.h \
+	slurm_jobacct_gather.c slurm_jobacct_gather.h \
+	slurm_jobacct_storage.c slurm_jobacct_storage.h \
 	slurm_jobcomp.c slurm_jobcomp.h	\
-	slurm_storage.c slurm_storage.h \
 	switch.c switch.h		\
 	arg_desc.c arg_desc.h		\
 	macros.h			\
@@ -471,10 +477,12 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hostlist.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/io_hdr.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/job_options.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/jobacct_common.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/list.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/log.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/malloc.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mpi.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mysql_common.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/net.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/node_select.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/optz.Plo@am__quote@
@@ -482,6 +490,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/parse_config.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/parse_spec.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/parse_time.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pgsql_common.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/plugin.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/plugrack.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/plugstack.Plo@am__quote@
@@ -490,7 +499,8 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurm_auth.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurm_cred.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurm_errno.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurm_jobacct.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurm_jobacct_gather.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurm_jobacct_storage.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurm_jobcomp.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurm_protocol_api.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurm_protocol_defs.Plo@am__quote@
@@ -501,7 +511,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurm_rlimits_info.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurm_selecttype_info.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurm_step_layout.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurm_storage.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/stepd_api.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/strlcpy.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/switch.Plo@am__quote@

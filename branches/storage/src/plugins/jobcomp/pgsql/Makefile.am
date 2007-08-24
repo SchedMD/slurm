@@ -10,9 +10,9 @@ INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common
 pkglib_LTLIBRARIES = jobcomp_pgsql.la
 
 # Pgsql storage plugin.
-storage_pgsql_la_SOURCES = jobcomp_pgsql.c \
+jobcomp_pgsql_la_SOURCES = jobcomp_pgsql.c \
 		pgsql_jobcomp.c pgsql_jobcomp.h \
 		pgsql_jobcomp_process.c pgsql_jobcomp_process.h
-storage_pgsql_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
-storage_pgsql_la_LIBADD  = $(top_builddir)/src/common/libcommon.la
+jobcomp_pgsql_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
+jobcomp_pgsql_la_LIBADD  = $(top_builddir)/src/common/libcommon.la
 

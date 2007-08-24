@@ -267,15 +267,21 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/checkpoint/Makefile
 		 src/plugins/checkpoint/aix/Makefile
 		 src/plugins/checkpoint/none/Makefile
-		 src/plugins/jobacct/Makefile
-		 src/plugins/jobacct/linux/Makefile
-		 src/plugins/jobacct/aix/Makefile
-		 src/plugins/jobacct/none/Makefile
+		 src/plugins/jobacct-gather/Makefile
+		 src/plugins/jobacct-gather/linux/Makefile
+		 src/plugins/jobacct-gather/aix/Makefile
+		 src/plugins/jobacct-gather/none/Makefile
+		 src/plugins/jobacct-storage/Makefile
+		 src/plugins/jobacct-storage/flatfile/Makefile
+		 src/plugins/jobacct-storage/mysql/Makefile
+		 src/plugins/jobacct-storage/pgsql/Makefile
+		 src/plugins/jobacct-storage/script/Makefile
 		 src/plugins/jobcomp/Makefile
 		 src/plugins/jobcomp/filetxt/Makefile
 		 src/plugins/jobcomp/none/Makefile
 		 src/plugins/jobcomp/script/Makefile
-		 src/plugins/jobcomp/database/Makefile
+		 src/plugins/jobcomp/mysql/Makefile
+		 src/plugins/jobcomp/pgsql/Makefile
 		 src/plugins/proctrack/Makefile
 		 src/plugins/proctrack/aix/Makefile
 		 src/plugins/proctrack/pgid/Makefile
@@ -310,11 +316,6 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/task/Makefile
 		 src/plugins/task/affinity/Makefile
 		 src/plugins/task/none/Makefile
-		 src/plugins/storage/Makefile
-		 src/plugins/storage/flatfile/Makefile
-		 src/plugins/storage/mysql/Makefile
-		 src/plugins/storage/pgsql/Makefile
-		 src/plugins/storage/script/Makefile
 		 doc/Makefile
 		 doc/man/Makefile
 		 doc/html/Makefile

@@ -53,9 +53,7 @@
 #include <stdio.h>
 #include <slurm/slurm_errno.h>
 
-#include "src/slurmctld/slurmctld.h"
-#include "src/slurmd/slurmd/slurmd.h"
-#include "src/common/slurm_jobacct.h"
+#include "src/common/jobacct_common.h"
 
 /*
  * These variables are required by the generic plugin interface.  If they
@@ -86,8 +84,8 @@
  * minimum versions for their plugins as the job accounting API 
  * matures.
  */
-const char plugin_name[] = "Job accounting NOT_INVOKED plugin";
-const char plugin_type[] = "jobacct/none";
+const char plugin_name[] = "Job accounting gather NOT_INVOKED plugin";
+const char plugin_type[] = "jobacct-gather/none";
 const uint32_t plugin_version = 100;
 
 /*
@@ -105,99 +103,17 @@ extern int fini ( void )
 	return SLURM_SUCCESS;
 }
 
-/*
- * The following routines are called by slurmctld
- */
-
-/*
- * The following routines are called by slurmd
- */
-int jobacct_p_init_struct(struct jobacctinfo *jobacct, 
-			  jobacct_id_t *jobacct_id)
-{
-	return SLURM_SUCCESS;
-}
-
-struct jobacctinfo *jobacct_p_alloc(jobacct_id_t *jobacct_id)
-{
-	return NULL;
-}
-
-void jobacct_p_free(struct jobacctinfo *jobacct)
+extern void jobacct_gather_p_pack(struct jobacctinfo *jobacct, Buf buffer)
 {
 	return;
 }
 
-int jobacct_p_setinfo(struct jobacctinfo *jobacct, 
-		      enum jobacct_data_type type, void *data)
-{
-	return SLURM_SUCCESS;
-	
-}
-
-int jobacct_p_getinfo(struct jobacctinfo *jobacct, 
-		      enum jobacct_data_type type, void *data)
+extern int jobacct_gather_p_unpack(struct jobacctinfo **jobacct, Buf buffer)
 {
 	return SLURM_SUCCESS;
 }
 
-void jobacct_p_aggregate(struct jobacctinfo *dest, struct jobacctinfo *from)
-{
-	return;
-}
-
-void jobacct_p_2_sacct(sacct_t *sacct, struct jobacctinfo *jobacct)
-{
-	return;
-}
-
-void jobacct_p_pack(struct jobacctinfo *jobacct, Buf buffer)
-{
-	return;
-}
-
-int jobacct_p_unpack(struct jobacctinfo **jobacct, Buf buffer)
-{
-	return SLURM_SUCCESS;
-}
-
-
-int jobacct_p_init_slurmctld(char *job_acct_log)
-{
-	return SLURM_SUCCESS;
-}
-
-int jobacct_p_fini_slurmctld()
-{
-	return SLURM_SUCCESS;
-}
-
-int jobacct_p_job_start_slurmctld(struct job_record *job_ptr)
-{
-	return SLURM_SUCCESS;
-}
-
-int jobacct_p_job_complete_slurmctld(struct job_record *job_ptr) 
-{
-	return  SLURM_SUCCESS;
-}
-
-int jobacct_p_step_start_slurmctld(struct step_record *step)
-{
-	return SLURM_SUCCESS;	
-}
-
-int jobacct_p_step_complete_slurmctld(struct step_record *step)
-{
-	return SLURM_SUCCESS;	
-}
-
-int jobacct_p_suspend_slurmctld(struct job_record *job_ptr)
-{
-	return SLURM_SUCCESS;
-}
-
-int jobacct_p_startpoll(int frequency)
+extern int jobacct_gather_p_startpoll(int frequency)
 {
 	info("jobacct NONE plugin loaded");
 	debug3("slurmd_jobacct_init() called");
@@ -205,37 +121,22 @@ int jobacct_p_startpoll(int frequency)
 	return SLURM_SUCCESS;
 }
 
-int jobacct_p_endpoll()
+extern int jobacct_gather_p_endpoll()
 {
 	return SLURM_SUCCESS;
 }
 
-int jobacct_p_set_proctrack_container_id(uint32_t id)
-{
-	return SLURM_SUCCESS;
-}
-
-int jobacct_p_add_task(pid_t pid, jobacct_id_t *jobacct_id)
-{
-	return SLURM_SUCCESS;
-}
-
-struct jobacctinfo *jobacct_p_stat_task(pid_t pid)
+extern jobacctinfo_t *jobacct_gather_p_stat_task(pid_t pid)
 {
 	return NULL;
 }
 
-struct jobacctinfo *jobacct_p_remove_task(pid_t pid)
-{
-	return NULL;
-}
-
-void jobacct_p_suspend_poll()
+extern void jobacct_gather_p_suspend_poll()
 {
 	return;
 }
 
-void jobacct_p_resume_poll()
+extern void jobacct_p_resume_poll()
 {
 	return;
 }

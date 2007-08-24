@@ -50,7 +50,7 @@
 #include "src/common/bitstring.h"
 #include "src/common/log.h"
 #include "src/common/node_select.h"
-#include "src/common/slurm_jobacct.h"
+#include "src/common/slurm_jobacct_gather.h"
 #include "src/common/pack.h"
 #include "src/common/slurm_auth.h"
 #include "src/common/slurm_cred.h"
@@ -3198,7 +3198,7 @@ _pack_stat_jobacct_msg(stat_jobacct_msg_t * msg, Buf buffer)
 	pack32((uint32_t)msg->return_code, buffer);
 	pack32((uint32_t)msg->step_id, buffer);
 	pack32((uint32_t)msg->num_tasks, buffer);
-	jobacct_g_pack(msg->jobacct, buffer);	
+	jobacct_gather_g_pack(msg->jobacct, buffer);	
 }
 
 
@@ -3214,7 +3214,7 @@ _unpack_stat_jobacct_msg(stat_jobacct_msg_t ** msg_ptr, Buf buffer)
 	safe_unpack32(&msg->return_code, buffer);
 	safe_unpack32(&msg->step_id, buffer);
 	safe_unpack32(&msg->num_tasks, buffer);
-	jobacct_g_unpack(&msg->jobacct, buffer);
+	jobacct_gather_g_unpack(&msg->jobacct, buffer);
 
 	return SLURM_SUCCESS;
 
@@ -3262,7 +3262,7 @@ _pack_step_complete_msg(step_complete_msg_t * msg, Buf buffer)
 	pack32((uint32_t)msg->range_first, buffer);
 	pack32((uint32_t)msg->range_last, buffer);
 	pack32((uint32_t)msg->step_rc, buffer);
-	jobacct_g_pack(msg->jobacct, buffer);
+	jobacct_gather_g_pack(msg->jobacct, buffer);
 }
 
 static int
@@ -3278,7 +3278,7 @@ _unpack_step_complete_msg(step_complete_msg_t ** msg_ptr, Buf buffer)
 	safe_unpack32(&msg->range_first, buffer);
 	safe_unpack32(&msg->range_last, buffer);
 	safe_unpack32(&msg->step_rc, buffer);
-	jobacct_g_unpack(&msg->jobacct, buffer);
+	jobacct_gather_g_unpack(&msg->jobacct, buffer);
 
 	return SLURM_SUCCESS;
 

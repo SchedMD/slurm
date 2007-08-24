@@ -14,7 +14,7 @@
 
 @SET_MAKE@
 
-# Makefile for jobacct/aix plugin
+# Makefile for jobacct-gather/aix plugin
 
 VPATH = @srcdir@
 pkgdatadir = $(datadir)/@PACKAGE@
@@ -35,7 +35,7 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
-subdir = src/plugins/jobacct/aix
+subdir = src/plugins/jobacct-gather/aix
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/auxdir/acx_pthread.m4 \
@@ -74,13 +74,13 @@ am__strip_dir = `echo $$p | sed -e 's|^.*/||'`;
 am__installdirs = "$(DESTDIR)$(pkglibdir)"
 pkglibLTLIBRARIES_INSTALL = $(INSTALL)
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
-jobacct_aix_la_DEPENDENCIES = $(top_builddir)/src/common/libcommon.la
-am_jobacct_aix_la_OBJECTS = jobacct_aix.lo jobacct_common.lo \
-	common_slurmstepd.lo proctrack.lo
-jobacct_aix_la_OBJECTS = $(am_jobacct_aix_la_OBJECTS)
-jobacct_aix_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
+jobacct_gather_aix_la_DEPENDENCIES =  \
+	$(top_builddir)/src/common/libcommon.la
+am_jobacct_gather_aix_la_OBJECTS = jobacct_gather_aix.lo proctrack.lo
+jobacct_gather_aix_la_OBJECTS = $(am_jobacct_gather_aix_la_OBJECTS)
+jobacct_gather_aix_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
-	$(jobacct_aix_la_LDFLAGS) $(LDFLAGS) -o $@
+	$(jobacct_gather_aix_la_LDFLAGS) $(LDFLAGS) -o $@
 DEFAULT_INCLUDES = -I. -I$(top_builddir) -I$(top_builddir)/slurm@am__isrc@
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
 am__depfiles_maybe = depfiles
@@ -93,8 +93,8 @@ CCLD = $(CC)
 LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
-SOURCES = $(jobacct_aix_la_SOURCES)
-DIST_SOURCES = $(jobacct_aix_la_SOURCES)
+SOURCES = $(jobacct_gather_aix_la_SOURCES)
+DIST_SOURCES = $(jobacct_gather_aix_la_SOURCES)
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -260,17 +260,15 @@ top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
 PLUGIN_FLAGS = -module -avoid-version --export-dynamic 
 INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common
-pkglib_LTLIBRARIES = jobacct_aix.la
+pkglib_LTLIBRARIES = jobacct_gather_aix.la
 
 # Null job completion logging plugin.
-jobacct_aix_la_SOURCES = jobacct_aix.c \
-	$(top_builddir)/src/plugins/jobacct/common/jobacct_common.c \
-	$(top_builddir)/src/plugins/jobacct/common/common_slurmstepd.c \
+jobacct_gather_aix_la_SOURCES = jobacct_gather_aix.c \
 	$(top_builddir)/src/slurmd/common/proctrack.c \
 	$(top_builddir)/src/slurmd/common/proctrack.h 
 
-jobacct_aix_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
-jobacct_aix_la_LIBADD = \
+jobacct_gather_aix_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
+jobacct_gather_aix_la_LIBADD = \
 	$(top_builddir)/src/common/libcommon.la -lpthread 
 
 all: all-am
@@ -286,9 +284,9 @@ $(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.am  $(am__confi
 	      exit 1;; \
 	  esac; \
 	done; \
-	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign  src/plugins/jobacct/aix/Makefile'; \
+	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign  src/plugins/jobacct-gather/aix/Makefile'; \
 	cd $(top_srcdir) && \
-	  $(AUTOMAKE) --foreign  src/plugins/jobacct/aix/Makefile
+	  $(AUTOMAKE) --foreign  src/plugins/jobacct-gather/aix/Makefile
 .PRECIOUS: Makefile
 Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
 	@case '$?' in \
@@ -333,8 +331,8 @@ clean-pkglibLTLIBRARIES:
 	  echo "rm -f \"$${dir}/so_locations\""; \
 	  rm -f "$${dir}/so_locations"; \
 	done
-jobacct_aix.la: $(jobacct_aix_la_OBJECTS) $(jobacct_aix_la_DEPENDENCIES) 
-	$(jobacct_aix_la_LINK) -rpath $(pkglibdir) $(jobacct_aix_la_OBJECTS) $(jobacct_aix_la_LIBADD) $(LIBS)
+jobacct_gather_aix.la: $(jobacct_gather_aix_la_OBJECTS) $(jobacct_gather_aix_la_DEPENDENCIES) 
+	$(jobacct_gather_aix_la_LINK) -rpath $(pkglibdir) $(jobacct_gather_aix_la_OBJECTS) $(jobacct_gather_aix_la_LIBADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -342,9 +340,7 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/common_slurmstepd.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/jobacct_aix.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/jobacct_common.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/jobacct_gather_aix.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/proctrack.Plo@am__quote@
 
 .c.o:
@@ -367,20 +363,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$<' object='$@' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LTCOMPILE) -c -o $@ $<
-
-jobacct_common.lo: $(top_builddir)/src/plugins/jobacct/common/jobacct_common.c
-@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT jobacct_common.lo -MD -MP -MF $(DEPDIR)/jobacct_common.Tpo -c -o jobacct_common.lo `test -f '$(top_builddir)/src/plugins/jobacct/common/jobacct_common.c' || echo '$(srcdir)/'`$(top_builddir)/src/plugins/jobacct/common/jobacct_common.c
-@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/jobacct_common.Tpo $(DEPDIR)/jobacct_common.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(top_builddir)/src/plugins/jobacct/common/jobacct_common.c' object='jobacct_common.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o jobacct_common.lo `test -f '$(top_builddir)/src/plugins/jobacct/common/jobacct_common.c' || echo '$(srcdir)/'`$(top_builddir)/src/plugins/jobacct/common/jobacct_common.c
-
-common_slurmstepd.lo: $(top_builddir)/src/plugins/jobacct/common/common_slurmstepd.c
-@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT common_slurmstepd.lo -MD -MP -MF $(DEPDIR)/common_slurmstepd.Tpo -c -o common_slurmstepd.lo `test -f '$(top_builddir)/src/plugins/jobacct/common/common_slurmstepd.c' || echo '$(srcdir)/'`$(top_builddir)/src/plugins/jobacct/common/common_slurmstepd.c
-@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/common_slurmstepd.Tpo $(DEPDIR)/common_slurmstepd.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$(top_builddir)/src/plugins/jobacct/common/common_slurmstepd.c' object='common_slurmstepd.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o common_slurmstepd.lo `test -f '$(top_builddir)/src/plugins/jobacct/common/common_slurmstepd.c' || echo '$(srcdir)/'`$(top_builddir)/src/plugins/jobacct/common/common_slurmstepd.c
 
 proctrack.lo: $(top_builddir)/src/slurmd/common/proctrack.c
 @am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT proctrack.lo -MD -MP -MF $(DEPDIR)/proctrack.Tpo -c -o proctrack.lo `test -f '$(top_builddir)/src/slurmd/common/proctrack.c' || echo '$(srcdir)/'`$(top_builddir)/src/slurmd/common/proctrack.c

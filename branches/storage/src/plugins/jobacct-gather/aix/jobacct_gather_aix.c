@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  jobacct_aix.c - slurm job accounting plugin for AIX.
+ *  jobacct_gather_aix.c - slurm job accounting gather plugin for AIX.
  *****************************************************************************
  *
  *  Copyright (C) 2005 Hewlett-Packard Development Company, L.P.
@@ -39,7 +39,7 @@
  *  Copyright (C) 2002 The Regents of the University of California.
 \*****************************************************************************/
 
-#include "src/plugins/jobacct/common/jobacct_common.h"
+#include "src/common/jobacct_common.h"
 
 #ifdef HAVE_AIX
 #include <procinfo.h>
@@ -77,8 +77,8 @@
  * minimum versions for their plugins as the job accounting API 
  * matures.
  */
-const char plugin_name[] = "Job accounting AIX plugin";
-const char plugin_type[] = "jobacct/aix";
+const char plugin_name[] = "Job accounting gather AIX plugin";
+const char plugin_type[] = "jobacct-gather/aix";
 const uint32_t plugin_version = 100;
 	
 /* Other useful declarations */
@@ -93,6 +93,8 @@ typedef struct prec {	/* process record */
 	float	vsize;	/* max virtual size */
 } prec_t;
 
+static bool jobacct_shutdown = false;
+static bool suspended = false;
 static int freq = 0;
 static int pagesize = 0;
 /* Finally, pre-define all the routines. */
@@ -109,209 +111,6 @@ extern int getprocs(struct procsinfo *procinfo, int, struct fdsinfo *,
     /* nproc:      number of user procinfo struct */
     /* sizproc:    size of expected procinfo structure */
 
-#endif
-
-/*
- * init() is called when the plugin is loaded, before any other functions
- * are called.  Put global initialization here.
- */
-extern int init ( void )
-{
-	char *proctrack = slurm_get_proctrack_type();
-	if(!strcasecmp(proctrack, "proctrack/pgid")) {
-		info("WARNING: We will use a much slower algorithm with "
-		     "proctrack/pgid, use Proctracktype=proctrack/aix "
-		     "with %s", plugin_name);
-		pgid_plugin = true;
-	}
-	xfree(proctrack);
-
-	verbose("%s loaded", plugin_name);
-	return SLURM_SUCCESS;
-}
-
-extern int fini ( void )
-{
-	return SLURM_SUCCESS;
-}
-
-/*
- * The following routine is called by the slurmd mainline
- */
-
-int jobacct_p_init_struct(struct jobacctinfo *jobacct, 
-			  jobacct_id_t *jobacct_id)
-{
-	return common_init_struct(jobacct, jobacct_id);
-}
-
-struct jobacctinfo *jobacct_p_alloc(jobacct_id_t *jobacct_id)
-{
-	return common_alloc_jobacct(jobacct_id);
-}
-
-void jobacct_p_free(struct jobacctinfo *jobacct)
-{
-	common_free_jobacct(jobacct);
-}
-
-int jobacct_p_setinfo(struct jobacctinfo *jobacct, 
-		      enum jobacct_data_type type, void *data)
-{
-	return common_setinfo(jobacct, type, data);
-	
-}
-
-int jobacct_p_getinfo(struct jobacctinfo *jobacct, 
-		      enum jobacct_data_type type, void *data)
-{
-	return common_getinfo(jobacct, type, data);
-}
-
-void jobacct_p_aggregate(struct jobacctinfo *dest, struct jobacctinfo *from)
-{
-	common_aggregate(dest, from);
-}
-
-void jobacct_p_2_sacct(sacct_t *sacct, struct jobacctinfo *jobacct)
-{
-	common_2_sacct(sacct, jobacct);
-}
-
-void jobacct_p_pack(struct jobacctinfo *jobacct, Buf buffer)
-{
-	common_pack(jobacct, buffer);
-}
-
-int jobacct_p_unpack(struct jobacctinfo **jobacct, Buf buffer)
-{
-	return common_unpack(jobacct, buffer);
-}
-
-
-int jobacct_p_init_slurmctld(char *job_acct_log)
-{
-	return storage_g_jobacct_init(job_acct_log);
-}
-
-int jobacct_p_fini_slurmctld()
-{
-	return storage_g_jobacct_fini();
-}
-
-int jobacct_p_job_start_slurmctld(struct job_record *job_ptr)
-{
-	return storage_g_jobacct_job_start(job_ptr);
-}
-
-int jobacct_p_job_complete_slurmctld(struct job_record *job_ptr) 
-{
-	return storage_g_jobacct_job_complete(job_ptr);
-}
-
-int jobacct_p_step_start_slurmctld(struct step_record *step)
-{
-	return storage_g_jobacct_step_start(step);	
-}
-
-int jobacct_p_step_complete_slurmctld(struct step_record *step)
-{
-	return storage_g_jobacct_step_complete(step);	
-}
-
-int jobacct_p_suspend_slurmctld(struct job_record *job_ptr)
-{
-	return storage_g_jobacct_job_suspend(job_ptr);
-}
-
-/*
- * jobacct_startpoll() is called when the plugin is loaded by
- * slurmd, before any other functions are called.  Put global
- * initialization here.
- */
-
-int jobacct_p_startpoll(int frequency)
-{
-	int rc = SLURM_SUCCESS;
-	
-#ifdef HAVE_AIX
-	pthread_attr_t attr;
-	pthread_t _watch_tasks_thread_id;
-
-	debug("jobacct AIX plugin loaded");
-	
-	debug("jobacct: frequency = %d", frequency);
-		
-	jobacct_shutdown = false;
-	
-	if (frequency == 0) {	/* don't want dynamic monitoring? */
-		debug2("jobacct AIX dynamic logging disabled");
-		return rc;
-	}
-
-	freq = frequency;
-	pagesize = getpagesize()/1024;
-	task_list = list_create(common_free_jobacct);
-	
-	/* create polling thread */
-	slurm_attr_init(&attr);
-	if (pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED))
-		error("pthread_attr_setdetachstate error %m");
-	
-	if  (pthread_create(&_watch_tasks_thread_id, &attr,
-			    &_watch_tasks, NULL)) {
-		debug("jobacct failed to create _watch_tasks "
-		      "thread: %m");
-		frequency = 0;
-	}
-	else 
-		debug3("jobacct AIX dynamic logging enabled");
-	slurm_attr_destroy(&attr);
-#else
-	error("jobacct AIX not loaded, not an aix system, check slurm.conf");
-#endif
-	return rc;
-}
-
-int jobacct_p_endpoll()
-{
-	return common_endpoll();
-}
-
-int jobacct_p_set_proctrack_container_id(uint32_t id)
-{
-	return common_set_proctrack_container_id(id);
-}
-
-int jobacct_p_add_task(pid_t pid, jobacct_id_t *jobacct_id)
-{
-	return common_add_task(pid, jobacct_id);
-}
-
-struct jobacctinfo *jobacct_p_stat_task(pid_t pid)
-{
-#ifdef HAVE_AIX
-	_get_process_data();
-#endif
-	return common_stat_task(pid);
-}
-
-struct jobacctinfo *jobacct_p_remove_task(pid_t pid)
-{
-	return common_remove_task(pid);
-}
-
-void jobacct_p_suspend_poll()
-{
-	common_suspend_poll();
-}
-
-void jobacct_p_resume_poll()
-{
-	common_resume_poll();
-}
-
-#ifdef HAVE_AIX
 
 /* 
  * _get_offspring_data() -- collect memory usage data for the offspring
@@ -523,3 +322,112 @@ static void _destroy_prec(void *object)
 }
 
 #endif
+
+/*
+ * init() is called when the plugin is loaded, before any other functions
+ * are called.  Put global initialization here.
+ */
+extern int init ( void )
+{
+	char *proctrack = slurm_get_proctrack_type();
+	if(!strcasecmp(proctrack, "proctrack/pgid")) {
+		info("WARNING: We will use a much slower algorithm with "
+		     "proctrack/pgid, use Proctracktype=proctrack/aix "
+		     "with %s", plugin_name);
+		pgid_plugin = true;
+	}
+	xfree(proctrack);
+
+	verbose("%s loaded", plugin_name);
+	return SLURM_SUCCESS;
+}
+
+extern int fini ( void )
+{
+	return SLURM_SUCCESS;
+}
+
+extern void jobacct_gather_p_pack(jobacctinfo_t *jobacct, Buf buffer)
+{
+	pack_jobacctinfo(jobacct, buffer);
+}
+
+extern int jobacct_gather_p_unpack(jobacctinfo_t **jobacct, Buf buffer)
+{
+	return unpack_jobacctinfo(jobacct, buffer);
+}
+
+/*
+ * jobacct_startpoll() is called when the plugin is loaded by
+ * slurmd, before any other functions are called.  Put global
+ * initialization here.
+ */
+
+extern int jobacct_gather_p_startpoll(int frequency)
+{
+	int rc = SLURM_SUCCESS;
+	
+#ifdef HAVE_AIX
+	pthread_attr_t attr;
+	pthread_t _watch_tasks_thread_id;
+
+	debug("jobacct AIX plugin loaded");
+	
+	debug("jobacct: frequency = %d", frequency);
+		
+	jobacct_shutdown = false;
+	
+	if (frequency == 0) {	/* don't want dynamic monitoring? */
+		debug2("jobacct AIX dynamic logging disabled");
+		return rc;
+	}
+
+	freq = frequency;
+	pagesize = getpagesize()/1024;
+	task_list = list_create(common_free_jobacct);
+	
+	/* create polling thread */
+	slurm_attr_init(&attr);
+	if (pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED))
+		error("pthread_attr_setdetachstate error %m");
+	
+	if  (pthread_create(&_watch_tasks_thread_id, &attr,
+			    &_watch_tasks, NULL)) {
+		debug("jobacct failed to create _watch_tasks "
+		      "thread: %m");
+		frequency = 0;
+	}
+	else 
+		debug3("jobacct AIX dynamic logging enabled");
+	slurm_attr_destroy(&attr);
+#else
+	error("jobacct AIX not loaded, not an aix system, check slurm.conf");
+#endif
+	return rc;
+}
+
+extern int jobacct_gather_p_endpoll()
+{
+	jobacct_shutdown = true;
+
+	return SLURM_SUCCESS;
+}
+
+extern jobacctinfo_t *jobacct_p_stat_task(pid_t pid)
+{
+#ifdef HAVE_AIX
+	_get_process_data();
+#endif
+	return jobacct_stat_task(pid);
+}
+
+extern void jobacct_p_suspend_poll()
+{
+	suspended = true;
+}
+
+extern void jobacct_p_resume_poll()
+{
+	suspended = false;
+}
+

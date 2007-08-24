@@ -1,4 +1,4 @@
-# Makefile for jobacct_storage/storage/flatfile plugin
+# Makefile for jobacct-storage/storage/flatfile plugin
 
 AUTOMAKE_OPTIONS = foreign
 
@@ -9,9 +9,8 @@ INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common
 pkglib_LTLIBRARIES = jobacct_storage_flatfile.la
 
 # Flatfile storage plugin.
-storage_flatfile_la_SOURCES = jobacct_storage_flatfile.c \
-		flatfile_jobacct.c flatfile_jobacct.h \
+jobacct_storage_flatfile_la_SOURCES = jobacct_storage_flatfile.c \
 		flatfile_jobacct_process.c flatfile_jobacct_process.h 
-storage_flatfile_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
-storage_flatfile_la_LIBADD  = $(top_builddir)/src/common/libcommon.la
+jobacct_storage_flatfile_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
+jobacct_storage_flatfile_la_LIBADD  = $(top_builddir)/src/common/libcommon.la
 

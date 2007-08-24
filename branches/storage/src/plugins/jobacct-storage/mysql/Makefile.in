@@ -14,7 +14,7 @@
 
 @SET_MAKE@
 
-# Makefile for storage/mysql plugin
+# Makefile for jobacct-storage/mysql plugin
 
 VPATH = @srcdir@
 pkgdatadir = $(datadir)/@PACKAGE@
@@ -35,7 +35,7 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
-subdir = src/plugins/storage/mysql
+subdir = src/plugins/jobacct-storage/mysql
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/auxdir/acx_pthread.m4 \
@@ -74,15 +74,15 @@ am__strip_dir = `echo $$p | sed -e 's|^.*/||'`;
 am__installdirs = "$(DESTDIR)$(pkglibdir)"
 pkglibLTLIBRARIES_INSTALL = $(INSTALL)
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
-storage_mysql_la_DEPENDENCIES =  \
+jobacct_storage_mysql_la_DEPENDENCIES =  \
 	$(top_builddir)/src/common/libcommon.la
-am_storage_mysql_la_OBJECTS = storage_mysql.lo mysql_common.lo \
-	mysql_jobacct.lo mysql_jobcomp.lo mysql_jobacct_process.lo \
-	mysql_jobcomp_process.lo
-storage_mysql_la_OBJECTS = $(am_storage_mysql_la_OBJECTS)
-storage_mysql_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
+am_jobacct_storage_mysql_la_OBJECTS = jobacct_storage_mysql.lo \
+	mysql_jobacct.lo mysql_jobacct_process.lo
+jobacct_storage_mysql_la_OBJECTS =  \
+	$(am_jobacct_storage_mysql_la_OBJECTS)
+jobacct_storage_mysql_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
-	$(storage_mysql_la_LDFLAGS) $(LDFLAGS) -o $@
+	$(jobacct_storage_mysql_la_LDFLAGS) $(LDFLAGS) -o $@
 DEFAULT_INCLUDES = -I. -I$(top_builddir) -I$(top_builddir)/slurm@am__isrc@
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
 am__depfiles_maybe = depfiles
@@ -95,8 +95,8 @@ CCLD = $(CC)
 LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
-SOURCES = $(storage_mysql_la_SOURCES)
-DIST_SOURCES = $(storage_mysql_la_SOURCES)
+SOURCES = $(jobacct_storage_mysql_la_SOURCES)
+DIST_SOURCES = $(jobacct_storage_mysql_la_SOURCES)
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -262,18 +262,15 @@ top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
 PLUGIN_FLAGS = -module -avoid-version --export-dynamic $(MYSQL_LIBS)
 INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common
-pkglib_LTLIBRARIES = storage_mysql.la
+pkglib_LTLIBRARIES = jobacct_storage_mysql.la
 
 # Mysql storage plugin.
-storage_mysql_la_SOURCES = storage_mysql.c \
-		mysql_common.c mysql_common.h \
+jobacct_storage_mysql_la_SOURCES = jobacct_storage_mysql.c \
 		mysql_jobacct.c mysql_jobacct.h \
-		mysql_jobcomp.c mysql_jobcomp.h \
-		mysql_jobacct_process.c mysql_jobacct_process.h \
-		mysql_jobcomp_process.c mysql_jobcomp_process.h
+		mysql_jobacct_process.c mysql_jobacct_process.h 
 
-storage_mysql_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
-storage_mysql_la_LIBADD = $(top_builddir)/src/common/libcommon.la
+jobacct_storage_mysql_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
+jobacct_storage_mysql_la_LIBADD = $(top_builddir)/src/common/libcommon.la
 all: all-am
 
 .SUFFIXES:
@@ -287,9 +284,9 @@ $(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.am  $(am__confi
 	      exit 1;; \
 	  esac; \
 	done; \
-	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign  src/plugins/storage/mysql/Makefile'; \
+	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign  src/plugins/jobacct-storage/mysql/Makefile'; \
 	cd $(top_srcdir) && \
-	  $(AUTOMAKE) --foreign  src/plugins/storage/mysql/Makefile
+	  $(AUTOMAKE) --foreign  src/plugins/jobacct-storage/mysql/Makefile
 .PRECIOUS: Makefile
 Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
 	@case '$?' in \
@@ -334,8 +331,8 @@ clean-pkglibLTLIBRARIES:
 	  echo "rm -f \"$${dir}/so_locations\""; \
 	  rm -f "$${dir}/so_locations"; \
 	done
-storage_mysql.la: $(storage_mysql_la_OBJECTS) $(storage_mysql_la_DEPENDENCIES) 
-	$(storage_mysql_la_LINK) -rpath $(pkglibdir) $(storage_mysql_la_OBJECTS) $(storage_mysql_la_LIBADD) $(LIBS)
+jobacct_storage_mysql.la: $(jobacct_storage_mysql_la_OBJECTS) $(jobacct_storage_mysql_la_DEPENDENCIES) 
+	$(jobacct_storage_mysql_la_LINK) -rpath $(pkglibdir) $(jobacct_storage_mysql_la_OBJECTS) $(jobacct_storage_mysql_la_LIBADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -343,12 +340,9 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mysql_common.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/jobacct_storage_mysql.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mysql_jobacct.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mysql_jobacct_process.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mysql_jobcomp.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mysql_jobcomp_process.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/storage_mysql.Plo@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<

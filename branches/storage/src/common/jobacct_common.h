@@ -1,10 +1,10 @@
 /*****************************************************************************\
- *  slurm_jobacct.h - implementation-independent job completion logging 
+ *  jobacct_common.h - implementation-independent job accounting logging 
  *  API definitions
  *****************************************************************************
  *  Copyright (C) 2003 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Morris Jette <jette@llnl.com> et. al.
+ *  Written by Danny Auble <da@llnl.com> et. al.
  *  UCRL-CODE-226842.
  *  
  *  Copyright (C) 2005 Hewlett-Packard Development Company, L.P.
@@ -47,8 +47,8 @@
 \*****************************************************************************/
 
 
-#ifndef __SLURM_JOBACCT_H__
-#define __SLURM_JOBACCT_H__
+#ifndef __JOBACCT_COMMON_H__
+#define __JOBACCT_COMMON_H__
 
 #if HAVE_STDINT_H
 #  include <stdint.h>           /* for uint16_t, uint32_t definitions */
@@ -64,10 +64,38 @@
 #include "src/slurmd/slurmstepd/slurmstepd_job.h"
 #include "src/slurmctld/slurmctld.h"
 
+extern bool jobacct_shutdown;
+extern List task_list;
+extern pthread_mutex_t jobacct_lock;
+extern uint32_t cont_id;
+extern bool pgid_plugin;
+
 typedef struct {
 	uint16_t taskid; /* contains which task number it was on */
 	uint32_t nodeid; /* contains which node number it was on */	
 } jobacct_id_t;
+
+struct jobacctinfo {
+	pid_t pid;
+	struct rusage rusage; /* returned by wait3 */
+	uint32_t max_vsize; /* max size of virtual memory */
+	jobacct_id_t max_vsize_id; /* contains which task number it was on */
+	uint32_t tot_vsize; /* total virtual memory 
+			       (used to figure out ave later) */
+	uint32_t max_rss; /* max Resident Set Size */
+	jobacct_id_t max_rss_id; /* contains which task it was on */
+	uint32_t tot_rss; /* total rss 
+			     (used to figure out ave later) */
+	uint32_t max_pages; /* max pages */
+	jobacct_id_t max_pages_id; /* contains which task it was on */
+	uint32_t tot_pages; /* total pages
+			     (used to figure out ave later) */ 
+	uint32_t min_cpu; /* min cpu time */
+	jobacct_id_t min_cpu_id; /* contains which task it was on */
+	uint32_t tot_cpu; /* total cpu time 
+				 (used to figure out ave later) */
+} jobacctinfo_t;
+
 
 typedef struct {
 	uint32_t max_vsize; 
@@ -171,48 +199,25 @@ typedef struct selected_step_t {
 	uint32_t stepid;
 } jobacct_selected_step_t;
 
-extern jobacct_step_rec_t *jobacct_init_step_rec(jobacct_header_t header);
-extern jobacct_job_rec_t *jobacct_init_job_rec(jobacct_header_t header);
-extern void jobacct_destroy_acct_header(void *object);
-extern void jobacct_destroy_job(void *object);
-extern void jobacct_destroy_step(void *object);
+extern jobacct_step_rec_t *create_jobacct_step_rec(jobacct_header_t header);
+extern jobacct_job_rec_t *create_jobacct_job_rec(jobacct_header_t header);
+extern jobacctinfo_t *create_jobacctinfo(jobacct_id_t *jobacct_id);
+extern void free_jobacct_header(jobacct_header_t *header);
+extern void destroy_jobacct_job_rec(jobacct_job_rec_t *job);
+extern void destroy_jobacct_step_rec(jobacct_step_rec_t *step);
+extern void destroy_jobacctinfo(jobacctinfo_t *jobacct);
 
-/* common */
-extern int jobacct_init(void); /* load the plugin */
-extern int jobacct_g_init_struct(jobacctinfo_t *jobacct, 
-				 jobacct_id_t *jobacct_id);
-/* must free jobacctinfo_t if not NULL */
-extern jobacctinfo_t *jobacct_g_alloc(jobacct_id_t *jobacct_id);
-extern void jobacct_g_free(jobacctinfo_t *jobacct);
-extern int jobacct_g_setinfo(jobacctinfo_t *jobacct, 
-			     enum jobacct_data_type type, void *data);
-extern int jobacct_g_getinfo(jobacctinfo_t *jobacct, 
-			     enum jobacct_data_type type, void *data);
-extern void jobacct_g_aggregate(jobacctinfo_t *dest, jobacctinfo_t *from);
-extern void jobacct_g_2_sacct(sacct_t *sacct, jobacctinfo_t *jobacct);
-extern void jobacct_g_pack(jobacctinfo_t *jobacct, Buf buffer);
-extern int jobacct_g_unpack(jobacctinfo_t **jobacct, Buf buffer);
+extern void aggregate_jobacctinfo(jobacctinfo_t *dest, jobacctinfo_t *from);
+extern void pack_jobacctinfo(jobacctinfo_t *jobacct, Buf buffer);
+extern int unpack_jobacctinfo(jobacctinfo_t **jobacct, Buf buffer);
 
-/*functions used in slurmctld */
-extern int jobacct_g_init_slurmctld(char *job_acct_log);
-extern int jobacct_g_fini_slurmctld();
-extern int jobacct_g_job_start_slurmctld(struct job_record *job_ptr);
-extern int jobacct_g_job_complete_slurmctld(struct job_record *job_ptr); 
-extern int jobacct_g_step_start_slurmctld(struct step_record *step);
-extern int jobacct_g_step_complete_slurmctld(struct step_record *step);
-extern int jobacct_g_suspend_slurmctld(struct job_record *job_ptr);
+extern int jobacct_set_proctrack_container_id(uint32_t id);
+extern int jobacct_add_task(pid_t pid, jobacct_id_t *jobacct_id);
+extern jobacctinfo_t *jobacct_stat_task(pid_t pid);
+extern jobacctinfo_t *jobacct_remove_task(pid_t pid);
 
-/*functions used in slurmstepd */
-extern int jobacct_g_startpoll(int frequency);
-extern int jobacct_g_endpoll();
-extern int jobacct_g_set_proctrack_container_id(uint32_t id);
-extern int jobacct_g_add_task(pid_t pid, jobacct_id_t *jobacct_id);
-/* must free jobacctinfo_t if not NULL */
-extern jobacctinfo_t *jobacct_g_stat_task(pid_t pid);
-/* must free jobacctinfo_t if not NULL */
-extern jobacctinfo_t *jobacct_g_remove_task(pid_t pid);
-extern void jobacct_g_suspend_poll();
-extern void jobacct_g_resume_poll();
 
 #endif /*__SLURM_JOBACCT_H__*/
+
+
 

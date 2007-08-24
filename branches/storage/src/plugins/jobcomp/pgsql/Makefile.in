@@ -14,7 +14,7 @@
 
 @SET_MAKE@
 
-# Makefile for storage/pgsql plugin
+# Makefile for jobcomp/pgsql plugin
 
 VPATH = @srcdir@
 pkgdatadir = $(datadir)/@PACKAGE@
@@ -35,7 +35,7 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
-subdir = src/plugins/storage/pgsql
+subdir = src/plugins/jobcomp/pgsql
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/auxdir/acx_pthread.m4 \
@@ -74,15 +74,14 @@ am__strip_dir = `echo $$p | sed -e 's|^.*/||'`;
 am__installdirs = "$(DESTDIR)$(pkglibdir)"
 pkglibLTLIBRARIES_INSTALL = $(INSTALL)
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
-storage_pgsql_la_DEPENDENCIES =  \
+jobcomp_pgsql_la_DEPENDENCIES =  \
 	$(top_builddir)/src/common/libcommon.la
-am_storage_pgsql_la_OBJECTS = storage_pgsql.lo pgsql_common.lo \
-	pgsql_jobacct.lo pgsql_jobcomp.lo pgsql_jobacct_process.lo \
+am_jobcomp_pgsql_la_OBJECTS = jobcomp_pgsql.lo pgsql_jobcomp.lo \
 	pgsql_jobcomp_process.lo
-storage_pgsql_la_OBJECTS = $(am_storage_pgsql_la_OBJECTS)
-storage_pgsql_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
+jobcomp_pgsql_la_OBJECTS = $(am_jobcomp_pgsql_la_OBJECTS)
+jobcomp_pgsql_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
-	$(storage_pgsql_la_LDFLAGS) $(LDFLAGS) -o $@
+	$(jobcomp_pgsql_la_LDFLAGS) $(LDFLAGS) -o $@
 DEFAULT_INCLUDES = -I. -I$(top_builddir) -I$(top_builddir)/slurm@am__isrc@
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
 am__depfiles_maybe = depfiles
@@ -95,8 +94,8 @@ CCLD = $(CC)
 LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
-SOURCES = $(storage_pgsql_la_SOURCES)
-DIST_SOURCES = $(storage_pgsql_la_SOURCES)
+SOURCES = $(jobcomp_pgsql_la_SOURCES)
+DIST_SOURCES = $(jobcomp_pgsql_la_SOURCES)
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -262,18 +261,15 @@ top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
 PLUGIN_FLAGS = -module -avoid-version --export-dynamic $(PGSQL_LIBS)
 INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common
-pkglib_LTLIBRARIES = storage_pgsql.la
+pkglib_LTLIBRARIES = jobcomp_pgsql.la
 
 # Pgsql storage plugin.
-storage_pgsql_la_SOURCES = storage_pgsql.c \
-		pgsql_common.c pgsql_common.h \
-		pgsql_jobacct.c pgsql_jobacct.h \
+jobcomp_pgsql_la_SOURCES = jobcomp_pgsql.c \
 		pgsql_jobcomp.c pgsql_jobcomp.h \
-		pgsql_jobacct_process.c pgsql_jobacct_process.h \
 		pgsql_jobcomp_process.c pgsql_jobcomp_process.h
 
-storage_pgsql_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
-storage_pgsql_la_LIBADD = $(top_builddir)/src/common/libcommon.la
+jobcomp_pgsql_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
+jobcomp_pgsql_la_LIBADD = $(top_builddir)/src/common/libcommon.la
 all: all-am
 
 .SUFFIXES:
@@ -287,9 +283,9 @@ $(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.am  $(am__confi
 	      exit 1;; \
 	  esac; \
 	done; \
-	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign  src/plugins/storage/pgsql/Makefile'; \
+	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign  src/plugins/jobcomp/pgsql/Makefile'; \
 	cd $(top_srcdir) && \
-	  $(AUTOMAKE) --foreign  src/plugins/storage/pgsql/Makefile
+	  $(AUTOMAKE) --foreign  src/plugins/jobcomp/pgsql/Makefile
 .PRECIOUS: Makefile
 Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
 	@case '$?' in \
@@ -334,8 +330,8 @@ clean-pkglibLTLIBRARIES:
 	  echo "rm -f \"$${dir}/so_locations\""; \
 	  rm -f "$${dir}/so_locations"; \
 	done
-storage_pgsql.la: $(storage_pgsql_la_OBJECTS) $(storage_pgsql_la_DEPENDENCIES) 
-	$(storage_pgsql_la_LINK) -rpath $(pkglibdir) $(storage_pgsql_la_OBJECTS) $(storage_pgsql_la_LIBADD) $(LIBS)
+jobcomp_pgsql.la: $(jobcomp_pgsql_la_OBJECTS) $(jobcomp_pgsql_la_DEPENDENCIES) 
+	$(jobcomp_pgsql_la_LINK) -rpath $(pkglibdir) $(jobcomp_pgsql_la_OBJECTS) $(jobcomp_pgsql_la_LIBADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -343,12 +339,9 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pgsql_common.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pgsql_jobacct.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pgsql_jobacct_process.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/jobcomp_pgsql.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pgsql_jobcomp.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pgsql_jobcomp_process.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/storage_pgsql.Plo@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
