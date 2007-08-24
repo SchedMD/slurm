@@ -448,7 +448,7 @@ test17.27  Test that a job executes with the specified nodes, requires multiple
 test17.28  Tests #SBATCH entry functionality in a batch script.
 test17.29  Verify that command arguments get forwarded to job script.
 test17.30  Test of comment field specification (--comment option).
-test17.28  Tests #PBS entry functionality in a batch script.
+test17.31  Tests #PBS entry functionality in a batch script.
 
 
 test18.#   Testing of slaunch options.
