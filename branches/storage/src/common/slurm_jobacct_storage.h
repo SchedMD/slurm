@@ -49,44 +49,44 @@
  * Initialize the storage make sure tables are created and in working
  * order
  */
-extern int storage_g_jobacct_init (char *location);
+extern int jobacct_storage_g_init (char *location);
 
 /*
  * finish up storage connection
  */
-extern int storage_g_jobacct_fini ();
+extern int jobacct_storage_g_fini ();
 
 /* 
  * load into the storage the start of a job
  */
-extern int storage_g_jobacct_job_start (struct job_record *job_ptr);
+extern int jobacct_storage_g_jobacct_job_start (struct job_record *job_ptr);
 
 /* 
  * load into the storage the end of a job
  */
-extern int storage_g_jobacct_job_complete (struct job_record *job_ptr);
+extern int jobacct_storage_g_jobacct_job_complete (struct job_record *job_ptr);
 
 /* 
  * load into the storage the start of a job step
  */
-extern int storage_g_jobacct_step_start (struct step_record *step_ptr);
+extern int jobacct_storage_g_jobacct_step_start (struct step_record *step_ptr);
 
 /* 
  * load into the storage the end of a job step
  */
-extern int storage_g_jobacct_step_complete (struct step_record *step_ptr);
+extern int jobacct_storage_g_jobacct_step_complete (struct step_record *step_ptr);
 
 /* 
  * load into the storage a suspention of a job
  */
-extern int storage_g_jobacct_job_suspend (struct job_record *job_ptr);
+extern int jobacct_storage_g_jobacct_job_suspend (struct job_record *job_ptr);
 
 /* 
  * get info from the storage 
  * in/out job_list List of job_rec_t *
  * note List needs to be freed when called
  */
-extern void storage_g_jobacct_get_jobs(List job_list,
+extern void jobacct_storage_g_jobacct_get_jobs(List job_list,
 					List selected_steps,
 					List selected_parts,
 					void *params);
@@ -94,21 +94,8 @@ extern void storage_g_jobacct_get_jobs(List job_list,
 /* 
  * expire old info from the storage 
  */
-extern void storage_g_jobacct_archive(List selected_parts, void *params);
+extern void jobacct_storage_g_jobacct_archive(List selected_parts, void *params);
 
-/*
- * jobcomp functions
- */
-extern int storage_g_jobcomp_init(char * location);
-extern int storage_g_jobcomp_fini();
-extern int storage_g_jobcomp_get_errno();
-extern int storage_g_jobcomp_log_record(struct job_record *job_ptr);
-extern char *storage_g_jobcomp_strerror(int errnum);
-extern void storage_g_jobcomp_get_jobs(List job_list,
-					List selected_steps,
-					List selected_parts,
-					void *params);
-extern void storage_g_jobcomp_archive(List selected_parts, void *params);
 
 
 
