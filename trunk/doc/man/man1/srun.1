@@ -944,15 +944,13 @@ demand for CPUs. In other words, a \fIminimum\fR of 16 nodes are being
 requested. However, if 16 nodes are requested for 15 processes,
 .B srun
 will consider this an error, as 15 processes cannot run across 16 nodes.
+
 .PP
 .B "IO Redirection"
 .PP
-By default stdout and stderr will be redirected from all tasks to the
-stdout and stderr of
-.B srun
-, and stdin will be redirected from the standard input of 
-.B srun 
-to all remote tasks. 
+By default, stdout and stderr will be redirected from all tasks to the
+stdout and stderr of \fBsrun\fR, and stdin will be redirected from the 
+standard input of \fBsrun\fR to all remote tasks. 
 For OS X, the poll() function does not support stdin, so input from 
 a terminal is not possible.
 This behavior may be changed with the 
@@ -973,13 +971,11 @@ stdin is not sent to any task (stdin is closed).
 stdout and/or stderr are redirected from only the task with relative
 id equal to \fItaskid\fR, where 0 <= \fItaskid\fR <= \fIntasks\fR,
 where \fIntasks\fR is the total number of tasks in the current job step.
-stdin is redirected from the stdin of
-.B srun
-to this same task.
+stdin is redirected from the stdin of \fBsrun\fR to this same task.
 .TP
 \fIfilename\fR
-.B srun
-will redirect stdout and/or stderr to the named file from all tasks.
+fBsrun\fR will redirect stdout and/or stderr to the named file from 
+all tasks.
 stdin will be redirected from the named file and broadcast to all
 tasks in the job.  \fIfilename\fR refers to a path on the host
 that runs \fBsrun\fR.  Depending on the cluster's file system layout,
@@ -987,8 +983,8 @@ this may result in the output appearing in different places depending
 on whether the job is run in batch mode.
 .TP
 format string
-.B srun 
-allows for a format string to be used to generate the named IO file 
+\fBsrun\fR allows for a format string to be used to generate the 
+named IO file 
 described above. The following list of format specifiers may be
 used in the format string to generate a filename that will be
 unique to a given jobid, stepid, node, or task. In each case, 
