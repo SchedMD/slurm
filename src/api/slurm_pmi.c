@@ -197,12 +197,19 @@ int  slurm_get_kvs_comm_set(struct kvs_comm_set **kvs_set_ptr,
 	/* Send the RPC to the local srun communcation manager.
 	 * Since the srun can be sent thousands of messages at 
 	 * the same time and refuse some connections, retry as 
-	 * needed. Spread out messages by task's rank. Also
-	 * increase the timeout if many tasks since the srun
-	 * command is very overloaded.
-	 * We also increase the timeout (default timeout is
-	 * 10 secs). */
-	usleep(pmi_rank * pmi_time);
+	 * needed. Wait until all key-pairs have been sent by
+	 * all tasks then spread out messages by task's rank.
+	 * Also increase the message timeout if many tasks 
+	 * since the srun command can get very overloaded (the
+	 * default timeout is 10 secs).
+	 *
+	 * TaskID  SendTime  GetTime  (Units are PMI_TIME, default=500 usec)
+	 *      0         0      N+0
+	 *      1         1      N+1
+	 *      2         2      N+2
+	 *    N-1       N-1      N+N-1
+	 */
+	usleep(pmi_size * pmi_time);
 	if      (pmi_size > 1000)	/* 100 secs */
 		timeout = slurm_get_msg_timeout() * 10000;
 	else if (pmi_size > 100)	/* 50 secs */
