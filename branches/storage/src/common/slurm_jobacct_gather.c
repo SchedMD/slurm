@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  slurm_jobacct.c - implementation-independent job accounting logging 
+ *  slurm_jobacct_gather.c - implementation-independent job accounting logging 
  *  functions
  *****************************************************************************
  *  Copyright (C) 2003 The Regents of the University of California.
@@ -66,13 +66,28 @@
  * at the end of the structure.
  */
 typedef struct slurm_jobacct_gather_ops {
+	jobacctinfo_t *(*jobacct_gather_create)(jobacct_id_t *jobacct_id);
+	void (*jobacct_gather_destroy)          (jobacctinfo_t *jobacct);
+	int (*jobacct_gather_setinfo)        (jobacctinfo_t *jobacct, 
+					      enum jobacct_data_type type, 
+					      void *data);
+	int (*jobacct_gather_getinfo)        (jobacctinfo_t *jobacct, 
+					      enum jobacct_data_type type, 
+					      void *data);
 	void (*jobacct_gather_pack)   (jobacctinfo_t *jobacct, Buf buffer);
 	int (*jobacct_gather_unpack)  (jobacctinfo_t **jobacct, Buf buffer);
+	void (*jobacct_gather_aggregate)     (jobacctinfo_t *dest, 
+					      jobacctinfo_t *from);
 	int (*jobacct_gather_startpoll)      (int frequency);
 	int (*jobacct_gather_endpoll)	      ();
-	jobacctinfo_t *(*jobacct_gather_stat_task)(pid_t pid);
 	void (*jobacct_gather_suspend_poll)  ();
 	void (*jobacct_gather_resume_poll)   ();
+	int (*jobacct_gather_set_proctrack_container_id)(uint32_t id);
+	int (*jobacct_gather_add_task) (pid_t pid, jobacct_id_t *jobacct_id);
+	jobacctinfo_t *(*jobacct_gather_stat_task)(pid_t pid);
+	jobacctinfo_t *(*jobacct_gather_remove_task)(pid_t pid);
+	void (*jobacct_gather_2_sacct)       (sacct_t *sacct, 
+					      jobacctinfo_t *jobacct);
 } slurm_jobacct_gather_ops_t;
 
 /*
@@ -92,7 +107,6 @@ static slurm_jobacct_gather_context_t *g_jobacct_gather_context = NULL;
 static pthread_mutex_t g_jobacct_gather_context_lock = PTHREAD_MUTEX_INITIALIZER;
 
 static int _slurm_jobacct_gather_init(void);
-static int _slurm_jobacct_gather_fini(void);
 
 static slurm_jobacct_gather_context_t *
 _slurm_jobacct_gather_context_create( const char *jobacct_gather_type)
@@ -154,13 +168,22 @@ _slurm_jobacct_gather_get_ops( slurm_jobacct_gather_context_t *c )
 	 * for slurm_jobacct_gather_ops_t.
 	 */
 	static const char *syms[] = {
+		"jobacct_gather_p_create",
+		"jobacct_gather_p_destroy",
+		"jobacct_gather_p_setinfo",
+		"jobacct_gather_p_getinfo",
 		"jobacct_gather_p_pack",
 		"jobacct_gather_p_unpack",	
+		"jobacct_gather_p_aggregate",
 		"jobacct_gather_p_startpoll",
 		"jobacct_gather_p_endpoll",
-		"jobacct_gather_p_stat_task",
 		"jobacct_gather_p_suspend_poll",
-		"jobacct_gather_p_resume_poll"
+		"jobacct_gather_p_resume_poll",
+		"jobacct_gather_p_set_proctrack_container_id",
+		"jobacct_gather_p_add_task",
+		"jobacct_gather_p_stat_task",
+		"jobacct_gather_p_remove_task",
+		"jobacct_gather_p_2_sacct"
 	};
 	int n_syms = sizeof( syms ) / sizeof( char * );
 	int rc = 0;
@@ -203,6 +226,7 @@ _slurm_jobacct_gather_get_ops( slurm_jobacct_gather_context_t *c )
         }
 
         return &c->ops;
+
 }
 
 static int _slurm_jobacct_gather_init(void)
@@ -239,7 +263,18 @@ static int _slurm_jobacct_gather_init(void)
 	return(retval);
 }
 
-static int _slurm_jobacct_gather_fini(void)
+
+
+
+extern int slurm_jobacct_gather_init(void)
+{
+	if (_slurm_jobacct_gather_init() < 0)
+		return SLURM_ERROR;
+
+	return SLURM_SUCCESS;
+}
+
+extern int slurm_jobacct_gather_fini(void)
 {
 	int rc;
 
@@ -251,14 +286,154 @@ static int _slurm_jobacct_gather_fini(void)
 	return rc;
 }
 
-extern int jobacct_gather_init(void)
+extern jobacct_job_rec_t *jobacct_init_job_rec(jobacct_header_t header)
 {
-	if (_slurm_jobacct_gather_init() < 0)
-		return SLURM_ERROR;
+	jobacct_job_rec_t *job = xmalloc(sizeof(jobacct_job_rec_t));
+	memcpy(&job->header, &header, sizeof(jobacct_header_t));
+	memset(&job->rusage, 0, sizeof(struct rusage));
+	memset(&job->sacct, 0, sizeof(sacct_t));
+	job->sacct.min_cpu = (float)NO_VAL;
+	job->job_start_seen = 0;
+	job->job_step_seen = 0;
+	job->job_terminated_seen = 0;
+	job->jobnum_superseded = 0;
+	job->jobname = NULL;
+	job->status = JOB_PENDING;
+	job->nodes = NULL;
+	job->jobname = NULL;
+	job->exitcode = 0;
+	job->priority = 0;
+	job->ntasks = 0;
+	job->ncpus = 0;
+	job->elapsed = 0;
+	job->tot_cpu_sec = 0;
+	job->tot_cpu_usec = 0;
+	job->steps = list_create(destroy_jobacct_step_rec);
+	job->nodes = NULL;
+	job->track_steps = 0;
+	job->account = NULL;
+	job->requid = -1;
 
-	return SLURM_SUCCESS;
+      	return job;
 }
 
+extern jobacct_step_rec_t *jobacct_init_step_rec(jobacct_header_t header)
+{
+	jobacct_step_rec_t *step = xmalloc(sizeof(jobacct_job_rec_t));
+	memcpy(&step->header, &header, sizeof(jobacct_header_t));
+	memset(&step->rusage, 0, sizeof(struct rusage));
+	memset(&step->sacct, 0, sizeof(sacct_t));
+	step->stepnum = (uint32_t)NO_VAL;
+	step->nodes = NULL;
+	step->stepname = NULL;
+	step->status = NO_VAL;
+	step->exitcode = NO_VAL;
+	step->ntasks = (uint32_t)NO_VAL;
+	step->ncpus = (uint32_t)NO_VAL;
+	step->elapsed = (uint32_t)NO_VAL;
+	step->tot_cpu_sec = (uint32_t)NO_VAL;
+	step->tot_cpu_usec = (uint32_t)NO_VAL;
+	step->account = NULL;
+	step->requid = -1;
+
+	return step;
+}
+
+extern void free_jobacct_header(void *object)
+{
+	jobacct_header_t *header = (jobacct_header_t *)object;
+	if(header) {
+		xfree(header->partition);
+		xfree(header->blockid);
+	}
+}
+
+extern void destroy_jobacct_job_rec(void *object)
+{
+	jobacct_job_rec_t *job = (jobacct_job_rec_t *)object;
+	if (job) {
+		if(job->steps)
+			list_destroy(job->steps);
+		free_jobacct_header(&job->header);
+		xfree(job->jobname);
+		xfree(job->account);
+		xfree(job->nodes);
+		xfree(job);
+	}
+}
+
+extern void destroy_jobacct_step_rec(void *object)
+{
+	jobacct_step_rec_t *step = (jobacct_step_rec_t *)object;
+	if (step) {
+		free_jobacct_header(&step->header);
+		xfree(step->stepname);
+		xfree(step->nodes);
+		xfree(step->account);
+		xfree(step);
+	}
+}
+
+extern jobacctinfo_t *jobacct_gather_g_create(jobacct_id_t *jobacct_id)
+{
+	jobacctinfo_t *jobacct = NULL;
+
+	if (_slurm_jobacct_gather_init() < 0)
+		return jobacct;
+	
+	slurm_mutex_lock( &g_jobacct_gather_context_lock );
+	if ( g_jobacct_gather_context )
+		jobacct = (*(g_jobacct_gather_context->
+			     ops.jobacct_gather_create))(jobacct_id);
+	
+	slurm_mutex_unlock( &g_jobacct_gather_context_lock );	
+	return jobacct;
+}
+
+extern void jobacct_gather_g_destroy(jobacctinfo_t *jobacct)
+{
+	if (_slurm_jobacct_gather_init() < 0)
+		return;
+	
+	slurm_mutex_lock( &g_jobacct_gather_context_lock );
+	if ( g_jobacct_gather_context )
+		(*(g_jobacct_gather_context->ops.jobacct_gather_destroy))
+			(jobacct);
+	slurm_mutex_unlock( &g_jobacct_gather_context_lock );	
+	return;
+}
+
+extern int jobacct_gather_g_setinfo(jobacctinfo_t *jobacct, 
+				    enum jobacct_data_type type, void *data)
+{
+	int retval = SLURM_SUCCESS;
+
+	if (_slurm_jobacct_gather_init() < 0)
+		return SLURM_ERROR;
+	
+	slurm_mutex_lock( &g_jobacct_gather_context_lock );
+	if ( g_jobacct_gather_context )
+		retval = (*(g_jobacct_gather_context->
+			    ops.jobacct_gather_setinfo))(jobacct, type, data);
+	slurm_mutex_unlock( &g_jobacct_gather_context_lock );	
+	return retval;
+}
+
+extern int jobacct_gather_g_getinfo(jobacctinfo_t *jobacct, 
+				    enum jobacct_data_type type, void *data)
+{
+	int retval = SLURM_SUCCESS;
+
+	if (_slurm_jobacct_gather_init() < 0)
+		return SLURM_ERROR;
+	
+	slurm_mutex_lock( &g_jobacct_gather_context_lock );
+	if ( g_jobacct_gather_context )
+		retval = (*(g_jobacct_gather_context->
+			    ops.jobacct_gather_getinfo))(jobacct, type, data);
+	slurm_mutex_unlock( &g_jobacct_gather_context_lock );	
+	return retval;
+}
 
 extern void jobacct_gather_g_pack(jobacctinfo_t *jobacct, Buf buffer)
 {
@@ -267,7 +442,7 @@ extern void jobacct_gather_g_pack(jobacctinfo_t *jobacct, Buf buffer)
 	
 	slurm_mutex_lock( &g_jobacct_gather_context_lock );
 	if ( g_jobacct_gather_context )
-		(*(g_jobacct_gather_context->ops.jobacct_pack))
+		(*(g_jobacct_gather_context->ops.jobacct_gather_pack))
 			(jobacct, buffer);
 	slurm_mutex_unlock( &g_jobacct_gather_context_lock );	
 	return;
@@ -280,10 +455,10 @@ extern int jobacct_gather_g_unpack(jobacctinfo_t **jobacct, Buf buffer)
 	if (_slurm_jobacct_gather_init() < 0)
 		return SLURM_ERROR;
 	
-	slurm_mutex_lock( &g_jobacct_cgather_ontext_lock );
+	slurm_mutex_lock( &g_jobacct_gather_context_lock );
 	if ( g_jobacct_gather_context )
-		retval = (*(g_jobacct_gather_context->ops.jobacct_unpack))
-			(jobacct, buffer);
+		retval = (*(g_jobacct_gather_context->
+			    ops.jobacct_gather_unpack))(jobacct, buffer);
 	slurm_mutex_unlock( &g_jobacct_gather_context_lock );	
 	return retval;
 }
@@ -292,9 +467,6 @@ extern int jobacct_gather_g_unpack(jobacctinfo_t **jobacct, Buf buffer)
 extern int jobacct_gather_g_startpoll(int frequency)
 {
 	int retval = SLURM_SUCCESS;
-	if (_slurm_jobacct_gather_init() < 0)
-		return SLURM_ERROR;
-	
 	if (_slurm_jobacct_gather_init() < 0)
 		return SLURM_ERROR;
 
@@ -318,32 +490,6 @@ extern int jobacct_gather_g_endpoll()
 		retval = (*(g_jobacct_gather_context->ops.jobacct_gather_endpoll))();
 	slurm_mutex_unlock( &g_jobacct_gather_context_lock );	
 	return retval;
-}
-
-extern jobacctinfo_t *jobacct_gather_g_stat_task(pid_t pid)
-{
-	jobacctinfo_t *jobacct = NULL;
-	if (_slurm_jobacct_gather_init() < 0)
-		return jobacct;
-	
-	slurm_mutex_lock( &g_jobacct_gather_context_lock );
-	if ( g_jobacct_gather_context )
-		jobacct = (*(g_jobacct_gather_context->ops.jobacct_gather_stat_task))(pid);
-	slurm_mutex_unlock( &g_jobacct_gather_context_lock );	
-	return jobacct;
-}
-
-extern jobacctinfo_t *jobacct_gather_g_remove_task(pid_t pid)
-{
-	jobacctinfo_t *jobacct = NULL;
-	if (_slurm_jobacct_gather_init() < 0)
-		return jobacct;
-	
-	slurm_mutex_lock( &g_jobacct_gather_context_lock );
-	if ( g_jobacct_gather_context )
-		jobacct = (*(g_jobacct_gather_context->ops.jobacct_gather_remove_task))(pid);
-	slurm_mutex_unlock( &g_jobacct_gather_context_lock );	
-	return jobacct;
 }
 
 extern void jobacct_gather_g_suspend_poll()
@@ -370,3 +516,72 @@ extern void jobacct_gather_g_resume_poll()
 	return;
 }
 
+extern int jobacct_gather_g_set_proctrack_container_id(uint32_t id)
+{
+	int retval = SLURM_SUCCESS;
+	if (_slurm_jobacct_gather_init() < 0)
+		return SLURM_ERROR;
+	
+	slurm_mutex_lock( &g_jobacct_gather_context_lock );
+	if ( g_jobacct_gather_context )
+		retval = (*(g_jobacct_gather_context->ops.
+			    jobacct_gather_set_proctrack_container_id))(id);
+	slurm_mutex_unlock( &g_jobacct_gather_context_lock );	
+	return retval;
+	
+}
+
+extern int jobacct_gather_g_add_task(pid_t pid, jobacct_id_t *jobacct_id)
+{
+	int retval = SLURM_SUCCESS;
+	if (_slurm_jobacct_gather_init() < 0)
+		return SLURM_ERROR;
+	
+	slurm_mutex_lock( &g_jobacct_gather_context_lock );
+	if ( g_jobacct_gather_context )
+		retval = (*(g_jobacct_gather_context->
+			    ops.jobacct_gather_add_task))(pid, jobacct_id);
+	slurm_mutex_unlock( &g_jobacct_gather_context_lock );	
+	return retval;
+}
+
+extern jobacctinfo_t *jobacct_gather_g_stat_task(pid_t pid)
+{
+	jobacctinfo_t *jobacct = NULL;
+	if (_slurm_jobacct_gather_init() < 0)
+		return jobacct;
+	
+	slurm_mutex_lock( &g_jobacct_gather_context_lock );
+	if ( g_jobacct_gather_context )
+		jobacct = (*(g_jobacct_gather_context->
+			     ops.jobacct_gather_stat_task))(pid);
+	slurm_mutex_unlock( &g_jobacct_gather_context_lock );	
+	return jobacct;
+}
+
+extern jobacctinfo_t *jobacct_gather_g_remove_task(pid_t pid)
+{
+	jobacctinfo_t *jobacct = NULL;
+	if (_slurm_jobacct_gather_init() < 0)
+		return jobacct;
+	
+	slurm_mutex_lock( &g_jobacct_gather_context_lock );
+	if ( g_jobacct_gather_context )
+		jobacct = (*(g_jobacct_gather_context->
+			     ops.jobacct_gather_remove_task))(pid);
+	slurm_mutex_unlock( &g_jobacct_gather_context_lock );	
+	return jobacct;
+}
+
+extern void jobacct_gather_g_2_sacct(sacct_t *sacct, jobacctinfo_t *jobacct)
+{
+	if (_slurm_jobacct_gather_init() < 0)
+		return;
+	
+	slurm_mutex_lock( &g_jobacct_gather_context_lock );
+	if ( g_jobacct_gather_context )
+		(*(g_jobacct_gather_context->ops.jobacct_gather_2_sacct))
+			(sacct, jobacct);
+	slurm_mutex_unlock( &g_jobacct_gather_context_lock );	
+	return;
+}

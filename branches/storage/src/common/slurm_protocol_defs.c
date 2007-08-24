@@ -50,7 +50,6 @@
 #include <stdio.h>
 
 #include "src/common/log.h"
-#include "src/common/slurm_jobacct.h"
 #include "src/common/node_select.h"
 #include "src/common/slurm_cred.h"
 #include "src/common/slurm_protocol_defs.h"
@@ -58,6 +57,7 @@
 #include "src/common/xmalloc.h"
 #include "src/common/job_options.h"
 #include "src/common/forward.h"
+#include "src/common/slurm_jobacct_gather.h"
 
 static void _free_all_job_info (job_info_msg_t *msg);
 
@@ -843,10 +843,17 @@ void slurm_free_ctl_conf(slurm_ctl_conf_info_msg_t * config_ptr)
 		xfree(config_ptr->control_addr);
 		xfree(config_ptr->control_machine);
 		xfree(config_ptr->epilog);
-		xfree(config_ptr->job_acct_loc);
-		xfree(config_ptr->job_acct_type);
+		xfree(config_ptr->job_acct_gather_type);
+		xfree(config_ptr->job_acct_storage_loc);
+		xfree(config_ptr->job_acct_storage_type);
+		xfree(config_ptr->job_acct_storage_user);
+		xfree(config_ptr->job_acct_storage_host);
+		xfree(config_ptr->job_acct_storage_pass);
 		xfree(config_ptr->job_comp_loc);
 		xfree(config_ptr->job_comp_type);
+		xfree(config_ptr->job_comp_user);
+		xfree(config_ptr->job_comp_host);
+		xfree(config_ptr->job_comp_pass);
 		xfree(config_ptr->job_credential_private_key);
 		xfree(config_ptr->job_credential_public_certificate);
 		xfree(config_ptr->mail_prog);
@@ -1038,7 +1045,7 @@ extern void slurm_free_file_bcast_msg(file_bcast_msg_t *msg)
 extern void slurm_free_step_complete_msg(step_complete_msg_t *msg)
 {
 	if (msg) {
-		jobacct_g_free(msg->jobacct);
+		jobacct_gather_g_destroy(msg->jobacct);
 		xfree(msg);
 	}
 }
@@ -1046,7 +1053,7 @@ extern void slurm_free_step_complete_msg(step_complete_msg_t *msg)
 extern void slurm_free_stat_jobacct_msg(stat_jobacct_msg_t *msg)
 {
 	if (msg) {
-		jobacct_g_free(msg->jobacct);
+		jobacct_gather_g_destroy(msg->jobacct);
 		xfree(msg);
 	}
 }

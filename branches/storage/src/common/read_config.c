@@ -142,15 +142,17 @@ s_p_options_t slurm_conf_options[] = {
 	{"HashBase", S_P_LONG, defunct_option},
 	{"HeartbeatInterval", S_P_LONG, defunct_option},
 	{"InactiveLimit", S_P_UINT16},
-	{"JobAcctLogFile", S_P_STRING},
-	{"JobAcctLoc", S_P_STRING},
-	{"JobAcctFrequency", S_P_UINT16},
 	{"JobAcctType", S_P_STRING},
-	{"StorageType", S_P_STRING},
-	{"StorageHost", S_P_STRING},
-	{"StorageUser", S_P_STRING},
-	{"StoragePass", S_P_STRING},
-	{"StoragePort", S_P_UINT32},
+	{"JobAcctGatherType", S_P_STRING},
+	{"JobAcctrFrequency", S_P_UINT16},
+	{"JobAcctGatherFrequency", S_P_UINT16},
+	{"JobAcctLogFile", S_P_STRING},
+	{"JobAcctStorageLoc", S_P_STRING},
+	{"JobAcctStorageType", S_P_STRING},
+	{"JobAcctStorageHost", S_P_STRING},
+	{"JobAcctStorageUser", S_P_STRING},
+	{"JobAcctStoragePass", S_P_STRING},
+	{"JobAcctStoragePort", S_P_UINT32},
 	{"JobCompLoc", S_P_STRING},
 	{"JobCompType", S_P_STRING},
 	{"JobCredentialPrivateKey", S_P_STRING},
@@ -1050,14 +1052,17 @@ free_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr, bool purge_node_hash)
 	xfree (ctl_conf_ptr->control_addr);
 	xfree (ctl_conf_ptr->control_machine);
 	xfree (ctl_conf_ptr->epilog);
-	xfree (ctl_conf_ptr->job_acct_loc);
-	xfree (ctl_conf_ptr->job_acct_type);
-	xfree (ctl_conf_ptr->storage_type);
-	xfree (ctl_conf_ptr->storage_user);
-	xfree (ctl_conf_ptr->storage_host);
-	xfree (ctl_conf_ptr->storage_pass);
+	xfree (ctl_conf_ptr->job_acct_gather_type);
+	xfree (ctl_conf_ptr->job_acct_storage_loc);
+	xfree (ctl_conf_ptr->job_acct_storage_type);
+	xfree (ctl_conf_ptr->job_acct_storage_user);
+	xfree (ctl_conf_ptr->job_acct_storage_host);
+	xfree (ctl_conf_ptr->job_acct_storage_pass);
 	xfree (ctl_conf_ptr->job_comp_loc);
 	xfree (ctl_conf_ptr->job_comp_type);
+	xfree (ctl_conf_ptr->job_comp_user);
+	xfree (ctl_conf_ptr->job_comp_host);
+	xfree (ctl_conf_ptr->job_comp_pass);
 	xfree (ctl_conf_ptr->job_credential_private_key);
 	xfree (ctl_conf_ptr->job_credential_public_certificate);
 	xfree (ctl_conf_ptr->mail_prog);
@@ -1113,16 +1118,21 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	ctl_conf_ptr->fast_schedule		= (uint16_t) NO_VAL;
 	ctl_conf_ptr->first_job_id		= (uint32_t) NO_VAL;
 	ctl_conf_ptr->inactive_limit		= (uint16_t) NO_VAL;
-	xfree (ctl_conf_ptr->job_acct_loc);
-	ctl_conf_ptr->job_acct_freq             = 0;
-	xfree (ctl_conf_ptr->job_acct_type);
-	xfree (ctl_conf_ptr->storage_type);
-	xfree (ctl_conf_ptr->storage_user);
-	xfree (ctl_conf_ptr->storage_host);
-	xfree (ctl_conf_ptr->storage_pass);
-	ctl_conf_ptr->storage_port             = 0;
+	xfree (ctl_conf_ptr->job_acct_gather_type);
+	ctl_conf_ptr->job_acct_gather_freq             = 0;
+	xfree (ctl_conf_ptr->job_acct_storage_loc);
+	xfree (ctl_conf_ptr->job_acct_storage_type);
+	xfree (ctl_conf_ptr->job_acct_storage_user);
+	xfree (ctl_conf_ptr->job_acct_storage_host);
+	xfree (ctl_conf_ptr->job_acct_storage_pass);
+	ctl_conf_ptr->job_acct_storage_port             = 0;
 	xfree (ctl_conf_ptr->job_comp_loc);
 	xfree (ctl_conf_ptr->job_comp_type);
+	xfree (ctl_conf_ptr->job_comp_user);
+	xfree (ctl_conf_ptr->job_comp_host);
+	xfree (ctl_conf_ptr->job_comp_pass);
+	ctl_conf_ptr->job_comp_port             = 0;
+
 	xfree (ctl_conf_ptr->job_credential_private_key);
 	xfree (ctl_conf_ptr->job_credential_public_certificate);
 	ctl_conf_ptr->kill_wait			= (uint16_t) NO_VAL;
@@ -1483,14 +1493,16 @@ validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 		conf->inactive_limit = DEFAULT_INACTIVE_LIMIT;
 	}
 
-	if (!s_p_get_uint16(&conf->job_acct_freq, "JobAcctFrequency", hashtbl)
-	    && !s_p_get_string(&conf->job_acct_loc, "JobAcctGatherFrequency",
-			       hashtbl))
+	if (!s_p_get_uint16(&conf->job_acct_gather_freq,
+			    "JobAcctFrequency", hashtbl)
+	    && !s_p_get_uint16(&conf->job_acct_gather_freq,
+			       "JobAcctGatherFrequency", hashtbl))
 		conf->job_acct_gather_freq = DEFAULT_JOB_ACCT_GATHER_FREQ;
 
-	if (!s_p_get_string(&conf->job_acct_type, "JobAcctType", hashtbl)
-	    && !s_p_get_string(&conf->job_acct_loc, "JobAcctGatherType",
-			       hashtbl))
+	if (!s_p_get_string(&conf->job_acct_gather_type,
+			    "JobAcctType", hashtbl)
+	    && !s_p_get_string(&conf->job_acct_gather_type,
+			       "JobAcctGatherType", hashtbl))
 		conf->job_acct_gather_type =
 			xstrdup(DEFAULT_JOB_ACCT_GATHER_TYPE);
 
@@ -1498,27 +1510,30 @@ validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	 * the database name also depending on the storage type you
 	 * use so we still check JobAcctLogFile for the same thing
 	 */
-	if (!s_p_get_string(&conf->job_acct_loc, "JobAcctStorageLoc", hashtbl)
-	    && !s_p_get_string(&conf->job_acct_loc, "JobAcctLogFile", hashtbl))
-		conf->job_acct_storage_loc = xstrdup(DEFAULT_JOB_ACCT_LOC);
+	if (!s_p_get_string(&conf->job_acct_storage_loc,
+			    "JobAcctStorageLoc", hashtbl)
+	    && !s_p_get_string(&conf->job_acct_storage_loc,
+			       "JobAcctLogFile", hashtbl))
+		conf->job_acct_storage_loc = 
+			xstrdup(DEFAULT_JOB_ACCT_STORAGE_LOC);
 	
-	if (!s_p_get_string(&conf->storage_type, "JobAcctStorageType",
+	if (!s_p_get_string(&conf->job_acct_storage_type, "JobAcctStorageType",
 			    hashtbl))
 		conf->job_acct_storage_type =
 			xstrdup(DEFAULT_JOB_ACCT_STORAGE_TYPE);
-	if (!s_p_get_string(&conf->storage_host, "JobAcctStorageHost",
+	if (!s_p_get_string(&conf->job_acct_storage_host, "JobAcctStorageHost",
 			    hashtbl))
 		conf->job_acct_storage_host =
 			xstrdup(DEFAULT_JOB_ACCT_STORAGE_HOST);
-	if (!s_p_get_string(&conf->storage_user, "JobAcctStorageUser",
+	if (!s_p_get_string(&conf->job_acct_storage_user, "JobAcctStorageUser",
 			    hashtbl))
 		conf->job_acct_storage_user =
 			xstrdup(DEFAULT_JOB_ACCT_STORAGE_USER);
-	if (!s_p_get_string(&conf->storage_pass, "JobAcctStoragePass",
+	if (!s_p_get_string(&conf->job_acct_storage_pass, "JobAcctStoragePass",
 			    hashtbl))
 		conf->job_acct_storage_pass =
 			xstrdup(DEFAULT_JOB_ACCT_STORAGE_PASS);
-	if (!s_p_get_uint32(&conf->storage_port, "JobAcctStoragePort",
+	if (!s_p_get_uint32(&conf->job_acct_storage_port, "JobAcctStoragePort",
 			    hashtbl))
 		conf->job_acct_storage_port =
 			DEFAULT_JOB_ACCT_STORAGE_PORT;
@@ -1529,16 +1544,16 @@ validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	if (!s_p_get_string(&conf->job_comp_loc, "JobCompLoc", hashtbl))
 		conf->job_comp_loc = xstrdup(DEFAULT_JOB_COMP_LOC);
 
-	if (!s_p_get_string(&conf->storage_host, "JobCompHost",
+	if (!s_p_get_string(&conf->job_comp_host, "JobCompHost",
 			    hashtbl))
 		conf->job_comp_host = xstrdup(DEFAULT_JOB_COMP_HOST);
-	if (!s_p_get_string(&conf->storage_user, "JobCompUser",
+	if (!s_p_get_string(&conf->job_comp_user, "JobCompUser",
 			    hashtbl))
 		conf->job_comp_user = xstrdup(DEFAULT_JOB_COMP_USER);
-	if (!s_p_get_string(&conf->storage_pass, "JobCompPass",
+	if (!s_p_get_string(&conf->job_comp_pass, "JobCompPass",
 			    hashtbl))
 		conf->job_comp_pass = xstrdup(DEFAULT_JOB_COMP_PASS);
-	if (!s_p_get_uint32(&conf->storage_port, "JobCompPort",
+	if (!s_p_get_uint32(&conf->job_comp_port, "JobCompPort",
 			    hashtbl))
 		conf->job_comp_port = DEFAULT_JOB_COMP_PORT;
 

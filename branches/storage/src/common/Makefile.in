@@ -67,7 +67,8 @@ CONFIG_HEADER = $(top_builddir)/config.h $(top_builddir)/slurm/slurm.h
 CONFIG_CLEAN_FILES =
 LTLIBRARIES = $(noinst_LTLIBRARIES)
 am__DEPENDENCIES_1 =
-libcommon_la_DEPENDENCIES = $(am__DEPENDENCIES_1)
+libcommon_la_DEPENDENCIES = $(am__DEPENDENCIES_1) \
+	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
 am__libcommon_la_SOURCES_DIST = xmalloc.c xmalloc.h xassert.c \
 	xassert.h xstring.c xstring.h xsignal.c xsignal.h forward.c \
 	forward.h strlcpy.c strlcpy.h list.c list.h net.c net.h fd.c \
@@ -85,17 +86,17 @@ am__libcommon_la_SOURCES_DIST = xmalloc.c xmalloc.h xassert.c \
 	slurm_protocol_interface.h slurm_protocol_defs.c \
 	slurm_protocol_defs.h slurm_rlimits_info.h \
 	slurm_rlimits_info.c uid.c uid.h util-net.c util-net.h \
-	slurm_auth.c slurm_auth.h jobacct_common.c jobacct_common.h \
-	slurm_jobacct_gather.c slurm_jobacct_gather.h \
-	slurm_jobacct_storage.c slurm_jobacct_storage.h \
-	slurm_jobcomp.c slurm_jobcomp.h switch.c switch.h arg_desc.c \
-	arg_desc.h macros.h malloc.c malloc.h getopt.h getopt.c \
-	getopt1.c unsetenv.c unsetenv.h slurm_selecttype_info.c \
-	slurm_resource_info.c slurm_resource_info.h hostlist.c \
-	hostlist.h slurm_step_layout.c slurm_step_layout.h \
-	checkpoint.c checkpoint.h parse_time.c parse_time.h \
-	job_options.c job_options.h global_defaults.c timers.c \
-	timers.h slurm_xlator.h stepd_api.c stepd_api.h
+	slurm_auth.c slurm_auth.h slurm_jobacct_gather.c \
+	slurm_jobacct_gather.h slurm_jobacct_storage.c \
+	slurm_jobacct_storage.h slurm_jobcomp.c slurm_jobcomp.h \
+	switch.c switch.h arg_desc.c arg_desc.h macros.h malloc.c \
+	malloc.h getopt.h getopt.c getopt1.c unsetenv.c unsetenv.h \
+	slurm_selecttype_info.c slurm_resource_info.c \
+	slurm_resource_info.h hostlist.c hostlist.h \
+	slurm_step_layout.c slurm_step_layout.h checkpoint.c \
+	checkpoint.h parse_time.c parse_time.h job_options.c \
+	job_options.h global_defaults.c timers.c timers.h \
+	slurm_xlator.h stepd_api.c stepd_api.h
 @HAVE_UNSETENV_FALSE@am__objects_1 = unsetenv.lo
 am_libcommon_la_OBJECTS = xmalloc.lo xassert.lo xstring.lo xsignal.lo \
 	forward.lo strlcpy.lo list.lo net.lo fd.lo log.lo cbuf.lo \
@@ -105,13 +106,12 @@ am_libcommon_la_OBJECTS = xmalloc.lo xassert.lo xstring.lo xsignal.lo \
 	slurm_errno.lo slurm_protocol_api.lo slurm_protocol_pack.lo \
 	slurm_protocol_util.lo slurm_protocol_socket_implementation.lo \
 	slurm_protocol_defs.lo slurm_rlimits_info.lo uid.lo \
-	util-net.lo slurm_auth.lo jobacct_common.lo \
-	slurm_jobacct_gather.lo slurm_jobacct_storage.lo \
-	slurm_jobcomp.lo switch.lo arg_desc.lo malloc.lo getopt.lo \
-	getopt1.lo $(am__objects_1) slurm_selecttype_info.lo \
-	slurm_resource_info.lo hostlist.lo slurm_step_layout.lo \
-	checkpoint.lo parse_time.lo job_options.lo global_defaults.lo \
-	timers.lo stepd_api.lo
+	util-net.lo slurm_auth.lo slurm_jobacct_gather.lo \
+	slurm_jobacct_storage.lo slurm_jobcomp.lo switch.lo \
+	arg_desc.lo malloc.lo getopt.lo getopt1.lo $(am__objects_1) \
+	slurm_selecttype_info.lo slurm_resource_info.lo hostlist.lo \
+	slurm_step_layout.lo checkpoint.lo parse_time.lo \
+	job_options.lo global_defaults.lo timers.lo stepd_api.lo
 am__EXTRA_libcommon_la_SOURCES_DIST = unsetenv.c unsetenv.h
 libcommon_la_OBJECTS = $(am_libcommon_la_OBJECTS)
 libcommon_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
@@ -163,7 +163,7 @@ CCDEPMODE = @CCDEPMODE@
 CFLAGS = @CFLAGS@
 CMD_LDFLAGS = @CMD_LDFLAGS@
 CPP = @CPP@
-CPPFLAGS = @CPPFLAGS@
+CPPFLAGS = $(PGSQL_CFLAGS)
 CXX = @CXX@
 CXXCPP = @CXXCPP@
 CXXDEPMODE = @CXXDEPMODE@
@@ -364,7 +364,6 @@ libcommon_la_SOURCES = \
 	uid.c uid.h			\
 	util-net.c util-net.h		\
 	slurm_auth.c slurm_auth.h	\
-	jobacct_common.c jobacct_common.h \
 	slurm_jobacct_gather.c slurm_jobacct_gather.h \
 	slurm_jobacct_storage.c slurm_jobacct_storage.h \
 	slurm_jobcomp.c slurm_jobcomp.h	\
@@ -403,7 +402,7 @@ libspank_la_SOURCES = \
 	plugstack.c plugstack.h \
 	optz.c      optz.h
 
-libcommon_la_LIBADD = $(SSL_LIBS) -ldl
+libcommon_la_LIBADD = $(SSL_LIBS) -ldl $(PGSQL_LIBS) $(MYSQL_LIBS)
 libcommon_la_LDFLAGS = $(LIB_LDFLAGS) $(SSL_LDFLAGS)
 all: all-am
 
@@ -477,7 +476,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hostlist.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/io_hdr.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/job_options.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/jobacct_common.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/list.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/log.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/malloc.Plo@am__quote@

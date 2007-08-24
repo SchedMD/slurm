@@ -12,6 +12,8 @@ endif
 
 INCLUDES     = -I$(top_srcdir) $(SSL_CPPFLAGS) 
 
+CPPFLAGS = $(PGSQL_CFLAGS)
+
 noinst_LTLIBRARIES = 			\
 	libcommon.la 			\
 	libdaemonize.la 		\
@@ -63,7 +65,6 @@ libcommon_la_SOURCES = 			\
 	uid.c uid.h			\
 	util-net.c util-net.h		\
 	slurm_auth.c slurm_auth.h	\
-	jobacct_common.c jobacct_common.h \
 	slurm_jobacct_gather.c slurm_jobacct_gather.h \
 	slurm_jobacct_storage.c slurm_jobacct_storage.h \
 	slurm_jobcomp.c slurm_jobcomp.h	\
@@ -102,7 +103,7 @@ libspank_la_SOURCES = \
 	plugstack.c plugstack.h \
 	optz.c      optz.h
 
-libcommon_la_LIBADD   = $(SSL_LIBS) -ldl
+libcommon_la_LIBADD   = $(SSL_LIBS) -ldl $(PGSQL_LIBS) $(MYSQL_LIBS)
 
 libcommon_la_LDFLAGS  = $(LIB_LDFLAGS) $(SSL_LDFLAGS)
 

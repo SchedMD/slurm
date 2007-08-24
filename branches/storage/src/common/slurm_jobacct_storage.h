@@ -1,7 +1,7 @@
 /*****************************************************************************\
- *  node_select.h - Define storage plugin functions.
+ *  slurm_jobacct_storage.h - Define storage plugin functions.
  *
- * $Id: node_select.h 10574 2006-12-15 23:38:29Z jette $
+ * $Id: slurm_jobacct_storage.h 10574 2006-12-15 23:38:29Z jette $
  *****************************************************************************
  *  Copyright (C) 2004-2006 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -37,8 +37,8 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef _SLURM_STORAGE_H 
-#define _SLURM_STORAGE_H
+#ifndef _SLURM_JOBACCT_STORAGE_H 
+#define _SLURM_JOBACCT_STORAGE_H
 
 #include "src/common/list.h"
 #include "src/slurmctld/slurmctld.h"
@@ -99,4 +99,4 @@ extern void jobacct_storage_g_archive(List selected_parts, void *params);
 
 
 
-#endif /*_SLURM_STORAGE_H*/
+#endif /*_SLURM_JOBACCT_STORAGE_H*/

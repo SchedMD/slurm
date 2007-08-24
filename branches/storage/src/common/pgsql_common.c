@@ -48,14 +48,14 @@ pthread_mutex_t pgsql_lock = PTHREAD_MUTEX_INITIALIZER;
 extern pgsql_db_info_t *create_pgsql_db_info()
 {
 	pgsql_db_info_t *db_info = xmalloc(sizeof(pgsql_db_info_t));
-	db_info->port = slurm_get_storage_port();
+	db_info->port = slurm_get_jobacct_storage_port();
 	/* it turns out it is better if using defaults to let postgres
 	   handle them on it's own terms */
 	if(!db_info->port)
 		db_info->port = 5432;
-	db_info->host = slurm_get_storage_host();
-	db_info->user = slurm_get_storage_user();	
-	db_info->pass = slurm_get_storage_pass();	
+	db_info->host = slurm_get_jobacct_storage_host();
+	db_info->user = slurm_get_jobacct_storage_user();	
+	db_info->pass = slurm_get_jobacct_storage_pass();	
 	return db_info;
 }
 

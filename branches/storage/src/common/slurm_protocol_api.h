@@ -158,17 +158,17 @@ extern int slurm_set_tree_width(uint16_t tree_width);
  */
 extern uint16_t slurm_get_tree_width(void);
 
-/* slurm_get_jobacct_loc
- * returns the job accounting loc from slurmctld_conf object
- * RET char *    - job accounting location,  MUST be xfreed by caller
+/* slurm_get_jobacct_gather_type
+ * returns the job accounting type from slurmctld_conf object
+ * RET char *    - job accounting type,  MUST be xfreed by caller
  */
-char *slurm_get_jobacct_loc(void);
+char *slurm_get_jobacct_gather_type(void);
 
-/* slurm_get_jobacct_freq
+/* slurm_get_jobacct_gather_freq
  * returns the job accounting poll frequency from the slurmctld_conf object
  * RET int    - job accounting frequency
  */
-uint16_t slurm_get_jobacct_freq(void);
+uint16_t slurm_get_jobacct_gather_freq(void);
 
 /* slurm_get_jobacct_type
  * returns the job accounting type from slurmctld_conf object
@@ -176,35 +176,41 @@ uint16_t slurm_get_jobacct_freq(void);
  */
 char *slurm_get_jobacct_type(void);
 
-/* slurm_get_storage_type
+/* slurm_get_jobacct_storage_loc
+ * returns the job accounting loc from slurmctld_conf object
+ * RET char *    - job accounting location,  MUST be xfreed by caller
+ */
+char *slurm_get_jobacct_storage_loc(void);
+
+/* slurm_get_jobacct_storage_type
  * returns the storage type from slurmctld_conf object
  * RET char *    - storage type,  MUST be xfreed by caller
  */
-char *slurm_get_storage_type(void);
+char *slurm_get_jobacct_storage_type(void);
 
-/* slurm_get_storage_user
+/* slurm_get_jobacct_storage_user
  * returns the storage user from slurmctld_conf object
  * RET char *    - storage user,  MUST be xfreed by caller
  */
-char *slurm_get_storage_user(void);
+char *slurm_get_jobacct_storage_user(void);
 
-/* slurm_get_storage_host
+/* slurm_get_jobacct_storage_host
  * returns the storage host from slurmctld_conf object
  * RET char *    - storage host,  MUST be xfreed by caller
  */
-char *slurm_get_storage_host(void);
+char *slurm_get_jobacct_storage_host(void);
 
-/* slurm_get_storage_pass
+/* slurm_get_jobacct_storage_pass
  * returns the storage password from slurmctld_conf object
  * RET char *    - storage password,  MUST be xfreed by caller
  */
-char *slurm_get_storage_pass(void);
+char *slurm_get_jobacct_storage_pass(void);
 
-/* slurm_get_storage_port
+/* slurm_get_jobacct_storage_port
  * returns the storage port from slurmctld_conf object
  * RET uint32_t   - storage port
  */
-uint32_t slurm_get_storage_port(void);
+uint32_t slurm_get_jobacct_storage_port(void);
 
 /* slurm_get_jobcomp_type
  * returns the job completion logger type from slurmctld_conf object
@@ -217,6 +223,30 @@ char *slurm_get_jobcomp_type(void);
  * RET char *    - job completion location,  MUST be xfreed by caller
  */
 char *slurm_get_jobcomp_loc(void);
+
+/* slurm_get_jobcomp_user
+ * returns the storage user from slurmctld_conf object
+ * RET char *    - storage user,  MUST be xfreed by caller
+ */
+char *slurm_get_jobcomp_user(void);
+
+/* slurm_get_jobcomp_host
+ * returns the storage host from slurmctld_conf object
+ * RET char *    - storage host,  MUST be xfreed by caller
+ */
+char *slurm_get_jobcomp_host(void);
+
+/* slurm_get_jobcomp_pass
+ * returns the storage password from slurmctld_conf object
+ * RET char *    - storage password,  MUST be xfreed by caller
+ */
+char *slurm_get_jobcomp_pass(void);
+
+/* slurm_get_jobcomp_port
+ * returns the storage port from slurmctld_conf object
+ * RET uint32_t   - storage port
+ */
+uint32_t slurm_get_jobcomp_port(void);
 
 /* slurm_get_propagate_prio_process
  * return the PropagatePrioProcess flag from slurmctld_conf object

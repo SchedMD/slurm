@@ -318,122 +318,122 @@ extern int slurm_set_auth_type(char *auth_type)
 	return 0;
 }
 
-/* slurm_get_jobacct_loc
- * returns the job accounting loc from the slurmctld_conf object
- * RET char *    - job accounting loc,  MUST be xfreed by caller
+/* slurm_get_jobacct_gather_type
+ * returns the job accounting type from the slurmctld_conf object
+ * RET char *    - job accounting type,  MUST be xfreed by caller
  */
-char *slurm_get_jobacct_loc(void)
+char *slurm_get_jobacct_gather_type(void)
 {
-	char *jobacct_loc;
+	char *jobacct_type;
 	slurm_ctl_conf_t *conf;
 
 	conf = slurm_conf_lock();
-	jobacct_loc = xstrdup(conf->job_acct_loc);
+	jobacct_type = xstrdup(conf->job_acct_gather_type);
 	slurm_conf_unlock();
-	return jobacct_loc;
+	return jobacct_type;
 }
 
 /* slurm_get_jobacct_freq
  * returns the job accounting poll frequency from the slurmctld_conf object
  * RET int    - job accounting frequency
  */
-uint16_t slurm_get_jobacct_freq(void)
+uint16_t slurm_get_jobacct_gather_freq(void)
 {
 	uint16_t freq;
 	slurm_ctl_conf_t *conf;
 
 	conf = slurm_conf_lock();
-	freq = conf->job_acct_freq;
+	freq = conf->job_acct_gather_freq;
 	slurm_conf_unlock();
 	return freq;
 }
 
-/* slurm_get_jobacct_type
- * returns the job accounting type from the slurmctld_conf object
- * RET char *    - job accounting type,  MUST be xfreed by caller
- */
-char *slurm_get_jobacct_type(void)
-{
-	char *jobacct_type;
-	slurm_ctl_conf_t *conf;
-
-	conf = slurm_conf_lock();
-	jobacct_type = xstrdup(conf->job_acct_type);
-	slurm_conf_unlock();
-	return jobacct_type;
-}
-
-/* slurm_get_storage_type
+/* slurm_get_jobacct_storage_type
  * returns the storage type from slurmctld_conf object
  * RET char *    - storage type,  MUST be xfreed by caller
  */
-char *slurm_get_storage_type(void)
+char *slurm_get_jobacct_storage_type(void)
 {
 	char *storage_type;
 	slurm_ctl_conf_t *conf;
 
 	conf = slurm_conf_lock();
-	storage_type = xstrdup(conf->storage_type);
+	storage_type = xstrdup(conf->job_acct_storage_type);
 	slurm_conf_unlock();
 	return storage_type;	
 }
 
-/* slurm_get_storage_user
+/* slurm_get_jobacct_storage_loc
+ * returns the job accounting loc from the slurmctld_conf object
+ * RET char *    - job accounting loc,  MUST be xfreed by caller
+ */
+char *slurm_get_jobacct_storage_loc(void)
+{
+	char *jobacct_loc;
+	slurm_ctl_conf_t *conf;
+
+	conf = slurm_conf_lock();
+	jobacct_loc = xstrdup(conf->job_acct_storage_loc);
+	slurm_conf_unlock();
+	return jobacct_loc;
+}
+
+/* slurm_get_jobacct_storage_user
  * returns the storage user from slurmctld_conf object
  * RET char *    - storage user,  MUST be xfreed by caller
  */
-char *slurm_get_storage_user(void)
+char *slurm_get_jobacct_storage_user(void)
 {
 	char *storage_user;
 	slurm_ctl_conf_t *conf;
 
 	conf = slurm_conf_lock();
-	storage_user = xstrdup(conf->storage_user);
+	storage_user = xstrdup(conf->job_acct_storage_user);
 	slurm_conf_unlock();
 	return storage_user;	
 }
 
-/* slurm_get_storage_host
+/* slurm_get_jobacct_storage_host
  * returns the storage host from slurmctld_conf object
  * RET char *    - storage host,  MUST be xfreed by caller
  */
-char *slurm_get_storage_host(void)
+char *slurm_get_jobacct_storage_host(void)
 {
 	char *storage_host;
 	slurm_ctl_conf_t *conf;
 
 	conf = slurm_conf_lock();
-	storage_host = xstrdup(conf->storage_host);
+	storage_host = xstrdup(conf->job_acct_storage_host);
 	slurm_conf_unlock();
 	return storage_host;	
 }
 
-/* slurm_get_storage_pass
+/* slurm_get_jobacct_storage_pass
  * returns the storage password from slurmctld_conf object
  * RET char *    - storage password,  MUST be xfreed by caller
  */
-char *slurm_get_storage_pass(void)
+char *slurm_get_jobacct_storage_pass(void)
 {
 	char *storage_pass;
 	slurm_ctl_conf_t *conf;
 
 	conf = slurm_conf_lock();
-	storage_pass = xstrdup(conf->storage_pass);
+	storage_pass = xstrdup(conf->job_acct_storage_pass);
 	slurm_conf_unlock();
 	return storage_pass;	
 }
 
-/* slurm_get_storage_port
+/* slurm_get_jobacct_storage_port
  * returns the storage port from slurmctld_conf object
  * RET uint32_t   - storage port
  */
-uint32_t slurm_get_storage_port(void)
+uint32_t slurm_get_jobacct_storage_port(void)
 {
 	uint32_t storage_port;
 	slurm_ctl_conf_t *conf;
 
 	conf = slurm_conf_lock();
-	storage_port = conf->storage_port;
+	storage_port = conf->job_acct_storage_port;
 	slurm_conf_unlock();
 	return storage_port;
 	
@@ -467,6 +467,67 @@ char *slurm_get_jobcomp_loc(void)
 	jobcomp_loc = xstrdup(conf->job_comp_loc);
 	slurm_conf_unlock();
 	return jobcomp_loc;	
+}
+
+/* slurm_get_jobcomp_user
+ * returns the storage user from slurmctld_conf object
+ * RET char *    - storage user,  MUST be xfreed by caller
+ */
+char *slurm_get_jobcomp_user(void)
+{
+	char *storage_user;
+	slurm_ctl_conf_t *conf;
+
+	conf = slurm_conf_lock();
+	storage_user = xstrdup(conf->job_comp_user);
+	slurm_conf_unlock();
+	return storage_user;	
+}
+
+/* slurm_get_jobcomp_host
+ * returns the storage host from slurmctld_conf object
+ * RET char *    - storage host,  MUST be xfreed by caller
+ */
+char *slurm_get_jobcomp_host(void)
+{
+	char *storage_host;
+	slurm_ctl_conf_t *conf;
+
+	conf = slurm_conf_lock();
+	storage_host = xstrdup(conf->job_comp_host);
+	slurm_conf_unlock();
+	return storage_host;	
+}
+
+/* slurm_get_jobcomp_pass
+ * returns the storage password from slurmctld_conf object
+ * RET char *    - storage password,  MUST be xfreed by caller
+ */
+char *slurm_get_jobcomp_pass(void)
+{
+	char *storage_pass;
+	slurm_ctl_conf_t *conf;
+
+	conf = slurm_conf_lock();
+	storage_pass = xstrdup(conf->job_comp_pass);
+	slurm_conf_unlock();
+	return storage_pass;	
+}
+
+/* slurm_get_jobcomp_port
+ * returns the storage port from slurmctld_conf object
+ * RET uint32_t   - storage port
+ */
+uint32_t slurm_get_jobcomp_port(void)
+{
+	uint32_t storage_port;
+	slurm_ctl_conf_t *conf;
+
+	conf = slurm_conf_lock();
+	storage_port = conf->job_comp_port;
+	slurm_conf_unlock();
+	return storage_port;
+	
 }
 
 /* slurm_get_proctrack_type

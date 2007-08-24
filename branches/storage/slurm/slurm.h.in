@@ -873,6 +873,7 @@ typedef struct slurm_ctl_conf {
 	char *job_comp_user;	/* job completion storage user */
 	char *job_comp_host;	/* job completion storage host */
 	char *job_comp_pass;	/* job completion storage password */
+	uint32_t job_comp_port;	/* job completion storage port */
 	uint16_t kill_wait;	/* seconds between SIGXCPU to SIGKILL 
 				 * on job termination */
 	char *mail_prog;	/* pathname of mail program */

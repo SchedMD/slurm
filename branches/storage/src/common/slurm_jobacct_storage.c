@@ -1,7 +1,7 @@
 /*****************************************************************************\
  *  slurm_jobacct_storage.c - storage plugin wrapper.
  *
- *  $Id: slurm_storage.c 10744 2007-01-11 20:09:18Z da $
+ *  $Id: slurm_jobacct_storage.c 10744 2007-01-11 20:09:18Z da $
  *****************************************************************************
  *  Copyright (C) 2002-2006 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -232,7 +232,7 @@ extern int slurm_jobacct_storage_fini(void)
 	if (!g_jobacct_storage_context)
 		return SLURM_SUCCESS;
 
-	(*(g_jobacct_storage_context->ops.jobacct_jobacct_storage_fini))();
+	(*(g_jobacct_storage_context->ops.jobacct_storage_fini))();
 	rc = _jobacct_storage_context_destroy( g_jobacct_storage_context );
 	g_jobacct_storage_context = NULL;
 	return rc;

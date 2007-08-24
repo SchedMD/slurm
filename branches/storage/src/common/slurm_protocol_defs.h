@@ -64,6 +64,7 @@
 #include "src/common/job_options.h"
 #include "src/common/slurm_step_layout.h"
 #include "src/common/xassert.h"
+//#include "src/common/slurm_jobacct_common.h"
 
 #define MAX_SLURM_NAME 64
 #define FORWARD_INIT 0xfffe

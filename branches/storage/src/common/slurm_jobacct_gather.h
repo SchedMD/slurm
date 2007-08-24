@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  slurm_jobacct.h - implementation-independent job completion logging 
+ *  slurm_jobacct_gather.h - implementation-independent job completion logging 
  *  API definitions
  *****************************************************************************
  *  Copyright (C) 2003 The Regents of the University of California.
@@ -47,35 +47,177 @@
 \*****************************************************************************/
 
 
-#ifndef __SLURM_JOBACCT_H__
-#define __SLURM_JOBACCT_H__
+#ifndef __SLURM_JOBACCT_GATHER_H__
+#define __SLURM_JOBACCT_GATHER_H__
 
-#if HAVE_STDINT_H
-#  include <stdint.h>           /* for uint16_t, uint32_t definitions */
-#endif
-#if HAVE_INTTYPES_H
-#  include <inttypes.h>         /* for uint16_t, uint32_t definitions */
-#endif
+#if HAVE_CONFIG_H
+#  include "config.h"
+#  if HAVE_INTTYPES_H
+#    include <inttypes.h>
+#  else
+#    if HAVE_STDINT_H
+#      include <stdint.h>
+#    endif
+#  endif			/* HAVE_INTTYPES_H */
+#else				/* !HAVE_CONFIG_H */
+#  include <inttypes.h>
+#endif				/*  HAVE_CONFIG_H */
+
 #include <sys/resource.h>
 #include <sys/types.h>
 #include <time.h>
 #include <unistd.h>
 
-#include "src/slurmd/slurmstepd/slurmstepd_job.h"
-#include "src/slurmctld/slurmctld.h"
-#include "src/common/jobacct_common.h"
+#include <slurm/slurm.h>
 
-extern int jobacct_gather_init(void); /* load the plugin */
+#include "src/common/macros.h"
+#include "src/common/pack.h"
+#include "src/common/list.h"
+#include "src/common/xmalloc.h"
 
+typedef struct {
+	uint16_t taskid; /* contains which task number it was on */
+	uint32_t nodeid; /* contains which node number it was on */	
+} jobacct_id_t;
+
+typedef struct {
+	uint32_t max_vsize; 
+	jobacct_id_t max_vsize_id;
+	float ave_vsize;
+	uint32_t max_rss;
+	jobacct_id_t max_rss_id;
+	float ave_rss;
+	uint32_t max_pages;
+	jobacct_id_t max_pages_id;
+	float ave_pages;
+	float min_cpu;
+	jobacct_id_t min_cpu_id;
+	float ave_cpu;	
+} sacct_t;
+
+typedef struct {
+	int opt_completion;	/* --completion */
+	int opt_dump;		/* --dump */
+	int opt_dup;		/* --duplicates; +1 = explicitly set */
+	int opt_fdump;		/* --formattted_dump */
+	int opt_stat;		/* --stat */
+	int opt_gid;		/* --gid (-1=wildcard, 0=root) */
+	int opt_header;		/* can only be cleared */
+	int opt_help;		/* --help */
+	int opt_long;		/* --long */
+	int opt_lowmem;		/* --low_memory */
+	int opt_purge;		/* --purge */
+	int opt_total;		/* --total */
+	int opt_uid;		/* --uid (-1=wildcard, 0=root) */
+	int opt_verbose;	/* --verbose */
+	long opt_expire;		/* --expire= */ 
+	char *opt_expire_timespec; /* --expire= */
+	char *opt_field_list;	/* --fields= */
+	char *opt_filein;	/* --file */
+	char *opt_job_list;	/* --jobs */
+	char *opt_partition_list;/* --partitions */
+	char *opt_state_list;	/* --states */
+} sacct_parameters_t;
+
+typedef struct header {
+	uint32_t jobnum;
+	char	*partition;
+	char	*blockid;
+	time_t 	job_submit;
+	time_t	timestamp;
+	uint32_t uid;
+	uint32_t gid;
+	uint16_t rec_type;
+} jobacct_header_t;
+
+typedef struct {
+	uint32_t job_start_seen,		/* useful flags */
+		job_step_seen,
+		job_terminated_seen,
+		jobnum_superseded;	/* older jobnum was reused */
+	jobacct_header_t header;
+	uint16_t show_full;
+	char	*nodes;
+	char	*jobname;
+	uint16_t track_steps;
+	int32_t priority;
+	uint32_t ncpus;
+	uint32_t ntasks;
+	enum job_states	status;
+	int32_t	exitcode;
+	uint32_t elapsed;
+	time_t end;
+	uint32_t tot_cpu_sec;
+	uint32_t tot_cpu_usec;
+	struct rusage rusage;
+	sacct_t sacct;
+	List    steps;
+	char    *account;
+	uint32_t requid;
+} jobacct_job_rec_t;
+
+typedef struct {
+	jobacct_header_t   header;
+	uint32_t	stepnum;	/* job's step number */
+	char	        *nodes;
+	char	        *stepname;
+	enum job_states	status;
+	int32_t	        exitcode;
+	uint32_t	ntasks; 
+	uint32_t        ncpus;
+	uint32_t	elapsed;
+	time_t          end;
+	uint32_t	tot_cpu_sec;
+	uint32_t        tot_cpu_usec;
+	struct rusage   rusage;
+	sacct_t         sacct;
+	char            *account;
+	uint32_t requid;
+} jobacct_step_rec_t;
+
+typedef struct selected_step_t {
+	char *job;
+	char *step;
+	uint32_t jobid;
+	uint32_t stepid;
+} jobacct_selected_step_t;
+
+extern int slurm_jobacct_gather_init(void); /* load the plugin */
+extern int slurm_jobacct_gather_fini(void); /* unload the plugin */
+
+extern jobacct_step_rec_t *create_jobacct_step_rec(jobacct_header_t header);
+extern jobacct_job_rec_t *create_jobacct_job_rec(jobacct_header_t header);
+extern void free_jobacct_header(void *object);
+extern void destroy_jobacct_job_rec(void *object);
+extern void destroy_jobacct_step_rec(void *object);
+
+extern jobacctinfo_t *jobacct_gather_g_create(jobacct_id_t *jobacct_id);
+extern void jobacct_gather_g_destroy(jobacctinfo_t *jobacct);
+extern int jobacct_gather_g_setinfo(jobacctinfo_t *jobacct, 
+				    enum jobacct_data_type type, void *data);
+extern int jobacct_gather_g_getinfo(jobacctinfo_t *jobacct, 
+				    enum jobacct_data_type type, void *data);
 extern void jobacct_gather_g_pack(jobacctinfo_t *jobacct, Buf buffer);
 extern int jobacct_gather_g_unpack(jobacctinfo_t **jobacct, Buf buffer);
 
+extern void jobacct_gather_g_aggregate(jobacctinfo_t *dest,
+				       jobacctinfo_t *from);
+
+
 extern int jobacct_gather_g_startpoll(int frequency);
 extern int jobacct_gather_g_endpoll();
-/* must free jobacctinfo_t if not NULL */
-extern jobacctinfo_t *jobacct_gather_g_stat_task(pid_t pid);
 extern void jobacct_gather_g_suspend_poll();
 extern void jobacct_gather_g_resume_poll();
 
-#endif /*__SLURM_JOBACCT_H__*/
+extern int jobacct_gather_g_set_proctrack_container_id(uint32_t id);
+extern int jobacct_gather_g_add_task(pid_t pid, jobacct_id_t *jobacct_id);
+/* must free jobacctinfo_t if not NULL */
+extern jobacctinfo_t *jobacct_gather_g_stat_task(pid_t pid);
+/* must free jobacctinfo_t if not NULL */
+extern jobacctinfo_t *jobacct_gather_g_remove_task(pid_t pid);
+
+extern void jobacct_gather_g_2_sacct(sacct_t *sacct, jobacctinfo_t *jobacct);
+
+
+#endif /*__SLURM_JOBACCT_GATHER_H__*/
 
