@@ -868,7 +868,6 @@ typedef struct slurm_ctl_conf {
 	char *job_acct_storage_host;	/* job accounting storage host */
 	char *job_acct_storage_pass;	/* job accounting storage password */
 	uint32_t job_acct_storage_port;	/* job accounting storage port */
-	char *job_comp_type;	/* job completion logger type */
 	char *job_comp_loc;	/* job completion logging location */
 	char *job_comp_type;	/* job completion storage type */
 	char *job_comp_user;	/* job completion storage user */
