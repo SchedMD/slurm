@@ -42,8 +42,6 @@ set node_cnt    3
 set ppn_cnt     2
 set min_mem     1024
 
-append min_mem_mb $min_mem "mb"
-
 print_header $test_id
 
 set available [available_nodes [default_partition]]
@@ -52,6 +50,35 @@ if {$available < $node_cnt} {
 	send_user " ($available avail, $node_cnt needed)\n"
 	exit $exit_code
 }
+
+log_user 0
+set scontrol_pid [spawn $scontrol show nodes]
+expect {
+	-re "CPUS=($number)" {
+		if {$expect_out(1,string) < $ppn_cnt} {
+			set ppn_cnt $expect_out(1,string)
+		}
+		exp_continue
+	}
+	-re "RealMemory=($number)" {
+		if {$expect_out(1,string) < $min_mem} {
+			set min_mem $expect_out(1,string)
+		}
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: scontrol not responding\n"
+		set exit_code 1
+		slow_kill $scontrol_pid
+		exp_continue
+	}
+	eof {
+		wait
+	}
+}
+log_user 1
+send_user "Actual configuration: min_cpus=$ppn_cnt  min_mem=$min_mem\n\n"
+append min_mem_mb $min_mem "mb"
 
 #
 # Build input script file
@@ -65,7 +92,7 @@ $bin_sleep $delay
 "
 
 set matches 0
-spawn $sbatch -vv -o $file_out $file_in
+set sbatch_pid [spawn $sbatch -vv -o $file_out $file_in]
 #exp_internal 1
 expect {
 	-re "nprocs$whitespace: ($number) \\(set\\)" {
@@ -79,16 +106,6 @@ expect {
 		}		
 		exp_continue
 	}
-	-re "mem=($number)" {
-		set mem $expect_out(1,string)
-		if { $mem != $min_mem } {
-			send_user "\nFAILURE: Min memory is different ($mem) than requested ($min_mem)\n"
-			set exit_code 1
-		} else {
-			incr matches
-		}
-		exp_continue
-	}
 	-re "nodes$whitespace: ($number)" {
 		set nodes $expect_out(1,string)
 		if { $nodes != $node_cnt } {
@@ -99,7 +116,16 @@ expect {
 		}
 		exp_continue
 	}
-	
+	-re "mem=($number)" {
+		set mem $expect_out(1,string)
+		if { $mem != $min_mem } {
+			send_user "\nFAILURE: Min memory is different ($mem) than requested ($min_mem)\n"
+			set exit_code 1
+		} else {
+			incr matches
+		}
+		exp_continue
+	}
 	-re "batch job ($number)" {
 		set job_id $expect_out(1,string)
 		exp_continue
@@ -113,6 +139,7 @@ expect {
 	timeout {
 		send_user "\nFAILURE: sbatch not responding\n"
 		set exit_code 1
+		slow_kill $sbatch_pid
 		exp_continue
 	}
 	eof {
