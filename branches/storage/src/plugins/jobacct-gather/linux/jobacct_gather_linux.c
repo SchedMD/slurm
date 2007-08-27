@@ -39,7 +39,7 @@
 \*****************************************************************************/
 
 #include <fcntl.h>
-#include "src/common/jobacct_common.h"
+#include "src/plugins/jobacct-gather/common/jobacct_common.h"
 
 /*
  * These variables are required by the generic plugin interface.  If they
@@ -86,8 +86,6 @@ typedef struct prec {	/* process record */
 	int	vsize;	/* virtual size */
 } prec_t;
 
-static bool jobacct_shutdown = false;
-static bool suspended = false;
 static int freq = 0;
 static DIR  *slash_proc = NULL;
 static pthread_mutex_t reading_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -449,14 +447,43 @@ extern int fini ( void )
 	return SLURM_SUCCESS;
 }
 
-extern void jobacct_gather_p_pack(jobacctinfo_t *jobacct, Buf buffer)
+extern struct jobacctinfo *jobacct_gather_p_create(jobacct_id_t *jobacct_id)
 {
-	pack_jobacctinfo(jobacct, buffer);
+	return common_alloc_jobacct(jobacct_id);
 }
 
-extern int jobacct_gather_p_unpack(jobacctinfo_t **jobacct, Buf buffer)
+extern void jobacct_gather_p_destroy(struct jobacctinfo *jobacct)
 {
-	return unpack_jobacctinfo(jobacct, buffer);
+	common_free_jobacct(jobacct);
+}
+
+extern int jobacct_gather_p_setinfo(struct jobacctinfo *jobacct, 
+				    enum jobacct_data_type type, void *data)
+{
+	return common_setinfo(jobacct, type, data);
+	
+}
+
+extern int jobacct_gather_p_getinfo(struct jobacctinfo *jobacct, 
+				    enum jobacct_data_type type, void *data)
+{
+	return common_getinfo(jobacct, type, data);
+}
+
+extern void jobacct_gather_p_pack(struct jobacctinfo *jobacct, Buf buffer)
+{
+	common_pack(jobacct, buffer);
+}
+
+extern int jobacct_gather_p_unpack(struct jobacctinfo **jobacct, Buf buffer)
+{
+	return common_unpack(jobacct, buffer);
+}
+
+extern void jobacct_gather_p_aggregate(struct jobacctinfo *dest,
+				       struct jobacctinfo *from)
+{
+	common_aggregate(dest, from);
 }
 
 /*
@@ -472,17 +499,14 @@ extern int jobacct_gather_p_startpoll(int frequency)
 	pthread_attr_t attr;
 	pthread_t _watch_tasks_thread_id;
 	 
-	debug("jobacct LINUX plugin loaded");
+	debug("%s loaded", plugin_name);
 
-	/* Parse the JobAcctParameters */
-
-	
-	debug("jobacct: frequency = %d", frequency);
+	debug("jobacct-gather: frequency = %d", frequency);
 		
 	jobacct_shutdown = false;
 	
 	if (frequency == 0) {	/* don't want dynamic monitoring? */
-		debug2("jobacct LINUX dynamic logging disabled");
+		debug2("jobacct-gather LINUX dynamic logging disabled");
 		return rc;
 	}
 
@@ -496,12 +520,12 @@ extern int jobacct_gather_p_startpoll(int frequency)
 	
 	if  (pthread_create(&_watch_tasks_thread_id, &attr,
 			    &_watch_tasks, NULL)) {
-		debug("jobacct failed to create _watch_tasks "
+		debug("jobacct-gather failed to create _watch_tasks "
 		      "thread: %m");
 		frequency = 0;
 	}
 	else 
-		debug3("jobacct LINUX dynamic logging enabled");
+		debug3("jobacct-gather LINUX dynamic logging enabled");
 	slurm_attr_destroy(&attr);
 	
 	return rc;
@@ -526,19 +550,42 @@ extern int jobacct_gather_p_endpoll()
 	return SLURM_SUCCESS;
 }
 
-extern jobacctinfo_t *jobacct_gather_p_stat_task(pid_t pid)
-{
-	_get_process_data();
-	return jobacct_stat_task(pid);
-}
-
 extern void jobacct_gather_p_suspend_poll()
 {
-	suspended = true;
+	common_suspend_poll();
 }
 
 extern void jobacct_gather_p_resume_poll()
 {
-	suspended = false;
+	common_resume_poll();
 }
+
+extern int jobacct_gather_p_set_proctrack_container_id(uint32_t id)
+{
+	return common_set_proctrack_container_id(id);
+}
+
+extern int jobacct_gather_p_add_task(pid_t pid, jobacct_id_t *jobacct_id)
+{
+	return common_add_task(pid, jobacct_id);
+}
+
+
+extern struct jobacctinfo *jobacct_gather_p_stat_task(pid_t pid)
+{
+	_get_process_data();
+	return common_stat_task(pid);
+}
+
+extern struct jobacctinfo *jobacct_gather_p_remove_task(pid_t pid)
+{
+	return common_remove_task(pid);
+}
+
+extern void jobacct_gather_p_2_sacct(sacct_t *sacct, 
+				     struct jobacctinfo *jobacct)
+{
+	common_2_sacct(sacct, jobacct);
+}
+
 

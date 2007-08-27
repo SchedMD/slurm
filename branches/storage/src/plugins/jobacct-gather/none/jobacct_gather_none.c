@@ -39,21 +39,7 @@
  *  Copyright (C) 2002 The Regents of the University of California.
 \*****************************************************************************/
 
-#ifdef HAVE_CONFIG_H
-#  include "config.h"
-#endif
-
-#if HAVE_STDINT_H
-#  include <stdint.h>
-#endif
-#if HAVE_INTTYPES_H
-#  include <inttypes.h>
-#endif
-
-#include <stdio.h>
-#include <slurm/slurm_errno.h>
-
-#include "src/common/jobacct_common.h"
+#include "src/common/slurm_jobacct_gather.h"
 
 /*
  * These variables are required by the generic plugin interface.  If they
@@ -103,6 +89,29 @@ extern int fini ( void )
 	return SLURM_SUCCESS;
 }
 
+extern jobacctinfo_t *jobacct_gather_p_create(jobacct_id_t *jobacct_id)
+{
+	return NULL;
+}
+
+extern void jobacct_gather_p_destroy(struct jobacctinfo *jobacct)
+{
+	return;
+}
+
+extern int jobacct_gather_p_setinfo(struct jobacctinfo *jobacct, 
+				    enum jobacct_data_type type, void *data)
+{
+	return SLURM_SUCCESS;
+	
+}
+
+extern int jobacct_gather_p_getinfo(struct jobacctinfo *jobacct, 
+				    enum jobacct_data_type type, void *data)
+{
+	return SLURM_SUCCESS;
+}
+
 extern void jobacct_gather_p_pack(struct jobacctinfo *jobacct, Buf buffer)
 {
 	return;
@@ -113,10 +122,15 @@ extern int jobacct_gather_p_unpack(struct jobacctinfo **jobacct, Buf buffer)
 	return SLURM_SUCCESS;
 }
 
+extern void jobacct_gather_p_aggregate(struct jobacctinfo *dest,
+				       struct jobacctinfo *from)
+{
+	return;
+}
+
 extern int jobacct_gather_p_startpoll(int frequency)
 {
-	info("jobacct NONE plugin loaded");
-	debug3("slurmd_jobacct_init() called");
+	info("%s loaded", plugin_name);
 	
 	return SLURM_SUCCESS;
 }
@@ -126,17 +140,29 @@ extern int jobacct_gather_p_endpoll()
 	return SLURM_SUCCESS;
 }
 
-extern jobacctinfo_t *jobacct_gather_p_stat_task(pid_t pid)
-{
-	return NULL;
-}
-
 extern void jobacct_gather_p_suspend_poll()
 {
 	return;
 }
 
-extern void jobacct_p_resume_poll()
+extern void jobacct_gather_p_resume_poll()
 {
 	return;
 }
+
+extern jobacctinfo_t *jobacct_gather_p_stat_task(pid_t pid)
+{
+	return NULL;
+}
+
+extern jobacctinfo_t *jobacct_gather_p_remove_task(pid_t pid)
+{
+	return NULL;
+}
+
+extern void jobacct_gather_p_2_sacct(sacct_t *sacct, 
+				     struct jobacctinfo *jobacct)
+{
+	return;
+}
+

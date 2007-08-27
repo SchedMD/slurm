@@ -40,7 +40,6 @@
 
 #include "mysql_common.h"
 
-bool thread_safe = true;
 pthread_mutex_t mysql_lock = PTHREAD_MUTEX_INITIALIZER;
 
 #ifdef HAVE_MYSQL

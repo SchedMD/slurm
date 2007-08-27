@@ -41,7 +41,6 @@
 #include "pgsql_common.h"
 #include <stdlib.h>
 
-bool thread_safe = true;
 pthread_mutex_t pgsql_lock = PTHREAD_MUTEX_INITIALIZER;
 
 #ifdef HAVE_PGSQL

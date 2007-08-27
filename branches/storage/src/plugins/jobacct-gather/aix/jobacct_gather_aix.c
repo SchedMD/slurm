@@ -39,7 +39,7 @@
  *  Copyright (C) 2002 The Regents of the University of California.
 \*****************************************************************************/
 
-#include "src/common/jobacct_common.h"
+#include "src/plugins/jobacct-gather/common/jobacct_common.h"
 
 #ifdef HAVE_AIX
 #include <procinfo.h>
@@ -93,8 +93,6 @@ typedef struct prec {	/* process record */
 	float	vsize;	/* max virtual size */
 } prec_t;
 
-static bool jobacct_shutdown = false;
-static bool suspended = false;
 static int freq = 0;
 static int pagesize = 0;
 /* Finally, pre-define all the routines. */
@@ -347,14 +345,43 @@ extern int fini ( void )
 	return SLURM_SUCCESS;
 }
 
-extern void jobacct_gather_p_pack(jobacctinfo_t *jobacct, Buf buffer)
+extern struct jobacctinfo *jobacct_gather_p_create(jobacct_id_t *jobacct_id)
 {
-	pack_jobacctinfo(jobacct, buffer);
+	return common_alloc_jobacct(jobacct_id);
 }
 
-extern int jobacct_gather_p_unpack(jobacctinfo_t **jobacct, Buf buffer)
+extern void jobacct_gather_p_destroy(struct jobacctinfo *jobacct)
 {
-	return unpack_jobacctinfo(jobacct, buffer);
+	common_free_jobacct(jobacct);
+}
+
+extern int jobacct_gather_p_setinfo(struct jobacctinfo *jobacct, 
+				    enum jobacct_data_type type, void *data)
+{
+	return common_setinfo(jobacct, type, data);
+	
+}
+
+extern int jobacct_gather_p_getinfo(struct jobacctinfo *jobacct, 
+				    enum jobacct_data_type type, void *data)
+{
+	return common_getinfo(jobacct, type, data);
+}
+
+extern void jobacct_gather_p_pack(struct jobacctinfo *jobacct, Buf buffer)
+{
+	common_pack(jobacct, buffer);
+}
+
+extern int jobacct_gather_p_unpack(struct jobacctinfo **jobacct, Buf buffer)
+{
+	return common_unpack(jobacct, buffer);
+}
+
+extern void jobacct_gather_p_aggregate(struct jobacctinfo *dest,
+				       struct jobacctinfo *from)
+{
+	common_aggregate(dest, from);
 }
 
 /*
@@ -371,7 +398,7 @@ extern int jobacct_gather_p_startpoll(int frequency)
 	pthread_attr_t attr;
 	pthread_t _watch_tasks_thread_id;
 
-	debug("jobacct AIX plugin loaded");
+	debug("%s loaded", plugin_name);
 	
 	debug("jobacct: frequency = %d", frequency);
 		
@@ -413,21 +440,41 @@ extern int jobacct_gather_p_endpoll()
 	return SLURM_SUCCESS;
 }
 
-extern jobacctinfo_t *jobacct_p_stat_task(pid_t pid)
+extern void jobacct_gather_p_suspend_poll()
+{
+	common_suspend_poll();
+}
+
+extern void jobacct_gather_p_resume_poll()
+{
+	common_resume_poll();
+}
+
+extern int jobacct_gather_p_set_proctrack_container_id(uint32_t id)
+{
+	return common_set_proctrack_container_id(id);
+}
+
+extern int jobacct_gather_p_add_task(pid_t pid, jobacct_id_t *jobacct_id)
+{
+	return common_add_task(pid, jobacct_id);
+}
+
+extern struct jobacctinfo *jobacct_gather_p_stat_task(pid_t pid)
 {
 #ifdef HAVE_AIX
 	_get_process_data();
 #endif
-	return jobacct_stat_task(pid);
+	return common_stat_task(pid);
 }
 
-extern void jobacct_p_suspend_poll()
+extern struct jobacctinfo *jobacct_gather_p_remove_task(pid_t pid)
 {
-	suspended = true;
+	return common_remove_task(pid);
 }
 
-extern void jobacct_p_resume_poll()
+extern void jobacct_gather_p_2_sacct(sacct_t *sacct, 
+				     struct jobacctinfo *jobacct)
 {
-	suspended = false;
+	common_2_sacct(sacct, jobacct);
 }
-

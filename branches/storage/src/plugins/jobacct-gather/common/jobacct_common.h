@@ -55,8 +55,7 @@
 #include <dirent.h>
 #include <sys/stat.h>
 
-#include "src/common/slurm_jobacct.h"
-#include "src/common/slurm_storage.h"
+#include "src/common/slurm_jobacct_gather.h"
 #include "src/common/xmalloc.h"
 #include "src/common/list.h"
 #include "src/common/xstring.h"
