@@ -229,17 +229,20 @@ static void
 _cancel_job_id (uint32_t job_id, uint16_t sig)
 {
 	int error_code = SLURM_SUCCESS, i;
+	bool sig_set = true;
 
-	if (sig == (uint16_t)-1)
+	if (sig == (uint16_t)-1) {
 		sig = SIGKILL;
+		sig_set = false;
+	}
 
 	for (i=0; i<MAX_CANCEL_RETRY; i++) {
-		if (sig == SIGKILL)
+		if (!sig_set)
 			verbose("Terminating job %u", job_id);
 		else
 			verbose("Signal %u to job %u", sig, job_id);
 
-		if ((sig == SIGKILL) || opt.ctld) {
+		if ((!sig_set) || opt.ctld) {
 			error_code = slurm_kill_job (job_id, sig,
 						     (uint16_t)opt.batch);
 		} else {

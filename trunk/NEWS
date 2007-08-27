@@ -6,6 +6,9 @@ documents those changes that are of interest to users and admins.
  -- Remove slaunch command
  -- Added srun option "--checkpoint=time" for job step to automatically be 
     checkpointed on a period basis.
+ -- Change behavior of "scancel -s KILL <jobid>" to send SIGKILL to all job
+    steps rather than cancelling the job. This now matches the behavior of
+    all other signals. "scancel <jobid>" still cancels the job and all steps.
 
 * Changes in SLURM 1.3.0-pre2
 =============================
