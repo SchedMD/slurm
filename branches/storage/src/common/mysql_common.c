@@ -39,6 +39,8 @@
 \*****************************************************************************/
 
 #include "mysql_common.h"
+#include "src/common/xmalloc.h"
+#include "src/common/slurm_protocol_api.h"
 
 pthread_mutex_t mysql_lock = PTHREAD_MUTEX_INITIALIZER;
 

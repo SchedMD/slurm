@@ -65,7 +65,7 @@
 #include "src/common/xassert.h"
 #include "src/common/xstring.h"
 #include "src/common/forward.h"
-#include "src/common/slurm_jobacct.h"
+#include "src/common/slurm_jobacct_storage.h"
 #include "src/common/slurm_protocol_pack.h"
 
 #include "src/slurmctld/agent.h"
@@ -1341,7 +1341,7 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 			job_ptr->exit_code = 1;
 			job_ptr->state_reason = FAIL_BAD_CONSTRAINTS;
 			job_ptr->start_time = job_ptr->end_time = time(NULL);
-			jobacct_g_job_start_slurmctld(job_ptr);
+			jobacct_storage_g_job_start(job_ptr);
 			job_completion_logger(job_ptr);
 		}
 		return error_code;
@@ -1374,7 +1374,7 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 		job_ptr->exit_code  = 1;
 		job_ptr->state_reason = FAIL_BAD_CONSTRAINTS;
 		job_ptr->start_time = job_ptr->end_time = time(NULL);
-		jobacct_g_job_start_slurmctld(job_ptr);
+		jobacct_storage_g_job_start(job_ptr);
 		job_completion_logger(job_ptr);
 		if (!independent)
 			return ESLURM_DEPENDENCY;
@@ -1389,7 +1389,7 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 	no_alloc = test_only || too_fragmented || 
 		(!top_prio) || (!independent);
 	error_code = select_nodes(job_ptr, no_alloc, NULL);
-	jobacct_g_job_start_slurmctld(job_ptr);
+	jobacct_storage_g_job_start(job_ptr);
 	if (!test_only) {
 		last_job_update = time(NULL);
 		slurm_sched_schedule();	/* work for external scheduler */
@@ -4343,7 +4343,7 @@ extern void job_completion_logger(struct job_record  *job_ptr)
 			mail_job_info(job_ptr, MAIL_JOB_FAIL);
 	}
 
-	jobacct_g_job_complete_slurmctld(job_ptr);
+	jobacct_storage_g_job_complete(job_ptr);
 	g_slurm_jobcomp_write(job_ptr);
 	srun_complete(job_ptr);
 }
@@ -4672,7 +4672,7 @@ extern int job_suspend(suspend_msg_t *sus_ptr, uid_t uid,
 
 	job_ptr->time_last_active = now;
 	job_ptr->suspend_time = now;
-	jobacct_g_suspend_slurmctld(job_ptr);
+	jobacct_storage_g_job_suspend(job_ptr);
 
     reply:
 	if (conn_fd >= 0) {

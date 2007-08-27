@@ -130,14 +130,20 @@ void slurm_print_ctl_conf ( FILE* out,
 		slurm_ctl_conf_ptr->control_addr);
 	fprintf(out, "ControlMachine    = %s\n", 
 		slurm_ctl_conf_ptr->control_machine);
-	fprintf(out, "StorageType      = %s\n", 
-		slurm_ctl_conf_ptr->storage_type);
-	fprintf(out, "StorageHost      = %s\n", 
-		slurm_ctl_conf_ptr->storage_host);
-	fprintf(out, "StoragePort      = %u\n", 
-		slurm_ctl_conf_ptr->storage_port);
-	fprintf(out, "StorageUser      = %s\n", 
-		slurm_ctl_conf_ptr->storage_user);
+	fprintf(out, "JobAcctGatherType       = %s\n", 
+		slurm_ctl_conf_ptr->job_acct_gather_type);
+	fprintf(out, "JobAcctGatherFrequency  = %u\n",
+		slurm_ctl_conf_ptr->job_acct_gather_freq);
+	fprintf(out, "JobAcctStorageType   = %s\n", 
+		slurm_ctl_conf_ptr->job_acct_storage_type);
+	fprintf(out, "JobAcctStorageLoc    = %s\n", 
+		slurm_ctl_conf_ptr->job_acct_storage_loc);
+	fprintf(out, "JobAcctStorageHost   = %s\n", 
+		slurm_ctl_conf_ptr->job_acct_storage_host);
+	fprintf(out, "JobAcctStoragePort   = %u\n", 
+		slurm_ctl_conf_ptr->job_acct_storage_port);
+	fprintf(out, "JobAcctStorageUser   = %s\n", 
+		slurm_ctl_conf_ptr->job_acct_storage_user);
 	fprintf(out, "Epilog            = %s\n", 
 		slurm_ctl_conf_ptr->epilog);
 	fprintf(out, "FastSchedule      = %u\n", 
@@ -149,17 +155,17 @@ void slurm_print_ctl_conf ( FILE* out,
 #endif
 	fprintf(out, "InactiveLimit     = %u\n", 
 		slurm_ctl_conf_ptr->inactive_limit);
-	fprintf(out, "JobAcctLoc    = %s\n", 
-		slurm_ctl_conf_ptr->job_acct_loc);
-	fprintf(out, "JobAcctFrequency  = %u\n",
-		slurm_ctl_conf_ptr->job_acct_freq);
-	fprintf(out, "JobAcctType       = %s\n", 
-		slurm_ctl_conf_ptr->job_acct_type);
-	fprintf(out, "JobCompLoc        = %s\n", 
-		slurm_ctl_conf_ptr->job_comp_loc);
 	fprintf(out, "JobCompType       = %s\n", 
 		slurm_ctl_conf_ptr->job_comp_type);
-	fprintf(out, "JobCredentialPrivateKey = %s\n", 
+	fprintf(out, "JobCompLoc        = %s\n", 
+		slurm_ctl_conf_ptr->job_comp_loc);
+	fprintf(out, "JobCompHost       = %s\n", 
+		slurm_ctl_conf_ptr->job_comp_host);
+	fprintf(out, "JobCompPort       = %u\n", 
+		slurm_ctl_conf_ptr->job_comp_port);
+	fprintf(out, "JobCompUser       = %s\n", 
+		slurm_ctl_conf_ptr->job_comp_user);
+	fprintf(out, "JobCredentialPrivateKey        = %s\n", 
 		slurm_ctl_conf_ptr->job_credential_private_key);
 	fprintf(out, "JobCredentialPublicCertificate = %s\n", 
 		slurm_ctl_conf_ptr->job_credential_public_certificate);

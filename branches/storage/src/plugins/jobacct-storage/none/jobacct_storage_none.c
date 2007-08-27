@@ -55,7 +55,6 @@
 
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmd/slurmd/slurmd.h"
-#include "src/common/slurm_jobacct.h"
 
 /*
  * These variables are required by the generic plugin interface.  If they

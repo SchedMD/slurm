@@ -372,6 +372,19 @@ extern int jobacct_gather_g_unpack(jobacctinfo_t **jobacct, Buf buffer)
 	return retval;
 }
 
+extern void jobacct_gather_g_aggregate(jobacctinfo_t *dest,
+				       jobacctinfo_t *from)
+{
+	if (_slurm_jobacct_gather_init() < 0)
+		return;
+	
+	slurm_mutex_lock( &g_jobacct_gather_context_lock );
+	if ( g_jobacct_gather_context )
+		(*(g_jobacct_gather_context->ops.jobacct_gather_aggregate))
+			(dest, from);
+	slurm_mutex_unlock( &g_jobacct_gather_context_lock );	
+	return;
+}
 
 extern int jobacct_gather_g_startpoll(int frequency)
 {

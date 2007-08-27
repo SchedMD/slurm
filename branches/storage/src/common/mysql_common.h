@@ -53,6 +53,8 @@
 
 #include <stdio.h>
 #include <slurm/slurm_errno.h>
+#include "src/common/list.h"
+#include "src/common/xstring.h"
 
 #ifdef HAVE_MYSQL
 #include <mysql/mysql.h>

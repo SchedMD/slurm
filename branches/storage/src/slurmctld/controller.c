@@ -68,7 +68,7 @@
 #include "src/common/node_select.h"
 #include "src/common/pack.h"
 #include "src/common/read_config.h"
-#include "src/common/slurm_jobacct.h"
+#include "src/common/slurm_jobacct_storage.h"
 #include "src/common/slurm_auth.h"
 #include "src/common/slurm_jobcomp.h"
 #include "src/common/slurm_protocol_api.h"
@@ -413,7 +413,9 @@ int main(int argc, char *argv[])
 	/* Plugins are needed to purge job/node data structures,
 	 * unplug after other data structures are purged */
 	g_slurm_jobcomp_fini();
-	jobacct_g_fini_slurmctld();
+	jobacct_storage_g_fini_slurmctld();
+	slurm_jobacct_gather_fini();
+	slurm_jobacct_storage_fini();
 	slurm_sched_fini();
 	slurm_select_fini();
 	checkpoint_fini();

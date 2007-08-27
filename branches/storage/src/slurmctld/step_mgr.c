@@ -59,7 +59,8 @@
 #include "src/common/switch.h"
 #include "src/common/xstring.h"
 #include "src/common/forward.h"
-#include "src/common/slurm_jobacct.h"
+#include "src/common/slurm_jobacct_storage.h"
+#include "src/common/slurm_jobacct_gather.h"
 
 #include "src/slurmctld/agent.h"
 #include "src/slurmctld/locks.h"
@@ -94,7 +95,7 @@ create_step_record (struct job_record *job_ptr)
 	step_ptr->job_ptr = job_ptr; 
 	step_ptr->step_id = (job_ptr->next_step_id)++;
 	step_ptr->start_time = time ( NULL ) ;
-	step_ptr->jobacct = jobacct_g_alloc(NULL);
+	step_ptr->jobacct = jobacct_gather_g_create(NULL);
 	if (list_append (job_ptr->step_list, step_ptr) == NULL)
 		fatal ("create_step_record: unable to allocate memory");
 
@@ -134,7 +135,7 @@ delete_step_records (struct job_record *job_ptr, int filter)
 		xfree(step_ptr->host);
 		xfree(step_ptr->name);
 		slurm_step_layout_destroy(step_ptr->step_layout);
-		jobacct_g_free(step_ptr->jobacct);
+		jobacct_gather_g_destroy(step_ptr->jobacct);
 		FREE_NULL_BITMAP(step_ptr->step_node_bitmap);
 		FREE_NULL_BITMAP(step_ptr->exit_node_bitmap);
 		if (step_ptr->network)
@@ -181,7 +182,7 @@ delete_step_record (struct job_record *job_ptr, uint32_t step_id)
 			xfree(step_ptr->host);
 			xfree(step_ptr->name);
 			slurm_step_layout_destroy(step_ptr->step_layout);
-			jobacct_g_free(step_ptr->jobacct);
+			jobacct_gather_g_destroy(step_ptr->jobacct);
 			FREE_NULL_BITMAP(step_ptr->step_node_bitmap);
 			FREE_NULL_BITMAP(step_ptr->exit_node_bitmap);
 			if (step_ptr->network)
@@ -376,7 +377,7 @@ int job_step_complete(uint32_t job_id, uint32_t step_id, uid_t uid,
 	if (step_ptr == NULL) 
 		return ESLURM_INVALID_JOB_ID;
 	else 
-		jobacct_g_step_complete_slurmctld(step_ptr);
+		jobacct_storage_g_step_complete(step_ptr);
 	
 	if ((job_ptr->kill_on_step_done)
 	    &&  (list_count(job_ptr->step_list) <= 1)
@@ -810,7 +811,7 @@ step_create(job_step_create_request_msg_t *step_specs,
 		fatal ("step_create: checkpoint_alloc_jobinfo error");
 	xfree(step_node_list);
 	*new_step_record = step_ptr;
-	jobacct_g_step_start_slurmctld(step_ptr);
+	jobacct_storage_g_step_start(step_ptr);
 	return SLURM_SUCCESS;
 }
 
@@ -1241,7 +1242,7 @@ extern int step_partial_comp(step_complete_msg_t *req, int *rem,
 		return EINVAL;
 	}
 
-	jobacct_g_aggregate(step_ptr->jobacct, req->jobacct);
+	jobacct_gather_g_aggregate(step_ptr->jobacct, req->jobacct);
 
 	if (step_ptr->exit_code == NO_VAL) {
 		/* initialize the node bitmap for exited nodes */
