@@ -1,8 +1,11 @@
 .TH SCANCEL "1" "August 2007" "scancel 1.2" "Slurm components"
+
 .SH "NAME"
 scancel \- Used to signal jobs or job steps that are under the control of Slurm.
+
 .SH "SYNOPSIS"
 \fBscancel\fR [\fIOPTIONS\fR...] [\fIjob_id\fR[.\fIstep_id\fR]] [\fIjob_id\fR[.\fIstep_id\fR]...]
+
 .SH "DESCRIPTION"
 \fBscancel\fR is used to signal or cancel jobs or job steps. An arbitrary number 
 of jobs or job steps may be signaled using job specification filters or a
@@ -46,7 +49,8 @@ This option is incompatible with the \fB\-\-verbose\fR option.
 
 .TP
 \fB\-s\fR, \fB\-\-signal\fR=\fIsignal_name\fR
-The name or number of the signal to be send. Default value is "KILL".
+The name or number of the signal to be send. 
+If no signal is specified, the specified job or step will be terminated.
 
 .TP
 \fB\-t\fR, \fB\-\-state\fR=\fIjob_state_name\fR
@@ -81,10 +85,7 @@ The Slurm job ID to be signaled.
 \fIstep_id\fP
 The step ID of the job step to be signaled. 
 If not specified, the operation is performed at the level of a job.
-A "KILL" (the default) signal applied to a job cancels the job and
-all of its steps.
-For other signals, when \fB\-\-batch\fR is used, the batch shell 
-processes will be signalled.
+When \fB\-\-batch\fR is used, the batch shell processes will be signalled.
 Otherwise the processes associated with all job steps, but not the 
 batch script itself, will be signalled.
 
