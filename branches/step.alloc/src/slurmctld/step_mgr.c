@@ -67,6 +67,7 @@
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/srun_comm.h"
 
+#define STEP_DEBUG 0
 #define MAX_RETRIES 10
 
 static void _pack_ctld_job_step_info(struct step_record *step, Buf buffer);
@@ -424,9 +425,11 @@ _pick_step_nodes (struct job_record  *job_ptr,
 	bitstr_t *nodes_avail = NULL, *nodes_idle = NULL;
 	bitstr_t *nodes_picked = NULL, *node_tmp = NULL;
 	int error_code, nodes_picked_cnt = 0, cpus_picked_cnt, i;
-/* 	char *temp; */
 	ListIterator step_iterator;
 	struct step_record *step_p;
+#if STEP_DEBUG
+	char *temp;
+#endif
 
 	if (job_ptr->node_bitmap == NULL)
 		return NULL;
@@ -441,7 +444,9 @@ _pick_step_nodes (struct job_record  *job_ptr,
 
 	if (step_spec->node_list) {
 		bitstr_t *selected_nodes = NULL;
-/* 		info("selected nodelist is %s", step_spec->node_list); */
+#if STEP_DEBUG
+		info("selected nodelist is %s", step_spec->node_list);
+#endif
 		error_code = node_name2bitmap(step_spec->node_list, false, 
 					      &selected_nodes);
 		
@@ -537,26 +542,30 @@ _pick_step_nodes (struct job_record  *job_ptr,
 		while ((step_p = (struct step_record *)
 			list_next(step_iterator))) {
 			bit_or(nodes_idle, step_p->step_node_bitmap);
-			/* temp = bitmap2node_name(step_p->step_node_bitmap); */
-/* 			info("step %d has nodes %s", step_p->step_id, temp); */
-/* 			xfree(temp); */
+#if STEP_DEBUG
+			temp = bitmap2node_name(step_p->step_node_bitmap);
+			info("step %d has nodes %s", step_p->step_id, temp);
+			xfree(temp);
+#endif
 		} 
 		list_iterator_destroy (step_iterator);
 		bit_not(nodes_idle);
 		bit_and(nodes_idle, nodes_avail);
 	}
-/* 	temp = bitmap2node_name(nodes_avail); */
-/* 	info("can pick from %s %d", temp, step_spec->node_count); */
-/* 	xfree(temp); */
-/* 	temp = bitmap2node_name(nodes_idle); */
-/* 	info("can pick from %s", temp); */
-/* 	xfree(temp); */
-	
+#if STEP_DEBUG
+	temp = bitmap2node_name(nodes_avail);
+	info("can pick from %s %d", temp, step_spec->node_count);
+	xfree(temp);
+	temp = bitmap2node_name(nodes_idle);
+	info("can pick from %s", temp);
+	xfree(temp);
+#endif
+
 	/* if user specifies step needs a specific processor count and 
 	 * all nodes have the same processor count, just translate this to
 	 * a node count */
-	if (step_spec->cpu_count && (job_ptr->num_cpu_groups == 1)
-	&&  job_ptr->cpus_per_node[0]) {
+	if (step_spec->cpu_count && (job_ptr->num_cpu_groups == 1) &&
+	    job_ptr->cpus_per_node[0]) {
 		i = (step_spec->cpu_count + (job_ptr->cpus_per_node[0] - 1) ) 
 				/ job_ptr->cpus_per_node[0];
 		step_spec->node_count = (i > step_spec->node_count) ? 
@@ -566,7 +575,9 @@ _pick_step_nodes (struct job_record  *job_ptr,
 
 	if (step_spec->node_count) {
 		nodes_picked_cnt = bit_set_count(nodes_picked);
-/* 		info("got %d %d", step_spec->node_count, nodes_picked_cnt); */
+#if STEP_DEBUG
+		info("got %d %d", step_spec->node_count, nodes_picked_cnt);
+#endif
 		if (nodes_idle 
 		    && (bit_set_count(nodes_idle) >= step_spec->node_count)
 		    && (step_spec->node_count > nodes_picked_cnt)) {
@@ -600,8 +611,8 @@ _pick_step_nodes (struct job_record  *job_ptr,
 	
 	if (step_spec->cpu_count) {
 		cpus_picked_cnt = count_cpus(nodes_picked);
-		/* person is requesting more cpus than we got from the
-		   picked nodes we should return with an error */
+		/* user is requesting more cpus than we got from the
+		 * picked nodes we should return with an error */
 		if(step_spec->cpu_count > cpus_picked_cnt) {
 			debug2("Have %d nodes with %d cpus which is less "
 			       "than what the user is asking for (%d cpus) "
@@ -610,60 +621,6 @@ _pick_step_nodes (struct job_record  *job_ptr,
 			       step_spec->cpu_count);
 			goto cleanup;
 		}
-		/* Not sure why the rest of this 'if' is here 
-		   since this will only
-		   change the number of requested nodes by added nodes
-		   to the picked bitmap which isn't what we want to do
-		   if the user requests a node count.  If the user
-		   doesn't specify one then the entire allocation is
-		   already set so we should return an error in either
-		   case */
-		
-/* 		if (nodes_idle */
-/* 		    &&  (step_spec->cpu_count > cpus_picked_cnt)) { */
-/* 			int first_bit, last_bit; */
-/* 			first_bit = bit_ffs(nodes_idle); */
-/* 			if(first_bit == -1) */
-/* 				goto no_idle_bits; */
-/* 			last_bit  = bit_fls(nodes_idle); */
-/* 			if(last_bit == -1) */
-/* 				goto no_idle_bits; */
-			
-/* 			for (i = first_bit; i <= last_bit; i++) { */
-/* 				if (bit_test (nodes_idle, i) != 1) */
-/* 					continue; */
-/* 				bit_set (nodes_picked, i); */
-/* 				bit_clear (nodes_avail, i); */
-/* 				/\* bit_clear (nodes_idle, i);	unused *\/ */
-/* 				cpus_picked_cnt += */
-/* 					node_record_table_ptr[i].cpus; */
-/* 				if (cpus_picked_cnt >= step_spec->cpu_count) */
-/* 					break; */
-/* 			} */
-/* 			if (step_spec->cpu_count > cpus_picked_cnt) */
-/* 				goto cleanup; */
-/* 		} */
-/* 	no_idle_bits: */
-/* 		if (step_spec->cpu_count > cpus_picked_cnt) { */
-/* 			int first_bit, last_bit; */
-/* 			first_bit = bit_ffs(nodes_avail); */
-/* 			if(first_bit == -1) */
-/* 				goto cleanup; */
-/* 			last_bit  = bit_fls(nodes_avail); */
-/*  			if(last_bit == -1) */
-/* 				goto cleanup; */
-/* 			for (i = first_bit; i <= last_bit; i++) { */
-/* 				if (bit_test (nodes_avail, i) != 1) */
-/* 					continue; */
-/* 				bit_set (nodes_picked, i); */
-/* 				cpus_picked_cnt +=  */
-/* 					node_record_table_ptr[i].cpus; */
-/* 				if (cpus_picked_cnt >= step_spec->cpu_count) */
-/* 					break; */
-/* 			} */
-/* 			if (step_spec->cpu_count > cpus_picked_cnt) */
-/* 				goto cleanup; */
-/* 		} */
 	}
 	
 	FREE_NULL_BITMAP(nodes_avail);
