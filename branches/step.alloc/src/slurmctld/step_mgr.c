@@ -621,60 +621,6 @@ _pick_step_nodes (struct job_record  *job_ptr,
 			       step_spec->cpu_count);
 			goto cleanup;
 		}
-		/* Not sure why the rest of this 'if' is here 
-		   since this will only
-		   change the number of requested nodes by added nodes
-		   to the picked bitmap which isn't what we want to do
-		   if the user requests a node count.  If the user
-		   doesn't specify one then the entire allocation is
-		   already set so we should return an error in either
-		   case */
-		
-/* 		if (nodes_idle */
-/* 		    &&  (step_spec->cpu_count > cpus_picked_cnt)) { */
-/* 			int first_bit, last_bit; */
-/* 			first_bit = bit_ffs(nodes_idle); */
-/* 			if(first_bit == -1) */
-/* 				goto no_idle_bits; */
-/* 			last_bit  = bit_fls(nodes_idle); */
-/* 			if(last_bit == -1) */
-/* 				goto no_idle_bits; */
-			
-/* 			for (i = first_bit; i <= last_bit; i++) { */
-/* 				if (bit_test (nodes_idle, i) != 1) */
-/* 					continue; */
-/* 				bit_set (nodes_picked, i); */
-/* 				bit_clear (nodes_avail, i); */
-/* 				/\* bit_clear (nodes_idle, i);	unused *\/ */
-/* 				cpus_picked_cnt += */
-/* 					node_record_table_ptr[i].cpus; */
-/* 				if (cpus_picked_cnt >= step_spec->cpu_count) */
-/* 					break; */
-/* 			} */
-/* 			if (step_spec->cpu_count > cpus_picked_cnt) */
-/* 				goto cleanup; */
-/* 		} */
-/* 	no_idle_bits: */
-/* 		if (step_spec->cpu_count > cpus_picked_cnt) { */
-/* 			int first_bit, last_bit; */
-/* 			first_bit = bit_ffs(nodes_avail); */
-/* 			if(first_bit == -1) */
-/* 				goto cleanup; */
-/* 			last_bit  = bit_fls(nodes_avail); */
-/*  			if(last_bit == -1) */
-/* 				goto cleanup; */
-/* 			for (i = first_bit; i <= last_bit; i++) { */
-/* 				if (bit_test (nodes_avail, i) != 1) */
-/* 					continue; */
-/* 				bit_set (nodes_picked, i); */
-/* 				cpus_picked_cnt +=  */
-/* 					node_record_table_ptr[i].cpus; */
-/* 				if (cpus_picked_cnt >= step_spec->cpu_count) */
-/* 					break; */
-/* 			} */
-/* 			if (step_spec->cpu_count > cpus_picked_cnt) */
-/* 				goto cleanup; */
-/* 		} */
 	}
 	
 	FREE_NULL_BITMAP(nodes_avail);
