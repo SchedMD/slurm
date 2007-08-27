@@ -578,6 +578,8 @@ _step_req_create(srun_job_t *j)
 	r->name       = xstrdup(opt.job_name);
 	r->relative   = (uint16_t)opt.relative;
 	r->ckpt_interval = (uint16_t)opt.ckpt_interval;
+	r->exclusive  = (uint16_t)opt.exclusive;
+	r->immediate  = (uint16_t)opt.immediate;
 	r->overcommit = opt.overcommit ? 1 : 0;
 	debug("requesting job %d, user %d, nodes %d including (%s)", 
 	      r->job_id, r->user_id, r->node_count, r->node_list);

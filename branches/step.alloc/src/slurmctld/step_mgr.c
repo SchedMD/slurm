@@ -71,7 +71,8 @@
 
 static void _pack_ctld_job_step_info(struct step_record *step, Buf buffer);
 static bitstr_t * _pick_step_nodes (struct job_record  *job_ptr, 
-				    job_step_create_request_msg_t *step_spec );
+				    job_step_create_request_msg_t *step_spec,
+				    bool batch_step );
 static hostlist_t _step_range_to_hostlist(struct step_record *step_ptr,
 				uint32_t range_first, uint32_t range_last);
 static int _step_hostname_to_inx(struct step_record *step_ptr,
@@ -217,6 +218,8 @@ dump_step_desc(job_step_create_request_msg_t *step_spec)
 	debug3("   host=%s port=%u name=%s network=%s checkpoint=%u", 
 		step_spec->host, step_spec->port, step_spec->name,
 		step_spec->network, step_spec->ckpt_interval);
+	debug3("   exclusive=%u immediate=%u",
+		step_spec->exclusive, step_spec->immediate);
 }
 
 
@@ -407,13 +410,15 @@ int job_step_complete(uint32_t job_id, uint32_t step_id, uid_t uid,
  *	we satisfy the super-set of constraints.
  * IN job_ptr - pointer to job to have new step started
  * IN step_spec - job step specification
+ * IN batch_step - if set then step is a batch script
  * global: node_record_table_ptr - pointer to global node table
  * NOTE: returns all of a job's nodes if step_spec->node_count == INFINITE
  * NOTE: returned bitmap must be freed by the caller using bit_free()
  */
 static bitstr_t *
 _pick_step_nodes (struct job_record  *job_ptr, 
-		  job_step_create_request_msg_t *step_spec)
+		  job_step_create_request_msg_t *step_spec,
+		  bool batch_step)
 {
 
 	bitstr_t *nodes_avail = NULL, *nodes_idle = NULL;
@@ -750,7 +755,7 @@ step_create(job_step_create_request_msg_t *step_specs,
 	job_ptr->kill_on_step_done = kill_job_when_step_done;
 
 	job_ptr->time_last_active = now;
-	nodeset = _pick_step_nodes(job_ptr, step_specs);
+	nodeset = _pick_step_nodes(job_ptr, step_specs, batch_step);
 	if (nodeset == NULL)
 		return ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE ;
 	node_count = bit_set_count(nodeset);
