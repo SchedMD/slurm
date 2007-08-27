@@ -55,8 +55,10 @@ extern char *default_plugstack;
 /* NOTE: DEFAULT_INACTIVE_LIMIT must be 0 for Blue Gene/L systems */
 #define DEFAULT_INACTIVE_LIMIT      0
 #define DEFAULT_JOB_ACCT_GATHER_TYPE  "jobacct-gather/none"
+#define JOB_ACCT_GATHER_TYPE_NONE "jobacct-gather/none"
 #define DEFAULT_JOB_ACCT_GATHER_FREQ  30
 #define DEFAULT_JOB_ACCT_STORAGE_TYPE "jobacct-storage/flatfile"
+#define JOB_ACCT_STORAGE_TYPE_NONE "jobacct-storage/none"
 #define DEFAULT_JOB_ACCT_STORAGE_LOC  "/var/log/slurm_accounting.log"
 #define DEFAULT_JOB_ACCT_STORAGE_HOST "localhost"
 #define DEFAULT_JOB_ACCT_STORAGE_USER "root"

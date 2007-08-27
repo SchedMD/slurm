@@ -62,6 +62,94 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
+extern jobacct_job_rec_t *jobacct_init_job_rec(jobacct_header_t header)
+{
+	jobacct_job_rec_t *job = xmalloc(sizeof(jobacct_job_rec_t));
+	memcpy(&job->header, &header, sizeof(jobacct_header_t));
+	memset(&job->rusage, 0, sizeof(struct rusage));
+	memset(&job->sacct, 0, sizeof(sacct_t));
+	job->sacct.min_cpu = (float)NO_VAL;
+	job->job_start_seen = 0;
+	job->job_step_seen = 0;
+	job->job_terminated_seen = 0;
+	job->jobnum_superseded = 0;
+	job->jobname = NULL;
+	job->status = JOB_PENDING;
+	job->nodes = NULL;
+	job->jobname = NULL;
+	job->exitcode = 0;
+	job->priority = 0;
+	job->ntasks = 0;
+	job->ncpus = 0;
+	job->elapsed = 0;
+	job->tot_cpu_sec = 0;
+	job->tot_cpu_usec = 0;
+	job->steps = list_create(destroy_jobacct_step_rec);
+	job->nodes = NULL;
+	job->track_steps = 0;
+	job->account = NULL;
+	job->requid = -1;
+
+      	return job;
+}
+
+extern jobacct_step_rec_t *jobacct_init_step_rec(jobacct_header_t header)
+{
+	jobacct_step_rec_t *step = xmalloc(sizeof(jobacct_job_rec_t));
+	memcpy(&step->header, &header, sizeof(jobacct_header_t));
+	memset(&step->rusage, 0, sizeof(struct rusage));
+	memset(&step->sacct, 0, sizeof(sacct_t));
+	step->stepnum = (uint32_t)NO_VAL;
+	step->nodes = NULL;
+	step->stepname = NULL;
+	step->status = NO_VAL;
+	step->exitcode = NO_VAL;
+	step->ntasks = (uint32_t)NO_VAL;
+	step->ncpus = (uint32_t)NO_VAL;
+	step->elapsed = (uint32_t)NO_VAL;
+	step->tot_cpu_sec = (uint32_t)NO_VAL;
+	step->tot_cpu_usec = (uint32_t)NO_VAL;
+	step->account = NULL;
+	step->requid = -1;
+
+	return step;
+}
+
+extern void free_jobacct_header(void *object)
+{
+	jobacct_header_t *header = (jobacct_header_t *)object;
+	if(header) {
+		xfree(header->partition);
+		xfree(header->blockid);
+	}
+}
+
+extern void destroy_jobacct_job_rec(void *object)
+{
+	jobacct_job_rec_t *job = (jobacct_job_rec_t *)object;
+	if (job) {
+		if(job->steps)
+			list_destroy(job->steps);
+		free_jobacct_header(&job->header);
+		xfree(job->jobname);
+		xfree(job->account);
+		xfree(job->nodes);
+		xfree(job);
+	}
+}
+
+extern void destroy_jobacct_step_rec(void *object)
+{
+	jobacct_step_rec_t *step = (jobacct_step_rec_t *)object;
+	if (step) {
+		free_jobacct_header(&step->header);
+		xfree(step->stepname);
+		xfree(step->nodes);
+		xfree(step->account);
+		xfree(step);
+	}
+}
+
 extern int common_init_struct(struct jobacctinfo *jobacct, 
 			      jobacct_id_t *jobacct_id)
 {

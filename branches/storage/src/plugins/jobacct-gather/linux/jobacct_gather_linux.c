@@ -39,7 +39,8 @@
 \*****************************************************************************/
 
 #include <fcntl.h>
-#include "src/plugins/jobacct-gather/common/jobacct_common.h"
+#include "src/common/jobacct_common.h"
+#include "src/slurmd/common/proctrack.h"
 
 /*
  * These variables are required by the generic plugin interface.  If they
@@ -428,16 +429,23 @@ static void _destroy_prec(void *object)
  */
 extern int init ( void )
 {
-	char *proctrack = slurm_get_proctrack_type();
-	if(!strcasecmp(proctrack, "proctrack/pgid")) {
+	char *temp = slurm_get_proctrack_type();
+	if(!strcasecmp(temp, "proctrack/pgid")) {
 		info("WARNING: We will use a much slower algorithm with "
 		     "proctrack/pgid, use Proctracktype=proctrack/linuxproc "
 		     "or Proctracktype=proctrack/rms with %s",
 		     plugin_name);
 		pgid_plugin = true;
 	}
-	xfree(proctrack);
-
+	xfree(temp);
+	temp = slurm_get_jobacct_storage_type();
+	if(!strcasecmp(temp, JOB_ACCT_STORAGE_TYPE_NONE)) {
+		error("WARNING: Even though we are collecting accounting "
+		      "information you have asked for it not to be stored "
+		      "(%s) if this is not what you have in mind you will "
+		      "need to change it.", JOB_ACCT_STORAGE_TYPE_NONE);
+	}
+	xfree(temp);
 	verbose("%s loaded", plugin_name);
 	return SLURM_SUCCESS;
 }

@@ -1518,9 +1518,19 @@ validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 			xstrdup(DEFAULT_JOB_ACCT_STORAGE_LOC);
 	
 	if (!s_p_get_string(&conf->job_acct_storage_type, "JobAcctStorageType",
-			    hashtbl))
-		conf->job_acct_storage_type =
-			xstrdup(DEFAULT_JOB_ACCT_STORAGE_TYPE);
+			    hashtbl)) {
+		/* if we aren't gathering then set the storage type to
+		 * none else use flatfile if they didn't say anything
+		 */
+		if(!strcmp(conf->job_acct_gather_type,
+			   DEFAULT_JOB_ACCT_GATHER_TYPE)) {
+			conf->job_acct_storage_type =
+				xstrdup(JOB_ACCT_STORAGE_TYPE_NONE);
+		} else {
+			conf->job_acct_storage_type =
+				xstrdup(DEFAULT_JOB_ACCT_STORAGE_TYPE);
+		}
+	}
 	if (!s_p_get_string(&conf->job_acct_storage_host, "JobAcctStorageHost",
 			    hashtbl))
 		conf->job_acct_storage_host =

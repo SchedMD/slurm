@@ -170,23 +170,17 @@ char *slurm_get_jobacct_gather_type(void);
  */
 uint16_t slurm_get_jobacct_gather_freq(void);
 
-/* slurm_get_jobacct_type
+/* slurm_get_jobacct_storage_type
  * returns the job accounting type from slurmctld_conf object
  * RET char *    - job accounting type,  MUST be xfreed by caller
  */
-char *slurm_get_jobacct_type(void);
+char *slurm_get_jobacct_storage_type(void);
 
 /* slurm_get_jobacct_storage_loc
  * returns the job accounting loc from slurmctld_conf object
  * RET char *    - job accounting location,  MUST be xfreed by caller
  */
 char *slurm_get_jobacct_storage_loc(void);
-
-/* slurm_get_jobacct_storage_type
- * returns the storage type from slurmctld_conf object
- * RET char *    - storage type,  MUST be xfreed by caller
- */
-char *slurm_get_jobacct_storage_type(void);
 
 /* slurm_get_jobacct_storage_user
  * returns the storage user from slurmctld_conf object

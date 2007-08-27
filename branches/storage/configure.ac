@@ -275,7 +275,7 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/jobacct-storage/flatfile/Makefile
 		 src/plugins/jobacct-storage/mysql/Makefile
 		 src/plugins/jobacct-storage/pgsql/Makefile
-		 src/plugins/jobacct-storage/script/Makefile
+		 src/plugins/jobacct-storage/none/Makefile
 		 src/plugins/jobcomp/Makefile
 		 src/plugins/jobcomp/filetxt/Makefile
 		 src/plugins/jobcomp/none/Makefile
