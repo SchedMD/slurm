@@ -41,8 +41,6 @@
 \*****************************************************************************/
 
 #include <stdlib.h>
-#include "src/common/slurm_jobacct.h"
-#include "src/common/xstring.h"
 #include "pgsql_jobacct_process.h"
 
 #ifdef HAVE_PGSQL
@@ -288,7 +286,7 @@ extern void pgsql_jobacct_process_get_jobs(List job_list,
 		header.blockid = xstrdup(PQgetvalue(result, i,
 						    JOB_REQ_BLOCKID));
 
-		job = jobacct_init_job_rec(header);
+		job = create_jobacct_job_rec(header);
 		job->show_full = 1;
 		job->status = atoi(PQgetvalue(result, i, JOB_REQ_STATE));
 		job->jobname = xstrdup(PQgetvalue(result, i, JOB_REQ_NAME));
@@ -374,7 +372,7 @@ extern void pgsql_jobacct_process_get_jobs(List job_list,
 			if(job->header.timestamp < header.timestamp) {
 				job->header.timestamp = header.timestamp;
 			}
-			step = jobacct_init_step_rec(header);
+			step = create_jobacct_step_rec(header);
 			list_append(job->steps, step);
 			step->stepnum = atoi(
 				PQgetvalue(step_result, j, STEP_REQ_STEPID));

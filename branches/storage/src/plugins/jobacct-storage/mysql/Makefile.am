@@ -10,7 +10,6 @@ pkglib_LTLIBRARIES = jobacct_storage_mysql.la
 
 # Mysql storage plugin.
 jobacct_storage_mysql_la_SOURCES = jobacct_storage_mysql.c \
-		mysql_jobacct.c mysql_jobacct.h \
 		mysql_jobacct_process.c mysql_jobacct_process.h 
 jobacct_storage_mysql_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
 jobacct_storage_mysql_la_LIBADD  = $(top_builddir)/src/common/libcommon.la

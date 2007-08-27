@@ -190,6 +190,17 @@ extern int init ( void )
 {
 	static int first = 1;
 	if(first) {
+		char *temp = slurm_get_jobacct_gather_type();
+		char *temp2 = slurm_get_jobacct_storage_type();
+		if(!strcasecmp(temp, JOB_ACCT_GATHER_TYPE_NONE)) {
+			fatal("WARNING: You are trying to store job "
+			      "accounting info (%s) without collecting it. "
+			      "This will not work.  If you want to collect "
+			      "accounting data set the jobacct-gather option "
+			      "to something other than '%s'", temp2, temp);
+		}
+		xfree(temp);
+		xfree(temp2);
 		/* since this can be loaded from many different places
 		   only tell us once. */
 		verbose("%s loaded", plugin_name);
@@ -217,7 +228,7 @@ extern int jobacct_storage_p_init(char *location)
 
 	debug2("jobacct_init() called");
 	if(!location) {
-		log_file = xstrdup(DEFAULT_JOB_ACCT_LOC);
+		log_file = slurm_get_jobacct_storage_loc();
 	} else {
 		log_file = xstrdup(location);
 	}

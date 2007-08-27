@@ -43,11 +43,12 @@
 #ifndef _HAVE_PGSQL_JOBACCT_PROCESS_H
 #define _HAVE_PGSQL_JOBACCT_PROCESS_H
 
-#include "pgsql_common.h"
-#include "pgsql_jobacct.h"
-#include "src/common/slurm_jobacct.h"
+#include "src/common/jobacct_common.h"
+#include "src/slurmctld/slurmctld.h"
+#include "src/common/pgsql_common.h"
 
 #ifdef HAVE_PGSQL
+
 extern PGconn *jobacct_pgsql_db;
 extern int jobacct_db_init;
 

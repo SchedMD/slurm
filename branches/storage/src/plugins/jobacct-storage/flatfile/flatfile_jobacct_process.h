@@ -43,7 +43,7 @@
 #ifndef _HAVE_FLATFILE_JOBACCT_PROCESS_H
 #define _HAVE_FLATFILE_JOBACCT_PROCESS_H
 
-#include "src/common/slurm_jobacct_storage.h"
+#include "src/common/jobacct_common.h"
 
 extern void flatfile_jobacct_process_get_jobs(List job_list, 
 					      List selected_steps,

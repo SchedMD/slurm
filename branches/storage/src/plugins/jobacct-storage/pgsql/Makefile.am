@@ -11,7 +11,6 @@ pkglib_LTLIBRARIES = jobacct_storage_pgsql.la
 
 # Pgsql storage plugin.
 jobacct_storage_pgsql_la_SOURCES = jobacct_storage_pgsql.c \
-		pgsql_jobacct.c pgsql_jobacct.h \
 		pgsql_jobacct_process.c pgsql_jobacct_process.h 
 jobacct_storage_pgsql_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
 jobacct_storage_pgsql_la_LIBADD  = $(top_builddir)/src/common/libcommon.la

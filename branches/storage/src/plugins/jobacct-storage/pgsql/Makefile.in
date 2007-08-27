@@ -77,7 +77,7 @@ LTLIBRARIES = $(pkglib_LTLIBRARIES)
 jobacct_storage_pgsql_la_DEPENDENCIES =  \
 	$(top_builddir)/src/common/libcommon.la
 am_jobacct_storage_pgsql_la_OBJECTS = jobacct_storage_pgsql.lo \
-	pgsql_jobacct.lo pgsql_jobacct_process.lo
+	pgsql_jobacct_process.lo
 jobacct_storage_pgsql_la_OBJECTS =  \
 	$(am_jobacct_storage_pgsql_la_OBJECTS)
 jobacct_storage_pgsql_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
@@ -266,7 +266,6 @@ pkglib_LTLIBRARIES = jobacct_storage_pgsql.la
 
 # Pgsql storage plugin.
 jobacct_storage_pgsql_la_SOURCES = jobacct_storage_pgsql.c \
-		pgsql_jobacct.c pgsql_jobacct.h \
 		pgsql_jobacct_process.c pgsql_jobacct_process.h 
 
 jobacct_storage_pgsql_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
@@ -341,7 +340,6 @@ distclean-compile:
 	-rm -f *.tab.c
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/jobacct_storage_pgsql.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pgsql_jobacct.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pgsql_jobacct_process.Plo@am__quote@
 
 .c.o:

@@ -1,6 +1,6 @@
 
 /*****************************************************************************\
- *  jobacct_none.c - NO-OP slurm job completion logging plugin.
+ *  jobacct_storage_none.c - NO-OP slurm job completion logging plugin.
  *****************************************************************************
  *
  *  Copyright (C) 2005 Hewlett-Packard Development Company, L.P.
@@ -86,8 +86,8 @@
  * minimum versions for their plugins as the job accounting API 
  * matures.
  */
-const char plugin_name[] = "Job accounting NOT_INVOKED plugin";
-const char plugin_type[] = "jobacct/none";
+const char plugin_name[] = "Job accounting storage NOT_INVOKED plugin";
+const char plugin_type[] = "jobacct-storage/none";
 const uint32_t plugin_version = 100;
 
 /*
@@ -96,7 +96,16 @@ const uint32_t plugin_version = 100;
  */
 extern int init ( void )
 {
-	verbose("%s loaded", plugin_name);
+	static int first = 1;
+	if(first) {
+		/* since this can be loaded from many different places
+		   only tell us once. */
+		verbose("%s loaded", plugin_name);
+		first = 0;
+	} else {
+		debug4("%s loaded", plugin_name);
+	}
+
 	return SLURM_SUCCESS;
 }
 
@@ -104,138 +113,127 @@ extern int fini ( void )
 {
 	return SLURM_SUCCESS;
 }
+/* 
+ * Initialize the storage make sure tables are created and in working
+ * order
+ */
+extern int storage_p_jobacct_init(char *location)
+{
+	return SLURM_SUCCESS;
+}
 
 /*
- * The following routines are called by slurmctld
+ * finish up storage connection
  */
+extern int storage_p_jobacct_fini()
+{
+	return SLURM_SUCCESS;
+}
 
-/*
- * The following routines are called by slurmd
+/* 
+ * load into the storage the start of a job
  */
-int jobacct_p_init_struct(struct jobacctinfo *jobacct, 
-			  jobacct_id_t *jobacct_id)
+extern int storage_p_jobacct_job_start(struct job_record *job_ptr)
 {
 	return SLURM_SUCCESS;
 }
 
-struct jobacctinfo *jobacct_p_alloc(jobacct_id_t *jobacct_id)
+/* 
+ * load into the storage the end of a job
+ */
+extern int storage_p_jobacct_job_complete(struct job_record *job_ptr)
+{
+	return SLURM_SUCCESS;
+}
+
+/* 
+ * load into the storage the start of a job step
+ */
+extern int storage_p_jobacct_step_start(struct step_record *step_ptr)
+{
+	return SLURM_SUCCESS;
+}
+
+/* 
+ * load into the storage the end of a job step
+ */
+extern int storage_p_jobacct_step_complete(struct step_record *step_ptr)
+{
+	return SLURM_SUCCESS;
+}
+
+/* 
+ * load into the storage a suspention of a job
+ */
+extern int storage_p_jobacct_suspend(struct job_record *job_ptr)
+{
+	return SLURM_SUCCESS;
+}
+
+/* 
+ * get info from the storage 
+ * returns List of job_rec_t *
+ * note List needs to be freed when called
+ */
+extern void storage_p_jobacct_get_jobs(List job_list,
+					List selected_steps,
+					List selected_parts,
+					void *params)
+{
+	return;
+}
+
+/* 
+ * expire old info from the storage 
+ */
+extern void storage_p_jobacct_archive(List selected_parts,
+				       void *params)
+{
+	return;
+}
+
+extern int storage_p_jobcomp_init(char *location)
+{
+	return SLURM_SUCCESS;
+}
+
+extern int storage_p_jobcomp_fini()
+{
+	return SLURM_SUCCESS;
+}
+
+extern int storage_p_jobcomp_log_record(struct job_record *job_ptr)
+{
+	return SLURM_SUCCESS;
+}
+
+extern int storage_p_jobcomp_get_errno()
+{
+	return SLURM_SUCCESS;
+}
+
+extern char *storage_p_jobcomp_strerror(int errnum)
 {
 	return NULL;
 }
 
-void jobacct_p_free(struct jobacctinfo *jobacct)
+/* 
+ * get info from the storage 
+ * in/out job_list List of job_rec_t *
+ * note List needs to be freed when called
+ */
+extern void storage_p_jobcomp_get_jobs(List job_list, 
+					List selected_steps,
+					List selected_parts,
+					void *params)
 {
 	return;
 }
 
-int jobacct_p_setinfo(struct jobacctinfo *jobacct, 
-		      enum jobacct_data_type type, void *data)
-{
-	return SLURM_SUCCESS;
-	
-}
-
-int jobacct_p_getinfo(struct jobacctinfo *jobacct, 
-		      enum jobacct_data_type type, void *data)
-{
-	return SLURM_SUCCESS;
-}
-
-void jobacct_p_aggregate(struct jobacctinfo *dest, struct jobacctinfo *from)
-{
-	return;
-}
-
-void jobacct_p_2_sacct(sacct_t *sacct, struct jobacctinfo *jobacct)
-{
-	return;
-}
-
-void jobacct_p_pack(struct jobacctinfo *jobacct, Buf buffer)
-{
-	return;
-}
-
-int jobacct_p_unpack(struct jobacctinfo **jobacct, Buf buffer)
-{
-	return SLURM_SUCCESS;
-}
-
-
-int jobacct_p_init_slurmctld(char *job_acct_log)
-{
-	return SLURM_SUCCESS;
-}
-
-int jobacct_p_fini_slurmctld()
-{
-	return SLURM_SUCCESS;
-}
-
-int jobacct_p_job_start_slurmctld(struct job_record *job_ptr)
-{
-	return SLURM_SUCCESS;
-}
-
-int jobacct_p_job_complete_slurmctld(struct job_record *job_ptr) 
-{
-	return  SLURM_SUCCESS;
-}
-
-int jobacct_p_step_start_slurmctld(struct step_record *step)
-{
-	return SLURM_SUCCESS;	
-}
-
-int jobacct_p_step_complete_slurmctld(struct step_record *step)
-{
-	return SLURM_SUCCESS;	
-}
-
-int jobacct_p_suspend_slurmctld(struct job_record *job_ptr)
-{
-	return SLURM_SUCCESS;
-}
-
-int jobacct_p_startpoll(int frequency)
-{
-	info("jobacct NONE plugin loaded");
-	debug3("slurmd_jobacct_init() called");
-	
-	return SLURM_SUCCESS;
-}
-
-int jobacct_p_endpoll()
-{
-	return SLURM_SUCCESS;
-}
-
-int jobacct_p_set_proctrack_container_id(uint32_t id)
-{
-	return SLURM_SUCCESS;
-}
-
-int jobacct_p_add_task(pid_t pid, jobacct_id_t *jobacct_id)
-{
-	return SLURM_SUCCESS;
-}
-
-struct jobacctinfo *jobacct_p_stat_task(pid_t pid)
-{
-	return NULL;
-}
-
-struct jobacctinfo *jobacct_p_remove_task(pid_t pid)
-{
-	return NULL;
-}
-
-void jobacct_p_suspend_poll()
-{
-	return;
-}
-
-void jobacct_p_resume_poll()
+/* 
+ * expire old info from the storage 
+ */
+extern void storage_p_jobcomp_archive(List selected_parts, void *params)
 {
 	return;
 }

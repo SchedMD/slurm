@@ -43,11 +43,12 @@
 #ifndef _HAVE_MYSQL_JOBACCT_PROCESS_H
 #define _HAVE_MYSQL_JOBACCT_PROCESS_H
 
-#include "mysql_common.h"
-#include "mysql_jobacct.h"
-#include "src/common/slurm_jobacct.h"
+#include "src/common/jobacct_common.h"
+#include "src/slurmctld/slurmctld.h"
+#include "src/common/mysql_common.h"
 
 #ifdef HAVE_MYSQL
+
 extern MYSQL *jobacct_mysql_db;
 extern int jobacct_db_init;
 

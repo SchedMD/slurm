@@ -45,7 +45,7 @@
 
 #include "src/common/xstring.h"
 #include "src/common/xmalloc.h"
-#include "src/common/slurm_jobacct.h"
+#include "src/common/jobacct_common.h"
 /* Map field names to positions */
 
 /* slurmd uses "(uint32_t) -2" to track data for batch allocations
@@ -53,7 +53,6 @@
 #define BATCH_JOB_TIMESTAMP 0
 #define EXPIRE_READ_LENGTH 10
 #define MAX_RECORD_FIELDS 100
-#define BUFFER_SIZE 1024
 
 typedef struct expired_rec {  /* table of expired jobs */
 	uint32_t job;
@@ -359,7 +358,7 @@ static jobacct_job_rec_t *_find_job_record(List job_list, jobacct_header_t heade
 		if (job->header.jobnum == header.jobnum) {
 			if(job->header.job_submit == 0 && type == JOB_START) {
 				list_remove(itr);
-				jobacct_destroy_job(job);
+				destroy_jobacct_job_rec(job);
 				job = NULL;
 				break;
 			}
@@ -396,7 +395,7 @@ static int _remove_job_record(List job_list, uint32_t jobnum)
 	while((job = (jobacct_job_rec_t *)list_next(itr)) != NULL) {
 		if (job->header.jobnum == jobnum) {
 			list_remove(itr);
-			jobacct_destroy_job(job);
+			destroy_jobacct_job_rec(job);
 			rc = SLURM_SUCCESS;
 		}
 	}
@@ -444,7 +443,7 @@ static int _parse_line(char *f[], void **data, int len)
 		
 	switch(i) {
 	case JOB_START:
-		*job = jobacct_init_job_rec(header);
+		*job = create_jobacct_job_rec(header);
 		(*job)->jobname = xstrdup(f[F_JOBNAME]);
 		(*job)->track_steps = atoi(f[F_TRACK_STEPS]);
 		(*job)->priority = atoi(f[F_PRIORITY]);
@@ -468,7 +467,7 @@ static int _parse_line(char *f[], void **data, int len)
 		}
 		break;
 	case JOB_STEP:
-		*step = jobacct_init_step_rec(header);
+		*step = create_jobacct_step_rec(header);
 		(*step)->stepnum = atoi(f[F_JOBSTEP]);
 		(*step)->status = atoi(f[F_STATUS]);
 		(*step)->exitcode = atoi(f[F_EXITCODE]);
@@ -555,7 +554,7 @@ static int _parse_line(char *f[], void **data, int len)
 		break;
 	case JOB_SUSPEND:
 	case JOB_TERMINATED:
-		*job = jobacct_init_job_rec(header);
+		*job = create_jobacct_job_rec(header);
 		(*job)->elapsed = atoi(f[F_TOT_ELAPSED]);
 		(*job)->status = atoi(f[F_STATUS]);		
 		if(len > F_JOB_REQUID) 
@@ -586,7 +585,7 @@ static void _process_start(List job_list, char *f[], int lc,
 				"Conflicting JOB_START for job %u at"
 				" line %d -- ignoring it\n",
 				job->header.jobnum, lc);
-			jobacct_destroy_job(temp);
+			destroy_jobacct_job_rec(temp);
 			return;
 		}
 	}
@@ -612,11 +611,11 @@ static void _process_step(List job_list, char *f[], int lc,
 	job = _find_job_record(job_list, temp->header, JOB_STEP);
 	
 	if (temp->stepnum == -2) {
-		jobacct_destroy_step(temp);
+		destroy_jobacct_step_rec(temp);
 		return;
 	}
 	if (!job) {	/* fake it for now */
-		job = jobacct_init_job_rec(temp->header);
+		job = create_jobacct_job_rec(temp->header);
 		job->jobname = xstrdup("(unknown)");
 		if (params->opt_verbose > 1) 
 			fprintf(stderr, 
@@ -629,7 +628,7 @@ static void _process_step(List job_list, char *f[], int lc,
 	if ((step = _find_step_record(job, temp->stepnum))) {
 		
 		if (temp->status == JOB_RUNNING) {
-			jobacct_destroy_step(temp);
+			destroy_jobacct_step_rec(temp);
 			return;/* if "R" record preceded by F or CD; unusual */
 		}
 		if (step->status != JOB_RUNNING) { /* if not JOB_RUNNING */
@@ -639,7 +638,7 @@ static void _process_step(List job_list, char *f[], int lc,
 				"-- ignoring it\n",
 				step->header.jobnum, 
 				step->stepnum, lc);
-			jobacct_destroy_step(temp);
+			destroy_jobacct_step_rec(temp);
 			return;
 		}
 		step->status = temp->status;
@@ -656,7 +655,7 @@ static void _process_step(List job_list, char *f[], int lc,
 		xfree(step->stepname);
 		step->stepname = xstrdup(temp->stepname);
 		step->end = temp->header.timestamp;
-		jobacct_destroy_step(temp);
+		destroy_jobacct_step_rec(temp);
 		goto got_step;
 	}
 	step = temp;
@@ -693,7 +692,7 @@ static void _process_suspend(List job_list, char *f[], int lc,
 	_parse_line(f, (void **)&temp, len);
 	job = _find_job_record(job_list, temp->header, JOB_SUSPEND);
 	if (!job)  {	/* fake it for now */
-		job = jobacct_init_job_rec(temp->header);
+		job = create_jobacct_job_rec(temp->header);
 		job->jobname = xstrdup("(unknown)");
 	} 
 			
@@ -703,7 +702,7 @@ static void _process_suspend(List job_list, char *f[], int lc,
 
 	//job->header.timestamp = temp->header.timestamp;
 	job->status = temp->status;
-	jobacct_destroy_job(temp);
+	destroy_jobacct_job_rec(temp);
 }
 	
 static void _process_terminated(List job_list, char *f[], int lc,
@@ -716,7 +715,7 @@ static void _process_terminated(List job_list, char *f[], int lc,
 	_parse_line(f, (void **)&temp, len);
 	job = _find_job_record(job_list, temp->header, JOB_TERMINATED);
 	if (!job) {	/* fake it for now */
-		job = jobacct_init_job_rec(temp->header);
+		job = create_jobacct_job_rec(temp->header);
 		job->jobname = xstrdup("(unknown)");
 		if (params->opt_verbose > 1) 
 			fprintf(stderr, "Note: JOB_TERMINATED record for job "
@@ -757,7 +756,7 @@ static void _process_terminated(List job_list, char *f[], int lc,
 	job->show_full = show_full;
 	
 finished:
-	jobacct_destroy_job(temp);
+	destroy_jobacct_job_rec(temp);
 }
 
 extern void flatfile_jobacct_process_get_jobs(List job_list, 
