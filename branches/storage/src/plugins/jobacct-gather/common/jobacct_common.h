@@ -110,7 +110,6 @@ extern void common_2_sacct(sacct_t *sacct, struct jobacctinfo *jobacct);
 extern void common_pack(struct jobacctinfo *jobacct, Buf buffer);
 extern int common_unpack(struct jobacctinfo **jobacct, Buf buffer);
 
-/* in common_slurmstepd.c */
 extern int common_endpoll();
 extern int common_set_proctrack_container_id(uint32_t id);
 extern int common_add_task(pid_t pid, jobacct_id_t *jobacct_id);

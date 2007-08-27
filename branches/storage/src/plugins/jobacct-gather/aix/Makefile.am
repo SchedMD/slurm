@@ -10,8 +10,6 @@ pkglib_LTLIBRARIES = jobacct_gather_aix.la
 
 # Null job completion logging plugin.
 jobacct_gather_aix_la_SOURCES = jobacct_gather_aix.c \
-	$(top_builddir)/src/plugins/jobacct-gather/common/jobacct_common.c \
-	$(top_builddir)/src/plugins/jobacct-gather/common/common_slurmstepd.c \
 	$(top_builddir)/src/slurmd/common/proctrack.c \
 	$(top_builddir)/src/slurmd/common/proctrack.h 
 
