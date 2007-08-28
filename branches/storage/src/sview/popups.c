@@ -245,20 +245,6 @@ static void _layout_ctl_conf(GtkTreeStore *treestore,
 				   "ControlMachine", 
 				   slurm_ctl_conf_ptr->control_machine);
 	add_display_treestore_line(update, treestore, &iter, 
-				   "StorageType", 
-				   slurm_ctl_conf_ptr->storage_type);
-	add_display_treestore_line(update, treestore, &iter, 
-				   "StorageHost", 
-				   slurm_ctl_conf_ptr->storage_host);
-	snprintf(temp_str, sizeof(temp_str), "%u", 
-		 slurm_ctl_conf_ptr->storage_port);
-	add_display_treestore_line(update, treestore, &iter, 
-				   "StoragePort", 
-				   temp_str);
-	add_display_treestore_line(update, treestore, &iter, 
-				   "StorageUser", 
-				   slurm_ctl_conf_ptr->storage_user);
-	add_display_treestore_line(update, treestore, &iter, 
 				   "Epilog", 
 				   slurm_ctl_conf_ptr->epilog);
 	snprintf(temp_str, sizeof(temp_str), "%u", 
@@ -281,22 +267,50 @@ static void _layout_ctl_conf(GtkTreeStore *treestore,
 				   "InactiveLimit", 
 				   temp_str);
 	add_display_treestore_line(update, treestore, &iter, 
-				   "JobAcctLoc", 
-				   slurm_ctl_conf_ptr->job_acct_loc);
-	snprintf(temp_str, sizeof(temp_str), "%u", 
-		 slurm_ctl_conf_ptr->job_acct_freq);
-	add_display_treestore_line(update, treestore, &iter, 
-				   "JobAcctFrequency",
-				   temp_str);
-	add_display_treestore_line(update, treestore, &iter, 
-				   "JobAcctType", 
-				   slurm_ctl_conf_ptr->job_acct_type);
-	add_display_treestore_line(update, treestore, &iter, 
 				   "JobCompLoc", 
 				   slurm_ctl_conf_ptr->job_comp_loc);
 	add_display_treestore_line(update, treestore, &iter, 
 				   "JobCompType", 
 				   slurm_ctl_conf_ptr->job_comp_type);
+	add_display_treestore_line(update, treestore, &iter, 
+				   "JobCompType", 
+				   slurm_ctl_conf_ptr->job_comp_type);
+	add_display_treestore_line(update, treestore, &iter, 
+				   "JobCompHost", 
+				   slurm_ctl_conf_ptr->job_comp_host);
+	snprintf(temp_str, sizeof(temp_str), "%u", 
+		 slurm_ctl_conf_ptr->job_comp_port);
+	add_display_treestore_line(update, treestore, &iter, 
+				   "JobCompPort", 
+				   temp_str);
+	add_display_treestore_line(update, treestore, &iter, 
+				   "JobCompUser", 
+				   slurm_ctl_conf_ptr->job_comp_user);
+	add_display_treestore_line(update, treestore, &iter, 
+				   "JobAcctGatherType", 
+				   slurm_ctl_conf_ptr->job_acct_gather_type);
+	snprintf(temp_str, sizeof(temp_str), "%u", 
+		 slurm_ctl_conf_ptr->job_acct_gather_freq);
+	add_display_treestore_line(update, treestore, &iter, 
+				   "JobAcctGatherFrequency",
+				   temp_str);
+	add_display_treestore_line(update, treestore, &iter, 
+				   "JobAcctStorageType", 
+				   slurm_ctl_conf_ptr->job_acct_storage_type);
+	add_display_treestore_line(update, treestore, &iter, 
+				   "JobAcctStorageLoc", 
+				   slurm_ctl_conf_ptr->job_acct_storage_loc);
+	add_display_treestore_line(update, treestore, &iter, 
+				   "JobAcctStorageHost", 
+				   slurm_ctl_conf_ptr->job_acct_storage_host);
+	snprintf(temp_str, sizeof(temp_str), "%u", 
+		 slurm_ctl_conf_ptr->job_acct_storage_port);
+	add_display_treestore_line(update, treestore, &iter, 
+				   "JobAcctStoragePort", 
+				   temp_str);
+	add_display_treestore_line(update, treestore, &iter, 
+				   "JobAcctStorageUser", 
+				   slurm_ctl_conf_ptr->job_acct_storage_user);
 	add_display_treestore_line(update, treestore, &iter, 
 				   "JobCredentialPrivateKey", 
 				   slurm_ctl_conf_ptr->job_credential_private_key);

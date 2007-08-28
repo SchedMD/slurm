@@ -272,7 +272,7 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/jobacct-gather/aix/Makefile
 		 src/plugins/jobacct-gather/none/Makefile
 		 src/plugins/jobacct-storage/Makefile
-		 src/plugins/jobacct-storage/flatfile/Makefile
+		 src/plugins/jobacct-storage/filetxt/Makefile
 		 src/plugins/jobacct-storage/mysql/Makefile
 		 src/plugins/jobacct-storage/pgsql/Makefile
 		 src/plugins/jobacct-storage/none/Makefile
