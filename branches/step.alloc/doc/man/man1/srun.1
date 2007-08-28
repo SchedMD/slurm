@@ -239,10 +239,14 @@ parameter in slurm.conf.
 .TP
 \fB\-\-exclusive\fR
 When used to initiate a job step within an existing resource allocation, 
-proceed only when resource can be dedicated to the job step without 
+proceed only when processors can be dedicated to the job step without 
 sharing with other job steps. This can be used to initiate many 
 job steps simultaneously withn an existing job allocation and have 
-Slurm perform resource management for the job. See \fBEXAMPLE\fR below.
+SLURM perform resource management for the job. 
+In this mode, use with the \fB\-\-ntasks\fR option and NOT the 
+\fB\-\-nodes\fR, \fB\-\-relative\fR, \fB\-\-relative\fR=\fIarbitrary\fR
+options (which provide user control over task layout).
+See \fBEXAMPLE\fR below.
 When used to initiate a job, dedicate whole nodes to the job rather 
 than individual processors even if consumable resources are enabled 
 (e.g. \fBSelectType=select/cons_res\fR).
@@ -334,7 +338,7 @@ The \fB\-\-label\fR option will prepend lines of output with the remote
 task id.
 
 .TP
-\fB\-m\fR, \fB\-\-distribution\fR=
+\fB\-m\fR, \\fB\-\-relative\fR
 (\fIblock\fR|\fIcyclic\fR|\fIarbitrary\fR|\fIplane=<options>\fR)
 Specify an alternate distribution method for remote processes.
 .RS

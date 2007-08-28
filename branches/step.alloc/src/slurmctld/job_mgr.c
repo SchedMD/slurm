@@ -2756,6 +2756,7 @@ static void _list_delete_job(void *job_entry)
 	xfree(job_ptr->mail_user);
 	xfree(job_ptr->network);
 	xfree(job_ptr->alloc_lps);
+	xfree(job_ptr->used_lps);
 	xfree(job_ptr->comment);
 	select_g_free_jobinfo(&job_ptr->select_jobinfo);
 	if (job_ptr->step_list) {

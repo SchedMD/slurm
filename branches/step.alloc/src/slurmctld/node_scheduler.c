@@ -1415,6 +1415,7 @@ extern void build_node_details(struct job_record *job_ptr)
 		job_ptr->node_addr = NULL;
 		job_ptr->alloc_lps_cnt = 0;
 		xfree(job_ptr->alloc_lps);
+		xfree(job_ptr->used_lps);
 		return;
 	}
 
@@ -1435,6 +1436,8 @@ extern void build_node_details(struct job_record *job_ptr)
 
 	job_ptr->alloc_lps_cnt = job_ptr->node_cnt;
 	xrealloc(job_ptr->alloc_lps,
+		(sizeof(uint32_t) * job_ptr->node_cnt));
+	xrealloc(job_ptr->used_lps,
 		(sizeof(uint32_t) * job_ptr->node_cnt));
 
 	while ((this_node_name = hostlist_shift(host_list))) {
@@ -1464,7 +1467,8 @@ extern void build_node_details(struct job_record *job_ptr)
 								usable_lps;
 				}
 			} else {
-				xfree(job_ptr->alloc_lps); 
+				xfree(job_ptr->alloc_lps);
+				xfree(job_ptr->used_lps); 
 				job_ptr->alloc_lps_cnt = 0;
 				error("Unable to get extra jobinfo "
 				      "from JobId=%u", job_ptr->job_id);
