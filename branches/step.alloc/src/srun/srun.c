@@ -121,6 +121,7 @@ static int   _slurm_debug_env_val (void);
 static int   _call_spank_local_user (srun_job_t *job);
 static void  _define_symbols(void);
 static void  _pty_restore(void);
+static void  _step_opt_exclusive(void);
 
 int srun(int ac, char **av)
 {
@@ -207,6 +208,8 @@ int srun(int ac, char **av)
 		job_id = resp->job_id;
 		if (opt.alloc_nodelist == NULL)
                        opt.alloc_nodelist = xstrdup(resp->node_list);
+		if (opt.exclusive)
+			_step_opt_exclusive();
 
 		job = job_step_create_allocation(resp);
 		slurm_free_resource_allocation_response_msg(resp);
@@ -239,6 +242,7 @@ int srun(int ac, char **av)
 		job = job_create_allocation(resp);
 		if(!job)
 			exit(1);
+		opt.exclusive = false;	/* not applicable for this step */
 		if (create_job_step(job) < 0) {
 			srun_job_destroy(job, 0);
 			exit(1);
@@ -845,4 +849,24 @@ static void _pty_restore(void)
 	/* STDIN is probably closed by now */
 	if (tcsetattr(STDOUT_FILENO, TCSANOW, &termdefaults) < 0)
 		fprintf(stderr, "tcsetattr: %s\n", strerror(errno));
+}
+
+/* opt.exclusive is set, disable user task layout controls */
+static void _step_opt_exclusive(void)
+{
+	if (!opt.nprocs_set)
+		fatal("--nprocs must be set with --exclusive");
+	if (opt.relative_set)
+		fatal("--relative disabled, incompatible with --exclusive");
+	if (opt.nodes_set) {
+		/* Likely set via SLURM_NNODES env var from job allocation */
+		verbose("ignoring node count set by --nodes or SLURM_NNODES");
+		verbose("  it is incompatible with --exclusive");
+		opt.min_nodes = 1;
+		opt.max_nodes = 0;
+	}
+	if (opt.exc_nodes)
+		fatal("--exclude is incompatible with --exclusive");
+	if (opt.nodelist)
+		fatal("--nodelist is incompatible with --exclusive");
 }
