@@ -68,7 +68,7 @@
  * matures.
  */
 const char plugin_name[] = "Job accounting storage MYSQL plugin";
-const char plugin_type[] = "jobacct-storage/mysql";
+const char plugin_type[] = "jobacct_storage/mysql";
 const uint32_t plugin_version = 100;
 
 #ifdef HAVE_MYSQL

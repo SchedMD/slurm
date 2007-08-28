@@ -79,7 +79,7 @@
  * matures.
  */
 const char plugin_name[] = "Job accounting gather AIX plugin";
-const char plugin_type[] = "jobacct-gather/aix";
+const char plugin_type[] = "jobacct_gather/aix";
 const uint32_t plugin_version = 100;
 	
 /* Other useful declarations */

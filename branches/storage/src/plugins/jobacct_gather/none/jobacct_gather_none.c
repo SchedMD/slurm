@@ -71,7 +71,7 @@
  * matures.
  */
 const char plugin_name[] = "Job accounting gather NOT_INVOKED plugin";
-const char plugin_type[] = "jobacct-gather/none";
+const char plugin_type[] = "jobacct_gather/none";
 const uint32_t plugin_version = 100;
 
 /*

@@ -68,7 +68,7 @@
  * matures.
  */
 const char plugin_name[] = "Job accounting storage POSTGRESQL plugin";
-const char plugin_type[] = "jobacct-storage/pgsql";
+const char plugin_type[] = "jobacct_storage/pgsql";
 const uint32_t plugin_version = 100;
 
 #ifdef HAVE_PGSQL

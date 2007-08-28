@@ -196,7 +196,7 @@ _slurm_jobacct_gather_get_ops( slurm_jobacct_gather_context_t *c )
                         return NULL;
                 }
 
-                plugrack_set_major_type( c->plugin_list, "jobacct-gather" );
+                plugrack_set_major_type( c->plugin_list, "jobacct_gather" );
                 plugrack_set_paranoia( c->plugin_list, 
 				       PLUGRACK_PARANOIA_NONE, 
 				       0 );
@@ -219,7 +219,7 @@ _slurm_jobacct_gather_get_ops( slurm_jobacct_gather_context_t *c )
 				    n_syms,
 				    syms,
 				    (void **) &c->ops )) < n_syms ) {
-                error( "incomplete jobacct plugin detected only "
+                error( "incomplete jobacct_gather plugin detected only "
 		       "got %d out of %d",
 		       rc, n_syms);
                 return NULL;

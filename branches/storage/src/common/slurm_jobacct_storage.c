@@ -120,7 +120,7 @@ static slurm_jobacct_storage_ops_t * _jobacct_storage_get_ops(slurm_jobacct_stor
 			error( "cannot create plugin manager" );
 			return NULL;
 		}
-		plugrack_set_major_type( c->plugin_list, "jobacct-storage" );
+		plugrack_set_major_type( c->plugin_list, "jobacct_storage" );
 		plugrack_set_paranoia( c->plugin_list,
 				       PLUGRACK_PARANOIA_NONE,
 				       0 );

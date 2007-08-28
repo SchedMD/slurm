@@ -83,7 +83,7 @@
  * matures.
  */
 const char plugin_name[] = "Job Accounting storage FILETXT plugin";
-const char plugin_type[] = "jobacct-storage/filetxt";
+const char plugin_type[] = "jobacct_storage/filetxt";
 const uint32_t plugin_version = 100;
 
 static FILE *		LOGFILE;
