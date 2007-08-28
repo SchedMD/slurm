@@ -1241,6 +1241,9 @@ extern int slurmctld_shutdown(void);
 /* Perform periodic job step checkpoints (per user request) */
 extern void step_checkpoint(void);
 
+/* Update a job's record of allocated CPUs when a job step gets scheduled */
+extern void step_alloc_lps(struct step_record *step_ptr);
+
 /*
  * step_create - creates a step_record in step_specs->job_id, sets up the
  *	according to the step_specs.

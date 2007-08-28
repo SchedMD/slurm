@@ -78,7 +78,6 @@ static hostlist_t _step_range_to_hostlist(struct step_record *step_ptr,
 				uint32_t range_first, uint32_t range_last);
 static int _step_hostname_to_inx(struct step_record *step_ptr,
 				char *node_name);
-static void _step_alloc_lps(struct step_record *step_ptr);
 static void _step_dealloc_lps(struct step_record *step_ptr);
 /* 
  * create_step_record - create an empty step_record for the specified job.
@@ -661,7 +660,7 @@ cleanup:
 }
 
 /* Update a job's record of allocated CPUs when a job step gets scheduled */
-static void _step_alloc_lps(struct step_record *step_ptr)
+extern void step_alloc_lps(struct step_record *step_ptr)
 {
 	struct job_record  *job_ptr = step_ptr->job_ptr;
 	int i_node;
@@ -847,6 +846,7 @@ step_create(job_step_create_request_msg_t *step_specs,
 	step_ptr->ckpt_interval = step_specs->ckpt_interval;
 	step_ptr->ckpt_time = now;
 	step_ptr->exit_code = NO_VAL;
+	step_ptr->exclusive = step_specs->exclusive;
 
 	/* step's name and network default to job's values if not 
 	 * specified in the step specification */
@@ -882,7 +882,7 @@ step_create(job_step_create_request_msg_t *step_specs,
 			delete_step_record (job_ptr, step_ptr->step_id);
 			return ESLURM_INTERCONNECT_FAILURE;
 		}
-		_step_alloc_lps(step_ptr);
+		step_alloc_lps(step_ptr);
 	}
 	if (checkpoint_alloc_jobinfo (&step_ptr->check_job) < 0)
 		fatal ("step_create: checkpoint_alloc_jobinfo error");

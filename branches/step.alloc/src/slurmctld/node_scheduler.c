@@ -1463,6 +1463,7 @@ extern void build_node_details(struct job_record *job_ptr)
 				&usable_lps);
 			if (error_code == SLURM_SUCCESS) {
 				if (job_ptr->alloc_lps) {
+					job_ptr->used_lps[cr_count] = 0;
 					job_ptr->alloc_lps[cr_count++] =
 								usable_lps;
 				}
