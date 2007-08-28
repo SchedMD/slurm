@@ -267,15 +267,15 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/checkpoint/Makefile
 		 src/plugins/checkpoint/aix/Makefile
 		 src/plugins/checkpoint/none/Makefile
-		 src/plugins/jobacct-gather/Makefile
-		 src/plugins/jobacct-gather/linux/Makefile
-		 src/plugins/jobacct-gather/aix/Makefile
-		 src/plugins/jobacct-gather/none/Makefile
-		 src/plugins/jobacct-storage/Makefile
-		 src/plugins/jobacct-storage/filetxt/Makefile
-		 src/plugins/jobacct-storage/mysql/Makefile
-		 src/plugins/jobacct-storage/pgsql/Makefile
-		 src/plugins/jobacct-storage/none/Makefile
+		 src/plugins/jobacct_gather/Makefile
+		 src/plugins/jobacct_gather/linux/Makefile
+		 src/plugins/jobacct_gather/aix/Makefile
+		 src/plugins/jobacct_gather/none/Makefile
+		 src/plugins/jobacct_storage/Makefile
+		 src/plugins/jobacct_storage/filetxt/Makefile
+		 src/plugins/jobacct_storage/mysql/Makefile
+		 src/plugins/jobacct_storage/pgsql/Makefile
+		 src/plugins/jobacct_storage/none/Makefile
 		 src/plugins/jobcomp/Makefile
 		 src/plugins/jobcomp/filetxt/Makefile
 		 src/plugins/jobcomp/none/Makefile

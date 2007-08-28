@@ -116,7 +116,7 @@ extern int fini ( void )
  * Initialize the storage make sure tables are created and in working
  * order
  */
-extern int storage_p_jobacct_init(char *location)
+extern int jobacct_storage_p_init(char *location)
 {
 	return SLURM_SUCCESS;
 }
@@ -124,7 +124,7 @@ extern int storage_p_jobacct_init(char *location)
 /*
  * finish up storage connection
  */
-extern int storage_p_jobacct_fini()
+extern int jobacct_storage_p_fini()
 {
 	return SLURM_SUCCESS;
 }
@@ -132,7 +132,7 @@ extern int storage_p_jobacct_fini()
 /* 
  * load into the storage the start of a job
  */
-extern int storage_p_jobacct_job_start(struct job_record *job_ptr)
+extern int jobacct_storage_p_job_start(struct job_record *job_ptr)
 {
 	return SLURM_SUCCESS;
 }
@@ -140,7 +140,7 @@ extern int storage_p_jobacct_job_start(struct job_record *job_ptr)
 /* 
  * load into the storage the end of a job
  */
-extern int storage_p_jobacct_job_complete(struct job_record *job_ptr)
+extern int jobacct_storage_p_job_complete(struct job_record *job_ptr)
 {
 	return SLURM_SUCCESS;
 }
@@ -148,7 +148,7 @@ extern int storage_p_jobacct_job_complete(struct job_record *job_ptr)
 /* 
  * load into the storage the start of a job step
  */
-extern int storage_p_jobacct_step_start(struct step_record *step_ptr)
+extern int jobacct_storage_p_step_start(struct step_record *step_ptr)
 {
 	return SLURM_SUCCESS;
 }
@@ -156,7 +156,7 @@ extern int storage_p_jobacct_step_start(struct step_record *step_ptr)
 /* 
  * load into the storage the end of a job step
  */
-extern int storage_p_jobacct_step_complete(struct step_record *step_ptr)
+extern int jobacct_storage_p_step_complete(struct step_record *step_ptr)
 {
 	return SLURM_SUCCESS;
 }
@@ -164,7 +164,7 @@ extern int storage_p_jobacct_step_complete(struct step_record *step_ptr)
 /* 
  * load into the storage a suspention of a job
  */
-extern int storage_p_jobacct_suspend(struct job_record *job_ptr)
+extern int jobacct_storage_p_suspend(struct job_record *job_ptr)
 {
 	return SLURM_SUCCESS;
 }
@@ -174,7 +174,7 @@ extern int storage_p_jobacct_suspend(struct job_record *job_ptr)
  * returns List of job_rec_t *
  * note List needs to be freed when called
  */
-extern void storage_p_jobacct_get_jobs(List job_list,
+extern void jobacct_storage_p_get_jobs(List job_list,
 					List selected_steps,
 					List selected_parts,
 					void *params)
@@ -185,54 +185,8 @@ extern void storage_p_jobacct_get_jobs(List job_list,
 /* 
  * expire old info from the storage 
  */
-extern void storage_p_jobacct_archive(List selected_parts,
+extern void jobacct_storage_p_archive(List selected_parts,
 				       void *params)
-{
-	return;
-}
-
-extern int storage_p_jobcomp_init(char *location)
-{
-	return SLURM_SUCCESS;
-}
-
-extern int storage_p_jobcomp_fini()
-{
-	return SLURM_SUCCESS;
-}
-
-extern int storage_p_jobcomp_log_record(struct job_record *job_ptr)
-{
-	return SLURM_SUCCESS;
-}
-
-extern int storage_p_jobcomp_get_errno()
-{
-	return SLURM_SUCCESS;
-}
-
-extern char *storage_p_jobcomp_strerror(int errnum)
-{
-	return NULL;
-}
-
-/* 
- * get info from the storage 
- * in/out job_list List of job_rec_t *
- * note List needs to be freed when called
- */
-extern void storage_p_jobcomp_get_jobs(List job_list, 
-					List selected_steps,
-					List selected_parts,
-					void *params)
-{
-	return;
-}
-
-/* 
- * expire old info from the storage 
- */
-extern void storage_p_jobcomp_archive(List selected_parts, void *params)
 {
 	return;
 }

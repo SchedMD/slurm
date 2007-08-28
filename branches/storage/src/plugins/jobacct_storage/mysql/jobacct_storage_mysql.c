@@ -237,7 +237,7 @@ extern int fini ( void )
  * Initialize the storage make sure tables are created and in working
  * order
  */
-extern int storage_p_jobacct_init(char *location)
+extern int jobacct_storage_p_init(char *location)
 {
 #ifdef HAVE_MYSQL
 	mysql_db_info_t *db_info = create_mysql_db_info();
@@ -285,7 +285,7 @@ extern int storage_p_jobacct_init(char *location)
 /*
  * finish up storage connection
  */
-extern int storage_p_jobacct_fini()
+extern int jobacct_storage_p_fini()
 {
 #ifdef HAVE_MYSQL
 	if (jobacct_mysql_db) {
@@ -302,7 +302,7 @@ extern int storage_p_jobacct_fini()
 /* 
  * load into the storage the start of a job
  */
-extern int storage_p_jobacct_job_start(struct job_record *job_ptr)
+extern int jobacct_storage_p_job_start(struct job_record *job_ptr)
 {
 #ifdef HAVE_MYSQL
 		int	i,
@@ -317,7 +317,7 @@ extern int storage_p_jobacct_job_start(struct job_record *job_ptr)
 
 	if(!jobacct_mysql_db) {
 		char *loc = slurm_get_jobacct_storage_loc();
-		if(storage_p_jobacct_init(loc) == SLURM_ERROR) {
+		if(jobacct_storage_p_init(loc) == SLURM_ERROR) {
 			xfree(loc);
 			return SLURM_ERROR;
 		}
@@ -386,8 +386,8 @@ try_again:
 		char *loc = slurm_get_jobacct_storage_loc();
 		error("It looks like the storage has gone "
 		      "away trying to reconnect");
-		storage_p_jobacct_fini();
-		storage_p_jobacct_init(loc);
+		jobacct_storage_p_fini();
+		jobacct_storage_p_init(loc);
 		xfree(loc);
 		reinit = 1;
 		goto try_again;
@@ -403,7 +403,7 @@ try_again:
 /* 
  * load into the storage the end of a job
  */
-extern int storage_p_jobacct_job_complete(struct job_record *job_ptr)
+extern int jobacct_storage_p_job_complete(struct job_record *job_ptr)
 {
 #ifdef HAVE_MYSQL
 		char query[1024];
@@ -412,7 +412,7 @@ extern int storage_p_jobacct_job_complete(struct job_record *job_ptr)
 	
 	if(!jobacct_mysql_db) {
 		char *loc = slurm_get_jobacct_storage_loc();
-		if(storage_p_jobacct_init(loc) == SLURM_ERROR) {
+		if(jobacct_storage_p_init(loc) == SLURM_ERROR) {
 			xfree(loc);
 			return SLURM_ERROR;
 		}
@@ -457,7 +457,7 @@ extern int storage_p_jobacct_job_complete(struct job_record *job_ptr)
 /* 
  * load into the storage the start of a job step
  */
-extern int storage_p_jobacct_step_start(struct step_record *step_ptr)
+extern int jobacct_storage_p_step_start(struct step_record *step_ptr)
 {
 #ifdef HAVE_MYSQL
 		int cpus = 0;
@@ -470,7 +470,7 @@ extern int storage_p_jobacct_step_start(struct step_record *step_ptr)
 	
 	if(!jobacct_mysql_db) {
 		char *loc = slurm_get_jobacct_storage_loc();
-		if(storage_p_jobacct_init(loc) == SLURM_ERROR) {
+		if(jobacct_storage_p_init(loc) == SLURM_ERROR) {
 			xfree(loc);
 			return SLURM_ERROR;
 		}
@@ -534,7 +534,7 @@ extern int storage_p_jobacct_step_start(struct step_record *step_ptr)
 /* 
  * load into the storage the end of a job step
  */
-extern int storage_p_jobacct_step_complete(struct step_record *step_ptr)
+extern int jobacct_storage_p_step_complete(struct step_record *step_ptr)
 {
 #ifdef HAVE_MYSQL
 		time_t now;
@@ -553,7 +553,7 @@ extern int storage_p_jobacct_step_complete(struct step_record *step_ptr)
 	
 	if(!jobacct_mysql_db) {
 		char *loc = slurm_get_jobacct_storage_loc();
-		if(storage_p_jobacct_init(loc) == SLURM_ERROR) {
+		if(jobacct_storage_p_init(loc) == SLURM_ERROR) {
 			xfree(loc);
 			return SLURM_ERROR;
 		}
@@ -710,7 +710,7 @@ extern int storage_p_jobacct_step_complete(struct step_record *step_ptr)
 /* 
  * load into the storage a suspention of a job
  */
-extern int storage_p_jobacct_suspend(struct job_record *job_ptr)
+extern int jobacct_storage_p_suspend(struct job_record *job_ptr)
 {
 #ifdef HAVE_MYSQL
 		char query[1024];
@@ -718,7 +718,7 @@ extern int storage_p_jobacct_suspend(struct job_record *job_ptr)
 	
 	if(!jobacct_mysql_db) {
 		char *loc = slurm_get_jobacct_storage_loc();
-		if(storage_p_jobacct_init(loc) == SLURM_ERROR) {
+		if(jobacct_storage_p_init(loc) == SLURM_ERROR) {
 			xfree(loc);
 			return SLURM_ERROR;
 		}
@@ -756,7 +756,7 @@ extern int storage_p_jobacct_suspend(struct job_record *job_ptr)
  * returns List of job_rec_t *
  * note List needs to be freed when called
  */
-extern void storage_p_jobacct_get_jobs(List job_list,
+extern void jobacct_storage_p_get_jobs(List job_list,
 					List selected_steps,
 					List selected_parts,
 					void *params)
@@ -764,7 +764,7 @@ extern void storage_p_jobacct_get_jobs(List job_list,
 #ifdef HAVE_MYSQL
 		if(!jobacct_mysql_db) {
 		char *loc = slurm_get_jobacct_storage_loc();
-		if(storage_p_jobacct_init(loc) == SLURM_ERROR) {
+		if(jobacct_storage_p_init(loc) == SLURM_ERROR) {
 			xfree(loc);
 			return;
 		}
@@ -780,13 +780,13 @@ extern void storage_p_jobacct_get_jobs(List job_list,
 /* 
  * expire old info from the storage 
  */
-extern void storage_p_jobacct_archive(List selected_parts,
+extern void jobacct_storage_p_archive(List selected_parts,
 				       void *params)
 {
 #ifdef HAVE_MYSQL
 	if(!jobacct_mysql_db) {
 		char *loc = slurm_get_jobacct_storage_loc();
-		if(storage_p_jobacct_init(loc) == SLURM_ERROR) {
+		if(jobacct_storage_p_init(loc) == SLURM_ERROR) {
 			xfree(loc);
 			return;
 		}
