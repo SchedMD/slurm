@@ -73,7 +73,7 @@
 static void _pack_ctld_job_step_info(struct step_record *step, Buf buffer);
 static bitstr_t * _pick_step_nodes (struct job_record  *job_ptr, 
 				    job_step_create_request_msg_t *step_spec,
-				    bool batch_step );
+				    bool batch_step, int *return_code);
 static hostlist_t _step_range_to_hostlist(struct step_record *step_ptr,
 				uint32_t range_first, uint32_t range_last);
 static int _step_hostname_to_inx(struct step_record *step_ptr,
@@ -413,6 +413,7 @@ int job_step_complete(uint32_t job_id, uint32_t step_id, uid_t uid,
  * IN job_ptr - pointer to job to have new step started
  * IN step_spec - job step specification
  * IN batch_step - if set then step is a batch script
+ * OUT return_code - exit code or SLURM_SUCCESS
  * global: node_record_table_ptr - pointer to global node table
  * NOTE: returns all of a job's nodes if step_spec->node_count == INFINITE
  * NOTE: returned bitmap must be freed by the caller using bit_free()
@@ -420,7 +421,7 @@ int job_step_complete(uint32_t job_id, uint32_t step_id, uid_t uid,
 static bitstr_t *
 _pick_step_nodes (struct job_record  *job_ptr, 
 		  job_step_create_request_msg_t *step_spec,
-		  bool batch_step)
+		  bool batch_step, int *return_code)
 {
 
 	bitstr_t *nodes_avail = NULL, *nodes_idle = NULL;
@@ -432,8 +433,11 @@ _pick_step_nodes (struct job_record  *job_ptr,
 	char *temp;
 #endif
 
-	if (job_ptr->node_bitmap == NULL)
+	*return_code = SLURM_SUCCESS;
+	if (job_ptr->node_bitmap == NULL) {
+		*return_code = ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE;
 		return NULL;
+	}
 	
 	nodes_avail = bit_copy (job_ptr->node_bitmap);
 	if (nodes_avail == NULL)
@@ -443,13 +447,14 @@ _pick_step_nodes (struct job_record  *job_ptr,
 	/* In exclusive mode, just satisfy the processor count.
 	 * Do not use nodes that have no unused CPUs */
 	if (step_spec->exclusive) {
-		int i, j=0, avail;
+		int i, j=0, avail, tot_cpus = 0;
 		cpus_picked_cnt = 0;
 		for (i=bit_ffs(job_ptr->node_bitmap); i<node_record_count; 
 		     i++) {
 			if (bit_test(job_ptr->node_bitmap, i) == 0)
 				continue;
 			avail = job_ptr->alloc_lps[j] - job_ptr->used_lps[j];
+			tot_cpus += job_ptr->alloc_lps[j];
 			if ((avail <= 0) ||
 			    (cpus_picked_cnt >= step_spec->cpu_count))
 				bit_clear(nodes_avail, i);
@@ -460,8 +465,13 @@ _pick_step_nodes (struct job_record  *job_ptr,
 		}
 		if (cpus_picked_cnt >= step_spec->cpu_count)
 			return nodes_avail;
+
+		FREE_NULL_BITMAP(nodes_avail);
+		if (tot_cpus >= step_spec->cpu_count)
+			*return_code = ESLURM_NODES_BUSY;
 		else
-			goto cleanup;
+			*return_code = ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE;
+		return NULL;
 	}
 
 	if ( step_spec->node_count == INFINITE)	/* use all nodes */
@@ -656,6 +666,7 @@ cleanup:
 	FREE_NULL_BITMAP(nodes_avail);
 	FREE_NULL_BITMAP(nodes_idle);
 	FREE_NULL_BITMAP(nodes_picked);
+	*return_code = ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE;
 	return NULL;
 }
 
@@ -728,7 +739,7 @@ step_create(job_step_create_request_msg_t *step_specs,
 	struct step_record *step_ptr;
 	struct job_record  *job_ptr;
 	bitstr_t *nodeset;
-	int node_count;
+	int node_count, ret_code;
 	time_t now = time(NULL);
 	char *step_node_list = NULL;
 
@@ -786,9 +797,9 @@ step_create(job_step_create_request_msg_t *step_specs,
 	job_ptr->kill_on_step_done = kill_job_when_step_done;
 
 	job_ptr->time_last_active = now;
-	nodeset = _pick_step_nodes(job_ptr, step_specs, batch_step);
+	nodeset = _pick_step_nodes(job_ptr, step_specs, batch_step, &ret_code);
 	if (nodeset == NULL)
-		return ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE ;
+		return ret_code;
 	node_count = bit_set_count(nodeset);
 
 	if (step_specs->num_tasks == NO_VAL) {
