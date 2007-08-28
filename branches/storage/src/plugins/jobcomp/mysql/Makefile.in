@@ -76,7 +76,7 @@ pkglibLTLIBRARIES_INSTALL = $(INSTALL)
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
 jobcomp_mysql_la_DEPENDENCIES =  \
 	$(top_builddir)/src/common/libcommon.la
-am_jobcomp_mysql_la_OBJECTS = jobcomp_mysql.lo mysql_jobcomp.lo \
+am_jobcomp_mysql_la_OBJECTS = jobcomp_mysql.lo \
 	mysql_jobcomp_process.lo
 jobcomp_mysql_la_OBJECTS = $(am_jobcomp_mysql_la_OBJECTS)
 jobcomp_mysql_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
@@ -265,8 +265,7 @@ pkglib_LTLIBRARIES = jobcomp_mysql.la
 
 # Mysql storage plugin.
 jobcomp_mysql_la_SOURCES = jobcomp_mysql.c \
-		mysql_jobcomp.c mysql_jobcomp.h \
-		mysql_jobcomp_process.c mysql_jobcomp_process.h
+			mysql_jobcomp_process.c mysql_jobcomp_process.h
 
 jobcomp_mysql_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
 jobcomp_mysql_la_LIBADD = $(top_builddir)/src/common/libcommon.la
@@ -340,7 +339,6 @@ distclean-compile:
 	-rm -f *.tab.c
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/jobcomp_mysql.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mysql_jobcomp.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mysql_jobcomp_process.Plo@am__quote@
 
 .c.o:

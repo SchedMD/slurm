@@ -1,6 +1,6 @@
 /*****************************************************************************\
- *  flatfile_jobacct_process.c - functions the processing of
- *                               information from the flatfile jobacct
+ *  filetxt_jobacct_process.c - functions the processing of
+ *                               information from the filetxt jobacct
  *                               storage.
  *****************************************************************************
  *
@@ -759,7 +759,7 @@ finished:
 	destroy_jobacct_job_rec(temp);
 }
 
-extern void flatfile_jobacct_process_get_jobs(List job_list, 
+extern void filetxt_jobacct_process_get_jobs(List job_list, 
 					      List selected_steps,
 					      List selected_parts,
 					      sacct_parameters_t *params)
@@ -900,8 +900,8 @@ extern void flatfile_jobacct_process_get_jobs(List job_list,
 	return;
 }
 
-extern void flatfile_jobacct_process_archive(List selected_parts,
-					     sacct_parameters_t *params)
+extern void filetxt_jobacct_process_archive(List selected_parts,
+					    sacct_parameters_t *params)
 {
 	char	line[BUFFER_SIZE],
 		*f[EXPIRE_READ_LENGTH],

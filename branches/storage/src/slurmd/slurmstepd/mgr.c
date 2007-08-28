@@ -500,10 +500,10 @@ _one_step_complete_msg(slurmd_job_t *job, int first, int last)
 	msg.range_first = first;
 	msg.range_last = last;
 	msg.step_rc = step_complete.step_rc;
-	msg.jobacct = jobacct_g_alloc(NULL);
+	msg.jobacct = jobacct_gather_g_create(NULL);
 	/************* acct stuff ********************/
-	jobacct_g_aggregate(step_complete.jobacct, job->jobacct);
-	jobacct_g_getinfo(step_complete.jobacct, JOBACCT_DATA_TOTAL, 
+	jobacct_gather_g_aggregate(step_complete.jobacct, job->jobacct);
+	jobacct_gather_g_getinfo(step_complete.jobacct, JOBACCT_DATA_TOTAL, 
 			  msg.jobacct);
 	/*********************************************/	
 	slurm_msg_t_init(&req);
@@ -546,7 +546,7 @@ _one_step_complete_msg(slurmd_job_t *job, int first, int last)
 		error("Rank %d failed sending step completion message"
 		      " directly to slurmctld", step_complete.rank);
 finished:
-	jobacct_g_free(msg.jobacct);
+	jobacct_gather_g_destroy(msg.jobacct);
 }
 
 /* Given a starting bit in the step_complete.bits bitstring, "start",
@@ -656,7 +656,7 @@ job_manager(slurmd_job_t *job)
 	    || slurmd_task_init() != SLURM_SUCCESS
 	    || mpi_hook_slurmstepd_init(&job->env) != SLURM_SUCCESS
 	    || slurm_proctrack_init() != SLURM_SUCCESS
-	    || jobacct_init() != SLURM_SUCCESS) {
+	    || slurm_jobacct_gather_init() != SLURM_SUCCESS) {
 		rc = SLURM_FAILURE;
 		goto fail1;
 	}
@@ -719,7 +719,7 @@ job_manager(slurmd_job_t *job)
 	_send_launch_resp(job, 0);
 
 	_wait_for_all_tasks(job);
-	jobacct_g_endpoll();
+	jobacct_gather_g_endpoll();
 		
 	job->state = SLURMSTEPD_STEP_ENDING;
 
@@ -897,7 +897,7 @@ _fork_all_tasks(slurmd_job_t *job)
 				if (j > i)
 					close(readfds[j]);
 			}
-			/* jobacct_g_endpoll();	
+			/* jobacct_gather_g_endpoll();	
 			 * closing jobacct files here causes deadlock */
 
 			if (conf->propagate_prio == 1)
@@ -948,7 +948,7 @@ _fork_all_tasks(slurmd_job_t *job)
 		error ("Unable to return to working directory");
 	}
 
-	jobacct_g_set_proctrack_container_id(job->cont_id);
+	jobacct_gather_g_set_proctrack_container_id(job->cont_id);
 
 	for (i = 0; i < job->ntasks; i++) {
 		/*
@@ -964,7 +964,7 @@ _fork_all_tasks(slurmd_job_t *job)
                 }
 		jobacct_id.nodeid = job->nodeid;
 		jobacct_id.taskid = job->task[i]->gtid;
-		jobacct_g_add_task(job->task[i]->pid, 
+		jobacct_gather_g_add_task(job->task[i]->pid, 
 				   &jobacct_id);
 
 		if (spank_task_post_fork (job, i) < 0) {
@@ -1093,12 +1093,12 @@ _wait_for_any_task(slurmd_job_t *job, bool waitflag)
 		}
 
 		/************* acct stuff ********************/
-		jobacct = jobacct_g_remove_task(pid);
+		jobacct = jobacct_gather_g_remove_task(pid);
 		if(jobacct) {
-			jobacct_g_setinfo(jobacct, 
+			jobacct_gather_g_setinfo(jobacct, 
 					  JOBACCT_DATA_RUSAGE, &rusage);
-			jobacct_g_aggregate(job->jobacct, jobacct);
-			jobacct_g_free(jobacct);
+			jobacct_gather_g_aggregate(job->jobacct, jobacct);
+			jobacct_gather_g_destroy(jobacct);
 		} 		
 		/*********************************************/	
 	

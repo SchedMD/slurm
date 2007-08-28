@@ -43,9 +43,8 @@
 #ifndef _HAVE_PGSQL_JOBCOMP_PROCESS_H
 #define _HAVE_PGSQL_JOBCOMP_PROCESS_H
 
-#include "pgsql_common.h"
-#include "pgsql_jobcomp.h"
-#include "src/common/slurm_jobacct.h"
+#include "src/common/pgsql_common.h"
+#include "src/common/slurm_jobacct_gather.h"
 #include "src/common/slurm_jobcomp.h"
 
 #ifdef HAVE_PGSQL

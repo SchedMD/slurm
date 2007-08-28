@@ -98,7 +98,7 @@
  */
 const char plugin_name[]       	= "Job completion logging script plugin";
 const char plugin_type[]       	= "jobcomp/script";
-const uint32_t plugin_version	= 90;
+const uint32_t plugin_version	= 100;
 
 static char * script = NULL;
 static List comp_list = NULL;
@@ -557,4 +557,28 @@ extern int fini ( void )
 	}
 
 	return rc;
+}
+
+/* 
+ * get info from the storage 
+ * in/out job_list List of job_rec_t *
+ * note List needs to be freed when called
+ */
+extern void slurm_jobcomp_get_jobs(List job_list, 
+				   List selected_steps,
+				   List selected_parts,
+				   void *params)
+{
+
+	info("This function is not implemented.");
+	return;
+}
+
+/* 
+ * expire old info from the storage 
+ */
+extern void slurm_jobcomp_archive(List selected_parts, void *params)
+{
+	info("This function is not implemented.");
+	return;
 }

@@ -233,7 +233,7 @@ extern void common_resume_poll();
 
 /* defined in common_jobacct.c */
 extern bool jobacct_shutdown;
-extern bool suspended;
+extern bool jobacct_suspended;
 extern List task_list;
 extern pthread_mutex_t jobacct_lock;
 extern uint32_t cont_id;

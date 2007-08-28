@@ -57,7 +57,8 @@
 #include "src/common/xstring.h"
 #include "src/common/list.h"
 #include "src/common/hostlist.h"
-#include "src/common/slurm_jobacct.h"
+#include "src/common/slurm_jobacct_gather.h"
+#include "src/common/slurm_jobacct_storage.h"
 #include "src/common/slurm_jobcomp.h"
 
 #define ERROR 2

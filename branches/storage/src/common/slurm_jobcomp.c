@@ -65,6 +65,9 @@ typedef struct slurm_jobcomp_ops {
 	int          (*job_write) ( struct job_record *job_ptr);
 	int          (*sa_errno)  ( void );
 	char *       (*job_strerror)  ( int errnum );
+	void         (*get_jobs)  ( List job_list, List selected_steps,
+				    List selected_parts, void *params );
+	void         (*archive)   ( List selected_parts, void *params );
 } slurm_jobcomp_ops_t;
 
 
@@ -146,7 +149,9 @@ _slurm_jobcomp_get_ops( slurm_jobcomp_context_t c )
 		"slurm_jobcomp_set_location",
 		"slurm_jobcomp_log_record",
 		"slurm_jobcomp_get_errno",
-		"slurm_jobcomp_strerror"
+		"slurm_jobcomp_strerror",
+		"slurm_jobcomp_get_jobs",
+		"slurm_jobcomp_archive"
 	};
         int n_syms = sizeof( syms ) / sizeof( char * );
 
@@ -305,4 +310,30 @@ g_slurm_jobcomp_strerror(int errnum)
 		error ("slurm_jobcomp plugin context not initialized");
 	slurm_mutex_unlock( &context_lock );
 	return retval;
+}
+
+extern void
+g_slurm_jobcomp_get_jobs(List job_list, List selected_steps,
+			 List selected_parts, void *params)
+{
+	slurm_mutex_lock( &context_lock );
+	if ( g_context )
+		(*(g_context->ops.get_jobs))
+			(job_list, selected_steps, selected_parts, params);
+	else
+		error ("slurm_jobcomp plugin context not initialized");
+	slurm_mutex_unlock( &context_lock );
+	return;
+}
+
+extern void
+g_slurm_jobcomp_archive(List selected_parts, void *params)
+{
+	slurm_mutex_lock( &context_lock );
+	if ( g_context )
+		(*(g_context->ops.archive))(selected_parts, params);
+	else
+		error ("slurm_jobcomp plugin context not initialized");
+	slurm_mutex_unlock( &context_lock );
+	return;
 }

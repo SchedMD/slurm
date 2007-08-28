@@ -1,3 +1,3 @@
 # Makefile for storage plugins
 
-SUBDIRS = flatfile mysql pgsql none
+SUBDIRS = filetxt mysql pgsql none

@@ -76,7 +76,7 @@ pkglibLTLIBRARIES_INSTALL = $(INSTALL)
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
 jobcomp_pgsql_la_DEPENDENCIES =  \
 	$(top_builddir)/src/common/libcommon.la
-am_jobcomp_pgsql_la_OBJECTS = jobcomp_pgsql.lo pgsql_jobcomp.lo \
+am_jobcomp_pgsql_la_OBJECTS = jobcomp_pgsql.lo \
 	pgsql_jobcomp_process.lo
 jobcomp_pgsql_la_OBJECTS = $(am_jobcomp_pgsql_la_OBJECTS)
 jobcomp_pgsql_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
@@ -265,8 +265,7 @@ pkglib_LTLIBRARIES = jobcomp_pgsql.la
 
 # Pgsql storage plugin.
 jobcomp_pgsql_la_SOURCES = jobcomp_pgsql.c \
-		pgsql_jobcomp.c pgsql_jobcomp.h \
-		pgsql_jobcomp_process.c pgsql_jobcomp_process.h
+			pgsql_jobcomp_process.c pgsql_jobcomp_process.h
 
 jobcomp_pgsql_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
 jobcomp_pgsql_la_LIBADD = $(top_builddir)/src/common/libcommon.la
@@ -340,7 +339,6 @@ distclean-compile:
 	-rm -f *.tab.c
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/jobcomp_pgsql.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pgsql_jobcomp.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pgsql_jobcomp_process.Plo@am__quote@
 
 .c.o:

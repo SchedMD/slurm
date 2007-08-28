@@ -41,7 +41,7 @@
 #include "jobacct_common.h"
 
 bool jobacct_shutdown = false;
-bool suspended = false;
+bool jobacct_suspended = false;
 List task_list = NULL;
 pthread_mutex_t jobacct_lock = PTHREAD_MUTEX_INITIALIZER;
 uint32_t cont_id = (uint32_t)NO_VAL;
@@ -670,11 +670,11 @@ extern int common_endpoll()
 
 extern void common_suspend_poll()
 {
-	suspended = true;
+	jobacct_suspended = true;
 }
 
 extern void common_resume_poll()
 {
-	suspended = false;
+	jobacct_suspended = false;
 }
 

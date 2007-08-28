@@ -80,7 +80,6 @@
 #include "src/common/node_select.h"
 #include "src/common/fd.h"
 #include "src/common/safeopen.h"
-#include "src/common/slurm_jobacct.h"
 #include "src/common/switch.h"
 #include "src/common/xsignal.h"
 #include "src/common/xstring.h"

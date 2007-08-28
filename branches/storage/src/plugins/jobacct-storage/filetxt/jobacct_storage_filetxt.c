@@ -1,7 +1,7 @@
 /*****************************************************************************\
- *  jobacct_storage_flatfile.c - Store/Get all information in a flatfile.
+ *  jobacct_storage_filetxt.c - Store/Get all information in a filetxt.
  *
- *  $Id: storage_flatfile.c 10893 2007-01-29 21:53:48Z da $
+ *  $Id: storage_filetxt.c 10893 2007-01-29 21:53:48Z da $
  *****************************************************************************
  *  Copyright (C) 2004-2007 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -51,7 +51,7 @@
 #include <slurm/slurm_errno.h>
 
 #include "src/slurmctld/slurmctld.h"
-#include "flatfile_jobacct_process.h"
+#include "filetxt_jobacct_process.h"
 
 /*
  * These variables are required by the generic plugin interface.  If they
@@ -82,8 +82,8 @@
  * minimum versions for their plugins as the job accounting API 
  * matures.
  */
-const char plugin_name[] = "Job Accounting storage FLATFILE plugin";
-const char plugin_type[] = "jobacct-storage/flatfile";
+const char plugin_name[] = "Job Accounting storage FILETXT plugin";
+const char plugin_type[] = "jobacct-storage/filetxt";
 const uint32_t plugin_version = 100;
 
 static FILE *		LOGFILE;
@@ -645,7 +645,7 @@ extern void jobacct_storage_p_get_jobs(List job_list,
 				       List selected_parts,
 				       void *params)
 {
-	flatfile_jobacct_process_get_jobs(job_list,
+	filetxt_jobacct_process_get_jobs(job_list,
 					  selected_steps, selected_parts,
 					  params);
 	return;
@@ -657,7 +657,7 @@ extern void jobacct_storage_p_get_jobs(List job_list,
 extern void jobacct_storage_p_archive(List selected_parts,
 				      void *params)
 {
-	flatfile_jobacct_process_archive(selected_parts, params);
+	filetxt_jobacct_process_archive(selected_parts, params);
 	return;
 }
 

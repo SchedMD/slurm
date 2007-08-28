@@ -43,9 +43,8 @@
 #ifndef _HAVE_MYSQL_JOBCOMP_PROCESS_H
 #define _HAVE_MYSQL_JOBCOMP_PROCESS_H
 
-#include "mysql_common.h"
-#include "mysql_jobcomp.h"
-#include "src/common/slurm_jobacct.h"
+#include "src/common/mysql_common.h"
+#include "src/common/slurm_jobacct_gather.h"
 #include "src/common/slurm_jobcomp.h"
 
 #ifdef HAVE_MYSQL
