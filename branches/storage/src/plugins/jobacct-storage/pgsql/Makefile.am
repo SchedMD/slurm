@@ -1,4 +1,4 @@
-# Makefile for jobacct-storage/pgsql plugin
+# Makefile for jobacct_storage/pgsql plugin
 
 CPPFLAGS = $(PGSQL_CFLAGS)
 AUTOMAKE_OPTIONS = foreign

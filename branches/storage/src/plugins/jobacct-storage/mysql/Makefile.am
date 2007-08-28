@@ -1,4 +1,4 @@
-# Makefile for jobacct-storage/mysql plugin
+# Makefile for jobacct_storage/mysql plugin
 
 AUTOMAKE_OPTIONS = foreign
 

@@ -1,4 +1,4 @@
-# Makefile for jobacct-storage/none plugin
+# Makefile for jobacct_storage/none plugin
 
 AUTOMAKE_OPTIONS = foreign
 
