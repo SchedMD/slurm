@@ -282,8 +282,8 @@ Index: README
 +DETAILS: The srun command opens two socket connections and passes 
 +their ports to all tasks via the SLURM_MPICH1_P4_PORT1 and 
 +SLURM_MPICH1_P4_PORT2 environment variables. Task zero connects to 
-+SLURM_MPICH1_P4_PORT1 and writes port number. The other tasks connect 
-+to SLURM_MPICH1_P4_PORT2 and that port number. This avoid the requirement 
++SLURM_MPICH1_P4_PORT1 and writes its port number. The other tasks connect to 
++SLURM_MPICH1_P4_PORT2 and read that port number. This avoid the requirement 
 +of having task zero launch all subsequent tasks and also launches 
 +all tasks under the direct control of SLURM (for process management 
 +and accounting).  SLURM only launches one task per node and that 
