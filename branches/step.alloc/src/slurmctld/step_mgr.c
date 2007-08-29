@@ -698,13 +698,16 @@ static void _step_dealloc_lps(struct step_record *step_ptr)
 	int i_node;
 	int job_node_inx = -1, step_node_inx = -1;
 
-	for (i_node = bit_ffs(job_ptr->node_bitmap); ; i_node++) {
+	for (i_node = bit_ffs(job_ptr->node_bitmap); 
+	     i_node < job_ptr->node_cnt; i_node++) {
 		if (!bit_test(job_ptr->node_bitmap, i_node))
 			continue;
 		job_node_inx++;
 		if (!bit_test(step_ptr->step_node_bitmap, i_node))
 			continue;
 		step_node_inx++;
+		if (step_ptr->step_layout == NULL)	/* batch step */
+			continue;
 		if (job_ptr->used_lps[job_node_inx] >=
 		    step_ptr->step_layout->tasks[step_node_inx]) {
 			job_ptr->used_lps[job_node_inx] -= 
