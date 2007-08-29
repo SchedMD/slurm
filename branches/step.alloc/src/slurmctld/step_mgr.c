@@ -686,6 +686,12 @@ extern void step_alloc_lps(struct step_record *step_ptr)
 		step_node_inx++;
 		job_ptr->used_lps[job_node_inx] += 
 			step_ptr->step_layout->tasks[step_node_inx];
+#if 0
+		info("step alloc of %s procs: %u of %u", 
+			node_record_table_ptr[i_node].name,
+			job_ptr->used_lps[job_node_inx],
+			job_ptr->alloc_lps[job_node_inx]);
+#endif
 		if (step_node_inx == (step_ptr->step_layout->node_cnt - 1))
 			break;
 	}
@@ -717,6 +723,12 @@ static void _step_dealloc_lps(struct step_record *step_ptr)
 				job_ptr->job_id, step_ptr->step_id);
 			job_ptr->used_lps[job_node_inx] = 0;
 		}
+#if 0
+		info("step dealloc of %s procs: %u of %u", 
+			node_record_table_ptr[i_node].name,
+			job_ptr->used_lps[job_node_inx],
+			job_ptr->alloc_lps[job_node_inx]);
+#endif
 		if (step_node_inx == (step_ptr->step_layout->node_cnt - 1))
 			break;
 	}
