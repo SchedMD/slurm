@@ -36,6 +36,7 @@ set exit_code        0
 set file_in         "test$test_id.input"
 set file_out        "test$test_id.output"
 set job_id           0
+set sleep_secs       10
 
 print_header $test_id
 
@@ -49,7 +50,7 @@ make_bash_script $file_in "
   inx=0
   while \[ \$inx -lt \$SLURM_TASKS_PER_NODE \]
   do
-    $srun --exclusive -n1 sleep 10 &
+    $srun --exclusive -n1 sleep $sleep_secs &
     inx=\$((inx+1))
   done
   $srun --exclusive -n1 hostname &
@@ -103,7 +104,7 @@ expect {
 		incr match1
 		exp_continue
 	}
-	-re "Step creation completed" {
+	-re "Job step created" {
 		incr match2
 		exp_continue
 	}
@@ -113,7 +114,93 @@ expect {
 }
 
 if { $match1 != 1 || $match2 != 1 } {
-	send_user "\nFAILURE: Problem with exclusive resource allocation for step\n"
+	send_user "\nFAILURE: Problem with exclusive resource allocation "
+	send_user "for step ($match1, $match2)\n"
+	set exit_code 1
+}
+
+if {$exit_code == 0} {
+	send_user "\nSo far, so good. Trying with --imediate option\n\n"
+} else {
+	exit $exit_code
+}
+
+#
+# Delete left-over input script
+# Build another input script file
+# Run one more step than allocated CPUs with immediate option and make aborts
+#
+exec $bin_rm -f $file_in $file_out
+make_bash_script $file_in "
+  inx=0
+  while \[ \$inx -lt \$SLURM_TASKS_PER_NODE \]
+  do
+    $srun --exclusive -n1 sleep $sleep_secs &
+    inx=\$((inx+1))
+  done
+  $srun --exclusive -n1 --immediate hostname &
+  wait
+"
+
+#
+# Spawn a job via sbatch
+#
+spawn $sbatch -N1 -t1 --output=$file_out $file_in
+expect {
+	-re "Submitted batch job ($number)" {
+		set job_id $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: sbatch not responding\n"
+		set exit_code 1
+		exp_continue
+	}
+	eof {
+		wait
+	}
+}
+if { $job_id == 0 } {
+	send_user "\nFAILURE: failed to submit job\n"
+	exit 1
+}
+
+#
+# Wait for job to complete
+#
+if {[wait_for_job $job_id "DONE"] != 0} {
+	send_user "\nFAILURE: waiting for job to complete\n"
+	cancel_job $job_id
+	set exit_code 1
+}
+
+#
+# Check for desired output
+#
+if {[wait_for_file $file_out] != 0} {
+	send_user "\nFAILURE: Output file $file_out is missing\n"
+	exit 1
+}
+set match1 0
+spawn $bin_cat $file_out
+expect {
+	-re "Job step creation temporarily disabled, retrying" {
+		send_user "\nFAILURE: Problem --exclusive and --immediate option for step\n"
+		set exit_code 1
+		exp_continue
+	}
+	-re "Unable to create job step" {
+		send_user "This error was expected, no worries\n"
+		incr match1
+		exp_continue
+	}
+	eof {
+		wait
+	}
+}
+
+if { $match1 != 1 } {
+	send_user "\nFAILURE: Problem --exclusive and --immediate option for step\n"
 	set exit_code 1
 }
 

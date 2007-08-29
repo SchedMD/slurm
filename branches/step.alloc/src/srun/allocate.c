@@ -648,7 +648,8 @@ create_job_step(srun_job_t *job)
 			break;
 		}
 		rc = slurm_get_errno();
-		if ((rc != ESLURM_NODES_BUSY) && (rc != ESLURM_DISABLED)) {
+		if (opt.immediate ||
+		    ((rc != ESLURM_NODES_BUSY) && (rc != ESLURM_DISABLED))) {
 			error ("Unable to create job step: %m");
 			return -1;
 		}
