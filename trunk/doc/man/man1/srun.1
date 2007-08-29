@@ -478,8 +478,9 @@ Specify a minimum number of threads per core.
 
 .TP
 \fB\-\-msg\-timeout\fR=\fIseconds\fR
-Modify the job launch message timeout. 
-Changes to this are typically not recommended.
+Modify the job launch message timeout.
+The default value is \fBMessageTimeout\fR in the SLURM configuration file slurm.conf. 
+Changes to this are typically not recommended, but could be useful to diagnose problems.
 
 .TP
 \fB\-\-mpi\fR=\fImpi_type\fR
