@@ -305,7 +305,7 @@ void set_options(const int argc, char **argv)
 		switch (opt_char) {
 			
 		case '?':
-			fprintf(stderr, "Try \"sbatch --help\" for more "
+			fprintf(stderr, "Try \"sattach --help\" for more "
 				"information\n");
 			exit(1);
 			break;
