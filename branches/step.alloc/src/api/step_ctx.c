@@ -329,7 +329,7 @@ extern void slurm_step_ctx_params_t_init (slurm_step_ctx_params_t *ptr)
 	char *jobid_str;
 
 	/* zero the entire structure */
-	memset(ptr, 0, sizeof(job_step_create_request_msg_t));
+	memset(ptr, 0, sizeof(slurm_step_ctx_params_t));
 
 	/* now set anything that shouldn't be 0 or NULL by default */
 	ptr->relative = (uint16_t)NO_VAL;
