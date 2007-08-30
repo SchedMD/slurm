@@ -233,7 +233,7 @@ static char * _task_list_exp(struct job_record *job_ptr)
 
 		if (reps == job_ptr->alloc_lps[i]) {
 			/* append to existing hostlist record */
-			if (hostlist_push(hl_tmp, host))
+			if (hostlist_push(hl_tmp, host) == 0)
 				error("hostlist_push failure");
 		} else {
 			if (hl_tmp)
