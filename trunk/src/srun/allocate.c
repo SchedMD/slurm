@@ -578,6 +578,8 @@ _step_req_create(srun_job_t *j)
 	r->name       = xstrdup(opt.job_name);
 	r->relative   = (uint16_t)opt.relative;
 	r->ckpt_interval = (uint16_t)opt.ckpt_interval;
+	r->exclusive  = (uint16_t)opt.exclusive;
+	r->immediate  = (uint16_t)opt.immediate;
 	r->overcommit = opt.overcommit ? 1 : 0;
 	debug("requesting job %d, user %d, nodes %d including (%s)", 
 	      r->job_id, r->user_id, r->node_count, r->node_list);
@@ -631,7 +633,7 @@ create_job_step(srun_job_t *job)
 {
 	job_step_create_request_msg_t  *req  = NULL;
 	job_step_create_response_msg_t *resp = NULL;
-	int i;
+	int i, rc;
 	
 	if (!(req = _step_req_create(job))) {
 		error ("Unable to allocate step request message");
@@ -640,14 +642,21 @@ create_job_step(srun_job_t *job)
 
 	for (i=0; ;i++) {
 		if ((slurm_job_step_create(req, &resp) == SLURM_SUCCESS)
-		&&  (resp != NULL))
+		&&  (resp != NULL)) {
+			if (i > 0)
+				info("Job step created");
 			break;
-		if (slurm_get_errno() != ESLURM_DISABLED) {
+		}
+		rc = slurm_get_errno();
+		if (opt.immediate ||
+		    ((rc != ESLURM_NODES_BUSY) && (rc != ESLURM_DISABLED))) {
 			error ("Unable to create job step: %m");
 			return -1;
 		}
 		if (i == 0)
 			info("Job step creation temporarily disabled, retrying");
+		else
+			info("Job step creation still disabled, retrying");
 		sleep(MIN((i*10), 60));
 	}
 	

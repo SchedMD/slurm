@@ -714,10 +714,6 @@ static int _load_job_state(Buf buffer)
 	job_ptr->mail_user         = mail_user;
 	mail_user = NULL;	/* reused, nothing left to free */
 	job_ptr->select_jobinfo = select_jobinfo;
-
-	build_node_details(job_ptr);	/* set: num_cpu_groups, cpus_per_node, 
-					 *	cpu_count_reps, node_cnt, and
-					 *	node_addr */
 	info("recovered job id %u", job_id);
 
 	safe_unpack16(&step_flag, buffer);
@@ -727,6 +723,9 @@ static int _load_job_state(Buf buffer)
 		safe_unpack16(&step_flag, buffer);
 	}
 
+	build_node_details(job_ptr);	/* set: num_cpu_groups, cpus_per_node,
+					 *  cpu_count_reps, node_cnt,
+					 *  node_addr, alloc_lps, used_lps */
 	return SLURM_SUCCESS;
 
 unpack_error:
@@ -2756,6 +2755,7 @@ static void _list_delete_job(void *job_entry)
 	xfree(job_ptr->mail_user);
 	xfree(job_ptr->network);
 	xfree(job_ptr->alloc_lps);
+	xfree(job_ptr->used_lps);
 	xfree(job_ptr->comment);
 	select_g_free_jobinfo(&job_ptr->select_jobinfo);
 	if (job_ptr->step_list) {
@@ -3200,7 +3200,8 @@ static void _reset_step_bitmaps(struct job_record *job_ptr)
 			      job_ptr->job_id, step_ptr->step_id);
 			delete_step_record (job_ptr, step_ptr->step_id);
 		}
-	}		
+		step_alloc_lps(step_ptr);
+	}
 
 	list_iterator_destroy (step_iterator);
 	return;

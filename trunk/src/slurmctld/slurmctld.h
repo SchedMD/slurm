@@ -381,6 +381,8 @@ struct job_record {
 					 * for the credentials */
         uint32_t *alloc_lps;		/* number of logical processors
 					 * allocated for this job */
+	uint32_t *used_lps;		/* number of logical processors
+					 * already allocated to job steps */
 	uint16_t mail_type;		/* see MAIL_JOB_* in slurm.h */
 	char *mail_user;		/* user to get e-mail notification */
 	uint32_t requid;            	/* requester user ID */
@@ -408,6 +410,7 @@ struct 	step_record {
 	char *host;			/* host for srun communications */
 	uint16_t batch_step;		/* 1 if batch job step, 0 otherwise */
 	uint16_t ckpt_interval;		/* checkpoint interval in minutes */
+	uint16_t exclusive;	/* FIXME */
 	time_t ckpt_time;		/* time of last checkpoint */
 	switch_jobinfo_t switch_job;	/* switch context, opaque */
 	check_jobinfo_t check_job;	/* checkpoint context, opaque */
@@ -1237,6 +1240,9 @@ extern int slurmctld_shutdown(void);
 
 /* Perform periodic job step checkpoints (per user request) */
 extern void step_checkpoint(void);
+
+/* Update a job's record of allocated CPUs when a job step gets scheduled */
+extern void step_alloc_lps(struct step_record *step_ptr);
 
 /*
  * step_create - creates a step_record in step_specs->job_id, sets up the
