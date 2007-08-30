@@ -451,7 +451,7 @@ _pick_step_nodes (struct job_record  *job_ptr,
 		cpus_picked_cnt = 0;
 		for (i=bit_ffs(job_ptr->node_bitmap); i<node_record_count; 
 		     i++) {
-			if (bit_test(job_ptr->node_bitmap, i) == 0)
+			if (!bit_test(job_ptr->node_bitmap, i))
 				continue;
 			avail = job_ptr->alloc_lps[j] - job_ptr->used_lps[j];
 			tot_cpus += job_ptr->alloc_lps[j];
@@ -704,6 +704,9 @@ static void _step_dealloc_lps(struct step_record *step_ptr)
 	int i_node;
 	int job_node_inx = -1, step_node_inx = -1;
 
+	if (step_ptr->step_layout == NULL)	/* batch step */
+		return;
+
 	for (i_node = bit_ffs(job_ptr->node_bitmap); 
 	     i_node < job_ptr->node_cnt; i_node++) {
 		if (!bit_test(job_ptr->node_bitmap, i_node))
@@ -712,8 +715,6 @@ static void _step_dealloc_lps(struct step_record *step_ptr)
 		if (!bit_test(step_ptr->step_node_bitmap, i_node))
 			continue;
 		step_node_inx++;
-		if (step_ptr->step_layout == NULL)	/* batch step */
-			continue;
 		if (job_ptr->used_lps[job_node_inx] >=
 		    step_ptr->step_layout->tasks[step_node_inx]) {
 			job_ptr->used_lps[job_node_inx] -= 
@@ -930,7 +931,6 @@ extern slurm_step_layout_t *step_layout_create(struct step_record *step_ptr,
 	int cpu_inx = -1;
 	int usable_cpus = 0, i;
 	int set_nodes = 0;
-	int inx = 0;
 	int pos = -1;
 	struct job_record *job_ptr = step_ptr->job_ptr;
 			
@@ -951,8 +951,8 @@ extern slurm_step_layout_t *step_layout_create(struct step_record *step_ptr,
 				}
 			} else
 				usable_cpus = job_ptr->alloc_lps[pos];
-			debug2("%d got inx of %d cpus = %d pos = %d", 
-			       i, inx, usable_cpus, pos);
+			debug2("step_layou cpus = %d pos = %d", 
+			       usable_cpus, pos);
 			
 			if ((cpu_inx == -1) ||
 			    (cpus_per_node[cpu_inx] != usable_cpus)) {
@@ -963,10 +963,11 @@ extern slurm_step_layout_t *step_layout_create(struct step_record *step_ptr,
 			} else
 				cpu_count_reps[cpu_inx]++;
 			set_nodes++;
-			if(set_nodes == node_count)
+			if (set_nodes == node_count)
 				break;
 		}
 	}
+
 	/* layout the tasks on the nodes */
 	return slurm_step_layout_create(step_node_list,
 					cpus_per_node, cpu_count_reps, 
