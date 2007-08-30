@@ -96,7 +96,8 @@ extern char * moab2slurm_task_list(char *moab_tasklist, int *task_cnt)
 			if (slurm_tasklist[i] == ':') {
 				slurm_tasklist[i] = ',';
 				(*task_cnt)++;
-			}
+			} else if (slurm_tasklist[i] == ',')
+				(*task_cnt)++;
 		}		
 		return slurm_tasklist;
 	}
