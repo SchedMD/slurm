@@ -3,6 +3,8 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 1.2.15
 =========================
+ -- In sched/wiki2, fix bug processing hostlist expressions where hosts
+    lack a numeric suffix.
 
 * Changes in SLURM 1.2.14
 =========================
