@@ -141,6 +141,7 @@ static int	_start_job(uint32_t jobid, int task_cnt, char *hostlist,
 	size_t node_name_len;
 	static uint32_t cr_test = 0, cr_enabled = 0;
 
+info("task_cnt=%d, hostlist=%s, tasklist=%s", task_cnt, hostlist, tasklist);
 	if (cr_test == 0) {
 		select_g_get_info_from_plugin(SELECT_CR_PLUGIN,
 						&cr_enabled);
@@ -187,10 +188,6 @@ static int	_start_job(uint32_t jobid, int task_cnt, char *hostlist,
 		goto fini;
 	}
 
-	xfree(job_ptr->details->req_node_layout);
-	job_ptr->details->req_node_layout = (uint16_t *) 
-			xmalloc(bit_set_count(new_bitmap) * sizeof(uint16_t));
-
 	/* User excluded node list incompatable with Wiki
 	 * Exclude all nodes not explicitly requested */
 	if (task_cnt) {
@@ -204,7 +201,10 @@ static int	_start_job(uint32_t jobid, int task_cnt, char *hostlist,
 	 * as cpus should be used per node); at this point, node names
 	 * are comma-separated. This is _not_ a fast algorithm as it
 	 * performs many string compares. */
-	if (cr_enabled) {
+	xfree(job_ptr->details->req_node_layout);
+	if (task_cnt && cr_enabled) {
+		job_ptr->details->req_node_layout = (uint16_t *)
+			xmalloc(bit_set_count(new_bitmap) * sizeof(uint16_t));
 		bsize = bit_size(new_bitmap);
 		for (i = 0, ll = -1; i < bsize; i++) {
 			if (!bit_test(new_bitmap, i))
