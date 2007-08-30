@@ -71,11 +71,7 @@ typedef struct {
 	char *options;
 } storage_field_t;
 
-
-extern bool thread_safe;
 extern pthread_mutex_t pgsql_lock;
-
-extern pgsql_db_info_t *create_pgsql_db_info();
 
 extern int *destroy_pgsql_db_info(pgsql_db_info_t *db_info);
 

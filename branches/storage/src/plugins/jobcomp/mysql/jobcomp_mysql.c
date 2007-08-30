@@ -39,6 +39,7 @@
 #include "src/common/mysql_common.h"
 #include "mysql_jobcomp_process.h"
 #include <pwd.h>
+#include <grp.h>
 #include <sys/types.h>
 #include "src/common/parse_time.h"
 #include "src/common/node_select.h"
@@ -126,6 +127,18 @@ static int plugin_errno = SLURM_SUCCESS;
 static pthread_mutex_t  jobcomp_lock = PTHREAD_MUTEX_INITIALIZER;
 
 
+static mysql_db_info_t *_mysql_jobcomp_create_db_info()
+{
+	mysql_db_info_t *db_info = xmalloc(sizeof(mysql_db_info_t));
+	db_info->port = slurm_get_jobcomp_port();
+	if(!db_info->port) 
+		db_info->port = 3306;
+	db_info->host = slurm_get_jobcomp_host();	
+	db_info->user = slurm_get_jobcomp_user();	
+	db_info->pass = slurm_get_jobcomp_pass();	
+	return db_info;
+}
+
 static int _mysql_jobcomp_check_tables()
 {
 	if(mysql_db_create_table(jobcomp_mysql_db, jobcomp_table,
@@ -153,6 +166,30 @@ static char *_get_user_name(uint32_t user_id)
 		else
 			snprintf(cache_name, sizeof(cache_name), "Unknown");
 		cache_uid = user_id;
+	}
+	ret_name = xstrdup(cache_name);
+	slurm_mutex_unlock(&jobcomp_lock);
+
+	return ret_name;
+}
+
+/* get the group name for the give group_id */
+static char *_get_group_name(uint32_t group_id)
+{
+	static uint32_t cache_gid      = 0;
+	static char     cache_name[32] = "root";
+	struct group  *group_info      = NULL;
+	char *ret_name = NULL;
+
+	slurm_mutex_lock(&jobcomp_lock);
+	if (group_id != cache_gid) {
+		group_info = getgrgid((gid_t) group_id);
+		if (group_info && group_info->gr_name[0])
+			snprintf(cache_name, sizeof(cache_name), "%s", 
+				 group_info->gr_name);
+		else
+			snprintf(cache_name, sizeof(cache_name), "Unknown");
+		cache_gid = group_id;
 	}
 	ret_name = xstrdup(cache_name);
 	slurm_mutex_unlock(&jobcomp_lock);
@@ -218,7 +255,7 @@ extern int fini ( void )
 extern int slurm_jobcomp_set_location(char *location)
 {
 #ifdef HAVE_MYSQL
-	mysql_db_info_t *db_info = create_mysql_db_info();
+	mysql_db_info_t *db_info = _mysql_jobcomp_create_db_info();
 	int rc = SLURM_SUCCESS;
 	char *db_name = NULL;
 	int i = 0;
@@ -266,7 +303,7 @@ extern int slurm_jobcomp_log_record(struct job_record *job_ptr)
 {
 #ifdef HAVE_MYSQL
 	int rc = SLURM_SUCCESS;
-	char *usr_str = NULL, lim_str[32];
+	char *usr_str = NULL, *grp_str = NULL, lim_str[32];
 #ifdef HAVE_BG
 	char connection[128];
 	char reboot[4];
@@ -289,6 +326,7 @@ extern int slurm_jobcomp_log_record(struct job_record *job_ptr)
 	}
 
 	usr_str = _get_user_name(job_ptr->user_id);
+	grp_str = _get_group_name(job_ptr->group_id);
 	if (job_ptr->time_limit == INFINITE)
 		strcpy(lim_str, "UNLIMITED");
 	else
@@ -317,20 +355,22 @@ extern int slurm_jobcomp_log_record(struct job_record *job_ptr)
 		blockid, sizeof(blockid), SELECT_PRINT_BG_ID);
 #endif
 	snprintf(query, sizeof(query),
-		 "insert into %s (jobid, uid, user_name, name, state, "
+		 "insert into %s (jobid, uid, user_name, gid, group_name, "
+		 "name, state, "
 		 "partition, timelimit, starttime, endtime, nodelist, nodecnt"
 #ifdef HAVE_BG
 		 ", connection, reboot, rotate, maxprocs, geometry, "
 		 "start, blockid"
 #endif
-		 ") values (%u, %u, '%s', '%s', %d, '%s', '%s', %u, %u, "
-		 "'%s', %u"
+		 ") values (%u, %u, '%s', %u, '%s', '%s', %d, "
+		 "'%s', '%s', %u, %u, '%s', %u"
 #ifdef HAVE_BG
 		 ", '%s', '%s', '%s', %s, '%s', '%s', '%s'"
 #endif
 		 ")",
 		 jobcomp_table, job_ptr->job_id, job_ptr->user_id, usr_str,
-		 job_ptr->name, job_state, job_ptr->partition, lim_str,
+		 job_ptr->group_id, grp_str, job_ptr->name,
+		 job_state, job_ptr->partition, lim_str,
 		 (int)job_ptr->start_time, (int)job_ptr->end_time,
 		 job_ptr->nodes, job_ptr->node_cnt
 #ifdef HAVE_BG
@@ -341,6 +381,7 @@ extern int slurm_jobcomp_log_record(struct job_record *job_ptr)
 //	info("query = %s", query);
 	rc = mysql_db_query(jobcomp_mysql_db, query);
 	xfree(usr_str);
+	xfree(grp_str);
 
 	return rc;
 #else

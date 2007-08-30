@@ -62,7 +62,7 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-extern jobacct_job_rec_t *jobacct_init_job_rec(jobacct_header_t header)
+extern jobacct_job_rec_t *create_jobacct_job_rec(jobacct_header_t header)
 {
 	jobacct_job_rec_t *job = xmalloc(sizeof(jobacct_job_rec_t));
 	memcpy(&job->header, &header, sizeof(jobacct_header_t));
@@ -93,7 +93,7 @@ extern jobacct_job_rec_t *jobacct_init_job_rec(jobacct_header_t header)
       	return job;
 }
 
-extern jobacct_step_rec_t *jobacct_init_step_rec(jobacct_header_t header)
+extern jobacct_step_rec_t *create_jobacct_step_rec(jobacct_header_t header)
 {
 	jobacct_step_rec_t *step = xmalloc(sizeof(jobacct_job_rec_t));
 	memcpy(&step->header, &header, sizeof(jobacct_header_t));

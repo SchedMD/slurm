@@ -139,8 +139,9 @@ extern void pgsql_jobcomp_process_get_jobs(List job_list,
 		return;
 	}
 	xfree(query);
-
-	for (i = 0; i < PQntuples(result); i++) {		
+	
+	for (i = 0; i < PQntuples(result); i++) {
+		
 		if (params->opt_fdump) {
 			_do_fdump(result, i);
 			continue;
@@ -187,8 +188,8 @@ extern void pgsql_jobcomp_process_get_jobs(List job_list,
 				atoi(PQgetvalue(result, i, 
 						JOBCOMP_REQ_MAXPROCS));
 		if(PQgetvalue(result, i, JOBCOMP_REQ_STATE)) {
-			i = atoi(PQgetvalue(result, i, JOBCOMP_REQ_STATE));
-			job->state = xstrdup(job_state_string(i));
+			int j = atoi(PQgetvalue(result, i, JOBCOMP_REQ_STATE));
+			job->state = xstrdup(job_state_string(j));
 		}
 		job->timelimit =
 			xstrdup(PQgetvalue(result, i, JOBCOMP_REQ_TIMELIMIT));
@@ -205,6 +206,7 @@ extern void pgsql_jobcomp_process_get_jobs(List job_list,
 		list_append(job_list, job);
 
 	}
+	
 	PQclear(result);
 	return;
 }

@@ -82,6 +82,18 @@ char *job_table = "job_table";
 char *step_table = "step_table";
 char *rusage_table = "rusage_table";
 
+static mysql_db_info_t *_mysql_jobacct_create_db_info()
+{
+	mysql_db_info_t *db_info = xmalloc(sizeof(mysql_db_info_t));
+	db_info->port = slurm_get_jobacct_storage_port();
+	if(!db_info->port) 
+		db_info->port = 3306;
+	db_info->host = slurm_get_jobacct_storage_host();	
+	db_info->user = slurm_get_jobacct_storage_user();	
+	db_info->pass = slurm_get_jobacct_storage_pass();	
+	return db_info;
+}
+
 static int _mysql_jobacct_check_tables()
 {
 	storage_field_t job_index_fields[] = {
@@ -235,7 +247,7 @@ extern int fini ( void )
 extern int jobacct_storage_p_init(char *location)
 {
 #ifdef HAVE_MYSQL
-	mysql_db_info_t *db_info = create_mysql_db_info();
+	mysql_db_info_t *db_info = _mysql_jobacct_create_db_info();
 	int rc = SLURM_SUCCESS;
 	char *db_name = NULL;
 

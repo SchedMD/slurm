@@ -78,18 +78,6 @@ static int _mysql_make_table_current(MYSQL *mysql_db, char *table_name,
 	return SLURM_SUCCESS;
 }
 
-extern mysql_db_info_t *create_mysql_db_info()
-{
-	mysql_db_info_t *db_info = xmalloc(sizeof(mysql_db_info_t));
-	db_info->port = slurm_get_jobacct_storage_port();
-	if(!db_info->port) 
-		db_info->port = 3306;
-	db_info->host = slurm_get_jobacct_storage_host();	
-	db_info->user = slurm_get_jobacct_storage_user();	
-	db_info->pass = slurm_get_jobacct_storage_pass();	
-	return db_info;
-}
-
 extern int *destroy_mysql_db_info(mysql_db_info_t *db_info)
 {
 	if(db_info) {

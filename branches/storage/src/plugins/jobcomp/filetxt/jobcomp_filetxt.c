@@ -48,6 +48,7 @@
 
 #include <fcntl.h>
 #include <pwd.h>
+#include <grp.h>
 #include <unistd.h>
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/slurm_jobcomp.h"
@@ -87,7 +88,7 @@ const char plugin_name[]       	= "Job completion text file logging plugin";
 const char plugin_type[]       	= "jobcomp/filetxt";
 const uint32_t plugin_version	= 100;
 
-#define JOB_FORMAT "JobId=%lu UserId=%s(%lu) Name=%s JobState=%s Partition=%s "\
+#define JOB_FORMAT "JobId=%lu UserId=%s(%lu) GroupId=%s(%lu) Name=%s JobState=%s Partition=%s "\
 		"TimeLimit=%s StartTime=%s EndTime=%s NodeList=%s NodeCnt=%u %s\n"
  
 /* Type for error string table entries */
@@ -128,6 +129,28 @@ _get_user_name(uint32_t user_id, char *user_name, int buf_size)
 			snprintf(cache_name, sizeof(cache_name), "Unknown");
 		cache_uid = user_id;
 		snprintf(user_name, buf_size, "%s", cache_name);
+	}
+}
+
+/* get the group name for the give group_id */
+static void
+_get_group_name(uint32_t group_id, char *group_name, int buf_size)
+{
+	static uint32_t cache_gid      = 0;
+	static char     cache_name[32] = "root";
+	struct group  *group_info      = NULL;
+
+	if (group_id == cache_gid)
+		snprintf(group_name, buf_size, "%s", cache_name);
+	else {
+		group_info = getgrgid((gid_t) group_id);
+		if (group_info && group_info->gr_name[0])
+			snprintf(cache_name, sizeof(cache_name), "%s", 
+				group_info->gr_name);
+		else
+			snprintf(cache_name, sizeof(cache_name), "Unknown");
+		cache_gid = group_id;
+		snprintf(group_name, buf_size, "%s", cache_name);
 	}
 }
 
@@ -200,7 +223,7 @@ extern int slurm_jobcomp_log_record ( struct job_record *job_ptr )
 {
 	int rc = SLURM_SUCCESS;
 	char job_rec[512+MAX_JOBNAME_LEN];
-	char usr_str[32], start_str[32], end_str[32], lim_str[32];
+	char usr_str[32], grp_str[32], start_str[32], end_str[32], lim_str[32];
 	char select_buf[128];
 	size_t offset = 0, tot_size, wrote;
 	enum job_states job_state;
@@ -212,6 +235,7 @@ extern int slurm_jobcomp_log_record ( struct job_record *job_ptr )
 
 	slurm_mutex_lock( &file_lock );
 	_get_user_name(job_ptr->user_id, usr_str, sizeof(usr_str));
+	_get_group_name(job_ptr->group_id, grp_str, sizeof(grp_str));
 	if (job_ptr->time_limit == INFINITE)
 		strcpy(lim_str, "UNLIMITED");
 	else
@@ -231,12 +255,13 @@ extern int slurm_jobcomp_log_record ( struct job_record *job_ptr )
 		select_buf, sizeof(select_buf), SELECT_PRINT_MIXED);
 
 	snprintf(job_rec, sizeof(job_rec), JOB_FORMAT,
-			(unsigned long) job_ptr->job_id, usr_str, 
-			(unsigned long) job_ptr->user_id, job_ptr->name, 
-			job_state_string(job_state), 
-			job_ptr->partition, lim_str, start_str, 
-			end_str, job_ptr->nodes, job_ptr->node_cnt,
-			select_buf);
+		 (unsigned long) job_ptr->job_id, usr_str, 
+		 (unsigned long) job_ptr->user_id, grp_str, 
+		 (unsigned long) job_ptr->group_id, job_ptr->name, 
+		 job_state_string(job_state), 
+		 job_ptr->partition, lim_str, start_str, 
+		 end_str, job_ptr->nodes, job_ptr->node_cnt,
+		 select_buf);
 	tot_size = strlen(job_rec);
 
 	while ( offset < tot_size ) {

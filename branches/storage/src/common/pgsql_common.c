@@ -44,19 +44,6 @@
 pthread_mutex_t pgsql_lock = PTHREAD_MUTEX_INITIALIZER;
 
 #ifdef HAVE_PGSQL
-extern pgsql_db_info_t *create_pgsql_db_info()
-{
-	pgsql_db_info_t *db_info = xmalloc(sizeof(pgsql_db_info_t));
-	db_info->port = slurm_get_jobacct_storage_port();
-	/* it turns out it is better if using defaults to let postgres
-	   handle them on it's own terms */
-	if(!db_info->port)
-		db_info->port = 5432;
-	db_info->host = slurm_get_jobacct_storage_host();
-	db_info->user = slurm_get_jobacct_storage_user();	
-	db_info->pass = slurm_get_jobacct_storage_pass();	
-	return db_info;
-}
 
 extern int *destroy_pgsql_db_info(pgsql_db_info_t *db_info)
 {
@@ -132,7 +119,7 @@ extern int pgsql_get_db_connection(PGconn **pgsql_db, char *db_name,
 				      "like blank ones");
 			} 
 			
-			info("Database %s not created. Creating %d", db_name);
+			info("Database %s not created. Creating", db_name);
 			PQfinish(*pgsql_db);
 			pgsql_create_db(*pgsql_db, db_name, db_info);
 			
