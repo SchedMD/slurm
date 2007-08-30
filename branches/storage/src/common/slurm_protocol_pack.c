@@ -2209,7 +2209,6 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **
 	safe_unpack32(&build_ptr->job_acct_storage_port, buffer);
 	safe_unpackstr_xmalloc(&build_ptr->job_comp_loc, &uint16_tmp, buffer);
 	safe_unpackstr_xmalloc(&build_ptr->job_comp_type, &uint16_tmp, buffer);
-	safe_unpackstr_xmalloc(&build_ptr->job_comp_type, &uint16_tmp, buffer);
 	safe_unpackstr_xmalloc(&build_ptr->job_comp_user, &uint16_tmp, buffer);
 	safe_unpackstr_xmalloc(&build_ptr->job_comp_host, &uint16_tmp, buffer);
 	safe_unpackstr_xmalloc(&build_ptr->job_comp_pass, &uint16_tmp, buffer);

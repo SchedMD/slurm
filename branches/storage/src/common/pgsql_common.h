@@ -83,18 +83,16 @@ extern int pgsql_create_db(PGconn *pgsql_db, char *db_name,
 			   pgsql_db_info_t *db_info);
 
 extern int pgsql_get_db_connection(PGconn **pgsql_db, char *db_name,
-				   pgsql_db_info_t *db_info,
-				   int *storage_init);
+				   pgsql_db_info_t *db_info);
 
-extern int pgsql_db_query(PGconn *pgsql_db, int storage_init, char *query);
+extern int pgsql_db_query(PGconn *pgsql_db, char *query);
 
-extern PGresult *pgsql_db_query_ret(PGconn *pgsql_db, int storage_init,
-				     char *query);
+extern PGresult *pgsql_db_query_ret(PGconn *pgsql_db, char *query);
 
-extern int pgsql_insert_ret_id(PGconn *pgsql_db, int storage_init, 
+extern int pgsql_insert_ret_id(PGconn *pgsql_db, 
 			       char *sequence_name, char *query);
 
-extern int pgsql_db_create_table(PGconn *pgsql_db, int storage_init, 
+extern int pgsql_db_create_table(PGconn *pgsql_db, 
 				 char *table_name, storage_field_t *fields,
 				 char *ending);
 

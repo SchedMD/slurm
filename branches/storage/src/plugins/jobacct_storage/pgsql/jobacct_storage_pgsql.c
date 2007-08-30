@@ -75,7 +75,6 @@ const uint32_t plugin_version = 100;
 #define DEFAULT_JOBACCT_DB "slurm_jobacct_db"
 
 PGconn *jobacct_pgsql_db = NULL;
-int jobacct_db_init = 0;
 
 char *index_table = "index_table";
 char *job_table = "job_table";
@@ -176,7 +175,7 @@ static int _pgsql_jobacct_check_tables(char *user)
 				     "and tablename !~ '^pg_+'", user);
 
 	if(!(result =
-	     pgsql_db_query_ret(jobacct_pgsql_db, jobacct_db_init, query))) {
+	     pgsql_db_query_ret(jobacct_pgsql_db, query))) {
 		xfree(query);
 		return SLURM_ERROR;
 	}
@@ -199,25 +198,25 @@ static int _pgsql_jobacct_check_tables(char *user)
 	PQclear(result);
 
 	if(!index_found)
-		if(pgsql_db_create_table(jobacct_pgsql_db, jobacct_db_init, 
+		if(pgsql_db_create_table(jobacct_pgsql_db,  
 					 index_table, index_table_fields,
 					 ", primary key (id))") == SLURM_ERROR)
 			return SLURM_ERROR;
 	
 	if(!job_found)
-		if(pgsql_db_create_table(jobacct_pgsql_db, jobacct_db_init, 
+		if(pgsql_db_create_table(jobacct_pgsql_db,  
 					 job_table, job_table_fields,
 					 ")") == SLURM_ERROR)
 			return SLURM_ERROR;
 
 	if(!step_found)
-		if(pgsql_db_create_table(jobacct_pgsql_db, jobacct_db_init, 
+		if(pgsql_db_create_table(jobacct_pgsql_db, 
 					 step_table, step_table_fields,
 					 ")") == SLURM_ERROR)
 			return SLURM_ERROR;
 
 	if(!rusage_found)
-		if(pgsql_db_create_table(jobacct_pgsql_db, jobacct_db_init, 
+		if(pgsql_db_create_table(jobacct_pgsql_db, 
 					 rusage_table, step_rusage_fields,
 					 ")") == SLURM_ERROR)
 			return SLURM_ERROR;
@@ -273,8 +272,8 @@ extern int jobacct_storage_p_init(char *location)
 	int rc = SLURM_SUCCESS;
 	char *db_name = NULL;
 
-	if(jobacct_db_init) 
-		return SLURM_ERROR;
+	if(jobacct_pgsql_db && PQstatus(jobacct_pgsql_db) == CONNECTION_OK) 
+		return SLURM_SUCCESS;
 	
 	if(!location)
 		db_name = DEFAULT_JOBACCT_DB;
@@ -296,8 +295,7 @@ extern int jobacct_storage_p_init(char *location)
 	}
 	debug2("pgsql_connect() called for db %s", db_name);
 	
-	pgsql_get_db_connection(&jobacct_pgsql_db, db_name, db_info,
-				&jobacct_db_init);
+	pgsql_get_db_connection(&jobacct_pgsql_db, db_name, db_info);
 
 	rc = _pgsql_jobacct_check_tables(db_info->user);
 
@@ -323,7 +321,6 @@ extern int jobacct_storage_p_fini()
 		PQfinish(jobacct_pgsql_db);
 		jobacct_pgsql_db = NULL;
 	}
-	jobacct_db_init = 0;
 	return SLURM_SUCCESS;
 #else
 	return SLURM_ERROR;
@@ -346,7 +343,7 @@ extern int jobacct_storage_p_job_start(struct job_record *job_ptr)
 	char query[1024];
 	int reinit = 0;
 
-	if(!jobacct_pgsql_db) {
+	if(!jobacct_pgsql_db || PQstatus(jobacct_pgsql_db) != CONNECTION_OK) {
 		char *loc = slurm_get_jobacct_storage_loc();
 		if(jobacct_storage_p_init(loc) == SLURM_ERROR) {
 			xfree(loc);
@@ -401,7 +398,7 @@ extern int jobacct_storage_p_job_start(struct job_record *job_ptr)
 
 try_again:
 	if((job_ptr->db_index = pgsql_insert_ret_id(
-		    jobacct_pgsql_db, jobacct_db_init, 
+		    jobacct_pgsql_db,  
 		    "index_table_id_seq", query))) {
 		snprintf(query, sizeof(query),
 			 "insert into %s (id, start, name, track_steps, "
@@ -413,7 +410,7 @@ try_again:
 			 job_ptr->job_state & (~JOB_COMPLETING),
 			 priority, job_ptr->num_procs,
 			 nodes, account);
-		rc = pgsql_db_query(jobacct_pgsql_db, jobacct_db_init, query);
+		rc = pgsql_db_query(jobacct_pgsql_db, query);
 	} else if(!reinit) {
 		char *loc = slurm_get_jobacct_storage_loc();
 		error("It looks like the storage has gone "
@@ -442,7 +439,7 @@ extern int jobacct_storage_p_job_complete(struct job_record *job_ptr)
 	char	*account, *nodes;
 	int rc=SLURM_SUCCESS;
 	
-	if(!jobacct_pgsql_db) {
+	if(!jobacct_pgsql_db || PQstatus(jobacct_pgsql_db) != CONNECTION_OK) {
 		char *loc = slurm_get_jobacct_storage_loc();
 		if(jobacct_storage_p_init(loc) == SLURM_ERROR) {
 			xfree(loc);
@@ -476,7 +473,7 @@ extern int jobacct_storage_p_job_complete(struct job_record *job_ptr)
 			 job_ptr->job_state & (~JOB_COMPLETING),
 			 nodes, account,
 			 job_ptr->requid, job_ptr->db_index);
-		rc = pgsql_db_query(jobacct_pgsql_db, jobacct_db_init, query);
+		rc = pgsql_db_query(jobacct_pgsql_db, query);
 	} else 
 		rc = SLURM_ERROR;
 
@@ -500,7 +497,7 @@ extern int jobacct_storage_p_step_start(struct step_record *step_ptr)
 #endif
 	char query[1024];
 	
-	if(!jobacct_pgsql_db) {
+	if(!jobacct_pgsql_db || PQstatus(jobacct_pgsql_db) != CONNECTION_OK) {
 		char *loc = slurm_get_jobacct_storage_loc();
 		if(jobacct_storage_p_init(loc) == SLURM_ERROR) {
 			xfree(loc);
@@ -545,14 +542,13 @@ extern int jobacct_storage_p_step_start(struct step_record *step_ptr)
 			 (int)step_ptr->start_time, step_ptr->name,
 			 JOB_RUNNING, cpus, node_list, 
 			 step_ptr->job_ptr->requid);
-		rc = pgsql_db_query(jobacct_pgsql_db, jobacct_db_init, query);
+		rc = pgsql_db_query(jobacct_pgsql_db, query);
 		if(rc != SLURM_ERROR) {
 			snprintf(query, sizeof(query),
 				 "insert into %s (id, stepid) values (%d, %u)",
 				 rusage_table, step_ptr->job_ptr->db_index,
 				 step_ptr->step_id);
-			rc = pgsql_db_query(jobacct_pgsql_db,
-					    jobacct_db_init, query);
+			rc = pgsql_db_query(jobacct_pgsql_db, query);
 		}	  
 	} else 
 		rc = SLURM_ERROR;
@@ -583,7 +579,7 @@ extern int jobacct_storage_p_step_complete(struct step_record *step_ptr)
 	char query[1024];
 	int rc =SLURM_SUCCESS;
 	
-	if(!jobacct_pgsql_db) {
+	if(!jobacct_pgsql_db || PQstatus(jobacct_pgsql_db) != CONNECTION_OK) {
 		char *loc = slurm_get_jobacct_storage_loc();
 		if(jobacct_storage_p_init(loc) == SLURM_ERROR) {
 			xfree(loc);
@@ -666,7 +662,7 @@ extern int jobacct_storage_p_step_complete(struct step_record *step_ptr)
 			 jobacct->min_cpu_id.nodeid,	/* min cpu node */
 			 ave_cpu,	/* ave cpu */
 			 step_ptr->job_ptr->db_index, step_ptr->step_id);
-		rc = pgsql_db_query(jobacct_pgsql_db, jobacct_db_init, query);
+		rc = pgsql_db_query(jobacct_pgsql_db, query);
 		if(rc != SLURM_ERROR) {
 			snprintf(query, sizeof(query),
 				 "update %s set id=%u, stepid=%u, "
@@ -727,8 +723,7 @@ extern int jobacct_storage_p_step_complete(struct step_record *step_ptr)
 				 step_ptr->job_ptr->db_index,
 				 step_ptr->step_id);
 			
-			rc = pgsql_db_query(jobacct_pgsql_db, jobacct_db_init,
-					    query);
+			rc = pgsql_db_query(jobacct_pgsql_db, query);
 		}
 	} else
 		rc = SLURM_ERROR;
@@ -748,7 +743,7 @@ extern int jobacct_storage_p_suspend(struct job_record *job_ptr)
 	char query[1024];
 	int rc = SLURM_SUCCESS;
 	
-	if(!jobacct_pgsql_db) {
+	if(!jobacct_pgsql_db || PQstatus(jobacct_pgsql_db) != CONNECTION_OK) {
 		char *loc = slurm_get_jobacct_storage_loc();
 		if(jobacct_storage_p_init(loc) == SLURM_ERROR) {
 			xfree(loc);
@@ -764,15 +759,14 @@ extern int jobacct_storage_p_suspend(struct job_record *job_ptr)
 			 job_table, (int)job_ptr->suspend_time, 
 			 job_ptr->job_state & (~JOB_COMPLETING),
 			 job_ptr->db_index);
-		rc = pgsql_db_query(jobacct_pgsql_db, jobacct_db_init, query);
+		rc = pgsql_db_query(jobacct_pgsql_db, query);
 		if(rc != SLURM_ERROR) {
 			snprintf(query, sizeof(query),
 				 "update %s set suspended=%u-suspended, "
 				 "state=%d where id=%u and endtime=0",
 				 step_table, (int)job_ptr->suspend_time, 
 				 job_ptr->job_state, job_ptr->db_index);
-			rc = pgsql_db_query(jobacct_pgsql_db, jobacct_db_init,
-					    query);			
+			rc = pgsql_db_query(jobacct_pgsql_db, query);			
 		}
 	} else
 		rc = SLURM_ERROR;
@@ -794,7 +788,7 @@ extern void jobacct_storage_p_get_jobs(List job_list,
 					void *params)
 {
 #ifdef HAVE_PGSQL
-	if(!jobacct_pgsql_db) {
+	if(!jobacct_pgsql_db || PQstatus(jobacct_pgsql_db) != CONNECTION_OK) {
 		char *loc = slurm_get_jobacct_storage_loc();
 		if(jobacct_storage_p_init(loc) == SLURM_ERROR) {
 			xfree(loc);
@@ -817,7 +811,7 @@ extern void jobacct_storage_p_archive(List selected_parts,
 				       void *params)
 {
 #ifdef HAVE_PGSQL
-	if(!jobacct_pgsql_db) {
+	if(!jobacct_pgsql_db || PQstatus(jobacct_pgsql_db) != CONNECTION_OK) {
 		char *loc = slurm_get_jobacct_storage_loc();
 		if(jobacct_storage_p_init(loc) == SLURM_ERROR) {
 			xfree(loc);

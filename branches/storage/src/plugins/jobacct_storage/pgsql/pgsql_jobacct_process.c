@@ -265,7 +265,7 @@ extern void pgsql_jobacct_process_get_jobs(List job_list,
 
 	//info("query = %s", query);
 	if(!(result =
-	     pgsql_db_query_ret(jobacct_pgsql_db, jobacct_db_init, query))) {
+	     pgsql_db_query_ret(jobacct_pgsql_db, query))) {
 		xfree(query);
 		return;
 	}
@@ -351,7 +351,7 @@ extern void pgsql_jobacct_process_get_jobs(List job_list,
 		
 		//info("query = %s", query);
 		if(!(step_result = pgsql_db_query_ret(
-			     jobacct_pgsql_db, jobacct_db_init, query))) {
+			     jobacct_pgsql_db, query))) {
 			xfree(query);
 			return;
 		}

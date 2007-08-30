@@ -76,7 +76,6 @@ const uint32_t plugin_version = 100;
 #define DEFAULT_JOBACCT_DB "slurm_jobacct_db"
 
 MYSQL *jobacct_mysql_db = NULL;
-int jobacct_db_init = 0;
 
 char *job_index = "index_table";
 char *job_table = "job_table";
@@ -169,24 +168,20 @@ static int _mysql_jobacct_check_tables()
 		{ NULL, NULL}
 	};
 
-	if(mysql_db_create_table(jobacct_mysql_db, jobacct_db_init, 
-				 job_index, job_index_fields,
+	if(mysql_db_create_table(jobacct_mysql_db, job_index, job_index_fields,
 				 ", primary key (id))") == SLURM_ERROR)
 		return SLURM_ERROR;
 	
-	if(mysql_db_create_table(jobacct_mysql_db, jobacct_db_init, 
-				 job_table, job_table_fields,
+	if(mysql_db_create_table(jobacct_mysql_db, job_table, job_table_fields,
 				 ")") == SLURM_ERROR)
 		return SLURM_ERROR;
 
-	if(mysql_db_create_table(jobacct_mysql_db, jobacct_db_init, 
-				 step_table, step_table_fields,
-				 ")") == SLURM_ERROR)
+	if(mysql_db_create_table(jobacct_mysql_db, step_table,
+				 step_table_fields, ")") == SLURM_ERROR)
 		return SLURM_ERROR;
 
-	if(mysql_db_create_table(jobacct_mysql_db, jobacct_db_init, 
-				 rusage_table, step_rusage_fields,
-				 ")") == SLURM_ERROR)
+	if(mysql_db_create_table(jobacct_mysql_db, rusage_table,
+				 step_rusage_fields, ")") == SLURM_ERROR)
 		return SLURM_ERROR;
 
 
@@ -243,9 +238,9 @@ extern int jobacct_storage_p_init(char *location)
 	mysql_db_info_t *db_info = create_mysql_db_info();
 	int rc = SLURM_SUCCESS;
 	char *db_name = NULL;
-	
-	if(jobacct_db_init) 
-		return SLURM_ERROR;
+
+	if(jobacct_mysql_db && mysql_ping(jobacct_mysql_db) == 0)
+		return SLURM_SUCCESS;
 	
 	if(!location)
 		db_name = DEFAULT_JOBACCT_DB;
@@ -267,8 +262,7 @@ extern int jobacct_storage_p_init(char *location)
 	}
 	debug2("mysql_connect() called for db %s", db_name);
 	
-	mysql_get_db_connection(&jobacct_mysql_db, db_name, db_info,
-				&jobacct_db_init);
+	mysql_get_db_connection(&jobacct_mysql_db, db_name, db_info);
 
 	_mysql_jobacct_check_tables();
 
@@ -292,7 +286,7 @@ extern int jobacct_storage_p_fini()
 		mysql_close(jobacct_mysql_db);
 		jobacct_mysql_db = NULL;
 	}
-	jobacct_db_init = 0;
+
 	return SLURM_SUCCESS;
 #else
 	return SLURM_ERROR;
@@ -315,7 +309,7 @@ extern int jobacct_storage_p_job_start(struct job_record *job_ptr)
 	char query[1024];
 	int reinit = 0;
 
-	if(!jobacct_mysql_db) {
+	if(!jobacct_mysql_db || mysql_ping(jobacct_mysql_db)) {
 		char *loc = slurm_get_jobacct_storage_loc();
 		if(jobacct_storage_p_init(loc) == SLURM_ERROR) {
 			xfree(loc);
@@ -370,7 +364,7 @@ extern int jobacct_storage_p_job_start(struct job_record *job_ptr)
 
 try_again:
 	if((job_ptr->db_index =
-	    mysql_insert_ret_id(jobacct_mysql_db, jobacct_db_init, query))) {
+	    mysql_insert_ret_id(jobacct_mysql_db, query))) {
 		snprintf(query, sizeof(query),
 			 "insert into %s (id, start, name, track_steps, "
 			 "state, priority, cpus, nodelist, account) "
@@ -381,7 +375,7 @@ try_again:
 			 job_ptr->job_state & (~JOB_COMPLETING),
 			 priority, job_ptr->num_procs,
 			 nodes, account);
-		rc = mysql_db_query(jobacct_mysql_db, jobacct_db_init, query);
+		rc = mysql_db_query(jobacct_mysql_db, query);
 	} else if(!reinit) {
 		char *loc = slurm_get_jobacct_storage_loc();
 		error("It looks like the storage has gone "
@@ -410,7 +404,7 @@ extern int jobacct_storage_p_job_complete(struct job_record *job_ptr)
 	char	*account, *nodes;
 	int rc=SLURM_SUCCESS;
 	
-	if(!jobacct_mysql_db) {
+	if(!jobacct_mysql_db || mysql_ping(jobacct_mysql_db)) {
 		char *loc = slurm_get_jobacct_storage_loc();
 		if(jobacct_storage_p_init(loc) == SLURM_ERROR) {
 			xfree(loc);
@@ -444,7 +438,7 @@ extern int jobacct_storage_p_job_complete(struct job_record *job_ptr)
 			 job_ptr->job_state & (~JOB_COMPLETING),
 			 nodes, account,
 			 job_ptr->requid, job_ptr->db_index);
-		rc = mysql_db_query(jobacct_mysql_db, jobacct_db_init, query);
+		rc = mysql_db_query(jobacct_mysql_db, query);
 	} else 
 		rc = SLURM_ERROR;
 
@@ -468,7 +462,7 @@ extern int jobacct_storage_p_step_start(struct step_record *step_ptr)
 #endif
 	char query[1024];
 	
-	if(!jobacct_mysql_db) {
+	if(!jobacct_mysql_db || mysql_ping(jobacct_mysql_db)) {
 		char *loc = slurm_get_jobacct_storage_loc();
 		if(jobacct_storage_p_init(loc) == SLURM_ERROR) {
 			xfree(loc);
@@ -513,14 +507,13 @@ extern int jobacct_storage_p_step_start(struct step_record *step_ptr)
 			 (int)step_ptr->start_time, step_ptr->name,
 			 JOB_RUNNING, cpus, node_list, 
 			 step_ptr->job_ptr->requid);
-		rc = mysql_db_query(jobacct_mysql_db, jobacct_db_init, query);
+		rc = mysql_db_query(jobacct_mysql_db, query);
 		if(rc != SLURM_ERROR) {
 			snprintf(query, sizeof(query),
 				 "insert into %s (id, stepid) values (%d, %u)",
 				 rusage_table, step_ptr->job_ptr->db_index,
 				 step_ptr->step_id);
-			rc = mysql_db_query(jobacct_mysql_db,
-					    jobacct_db_init, query);
+			rc = mysql_db_query(jobacct_mysql_db, query);
 		}	  
 	} else 
 		rc = SLURM_ERROR;
@@ -551,7 +544,7 @@ extern int jobacct_storage_p_step_complete(struct step_record *step_ptr)
 	char query[1024];
 	int rc =SLURM_SUCCESS;
 	
-	if(!jobacct_mysql_db) {
+	if(!jobacct_mysql_db || mysql_ping(jobacct_mysql_db)) {
 		char *loc = slurm_get_jobacct_storage_loc();
 		if(jobacct_storage_p_init(loc) == SLURM_ERROR) {
 			xfree(loc);
@@ -634,7 +627,7 @@ extern int jobacct_storage_p_step_complete(struct step_record *step_ptr)
 			 jobacct->min_cpu_id.nodeid,	/* min cpu node */
 			 ave_cpu,	/* ave cpu */
 			 step_ptr->job_ptr->db_index, step_ptr->step_id);
-		rc = mysql_db_query(jobacct_mysql_db, jobacct_db_init, query);
+		rc = mysql_db_query(jobacct_mysql_db, query);
 		if(rc != SLURM_ERROR) {
 			snprintf(query, sizeof(query),
 				 "update %s set id=%u, stepid=%u, "
@@ -695,8 +688,7 @@ extern int jobacct_storage_p_step_complete(struct step_record *step_ptr)
 				 step_ptr->job_ptr->db_index,
 				 step_ptr->step_id);
 			
-			rc = mysql_db_query(jobacct_mysql_db, jobacct_db_init,
-					    query);
+			rc = mysql_db_query(jobacct_mysql_db, query);
 		}
 	} else
 		rc = SLURM_ERROR;
@@ -716,7 +708,7 @@ extern int jobacct_storage_p_suspend(struct job_record *job_ptr)
 		char query[1024];
 	int rc = SLURM_SUCCESS;
 	
-	if(!jobacct_mysql_db) {
+	if(!jobacct_mysql_db || mysql_ping(jobacct_mysql_db)) {
 		char *loc = slurm_get_jobacct_storage_loc();
 		if(jobacct_storage_p_init(loc) == SLURM_ERROR) {
 			xfree(loc);
@@ -732,15 +724,14 @@ extern int jobacct_storage_p_suspend(struct job_record *job_ptr)
 			 job_table, (int)job_ptr->suspend_time, 
 			 job_ptr->job_state & (~JOB_COMPLETING),
 			 job_ptr->db_index);
-		rc = mysql_db_query(jobacct_mysql_db, jobacct_db_init, query);
+		rc = mysql_db_query(jobacct_mysql_db, query);
 		if(rc != SLURM_ERROR) {
 			snprintf(query, sizeof(query),
 				 "update %s set suspended=%u-suspended, "
 				 "state=%d where id=%u and end=0",
 				 step_table, (int)job_ptr->suspend_time, 
 				 job_ptr->job_state, job_ptr->db_index);
-			rc = mysql_db_query(jobacct_mysql_db, jobacct_db_init,
-					    query);			
+			rc = mysql_db_query(jobacct_mysql_db, query);
 		}
 	} else
 		rc = SLURM_ERROR;
@@ -762,7 +753,7 @@ extern void jobacct_storage_p_get_jobs(List job_list,
 					void *params)
 {
 #ifdef HAVE_MYSQL
-		if(!jobacct_mysql_db) {
+	if(!jobacct_mysql_db || mysql_ping(jobacct_mysql_db)) {
 		char *loc = slurm_get_jobacct_storage_loc();
 		if(jobacct_storage_p_init(loc) == SLURM_ERROR) {
 			xfree(loc);
@@ -784,7 +775,7 @@ extern void jobacct_storage_p_archive(List selected_parts,
 				       void *params)
 {
 #ifdef HAVE_MYSQL
-	if(!jobacct_mysql_db) {
+	if(!jobacct_mysql_db || mysql_ping(jobacct_mysql_db)) {
 		char *loc = slurm_get_jobacct_storage_loc();
 		if(jobacct_storage_p_init(loc) == SLURM_ERROR) {
 			xfree(loc);

@@ -135,7 +135,7 @@ extern void mysql_jobcomp_process_get_jobs(List job_list,
 
 	//info("query = %s", query);
 	if(!(result =
-	     mysql_db_query_ret(jobcomp_mysql_db, jobcomp_db_init, query))) {
+	     mysql_db_query_ret(jobcomp_mysql_db, query))) {
 		xfree(query);
 		return;
 	}

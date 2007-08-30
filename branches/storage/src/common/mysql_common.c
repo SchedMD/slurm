@@ -46,8 +46,7 @@ pthread_mutex_t mysql_lock = PTHREAD_MUTEX_INITIALIZER;
 
 #ifdef HAVE_MYSQL
 
-static int _mysql_make_table_current(MYSQL *mysql_db, int storage_init, 
-				     char *table_name,
+static int _mysql_make_table_current(MYSQL *mysql_db, char *table_name,
 				     storage_field_t *fields)
 {
 	char *query = NULL;
@@ -57,7 +56,7 @@ static int _mysql_make_table_current(MYSQL *mysql_db, int storage_init,
 		query = xstrdup_printf("alter table %s modify %s %s",
 				       table_name, fields[i].name,
 				       fields[i].options);
-		if(mysql_db_query(mysql_db, storage_init, query)) {
+		if(mysql_db_query(mysql_db, query)) {
 			info("adding column %s after %s", fields[i].name,
 			     fields[i-1].name);
 			xfree(query);
@@ -66,7 +65,7 @@ static int _mysql_make_table_current(MYSQL *mysql_db, int storage_init,
 				table_name, fields[i].name,
 				fields[i].options,
 				fields[i-1].name);
-			if(mysql_db_query(mysql_db, storage_init, query)) {
+			if(mysql_db_query(mysql_db, query)) {
 				xfree(query);
 				return SLURM_ERROR;
 			}
@@ -129,15 +128,15 @@ extern int mysql_create_db(MYSQL *mysql_db, char *db_name,
 }
 
 extern int mysql_get_db_connection(MYSQL **mysql_db, char *db_name,
-				   mysql_db_info_t *db_info,
-				   int *storage_init)
+				   mysql_db_info_t *db_info)
 {
 	int rc = SLURM_SUCCESS;
-	
+	bool storage_init = false;
+
 	if(!(*mysql_db = mysql_init(*mysql_db)))
 		fatal("mysql_init failed: %s", mysql_error(*mysql_db));
 	else {
-		while(!*storage_init) {
+		while(!storage_init) {
 			if(!mysql_real_connect(*mysql_db, db_info->host,
 					       db_info->user, db_info->pass,
 					       db_name, db_info->port,
@@ -154,16 +153,16 @@ extern int mysql_get_db_connection(MYSQL **mysql_db, char *db_name,
 					      mysql_error(*mysql_db));
 				}
 			} else {
-				*storage_init = true;
+				storage_init = true;
 			}
 		}
 	}
 	return rc;
 }
 
-extern int mysql_db_query(MYSQL *mysql_db, int storage_init,  char *query)
+extern int mysql_db_query(MYSQL *mysql_db, char *query)
 {
-	if(!storage_init)
+	if(!mysql_db)
 		fatal("You haven't inited this storage yet.");
 
 	if(mysql_query(mysql_db, query)) {
@@ -176,12 +175,11 @@ extern int mysql_db_query(MYSQL *mysql_db, int storage_init,  char *query)
 	return SLURM_SUCCESS;
 }
 
-extern MYSQL_RES *mysql_db_query_ret(MYSQL *mysql_db, int storage_init,
-				     char *query)
+extern MYSQL_RES *mysql_db_query_ret(MYSQL *mysql_db, char *query)
 {
 	MYSQL_RES *result = NULL;
 	
-	if(mysql_db_query(mysql_db, storage_init, query) != SLURM_ERROR)  {
+	if(mysql_db_query(mysql_db, query) != SLURM_ERROR)  {
 		result = mysql_store_result(mysql_db);
 		if(!result && mysql_field_count(mysql_db)) {
 			/* should have returned data */
@@ -193,11 +191,11 @@ extern MYSQL_RES *mysql_db_query_ret(MYSQL *mysql_db, int storage_init,
 	return result;
 }
 
-extern int mysql_insert_ret_id(MYSQL *mysql_db, int storage_init, char *query)
+extern int mysql_insert_ret_id(MYSQL *mysql_db, char *query)
 {
 	int new_id = 0;
 	
-	if(mysql_db_query(mysql_db, storage_init, query) != SLURM_ERROR)  {
+	if(mysql_db_query(mysql_db, query) != SLURM_ERROR)  {
 		new_id = mysql_insert_id(mysql_db);
 		if(!new_id) {
 			/* should have new id */
@@ -210,9 +208,8 @@ extern int mysql_insert_ret_id(MYSQL *mysql_db, int storage_init, char *query)
 	
 }
 
-extern int mysql_db_create_table(MYSQL *mysql_db, int storage_init, 
-				 char *table_name, storage_field_t *fields,
-				 char *ending)
+extern int mysql_db_create_table(MYSQL *mysql_db, char *table_name,
+				 storage_field_t *fields, char *ending)
 {
 	char *query = NULL;
 	char *tmp = NULL;
@@ -237,15 +234,14 @@ extern int mysql_db_create_table(MYSQL *mysql_db, int storage_init,
 	xfree(tmp);
 	xstrcat(query, ending);
 
-	if(mysql_db_query(mysql_db, storage_init, query)
+	if(mysql_db_query(mysql_db, query)
 	   == SLURM_ERROR) {
 		xfree(query);
 		return SLURM_ERROR;
 	}
 	xfree(query);	
 	
-	return _mysql_make_table_current(mysql_db, storage_init, 
-					 table_name, first_field);
+	return _mysql_make_table_current(mysql_db, table_name, first_field);
 }
 
 #endif

@@ -134,7 +134,7 @@ extern void pgsql_jobcomp_process_get_jobs(List job_list,
 
 	//info("query = %s", query);
 	if(!(result =
-	     pgsql_db_query_ret(jobcomp_pgsql_db, jobcomp_db_init, query))) {
+	     pgsql_db_query_ret(jobcomp_pgsql_db, query))) {
 		xfree(query);
 		return;
 	}

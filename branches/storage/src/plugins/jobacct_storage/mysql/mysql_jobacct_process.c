@@ -267,7 +267,7 @@ extern void mysql_jobacct_process_get_jobs(List job_list,
 
 	//info("query = %s", query);
 	if(!(result =
-	     mysql_db_query_ret(jobacct_mysql_db, jobacct_db_init, query))) {
+	     mysql_db_query_ret(jobacct_mysql_db, query))) {
 		xfree(query);
 		return;
 	}
@@ -348,7 +348,7 @@ extern void mysql_jobacct_process_get_jobs(List job_list,
 		
 		//info("query = %s", query);
 		if(!(step_result = mysql_db_query_ret(
-			     jobacct_mysql_db, jobacct_db_init, query))) {
+			     jobacct_mysql_db, query))) {
 			xfree(query);
 			return;
 		}

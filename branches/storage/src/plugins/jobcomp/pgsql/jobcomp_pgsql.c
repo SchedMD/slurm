@@ -81,7 +81,6 @@ const uint32_t plugin_version = 100;
 #define DEFAULT_JOBCOMP_DB "slurm_jobcomp_db"
 
 PGconn *jobcomp_pgsql_db = NULL;
-int jobcomp_db_init = 0;
 
 char *jobcomp_table = "jobcomp_table";
 storage_field_t jobcomp_table_fields[] = {
@@ -135,7 +134,7 @@ static int _pgsql_jobcomp_check_tables(char *user)
 				     "and tablename !~ '^pg_+'", user);
 
 	if(!(result =
-	     pgsql_db_query_ret(jobcomp_pgsql_db, jobcomp_db_init, query))) {
+	     pgsql_db_query_ret(jobcomp_pgsql_db, query))) {
 		xfree(query);
 		return SLURM_ERROR;
 	}
@@ -149,8 +148,8 @@ static int _pgsql_jobcomp_check_tables(char *user)
 	PQclear(result);
 
 	if(!job_found)
-		if(pgsql_db_create_table(jobcomp_pgsql_db, jobcomp_db_init, 
-					 jobcomp_table, jobcomp_table_fields,
+		if(pgsql_db_create_table(jobcomp_pgsql_db, jobcomp_table,
+					 jobcomp_table_fields,
 					 ")") == SLURM_ERROR)
 			return SLURM_ERROR;
 
@@ -231,7 +230,6 @@ extern int fini ( void )
 		PQfinish(jobcomp_pgsql_db);
 		jobcomp_pgsql_db = NULL;
 	}
-	jobcomp_db_init = 0;
 	return SLURM_SUCCESS;
 #else
 	return SLURM_ERROR;
@@ -245,8 +243,8 @@ extern int slurm_jobcomp_set_location(char *location)
 	char *db_name = NULL;
 	int i = 0;
 	
-	if(jobcomp_db_init) 
-		return SLURM_ERROR;
+	if(jobcomp_pgsql_db && PQstatus(jobcomp_pgsql_db) == CONNECTION_OK) 
+		return SLURM_SUCCESS;
 	
 	if(!location)
 		db_name = DEFAULT_JOBCOMP_DB;
@@ -268,8 +266,7 @@ extern int slurm_jobcomp_set_location(char *location)
 		
 	debug2("pgsql_connect() called for db %s", db_name);
 	
-	pgsql_get_db_connection(&jobcomp_pgsql_db, db_name, db_info,
-				&jobcomp_db_init);
+	pgsql_get_db_connection(&jobcomp_pgsql_db, db_name, db_info);
 	
 	rc = _pgsql_jobcomp_check_tables(db_info->user);
 
@@ -299,7 +296,7 @@ extern int slurm_jobcomp_log_record(struct job_record *job_ptr)
 	enum job_states job_state;
 	char query[1024];
 
-	if(!jobcomp_pgsql_db) {
+	if(!jobcomp_pgsql_db && PQstatus(jobcomp_pgsql_db) == CONNECTION_OK) {
 		char *loc = slurm_get_jobcomp_loc();
 		if(slurm_jobcomp_set_location(loc) == SLURM_ERROR) {
 			xfree(loc);
@@ -358,7 +355,7 @@ extern int slurm_jobcomp_log_record(struct job_record *job_ptr)
 		 start, blockid
 #endif
 		 );
-	rc = pgsql_db_query(jobcomp_pgsql_db, jobcomp_db_init, query);
+	rc = pgsql_db_query(jobcomp_pgsql_db, query);
 	xfree(usr_str);
 
 	return rc;
@@ -397,6 +394,15 @@ extern void slurm_jobcomp_get_jobs(List job_list,
 					void *params)
 {
 #ifdef HAVE_PGSQL
+	if(!jobcomp_pgsql_db && PQstatus(jobcomp_pgsql_db) == CONNECTION_OK) {
+		char *loc = slurm_get_jobcomp_loc();
+		if(slurm_jobcomp_set_location(loc) == SLURM_ERROR) {
+			xfree(loc);
+			return;
+		}
+		xfree(loc);
+	}
+
 	pgsql_jobcomp_process_get_jobs(job_list, 
 				       selected_steps, selected_parts,
 				       params);	
@@ -410,6 +416,15 @@ extern void slurm_jobcomp_get_jobs(List job_list,
 extern void slurm_jobcomp_archive(List selected_parts, void *params)
 {
 #ifdef HAVE_PGSQL
+	if(!jobcomp_pgsql_db && PQstatus(jobcomp_pgsql_db) == CONNECTION_OK) {
+		char *loc = slurm_get_jobcomp_loc();
+		if(slurm_jobcomp_set_location(loc) == SLURM_ERROR) {
+			xfree(loc);
+			return;
+		}
+		xfree(loc);
+	}
+
 	pgsql_jobcomp_process_archive(selected_parts, params);
 #endif 
 	return;

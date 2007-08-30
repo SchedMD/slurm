@@ -84,19 +84,15 @@ extern int mysql_create_db(MYSQL *mysql_db, char *db_name,
 			   mysql_db_info_t *db_info);
 
 extern int mysql_get_db_connection(MYSQL **mysql_db, char *db_name,
-				   mysql_db_info_t *db_info,
-				   int *storage_init);
-extern int mysql_db_query(MYSQL *mysql_db, int storage_init, char *query);
+				   mysql_db_info_t *db_info);
+extern int mysql_db_query(MYSQL *mysql_db, char *query);
 
-extern MYSQL_RES *mysql_db_query_ret(MYSQL *mysql_db, int storage_init,
-				     char *query);
+extern MYSQL_RES *mysql_db_query_ret(MYSQL *mysql_db, char *query);
 
-extern int mysql_insert_ret_id(MYSQL *mysql_db, int storage_init, 
-			       char *query);
+extern int mysql_insert_ret_id(MYSQL *mysql_db, char *query);
 
-extern int mysql_db_create_table(MYSQL *mysql_db, int storage_init, 
-				 char *table_name, storage_field_t *fields,
-				 char *ending);
+extern int mysql_db_create_table(MYSQL *mysql_db, char *table_name,
+				 storage_field_t *fields, char *ending);
 
 #endif
 
