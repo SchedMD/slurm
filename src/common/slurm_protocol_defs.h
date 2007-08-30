@@ -383,6 +383,9 @@ typedef struct job_step_specs {
 				   SLURM_DIST_PLANE */
 	uint16_t port;		/* port to contact initiating srun */
 	uint16_t ckpt_interval;	/* checkpoint creation interval (minutes) */
+	uint16_t exclusive;	/* 1 if CPUs not shared with other steps */
+	uint16_t immediate;	/* 1 if allocate to run or fail immediately,
+				 * 0 if to be queued awaiting resources */
 	char *host;		/* host to contact initiating srun */
 	char *node_list;	/* list of required nodes */
 	char *network;		/* network use spec */

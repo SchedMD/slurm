@@ -969,6 +969,7 @@ static void _opt_default()
 	opt.unbuffered = false;
 	opt.overcommit = false;
 	opt.shared = (uint16_t)NO_VAL;
+	opt.exclusive = false;
 	opt.no_kill = false;
 	opt.kill_bad_exit = false;
 
@@ -1190,6 +1191,7 @@ _process_env_var(env_vars_t *e, const char *val)
 		break;
 
 	case OPT_EXCLUSIVE:
+		opt.exclusive = true;
 		opt.shared = 0;
 		break;
 
@@ -1649,6 +1651,7 @@ static void set_options(const int argc, char **argv)
 			opt.contiguous = true;
 			break;
                 case LONG_OPT_EXCLUSIVE:
+			opt.exclusive = true;
                         opt.shared = 0;
                         break;
                 case LONG_OPT_CPU_BIND:
@@ -2590,6 +2593,7 @@ static void _opt_list()
 		info("dependency     : none");
 	else
 		info("dependency     : %u", opt.dependency);
+	info("exclusive      : %s", tf_(opt.exclusive));
 	if (opt.shared != (uint16_t) NO_VAL)
 		info("shared         : %u", opt.shared);
 	str = print_constraints();
@@ -2753,6 +2757,7 @@ static void _help(void)
 "Consumable resources related options:\n" 
 "      --exclusive             allocate nodes in exclusive mode when\n" 
 "                              cpu consumable resource is enabled\n"
+"                              or don't share CPUs for job steps\n"
 "      --job-mem=MB            maximum amount of real memory per node\n"
 "                              required by the job.\n" 
 "                              --mem >= --job-mem if --mem is specified.\n" 

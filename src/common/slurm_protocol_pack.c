@@ -1511,6 +1511,8 @@ _pack_job_step_create_request_msg(job_step_create_request_msg_t
 	pack16(msg->plane_size, buffer);
 	pack16(msg->port, buffer);
 	pack16(msg->ckpt_interval, buffer);
+	pack16(msg->exclusive, buffer);
+	pack16(msg->immediate, buffer);
 
 	packstr(msg->host, buffer);
 	packstr(msg->name, buffer);
@@ -1543,6 +1545,8 @@ _unpack_job_step_create_request_msg(job_step_create_request_msg_t ** msg,
 	safe_unpack16(&(tmp_ptr->plane_size), buffer);
 	safe_unpack16(&(tmp_ptr->port), buffer);
 	safe_unpack16(&(tmp_ptr->ckpt_interval), buffer);
+	safe_unpack16(&(tmp_ptr->exclusive), buffer);
+	safe_unpack16(&(tmp_ptr->immediate), buffer);
 
 	safe_unpackstr_xmalloc(&(tmp_ptr->host), &uint16_tmp, buffer);
 	safe_unpackstr_xmalloc(&(tmp_ptr->name), &uint16_tmp, buffer);

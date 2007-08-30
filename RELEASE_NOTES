@@ -16,6 +16,14 @@ COMMAND CHANGES
   sattach - Attach to an existing job step (functions like "srun --attach")
   sbatch  - Submit a batch job script (functions like "srun --batch")
   See the individual man pages for more information. 
+* The slaunch command has been removed. Use the srun command instead.
+* The srun option --exclusive has been added for job steps to be 
+  allocated processors not already assigned to other job steps. This 
+  can be used to execute multiple job steps simultaneously within a 
+  job allocation and have SLURM perform resource management for the 
+  job steps much like it does for jobs. If dedicated resources are 
+  not immediately available, the job step will be executed later 
+  unless the --immediate option is also set.
 
 CONFIGURATION FILE CHANGES
 
