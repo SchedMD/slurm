@@ -5,6 +5,8 @@ documents those changes that are of interest to users and admins.
 =========================
  -- In sched/wiki2, fix bug processing hostlist expressions where hosts
     lack a numeric suffix.
+ -- Fix bug in srun. When user did not specify time limit, it defaulted to 
+    INFINITE rather than partition's limit.
 
 * Changes in SLURM 1.2.14
 =========================

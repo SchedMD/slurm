@@ -399,7 +399,7 @@ static void _opt_default()
 	opt.max_nodes = 0;
 	opt.tasks_per_node   = -1;
 	opt.nodes_set = false;
-	opt.time_limit = 0;
+	opt.time_limit = NO_VAL;
 	opt.partition = NULL;
 
 	opt.job_name = NULL;
@@ -1704,8 +1704,9 @@ static bool _opt_verify(void)
 			error("Invalid time limit specification");
 			exit(1);
 		}
-	} else
-		opt.time_limit = INFINITE;
+		if (opt.time_limit == 0)
+			opt.time_limit = INFINITE;
+	}
 
 	if ((opt.euid != (uid_t) -1) && (opt.euid != opt.uid)) 
 		opt.uid = opt.euid;
@@ -2015,7 +2016,7 @@ static void _opt_list()
 	info("no-requeue     : %s", tf_(opt.no_requeue));
 	if (opt.time_limit == INFINITE)
 		info("time_limit     : INFINITE");
-	else
+	else if (opt.time_limit != NO_VAL)
 		info("time_limit     : %d", opt.time_limit);
 	if (opt.nice)
 		info("nice           : %d", opt.nice);
