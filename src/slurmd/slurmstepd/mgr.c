@@ -1707,7 +1707,8 @@ _run_script_as_user(const char *name, const char *path, slurmd_job_t *job,
 			/* child process, should not return */
 			exit(127);
 		}
-	
+
+		chdir(job->cwd);
 		setpgrp();
 		execve(path, argv, env);
 		error("execve(): %m");
