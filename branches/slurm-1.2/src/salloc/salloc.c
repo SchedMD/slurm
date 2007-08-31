@@ -165,6 +165,10 @@ int main(int argc, char *argv[])
 	/* Add default task count for srun, if not already set */
 	if (opt.nprocs_set)
 		env_array_append_fmt(&env, "SLURM_NPROCS", "%d", opt.nprocs);
+	if (opt.overcommit) {
+		env_array_append_fmt(&env, "SLURM_OVERCOMMIT", "%d", 
+			opt.overcommit);
+	}
 	env_array_set_environment(env);
 	env_array_free(env);
 	pthread_mutex_lock(&allocation_state_lock);
@@ -285,7 +289,11 @@ static int fill_job_desc_from_opts(job_desc_msg_t *desc)
 		desc->job_min_memory = opt.realmem;
 	if (opt.tmpdisk > -1)
 		desc->job_min_tmp_disk = opt.tmpdisk;
-	desc->num_procs = opt.nprocs * opt.cpus_per_task;
+	if (opt.overcommit) {
+		desc->num_procs = opt.min_nodes;
+		desc->overcommit = opt.overcommit;
+	} else
+		desc->num_procs = opt.nprocs * opt.cpus_per_task;
 	if (opt.nprocs_set)
 		desc->num_tasks = opt.nprocs;
 	if (opt.cpus_set)

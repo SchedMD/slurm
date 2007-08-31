@@ -78,6 +78,7 @@ typedef struct salloc_options {
 
 	bool hold;		/* --hold, -H			*/
 	bool no_kill;		/* --no-kill, -k		*/
+	bool overcommit;	/* --overcommit -O		*/
 	int kill_command_signal;/* --kill-command, -K           */
 	bool kill_command_signal_set;
 	uint16_t shared;	/* --share,   -s		*/

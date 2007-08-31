@@ -1,6 +1,10 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins.
 
+* Changes in SLURM 1.2.16
+=========================
+ -- Add --overcommit option to the salloc command.
+
 * Changes in SLURM 1.2.15
 =========================
  -- In sched/wiki2, fix bug processing hostlist expressions where hosts
