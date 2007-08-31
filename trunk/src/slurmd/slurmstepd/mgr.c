@@ -1691,6 +1691,11 @@ _run_script_as_user(const char *name, const char *path, slurmd_job_t *job,
 
 	debug("[job %u] attempting to run %s [%s]", job->jobid, name, path);
 
+	if (access(path, R_OK | X_OK) < 0) {
+		error("Could not run %s [%s]: %m", name, path);
+		return -1;
+	}
+
 	if ((cpid = fork()) < 0) {
 		error ("executing %s: fork: %m", name);
 		return -1;
@@ -1713,7 +1718,8 @@ _run_script_as_user(const char *name, const char *path, slurmd_job_t *job,
 			/* child process, should not return */
 			exit(127);
 		}
-	
+
+		chdir(job->cwd);
 		setpgrp();
 		execve(path, argv, env);
 		error("execve(): %m");
