@@ -49,6 +49,9 @@ documents those changes that are of interest to users and admins.
 * Changes in SLURM 1.2.16
 =========================
  -- Add --overcommit option to the salloc command.
+ -- Run task epilog from job's working directory rather than directory
+    where slurmd daemon started from.
+ -- Log errors running task prolog or task epilog to srun's output.
 
 * Changes in SLURM 1.2.15
 =========================

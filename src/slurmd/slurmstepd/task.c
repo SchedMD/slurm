@@ -160,8 +160,8 @@ _run_script_and_set_env(const char *name, const char *path, slurmd_job_t *job)
 	debug("[job %u] attempting to run %s [%s]", job->jobid, name, path);
 
 	if (access(path, R_OK | X_OK) < 0) {
-		debug("Not running %s [%s]: %m", name, path);
-		return 0;
+		error("Could not run %s [%s]: %m", name, path);
+		return -1;
 	}
 	if (pipe(pfd) < 0) {
 		error("executing %s: pipe: %m", name);
