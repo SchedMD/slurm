@@ -2312,8 +2312,9 @@ static bool _opt_verify(void)
 			error("Invalid time limit specification");
 			exit(1);
 		}
-	} else
-		opt.time_limit = INFINITE;
+		if (opt.time_limit == 0)
+			opt.time_limit = INFINITE;
+	}
 
 	if (opt.ckpt_interval_str) {
 		opt.ckpt_interval = time_str2mins(opt.ckpt_interval_str);
@@ -2580,7 +2581,7 @@ static void _opt_list()
 	info("threads        : %d", opt.max_threads);
 	if (opt.time_limit == INFINITE)
 		info("time_limit     : INFINITE");
-	else
+	else if (opt.time_limit != NO_VAL)
 		info("time_limit     : %d", opt.time_limit);
 	if (opt.ckpt_interval)
 		info("checkpoint     : %d secs", opt.ckpt_interval);

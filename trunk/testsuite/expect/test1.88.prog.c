@@ -26,11 +26,13 @@
 
 #include <stdio.h>
 #include <mpi.h>
+#include <sys/utsname.h>
 
 #define COMM_TAG 1000
 
 static void pass_its_neighbor(const int rank, const int size, const int* buf)
 {
+	struct utsname uts;
 	MPI_Request request[2];
 	MPI_Status status[2];
 
@@ -40,8 +42,9 @@ static void pass_its_neighbor(const int rank, const int size, const int* buf)
 		MPI_COMM_WORLD, &request[1]);
 	MPI_Waitall(2, request, status);
 
-	fprintf(stdout, "Rank[%d] I just received msg from Rank %d\n", 
-		rank, *buf);
+	uname(&uts);
+	fprintf(stdout, "Rank[%d] on %s just received msg from Rank %d\n", 
+		rank, uts.nodename, *buf);
 }
 
 int main(int argc, char * argv[])

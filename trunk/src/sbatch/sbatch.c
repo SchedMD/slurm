@@ -176,7 +176,11 @@ static int fill_job_desc_from_opts(job_desc_msg_t *desc)
 		desc->job_min_memory = opt.realmem;
 	if (opt.tmpdisk > -1)
 		desc->job_min_tmp_disk = opt.tmpdisk;
-	desc->num_procs = opt.nprocs * opt.cpus_per_task;
+	if (opt.overcommit) {
+		desc->num_procs = opt.min_nodes;
+		desc->overcommit = opt.overcommit;
+	} else
+		desc->num_procs = opt.nprocs * opt.cpus_per_task;
 	if (opt.tasks_per_node > -1)
 		desc->ntasks_per_node = opt.tasks_per_node;
 	if (opt.nprocs_set)
@@ -185,7 +189,7 @@ static int fill_job_desc_from_opts(job_desc_msg_t *desc)
 		desc->cpus_per_task = opt.cpus_per_task;
 	if (opt.no_kill)
 		desc->kill_on_node_fail = 0;
-	if (opt.time_limit > -1)
+	if (opt.time_limit != NO_VAL)
 		desc->time_limit = opt.time_limit;
 	desc->shared = opt.shared;
 
