@@ -7,6 +7,8 @@ documents those changes that are of interest to users and admins.
     lack a numeric suffix.
  -- Fix bug in srun. When user did not specify time limit, it defaulted to 
     INFINITE rather than partition's limit.
+ -- In select/cons_res with SelectTypeParameters=CR_Socket_Memory, fix bug in 
+    memory allocation tracking, mem.patch from Chris Holmes, HP.
 
 * Changes in SLURM 1.2.14
 =========================
