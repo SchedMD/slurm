@@ -1,4 +1,4 @@
-.TH "salloc" "1" "SLURM 1.2" "December 2006" "SLURM Commands"
+.TH "salloc" "1" "SLURM 1.2" "August 2007" "SLURM Commands"
 .SH "NAME"
 .LP 
 salloc \- Obtain a SLURM job allocation (a set of nodes), execute a command, and then release the allocation when the command is finished.
@@ -222,6 +222,13 @@ is presently ignored if SchedulerType=sched/maui.
 \fB\-\-no\-bell\fR
 Silence salloc's use of the terminal bell. Also see the option \fB\-\-bell\fR.
 
+.TP
+\fB\-O\fR, \fB\-\-overcommit\fR
+Overcommit resources. Normally, \fBsbatch\fR will allocate one cpu per
+task to be executed. By specifying \fB\-\-overcommit\fR you are explicitly
+allowing more than one process per cpu. However no more than
+\fBMAX_TASKS_PER_NODE\fR tasks are permitted to execute per node.
+
 .TP 
 \fB\-p\fR, \fB\-\-partition\fR[=]<\fIpartition name\fR>
 Request a specific partition for the resource allocation.  If not specified,
@@ -375,6 +382,9 @@ Same as \fB\-\-no\-bell\fR.
 .TP
 \fBSALLOC_NO_ROTATE\fR
 Same as \fB\-R\fR or \fB\-\-no\-rotate\fR.
+.TP
+\fBSLURM_OVERCOMMIT\fR
+Same as \fB\-O, \-\-overcommit\fR
 .TP
 \fBSALLOC_PARTITION\fR
 Same as \fB\-p\fR or \fB\-\-partition\fR.

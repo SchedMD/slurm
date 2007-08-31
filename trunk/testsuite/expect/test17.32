@@ -41,7 +41,7 @@ set task_cnt    10
 print_header $test_id
 
 #
-# Submit a slurm job that will execute 'id' on 4 tasks (or try anyway)
+# Submit a slurm job that will print slurm env vars and execute 'id'
 #
 file delete $file_in $file_out
 make_bash_script $file_in "
@@ -110,11 +110,6 @@ if {$task_cnt != $tasks} {
 	set exit_code 1
 }
 
-if {$task_cnt != $tasks} {
-	send_user "\nFAILURE: Did not get proper number of tasks: "
-	send_user "$task_cnt, $tasks\n"
-	set exit_code 1
-}
 if {$exit_code == 0} {
 	file delete $file_in $file_out
 	send_user "\nSUCCESS\n"

@@ -85,6 +85,7 @@
 #define OPT_NO_BELL     0x10
 #define OPT_JOBID       0x11
 #define OPT_EXCLUSIVE   0x12
+#define OPT_OVERCOMMIT  0x13
 
 /* generic getopt_long flags, integers and *not* valid characters */
 #define LONG_OPT_JOBID       0x105
@@ -441,6 +442,7 @@ static void _opt_default()
 	opt.kill_command_signal_set = false;
 
 	opt.immediate	= false;
+	opt.overcommit	= false;
 	opt.max_wait	= 0;
 
 	opt.quiet = 0;
@@ -504,6 +506,7 @@ env_vars_t env_vars[] = {
   {"SALLOC_BELL",          OPT_BELL,       NULL,               NULL           },
   {"SALLOC_NO_BELL",       OPT_NO_BELL,    NULL,               NULL           },
   {"SALLOC_EXCLUSIVE",     OPT_EXCLUSIVE,  NULL,               NULL           },
+  {"SALLOC_OVERCOMMIT",    OPT_OVERCOMMIT, NULL,               NULL           },
   {NULL, 0, NULL, NULL}
 };
 
@@ -612,6 +615,9 @@ _process_env_var(env_vars_t *e, const char *val)
 	case OPT_EXCLUSIVE:
 		opt.shared = 0;
 		break;
+	case OPT_OVERCOMMIT:
+		opt.overcommit = true;
+		break;
 	default:
 		/* do nothing */
 		break;
@@ -660,6 +666,7 @@ void set_options(const int argc, char **argv)
 		{"kill-command",  optional_argument, 0, 'K'},
 		{"tasks",         required_argument, 0, 'n'},
 		{"nodes",         required_argument, 0, 'N'},
+		{"overcommit",    no_argument,       0, 'O'},
 		{"partition",     required_argument, 0, 'p'},
 		{"quiet",         no_argument,       0, 'q'},
 		{"no-rotate",     no_argument,       0, 'R'},
@@ -694,7 +701,7 @@ void set_options(const int argc, char **argv)
 		{"reboot",	  no_argument,       0, LONG_OPT_REBOOT},
 		{NULL,            0,                 0, 0}
 	};
-	char *opt_string = "+a:c:C:d:F:g:hHIJ:kK::n:N:p:qR:st:uU:vVw:W:x:";
+	char *opt_string = "+a:c:C:d:F:g:hHIJ:kK::n:N:Op:qR:st:uU:vVw:W:x:";
 
 	opt.progname = xbasename(argv[0]);
 	optind = 0;		
@@ -771,6 +778,9 @@ void set_options(const int argc, char **argv)
 			if (opt.nodes_set == false) {
 				exit(1);
 			}
+			break;
+		case 'O':
+			opt.overcommit = true;
 			break;
 		case 'p':
 			xfree(opt.partition);
@@ -1247,6 +1257,7 @@ static void _opt_list()
 		info("jobid          : %u", opt.jobid);
 	info("verbose        : %d", opt.verbose);
 	info("immediate      : %s", tf_(opt.immediate));
+	info("overcommit     : %s", tf_(opt.overcommit));
 	if (opt.time_limit == INFINITE)
 		info("time_limit     : INFINITE");
 	else if (opt.time_limit != NO_VAL)
@@ -1288,7 +1299,7 @@ static void _usage(void)
  	printf(
 "Usage: salloc [-N numnodes|[min nodes]-[max nodes]] [-n num-processors]\n"
 "              [[-c cpus-per-node] [-r n] [-p partition] [--hold] [-t minutes]\n"
-"              [--immediate] [--no-kill]\n"
+"              [--immediate] [--no-kill] [--overcommit]\n"
 "              [--share] [-J jobname] [--jobid=id]\n"
 "              [--verbose] [--gid=group] [--uid=user]\n"
 "              [-W sec] [--minsockets=n] [--mincores=n] [--minthreads=n]\n"
@@ -1318,6 +1329,7 @@ static void _help(void)
 "  -I, --immediate             exit if resources are not immediately available\n"
 "  -k, --no-kill               do not kill job on node failure\n"
 "  -K, --kill-command[=signal] signal to send terminating job\n"
+"  -O, --overcommit            overcommit resources\n"
 "  -s, --share                 share nodes with other jobs\n"
 "  -J, --job-name=jobname      name of job\n"
 "      --jobid=id              specify jobid to use\n"
