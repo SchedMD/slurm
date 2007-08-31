@@ -2443,7 +2443,6 @@ extern int select_p_update_nodeinfo(struct job_record *job_ptr)
 					error("Job %u Host %s too many allocated sockets %u",
 					      job->job_id, this_node->node_ptr->name, 
 					      this_node->alloc_sockets);
-				this_node->alloc_memory += job->alloc_memory[i];
 				break;
 			case CR_CORE_MEMORY:
 				this_node->alloc_memory += job->alloc_memory[i];

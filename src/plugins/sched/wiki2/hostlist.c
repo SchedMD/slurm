@@ -96,7 +96,8 @@ extern char * moab2slurm_task_list(char *moab_tasklist, int *task_cnt)
 			if (slurm_tasklist[i] == ':') {
 				slurm_tasklist[i] = ',';
 				(*task_cnt)++;
-			}
+			} else if (slurm_tasklist[i] == ',')
+				(*task_cnt)++;
 		}		
 		return slurm_tasklist;
 	}
@@ -189,7 +190,8 @@ static char * _task_list(struct job_record *job_ptr)
 static void _append_hl_buf(char **buf, hostlist_t *hl_tmp, int *reps)
 {
 	int host_str_len = 4096;
-	char *host_str, rep_str[8];
+	char *host_str, tmp_str[64];
+	char *sep, *tok, *tok_p;
 
 	host_str = xmalloc(host_str_len);
 	hostlist_uniq(*hl_tmp);
@@ -197,11 +199,20 @@ static void _append_hl_buf(char **buf, hostlist_t *hl_tmp, int *reps)
 		host_str_len *= 2;
 		xrealloc(*host_str, host_str_len);
 	}
+	/* Note that host_str may be of this form "alpha,beta". We want
+	 * to record this as "alpha*#:beta*#" and NOT "alpha,beta*#" */
 	if (*buf)
-		xstrcat(*buf, ":");
-	xstrcat(*buf, host_str);
-	snprintf(rep_str, 8, "*%d", *reps);
-	xstrcat(*buf, rep_str);
+		sep = ":";
+	else
+		sep = "";
+	tok = strtok_r(host_str, ",", &tok_p);
+	while (tok) {
+		snprintf(tmp_str, sizeof(tmp_str), "%s%s*%d",
+			sep, tok, *reps);
+		xstrcat(*buf, tmp_str);
+		sep = ":";
+		tok = strtok_r(NULL, ",", &tok_p);
+	}
 	xfree(host_str);
 	hostlist_destroy(*hl_tmp);
 	*hl_tmp = (hostlist_t) NULL;
@@ -233,7 +244,7 @@ static char * _task_list_exp(struct job_record *job_ptr)
 
 		if (reps == job_ptr->alloc_lps[i]) {
 			/* append to existing hostlist record */
-			if (hostlist_push(hl_tmp, host))
+			if (hostlist_push(hl_tmp, host) == 0)
 				error("hostlist_push failure");
 		} else {
 			if (hl_tmp)

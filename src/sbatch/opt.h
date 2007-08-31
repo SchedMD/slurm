@@ -80,6 +80,7 @@ typedef struct sbatch_options {
 	bool hold;		/* --hold, -H			*/
 	bool no_kill;		/* --no-kill, -k		*/
 	bool no_requeue;	/* --no-requeue			*/
+	bool overcommit;	/* --overcommit -O		*/
 	uint16_t shared;	/* --share,   -s		*/
 	int  quiet;
 	int  verbose;

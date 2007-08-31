@@ -159,7 +159,7 @@ if {[wait_for_file $file_out] == 0} {
 	set complete 0
 	spawn $bin_cat $file_out
 	expect {
-                -re "I just received msg from Rank" {
+                -re "just received msg from Rank" {
 			incr matches
                         exp_continue
                 }

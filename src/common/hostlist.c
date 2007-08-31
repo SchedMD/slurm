@@ -1794,7 +1794,7 @@ char *hostlist_pop(hostlist_t hl)
 {
 	char *host = NULL;
 	if(!hl) {
-		error("hostlist_pop: no hoslist given");
+		error("hostlist_pop: no hostlist given");
 		return NULL;
 	}
 	

@@ -82,6 +82,7 @@
 #define OPT_GEOMETRY	0x0b
 #define OPT_MULTI	0x0f
 #define OPT_EXCLUSIVE	0x10
+#define OPT_OVERCOMMIT	0x11
 
 /* generic getopt_long flags, integers and *not* valid characters */
 #define LONG_OPT_JOBID       0x105
@@ -399,7 +400,7 @@ static void _opt_default()
 	opt.max_nodes = 0;
 	opt.tasks_per_node   = -1;
 	opt.nodes_set = false;
-	opt.time_limit = 0;
+	opt.time_limit = NO_VAL;
 	opt.partition = NULL;
 
 	opt.job_name = NULL;
@@ -414,6 +415,7 @@ static void _opt_default()
 
 	opt.immediate	= false;
 	opt.no_requeue	= false;
+	opt.overcommit	= false;
 
 	opt.quiet = 0;
 	opt.verbose = 0;
@@ -478,6 +480,7 @@ env_vars_t env_vars[] = {
   {"SBATCH_MLOADER_IMAGE", OPT_STRING,     &opt.mloaderimage,  NULL           },
   {"SBATCH_NO_REQUEUE",    OPT_BOOL,       &opt.no_requeue,    NULL           },
   {"SBATCH_NO_ROTATE",     OPT_BOOL,       &opt.no_rotate,     NULL           },
+  {"SBATCH_OVERCOMMIT",    OPT_OVERCOMMIT, NULL,               NULL           },
   {"SBATCH_PARTITION",     OPT_STRING,     &opt.partition,     NULL           },
   {"SBATCH_RAMDISK_IMAGE", OPT_STRING,     &opt.ramdiskimage,  NULL           },
   {"SBATCH_TIMELIMIT",     OPT_STRING,     &opt.time_limit_str,NULL           },
@@ -581,6 +584,10 @@ _process_env_var(env_vars_t *e, const char *val)
 		opt.shared = 0;
 		break;
 
+	case OPT_OVERCOMMIT:
+		opt.overcommit = true;
+		break;
+
 	default:
 		/* do nothing */
 		break;
@@ -611,6 +618,7 @@ static struct option long_options[] = {
 	{"tasks",         required_argument, 0, 'n'},
 	{"nodes",         required_argument, 0, 'N'},
 	{"output",        required_argument, 0, 'o'},
+	{"overcommit",    no_argument,       0, 'O'},
 	{"partition",     required_argument, 0, 'p'},
 	{"quiet",         no_argument,       0, 'q'},
 	{"no-rotate",     no_argument,       0, 'R'},
@@ -1085,6 +1093,9 @@ static void _set_options(int argc, char **argv)
 				opt.ofname = xstrdup("/dev/null");
 			else
 				opt.ofname = _fullpath(optarg);
+			break;
+		case 'O':
+			opt.overcommit = true;
 			break;
 		case 'p':
 			xfree(opt.partition);
@@ -1704,8 +1715,9 @@ static bool _opt_verify(void)
 			error("Invalid time limit specification");
 			exit(1);
 		}
-	} else
-		opt.time_limit = INFINITE;
+		if (opt.time_limit == 0)
+			opt.time_limit = INFINITE;
+	}
 
 	if ((opt.euid != (uid_t) -1) && (opt.euid != opt.uid)) 
 		opt.uid = opt.euid;
@@ -2013,9 +2025,10 @@ static void _opt_list()
 	info("verbose        : %d", opt.verbose);
 	info("immediate      : %s", tf_(opt.immediate));
 	info("no-requeue     : %s", tf_(opt.no_requeue));
+	info("overcommit     : %s", tf_(opt.overcommit));
 	if (opt.time_limit == INFINITE)
 		info("time_limit     : INFINITE");
-	else
+	else if (opt.time_limit != NO_VAL)
 		info("time_limit     : %d", opt.time_limit);
 	if (opt.nice)
 		info("nice           : %d", opt.nice);
@@ -2064,7 +2077,7 @@ static void _usage(void)
  	printf(
 "Usage: sbatch [-N nnodes] [-n ntasks]\n"
 "              [-c ncpus] [-r n] [-p partition] [--hold] [-t minutes]\n"
-"              [-D path] [--immediate] [--no-kill]\n"
+"              [-D path] [--immediate] [--no-kill] [--overcommit]\n"
 "              [--input file] [--output file] [--error file]\n"
 "              [--workdir=directory] [--share] [-m dist] [-J jobname]\n"
 "              [--jobid=id] [--verbose] [--gid=group] [--uid=user]\n"
@@ -2109,6 +2122,7 @@ static void _help(void)
 "  -d, --dependency=jobid      defer job until specified jobid completes\n"
 "  -D, --workdir=directory     set working directory for batch script\n"
 "      --nice[=value]          decrease secheduling priority by value\n"
+"  -O, --overcommit            overcommit resources\n"
 "  -U, --account=name          charge job to specified account\n"
 "      --begin=time            defer job until HH:MM DD/MM/YY\n"
 "      --comment=name          arbitrary comment\n"

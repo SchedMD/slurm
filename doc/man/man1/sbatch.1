@@ -1,4 +1,4 @@
-.TH "sbatch" "1" "SLURM 1.2" "June 2007" "SLURM Commands"
+.TH "sbatch" "1" "SLURM 1.2" "August 2007" "SLURM Commands"
 .SH "NAME"
 .LP 
 sbatch \- Submit a batch script to SLURM.
@@ -271,6 +271,12 @@ When a job is requeued, the batch script is initiated from its beginning.
 Specify the number of tasks to be launched per node.
 Equivalent to \fB\-\-tasks\-per\-node\fR.
 
+\fB\-O\fR, \fB\-\-overcommit\fR
+Overcommit resources. Normally, \fBsbatch\fR will allocate one cpu per
+task to be executed. By specifying \fB\-\-overcommit\fR you are explicitly
+allowing more than one process per cpu. However no more than
+\fBMAX_TASKS_PER_NODE\fR tasks are permitted to execute per node.
+
 .TP
 \fB\-o\fR, \fB\-\-output\fR[=]<\fIfilename pattern\fR>
 Instruct SLURM to connect the batch script's standard output directly to the 
@@ -453,6 +459,9 @@ Same as \fB\-\-no\-requeue\fR.
 .TP
 \fBSBATCH_NO_ROTATE\fR
 Same as \fB\-R\fR or \fB\-\-no\-rotate\fR.
+.TP
+\fBSLURM_OVERCOMMIT\fR
+Same as \fB\-O, \-\-overcommit\fR
 .TP
 \fBSBATCH_PARTITION\fR
 Same as \fB\-p\fR or \fB\-\-partition\fR.
