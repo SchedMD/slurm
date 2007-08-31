@@ -141,7 +141,6 @@ static int	_start_job(uint32_t jobid, int task_cnt, char *hostlist,
 	size_t node_name_len;
 	static uint32_t cr_test = 0, cr_enabled = 0;
 
-info("task_cnt=%d, hostlist=%s, tasklist=%s", task_cnt, hostlist, tasklist);
 	if (cr_test == 0) {
 		select_g_get_info_from_plugin(SELECT_CR_PLUGIN,
 						&cr_enabled);
