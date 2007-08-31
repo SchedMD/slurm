@@ -9,6 +9,7 @@ documents those changes that are of interest to users and admins.
     INFINITE rather than partition's limit.
  -- In select/cons_res with SelectTypeParameters=CR_Socket_Memory, fix bug in 
     memory allocation tracking, mem.patch from Chris Holmes, HP.
+ -- Add --overcommit option to the sbatch command.
 
 * Changes in SLURM 1.2.14
 =========================
