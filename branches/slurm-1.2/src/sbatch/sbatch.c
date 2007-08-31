@@ -185,7 +185,7 @@ static int fill_job_desc_from_opts(job_desc_msg_t *desc)
 		desc->cpus_per_task = opt.cpus_per_task;
 	if (opt.no_kill)
 		desc->kill_on_node_fail = 0;
-	if (opt.time_limit > -1)
+	if (opt.time_limit != NO_VAL)
 		desc->time_limit = opt.time_limit;
 	desc->shared = opt.shared;
 

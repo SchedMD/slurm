@@ -425,7 +425,7 @@ static void _opt_default()
 	opt.min_nodes = 1;
 	opt.max_nodes = 0;
 	opt.nodes_set = false;
-	opt.time_limit = 0;
+	opt.time_limit = NO_VAL;
 	opt.time_limit_str = NULL;
 	opt.partition = NULL;
 
@@ -1038,8 +1038,9 @@ static bool _opt_verify(void)
 			error("Invalid time limit specification");
 			exit(1);
 		}
-	} else
-		opt.time_limit = INFINITE;
+		if (opt.time_limit == 0)
+			opt.time_limit = INFINITE;
+	}
 
 	if ((opt.euid != (uid_t) -1) && (opt.euid != opt.uid)) 
 		opt.uid = opt.euid;
@@ -1248,7 +1249,7 @@ static void _opt_list()
 	info("immediate      : %s", tf_(opt.immediate));
 	if (opt.time_limit == INFINITE)
 		info("time_limit     : INFINITE");
-	else
+	else if (opt.time_limit != NO_VAL)
 		info("time_limit     : %d", opt.time_limit);
 	info("wait           : %d", opt.max_wait);
 	if (opt.nice)
