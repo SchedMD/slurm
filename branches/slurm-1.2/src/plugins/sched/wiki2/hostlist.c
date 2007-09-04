@@ -191,7 +191,8 @@ static void _append_hl_buf(char **buf, hostlist_t *hl_tmp, int *reps)
 {
 	int host_str_len = 4096;
 	char *host_str, tmp_str[64];
-	char *sep, *tok, *tok_p;
+	char *tok, *sep;
+	int i, in_bracket = 0, fini = 0;
 
 	host_str = xmalloc(host_str_len);
 	hostlist_uniq(*hl_tmp);
@@ -199,19 +200,39 @@ static void _append_hl_buf(char **buf, hostlist_t *hl_tmp, int *reps)
 		host_str_len *= 2;
 		xrealloc(*host_str, host_str_len);
 	}
+
 	/* Note that host_str may be of this form "alpha,beta". We want
-	 * to record this as "alpha*#:beta*#" and NOT "alpha,beta*#" */
+	 * to record this as "alpha*#:beta*#" and NOT "alpha,beta*#". 
+	 * NOTE: Do not break up command within brackets (e.g. "tux[1,2-4]") */
 	if (*buf)
 		sep = ":";
 	else
 		sep = "";
-	tok = strtok_r(host_str, ",", &tok_p);
-	while (tok) {
-		snprintf(tmp_str, sizeof(tmp_str), "%s%s*%d",
-			sep, tok, *reps);
-		xstrcat(*buf, tmp_str);
-		sep = ":";
-		tok = strtok_r(NULL, ",", &tok_p);
+	tok = host_str;
+	for (i=0; (fini == 0) ; i++) {
+		switch (tok[i]) {
+			case '[':
+				in_bracket = 1;
+				break;
+			case ']':
+				in_bracket = 0;
+				break;
+			case '\0':
+				fini = 1;
+				if (in_bracket)
+					error("badly formed hostlist %s", tok);
+			case ',':
+				if (in_bracket)
+					break;
+				tok[i] = '\0';
+				snprintf(tmp_str, sizeof(tmp_str), "%s%s*%d",
+					sep, tok, *reps);
+				xstrcat(*buf, tmp_str);
+				sep = ":";
+				tok += (i + 1);
+				i = -1;
+				break;
+		}
 	}
 	xfree(host_str);
 	hostlist_destroy(*hl_tmp);
