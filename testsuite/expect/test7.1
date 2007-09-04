@@ -171,6 +171,7 @@ if {$prio3 != 0} {
 }
 
 if {$exit_code == 0} {
+	$bin_rm -f pwd_script
 	send_user "\nSUCCESS\n"
 }
 exit $exit_code
