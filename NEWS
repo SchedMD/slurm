@@ -52,6 +52,7 @@ documents those changes that are of interest to users and admins.
  -- Run task epilog from job's working directory rather than directory
     where slurmd daemon started from.
  -- Log errors running task prolog or task epilog to srun's output.
+ -- In sched/wiki2, fix bug processing condensed hostlist expressions.
 
 * Changes in SLURM 1.2.15
 =========================
