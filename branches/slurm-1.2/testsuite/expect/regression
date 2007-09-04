@@ -81,6 +81,10 @@ echo ""
 echo "Completions:$COMPLETIONS"
 echo "Failures:   $FAILURES"
 echo "Time (sec): $DELTA_TIME"
+
+echo "Completions:$COMPLETIONS" >& 2
+echo "Failures:   $FAILURES"    >& 2
+echo "Time (sec): $DELTA_TIME"  >& 2
 echo "Remember to check for mail send by tests" >& 2
 
 if [ $FAILURES -eq 0 ]

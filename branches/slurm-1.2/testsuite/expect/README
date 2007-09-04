@@ -1,5 +1,5 @@
 ############################################################################
-# Copyright (C) 2002-2006 The Regents of the University of California.
+# Copyright (C) 2002-2007 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 # Written by Morris Jette <jette1@llnl.gov>
 # UCRL-CODE-226842.
@@ -22,34 +22,47 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 ############################################################################
 
-This directory contains a battery of SLURM regression tests. The tests make use 
-of the "expect" scripting language. You can create "globals.local" and 
-identify locations of files to be used in testing, especially the 
-variable "slurm_dir". These tests expect single node jobs submitted to the 
-default partition to respond within a one minutes. 
-If that is not the case, modify the value of "max_job_delay" in the 
-"globals.local" file to an appropriate value or the tests will report 
-failures due to timeouts. 
-If there are file propagation delays (e.g. due to NFS), the value of 
-"max_file_delay" in the "globals.local" file may need modification.
+This directory contains a battery of SLURM regression tests. The tests make
+use of the "expect" scripting language. You can create "globals.local" and 
+identify locations of files to be used in testing, especially the variable 
+"slurm_dir". These tests expect single node jobs submitted to the default 
+partition to respond within a 120 seconds.  If that is not the case, modify 
+the value of "max_job_delay" in the "globals.local" file to an appropriate 
+value or the tests will report failures due to timeouts.  If there are file 
+propagation delays (e.g. due to NFS), the value of "max_file_delay" in the 
+"globals.local" file may need modification. For example:
+    $ cat globals.local
+    set slurm_dir     "/usr/local"
+    set max_job_delay 300
 
 Each test can be executed independently. Upon successful completion, the test 
 will print "SUCCESS" and terminate with an exit code of zero. Upon failure, 
 the test will typically print "FAILURE" and an explanation of the failure. 
 The message "WARNING" indicates that the cluster configuration can not fully 
-test some option (e.g. only one node or partition) and the test terminates with 
-an exit code of zero. In the event of a configuration problem or other 
+test some option (e.g. only one node or partition) and the test terminates 
+with an exit code of zero. In the event of a configuration problem or other 
 catastrophic test failure other messages could be printed and their cause 
 should be investigated. In either case, failing tests will terminate with a 
 non-zero exit code and successful tests will terminate with a zero exit code.
 
-The script "regression" will execute all of the tests and summarize the results.
-This script may be modified to test only selected commands (e.g. sinfo command 
-tests have the prefix "test4.*"). A summary of each test is shown below.
+The script "regression" will execute all of the tests and summarize the 
+results. Standard output contains detailed logging of all events, which is 
+quite verbose. Failure information is written to standard error. A good 
+way to run "regression" is to write its standard output to one file and 
+either write standard error to another file or print it to the terminal.
+Execution time of the full test suite is roughly 80 minutes, but can vary
+considerably with the architecuture, configuration, and system load. Some 
+tests send e-mail, so check for four e-mail messages set the the user 
+running the tests. Here is an example. 
+    $ ./regression >slurm.test.tux.Aug3
+    Completions:357
+    Failures:   0
+    Time (sec): 4375
+    Remember to check for mail send by tests
 
-There are also scripts to emulate some commands on systems lacking them (e.g. 
-AIX). These include pkill and usleep.
-
+A summary of each test is shown below. There are also scripts to emulate 
+some commands on systems lacking them (e.g.  AIX). These include pkill and 
+usleep.
 ############################################################################
 
 
