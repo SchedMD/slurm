@@ -123,6 +123,7 @@ expect {
 }
 
 if {$exit_code == 0} {
+	$bin_rm -f id_script
 	send_user "\nSUCCESS\n"
 }
 exit $exit_code

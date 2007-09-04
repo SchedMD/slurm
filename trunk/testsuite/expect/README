@@ -169,7 +169,7 @@ test1.83   Test of contiguous option with multiple nodes (--contiguous option).
            Also see test1.14.
 test1.84   Test of cpus-per-task option on a single node (--cpus-per-task  
            option).
-test1.85   REMOVE
+test1.85   REMOVED
 test1.86   Confirm node selection from within a job step on existing allocation
            (--nodelist, --exclude, --nodes and --nprocs options).
 test1.87   Confirm node selection from within a job step on existing allocation
