@@ -463,9 +463,11 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 		shared = 0;
 		job_ptr->cr_enabled = cr_enabled; /* CR enabled for this job */
 
-		cr_type = (select_type_plugin_info_t) slurmctld_conf.select_type_param;
+		cr_type = (select_type_plugin_info_t) slurmctld_conf.
+							select_type_param;
 		if (cr_type == CR_MEMORY) {
-			shared = 1; /* Sharing set when only memory as a CR is enabled */
+			shared = 1; 	/* Sharing set when only memory 
+					 * as a CR is enabled */
 		} else if ((cr_type == CR_SOCKET) 
 			   || (cr_type == CR_CORE) 
 			   || (cr_type == CR_CPU)) {
