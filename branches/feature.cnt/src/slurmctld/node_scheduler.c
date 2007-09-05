@@ -108,7 +108,8 @@ static int _pick_best_nodes(struct node_set *node_set_ptr,
 			    uint32_t min_nodes, uint32_t max_nodes,
 			    uint32_t req_nodes);
 static void _print_feature_list(uint32_t job_id, List feature_list);
-static bitstr_t *_valid_features(char *requested, char *available);
+static bitstr_t *_valid_features(struct job_details *detail_ptr, 
+				 char *available);
 
 
 /*
@@ -1168,7 +1169,7 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 static void _print_feature_list(uint32_t job_id, List feature_list)
 {
 	ListIterator feat_iter;
-	struct feature_record *feat;
+	struct feature_record *feat_ptr;
 	char *buf = NULL, tmp[16];
 	int bracket = 0;
 
@@ -1178,25 +1179,25 @@ static void _print_feature_list(uint32_t job_id, List feature_list)
 	}
 
 	feat_iter = list_iterator_create(feature_list);
-	while((feat = (struct feature_record *)list_next(feat_iter))) {
-		if (feat->op_code == FEATURE_OP_XOR) {
+	while((feat_ptr = (struct feature_record *)list_next(feat_iter))) {
+		if (feat_ptr->op_code == FEATURE_OP_XOR) {
 			if (bracket == 0)
 				xstrcat(buf, "[");
 			bracket = 1;
 		}
-		xstrcat(buf, feat->name);
-		if (feat->count) {
-			snprintf(tmp, sizeof(tmp), "*%u", feat->count);
+		xstrcat(buf, feat_ptr->name);
+		if (feat_ptr->count) {
+			snprintf(tmp, sizeof(tmp), "*%u", feat_ptr->count);
 			xstrcat(buf, tmp);
 		}
-		if (bracket && (feat->op_code != FEATURE_OP_XOR)) {
+		if (bracket && (feat_ptr->op_code != FEATURE_OP_XOR)) {
 			xstrcat(buf, "]");
 			bracket = 0;
 		}
-		if (feat->op_code == FEATURE_OP_AND)
+		if (feat_ptr->op_code == FEATURE_OP_AND)
 			xstrcat(buf, "&");
-		else if ((feat->op_code == FEATURE_OP_OR) ||
-			 (feat->op_code == FEATURE_OP_XOR))
+		else if ((feat_ptr->op_code == FEATURE_OP_OR) ||
+			 (feat_ptr->op_code == FEATURE_OP_XOR))
 			xstrcat(buf, "|");
 	}
 	list_iterator_destroy(feat_iter);
@@ -1402,7 +1403,7 @@ static int _build_node_list(struct job_record *job_ptr,
 			continue;
 		}
 
-		tmp_feature = _valid_features(job_ptr->details->features,
+		tmp_feature = _valid_features(job_ptr->details,
 					      config_ptr->feature);
 		if (tmp_feature == NULL) {
 			FREE_NULL_BITMAP(node_set_ptr[node_set_inx].my_bitmap);
@@ -1659,7 +1660,7 @@ extern void build_node_details(struct job_record *job_ptr)
 /*
  * _valid_features - determine if the requested features are satisfied by
  *	those available
- * IN requested - requested features (by a job)
+ * IN details_ptr - job requirement details, includes requested features
  * IN available - available features (on a node)
  * RET NULL if request is not satisfied, otherwise a bitmap indicating 
  *	which mutually exclusive features are satisfied. For example
@@ -1670,15 +1671,16 @@ extern void build_node_details(struct job_record *job_ptr)
  *	with the first bit set if requirements are satisfied without a 
  *	mutually exclusive feature list.
  */
-static bitstr_t *_valid_features(char *requested, char *available)
+static bitstr_t *_valid_features(struct job_details *details_ptr, 
+				 char *available)
 {
-	char *tmp_requested, *str_ptr1;
-	int bracket, found, i, position, result;
-	int last_op;		/* last operation 0 for or, 1 for and */
-	int save_op = 0, save_result = 0;	/* for bracket support */
 	bitstr_t *result_bits = (bitstr_t *) NULL;
+	ListIterator feat_iter;
+	struct feature_record *feat_ptr;
+	int found, last_op, position = 0, result;
+	int save_op = FEATURE_OP_AND, save_result=1;
 
-	if (requested == NULL) {		/* no constraints */
+	if (details_ptr->feature_list == NULL) {/* no constraints */
 		result_bits = bit_alloc(MAX_FEATURES);
 		bit_set(result_bits, 0);
 		return result_bits;
@@ -1686,107 +1688,49 @@ static bitstr_t *_valid_features(char *requested, char *available)
 	if (available == NULL)			/* no features */
 		return result_bits;
 
-	tmp_requested = xstrdup(requested);
-	bracket = position = 0;
-	str_ptr1 = tmp_requested;	/* start of feature name */
-	result = 1;			/* assume good for now */
+	result = 1;				/* assume good for now */
 	last_op = FEATURE_OP_AND;
-	for (i=0; ; i++) {
-		if (tmp_requested[i] == (char) NULL) {
-			if (strlen(str_ptr1) == 0)
-				break;
-			found = _match_feature(str_ptr1, available);
-			if (last_op == FEATURE_OP_AND)
-				result &= found;
-			else	/* FEATURE_OP_OR */
+	feat_iter = list_iterator_create(details_ptr->feature_list);
+	while ((feat_ptr = (struct feature_record *) list_next(feat_iter))) {
+		if (feat_ptr->count)
+			found = 1;	/* handle feature counts elsewhere */
+		else
+			found = _match_feature(feat_ptr->name, available);
+
+		if ((last_op == FEATURE_OP_XOR) ||
+		    (feat_ptr->op_code == FEATURE_OP_XOR)) {
+			if (position == 0) {
+				save_op = last_op;
+				save_result = result;
+				result = found;
+			} else
 				result |= found;
-			break;
-		}
 
-		if (tmp_requested[i] == '&') {
-			if (bracket != 0) {
-				debug("_valid_features: parsing failure on %s",
-					requested);
-				result = 0;
-				break;
-			}
-			tmp_requested[i] = (char) NULL;
-			found = _match_feature(str_ptr1, available);
-			if (last_op == FEATURE_OP_AND)
-				result &= found;
-			else	/* FEATURE_OP_OR */
-				result |= found;
-			str_ptr1 = &tmp_requested[i + 1];
-			last_op = FEATURE_OP_AND;
+			if (!result_bits)
+				result_bits = bit_alloc(MAX_FEATURES);
 
-		} else if (tmp_requested[i] == '|') {
-			tmp_requested[i] = (char) NULL;
-			found = _match_feature(str_ptr1, available);
-			if (bracket != 0) {
-				if (found) {
-					if (!result_bits)
-						result_bits = bit_alloc(MAX_FEATURES);
-					if (position < MAX_FEATURES)
-						bit_set(result_bits, (position-1));
-					else
-						error("_valid_features: overflow");
-				}
-				position++;
-			}
-			if (last_op == FEATURE_OP_AND)
-				result &= found;
-			else	/* FEATURE_OP_OR */
-				result |= found;
-			str_ptr1 = &tmp_requested[i + 1];
-			last_op = FEATURE_OP_OR;
-
-		} else if (tmp_requested[i] == '[') {
-			bracket++;
-			position = 1;
-			save_op = last_op;
-			save_result = result;
-			last_op = FEATURE_OP_AND;
-			result = 1;
-			str_ptr1 = &tmp_requested[i + 1];
-
-		} else if (tmp_requested[i] == ']') {
-			tmp_requested[i] = (char) NULL;
-			found = _match_feature(str_ptr1, available);
-			if (found) {
-				if (!result_bits)
-					result_bits = bit_alloc(MAX_FEATURES);
-				if (position < MAX_FEATURES)
-					bit_set(result_bits, (position-1));
-				else
-					error("_valid_features: overflow");
-			}
+			if (!found)
+				;
+			else if (position < MAX_FEATURES)
+				bit_set(result_bits, position);
+			else
+				error("_valid_features: overflow");
 			position++;
-			result |= found;
-			if (save_op == FEATURE_OP_AND)
-				result &= save_result;
-			else	/* FEATURE_OP_OR */
-				result |= save_result;
-			if ((tmp_requested[i + 1] == '&')
-			    && (bracket == 1)) {
-				last_op = FEATURE_OP_AND;
-				str_ptr1 = &tmp_requested[i + 2];
-			} else if ((tmp_requested[i + 1] == '|')
-				   && (bracket == 1)) {
-				last_op = FEATURE_OP_OR;
-				str_ptr1 = &tmp_requested[i + 2];
-			} else if ((tmp_requested[i + 1] == (char) NULL)
-				   && (bracket == 1)) {
-				break;
-			} else {
-				debug("_valid_features: parsing failure on %s",
-					requested);
-				result = 0;
-				break;
+
+			if (feat_ptr->op_code != FEATURE_OP_XOR) {
+				if (save_op == FEATURE_OP_OR)
+					result |= save_result;
+				else /* (save_op == FEATURE_OP_AND) */
+					result &= save_result;
 			}
-			bracket = 0;
+		} else if (last_op == FEATURE_OP_OR) {
+			result |= found;
+		} else if (last_op == FEATURE_OP_AND) {
+			result &= found;
 		}
+		last_op = feat_ptr->op_code;
 	}
-	xfree(tmp_requested);
+	list_iterator_destroy(feat_iter);
 
 	if (result) {
 		if (!result_bits) {
