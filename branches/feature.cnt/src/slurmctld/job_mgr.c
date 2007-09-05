@@ -229,6 +229,8 @@ void delete_job_details(struct job_record *job_entry)
 	xfree(job_entry->details->out);
 	xfree(job_entry->details->work_dir);
 	xfree(job_entry->details->mc_ptr);
+	if (job_entry->details->feature_list)
+		list_destroy(job_entry->details->feature_list);
 	xfree(job_entry->details);
 }
 
