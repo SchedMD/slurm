@@ -98,6 +98,7 @@ by appending an asterisk and count after the feature name.
 For example "\fBsrun \-\-nodes=16 \-\-constraint=graphics*4 ..."\fR 
 indicates that the job requires 16 nodes at that at least four of those
 nodes must have the feature "graphics."
+Constraints with node counts may only be combined with AND operators.
 If no nodes have the requested features, then the job will be rejected 
 by the slurm job manager.
 
