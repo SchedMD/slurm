@@ -92,6 +92,8 @@ extern int pgsql_db_create_table(PGconn *pgsql_db,
 				 char *table_name, storage_field_t *fields,
 				 char *ending);
 
+extern int pgsql_db_make_table_current(PGconn *pgsql_db, char *table_name,
+				       storage_field_t *fields);
 #endif
 
 #endif

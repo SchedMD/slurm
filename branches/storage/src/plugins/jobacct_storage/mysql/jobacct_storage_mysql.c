@@ -115,6 +115,7 @@ static int _mysql_jobacct_check_tables()
 		{ "name", "tinytext not null" }, 
 		{ "track_steps", "tinyint not null" },
 		{ "state", "smallint not null" }, 
+		{ "comp_code", "smallint default 0" },
 		{ "priority", "int unsigned not null" },
 		{ "cpus", "mediumint unsigned not null" }, 
 		{ "nodelist", "text" },
@@ -443,12 +444,12 @@ extern int jobacct_storage_p_job_complete(struct job_record *job_ptr)
 	if(job_ptr->db_index) {
 		snprintf(query, sizeof(query),
 			 "update %s set start=%u, end=%u, state=%d, "
-			 "nodelist='%s', account='%s', "
+			 "nodelist='%s', account='%s', comp_code=%d, "
 			 "kill_requid=%d where id=%u",
 			 job_table, (int)job_ptr->start_time,
 			 (int)job_ptr->end_time, 
 			 job_ptr->job_state & (~JOB_COMPLETING),
-			 nodes, account,
+			 nodes, account, job_ptr->exit_code,
 			 job_ptr->requid, job_ptr->db_index);
 		rc = mysql_db_query(jobacct_mysql_db, query);
 	} else 
@@ -609,7 +610,7 @@ extern int jobacct_storage_p_step_complete(struct step_record *step_ptr)
 	if(step_ptr->job_ptr->db_index) {
 		snprintf(query, sizeof(query),
 			 "update %s set end=%u, state=%d, "
-			 "kill_requid=%d, "
+			 "kill_requid=%d, comp_code=%d, "
 			 "max_vsize=%u, max_vsize_task=%u, "
 			 "max_vsize_node=%u, ave_vsize=%.2f, "
 			 "max_rss=%u, max_rss_task=%u, "
@@ -622,6 +623,7 @@ extern int jobacct_storage_p_step_complete(struct step_record *step_ptr)
 			 step_table, (int)now,
 			 comp_status,
 			 step_ptr->job_ptr->requid, 
+			 step_ptr->exit_code, 
 			 jobacct->max_vsize,	/* max vsize */
 			 jobacct->max_vsize_id.taskid,	/* max vsize task */
 			 jobacct->max_vsize_id.nodeid,	/* max vsize node */

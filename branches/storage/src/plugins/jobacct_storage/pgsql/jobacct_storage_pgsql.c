@@ -116,6 +116,7 @@ static int _pgsql_jobacct_check_tables(char *user)
 		{ "name", "text not null" }, 
 		{ "track_steps", "smallint not null" },
 		{ "state", "smallint not null" }, 
+		{ "comp_code", "smallint default 0" },
 		{ "priority", "bigint not null" },
 		{ "cpus", "integer not null" }, 
 		{ "nodelist", "text" },
@@ -211,29 +212,52 @@ static int _pgsql_jobacct_check_tables(char *user)
 	}
 	PQclear(result);
 
-	if(!index_found)
+	if(!index_found) {
 		if(pgsql_db_create_table(jobacct_pgsql_db,  
 					 index_table, index_table_fields,
 					 ", primary key (id))") == SLURM_ERROR)
 			return SLURM_ERROR;
-	
-	if(!job_found)
+	} else {
+		if(pgsql_db_make_table_current(jobacct_pgsql_db,  
+					       index_table,
+					       index_table_fields))
+			return SLURM_ERROR;
+	}
+	if(!job_found) {
 		if(pgsql_db_create_table(jobacct_pgsql_db,  
 					 job_table, job_table_fields,
 					 ")") == SLURM_ERROR)
 			return SLURM_ERROR;
-
-	if(!step_found)
+	} else {
+		if(pgsql_db_make_table_current(jobacct_pgsql_db,  
+					       job_table,
+					       job_table_fields))
+			return SLURM_ERROR;
+	}
+	
+	if(!step_found) {
 		if(pgsql_db_create_table(jobacct_pgsql_db, 
 					 step_table, step_table_fields,
 					 ")") == SLURM_ERROR)
 			return SLURM_ERROR;
 
-	if(!rusage_found)
+	} else {
+		if(pgsql_db_make_table_current(jobacct_pgsql_db,  
+					       step_table,
+					       step_table_fields))
+			return SLURM_ERROR;
+	}
+	if(!rusage_found) {
 		if(pgsql_db_create_table(jobacct_pgsql_db, 
 					 rusage_table, step_rusage_fields,
 					 ")") == SLURM_ERROR)
 			return SLURM_ERROR;
+	} else {
+		if(pgsql_db_make_table_current(jobacct_pgsql_db,  
+					       rusage_table,
+					       step_rusage_fields))
+			return SLURM_ERROR;
+	}
 
 
 	return SLURM_SUCCESS;
@@ -480,12 +504,12 @@ extern int jobacct_storage_p_job_complete(struct job_record *job_ptr)
 	if(job_ptr->db_index) {
 		snprintf(query, sizeof(query),
 			 "update %s set start=%u, endtime=%u, state=%d, "
-			 "nodelist='%s', account='%s', "
+			 "nodelist='%s', account='%s', comp_code=%d, "
 			 "kill_requid=%d where id=%u",
 			 job_table, (int)job_ptr->start_time,
 			 (int)job_ptr->end_time, 
 			 job_ptr->job_state & (~JOB_COMPLETING),
-			 nodes, account,
+			 nodes, account, job_ptr->exit_code,
 			 job_ptr->requid, job_ptr->db_index);
 		rc = pgsql_db_query(jobacct_pgsql_db, query);
 	} else 
@@ -646,7 +670,7 @@ extern int jobacct_storage_p_step_complete(struct step_record *step_ptr)
 	if(step_ptr->job_ptr->db_index) {
 		snprintf(query, sizeof(query),
 			 "update %s set endtime=%u, state=%d, "
-			 "kill_requid=%d, "
+			 "kill_requid=%d, comp_code=%d, "
 			 "max_vsize=%u, max_vsize_task=%u, "
 			 "max_vsize_node=%u, ave_vsize=%.2f, "
 			 "max_rss=%u, max_rss_task=%u, "
@@ -659,6 +683,7 @@ extern int jobacct_storage_p_step_complete(struct step_record *step_ptr)
 			 step_table, (int)now,
 			 comp_status,
 			 step_ptr->job_ptr->requid, 
+			 step_ptr->exit_code, 
 			 jobacct->max_vsize,	/* max vsize */
 			 jobacct->max_vsize_id.taskid,	/* max vsize task */
 			 jobacct->max_vsize_id.nodeid,	/* max vsize node */

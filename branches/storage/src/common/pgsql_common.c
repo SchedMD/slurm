@@ -229,5 +229,117 @@ extern int pgsql_db_create_table(PGconn *pgsql_db,
 	return SLURM_SUCCESS;
 }
 
+extern int pgsql_db_make_table_current(PGconn *pgsql_db, char *table_name,
+				       storage_field_t *fields)
+{
+	char *query = NULL, *opt_part = NULL, *temp_char = NULL;
+	char *type = NULL;
+	int not_null = 0;
+	char *default_str = NULL, *default_query = NULL, *null_query = NULL;
+	char* original_ptr = NULL;
+	int i = 0;
+
+	while(fields[i].name) {
+		if(!strcmp("serial", fields[i].options)) {
+			i++;
+			continue;
+		} 
+		opt_part = xstrdup(fields[i].options);
+		original_ptr = opt_part;
+		opt_part = strtok_r(opt_part, " ", &temp_char);
+		if(opt_part) {
+			type = xstrdup(opt_part);
+			opt_part = temp_char;
+			opt_part = strtok_r(opt_part, " ", &temp_char);
+			while(opt_part) {
+				if(!strcmp("not null", opt_part)) {
+					not_null = 1;
+					opt_part = temp_char;
+					opt_part = strtok_r(opt_part,
+							    " ", &temp_char);
+				} else if(!strcmp("default", opt_part)){
+					opt_part = temp_char;
+					opt_part = strtok_r(opt_part,
+							    " ", &temp_char);
+					default_str = xstrdup(opt_part);
+				}
+				if(opt_part) {
+					opt_part = temp_char;
+					opt_part = strtok_r(opt_part,
+							    " ", &temp_char);
+				}
+			}
+		} else {
+			type = xstrdup(fields[i].options);
+		}
+		xfree(original_ptr);
+
+		if(default_str) 
+			default_query = xstrdup_printf(
+				", alter column %s set default %s",
+				fields[i].name, default_str);
+		else 
+			default_query = xstrdup_printf(
+				", alter column %s drop default",
+				fields[i].name);
+
+		if(not_null) 
+			null_query = xstrdup_printf(
+				", alter column %s set not null",
+				fields[i].name);
+		else 
+			null_query = xstrdup_printf(
+				", alter column %s drop not null",
+				fields[i].name);
+		
+		
+		query = xstrdup_printf("alter table %s alter column "
+				       "%s type %s%s%s",
+				       table_name, fields[i].name, type,
+				       default_query, null_query);
+		xfree(default_query);
+		xfree(null_query);
+			
+		if(pgsql_db_query(pgsql_db, query)) {
+			info("adding column %s", fields[i].name);
+			if(default_str) 
+				default_query = xstrdup_printf(
+					" default %s", default_str);
+						
+			if(not_null) 
+				null_query = xstrdup_printf(" not null");
+			
+			xfree(query);
+			query = xstrdup_printf(
+				"alter table %s add %s %s",
+				table_name, fields[i].name,
+				type);
+			if(default_query) {
+				xstrcat(query, default_query);
+				xfree(default_query);
+			}
+
+			if(null_query) {
+				xstrcat(query, null_query);
+				xfree(null_query);
+			}
+
+			if(pgsql_db_query(pgsql_db, query)) {
+				xfree(default_str);
+				xfree(query);
+				return SLURM_ERROR;
+			}
+			
+
+		}
+		xfree(default_str);
+		xfree(query);
+		i++;
+	}
+	
+	return SLURM_SUCCESS;
+}
+
+
 #endif
 
