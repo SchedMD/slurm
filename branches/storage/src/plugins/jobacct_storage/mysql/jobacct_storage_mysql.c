@@ -115,7 +115,7 @@ static int _mysql_jobacct_check_tables()
 		{ "name", "tinytext not null" }, 
 		{ "track_steps", "tinyint not null" },
 		{ "state", "smallint not null" }, 
-		{ "comp_code", "smallint default 0" },
+		{ "comp_code", "int default 0" },
 		{ "priority", "int unsigned not null" },
 		{ "cpus", "mediumint unsigned not null" }, 
 		{ "nodelist", "text" },
@@ -134,7 +134,7 @@ static int _mysql_jobacct_check_tables()
 		{ "nodelist", "text not null" },
 		{ "state", "smallint not null" },
 		{ "kill_requid", "smallint default -1" },
-		{ "comp_code", "smallint default 0" },
+		{ "comp_code", "int default 0" },
 		{ "cpus", "mediumint unsigned not null" },
 		{ "max_vsize", "mediumint unsigned default 0" },
 		{ "max_vsize_task", "smallint unsigned default 0" },
@@ -444,7 +444,7 @@ extern int jobacct_storage_p_job_complete(struct job_record *job_ptr)
 	if(job_ptr->db_index) {
 		snprintf(query, sizeof(query),
 			 "update %s set start=%u, end=%u, state=%d, "
-			 "nodelist='%s', account='%s', comp_code=%d, "
+			 "nodelist='%s', account='%s', comp_code=%u, "
 			 "kill_requid=%d where id=%u",
 			 job_table, (int)job_ptr->start_time,
 			 (int)job_ptr->end_time, 
@@ -610,7 +610,7 @@ extern int jobacct_storage_p_step_complete(struct step_record *step_ptr)
 	if(step_ptr->job_ptr->db_index) {
 		snprintf(query, sizeof(query),
 			 "update %s set end=%u, state=%d, "
-			 "kill_requid=%d, comp_code=%d, "
+			 "kill_requid=%d, comp_code=%u, "
 			 "max_vsize=%u, max_vsize_task=%u, "
 			 "max_vsize_node=%u, ave_vsize=%.2f, "
 			 "max_rss=%u, max_rss_task=%u, "

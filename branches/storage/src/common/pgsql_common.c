@@ -327,6 +327,7 @@ extern int pgsql_db_make_table_current(PGconn *pgsql_db, char *table_name,
 			if(pgsql_db_query(pgsql_db, query)) {
 				xfree(default_str);
 				xfree(query);
+				xfree(type);
 				return SLURM_ERROR;
 			}
 			
@@ -334,6 +335,7 @@ extern int pgsql_db_make_table_current(PGconn *pgsql_db, char *table_name,
 		}
 		xfree(default_str);
 		xfree(query);
+		xfree(type);
 		i++;
 	}
 	

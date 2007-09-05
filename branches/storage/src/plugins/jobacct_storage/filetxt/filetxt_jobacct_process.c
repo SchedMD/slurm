@@ -137,6 +137,7 @@ enum {	F_JOBSTEP = HEADER_LENGTH,
 enum {	F_TOT_ELAPSED = HEADER_LENGTH,
 	F_TERM_STATUS,
 	F_JOB_REQUID,
+	F_JOB_EXITCODE,
 	JOB_TERM_LENGTH
 };
 
@@ -313,6 +314,7 @@ static void _do_fdump(char* f[], int lc)
 	char	*term[] = {"totElapsed", /* F_TOT_ELAPSED */
 			   "status",	 /* F_STATUS */ 
 			   "requid",     /* F_JOB_REQUID */
+			   "exitcode",	 /* F_EXITCODE */
 			   NULL};	 
 		
 	i = atoi(f[F_RECTYPE]);
@@ -559,6 +561,8 @@ static int _parse_line(char *f[], void **data, int len)
 		(*job)->status = atoi(f[F_STATUS]);		
 		if(len > F_JOB_REQUID) 
 			(*job)->requid = atoi(f[F_JOB_REQUID]);
+		if(len > F_JOB_EXITCODE) 
+			(*job)->exitcode = atoi(f[F_JOB_EXITCODE]);
 		break;
 	default:
 		printf("UNKOWN TYPE %d",i);
@@ -751,6 +755,7 @@ static void _process_terminated(List job_list, char *f[], int lc,
 	job->end = temp->header.timestamp;
 	job->status = temp->status;
 	job->requid = temp->requid;
+	job->exitcode = temp->exitcode;
 	if(list_count(job->steps) > 1)
 		job->track_steps = 1;
 	job->show_full = show_full;

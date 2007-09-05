@@ -90,7 +90,8 @@ extern void pgsql_jobacct_process_get_jobs(List job_list,
 		"t2.cpus",
 		"t2.nodelist",
 		"t2.account",
-		"t2.kill_requid"
+		"t2.kill_requid",
+		"t2.comp_code"
 	};
 
 	/* if this changes you will need to edit the corresponding 
@@ -162,6 +163,7 @@ extern void pgsql_jobacct_process_get_jobs(List job_list,
 		JOB_REQ_NODELIST,
 		JOB_REQ_ACCOUNT,
 		JOB_REQ_KILL_REQUID,
+		JOB_REQ_COMP_CODE,
 		JOB_REQ_COUNT		
 	};
 	enum {
@@ -301,6 +303,8 @@ extern void pgsql_jobacct_process_get_jobs(List job_list,
 			job->nodes = xstrdup("(unknown)");
 		}
 		job->account = xstrdup(PQgetvalue(result, i, JOB_REQ_ACCOUNT));
+		job->requid = atoi(PQgetvalue(result, i, JOB_REQ_KILL_REQUID));
+		job->exitcode = atoi(PQgetvalue(result, i, JOB_REQ_COMP_CODE));
 		list_append(job_list, job);
 
 		if(selected_steps && list_count(selected_steps)) {
