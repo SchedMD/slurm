@@ -1510,11 +1510,14 @@ extern void build_node_details(struct job_record *job_ptr)
  *	those available
  * IN requested - requested features (by a job)
  * IN available - available features (on a node)
- * RET 0 if request is not satisfied, otherwise an integer indicating which 
- *	mutually exclusive feature is satisfied. for example
- *	_valid_features("[fs1|fs2|fs3|fs4]", "fs3") returns 3. see the 
- *	slurm administrator and user guides for details. returns 1 if 
- *	requirements are satisfied without mutually exclusive feature list.
+ * RET NULL if request is not satisfied, otherwise a bitmap indicating 
+ *	which mutually exclusive features are satisfied. For example
+ *	_valid_features("[fs1|fs2|fs3|fs4]", "fs3") returns a bitmap with
+ *	the third bit set. For another example
+ *	_valid_features("[fs1|fs2|fs3|fs4]", "fs1,fs3") returns a bitmap 
+ *	with the first and third bits set. This function returns a bitmap
+ *	with the first bit set if requirements are satisfied without a 
+ *	mutually exclusive feature list.
  */
 static bitstr_t *_valid_features(char *requested, char *available)
 {
