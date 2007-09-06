@@ -1193,6 +1193,7 @@ static void _print_feature_list(uint32_t job_id, List feature_list)
 			xstrcat(buf, tmp);
 		}
 		if (bracket && (feat_ptr->op_code != FEATURE_OP_XOR)) {
+info("app]: %s", feat_ptr->name);
 			xstrcat(buf, "]");
 			bracket = 0;
 		}
@@ -1224,6 +1225,7 @@ static int _build_feature_list(struct job_record *job_ptr)
 	struct job_details *detail_ptr = job_ptr->details;
 	char *tmp_requested, *str_ptr1, *str_ptr2, *feature = NULL;
 	int bracket = 0, count = 0, i;
+	bool have_count = false, have_or = false;
 	struct feature_record *feat;
 
 	if (detail_ptr->features == NULL)		/* no constraints */
@@ -1237,6 +1239,7 @@ static int _build_feature_list(struct job_record *job_ptr)
 	for (i=0; ; i++) {
 		if (tmp_requested[i] == '*') {
 			tmp_requested[i] = '\0';
+			have_count = true;
 			count = strtol(&tmp_requested[i+1], &str_ptr2, 10);
 			if ((feature == NULL) || (count <= 0)) {
 				info("Job %u invalid constraint %s", 
@@ -1262,6 +1265,7 @@ static int _build_feature_list(struct job_record *job_ptr)
 			count = 0;
 		} else if (tmp_requested[i] == '|') {
 			tmp_requested[i] = '\0';
+			have_or = true;
 			if (feature == NULL) {
 				info("Job %u invalid constraint %s", 
 					job_ptr->job_id, detail_ptr->features);
@@ -1279,6 +1283,7 @@ static int _build_feature_list(struct job_record *job_ptr)
 			feature = NULL;
 			count = 0;
 		} else if (tmp_requested[i] == '[') {
+			tmp_requested[i] = '\0';
 			if ((feature != NULL) || bracket) {
 				info("Job %u invalid constraint %s", 
 					job_ptr->job_id, detail_ptr->features);
@@ -1287,6 +1292,7 @@ static int _build_feature_list(struct job_record *job_ptr)
 			}
 			bracket++;
 		} else if (tmp_requested[i] == ']') {
+			tmp_requested[i] = '\0';
 			if ((feature == NULL) || (bracket == 0)) {
 				info("Job %u invalid constraint %s", 
 					job_ptr->job_id, detail_ptr->features);
@@ -1308,6 +1314,12 @@ static int _build_feature_list(struct job_record *job_ptr)
 		}
 	}
 	xfree(tmp_requested);
+	if (have_count && have_or) {
+		info("Job %u invalid constraint (OR with feature count): %s", 
+			job_ptr->job_id, detail_ptr->features);
+		return ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE;
+	}
+
 	_print_feature_list(job_ptr->job_id, detail_ptr->feature_list);
 	return SLURM_SUCCESS;
 }
