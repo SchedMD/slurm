@@ -267,6 +267,16 @@ extern time_t last_job_update;	/* time of last update to part records */
 #define STEP_MAGIC 0xce593bc1
 #define KILL_ON_STEP_DONE	1
 
+#define FEATURE_OP_OR  0
+#define FEATURE_OP_AND 1
+#define FEATURE_OP_XOR 2
+#define FEATURE_OP_END 3		/* last entry lacks separator */
+struct feature_record {
+	char *name;			/* name of feature */
+	uint16_t count;			/* count of nodes with this feature */
+	uint8_t op_code;		/* separator, see FEATURE_OP_ above */
+};
+
 /* job_details - specification of a job's constraints, 
  * can be purged after initiation */
 struct job_details {
@@ -279,6 +289,7 @@ struct job_details {
 	uint16_t *req_node_layout;	/* task layout for required nodes */
 	bitstr_t *exc_node_bitmap;	/* bitmap of excluded nodes */
 	char *features;			/* required features */
+	List feature_list;		/* required features with node counts */
 	uint16_t shared;		/* 1 if job can share nodes,
 					   0 if job cannot share nodes,
 					   any other value accepts the default
@@ -326,7 +337,7 @@ struct job_record {
 	uint16_t kill_on_step_done;	/* 1 if job should be killed when 
 					 * the job step completes, 2 if kill
 					 * in progress */
-	select_jobinfo_t select_jobinfo;	/* opaque data */
+	select_jobinfo_t select_jobinfo;/* opaque data */
 	char *nodes;			/* list of nodes allocated to job */
 	bitstr_t *node_bitmap;		/* bitmap of nodes allocated to job */
 	char *nodes_completing;		/* nodes still in completing state
