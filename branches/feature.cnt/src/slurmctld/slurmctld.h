@@ -337,7 +337,7 @@ struct job_record {
 	uint16_t kill_on_step_done;	/* 1 if job should be killed when 
 					 * the job step completes, 2 if kill
 					 * in progress */
-	select_jobinfo_t select_jobinfo;	/* opaque data */
+	select_jobinfo_t select_jobinfo;/* opaque data */
 	char *nodes;			/* list of nodes allocated to job */
 	bitstr_t *node_bitmap;		/* bitmap of nodes allocated to job */
 	char *nodes_completing;		/* nodes still in completing state
