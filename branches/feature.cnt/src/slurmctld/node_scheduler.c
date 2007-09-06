@@ -1193,7 +1193,6 @@ static void _print_feature_list(uint32_t job_id, List feature_list)
 			xstrcat(buf, tmp);
 		}
 		if (bracket && (feat_ptr->op_code != FEATURE_OP_XOR)) {
-info("app]: %s", feat_ptr->name);
 			xstrcat(buf, "]");
 			bracket = 0;
 		}
