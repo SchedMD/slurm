@@ -9,6 +9,7 @@ documents those changes that are of interest to users and admins.
  -- Log errors running task prolog or task epilog to srun's output.
  -- In sched/wiki2, fix bug processing condensed hostlist expressions.
  -- Release contribs/mpich1.slurm.patch without GPL license. 
+ -- Fix bug in mvapich plugin for read/write calls that return EAGAIN.
 
 * Changes in SLURM 1.2.15
 =========================

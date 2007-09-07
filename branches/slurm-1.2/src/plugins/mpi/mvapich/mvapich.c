@@ -288,7 +288,8 @@ static int mvapich_write_n (mvapich_state_t *st, struct mvapich_info *mvi,
 		if (mvapich_poll (st, mvi, 1) < 0)
 			return (-1);
 
-		 if ((n = fd_write_n (mvi->fd, buf, len)) < 0 && (errno != EINTR))
+		 if ((n = fd_write_n (mvi->fd, buf, len)) < 0 && 
+		     (errno != EAGAIN))
 			return (-1);
 
 		nleft -= n;
@@ -308,7 +309,8 @@ static int mvapich_read_n (mvapich_state_t *st,  struct mvapich_info *mvi,
 		if (mvapich_poll (st, mvi, 0) < 0)
 			return (-1);
 
-		 if ((n = fd_read_n (mvi->fd, buf, len)) < 0 && (errno != EINTR))
+		 if ((n = fd_read_n (mvi->fd, buf, len)) < 0 && 
+		     (errno != EAGAIN))
 			return (-1);
 
 		nleft -= n;
