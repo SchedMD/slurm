@@ -931,10 +931,10 @@ extern slurm_step_layout_t *step_layout_create(struct step_record *step_ptr,
 	uint32_t cpu_count_reps[node_count];
 	int cpu_inx = -1;
 	int usable_cpus = 0, i;
-	int set_nodes = 0;
+	int set_nodes = 0, set_cpus = 0;
 	int pos = -1;
 	struct job_record *job_ptr = step_ptr->job_ptr;
-			
+
 	/* build the cpus-per-node arrays for the subset of nodes
 	   used by this job step */
 	for (i = 0; i < node_record_count; i++) {
@@ -950,9 +950,11 @@ extern slurm_step_layout_t *step_layout_create(struct step_record *step_ptr,
 					error("step_layout_create exclusive");
 					return NULL;
 				}
+				usable_cpus = MAX(usable_cpus, 
+						  (num_tasks - set_cpus));
 			} else
 				usable_cpus = job_ptr->alloc_lps[pos];
-			debug2("step_layou cpus = %d pos = %d", 
+			debug2("step_layout cpus = %d pos = %d", 
 			       usable_cpus, pos);
 			
 			if ((cpu_inx == -1) ||
@@ -964,6 +966,7 @@ extern slurm_step_layout_t *step_layout_create(struct step_record *step_ptr,
 			} else
 				cpu_count_reps[cpu_inx]++;
 			set_nodes++;
+			set_cpus += usable_cpus;
 			if (set_nodes == node_count)
 				break;
 		}
