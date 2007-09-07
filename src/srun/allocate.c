@@ -636,7 +636,7 @@ create_job_step(srun_job_t *job)
 	int i, rc;
 	sigset_t oset;
 	static int sigarray[] = { SIGQUIT, SIGINT, SIGTERM, 0 };
-	SigFunc *oquitf, *ointf, *otermf = NULL;
+	SigFunc *oquitf = NULL, *ointf = NULL, *otermf = NULL;
 
 	if (!(req = _step_req_create(job))) {
 		error ("Unable to allocate step request message");
