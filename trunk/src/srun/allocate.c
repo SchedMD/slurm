@@ -634,13 +634,16 @@ create_job_step(srun_job_t *job)
 	job_step_create_request_msg_t  *req  = NULL;
 	job_step_create_response_msg_t *resp = NULL;
 	int i, rc;
-	
+	sigset_t oset;
+	static int sigarray[] = { SIGQUIT, SIGINT, SIGTERM, 0 };
+	SigFunc *oquitf, *ointf, *otermf = NULL;
+
 	if (!(req = _step_req_create(job))) {
 		error ("Unable to allocate step request message");
 		return -1;
 	}
 
-	for (i=0; ;i++) {
+	for (i=0;(!destroy_job);i++) {
 		if ((slurm_job_step_create(req, &resp) == SLURM_SUCCESS)
 		&&  (resp != NULL)) {
 			if (i > 0)
@@ -653,13 +656,29 @@ create_job_step(srun_job_t *job)
 			error ("Unable to create job step: %m");
 			return -1;
 		}
-		if (i == 0)
+		if (i == 0) {
 			info("Job step creation temporarily disabled, retrying");
-		else
+			ointf  = xsignal(SIGINT,  _intr_handler);
+			otermf = xsignal(SIGTERM, _intr_handler);
+			oquitf = xsignal(SIGQUIT, _intr_handler);
+			xsignal_save_mask(&oset);
+			xsignal_unblock(sigarray);
+		} else
 			info("Job step creation still disabled, retrying");
 		sleep(MIN((i*10), 60));
 	}
-	
+
+	if (i > 0) {
+		xsignal(SIGINT,  ointf);
+		xsignal(SIGQUIT, oquitf);
+		xsignal(SIGTERM, otermf);
+		xsignal_set_mask(&oset);
+		if (destroy_job) {
+			info("Cancelled pending job step");
+			return -1;
+		}
+	}
+
 	job->stepid  = resp->job_step_id;
 	job->step_layout = resp->step_layout;
 	job->cred    = resp->cred;
