@@ -10,6 +10,8 @@ documents those changes that are of interest to users and admins.
  -- In sched/wiki2, fix bug processing condensed hostlist expressions.
  -- Release contribs/mpich1.slurm.patch without GPL license. 
  -- Fix bug in mvapich plugin for read/write calls that return EAGAIN.
+ -- Don't start MVAPICH timeout logic until we know that srun is starting 
+    an MVAPICH program.
 
 * Changes in SLURM 1.2.15
 =========================

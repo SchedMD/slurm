@@ -230,7 +230,7 @@ static int startup_timeout (mvapich_state_t *st)
 	now = time (NULL);
 
 	if (!st->start_time)
-		st->start_time = now;
+		return (-1);
 
 	remaining = st->timeout - (now - st->start_time);
 
@@ -1135,6 +1135,10 @@ again:
 		if (first) {
 			mvapich_debug ("first task checked in");
 			do_timings (st);
+			/*
+			 *  Officially start timeout timer now.
+			 */
+			st->start_time = time(NULL);
 			first = 0;
 		}
 
