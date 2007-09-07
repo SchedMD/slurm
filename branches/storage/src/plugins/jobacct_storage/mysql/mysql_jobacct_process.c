@@ -278,6 +278,7 @@ extern void mysql_jobacct_process_get_jobs(List job_list,
 	while((row = mysql_fetch_row(result))) {
 		time_t job_suspended = atoi(row[JOB_REQ_SUSPENDED]);
 		char *id = row[JOB_REQ_ID];
+
 		header.jobnum = atoi(row[JOB_REQ_JOBID]);
 		header.partition = xstrdup(row[JOB_REQ_PARTITION]);
 		header.job_submit = atoi(row[JOB_REQ_SUBMIT]);
@@ -299,6 +300,7 @@ extern void mysql_jobacct_process_get_jobs(List job_list,
 			xfree(job->nodes);
 			job->nodes = xstrdup("(unknown)");
 		}
+
 		job->account = xstrdup(row[JOB_REQ_ACCOUNT]);
 		job->requid = atoi(row[JOB_REQ_KILL_REQUID]);
 		job->exitcode = atoi(row[JOB_REQ_COMP_CODE]);
@@ -460,7 +462,10 @@ extern void mysql_jobacct_process_get_jobs(List job_list,
 			step->requid = atoi(step_row[STEP_REQ_KILL_REQUID]);
 		}
 		mysql_free_result(step_result);
-
+		
+		if(list_count(job->steps) > 1)
+			job->track_steps = 1;
+					
 		if(!job->end) {
 			job->elapsed = now - job->header.timestamp;
 		} else {
@@ -469,9 +474,10 @@ extern void mysql_jobacct_process_get_jobs(List job_list,
 		job->elapsed -= job_suspended;
 	}
 	mysql_free_result(result);
-	if (params->opt_fdump) {
+
+	if (params->opt_fdump) 
 		_do_fdump(job_list);
-	}
+
 	return;
 }
 

@@ -901,8 +901,8 @@ static void _slurm_rpc_complete_job_allocation(slurm_msg_t * msg)
 
 	/* init */
 	START_TIMER;
-	debug2("Processing RPC: REQUEST_COMPLETE_JOB_ALLOCATION %u",
-	       comp_msg->job_id);
+	debug2("Processing RPC: REQUEST_COMPLETE_JOB_ALLOCATION %u %d",
+	       comp_msg->job_id, comp_msg->job_rc);
 	uid = g_slurm_auth_get_uid(msg->auth_cred);
 
 	lock_slurmctld(job_write_lock);

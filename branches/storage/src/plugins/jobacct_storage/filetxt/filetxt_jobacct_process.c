@@ -256,7 +256,7 @@ static void _do_fdump(char* f[], int lc)
 			    "priority",	 /* F_PRIORITY */
 			    "ncpus",	 /* F_NCPUS */
 			    "nodeList", /* F_NODES */
-				"account",   /* F_JOB_ACCOUNT */
+			    "account",   /* F_JOB_ACCOUNT */
 			    NULL};
 		
 	char	*step[] = {"jobStep",	 /* F_JOBSTEP */
@@ -665,6 +665,8 @@ static void _process_step(List job_list, char *f[], int lc,
 	step = temp;
 	temp = NULL;
 	list_append(job->steps, step);
+	if(list_count(job->steps) > 1)
+		job->track_steps = 1;
 	if(job->header.timestamp == 0)
 		job->header.timestamp = step->header.timestamp;
 	job->job_step_seen = 1;
@@ -869,7 +871,7 @@ extern void filetxt_jobacct_process_get_jobs(List job_list,
 					      params);
 			break;
 		case JOB_SUSPEND:
-			if(i < JOB_TERM_LENGTH) {
+			if(i < F_JOB_REQUID) {
 				printf("Bad data on a Suspend entry\n");
 				_show_rec(f);
 			} else
@@ -877,7 +879,7 @@ extern void filetxt_jobacct_process_get_jobs(List job_list,
 						 show_full, i);
 			break;
 		case JOB_TERMINATED:
-			if(i < JOB_TERM_LENGTH) {
+			if(i < F_JOB_REQUID) {
 				printf("Bad data on a Job Term\n");
 				_show_rec(f);
 			} else

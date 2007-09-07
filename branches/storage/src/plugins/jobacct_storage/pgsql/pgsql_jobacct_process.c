@@ -502,6 +502,9 @@ extern void pgsql_jobacct_process_get_jobs(List job_list,
 		}
 		PQclear(step_result);
 
+		if(list_count(job->steps) > 1)
+			job->track_steps = 1;
+		
 		if(!job->end) {
 			job->elapsed = now - job->header.timestamp;
 		} else {

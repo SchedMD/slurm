@@ -185,6 +185,7 @@ int main(int argc, char *argv[])
 			if (errno == EINTR)
 				continue;
 		}
+		info("got exit code %u %d", rc_pid, WEXITSTATUS(status));
 		errnum = errno;
 		if (rc_pid == -1 && errnum != EINTR)
 			error("waitpid for %s failed: %m", command_argv[0]);
@@ -197,7 +198,8 @@ relinquish:
 	pthread_mutex_lock(&allocation_state_lock);
 	if (allocation_state != REVOKED) {
 		info("Relinquishing job allocation %d", alloc->job_id);
-		if (slurm_complete_job(alloc->job_id, 0) != 0)
+		if (slurm_complete_job(alloc->job_id, status)
+		    != 0)
 			error("Unable to clean up job allocation %d: %m",
 			      alloc->job_id);
 		else
@@ -214,9 +216,12 @@ relinquish:
 	 */
 	rc = 1;
 	if (rc_pid != -1) {
+		info("here");
 		if (WIFEXITED(status)) {
+		info("here2");
 			rc = WEXITSTATUS(status);
 		} else if (WIFSIGNALED(status)) {
+		info("here3");
 			verbose("Command \"%s\" was terminated by signal %d",
 				command_argv[0], WTERMSIG(status));
 		}
