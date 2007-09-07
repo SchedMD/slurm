@@ -2211,6 +2211,13 @@ static bool _opt_verify(void)
 			opt.nodes_set = true;
 		}
 	}
+	if (opt.exclusive && opt.nodes_set) {
+		verbose("ignoring node count set by --nodes or SLURM_NNODES");
+		verbose("  it is incompatible with --exclusive");
+		opt.nodes_set = false;
+		opt.min_nodes = 1;
+		opt.max_nodes = 0;
+	}
 	if ((opt.nodes_set || opt.extra_set) && !opt.nprocs_set) {
 		/* 1 proc / node default */
 		opt.nprocs = opt.min_nodes;

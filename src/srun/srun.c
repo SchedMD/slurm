@@ -858,13 +858,6 @@ static void _step_opt_exclusive(void)
 		fatal("--nprocs must be set with --exclusive");
 	if (opt.relative_set)
 		fatal("--relative disabled, incompatible with --exclusive");
-	if (opt.nodes_set) {
-		/* Likely set via SLURM_NNODES env var from job allocation */
-		verbose("ignoring node count set by --nodes or SLURM_NNODES");
-		verbose("  it is incompatible with --exclusive");
-		opt.min_nodes = 1;
-		opt.max_nodes = 0;
-	}
 	if (opt.exc_nodes)
 		fatal("--exclude is incompatible with --exclusive");
 	if (opt.nodelist)
