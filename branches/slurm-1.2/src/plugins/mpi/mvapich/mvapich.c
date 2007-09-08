@@ -282,20 +282,24 @@ static int mvapich_write_n (mvapich_state_t *st, struct mvapich_info *mvi,
 {
 	int nleft = len;
 	int n = 0;
+	unsigned char * p = buf;
 
-	while (nleft) {
+	while (nleft > 0) {
 		/* Poll for write-activity */
 		if (mvapich_poll (st, mvi, 1) < 0)
 			return (-1);
 
-		 if ((n = fd_write_n (mvi->fd, buf, len)) < 0 && 
-		     (errno != EAGAIN))
+		if ((n = write (mvi->fd, p, nleft)) < 0) {
+			if (errno == EAGAIN || errno == EINTR)
+				continue;
 			return (-1);
+		}
 
 		nleft -= n;
+		p += n;
 	}
 
-	 return (n);
+	return (len - nleft);
 }
 
 static int mvapich_read_n (mvapich_state_t *st,  struct mvapich_info *mvi,
@@ -303,20 +307,27 @@ static int mvapich_read_n (mvapich_state_t *st,  struct mvapich_info *mvi,
 {
 	int nleft = len;
 	int n = 0;
+	unsigned char * p = buf;
 
-	while (nleft) {
+	while (nleft > 0) {
 		/* Poll for write-activity */
 		if (mvapich_poll (st, mvi, 0) < 0)
 			return (-1);
 
-		 if ((n = fd_read_n (mvi->fd, buf, len)) < 0 && 
-		     (errno != EAGAIN))
+		if ((n = read (mvi->fd, p, nleft)) < 0) { 
+			if (errno == EAGAIN || errno == EINTR)
+				continue;
+			return (-1);
+		}
+
+		if (n == 0) /* unexpected EOF */
 			return (-1);
 
 		nleft -= n;
+		p += n;
 	}
 
-	 return (n);
+	return (len - nleft);
 }
 
 
@@ -342,6 +353,8 @@ static int mvapich_abort_sends_rank (mvapich_state_t *st)
 static int mvapich_get_task_info (mvapich_state_t *st,
 				  struct mvapich_info *mvi)
 {
+	mvi->do_poll = 0;
+
 	if (mvapich_read_n (st, mvi, &mvi->addrlen, sizeof (int)) <= 0)
 		return error ("mvapich: Unable to read addrlen for rank %d: %m", 
 				mvi->rank);
@@ -366,8 +379,6 @@ static int mvapich_get_task_info (mvapich_state_t *st,
 		return error ("mvapich: Unable to read pid for rank %d: %m", 
 				mvi->rank);
 	}
-
-	mvi->do_poll = 0;
 
 	return (0);
 }
