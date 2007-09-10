@@ -16,6 +16,8 @@ documents those changes that are of interest to users and admins.
     count when combining allocation and step creation in srun.
  -- Execute task-prolog within proctrack container to insure that all 
     child processes get terminated.
+ -- Fixed job accounting to work with sgi_job proctrack plugin.
+
 
 * Changes in SLURM 1.2.15
 =========================
