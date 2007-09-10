@@ -951,8 +951,6 @@ _fork_all_tasks(slurmd_job_t *job)
 		error ("Unable to return to working directory");
 	}
 
-	jobacct_g_set_proctrack_container_id(job->cont_id);
-
 	for (i = 0; i < job->ntasks; i++) {
 		/*
                  * Put this task in the step process group
@@ -975,6 +973,7 @@ _fork_all_tasks(slurmd_job_t *job)
 			return SLURM_ERROR;
 		}
 	}
+	jobacct_g_set_proctrack_container_id(job->cont_id);
 
 	/*
 	 * Now it's ok to unblock the tasks, so they may call exec.
