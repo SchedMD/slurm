@@ -2358,8 +2358,11 @@ static bool _opt_verify(void)
 		} else if (opt.nodes_set && opt.nprocs_set) {
 
 			/* 
-			 *  make sure # of procs >= min_nodes 
+			 *  make sure # of procs >= min_nodes || max_nodes 
 			 */
+			if (opt.nprocs < opt.max_nodes) 
+				opt.max_nodes = opt.nprocs;
+
 			if (opt.nprocs < opt.min_nodes) {
 
 				info ("Warning: can't run %d processes on %d " 

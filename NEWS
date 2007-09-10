@@ -12,6 +12,8 @@ documents those changes that are of interest to users and admins.
  -- Fix bug in mvapich plugin for read/write calls that return EAGAIN.
  -- Don't start MVAPICH timeout logic until we know that srun is starting 
     an MVAPICH program.
+ -- Fix to srun only allocating number of nodes needed for requested task
+    count when combining allocation and step creation in srun.
 
 * Changes in SLURM 1.2.15
 =========================
