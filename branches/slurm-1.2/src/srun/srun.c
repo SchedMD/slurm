@@ -250,6 +250,14 @@ int srun(int ac, char **av)
 		if (msg_thr_create(job) < 0)
 			job_fatal(job, "Unable to create msg thread");
 		exitcode = _run_job_script(job, env);
+
+		/* close up the msg thread cleanly */
+		close(job->forked_msg->msg_par->msg_pipe[1]);
+		debug2("Waiting for message thread");
+		if (pthread_join(job->jtid, NULL) < 0)
+			error ("Waiting on message thread: %m");
+		debug2("done");
+
 		srun_job_destroy(job,exitcode);
 
 		debug ("Spawned srun shell terminated");
