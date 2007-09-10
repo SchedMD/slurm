@@ -76,7 +76,7 @@ set spawn_id $slaunch_spawn_id
 set sum 0
 expect {
 	-re "exit code ($number)" {
-		send_user "This error is expected, no worries\n"
+		send_user "\nThis error is expected, no worries\n"
 		incr sum $expect_out(1,string)
 		exp_continue
 	}
