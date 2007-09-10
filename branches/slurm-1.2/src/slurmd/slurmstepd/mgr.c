@@ -1690,6 +1690,9 @@ _run_script_as_user(const char *name, const char *path, slurmd_job_t *job,
 		return -1;
 	}
 
+	if (slurm_container_create(job) != SLURM_SUCCESS)
+		error("slurm_container_create: %m");
+
 	if ((cpid = fork()) < 0) {
 		error ("executing %s: fork: %m", name);
 		return -1;
@@ -1720,6 +1723,8 @@ _run_script_as_user(const char *name, const char *path, slurmd_job_t *job,
 		exit(127);
 	}
 
+	if (slurm_container_add(job, cpid) != SLURM_SUCCESS)
+		error("slurm_container_add: %m");
 	if (max_wait < 0)
 		opt = 0;
 	else
@@ -1731,7 +1736,8 @@ _run_script_as_user(const char *name, const char *path, slurmd_job_t *job,
 			if (errno == EINTR)
 				continue;
 			error("waidpid: %m");
-			return 0;
+			status = 0;
+			break;
 		} else if (rc == 0) {
 			sleep(1);
 			if ((--max_wait) == 0) {
@@ -1739,10 +1745,13 @@ _run_script_as_user(const char *name, const char *path, slurmd_job_t *job,
 				opt = 0;
 			}
 		} else  {
-			killpg(cpid, SIGKILL);	/* kill children too */
-			return status;
+			/* spawned process exited */
+			break;
 		}
 	}
-
-	/* NOTREACHED */
+	/* Insure that all child processes get killed */
+	killpg(cpid, SIGKILL);
+	slurm_container_signal(job->cont_id, SIGKILL);
+	
+	return status;
 }

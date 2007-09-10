@@ -14,6 +14,8 @@ documents those changes that are of interest to users and admins.
     an MVAPICH program.
  -- Fix to srun only allocating number of nodes needed for requested task
     count when combining allocation and step creation in srun.
+ -- Execute task-prolog within proctrack container to insure that all 
+    child processes get terminated.
 
 * Changes in SLURM 1.2.15
 =========================
