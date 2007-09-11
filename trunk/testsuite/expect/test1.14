@@ -44,6 +44,7 @@ print_header $test_id
 # Delete left-over input script
 # Build input script file
 # Run one more step than allocated CPUs and make sure it waits
+# The "sleep 2" is meant to insure the earlier job steps start first
 #
 exec $bin_rm -f $file_in $file_out
 make_bash_script $file_in "
@@ -53,6 +54,7 @@ make_bash_script $file_in "
     $srun --exclusive -n1 sleep $sleep_secs &
     inx=\$((inx+1))
   done
+  $bin_sleep 2
   $srun --exclusive -n1 hostname &
   wait
 "
@@ -129,6 +131,7 @@ if {$exit_code == 0} {
 # Delete left-over input script
 # Build another input script file
 # Run one more step than allocated CPUs with immediate option and make aborts
+# The "sleep 2" is meant to insure the earlier job steps start first
 #
 exec $bin_rm -f $file_in $file_out
 make_bash_script $file_in "
@@ -138,6 +141,7 @@ make_bash_script $file_in "
     $srun --exclusive -n1 sleep $sleep_secs &
     inx=\$((inx+1))
   done
+  $bin_sleep 2
   $srun --exclusive -n1 --immediate hostname &
   wait
 "
