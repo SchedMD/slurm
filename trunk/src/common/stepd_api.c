@@ -55,7 +55,7 @@
 #include "src/common/pack.h"
 #include "src/common/slurm_auth.h"
 #include "src/common/slurm_cred.h"
-#include "src/common/slurm_jobacct.h"
+#include "src/common/slurm_jobacct_gather.h"
 #include "src/common/list.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/read_config.h"
@@ -740,7 +740,7 @@ stepd_completion(int fd, step_complete_msg_t *sent)
 	safe_write(fd, &sent->range_first, sizeof(int));
 	safe_write(fd, &sent->range_last, sizeof(int));
 	safe_write(fd, &sent->step_rc, sizeof(int));
-	jobacct_g_setinfo(sent->jobacct, JOBACCT_DATA_PIPE, &fd);	
+	jobacct_gather_g_setinfo(sent->jobacct, JOBACCT_DATA_PIPE, &fd);
 	/* Receive the return code and errno */
 	safe_read(fd, &rc, sizeof(int));
 	safe_read(fd, &errnum, sizeof(int));
@@ -768,15 +768,16 @@ stepd_stat_jobacct(int fd, stat_jobacct_msg_t *sent, stat_jobacct_msg_t *resp)
 	safe_write(fd, &req, sizeof(int));
 	
 	/* Receive the jobacct struct and return */
-	resp->jobacct = jobacct_g_alloc(NULL);
+	resp->jobacct = jobacct_gather_g_create(NULL);
 	
-	rc = jobacct_g_getinfo(resp->jobacct, JOBACCT_DATA_PIPE, &fd);	
+	rc = jobacct_gather_g_getinfo(resp->jobacct, JOBACCT_DATA_PIPE, &fd);
+	
 	safe_read(fd, &tasks, sizeof(int));
 	resp->num_tasks = tasks;
 	return rc;
 rwfail:
 	error("an error occured %d", rc);
-	jobacct_g_free(resp->jobacct);
+	jobacct_gather_g_destroy(resp->jobacct);
 	resp->jobacct = NULL;
 	return rc;
 }

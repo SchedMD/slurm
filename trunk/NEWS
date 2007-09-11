@@ -21,6 +21,9 @@ documents those changes that are of interest to users and admins.
     cleanup.patch from Chris Holmes, HP).
  -- In select/cons_res properly release resources allocated to job being suspended
     (rmbreak.patch, from Chris Holmes, HP).
+ -- Removed database and jobacct plugin replaced with jobacct_storage 
+    and jobacct_gather for easier hooks for further expansion of the
+    jobacct plugin.
 
 * Changes in SLURM 1.3.0-pre2
 =============================

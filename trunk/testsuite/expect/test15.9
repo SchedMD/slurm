@@ -61,10 +61,10 @@ expect {
 				break
 			}
 		}
-		send "exit 0\n"
+		send "exit 4\n"
 		exp_continue
 	}
-	-re "\[Ee\]xit 0" {
+	-re "\[Ee\]xit 4" {
 		set match 1
 		exp_continue
 	}

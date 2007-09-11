@@ -12,6 +12,8 @@ endif
 
 INCLUDES     = -I$(top_srcdir) $(SSL_CPPFLAGS) 
 
+CPPFLAGS = $(PGSQL_CFLAGS)
+
 noinst_LTLIBRARIES = 			\
 	libcommon.la 			\
 	libdaemonize.la 		\
@@ -33,9 +35,11 @@ libcommon_la_SOURCES = 			\
 	safeopen.c safeopen.h		\
 	bitstring.c bitstring.h 	\
 	mpi.c mpi.h                     \
+	mysql_common.c mysql_common.h   \
 	pack.c pack.h			\
 	parse_config.c parse_config.h	\
 	parse_spec.c parse_spec.h	\
+	pgsql_common.c pgsql_common.h   \
 	plugin.c plugin.h		\
 	plugrack.c plugrack.h		\
 	read_config.c read_config.h	\
@@ -61,9 +65,10 @@ libcommon_la_SOURCES = 			\
 	uid.c uid.h			\
 	util-net.c util-net.h		\
 	slurm_auth.c slurm_auth.h	\
-	slurm_jobacct.c slurm_jobacct.h \
+	jobacct_common.c jobacct_common.h \
+	slurm_jobacct_gather.c slurm_jobacct_gather.h \
+	slurm_jobacct_storage.c slurm_jobacct_storage.h \
 	slurm_jobcomp.c slurm_jobcomp.h	\
-	slurm_database.c slurm_database.h \
 	switch.c switch.h		\
 	arg_desc.c arg_desc.h		\
 	macros.h			\
@@ -100,7 +105,7 @@ libspank_la_SOURCES = \
 	plugstack.c plugstack.h \
 	optz.c      optz.h
 
-libcommon_la_LIBADD   = $(SSL_LIBS) -ldl
+libcommon_la_LIBADD   = $(SSL_LIBS) -ldl $(PGSQL_LIBS) $(MYSQL_LIBS)
 
 libcommon_la_LDFLAGS  = $(LIB_LDFLAGS) $(SSL_LDFLAGS)
 

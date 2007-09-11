@@ -77,7 +77,6 @@
 #include "src/common/env.h"
 #include "src/common/fd.h"
 #include "src/common/log.h"
-#include "src/common/slurm_jobacct.h"
 #include "src/common/switch.h"
 #include "src/common/xsignal.h"
 #include "src/common/xstring.h"

@@ -97,8 +97,8 @@ subdirectory is used for each plugin class:<br>
 <li><b>auth</b> for user authentication,<br> 
 <li><b>checkpoint</b> for system-initiated checkpoint 
 and restart of user jobs,<br>
-<li><b>database</b> for specifing the type of database to use,<br>
-<li><b>jobacct</b> for job accounting,<br>
+<li><b>jobacct_gather</b> for job accounting,<br>
+<li><b>jobacct_storage</b> for specifing the type of storage for job accounting,<br>
 <li><b>jobcomp</b> for job completion logging,<br>
 <li><b>mpi</b> for MPI support,<br>
 <li><b>proctrack</b> for process tracking,<br>

@@ -44,6 +44,7 @@
 #include "slurm/slurm.h"
 #include "src/common/list.h"
 #include "src/common/slurm_protocol_defs.h"
+#include "src/common/io_hdr.h"
 
 typedef struct step_location {
 	uint32_t jobid;

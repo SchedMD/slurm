@@ -119,7 +119,7 @@ typedef struct slurmd_config {
 
 	uid_t           slurm_user_id;	/* UID that slurmctld runs as      */
 	pthread_mutex_t config_mutex;	/* lock for slurmd_config access   */
-	uint16_t        job_acct_freq;
+	uint16_t        job_acct_gather_freq;
 	uint16_t	use_pam;
 	uint16_t	use_cpusets;	/* Use cpusets, if available       */
 	uint16_t	propagate_prio;	/* PropagatePrioProcess flag       */

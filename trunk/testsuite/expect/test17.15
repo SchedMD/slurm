@@ -44,7 +44,7 @@ set job_id           0
 set limit_core       943
 set limit_fsize      274515
 set limit_nofile     1016
-set limit_nproc      123
+set limit_nproc      1230
 set limit_stack      2021
 set matches          0
 
@@ -117,11 +117,11 @@ if {$cur_stack != -1} {
 # Spawn a job via sbatch to print environment variables and user limits
 #
 make_bash_script $file_in "
-  ulimit -c $limit_core
-  ulimit -f $limit_fsize
-  ulimit -n $limit_nofile
-  ulimit -u $limit_nproc
-  ulimit -s $limit_stack
+  ulimit -S -c $limit_core
+  ulimit -S -f $limit_fsize
+  ulimit -S -n $limit_nofile
+  ulimit -S -u $limit_nproc
+  ulimit -S -s $limit_stack
   ./$file_prog_get
 "
 

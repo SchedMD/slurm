@@ -870,16 +870,21 @@ typedef struct slurm_ctl_conf {
 				 * (only check configuration file, faster) */
 	uint16_t inactive_limit;/* seconds of inactivity before a
 				 * inactive resource allocation is released */
-	char *job_acct_loc;	/* job accounting log location */
-	uint16_t job_acct_freq; /* poll frequency for job accounting plugins */
-	char *job_acct_type;	/* job accounting type */
-	char *database_type;	/* database type */
-	char *database_user;	/* database user */
-	char *database_host;	/* database host */
-	char *database_pass;	/* database password */
-	uint32_t database_port;	/* database port */
-	char *job_comp_type;	/* job completion logger type */
+	char *job_acct_gather_type; /* job accounting gather type */
+	uint16_t job_acct_gather_freq; /* poll frequency for job accounting 
+					* gather plugins */
+	char *job_acct_storage_loc; /* job accounting storage log location */
+	char *job_acct_storage_type;	/* job accounting storage type */
+	char *job_acct_storage_user;	/* job accounting storage user */
+	char *job_acct_storage_host;	/* job accounting storage host */
+	char *job_acct_storage_pass;	/* job accounting storage password */
+	uint32_t job_acct_storage_port;	/* job accounting storage port */
 	char *job_comp_loc;	/* job completion logging location */
+	char *job_comp_type;	/* job completion storage type */
+	char *job_comp_user;	/* job completion storage user */
+	char *job_comp_host;	/* job completion storage host */
+	char *job_comp_pass;	/* job completion storage password */
+	uint32_t job_comp_port;	/* job completion storage port */
 	uint16_t job_file_append; /* if set, append to stdout/err file */
 	uint16_t kill_wait;	/* seconds between SIGXCPU to SIGKILL 
 				 * on job termination */
