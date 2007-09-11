@@ -24,6 +24,15 @@ COMMAND CHANGES
   job steps much like it does for jobs. If dedicated resources are 
   not immediately available, the job step will be executed later 
   unless the --immediate option is also set.
+* Multi-core options have been added to salloc and sbatch commands.  These 
+  include -B, --hint, --distribution, --ntasks-per-core, --ntasks-per-socket, 
+  and --ntasks-per-thread. In addition the --tasks option in these commands 
+  was changed to --ntasks for consistency with the srun command.
+* Support is now provided for feature counts in job constraints. For example:
+  srun --nodes=16 --constraint=graphics*4 ...
+* The srun option --pty has been added to start the job with a pseudo terminal.
+* The "scontrol show job" command noe reports the command, arguments, and 
+  working directory for batch jobs.
 
 CONFIGURATION FILE CHANGES
 
