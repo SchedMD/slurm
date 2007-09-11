@@ -95,7 +95,7 @@ static void _get_resources_this_node(uint16_t *cpus,
 				     uint16_t *alloc_sockets,
 				     uint16_t *alloc_cores,
 				     uint16_t *alloc_lps,
-				     uint32_t *jobid);
+				     uint32_t jobid);
 static void _cr_update_reservation(int reserve, uint32_t *reserved, 
 				   bitstr_t *mask);
 
@@ -627,7 +627,7 @@ static int _task_layout_lllp_init(launch_tasks_request_msg_t *req,
 
 	_get_resources_this_node(usable_cpus, usable_sockets, usable_cores,
 				 usable_threads, &alloc_sockets, alloc_cores,
-				 &alloc_lps, &req->job_id);
+				 &alloc_lps, req->job_id);
 
 	*hw_sockets = *usable_sockets;
 	*hw_cores   = *usable_cores;
@@ -675,7 +675,7 @@ static void _get_resources_this_node(uint16_t *cpus,
 				     uint16_t *alloc_sockets,
 				     uint16_t *alloc_cores,
 				     uint16_t *alloc_lps,
-	                             uint32_t *jobid)
+	                             uint32_t jobid)
 {
 	int bit_index = 0;
 	int i, j , k;
@@ -703,7 +703,7 @@ static void _get_resources_this_node(uint16_t *cpus,
 			for(j = 0; j < *cores; j++) {
 				for(k = 0; k < *threads; k++) {
 					info("jobid %d lllp_reserved[%d]=%d", 
-					     *jobid, bit_index, lllp_reserved[bit_index]);
+					     jobid, bit_index, lllp_reserved[bit_index]);
 					if(lllp_reserved[bit_index] > 0) {
 						*alloc_lps += 1;
 						if ((k == 0) && (cr_core_enabled)) {
@@ -727,11 +727,11 @@ static void _get_resources_this_node(uint16_t *cpus,
 
 #if(0)
 	info("_get_resources jobid %d hostname %s alloc_sockets %d alloc_lps %d ", 
-	     *jobid, conf->hostname, *alloc_sockets, *alloc_lps);
+	     jobid, conf->hostname, *alloc_sockets, *alloc_lps);
 	if (cr_core_enabled) 
 		for (i = 0; i < *sockets; i++)
 			info("_get_resources %d hostname %s socket id %d cores %d ", 
-			     *jobid, conf->hostname, i, alloc_cores[i]);
+			     jobid, conf->hostname, i, alloc_cores[i]);
 #endif
 }
 	

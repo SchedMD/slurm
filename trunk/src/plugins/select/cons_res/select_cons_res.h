@@ -132,6 +132,6 @@ void get_resources_this_node(uint16_t *cpus,
 			     struct node_cr_record *this_cr_node,
 			     uint16_t *alloc_sockets, 
 			     uint16_t *alloc_lps,
-			     uint32_t *jobid);
+			     uint32_t jobid);
 
 #endif /* !_CONS_RES_H */
