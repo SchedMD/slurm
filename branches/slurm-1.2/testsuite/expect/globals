@@ -350,6 +350,12 @@ proc wait_for_file { file_name } {
 	for {set my_delay 0} {$my_delay <= $max_file_delay} {incr my_delay} {
 		if [file exists $file_name] {
 #			Add small delay for I/O buffering
+			for {} {$my_delay <= $max_file_delay} {incr my_delay} {
+				if {[file size $file_name] != 0} {
+					break
+				}
+				exec $bin_sleep 1
+			}
 			exec $bin_sleep 2
 			return 0
 		}
