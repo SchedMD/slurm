@@ -1,7 +1,7 @@
 #!/usr/bin/expect
 ############################################################################
 # Purpose: Test of SLURM functionality
-#          Confirm that a job executes with the proper task count (--tasks
+#          Confirm that a job executes with the proper task count (--ntasks
 #          option).
 #
 # Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
@@ -48,7 +48,7 @@ file delete $file_in $file_out
 make_bash_script $file_in "$srun $bin_id"
 set job_id 0
 set no_run 0
-spawn $sbatch --tasks=$task_cnt --output=$file_out -t1 $file_in
+spawn $sbatch --ntasks=$task_cnt --output=$file_out -t1 $file_in
 expect {
 	-re "Submitted batch job ($number)" {
 		set job_id $expect_out(1,string)
@@ -107,7 +107,7 @@ file delete $file_in $file_out
 make_bash_script $file_in "$srun -n $task_cnt --overcommit $bin_id"
 set job_id 0
 set tasks  0
-spawn $sbatch --tasks=1 --output=$file_out -t1 $file_in
+spawn $sbatch --ntasks=1 --output=$file_out -t1 $file_in
 expect {
 	-re "Submitted batch job ($number)" {
 		set job_id $expect_out(1,string)
