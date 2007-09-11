@@ -315,16 +315,20 @@ void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
 	conf_ptr->fast_schedule       = conf->fast_schedule;
 	conf_ptr->first_job_id        = conf->first_job_id;
 	conf_ptr->inactive_limit      = conf->inactive_limit;
-	conf_ptr->job_acct_loc        = xstrdup(conf->job_acct_loc);
-	conf_ptr->database_type       = xstrdup(conf->database_type);
-	conf_ptr->database_user       = xstrdup(conf->database_user);
-	conf_ptr->database_host       = xstrdup(conf->database_host);
-	conf_ptr->database_pass       = xstrdup(conf->database_pass);
-	conf_ptr->database_port       = conf->database_port;
-	conf_ptr->job_acct_freq       = conf->job_acct_freq;
-	conf_ptr->job_acct_type       = xstrdup(conf->job_acct_type);
+	conf_ptr->job_acct_storage_loc = xstrdup(conf->job_acct_storage_loc);
+	conf_ptr->job_acct_storage_type = xstrdup(conf->job_acct_storage_type);
+	conf_ptr->job_acct_storage_user = xstrdup(conf->job_acct_storage_user);
+	conf_ptr->job_acct_storage_host = xstrdup(conf->job_acct_storage_host);
+	conf_ptr->job_acct_storage_pass = xstrdup(conf->job_acct_storage_pass);
+	conf_ptr->job_acct_storage_port = conf->job_acct_storage_port;
+	conf_ptr->job_acct_gather_type  = xstrdup(conf->job_acct_gather_type);
+	conf_ptr->job_acct_gather_freq  = conf->job_acct_gather_freq;
 	conf_ptr->job_comp_loc        = xstrdup(conf->job_comp_loc);
 	conf_ptr->job_comp_type       = xstrdup(conf->job_comp_type);
+	conf_ptr->job_comp_user = xstrdup(conf->job_comp_user);
+	conf_ptr->job_comp_host = xstrdup(conf->job_comp_host);
+	conf_ptr->job_comp_pass = xstrdup(conf->job_comp_pass);
+	conf_ptr->job_comp_port = conf->job_comp_port;
 	conf_ptr->job_credential_private_key = xstrdup(conf->
 					job_credential_private_key);
 	conf_ptr->job_credential_public_certificate = xstrdup(conf->
@@ -903,8 +907,8 @@ static void _slurm_rpc_complete_job_allocation(slurm_msg_t * msg)
 
 	/* init */
 	START_TIMER;
-	debug2("Processing RPC: REQUEST_COMPLETE_JOB_ALLOCATION %u",
-	       comp_msg->job_id);
+	debug2("Processing RPC: REQUEST_COMPLETE_JOB_ALLOCATION %u %d",
+	       comp_msg->job_id, comp_msg->job_rc);
 	uid = g_slurm_auth_get_uid(msg->auth_cred);
 
 	lock_slurmctld(job_write_lock);

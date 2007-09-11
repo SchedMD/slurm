@@ -153,6 +153,8 @@ void print_exitcode(type_t type, void *object)
 {
 	jobacct_job_rec_t *job = (jobacct_job_rec_t *)object;
 	jobacct_step_rec_t *step = (jobacct_step_rec_t *)object;
+	char tmp[9];
+	uint16_t term_sig = 0;
 
 	switch(type) {
 	case HEADLINE:
@@ -162,10 +164,20 @@ void print_exitcode(type_t type, void *object)
 		printf("%-8s", "--------");
 		break;
 	case JOB:
-		printf("%-8u", job->exitcode);
+		if (WIFSIGNALED(job->exitcode))
+			term_sig = WTERMSIG(job->exitcode);
+	
+		snprintf(tmp, sizeof(tmp), "%u:%u",
+			 WEXITSTATUS(job->exitcode), term_sig);
+		printf("%-8s", tmp);
 		break;
 	case JOBSTEP:
-		printf("%-8u", step->exitcode);
+		if (WIFSIGNALED(step->exitcode))
+			term_sig = WTERMSIG(step->exitcode);
+	
+		snprintf(tmp, sizeof(tmp), "%u:%u",
+			 WEXITSTATUS(step->exitcode), term_sig);
+		printf("%-8s", tmp);
 		break;
 	default:
 		printf("%-8s", "n/a");

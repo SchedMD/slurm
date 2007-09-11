@@ -53,7 +53,7 @@
 #include "src/common/fd.h"
 #include "src/common/eio.h"
 #include "src/common/slurm_auth.h"
-#include "src/common/slurm_jobacct.h"
+#include "src/common/slurm_jobacct_gather.h"
 #include "src/common/stepd_api.h"
 
 #include "src/slurmd/slurmd/slurmd.h"
@@ -933,7 +933,7 @@ _handle_suspend(int fd, slurmd_job_t *job, uid_t uid)
 		goto done;
 	}
 
-	jobacct_g_suspend_poll();
+	jobacct_gather_g_suspend_poll();
 
 	/*
 	 * Signal the container
@@ -990,7 +990,7 @@ _handle_resume(int fd, slurmd_job_t *job, uid_t uid)
 		goto done;
 	}
 
-	jobacct_g_resume_poll();
+	jobacct_gather_g_resume_poll();
 	/*
 	 * Signal the container
 	 */
@@ -1049,8 +1049,8 @@ _handle_completion(int fd, slurmd_job_t *job, uid_t uid)
 	safe_read(fd, &first, sizeof(int));
 	safe_read(fd, &last, sizeof(int));
 	safe_read(fd, &step_rc, sizeof(int));
-	jobacct = jobacct_g_alloc(NULL);
-	jobacct_g_getinfo(jobacct, JOBACCT_DATA_PIPE, &fd);	
+	jobacct = jobacct_gather_g_create(NULL);
+	jobacct_gather_g_getinfo(jobacct, JOBACCT_DATA_PIPE, &fd);	
 	
 	/*
 	 * Record the completed nodes
@@ -1069,8 +1069,8 @@ _handle_completion(int fd, slurmd_job_t *job, uid_t uid)
 	step_complete.step_rc = MAX(step_complete.step_rc, step_rc);
 	
 	/************* acct stuff ********************/
-	jobacct_g_aggregate(step_complete.jobacct, jobacct);
-	jobacct_g_free(jobacct);
+	jobacct_gather_g_aggregate(step_complete.jobacct, jobacct);
+	jobacct_gather_g_destroy(jobacct);
 	/*********************************************/
 	
 	/* Send the return code and errno, we do this within the locked
@@ -1102,24 +1102,24 @@ _handle_stat_jobacct(int fd, slurmd_job_t *job, uid_t uid)
 		      "owned by uid %ld",
 		      (long)uid, job->jobid, job->stepid, (long)job->uid);
 		/* Send NULL */
-		jobacct_g_setinfo(jobacct, JOBACCT_DATA_PIPE, &fd);	
+		jobacct_gather_g_setinfo(jobacct, JOBACCT_DATA_PIPE, &fd);
 		return SLURM_ERROR;
 	}
 	
-	jobacct = jobacct_g_alloc(NULL);
+	jobacct = jobacct_gather_g_create(NULL);
 	debug3("num tasks = %d", job->ntasks);
 	
 	for (i = 0; i < job->ntasks; i++) {
-		temp_jobacct = jobacct_g_stat_task(job->task[i]->pid);
+		temp_jobacct = jobacct_gather_g_stat_task(job->task[i]->pid);
 		if(temp_jobacct) {
-			jobacct_g_aggregate(jobacct, temp_jobacct);
-			jobacct_g_free(temp_jobacct);
+			jobacct_gather_g_aggregate(jobacct, temp_jobacct);
+			jobacct_gather_g_destroy(temp_jobacct);
 			num_tasks++;
 		}
 	}
-	jobacct_g_setinfo(jobacct, JOBACCT_DATA_PIPE, &fd);
+	jobacct_gather_g_setinfo(jobacct, JOBACCT_DATA_PIPE, &fd);
 	safe_write(fd, &num_tasks, sizeof(int));
-	jobacct_g_free(jobacct);
+	jobacct_gather_g_destroy(jobacct);
 	return SLURM_SUCCESS;
 rwfail:
 	return SLURM_ERROR;

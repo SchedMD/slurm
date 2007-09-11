@@ -39,7 +39,6 @@
 
 #include "sacct.h"
 #include <pthread.h>
-#include "src/common/slurm_jobacct.h"
 #include "src/common/forward.h"
 #include "src/common/slurm_auth.h"
 
@@ -87,7 +86,7 @@ int _sacct_query(slurm_step_layout_t *step_layout, uint32_t job_id,
 	/* Common message contents */
 	r.job_id      = job_id;
 	r.step_id     = step_id;
-	r.jobacct     = jobacct_g_alloc(NULL);
+	r.jobacct     = jobacct_gather_g_create(NULL);
 	msg.msg_type        = MESSAGE_STAT_JOBACCT;
 	msg.data            = &r;
 	
@@ -107,7 +106,7 @@ int _sacct_query(slurm_step_layout_t *step_layout, uint32_t job_id,
 			if(jobacct_msg) {
 				debug2("got it back for job %d", 
 				       jobacct_msg->job_id);
-				jobacct_g_2_sacct(
+				jobacct_gather_g_2_sacct(
 					&temp_sacct, 
 					jobacct_msg->jobacct);
 				ntasks += jobacct_msg->num_tasks;
@@ -147,7 +146,7 @@ cleanup:
 		step.sacct.ave_vsize /= step.ntasks;
 		step.sacct.ave_pages /= step.ntasks;
 	}
-	jobacct_g_free(r.jobacct);	
+	jobacct_gather_g_destroy(r.jobacct);	
 	return SLURM_SUCCESS;
 }
 

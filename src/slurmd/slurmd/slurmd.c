@@ -627,7 +627,7 @@ _read_config()
 	_free_and_set(&conf->pubkey,   path_pubkey);
 	
 	conf->propagate_prio = cf->propagate_prio_process;
-	conf->job_acct_freq = cf->job_acct_freq;
+	conf->job_acct_gather_freq = cf->job_acct_gather_freq;
 
 	if ( (conf->node_name == NULL) ||
 	     (conf->node_name[0] == '\0') )

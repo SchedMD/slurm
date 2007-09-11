@@ -83,7 +83,7 @@
  */
 const char plugin_name[]       	= "Job completion logging NONE plugin";
 const char plugin_type[]       	= "jobcomp/none";
-const uint32_t plugin_version	= 90;
+const uint32_t plugin_version	= 100;
 
 /*
  * init() is called when the plugin is loaded, before any other functions
@@ -119,7 +119,22 @@ char *slurm_jobcomp_strerror( int errnum )
 	        return NULL;
 }
 
+void slurm_jobcomp_get_jobs(List job_list, 
+			    List selected_steps, List selected_parts,
+			    void *params)
+{
+	return;
+}
+
+void slurm_jobcomp_archive(List selected_parts,
+			   void *params)
+{
+	return;
+}
+
 int fini ( void )
 {
 	return SLURM_SUCCESS;
 }
+
+

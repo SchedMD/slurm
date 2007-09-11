@@ -47,7 +47,7 @@
 
 #include "src/common/xmalloc.h"
 #include "src/common/xsignal.h"
-#include "src/common/slurm_jobacct.h"
+#include "src/common/slurm_jobacct_gather.h"
 #include "src/common/switch.h"
 #include "src/common/stepd_api.h"
 
@@ -196,7 +196,7 @@ _init_from_slurmd(int sock, char **argv,
 	safe_read(sock, &step_complete.max_depth, sizeof(int));
 	safe_read(sock, &step_complete.parent_addr, sizeof(slurm_addr));
 	step_complete.bits = bit_alloc(step_complete.children);
-	step_complete.jobacct = jobacct_g_alloc(NULL);
+	step_complete.jobacct = jobacct_gather_g_create(NULL);
 	pthread_mutex_unlock(&step_complete.lock);
 
 	/* receive conf from slurmd */
@@ -230,7 +230,7 @@ _init_from_slurmd(int sock, char **argv,
 
 	log_init(argv[0], conf->log_opts, LOG_DAEMON, conf->logfile);
 	/* acct info */
-	jobacct_g_startpoll(conf->job_acct_freq);
+	jobacct_gather_g_startpoll(conf->job_acct_gather_freq);
 	
 	switch_g_slurmd_step_init();
 
@@ -342,7 +342,7 @@ _step_setup(slurm_addr *cli, slurm_addr *self, slurm_msg_t *msg)
 		fatal("_step_setup: no job returned");
 	}
 	job->jmgr_pid = getpid();
-	job->jobacct = jobacct_g_alloc(NULL);
+	job->jobacct = jobacct_gather_g_create(NULL);
 	
 	return job;
 }
@@ -350,7 +350,7 @@ _step_setup(slurm_addr *cli, slurm_addr *self, slurm_msg_t *msg)
 static void
 _step_cleanup(slurmd_job_t *job, slurm_msg_t *msg, int rc)
 {
-	jobacct_g_free(job->jobacct);
+	jobacct_gather_g_destroy(job->jobacct);
 	if (!job->batch)
 		job_destroy(job);
 	/* 
@@ -369,7 +369,7 @@ _step_cleanup(slurmd_job_t *job, slurm_msg_t *msg, int rc)
 		fatal("handle_launch_message: Unrecognized launch RPC");
 		break;
 	}
-	jobacct_g_free(step_complete.jobacct);
+	jobacct_gather_g_destroy(step_complete.jobacct);
 	
 	xfree(msg);
 }

@@ -10,7 +10,6 @@ pkglib_LTLIBRARIES = jobcomp_filetxt.la
 
 # Text file job completion logging plugin.
 jobcomp_filetxt_la_SOURCES = jobcomp_filetxt.c \
-	$(top_builddir)/src/plugins/database/flatfile/flatfile_jobcomp.c \
-	$(top_builddir)/src/plugins/database/flatfile/flatfile_jobcomp.h
+			filetxt_jobcomp_process.c filetxt_jobcomp_process.h
 
 jobcomp_filetxt_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)

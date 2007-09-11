@@ -50,7 +50,7 @@
 #include "src/common/bitstring.h"
 #include "src/common/log.h"
 #include "src/common/node_select.h"
-#include "src/common/slurm_jobacct.h"
+#include "src/common/slurm_jobacct_gather.h"
 #include "src/common/pack.h"
 #include "src/common/slurm_auth.h"
 #include "src/common/slurm_cred.h"
@@ -2135,12 +2135,6 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer)
 	packstr(build_ptr->control_machine, buffer);
 	packstr(build_ptr->crypto_type, buffer);
 
-	packstr(build_ptr->database_host, buffer);
-	packstr(build_ptr->database_pass, buffer);
-	pack32(build_ptr->database_port, buffer);
-	packstr(build_ptr->database_type, buffer);
-	packstr(build_ptr->database_user, buffer);
-
 	packstr(build_ptr->epilog, buffer);
 
 	pack16(build_ptr->fast_schedule, buffer);
@@ -2148,11 +2142,22 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer)
 
 	pack16(build_ptr->inactive_limit, buffer);
 
-	packstr(build_ptr->job_acct_loc, buffer);
-	pack16(build_ptr->job_acct_freq, buffer);
-	packstr(build_ptr->job_acct_type, buffer);
+	pack16(build_ptr->job_acct_gather_freq, buffer);
+	packstr(build_ptr->job_acct_gather_type, buffer);
+	packstr(build_ptr->job_acct_storage_loc, buffer);
+	packstr(build_ptr->job_acct_storage_type, buffer);
+	packstr(build_ptr->job_acct_storage_user, buffer);
+	packstr(build_ptr->job_acct_storage_host, buffer);
+	packstr(build_ptr->job_acct_storage_pass, buffer);
+	pack32((uint32_t)build_ptr->job_acct_storage_port, buffer);
+
 	packstr(build_ptr->job_comp_loc, buffer);
 	packstr(build_ptr->job_comp_type, buffer);
+	packstr(build_ptr->job_comp_user, buffer);
+	packstr(build_ptr->job_comp_host, buffer);
+	packstr(build_ptr->job_comp_pass, buffer);
+	pack32((uint32_t)build_ptr->job_comp_port, buffer);
+
 	packstr(build_ptr->job_credential_private_key, buffer);
 	packstr(build_ptr->job_credential_public_certificate, buffer);
 	pack16(build_ptr->job_file_append, buffer);
@@ -2257,12 +2262,6 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **
 	safe_unpackstr_xmalloc(&build_ptr->crypto_type, &uint16_tmp,
 			       buffer);
 
-	safe_unpackstr_xmalloc(&build_ptr->database_host, &uint16_tmp, buffer);
-	safe_unpackstr_xmalloc(&build_ptr->database_pass, &uint16_tmp, buffer);
-	safe_unpack32(&build_ptr->database_port, buffer);
-	safe_unpackstr_xmalloc(&build_ptr->database_type, &uint16_tmp, buffer);
-	safe_unpackstr_xmalloc(&build_ptr->database_user, &uint16_tmp, buffer);
-
 	safe_unpackstr_xmalloc(&build_ptr->epilog, &uint16_tmp, buffer);
 
 	safe_unpack16(&build_ptr->fast_schedule, buffer);
@@ -2270,12 +2269,28 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **
 
 	safe_unpack16(&build_ptr->inactive_limit, buffer);
 
-	safe_unpackstr_xmalloc(&build_ptr->job_acct_loc, &uint16_tmp, 
-			       buffer);
-	safe_unpack16(&build_ptr->job_acct_freq, buffer);
-	safe_unpackstr_xmalloc(&build_ptr->job_acct_type, &uint16_tmp, buffer);
+	safe_unpack16(&build_ptr->job_acct_gather_freq, buffer);
+	safe_unpackstr_xmalloc(&build_ptr->job_acct_gather_type,
+			       &uint16_tmp, buffer);
+	safe_unpackstr_xmalloc(&build_ptr->job_acct_storage_loc,
+			       &uint16_tmp, buffer);
+	safe_unpackstr_xmalloc(&build_ptr->job_acct_storage_type,
+			       &uint16_tmp, buffer);
+	safe_unpackstr_xmalloc(&build_ptr->job_acct_storage_user,
+			       &uint16_tmp, buffer);
+	safe_unpackstr_xmalloc(&build_ptr->job_acct_storage_host,
+			       &uint16_tmp, buffer);
+	safe_unpackstr_xmalloc(&build_ptr->job_acct_storage_pass,
+			       &uint16_tmp, buffer);
+	safe_unpack32(&build_ptr->job_acct_storage_port, buffer);
+
 	safe_unpackstr_xmalloc(&build_ptr->job_comp_loc, &uint16_tmp, buffer);
 	safe_unpackstr_xmalloc(&build_ptr->job_comp_type, &uint16_tmp, buffer);
+	safe_unpackstr_xmalloc(&build_ptr->job_comp_user, &uint16_tmp, buffer);
+	safe_unpackstr_xmalloc(&build_ptr->job_comp_host, &uint16_tmp, buffer);
+	safe_unpackstr_xmalloc(&build_ptr->job_comp_pass, &uint16_tmp, buffer);
+	safe_unpack32(&build_ptr->job_comp_port, buffer);
+
 	safe_unpackstr_xmalloc(&build_ptr->job_credential_private_key,
 			       &uint16_tmp, buffer);
 	safe_unpackstr_xmalloc(&build_ptr->
@@ -2377,14 +2392,17 @@ unpack_error:
 	xfree(build_ptr->control_machine);
 	xfree(build_ptr->crypto_type);
 	xfree(build_ptr->epilog);
-	xfree(build_ptr->job_acct_loc);
-	xfree(build_ptr->job_acct_type);
-	xfree(build_ptr->database_type);
-	xfree(build_ptr->database_user);
-	xfree(build_ptr->database_host);
-	xfree(build_ptr->database_pass);
+	xfree(build_ptr->job_acct_gather_type);
+	xfree(build_ptr->job_acct_storage_loc);
+	xfree(build_ptr->job_acct_storage_type);
+	xfree(build_ptr->job_acct_storage_user);
+	xfree(build_ptr->job_acct_storage_host);
+	xfree(build_ptr->job_acct_storage_pass);
 	xfree(build_ptr->job_comp_loc);
 	xfree(build_ptr->job_comp_type);
+	xfree(build_ptr->job_comp_user);
+	xfree(build_ptr->job_comp_host);
+	xfree(build_ptr->job_comp_pass);
 	xfree(build_ptr->job_credential_private_key);
 	xfree(build_ptr->job_credential_public_certificate);
 	xfree(build_ptr->mail_prog);
@@ -3274,7 +3292,7 @@ _pack_stat_jobacct_msg(stat_jobacct_msg_t * msg, Buf buffer)
 	pack32((uint32_t)msg->return_code, buffer);
 	pack32((uint32_t)msg->step_id, buffer);
 	pack32((uint32_t)msg->num_tasks, buffer);
-	jobacct_g_pack(msg->jobacct, buffer);	
+	jobacct_gather_g_pack(msg->jobacct, buffer);	
 }
 
 
@@ -3290,7 +3308,7 @@ _unpack_stat_jobacct_msg(stat_jobacct_msg_t ** msg_ptr, Buf buffer)
 	safe_unpack32(&msg->return_code, buffer);
 	safe_unpack32(&msg->step_id, buffer);
 	safe_unpack32(&msg->num_tasks, buffer);
-	jobacct_g_unpack(&msg->jobacct, buffer);
+	jobacct_gather_g_unpack(&msg->jobacct, buffer);
 
 	return SLURM_SUCCESS;
 
@@ -3338,7 +3356,7 @@ _pack_step_complete_msg(step_complete_msg_t * msg, Buf buffer)
 	pack32((uint32_t)msg->range_first, buffer);
 	pack32((uint32_t)msg->range_last, buffer);
 	pack32((uint32_t)msg->step_rc, buffer);
-	jobacct_g_pack(msg->jobacct, buffer);
+	jobacct_gather_g_pack(msg->jobacct, buffer);
 }
 
 static int
@@ -3354,7 +3372,7 @@ _unpack_step_complete_msg(step_complete_msg_t ** msg_ptr, Buf buffer)
 	safe_unpack32(&msg->range_first, buffer);
 	safe_unpack32(&msg->range_last, buffer);
 	safe_unpack32(&msg->step_rc, buffer);
-	jobacct_g_unpack(&msg->jobacct, buffer);
+	jobacct_gather_g_unpack(&msg->jobacct, buffer);
 
 	return SLURM_SUCCESS;
 

@@ -33,6 +33,7 @@ COMMAND CHANGES
 * The srun option --pty has been added to start the job with a pseudo terminal.
 * The "scontrol show job" command noe reports the command, arguments, and 
   working directory for batch jobs.
+* sacct -c can now be used to view job completion data
 
 CONFIGURATION FILE CHANGES
 
@@ -40,9 +41,16 @@ CONFIGURATION FILE CHANGES
   from being able to view jobs or job steps belonging to other users.
 * Added configuration parameters for node power save mode: ResumeProgram
   ResumeRate, SuspendExcNodes, SuspendExcParts, SuspendProgram and SuspendRate.
-* Job accounting and termination data can be written to a database as specified 
-  by these new parameters: DatabaseType (flatfile, mysql, and pgsql), 
-  DatabaseHost, DatabasePass, DatabasePort, and DatabaseUser.
+* Job accounting has been split into two plugins Job Accounting Gather 
+  (jobacct_gather) and Storage (jobacct_storage).  The major jobacct no 
+  longer exsists instead use jobacct_gather to specify the gathering method 
+  (linux, aix, or none).  jobacct_storage should be used to specify how to
+  store the data collected i.e. JobAcctStorageType (filetxt, mysql, and pgsql).
+  JobAcctStorageHost, JobAcctStoragePass, JobAcctStoragePort, and 
+  JobAcctStorageUser are used to specify how SLURM will talk to the database.
+* Job completion also has database hooks built in 
+  JobCompHost, JobCompPass, JobCompPort, and JobCompUser are used to 
+  specify how SLURM will talk to the database.
 * Added new paramter "CryptoType" to specify digital signature plugin to 
   be used. Currenly only supports crypto/openssl.
 * See "man slurm.conf" for more information.

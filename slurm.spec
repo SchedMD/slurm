@@ -299,12 +299,13 @@ rm -rf $RPM_BUILD_ROOT
 %dir %{_libdir}/slurm
 %{_libdir}/slurm/checkpoint_none.so
 %{_libdir}/slurm/checkpoint_ompi.so
-%{_libdir}/slurm/database_flatfile.so
-%{_libdir}/slurm/database_mysql.so
-%{_libdir}/slurm/database_pgsql.so
-%{_libdir}/slurm/jobacct_aix.so
-%{_libdir}/slurm/jobacct_linux.so
-%{_libdir}/slurm/jobacct_none.so
+%{_libdir}/slurm/jobacct_gather_aix.so
+%{_libdir}/slurm/jobacct_gather_linux.so
+%{_libdir}/slurm/jobacct_gather_none.so
+%{_libdir}/slurm/jobacct_storage_filetxt.so
+%{_libdir}/slurm/jobacct_storage_mysql.so
+%{_libdir}/slurm/jobacct_storage_none.so
+%{_libdir}/slurm/jobacct_storage_pgsql.so
 %{_libdir}/slurm/jobcomp_none.so
 %{_libdir}/slurm/jobcomp_filetxt.so
 %{_libdir}/slurm/jobcomp_database.so

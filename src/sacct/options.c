@@ -38,7 +38,6 @@
 \*****************************************************************************/
 
 #include "src/common/read_config.h"
-#include "src/common/slurm_database.h"
 #include "sacct.h"
 #include <time.h>
 
@@ -297,13 +296,13 @@ int get_data(void)
 
 	if(params.opt_completion) {
 		jobs = list_create(jobcomp_destroy_job);
-		database_g_jobcomp_get_jobs(jobs, selected_steps,
-					    selected_parts, &params);
+		g_slurm_jobcomp_get_jobs(jobs, selected_steps,
+					 selected_parts, &params);
 		return SLURM_SUCCESS;
 	} else {
-		jobs = list_create(jobacct_destroy_job);
-		database_g_jobacct_get_jobs(jobs, selected_steps,
-					    selected_parts, &params);
+		jobs = list_create(destroy_jobacct_job_rec);
+		jobacct_storage_g_get_jobs(jobs, selected_steps,
+					   selected_parts, &params);
 	}
 
 	if (params.opt_fdump) {
@@ -690,11 +689,11 @@ void parse_command_line(int argc, char **argv)
 		if(params.opt_completion) 
 			params.opt_filein = slurm_get_jobcomp_loc();
 		else
-			params.opt_filein = slurm_get_jobacct_loc();	
+			params.opt_filein = slurm_get_jobacct_storage_loc();
 	}
 
 	if(params.opt_completion) {
-		database_g_jobcomp_init(params.opt_filein);
+		g_slurm_jobcomp_init(params.opt_filein);
 
 		acct_type = slurm_get_jobcomp_type();
 		if ((strcmp(acct_type, "jobcomp/none") == 0)
@@ -704,9 +703,9 @@ void parse_command_line(int argc, char **argv)
 		}
 		xfree(acct_type);
 	} else {
-		database_g_jobacct_init(params.opt_filein);
+		jobacct_storage_g_init(params.opt_filein);
 		
-		acct_type = slurm_get_jobacct_type();
+		acct_type = slurm_get_jobacct_storage_type();
 		if ((strcmp(acct_type, "jobacct/none") == 0)
 		    &&  (stat(params.opt_filein, &stat_buf) != 0)) {
 			fprintf(stderr, "SLURM accounting is disabled\n");
@@ -1118,9 +1117,9 @@ void do_dump_completion(void)
 void do_expire(void)
 {
 	if(params.opt_completion) 
-		database_g_jobcomp_archive(selected_parts, &params);
+		g_slurm_jobcomp_archive(selected_parts, &params);
 	else
-		database_g_jobacct_archive(selected_parts, &params);
+		jobacct_storage_g_archive(selected_parts, &params);
 }
 
 void do_help(void)
@@ -1297,7 +1296,7 @@ void sacct_fini()
 	list_destroy(selected_parts);
 	list_destroy(selected_steps);
 	if(params.opt_completion)
-		database_g_jobcomp_fini();
+		g_slurm_jobcomp_fini();
 	else
-		database_g_jobacct_fini();
+		jobacct_storage_g_fini();
 }
