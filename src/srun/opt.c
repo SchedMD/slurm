@@ -2261,6 +2261,13 @@ static bool _opt_verify(void)
 		}
 	} else if (opt.nodes_set && opt.nprocs_set) {
 
+		/*
+		 * Make sure in a non allocate situation that
+		 * the number of max_nodes is <= number of tasks
+		 */
+		if (!opt.allocate && opt.nprocs < opt.max_nodes) 
+			opt.max_nodes = opt.nprocs;
+		
 		/* 
 		 *  make sure # of procs >= min_nodes 
 		 */
@@ -2282,7 +2289,8 @@ static bool _opt_verify(void)
 					host = hostlist_pop(hl);
 					free(host);
 				}
-				hostlist_ranged_string(hl, strlen(opt.nodelist)+1, 
+				hostlist_ranged_string(hl, 
+						       strlen(opt.nodelist)+1, 
 						       opt.nodelist);
 			}
 		}

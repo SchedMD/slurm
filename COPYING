@@ -1,5 +1,6 @@
 All SLURM code and documentation is available under the GNU General Public 
-License. 
+License. Some tools in the "contribs" directory have other licenses. See 
+the documentation for individual contributed tools for details. 
 
 In addition, as a special exception, the copyright holders give permission 
 to link the code of portions of this program with the OpenSSL library under 

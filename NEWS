@@ -56,6 +56,16 @@ documents those changes that are of interest to users and admins.
     where slurmd daemon started from.
  -- Log errors running task prolog or task epilog to srun's output.
  -- In sched/wiki2, fix bug processing condensed hostlist expressions.
+ -- Release contribs/mpich1.slurm.patch without GPL license. 
+ -- Fix bug in mvapich plugin for read/write calls that return EAGAIN.
+ -- Don't start MVAPICH timeout logic until we know that srun is starting 
+    an MVAPICH program.
+ -- Fix to srun only allocating number of nodes needed for requested task
+    count when combining allocation and step creation in srun.
+ -- Execute task-prolog within proctrack container to insure that all 
+    child processes get terminated.
+ -- Fixed job accounting to work with sgi_job proctrack plugin.
+
 
 * Changes in SLURM 1.2.15
 =========================
