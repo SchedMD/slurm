@@ -277,6 +277,7 @@ extern int fini ( void )
 
 extern int slurm_jobcomp_set_location(char *location)
 {
+#ifdef HAVE_PGSQL
 	pgsql_db_info_t *db_info = _pgsql_jobcomp_create_db_info();
 	int rc = SLURM_SUCCESS;
 	char *db_name = NULL;
@@ -316,6 +317,9 @@ extern int slurm_jobcomp_set_location(char *location)
 	else
 		debug("Jobcomp database init failed");
 	return rc;
+#else
+	return SLURM_ERROR;
+#endif
 }
 
 extern int slurm_jobcomp_log_record(struct job_record *job_ptr)
