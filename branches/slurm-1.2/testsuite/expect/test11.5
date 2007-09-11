@@ -159,6 +159,13 @@ if {$matches != 1} {
 	set exit_code 1
 }
 
+# Actual checkpoint on AIX only works for tasks launched using POE
+if {[test_aix] == 1} {
+	send_user "WARNING: Further testing is incompatible with AIX\n"
+	cancel_job $job_id
+	exit $exit_code
+}
+
 #
 # Create a checkpoint, continue execution
 #
