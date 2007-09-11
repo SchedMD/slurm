@@ -215,13 +215,13 @@ int printfields[MAX_PRINTFIELDS],	/* Indexed into fields[] */
 int main(int argc, char **argv)
 {
 	enum {
-		DUMP,
-		EXPIRE,
-		FDUMP,
-		LIST,
-		STAT,
-		HELP,
-		USAGE
+		SACCT_DUMP,
+		SACCT_EXPIRE,
+		SACCT_FDUMP,
+		SACCT_LIST,
+		SACCT_STAT,
+		SACCT_HELP,
+		SACCT_USAGE
 	} op;
 	int rc = 0;
 	
@@ -233,9 +233,9 @@ int main(int argc, char **argv)
 	 */
 
 	if (params.opt_help)
-		op = HELP;
+		op = SACCT_HELP;
 	else if (params.opt_dump) {
-		op = DUMP;
+		op = SACCT_DUMP;
 		if (params.opt_long || params.opt_total 
 		    || params.opt_field_list || params.opt_expire) {
 			if (params.opt_verbose)
@@ -254,11 +254,11 @@ int main(int argc, char **argv)
 			goto finished;
 		}
 	} else if (params.opt_fdump) {
-		op = FDUMP;
+		op = SACCT_FDUMP;
 	} else if (params.opt_stat) {
-		op = STAT;
+		op = SACCT_STAT;
 	} else if (params.opt_expire) {
-		op = EXPIRE;
+		op = SACCT_EXPIRE;
 		if (params.opt_long || params.opt_total 
 		    || params.opt_field_list || 
 		    (params.opt_gid>=0) || (params.opt_uid>=0) ||
@@ -288,24 +288,24 @@ int main(int argc, char **argv)
 			goto finished;
 		}
 	} else
-		op = LIST;
+		op = SACCT_LIST;
 
 	
 	switch (op) {
-	case DUMP:
+	case SACCT_DUMP:
 		get_data();
 		if(params.opt_completion) 
 			do_dump_completion();
 		else 
 			do_dump();
 		break;
-	case EXPIRE:
+	case SACCT_EXPIRE:
 		do_expire();
 		break;
-	case FDUMP:
+	case SACCT_FDUMP:
 		get_data();
 		break;
-	case LIST:
+	case SACCT_LIST:
 		if (params.opt_header) 	/* give them something to look */
 			_print_header();/* at while we think...        */
 		get_data();
@@ -314,12 +314,12 @@ int main(int argc, char **argv)
 		else 
 			do_list();
 		break;
-	case STAT:
+	case SACCT_STAT:
 		if (params.opt_header) 	/* give them something to look */
 			_print_header();/* at while we think...        */
 		do_stat();
 		break;
-	case HELP:
+	case SACCT_HELP:
 		do_help();
 		break;
 	default:
