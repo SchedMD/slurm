@@ -608,9 +608,6 @@ extern int jobacct_storage_p_step_complete(struct step_record *step_ptr)
 	int comp_status;
 	int cpus = 0;
 	struct jobacctinfo *jobacct = (struct jobacctinfo *)step_ptr->jobacct;
-#ifdef HAVE_BG
-	char *ionodes = NULL;
-#endif
 	float ave_vsize = 0, ave_rss = 0, ave_pages = 0;
 	float ave_cpu = 0, ave_cpu2 = 0;
 	char *account;
