@@ -2099,7 +2099,6 @@ extern int select_p_job_suspend(struct job_record *job_ptr)
 			default:
 				break;
 			}
-			break;
 		}
 		rc = SLURM_SUCCESS;
 		break;
@@ -2179,7 +2178,6 @@ extern int select_p_job_resume(struct job_record *job_ptr)
 			default:
 				break;
 			}
-			break;
 		}
 		rc = SLURM_SUCCESS;
 		break;
