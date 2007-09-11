@@ -128,6 +128,9 @@ static int fill_job_desc_from_opts(job_desc_msg_t *desc)
 	desc->user_id = opt.uid;
 	desc->group_id = opt.gid;
 	desc->dependency = opt.dependency;
+	desc->task_dist  = opt.distribution;
+	if (opt.plane_size != NO_VAL)
+		desc->plane_size = opt.plane_size;
 	if (opt.nice)
 		desc->nice = NICE_OFFSET + opt.nice;
 	desc->mail_type = opt.mail_type;
@@ -164,6 +167,7 @@ static int fill_job_desc_from_opts(job_desc_msg_t *desc)
 	if (opt.ramdiskimage)
 		desc->ramdiskimage = xstrdup(opt.ramdiskimage);
 
+	/* job constraints */
 	if (opt.mincpus > -1)
 		desc->job_min_procs = opt.mincpus;
 	if (opt.minsockets > -1)
@@ -172,6 +176,8 @@ static int fill_job_desc_from_opts(job_desc_msg_t *desc)
 		desc->job_min_cores = opt.mincores;
 	if (opt.minthreads > -1)
 		desc->job_min_threads = opt.minthreads;
+	if (opt.jobmem > -1)
+		desc->job_max_memory = opt.jobmem;
 	if (opt.realmem > -1)
 		desc->job_min_memory = opt.realmem;
 	if (opt.tmpdisk > -1)
@@ -181,12 +187,29 @@ static int fill_job_desc_from_opts(job_desc_msg_t *desc)
 		desc->overcommit = opt.overcommit;
 	} else
 		desc->num_procs = opt.nprocs * opt.cpus_per_task;
-	if (opt.tasks_per_node > -1)
-		desc->ntasks_per_node = opt.tasks_per_node;
 	if (opt.nprocs_set)
 		desc->num_tasks = opt.nprocs;
 	if (opt.cpus_set)
 		desc->cpus_per_task = opt.cpus_per_task;
+	if (opt.ntasks_per_socket > -1)
+		desc->ntasks_per_socket = opt.ntasks_per_socket;
+	if (opt.ntasks_per_core > -1)
+		desc->ntasks_per_core = opt.ntasks_per_core;
+
+	/* node constraints */
+	if (opt.min_sockets_per_node > -1)
+		desc->min_sockets = opt.min_sockets_per_node;
+	if (opt.max_sockets_per_node > -1)
+		desc->max_sockets = opt.max_sockets_per_node;
+	if (opt.min_cores_per_socket > -1)
+		desc->min_cores = opt.min_cores_per_socket;
+	if (opt.max_cores_per_socket > -1)
+		desc->max_cores = opt.max_cores_per_socket;
+	if (opt.min_threads_per_core > -1)
+		desc->min_threads = opt.min_threads_per_core;
+	if (opt.max_threads_per_core > -1)
+		desc->max_threads = opt.max_threads_per_core;
+
 	if (opt.no_kill)
 		desc->kill_on_node_fail = 0;
 	if (opt.time_limit != NO_VAL)

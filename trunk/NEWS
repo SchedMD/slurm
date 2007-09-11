@@ -17,6 +17,8 @@ documents those changes that are of interest to users and admins.
  -- Add support for feature count in job contraints, for example
     srun --nodes=16 --constraint=graphics*4 ...
     Based upon work by Kumar Krishna (HP, India).
+ -- Add multi-core options to salloc and sbatch commands (sbatch.patch, 
+    from Chris Holmes, HP).
 
 * Changes in SLURM 1.3.0-pre2
 =============================

@@ -14,6 +14,34 @@ The command may be any program the user wishes.  Some typical commands are xterm
 .LP 
 
 .TP
+\fB\-B\fR \fB\-\-extra\-node\-info\fR=\fIsockets\fR[:\fIcores\fR[:\fIthreads\fR]]
+Request a specific allocation of resources with details as to the
+number and type of computational resources within a cluster:
+number of sockets (or physical processors) per node,
+cores per socket, and threads per core.
+The total amount of resources being requested is the product of all of
+the terms.
+As with \-\-nodes, each value can be a single number or a range (e.g. min\-max).
+An asterisk (*) can be used as a placeholder indicating that all available
+resources of that type are to be utilized.
+As with nodes, the individual levels can also be specified in separate
+options if desired:
+.nf
+    \fB\-\-sockets\-per\-node\fR=\fIsockets\fR
+    \fB\-\-cores\-per\-socket\fR=\fIcores\fR
+    \fB\-\-threads\-per\-core\fR=\fIthreads\fR
+.fi
+When the task/affinity plugin is enabled,
+specifying an allocation in this manner also instructs SLURM to use
+a CPU affinity mask to guarantee the request is filled as specified.
+NOTE: Support for these options are configuration dependent. 
+The task/affinity plugin must be configured.
+In addition either select/linear or select/cons_res plugin must be 
+configured.
+If select/cons_res is configured, it must have a parameter of CR_Core, 
+CR_Core_Memory, CR_Socket, or CR_Socket_Memory. 
+
+.TP
 \fB\-\-begin\fR[=]<\fItime\fR>
 Submit the batch script to the SLURM controller immediately, like normal, but
 tell the controller to defer the allocation of the job until the specified time.
@@ -121,6 +149,26 @@ may be the group name or the numerical group ID.
 \fB\-h\fR, \fB\-\-help\fR
 Display help information and exit.
 
+.TP
+\fB\-\-hint\fR=\fItype\fR
+Bind tasks according to application hints
+.RS
+.TP
+.B compute_bound
+Select settings for compute bound applications:
+use all cores in each physical CPU
+.TP
+.B memory_bound
+Select settings for memory bound applications:
+use only one core in each physical CPU
+.TP
+.B [no]multithread
+[don't] use extra threads with in-core multi-threading
+which can benefit communication intensive applications
+.B help
+show this help message
+.RE
+
 .TP 
 \fB\-I\fR,\fB\-\-immediate\fR
 Grab the requested resources immediately, or abort if the resources are not
@@ -160,6 +208,47 @@ new job steps on the remaining nodes in their allocation.
 
 By default SLURM terminates the entire job allocation if any node fails in its
 range of allocated nodes.
+
+.TP
+\fB\-m\fR, \fB\-\-distribution\fR=
+(\fIblock\fR|\fIcyclic\fR|\fIarbitrary\fR|\fIplane=<options>\fR)
+Specify an alternate distribution method for remote processes.
+.RS
+.TP
+.B block
+The block method of distribution will allocate processes in\-order to
+the cpus on a node. If the number of processes exceeds the number of 
+cpus on all of the nodes in the allocation then all nodes will be 
+utilized. For example, consider an allocation of three nodes each with 
+two cpus. A four\-process block distribution request will distribute 
+those processes to the nodes with processes one and two on the first 
+node, process three on the second node, and process four on the third node.  
+Block distribution is the default behavior if the number of tasks 
+exceeds the number of nodes requested.
+.TP
+.B cyclic
+The cyclic method distributes processes in a round\-robin fashion across
+the allocated nodes. That is, process one will be allocated to the first
+node, process two to the second, and so on. This is the default behavior
+if the number of tasks is no larger than the number of nodes requested.
+.TP
+.B plane
+The tasks are distributed in blocks of a specified size.
+The options include a number representing the size of the task block.
+This is followed by an optional specification of the task distribution 
+scheme within a block of tasks and between the blocks of tasks.
+For more details (including examples and diagrams), please see
+http://www.llnl.gov/linux/slurm/mc_support.html and
+http://www.llnl.gov/linux/slurm/dist_plane.html.
+.TP
+.B arbitrary
+The arbitrary method of distribution will allocate processes in\-order as 
+listed in file designated by the environment variable SLURM_HOSTFILE.  If
+this variable is listed it will over ride any other method specified. 
+If not set the method will default to block.  Inside the hostfile must
+contain at minimum the number of hosts requested.  If requesting tasks
+(-n) your tasks will be laid out on the nodes in the order of the file.
+.RE
 
 .TP
 \fB\-\-mail\-type\fR=\fItype\fR
@@ -208,7 +297,7 @@ The job will be allocated as many nodes as possible within the range specified
 and without delaying the initiation of the job.
 
 .TP
-\fB\-n\fR, \fB\-\-tasks\fR[=]<\fInumber\fR>
+\fB\-n\fR, \fB\-\-ntasks\fR[=]<\fInumber\fR>
 salloc does not launch tasks, it requests an allocation of resources and submits
 a batch script.  However this \-\-tasks option advizes the SLURM controller
 that job steps run within this allocation will launch a maximum of \fInumber\fR
@@ -223,6 +312,40 @@ value the scheduling priority is decreased by 100.  The adjustment range
 is from \-10000 (highest priority) to 10000 (lowest priority). Only
 privileged users can specify a negative adjustment.  NOTE: This option
 is presently ignored if SchedulerType=sched/maui.
+
+.TP
+\fB\-\-ntasks\-per\-core\fR=\fIntasks\fR
+Request that no more than \fIntasks\fR be invoked on each core.
+Similar to \fB\-\-ntasks\-per\-node\fR except at the core level
+instead of the node level.  Masks will automatically be generated
+to bind the tasks to specific core unless \fB\-\-cpu_bind=none\fR
+is specified.
+NOTE: This option is not supported unless \fISelectType=CR_Core\fR
+or \fISelectType=CR_Core_Memory\fR is configured.
+
+.TP
+\fB\-\-ntasks\-per\-socket\fR=\fIntasks\fR
+Request that no more than \fIntasks\fR be invoked on each socket.
+Similar to \fB\-\-ntasks\-per\-node\fR except at the socket level
+instead of the node level.  Masks will automatically be generated
+to bind the tasks to specific sockets unless \fB\-\-cpu_bind=none\fR
+is specified.
+NOTE: This option is not supported unless \fISelectType=CR_Socket\fR 
+or \fISelectType=CR_Socket_Memory\fR is configured.
+
+.TP
+\fB\-\-ntasks\-per\-node\fR=\fIntasks\fR
+Request that no more than \fIntasks\fR be invoked on each node.
+This is similiar to using \fB\-\-cpus\-per\-task\fR=\fIncpus\fR
+but does not require knowledge of the actual number of cpus on
+each node.  In some cases, it is more convenient to be able to
+request that no more than a specific number of ntasks be invoked
+on each node.  Examples of this include submitting
+a hybrid MPI/OpenMP app where only one MPI "task/rank" should be
+assigned to each node while allowing the OpenMP portion to utilize
+all of the parallelism present in the node, or submitting a single
+setup/cleanup/monitoring job to each node of a pre\-existing  
+allocation as one step in a larger job script.
 
 .TP 
 \fB\-\-no\-bell\fR

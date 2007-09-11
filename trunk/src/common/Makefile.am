@@ -81,7 +81,8 @@ libcommon_la_SOURCES = 			\
 	global_defaults.c		\
 	timers.c timers.h		\
 	slurm_xlator.h			\
-	stepd_api.c stepd_api.h		
+	stepd_api.c stepd_api.h		\
+	proc_args.c proc_args.h		
 
 EXTRA_libcommon_la_SOURCES = 	\
 	$(extra_unsetenv_src)
