@@ -356,41 +356,41 @@ extern int fini ( void )
 
 extern struct jobacctinfo *jobacct_gather_p_create(jobacct_id_t *jobacct_id)
 {
-	return common_alloc_jobacct(jobacct_id);
+	return jobacct_common_alloc_jobacct(jobacct_id);
 }
 
 extern void jobacct_gather_p_destroy(struct jobacctinfo *jobacct)
 {
-	common_free_jobacct(jobacct);
+	jobacct_common_free_jobacct(jobacct);
 }
 
 extern int jobacct_gather_p_setinfo(struct jobacctinfo *jobacct, 
 				    enum jobacct_data_type type, void *data)
 {
-	return common_setinfo(jobacct, type, data);
+	return jobacct_common_setinfo(jobacct, type, data);
 	
 }
 
 extern int jobacct_gather_p_getinfo(struct jobacctinfo *jobacct, 
 				    enum jobacct_data_type type, void *data)
 {
-	return common_getinfo(jobacct, type, data);
+	return jobacct_common_getinfo(jobacct, type, data);
 }
 
 extern void jobacct_gather_p_pack(struct jobacctinfo *jobacct, Buf buffer)
 {
-	common_pack(jobacct, buffer);
+	jobacct_common_pack(jobacct, buffer);
 }
 
 extern int jobacct_gather_p_unpack(struct jobacctinfo **jobacct, Buf buffer)
 {
-	return common_unpack(jobacct, buffer);
+	return jobacct_common_unpack(jobacct, buffer);
 }
 
 extern void jobacct_gather_p_aggregate(struct jobacctinfo *dest,
 				       struct jobacctinfo *from)
 {
-	common_aggregate(dest, from);
+	jobacct_common_aggregate(dest, from);
 }
 
 /*
@@ -420,7 +420,7 @@ extern int jobacct_gather_p_startpoll(int frequency)
 
 	freq = frequency;
 	pagesize = getpagesize()/1024;
-	task_list = list_create(common_free_jobacct);
+	task_list = list_create(jobacct_common_free_jobacct);
 	
 	/* create polling thread */
 	slurm_attr_init(&attr);
@@ -451,22 +451,22 @@ extern int jobacct_gather_p_endpoll()
 
 extern void jobacct_gather_p_suspend_poll()
 {
-	common_suspend_poll();
+	jobacct_common_suspend_poll();
 }
 
 extern void jobacct_gather_p_resume_poll()
 {
-	common_resume_poll();
+	jobacct_common_resume_poll();
 }
 
 extern int jobacct_gather_p_set_proctrack_container_id(uint32_t id)
 {
-	return common_set_proctrack_container_id(id);
+	return jobacct_common_set_proctrack_container_id(id);
 }
 
 extern int jobacct_gather_p_add_task(pid_t pid, jobacct_id_t *jobacct_id)
 {
-	return common_add_task(pid, jobacct_id);
+	return jobacct_common_add_task(pid, jobacct_id);
 }
 
 extern struct jobacctinfo *jobacct_gather_p_stat_task(pid_t pid)
@@ -474,16 +474,16 @@ extern struct jobacctinfo *jobacct_gather_p_stat_task(pid_t pid)
 #ifdef HAVE_AIX
 	_get_process_data();
 #endif
-	return common_stat_task(pid);
+	return jobacct_common_stat_task(pid);
 }
 
 extern struct jobacctinfo *jobacct_gather_p_remove_task(pid_t pid)
 {
-	return common_remove_task(pid);
+	return jobacct_common_remove_task(pid);
 }
 
 extern void jobacct_gather_p_2_sacct(sacct_t *sacct, 
 				     struct jobacctinfo *jobacct)
 {
-	common_2_sacct(sacct, jobacct);
+	jobacct_common_2_sacct(sacct, jobacct);
 }

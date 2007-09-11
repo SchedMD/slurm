@@ -150,7 +150,7 @@ extern void destroy_jobacct_step_rec(void *object)
 	}
 }
 
-extern int common_init_struct(struct jobacctinfo *jobacct, 
+extern int jobacct_common_init_struct(struct jobacctinfo *jobacct, 
 			      jobacct_id_t *jobacct_id)
 {
 	if(!jobacct_id) {
@@ -194,21 +194,22 @@ extern int common_init_struct(struct jobacctinfo *jobacct,
 	return SLURM_SUCCESS;
 }
 
-extern struct jobacctinfo *common_alloc_jobacct(jobacct_id_t *jobacct_id)
+extern struct jobacctinfo *jobacct_common_alloc_jobacct(
+	jobacct_id_t *jobacct_id)
 {
 	struct jobacctinfo *jobacct = xmalloc(sizeof(struct jobacctinfo));
-	common_init_struct(jobacct, jobacct_id);
+	jobacct_common_init_struct(jobacct, jobacct_id);
 	return jobacct;
 }
 
-extern void common_free_jobacct(void *object)
+extern void jobacct_common_free_jobacct(void *object)
 {
 	struct jobacctinfo *jobacct = (struct jobacctinfo *)object;
 	xfree(jobacct);
 	jobacct = NULL;
 }
 
-extern int common_setinfo(struct jobacctinfo *jobacct, 
+extern int jobacct_common_setinfo(struct jobacctinfo *jobacct, 
 			  enum jobacct_data_type type, void *data)
 {
 	int rc = SLURM_SUCCESS;
@@ -277,7 +278,7 @@ rwfail:
 	
 }
 
-extern int common_getinfo(struct jobacctinfo *jobacct, 
+extern int jobacct_common_getinfo(struct jobacctinfo *jobacct, 
 			  enum jobacct_data_type type, void *data)
 {
 	int rc = SLURM_SUCCESS;
@@ -346,7 +347,7 @@ rwfail:
 
 }
 
-extern void common_aggregate(struct jobacctinfo *dest, 
+extern void jobacct_common_aggregate(struct jobacctinfo *dest, 
 			     struct jobacctinfo *from)
 {
 	xassert(dest);
@@ -422,7 +423,7 @@ extern void common_aggregate(struct jobacctinfo *dest,
 	slurm_mutex_unlock(&jobacct_lock);	
 }
 
-extern void common_2_sacct(sacct_t *sacct, struct jobacctinfo *jobacct)
+extern void jobacct_common_2_sacct(sacct_t *sacct, struct jobacctinfo *jobacct)
 {
 	xassert(jobacct);
 	xassert(sacct);
@@ -442,7 +443,7 @@ extern void common_2_sacct(sacct_t *sacct, struct jobacctinfo *jobacct)
 	slurm_mutex_unlock(&jobacct_lock);
 }
 
-extern void common_pack(struct jobacctinfo *jobacct, Buf buffer)
+extern void jobacct_common_pack(struct jobacctinfo *jobacct, Buf buffer)
 {
 	int i=0;
 
@@ -488,7 +489,7 @@ extern void common_pack(struct jobacctinfo *jobacct, Buf buffer)
 }
 
 /* you need to xfree this */
-extern int common_unpack(struct jobacctinfo **jobacct, Buf buffer)
+extern int jobacct_common_unpack(struct jobacctinfo **jobacct, Buf buffer)
 {
 	uint32_t uint32_tmp;
 	*jobacct = xmalloc(sizeof(struct jobacctinfo));
@@ -555,7 +556,7 @@ unpack_error:
        	return SLURM_ERROR;
 }
 
-extern int common_set_proctrack_container_id(uint32_t id)
+extern int jobacct_common_set_proctrack_container_id(uint32_t id)
 {
 	if(pgid_plugin)
 		return SLURM_SUCCESS;
@@ -575,9 +576,9 @@ extern int common_set_proctrack_container_id(uint32_t id)
 	return SLURM_SUCCESS;
 }
 
-extern int common_add_task(pid_t pid, jobacct_id_t *jobacct_id)
+extern int jobacct_common_add_task(pid_t pid, jobacct_id_t *jobacct_id)
 {
-	struct jobacctinfo *jobacct = common_alloc_jobacct(jobacct_id);
+	struct jobacctinfo *jobacct = jobacct_common_alloc_jobacct(jobacct_id);
 	
 	slurm_mutex_lock(&jobacct_lock);
 	if(pid <= 0) {
@@ -598,11 +599,11 @@ extern int common_add_task(pid_t pid, jobacct_id_t *jobacct_id)
 	return SLURM_SUCCESS;
 error:
 	slurm_mutex_unlock(&jobacct_lock);
-	common_free_jobacct(jobacct);
+	jobacct_common_free_jobacct(jobacct);
 	return SLURM_ERROR;
 }
 
-extern struct jobacctinfo *common_stat_task(pid_t pid)
+extern struct jobacctinfo *jobacct_common_stat_task(pid_t pid)
 {
 	struct jobacctinfo *jobacct = NULL;
 	struct jobacctinfo *ret_jobacct = NULL;
@@ -627,7 +628,7 @@ error:
 	return ret_jobacct;
 }
 
-extern struct jobacctinfo *common_remove_task(pid_t pid)
+extern struct jobacctinfo *jobacct_common_remove_task(pid_t pid)
 {
 	struct jobacctinfo *jobacct = NULL;
 	struct jobacctinfo *ret_jobacct = NULL;
@@ -652,7 +653,7 @@ extern struct jobacctinfo *common_remove_task(pid_t pid)
 		       jobacct->max_vsize_id.taskid, jobacct->pid);
 		ret_jobacct = xmalloc(sizeof(struct jobacctinfo));
 		memcpy(ret_jobacct, jobacct, sizeof(struct jobacctinfo));
-		common_free_jobacct(jobacct);
+		jobacct_common_free_jobacct(jobacct);
 	} else {
 		error("pid(%d) not being watched in jobacct!", pid);
 	}
@@ -661,19 +662,19 @@ error:
 	return ret_jobacct;
 }
 
-extern int common_endpoll()
+extern int jobacct_common_endpoll()
 {
 	jobacct_shutdown = true;
 
 	return SLURM_SUCCESS;
 }
 
-extern void common_suspend_poll()
+extern void jobacct_common_suspend_poll()
 {
 	jobacct_suspended = true;
 }
 
-extern void common_resume_poll()
+extern void jobacct_common_resume_poll()
 {
 	jobacct_suspended = false;
 }

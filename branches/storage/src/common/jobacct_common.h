@@ -207,27 +207,29 @@ extern void destroy_jobacct_step_rec(void *object);
 
 
 /* These should only be called from the jobacct-gather plugin */
-extern int common_init_struct(struct jobacctinfo *jobacct, 
-			      jobacct_id_t *jobacct_id);
-extern struct jobacctinfo *common_alloc_jobacct(jobacct_id_t *jobacct_id);
-extern void common_free_jobacct(void *object);
-extern int common_setinfo(struct jobacctinfo *jobacct, 
+extern int jobacct_common_init_struct(struct jobacctinfo *jobacct, 
+				      jobacct_id_t *jobacct_id);
+extern struct jobacctinfo *jobacct_common_alloc_jobacct(
+	jobacct_id_t *jobacct_id);
+extern void jobacct_common_free_jobacct(void *object);
+extern int jobacct_common_setinfo(struct jobacctinfo *jobacct, 
 			  enum jobacct_data_type type, void *data);
-extern int common_getinfo(struct jobacctinfo *jobacct, 
+extern int jobacct_common_getinfo(struct jobacctinfo *jobacct, 
 			  enum jobacct_data_type type, void *data);
-extern void common_aggregate(struct jobacctinfo *dest, 
+extern void jobacct_common_aggregate(struct jobacctinfo *dest, 
 			     struct jobacctinfo *from);
-extern void common_2_sacct(sacct_t *sacct, struct jobacctinfo *jobacct);
-extern void common_pack(struct jobacctinfo *jobacct, Buf buffer);
-extern int common_unpack(struct jobacctinfo **jobacct, Buf buffer);
+extern void jobacct_common_2_sacct(sacct_t *sacct,
+				   struct jobacctinfo *jobacct);
+extern void jobacct_common_pack(struct jobacctinfo *jobacct, Buf buffer);
+extern int jobacct_common_unpack(struct jobacctinfo **jobacct, Buf buffer);
 
-extern int common_endpoll();
-extern int common_set_proctrack_container_id(uint32_t id);
-extern int common_add_task(pid_t pid, jobacct_id_t *jobacct_id);
-extern struct jobacctinfo *common_stat_task(pid_t pid);
-extern struct jobacctinfo *common_remove_task(pid_t pid);
-extern void common_suspend_poll();
-extern void common_resume_poll();
+extern int jobacct_common_endpoll();
+extern int jobacct_common_set_proctrack_container_id(uint32_t id);
+extern int jobacct_common_add_task(pid_t pid, jobacct_id_t *jobacct_id);
+extern struct jobacctinfo *jobacct_common_stat_task(pid_t pid);
+extern struct jobacctinfo *jobacct_common_remove_task(pid_t pid);
+extern void jobacct_common_suspend_poll();
+extern void jobacct_common_resume_poll();
 /***************************************************************/
 
 

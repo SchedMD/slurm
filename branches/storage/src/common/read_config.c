@@ -1503,10 +1503,23 @@ validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 			       "JobAcctGatherFrequency", hashtbl))
 		conf->job_acct_gather_freq = DEFAULT_JOB_ACCT_GATHER_FREQ;
 
-	if (!s_p_get_string(&conf->job_acct_gather_type,
-			    "JobAcctType", hashtbl)
-	    && !s_p_get_string(&conf->job_acct_gather_type,
-			       "JobAcctGatherType", hashtbl))
+	if (s_p_get_string(&conf->job_acct_gather_type,
+			    "JobAcctType", hashtbl)) {
+		fatal("JobAcctType is no longer a valid parameter.\n"
+		      "The job accounting plugin has changed to 2 different "
+		      "plugins one for gathering and one for storing the "
+		      "gathered information.\n"
+		      "Please change this to JobAcctGatherType to "
+		      "correctly work.\n"
+		      "The major 'jobacct' is now 'jobacct_gather' and "
+		      "'jobacct_storage' your declarations will also need "
+		      "to change in your slurm.conf file.\n"
+		      "Refer to the slurm.conf man page or the web "
+		      "documentation for further explanation.");
+	}
+	
+	if(!s_p_get_string(&conf->job_acct_gather_type,
+			   "JobAcctGatherType", hashtbl))
 		conf->job_acct_gather_type =
 			xstrdup(DEFAULT_JOB_ACCT_GATHER_TYPE);
 
@@ -1524,7 +1537,7 @@ validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	if (!s_p_get_string(&conf->job_acct_storage_type, "JobAcctStorageType",
 			    hashtbl)) {
 		/* if we aren't gathering then set the storage type to
-		 * none else use flatfile if they didn't say anything
+		 * none else use filetxt if they didn't say anything
 		 */
 		if(!strcmp(conf->job_acct_gather_type,
 			   DEFAULT_JOB_ACCT_GATHER_TYPE)) {
