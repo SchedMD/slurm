@@ -195,27 +195,79 @@ The default value is unlimited (zero).
 May not exceed 65533.
 
 .TP
-\fBJobAcctType\fR
+\fBJobAcctGatherType\fR
 Define the job accounting mechanism type.
-Acceptable values at present include "jobacct/aix" (for AIX operating
-system), "jobacct/linux" (for Linux operating system) and "jobacct/none"
+Acceptable values at present include "jobacct_gather/aix" (for AIX operating
+system), "jobacct_gather/linux" (for Linux operating system) and "jobacct_gather/none"
 (no accounting data collected).
-The default value is "jobacct/none".
-In order to use the \fBsacct\fR tool, "jobacct/aix" or "jobacct/linux" 
+The default value is "jobacct_gather/none".
+In order to use the \fBsacct\fR tool, "jobacct_gather/aix" or "jobacct_gather/linux" 
 must be configured.
 
 .TP
-\fBJobAcctLoc\fR
-Define the location where job accounting logs are to be written either
-a filename or a database name.
-For jobacct/none this parameter is ignored.
-For jobacct/linux this is the fully\-qualified file name for the data file.
+\fBJobAcctGatherFrequency\fR
+Define the polling frequencys to pass to the job accounting plugin.
+For jobacct_gather/none this parameter is ignored.
+For jobacct_gather/linux the parameter is a number is seconds between polls.
 
 .TP
-\fBJobAcctFrequency\fR
-Define the polling frequencys to pass to the job accounting plugin.
-For jobacct/none this parameter is ignored.
-For jobacct/linux the parameter is a number is seconds between polls.
+\fBJobAcctStorageType\fR
+Define the job accounting storage mechanism type.
+Acceptable values at present include "jobacct_storage/none", "jobacct_storage/filetxt", 
+"jobacct_storage/mysql", "jobacct_storage/pgsql", and "jobacct_storage/script".
+The default value is "jobacct_storage/none", which means that job
+accounting isn't recorded for the system. 
+The value "jobacct_storage/filetxt" indicates that a record of the job should be 
+written to a text file specified by the \fBJobAcctStorageLoc\fR parameter.
+The value "jobacct_storage/mysql" indicates that a record of the job should be 
+written to a mysql database specified by the \fBJobAcctStorageLoc\fR parameter.
+The value "jobacct_storage/pgsql" indicates that a record of the job should be 
+written to a postresql database specified by the \fBJobAcctStorageLoc\fR parameter.
+
+.TP
+\fBJobAcctStorageLoc\fR
+Define the location where job accounting logs are to be written either
+a filename or a database name.
+
+.TP
+\fBJobAcctStorageHost\fR
+Define the name of the host the database is running where we are going
+to store the job accounting data.
+Only used for database type storage plugins, ignored otherwise.
+
+.TP
+\fBJobAcctStoragePort\fR
+Define the port the database server is listening on where we are going
+to store the job accounting data.
+Only used for database type storage plugins, ignored otherwise.
+
+.TP
+\fBJobAcctStorageUser\fR
+Define the name of the user we are going to connect to the database
+with to store the job accounting data.
+Only used for database type storage plugins, ignored otherwise.
+
+.TP
+\fBJobAcctStoragePass\fR
+Define the password used to gain access to the database to store the job accounting data.
+Only used for database type storage plugins, ignored otherwise.
+
+.TP
+\fBJobCompType\fR
+Define the job completion logging mechanism type.
+Acceptable values at present include "jobcomp/none", "jobcomp/filetxt", 
+"jobcomp/mysql", "jobcomp/pgsql", and "jobcomp/script".
+The default value is "jobcomp/none", which means that upon job completion 
+the record of the job is purged from the system. 
+The value "jobcomp/filetxt" indicates that a record of the job should be 
+written to a text file specified by the \fBJobCompLoc\fR parameter.
+The value "jobcomp/mysql" indicates that a record of the job should be 
+written to a mysql database specified by the \fBJobCompLoc\fR parameter.
+The value "jobcomp/pgsql" indicates that a record of the job should be 
+written to a postresql database specified by the \fBJobCompLoc\fR parameter.
+The value "jobcomp/script" indicates that a script specified by the 
+\fBJobCompLoc\fR parameter is to be executed with environment variables 
+indicating the job information.
 
 .TP
 \fBJobCompLoc\fR
@@ -224,20 +276,27 @@ specified by the \fBJobCompType\fR parameter either a filename or a
 database name. 
 
 .TP
-\fBJobCompType\fR
-Define the job completion logging mechanism type.
-Acceptable values at present include "jobcomp/none", "jobcomp/filetxt", 
-"jobcomp/database", and "jobcomp/script".
-The default value is "jobcomp/none", which means that upon job completion 
-the record of the job is purged from the system. 
-The value "jobcomp/filetxt" indicates that a record of the job should be 
-written to a text file specified by the \fBJobCompLoc\fR parameter.
-The value "jobcomp/database" indicates that a record of the job should be 
-written to a database specified by the \fBJobCompLoc\fR parameter, the
-database type must be set up by the \fBDatabaseType\fR parameter.
-The value "jobcomp/script" indicates that a script specified by the 
-\fBJobCompLoc\fR parameter is to be executed with environment variables 
-indicating the job information.
+\fBJobCompHost\fR
+Define the name of the host the database is running where we are going
+to store the job completion data.
+Only used for database type storage plugins, ignored otherwise.
+
+.TP
+\fBJobCompPort\fR
+Define the port the database server is listening on where we are going
+to store the job completion data.
+Only used for database type storage plugins, ignored otherwise.
+
+.TP
+\fBJobCompUser\fR
+Define the name of the user we are going to connect to the database
+with to store the job completion data.
+Only used for database type storage plugins, ignored otherwise.
+
+.TP
+\fBJobCompPass\fR
+Define the password used to gain access to the database to store the job completion data.
+Only used for database type storage plugins, ignored otherwise.
 
 .TP
 \fBJobCredentialPrivateKey\fR
@@ -1333,9 +1392,17 @@ HeartbeatInterval=60
 .br
 InactiveLimit=120
 .br
-JobCompType=jobcomp/filetxt
+JobCompType=jobcomp/mysql
 .br
-JobCompLoc=/var/log/slurm.job.log
+JobCompLoc=slurm_jobcomp_db
+.br
+JobCompHost=localhost
+.br
+JobCompPort=1234
+.br
+JobCompUser=mysql
+.br
+JobCompPass=secret?
 .br
 KillWait=30
 .br
@@ -1373,11 +1440,13 @@ JobCredentialPrivateKey=/usr/local/slurm/private.key
 .br
 JobCredentialPublicCertificate=/usr/local/slurm/public.cert
 .br
-JobAcctType=jobacct/linux
+JobAcctGatherType=jobacct/linux
 .br
-JobAcctLogFile=/var/log/slurm_accounting.log
+JobAccGatherFrequency=30
 .br
-JobAcctParameters="Frequency=30,MaxSendRetries=5"
+JobAcctStorageType=jobacct_storage/filetxt
+.br
+JobAcctStorageLoc=/var/log/slurm_accounting.log
 .br
 #
 .br
