@@ -200,6 +200,13 @@ The default value of this option is one node, but other options implicitly
 increase the default node count. 
 The job will be allocated as many nodes as possible within the range specified 
 and without delaying the initiation of the job.
+The partition's node limits supersede those of the job. 
+If a job's node limits are outside of the range permitted for its 
+associated partition, the job will be left in a PENDING state. 
+This permits possible execution at a later time, when the partition 
+limit is changed.
+If a job node limit exceeds the number of nodes configured in the 
+partition, the job will be rejected.
 
 .TP
 \fB\-n\fR, \fB\-\-tasks\fR[=]<\fInumber\fR>

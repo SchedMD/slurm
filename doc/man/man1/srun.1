@@ -584,10 +584,15 @@ The scheduler may decide to launch the job on more than \fIminnodes\fR nodes.
 A limit on the maximum node count may be specified with \fImaxnodes\fR
 (e.g. "\-\-nodes=2\-4").  The minimum and maximum node count may be the
 same to specify a specific number of nodes (e.g. "\-\-nodes=2\-2" will ask
-for two and ONLY two nodes).  The partition's node 
-limits supersede those of the job. If a job's node limits are completely 
-outside of the range permitted for its associated partition, the job 
-will be left in a PENDING state. Note that the environment 
+for two and ONLY two nodes).  
+The partition's node limits supersede those of the job. 
+If a job's node limits are outside of the range permitted for its 
+associated partition, the job will be left in a PENDING state. 
+This permits possible execution at a later time, when the partition 
+limit is changed.
+If a job node limit exceeds the number of nodes configured in the 
+partition, the job will be rejected.
+Note that the environment 
 variable \fBSLURM_NNODES\fR will be set to the count of nodes actually 
 allocated to the job. See the \fBENVIRONMENT VARIABLES \fR section 
 for more information.  If \fB\-N\fR is not specified, the default
