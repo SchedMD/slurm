@@ -162,15 +162,15 @@ void slurm_print_ctl_conf ( FILE* out,
 #endif
 	fprintf(out, "InactiveLimit         = %u\n", 
 		slurm_ctl_conf_ptr->inactive_limit);
-	fprintf(out, "JobCompType       = %s\n", 
+	fprintf(out, "JobCompType           = %s\n", 
 		slurm_ctl_conf_ptr->job_comp_type);
 	fprintf(out, "JobCompLoc            = %s\n", 
 		slurm_ctl_conf_ptr->job_comp_loc);
-	fprintf(out, "JobCompHost       = %s\n", 
+	fprintf(out, "JobCompHost           = %s\n", 
 		slurm_ctl_conf_ptr->job_comp_host);
-	fprintf(out, "JobCompPort       = %u\n", 
+	fprintf(out, "JobCompPort           = %u\n", 
 		slurm_ctl_conf_ptr->job_comp_port);
-	fprintf(out, "JobCompUser       = %s\n", 
+	fprintf(out, "JobCompUser           = %s\n", 
 		slurm_ctl_conf_ptr->job_comp_user);
 	fprintf(out, "JobCredentialPrivateKey = %s\n", 
 		slurm_ctl_conf_ptr->job_credential_private_key);
