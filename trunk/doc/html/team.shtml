@@ -12,7 +12,7 @@
 <li>Morris Jette (LLNL, Project leader)</li>
 <li>Danny Auble (LLNL)</li>
 <li>Susanne Balle (HP)</li>
-<li>Chris Morrone (LLNL)</li>
+<li>Chris Holmes (HP)</li>
 </ul>
 
 <p> SLURM contributers include: </p>
@@ -31,7 +31,6 @@
 <li>Jim Garlick (LLNL)</li>
 <li>Mark Grondona (LLNL)</li>
 <li>Takao Hatazaki (HP, Japan)</li>
-<li>Chris Holmes (HP)</li>
 <li>Nathan Huff (North Dakota State University)</li>
 <li>David Jackson (Cluster Resources)</li>
 <li>Greg Johnson (LANL)</li>
@@ -40,6 +39,7 @@
 <li>Puenlap Lee (Bull)</li>
 <li>Bernard Li (Genome Sciences Centre, Canada)</li>
 <li>Donna Mecozzi (LLNL)</li>
+<li>Chris Morrone (LLNL)</li>
 <li>Pere Munt (Barcelona Supercomputer Center, Spain)<li>
 <li>Bryan O'Sullivan (Pathscale)</li>
 <li>Gennaro Oliva (Institute of High Performance Computing and 
@@ -57,6 +57,6 @@ Networking, Italy)</li>
 <li>Anne-Marie Wunderlin (Bull)</li>
 </ul>
 
-<p style="text-align:center;">Last modified 14 August 2007</p>
+<p style="text-align:center;">Last modified 11 September 2007</p>
 
 <!--#include virtual="footer.txt"-->
