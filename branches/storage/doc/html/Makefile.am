@@ -9,13 +9,13 @@ generated_html = \
 	checkpoint_plugins.html \
 	cons_res.html \
 	dist_plane.html \
-	databaseplugins.html \
 	documentation.html \
 	download.html \
 	faq.html \
 	help.html \
 	ibm.html \
-	jobacctplugins.html \
+	jobacct_gatherplugins.html \
+	jobacct_storageplugins.html \
 	jobcompplugins.html \
 	mail.html \
 	maui.html \

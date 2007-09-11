@@ -150,6 +150,17 @@ extern void jobacct_gather_p_resume_poll()
 	return;
 }
 
+extern int jobacct_gather_p_set_proctrack_container_id(uint32_t id)
+{
+	return SLURM_SUCCESS;
+}
+
+extern int jobacct_gather_p_add_task(pid_t pid, jobacct_id_t *jobacct_id)
+{
+	return SLURM_SUCCESS;
+}
+
+
 extern jobacctinfo_t *jobacct_gather_p_stat_task(pid_t pid)
 {
 	return NULL;

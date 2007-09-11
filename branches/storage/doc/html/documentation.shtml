@@ -41,8 +41,8 @@ Jobs throuh LSF</a></li>
 <li><a href="plugins.shtml">Plugin Programmer Guide</a></li>
 <li><a href="authplugins.shtml">Authentication Plugin Programmer Guide</a></li>
 <li><a href="checkpoint_plugins.shtml">Job Checkpoint Plugin Programmer Guild</a></li>
-<li><a href="databaseplugins.shtml">Database Plugin Programmer Guide</a></li>
-<li><a href="jobacctplugins.shtml">Job Accounting Plugin Programmer Guide</a></li>
+<li><a href="jobacct_gatherplugins.shtml">Job Accounting Gather Plugin Programmer Guide</a></li>
+<li><a href="jobacct_storageplugins.shtml">Job Accounting Storage Plugin Programmer Guide</a></li>
 <li><a href="jobcompplugins.shtml">Job Completion Logging Plugin Programmer Guide</a></li>
 <li><a href="mpiplugins.shtml">MPI Plugin Programmer Guide</a></li>
 </ul>

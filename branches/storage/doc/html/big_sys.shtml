@@ -19,7 +19,7 @@ processors and memory within each node adds significant overhead.
 For best scalability, the consumable resource plugin (<i>select/cons_res</i>)
 is best avoided.</p>
 
-<h2>Job Accounting Plugin (JobAcctType)</h2>
+<h2>Job Accounting Gather Plugin (JobAcctGatherType)</h2>
 
 <p>Job accounting relies upon the <i>slurmstepd</i> daemon on each compute 
 node periodically sampling data.
@@ -28,11 +28,11 @@ inducing what is known as <i>system noise</i>.
 For large parallel applications, this system noise can detract for 
 application scalability.
 For optimal application performance, disabling job accounting 
-is best (<i>jobacct/none</i>).
+is best (<i>jobacct_gather/none</i>).
 Consider use of job completion records (<i>JobCompType</i>) for accounting 
 purposes as this entails far less overhead.
 If job accounting is required, configure the sampling interval 
-to a relatively large size (e.g. <i>JobAcctFrequency=300</i>).
+to a relatively large size (e.g. <i>JobAcctGatherFrequency=300</i>).
 Some experimentation may also be required to deal with collisions 
 on data transmission.</p>
 
