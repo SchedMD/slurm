@@ -42,6 +42,7 @@
 
 #define MAX_USERNAME	9
 
+
 typedef struct sbatch_options {
 	char *progname;		/* argv[0] of this program or   */
 
@@ -63,9 +64,25 @@ typedef struct sbatch_options {
 	int  min_nodes;		/* --nodes=n,       -N n	*/ 
 	int  max_nodes;		/* --nodes=x-n,       -N x-n	*/ 
 	bool nodes_set;		/* true if nodes explicitly set */
+	int min_sockets_per_node; /* --sockets-per-node=n      */
+	int max_sockets_per_node; /* --sockets-per-node=x-n    */
+	int min_cores_per_socket; /* --cores-per-socket=n      */
+	int max_cores_per_socket; /* --cores-per-socket=x-n    */
+	int min_threads_per_core; /* --threads-per-core=n      */
+	int max_threads_per_core; /* --threads-per-core=x-n    */
+	int ntasks_per_node;   /* --ntasks-per-node=n	    */
+	int ntasks_per_socket; /* --ntasks-per-socket=n     */
+	int ntasks_per_core;   /* --ntasks-per-core=n	    */
+	cpu_bind_type_t cpu_bind_type; /* --cpu_bind=           */
+	bool extra_set;		/* true if extra node info explicitly set */
 	int  time_limit;	/* --time,   -t	(int minutes)	*/
 	char *time_limit_str;	/* --time,   -t (string)	*/
 	char *partition;	/* --partition=n,   -p n   	*/
+	enum task_dist_states
+	        distribution;	/* --distribution=, -m dist	*/
+        uint32_t plane_size;    /* lllp distribution -> plane_size for
+				 * when -m plane=<# of lllp per
+				 * plane> */      
 	char *job_name;		/* --job-name=,     -J name	*/
 	unsigned int jobid;     /* --jobid=jobid                */
 	bool jobid_set;		/* true of jobid explicitly set */
@@ -91,9 +108,9 @@ typedef struct sbatch_options {
 	int minsockets;		/* --minsockets=n		*/
 	int mincores;		/* --mincores=n			*/
 	int minthreads;		/* --minthreads=n		*/
+	int jobmem;		/* --job-mem=n			*/
 	int realmem;		/* --mem=n			*/
 	long tmpdisk;		/* --tmp=n			*/
-	int tasks_per_node;	/* --tasks-per-node=n		*/
 	char *constraints;	/* --constraints=, -C constraint*/
 	bool contiguous;	/* --contiguous			*/
 	char *nodelist;		/* --nodelist=node1,node2,...	*/

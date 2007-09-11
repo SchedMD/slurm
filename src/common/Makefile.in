@@ -93,7 +93,8 @@ am__libcommon_la_SOURCES_DIST = xmalloc.c xmalloc.h xassert.c \
 	hostlist.h slurm_step_layout.c slurm_step_layout.h \
 	checkpoint.c checkpoint.h parse_time.c parse_time.h \
 	job_options.c job_options.h global_defaults.c timers.c \
-	timers.h slurm_xlator.h stepd_api.c stepd_api.h
+	timers.h slurm_xlator.h stepd_api.c stepd_api.h proc_args.c \
+	proc_args.h 
 @HAVE_UNSETENV_FALSE@am__objects_1 = unsetenv.lo
 am_libcommon_la_OBJECTS = xmalloc.lo xassert.lo xstring.lo xsignal.lo \
 	forward.lo strlcpy.lo list.lo net.lo fd.lo log.lo cbuf.lo \
@@ -108,7 +109,7 @@ am_libcommon_la_OBJECTS = xmalloc.lo xassert.lo xstring.lo xsignal.lo \
 	getopt1.lo $(am__objects_1) slurm_selecttype_info.lo \
 	slurm_resource_info.lo hostlist.lo slurm_step_layout.lo \
 	checkpoint.lo parse_time.lo job_options.lo global_defaults.lo \
-	timers.lo stepd_api.lo
+	timers.lo stepd_api.lo proc_args.lo 
 am__EXTRA_libcommon_la_SOURCES_DIST = unsetenv.c unsetenv.h
 libcommon_la_OBJECTS = $(am_libcommon_la_OBJECTS)
 libcommon_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
@@ -381,7 +382,8 @@ libcommon_la_SOURCES = \
 	global_defaults.c		\
 	timers.c timers.h		\
 	slurm_xlator.h			\
-	stepd_api.c stepd_api.h		
+	stepd_api.c stepd_api.h		\
+	proc_args.c proc_args.h		
 
 EXTRA_libcommon_la_SOURCES = \
 	$(extra_unsetenv_src)
@@ -487,6 +489,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/plugin.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/plugrack.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/plugstack.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/proc_args.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/read_config.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/safeopen.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurm_auth.Plo@am__quote@
