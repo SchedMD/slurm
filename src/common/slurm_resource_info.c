@@ -56,12 +56,12 @@
  *	given this number given the number of cpus_per_task and
  *	maximum sockets, cores, threads.  Note that the value of
  *	cpus is the lowest-level logical processor (LLLP).
- * IN mxsockets      - Job requested max sockets
- * IN mxcores        - Job requested max cores
- * IN mxthreads      - Job requested max threads
- * IN minsockets     - Job requested min sockets
- * IN mincores       - Job requested min cores
- * IN cpuspertask    - Job requested cpus per task
+ * IN max_sockets    - Job requested max sockets
+ * IN max_cores      - Job requested max cores
+ * IN max_threads    - Job requested max threads
+ * IN min_sockets    - Job requested min sockets
+ * IN min_cores      - Job requested min cores
+ * IN cpus_per_task  - Job requested cpus per task
  * IN ntaskspernode  - number of tasks per node
  * IN ntaskspersocket- number of tasks per socket
  * IN ntaskspercore  - number of tasks per core
@@ -75,12 +75,12 @@
  *
  * Note: used in both the select/{linear,cons_res} plugins.
  */
-int slurm_get_avail_procs(const uint16_t mxsockets,
-			  const uint16_t mxcores,
-			  const uint16_t mxthreads,
-			  const uint16_t minsockets,
-			  const uint16_t mincores,
-			  const uint16_t cpuspertask,
+int slurm_get_avail_procs(const uint16_t max_sockets,
+			  const uint16_t max_cores,
+			  const uint16_t max_threads,
+			  const uint16_t min_sockets,
+			  const uint16_t min_cores,
+			  uint16_t cpus_per_task,
 			  const uint16_t ntaskspernode,
 			  const uint16_t ntaskspersocket,
 			  const uint16_t ntaskspercore,
@@ -97,12 +97,6 @@ int slurm_get_avail_procs(const uint16_t mxsockets,
 {
 	uint16_t avail_cpus = 0, max_cpus = 0;
 	uint16_t max_avail_cpus = 0xffff;	/* for alloc_* accounting */
-	uint16_t max_sockets   = mxsockets;
-	uint16_t max_cores     = mxcores;
-	uint16_t max_threads   = mxthreads;
-	uint16_t min_sockets   = minsockets;
-	uint16_t min_cores     = mincores;
-	uint16_t cpus_per_task = cpuspertask;
 	int i;
 
         /* pick defaults for any unspecified items */
@@ -139,21 +133,14 @@ int slurm_get_avail_procs(const uint16_t mxsockets,
 	   and thread.  Only one level of logical processors */ 
 	case CR_CPU:
 	case CR_CPU_MEMORY:
-	case CR_MEMORY:
-		switch(cr_type) { 
-		case CR_CPU:
-		case CR_CPU_MEMORY:
-			if (*cpus >= alloc_lps)
-				*cpus -= alloc_lps;
-			else {
-				*cpus = 0;
-				error("cons_res: *cpus underflow");
-			}
-			break;
-		default:
-			break;
+		if (*cpus >= alloc_lps)
+			*cpus -= alloc_lps;
+		else {
+			*cpus = 0;
+			error("cons_res: *cpus underflow");
 		}
 
+	case CR_MEMORY:
 		/*** compute an overall maximum cpu count honoring ntasks* ***/
 		max_cpus  = *cpus;
 		if (ntaskspernode > 0) {

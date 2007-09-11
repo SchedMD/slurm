@@ -105,7 +105,7 @@ int compute_c_b_task_dist(struct select_cr_job *job,
 				get_resources_this_node(&cpus, &sockets, 
 							&cores, &threads, 
 							this_node, &alloc_sockets, 
-							&alloc_lps, &job->job_id);
+							&alloc_lps, job->job_id);
 				
 				avail_cpus = slurm_get_avail_procs(job->max_sockets, 
 								   job->max_cores, 
@@ -136,7 +136,7 @@ int compute_c_b_task_dist(struct select_cr_job *job,
 				get_resources_this_node(&cpus, &sockets, 
 							&cores, &threads, 
 							this_node, &alloc_sockets,
-							&alloc_lps, &job->job_id);
+							&alloc_lps, job->job_id);
 				
 				avail_cpus = slurm_get_avail_procs(job->max_sockets, 
 								   job->max_cores, 
@@ -495,7 +495,7 @@ int cr_dist(struct select_cr_job *job, int cyclic,
 		get_resources_this_node(&usable_cpus,  &usable_sockets, 
 					&usable_cores, &usable_threads, 
 					this_cr_node,  &alloc_sockets, 
-					&alloc_lps, &job->job_id);
+					&alloc_lps, job->job_id);
 		
 		avail_cpus = slurm_get_avail_procs(job->max_sockets,
 						   job->max_cores,
@@ -722,7 +722,7 @@ int cr_plane_dist(struct select_cr_job *job,
 		get_resources_this_node(&usable_cpus, &usable_sockets, 
 					&usable_cores, &usable_threads, 
 					this_cr_node,  &alloc_sockets, 
-					&alloc_lps, &job->job_id);
+					&alloc_lps, job->job_id);
 		
 		avail_cpus = slurm_get_avail_procs(job->max_sockets,
 						   job->max_cores,

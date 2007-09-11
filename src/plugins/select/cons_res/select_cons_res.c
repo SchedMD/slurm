@@ -325,7 +325,7 @@ void get_resources_this_node(uint16_t *cpus,
 			     struct node_cr_record *this_cr_node,
 			     uint16_t *alloc_sockets, 
 			     uint16_t *alloc_lps,
-			     uint32_t *jobid)
+			     uint32_t jobid)
 {
 	if (select_fast_schedule) {
 		*cpus    = this_cr_node->node_ptr->config_ptr->cpus;
@@ -343,10 +343,10 @@ void get_resources_this_node(uint16_t *cpus,
 
 	debug3("cons_res %u _get_resources host %s HW_ "
 	       "cpus %u sockets %u cores %u threads %u ", 
-	       *jobid, this_cr_node->node_ptr->name,
+	       jobid, this_cr_node->node_ptr->name,
 	       *cpus, *sockets, *cores, *threads);
 	debug3("cons_res %u _get_resources host %s Alloc_ sockets %u lps %u", 
-	       *jobid, this_cr_node->node_ptr->name, 
+	       jobid, this_cr_node->node_ptr->name, 
 	       *alloc_sockets, *alloc_lps);
 }
 
@@ -426,7 +426,7 @@ static uint16_t _get_avail_lps(struct job_record *job_ptr,
 	}
 	get_resources_this_node(&cpus, &sockets, &cores, &threads, 
 				this_cr_node, &alloc_sockets,
-				&alloc_lps, &job_ptr->job_id);
+				&alloc_lps, job_ptr->job_id);
 	if (all_available) {
 		alloc_sockets = 0;
 		alloc_lps     = 0;
@@ -450,6 +450,28 @@ static uint16_t _get_avail_lps(struct job_record *job_ptr,
 					   this_cr_node->node_ptr->name);
 	return(avail_cpus);
 }		
+
+/* return the number of cpus on the indexed node
+   that can be used by the given job */
+static int _get_avail_cpus(struct job_record *job_ptr, const int index,
+			   const bool test_only) {
+
+	int cpus, pos;
+	uint16_t * layout_ptr = NULL;
+
+	if (job_ptr->details)
+		layout_ptr = job_ptr->details->req_node_layout;
+	
+	cpus = _get_avail_lps(job_ptr, index, test_only);
+	if (layout_ptr && bit_test(job_ptr->details->req_node_bitmap, index)) {
+		pos = bit_get_pos_num(job_ptr->details->req_node_bitmap,
+				      index);
+		cpus = MIN(cpus, layout_ptr[pos]);
+	} else if (layout_ptr) {
+		cpus = 0; /* should not happen? */
+	}
+	return cpus;
+}
 
 /* xfree an array of node_cr_record */
 static void _xfree_select_nodes(struct node_cr_record *ptr, int select_node_cnt)
@@ -1501,7 +1523,7 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t * bitmap,
 			     uint32_t min_nodes, uint32_t max_nodes, 
 			     uint32_t req_nodes, bool test_only)
 {
-	int i, index, error_code = SLURM_ERROR, sufficient;
+	int i, index, error_code = SLURM_ERROR;
 	int *consec_nodes;	/* how many nodes we can add from this 
 				 * consecutive set of nodes */
 	int *consec_cpus;	/* how many nodes we can add from this 
@@ -1510,22 +1532,21 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t * bitmap,
 	int *consec_end;	/* where this consecutive set ends (index) */
 	int *consec_req;	/* are nodes from this set required 
 				 * (in req_bitmap) */
-	int consec_index, consec_size;
+	int consec_index, consec_size, sufficient;
 	int rem_cpus, rem_nodes;	/* remaining resources desired */
 	int best_fit_nodes, best_fit_cpus, best_fit_req;
-	int best_fit_location = 0, best_fit_sufficient;
+	int best_fit_sufficient, best_fit_location = 0;
 	int avail_cpus;
-	uint16_t plane_size = 0;
-	//int asockets, acores, athreads, acpus;
-	bool all_avail = false;
 	struct multi_core_data *mc_ptr = NULL;
 	int ll; /* layout array index */
 	uint16_t * layout_ptr = NULL;
 
-	if (job_ptr->details)
-		layout_ptr = job_ptr->details->req_node_layout;
-
 	xassert(bitmap);
+
+	if (job_ptr->details) {
+		layout_ptr = job_ptr->details->req_node_layout;
+		mc_ptr = job_ptr->details->mc_ptr;
+	}
 
 	consec_index = 0;
 	consec_size = 50;	/* start allocation for 50 sets of 
@@ -1540,9 +1561,6 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t * bitmap,
 	consec_cpus[consec_index] = consec_nodes[consec_index] = 0;
 	consec_req[consec_index] = -1;	/* no required nodes here by default */
 
-	if (job_ptr->details)
-		mc_ptr = job_ptr->details->mc_ptr;
-
 	/* This is the case if -O/--overcommit  is true */ 
 	debug3("job_ptr->num_procs %u", job_ptr->num_procs);
 	if (mc_ptr && (job_ptr->num_procs == job_ptr->details->min_nodes)) {
@@ -1556,17 +1574,14 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t * bitmap,
 		rem_nodes = req_nodes;
 	else
 		rem_nodes = min_nodes;
+
 	for (index = 0, ll = -1; index < select_node_cnt; index++) {
 		if (layout_ptr && bit_test(job_ptr->details->req_node_bitmap, index))
 			ll++;
 		if (bit_test(bitmap, index)) {
 			if (consec_nodes[consec_index] == 0)
 				consec_start[consec_index] = index;
-			if (!test_only)
-				all_avail = false;
-			else
-				all_avail = true;
-			avail_cpus = _get_avail_lps(job_ptr, index, all_avail);
+			avail_cpus = _get_avail_lps(job_ptr, index, test_only);
 			if (layout_ptr
 			    && bit_test(job_ptr->details->req_node_bitmap, index)) {
 				avail_cpus = MIN(avail_cpus, layout_ptr[ll]);
@@ -1596,16 +1611,11 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t * bitmap,
 			consec_end[consec_index] = index - 1;
 			if (++consec_index >= consec_size) {
 				consec_size *= 2;
-				xrealloc(consec_cpus,
-					 sizeof(int) * consec_size);
-				xrealloc(consec_nodes,
-					 sizeof(int) * consec_size);
-				xrealloc(consec_start,
-					 sizeof(int) * consec_size);
-				xrealloc(consec_end,
-					 sizeof(int) * consec_size);
-				xrealloc(consec_req,
-					 sizeof(int) * consec_size);
+				xrealloc(consec_cpus, sizeof(int)*consec_size);
+				xrealloc(consec_nodes, sizeof(int)*consec_size);
+				xrealloc(consec_start, sizeof(int)*consec_size);
+				xrealloc(consec_end, sizeof(int)*consec_size);
+				xrealloc(consec_req, sizeof(int)*consec_size);
 			}
 			consec_cpus[consec_index] = 0;
 			consec_nodes[consec_index] = 0;
@@ -1667,19 +1677,8 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t * bitmap,
 				bit_set(bitmap, i);
 				rem_nodes--;
 				max_nodes--;
-				if (!test_only)
-					all_avail = false;
-				else
-					all_avail = true;
-				avail_cpus = _get_avail_lps(job_ptr, i, all_avail);
-				if (layout_ptr
-				    && bit_test(job_ptr->details->req_node_bitmap, i)) {
-					ll = bit_get_pos_num(job_ptr->details->
-							req_node_bitmap, i);
-					avail_cpus = MIN(avail_cpus, layout_ptr[ll]);
-				} else if (layout_ptr) {
-					avail_cpus = 0; /* should not happen? */
-				}
+				avail_cpus = _get_avail_cpus(job_ptr, i,
+							     test_only);
 				rem_cpus -= avail_cpus;
 			}
 			for (i = (best_fit_req - 1);
@@ -1689,19 +1688,8 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t * bitmap,
 					break;
 				if (bit_test(bitmap, i)) 
 					continue;
-				if (!test_only)
-					all_avail = false;
-				else
-					all_avail = true;
-				avail_cpus = _get_avail_lps(job_ptr, i, all_avail);
-				if (layout_ptr
-				    && bit_test(job_ptr->details->req_node_bitmap, i)) {
-					ll = bit_get_pos_num(job_ptr->details->
-							req_node_bitmap, i);
-					avail_cpus = MIN(avail_cpus, layout_ptr[ll]);
-				} else if (layout_ptr) {
-					avail_cpus = 0; /* should not happen? */
-				}
+				avail_cpus = _get_avail_cpus(job_ptr, i,
+							     test_only);
 				if(avail_cpus <= 0)
 					continue;
 				rem_cpus -= avail_cpus;
@@ -1717,19 +1705,8 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t * bitmap,
 					break;
 				if (bit_test(bitmap, i))
 					continue;
-				if (!test_only)
-					all_avail = false;
-				else
-					all_avail = true;
-				avail_cpus = _get_avail_lps(job_ptr, i, all_avail);
-				if (layout_ptr
-				    && bit_test(job_ptr->details->req_node_bitmap, i)) {
-					ll = bit_get_pos_num(job_ptr->details->
-							req_node_bitmap, i);
-					avail_cpus = MIN(avail_cpus, layout_ptr[ll]);
-				} else if (layout_ptr) {
-					avail_cpus = 0; /* should not happen? */
-				}
+				avail_cpus = _get_avail_cpus(job_ptr, i,
+							     test_only);
 				if(avail_cpus <= 0)
 					continue;
 				rem_cpus -= avail_cpus;
@@ -1756,15 +1733,13 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t * bitmap,
 		goto cleanup;
 	
 	if (!test_only) {
-		int jobid, job_nodecnt, j, k;
-		bitoff_t size;
+		int j, k;
+		uint16_t plane_size = 0;
 		static struct select_cr_job *job;
 		job = xmalloc(sizeof(struct select_cr_job));
-		jobid = job_ptr->job_id;
-		job->job_id = jobid;
-		job_nodecnt = bit_set_count(bitmap);
-		job->nhosts = job_nodecnt;
-		job->nprocs = MAX(job_ptr->num_procs, job_nodecnt);
+		job->job_id = job_ptr->job_id;
+		job->nhosts = bit_set_count(bitmap);
+		job->nprocs = MAX(job_ptr->num_procs, job->nhosts);
 		job->cpus_per_task = job_ptr->details->cpus_per_task;
 		job->ntasks_per_node = job_ptr->details->ntasks_per_node;
 		if (mc_ptr) {
@@ -1788,15 +1763,9 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t * bitmap,
 			job->ntasks_per_core   = 0;
 		}
 
-		size = bit_size(bitmap);
-		job->node_bitmap = (bitstr_t *) bit_alloc(size);
+		job->node_bitmap = bit_copy(bitmap);
 		if (job->node_bitmap == NULL)
-			fatal("bit_alloc malloc failure");
-		for (i = 0; i < size; i++) {
-			if (!bit_test(bitmap, i))
-				continue;
-			bit_set(job->node_bitmap, i);
-		}
+			fatal("bit_copy malloc failure");
 		
 		job->host          = (char **)    xmalloc(job->nhosts * sizeof(char *));
 		job->cpus          = (uint16_t *) xmalloc(job->nhosts * sizeof(uint16_t));
@@ -1885,7 +1854,6 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t * bitmap,
 								   select_fast_schedule);
 				if (error_code != SLURM_SUCCESS) {
 					error(" Error in compute_c_b_task_dist");
-					return error_code;
 				}
 				break;
 			}
