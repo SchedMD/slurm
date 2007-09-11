@@ -130,6 +130,11 @@ if {[wait_for_file $file_err] == 0} {
 			incr matches
 			exp_continue
 		}
+		-re "not found" {
+			send_user "These errors are expected, no worries\n"
+			incr matches
+			exp_continue
+		}
 		eof {
 			wait
 		}

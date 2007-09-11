@@ -55,13 +55,6 @@ set no_bulk       "set issue_dgo false; dset TV::bulk_launch_enabled false"
 print_header $test_id
 
 #
-# Put desired SLURM install directory at head of search path for bulk launch 
-# command to work (runs "srun" without path)
-#
-set env(PATH) "$slurm_dir/bin:$env(PATH)"
-send_user "\n $env(PATH)\n"
-
-#
 # Test for existence of mpi compiler and totalview
 #
 if {[info exists mpicc] == 0} {
@@ -84,6 +77,17 @@ if {[test_front_end] != 0} {
         send_user "\nWARNING: This test is incompatable with front-end systems\n"
         exit 0
 }
+if {[test_aix] == 1} {
+	send_user "WARNING: Test is incompatible with AIX\n"
+	exit 0
+}
+
+#
+# Put desired SLURM install directory at head of search path for bulk launch
+# command to work (runs "srun" without path)
+#
+set env(PATH) "$slurm_dir/bin:$env(PATH)"
+send_user "\n $env(PATH)\n"
 
 #
 # Delete left-over program and rebuild it

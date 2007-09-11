@@ -1665,12 +1665,12 @@ extern int job_complete(uint32_t job_id, uid_t uid, bool requeue,
 		if (job_return_code == NO_VAL) {
 			job_ptr->job_state = JOB_CANCELLED| job_comp_flag;
 			job_ptr->requid = uid;
-		} else if (WEXITSTATUS(job_return_code)) {
+		} else if (WIFEXITED(job_return_code) &&
+		           WEXITSTATUS(job_return_code)) {
 			job_ptr->job_state = JOB_FAILED   | job_comp_flag;
 			job_ptr->exit_code = job_return_code;
 			job_ptr->state_reason = FAIL_EXIT_CODE;
-		}
-		else if (job_comp_flag &&		/* job was running */
+		} else if (job_comp_flag &&		/* job was running */
 			 (job_ptr->end_time < now)) {	/* over time limit */
 			job_ptr->job_state = JOB_TIMEOUT  | job_comp_flag;
 			job_ptr->exit_code = MAX(job_ptr->exit_code, 1);

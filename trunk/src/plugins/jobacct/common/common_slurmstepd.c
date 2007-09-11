@@ -62,7 +62,7 @@ extern int common_set_proctrack_container_id(uint32_t id)
 		info("Warning: jobacct: set_proctrack_container_id: "
 		     "cont_id is already set to %d you are setting it to %d",
 		     cont_id, id);
-	if(id <= 0) {
+	if((int)id <= 0) {
 		error("jobacct: set_proctrack_container_id: "
 		      "I was given most likely an unset cont_id %d",
 		      id);
