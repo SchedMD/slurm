@@ -304,7 +304,7 @@ static void *_watch_tasks(void *arg)
 {
 
 	while(!jobacct_shutdown) {	/* Do this until shutdown is requested */
-		if(!suspended) {
+		if(!jobacct_suspended) {
 			_get_process_data();	/* Update the data */ 
 		}
 		sleep(freq);
