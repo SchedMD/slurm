@@ -308,7 +308,8 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/slurm/jobacct_storage_pgsql.so
 %{_libdir}/slurm/jobcomp_none.so
 %{_libdir}/slurm/jobcomp_filetxt.so
-%{_libdir}/slurm/jobcomp_database.so
+%{_libdir}/slurm/jobcomp_mysql.so
+%{_libdir}/slurm/jobcomp_pgsql.so
 %{_libdir}/slurm/jobcomp_script.so
 %{_libdir}/slurm/proctrack_pgid.so
 %{_libdir}/slurm/proctrack_linuxproc.so
