@@ -1,6 +1,9 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins.
 
+* Changes in SLURM 1.2.17
+=========================
+
 * Changes in SLURM 1.2.16
 =========================
  -- Add --overcommit option to the salloc command.
@@ -17,7 +20,6 @@ documents those changes that are of interest to users and admins.
  -- Execute task-prolog within proctrack container to insure that all 
     child processes get terminated.
  -- Fixed job accounting to work with sgi_job proctrack plugin.
-
 
 * Changes in SLURM 1.2.15
 =========================
