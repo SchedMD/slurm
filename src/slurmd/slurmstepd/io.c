@@ -178,8 +178,10 @@ struct window_info {
 	slurmd_job_t *job;
 	slurm_fd pty_fd;
 };
+#ifdef HAVE_PTY_H
 static void  _spawn_window_manager(slurmd_task_info_t *task, slurmd_job_t *job);
 static void *_window_manager(void *arg);
+#endif
 
 /**********************************************************************
  * General declarations
@@ -674,6 +676,7 @@ again:
 /**********************************************************************
  * Pseudo terminal functions
  **********************************************************************/
+#ifdef HAVE_PTY_H
 static void *_window_manager(void *arg)
 {
 	struct window_info *win_info = (struct window_info *) arg;
@@ -781,6 +784,7 @@ _spawn_window_manager(slurmd_task_info_t *task, slurmd_job_t *job)
 	if (pthread_create(&win_id, &attr, &_window_manager, (void *) win_info))
 		error("pthread_create(pty_conn): %m");
 }
+#endif
 
 /**********************************************************************
  * General fuctions
@@ -808,6 +812,7 @@ _init_task_stdio_fds(slurmd_task_info_t *task, slurmd_job_t *job)
 	/*
 	 *  Initialize stdin
 	 */
+#ifdef HAVE_PTY_H
 	if (job->pty) {
 		/* All of the stdin fails unless EVERY
 		 * task gets an eio object for stdin.
@@ -837,7 +842,9 @@ _init_task_stdio_fds(slurmd_task_info_t *task, slurmd_job_t *job)
 			task->in = _create_task_in_eio(task->to_stdin, job);
 			eio_new_initial_obj(job->eio, (void *)task->in);
 		}
-	} else if (task->ifname != NULL) {
+	} else 
+#endif
+	if (task->ifname != NULL) {
 		/* open file on task's stdin */
 		debug5("  stdin file name = %s", task->ifname);
 		if ((task->stdin_fd = open(task->ifname, O_RDONLY)) == -1) {
