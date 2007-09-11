@@ -51,7 +51,7 @@ make_bash_script $file_in "
 #
 # Submit a slurm job that will execute 'id' on 1 node and over task_cnt tasks
 #
-spawn $sbatch --tasks=$task_cnt --overcommit -N1 --output=$file_out -t1 $file_in
+spawn $sbatch --ntasks=$task_cnt --overcommit -N1 --output=$file_out -t1 $file_in
 expect {
 	-re "Submitted batch job ($number)" {
 		set job_id $expect_out(1,string)
