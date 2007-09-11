@@ -842,9 +842,10 @@ _init_task_stdio_fds(slurmd_task_info_t *task, slurmd_job_t *job)
 			task->in = _create_task_in_eio(task->to_stdin, job);
 			eio_new_initial_obj(job->eio, (void *)task->in);
 		}
-	} else 
-#endif
+	} else if (task->ifname != NULL) {
+#else
 	if (task->ifname != NULL) {
+#endif
 		/* open file on task's stdin */
 		debug5("  stdin file name = %s", task->ifname);
 		if ((task->stdin_fd = open(task->ifname, O_RDONLY)) == -1) {
@@ -873,6 +874,7 @@ _init_task_stdio_fds(slurmd_task_info_t *task, slurmd_job_t *job)
 	/*
 	 *  Initialize stdout
 	 */
+#ifdef HAVE_PTY_H
 	if (job->pty) {
 		if (task->gtid == 0) {
 			task->stdout_fd = dup(task->stdin_fd);
@@ -892,6 +894,9 @@ _init_task_stdio_fds(slurmd_task_info_t *task, slurmd_job_t *job)
 			task->from_stdout = -1;  /* not used */
 		}
 	} else if (task->ofname != NULL) {
+#else
+	if (task->ofname != NULL) {
+#endif
 		/* open file on task's stdout */
 		debug5("  stdout file name = %s", task->ofname);
 		task->stdout_fd = open(task->ofname, file_flags, 0666);
@@ -927,6 +932,7 @@ _init_task_stdio_fds(slurmd_task_info_t *task, slurmd_job_t *job)
 	/*
 	 *  Initialize stderr
 	 */
+#ifdef HAVE_PTY_H
 	if (job->pty) {
 		if (task->gtid == 0) {
 			task->stderr_fd = dup(task->stdin_fd);
@@ -946,6 +952,9 @@ _init_task_stdio_fds(slurmd_task_info_t *task, slurmd_job_t *job)
 			task->from_stderr = -1;  /* not used */
 		}
 	} else if (task->efname != NULL) {
+#else
+	if (task->efname != NULL) {
+#endif
 		/* open file on task's stdout */
 		debug5("  stderr file name = %s", task->efname);
 		task->stderr_fd = open(task->efname, file_flags, 0666);
