@@ -39,24 +39,32 @@ slurm_ctl_conf_to_hv(slurm_ctl_conf_t* conf, HV* hv)
 	STORE_FIELD(hv, conf, next_job_id, uint32_t);
 	STORE_FIELD(hv, conf, fast_schedule, uint16_t);
 	STORE_FIELD(hv, conf, inactive_limit, uint16_t);
-	if(conf->job_acct_loc)
-		STORE_FIELD(hv, conf, job_acct_loc, charp);
-	STORE_FIELD(hv, conf, job_acct_freq, uint16_t);
-	if(conf->job_acct_type)
-		STORE_FIELD(hv, conf, job_acct_type, charp);
-	if(conf->database_type)
-		STORE_FIELD(hv, conf, database_type, charp);
-	if(conf->database_user)
-		STORE_FIELD(hv, conf, database_user, charp);
-	if(conf->database_host)
-		STORE_FIELD(hv, conf, database_host, charp);
-	if(conf->database_pass)
-		STORE_FIELD(hv, conf, database_pass, charp);
-	STORE_FIELD(hv, conf, database_port, uint32_t);
+	if(conf->job_acct_gather_type)
+		STORE_FIELD(hv, conf, job_acct_gather_type, charp);
+	 STORE_FIELD(hv, conf, job_acct_gather_freq, uint16_t);
+	if(conf->job_acct_storage_loc)
+		STORE_FIELD(hv, conf, job_acct_storage_loc, charp);
+	if(conf->job_acct_storage_type)
+		STORE_FIELD(hv, conf, job_acct_storage_type, charp);
+	if(conf->job_acct_storage_user)
+		STORE_FIELD(hv, conf, job_acct_storage_user, charp);
+	if(conf->job_acct_storage_host)
+		STORE_FIELD(hv, conf, job_acct_storage_host, charp);
+	if(conf->job_acct_storage_pass)
+		STORE_FIELD(hv, conf, job_acct_storage_pass, charp);
+	STORE_FIELD(hv, conf, job_acct_storage_port, uint32_t);
 	if(conf->job_comp_type)
 		STORE_FIELD(hv, conf, job_comp_type, charp);
 	if(conf->job_comp_loc)
 		STORE_FIELD(hv, conf, job_comp_loc, charp);
+	if(conf->job_comp_user)
+		STORE_FIELD(hv, conf, job_comp_user, charp);
+	if(conf->job_comp_host)
+		STORE_FIELD(hv, conf, job_comp_host, charp);
+	if(conf->job_comp_pass)
+		STORE_FIELD(hv, conf, job_comp_pass, charp);
+	STORE_FIELD(hv, conf, job_comp_port, uint32_t);
+	STORE_FIELD(hv, conf, job_file_append, uint16_t); 
 	STORE_FIELD(hv, conf, kill_wait, uint16_t);
 	if(conf->mail_prog)
 		STORE_FIELD(hv, conf, mail_prog, charp);
@@ -145,6 +153,9 @@ slurm_ctl_conf_to_hv(slurm_ctl_conf_t* conf, HV* hv)
 		STORE_FIELD(hv, conf, node_prefix, charp);
 	STORE_FIELD(hv, conf, tree_width, uint16_t);
 	STORE_FIELD(hv, conf, use_pam, uint16_t);
+	if(conf->unkillable_program)
+		STORE_FIELD(hv, conf, unkillable_program, charp);
+	STORE_FIELD(hv, conf, unkillable_timeout, uint16_t);
 	return 0;
 }
 
