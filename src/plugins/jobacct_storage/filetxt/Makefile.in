@@ -75,7 +75,7 @@ am__installdirs = "$(DESTDIR)$(pkglibdir)"
 pkglibLTLIBRARIES_INSTALL = $(INSTALL)
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
 jobacct_storage_filetxt_la_DEPENDENCIES =  \
-	$(top_builddir)/src/common/libcommon.la
+	$(top_builddir)/src/api/libslurmhelper.la
 am_jobacct_storage_filetxt_la_OBJECTS = jobacct_storage_filetxt.lo \
 	filetxt_jobacct_process.lo
 jobacct_storage_filetxt_la_OBJECTS =  \
@@ -272,7 +272,7 @@ jobacct_storage_filetxt_la_SOURCES = jobacct_storage_filetxt.c \
 		filetxt_jobacct_process.c filetxt_jobacct_process.h 
 
 jobacct_storage_filetxt_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
-jobacct_storage_filetxt_la_LIBADD = $(top_builddir)/src/common/libcommon.la
+jobacct_storage_filetxt_la_LIBADD = $(top_builddir)/src/api/libslurmhelper.la
 all: all-am
 
 .SUFFIXES:

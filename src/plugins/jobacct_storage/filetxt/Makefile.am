@@ -12,5 +12,4 @@ pkglib_LTLIBRARIES = jobacct_storage_filetxt.la
 jobacct_storage_filetxt_la_SOURCES = jobacct_storage_filetxt.c \
 		filetxt_jobacct_process.c filetxt_jobacct_process.h 
 jobacct_storage_filetxt_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
-jobacct_storage_filetxt_la_LIBADD  = $(top_builddir)/src/common/libcommon.la
-
+jobacct_storage_filetxt_la_LIBADD  = $(top_builddir)/src/api/libslurmhelper.la
