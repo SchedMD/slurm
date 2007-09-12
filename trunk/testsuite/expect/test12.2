@@ -180,9 +180,7 @@ if { $mem_used == -1 } {
 # Compute error in KB
 set diff_mem [expr $mem_used - $mem_size]
 set error_mem [expr abs($diff_mem)]
-if {$aix && $error_mem > 0} {
-	send_user "\nSUCCESS: sacct memory use discrepancy of $error_mem KB but on AIX that is ok\n"
-} elseif {$error_mem > 4000} {
+if {$error_mem > 4000} {
 	send_user "\nFAILURE: sacct memory use discrepancy of $error_mem KB\n"
 	send_user "  Wanted $mem_size KB, got $mem_used KB\n"
 	set exit_code 1
@@ -318,9 +316,7 @@ if { $mem_used == -1 } {
 # Compute error in KB
 set diff_mem [expr $mem_used - $mem_size]
 set error_mem [expr abs($diff_mem)]
-if {$aix && $error_mem > 0} {
-	send_user "\nSUCCESS: sacct memory use discrepancy of $error_mem KB but on AIX that is ok\n"
-} elseif {$error_mem > 4000} {
+if {$error_mem > 4000} {
 	send_user "\nFAILURE: sacct memory use discrepancy of $error_mem KB\n"
 	send_user "  Wanted $mem_size KB, got $mem_used KB\n"
 	set exit_code 1
