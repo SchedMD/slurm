@@ -59,11 +59,11 @@ set supported 0
 log_user 0
 spawn $scontrol show config
 expect {
-	-re "JobAcctType *= jobacct/linux" {
+	-re "JobAcctGatherType *= jobacct_gather/linux" {
 		set supported 1
 		exp_continue
 	}
-	-re "JobAcctType *= jobacct/aix" {
+	-re "JobAcctGatherType *= jobacct_gather/aix" {
 		set supported 1
 		set aix 1
 		exp_continue
