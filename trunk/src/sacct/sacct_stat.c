@@ -77,7 +77,7 @@ int _sacct_query(slurm_step_layout_t *step_layout, uint32_t job_id,
 	step.header.partition = NULL;
 	step.header.blockid = NULL;
 	step.stepnum = step_id;
-	step.nodes = xstrdup(step_layout->node_list);
+	step.nodes = step_layout->node_list;
 	step.stepname = NULL;
 	step.status = JOB_RUNNING;
 	step.ntasks = 0;
@@ -196,8 +196,10 @@ int sacct_stat(uint32_t jobid, uint32_t stepid)
 	}
 
 	_sacct_query(step_layout, jobid, stepid);
-	slurm_step_layout_destroy(step_layout);	
 	
 	_process_results();
+	
+	slurm_step_layout_destroy(step_layout);	
+	
 	return rc;
 }
