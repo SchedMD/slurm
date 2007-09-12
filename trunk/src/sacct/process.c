@@ -57,6 +57,7 @@ void find_hostname(uint32_t pos, char *hosts, char *host)
 	} else {
 		snprintf(host, 50, "'N/A'");
 	}
+	hostlist_destroy(hostlist);
 	return;
 }
 
