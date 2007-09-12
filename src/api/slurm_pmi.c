@@ -156,6 +156,7 @@ int  slurm_get_kvs_comm_set(struct kvs_comm_set **kvs_set_ptr,
 	
 	if (kvs_set_ptr == NULL)
 		return EINVAL;
+	*kvs_set_ptr = NULL;	/* initialization */
 
 	if ((rc = _get_addr()) != SLURM_SUCCESS) {
 		error("_get_addr: %m");

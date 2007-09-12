@@ -3,8 +3,9 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 1.2.17
 =========================
- -- In select/cons_res properly release resources allocated to job being suspended
-    (rmbreak.patch, from Chris Holmes, HP).
+ -- In select/cons_res properly release resources allocated to job being 
+    suspended (rmbreak.patch, from Chris Holmes, HP).
+ -- Fix AIX linking problem for PMI (mpich2) support.
 
 * Changes in SLURM 1.2.16
 =========================

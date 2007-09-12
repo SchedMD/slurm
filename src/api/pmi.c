@@ -112,8 +112,11 @@ struct kvs_rec {
 	char **		kvs_values;
 };
 
+#define _DEBUG 0
+
 static void _del_kvs_rec( struct kvs_rec *kvs_ptr );
 static void _init_kvs( char kvsname[] );
+static void inline _kvs_dump(void);
 static int  _kvs_put( const char kvsname[], const char key[], 
 		const char value[], int local);
 static void _kvs_swap(struct kvs_rec *kvs_ptr, int inx1, int inx2);
@@ -834,7 +837,10 @@ static void _init_kvs( char kvsname[] )
 	i = kvs_rec_cnt;
 	kvs_rec_cnt++;
 	kvs_recs = realloc(kvs_recs, (sizeof(struct kvs_rec) * kvs_rec_cnt));
-	kvs_recs[i].kvs_name = strndup(kvsname, PMI_MAX_KVSNAME_LEN);
+	/* DO NOT CHANGE TO STRNDUP(), NOT SUPPORTED ON AIX */
+	kvs_recs[i].kvs_name = malloc(PMI_MAX_KVSNAME_LEN);
+	if (kvs_recs[i].kvs_name)
+		strncpy(kvs_recs[i].kvs_name, kvsname, PMI_MAX_KVSNAME_LEN);
 	kvs_recs[i].kvs_state = KVS_STATE_LOCAL;
 	kvs_recs[i].kvs_cnt = 0;
 	kvs_recs[i].kvs_inx = 0;
@@ -1077,13 +1083,16 @@ static int _kvs_put( const char kvsname[], const char key[], const char value[],
 				kvs_recs[i].kvs_key_states[j] = KVS_KEY_STATE_LOCAL;
 			/* else leave unchanged */
 			/* replace the existing value */
-			free(kvs_recs[i].kvs_values[j]);
-			kvs_recs[i].kvs_values[j] = 
-					strndup(value, PMI_MAX_VAL_LEN);
+			/* DO NOT CHANGE TO STRNDUP(), NOT SUPPORTED ON AIX */
+			if (kvs_recs[i].kvs_values[j] == NULL)
+				kvs_recs[i].kvs_values[j] = malloc(PMI_MAX_VAL_LEN);
 			if (kvs_recs[i].kvs_values[j] == NULL)
 				rc = PMI_FAIL;	/* malloc error */
-			else
+			else {
 				rc = PMI_SUCCESS;
+				strncpy(kvs_recs[i].kvs_values[j], value, 
+					PMI_MAX_VAL_LEN);
+			}
 			goto fini;
 		}
 		/* create new key */
@@ -1104,18 +1113,23 @@ static int _kvs_put( const char kvsname[], const char key[], const char value[],
 			kvs_recs[i].kvs_key_states[j] = KVS_KEY_STATE_LOCAL;
 		else
 			kvs_recs[i].kvs_key_states[j] = KVS_KEY_STATE_GLOBAL;
-		kvs_recs[i].kvs_values[j] = strndup(value, PMI_MAX_VAL_LEN);
-		kvs_recs[i].kvs_keys[j]   = strndup(key, PMI_MAX_KEY_LEN);
+		/* DO NOT CHANGE TO STRNDUP(), NOT SUPPORTED ON AIX */
+		kvs_recs[i].kvs_values[j] = malloc(PMI_MAX_VAL_LEN);
+		kvs_recs[i].kvs_keys[j]   = malloc(PMI_MAX_KEY_LEN);
 		if ((kvs_recs[i].kvs_values[j] == NULL)
 		||  (kvs_recs[i].kvs_keys[j] == NULL))
 			rc = PMI_FAIL;	/* malloc error */
-		else
+		else {
 			rc = PMI_SUCCESS;
+			strncpy(kvs_recs[i].kvs_values[j], value, PMI_MAX_VAL_LEN);
+			strncpy(kvs_recs[i].kvs_keys[j],   key,   PMI_MAX_KEY_LEN);
+		}
 		goto fini;
 	}
 	rc = PMI_ERR_INVALID_KVS;
 
 fini:	pthread_mutex_unlock(&kvs_mutex);
+	_kvs_dump();
 	return rc;
 }
 
@@ -1810,4 +1824,23 @@ static int IsPmiKey(char * key) {
 
 	/* add code to test special key if needed */
 	return 0;
+}
+
+static void inline _kvs_dump(void)
+{
+#if _DEBUG
+	int i, j;
+
+	for (i=0; i<kvs_rec_cnt; i++) {
+		info("name=%s state=%u cnt=%u inx=%u",
+			kvs_recs[i].kvs_name, kvs_recs[i].kvs_state,
+			kvs_recs[i].kvs_cnt, kvs_recs[i].kvs_inx);
+		for (j=0; j<kvs_recs[i].kvs_cnt; j++) {
+			info("  state=%u key=%s value=%s",
+				kvs_recs[i].kvs_key_states[j],
+				kvs_recs[i].kvs_keys[j],
+				kvs_recs[i].kvs_values[j]);
+		}
+	}
+#endif
 }
