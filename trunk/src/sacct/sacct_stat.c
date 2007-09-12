@@ -77,12 +77,11 @@ int _sacct_query(slurm_step_layout_t *step_layout, uint32_t job_id,
 	step.header.partition = NULL;
 	step.header.blockid = NULL;
 	step.stepnum = step_id;
-	step.nodes = step_layout->node_list;
+	step.nodes = xstrdup(step_layout->node_list);
 	step.stepname = NULL;
 	step.status = JOB_RUNNING;
 	step.ntasks = 0;
 	slurm_msg_t_init(&msg);
-	
 	/* Common message contents */
 	r.job_id      = job_id;
 	r.step_id     = step_id;
