@@ -41,7 +41,7 @@ slurm_ctl_conf_to_hv(slurm_ctl_conf_t* conf, HV* hv)
 	STORE_FIELD(hv, conf, inactive_limit, uint16_t);
 	if(conf->job_acct_gather_type)
 		STORE_FIELD(hv, conf, job_acct_gather_type, charp);
-	 STORE_FIELD(hv, conf, job_acct_gather_freq, uint16_t);
+	STORE_FIELD(hv, conf, job_acct_gather_freq, uint16_t);
 	if(conf->job_acct_storage_loc)
 		STORE_FIELD(hv, conf, job_acct_storage_loc, charp);
 	if(conf->job_acct_storage_type)
@@ -53,10 +53,10 @@ slurm_ctl_conf_to_hv(slurm_ctl_conf_t* conf, HV* hv)
 	if(conf->job_acct_storage_pass)
 		STORE_FIELD(hv, conf, job_acct_storage_pass, charp);
 	STORE_FIELD(hv, conf, job_acct_storage_port, uint32_t);
-	if(conf->job_comp_type)
-		STORE_FIELD(hv, conf, job_comp_type, charp);
 	if(conf->job_comp_loc)
 		STORE_FIELD(hv, conf, job_comp_loc, charp);
+	if(conf->job_comp_type)
+		STORE_FIELD(hv, conf, job_comp_type, charp);
 	if(conf->job_comp_user)
 		STORE_FIELD(hv, conf, job_comp_user, charp);
 	if(conf->job_comp_host)
