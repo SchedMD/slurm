@@ -64,7 +64,7 @@ send_user "\ntask affinity plugin installed\n"
 # Build a test program to report affinity by task
 #
 exec $bin_rm -f $file_prog
-exec $bin_make -f /dev/null $file_prog
+exec $bin_cc -I$build_dir $file_prog.c -o $file_prog
 exec $bin_chmod 700 $file_prog
 
 #

@@ -53,6 +53,7 @@ if [file exists globals.local] {
 # Used to locate binaries, libraries, and header files.
 #
 cset slurm_dir   "/usr"
+cset build_dir   "../../"
 cset sacct       "${slurm_dir}/bin/sacct"
 cset salloc      "${slurm_dir}/bin/salloc"
 cset sattach     "${slurm_dir}/bin/sattach"
