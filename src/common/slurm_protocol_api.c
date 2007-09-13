@@ -804,10 +804,10 @@ int slurm_receive_msg(slurm_fd fd, slurm_msg_t *msg, int timeout)
                 timeout  = slurm_get_msg_timeout() * 1000; 
 
 	else if(timeout > (slurm_get_msg_timeout() * 10000)) {
-		error("You are sending a message with very long "
+		debug("You are receiving a message with very long "
 		      "timeout of %d seconds", (timeout/1000));
 	} else if(timeout < 1000) {
-		error("You are sending a message with a very short "
+		error("You are receiving a message with a very short "
 		      "timeout of %d msecs", timeout);
 	} 
 	
@@ -950,7 +950,7 @@ List slurm_receive_msgs(slurm_fd fd, int steps, int timeout)
 	debug4("orig_timeout was %d we have %d steps and a timeout of %d",
 	       orig_timeout, steps, timeout);
 	if(orig_timeout >= (slurm_get_msg_timeout() * 10000)) {
-		error("slurm_receive_msgs: "
+		debug("slurm_receive_msgs: "
 		      "You are sending a message with timeout's greater "
 		      "than %d seconds, your's is %d seconds", 
 		      (slurm_get_msg_timeout() * 10), 
@@ -1111,7 +1111,7 @@ int slurm_receive_msg_and_forward(slurm_fd fd, slurm_addr *orig_addr,
                 timeout  = slurm_get_msg_timeout() * 1000; 
 		
 	if(timeout >= (slurm_get_msg_timeout() * 10000)) {
-		error("slurm_receive_msg_and_forward: "
+		debug("slurm_receive_msg_and_forward: "
 		      "You are sending a message with timeout's greater "
 		      "than %d seconds, your's is %d seconds", 
 		      (slurm_get_msg_timeout() * 10), 
