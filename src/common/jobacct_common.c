@@ -631,7 +631,7 @@ error:
 extern struct jobacctinfo *jobacct_common_remove_task(pid_t pid)
 {
 	struct jobacctinfo *jobacct = NULL;
-	struct jobacctinfo *ret_jobacct = NULL;
+
 	ListIterator itr = NULL;
 
 	slurm_mutex_lock(&jobacct_lock);
@@ -651,15 +651,12 @@ extern struct jobacctinfo *jobacct_common_remove_task(pid_t pid)
 	if(jobacct) {
 		debug2("removing task %u pid %d from jobacct", 
 		       jobacct->max_vsize_id.taskid, jobacct->pid);
-		ret_jobacct = xmalloc(sizeof(struct jobacctinfo));
-		memcpy(ret_jobacct, jobacct, sizeof(struct jobacctinfo));
-		jobacct_common_free_jobacct(jobacct);
 	} else {
 		error("pid(%d) not being watched in jobacct!", pid);
 	}
 error:
 	slurm_mutex_unlock(&jobacct_lock);
-	return ret_jobacct;
+	return jobacct;
 }
 
 extern int jobacct_common_endpoll()
