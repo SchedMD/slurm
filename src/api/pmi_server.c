@@ -30,6 +30,7 @@
 #endif
 
 #include <pthread.h>
+#include <stdlib.h>
 #include <slurm/slurm_errno.h>
 
 #include "src/api/slurm_pmi.h"
@@ -43,7 +44,6 @@
 
 #define _DEBUG           0	/* non-zero for extra KVS logging */
 #define _DEBUG_TIMING    0	/* non-zero for KVS timing details */
-#define PMI_FANOUT      32	/* max fanout for PMI msg forwarding */
 
 static pthread_mutex_t kvs_mutex = PTHREAD_MUTEX_INITIALIZER;
 static int kvs_comm_cnt = 0;
@@ -180,11 +180,19 @@ static void *_agent(void *x)
 	struct kvs_comm_set *kvs_set;
 	struct msg_arg *msg_args;
 	struct kvs_hosts *kvs_host_list;
-	int i, j, kvs_set_cnt = 0, host_cnt;
+	int i, j, kvs_set_cnt = 0, host_cnt, pmi_fanout = 32;
 	int msg_sent = 0, max_forward = 0;
+	char *tmp;
 	pthread_t msg_id;
 	pthread_attr_t attr;
 	DEF_TIMERS;
+
+	tmp = getenv("PMI_FANOUT");
+	if (tmp) {
+		pmi_fanout = atoi(tmp);
+		if (pmi_fanout < 1)
+			pmi_fanout = 32;
+	}
 
 	/* only send one message to each host, 
 	 * build table of the ports on each host */
@@ -195,9 +203,9 @@ static void *_agent(void *x)
 	for (i=0; i<args->barrier_xmit_cnt; i++) {
 		if (args->barrier_xmit_ptr[i].port == 0)
 			continue;	/* already sent message to host */
-		kvs_host_list = xmalloc(sizeof(struct kvs_hosts) * PMI_FANOUT);
+		kvs_host_list = xmalloc(sizeof(struct kvs_hosts) * pmi_fanout);
 		host_cnt = 0;
-#if PMI_FANOUT
+
 		/* This code enables key-pair forwarding between 
 		 * tasks. First task on the node gets the key-pairs
 		 * with host/port information for all other tasks on
@@ -215,10 +223,10 @@ static void *_agent(void *x)
 					args->barrier_xmit_ptr[j].hostname;
 			args->barrier_xmit_ptr[j].port = 0;/* don't reissue */
 			host_cnt++;
-			if (host_cnt >= PMI_FANOUT)
+			if (host_cnt >= pmi_fanout)
 				break;
 		}
-#endif
+
 		msg_sent++;
 		max_forward = MAX(host_cnt, max_forward);
 

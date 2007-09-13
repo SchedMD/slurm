@@ -1169,6 +1169,16 @@ These environment variables, along with their corresponding options,
 are listed below.
 Note: Command line options will always override these settings.
 .TP 22
+\fBPMI_FANOUT\fR
+This is used exclusively with PMI (MPICH2 and MVAPICH2) and
+controls the fanout of data communications. The srun command
+sends messages to application programs (via the PMI library)
+and those applications may be called upon to forward that 
+data to up to this number of additional tasks. Higher values
+offload work from the srun command to the applications and 
+likely increase the vulernability to failures. 
+The default value is 32.
+.TP
 \fBPMI_TIME\fR
 This is used exclusively with PMI (MPICH2 and MVAPICH2) and 
 controls how much the communications from the tasks to the 
@@ -1286,11 +1296,14 @@ Same as \fB\-\-task\-epilog\fR=\fIexecutable\fR
 \fBSLURM_TASK_PROLOG\fR
 Same as \fB\-\-task\-prolog\fR=\fIexecutable\fR
 .TP
+\fBSLURM_THREADS\fR
+Same as \fB\-T, \-\-threads\fR
+.TP
 \fBSLURM_TIMELIMIT\fR
 Same as \fB\-t, \-\-time\fR=\fIminutes\fR
 .TP
 \fBSLURM_UNBUFFEREDIO\fR
-Same as \fB-u, --unbuffered\fR
+Same as \fB\-u, \-\-unbuffered\fR
 .TP
 \fBSLURM_WAIT\fR
 Same as \fB\-W, \-\-wait\fR=\fIseconds\fR
