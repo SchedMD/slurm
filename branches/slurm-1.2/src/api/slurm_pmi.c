@@ -184,8 +184,10 @@ int slurm_send_kvs_comm_set(struct kvs_comm_set *kvs_set_ptr,
 	 * We also increase the timeout (default timeout is
 	 * 10 secs). */
 	_delay_rpc(pmi_rank, pmi_size);
-	if      (pmi_size > 1000)	/* 100 secs */
-		timeout = slurm_get_msg_timeout() * 10000;
+	if      (pmi_size > 4000)	/* 240 secs */
+		timeout = slurm_get_msg_timeout() * 24000;
+	else if (pmi_size > 1000)	/* 120 secs */
+		timeout = slurm_get_msg_timeout() * 12000;
 	else if (pmi_size > 100)	/* 50 secs */
 		timeout = slurm_get_msg_timeout() * 5000;
 	else if (pmi_size > 10)		/* 20 secs */
@@ -264,18 +266,14 @@ int  slurm_get_kvs_comm_set(struct kvs_comm_set **kvs_set_ptr,
 	 * Also increase the message timeout if many tasks 
 	 * since the srun command can get very overloaded (the
 	 * default timeout is 10 secs).
-	 *
-	 * TaskID  SendTime  GetTime  (Units are PMI_TIME, default=500 usec)
-	 *      0         0      N+0
-	 *      1         1      N+1
-	 *      2         2      N+2
-	 *    N-1       N-1      N+N-1
 	 */
 	_delay_rpc(pmi_rank, pmi_size);
-	if      (pmi_size > 1000)	/* 100 secs */
-		timeout = slurm_get_msg_timeout() * 10000;
-	else if (pmi_size > 100)	/* 50 secs */
-		timeout = slurm_get_msg_timeout() * 5000;
+	if      (pmi_size > 4000)	/* 240 secs */
+		timeout = slurm_get_msg_timeout() * 24000;
+	else if (pmi_size > 1000)	/* 120 secs */
+		timeout = slurm_get_msg_timeout() * 12000;
+	else if (pmi_size > 100)	/* 60 secs */
+		timeout = slurm_get_msg_timeout() * 6000;
 	else if (pmi_size > 10)		/* 20 secs */
 		timeout = slurm_get_msg_timeout() * 2000;
 
@@ -325,7 +323,8 @@ int  slurm_get_kvs_comm_set(struct kvs_comm_set **kvs_set_ptr,
 }
 
 /* Forward keypair info to other tasks as required.
-* Clear message forward structure upon completion. */
+ * Clear message forward structure upon completion. 
+ * The messages are forwarded sequentially. */
 static int _forward_comm_set(struct kvs_comm_set *kvs_set_ptr)
 {
 	int i, rc = SLURM_SUCCESS;
