@@ -42,6 +42,7 @@
 #include "src/common/xmalloc.h"
 
 #define _DEBUG           0	/* non-zero for extra KVS logging */
+#define _DEBUG_TIMING    0	/* non-zero for KVS timing details */
 #define PMI_FANOUT      32	/* max fanout for PMI msg forwarding */
 
 static pthread_mutex_t kvs_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -413,6 +414,11 @@ extern int pmi_kvs_put(struct kvs_comm_set *kvs_set_ptr)
 extern int pmi_kvs_get(kvs_get_msg_t *kvs_get_ptr)
 {
 	int rc = SLURM_SUCCESS;
+#if _DEBUG_TIMING
+	static uint32_t tm[10000];
+	int cur_time, i;
+	struct timeval tv;
+#endif
 
 #if _DEBUG
 	info("pmi_kvs_get: rank:%u size:%u port:%u, host:%s", 
@@ -423,7 +429,12 @@ extern int pmi_kvs_get(kvs_get_msg_t *kvs_get_ptr)
 		error("PMK_KVS_Barrier reached with size == 0");
 		return SLURM_ERROR;
 	}
-
+#if _DEBUG_TIMING
+	gettimeofday(&tv, NULL);
+	cur_time = (tv.tv_sec % 1000) + tv.tv_usec;
+	if (kvs_get_ptr->task_id < 10000)
+		tm[kvs_get_ptr->task_id] = cur_time;
+#endif
 	pthread_mutex_lock(&kvs_mutex);
 	if (barrier_cnt == 0) {
 		barrier_cnt = kvs_get_ptr->size;
@@ -448,9 +459,18 @@ extern int pmi_kvs_get(kvs_get_msg_t *kvs_get_ptr)
 	barrier_ptr[kvs_get_ptr->task_id].port = kvs_get_ptr->port;
 	barrier_ptr[kvs_get_ptr->task_id].hostname = kvs_get_ptr->hostname;
 	kvs_get_ptr->hostname = NULL; /* just moved the pointer */
-	if (barrier_resp_cnt == barrier_cnt)
+	if (barrier_resp_cnt == barrier_cnt) {
+#if _DEBUG_TIMING
+		info("task[%d] at %u", 0, tm[0]);
+		for (i=1; ((i<barrier_cnt) && (i<10000)); i++) {
+			cur_time = (int) tm[i] - (int) tm[i-1];
+			info("task[%d] at %u diff %d", i, tm[i], cur_time);
+		}
+#endif
 		_kvs_xmit_tasks();
+}
 fini:	pthread_mutex_unlock(&kvs_mutex); 
+
 	return rc;
 }
 
