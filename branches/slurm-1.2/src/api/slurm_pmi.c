@@ -36,6 +36,7 @@
 \*****************************************************************************/
 
 #include <stdlib.h>
+#include <sys/time.h>
 #include <slurm/slurm.h>
 #include <slurm/slurm_errno.h>
 
@@ -55,9 +56,35 @@ int pmi_time = 0;
 uint16_t srun_port = 0;
 slurm_addr srun_addr;
 
-static int _forward_comm_set(struct kvs_comm_set *kvs_set_ptr);
-static int _get_addr(void);
+static void _delay_rpc(int pmi_rank, int pmi_size);
+static int  _forward_comm_set(struct kvs_comm_set *kvs_set_ptr);
+static int  _get_addr(void);
 static void _set_pmi_time(void);
+
+/* Delay an RPC to srun in order to avoid overwhelming the srun command.
+ * The delay is based upon the number of tasks, this task's rank and PMI_TIME.
+ * This logic depends upon synchronized clocks across the cluster */
+static void _delay_rpc(int pmi_rank, int pmi_size)
+{
+	struct timeval tv;
+	uint32_t cur_time;	/* current time in usec (just 9 digits) */
+	uint32_t tot_time;	/* total time expected for all RPCs */
+	uint32_t offset_time;	/* relative time within tot_time */
+	uint32_t target_time;	/* desired time to issue the RPC */
+
+	_set_pmi_time();
+	if (gettimeofday(&tv, NULL))
+		usleep(pmi_rank * pmi_time);
+	else {
+		cur_time = (tv.tv_sec % 1000) + tv.tv_usec;
+		tot_time = pmi_size * pmi_time;
+		offset_time = cur_time % tot_time;
+		target_time = pmi_rank * pmi_time;
+		if (target_time < offset_time)
+			target_time += tot_time;
+		usleep(target_time - offset_time);
+	}
+}
 
 static int _get_addr(void)
 {
@@ -123,7 +150,7 @@ int slurm_send_kvs_comm_set(struct kvs_comm_set *kvs_set_ptr,
 	 * command is very overloaded.
 	 * We also increase the timeout (default timeout is
 	 * 10 secs). */
-	usleep(pmi_rank * pmi_time);
+	_delay_rpc(pmi_rank, pmi_size);
 	if      (pmi_size > 1000)	/* 100 secs */
 		timeout = slurm_get_msg_timeout() * 10000;
 	else if (pmi_size > 100)	/* 50 secs */
@@ -136,7 +163,7 @@ int slurm_send_kvs_comm_set(struct kvs_comm_set *kvs_set_ptr,
 			error("slurm_send_kvs_comm_set: %m");
 			return SLURM_ERROR;
 		}
-		usleep(pmi_rank * pmi_time);
+		_delay_rpc(pmi_rank, pmi_size);
 	}
 
 	return rc;
@@ -153,7 +180,7 @@ int  slurm_get_kvs_comm_set(struct kvs_comm_set **kvs_set_ptr,
 	uint16_t port;
 	kvs_get_msg_t data;
 	char *env_pmi_ifhn;
-	
+
 	if (kvs_set_ptr == NULL)
 		return EINVAL;
 	*kvs_set_ptr = NULL;	/* initialization */
@@ -210,7 +237,7 @@ int  slurm_get_kvs_comm_set(struct kvs_comm_set **kvs_set_ptr,
 	 *      2         2      N+2
 	 *    N-1       N-1      N+N-1
 	 */
-	usleep(pmi_size * pmi_time);
+	_delay_rpc(pmi_rank, pmi_size);
 	if      (pmi_size > 1000)	/* 100 secs */
 		timeout = slurm_get_msg_timeout() * 10000;
 	else if (pmi_size > 100)	/* 50 secs */
@@ -223,7 +250,7 @@ int  slurm_get_kvs_comm_set(struct kvs_comm_set **kvs_set_ptr,
 			error("slurm_get_kvs_comm_set: %m");
 			return SLURM_ERROR;
 		}
-		usleep(pmi_rank * pmi_time);
+		_delay_rpc(pmi_rank, pmi_size);
 	}
 	if (rc != SLURM_SUCCESS) {
 		error("slurm_get_kvs_comm_set error_code=%d", rc);
