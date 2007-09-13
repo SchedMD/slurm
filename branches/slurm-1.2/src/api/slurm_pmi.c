@@ -62,27 +62,60 @@ static int  _get_addr(void);
 static void _set_pmi_time(void);
 
 /* Delay an RPC to srun in order to avoid overwhelming the srun command.
- * The delay is based upon the number of tasks, this task's rank and PMI_TIME.
- * This logic depends upon synchronized clocks across the cluster */
+ * The delay is based upon the number of tasks, this task's rank, and PMI_TIME.
+ * This logic depends upon synchronized clocks across the cluster. */
 static void _delay_rpc(int pmi_rank, int pmi_size)
 {
-	struct timeval tv;
+	struct timeval tv1, tv2;
 	uint32_t cur_time;	/* current time in usec (just 9 digits) */
 	uint32_t tot_time;	/* total time expected for all RPCs */
 	uint32_t offset_time;	/* relative time within tot_time */
 	uint32_t target_time;	/* desired time to issue the RPC */
+	uint32_t delta_time, error_time;
+	int retries = 0;
 
 	_set_pmi_time();
-	if (gettimeofday(&tv, NULL))
+
+again:	if (gettimeofday(&tv1, NULL)) {
 		usleep(pmi_rank * pmi_time);
-	else {
-		cur_time = (tv.tv_sec % 1000) + tv.tv_usec;
-		tot_time = pmi_size * pmi_time;
-		offset_time = cur_time % tot_time;
-		target_time = pmi_rank * pmi_time;
-		if (target_time < offset_time)
-			target_time += tot_time;
-		usleep(target_time - offset_time);
+		return;
+	}
+
+	cur_time = (tv1.tv_sec % 1000) + tv1.tv_usec;
+	tot_time = pmi_size * pmi_time;
+	offset_time = cur_time % tot_time;
+	target_time = pmi_rank * pmi_time;
+	if (target_time < offset_time)
+		delta_time = target_time - offset_time + tot_time;
+	else
+		delta_time = target_time - offset_time;
+	if (usleep(delta_time)) {
+		if (errno == EINVAL)
+			usleep(900000);
+		/* errno == EINTR */
+		goto again;
+	}
+
+	/* Verify we are active at the right time. If current time is different
+	 * from target by more than 15*pmi_time, then start over. If PMI_TIME 
+	 * is set appropriately, then srun should have no more than 30 RPCs
+	 * in the queue at one time in the worst case. */
+	if (gettimeofday(&tv2, NULL))
+		return;
+	tot_time = (tv2.tv_sec - tv1.tv_sec) * 1000000;
+	tot_time += tv2.tv_usec;
+	tot_time -= tv1.tv_usec;
+	if (tot_time >= delta_time)
+		error_time = tot_time - delta_time;
+	else
+		error_time = delta_time - tot_time;
+	if (error_time > (15*pmi_time)) {	/* too far off */
+#if 0
+		info("delta=%u tot=%u err=%u", 
+			delta_time, tot_time, error_time);
+#endif
+		if ((++retries) <= 2)
+			goto again;
 	}
 }
 
@@ -162,7 +195,8 @@ int slurm_send_kvs_comm_set(struct kvs_comm_set *kvs_set_ptr,
 		if (retries++ > MAX_RETRIES) {
 			error("slurm_send_kvs_comm_set: %m");
 			return SLURM_ERROR;
-		}
+		} else
+			debug("send_kvs retry %d", retries);
 		_delay_rpc(pmi_rank, pmi_size);
 	}
 
@@ -249,7 +283,8 @@ int  slurm_get_kvs_comm_set(struct kvs_comm_set **kvs_set_ptr,
 		if (retries++ > MAX_RETRIES) {
 			error("slurm_get_kvs_comm_set: %m");
 			return SLURM_ERROR;
-		}
+		} else
+			debug("get kvs retry %d", retries);
 		_delay_rpc(pmi_rank, pmi_size);
 	}
 	if (rc != SLURM_SUCCESS) {
