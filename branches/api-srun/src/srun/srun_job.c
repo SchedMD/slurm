@@ -139,6 +139,7 @@ job_create_noalloc(void)
 	 * Create job, then fill in host addresses
 	 */
 	job = _job_create_structure(ai);
+	
 	job->step_layout = fake_slurm_step_layout_create(job->nodelist, 
 							 NULL, NULL,
 							 job->nhosts,
@@ -146,6 +147,7 @@ job_create_noalloc(void)
 		
 	_job_fake_cred(job);
 	job_update_io_fnames(job);
+
    error:
 	xfree(ai);
 	return (job);

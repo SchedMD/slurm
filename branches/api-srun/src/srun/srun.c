@@ -70,6 +70,7 @@
 #include <fcntl.h>
 #include <grp.h>
 
+
 #include "src/common/fd.h"
 #include "src/common/log.h"
 #include "src/common/slurm_protocol_api.h"
@@ -91,6 +92,8 @@
 #include "src/srun/debugger.h"
 #include "src/srun/srun.h"
 #include "src/srun/signals.h"
+#include "src/srun/multi_prog.h"
+#include "src/api/pmi_server.h"
 
 #define MAX_RETRIES 20
 #define MAX_ENTRIES 50
@@ -102,6 +105,15 @@
 mpi_plugin_client_info_t mpi_job_info[1];
 pid_t srun_ppid = 0;
 static struct termios termdefaults;
+int global_rc;
+slurm_step_ctx_t *step_ctx = NULL;
+
+struct {
+	bitstr_t *start_success;
+	bitstr_t *start_failure;
+	bitstr_t *finish_normal;
+	bitstr_t *finish_abnormal;
+} task_state;
 
 /*
  * forward declaration of static funcs
@@ -119,21 +131,31 @@ static int   _run_srun_script (srun_job_t *job, char *script);
 static int   _change_rlimit_rss(void);
 static int   _slurm_debug_env_val (void);
 static int   _call_spank_local_user (srun_job_t *job);
+static void  _set_stdio_fds(srun_job_t *job, slurm_step_io_fds_t *cio_fds);
 static void  _define_symbols(void);
 static void  _pty_restore(void);
 static void  _step_opt_exclusive(void);
+static void _task_start(launch_tasks_response_msg_t *msg);
+static void _task_finish(task_exit_msg_t *msg);
+static void _task_state_struct_init(int num_tasks);
+static void _task_state_struct_print(void);
+static void _task_state_struct_free(void);
+static void _mpir_init(int num_tasks);
+static void _mpir_cleanup(void);
+static void _mpir_set_executable_names(const char *executable_name);
+static void _mpir_dump_proctable(void);
+static void _ignore_signal(int signo);
+static void _exit_on_signal(int signo);
 
 int srun(int ac, char **av)
 {
 	resource_allocation_response_msg_t *resp;
 	srun_job_t *job = NULL;
-	int exitcode = 0;
 	env_t *env = xmalloc(sizeof(env_t));
 	uint32_t job_id = 0;
 	log_options_t logopt = LOG_OPTS_STDERR_ONLY;
-	slurm_step_io_fds_t fds = SLURM_STEP_IO_FDS_INITIALIZER;
-	char **mpi_env = NULL;
-	mpi_plugin_client_state_t *mpi_state;
+	slurm_step_launch_params_t launch_params;
+	slurm_step_launch_callbacks_t callbacks;
 	
 	env->stepid = -1;
 	env->procid = -1;
@@ -144,6 +166,11 @@ int srun(int ac, char **av)
 
 	logopt.stderr_level += _slurm_debug_env_val();
 	log_init(xbasename(av[0]), logopt, 0, NULL);
+
+	xsignal(SIGQUIT, _ignore_signal);
+	xsignal(SIGPIPE, _ignore_signal);
+	xsignal(SIGUSR1, _ignore_signal);
+	xsignal(SIGUSR2, _ignore_signal);
 
 	/* Initialize plugin stack, read options from plugins, etc.
 	 */
@@ -203,7 +230,9 @@ int srun(int ac, char **av)
 		sig_setup_sigmask();
 		job = job_create_noalloc(); 
 		_switch_standalone(job);
-
+		if (create_job_step(job) < 0) {
+			exit(1);
+		}
 	} else if ((resp = existing_allocation())) {
 		job_id = resp->job_id;
 		if (opt.alloc_nodelist == NULL)
@@ -218,7 +247,6 @@ int srun(int ac, char **av)
 			exit(1);
 		
 		job->old_job = true;
-		sig_setup_sigmask();
 			
 		if (create_job_step(job) < 0)
 			exit(1);
@@ -235,7 +263,7 @@ int srun(int ac, char **av)
 		if (opt.job_max_memory > 0) {		
 			(void) _change_rlimit_rss();
 		}
-		sig_setup_sigmask();
+	
 		if ( !(resp = allocate_nodes()) ) 
 			exit(1);
 		_print_job_information(resp);
@@ -257,10 +285,15 @@ int srun(int ac, char **av)
 	if (_become_user () < 0)
 		info ("Warning: Unable to assume uid=%lu\n", opt.uid);
 
-	/* job structure should now be filled in */
 
-	if (_call_spank_local_user (job) < 0)
-		job_fatal(job, "Failure in local plugin stack");
+	/* Now we can register a few more signal handlers.  It
+	 * is only safe to have _exit_on_signal call
+	 * slurm_step_launch_abort after the the step context
+	 * has been created.
+	 */
+	xsignal(SIGHUP, _exit_on_signal);
+	xsignal(SIGINT, _exit_on_signal);
+	xsignal(SIGTERM, _exit_on_signal);
 
 	/*
 	 *  Enhance environment for job
@@ -286,11 +319,15 @@ int srun(int ac, char **av)
 	env->comm_port = slurmctld_comm_addr.port;
 	env->comm_hostname = slurmctld_comm_addr.hostname;
 	if(job) {
+		uint16_t *tasks = NULL;
+		slurm_step_ctx_get(job->step_ctx, SLURM_STEP_CTX_TASKS, 
+				   &tasks);
+
 		env->select_jobinfo = job->select_jobinfo;
 		env->nhosts = job->nhosts;
 		env->nodelist = job->nodelist;
 		env->task_count = _uint16_array_to_str(
-			job->nhosts, job->step_layout->tasks);
+			job->nhosts, tasks);
 		env->jobid = job->jobid;
 		env->stepid = job->stepid;
 	}
@@ -317,36 +354,81 @@ int srun(int ac, char **av)
 	xfree(env->task_count);
 	xfree(env);
 	
+	_task_state_struct_init(opt.nprocs);
+	slurm_step_launch_params_t_init(&launch_params);
+	launch_params.gid = opt.gid;
+	launch_params.argc = opt.argc;
+	launch_params.argv = opt.argv;
+	launch_params.multi_prog = opt.multi_prog ? true : false;
+	launch_params.cwd = opt.cwd;
+	launch_params.slurmd_debug = opt.slurmd_debug;
+	launch_params.buffered_stdio = opt.unbuffered ? false : true;
+	launch_params.labelio = opt.labelio ? true : false;
+	launch_params.remote_output_filename = opt.ofname;
+	launch_params.remote_input_filename = opt.ifname;
+	launch_params.remote_error_filename = opt.efname;
+	launch_params.task_prolog = opt.task_prolog;
+	launch_params.task_epilog = opt.task_epilog;
+	launch_params.cpu_bind = opt.cpu_bind;
+	launch_params.cpu_bind_type = opt.cpu_bind_type;
+	launch_params.mem_bind = opt.mem_bind;
+	launch_params.mem_bind_type = opt.mem_bind_type;	
+
+
+	/* job structure should now be filled in */
+	step_ctx = job->step_ctx;
+
+	_set_stdio_fds(job, &launch_params.local_fds);
+
+	if (MPIR_being_debugged) {
+		launch_params.parallel_debug = true;
+		pmi_server_max_threads(1);
+	} else {
+		launch_params.parallel_debug = false;
+	}
+	callbacks.task_start = _task_start;
+	callbacks.task_finish = _task_finish;
+
 	_run_srun_prolog(job);
 
-	if (msg_thr_create(job) < 0)
-		job_fatal(job, "Unable to create msg thread");
+	_mpir_init(job->ctx_params.task_count);
 
-	mpi_job_info->jobid = job->jobid;
-	mpi_job_info->stepid = job->stepid;
-	mpi_job_info->step_layout = job->step_layout;
-	if (!(mpi_state = mpi_hook_client_prelaunch(mpi_job_info, &mpi_env)))
-		job_fatal (job, "Failed to initialize MPI");
-	env_array_set_environment(mpi_env);
-	env_array_free(mpi_env);
+	if (_call_spank_local_user (job) < 0)
+		job_fatal(job, "Failure in local plugin stack");
 
-	srun_set_stdio_fds(job, &fds);
+	if (slurm_step_launch(job->step_ctx, &launch_params, &callbacks)
+	    != SLURM_SUCCESS) {
+		error("Application launch failed: %m");
+		goto cleanup;
+	}
 
-	job->client_io = client_io_handler_create(fds,
-				job->step_layout->task_cnt,
-				job->step_layout->node_cnt,
-				job->cred, opt.labelio);
+	if (slurm_step_launch_wait_start(job->step_ctx) == SLURM_SUCCESS) {
+		/* Only set up MPIR structures if the step launched
+		   correctly. */
+		if (opt.multi_prog)
+			mpir_set_multi_name(job->ctx_params.task_count,
+					    launch_params.argv[0]);
+		else
+			_mpir_set_executable_names(launch_params.argv[0]);
+		MPIR_debug_state = MPIR_DEBUG_SPAWNED;
+		MPIR_Breakpoint();
+		if (opt.debugger_test)
+			_mpir_dump_proctable();
+	} else {
+		info("Job step aborted before step completely launched.");
+	}
 
-	if (!job->client_io
-	    || (client_io_handler_start(job->client_io)	!= SLURM_SUCCESS))
-		job_fatal(job, "failed to start IO handler");
+	slurm_step_launch_wait_finish(job->step_ctx);
 
-	if (sig_thr_create(job) < 0)
-		job_fatal(job, "Unable to create signals thread: %m");
-	
-	if (launch_thr_create(job) < 0)
- 		job_fatal(job, "Unable to create launch thread: %m");
-	
+cleanup:
+	_run_srun_epilog(job);
+	slurm_step_ctx_destroy(job->step_ctx);
+	_mpir_cleanup();
+	_task_state_struct_free();
+	log_fini();
+
+	return global_rc;
+#if 0
 	/* wait for job to terminate 
 	 */
 	slurm_mutex_lock(&job->state_mutex);
@@ -431,17 +513,20 @@ int srun(int ac, char **av)
 	 */
 	log_fini();
 	exit(exitcode);
+#endif
 }
 
 static int _call_spank_local_user (srun_job_t *job)
 {
 	struct spank_launcher_job_info info[1];
+	job_step_create_response_msg_t *step_resp;
 
 	info->uid = opt.uid;
 	info->gid = opt.gid;
 	info->jobid = job->jobid;
 	info->stepid = job->stepid;
-	info->step_layout = job->step_layout;	
+	slurm_step_ctx_get(job->step_ctx, SLURM_STEP_CTX_RESP, &step_resp);
+	info->step_layout = step_resp->step_layout;
 	info->argc = opt.argc;
 	info->argv = opt.argv;
 
@@ -773,8 +858,8 @@ _is_local_file (io_filename_t *fname)
 	return ((fname->type != IO_PER_TASK) && (fname->type != IO_ONE));
 }
 
-void
-srun_set_stdio_fds(srun_job_t *job, slurm_step_io_fds_t *cio_fds)
+static void
+_set_stdio_fds(srun_job_t *job, slurm_step_io_fds_t *cio_fds)
 {
 	bool err_shares_out = false;
 
@@ -822,6 +907,7 @@ srun_set_stdio_fds(srun_job_t *job, slurm_step_io_fds_t *cio_fds)
 	if (err_shares_out) {
 		debug3("stdout and stderr sharing a file");
 		cio_fds->err.fd = cio_fds->out.fd;
+		cio_fds->err.taskid = cio_fds->out.taskid;
 	} else if (_is_local_file(job->efname)) {
 		if (job->efname->name == NULL) {
 			cio_fds->err.fd = STDERR_FILENO;
@@ -862,4 +948,242 @@ static void _step_opt_exclusive(void)
 		fatal("--exclude is incompatible with --exclusive");
 	if (opt.nodelist)
 		fatal("--nodelist is incompatible with --exclusive");
+}
+
+static void
+_task_start(launch_tasks_response_msg_t *msg)
+{
+	MPIR_PROCDESC *table;
+	int taskid;
+	int i;
+
+	verbose("Node %s (%d), %d tasks started",
+		msg->node_name, msg->srun_node_id, msg->count_of_pids);
+
+	for (i = 0; i < msg->count_of_pids; i++) {
+		taskid = msg->task_ids[i];
+		table = &MPIR_proctable[taskid];
+		table->host_name = xstrdup(msg->node_name);
+		/* table->executable_name is set elsewhere */
+		table->pid = msg->local_pids[i];
+
+		if (msg->return_code == 0) {
+			bit_set(task_state.start_success, taskid);
+		} else {
+			bit_set(task_state.start_failure, taskid);
+		}
+	}
+
+}
+
+static void
+_terminate_job_step(slurm_step_ctx_t *step_ctx)
+{
+	uint32_t job_id, step_id;
+
+	slurm_step_ctx_get(step_ctx, SLURM_STEP_CTX_JOBID, &job_id);
+	slurm_step_ctx_get(step_ctx, SLURM_STEP_CTX_STEPID, &step_id);
+	info("Terminating job step %u.%u", job_id, step_id);
+	slurm_kill_job_step(job_id, step_id, SIGKILL);
+}
+
+static void
+_handle_max_wait(int signo)
+{
+	info("First task exited %ds ago", opt.max_wait);
+	_task_state_struct_print();
+	_terminate_job_step(step_ctx);
+}
+
+static void
+_task_finish(task_exit_msg_t *msg)
+{
+	static bool first_done = true;
+	static bool first_error = true;
+	int rc = 0;
+	int i;
+
+	verbose("%d tasks finished (rc=%u)",
+		msg->num_tasks, msg->return_code);
+	if (WIFEXITED(msg->return_code)) {
+		rc = WEXITSTATUS(msg->return_code);
+		if (rc != 0) {
+			for (i = 0; i < msg->num_tasks; i++) {
+				error("task %u exited with exit code %d",
+				      msg->task_id_list[i], rc);
+				bit_set(task_state.finish_abnormal,
+					msg->task_id_list[i]);
+			}
+		} else {
+			for (i = 0; i < msg->num_tasks; i++) {
+				bit_set(task_state.finish_normal,
+					msg->task_id_list[i]);
+			}
+		}
+	} else if (WIFSIGNALED(msg->return_code)) {
+		for (i = 0; i < msg->num_tasks; i++) {
+			verbose("task %u killed by signal %d",
+				msg->task_id_list[i],
+				WTERMSIG(msg->return_code));
+			bit_set(task_state.finish_abnormal,
+				msg->task_id_list[i]);
+		}
+		rc = 1;
+	}
+	global_rc = MAX(global_rc, rc);
+
+	if (first_error && rc > 0 && opt.kill_bad_exit) {
+		first_error = false;
+		_terminate_job_step(step_ctx);
+	} else if (first_done && opt.max_wait > 0) {
+		/* If these are the first tasks to finish we need to
+		 * start a timer to kill off the job step if the other
+		 * tasks don't finish within opt.max_wait seconds.
+		 */
+		first_done = false;
+		debug2("First task has exited");
+		xsignal(SIGALRM, _handle_max_wait);
+		verbose("starting alarm of %d seconds", opt.max_wait);
+		alarm(opt.max_wait);
+	}
+}
+
+static void
+_task_state_struct_init(int num_tasks)
+{
+	task_state.start_success = bit_alloc(num_tasks);
+	task_state.start_failure = bit_alloc(num_tasks);
+	task_state.finish_normal = bit_alloc(num_tasks);
+	task_state.finish_abnormal = bit_alloc(num_tasks);
+}
+
+/*
+ * Tasks will most likely have bits set in multiple of the task_state
+ * bit strings (e.g. a task can start normally and then later exit normally)
+ * so we ensure that a task is only "seen" once.
+ */
+static void
+_task_state_struct_print(void)
+{
+	bitstr_t *tmp, *seen, *not_seen;
+	char buf[BUFSIZ];
+	int len;
+
+	len = bit_size(task_state.finish_abnormal); /* all the same length */
+	tmp = bit_alloc(len);
+	seen = bit_alloc(len);
+	not_seen = bit_alloc(len);
+	bit_not(not_seen);
+
+	if (bit_set_count(task_state.finish_abnormal) > 0) {
+		bit_copybits(tmp, task_state.finish_abnormal);
+		bit_and(tmp, not_seen);
+		bit_fmt(buf, BUFSIZ, tmp);
+		info("task%s: exited abnormally", buf);
+		bit_or(seen, tmp);
+		bit_copybits(not_seen, seen);
+		bit_not(not_seen);
+	}
+
+	if (bit_set_count(task_state.finish_normal) > 0) {
+		bit_copybits(tmp, task_state.finish_normal);
+		bit_and(tmp, not_seen);
+		bit_fmt(buf, BUFSIZ, tmp);
+		info("task%s: exited", buf);
+		bit_or(seen, tmp);
+		bit_copybits(not_seen, seen);
+		bit_not(not_seen);
+	}
+
+	if (bit_set_count(task_state.start_failure) > 0) {
+		bit_copybits(tmp, task_state.start_failure);
+		bit_and(tmp, not_seen);
+		bit_fmt(buf, BUFSIZ, tmp);
+		info("task%s: failed to start", buf);
+		bit_or(seen, tmp);
+		bit_copybits(not_seen, seen);
+		bit_not(not_seen);
+	}
+
+	if (bit_set_count(task_state.start_success) > 0) {
+		bit_copybits(tmp, task_state.start_success);
+		bit_and(tmp, not_seen);
+		bit_fmt(buf, BUFSIZ, tmp);
+		info("task%s: running", buf);
+		bit_or(seen, tmp);
+		bit_copybits(not_seen, seen);
+		bit_not(not_seen);
+	}
+}
+
+static void
+_task_state_struct_free(void)
+{
+	bit_free(task_state.start_success);
+	bit_free(task_state.start_failure);
+	bit_free(task_state.finish_normal);
+	bit_free(task_state.finish_abnormal);
+}
+
+/**********************************************************************
+ * Functions for manipulating the MPIR_* global variables which
+ * are accessed by parallel debuggers which trace slaunch.
+ **********************************************************************/
+static void
+_mpir_init(int num_tasks)
+{
+	MPIR_proctable_size = num_tasks;
+	MPIR_proctable = xmalloc(sizeof(MPIR_PROCDESC) * num_tasks);
+	if (MPIR_proctable == NULL)
+		fatal("Unable to initialize MPIR_proctable: %m");
+}
+
+static void
+_mpir_cleanup()
+{
+	int i;
+
+	for (i = 0; i < MPIR_proctable_size; i++) {
+		xfree(MPIR_proctable[i].host_name);
+		xfree(MPIR_proctable[i].executable_name);
+	}
+	xfree(MPIR_proctable);
+}
+
+static void
+_mpir_set_executable_names(const char *executable_name)
+{
+	int i;
+
+	for (i = 0; i < MPIR_proctable_size; i++) {
+		MPIR_proctable[i].executable_name = xstrdup(executable_name);
+		if (MPIR_proctable[i].executable_name == NULL)
+			fatal("Unable to set MPI_proctable executable_name:"
+			      " %m");
+	}
+}
+
+static void
+_mpir_dump_proctable()
+{
+	MPIR_PROCDESC *tv;
+	int i;
+
+	for (i = 0; i < MPIR_proctable_size; i++) {
+		tv = &MPIR_proctable[i];
+		if (!tv)
+			break;
+		info("task:%d, host:%s, pid:%d, executable:%s",
+		     i, tv->host_name, tv->pid, tv->executable_name);
+	}
+}
+	
+static void _ignore_signal(int signo)
+{
+	/* do nothing */
+}
+
+static void _exit_on_signal(int signo)
+{
+	slurm_step_launch_abort(step_ctx);
 }

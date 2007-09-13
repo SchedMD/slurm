@@ -42,7 +42,7 @@
 
 /* set global MPIR_PROCDESC executable names based upon multi-program 
  * configuration file */
-extern int set_multi_name(int ntasks);
+extern int mpir_set_multi_name(int ntasks, const char *config_fname);
 
 #endif
 

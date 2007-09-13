@@ -80,8 +80,6 @@ static void  _wait_for_resources(resource_allocation_response_msg_t **resp);
 static bool  _retry();
 static void  _intr_handler(int signo);
 
-static job_step_create_request_msg_t * _step_req_create(srun_job_t *j);
-
 static sig_atomic_t destroy_job = 0;
 static srun_job_t *allocate_job = NULL;
 
@@ -391,7 +389,6 @@ _intr_handler(int signo)
 	destroy_job = 1;
 }
 
-
 /*
  * Create job description structure based off srun options
  * (see opt.h)
@@ -556,153 +553,92 @@ job_desc_msg_destroy(job_desc_msg_t *j)
 	}
 }
 
-static job_step_create_request_msg_t *
-_step_req_create(srun_job_t *j)
+int
+create_job_step(srun_job_t *job)
 {
-	job_step_create_request_msg_t *r = xmalloc(sizeof(*r));
-	r->job_id     = j->jobid;
-	r->user_id    = opt.uid;
-
-	r->node_count = j->nhosts;
-	/* info("send %d or %d? sending %d", opt.max_nodes, */
-/* 		     j->nhosts, r->node_count); */
-	if(r->node_count > j->nhosts) {
-		error("Asking for more nodes that allocated");
-		return NULL;
-	}
-	r->cpu_count  = opt.overcommit ? r->node_count
-		                       : (opt.nprocs*opt.cpus_per_task);
-	r->num_tasks  = opt.nprocs;
-	r->node_list  = xstrdup(opt.nodelist);
-	r->network    = xstrdup(opt.network);
-	r->name       = xstrdup(opt.job_name);
-	r->relative   = (uint16_t)opt.relative;
-	r->ckpt_interval = (uint16_t)opt.ckpt_interval;
-	r->exclusive  = (uint16_t)opt.exclusive;
-	r->immediate  = (uint16_t)opt.immediate;
-	r->overcommit = opt.overcommit ? 1 : 0;
-	debug("requesting job %d, user %d, nodes %d including (%s)", 
-	      r->job_id, r->user_id, r->node_count, r->node_list);
-	debug("cpus %d, tasks %d, name %s, relative %d", 
-	      r->cpu_count, r->num_tasks, r->name, r->relative);
+	int i;
 	
+	slurm_step_ctx_params_t_init(&job->ctx_params);
+	job->ctx_params.job_id = job->jobid;
+	job->ctx_params.uid = opt.uid;
+/* 	totalview_jobid = NULL; */
+/* 	xstrfmtcat(totalview_jobid, "%u", ctx_params.job_id); */
+	job->ctx_params.node_count = job->nhosts;
+	job->ctx_params.task_count = opt.nprocs;
+	
+	job->ctx_params.cpu_count = opt.overcommit ? job->ctx_params.node_count
+		: (opt.nprocs*opt.cpus_per_task);
+	
+	job->ctx_params.relative = (uint16_t)opt.relative;
 	switch (opt.distribution) {
 	case SLURM_DIST_BLOCK:
-		r->task_dist = SLURM_DIST_BLOCK;
-		break;
 	case SLURM_DIST_ARBITRARY:
-		r->task_dist = SLURM_DIST_ARBITRARY;
-		break;
 	case SLURM_DIST_CYCLIC:
-		r->task_dist = SLURM_DIST_CYCLIC;
-		break;
 	case SLURM_DIST_CYCLIC_CYCLIC:
-		r->task_dist = SLURM_DIST_CYCLIC_CYCLIC;
-		break;
 	case SLURM_DIST_CYCLIC_BLOCK:
-		r->task_dist = SLURM_DIST_CYCLIC_BLOCK;
-		break;
 	case SLURM_DIST_BLOCK_CYCLIC:
-		r->task_dist = SLURM_DIST_BLOCK_CYCLIC;
-		break;
 	case SLURM_DIST_BLOCK_BLOCK:
-		r->task_dist = SLURM_DIST_BLOCK_BLOCK;
+		job->ctx_params.task_dist = opt.distribution;
 		break;
 	case SLURM_DIST_PLANE:
-		r->task_dist = SLURM_DIST_PLANE;
-		r->plane_size = opt.plane_size;
+		job->ctx_params.task_dist = SLURM_DIST_PLANE;
+		job->ctx_params.plane_size = opt.plane_size;
 		break;
 	default:
-		r->task_dist = (r->num_tasks <= r->node_count) 
+		job->ctx_params.task_dist = (job->ctx_params.task_count <= 
+			job->ctx_params.node_count) 
 			? SLURM_DIST_CYCLIC : SLURM_DIST_BLOCK;
 		break;
 
 	}
-	opt.distribution = r->task_dist;
+	job->ctx_params.overcommit = opt.overcommit ? 1 : 0;
+
+	job->ctx_params.node_list = opt.nodelist;
 	
-	if (slurmctld_comm_addr.port) {
-		r->host = xstrdup(slurmctld_comm_addr.hostname);
-		r->port = slurmctld_comm_addr.port;
-	}
+	job->ctx_params.network = opt.network;
+	job->ctx_params.name = opt.job_name;
+	
+	debug("requesting job %d, user %d, nodes %d including (%s)", 
+	      job->ctx_params.job_id, job->ctx_params.uid,
+	      job->ctx_params.node_count, job->ctx_params.node_list);
+	debug("cpus %d, tasks %d, name %s, relative %d", 
+	      job->ctx_params.cpu_count, job->ctx_params.task_count,
+	      job->ctx_params.name, job->ctx_params.relative);
 
-	return(r);
-}
-
-int
-create_job_step(srun_job_t *job)
-{
-	job_step_create_request_msg_t  *req  = NULL;
-	job_step_create_response_msg_t *resp = NULL;
-	int i, rc;
-	sigset_t oset;
-	static int sigarray[] = { SIGQUIT, SIGINT, SIGTERM, 0 };
-	SigFunc *oquitf = NULL, *ointf = NULL, *otermf = NULL;
-
-	if (!(req = _step_req_create(job))) {
-		error ("Unable to allocate step request message");
-		return -1;
-	}
-
-	for (i=0;(!destroy_job);i++) {
-		if ((slurm_job_step_create(req, &resp) == SLURM_SUCCESS)
-		&&  (resp != NULL)) {
-			if (i > 0)
-				info("Job step created");
-			break;
-		}
-		rc = slurm_get_errno();
-		if (opt.immediate ||
-		    ((rc != ESLURM_NODES_BUSY) && (rc != ESLURM_DISABLED))) {
-			error ("Unable to create job step: %m");
-			return -1;
-		}
-		if (i == 0) {
-			info("Job step creation temporarily disabled, retrying");
-			ointf  = xsignal(SIGINT,  _intr_handler);
-			otermf = xsignal(SIGTERM, _intr_handler);
-			oquitf = xsignal(SIGQUIT, _intr_handler);
-			xsignal_save_mask(&oset);
-			xsignal_unblock(sigarray);
+	for (i=0; ;i++) {
+		if(opt.no_alloc) {
+			job->step_ctx = slurm_step_ctx_create_no_alloc(
+				&job->ctx_params, job->stepid);
 		} else
-			info("Job step creation still disabled, retrying");
+			job->step_ctx = slurm_step_ctx_create(
+				&job->ctx_params);
+		if (job->step_ctx != NULL)
+			break;
+		if (slurm_get_errno() != ESLURM_DISABLED) {
+			error("Failed creating job step context: %m");
+			exit(1);
+		}
+		
+		if (i == 0)
+			info("Job step creation temporarily disabled, retrying");	
+		
 		sleep(MIN((i*10), 60));
 	}
 
-	if (i > 0) {
-		xsignal(SIGINT,  ointf);
-		xsignal(SIGQUIT, oquitf);
-		xsignal(SIGTERM, otermf);
-		xsignal_set_mask(&oset);
-		if (destroy_job) {
-			info("Cancelled pending job step");
-			return -1;
-		}
-	}
 
-	job->stepid  = resp->job_step_id;
-	job->step_layout = resp->step_layout;
-	job->cred    = resp->cred;
-	job->switch_job = resp->switch_job;
-		
-
+	slurm_step_ctx_get(job->step_ctx, SLURM_STEP_CTX_STEPID, &job->stepid);
 	/*  Number of hosts in job may not have been initialized yet if 
 	 *    --jobid was used or only SLURM_JOBID was set in user env.
 	 *    Reset the value here just in case.
 	 */
-	job->nhosts = job->step_layout->node_cnt;
-
-	if(!job->step_layout) {
-		error("step_layout not returned");
-		return -1;
-	}
+	slurm_step_ctx_get(job->step_ctx, SLURM_STEP_CTX_NUM_HOSTS,
+			   &job->nhosts);
 	
 	/*
 	 * Recreate filenames which may depend upon step id
 	 */
 	job_update_io_fnames(job);
 
-	slurm_free_job_step_create_request_msg(req);
-	
 	return 0;
 }
 

@@ -169,7 +169,8 @@ static void _update_mpir_proctable(srun_job_t *job,
 	   call the Breakpoint */
 	if (tasks_recorded == job->step_layout->task_cnt) {
 		if (opt.multi_prog)
-			set_multi_name(ntasks);
+			mpir_set_multi_name(ntasks,
+					    MPIR_proctable[0].executable_name);
 		MPIR_debug_state = MPIR_DEBUG_SPAWNED;
 		MPIR_Breakpoint();
 		if (opt.debugger_test)

@@ -166,18 +166,16 @@ _set_exec_names(char *ranks, char *exec_name, int ntasks)
 }
 
 extern int
-set_multi_name(int ntasks)
+mpir_set_multi_name(int ntasks, const char *config_fname)
 {
 	FILE *config_fd;
 	char line[256];
-	char *config_fname = NULL, *ranks, *exec_name, *p, *ptrptr;
+	char *ranks, *exec_name, *p, *ptrptr;
 	int line_num = 0, i;
 
 	for (i=0; i<ntasks; i++) {
 		MPIR_PROCDESC *tv;
 		tv = &MPIR_proctable[i];
-		if (i == 0)
-			config_fname = tv->executable_name;
 		tv->executable_name = NULL;
 	}
 

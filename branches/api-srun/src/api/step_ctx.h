@@ -47,7 +47,7 @@ struct slurm_step_ctx_struct {
 
 	uint32_t job_id;	/* assigned job id */
 	uint32_t user_id;	/* user the job runs as */
-	
+
 	job_step_create_request_msg_t *step_req;
 	job_step_create_response_msg_t *step_resp;
 

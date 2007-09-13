@@ -69,8 +69,9 @@ extern char **environ;
 /**********************************************************************
  * General declarations for step launch code
  **********************************************************************/
-static int _launch_tasks(slurm_step_ctx ctx,
-			 launch_tasks_request_msg_t *launch_msg);
+static int _launch_tasks(slurm_step_ctx_t *ctx,
+			 launch_tasks_request_msg_t *launch_msg,
+			 uint32_t timeout);
 static char *_lookup_cwd(void);
 
 /**********************************************************************
@@ -117,7 +118,7 @@ void slurm_step_launch_params_t_init (slurm_step_launch_params_t *ptr)
  * IN callbacks - Identify functions to be called when various events occur
  * RET SLURM_SUCCESS or SLURM_ERROR (with errno set)
  */
-int slurm_step_launch (slurm_step_ctx ctx,
+int slurm_step_launch (slurm_step_ctx_t *ctx,
 		       const slurm_step_launch_params_t *params,
 		       const slurm_step_launch_callbacks_t *callbacks)
 {
@@ -131,7 +132,7 @@ int slurm_step_launch (slurm_step_ctx ctx,
 	memset(&launch, 0, sizeof(launch));
 
 	if (ctx == NULL || ctx->magic != STEP_CTX_MAGIC) {
-		error("Not a valid slurm_step_ctx!");
+		error("Not a valid slurm_step_ctx_t!");
 
 		slurm_seterrno(EINVAL);
 		return SLURM_ERROR;
@@ -277,7 +278,7 @@ int slurm_step_launch (slurm_step_ctx ctx,
 		launch.resp_port[i] = ctx->launch_state->resp_port[i];
 	}
 
-	_launch_tasks(ctx, &launch);
+	_launch_tasks(ctx, &launch, params->msg_timeout);
 
 	/* clean up */
 	xfree(launch.resp_port);
@@ -298,7 +299,7 @@ done:
 /*
  * Block until all tasks have started.
  */
-int slurm_step_launch_wait_start(slurm_step_ctx ctx)
+int slurm_step_launch_wait_start(slurm_step_ctx_t *ctx)
 {
 	struct step_launch_state *sls = ctx->launch_state;
 	/* Wait for all tasks to start */
@@ -341,7 +342,7 @@ int slurm_step_launch_wait_start(slurm_step_ctx ctx)
 /*
  * Block until all tasks have finished (or failed to start altogether).
  */
-void slurm_step_launch_wait_finish(slurm_step_ctx ctx)
+void slurm_step_launch_wait_finish(slurm_step_ctx_t *ctx)
 {
 	struct step_launch_state *sls = ctx->launch_state;
 	struct timespec ts = {0, 0};
@@ -422,7 +423,7 @@ void slurm_step_launch_wait_finish(slurm_step_ctx ctx)
  *
  * Can be called from a signal handler.
  */
-void slurm_step_launch_abort(slurm_step_ctx ctx)
+void slurm_step_launch_abort(slurm_step_ctx_t *ctx)
 {
 	struct step_launch_state *sls = ctx->launch_state;
 
@@ -437,7 +438,7 @@ void slurm_step_launch_abort(slurm_step_ctx ctx)
 /*
  * Create a launch state structure for a specified step context, "ctx".
  */
-struct step_launch_state *step_launch_state_create(slurm_step_ctx ctx)
+struct step_launch_state *step_launch_state_create(slurm_step_ctx_t *ctx)
 {
 	struct step_launch_state *sls;
 
@@ -827,8 +828,9 @@ _handle_msg(struct step_launch_state *sls, slurm_msg_t *msg)
 /**********************************************************************
  * Task launch functions
  **********************************************************************/
-static int _launch_tasks(slurm_step_ctx ctx,
-			 launch_tasks_request_msg_t *launch_msg)
+static int _launch_tasks(slurm_step_ctx_t *ctx,
+			 launch_tasks_request_msg_t *launch_msg,
+			 uint32_t timeout)
 {
 	slurm_msg_t msg;
 	List ret_list = NULL;
@@ -843,7 +845,7 @@ static int _launch_tasks(slurm_step_ctx ctx,
 	
 	if(!(ret_list = slurm_send_recv_msgs(
 		     ctx->step_resp->step_layout->node_list,
-		     &msg, 0))) {
+		     &msg, timeout))) {
 		error("slurm_send_recv_msgs failed miserably: %m");
 		return SLURM_ERROR;
 	}
