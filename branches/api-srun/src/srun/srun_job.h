@@ -89,8 +89,6 @@ typedef enum {
 typedef struct io_filename io_filename_t;
 
 typedef struct srun_job {
-	slurm_step_layout_t *step_layout; /* holds info about how the task is 
-					     laid out */
 	uint32_t jobid;		/* assigned job id 	                  */
 	uint32_t stepid;	/* assigned step id 	                  */
 	bool old_job;           /* run job step under previous allocation */
@@ -199,7 +197,9 @@ void    report_job_status(srun_job_t *job);
  */
 int    set_job_rc(srun_job_t *job);
 
-void   fwd_signal(srun_job_t *job, int signal, int max_threads);
-int    job_active_tasks_on_host(srun_job_t *job, int hostid);
+void   timeout_handler(time_t timeout);
+
+/* Set up port to handle messages from slurmctld */
+slurm_fd slurmctld_msg_init(void);
 
 #endif /* !_HAVE_JOB_H */

@@ -70,10 +70,9 @@ am__installdirs = "$(DESTDIR)$(bindir)"
 binPROGRAMS_INSTALL = $(INSTALL_PROGRAM)
 PROGRAMS = $(bin_PROGRAMS)
 am_srun_OBJECTS = srun.$(OBJEXT) opt.$(OBJEXT) srun_job.$(OBJEXT) \
-	msg.$(OBJEXT) signals.$(OBJEXT) launch.$(OBJEXT) \
-	debugger.$(OBJEXT) fname.$(OBJEXT) sigstr.$(OBJEXT) \
-	allocate.$(OBJEXT) core-format.$(OBJEXT) multi_prog.$(OBJEXT) \
-	srun.wrapper.$(OBJEXT)
+	srun_pty.$(OBJEXT) debugger.$(OBJEXT) fname.$(OBJEXT) \
+	sigstr.$(OBJEXT) allocate.$(OBJEXT) core-format.$(OBJEXT) \
+	multi_prog.$(OBJEXT) srun.wrapper.$(OBJEXT)
 srun_OBJECTS = $(am_srun_OBJECTS)
 srun_DEPENDENCIES = $(convenience_libs)
 srun_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
@@ -263,9 +262,7 @@ srun_SOURCES = \
 	srun.c srun.h \
 	opt.c opt.h \
 	srun_job.c srun_job.h \
-	msg.c msg.h \
-	signals.c signals.h \
-	launch.c    \
+	srun_pty.c srun_pty.h \
 	launch.h    \
 	debugger.h    \
 	debugger.c    \
@@ -360,15 +357,13 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/core-format.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/debugger.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/fname.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/launch.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/msg.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/multi_prog.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/opt.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/signals.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sigstr.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/srun.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/srun.wrapper.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/srun_job.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/srun_pty.Po@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<

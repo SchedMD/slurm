@@ -55,6 +55,7 @@
 #include "src/common/xstring.h"
 #include "src/common/forward.h"
 #include "src/common/env.h"
+#include "src/common/fd.h"
 
 #include "src/srun/allocate.h"
 #include "src/srun/msg.h"
@@ -79,9 +80,10 @@ static int   _wait_for_alloc_rpc(int sleep_time,
 static void  _wait_for_resources(resource_allocation_response_msg_t **resp);
 static bool  _retry();
 static void  _intr_handler(int signo);
+static slurm_fd _slurmctld_msg_init(void);
 
 static sig_atomic_t destroy_job = 0;
-static srun_job_t *allocate_job = NULL;
+
 
 int
 allocate_test(void)
@@ -206,7 +208,6 @@ _wait_for_resources(resource_allocation_response_msg_t **resp)
 		if (destroy_job) {
 			verbose("cancelling job %u", job_id);
 			slurm_complete_job(job_id, 0);
-			debugger_launch_failure(allocate_job);
 			exit(0);
 		}
 
@@ -228,7 +229,7 @@ _wait_for_alloc_rpc(int sleep_time, resource_allocation_response_msg_t **resp)
 	struct pollfd fds[1];
 	slurm_fd slurmctld_fd;
 
-	if ((slurmctld_fd = slurmctld_msg_init()) < 0) {
+	if ((slurmctld_fd = _slurmctld_msg_init()) < 0) {
 		sleep (sleep_time);
 		return (0);
 	}
@@ -387,6 +388,37 @@ static void
 _intr_handler(int signo)
 {
 	destroy_job = 1;
+}
+
+/* Set up port to handle messages from slurmctld */
+static slurm_fd _slurmctld_msg_init(void)
+{
+	slurm_addr slurm_address;
+	uint16_t port;
+	static slurm_fd slurmctld_fd   = (slurm_fd) NULL;
+
+	if (slurmctld_fd)	/* May set early for queued job allocation */
+		return slurmctld_fd;
+
+	slurmctld_fd = -1;
+	slurmctld_comm_addr.hostname = NULL;
+	slurmctld_comm_addr.port = 0;
+
+	if ((slurmctld_fd = slurm_init_msg_engine_port(0)) < 0)
+		fatal("slurm_init_msg_engine_port error %m");
+	if (slurm_get_stream_addr(slurmctld_fd, &slurm_address) < 0)
+		fatal("slurm_get_stream_addr error %m");
+	fd_set_nonblocking(slurmctld_fd);
+	/* hostname is not set,  so slurm_get_addr fails
+	   slurm_get_addr(&slurm_address, &port, hostname, sizeof(hostname)); */
+	port = ntohs(slurm_address.sin_port);
+	slurmctld_comm_addr.hostname = xstrdup(opt.ctrl_comm_ifhn);
+	slurmctld_comm_addr.port     = port;
+	debug2("slurmctld messages to host=%s,port=%u", 
+	       slurmctld_comm_addr.hostname, 
+	       slurmctld_comm_addr.port);
+
+	return slurmctld_fd;
 }
 
 /*
@@ -642,9 +674,3 @@ create_job_step(srun_job_t *job)
 	return 0;
 }
 
-void 
-set_allocate_job(srun_job_t *job) 
-{
-	allocate_job = job;
-	return;
-}

@@ -1344,7 +1344,13 @@ extern void slurm_step_launch_wait_finish PARAMS((slurm_step_ctx_t *ctx));
  *
  * Can be called from a signal handler.
  */
-void slurm_step_launch_abort PARAMS((slurm_step_ctx_t *ctx));
+extern void slurm_step_launch_abort PARAMS((slurm_step_ctx_t *ctx));
+
+/* 
+ * Forward a signal to all those nodes with running tasks 
+ */
+extern void slurm_step_launch_fwd_signal PARAMS((slurm_step_ctx_t *ctx,
+	 int signo));
 
 /*****************************************************************************\
  *	SLURM CONTROL CONFIGURATION READ/PRINT/UPDATE FUNCTIONS
@@ -1394,7 +1400,7 @@ extern void slurm_print_ctl_conf PARAMS((
  * RET 0 or -1 on error
  * NOTE: free the response using slurm_free_slurmd_status()
  */
-extern int slurm_load_slurmd_status(slurmd_status_t **slurmd_status_ptr);
+extern int slurm_load_slurmd_status PARAMS((slurmd_status_t **slurmd_status_ptr));
 
 /*
  * slurm_free_slurmd_status - free slurmd state information

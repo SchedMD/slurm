@@ -167,7 +167,8 @@ int slurm_step_launch (slurm_step_ctx_t *ctx,
 	}
 
 	/* Create message receiving sockets and handler thread */
-	_msg_thr_create(ctx->launch_state, ctx->step_req->node_count);
+	_msg_thr_create(ctx->launch_state,
+			ctx->step_resp->step_layout->node_cnt);
 
 	/* Start tasks on compute nodes */
 	launch.job_id = ctx->step_req->job_id;
@@ -206,8 +207,8 @@ int slurm_step_launch (slurm_step_ctx_t *ctx,
 	} else {
 		launch.cwd = _lookup_cwd();
 	}
-	launch.nnodes = ctx->step_req->node_count;
-	launch.nprocs = ctx->step_req->num_tasks;
+	launch.nnodes = ctx->step_resp->step_layout->node_cnt;
+	launch.nprocs = ctx->step_resp->step_layout->task_cnt;
 	launch.slurmd_debug = params->slurmd_debug;
 	launch.switch_job = ctx->step_resp->switch_job;
 	launch.task_prolog = params->task_prolog;
@@ -431,6 +432,100 @@ void slurm_step_launch_abort(slurm_step_ctx_t *ctx)
 	pthread_cond_signal(&sls->cond);
 }
 
+/* 
+ * Forward a signal to all those nodes with running tasks 
+ */
+void slurm_step_launch_fwd_signal(slurm_step_ctx_t *ctx, int signo)
+{
+	int node_id, j, active, num_tasks;
+	slurm_msg_t req;
+	kill_tasks_msg_t msg;
+	hostlist_t hl;
+	char *name = NULL;
+	char buf[8192];
+	List ret_list = NULL;
+	ListIterator itr;
+	ret_data_info_t *ret_data_info = NULL;
+	int rc = SLURM_SUCCESS;
+	struct step_launch_state *sls = ctx->launch_state;
+	
+	debug2("forward signal %d to job", signo);
+	
+	/* common to all tasks */
+	msg.job_id      = ctx->job_id;
+	msg.job_step_id = ctx->step_resp->job_step_id;
+	msg.signal      = (uint32_t) signo;
+	
+	pthread_mutex_lock(&sls->lock);
+	
+	hl = hostlist_create("");
+	for (node_id = 0;
+	     node_id < ctx->step_resp->step_layout->node_cnt;
+	     node_id++) {
+		active = 0;		
+		num_tasks = sls->layout->tasks[node_id];
+		for (j = 0; j < num_tasks; j++) {
+			if(bit_test(sls->tasks_started,
+				    sls->layout->tids[node_id][j]) &&
+			   !bit_test(sls->tasks_exited,
+				     sls->layout->tids[node_id][j])) {
+				/* this one has active tasks */
+				active = 1;
+				break;
+			}
+		}
+		
+		if (!active)
+			continue;
+		
+		name = nodelist_nth_host(sls->layout->node_list, node_id);
+		hostlist_push(hl, name);
+		free(name);
+	}
+
+	pthread_mutex_unlock(&sls->lock);
+	
+	if(!hostlist_count(hl)) {
+		hostlist_destroy(hl);
+		goto nothing_left;
+	}
+	hostlist_ranged_string(hl, sizeof(buf), buf);
+	hostlist_destroy(hl);
+	name = xstrdup(buf);
+	
+	slurm_msg_t_init(&req);	
+	req.msg_type = REQUEST_SIGNAL_TASKS;
+	req.data     = &msg;
+	
+	debug3("sending signal to host %s", name);
+	
+	if (!(ret_list = slurm_send_recv_msgs(name, &req, 0))) { 
+		error("fwd_signal: slurm_send_recv_msgs really failed bad");
+		xfree(name);
+		return;
+	}
+	xfree(name);
+	itr = list_iterator_create(ret_list);		
+	while((ret_data_info = list_next(itr))) {
+		rc = slurm_get_return_code(ret_data_info->type, 
+					   ret_data_info->data);
+		/*
+		 *  Report error unless it is "Invalid job id" which 
+		 *    probably just means the tasks exited in the meanwhile.
+		 */
+		if ((rc != 0) && (rc != ESLURM_INVALID_JOB_ID)
+		    &&  (rc != ESLURMD_JOB_NOTRUNNING) && (rc != ESRCH)) {
+			error("%s: signal: %s", 
+			      ret_data_info->node_name, 
+			      slurm_strerror(rc));
+		}
+	}
+	list_iterator_destroy(itr);
+	list_destroy(ret_list);
+nothing_left:
+	debug2("All tasks have been signalled");
+	
+}
 
 /**********************************************************************
  * Functions used by step_ctx code, but not exported throught the API
@@ -441,20 +536,21 @@ void slurm_step_launch_abort(slurm_step_ctx_t *ctx)
 struct step_launch_state *step_launch_state_create(slurm_step_ctx_t *ctx)
 {
 	struct step_launch_state *sls;
+	slurm_step_layout_t *layout = ctx->step_resp->step_layout;
 
 	sls = xmalloc(sizeof(struct step_launch_state));
 	if (sls != NULL) {
 		sls->slurmctld_socket_fd = -1;
-		sls->tasks_requested = ctx->step_req->num_tasks;
-		sls->tasks_started = bit_alloc(ctx->step_req->num_tasks);
-		sls->tasks_exited = bit_alloc(ctx->step_req->num_tasks);
-		sls->layout = ctx->step_resp->step_layout;
+		sls->tasks_requested = layout->task_cnt;
+		sls->tasks_started = bit_alloc(layout->task_cnt);
+		sls->tasks_exited = bit_alloc(layout->task_cnt);
+		sls->layout = layout;
 		sls->resp_port = NULL;
 		sls->abort = false;
 		sls->abort_action_taken = false;
 		sls->mpi_info->jobid = ctx->step_req->job_id;
 		sls->mpi_info->stepid = ctx->step_resp->job_step_id;
-		sls->mpi_info->step_layout = ctx->step_resp->step_layout;
+		sls->mpi_info->step_layout = layout;
 		sls->mpi_state = NULL;
 		pthread_mutex_init(&sls->lock, NULL);
 		pthread_cond_init(&sls->cond, NULL);
@@ -478,7 +574,6 @@ void step_launch_state_destroy(struct step_launch_state *sls)
 		xfree(sls->resp_port);
 	}
 }
-
 
 /**********************************************************************
  * Message handler functions

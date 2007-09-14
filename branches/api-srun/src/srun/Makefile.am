@@ -10,9 +10,7 @@ srun_SOURCES = \
 	srun.c srun.h \
 	opt.c opt.h \
 	srun_job.c srun_job.h \
-	msg.c msg.h \
-	signals.c signals.h \
-	launch.c    \
+	srun_pty.c srun_pty.h \
 	launch.h    \
 	debugger.h    \
 	debugger.c    \

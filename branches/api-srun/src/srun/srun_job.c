@@ -61,6 +61,7 @@
 #include "src/common/xstring.h"
 #include "src/common/io_hdr.h"
 #include "src/common/forward.h"
+#include "src/common/fd.h"
 
 #include "src/srun/srun_job.h"
 #include "src/srun/opt.h"
@@ -92,6 +93,7 @@ typedef struct thd {
 } thd_t;
 
 int message_thread = 0;
+
 /*
  * Prototypes:
  */
@@ -140,11 +142,6 @@ job_create_noalloc(void)
 	 */
 	job = _job_create_structure(ai);
 	
-	job->step_layout = fake_slurm_step_layout_create(job->nodelist, 
-							 NULL, NULL,
-							 job->nhosts,
-							 job->ntasks);
-		
 	_job_fake_cred(job);
 	job_update_io_fnames(job);
 
@@ -517,6 +514,25 @@ set_job_rc(srun_job_t *job)
 	return job->rc;
 }
 
+/*
+ * Job has been notified of it's approaching time limit. 
+ * Job will be killed shortly after timeout.
+ * This RPC can arrive multiple times with the same or updated timeouts.
+ * FIXME: We may want to signal the job or perform other action for this.
+ * FIXME: How much lead time do we want for this message? Some jobs may 
+ *	require tens of minutes to gracefully terminate.
+ */
+void timeout_handler(time_t timeout)
+{
+	static time_t last_timeout = 0;
+
+	if (timeout != last_timeout) {
+		last_timeout = timeout;
+		verbose("job time limit to be reached at %s", 
+			ctime(&timeout));
+	}
+}
+
 
 void job_fatal(srun_job_t *job, const char *msg)
 {
@@ -542,11 +558,9 @@ srun_job_destroy(srun_job_t *job, int error)
 		slurm_complete_job(job->jobid, error);
 	} else {
 		debug("no allocation to cancel, killing remote tasks");
-		fwd_signal(job, SIGKILL, opt.max_threads); 
+		slurm_step_launch_fwd_signal(job->step_ctx, SIGKILL); 
 		return;
 	}
-
-	if (error) debugger_launch_failure(job);
 
 	job->removed = true;
 }
@@ -604,113 +618,6 @@ report_task_status(srun_job_t *job)
 		hostlist_destroy(hl[i]);
 	}
 
-}
-
-void 
-fwd_signal(srun_job_t *job, int signo, int max_threads)
-{
-	int i;
-	slurm_msg_t req;
-	kill_tasks_msg_t msg;
-	static pthread_mutex_t sig_mutex = PTHREAD_MUTEX_INITIALIZER;
-	hostlist_t hl;
-	char *name = NULL;
-	char buf[8192];
-	List ret_list = NULL;
-	ListIterator itr;
-	ret_data_info_t *ret_data_info = NULL;
-	int rc = SLURM_SUCCESS;
-
-	slurm_mutex_lock(&sig_mutex);
-
-	if (signo == SIGKILL || signo == SIGINT || signo == SIGTERM) {
-		slurm_mutex_lock(&job->state_mutex);
-		job->signaled = true;
-		slurm_mutex_unlock(&job->state_mutex);
-	}
-
-	debug2("forward signal %d to job", signo);
-
-	/* common to all tasks */
-	msg.job_id      = job->jobid;
-	msg.job_step_id = job->stepid;
-	msg.signal      = (uint32_t) signo;
-	
-	hl = hostlist_create("");
-	for (i = 0; i < job->nhosts; i++) {
-		if (job->host_state[i] != SRUN_HOST_REPLIED) {
-			name = nodelist_nth_host(
-				job->step_layout->node_list, i);
-			debug2("%s has not yet replied\n", name);
-			free(name);
-			continue;
-		}
-		if (job_active_tasks_on_host(job, i) == 0)
-			continue;
-		name = nodelist_nth_host(job->step_layout->node_list, i);
-		hostlist_push(hl, name);
-		free(name);
-	}
-	if(!hostlist_count(hl)) {
-		hostlist_destroy(hl);
-		goto nothing_left;
-	}
-	hostlist_ranged_string(hl, sizeof(buf), buf);
-	hostlist_destroy(hl);
-	name = xstrdup(buf);
-
-	slurm_msg_t_init(&req);	
-	req.msg_type = REQUEST_SIGNAL_TASKS;
-	req.data     = &msg;
-	
-	debug3("sending signal to host %s", name);
-	
-	if (!(ret_list = slurm_send_recv_msgs(name, &req, 0))) { 
-		error("fwd_signal: slurm_send_recv_msgs really failed bad");
-		xfree(name);
-		slurm_mutex_unlock(&sig_mutex);
-		return;
-	}
-	xfree(name);
-	itr = list_iterator_create(ret_list);		
-	while((ret_data_info = list_next(itr))) {
-		rc = slurm_get_return_code(ret_data_info->type, 
-					   ret_data_info->data);
-		/*
-		 *  Report error unless it is "Invalid job id" which 
-		 *    probably just means the tasks exited in the meanwhile.
-		 */
-		if ((rc != 0) && (rc != ESLURM_INVALID_JOB_ID)
-		    &&  (rc != ESLURMD_JOB_NOTRUNNING) && (rc != ESRCH)) {
-			error("%s: signal: %s", 
-			      ret_data_info->node_name, 
-			      slurm_strerror(rc));
-		}
-	}
-	list_iterator_destroy(itr);
-	list_destroy(ret_list);
-nothing_left:
-	debug2("All tasks have been signalled");
-	
-	slurm_mutex_unlock(&sig_mutex);
-}
-
-int
-job_active_tasks_on_host(srun_job_t *job, int hostid)
-{
-	int i;
-	int retval = 0;
-
-	slurm_mutex_lock(&job->task_mutex);
-	for (i = 0; i < job->step_layout->tasks[hostid]; i++) {
-		uint32_t *tids = job->step_layout->tids[hostid];
-		xassert(tids != NULL);
-		debug("Task %d state: %d", tids[i], job->task_state[tids[i]]);
-		if (job->task_state[tids[i]] == SRUN_TASK_RUNNING) 
-			retval++;
-	}
-	slurm_mutex_unlock(&job->task_mutex);
-	return retval;
 }
 
 static inline int

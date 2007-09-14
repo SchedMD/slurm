@@ -91,7 +91,7 @@
 #include "src/srun/sigstr.h"
 #include "src/srun/debugger.h"
 #include "src/srun/srun.h"
-#include "src/srun/signals.h"
+#include "src/srun/srun_pty.h"
 #include "src/srun/multi_prog.h"
 #include "src/api/pmi_server.h"
 
@@ -106,7 +106,7 @@ mpi_plugin_client_info_t mpi_job_info[1];
 pid_t srun_ppid = 0;
 static struct termios termdefaults;
 int global_rc;
-slurm_step_ctx_t *step_ctx = NULL;
+srun_job_t *job = NULL;
 
 struct {
 	bitstr_t *start_success;
@@ -144,13 +144,13 @@ static void _mpir_init(int num_tasks);
 static void _mpir_cleanup(void);
 static void _mpir_set_executable_names(const char *executable_name);
 static void _mpir_dump_proctable(void);
-static void _ignore_signal(int signo);
-static void _exit_on_signal(int signo);
+static void _handle_intr();
+static void _handle_signal(int signo);
+static int _setup_signals();
 
 int srun(int ac, char **av)
 {
 	resource_allocation_response_msg_t *resp;
-	srun_job_t *job = NULL;
 	env_t *env = xmalloc(sizeof(env_t));
 	uint32_t job_id = 0;
 	log_options_t logopt = LOG_OPTS_STDERR_ONLY;
@@ -167,10 +167,10 @@ int srun(int ac, char **av)
 	logopt.stderr_level += _slurm_debug_env_val();
 	log_init(xbasename(av[0]), logopt, 0, NULL);
 
-	xsignal(SIGQUIT, _ignore_signal);
-	xsignal(SIGPIPE, _ignore_signal);
-	xsignal(SIGUSR1, _ignore_signal);
-	xsignal(SIGUSR2, _ignore_signal);
+/* 	xsignal(SIGQUIT, _ignore_signal); */
+/* 	xsignal(SIGPIPE, _ignore_signal); */
+/* 	xsignal(SIGUSR1, _ignore_signal); */
+/* 	xsignal(SIGUSR2, _ignore_signal); */
 
 	/* Initialize plugin stack, read options from plugins, etc.
 	 */
@@ -209,9 +209,6 @@ int srun(int ac, char **av)
 	(void) _set_rlimit_env();
 	_set_prio_process_env();
 	(void) _set_umask_env();
-
-	/* Set up slurmctld message handler */
-	slurmctld_msg_init();
 	
 	/* now global "opt" should be filled in and available,
 	 * create a job from opt
@@ -227,7 +224,6 @@ int srun(int ac, char **av)
 
 	} else if (opt.no_alloc) {
 		info("do not allocate resources");
-		sig_setup_sigmask();
 		job = job_create_noalloc(); 
 		_switch_standalone(job);
 		if (create_job_step(job) < 0) {
@@ -284,16 +280,6 @@ int srun(int ac, char **av)
 	 */
 	if (_become_user () < 0)
 		info ("Warning: Unable to assume uid=%lu\n", opt.uid);
-
-
-	/* Now we can register a few more signal handlers.  It
-	 * is only safe to have _exit_on_signal call
-	 * slurm_step_launch_abort after the the step context
-	 * has been created.
-	 */
-	xsignal(SIGHUP, _exit_on_signal);
-	xsignal(SIGINT, _exit_on_signal);
-	xsignal(SIGTERM, _exit_on_signal);
 
 	/*
 	 *  Enhance environment for job
@@ -376,7 +362,7 @@ int srun(int ac, char **av)
 
 
 	/* job structure should now be filled in */
-	step_ctx = job->step_ctx;
+	_setup_signals();
 
 	_set_stdio_fds(job, &launch_params.local_fds);
 
@@ -596,12 +582,16 @@ static void
 _switch_standalone(srun_job_t *job)
 {
 	int cyclic = (opt.distribution == SLURM_DIST_CYCLIC);
+	uint16_t *tasks = NULL;
+
+	slurm_step_ctx_get(job->step_ctx, SLURM_STEP_CTX_TASKS, 
+			   &tasks);
 
 	if (switch_alloc_jobinfo(&job->switch_job) < 0)
 		fatal("switch_alloc_jobinfo: %m");
 	if (switch_build_jobinfo(job->switch_job, 
 				 job->nodelist, 
-				 job->step_layout->tasks, 
+				 tasks, 
 				 cyclic, opt.network) < 0)
 		fatal("switch_build_jobinfo: %m");
 }
@@ -875,9 +865,14 @@ _set_stdio_fds(srun_job_t *job, slurm_step_io_fds_t *cio_fds)
 				fatal("Could not open stdin file: %m");
 		}
 		if (job->ifname->type == IO_ONE) {
+			job_step_create_response_msg_t *step_resp = NULL;
+			
+			slurm_step_ctx_get(job->step_ctx, SLURM_STEP_CTX_RESP,
+					   &step_resp);
+		
 			cio_fds->in.taskid = job->ifname->taskid;
 			cio_fds->in.nodeid = slurm_step_layout_host_id(
-				job->step_layout, job->ifname->taskid);
+				step_resp->step_layout, job->ifname->taskid);
 		}
 	}
 
@@ -992,7 +987,7 @@ _handle_max_wait(int signo)
 {
 	info("First task exited %ds ago", opt.max_wait);
 	_task_state_struct_print();
-	_terminate_job_step(step_ctx);
+	_terminate_job_step(job->step_ctx);
 }
 
 static void
@@ -1034,7 +1029,7 @@ _task_finish(task_exit_msg_t *msg)
 
 	if (first_error && rc > 0 && opt.kill_bad_exit) {
 		first_error = false;
-		_terminate_job_step(step_ctx);
+		_terminate_job_step(job->step_ctx);
 	} else if (first_done && opt.max_wait > 0) {
 		/* If these are the first tasks to finish we need to
 		 * start a timer to kill off the job step if the other
@@ -1178,12 +1173,77 @@ _mpir_dump_proctable()
 	}
 }
 	
-static void _ignore_signal(int signo)
+static void _handle_intr()
 {
-	/* do nothing */
+	static time_t last_intr      = 0;
+	static time_t last_intr_sent = 0;
+	if (opt.quit_on_intr) {
+		slurm_step_launch_abort(job->step_ctx);
+		return;
+	}
+
+	if (((time(NULL) - last_intr) > 1) && !opt.disable_status) {
+		info("interrupt (one more within 1 sec to abort)");
+		report_task_status(job);
+		last_intr = time(NULL);
+	} else  { /* second Ctrl-C in half as many seconds */
+		update_job_state(job, SRUN_JOB_CANCELLED);
+		/* terminate job */
+		if (job->state < SRUN_JOB_FORCETERM) {
+			if ((time(NULL) - last_intr_sent) < 1) {
+				slurm_step_launch_abort(job->step_ctx);
+				return;
+			}
+
+			info("sending Ctrl-C to job");
+			last_intr_sent = time(NULL);
+			slurm_step_launch_fwd_signal(job->step_ctx, SIGINT);
+
+		} else {
+			slurm_step_launch_abort(job->step_ctx);
+		}
+	}
 }
 
-static void _exit_on_signal(int signo)
+static void _handle_signal(int signo)
 {
-	slurm_step_launch_abort(step_ctx);
+	switch (signo) {
+	case SIGINT:
+		_handle_intr();
+		break;
+	case SIGQUIT:
+		info("Quit");
+		/* continue with skurm_step_launch_abort */
+	case SIGTERM:
+	case SIGHUP:
+		slurm_step_launch_abort(job->step_ctx);
+		break;
+	/* case SIGTSTP: */
+/* 		debug3("got SIGTSTP"); */
+/* 		break; */
+	case SIGCONT:
+		debug3("got SIGCONT");
+		break;
+	default:
+		slurm_step_launch_fwd_signal(job->step_ctx, signo);
+		break;
+	}
 }
+
+static int _setup_signals()
+{
+	int sigarray[] = {
+		SIGINT,  SIGQUIT, /*SIGTSTP,*/ SIGCONT, SIGTERM,
+		SIGALRM, SIGUSR1, SIGUSR2, SIGPIPE, 0
+	};
+	int rc = SLURM_SUCCESS, i=0, signo;
+
+	xassert(job);
+	xassert(job->step_ctx);
+
+	while ((signo = sigarray[i++])) 
+		xsignal(signo, _handle_signal);
+
+	return rc;
+}
+

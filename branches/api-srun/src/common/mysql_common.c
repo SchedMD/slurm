@@ -144,6 +144,7 @@ extern int mysql_get_db_connection(MYSQL **mysql_db, char *db_name,
 				storage_init = true;
 			}
 		}
+		mysql_options(*mysql_db, MYSQL_OPT_RECONNECT, &reconnect);
 	}
 	return rc;
 }
