@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  test1.89.prog.c - Simple test program for SLURM regression test1.89.
+ *  test1.91.prog.c - Simple test program for SLURM regression test1.91.
  *  Reports SLURM task ID and the CPU mask,
  *  similar functionality to "taskset" command
  *****************************************************************************
@@ -32,7 +32,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "config.h"
+#include "../../config.h"
 
 static void _load_mask(cpu_set_t *mask)
 {
