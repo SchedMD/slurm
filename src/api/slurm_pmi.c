@@ -36,6 +36,7 @@
 \*****************************************************************************/
 
 #include <stdlib.h>
+#include <sys/time.h>
 #include <slurm/slurm.h>
 #include <slurm/slurm_errno.h>
 
@@ -48,16 +49,76 @@
 #include "src/common/fd.h"
 #include "src/common/slurm_auth.h"
 
-#define MAX_RETRIES 5
+#define DEFAULT_PMI_TIME 500
+#define MAX_RETRIES      5
 
 int pmi_fd = -1;
 int pmi_time = 0;
 uint16_t srun_port = 0;
 slurm_addr srun_addr;
 
-static int _forward_comm_set(struct kvs_comm_set *kvs_set_ptr);
-static int _get_addr(void);
+static void _delay_rpc(int pmi_rank, int pmi_size);
+static int  _forward_comm_set(struct kvs_comm_set *kvs_set_ptr);
+static int  _get_addr(void);
 static void _set_pmi_time(void);
+
+/* Delay an RPC to srun in order to avoid overwhelming the srun command.
+ * The delay is based upon the number of tasks, this task's rank, and PMI_TIME.
+ * This logic depends upon synchronized clocks across the cluster. */
+static void _delay_rpc(int pmi_rank, int pmi_size)
+{
+	struct timeval tv1, tv2;
+	uint32_t cur_time;	/* current time in usec (just 9 digits) */
+	uint32_t tot_time;	/* total time expected for all RPCs */
+	uint32_t offset_time;	/* relative time within tot_time */
+	uint32_t target_time;	/* desired time to issue the RPC */
+	uint32_t delta_time, error_time;
+	int retries = 0;
+
+	_set_pmi_time();
+
+again:	if (gettimeofday(&tv1, NULL)) {
+		usleep(pmi_rank * pmi_time);
+		return;
+	}
+
+	cur_time = (tv1.tv_sec % 1000) + tv1.tv_usec;
+	tot_time = pmi_size * pmi_time;
+	offset_time = cur_time % tot_time;
+	target_time = pmi_rank * pmi_time;
+	if (target_time < offset_time)
+		delta_time = target_time - offset_time + tot_time;
+	else
+		delta_time = target_time - offset_time;
+	if (usleep(delta_time)) {
+		if (errno == EINVAL)
+			usleep(900000);
+		/* errno == EINTR */
+		goto again;
+	}
+
+	/* Verify we are active at the right time. If current time is different
+	 * from target by more than 15*pmi_time, then start over. If PMI_TIME 
+	 * is set appropriately, then srun should have no more than 30 RPCs
+	 * in the queue at one time in the worst case. */
+	if (gettimeofday(&tv2, NULL))
+		return;
+	tot_time = (tv2.tv_sec - tv1.tv_sec) * 1000000;
+	tot_time += tv2.tv_usec;
+	tot_time -= tv1.tv_usec;
+	if (tot_time >= delta_time)
+		error_time = tot_time - delta_time;
+	else
+		error_time = delta_time - tot_time;
+	if (error_time > (15*pmi_time)) {	/* too far off */
+#if 0
+		info("delta=%u tot=%u err=%u", 
+			delta_time, tot_time, error_time);
+#endif
+		if ((++retries) <= 2)
+			goto again;
+	}
+}
 
 static int _get_addr(void)
 {
@@ -85,14 +146,14 @@ static void _set_pmi_time(void)
 
 	tmp = getenv("PMI_TIME");
 	if (tmp == NULL) {
-		pmi_time = 500;
+		pmi_time = DEFAULT_PMI_TIME;
 		return;
 	}
 
 	pmi_time = strtol(tmp, &endptr, 10);
 	if ((pmi_time < 0) || (endptr[0] != '\0')) {
 		error("Invalid PMI_TIME: %s", tmp);
-		pmi_time = 500;
+		pmi_time = DEFAULT_PMI_TIME;
 	}
 }
 
@@ -123,9 +184,11 @@ int slurm_send_kvs_comm_set(struct kvs_comm_set *kvs_set_ptr,
 	 * command is very overloaded.
 	 * We also increase the timeout (default timeout is
 	 * 10 secs). */
-	usleep(pmi_rank * pmi_time);
-	if      (pmi_size > 1000)	/* 100 secs */
-		timeout = slurm_get_msg_timeout() * 10000;
+	_delay_rpc(pmi_rank, pmi_size);
+	if      (pmi_size > 4000)	/* 240 secs */
+		timeout = slurm_get_msg_timeout() * 24000;
+	else if (pmi_size > 1000)	/* 120 secs */
+		timeout = slurm_get_msg_timeout() * 12000;
 	else if (pmi_size > 100)	/* 50 secs */
 		timeout = slurm_get_msg_timeout() * 5000;
 	else if (pmi_size > 10)		/* 20 secs */
@@ -135,8 +198,9 @@ int slurm_send_kvs_comm_set(struct kvs_comm_set *kvs_set_ptr,
 		if (retries++ > MAX_RETRIES) {
 			error("slurm_send_kvs_comm_set: %m");
 			return SLURM_ERROR;
-		}
-		usleep(pmi_rank * pmi_time);
+		} else
+			debug("send_kvs retry %d", retries);
+		_delay_rpc(pmi_rank, pmi_size);
 	}
 
 	return rc;
@@ -153,7 +217,7 @@ int  slurm_get_kvs_comm_set(struct kvs_comm_set **kvs_set_ptr,
 	uint16_t port;
 	kvs_get_msg_t data;
 	char *env_pmi_ifhn;
-	
+
 	if (kvs_set_ptr == NULL)
 		return EINVAL;
 	*kvs_set_ptr = NULL;	/* initialization */
@@ -203,18 +267,14 @@ int  slurm_get_kvs_comm_set(struct kvs_comm_set **kvs_set_ptr,
 	 * Also increase the message timeout if many tasks 
 	 * since the srun command can get very overloaded (the
 	 * default timeout is 10 secs).
-	 *
-	 * TaskID  SendTime  GetTime  (Units are PMI_TIME, default=500 usec)
-	 *      0         0      N+0
-	 *      1         1      N+1
-	 *      2         2      N+2
-	 *    N-1       N-1      N+N-1
 	 */
-	usleep(pmi_size * pmi_time);
-	if      (pmi_size > 1000)	/* 100 secs */
-		timeout = slurm_get_msg_timeout() * 10000;
-	else if (pmi_size > 100)	/* 50 secs */
-		timeout = slurm_get_msg_timeout() * 5000;
+	_delay_rpc(pmi_rank, pmi_size);
+	if      (pmi_size > 4000)	/* 240 secs */
+		timeout = slurm_get_msg_timeout() * 24000;
+	else if (pmi_size > 1000)	/* 120 secs */
+		timeout = slurm_get_msg_timeout() * 12000;
+	else if (pmi_size > 100)	/* 60 secs */
+		timeout = slurm_get_msg_timeout() * 6000;
 	else if (pmi_size > 10)		/* 20 secs */
 		timeout = slurm_get_msg_timeout() * 2000;
 
@@ -222,8 +282,9 @@ int  slurm_get_kvs_comm_set(struct kvs_comm_set **kvs_set_ptr,
 		if (retries++ > MAX_RETRIES) {
 			error("slurm_get_kvs_comm_set: %m");
 			return SLURM_ERROR;
-		}
-		usleep(pmi_rank * pmi_time);
+		} else
+			debug("get kvs retry %d", retries);
+		_delay_rpc(pmi_rank, pmi_size);
 	}
 	if (rc != SLURM_SUCCESS) {
 		error("slurm_get_kvs_comm_set error_code=%d", rc);
@@ -263,7 +324,8 @@ int  slurm_get_kvs_comm_set(struct kvs_comm_set **kvs_set_ptr,
 }
 
 /* Forward keypair info to other tasks as required.
-* Clear message forward structure upon completion. */
+ * Clear message forward structure upon completion. 
+ * The messages are forwarded sequentially. */
 static int _forward_comm_set(struct kvs_comm_set *kvs_set_ptr)
 {
 	int i, rc = SLURM_SUCCESS;
