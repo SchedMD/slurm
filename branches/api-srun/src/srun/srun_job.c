@@ -67,7 +67,6 @@
 #include "src/srun/opt.h"
 #include "src/srun/fname.h"
 #include "src/srun/debugger.h"
-#include "src/srun/msg.h"
 
 typedef enum {DSH_NEW, DSH_ACTIVE, DSH_DONE, DSH_FAILED} state_t;
 

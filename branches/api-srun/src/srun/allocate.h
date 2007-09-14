@@ -43,6 +43,13 @@
 
 #include "src/srun/srun_job.h"
 
+typedef struct slurmctld_communication_addr {
+	char *hostname;
+	uint16_t port;
+} slurmctld_comm_addr_t;
+
+slurmctld_comm_addr_t slurmctld_comm_addr;
+
 /* 
  * Allocate nodes from the slurm controller -- retrying the attempt
  * if the controller appears to be down, and optionally waiting for

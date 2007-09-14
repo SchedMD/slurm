@@ -85,8 +85,6 @@
 
 #include "src/srun/allocate.h"
 #include "src/srun/srun_job.h"
-#include "src/srun/launch.h"
-#include "src/srun/msg.h"
 #include "src/srun/opt.h"
 #include "src/srun/sigstr.h"
 #include "src/srun/debugger.h"

@@ -58,7 +58,6 @@
 #include "src/common/fd.h"
 
 #include "src/srun/allocate.h"
-#include "src/srun/msg.h"
 #include "src/srun/opt.h"
 #include "src/srun/debugger.h"
 
