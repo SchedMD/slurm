@@ -6,7 +6,7 @@ documents those changes that are of interest to users and admins.
  -- In select/cons_res properly release resources allocated to job being 
     suspended (rmbreak.patch, from Chris Holmes, HP).
  -- Fix AIX linking problem for PMI (mpich2) support.
- -- Improve PMI logic for greater scalability.
+ -- Improve PMI logic for greater scalability (up to 16k tasks run).
  -- Add srun support for SLURM_THREADS and PMI_FANOUT environment variables.
 
 * Changes in SLURM 1.2.16
