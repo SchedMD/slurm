@@ -322,7 +322,7 @@ extern int jobacct_storage_p_job_start(struct job_record *job_ptr)
 	char query[1024];
 	int reinit = 0;
 
-	if(!jobacct_mysql_db || mysql_ping(jobacct_mysql_db)) {
+	if(!jobacct_mysql_db || mysql_ping(jobacct_mysql_db) != 0) {
 		char *loc = slurm_get_jobacct_storage_loc();
 		if(jobacct_storage_p_init(loc) == SLURM_ERROR) {
 			xfree(loc);
@@ -417,7 +417,7 @@ extern int jobacct_storage_p_job_complete(struct job_record *job_ptr)
 	char	*account, *nodes;
 	int rc=SLURM_SUCCESS;
 	
-	if(!jobacct_mysql_db || mysql_ping(jobacct_mysql_db)) {
+	if(!jobacct_mysql_db || mysql_ping(jobacct_mysql_db) != 0) {
 		char *loc = slurm_get_jobacct_storage_loc();
 		if(jobacct_storage_p_init(loc) == SLURM_ERROR) {
 			xfree(loc);
@@ -475,7 +475,7 @@ extern int jobacct_storage_p_step_start(struct step_record *step_ptr)
 #endif
 	char query[1024];
 	
-	if(!jobacct_mysql_db || mysql_ping(jobacct_mysql_db)) {
+	if(!jobacct_mysql_db || mysql_ping(jobacct_mysql_db) != 0) {
 		char *loc = slurm_get_jobacct_storage_loc();
 		if(jobacct_storage_p_init(loc) == SLURM_ERROR) {
 			xfree(loc);
@@ -554,7 +554,7 @@ extern int jobacct_storage_p_step_complete(struct step_record *step_ptr)
 	char query[1024];
 	int rc =SLURM_SUCCESS;
 	
-	if(!jobacct_mysql_db || mysql_ping(jobacct_mysql_db)) {
+	if(!jobacct_mysql_db || mysql_ping(jobacct_mysql_db) != 0) {
 		char *loc = slurm_get_jobacct_storage_loc();
 		if(jobacct_storage_p_init(loc) == SLURM_ERROR) {
 			xfree(loc);
@@ -719,7 +719,7 @@ extern int jobacct_storage_p_suspend(struct job_record *job_ptr)
 		char query[1024];
 	int rc = SLURM_SUCCESS;
 	
-	if(!jobacct_mysql_db || mysql_ping(jobacct_mysql_db)) {
+	if(!jobacct_mysql_db || mysql_ping(jobacct_mysql_db) != 0) {
 		char *loc = slurm_get_jobacct_storage_loc();
 		if(jobacct_storage_p_init(loc) == SLURM_ERROR) {
 			xfree(loc);
@@ -764,7 +764,7 @@ extern void jobacct_storage_p_get_jobs(List job_list,
 					void *params)
 {
 #ifdef HAVE_MYSQL
-	if(!jobacct_mysql_db || mysql_ping(jobacct_mysql_db)) {
+	if(!jobacct_mysql_db || mysql_ping(jobacct_mysql_db) != 0) {
 		char *loc = slurm_get_jobacct_storage_loc();
 		if(jobacct_storage_p_init(loc) == SLURM_ERROR) {
 			xfree(loc);
@@ -786,7 +786,7 @@ extern void jobacct_storage_p_archive(List selected_parts,
 				       void *params)
 {
 #ifdef HAVE_MYSQL
-	if(!jobacct_mysql_db || mysql_ping(jobacct_mysql_db)) {
+	if(!jobacct_mysql_db || mysql_ping(jobacct_mysql_db) != 0) {
 		char *loc = slurm_get_jobacct_storage_loc();
 		if(jobacct_storage_p_init(loc) == SLURM_ERROR) {
 			xfree(loc);
