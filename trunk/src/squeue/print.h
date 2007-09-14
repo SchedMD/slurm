@@ -86,9 +86,9 @@ int job_format_add_function(List list, int width, bool right_justify,
 #define job_format_add_prefix(list,wid,right,prefix) \
 	job_format_add_function(list,0,0,prefix,_print_job_prefix)
 #define job_format_add_reason(list,wid,right,prefix) \
-        job_format_add_function(list,0,0,prefix,_print_job_reason)
+        job_format_add_function(list,wid,right,prefix,_print_job_reason)
 #define job_format_add_reason_list(list,wid,right,prefix) \
-	job_format_add_function(list,0,0,prefix,_print_job_reason_list)
+	job_format_add_function(list,wid,right,prefix,_print_job_reason_list)
 #define job_format_add_name(list,wid,right,suffix) \
 	job_format_add_function(list,wid,right,suffix,_print_job_name)
 #define job_format_add_user_name(list,wid,right,suffix) \
