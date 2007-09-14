@@ -51,7 +51,7 @@ exit 0
 #
 # Create an allocation
 #
-set srun_pid [spawn $srun --allocate -N2 --verbose -t2]
+set salloc_pid [spawn $salloc -N2 -n4 --verbose -t2 $bin_bash]
 expect {
 	-re "More ($alpha) requested than permitted" {
 		send_user "\nWARNING: can't test srun task distribution\n"
@@ -61,8 +61,8 @@ expect {
 		send "$srun -l -c1 $file_bash | sort -n\n"
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
-		slow_kill $srun_pid
+		send_user "\nFAILURE: salloc not responding\n"
+		slow_kill $salloc_pid
 		exit 1
 	}
 }
@@ -92,9 +92,9 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun (from --allocate) not responding "
+		send_user "\nFAILURE: salloc not responding "
 		send_user "or failure to recognize prompt\n"
-		slow_kill $srun_pid
+		slow_kill $salloc_pid
 		exit 1
 	}
 	-re $prompt
@@ -269,9 +269,9 @@ expect {
 		set exit_code 1
 	}
 	timeout {
-		send_user "\nFAILURE: srun (from --allocate) not responding "
+		send_user "\nFAILURE: salloc not responding "
 		send_user "or failure to recognize prompt\n"
-		slow_kill $srun_pid
+		slow_kill $salloc_pid
 		set exit_code 1
 	}
 	eof {
