@@ -8,7 +8,7 @@
 #          "FAILURE: ..." otherwise with an explanation of the failure, OR
 #          anything else indicates a failure mode that must be investigated.
 ############################################################################
-# Copyright (C) 2005 The Regents of the University of California.
+# Copyright (C) 2005-2007 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 # Written by Morris Jette <jette1@llnl.gov>
 # UCRL-CODE-226842.
@@ -101,7 +101,7 @@ exec $bin_chmod 700 $file_prog
 #
 global env
 set env(SLURM_CPU_BIND) "verbose"
-set srun_pid [spawn $srun --allocate -N1 --exclusive --verbose -t2]
+set salloc_pid [spawn $salloc -N1 --exclusive --verbose -t2 $bin_bash]
 
 #############################################################################
 #
@@ -123,9 +123,9 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun (from --allocate) not responding "
+		send_user "\nFAILURE: salloc not responding "
 		send_user "or failure to recognize prompt\n"
-		slow_kill $srun_pid
+		slow_kill $salloc_pid
 		exit 1
 	}
 	-re $prompt
@@ -241,7 +241,7 @@ while {$this_cnt <= $num_cores} {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: srun (from --allocate) not responding "
+			send_user "\nFAILURE: salloc not responding "
 			send_user "or failure to recognize prompt\n"
 			set exit_code 1
 		}
@@ -291,7 +291,7 @@ while {$this_cnt <= $num_threads} {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: srun (from --allocate) not responding "
+			send_user "\nFAILURE: salloc not responding "
 			send_user "or failure to recognize prompt\n"
 			set exit_code 1
 		}
@@ -340,7 +340,7 @@ while {$this_cnt <= $task_cnt} {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: srun (from --allocate) not responding "
+			send_user "\nFAILURE: salloc not responding "
 			send_user "or failure to recognize prompt\n"
 			set exit_code 1
 		}
@@ -376,7 +376,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun (from --allocate) not responding "
+		send_user "\nFAILURE: salloc not responding "
 		send_user "or failure to recognize prompt\n"
 		set exit_code 1
 	}
@@ -398,9 +398,9 @@ expect {
 		set exit_code 1
 	}
 	timeout {
-		send_user "\nFAILURE: srun (from --allocate) not responding "
+		send_user "\nFAILURE: salloc not responding "
 		send_user "or failure to recognize prompt\n"
-		slow_kill $srun_pid
+		slow_kill $salloc_pid
 		set exit_code 1
 	}
 	eof {
