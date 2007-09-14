@@ -316,7 +316,7 @@ extern int slurm_jobcomp_log_record(struct job_record *job_ptr)
 	enum job_states job_state;
 	char query[1024];
 
-	if(!jobcomp_mysql_db && mysql_ping(jobcomp_mysql_db) == 0) {
+	if(!jobcomp_mysql_db || mysql_ping(jobcomp_mysql_db) != 0) {
 		char *loc = slurm_get_jobcomp_loc();
 		if(slurm_jobcomp_set_location(loc) == SLURM_ERROR) {
 			xfree(loc);
@@ -419,7 +419,7 @@ extern void slurm_jobcomp_get_jobs(List job_list,
 				   void *params)
 {
 #ifdef HAVE_MYSQL
-	if(!jobcomp_mysql_db && mysql_ping(jobcomp_mysql_db) == 0) {
+	if(!jobcomp_mysql_db || mysql_ping(jobcomp_mysql_db) != 0) {
 		char *loc = slurm_get_jobcomp_loc();
 		if(slurm_jobcomp_set_location(loc) == SLURM_ERROR) {
 			xfree(loc);
@@ -441,7 +441,7 @@ extern void slurm_jobcomp_get_jobs(List job_list,
 extern void slurm_jobcomp_archive(List selected_parts, void *params)
 {
 #ifdef HAVE_MYSQL
-	if(!jobcomp_mysql_db && mysql_ping(jobcomp_mysql_db) == 0) {
+	if(!jobcomp_mysql_db || mysql_ping(jobcomp_mysql_db) != 0) {
 		char *loc = slurm_get_jobcomp_loc();
 		if(slurm_jobcomp_set_location(loc) == SLURM_ERROR) {
 			xfree(loc);

@@ -339,7 +339,7 @@ extern int slurm_jobcomp_log_record(struct job_record *job_ptr)
 	enum job_states job_state;
 	char query[1024];
 
-	if(!jobcomp_pgsql_db && PQstatus(jobcomp_pgsql_db) == CONNECTION_OK) {
+	if(!jobcomp_pgsql_db || PQstatus(jobcomp_pgsql_db) != CONNECTION_OK) {
 		char *loc = slurm_get_jobcomp_loc();
 		if(slurm_jobcomp_set_location(loc) == SLURM_ERROR) {
 			xfree(loc);
@@ -442,7 +442,7 @@ extern void slurm_jobcomp_get_jobs(List job_list,
 					void *params)
 {
 #ifdef HAVE_PGSQL
-	if(!jobcomp_pgsql_db && PQstatus(jobcomp_pgsql_db) == CONNECTION_OK) {
+	if(!jobcomp_pgsql_db || PQstatus(jobcomp_pgsql_db) != CONNECTION_OK) {
 		char *loc = slurm_get_jobcomp_loc();
 		if(slurm_jobcomp_set_location(loc) == SLURM_ERROR) {
 			xfree(loc);
@@ -464,7 +464,7 @@ extern void slurm_jobcomp_get_jobs(List job_list,
 extern void slurm_jobcomp_archive(List selected_parts, void *params)
 {
 #ifdef HAVE_PGSQL
-	if(!jobcomp_pgsql_db && PQstatus(jobcomp_pgsql_db) == CONNECTION_OK) {
+	if(!jobcomp_pgsql_db || PQstatus(jobcomp_pgsql_db) != CONNECTION_OK) {
 		char *loc = slurm_get_jobcomp_loc();
 		if(slurm_jobcomp_set_location(loc) == SLURM_ERROR) {
 			xfree(loc);
