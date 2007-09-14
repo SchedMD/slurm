@@ -8,6 +8,8 @@ documents those changes that are of interest to users and admins.
  -- Fix AIX linking problem for PMI (mpich2) support.
  -- Improve PMI logic for greater scalability (up to 16k tasks run).
  -- Add srun support for SLURM_THREADS and PMI_FANOUT environment variables.
+ -- Fix support in squeue for output format with left justification of 
+    reason (%r) and reason/node_list (%R) output.
 
 * Changes in SLURM 1.2.16
 =========================
