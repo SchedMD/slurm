@@ -49,7 +49,8 @@
 #include "src/common/fd.h"
 #include "src/common/slurm_auth.h"
 
-#define MAX_RETRIES 5
+#define DEFAULT_PMI_TIME 500
+#define MAX_RETRIES      5
 
 int pmi_fd = -1;
 int pmi_time = 0;
@@ -145,14 +146,14 @@ static void _set_pmi_time(void)
 
 	tmp = getenv("PMI_TIME");
 	if (tmp == NULL) {
-		pmi_time = 500;
+		pmi_time = DEFAULT_PMI_TIME;
 		return;
 	}
 
 	pmi_time = strtol(tmp, &endptr, 10);
 	if ((pmi_time < 0) || (endptr[0] != '\0')) {
 		error("Invalid PMI_TIME: %s", tmp);
-		pmi_time = 500;
+		pmi_time = DEFAULT_PMI_TIME;
 	}
 }
 
