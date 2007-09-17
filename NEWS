@@ -12,7 +12,9 @@ documents those changes that are of interest to users and admins.
     reason (%r) and reason/node_list (%R) output.
  -- Automatically requeue a batch job when a node allocated to it fails
     or the prolog fails (unless --no-requeue or --no-kill option used).
-
+ -- In sched/wiki, enable use of wiki.conf parameter ExcludePartitions to
+    directly schedule selected partitions without Maui control.
+ 
 * Changes in SLURM 1.2.16
 =========================
  -- Add --overcommit option to the salloc command.

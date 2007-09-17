@@ -108,9 +108,11 @@ includes a description of keywords presently only
 supported by the sched/wiki2 plugin for use with the 
 Moab Scheduler.</p>
 
-<p>They only wiki.conf keyword used by the sched/wiki plugin
-is <b>AuthKey</b>, which should match the key used to configure 
-Maui at build time.
+<p>Only two wiki.conf parameters are used by the sched/wiki plugin:
+<b>AuthKey</b> should match the key used to configure 
+Maui at build time and
+<b>ExcludePartitions</b> can be used for SLURM to directly 
+schedule jobs in select partitions without Maui control.
 Note that SLURM's wiki plugin does not include a mechanism
 to submit new jobs, so even without this key nobody could
 run jobs as another user.
@@ -130,11 +132,14 @@ configuration.</p>
 #
 # Matches Maui's --with-key configuration parameter
 AuthKey=42
+#
+# SLURM to directly schedule "debug" partition
+ExcludePartitions=debug
 </pre>
 </p>
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 21 August 2007</p>
+<p style="text-align:center;">Last modified 17 September 2007</p>
 
 <!--#include virtual="footer.txt"-->
