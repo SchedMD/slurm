@@ -73,6 +73,8 @@ static int _launch_tasks(slurm_step_ctx_t *ctx,
 			 launch_tasks_request_msg_t *launch_msg,
 			 uint32_t timeout);
 static char *_lookup_cwd(void);
+static void _print_launch_msg(launch_tasks_request_msg_t *msg,
+			      char *hostname, int nodeid);
 
 /**********************************************************************
  * Message handler declarations
@@ -934,6 +936,17 @@ static int _launch_tasks(slurm_step_ctx_t *ctx,
 	int rc = SLURM_SUCCESS;
 
 	debug("Entering _launch_tasks");
+	if (ctx->verbose_level) {
+		char *name = NULL;
+		hostlist_t hl = hostlist_create(launch_msg->complete_nodelist);
+		int i = 0;
+		while((name = hostlist_shift(hl))) {
+			_print_launch_msg(launch_msg, name, i++);
+			free(name);			
+		}
+		hostlist_destroy(hl);
+	}
+
 	slurm_msg_t_init(&msg);
 	msg.msg_type = REQUEST_LAUNCH_TASKS;
 	msg.data = launch_msg;
@@ -977,4 +990,26 @@ static char *_lookup_cwd(void)
 	} else {
 		return NULL;
 	}
+}
+
+static void _print_launch_msg(launch_tasks_request_msg_t *msg,
+			      char *hostname, int nodeid)
+{
+	int i;
+	char tmp_str[10], task_list[4096];
+	hostlist_t hl = hostlist_create("");
+
+	for (i=0; i<msg->tasks_to_launch[nodeid]; i++) {
+		sprintf(tmp_str, "%u", msg->global_task_ids[nodeid][i]);
+		hostlist_push(hl, tmp_str);
+	}
+	hostlist_ranged_string(hl, 4096, task_list);
+	hostlist_destroy(hl);
+	
+	info("launching %u.%u on host %s, %u tasks: %s", 
+	     msg->job_id, msg->job_step_id, hostname, 
+	     msg->tasks_to_launch[nodeid], task_list);
+
+	debug3("uid:%ld gid:%ld cwd:%s %d", (long) msg->uid,
+		(long) msg->gid, msg->cwd, nodeid);
 }

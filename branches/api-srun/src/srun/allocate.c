@@ -587,8 +587,9 @@ job_desc_msg_destroy(job_desc_msg_t *j)
 int
 create_job_step(srun_job_t *job)
 {
-	int i;
-	
+	int i, rc;
+	SigFunc *oquitf = NULL, *ointf = NULL, *otermf = NULL;
+
 	slurm_step_ctx_params_t_init(&job->ctx_params);
 	job->ctx_params.job_id = job->jobid;
 	job->ctx_params.uid = opt.uid;
@@ -601,6 +602,10 @@ create_job_step(srun_job_t *job)
 		: (opt.nprocs*opt.cpus_per_task);
 	
 	job->ctx_params.relative = (uint16_t)opt.relative;
+	job->ctx_params.ckpt_interval = (uint16_t)opt.ckpt_interval;
+	job->ctx_params.exclusive = (uint16_t)opt.exclusive;
+	job->ctx_params.immediate = (uint16_t)opt.immediate;
+	job->ctx_params.verbose_level = (uint16_t)_verbose;
 	switch (opt.distribution) {
 	case SLURM_DIST_BLOCK:
 	case SLURM_DIST_ARBITRARY:
@@ -636,26 +641,45 @@ create_job_step(srun_job_t *job)
 	      job->ctx_params.cpu_count, job->ctx_params.task_count,
 	      job->ctx_params.name, job->ctx_params.relative);
 
-	for (i=0; ;i++) {
+	for (i=0; (!destroy_job); i++) {
 		if(opt.no_alloc) {
 			job->step_ctx = slurm_step_ctx_create_no_alloc(
 				&job->ctx_params, job->stepid);
 		} else
 			job->step_ctx = slurm_step_ctx_create(
 				&job->ctx_params);
-		if (job->step_ctx != NULL)
+		if (job->step_ctx != NULL) {
+			if (i > 0)
+				info("Job step created");
+			
 			break;
-		if (slurm_get_errno() != ESLURM_DISABLED) {
-			error("Failed creating job step context: %m");
-			exit(1);
+		}
+		rc = slurm_get_errno();
+
+		if (opt.immediate ||
+		    ((rc != ESLURM_NODES_BUSY) && (rc != ESLURM_DISABLED))) {
+			error ("Unable to create job step: %m");
+			return -1;
 		}
 		
-		if (i == 0)
+		if (i == 0) {
 			info("Job step creation temporarily disabled, retrying");	
-		
+			ointf  = xsignal(SIGINT,  _intr_handler);
+			otermf  = xsignal(SIGTERM, _intr_handler);
+			oquitf  = xsignal(SIGQUIT, _intr_handler);
+		} else
+			info("Job step creation still disabled, retrying");
 		sleep(MIN((i*10), 60));
 	}
-
+	if (i > 0) {
+		xsignal(SIGINT,  ointf);
+		xsignal(SIGQUIT, oquitf);
+		xsignal(SIGTERM, otermf);
+		if (destroy_job) {
+			info("Cancelled pending job step");
+			return -1;
+		}
+	}
 
 	slurm_step_ctx_get(job->step_ctx, SLURM_STEP_CTX_STEPID, &job->stepid);
 	/*  Number of hosts in job may not have been initialized yet if 

@@ -67,6 +67,30 @@ _job_fake_cred(struct slurm_step_ctx_struct *ctx)
 	ctx->step_resp->cred = slurm_cred_faker(&arg);
 }
 
+static job_step_create_request_msg_t *_create_step_request(
+	const slurm_step_ctx_params_t *step_params)
+{
+	job_step_create_request_msg_t *step_req = 
+		xmalloc(sizeof(job_step_create_request_msg_t));
+	step_req->job_id = step_params->job_id;
+	step_req->user_id = (uint32_t)step_params->uid;
+	step_req->node_count = step_params->node_count;
+	step_req->cpu_count = step_params->cpu_count;
+	step_req->num_tasks = step_params->task_count;
+	step_req->relative = step_params->relative;
+	step_req->exclusive  = step_params->exclusive;
+	step_req->immediate  = step_params->immediate;
+	step_req->ckpt_interval = step_params->ckpt_interval;
+	step_req->task_dist = step_params->task_dist;
+	step_req->plane_size = step_params->plane_size;
+	step_req->node_list = xstrdup(step_params->node_list);
+	step_req->network = xstrdup(step_params->network);
+	step_req->name = xstrdup(step_params->name);
+	step_req->overcommit = step_params->overcommit ? 1 : 0;
+
+	return step_req;
+}
+
 /*
  * slurm_step_ctx_create - Create a job step and its context. 
  * IN step_params - job step parameters
@@ -83,21 +107,9 @@ slurm_step_ctx_create (const slurm_step_ctx_params_t *step_params)
 	short port = 0;
 	int errnum = 0;
 	
-	/* First copy the user's step_params into a step request struct */
-	step_req = (job_step_create_request_msg_t *)
-		xmalloc(sizeof(job_step_create_request_msg_t));
-	step_req->job_id = step_params->job_id;
-	step_req->user_id = (uint32_t)step_params->uid;
-	step_req->node_count = step_params->node_count;
-	step_req->cpu_count = step_params->cpu_count;
-	step_req->num_tasks = step_params->task_count;
-	step_req->relative = step_params->relative;
-	step_req->task_dist = step_params->task_dist;
-	step_req->plane_size = step_params->plane_size;
-	step_req->node_list = xstrdup(step_params->node_list);
-	step_req->network = xstrdup(step_params->network);
-	step_req->name = xstrdup(step_params->name);
-	step_req->overcommit = step_params->overcommit ? 1 : 0;
+	/* First copy the user's step_params into a step request
+	 * struct */
+	step_req = _create_step_request(step_params);
 
 	/* We will handle the messages in the step_launch.c mesage handler,
 	 * but we need to open the socket right now so we can tell the
@@ -126,6 +138,7 @@ slurm_step_ctx_create (const slurm_step_ctx_params_t *step_params)
 	ctx->user_id	= step_req->user_id;
 	ctx->step_req   = step_req;
 	ctx->step_resp	= step_resp;
+	ctx->verbose_level = step_params->verbose_level;
 
 	ctx->launch_state = step_launch_state_create(ctx);
 	ctx->launch_state->slurmctld_socket_fd = sock;
@@ -154,20 +167,7 @@ slurm_step_ctx_create_no_alloc (const slurm_step_ctx_params_t *step_params,
 	int errnum = 0;
 	
 	/* First copy the user's step_params into a step request struct */
-	step_req = (job_step_create_request_msg_t *)
-		xmalloc(sizeof(job_step_create_request_msg_t));
-	step_req->job_id = step_params->job_id;
-	step_req->user_id = (uint32_t)step_params->uid;
-	step_req->node_count = step_params->node_count;
-	step_req->cpu_count = step_params->cpu_count;
-	step_req->num_tasks = step_params->task_count;
-	step_req->relative = step_params->relative;
-	step_req->task_dist = step_params->task_dist;
-	step_req->plane_size = step_params->plane_size;
-	step_req->node_list = xstrdup(step_params->node_list);
-	step_req->network = xstrdup(step_params->network);
-	step_req->name = xstrdup(step_params->name);
-	step_req->overcommit = step_params->overcommit ? 1 : 0;
+	step_req = _create_step_request(step_params);
 
 	/* We will handle the messages in the step_launch.c mesage handler,
 	 * but we need to open the socket right now so we can tell the
@@ -201,6 +201,7 @@ slurm_step_ctx_create_no_alloc (const slurm_step_ctx_params_t *step_params,
 	ctx->user_id	= step_req->user_id;
 	ctx->step_req   = step_req;
 	ctx->step_resp	= step_resp;
+	ctx->verbose_level = step_params->verbose_level;
 
 	ctx->launch_state = step_launch_state_create(ctx);
 	ctx->launch_state->slurmctld_socket_fd = sock;
@@ -426,6 +427,7 @@ extern void slurm_step_ctx_params_t_init (slurm_step_ctx_params_t *ptr)
 	ptr->relative = (uint16_t)NO_VAL;
 	ptr->task_dist = SLURM_DIST_CYCLIC;
 	ptr->plane_size = (uint16_t)NO_VAL;
+	ptr->ckpt_interval = 0;
 
 	ptr->uid = getuid();
 

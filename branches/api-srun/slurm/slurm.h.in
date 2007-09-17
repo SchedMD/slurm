@@ -697,10 +697,16 @@ typedef struct {
 				   SLURM_DIST_PLANE */
 	char *node_list;	/* list of required nodes */
 	char *network;		/* network use spec */
+	uint16_t immediate;	/* 1 if allocate to run or fail immediately, 
+				 * 0 if to be queued awaiting resources */
+	uint16_t exclusive;	/* 1 if CPUs not shared with other steps */
 	bool overcommit;	/* "true" to allow the allocation of more tasks
 				   to a node than available processors,
 				   "false" to accept at most one task per
 				   processor. "false" by default. */
+	uint16_t ckpt_interval;	/* checkpoint interval in minutes */
+	uint16_t verbose_level; /* for extra logging decisions in step
+				   launch api */
 } slurm_step_ctx_params_t;
 
 typedef struct {
