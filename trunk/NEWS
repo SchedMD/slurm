@@ -65,7 +65,11 @@ documents those changes that are of interest to users and admins.
  -- Add srun support for SLURM_THREADS and PMI_FANOUT environment variables.
  -- Fix support in squeue for output format with left justification of 
     reason (%r) and reason/node_list (%R) output.
-
+ -- Automatically requeue a batch job when a node allocated to it fails
+    or the prolog fails (unless --no-requeue or --no-kill option used).
+ -- In sched/wiki, enable use of wiki.conf parameter ExcludePartitions to
+    directly schedule selected partitions without Maui control.
+ 
 * Changes in SLURM 1.2.16
 =========================
  -- Add --overcommit option to the salloc command.

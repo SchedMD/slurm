@@ -871,9 +871,10 @@ static void *_thread_per_group_rpc(void *args)
 				run_scheduler = true;
 			unlock_slurmctld(job_write_lock);
 		}
-			
-		/* SPECIAL CASE: Kill non-startable batch job */
-		if ((msg_type == REQUEST_BATCH_JOB_LAUNCH) && rc &&
+		/* SPECIAL CASE: Kill non-startable batch job, 
+		 * Requeue the job on ESLURMD_PROLOG_FAILED */
+		if ((msg_type == REQUEST_BATCH_JOB_LAUNCH) && 
+		    (rc != SLURM_SUCCESS) && (rc != ESLURMD_PROLOG_FAILED) &&
 		    (ret_data_info->type != RESPONSE_FORWARD_FAILED)) {
 			batch_job_launch_msg_t *launch_msg_ptr = 
 				task_ptr->msg_args_ptr;
@@ -890,9 +891,9 @@ static void *_thread_per_group_rpc(void *args)
 #endif
 		
 		
-		if (((msg_type == REQUEST_SIGNAL_TASKS) 
-		     ||   (msg_type == REQUEST_TERMINATE_TASKS)) 
-		    && (rc == ESRCH)) {
+		if (((msg_type == REQUEST_SIGNAL_TASKS) || 
+		     (msg_type == REQUEST_TERMINATE_TASKS)) && 
+		     (rc == ESRCH)) {
 			/* process is already dead, not a real error */
 			rc = SLURM_SUCCESS;
 		}

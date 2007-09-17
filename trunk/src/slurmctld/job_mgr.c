@@ -1016,6 +1016,7 @@ extern int kill_running_job_by_node_name(char *node_name, bool step_test)
 	struct node_record *node_ptr;
 	int bit_position;
 	int job_count = 0;
+	time_t now = time(NULL);
 
 	node_ptr = find_node_record(node_name);
 	if (node_ptr == NULL)	/* No such node */
@@ -1055,10 +1056,28 @@ extern int kill_running_job_by_node_name(char *node_name, bool step_test)
 				continue;
 
 			job_count++;
-			srun_node_fail(job_ptr->job_id, node_name);
-			if ((job_ptr->details == NULL) ||
-			    (job_ptr->kill_on_node_fail) ||
-			    (job_ptr->node_cnt <= 1)) {
+			if ((job_ptr->details) &&
+			    (job_ptr->kill_on_node_fail == 0) &&
+			    (job_ptr->node_cnt > 1)) {
+				/* keep job running on remaining nodes */
+				srun_node_fail(job_ptr->job_id, node_name);
+				error("Removing failed node %s from job_id %u",
+				      node_name, job_ptr->job_id);
+				_excise_node_from_job(job_ptr, node_ptr);
+			} else if (job_ptr->batch_flag && job_ptr->details &&
+			           (job_ptr->details->no_requeue == 0)) {
+				info("requeue job %u due to failure of node %s",
+				     job_ptr->job_id, node_name);
+				_set_job_prio(job_ptr);
+				job_ptr->time_last_active  = now;
+				job_ptr->job_state = JOB_PENDING | JOB_COMPLETING;
+				if (suspended)
+					job_ptr->end_time = job_ptr->suspend_time;
+				else
+					job_ptr->end_time = now;
+				deallocate_nodes(job_ptr, false, suspended);
+				job_completion_logger(job_ptr);
+			} else {
 				info("Killing job_id %u on failed node %s",
 				     job_ptr->job_id, node_name);
 				job_ptr->job_state = JOB_NODE_FAIL | 
@@ -1073,17 +1092,13 @@ extern int kill_running_job_by_node_name(char *node_name, bool step_test)
 					job_ptr->end_time = time(NULL);
 				job_completion_logger(job_ptr);
 				deallocate_nodes(job_ptr, false, suspended);
-			} else {
-				error("Removing failed node %s from job_id %u",
-				      node_name, job_ptr->job_id);
-				_excise_node_from_job(job_ptr, node_ptr);
 			}
 		}
 
 	}
 	list_iterator_destroy(job_iterator);
 	if (job_count)
-		last_job_update = time(NULL);
+		last_job_update = now;
 
 	return job_count;
 }
