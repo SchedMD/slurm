@@ -84,13 +84,30 @@ extern uint32_t
 slurm_sched_plugin_initial_priority( uint32_t last_prio,
 				     struct job_record *job_ptr )
 {
+	if (exclude_part_ptr[0]) {
+		/* Interactive job (initiated by srun) in partition
+		 * excluded from Moab scheduling */
+		int i;
+		static int exclude_prio = 100000000;
+		for (i=0; i<EXC_PART_CNT; i++) {
+			if (exclude_part_ptr[i] == NULL)
+				break;
+			if (exclude_part_ptr[i] == job_ptr->part_ptr) {
+				debug("Scheduiling job %u directly (no Maui)", 
+					job_ptr->job_id);
+				return (exclude_prio--);
+			}
+		}
+		return 0;
+	}
+
 	if (init_prio_mode == PRIO_DECREMENT) {
 		if (last_prio >= 2)
 			return (last_prio - 1);
 		else
 			return 1;
-	} else 
-		return 0;
+	}
+	return 0;
 }
 
 /**************************************************************************/

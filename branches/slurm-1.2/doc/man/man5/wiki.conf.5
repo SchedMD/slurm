@@ -49,19 +49,18 @@ Not applicable to wiki plugin, only the wiki2 plugin.
 .TP
 \fBExcludePartitions\fR
 Identifies partitions whose jobs are to be scheduled directly 
-by SLURM rather than Moab. 
-This only effects jobs which are submitted using Slurm 
+by SLURM rather than Moab/Maui. 
+This only effects jobs which are submitted using SLURM 
 commands (i.e. srun, salloc or sbatch, NOT msub from Moab).
 These jobs will be scheduled on a First\-Come\-First\-Served 
-basis. 
-This may provide faster response times than Moab scheduling. 
-Moab will account for and report the jobs, but their initiation
-will be outside of Moab's control.
-Note that Moab controls for resource reservation, fair share 
+basis directly by SLURM. 
+Moab/Maui controls for resource reservation, fair share 
 scheduling, etc. will not apply to the initiation of these jobs.
+While Moab/Maui will not control the initiation of jobs in these 
+partitions, it will account for and report the jobs.
 If more than one partition is to be scheduled directly by
-Slurm, use a comma separator between their names.
-Not applicable to wiki plugin, only the wiki2 plugin.
+SLURM, use a comma separator between their names.
+This may provide faster response times than Moab/Maui scheduling. 
 
 .TP
 \fBHostFormat\fR
