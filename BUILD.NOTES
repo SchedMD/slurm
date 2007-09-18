@@ -33,7 +33,8 @@ Linux cluster (See BlueGene and AIX specific notes below for some differences).
    svn copy https://eris.llnl.gov/svn/slurm/trunk \
      https://eris.llnl.gov/svn/slurm/tags/slurm-1-2-0-0-pre3 \
      -m "description"
-3. Use the rpm make target to create the new RPMs. This requires a .rpmmacros (.rpmrc for newer versions of rpmbuild) file containing:
+3. Use the rpm make target to create the new RPMs. This requires a .rpmmacros 
+   (.rpmrc for newer versions of rpmbuild) file containing:
 	%_slurm_sysconfdir      /etc/slurm
 	%_enable_debug    "--enable-debug"
    I usually build with using the following syntax:
@@ -68,11 +69,12 @@ BlueGene build notes:
 To build and run on AIX:
 0. svn co https://eris.llnl.gov/svn/slurm/trunk slurm
    svn co https://eris.llnl.gov/svn/buildfarm/trunk buildfarm
-   put the buildfarm directory in your search path
-   Also, you will need two commands to appear FIRST in your PATH:
+   Put the buildfarm directory in your search path
+   Also, you will need several commands to appear FIRST in your PATH:
 
       /usr/local/tools/gnu/aix_5_64_fed/bin/install
       /usr/local/gnu/bin/tar
+      /usr/bin/gcc
 
    I do this by making symlinks to those commands in the buildfarm directory,
    then making the buildfarm directory the first one in my PATH.
@@ -85,7 +87,7 @@ To build and run on AIX:
    make
    make uninstall  # remove old shared libraries, aix caches them
    make install
-3. To build RPMs (NOTE: Many GNU tools are required):
+3. To build RPMs (NOTE: GNU tools early in PATH as described above in #0):
    Create a file specifying system specific files:
 	#
 	# RPM Macros for use with SLURM on AIX
@@ -113,7 +115,7 @@ To build and run on AIX:
    version.
 8. Install the rpms slurm-*.ppc.rpm, slurm-aix-federation-*.ppc.rpm,
    slurm-auth-munge-*.ppc.rpm and slurm-devel-*.ppc.rpm in 
-   /usr/admin/inst.image/slurm/aix5.3 on an OCF AIX machine 
+   /usr/admin/inst.images/slurm/aix5.3 on an OCF AIX machine 
    (pdev is a good choice).
 
 AIX/Federation switch window problems

@@ -606,15 +606,18 @@ _backfill_part(part_specs_t *part_specs)
 	/* find job to possibly backfill */
 	pend_job_iterate = list_iterator_create(pend_job_list);
 	while ( (pend_job_ptr = list_next(pend_job_iterate)) ) {
+		if (first_job == NULL)
+			first_job = pend_job_ptr;
+
 		if (_loc_restrict(pend_job_ptr, part_specs)) {
 #if __DEBUG
 			info("Job %u has locality restrictions",
 				pend_job_ptr->job_id);
 #endif
-			break;
+			continue;
 		}
 
-		if (first_job == NULL) {
+		if (first_job == pend_job_ptr) {
 			if (pend_job_ptr->details == NULL)
 				break;
 			if (pend_job_ptr->details->min_nodes <= 
@@ -625,7 +628,6 @@ _backfill_part(part_specs_t *part_specs)
 #endif
 				break;
 			}
-			first_job = pend_job_ptr;
 		}
 
 		if (_update_node_space_map(pend_job_ptr)) {
