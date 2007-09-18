@@ -380,13 +380,16 @@ int srun(int ac, char **av)
 	if (_call_spank_local_user (job) < 0)
 		job_fatal(job, "Failure in local plugin stack");
 
+	update_job_state(job, SRUN_JOB_LAUNCHING);
 	if (slurm_step_launch(job->step_ctx, &launch_params, &callbacks)
 	    != SLURM_SUCCESS) {
 		error("Application launch failed: %m");
 		goto cleanup;
 	}
 
+	update_job_state(job, SRUN_JOB_STARTING);
 	if (slurm_step_launch_wait_start(job->step_ctx) == SLURM_SUCCESS) {
+		update_job_state(job, SRUN_JOB_RUNNING);
 		/* Only set up MPIR structures if the step launched
 		   correctly. */
 		if (opt.multi_prog)
@@ -1176,13 +1179,14 @@ static void _handle_intr()
 	static time_t last_intr      = 0;
 	static time_t last_intr_sent = 0;
 	if (opt.quit_on_intr) {
+		job_force_termination(job);
 		slurm_step_launch_abort(job->step_ctx);
 		return;
 	}
 
 	if (((time(NULL) - last_intr) > 1) && !opt.disable_status) {
 		info("interrupt (one more within 1 sec to abort)");
-		report_task_status(job);
+		_task_state_struct_print();
 		last_intr = time(NULL);
 	} else  { /* second Ctrl-C in half as many seconds */
 		update_job_state(job, SRUN_JOB_CANCELLED);
@@ -1198,6 +1202,7 @@ static void _handle_intr()
 			slurm_step_launch_fwd_signal(job->step_ctx, SIGINT);
 
 		} else {
+			job_force_termination(job);
 			slurm_step_launch_abort(job->step_ctx);
 		}
 	}
