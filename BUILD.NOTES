@@ -70,10 +70,11 @@ To build and run on AIX:
 0. svn co https://eris.llnl.gov/svn/slurm/trunk slurm
    svn co https://eris.llnl.gov/svn/buildfarm/trunk buildfarm
    put the buildfarm directory in your search path
-   Also, you will need two commands to appear FIRST in your PATH:
+   Also, you will need several commands to appear FIRST in your PATH:
 
       /usr/local/tools/gnu/aix_5_64_fed/bin/install
       /usr/local/gnu/bin/tar
+      /usr/bin/gcc
 
    I do this by making symlinks to those commands in the buildfarm directory,
    then making the buildfarm directory the first one in my PATH.
