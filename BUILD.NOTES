@@ -33,7 +33,8 @@ Linux cluster (See BlueGene and AIX specific notes below for some differences).
    svn copy https://eris.llnl.gov/svn/slurm/trunk \
      https://eris.llnl.gov/svn/slurm/tags/slurm-1-2-0-0-pre3 \
      -m "description"
-3. Use the rpm make target to create the new RPMs. This requires a .rpmmacros (.rpmrc for newer versions of rpmbuild) file containing:
+3. Use the rpm make target to create the new RPMs. This requires a .rpmmacros 
+   (.rpmrc for newer versions of rpmbuild) file containing:
 	%_slurm_sysconfdir      /etc/slurm
 	%_enable_debug    "--enable-debug"
    I usually build with using the following syntax:
@@ -113,7 +114,7 @@ To build and run on AIX:
    version.
 8. Install the rpms slurm-*.ppc.rpm, slurm-aix-federation-*.ppc.rpm,
    slurm-auth-munge-*.ppc.rpm and slurm-devel-*.ppc.rpm in 
-   /usr/admin/inst.image/slurm/aix5.3 on an OCF AIX machine 
+   /usr/admin/inst.images/slurm/aix5.3 on an OCF AIX machine 
    (pdev is a good choice).
 
 AIX/Federation switch window problems
