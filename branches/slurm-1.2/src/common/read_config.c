@@ -917,6 +917,9 @@ extern uint16_t slurm_conf_get_port(const char *node_name)
 	while (p) {
 		if (strcmp(p->alias, node_name) == 0) {
 			uint16_t port = p->port;
+			if ((!port || port == SLURMD_PORT) &&
+			    default_slurmd_port != NO_VAL)
+				port = default_slurmd_port;
 			slurm_conf_unlock();
 			return port;
 		}
