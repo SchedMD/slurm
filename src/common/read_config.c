@@ -238,7 +238,7 @@ static int parse_slurmd_port(void **dest, slurm_parser_enum_t type,
 		return -1;
 	}
 
-	default_slurmd_port = (uint32_t)num;
+	default_slurmd_port = (uint16_t) num;
 
 	ptr = (uint32_t *)xmalloc(sizeof(uint32_t));
 	*ptr = (uint32_t)num;
@@ -917,8 +917,7 @@ extern uint16_t slurm_conf_get_port(const char *node_name)
 	while (p) {
 		if (strcmp(p->alias, node_name) == 0) {
 			uint16_t port = p->port;
-			if ((!port || port == SLURMD_PORT) &&
-			    default_slurmd_port != NO_VAL)
+			if ((!port || port == SLURMD_PORT))
 				port = default_slurmd_port;
 			slurm_conf_unlock();
 			return port;
