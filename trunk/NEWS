@@ -69,6 +69,9 @@ documents those changes that are of interest to users and admins.
     or the prolog fails (unless --no-requeue or --no-kill option used).
  -- In sched/wiki, enable use of wiki.conf parameter ExcludePartitions to
     directly schedule selected partitions without Maui control.
+ -- In sched/backfill, if a job requires specific nodes, schedule other jobs
+    ahead of it rather than completely stopping backfill scheduling for that
+    partition.
  
 * Changes in SLURM 1.2.16
 =========================
