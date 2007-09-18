@@ -69,7 +69,7 @@ BlueGene build notes:
 To build and run on AIX:
 0. svn co https://eris.llnl.gov/svn/slurm/trunk slurm
    svn co https://eris.llnl.gov/svn/buildfarm/trunk buildfarm
-   put the buildfarm directory in your search path
+   Put the buildfarm directory in your search path
    Also, you will need several commands to appear FIRST in your PATH:
 
       /usr/local/tools/gnu/aix_5_64_fed/bin/install
@@ -87,7 +87,7 @@ To build and run on AIX:
    make
    make uninstall  # remove old shared libraries, aix caches them
    make install
-3. To build RPMs (NOTE: Many GNU tools are required):
+3. To build RPMs (NOTE: GNU tools early in PATH as described above in #0):
    Create a file specifying system specific files:
 	#
 	# RPM Macros for use with SLURM on AIX
