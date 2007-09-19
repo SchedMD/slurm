@@ -414,7 +414,7 @@ int main(int argc, char *argv[])
 	/* Plugins are needed to purge job/node data structures,
 	 * unplug after other data structures are purged */
 	g_slurm_jobcomp_fini();
-	jobacct_storage_g_fini_slurmctld();
+	jobacct_storage_g_fini();
 	slurm_jobacct_gather_fini();
 	slurm_jobacct_storage_fini();
 	slurm_sched_fini();
