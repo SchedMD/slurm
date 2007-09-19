@@ -64,6 +64,16 @@ be some impact upon applications).
 For really large clusters, <i>SlurmdTimeoutl</i> values of 
 120 seconds or more are reasonable.</p> 
 
-<p style="text-align:center;">Last modified 28 January 2006</p>
+<p>If MPICH-2 is used, the srun command will manage the key-pairs
+used to bootstrap the application. 
+Depending upon the processor speed and architecture, the communication 
+of key-pair information may require extra time. 
+This can be done by setting an environment variable PMI_TIME before 
+executing srun to launch the tasks. 
+The default value of PMI_TIME is 500 and this is the number of 
+microseconds alloted to transmit each key-pair. 
+We have executed up to 16,000 tasks with a value of PMI_TIME=4000.
+
+<p style="text-align:center;">Last modified 19 September 2006</p>
 
 <!--#include virtual="footer.txt"-->
