@@ -45,6 +45,8 @@
 #include <slurm/slurm.h>
 #include <slurm/slurm_errno.h>
 
+extern int slurm_jobacct_storage_init(void); /* load the plugin */
+extern int slurm_jobacct_storage_fini(void); /* unload the plugin */
 /* 
  * Initialize the storage make sure tables are created and in working
  * order
