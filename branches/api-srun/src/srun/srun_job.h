@@ -53,7 +53,6 @@
 #include "src/common/slurm_protocol_defs.h"
 #include "src/api/step_io.h"
 
-//#include "src/srun/fname.h"
 
 typedef enum {
 	SRUN_JOB_INIT = 0,         /* Job's initial state                   */
@@ -86,13 +85,25 @@ typedef enum {
 	SRUN_TASK_ABNORMAL_EXIT
 } srun_task_state_t;
 
-typedef struct io_filename io_filename_t;
+enum io_t {
+	IO_ALL          = 0, /* multiplex output from all/bcast stdin to all */
+	IO_ONE          = 1, /* output from only one task/stdin to one task  */
+	IO_PER_TASK     = 2, /* separate output/input file per task          */
+	IO_NONE         = 3, /* close output/close stdin                     */
+};
+
+#define format_io_t(t) (t == IO_ONE) ? "one" : (t == IO_ALL) ? \
+                                                     "all" : "per task"
+
+typedef struct fname {
+	char      *name;
+	enum io_t  type;
+	int        taskid;  /* taskid for IO if IO_ONE */
+} fname_t;
 
 typedef struct srun_job {
 	uint32_t jobid;		/* assigned job id 	                  */
 	uint32_t stepid;	/* assigned step id 	                  */
-	bool old_job;           /* run job step under previous allocation */
-	bool removed;       /* job has been removed from SLURM */
 
 	uint32_t nhosts;	/* node count */
 	uint32_t ntasks;	/* task count */
@@ -100,38 +111,13 @@ typedef struct srun_job {
 	pthread_mutex_t state_mutex; 
 	pthread_cond_t  state_cond;
 
-	bool signaled;          /* True if user generated signal to job   */
 	int  rc;                /* srun return code                       */
 
-	slurm_cred_t  cred;     /* Slurm job credential    */
 	char *nodelist;		/* nodelist in string form */
 
-	pthread_t sigid;	/* signals thread tid		  */
-
-	pthread_t msg_tid;	/* message thread id 	  	  */
-	slurm_fd *jfd;		/* job control info fd   	  */
-	
-	pthread_t lid;		  /* launch thread id */
-
-	client_io_t *client_io;
-	time_t    ltimeout;       /* Time by which all tasks must be running */
-	time_t    etimeout;       /* exit timeout (see opt.max_wait          */
-
-	srun_host_state_t *host_state; /* nhost host states */
-
-	int *tstatus;	          /* ntask exit statii */
-	srun_task_state_t *task_state; /* ntask task states */
-	
-	switch_jobinfo_t switch_job;
-	io_filename_t *ifname;
-	io_filename_t *ofname;
-	io_filename_t *efname;
-	char *task_epilog;	/* task-epilog */
-	char *task_prolog;	/* task-prolog */
-	pthread_mutex_t task_mutex;
-	int njfds;		/* number of job control info fds */
-	slurm_addr *jaddr;	/* job control info ports 	  */
-	int thr_count;  	/* count of threads in job launch */
+	fname_t *ifname;
+	fname_t *ofname;
+	fname_t *efname;
 
 	/* Output streams and stdin fileno */
 	select_jobinfo_t select_jobinfo;
@@ -145,8 +131,6 @@ typedef struct srun_job {
 	slurm_step_ctx_t *step_ctx;
 	slurm_step_ctx_params_t ctx_params;
 } srun_job_t;
-
-extern int message_thread;
 
 void    update_job_state(srun_job_t *job, srun_job_state_t newstate);
 void    job_force_termination(srun_job_t *job);
@@ -165,37 +149,6 @@ extern srun_job_t * job_create_structure(
  *  Update job filenames and modes for stderr, stdout, and stdin.
  */
 void    job_update_io_fnames(srun_job_t *j);
-
-/* 
- * Issue a fatal error message and terminate running job
- */
-void    job_fatal(srun_job_t *job, const char *msg);
-
-/* 
- * Deallocates job and or job step via slurm API
- */
-void    srun_job_destroy(srun_job_t *job, int error);
-
-/* 
- * Send SIGKILL to running job via slurm controller
- */
-void    srun_job_kill(srun_job_t *job);
-
-/*
- * report current task status
- */
-void    report_task_status(srun_job_t *job);
-
-/*
- * report current node status
- */
-void    report_job_status(srun_job_t *job);
-
-/*
- * Sets job->rc to highest task exit value.
- * Returns job return code (for srun exit status)
- */
-int    set_job_rc(srun_job_t *job);
 
 void   timeout_handler(time_t timeout);
 

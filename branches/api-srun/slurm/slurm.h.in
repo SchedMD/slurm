@@ -738,6 +738,9 @@ typedef struct {
 	uint16_t mem_bind_type;	/* use mem_bind_type_t */
 	char *mem_bind;
 
+	uint16_t max_sockets;
+	uint16_t max_cores;
+	uint16_t max_threads;
 	uint16_t cpus_per_task;
 	uint16_t ntasks_per_node;
 	uint16_t ntasks_per_socket;
@@ -746,11 +749,14 @@ typedef struct {
 	uint16_t plane_size;
 
 	char *mpi_plugin_name;
+	bool pty;
 } slurm_step_launch_params_t;
 
 typedef struct {
 	void (*task_start)(launch_tasks_response_msg_t *);
 	void (*task_finish)(task_exit_msg_t *);
+	void (*job_complete)();
+	void (*timeout_handler)(time_t);
 } slurm_step_launch_callbacks_t;
 
 

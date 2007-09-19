@@ -64,12 +64,12 @@
  * Fill in as much of filename as possible from srun, update
  * filename type to one of the io types ALL, NONE, PER_TASK, ONE
  */
-io_filename_t *
+fname_t *
 fname_create(srun_job_t *job, char *format)
 {
 	unsigned long int wid     = 0;
 	unsigned long int taskid  = 0;
-	io_filename_t *fname = NULL;
+	fname_t *fname = NULL;
 	char *p, *q, *name;
 
 	fname = xmalloc(sizeof(*fname));
@@ -166,7 +166,7 @@ fname_create(srun_job_t *job, char *format)
 }
 
 void 
-fname_destroy(io_filename_t *f)
+fname_destroy(fname_t *f)
 {
 	if (f->name)
 		xfree(f->name);
@@ -174,7 +174,7 @@ fname_destroy(io_filename_t *f)
 }
 
 char * 
-fname_remote_string (io_filename_t *f)
+fname_remote_string (fname_t *f)
 {
 	if ((f->type == IO_PER_TASK) || (f->type == IO_ONE))
 		return (xstrdup (f->name));

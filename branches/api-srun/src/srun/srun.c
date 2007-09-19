@@ -121,7 +121,6 @@ static void  _set_prio_process_env(void);
 static int   _set_rlimit_env(void);
 static int   _set_umask_env(void);
 static char *_uint16_array_to_str(int count, const uint16_t *array);
-static void  _switch_standalone(srun_job_t *job);
 static int   _become_user (void);
 static void  _run_srun_prolog (srun_job_t *job);
 static void  _run_srun_epilog (srun_job_t *job);
@@ -135,6 +134,7 @@ static void  _pty_restore(void);
 static void  _step_opt_exclusive(void);
 static void _task_start(launch_tasks_response_msg_t *msg);
 static void _task_finish(task_exit_msg_t *msg);
+static void _job_complete();
 static void _task_state_struct_init(int num_tasks);
 static void _task_state_struct_print(void);
 static void _task_state_struct_free(void);
@@ -223,7 +223,6 @@ int srun(int ac, char **av)
 	} else if (opt.no_alloc) {
 		info("do not allocate resources");
 		job = job_create_noalloc(); 
-		_switch_standalone(job);
 		if (create_job_step(job) < 0) {
 			exit(1);
 		}
@@ -237,12 +236,7 @@ int srun(int ac, char **av)
 		job = job_step_create_allocation(resp);
 		slurm_free_resource_allocation_response_msg(resp);
 
-		if(!job)
-			exit(1);
-		
-		job->old_job = true;
-			
-		if (create_job_step(job) < 0)
+		if (!job || create_job_step(job) < 0)
 			exit(1);
 	} else {
 		/* Combined job allocation and job step launch */
@@ -262,11 +256,8 @@ int srun(int ac, char **av)
 			exit(1);
 		_print_job_information(resp);
 		job = job_create_allocation(resp);
-		if(!job)
-			exit(1);
 		opt.exclusive = false;	/* not applicable for this step */
-		if (create_job_step(job) < 0) {
-			srun_job_destroy(job, 0);
+		if (!job || create_job_step(job) < 0) {
 			exit(1);
 		}
 		
@@ -346,18 +337,25 @@ int srun(int ac, char **av)
 	launch_params.multi_prog = opt.multi_prog ? true : false;
 	launch_params.cwd = opt.cwd;
 	launch_params.slurmd_debug = opt.slurmd_debug;
-	launch_params.buffered_stdio = opt.unbuffered ? false : true;
+	launch_params.buffered_stdio = !opt.unbuffered;
 	launch_params.labelio = opt.labelio ? true : false;
-	launch_params.remote_output_filename = opt.ofname;
-	launch_params.remote_input_filename = opt.ifname;
-	launch_params.remote_error_filename = opt.efname;
+	launch_params.remote_output_filename =fname_remote_string(job->ofname);
+	launch_params.remote_input_filename = fname_remote_string(job->ifname);
+	launch_params.remote_error_filename = fname_remote_string(job->efname);
 	launch_params.task_prolog = opt.task_prolog;
 	launch_params.task_epilog = opt.task_epilog;
 	launch_params.cpu_bind = opt.cpu_bind;
 	launch_params.cpu_bind_type = opt.cpu_bind_type;
 	launch_params.mem_bind = opt.mem_bind;
 	launch_params.mem_bind_type = opt.mem_bind_type;	
-
+	launch_params.pty = opt.pty;
+	launch_params.max_sockets     = opt.max_sockets_per_node;
+	launch_params.max_cores       = opt.max_cores_per_socket;
+	launch_params.max_threads     = opt.max_threads_per_core;
+	launch_params.cpus_per_task = opt.cpus_per_task;
+	launch_params.ntasks_per_node   = opt.ntasks_per_node;
+	launch_params.ntasks_per_socket = opt.ntasks_per_socket;
+	launch_params.ntasks_per_core   = opt.ntasks_per_core;
 
 	/* job structure should now be filled in */
 	_setup_signals();
@@ -372,13 +370,18 @@ int srun(int ac, char **av)
 	}
 	callbacks.task_start = _task_start;
 	callbacks.task_finish = _task_finish;
+	callbacks.job_complete = _job_complete;
+	callbacks.timeout_handler = timeout_handler;
 
 	_run_srun_prolog(job);
 
 	_mpir_init(job->ctx_params.task_count);
 
-	if (_call_spank_local_user (job) < 0)
-		job_fatal(job, "Failure in local plugin stack");
+	if (_call_spank_local_user (job) < 0) {
+		error("Failure in local plugin stack");
+		slurm_step_launch_abort(job->step_ctx);
+		exit(1);
+	}
 
 	update_job_state(job, SRUN_JOB_LAUNCHING);
 	if (slurm_step_launch(job->step_ctx, &launch_params, &callbacks)
@@ -415,92 +418,6 @@ cleanup:
 	log_fini();
 
 	return global_rc;
-#if 0
-	/* wait for job to terminate 
-	 */
-	slurm_mutex_lock(&job->state_mutex);
-	while (job->state < SRUN_JOB_TERMINATED) {
-		pthread_cond_wait(&job->state_cond, &job->state_mutex);
-	}
-	slurm_mutex_unlock(&job->state_mutex);
-	
-	/* job is now overdone, clean up  
-	 *
-	 * If job is "forcefully terminated" exit immediately.
-	 *
-	 */
-	if (job->state == SRUN_JOB_FORCETERM) {
-		info("Force Terminated job");
-		srun_job_destroy(job, 0);
-		exit(1);
-	} else if (job->state == SRUN_JOB_CANCELLED) {
-		info("Cancelling job");
-		srun_job_destroy(job, NO_VAL);
-		exit(1);
-	} else if (job->state == SRUN_JOB_FAILED) {
-		/* This check here is to check if the job failed
-		   because we (srun or slurmd or slurmstepd wasn't
-		   able to fork or make a thread or something we still
-		   need the job failed check below incase the job
-		   failed on it's own.
-		*/
-		info("Job Failed");
-		srun_job_destroy(job, NO_VAL);
-		exit(1);
-	}
-
-	/*
-	 *  We want to make sure we get the correct state of the job
-	 *  and not finish before all the messages have been sent.
-	 */
-/* FIXME - need a new way to tell the message thread to shutdown */
-/* 	if (job->state == SRUN_JOB_FAILED) */
-/* 		close(job->forked_msg->msg_par->msg_pipe[1]); */
-	debug("Waiting for message thread");
-	if (pthread_join(job->msg_tid, NULL) < 0)
-		error ("Waiting on message thread: %m");
-	debug("done");
-	
-	/* have to check if job was cancelled here just to make sure 
-	   state didn't change when we were waiting for the message thread */
-	exitcode = set_job_rc(job);
-	if (job->state == SRUN_JOB_CANCELLED) {
-		info("Cancelling job");
-		srun_job_destroy(job, NO_VAL);
-	} else if (job->state == SRUN_JOB_FAILED) {
-		info("Terminating job");
-		srun_job_destroy(job, job->rc);
-	} else 
-		srun_job_destroy(job, job->rc);
-		
-	/* wait for launch thread */
-	if (pthread_join(job->lid, NULL) < 0)
-		error ("Waiting on launch thread: %m");
-
-	/*
-	 *  Signal the IO thread to shutdown, which will stop
-	 *  the listening socket and file read (stdin) event
-	 *  IO objects, but allow file write (stdout) objects to
-	 *  complete any writing that remains.
-	 */
-	debug("Waiting for IO thread");
-	if (client_io_handler_finish(job->client_io) != SLURM_SUCCESS)
-		error ("IO handler did not finish correctly: %m");
-	client_io_handler_destroy(job->client_io);
-	debug("done");
-	
-	
-	if (mpi_hook_client_fini (mpi_state) < 0)
-		; /* eh, ignore errors here */
-
-	_run_srun_epilog(job);
-
-	/* 
-	 *  Let exit() clean up remaining threads.
-	 */
-	log_fini();
-	exit(exitcode);
-#endif
 }
 
 static int _call_spank_local_user (srun_job_t *job)
@@ -578,25 +495,6 @@ static char *_uint16_array_to_str(int array_len, const uint16_t *array)
 	
 	return str;
 }
-
-static void
-_switch_standalone(srun_job_t *job)
-{
-	int cyclic = (opt.distribution == SLURM_DIST_CYCLIC);
-	uint16_t *tasks = NULL;
-
-	slurm_step_ctx_get(job->step_ctx, SLURM_STEP_CTX_TASKS, 
-			   &tasks);
-
-	if (switch_alloc_jobinfo(&job->switch_job) < 0)
-		fatal("switch_alloc_jobinfo: %m");
-	if (switch_build_jobinfo(job->switch_job, 
-				 job->nodelist, 
-				 tasks, 
-				 cyclic, opt.network) < 0)
-		fatal("switch_build_jobinfo: %m");
-}
-
 
 static void 
 _print_job_information(resource_allocation_response_msg_t *resp)
@@ -838,7 +736,7 @@ static int _run_srun_script (srun_job_t *job, char *script)
 }
 
 static int
-_is_local_file (io_filename_t *fname)
+_is_local_file (fname_t *fname)
 {
 	if (fname->name == NULL)
 		return 1;
@@ -1044,6 +942,13 @@ _task_finish(task_exit_msg_t *msg)
 	}
 }
 
+/* This typically signifies the job was cancelled by scancel */
+static void
+_job_complete()
+{
+	info("Force Terminated job");
+}
+
 static void
 _task_state_struct_init(int num_tasks)
 {
@@ -1193,6 +1098,7 @@ static void _handle_intr()
 		/* terminate job */
 		if (job->state < SRUN_JOB_FORCETERM) {
 			if ((time(NULL) - last_intr_sent) < 1) {
+				job_force_termination(job);
 				slurm_step_launch_abort(job->step_ctx);
 				return;
 			}
@@ -1210,6 +1116,8 @@ static void _handle_intr()
 
 static void _handle_signal(int signo)
 {
+	debug2("got signal %d", signo);
+
 	switch (signo) {
 	case SIGINT:
 		_handle_intr();
@@ -1219,6 +1127,7 @@ static void _handle_signal(int signo)
 		/* continue with skurm_step_launch_abort */
 	case SIGTERM:
 	case SIGHUP:
+		job_force_termination(job);
 		slurm_step_launch_abort(job->step_ctx);
 		break;
 	/* case SIGTSTP: */

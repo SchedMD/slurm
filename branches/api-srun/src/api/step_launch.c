@@ -220,12 +220,16 @@ int slurm_step_launch (slurm_step_ctx_t *ctx,
 	launch.mem_bind_type = params->mem_bind_type;
 	launch.mem_bind = params->mem_bind;
 	launch.multi_prog = params->multi_prog ? 1 : 0;
+	launch.max_sockets = params->max_sockets;
+	launch.max_cores   = params->max_cores;
+	launch.max_threads = params->max_threads;
 	launch.cpus_per_task	= params->cpus_per_task;
 	launch.ntasks_per_node	= params->ntasks_per_node;
 	launch.ntasks_per_socket= params->ntasks_per_socket;
 	launch.ntasks_per_core	= params->ntasks_per_core;
 	launch.task_dist	= params->task_dist;
 	launch.plane_size	= params->plane_size;
+	launch.pty              = params->pty;
 	launch.options = job_options_create();
 	launch.complete_nodelist = 
 		xstrdup(ctx->step_resp->step_layout->node_list);
@@ -240,6 +244,7 @@ int slurm_step_launch (slurm_step_ctx_t *ctx,
 	
 	launch.user_managed_io = params->user_managed_io ? 1 : 0;
 	ctx->launch_state->user_managed_io = params->user_managed_io;
+	
 	if (!ctx->launch_state->user_managed_io) {
 		launch.ofname = params->remote_output_filename;
 		launch.efname = params->remote_error_filename;
@@ -758,6 +763,43 @@ _exit_handler(struct step_launch_state *sls, slurm_msg_t *exit_msg)
 	pthread_mutex_unlock(&sls->lock);
 }
 
+static void 
+_job_complete_handler(struct step_launch_state *sls, slurm_msg_t *complete_msg)
+{
+	srun_job_complete_msg_t *step_msg = 
+		(srun_job_complete_msg_t *) complete_msg->data;
+	
+	if (step_msg->step_id == NO_VAL) {
+		verbose("Complete job %u received",
+			step_msg->job_id);
+	} else {
+		verbose("Complete job step %u.%u received",
+			step_msg->job_id, step_msg->step_id);
+	}
+
+	pthread_mutex_lock(&sls->lock);
+	
+	if (sls->callback.job_complete != NULL)
+		(sls->callback.job_complete)();
+	
+	pthread_cond_signal(&sls->cond);
+	pthread_mutex_unlock(&sls->lock);
+}
+
+static void 
+_timeout_handler(struct step_launch_state *sls, slurm_msg_t *timeout_msg)
+{
+	srun_timeout_msg_t *to = (srun_timeout_msg_t *)timeout_msg;
+	
+	pthread_mutex_lock(&sls->lock);
+
+	if (sls->callback.timeout_handler != NULL)
+		(sls->callback.timeout_handler)(to->timeout);
+
+	pthread_cond_signal(&sls->cond);
+	pthread_mutex_unlock(&sls->lock);
+}
+
 /*
  * Take the list of node names of down nodes and convert into an
  * array of nodeids for the step.  The nodeid array is passed to
@@ -891,12 +933,12 @@ _handle_msg(struct step_launch_state *sls, slurm_msg_t *msg)
 		break;
 	case SRUN_TIMEOUT:
 		debug2("received job step timeout message");
-		/* FIXME - does nothing yet */
+		_timeout_handler(sls, msg);
 		slurm_free_srun_timeout_msg(msg->data);
 		break;
 	case SRUN_JOB_COMPLETE:
 		debug2("received job step complete message");
-		/* FIXME - does nothing yet */
+		_job_complete_handler(sls, msg);
 		slurm_free_srun_job_complete_msg(msg->data);
 		break;
 	case PMI_KVS_PUT_REQ:
