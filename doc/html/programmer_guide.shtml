@@ -60,14 +60,16 @@ The build process is described in the README file.
 
 <p>Copyright and disclaimer information are in the files COPYING and DISCLAIMER. 
 All of the top-level subdirectories are described below.</p>
+
 <p style="margin-left:.2in"><b>auxdir</b>&#151;Used for building SLURM.<br>
+<b>contribs</b>&#151;Various contributed tools.<br>
 <b>doc</b>&#151;Documentation including man pages. <br>
 <b>etc</b>&#151;Sample configuration files.<br>
 <b>slurm</b>&#151;Header files for API use. These files must be installed. Placing 
 these header files in this location makes for better code portability.<br>
 <b>src</b>&#151;Contains all source code and header files not in the "slurm" subdirectory 
 described above.<br>
-<b>testsuite</b>&#151;DejaGnu is used as a testing framework and all of its files 
+<b>testsuite</b>&#151;DejaGnu and Expect are used for testing all of its files 
 are here.</p>
 
 <p class="footer"><a href="#top">top</a></p>
@@ -95,8 +97,8 @@ SLURM.<br>
 subdirectory is used for each plugin class:<br> 
 <ul>
 <li><b>auth</b> for user authentication,<br> 
-<li><b>checkpoint</b> for system-initiated checkpoint 
-and restart of user jobs,<br>
+<li><b>checkpoint</b> for system-initiated checkpoint and restart of user jobs,<br>
+<li><b>crypto</b> for cryptographic functions,<br>
 <li><b>jobacct_gather</b> for job accounting,<br>
 <li><b>jobacct_storage</b> for specifing the type of storage for job accounting,<br>
 <li><b>jobcomp</b> for job completion logging,<br>
@@ -104,8 +106,7 @@ and restart of user jobs,<br>
 <li><b>proctrack</b> for process tracking,<br>
 <li><b>sched</b> for job scheduler,<br> 
 <li><b>select</b> for a job's node selection,<br>
-<li><b>switch</b> for switch (interconnect) specific 
-functions,<br>
+<li><b>switch</b> for switch (interconnect) specific functions,<br>
 <li><b>task</b> for task affinity to processors.<br>
 </ul>
 <p style="margin-left:.2in">
@@ -127,6 +128,7 @@ dimension torus topography.<br>
 <b>squeue</b>&#151;User command to get information on SLURM jobs and job steps.<br>
 <b>srun</b>&#151;User command to submit a job, get an allocation, and/or 
 initiation a parallel job step.<br>
+<b>strigger</b>&#151;User and administrator to manage event triggers.<br>
 <b>sview</b>&#151;User command to view and update node, partition, and job 
 job state information.<br>
 
@@ -228,6 +230,6 @@ host1> slurmd -N foo21
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 29 September 2006</p>
+<p style="text-align:center;">Last modified 19 September 2007</p>
 
 <!--#include virtual="footer.txt"-->
