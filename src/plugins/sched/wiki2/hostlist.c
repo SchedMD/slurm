@@ -86,7 +86,11 @@ extern char * moab2slurm_task_list(char *moab_tasklist, int *task_cnt)
 	}
 
 	*task_cnt = 0;
+
+	/* Moab format 2 if string contains '*' or '[' */ 
 	tmp1 = strchr(moab_tasklist, (int) '*');
+	if (tmp1 == NULL)
+		tmp1 = strchr(moab_tasklist, (int) '[');
 
 	if (tmp1 == NULL) {	/* Moab format 1 */
 		slurm_tasklist = xstrdup(moab_tasklist);
