@@ -466,8 +466,11 @@ slurm_fd _slurm_open_stream(slurm_addr *addr, bool retry)
         int retry_cnt;
         slurm_fd fd;
 
-        if ( (addr->sin_family == 0) || (addr->sin_port  == 0) ) 
-                return SLURM_SOCKET_ERROR;
+	if ( (addr->sin_family == 0) || (addr->sin_port  == 0) ) {
+		error("Error connecting, bad data: family = %u, port = %u",
+			addr->sin_family, addr->sin_port);
+		return SLURM_SOCKET_ERROR;
+	}
 
         for (retry_cnt=0; ; retry_cnt++) {
                 int rc;
