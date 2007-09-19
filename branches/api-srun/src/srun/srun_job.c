@@ -67,8 +67,6 @@
 #include "src/srun/fname.h"
 #include "src/srun/debugger.h"
 
-typedef enum {DSH_NEW, DSH_ACTIVE, DSH_DONE, DSH_FAILED} state_t;
-
 /*
  * allocation information structure used to store general information
  * about node allocation to be passed to _job_create_structure()
@@ -83,14 +81,6 @@ typedef struct allocation_info {
 	uint32_t               *cpu_count_reps;
 	select_jobinfo_t select_jobinfo;
 } allocation_info_t;
-
-typedef struct thd {
-        pthread_t	thread;			/* thread ID */
-        pthread_attr_t	attr;			/* thread attributes */
-        state_t		state;      		/* thread state */
-} thd_t;
-
-int message_thread = 0;
 
 /*
  * Prototypes:

@@ -69,22 +69,6 @@ typedef enum {
 	SRUN_JOB_FORCETERM         /* Forced termination of IO thread       */
 } srun_job_state_t;
 
-typedef enum {
-	SRUN_HOST_INIT = 0,
-	SRUN_HOST_CONTACTED,
-	SRUN_HOST_UNREACHABLE,
-	SRUN_HOST_REPLIED
-} srun_host_state_t;
-
-typedef enum {
-	SRUN_TASK_INIT = 0,
-	SRUN_TASK_RUNNING,
-	SRUN_TASK_FAILED,
-	SRUN_TASK_IO_WAIT,/* this state deprecated with new eio stdio engine */
-	SRUN_TASK_EXITED,
-	SRUN_TASK_ABNORMAL_EXIT
-} srun_task_state_t;
-
 enum io_t {
 	IO_ALL          = 0, /* multiplex output from all/bcast stdin to all */
 	IO_ONE          = 1, /* output from only one task/stdin to one task  */
