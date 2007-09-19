@@ -214,21 +214,25 @@ resources). It also does not update the required or excluded node list of
 individual jobs. These are the current limiations. You can use the 
 scontrol show command to check if these conditions apply.</p> 
 <ul>
-<li>partition: State=UP</li>
-<li>partition: RootOnly=NO</li>
-<li>partition: Shared=NO</li>
-<li>job: ReqNodeList=NULL</li>
-<li>job: ExcNodeList=NULL</li>
-<li>job: Contiguous=0</li>
-<li>job: Features=NULL</li>
-<li>job: MinProcs, MinMemory, and MinTmpDisk satisfied by all nodes in 
+<li>Partition: State=UP</li>
+<li>Partition: RootOnly=NO</li>
+<li>Partition: Shared=NO</li>
+<li>Job: ReqNodeList=NULL</li>
+<li>Job: ExcNodeList=NULL</li>
+<li>Job: Contiguous=0</li>
+<li>Job: Features=NULL</li>
+<li>Job: MinProcs, MinMemory, and MinTmpDisk satisfied by all nodes in 
 the partition</li>
-<li>job: MinProcs or MinNodes not to exceed partition's MaxNodes</li>
+<li>Job: MinProcs or MinNodes not to exceed partition's MaxNodes</li>
 </ul>
-<p>As soon as any priority-ordered job in the partition's queue fail to 
-satisfy the request, no lower priority job in that partition's queue 
-will be considered as a backfill candidate. Any programmer wishing 
-to augment the existing code is welcome to do so. 
+<p>If the partitions specifications differ from those listed above, 
+no jobs in that partition will be scheduled by the backfills scheduler. 
+Their jobs will only be scheduled on a First-In-First-Out (FIFO) basis.</p>
+<p>Jobs failing to satisfy the requirements above (i.e. with specific 
+node requirements) will not be considered candidates for backfill 
+scheduling and other jobs may be scheduled ahead of these jobs. 
+These jobs are subject to starvation, but will not block other 
+jobs from running when sufficient resources are available for them.</p>
 
 <p><a name="steps"><b>9. How can I run multiple jobs from within a 
 single script?</b></a><br>
@@ -290,18 +294,8 @@ Bash's <i>-i</i> option tells it to run in interactive mode (with prompts).
 
 <p><a name="batch_out"><b>14. How can I get the task ID in the output 
 or error file name for a batch job?</b></a><br>
-The <i>srun -b</i> or <i>sbatch</i> commands are meant to accept a 
-script rather than a command line. If you specify a command line 
-rather than a script, it gets translated to a simple script of this
-sort:</p>
-<pre>
-#!/bin/sh
-srun hostname
-</pre>
-<p>You will note that the srun command lacks the output file specification.
-It's output (for all tasks) becomes the output of the job. If you
-want separate output by task, you will need to build a script containing
-this specification. For example:</p>
+<p>If you want separate output by task, you will need to build a script 
+containing this specification. For example:</p>
 <pre>
 $ cat test
 #!/bin/sh
@@ -343,13 +337,11 @@ will be unchanged.</p>
 
 <p><a name="terminal"><b>16. Can tasks be launched with a remote 
 terminal?</b></a><br>
-SLURM does not directly support a remote pseudo terminal for spawned 
-tasks. 
-We intend to remedy this in Slurm version 1.3. 
+In SLURM version 1.3 or higher, use srun's <i>--pty</i> option.
 Until then, you can accomplish this by starting an appropriate program 
 or script. In the simplest case (X11 over TCP with the DISPLAY 
-environment already set), <i>srun xterm</i> may suffice. In the more 
-general case, the following scripts should work. 
+environment already set), executing <i>srun xterm</i> may suffice. 
+In the more general case, the following scripts should work. 
 <b>NOTE: The pathname to the additional scripts are included in the 
 variables BS and IS of the first script. You must change this in the 
 first script.</b>
@@ -815,6 +807,6 @@ about these options.
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 30 July 2007</p>
+<p style="text-align:center;">Last modified 19 September 2007</p>
 
 <!--#include virtual="footer.txt"-->
