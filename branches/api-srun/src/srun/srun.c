@@ -86,7 +86,6 @@
 #include "src/srun/allocate.h"
 #include "src/srun/srun_job.h"
 #include "src/srun/opt.h"
-#include "src/srun/sigstr.h"
 #include "src/srun/debugger.h"
 #include "src/srun/srun.h"
 #include "src/srun/srun_pty.h"
@@ -154,7 +153,8 @@ int srun(int ac, char **av)
 	log_options_t logopt = LOG_OPTS_STDERR_ONLY;
 	slurm_step_launch_params_t launch_params;
 	slurm_step_launch_callbacks_t callbacks;
-	
+	int got_alloc = 0;
+
 	env->stepid = -1;
 	env->procid = -1;
 	env->localid = -1;
@@ -239,6 +239,7 @@ int srun(int ac, char **av)
 		if (!job || create_job_step(job) < 0)
 			exit(1);
 	} else {
+		got_alloc = 1;
 		/* Combined job allocation and job step launch */
 #ifdef HAVE_FRONT_END
 		uid_t my_uid = getuid();
@@ -411,6 +412,8 @@ int srun(int ac, char **av)
 	slurm_step_launch_wait_finish(job->step_ctx);
 
 cleanup:
+	if(got_alloc)
+		slurm_complete_job(job->jobid, global_rc);
 	_run_srun_epilog(job);
 	slurm_step_ctx_destroy(job->step_ctx);
 	_mpir_cleanup();

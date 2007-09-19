@@ -11,13 +11,10 @@ srun_SOURCES = \
 	opt.c opt.h \
 	srun_job.c srun_job.h \
 	srun_pty.c srun_pty.h \
-	launch.h    \
 	debugger.h    \
 	debugger.c    \
 	fname.c     \
 	fname.h     \
-	sigstr.c    \
-	sigstr.h    \
 	allocate.c  \
 	allocate.h  \
 	core-format.c \
