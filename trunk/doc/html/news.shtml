@@ -74,9 +74,12 @@ option of using OpenSSL (default) or Munge (GPL).</li>
 <li>Improved scheduling of multple job steps within a job's allocation.</li>
 <li>Gang scheduling of jobs (time-slicing of parallel jobs
 without an external scheduler).</li>
+<li>Support for job specification of node features with node counts.</li> 
 <li>Support for BlueGene/P systems.</li>
-<li><i>Srun</i>'s --alloc, --attach, and --batch options removed (use 
+<li><i>srun</i>'s --alloc, --attach, and --batch options removed (use 
 <i>salloc</i>, <i>sattach</i> or <i>sbatch</i> commands instead).</li>
+<li><i>srun --pty</i> option added to support remote pseudo terminial for 
+spawned tasks.</li>
 </ul>
 
 <h2><a name="14">Major Updates in SLURM Version 1.4 and beyond</a></h2>
@@ -90,6 +93,6 @@ to coordinate activies. Future development plans includes:
 and refresh.</li>
 </ul>
 
-<p style="text-align:center;">Last modified 13 July 2007</p>
+<p style="text-align:center;">Last modified 19 September 2007</p>
 
 <!--#include virtual="footer.txt"-->
