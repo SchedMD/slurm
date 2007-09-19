@@ -75,16 +75,6 @@ static s_p_hashtbl_t *conf_hashtbl = NULL;
 static slurm_ctl_conf_t *conf_ptr = &slurmctld_conf;
 static bool conf_initialized = false;
 
-/*
- * FIXME - If we eliminate the SlurmdPort option altogether, then
- *         default_slurmd_port and parse_slurmd_port can
- *         be removed.
- */
-static uint16_t default_slurmd_port;
-static int parse_slurmd_port(void **dest, slurm_parser_enum_t type,
-			     const char *key, const char *value,
-			     const char *line, char **leftover);
-
 static s_p_hashtbl_t *default_nodename_tbl;
 static s_p_hashtbl_t *default_partition_tbl;
 
@@ -197,7 +187,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"SlurmdDebug", S_P_UINT16},
 	{"SlurmdLogFile", S_P_STRING},
 	{"SlurmdPidFile",  S_P_STRING},
-	{"SlurmdPort", S_P_UINT32, parse_slurmd_port},
+	{"SlurmdPort", S_P_UINT32},
 	{"SlurmdSpoolDir", S_P_STRING},
 	{"SlurmdTimeout", S_P_UINT16},
 	{"SrunEpilog", S_P_STRING},
@@ -227,46 +217,6 @@ s_p_options_t slurm_conf_options[] = {
 	{NULL}
 };
 
-
-/*
- * This function works almost exactly the same as the
- * default S_P_UINT32 handler, except that it also sets the
- * global variable default_slurmd_port.
- */
-static int parse_slurmd_port(void **dest, slurm_parser_enum_t type,
-			     const char *key, const char *value,
-			     const char *line, char **leftover)
-{
-	char *endptr;
-	unsigned long num;
-	uint32_t *ptr;
-
-	errno = 0;
-	num = strtoul(value, &endptr, 0);
-	if ((num == 0 && errno == EINVAL)
-	    || (*endptr != '\0')) {
-		error("%s value (%s) is not a valid number", key, value);
-		return -1;
-	} else if (errno == ERANGE) {
-		error("%s value (%s) is out of range", key, value);
-		return -1;
-	} else if (num < 0) {
-		error("value %s (%s) is less than zero", key, value);
-		return -1;
-	} else if (num > 0xffffffff) {
-		error("%s value (%s) is greater than 4294967295", 
-			key, value);
-		return -1;
-	}
-
-	default_slurmd_port = (uint16_t) num;
-
-	ptr = (uint32_t *)xmalloc(sizeof(uint32_t));
-	*ptr = (uint32_t)num;
-	*dest = (void *)ptr;
-
-	return 1;
-}
 
 static int defunct_option(void **dest, slurm_parser_enum_t type,
 			  const char *key, const char *value,
@@ -349,10 +299,10 @@ static int parse_nodename(void **dest, slurm_parser_enum_t type,
 
 		if (!s_p_get_uint16(&n->port, "Port", tbl)
 		    && !s_p_get_uint16(&n->port, "Port", dflt)) {
-			if (default_slurmd_port != 0)
-				n->port = default_slurmd_port;
-			else
-				n->port = SLURMD_PORT;
+			/* This gets resolved in slurm_conf_get_port() 
+			 * and slurm_conf_get_addr(). For now just 
+			 * leave with a value of zero */
+			n->port = 0;
 		}
 
 		if (!s_p_get_uint16(&n->cpus, "Procs", tbl)
@@ -937,9 +887,10 @@ extern uint16_t slurm_conf_get_port(const char *node_name)
 	p = node_to_host_hashtbl[idx];
 	while (p) {
 		if (strcmp(p->alias, node_name) == 0) {
-			uint16_t port = p->port;
-			if ((!port || port == SLURMD_PORT))
-				port = default_slurmd_port;
+			uint16_t port;
+			if (!p->port)
+				p->port = (uint16_t) conf_ptr->slurmd_port;
+			port = p->port;
 			slurm_conf_unlock();
 			return port;
 		}
@@ -966,6 +917,8 @@ extern int slurm_conf_get_addr(const char *node_name, slurm_addr *address)
 	p = node_to_host_hashtbl[idx];
 	while (p) {
 		if (strcmp(p->alias, node_name) == 0) {
+			if (!p->port)
+				p->port = (uint16_t) conf_ptr->slurmd_port;
 			if (!p->addr_initialized) {
 				slurm_set_addr(&p->addr, p->port, p->address);
 				p->addr_initialized = true;
@@ -1219,7 +1172,6 @@ _init_slurm_conf(const char *file_name)
 {
 	char *name = (char *)file_name;
 	/* conf_ptr = (slurm_ctl_conf_t *)xmalloc(sizeof(slurm_ctl_conf_t)); */
-	default_slurmd_port = 0;
 
 	if (name == NULL) {
 		name = getenv("SLURM_CONF");
