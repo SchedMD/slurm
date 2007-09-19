@@ -68,6 +68,7 @@
 #include "src/common/node_select.h"
 #include "src/common/pack.h"
 #include "src/common/read_config.h"
+#include "src/common/slurm_jobacct_gather.h"
 #include "src/common/slurm_jobacct_storage.h"
 #include "src/common/slurm_auth.h"
 #include "src/common/slurm_jobcomp.h"
