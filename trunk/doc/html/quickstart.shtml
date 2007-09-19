@@ -30,11 +30,12 @@ All of the commands can run anywhere in the cluster.</p>
   Figure 1. SLURM components
 </div>
 
-<p>The entities managed by these SLURM daemons, shown in Figure 2, include <b>nodes</b>, 
-the compute resource in SLURM, <b>partitions</b>, which group nodes into logical 
-sets, <b>jobs</b>, or allocations of resources assigned to a user for 
-a specified amount of time, and <b>job steps</b>, which are sets of (possibly 
-parallel) tasks within a job. 
+<p>The entities managed by these SLURM daemons, shown in Figure 2, include 
+<b>nodes</b>, the compute resource in SLURM, 
+<b>partitions</b>, which group nodes into logical (possibly overlapping) sets, 
+<b>jobs</b>, or allocations of resources assigned to a user for 
+a specified amount of time, and 
+<b>job steps</b>, which are sets of (possibly parallel) tasks within a job. 
 The partitions can be considered job queues, each of which has an assortment of 
 constraints such as job size limit, job time limit, users permitted to use it, etc.
 Priority-ordered jobs are allocated nodes within a partition until the resources 
@@ -429,6 +430,6 @@ sbatch: Submitted batch job 1234
 tasks. These tasks are not managed by SLURM since they are launched 
 outside of its control.</p>
  
-<p style="text-align:center;">Last modified 14 August 2007</p>
+<p style="text-align:center;">Last modified 19 September 2007</p>
 
 <!--#include virtual="footer.txt"-->
