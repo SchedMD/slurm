@@ -748,7 +748,7 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 
 	if (slurm_send_rc_msg(msg, errnum) < 0) {
 
-		error("launch_tasks: unable to send return code: %m");
+		error("_rpc_launch_tasks: unable to send return code: %m");
 
 		/*
 		 * Rewind credential so that srun may perform retry

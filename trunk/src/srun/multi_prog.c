@@ -22,7 +22,7 @@
  *  any later version.
  *
  *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under 
+ *  to link the code of portions of this program with the OpenSSL library under
  *  certain conditions as described in each individual source file, and 
  *  distribute linked combinations including the two. You must obey the GNU 
  *  General Public License in all respects for all of the code used other than 
@@ -166,18 +166,16 @@ _set_exec_names(char *ranks, char *exec_name, int ntasks)
 }
 
 extern int
-set_multi_name(int ntasks)
+mpir_set_multi_name(int ntasks, const char *config_fname)
 {
 	FILE *config_fd;
 	char line[256];
-	char *config_fname = NULL, *ranks, *exec_name, *p, *ptrptr;
+	char *ranks, *exec_name, *p, *ptrptr;
 	int line_num = 0, i;
 
 	for (i=0; i<ntasks; i++) {
 		MPIR_PROCDESC *tv;
 		tv = &MPIR_proctable[i];
-		if (i == 0)
-			config_fname = tv->executable_name;
 		tv->executable_name = NULL;
 	}
 
@@ -215,4 +213,53 @@ set_multi_name(int ntasks)
 	}
 	fclose(config_fd);
 	return 0;
+}
+
+extern void
+mpir_init(int num_tasks)
+{
+	MPIR_proctable_size = num_tasks;
+	MPIR_proctable = xmalloc(sizeof(MPIR_PROCDESC) * num_tasks);
+	if (MPIR_proctable == NULL)
+		fatal("Unable to initialize MPIR_proctable: %m");
+}
+
+extern void
+mpir_cleanup()
+{
+	int i;
+
+	for (i = 0; i < MPIR_proctable_size; i++) {
+		xfree(MPIR_proctable[i].host_name);
+		xfree(MPIR_proctable[i].executable_name);
+	}
+	xfree(MPIR_proctable);
+}
+
+extern void
+mpir_set_executable_names(const char *executable_name)
+{
+	int i;
+
+	for (i = 0; i < MPIR_proctable_size; i++) {
+		MPIR_proctable[i].executable_name = xstrdup(executable_name);
+		if (MPIR_proctable[i].executable_name == NULL)
+			fatal("Unable to set MPI_proctable executable_name:"
+			      " %m");
+	}
+}
+
+extern void
+mpir_dump_proctable()
+{
+	MPIR_PROCDESC *tv;
+	int i;
+
+	for (i = 0; i < MPIR_proctable_size; i++) {
+		tv = &MPIR_proctable[i];
+		if (!tv)
+			break;
+		info("task:%d, host:%s, pid:%d, executable:%s",
+		     i, tv->host_name, tv->pid, tv->executable_name);
+	}
 }

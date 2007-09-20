@@ -58,5 +58,7 @@ CONFIGURATION FILE CHANGES
 OTHER CHANGES
 
 * New node state "FAILING" added along with event trigger for it.
+* type slurm_step_ctx has changed to slurm_step_ctx_t * make appropriate
+  changes.
 
 See the file NEWS for more details.

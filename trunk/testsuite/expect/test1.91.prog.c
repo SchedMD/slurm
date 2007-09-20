@@ -32,7 +32,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "../../config.h"
+#include "config.h"
 
 static void _load_mask(cpu_set_t *mask)
 {

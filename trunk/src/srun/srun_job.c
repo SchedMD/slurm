@@ -56,19 +56,16 @@
 #include "src/common/log.h"
 #include "src/common/read_config.h"
 #include "src/common/slurm_protocol_api.h"
-#include "src/common/slurm_cred.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 #include "src/common/io_hdr.h"
 #include "src/common/forward.h"
+#include "src/common/fd.h"
 
 #include "src/srun/srun_job.h"
 #include "src/srun/opt.h"
 #include "src/srun/fname.h"
 #include "src/srun/debugger.h"
-#include "src/srun/msg.h"
-
-typedef enum {DSH_NEW, DSH_ACTIVE, DSH_DONE, DSH_FAILED} state_t;
 
 /*
  * allocation information structure used to store general information
@@ -85,13 +82,6 @@ typedef struct allocation_info {
 	select_jobinfo_t select_jobinfo;
 } allocation_info_t;
 
-typedef struct thd {
-        pthread_t	thread;			/* thread ID */
-        pthread_attr_t	attr;			/* thread attributes */
-        state_t		state;      		/* thread state */
-} thd_t;
-
-int message_thread = 0;
 /*
  * Prototypes:
  */
@@ -99,9 +89,6 @@ static inline int _estimate_nports(int nclients, int cli_per_port);
 static int        _compute_task_count(allocation_info_t *info);
 static void       _set_nprocs(allocation_info_t *info);
 static srun_job_t *_job_create_structure(allocation_info_t *info);
-static void       _job_fake_cred(srun_job_t *job);
-static char *     _task_state_name(srun_task_state_t state_inx);
-static char *     _host_state_name(srun_host_state_t state_inx);
 static char *     _normalize_hostlist(const char *hostlist);
 
 
@@ -139,13 +126,9 @@ job_create_noalloc(void)
 	 * Create job, then fill in host addresses
 	 */
 	job = _job_create_structure(ai);
-	job->step_layout = fake_slurm_step_layout_create(job->nodelist, 
-							 NULL, NULL,
-							 job->nhosts,
-							 job->ntasks);
-		
-	_job_fake_cred(job);
+	
 	job_update_io_fnames(job);
+
    error:
 	xfree(ai);
 	return (job);
@@ -378,6 +361,88 @@ job_create_allocation(resource_allocation_response_msg_t *resp)
 	return (job);
 }
 
+void
+update_job_state(srun_job_t *job, srun_job_state_t state)
+{
+	pthread_mutex_lock(&job->state_mutex);
+	if (job->state < state) {
+		job->state = state;
+		pthread_cond_signal(&job->state_cond);
+		
+	}
+	pthread_mutex_unlock(&job->state_mutex);
+	return;
+}
+
+srun_job_state_t 
+job_state(srun_job_t *job)
+{
+	srun_job_state_t state;
+	slurm_mutex_lock(&job->state_mutex);
+	state = job->state;
+	slurm_mutex_unlock(&job->state_mutex);
+	return state;
+}
+
+
+void 
+job_force_termination(srun_job_t *job)
+{
+	info ("forcing job termination");
+	update_job_state(job, SRUN_JOB_FORCETERM);
+}
+
+/*
+ * Job has been notified of it's approaching time limit. 
+ * Job will be killed shortly after timeout.
+ * This RPC can arrive multiple times with the same or updated timeouts.
+ * FIXME: We may want to signal the job or perform other action for this.
+ * FIXME: How much lead time do we want for this message? Some jobs may 
+ *	require tens of minutes to gracefully terminate.
+ */
+void timeout_handler(time_t timeout)
+{
+	static time_t last_timeout = 0;
+
+	if (timeout != last_timeout) {
+		last_timeout = timeout;
+		verbose("job time limit to be reached at %s", 
+			ctime(&timeout));
+	}
+}
+
+static inline int
+_estimate_nports(int nclients, int cli_per_port)
+{
+	div_t d;
+	d = div(nclients, cli_per_port);
+	return d.rem > 0 ? d.quot + 1 : d.quot;
+}
+
+static int
+_compute_task_count(allocation_info_t *ainfo)
+{
+	int i, cnt = 0;
+
+	if (opt.cpus_set) {
+		for (i = 0; i < ainfo->num_cpu_groups; i++)
+			cnt += ( ainfo->cpu_count_reps[i] *
+				 (ainfo->cpus_per_node[i]/opt.cpus_per_task));
+	}
+
+	return (cnt < ainfo->nnodes) ? ainfo->nnodes : cnt;
+}
+
+static void
+_set_nprocs(allocation_info_t *info)
+{
+	if (!opt.nprocs_set) {
+		opt.nprocs = _compute_task_count(info);
+		if (opt.cpus_set)
+			opt.nprocs_set = true;	/* implicit */
+	}
+}
+
 /*
  * Create an srun job structure from a resource allocation response msg
  */
@@ -419,328 +484,12 @@ _job_create_structure(allocation_info_t *ainfo)
 	job->jobid   = ainfo->jobid;
 	
 	job->ntasks  = opt.nprocs;
-	job->task_prolog = xstrdup(opt.task_prolog);
-	job->task_epilog = xstrdup(opt.task_epilog);
-	/* Compute number of file descriptors / Ports needed for Job 
-	 * control info server
-	 */
-	job->njfds = _estimate_nports(opt.nprocs, 48);
-	debug3("njfds = %d", job->njfds);
-	job->jfd = (slurm_fd *)
-		xmalloc(job->njfds * sizeof(slurm_fd));
-	job->jaddr = (slurm_addr *) 
-		xmalloc(job->njfds * sizeof(slurm_addr));
 
- 	slurm_mutex_init(&job->task_mutex);
-	
-	job->old_job = false;
-	job->removed = false;
-	job->signaled = false;
 	job->rc       = -1;
-	
-	/* 
-	 *  Initialize Launch and Exit timeout values
-	 */
-	job->ltimeout = 0;
-	job->etimeout = 0;
-	
-	job->host_state =  xmalloc(job->nhosts * sizeof(srun_host_state_t));
-	
-	/* ntask task states and statii*/
-	job->task_state  =  xmalloc(opt.nprocs * sizeof(srun_task_state_t));
-	job->tstatus	 =  xmalloc(opt.nprocs * sizeof(int));
 	
 	job_update_io_fnames(job);
 	
 	return (job);	
-}
-
-void
-update_job_state(srun_job_t *job, srun_job_state_t state)
-{
-	pthread_mutex_lock(&job->state_mutex);
-	if (job->state < state) {
-		job->state = state;
-		pthread_cond_signal(&job->state_cond);
-		
-	}
-	pthread_mutex_unlock(&job->state_mutex);
-	return;
-}
-
-srun_job_state_t 
-job_state(srun_job_t *job)
-{
-	srun_job_state_t state;
-	slurm_mutex_lock(&job->state_mutex);
-	state = job->state;
-	slurm_mutex_unlock(&job->state_mutex);
-	return state;
-}
-
-
-void 
-job_force_termination(srun_job_t *job)
-{
-	info ("forcing job termination");
-	update_job_state(job, SRUN_JOB_FORCETERM);
-
-	client_io_handler_finish(job->client_io);
-}
-
-
-int
-set_job_rc(srun_job_t *job)
-{
-	int i, rc = 0, task_failed = 0;
-
-	/*
-	 *  return code set to at least one if any tasks failed launch
-	 */
-	for (i = 0; i < opt.nprocs; i++) {
-		if (job->task_state[i] == SRUN_TASK_FAILED)
-			task_failed = 1; 
-		if (job->rc < job->tstatus[i])
-			job->rc = job->tstatus[i];
-	}
-	if (task_failed && (job->rc <= 0)) {
-		job->rc = 1;
-		return 1;
-	}
-
-	if ((rc = WEXITSTATUS(job->rc)))
-		return rc;
-	if (WIFSIGNALED(job->rc))
-		return (128 + WTERMSIG(job->rc));
-	return job->rc;
-}
-
-
-void job_fatal(srun_job_t *job, const char *msg)
-{
-	if (msg) error(msg);
-
-	srun_job_destroy(job, errno);
-
-	exit(1);
-}
-
-
-void 
-srun_job_destroy(srun_job_t *job, int error)
-{
-	if (job->removed)
-		return;
-
-	if (job->old_job) {
-		debug("cancelling job step %u.%u", job->jobid, job->stepid);
-		slurm_kill_job_step(job->jobid, job->stepid, SIGKILL);
-	} else if (!opt.no_alloc) {
-		debug("cancelling job %u", job->jobid);
-		slurm_complete_job(job->jobid, error);
-	} else {
-		debug("no allocation to cancel, killing remote tasks");
-		fwd_signal(job, SIGKILL, opt.max_threads); 
-		return;
-	}
-
-	if (error) debugger_launch_failure(job);
-
-	job->removed = true;
-}
-
-
-void
-srun_job_kill(srun_job_t *job)
-{
-	if (!opt.no_alloc) {
-		if (slurm_kill_job_step(job->jobid, job->stepid, SIGKILL) < 0)
-			error ("slurm_kill_job_step: %m");
-	}
-	update_job_state(job, SRUN_JOB_FAILED);
-}
-	
-void 
-report_job_status(srun_job_t *job)
-{
-	int i;
-	hostlist_t hl = hostlist_create(job->nodelist);
-	char *name = NULL;
-
-	for (i = 0; i < job->nhosts; i++) {
-		name = hostlist_shift(hl);
-		info ("host:%s state:%s", name, 
-		      _host_state_name(job->host_state[i]));
-		free(name);
-	}
-}
-
-
-#define NTASK_STATES 6
-void 
-report_task_status(srun_job_t *job)
-{
-	int i;
-	char buf[MAXHOSTRANGELEN+2];
-	hostlist_t hl[NTASK_STATES];
-
-	for (i = 0; i < NTASK_STATES; i++)
-		hl[i] = hostlist_create(NULL);
-
-	for (i = 0; i < opt.nprocs; i++) {
-		int state = job->task_state[i];
-		debug3("  state of task %d is %d", i, state);
-		snprintf(buf, 256, "task%d", i);
-		hostlist_push(hl[state], buf); 
-	}
-
-	for (i = 0; i< NTASK_STATES; i++) {
-		if (hostlist_count(hl[i]) > 0) {
-			hostlist_ranged_string(hl[i], MAXHOSTRANGELEN, buf);
-			info("%s: %s", buf, _task_state_name(i));
-		}
-		hostlist_destroy(hl[i]);
-	}
-
-}
-
-void 
-fwd_signal(srun_job_t *job, int signo, int max_threads)
-{
-	int i;
-	slurm_msg_t req;
-	kill_tasks_msg_t msg;
-	static pthread_mutex_t sig_mutex = PTHREAD_MUTEX_INITIALIZER;
-	hostlist_t hl;
-	char *name = NULL;
-	char buf[8192];
-	List ret_list = NULL;
-	ListIterator itr;
-	ret_data_info_t *ret_data_info = NULL;
-	int rc = SLURM_SUCCESS;
-
-	slurm_mutex_lock(&sig_mutex);
-
-	if (signo == SIGKILL || signo == SIGINT || signo == SIGTERM) {
-		slurm_mutex_lock(&job->state_mutex);
-		job->signaled = true;
-		slurm_mutex_unlock(&job->state_mutex);
-	}
-
-	debug2("forward signal %d to job", signo);
-
-	/* common to all tasks */
-	msg.job_id      = job->jobid;
-	msg.job_step_id = job->stepid;
-	msg.signal      = (uint32_t) signo;
-	
-	hl = hostlist_create("");
-	for (i = 0; i < job->nhosts; i++) {
-		if (job->host_state[i] != SRUN_HOST_REPLIED) {
-			name = nodelist_nth_host(
-				job->step_layout->node_list, i);
-			debug2("%s has not yet replied\n", name);
-			free(name);
-			continue;
-		}
-		if (job_active_tasks_on_host(job, i) == 0)
-			continue;
-		name = nodelist_nth_host(job->step_layout->node_list, i);
-		hostlist_push(hl, name);
-		free(name);
-	}
-	if(!hostlist_count(hl)) {
-		hostlist_destroy(hl);
-		goto nothing_left;
-	}
-	hostlist_ranged_string(hl, sizeof(buf), buf);
-	hostlist_destroy(hl);
-	name = xstrdup(buf);
-
-	slurm_msg_t_init(&req);	
-	req.msg_type = REQUEST_SIGNAL_TASKS;
-	req.data     = &msg;
-	
-	debug3("sending signal to host %s", name);
-	
-	if (!(ret_list = slurm_send_recv_msgs(name, &req, 0))) { 
-		error("fwd_signal: slurm_send_recv_msgs really failed bad");
-		xfree(name);
-		slurm_mutex_unlock(&sig_mutex);
-		return;
-	}
-	xfree(name);
-	itr = list_iterator_create(ret_list);		
-	while((ret_data_info = list_next(itr))) {
-		rc = slurm_get_return_code(ret_data_info->type, 
-					   ret_data_info->data);
-		/*
-		 *  Report error unless it is "Invalid job id" which 
-		 *    probably just means the tasks exited in the meanwhile.
-		 */
-		if ((rc != 0) && (rc != ESLURM_INVALID_JOB_ID)
-		    &&  (rc != ESLURMD_JOB_NOTRUNNING) && (rc != ESRCH)) {
-			error("%s: signal: %s", 
-			      ret_data_info->node_name, 
-			      slurm_strerror(rc));
-		}
-	}
-	list_iterator_destroy(itr);
-	list_destroy(ret_list);
-nothing_left:
-	debug2("All tasks have been signalled");
-	
-	slurm_mutex_unlock(&sig_mutex);
-}
-
-int
-job_active_tasks_on_host(srun_job_t *job, int hostid)
-{
-	int i;
-	int retval = 0;
-
-	slurm_mutex_lock(&job->task_mutex);
-	for (i = 0; i < job->step_layout->tasks[hostid]; i++) {
-		uint32_t *tids = job->step_layout->tids[hostid];
-		xassert(tids != NULL);
-		debug("Task %d state: %d", tids[i], job->task_state[tids[i]]);
-		if (job->task_state[tids[i]] == SRUN_TASK_RUNNING) 
-			retval++;
-	}
-	slurm_mutex_unlock(&job->task_mutex);
-	return retval;
-}
-
-static inline int
-_estimate_nports(int nclients, int cli_per_port)
-{
-	div_t d;
-	d = div(nclients, cli_per_port);
-	return d.rem > 0 ? d.quot + 1 : d.quot;
-}
-
-static int
-_compute_task_count(allocation_info_t *ainfo)
-{
-	int i, cnt = 0;
-
-	if (opt.cpus_set) {
-		for (i = 0; i < ainfo->num_cpu_groups; i++)
-			cnt += ( ainfo->cpu_count_reps[i] *
-				 (ainfo->cpus_per_node[i]/opt.cpus_per_task));
-	}
-
-	return (cnt < ainfo->nnodes) ? ainfo->nnodes : cnt;
-}
-
-static void
-_set_nprocs(allocation_info_t *info)
-{
-	if (!opt.nprocs_set) {
-		opt.nprocs = _compute_task_count(info);
-		if (opt.cpus_set)
-			opt.nprocs_set = true;	/* implicit */
-	}
 }
 
 void
@@ -749,57 +498,6 @@ job_update_io_fnames(srun_job_t *job)
 	job->ifname = fname_create(job, opt.ifname);
 	job->ofname = fname_create(job, opt.ofname);
 	job->efname = opt.efname ? fname_create(job, opt.efname) : job->ofname;
-}
-
-static void
-_job_fake_cred(srun_job_t *job)
-{
-	slurm_cred_arg_t arg;
-	arg.jobid    = job->jobid;
-	arg.stepid   = job->stepid;
-	arg.uid      = opt.uid;
-	arg.hostlist = job->nodelist;
-        arg.alloc_lps_cnt = 0;    
-        arg.alloc_lps     =  NULL; 
-	job->cred = slurm_cred_faker(&arg);
-}
-
-static char *
-_task_state_name(srun_task_state_t state_inx)
-{
-	switch (state_inx) {
-		case SRUN_TASK_INIT:
-			return "initializing";
-		case SRUN_TASK_RUNNING:
-			return "running";
-		case SRUN_TASK_FAILED:
-			return "failed";
-		case SRUN_TASK_EXITED:
-			return "exited";
-		case SRUN_TASK_IO_WAIT:
-			return "waiting for io";
-		case SRUN_TASK_ABNORMAL_EXIT:
-			return "exited abnormally";
-		default:
-			return "unknown";
-	}
-}
-
-static char *
-_host_state_name(srun_host_state_t state_inx)
-{
-	switch (state_inx) {
-		case SRUN_HOST_INIT:
-			return "initial";
-		case SRUN_HOST_CONTACTED:
-			return "contacted";
-		case SRUN_HOST_UNREACHABLE:
-			return "unreachable";
-		case SRUN_HOST_REPLIED:
-			return "replied";
-		default:
-			return "unknown";
-	}
 }
 
 static char *

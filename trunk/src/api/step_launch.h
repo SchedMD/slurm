@@ -87,7 +87,7 @@ struct step_launch_state {
 /*
  * Create a launch state structure for a specified step context, "ctx".
  */
-struct step_launch_state * step_launch_state_create(slurm_step_ctx ctx);
+struct step_launch_state * step_launch_state_create(slurm_step_ctx_t *ctx);
 
 /*
  * Free the memory associated with the a launch state structure.
