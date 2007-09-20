@@ -909,12 +909,19 @@ slurm_fd slurm_open_controller_conn_spec(enum controller_id dest)
 		debug3("Error: Unable to set default config");
 		return SLURM_ERROR;
 	}
-		
-	addr = (dest == PRIMARY_CONTROLLER) ? 
-		  &proto_conf->primary_controller : 
-		  &proto_conf->secondary_controller;
 
-	if (!addr) return SLURM_ERROR;
+	if (dest == PRIMARY_CONTROLLER)
+		addr = &proto_conf->primary_controller;
+	else {	/* (dest == SECONDARY_CONTROLLER) */
+		slurm_ctl_conf_t *conf;
+		addr = NULL;
+		conf = slurm_conf_lock();
+		if (conf->backup_addr)
+			addr = &proto_conf->secondary_controller;
+		slurm_conf_unlock();
+		if (!addr)
+			return SLURM_ERROR;
+	}
 
 	rc = slurm_open_msg_conn(addr);
 	if (rc == -1)
