@@ -138,7 +138,7 @@ _send_message_controller (enum controller_id dest, slurm_msg_t *req)
 	slurm_fd fd = -1;
 	slurm_msg_t *resp_msg = NULL;
 		
-	/*always only going to 1 node */
+	/* always going to one node (primary or backup per value of "dest") */
 	if ((fd = slurm_open_controller_conn_spec(dest)) < 0)
 		slurm_seterrno_ret(SLURMCTLD_COMMUNICATIONS_CONNECTION_ERROR);
 
