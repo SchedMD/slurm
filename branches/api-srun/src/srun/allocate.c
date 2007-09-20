@@ -79,106 +79,8 @@ static int   _wait_for_alloc_rpc(int sleep_time,
 static void  _wait_for_resources(resource_allocation_response_msg_t **resp);
 static bool  _retry();
 static void  _intr_handler(int signo);
-static slurm_fd _slurmctld_msg_init(void);
 
 static sig_atomic_t destroy_job = 0;
-
-
-int
-allocate_test(void)
-{
-	int rc;
-	job_desc_msg_t *j = job_desc_msg_create_from_opts();
-	if(!j)
-		return SLURM_ERROR;
-	
-	rc = slurm_job_will_run(j);
-	job_desc_msg_destroy(j);
-	return rc;
-}
-
-resource_allocation_response_msg_t *
-allocate_nodes(void)
-{
-	int rc = 0;
-	static int sigarray[] = { SIGQUIT, SIGINT, SIGTERM, 0 };
-	SigFunc *oquitf, *ointf, *otermf;
-	sigset_t oset;
-	resource_allocation_response_msg_t *resp = NULL;
-	job_desc_msg_t *j = job_desc_msg_create_from_opts();
-
-	if(!j)
-		return NULL;
-	
-	oquitf = xsignal(SIGQUIT, _intr_handler);
-	ointf  = xsignal(SIGINT,  _intr_handler);
-	otermf = xsignal(SIGTERM, _intr_handler);
-
-	xsignal_save_mask(&oset);
-	xsignal_unblock(sigarray);
-
-	/* Do not re-use existing job id when submitting new job
-	 * from within a running job */
-	if ((j->job_id != NO_VAL) && !opt.jobid_set) {
-		info("WARNING: Creating SLURM job allocation from within "
-			"another allocation");
-		info("WARNING: You are attempting to initiate a second job");
-		if (!opt.jobid_set)	/* Let slurmctld set jobid */
-			j->job_id = NO_VAL;
-	}
-	
-	while ((rc = slurm_allocate_resources(j, &resp) < 0) && _retry()) {
-		if (destroy_job)
-			goto done;
-	} 
-
-	if(!resp)
-		goto done;
-	
-	if ((rc == 0) && (resp->node_list == NULL)) {
-		if (resp->error_code)
-			verbose("Warning: %s",
-				slurm_strerror(resp->error_code));
-		_wait_for_resources(&resp);
-	}
-
-    done:
-	xsignal_set_mask(&oset);
-	xsignal(SIGINT,  ointf);
-	xsignal(SIGTERM, otermf);
-	xsignal(SIGQUIT, oquitf);
-
-	job_desc_msg_destroy(j);
-
-	return resp;
-}
-
-resource_allocation_response_msg_t *
-existing_allocation(void)
-{
-	uint32_t old_job_id;
-        resource_allocation_response_msg_t *resp = NULL;
-
-	if (opt.jobid != NO_VAL)
-		old_job_id = (uint32_t)opt.jobid;
-	else
-                return NULL;
-
-        if (slurm_allocation_lookup_lite(old_job_id, &resp) < 0) {
-                if (opt.parallel_debug || opt.jobid_set)
-                        return NULL;    /* create new allocation as needed */
-                if (errno == ESLURM_ALREADY_DONE)
-                        error ("SLURM job %u has expired.", old_job_id);
-                else
-                        error ("Unable to confirm allocation for job %u: %m",
-                              old_job_id);
-                info ("Check SLURM_JOBID environment variable "
-                      "for expired or invalid job.");
-                exit(1);
-        }
-
-        return resp;
-}
 
 static void
 _wait_for_resources(resource_allocation_response_msg_t **resp)
@@ -228,7 +130,7 @@ _wait_for_alloc_rpc(int sleep_time, resource_allocation_response_msg_t **resp)
 	struct pollfd fds[1];
 	slurm_fd slurmctld_fd;
 
-	if ((slurmctld_fd = _slurmctld_msg_init()) < 0) {
+	if ((slurmctld_fd = slurmctld_msg_init()) < 0) {
 		sleep (sleep_time);
 		return (0);
 	}
@@ -389,8 +291,105 @@ _intr_handler(int signo)
 	destroy_job = 1;
 }
 
+int
+allocate_test(void)
+{
+	int rc;
+	job_desc_msg_t *j = job_desc_msg_create_from_opts();
+	if(!j)
+		return SLURM_ERROR;
+	
+	rc = slurm_job_will_run(j);
+	job_desc_msg_destroy(j);
+	return rc;
+}
+
+resource_allocation_response_msg_t *
+allocate_nodes(void)
+{
+	int rc = 0;
+	static int sigarray[] = { SIGQUIT, SIGINT, SIGTERM, 0 };
+	SigFunc *oquitf, *ointf, *otermf;
+	sigset_t oset;
+	resource_allocation_response_msg_t *resp = NULL;
+	job_desc_msg_t *j = job_desc_msg_create_from_opts();
+
+	if(!j)
+		return NULL;
+	
+	oquitf = xsignal(SIGQUIT, _intr_handler);
+	ointf  = xsignal(SIGINT,  _intr_handler);
+	otermf = xsignal(SIGTERM, _intr_handler);
+
+	xsignal_save_mask(&oset);
+	xsignal_unblock(sigarray);
+
+	/* Do not re-use existing job id when submitting new job
+	 * from within a running job */
+	if ((j->job_id != NO_VAL) && !opt.jobid_set) {
+		info("WARNING: Creating SLURM job allocation from within "
+			"another allocation");
+		info("WARNING: You are attempting to initiate a second job");
+		if (!opt.jobid_set)	/* Let slurmctld set jobid */
+			j->job_id = NO_VAL;
+	}
+	
+	while ((rc = slurm_allocate_resources(j, &resp) < 0) && _retry()) {
+		if (destroy_job)
+			goto done;
+	} 
+
+	if(!resp)
+		goto done;
+	
+	if ((rc == 0) && (resp->node_list == NULL)) {
+		if (resp->error_code)
+			verbose("Warning: %s",
+				slurm_strerror(resp->error_code));
+		_wait_for_resources(&resp);
+	}
+
+    done:
+	xsignal_set_mask(&oset);
+	xsignal(SIGINT,  ointf);
+	xsignal(SIGTERM, otermf);
+	xsignal(SIGQUIT, oquitf);
+
+	job_desc_msg_destroy(j);
+
+	return resp;
+}
+
+resource_allocation_response_msg_t *
+existing_allocation(void)
+{
+	uint32_t old_job_id;
+        resource_allocation_response_msg_t *resp = NULL;
+
+	if (opt.jobid != NO_VAL)
+		old_job_id = (uint32_t)opt.jobid;
+	else
+                return NULL;
+
+        if (slurm_allocation_lookup_lite(old_job_id, &resp) < 0) {
+                if (opt.parallel_debug || opt.jobid_set)
+                        return NULL;    /* create new allocation as needed */
+                if (errno == ESLURM_ALREADY_DONE)
+                        error ("SLURM job %u has expired.", old_job_id);
+                else
+                        error ("Unable to confirm allocation for job %u: %m",
+                              old_job_id);
+                info ("Check SLURM_JOBID environment variable "
+                      "for expired or invalid job.");
+                exit(1);
+        }
+
+        return resp;
+}
+
 /* Set up port to handle messages from slurmctld */
-static slurm_fd _slurmctld_msg_init(void)
+slurm_fd
+slurmctld_msg_init(void)
 {
 	slurm_addr slurm_address;
 	uint16_t port;

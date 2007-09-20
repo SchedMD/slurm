@@ -66,6 +66,9 @@ resource_allocation_response_msg_t * allocate_nodes(void);
  */
 int allocate_test(void);
 
+/* Set up port to handle messages from slurmctld */
+slurm_fd slurmctld_msg_init(void);
+
 /*
  * Create a job_desc_msg_t object, filled in from the current srun options
  * (see opt.h)

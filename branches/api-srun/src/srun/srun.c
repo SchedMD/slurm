@@ -208,6 +208,9 @@ int srun(int ac, char **av)
 	_set_prio_process_env();
 	(void) _set_umask_env();
 	
+	/* Set up slurmctld message handler */
+	slurmctld_msg_init();
+
 	/* now global "opt" should be filled in and available,
 	 * create a job from opt
 	 */
