@@ -137,10 +137,6 @@ static void _job_complete();
 static void _task_state_struct_init(int num_tasks);
 static void _task_state_struct_print(void);
 static void _task_state_struct_free(void);
-static void _mpir_init(int num_tasks);
-static void _mpir_cleanup(void);
-static void _mpir_set_executable_names(const char *executable_name);
-static void _mpir_dump_proctable(void);
 static void _handle_intr();
 static void _handle_signal(int signo);
 static int _setup_signals();
@@ -379,7 +375,7 @@ int srun(int ac, char **av)
 
 	_run_srun_prolog(job);
 
-	_mpir_init(job->ctx_params.task_count);
+	mpir_init(job->ctx_params.task_count);
 
 	if (_call_spank_local_user (job) < 0) {
 		error("Failure in local plugin stack");
@@ -403,11 +399,11 @@ int srun(int ac, char **av)
 			mpir_set_multi_name(job->ctx_params.task_count,
 					    launch_params.argv[0]);
 		else
-			_mpir_set_executable_names(launch_params.argv[0]);
+			mpir_set_executable_names(launch_params.argv[0]);
 		MPIR_debug_state = MPIR_DEBUG_SPAWNED;
 		MPIR_Breakpoint();
 		if (opt.debugger_test)
-			_mpir_dump_proctable();
+			mpir_dump_proctable();
 	} else {
 		info("Job step aborted before step completely launched.");
 	}
@@ -419,7 +415,7 @@ cleanup:
 		slurm_complete_job(job->jobid, global_rc);
 	_run_srun_epilog(job);
 	slurm_step_ctx_destroy(job->step_ctx);
-	_mpir_cleanup();
+	mpir_cleanup();
 	_task_state_struct_free();
 	log_fini();
 
@@ -1030,59 +1026,6 @@ _task_state_struct_free(void)
 	bit_free(task_state.start_failure);
 	bit_free(task_state.finish_normal);
 	bit_free(task_state.finish_abnormal);
-}
-
-/**********************************************************************
- * Functions for manipulating the MPIR_* global variables which
- * are accessed by parallel debuggers which trace slaunch.
- **********************************************************************/
-static void
-_mpir_init(int num_tasks)
-{
-	MPIR_proctable_size = num_tasks;
-	MPIR_proctable = xmalloc(sizeof(MPIR_PROCDESC) * num_tasks);
-	if (MPIR_proctable == NULL)
-		fatal("Unable to initialize MPIR_proctable: %m");
-}
-
-static void
-_mpir_cleanup()
-{
-	int i;
-
-	for (i = 0; i < MPIR_proctable_size; i++) {
-		xfree(MPIR_proctable[i].host_name);
-		xfree(MPIR_proctable[i].executable_name);
-	}
-	xfree(MPIR_proctable);
-}
-
-static void
-_mpir_set_executable_names(const char *executable_name)
-{
-	int i;
-
-	for (i = 0; i < MPIR_proctable_size; i++) {
-		MPIR_proctable[i].executable_name = xstrdup(executable_name);
-		if (MPIR_proctable[i].executable_name == NULL)
-			fatal("Unable to set MPI_proctable executable_name:"
-			      " %m");
-	}
-}
-
-static void
-_mpir_dump_proctable()
-{
-	MPIR_PROCDESC *tv;
-	int i;
-
-	for (i = 0; i < MPIR_proctable_size; i++) {
-		tv = &MPIR_proctable[i];
-		if (!tv)
-			break;
-		info("task:%d, host:%s, pid:%d, executable:%s",
-		     i, tv->host_name, tv->pid, tv->executable_name);
-	}
 }
 	
 static void _handle_intr()
