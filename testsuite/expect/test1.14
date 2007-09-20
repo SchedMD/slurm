@@ -55,7 +55,7 @@ make_bash_script $file_in "
     inx=\$((inx+1))
   done
   $bin_sleep 2
-  $srun --exclusive -n1 hostname &
+  $srun -v --exclusive -n1 $bin_printenv SLURMD_NODENAME &
   wait
 "
 

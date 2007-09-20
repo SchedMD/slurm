@@ -57,7 +57,7 @@ set job_id         0
 
 set srun_pid [spawn $srun --verbose --job-name=$job_name -t1 $bin_id]
 expect {
-	-re "launching ($number).0 on host" {
+	-re "jobid ($number):" {
 		set job_id $expect_out(1,string)
 		exp_continue
 	}

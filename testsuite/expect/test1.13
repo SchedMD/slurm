@@ -76,7 +76,7 @@ expect {
 		incr matches
 		exp_continue
 	}
-	-re "launching" {
+	-re "tasks started" {
 		incr matches
 		exp_continue
 	}

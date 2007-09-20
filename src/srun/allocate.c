@@ -55,9 +55,9 @@
 #include "src/common/xstring.h"
 #include "src/common/forward.h"
 #include "src/common/env.h"
+#include "src/common/fd.h"
 
 #include "src/srun/allocate.h"
-#include "src/srun/msg.h"
 #include "src/srun/opt.h"
 #include "src/srun/debugger.h"
 
@@ -80,106 +80,7 @@ static void  _wait_for_resources(resource_allocation_response_msg_t **resp);
 static bool  _retry();
 static void  _intr_handler(int signo);
 
-static job_step_create_request_msg_t * _step_req_create(srun_job_t *j);
-
 static sig_atomic_t destroy_job = 0;
-static srun_job_t *allocate_job = NULL;
-
-int
-allocate_test(void)
-{
-	int rc;
-	job_desc_msg_t *j = job_desc_msg_create_from_opts();
-	if(!j)
-		return SLURM_ERROR;
-	
-	rc = slurm_job_will_run(j);
-	job_desc_msg_destroy(j);
-	return rc;
-}
-
-resource_allocation_response_msg_t *
-allocate_nodes(void)
-{
-	int rc = 0;
-	static int sigarray[] = { SIGQUIT, SIGINT, SIGTERM, 0 };
-	SigFunc *oquitf, *ointf, *otermf;
-	sigset_t oset;
-	resource_allocation_response_msg_t *resp = NULL;
-	job_desc_msg_t *j = job_desc_msg_create_from_opts();
-
-	if(!j)
-		return NULL;
-	
-	oquitf = xsignal(SIGQUIT, _intr_handler);
-	ointf  = xsignal(SIGINT,  _intr_handler);
-	otermf = xsignal(SIGTERM, _intr_handler);
-
-	xsignal_save_mask(&oset);
-	xsignal_unblock(sigarray);
-
-	/* Do not re-use existing job id when submitting new job
-	 * from within a running job */
-	if ((j->job_id != NO_VAL) && !opt.jobid_set) {
-		info("WARNING: Creating SLURM job allocation from within "
-			"another allocation");
-		info("WARNING: You are attempting to initiate a second job");
-		if (!opt.jobid_set)	/* Let slurmctld set jobid */
-			j->job_id = NO_VAL;
-	}
-	
-	while ((rc = slurm_allocate_resources(j, &resp) < 0) && _retry()) {
-		if (destroy_job)
-			goto done;
-	} 
-
-	if(!resp)
-		goto done;
-	
-	if ((rc == 0) && (resp->node_list == NULL)) {
-		if (resp->error_code)
-			verbose("Warning: %s",
-				slurm_strerror(resp->error_code));
-		_wait_for_resources(&resp);
-	}
-
-    done:
-	xsignal_set_mask(&oset);
-	xsignal(SIGINT,  ointf);
-	xsignal(SIGTERM, otermf);
-	xsignal(SIGQUIT, oquitf);
-
-	job_desc_msg_destroy(j);
-
-	return resp;
-}
-
-resource_allocation_response_msg_t *
-existing_allocation(void)
-{
-	uint32_t old_job_id;
-        resource_allocation_response_msg_t *resp = NULL;
-
-	if (opt.jobid != NO_VAL)
-		old_job_id = (uint32_t)opt.jobid;
-	else
-                return NULL;
-
-        if (slurm_allocation_lookup_lite(old_job_id, &resp) < 0) {
-                if (opt.parallel_debug || opt.jobid_set)
-                        return NULL;    /* create new allocation as needed */
-                if (errno == ESLURM_ALREADY_DONE)
-                        error ("SLURM job %u has expired.", old_job_id);
-                else
-                        error ("Unable to confirm allocation for job %u: %m",
-                              old_job_id);
-                info ("Check SLURM_JOBID environment variable "
-                      "for expired or invalid job.");
-                exit(1);
-        }
-
-        return resp;
-}
 
 static void
 _wait_for_resources(resource_allocation_response_msg_t **resp)
@@ -208,7 +109,6 @@ _wait_for_resources(resource_allocation_response_msg_t **resp)
 		if (destroy_job) {
 			verbose("cancelling job %u", job_id);
 			slurm_complete_job(job_id, 0);
-			debugger_launch_failure(allocate_job);
 			exit(0);
 		}
 
@@ -391,6 +291,133 @@ _intr_handler(int signo)
 	destroy_job = 1;
 }
 
+int
+allocate_test(void)
+{
+	int rc;
+	job_desc_msg_t *j = job_desc_msg_create_from_opts();
+	if(!j)
+		return SLURM_ERROR;
+	
+	rc = slurm_job_will_run(j);
+	job_desc_msg_destroy(j);
+	return rc;
+}
+
+resource_allocation_response_msg_t *
+allocate_nodes(void)
+{
+	int rc = 0;
+	static int sigarray[] = { SIGQUIT, SIGINT, SIGTERM, 0 };
+	SigFunc *oquitf, *ointf, *otermf;
+	sigset_t oset;
+	resource_allocation_response_msg_t *resp = NULL;
+	job_desc_msg_t *j = job_desc_msg_create_from_opts();
+
+	if(!j)
+		return NULL;
+	
+	oquitf = xsignal(SIGQUIT, _intr_handler);
+	ointf  = xsignal(SIGINT,  _intr_handler);
+	otermf = xsignal(SIGTERM, _intr_handler);
+
+	xsignal_save_mask(&oset);
+	xsignal_unblock(sigarray);
+
+	/* Do not re-use existing job id when submitting new job
+	 * from within a running job */
+	if ((j->job_id != NO_VAL) && !opt.jobid_set) {
+		info("WARNING: Creating SLURM job allocation from within "
+			"another allocation");
+		info("WARNING: You are attempting to initiate a second job");
+		if (!opt.jobid_set)	/* Let slurmctld set jobid */
+			j->job_id = NO_VAL;
+	}
+	
+	while ((rc = slurm_allocate_resources(j, &resp) < 0) && _retry()) {
+		if (destroy_job)
+			goto done;
+	} 
+
+	if(!resp)
+		goto done;
+	
+	if ((rc == 0) && (resp->node_list == NULL)) {
+		if (resp->error_code)
+			verbose("Warning: %s",
+				slurm_strerror(resp->error_code));
+		_wait_for_resources(&resp);
+	}
+
+    done:
+	xsignal_set_mask(&oset);
+	xsignal(SIGINT,  ointf);
+	xsignal(SIGTERM, otermf);
+	xsignal(SIGQUIT, oquitf);
+
+	job_desc_msg_destroy(j);
+
+	return resp;
+}
+
+resource_allocation_response_msg_t *
+existing_allocation(void)
+{
+	uint32_t old_job_id;
+        resource_allocation_response_msg_t *resp = NULL;
+
+	if (opt.jobid != NO_VAL)
+		old_job_id = (uint32_t)opt.jobid;
+	else
+                return NULL;
+
+        if (slurm_allocation_lookup_lite(old_job_id, &resp) < 0) {
+                if (opt.parallel_debug || opt.jobid_set)
+                        return NULL;    /* create new allocation as needed */
+                if (errno == ESLURM_ALREADY_DONE)
+                        error ("SLURM job %u has expired.", old_job_id);
+                else
+                        error ("Unable to confirm allocation for job %u: %m",
+                              old_job_id);
+                info ("Check SLURM_JOBID environment variable "
+                      "for expired or invalid job.");
+                exit(1);
+        }
+
+        return resp;
+}
+
+/* Set up port to handle messages from slurmctld */
+slurm_fd
+slurmctld_msg_init(void)
+{
+	slurm_addr slurm_address;
+	uint16_t port;
+	static slurm_fd slurmctld_fd   = (slurm_fd) NULL;
+
+	if (slurmctld_fd)	/* May set early for queued job allocation */
+		return slurmctld_fd;
+
+	slurmctld_fd = -1;
+	slurmctld_comm_addr.hostname = NULL;
+	slurmctld_comm_addr.port = 0;
+
+	if ((slurmctld_fd = slurm_init_msg_engine_port(0)) < 0)
+		fatal("slurm_init_msg_engine_port error %m");
+	if (slurm_get_stream_addr(slurmctld_fd, &slurm_address) < 0)
+		fatal("slurm_get_stream_addr error %m");
+	fd_set_nonblocking(slurmctld_fd);
+	/* hostname is not set,  so slurm_get_addr fails
+	   slurm_get_addr(&slurm_address, &port, hostname, sizeof(hostname)); */
+	port = ntohs(slurm_address.sin_port);
+	slurmctld_comm_addr.hostname = xstrdup(opt.ctrl_comm_ifhn);
+	slurmctld_comm_addr.port     = port;
+	debug2("slurmctld messages to host=%s,port=%u", 
+	       slurmctld_comm_addr.hostname, 
+	       slurmctld_comm_addr.port);
+
+	return slurmctld_fd;
+}
 
 /*
  * Create job description structure based off srun options
@@ -556,159 +583,116 @@ job_desc_msg_destroy(job_desc_msg_t *j)
 	}
 }
 
-static job_step_create_request_msg_t *
-_step_req_create(srun_job_t *j)
+int
+create_job_step(srun_job_t *job)
 {
-	job_step_create_request_msg_t *r = xmalloc(sizeof(*r));
-	r->job_id     = j->jobid;
-	r->user_id    = opt.uid;
+	int i, rc;
+	SigFunc *oquitf = NULL, *ointf = NULL, *otermf = NULL;
 
-	r->node_count = j->nhosts;
-	/* info("send %d or %d? sending %d", opt.max_nodes, */
-/* 		     j->nhosts, r->node_count); */
-	if(r->node_count > j->nhosts) {
-		error("Asking for more nodes that allocated");
-		return NULL;
-	}
-	r->cpu_count  = opt.overcommit ? r->node_count
-		                       : (opt.nprocs*opt.cpus_per_task);
-	r->num_tasks  = opt.nprocs;
-	r->node_list  = xstrdup(opt.nodelist);
-	r->network    = xstrdup(opt.network);
-	r->name       = xstrdup(opt.job_name);
-	r->relative   = (uint16_t)opt.relative;
-	r->ckpt_interval = (uint16_t)opt.ckpt_interval;
-	r->exclusive  = (uint16_t)opt.exclusive;
-	r->immediate  = (uint16_t)opt.immediate;
-	r->overcommit = opt.overcommit ? 1 : 0;
-	debug("requesting job %d, user %d, nodes %d including (%s)", 
-	      r->job_id, r->user_id, r->node_count, r->node_list);
-	debug("cpus %d, tasks %d, name %s, relative %d", 
-	      r->cpu_count, r->num_tasks, r->name, r->relative);
+	slurm_step_ctx_params_t_init(&job->ctx_params);
+	job->ctx_params.job_id = job->jobid;
+	job->ctx_params.uid = opt.uid;
+/* 	totalview_jobid = NULL; */
+/* 	xstrfmtcat(totalview_jobid, "%u", ctx_params.job_id); */
+	job->ctx_params.node_count = job->nhosts;
+	job->ctx_params.task_count = opt.nprocs;
 	
+	job->ctx_params.cpu_count = opt.overcommit ? job->ctx_params.node_count
+		: (opt.nprocs*opt.cpus_per_task);
+	
+	job->ctx_params.relative = (uint16_t)opt.relative;
+	job->ctx_params.ckpt_interval = (uint16_t)opt.ckpt_interval;
+	job->ctx_params.exclusive = (uint16_t)opt.exclusive;
+	job->ctx_params.immediate = (uint16_t)opt.immediate;
+	job->ctx_params.verbose_level = (uint16_t)_verbose;
 	switch (opt.distribution) {
 	case SLURM_DIST_BLOCK:
-		r->task_dist = SLURM_DIST_BLOCK;
-		break;
 	case SLURM_DIST_ARBITRARY:
-		r->task_dist = SLURM_DIST_ARBITRARY;
-		break;
 	case SLURM_DIST_CYCLIC:
-		r->task_dist = SLURM_DIST_CYCLIC;
-		break;
 	case SLURM_DIST_CYCLIC_CYCLIC:
-		r->task_dist = SLURM_DIST_CYCLIC_CYCLIC;
-		break;
 	case SLURM_DIST_CYCLIC_BLOCK:
-		r->task_dist = SLURM_DIST_CYCLIC_BLOCK;
-		break;
 	case SLURM_DIST_BLOCK_CYCLIC:
-		r->task_dist = SLURM_DIST_BLOCK_CYCLIC;
-		break;
 	case SLURM_DIST_BLOCK_BLOCK:
-		r->task_dist = SLURM_DIST_BLOCK_BLOCK;
+		job->ctx_params.task_dist = opt.distribution;
 		break;
 	case SLURM_DIST_PLANE:
-		r->task_dist = SLURM_DIST_PLANE;
-		r->plane_size = opt.plane_size;
+		job->ctx_params.task_dist = SLURM_DIST_PLANE;
+		job->ctx_params.plane_size = opt.plane_size;
 		break;
 	default:
-		r->task_dist = (r->num_tasks <= r->node_count) 
+		job->ctx_params.task_dist = (job->ctx_params.task_count <= 
+			job->ctx_params.node_count) 
 			? SLURM_DIST_CYCLIC : SLURM_DIST_BLOCK;
 		break;
 
 	}
-	opt.distribution = r->task_dist;
+	job->ctx_params.overcommit = opt.overcommit ? 1 : 0;
+
+	job->ctx_params.node_list = opt.nodelist;
 	
-	if (slurmctld_comm_addr.port) {
-		r->host = xstrdup(slurmctld_comm_addr.hostname);
-		r->port = slurmctld_comm_addr.port;
-	}
+	job->ctx_params.network = opt.network;
+	job->ctx_params.name = opt.job_name;
+	
+	debug("requesting job %d, user %d, nodes %d including (%s)", 
+	      job->ctx_params.job_id, job->ctx_params.uid,
+	      job->ctx_params.node_count, job->ctx_params.node_list);
+	debug("cpus %d, tasks %d, name %s, relative %d", 
+	      job->ctx_params.cpu_count, job->ctx_params.task_count,
+	      job->ctx_params.name, job->ctx_params.relative);
 
-	return(r);
-}
-
-int
-create_job_step(srun_job_t *job)
-{
-	job_step_create_request_msg_t  *req  = NULL;
-	job_step_create_response_msg_t *resp = NULL;
-	int i, rc;
-	sigset_t oset;
-	static int sigarray[] = { SIGQUIT, SIGINT, SIGTERM, 0 };
-	SigFunc *oquitf = NULL, *ointf = NULL, *otermf = NULL;
-
-	if (!(req = _step_req_create(job))) {
-		error ("Unable to allocate step request message");
-		return -1;
-	}
-
-	for (i=0;(!destroy_job);i++) {
-		if ((slurm_job_step_create(req, &resp) == SLURM_SUCCESS)
-		&&  (resp != NULL)) {
+	for (i=0; (!destroy_job); i++) {
+		if(opt.no_alloc) {
+			job->step_ctx = slurm_step_ctx_create_no_alloc(
+				&job->ctx_params, job->stepid);
+		} else
+			job->step_ctx = slurm_step_ctx_create(
+				&job->ctx_params);
+		if (job->step_ctx != NULL) {
 			if (i > 0)
 				info("Job step created");
+			
 			break;
 		}
 		rc = slurm_get_errno();
+
 		if (opt.immediate ||
 		    ((rc != ESLURM_NODES_BUSY) && (rc != ESLURM_DISABLED))) {
 			error ("Unable to create job step: %m");
 			return -1;
 		}
+		
 		if (i == 0) {
-			info("Job step creation temporarily disabled, retrying");
+			info("Job step creation temporarily disabled, retrying");	
 			ointf  = xsignal(SIGINT,  _intr_handler);
-			otermf = xsignal(SIGTERM, _intr_handler);
-			oquitf = xsignal(SIGQUIT, _intr_handler);
-			xsignal_save_mask(&oset);
-			xsignal_unblock(sigarray);
+			otermf  = xsignal(SIGTERM, _intr_handler);
+			oquitf  = xsignal(SIGQUIT, _intr_handler);
 		} else
 			info("Job step creation still disabled, retrying");
 		sleep(MIN((i*10), 60));
 	}
-
 	if (i > 0) {
 		xsignal(SIGINT,  ointf);
 		xsignal(SIGQUIT, oquitf);
 		xsignal(SIGTERM, otermf);
-		xsignal_set_mask(&oset);
 		if (destroy_job) {
 			info("Cancelled pending job step");
 			return -1;
 		}
 	}
 
-	job->stepid  = resp->job_step_id;
-	job->step_layout = resp->step_layout;
-	job->cred    = resp->cred;
-	job->switch_job = resp->switch_job;
-		
-
+	slurm_step_ctx_get(job->step_ctx, SLURM_STEP_CTX_STEPID, &job->stepid);
 	/*  Number of hosts in job may not have been initialized yet if 
 	 *    --jobid was used or only SLURM_JOBID was set in user env.
 	 *    Reset the value here just in case.
 	 */
-	job->nhosts = job->step_layout->node_cnt;
-
-	if(!job->step_layout) {
-		error("step_layout not returned");
-		return -1;
-	}
+	slurm_step_ctx_get(job->step_ctx, SLURM_STEP_CTX_NUM_HOSTS,
+			   &job->nhosts);
 	
 	/*
 	 * Recreate filenames which may depend upon step id
 	 */
 	job_update_io_fnames(job);
 
-	slurm_free_job_step_create_request_msg(req);
-	
 	return 0;
 }
 
-void 
-set_allocate_job(srun_job_t *job) 
-{
-	allocate_job = job;
-	return;
-}

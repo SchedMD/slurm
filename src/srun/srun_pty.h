@@ -1,9 +1,9 @@
 /*****************************************************************************\
- * src/srun/signals.h - srun signal handling
+ * src/srun/srun_pty.h - srun signal handling
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Mark Grodnona <mgrondona@llnl.gov>.
+ *  Written by Moe Jette <jette@llnl.gov>.
  *  UCRL-CODE-226842.
  *  
  *  This file is part of SLURM, a resource management program.
@@ -45,8 +45,5 @@ typedef struct srun_job signal_job_t;
 void block_sigwinch(void);
 void pty_thread_create(srun_job_t *job);
 void set_winsize(srun_job_t *job);
-int  sig_setup_sigmask(void);
-int  sig_unblock_signals(void);
-int  sig_thr_create(signal_job_t *job);
 
 #endif /* !_SIGNALS_H */

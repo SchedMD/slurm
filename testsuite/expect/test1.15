@@ -65,6 +65,10 @@ expect {
 		incr matches
 		exp_continue
 	}
+	-re "exited with exit code" {
+		send_user "This error is expected, no worries\n"
+		exp_continue
+	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
 		slow_kill $srun_pid

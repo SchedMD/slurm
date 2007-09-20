@@ -44,34 +44,17 @@
 
 #include "src/srun/srun_job.h"
 
-enum io_t {
-	IO_ALL          = 0, /* multiplex output from all/bcast stdin to all */
-	IO_ONE          = 1, /* output from only one task/stdin to one task  */
-	IO_PER_TASK     = 2, /* separate output/input file per task          */
-	IO_NONE         = 3, /* close output/close stdin                     */
-};
-
-#define format_io_t(t) (t == IO_ONE) ? "one" : (t == IO_ALL) ? \
-                                                     "all" : "per task"
-
-struct io_filename {
-	char      *name;
-	enum io_t  type;
-	int        taskid;  /* taskid for IO if IO_ONE */
-};
-
 /*
  * Create an filename from a (probably user supplied) filename format.
  * fname_create() will expand the format as much as possible for srun,
  * leaving node or task specific format specifiers for the remote 
  * slurmd to handle.
  */
-typedef struct srun_job fname_job_t;
 
-io_filename_t *fname_create(fname_job_t *job, char *format);
-void fname_destroy(io_filename_t *fname);
+fname_t *fname_create(srun_job_t *job, char *format);
+void fname_destroy(fname_t *fname);
 
-char * fname_remote_string (io_filename_t *fname);
+char * fname_remote_string (fname_t *fname);
 
 #endif /* !_FNAME_H */
 
