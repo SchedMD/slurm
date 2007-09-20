@@ -24,6 +24,8 @@ documents those changes that are of interest to users and admins.
  -- Removed database and jobacct plugin replaced with jobacct_storage 
     and jobacct_gather for easier hooks for further expansion of the
     jobacct plugin.
+ -- Job step launch in srun is now done from the slurm api's all futher
+    modifications to job launch should be done there.
 
 * Changes in SLURM 1.3.0-pre2
 =============================
