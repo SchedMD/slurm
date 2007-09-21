@@ -1191,7 +1191,8 @@ void agent_queue_request(agent_arg_t *agent_arg_ptr)
 {
 	queued_request_t *queued_req_ptr = NULL;
 
-	if (agent_cnt < MAX_AGENT_CNT) {	/* execute now */
+	if ((agent_cnt < MAX_AGENT_CNT) ||		/* execute now */
+	    (agent_arg_ptr->msg_type == REQUEST_SHUTDOWN)) {
 		pthread_attr_t attr_agent;
 		pthread_t thread_agent;
 		int rc;

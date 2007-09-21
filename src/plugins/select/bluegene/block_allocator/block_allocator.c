@@ -170,9 +170,9 @@ static int _find_next_free_using_port_2(ba_switch_t *curr_switch,
 					List nodes, int dim, 
 					int count);
 /* */
-static int _find_passthrough(ba_switch_t *curr_switch, int source_port, 
-			     List nodes, int dim, 
-			     int count, int highest_phys_x); 
+/* static int _find_passthrough(ba_switch_t *curr_switch, int source_port,  */
+/* 			     List nodes, int dim,  */
+/* 			     int count, int highest_phys_x);  */
 /* */
 static int _finish_torus(ba_switch_t *curr_switch, int source_port, 
 			   List nodes, int dim, int count, int *start);
@@ -2895,14 +2895,15 @@ extern int set_bp_map(void)
 		
 		number = xstrntol(bp_id+1, NULL,
 				  BA_SYSTEM_DIMENSIONS, HOSTLIST_BASE);
-		if(DIM_SIZE[X] > bp_loc.X
-		   && DIM_SIZE[Y] > bp_loc.Y
-		   && DIM_SIZE[Z] > bp_loc.Z)
-			ba_system_ptr->grid
-				[bp_loc.X]
-				[bp_loc.Y]
-				[bp_loc.Z].phys_x =
-				number / (HOSTLIST_BASE * HOSTLIST_BASE);
+/* no longer needed for calculation */
+/* 		if(DIM_SIZE[X] > bp_loc.X */
+/* 		   && DIM_SIZE[Y] > bp_loc.Y */
+/* 		   && DIM_SIZE[Z] > bp_loc.Z) */
+/* 			ba_system_ptr->grid */
+/* 				[bp_loc.X] */
+/* 				[bp_loc.Y] */
+/* 				[bp_loc.Z].phys_x = */
+/* 				number / (HOSTLIST_BASE * HOSTLIST_BASE); */
 		
 		list_push(bp_map_list, bp_map);
 		
@@ -3501,7 +3502,7 @@ static int _set_external_wires(int dim, int count, ba_node_t* source,
 		switch(count) {
 		case 0:
 		case 6:
-			/* 0 and 4th Node no split */
+			/* 0 and 6th Node no split */
 		case 8:
 		case 9:
 		case 10:
@@ -3647,8 +3648,9 @@ static int _find_x_path(List results, ba_node_t *ba_node,
 	int i = 0;
 	ba_node_t *next_node = NULL;
 	ba_node_t *check_node = NULL;
-	int highest_phys_x = geometry[X] - start[X];
-	
+/* 	int highest_phys_x = geometry[X] - start[X]; */
+/* 	info("highest_phys_x is %d", highest_phys_x); */
+
 	ListIterator itr;
 
 	if(!ba_node)
@@ -3666,6 +3668,7 @@ static int _find_x_path(List results, ba_node_t *ba_node,
 	}
 	debug3("found - %d",found);
 	for(i=0;i<2;i++) {
+		/* info("trying port %d", ports_to_try[i]); */
 		/* check to make sure it isn't used */
 		if(!curr_switch->int_wire[ports_to_try[i]].used) {
 			/* looking at the next node on the switch 
@@ -3674,7 +3677,11 @@ static int _find_x_path(List results, ba_node_t *ba_node,
 				ext_wire[ports_to_try[i]].node_tar;
 			port_tar = curr_switch->
 				ext_wire[ports_to_try[i]].port_tar;
-
+			/* info("goes to %c%c%c port %d", */
+/* 			       alpha_num[node_tar[X]], */
+/* 			       alpha_num[node_tar[Y]], */
+/* 			       alpha_num[node_tar[Z]], */
+/* 			       port_tar); */
 			/* check to see if we are back at the start of the
 			   block */
 			if((node_tar[X] == 
@@ -3738,65 +3745,70 @@ static int _find_x_path(List results, ba_node_t *ba_node,
 			}
 			debug3("Broke = %d Found = %d geometry[X] = %d",
 			       broke, found, geometry[X]);
-			debug3("Next Phys X %d Highest X %d",
-			       next_node->phys_x, highest_phys_x);
-			if(next_node->phys_x >= highest_phys_x) {
-				debug3("looking for a passthrough");
-				if(best_path)
-					list_destroy(best_path);
-				best_path = list_create(_delete_path_list);
-				if(path)
-					list_destroy(path);
-				path = list_create(_delete_path_list);
+
+/* This doesnt' appear to be of any use since we are doing a circular
+ * system not a linear one.  Kept just to make sure.
+ */
+
+/* 			debug3("Next Phys X %d Highest X %d", */
+/* 			       next_node->phys_x, highest_phys_x); */
+/* 			if(next_node->phys_x >= highest_phys_x) { */
+/* 				debug3("looking for a passthrough"); */
+/* 				if(best_path) */
+/* 					list_destroy(best_path); */
+/* 				best_path = list_create(_delete_path_list); */
+/* 				if(path) */
+/* 					list_destroy(path); */
+/* 				path = list_create(_delete_path_list); */
 	
-				_find_passthrough(curr_switch,
-						  0,
-						  results,
-						  X,
-						  0,
-						  highest_phys_x);
-				if(best_count < BEST_COUNT_INIT) {
-					debug2("yes found next free %d", 
-					       best_count);
-					node_tar = _set_best_path();
-					next_node = &ba_system_ptr->
-						grid[node_tar[X]]
-#ifdef HAVE_BG
-						[node_tar[Y]]
-						[node_tar[Z]]
-#endif
-						;
-					next_switch = 
-						&next_node->axis_switch[X];
+/* 				_find_passthrough(curr_switch, */
+/* 						  0, */
+/* 						  results, */
+/* 						  X, */
+/* 						  0, */
+/* 						  highest_phys_x); */
+/* 				if(best_count < BEST_COUNT_INIT) { */
+/* 					debug2("yes found next free %d",  */
+/* 					       best_count); */
+/* 					node_tar = _set_best_path(); */
+/* 					next_node = &ba_system_ptr-> */
+/* 						grid[node_tar[X]] */
+/* #ifdef HAVE_BG */
+/* 						[node_tar[Y]] */
+/* 						[node_tar[Z]] */
+/* #endif */
+/* 						; */
+/* 					next_switch =  */
+/* 						&next_node->axis_switch[X]; */
 					
-#ifdef HAVE_BG
-					debug2("found %d looking at "
-					       "%c%c%c going to %c%c%c %d",
-					       found,
-					       alpha_num[ba_node->coord[X]],
-					       alpha_num[ba_node->coord[Y]],
-					       alpha_num[ba_node->coord[Z]],
-					       alpha_num[node_tar[X]],
-					       alpha_num[node_tar[Y]],
-					       alpha_num[node_tar[Z]],
-					       port_tar);
-#endif		
-					list_append(results, next_node);
-					found++;
-					if(_find_x_path(results, next_node, 
-							start, first, geometry,
-							found, conn_type)) {
-						return 1;
-					} else {
-						found--;
-						_reset_the_path(curr_switch, 0,
-								1, X);
-						_remove_node(results, 
-							     next_node->coord);
-						return 0;
-					}
-				}
-			}			
+/* #ifdef HAVE_BG */
+/* 					debug2("found %d looking at " */
+/* 					       "%c%c%c going to %c%c%c %d", */
+/* 					       found, */
+/* 					       alpha_num[ba_node->coord[X]], */
+/* 					       alpha_num[ba_node->coord[Y]], */
+/* 					       alpha_num[ba_node->coord[Z]], */
+/* 					       alpha_num[node_tar[X]], */
+/* 					       alpha_num[node_tar[Y]], */
+/* 					       alpha_num[node_tar[Z]], */
+/* 					       port_tar); */
+/* #endif		 */
+/* 					list_append(results, next_node); */
+/* 					found++; */
+/* 					if(_find_x_path(results, next_node,  */
+/* 							start, first, geometry, */
+/* 							found, conn_type)) { */
+/* 						return 1; */
+/* 					} else { */
+/* 						found--; */
+/* 						_reset_the_path(curr_switch, 0, */
+/* 								1, X); */
+/* 						_remove_node(results,  */
+/* 							     next_node->coord); */
+/* 						return 0; */
+/* 					} */
+/* 				} */
+/* 			}			 */
 
 			if(broke && (found == geometry[X])) {
 				goto found_path;
@@ -4433,204 +4445,204 @@ return_0:
 	return 0;
 }
 
-static int _find_passthrough(ba_switch_t *curr_switch, int source_port, 
-			     List nodes, int dim, int count, int highest_phys_x) 
-{
-	ba_switch_t *next_switch = NULL; 
-	ba_path_switch_t *path_add = 
-		(ba_path_switch_t *) xmalloc(sizeof(ba_path_switch_t));
-	ba_path_switch_t *path_switch = NULL;
-	ba_path_switch_t *temp_switch = NULL;
-	int port_tar;
-	int target_port = 0;
-	int ports_to_try[2] = {3,5};
-	int *node_tar= curr_switch->ext_wire[0].node_tar;
-	int *node_src = curr_switch->ext_wire[0].node_tar;
-	int i;
-	int used=0;
-	int broke = 0;
-	ba_node_t *ba_node = NULL;
+/* static int _find_passthrough(ba_switch_t *curr_switch, int source_port,  */
+/* 			     List nodes, int dim, int count, int highest_phys_x)  */
+/* { */
+/* 	ba_switch_t *next_switch = NULL;  */
+/* 	ba_path_switch_t *path_add =  */
+/* 		(ba_path_switch_t *) xmalloc(sizeof(ba_path_switch_t)); */
+/* 	ba_path_switch_t *path_switch = NULL; */
+/* 	ba_path_switch_t *temp_switch = NULL; */
+/* 	int port_tar; */
+/* 	int target_port = 0; */
+/* 	int ports_to_try[2] = {3,5}; */
+/* 	int *node_tar= curr_switch->ext_wire[0].node_tar; */
+/* 	int *node_src = curr_switch->ext_wire[0].node_tar; */
+/* 	int i; */
+/* 	int used=0; */
+/* 	int broke = 0; */
+/* 	ba_node_t *ba_node = NULL; */
 	
-	ListIterator itr;
-	static bool found = false;
+/* 	ListIterator itr; */
+/* 	static bool found = false; */
 
-	path_add->geometry[X] = node_src[X];
-#ifdef HAVE_BG
-	path_add->geometry[Y] = node_src[Y];
-	path_add->geometry[Z] = node_src[Z];
-#endif
-	path_add->dim = dim;
-	path_add->in = source_port;
+/* 	path_add->geometry[X] = node_src[X]; */
+/* #ifdef HAVE_BG */
+/* 	path_add->geometry[Y] = node_src[Y]; */
+/* 	path_add->geometry[Z] = node_src[Z]; */
+/* #endif */
+/* 	path_add->dim = dim; */
+/* 	path_add->in = source_port; */
 	
-	if(count>=best_count) {
-		xfree(path_add);
-		return 0;
-	}
+/* 	if(count>=best_count) { */
+/* 		xfree(path_add); */
+/* 		return 0; */
+/* 	} */
 
-	itr = list_iterator_create(nodes);
-	while((ba_node = (ba_node_t*) list_next(itr))) {
+/* 	itr = list_iterator_create(nodes); */
+/* 	while((ba_node = (ba_node_t*) list_next(itr))) { */
 		
-#ifdef HAVE_BG
-		if(node_tar[X] == ba_node->coord[X] 
-		   && node_tar[Y] == ba_node->coord[Y] 
-		   && node_tar[Z] == ba_node->coord[Z]) {
-			broke = 1;
-			break;
-		}
-#else
-		if(node_tar[X] == ba_node->coord[X]) {
-			broke = 1;
-			break;
-		}
-#endif
+/* #ifdef HAVE_BG */
+/* 		if(node_tar[X] == ba_node->coord[X]  */
+/* 		   && node_tar[Y] == ba_node->coord[Y]  */
+/* 		   && node_tar[Z] == ba_node->coord[Z]) { */
+/* 			broke = 1; */
+/* 			break; */
+/* 		} */
+/* #else */
+/* 		if(node_tar[X] == ba_node->coord[X]) { */
+/* 			broke = 1; */
+/* 			break; */
+/* 		} */
+/* #endif */
 		
-	}
-	list_iterator_destroy(itr);
-	ba_node = &ba_system_ptr->
-		grid[node_tar[X]]
-#ifdef HAVE_BG
-		[node_tar[Y]]
-		[node_tar[Z]]
-#endif
-		;
-	if(!broke && count>0
-	   && !ba_node->used 
-	   && (ba_node->phys_x < highest_phys_x)) {
+/* 	} */
+/* 	list_iterator_destroy(itr); */
+/* 	ba_node = &ba_system_ptr-> */
+/* 		grid[node_tar[X]] */
+/* #ifdef HAVE_BG */
+/* 		[node_tar[Y]] */
+/* 		[node_tar[Z]] */
+/* #endif */
+/* 		; */
+/* 	if(!broke && count>0 */
+/* 	   && !ba_node->used  */
+/* 	   && (ba_node->phys_x < highest_phys_x)) { */
 		
-		debug3("this one not found %c%c%c",
-		       alpha_num[node_tar[X]],
-		       alpha_num[node_tar[Y]],
-		       alpha_num[node_tar[Z]]);
+/* 		debug3("this one not found %c%c%c", */
+/* 		       alpha_num[node_tar[X]], */
+/* 		       alpha_num[node_tar[Y]], */
+/* 		       alpha_num[node_tar[Z]]); */
 		
-		broke = 0;
+/* 		broke = 0; */
 				
-		if((source_port%2))
-			target_port=1;
+/* 		if((source_port%2)) */
+/* 			target_port=1; */
 		
-		list_destroy(best_path);
-		best_path = list_create(_delete_path_list);
-		found = true;
-		path_add->out = target_port;
-		list_push(path, path_add);
+/* 		list_destroy(best_path); */
+/* 		best_path = list_create(_delete_path_list); */
+/* 		found = true; */
+/* 		path_add->out = target_port; */
+/* 		list_push(path, path_add); */
 		
-		itr = list_iterator_create(path);
-		while((path_switch = (ba_path_switch_t*) list_next(itr))){
+/* 		itr = list_iterator_create(path); */
+/* 		while((path_switch = (ba_path_switch_t*) list_next(itr))){ */
 		
-			temp_switch = (ba_path_switch_t *) 
-				xmalloc(sizeof(ba_path_switch_t));
+/* 			temp_switch = (ba_path_switch_t *)  */
+/* 				xmalloc(sizeof(ba_path_switch_t)); */
 			 
-			temp_switch->geometry[X] = path_switch->geometry[X];
-#ifdef HAVE_BG
-			temp_switch->geometry[Y] = path_switch->geometry[Y];
-			temp_switch->geometry[Z] = path_switch->geometry[Z];
-#endif
-			temp_switch->dim = path_switch->dim;
-			temp_switch->in = path_switch->in;
-			temp_switch->out = path_switch->out;
-			list_append(best_path,temp_switch);
-		}
-		list_iterator_destroy(itr);
-		best_count = count;
-		return 1;
-	} 
+/* 			temp_switch->geometry[X] = path_switch->geometry[X]; */
+/* #ifdef HAVE_BG */
+/* 			temp_switch->geometry[Y] = path_switch->geometry[Y]; */
+/* 			temp_switch->geometry[Z] = path_switch->geometry[Z]; */
+/* #endif */
+/* 			temp_switch->dim = path_switch->dim; */
+/* 			temp_switch->in = path_switch->in; */
+/* 			temp_switch->out = path_switch->out; */
+/* 			list_append(best_path,temp_switch); */
+/* 		} */
+/* 		list_iterator_destroy(itr); */
+/* 		best_count = count; */
+/* 		return 1; */
+/* 	}  */
 
-	if(source_port==0 || source_port==3 || source_port==5) {
-		if(count==0) {
-			ports_to_try[0] = 2;
-			ports_to_try[1] = 4;	
-		} else {
-			ports_to_try[0] = 4;
-			ports_to_try[1] = 2;	
-		}
-	}
+/* 	if(source_port==0 || source_port==3 || source_port==5) { */
+/* 		if(count==0) { */
+/* 			ports_to_try[0] = 2; */
+/* 			ports_to_try[1] = 4;	 */
+/* 		} else { */
+/* 			ports_to_try[0] = 4; */
+/* 			ports_to_try[1] = 2;	 */
+/* 		} */
+/* 	} */
 			
-	for(i=0;i<2;i++) {
-		used=0;
-		if(!curr_switch->int_wire[ports_to_try[i]].used) {
-			itr = list_iterator_create(path);
-			while((path_switch = 
-			       (ba_path_switch_t*) list_next(itr))){
+/* 	for(i=0;i<2;i++) { */
+/* 		used=0; */
+/* 		if(!curr_switch->int_wire[ports_to_try[i]].used) { */
+/* 			itr = list_iterator_create(path); */
+/* 			while((path_switch =  */
+/* 			       (ba_path_switch_t*) list_next(itr))){ */
 				
-				if(((path_switch->geometry[X] == node_src[X]) 
-#ifdef HAVE_BG
-				    && (path_switch->geometry[Y] 
-					== node_src[Y])
-				    && (path_switch->geometry[Z] 
-					== node_tar[Z])
-#endif
-					   )) {
+/* 				if(((path_switch->geometry[X] == node_src[X])  */
+/* #ifdef HAVE_BG */
+/* 				    && (path_switch->geometry[Y]  */
+/* 					== node_src[Y]) */
+/* 				    && (path_switch->geometry[Z]  */
+/* 					== node_tar[Z]) */
+/* #endif */
+/* 					   )) { */
 					
-					if( path_switch->out
-					    == ports_to_try[i]) {
-						used = 1;
-						break;
-					}
-				}
-			}
-			list_iterator_destroy(itr);
+/* 					if( path_switch->out */
+/* 					    == ports_to_try[i]) { */
+/* 						used = 1; */
+/* 						break; */
+/* 					} */
+/* 				} */
+/* 			} */
+/* 			list_iterator_destroy(itr); */
 			
-			if(curr_switch->
-			   ext_wire[ports_to_try[i]].node_tar[X]
-			   == curr_switch->ext_wire[0].node_tar[X]  
-#ifdef HAVE_BG
-			   && curr_switch->
-			   ext_wire[ports_to_try[i]].node_tar[Y] 
-			   == curr_switch->ext_wire[0].node_tar[Y] 
-			   && curr_switch->
-			   ext_wire[ports_to_try[i]].node_tar[Z] 
-			   == curr_switch->ext_wire[0].node_tar[Z]
-#endif
-				) {
-				continue;
-			}
+/* 			if(curr_switch-> */
+/* 			   ext_wire[ports_to_try[i]].node_tar[X] */
+/* 			   == curr_switch->ext_wire[0].node_tar[X]   */
+/* #ifdef HAVE_BG */
+/* 			   && curr_switch-> */
+/* 			   ext_wire[ports_to_try[i]].node_tar[Y]  */
+/* 			   == curr_switch->ext_wire[0].node_tar[Y]  */
+/* 			   && curr_switch-> */
+/* 			   ext_wire[ports_to_try[i]].node_tar[Z]  */
+/* 			   == curr_switch->ext_wire[0].node_tar[Z] */
+/* #endif */
+/* 				) { */
+/* 				continue; */
+/* 			} */
 						
-			if(!used) {
-				port_tar = curr_switch->
-					ext_wire[ports_to_try[i]].port_tar;
-				node_tar = curr_switch->
-					ext_wire[ports_to_try[i]].node_tar;
+/* 			if(!used) { */
+/* 				port_tar = curr_switch-> */
+/* 					ext_wire[ports_to_try[i]].port_tar; */
+/* 				node_tar = curr_switch-> */
+/* 					ext_wire[ports_to_try[i]].node_tar; */
 				
-				next_switch = &ba_system_ptr->
-					grid[node_tar[X]]
-#ifdef HAVE_BG
-					[node_tar[Y]]
-					[node_tar[Z]]
-#endif
-					.axis_switch[X];
+/* 				next_switch = &ba_system_ptr-> */
+/* 					grid[node_tar[X]] */
+/* #ifdef HAVE_BG */
+/* 					[node_tar[Y]] */
+/* 					[node_tar[Z]] */
+/* #endif */
+/* 					.axis_switch[X]; */
 				
-				count++;
-				path_add->out = ports_to_try[i];
-				list_push(path, path_add);
-				debug3("looking at this one "
-				       "%c%c%c %d -> %c%c%c %d",
-				       alpha_num[ba_node->coord[X]],
-				       alpha_num[ba_node->coord[Y]],
-				       alpha_num[ba_node->coord[Z]],
-				       ports_to_try[i],
-				       alpha_num[node_tar[X]],
-				       alpha_num[node_tar[Y]],
-				       alpha_num[node_tar[Z]],
-				       port_tar);
+/* 				count++; */
+/* 				path_add->out = ports_to_try[i]; */
+/* 				list_push(path, path_add); */
+/* 				debug3("looking at this one " */
+/* 				       "%c%c%c %d -> %c%c%c %d", */
+/* 				       alpha_num[ba_node->coord[X]], */
+/* 				       alpha_num[ba_node->coord[Y]], */
+/* 				       alpha_num[ba_node->coord[Z]], */
+/* 				       ports_to_try[i], */
+/* 				       alpha_num[node_tar[X]], */
+/* 				       alpha_num[node_tar[Y]], */
+/* 				       alpha_num[node_tar[Z]], */
+/* 				       port_tar); */
 		
-				_find_passthrough(next_switch, port_tar, nodes,
-						dim, count, highest_phys_x);
-				while((temp_switch = list_pop(path)) 
-				      != path_add){
-					xfree(temp_switch);
-					debug3("something here 2");
-				}
-			}
-		}
-	}
-	xfree(path_add);
-	return 0;
-}
+/* 				_find_passthrough(next_switch, port_tar, nodes, */
+/* 						dim, count, highest_phys_x); */
+/* 				while((temp_switch = list_pop(path))  */
+/* 				      != path_add){ */
+/* 					xfree(temp_switch); */
+/* 					debug3("something here 2"); */
+/* 				} */
+/* 			} */
+/* 		} */
+/* 	} */
+/* 	xfree(path_add); */
+/* 	return 0; */
+/* } */
 
-static int _finish_torus(ba_switch_t *curr_switch, int source_port, 
-			 List nodes, int dim, int count, int *start) 
+static int _finish_torus(ba_switch_t *curr_switch, int source_port,
+			 List nodes, int dim, int count, int *start)
 {
-	ba_switch_t *next_switch = NULL; 
-	ba_path_switch_t *path_add = 
+	ba_switch_t *next_switch = NULL;
+	ba_path_switch_t *path_add =
 		(ba_path_switch_t *) xmalloc(sizeof(ba_path_switch_t));
 	ba_path_switch_t *path_switch = NULL;
 	ba_path_switch_t *temp_switch = NULL;
@@ -4656,9 +4668,9 @@ static int _finish_torus(ba_switch_t *curr_switch, int source_port,
 		xfree(path_add);
 		return 0;
 	}
-	if(node_tar[X] == start[X] 
+	if(node_tar[X] == start[X]
 #ifdef HAVE_BG
-	    && node_tar[Y] == start[Y] 
+	    && node_tar[Y] == start[Y]
 	    && node_tar[Z] == start[Z]
 #endif
 		) {
@@ -4674,18 +4686,18 @@ static int _finish_torus(ba_switch_t *curr_switch, int source_port,
 			list_push(path, path_add);
 			
 			itr = list_iterator_create(path);
-			while((path_switch = 
+			while((path_switch =
 			       (ba_path_switch_t*) list_next(itr))){
 				
-				temp_switch = (ba_path_switch_t *) 
+				temp_switch = (ba_path_switch_t *)
 					xmalloc(sizeof(ba_path_switch_t));
 				
-				temp_switch->geometry[X] = 
+				temp_switch->geometry[X] =
 					path_switch->geometry[X];
 #ifdef HAVE_BG
-				temp_switch->geometry[Y] = 
+				temp_switch->geometry[Y] =
 					path_switch->geometry[Y];
-				temp_switch->geometry[Z] = 
+				temp_switch->geometry[Z] =
 					path_switch->geometry[Z];
 #endif
 				temp_switch->dim = path_switch->dim;
@@ -4696,26 +4708,26 @@ static int _finish_torus(ba_switch_t *curr_switch, int source_port,
 			list_iterator_destroy(itr);
 			best_count = count;
 			return 1;
-		} 
+		}
 	}
 	
 	if(source_port==0 || source_port==3 || source_port==5) {
 		ports_to_try[0] = 4;
-		ports_to_try[1] = 2;		
+		ports_to_try[1] = 2;
 	}
 	
 	for(i=0;i<2;i++) {
 		used=0;
 		if(!curr_switch->int_wire[ports_to_try[i]].used) {
 			itr = list_iterator_create(path);
-			while((path_switch = 
+			while((path_switch =
 			       (ba_path_switch_t*) list_next(itr))){
 				
-				if(((path_switch->geometry[X] == node_src[X]) 
+				if(((path_switch->geometry[X] == node_src[X])
 #ifdef HAVE_BG
-				    && (path_switch->geometry[Y] 
+				    && (path_switch->geometry[Y]
 					== node_src[Y])
-				    && (path_switch->geometry[Z] 
+				    && (path_switch->geometry[Z]
 					== node_tar[Z])
 #endif
 					)) {
@@ -4728,13 +4740,13 @@ static int _finish_torus(ba_switch_t *curr_switch, int source_port,
 			}
 			list_iterator_destroy(itr);
 			if((curr_switch->
-			    ext_wire[ports_to_try[i]].node_tar[X] == 
-			    curr_switch->ext_wire[0].node_tar[X] && 
+			    ext_wire[ports_to_try[i]].node_tar[X] ==
+			    curr_switch->ext_wire[0].node_tar[X] &&
 			    curr_switch->
-			    ext_wire[ports_to_try[i]].node_tar[Y] == 
-			    curr_switch->ext_wire[0].node_tar[Y] && 
+			    ext_wire[ports_to_try[i]].node_tar[Y] ==
+			    curr_switch->ext_wire[0].node_tar[Y] &&
 			    curr_switch->
-			    ext_wire[ports_to_try[i]].node_tar[Z] == 
+			    ext_wire[ports_to_try[i]].node_tar[Z] ==
 			    curr_switch->ext_wire[0].node_tar[Z])) {
 				continue;
 			}
@@ -4758,11 +4770,11 @@ static int _finish_torus(ba_switch_t *curr_switch, int source_port,
 				list_push(path, path_add);
 				_finish_torus(next_switch, port_tar, nodes,
 						dim, count, start);
-				while((temp_switch = list_pop(path)) 
+				while((temp_switch = list_pop(path))
 				      != path_add){
 					xfree(temp_switch);
 					debug3("something here 3");
-				} 
+				}
 			}
 		}
        }
@@ -4852,6 +4864,7 @@ int main(int argc, char** argv)
 	ba_request_t *request = (ba_request_t*) xmalloc(sizeof(ba_request_t)); 
 	log_options_t log_opts = LOG_OPTS_INITIALIZER;
 	int debug_level = 6;
+	node_info_msg_t *new_node_ptr = NULL;
 
 	List results;
 //	List results2;
@@ -4866,7 +4879,12 @@ int main(int argc, char** argv)
 	DIM_SIZE[X]=0;
 	DIM_SIZE[Y]=0;
 	DIM_SIZE[Z]=0;
-	ba_init(NULL);
+	while (slurm_load_node((time_t) NULL, &new_node_ptr, SHOW_ALL)) { 
+		
+		sleep(10);	/* keep trying to reconnect */
+	}
+	
+	ba_init(new_node_ptr);
 	init_wires(NULL);
 						
 	/* results = list_create(NULL); */
@@ -4914,11 +4932,15 @@ int main(int argc, char** argv)
 	list_destroy(results);
 
 	results = list_create(NULL);
-	request->geometry[0] = 1;
+	request->geometry[0] = 4;
 	request->geometry[1] = 1;
 	request->geometry[2] = 1;
-	request->start_req = 0;
-	request->size = 1;
+	request->start[0] = 1;
+	request->start[1] = 0;
+	request->start[2] = 0;
+	request->start_req = 1;
+	request->rotate = 0;
+	request->elongate = 0;
 	request->conn_type = SELECT_TORUS;
 	new_ba_request(request);
 	print_ba_request(request);
@@ -4959,7 +4981,6 @@ int main(int argc, char** argv)
 /* 		       request->geometry[1], */
 /* 		       request->geometry[2]); */
 /* 	} */
-
 	
 	int dim,j;
 	int x,y,z;
