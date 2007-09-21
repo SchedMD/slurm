@@ -182,7 +182,7 @@ typedef struct {
 	int color;
 	int index;
 	int state;
-	int phys_x;	
+//	int phys_x;	// no longer needed 
 } ba_node_t;
 
 typedef struct {

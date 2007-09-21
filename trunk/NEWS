@@ -58,6 +58,9 @@ documents those changes that are of interest to users and admins.
     Moved existing digital signature logic into new plugin: crypto/openssl.
     Added new support for crypto/munge (available with GPL license).
 
+* Changes in SLURM 1.2.18
+=========================
+
 * Changes in SLURM 1.2.17
 =========================
  -- In select/cons_res properly release resources allocated to job being 
@@ -74,6 +77,8 @@ documents those changes that are of interest to users and admins.
  -- In sched/backfill, if a job requires specific nodes, schedule other jobs
     ahead of it rather than completely stopping backfill scheduling for that
     partition.
+ -- BLUEGENE - corrected logic making block allocation work in a circular 
+    fashion instead of linear.
  
 * Changes in SLURM 1.2.16
 =========================
