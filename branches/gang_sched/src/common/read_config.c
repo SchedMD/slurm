@@ -175,6 +175,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"SchedulerAuth", S_P_STRING},
 	{"SchedulerPort", S_P_UINT16},
 	{"SchedulerRootFilter", S_P_UINT16},
+	{"SchedulerTimeSlice", S_P_UINT16},
 	{"SchedulerType", S_P_STRING},
 	{"SelectType", S_P_STRING},
 	{"SelectTypeParameters", S_P_STRING},
@@ -1134,6 +1135,7 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	xfree (ctl_conf_ptr->resume_program);
 	ctl_conf_ptr->resume_rate		= (uint16_t) NO_VAL;
 	ctl_conf_ptr->ret2service		= (uint16_t) NO_VAL;
+	ctl_conf_ptr->sched_time_slice		= (uint16_t) NO_VAL;
 	ctl_conf_ptr->schedport			= (uint16_t) NO_VAL;
 	ctl_conf_ptr->schedrootfltr		= (uint16_t) NO_VAL;
 	xfree( ctl_conf_ptr->schedtype );
@@ -1651,6 +1653,10 @@ validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	} else {
 		conf->schedport = DEFAULT_SCHEDULER_PORT;
 	}
+
+	if (!s_p_get_uint16(&conf->sched_time_slice, "SchedulerTimeSlice",
+	    hashtbl))
+		conf->sched_time_slice = DEFAULT_SCHED_TIME_SLICE;
 
 	if (!s_p_get_uint16(&conf->schedrootfltr,
 			    "SchedulerRootFilter", hashtbl))

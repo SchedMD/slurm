@@ -189,6 +189,7 @@ function displayfile()
    "# SCHEDULING<br>" +
    "SchedulerType=sched/" + get_radio_value(document.config.sched_type) + "<br>" +
    get_field("SchedulerPort",document.config.scheduler_port) + "<br>" +
+   "#SchedulerTimeSlice= <br>" +
    "#SchedulerRootFilter= <br>" +
    "SelectType=select/" + get_radio_value(document.config.select_type) + "<br>" +
    get_select_type_params() + "<br>" +

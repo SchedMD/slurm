@@ -2191,6 +2191,7 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer)
 
 	pack16(build_ptr->schedport, buffer);
 	pack16(build_ptr->schedrootfltr, buffer);
+	pack16(build_ptr->sched_time_slice, buffer);
 	packstr(build_ptr->schedtype, buffer);
 	packstr(build_ptr->select_type, buffer);
 	pack16(build_ptr->select_type_param, buffer);
@@ -2331,6 +2332,7 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **
 
 	safe_unpack16(&build_ptr->schedport, buffer);
 	safe_unpack16(&build_ptr->schedrootfltr, buffer);
+	safe_unpack16(&build_ptr->sched_time_slice, buffer);
 	safe_unpackstr_xmalloc(&build_ptr->schedtype, &uint16_tmp, buffer);
 	safe_unpackstr_xmalloc(&build_ptr->select_type, &uint16_tmp, buffer);
 	safe_unpack16(&build_ptr->select_type_param, buffer);
