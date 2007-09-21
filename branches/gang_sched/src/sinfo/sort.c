@@ -63,6 +63,7 @@ static int _sort_by_node_list(void *void1, void *void2);
 static int _sort_by_nodes_ai(void *void1, void *void2);
 static int _sort_by_nodes(void *void1, void *void2);
 static int _sort_by_partition(void *void1, void *void2);
+static int _sort_by_priority(void *void1, void *void2);
 static int _sort_by_reason(void *void1, void *void2);
 static int _sort_by_reason_time(void *void1, void *void2);
 static int _sort_by_root(void *void1, void *void2);
@@ -122,6 +123,8 @@ void sort_sinfo_list(List sinfo_list)
 				list_sort(sinfo_list, _sort_by_memory);
 		else if (params.sort[i] == 'N')
 				list_sort(sinfo_list, _sort_by_node_list);
+		else if (params.sort[i] == 'p')
+				list_sort(sinfo_list, _sort_by_priority);
 		else if (params.sort[i] == 'P')
 				list_sort(sinfo_list, _sort_by_partition);
 		else if (params.sort[i] == 'r')
@@ -527,9 +530,27 @@ static int _sort_by_share(void *void1, void *void2)
 	int val1 = 0, val2 = 0;
 
 	if (sinfo1->part_info)
-		val1 = sinfo1->part_info->shared;
+		val1 = sinfo1->part_info->max_share;
 	if (sinfo2->part_info)
-		val2 = sinfo2->part_info->shared;
+		val2 = sinfo2->part_info->max_share;
+	diff = val1 - val2;
+
+	if (reverse_order)
+		diff = -diff;
+	return diff;
+}
+
+static int _sort_by_priority(void *void1, void *void2)
+{
+	int diff;
+	sinfo_data_t *sinfo1 = (sinfo_data_t *) void1;
+	sinfo_data_t *sinfo2 = (sinfo_data_t *) void2;
+	int val1 = 0, val2 = 0;
+
+	if (sinfo1->part_info)
+		val1 = sinfo1->part_info->priority;
+	if (sinfo2->part_info)
+		val2 = sinfo2->part_info->priority;
 	diff = val1 - val2;
 
 	if (reverse_order)

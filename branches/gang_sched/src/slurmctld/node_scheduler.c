@@ -351,13 +351,13 @@ _job_count_bitmap(bitstr_t * bitmap, bitstr_t * jobmap, int job_cnt)
  *
  * IN user_flag - may be 0 (do not share nodes), 1 (node sharing allowed),
  *                or any other number means "don't care"
- * IN part_enum - current partition's node sharing policy
+ * IN part_max_share - current partition's node sharing policy
  * IN cons_res_flag - 1 if the consumable resources flag is enable, 0 otherwise
  *
  * RET - 1 if nodes can be shared, 0 if nodes cannot be shared
  */
 static int
-_resolve_shared_status(uint16_t user_flag, uint16_t part_enum,
+_resolve_shared_status(uint16_t user_flag, uint16_t part_max_share,
 		       int cons_res_flag)
 {
 	int shared;
@@ -368,7 +368,7 @@ _resolve_shared_status(uint16_t user_flag, uint16_t part_enum,
 		 * the partition or user has to explicitly disable sharing to
 		 * get exclusive nodes.
 		 */
-		if ((part_enum == SHARED_EXCLUSIVE) || (user_flag == 0))
+		if ((part_max_share == 0) || (user_flag == 0))
 			shared = 0;
 		else
 			shared = 1;
@@ -376,12 +376,10 @@ _resolve_shared_status(uint16_t user_flag, uint16_t part_enum,
 		/* The partition sharing option is only used if
 		 * the consumable resources plugin is NOT in use.
 		 */
-		if (part_enum == SHARED_FORCE)   /* shared=force */
-			shared = 1;
-		else if (part_enum == SHARED_NO) /* can't share */
+		if (part_max_share <= 1)	/* can't share */
 			shared = 0;
 		else
-			shared = (user_flag == 1) ? 1 : 0;
+			shared = 1;
 	}
 
 	return shared;
@@ -592,7 +590,7 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
                 return error_code;
 
 	shared = _resolve_shared_status(job_ptr->details->shared,
-					part_ptr->shared, cr_enabled);
+					part_ptr->max_share, cr_enabled);
 	job_ptr->details->shared = shared;
 
         if (cr_enabled) {

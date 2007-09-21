@@ -150,7 +150,8 @@ void slurm_init_part_desc_msg (update_part_msg_t * update_part_msg)
 	update_part_msg->hidden 	= (uint16_t) NO_VAL;
 	update_part_msg->default_part 	= (uint16_t) NO_VAL;
 	update_part_msg->root_only 	= (uint16_t) NO_VAL;
-	update_part_msg->shared 	= (uint16_t) NO_VAL;
+	update_part_msg->max_share 	= (uint16_t) NO_VAL;
+	update_part_msg->priority 	= (uint16_t) NO_VAL;
 	update_part_msg->state_up 	= (uint16_t) NO_VAL;
 }
 

@@ -422,8 +422,10 @@ static int parse_partitionname(void **dest, slurm_parser_enum_t type,
 		{"Hidden", S_P_BOOLEAN}, /* YES or NO */
 		{"MaxTime", S_P_UINT32}, /* INFINITE or a number */
 		{"MaxNodes", S_P_UINT32}, /* INFINITE or a number */
+		{"MaxShare", S_P_UINT16},
 		{"MinNodes", S_P_UINT32},
 		{"Nodes", S_P_STRING},
+		{"Priority", S_P_UINT16},
 		{"RootOnly", S_P_BOOLEAN}, /* YES or NO */
 		{"Shared", S_P_STRING}, /* YES, NO, or FORCE */
 		{"State", S_P_BOOLEAN}, /* UP or DOWN */
@@ -482,20 +484,26 @@ static int parse_partitionname(void **dest, slurm_parser_enum_t type,
 		    && !s_p_get_boolean(&p->root_only_flag, "RootOnly", dflt))
 			p->root_only_flag = false;
 
-		if (!s_p_get_string(&tmp, "Shared", tbl)
-		    && !s_p_get_string(&tmp, "Shared", dflt)) {
-			p->shared = SHARED_NO;
-		} else {
+		if (!s_p_get_uint16(&p->priority, "Priority", tbl) &&
+		    !s_p_get_uint16(&p->priority, "Priority", dflt))
+			p->priority = 1;
+
+		if (s_p_get_uint16(&p->max_share, "MaxShare", tbl) ||
+		    s_p_get_uint16(&p->max_share, "MaxShare", dflt)) {
+			/* Use MaxShare and ignore Shared value */
+			;
+		} else if (s_p_get_string(&tmp, "Shared", tbl) ||
+		           s_p_get_string(&tmp, "Shared", dflt)) {
 			if (strcasecmp(tmp, "NO") == 0)
-				p->shared = SHARED_NO;
+				p->max_share = 1;
 #ifndef HAVE_XCPU
 			/* Only "Shared=NO" is valid on XCPU systems */
 			else if (strcasecmp(tmp, "YES") == 0)
-				p->shared = SHARED_YES;
+				p->max_share = (uint16_t) INFINITE;
 			else if (strcasecmp(tmp, "EXCLUSIVE") == 0)
-				p->shared = SHARED_EXCLUSIVE;
+				p->max_share = 0;
 			else if (strcasecmp(tmp, "FORCE") == 0)
-				p->shared = SHARED_FORCE;
+				p->max_share = (uint16_t) INFINITE;
 #endif
 			else {
 				error("Bad value \"%s\" for Shared", tmp);
@@ -504,7 +512,11 @@ static int parse_partitionname(void **dest, slurm_parser_enum_t type,
 				xfree(tmp);
 				return -1;
 			}
+		} else {
+			/* No MaxShare or Shared specified */
+			p->min_nodes = 1;
 		}
+
 		xfree(tmp);
 
 		if (!s_p_get_boolean(&p->state_up_flag, "State", tbl)

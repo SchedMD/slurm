@@ -1423,9 +1423,10 @@ _pack_update_partition_msg(update_part_msg_t * msg, Buf buffer)
 	packstr(msg->name,         buffer);
 	packstr(msg->nodes,        buffer);
 
-	pack16(msg-> hidden,      buffer);
+	pack16(msg-> hidden,       buffer);
+	pack16(msg-> max_share,    buffer);
+	pack16(msg-> priority,     buffer);
 	pack16(msg-> root_only,    buffer);
-	pack16(msg-> shared,       buffer);
 	pack16(msg-> state_up,     buffer);
 }
 
@@ -1449,10 +1450,11 @@ _unpack_update_partition_msg(update_part_msg_t ** msg, Buf buffer)
 	safe_unpackstr_xmalloc(&tmp_ptr->name, &uint16_tmp, buffer);
 	safe_unpackstr_xmalloc(&tmp_ptr->nodes, &uint16_tmp, buffer);
 
-	safe_unpack16(&tmp_ptr->hidden, buffer);
+	safe_unpack16(&tmp_ptr->hidden,    buffer);
+	safe_unpack16(&tmp_ptr->max_share, buffer);
+	safe_unpack16(&tmp_ptr->priority,  buffer);
 	safe_unpack16(&tmp_ptr->root_only, buffer);
-	safe_unpack16(&tmp_ptr->shared, buffer);
-	safe_unpack16(&tmp_ptr->state_up, buffer);
+	safe_unpack16(&tmp_ptr->state_up,  buffer);
 	return SLURM_SUCCESS;
 
 unpack_error:
@@ -1811,7 +1813,8 @@ _unpack_partition_info_members(partition_info_t * part, Buf buffer)
 	safe_unpack16(&part->default_part, buffer);
 	safe_unpack16(&part->hidden,       buffer);
 	safe_unpack16(&part->root_only,    buffer);
-	safe_unpack16(&part->shared,       buffer);
+	safe_unpack16(&part->max_share,    buffer);
+	safe_unpack16(&part->priority,     buffer);
 
 	safe_unpack16(&part->state_up, buffer);
 	safe_unpackstr_xmalloc(&part->allow_groups, &uint16_tmp, buffer);
