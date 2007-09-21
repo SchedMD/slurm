@@ -1363,7 +1363,9 @@ replaced with a different set of default values.
 \fBPriority\fR
 Jobs submitted to a higher priority partition will be dispatched 
 before pending jobs in lower priority partitions and if possible
-they will preepmtp running jobs from lower priority partitions.
+they will preempt running jobs from lower priority partitions.
+Note that a partition's priority takes precedence over a job's 
+priority.
 The value may not exceed 65533.
 
 .TP
