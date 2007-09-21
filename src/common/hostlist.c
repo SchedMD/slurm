@@ -531,14 +531,21 @@ static int _width_equiv(unsigned long n, int *wn, unsigned long m, int *wm)
 static size_t host_prefix_end(const char *hostname)
 {
 	size_t idx; 
-	if (!hostname)
-		return -1;
-#ifdef HAVE_BG
-	idx = strlen(hostname) - 4;
-#else
-	idx = strlen(hostname) - 1;
+	int len;
 
-	while (idx >= 0 && isdigit((char) hostname[idx])) 
+	assert(hostname != NULL);
+
+	len = strlen(hostname);
+#ifdef HAVE_BG
+	if (len < 4)
+		return 0;
+	idx = len - 4;
+#else
+	if (len < 1)
+		return 0;
+	idx = len - 1;
+
+	while (idx > 0 && isdigit((char) hostname[idx])) 
 		idx--;
 #endif
 	return idx;
