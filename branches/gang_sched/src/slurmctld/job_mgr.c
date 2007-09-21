@@ -3315,9 +3315,9 @@ void reset_job_priority(void)
 }
 
 /* 
- * _top_priority - determine if any other job for this partition has a 
- *	higher priority than specified job
- * IN job_ptr - pointer to selected partition
+ * _top_priority - determine if any other job has a higher priority than the
+ *	specified job
+ * IN job_ptr - pointer to selected job
  * RET true if selected job has highest priority
  */
 static bool _top_priority(struct job_record *job_ptr)
@@ -3347,8 +3347,11 @@ static bool _top_priority(struct job_record *job_ptr)
 				continue;
 			if (!job_independent(job_ptr2))
 				continue;
-			if ((job_ptr2->priority >  job_ptr->priority) &&
-			    (job_ptr2->part_ptr == job_ptr->part_ptr)) {
+			if ((job_ptr2->part_ptr->priority > 
+			     job_ptr ->part_ptr->priority) ||
+			    ((job_ptr2->part_ptr->priority ==
+			      job_ptr ->part_ptr->priority) &&
+			     (job_ptr2->priority >  job_ptr->priority))) {
 				top = false;
 				break;
 			}
