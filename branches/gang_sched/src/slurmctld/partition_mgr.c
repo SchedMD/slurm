@@ -788,6 +788,12 @@ int update_part(update_part_msg_t * part_desc)
 
 	last_part_update = time(NULL);
 
+	if (part_desc->hidden != (uint16_t) NO_VAL) {
+		info("update_part: setting hidden to %u for partition %s",
+			part_desc->hidden, part_desc->name);
+		part_ptr->hidden = part_desc->hidden;
+	}
+
 	if (part_desc->max_time != NO_VAL) {
 		info("update_part: setting max_time to %u for partition %s", 
 		     part_desc->max_time, part_desc->name);

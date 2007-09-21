@@ -644,7 +644,7 @@ int _print_priority(sinfo_data_t * sinfo_data, int width,
 		                      sinfo_data->part_info->priority, true);
 		_print_str(id, width, right_justify, true);
 	} else
-		_print_str("MAX_SHARE", width, right_justify, true);
+		_print_str("PRIORITY", width, right_justify, true);
 
 	if (suffix)
 		printf("%s", suffix);

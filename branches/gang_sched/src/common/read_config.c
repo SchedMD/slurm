@@ -500,7 +500,7 @@ static int parse_partitionname(void **dest, slurm_parser_enum_t type,
 #ifndef HAVE_XCPU
 			/* Only "Shared=NO" is valid on XCPU systems */
 			else if (strcasecmp(tmp, "YES") == 0)
-				p->max_share = (uint16_t) INFINITE;
+				p->max_share = (uint16_t) 64;
 			else if (strcasecmp(tmp, "EXCLUSIVE") == 0)
 				p->max_share = 0;
 			else if (strcasecmp(tmp, "FORCE") == 0)
