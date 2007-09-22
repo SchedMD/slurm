@@ -53,6 +53,20 @@ CONFIGURATION FILE CHANGES
   specify how SLURM will talk to the database.
 * Added new paramter "CryptoType" to specify digital signature plugin to 
   be used. Currenly only supports crypto/openssl.
+* Added new parameter "SchedulerTimeSlice" to control the lenght of gang scheduler
+  time slices.
+* Added new partition parameter "Priority". A job's scheduling priority is based
+  upon two factors. First the priority of its partition and the job's priority. 
+  Since nodes can be configured in multiple partitions, this can be used to configure
+  high priority partitions (queues).
+* The partition parameter "Shared" has been replace by "MaxShare" which controls the 
+  number of jobs which can be executed on a given set of resources. Here are equivalent
+  values of the parameters:
+  Shared=EXCLUSIVE MaxShare=0
+  Shared=NO        MaxShare=1
+  Shared=YES       MaxShare=4         (or some other small number, two or higher)
+  Shared=FORCE     MaxShare=65535
+ 
 * See "man slurm.conf" for more information.
 
 OTHER CHANGES

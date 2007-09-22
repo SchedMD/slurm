@@ -91,6 +91,7 @@ extern char *default_plugstack;
 #define DEFAULT_SAVE_STATE_LOC      "/tmp"
 #define DEFAULT_SCHEDROOTFILTER     1
 #define DEFAULT_SCHEDULER_PORT      7321
+#define DEFAULT_SCHED_TIME_SLICE    30
 #define DEFAULT_SCHEDTYPE           "sched/builtin"
 #ifdef HAVE_BG		/* Blue Gene specific default configuration parameters */
 #  define DEFAULT_SELECT_TYPE       "select/bluegene"
@@ -137,10 +138,10 @@ typedef struct slurm_conf_partition {
 	uint32_t min_nodes;	/* per job */
 	uint32_t total_nodes;	/* total number of nodes in the partition */
 	uint32_t total_cpus;	/* total number of cpus in the partition */
+	uint16_t priority;	/* scheduling priority for jobs */
 	bool     root_only_flag;/* 1 if allocate/submit RPC can only be 
 				   issued by user root */
-	uint16_t shared;	/* 1 if job can share a node,
-				   2 if sharing required */
+	uint16_t max_share;	/* number of jobs to gang schedule */
 	bool     state_up_flag;	/* 1 if state is up, 0 if down */
 	char *nodes;		/* comma delimited list names of nodes */
 	char *allow_groups;	/* comma delimited list of groups, 

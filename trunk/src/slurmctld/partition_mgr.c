@@ -215,13 +215,14 @@ struct part_record *create_part_record(void)
 
 	xassert (part_ptr->magic = PART_MAGIC);  /* set value */
 	strcpy(part_ptr->name, "DEFAULT");
-	part_ptr->hidden    = default_part.hidden;
+	part_ptr->hidden       = default_part.hidden;
 	part_ptr->max_time     = default_part.max_time;
 	part_ptr->max_nodes    = default_part.max_nodes;
 	part_ptr->min_nodes    = default_part.min_nodes;
 	part_ptr->root_only    = default_part.root_only;
 	part_ptr->state_up     = default_part.state_up;
-	part_ptr->shared       = default_part.shared;
+	part_ptr->max_share    = default_part.max_share;
+	part_ptr->priority     = default_part.priority;
 	part_ptr->node_bitmap  = NULL;
 
 	if (default_part.allow_groups)
@@ -362,19 +363,20 @@ static void _dump_part_state(struct part_record *part_ptr, Buf buffer)
 	else
 		default_part_flag = 0;
 
-	packstr(part_ptr->name, buffer);
-	pack32(part_ptr->max_time, buffer);
+	packstr(part_ptr->name,     buffer);
+	pack32(part_ptr->max_time,  buffer);
 	pack32(part_ptr->max_nodes, buffer);
 	pack32(part_ptr->min_nodes, buffer);
 
-	pack16(default_part_flag, buffer);
-	pack16(part_ptr->hidden, buffer);
+	pack16(default_part_flag,   buffer);
+	pack16(part_ptr->hidden,    buffer);
 	pack16(part_ptr->root_only, buffer);
-	pack16(part_ptr->shared, buffer);
+	pack16(part_ptr->max_share, buffer);
+	pack16(part_ptr->priority,  buffer);
 
-	pack16(part_ptr->state_up, buffer);
+	pack16(part_ptr->state_up,  buffer);
 	packstr(part_ptr->allow_groups, buffer);
-	packstr(part_ptr->nodes, buffer);
+	packstr(part_ptr->nodes,    buffer);
 }
 
 /*
@@ -388,7 +390,8 @@ int load_all_part_state(void)
 	char *part_name, *allow_groups, *nodes, *state_file, *data = NULL;
 	uint32_t max_time, max_nodes, min_nodes;
 	time_t time;
-	uint16_t name_len, def_part_flag, hidden, root_only, shared, state_up;
+	uint16_t name_len, def_part_flag, hidden, root_only;
+	uint16_t max_share, priority, state_up;
 	struct part_record *part_ptr;
 	uint32_t data_size = 0;
 	int data_allocated, data_read = 0, error_code = 0, part_cnt = 0;
@@ -439,9 +442,10 @@ int load_all_part_state(void)
 		safe_unpack32(&min_nodes, buffer);
 
 		safe_unpack16(&def_part_flag, buffer);
-		safe_unpack16(&hidden, buffer);
+		safe_unpack16(&hidden,    buffer);
 		safe_unpack16(&root_only, buffer);
-		safe_unpack16(&shared, buffer);
+		safe_unpack16(&max_share, buffer);
+		safe_unpack16(&priority,  buffer);
 
 		safe_unpack16(&state_up, buffer);
 		safe_unpackstr_xmalloc(&allow_groups, &name_len, buffer);
@@ -450,10 +454,10 @@ int load_all_part_state(void)
 		/* validity test as possible */
 		if ((def_part_flag > 1) ||
 		    (root_only > 1) || (hidden > 1) ||
-		    (shared > SHARED_EXCLUSIVE) || (state_up > 1)) {
+		    (state_up > 1)) {
 			error("Invalid data for partition %s: def_part_flag=%u, "
-				"hidden=%u root_only=%u, shared=%u, state_up=%u",
-				part_name, def_part_flag, hidden, root_only, shared,
+				"hidden=%u root_only=%u, state_up=%u",
+				part_name, def_part_flag, hidden, root_only,
 				state_up);
 			error("No more partition data will be processed from "
 				"the checkpoint file");
@@ -477,8 +481,9 @@ int load_all_part_state(void)
 				default_part_loc = part_ptr;
 			}
 			part_ptr->root_only = root_only;
-			part_ptr->shared = shared;
-			part_ptr->state_up = state_up;
+			part_ptr->max_share = max_share;
+			part_ptr->priority  = priority;
+			part_ptr->state_up  = state_up;
 			xfree(part_ptr->allow_groups);
 			part_ptr->allow_groups = allow_groups;
 			xfree(part_ptr->nodes);
@@ -533,7 +538,8 @@ int init_part_conf(void)
 	default_part.min_nodes   = 1;
 	default_part.root_only   = 0;
 	default_part.state_up    = 1;
-	default_part.shared      = SHARED_NO;
+	default_part.max_share   = 1;
+	default_part.priority    = 1;
 	default_part.total_nodes = 0;
 	default_part.total_cpus  = 0;
 	xfree(default_part.nodes);
@@ -732,10 +738,11 @@ void pack_part(struct part_record *part_ptr, Buf buffer)
 				&node_scaling);
 	pack16(node_scaling, buffer);
 	pack32(part_ptr->total_cpus, buffer);
-	pack16(default_part_flag, buffer);
-	pack16(part_ptr->hidden, buffer);
-	pack16(part_ptr->root_only, buffer);
-	pack16(part_ptr->shared, buffer);
+	pack16(default_part_flag,    buffer);
+	pack16(part_ptr->hidden,     buffer);
+	pack16(part_ptr->root_only,  buffer);
+	pack16(part_ptr->max_share,  buffer);
+	pack16(part_ptr->priority,   buffer);
 
 	pack16(part_ptr->state_up, buffer);
 	packstr(part_ptr->allow_groups, buffer);
@@ -782,8 +789,8 @@ int update_part(update_part_msg_t * part_desc)
 	last_part_update = time(NULL);
 
 	if (part_desc->hidden != (uint16_t) NO_VAL) {
-		info("update_part: setting hidden to %u for partition %s", 
-		     part_desc->hidden, part_desc->name);
+		info("update_part: setting hidden to %u for partition %s",
+			part_desc->hidden, part_desc->name);
 		part_ptr->hidden = part_desc->hidden;
 	}
 
@@ -817,10 +824,16 @@ int update_part(update_part_msg_t * part_desc)
 		part_ptr->state_up = part_desc->state_up;
 	}
 
-	if (part_desc->shared != (uint16_t) NO_VAL) {
-		info("update_part: setting shared to %u for partition %s",
-		     part_desc->shared, part_desc->name);
-		part_ptr->shared = part_desc->shared;
+	if (part_desc->max_share != (uint16_t) NO_VAL) {
+		info("update_part: setting max_share to %u for partition %s",
+		     part_desc->max_share, part_desc->name);
+		part_ptr->max_share = part_desc->max_share;
+	}
+
+	if (part_desc->priority != (uint16_t) NO_VAL) {
+		info("update_part: setting priority to %u for partition %s",
+		     part_desc->priority, part_desc->name);
+		part_ptr->priority = part_desc->priority;
 	}
 
 	if ((part_desc->default_part == 1) &&

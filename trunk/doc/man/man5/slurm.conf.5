@@ -1,4 +1,4 @@
-.TH "slurm.conf" "5" "July 2007" "slurm.conf 1.3" "Slurm configuration file"
+.TH "slurm.conf" "5" "September 2007" "slurm.conf 1.3" "Slurm configuration file"
 .SH "NAME"
 slurm.conf \- Slurm configuration file 
 .SH "DESCRIPTION"
@@ -573,14 +573,6 @@ DOWN state until a system administrator explicitly changes its state
 (even if the slurmd daemon registers and resumes communications).
 
 .TP
-\fBSchedulerRootFilter\fR
-If set to '1' then scheduler will filter and avoid \fBRootOnly\fR 
-partitions (let root user or process schedule these partitions).
-Otherwise scheduler will treat \fBRootOnly\fR partitions as any 
-other standard partition.
-Currently only supported by sched/backfill schedululer plugin.
-
-.TP
 \fBSchedulerPort\fR
 The port number on which slurmctld should listen for connection requests.
 This value is only used by the Maui Scheduler (see \fBSchedulerType\fR).
@@ -596,11 +588,17 @@ default value is 1. Currently only used by the built\-in backfill
 scheduling module "sched/backfill" (see \fBSchedulerType\fR).
 
 .TP
+\fBSchedulerTimeSlice\fR
+Number of seconds in each time slice when \fBSchedulerType=sched/gang\fR.
+The default value is 30.
+
+.TP
 \fBSchedulerType\fR
 Identifies the type of scheduler to be used. Acceptable values include 
 "sched/builtin" for the built\-in FIFO scheduler, 
 "sched/backfill" for a backfill scheduling module to augment 
 the default FIFO scheduling, 
+"sched/gang" for gang scheduler (time\-slicing of parallel jobs),
 "sched/hold" to hold all newly arriving jobs if a file "/etc/slurm.hold" 
 exists otherwise use the built\-in FIFO scheduler, and 
 "sched/wiki" for the Wiki interface to the Maui Scheduler. 
@@ -636,8 +634,8 @@ This is the default value for non\-BlueGene systems.
 The resources within a node are individually allocated as
 consumable resources. 
 Note that whole nodes can be allocated to jobs for selected 
-partitions by using the \fIShared=EXCLUSIVE\fR option.
-See the partition \fBShared\fR parameter for more information.
+partitions by using the \fIMaxShare=\fR option.
+See the partition \fBMaxShare\fR parameter for more information.
 .TP
 \fBselect/bluegene\fR
 for a three\-dimentional BlueGene system. 
@@ -674,7 +672,7 @@ Memory and CPUs are consumable resources.
 .TP
 \fBCR_Memory\fR
 Memory is a consumable resource.
-NOTE: This implies \fIShared=Yes\fR for all partitions.
+NOTE: This implies \fIMaxShare\fR is non\-zero  for all partitions.
 .RE
 
 .TP
@@ -1312,6 +1310,25 @@ The default value is "UNLIMITED", which is represented internally as \-1.
 This limit does not apply to jobs executed by SlurmUser or user root.
 
 .TP
+\fBMaxShare\fR
+Ability of the partition to execute more than one job at a 
+time on each node. Shared nodes will offer unpredictable performance 
+for application programs, but can provide higher system utilization 
+and responsiveness than otherwise possible. 
+Accepts a numeric value indicating the number of jobs which can 
+be allocated each resources in the partition. 
+For example, a value of two indicates that two jobs can simultaneously
+be allocated each resources. 
+If \fBSchedulerType=sched/gang\fR then those jobs can be time sliced.
+Other values of \fBSchedulerType\fR will rely upon the operating 
+system to perform timesharing of the resouces to active jobs.
+The default value is 1 (resources are not shared).
+A value of 0 is treated as a special case to allocate entire
+nodes to jobs even with \fBSelectType=select/cons_res\fR.
+A value of 65535 is treated as a special case to make all nodes 
+available for sharing without any user means of disabling it.
+
+.TP
 \fBMaxTime\fR
 Maximum wall\-time limit for any job in minutes. The default 
 value is "UNLIMITED", which is represented internally as \-1.
@@ -1343,23 +1360,17 @@ unless explicitly set to other values in that partition record or
 replaced with a different set of default values.
 
 .TP
+\fBPriority\fR
+Jobs submitted to a higher priority partition will be dispatched 
+before pending jobs in lower priority partitions and if possible
+they will preempt running jobs from lower priority partitions.
+Note that a partition's priority takes precedence over a job's 
+priority.
+The value may not exceed 65533.
+
+.TP
 \fBShared\fR
-Ability of the partition to execute more than one job at a 
-time on each node. Shared nodes will offer unpredictable performance 
-for application programs, but can provide higher system utilization 
-and responsiveness than otherwise possible. 
-Possible values are "EXCLUSIVE", "FORCE", "YES", and "NO".
-"EXCLUSIVE" allocates entire nodes to jobs even with 
-select/cons_res configured.
-This can be used to allocate whole nodes in some partitions 
-and individual processors in other partitions. 
-"FORCE" makes all nodes in the partition available for sharing 
-without user means of disabling it.
-"YES" makes nodes in the partition available for sharing if and 
-only if the individual jobs permit sharing (see the srun 
-"\-\-share" option).
-"NO" makes nodes unavailable for sharing under all circumstances. 
-The default value is "NO".
+This parameter has been replace by \fBMaxShare\fR.
 
 .TP
 \fBState\fR

@@ -2,7 +2,7 @@
  * job_scheduler.c - manage the scheduling of pending jobs in priority order
  *	Note there is a global job list (job_list)
  *****************************************************************************
- *  Copyright (C) 2002-2006 The Regents of the University of California.
+ *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
  *  UCRL-CODE-226842.
@@ -61,8 +61,9 @@
 #define MAX_RETRIES 10
 
 struct job_queue {
-	int priority;
 	struct job_record *job_ptr;
+	uint32_t job_priority;
+	uint16_t part_priority;
 };
 
 static int  _build_job_queue(struct job_queue **job_queue);
@@ -104,7 +105,9 @@ static int _build_job_queue(struct job_queue **job_queue)
 				 sizeof(struct job_queue));
 		}
 		my_job_queue[job_queue_size].job_ptr  = job_ptr;
-		my_job_queue[job_queue_size].priority = job_ptr->priority;
+		my_job_queue[job_queue_size].job_priority = job_ptr->priority;
+		my_job_queue[job_queue_size].part_priority = 
+						job_ptr->part_ptr->priority;
 		job_queue_size++;
 	}
 	list_iterator_destroy(job_iterator);
@@ -283,26 +286,42 @@ int schedule(void)
 static void _sort_job_queue(struct job_queue *job_queue, int job_queue_size)
 {
 	int i, j, top_prio_inx;
-	int tmp_prio, top_prio;
 	struct job_record *tmp_job_ptr;
+	uint32_t top_job_prio,  tmp_job_prio;
+	uint16_t top_part_prio, tmp_part_prio;
 
 	for (i = 0; i < job_queue_size; i++) {
-		top_prio = job_queue[i].priority;
-		top_prio_inx = i;
+		top_prio_inx  = i;
+		top_job_prio  = job_queue[i].job_priority;
+		top_part_prio = job_queue[i].part_priority;
+
 		for (j = (i + 1); j < job_queue_size; j++) {
-			if (top_prio >= job_queue[j].priority)
+			if (top_part_prio > job_queue[j].part_priority)
 				continue;
-			top_prio = job_queue[j].priority;
-			top_prio_inx = j;
+			if ((top_part_prio == job_queue[j].part_priority) &&
+			    (top_job_prio  >= job_queue[j].job_priority))
+				continue;
+
+			top_prio_inx  = j;
+			top_job_prio  = job_queue[j].job_priority;
+			top_part_prio = job_queue[j].part_priority;
 		}
 		if (top_prio_inx == i)
-			continue;
-		tmp_prio = job_queue[i].priority;
-		tmp_job_ptr = job_queue[i].job_ptr;
-		job_queue[i].priority = job_queue[top_prio_inx].priority;
-		job_queue[i].job_ptr = job_queue[top_prio_inx].job_ptr;
-		job_queue[top_prio_inx].priority = tmp_prio;
-		job_queue[top_prio_inx].job_ptr = tmp_job_ptr;
+			continue;	/* in correct order */
+
+		/* swap records at top_prio_inx and i */
+		tmp_job_ptr   = job_queue[i].job_ptr;
+		tmp_job_prio  = job_queue[i].job_priority;
+		tmp_part_prio = job_queue[i].part_priority;
+
+		job_queue[i].job_ptr       = job_queue[top_prio_inx].job_ptr;
+		job_queue[i].job_priority  = job_queue[top_prio_inx].job_priority;
+		job_queue[i].part_priority = job_queue[top_prio_inx].part_priority;
+
+		job_queue[top_prio_inx].job_ptr       = tmp_job_ptr;
+		job_queue[top_prio_inx].job_priority  = tmp_job_prio;
+		job_queue[top_prio_inx].part_priority = tmp_part_prio;
+
 	}
 }
 

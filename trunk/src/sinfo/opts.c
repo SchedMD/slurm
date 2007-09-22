@@ -517,6 +517,12 @@ _parse_format( char* format )
 					field_size, 
 					right_justify, 
 					suffix );
+		} else if (field[0] == 'p') {
+			params.match_flags.priority_flag = true;
+			format_add_priority( params.format_list, 
+					field_size, 
+					right_justify, 
+					suffix );
 		} else if (field[0] == 'P') {
 			params.match_flags.partition_flag = true;
 			format_add_partition( params.format_list, 
@@ -691,6 +697,8 @@ void _print_options( void )
 	printf("memory_flag     = %s\n", params.match_flags.memory_flag ?
 			"true" : "false");
 	printf("partition_flag  = %s\n", params.match_flags.partition_flag ?
+			"true" : "false");
+	printf("priority_flag   = %s\n", params.match_flags.priority_flag ?
 			"true" : "false");
 	printf("reason_flag     = %s\n", params.match_flags.reason_flag ?
 			"true" : "false");

@@ -221,6 +221,8 @@ void slurm_print_ctl_conf ( FILE* out,
 		slurm_ctl_conf_ptr->schedport);
 	fprintf(out, "SchedulerRootFilter     = %u\n",
 		slurm_ctl_conf_ptr->schedrootfltr);
+	fprintf(out, "SchedulerTimeSlice      = %u\n",
+		slurm_ctl_conf_ptr->sched_time_slice);
 	fprintf(out, "SchedulerType           = %s\n",
 		slurm_ctl_conf_ptr->schedtype);
 	fprintf(out, "SelectType              = %s\n",

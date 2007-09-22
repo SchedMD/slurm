@@ -911,7 +911,7 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 			slurm_mutex_lock(&block_state_mutex);
 
 			if((record->ionodes)
-			   && (job_ptr->part_ptr->shared == 0))
+			   && (job_ptr->part_ptr->max_share <= 1))
 				error("Small block used in "
 				      "non-shared partition");
 
