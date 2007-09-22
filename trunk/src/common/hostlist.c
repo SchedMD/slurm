@@ -574,11 +574,8 @@ static hostname_t hostname_create(const char *hostname)
 	hn->num = 0;
 	hn->prefix = NULL;
 	hn->suffix = NULL;
-#ifdef HAVE_BG
-	if (idx == (strlen(hostname) - 4)) {
-#else
+
 	if (idx == (strlen(hostname) - 1)) {
-#endif
 		if ((hn->prefix = strdup(hostname)) == NULL) {
 			hostname_destroy(hn);
 			out_of_memory("hostname prefix create");
