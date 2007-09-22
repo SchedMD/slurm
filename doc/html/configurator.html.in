@@ -189,6 +189,7 @@ function displayfile()
    "# SCHEDULING<br>" +
    "SchedulerType=sched/" + get_radio_value(document.config.sched_type) + "<br>" +
    get_field("SchedulerPort",document.config.scheduler_port) + "<br>" +
+   "#SchedulerTimeSlice= <br>" +
    "#SchedulerRootFilter= <br>" +
    "SelectType=select/" + get_radio_value(document.config.select_type) + "<br>" +
    get_select_type_params() + "<br>" +
@@ -507,7 +508,7 @@ individual processors and memory<BR>
 	when CR_CPU or CR_CPU_MEMORY is selected. 
 	They are considered to compute the total number of 
 	tasks when -n is not specified
-    <DD> Note: CR_MEMORY assumes Shared=Yes
+    <DD> Note: CR_MEMORY assumes MaxShare value of one of higher
 <DT> <input type="radio" name="cons_res_params" value="CR_CPU" checked
 	    onClick="javascript:set_select_type(this, 'cons_res')">
     <B>CR_CPU</B>: (default)
@@ -525,7 +526,7 @@ individual processors and memory<BR>
 <DT> <input type="radio" name="cons_res_params" value="CR_Memory"
 	    onClick="javascript:set_select_type(this)">
     <B>CR_Memory</B>: Memory as a consumable resource. 
-    <DD> Note: CR_Memory assumes Shared=Yes
+    <DD> Note: CR_Memory assumes MaxShare value of one of higher
 <DT> <input type="radio" name="cons_res_params" value="CR_CPU_Memory"
 	    onClick="javascript:set_select_type(this)">
     <B>CR_CPU_Memory</B>:
@@ -723,6 +724,6 @@ before terminating all remaining tasks. A value of zero indicates unlimited wait
 </FORM>
 <HR>
 <p class="footer">UCRL-WEB-225274<br>
-Last modified 11 Sep 2007</p>
+Last modified 21 September 2007</p>
 </BODY>
 

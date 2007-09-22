@@ -198,7 +198,7 @@ backfill_agent(void *args)
 			part_iterator = list_iterator_create(part_list);
 			while ((part_ptr = (struct part_record *) 
 						list_next(part_iterator))) {
-				if ( ((part_ptr->shared)       ||
+				if ( ((part_ptr->max_share > 1) ||
 				      (part_ptr->state_up == 0)) )
 				 	continue; /* not under our control */
 				if ((part_ptr->root_only) && filter_root)

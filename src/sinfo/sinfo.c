@@ -3,7 +3,7 @@
  *
  *  $Id$
  *****************************************************************************
- *  Copyright (C) 2002-2006 The Regents of the University of California.
+ *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Joey Ekstrom <ekstrom1@llnl.gov>, Morris Jette <jette1@llnl.gov>
  *  UCRL-CODE-226842.
@@ -629,7 +629,11 @@ static bool _match_part_data(sinfo_data_t *sinfo_ptr,
 		return false;
 
 	if (params.match_flags.share_flag &&
-	    (part_ptr->shared != sinfo_ptr->part_info->shared))
+	    (part_ptr->max_share != sinfo_ptr->part_info->max_share))
+		return false;
+
+	if (params.match_flags.priority_flag &&
+	    (part_ptr->priority != sinfo_ptr->part_info->priority))
 		return false;
 
 	return true;

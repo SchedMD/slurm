@@ -19,13 +19,16 @@ documents those changes that are of interest to users and admins.
     Based upon work by Kumar Krishna (HP, India).
  -- Add multi-core options to salloc and sbatch commands (sbatch.patch and
     cleanup.patch from Chris Holmes, HP).
- -- In select/cons_res properly release resources allocated to job being suspended
-    (rmbreak.patch, from Chris Holmes, HP).
+ -- In select/cons_res properly release resources allocated to job being 
+    suspended (rmbreak.patch, from Chris Holmes, HP).
  -- Removed database and jobacct plugin replaced with jobacct_storage 
     and jobacct_gather for easier hooks for further expansion of the
     jobacct plugin.
  -- Job step launch in srun is now done from the slurm api's all futher
     modifications to job launch should be done there.
+ -- Add new partition configuration parameter Priority and replace Shared 
+    with MaxShare.
+ -- Add new configuration parameter SchedulerTimeSlice.
 
 * Changes in SLURM 1.3.0-pre2
 =============================

@@ -346,16 +346,15 @@ static void	_get_job_comment(struct job_record *job_ptr,
 
 	/* SHARED NODES */
 	if (cr_enabled)	{			/* consumable resources */
-		if (job_ptr->part_ptr->shared == SHARED_EXCLUSIVE)
+		if (job_ptr->part_ptr->max_share == 0)	/* Exclusive use */
 			sharing = 0;
-		else if (job_ptr->details && (job_ptr->details->shared != 0))
+		else if (job_ptr->details && job_ptr->details->shared)
 			sharing = 1;
-	} else if (job_ptr->part_ptr) {			/* partition with */
-		if (job_ptr->part_ptr->shared == SHARED_FORCE)
-			sharing = 1;
-		else if ((job_ptr->part_ptr->shared == SHARED_YES)
-		&&  (job_ptr->details)			/* optional for partition */
-		&&  (job_ptr->details->shared))		/* with job to share */
+	} else if (job_ptr->part_ptr) {		/* partition level control */
+		if (job_ptr->part_ptr->max_share == (uint16_t) INFINITE)
+			sharing = 1;		/* Sharing forced */
+		else if ((job_ptr->part_ptr->max_share > 1) &&
+		         (job_ptr->details) && (job_ptr->details->shared))
 			sharing = 1;
 	}
 	if (sharing) {

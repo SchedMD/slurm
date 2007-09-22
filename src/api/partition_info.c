@@ -2,7 +2,7 @@
  *  partition_info.c - get/print the partition state information of slurm
  *  $Id$
  *****************************************************************************
- *  Copyright (C) 2002-2006 The Regents of the University of California.
+ *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov> et. al.
  *  UCRL-CODE-226842.
@@ -137,14 +137,8 @@ char *slurm_sprint_partition_info ( partition_info_t * part_ptr,
 	else
 		sprintf(tmp_line, "Default=NO ");
 	xstrcat(out, tmp_line);
-	if (part_ptr->shared == SHARED_NO)
-		sprintf(tmp_line, "Shared=NO ");
-	else if (part_ptr->shared == SHARED_YES)
-		sprintf(tmp_line, "Shared=YES ");
-	else if (part_ptr->shared == SHARED_EXCLUSIVE)
-		sprintf(tmp_line, "Shared=EXCLUSIVE ");
-	else
-		sprintf(tmp_line, "Shared=FORCE ");
+	sprintf(tmp_line, "MaxShare=%u Priority=%u ",
+		part_ptr->max_share, part_ptr->priority);
 	xstrcat(out, tmp_line);
 	if (part_ptr->state_up)
 		sprintf(tmp_line, "State=UP ");

@@ -127,23 +127,14 @@ scontrol_update_part (int argc, char *argv[])
 			}
 			update_cnt++;
 		}
-		else if (strncasecmp(argv[i], "Shared=", 7) == 0) {
-			if (strcasecmp(&argv[i][7], "NO") == 0)
-				part_msg.shared = SHARED_NO;
-			else if (strcasecmp(&argv[i][7], "YES") == 0)
-				part_msg.shared = SHARED_YES;
-			else if (strcasecmp(&argv[i][7], "EXCLUSIVE") == 0)
-				part_msg.shared = SHARED_EXCLUSIVE;
-			else if (strcasecmp(&argv[i][7], "FORCE") == 0)
-				part_msg.shared = SHARED_FORCE;
-			else {
-				exit_code = 1;
-				fprintf (stderr, "Invalid input: %s\n", 
-					 argv[i]);
-				fprintf (stderr, "Acceptable Shared values "
-					"are YES, NO and FORCE\n");
-				return 0;
-			}
+		else if (strncasecmp(argv[i], "MaxShare=", 9) == 0) {
+			part_msg.max_share = (uint16_t) strtol(&argv[i][9], 
+					(char **) NULL, 10);
+			update_cnt++;
+		}
+		else if (strncasecmp(argv[i], "Priority=", 9) == 0) {
+			part_msg.priority = (uint16_t) strtol(&argv[i][9], 
+					(char **) NULL, 10);
 			update_cnt++;
 		}
 		else if (strncasecmp(argv[i], "State=", 6) == 0) {

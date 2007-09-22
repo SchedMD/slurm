@@ -425,13 +425,6 @@ typedef enum select_type_plugin_info {
 #define TASK_PARAM_CPUSETS 0x0001
 #define TASK_PARAM_SCHED   0x0002
 
-enum part_shared {
-	SHARED_NO = 0,		/* Nodes never shared in partition */
-	SHARED_YES,		/* Nodes possible to share in partition */
-	SHARED_FORCE,		/* Nodes always shares in partition */
-	SHARED_EXCLUSIVE	/* Nodes never shared even with cons_res */
-};
-
 /*****************************************************************************\
  *	PROTOCOL DATA STRUCTURE DEFINITIONS
 \*****************************************************************************/
@@ -819,8 +812,9 @@ typedef struct partition_info {
 	uint16_t node_scaling;	/* select plugin node scaling factor */
 	uint16_t default_part;	/* 1 if this is default partition */
 	uint16_t hidden;	/* 1 if partition is hidden by default */
+	uint16_t priority;	/* scheduling priority for jobs */
 	uint16_t root_only;	/* 1 if allocate must come for user root */
-	uint16_t shared;	/* See part_shared above */
+	uint16_t max_share;	/* number of jobs to gang schedule */
 	uint16_t state_up;	/* 1 if state is up, 0 if down */
 	char *nodes;		/* list names of nodes in partition */
 	int *node_inx;		/* list index pairs into node_table:
@@ -920,6 +914,7 @@ typedef struct slurm_ctl_conf {
 				 * registration */
 	uint16_t resume_rate;	/* nodes to make full power, per minute */
 	char *resume_program;	/* program to make nodes full power */
+	uint16_t sched_time_slice;	/* gang scheduler slice time, secs */
 	char *schedtype;	/* type of scheduler to use */
 	uint16_t schedport;	/* port for scheduler connection */
 	uint16_t schedrootfltr;	/* 1 if rootOnly partitions should be
