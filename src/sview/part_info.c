@@ -203,6 +203,7 @@ enum {
 static display_data_t *local_display_data = NULL;
 
 static char *got_edit_signal = NULL;
+static char *got_features_edit_signal = NULL;
 
 static void _update_part_sub_record(sview_part_sub_t *sview_part_sub,
 				    GtkTreeStore *treestore,
@@ -330,6 +331,7 @@ static void _set_active_combo_part(GtkComboBox *combo,
 			action = 2;
 		else 
 			action = 0;
+		break;
 	case SORTID_AVAIL:
 		if(!strcmp(temp_char, "up"))
 			action = 0;
@@ -428,25 +430,26 @@ static const char *_set_part_msg(update_part_msg_t *part_msg,
 		break;
 	case SORTID_ROOT:
 		if (!strcasecmp(new_text, "yes")) {
-			part_msg->default_part = 1;
+			part_msg->root_only = 1;
 		} else {
-			part_msg->default_part = 0;
+			part_msg->root_only = 0;
 		}
 		
 		type = "root";
 		break;
 	case SORTID_SHARE:
 		if (!strcasecmp(new_text, "yes")) {
-			part_msg->default_part = SHARED_YES;
+			part_msg->shared = SHARED_YES;
 		} else if (!strcasecmp(new_text, "no")) {
-			part_msg->default_part = SHARED_NO;
+			part_msg->shared = SHARED_NO;
 		} else {
-			part_msg->default_part = SHARED_FORCE;
+			part_msg->shared = SHARED_FORCE;
 		}
 		type = "share";
 		break;
 	case SORTID_GROUPS:
 		type = "groups";
+		part_msg->allow_groups = xstrdup(new_text);
 		break;
 	case SORTID_NODELIST:
 		part_msg->nodes = xstrdup(new_text);
@@ -462,7 +465,11 @@ static const char *_set_part_msg(update_part_msg_t *part_msg,
 	case SORTID_STATE:
 		type = (char *)new_text;
 		got_edit_signal = xstrdup(new_text);
-		break;			
+		break;
+	case SORTID_FEATURES:
+		type = "Update Features";
+		got_features_edit_signal = xstrdup(new_text);
+		break;
 	}
 	
 	return type;
@@ -1816,8 +1823,13 @@ extern void admin_edit_part(GtkCellRendererText *cell,
 		xfree(temp);
 		goto no_input;
 	}
+
+	if(got_features_edit_signal) {
+		admin_part(GTK_TREE_MODEL(treestore), &iter, (char *)type);
+		goto no_input;
+	}
 	
-	if(column != SORTID_STATE) {
+	if(column != SORTID_STATE && column != SORTID_FEATURES ) {
 		if(old_text && !strcmp(old_text, new_text)) {
 			temp = g_strdup_printf("No change in value.");
 			display_edit_note(temp);
@@ -2407,11 +2419,18 @@ extern void admin_part(GtkTreeModel *model, GtkTreeIter *iter, char *type)
 		entry = _admin_full_edit_part(part_msg, model, iter);
 	} else if(!strncasecmp("Update", type, 6)) {
 		char *old_features = NULL;
-		gtk_tree_model_get(model, iter, SORTID_FEATURES,
-				   &old_features, -1);
+		if(got_features_edit_signal) 
+			old_features = got_features_edit_signal;
+		else 
+			gtk_tree_model_get(model, iter, SORTID_FEATURES,
+					   &old_features, -1);
 		update_features_node(GTK_DIALOG(popup),
 				     nodelist, old_features);
-		g_free(old_features);
+		if(got_features_edit_signal) {
+			got_features_edit_signal = NULL;
+			xfree(old_features);
+		} else 
+			g_free(old_features);
 		goto end_it;
 	} else {
 		/* something that has to deal with a node state change */
@@ -2426,27 +2445,19 @@ extern void admin_part(GtkTreeModel *model, GtkTreeIter *iter, char *type)
 				   entry, TRUE, TRUE, 0);
 	gtk_widget_show_all(popup);
 	response = gtk_dialog_run (GTK_DIALOG(popup));
+
 	if (response == GTK_RESPONSE_OK) {
-		switch(edit_type) {
-		case EDIT_AVAIL:
-			if(got_edit_signal) 
-				goto end_it;
-			if(slurm_update_partition(part_msg) == SLURM_SUCCESS) {
-				temp = g_strdup_printf(
-					"Partition %s updated successfully",
-					partid);
-			} else {
-				temp = g_strdup_printf(
-					"Problem updating partition %s.",
-					partid);
-			}
-			display_edit_note(temp);
-			g_free(temp);
-			break;		
-		default:
-			break;
-		
+		if(slurm_update_partition(part_msg) == SLURM_SUCCESS) {
+			temp = g_strdup_printf(
+				"Partition %s updated successfully",
+				partid);
+		} else {
+			temp = g_strdup_printf(
+				"Problem updating partition %s.",
+				partid);
 		}
+		display_edit_note(temp);
+		g_free(temp);
 	}
 end_it:
 		
@@ -2461,7 +2472,10 @@ end_it:
 		admin_part(model, iter, type);
 		xfree(type);
 	}			
-	
+	if(got_features_edit_signal) {
+		type = "Update Features";		
+		admin_part(model, iter, type);		
+	} 
 	return;
 }
 
