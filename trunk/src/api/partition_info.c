@@ -108,6 +108,7 @@ char *slurm_sprint_partition_info ( partition_info_t * part_ptr,
 	char tmp1[7], tmp2[7];
 	char tmp_line[MAXHOSTRANGELEN];
 	char *out = NULL;
+	uint16_t force, val;
 
 	/****** Line 1 ******/
 #ifdef HAVE_BG
@@ -137,8 +138,20 @@ char *slurm_sprint_partition_info ( partition_info_t * part_ptr,
 	else
 		sprintf(tmp_line, "Default=NO ");
 	xstrcat(out, tmp_line);
-	sprintf(tmp_line, "MaxShare=%u Priority=%u ",
-		part_ptr->max_share, part_ptr->priority);
+	force = part_ptr->max_share & SHARED_FORCE;
+	val = part_ptr->max_share & (~SHARED_FORCE);
+	if (val == 0)
+		xstrcat(out, "Shared=EXCLUSIVE ");
+	else if (force) {
+		sprintf(tmp_line, "Shared=FORCE:%u ", val);
+		xstrcat(out, tmp_line);
+	} else if (val == 1)
+		xstrcat(out, "Shared=NO ");
+	else {
+		sprintf(tmp_line, "Shared=YES:%u ", val);
+		xstrcat(out, tmp_line);
+	}
+	sprintf(tmp_line, "Priority=%u ", part_ptr->priority);
 	xstrcat(out, tmp_line);
 	if (part_ptr->state_up)
 		sprintf(tmp_line, "State=UP ");

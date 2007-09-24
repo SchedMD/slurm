@@ -127,9 +127,30 @@ scontrol_update_part (int argc, char *argv[])
 			}
 			update_cnt++;
 		}
-		else if (strncasecmp(argv[i], "MaxShare=", 9) == 0) {
-			part_msg.max_share = (uint16_t) strtol(&argv[i][9], 
+		else if (strncasecmp(argv[i], "Shared=", 7) == 0) {
+			if (strncasecmp(&argv[i][7], "NO", 2) == 0) {
+				part_msg.max_share = 1;
+			} else if (strncasecmp(&argv[i][7], "EXCLUSIVE", 9) == 0) {
+				part_msg.max_share = 0;
+			} else if (strncasecmp(&argv[i][7], "YES:", 4) == 0) {
+				part_msg.max_share = (uint16_t) strtol(&argv[i][11], 
 					(char **) NULL, 10);
+			} else if (strncasecmp(&argv[i][7], "YES", 3) == 0) {
+				part_msg.max_share = (uint16_t) 64;
+			} else if (strncasecmp(&argv[i][7], "FORCE:", 6) == 0) {
+				part_msg.max_share = (uint16_t) strtol(&argv[i][13],
+					(char **) NULL, 10) | SHARED_FORCE;
+			} else if (strncasecmp(&argv[i][7], "FORCE", 5) == 0) {
+				part_msg.max_share = (uint16_t) 64 |
+					SHARED_FORCE;
+			} else {
+				exit_code = 1;
+				fprintf (stderr, "Invalid input: %s\n",
+					argv[i]);
+				fprintf (stderr, "Acceptable Shared values are "
+					"NO, EXCLUSIVE, YES:#, and FORCE:#\n");
+				return 0;
+			}
 			update_cnt++;
 		}
 		else if (strncasecmp(argv[i], "Priority=", 9) == 0) {

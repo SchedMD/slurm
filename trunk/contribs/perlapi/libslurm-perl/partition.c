@@ -30,7 +30,7 @@ part_info_to_hv(partition_info_t* part_info, HV* hv)
 	STORE_FIELD(hv, part_info, default_part, uint16_t);
 	STORE_FIELD(hv, part_info, hidden, uint16_t);
 	STORE_FIELD(hv, part_info, root_only, uint16_t);
-	STORE_FIELD(hv, part_info, shared, uint16_t);
+	STORE_FIELD(hv, part_info, max_share, uint16_t);
 	STORE_FIELD(hv, part_info, state_up, uint16_t);
 	if (part_info->nodes)
 		STORE_FIELD(hv, part_info, nodes, charp);
@@ -81,7 +81,7 @@ hv_to_update_part_msg(HV* hv, update_part_msg_t* part_msg)
 	FETCH_FIELD(hv, part_msg, default_part, uint16_t, FALSE);
 	FETCH_FIELD(hv, part_msg, hidden, uint16_t, FALSE);
 	FETCH_FIELD(hv, part_msg, root_only, uint16_t, FALSE);
-	FETCH_FIELD(hv, part_msg, shared, uint16_t, FALSE);
+	FETCH_FIELD(hv, part_msg, max_share, uint16_t, FALSE);
 	FETCH_FIELD(hv, part_msg, state_up, uint16_t, FALSE);
 	FETCH_FIELD(hv, part_msg, nodes, charp, FALSE);
 	/* node_inx not used */

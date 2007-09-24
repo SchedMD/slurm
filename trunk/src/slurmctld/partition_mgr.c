@@ -825,8 +825,19 @@ int update_part(update_part_msg_t * part_desc)
 	}
 
 	if (part_desc->max_share != (uint16_t) NO_VAL) {
-		info("update_part: setting max_share to %u for partition %s",
-		     part_desc->max_share, part_desc->name);
+		uint16_t force = part_desc->max_share & SHARED_FORCE;
+		uint16_t val = part_desc->max_share & (~SHARED_FORCE);
+		char tmp_str[24];
+		if (val == 0)
+			snprintf(tmp_str, sizeof(tmp_str), "EXCLUSIVE");
+		else if (force)
+			snprintf(tmp_str, sizeof(tmp_str), "FORCE:%u", val);
+		else if (val == 1)
+			snprintf(tmp_str, sizeof(tmp_str), "NO");
+		else
+			snprintf(tmp_str, sizeof(tmp_str), "YES:%u", val);
+		info("update_part: setting share to %s for partition %s",
+		     tmp_str, part_desc->name);
 		part_ptr->max_share = part_desc->max_share;
 	}
 

@@ -691,12 +691,19 @@ int _print_share(sinfo_data_t * sinfo_data, int width,
 	char id[FORMAT_STRING_SIZE];
 
 	if (sinfo_data) {
-		_build_min_max_16_string(id, FORMAT_STRING_SIZE, 
-		                      sinfo_data->part_info->max_share, 
-		                      sinfo_data->part_info->max_share, true);
+		bool force = sinfo_data->part_info->max_share & SHARED_FORCE;
+		uint16_t val = sinfo_data->part_info->max_share & (~SHARED_FORCE);
+		if (val == 0)
+			snprintf(id, sizeof(id), "EXCLUSIVE");
+		else if (force)
+			snprintf(id, sizeof(id), "FORCE:%u", val);
+		else if (val == 1)
+			snprintf(id, sizeof(id), "NO");
+		else
+			snprintf(id, sizeof(id), "YES:%u", val);
 		_print_str(id, width, right_justify, true);
 	} else
-		_print_str("MAX_SHARE", width, right_justify, true);
+		_print_str("SHARE", width, right_justify, true);
 
 	if (suffix)
 		printf("%s", suffix);

@@ -423,7 +423,6 @@ static int parse_partitionname(void **dest, slurm_parser_enum_t type,
 		{"Hidden", S_P_BOOLEAN}, /* YES or NO */
 		{"MaxTime", S_P_UINT32}, /* INFINITE or a number */
 		{"MaxNodes", S_P_UINT32}, /* INFINITE or a number */
-		{"MaxShare", S_P_UINT16},
 		{"MinNodes", S_P_UINT32},
 		{"Nodes", S_P_STRING},
 		{"Priority", S_P_UINT16},
@@ -489,22 +488,23 @@ static int parse_partitionname(void **dest, slurm_parser_enum_t type,
 		    !s_p_get_uint16(&p->priority, "Priority", dflt))
 			p->priority = 1;
 
-		if (s_p_get_uint16(&p->max_share, "MaxShare", tbl) ||
-		    s_p_get_uint16(&p->max_share, "MaxShare", dflt)) {
-			/* Use MaxShare and ignore Shared value */
-			;
-		} else if (s_p_get_string(&tmp, "Shared", tbl) ||
-		           s_p_get_string(&tmp, "Shared", dflt)) {
+		if (s_p_get_string(&tmp, "Shared", tbl) ||
+		    s_p_get_string(&tmp, "Shared", dflt)) {
 			if (strcasecmp(tmp, "NO") == 0)
 				p->max_share = 1;
 #ifndef HAVE_XCPU
 			/* Only "Shared=NO" is valid on XCPU systems */
-			else if (strcasecmp(tmp, "YES") == 0)
-				p->max_share = (uint16_t) 64;
 			else if (strcasecmp(tmp, "EXCLUSIVE") == 0)
 				p->max_share = 0;
-			else if (strcasecmp(tmp, "FORCE") == 0)
-				p->max_share = (uint16_t) INFINITE;
+			else if (strncasecmp(tmp, "YES:", 4) == 0)
+				p->max_share = strtol(&tmp[4], (char **) NULL, 10);
+			else if (strcasecmp(tmp, "YES") == 0) 
+				p->max_share = 64;
+			else if (strncasecmp(tmp, "FORCE:", 6) == 0) {
+				p->max_share = strtol(&tmp[6], (char **) NULL, 10) |
+					SHARED_FORCE;
+			} else if (strcasecmp(tmp, "FORCE") == 0)
+				p->max_share = 64 | SHARED_FORCE;
 #endif
 			else {
 				error("Bad value \"%s\" for Shared", tmp);
@@ -513,10 +513,8 @@ static int parse_partitionname(void **dest, slurm_parser_enum_t type,
 				xfree(tmp);
 				return -1;
 			}
-		} else {
-			/* No MaxShare or Shared specified */
-			p->min_nodes = 1;
-		}
+		} else
+			p->max_share = 1;
 
 		xfree(tmp);
 
