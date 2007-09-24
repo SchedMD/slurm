@@ -628,7 +628,7 @@ extern int get_system_stats(GtkTable *table)
 	
 	if(label)
 		gtk_widget_destroy(label);
-		
+
 	if((error_code = get_new_info_node(&node_info_ptr, force_refresh))
 	   == SLURM_NO_CHANGE_IN_DATA) { 
 		changed = 0;
@@ -817,7 +817,7 @@ extern void sview_init_grid()
 	ListIterator itr = NULL;
 	grid_button_t *grid_button = NULL;
 	GdkColor color;
-	
+
 	if((error_code = get_new_info_node(&node_info_ptr, force_refresh))
 	   == SLURM_NO_CHANGE_IN_DATA) { 
 		return;

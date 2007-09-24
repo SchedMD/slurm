@@ -573,24 +573,30 @@ extern int get_new_info_node_select(node_select_info_msg_t **node_select_ptr,
 	static node_select_info_msg_t *new_bg_ptr = NULL;
 	time_t now = time(NULL);
 	static time_t last;
+	static bool changed = 0;
 		
 	if(!force && ((now - last) < global_sleep_time)) {
 		*node_select_ptr = bg_info_ptr;
+		if(changed) 
+			return SLURM_SUCCESS;
 		return error_code;
 	}
 	last = now;
 	if (bg_info_ptr) {
 		error_code = slurm_load_node_select(bg_info_ptr->last_update, 
 						    &new_bg_ptr);
-		if (error_code == SLURM_SUCCESS)
+		if (error_code == SLURM_SUCCESS) {
 			select_g_free_node_info(&bg_info_ptr);
-		else if (slurm_get_errno() == SLURM_NO_CHANGE_IN_DATA) {
+			changed = 1;
+		} else if (slurm_get_errno() == SLURM_NO_CHANGE_IN_DATA) {
 			error_code = SLURM_NO_CHANGE_IN_DATA;
 			new_bg_ptr = bg_info_ptr;
+			changed = 0;
 		}
 	} else {
 		error_code = slurm_load_node_select((time_t) NULL, 
 						    &new_bg_ptr);
+		changed = 1;
 	}
 
 	bg_info_ptr = new_bg_ptr;
