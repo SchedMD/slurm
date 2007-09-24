@@ -351,7 +351,7 @@ static void	_get_job_comment(struct job_record *job_ptr,
 		else if (job_ptr->details && job_ptr->details->shared)
 			sharing = 1;
 	} else if (job_ptr->part_ptr) {		/* partition level control */
-		if (job_ptr->part_ptr->max_share == (uint16_t) INFINITE)
+		if (job_ptr->part_ptr->max_share & SHARED_FORCE)
 			sharing = 1;		/* Sharing forced */
 		else if ((job_ptr->part_ptr->max_share > 1) &&
 		         (job_ptr->details) && (job_ptr->details->shared))

@@ -425,6 +425,8 @@ typedef enum select_type_plugin_info {
 #define TASK_PARAM_CPUSETS 0x0001
 #define TASK_PARAM_SCHED   0x0002
 
+#define SHARED_FORCE 0x8000
+
 /*****************************************************************************\
  *	PROTOCOL DATA STRUCTURE DEFINITIONS
 \*****************************************************************************/
@@ -462,7 +464,8 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 				 * from job's allocation, default NONE */
 	uint16_t shared;	/* 1 if job can share nodes with other jobs,
 				 * 0 if job needs exclusive access to the node,
-				 * or NO_VAL to accept the system default. */
+				 * or NO_VAL to accept the system default.
+				 * SHARED_FORCE to eliminate user control. */
 	uint32_t time_limit;	/* maximum run time in minutes, default is
 				 * partition limit */
 	uint32_t num_procs;	/* total count of processors required, 

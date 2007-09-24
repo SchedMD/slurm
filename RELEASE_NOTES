@@ -59,13 +59,9 @@ CONFIGURATION FILE CHANGES
   upon two factors. First the priority of its partition and the job's priority. 
   Since nodes can be configured in multiple partitions, this can be used to configure
   high priority partitions (queues).
-* The partition parameter "Shared" has been replace by "MaxShare" which controls the 
-  number of jobs which can be executed on a given set of resources. Here are equivalent
-  values of the parameters:
-  Shared=EXCLUSIVE MaxShare=0
-  Shared=NO        MaxShare=1
-  Shared=YES       MaxShare=4         (or some other small number, two or higher)
-  Shared=FORCE     MaxShare=65535
+* The partition parameter "Shared" now has a job count. For example:
+  Shared=YES:4     (Up to 4 jobs may share each resource)
+  Shared=FORCE:2   (Up to 2 jobs must share each resource)
  
 * See "man slurm.conf" for more information.
 

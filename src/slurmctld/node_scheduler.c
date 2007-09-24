@@ -376,7 +376,7 @@ _resolve_shared_status(uint16_t user_flag, uint16_t part_max_share,
 		/* The partition sharing option is only used if
 		 * the consumable resources plugin is NOT in use.
 		 */
-		if (part_max_share == (uint16_t) INFINITE)  /* shared=force */
+		if (part_max_share & SHARED_FORCE)  /* shared=force */
 			shared = 1;
 		else if (part_max_share <= 1)	/* can't share */
 			shared = 0;

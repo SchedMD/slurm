@@ -434,11 +434,13 @@ static const char *_set_part_msg(update_part_msg_t *part_msg,
 		break;
 	case SORTID_SHARE:
 		if (!strcasecmp(new_text, "yes")) {
-			part_msg->default_part = SHARED_YES;
+			part_msg->default_part = 64;
 		} else if (!strcasecmp(new_text, "no")) {
-			part_msg->default_part = SHARED_NO;
+			part_msg->default_part = 1;
+		} else if (!strcasecmp(new_text, "exclusive")) {
+			part_msg->default_part = 0;
 		} else {
-			part_msg->default_part = SHARED_FORCE;
+			part_msg->default_part = SHARED_FORCE | 64;
 		}
 		type = "share";
 		break;
@@ -709,7 +711,7 @@ static void _layout_part_record(GtkTreeView *treeview,
 {
 	GtkTreeIter iter;
 	ListIterator itr = NULL;
-	char time_buf[20];
+	char time_buf[20], tmp_buf[20];
 	char tmp_cnt[7];
 	char tmp_cnt1[7];
 	char tmp_cnt2[7];
@@ -812,11 +814,17 @@ static void _layout_part_record(GtkTreeView *treeview,
 						 SORTID_ROOT),
 				   temp_char);
 		
-	if(part_ptr->shared > 1)
-		temp_char = "force";
-	else if(part_ptr->shared)
-		temp_char = "yes";
-	else 
+	if(part_ptr->max_share & SHARED_FORCE) {
+		snprintf(tmp_buf, sizeof(tmp_buf), "force:%u", 
+			 (part_ptr->max_share & ~(SHARED_FORCE))); 
+		temp_char = tmp_buf;
+	} else if(part_ptr->max_share == 0)
+		temp_char = "exclusive";
+	else if(part_ptr->max_share > 1) {
+		snprintf(tmp_buf, sizeof(tmp_buf), "yes:%u", 
+			 part_ptr->max_share);
+		temp_char = tmp_buf;
+	} else 
 		temp_char = "no";
 	add_display_treestore_line(update, treestore, &iter,
 				   find_col_name(display_data_part,
@@ -903,7 +911,7 @@ static void _update_part_record(sview_part_info_t *sview_part_info,
 				GtkTreeStore *treestore, 
 				GtkTreeIter *iter)
 {
-	char time_buf[20];
+	char time_buf[20], tmp_buf[20];
 	char tmp_cnt[7];
 	char *temp_char = NULL;
 	partition_info_t *part_ptr = sview_part_info->part_ptr;
@@ -967,11 +975,17 @@ static void _update_part_record(sview_part_info_t *sview_part_info,
 		temp_char = "no";
 	gtk_tree_store_set(treestore, iter, SORTID_ROOT, temp_char, -1);
 	
-	if(part_ptr->shared > 1)
-		temp_char = "force";
-	else if(part_ptr->shared)
-		temp_char = "yes";
-	else 
+	if(part_ptr->max_share & SHARED_FORCE) {
+		snprintf(tmp_buf, sizeof(tmp_buf), "force:%u", 
+			 (part_ptr->max_share & ~(SHARED_FORCE))); 
+		temp_char = tmp_buf;
+	} else if(part_ptr->max_share == 0)
+		temp_char = "exclusive";
+	else if(part_ptr->max_share > 1) {
+		snprintf(tmp_buf, sizeof(tmp_buf), "yes:%u", 
+			 part_ptr->max_share);
+		temp_char = tmp_buf;
+	} else 
 		temp_char = "no";
 	gtk_tree_store_set(treestore, iter, SORTID_SHARE, temp_char, -1);
 	
