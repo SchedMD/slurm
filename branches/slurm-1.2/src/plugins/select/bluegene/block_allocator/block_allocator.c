@@ -2465,7 +2465,7 @@ static int _copy_the_path(List nodes, ba_switch_t *curr_switch,
 					       [mark_node_tar[Z]]);
 			_new_ba_node(ba_node, mark_node_tar, false);
 			list_push(nodes, ba_node);
-			debug3("adding %c%c%c as a pass through",
+			debug3("haven't seen %c%c%c adding it",
 			       alpha_num[ba_node->coord[X]], 
 			       alpha_num[ba_node->coord[Y]],
 			       alpha_num[ba_node->coord[Z]]);
@@ -3416,8 +3416,8 @@ static int _set_external_wires(int dim, int count, ba_node_t* source,
 			target = &ba_system_ptr->grid[4]
 				[source->coord[Y]]
 				[source->coord[Z]];
-			/* 3->4 of 4th */
-			_switch_config(source, target, dim, 3, 4);
+			/* 4->3 of 4th */
+			_switch_config(source, target, dim, 4, 3);
 			break;
 		case 3:
 			/* 3rd node */
@@ -3425,8 +3425,8 @@ static int _set_external_wires(int dim, int count, ba_node_t* source,
 			target = &ba_system_ptr->grid[2]
 				[source->coord[Y]]
 				[source->coord[Z]];
-			/* 3->4 of 2nd */
-			_switch_config(source, target, dim, 3, 4);
+			/* 4->3 of 2nd */
+			_switch_config(source, target, dim, 4, 3);
 			break;
 		case 4:
 			/* 4th node */
@@ -3434,8 +3434,8 @@ static int _set_external_wires(int dim, int count, ba_node_t* source,
 			target = &ba_system_ptr->grid[1]
 				[source->coord[Y]]
 				[source->coord[Z]];
-			/* 3->4 of 2nd */
-			_switch_config(source, target, dim, 3, 4);
+			/* 4->3 of 1st */
+			_switch_config(source, target, dim, 4, 3);
 			
 			break;
 		default:
@@ -3456,40 +3456,40 @@ static int _set_external_wires(int dim, int count, ba_node_t* source,
 			target = &ba_system_ptr->grid[count-1]
 				[source->coord[Y]]
 				[source->coord[Z]];
-			/* 3->4 of previous */
-			_switch_config(source, target, dim, 3, 4);
+			/* 4->3 of previous */
+			_switch_config(source, target, dim, 4, 3);
 			break;	
 		case 2:
 			/* 2nd Node */
 			target = &ba_system_ptr->grid[7]
 				[source->coord[Y]]
 				[source->coord[Z]];
-			/* 3->4 of last */
-			_switch_config(source, target, dim, 3, 4);
+			/* 4->3 of last */
+			_switch_config(source, target, dim, 4, 3);
 			break;
 		case 3:
 			/* 3rd Node */
 			target = &ba_system_ptr->grid[6]
 				[source->coord[Y]]
 				[source->coord[Z]];
-			/* 3->4 of 6th */
-			_switch_config(source, target, dim, 3, 4);
+			/* 4->3 of 6th */
+			_switch_config(source, target, dim, 4, 3);
 			break;
 		case 6:
 			/* 6th Node */
 			target = &ba_system_ptr->grid[3]
 				[source->coord[Y]]
 				[source->coord[Z]];
-			/* 3->4 of 3rd */
-			_switch_config(source, target, dim, 3, 4);	
+			/* 4->3 of 3rd */
+			_switch_config(source, target, dim, 4, 3);	
 			break;
 		case 7:
 			/* 7th Node */
 			target = &ba_system_ptr->grid[2]
 				[source->coord[Y]]
 				[source->coord[Z]];
-			/* 3->4 of 2nd */
-			_switch_config(source, target, dim, 3, 4);	
+			/* 4->3 of 2nd */
+			_switch_config(source, target, dim, 4, 3);	
 			break;
 		default:
 			fatal("got %d for a count on a %d X-dim system",
@@ -3539,8 +3539,8 @@ static int _set_external_wires(int dim, int count, ba_node_t* source,
 			target = &ba_system_ptr->grid[count-1]
 				[source->coord[Y]]
 				[source->coord[Z]];
-			/* 3->4 of previous */
-			_switch_config(source, target, dim, 3, 4);
+			/* 4->3 of previous */
+			_switch_config(source, target, dim, 4, 3);
 			break;	
 		default:
 			fatal("got %d for a count on a %d X-dim system",
@@ -4792,12 +4792,16 @@ static int *_set_best_path()
 		return NULL;
 	itr = list_iterator_create(best_path);
 	while((path_switch = (ba_path_switch_t*) list_next(itr))) {
-		if(passthrough)
+		if(passthrough && path_switch->in > 1 && path_switch->out > 1) {
 			*passthrough = true;
+			debug2("got a passthrough");
+		}
 #ifdef HAVE_BG
-		debug3("mapping %c%c%c",alpha_num[path_switch->geometry[X]],
+		debug3("mapping %c%c%c %d->%d",
+		       alpha_num[path_switch->geometry[X]],
 		       alpha_num[path_switch->geometry[Y]],
-		       alpha_num[path_switch->geometry[Z]]);
+		       alpha_num[path_switch->geometry[Z]],
+		       path_switch->in, path_switch->out);
 		if(!geo)
 			geo = path_switch->geometry;
 		curr_switch = &ba_system_ptr->
@@ -4909,33 +4913,33 @@ int main(int argc, char** argv)
 /* 	} */
 /* 	list_destroy(results); */
 
+/* 	results = list_create(NULL); */
+/* 	request->geometry[0] = 1; */
+/* 	request->geometry[1] = 1; */
+/* 	request->geometry[2] = 1; */
+/* 	request->start[0] = 0; */
+/* 	request->start[1] = 0; */
+/* 	request->start[2] = 0; */
+/* 	request->start_req = 1; */
+/* 	request->size = 1; */
+/* 	request->rotate = 0; */
+/* 	request->elongate = 0; */
+/* 	request->conn_type = SELECT_TORUS; */
+/* 	new_ba_request(request); */
+/* 	print_ba_request(request); */
+/* 	if(!allocate_block(request, results)) { */
+/*        		debug("couldn't allocate %c%c%c", */
+/* 		       alpha_num[request->geometry[0]], */
+/* 		       alpha_num[request->geometry[1]], */
+/* 		       alpha_num[request->geometry[2]]);	 */
+/* 	} */
+/* 	list_destroy(results); */
+
 	results = list_create(NULL);
-	request->geometry[0] = 1;
+	request->geometry[0] = 12;
 	request->geometry[1] = 1;
 	request->geometry[2] = 1;
 	request->start[0] = 0;
-	request->start[1] = 0;
-	request->start[2] = 0;
-	request->start_req = 1;
-	request->size = 1;
-	request->rotate = 0;
-	request->elongate = 0;
-	request->conn_type = SELECT_TORUS;
-	new_ba_request(request);
-	print_ba_request(request);
-	if(!allocate_block(request, results)) {
-       		debug("couldn't allocate %c%c%c",
-		       alpha_num[request->geometry[0]],
-		       alpha_num[request->geometry[1]],
-		       alpha_num[request->geometry[2]]);	
-	}
-	list_destroy(results);
-
-	results = list_create(NULL);
-	request->geometry[0] = 4;
-	request->geometry[1] = 1;
-	request->geometry[2] = 1;
-	request->start[0] = 1;
 	request->start[1] = 0;
 	request->start[2] = 0;
 	request->start_req = 1;
@@ -4990,6 +4994,7 @@ int main(int argc, char** argv)
 	int endx=DIM_SIZE[X];
 	int endy=1;//DIM_SIZE[Y];
 	int endz=1;//DIM_SIZE[Z];
+
 	for(x=startx;x<endx;x++) {
 		for(y=starty;y<endy;y++) {
 			for(z=startz;z<endz;z++) {
