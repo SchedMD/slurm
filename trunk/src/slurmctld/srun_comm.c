@@ -208,11 +208,11 @@ extern void srun_timeout (struct job_record *job_ptr)
 	srun_timeout_msg_t *msg_arg;
 	ListIterator step_iterator;
 	struct step_record *step_ptr;
-
+	
 	xassert(job_ptr);
 	if (job_ptr->job_state != JOB_RUNNING)
 		return;
-
+	
 	if (job_ptr->other_port && job_ptr->alloc_node && job_ptr->resp_host) {
 		addr = xmalloc(sizeof(struct sockaddr_in));
 		slurm_set_addr(addr, job_ptr->other_port, job_ptr->resp_host);

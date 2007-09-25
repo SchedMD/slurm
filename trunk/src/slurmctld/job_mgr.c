@@ -4391,6 +4391,10 @@ extern void job_completion_logger(struct job_record  *job_ptr)
 	int base_state;
 	xassert(job_ptr);
 
+	/* make sure all parts of the job are notified */
+	srun_job_complete(job_ptr);
+	
+	/* mail out notifications of completion */
 	base_state = job_ptr->job_state & (~JOB_COMPLETING);
 	if ((base_state == JOB_COMPLETE) || (base_state == JOB_CANCELLED)) {
 		if (job_ptr->mail_type & MAIL_JOB_END)
@@ -4400,9 +4404,9 @@ extern void job_completion_logger(struct job_record  *job_ptr)
 			mail_job_info(job_ptr, MAIL_JOB_FAIL);
 	}
 
+	/* write out to logs */
 	jobacct_storage_g_job_complete(job_ptr);
 	g_slurm_jobcomp_write(job_ptr);
-	srun_job_complete(job_ptr);
 }
 
 /*
