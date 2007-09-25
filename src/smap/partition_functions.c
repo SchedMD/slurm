@@ -836,12 +836,17 @@ static int _addto_nodelist(List nodelist, int *start, int *end)
 	int *coord = NULL;
 	int x,y,z;
 	
-	assert(end[X] < DIM_SIZE[X]);
+	if(end[X] < DIM_SIZE[X]
+	   || end[Y] < DIM_SIZE[Y]
+	   || end[Z] < DIM_SIZE[Z]) {
+		fatal("It appears the slurm.conf file has changed since "
+		      "the last restart.\nThings are in an incompatible "
+		      "state, please restart the slurmctld.");
+	}
+
 	assert(start[X] >= 0);
-	assert(end[Y] < DIM_SIZE[Y]);
 	assert(start[Y] >= 0);
-	assert(end[Z] < DIM_SIZE[Z]);
-	assert(start[Z] >= 0);
+	assert(start[X] >= 0);
 	
 	for (x = start[X]; x <= end[X]; x++) {
 		for (y = start[Y]; y <= end[Y]; y++) {

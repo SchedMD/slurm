@@ -455,9 +455,13 @@ extern int get_new_info_node(node_info_msg_t **info_ptr, int force)
 	int error_code = SLURM_NO_CHANGE_IN_DATA;
 	time_t now = time(NULL);
 	static time_t last;
-		
+	static bool changed = 0;
+
 	if(!force && ((now - last) < global_sleep_time)) {
 		*info_ptr = node_info_ptr;
+		if(changed) 
+			return SLURM_SUCCESS;
+		
 		return error_code;
 	}
 	last = now;
@@ -466,15 +470,19 @@ extern int get_new_info_node(node_info_msg_t **info_ptr, int force)
 	if (node_info_ptr) {
 		error_code = slurm_load_node(node_info_ptr->last_update,
 					     &new_node_ptr, show_flags);
-		if (error_code == SLURM_SUCCESS)
+		if (error_code == SLURM_SUCCESS) {
 			slurm_free_node_info_msg(node_info_ptr);
-		else if (slurm_get_errno() == SLURM_NO_CHANGE_IN_DATA) {
+			changed = 1;
+		} else if (slurm_get_errno() == SLURM_NO_CHANGE_IN_DATA) {
 			error_code = SLURM_NO_CHANGE_IN_DATA;
 			new_node_ptr = node_info_ptr;
+			changed = 0;
 		}
-	} else
+	} else {
 		error_code = slurm_load_node((time_t) NULL, &new_node_ptr, 
 					     show_flags);
+		changed = 1;
+	}
 	node_info_ptr = new_node_ptr;
 	*info_ptr = new_node_ptr;
 	return error_code;
