@@ -577,7 +577,7 @@ static const char *_set_job_msg(job_desc_msg_t *job_msg, const char *new_text,
 		if(!strcasecmp(new_text, "infinite"))
 			temp_int = INFINITE;
 		else
-			temp_int = strtol(new_text, (char **)NULL, 10);
+			temp_int = time_str2mins((char *)new_text);
 		
 		type = "timelimit";
 		if(temp_int <= 0 && temp_int != INFINITE)
@@ -1064,7 +1064,7 @@ static void _layout_job_record(GtkTreeView *treeview,
 					    + job_ptr->pre_sus_time);
 			now_time = difftime(now_time, job_ptr->start_time);
 		}
-		snprint_time(tmp_char, sizeof(tmp_char), now_time);
+		secs2time_str(now_time, tmp_char, sizeof(tmp_char));
 		nodes = sview_job_info_ptr->nodes;	
 	}
 	add_display_treestore_line(update, treestore, &iter, 
@@ -1094,18 +1094,17 @@ static void _layout_job_record(GtkTreeView *treeview,
 				   find_col_name(display_data_job,
 						 SORTID_END_TIME), 
 				   tmp_char);
-	snprint_time(tmp_char, sizeof(tmp_char), job_ptr->suspend_time);
+	secs2time_str(job_ptr->suspend_time, tmp_char, sizeof(tmp_char));
 	add_display_treestore_line(update, treestore, &iter, 
 				   find_col_name(display_data_job,
 						 SORTID_SUSPEND_TIME), 
 				   tmp_char);
 
-	if (job_ptr->time_limit == INFINITE)
-		sprintf(tmp_char, "UNLIMITED");
-	else if (job_ptr->time_limit == NO_VAL)
+	if (job_ptr->time_limit == NO_VAL)
 		sprintf(tmp_char, "Partition Limit");
 	else
-		snprint_time(tmp_char, sizeof(tmp_char), job_ptr->time_limit);
+		secs2time_str((job_ptr->time_limit * 60),
+			      tmp_char, sizeof(tmp_char));
 	add_display_treestore_line(update, treestore, &iter, 
 				   find_col_name(display_data_job,
 						 SORTID_TIMELIMIT), 
@@ -1455,7 +1454,7 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 					    + job_ptr->pre_sus_time);
 			now_time = difftime(now_time, job_ptr->start_time);
 		}
-		snprint_time(tmp_char, sizeof(tmp_char), now_time);
+		secs2time_str(now_time, tmp_char, sizeof(tmp_char));
 		nodes = sview_job_info_ptr->nodes;	
 	}
 	gtk_tree_store_set(treestore, iter, SORTID_TIME, tmp_char, -1);
@@ -1476,12 +1475,11 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 			    sizeof(tmp_char));
 	gtk_tree_store_set(treestore, iter, SORTID_SUSPEND_TIME, tmp_char, -1);
 
-	if (job_ptr->time_limit == INFINITE)
-		sprintf(tmp_char, "UNLIMITED");
-	else if (job_ptr->time_limit == NO_VAL)
+	if (job_ptr->time_limit == NO_VAL)
 		sprintf(tmp_char, "Partition Limit");
 	else
-		snprint_time(tmp_char, sizeof(tmp_char), job_ptr->time_limit);
+		secs2time_str((job_ptr->time_limit * 60),
+			      tmp_char, sizeof(tmp_char));
 	gtk_tree_store_set(treestore, iter, SORTID_TIMELIMIT, tmp_char, -1);
 	
 	gtk_tree_store_set(treestore, iter, SORTID_ALLOC, 1, -1);
@@ -1765,7 +1763,7 @@ static void _layout_step_record(GtkTreeView *treeview,
 		state = JOB_PENDING;
 	} else {
 		now_time -= step_ptr->start_time;
-		snprint_time(tmp_time, sizeof(tmp_time), now_time);
+		secs2time_str(now_time, tmp_time, sizeof(tmp_time));
 		nodes = step_ptr->nodes;
 #ifdef HAVE_BG
 		convert_num_unit((float)step_ptr->num_tasks,
@@ -1855,7 +1853,7 @@ static void _update_step_record(job_step_info_t *step_ptr,
 		state = JOB_PENDING;
 	} else {
 		now_time -= step_ptr->start_time;
-		snprint_time(tmp_time, sizeof(tmp_time), now_time);
+		secs2time_str(now_time, tmp_time, sizeof(tmp_time));
 		nodes = step_ptr->nodes;
 #ifdef HAVE_BG
 		convert_num_unit((float)step_ptr->num_tasks,
