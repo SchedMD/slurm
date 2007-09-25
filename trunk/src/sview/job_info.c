@@ -883,7 +883,7 @@ static void _admin_edit_combo_box_job(GtkComboBox *combo,
 	
 	gtk_tree_model_get(model, &iter, 0, &name, -1);
 	gtk_tree_model_get(model, &iter, 1, &column, -1);
-
+ 
 	_set_job_msg(job_msg, name, column);
 
 	g_free(name);
@@ -2360,10 +2360,13 @@ extern int get_new_info_job(job_info_msg_t **info_ptr,
 	int error_code = SLURM_NO_CHANGE_IN_DATA;
 	time_t now = time(NULL);
 	static time_t last;
+	static bool changed = 0;
 		
 	if(!force && ((now - last) < global_sleep_time)) {
 		error_code = SLURM_NO_CHANGE_IN_DATA;
 		*info_ptr = job_info_ptr;
+		if(changed) 
+			return SLURM_SUCCESS;
 		return error_code;
 	}
 	last = now;
@@ -2371,15 +2374,19 @@ extern int get_new_info_job(job_info_msg_t **info_ptr,
 	if (job_info_ptr) {
 		error_code = slurm_load_jobs(job_info_ptr->last_update,
 					     &new_job_ptr, show_flags);
-		if (error_code == SLURM_SUCCESS)
+		if (error_code == SLURM_SUCCESS) {
 			slurm_free_job_info_msg(job_info_ptr);
-		else if (slurm_get_errno() == SLURM_NO_CHANGE_IN_DATA) {
+			changed = 1;
+		} else if (slurm_get_errno() == SLURM_NO_CHANGE_IN_DATA) {
 			error_code = SLURM_NO_CHANGE_IN_DATA;
 			new_job_ptr = job_info_ptr;
+			changed = 0;
 		}
-	} else
+	} else {
 		error_code = slurm_load_jobs((time_t) NULL, &new_job_ptr, 
 					     show_flags);
+		changed = 1;
+	}
 	job_info_ptr = new_job_ptr;
 	*info_ptr = new_job_ptr;
 	return error_code;
