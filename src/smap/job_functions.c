@@ -38,6 +38,7 @@
 
 #include "src/common/uid.h"
 #include "src/common/node_select.h"
+#include "src/common/parse_time.h"
 #include "src/smap/smap.h"
 
 static int  _get_node_cnt(job_info_t * job);
@@ -308,7 +309,7 @@ static int _print_text_job(job_info_t * job_ptr)
 			sprintf(time_buf,"0:00:00");
 		} else {
 			time_diff = now_time - job_ptr->start_time;
-			snprint_time(time_buf, sizeof(time_buf), time_diff);
+			secs2time_str(time_diff, time_buf, sizeof(time_buf));
 		}
 		width = strlen(time_buf);
 		mvwprintw(text_win, main_ycord,
@@ -374,7 +375,7 @@ static int _print_text_job(job_info_t * job_ptr)
 			sprintf(time_buf,"0:00:00");
 		} else {
 			time_diff = now_time - job_ptr->start_time;
-			snprint_time(time_buf, sizeof(time_buf), time_diff);
+			secs2time_str(time_diff, time_buf, sizeof(time_buf));
 		}
 		
 		printf("%10.10s ", time_buf);

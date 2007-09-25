@@ -150,7 +150,6 @@ extern int set_grid_bg(int *start, int *end, int count, int set);
 extern void print_grid(int dir);
 
 extern void parse_command_line(int argc, char *argv[]);
-extern void snprint_time(char *buf, size_t buf_size, time_t time);
 extern void print_date();
 extern void clear_window(WINDOW *win);
 
