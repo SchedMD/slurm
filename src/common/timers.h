@@ -44,6 +44,8 @@
 #define START_TIMER	gettimeofday(&tv1, NULL)
 #define END_TIMER	gettimeofday(&tv2, NULL); \
 			diff_tv_str(&tv1, &tv2, tv_str, 20)
+#define END_TIMER2(from) gettimeofday(&tv2, NULL); \
+			diff_tv_str2(&tv1, &tv2, tv_str, 20, from)
 #define DELTA_TIMER	diff_tv(&tv1, &tv2)
 #define TIME_STR 	tv_str
 
@@ -56,6 +58,16 @@
  */
 extern inline void diff_tv_str(struct timeval *tv1,struct timeval *tv2, 
 		char *tv_str, int len_tv_str);
+
+/*
+ * diff_tv_str - build a string showing the time difference between two times
+ * IN tv1 - start of event
+ * IN tv2 - end of event
+ * OUT tv_str - place to put delta time in format "usec=%ld"
+ * IN len_tv_str - size of tv_str in bytes
+ */
+extern inline void diff_tv_str2(struct timeval *tv1,struct timeval *tv2,
+                char *tv_str, int len_tv_str, char *from);
 
 /*
  * diff_tv - return the difference between two times

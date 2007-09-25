@@ -58,6 +58,27 @@ inline void diff_tv_str(struct timeval *tv1,struct timeval *tv2,
 }
 
 /*
+ * diff_tv_str2 - build a string showing the time difference between two times
+ * IN tv1 - start of event
+ * IN tv2 - end of event
+ * OUT tv_str - place to put delta time in format "usec=%ld"
+ * IN len_tv_str - size of tv_str in bytes
+ * IN from - where the function was called form
+ */
+inline void diff_tv_str2(struct timeval *tv1,struct timeval *tv2, 
+		char *tv_str, int len_tv_str, char *from)
+{
+	long delta_t;
+	delta_t  = (tv2->tv_sec  - tv1->tv_sec) * 1000000;
+	delta_t +=  tv2->tv_usec - tv1->tv_usec;
+	snprintf(tv_str, len_tv_str, "usec=%ld", delta_t);
+	if (delta_t > 1) {
+		verbose("Warning: Note very large processing time from %s: %s",
+			from, tv_str);
+	}
+}
+
+/*
  * diff_tv - return the difference between two times
  * IN tv1 - start of event
  * IN tv2 - end of event

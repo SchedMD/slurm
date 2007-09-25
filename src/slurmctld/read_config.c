@@ -803,10 +803,7 @@ int read_slurm_conf(int recover)
 			old_select_type_p);
 
 	slurmctld_conf.last_update = time(NULL);
-	END_TIMER;
-	debug("read_slurm_conf: finished loading configuration %s",
-	     TIME_STR);
-
+	END_TIMER2("read_slurm_conf");
 	return error_code;
 }
 

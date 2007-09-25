@@ -346,8 +346,7 @@ int dump_all_job_state(void)
 	unlock_state_files();
 
 	free_buf(buffer);
-	END_TIMER;
-	debug3("dump_all_job_state %s", TIME_STR);
+	END_TIMER2("dump_all_job_state");
 	return error_code;
 }
 
@@ -2060,9 +2059,7 @@ _copy_job_desc_to_file(job_desc_msg_t * job_desc, uint32_t job_id)
 	}
 
 	xfree(dir_name);
-	END_TIMER;
-	if (DELTA_TIMER > 1000000)	/* more than one second */
-		info("_copy_job_desc_to_file %s", TIME_STR);
+	END_TIMER2("_copy_job_desc_to_file");
 	return error_code;
 }
 
