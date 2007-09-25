@@ -42,6 +42,8 @@
 #define __USE_ISOC99 /* isblank() */
 #include <ctype.h>
 
+#include <slurm/slurm.h>
+
 #define _RUN_STAND_ALONE 0
 
 time_t     time_now;
@@ -434,7 +436,8 @@ slurm_make_time_str (time_t *time, char *string, int size)
  *   days-hr:min:sec
  *   days-hr
  * output:
- *   minutes  (or -1 on error)
+ *   minutes  (or -1 on error) (or INFINITE value defined in slurm.h
+ *   if unlimited is the value of string)
  */
 extern int time_str2mins(char *string)
 {
@@ -443,6 +446,10 @@ extern int time_str2mins(char *string)
 
 	if ((string == NULL) || (string[0] == '\0'))
 		return -1;	/* invalid input */
+
+	if (!strcasecmp(string, "UNLIMITED")) {
+		return INFINITE;
+	}
 
 	for (i=0; ; i++) {
 		if ((string[i] >= '0') && (string[i] <= '9')) {
@@ -490,4 +497,26 @@ extern int time_str2mins(char *string)
 	if (sec > 0)
 		res++;	/* round up */
 	return res;
+}
+
+extern void secs2time_str(time_t time, char *string, int size)
+{
+	if (time == INFINITE) {
+		snprintf(string, size, "UNLIMITED");
+	} else {
+		long days, hours, minutes, seconds;
+		seconds = time % 60;
+		minutes = (time / 60) % 60;
+		hours = (time / 3600) % 24;
+		days = time / 86400;
+
+		if (days)
+			snprintf(string, size,
+				"%ld-%2.2ld:%2.2ld:%2.2ld",
+				days, hours, minutes, seconds);
+		else
+			snprintf(string, size,
+				"%2.2ld:%2.2ld:%2.2ld", 
+				hours, minutes, seconds);
+	}
 }

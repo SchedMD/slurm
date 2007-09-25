@@ -39,6 +39,7 @@
 
 #include "src/smap/smap.h"
 #include "src/common/node_select.h"
+#include "src/common/parse_time.h"
 #include "src/api/node_select_info.h"
 
 #define _DEBUG 0
@@ -554,10 +555,10 @@ static int _print_text_part(partition_info_t *part_ptr,
 					snprintf(time_buf, sizeof(time_buf), 
 						 "infinite");
 				else {
-					snprint_time(time_buf, 
-						     sizeof(time_buf), 
-						     (part_ptr->max_time 
-						      * 60));
+					secs2time_str((part_ptr->max_time
+						       * 60),
+						      time_buf, 
+						      sizeof(time_buf));
 				}
 			
 				width = strlen(time_buf);
@@ -692,10 +693,10 @@ static int _print_text_part(partition_info_t *part_ptr,
 					snprintf(time_buf, sizeof(time_buf), 
 						 "infinite");
 				else {
-					snprint_time(time_buf, 
-						     sizeof(time_buf), 
-						     (part_ptr->max_time 
-						      * 60));
+					secs2time_str((part_ptr->max_time 
+						       * 60),
+						      time_buf, 
+						      sizeof(time_buf));
 				}
 			
 				width = strlen(time_buf);
