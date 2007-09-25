@@ -27,6 +27,7 @@
 \*****************************************************************************/
 
 #include "src/sview/sview.h"
+#include "src/common/parse_time.h"
 
 #define _DEBUG 0
 
@@ -401,7 +402,7 @@ static const char *_set_part_msg(update_part_msg_t *part_msg,
 		if ((strcasecmp(new_text,"infinite") == 0))
 			temp_int = INFINITE;
 		else
-			temp_int = strtol(new_text, (char **)NULL, 10);
+			temp_int = time_str2mins((char *)new_text);
 		
 		type = "timelimit";
 		if(temp_int <= 0 && temp_int != INFINITE)
@@ -775,8 +776,8 @@ static void _layout_part_record(GtkTreeView *treeview,
 	if (part_ptr->max_time == INFINITE)
 		snprintf(time_buf, sizeof(time_buf), "infinite");
 	else {
-		snprint_time(time_buf, sizeof(time_buf), 
-			     (part_ptr->max_time * 60));
+		secs2time_str((part_ptr->max_time * 60), 
+			      time_buf, sizeof(time_buf));
 	}
 
 	add_display_treestore_line(update, treestore, &iter, 
@@ -943,8 +944,8 @@ static void _update_part_record(sview_part_info_t *sview_part_info,
 	if (part_ptr->max_time == INFINITE)
 		snprintf(time_buf, sizeof(time_buf), "infinite");
 	else {
-		snprint_time(time_buf, sizeof(time_buf), 
-			     (part_ptr->max_time * 60));
+		secs2time_str((part_ptr->max_time * 60), 
+			      time_buf, sizeof(time_buf));
 	}
 	
 	gtk_tree_store_set(treestore, iter, SORTID_TIMELIMIT, time_buf, -1);

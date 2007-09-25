@@ -77,4 +77,10 @@ slurm_make_time_str (time_t *time, char *string, int size);
  */
 extern int time_str2mins(char *string);
 
+/* Convert a time value into a string that can be converted back by 
+ * time_str2mins. 
+ * fill in string with HH:MM:SS or D-HH:MM:SS
+ */
+extern void secs2time_str(time_t time, char *string, int size);
+
 #endif

@@ -357,7 +357,6 @@ extern void get_info_submit(GtkTable *table, display_data_t *display_data);
 extern void set_menus_submit(void *arg, GtkTreePath *path, 
 			     GtkMenu *menu, int type);
 // common.c
-extern void snprint_time(char *buf, size_t buf_size, time_t time);
 extern int get_row_number(GtkTreeView *tree_view, GtkTreePath *path);
 extern int find_col(display_data_t *display_data, int type);
 extern const char *find_col_name(display_data_t *display_data, int type);
