@@ -329,6 +329,8 @@ static void _set_active_combo_part(GtkComboBox *combo,
 			action = 1;
 		else if(!strcmp(temp_char, "force"))
 			action = 2;
+		else if(!strcmp(temp_char, "exclusive"))
+			action = 3;
 		else 
 			action = 0;
 		break;
@@ -439,13 +441,13 @@ static const char *_set_part_msg(update_part_msg_t *part_msg,
 		break;
 	case SORTID_SHARE:
 		if (!strcasecmp(new_text, "yes")) {
-			part_msg->max_share = 64;
-		} else if (!strcasecmp(new_text, "no")) {
-			part_msg->max_share = 1;
+			 part_msg->max_share = 4;
 		} else if (!strcasecmp(new_text, "exclusive")) {
 			part_msg->max_share = 0;
-		} else {
-			part_msg->max_share = SHARED_FORCE | 64;
+		} else if (!strcasecmp(new_text, "force")) {
+			part_msg->max_share = SHARED_FORCE | 4;
+		} else {	/* "no" */
+			part_msg->max_share = 1;
 		}
 		type = "share";
 		break;
@@ -1733,9 +1735,9 @@ extern GtkListStore *create_model_part(int type)
 		model = gtk_list_store_new(2, G_TYPE_STRING, G_TYPE_INT);
 		gtk_list_store_append(model, &iter);
 		gtk_list_store_set(model, &iter,
-				   0, "yes",
+				   0, "force",
 				   1, SORTID_SHARE,
-				   -1);	
+				   -1);
 		gtk_list_store_append(model, &iter);
 		gtk_list_store_set(model, &iter,
 				   0, "no",
@@ -1743,9 +1745,14 @@ extern GtkListStore *create_model_part(int type)
 				   -1);	
 		gtk_list_store_append(model, &iter);
 		gtk_list_store_set(model, &iter,
-				   0, "force",
+				   0, "yes",
 				   1, SORTID_SHARE,
-				   -1);	
+				   -1);
+		gtk_list_store_append(model, &iter);	
+		gtk_list_store_set(model, &iter,
+				   0, "exclusive",
+				   1, SORTID_SHARE,
+				   -1);
 		break;
 	case SORTID_GROUPS:
 		break;
