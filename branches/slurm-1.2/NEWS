@@ -5,6 +5,8 @@ documents those changes that are of interest to users and admins.
 =========================
  -- BLUEGENE - bug fix for smap stating passthroughs are used when they aren't
  -- fixed bug in sview to be able to edit partitions correctly
+ -- fixed bug so in slurm.conf files where SlurmdPort isn't defined things
+    work correctly.
 
 * Changes in SLURM 1.2.17
 =========================
