@@ -559,7 +559,6 @@ static void _slurm_rpc_dump_conf(slurm_msg_t * msg)
 		_fill_ctld_conf(&config_tbl);
 		unlock_slurmctld(config_read_lock);
 		END_TIMER2("_slurm_rpc_dump_conf");
-		debug2("_slurm_rpc_dump_conf %s", TIME_STR);
 
 		/* init response_msg structure */
 		slurm_msg_t_init(&response_msg);
@@ -1836,13 +1835,16 @@ static void _slurm_rpc_update_job(slurm_msg_t * msg)
 extern int slurm_drain_nodes(char *node_list, char *reason)
 {
 	int error_code;
+	DEF_TIMERS;
 	/* Locks: Write  node */
 	slurmctld_lock_t node_write_lock = { 
 		NO_LOCK, NO_LOCK, WRITE_LOCK, NO_LOCK };
 
+	START_TIMER;
 	lock_slurmctld(node_write_lock);
 	error_code = drain_nodes(node_list, reason);
 	unlock_slurmctld(node_write_lock);
+	END_TIMER2("slurm_drain_nodes");
 
 	return error_code;
 }
@@ -1858,13 +1860,16 @@ extern int slurm_drain_nodes(char *node_list, char *reason)
 extern int slurm_fail_job(uint32_t job_id)
 {
 	int error_code;
+	DEF_TIMERS;
 	/* Locks: Write job and node */
 	slurmctld_lock_t job_write_lock = {
 		NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK };
 
+	START_TIMER;
 	lock_slurmctld(job_write_lock);
 	error_code = job_fail(job_id);
 	unlock_slurmctld(job_write_lock);
+	END_TIMER2("slurm_fail_job");
 
 	return error_code;
 }
@@ -2490,11 +2495,15 @@ inline static void  _slurm_rpc_trigger_clear(slurm_msg_t * msg)
 	int rc;
 	uid_t uid;
 	trigger_info_msg_t * trigger_ptr = (trigger_info_msg_t *) msg->data;
+	DEF_TIMERS;
 
+	START_TIMER;
 	debug("Processing RPC: REQUEST_TRIGGER_CLEAR");
 	uid = g_slurm_auth_get_uid(msg->auth_cred);
 
 	rc = trigger_clear(uid, trigger_ptr);
+	END_TIMER2("_slurm_rpc_trigger_clear");
+
 	slurm_send_rc_msg(msg, rc);
 }
 
@@ -2504,11 +2513,14 @@ inline static void  _slurm_rpc_trigger_get(slurm_msg_t * msg)
 	trigger_info_msg_t *resp_data;
 	trigger_info_msg_t * trigger_ptr = (trigger_info_msg_t *) msg->data;
 	slurm_msg_t response_msg;
+	DEF_TIMERS;
 
+	START_TIMER;
 	debug("Processing RPC: REQUEST_TRIGGER_GET");
 	uid = g_slurm_auth_get_uid(msg->auth_cred);
 
 	resp_data = trigger_get(uid, trigger_ptr);
+	END_TIMER2("_slurm_rpc_trigger_get");
 
 	slurm_msg_t_init(&response_msg);
 	response_msg.address  = msg->address;
@@ -2524,11 +2536,15 @@ inline static void  _slurm_rpc_trigger_set(slurm_msg_t * msg)
 	uid_t uid;
 	gid_t gid;
 	trigger_info_msg_t * trigger_ptr = (trigger_info_msg_t *) msg->data;
+	DEF_TIMERS;
 
+	START_TIMER;
 	debug("Processing RPC: REQUEST_TRIGGER_SET");
 	uid = g_slurm_auth_get_uid(msg->auth_cred);
 	gid = g_slurm_auth_get_gid(msg->auth_cred);
 
 	rc = trigger_set(uid, gid, trigger_ptr);
+	END_TIMER2("_slurm_rpc_trigger_set");
+
 	slurm_send_rc_msg(msg, rc);
 }
