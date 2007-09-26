@@ -68,14 +68,27 @@ static uint32_t	_get_job_time_limit(struct job_record *job_ptr);
  * RET 0 on success, -1 on failure
  *
  * Response format
- * ARG=<cnt>#<JOBID>;UPDATE_TIME=<uts>;STATE=<state>;WCLIMIT=<time_limit>;
- *                    TASKS=<cpus>;QUEUETIME=<submit_time>;STARTTIME=<time>;
- *                    UNAME=<user>;GNAME=<group>;PARTITIONMASK=<part>;
- *                    NODES=<node_cnt>;RMEM=<mem_size>;RDISK=<disk_space>;
- *                    [COMPLETETIME=<end_time>;]
- *         [#<JOBID>;...];
+ * ARG=<cnt>#<JOBID>;
+ *	STATE=<state>;
+ *	[HOSTLIST=<required_hosts>;]
+ *	[TASKLIST=<allocated_hosts>;]
+ *	[REJMESSAGE=<reason_job_failed>;]
+ *	UPDATE_TIME=<uts>;
+ *	WCLIMIT=<time_limit>;
+ *	[TASKS=<required_cpus>;]
+ *	[NODES=<required_node_cnt>;]
+ *	QUEUETIME=<submit_time>;
+ *	STARTTIME=<time>;
+ *	PARTITIONMASK=<partition>;
+ *	RMEM=<mem_size>;
+ *	RDISK=<disk_space>;
+ *	[COMPLETETIME=<end_time>;]
+ *	[SUSPENDTIME=<time_suspended>;]
+ *	[UNAME=<user>;]
+ *	[GNAME=<group>;]
+ *  [#<JOBID>;...];
+ *
  */
-/* RET 0 on success, -1 on failure */
 extern int	get_jobs(char *cmd_ptr, int *err_code, char **err_msg)
 {
 	char *arg_ptr, *tmp_char, *tmp_buf, *buf = NULL;
@@ -217,17 +230,21 @@ static char *	_dump_job(struct job_record *job_ptr, int state_info)
 		(uint32_t) _get_job_time_limit(job_ptr));
 	xstrcat(buf, tmp);
 
-	snprintf(tmp, sizeof(tmp),
-		"TASKS=%u;QUEUETIME=%u;STARTTIME=%u;",
-		_get_job_tasks(job_ptr),
-		_get_job_submit_time(job_ptr),
-		(uint32_t) job_ptr->start_time);
-	xstrcat(buf, tmp);
+	if (job_ptr->job_state  == JOB_PENDING) {
+		/* Don't report actual tasks or nodes allocated since
+		 * this can impact requeue on heterogenous clusters */
+		snprintf(tmp, sizeof(tmp),
+			"TASKS=%u;NODES=%u;",
+			_get_job_tasks(job_ptr),
+			_get_job_min_nodes(job_ptr));
+		xstrcat(buf, tmp);
+	}
 
 	snprintf(tmp, sizeof(tmp),
-		"PARTITIONMASK=%s;NODES=%u;",
-		job_ptr->partition,
-		_get_job_min_nodes(job_ptr));
+		"QUEUETIME=%u;STARTTIME=%u;PARTITIONMASK=%s;",
+		_get_job_submit_time(job_ptr),
+		(uint32_t) job_ptr->start_time,
+		job_ptr->partition);
 	xstrcat(buf, tmp);
 
 	snprintf(tmp, sizeof(tmp),

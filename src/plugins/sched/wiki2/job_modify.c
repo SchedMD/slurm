@@ -70,7 +70,7 @@ static int32_t _get_depend_id(char *str)
 }
 
 static int	_job_modify(uint32_t jobid, char *bank_ptr, 
-			int32_t depend_id,
+			int32_t depend_id, char *new_hostlist,
 			uint32_t new_node_cnt, char *part_name_ptr, 
 			uint32_t new_time_limit)
 {
@@ -108,6 +108,60 @@ static int	_job_modify(uint32_t jobid, char *bank_ptr,
 		xfree(job_ptr->account);
 		job_ptr->account = xstrdup(bank_ptr);
 		last_job_update = time(NULL);
+	}
+
+	if (new_hostlist) {
+		int i, rc = 0, task_cnt;
+		hostlist_t hl;
+		char *tasklist;
+
+		if (!job_ptr->details) {
+			/* Job is done, nothing to reset */
+			if (new_hostlist == '\0')
+				goto host_fini;
+			error("wiki: MODIFYJOB tasklist of non-pending "
+				"job %u", jobid);
+			return ESLURM_DISABLED;
+		}
+
+		xfree(job_ptr->details->req_nodes);
+		FREE_NULL_BITMAP(job_ptr->details->req_node_bitmap);
+		if (new_hostlist == '\0')
+			goto host_fini;
+
+		tasklist = moab2slurm_task_list(new_hostlist, &task_cnt);
+		if (tasklist == NULL) {
+			rc = 1;
+			goto host_fini;
+		}
+		hl = hostlist_create(tasklist);
+		if (hl == 0) {
+			rc = 1;
+			goto host_fini;
+		}
+		hostlist_uniq(hl);
+		hostlist_sort(hl);
+		i = strlen(new_hostlist) + 16;
+		job_ptr->details->req_nodes = xmalloc(i);
+		i = hostlist_ranged_string(hl, i, job_ptr->details->req_nodes);
+		hostlist_destroy(hl);
+		if (i < 0) {
+			rc = 1;
+			goto host_fini;
+		}
+		if (node_name2bitmap(job_ptr->details->req_nodes, false,
+                                     &job_ptr->details->req_node_bitmap)) {
+			rc = 1;
+			goto host_fini;
+		}
+
+host_fini:	if (rc) {
+			info("wiki: change job %u invalid hostlist %s", jobid, new_hostlist);
+			xfree(job_ptr->details->req_nodes);
+			return EINVAL;
+		} else {
+			info("wiki: change job %u hostlist %s", jobid, new_hostlist);
+		}
 	}
 
 	if (part_name_ptr) {
@@ -151,7 +205,7 @@ static int	_job_modify(uint32_t jobid, char *bank_ptr,
 extern int	job_modify_wiki(char *cmd_ptr, int *err_code, char **err_msg)
 {
 	char *arg_ptr, *bank_ptr, *depend_ptr, *nodes_ptr;
-	char *part_ptr, *time_ptr, *tmp_char;
+	char *host_ptr, *part_ptr, *time_ptr, *tmp_char;
 	int slurm_rc;
 	int depend_id = -1;
 	uint32_t jobid, new_node_cnt = 0, new_time_limit = 0;
@@ -180,6 +234,7 @@ extern int	job_modify_wiki(char *cmd_ptr, int *err_code, char **err_msg)
 	}
 	bank_ptr   = strstr(cmd_ptr, "BANK=");
 	depend_ptr = strstr(cmd_ptr, "DEPEND=");
+	host_ptr   = strstr(cmd_ptr, "HOSTLIST=");
 	nodes_ptr  = strstr(cmd_ptr, "NODES=");
 	part_ptr   = strstr(cmd_ptr, "PARTITION=");
 	time_ptr   = strstr(cmd_ptr, "TIMELIMIT=");
@@ -199,6 +254,11 @@ extern int	job_modify_wiki(char *cmd_ptr, int *err_code, char **err_msg)
 				depend_ptr);
 			return -1;
 		}
+	}
+	if (host_ptr) {
+		host_ptr[8] = ':';
+		host_ptr += 9;
+		_null_term(bank_ptr);
 	}
 	if (nodes_ptr) {
 		nodes_ptr[5] = ':';
@@ -226,7 +286,7 @@ extern int	job_modify_wiki(char *cmd_ptr, int *err_code, char **err_msg)
 	}
 
 	lock_slurmctld(job_write_lock);
-	slurm_rc = _job_modify(jobid, bank_ptr, depend_id, 
+	slurm_rc = _job_modify(jobid, bank_ptr, depend_id, host_ptr,
 			new_node_cnt, part_ptr, new_time_limit);
 	unlock_slurmctld(job_write_lock);
 	if (slurm_rc != SLURM_SUCCESS) {
