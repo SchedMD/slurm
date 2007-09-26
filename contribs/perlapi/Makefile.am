@@ -31,8 +31,8 @@ all-local: $(perl_dir)/Makefile #libslurm
 	if [ ! -f Makefile ]; then \
 		$(perlpath) Makefile.PL $(PERL_MM_PARAMS) prefix=${prefix}; \
 	fi && \
-	($(MAKE) CC="$(CC)" CCFLAGS="$(PERL_CFLAGS) -static $(CFLAGS)" $(PERL_EXTRA_OPTS) || \
-	 $(MAKE) CC="$(CC)" CCFLAGS="$(PERL_CFLAGS) -static $(CFLAGS)" $(PERL_EXTRA_OPTS)) && \
+	($(MAKE) CC="$(CC)" LD="$(CC) $(CFLAGS)" CCFLAGS="$(PERL_CFLAGS) -g -static $(CFLAGS)" $(PERL_EXTRA_OPTS) || \
+	 $(MAKE) CC="$(CC)" LD="$(CC) $(CFLAGS)" CCFLAGS="$(PERL_CFLAGS) -g -static $(CFLAGS)" $(PERL_EXTRA_OPTS)) && \
 	cd ..;
 
 install-exec-local:
