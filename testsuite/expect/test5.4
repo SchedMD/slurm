@@ -90,8 +90,8 @@ if {$job_id2 == 0} {
 
 if {[wait_for_job $job_id1 RUNNING] != 0} {
 	send_user "\nFAILURE to start job $job_id1\n"
-	cancel_job $$job_id1
-	cancel_job $$job_id2
+	cancel_job $job_id1
+	cancel_job $job_id2
 	exit 1
 }
 exec $bin_rm -f $file_in
