@@ -75,12 +75,7 @@ static s_p_hashtbl_t *conf_hashtbl = NULL;
 static slurm_ctl_conf_t *conf_ptr = &slurmctld_conf;
 static bool conf_initialized = false;
 
-/*
- * FIXME - If we eliminate the SlurmdPort option altogether, then
- *         default_slurmd_port and parse_slurmd_port can
- *         be removed.
- */
-static uint16_t default_slurmd_port;
+static uint16_t global_slurmd_port = SLURMD_PORT;
 static int parse_slurmd_port(void **dest, slurm_parser_enum_t type,
 			     const char *key, const char *value,
 			     const char *line, char **leftover);
@@ -210,7 +205,7 @@ s_p_options_t slurm_conf_options[] = {
 /*
  * This function works almost exactly the same as the
  * default S_P_UINT32 handler, except that it also sets the
- * global variable default_slurmd_port.
+ * global variable global_slurmd_port.
  */
 static int parse_slurmd_port(void **dest, slurm_parser_enum_t type,
 			     const char *key, const char *value,
@@ -238,7 +233,7 @@ static int parse_slurmd_port(void **dest, slurm_parser_enum_t type,
 		return -1;
 	}
 
-	default_slurmd_port = (uint16_t) num;
+	global_slurmd_port = (uint16_t) num;
 
 	ptr = (uint32_t *)xmalloc(sizeof(uint32_t));
 	*ptr = (uint32_t)num;
@@ -328,10 +323,7 @@ static int parse_nodename(void **dest, slurm_parser_enum_t type,
 
 		if (!s_p_get_uint16(&n->port, "Port", tbl)
 		    && !s_p_get_uint16(&n->port, "Port", dflt)) {
-			if (default_slurmd_port != 0)
-				n->port = default_slurmd_port;
-			else
-				n->port = SLURMD_PORT;
+			n->port = global_slurmd_port;
 		}
 
 		if (!s_p_get_uint16(&n->cpus, "Procs", tbl)
@@ -917,8 +909,8 @@ extern uint16_t slurm_conf_get_port(const char *node_name)
 	while (p) {
 		if (strcmp(p->alias, node_name) == 0) {
 			uint16_t port = p->port;
-			if ((!port || port == SLURMD_PORT))
-				port = default_slurmd_port;
+			if (!port)
+				port = global_slurmd_port;
 			slurm_conf_unlock();
 			return port;
 		}
@@ -1171,7 +1163,6 @@ _init_slurm_conf(const char *file_name)
 {
 	char *name = (char *)file_name;
 	/* conf_ptr = (slurm_ctl_conf_t *)xmalloc(sizeof(slurm_ctl_conf_t)); */
-	default_slurmd_port = 0;
 
 	if (name == NULL) {
 		name = getenv("SLURM_CONF");
