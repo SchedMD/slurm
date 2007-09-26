@@ -1,7 +1,7 @@
 /*****************************************************************************\
  *  start_job.c - Process Wiki start job request
  *****************************************************************************
- *  Copyright (C) 2006 The Regents of the University of California.
+ *  Copyright (C) 2006-2007 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
  *  UCRL-CODE-226842.
@@ -117,9 +117,9 @@ static int	_start_job(uint32_t jobid, char *hostlist,
 	/* Write lock on job info, read lock on node info */
 	slurmctld_lock_t job_write_lock = {
 		NO_LOCK, WRITE_LOCK, READ_LOCK, NO_LOCK };
-	char *new_node_list;
+	char *new_node_list, *save_req_nodes = NULL;
 	static char tmp_msg[128];
-	bitstr_t *new_bitmap;
+	bitstr_t *new_bitmap, *save_req_bitmap = (bitstr_t *) NULL;
 
 	lock_slurmctld(job_write_lock);
 	job_ptr = find_job_record(jobid);
@@ -170,9 +170,9 @@ static int	_start_job(uint32_t jobid, char *hostlist,
 	}
 
 	/* start it now */
-	xfree(job_ptr->details->req_nodes);
+	save_req_nodes = job_ptr->details->req_nodes;
 	job_ptr->details->req_nodes = new_node_list;
-	FREE_NULL_BITMAP(job_ptr->details->req_node_bitmap);
+	save_req_bitmap = job_ptr->details->req_node_bitmap;
 	job_ptr->details->req_node_bitmap = new_bitmap;
 	job_ptr->priority = 100000000;
 
@@ -182,6 +182,18 @@ static int	_start_job(uint32_t jobid, char *hostlist,
 		/* Check to insure the job was actually started */
 		lock_slurmctld(job_write_lock);
 		/* job_ptr = find_job_record(jobid);	don't bother */
+		if ((job_ptr->job_id == jobid) && job_ptr->details &&
+		    (job_ptr->job_state == JOB_RUNNING)) {
+			/* Restore required node list */
+			xfree(job_ptr->details->req_nodes);
+			job_ptr->details->req_nodes = save_req_nodes;
+			FREE_NULL_BITMAP(job_ptr->details->req_node_bitmap);
+			job_ptr->details->req_node_bitmap = save_req_bitmap;
+		} else {
+			xfree(save_req_nodes);
+			FREE_NULL_BITMAP(save_req_bitmap);
+		}
+
 		if ((job_ptr->job_id == jobid)
 		&&  (job_ptr->job_state != JOB_RUNNING)) {
 			uint16_t wait_reason = 0;
