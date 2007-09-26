@@ -306,8 +306,7 @@ int dump_all_node_state ( void )
 	unlock_state_files ();
 
 	free_buf (buffer);
-	END_TIMER;
-	debug3("dump_all_node_state %s", TIME_STR);
+	END_TIMER2("dump_all_node_state");
 	return error_code;
 }
 
@@ -977,9 +976,7 @@ void set_slurmd_addr (void)
 		       node_ptr->comm_name);
 	}
 
-	END_TIMER;
-	debug("set_slurmd_addr: got IP addresses for all nodes %s",
-		TIME_STR);
+	END_TIMER2("set_slurmd_addr");
 	return;
 }
 

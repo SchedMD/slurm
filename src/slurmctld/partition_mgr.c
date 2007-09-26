@@ -342,8 +342,7 @@ int dump_all_part_state(void)
 	unlock_state_files();
 
 	free_buf(buffer);
-	END_TIMER;
-	debug3("dump_all_part_state %s", TIME_STR);
+	END_TIMER2("dump_all_part_state");
 	return 0;
 }
 
