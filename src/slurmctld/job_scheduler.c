@@ -166,7 +166,9 @@ int schedule(void)
 #endif
 	static bool wiki_sched = false;
 	static bool wiki_sched_test = false;
+	DEF_TIMERS;
 
+	START_TIMER;
 	/* don't bother trying to avoid fragmentation with sched/wiki */
 	if (!wiki_sched_test) {
 		char *sched_type = slurm_get_sched_type();
@@ -271,6 +273,7 @@ int schedule(void)
 	xfree(failed_parts);
 	xfree(job_queue);
 	unlock_slurmctld(job_write_lock);
+	END_TIMER2("schedule");
 	return job_cnt;
 }
 
