@@ -315,8 +315,7 @@ extern int select_p_state_save(char *dir_name)
 	xfree(new_file);
 
 	free_buf(buffer);
-	END_TIMER;
-	debug3("select_p_state_save %s", TIME_STR);
+	END_TIMER2("select_p_state_save");
 	return SLURM_SUCCESS;
 }
 
