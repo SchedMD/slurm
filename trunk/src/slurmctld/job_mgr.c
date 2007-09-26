@@ -348,8 +348,7 @@ int dump_all_job_state(void)
 	unlock_state_files();
 
 	free_buf(buffer);
-	END_TIMER;
-	debug3("dump_all_job_state %s", TIME_STR);
+	END_TIMER2("dump_all_job_state");
 	return error_code;
 }
 
@@ -2030,12 +2029,14 @@ _copy_job_desc_to_file(job_desc_msg_t * job_desc, uint32_t job_id)
 {
 	int error_code = 0;
 	char *dir_name, job_dir[20], *file_name;
+	DEF_TIMERS;
 
+	START_TIMER;
 	/* Create state_save_location directory */
 	dir_name = xstrdup(slurmctld_conf.state_save_location);
 
 	/* Create job_id specific directory */
-	sprintf(job_dir, "/job.%d", job_id);
+	sprintf(job_dir, "/job.%u", job_id);
 	xstrcat(dir_name, job_dir);
 	if (mkdir(dir_name, 0700)) {
 		error("mkdir(%s) error %m", dir_name);
@@ -2061,6 +2062,7 @@ _copy_job_desc_to_file(job_desc_msg_t * job_desc, uint32_t job_id)
 	}
 
 	xfree(dir_name);
+	END_TIMER2("_copy_job_desc_to_file");
 	return error_code;
 }
 
