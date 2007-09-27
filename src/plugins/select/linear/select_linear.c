@@ -610,25 +610,17 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 
 extern int select_p_job_begin(struct job_record *job_ptr)
 {
-	int i;
-	uint32_t cnt=0;
 #ifdef HAVE_XCPU
-	/* FIXME - rc is not returned! */
-	int rc=SLURM_SUCCESS;
-#endif
+	int i;
+	int rc = SLURM_SUCCESS;
+	char clone_path[128];
+
 	xassert(job_ptr);
 	xassert(job_ptr->node_bitmap);
 
-	/* set job's processor count (for accounting purposes) */
 	for (i=0; i<select_node_cnt; i++) {
 		if (bit_test(job_ptr->node_bitmap, i) == 0)
 			continue;
-		if (select_fast_schedule)
-			cnt += select_node_ptr[i].config_ptr->cpus;
-		else
-			cnt += select_node_ptr[i].cpus;
-#ifdef HAVE_XCPU
-{		char clone_path[128];
 		snprintf(clone_path, sizeof(clone_path), 
 			"%s/%s/xcpu/clone", XCPU_DIR, 
 			select_node_ptr[i].name);
@@ -640,14 +632,11 @@ extern int select_p_job_begin(struct job_record *job_ptr)
 			debug("chown %s to %u", clone_path, 
 				job_ptr->user_id);
 		}
-}
-#endif
 	}
-	debug2("reset num_proc for %u from %u to %u",job_ptr->job_id,
-			job_ptr->num_procs, cnt);
-	job_ptr->num_procs = cnt;
-	
+	return rc;
+#else
 	return SLURM_SUCCESS;
+#endif
 }
 
 extern int select_p_job_fini(struct job_record *job_ptr)
