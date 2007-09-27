@@ -14,7 +14,7 @@ Linux clusters, high-performance computing, Livermore Computing">
 <meta name="description" content="Simple Linux Utility for Resource Management">
 <meta name="copyright"
 content="This document is copyrighted U.S.
-Department of Energy under Contract W-7405-Eng-48">
+Department of Energy under Contract DE-AC52-07NA27344">
 <meta name="Author" content="Morris Jette">
 <meta name="email" content="jette1@llnl.gov">
 <meta name="Classification"
