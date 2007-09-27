@@ -49,7 +49,6 @@ html_DATA = \
 	lci.7.tutorial.pdf \
 	lll.gif \
 	mc_support.gif \
-	nnsa_doe_uc_comp.gif \
 	plane_ex1.gif \
 	plane_ex2.gif \
 	plane_ex3.gif \
@@ -60,6 +59,7 @@ html_DATA = \
 	slurm_banner.gif \
 	slurm_design.pdf \
 	slurmstyles.css \
+	sponsors.gif \
 	linuxstyles.css
 
 MOSTLYCLEANFILES = ${generated_html}
