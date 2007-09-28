@@ -59,6 +59,8 @@ typedef struct slurm_sched_ops {
 	void            (*partition_change)    	( void );
 	int		(*get_errno)		( void );
 	char *		(*strerror)		( int );
+	void		(*job_requeue)		( struct job_record *,
+						  char *reason );
 } slurm_sched_ops_t;
 
 
@@ -93,7 +95,8 @@ slurm_sched_get_ops( slurm_sched_context_t *c )
 		"slurm_sched_plugin_reconfig",
 		"slurm_sched_plugin_partition_change",
 		"slurm_sched_get_errno",
-		"slurm_sched_strerror"
+		"slurm_sched_strerror",
+		"slurm_sched_plugin_requeue"
 	};
 	int n_syms = sizeof( syms ) / sizeof( char * );
 
@@ -322,3 +325,17 @@ slurm_sched_p_strerror( int errnum )
 
 	return (*(g_sched_context->ops.strerror))( errnum );
 }
+
+/* *********************************************************************** */
+/*  TAG(                   slurm_sched_requeue                          )  */
+/* *********************************************************************** */
+void
+slurm_sched_requeue( struct job_record *job_ptr, char *reason )
+{
+        if ( slurm_sched_init() < 0 )
+                return;
+
+        (*(g_sched_context->ops.job_requeue))( job_ptr, reason );
+}
+
+

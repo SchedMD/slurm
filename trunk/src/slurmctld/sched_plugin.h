@@ -78,6 +78,11 @@ uint32_t slurm_sched_initial_priority( uint32_t max_prio,
 				       struct job_record *job_ptr );
 
 /*
+ * Requeue a job
+ */
+void slurm_sched_requeue( struct job_record *job_ptr, char *reason );
+
+/*
  * Note that some job is pending.
  */
 void slurm_sched_job_is_pending( void );
