@@ -86,8 +86,8 @@ static uint32_t cr_enabled = 0, cr_test = 0;
  *	UPDATETIME=<uts>;		time last active
  *	[FLAGS=INTERACTIVE;]		set if interactive (not batch) job
  *	WCLIMIT=<secs>;			wall clock time limit, seconds
- *	[TASKS=<cpus>;]			CPUs required
- *	[NODES=<nodes>;]		nodes required
+ *	TASKS=<cpus>;			CPUs required
+ *	NODES=<nodes>;			nodes required
  *	QUEUETIME=<uts>;		submission time
  *	STARTTIME=<uts>;		time execution started
  *	RCLASS=<partition>;		SLURM partition name
@@ -268,15 +268,11 @@ static char *	_dump_job(struct job_record *job_ptr, int state_info)
 		(uint32_t) _get_job_time_limit(job_ptr));
 	xstrcat(buf, tmp);
 
-	if (job_ptr->job_state  == JOB_PENDING) {
-		/* Don't report actual tasks or nodes allocated since
-		 * this can impact requeue on heterogenous clusters */
-		snprintf(tmp, sizeof(tmp),
-			"TASKS=%u;NODES=%u;",
-			_get_job_tasks(job_ptr),
-			_get_job_min_nodes(job_ptr));
-		xstrcat(buf, tmp);
-	}
+	snprintf(tmp, sizeof(tmp),
+		"TASKS=%u;NODES=%u;",
+		_get_job_tasks(job_ptr),
+		_get_job_min_nodes(job_ptr));
+	xstrcat(buf, tmp);
 
 	snprintf(tmp, sizeof(tmp),
 		"QUEUETIME=%u;STARTTIME=%u;RCLASS=%s;",
