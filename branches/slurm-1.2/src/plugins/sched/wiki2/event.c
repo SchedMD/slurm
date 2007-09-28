@@ -110,7 +110,9 @@ extern int	event_notify(int event_code, char *desc)
 	time_t now = time(NULL);
 	int rc = 0, retry = 2;
 	char *event_msg;
+	DEF_TIMERS;
 
+	START_TIMER;
 	if (e_port == 0) {
 		/* Event notification disabled */
 		return 0;
@@ -169,6 +171,7 @@ extern int	event_notify(int event_code, char *desc)
 		}
 	}
 	pthread_mutex_unlock(&event_mutex);
+	END_TIMER2("event_notify");
 
 	return rc;
 }
