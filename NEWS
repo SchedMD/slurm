@@ -14,7 +14,7 @@ documents those changes that are of interest to users and admins.
     job allocation to dedicate the resources to the job step. Useful for
     executing simultaneous job steps. Provides resource management both at 
     the level of jobs and job steps.
- -- Add support for feature count in job contraints, for example
+ -- Add support for feature count in job constraints, for example
     srun --nodes=16 --constraint=graphics*4 ...
     Based upon work by Kumar Krishna (HP, India).
  -- Add multi-core options to salloc and sbatch commands (sbatch.patch and
