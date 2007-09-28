@@ -29,6 +29,8 @@ documents those changes that are of interest to users and admins.
  -- Add new partition configuration parameter Priority. Add job count to 
     Shared parameter.
  -- Add new configuration parameter SchedulerTimeSlice.
+ -- In sched/wiki2, return REJMESSAGE with details on why a job was 
+    requeued (e.g. what node failed).
 
 * Changes in SLURM 1.3.0-pre2
 =============================

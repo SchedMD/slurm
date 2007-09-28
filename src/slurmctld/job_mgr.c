@@ -1065,9 +1065,14 @@ extern int kill_running_job_by_node_name(char *node_name, bool step_test)
 				_excise_node_from_job(job_ptr, node_ptr);
 			} else if (job_ptr->batch_flag && job_ptr->details &&
 			           (job_ptr->details->no_requeue == 0)) {
+				char requeue_msg[128];
 				info("requeue job %u due to failure of node %s",
 				     job_ptr->job_id, node_name);
 				_set_job_prio(job_ptr);
+				snprintf(requeue_msg, sizeof(requeue_msg),
+					"Job requeued due to failure of node %s",
+					node_name);
+				slurm_sched_requeue(job_ptr, requeue_msg);
 				job_ptr->time_last_active  = now;
 				job_ptr->job_state = JOB_PENDING | JOB_COMPLETING;
 				if (suspended)
@@ -4793,6 +4798,7 @@ extern int job_requeue (uid_t uid, uint32_t job_id, slurm_fd conn_fd)
 
 	/* reset the priority */
 	_set_job_prio(job_ptr);
+	slurm_sched_requeue(job_ptr, "Job requeued by user/admin");
 	last_job_update = now;
 
 	/* nothing else to do if pending */

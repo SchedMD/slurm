@@ -122,3 +122,4 @@ extern char *	slurm_job2moab_task_list(struct job_record *job_ptr);
 extern int	start_job(char *cmd_ptr, int *err_code, char **err_msg);
 extern int	suspend_job(char *cmd_ptr, int *err_code, char **err_msg);
 extern int	resume_job(char *cmd_ptr, int *err_code, char **err_msg);
+extern void     wiki_job_requeue(struct job_record *job_ptr, char *reason);

@@ -67,6 +67,16 @@ static uint32_t	_get_job_time_limit(struct job_record *job_ptr);
 
 static uint32_t cr_enabled = 0, cr_test = 0;
 
+/* We only keep a few reject message to limit the overhead */
+#define REJECT_MSG_MAX        16
+#define REJECT_MSG_LEN       128
+static int reject_msg_cnt = 0;
+typedef struct reject_msg {
+	uint32_t job_id;
+	char     reason[REJECT_MSG_LEN];
+} reject_msg_t;
+reject_msg_t reject_msgs[REJECT_MSG_MAX];
+
 /*
  * get_jobs - get information on specific job(s) changed since some time
  * cmd_ptr IN - CMD=GETJOBS ARG=[<UPDATETIME>:<JOBID>[:<JOBID>]...]
@@ -205,6 +215,7 @@ static char *	_dump_job(struct job_record *job_ptr, int state_info)
 {
 	char tmp[16384], *buf = NULL;
 	uint32_t end_time, suspend_time;
+	int i, rej_sent = 0;
 
 	if (!job_ptr)
 		return NULL;
@@ -252,7 +263,22 @@ static char *	_dump_job(struct job_record *job_ptr, int state_info)
 		xfree(hosts);
 	}
 
-	if (job_ptr->job_state == JOB_FAILED) {
+	if (reject_msg_cnt) {
+		/* Possible job requeue/reject message */
+		for (i=0; i<REJECT_MSG_MAX; i++) {
+			if (reject_msgs[i].job_id != job_ptr->job_id)
+				continue;
+			snprintf(tmp, sizeof(tmp),
+				"REJMESSAGE=\"%s\";",
+				reject_msgs[i].reason);
+			xstrcat(buf, tmp);
+			reject_msgs[i].job_id = 0;
+			reject_msg_cnt--;
+			rej_sent = 1;
+			break;
+		}
+	}
+	if ((rej_sent == 0) && (job_ptr->job_state == JOB_FAILED)) {
 		snprintf(tmp, sizeof(tmp),
 			"REJMESSAGE=\"%s\";",
 			job_reason_string(job_ptr->state_reason));
@@ -537,4 +563,30 @@ static uint32_t	_get_job_suspend_time(struct job_record *job_ptr)
 	return (uint32_t) 0;
 }
 
+extern void wiki_job_requeue(struct job_record *job_ptr, char *reason)
+{
+	int empty = -1, i;
+
+	for (i=0; i<REJECT_MSG_MAX; i++) {
+		if ((reject_msgs[i].job_id == 0) && (empty == -1)) {
+			empty = i;
+			if (reject_msg_cnt == 0)
+				break;
+		} else if (reject_msgs[i].job_id != job_ptr->job_id)
+			continue;
+
+		/* over-write previous message for this job */
+		strncpy(reject_msgs[i].reason, reason, REJECT_MSG_LEN);
+		reject_msgs[i].reason[REJECT_MSG_LEN - 1] = '\0';
+		return;
+	}
+
+	if (empty == -1)	/* no free space */
+		return;
+
+	reject_msgs[empty].job_id = job_ptr->job_id;
+	strncpy(reject_msgs[i].reason, reason, REJECT_MSG_LEN);
+	reject_msgs[i].reason[REJECT_MSG_LEN - 1] = '\0';
+	reject_msg_cnt++;
+}
 
