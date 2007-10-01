@@ -7,6 +7,8 @@ overview.
 
 <h2>Super Quick Start</h2>
 <ol>
+<li>Make sure that you have synchronized clocks plus consistent users and groups
+across the cluster.</li>
 <li>bunzip2 the distributed tar-ball and untar the files:<br>
 <i>tar --bzip -x -f slurm*tar.bz2</i></li>
 <li><i>cd</i> to the directory containing the SLURM source and type
@@ -30,7 +32,7 @@ NOTE: You will build the OpenSSL key files on one node and distribute them
 to all of the nodes in the cluster.</li>
 <li>Start the <i>slurmctld</i> and <i>slurmd</i> daemons.</li>
 </ol>
-<p>NOTE: Items 1 through 4 can be replaced with</p>
+<p>NOTE: Items 2 through 5 can be replaced with</p>
 <ol>
 <li><i>rpmbuild -ta slurm*.tar.bz2</i></li>
 <li><i>rpm --install &lt;the rpm files&gt;</i></li>
@@ -626,6 +628,6 @@ in the NEWS file.
 
 </pre> <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 19 September 2007</p>
+<p style="text-align:center;">Last modified 1 October 2007</p>
 
 <!--#include virtual="footer.txt"-->
