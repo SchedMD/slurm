@@ -72,8 +72,12 @@ documents those changes that are of interest to users and admins.
  -- Fixed bug in sview to be able to edit partitions correctly
  -- Fixed bug so in slurm.conf files where SlurmdPort isn't defined things
     work correctly.
- - In sched/wiki2 and sched/wiki add support for batch job being requeued
-   in Slurm either when nodes fail or upon request.
+ -- In sched/wiki2 and sched/wiki add support for batch job being requeued
+    in Slurm either when nodes fail or upon request.
+ -- In sched/wiki2 and sched/wiki with FastSchedule=2 configured and nodes 
+    configured with more CPUs than actually exist, return a value of TASKS 
+    equal to the number of configured CPUs that are allocated to a job rather 
+    than the number of physical CPUs allocated.
 
 * Changes in SLURM 1.2.17
 =========================
