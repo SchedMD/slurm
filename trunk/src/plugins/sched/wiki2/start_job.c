@@ -245,11 +245,12 @@ static int	_start_job(uint32_t jobid, int task_cnt, char *hostlist,
 
 	/* No errors so far */
 	(void) schedule();	/* provides own locking */
+
 	/* Check to insure the job was actually started */
 	lock_slurmctld(job_write_lock);
-	/* job_ptr = find_job_record(jobid);	don't bother */
-
-	if ((job_ptr->job_id == jobid) && job_ptr->details &&
+	if (job_ptr->job_id != jobid)
+		job_ptr = find_job_record(jobid);
+	if (job_ptr && (job_ptr->job_id == jobid) && job_ptr->details &&
 	    (job_ptr->job_state == JOB_RUNNING)) {
 		/* Restore required node list */
 		xfree(job_ptr->details->req_nodes);
@@ -260,10 +261,11 @@ static int	_start_job(uint32_t jobid, int task_cnt, char *hostlist,
 	} else {
 		xfree(save_req_nodes);
 		FREE_NULL_BITMAP(save_req_bitmap);
-		FREE_NULL_BITMAP(job_ptr->details->exc_node_bitmap);
+		if (job_ptr && (job_ptr->job_id == jobid) && job_ptr->details)
+			FREE_NULL_BITMAP(job_ptr->details->exc_node_bitmap);
 	}
 
-	if ((job_ptr->job_id == jobid) 
+	if (job_ptr && (job_ptr->job_id == jobid) 
 	&&  (job_ptr->job_state != JOB_RUNNING)) {
 		uint16_t wait_reason = 0;
 		char *wait_string;
