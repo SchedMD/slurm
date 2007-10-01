@@ -1,4 +1,4 @@
-.TH "slurm.conf" "5" "September 2007" "slurm.conf 1.3" "Slurm configuration file"
+.TH "slurm.conf" "5" "October 2007" "slurm.conf 1.3" "Slurm configuration file"
 .SH "NAME"
 slurm.conf \- Slurm configuration file 
 .SH "DESCRIPTION"
@@ -118,34 +118,12 @@ License (GPL).
 The default value is "crypto/openssl".
 
 .TP
-\fBDatabaseHost\fR
-Define the Host the database server is running on.
-For "DatabaseType=database/flatfile" this parameter is ignored.
-
-.TP
-\fBDatabasePass\fR
-Define the Password to use to connect to the database server.
-For "DatabaseType=database/flatfile" this parameter is ignored.
-
-.TP
-\fBDatabasePort\fR
-Define the Port of the database server to connect to.
-For "DatabaseType=database/flatfile" this parameter is ignored.
-
-.TP
-\fBDatabaseType\fR
-Define the type of database to be used for various plugins that will
-write to the database.
-The slurmctld daemon must be restarted for a change in DatabaseType
-to take effect.
-Acceptable values at present include "database/flatfile",
-"database/mysql", and "database/pgsql".
-The default value is "database/flatfile".
-
-.TP
-\fBDatabaseUser\fR
-Define the User to use to connect to the database server.
-For "DatabaseType=database/flatfile" this parameter is ignored.
+\fBDefMemPerTask\fR
+Default real memory size of spawned tasks in MB. 
+Used when \fBSchedulerType=sched/gang\fR to avoid over\-subscribing memory
+and causing paging.
+Also see \fBDefMemPerTask\fR.
+The default value is 0 (unlimited).
 
 .TP
 \fBEpilog\fR
@@ -358,6 +336,14 @@ jobs will fail. The default value is 2000 jobs. This value may not
 be reset via "scontrol reconfig". It only takes effect upon restart 
 of the slurmctld daemon.
 May not exceed 65533.
+
+.TP
+\fBMaxMemPerTask\fR
+Maximum real memory size of spawned tasks in MB. 
+Used when \fBSchedulerType=sched/gang\fR to avoid over\-subscribing memory
+and causing paging.
+Also see \fBDefMemPerTask\fR.
+The default value is 0 (unlimited).
 
 .TP
 \fBMessageTimeout\fR

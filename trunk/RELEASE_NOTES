@@ -53,8 +53,10 @@ CONFIGURATION FILE CHANGES
   specify how SLURM will talk to the database.
 * Added new paramter "CryptoType" to specify digital signature plugin to 
   be used. Currenly only supports crypto/openssl.
-* Added new parameter "SchedulerTimeSlice" to control the lenght of gang scheduler
+* Added new parameter "SchedulerTimeSlice" to control the length of gang scheduler
   time slices.
+* Added new parameters "DefMemPerTask" and "MaxMemPerTask" any task that exceeds
+  the specified size will be terminated.
 * Added new partition parameter "Priority". A job's scheduling priority is based
   upon two factors. First the priority of its partition and the job's priority. 
   Since nodes can be configured in multiple partitions, this can be used to configure

@@ -127,6 +127,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"ControlAddr", S_P_STRING},
 	{"ControlMachine", S_P_STRING},
 	{"CryptoType", S_P_STRING},
+	{"DefMemPerTask", S_P_UINT32},
 	{"Epilog", S_P_STRING},
 	{"FastSchedule", S_P_UINT16},
 	{"FirstJobId", S_P_UINT32},
@@ -157,6 +158,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"KillWait", S_P_UINT16},
 	{"MailProg", S_P_STRING},
 	{"MaxJobCount", S_P_UINT16},
+	{"MaxMemPerTask", S_P_UINT32},
 	{"MessageTimeout", S_P_UINT16},
 	{"MinJobAge", S_P_UINT16},
 	{"MpichGmDirectSupport", S_P_LONG},
@@ -1093,6 +1095,7 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	xfree (ctl_conf_ptr->control_addr);
 	xfree (ctl_conf_ptr->control_machine);
 	xfree (ctl_conf_ptr->crypto_type);
+	ctl_conf_ptr->def_mem_per_task          = 0;
 	xfree (ctl_conf_ptr->epilog);
 	ctl_conf_ptr->fast_schedule		= (uint16_t) NO_VAL;
 	ctl_conf_ptr->first_job_id		= (uint32_t) NO_VAL;
@@ -1118,6 +1121,7 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	ctl_conf_ptr->kill_wait			= (uint16_t) NO_VAL;
 	xfree (ctl_conf_ptr->mail_prog);
 	ctl_conf_ptr->max_job_cnt		= (uint16_t) NO_VAL;
+	ctl_conf_ptr->max_mem_per_task          = 0;
 	ctl_conf_ptr->min_job_age		= (uint16_t) NO_VAL;
 	xfree (ctl_conf_ptr->mpi_default);
 	ctl_conf_ptr->msg_timeout		= (uint16_t) NO_VAL;
@@ -1454,6 +1458,9 @@ validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	if (!s_p_get_string(&conf->crypto_type, "CryptoType", hashtbl))
 		 conf->crypto_type = xstrdup(DEFAULT_CRYPTO_TYPE);
 
+	if (!s_p_get_uint32(&conf->def_mem_per_task, "DefMemPerTask", hashtbl))
+		conf->def_mem_per_task = DEFAULT_MEM_PER_TASK;
+
 	s_p_get_string(&conf->epilog, "Epilog", hashtbl);
 
 	if (!s_p_get_uint16(&conf->fast_schedule, "FastSchedule", hashtbl))
@@ -1576,6 +1583,9 @@ validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 
 	if (!s_p_get_uint16(&conf->max_job_cnt, "MaxJobCount", hashtbl))
 		conf->max_job_cnt = DEFAULT_MAX_JOB_COUNT;
+
+	if (!s_p_get_uint32(&conf->max_mem_per_task, "MaxMemPerTask", hashtbl))
+		conf->max_mem_per_task = DEFAULT_MAX_MEM_PER_TASK;
 
 	if (!s_p_get_uint16(&conf->msg_timeout, "MessageTimeout", hashtbl))
 		conf->msg_timeout = DEFAULT_MSG_TIMEOUT;

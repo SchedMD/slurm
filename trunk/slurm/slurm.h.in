@@ -873,6 +873,7 @@ typedef struct slurm_ctl_conf {
 	char *control_addr;	/* comm path of slurmctld primary server */
 	char *control_machine;	/* name of slurmctld primary server */
 	char *crypto_type;	/* cryptographic signature plugin */
+	uint32_t def_mem_per_task; /* default MB memory per spawned task */
 	char *epilog;		/* pathname of job epilog */
 	uint32_t first_job_id;	/* first slurm generated job_id to assign */
 	uint32_t next_job_id;	/* next slurm generated job_id to assign */
@@ -900,6 +901,7 @@ typedef struct slurm_ctl_conf {
 				 * on job termination */
 	char *mail_prog;	/* pathname of mail program */
 	uint16_t max_job_cnt;	/* maximum number of active jobs */
+	uint32_t max_mem_per_task; /* maximum MB memory per spawned task */
 	uint16_t min_job_age;	/* COMPLETED jobs over this age (secs) 
 	                         * purged from in memory records */
 	char *mpi_default;	/* Default version of MPI in use */
