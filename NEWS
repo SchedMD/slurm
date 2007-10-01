@@ -7,7 +7,8 @@ documents those changes that are of interest to users and admins.
     modifications to job launch should be done there.
  -- Add new partition configuration parameter Priority. Add job count to 
     Shared parameter.
- -- Add new configuration parameter SchedulerTimeSlice.
+ -- Add new configuration parameters DefMemPerTask, MaxMemPerTask, and 
+    SchedulerTimeSlice.
  -- In sched/wiki2, return REJMESSAGE with details on why a job was 
     requeued (e.g. what node failed).
 

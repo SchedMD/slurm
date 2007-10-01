@@ -161,8 +161,8 @@ function displayfile()
    "ReturnToService=" + get_radio_value(document.config.return_to_service) + "<br>" +
    "#MaxJobCount=2000 <br>" +
    "#PlugStackConfig= <br>" +
-   "#Privatedata= <br>" +
-   "#PropagatePrioProcess= <br>" +
+   "#PrivateData=0 <br>" +
+   "#PropagatePrioProcess=0 <br>" +
    "#PropagateResourceLimits= <br>" +
    "#PropagateResourceLimitsExcept= <br>" +
    get_field("Prolog",document.config.prolog) + "<br>" +
@@ -174,7 +174,7 @@ function displayfile()
    "TaskPlugin=task/" + get_radio_value(document.config.task_plugin) + "<br>" +
    get_task_plugin_param() + "<br>" +
    "#TmpFs=/tmp <br>" +
-   "#UsePAM= <br>" +
+   "#UsePAM=0 <br>" +
    "# <br>" +
    "# TIMERS <br>" +
    "SlurmctldTimeout=" + document.config.slurmctld_timeout.value + "<br>" +
@@ -189,11 +189,13 @@ function displayfile()
    "# SCHEDULING<br>" +
    "SchedulerType=sched/" + get_radio_value(document.config.sched_type) + "<br>" +
    get_field("SchedulerPort",document.config.scheduler_port) + "<br>" +
-   "#SchedulerTimeSlice= <br>" +
-   "#SchedulerRootFilter= <br>" +
+   "#SchedulerTimeSlice=30 <br>" +
+   "#SchedulerRootFilter=1 <br>" +
    "SelectType=select/" + get_radio_value(document.config.select_type) + "<br>" +
    get_select_type_params() + "<br>" +
    "FastSchedule=" + get_radio_value(document.config.fast_schedule) + "<br>" +
+   "#DefMemPerTask=0 <br>" +
+   "#MaxMemPerTask=0 <br>" +
    "# <br>" +
    "# LOGGING <br>" +
    "SlurmctldDebug=" + document.config.slurmctld_debug.value + "<br>" +
@@ -724,6 +726,6 @@ before terminating all remaining tasks. A value of zero indicates unlimited wait
 </FORM>
 <HR>
 <p class="footer">UCRL-WEB-225274<br>
-Last modified 21 September 2007</p>
+Last modified 1 October 2007</p>
 </BODY>
 

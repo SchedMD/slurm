@@ -311,6 +311,7 @@ void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
 	conf_ptr->control_addr        = xstrdup(conf->control_addr);
 	conf_ptr->control_machine     = xstrdup(conf->control_machine);
 	conf_ptr->crypto_type         = xstrdup(conf->crypto_type);
+	conf_ptr->def_mem_per_task    = conf->def_mem_per_task;
 	conf_ptr->epilog              = xstrdup(conf->epilog);
 	conf_ptr->fast_schedule       = conf->fast_schedule;
 	conf_ptr->first_job_id        = conf->first_job_id;
@@ -337,6 +338,7 @@ void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
 	conf_ptr->kill_wait           = conf->kill_wait;
 	conf_ptr->mail_prog           = xstrdup(conf->mail_prog);
 	conf_ptr->max_job_cnt         = conf->max_job_cnt;
+	conf_ptr->max_mem_per_task    = conf->max_mem_per_task;
 	conf_ptr->min_job_age         = conf->min_job_age;
 	conf_ptr->mpi_default         = xstrdup(conf->mpi_default);
 	conf_ptr->msg_timeout         = conf->msg_timeout;

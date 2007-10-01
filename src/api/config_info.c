@@ -137,6 +137,11 @@ void slurm_print_ctl_conf ( FILE* out,
 		slurm_ctl_conf_ptr->control_machine);
 	fprintf(out, "CryptoType              = %s\n",
 		slurm_ctl_conf_ptr->crypto_type);
+	if (slurm_ctl_conf_ptr->def_mem_per_task) {
+		fprintf(out, "DefMemPerTask           = %u\n",
+			slurm_ctl_conf_ptr->def_mem_per_task);
+	} else
+		fprintf(out, "DefMemPerTask           = UNLIMITED\n");
 	fprintf(out, "JobAcctGatherType       = %s\n", 
 		slurm_ctl_conf_ptr->job_acct_gather_type);
 	fprintf(out, "JobAcctGatherFrequency  = %u\n",
@@ -184,6 +189,11 @@ void slurm_print_ctl_conf ( FILE* out,
 		slurm_ctl_conf_ptr->mail_prog);
 	fprintf(out, "MaxJobCount             = %u\n", 
 		slurm_ctl_conf_ptr->max_job_cnt);
+	if (slurm_ctl_conf_ptr->max_mem_per_task) {
+		fprintf(out, "MaxMemPerTask           = %u\n",
+			slurm_ctl_conf_ptr->max_mem_per_task);
+	} else
+		fprintf(out, "MaxMemPerTask           = UNLIMITED\n");
 	fprintf(out, "MessageTimeout          = %u\n",
 		slurm_ctl_conf_ptr->msg_timeout);
 	fprintf(out, "MinJobAge               = %u\n", 

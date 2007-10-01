@@ -2138,6 +2138,8 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer)
 	packstr(build_ptr->control_machine, buffer);
 	packstr(build_ptr->crypto_type, buffer);
 
+	pack32(build_ptr->def_mem_per_task, buffer);
+
 	packstr(build_ptr->epilog, buffer);
 
 	pack16(build_ptr->fast_schedule, buffer);
@@ -2169,6 +2171,7 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer)
 
 	packstr(build_ptr->mail_prog, buffer);
 	pack16(build_ptr->max_job_cnt, buffer);
+	pack32(build_ptr->max_mem_per_task, buffer);
 	pack16(build_ptr->min_job_age, buffer);
 	packstr(build_ptr->mpi_default, buffer);
 	pack16(build_ptr->msg_timeout, buffer);
@@ -2266,6 +2269,8 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **
 	safe_unpackstr_xmalloc(&build_ptr->crypto_type, &uint16_tmp,
 			       buffer);
 
+	safe_unpack32(&build_ptr->def_mem_per_task, buffer);
+
 	safe_unpackstr_xmalloc(&build_ptr->epilog, &uint16_tmp, buffer);
 
 	safe_unpack16(&build_ptr->fast_schedule, buffer);
@@ -2306,6 +2311,7 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **
 
 	safe_unpackstr_xmalloc(&build_ptr->mail_prog, &uint16_tmp, buffer);
 	safe_unpack16(&build_ptr->max_job_cnt, buffer);
+	safe_unpack32(&build_ptr->max_mem_per_task, buffer);
 	safe_unpack16(&build_ptr->min_job_age, buffer);
 	safe_unpackstr_xmalloc(&build_ptr->mpi_default, &uint16_tmp, buffer);
 	safe_unpack16(&build_ptr->msg_timeout, buffer);
