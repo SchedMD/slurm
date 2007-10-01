@@ -817,6 +817,12 @@ static void _trigger_node_event(trig_mgr_info_t *trig_in, time_t now)
 	}
 }
 
+/* Ideally we would use the existing proctrack plugin to prevent any 
+ * processes from escaping our control, but that plugin is tied
+ * to various slurmd data structures. We just the process group ID
+ * to kill the spawned program after MAX_PROG_TIME. Since triggers are 
+ * meant primarily for system administrators rather than users, this 
+ * may be sufficient. */
 static void _trigger_run_program(trig_mgr_info_t *trig_in)
 {
 	char program[1024], arg0[1024], arg1[1024], user_name[1024], *pname;
