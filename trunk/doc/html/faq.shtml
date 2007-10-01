@@ -61,6 +61,8 @@ processing time" in the <i>SlurmctldLogFile</i> indicate?</a></li>
 core files?</a></li>
 <li><a href="#limit_propagation">Is resource limit propagation
 useful on a homogeneous cluster?</a></li>
+<li<a href="#clock">Do I need to maintain synchronized clocks 
+on the cluster?</a></li>
 </ol>
 
 <h2>For Users</h2>
@@ -805,8 +807,14 @@ option.
 See <i>"man slurm.conf"</i> and <i>"man srun"</i> for more information 
 about these options.
 
+<p><a name="clock"><b>20. Do I need to maintain synchronized 
+clocks on the cluster?</b></a><br>
+In general, yes. Having inconsistent clocks may cause nodes to 
+be unusable. SLURM log files should contain references to 
+expired credentials.
+  
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 19 September 2007</p>
+<p style="text-align:center;">Last modified 1 October 2007</p>
 
 <!--#include virtual="footer.txt"-->
