@@ -10,7 +10,6 @@
 to run on nodes?</a></li>
 <li><a href="#purge">Why is my job killed prematurely?</a></li>
 <li><a href="#opts">Why are my srun options ignored?</a></li>
-<li><a href="#cred">Why are &quot;Invalid job credential&quot; errors generated?</a></li>
 <li><a href="#backfill">Why is the SLURM backfill scheduler not starting my 
 job?</a></li>
 <li><a href="#steps">How can I run multiple jobs from within a single script?</a></li>
@@ -63,6 +62,11 @@ core files?</a></li>
 useful on a homogeneous cluster?</a></li>
 <li<a href="#clock">Do I need to maintain synchronized clocks 
 on the cluster?</a></li>
+<li><a href="#cred_invalid">Why are &quot;Invalid job credential&quot; errors 
+generated?</a></li>
+<li><a href="#cred_replay">Why are 
+&quot;Task launch failed on node ... Job credential replayed&quot; 
+errors generated?</a></li>
 </ol>
 
 <h2>For Users</h2>
@@ -200,14 +204,7 @@ hostname command. Which will change the name of the computer
 on which SLURM executes the command - Very bad, <b>Don't run 
 this command as user root!</b></p>
 
-<p><a name="cred"><b>7. Why are &quot;Invalid job credential&quot; errors generated?
-</b></a><br>
-This error is indicative of SLURM's job credential files being inconsistent across 
-the cluster. All nodes in the cluster must have the matching public and private 
-keys as defined by <b>JobCredPrivateKey</b> and <b>JobCredPublicKey</b> in the 
-slurm configuration file <b>slurm.conf</b>.
-
-<p><a name="backfill"><b>8. Why is the SLURM backfill scheduler not starting my job?
+<p><a name="backfill"><b>7. Why is the SLURM backfill scheduler not starting my job?
 </b></a><br>
 There are significant limitations in the current backfill scheduler plugin. 
 It was designed to perform backfill node scheduling for a homogeneous cluster.
@@ -236,7 +233,7 @@ scheduling and other jobs may be scheduled ahead of these jobs.
 These jobs are subject to starvation, but will not block other 
 jobs from running when sufficient resources are available for them.</p>
 
-<p><a name="steps"><b>9. How can I run multiple jobs from within a 
+<p><a name="steps"><b>8. How can I run multiple jobs from within a 
 single script?</b></a><br>
 A SLURM job is just a resource allocation. You can execute many 
 job steps within that allocation, either in parallel or sequentially. 
@@ -245,7 +242,7 @@ steps will be allocated nodes that are not already allocated to
 other job steps. This essential provides a second level of resource 
 management within the job for the job steps.</p>
 
-<p><a name="orphan"><b>10. Why do I have job steps when my job has 
+<p><a name="orphan"><b>9. Why do I have job steps when my job has 
 already COMPLETED?</b></a><br>
 NOTE: This only applies to systems configured with 
 <i>SwitchType=switch/elan</i> or <i>SwitchType=switch/federation</i>.
@@ -262,7 +259,7 @@ This enables SLURM to purge job information in a timely fashion
 even when there are many failing nodes.
 Unfortunately the job step information may persist longer.</p>
 
-<p><a name="multi_batch"><b>11. How can I run a job within an existing
+<p><a name="multi_batch"><b>10. How can I run a job within an existing
 job allocation?</b></a><br>
 There is a srun option <i>--jobid</i> that can be used to specify 
 a job's ID. 
@@ -278,7 +275,7 @@ If you specify that a batch job should use an existing allocation,
 that job allocation will be released upon the termination of 
 that batch job.</p>
 
-<p><a name="user_env"><b>12. How does SLURM establish the environment 
+<p><a name="user_env"><b>11. How does SLURM establish the environment 
 for my job?</b></a><br>
 SLURM processes are not run under a shell, but directly exec'ed 
 by the <i>slurmd</i> daemon (assuming <i>srun</i> is used to launch 
@@ -288,13 +285,13 @@ is executed are propagated to the spawned processes.
 The <i>~/.profile</i> and <i>~/.bashrc</i> scripts are not executed 
 as part of the process launch.</p>
 
-<p><a name="prompt"><b>13. How can I get shell prompts in interactive 
+<p><a name="prompt"><b>12. How can I get shell prompts in interactive 
 mode?</b></a><br>
 <i>srun -u bash -i</i><br>
 Srun's <i>-u</i> option turns off buffering of stdout.
 Bash's <i>-i</i> option tells it to run in interactive mode (with prompts).
 
-<p><a name="batch_out"><b>14. How can I get the task ID in the output 
+<p><a name="batch_out"><b>13. How can I get the task ID in the output 
 or error file name for a batch job?</b></a><br>
 <p>If you want separate output by task, you will need to build a script 
 containing this specification. For example:</p>
@@ -324,7 +321,7 @@ $ cat out_65541_2
 tdev2
 </pre>
 
-<p><a name="parallel_make"><b>15. Can the <i>make</i> command
+<p><a name="parallel_make"><b>14. Can the <i>make</i> command
 utilize the resources allocated to a SLURM job?</b></a><br>
 Yes. There is a patch available for GNU make version 3.81 
 available as part of the SLURM distribution in the file 
@@ -337,7 +334,7 @@ overhead of SLURM's task launch. Use with make's <i>-j</i> option within an
 existing SLURM allocation. Outside of a SLURM allocation, make's behavior
 will be unchanged.</p>
 
-<p><a name="terminal"><b>16. Can tasks be launched with a remote 
+<p><a name="terminal"><b>15. Can tasks be launched with a remote 
 terminal?</b></a><br>
 In SLURM version 1.3 or higher, use srun's <i>--pty</i> option.
 Until then, you can accomplish this by starting an appropriate program 
@@ -812,9 +809,37 @@ clocks on the cluster?</b></a><br>
 In general, yes. Having inconsistent clocks may cause nodes to 
 be unusable. SLURM log files should contain references to 
 expired credentials.
-  
+
+<p><a name="cred_invalid"><b>21. Why are &quot;Invalid job credential&quot; 
+errors generated?</b></a><br>
+This error is indicative of SLURM's job credential files being inconsistent across 
+the cluster. All nodes in the cluster must have the matching public and private 
+keys as defined by <b>JobCredPrivateKey</b> and <b>JobCredPublicKey</b> in the 
+slurm configuration file <b>slurm.conf</b>.
+
+<p><a name="cred_replay"><b>22. Why are 
+&quot;Task launch failed on node ... Job credential replayed&quot; 
+errors generated?</b></a><br>
+This error indicates that a job credential generated by the slurmctld daemon 
+corresponds to a job that the slurmd daemon has already revoked. 
+The slurmctld daemon selects job ID values based upon the configured 
+value of <b>FirstJobId</b> (the default value is 1) and each job gets 
+an value one large than the previous job. 
+On job termination, the slurmctld daemon notifies the slurmd on each 
+allocated node that all processes associated with that job should be 
+terminated. 
+The slurmd daemon maintains a list of the jobs which have already been 
+terminated to avoid replay of task launch requests. 
+If the slurmctld daemon is cold-started (with the &quot;-c&quot; option 
+or &quot;/etc/init.d/slurm startclean&quot;), it starts job ID values 
+over based upon <b>FirstJobId</b>.
+If the slurmd is not also cold-started, it will reject job launch requests 
+for jobs that it considers terminated. 
+This solution to this problem is to cold-start all slurmd daemons whenever
+the slurmctld daemon is cold-started.
+
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 1 October 2007</p>
+<p style="text-align:center;">Last modified 2 October 2007</p>
 
 <!--#include virtual="footer.txt"-->
