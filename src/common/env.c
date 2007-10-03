@@ -1238,7 +1238,7 @@ char **env_array_user_default(const char *username)
 	char *starttoken = "XXXXSLURMSTARTPARSINGHEREXXXX";
 	char *stoptoken  = "XXXXSLURMSTOPPARSINGHEREXXXXX";
 	char cmdstr[256];
-	int fildes[2], fval, len, rc, timeleft;
+	int fildes[2], found, fval, len, rc, timeleft;
 	pid_t child;
 	struct timeval begin, now;
 	struct pollfd ufds;
@@ -1260,12 +1260,20 @@ char **env_array_user_default(const char *username)
 	}
 	if (child == 0) {
 		close(0);
+		open("/dev/null", O_RDONLY);
 		dup2(fildes[1], 1);
 		close(2);
+		open("/dev/null", O_WRONLY);
 		snprintf(cmdstr, sizeof(cmdstr),
 			 "echo; echo; echo; echo %s; env; echo %s",
 			 starttoken, stoptoken);
+#if 1
+		/* execute .profile only */
+		execl("/bin/su", "su", username, "-c", cmdstr, NULL);
+#else
+		/* execute .login plus .profile */
 		execl("/bin/su", "su", "-", username, "-c", cmdstr, NULL);
+#endif
 		exit(1);
 	}
 
@@ -1280,7 +1288,8 @@ char **env_array_user_default(const char *username)
 
 	/* First look for the start token in the output */
 	len = strlen(starttoken);
-	while (1) {
+	found = 0;
+	while (!found) {
 		gettimeofday(&now, NULL);
 		timeleft = SU_WAIT_MSEC;
 		timeleft -= (now.tv_sec -  begin.tv_sec)  * 1000;
@@ -1295,12 +1304,16 @@ char **env_array_user_default(const char *username)
 				break;
 			}
 		}
-		if ((ufds.revents & POLLERR) || (ufds.revents & POLLHUP) ||
-		    (fgets(line, BUFSIZ, su) == NULL) ||
-		    (!strncmp(line, starttoken, len)))
+		if ((ufds.revents & POLLERR) || (ufds.revents & POLLHUP))
 			break;
+		while (fgets(line, BUFSIZ, su)) {
+			if (!strncmp(line, starttoken, len))) {
+				found = 1;
+				break;
+			}
+		}
 	}
-	if (strncmp(line, starttoken, len)) {
+	if (!found) {
 		error("Failed to get user environment variables");
 		close(fildes[0]);
 		return NULL;
@@ -1309,7 +1322,8 @@ char **env_array_user_default(const char *username)
 	/* Now read in the environment variable strings. */
 	env = env_array_create();
 	len = strlen(stoptoken);
-	while (1) {
+	found = 0;
+	while (!found) {
 		gettimeofday(&now, NULL);
 		timeleft = SU_WAIT_MSEC;
 		timeleft -= (now.tv_sec -  begin.tv_sec)  * 1000;
@@ -1325,10 +1339,14 @@ char **env_array_user_default(const char *username)
 			}
 		}
 		/* stop at the line containing the stoptoken string */
-		if ((ufds.revents & POLLERR) || (ufds.revents & POLLHUP) ||
-		    (fgets(line, BUFSIZ, su) == NULL) ||
-		    (!strncmp(line, stoptoken, len)))
+		if ((ufds.revents & POLLERR) || (ufds.revents & POLLHUP))
 			break;
+		while (fgets(line, BUFSIZ, su) {
+			if (!strncmp(line, stoptoken, len)) {
+				found = 1;
+				break;
+			}
+		}
 
 		_strip_cr_nl(line);
 		_env_array_entry_splitter(line, name, BUFSIZ, value, BUFSIZ);
