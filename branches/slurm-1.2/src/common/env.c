@@ -1297,12 +1297,14 @@ char **env_array_user_default(const char *username)
 		if (timeleft <= 0)
 			break;
 		if ((rc = poll(&ufds, 1, timeleft)) <= 0) {
-			if ((rc == 0) || (errno == EINTR) || (errno == EAGAIN))
-				continue;
-			else {
-				error("timeout waiting for /bin/su to complete");
+			if (rc == 0) {
+				verbose("timeout waiting for /bin/su to complete");
 				break;
 			}
+			if ((errno == EINTR) || (errno == EAGAIN))
+				continue;
+			error("poll: %m");
+			break;
 		}
 		if ((ufds.revents & POLLERR) || (ufds.revents & POLLHUP))
 			break;
@@ -1331,12 +1333,14 @@ char **env_array_user_default(const char *username)
 		if (timeleft <= 0)
 			break;
 		if ((rc = poll(&ufds, 1, timeleft)) <= 0) {
-			if ((rc == 0) || (errno == EINTR) || (errno == EAGAIN))
-				continue;
-			else {
-				error("timeout waiting for /bin/su to complete");
+			if (rc == 0) {
+				verbose("timeout waiting for /bin/su to complete");
 				break;
 			}
+			if ((errno == EINTR) || (errno == EAGAIN))
+				continue;
+			error("poll: %m");
+			break;
 		}
 		/* stop at the line containing the stoptoken string */
 		if ((ufds.revents & POLLERR) || (ufds.revents & POLLHUP))
