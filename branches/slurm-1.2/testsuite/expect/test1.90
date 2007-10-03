@@ -42,9 +42,14 @@ print_header $test_id
 # Test if memory affinity support is supported.
 #
 set affinity 0
+set fast_sched 0
 log_user 0
 spawn $scontrol show config
 expect {
+	-re "FastSchedule *= ($number)" {
+		set fast_sched $expect_out(1,string)
+		exp_continue
+	}
 	-re "task/affinity" {
 		set affinity 1
 		exp_continue
@@ -52,6 +57,10 @@ expect {
 	eof {
 		wait
 	}
+}
+if {$fast_sched > 1} {
+	send_user "\nWARNING: FastSchedule > 1 not compatable with this test\n"
+	exit 0
 }
 spawn ls /usr/include/numa.h
 expect {
@@ -80,7 +89,7 @@ exec $bin_chmod 700 $file_prog
 #
 # Create an allocation
 #
-set srun_pid [spawn $srun --allocate -N1 --verbose -t2]
+set srun_pid [spawn $srun --allocate -N1 --exclusive --verbose -t2]
 
 #
 # Run a job step to get allocated processor count and affinity
