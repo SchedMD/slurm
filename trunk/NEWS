@@ -79,6 +79,14 @@ documents those changes that are of interest to users and admins.
     configured with more CPUs than actually exist, return a value of TASKS 
     equal to the number of configured CPUs that are allocated to a job rather 
     than the number of physical CPUs allocated.
+ -- For sched/wiki2, timeout "srun --get-user-env ..." command after 3 seconds 
+    if unable to perform pseudo-login and get user environment variables.
+ -- The pseudo-login (initiated by srun's --get-user-env option) will no longer 
+    execute the users .login script, just the dot file(s) for spawning the 
+    user's default shell.
+ -- Add contribs/time_login.c program to test how long pseudo-login takes
+    for specific users or all users. This can identify users for which Moab 
+    job submissions are unable to set the proper environment variables.
 
 * Changes in SLURM 1.2.17
 =========================
