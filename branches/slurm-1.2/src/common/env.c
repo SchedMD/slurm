@@ -1295,7 +1295,8 @@ char **env_array_user_default(const char *username)
 				break;
 			}
 		}
-		if ((fgets(line, BUFSIZ, su) == NULL) ||
+		if ((ufds.revents & POLLERR) || (ufds.revents & POLLHUP) ||
+		    (fgets(line, BUFSIZ, su) == NULL) ||
 		    (!strncmp(line, starttoken, len)))
 			break;
 	}
@@ -1324,7 +1325,8 @@ char **env_array_user_default(const char *username)
 			}
 		}
 		/* stop at the line containing the stoptoken string */
-		if ((fgets(line, BUFSIZ, su) == NULL) ||
+		if ((ufds.revents & POLLERR) || (ufds.revents & POLLHUP) ||
+		    (fgets(line, BUFSIZ, su) == NULL) ||
 		    (!strncmp(line, stoptoken, len)))
 			break;
 
