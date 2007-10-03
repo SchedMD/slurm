@@ -328,7 +328,9 @@ or srun's <i>--mpi=mvapich</i> option.
 $ mpicc ...
 $ srun -n16 --mpi=mvapich a.out
 </pre>
-<p><b>Note for system administrators:</b> Configure
+<b>NOTE:</b> If MVAPICH is used in the shared memory model, with all tasks
+running on a single node, then use the <i>mpich1_shmem</i> MPI plugin instead.<br>
+<b>NOTE (for system administrators):</b> Configure
 <i>PropagateResourceLimitsExcept=MEMLOCK</i> in <b>slurm.conf</b> and 
 start the <i>slurmd</i> daemons with an unlimited locked memory limit.
 For more details, see 
