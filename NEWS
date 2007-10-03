@@ -21,6 +21,7 @@ documents those changes that are of interest to users and admins.
  -- Add contribs/time_login.c program to test how long pseudo-login takes
     for specific users or all users. This can identify users for which Moab 
     job submissions are unable to set the proper environment variables.
+ -- Fix problem in parallel make of Slurm.
 
 * Changes in SLURM 1.2.17
 =========================

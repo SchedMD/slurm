@@ -85,13 +85,6 @@ slurmapi_add = 				\
 	$(common_dir)/libeio.la		\
 	-lpthread
 
-libslurm_la_SOURCES = $(slurmapi_src)
-libslurm_la_LIBADD = $(slurmapi_add)
-libslurm_la_LDFLAGS        = \
-	$(LIB_LDFLAGS) \
-	-version-info $(current):$(rev):$(age) \
-	$(OTHER_FLAGS)
-
 libslurmhelper_la_SOURCES = $(slurmapi_src)
 libslurmhelper_la_LIBADD = $(slurmapi_add)
 libslurmhelper_la_LDFLAGs = \
@@ -100,13 +93,18 @@ libslurmhelper_la_LDFLAGs = \
 
 convenience_libs = $(top_builddir)/src/api/libslurmhelper.la
 
+libslurm_la_SOURCES = 
+libslurm_la_LIBADD = $(convenience_libs)
+libslurm_la_LDFLAGS        = \
+        $(LIB_LDFLAGS) \
+        -version-info $(current):$(rev):$(age) \
+        $(OTHER_FLAGS)
+
 libpmi_la_SOURCES = pmi.c
 libpmi_la_LIBADD = $(convenience_libs)
 libpmi_la_LDFLAGS = $(LIB_LDFLAGS)
 
 force:
-$(libslurm_la_LIBADD) : force
-	@cd `dirname $@` && $(MAKE) `basename $@`
 $(convenience_libs) : force
 	@cd `dirname $@` && $(MAKE) `basename $@`
 
