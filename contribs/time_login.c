@@ -167,12 +167,12 @@ static long int _time_login(char *user_name)
 		if (timeleft <= 0)
 			break;
 		if ((rc = poll(&ufds, 1, timeleft)) <= 0) {
-			if ((rc == 0) || (errno == EINTR) || (errno == EAGAIN))
-				continue;
-			else {
-				perror("poll");	/* timeout */
+			if (rc == 0)	/* timeout */
 				break;
-			}
+			if ((errno == EINTR) || (errno == EAGAIN))
+				continue;
+			perror("poll");
+			break;
 		}
 		if ((ufds.revents & POLLERR) || (ufds.revents & POLLHUP))
 			break;
