@@ -40,11 +40,13 @@
 #  include "config.h"
 #endif 
 
+#include <fcntl.h>
 #include <stdio.h>
 #include <stdarg.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <sys/poll.h>
 #include <sys/types.h>
 
 #include "src/common/macros.h"
@@ -73,6 +75,8 @@ strong_alias(env_array_append_fmt,	slurm_env_array_append_fmt);
 strong_alias(env_array_overwrite,	slurm_env_array_overwrite);
 strong_alias(env_array_overwrite_fmt,	slurm_env_array_overwrite_fmt);
 
+#define SU_WAIT_MSEC 3000	/* 3000 msec for /bin/su to return user 
+				 * env vars for --get-user-env option */
 /*
  *  Return pointer to `name' entry in environment if found, or
  *   pointer to the last entry (i.e. NULL) if `name' is not
@@ -1246,48 +1250,130 @@ char **env_array_user_default(const char *username)
 	char line[BUFSIZ];
 	char name[BUFSIZ];
 	char value[BUFSIZ];
-	char *cmdstr = xstrdup("");
 	char **env = NULL;
 	char *starttoken = "XXXXSLURMSTARTPARSINGHEREXXXX";
-	char *stoptoken =  "XXXXSLURMSTOPPARSINGHEREXXXXX";
-	int len;
+	char *stoptoken  = "XXXXSLURMSTOPPARSINGHEREXXXXX";
+	char cmdstr[256];
+	int fildes[2], found, fval, len, rc, timeleft;
+	pid_t child;
+	struct timeval begin, now;
+	struct pollfd ufds;
 
 	if (geteuid() != (uid_t)0) {
 		info("WARNING: you must be root to use --get-user-env");
 		return NULL;
 	}
 
-	xstrfmtcat(cmdstr, "/bin/su - %s -c \"echo; echo; echo; echo %s; env; echo %s\" 2>/dev/null",
-		   username, starttoken, stoptoken);
-	su = popen(cmdstr, "r");
-	xfree(cmdstr);
-	if (su == NULL) {
+	if (pipe(fildes) < 0) {
+		error("pipe: %m");
 		return NULL;
 	}
 
-	env = env_array_create();
+	child = fork();
+	if (child == -1) {
+		error("fork: %m");
+		return NULL;
+	}
+	if (child == 0) {
+		close(0);
+		open("/dev/null", O_RDONLY);
+		dup2(fildes[1], 1);
+		close(2);
+		open("/dev/null", O_WRONLY);
+		snprintf(cmdstr, sizeof(cmdstr),
+			 "echo; echo; echo; echo %s; env; echo %s",
+			 starttoken, stoptoken);
+#if 1
+		/* execute .profile only */
+		execl("/bin/su", "su", username, "-c", cmdstr, NULL);
+#else
+		/* execute .login plus .profile */
+		execl("/bin/su", "su", "-", username, "-c", cmdstr, NULL);
+#endif
+		exit(1);
+	}
+
+	close(fildes[1]);
+	if ((fval = fcntl(fildes[0], F_GETFL, 0)) >= 0)
+		fcntl(fildes[0], F_SETFL, fval | O_NONBLOCK);
+	su= fdopen(fildes[0], "r");
+
+	gettimeofday(&begin, NULL);
+	ufds.fd = fildes[0];
+	ufds.events = POLLIN;
 
 	/* First look for the start token in the output */
 	len = strlen(starttoken);
-	while (fgets(line, BUFSIZ, su) != NULL) {
-		if (0 == strncmp(line, starttoken, len)) {
+	found = 0;
+	while (!found) {
+		gettimeofday(&now, NULL);
+		timeleft = SU_WAIT_MSEC;
+		timeleft -= (now.tv_sec -  begin.tv_sec)  * 1000;
+		timeleft -= (now.tv_usec - begin.tv_usec) / 1000;
+		if (timeleft <= 0)
+			break;
+		if ((rc = poll(&ufds, 1, timeleft)) <= 0) {
+			if (rc == 0) {
+				verbose("timeout waiting for /bin/su to complete");
+				break;
+			}
+			if ((errno == EINTR) || (errno == EAGAIN))
+				continue;
+			error("poll: %m");
 			break;
 		}
+		if ((ufds.revents & POLLERR) || (ufds.revents & POLLHUP))
+			break;
+		while (fgets(line, BUFSIZ, su)) {
+			if (!strncmp(line, starttoken, len)) {
+				found = 1;
+				break;
+			}
+		}
+	}
+	if (!found) {
+		error("Failed to get user environment variables");
+		close(fildes[0]);
+		return NULL;
 	}
 
 	/* Now read in the environment variable strings. */
+	env = env_array_create();
 	len = strlen(stoptoken);
-	while (fgets(line, BUFSIZ, su) != NULL) {
-		/* stop at the line containing the stoptoken string */
-		if (0 == strncmp(line, stoptoken, len)) {
+	found = 0;
+	while (!found) {
+		gettimeofday(&now, NULL);
+		timeleft = SU_WAIT_MSEC;
+		timeleft -= (now.tv_sec -  begin.tv_sec)  * 1000;
+		timeleft -= (now.tv_usec - begin.tv_usec) / 1000;
+		if (timeleft <= 0)
 			break;
+		if ((rc = poll(&ufds, 1, timeleft)) <= 0) {
+			if (rc == 0) {
+				verbose("timeout waiting for /bin/su to complete");
+				break;
+			}
+			if ((errno == EINTR) || (errno == EAGAIN))
+				continue;
+			error("poll: %m");
+			break;
+		}
+		/* stop at the line containing the stoptoken string */
+		if ((ufds.revents & POLLERR) || (ufds.revents & POLLHUP))
+			break;
+		while (fgets(line, BUFSIZ, su)) {
+			if (!strncmp(line, stoptoken, len)) {
+				found = 1;
+				break;
+			}
 		}
 
 		_strip_cr_nl(line);
 		_env_array_entry_splitter(line, name, BUFSIZ, value, BUFSIZ);
 		env_array_overwrite(&env, name, value);
 	}
-	pclose(su);
+	close(fildes[0]);
 
 	return env;
 }
+
