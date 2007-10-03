@@ -15,6 +15,9 @@ documents those changes that are of interest to users and admins.
     than the number of physical CPUs allocated.
  -- For sched/wiki2, timeout "srun --get-user-env ..." command after 3 seconds 
     if unable to perform pseudo-login and get user environment variables.
+ -- The pseudo-login (initiated by srun's --get-user-env option) will no longer 
+    execute the users .login script, just the dot file(s) for spawning the 
+    user's default shell.
  -- Add contribs/time_login.c program to test how long pseudo-login takes
     for specific users or all users. This can identify users for which Moab 
     job submissions are unable to set the proper environment variables.
