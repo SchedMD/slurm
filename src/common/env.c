@@ -1345,11 +1345,10 @@ char **env_array_user_default(const char *username)
 		/* stop at the line containing the stoptoken string */
 		if ((ufds.revents & POLLERR) || (ufds.revents & POLLHUP))
 			break;
-		while (fgets(line, BUFSIZ, su)) {
-			if (!strncmp(line, stoptoken, len)) {
-				found = 1;
-				break;
-			}
+		if ((fgets(line, BUFSIZ, su) == 0) ||
+		    (!strncmp(line, stoptoken, len))) {
+			found = 1;
+			break;
 		}
 
 		_strip_cr_nl(line);
