@@ -1,6 +1,9 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins.
 
+* Changes in SLURM 1.3.0-pre5
+=============================
+
 * Changes in SLURM 1.3.0-pre4
 =============================
  -- Job step launch in srun is now done from the slurm api's all further
