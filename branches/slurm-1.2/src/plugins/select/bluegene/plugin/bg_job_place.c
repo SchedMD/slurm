@@ -655,6 +655,10 @@ try_again:
 			if(check_block_bp_states(
 				   (*found_bg_record)->bg_block_id) 
 			   == SLURM_ERROR) {
+				error("_find_best_block_match: Marking "
+				      "block %s in an error state "
+				      "because of bad bps.",
+				      (*found_bg_record)->bg_block_id);
 				(*found_bg_record)->job_running =
 					BLOCK_ERROR_STATE;
 				(*found_bg_record)->state = RM_PARTITION_ERROR;

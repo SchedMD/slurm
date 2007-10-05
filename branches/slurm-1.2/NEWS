@@ -19,6 +19,7 @@ documents those changes that are of interest to users and admins.
     for specific users or all users. This can identify users for which Moab 
     job submissions are unable to set the proper environment variables.
  -- Fix problem in parallel make of Slurm.
+ -- Fixed bug in consumable resources with CR_Core_Memory enabled
 
 * Changes in SLURM 1.2.17
 =========================
