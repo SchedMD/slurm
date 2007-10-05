@@ -1267,7 +1267,7 @@ char **env_array_user_default(const char *username)
 		snprintf(cmdstr, sizeof(cmdstr),
 			 "echo; echo; echo; echo %s; env; echo %s",
 			 starttoken, stoptoken);
-#if 1
+#if 0
 		/* execute .profile only */
 		execl("/bin/su", "su", username, "-c", cmdstr, NULL);
 #else
