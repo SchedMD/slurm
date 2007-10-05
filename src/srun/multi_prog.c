@@ -66,7 +66,7 @@ static char *
 _build_path(char* fname)
 {
 	int i;
-	char *path_env = NULL, *dir, *ptrptr;
+	char *path_env = NULL, *dir = NULL, *ptrptr = NULL;
 	static char file_name[256], file_path[256];	/* return values */
 	struct stat buf;
 
@@ -126,7 +126,8 @@ _set_range(int low_num, int high_num, char *exec_name)
 static void
 _set_exec_names(char *ranks, char *exec_name, int ntasks)
 {
-	char *range, *p, *ptrptr, *exec_path, *upper;
+	char *range = NULL, *p = NULL;
+	char *ptrptr = NULL, *exec_path = NULL, *upper = NULL;
 	int low_num, high_num;
 
 	if (ranks[0] == '*' && ranks[1] == '\0') {

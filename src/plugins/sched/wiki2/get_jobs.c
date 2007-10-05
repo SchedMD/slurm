@@ -105,7 +105,7 @@ static uint32_t cr_enabled = 0, cr_test = 0;
 /* RET 0 on success, -1 on failure */
 extern int	get_jobs(char *cmd_ptr, int *err_code, char **err_msg)
 {
-	char *arg_ptr, *tmp_char, *tmp_buf, *buf = NULL;
+	char *arg_ptr = NULL, *tmp_char = NULL, *tmp_buf = NULL, *buf = NULL;
 	time_t update_time;
 	/* Locks: read job, partition */
 	slurmctld_lock_t job_read_lock = {
@@ -151,8 +151,8 @@ extern int	get_jobs(char *cmd_ptr, int *err_code, char **err_msg)
 		/* report all jobs */
 		buf = _dump_all_jobs(&job_rec_cnt, state_info);
 	} else {
-		struct job_record *job_ptr;
-		char *job_name, *tmp2_char;
+		struct job_record *job_ptr = NULL;
+		char *job_name = NULL, *tmp2_char = NULL;
 		uint32_t job_id;
 
 		job_name = strtok_r(tmp_char, ":", &tmp2_char);

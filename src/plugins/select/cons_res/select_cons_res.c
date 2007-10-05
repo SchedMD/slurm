@@ -1083,11 +1083,11 @@ extern int select_p_state_save(char *dir_name)
 {
 	int error_code = SLURM_SUCCESS;
 	ListIterator job_iterator;
-	struct select_cr_job *job;
+	struct select_cr_job *job = NULL;
 	Buf buffer = NULL;
 	int state_fd, i;
 	uint16_t job_cnt;
-	char *file_name;
+	char *file_name = NULL;
 	static time_t last_save_time;
 
 	if (last_save_time > last_cr_update_time)
