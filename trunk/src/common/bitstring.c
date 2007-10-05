@@ -981,7 +981,7 @@ bitfmt2int (char *bit_str_ptr)
 		}
 
 		else if (bit_str_ptr[i] == ',' || 
-		         bit_str_ptr[i] == (char) NULL) {
+		         bit_str_ptr[i] == '\0') {
 			if (i == 0)
 				break;
 			if (start_val == -1)

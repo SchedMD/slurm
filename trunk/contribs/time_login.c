@@ -138,7 +138,7 @@ static long int _time_login(char *user_name)
 		dup2(fildes[1], 1);
 		close(2);
 		open("/dev/null", O_WRONLY);
-#if 1
+#if 0
 		/* execute .profile only */
 		execl("/bin/su", "su", user_name, "-c", 
 			"echo; echo; echo HELLO", NULL);

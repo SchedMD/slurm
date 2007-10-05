@@ -968,7 +968,7 @@ uid_t *_get_groups_members(char *group_names)
 	uid_t *group_uids = NULL;
 	uid_t *temp_uids  = NULL;
 	int i, j, k;
-	char *tmp_names, *name_ptr, *one_group_name;
+	char *tmp_names = NULL, *name_ptr = NULL, *one_group_name = NULL;
 
 	if (group_names == NULL)
 		return NULL;

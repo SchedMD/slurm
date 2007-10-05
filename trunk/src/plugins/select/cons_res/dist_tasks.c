@@ -541,7 +541,7 @@ int cr_dist(struct select_cr_job *job, int cyclic,
 		job->alloc_sockets[job_index] = 0;
 		if ((cr_type == CR_CORE) || (cr_type == CR_CORE_MEMORY)) {
 			for (j = 0; 
-			     j < node_record_table_ptr[host_index].cores; 
+			     j < job->num_sockets[job_index]; 
 			     j++)
 				job->alloc_cores[job_index][j] = 0;
 		}		
@@ -752,7 +752,7 @@ int cr_plane_dist(struct select_cr_job *job,
 		job->alloc_sockets[job_index] = 0;
 		if ((cr_type == CR_CORE) || (cr_type == CR_CORE_MEMORY)) {
 			for (j = 0; 
-			     j < node_record_table_ptr[host_index].cores; 
+			     j < job->num_sockets[job_index]; 
 			     j++)
 				job->alloc_cores[job_index][j] = 0;
 		}	
