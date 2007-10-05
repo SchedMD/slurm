@@ -344,8 +344,8 @@ static int _init_power_config(void)
 	}
 
 	if (exc_parts) {
-		char *tmp, *one_part, *part_list;
-		struct part_record *part_ptr;
+		char *tmp = NULL, *one_part = NULL, *part_list = NULL;
+		struct part_record *part_ptr = NULL;
 		int rc = 0;
 
 		part_list = xstrdup(exc_parts);

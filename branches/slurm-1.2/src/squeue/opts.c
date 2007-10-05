@@ -346,7 +346,8 @@ extern int parse_format( char* format )
 {
 	int field_size;
 	bool right_justify;
-	char *prefix, *suffix, *token, *tmp_char, *tmp_format;
+	char *prefix = NULL, *suffix = NULL, *token = NULL;
+	char *tmp_char = NULL, *tmp_format = NULL;
 	char field[1];
 
 	if (format == NULL) {
@@ -772,9 +773,9 @@ static List
 _build_job_list( char* str )
 {
 	List my_list;
-	char *job, *tmp_char, *my_job_list;
+	char *job = NULL, *tmp_char = NULL, *my_job_list = NULL;
 	int i;
-	uint32_t *job_id;
+	uint32_t *job_id = NULL;
 
 	if ( str == NULL)
 		return NULL;
@@ -805,7 +806,7 @@ static List
 _build_part_list( char* str )
 {
 	List my_list;
-	char *part, *tmp_char, *my_part_list;
+	char *part = NULL, *tmp_char = NULL, *my_part_list = NULL;
 
 	if ( str == NULL)
 		return NULL;
@@ -829,8 +830,8 @@ static List
 _build_state_list( char* str )
 {
 	List my_list;
-	char *state, *tmp_char, *my_state_list;
-	enum job_states *state_id;
+	char *state = NULL, *tmp_char = NULL, *my_state_list = NULL;
+	enum job_states *state_id = NULL;
 
 	if ( str == NULL)
 		return NULL;
@@ -887,10 +888,10 @@ static List
 _build_step_list( char* str )
 {
 	List my_list;
-	char *step, *tmp_char, *tmps_char, *my_step_list;
-	char *job_name, *step_name;
+	char *step = NULL, *tmp_char = NULL, *tmps_char = NULL;
+	char *job_name = NULL, *step_name = NULL, *my_step_list = NULL;
 	int i, j;
-	squeue_job_step_t *job_step_id;
+	squeue_job_step_t *job_step_id = NULL;
 
 	if ( str == NULL)
 		return NULL;
@@ -931,9 +932,10 @@ static List
 _build_user_list( char* str )
 {
 	List my_list;
-	char *user, *tmp_char, *my_user_list, *end_ptr;
-	uint32_t *uid;
-	struct passwd *passwd_ptr;
+	char *user = NULL;
+	char *tmp_char = NULL, *my_user_list = NULL, *end_ptr = NULL;
+	uint32_t *uid = NULL;
+	struct passwd *passwd_ptr = NULL;
 
 	if ( str == NULL)
 		return NULL;
