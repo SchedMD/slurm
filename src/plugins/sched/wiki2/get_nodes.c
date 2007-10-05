@@ -68,7 +68,7 @@ static char *	_get_node_state(struct node_record *node_ptr);
  */
 extern int	get_nodes(char *cmd_ptr, int *err_code, char **err_msg)
 {
-	char *arg_ptr, *tmp_char, *tmp_buf, *buf = NULL;
+	char *arg_ptr = NULL, *tmp_char = NULL, *tmp_buf = NULL, *buf = NULL;
 	time_t update_time;
 	/* Locks: read node, read partition */
 	slurmctld_lock_t node_read_lock = {
@@ -102,8 +102,8 @@ extern int	get_nodes(char *cmd_ptr, int *err_code, char **err_msg)
 		/* report all nodes */
 		buf = _dump_all_nodes(&node_rec_cnt, state_info);
 	} else {
-		struct node_record *node_ptr;
-		char *node_name, *tmp2_char;
+		struct node_record *node_ptr = NULL;
+		char *node_name = NULL, *tmp2_char = NULL;
 
 		node_name = strtok_r(tmp_char, ":", &tmp2_char);
 		while (node_name) {
@@ -134,7 +134,7 @@ static char *	_dump_all_nodes(int *node_cnt, int state_info)
 {
 	int i, cnt = 0;
 	struct node_record *node_ptr = node_record_table_ptr;
-	char *tmp_buf, *buf = NULL;
+	char *tmp_buf = NULL, *buf = NULL;
 
 	for (i=0; i<node_record_count; i++, node_ptr++) {
 		if (node_ptr->name == NULL)

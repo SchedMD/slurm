@@ -247,7 +247,7 @@ extern void deallocate_nodes(struct job_record *job_ptr, bool timeout,
  */
 static int _match_feature(char *seek, char *available)
 {
-	char *tmp_available, *str_ptr3, *str_ptr4;
+	char *tmp_available = NULL, *str_ptr3 = NULL, *str_ptr4 = NULL;
 	int found;
 
 	if (seek == NULL)

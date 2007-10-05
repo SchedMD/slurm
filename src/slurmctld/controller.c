@@ -927,7 +927,7 @@ static void *_slurmctld_background(void *no_data)
 		    slurmctld_conf.backup_addr[0]      &&
 		    (difftime(now, last_assert_primary_time) >=
 		     slurmctld_conf.slurmctld_timeout) &&
-		    node_name && slurmctld_conf.backup_controller &&
+		    slurmctld_conf.backup_controller &&
 		    strcmp(node_name, slurmctld_conf.backup_controller)) {
 			last_assert_primary_time = now;
 			(void) _shutdown_backup_controller(0);

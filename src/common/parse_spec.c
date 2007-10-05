@@ -178,7 +178,7 @@ _load_integer (int *destination, char *keyword, char *in_line)
 	if (str_ptr1 != NULL) {
 		str_len1 = strlen (keyword);
 		strcpy (scratch, str_ptr1 + str_len1);
-		if ((scratch[0] == (char) NULL) || 
+		if ((scratch[0] == '\0') || 
 		    (isspace ((int) scratch[0]))) {
 			/* keyword with no value set */
 			*destination = 1;
@@ -235,7 +235,7 @@ _load_long (long *destination, char *keyword, char *in_line)
 	if (str_ptr1 != NULL) {
 		str_len1 = strlen (keyword);
 		strcpy (scratch, str_ptr1 + str_len1);
-		if ((scratch[0] == (char) NULL) || 
+		if ((scratch[0] == '\0') || 
 		    (isspace ((int) scratch[0]))) {	
 			/* keyword with no value set */
 			*destination = 1;

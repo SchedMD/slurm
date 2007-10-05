@@ -683,7 +683,9 @@ end_it:
 		       bg_record->bg_block_id, bg_record->job_running);
 		sleep(1);
 	}
+	
 	slurm_mutex_lock(&block_state_mutex);
+	error("Setting Block %s to ERROR state.", bg_record->bg_block_id);
 	bg_record->job_running = BLOCK_ERROR_STATE;
 	bg_record->state = RM_PARTITION_ERROR;
 	slurm_mutex_unlock(&block_state_mutex);
