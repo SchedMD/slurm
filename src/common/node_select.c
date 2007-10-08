@@ -106,6 +106,7 @@ typedef struct slurm_select_ops {
 	int             (*update_node_state)   (int index, uint16_t state);
 	int             (*alter_node_cnt)      (enum select_node_cnt type,
 						void *data);
+	int		(*reconfigure)         (void);
 } slurm_select_ops_t;
 
 typedef struct slurm_select_context {
@@ -180,7 +181,8 @@ static slurm_select_ops_t * _select_get_ops(slurm_select_context_t *c)
  		"select_p_update_sub_node",
                 "select_p_get_info_from_plugin",
 		"select_p_update_node_state",
-		"select_p_alter_node_cnt"
+		"select_p_alter_node_cnt",
+		"select_p_reconfigure"
 	};
 	int n_syms = sizeof( syms ) / sizeof( char * );
 
@@ -497,6 +499,17 @@ extern int select_g_alter_node_cnt (enum select_node_cnt type, void *data)
 		*nodes = 1;
 	}	
 	return (*(g_select_context->ops.alter_node_cnt))(type, data);
+}
+
+/*
+ * Note reconfiguration or change in partition configuration
+ */
+extern int select_g_reconfigure (void)
+{
+	if (slurm_select_init() < 0)
+		return SLURM_ERROR;
+
+	return (*(g_select_context->ops.reconfigure))();
 }
 
 /*

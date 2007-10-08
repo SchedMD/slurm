@@ -294,4 +294,7 @@ extern int select_g_unpack_node_info(node_select_info_msg_t **
 extern int select_g_free_node_info(node_select_info_msg_t **
 				   node_select_info_msg_pptr);
 
+/* Note reconfiguration or change in partition configuration */
+extern int select_g_reconfigure(void);
+
 #endif /*__SELECT_PLUGIN_API_H__*/

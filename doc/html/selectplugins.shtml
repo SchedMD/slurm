@@ -339,7 +339,7 @@ state of the node.</p>
 <p class="commandline">int select_p_alter_node_cnt (enum
 select_node_cnt type, void *data);</p>
 <p style="margin-left:.2in"><b>Description</b>: Used for systems like
-a Bluegene system where slurm sees 1 node where many nodes really
+a Bluegene system where SLURM sees 1 node where many nodes really
 exists, in Bluegene's case 1 node reflects 512 nodes in real live, but
 since usually 512 is the smallest allocatable block slurm only handles
 it as 1 node.  This is a function so the user can issue a 'real'
@@ -352,6 +352,13 @@ telling the plug in what the user is really wanting.<br>
 Is a void * so depending on the type sent in argument 1 this should 
 adjust the variable returning what the user is asking for.</p>
 <p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful, otherwise SLURM_ERROR</p>
+
+<p class="commandline">int select_p_reconfigure (void);</p>
+<p style="margin-left:.2in"><b>Description</b>: Used to notify plugin 
+of change in partition configuration or general configuration change.
+The plugin will test global variables for changes as appropriate.</p>
+<p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful, otherwise SLURM_ERROR</p>
+
 <p class="footer"><a href="#top">top</a></p>
 
 <h2>Versioning</h2>
@@ -364,6 +371,6 @@ to maintain data format compatibility across different versions of the plugin.</
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 12 October 2006</p>
+<p style="text-align:center;">Last modified 8 October 2007</p>
 
 <!--#include virtual="footer.txt"-->

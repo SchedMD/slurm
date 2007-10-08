@@ -549,7 +549,8 @@ static void *_slurmctld_signal_hand(void *no_data)
 			}
 			unlock_slurmctld(config_write_lock);
 			trigger_reconfig();
-			slurm_sched_partition_change();
+			slurm_sched_partition_change();	/* notify sched plugin */
+			select_g_reconfigure();		/* notify select plugin too */
 			break;
 		case SIGABRT:	/* abort */
 			info("SIGABRT received");

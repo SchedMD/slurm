@@ -892,7 +892,8 @@ int update_part(update_part_msg_t * part_desc)
 
 	if (error_code == SLURM_SUCCESS) {
 		slurm_sched_partition_change();	/* notify sched plugin */
-		reset_job_priority();	/* free jobs */
+		select_g_reconfigure();		/* notify select plugin too */
+		reset_job_priority();		/* free jobs */
 		if (select_g_block_init(part_list) != SLURM_SUCCESS )
 			error("failed to update node selection plugin state");
 	}
