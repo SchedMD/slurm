@@ -463,7 +463,6 @@ static bitstr_t *_lllp_map_abstract_mask (bitstr_t *bitmask)
 	int num_bits = bit_size(bitmask);
 	bitstr_t *newmask = bit_alloc(num_bits);
 
-	bit_nclear(newmask,0,num_bits-1); /* init to zero */
 	/* remap to physical machine */
 	for (i = 0; i < num_bits; i++) {
 		if (bit_test(bitmask,i)) {
@@ -1327,7 +1326,6 @@ static void _single_mask(const uint16_t nsockets,
 	bitoff_t bit;
 	bitoff_t num_bits = nsockets * ncores * nthreads;
 	bitstr_t * bitmask = bit_alloc(num_bits);
-	bit_nclear(bitmask,0,num_bits-1); /* init to zero */
 
 	if (bind_to_exact_socket) {
 		nsockets_left = 1;
@@ -1573,7 +1571,6 @@ static void _cr_update_lllp(int reserve, uint32_t job_id, uint32_t job_step_id,
 		bitoff_t num_bits = 
 			conf->sockets * conf->cores * conf->threads;
 		bitstr_t * bitmap_test = bit_alloc(num_bits);
-		bit_nclear(bitmap_test,0,num_bits-1); /* init to zero */
 		get_bitmap_from_cpu_bind(bitmap_test,
 					 cpu_bind_type, cpu_bind, numtasks);
 
