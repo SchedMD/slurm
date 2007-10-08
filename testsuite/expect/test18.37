@@ -111,7 +111,7 @@ expect {
 expect -re $prompt
 set task_cnt 0
 set full_mask 0
-send "$slaunch -c1 $file_prog\n"
+send "$srun -c1 $file_prog\n"
 expect {
 	-re "TASK_ID:($number),CPU_MASK:($number),MEM_MASK:($number)" {
 		set full_mask $expect_out(2,string)
@@ -124,7 +124,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: slaunch not responding or failure to recognize prompt\n"
+		send_user "\nFAILURE: srun not responding or failure to recognize prompt\n"
 		set exit_code 1
 	}
 	-re $prompt
@@ -135,7 +135,7 @@ expect {
 #
 set cpu_mask 0
 set mem_mask 0
-send "$slaunch -c1 --mem_bind=rank $file_prog\n"
+send "$srun -c1 --mem_bind=rank $file_prog\n"
 expect {
 	-re "TASK_ID:($number),CPU_MASK:($number),MEM_MASK:($number)" {
 		incr cpu_mask $expect_out(2,string)
@@ -148,7 +148,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: slaunch not responding or failure to recognize prompt\n"
+		send_user "\nFAILURE: srun not responding or failure to recognize prompt\n"
 		set exit_code 1
 	}
 	-re $prompt
@@ -163,7 +163,7 @@ if {$mem_mask != $full_mask} {
 #
 set task_mask 0
 set verbose_cnt 0
-send "$slaunch -c1 --mem_bind=verbose,map_mem:0 $file_prog\n"
+send "$srun -c1 --mem_bind=verbose,map_mem:0 $file_prog\n"
 expect {
 	-re "TASK_ID:($number),CPU_MASK:($number),MEM_MASK:($number)" {
 		incr task_mask $expect_out(3,string)
@@ -175,7 +175,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: slaunch not responding or failure to recognize prompt\n"
+		send_user "\nFAILURE: srun not responding or failure to recognize prompt\n"
 		set exit_code 1
 	}
 	-re $prompt
@@ -185,7 +185,7 @@ if {$task_mask != $task_cnt} {
 	set exit_code 1
 }
 set verbose_cnt 0
-send "$slaunch -c1 --mem_bind=verbose,map_mem:0 $file_prog\n"
+send "$srun -c1 --mem_bind=verbose,map_mem:0 $file_prog\n"
 expect {
 	-re "mem_bind=MAP" {
 		incr verbose_cnt
@@ -197,7 +197,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: slaunch not responding or failure to recognize prompt\n"
+		send_user "\nFAILURE: srun not responding or failure to recognize prompt\n"
 		set exit_code 1
 	}
 	-re $prompt
@@ -210,7 +210,7 @@ if {$verbose_cnt != $task_cnt} {
 #
 # Run all tasks all bound to the same CPU's memory (local CPU)
 #
-send "$slaunch -c1 --cpu_bind=rank --mem_bind=local $file_prog\n"
+send "$srun -c1 --cpu_bind=rank --mem_bind=local $file_prog\n"
 expect {
 	-re "TASK_ID:($number),CPU_MASK:($number),MEM_MASK:($number)" {
 		if {$expect_out(2,string) != $expect_out(3,string)} {
@@ -225,7 +225,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: slaunch not responding or failure to recognize prompt\n"
+		send_user "\nFAILURE: srun not responding or failure to recognize prompt\n"
 		set exit_code 1
 		exp_continue
 	}
@@ -239,7 +239,7 @@ set cpu_cnt 0
 while {$cpu_cnt < $task_cnt} {
 	set mask_sum 0
 	set mask [ expr 1 << $cpu_cnt ]
-	send "$slaunch -c1 --mem_bind=map_mem:$cpu_cnt $file_prog\n"
+	send "$srun -c1 --mem_bind=map_mem:$cpu_cnt $file_prog\n"
 	expect {
 		-re "TASK_ID:($number),CPU_MASK:($number),MEM_MASK:($number)" {
 			incr mask_sum $expect_out(3,string)
@@ -251,7 +251,7 @@ while {$cpu_cnt < $task_cnt} {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: slaunch not responding or failure to recognize prompt\n"
+			send_user "\nFAILURE: srun not responding or failure to recognize prompt\n"
 			set exit_code 1
 			exp_continue
 		}
@@ -272,7 +272,7 @@ while {$cpu_cnt < $task_cnt} {
 	set mask_sum 0
 	set mask [ expr 1 << $cpu_cnt ]
 	set mstr [ dec2hex16 $mask]
-	send "$slaunch -c1 --mem_bind=mask_mem:$mstr $file_prog\n"
+	send "$srun -c1 --mem_bind=mask_mem:$mstr $file_prog\n"
 	expect {
 		 -re "TASK_ID:($number),CPU_MASK:($number),MEM_MASK:($number)" {
 			incr mask_sum $expect_out(3,string)
@@ -284,7 +284,7 @@ while {$cpu_cnt < $task_cnt} {
 			exp_continue
 		}
 		timeout {
-			send_user "\nFAILURE: slaunch not responding or failure to recognize prompt\n"
+			send_user "\nFAILURE: srun not responding or failure to recognize prompt\n"
 			set exit_code 1
 			exp_continue
 		}
@@ -347,7 +347,7 @@ send_user "alt_mask: $alt_mask\n"
 # Run all tasks bound to a different CPU's memory by specifying a forward map
 #
 set task_mask 0
-send "$slaunch -c1 --mem_bind=map_mem:$fwd_map $file_prog\n"
+send "$srun -c1 --mem_bind=map_mem:$fwd_map $file_prog\n"
 expect {
 	-re "TASK_ID:($number),CPU_MASK:($number),MEM_MASK:($number)" {
 		incr task_mask $expect_out(3,string)
@@ -359,7 +359,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: slaunch not responding or failure to recognize prompt\n"
+		send_user "\nFAILURE: srun not responding or failure to recognize prompt\n"
 		set exit_code 1
 		exp_continue
 	}
@@ -374,7 +374,7 @@ if {$task_mask != $full_mask} {
 # Run all tasks bound to a different CPU's memory by specifying a reverse map
 #
 set task_mask 0
-send "$slaunch -c1 --mem_bind=map_mem:$rev_map $file_prog\n"
+send "$srun -c1 --mem_bind=map_mem:$rev_map $file_prog\n"
 expect {
 	-re "TASK_ID:($number),CPU_MASK:($number),MEM_MASK:($number)" {
 		incr task_mask $expect_out(3,string)
@@ -386,7 +386,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: slaunch not responding or failure to recognize prompt\n"
+		send_user "\nFAILURE: srun not responding or failure to recognize prompt\n"
 		set exit_code 1
 		exp_continue
 	}
@@ -401,7 +401,7 @@ if {$task_mask != $full_mask} {
 # Run all tasks bound to a different CPU's memroy by specifying an alternating map
 #
 set task_mask 0
-send "$slaunch -c1 --mem_bind=map_mem:$alt_map $file_prog\n"
+send "$srun -c1 --mem_bind=map_mem:$alt_map $file_prog\n"
 expect {
 	-re "TASK_ID:($number),CPU_MASK:($number),MEM_MASK:($number)" {
 		incr task_mask $expect_out(3,string)
@@ -413,7 +413,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: slaunch not responding or failure to recognize prompt\n"
+		send_user "\nFAILURE: srun not responding or failure to recognize prompt\n"
 		set exit_code 1
 		exp_continue
 	}
@@ -428,7 +428,7 @@ if {$task_mask != $full_mask} {
 # Run all tasks bound to a different CPU's memory by specifying a forward mask
 #
 set task_mask 0
-send "$slaunch -c1 --mem_bind=mask_mem:$fwd_mask $file_prog\n"
+send "$srun -c1 --mem_bind=mask_mem:$fwd_mask $file_prog\n"
 expect {
 	-re "TASK_ID:($number),CPU_MASK:($number),MEM_MASK:($number)" {
 		incr task_mask $expect_out(3,string)
@@ -440,7 +440,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: slaunch not responding or failure to recognize prompt\n"
+		send_user "\nFAILURE: srun not responding or failure to recognize prompt\n"
 		set exit_code 1
 		exp_continue
 	}
@@ -455,7 +455,7 @@ if {$task_mask != $full_mask} {
 # Run all tasks bound to a different CPU's memory by specifying a reverse mask
 #
 set task_mask 0
-send "$slaunch -c1 --mem_bind=mask_mem:$rev_mask $file_prog\n"
+send "$srun -c1 --mem_bind=mask_mem:$rev_mask $file_prog\n"
 expect {
 	-re "TASK_ID:($number),CPU_MASK:($number),MEM_MASK:($number)" {
 		incr task_mask $expect_out(3,string)
@@ -467,7 +467,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: slaunch not responding or failure to recognize prompt\n"
+		send_user "\nFAILURE: srun not responding or failure to recognize prompt\n"
 		set exit_code 1
 		exp_continue
 	}
@@ -482,7 +482,7 @@ if {$task_mask != $full_mask} {
 # Run all tasks bound to a different CPU's memory by specifying an alternating mask
 #
 set task_mask 0
-send "$slaunch -c1 --mem_bind=mask_mem:$alt_mask $file_prog\n"
+send "$srun -c1 --mem_bind=mask_mem:$alt_mask $file_prog\n"
 expect {
 	-re "TASK_ID:($number),CPU_MASK:($number),MEM_MASK:($number)" {
 		incr task_mask $expect_out(3,string)
@@ -494,7 +494,7 @@ expect {
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: slaunch not responding or failure to recognize prompt\n"
+		send_user "\nFAILURE: srun not responding or failure to recognize prompt\n"
 		set exit_code 1
 		exp_continue
 	}
