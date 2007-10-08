@@ -592,8 +592,11 @@ create_job_step(srun_job_t *job)
 	slurm_step_ctx_params_t_init(&job->ctx_params);
 	job->ctx_params.job_id = job->jobid;
 	job->ctx_params.uid = opt.uid;
-/* 	totalview_jobid = NULL; */
-/* 	xstrfmtcat(totalview_jobid, "%u", ctx_params.job_id); */
+
+	/* set the jobid for totalview */
+	totalview_jobid = NULL;
+	xstrfmtcat(totalview_jobid, "%u", job->ctx_params.job_id);
+
 	job->ctx_params.node_count = job->nhosts;
 	job->ctx_params.task_count = opt.nprocs;
 	
