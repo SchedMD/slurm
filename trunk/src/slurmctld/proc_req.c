@@ -1488,8 +1488,9 @@ static void _slurm_rpc_reconfigure_controller(slurm_msg_t * msg)
 		info("_slurm_rpc_reconfigure_controller: completed %s", 
 			TIME_STR);
 		slurm_send_rc_msg(msg, SLURM_SUCCESS);
-		slurm_sched_partition_change();
-		schedule();	/* has its own locks */
+		slurm_sched_partition_change();	/* notify sched plugin */
+		select_g_reconfigure();		/* notify select plugin too */
+		schedule();			/* has its own locks */
 		save_all_state();
 	}
 }
