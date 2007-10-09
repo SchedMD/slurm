@@ -210,13 +210,13 @@ scontrol_update_job (int argc, char *argv[])
 				(uint32_t) strtol(&argv[i][6], 
 						 (char **) NULL, 10);
 		else if (strncasecmp(argv[i], "TimeLimit=", 10) == 0) {
-			if ((strcasecmp(&argv[i][10], "UNLIMITED") == 0) ||
-			    (strcasecmp(&argv[i][10], "INFINITE") == 0))
-				job_msg.time_limit = INFINITE;
-			else
-				job_msg.time_limit = 
-					(uint32_t) strtol(&argv[i][10], 
-							  (char **) NULL, 10);
+			int time_limit = time_str2mins(&argv[i][10]);
+			if (time_limit < 0) {
+				error("Invalid TimeLimit value");
+				exit_code = 1;
+				return 0;
+			}
+			job_msg.time_limit = time_limit;
 			update_cnt++;
 		}
 		else if (strncasecmp(argv[i], "Priority=", 9) == 0) {

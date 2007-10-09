@@ -160,8 +160,12 @@ char *slurm_sprint_partition_info ( partition_info_t * part_ptr,
 	xstrcat(out, tmp_line);
 	if (part_ptr->max_time == INFINITE)
 		sprintf(tmp_line, "MaxTime=UNLIMITED ");
-	else
-		sprintf(tmp_line, "MaxTime=%u ", part_ptr->max_time);
+	else {
+		char time_line[32];
+		secs2time_str(part_ptr->max_time * 60, time_line, 
+			sizeof(time_line));
+		sprintf(tmp_line, "MaxTime=%s ", time_line);
+	}
 	xstrcat(out, tmp_line);
 	if (part_ptr->hidden)
 		sprintf(tmp_line, "Hidden=YES");

@@ -33,6 +33,10 @@ COMMAND CHANGES
 * The srun option --pty has been added to start the job with a pseudo terminal.
 * The "scontrol show job" command noe reports the command, arguments, and 
   working directory for batch jobs.
+* scontrol now shows job TimeLimit and partition MaxTime in the format of
+  [days-]hours:minutes:seconds or "UNLIMITED". The scontrol update options 
+  for times now accept minutes, minutes:seconds, hours:minutes:seconds, 
+  days-hours, days-hours:minutes, days-hours:minutes:seconds or "UNLIMITED".
 * sacct -c can now be used to view job completion data
 
 CONFIGURATION FILE CHANGES
@@ -64,6 +68,9 @@ CONFIGURATION FILE CHANGES
 * The partition parameter "Shared" now has a job count. For example:
   Shared=YES:4     (Up to 4 jobs may share each resource)
   Shared=FORCE:2   (Up to 2 jobs must share each resource)
+* The partition MaxTime format now accepts minutes, minutes:seconds, 
+  hours:minutes:seconds, days-hours, days-hours:minutes, 
+  days-hours:minutes:seconds or "UNLIMITED".
  
 * See "man slurm.conf" for more information.
 
