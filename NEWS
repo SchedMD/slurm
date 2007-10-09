@@ -1,6 +1,9 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins.
 
+* Changes in SLURM 1.2.19
+=========================
+
 * Changes in SLURM 1.2.18
 =========================
  -- BLUEGENE - bug fix for smap stating passthroughs are used when they aren't
