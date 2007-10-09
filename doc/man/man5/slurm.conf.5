@@ -1297,8 +1297,12 @@ This limit does not apply to jobs executed by SlurmUser or user root.
 
 .TP
 \fBMaxTime\fR
-Maximum wall\-time limit for any job in minutes. The default 
-value is "UNLIMITED", which is represented internally as \-1.
+Maximum run time limit for jobs.
+Format is minutes, minutes:seconds, hours:minutes:seconds, 
+days\-hours, days\-hours:minutes, days\-hours:minutes:seconds or
+"UNLIMITED". 
+Time resolution is one minute and second values are rounded up to 
+the next minute.
 This limit does not apply to jobs executed by SlurmUser or user root.
 
 .TP

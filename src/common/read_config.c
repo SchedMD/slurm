@@ -64,6 +64,7 @@
 #include "src/common/xstring.h"
 #include "src/common/slurm_rlimits_info.h"
 #include "src/common/parse_config.h"
+#include "src/common/parse_time.h"
 #include "src/common/slurm_selecttype_info.h"
 
 /* Instantiation of the "extern slurm_ctl_conf_t slurmcltd_conf"
@@ -423,7 +424,7 @@ static int parse_partitionname(void **dest, slurm_parser_enum_t type,
 		{"AllowGroups", S_P_STRING},
 		{"Default", S_P_BOOLEAN}, /* YES or NO */
 		{"Hidden", S_P_BOOLEAN}, /* YES or NO */
-		{"MaxTime", S_P_UINT32}, /* INFINITE or a number */
+		{"MaxTime", S_P_STRING},
 		{"MaxNodes", S_P_UINT32}, /* INFINITE or a number */
 		{"MinNodes", S_P_UINT32},
 		{"Nodes", S_P_STRING},
@@ -466,9 +467,21 @@ static int parse_partitionname(void **dest, slurm_parser_enum_t type,
 		    && !s_p_get_boolean(&p->hidden_flag, "Hidden", dflt))
 			p->hidden_flag = false;
 
-		if (!s_p_get_uint32(&p->max_time, "MaxTime", tbl)
-		    && !s_p_get_uint32(&p->max_time, "MaxTime", dflt))
+		if (!s_p_get_string(&tmp, "MaxTime", tbl) &&
+		    !s_p_get_string(&tmp, "MaxTime", dflt))
 			p->max_time = INFINITE;
+		else {
+			int max_time = time_str2mins(tmp);
+			if (max_time < 0) {
+				error("Bad value \"%s\" for MaxTime", tmp);
+				destroy_partitionname(p);
+				s_p_hashtbl_destroy(tbl);
+				xfree(tmp);
+				return -1;
+			}
+			p->max_time = max_time;
+			xfree(tmp);
+		}
 
 		if (!s_p_get_uint32(&p->max_nodes, "MaxNodes", tbl)
 		    && !s_p_get_uint32(&p->max_nodes, "MaxNodes", dflt))

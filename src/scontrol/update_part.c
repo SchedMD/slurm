@@ -57,13 +57,13 @@ scontrol_update_part (int argc, char *argv[])
 		if (strncasecmp(argv[i], "PartitionName=", 14) == 0)
 			part_msg.name = &argv[i][14];
 		else if (strncasecmp(argv[i], "MaxTime=", 8) == 0) {
-			if ((strcasecmp(&argv[i][8],"UNLIMITED") == 0) ||
-			    (strcasecmp(&argv[i][8],"INFINITE") == 0))
-				part_msg.max_time = INFINITE;
-			else
-				part_msg.max_time = 
-					(uint32_t) strtol(&argv[i][8], 
-						(char **) NULL, 10);
+			int max_time = time_str2mins(&argv[i][8]);
+			if (max_time < 0) {
+				exit_code = 1;
+				error("Invalid input %s", argv[i]);
+				return 0;
+			}
+			part_msg.max_time = max_time;
 			update_cnt++;
 		}
 		else if (strncasecmp(argv[i], "MaxNodes=", 9) == 0) {
@@ -89,10 +89,9 @@ scontrol_update_part (int argc, char *argv[])
 				part_msg.default_part = 1;
 			else {
 				exit_code = 1;
-				fprintf (stderr, "Invalid input: %s\n", 
-					 argv[i]);
-				fprintf (stderr, "Acceptable Default values "
-					"are YES and NO\n");
+				error("Invalid input: %s", argv[i]);
+				error("Acceptable Default values "
+					"are YES and NO");
 				return 0;
 			}
 			update_cnt++;
@@ -104,10 +103,9 @@ scontrol_update_part (int argc, char *argv[])
 				part_msg.hidden = 1;
 			else {
 				exit_code = 1;
-				fprintf (stderr, "Invalid input: %s\n", 
-					 argv[i]);
-				fprintf (stderr, "Acceptable Hidden values "
-					"are YES and NO\n");
+				error("Invalid input: %s", argv[i]);
+				error("Acceptable Hidden values "
+					"are YES and NO");
 				return 0;
 			}
 			update_cnt++;
@@ -119,10 +117,9 @@ scontrol_update_part (int argc, char *argv[])
 				part_msg.root_only = 1;
 			else {
 				exit_code = 1;
-				fprintf (stderr, "Invalid input: %s\n", 
-					 argv[i]);
-				fprintf (stderr, "Acceptable RootOnly values "
-					"are YES and NO\n");
+				error("Invalid input: %s", argv[i]);
+				error("Acceptable RootOnly values "
+					"are YES and NO");
 				return 0;
 			}
 			update_cnt++;
@@ -145,10 +142,9 @@ scontrol_update_part (int argc, char *argv[])
 					SHARED_FORCE;
 			} else {
 				exit_code = 1;
-				fprintf (stderr, "Invalid input: %s\n",
-					argv[i]);
-				fprintf (stderr, "Acceptable Shared values are "
-					"NO, EXCLUSIVE, YES:#, and FORCE:#\n");
+				error("Invalid input: %s", argv[i]);
+				error("Acceptable Shared values are "
+					"NO, EXCLUSIVE, YES:#, and FORCE:#");
 				return 0;
 			}
 			update_cnt++;
@@ -165,10 +161,9 @@ scontrol_update_part (int argc, char *argv[])
 				part_msg.state_up = 1;
 			else {
 				exit_code = 1;
-				fprintf (stderr, "Invalid input: %s\n", 
-					 argv[i]);
-				fprintf (stderr, "Acceptable State values "
-					"are UP and DOWN\n");
+				error("Invalid input: %s", argv[i]);
+				error("Acceptable State values "
+					"are UP and DOWN");
 				return 0;
 			}
 			update_cnt++;
@@ -183,15 +178,15 @@ scontrol_update_part (int argc, char *argv[])
 		}
 		else {
 			exit_code = 1;
-			fprintf (stderr, "Invalid input: %s\n", argv[i]);
-			fprintf (stderr, "Request aborted\n");
+			error("Invalid input: %s", argv[i]);
+			error("Request aborted");
 			return 0;
 		}
 	}
 
 	if (update_cnt == 0) {
 		exit_code = 1;
-		fprintf (stderr, "No changes specified\n");
+		error("No changes specified");
 		return 0;
 	}
 

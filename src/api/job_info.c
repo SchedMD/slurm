@@ -188,8 +188,11 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 		sprintf(tmp_line, "UNLIMITED ");
 	else if (job_ptr->time_limit == NO_VAL)
 		sprintf(tmp_line, "Partition_Limit ");
-	else
-		sprintf(tmp_line, "%u ", job_ptr->time_limit);
+	else {
+		secs2time_str(job_ptr->time_limit * 60, tmp1,
+			sizeof(tmp1));
+		sprintf(tmp_line, "%s ", tmp1);
+	}
 	xstrcat(out, tmp_line);
 	if (WIFSIGNALED(job_ptr->exit_code))
 		term_sig = WTERMSIG(job_ptr->exit_code);
