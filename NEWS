@@ -72,6 +72,11 @@ documents those changes that are of interest to users and admins.
     Moved existing digital signature logic into new plugin: crypto/openssl.
     Added new support for crypto/munge (available with GPL license).
 
+* Changes in SLURM 1.2.19
+=========================
+ -- Print warning if non-privileged user requests negative "--nice" value on
+    job submission (srun, salloc, and sbatch commands).
+
 * Changes in SLURM 1.2.18
 =========================
  -- BLUEGENE - bug fix for smap stating passthroughs are used when they aren't
