@@ -923,6 +923,15 @@ void set_options(const int argc, char **argv)
 					"-%d and %d", NICE_OFFSET, NICE_OFFSET);
 				exit(1);
 			}
+			if (opt.nice < 0) {
+				uid_t my_uid = getuid();
+				if ((my_uid != 0) &&
+				    (my_uid != slurm_get_slurm_user_id())) {
+					error("Nice value must be non-negative, "
+					      "value ignored");
+					opt.nice = 0;
+				}
+			}
 			break;
 		case LONG_OPT_BELL:
 			opt.bell = BELL_ALWAYS;
