@@ -463,7 +463,6 @@ static bitstr_t *_lllp_map_abstract_mask (bitstr_t *bitmask)
 	int num_bits = bit_size(bitmask);
 	bitstr_t *newmask = bit_alloc(num_bits);
 
-	bit_nclear(newmask,0,num_bits-1); /* init to zero */
 	/* remap to physical machine */
 	for (i = 0; i < num_bits; i++) {
 		if (bit_test(bitmask,i)) {
@@ -1327,7 +1326,6 @@ static void _single_mask(const uint16_t nsockets,
 	bitoff_t bit;
 	bitoff_t num_bits = nsockets * ncores * nthreads;
 	bitstr_t * bitmask = bit_alloc(num_bits);
-	bit_nclear(bitmask,0,num_bits-1); /* init to zero */
 
 	if (bind_to_exact_socket) {
 		nsockets_left = 1;
@@ -1355,7 +1353,10 @@ static void _single_mask(const uint16_t nsockets,
 			while (nthreads_left-- > 0) {
 				bit = SCT_TO_LLLP(socket, core, thread,
 						  ncores, nthreads);
-				bit_set(bitmask, bit);
+				if (bit < num_bits)
+					bit_set(bitmask, bit);
+				else
+					info("Invalid job cpu_bind mask");
 				thread++;
 			}
 			core++;
@@ -1429,7 +1430,8 @@ static void _cr_reserve_unit(bitstr_t *bitmask, int cr_type)
 						reserve_this_core   = true;
 						nthreads_left = 0;
 					}
-				}
+				} else
+					info("Invalid job cpu_bind mask");
 				thread++;
 			}
 			/* mark entire core */
@@ -1443,7 +1445,10 @@ static void _cr_reserve_unit(bitstr_t *bitmask, int cr_type)
 							  ncores, nthreads);
 					/* map abstract to machine */
 					bit = BLOCK_MAP(bit);
-					bit_set(bitmask, bit);
+					if (bit < num_bits)
+						bit_set(bitmask, bit);
+					else
+						info("Invalid job cpu_bind mask");
 					thread++;
 				}
 			}
@@ -1463,7 +1468,10 @@ static void _cr_reserve_unit(bitstr_t *bitmask, int cr_type)
 							  ncores, nthreads);
 					/* map abstract to machine */
 					bit = BLOCK_MAP(bit);
-					bit_set(bitmask, bit);
+					if (bit < num_bits)
+						bit_set(bitmask, bit);
+					else
+						info("Invalid job cpu_bind mask");
 					thread++;
 				}
 				core++;
@@ -1475,22 +1483,28 @@ static void _cr_reserve_unit(bitstr_t *bitmask, int cr_type)
 }
 
 
-void get_bitmap_from_cpu_bind(bitstr_t *bitmap_test,
-			      cpu_bind_type_t cpu_bind_type, 
-			      char *cpu_bind, uint32_t numtasks)
+static int _get_bitmap_from_cpu_bind(bitstr_t *bitmap_test,
+				     cpu_bind_type_t cpu_bind_type, 
+				     char *cpu_bind, uint32_t numtasks)
 {
 	char opt_dist[10];
 	char *dist_str = NULL;
 	char *dist_str_next = NULL;
 	int bitmap_size = bit_size(bitmap_test);
+	int rc = SLURM_SUCCESS;
 	unsigned int i;
 	dist_str = cpu_bind;
 	
 	if (cpu_bind_type & CPU_BIND_RANK) {
-		for (i = 0; i < MIN(numtasks,bitmap_size); i++) {
-			bit_set(bitmap_test, i);
+		for (i=0; i<numtasks; i++) {
+			if (i < bitmap_size)
+				bit_set(bitmap_test, i);
+			else {
+				info("Invalid job cpu_bind mask");
+				return SLURM_ERROR;
+			}
 		}
-		return;
+		return rc;
 	}
 
 	i = 0;
@@ -1520,8 +1534,12 @@ void get_bitmap_from_cpu_bind(bitstr_t *bitmap_test,
 			} else {
 				mycpu = strtoul(opt_dist, NULL, 10);
 			}
-			if (mycpu < bitmap_size) {
+			if (mycpu < bitmap_size)
 				bit_set(bitmap_test, mycpu);
+			else {
+				info("Invalid job cpu_bind mask");
+				rc = SLURM_ERROR;
+				/* continue and try to map remaining tasks */
 			}
 		}
 
@@ -1529,6 +1547,7 @@ void get_bitmap_from_cpu_bind(bitstr_t *bitmap_test,
 		dist_str_next = NULL;
 	    	i++;
 	}
+	return rc;
 }
 
 
@@ -1573,9 +1592,8 @@ static void _cr_update_lllp(int reserve, uint32_t job_id, uint32_t job_step_id,
 		bitoff_t num_bits = 
 			conf->sockets * conf->cores * conf->threads;
 		bitstr_t * bitmap_test = bit_alloc(num_bits);
-		bit_nclear(bitmap_test,0,num_bits-1); /* init to zero */
-		get_bitmap_from_cpu_bind(bitmap_test,
-					 cpu_bind_type, cpu_bind, numtasks);
+		_get_bitmap_from_cpu_bind(bitmap_test,
+					  cpu_bind_type, cpu_bind, numtasks);
 
 		_cr_reserve_unit(bitmap_test, conf->cr_type);
 
