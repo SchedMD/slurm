@@ -57,7 +57,7 @@ make_bash_script $test_script {
 set timeout $max_job_delay
 set jobid  0
 set stepid 0
-set srun_pid [spawn $srun -u -v -n1 $test_script]
+set srun_pid [spawn $srun -u -v -n1 -t1 $test_script]
 expect {
 	-re "launching (($number)\.0)" {
 		set stepid $expect_out(1,string)
@@ -105,14 +105,37 @@ send_user "Test sees step is gone, srun should have exited as well.\n"
 
 #
 # And finally check to see if srun is still hanging around (it should
-# have exited by now).
+# have exited by now) and job has completed
 #
 if [catch {exec kill -0 $srun_pid}] {
+	send_user "\nsrun command is terminated, as desired\n"
+	set exit_code 0
+} else {
+	send_user "\nFAILURE: srun is still running after job exits!\n"
+	set exit_code 1
+}
+spawn $squeue --noheader --jobs=$jobid
+expect {
+	-re "R" {
+		send_user "\nFAILURE: job not completed!\n"
+		set exit_code 1
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: squeue not responding\n"
+		set exit_code 1
+		exit 1
+	}
+	eof {
+		wait
+	}
+}
+
+if {$exit_code == 0} {
 	send_user "\nSUCCESS\n"
 	exec $bin_rm -f $test_script
 	exit 0
 } else {
-	send_user "\nFAILURE: srun is still running after job exits!\n"
-	exec kill -9 $srun_pid
+	cancel_job $jobid
 	exit 1
 }

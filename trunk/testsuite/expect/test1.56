@@ -59,7 +59,7 @@ close $file
 # Launch the test script
 #
 set timeout $max_job_delay
-set srun_pid [spawn $srun -v -n1 --input=$file_in --output=$file_out --error=- cat]
+set srun_pid [spawn $srun -v -n1 -t1 --input=$file_in --output=$file_out --error=- cat]
 expect {
 	-re {launching ($number)\.($number)} {
 		set jobid $expect_out(1,string)
