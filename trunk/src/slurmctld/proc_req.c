@@ -76,6 +76,7 @@
 #include "src/slurmctld/read_config.h"
 #include "src/slurmctld/sched_plugin.h"
 #include "src/slurmctld/slurmctld.h"
+#include "src/slurmctld/srun_comm.h"
 #include "src/slurmctld/state_save.h"
 #include "src/slurmctld/trigger_mgr.h"
 
@@ -96,6 +97,7 @@ inline static void  _slurm_rpc_dump_jobs(slurm_msg_t * msg);
 inline static void  _slurm_rpc_dump_nodes(slurm_msg_t * msg);
 inline static void  _slurm_rpc_dump_partitions(slurm_msg_t * msg);
 inline static void  _slurm_rpc_epilog_complete(slurm_msg_t * msg);
+inline static void  _slurm_rpc_job_notify(slurm_msg_t * msg);
 inline static void  _slurm_rpc_job_ready(slurm_msg_t * msg);
 inline static void  _slurm_rpc_job_step_kill(slurm_msg_t * msg);
 inline static void  _slurm_rpc_job_step_create(slurm_msg_t * msg);
@@ -284,6 +286,10 @@ void slurmctld_req (slurm_msg_t * msg)
 	case REQUEST_TRIGGER_CLEAR:
 		_slurm_rpc_trigger_clear(msg);
 		slurm_free_trigger_msg(msg->data);
+		break;
+	case REQUEST_JOB_NOTIFY:
+		_slurm_rpc_job_notify(msg);
+		slurm_free_job_notify_msg(msg->data);
 		break;
 	default:
 		error("invalid RPC msg_type=%d", msg->msg_type);
@@ -2626,3 +2632,40 @@ inline static void  _slurm_rpc_trigger_set(slurm_msg_t * msg)
 
 	slurm_send_rc_msg(msg, rc);
 }
+
+inline static void  _slurm_rpc_job_notify(slurm_msg_t * msg)
+{
+	int error_code = SLURM_SUCCESS;
+	/* Locks: read job */
+	slurmctld_lock_t job_read_lock = { 
+		NO_LOCK, READ_LOCK, NO_LOCK, NO_LOCK };
+	uid_t uid;
+	job_notify_msg_t * notify_msg = (job_notify_msg_t *) msg->data;
+	DEF_TIMERS;
+
+	START_TIMER;
+	debug("Processing RPC: REQUEST_JOB_NOTIFY");
+	uid = g_slurm_auth_get_uid(msg->auth_cred);
+	if (!validate_super_user(uid)) {
+		error_code = ESLURM_USER_ID_MISSING;
+		error("Security violation, REQUEST_JOB_NOTIFY RPC from uid=%u",
+		      (unsigned int) uid);
+	}
+
+	if (error_code == SLURM_SUCCESS) {
+		/* do RPC call */
+		struct job_record *job_ptr;
+		lock_slurmctld(job_read_lock);
+		job_ptr = find_job_record(notify_msg->job_id);
+		if (job_ptr)
+			srun_user_message(job_ptr, notify_msg->message);
+		else
+			error_code = ESLURM_INVALID_JOB_ID;
+		unlock_slurmctld(job_read_lock);
+	}
+
+	END_TIMER2("_slurm_rpc_job_notify");
+info("NOTIFY job %u: %s %d", notify_msg->job_id, notify_msg->message, error_code);
+	slurm_send_rc_msg(msg, error_code);
+}
+

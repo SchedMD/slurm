@@ -572,7 +572,7 @@ _process_command (int argc, char *argv[])
 				        argv[0]);
 		}
 		else {
-			error_code =scontrol_checkpoint(argv[1], argv[2]);
+			error_code = scontrol_checkpoint(argv[1], argv[2]);
 			if (error_code) {
 				exit_code = 1;
 				if (quiet_flag != 1)
@@ -594,7 +594,7 @@ _process_command (int argc, char *argv[])
 					"too few arguments for keyword:%s\n",
 					argv[0]);
 		} else {
-			error_code =scontrol_requeue(argv[1]);
+			error_code = scontrol_requeue(argv[1]);
 			if (error_code) {
 				exit_code = 1;
 				if (quiet_flag != 1)
@@ -771,6 +771,17 @@ _process_command (int argc, char *argv[])
 		} else {
 			scontrol_list_pids (argc == 1 ? NULL : argv[1],
 					    argc <= 2 ? NULL : argv[2]);
+		}
+	}
+	else if (strncasecmp (argv[0], "notify", 6) == 0) {
+		if (argc < 3) {
+			exit_code = 1;
+			fprintf (stderr, 
+				 "too few arguments for keyword:%s\n", 
+				 argv[0]);
+		} else if (scontrol_job_notify(argc-1, &argv[1])) {
+			exit_code = 1;
+			slurm_perror("job notify failure");
 		}
 	}
 	else {
@@ -996,6 +1007,7 @@ scontrol [<OPTION>] [<COMMAND>]                                            \n\
                               scontrol is ran on, and only for those       \n\
                               processes spawned by SLURM and their         \n\
                               descendants)                                 \n\
+     notify <job_id> msg      send message to specified job                \n\
      oneliner                 report output one record per line.           \n\
      pidinfo <pid>            return slurm job information for given pid.  \n\
      ping                     print status of slurmctld daemons.           \n\
