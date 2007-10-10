@@ -326,9 +326,18 @@ static uint32_t _get_job_submit_time(struct job_record *job_ptr)
 
 static uint32_t _get_job_tasks(struct job_record *job_ptr)
 {
+	uint32_t task_cnt = 1;
+
 	if (job_ptr->num_procs)
-		return job_ptr->num_procs;
-	return (uint32_t) 1;
+		task_cnt = job_ptr->num_procs;
+
+	if (job_ptr->details) {
+		task_cnt = MAX(task_cnt,
+			       (_get_job_min_nodes(job_ptr) * 
+			        job_ptr->details->ntasks_per_node));
+	}
+
+	return task_cnt;
 }
 
 static uint32_t	_get_job_time_limit(struct job_record *job_ptr)

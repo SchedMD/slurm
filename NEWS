@@ -78,6 +78,8 @@ documents those changes that are of interest to users and admins.
 =========================
  -- Print warning if non-privileged user requests negative "--nice" value on
     job submission (srun, salloc, and sbatch commands).
+ -- In sched/wiki and sched/wiki2,, add support for srun's 
+    --ntasks-per-node option.
 
 * Changes in SLURM 1.2.18
 =========================
