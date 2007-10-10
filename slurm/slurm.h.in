@@ -1528,6 +1528,15 @@ extern int slurm_update_job PARAMS(( job_desc_msg_t * job_msg )) ;
 extern int slurm_get_select_jobinfo PARAMS((select_jobinfo_t jobinfo,
 		enum select_data_type data_type, void *data));
 
+/*
+ * slurm_notify_job - send message to the job's stdout, 
+ *	usable only by user root
+ * IN job_id - slurm job_id or 0 for all jobs
+ * IN message - arbitrary message
+ * RET 0 or -1 on error
+ */
+extern int slurm_notify_job PARAMS(( uint32_t job_id, char *message ));
+
 /*****************************************************************************\
  *	SLURM JOB STEP CONFIGURATION READ/PRINT/UPDATE FUNCTIONS
 \*****************************************************************************/

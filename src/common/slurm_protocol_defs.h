@@ -142,6 +142,7 @@ typedef enum {
 	REQUEST_JOB_READY,
 	RESPONSE_JOB_READY,
 	REQUEST_JOB_END_TIME,
+	REQUEST_JOB_NOTIFY,
 
 	REQUEST_JOB_STEP_CREATE = 5001,
 	RESPONSE_JOB_STEP_CREATE,
@@ -286,6 +287,12 @@ typedef struct job_step_kill_msg {
 	uint16_t signal;
 	uint16_t batch_flag;
 } job_step_kill_msg_t;
+
+typedef struct job_notify_msg {
+	uint32_t job_id;
+	uint32_t job_step_id;	/* currently not used */
+	char *   message;
+} job_notify_msg_t;
 
 typedef struct job_id_msg {
 	uint32_t job_id;
@@ -796,6 +803,7 @@ void inline slurm_free_step_complete_msg(step_complete_msg_t *msg);
 void inline slurm_free_stat_jobacct_msg(stat_jobacct_msg_t *msg);
 void inline slurm_free_node_select_msg(
 		node_info_select_request_msg_t *msg);
+void inline slurm_free_job_notify_msg(job_notify_msg_t * msg);
 extern int slurm_free_msg_data(slurm_msg_type_t type, void *data);
 extern uint32_t slurm_get_return_code(slurm_msg_type_t type, void *data);
 

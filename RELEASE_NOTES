@@ -38,6 +38,8 @@ COMMAND CHANGES
   for times now accept minutes, minutes:seconds, hours:minutes:seconds, 
   days-hours, days-hours:minutes, days-hours:minutes:seconds or "UNLIMITED".
 * sacct -c can now be used to view job completion data
+* scontrol "notify" command added to send message to stdout of srun for 
+  specified job id. 
 
 CONFIGURATION FILE CHANGES
 

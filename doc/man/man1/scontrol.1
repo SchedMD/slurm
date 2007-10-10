@@ -111,24 +111,29 @@ configured as hidden or partitions that are unavailable to the user's group.
 This is the default behavior.
 
 .TP
+\fBnotify\fP \fIjob_id\fP \fImessage\fP
+Send a message to standard output of the srun command associated with the 
+specified \fIjob_id\fP.
+
+.TP
 \fBoneliner\fP
 Print information one line per record.
 This is an independent command with no options meant for use in interactive mode.
 
 .TP
-\fBpidinfo\fP \fIPROC_ID\fP
+\fBpidinfo\fP \fIproc_id\fP
 Print the Slurm job id and scheduled termination time corresponding to the 
-supplied process id, \fIPROC_ID\fP, on the current node.  This will work only
+supplied process id, \fIproc_id\fP, on the current node.  This will work only
 with processes on node on which scontrol is run, and only for those processes
 spawned by SLURM and their descendants.
 
 .TP
-\fBlistpids\fP [JOBID[.STEPID]] [NodeName]
+\fBlistpids\fP [\fIjob_id\fP[.\fIstep_id\fP]] [\fINodeName\fP]
 Print a listing of the process IDs in a job step (if JOBID.STEPID is provided),
-or all of the job steps in a job (if JOBID is provided), or all of the job
-steps in all of the jobs on the local node (if JOBID is not provided or JOBID
-is "*").  This will work only with processes on the node on which
-scontrol is run, and only for those processes spawned by SLURM and
+or all of the job steps in a job (if \fIjob_id\fP is provided), or all of the job
+steps in all of the jobs on the local node (if \fIjob_id\fP is not provided 
+or \fIjob_id\fP is "*").  This will work only with processes on the node on 
+which scontrol is run, and only for those processes spawned by SLURM and
 their descendants. Note that some SLURM configurations
 (\fIProctrackType\fP value of \fIpgid\fP or \fIaix\fP) 
 are unable to identify all processes associated with a job or job step.

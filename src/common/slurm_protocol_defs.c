@@ -1286,3 +1286,10 @@ extern uint32_t slurm_get_return_code(slurm_msg_type_t type, void *data)
 	return rc;
 }
 
+void inline slurm_free_job_notify_msg(job_notify_msg_t * msg)
+{
+	if (msg) {
+		xfree(msg->message);
+		xfree(msg);
+	}
+}

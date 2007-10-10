@@ -5,8 +5,10 @@ documents those changes that are of interest to users and admins.
 =============================
  -- Add select_g_reconfigure() function to node changes in slurmctld configuration
     that can impact node scheduling.
- -- Scontrol to set/get partition's MaxTime and job's Timelimit in minutes plus
+ -- scontrol to set/get partition's MaxTime and job's Timelimit in minutes plus
     new formats: min:sec, hr:min:sec, days-hr:min:sec, days-hr, etc.
+ -- scontrol "notify" command added to send message to stdout of srun for 
+    specified job id.
 
 * Changes in SLURM 1.3.0-pre4
 =============================

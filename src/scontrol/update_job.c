@@ -448,3 +448,35 @@ scontrol_update_job (int argc, char *argv[])
 	else
 		return 0;
 }
+
+/*
+ * Send message to stdout of specified job
+ * argv[0] == jobid
+ * argv[1]++ the message
+ */
+extern int
+scontrol_job_notify(int argc, char *argv[])
+{
+	int i;
+	uint32_t job_id;
+	char message[256];
+
+	job_id = atoi(argv[0]);
+	if (job_id <= 0) {
+		fprintf(stderr, "Invalid job_id %s", argv[0]);
+		return 1;
+	}
+
+	message[0] = '\0';
+	for (i=1; i<argc; i++) {
+		if (i > 1)
+			strncat(message, " ", sizeof(message));
+		strncat(message, argv[i], sizeof(message));
+	}
+			
+	if (slurm_notify_job(job_id, message))
+		return slurm_get_errno ();
+	else
+		return 0;
+}
+
