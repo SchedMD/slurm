@@ -995,9 +995,10 @@ stdout and/or stderr are redirected from only the task with relative
 id equal to \fItaskid\fR, where 0 <= \fItaskid\fR <= \fIntasks\fR,
 where \fIntasks\fR is the total number of tasks in the current job step.
 stdin is redirected from the stdin of \fBsrun\fR to this same task.
+This file will be written on the node executing the task.
 .TP
 \fIfilename\fR
-fBsrun\fR will redirect stdout and/or stderr to the named file from 
+\fBsrun\fR will redirect stdout and/or stderr to the named file from 
 all tasks.
 stdin will be redirected from the named file and broadcast to all
 tasks in the job.  \fIfilename\fR refers to a path on the host
@@ -1012,7 +1013,9 @@ described above. The following list of format specifiers may be
 used in the format string to generate a filename that will be
 unique to a given jobid, stepid, node, or task. In each case, 
 the appropriate number of files are opened and associated with
-the corresponding tasks.
+the corresponding tasks. Note that any format string containing 
+%t, %n, and/or %N will be written on the node executing the task 
+rather than the node where \fBsrun\fR executes.
 .RS 10
 .TP
 %J
