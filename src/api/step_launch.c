@@ -31,6 +31,7 @@
 #endif
 
 #include <errno.h>
+#include <fcntl.h>
 #include <pthread.h>
 #include <stdarg.h>
 #include <stdlib.h>
@@ -40,6 +41,7 @@
 #include <netinet/in.h>
 #include <sys/param.h>
 #include <sys/socket.h>
+#include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/un.h>
 #include <netdb.h> /* for gethostbyname */
@@ -79,11 +81,13 @@ static void _print_launch_msg(launch_tasks_request_msg_t *msg,
 /**********************************************************************
  * Message handler declarations
  **********************************************************************/
+static pid_t  srun_ppid = (pid_t) 0;
 static uid_t  slurm_uid;
-static int _msg_thr_create(struct step_launch_state *sls, int num_nodes);
+static void _exec_prog(slurm_msg_t *msg);
+static int  _msg_thr_create(struct step_launch_state *sls, int num_nodes);
 static void _handle_msg(struct step_launch_state *sls, slurm_msg_t *msg);
 static bool _message_socket_readable(eio_obj_t *obj);
-static int _message_socket_accept(eio_obj_t *obj, List objs);
+static int  _message_socket_accept(eio_obj_t *obj, List objs);
 
 static struct io_operations message_socket_ops = {
 	readable:	&_message_socket_readable,
@@ -907,6 +911,7 @@ _handle_msg(struct step_launch_state *sls, slurm_msg_t *msg)
 {
 	uid_t req_uid = g_slurm_auth_get_uid(msg->auth_cred);
 	uid_t uid = getuid();
+	srun_user_msg_t *um;
 	int rc;
 	
 	if ((req_uid != slurm_uid) && (req_uid != 0) && (req_uid != uid)) {
@@ -926,20 +931,34 @@ _handle_msg(struct step_launch_state *sls, slurm_msg_t *msg)
 		_exit_handler(sls, msg);
 		slurm_free_task_exit_msg(msg->data);
 		break;
-	case SRUN_NODE_FAIL:
-		debug2("received srun node fail");
-		_node_fail_handler(sls, msg);
-		slurm_free_srun_node_fail_msg(msg->data);
+	case SRUN_PING:
+		debug3("slurmctld ping received");
+		slurm_send_rc_msg(msg, SLURM_SUCCESS);
+		slurm_free_srun_ping_msg(msg->data);
+		break;
+	case SRUN_EXEC:
+		_exec_prog(msg);
+		slurm_free_srun_exec_msg(msg->data);
+		break;
+	case SRUN_JOB_COMPLETE:
+		debug2("received job step complete message");
+		_job_complete_handler(sls, msg);
+		slurm_free_srun_job_complete_msg(msg->data);
 		break;
 	case SRUN_TIMEOUT:
 		debug2("received job step timeout message");
 		_timeout_handler(sls, msg);
 		slurm_free_srun_timeout_msg(msg->data);
 		break;
-	case SRUN_JOB_COMPLETE:
-		debug2("received job step complete message");
-		_job_complete_handler(sls, msg);
-		slurm_free_srun_job_complete_msg(msg->data);
+	case SRUN_USER_MSG:
+		um = msg->data;
+		info("%s", um->msg);
+		slurm_free_srun_user_msg(msg->data);
+		break;
+	case SRUN_NODE_FAIL:
+		debug2("received srun node fail");
+		_node_fail_handler(sls, msg);
+		slurm_free_srun_node_fail_msg(msg->data);
 		break;
 	case PMI_KVS_PUT_REQ:
 		debug2("PMI_KVS_PUT_REQ received");
@@ -1055,3 +1074,101 @@ static void _print_launch_msg(launch_tasks_request_msg_t *msg,
 	debug3("uid:%ld gid:%ld cwd:%s %d", (long) msg->uid,
 		(long) msg->gid, msg->cwd, nodeid);
 }
+
+void record_ppid(void)
+{
+	srun_ppid = getppid();
+}
+
+/* This is used to initiate an OpenMPI checkpoint program, 
+ * but is written to be general purpose */
+static void
+_exec_prog(slurm_msg_t *msg)
+{
+	pid_t child;
+	int pfd[2], status, exit_code = 0, i;
+	ssize_t len;
+	char *argv[4], buf[256] = "";
+	time_t now = time(NULL);
+	bool checkpoint = false;
+	srun_exec_msg_t *exec_msg = msg->data;
+
+	if (exec_msg->argc > 2) {
+		verbose("Exec '%s %s' for %u.%u", 
+			exec_msg->argv[0], exec_msg->argv[1],
+			exec_msg->job_id, exec_msg->step_id);
+	} else {
+		verbose("Exec '%s' for %u.%u", 
+			exec_msg->argv[0], 
+			exec_msg->job_id, exec_msg->step_id);
+	}
+
+	if (strcmp(exec_msg->argv[0], "ompi-checkpoint") == 0) {
+		if (srun_ppid)
+			checkpoint = true;
+		else {
+			error("Can not create checkpoint, no srun_ppid set");
+			exit_code = EINVAL;
+			goto fini;
+		}
+	}
+	if (checkpoint) {
+		/* OpenMPI specific checkpoint support */
+		info("Checkpoint started at %s", ctime(&now));
+		for (i=0; (exec_msg->argv[i] && (i<2)); i++) {
+			argv[i] = exec_msg->argv[i];
+		}
+		snprintf(buf, sizeof(buf), "%ld", (long) srun_ppid);
+		argv[i] = buf;
+		argv[i+1] = NULL;
+	}
+
+	if (pipe(pfd) == -1) {
+		snprintf(buf, sizeof(buf), "pipe: %s", strerror(errno));
+		error("%s", buf);
+		exit_code = errno;
+		goto fini;
+	}
+
+	child = fork();
+	if (child == 0) {
+		int fd = open("/dev/null", O_RDONLY);
+		dup2(fd, 0);		/* stdin from /dev/null */
+		dup2(pfd[1], 1);	/* stdout to pipe */
+		dup2(pfd[1], 2);	/* stderr to pipe */
+		close(pfd[0]);
+		close(pfd[1]);
+		if (checkpoint)
+			execvp(exec_msg->argv[0], argv);
+		else
+			execvp(exec_msg->argv[0], exec_msg->argv);
+		error("execvp(%s): %m", exec_msg->argv[0]);
+	} else if (child < 0) {
+		snprintf(buf, sizeof(buf), "fork: %s", strerror(errno));
+		error("%s", buf);
+		exit_code = errno;
+		goto fini;
+	} else {
+		close(pfd[1]);
+		len = read(pfd[0], buf, sizeof(buf));
+		close(pfd[0]);
+		waitpid(child, &status, 0);
+		exit_code = WEXITSTATUS(status);
+	}
+
+fini:	if (checkpoint) {
+		now = time(NULL);
+		if (exit_code) {
+			info("Checkpoint completion code %d at %s", 
+				exit_code, ctime(&now));
+		} else {
+			info("Checkpoint completed successfully at %s",
+				ctime(&now));
+		}
+		if (buf[0])
+			info("Checkpoint location: %s", buf);
+		slurm_checkpoint_complete(exec_msg->job_id, exec_msg->step_id,
+			time(NULL), (uint32_t) exit_code, buf);
+	}
+}
+

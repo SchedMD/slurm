@@ -100,7 +100,6 @@
 #define	TYPE_SCRIPT	2
 
 mpi_plugin_client_info_t mpi_job_info[1];
-pid_t srun_ppid = 0;
 static struct termios termdefaults;
 int global_rc;
 srun_job_t *job = NULL;
@@ -185,7 +184,7 @@ int srun(int ac, char **av)
 		error ("srun initialization failed");
 		exit (1);
 	}
-	srun_ppid = getppid();
+	record_ppid();
 	
 	/* reinit log with new verbosity (if changed by command line)
 	 */
