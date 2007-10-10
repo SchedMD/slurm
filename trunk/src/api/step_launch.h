@@ -94,4 +94,9 @@ struct step_launch_state * step_launch_state_create(slurm_step_ctx_t *ctx);
  */
 void step_launch_state_destroy(struct step_launch_state *sls);
 
+/*
+ * Record the parent process ID of the program which spawned this.
+ * Needed to locate the mpirun program for OpenMPI checkpoint
+ */
+void record_ppid(void);
 #endif /* _STEP_LAUNCH_H */
