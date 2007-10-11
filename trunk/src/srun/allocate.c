@@ -65,202 +65,96 @@
 #define MIN_ALLOC_WAIT  5	/* seconds */
 #define MAX_RETRIES    10
 
+pthread_mutex_t msg_lock = PTHREAD_MUTEX_INITIALIZER;
+pthread_cond_t msg_cond = PTHREAD_COND_INITIALIZER;
+allocation_msg_thread_t *msg_thr = NULL;
+resource_allocation_response_msg_t *global_resp = NULL;
+struct pollfd global_fds[1];
+
 extern char **environ;
+
+static bool exit_flag = false;
+static uint32_t pending_job_id = 0;
 
 /*
  * Static Prototypes
  */
-static int   _accept_msg_connection(slurm_fd slurmctld_fd,
-		resource_allocation_response_msg_t **resp);
-static int   _handle_msg(slurm_msg_t *msg, \
-		resource_allocation_response_msg_t **resp);
-static int   _wait_for_alloc_rpc(int sleep_time,
-		resource_allocation_response_msg_t **resp);
-static void  _wait_for_resources(resource_allocation_response_msg_t **resp);
-static bool  _retry();
+static void _set_pending_job_id(uint32_t job_id);
+static void _ignore_signal(int signo);
+static void _exit_on_signal(int signo);
+static void _signal_while_allocating(int signo);
 static void  _intr_handler(int signo);
 
 static sig_atomic_t destroy_job = 0;
 
-static void
-_wait_for_resources(resource_allocation_response_msg_t **resp)
+static void _set_pending_job_id(uint32_t job_id)
 {
-	resource_allocation_response_msg_t *r = *resp;
-	int sleep_time = MIN_ALLOC_WAIT;
-	int job_id = r->job_id;
-
-	if (!opt.quiet)
-		info ("job %u queued and waiting for resources", r->job_id);
-
-	slurm_free_resource_allocation_response_msg(r);
-
-	/* Keep polling until the job is allocated resources */
-	while (_wait_for_alloc_rpc(sleep_time, resp) <= 0) {
-
-		if (slurm_allocation_lookup_lite(job_id, resp) >= 0)
-			break;
-
-		if (slurm_get_errno() == ESLURM_JOB_PENDING) 
-			debug3 ("Still waiting for allocation");
-		else 
-			fatal ("Unable to confirm allocation for job %u: %m", 
-			       job_id);
-
-		if (destroy_job) {
-			verbose("cancelling job %u", job_id);
-			slurm_complete_job(job_id, 0);
-			exit(0);
-		}
-
-		if (sleep_time < MAX_ALLOC_WAIT)
-			sleep_time++;
-	}
-	if (!opt.quiet)
-		info ("job %u has been allocated resources", (*resp)->job_id);
+	info("Pending job allocation %u", job_id);
+	pending_job_id = job_id;
 }
 
-/* Wait up to sleep_time for RPC from slurmctld indicating resource allocation
- * has occured.
- * IN sleep_time: delay in seconds
- * OUT resp: resource allocation response message
- * RET 1 if resp is filled in, 0 otherwise */
-static int
-_wait_for_alloc_rpc(int sleep_time, resource_allocation_response_msg_t **resp)
+static void _signal_while_allocating(int signo)
 {
-	struct pollfd fds[1];
-	slurm_fd slurmctld_fd;
-
-	if ((slurmctld_fd = slurmctld_msg_init()) < 0) {
-		sleep (sleep_time);
-		return (0);
+	destroy_job = 1;
+	if (pending_job_id != 0) {
+		slurm_complete_job(pending_job_id, 0);
 	}
-
-	fds[0].fd = slurmctld_fd;
-	fds[0].events = POLLIN;
-
-	while (poll (fds, 1, (sleep_time * 1000)) < 0) {
-		switch (errno) {
-			case EAGAIN:
-			case EINTR:
-				return (-1);
-			case ENOMEM:
-			case EINVAL:
-			case EFAULT:
-				fatal("poll: %m");
-			default:
-				error("poll: %m. Continuing...");
-		}
-	}
-
-	if (fds[0].revents & POLLIN)
-		return (_accept_msg_connection(slurmctld_fd, resp));
-
-	return (0);
 }
 
-/* Accept RPC from slurmctld and process it.
- * IN slurmctld_fd: file descriptor for slurmctld communications
- * OUT resp: resource allocation response message
- * RET 1 if resp is filled in, 0 otherwise */
-static int 
-_accept_msg_connection(slurm_fd slurmctld_fd, 
-		resource_allocation_response_msg_t **resp)
+static void _ignore_signal(int signo)
 {
-	slurm_fd     fd;
-	slurm_msg_t *msg = NULL;
-	slurm_addr   cli_addr;
-	char         host[256];
-	uint16_t     port;
-	int          rc = 0;
-
-	fd = slurm_accept_msg_conn(slurmctld_fd, &cli_addr);
-	if (fd < 0) {
-		error("Unable to accept connection: %m");
-		return rc;
-	}
-
-	slurm_get_addr(&cli_addr, &port, host, sizeof(host));
-	debug2("got message connection from %s:%hu", host, port);
-
-	msg = xmalloc(sizeof(slurm_msg_t));
-	slurm_msg_t_init(msg);
-	
-  again:
-	if(slurm_receive_msg(fd, msg, 0) != 0) {
-		if (errno == EINTR) {
-			goto again;
-		}			
-		error("_accept_msg_connection[%s]: %m", host);
-		rc = SLURM_ERROR;
-		goto cleanup;
-		
-	}
-		
-	rc = _handle_msg(msg, resp); /* handle_msg frees msg->data */
-cleanup:
-	slurm_free_msg(msg);
-		
-	slurm_close_accepted_conn(fd);
-	return rc;
+	/* do nothing */
 }
 
-/* process RPC from slurmctld
- * IN msg: message recieved
- * OUT resp: resource allocation response message
- * RET 1 if resp is filled in, 0 otherwise */
-static int
-_handle_msg(slurm_msg_t *msg, resource_allocation_response_msg_t **resp)
+static void _exit_on_signal(int signo)
 {
-	uid_t req_uid   = g_slurm_auth_get_uid(msg->auth_cred);
-	uid_t uid       = getuid();
-	uid_t slurm_uid = (uid_t) slurm_get_slurm_user_id();
-	int rc = 0;
-	srun_timeout_msg_t *to;
-	srun_user_msg_t *um;
-
-	if ((req_uid != slurm_uid) && (req_uid != 0) && (req_uid != uid)) {
-		error ("Security violation, slurm message from uid %u",
-			(unsigned int) req_uid);
-		return 0;
-	}
-
-	switch (msg->msg_type) {
-		case SRUN_PING:
-			debug3("slurmctld ping received");
-			slurm_send_rc_msg(msg, SLURM_SUCCESS);
-			slurm_free_srun_ping_msg(msg->data);
-			break;
-		case SRUN_JOB_COMPLETE:
-			debug3("job complete received");
-			/* FIXME: do something here */
-			slurm_free_srun_job_complete_msg(msg->data);	
-			break;
-		case RESPONSE_RESOURCE_ALLOCATION:
-			debug2("resource allocation response received");
-			slurm_send_rc_msg(msg, SLURM_SUCCESS);
-			*resp = msg->data;
-			rc = 1;
-			break;
-		case SRUN_TIMEOUT:
-			debug2("timeout received");
-			to = msg->data;
-			timeout_handler(to->timeout);
-			slurm_free_srun_timeout_msg(msg->data);
-			break;
-		case SRUN_USER_MSG:
-			um = msg->data;
-			info("%s", um->msg);
-			slurm_free_srun_user_msg(msg->data);
-			break;
-		default:
-			error("received spurious message type: %d\n",
-				 msg->msg_type);
-	}
-	return rc;
+	exit_flag = true;
 }
 
-static bool
-_retry()
+/* This typically signifies the job was cancelled by scancel */
+static void _job_complete_handler(srun_job_complete_msg_t *msg)
+{
+	info("Force Terminated job");
+}
+
+/*
+ * Job has been notified of it's approaching time limit. 
+ * Job will be killed shortly after timeout.
+ * This RPC can arrive multiple times with the same or updated timeouts.
+ * FIXME: We may want to signal the job or perform other action for this.
+ * FIXME: How much lead time do we want for this message? Some jobs may 
+ *	require tens of minutes to gracefully terminate.
+ */
+static void _timeout_handler(srun_timeout_msg_t *msg)
+{
+	static time_t last_timeout = 0;
+
+	if (msg->timeout != last_timeout) {
+		last_timeout = msg->timeout;
+		verbose("job time limit to be reached at %s", 
+			ctime(&msg->timeout));
+	}
+}
+
+static void _user_msg_handler(srun_user_msg_t *msg)
+{
+	info("%s", msg->msg);
+}
+
+static void _ping_handler(srun_ping_msg_t *msg) 
+{
+	/* the api will respond so there really isn't anything to do
+	   here */
+}
+
+static void _node_fail_handler(srun_node_fail_msg_t *msg)
+{
+	error("Node failure on %s", msg->nodelist);
+}
+
+
+
+static bool _retry()
 {
 	static int  retries = 0;
 	static char *msg = "Slurm controller not responding, "
@@ -307,23 +201,13 @@ allocate_test(void)
 resource_allocation_response_msg_t *
 allocate_nodes(void)
 {
-	int rc = 0;
-	static int sigarray[] = { SIGQUIT, SIGINT, SIGTERM, 0 };
-	SigFunc *oquitf, *ointf, *otermf;
-	sigset_t oset;
 	resource_allocation_response_msg_t *resp = NULL;
 	job_desc_msg_t *j = job_desc_msg_create_from_opts();
+	slurm_allocation_callbacks_t callbacks;
 
 	if(!j)
 		return NULL;
 	
-	oquitf = xsignal(SIGQUIT, _intr_handler);
-	ointf  = xsignal(SIGINT,  _intr_handler);
-	otermf = xsignal(SIGTERM, _intr_handler);
-
-	xsignal_save_mask(&oset);
-	xsignal_unblock(sigarray);
-
 	/* Do not re-use existing job id when submitting new job
 	 * from within a running job */
 	if ((j->job_id != NO_VAL) && !opt.jobid_set) {
@@ -333,31 +217,52 @@ allocate_nodes(void)
 		if (!opt.jobid_set)	/* Let slurmctld set jobid */
 			j->job_id = NO_VAL;
 	}
-	
-	while ((rc = slurm_allocate_resources(j, &resp) < 0) && _retry()) {
-		if (destroy_job)
-			goto done;
-	} 
+	callbacks.ping = _ping_handler;
+	callbacks.timeout = _timeout_handler;
+	callbacks.job_complete = _job_complete_handler;
+	callbacks.user_msg = _user_msg_handler;
+	callbacks.node_fail = _node_fail_handler;
 
-	if(!resp)
-		goto done;
-	
-	if ((rc == 0) && (resp->node_list == NULL)) {
-		if (resp->error_code)
-			verbose("Warning: %s",
-				slurm_strerror(resp->error_code));
-		_wait_for_resources(&resp);
+	/* create message thread to handle pings and such from slurmctld */
+	msg_thr = slurm_allocation_msg_thr_create(&j->other_port, &callbacks);
+
+	xsignal(SIGHUP, _signal_while_allocating);
+	xsignal(SIGINT, _signal_while_allocating);
+	xsignal(SIGQUIT, _signal_while_allocating);
+	xsignal(SIGPIPE, _signal_while_allocating);
+	xsignal(SIGTERM, _signal_while_allocating);
+	xsignal(SIGUSR1, _signal_while_allocating);
+	xsignal(SIGUSR2, _signal_while_allocating);
+
+	while (!resp) {
+		resp = slurm_allocate_resources_blocking(j, opt.max_wait,
+							 _set_pending_job_id);
+		if (destroy_job) {
+			/* cancelled by signal */
+			break;
+		} else if(!resp && !_retry()) {
+			break;		
+		}
 	}
-
-    done:
-	xsignal_set_mask(&oset);
-	xsignal(SIGINT,  ointf);
-	xsignal(SIGTERM, otermf);
-	xsignal(SIGQUIT, oquitf);
+	
+	xsignal(SIGHUP, _exit_on_signal);
+	xsignal(SIGINT, _ignore_signal);
+	xsignal(SIGQUIT, _ignore_signal);
+	xsignal(SIGPIPE, _ignore_signal);
+	xsignal(SIGTERM, _ignore_signal);
+	xsignal(SIGUSR1, _ignore_signal);
+	xsignal(SIGUSR2, _ignore_signal);
 
 	job_desc_msg_destroy(j);
 
 	return resp;
+}
+
+int 
+cleanup_allocation()
+{
+	slurm_allocation_msg_thr_destroy(msg_thr);
+	return SLURM_SUCCESS;
 }
 
 resource_allocation_response_msg_t *

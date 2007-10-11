@@ -563,34 +563,12 @@ typedef struct job_id_response_msg {
 	uint32_t return_code;	/* slurm return code */
 } job_id_response_msg_t;
 
-typedef struct srun_ping_msg {
-	uint32_t job_id;	/* slurm job_id */
-	uint32_t step_id;	/* step_id or NO_VAL */
-} srun_ping_msg_t;
-
-typedef struct srun_job_complete_msg {
-        uint32_t job_id;        /* slurm job_id */
-        uint32_t step_id;       /* step_id or NO_VAL */
-} srun_job_complete_msg_t;
-
 typedef struct srun_exec_msg {
 	uint32_t job_id;	/* slurm job_id */
 	uint32_t step_id;	/* step_id or NO_VAL */
 	uint16_t argc;		/* argument count */
 	char **  argv;		/* program arguments */
 } srun_exec_msg_t;
-
-typedef struct srun_node_fail_msg {
-	uint32_t job_id;	/* slurm job_id */
-	uint32_t step_id;	/* step_id or NO_VAL */
-	char *nodelist;		/* name of failed node(s) */
-} srun_node_fail_msg_t;
-
-typedef struct srun_timeout_msg {
-	uint32_t job_id;	/* slurm job_id */
-	uint32_t step_id;	/* step_id or NO_VAL */
-	time_t   timeout;	/* when job scheduled to be killed */
-} srun_timeout_msg_t;
 
 typedef struct checkpoint_msg {
 	uint16_t op;		/* checkpoint operation, see enum check_opts */
@@ -617,11 +595,6 @@ typedef struct suspend_msg {
 	uint16_t op;            /* suspend operation, see enum suspend_opts */
 	uint32_t job_id;        /* slurm job_id */
 } suspend_msg_t;
-
-typedef struct srun_user_msg {
-	uint32_t job_id;	/* slurm job_id */
-	char *msg;		/* message to user's srun */
-} srun_user_msg_t;
 
 typedef struct kvs_get_msg {
 	uint16_t task_id;	/* job step's task id */

@@ -142,6 +142,14 @@ BEGIN_C_DECLS
    typedef struct jobacctinfo *jobacctinfo_t;     /* opaque data type */
 #endif
 
+/* Define allocation_msg_thread_t below to avoid including extraneous 
+   slurm headers */
+#ifndef __allocation_msg_thread_t_defined
+#  define  __allocation_msg_thread_t_defined
+   typedef struct allocation_msg_thread *allocation_msg_thread_t;
+#endif
+
+
 /*****************************************************************************\
  *      DEFINITIONS FOR VERSION MANAGEMENT
 \*****************************************************************************/
@@ -679,6 +687,33 @@ typedef struct task_ext_msg {
 	uint32_t return_code;
 } task_exit_msg_t;
 
+typedef struct srun_ping_msg {
+	uint32_t job_id;	/* slurm job_id */
+	uint32_t step_id;	/* step_id or NO_VAL */
+} srun_ping_msg_t;
+
+typedef struct srun_job_complete_msg {
+        uint32_t job_id;        /* slurm job_id */
+        uint32_t step_id;       /* step_id or NO_VAL */
+} srun_job_complete_msg_t;
+
+typedef struct srun_timeout_msg {
+	uint32_t job_id;	/* slurm job_id */
+	uint32_t step_id;	/* step_id or NO_VAL */
+	time_t   timeout;	/* when job scheduled to be killed */
+} srun_timeout_msg_t;
+
+typedef struct srun_user_msg {
+	uint32_t job_id;	/* slurm job_id */
+	char *msg;		/* message to user's srun */
+} srun_user_msg_t;
+
+typedef struct srun_node_fail_msg {
+	uint32_t job_id;	/* slurm job_id */
+	uint32_t step_id;	/* step_id or NO_VAL */
+	char *nodelist;		/* name of failed node(s) */
+} srun_node_fail_msg_t;
+
 typedef struct {
 	uint32_t job_id;	/* job ID */
 	uid_t uid;
@@ -751,10 +786,15 @@ typedef struct {
 typedef struct {
 	void (*task_start)(launch_tasks_response_msg_t *);
 	void (*task_finish)(task_exit_msg_t *);
-	void (*job_complete)();
-	void (*timeout_handler)(time_t);
 } slurm_step_launch_callbacks_t;
 
+typedef struct {
+	void (*ping)(srun_ping_msg_t *);
+	void (*job_complete)(srun_job_complete_msg_t *);
+	void (*timeout)(srun_timeout_msg_t *);
+	void (*user_msg)(srun_user_msg_t *);
+	void (*node_fail)(srun_node_fail_msg_t *);
+} slurm_allocation_callbacks_t;
 
 typedef struct {
 	uint32_t job_id;	/* job ID */
@@ -1139,6 +1179,26 @@ extern int slurm_allocation_lookup_lite PARAMS((
  */
 extern char *slurm_read_hostfile PARAMS((char *filename, int n));
 
+/*
+ * slurm_allocation_msg_thr_create - startup a message handler talking 
+ * with the controller dealing with messages from the controller during an 
+ * allocation. 
+ * IN port - port we are listening for messages on from the controller
+ * IN callbacks - callbacks for different types of messages
+ * RET allocation_msg_thread_t * or NULL on failure
+ */
+extern allocation_msg_thread_t *slurm_allocation_msg_thr_create PARAMS(
+	(uint16_t *port, const slurm_allocation_callbacks_t *callbacks));
+
+/*
+ * slurm_allocation_msg_thr_destroy - shutdown the message handler talking 
+ * with the controller dealing with messages from the controller during an
+ * allocation. 
+ * IN msg_thr - allocation_msg_thread_t pointer allocated with
+ *              slurm_allocation_msg_thr_create
+ */
+extern void slurm_allocation_msg_thr_destroy PARAMS(
+	(allocation_msg_thread_t * msg_thr));
 /*
  * slurm_submit_batch_job - issue RPC to submit a job for later execution
  * NOTE: free the response using slurm_free_submit_response_response_msg

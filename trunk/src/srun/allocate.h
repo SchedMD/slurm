@@ -60,6 +60,9 @@ slurmctld_comm_addr_t slurmctld_comm_addr;
  */
 resource_allocation_response_msg_t * allocate_nodes(void);
 
+/* clean up the msg thread polling for information from the controller */
+int cleanup_allocation();
+
 /*
  * Test if an allocation would occur now given the job request.
  * Do not actually allocate resources

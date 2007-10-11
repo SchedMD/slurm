@@ -55,6 +55,7 @@ noinst_LTLIBRARIES = libslurmhelper.la
 
 slurmapi_src =           \
 	allocate.c       \
+	allocate_msg.c   \
 	cancel.c         \
 	checkpoint.c     \
 	complete.c       \

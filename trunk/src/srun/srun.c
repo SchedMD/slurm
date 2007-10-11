@@ -370,8 +370,6 @@ int srun(int ac, char **av)
 	}
 	callbacks.task_start = _task_start;
 	callbacks.task_finish = _task_finish;
-	callbacks.job_complete = _job_complete;
-	callbacks.timeout_handler = timeout_handler;
 
 	_run_srun_prolog(job);
 
@@ -411,8 +409,10 @@ int srun(int ac, char **av)
 	slurm_step_launch_wait_finish(job->step_ctx);
 
 cleanup:
-	if(got_alloc)
+	if(got_alloc) {
+		cleanup_allocation();
 		slurm_complete_job(job->jobid, global_rc);
+	}
 	_run_srun_epilog(job);
 	slurm_step_ctx_destroy(job->step_ctx);
 	mpir_cleanup();
@@ -942,13 +942,6 @@ _task_finish(task_exit_msg_t *msg)
 		verbose("starting alarm of %d seconds", opt.max_wait);
 		alarm(opt.max_wait);
 	}
-}
-
-/* This typically signifies the job was cancelled by scancel */
-static void
-_job_complete()
-{
-	info("Force Terminated job");
 }
 
 static void

@@ -134,8 +134,6 @@ extern srun_job_t * job_create_structure(
  */
 void    job_update_io_fnames(srun_job_t *j);
 
-void   timeout_handler(time_t timeout);
-
 /* Set up port to handle messages from slurmctld */
 slurm_fd slurmctld_msg_init(void);
 

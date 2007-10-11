@@ -413,7 +413,7 @@ void slurm_step_launch_wait_finish(slurm_step_ctx_t *ctx)
 			}
 		}
 	}
-	
+
 	/* Then shutdown the message handler thread */
 	eio_signal_shutdown(sls->msg_handle);
 	pthread_join(sls->msg_thread, NULL);
@@ -697,7 +697,7 @@ static int _message_socket_accept(eio_obj_t *obj, List objs)
 	   in /etc/hosts. */
 	uc = (unsigned char *)&((struct sockaddr_in *)&addr)->sin_addr.s_addr;
 	port = ((struct sockaddr_in *)&addr)->sin_port;
-	debug2("got message connection from %u.%u.%u.%u:%hu",
+	debug2("step got message connection from %u.%u.%u.%u:%hu",
 	       uc[0], uc[1], uc[2], uc[3], ntohs(port));
 	fflush(stdout);
 
@@ -781,11 +781,9 @@ _job_complete_handler(struct step_launch_state *sls, slurm_msg_t *complete_msg)
 			step_msg->job_id, step_msg->step_id);
 	}
 
+	/* FIXME: does nothing yet */
+
 	pthread_mutex_lock(&sls->lock);
-	
-	if (sls->callback.job_complete != NULL)
-		(sls->callback.job_complete)();
-	
 	pthread_cond_signal(&sls->cond);
 	pthread_mutex_unlock(&sls->lock);
 }
@@ -793,13 +791,8 @@ _job_complete_handler(struct step_launch_state *sls, slurm_msg_t *complete_msg)
 static void 
 _timeout_handler(struct step_launch_state *sls, slurm_msg_t *timeout_msg)
 {
-	srun_timeout_msg_t *to = (srun_timeout_msg_t *)timeout_msg;
-	
+	/* FIXME: does nothing yet */
 	pthread_mutex_lock(&sls->lock);
-
-	if (sls->callback.timeout_handler != NULL)
-		(sls->callback.timeout_handler)(to->timeout);
-
 	pthread_cond_signal(&sls->cond);
 	pthread_mutex_unlock(&sls->lock);
 }
