@@ -91,6 +91,7 @@
 #include "src/srun/srun_pty.h"
 #include "src/srun/multi_prog.h"
 #include "src/api/pmi_server.h"
+#include "src/api/step_launch.h"
 
 #define MAX_RETRIES 20
 #define MAX_ENTRIES 50
