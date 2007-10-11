@@ -214,8 +214,10 @@ void *agent(void *args)
 	task_info_t *task_specific_ptr;
 	time_t begin_time;
 
-	/* info("I am here and agent_cnt is %d of %d with type %d", */
-/* 	     agent_cnt, MAX_AGENT_CNT, agent_arg_ptr->msg_type); */
+#if 0
+	info("I am here and agent_cnt is %d of %d with type %d",
+	     agent_cnt, MAX_AGENT_CNT, agent_arg_ptr->msg_type);
+#endif
 	slurm_mutex_lock(&agent_cnt_mutex);
 	while (slurmctld_config.shutdown_time == 0) {
 		if (agent_cnt < MAX_AGENT_CNT) {
@@ -359,7 +361,6 @@ static agent_info_t *_make_agent_info(agent_arg_t *agent_arg_ptr)
 	thd_t *thread_ptr = NULL;
 	int *span = NULL;
 	int thr_count = 0;
-       	//forward_t forward;
 	hostlist_t hl = NULL;
 	char buf[8192];
 	char *name = NULL;
@@ -384,9 +385,15 @@ static agent_info_t *_make_agent_info(agent_arg_t *agent_arg_ptr)
 	&&  (agent_arg_ptr->msg_type != SRUN_NODE_FAIL)
 	&&  (agent_arg_ptr->msg_type != SRUN_USER_MSG)
 	&&  (agent_arg_ptr->msg_type != SRUN_JOB_COMPLETE)) {
+		/* Sending message to a possibly large number of slurmd.
+		 * Push all message forwarding to slurmd in order to 
+		 * offload as much work from slurmctld as possible. */
 		agent_info_ptr->get_reply = true;
-		span = set_span(agent_arg_ptr->node_count, 0);
+		span = set_span(agent_arg_ptr->node_count, 1); 
 	} else {
+		/* Message is going to one node (for srun) or we want 
+		 * it to get processed ASAP (SHUTDOWN or RECONFIGURE).
+		 * Send the message directly to each node. */
 		span = set_span(agent_arg_ptr->node_count, 
 				agent_arg_ptr->node_count);
 	}
@@ -411,7 +418,6 @@ static agent_info_t *_make_agent_info(agent_arg_t *agent_arg_ptr)
 			name = hostlist_shift(agent_arg_ptr->hostlist);
 			if(!name)
 				break;
-			/* info("adding %s", name); */
 			hostlist_push(hl, name);
 			free(name);
 			i++;
@@ -420,9 +426,9 @@ static agent_info_t *_make_agent_info(agent_arg_t *agent_arg_ptr)
 		hostlist_ranged_string(hl, sizeof(buf), buf);
 		hostlist_destroy(hl);
 		thread_ptr[thr_count].nodelist = xstrdup(buf);
-		
-		/* info("sending to nodes %s",  */
-/* 		     thread_ptr[thr_count].nodelist); */
+#if 0
+		info("sending to nodes %s", thread_ptr[thr_count].nodelist);
+#endif
 		thr_count++;		       
 	}
 	xfree(span);
@@ -806,8 +812,9 @@ static void *_thread_per_group_rpc(void *args)
 	slurm_msg_t_init(&msg);
 	msg.msg_type = msg_type;
 	msg.data     = task_ptr->msg_args_ptr;
-/* 	info("sending message type %u to %s", msg_type,
-	thread_ptr->nodelist); */
+#if 0
+ 	info("sending message type %u to %s", msg_type, thread_ptr->nodelist);
+#endif
 	if (task_ptr->get_reply) {
 		if(thread_ptr->addr) {
 			msg.address = *thread_ptr->addr;
