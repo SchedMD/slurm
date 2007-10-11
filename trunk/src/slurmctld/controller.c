@@ -174,7 +174,7 @@ typedef struct connection_arg {
 /* main - slurmctld main function, start various threads and process RPCs */
 int main(int argc, char *argv[])
 {
-	int error_code;
+	int cnt, error_code, i;
 	pthread_attr_t thread_attr;
 	struct stat stat_buf;
 
@@ -389,10 +389,8 @@ int main(int argc, char *argv[])
 			slurmctld_conf.slurmctld_pidfile);
 
 #ifdef MEMORY_LEAK_DEBUG
-{
 	/* This should purge all allocated memory,   *\
 	\*   Anything left over represents a leak.   */
-	int i, cnt;
 
 	/* Give running agents a chance to complete and free memory.
 	 * Wait up to 30 seconds (3 seconds * 10) */
@@ -430,7 +428,16 @@ int main(int argc, char *argv[])
 	slurm_conf_destroy();
 	slurm_api_clear_config();
 	sleep(2);
-}
+#else
+	/* Give REQUEST_SHUTDOWN a chance to get propagated, 
+	 * up to 6 seconds. */
+	for (i=0; i<6; i++) {
+		agent_purge();
+		cnt = get_agent_count();
+		if (cnt == 0)
+			break;
+		sleep(1);
+	}
 #endif
 
 	info("Slurmctld shutdown completing");
