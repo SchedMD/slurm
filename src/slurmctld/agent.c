@@ -219,6 +219,7 @@ void *agent(void *args)
 	     agent_cnt, MAX_AGENT_CNT, agent_arg_ptr->msg_type);
 #endif
 	slurm_mutex_lock(&agent_cnt_mutex);
+	info("in.");
 	while (slurmctld_config.shutdown_time == 0) {
 		if (agent_cnt < MAX_AGENT_CNT) {
 			agent_cnt++;
@@ -228,6 +229,7 @@ void *agent(void *args)
 		}
 	}
 	slurm_mutex_unlock(&agent_cnt_mutex);
+	info("out.");
 	if (slurmctld_config.shutdown_time)
 		return NULL;
 	
@@ -323,13 +325,19 @@ void *agent(void *args)
 		xfree(agent_info_ptr);
 	}
 	slurm_mutex_lock(&agent_cnt_mutex);
+	
 	if (agent_cnt > 0)
 		agent_cnt--;
-	else
+	else {
 		error("agent_cnt underflow");
-	if (agent_cnt < MAX_AGENT_CNT)
+		agent_cnt = 0;
+	}
+
+	if (agent_cnt && agent_cnt < MAX_AGENT_CNT) 
 		agent_retry(RPC_RETRY_INTERVAL);
+	
 	slurm_mutex_unlock(&agent_cnt_mutex);
+	
 	pthread_cond_broadcast(&agent_cnt_cond);
 
 	return NULL;
@@ -818,12 +826,15 @@ static void *_thread_per_group_rpc(void *args)
 	if (task_ptr->get_reply) {
 		if(thread_ptr->addr) {
 			msg.address = *thread_ptr->addr;
+			
 			if(!(ret_list = slurm_send_addr_recv_msgs(
 				     &msg, thread_ptr->nodelist, 0))) {
 				error("_thread_per_group_rpc: "
 				      "no ret_list given");
 				goto cleanup;
 			}
+			
+			
 		} else {
 			if(!(ret_list = slurm_send_recv_msgs(
 				     thread_ptr->nodelist,
@@ -836,8 +847,10 @@ static void *_thread_per_group_rpc(void *args)
 		}
 	} else {
 		if(thread_ptr->addr) {
+			//info("got the address");
 			msg.address = *thread_ptr->addr;
 		} else {
+			//info("no address given");
 			if(slurm_conf_get_addr(thread_ptr->nodelist,
 					       &msg.address) == SLURM_ERROR) {
 				error("_thread_per_group_rpc: "
@@ -846,6 +859,7 @@ static void *_thread_per_group_rpc(void *args)
 				goto cleanup;
 			}
 		}
+		//info("sending %u to %s", msg_type, thread_ptr->nodelist);
 		if (slurm_send_only_node_msg(&msg) == SLURM_SUCCESS) {
 			thread_state = DSH_DONE;
 		} else {
@@ -1172,9 +1186,9 @@ extern int agent_retry (int min_wait)
 	if (queued_req_ptr) {
 		agent_arg_ptr = queued_req_ptr->agent_arg_ptr;
 		xfree(queued_req_ptr);
-		if (agent_arg_ptr)
+		if (agent_arg_ptr) {
 			_spawn_retry_agent(agent_arg_ptr);
-		else
+		} else
 			error("agent_retry found record with no agent_args");
 	} else {
 		mail_info_t *mi = NULL;
@@ -1185,7 +1199,7 @@ extern int agent_retry (int min_wait)
 		if (mi)
 			_mail_proc(mi);
 	}
-
+	
 	return list_size;
 }
 
@@ -1198,7 +1212,8 @@ void agent_queue_request(agent_arg_t *agent_arg_ptr)
 {
 	queued_request_t *queued_req_ptr = NULL;
 
-	if (agent_arg_ptr->msg_type == REQUEST_SHUTDOWN) { /* execute now */
+	if (agent_arg_ptr->msg_type == REQUEST_SHUTDOWN) {
+		/* execute now */
 		pthread_attr_t attr_agent;
 		pthread_t thread_agent;
 		int rc;
@@ -1222,6 +1237,7 @@ void agent_queue_request(agent_arg_t *agent_arg_ptr)
 /*	queued_req_ptr->last_attempt  = 0; Implicit */
 
 	slurm_mutex_lock(&retry_mutex);
+
 	if (retry_list == NULL) {
 		retry_list = list_create(_list_delete_retry);
 		if (retry_list == NULL)

@@ -90,12 +90,12 @@ libslurm_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 am__DEPENDENCIES_1 = $(common_dir)/libcommon.la \
 	$(common_dir)/libspank.la $(common_dir)/libeio.la
 libslurmhelper_la_DEPENDENCIES = $(am__DEPENDENCIES_1)
-am__objects_1 = allocate.lo cancel.lo checkpoint.lo complete.lo \
-	config_info.lo init_msg.lo job_info.lo job_step_info.lo \
-	node_info.lo node_select_info.lo partition_info.lo signal.lo \
-	slurm_pmi.lo step_ctx.lo step_io.lo step_launch.lo \
-	pmi_server.lo submit.lo suspend.lo triggers.lo reconfigure.lo \
-	update_config.lo
+am__objects_1 = allocate.lo allocate_msg.lo cancel.lo checkpoint.lo \
+	complete.lo config_info.lo init_msg.lo job_info.lo \
+	job_step_info.lo node_info.lo node_select_info.lo \
+	partition_info.lo signal.lo slurm_pmi.lo step_ctx.lo \
+	step_io.lo step_launch.lo pmi_server.lo submit.lo suspend.lo \
+	triggers.lo reconfigure.lo update_config.lo
 am_libslurmhelper_la_OBJECTS = $(am__objects_1)
 libslurmhelper_la_OBJECTS = $(am_libslurmhelper_la_OBJECTS)
 DEFAULT_INCLUDES = -I. -I$(top_builddir) -I$(top_builddir)/slurm@am__isrc@
@@ -328,6 +328,7 @@ BUILT_SOURCES = $(VERSION_SCRIPT) libslurm.la
 noinst_LTLIBRARIES = libslurmhelper.la
 slurmapi_src = \
 	allocate.c       \
+	allocate_msg.c   \
 	cancel.c         \
 	checkpoint.c     \
 	complete.c       \
@@ -464,6 +465,7 @@ distclean-compile:
 	-rm -f *.tab.c
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/allocate.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/allocate_msg.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cancel.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/checkpoint.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/complete.Plo@am__quote@

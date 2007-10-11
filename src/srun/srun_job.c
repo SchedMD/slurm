@@ -392,25 +392,6 @@ job_force_termination(srun_job_t *job)
 	update_job_state(job, SRUN_JOB_FORCETERM);
 }
 
-/*
- * Job has been notified of it's approaching time limit. 
- * Job will be killed shortly after timeout.
- * This RPC can arrive multiple times with the same or updated timeouts.
- * FIXME: We may want to signal the job or perform other action for this.
- * FIXME: How much lead time do we want for this message? Some jobs may 
- *	require tens of minutes to gracefully terminate.
- */
-void timeout_handler(time_t timeout)
-{
-	static time_t last_timeout = 0;
-
-	if (timeout != last_timeout) {
-		last_timeout = timeout;
-		verbose("job time limit to be reached at %s", 
-			ctime(&timeout));
-	}
-}
-
 static inline int
 _estimate_nports(int nclients, int cli_per_port)
 {
