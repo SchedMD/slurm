@@ -88,9 +88,12 @@ extern void agent_queue_request(agent_arg_t *agent_arg_ptr);
  * agent_retry - Agent for retrying pending RPCs. One pending request is 
  *	issued if it has been pending for at least min_wait seconds
  * IN min_wait - Minimum wait time between re-issue of a pending RPC
+ * IN mai_too - Send pending email too, note this performed using a 
+ *		fork/waitpid, so it can take longer than just creating 
+ *		a pthread to send RPCs
  * RET count of queued requests remaining
  */
-extern int agent_retry (int min_wait);
+extern int agent_retry (int min_wait, bool mail_too);
 
 /* agent_purge - purge all pending RPC requests */
 extern void agent_purge (void);
