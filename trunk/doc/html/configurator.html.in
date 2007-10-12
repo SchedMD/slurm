@@ -470,7 +470,11 @@ handling required (InfiniBand, Myrinet, Ethernet, etc.)<BR>
 Specify the type of MPI to be used by default. SLURM will configure environment 
 variables accordingly. Users can over-ride this specification with an srun option.<BR>
 Select one value for <B>MpiDefault</B>:<BR>
-<input type="radio" name="mpi_default" value="mpichgm"> <B>Mpich-Gm</B><BR>
+<input type="radio" name="mpi_default" value="mpichgm"> <B>MPICH-GM</B><BR>
+<input type="radio" name="mpi_default" value="mpichmx"> <B>MPICH-MX</B><BR>
+<input type="radio" name="mpi_default" value="mpich1_p4"> <B>MPICH1-P4</B><BR>
+<input type="radio" name="mpi_default" value="mpich1_shmem"> <B>MPICH1-SHMEM</B>: 
+This also works for MVAPICH-SHMEM.<BR>
 <input type="radio" name="mpi_default" value="mvapich"> <B>MVAPICH</B><BR>
 <input type="radio" name="mpi_default" value="none" checked> <B>None</B>: 
 This works for most other MPI types including LAM MPI and Open MPI.<BR>
@@ -726,6 +730,6 @@ before terminating all remaining tasks. A value of zero indicates unlimited wait
 </FORM>
 <HR>
 <p class="footer">UCRL-WEB-225274<br>
-Last modified 1 October 2007</p>
+Last modified 12 October 2007</p>
 </BODY>
 
