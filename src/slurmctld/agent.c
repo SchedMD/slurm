@@ -215,7 +215,7 @@ void *agent(void *args)
 	time_t begin_time;
 
 #if 0
-	info("I am here and agent_cnt is %d of %d with type %d",
+	info("Agent_cnt is %d of %d with msg_type %d",
 	     agent_cnt, MAX_AGENT_CNT, agent_arg_ptr->msg_type);
 #endif
 	slurm_mutex_lock(&agent_cnt_mutex);
@@ -332,7 +332,7 @@ void *agent(void *args)
 	}
 
 	if (agent_cnt && agent_cnt < MAX_AGENT_CNT) 
-		agent_retry(RPC_RETRY_INTERVAL);
+		agent_retry(RPC_RETRY_INTERVAL, true);
 	
 	slurm_mutex_unlock(&agent_cnt_mutex);
 	
@@ -1106,9 +1106,12 @@ static void _list_delete_retry(void *retry_entry)
  * agent_retry - Agent for retrying pending RPCs. One pending request is 
  *	issued if it has been pending for at least min_wait seconds
  * IN min_wait - Minimum wait time between re-issue of a pending RPC
+ * IN mai_too - Send pending email too, note this performed using a 
+ *	fork/waitpid, so it can take longer than just creating  a pthread 
+ *	to send RPCs
  * RET count of queued requests remaining
  */
-extern int agent_retry (int min_wait)
+extern int agent_retry (int min_wait, bool mail_too)
 {
 	int list_size = 0;
 	time_t now = time(NULL);
@@ -1188,7 +1191,7 @@ extern int agent_retry (int min_wait)
 			_spawn_retry_agent(agent_arg_ptr);
 		} else
 			error("agent_retry found record with no agent_args");
-	} else {
+	} else if (mail_too) {
 		mail_info_t *mi = NULL;
 		slurm_mutex_lock(&mail_mutex);
 		if (mail_list)
@@ -1243,6 +1246,10 @@ void agent_queue_request(agent_arg_t *agent_arg_ptr)
 	}
 	list_append(retry_list, (void *)queued_req_ptr);
 	slurm_mutex_unlock(&retry_mutex);
+
+	/* now process the request in a separate pthread 
+	 * (if we can create another pthread to do so) */
+	agent_retry(999, false);
 }
 
 /* _spawn_retry_agent - pthread_create an agent for the given task */
