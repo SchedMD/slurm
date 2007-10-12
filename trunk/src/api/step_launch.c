@@ -83,6 +83,8 @@ static void _print_launch_msg(launch_tasks_request_msg_t *msg,
  **********************************************************************/
 static pid_t  srun_ppid = (pid_t) 0;
 static uid_t  slurm_uid;
+static bool   force_terminated_job = false;
+static int    task_exit_signal = 0;
 static void _exec_prog(slurm_msg_t *msg);
 static int  _msg_thr_create(struct step_launch_state *sls, int num_nodes);
 static void _handle_msg(struct step_launch_state *sls, slurm_msg_t *msg);
@@ -413,6 +415,9 @@ void slurm_step_launch_wait_finish(slurm_step_ctx_t *ctx)
 			}
 		}
 	}
+
+	if (!force_terminated_job && task_exit_signal)
+		info("Force Terminated job step");
 
 	/* Then shutdown the message handler thread */
 	eio_signal_shutdown(sls->msg_handle);
@@ -753,6 +758,14 @@ _exit_handler(struct step_launch_state *sls, slurm_msg_t *exit_msg)
 	task_exit_msg_t *msg = (task_exit_msg_t *) exit_msg->data;
 	int i;
 
+	/* Record SIGTERM and SIGKILL termination codes to 
+	 * recognize abnormal termination */
+	if (WIFSIGNALED(msg->return_code)) {
+		i = WTERMSIG(msg->return_code);
+		if ((i == SIGKILL) || (i == SIGTERM))
+			task_exit_signal = i;
+	}
+
 	pthread_mutex_lock(&sls->lock);
 
 	for (i = 0; i < msg->num_tasks; i++) {
@@ -935,6 +948,7 @@ _handle_msg(struct step_launch_state *sls, slurm_msg_t *msg)
 		break;
 	case SRUN_JOB_COMPLETE:
 		debug2("received job step complete message");
+		force_terminated_job = true;
 		_job_complete_handler(sls, msg);
 		slurm_free_srun_job_complete_msg(msg->data);
 		break;
