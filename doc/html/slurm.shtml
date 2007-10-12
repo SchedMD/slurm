@@ -6,8 +6,7 @@ sizes. It provides three key functions. First it allocates exclusive and/or non-
 access to resources (computer nodes) to users for some duration of time so they 
 can perform work. Second, it provides a framework for starting, executing, and 
 monitoring work (typically a parallel job) on a set of allocated nodes. Finally, 
-it arbitrates conflicting requests for resources by managing a queue of pending 
-work. </p>
+it arbitrates contention for resources by managing a queue of pending work. </p>
 
 <p>SLURM is not a sophisticated batch system, but it does provide an Applications 
 Programming Interface (API) for integration with external schedulers such as 

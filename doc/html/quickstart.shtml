@@ -11,8 +11,7 @@ SLURM has three key functions. First, it allocates exclusive and/or non-exclusiv
 access to resources (compute nodes) to users for some duration of time so they 
 can perform work. Second, it provides a framework for starting, executing, and 
 monitoring work (normally a parallel job) on the set of allocated nodes. Finally, 
-it arbitrates conflicting requests for resources by managing a queue of pending 
-work.</p>
+it arbitrates contention for resources by managing a queue of pending work.</p>
 
 <h2>Architecture</h2>
 <p>As depicted in Figure 1, SLURM consists of a <b>slurmd</b> daemon running on 
