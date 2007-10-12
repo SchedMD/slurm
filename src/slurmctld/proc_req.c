@@ -2665,7 +2665,6 @@ inline static void  _slurm_rpc_job_notify(slurm_msg_t * msg)
 	}
 
 	END_TIMER2("_slurm_rpc_job_notify");
-info("NOTIFY job %u: %s %d", notify_msg->job_id, notify_msg->message, error_code);
 	slurm_send_rc_msg(msg, error_code);
 }
 
