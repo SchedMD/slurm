@@ -184,7 +184,7 @@ function displayfile()
    "# <br>" +
    "# COMPUTE NODES <br>" +
    "NodeName=" + document.config.node_name.value +
-   get_field2("NodeAddr",document.config.node_addr) +
+   get_field2(" NodeAddr",document.config.node_addr) +
    get_field2(" Procs",document.config.procs) +
    get_field2(" Memory",document.config.memory) +
    get_field2(" Sockets",document.config.sockets) +
