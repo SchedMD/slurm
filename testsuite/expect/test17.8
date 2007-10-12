@@ -77,8 +77,8 @@ if { $job_id == 0 } {
 
 spawn $scontrol show job $job_id
 expect {
-	-re "TimeLimit=($number)" {
-		set time_get $expect_out(1,string)
+	-re "TimeLimit=($number):($number):" {
+		set time_get [expr $expect_out(1,string) * 60 + $expect_out(2,string)]
 		exp_continue
 	}
 	eof {
@@ -121,8 +121,8 @@ if { $job_id == 0 } {
 
 spawn $scontrol show job $job_id
 expect {
-	-re "TimeLimit=($number)" {
-		set time_get $expect_out(1,string)
+	-re "TimeLimit=($number):($number):" {
+		set time_get [expr $expect_out(1,string) * 60 + $expect_out(2,string)]
 		exp_continue
 	}
 	eof {
@@ -165,8 +165,8 @@ if { $job_id == 0 } {
 
 spawn $scontrol show job $job_id
 expect {
-	-re "TimeLimit=($number)" {
-		set time_get $expect_out(1,string)
+	-re "TimeLimit=($number)-($number):($number):" {
+		set time_get [expr $expect_out(1,string) * 1440 + $expect_out(2,string) * 60 + $expect_out(3,string)]
 		exp_continue
 	}
 	eof {
