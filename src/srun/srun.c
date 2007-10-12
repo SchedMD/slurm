@@ -133,7 +133,6 @@ static void  _pty_restore(void);
 static void  _step_opt_exclusive(void);
 static void _task_start(launch_tasks_response_msg_t *msg);
 static void _task_finish(task_exit_msg_t *msg);
-static void _job_complete();
 static void _task_state_struct_init(int num_tasks);
 static void _task_state_struct_print(void);
 static void _task_state_struct_free(void);
