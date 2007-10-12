@@ -62,8 +62,9 @@ expect {
 		send "$scontrol show job $job_id\n"
 		exp_continue
 	}
-	-re "TimeLimit=($number)" {
-		if {$expect_out(1,string) == 2} {
+	-re "TimeLimit=($number):($number):" {
+		set time_limit [expr $expect_out(1,string) * 60 + $expect_out(2,string)]
+		if {$time_limit == 2} {
 			incr matches
 		} else {
 			send_user "FAILURE: TimeLimit not set\n"
