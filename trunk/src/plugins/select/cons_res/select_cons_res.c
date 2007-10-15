@@ -877,10 +877,11 @@ _enough_nodes(int avail_nodes, int rem_nodes,
 extern int init(void)
 {
 #ifdef HAVE_XCPU
-	error("%s presently incompatible with XCPU use", plugin_name);
-	return SLURM_ERROR;
+	fatal("%s is incompatible with XCPU use", plugin_name);
 #endif
-
+#ifdef HAVE_BG
+	fatal("%s is incompatable with Blue Gene", plugin_name);
+#endif
 	cr_type = (select_type_plugin_info_t)
 			slurmctld_conf.select_type_param;
 	info("%s loaded with argument %d ", plugin_name, cr_type);
