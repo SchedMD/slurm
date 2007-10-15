@@ -2330,9 +2330,9 @@ need_refresh:
 			
 			goto need_refresh;
 		}
-		if(first_time)
-			put_buttons_in_table(popup_win->grid_table,
-					     popup_win->grid_button_list);
+		
+		put_buttons_in_table(popup_win->grid_table,
+				     popup_win->grid_button_list);
 	}
 	gtk_widget_show_all(spec_info->display_widget);
 
