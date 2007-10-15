@@ -232,6 +232,9 @@ extern int init ( void )
 #ifdef HAVE_XCPU
 	rc = _init_status_pthread();
 #endif
+#ifdef HAVE_BG
+	fatal("%s is incompatable with Blue Gene", plugin_name);
+#endif
 	return rc;
 }
 
