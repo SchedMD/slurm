@@ -2332,7 +2332,7 @@ need_refresh:
 			
 			goto need_refresh;
 		}
-
+		
 		put_buttons_in_table(popup_win->grid_table,
 				     popup_win->grid_button_list);
 	}
