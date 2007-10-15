@@ -2160,6 +2160,7 @@ static List _create_job_info_list(job_info_msg_t *job_info_ptr,
 		count = 0;
 		while(job_ptr->node_inx[count] != -1)
 			count++;
+		count++; // for the -1;
 #endif
 	
 		for(j = 0; j < step_info_ptr->job_step_count; j++) {
@@ -2223,6 +2224,7 @@ void _display_info_job(List info_list, popup_info_t *popup_win)
 	}
 	if(!list_count(popup_win->grid_button_list)) 
 		first_time = 1;
+
 need_refresh:
 	if(!spec_info->display_widget) {
 		treeview = create_treeview_2cols_attach_to_table(
@@ -2330,9 +2332,9 @@ need_refresh:
 			
 			goto need_refresh;
 		}
-		if(first_time)
-			put_buttons_in_table(popup_win->grid_table,
-					     popup_win->grid_button_list);
+
+		put_buttons_in_table(popup_win->grid_table,
+				     popup_win->grid_button_list);
 	}
 	gtk_widget_show_all(spec_info->display_widget);
 

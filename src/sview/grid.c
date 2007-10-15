@@ -384,7 +384,6 @@ extern void get_button_list_from_main(List *button_list, int start, int end,
 		*button_list = list_create(destroy_grid_button);
 	
 	color_inx %= sview_colors_cnt;
-	
 	itr = list_iterator_create(grid_button_list);
 	while((grid_button = list_next(itr))) {
 		if ((grid_button->inx < start)
