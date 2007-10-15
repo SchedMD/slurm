@@ -142,8 +142,17 @@ void slurm_print_ctl_conf ( FILE* out,
 			slurm_ctl_conf_ptr->def_mem_per_task);
 	} else
 		fprintf(out, "DefMemPerTask           = UNLIMITED\n");
-	fprintf(out, "JobAcctGatherType       = %s\n", 
-		slurm_ctl_conf_ptr->job_acct_gather_type);
+	fprintf(out, "Epilog                  = %s\n",
+		slurm_ctl_conf_ptr->epilog);
+	fprintf(out, "FastSchedule            = %u\n",
+		slurm_ctl_conf_ptr->fast_schedule);
+	fprintf(out, "FirstJobId              = %u\n",
+		 slurm_ctl_conf_ptr->first_job_id);
+#ifdef HAVE_XCPU
+	fprintf(out, "HAVE_XCPU               = %d\n", HAVE_XCPU);
+#endif
+	fprintf(out, "InactiveLimit           = %u\n",
+		slurm_ctl_conf_ptr->inactive_limit);
 	fprintf(out, "JobAcctGatherFrequency  = %u\n",
 		slurm_ctl_conf_ptr->job_acct_gather_freq);
 	fprintf(out, "JobAcctStorageType      = %s\n", 
@@ -156,25 +165,14 @@ void slurm_print_ctl_conf ( FILE* out,
 		slurm_ctl_conf_ptr->job_acct_storage_port);
 	fprintf(out, "JobAcctStorageUser      = %s\n", 
 		slurm_ctl_conf_ptr->job_acct_storage_user);
-	fprintf(out, "Epilog                  = %s\n", 
-		slurm_ctl_conf_ptr->epilog);
-	fprintf(out, "FastSchedule            = %u\n", 
-		slurm_ctl_conf_ptr->fast_schedule);
-	fprintf(out, "FirstJobId              = %u\n", 
-		slurm_ctl_conf_ptr->first_job_id);
-#ifdef HAVE_XCPU
-	fprintf(out, "HAVE_XCPU               = %d\n", HAVE_XCPU);
-#endif
-	fprintf(out, "InactiveLimit           = %u\n", 
-		slurm_ctl_conf_ptr->inactive_limit);
+	fprintf(out, "JobCompHost             = %s\n",
+		slurm_ctl_conf_ptr->job_comp_host);
+	fprintf(out, "JobCompLoc              = %s\n",
+		 slurm_ctl_conf_ptr->job_comp_loc);
+	fprintf(out, "JobCompPort             = %u\n",
+		slurm_ctl_conf_ptr->job_comp_port);
 	fprintf(out, "JobCompType             = %s\n", 
 		slurm_ctl_conf_ptr->job_comp_type);
-	fprintf(out, "JobCompLoc              = %s\n", 
-		slurm_ctl_conf_ptr->job_comp_loc);
-	fprintf(out, "JobCompHost             = %s\n", 
-		slurm_ctl_conf_ptr->job_comp_host);
-	fprintf(out, "JobCompPort             = %u\n", 
-		slurm_ctl_conf_ptr->job_comp_port);
 	fprintf(out, "JobCompUser             = %s\n", 
 		slurm_ctl_conf_ptr->job_comp_user);
 	fprintf(out, "JobCredentialPrivateKey = %s\n", 
@@ -272,10 +270,10 @@ void slurm_print_ctl_conf ( FILE* out,
 	fprintf(out, "SLURM_CONFIG_FILE       = %s\n", 
 		slurm_ctl_conf_ptr->slurm_conf);
 	fprintf(out, "SLURM_VERSION           = %s\n", SLURM_VERSION);
-	fprintf(out, "SrunProlog              = %s\n",
-		slurm_ctl_conf_ptr->srun_prolog);
 	fprintf(out, "SrunEpilog              = %s\n",
 		slurm_ctl_conf_ptr->srun_epilog);
+	fprintf(out, "SrunProlog              = %s\n",
+		slurm_ctl_conf_ptr->srun_prolog);
 	fprintf(out, "StateSaveLocation       = %s\n", 
 		slurm_ctl_conf_ptr->state_save_location);
 	fprintf(out, "SuspendExcNodes         = %s\n", 
