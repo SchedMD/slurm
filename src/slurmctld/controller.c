@@ -440,7 +440,7 @@ int main(int argc, char *argv[])
 	}
 #endif
 
-	info("Slurmctld shutdown completing with %d active agent threads", cnt);
+	info("Slurmctld shutdown completing with %d active agent threads\n\n", cnt);
 	log_fini();
 	
 	if (dump_core)
