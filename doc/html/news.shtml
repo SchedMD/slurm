@@ -57,7 +57,6 @@ mechanism.</li>
 <a href="power_save.html">power savings</a> on idle nodes.</li>
 <li>Support for MPICH-MX, MPICH1/shmem and MPICH1/p4 added with 
 task launch directly from the <i>srun</i> command.</li>
-<li>Globus GRAM available to interface with SLURM.</li>
 <li>Wrappers available for common PBS commands 
 (<i>psub</i>, <i>pstat</i>, and <i>pbsnodes</i>).</li>
 <li>Wrapper available for <i>mpiexec</i> command.</li>
@@ -75,11 +74,11 @@ option of using OpenSSL (default) or Munge (GPL).</li>
 <li>Gang scheduling of jobs (time-slicing of parallel jobs
 without an external scheduler).</li>
 <li>Support for job specification of node features with node counts.</li> 
-<li>Support for BlueGene/P systems.</li>
 <li><i>srun</i>'s --alloc, --attach, and --batch options removed (use 
 <i>salloc</i>, <i>sattach</i> or <i>sbatch</i> commands instead).</li>
 <li><i>srun --pty</i> option added to support remote pseudo terminial for 
 spawned tasks.</li>
+<li>Support for <a href="http://www-unix.globus.org/">Globus</a></li>
 </ul>
 
 <h2><a name="14">Major Updates in SLURM Version 1.4 and beyond</a></h2>
@@ -93,6 +92,6 @@ to coordinate activies. Future development plans includes:
 and refresh.</li>
 </ul>
 
-<p style="text-align:center;">Last modified 19 September 2007</p>
+<p style="text-align:center;">Last modified 16 October 2007</p>
 
 <!--#include virtual="footer.txt"-->
