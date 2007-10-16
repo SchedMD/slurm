@@ -1761,6 +1761,8 @@ extern void build_node_details(struct job_record *job_ptr)
 				job_ptr->cpus_per_node[cpu_inx] =
 					job_ptr->num_procs;
 				job_ptr->cpu_count_reps[cpu_inx] = 1;
+				job_ptr->alloc_lps[0] = job_ptr->num_procs;
+				job_ptr->used_lps[0]  = 0;
 				goto cleanup;
 			}
 #endif
