@@ -132,9 +132,10 @@ static int	_start_job(uint32_t jobid, int task_cnt, char *hostlist,
 	/* Write lock on job info, read lock on node info */
 	slurmctld_lock_t job_write_lock = {
 		NO_LOCK, WRITE_LOCK, READ_LOCK, NO_LOCK };
-	char *new_node_list;
+	char *new_node_list = NULL;
 	static char tmp_msg[128];
-	bitstr_t *new_bitmap, *save_req_bitmap = (bitstr_t *) NULL;
+	bitstr_t *new_bitmap = (bitstr_t *) NULL;
+	bitstr_t *save_req_bitmap = (bitstr_t *) NULL;
 	bitoff_t i, bsize;
 	int ll; /* layout info index */
 	char *node_name, *node_idx, *node_cur, *save_req_nodes = NULL;
@@ -167,29 +168,21 @@ static int	_start_job(uint32_t jobid, int task_cnt, char *hostlist,
 		goto fini;
 	}
 
-	new_node_list = xstrdup(hostlist);
-	if (hostlist && (new_node_list == NULL)) {
-		*err_code = -700;
-		*err_msg = "Invalid TASKLIST";
-		error("wiki: Attempt to set invalid node list for job %u, %s",
-			jobid, hostlist);
-		rc = -1;
-		goto fini;
-	}
-
-	if (node_name2bitmap(new_node_list, false, &new_bitmap) != 0) {
-		*err_code = -700;
-		*err_msg = "Invalid TASKLIST";
-		error("wiki: Attempt to set invalid node list for job %u, %s",
-			jobid, hostlist);
-		xfree(new_node_list);
-		rc = -1;
-		goto fini;
-	}
-
-	/* User excluded node list incompatable with Wiki
-	 * Exclude all nodes not explicitly requested */
 	if (task_cnt) {
+		new_node_list = xstrdup(hostlist);
+		if (node_name2bitmap(new_node_list, false, &new_bitmap) != 0) {
+			*err_code = -700;
+			*err_msg = "Invalid TASKLIST";
+			error("wiki: Attempt to set invalid node list for "
+				"job %u, %s",
+				jobid, hostlist);
+			xfree(new_node_list);
+			rc = -1;
+			goto fini;
+		}
+
+		/* User excluded node list incompatable with Wiki
+		 * Exclude all nodes not explicitly requested */
 		FREE_NULL_BITMAP(job_ptr->details->exc_node_bitmap);
 		job_ptr->details->exc_node_bitmap = bit_copy(new_bitmap);
 		bit_not(job_ptr->details->exc_node_bitmap);
@@ -230,7 +223,7 @@ static int	_start_job(uint32_t jobid, int task_cnt, char *hostlist,
 		}
 	}
 
-	/* get job ready to start now */
+	/* save and update job state to start now */
 	save_req_nodes = job_ptr->details->req_nodes;
 	job_ptr->details->req_nodes = new_node_list;
 	save_req_bitmap = job_ptr->details->req_node_bitmap;
@@ -252,7 +245,8 @@ static int	_start_job(uint32_t jobid, int task_cnt, char *hostlist,
 		job_ptr = find_job_record(jobid);
 	if (job_ptr && (job_ptr->job_id == jobid) && job_ptr->details &&
 	    (job_ptr->job_state == JOB_RUNNING)) {
-		/* Restore required node list */
+		/* Restore required node list, even if job has started so
+		 * that it can be requeued with the original requirements */
 		xfree(job_ptr->details->req_nodes);
 		job_ptr->details->req_nodes = save_req_nodes;
 		FREE_NULL_BITMAP(job_ptr->details->req_node_bitmap);
@@ -289,8 +283,8 @@ static int	_start_job(uint32_t jobid, int task_cnt, char *hostlist,
 		*err_msg = tmp_msg;
 		error("wiki: %s", tmp_msg);
 
-		/* restore job state *after* printing 
-		 * new_node_list (job_ptr->details->req_nodes) */
+		/* Restore remainder of job state. Note the required node
+		 * information is restored above (even if job starts). */
 		job_ptr->priority = 0;
 		job_ptr->num_procs = old_task_cnt;
 		if (job_ptr->details) {
