@@ -595,9 +595,6 @@ static void	_proc_msg(slurm_fd new_fd, char *msg)
 	} else if (strncmp(cmd_ptr, "JOBRELEASETASK", 14) == 0) {
 		msg_type = "wiki:JOBRELEASETASK";
 		job_release_task(cmd_ptr, &err_code, &err_msg);
-	} else if (strncmp(cmd_ptr, "JOBWILLRUN", 10) == 0) {
-		msg_type = "wiki:JOBWILLRUN";
-		job_will_run(cmd_ptr, &err_code, &err_msg);
 	} else if (strncmp(cmd_ptr, "MODIFYJOB", 9) == 0) {
 		msg_type = "wiki:MODIFYJOB";
 		job_modify_wiki(cmd_ptr, &err_code, &err_msg);
