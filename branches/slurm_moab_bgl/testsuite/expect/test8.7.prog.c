@@ -316,12 +316,12 @@ int main(int argc, char * argv[])
 	_start_job(job_id2);
 	_start_job(job_id3);
 	_start_job(job_id4);
+	_get_jobs();
 
 	_cancel_job(job_id1);
 	_cancel_job(job_id2);
 	_cancel_job(job_id3);
 	_cancel_job(job_id4);
-	_get_jobs();
 
 	printf("SUCCESS\n");
 	exit(0);
