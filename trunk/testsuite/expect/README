@@ -297,7 +297,7 @@ test8.3    Test of Blue Gene specific job geometry support
 test8.4    Test of Blue Gene MPI job execution
 test8.5    Confirm we can make a 32, 128, and 512 cnode block.
 test8.6    Stress test Dynamic mode block creation.
-
+test8.7    Test of Blue Gene scheduling with sched/wik2 plugin.
 
 test9.#    System stress testing. Exercises all commands and daemons.
 =====================================================================
