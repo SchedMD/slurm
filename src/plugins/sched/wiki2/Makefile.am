@@ -25,7 +25,6 @@ sched_wiki2_la_SOURCES = \
 	job_release_task.c \
 	job_requeue.c	\
 	job_signal.c	\
-	job_will_run.c	\
 	msg.c		\
 	msg.h		\
 	resume_job.c	\
