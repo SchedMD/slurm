@@ -57,8 +57,8 @@ CONFIGURATION FILE CHANGES
 * Job completion also has database hooks built in 
   JobCompHost, JobCompPass, JobCompPort, and JobCompUser are used to 
   specify how SLURM will talk to the database.
-* Added new paramter "CryptoType" to specify digital signature plugin to 
-  be used. Currenly only supports crypto/openssl.
+* Added new paramter "CryptoType" to specify digital signature plugin to be
+  used. Supports crypto/openssl (default) or crypto/munge (for a GPL license).
 * Added new parameter "SchedulerTimeSlice" to control the length of gang scheduler
   time slices.
 * Added new parameters "DefMemPerTask" and "MaxMemPerTask" any task that exceeds
