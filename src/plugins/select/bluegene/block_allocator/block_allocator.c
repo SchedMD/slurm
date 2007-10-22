@@ -325,7 +325,7 @@ extern int parse_image(void **dest, slurm_parser_enum_t type,
 			snprintf(image_group->name, (i-j)+1, "%s", tmp+j);
 			image_group->gid = gid_from_string(image_group->name);
 			if (image_group->gid == (gid_t) -1) {
-				error("invalid group name %s", 
+				error("Invalid bluegene.conf parameter Groups=%s", 
 				      image_group->name);
 			} else {
 				debug3("adding group %s %d", image_group->name,
