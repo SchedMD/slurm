@@ -2523,9 +2523,14 @@ size_t hostlist_ranged_string(hostlist_t hl, size_t n, char *buf)
 	if (hl->nranges < 1)
 		goto notbox;	/* no data */
 	if (hl->hr[0]->width != 3) {
-		error("This node is not in bluegene format.  "
-		      "The suffix was %d chars in length",
-		      hl->hr[0]->width);	/* not Bluegene format */
+		/* We use this logic to build task list ranges, so
+		 * this does not necessarily contain a BlueGene
+		 * host list. It could just be numeric values */
+		if (hl->hr[0]->prefix[0]) {
+			error("This node is not in bluegene format.  "
+		 	     "The suffix was %d chars in length",
+		  	    hl->hr[0]->width);
+		}
 		goto notbox; 
 	}
 	_clear_grid();
