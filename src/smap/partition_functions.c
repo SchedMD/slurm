@@ -901,6 +901,7 @@ static int _make_nodelist(char *nodes, List nodelist)
 				break;
 			j--;
 		} else if((nodes[j] >= '0' && nodes[j] <= '9')
+			  || (nodes[j] >= 'a' && nodes[j] <= 'z')
 			  || (nodes[j] >= 'A' && nodes[j] <= 'Z')) {
 					
 			number = xstrntol(nodes + j, NULL,
