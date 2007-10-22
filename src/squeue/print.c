@@ -1168,7 +1168,7 @@ int _print_step_name(job_step_info_t * step, int width, bool right,
 	if (step == NULL)	/* Print the Header instead */
 		_print_str("NAME", width, right, true);
 	else
-		_print_nodes(step->name, width, right, true);
+		_print_str(step->name, width, right, true);
 	if (suffix)
 		printf("%s", suffix);
 	return SLURM_SUCCESS;
