@@ -62,9 +62,9 @@ if {[test_front_end] != 0} {
 make_bash_script $file_in "
 $bin_sleep $delay
 for ((inx=0; inx < $task_cnt; inx++)) ; do
-        $srun $bin_sleep $sleep_time &
+        $srun -N1 -n1 $bin_sleep $sleep_time &
 done
-$srun $bin_sleep $sleep_time
+$srun -N1 -n1 $bin_sleep $sleep_time
 "
 
 #
