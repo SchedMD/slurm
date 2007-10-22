@@ -48,9 +48,9 @@ if {[test_bluegene] == 0} {
 # Set target environment variables
 #
 global env
-set env(SLURM_CONN_TYPE)    torus
-set env(SLURM_GEOMETRY)     1x1x1
-set env(SLURM_NO_ROTATE)    1
+set env(SBATCH_CONN_TYPE)    torus
+set env(SBATCH_GEOMETRY)     1x1x1
+set env(SBATCH_NO_ROTATE)    1
 
 #
 # Delete left-over input script files

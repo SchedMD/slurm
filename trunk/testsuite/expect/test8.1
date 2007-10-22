@@ -135,7 +135,7 @@ set job_id      0
 set timeout $max_job_delay
 set sbatch_pid [spawn $sbatch -N$num_nodes --geometry=$geometry --no-rotate --conn-type=$connection --output=/dev/null --error=/dev/null $file_in]
 expect {
-	-re "jobid ($number) submitted" {
+	-re "Submitted batch job ($number)" {
 		set job_id $expect_out(1,string)
 		exp_continue
 	}
