@@ -324,8 +324,13 @@ extern int parse_image(void **dest, slurm_parser_enum_t type,
 			image_group->name = xmalloc(i-j+2);
 			snprintf(image_group->name, (i-j)+1, "%s", tmp+j);
 			image_group->gid = gid_from_string(image_group->name);
-			debug3("adding group %s %d", image_group->name,
-			       image_group->gid);
+			if (image_group->gid == (gid_t) -1) {
+				error("invalid group name %s", 
+				      image_group->name);
+			} else {
+				debug3("adding group %s %d", image_group->name,
+				       image_group->gid);
+			}
 			list_append(n->groups, image_group);
 		}
 		xfree(tmp);
