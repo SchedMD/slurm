@@ -104,13 +104,14 @@ static int _get_user_groups(uint32_t user_id, uint32_t group_id,
 	}
 	buffer = xmalloc(buf_size);
 	rc = getpwuid_r((uid_t) user_id, &pwd, buffer, buf_size, &results);
-	xfree(buffer);
 	if (rc != 0) {
 		error("getpwuid_r(%u): %m", user_id);
+		xfree(buffer);
 		return -1;
 	}
 	*ngroups = max_groups;
 	rc = getgrouplist(pwd.pw_name, (gid_t) group_id, groups, ngroups);
+	xfree(buffer);
 	if (rc < 0) {
 		error("getgrouplist(%s): %m", pwd.pw_name);
 		return -1;
