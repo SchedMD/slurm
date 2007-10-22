@@ -584,11 +584,15 @@ static int _change_state_bps(char *com, int state)
 #ifdef HAVE_BG
 	if ((com[i+3] == 'x')
 	    || (com[i+3] == '-')) {
-		for(j=0; j<3; j++) 
-			if((i+j)>len 
-			   || (com[i+j] < '0' || com[i+j] > 'Z'
-			       || (com[i+j] > '9' && com[i+j] < 'A'))) 
-				goto error_message2;
+		for(j=0; j<3; j++) {
+			if (((i+j) <= len) &&
+			    (((com[i+j] >= '0') && (com[i+j] <= '9')) ||
+			     ((com[i+j] >= 'A') && (com[i+j] <= 'Z')) ||
+			     ((com[i+j] >= 'a') && (com[i+j] <= 'z'))))
+				continue;
+			goto error_message2; 
+
+		}
 		number = xstrntol(com + i, NULL,
 				  BA_SYSTEM_DIMENSIONS, HOSTLIST_BASE);
 		start[X] = number / (HOSTLIST_BASE * HOSTLIST_BASE);
@@ -597,11 +601,14 @@ static int _change_state_bps(char *com, int state)
 		start[Z] = (number % HOSTLIST_BASE);
 		
 		i += 4;
-		for(j=0; j<3; j++) 
-			if((i+j)>len 
-			   || (com[i+j] < '0' || com[i+j] > 'Z'
-			       || (com[i+j] > '9' && com[i+j] < 'A'))) 
-				goto error_message2;
+		for(j=0; j<3; j++) {
+			if (((i+j) <= len) &&
+			    (((com[i+j] >= '0') && (com[i+j] <= '9')) ||
+			     ((com[i+j] >= 'A') && (com[i+j] <= 'Z')) ||
+			     ((com[i+j] >= 'a') && (com[i+j] <= 'z'))))
+				continue; 
+			goto error_message2;
+		}
 		number = xstrntol(com + i, NULL,
 				  BA_SYSTEM_DIMENSIONS, HOSTLIST_BASE);
 		end[X] = number / (HOSTLIST_BASE * HOSTLIST_BASE);
@@ -609,11 +616,14 @@ static int _change_state_bps(char *com, int state)
 			/ HOSTLIST_BASE;
 		end[Z] = (number % HOSTLIST_BASE);			
 	} else {
-		for(j=0; j<3; j++) 
-			if((i+j)>len 
-			   || (com[i+j] < '0' || com[i+j] > 'Z'
-			       || (com[i+j] > '9' && com[i+j] < 'A')))
-				goto error_message2;
+		for(j=0; j<3; j++) {
+			if (((i+j) <= len) &&
+			    (((com[i+j] >= '0') && (com[i+j] <= '9')) ||
+			     ((com[i+j] >= 'A') && (com[i+j] <= 'Z')) ||
+			     ((com[i+j] >= 'a') && (com[i+j] <= 'z'))))
+				continue;
+			goto error_message2;
+		}
 		number = xstrntol(com + i, NULL,
 				  BA_SYSTEM_DIMENSIONS, HOSTLIST_BASE);
 		start[X] = end[X] = number / (HOSTLIST_BASE * HOSTLIST_BASE);
