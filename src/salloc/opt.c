@@ -109,6 +109,10 @@
 #define LONG_OPT_NO_BELL     0x117
 #define LONG_OPT_COMMENT     0x118
 #define LONG_OPT_REBOOT      0x119
+#define LONG_OPT_BLRTS_IMAGE     0x120
+#define LONG_OPT_LINUX_IMAGE     0x121
+#define LONG_OPT_MLOADER_IMAGE   0x122
+#define LONG_OPT_RAMDISK_IMAGE   0x123
 
 /*---- global variables, defined in opt.h ----*/
 opt_t opt;
@@ -699,6 +703,10 @@ void set_options(const int argc, char **argv)
 		{"jobid",         required_argument, 0, LONG_OPT_JOBID},
 		{"comment",       required_argument, 0, LONG_OPT_COMMENT},
 		{"reboot",	  no_argument,       0, LONG_OPT_REBOOT},
+		{"blrts-image",   required_argument, 0, LONG_OPT_BLRTS_IMAGE},
+		{"linux-image",   required_argument, 0, LONG_OPT_LINUX_IMAGE},
+		{"mloader-image", required_argument, 0, LONG_OPT_MLOADER_IMAGE},
+		{"ramdisk-image", required_argument, 0, LONG_OPT_RAMDISK_IMAGE},
 		{NULL,            0,                 0, 0}
 	};
 	char *opt_string = "+a:c:C:d:F:g:hHIJ:kK::n:N:Op:qR:st:uU:vVw:W:x:";
@@ -948,6 +956,22 @@ void set_options(const int argc, char **argv)
 			break;
 		case LONG_OPT_REBOOT:
 			opt.reboot = true;
+			break;
+		case LONG_OPT_BLRTS_IMAGE:
+			xfree(opt.blrtsimage);
+			opt.blrtsimage = xstrdup(optarg);
+			break;
+		case LONG_OPT_LINUX_IMAGE:
+			xfree(opt.linuximage);
+			opt.linuximage = xstrdup(optarg);
+			break;
+		case LONG_OPT_MLOADER_IMAGE:
+			xfree(opt.mloaderimage);
+			opt.mloaderimage = xstrdup(optarg);
+			break;
+		case LONG_OPT_RAMDISK_IMAGE:
+			xfree(opt.ramdiskimage);
+			opt.ramdiskimage = xstrdup(optarg);
 			break;
 		default:
 			fatal("Unrecognized command line parameter %c",
@@ -1290,6 +1314,14 @@ static void _opt_list()
 	xfree(str);
 	info("reboot         : %s", opt.reboot ? "no" : "yes");
 	info("rotate         : %s", opt.no_rotate ? "yes" : "no");
+	if (opt.blrtsimage)
+		info("BlrtsImage     : %s", opt.blrtsimage);
+	if (opt.linuximage)
+		info("LinuxImage     : %s", opt.linuximage);
+	if (opt.mloaderimage)
+		info("MloaderImage   : %s", opt.mloaderimage);
+	if (opt.ramdiskimage)
+		info("RamDiskImage   : %s", opt.ramdiskimage);
 	if (opt.begin) {
 		char time_str[32];
 		slurm_make_time_str(&opt.begin, time_str, sizeof(time_str));
@@ -1316,6 +1348,8 @@ static void _usage(void)
 "              [--account=name] [--dependency=jobid] [--comment=name]\n"
 #ifdef HAVE_BG		/* Blue gene specific options */
 "              [--geometry=XxYxZ] [--conn-type=type] [--no-rotate] [ --reboot]\n"
+"              [--blrts-image=path] [--linux-image=path]\n"
+"              [--mloader-image=path] [--ramdisk-image=path]\n"
 #endif
 "              [--mail-type=type] [--mail-user=user][--nice[=value]]\n"
 "              [--bell] [--no-bell] [--kill-command[=signal]]\n"
@@ -1382,6 +1416,10 @@ static void _help(void)
   "      --reboot                reboot nodes before starting job\n"
   "      --conn-type=type        constraint on type of connection, MESH or TORUS\n"
   "                              if not set, then tries to fit TORUS else MESH\n"
+  "      --blrts-image=path      path to blrts image for bluegene block.  Default if not set\n"
+  "      --linux-image=path      path to linux image for bluegene block.  Default if not set\n"
+  "      --mloader-image=path    path to mloader image for bluegene block.  Default if not set\n"
+  "      --ramdisk-image=path    path to ramdisk image for bluegene block.  Default if not set\n"
   "\n"
 #endif
 "Help options:\n"
