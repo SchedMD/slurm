@@ -104,10 +104,10 @@ typedef struct sbatch_options {
 	bool reboot;		/* --reboot			*/
 	bool no_rotate;		/* --no_rotate, -R		*/
 	uint16_t conn_type;	/* --conn-type 			*/
-	char *blrtsimage;       /* --blrtsimage BlrtsImage for block */
-	char *linuximage;       /* --linuximage LinuxImage for block */
-	char *mloaderimage;     /* --mloaderimage mloaderImage for block */
-	char *ramdiskimage;     /* --ramdiskimage RamDiskImage for block */
+	char *blrtsimage;       /* --blrts-image BlrtsImage for block */
+	char *linuximage;       /* --linux-image LinuxImage for block */
+	char *mloaderimage;     /* --mloader-image mloaderImage for block */
+	char *ramdiskimage;     /* --ramdisk-image RamDiskImage for block */
 	/*********************/
 
 	time_t begin;		/* --begin			*/

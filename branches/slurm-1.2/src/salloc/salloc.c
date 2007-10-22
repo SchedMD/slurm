@@ -277,6 +277,14 @@ static int fill_job_desc_from_opts(job_desc_msg_t *desc)
 		desc->reboot = 1;
 	if (opt.no_rotate)
 		desc->rotate = 0;
+	if (opt.blrtsimage)
+		desc->blrtsimage = xstrdup(opt.blrtsimage);
+	if (opt.linuximage)
+		desc->linuximage = xstrdup(opt.linuximage);
+	if (opt.mloaderimage)
+		desc->mloaderimage = xstrdup(opt.mloaderimage);
+	if (opt.ramdiskimage)
+		desc->ramdiskimage = xstrdup(opt.ramdiskimage);
 	if (opt.mincpus > -1)
 		desc->job_min_procs = opt.mincpus;
 	if (opt.minsockets > -1)
