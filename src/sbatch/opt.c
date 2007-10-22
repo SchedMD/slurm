@@ -1793,7 +1793,7 @@ static uint16_t _parse_pbs_mail_type(const char *arg)
 		|| strcasecmp(arg, "ae") == 0)
 		rc = MAIL_JOB_END |  MAIL_JOB_FAIL;
 	else
-		rc = 0;		/* failure */
+		rc = 0;		/* arg="n" or failure */
 
 	return rc;
 }
