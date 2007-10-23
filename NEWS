@@ -85,6 +85,14 @@ documents those changes that are of interest to users and admins.
     --ntasks-per-node option.
  -- In select/bluegene with Groups defined for Images, fix possible memory 
     corruption. Other configurations are not affected. 
+ -- BLUEGENE - Fix bug that prevented user specification of linux-image, 
+    mloader-image, and ramdisk-image on job submission.
+ -- BLUEGENE - filter Groups specified for image not just by submitting 
+    user's current group, but all groups the user has access to.
+ -- BLUEGENE - Add salloc options to specify images to be loaded (--blrts-image, 
+    --linux-image, --mloader-image, and --ramdisk-image).
+ -- sbatch will accept batch script containing "#SLURM" options and advise
+    changed to "#SBATCH".
 
 * Changes in SLURM 1.2.18
 =========================

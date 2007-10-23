@@ -299,6 +299,7 @@ struct env_vars {
 	void *set_flag;
 };
 
+
 env_vars_t env_vars[] = {
   {"SBATCH_ACCOUNT",       OPT_STRING,     &opt.account,       NULL           },
   {"SBATCH_BLRTS_IMAGE",   OPT_STRING,     &opt.blrtsimage,    NULL           },
@@ -741,31 +742,43 @@ static char *_get_argument(const char *line, int *skipped)
  */
 static void _opt_batch_script(const void *body, int size)
 {
-	char *magic_word = "#SBATCH";
-	int magic_word_len;
+	char *magic_word1 = "#SBATCH";
+	char *magic_word2 = "#SLURM";
+	int magic_word_len1, magic_word_len2;
 	int argc;
 	char **argv;
 	void *state = NULL;
 	char *line;
 	char *option;
 	char *ptr;
-	int skipped = 0;
+	int skipped = 0, warned = 0;
 	int i;
 
-	magic_word_len = strlen(magic_word);
+	magic_word_len1 = strlen(magic_word1);
+	magic_word_len2 = strlen(magic_word2);
+
 	/* getopt_long skips over the first argument, so fill it in */
 	argc = 1;
 	argv = xmalloc(sizeof(char *));
 	argv[0] = "sbatch";
 
 	while((line = _next_line(body, size, &state)) != NULL) {
-		if (strncmp(line, magic_word, magic_word_len) != 0) {
+		if (!strncmp(line, magic_word1, magic_word_len1))
+			ptr = line + magic_word_len1;
+		else if (!strncmp(line, magic_word2, magic_word_len2)) {
+			ptr = line + magic_word_len2;
+			if (!warned) {
+				error("Change from #SLURM to #SBATCH in your "
+				      "script and verify the options are "
+				      "valid in sbatch");
+				warned = 1;
+			}
+		} else {
 			xfree(line);
 			continue;
 		}
 
 		/* this line starts with the magic word */
-		ptr = line + magic_word_len;
 		while ((option = _get_argument(ptr, &skipped)) != NULL) {
 			debug2("Found in script, argument \"%s\"", option);
 			argc += 1;
@@ -1766,7 +1779,7 @@ static uint16_t _parse_pbs_mail_type(const char *arg)
 		|| strcasecmp(arg, "ae") == 0)
 		rc = MAIL_JOB_END |  MAIL_JOB_FAIL;
 	else
-		rc = 0;		/* failure */
+		rc = 0;		/* arg="n" or failure */
 
 	return rc;
 }

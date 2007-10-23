@@ -4,7 +4,7 @@
  *
  *  $Id$ 
  *****************************************************************************
- *  Copyright (C) 2004 The Regents of the University of California.
+ *  Copyright (C) 2004-2007 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Dan Phung <phung4@llnl.gov> and Morris Jette <jette1@llnl.gov>
  *  
@@ -37,11 +37,15 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#include <grp.h>
+#include <pwd.h>
+
 #include "src/common/node_select.h"
 #include "src/slurmctld/trigger_mgr.h"
 #include "bluegene.h"
 
 #define _DEBUG 0
+#define MAX_GROUPS 128
 
 #define SWAP(a,b,t)	\
 _STMT_START {		\
@@ -55,7 +59,11 @@ static int  _find_best_block_match(struct job_record* job_ptr,
 				   uint32_t max_nodes, uint32_t req_nodes,
 				   int spec, bg_record_t** found_bg_record,
 				   bool test_only);
+static int  _get_user_groups(uint32_t user_id, uint32_t group_id, 
+			     gid_t *groups, int max_groups, int *ngroups);
 static void _rotate_geo(uint16_t *req_geometry, int rot_cnt);
+static int  _test_image_perms(char *image_name, List image_list, 
+			      struct job_record* job_ptr);
 
 /* Rotate a 3-D geometry array through its six permutations */
 static void _rotate_geo(uint16_t *req_geometry, int rot_cnt)
@@ -79,6 +87,101 @@ static void _rotate_geo(uint16_t *req_geometry, int rot_cnt)
 pthread_mutex_t create_dynamic_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 /*
+ * Get a list of groups associated with a specific user_id
+ * Return 0 on success, -1 on failure
+ */
+static int _get_user_groups(uint32_t user_id, uint32_t group_id, 
+			    gid_t *groups, int max_groups, int *ngroups)
+{
+	struct passwd pwd, *results;
+	char *buffer;
+	static size_t buf_size = 0;
+	int rc;
+
+	if (!buf_size && ((buf_size = sysconf(_SC_GETPW_R_SIZE_MAX)) < 0)) {
+		error("sysconf(_SC_GETPW_R_SIZE_MAX)");
+		return -1;
+	}
+	buffer = xmalloc(buf_size);
+	rc = getpwuid_r((uid_t) user_id, &pwd, buffer, buf_size, &results);
+	if (rc != 0) {
+		error("getpwuid_r(%u): %m", user_id);
+		xfree(buffer);
+		return -1;
+	}
+	*ngroups = max_groups;
+	rc = getgrouplist(pwd.pw_name, (gid_t) group_id, groups, ngroups);
+	xfree(buffer);
+	if (rc < 0) {
+		error("getgrouplist(%s): %m", pwd.pw_name);
+		return -1;
+	}
+	*ngroups = rc;
+
+	return 0;
+}
+
+/*
+ * Determine if the job has permission to use the identified image
+ */
+static int _test_image_perms(char *image_name, List image_list, 
+			     struct job_record* job_ptr)
+{
+	int allow = 0, i, rc;
+	ListIterator itr;
+	ListIterator itr2;
+	image_t *image = NULL;
+	image_group_t *image_group = NULL;
+
+	/* Cache group information for most recently checked user */
+	static gid_t groups[MAX_GROUPS];
+	static int ngroups = -1;
+	static int32_t cache_user = -1;
+
+	itr = list_iterator_create(image_list);
+	while ((image = list_next(itr))) {
+		if (!strcasecmp(image->name, image_name) ||
+		    !strcasecmp(image->name, "*")) {
+			if (image->def) {
+				allow = 1;
+				break;
+			}
+			if (!image->groups ||
+			    !list_count(image->groups)) {
+				allow = 1;
+				break;
+			}
+			if (job_ptr->user_id != cache_user) {
+				rc = _get_user_groups(job_ptr->user_id, 
+						      job_ptr->group_id,
+						      groups, 
+						      MAX_GROUPS, &ngroups);
+				if (rc)		/* Failed to get groups */
+					break;
+				cache_user = job_ptr->user_id;
+			}
+			itr2 = list_iterator_create(image->groups);
+			while ((allow == 0) &&
+			       (image_group = list_next(itr2))) {
+				for (i=0; i<ngroups; i++) {
+					if (image_group->gid
+					    == groups[i]) {
+						allow = 1;
+						break;
+					}
+				}
+			}
+			list_iterator_destroy(itr2);
+			if (allow)
+				break;	
+		}
+	}
+	list_iterator_destroy(itr);
+
+	return allow;
+}
+
+/*
  * finds the best match for a given job request 
  * 
  * IN - int spec right now holds the place for some type of
@@ -100,8 +203,6 @@ static int _find_best_block_match(struct job_record* job_ptr,
 	ListIterator itr2;
 	bg_record_t *record = NULL;
 	bg_record_t *found_record = NULL;
-	image_t *image = NULL;
-	image_group_t *image_group = NULL;
 	uint16_t req_geometry[BA_SYSTEM_DIMENSIONS];
 	uint16_t start[BA_SYSTEM_DIMENSIONS];
 	uint16_t conn_type, rotate, target_size = 0;
@@ -207,113 +308,38 @@ static int _find_best_block_match(struct job_record* job_ptr,
 			     SELECT_DATA_ROTATE, &rotate);
 	select_g_get_jobinfo(job_ptr->select_jobinfo,
 			     SELECT_DATA_MAX_PROCS, &max_procs);
+
 	select_g_get_jobinfo(job_ptr->select_jobinfo,
 			     SELECT_DATA_BLRTS_IMAGE, &blrtsimage);
-	if(blrtsimage) {
-		allow = 0;
-		itr = list_iterator_create(bg_blrtsimage_list);
-		while((image = list_next(itr))) {
-			if(!strcasecmp(blrtsimage, image->name)
-			   || !strcasecmp("*", image->name)) {
-				if(image->def) {
-					allow = 1;
-					break;
-				}
-				if(!image->groups ||
-				   !list_count(image->groups)) {
-					allow = 1;
-					break;
-				}				
-				itr2 = list_iterator_create(image->groups);
-				while((image_group = list_next(itr2))) {
-					if(image_group->gid
-					   == job_ptr->group_id) {
-						allow = 1;
-						break;
-					}
-				}
-				list_iterator_destroy(itr2);
-				if(allow)
-					break;	
-			}
-		}
-		list_iterator_destroy(itr);
-		if(!allow) {
+	if (blrtsimage) {
+		allow = _test_image_perms(blrtsimage, bg_blrtsimage_list, 
+					  job_ptr);
+		if (!allow) {
 			error("User %u:%u is not allowed to use BlrtsImage %s",
 			      job_ptr->user_id, job_ptr->group_id, blrtsimage);
 			rc = SLURM_ERROR;
 			goto end_it;
 		}
 	}
+
 	select_g_get_jobinfo(job_ptr->select_jobinfo,
 			     SELECT_DATA_LINUX_IMAGE, &linuximage);
-	if(linuximage) {
-		allow = 0;
-		itr = list_iterator_create(bg_linuximage_list);
-		while((image = list_next(itr))) {
-			if(!strcasecmp(linuximage, image->name)
-			   || !strcasecmp("*", image->name)) {
-				if(image->def) {
-					allow = 1;
-					break;
-				}
-				if(!image->groups
-				   || !list_count(image->groups)) {
-					allow = 1;
-					break;
-				}				
-				itr2 = list_iterator_create(image->groups);
-				while((image_group = list_next(itr2))) {
-					if(image_group->gid
-					   == job_ptr->group_id) {
-						allow = 1;
-						break;
-					}
-				}
-				list_iterator_destroy(itr2);
-				if(allow)
-					break;	
-			}
-		}
-		list_iterator_destroy(itr);
-		if(!allow) {
+	if (linuximage) {
+		allow = _test_image_perms(linuximage, bg_linuximage_list, 
+					  job_ptr);
+		if (!allow) {
 			error("User %u:%u is not allowed to use LinuxImage %s",
 			      job_ptr->user_id, job_ptr->group_id, linuximage);
 			rc = SLURM_ERROR;
 			goto end_it;
 		}
 	}
+
 	select_g_get_jobinfo(job_ptr->select_jobinfo,
 			     SELECT_DATA_MLOADER_IMAGE, &mloaderimage);
-	if(mloaderimage) {
-		allow = 0;
-		itr = list_iterator_create(bg_mloaderimage_list);
-		while((image = list_next(itr))) {
-			if(!strcasecmp(mloaderimage, image->name)
-			   || !strcasecmp("*", image->name)) {
-				if(image->def) {
-					allow = 1;
-					break;
-				}
-				if(!image->groups
-				   || !list_count(image->groups)) {
-					allow = 1;
-					break;
-				}				
-				itr2 = list_iterator_create(image->groups);
-				while((image_group = list_next(itr2))) {
-					if(image_group->gid
-					   == job_ptr->group_id) {
-						allow = 1;
-						break;
-					}
-				}
-				list_iterator_destroy(itr2);
-				if(allow)
-					break;	
-			}
-		}
-		list_iterator_destroy(itr);
+	if (mloaderimage) {
+		allow = _test_image_perms(mloaderimage, bg_mloaderimage_list, 
+					  job_ptr);
 		if(!allow) {
 			error("User %u:%u is not allowed "
 			      "to use MloaderImage %s",
@@ -323,37 +349,12 @@ static int _find_best_block_match(struct job_record* job_ptr,
 			goto end_it;
 		}
 	}
+
 	select_g_get_jobinfo(job_ptr->select_jobinfo,
 			     SELECT_DATA_RAMDISK_IMAGE, &ramdiskimage);
-	if(ramdiskimage) {
-		allow = 0;
-		itr = list_iterator_create(bg_ramdiskimage_list);
-		while((image = list_next(itr))) {
-			if(!strcasecmp(ramdiskimage, image->name)
-			   || !strcasecmp("*", image->name)) {
-				if(image->def) {
-					allow = 1;
-					break;
-				}
-				if(!image->groups
-				   || !list_count(image->groups)) {
-					allow = 1;
-					break;
-				}				
-				itr2 = list_iterator_create(image->groups);
-				while((image_group = list_next(itr2))) {
-					if(image_group->gid
-					   == job_ptr->group_id) {
-						allow = 1;
-						break;
-					}
-				}
-				list_iterator_destroy(itr2);
-				if(allow)
-					break;	
-			}
-		}
-		list_iterator_destroy(itr);
+	if (ramdiskimage) {
+		allow = _test_image_perms(ramdiskimage, bg_ramdiskimage_list, 
+					  job_ptr);
 		if(!allow) {
 			error("User %u:%u is not allowed "
 			      "to use RamDiskImage %s",
