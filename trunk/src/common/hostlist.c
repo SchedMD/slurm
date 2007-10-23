@@ -864,9 +864,6 @@ static char *hostrange_pop(hostrange_t hr)
 {
 	size_t size = 0;
 	char *host = NULL;
-#ifdef HAVE_BG
-	int coord[3];
-#endif
 	assert(hr != NULL);
 
 	if (hr->singlehost) {
@@ -877,15 +874,21 @@ static char *hostrange_pop(hostrange_t hr)
 		if (!(host = (char *) malloc(size * sizeof(char))))
 			out_of_memory("hostrange pop");
 #ifdef HAVE_BG
-		coord[0] = hr->hi / (HOSTLIST_BASE * HOSTLIST_BASE);
-		coord[1] = (hr->hi % (HOSTLIST_BASE * HOSTLIST_BASE))
-			/ HOSTLIST_BASE;
-		coord[2] = (hr->hi % HOSTLIST_BASE);
+		if (hr->width == 3) {
+			int coord[3];
+			coord[0] = hr->hi / (HOSTLIST_BASE * HOSTLIST_BASE);
+			coord[1] = (hr->hi % (HOSTLIST_BASE * HOSTLIST_BASE))
+				/ HOSTLIST_BASE;
+			coord[2] = (hr->hi % HOSTLIST_BASE);
 		
-		snprintf(host, size, "%s%c%c%c", hr->prefix, 
-			 alpha_num[coord[0]], alpha_num[coord[1]],
-			 alpha_num[coord[2]]);
-		hr->hi--;
+			snprintf(host, size, "%s%c%c%c", hr->prefix, 
+				 alpha_num[coord[0]], alpha_num[coord[1]],
+				 alpha_num[coord[2]]);
+			hr->hi--;
+		} else {
+			snprintf(host, size, "%s%0*lu", hr->prefix, 
+				 hr->width, hr->hi--);
+		}
 #else
 		snprintf(host, size, "%s%0*lu", hr->prefix, 
 			 hr->width, hr->hi--);
@@ -900,9 +903,6 @@ static char *hostrange_shift(hostrange_t hr)
 {
 	size_t size = 0;
 	char *host = NULL;
-#ifdef HAVE_BG
-	int coord[3];
-#endif
 
 	assert(hr != NULL);
 
@@ -915,14 +915,20 @@ static char *hostrange_shift(hostrange_t hr)
 		if (!(host = (char *) malloc(size * sizeof(char))))
 			out_of_memory("hostrange shift");
 #ifdef HAVE_BG
-		coord[0] = hr->lo / (HOSTLIST_BASE * HOSTLIST_BASE);
-		coord[1] = (hr->lo % (HOSTLIST_BASE * HOSTLIST_BASE))
-			/ HOSTLIST_BASE;
-		coord[2] = (hr->lo % HOSTLIST_BASE);
-		snprintf(host, size, "%s%c%c%c", hr->prefix, 
-			 alpha_num[coord[0]], alpha_num[coord[1]],
-			 alpha_num[coord[2]]);
-		hr->lo++;
+		if (hr->width == 3) {
+			int coord[3];
+			coord[0] = hr->lo / (HOSTLIST_BASE * HOSTLIST_BASE);
+			coord[1] = (hr->lo % (HOSTLIST_BASE * HOSTLIST_BASE))
+				/ HOSTLIST_BASE;
+			coord[2] = (hr->lo % HOSTLIST_BASE);
+			snprintf(host, size, "%s%c%c%c", hr->prefix, 
+				 alpha_num[coord[0]], alpha_num[coord[1]],
+				 alpha_num[coord[2]]);
+			hr->lo++;
+		} else {
+			snprintf(host, size, "%s%0*lu", hr->prefix,
+				 hr->width, hr->lo++);
+		}
 #else		
 		snprintf(host, size, "%s%0*lu", hr->prefix,
 			hr->width, hr->lo++);
@@ -1049,14 +1055,19 @@ hostrange_to_string(hostrange_t hr, size_t n, char *buf, char *separator)
 		size_t m = (n - len) <= n ? n - len : 0; /* check for < 0 */
 		int ret = 0;
 #ifdef HAVE_BG
-		int coord[3];
-		coord[0] = i / (HOSTLIST_BASE * HOSTLIST_BASE);
-		coord[1] = (i % (HOSTLIST_BASE * HOSTLIST_BASE))
-			/ HOSTLIST_BASE;
-		coord[2] = (i % HOSTLIST_BASE);
-		ret = snprintf(buf + len, m, "%s%c%c%c", hr->prefix, 
-				alpha_num[coord[0]], alpha_num[coord[1]],
-				alpha_num[coord[2]]);
+		if (hr->width == 3) {
+			int coord[3];
+			coord[0] = i / (HOSTLIST_BASE * HOSTLIST_BASE);
+			coord[1] = (i % (HOSTLIST_BASE * HOSTLIST_BASE))
+				/ HOSTLIST_BASE;
+			coord[2] = (i % HOSTLIST_BASE);
+			ret = snprintf(buf + len, m, "%s%c%c%c", hr->prefix, 
+					alpha_num[coord[0]], alpha_num[coord[1]],
+					alpha_num[coord[2]]);
+		} else {
+			ret = snprintf(buf + len, m, "%s%0*lu",
+				       hr->prefix, hr->width, i);
+		}
 #else		
 		ret = snprintf(buf + len, m, "%s%0*lu",
 			       hr->prefix, hr->width, i);
@@ -1086,10 +1097,6 @@ hostrange_to_string(hostrange_t hr, size_t n, char *buf, char *separator)
 static size_t hostrange_numstr(hostrange_t hr, size_t n, char *buf)
 {
 	int len = 0;
-#ifdef HAVE_BG
-	int coord[3];
-#endif
-
 	assert(buf != NULL);
 	assert(hr != NULL);
 
@@ -1097,12 +1104,17 @@ static size_t hostrange_numstr(hostrange_t hr, size_t n, char *buf)
 		return 0;
 
 #ifdef HAVE_BG
-	coord[0] = hr->lo / (HOSTLIST_BASE * HOSTLIST_BASE);
-	coord[1] = (hr->lo % (HOSTLIST_BASE * HOSTLIST_BASE)) / HOSTLIST_BASE;
-	coord[2] = (hr->lo % HOSTLIST_BASE);
-	len = snprintf(buf, n, "%c%c%c",  
-		       alpha_num[coord[0]], alpha_num[coord[1]],
-		       alpha_num[coord[2]]);	
+	if (hr->width == 3) {
+		int coord[3];
+		coord[0] = hr->lo / (HOSTLIST_BASE * HOSTLIST_BASE);
+		coord[1] = (hr->lo % (HOSTLIST_BASE * HOSTLIST_BASE)) / HOSTLIST_BASE;
+		coord[2] = (hr->lo % HOSTLIST_BASE);
+		len = snprintf(buf, n, "%c%c%c",  
+			       alpha_num[coord[0]], alpha_num[coord[1]],
+			       alpha_num[coord[2]]);
+	} else {
+		len = snprintf(buf, n, "%0*lu", hr->width, hr->lo);
+	}
 #else		
 	len = snprintf(buf, n, "%0*lu", hr->width, hr->lo);
 #endif
@@ -1110,13 +1122,19 @@ static size_t hostrange_numstr(hostrange_t hr, size_t n, char *buf)
 	if ((len >= 0) && (len < n) && (hr->lo < hr->hi)) {
 		int len2 = 0;
 #ifdef HAVE_BG
-		coord[0] = hr->hi / (HOSTLIST_BASE * HOSTLIST_BASE);
-		coord[1] = (hr->hi % (HOSTLIST_BASE * HOSTLIST_BASE))
-			/ HOSTLIST_BASE;
-		coord[2] = (hr->hi % HOSTLIST_BASE);
-		len2 = snprintf(buf+len, n-len, "-%c%c%c",  
-				alpha_num[coord[0]], alpha_num[coord[1]],
-				alpha_num[coord[2]]);	
+		if (hr->width == 3) {
+			int coord[3];
+			coord[0] = hr->hi / (HOSTLIST_BASE * HOSTLIST_BASE);
+			coord[1] = (hr->hi % (HOSTLIST_BASE * HOSTLIST_BASE))
+				/ HOSTLIST_BASE;
+			coord[2] = (hr->hi % HOSTLIST_BASE);
+			len2 = snprintf(buf+len, n-len, "-%c%c%c",  
+					alpha_num[coord[0]], alpha_num[coord[1]],
+					alpha_num[coord[2]]);
+		} else {
+			len2 = snprintf(buf+len, n-len, "-%0*lu", 
+					hr->width, hr->hi);
+		}
 #else				
 		len2 = snprintf(buf+len, n-len, "-%0*lu", hr->width, hr->hi);
 #endif
@@ -1997,15 +2015,20 @@ _hostrange_string(hostrange_t hr, int depth)
 
 	if (!hr->singlehost) {
 #ifdef HAVE_BG
-		int coord[3];
-		int temp = hr->lo+depth;
-		coord[0] = temp / (HOSTLIST_BASE * HOSTLIST_BASE);
-		coord[1] = (temp % (HOSTLIST_BASE * HOSTLIST_BASE))
-			/ HOSTLIST_BASE;
-		coord[2] = (temp % HOSTLIST_BASE);
-		snprintf(buf+len, MAXHOSTNAMELEN+15 - len, "%c%c%c",
-			 alpha_num[coord[0]], alpha_num[coord[1]],
-			 alpha_num[coord[2]]);
+		if (hr->width == 3) {
+			int coord[3];
+			int temp = hr->lo+depth;
+			coord[0] = temp / (HOSTLIST_BASE * HOSTLIST_BASE);
+			coord[1] = (temp % (HOSTLIST_BASE * HOSTLIST_BASE))
+				/ HOSTLIST_BASE;
+			coord[2] = (temp % HOSTLIST_BASE);
+			snprintf(buf+len, MAXHOSTNAMELEN+15 - len, "%c%c%c",
+				 alpha_num[coord[0]], alpha_num[coord[1]],
+				 alpha_num[coord[2]]);
+		} else {
+			snprintf(buf+len, MAXHOSTNAMELEN+15 - len, "%0*lu", 
+				 hr->width, hr->lo + depth);
+		}
 #else
 		snprintf(buf+len, MAXHOSTNAMELEN+15 - len, "%0*lu", 
 			 hr->width, hr->lo + depth);
@@ -2704,15 +2727,20 @@ char *hostlist_next(hostlist_iterator_t i)
 	len = snprintf(buf, MAXHOSTNAMELEN + 15, "%s", i->hr->prefix);
 	if (!i->hr->singlehost) {
 #ifdef HAVE_BG
-		int coord[3];
-		int temp = i->hr->lo + i->depth;
-		coord[0] = temp / (HOSTLIST_BASE * HOSTLIST_BASE);
-		coord[1] = (temp % (HOSTLIST_BASE * HOSTLIST_BASE))
-			/ HOSTLIST_BASE;
-		coord[2] = (temp % HOSTLIST_BASE);
-		snprintf(buf + len, MAXHOSTNAMELEN + 15 - len, "%c%c%c",
-			 alpha_num[coord[0]], alpha_num[coord[1]],
-			 alpha_num[coord[2]]);
+		if (i->hr->width == 3) {
+			int coord[3];
+			int temp = i->hr->lo + i->depth;
+			coord[0] = temp / (HOSTLIST_BASE * HOSTLIST_BASE);
+			coord[1] = (temp % (HOSTLIST_BASE * HOSTLIST_BASE))
+				/ HOSTLIST_BASE;
+			coord[2] = (temp % HOSTLIST_BASE);
+			snprintf(buf + len, MAXHOSTNAMELEN + 15 - len, "%c%c%c",
+				 alpha_num[coord[0]], alpha_num[coord[1]],
+				 alpha_num[coord[2]]);
+		} else {
+			snprintf(buf + len, MAXHOSTNAMELEN + 15 - len, "%0*lu",
+				 i->hr->width, i->hr->lo + i->depth);
+		}
 #else
 		snprintf(buf + len, MAXHOSTNAMELEN + 15 - len, "%0*lu",
 			i->hr->width, i->hr->lo + i->depth);

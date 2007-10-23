@@ -2569,15 +2569,15 @@ _pack_job_desc_msg(job_desc_msg_t * job_desc_ptr, Buf buffer)
 		}
 		if (job_desc_ptr->linuximage)
 			select_g_set_jobinfo(job_desc_ptr->select_jobinfo, 
-					     SELECT_DATA_BLRTS_IMAGE, 
+					     SELECT_DATA_LINUX_IMAGE, 
 					     job_desc_ptr->linuximage);
 		if (job_desc_ptr->mloaderimage)
 			select_g_set_jobinfo(job_desc_ptr->select_jobinfo, 
-					     SELECT_DATA_BLRTS_IMAGE, 
+					     SELECT_DATA_MLOADER_IMAGE, 
 					     job_desc_ptr->mloaderimage);
 		if (job_desc_ptr->ramdiskimage)
 			select_g_set_jobinfo(job_desc_ptr->select_jobinfo, 
-					     SELECT_DATA_BLRTS_IMAGE, 
+					     SELECT_DATA_RAMDISK_IMAGE, 
 					     job_desc_ptr->ramdiskimage);
 		select_g_pack_jobinfo(job_desc_ptr->select_jobinfo, buffer);
 		select_g_free_jobinfo(&job_desc_ptr->select_jobinfo);

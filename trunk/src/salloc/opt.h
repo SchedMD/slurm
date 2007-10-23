@@ -113,10 +113,17 @@ typedef struct salloc_options {
 	char *nodelist;		/* --nodelist=node1,node2,...	*/
 	char *exc_nodes;	/* --exclude=node1,node2,... -x	*/
 
+	/* BLUEGENE SPECIFIC */
 	uint16_t geometry[SYSTEM_DIMENSIONS]; /* --geometry, -g	*/
 	bool reboot;		/* --reboot			*/
 	bool no_rotate;		/* --no_rotate, -R		*/
 	int16_t conn_type;	/* --conn-type 			*/
+	char *blrtsimage;       /* --blrts-image BlrtsImage for block */
+	char *linuximage;       /* --linux-image LinuxImage for block */
+	char *mloaderimage;     /* --mloader-image mloaderImage for block */
+	char *ramdiskimage;     /* --ramdisk-image RamDiskImage for block */
+	/*********************/
+
 	time_t begin;		/* --begin			*/
 	uint16_t mail_type;	/* --mail-type			*/
 	char *mail_user;	/* --mail-user			*/
