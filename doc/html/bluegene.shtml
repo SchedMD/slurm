@@ -465,10 +465,10 @@ AltRamDiskImage=/bgl/BlueLight/ppcfloor/bglsys/bin/ramdisk3.elf
 
 # Another option for images would be a "You can use anything you like image" *
 # This allows the user to use any image entered with no security checking
-AltBlrtsImage=* Groups=da:adamb
-AltLinuxImage=* Groups=da:adamb
-AltMloaderImage=* Groups=da:adamb
-AltRamDiskImage=*  Groups=da:adamb
+AltBlrtsImage=* Groups=da,adamb
+AltLinuxImage=* Groups=da,adamb
+AltMloaderImage=* Groups=da,adamb
+AltRamDiskImage=*  Groups=da,adamb
 
 LayoutMode=STATIC
 BasePartitionNodeCnt=512
