@@ -607,14 +607,14 @@ report_task_status(srun_job_t *job)
 	for (i = 0; i < opt.nprocs; i++) {
 		int state = job->task_state[i];
 		debug3("  state of task %d is %d", i, state);
-		snprintf(buf, 256, "task%d", i);
+		snprintf(buf, 256, "%d", i);
 		hostlist_push(hl[state], buf); 
 	}
 
 	for (i = 0; i< NTASK_STATES; i++) {
 		if (hostlist_count(hl[i]) > 0) {
 			hostlist_ranged_string(hl[i], MAXHOSTRANGELEN, buf);
-			info("%s: %s", buf, _task_state_name(i));
+			info("task%s: %s", buf, _task_state_name(i));
 		}
 		hostlist_destroy(hl[i]);
 	}

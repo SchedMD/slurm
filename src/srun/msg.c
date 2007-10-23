@@ -880,11 +880,13 @@ _print_exit_status(srun_job_t *job, hostlist_t hl, char *host, int status)
 		corestr = " (core dumped)";
 #endif
 
-	if (WIFSIGNALED(status))
-		(*print) ("%s: %s: %s%s", host, buf, sigstr(status), corestr); 
-	else
-		error ("%s: %s: Exited with exit code %d", 
+	if (WIFSIGNALED(status)) {
+		(*print) ("%s: task%s: %s%s", host, buf, 
+			  sigstr(status), corestr); 
+	} else {
+		error ("%s: task%s: Exited with exit code %d", 
 		       host, buf, WEXITSTATUS(status));
+	}
 
 	return;
 }
@@ -948,7 +950,7 @@ _exit_handler(srun_job_t *job, slurm_msg_t *exit_msg)
 			continue;
 		}
 
-		snprintf(buf, sizeof(buf), "task%d", taskid);
+		snprintf(buf, sizeof(buf), "%d", taskid);
 		hostlist_push(hl, buf);
 
 		slurm_mutex_lock(&job->task_mutex);
