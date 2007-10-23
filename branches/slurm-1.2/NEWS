@@ -15,6 +15,8 @@ documents those changes that are of interest to users and admins.
     user's current group, but all groups the user has access to.
  -- BLUEGENE - Add salloc options to specify images to be loaded (--blrts-image, 
     --linux-image, --mloader-image, and --ramdisk-image).
+ -- BLUEGENE - In bluegene.conf, permit Groups to be comma separated in addition 
+    to colon separators previously supported.
  -- sbatch will accept batch script containing "#SLURM" options and advise
     changed to "#SBATCH".
 

@@ -305,7 +305,7 @@ extern int parse_image(void **dest, slurm_parser_enum_t type,
 	s_p_get_string(&tmp, "Groups", tbl);
 	if(tmp) {
 		for(i=0; i<strlen(tmp); i++) {
-			if(tmp[i] == ':') {
+			if((tmp[i] == ':') || (tmp[i] == ',')) {
 				image_group = xmalloc(sizeof(image_group_t));
 				image_group->name = xmalloc(i-j+2);
 				snprintf(image_group->name,
