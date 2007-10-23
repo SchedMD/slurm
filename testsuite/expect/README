@@ -108,8 +108,8 @@ test1.19   Test srun stdout/err file name formatting (--output and --error
            options with %j, %J, %n, %s and %t specifications).
 test1.20   Test srun stdout/err disabling (--output and --error options with 
            argument of "none").
-test1.21   Test srun stdin routing to specific task (--input option with 
-           numeric argument).
+test1.21   Test srun stdin/out routing with specific task number (--input 
+           and --output options with numeric argument).
 test1.22   Confirm that a job executes with various launch thread fanouts
            (--threads option).
 test1.23   Verify node configuration specification (--mem, --mincpus, and 

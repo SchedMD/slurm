@@ -1229,7 +1229,7 @@ srun_set_stdio_fds(srun_job_t *job, slurm_step_io_fds_t *cio_fds)
 	 * create stdin file descriptor
 	 */
 	if (_is_local_file(job->ifname)) {
-		if (job->ifname->name == NULL || job->ifname->taskid != -1) {
+		if ((job->ifname->name == NULL) || (job->ifname->taskid != -1)) {
 			cio_fds->in.fd = STDIN_FILENO;
 		} else {
 			cio_fds->in.fd = open(job->ifname->name, O_RDONLY);
@@ -1247,7 +1247,7 @@ srun_set_stdio_fds(srun_job_t *job, slurm_step_io_fds_t *cio_fds)
 	 * create stdout file descriptor
 	 */
 	if (_is_local_file(job->ofname)) {
-		if (job->ofname->name == NULL) {
+		if ((job->ofname->name == NULL) || (job->ofname->taskid != -1)) {
 			cio_fds->out.fd = STDOUT_FILENO;
 		} else {
 			cio_fds->out.fd = open(job->ofname->name,
@@ -1270,7 +1270,7 @@ srun_set_stdio_fds(srun_job_t *job, slurm_step_io_fds_t *cio_fds)
 		debug3("stdout and stderr sharing a file");
 		cio_fds->err.fd = cio_fds->out.fd;
 	} else if (_is_local_file(job->efname)) {
-		if (job->efname->name == NULL) {
+		if ((job->efname->name == NULL) || (job->efname->taskid != -1)) {
 			cio_fds->err.fd = STDERR_FILENO;
 		} else {
 			cio_fds->err.fd = open(job->efname->name,
