@@ -19,6 +19,9 @@ documents those changes that are of interest to users and admins.
     to colon separators previously supported.
  -- sbatch will accept batch script containing "#SLURM" options and advise
     changed to "#SBATCH".
+ -- If srun --output or --error specification contains a task number rather 
+    than a file name, send stdout/err from specified task to srun's stdout/err
+    rather than to a file by the same name as the task's number.
 
 * Changes in SLURM 1.2.18
 =========================
