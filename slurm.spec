@@ -157,12 +157,12 @@ SLURM authentication module for Brent Chun's authd
 %endif
 
 %if %{slurm_with munge}
-%package auth-munge
+%package munge
 Summary: SLURM authentication and crypto implementation using Munge
 Group: System Environment/Base
 Requires: slurm munge
 BuildRequires: munge-devel munge-libs
-%description auth-munge
+%description munge
 SLURM authentication module for Chris Dunlap's Munge
 %endif
 
