@@ -1,14 +1,14 @@
 #!/usr/bin/expect
 ############################################################################
 # Purpose: Test of SLURM functionality
-#          Test srun stdin routing to specific task (--input option with 
-#          numeric argument).
+#          Test srun stdin/out routing with specific task number (--input
+#          and --output options with numeric argument).
 #
 # Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
 #          "FAILURE: ..." otherwise with an explanation of the failure, OR
 #          anything else indicates a failure mode that must be investigated.
 ############################################################################
-# Copyright (C) 2002 The Regents of the University of California.
+# Copyright (C) 2002-2007 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 # Written by Morris Jette <jette1@llnl.gov>
 # UCRL-CODE-226842.
@@ -75,9 +75,46 @@ expect {
 		wait
 	}
 }
-
 if {$matches != 1} {
-	send_user "\nFAILURE: specific task_id failed to respond\n"
+	send_user "\nFAILURE: stdin to specific task_id failed\n"
+	set exit_code 1
+}
+if {$exit_code == 0} {
+	send_user "\nSo far... stdin to specific task worked fine\n\n\n"
+}
+
+#
+# Spawn program to print task number, we only expect to see output from task 2
+#
+set job_id  0
+set matches 0
+set srun_pid [spawn $srun --output=$task_id -N1 -n10 -O -v env]
+expect {
+	-re "launching ($number).0 on host" {
+		set job_id $expect_out(1,string)
+		exp_continue
+	}
+	-re "SLURM_PROCID=($number)" {
+		set proc_id $expect_out(1,string)
+		if {$task_id == $proc_id} {
+			incr matches
+		} else {
+			send_user "\nFAILURE: wrong task_id responded\n"
+			set exit_code 1
+		}
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: srun not responding\n"
+		slow_kill $srun_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$matches != 1} {
+	send_user "\nFAILURE: stdout from specific task_id failed\n"
 	set exit_code 1
 }
 
