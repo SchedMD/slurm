@@ -221,8 +221,11 @@ SLURM process tracking plugin for SGI job containers.
 	%{!?with_readline:--without-readline} \
     %{?with_cflags}
 
-make %{_smp_mflags} 
-
+%if %{_smp_mflags}
+    make %{_smp_mflags} 
+%else
+    make
+%endif
 
 
 
