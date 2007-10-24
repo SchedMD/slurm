@@ -65,8 +65,6 @@ BlueGene build notes:
    Build on Service Node with using the following syntax
    build -s https://eris.llnl.gov/svn/slurm/tags/slurm-1-2-0-0-pre3
  4. Copy RPMs to /usr/admin/sles/llnl/RPMS-SLES9
-    Do _not_ copy the switch-elan, authd-authd,
-    aix-federation or auth-none RPMs
 
 To build and run on AIX:
 0. svn co https://eris.llnl.gov/svn/slurm/trunk slurm
@@ -115,10 +113,8 @@ To build and run on AIX:
    There will be a log file create named /tmp/mplog.<jobid>.<taskid>
 7. If you update proctrack, be sure to run "slibclean" to clear cached
    version.
-8. Install the rpms slurm-*.ppc.rpm, slurm-aix-federation-*.ppc.rpm,
-   slurm-auth-munge-*.ppc.rpm and slurm-devel-*.ppc.rpm in 
-   /usr/admin/inst.images/slurm/aix5.3 on an OCF AIX machine 
-   (pdev is a good choice).
+8. Install the rpms int /usr/admin/inst.images/slurm/aix5.3 on an OCF AIX 
+   machine (pdev is a good choice).
 
 AIX/Federation switch window problems
 To clean switch windows:     ntblclean =w 8 -a sni0
