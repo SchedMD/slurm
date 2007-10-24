@@ -79,6 +79,14 @@ if {$matches != 1} {
 	send_user "\nFAILURE: stdin to specific task_id failed\n"
 	set exit_code 1
 }
+
+if {[test_bluegene]} {
+	if {$exit_code == 0} {
+		send_user "\nSUCCESS\n"
+	}
+	exit $exit_code
+}
+
 if {$exit_code == 0} {
 	send_user "\nSo far... stdin to specific task worked fine\n\n\n"
 }
