@@ -22,6 +22,9 @@ documents those changes that are of interest to users and admins.
  -- If srun --output or --error specification contains a task number rather 
     than a file name, send stdout/err from specified task to srun's stdout/err
     rather than to a file by the same name as the task's number.
+ -- slurm.spec file (used to build RPMs) updated in order to support Mock,
+    a chroot build environment, see https://hosted.fedoraproject.org/projects/mock/
+    for more information.
 
 * Changes in SLURM 1.2.18
 =========================
