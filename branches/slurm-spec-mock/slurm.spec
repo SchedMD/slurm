@@ -7,8 +7,8 @@
 #    slurm_with    builds option by default unless --without is specified
 #    slurm_without builds option iff --with specified
 #
-%define slurm_with_opt() %{expand:%%{!?_without_%{1}:%%global slurm_with_%{1} 1}}
-%define slurm_without_opt() %{expand:%%{?_with_%{1}:%%global slurm_with_%{1} 1}}
+%define slurm_with_opt() %{expand:%%{!?_with_%{1}:%%global slurm_with_%{1} 1}}
+%define slurm_without_opt() %{expand:%%{?_without_%{1}:%%global slurm_with_%{1} 0}}
 #
 #  with helper macro to test for slurm_with_*
 #
