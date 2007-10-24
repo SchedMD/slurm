@@ -88,7 +88,8 @@ BuildRequires: readline-devel
 %define debug_package %{nil}
 
 #
-# Should unpackaged files in a build root terminate a build?  #
+# Should unpackaged files in a build root terminate a build?
+#
 # Note: The default value should be 0 for legacy compatibility.
 # This was added due to a bug in Suse Linux. For a good reference, see
 # http://slforums.typo3-factory.net/index.php?showtopic=11378
@@ -163,11 +164,11 @@ SLURM switch plugin for Quadrics Elan3 or Elan4.
 %endif
 
 %package torque
-Summary: Torque wrappers for trasitition from Torque to SLURM.
+Summary: Torque/PBS wrappers for transitition from Torque/PBS to SLURM.
 Group: Development/System
 Requires: slurm
 %description torque
-Torque wrapper scripts used for helping migrate from torque to SLURM.
+Torque wrapper scripts used for helping migrate from Torque/PBS to SLURM.
 
 %if %{slurm_with aix}
 %package aix-federation
