@@ -57,8 +57,10 @@ mechanism.</li>
 <a href="power_save.html">power savings</a> on idle nodes.</li>
 <li>Support for MPICH-MX, MPICH1/shmem and MPICH1/p4 added with 
 task launch directly from the <i>srun</i> command.</li>
-<li>Wrappers available for common PBS commands 
+<li>Wrappers available for common Torque/PBS commands 
 (<i>psub</i>, <i>pstat</i>, and <i>pbsnodes</i>).</li>
+<li>Support for <a href="http://www-unix.globus.org/">Globus</a> 
+(using Torque/PBS command wrappers).</li>
 <li>Wrapper available for <i>mpiexec</i> command.</li>
 </ul>
 
@@ -78,7 +80,6 @@ without an external scheduler).</li>
 <i>salloc</i>, <i>sattach</i> or <i>sbatch</i> commands instead).</li>
 <li><i>srun --pty</i> option added to support remote pseudo terminial for 
 spawned tasks.</li>
-<li>Support for <a href="http://www-unix.globus.org/">Globus</a></li>
 </ul>
 
 <h2><a name="14">Major Updates in SLURM Version 1.4 and beyond</a></h2>
@@ -92,6 +93,6 @@ to coordinate activies. Future development plans includes:
 and refresh.</li>
 </ul>
 
-<p style="text-align:center;">Last modified 16 October 2007</p>
+<p style="text-align:center;">Last modified 24 October 2007</p>
 
 <!--#include virtual="footer.txt"-->
