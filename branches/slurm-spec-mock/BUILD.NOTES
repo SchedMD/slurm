@@ -36,7 +36,8 @@ Linux cluster (See BlueGene and AIX specific notes below for some differences).
 3. Use the rpm make target to create the new RPMs. This requires a .rpmmacros 
    (.rpmrc for newer versions of rpmbuild) file containing:
 	%_slurm_sysconfdir      /etc/slurm
-	%_enable_debug    "--enable-debug"
+	%_with_debug            1
+	%_with_elan		1   (ONLY ON SYSTEMS WITH ELAN SWITCH)
    I usually build with using the following syntax:
    build  -s https://eris.llnl.gov/svn/slurm/tags/slurm-1-2-0-0-pre3
    NOTE: For v1.0 and earlier add: --pre-exec='./autogen.sh'
@@ -58,7 +59,8 @@ BlueGene build notes:
 3. Use the rpm make target to create the new RPMs. This requires a .rpmmacros
    (.rpmrc for newer versions of rpmbuild) file containing:
 	%_slurm_sysconfdir      /etc/slurm
-	%_enable_debug         "--enable-debug"
+	%_with_debug            1
+	%_with_bluegene         1
 	%with_cflags		CFLAGS=-m64
    Build on Service Node with using the following syntax
    build -s https://eris.llnl.gov/svn/slurm/tags/slurm-1-2-0-0-pre3
@@ -97,7 +99,7 @@ To build and run on AIX:
 	%_prefix                /opt/freeware
 	%_slurm_sysconfdir      %{_prefix}/etc/slurm
         %_defaultdocdir         %{_prefix}/doc
-	%_enable_debug          "--enable-debug"
+	%_with_debug            1
 	%with_ssl               "--with-ssl=/opt/freeware"
 	%with_munge             "--with-munge=/opt/freeware"
 	%with_proctrack         "--with-proctrack=/admin/llnl/include"

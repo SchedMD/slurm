@@ -3,6 +3,13 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 1.2.19
 =========================
+*** IMPORTANT CHANGE IN RPM BUILD BELOW ****
+ -- slurm.spec file (used to build RPMs) updated in order to support Mock, a
+    chroot build environment, see https://hosted.fedoraproject.org/projects/mock/
+    for more information. The following RPMs are no longer build by default:
+    aix-federation, auth_none, authd, bluegene, sgijob. switch-elan. Change the
+    RPMs built using the following options in ~/rpmmacros: "%_with_authd 1", 
+    "%_without_munge 1", etc. See the slurm.spec file for more details.
  -- Print warning if non-privileged user requests negative "--nice" value on
     job submission (srun, salloc, and sbatch commands).
  -- In sched/wiki and sched/wiki2, add support for srun's 
@@ -22,9 +29,6 @@ documents those changes that are of interest to users and admins.
  -- If srun --output or --error specification contains a task number rather 
     than a file name, send stdout/err from specified task to srun's stdout/err
     rather than to a file by the same name as the task's number.
- -- slurm.spec file (used to build RPMs) updated in order to support Mock,
-    a chroot build environment, see https://hosted.fedoraproject.org/projects/mock/
-    for more information.
 
 * Changes in SLURM 1.2.18
 =========================

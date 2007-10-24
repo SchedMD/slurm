@@ -3,7 +3,21 @@
 # Note that this package is not relocatable
 
 #
-#  Allow defining --with and --without build options
+# build options      .rpmmacros options      change to default action
+# ===============    ====================    ========================
+# --with aix         %_with_aix         1    build aix-federation RPM
+# --with authd       %_with_authd       1    build auth-authd RPM
+# --with auth_none   %_with_auth_none   1    build auth-none RPM
+# --with elan        %_with_elan        1    build switch_elan RPM
+# --without munge    %_without_munge    1    don't build auth-munge RPM
+# --with bluegene    %_with_bluegene    1    build bluegene RPM
+# --with debug       %_with_debug       1    enable extra debugging within SLURM
+# --without pam      %_without_pam      1    don't require pam-devel RPM to be installed
+# --without readline %_without_readline 1    don't require readline-devel RPM to be installed
+# --with sgijob      %_with_sgijob      1    build proctrack-sgi-job RPM
+
+#
+#  Allow defining --with and --without build options or %_with and %without in .rpmmacors
 #    slurm_with    builds option by default unless --without is specified
 #    slurm_without builds option iff --with specified
 #
@@ -15,7 +29,7 @@
 %define slurm_with() %{expand:%%{?slurm_with_%{1}:1}%%{!?slurm_with_%{1}:0}}
 
 #  Options that are off by default (enable with --with <opt>)
-%slurm_without_opt qsnet
+%slurm_without_opt elan
 %slurm_without_opt authd
 %slurm_without_opt bluegene
 %slurm_without_opt auth_none
@@ -33,13 +47,13 @@
 %endif
 
 # Build with sgijob on CHAOS systems
-#  (add qsnet too when it is available)
+#  (add elan too when it is available)
 %if 0%{?chaos}
 %slurm_with_opt sgijob
 %endif 
 
 # Define with_aix on AIX systems (for proctrack)
-%ifos aix5.3
+%ifos aix
 %slurm_with_opt aix
 %endif
 
@@ -56,7 +70,6 @@ Source: %{name}-%{version}-%{release}.tgz
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}
 URL: http://www.llnl.gov/linux/slurm
 BuildRequires: openssl-devel >= 0.9.6 openssl >= 0.9.6
-BuildRequires: ncurses-devel
 
 %description 
 SLURM is an open source, fault-tolerant, and highly
@@ -64,6 +77,9 @@ scalable cluster management and job scheduling system for Linux clusters
 containing up to thousands of nodes. Components include machine status,
 partition management, job management, and scheduling modules.
 
+%ifnos aix
+BuildRequires: ncurses-devel
+%endif
 %ifos linux
 BuildRequires: python 
 %endif
@@ -153,7 +169,7 @@ Requires: slurm
 SLURM plugin interfaces to IBM Blue Gene system
 %endif
 
-%if %{slurm_with qsnet}
+%if %{slurm_with elan}
 %package switch-elan
 Summary: SLURM switch plugin for Quadrics Elan3 or Elan4.
 Group: System Environment/Base
@@ -410,7 +426,7 @@ rm -rf $RPM_BUILD_ROOT
 %defattr(-,root,root)
 #############################################################################
 
-%if %{slurm_with qsnet}
+%if %{slurm_with elan}
 %files -f switch_elan.files switch-elan
 %defattr(-,root,root)
 %endif
