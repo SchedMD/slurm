@@ -151,13 +151,15 @@ multi_prog_get_argv(char *file_contents, char **prog_env, int task_rank,
 	char **prog_argv = NULL;
 	char *local_data = NULL;
 
+	prog_argv = (char **)xmalloc(sizeof(char *) * 128);
+
 	if (task_rank < 0) {
-		*argc = 0;
-		*argv = NULL;
+		error("Invalid task rank %d", task_rank);
+		*argc = 1;
+		*argv = prog_argv;
 		return -1;
 	}
 
-	prog_argv = (char **)xmalloc(sizeof(char *) * 128);
 	local_data = xstrdup(file_contents);
 
 	line = strtok_r(local_data, "\n", &ptrptr);
@@ -272,9 +274,9 @@ multi_prog_get_argv(char *file_contents, char **prog_env, int task_rank,
 
 	error("Program for task rank %d not specified.", task_rank);
 fail:
-	xfree(prog_argv);
 	xfree(local_data);
-	*argc = 0;
-	*argv = NULL;
+	*argc = 1;
+	prog_argv[0] = NULL;
+	*argv = prog_argv;
 	return -1;
 }
