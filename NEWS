@@ -3,17 +3,17 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 1.2.19
 =========================
-*** IMPORTANT CHANGE IN RPM BUILD BELOW ****
- -- slurm.spec file (used to build RPMs) updated in order to support Mock, a
-    chroot build environment, see https://hosted.fedoraproject.org/projects/mock/
+*** NOTE IMPORTANT CHANGE IN RPM BUILD BELOW ****
+ -- slurm.spec file (used to build RPMs) was updated in order to support Mock, a
+    chroot build environment. See https://hosted.fedoraproject.org/projects/mock/
     for more information. The following RPMs are no longer build by default:
-    aix-federation, auth_none, authd, bluegene, sgijob. switch-elan. Change the
-    RPMs built using the following options in ~/rpmmacros: "%_with_authd 1", 
+    aix-federation, auth_none, authd, bluegene, sgijob, and switch-elan. Change 
+    the RPMs built using the following options in ~/rpmmacros: "%_with_authd 1", 
     "%_without_munge 1", etc. See the slurm.spec file for more details.
  -- Print warning if non-privileged user requests negative "--nice" value on
     job submission (srun, salloc, and sbatch commands).
- -- In sched/wiki and sched/wiki2, add support for srun's 
-    --ntasks-per-node option.
+ -- In sched/wiki and sched/wiki2, add support for srun's --ntasks-per-node 
+    option.
  -- In select/bluegene with Groups defined for Images, fix possible memory 
     corruption. Other configurations are not affected. 
  -- BLUEGENE - Fix bug that prevented user specification of linux-image, 
