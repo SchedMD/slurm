@@ -132,7 +132,7 @@ static int	_start_job(uint32_t jobid, int task_cnt, char *hostlist,
 	/* Write lock on job info, read lock on node info */
 	slurmctld_lock_t job_write_lock = {
 		NO_LOCK, WRITE_LOCK, READ_LOCK, NO_LOCK };
-	char *new_node_list;
+	char *new_node_list = NULL;
 	static char tmp_msg[128];
 	bitstr_t *new_bitmap, *save_req_bitmap = (bitstr_t *) NULL;
 	bitoff_t i, bsize;
@@ -250,20 +250,6 @@ static int	_start_job(uint32_t jobid, int task_cnt, char *hostlist,
 	lock_slurmctld(job_write_lock);
 	if (job_ptr->job_id != jobid)
 		job_ptr = find_job_record(jobid);
-	if (job_ptr && (job_ptr->job_id == jobid) && job_ptr->details &&
-	    (job_ptr->job_state == JOB_RUNNING)) {
-		/* Restore required node list */
-		xfree(job_ptr->details->req_nodes);
-		job_ptr->details->req_nodes = save_req_nodes;
-		FREE_NULL_BITMAP(job_ptr->details->req_node_bitmap);
-		job_ptr->details->req_node_bitmap = save_req_bitmap;
-		FREE_NULL_BITMAP(job_ptr->details->exc_node_bitmap);
-	} else {
-		xfree(save_req_nodes);
-		FREE_NULL_BITMAP(save_req_bitmap);
-		if (job_ptr && (job_ptr->job_id == jobid) && job_ptr->details)
-			FREE_NULL_BITMAP(job_ptr->details->exc_node_bitmap);
-	}
 
 	if (job_ptr && (job_ptr->job_id == jobid) 
 	&&  (job_ptr->job_state != JOB_RUNNING)) {
@@ -289,22 +275,26 @@ static int	_start_job(uint32_t jobid, int task_cnt, char *hostlist,
 		*err_msg = tmp_msg;
 		error("wiki: %s", tmp_msg);
 
-		/* restore job state *after* printing 
-		 * new_node_list (job_ptr->details->req_nodes) */
+		/* restore some of job state */
 		job_ptr->priority = 0;
 		job_ptr->num_procs = old_task_cnt;
-		if (job_ptr->details) {
-			/* Details get cleared on job abort; happens 
-			 * if the request is sufficiently messed up.
-			 * This happens when Moab tries to start a
-			 * a job on invalid nodes (wrong partition). */ 
-			xfree(job_ptr->details->req_nodes);
-			FREE_NULL_BITMAP(job_ptr->details->
-					 req_node_bitmap);
-			xfree(job_ptr->details->req_node_layout);
-		}
 		rc = -1;
 	}
+
+	if (job_ptr && (job_ptr->job_id == jobid) && job_ptr->details) {
+		/* Restore required node list in case job requeued */
+		xfree(job_ptr->details->req_nodes);
+		job_ptr->details->req_nodes = save_req_nodes;
+		FREE_NULL_BITMAP(job_ptr->details->req_node_bitmap);
+		job_ptr->details->req_node_bitmap = save_req_bitmap;
+		FREE_NULL_BITMAP(job_ptr->details->exc_node_bitmap);
+		xfree(job_ptr->details->req_node_layout);
+	} else {
+		error("wiki: start_job(%u) job missing", jobid);
+		xfree(save_req_nodes);
+		FREE_NULL_BITMAP(save_req_bitmap);
+	}
+
 	unlock_slurmctld(job_write_lock);
 	schedule_node_save();	/* provides own locking */
 	schedule_job_save();	/* provides own locking */
