@@ -29,6 +29,8 @@ documents those changes that are of interest to users and admins.
  -- If srun --output or --error specification contains a task number rather 
     than a file name, send stdout/err from specified task to srun's stdout/err
     rather than to a file by the same name as the task's number.
+ -- If srun --multi-prog does not identify a program to use for some task, 
+    return the error "Could not identify executable program for this task".
 
 * Changes in SLURM 1.2.18
 =========================
