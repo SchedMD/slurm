@@ -75,7 +75,8 @@ if {[wait_for_job $job_id RUNNING] != 0} {
 	cancel_job $job_id
 	exit 1
 }
-exec $bin_sleep 2
+# Allow time for the step to start
+exec $bin_sleep 4
 
 #
 # Test verbose scancel
