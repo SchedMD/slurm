@@ -160,7 +160,7 @@ if {$exit_code != 0} {
 set matches   0
 set srun_pid [spawn $srun -N1 -n5 --overcommit -l -t1 --multi-prog  ./$file_in]
 expect {
-	-re "Could not identify executable program for this task" {
+	-re "No executable program specified for this task" {
 		incr matches
 	}
 	timeout {
