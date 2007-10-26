@@ -133,7 +133,7 @@ typedef struct sbatch_options {
 	char *ifname;		/* input file name		*/
 	char *ofname;		/* output file name		*/
 	char *efname;		/* error file name		*/
-	bool get_user_env;	/* --get-user-env		*/
+	int get_user_env;	/* --get-user-env[=timeout]	*/
 } opt_t;
 
 extern opt_t opt;

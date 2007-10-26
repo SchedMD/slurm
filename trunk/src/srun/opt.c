@@ -84,6 +84,7 @@
 #include "src/common/optz.h"
 #include "src/api/pmi_server.h"
 
+#include "src/srun/multi_prog.h"
 #include "src/srun/opt.h"
 #include "src/srun/debugger.h"
 #include "src/common/mpi.h"
@@ -697,7 +698,6 @@ static void _opt_default()
 		opt.msg_timeout     = 15;
 	}
 	
-	opt.get_user_env = false;
 	opt.pty = false;
 }
 
@@ -1009,7 +1009,7 @@ static void set_options(const int argc, char **argv)
 		{"mloader-image",    required_argument, 0, LONG_OPT_MLOADER_IMAGE},
 		{"ramdisk-image",    required_argument, 0, LONG_OPT_RAMDISK_IMAGE},
 		{"reboot",           no_argument,       0, LONG_OPT_REBOOT},            
-		{"get-user-env",     no_argument,       0, LONG_OPT_GET_USER_ENV},
+		{"get-user-env",     optional_argument, 0, LONG_OPT_GET_USER_ENV},
 		{"pty",              no_argument,       0, LONG_OPT_PTY},
 		{"checkpoint",       required_argument, 0, LONG_OPT_CHECKPOINT},
 		{NULL,               0,                 0, 0}
@@ -1494,7 +1494,7 @@ static void set_options(const int argc, char **argv)
 			opt.reboot = true;
 			break;
 		case LONG_OPT_GET_USER_ENV:
-			opt.get_user_env = true;
+			error("--get-user-env is no longer supported in srun, use sbatch");
 			break;
 		case LONG_OPT_PTY:
 #ifdef HAVE_PTY_H
@@ -1635,7 +1635,6 @@ static void _opt_args(int argc, char **argv)
 			exit(1);
 		}
 		_load_multi(&opt.argc, opt.argv);
-
 	}
 	else if (opt.argc > 0) {
 		char *fullpath;
@@ -1645,6 +1644,9 @@ static void _opt_args(int argc, char **argv)
 			opt.argv[0] = fullpath;
 		} 
 	}
+
+	if (opt.multi_prog && verify_multi_name(opt.argv[0], opt.nprocs))
+		exit(1);
 }
 
 /* 

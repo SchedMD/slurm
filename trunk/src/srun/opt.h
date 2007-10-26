@@ -198,7 +198,6 @@ typedef struct srun_options {
 	uint16_t mail_type;	/* --mail-type			*/
 	char *mail_user;	/* --mail-user			*/
 	char *ctrl_comm_ifhn;	/* --ctrl-comm-ifhn		*/
-	bool get_user_env;	/* --get-user-env		*/
 	bool pty;		/* --pty			*/
 	int argc;		/* length of argv array		*/
 	char **argv;		/* left over on command line	*/

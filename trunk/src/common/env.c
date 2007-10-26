@@ -75,7 +75,7 @@ strong_alias(env_array_append_fmt,	slurm_env_array_append_fmt);
 strong_alias(env_array_overwrite,	slurm_env_array_overwrite);
 strong_alias(env_array_overwrite_fmt,	slurm_env_array_overwrite_fmt);
 
-#define SU_WAIT_MSEC 3000	/* 3000 msec for /bin/su to return user 
+#define SU_WAIT_MSEC 8000	/* 8000 msec for /bin/su to return user 
 				 * env vars for --get-user-env option */
 /*
  *  Return pointer to `name' entry in environment if found, or
@@ -1239,12 +1239,13 @@ static void _strip_cr_nl(char *line)
  * environment variables, as determined by calling (more-or-less)
  * "/bin/su - <username> -c /usr/bin/env".
  *
+ * timeout value is in seconds or zero for default (8 secs) 
  * On error, returns NULL.
  *
  * NOTE: The calling process must have an effective uid of root for
  * this function to succeed.
  */
-char **env_array_user_default(const char *username)
+char **env_array_user_default(const char *username, int timeout)
 {
 	FILE *su;
 	char line[BUFSIZ];
@@ -1283,13 +1284,7 @@ char **env_array_user_default(const char *username)
 		snprintf(cmdstr, sizeof(cmdstr),
 			 "echo; echo; echo; echo %s; env; echo %s",
 			 starttoken, stoptoken);
-#if 0
-		/* execute .profile only */
-		execl("/bin/su", "su", username, "-c", cmdstr, NULL);
-#else
-		/* execute .login plus .profile */
 		execl("/bin/su", "su", "-", username, "-c", cmdstr, NULL);
-#endif
 		exit(1);
 	}
 
@@ -1307,7 +1302,10 @@ char **env_array_user_default(const char *username)
 	found = 0;
 	while (!found) {
 		gettimeofday(&now, NULL);
-		timeleft = SU_WAIT_MSEC;
+		if (timeout > 0)
+			timeleft = timeout * 1000;
+		else
+			timeleft = SU_WAIT_MSEC;
 		timeleft -= (now.tv_sec -  begin.tv_sec)  * 1000;
 		timeleft -= (now.tv_usec - begin.tv_usec) / 1000;
 		if (timeleft <= 0)
@@ -1343,7 +1341,10 @@ char **env_array_user_default(const char *username)
 	found = 0;
 	while (!found) {
 		gettimeofday(&now, NULL);
-		timeleft = SU_WAIT_MSEC;
+		if (timeout > 0)
+			timeleft = timeout * 1000;
+		else
+			timeleft = SU_WAIT_MSEC;
 		timeleft -= (now.tv_sec -  begin.tv_sec)  * 1000;
 		timeleft -= (now.tv_usec - begin.tv_usec) / 1000;
 		if (timeleft <= 0)

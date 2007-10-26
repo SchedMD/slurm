@@ -354,7 +354,7 @@ exec_task(slurmd_job_t *job, int i, int waitfd)
 	job->envtp->env = NULL;
 	xfree(job->envtp->task_count);
 
-	if (job->multi_prog) {
+	if (job->multi_prog && task->argv[0]) {
 		/*
 		 * Normally the client (srun/slauch) expands the command name
 		 * to a fully qualified path, but in --multi-prog mode it
@@ -416,6 +416,10 @@ exec_task(slurmd_job_t *job, int i, int waitfd)
 		job->env[0] = (char *)NULL;
 	}
 
+	if (task->argv[0] == NULL) {
+		error("No executable program specified for this task");
+		exit(2);
+	}
 	execve(task->argv[0], task->argv, job->env);
 
 	/* 
