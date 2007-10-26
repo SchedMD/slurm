@@ -282,13 +282,14 @@ even if consumable resources are enabled
 (e.g. \fBSelectType=select/cons_res\fR).
 
 .TP
-\fB\-\-get\-user\-env\fR
+\fB\-\-get\-user\-env\fR[=\fItimeout\fR]
 For a batch script submission, this option will tell srun to retrieve the
 login environment variables for the user specified in the \-\-uid option.
 The environment variables are retrieved by running "su - <username> -c
 /usr/bin/env" and parsing the output.  Be aware that any environment
 variables already set in srun's environment will take precedence over any
 environment variables in the user's login environment.
+Optional timeout value is in seconds. Default value is 8 seconds.
 NOTE: This option only works if the caller has an
 effective uid of "root", and only takes effect in batch mode (\-b/\-\-batch).
 This option was originally created for use by Moab.

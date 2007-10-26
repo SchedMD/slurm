@@ -212,7 +212,7 @@ typedef struct srun_options {
 	uint16_t mail_type;	/* --mail-type			*/
 	char *mail_user;	/* --mail-user			*/
 	char *ctrl_comm_ifhn;	/* --ctrl-comm-ifhn		*/
-	bool get_user_env;	/* --get-user-env		*/
+	int get_user_env;	/* --get-user-env[=secs]	*/
 } opt_t;
 
 extern opt_t opt;
