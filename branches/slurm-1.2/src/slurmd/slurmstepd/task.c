@@ -393,7 +393,7 @@ exec_task(slurmd_job_t *job, int i, int waitfd)
 	}
 
 	if (task->argv[0] == NULL) {
-		error("Could not identify executable program for this task");
+		error("No executable program specified for this task");
 		exit(2);
 	}
 	execve(task->argv[0], task->argv, job->env);

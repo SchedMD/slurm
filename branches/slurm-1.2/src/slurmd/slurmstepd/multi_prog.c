@@ -167,7 +167,7 @@ multi_prog_get_argv(char *file_contents, char **prog_env, int task_rank,
 		if (line_num > 0)
 			line = strtok_r(NULL, "\n", &ptrptr);
 		if (line == NULL) {
-			error("Could not identify executable program for this task");
+			error("No executable program specified for this task");
 			goto fail;
 		}
 		line_num ++;
