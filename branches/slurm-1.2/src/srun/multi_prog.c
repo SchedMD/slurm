@@ -54,6 +54,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#include "src/common/bitstring.h"
 #include "src/common/log.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
@@ -132,7 +133,7 @@ _set_exec_names(char *ranks, char *exec_name, int ntasks)
 
 	if (ranks[0] == '*' && ranks[1] == '\0') {
 		low_num = 0;
-		high_num = ntasks -1;
+		high_num = ntasks - 1;
 		_set_range(low_num, high_num, exec_name);
 		return;
 	}
@@ -161,7 +162,8 @@ _set_exec_names(char *ranks, char *exec_name, int ntasks)
 			high_num = MIN((ntasks-1), atoi(upper));
 			_set_range(low_num, high_num, exec_path);
 		} else {
-			error ("Invalid task range specification (%s) ignored.",				range);
+			error ("Invalid task range specification (%s) ignored.",
+				range);
 		}
 	}
 }
@@ -190,8 +192,8 @@ set_multi_name(int ntasks)
 	while (fgets(line, sizeof(line), config_fd)) {
 		line_num ++;
 		if (strlen (line) >= (sizeof(line) - 1)) {
-			error ("Line %d of configuration file too long", 
-				line_num);
+			error ("Line %d of configuration file %s too long", 
+				line_num, config_fname);
 			fclose(config_fd);
 			return -1;
 		} 
@@ -208,7 +210,8 @@ set_multi_name(int ntasks)
 		ranks = strtok_r(p, " \t\n", &ptrptr);
 		exec_name = strtok_r(NULL, " \t\n", &ptrptr);
 		if (!ranks || !exec_name) {
-			error("Line %d is invalid", line_num);
+			error("Line %d of configuration file %s is invalid", 
+				line_num, config_fname);
 			fclose(config_fd);
 			return -1;
 		}
@@ -216,4 +219,151 @@ set_multi_name(int ntasks)
 	}
 	fclose(config_fd);
 	return 0;
+}
+
+static int
+_update_task_mask(int low_num, int high_num, int ntasks, bitstr_t *task_mask)
+{
+	int i;
+
+	if (low_num > high_num) {
+		error("Invalid task range, %d-%d", low_num, high_num);
+		return -1;
+	}
+	if (low_num < 0) {
+		error("Invalid task id, %d < 0", low_num);
+		return -1;
+	}
+	if (high_num >= ntasks) {
+		error("Invalid task id, %d >= ntasks", high_num);
+		return -1;
+	}
+	for (i=low_num; i<=high_num; i++) {
+		if (bit_test(task_mask, i)) {
+			error("Duplicate record for task %d", i);
+			return -1;
+		}
+		bit_set(task_mask, i);
+	}
+	return 0;
+}
+
+static int
+_validate_ranks(char *ranks, int ntasks, bitstr_t *task_mask)
+{
+	char *range = NULL, *p = NULL;
+	char *ptrptr = NULL, *upper = NULL;
+	int low_num, high_num;
+
+	if (ranks[0] == '*' && ranks[1] == '\0') {
+		low_num = 0;
+		high_num = ntasks - 1;
+		return _update_task_mask(low_num, high_num, ntasks, task_mask);
+	}
+
+	for (range = strtok_r(ranks, ",", &ptrptr); range != NULL;
+			range = strtok_r(NULL, ",", &ptrptr)) {
+		p = range;
+		while (*p != '\0' && isdigit (*p))
+			p ++;
+
+		if (*p == '\0') { /* single rank */
+			low_num  = atoi(range);
+			high_num = low_num;
+		} else if (*p == '-') { /* lower-upper */
+			upper = ++ p;
+			while (isdigit (*p))
+				p ++;
+			if (*p != '\0') {
+				error ("Invalid task range specification");
+				return -1;
+			}
+			low_num  = atoi(range);
+			high_num = atoi(upper);
+		} else {
+			error ("Invalid task range specification (%s)",
+				range);
+			return -1;
+		}
+
+		if (_update_task_mask(low_num, high_num, ntasks, task_mask))
+			return -1;
+	}
+	return 0;
+}
+
+/*
+ * Verify that we have a valid executable program specified for each task
+ *	when the --multi-prog option is used.
+ *
+ * Return 0 on success, -1 otherwise
+ */
+extern int
+verify_multi_name(char *config_fname, int ntasks)
+{
+	FILE *config_fd;
+	char line[256];
+	char *ranks, *exec_name, *p, *ptrptr;
+	int line_num = 0, i, rc = 0;
+	bitstr_t *task_mask;
+
+	if (ntasks <= 0) {
+		error("Invalid task count %d", ntasks);
+		return -1;
+	}
+
+	config_fd = fopen(config_fname, "r");
+	if (config_fd == NULL) {
+		error("Unable to open configuration file %s", config_fname);
+		return -1;
+	}
+
+	task_mask = bit_alloc(ntasks);
+	while (fgets(line, sizeof(line), config_fd)) {
+		line_num ++;
+		if (strlen (line) >= (sizeof(line) - 1)) {
+			error ("Line %d of configuration file %s too long", 
+				line_num, config_fname);
+			rc = -1;
+			goto fini;
+		} 
+		p = line;
+		while (*p != '\0' && isspace (*p)) /* remove leading spaces */
+			p ++;
+		
+		if (*p == '#') /* only whole-line comments handled */
+			continue;
+
+		if (*p == '\0') /* blank line ignored */
+			continue;
+
+		ranks = strtok_r(p, " \t\n", &ptrptr);
+		exec_name = strtok_r(NULL, " \t\n", &ptrptr);
+		if (!ranks || !exec_name) {
+			error("Line %d of configuration file %s invalid", 
+				line_num, config_fname);
+			rc = -1;
+			goto fini;
+		}
+		if (_validate_ranks(ranks, ntasks, task_mask)) {
+			error("Line %d of configuration file %s invalid", 
+				line_num, config_fname);
+			rc = -1;
+			goto fini;
+		}
+	}
+
+	for (i=0; i<ntasks; i++) {
+		if (!bit_test(task_mask, i)) {
+			error("Configuration file %s invalid, "
+				"no record for task id %d", 
+				config_fname, i);
+			rc = -1;
+			goto fini;
+		}
+	}
+
+fini:	fclose(config_fd);
+	bit_free(task_mask);
+	return rc;
 }

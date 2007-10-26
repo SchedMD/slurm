@@ -83,8 +83,9 @@
 #include "src/common/optz.h"
 #include "src/api/pmi_server.h"
 
-#include "src/srun/opt.h"
 #include "src/srun/attach.h"
+#include "src/srun/multi_prog.h"
+#include "src/srun/opt.h"
 #include "src/common/mpi.h"
 
 /* generic OPT_ definitions -- mainly for use with env vars  */
@@ -2137,7 +2138,6 @@ static void _opt_args(int argc, char **argv)
 			exit(1);
 		}
 		_load_multi(&remote_argc, remote_argv);
-
 	}
 	else if (remote_argc > 0) {
 		char *fullpath;
@@ -2151,6 +2151,9 @@ static void _opt_args(int argc, char **argv)
 		} 
 	}
 	if (!_opt_verify())
+		exit(1);
+
+	if (opt.multi_prog && verify_multi_name(remote_argv[0], opt.nprocs))
 		exit(1);
 }
 
