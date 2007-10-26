@@ -96,6 +96,8 @@ if {$matches != 4} {
 }
 if {$exit_code != 0} {
 	exit $exit_code
+} else {
+	send_user "\nSo far, so good\n\n"
 }
 
 #
@@ -143,6 +145,37 @@ expect {
 }
 if {$matches != 4} {
 	send_user "\nFAILURE: did not generate full list of executables.\n"
+	set exit_code 1
+}
+
+if {$exit_code != 0} {
+	exit $exit_code
+} else {
+	send_user "\nSo far, so good\n\n"
+}
+
+#
+# Submit a slurm job that asks for more tasks than specified in our 
+# configuration file
+#
+set matches   0
+set srun_pid [spawn $srun -N1 -n5 --overcommit -l -t1 --multi-prog  ./$file_in]
+expect {
+	-re "Configuration file .* invalid" {
+		send_user "\nNo worries. This error is expected\n"
+		incr matches
+	}
+	timeout {
+		send_user "\nFAILURE: srun not responding\n"
+		slow_kill $srun_pid
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$matches != 1} {
+	send_user "\nFAILURE: did not note lack of a executable for task 5.\n"
 	set exit_code 1
 }
 

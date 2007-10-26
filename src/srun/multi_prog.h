@@ -48,5 +48,13 @@ extern void mpir_cleanup(void);
 extern void mpir_set_executable_names(const char *executable_name);
 extern void mpir_dump_proctable(void);
 
+/*
+ * Verify that we have a valid executable program specified for each task
+ *	when the --multi-prog option is used.
+ *
+ * Return 0 on success, -1 otherwise
+ */
+extern int verify_multi_name(char *config_fname, int ntasks);
+
 #endif
 

@@ -217,11 +217,12 @@ static int fill_job_desc_from_opts(job_desc_msg_t *desc)
 	desc->shared = opt.shared;
 
 	desc->environment = NULL;
-	if (opt.get_user_env) {
+	if (opt.get_user_env >= 0) {
 		struct passwd *pw = NULL;
 		pw = getpwuid(opt.uid);
 		if (pw != NULL) {
-			desc->environment = env_array_user_default(pw->pw_name);
+			desc->environment = env_array_user_default(pw->pw_name,
+						opt.get_user_env);
 			/* FIXME - should we abort if j->environment
 			 * is NULL? */
 		}
