@@ -558,12 +558,13 @@ job_desc_msg_create_from_opts (char *script)
 		xassert (opt.batch);
 
 		j->environment = NULL;
-		if (opt.get_user_env) {
+		if (opt.get_user_env >= 0) {
 			struct passwd *pw = NULL;
 			pw = getpwuid(opt.uid);
 			if (pw != NULL) {
 				j->environment =
-					env_array_user_default(pw->pw_name);
+					env_array_user_default(pw->pw_name,
+							opt.get_user_env);
 				/* FIXME - should we abort if j->environment
 				   is NULL? */
 			}

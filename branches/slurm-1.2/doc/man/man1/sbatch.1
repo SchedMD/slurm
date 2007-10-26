@@ -120,13 +120,14 @@ The order of the node names in the list is not important; the node names
 will be sorted my SLURM.
 
 .TP
-\fB\-\-get\-user\-env\fR
+\fB\-\-get\-user\-env\fR[=\fItimeout\fR]
 This option will tell sbatch to retrieve the
 login environment variables for the user specified in the \-\-uid option.
 The environment variables are retrieved by running "su - <username> -c
 /usr/bin/env" and parsing the output.  Be aware that any environment
 variables already set in sbatch's environment will take precedence over any
 environment variables in the user's login environment.
+Optional timeout value is in seconds. Default value is 8 seconds.
 NOTE: This option only works if the caller has an effective uid of "root".
 This option was originally created for use by Moab.
 

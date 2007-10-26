@@ -446,7 +446,7 @@ static void _opt_default()
 	opt.ifname = xstrdup("/dev/null");
 	opt.ofname = NULL;
 	opt.efname = NULL;
-	opt.get_user_env = false;
+	opt.get_user_env = -1;
 }
 
 /*---[ env var processing ]-----------------------------------------------*/
@@ -657,7 +657,7 @@ static struct option long_options[] = {
 	{"tasks-per-node",  required_argument,0,LONG_OPT_TASKSPERNODE},
 	{"ntasks-per-node", required_argument,0,LONG_OPT_TASKSPERNODE}, 
 	{"wrap",          required_argument, 0, LONG_OPT_WRAP},
-	{"get-user-env",  no_argument,       0, LONG_OPT_GET_USER_ENV},
+	{"get-user-env",  optional_argument, 0, LONG_OPT_GET_USER_ENV},
 	{NULL,            0,                 0, 0}
 };
 
@@ -1290,7 +1290,10 @@ static void _set_options(int argc, char **argv)
 			/* handled in process_options_first_pass() */
 			break;
 		case LONG_OPT_GET_USER_ENV:
-			opt.get_user_env = true;
+			if (optarg)
+				opt.get_user_env = strtol(optarg, NULL, 10);
+			else
+				opt.get_user_env = 0;
 			break;
 		default:
 			fatal("Unrecognized command line parameter %c",

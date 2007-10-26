@@ -241,11 +241,12 @@ void env_array_set_environment(char **env_array);
  * environment variables, as determined by calling (more-or-less)
  * "/bin/su - <username> -c /usr/bin/env".
  *
+ * timeout value is in seconds or zero for default (8 secs)
  * On error, returns NULL.
  *
  * NOTE: The calling process must have an effective uid of root for
  * this function to succeed.
  */
-char **env_array_user_default(const char *username);
+char **env_array_user_default(const char *username, int timeout);
 
 #endif

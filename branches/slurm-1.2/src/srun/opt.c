@@ -1044,7 +1044,7 @@ static void _opt_default()
 		opt.msg_timeout     = 15;
 	}
 	
-	opt.get_user_env = false;
+	opt.get_user_env = -1;
 }
 
 /*---[ env var processing ]-----------------------------------------------*/
@@ -1419,7 +1419,7 @@ void set_options(const int argc, char **argv, int first)
 		{"mloader-image",    required_argument, 0, LONG_OPT_MLOADER_IMAGE},
 		{"ramdisk-image",    required_argument, 0, LONG_OPT_RAMDISK_IMAGE},
 		{"reboot",           no_argument,       0, LONG_OPT_REBOOT},            
-		{"get-user-env",     no_argument,       0, LONG_OPT_GET_USER_ENV},
+		{"get-user-env",     optional_argument, 0, LONG_OPT_GET_USER_ENV},
 		{NULL,               0,                 0, 0}
 	};
 	char *opt_string = "+a:AbB:c:C:d:D:e:g:Hi:IjJ:kKlm:n:N:"
@@ -2004,7 +2004,10 @@ void set_options(const int argc, char **argv, int first)
 			opt.reboot = true;
 			break;
 		case LONG_OPT_GET_USER_ENV:
-			opt.get_user_env = true;
+			if (optarg)
+				opt.get_user_env = strtol(optarg, NULL, 10);
+			else
+				opt.get_user_env = 0;
 			break;
 		default:
 			if (spank_process_option (opt_char, optarg) < 0) {

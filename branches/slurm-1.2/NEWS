@@ -31,6 +31,8 @@ documents those changes that are of interest to users and admins.
     rather than to a file by the same name as the task's number.
  -- If srun --multi-prog does not identify a program to use for some task, 
     return the error "Could not identify executable program for this task".
+ -- For sched/wiki2, add optional timeout option to srun's s --get-user-env
+    parameter, change default timeout from 3 to 8 seconds.
 
 * Changes in SLURM 1.2.18
 =========================
