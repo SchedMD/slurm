@@ -155,12 +155,14 @@ if {$exit_code != 0} {
 }
 
 #
-# Submit a slurm job that asks for more tasks than specified in our configuration file
+# Submit a slurm job that asks for more tasks than specified in our 
+# configuration file
 #
 set matches   0
 set srun_pid [spawn $srun -N1 -n5 --overcommit -l -t1 --multi-prog  ./$file_in]
 expect {
-	-re "No executable program specified for this task" {
+	-re "Configuration file .* invalid" {
+		send_user "\nNo worries. This error is expected\n"
 		incr matches
 	}
 	timeout {
