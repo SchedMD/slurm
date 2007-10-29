@@ -301,9 +301,10 @@ cleanup1:
 	error("batch script setup failed for job %u.%u",
 	      msg->job_id, msg->step_id);
 
-	if (msg->step_id == SLURM_BATCH_SCRIPT)
-		_send_complete_batch_script_msg(job, -1, -1);
-	else
+	if (msg->step_id == SLURM_BATCH_SCRIPT) {
+		_send_complete_batch_script_msg(job, 
+			ESLURMD_CREATE_BATCH_DIR_ERROR, -1);
+	} else
 		_send_step_complete_msgs(job);
 
 	return NULL;
