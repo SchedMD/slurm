@@ -74,10 +74,10 @@
 #define BITSTR_SHIFT_WORD64	6
 
 #ifdef USE_64BIT_BITSTR
-typedef uint64_t bitstr_t;
+typedef int64_t bitstr_t;
 #define BITSTR_SHIFT 		BITSTR_SHIFT_WORD64
 #else
-typedef uint32_t bitstr_t;
+typedef int32_t bitstr_t;
 #define BITSTR_SHIFT 		BITSTR_SHIFT_WORD32
 #endif
 

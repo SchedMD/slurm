@@ -318,6 +318,7 @@ job_batch_job_create(batch_job_launch_msg_t *msg)
 	job->batch   = true;
 	job->multi_prog = 0;
 	job->overcommit = (bool) msg->overcommit;
+	job->node_name = xstrdup(conf->node_name);
 
 	job->uid     = (uid_t) msg->uid;
 	job->gid     = (gid_t) msg->gid;

@@ -109,6 +109,8 @@ documents those changes that are of interest to users and admins.
     to launch tasks, report clear explanation of any configuration file errors.
  -- For sched/wiki2, add optional timeout option to srun's s --get-user-env
     parameter, change default timeout from 3 to 8 seconds.
+ -- squeue modified for completing job to remove nodes that have already 
+    completed the job before applying node filter logic.
 
 * Changes in SLURM 1.2.18
 =========================
