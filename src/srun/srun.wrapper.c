@@ -2,8 +2,8 @@
  * srun.wrapper.c - srun command wrapper for use with debuggers
  *	srun is the SLURM parallel job initiator and resource allocator
  *
- * For TotalView, a parallel job debugger from TotalView Technologies, LLC
- * <http://www.TotalViewTech.com>
+ * For TotalView, a parallel job debugger from 
+ * TotalView Technologies, LLC <http://www.TotalViewTech.com>
  *	Type "<ctrl-a>" to specify arguments for srun
  *	Type "g" to start the program
  *
