@@ -95,17 +95,12 @@ int print_jobs_array(job_info_t * jobs, int size, List format)
 
 	/* Filter out the jobs of interest */
 	for (; i < size; i++) {
+		_adjust_completing(&jobs[i], &ni);
 		if (_filter_job(&jobs[i]))
 			continue;
 		list_append(l, (void *) &jobs[i]);
 	}
-
-
-	/* 
-	 * Adjust nodelists for any completing jobs
-	 */
 	sort_jobs_by_start_time (l);
-	list_for_each (l, (ListForF) _adjust_completing, (void *) &ni);
 	if (ni) 
 		slurm_free_node_info_msg (ni);
 
