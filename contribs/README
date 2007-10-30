@@ -7,6 +7,13 @@ Subdirectories contain the source-code for the various contributations for
 SLURM as their documentation. A quick description of the subdirectories
 of the SLURM contribs distribution follows:
 
+  env_cache_builder.c [C program]
+     This program will build an environment variable cache file for specific 
+     users or all users on the system. This can be used to prevent the aborting 
+     of jobs submitted by Moab using the srun/sbatch --get-user-env option.
+     Build with "make -f /dev/null env_cache_builder" and execute as user root
+     on the node where the moab daemon runs.
+
   perlapi/           [ Perl API to SLURM source ]
      API to SLURM using perl.  Making available all SLURM command that exist
      in the SLURM proper API.

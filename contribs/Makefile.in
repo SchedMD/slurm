@@ -233,6 +233,7 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 SUBDIRS = perlapi torque
 EXTRA_DIST = \
+	env_cache_builder.c	\
 	make.slurm.patch	\
 	mpich1.slurm.patch	\
 	ptrace.patch		\
