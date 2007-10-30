@@ -1841,17 +1841,16 @@ static List
 _create_path_list(void)
 {
 	List l = list_create(_freeF);
-	char *path = xstrdup(getenv("PATH"));
-	char *c, *lc;
+	char *path, *c, *lc;
 
-	if (!path) {
-		error("Error in PATH environment variable");
-		list_destroy(l);
-		return NULL;
+	c = getenv("PATH");
+	if (!c) {
+		verbose("No PATH environment variable");
+		return l;
 	}
 
+	path = xstrdup(c);
 	c = lc = path;
-
 	while (*c != '\0') {
 		if (*c == ':') {
 			/* nullify and push token onto list */

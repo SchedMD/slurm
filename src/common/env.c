@@ -2,7 +2,7 @@
  *  src/common/env.c - add an environment variable to environment vector
  *  $Id$
  *****************************************************************************
- *  Copyright (C) 2002-2006 The Regents of the University of California.
+ *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Mark Grondona <mgrondona@llnl.gov>, Danny Auble <da@llnl.gov>.
  *  UCRL-CODE-226842.
@@ -1219,9 +1219,52 @@ static void _strip_cr_nl(char *line)
 }
 
 /*
+ * Load user environment from a cache file located in
+ * <state_save_location>/env_username
+ */
+char **_load_env_cache(const char *username)
+{
+	char *state_save_loc, fname[BUFSIZ];
+	char line[BUFSIZ], name[BUFSIZ], value[BUFSIZ];
+	char **env = NULL;
+	FILE *fp;
+	int i;
+
+	state_save_loc = slurm_get_state_save_location();
+	i = snprintf(fname, sizeof(fname), "%s/env_%s", state_save_loc, 
+		     username);
+	xfree(state_save_loc);
+	if (i < 0) {
+		fatal("Environment cache filename overflow");
+		return NULL;
+	}
+	if (!(fp = fopen(fname, "r"))) {
+		fatal("Could not open user environment cache at %s: %m",
+			fname);
+		return NULL;
+	}
+
+	info("Getting cached environment variables at %s", fname);
+	env = env_array_create();
+	while (1) {
+		if (!fgets(line, BUFSIZ, fp))
+			break;
+		_strip_cr_nl(line);
+		_env_array_entry_splitter(line, name, BUFSIZ, value, BUFSIZ);
+		env_array_overwrite(&env, name, value);
+	}
+	fclose(fp);
+	return env;
+}
+
+/*
  * Return an array of strings representing the specified user's default
- * environment variables, as determined by calling (more-or-less)
- * "/bin/su - <username> -c /usr/bin/env".
+ * environment variables following a two-prongged approach. 
+ * 1. Execute (more or less): "/bin/su - <username> -c /usr/bin/env"
+ *    Depending upon the user's login scripts, this may take a very
+ *    long time to complete or possibly never return
+ * 2. Load the user environment from a cache file. This is used
+ *    in the event that option 1 times out.
  *
  * timeout value is in seconds or zero for default (8 secs) 
  * On error, returns NULL.
@@ -1250,13 +1293,13 @@ char **env_array_user_default(const char *username, int timeout)
 	}
 
 	if (pipe(fildes) < 0) {
-		error("pipe: %m");
+		fatal("pipe: %m");
 		return NULL;
 	}
 
 	child = fork();
 	if (child == -1) {
-		error("fork: %m");
+		fatal("fork: %m");
 		return NULL;
 	}
 	if (child == 0) {
@@ -1314,9 +1357,9 @@ char **env_array_user_default(const char *username, int timeout)
 		}
 	}
 	if (!found) {
-		error("Failed to get user environment variables");
+		error("Failed to get current user environment variables");
 		close(fildes[0]);
-		return NULL;
+		return _load_env_cache(username);
 	}
 
 	/* Now read in the environment variable strings. */
