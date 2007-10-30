@@ -2519,14 +2519,15 @@ static List
 _create_path_list(void)
 {
 	List l = list_create(_freeF);
-	char *path = xstrdup(getenv("PATH"));
-	char *c, *lc;
+	char *path, *c, *lc;
 
-	if (!path) {
+	c = getenv("PATH");
+	if (!c) {
 		verbose("No PATH environment variable");
 		return l;
 	}
 
+	path = xstrdup(c);
 	c = lc = path;
 
 	while (*c != '\0') {

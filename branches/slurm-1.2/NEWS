@@ -31,8 +31,11 @@ documents those changes that are of interest to users and admins.
     rather than to a file by the same name as the task's number.
  -- For srun --multi-prog option, verify configuration file before attempting 
     to launch tasks, report clear explanation of any configuration file errors.
- -- For sched/wiki2, add optional timeout option to srun's s --get-user-env
-    parameter, change default timeout from 3 to 8 seconds.
+ -- For sched/wiki2, add optional timeout option to srun's --get-user-env
+    parameter, change default timeout for "su - <user> env" from 3 to 8 seconds.
+    On timeout, attempt to load env from file at StateSaveLocation/env_<user>.
+    The format of this file is the same as output of "env" command. If there
+    is no env cache file, then abort the request.
  -- squeue modified for completing job to remove nodes that have already 
     completed the job before applying node filter logic.
 
