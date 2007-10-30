@@ -59,13 +59,15 @@
 
 #define DEBUG 0
 #define SU_WAIT_MSEC 8000
-static void _parse_line(char *in_line, char **user_name, int *user_id);
-static long int _build_cache(char *user_name);
+
+static long int	_build_cache(char *user_name, char *cache_dir);
+static int	_get_cache_dir(char *buffer, int buf_size);
+static void	_parse_line(char *in_line, char **user_name, int *user_id);
 
 main (int argc, char **argv)
 {
 	FILE *passwd_fd;
-	char in_line[256], *user_name;
+	char cache_dir[256], in_line[256], *user_name;
 	int i, user_id;
 	long int delta_t;
 
@@ -74,8 +76,20 @@ main (int argc, char **argv)
 		exit(1);
 	}
 
+	if (_get_cache_dir(cache_dir, sizeof(cache_dir)))
+		exit(1);
+	strncat(cache_dir, "/env_cache", sizeof(cache_dir));
+	if (mkdir(cache_dir, 0500) && (errno != EEXIST)) {
+		printf("Could not create cache directory %s: %s", cache_dir,
+			strerror(errno));
+		exit(1);
+	}
+#if DEBUG
+	printf("cache_dir=%s\n", cache_dir);
+#endif
+
 	for (i=1; i<argc; i++) {
-		delta_t = _build_cache(argv[i]);
+		delta_t = _build_cache(argv[i], cache_dir);
 #if DEBUG
 		printf("user %-8s time %ld usec\n", argv[i], delta_t);
 #endif
@@ -93,7 +107,7 @@ main (int argc, char **argv)
 		_parse_line(in_line, &user_name, &user_id);
 		if (user_id <= 100)
 			continue;
-		delta_t = _build_cache(user_name);
+		delta_t = _build_cache(user_name, cache_dir);
 #if DEBUG
 		if (delta_t < ((SU_WAIT_MSEC * 0.8) * 1000))
 			continue;
@@ -103,6 +117,7 @@ main (int argc, char **argv)
 	fclose(passwd_fd);
 }
 
+/* Given a line from /etc/passwd, return the user_name and user_id */
 static void _parse_line(char *in_line, char **user_name, int *user_id)
 {
 	char *tok;
@@ -118,12 +133,15 @@ static void _parse_line(char *in_line, char **user_name, int *user_id)
 	}
 }
 
-static long int _build_cache(char *user_name)
+/* For a given user_name, get his environment variable by executing
+ * "su - <user_name> -c env" and store the result in 
+ * cache_dir/env_<user_name>
+ * Returns time to perform the operation in usec
+ */
+static long int _build_cache(char *user_name, char *cache_dir)
 {
-	FILE *su;
-	char line[BUFSIZ];
-	char name[BUFSIZ];
-	char value[BUFSIZ];
+	FILE *su, *cache;
+	char line[BUFSIZ], name[BUFSIZ], value[BUFSIZ], out_file[BUFSIZ];
 	char *starttoken = "XXXXSLURMSTARTPARSINGHEREXXXX";
 	char *stoptoken  = "XXXXSLURMSTOPPARSINGHEREXXXXX";
 	int fildes[2], found, fval, len, rc, timeleft;
@@ -158,7 +176,7 @@ static long int _build_cache(char *user_name)
 	close(fildes[1]);
 	if ((fval = fcntl(fildes[0], F_GETFL, 0)) >= 0)
 		fcntl(fildes[0], F_SETFL, fval | O_NONBLOCK);
-	su= fdopen(fildes[0], "r");
+	su = fdopen(fildes[0], "r");
 
 	gettimeofday(&begin, NULL);
 	ufds.fd = fildes[0];
@@ -213,9 +231,16 @@ static long int _build_cache(char *user_name)
 		return delta_t;
 	}
 
+	snprintf(out_file, sizeof(out_file), "%s/%s", cache_dir, user_name);
+	cache = fopen(out_file, "w");
+	if (!cache) {
+		printf("Could not create cache file %s: %s\n", out_file, 
+			strerror(errno));
+	}
+
 	len = strlen(stoptoken);
 	found = 0;
-	while (!found) {
+	while (!found && cache) {
 		gettimeofday(&now, NULL);
 		timeleft = SU_WAIT_MSEC * 10;
 		timeleft -= (now.tv_sec -  begin.tv_sec)  * 1000;
@@ -249,10 +274,15 @@ static long int _build_cache(char *user_name)
 			break;
 		}
 
-		/* write "line" to the cache file */
-/*printf("p2:%s\n",line); */
+		if (fputs(line, cache) == EOF) {
+			printf("Could not write cache file %s: %s\n", 
+				out_file, strerror(errno));
+			found = 1;	/* quit now */
+		}
 	}
 	close(fildes[0]);
+	if (cache)
+		fclose(cache);
 	waitpid(-1, NULL, WNOHANG);
 
 	gettimeofday(&now, NULL);
@@ -265,4 +295,61 @@ static long int _build_cache(char *user_name)
 			return (SU_WAIT_MSEC * 1000);
 	}
 	return delta_t;
+}
+
+/* Get configured StateSaveLocation. 
+ * User environment variable caches get created there.
+ * Returns 0 on success, -1 on error. */
+static int _get_cache_dir(char *buffer, int buf_size)
+{
+	FILE *scontrol;
+	int fildes[2];
+	pid_t child, fval;
+	char line[BUFSIZ], *fname;
+
+	if (pipe(fildes) < 0) {
+		perror("pipe");
+		return -1;
+	}
+
+	child = fork();
+	if (child == -1) {
+		perror("fork");
+		return -1;
+	}
+	if (child == 0) {
+		close(0);
+		open("/dev/null", O_RDONLY);
+		dup2(fildes[1], 1);
+		close(2);
+		open("/dev/null", O_WRONLY);
+		execlp("scontrol", "scontrol", "show", "config", NULL);
+		perror("execl(scontrol)");
+		return -1;
+	}
+
+	close(fildes[1]);
+	scontrol = fdopen(fildes[0], "r");
+
+	buffer[0] = '\0';
+	while (fgets(line, BUFSIZ, scontrol)) {
+		if (strncmp(line, "StateSaveLocation", 17))
+			continue;
+		fname = strchr(line, '\n');
+		if (fname)
+			fname[0] = '\0';
+		fname = strchr(line, '/');
+		if (fname)
+			strncpy(buffer, fname, buf_size);
+		break;
+	}
+	close(fildes[0]);
+	if (!buffer[0]) {
+		printf("Failed to get StateSaveLocation\n");
+		close(fildes[0]);
+		return -1;
+	}
+
+	waitpid(-1, NULL, WNOHANG);
+	return 0;
 }
