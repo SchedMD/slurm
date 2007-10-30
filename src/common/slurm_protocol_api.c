@@ -229,6 +229,21 @@ char *slurm_get_plugin_dir(void)
 	return plugin_dir;
 }
 
+/* slurm_get_state_save_location
+ * get state_save_location from slurmctld_conf object from slurmctld_conf object 
+ * RET char *   - state_save_location directory, MUST be xfreed by caller
+ */
+char *slurm_get_state_save_location(void)
+{
+	char *state_save_loc;
+	slurm_ctl_conf_t *conf;
+
+	conf = slurm_conf_lock();
+	state_save_loc = xstrdup(conf->state_save_location);
+	slurm_conf_unlock();
+	return state_save_loc;
+}
+
 /* slurm_get_auth_type
  * returns the authentication type from slurmctld_conf object
  * RET char *    - auth type, MUST be xfreed by caller

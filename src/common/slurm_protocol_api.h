@@ -130,6 +130,12 @@ void inline slurm_api_clear_config(void);
  */
 char *slurm_get_plugin_dir(void);
 
+/* slurm_get_state_save_location
+ * get state_save_location from slurmctld_conf object from slurmctld_conf object 
+ * RET char *   - state_save_location directory, MUST be xfreed by caller
+ */
+char *slurm_get_state_save_location(void);
+
 /* slurm_get_auth_type
  * returns the authentication type from slurmctld_conf object
  * RET char *    - auth type, MUST be xfreed by caller

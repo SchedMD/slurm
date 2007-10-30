@@ -556,12 +556,12 @@ _create_path_list(void)
 	char *path = xstrdup(getenv("PATH"));
 	char *c, *lc;
 
-	if (!path) {
-		error("Error in PATH environment variable");
-		list_destroy(l);
-		return NULL;
+	c = getenv("PATH");
+	if (!c) {
+		error("No PATH environment variable");
+		return l;
 	}
-
+	path = xstrdup(c);
 	c = lc = path;
 
 	while (*c != '\0') {
