@@ -54,7 +54,7 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 
-#define SU_WAIT_MSEC 3000
+#define SU_WAIT_MSEC 8000
 static void _parse_line(char *in_line, char **user_name, int *user_id);
 static long int  _time_login(char *user_name);
 
@@ -138,15 +138,8 @@ static long int _time_login(char *user_name)
 		dup2(fildes[1], 1);
 		close(2);
 		open("/dev/null", O_WRONLY);
-#if 0
-		/* execute .profile only */
-		execl("/bin/su", "su", user_name, "-c", 
-			"echo; echo; echo HELLO", NULL);
-#else
-		/* execute .login plus .profile */
 		execl("/bin/su", "su", "-", user_name, "-c", 
 			"echo; echo; echo HELLO", NULL);
-#endif
 		exit(1);
 	}
 
@@ -174,8 +167,10 @@ static long int _time_login(char *user_name)
 			perror("poll");
 			break;
 		}
-		if ((ufds.revents & POLLERR) || (ufds.revents & POLLHUP))
+		if (!(ufds.revents & POLLIN)) {
+			perror("POLLERR|POLLHUP");
 			break;
+		}
 		while (fgets(line, BUFSIZ, su)) {
 			if (!strncmp(line, "HELLO", 5)) {
 				found = 1;
@@ -186,10 +181,9 @@ static long int _time_login(char *user_name)
 	close(fildes[0]);
 	waitpid(-1, NULL, WNOHANG);
 
-	if (!found)
-		return (SU_WAIT_MSEC * 1000);
-
 	delta_t  = (now.tv_sec  - begin.tv_sec)  * 1000000;
 	delta_t +=  now.tv_usec - begin.tv_usec;
+	if (!found && (delta_t < (SU_WAIT_MSEC * 1000)))
+		return (SU_WAIT_MSEC * 1000);
 	return delta_t;
 }
