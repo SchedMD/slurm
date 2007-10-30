@@ -1347,7 +1347,7 @@ char **env_array_user_default(const char *username, int timeout)
 			error("poll: %m");
 			break;
 		}
-		if ((ufds.revents & POLLERR) || (ufds.revents & POLLHUP))
+		if (!(ufds.revents & POLLIN)) {
 			break;
 		while (fgets(line, BUFSIZ, su)) {
 			if (!strncmp(line, starttoken, len)) {
@@ -1387,7 +1387,7 @@ char **env_array_user_default(const char *username, int timeout)
 			break;
 		}
 		/* stop at the line containing the stoptoken string */
-		if ((ufds.revents & POLLERR) || (ufds.revents & POLLHUP))
+		if (!(ufds.revents & POLLIN)) {
 			break;
 		if ((fgets(line, BUFSIZ, su) == 0) ||
 		    (!strncmp(line, stoptoken, len))) {
