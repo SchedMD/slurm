@@ -604,7 +604,16 @@ int _print_job_num_procs(job_info_t * job, int width, bool right, char* suffix)
 	if (job == NULL)	/* Print the Header instead */
 		_print_str("CPUS", width, right, true);
 	else {
-		convert_num_unit((float)job->num_procs, tmp_char, UNIT_NONE);
+		if (job->job_state == JOB_RUNNING) {
+			uint32_t cnt = 0, i;
+			for (i=0; i<job->num_cpu_groups; i++) {
+				cnt += job->cpus_per_node[i] * 
+				       job->cpu_count_reps[i];
+			}
+			convert_num_unit((float)cnt, tmp_char, UNIT_NONE);
+		} else {
+			convert_num_unit((float)job->num_procs, tmp_char, UNIT_NONE);
+		}
 		_print_str(tmp_char, width, right, true);
 	}
 	if (suffix)
