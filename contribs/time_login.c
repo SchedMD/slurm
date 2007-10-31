@@ -138,8 +138,13 @@ static long int _time_login(char *user_name)
 		dup2(fildes[1], 1);
 		close(2);
 		open("/dev/null", O_WRONLY);
+#ifdef LOAD_ENV_NO_LOGIN
+		execl("/bin/su", "su", user_name, "-c",
+			"echo; echo; echo HELLO", NULL);
+#else
 		execl("/bin/su", "su", "-", user_name, "-c", 
 			"echo; echo; echo HELLO", NULL);
+#endif
 		exit(1);
 	}
 
