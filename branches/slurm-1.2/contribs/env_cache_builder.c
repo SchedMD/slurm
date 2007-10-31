@@ -169,7 +169,11 @@ static long int _build_cache(char *user_name, char *cache_dir)
 		snprintf(line, sizeof(line),
 			 "echo; echo; echo; echo %s; env; echo %s",
 			 starttoken, stoptoken);
+#ifdef LOAD_ENV_NO_LOGIN
+		execl("/bin/su", "su", user_name, "-c", line, NULL);
+#else
 		execl("/bin/su", "su", "-", user_name, "-c", line, NULL);
+#endif
 		exit(1);
 	}
 
