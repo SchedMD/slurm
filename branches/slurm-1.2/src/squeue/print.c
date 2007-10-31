@@ -980,6 +980,18 @@ int _print_job_account(job_info_t * job, int width, bool right_justify,
 	return SLURM_SUCCESS;
 }
 
+int _print_job_comment(job_info_t * job, int width, bool right_justify,
+			char* suffix)
+{
+	if (job == NULL)	 /* Print the Header instead */
+		_print_str("COMMENT", width, right_justify, true);
+	else
+		_print_str(job->comment, width, right_justify, true);
+	if (suffix)
+		printf("%s", suffix);
+	return SLURM_SUCCESS;
+}
+
 int _print_job_dependency(job_info_t * job, int width, bool right_justify,
 			char* suffix) 
 {

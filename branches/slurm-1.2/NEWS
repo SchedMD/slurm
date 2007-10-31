@@ -38,6 +38,8 @@ documents those changes that are of interest to users and admins.
     is no env cache file, then abort the request.
  -- squeue modified for completing job to remove nodes that have already 
     completed the job before applying node filter logic.
+ -- squeue formatted output option added for job comment, "%q" (the obvious 
+    choices for letters are already in use).
 
 * Changes in SLURM 1.2.18
 =========================
