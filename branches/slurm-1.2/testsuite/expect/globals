@@ -458,6 +458,46 @@ proc wait_for_job { job_id desired_state } {
 
 ################################################################
 #
+# Proc: wait_for_step
+#
+# Purpose: Wait for a job step to be found, exponential back-off 
+# 1 to 10 seconds
+#
+# Returns: A non-zero return code indicates a failure.
+#
+# Input: step_id   -- The SLURM step id of a job we want to
+#                     wait for.
+#
+################################################################
+
+proc wait_for_step { step_id } {
+	global scontrol max_job_state_delay
+	set sleep_time  1
+	set my_delay    0
+	while 1 {
+		set fd [open "|$scontrol -o show step $step_id"]
+		gets $fd line
+		catch {close $fd}
+		if {[regexp {Nodes=} $line foo] == 1} {
+			return 0
+		}
+		if { $my_delay > $max_job_state_delay } {
+			send_user "FAILURE: Timeout waiting for job step\n"
+			return 1
+		}
+
+		exec sleep $sleep_time
+		set my_delay [expr $my_delay + $sleep_time]
+		set sleep_time  [expr $sleep_time * 2]
+		if { $sleep_time > 10 } {
+			set sleep_time 10
+		}
+	}
+}
+
+
+################################################################
+#
 # Proc: test_front_end
 #
 # Purpose: Determine if the execution host is one in which the
