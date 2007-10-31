@@ -40,6 +40,9 @@ documents those changes that are of interest to users and admins.
     completed the job before applying node filter logic.
  -- squeue formatted output option added for job comment, "%q" (the obvious 
     choices for letters are already in use).
+ -- Added configure option --enable-load-env-no-login for use with Moab. If
+    set then the user job runs with the environment built without a login
+    ("su <user> env" rather than "su - <user> env").
 
 * Changes in SLURM 1.2.18
 =========================
