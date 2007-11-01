@@ -56,8 +56,9 @@ my (
     $giga,             $help,            $idle,         $mega,
     $man,              $nodes,           $one,          $queueList,
     $queueStatus,      $running,         $serverStatus, $siteSpecific,
-    $userList,         $hostname
+    $userList,         $hostname,        $rc
 );
+
 GetOptions(
 	'a'      => \$all,
 	'B=s'    => \$serverStatus,
@@ -77,6 +78,8 @@ GetOptions(
 	'u=s'    => \$userList,
 	'W=s'    => \$siteSpecific,
 	) or pod2usage(2);
+
+$rc = 153; # if we don't find what we are looking for return this.
 
 # Display usage if necessary
 pod2usage(0) if $help;
@@ -126,6 +129,8 @@ if(defined($queueList)) {
 	if(!$resp) {
 		die "Problem loading jobs.\n";
 	}
+	
+	my $line = 0;
 	foreach my $part (@{$resp->{partition_array}}) {
 		if (@queueIds) {
 			next unless grep /^$part->{'name'}/, @queueIds;
@@ -134,8 +139,10 @@ if(defined($queueList)) {
 		if ($full) { # Full
 			print_part_full($part);
 		} else { # Brief
-			print_part_brief($part);
+			print_part_brief($part, $line);
+			$line++;
 		}	
+		$rc = 0;
 	}
 } else {
 	my @jobIds = @ARGV;
@@ -146,6 +153,7 @@ if(defined($queueList)) {
 		die "Problem loading jobs.\n";
 	}
 
+	my $line = 0;
 	foreach my $job (@{$resp->{job_array}}) {
 		my $use_time      = $now_time;
 		my $state = $job->{'job_state'};
@@ -183,13 +191,15 @@ if(defined($queueList)) {
 		} elsif ($full) { # Full
 			print_job_full($job);
 		} else { # Brief
-			print_job_brief($job);
-		}	
+			print_job_brief($job, $line);
+			$line++;
+		}
+		$rc = 0;
 	}
 }
 
 # Exit with status code
-exit 0;
+exit $rc;
 
 ################################################################################
 # $stateCode = stateCode($state)
@@ -380,10 +390,12 @@ sub get_exec_host
 ###############################################################################
 sub print_job_brief 
 {
-	my ($job) = @_;
+	my ($job, $line_num) = @_;
 
-	printf("%-19s %-16s %-15s %-8s %-1s %-15s\n",
-	       "Job ID", "Jobname", "Username", "Time",  "S", "Queue");
+	if(!$line_num) {
+		printf("%-19s %-16s %-15s %-8s %-1s %-15s\n",
+		       "Job ID", "Jobname", "Username", "Time",  "S", "Queue");
+	}
 	printf("%-19.19s %-16.16s %-15.15s %-8.8s %-1.1s %-15.15s\n",
 	       $job->{'job_id'}, $job->{'name'}, $job->{'user_name'},
 	       ddhhmm($job->{'statPSUtil'}), $job->{'stateCode'},
