@@ -32,9 +32,9 @@ add functionality.</li>
 <p>SLURM provides resource management on about 1000 computers worldwide,
 including many of the most powerful computers in the world:
 <ul>
-<li><a href="http://www.llnl.gov/asc/computing_resources/bluegenel/bluegene_home.html">BlueGene/L</a> 
+<li><a href="https://www.llnl.gov/asc/computing_resources/bluegenel/">BlueGene/L</a> 
 at LLNL with 106,496 dual-core processors</li>
-<li><a href="http://www.llnl.gov/asc/computing_resources/purple/purple_index.html">ASC Purple</a>
+<li><a href="https://www.llnl.gov/asc/computing_resources/purple/">ASC Purple</a>
 an IBM SP/AIX cluster at LLNL with 12,208 Power5 processors and a Federation switch</li>
 <li><a href="http://www.bsc.es/plantillaA.php?cat_id=5">MareNostrum</a>
 a Linux cluster at Barcelona Supercomputer Center
