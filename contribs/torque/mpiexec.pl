@@ -50,7 +50,8 @@ use Switch;
 my $srun = "${FindBin::Bin}/srun";
 
 my ($nprocs, $hostname, $verbose, $nostdin, $allstdin, $nostdout, $pernode,
-    $perif, $no_shem, $gige, $kill_it, $tv, $config_file, $help, $man);
+    $perif, $no_shem, $gige, $kill_it, $tv, $config_file, $timeout,
+    $help, $man);
 
 sub get_new_config() {
 
@@ -142,6 +143,8 @@ $command .= " -inone" if $nostdin;
 $command .= " -i0" if !$allstdin; #default only send stdin to first node
 $command .= " -n$nprocs" if $nprocs; # number of tasks
 $command .= " -w$hostname" if $hostname; # Hostlist provided
+$command .= " -t '" . $ENV{"MPIEXEC_TIMEOUT"} . "'" if $ENV{"MPIEXEC_TIMEOUT"};
+
 if($verbose) {
 	$command .= " -"; # verbose
 	for(my $i=0; $i<$verbose; $i++) {
