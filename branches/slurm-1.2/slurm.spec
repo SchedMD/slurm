@@ -315,7 +315,6 @@ LIST=./sgi-job.files
 touch $LIST
 test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/proctrack_sgi_job.so &&
 echo "%{_libdir}/slurm/proctrack_sgi_job.so" >> $LIST
-cp $LIST /home/jette/slurm-1.2
 %endif
 
 #############################################################################
