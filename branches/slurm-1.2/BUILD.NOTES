@@ -65,8 +65,7 @@ BlueGene build notes:
 	%_with_bluegene         1
 	%with_cflags		CFLAGS=-m64
    Build on Service Node with using the following syntax
-   build -s https://eris.llnl.gov/svn/slurm/tags/slurm-1-2-0-0-pre3
- 4. Copy RPMs to /usr/admin/sles/llnl/RPMS-SLES9
+   rpmbuild -ta slurm-...bz2
 
 To build and run on AIX:
 0. svn co https://eris.llnl.gov/svn/slurm/trunk slurm
