@@ -114,6 +114,16 @@ documents those changes that are of interest to users and admins.
     is no env cache file, then abort the request.
  -- squeue modified for completing job to remove nodes that have already 
     completed the job before applying node filter logic.
+ -- squeue formatted output option added for job comment, "%q" (the obvious 
+    choices for letters are already in use).
+ -- Added configure option --enable-load-env-no-login for use with Moab. If
+    set then the user job runs with the environment built without a login
+    ("su <user> env" rather than "su - <user> env").
+ -- Fix output of "srun -o %C" (allocated CPU count) for running jobs. This was
+    broken in 1.2.18 for handling requeue of Moab jobs.
+ -- Added logic to mpiexec wrapper to read in the MPIEXEC_TIMEOUT var
+ -- Updated qstat wrapper to display information for partitions (-Q) option
+ -- NOTE: SLURM should now work directly with Globus using the PBS GRAM.
 
 * Changes in SLURM 1.2.18
 =========================

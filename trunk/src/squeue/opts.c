@@ -553,6 +553,11 @@ extern int parse_format( char* format )
 				                          field_size, 
 				                          right_justify, 
 				                          suffix );
+			else if (field[0] == 'q')
+				job_format_add_comment( params.format_list, 
+				                        field_size, 
+				                        right_justify, 
+				                        suffix );
 			else if (field[0] == 'r')
 				job_format_add_reason( params.format_list,
 							field_size,

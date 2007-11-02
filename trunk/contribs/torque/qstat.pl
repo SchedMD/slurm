@@ -54,51 +54,53 @@ use Switch;
 my (
     $all,              $diskReservation, $executable,   $full,
     $giga,             $help,            $idle,         $mega,
-    $man,              $nodes,           $one,          $queueStatus,
-    $queueDestination, $running,         $serverStatus, $siteSpecific,
-    $userList,         $hostname
+    $man,              $nodes,           $one,          $queueList,
+    $queueStatus,      $running,         $serverStatus, $siteSpecific,
+    $userList,         $hostname,        $rc
 );
+
 GetOptions(
-    'a'      => \$all,
-    'B=s'    => \$serverStatus,
-    'e'      => \$executable,
-    'f'      => \$full,
-    'help|?' => \$help,
-    'i'      => \$idle,
-    'G'      => \$giga,
-    'man'    => \$man,
-    'M'      => \$mega,
-    'n'      => \$nodes,
-    '1'      => \$one,
-    'r'      => \$running,
-    'R'      => \$diskReservation,
-    'q'      => \$queueStatus,
-    'Q=s'    => \$queueDestination,
-    'u=s'    => \$userList,
-    'W=s'    => \$siteSpecific,
-) or pod2usage(2);
+	'a'      => \$all,
+	'B=s'    => \$serverStatus,
+	'e'      => \$executable,
+	'f'      => \$full,
+	'help|?' => \$help,
+	'i'      => \$idle,
+	'G'      => \$giga,
+	'man'    => \$man,
+	'M'      => \$mega,
+	'n'      => \$nodes,
+	'1'      => \$one,
+	'r'      => \$running,
+	'R'      => \$diskReservation,
+	'q'      => \$queueStatus,
+	'Q:s'    => \$queueList,
+	'u=s'    => \$userList,
+	'W=s'    => \$siteSpecific,
+	) or pod2usage(2);
+
+$rc = 153; # if we don't find what we are looking for return this.
 
 # Display usage if necessary
 pod2usage(0) if $help;
 if ($man)
 {
-    if ($< == 0)    # Cannot invoke perldoc as root
-    {
-        my $id = eval { getpwnam("nobody") };
-        $id = eval { getpwnam("nouser") } unless defined $id;
-        $id = -2                          unless defined $id;
-        $<  = $id;
-    }
-    $> = $<;                         # Disengage setuid
-    $ENV{PATH} = "/bin:/usr/bin";    # Untaint PATH
-    delete @ENV{'IFS', 'CDPATH', 'ENV', 'BASH_ENV'};
-    if ($0 =~ /^([-\/\w\.]+)$/) { $0 = $1; }    # Untaint $0
-    else { die "Illegal characters were found in \$0 ($0)\n"; }
-    pod2usage(-exitstatus => 0, -verbose => 2);
+	if ($< == 0)    # Cannot invoke perldoc as root
+	{
+		my $id = eval { getpwnam("nobody") };
+		$id = eval { getpwnam("nouser") } unless defined $id;
+		$id = -2                          unless defined $id;
+		$<  = $id;
+	}
+	$> = $<;                         # Disengage setuid
+	$ENV{PATH} = "/bin:/usr/bin";    # Untaint PATH
+	delete @ENV{'IFS', 'CDPATH', 'ENV', 'BASH_ENV'};
+	if ($0 =~ /^([-\/\w\.]+)$/) { $0 = $1; }    # Untaint $0
+	else { die "Illegal characters were found in \$0 ($0)\n"; }
+	pod2usage(-exitstatus => 0, -verbose => 2);
 }
 
 # Use sole remaining argument as jobIds
-my @jobIds = @ARGV;
 
 $hostname = `hostname -f`;
 chomp $hostname;
@@ -112,10 +114,6 @@ chomp $hostname;
 #unsupportedOption("-B", DIE) if $serverStatus;
 
 # Build command
-my $resp = Slurm->load_jobs(1);
-if(!$resp) {
-	die "Problem loading jobs.\n";
-}
 
 # foreach my $job (@{$resp->{job_array}}) {
 # 	while(my ($key, $value) = each(%$job)) {
@@ -124,67 +122,84 @@ if(!$resp) {
 # }
 my $now_time = time();
 
-my @userIds = split /,/, $userList || '';
+if(defined($queueList)) {
+	my @queueIds = split(/,/, $queueList) if $queueList;
 
-foreach my $job (@{$resp->{job_array}}) {
-	my $use_time      = $now_time;
-	my $state = $job->{'job_state'};
-	if($job->{'end_time'} && $job->{'end_time'} < $now_time) {
-		$use_time = $job->{'end_time'};
-	} 	
-	$job->{'statPSUtl'} =
-		$use_time - $job->{'start_time'} - $job->{'suspend_time'};
-	$job->{'aWDuration'} =
-		$use_time - $job->{'start_time'} - $job->{'suspend_time'};
-
-	$job->{'allocNodeList'} = $job->{'nodes'} || "--";
-	$job->{'stateCode'} = stateCode($job->{'job_state'});
-	$job->{'user_name'} = getpwuid($job->{'user_id'});
-	if(!$job->{'name'}) {
-		$job->{'name'} = "Allocation";	       
-	}
-	       
-	switch($job->{'job_state'}) {
-		case [JOB_COMPLETE, 
-		      JOB_CANCELLED,
-		      JOB_TIMEOUT,
-		      JOB_FAILED]    { $job->{'stateCode'} = 'C' }
-		case [JOB_RUNNING]   { $job->{'stateCode'} = 'R' }
-		case [JOB_PENDING]   { $job->{'stateCode'} = 'Q' }
-		case [JOB_SUSPENDED] { $job->{'stateCode'} = 'S' }
-		else                 { $job->{'stateCode'} = 'U' }   # Unknown
-	}
-
-
-	# Filter jobs according to options and arguments
-	if (@jobIds) {
-		next unless grep /^$job->{'job_id'}/, @jobIds;
-	} else {
-		if ($running) {
-			next unless ($job->{'stateCode'} eq 'R'
-				     || $job->{'stateCode'} eq 'S');
-		}
-		if ($idle) {
-			next unless ($job->{'stateCode'} eq 'Q');
-		}
-		if (@userIds) {
-			next unless grep /^$job->{'user_name'}$/, @userIds;
-		}
+	my $resp = Slurm->load_partitions(1);
+	if(!$resp) {
+		die "Problem loading jobs.\n";
 	}
 	
-	if ($all || $idle || $nodes || $running
-	    || $giga || $mega || $userList) { # Normal
-		print_select($job);
-	} elsif ($full) { # Full
-		print_full($job);
-	} else { # Brief
-		print_brief($job);
-	}	
+	my $line = 0;
+	foreach my $part (@{$resp->{partition_array}}) {
+		if (@queueIds) {
+			next unless grep /^$part->{'name'}/, @queueIds;
+		} 
+		
+		if ($full) { # Full
+			print_part_full($part);
+		} else { # Brief
+			print_part_brief($part, $line);
+			$line++;
+		}	
+		$rc = 0;
+	}
+} else {
+	my @jobIds = @ARGV;
+	my @userIds = split(/,/, $userList) if $userList;
+
+	my $resp = Slurm->load_jobs(1);
+	if(!$resp) {
+		die "Problem loading jobs.\n";
+	}
+
+	my $line = 0;
+	foreach my $job (@{$resp->{job_array}}) {
+		my $use_time      = $now_time;
+		my $state = $job->{'job_state'};
+		if($job->{'end_time'} && $job->{'end_time'} < $now_time) {
+			$use_time = $job->{'end_time'};
+		} 	
+		$job->{'statPSUtl'} = job_time_used($job);
+		$job->{'aWDuration'} = $job->{'statPSUtl'};
+
+		$job->{'allocNodeList'} = $job->{'nodes'} || "--";
+		$job->{'stateCode'} = stateCode($job->{'job_state'});
+		$job->{'user_name'} = getpwuid($job->{'user_id'});
+		$job->{'name'} = "Allocation" if !$job->{'name'};	       
+		
+		# Filter jobs according to options and arguments
+		if (@jobIds) {
+			next unless grep /^$job->{'job_id'}/, @jobIds;
+		} else {
+			if ($running) {
+				next unless ($job->{'stateCode'} eq 'R'
+					     || $job->{'stateCode'} eq 'S');
+			}
+			if ($idle) {
+				next unless ($job->{'stateCode'} eq 'Q');
+			}
+			if (@userIds) {
+				next unless 
+					grep /^$job->{'user_name'}$/, @userIds;
+			}
+		}
+		
+		if ($all || $idle || $nodes || $running
+		    || $giga || $mega || $userList) { # Normal
+			print_job_select($job);
+		} elsif ($full) { # Full
+			print_job_full($job);
+		} else { # Brief
+			print_job_brief($job, $line);
+			$line++;
+		}
+		$rc = 0;
+	}
 }
 
-
 # Exit with status code
-exit 0;
+exit $rc;
 
 ################################################################################
 # $stateCode = stateCode($state)
@@ -315,6 +330,36 @@ sub hRTime
 	return scalar localtime $epochTime;
 }
 
+sub job_time_used
+{
+	my ($job) = @_;
+
+	my $end_time;
+
+	return 0 if ($job->{'start_time'} == 0)
+		|| ($job->{'job_state'} == JOB_PENDING);
+
+	return $job->{'pre_sus_time'} if $job->{'job_state'} == JOB_SUSPENDED;
+
+	if (($job->{'job_state'} == JOB_RUNNING)
+	    ||  ($job->{'end_time'} == 0)) {
+		$end_time = localtime;
+	} else {
+		$end_time = $job->{'end_time'};
+	}
+	
+	return ($end_time - $job->{'suspend_time'} + $job->{'pre_sus_time'}) 
+		if $job->{'suspend_time'};
+	return ($end_time - $job->{'start_time'});
+}
+
+sub yes_no
+{
+	my ($query) = @_;
+	return "yes" if $query;
+	return "no";
+}
+
 sub get_exec_host 
 {
 	my ($job) = @_;
@@ -340,23 +385,28 @@ sub get_exec_host
 	return $execHost;
 }
 
-sub print_brief 
+###############################################################################
+# Job Functions
+###############################################################################
+sub print_job_brief 
 {
-	my ($job) = @_;
+	my ($job, $line_num) = @_;
 
-	printf("%-19s %-16s %-15s %-8s %-1s %-15s\n",
-	       "Job ID", "Jobname", "Username", "Time",  "S", "Queue");
+	if(!$line_num) {
+		printf("%-19s %-16s %-15s %-8s %-1s %-15s\n",
+		       "Job ID", "Jobname", "Username", "Time",  "S", "Queue");
+	}
 	printf("%-19.19s %-16.16s %-15.15s %-8.8s %-1.1s %-15.15s\n",
 	       $job->{'job_id'}, $job->{'name'}, $job->{'user_name'},
 	       ddhhmm($job->{'statPSUtil'}), $job->{'stateCode'},
 	       $job->{'partition'});
 }
 
-sub print_select
+sub print_job_select
 {
 	my ($job) = @_;
 
-	my $sessID = "??????";
+	my $sessID = "--";
 	my $execHost;
 
 	print "\n${hostname}:\n";
@@ -374,14 +424,8 @@ sub print_select
 	       '-' x 3,  '-' x 6, '-' x 5, '-',      '-' x 5
 	       );
 
-	if ($nodes) {
-		$execHost = get_exec_host($job);
+	$execHost = get_exec_host($job) if $nodes;
 		
-		if ($one) {
-			$sessID = "--";
-		}
-	} 
-	
 	printf("%-20.20s %-8.8s %-8.8s %-10.10s " .
 	       "%-6.6s %5.5s %3.3s %6.6s %-5.5s %-1s %-5.5s",
 	       $job->{'job_id'}, 
@@ -406,74 +450,89 @@ sub print_select
 	}
 }
 
-sub print_full
+sub print_job_full
 {
 	my ($job) = @_;
 	# Print the job attributes
 	printf("Job Id:\t%s\n", $job->{'job_id'});
-	if($job->{'start_time'}) {
-		printf("\tExecution_Time = %s\n",
-		       hRTime($job->{'start_time'}));
-		}
-	if(!$job->{'batch_flag'}) {
-		printf "\tinteractive = True\n"; 
-	}
-	if($job->{'name'}) {
-		printf("\tJob_Name = %s\n", $job->{'name'}); 
-	}
+	printf("\tJob_Name = %s\n", $job->{'name'}) if $job->{'name'};
 	printf("\tJob_Owner = %s@%s\n", 
 	       $job->{'user_name'}, $job->{'alloc_node'});
-
-	if($job->{'statPSUtl'}) {
-		printf("\tresources_used.cput = %s\n",
-		       hhmmss($job->{'statPSUtl'}));
-	}
-
-	if($job->{'aWDuration'}) {
-		printf("\tresources_used.walltime = %s\n",
-		       hhmmss($job->{'aWDuration'}));
-	}
-		
+	
+	printf "\tinteractive = True\n" if !$job->{'batch_flag'};
+	
 	printf("\tjob_state = %s\n", $job->{'stateCode'});
 	printf("\tqueue = %s\n", $job->{'partition'});
 	
-	if($job->{'account'}) {				       
-		printf("\tAccount_Name = %s\n", $job->{'account'});
-	}
-
-	my $execHost = get_exec_host($job);
-	if($execHost ne '--') { 
-		printf("\texec_host = %s\n", $execHost);
-	}
-	
-	printf("\tPriority = %s\n", $job->{'priority'});
-	
 	printf("\tqtime = %s\n", hRTime($job->{'submit_time'}));
+	printf("\tmtime = %s\n", hRTime($job->{'start_time'})) 
+		if $job->{'start_time'};
+	printf("\tctime = %s\n", hRTime($job->{'end_time'}))
+		if $job->{'end_time'};
 	
-	if($job->{'num_nodes'}) {
-		printf("\tResource_List.nodect = %d\n", $job->{'num_nodes'});
-	}
+	printf("\tAccount_Name = %s\n", $job->{'account'}) if $job->{'account'};
+	
+	my $execHost = get_exec_host($job);
+	printf("\texec_host = %s\n", $execHost) if $execHost ne '--';
+		
+	printf("\tPriority = %u\n", $job->{'priority'});
+	printf("\teuser = %s(%d)\n", $job->{'user_name'}, $job->{'user_id'});
+
+	# can't run getgrgid inside printf it appears the input gets set to
+	# x if ran there.
+	my $user_group = getgrgid($job->{'group_id'});
+	printf("\tegroup = %s(%d)\n", $user_group, $job->{'group_id'});
+
+	printf("\tResource_List.walltime = %s\n", hhmmss($job->{'aWDuration'}));
+	printf("\tResource_List.nodect = %d\n", $job->{'num_nodes'})
+		if $job->{'num_nodes'};
+	printf("\tResource_List.ncpus = %s\n", $job->{'num_procs'}) 
+		if $job->{'num_procs'}; 
 	
 	if ($job->{'reqNodes'}) {
 		my $nodeExpr = $job->{'reqNodes'};
-		if($job->{'ntasks_per_node'}) {
-			$nodeExpr .= ":ppn=" . $job->{'ntasks_per_node'}; 
-		}
+		$nodeExpr .= ":ppn=" . $job->{'ntasks_per_node'} 
+		        if $job->{'ntasks_per_node'}; 
+		
 		printf("\tResource_List.nodes = %s\n", $nodeExpr);
 	}
-	if($job->{'num_procs'}) {
-		printf("\tResource_List.ncpus = %s\n", $job->{'num_procs'}); 
-	} 
+		
+	print "\n";
+}
 
-	
-	if($job->{'reqAWDuration'}) {
-		printf("\tResource_List.walltime = %s\n",
-		       hhmmss($job->{'reqAWDuration'}));
+###############################################################################
+# Partition Functions
+###############################################################################
+sub print_part_brief 
+{
+	my ($part, $line_num) = @_;
+
+	if(!$line_num) {
+		printf("%-16s %5s %5s %5s %5s %5s %5s %5s %5s %5s %5s %1s\n\n",
+		       "Queue", "Max", "Tot", "Ena",  "Str", "Que", "Run",
+		       "Hld", "Wat", "Trn", "Ext", "T");
+		printf("%-16s %5s %5s %5s %5s %5s %5s %5s %5s %5s %5s %1s\n\n",
+		       "----------------", "---", "---", "---",  "---", "---", 
+		       "---", "---", "---", "---", "---", "-");
 	}
+	printf("%-16.16s %5.5s %5.5s %5.5s %5.5s %5.5s %5.5s %5.5s " .
+	       "%5.5s %5.5s %5.5s %1.1s\n",
+	       $part->{'name'}, '?', '?', yes_no($part->{'state_up'}),
+	       yes_no($part->{'state_up'}), '?', '?', '?', '?', '?', '?', 'E');
+}
 
-	printf("\teuser = %s\n", $job->{'user_name'});
-	printf("\tegroup = %s\n", getgrgid($job->{'group_id'}));
-
+sub print_part_full
+{
+	my ($part) = @_;
+	# Print the part attributes
+	printf("Queue:\t%s\n", $part->{'name'});
+	printf("\tqueue_type = Execution\n");
+	printf("\tresources_default.nodes = %d\n", $part->{'total_nodes'});
+	
+	printf("\tenabled = %s\n", yes_no($part->{'state_up'}));
+	
+	printf("\tstarted = %s\n", yes_no($part->{'state_up'}));
+	
 	print "\n";
 }
 
@@ -483,7 +542,7 @@ __END__
 
 =head1 NAME
 
-B<qstat> - display job information in a familiar pbs format
+B<qstat> - display job/partition information in a familiar pbs format
 
 =head1 SYNOPSIS
 

@@ -38,6 +38,7 @@ Linux cluster (See BlueGene and AIX specific notes below for some differences).
 	%_slurm_sysconfdir      /etc/slurm
 	%_with_debug            1
 	%_with_elan		1   (ONLY ON SYSTEMS WITH ELAN SWITCH)
+	%_with_sgijob		1   (ON SYSTEMS WITHOUT ELAN SWITCH)
    I usually build with using the following syntax:
    build  -s https://eris.llnl.gov/svn/slurm/tags/slurm-1-2-0-0-pre3
    NOTE: For v1.0 and earlier add: --pre-exec='./autogen.sh'

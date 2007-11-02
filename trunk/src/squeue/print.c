@@ -604,7 +604,16 @@ int _print_job_num_procs(job_info_t * job, int width, bool right, char* suffix)
 	if (job == NULL)	/* Print the Header instead */
 		_print_str("CPUS", width, right, true);
 	else {
-		convert_num_unit((float)job->num_procs, tmp_char, UNIT_NONE);
+		if (job->job_state == JOB_RUNNING) {
+			uint32_t cnt = 0, i;
+			for (i=0; i<job->num_cpu_groups; i++) {
+				cnt += job->cpus_per_node[i] * 
+				       job->cpu_count_reps[i];
+			}
+			convert_num_unit((float)cnt, tmp_char, UNIT_NONE);
+		} else {
+			convert_num_unit((float)job->num_procs, tmp_char, UNIT_NONE);
+		}
 		_print_str(tmp_char, width, right, true);
 	}
 	if (suffix)
@@ -975,6 +984,18 @@ int _print_job_account(job_info_t * job, int width, bool right_justify,
 		_print_str("ACCOUNT", width, right_justify, true);
 	else
 		_print_str(job->account, width, right_justify, true);
+	if (suffix)
+		printf("%s", suffix);
+	return SLURM_SUCCESS;
+}
+
+int _print_job_comment(job_info_t * job, int width, bool right_justify,
+			char* suffix)
+{
+	if (job == NULL)	 /* Print the Header instead */
+		_print_str("COMMENT", width, right_justify, true);
+	else
+		_print_str(job->comment, width, right_justify, true);
 	if (suffix)
 		printf("%s", suffix);
 	return SLURM_SUCCESS;

@@ -1327,7 +1327,11 @@ char **env_array_user_default(const char *username, int timeout)
 		snprintf(cmdstr, sizeof(cmdstr),
 			 "echo; echo; echo; echo %s; env; echo %s",
 			 starttoken, stoptoken);
+#ifdef LOAD_ENV_NO_LOGIN
+		execl("/bin/su", "su", username, "-c", cmdstr, NULL);
+#else
 		execl("/bin/su", "su", "-", username, "-c", cmdstr, NULL);
+#endif
 		exit(1);
 	}
 

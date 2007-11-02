@@ -35,6 +35,7 @@
 %slurm_without_opt bluegene
 %slurm_without_opt auth_none
 %slurm_without_opt debug
+%slurm_without_opt sgijob
 
 # Build with munge by default on all platforms (disable using --without munge)
 %slurm_with_opt munge
@@ -49,12 +50,6 @@
 %ifos linux 
 %slurm_with_opt pam
 %endif
-
-# Build with sgijob on CHAOS systems
-#  (add elan too when it is available)
-%if 0%{?chaos}
-%slurm_with_opt sgijob
-%endif 
 
 # Define with_aix on AIX systems (for proctrack)
 %ifos aix
