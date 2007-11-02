@@ -622,6 +622,8 @@ comma\-separated and case insensitive types are recongnized:
 \fBBULK_XFER\fR and adapter names  (e.g. \fBSNI0\fR and \fBSNI1\fR). 
 For more information, on IBM systems see \fIpoe\fR documenation on 
 the environment variables \fBMP_EUIDEVICE\fR and \fBMP_USE_BULK_XFER\fR.
+Note that only four jobs steps may be active at once on a node with the 
+\fBBULK_XFER\fR option due to limitations in the Federation switch driver.
 
 .TP
 \fB\-\-nice\fR[=\fIadjustment]\fR
