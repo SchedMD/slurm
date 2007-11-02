@@ -41,16 +41,17 @@ Linux cluster (See BlueGene and AIX specific notes below for some differences).
 	%_with_sgijob		1   (ON SYSTEMS WITHOUT ELAN SWITCH)
    I usually build with using the following syntax:
    build  -s https://eris.llnl.gov/svn/slurm/tags/slurm-1-2-0-0-pre3
-   NOTE: For v1.0 and earlier add: --pre-exec='./autogen.sh'
-4. Move the RPMs to
+4. Remove the RPMs that we don't want:
+   rm -f slurm-perlapi*rpm slurm-torque*rpm
+5. Move the RPMs to
    /usr/local/admin/rpms/llnl/RPMS-RHEL4/x86_64 (odevi, or gauss)
    /usr/local/admin/rpms/llnl/RPMS-RHEL4/i386/ (adevi)
    /usr/local/admin/rpms/llnl/RPMS-RHEL4/ia64/ (tdevi)
    send an announcement email (with the latest entry from the NEWS
    file) out to linux-admin@lists.llnl.gov.
-5. Copy tagged bzip file (e.g. slurm-0.6.0-0.pre3.bz2) to FTP server
+6. Copy tagged bzip file (e.g. slurm-0.6.0-0.pre3.bz2) to FTP server
    for external SLURM users.
-6. Copy bzip file and rpms (including src.rpm) to sourceforge.net:
+7. Copy bzip file and rpms (including src.rpm) to sourceforge.net:
    ncftp upload.sf.net
    cd upload
    put filename
@@ -114,8 +115,10 @@ To build and run on AIX:
    There will be a log file create named /tmp/mplog.<jobid>.<taskid>
 7. If you update proctrack, be sure to run "slibclean" to clear cached
    version.
-8. Install the rpms int /usr/admin/inst.images/slurm/aix5.3 on an OCF AIX 
-   machine (pdev is a good choice).
+8. Remove the RPMs that we don't want:
+   rm -f slurm-perlapi*rpm slurm-torque*rpm
+   and install the other RPMs into /usr/admin/inst.images/slurm/aix5.3 on an 
+   OCF AIX machine (pdev is a good choice).
 
 AIX/Federation switch window problems
 To clean switch windows:     ntblclean =w 8 -a sni0
