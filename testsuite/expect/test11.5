@@ -74,17 +74,14 @@ if {$job_id == 0} {
 	exit 1
 }
 
-exec $bin_rm -f $file_in
-
 #
-# Wait for job to begin execution
+# Wait for step  to begin execution
 #
-if {[wait_for_job $job_id RUNNING] != 0} {
-	send_user "\nFAILURE: waiting for job $job_id to run\n"
+if {[wait_for_step $job_id.0] != 0} {
+	send_user "\nFAILURE: waiting for step $job_id.0 to run\n"
 	cancel_job $job_id
 	exit 1
 }
-exec $bin_sleep 2
 
 #
 # Enable/disable/test ability to heckpoint
@@ -245,6 +242,7 @@ if {$matches != 1} {
 #
 cancel_job $job_id
 if {$exit_code == 0} {
+	exec $bin_rm -f $file_in
 	send_user "\nSUCCESS\n"
 }
 exit $exit_code
