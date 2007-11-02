@@ -34,7 +34,6 @@
 %slurm_without_opt bluegene
 %slurm_without_opt auth_none
 %slurm_without_opt debug
-%slurm_without_opt sgijob
 
 # Build with munge by default on all platforms (disable with --without munge)
 %slurm_with_opt munge
@@ -52,6 +51,13 @@
 %slurm_with_opt aix
 %endif
 
+# Build with sgijob on CHAOS systems
+#  (add elan too when it is available)
+%if 0%{$chaos}
+%slurm_with_opt sgijob
+%else
+%slurm_without_opt sgijob
+%endif
 
 Name:    See META file
 Version: See META file
