@@ -48,7 +48,7 @@
 %endif
 
 # Define with_aix on AIX systems (for proctrack)
-%ifos aix
+%ifos aix5.3
 %slurm_with_opt aix
 %endif
 
