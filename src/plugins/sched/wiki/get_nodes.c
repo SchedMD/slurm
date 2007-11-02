@@ -200,7 +200,8 @@ static char *	_get_node_state(struct node_record *node_ptr)
 	uint16_t state = node_ptr->node_state;
 	uint16_t base_state = state & NODE_STATE_BASE;
 
-	if (state & NODE_STATE_DRAIN)
+	if ((state & NODE_STATE_DRAIN)
+	||  (state & NODE_STATE_FAIL))
 		return "Draining";
 	if (state & NODE_STATE_COMPLETING)
 		return "Busy";
