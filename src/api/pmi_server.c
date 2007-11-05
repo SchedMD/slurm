@@ -182,7 +182,7 @@ static void *_agent(void *x)
 	struct kvs_hosts *kvs_host_list;
 	int i, j, kvs_set_cnt = 0, host_cnt, pmi_fanout = 32;
 	int msg_sent = 0, max_forward = 0;
-	char *tmp;
+	char *tmp, *fanout_off_host;
 	pthread_t msg_id;
 	pthread_attr_t attr;
 	DEF_TIMERS;
@@ -193,6 +193,7 @@ static void *_agent(void *x)
 		if (pmi_fanout < 1)
 			pmi_fanout = 32;
 	}
+	fanout_off_host = getenv("PMI_FANOUT_OFF_HOST");
 
 	/* only send one message to each host, 
 	 * build table of the ports on each host */
@@ -213,7 +214,8 @@ static void *_agent(void *x)
 		for (j=(i+1); j<args->barrier_xmit_cnt; j++) {
 			if (args->barrier_xmit_ptr[j].port == 0)
 				continue;	/* already sent message */
-			if (strcmp(args->barrier_xmit_ptr[i].hostname,
+			if ((fanout_off_host == NULL) &&
+			    strcmp(args->barrier_xmit_ptr[i].hostname,
 				   args->barrier_xmit_ptr[j].hostname))
 				continue;	/* another host */
 			kvs_host_list[host_cnt].task_id = 0; /* not avail */
