@@ -2250,14 +2250,20 @@ _check_rdma_job_count(char *adapter)
 {
 	unsigned int job_count;
 	unsigned int *job_keys;
-	int z;
+	int rc, z;
 
-	ntbl_rdma_jobs(NTBL_VERSION, adapter,
-		       &job_count, &job_keys);
+	rc = ntbl_rdma_jobs(NTBL_VERSION, adapter,
+			    &job_count, &job_keys);
+	if (rc != NTBL_SUCESSS) {
+		error("ntbl_rdma_jobs(): %d", rc);
+		return SLURM_ERROR;
+	}
+
 	debug3("Adapter %s, RDMA job_count = %u",
 	       adapter, job_count);
 	for (z = 0; z < job_count; z++)
 		debug3("  job key = %u", job_keys[z]);
+	free(job_keys);
 	if (job_count >= 4) {
 		error("RDMA job_count is too high: %u", job_count);
 		return SLURM_ERROR;
