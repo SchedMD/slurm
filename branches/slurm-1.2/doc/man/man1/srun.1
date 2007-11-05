@@ -1187,6 +1187,19 @@ offload work from the srun command to the applications and
 likely increase the vulernability to failures. 
 The default value is 32.
 .TP
+\fBPMI_FANOUT_OFF_HOST\fR
+This is used exclusively with PMI (MPICH2 and MVAPICH2) and
+controls the fanout of data communications.  The srun command
+sends messages to application programs (via the PMI library)
+and those applications may be called upon to forward that
+data to additional tasks. By default, srun sends one message 
+per host and one task on that host forwards the data to other 
+tasks on that host up to \fBPMI_FANOUT\fR. 
+If \fBPMI_FANOUT_OFF_HOST\fR is defined, the user task 
+may be required to forward the data to tasks on other hosts.
+Setting \fBPMI_FANOUT_OFF_HOST\fR may increase performance
+and vulernability to failures.
+.TP
 \fBPMI_TIME\fR
 This is used exclusively with PMI (MPICH2 and MVAPICH2) and 
 controls how much the communications from the tasks to the 
