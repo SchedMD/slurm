@@ -1173,14 +1173,20 @@ static void _set_options(int argc, char **argv)
 		case LONG_OPT_NTASKSPERNODE:
 			opt.ntasks_per_node = _get_int(optarg,
 				"ntasks-per-node");
+			setenvf(NULL, "SLURM_NTASKS_PER_NODE", "%d",
+				opt.ntasks_per_node);
 			break;
 		case LONG_OPT_NTASKSPERSOCKET:
 			opt.ntasks_per_socket = _get_int(optarg, 
 				"ntasks-per-socket");
+			setenvf(NULL, "SLURM_NTASKS_PER_SOCKET", "%d",
+				opt.ntasks_per_socket);
 			break;
 		case LONG_OPT_NTASKSPERCORE:
 			opt.ntasks_per_core = _get_int(optarg,
 				"ntasks-per-core");
+			setenvf(NULL, "SLURM_NTASKS_PER_CORE", "%d",
+				opt.ntasks_per_socket);
 			break;
 		case LONG_OPT_BLRTS_IMAGE:
 			xfree(opt.blrtsimage);
