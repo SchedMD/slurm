@@ -6,6 +6,8 @@ documents those changes that are of interest to users and admins.
  -- In switch/federation, fix small memory leak effecting slurmd.
  -- Add PMI_FANOUT_OFF_HOST environment variable to control how message 
     forwarding is done for PMI (MPICH2). See "man srun" for details.
+ -- From sbatch set SLURM_NTASKS_PER_NODE when --ntasks-per-node option is 
+    specified.
 
 * Changes in SLURM 1.2.19
 =========================

@@ -1285,6 +1285,8 @@ static void _set_options(int argc, char **argv)
 			break;
 		case LONG_OPT_TASKSPERNODE:
 			opt.tasks_per_node = _get_int(optarg, "ntasks-per-node");
+			setenvf(NULL, "SLURM_NTASKS_PER_NODE", "%d",
+				opt.tasks_per_node);
 			break;
 		case LONG_OPT_WRAP:
 			/* handled in process_options_first_pass() */
