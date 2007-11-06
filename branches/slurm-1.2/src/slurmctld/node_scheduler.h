@@ -61,7 +61,7 @@ extern void build_node_details(struct job_record *job_ptr);
  * globals: node_record_count - number of nodes configured
  *	node_record_table_ptr - pointer to global node table
  */
-extern int count_cpus(unsigned *bitmap);
+extern int count_cpus(bitstr_t *bitmap);
 
 /*
  * deallocate_nodes - for a given job, deallocate its nodes and make

@@ -137,7 +137,7 @@ extern void allocate_nodes(struct job_record *job_ptr)
  * globals: node_record_count - number of nodes configured
  *	node_record_table_ptr - pointer to global node table
  */
-extern int count_cpus(unsigned *bitmap)
+extern int count_cpus(bitstr_t *bitmap)
 {
 	int i, sum;
 
