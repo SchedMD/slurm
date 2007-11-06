@@ -350,7 +350,7 @@ static void _update_info_block(List block_list,
 		if(block_ptr->node_cnt == 0)
 			block_ptr->node_cnt = block_ptr->size;
 		if(!block_ptr->slurm_part_name)
-			block_ptr->slurm_part_name = "no part";
+			block_ptr->slurm_part_name = xstrdup("no part");
 		
 		/* get the iter, or find out the list is empty goto add */
 		if (!gtk_tree_model_get_iter(model, &iter, path)) {
