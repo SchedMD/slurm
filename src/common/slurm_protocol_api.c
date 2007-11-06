@@ -2282,13 +2282,13 @@ extern int nodelist_find(const char *nodelist, const char *name)
 	return id;
 }
 
-extern void convert_num_unit(float num, char *buf, int orig_type)
+extern void convert_num_unit(float num, char *buf, int buf_size, int orig_type)
 {
 	char *unit = "\0KMGP?";
 	int i = (int)num % 512;
 	
 	if(i > 0 || (int)num == 0) {
-		sprintf(buf, "%d%c", (int)num, unit[orig_type]);
+		snprintf(buf, buf_size, "%d%c", (int)num, unit[orig_type]);
 		return;
 	}
 	
@@ -2301,9 +2301,9 @@ extern void convert_num_unit(float num, char *buf, int orig_type)
 		orig_type = UNIT_UNKNOWN;
 	i = (int)num;
 	if(i == num)
-		sprintf(buf, "%d%c", i, unit[orig_type]);
+		snprintf(buf, buf_size, "%d%c", i, unit[orig_type]);
 	else
-		sprintf(buf, "%.2f%c", num, unit[orig_type]);
+		snprintf(buf, buf_size, "%.2f%c", num, unit[orig_type]);
 }
 
 extern int revert_num_unit(const char *buf)
