@@ -87,10 +87,11 @@ slurm_print_job_info_msg ( FILE* out, job_info_msg_t *jinfo, int one_liner )
 
 static void _sprint_range(char *str, uint16_t lower, uint16_t upper)
 {
-    	char tmp[128];
-	convert_num_unit((float)lower, str, UNIT_NONE);
+	/* Note: We don't have the size of str here */
+	convert_num_unit((float)lower, str, 16, UNIT_NONE);
 	if (upper > 0) {
-		convert_num_unit((float)upper, tmp, UNIT_NONE);
+    		char tmp[128];
+		convert_num_unit((float)upper, tmp, sizeof(tmp), UNIT_NONE);
 		strcat(str, "-");
 		strcat(str, tmp);
 	}
@@ -255,7 +256,8 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 	/****** Line 6a (optional) ******/
 #if 0
 	/* mainly for debugging */ 
-	convert_num_unit((float)job_ptr->num_cpu_groups, tmp1, UNIT_NONE);
+	convert_num_unit((float)job_ptr->num_cpu_groups, tmp1, sizeof(tmp1),
+			 UNIT_NONE);
 	snprintf(tmp_line, sizeof(tmp_line),
 		"NumCPUGroups=%s ",
 		 tmp1);
@@ -303,9 +305,11 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 	}
 
 	/****** Line 7 ******/
-	convert_num_unit((float)job_ptr->num_procs, tmp1, UNIT_NONE);
+	convert_num_unit((float)job_ptr->num_procs, tmp1, sizeof(tmp1), 
+			 UNIT_NONE);
 #ifdef HAVE_BG
-	convert_num_unit((float)job_ptr->num_nodes, tmp2, UNIT_NONE);
+	convert_num_unit((float)job_ptr->num_nodes, tmp2, sizeof(tmp2),
+			 UNIT_NONE);
 	sprintf(tmp_line, "ReqProcs=%s MinBPs=%s ", tmp1, tmp2);
 #else
 	_sprint_range(tmp2, job_ptr->num_nodes, job_ptr->max_nodes);
@@ -359,8 +363,10 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 		xstrcat(out, "\n   ");
 
 	/****** Line 10 ******/
-	convert_num_unit((float)job_ptr->job_min_memory, tmp1, UNIT_NONE);
-	convert_num_unit((float)job_ptr->job_min_tmp_disk, tmp2, UNIT_NONE);
+	convert_num_unit((float)job_ptr->job_min_memory, tmp1, sizeof(tmp1),
+			 UNIT_NONE);
+	convert_num_unit((float)job_ptr->job_min_tmp_disk, tmp2, sizeof(tmp2),
+			 UNIT_NONE);
 	snprintf(tmp_line, sizeof(tmp_line), 
 		"MinMemory=%s MinTmpDisk=%s Features=%s",
 		tmp1, tmp2, job_ptr->features);

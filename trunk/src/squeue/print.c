@@ -543,7 +543,7 @@ int _print_job_reason_list(job_info_t * job, int width, bool right,
 		char* suffix)
 {
 	char *ionodes = NULL;
-	char tmp_char[6];
+	char tmp_char[16];
 	
 	if (job == NULL) {	/* Print the Header instead */
 #ifdef HAVE_BG
@@ -567,7 +567,8 @@ int _print_job_reason_list(job_info_t * job, int width, bool right,
 		
 		_print_nodes(job->nodes, width, right, false);
 		if(ionodes) {
-			sprintf(tmp_char, "[%s]", ionodes);
+			snprintf(tmp_char, sizeof(tmp_char), "[%s]", 
+				 ionodes);
 			_print_str(tmp_char, width, right, false);
 		}
 	}
@@ -600,7 +601,7 @@ int _print_job_node_inx(job_info_t * job, int width, bool right, char* suffix)
 
 int _print_job_num_procs(job_info_t * job, int width, bool right, char* suffix)
 {
-	char tmp_char[6];
+	char tmp_char[8];
 	if (job == NULL)	/* Print the Header instead */
 		_print_str("CPUS", width, right, true);
 	else {
@@ -610,9 +611,11 @@ int _print_job_num_procs(job_info_t * job, int width, bool right, char* suffix)
 				cnt += job->cpus_per_node[i] * 
 				       job->cpu_count_reps[i];
 			}
-			convert_num_unit((float)cnt, tmp_char, UNIT_NONE);
+			convert_num_unit((float)cnt, tmp_char, 
+					 sizeof(tmp_char), UNIT_NONE);
 		} else {
-			convert_num_unit((float)job->num_procs, tmp_char, UNIT_NONE);
+			convert_num_unit((float)job->num_procs, tmp_char, 
+					 sizeof(tmp_char), UNIT_NONE);
 		}
 		_print_str(tmp_char, width, right, true);
 	}
@@ -625,7 +628,7 @@ int _print_job_num_nodes(job_info_t * job, int width, bool right_justify,
 			 char* suffix)
 {
 	uint32_t node_cnt = 0;
-	char tmp_char[6];
+	char tmp_char[8];
 
 	if (job == NULL)	/* Print the Header instead */
 		_print_str("NODES", width, right_justify, true);
@@ -639,9 +642,10 @@ int _print_job_num_nodes(job_info_t * job, int width, bool right_justify,
 			node_cnt = _get_node_cnt(job);
 
 #ifdef HAVE_BG
-		convert_num_unit((float)node_cnt, tmp_char, UNIT_NONE);
+		convert_num_unit((float)node_cnt, tmp_char, sizeof(tmp_char),
+				 UNIT_NONE);
 #else
-		sprintf(tmp_char, "%d", node_cnt);
+		snprintf(tmp_char, sizeof(tmp_char), "%d", node_cnt);
 #endif
 		_print_str(tmp_char, width, right_justify, true);
 	}
@@ -675,9 +679,12 @@ int _print_job_num_sct(job_info_t * job, int width, bool right_justify,
 	char threads[10];
 	char sct[(10+1)*3];
 	if (job) {
-		convert_num_unit((float)job->min_sockets, sockets, UNIT_NONE);
-		convert_num_unit((float)job->min_cores, cores, UNIT_NONE);
-		convert_num_unit((float)job->min_threads, threads, UNIT_NONE);
+		convert_num_unit((float)job->min_sockets, sockets, 
+				 sizeof(sockets), UNIT_NONE);
+		convert_num_unit((float)job->min_cores, cores, 
+				 sizeof(cores), UNIT_NONE);
+		convert_num_unit((float)job->min_threads, threads, 
+				 sizeof(threads), UNIT_NONE);
 		sct[0] = '\0';
 		strcat(sct, sockets);
 		strcat(sct, ":");
@@ -701,7 +708,8 @@ int _print_job_num_sockets(job_info_t * job, int width, bool right_justify,
 	if (job == NULL)	/* Print the Header instead */
 		_print_str("SOCKETS", width, right_justify, true);
 	else {
-		convert_num_unit((float)job->min_sockets, tmp_char, UNIT_NONE);
+		convert_num_unit((float)job->min_sockets, tmp_char, 
+				 sizeof(tmp_char), UNIT_NONE);
 		_print_str(tmp_char, width, right_justify, true);
 	}
 	if (suffix)
@@ -716,7 +724,8 @@ int _print_job_num_cores(job_info_t * job, int width, bool right_justify,
 	if (job == NULL)	/* Print the Header instead */
 		_print_str("CORES", width, right_justify, true);
 	else {
-		convert_num_unit((float)job->min_cores, tmp_char, UNIT_NONE);
+		convert_num_unit((float)job->min_cores, tmp_char, 
+				 sizeof(tmp_char), UNIT_NONE);
 		_print_str(tmp_char, width, right_justify, true);
 	}
 	if (suffix)
@@ -731,7 +740,8 @@ int _print_job_num_threads(job_info_t * job, int width, bool right_justify,
 	if (job == NULL)	/* Print the Header instead */
 		_print_str("THREADS", width, right_justify, true);
 	else {
-		convert_num_unit((float)job->min_threads, tmp_char, UNIT_NONE);
+		convert_num_unit((float)job->min_threads, tmp_char, 
+				 sizeof(tmp_char), UNIT_NONE);
 		_print_str(tmp_char, width, right_justify, true);
 	}
 	if (suffix)
@@ -789,12 +799,13 @@ int _print_job_contiguous(job_info_t * job, int width, bool right_justify,
 int _print_job_min_procs(job_info_t * job, int width, bool right_justify, 
 			 char* suffix)
 {
-	char tmp_char[6];
+	char tmp_char[8];
 	
 	if (job == NULL)	/* Print the Header instead */
 		_print_str("MIN_PROCS", width, right_justify, true);
 	else {
-		convert_num_unit((float)job->job_min_procs, tmp_char, UNIT_NONE);
+		convert_num_unit((float)job->job_min_procs, tmp_char, 
+				 sizeof(tmp_char), UNIT_NONE);
 		_print_str(tmp_char, width, right_justify, true);
 	}
 	if (suffix)
@@ -805,12 +816,13 @@ int _print_job_min_procs(job_info_t * job, int width, bool right_justify,
 int _print_job_min_sockets(job_info_t * job, int width, bool right_justify, 
 			 char* suffix)
 {
-	char tmp_char[6];
+	char tmp_char[8];
 	
 	if (job == NULL)	/* Print the Header instead */
 		_print_str("MIN_SOCKETS", width, right_justify, true);
 	else {
-		convert_num_unit((float)job->job_min_sockets, tmp_char, UNIT_NONE);
+		convert_num_unit((float)job->job_min_sockets, tmp_char, 
+				 sizeof(tmp_char), UNIT_NONE);
 		_print_str(tmp_char, width, right_justify, true);
 	}
 	if (suffix)
@@ -821,12 +833,13 @@ int _print_job_min_sockets(job_info_t * job, int width, bool right_justify,
 int _print_job_min_cores(job_info_t * job, int width, bool right_justify, 
 			 char* suffix)
 {
-	char tmp_char[6];
+	char tmp_char[8];
 	
 	if (job == NULL)	/* Print the Header instead */
 		_print_str("MIN_CORES", width, right_justify, true);
 	else {
-		convert_num_unit((float)job->job_min_cores, tmp_char, UNIT_NONE);
+		convert_num_unit((float)job->job_min_cores, tmp_char, 
+				 sizeof(tmp_char), UNIT_NONE);
 		_print_str(tmp_char, width, right_justify, true);
 	}
 	if (suffix)
@@ -837,12 +850,13 @@ int _print_job_min_cores(job_info_t * job, int width, bool right_justify,
 int _print_job_min_threads(job_info_t * job, int width, bool right_justify, 
 			 char* suffix)
 {
-	char tmp_char[6];
+	char tmp_char[8];
 
 	if (job == NULL)	/* Print the Header instead */
 		_print_str("MIN_THREADS", width, right_justify, true);
 	else {
-		convert_num_unit((float)job->job_min_threads, tmp_char, UNIT_NONE);
+		convert_num_unit((float)job->job_min_threads, tmp_char, 
+				 sizeof(tmp_char), UNIT_NONE);
 		_print_str(tmp_char, width, right_justify, true);
 	}
 	if (suffix)
@@ -862,11 +876,13 @@ int _print_job_min_memory(job_info_t * job, int width, bool right_justify,
 	else {
 	    	tmp_char[0] = '\0';
 		if (job->job_max_memory < job->job_min_memory) {
-			convert_num_unit((float)job->job_max_memory, max_mem, UNIT_NONE);
+			convert_num_unit((float)job->job_max_memory, max_mem, 
+					 sizeof(max_mem), UNIT_NONE);
 			strcat(tmp_char, max_mem);
 			strcat(tmp_char, "-");
-		}
-		convert_num_unit((float)job->job_min_memory, min_mem, UNIT_NONE);
+		 }
+		convert_num_unit((float)job->job_min_memory, min_mem, 
+				 sizeof(min_mem), UNIT_NONE);
 		strcat(tmp_char, min_mem);
 		_print_str(tmp_char, width, right_justify, true);
 	}
@@ -880,13 +896,13 @@ int
 _print_job_min_tmp_disk(job_info_t * job, int width, bool right_justify, 
 			char* suffix)
 {
-	char tmp_char[6];
+	char tmp_char[10];
 	
 	if (job == NULL)	/* Print the Header instead */
 		_print_str("MIN_TMP_DISK", width, right_justify, true);
 	else {
 		convert_num_unit((float)job->job_min_tmp_disk, 
-				 tmp_char, UNIT_NONE);
+				 tmp_char, sizeof(tmp_char), UNIT_NONE);
 		_print_str(tmp_char, width, right_justify, true);
 	}
 		

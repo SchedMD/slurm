@@ -258,11 +258,13 @@ static int
 _build_min_max_16_string(char *buffer, int buf_size, 
 	uint16_t min, uint16_t max, bool range)
 {
-	char tmp_min[7];
-	char tmp_max[7];
-	convert_num_unit((float)min, tmp_min, UNIT_NONE);
-	if(max != (uint16_t) INFINITE)
-		convert_num_unit((float)max, tmp_max, UNIT_NONE);
+	char tmp_min[8];
+	char tmp_max[8];
+	convert_num_unit((float)min, tmp_min, sizeof(tmp_min), UNIT_NONE);
+	if(max != (uint16_t) INFINITE) {
+		convert_num_unit((float)max, tmp_max, sizeof(tmp_max), 
+				 UNIT_NONE);
+	}
 	
 	if (max == min)
 		return snprintf(buffer, buf_size, "%s", tmp_max);
@@ -281,10 +283,10 @@ static int
 _build_min_max_32_string(char *buffer, int buf_size, 
 	uint32_t min, uint32_t max, bool range)
 {
-	char tmp_min[7];
-	char tmp_max[7];
-	convert_num_unit((float)min, tmp_min, UNIT_NONE);
-	convert_num_unit((float)max, tmp_max, UNIT_NONE);
+	char tmp_min[8];
+	char tmp_max[8];
+	convert_num_unit((float)min, tmp_min, sizeof(tmp_min), UNIT_NONE);
+	convert_num_unit((float)max, tmp_max, sizeof(tmp_max), UNIT_NONE);
 	
 	if (max == min)
 		return snprintf(buffer, buf_size, "%s", tmp_max);
@@ -725,9 +727,9 @@ static void _layout_part_record(GtkTreeView *treeview,
 	GtkTreeIter iter;
 	ListIterator itr = NULL;
 	char time_buf[20], tmp_buf[20];
-	char tmp_cnt[7];
-	char tmp_cnt1[7];
-	char tmp_cnt2[7];
+	char tmp_cnt[8];
+	char tmp_cnt1[8];
+	char tmp_cnt2[8];
 	partition_info_t *part_ptr = sview_part_info->part_ptr;
 	sview_part_sub_t *sview_part_sub = NULL;
 	sview_part_sub_t *temp_part_sub = NULL;
@@ -801,7 +803,7 @@ static void _layout_part_record(GtkTreeView *treeview,
 		snprintf(time_buf, sizeof(time_buf), "infinite");
 	else {
 		convert_num_unit((float)part_ptr->min_nodes, 
-				 time_buf, UNIT_NONE);
+				 time_buf, sizeof(time_buf), UNIT_NONE);
 	}
 	add_display_treestore_line(update, treestore, &iter, 
 				   find_col_name(display_data_part,
@@ -811,7 +813,7 @@ static void _layout_part_record(GtkTreeView *treeview,
 		snprintf(time_buf, sizeof(time_buf), "infinite");
 	else {
 		convert_num_unit((float)part_ptr->max_nodes, 
-				 time_buf, UNIT_NONE);
+				 time_buf, sizeof(time_buf), UNIT_NONE);
 	}
 	add_display_treestore_line(update, treestore, &iter, 
 				   find_col_name(display_data_part,
@@ -854,7 +856,8 @@ static void _layout_part_record(GtkTreeView *treeview,
 				   temp_char);
 	
 #ifdef HAVE_BG
-	convert_num_unit((float)part_ptr->total_nodes, tmp_cnt, UNIT_NONE);
+	convert_num_unit((float)part_ptr->total_nodes, tmp_cnt, 
+			 sizeof(tmp_buf), UNIT_NONE);
 #else
 	sprintf(tmp_cnt, "%u", part_ptr->total_nodes);
 #endif
@@ -862,7 +865,8 @@ static void _layout_part_record(GtkTreeView *treeview,
 				   find_col_name(display_data_part,
 						 SORTID_NODES), 
 				   tmp_cnt);
-	convert_num_unit((float)part_ptr->total_cpus, tmp_cnt, UNIT_NONE);
+	convert_num_unit((float)part_ptr->total_cpus, tmp_cnt, sizeof(tmp_cnt),
+			 UNIT_NONE);
 	add_display_treestore_line(update, treestore, &iter, 
 				   find_col_name(display_data_part,
 						 SORTID_CPUS), 
@@ -901,9 +905,12 @@ static void _layout_part_record(GtkTreeView *treeview,
 			other_part_sub.reason = temp_part_sub->reason;
 		}
 	}
-	convert_num_unit((float)alloc_part_sub.node_cnt, tmp_cnt, UNIT_NONE);
-	convert_num_unit((float)idle_part_sub.node_cnt, tmp_cnt1, UNIT_NONE);
-	convert_num_unit((float)other_part_sub.node_cnt, tmp_cnt2, UNIT_NONE);
+	convert_num_unit((float)alloc_part_sub.node_cnt, 
+			 tmp_cnt, sizeof(tmp_cnt), UNIT_NONE);
+	convert_num_unit((float)idle_part_sub.node_cnt, 
+			 tmp_cnt1, sizeof(tmp_cnt1), UNIT_NONE);
+	convert_num_unit((float)other_part_sub.node_cnt, 
+			 tmp_cnt2, sizeof(tmp_cnt2), UNIT_NONE);
 	snprintf(tmp, sizeof(tmp), "%s/%s/%s",
 		 tmp_cnt, tmp_cnt1, tmp_cnt2);
 	add_display_treestore_line(update, treestore, &iter,
@@ -925,7 +932,7 @@ static void _update_part_record(sview_part_info_t *sview_part_info,
 				GtkTreeIter *iter)
 {
 	char time_buf[20], tmp_buf[20];
-	char tmp_cnt[7];
+	char tmp_cnt[8];
 	char *temp_char = NULL;
 	partition_info_t *part_ptr = sview_part_info->part_ptr;
 	GtkTreeIter sub_iter;
@@ -969,7 +976,7 @@ static void _update_part_record(sview_part_info_t *sview_part_info,
 		snprintf(time_buf, sizeof(time_buf), "infinite");
 	else {
 		convert_num_unit((float)part_ptr->min_nodes, 
-				 time_buf, UNIT_NONE);
+				 time_buf, sizeof(time_buf), UNIT_NONE);
 	}
 	gtk_tree_store_set(treestore, iter, SORTID_MIN_NODES, 
 			   time_buf, -1);
@@ -977,7 +984,7 @@ static void _update_part_record(sview_part_info_t *sview_part_info,
 		snprintf(time_buf, sizeof(time_buf), "infinite");
 	else {
 		convert_num_unit((float)part_ptr->max_nodes, 
-				 time_buf, UNIT_NONE);
+				 time_buf, sizeof(time_buf), UNIT_NONE);
 	}
 	gtk_tree_store_set(treestore, iter, SORTID_MAX_NODES, 
 			   time_buf, -1);
@@ -1009,7 +1016,8 @@ static void _update_part_record(sview_part_info_t *sview_part_info,
 	gtk_tree_store_set(treestore, iter, SORTID_GROUPS, temp_char, -1);
 	
 #ifdef HAVE_BG
-	convert_num_unit((float)part_ptr->total_nodes, tmp_cnt, UNIT_NONE);
+	convert_num_unit((float)part_ptr->total_nodes, tmp_cnt, 
+			 sizeof(tmp_cnt), UNIT_NONE);
 #else
 	sprintf(tmp_cnt, "%u", part_ptr->total_nodes);
 #endif
@@ -1047,7 +1055,7 @@ static void _update_part_sub_record(sview_part_sub_t *sview_part_sub,
 				    GtkTreeStore *treestore, GtkTreeIter *iter)
 {
 	char time_buf[20];
-	char tmp_cnt[7];
+	char tmp_cnt[8];
 	partition_info_t *part_ptr = sview_part_sub->part_ptr;
 	char *upper = NULL, *lower = NULL;		     
 	char tmp[MAXHOSTRANGELEN];
@@ -1083,7 +1091,8 @@ static void _update_part_sub_record(sview_part_sub_t *sview_part_sub,
 			      sview_part_sub->max_weight, false);
 	gtk_tree_store_set(treestore, iter, SORTID_WEIGHT, time_buf, -1);
 
-	convert_num_unit((float)sview_part_sub->node_cnt, tmp_cnt, UNIT_NONE);
+	convert_num_unit((float)sview_part_sub->node_cnt, tmp_cnt, 
+			 sizeof(tmp_cnt), UNIT_NONE);
 	gtk_tree_store_set(treestore, iter, SORTID_NODES, tmp_cnt, -1);
 	
 	hostlist_ranged_string(sview_part_sub->hl, sizeof(tmp), tmp);

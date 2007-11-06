@@ -105,18 +105,20 @@ char *slurm_sprint_partition_info ( partition_info_t * part_ptr,
 				    int one_liner )
 {
 	int j;
-	char tmp1[7], tmp2[7];
+	char tmp1[16], tmp2[16];
 	char tmp_line[MAXHOSTRANGELEN];
 	char *out = NULL;
 	uint16_t force, val;
 
 	/****** Line 1 ******/
 #ifdef HAVE_BG
-	convert_num_unit((float)part_ptr->total_nodes, tmp1, UNIT_NONE);
+	convert_num_unit((float)part_ptr->total_nodes, tmp1, sizeof(tmp1),
+			 UNIT_NONE);
 #else
-	sprintf(tmp1, "%u", part_ptr->total_nodes);
+	snprintf(tmp1, sizeof(tmp1), "%u", part_ptr->total_nodes);
 #endif
-	convert_num_unit((float)part_ptr->total_cpus, tmp2, UNIT_NONE);
+	convert_num_unit((float)part_ptr->total_cpus, tmp2, sizeof(tmp2),
+			 UNIT_NONE);
 	snprintf(tmp_line, sizeof(tmp_line),
 		 "PartitionName=%s TotalNodes=%s TotalCPUs=%s ", 
 		 part_ptr->name, tmp1, tmp2);
@@ -180,9 +182,10 @@ char *slurm_sprint_partition_info ( partition_info_t * part_ptr,
 	/****** Line 3 ******/
 
 #ifdef HAVE_BG
-	convert_num_unit((float)part_ptr->min_nodes, tmp1, UNIT_NONE);
+	convert_num_unit((float)part_ptr->min_nodes, tmp1, sizeof(tmp1),
+			 UNIT_NONE);
 #else
-	sprintf(tmp1, "%u", part_ptr->min_nodes);
+	snprintf(tmp1, sizeof(tmp1), "%u", part_ptr->min_nodes);
 #endif
 	sprintf(tmp_line, "MinNodes=%s ", tmp1);
 	xstrcat(out, tmp_line);
@@ -191,9 +194,10 @@ char *slurm_sprint_partition_info ( partition_info_t * part_ptr,
 		sprintf(tmp_line, "MaxNodes=UNLIMITED ");
 	else {
 #ifdef HAVE_BG
-		convert_num_unit((float)part_ptr->max_nodes, tmp1, UNIT_NONE);
+		convert_num_unit((float)part_ptr->max_nodes, tmp1, sizeof(tmp1),
+				 UNIT_NONE);
 #else
-		sprintf(tmp1, "%u", part_ptr->max_nodes);
+		snprintf(tmp1, sizeof(tmp1),"%u", part_ptr->max_nodes);
 #endif
 		sprintf(tmp_line, "MaxNodes=%s ", tmp1);
 	}

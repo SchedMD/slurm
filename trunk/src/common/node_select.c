@@ -1084,7 +1084,7 @@ extern char *select_g_sprint_jobinfo(select_jobinfo_t jobinfo,
 {
 	uint16_t geometry[SYSTEM_DIMENSIONS];
 	int i;
-	char max_procs_char[7], start_char[32];
+	char max_procs_char[8], start_char[32];
 	char *tmp_image = "default";
 		
 	if (buf == NULL) {
@@ -1121,7 +1121,8 @@ extern char *select_g_sprint_jobinfo(select_jobinfo_t jobinfo,
 			sprintf(max_procs_char, "None");
 		else
 			convert_num_unit((float)jobinfo->max_procs, 
-					 max_procs_char, UNIT_NONE);
+					 max_procs_char, sizeof(max_procs_char),
+					 UNIT_NONE);
 		if (jobinfo->start[0] == (uint16_t) NO_VAL)
 			sprintf(start_char, "None");
 		else {
@@ -1143,7 +1144,8 @@ extern char *select_g_sprint_jobinfo(select_jobinfo_t jobinfo,
 			sprintf(max_procs_char, "None");
 		else
 			convert_num_unit((float)jobinfo->max_procs,
-					 max_procs_char, UNIT_NONE);
+					 max_procs_char, sizeof(max_procs_char),
+					 UNIT_NONE);
 		if (jobinfo->start[0] == (uint16_t) NO_VAL)
 			sprintf(start_char, "None");
 		else {
@@ -1194,7 +1196,8 @@ extern char *select_g_sprint_jobinfo(select_jobinfo_t jobinfo,
 			sprintf(max_procs_char, "None");
 		else
 			convert_num_unit((float)jobinfo->max_procs,
-					 max_procs_char, UNIT_NONE);
+					 max_procs_char, sizeof(max_procs_char),
+					 UNIT_NONE);
 		
 		snprintf(buf, size, "%s", max_procs_char);
 		break;
