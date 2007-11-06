@@ -567,7 +567,7 @@ static void _append_to_job_list(struct select_cr_job *new_job)
 /*
  * _count_cpus - report how many cpus are available with the identified nodes 
  */
-static void _count_cpus(unsigned *bitmap, uint16_t *sum)
+static void _count_cpus(bitstr_t *bitmap, uint16_t *sum)
 {
 	int i, allocated_lps;
 	*sum = 0;

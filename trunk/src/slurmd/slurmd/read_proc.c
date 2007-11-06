@@ -77,7 +77,7 @@ struct sess_record *session_ptr;
 int dump_proc(int uid, int sid);
 void init_proc(void);
 int parse_proc_stat(char* proc_stat, int *session, 
-		long unsigned *time, long *resident_set_size);
+		    unsigned long *time, long *resident_set_size);
 int read_proc();
 
 #if DEBUG_MODULE
@@ -178,7 +178,7 @@ init_proc (void)
  * RET - zero or errno code
  */
 int 
-parse_proc_stat(char* proc_stat, int *session, long unsigned *time, 
+parse_proc_stat(char* proc_stat, int *session, unsigned long *time, 
 		long *resident_set_size) {
 	int pid, ppid, pgrp, tty, tpgid;
 	char cmd[16], state[1];
@@ -239,7 +239,7 @@ read_proc()
 	struct stat buffer;
 	int uid, session;
 	long resident_set_size;
-	long unsigned time;
+	unsigned long time;
 	struct sess_record *s_ptr, *sess_free;
 
 	/* Initialization */
