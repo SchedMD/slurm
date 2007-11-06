@@ -35,7 +35,7 @@ source ./globals
 set test_id       "10.5"
 set exit_code     0
 set matches       0
-set non_bg       0
+set non_bg        0
 set too_small     0
 
 print_header $test_id
@@ -97,7 +97,16 @@ expect {
 		send "q"
 		exp_continue
 	}
-	
+	-re "error" {
+		send_user "\nFAILURE: smap error\n"
+		set exit_code 1
+		exp_continue
+	}
+	-re "fatal" {
+		send_user "\nFAILURE: smap error\n"
+		set exit_code 1
+		exp_continue
+	}
 	timeout {
 		send_user "\nFAILURE: smap not responding\n"
 		set exit_code 1
