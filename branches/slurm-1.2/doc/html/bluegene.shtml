@@ -83,7 +83,7 @@ date
  
 <h3><a name="naming">Naming Convensions</a></h3>
 <p>The naming of base partitions includes a three-digit suffix representing the its 
-coordinates in the X, Y and Z dimensions with a zero origin.
+coordinates in the X, Y and Z dimensions with a zero origin.  
 For example, "bg012" represents the base partition whose coordinate is at X=0, Y=1 and Z=2.  In a system 
 configured with <i>small blocks</i> (any block less than a full base partition) there will be divisions
 into the base partition notation.  For example, if there were 64 psets in the
@@ -99,6 +99,21 @@ of the block enclosed in square-brackets.
 For example, "bg[620x731]" is used to represent the eight base partitions enclosed in a block 
 with endpoints bg620 and bg731 (bg620, bg621, bg630, bg631, bg720, bg721, 
 bg730 and bg731).</p></a>
+
+<p>
+<b>IMPORTANT:</b> As of SLURM version 1.2 SLURM can handle a bluegene
+system of size 36x36x36.  To try to keep with the 'three-digit suffix  
+representing the its coordinates in the X, Y and Z dimensions with a
+zero origin', we now support A-Z as valid numbers.  This makes it so
+the prefix <b>must always be lower case</b>, and any letters in the 
+three-digit suffix <b> must always be upper case</b>.  This schema
+should be used in your slurm.conf file and in your bluegene.conf file
+if you put a prefix there even though it is not necessary there. 
+<br>
+valid: bgl[000xC44] bgl000 bglZZZ
+<br>
+invalid: BGL[000xC44] BglC00 bglb00 Bglzzz
+</p>
 
 <p>One new tool provided is <i>smap</i>. 
 As of SLURM verison 1.2, <i>sview</i> is
