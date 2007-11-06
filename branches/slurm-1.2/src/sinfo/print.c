@@ -172,10 +172,10 @@ static int _print_secs(long time, int width, bool right, bool cut_output)
 static int 
 _build_min_max_16_string(char *buffer, int buf_size, uint16_t min, uint16_t max, bool range)
 {
-	char tmp_min[7];
-	char tmp_max[7];
-	convert_num_unit((float)min, tmp_min, UNIT_NONE);
-	convert_num_unit((float)max, tmp_max, UNIT_NONE);
+	char tmp_min[8];
+	char tmp_max[8];
+	convert_num_unit((float)min, tmp_min, sizeof(tmp_min), UNIT_NONE);
+	convert_num_unit((float)max, tmp_max, sizeof(tmp_max), UNIT_NONE);
 	
 	if (max == min)
 		return snprintf(buffer, buf_size, "%s", tmp_max);
@@ -193,10 +193,10 @@ _build_min_max_16_string(char *buffer, int buf_size, uint16_t min, uint16_t max,
 static int 
 _build_min_max_32_string(char *buffer, int buf_size, uint32_t min, uint32_t max, bool range)
 {
-	char tmp_min[7];
-	char tmp_max[7];
-	convert_num_unit((float)min, tmp_min, UNIT_NONE);
-	convert_num_unit((float)max, tmp_max, UNIT_NONE);
+	char tmp_min[8];
+	char tmp_max[8];
+	convert_num_unit((float)min, tmp_min, sizeof(tmp_min), UNIT_NONE);
+	convert_num_unit((float)max, tmp_max, sizeof(tmp_max), UNIT_NONE);
 	
 	if (max == min)
 		return snprintf(buffer, buf_size, "%s", tmp_max);
@@ -305,20 +305,20 @@ int _print_cpus_aiot(sinfo_data_t * sinfo_data, int width,
 		     bool right_justify, char *suffix)
 {
 	char id[FORMAT_STRING_SIZE];
-	char tmpa[7];
-	char tmpi[7];
-	char tmpo[7];
-	char tmpt[7];
+	char tmpa[8];
+	char tmpi[8];
+	char tmpo[8];
+	char tmpt[8];
 	if (sinfo_data) {
 #ifdef HAVE_BG
 		convert_num_unit((float)sinfo_data->cpus_alloc, 
-				 tmpa, UNIT_NONE);
+				 tmpa, sizeof(tmpa), UNIT_NONE);
 		convert_num_unit((float)sinfo_data->cpus_idle, 
-				 tmpi, UNIT_NONE);
+				 tmpi, sizeof(tmpi), UNIT_NONE);
 		convert_num_unit((float)sinfo_data->cpus_other, 
-				 tmpo, UNIT_NONE);
+				 tmpo, sizeof(tmpo), UNIT_NONE);
 		convert_num_unit((float)sinfo_data->cpus_total, 
-				 tmpt, UNIT_NONE);
+				 tmpt, sizeof(tmpt), UNIT_NONE);
 #else
 		sprintf(tmpa, "%u", sinfo_data->cpus_alloc);
 		sprintf(tmpi, "%u", sinfo_data->cpus_idle);
@@ -516,13 +516,13 @@ int _print_nodes_t(sinfo_data_t * sinfo_data, int width,
 		   bool right_justify, char *suffix)
 {
 	char id[FORMAT_STRING_SIZE];
-	char tmp[7];
+	char tmp[8];
 	if (sinfo_data) {
 #ifdef HAVE_BG		
 		convert_num_unit((float)sinfo_data->nodes_total, tmp, 
-				UNIT_NONE);
+				 sizeof(tmp), UNIT_NONE);
 #else
-		sprintf(tmp, "%d", sinfo_data->nodes_total);
+		snprintf(tmp, sizeof(tmp), "%d", sinfo_data->nodes_total);
 #endif
 		snprintf(id, FORMAT_STRING_SIZE, "%s", tmp);
 		_print_str(id, width, right_justify, true);
@@ -538,17 +538,17 @@ int _print_nodes_ai(sinfo_data_t * sinfo_data, int width,
 		    bool right_justify, char *suffix)
 {
 	char id[FORMAT_STRING_SIZE];
-	char tmpa[7];
-	char tmpi[7];
+	char tmpa[8];
+	char tmpi[8];
 	if (sinfo_data) {
 #ifdef HAVE_BG		
 		convert_num_unit((float)sinfo_data->nodes_alloc, 
-				 tmpa, UNIT_NONE);
+				 tmpa, sizeof(tmpa), UNIT_NONE);
 		convert_num_unit((float)sinfo_data->nodes_idle, 
-				 tmpi, UNIT_NONE);
+				 tmpi, sizeof(tmpi), UNIT_NONE);
 #else
-		sprintf(tmpa, "%d", sinfo_data->nodes_alloc);
-		sprintf(tmpi, "%d", sinfo_data->nodes_idle);
+		snprintf(tmpa, sizeof(tmpa), "%d", sinfo_data->nodes_alloc);
+		snprintf(tmpi, sizeof(tmpi), "%d", sinfo_data->nodes_idle);
 #endif
 		snprintf(id, FORMAT_STRING_SIZE, "%s/%s", 
 		         tmpa, tmpi);
@@ -565,25 +565,25 @@ int _print_nodes_aiot(sinfo_data_t * sinfo_data, int width,
 			bool right_justify, char *suffix)
 {
 	char id[FORMAT_STRING_SIZE];
-	char tmpa[7];
-	char tmpi[7];
-	char tmpo[7];
-	char tmpt[7];
+	char tmpa[8];
+	char tmpi[8];
+	char tmpo[8];
+	char tmpt[8];
 	if (sinfo_data) {
 #ifdef HAVE_BG		
 		convert_num_unit((float)sinfo_data->nodes_alloc, 
-				 tmpa, UNIT_NONE);
+				 tmpa, sizeof(tmpa), UNIT_NONE);
 		convert_num_unit((float)sinfo_data->nodes_idle, 
-				 tmpi, UNIT_NONE);
+				 tmpi, sizeof(tmpi), UNIT_NONE);
 		convert_num_unit((float)sinfo_data->nodes_other, 
-				 tmpo, UNIT_NONE);
+				 tmpo, sizeof(tmpo), UNIT_NONE);
 		convert_num_unit((float)sinfo_data->nodes_total,
-				 tmpt, UNIT_NONE);
+				 tmpt, sizeof(tmpt), UNIT_NONE);
 #else
-		sprintf(tmpa, "%u", sinfo_data->nodes_alloc);
-		sprintf(tmpi, "%u", sinfo_data->nodes_idle);
-		sprintf(tmpo, "%u", sinfo_data->nodes_other);
-		sprintf(tmpt, "%u", sinfo_data->nodes_total);
+		snprintf(tmpa, sizeof(tmpa), "%u", sinfo_data->nodes_alloc);
+		snprintf(tmpi, sizeof(tmpi), "%u", sinfo_data->nodes_idle);
+		snprintf(tmpo, sizeof(tmpo), "%u", sinfo_data->nodes_other);
+		snprintf(tmpt, sizeof(tmpt), "%u", sinfo_data->nodes_total);
 #endif
 
 		snprintf(id, FORMAT_STRING_SIZE, "%s/%s/%s/%s", 

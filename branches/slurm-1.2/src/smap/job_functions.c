@@ -251,7 +251,7 @@ static int _print_text_job(job_info_t * job_ptr)
 	int i = 0;
 	int width = 0;
 	char time_buf[20];
-	char tmp_cnt[7];
+	char tmp_cnt[8];
 	uint32_t node_cnt = 0;
 	char *ionodes = NULL;
 	time_t now_time = time(NULL);
@@ -271,9 +271,9 @@ static int _print_text_job(job_info_t * job_ptr)
 	if ((node_cnt  == 0) || (node_cnt == NO_VAL))
 		node_cnt = _get_node_cnt(job_ptr);
 #ifdef HAVE_BG
-	convert_num_unit((float)node_cnt, tmp_cnt, UNIT_NONE);
+	convert_num_unit((float)node_cnt, tmp_cnt, sizeof(tmp_cnt), UNIT_NONE);
 #else
-	sprintf(tmp_cnt, "%d", node_cnt);
+	snprintf(tmp_cnt, sizeof(tmp_cnt), "%d", node_cnt);
 #endif
 	if(!params.commandline) {
 		mvwprintw(text_win, main_ycord,

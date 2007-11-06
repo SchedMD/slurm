@@ -716,7 +716,7 @@ extern void slurm_free_msg(slurm_msg_t * msg);
 /* must free this memory with free not xfree */
 extern char *nodelist_nth_host(const char *nodelist, int inx);
 extern int nodelist_find(const char *nodelist, const char *name);
-extern void convert_num_unit(float num, char *buf, int orig_type);
+extern void convert_num_unit(float num, char *buf, int buf_size, int orig_type);
 extern int revert_num_unit(const char *buf);
 
 /*

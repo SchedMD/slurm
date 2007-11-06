@@ -517,12 +517,13 @@ static int _print_text_part(partition_info_t *part_ptr,
 	int i = 0;
 	int width = 0;
 	char *nodes = NULL, time_buf[20];
-	char tmp_cnt[7];
+	char tmp_cnt[8];
 
 #ifdef HAVE_BG
-	convert_num_unit((float)part_ptr->total_nodes, tmp_cnt, UNIT_NONE);
+	convert_num_unit((float)part_ptr->total_nodes, tmp_cnt, 
+			 sizeof(tmp_cnt), UNIT_NONE);
 #else
-	sprintf(tmp_cnt, "%u", part_ptr->total_nodes);
+	snprintf(tmp_cnt, sizeof(tmp_cnt), "%u", part_ptr->total_nodes);
 #endif
 
 	if(!params.commandline) {
