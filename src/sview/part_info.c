@@ -847,7 +847,7 @@ static void _layout_part_record(GtkTreeView *treeview,
 	
 #ifdef HAVE_BG
 	convert_num_unit((float)part_ptr->total_nodes, tmp_cnt, 
-			 sizeof(tmp_buf), UNIT_NONE);
+			 sizeof(tmp_cnt), UNIT_NONE);
 #else
 	sprintf(tmp_cnt, "%u", part_ptr->total_nodes);
 #endif
@@ -898,7 +898,7 @@ static void _layout_part_record(GtkTreeView *treeview,
 	convert_num_unit((float)alloc_part_sub.node_cnt, 
 			 tmp_cnt, sizeof(tmp_cnt), UNIT_NONE);
 	convert_num_unit((float)idle_part_sub.node_cnt, 
-			 tmp_cnt1, UNIT_NONE);
+			 tmp_cnt1, sizeof(tmp_cnt1), UNIT_NONE);
 	convert_num_unit((float)other_part_sub.node_cnt, 
 			 tmp_cnt2, sizeof(tmp_cnt2), UNIT_NONE);
 	snprintf(tmp, sizeof(tmp), "%s/%s/%s",
