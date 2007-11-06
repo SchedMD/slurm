@@ -543,7 +543,7 @@ int _print_job_reason_list(job_info_t * job, int width, bool right,
 		char* suffix)
 {
 	char *ionodes = NULL;
-	char tmp_char[6];
+	char tmp_char[16];
 	
 	if (job == NULL) {	/* Print the Header instead */
 #ifdef HAVE_BG
@@ -567,7 +567,8 @@ int _print_job_reason_list(job_info_t * job, int width, bool right,
 		
 		_print_nodes(job->nodes, width, right, false);
 		if(ionodes) {
-			sprintf(tmp_char, "[%s]", ionodes);
+			snprintf(tmp_char, sizeof(tmp_char), "[%s]", 
+				 ionodes);
 			_print_str(tmp_char, width, right, false);
 		}
 	}
