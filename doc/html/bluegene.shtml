@@ -108,7 +108,10 @@ zero origin', we now support A-Z as valid numbers.  This makes it so
 the prefix <b>must always be lower case</b>, and any letters in the 
 three-digit suffix <b> must always be upper case</b>.  This schema
 should be used in your slurm.conf file and in your bluegene.conf file
-if you put a prefix there even though it is not necessary there. 
+if you put a prefix there even though it is not necessary there.  This
+schema should also be used to specify midplanes or locations in
+configure mode of smap.
+
 <br>
 valid: bgl[000xC44] bgl000 bglZZZ
 <br>
