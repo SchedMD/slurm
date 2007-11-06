@@ -137,43 +137,50 @@ static void _layout_node_record(GtkTreeView *treeview,
 				   lower);
 	xfree(lower);
 	
-	convert_num_unit((float)node_ptr->cpus, tmp_cnt, UNIT_NONE);
+	convert_num_unit((float)node_ptr->cpus, tmp_cnt, sizeof(tmp_cnt),
+			 UNIT_NONE);
 	add_display_treestore_line(update, treestore, &iter, 
 				   find_col_name(display_data_node,
 						 SORTID_CPUS),
 				   tmp_cnt);
 
-	convert_num_unit((float)node_ptr->used_cpus, tmp_cnt, UNIT_NONE);
+	convert_num_unit((float)node_ptr->used_cpus, tmp_cnt, sizeof(tmp_cnt),
+			 UNIT_NONE);
 	add_display_treestore_line(update, treestore, &iter, 
 				   find_col_name(display_data_node,
 						 SORTID_USED_CPUS),
 				   tmp_cnt);
 
-	convert_num_unit((float)node_ptr->cores, tmp_cnt, UNIT_NONE);
+	convert_num_unit((float)node_ptr->cores, tmp_cnt, sizeof(tmp_cnt),
+			 UNIT_NONE);
 	add_display_treestore_line(update, treestore, &iter, 
 				   find_col_name(display_data_node,
 						 SORTID_CORES),
 				   tmp_cnt);
 
-	convert_num_unit((float)node_ptr->sockets, tmp_cnt, UNIT_NONE);
+	convert_num_unit((float)node_ptr->sockets, tmp_cnt, sizeof(tmp_cnt),
+			 UNIT_NONE);
 	add_display_treestore_line(update, treestore, &iter, 
 				   find_col_name(display_data_node,
 						 SORTID_SOCKETS),
 				   tmp_cnt);
 
-	convert_num_unit((float)node_ptr->threads, tmp_cnt, UNIT_NONE);
+	convert_num_unit((float)node_ptr->threads, tmp_cnt, sizeof(tmp_cnt),
+			 UNIT_NONE);
 	add_display_treestore_line(update, treestore, &iter, 
 				   find_col_name(display_data_node,
 						 SORTID_THREADS),
 				   tmp_cnt);
 
-	convert_num_unit((float)node_ptr->real_memory, tmp_cnt, UNIT_MEGA);
+	convert_num_unit((float)node_ptr->real_memory, tmp_cnt, sizeof(tmp_cnt),
+			 UNIT_MEGA);
 	add_display_treestore_line(update, treestore, &iter, 
 				   find_col_name(display_data_node,
 						 SORTID_MEMORY),
 				   tmp_cnt);
 
-	convert_num_unit((float)node_ptr->tmp_disk, tmp_cnt, UNIT_MEGA);
+	convert_num_unit((float)node_ptr->tmp_disk, tmp_cnt, sizeof(tmp_cnt),
+			 UNIT_MEGA);
 	add_display_treestore_line(update, treestore, &iter, 
 				   find_col_name(display_data_node,
 						 SORTID_DISK),
@@ -217,9 +224,11 @@ static void _update_node_record(node_info_t *node_ptr,
 			   node_ptr->sockets, -1);
 	gtk_tree_store_set(treestore, iter, SORTID_THREADS,
 			   node_ptr->threads, -1);
-	convert_num_unit((float)node_ptr->real_memory, tmp_cnt, UNIT_MEGA);
+	convert_num_unit((float)node_ptr->real_memory, tmp_cnt, sizeof(tmp_cnt),
+			 UNIT_MEGA);
 	gtk_tree_store_set(treestore, iter, SORTID_MEMORY, tmp_cnt, -1);
-	convert_num_unit((float)node_ptr->tmp_disk, tmp_cnt, UNIT_MEGA);
+	convert_num_unit((float)node_ptr->tmp_disk, tmp_cnt, sizeof(tmp_cnt),
+			 UNIT_MEGA);
 	gtk_tree_store_set(treestore, iter, SORTID_DISK, tmp_cnt, -1);
 	gtk_tree_store_set(treestore, iter, SORTID_WEIGHT, 
 			   node_ptr->weight, -1);

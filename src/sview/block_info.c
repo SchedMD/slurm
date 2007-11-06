@@ -207,7 +207,7 @@ static void _layout_block_record(GtkTreeView *treeview,
 				 sview_block_info_t *block_ptr, 
 				 int update)
 {
-	char tmp_cnt[7];
+	char tmp_cnt[8];
 	GtkTreeIter iter;
 	GtkTreeStore *treestore = 
 		GTK_TREE_STORE(gtk_tree_view_get_model(treeview));
@@ -238,7 +238,8 @@ static void _layout_block_record(GtkTreeView *treeview,
 						 SORTID_USE),
 				   _convert_node_use(block_ptr->bg_node_use));
 	
-	convert_num_unit((float)block_ptr->node_cnt, tmp_cnt, UNIT_NONE);
+	convert_num_unit((float)block_ptr->node_cnt, tmp_cnt, sizeof(tmp_cnt),
+			 UNIT_NONE);
 	add_display_treestore_line(update, treestore, &iter, 
 				   find_col_name(display_data_block,
 						 SORTID_NODES),
@@ -269,7 +270,7 @@ static void _layout_block_record(GtkTreeView *treeview,
 static void _update_block_record(sview_block_info_t *block_ptr, 
 				 GtkTreeStore *treestore, GtkTreeIter *iter)
 {
-	char tmp_cnt[7];
+	char tmp_cnt[8];
 	
 	gtk_tree_store_set(treestore, iter, SORTID_BLOCK, 
 			   block_ptr->bg_block_name, -1);
@@ -284,7 +285,8 @@ static void _update_block_record(sview_block_info_t *block_ptr,
 	gtk_tree_store_set(treestore, iter, SORTID_USE, 
 			   _convert_node_use(block_ptr->bg_node_use), -1);
 	
-	convert_num_unit((float)block_ptr->node_cnt, tmp_cnt, UNIT_NONE);
+	convert_num_unit((float)block_ptr->node_cnt, tmp_cnt, sizeof(tmp_cnt),
+			 UNIT_NONE);
 	gtk_tree_store_set(treestore, iter, SORTID_NODES, tmp_cnt, -1);
 
 	gtk_tree_store_set(treestore, iter, SORTID_NODELIST,
