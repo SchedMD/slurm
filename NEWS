@@ -84,6 +84,8 @@ documents those changes that are of interest to users and admins.
     forwarding is done for PMI (MPICH2). See "man srun" for details.
  -- From sbatch set SLURM_NTASKS_PER_NODE when --ntasks-per-node option is 
     specified.
+ -- BLUEGENE: Documented the prefix should always be lower case and the 3
+    digit suffix should be uppercase if any letters are used as digits. 
 
 * Changes in SLURM 1.2.19
 =========================

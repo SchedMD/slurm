@@ -88,12 +88,12 @@ expect {
 		incr matches
 		exp_continue
 	}
-	-re "SIGUSR1" {
-		set usr1cnt [expr $usr1cnt + 1]
-		exp_continue
-	}
-	-re "SIGUSR2" {
-		set usr2cnt [expr $usr2cnt + 1]
+	-re "SIGUSR($number)" {
+		if {$expect_out(1,string) == 1} {
+			set usr1cnt [expr $usr1cnt + 1]
+		} else {
+			set usr2cnt [expr $usr2cnt + 1]
+		}
 		exp_continue
 	}
 	-re "error.*not running" {
