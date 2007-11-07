@@ -50,6 +50,7 @@ static char *	_dump_job(struct job_record *job_ptr, int state_info);
 static char *	_get_group_name(gid_t gid);
 static void	_get_job_comment(struct job_record *job_ptr, 
 			char *buffer, int buf_size);
+static uint16_t _get_job_cpus_per_task(struct job_record *job_ptr);
 static uint32_t	_get_job_end_time(struct job_record *job_ptr);
 static char *	_get_job_features(struct job_record *job_ptr);
 static uint32_t	_get_job_min_disk(struct job_record *job_ptr);
@@ -301,6 +302,11 @@ static char *	_dump_job(struct job_record *job_ptr, int state_info)
 	xstrcat(buf, tmp);
 
 	snprintf(tmp, sizeof(tmp),
+		"DPROCS=%u;",
+		_get_job_cpus_per_task(job_ptr));
+	xstrcat(buf, tmp);
+
+	snprintf(tmp, sizeof(tmp),
 		"QUEUETIME=%u;STARTTIME=%u;RCLASS=%s;",
 		_get_job_submit_time(job_ptr),
 		(uint32_t) job_ptr->start_time,
@@ -408,6 +414,15 @@ static void	_get_job_comment(struct job_record *job_ptr,
 	size += snprintf((buffer + size), (buf_size - size), "\";");
 }
 
+static uint16_t _get_job_cpus_per_task(struct job_record *job_ptr)
+{
+	uint16_t cpus_per_task = 1;
+
+	if (job_ptr->details && job_ptr->details->cpus_per_task)
+		cpus_per_task = job_ptr->details->cpus_per_task;
+	return cpus_per_task;
+}
+
 static uint32_t _get_job_min_mem(struct job_record *job_ptr)
 {
 	if (job_ptr->details)
@@ -465,7 +480,7 @@ static uint32_t _get_job_tasks(struct job_record *job_ptr)
 			        job_ptr->details->ntasks_per_node));
 	}
 
-	return task_cnt;
+	return task_cnt / _get_job_cpus_per_task(job_ptr);
 }
 
 static uint32_t	_get_job_time_limit(struct job_record *job_ptr)

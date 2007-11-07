@@ -86,6 +86,8 @@ documents those changes that are of interest to users and admins.
     specified.
  -- BLUEGENE: Documented the prefix should always be lower case and the 3
     digit suffix should be uppercase if any letters are used as digits. 
+ -- In sched/wiki and sched/wiki2, add support for --cpus-per-task option.
+    From Miguel Ros, BSC.
 
 * Changes in SLURM 1.2.19
 =========================
