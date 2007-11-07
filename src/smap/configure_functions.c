@@ -587,8 +587,7 @@ static int _change_state_bps(char *com, int state)
 		for(j=0; j<3; j++) {
 			if (((i+j) <= len) &&
 			    (((com[i+j] >= '0') && (com[i+j] <= '9')) ||
-			     ((com[i+j] >= 'A') && (com[i+j] <= 'Z')) ||
-			     ((com[i+j] >= 'a') && (com[i+j] <= 'z'))))
+			     ((com[i+j] >= 'A') && (com[i+j] <= 'Z'))))
 				continue;
 			goto error_message2; 
 
@@ -604,8 +603,7 @@ static int _change_state_bps(char *com, int state)
 		for(j=0; j<3; j++) {
 			if (((i+j) <= len) &&
 			    (((com[i+j] >= '0') && (com[i+j] <= '9')) ||
-			     ((com[i+j] >= 'A') && (com[i+j] <= 'Z')) ||
-			     ((com[i+j] >= 'a') && (com[i+j] <= 'z'))))
+			     ((com[i+j] >= 'A') && (com[i+j] <= 'Z'))))
 				continue; 
 			goto error_message2;
 		}
@@ -619,8 +617,7 @@ static int _change_state_bps(char *com, int state)
 		for(j=0; j<3; j++) {
 			if (((i+j) <= len) &&
 			    (((com[i+j] >= '0') && (com[i+j] <= '9')) ||
-			     ((com[i+j] >= 'A') && (com[i+j] <= 'Z')) ||
-			     ((com[i+j] >= 'a') && (com[i+j] <= 'z'))))
+			     ((com[i+j] >= 'A') && (com[i+j] <= 'Z'))))
 				continue;
 			goto error_message2;
 		}
