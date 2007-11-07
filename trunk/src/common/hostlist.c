@@ -1569,8 +1569,6 @@ static int _parse_box_range(char *str, struct _range *ranges, int len, int *coun
 	for(i = 0; i<3; i++) {
 		if ((str[i] >= '0') && (str[i] <= '9'))
 			a[i] = str[i] - '0';
-		else if ((str[i] >= 'a') && (str[i] <= 'z'))
-			a[i] = str[i] - 'a' + 10;
 		else if ((str[i] >= 'A') && (str[i] <= 'Z'))
 			a[i] = str[i] - 'A' + 10;
 		else
@@ -1578,8 +1576,6 @@ static int _parse_box_range(char *str, struct _range *ranges, int len, int *coun
 
 		if ((str[i+4] >= '0') && (str[i+4] <= '9'))
 			b[i] = str[i+4] - '0';
-		else if ((str[i+4] >= 'a') && (str[i+4] <= 'z'))
-			b[i] = str[i+4] - 'a' + 10;
 		else if ((str[i+4] >= 'A') && (str[i+4] <= 'Z'))
 			b[i] = str[i+4] - 'A' + 10;
 		else

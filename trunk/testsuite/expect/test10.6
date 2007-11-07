@@ -86,7 +86,16 @@ expect {
 		incr matches
 		exp_continue
 	}
-	
+	-re "error" {
+		send_user "\nFAILURE: smap error\n"
+		set exit_code 1
+		exp_continue
+	}
+	-re "fatal" {
+		send_user "\nFAILURE: smap error\n"
+		set exit_code 1
+		exp_continue
+	}
 	timeout {
 		send_user "\nFAILURE: smap not responding\n"
 		set exit_code 1
