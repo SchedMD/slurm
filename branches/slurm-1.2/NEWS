@@ -12,6 +12,8 @@ documents those changes that are of interest to users and admins.
     digit suffix should be uppercase if any letters are used as digits. 
  -- In sched/wiki and sched/wiki2, add support for --cpus-per-task option.
     From Miguel Ros, BSC.
+ -- In sched/wiki2, prevent invalid memory pointer (and likely seg fault) 
+    for job associated with a partition that has since been deleted.
 
 * Changes in SLURM 1.2.19
 =========================
