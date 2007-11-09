@@ -936,6 +936,8 @@ typedef struct slurm_ctl_conf {
 	char *job_comp_host;	/* job completion storage host */
 	char *job_comp_pass;	/* job completion storage password */
 	uint32_t job_comp_port;	/* job completion storage port */
+	char *job_credential_private_key;	/* path to private key */
+	char *job_credential_public_certificate;/* path to public certificate*/
 	uint16_t job_file_append; /* if set, append to stdout/err file */
 	uint16_t kill_wait;	/* seconds between SIGXCPU to SIGKILL 
 				 * on job termination */
@@ -946,6 +948,8 @@ typedef struct slurm_ctl_conf {
 	                         * purged from in memory records */
 	char *mpi_default;	/* Default version of MPI in use */
 	uint16_t msg_timeout;	/* message timeout */
+	char *node_prefix;      /* prefix of nodes in partition only set in 
+				   bluegene clusters NULL otherwise */
 	char *plugindir;	/* pathname to plugins */
 	char *plugstack;        /* pathname to plugin stack config file */
 	uint16_t private_data;	/* block viewing of other user jobs */
@@ -959,6 +963,7 @@ typedef struct slurm_ctl_conf {
 				 * registration */
 	uint16_t resume_rate;	/* nodes to make full power, per minute */
 	char *resume_program;	/* program to make nodes full power */
+	char *sched_conf;	/* contents of scheduler plugin config file */
 	uint16_t sched_time_slice;	/* gang scheduler slice time, secs */
 	char *schedtype;	/* type of scheduler to use */
 	uint16_t schedport;	/* port for scheduler connection */
@@ -983,6 +988,8 @@ typedef struct slurm_ctl_conf {
 	uint16_t slurmd_timeout;/* how long slurmctld waits for slurmd before 
 				 * considering node DOWN */
 	char *slurm_conf;	/* pathname of slurm config file */
+	char *srun_prolog;      /* srun prolog program */
+	char *srun_epilog;      /* srun epilog program */
 	char *state_save_location;/* pathname of slurmctld state save
 				 * directory */
 	char *suspend_exc_nodes;/* nodes to not make power saving */
@@ -996,20 +1003,14 @@ typedef struct slurm_ctl_conf {
 	uint16_t task_plugin_param;	/* see TASK_PARAM_* */
 	char *task_prolog;	/* pathname of task launch prolog */
 	char *tmp_fs;		/* pathname of temporary file system */
-	uint16_t wait_time;	/* default job --wait time */
-	char *job_credential_private_key;	/* path to private key */
-	char *job_credential_public_certificate;/* path to public certificate*/
-	char *srun_prolog;      /* srun prolog program */
-	char *srun_epilog;      /* srun epilog program */
-	char *node_prefix;      /* prefix of nodes in partition only set in 
-				   bluegene clusters NULL otherwise */
 	uint16_t tree_width;    /* number of threads per node to span */
-	uint16_t use_pam;	/* enable/disable PAM support */
 	char *unkillable_program; /* program run by the slurmstepd when
                                    * processes in a job step are unkillable */
 	uint16_t unkillable_timeout; /* time in seconds, after processes in a
                                       * job step have been signalled, before
                                       * they are considered "unkillable". */
+	uint16_t use_pam;	/* enable/disable PAM support */
+	uint16_t wait_time;	/* default job --wait time */
 } slurm_ctl_conf_t;
 
 typedef struct slurmd_status_msg {

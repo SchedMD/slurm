@@ -362,6 +362,7 @@ void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
 	conf_ptr->resume_program      = xstrdup(conf->resume_program);
 	conf_ptr->resume_rate         = conf->resume_rate;
 	conf_ptr->ret2service         = conf->ret2service;
+	conf_ptr->sched_conf          = slurm_sched_p_get_conf();
 	conf_ptr->schedport           = conf->schedport;
 	conf_ptr->schedrootfltr       = conf->schedrootfltr;
 	conf_ptr->sched_time_slice    = conf->sched_time_slice;
@@ -578,9 +579,9 @@ static void _slurm_rpc_dump_conf(slurm_msg_t * msg)
 	slurm_msg_t response_msg;
 	last_update_msg_t *last_time_msg = (last_update_msg_t *) msg->data;
 	slurm_ctl_conf_info_msg_t config_tbl;
-	/* Locks: Read config */
+	/* Locks: Read config, partition*/
 	slurmctld_lock_t config_read_lock = { 
-		READ_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
+		READ_LOCK, NO_LOCK, NO_LOCK, READ_LOCK };
 
 	START_TIMER;
 	debug2("Processing RPC: REQUEST_BUILD_INFO");

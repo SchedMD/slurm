@@ -1037,9 +1037,9 @@ extern void
 free_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr, bool purge_node_hash)
 {
 	xfree (ctl_conf_ptr->authtype);
-	xfree (ctl_conf_ptr->checkpoint_type);
 	xfree (ctl_conf_ptr->backup_addr);
 	xfree (ctl_conf_ptr->backup_controller);
+	xfree (ctl_conf_ptr->checkpoint_type);
 	xfree (ctl_conf_ptr->control_addr);
 	xfree (ctl_conf_ptr->control_machine);
 	xfree (ctl_conf_ptr->crypto_type);
@@ -1059,31 +1059,35 @@ free_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr, bool purge_node_hash)
 	xfree (ctl_conf_ptr->job_credential_public_certificate);
 	xfree (ctl_conf_ptr->mail_prog);
 	xfree (ctl_conf_ptr->mpi_default);
+	xfree (ctl_conf_ptr->node_prefix);
 	xfree (ctl_conf_ptr->plugindir);
 	xfree (ctl_conf_ptr->plugstack);
 	xfree (ctl_conf_ptr->proctrack_type);
 	xfree (ctl_conf_ptr->prolog);
 	xfree (ctl_conf_ptr->propagate_rlimits_except);
 	xfree (ctl_conf_ptr->propagate_rlimits);
+	xfree (ctl_conf_ptr->resume_program);
+	xfree (ctl_conf_ptr->slurm_conf);
 	xfree (ctl_conf_ptr->schedtype);
 	xfree (ctl_conf_ptr->select_type);
-	xfree (ctl_conf_ptr->slurm_conf);
 	xfree (ctl_conf_ptr->slurm_user_name);
 	xfree (ctl_conf_ptr->slurmctld_logfile);
 	xfree (ctl_conf_ptr->slurmctld_pidfile);
 	xfree (ctl_conf_ptr->slurmd_logfile);
 	xfree (ctl_conf_ptr->slurmd_pidfile);
+/*	xfree (ctl_conf_ptr->slurm_conf);	UNUSED HERE */
+	xfree (ctl_conf_ptr->srun_epilog);
+	xfree (ctl_conf_ptr->srun_prolog);
 	xfree (ctl_conf_ptr->slurmd_spooldir);
 	xfree (ctl_conf_ptr->state_save_location);
+	xfree (ctl_conf_ptr->suspend_exc_nodes);
+	xfree (ctl_conf_ptr->suspend_exc_parts);
+	xfree (ctl_conf_ptr->suspend_program);
 	xfree (ctl_conf_ptr->switch_type);
-	xfree (ctl_conf_ptr->tmp_fs);
 	xfree (ctl_conf_ptr->task_epilog);
-	xfree (ctl_conf_ptr->task_prolog);
 	xfree (ctl_conf_ptr->task_plugin);
+	xfree (ctl_conf_ptr->task_prolog);
 	xfree (ctl_conf_ptr->tmp_fs);
-	xfree (ctl_conf_ptr->srun_prolog);
-	xfree (ctl_conf_ptr->srun_epilog);
-	xfree (ctl_conf_ptr->node_prefix);
 	xfree (ctl_conf_ptr->unkillable_program);
 
 	if (purge_node_hash)

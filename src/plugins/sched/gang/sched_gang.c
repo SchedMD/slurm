@@ -131,3 +131,10 @@ void slurm_sched_plugin_requeue( struct job_record *job_ptr, char *reason )
 	/* Empty. */
 }
 
+/**************************************************************************/
+/* TAG(              slurm_sched_get_conf                               ) */
+/**************************************************************************/
+char *slurm_sched_get_conf( void )
+{
+	return NULL;
+}
