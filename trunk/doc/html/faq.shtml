@@ -68,6 +68,7 @@ generated?</a></li>
 &quot;Task launch failed on node ... Job credential replayed&quot; 
 errors generated?</a></li>
 <li><a href="#globus">Can SLURM be used with Globus?</li>
+<li><a href="#time_format">Can SLURM time output format include the year?</li>
 </ol>
 
 <h2>For Users</h2>
@@ -846,8 +847,16 @@ the Perl APIs from SLURM's <i>contribs</i> directory and configure
 Note there are RPMs available for both of these packages, named 
 <i>torque</i> and <i>perlapi</i> respectively.
 
+<p><a name="time_format"><b>24. Can SLURM time output format include the 
+year?</b><br>
+The default SLURM time format output is <i>MM/DD-HH:MM:SS</i>. 
+Define &quot;ISO8601&quot; at SLURM build time to get the time format
+<i>YYY-MM-DDTHH:MM:SS</i>.
+Note that this change in format will break anything that parses 
+SLURM output expecting the old format (e.g. LSF, Maui or Moab).
+
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 24 October 2007</p>
+<p style="text-align:center;">Last modified 9 November 2007</p>
 
 <!--#include virtual="footer.txt"-->
