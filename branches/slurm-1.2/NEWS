@@ -14,6 +14,8 @@ documents those changes that are of interest to users and admins.
     From Miguel Ros, BSC.
  -- In sched/wiki2, prevent invalid memory pointer (and likely seg fault) 
     for job associated with a partition that has since been deleted.
+ -- In sched/wiki2 plus select/cons_res, prevent invalid memory pointer 
+    (and likely seg fault) when a job is requeued.
 
 * Changes in SLURM 1.2.19
 =========================
