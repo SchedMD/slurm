@@ -10,6 +10,10 @@ documents those changes that are of interest to users and admins.
  -- scontrol "notify" command added to send message to stdout of srun for 
     specified job id.
  -- For BlueGene, make alpha part of node location specification be case insensitive.
+ -- Report scheduler-plugin specific configuration information with the 
+    "scontrol show configuration" command on the SCHEDULER_CONF line. This
+    information is not found in the "slurm.conf" file, but a scheduler plugin 
+    specific configuration (e.g. "wiki.conf").
 
 * Changes in SLURM 1.3.0-pre4
 =============================

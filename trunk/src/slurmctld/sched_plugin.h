@@ -102,4 +102,10 @@ int slurm_sched_p_get_errno( void );
  */
 char *slurm_sched_p_strerror( int errnum );
 
+/*
+ * Return any plugin-specific configuration information
+ * Caller must xfree return value
+ */
+char *slurm_sched_p_get_conf( void );
+
 #endif /*__SLURM_CONTROLLER_SCHED_PLUGIN_API_H__*/

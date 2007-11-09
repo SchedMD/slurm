@@ -57,7 +57,7 @@ uint16_t e_port = 0;
 struct   part_record *exclude_part_ptr[EXC_PART_CNT];
 uint16_t job_aggregation_time = 10;	/* Default value is 10 seconds */
 int      init_prio_mode = PRIO_HOLD;
-uint16_t kill_wait;
+uint16_t kill_wait;			/* VESTIGIAL, REMOVE */
 uint16_t use_host_exp = 0;
 
 static char *	_get_wiki_conf_path(void);
@@ -321,8 +321,32 @@ extern int parse_wiki_config(void)
 	info("JobAggregationTime = %u sec", job_aggregation_time);
 	info("JobPriority        = %s", init_prio_mode ? "run" : "hold");
 	info("KillWait           = %u sec", kill_wait);      
+	for (i=0; i<EXC_PART_CNT; i++) {
+		if (!exclude_part_ptr[i])
+			continue;
+		info("ExcludePartitions  = %s", exclude_part_ptr[i]->name);
+	}
 #endif
 	return SLURM_SUCCESS;
+}
+
+extern char *	get_wiki_conf(void)
+{
+	int i, first = 1;
+	char *conf = NULL;
+
+	for (i=0; i<EXC_PART_CNT; i++) {
+		if (!exclude_part_ptr[i])
+			continue;
+		if (first) {
+			xstrcat(conf, "ExcludePartitions=");
+			first = 0;
+		} else
+			xstrcat(conf, ",");
+		xstrcat(conf, exclude_part_ptr[i]->name);
+	}
+
+	return conf;
 }
 
 static size_t	_read_bytes(int fd, char *buf, const size_t size)

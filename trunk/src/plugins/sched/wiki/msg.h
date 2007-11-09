@@ -97,10 +97,11 @@ extern uint16_t	job_aggregation_time;
 extern uint16_t kill_wait;
 extern uint16_t use_host_exp;
 
+extern char *   bitmap2wiki_node_name(bitstr_t *bitmap);
 extern int	event_notify(char *msg);
 extern int	spawn_msg_thread(void);
 extern void	term_msg_thread(void);
-extern char *   bitmap2wiki_node_name(bitstr_t *bitmap);
+extern char *   get_wiki_conf(void);
 
 /* Functions called from within msg.c (rather than creating a bunch 
  * more header files with one function definition each */

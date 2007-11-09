@@ -159,3 +159,10 @@ void slurm_sched_plugin_requeue( struct job_record *job_ptr, char *reason )
         wiki_job_requeue(job_ptr, reason);
 }
 
+/**************************************************************************/
+/* TAG(              slurm_sched_get_conf                               ) */
+/**************************************************************************/
+char *slurm_sched_get_conf( void )
+{
+	return get_wiki_conf();
+}
