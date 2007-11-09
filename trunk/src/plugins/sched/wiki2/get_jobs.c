@@ -378,7 +378,8 @@ static void	_get_job_comment(struct job_record *job_ptr,
 
 	/* SHARED NODES */
 	if (cr_enabled)	{			/* consumable resources */
-		if (job_ptr->part_ptr->max_share == 0)	/* Exclusive use */
+		if (job_ptr->part_ptr &&
+		    (job_ptr->part_ptr->max_share == 0))	/* Exclusive use */
 			sharing = 0;
 		else if (job_ptr->details && job_ptr->details->shared)
 			sharing = 1;

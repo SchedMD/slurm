@@ -4827,6 +4827,8 @@ extern int job_requeue (uid_t uid, uint32_t job_id, slurm_fd conn_fd)
 	else
 		job_ptr->end_time = now;
 	deallocate_nodes(job_ptr, false, suspended);
+	if (job_ptr->details)
+		xfree(job_ptr->details->req_node_layout);
 	job_completion_logger(job_ptr);
 //FIXME: Test accounting
 

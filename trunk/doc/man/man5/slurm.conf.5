@@ -327,6 +327,11 @@ The default value is 30 seconds.
 May not exceed 65533.
 
 .TP
+\fBMailProg\fR
+Fully qualified pathname to the program used to send email per user request.
+The default value is "/bin/mail".
+
+.TP
 \fBMaxJobCount\fR
 The maximum number of jobs SLURM can have in its active database 
 at one time. Set the values of \fBMaxJobCount\fR and \fBMinJobAge\fR 
@@ -1282,11 +1287,6 @@ external entity (e.g. a higher\-level job manager) and prevents
 users from directly using those resources.
 Possible values are "YES" and "NO". 
 The default value is "NO".
-
-.TP
-\fBMailProg\fR
-Fully qualified pathname to the program used to send email per user request.
-The default value is "/bin/mail".
 
 .TP
 \fBMaxNodes\fR
