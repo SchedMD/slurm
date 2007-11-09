@@ -57,7 +57,7 @@ uint16_t e_port = 0;
 struct   part_record *exclude_part_ptr[EXC_PART_CNT];
 uint16_t job_aggregation_time = 10;	/* Default value is 10 seconds */
 int      init_prio_mode = PRIO_HOLD;
-uint16_t kill_wait;			/* VESTIGIAL, REMOVE */
+uint16_t kill_wait;
 uint16_t use_host_exp = 0;
 
 static char *	_get_wiki_conf_path(void);
