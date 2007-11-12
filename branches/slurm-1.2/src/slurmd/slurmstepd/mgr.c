@@ -537,7 +537,7 @@ _one_step_complete_msg(slurmd_job_t *job, int first, int last)
 	for (i = 0; i < REVERSE_TREE_PARENT_RETRY; i++) {
 		if (i)
 			sleep(1);
-		retcode = slurm_send_recv_rc_msg_only_one(&req, &rc, 10000);
+		retcode = slurm_send_recv_rc_msg_only_one(&req, &rc, 0);
 		if (retcode == 0 && rc == 0)
 			goto finished;
 	}
