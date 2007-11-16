@@ -88,6 +88,7 @@ enum {
 #endif
 	SORTID_NODES, 
 	SORTID_ONLY_LINE, 
+	SORTID_PRIORITY,
 	SORTID_REASON,
 	SORTID_ROOT, 
 	SORTID_SHARE, 
@@ -125,6 +126,8 @@ static display_data_t display_data_part[] = {
 #endif
 	{G_TYPE_STRING, SORTID_JOB_SIZE, "Job Size", FALSE,
 	 EDIT_NONE, refresh_part, create_model_part, admin_edit_part},
+	{G_TYPE_STRING, SORTID_PRIORITY, "Priority", FALSE,
+	 EDIT_TEXTBOX, refresh_part, create_model_part, admin_edit_part},
 	{G_TYPE_STRING, SORTID_MIN_NODES, "Min Nodes", FALSE,
 	 EDIT_TEXTBOX, refresh_part, create_model_part, admin_edit_part},
 	{G_TYPE_STRING, SORTID_MAX_NODES, "Max Nodes", FALSE,
@@ -412,6 +415,11 @@ static const char *_set_part_msg(update_part_msg_t *part_msg,
 		if(temp_int <= 0 && temp_int != INFINITE)
 			goto return_error;
 		part_msg->max_time = (uint32_t)temp_int;
+		break;
+	case SORTID_PRIORITY:
+		temp_int = strtol(new_text, (char **)NULL, 10);
+		type = "priority";
+		part_msg->priority = (uint16_t)temp_int;
 		break;
 	case SORTID_MIN_NODES:
 		temp_int = strtol(new_text, (char **)NULL, 10);
@@ -798,7 +806,14 @@ static void _layout_part_record(GtkTreeView *treeview,
 				   find_col_name(display_data_part,
 						 SORTID_JOB_SIZE),
 				   time_buf);
-	
+
+	convert_num_unit((float)part_ptr->priority,
+			 time_buf, sizeof(time_buf), UNIT_NONE);
+	add_display_treestore_line(update, treestore, &iter,
+				   find_col_name(display_data_part,
+						 SORTID_PRIORITY),
+				   time_buf);
+				   
 	if (part_ptr->min_nodes == (uint32_t) INFINITE)
 		snprintf(time_buf, sizeof(time_buf), "infinite");
 	else {
@@ -972,6 +987,11 @@ static void _update_part_record(sview_part_info_t *sview_part_info,
 			      part_ptr->max_nodes, true);
 	gtk_tree_store_set(treestore, iter, SORTID_JOB_SIZE, time_buf, -1);
 	
+	convert_num_unit((float)part_ptr->priority,
+			 time_buf, sizeof(time_buf), UNIT_NONE);
+	gtk_tree_store_set(treestore, iter, SORTID_PRIORITY,
+			   time_buf, -1);
+
 	if (part_ptr->min_nodes == (uint32_t) INFINITE)
 		snprintf(time_buf, sizeof(time_buf), "infinite");
 	else {
@@ -1724,6 +1744,7 @@ extern GtkListStore *create_model_part(int type)
 				   -1);	
 
 		break;
+	case SORTID_PRIORITY:
 	case SORTID_TIMELIMIT:
 	case SORTID_MIN_NODES:
 	case SORTID_MAX_NODES:
