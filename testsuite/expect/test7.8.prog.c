@@ -33,7 +33,7 @@
 
 /* global variables */
 char *control_addr;
-int   sched_port;
+int   is_bluegene, sched_port;
 long  job_id1, job_id2;
 
 static int _conn_wiki_port(char *host, int port)
@@ -202,6 +202,33 @@ static void _cancel_job(long my_job_id)
 	_xmit(out_msg);
 }
 
+static void _modify_job(long my_job_id)
+{
+	time_t now = time(NULL);
+	char out_msg[256];
+
+	snprintf(out_msg, sizeof(out_msg),
+		"TS=%u AUTH=root DT=CMD=MODIFYJOB ARG=%ld "
+		/* "PARTITION=pdebug " */
+		/* "NODES=2 " */ 
+		/* "DEPEND=afterany:3 " */
+		/* "INVALID=123 " */
+		"TIMELIMIT=10 BANK=test_bank",
+		(uint32_t) now, my_job_id);
+	_xmit(out_msg);
+}
+
+static void _resume_job(long my_job_id)
+{
+	time_t now = time(NULL);
+	char out_msg[128];
+
+	snprintf(out_msg, sizeof(out_msg),
+		"TS=%u AUTH=root DT=CMD=RESUMEJOB ARG=%ld",
+		(uint32_t) now, my_job_id);
+	_xmit(out_msg);
+}
+
 static void _start_job(long my_job_id)
 {
 	time_t now = time(NULL);
@@ -214,10 +241,21 @@ static void _start_job(long my_job_id)
 	_xmit(out_msg);
 }
 
+static void _suspend_job(long my_job_id)
+{
+	time_t now = time(NULL);
+	char out_msg[128];
+
+	snprintf(out_msg, sizeof(out_msg),
+		"TS=%u AUTH=root DT=CMD=SUSPENDJOB ARG=%ld",
+		(uint32_t) now, my_job_id);
+	_xmit(out_msg);
+}
+
 int main(int argc, char * argv[])
 {
-	if (argc != 5) {
-		printf("Usage: %s, control_addr job_id1 job_id2 sched_port\n", 
+	if (argc != 6) {
+		printf("Usage: %s, control_addr job_id1 job_id2 sched_port is_bluegene\n", 
 			argv[0]);
 		exit(1);
 	}
@@ -226,12 +264,19 @@ int main(int argc, char * argv[])
 	job_id1      = atoi(argv[2]);
 	job_id2      = atoi(argv[3]);
 	sched_port   = atoi(argv[4]);
-	printf("control_addr=%s job_id=%ld,%ld sched_port=%d\n", 
-		control_addr, job_id1, job_id2, sched_port);
+	is_bluegene  = atoi(argv[5]);
+	printf("control_addr=%s job_id=%ld,%ld sched_port=%d is_bluegene=%d\n", 
+		control_addr, job_id1, job_id2, sched_port, is_bluegene);
 
 	_get_jobs();
 	_get_nodes();
+	_modify_job(job_id1);
+	_get_jobs();
 	_start_job(job_id1);
+	if (!is_bluegene) {
+		_suspend_job(job_id1);
+		_resume_job(job_id1);
+	}
 	_cancel_job(job_id2);
 	sleep(5);
 	_get_jobs();
