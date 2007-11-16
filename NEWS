@@ -16,6 +16,9 @@ documents those changes that are of interest to users and admins.
     for job associated with a partition that has since been deleted.
  -- In sched/wiki2 plus select/cons_res, prevent invalid memory pointer 
     (and likely seg fault) when a job is requeued.
+ -- In sched/wiki, add support for job suspend, resume, and modify.
+ -- In sched/wiki, add suppport for processor allocation (not just node allocation)
+    with layout control.
 
 * Changes in SLURM 1.2.19
 =========================

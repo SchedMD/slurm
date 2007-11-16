@@ -94,6 +94,14 @@ if {$sched_port == 0} {
 	exit 1
 }
 
+if { [test_bluegene] } {
+	set is_bluegene 1
+	set node_cnt "1-1024"
+} else {
+	set is_bluegene 0
+	set node_cnt "1-2"
+}
+
 #
 # Submit two jobs to work with
 #
@@ -106,15 +114,15 @@ make_bash_script $file_in "
 
 set job_id1 0
 set job_id2 0
-set srun_pid [spawn $srun -N1-6 --output=$file_out --comment=test --batch -t1 $file_in]
+set sbatch_pid [spawn $sbatch -N $node_cnt --output=$file_out --comment=test -t1 $file_in]
 expect {
-	-re "jobid ($number) submitted" {
+	-re "Submitted batch job ($number)" {
 		set job_id1 $expect_out(1,string)
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
-		catch {exec $bin_kill -KILL $srun_pid}
+		send_user "\nFAILURE: sbatch not responding\n"
+		catch {exec $bin_kill -KILL $sbatch_pid}
 		set exit_code 1
 	}
 	eof {
@@ -126,15 +134,15 @@ if {$job_id1 == 0} {
 	exit 1
 }
 
-set srun_pid [spawn $srun -N1-6 --output=$file_out --comment=test --batch -t1 $file_in]
+set sbatch_pid [spawn $sbatch -N $node_cnt --output=$file_out --comment=test -t1 $file_in]
 expect {
-	-re "jobid ($number) submitted" {
+	-re "Submitted batch job ($number)" {
 		set job_id2 $expect_out(1,string)
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: srun not responding\n"
-		catch {exec $bin_kill -KILL $srun_pid}
+		send_user "\nFAILURE: sbatch not responding\n"
+		catch {exec $bin_kill -KILL $sbatch_pid}
 		set exit_code 1
 	}
 	eof {
@@ -154,7 +162,7 @@ if {$job_id2 == 0} {
 exec $bin_rm -f $test_prog
 exec $bin_make -f /dev/null $test_prog
 set success 0
-set moab_pid [spawn $test_prog $control_addr $job_id1 $job_id2 $sched_port]
+set moab_pid [spawn $test_prog $control_addr $job_id1 $job_id2 $sched_port $is_bluegene]
 expect {
 	-re "SUCCESS" {
 		set success 1
