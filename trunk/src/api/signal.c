@@ -172,7 +172,7 @@ _local_send_recv_rc_msgs(const char *nodelist, slurm_msg_type_t type,
 	msg->msg_type = type;
 	msg->data = data;
 
-	if((ret_list = slurm_send_recv_msgs(nodelist, msg, 10000))) {
+	if((ret_list = slurm_send_recv_msgs(nodelist, msg, 0))) {
 		while((ret_data_info = list_pop(ret_list))) {
 			temp_rc = slurm_get_return_code(ret_data_info->type,
 							ret_data_info->data);
@@ -397,7 +397,7 @@ static int _terminate_batch_script_step(
 		return -1;
 	}
 	free(name);
-	i = slurm_send_recv_rc_msg_only_one(&msg, &rc, 10000);
+	i = slurm_send_recv_rc_msg_only_one(&msg, &rc, 0);
 	if (i != 0)
 		rc = i;
 
