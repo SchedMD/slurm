@@ -505,12 +505,14 @@ static int	_parse_msg(char *msg, char **req)
 \*****************************************************************************/
 static void	_proc_msg(slurm_fd new_fd, char *msg)
 {
-	char *req, *cmd_ptr;
+	DEF_TIMERS;
+	char *req, *cmd_ptr, *msg_type = NULL;
 	char response[128];
 
 	if (new_fd < 0)
 		return;
 
+	START_TIMER;
 	if (!msg) {
 		err_code = -300;
 		err_msg = "NULL request message";
@@ -531,20 +533,34 @@ static void	_proc_msg(slurm_fd new_fd, char *msg)
 	cmd_ptr +=4;
 	err_code = 0;
 	if        (strncmp(cmd_ptr, "GETJOBS", 7) == 0) {
+		msg_type = "wiki:GETJOBS";
 		if (!get_jobs(cmd_ptr, &err_code, &err_msg))
 			goto free_resp_msg;
 	} else if (strncmp(cmd_ptr, "GETNODES", 8) == 0) {
+		msg_type = "wiki:GETNODES";
 		if (!get_nodes(cmd_ptr, &err_code, &err_msg))
 			goto free_resp_msg;
 	} else if (strncmp(cmd_ptr, "STARTJOB", 8) == 0) {
+		msg_type = "wiki:STARTJOB";
 		start_job(cmd_ptr, &err_code, &err_msg);
 	} else if (strncmp(cmd_ptr, "CANCELJOB", 9) == 0) {
+		msg_type = "wiki:CANCELJOB";
 		cancel_job(cmd_ptr, &err_code, &err_msg);
+	} else if (strncmp(cmd_ptr, "SUSPENDJOB", 10) == 0) {
+		msg_type = "wiki:SUSPENDJOB";
+		suspend_job(cmd_ptr, &err_code, &err_msg);
+	} else if (strncmp(cmd_ptr, "RESUMEJOB", 9) == 0) {
+		msg_type = "wiki:RESUMEJOB";
+		resume_job(cmd_ptr, &err_code, &err_msg);
+	} else if (strncmp(cmd_ptr, "MODIFYJOB", 9) == 0) {
+		msg_type = "wiki:MODIFYJOB";
+		job_modify_wiki(cmd_ptr, &err_code, &err_msg);
 	} else {
 		err_code = -300;
 		err_msg = "unsupported request type";
 		error("wiki: unrecognized request type: %s", req);
 	}
+	END_TIMER2(msg_type);
 
  resp_msg:
 	snprintf(response, sizeof(response),

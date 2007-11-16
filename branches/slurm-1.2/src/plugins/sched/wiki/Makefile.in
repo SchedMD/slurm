@@ -75,7 +75,8 @@ pkglibLTLIBRARIES_INSTALL = $(INSTALL)
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
 sched_wiki_la_LIBADD =
 am_sched_wiki_la_OBJECTS = cancel_job.lo crypto.lo get_jobs.lo \
-	get_nodes.lo msg.lo sched_wiki.lo start_job.lo
+	get_nodes.lo hostlist.lo job_modify.lo msg.lo resume_job.lo \
+	sched_wiki.lo start_job.lo suspend_job.lo
 sched_wiki_la_OBJECTS = $(am_sched_wiki_la_OBJECTS)
 sched_wiki_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
@@ -263,10 +264,14 @@ sched_wiki_la_SOURCES = \
 	crypto.h	\
 	get_jobs.c	\
 	get_nodes.c	\
+	hostlist.c	\
+	job_modify.c	\
 	msg.c		\
 	msg.h		\
+	resume_job.c	\
 	sched_wiki.c	\
-	start_job.c
+	start_job.c	\
+	suspend_job.c
 
 sched_wiki_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
 all: all-am
@@ -342,9 +347,13 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/crypto.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/get_jobs.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/get_nodes.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hostlist.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/job_modify.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/msg.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/resume_job.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sched_wiki.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/start_job.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/suspend_job.Plo@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<

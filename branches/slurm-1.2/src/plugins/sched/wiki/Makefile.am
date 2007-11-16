@@ -16,8 +16,12 @@ sched_wiki_la_SOURCES = \
 	crypto.h	\
 	get_jobs.c	\
 	get_nodes.c	\
+	hostlist.c	\
+	job_modify.c	\
 	msg.c		\
 	msg.h		\
+	resume_job.c	\
 	sched_wiki.c	\
-	start_job.c
+	start_job.c	\
+	suspend_job.c
 sched_wiki_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
