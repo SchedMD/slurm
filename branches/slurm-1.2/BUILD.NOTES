@@ -10,6 +10,11 @@ Simple build/install on Linux:
   make
   make install
 
+To build the files in the contribs directory:
+  make contrib
+  make install-contrib
+  (The RPMs are built by default)
+
 If you make changes to any auxdir/* or Makefile.am file, then run
 _snowflake_ (where there are recent versions of autoconf, automake 
 and libtool installed):
