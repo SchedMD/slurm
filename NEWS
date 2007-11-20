@@ -100,6 +100,8 @@ documents those changes that are of interest to users and admins.
  -- In sched/wiki, add support for job suspend, resume, and modify.
  -- In sched/wiki, add suppport for processor allocation (not just node allocation)
     with layout control.
+ -- Prevent re-sending job termination RPC to a node that has already completed 
+    the job. Only send it to specific nodes which have not reported completion.
 
 * Changes in SLURM 1.2.19
 =========================
