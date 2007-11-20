@@ -697,6 +697,12 @@ int read_slurm_conf(int recover)
 	/* initialization */
 	START_TIMER;
 
+	if (recover == 0) {
+		/* in order to re-use job state information,
+		 * update nodes_completing string (based on node_bitmap) */
+		update_job_nodes_completing();
+	}
+
 	/* save node states for reconfig RPC */
 	old_node_record_count = node_record_count;
 	old_node_table_ptr    = node_record_table_ptr;
@@ -708,11 +714,6 @@ int read_slurm_conf(int recover)
 	node_record_table_ptr = NULL;
 	node_record_count = 0;
 
-	if (recover == 0) {
-		/* in order to re-use job state information,
-		 * update nodes_completing string (based on node_bitmap) */
-		update_job_nodes_completing();
-	}
 	if ((error_code = _init_all_slurm_conf())) {
 		node_record_table_ptr = old_node_table_ptr;
 		return error_code;
@@ -1005,6 +1006,7 @@ static int _sync_nodes_to_comp_job(void)
 			deallocate_nodes(job_ptr, false, false);
 		}
 	}
+	list_iterator_destroy(job_iterator);
 	if (update_cnt)
 		info("_sync_nodes_to_comp_job completing %d jobs",
 			update_cnt);
