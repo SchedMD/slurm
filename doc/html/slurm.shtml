@@ -32,28 +32,25 @@ add functionality.</li>
 <p>SLURM provides resource management on about 1000 computers worldwide,
 including many of the most powerful computers in the world:
 <ul>
-<li><a href="https://www.llnl.gov/asc/computing_resources/bluegenel/">BlueGene/L</a> 
+<li><a href="http://asc.llnl.gov/computing_resources/bluegenel/">BlueGene/L</a> 
 at LLNL with 106,496 dual-core processors</li>
-<li><a href="https://www.llnl.gov/asc/computing_resources/purple/">ASC Purple</a>
+<li><a href="http://c-r-labs.com/">EKA</a> at Computational Research Laboratories, 
+India with 14,240 Xeon processoers and Infiniband interconnect</li>
+<li><a href="http://asc.llnl.gov/computing_resources/purple/">ASC Purple</a>
 an IBM SP/AIX cluster at LLNL with 12,208 Power5 processors and a Federation switch</li>
 <li><a href="http://www.bsc.es/plantillaA.php?cat_id=5">MareNostrum</a>
 a Linux cluster at Barcelona Supercomputer Center
 with 10,240 PowerPC processors and a Myrinet switch</li>
-<li><a href="http://www.llnl.gov/computing/hpc/resources/OCF_resources.html#atlas">
-Atlas</a> with 1,152 nodes each having four sockets with dual-core Opteron processors and an InfiniBand switch</li>
-<li>An <a href="http://hpc.uky.edu/">IBM HPC Server</a> at the University of Kentucky.
-This is a heterogeneous cluster with 128 Power5+ processors and
-340 HS21 Blades each with dual-socket and dual-core Intel Woodcrest processors 
-for a total of 1,488 cores connected with Infiniband switch</li>
 </ul>
 <p>There are about 200 downloads of SLURM per month from LLNL's FTP server 
 and <a href="https:sourceforge.net">SourceForge.net</a>.
 As of March 2007, SLURM has been downloaded over 5000 times to over 500 
 distinct sites in 41 countries. 
 SLURM is also actively being developed, distributed and supported by 
-<a href="http://www.hp.com">Hewlett-Packard</a> and
-<a href="http://www.bull.com">Bull</a>.</p>
+<a href="http://www.hp.com">Hewlett-Packard</a>,
+<a href="http://www.bull.com">Bull</a> and
+<a href="http://www.sicortex.com">SiCortex</a>.</p>
 
-<p style="text-align:center;">Last modified 24 October 2007</p>
+<p style="text-align:center;">Last modified 20 November 2007</p>
 
 <!--#include virtual="footer.txt"-->
