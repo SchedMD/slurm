@@ -57,7 +57,7 @@
 
 # Build with sgijob on CHAOS systems
 #  (add elan too when it is available)
-%if %{$chaos}0
+%if %{$chaos}
 %slurm_with_opt sgijob
 %else
 %slurm_without_opt sgijob
