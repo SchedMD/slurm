@@ -76,6 +76,7 @@ expect {
 #
 if {[wait_for_job $job_id "DONE"] != 0} {
 	send_user "\nFAILURE: waiting for job to complete\n"
+	cancel_job $job_id
 	set exit_code 1
 }
 set matches     0

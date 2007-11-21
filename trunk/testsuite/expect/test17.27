@@ -95,9 +95,14 @@ expect {
 		wait
 	}
 }
+if {$job_id == 0} {
+	send_user "\nFAILURE: job not submitted\n"
+	exit 1
+}
 if {[wait_for_job $job_id "DONE"] != 0} {
 	send_user "\nFAILURE: job did not complete\n"
-	set exit_code 1
+	cancel_job $job_id
+	exit 1
 }
 if {[wait_for_file $file_out] != 0} {
 	send_user "\nFAILURE: no output file\n"

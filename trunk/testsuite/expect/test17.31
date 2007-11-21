@@ -146,11 +146,15 @@ expect {
 		wait
 	}
 }
-
-
 if {$matches != 3} {
 	send_user "\nFAILURE: sbatch didn't read the correct options from batch file\n"
 	set exit_code 1
+}
+if {$job_id == 0} {
+	send_user "\nFAILURE: sbatch failed to submit the job\n"
+	set exit_code 1
+} else {
+	cancel_job $job_id
 }
 
 #
