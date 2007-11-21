@@ -106,14 +106,20 @@ int _find_offset(struct select_cr_job *job, const int job_index,
 	int i, j, index, offset, skip;
 	uint16_t acpus, asockets, freecpus, last_freecpus = 0;
 	uint32_t maxtasks = job->alloc_cpus[job_index];
-	
+	uint16_t uint16_tmp, threads, usable_threads;
+
 	p_ptr = get_cr_part_ptr(this_cr_node, job->partition);
 	if (p_ptr == NULL)
 		/* this should never happen, because p_ptr */
 		/* exists in the callers of this function  */
 		fatal("cons_res: find_offset: could not find part %s",
 		      job->partition);
-	
+
+	/* get thread count per core */
+	get_resources_this_node(&uint16_tmp,  &uint16_tmp, &uint16_tmp, 
+				&threads, this_cr_node, job->job_id);
+	usable_threads = MIN(job->max_threads, threads);
+
 	index = -1;
 	for (i = 0; i < p_ptr->num_rows; i++) {
 		acpus = 0;
@@ -142,6 +148,7 @@ int _find_offset(struct select_cr_job *job, const int job_index,
 		}
 		
 		freecpus = (cores * sockets) - acpus;
+		freecpus *= usable_threads;
 		if (freecpus < maxtasks)
 			continue;
 
