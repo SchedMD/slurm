@@ -21,6 +21,8 @@ documents those changes that are of interest to users and admins.
     with layout control.
  -- Prevent re-sending job termination RPC to a node that has already completed 
     the job. Only send it to specific nodes which have not reported completion.
+ -- Support larger environment variables 64K instead of BUFSIZ (8k on some 
+    systems).
 
 * Changes in SLURM 1.2.19
 =========================
