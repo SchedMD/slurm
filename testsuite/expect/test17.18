@@ -101,8 +101,11 @@ if {$job_id2 == 0} {
 #
 if {[wait_for_job $job_id2 "DONE"] != 0} {
 	send_user "\nFAILURE: waiting for job to complete\n"
+	cancel_job $job_id2
+	cancel_job $job_id1
 	exit 1
 }
+cancel_job $job_id1
 
 #
 # Inspect the job's output file
@@ -185,6 +188,7 @@ if {$job_id1 == 0} {
 	send_user "\nFAILURE: batch submit failure\n"
 	exit 1
 }
+
 exec $bin_sleep 5
 set match 0
 spawn $scontrol show job $job_id1
@@ -214,6 +218,7 @@ if {$match != 2} {
 	send_user "\nFAILURE: unexpected JobState or StartTime\n"
 	set exit_code 1
 }
+
 # Reset start time and test for completion
 spawn $scontrol update JobId=$job_id1 StartTime=now
 expect {

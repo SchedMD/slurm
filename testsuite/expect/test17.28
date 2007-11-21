@@ -91,6 +91,7 @@ if {$matches != 2} {
 	send_user "\nFAILURE: did not set job name and account from batch script\n"
 	set exit_code 1
 }
+cancel_job $job_id
 
 #
 # Build input script file
@@ -102,7 +103,7 @@ make_bash_script $file_in "
 #SBATCH -N1000000k
 $bin_sleep $delay
 "
-
+set job_id  0
 set matches 0
 spawn $sbatch -o $file_out $file_in
 expect {
@@ -111,6 +112,10 @@ expect {
 		incr matches
 		exp_continue
 	}	
+	-re "Submitted batch job ($number)" {
+		set job_id $expect_out(1,string)
+		exp_continue
+	}
 	timeout {
 		send_user "\nFAILURE: sbatch not responding\n"
 		set exit_code 1
@@ -124,18 +129,28 @@ if {$matches != 1} {
 	send_user "\nFAILURE: sbatch didn't read the correct options from batch file\n"
 	set exit_code 1
 }
+if {$job_id == 0} {
+	send_user "\nFAILURE: sbatch didn't reject job with invalid size\n"
+	cancel_job $job_id
+	set exit_code 1
+}
 
 make_bash_script $file_in "
 #SBATCH -N650000
 $bin_sleep $delay
 "
 
+set job_id  0
 spawn $sbatch -N1 -o $file_out $file_in
 expect {
 	-re "More nodes requested than permitted" {
 		send_user "\nFAILURE: sbatch read from the batch file options"
 		send_user "over writing the commandline options\n"
 		set exit_code 1
+		exp_continue
+	}
+	-re "Submitted batch job ($number)" {
+		set job_id $expect_out(1,string)
 		exp_continue
 	}
 	timeout {
@@ -146,6 +161,11 @@ expect {
 	eof {
 		wait
 	}
+}
+if {$job_id == 0} {
+	send_user "\nFAILURE: sbatch didn't reject job with invalid size\n"
+	cancel_job $job_id
+	set exit_code 1
 }
 
 #
