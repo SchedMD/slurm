@@ -69,8 +69,7 @@
  * IN/OUT sockets    - Available socket count
  * IN/OUT cores      - Available core count
  * IN/OUT threads    - Available thread count
- * IN alloc_sockets  - Allocated socket count to other jobs
- * IN alloc_lps      - Allocated cpu count to other jobs
+ * IN alloc_cores    - Allocated cores (per socket) count to other jobs
  * IN cr_type        - Consumable Resource type
  *
  * Note: used in both the select/{linear,cons_res} plugins.
@@ -88,14 +87,13 @@ int slurm_get_avail_procs(const uint16_t max_sockets,
 			  uint16_t *sockets, 
 			  uint16_t *cores, 
 			  uint16_t *threads,
-			  const uint16_t alloc_sockets,
 			  const uint16_t *alloc_cores,
-			  const uint16_t alloc_lps,
 			  const select_type_plugin_info_t cr_type,
 			  uint32_t job_id,
 			  char *name)
 {
 	uint16_t avail_cpus = 0, max_cpus = 0;
+	uint16_t allocated_cores = 0, allocated_sockets = 0;
 	uint16_t max_avail_cpus = 0xffff;	/* for alloc_* accounting */
 	int i;
 
@@ -108,6 +106,11 @@ int slurm_get_avail_procs(const uint16_t max_sockets,
 	    	*cores = 1;
 	if (*sockets <= 0)
 	    	*sockets = *cpus / *cores / *threads;
+	for (i = 0 ; i < *sockets; i++) {
+		allocated_cores += alloc_cores[i];
+		if (alloc_cores[i])
+			allocated_sockets++;
+	}
 #if(DEBUG)
 	info("get_avail_procs %u %s MAX User_ sockets %u cores %u threads %u",
 			job_id, name, max_sockets, max_cores, max_threads);
@@ -115,17 +118,15 @@ int slurm_get_avail_procs(const uint16_t max_sockets,
 			job_id, name, min_sockets, min_cores);
 	info("get_avail_procs %u %s HW_   sockets %u cores %u threads %u",
 			job_id, name, *sockets, *cores, *threads);
-        info("get_avail_procs %u %s Ntask node   %u sockets %u core    %u",
-                        job_id, name, ntaskspernode, ntaskspersocket, 
+	info("get_avail_procs %u %s Ntask node   %u sockets %u core   %u",
+			job_id, name, ntaskspernode, ntaskspersocket, 
 			ntaskspercore);
-	info("get_avail_procs %u %s cr_type %d cpus %u Allocated sockets %u lps %u",
-			job_id, name, cr_type, *cpus, alloc_sockets, alloc_lps);
-	if (((cr_type == CR_CORE) || (cr_type == CR_CORE_MEMORY)) 
-	&&  (alloc_lps != 0)) {
-		for (i = 0; i < *sockets; i++)
-			info("get_avail_procs %u %s alloc_cores[%d] = %u", 
-			     job_id, name, i, alloc_cores[i]);
-	}
+	info("get_avail_procs %u %s cr_type %d cpus %u  alloc_ c %u s %u",
+			job_id, name, cr_type, *cpus, allocated_cores,
+			allocated_sockets);
+	for (i = 0; i < *sockets; i++)
+		info("get_avail_procs %u %s alloc_cores[%d] = %u", 
+		     job_id, name, i, alloc_cores[i]);
 #endif
 		
 	switch(cr_type) {
@@ -133,8 +134,9 @@ int slurm_get_avail_procs(const uint16_t max_sockets,
 	   and thread.  Only one level of logical processors */ 
 	case CR_CPU:
 	case CR_CPU_MEMORY:
-		if (*cpus >= alloc_lps)
-			*cpus -= alloc_lps;
+		
+		if (*cpus >= allocated_cores)
+			*cpus -= allocated_cores;
 		else {
 			*cpus = 0;
 			error("cons_res: *cpus underflow");
@@ -151,13 +153,13 @@ int slurm_get_avail_procs(const uint16_t max_sockets,
 	/* For all other types, nodes contain sockets, cores, and threads */
 	case CR_CORE:
 	case CR_CORE_MEMORY:
-		if (*cpus >= alloc_lps)
-			*cpus -= alloc_lps;
+		if (*cpus >= allocated_cores)
+			*cpus -= allocated_cores;
 		else {
 			*cpus = 0;
 			error("cons_res: *cpus underflow");
 		}
-		if (alloc_lps > 0) {
+		if (allocated_cores > 0) {
 			max_avail_cpus = 0;
 			int tmp_diff = 0;
 			for (i=0; i<*sockets; i++) {
@@ -207,14 +209,14 @@ int slurm_get_avail_procs(const uint16_t max_sockets,
 	case CR_SOCKET:
 	case CR_SOCKET_MEMORY:
 	default:
-		if (*sockets >= alloc_sockets)
-			*sockets -= alloc_sockets; /* sockets count */
+		if (*sockets >= allocated_sockets)
+			*sockets -= allocated_sockets; /* sockets count */
 		else {
 			*sockets = 0;
 			error("cons_res: *sockets underflow");
 		}
-		if (*cpus >= alloc_lps)
-			*cpus -= alloc_lps;
+		if (*cpus >= allocated_cores)
+			*cpus -= allocated_cores;
 		else {
 			*cpus = 0;
 			error("cons_res: *cpus underflow");
