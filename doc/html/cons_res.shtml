@@ -203,6 +203,7 @@ Please send comments and requests about the consumable resources to
       hold until hydra12 becomes available or if backfill is enabled
       until hydra12's remaining CPU gets allocated to another job
       which will allow the 4th job to get two dedicated nodes</li>
+      <li><b>Note!</b> This problem is fixed in SLURM version 1.3.</li>
       <li><b>Note!</b> If you want to specify <i>--max_????</i> this
       problem can be solved in the current implementation by asking
       for the nodes in dedicated mode using <i>--exclusive</i></li>.

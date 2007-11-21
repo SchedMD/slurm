@@ -350,8 +350,7 @@ static uint16_t _get_avail_cpus(struct job_record *job_ptr, int index)
 			max_sockets, max_cores, max_threads, 
 			min_sockets, min_cores, cpus_per_task,
 			ntasks_per_node, ntasks_per_socket, ntasks_per_core,
-	    		&cpus, &sockets, &cores, &threads, 
-			(uint16_t) 0, NULL, (uint16_t) 0, 
+	    		&cpus, &sockets, &cores, &threads, NULL, 
 			SELECT_TYPE_INFO_NONE,
 			job_ptr->job_id, node_ptr->name);
 

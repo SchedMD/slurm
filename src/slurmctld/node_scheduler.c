@@ -565,8 +565,6 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 {
 	int error_code = SLURM_SUCCESS, i, j, pick_code;
 	int total_nodes = 0, total_cpus = 0; 
-	uint32_t total_mem = 0; /* total_: total resources configured in
-			      partition */
 	int avail_nodes = 0, avail_cpus = 0;	
 	int avail_mem = 0; /* avail_: resources available for use now */
 	bitstr_t *avail_bitmap = NULL, *total_bitmap = NULL;
@@ -595,7 +593,7 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 					part_ptr->max_share, cr_enabled);
 	job_ptr->details->shared = shared;
 
-        if (cr_enabled) {
+	if (cr_enabled) {
 		shared = 0;
 		job_ptr->cr_enabled = cr_enabled; /* CR enabled for this job */
 
@@ -641,92 +639,48 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 			total_nodes = bit_set_count(
 				job_ptr->details->req_node_bitmap);
 		}
-		if (job_ptr->num_procs != 0) {
-			if (cr_enabled) {
-				uint16_t tmp16;
-				if ((cr_type == CR_MEMORY)
-				    || (cr_type == CR_SOCKET_MEMORY)
-				    || (cr_type == CR_CORE_MEMORY)
-				    || (cr_type == CR_CPU_MEMORY)) {
-					/* Check if the requested amount of
-					 * memory is available */
-					error_code = select_g_get_extra_jobinfo (
-					    NULL, 
-					    job_ptr, 
-					    SELECT_AVAIL_MEMORY, 
-					    &total_mem);
-					if (error_code != SLURM_SUCCESS) {
-						FREE_NULL_BITMAP(
-							partially_idle_node_bitmap);
-						return ESLURM_NODES_BUSY;
-					}
-				}
-				error_code = select_g_get_extra_jobinfo (
-					NULL, 
-					job_ptr, 
-					SELECT_CPU_COUNT, 
-					&tmp16);
-				if (error_code != SLURM_SUCCESS) {
-					FREE_NULL_BITMAP(
-						partially_idle_node_bitmap);
-					return error_code;
-				}
-				total_cpus = (int) tmp16;
-			} else { 
-				total_cpus = count_cpus(
-					job_ptr->details->req_node_bitmap);
-			}
-		}
 		if (total_nodes > max_nodes) {
 			/* exceeds node limit */
                         if (cr_enabled) 
                                 FREE_NULL_BITMAP(partially_idle_node_bitmap);
 			return ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE;
 		}
-		if ((min_nodes <= total_nodes) && 
-		    (max_nodes <= min_nodes) &&
-		    (job_ptr->num_procs <= total_cpus )) {
+
+		/* check the availability of these nodes */
+		/* Should we check memory availability on these nodes? */
+		if (!bit_super_set(job_ptr->details->req_node_bitmap, 
+				   avail_node_bitmap)) {
+			if (cr_enabled)
+				FREE_NULL_BITMAP(partially_idle_node_bitmap);
+			return ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE;
+		}
+
+		/* shared needs to be checked before cr_enabled
+		 * to make sure that CR_MEMORY works correctly */
+		if (shared) {
 			if (!bit_super_set(job_ptr->details->req_node_bitmap, 
-                                        avail_node_bitmap)) {
-				if (cr_enabled) { 
+					   share_node_bitmap)) {
+				if (cr_enabled)
 					FREE_NULL_BITMAP(
 						partially_idle_node_bitmap);
-				}
-				return ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE;
+				return ESLURM_NODES_BUSY;
 			}
-
-			/* shared needs to be checked before cr_enabled
-			 * to make sure that CR_MEMORY works correctly */
-			if (shared) {
-				if (!bit_super_set(job_ptr->details->
-						   req_node_bitmap, 
-						   share_node_bitmap)) {
-					if (cr_enabled) {
-						FREE_NULL_BITMAP(
-							partially_idle_node_bitmap);
-					}
-					return ESLURM_NODES_BUSY;
-				}
-			} else if (cr_enabled) {
-				if (!bit_super_set(job_ptr->details->
-						   req_node_bitmap, 
-						   partially_idle_node_bitmap)) {
-					FREE_NULL_BITMAP(
-					  partially_idle_node_bitmap);
-					return ESLURM_NODES_BUSY;
-				}
-			} else {
-				if (!bit_super_set(job_ptr->details->
-						   req_node_bitmap, 
-						   idle_node_bitmap)) {
-					return ESLURM_NODES_BUSY;
-				}
+		} else if (cr_enabled) {
+			if (!bit_super_set(job_ptr->details->req_node_bitmap, 
+					   partially_idle_node_bitmap)) {
+				FREE_NULL_BITMAP(partially_idle_node_bitmap);
+				return ESLURM_NODES_BUSY;
 			}
-			/* still must go through select_g_job_test() to 
-			 * determine validity of request and/or perform
-			 * set-up before job launch */
+		} else {
+			if (!bit_super_set(job_ptr->details->req_node_bitmap, 
+					   idle_node_bitmap)) {
+				return ESLURM_NODES_BUSY;
+			}
 		}
-		total_nodes = total_cpus = 0;	/* reinitialize */
+		/* still must go through select_g_job_test() to 
+		 * determine validity of request and/or perform
+		 * set-up before job launch */
+		total_nodes = 0;	/* reinitialize */
 	}
 
 #ifndef HAVE_BG
@@ -752,15 +706,13 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 			if (!bit_test(node_set_ptr[i].feature_bits, j))
 				continue;
 			if (!runable_ever) {
-				int cr_disabled = 0;
-				total_mem = 0;
 				error_code = _add_node_set_info(
 					&node_set_ptr[i],
 					&total_bitmap, 
 					&total_nodes, 
 					&total_cpus,
-					total_mem, 
-					cr_disabled,
+					0, 
+					0,
 					job_ptr);
 				if (error_code != SLURM_SUCCESS) {
 					if (cr_enabled) {
@@ -1004,10 +956,10 @@ _add_node_set_info(struct node_set *node_set_ptr,
 		   const int mem_cnt, int cr_enabled,
 		   struct job_record * job_ptr)
 {
-        int error_code = SLURM_SUCCESS, i;
+	int error_code = SLURM_SUCCESS, i;
 	int this_cpu_cnt, this_mem_cnt;
-	uint32_t alloc_mem;
-	uint16_t alloc_cpus;
+	uint32_t avail_mem;
+	uint16_t idle_cpus;
 	uint32_t job_id = job_ptr->job_id;
 
         xassert(node_set_ptr->my_bitmap);
@@ -1044,21 +996,21 @@ _add_node_set_info(struct node_set *node_set_ptr,
 			}
                         if (bit_test (node_set_ptr->my_bitmap, i) == 0)
 				continue;
-                        alloc_cpus = 0;
+                        idle_cpus = 0;
                         error_code = select_g_get_select_nodeinfo(
 				&node_record_table_ptr[i], 
-				SELECT_ALLOC_CPUS, 
-				&alloc_cpus);
+				SELECT_AVAIL_CPUS, 
+				&idle_cpus);
                         if (error_code != SLURM_SUCCESS) {
 				error("cons_res: Invalid Node reference %s", 
 				      node_record_table_ptr[i].name);
 				return error_code;
 			}
-                        alloc_mem = 0;
+                        avail_mem = 0;
                         error_code = select_g_get_select_nodeinfo(
 				&node_record_table_ptr[i], 
-				SELECT_ALLOC_MEMORY, 
-				&alloc_mem);
+				SELECT_AVAIL_MEMORY, 
+				&avail_mem);
                         if (error_code != SLURM_SUCCESS) {
 				error("cons_res: Invalid Node reference %s", 
 				      node_record_table_ptr[i]. name);
@@ -1066,17 +1018,8 @@ _add_node_set_info(struct node_set *node_set_ptr,
 			}
 
 			/* Determine processors and memory available for use */
-			if (slurmctld_conf.fast_schedule) {
-				this_cpu_cnt = node_set_ptr->cpus_per_node - 
-					alloc_cpus;
-				this_mem_cnt = (node_set_ptr->real_memory - 
-					alloc_mem) - mem_cnt;
-			} else {
-				this_cpu_cnt = node_record_table_ptr[i].cpus -
-					alloc_cpus;
-				this_mem_cnt = (node_record_table_ptr[i].real_memory -
-					alloc_mem) - mem_cnt;
-			}                       
+			this_cpu_cnt = idle_cpus;
+			this_mem_cnt = avail_mem - mem_cnt;
 
 			debug3("_add_node_set_info %u %s this_cpu_cnt %d"
 				" this_mem_cnt %d", 
@@ -1094,18 +1037,23 @@ _add_node_set_info(struct node_set *node_set_ptr,
 				this_cpu_cnt = 0;
 			}
 
+			/* IF there's at least one CPU available AND there's
+			 * memory available for this job on this node THEN
+			 * log the node... */
 			if ((this_cpu_cnt > 0) && (this_mem_cnt > 0)) {
 				*node_cnt += 1;
 				*cpu_cnt  += this_cpu_cnt;
 				
 				if (*node_bitmap)
-					bit_or(*node_bitmap, node_set_ptr->my_bitmap);
+					bit_set(*node_bitmap, i);
 				else {
 					*node_bitmap = bit_copy(node_set_ptr->
 								my_bitmap);
 					if (*node_bitmap == NULL)
 						fatal("bit_copy malloc failure");
 				}
+			} else if (*node_bitmap) {
+				bit_clear(*node_bitmap, i);
 			}
                 }
         }
@@ -1509,6 +1457,7 @@ static int _build_node_list(struct job_record *job_ptr,
 		config_filter = 0;
 		if ((detail_ptr->job_min_procs    > config_ptr->cpus       )
 		||  (detail_ptr->job_min_memory   > config_ptr->real_memory) 
+		||  (detail_ptr->job_max_memory   > config_ptr->real_memory) 
 		||  (detail_ptr->job_min_tmp_disk > config_ptr->tmp_disk))
 			config_filter = 1;
 		if (mc_ptr

@@ -47,6 +47,7 @@
 #include "src/common/list.h"
 #include "src/common/log.h"
 #include "src/common/node_select.h"
+#include "src/common/pack.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
@@ -55,6 +56,44 @@
 #include "src/slurmctld/slurmctld.h"
 
 #include "src/slurmd/slurmd/slurmd.h"
+
+/* part_cr_record keeps track of the allocated cores of a node that
+ * has been assigned to a partition. SLURM allows a node to be
+ * assigned to more than one partition. One or more partitions
+ * may be configured to share the cores with more than one job.
+ *
+ *** NOTE: If any changes are made here, the following data structure has
+ ***       persistent state which is maintained by select_cons_res.c:
+ ***		select_p_state_save
+ ***		select_p_state_restore
+ ***		select_p_node_init
+ *** 
+ *** as well as tracked by version control
+ ***		select_cons_res.c:pstate_version
+ *** which should be incremented if any changes are made.
+ */
+
+struct part_cr_record {
+	char *part_name;		/* name of partition */
+	uint16_t *alloc_cores;		/* core count per socket reserved by
+					 * already scheduled jobs */
+	uint16_t num_rows;		/* number of rows in alloc_cores. The
+					 * length of alloc_cores is
+					 * num_sockets * num_rows. */
+	struct part_cr_record *next;	/* ptr to next part_cr_record */
+};
+
+/*
+ * node_cr_record.node_state assists with the unique state of each node.
+ * NOTES:
+ * - If node is in use by Shared=NO part, some CPUs/memory may be available
+ * - Caution with NODE_CR_AVAILBLE: a Sharing partition could be full!!
+ */
+enum node_cr_state {
+	NODE_CR_RESERVED, /* node is NOT available for use by any other jobs */
+	NODE_CR_ONE_ROW,  /* node is in use by Shared=NO part */
+	NODE_CR_AVAILABLE /* The node may be IDLE or IN USE by Sharing part(s)*/
+};
 
 /* node_cr_record keeps track of the resources within a node which 
  * have been reserved by already scheduled jobs. 
@@ -70,14 +109,14 @@
  *** which should be incremented if any changes are made.
  **/
 struct node_cr_record {
-	struct node_record *node_ptr;	/* ptr to the node that own these resources */
-	char *name;		/* reference copy of node_ptr name */
-	uint16_t alloc_lps;	/* cpu count reserved by already scheduled jobs */
-	uint16_t alloc_sockets;	/* socket count reserved by already scheduled jobs */
-	uint16_t num_sockets;	/* number of sockets in alloc_cores */
-	uint16_t *alloc_cores;	/* core count per socket reserved by
-				 * already scheduled jobs */
-	uint32_t alloc_memory;	/* real memory reserved by already scheduled jobs */
+	struct node_record *node_ptr;	/* ptr to the actual node */
+	char *name;			/* reference copy of node_ptr name */
+	uint16_t num_sockets;		/* number of sockets in this node */
+	enum node_cr_state node_state;	/* see node_cr_state comments */
+	struct part_cr_record *parts;	/* ptr to singly-linked part_cr_record
+					 * list that contains alloc_core info */
+	uint32_t alloc_memory;		/* real memory reserved by already
+					 * scheduled jobs */
 	struct node_cr_record *node_next;/* next entry with same hash index */
 };
 
@@ -101,37 +140,36 @@ struct select_cr_job {
 				 * if using Moab scheduler (sched/wiki2)
 				 * then this will be initialized to the
 				 * number of CPUs desired on the node	*/
-	uint16_t *alloc_lps;	/* number of allocated threads/lps on
+	uint16_t *alloc_cpus;	/* number of allocated threads/cpus on
 				 * each host */
-	uint16_t *alloc_sockets;/* number of allocated sockets on each
-				 * host */
 	uint16_t *num_sockets;	/* number of sockets in alloc_cores[node] */
 	uint16_t **alloc_cores;	/* number of allocated cores on each
 				 * host */
 	uint32_t *alloc_memory;	/* number of allocated MB of real
 				 * memory on each host */
+	uint16_t *node_offset;	/* the node_cr_record->alloc_cores row to
+				 * which this job was assigned */
+	char *partition;	/* partition name for this job */
+	enum node_cr_state node_req;	/* see node_cr_state comments */
 	uint16_t max_sockets;
 	uint16_t max_cores;
 	uint16_t max_threads;
 	uint16_t min_sockets;
 	uint16_t min_cores;
 	uint16_t min_threads;
-	uint16_t ntasks_per_node;
-	uint16_t ntasks_per_socket;
-	uint16_t ntasks_per_core;
-	uint16_t cpus_per_task;      
 	bitstr_t *node_bitmap;	/* bitmap of nodes allocated to job    */
 };
 
 struct node_cr_record * find_cr_node_record (const char *name);
+
+struct part_cr_record *get_cr_part_ptr(struct node_cr_record *this_node,
+				     const char *part_name);
 
 void get_resources_this_node(uint16_t *cpus, 
 			     uint16_t *sockets, 
 			     uint16_t *cores,
 			     uint16_t *threads, 
 			     struct node_cr_record *this_cr_node,
-			     uint16_t *alloc_sockets, 
-			     uint16_t *alloc_lps,
 			     uint32_t jobid);
 
 #endif /* !_CONS_RES_H */
