@@ -92,9 +92,7 @@ static void _get_resources_this_node(uint16_t *cpus,
 				     uint16_t *sockets,
 				     uint16_t *cores,
 				     uint16_t *threads,
-				     uint16_t *alloc_sockets,
 				     uint16_t *alloc_cores,
-				     uint16_t *alloc_lps,
 				     uint32_t jobid);
 static void _cr_update_reservation(int reserve, uint32_t *reserved, 
 				   bitstr_t *mask);
@@ -608,7 +606,6 @@ static int _task_layout_lllp_init(launch_tasks_request_msg_t *req,
 				  uint16_t *avail_cpus)
 {
 	int i;
-	uint16_t alloc_sockets = 0, alloc_lps = 0;
 	uint16_t alloc_cores[conf->sockets];
 
 	if (req->cpu_bind_type & CPU_BIND_TO_THREADS) {
@@ -625,8 +622,7 @@ static int _task_layout_lllp_init(launch_tasks_request_msg_t *req,
 	}
 
 	_get_resources_this_node(usable_cpus, usable_sockets, usable_cores,
-				 usable_threads, &alloc_sockets, alloc_cores,
-				 &alloc_lps, req->job_id);
+				 usable_threads, alloc_cores, req->job_id);
 
 	*hw_sockets = *usable_sockets;
 	*hw_cores   = *usable_cores;
@@ -645,10 +641,8 @@ static int _task_layout_lllp_init(launch_tasks_request_msg_t *req,
 					    req->ntasks_per_core,
 					    usable_cpus, usable_sockets,
 					    usable_cores, usable_threads,
-					    alloc_sockets, alloc_cores,
-					    alloc_lps, conf->cr_type,
-					    req->job_id,
-					    conf->hostname);
+					    alloc_cores, conf->cr_type,
+					    req->job_id, conf->hostname);
 	/* Allocate masks array */
 	*masks_p = xmalloc(maxtasks * sizeof(bitstr_t*));
 	for (i = 0; i < maxtasks; i++) { 
@@ -671,14 +665,11 @@ static void _get_resources_this_node(uint16_t *cpus,
 				     uint16_t *sockets,
 				     uint16_t *cores,
 				     uint16_t *threads,
-				     uint16_t *alloc_sockets,
 				     uint16_t *alloc_cores,
-				     uint16_t *alloc_lps,
 	                             uint32_t jobid)
 {
 	int bit_index = 0;
-	int i, j , k;
-	int this_socket = 0, cr_core_enabled = 0;
+	int i, j, k;
 
 	/* FIX for heterogeneous socket/core/thread count per system
 	 * in future releases */
@@ -687,50 +678,30 @@ static void _get_resources_this_node(uint16_t *cpus,
 	*cores   = conf->cores;
 	*threads = conf->threads;
 
-	switch(conf->cr_type) {
-	case CR_CORE:
-	case CR_CORE_MEMORY: 
-		for(i = 0; i < *sockets; i++)
-			alloc_cores[i] = 0;
-		cr_core_enabled = 1;
-	case CR_SOCKET:
-	case CR_SOCKET_MEMORY: 
-	case CR_CPU:
-	case CR_CPU_MEMORY:
-		for(i = 0; i < *sockets; i++) {
-			this_socket = 0;
-			for(j = 0; j < *cores; j++) {
-				for(k = 0; k < *threads; k++) {
-					info("jobid %d lllp_reserved[%d]=%d", 
-					     jobid, bit_index, lllp_reserved[bit_index]);
-					if(lllp_reserved[bit_index] > 0) {
-						*alloc_lps += 1;
-						if ((k == 0) && (cr_core_enabled)) {
-							alloc_cores[i]++;
-						}
-						this_socket++;
+	for(i = 0; i < *sockets; i++)
+		alloc_cores[i] = 0;
+
+	for(i = 0; i < *sockets; i++) {
+		for(j = 0; j < *cores; j++) {
+			for(k = 0; k < *threads; k++) {
+				info("jobid %d lllp_reserved[%d]=%d", jobid, 
+				     bit_index, lllp_reserved[bit_index]);
+				if(lllp_reserved[bit_index] > 0) {
+					if (k == 0) {
+						alloc_cores[i]++;
 					}
-					bit_index++;
 				}
-			}
-			if (this_socket > 0) {
-				*alloc_sockets += 1;
+				bit_index++;
 			}
 		}
-		
-		xassert(bit_index == (*sockets * *cores * *threads));
-		break;
-	default:
-		break;
 	}
+		
+	xassert(bit_index == (*sockets * *cores * *threads));
 
 #if(0)
-	info("_get_resources jobid %d hostname %s alloc_sockets %d alloc_lps %d ", 
-	     jobid, conf->hostname, *alloc_sockets, *alloc_lps);
-	if (cr_core_enabled) 
-		for (i = 0; i < *sockets; i++)
-			info("_get_resources %d hostname %s socket id %d cores %d ", 
-			     jobid, conf->hostname, i, alloc_cores[i]);
+	for (i = 0; i < *sockets; i++)
+		info("_get_resources %d hostname %s socket id %d cores %d ", 
+		     jobid, conf->hostname, i, alloc_cores[i]);
 #endif
 }
 	

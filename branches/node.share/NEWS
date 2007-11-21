@@ -1,6 +1,12 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins.
 
+* Changes in SLURM 1.3.0-pre6
+=============================
+ -- Add support for configurable number of jobs to share resources using the 
+    partition Shared parameter in slurm.conf (e.g. "Shared=FORCE:3" for two 
+    jobs to share the resources). From Chris Holmes, HP.
+
 * Changes in SLURM 1.3.0-pre5
 =============================
  -- Add select_g_reconfigure() function to node changes in slurmctld configuration
