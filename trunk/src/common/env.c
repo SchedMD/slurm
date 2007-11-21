@@ -77,6 +77,8 @@ strong_alias(env_array_overwrite_fmt,	slurm_env_array_overwrite_fmt);
 
 #define SU_WAIT_MSEC 8000	/* 8000 msec for /bin/su to return user 
 				 * env vars for --get-user-env option */
+#define ENV_BUFSIZE (64 * 1024)
+
 /*
  *  Return pointer to `name' entry in environment if found, or
  *   pointer to the last entry (i.e. NULL) if `name' is not
@@ -153,12 +155,12 @@ int
 setenvfs(const char *fmt, ...)
 {
 	va_list ap;
-	char buf[BUFSIZ];
+	char buf[ENV_BUFSIZE];
 	char *bufcpy;
 	int rc;
 
 	va_start(ap, fmt);
-	vsnprintf(buf, BUFSIZ, fmt, ap);
+	vsnprintf(buf, ENV_BUFSIZE, fmt, ap);
 	va_end(ap);
 	
 	bufcpy = xstrdup(buf);
@@ -169,7 +171,7 @@ setenvfs(const char *fmt, ...)
 int 
 setenvf(char ***envp, const char *name, const char *fmt, ...)
 {
-	char buf[BUFSIZ];
+	char buf[ENV_BUFSIZE];
 	char **ep = NULL;
 	char *str = NULL;
 	va_list ap;
@@ -177,7 +179,7 @@ setenvf(char ***envp, const char *name, const char *fmt, ...)
 	char *bufcpy;
 
 	va_start(ap, fmt);
-	vsnprintf (buf, BUFSIZ, fmt, ap);
+	vsnprintf (buf, ENV_BUFSIZE, fmt, ap);
 	va_end(ap);
 	bufcpy = xstrdup(buf);
 	
@@ -960,7 +962,7 @@ char **env_array_create(void)
 int env_array_append_fmt(char ***array_ptr, const char *name,
 			 const char *value_fmt, ...)
 {
-	char buf[BUFSIZ];
+	char buf[ENV_BUFSIZE];
 	char **ep = NULL;
 	char *str = NULL;
 	va_list ap;
@@ -975,7 +977,7 @@ int env_array_append_fmt(char ***array_ptr, const char *name,
 	}
 
 	va_start(ap, value_fmt);
-	vsnprintf (buf, BUFSIZ, value_fmt, ap);
+	vsnprintf (buf, ENV_BUFSIZE, value_fmt, ap);
 	va_end(ap);
 	
 	ep = _find_name_in_env(*array_ptr, name);
@@ -1036,7 +1038,7 @@ int env_array_append(char ***array_ptr, const char *name,
 int env_array_overwrite_fmt(char ***array_ptr, const char *name,
 			    const char *value_fmt, ...)
 {
-	char buf[BUFSIZ];
+	char buf[ENV_BUFSIZE];
 	char **ep = NULL;
 	char *str = NULL;
 	va_list ap;
@@ -1051,7 +1053,7 @@ int env_array_overwrite_fmt(char ***array_ptr, const char *name,
 	}
 
 	va_start(ap, value_fmt);
-	vsnprintf (buf, BUFSIZ, value_fmt, ap);
+	vsnprintf (buf, ENV_BUFSIZE, value_fmt, ap);
 	va_end(ap);
 	
 	xstrfmtcat (str, "%s=%s", name, buf);
@@ -1170,10 +1172,11 @@ static int _env_array_entry_splitter(const char *entry,
  */
 static int _env_array_putenv(const char *string)
 {
-	char name[BUFSIZ];
-	char value[BUFSIZ];
+	char name[ENV_BUFSIZE];
+	char value[ENV_BUFSIZE];
 
-	if (!_env_array_entry_splitter(string, name, BUFSIZ, value, BUFSIZ))
+	if (!_env_array_entry_splitter(string, name, ENV_BUFSIZE, value, 
+				       ENV_BUFSIZE))
 		return 0;
 	if (setenv(name, value, 1) == -1)
 		return 0;
@@ -1205,14 +1208,15 @@ void env_array_set_environment(char **env_array)
 void env_array_merge(char ***dest_array, const char **src_array)
 {
 	char **ptr;
-	char name[BUFSIZ];
-	char value[BUFSIZ];
+	char name[ENV_BUFSIZE];
+	char value[ENV_BUFSIZE];
 
 	if (src_array == NULL)
 		return;
 
 	for (ptr = (char **)src_array; *ptr != NULL; ptr++) {
-		_env_array_entry_splitter(*ptr, name, BUFSIZ, value, BUFSIZ);
+		_env_array_entry_splitter(*ptr, name, ENV_BUFSIZE, value, 
+					  ENV_BUFSIZE);
 		env_array_overwrite(dest_array, name, value);
 	}
 }
@@ -1240,8 +1244,8 @@ static void _strip_cr_nl(char *line)
  */
 char **_load_env_cache(const char *username)
 {
-	char *state_save_loc, fname[BUFSIZ];
-	char line[BUFSIZ], name[BUFSIZ], value[BUFSIZ];
+	char *state_save_loc, fname[ENV_BUFSIZE];
+	char line[ENV_BUFSIZE], name[ENV_BUFSIZE], value[ENV_BUFSIZE];
 	char **env = NULL;
 	FILE *fp;
 	int i;
@@ -1263,10 +1267,11 @@ char **_load_env_cache(const char *username)
 	info("Getting cached environment variables at %s", fname);
 	env = env_array_create();
 	while (1) {
-		if (!fgets(line, BUFSIZ, fp))
+		if (!fgets(line, ENV_BUFSIZE, fp))
 			break;
 		_strip_cr_nl(line);
-		_env_array_entry_splitter(line, name, BUFSIZ, value, BUFSIZ);
+		_env_array_entry_splitter(line, name, ENV_BUFSIZE, value, 
+					  ENV_BUFSIZE);
 		env_array_overwrite(&env, name, value);
 	}
 	fclose(fp);
@@ -1291,9 +1296,9 @@ char **_load_env_cache(const char *username)
 char **env_array_user_default(const char *username, int timeout)
 {
 	FILE *su;
-	char line[BUFSIZ];
-	char name[BUFSIZ];
-	char value[BUFSIZ];
+	char line[ENV_BUFSIZE];
+	char name[ENV_BUFSIZE];
+	char value[ENV_BUFSIZE];
 	char **env = NULL;
 	char *starttoken = "XXXXSLURMSTARTPARSINGHEREXXXX";
 	char *stoptoken  = "XXXXSLURMSTOPPARSINGHEREXXXXX";
@@ -1369,7 +1374,7 @@ char **env_array_user_default(const char *username, int timeout)
 		}
 		if (!(ufds.revents & POLLIN))
 			break;
-		while (fgets(line, BUFSIZ, su)) {
+		while (fgets(line, ENV_BUFSIZE, su)) {
 			if (!strncmp(line, starttoken, len)) {
 				found = 1;
 				break;
@@ -1409,14 +1414,15 @@ char **env_array_user_default(const char *username, int timeout)
 		/* stop at the line containing the stoptoken string */
 		if (!(ufds.revents & POLLIN))
 			break;
-		if ((fgets(line, BUFSIZ, su) == 0) ||
+		if ((fgets(line, ENV_BUFSIZE, su) == 0) ||
 		    (!strncmp(line, stoptoken, len))) {
 			found = 1;
 			break;
 		}
 
 		_strip_cr_nl(line);
-		_env_array_entry_splitter(line, name, BUFSIZ, value, BUFSIZ);
+		_env_array_entry_splitter(line, name, ENV_BUFSIZE, value, 
+					  ENV_BUFSIZE);
 		env_array_overwrite(&env, name, value);
 	}
 	close(fildes[0]);
