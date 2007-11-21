@@ -8,6 +8,7 @@ generated_html = \
 	bluegene.html \
 	checkpoint_plugins.html \
 	cons_res.html \
+	cons_res_share.html \
 	crypto_plugins.html \
 	dist_plane.html \
 	documentation.html \
