@@ -272,7 +272,7 @@ void _job_assign_tasks(struct select_cr_job *job,
 					continue;
 				if (i<=avail_cores[j]) {
 					job->alloc_cores[job_index][j]++;
-					taskcount++;
+					taskcount += usable_threads;
 				}
 			}
 			if (last_taskcount == taskcount) {
@@ -289,7 +289,7 @@ void _job_assign_tasks(struct select_cr_job *job,
 			for (i = 0; (i < avail_cores[j]) && 
 				    (taskcount<maxtasks); i++) {
 				job->alloc_cores[job_index][j]++;
-				taskcount++;
+				taskcount += usable_threads;
 			}
 			if (last_taskcount == taskcount) {
 				/* Avoid possible infinite loop on error */
