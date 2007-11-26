@@ -129,7 +129,7 @@ if {$matches != 1} {
 	send_user "\nFAILURE: sbatch didn't read the correct options from batch file\n"
 	set exit_code 1
 }
-if {$job_id == 0} {
+if {$job_id != 0} {
 	send_user "\nFAILURE: sbatch didn't reject job with invalid size\n"
 	cancel_job $job_id
 	set exit_code 1
