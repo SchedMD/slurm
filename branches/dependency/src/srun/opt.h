@@ -123,7 +123,7 @@ typedef struct srun_options {
 	unsigned int jobid;     /* --jobid=jobid                */
 	bool jobid_set;		/* true if jobid explicitly set */
 	char *mpi_type;		/* --mpi=type			*/
-	unsigned int dependency;/* --dependency, -P jobid	*/
+	char *dependency;	/* --dependency, -P type:jobid	*/
 	int nice;		/* --nice			*/
 	char *account;		/* --account, -U acct_name	*/
 	char *comment;		/* --comment			*/

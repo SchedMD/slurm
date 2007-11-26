@@ -374,7 +374,8 @@ struct job_record {
 	uint16_t other_port;		/* port for client communications */
 	char *account;			/* account number to charge */
 	char *comment;			/* arbitrary comment */
-	uint32_t dependency;		/* defer until this job completes */
+	char *dependency;		/* wait for other jobs */
+	List depend_list;		/* list of job_ptr:state pairs */
 	char *network;			/* network/switch requirement spec */
 	struct job_record *job_next;	/* next entry with same hash index */
         uint16_t cr_enabled;            /* specify if if Consumable

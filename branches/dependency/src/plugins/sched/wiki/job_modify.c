@@ -53,24 +53,8 @@ static void	_null_term(char *str)
 	}
 }
 
-/* return -1 on error */
-static int32_t _get_depend_id(char *str)
-{
-	/* stand-alone job_id */
-	if (isdigit(str[0]))
-		return (int32_t) atol(str);
-
-	if (strncasecmp(str, "afterany:", 9) != 0)	/* invalid spec */
-		return (int32_t) -1;
-
-	str += 9;
-	if (!isdigit(str[0]))
-		return (int32_t) -1;
-	return (int32_t) atol(str);
-}
-
 static int	_job_modify(uint32_t jobid, char *bank_ptr, 
-			int32_t depend_id, char *new_hostlist,
+			char *depend_ptr, char *new_hostlist,
 			uint32_t new_node_cnt, char *part_name_ptr, 
 			uint32_t new_time_limit)
 {
@@ -86,9 +70,11 @@ static int	_job_modify(uint32_t jobid, char *bank_ptr,
 		return ESLURM_DISABLED;
 	}
 
-	if (depend_id != -1) {
-		info("wiki: changing job dependency to %d", depend_id);
-		job_ptr->dependency = depend_id;
+	if (depend_ptr) {
+		info("wiki: changing job dependency to %s", depend_ptr);
+		xfree(job_ptr->dependency);
+		job_ptr->dependency = depend_ptr;
+/* FIXME: rebuild depend_list */
 	}
 
 	if (new_time_limit) {
@@ -207,7 +193,6 @@ extern int	job_modify_wiki(char *cmd_ptr, int *err_code, char **err_msg)
 	char *arg_ptr, *bank_ptr, *depend_ptr, *nodes_ptr;
 	char *host_ptr, *part_ptr, *time_ptr, *tmp_char;
 	int slurm_rc;
-	int depend_id = -1;
 	uint32_t jobid, new_node_cnt = 0, new_time_limit = 0;
 	static char reply_msg[128];
 	/* Locks: write job, read node and partition info */
@@ -246,14 +231,7 @@ extern int	job_modify_wiki(char *cmd_ptr, int *err_code, char **err_msg)
 	if (depend_ptr) {
 		depend_ptr[6] = ':';
 		depend_ptr += 7;
-		depend_id = _get_depend_id(depend_ptr);
-		if (depend_id == -1) {
-			*err_code = -300;
-			*err_msg = "MODIFYJOB has invalid DEPEND specificiation";
-			error("wiki: MODIFYJOB has invalid DEPEND spec: %s",
-				depend_ptr);
-			return -1;
-		}
+		_null_term(depend_ptr);
 	}
 	if (host_ptr) {
 		host_ptr[8] = ':';
@@ -286,7 +264,7 @@ extern int	job_modify_wiki(char *cmd_ptr, int *err_code, char **err_msg)
 	}
 
 	lock_slurmctld(job_write_lock);
-	slurm_rc = _job_modify(jobid, bank_ptr, depend_id, host_ptr,
+	slurm_rc = _job_modify(jobid, bank_ptr, depend_ptr, host_ptr,
 			new_node_cnt, part_ptr, new_time_limit);
 	unlock_slurmctld(job_write_lock);
 	if (slurm_rc != SLURM_SUCCESS) {

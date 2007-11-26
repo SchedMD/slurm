@@ -234,7 +234,7 @@ static void _opt_default()
 	opt.job_name = NULL;
 	opt.jobid    = NO_VAL;
 	opt.jobid_set = false;
-	opt.dependency = NO_VAL;
+	opt.dependency = NULL;
 	opt.account  = NULL;
 	opt.comment  = NULL;
 
@@ -892,7 +892,8 @@ static void _set_options(int argc, char **argv)
 			opt.constraints = xstrdup(optarg);
 			break;
 		case 'd':
-			opt.dependency = _get_int(optarg, "dependency");
+			xfree(opt.dependency);
+			opt.dependency = xstrdup(optarg);
 			break;
 		case 'D':
 			xfree(opt.cwd);
@@ -1928,10 +1929,7 @@ static void _opt_list()
 		info("nice           : %d", opt.nice);
 	info("account        : %s", opt.account);
 	info("comment        : %s", opt.comment);
-	if (opt.dependency == NO_VAL)
-		info("dependency     : none");
-	else
-		info("dependency     : %u", opt.dependency);
+	info("dependency     : %s", opt.dependency);
 	str = print_constraints();
 	info("constraints    : %s", str);
 	xfree(str);
@@ -1986,7 +1984,7 @@ static void _usage(void)
 "              [--jobid=id] [--verbose] [--gid=group] [--uid=user]\n"
 "              [-W sec] [--minsockets=n] [--mincores=n] [--minthreads=n]\n"
 "              [--contiguous] [--mincpus=n] [--mem=MB] [--tmp=MB] [-C list]\n"
-"              [--account=name] [--dependency=jobid] [--comment=name]\n"
+"              [--account=name] [--dependency=type:jobid] [--comment=name]\n"
 #ifdef HAVE_BG		/* Blue gene specific options */
 "              [--geometry=XxYxZ] [--conn-type=type] [--no-rotate] [ --reboot]\n"
 "              [--blrts-image=path] [--linux-image=path]\n"
@@ -2024,7 +2022,7 @@ static void _help(void)
 "      --jobid=id              run under already allocated job\n"
 "  -v, --verbose               verbose mode (multiple -v's increase verbosity)\n"
 "  -q, --quiet                 quiet mode (suppress informational messages)\n"
-"  -d, --dependency=jobid      defer job until specified jobid completes\n"
+"  -d, --dependency=type:jobid defer job until condition on jobid is satisfied\n"
 "  -D, --workdir=directory     set working directory for batch script\n"
 "      --nice[=value]          decrease secheduling priority by value\n"
 "  -O, --overcommit            overcommit resources\n"

@@ -696,12 +696,8 @@ static const char *_set_job_msg(job_desc_msg_t *job_msg, const char *new_text,
 		type = "account";
 		break;
 	case SORTID_DEPENDENCY:
-		temp_int = strtol(new_text, (char **)NULL, 10);
-		
+		job_msg->dependency = xstrdup(new_text);	
 		type = "dependency";
-		if(temp_int <= 0)
-			goto return_error;
-		job_msg->dependency = (uint32_t)temp_int;
 		break;
 #ifdef HAVE_BG
 	case SORTID_GEOMETRY:
@@ -1396,14 +1392,10 @@ static void _layout_job_record(GtkTreeView *treeview,
 						 SORTID_FEATURES),
 				   job_ptr->features);
 	
-	if(job_ptr->dependency > 0) 
-		sprintf(tmp_char, "%u", job_ptr->dependency);
-	else 
-		sprintf(tmp_char, " ");
 	add_display_treestore_line(update, treestore, &iter, 
 				   find_col_name(display_data_job,
 						 SORTID_DEPENDENCY),
-				   tmp_char);
+				   job_ptr->dependency);
 	
 	add_display_treestore_line(update, treestore, &iter, 
 				   find_col_name(display_data_job,
@@ -1689,11 +1681,10 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 
 	gtk_tree_store_set(treestore, iter,
 			   SORTID_ACCOUNT, job_ptr->account, -1);
-	if(job_ptr->dependency > 0) {
-		sprintf(tmp_char, "%u", job_ptr->dependency);
-		gtk_tree_store_set(treestore, iter,
-				   SORTID_DEPENDENCY, tmp_char, -1);
-	}
+
+	gtk_tree_store_set(treestore, iter,
+			   SORTID_DEPENDENCY, job_ptr->dependency, -1);
+
 	sprintf(tmp_char, "%u", job_ptr->priority);
 	gtk_tree_store_set(treestore, iter,
 			   SORTID_PRIORITY, tmp_char, -1);

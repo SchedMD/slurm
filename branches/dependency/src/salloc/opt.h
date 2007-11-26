@@ -83,7 +83,7 @@ typedef struct salloc_options {
 				 * plane> */      
 	char *job_name;		/* --job-name=,     -J name	*/
 	unsigned int jobid;	/* --jobid=jobid		*/
-	unsigned int dependency;/* --dependency, -P jobid	*/
+	char *dependency;	/* --dependency, -P type:jobid	*/
 	int nice;		/* --nice			*/
 	char *account;		/* --account, -U acct_name	*/
 	char *comment;		/* --comment			*/

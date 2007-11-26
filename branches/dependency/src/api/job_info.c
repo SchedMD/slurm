@@ -378,7 +378,7 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 
 	/****** Line 11 ******/
 	snprintf(tmp_line, sizeof(tmp_line), 
-		"Dependency=%u Account=%s Reason=%s Network=%s",
+		"Dependency=%s Account=%s Reason=%s Network=%s",
 		job_ptr->dependency, job_ptr->account,
 		job_reason_string(job_ptr->state_reason), 
 		job_ptr->network);

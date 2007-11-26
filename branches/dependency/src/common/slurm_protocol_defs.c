@@ -200,6 +200,7 @@ void slurm_free_job_desc_msg(job_desc_msg_t * msg)
 		xfree(msg->account);
 		xfree(msg->network);
 		xfree(msg->comment);
+		xfree(msg->dependency);
 		xfree(msg->resp_host);
 		xfree(msg->blrtsimage);
 		xfree(msg->linuximage);
@@ -267,6 +268,7 @@ void slurm_free_job_info_members(job_info_t * job)
 		xfree(job->exc_node_inx);
 		xfree(job->network);
 		xfree(job->comment);
+		xfree(job->dependency);
 		xfree(job->work_dir);
 		xfree(job->command);
 	}
