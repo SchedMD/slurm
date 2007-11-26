@@ -23,6 +23,8 @@ documents those changes that are of interest to users and admins.
     the job. Only send it to specific nodes which have not reported completion.
  -- Support larger environment variables 64K instead of BUFSIZ (8k on some 
     systems).
+ -- If a job is being requeued, job step create requests will print a 
+    warning and repeatedly retry rather than aborting.
 
 * Changes in SLURM 1.2.19
 =========================
