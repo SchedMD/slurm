@@ -40,6 +40,8 @@ COMMAND CHANGES
 * sacct -c can now be used to view job completion data
 * scontrol "notify" command added to send message to stdout of srun for 
   specified job id. 
+* Support has been added for a much richer job dependency specification 
+  including testing of exit codes and multiple dependencies.
 
 CONFIGURATION FILE CHANGES
 
@@ -73,7 +75,6 @@ CONFIGURATION FILE CHANGES
 * The partition MaxTime format now accepts minutes, minutes:seconds, 
   hours:minutes:seconds, days-hours, days-hours:minutes, 
   days-hours:minutes:seconds or "UNLIMITED".
- 
 * See "man slurm.conf" for more information.
 
 OTHER CHANGES
