@@ -363,8 +363,7 @@ static bool
 _retry()
 {
 	static int  retries = 0;
-	static char *msg = "Slurm controller not responding, "
-		           "sleeping and retrying.";
+	static char *msg = "Slurm job queue full, sleeping and retrying.";
 
 	if (errno == ESLURM_ERROR_ON_DESC_TO_RECORD_COPY) {
 		if (retries == 0)

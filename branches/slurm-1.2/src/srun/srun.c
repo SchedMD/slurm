@@ -597,12 +597,12 @@ _print_job_information(resource_allocation_response_msg_t *resp)
 static int
 _run_batch_job(const char *argv0)
 {
-	int file_type, retries;
+	int file_type, retries = 0;
 	int rc = SLURM_SUCCESS;
 	job_desc_msg_t *req;
 	submit_response_msg_t *resp;
 	char *script;
-	void (*log_msg) (const char *fmt, ...) = (void (*)) &error;
+	static char *msg = "Slurm job queue full, sleeping and retrying.";
 
 	if ((remote_argc == 0) || (remote_argv[0] == NULL))
 		return SLURM_ERROR;
@@ -629,15 +629,15 @@ _run_batch_job(const char *argv0)
 	if (!opt.jobid_set)
 		req->job_id = NO_VAL;
 
-	retries = 0;
-	while (  (retries < MAX_RETRIES)
-              && (rc = slurm_submit_batch_job(req, &resp)) < 0) {
-
-		if (errno != ESLURM_ERROR_ON_DESC_TO_RECORD_COPY)
+	while ((rc = slurm_submit_batch_job(req, &resp)) < 0) {
+		if ((errno != ESLURM_ERROR_ON_DESC_TO_RECORD_COPY) ||
+		    (retries >= MAX_RETRIES))
 			return (error("Unable to submit batch job: %m"));
 		
-		(*log_msg) ("Controller not responding, retrying...");
-		log_msg = &debug;
+		if (retries == 0)
+			error(msg);
+		else
+			debug(msg);
 		sleep (++retries);
 	}
 
