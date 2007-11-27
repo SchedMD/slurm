@@ -141,6 +141,7 @@ static void _opt_pbs_batch_script(const void *body, int size);
 
 /* set options based upon env vars  */
 static void _opt_env(void);
+static void _proc_get_user_env(char *optarg);
 
 /* list known options and their settings  */
 static void  _opt_list(void);
@@ -446,7 +447,9 @@ static void _opt_default()
 	opt.ifname = xstrdup("/dev/null");
 	opt.ofname = NULL;
 	opt.efname = NULL;
-	opt.get_user_env = -1;
+
+	opt.get_user_env_time = -1;
+	opt.get_user_env_mode = -1;
 }
 
 /*---[ env var processing ]-----------------------------------------------*/
@@ -1293,9 +1296,9 @@ static void _set_options(int argc, char **argv)
 			break;
 		case LONG_OPT_GET_USER_ENV:
 			if (optarg)
-				opt.get_user_env = strtol(optarg, NULL, 10);
+				_proc_get_user_env(optarg);
 			else
-				opt.get_user_env = 0;
+				opt.get_user_env_time = 0;
 			break;
 		default:
 			fatal("Unrecognized command line parameter %c",
@@ -1306,6 +1309,23 @@ static void _set_options(int argc, char **argv)
 	if (optind < argc) {
 		fatal("Invalid argument: %s", argv[optind]);
 	}
+}
+
+static void _proc_get_user_env(char *optarg)
+{
+	char *end_ptr;
+
+	if ((optarg[0] >= '0') && (optarg[0] <= '9'))
+		opt.get_user_env_time = strtol(optarg, &end_ptr, 10);
+	else
+		opt.get_user_env_time = 0;
+
+	if ((end_ptr == NULL) || (end_ptr[0] == '\0'))
+		return;
+	if      ((end_ptr[0] == 's') || (end_ptr[0] == 'S'))
+		opt.get_user_env_mode = 1;
+	else if ((end_ptr[0] == 'l') || (end_ptr[0] == 'L'))
+		opt.get_user_env_mode = 2;
 }
 
 static void _set_pbs_options(int argc, char **argv)

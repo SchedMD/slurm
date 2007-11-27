@@ -1272,12 +1272,13 @@ char **_load_env_cache(const char *username)
  *    in the event that option 1 times out.
  *
  * timeout value is in seconds or zero for default (8 secs) 
+ * mode is 1 for short ("su <user>"), 2 for long ("su - <user>")
  * On error, returns NULL.
  *
  * NOTE: The calling process must have an effective uid of root for
  * this function to succeed.
  */
-char **env_array_user_default(const char *username, int timeout)
+char **env_array_user_default(const char *username, int timeout, int mode)
 {
 	FILE *su;
 	char line[ENV_BUFSIZE];
@@ -1316,11 +1317,17 @@ char **env_array_user_default(const char *username, int timeout)
 		snprintf(cmdstr, sizeof(cmdstr),
 			 "echo; echo; echo; echo %s; env; echo %s",
 			 starttoken, stoptoken);
+		if      (mode == 1)
+			execl("/bin/su", "su", username, "-c", cmdstr, NULL);
+		else if (mode == 2)
+			execl("/bin/su", "su", "-", username, "-c", cmdstr, NULL);
+		else {	/* Default system configuration */
 #ifdef LOAD_ENV_NO_LOGIN
-		execl("/bin/su", "su", username, "-c", cmdstr, NULL);
+			execl("/bin/su", "su", username, "-c", cmdstr, NULL);
 #else
-		execl("/bin/su", "su", "-", username, "-c", cmdstr, NULL);
+			execl("/bin/su", "su", "-", username, "-c", cmdstr, NULL);
 #endif
+		}
 		exit(1);
 	}
 

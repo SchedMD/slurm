@@ -116,7 +116,8 @@ typedef struct sbatch_options {
 	char *ifname;		/* input file name		*/
 	char *ofname;		/* output file name		*/
 	char *efname;		/* error file name		*/
-	int get_user_env;	/* --get-user-env[=timeout]	*/
+	int get_user_env_time;	/* --get-user-env[=timeout]	*/
+	int get_user_env_mode;	/* --get-user-env=[S|L]         */
 } opt_t;
 
 extern opt_t opt;

@@ -25,6 +25,7 @@ documents those changes that are of interest to users and admins.
     systems).
  -- If a job is being requeued, job step create requests will print a 
     warning and repeatedly retry rather than aborting.
+ -- Add optional mode value to srun and sbatch --get-user-env option.
 
 * Changes in SLURM 1.2.19
 =========================
