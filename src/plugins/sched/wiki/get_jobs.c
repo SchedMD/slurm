@@ -39,6 +39,7 @@
 #include <sys/types.h>
 
 #include "./msg.h"
+#include "src/common/hostlist.h"
 #include "src/common/list.h"
 #include "src/common/uid.h"
 #include "src/slurmctld/locks.h"
@@ -57,6 +58,8 @@ static uint32_t	_get_job_submit_time(struct job_record *job_ptr);
 static uint32_t	_get_job_suspend_time(struct job_record *job_ptr);
 static uint32_t	_get_job_tasks(struct job_record *job_ptr);
 static uint32_t	_get_job_time_limit(struct job_record *job_ptr);
+static char *	_task_list(struct job_record *job_ptr);
+
 
 #define SLURM_INFO_ALL		0
 #define SLURM_INFO_VOLITILE	1
@@ -210,8 +213,7 @@ static char *	_dump_job(struct job_record *job_ptr, int state_info)
 		xstrcat(buf, tmp);
 		xfree(hosts);
 	} else if (!IS_JOB_FINISHED(job_ptr)) {
-		char *hosts = bitmap2wiki_node_name(
-			job_ptr->node_bitmap);
+		char *hosts = _task_list(job_ptr);
 		snprintf(tmp, sizeof(tmp),
 			"TASKLIST=%s;", hosts);
 		xstrcat(buf, tmp);
@@ -231,15 +233,13 @@ static char *	_dump_job(struct job_record *job_ptr, int state_info)
 		(uint32_t) _get_job_time_limit(job_ptr));
 	xstrcat(buf, tmp);
 
-	if (job_ptr->job_state  == JOB_PENDING) {
-		/* Don't report actual tasks or nodes allocated since
-		 * this can impact requeue on heterogenous clusters */
-		snprintf(tmp, sizeof(tmp),
-			"TASKS=%u;NODES=%u;",
-			_get_job_tasks(job_ptr),
-			_get_job_min_nodes(job_ptr));
-		xstrcat(buf, tmp);
-	}
+	/* Don't report actual tasks or nodes allocated since
+	 * this can impact requeue on heterogenous clusters */
+	snprintf(tmp, sizeof(tmp),
+		"TASKS=%u;NODES=%u;",
+		_get_job_tasks(job_ptr),
+		_get_job_min_nodes(job_ptr));
+	xstrcat(buf, tmp);
 
 	snprintf(tmp, sizeof(tmp),
 		"DPROCS=%u;",
@@ -271,6 +271,18 @@ static char *	_dump_job(struct job_record *job_ptr, int state_info)
 		snprintf(tmp, sizeof(tmp),
 			"SUSPENDTIME=%u;", suspend_time);
 		xstrcat(buf, tmp);
+	}
+
+	if (job_ptr->account) {
+		snprintf(tmp, sizeof(tmp),
+			"ACCOUNT=%s;", job_ptr->account);
+		xstrcat(buf, tmp);
+	}
+
+	if (job_ptr->comment && job_ptr->comment[0]) {
+		snprintf(tmp,sizeof(tmp),
+			"COMMENT=%s;", job_ptr->comment);
+		xstrcat(buf,tmp);
 	}
 
 	if (state_info == SLURM_INFO_VOLITILE)
@@ -440,5 +452,39 @@ extern char *   bitmap2wiki_node_name(bitstr_t *bitmap)
 		first = 0;
 		xstrcat(buf, node_record_table_ptr[i].name);
 	}
+	return buf;
+}
+
+
+/* Return task list in Maui format: tux0:tux0:tux1:tux1:tux2 */
+static char * _task_list(struct job_record *job_ptr)
+{
+	int i, j, task_cnt;
+	char *buf = NULL, *host;
+	hostlist_t hl = hostlist_create(job_ptr->nodes);
+
+	buf = xstrdup("");
+	if (hl == NULL)
+		return buf;
+
+	for (i=0; i<job_ptr->alloc_lps_cnt; i++) {
+		host = hostlist_shift(hl);
+		if (host == NULL) {
+			error("bad alloc_lps_cnt for job %u (%s, %d)", 
+				job_ptr->job_id, job_ptr->nodes,
+				job_ptr->alloc_lps_cnt);
+			break;
+		}
+		task_cnt = job_ptr->alloc_lps[i];
+		if (job_ptr->details && job_ptr->details->cpus_per_task)
+			task_cnt /= job_ptr->details->cpus_per_task;
+		for (j=0; j<task_cnt; j++) {
+			if (buf)
+				xstrcat(buf, ":");
+			xstrcat(buf, host);
+		}
+		free(host);
+	}
+	hostlist_destroy(hl);
 	return buf;
 }
