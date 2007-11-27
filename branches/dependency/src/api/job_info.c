@@ -378,8 +378,17 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 
 	/****** Line 11 ******/
 	snprintf(tmp_line, sizeof(tmp_line), 
-		"Dependency=%s Account=%s Reason=%s Network=%s",
-		job_ptr->dependency, job_ptr->account,
+		"Dependency=%s Account=%s",
+		job_ptr->dependency, job_ptr->account);
+	xstrcat(out, tmp_line);
+	if (one_liner)
+		xstrcat(out, " ");
+	else
+		xstrcat(out, "\n   ");
+
+	/****** Line 12 ******/
+	snprintf(tmp_line, sizeof(tmp_line), 
+		"Reason=%s Network=%s",
 		job_reason_string(job_ptr->state_reason), 
 		job_ptr->network);
 	xstrcat(out, tmp_line);
@@ -388,7 +397,7 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 	else
 		xstrcat(out, "\n   ");
 
-	/****** Line 12 ******/
+	/****** Line 13 ******/
 	snprintf(tmp_line, sizeof(tmp_line), "Req%s=%s Req%sIndices=", 
 		nodelist, job_ptr->req_nodes, nodelist);
 	xstrcat(out, tmp_line);
@@ -405,7 +414,7 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 	else
 		xstrcat(out, "\n   ");
 
-	/****** Line 13 ******/
+	/****** Line 14 ******/
 	snprintf(tmp_line, sizeof(tmp_line), "Exc%s=%s Exc%sIndices=", 
 		nodelist, job_ptr->exc_nodes, nodelist);
 	xstrcat(out, tmp_line);
@@ -422,7 +431,7 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 	else
 		xstrcat(out, "\n   ");
 
-	/****** Line 14 ******/
+	/****** Line 15 ******/
 	slurm_make_time_str((time_t *)&job_ptr->submit_time, time_str, 
 		sizeof(time_str));
 	sprintf(tmp_line, "SubmitTime=%s ", time_str);
@@ -437,7 +446,7 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 		  time_str, (long int)job_ptr->pre_sus_time);
 	xstrcat(out, tmp_line);
 
-	/****** Lines 15, 16 (optional, batch only) ******/
+	/****** Lines 16, 17 (optional, batch only) ******/
 	if (job_ptr->batch_flag) {
 		if (one_liner)
 			xstrcat(out, " ");
@@ -454,7 +463,7 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 		xstrcat(out, tmp_line);
 	}
 
-	/****** Line 17 (optional) ******/
+	/****** Line 18 (optional) ******/
 	if (job_ptr->comment) {
 		if (one_liner)
 			xstrcat(out, " ");
@@ -464,7 +473,7 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 		xstrcat(out, tmp_line);
 	}
 
-	/****** Line 18 (optional) ******/
+	/****** Line 19 (optional) ******/
 	select_g_sprint_jobinfo(job_ptr->select_jobinfo,
 				select_buf, sizeof(select_buf),
 				SELECT_PRINT_MIXED);
@@ -475,7 +484,7 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 			xstrcat(out, "\n   ");
 		xstrcat(out, select_buf);
 	}
-	/****** Line 19 (optional) ******/
+	/****** Line 20 (optional) ******/
 	select_g_sprint_jobinfo(job_ptr->select_jobinfo,
 				select_buf, sizeof(select_buf),
 				SELECT_PRINT_BLRTS_IMAGE);
@@ -488,7 +497,7 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 			 "BlrtsImage=%s", select_buf);
 		xstrcat(out, tmp_line);
 	}
-	/****** Line 20 (optional) ******/
+	/****** Line 21 (optional) ******/
 	select_g_sprint_jobinfo(job_ptr->select_jobinfo,
 				select_buf, sizeof(select_buf),
 				SELECT_PRINT_LINUX_IMAGE);
@@ -501,7 +510,7 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 			 "LinuxImage=%s", select_buf);
 		xstrcat(out, tmp_line);
 	}
-	/****** Line 21 (optional) ******/
+	/****** Line 22 (optional) ******/
 	select_g_sprint_jobinfo(job_ptr->select_jobinfo,
 				select_buf, sizeof(select_buf),
 				SELECT_PRINT_MLOADER_IMAGE);
@@ -514,7 +523,7 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 			 "MloaderImage=%s", select_buf);
 		xstrcat(out, tmp_line);
 	}
-	/****** Line 22 (optional) ******/
+	/****** Line 23 (optional) ******/
 	select_g_sprint_jobinfo(job_ptr->select_jobinfo,
 				select_buf, sizeof(select_buf),
 				SELECT_PRINT_RAMDISK_IMAGE);

@@ -2777,6 +2777,9 @@ static void _list_delete_job(void *job_entry)
 	xfree(job_ptr->alloc_lps);
 	xfree(job_ptr->used_lps);
 	xfree(job_ptr->comment);
+	xfree(job_ptr->dependency);
+	if (job_ptr->depend_list)
+		list_destroy(job_ptr->depend_list);
 	select_g_free_jobinfo(&job_ptr->select_jobinfo);
 	if (job_ptr->step_list) {
 		delete_step_records(job_ptr, 0);
