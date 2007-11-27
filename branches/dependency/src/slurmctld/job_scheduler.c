@@ -512,7 +512,7 @@ extern int test_job_dependency(struct job_record *job_ptr)
 				break;
 		} else if (dep_ptr->depend_type == SLURM_DEPEND_AFTER_NOT_OK) {
 			if (!IS_JOB_FINISHED(dep_ptr->job_ptr))
-				continue;
+				break;
 			if ((dep_ptr->job_ptr->job_state & (~JOB_COMPLETING))
 			    != JOB_COMPLETE)
 				list_delete_item(depend_iter);
@@ -522,7 +522,7 @@ extern int test_job_dependency(struct job_record *job_ptr)
 			}
 		} else if (dep_ptr->depend_type == SLURM_DEPEND_AFTER_OK) {
 			if (!IS_JOB_FINISHED(dep_ptr->job_ptr))
-				continue;
+				break;
 			if ((dep_ptr->job_ptr->job_state & (~JOB_COMPLETING))
 			    == JOB_COMPLETE)
 				list_delete_item(depend_iter);

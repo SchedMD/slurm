@@ -4438,7 +4438,13 @@ extern bool job_independent(struct job_record *job_ptr)
 		job_ptr->state_reason = WAIT_DEPENDENCY;
 		return false;
 	} else {	/* rc == 2 */
-		/* FIXME: NEED TO CANCEL THE JOB */
+		time_t now = time(NULL);
+		info("Job dependency can't be satisfied, cancelling job %u",
+			job_ptr->job_id);
+		job_ptr->job_state	= JOB_CANCELLED;
+		job_ptr->start_time	= now;
+		job_ptr->end_time	= now;
+		job_completion_logger(job_ptr);
 		return false;
 	}
 }
