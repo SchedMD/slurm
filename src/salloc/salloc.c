@@ -250,7 +250,8 @@ static int fill_job_desc_from_opts(job_desc_msg_t *desc)
 		desc->max_nodes = opt.max_nodes;
 	desc->user_id = opt.uid;
 	desc->group_id = opt.gid;
-	desc->dependency = opt.dependency;
+	if (opt.dependency)
+		desc->dependency = xstrdup(opt.dependency);
 	desc->task_dist  = opt.distribution;
 	if (opt.plane_size != NO_VAL)
 		desc->plane_size = opt.plane_size;

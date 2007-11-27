@@ -58,6 +58,7 @@
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/srun_comm.h"
 
+#define _DEBUG 0
 #define MAX_RETRIES 10
 
 struct job_queue {
@@ -67,6 +68,7 @@ struct job_queue {
 };
 
 static int  _build_job_queue(struct job_queue **job_queue);
+static void _depend_list_del(void *dep_ptr);
 static void _launch_job(struct job_record *job_ptr);
 static void _sort_job_queue(struct job_queue *job_queue,
 			    int job_queue_size);
@@ -439,4 +441,215 @@ extern int make_batch_job_cred(batch_job_launch_msg_t *launch_msg_ptr)
 		return SLURM_SUCCESS;
 	error("slurm_cred_create failure for batch job %u", cred_arg.jobid);
 	return SLURM_ERROR;
+}
+
+static void _depend_list_del(void *dep_ptr)
+{
+	xfree(dep_ptr);
+}
+
+/* Print a job's dependency information based upon job_ptr->depend_list */
+extern void print_job_dependency(struct job_record *job_ptr)
+{
+	ListIterator depend_iter;
+	struct depend_spec *dep_ptr;
+	char *dep_str;
+
+	info("Dependency information for job %u", job_ptr->job_id);
+	if (!job_ptr->depend_list)
+		return;
+
+	depend_iter = list_iterator_create(job_ptr->depend_list);
+	if (!depend_iter)
+		fatal("list_iterator_create memory allocation failure");
+	while ((dep_ptr = list_next(depend_iter))) {
+		if      (dep_ptr->depend_type == SLURM_DEPEND_AFTER)
+			dep_str = "after";
+		else if (dep_ptr->depend_type == SLURM_DEPEND_AFTER_ANY)
+			dep_str = "afterany";
+		else if (dep_ptr->depend_type == SLURM_DEPEND_AFTER_NOT_OK)
+			dep_str = "afternotok";
+		else if (dep_ptr->depend_type == SLURM_DEPEND_AFTER_OK)
+			dep_str = "afterok";
+		else
+			dep_str = "unknown";
+		info("  %s:%u", dep_str, dep_ptr->job_id);
+	}
+	list_iterator_destroy(depend_iter);
+}
+
+/*
+ * Determine if a job's dependencies are met
+ * RET: 0 = no dependencies
+ *      1 = dependencies remain
+ *      2 = failure (job completion code not per dependency), delete the job
+ */
+extern int test_job_dependency(struct job_record *job_ptr)
+{
+	ListIterator depend_iter;
+	struct depend_spec *dep_ptr;
+	bool failure = false;
+
+	if (!job_ptr->depend_list)
+		return 0;
+
+	depend_iter = list_iterator_create(job_ptr->depend_list);
+	if (!depend_iter)
+		fatal("list_iterator_create memory allocation failure");
+	while ((dep_ptr = list_next(depend_iter))) {
+		if (dep_ptr->job_ptr->job_id != dep_ptr->job_id) {
+			/* job is gone, dependency lifted */
+			list_delete_item(depend_iter);
+		} else if (dep_ptr->depend_type == SLURM_DEPEND_AFTER) {
+			if (!IS_JOB_PENDING(dep_ptr->job_ptr))
+				list_delete_item(depend_iter);
+			else
+				break;
+		} else if (dep_ptr->depend_type == SLURM_DEPEND_AFTER_ANY) {
+			if (IS_JOB_FINISHED(dep_ptr->job_ptr))
+				list_delete_item(depend_iter);
+			else
+				break;
+		} else if (dep_ptr->depend_type == SLURM_DEPEND_AFTER_NOT_OK) {
+			if (!IS_JOB_FINISHED(dep_ptr->job_ptr))
+				break;
+			if ((dep_ptr->job_ptr->job_state & (~JOB_COMPLETING))
+			    != JOB_COMPLETE)
+				list_delete_item(depend_iter);
+			else {
+				failure = true;
+				break;
+			}
+		} else if (dep_ptr->depend_type == SLURM_DEPEND_AFTER_OK) {
+			if (!IS_JOB_FINISHED(dep_ptr->job_ptr))
+				break;
+			if ((dep_ptr->job_ptr->job_state & (~JOB_COMPLETING))
+			    == JOB_COMPLETE)
+				list_delete_item(depend_iter);
+			else {
+				failure = true;
+				break;
+			}
+		} else
+			failure = true;
+	}
+	list_iterator_destroy(depend_iter);
+
+	if (failure)
+		return 2;
+	if (dep_ptr)
+		return 1;
+	return 0;
+}
+
+/*
+ * Parse a job dependency string and use it to establish a "depend_spec" 
+ * list of dependencies. We accept both old format (a single job ID) and
+ * new format (e.g. "afterok:123:124,after:128").
+ * IN job_ptr - job record to have dependency and depend_list updated
+ * IN new_depend - new dependency description
+ * RET returns an error code from slurm_errno.h
+ */
+extern int update_job_dependency(struct job_record *job_ptr, char *new_depend)
+{
+	int rc = SLURM_SUCCESS;
+	uint16_t depend_type = 0;
+	uint32_t job_id = 0;
+	char *tok = new_depend, *sep_ptr, *sep_ptr2;
+	List new_depend_list = NULL;
+	struct depend_spec *dep_ptr;
+	struct job_record *dep_job_ptr;
+	char dep_buf[32];
+
+	/* Clear dependencies on NULL or empty dependency input */
+	if ((new_depend == NULL) || (new_depend[0] == '\0')) {
+		xfree(job_ptr->dependency);
+		if (job_ptr->depend_list)
+			list_destroy(job_ptr->depend_list);
+		return rc;
+
+	}
+
+	new_depend_list = list_create(_depend_list_del);
+	/* validate new dependency string */
+	while (rc == SLURM_SUCCESS) {
+		sep_ptr = strchr(tok, ':');
+		if ((sep_ptr == NULL) && (job_id == 0)) {
+			job_id = strtol(tok, &sep_ptr, 10);
+			if ((sep_ptr == NULL) || (sep_ptr[0] != '\0') ||
+			    (job_id <= 0) || (job_id == job_ptr->job_id)) {
+				rc = EINVAL;
+				break;
+			}
+			/* old format, just a single job_id */
+			dep_job_ptr = find_job_record(job_id);
+			if (!dep_job_ptr)	/* assume already done */
+				break;
+			snprintf(dep_buf, sizeof(dep_buf), "afterany:%u", job_id);
+			new_depend = dep_buf;
+			dep_ptr = xmalloc(sizeof(struct depend_spec));
+			dep_ptr->depend_type = SLURM_DEPEND_AFTER_ANY;
+			dep_ptr->job_id = job_id;
+			dep_ptr->job_ptr = dep_job_ptr;
+			if (!list_append(new_depend_list, dep_ptr))
+				fatal("list_append memory allocation failure");
+			break;
+		}
+
+		if      (strncasecmp(tok, "afternotok", 10) == 0)
+			depend_type = SLURM_DEPEND_AFTER_NOT_OK;
+		else if (strncasecmp(tok, "afterany", 8) == 0)
+			depend_type = SLURM_DEPEND_AFTER_ANY;
+		else if (strncasecmp(tok, "afterok", 7) == 0)
+			depend_type = SLURM_DEPEND_AFTER_OK;
+		else if (strncasecmp(tok, "after", 5) == 0)
+			depend_type = SLURM_DEPEND_AFTER;
+		else {
+			rc = EINVAL;
+			break;
+		}
+		sep_ptr++;	/* skip over ":" */
+		while (rc == SLURM_SUCCESS) {
+			job_id = strtol(sep_ptr, &sep_ptr2, 10);
+			if ((sep_ptr2 == NULL) || 
+			    (job_id <= 0) || (job_id == job_ptr->job_id) ||
+			    ((sep_ptr2[0] != '\0') && (sep_ptr2[0] != ',') && 
+			     (sep_ptr2[0] != ':'))) {
+				rc = EINVAL;
+				break;
+			}
+			dep_job_ptr = find_job_record(job_id);
+			if (dep_job_ptr) {	/* job still active */
+				dep_ptr = xmalloc(sizeof(struct depend_spec));
+				dep_ptr->depend_type = depend_type;
+				dep_ptr->job_id = job_id;
+				dep_ptr->job_ptr = dep_job_ptr;
+				if (!list_append(new_depend_list, dep_ptr)) {
+					fatal("list_append memory allocation "
+						"failure");
+				}
+			}
+			if (sep_ptr2[0] != ':')
+				break;
+			sep_ptr = sep_ptr2 + 1;	/* skip over ":" */
+		}
+		if (sep_ptr2[0] == ',')
+			tok = sep_ptr2 + 1;
+		else
+			break;
+	}
+
+	if (rc == SLURM_SUCCESS) {
+		xfree(job_ptr->dependency);
+		job_ptr->dependency = xstrdup(new_depend);
+		if (job_ptr->depend_list)
+			list_destroy(job_ptr->depend_list);
+		job_ptr->depend_list = new_depend_list;
+#if _DEBUG
+		print_job_dependency(job_ptr);
+#endif
+	} else {
+		list_destroy(new_depend_list);
+	}
+	return rc;
 }

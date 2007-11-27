@@ -372,7 +372,7 @@ static void	_get_job_comment(struct job_record *job_ptr,
 	if (job_ptr->dependency) {
 		/* Kludge for job dependency set via srun */
 		size += snprintf((buffer + size), (buf_size - size),
-			"DEPEND=afterany:%u", job_ptr->dependency);
+			"DEPEND=%s", job_ptr->dependency);
 		field_sep = "?";
 	}
 

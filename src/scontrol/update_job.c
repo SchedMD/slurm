@@ -366,9 +366,7 @@ scontrol_update_job (int argc, char *argv[])
 			update_cnt++;
 		}
 		else if (strncasecmp(argv[i], "Dependency=", 11) == 0) {
-			job_msg.dependency =
-				(uint32_t) strtol(&argv[i][11],
-					(char **) NULL, 10);
+			job_msg.dependency = &argv[i][11];
 			update_cnt++;
 		}
 #ifdef HAVE_BG

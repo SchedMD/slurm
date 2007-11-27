@@ -612,7 +612,7 @@ static void _opt_default()
 	opt.job_name_set = false;
 	opt.jobid    = NO_VAL;
 	opt.jobid_set = false;
-	opt.dependency = NO_VAL;
+	opt.dependency = NULL;
 	opt.account  = NULL;
 	opt.comment  = NULL;
 
@@ -728,7 +728,7 @@ env_vars_t env_vars[] = {
 {"SLURM_CORE_FORMAT",   OPT_CORE,       NULL,               NULL             },
 {"SLURM_CPU_BIND",      OPT_CPU_BIND,   NULL,               NULL             },
 {"SLURM_MEM_BIND",      OPT_MEM_BIND,   NULL,               NULL             },
-{"SLURM_DEPENDENCY",    OPT_INT,        &opt.dependency,    NULL             },
+{"SLURM_DEPENDENCY",    OPT_STRING,     &opt.dependency,    NULL             },
 {"SLURM_DISTRIBUTION",  OPT_DISTRIB,    NULL,               NULL             },
 {"SLURM_GEOMETRY",      OPT_GEOMETRY,   NULL,               NULL             },
 {"SLURM_IMMEDIATE",     OPT_INT,        &opt.immediate,     NULL             },
@@ -1175,7 +1175,8 @@ static void set_options(const int argc, char **argv)
 			opt.partition = xstrdup(optarg);
 			break;
 		case (int)'P':
-			opt.dependency = _get_int(optarg, "dependency", true);
+			xfree(opt.dependency);
+			opt.dependency = xstrdup(optarg);
 			break;
 		case (int)'q':
 			opt.quit_on_intr = true;
@@ -2068,10 +2069,8 @@ static void _opt_list()
 		info("nice           : %d", opt.nice);
 	info("account        : %s", opt.account);
 	info("comment        : %s", opt.comment);
-	if (opt.dependency == NO_VAL)
-		info("dependency     : none");
-	else
-		info("dependency     : %u", opt.dependency);
+
+	info("dependency     : %s", opt.dependency);
 	info("exclusive      : %s", tf_(opt.exclusive));
 	if (opt.shared != (uint16_t) NO_VAL)
 		info("shared         : %u", opt.shared);
@@ -2143,7 +2142,7 @@ static void _usage(void)
 "            [--jobid=id] [--verbose] [--slurmd_debug=#]\n"
 "            [--core=type] [-T threads] [-W sec] [--checkpoint=time]\n"
 "            [--contiguous] [--mincpus=n] [--mem=MB] [--tmp=MB] [-C list]\n"
-"            [--mpi=type] [--account=name] [--dependency=jobid]\n"
+"            [--mpi=type] [--account=name] [--dependency=type:jobid]\n"
 "            [--kill-on-bad-exit] [--propagate[=rlimits] [--comment=name]\n"
 "            [--cpu_bind=...] [--mem_bind=...]\n"
 "            [--ntasks-per-node=n] [--ntasks-per-socket=n]\n"
@@ -2204,7 +2203,7 @@ static void _help(void)
 "  -d, --slurmd-debug=level    slurmd debug level\n"
 "      --core=type             change default corefile format type\n"
 "                              (type=\"list\" to list of valid formats)\n"
-"  -P, --dependency=jobid      defer job until specified jobid completes\n"
+"  -P, --dependency=type:jobid defer job until condition on jobid is satisfied\n"
 "      --nice[=value]          decrease secheduling priority by value\n"
 "  -U, --account=name          charge job to specified account\n"
 "      --comment=name          arbitrary comment\n"

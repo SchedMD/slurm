@@ -235,7 +235,7 @@ static void _opt_default()
 
 	opt.job_name = NULL;
 	opt.jobid = NO_VAL;
-	opt.dependency = NO_VAL;
+	opt.dependency = NULL;
 	opt.account  = NULL;
 	opt.comment  = NULL;
 
@@ -564,7 +564,8 @@ void set_options(const int argc, char **argv)
 			opt.constraints = xstrdup(optarg);
 			break;
 		case 'd':
-			opt.dependency = _get_int(optarg, "dependency");
+			xfree(opt.dependency);
+			opt.dependency = xstrdup(optarg);
 			break;
 		case 'F':
 			xfree(opt.nodelist);
@@ -1215,10 +1216,7 @@ static void _opt_list()
 		info("nice           : %d", opt.nice);
 	info("account        : %s", opt.account);
 	info("comment        : %s", opt.comment);
-	if (opt.dependency == NO_VAL)
-		info("dependency     : none");
-	else
-		info("dependency     : %u", opt.dependency);
+	info("dependency     : %s", opt.dependency);
 	str = print_constraints();
 	info("constraints    : %s", str);
 	xfree(str);
@@ -1270,7 +1268,7 @@ static void _usage(void)
 "              [--verbose] [--gid=group] [--uid=user]\n"
 "              [-W sec] [--minsockets=n] [--mincores=n] [--minthreads=n]\n"
 "              [--contiguous] [--mincpus=n] [--mem=MB] [--tmp=MB] [-C list]\n"
-"              [--account=name] [--dependency=jobid] [--comment=name]\n"
+"              [--account=name] [--dependency=type:jobid] [--comment=name]\n"
 #ifdef HAVE_BG		/* Blue gene specific options */
 "              [--geometry=XxYxZ] [--conn-type=type] [--no-rotate] [ --reboot]\n"
 "              [--blrts-image=path] [--linux-image=path]\n"
@@ -1310,7 +1308,7 @@ static void _help(void)
 "                              immediately available\n"
 "  -v, --verbose               verbose mode (multiple -v's increase verbosity)\n"
 "  -q, --quiet                 quiet mode (suppress informational messages)\n"
-"  -d, --dependency=jobid      defer job until specified jobid completes\n"
+"  -d, --dependency=type:jobid defer job until condition on jobid is satisfied\n"
 "      --nice[=value]          decrease secheduling priority by value\n"
 "  -U, --account=name          charge job to specified account\n"
 "      --begin=time            defer job until HH:MM DD/MM/YY\n"

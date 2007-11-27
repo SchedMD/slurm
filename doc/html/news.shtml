@@ -80,6 +80,8 @@ without an external scheduler).</li>
 <i>salloc</i>, <i>sattach</i> or <i>sbatch</i> commands instead).</li>
 <li><i>srun --pty</i> option added to support remote pseudo terminial for 
 spawned tasks.</li>
+<li>Support added for a much richer job dependency specification
+including testing of exit codes and multiple dependencies.</li>
 </ul>
 
 <h2><a name="14">Major Updates in SLURM Version 1.4 and beyond</a></h2>
@@ -93,6 +95,6 @@ to coordinate activies. Future development plans includes:
 and refresh.</li>
 </ul>
 
-<p style="text-align:center;">Last modified 24 October 2007</p>
+<p style="text-align:center;">Last modified 27 November 2007</p>
 
 <!--#include virtual="footer.txt"-->

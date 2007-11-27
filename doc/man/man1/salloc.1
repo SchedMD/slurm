@@ -1,4 +1,4 @@
-.TH "salloc" "1" "SLURM 1.3" "September 2007" "SLURM Commands"
+.TH "salloc" "1" "SLURM 1.3" "November 2007" "SLURM Commands"
 .SH "NAME"
 .LP 
 salloc \- Obtain a SLURM job allocation (a set of nodes), execute a command, and then release the allocation when the command is finished.
@@ -117,11 +117,32 @@ the \-\-cpus\-per\-task=3 options, the controller knows that each task requires
 of 4 nodes, one for each of the 4 tasks.
 
 .TP 
-\fB\-d\fR, \fB\-\-dependency\fR[=]<\fIjobid\fR>
-Defer the start of this job until the specified \fIjobid\fR has completed.
+\fB\-d\fR, \fB\-\-dependency\fR[=]<\fIdependency_list\fR>
+Defer the start of this job until the specified dependencies have been
+satisfied completed.
+<\fIdependency_list\fR> is of the form 
+<\fItype:job_id[:job_id][,type:job_id[:job_id]]\fR>.
 Many jobs can share the same dependency and these jobs may even belong to
-different  users.   The  value may be changed after job submission using the
+different  users. The  value may be changed after job submission using the
 scontrol command.
+.PD
+.RS
+.TP
+\fBafter:job_id[:jobid...]\fR
+This job can begin execution after the specified jobs have begun
+execution.
+.TP
+\fBafterany:job_id[:jobid...]\fR
+This job can begin execution after the specified jobs have terminated.
+.TP
+\fBafternotok:job_id[:jobid...\fR
+This job can begin execution after the specified jobs have terminated
+in some failed state (non-zero exit code, node failure, timed out, etc).
+.TP
+\fBafterok:job_id[:jobid...]\fR
+This job can begin execution after the specified jobs have successfully
+executed (ran to completion with non-zero exit code).
+.RE
 
 .TP
 \fB\-\-exclusive\fR
