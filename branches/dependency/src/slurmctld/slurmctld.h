@@ -1344,6 +1344,14 @@ extern void suspend_job_step(struct job_record *job_ptr);
 extern int sync_job_files(void);
 
 /*
+ * Determine if a job's dependencies are met
+ * RET: 0 = no dependencies
+ *      1 = dependencies remain
+ *      2 = failure (job completion code not per dependency), delete the job
+ */
+extern int test_job_dependency(struct job_record *job_ptr);
+
+/*
  * update_job - update a job's parameters per the supplied specifications
  * IN job_specs - a job's specification
  * IN uid - uid of user issuing RPC

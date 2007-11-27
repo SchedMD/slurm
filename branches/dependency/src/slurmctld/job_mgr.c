@@ -4423,28 +4423,24 @@ extern void job_completion_logger(struct job_record  *job_ptr)
  */
 extern bool job_independent(struct job_record *job_ptr)
 {
-	struct job_record *dep_ptr;
 	struct job_details *detail_ptr = job_ptr->details;
+	int rc;
 
 	if (detail_ptr && (detail_ptr->begin_time > time(NULL))) {
 		job_ptr->state_reason = WAIT_TIME;
 		return false;	/* not yet time */
 	}
-#ifdef FIXME
-test this value for NULL or ""
-	if (job_ptr->dependency == NULL)
-		return true;
 
-	dep_ptr = find_job_record(job_ptr->dependency);
-	if (dep_ptr == NULL)
+	rc = test_job_dependency(job_ptr);
+	if (rc == 0)
 		return true;
-
-	if (((dep_ptr->job_state & JOB_COMPLETING) == 0) &&
-	    (dep_ptr->job_state >= JOB_COMPLETE))
-		return true;
-#endif
-	job_ptr->state_reason = WAIT_DEPENDENCY;
-	return false;	/* job exists and incomplete */
+	else if (rc == 1) {
+		job_ptr->state_reason = WAIT_DEPENDENCY;
+		return false;
+	} else {	/* rc == 2 */
+		/* FIXME: NEED TO CANCEL THE JOB */
+		return false;
+	}
 }
 /*
  * determine if job is ready to execute per the node select plugin

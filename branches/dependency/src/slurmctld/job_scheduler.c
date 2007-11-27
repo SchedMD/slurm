@@ -458,6 +458,7 @@ extern void print_job_dependency(struct job_record *job_ptr)
 	info("Dependency information for job %u", job_ptr->job_id);
 	if (!job_ptr->depend_list)
 		return;
+
 	depend_iter = list_iterator_create(job_ptr->depend_list);
 	if (!depend_iter)
 		fatal("list_iterator_create memory allocation failure");
@@ -475,6 +476,70 @@ extern void print_job_dependency(struct job_record *job_ptr)
 		info("  %s:%u", dep_str, dep_ptr->job_id);
 	}
 	list_iterator_destroy(depend_iter);
+}
+
+/*
+ * Determine if a job's dependencies are met
+ * RET: 0 = no dependencies
+ *      1 = dependencies remain
+ *      2 = failure (job completion code not per dependency), delete the job
+ */
+extern int test_job_dependency(struct job_record *job_ptr)
+{
+	ListIterator depend_iter;
+	struct depend_spec *dep_ptr;
+	bool failure = false;
+
+	if (!job_ptr->depend_list)
+		return 0;
+
+	depend_iter = list_iterator_create(job_ptr->depend_list);
+	if (!depend_iter)
+		fatal("list_iterator_create memory allocation failure");
+	while ((dep_ptr = list_next(depend_iter))) {
+		if (dep_ptr->job_ptr->job_id != dep_ptr->job_id) {
+			/* job is gone, dependency lifted */
+			list_delete_item(depend_iter);
+		} else if (dep_ptr->depend_type == SLURM_DEPEND_AFTER) {
+			if (!IS_JOB_PENDING(dep_ptr->job_ptr))
+				list_delete_item(depend_iter);
+			else
+				break;
+		} else if (dep_ptr->depend_type == SLURM_DEPEND_AFTER_ANY) {
+			if (IS_JOB_FINISHED(dep_ptr->job_ptr))
+				list_delete_item(depend_iter);
+			else
+				break;
+		} else if (dep_ptr->depend_type == SLURM_DEPEND_AFTER_NOT_OK) {
+			if (!IS_JOB_FINISHED(dep_ptr->job_ptr))
+				continue;
+			if ((dep_ptr->job_ptr->job_state & (~JOB_COMPLETING))
+			    != JOB_COMPLETE)
+				list_delete_item(depend_iter);
+			else {
+				failure = true;
+				break;
+			}
+		} else if (dep_ptr->depend_type == SLURM_DEPEND_AFTER_OK) {
+			if (!IS_JOB_FINISHED(dep_ptr->job_ptr))
+				continue;
+			if ((dep_ptr->job_ptr->job_state & (~JOB_COMPLETING))
+			    == JOB_COMPLETE)
+				list_delete_item(depend_iter);
+			else {
+				failure = true;
+				break;
+			}
+		} else
+			failure = true;
+	}
+	list_iterator_destroy(depend_iter);
+
+	if (failure)
+		return 2;
+	if (dep_ptr)
+		return 1;
+	return 0;
 }
 
 /*
