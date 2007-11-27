@@ -76,6 +76,7 @@ static int  _build_bitmaps(void);
 static int  _init_all_slurm_conf(void);
 static void _purge_old_node_state(struct node_record *old_node_table_ptr, 
 				int old_node_record_count);
+static int  _restore_job_dependencies(void);
 static void _restore_node_state(struct node_record *old_node_table_ptr, 
 				int old_node_record_count);
 static int  _preserve_select_type_param(slurm_ctl_conf_t * ctl_conf_ptr, 
@@ -784,6 +785,7 @@ int read_slurm_conf(int recover)
 
 	if ((error_code = _build_bitmaps()))
 		return error_code;
+	_restore_job_dependencies();
 	restore_node_features();
 #ifdef 	HAVE_ELAN
 	_validate_node_proc_count();
@@ -1114,3 +1116,30 @@ static void _validate_node_proc_count(void)
 }
 #endif
 
+/*
+ * _restore_job_dependencies - Build depend_list for every job
+ */
+static int _restore_job_dependencies(void)
+{
+	int error_code = SLURM_SUCCESS, rc;
+	struct job_record *job_ptr;
+	ListIterator job_iterator;
+	char *new_depend;
+
+	job_iterator = list_iterator_create(job_list);
+	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
+		if (job_ptr->dependency == NULL)
+			continue;
+		new_depend = job_ptr->dependency;
+		job_ptr->dependency = NULL;
+		rc = update_job_dependency(job_ptr, new_depend);
+		if (rc != SLURM_SUCCESS) {
+			error("Invalid dependencies discarded for job %u: %s",
+				job_ptr->job_id, new_depend);
+			error_code = rc;
+		}
+		xfree(new_depend);
+	}
+	list_iterator_destroy(job_iterator);
+	return error_code;
+}

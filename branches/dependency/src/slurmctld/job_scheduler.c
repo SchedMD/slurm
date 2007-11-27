@@ -487,7 +487,7 @@ extern void print_job_dependency(struct job_record *job_ptr)
  */
 extern int update_job_dependency(struct job_record *job_ptr, char *new_depend)
 {
-	int rc = SLURM_SUCCESS, tok_len;
+	int rc = SLURM_SUCCESS;
 	uint16_t depend_type = 0;
 	uint32_t job_id = 0;
 	char *tok = new_depend, *sep_ptr, *sep_ptr2;
@@ -528,15 +528,14 @@ extern int update_job_dependency(struct job_record *job_ptr, char *new_depend)
 			break;
 		}
 
-		tok_len = sep_ptr - tok;
-		if      (strncasecmp(tok, "after", tok_len) == 0)
-			depend_type = SLURM_DEPEND_AFTER;
-		else if (strncasecmp(tok, "afterany", tok_len) == 0)
-			depend_type = SLURM_DEPEND_AFTER_ANY;
-		else if (strncasecmp(tok, "afternotok", tok_len) == 0)
+		if      (strncasecmp(tok, "afternotok", 10) == 0)
 			depend_type = SLURM_DEPEND_AFTER_NOT_OK;
-		else if (strncasecmp(tok, "afterok", tok_len) == 0)
+		else if (strncasecmp(tok, "afterany", 8) == 0)
+			depend_type = SLURM_DEPEND_AFTER_ANY;
+		else if (strncasecmp(tok, "afterok", 7) == 0)
 			depend_type = SLURM_DEPEND_AFTER_OK;
+		else if (strncasecmp(tok, "after", 5) == 0)
+			depend_type = SLURM_DEPEND_AFTER;
 		else {
 			rc = EINVAL;
 			break;

@@ -357,7 +357,7 @@ int dump_all_job_state(void)
  *	checkpoint. Execute this after loading the configuration file data.
  * RET 0 or error code
  */
-int load_all_job_state(void)
+extern int load_all_job_state(void)
 {
 	int data_allocated, data_read = 0, error_code = 0;
 	uint32_t data_size = 0;
