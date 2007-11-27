@@ -1927,10 +1927,9 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 		goto cleanup;
 	}
 
-
 	if ((error_code =_validate_job_create_req(job_desc)))
 		goto cleanup;
-	
+
 	if ((error_code = _copy_job_desc_to_job_record(job_desc,
 						       job_pptr,
 						       part_ptr,
@@ -1939,15 +1938,12 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 		error_code = ESLURM_ERROR_ON_DESC_TO_RECORD_COPY;
 		goto cleanup;
 	}
-	
+
 	job_ptr = *job_pptr;
-#ifdef FIXME
-	if (job_ptr->dependency == job_ptr->job_id) {
-		info("User specified self as dependent job");
+	if (update_job_dependency(job_ptr, job_desc->dependency)) {
 		error_code = ESLURM_DEPENDENCY;
 		goto cleanup;
 	}
-#endif
 
 	if (job_desc->script
 	    &&  (!will_run)) {	/* don't bother with copy if just a test */
@@ -2437,7 +2433,6 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 	job_ptr->account    = xstrdup(job_desc->account);
 	job_ptr->network    = xstrdup(job_desc->network);
 	job_ptr->comment    = xstrdup(job_desc->comment);
-	job_ptr->dependency = job_desc->dependency;
 
 	if (job_desc->priority != NO_VAL) /* already confirmed submit_uid==0 */
 		job_ptr->priority = job_desc->priority;
@@ -2518,7 +2513,6 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 	job_ptr->select_jobinfo = 
 		select_g_copy_jobinfo(job_desc->select_jobinfo);
 	detail_ptr->mc_ptr = _set_multi_core_data(job_desc);	
-
 	*job_rec_ptr = job_ptr;
 	return SLURM_SUCCESS;
 }

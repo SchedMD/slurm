@@ -407,6 +407,17 @@ struct job_record {
 					   plugins */
 };
 
+/* Job dependency specification, used in "depend_list" within job_record */
+#define SLURM_DEPEND_AFTER		1
+#define SLURM_DEPEND_AFTER_ANY		2
+#define SLURM_DEPEND_AFTER_NOT_OK	3
+#define SLURM_DEPEND_AFTER_OK		4
+struct	depend_spec {
+	uint16_t	depend_type;	/* SLURM_DEPEND_* type */
+	uint32_t	job_id;		/* SLURM job_id */
+	struct job_record *job_ptr;	/* pointer to this job */
+};
+
 struct 	step_record {
 	struct job_record* job_ptr; 	/* ptr to the job that owns the step */
 	uint16_t step_id;		/* step number */
@@ -1154,6 +1165,9 @@ extern void part_filter_set(uid_t uid);
 /* part_fini - free all memory associated with partition records */
 void part_fini (void);
 
+/* Print a job's dependency information based upon job_ptr->depend_list */
+extern void print_job_dependency(struct job_record *job_ptr);
+
 /*
  * purge_old_job - purge old job records. 
  *	the jobs must have completed at least MIN_JOB_AGE minutes ago
@@ -1338,6 +1352,16 @@ extern int sync_job_files(void);
  *	last_job_update - time of last job table update
  */
 extern int update_job (job_desc_msg_t * job_specs, uid_t uid);
+
+/*
+ * Parse a job dependency string and use it to establish a "depend_spec"
+ * list of dependencies. We accept both old format (a single job ID) and
+ * new format (e.g. "afterok:123:124,after:128").
+ * IN job_ptr - job record to have dependency and depend_list updated
+ * IN new_depend - new dependency description
+ * RET returns an error code from slurm_errno.h
+ */
+extern int update_job_dependency(struct job_record *job_ptr, char *new_depend);
 
 /* Reset nodes_completing field for all jobs */
 extern void update_job_nodes_completing(void);
