@@ -71,10 +71,15 @@ static int	_job_modify(uint32_t jobid, char *bank_ptr,
 	}
 
 	if (depend_ptr) {
-		info("wiki: changing job dependency to %s", depend_ptr);
-		xfree(job_ptr->dependency);
-		job_ptr->dependency = depend_ptr;
-/* FIXME: rebuild depend_list */
+		int rc = update_job_dependency(job_ptr, depend_ptr);
+		if (rc == SLURM_SUCCESS) {
+			info("wiki: changed job %u dependency to %s", 
+				jobid, depend_ptr);
+		} else {
+			error("wiki: changing job %u dependency to %s", 
+				jobid, depend_ptr);
+			return EINVAL;
+		}
 	}
 
 	if (new_time_limit) {
