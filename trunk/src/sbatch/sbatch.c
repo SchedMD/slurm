@@ -46,6 +46,8 @@
 
 #include "src/sbatch/opt.h"
 
+#define MAX_RETRIES 3
+
 static int fill_job_desc_from_opts(job_desc_msg_t *desc);
 static void *get_script_buffer(const char *filename, int *size);
 static void  set_prio_process_env(void);
@@ -60,6 +62,7 @@ int main(int argc, char *argv[])
 	char *script_name;
 	void *script_body;
 	int script_size = 0;
+	int retries = 0;
 
 	log_init(xbasename(argv[0]), logopt, 0, NULL);
 	script_name = process_options_first_pass(argc, argv);
@@ -93,10 +96,21 @@ int main(int argc, char *argv[])
 
 	desc.script = (char *)script_body;
 
-	if (slurm_submit_batch_job(&desc, &resp) == -1) {
-		error("Batch job submission failed: %m");
-		exit(3);
-	}
+	while (slurm_submit_batch_job(&desc, &resp) < 0) {
+		static char *msg = "Slurm job queue full, sleeping and retrying.";
+
+		if ((errno != ESLURM_ERROR_ON_DESC_TO_RECORD_COPY) ||
+		    (retries >= MAX_RETRIES)) {
+			error("Batch job submission failed: %m");
+			exit(3);
+		}
+
+		if (retries)
+			debug(msg);
+		else
+			error(msg);
+		sleep (++retries);
+        }
 
 	info("Submitted batch job %d", resp->job_id);
 	xfree(desc.script);

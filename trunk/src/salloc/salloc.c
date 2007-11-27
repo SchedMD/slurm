@@ -51,6 +51,8 @@
 #include "src/salloc/opt.h"
 #include "src/salloc/msg.h"
 
+#define MAX_RETRIES 3
+
 char **command_argv;
 int command_argc;
 pid_t command_pid = -1;
@@ -79,9 +81,11 @@ int main(int argc, char *argv[])
 	char **env = NULL;
 	int status = 0;
 	int errnum = 0;
+	int retries = 0;
 	pid_t pid;
 	pid_t rc_pid = 0;
 	int rc = 0;
+	static char *msg = "Slurm job queue full, sleeping and retrying.";
 
 	log_init(xbasename(argv[0]), logopt, 0, NULL);
 	if (initialize_and_process_args(argc, argv) < 0) {
@@ -115,8 +119,18 @@ int main(int argc, char *argv[])
 	xsignal(SIGUSR2, _signal_while_allocating);
 
 	before = time(NULL);
-	alloc = slurm_allocate_resources_blocking(&desc, opt.max_wait,
-						  _pending_callback);
+	while ((alloc = slurm_allocate_resources_blocking(&desc, opt.max_wait,
+					_pending_callback)) == NULL) {
+		if ((errno != ESLURM_ERROR_ON_DESC_TO_RECORD_COPY) ||
+		    (retries >= MAX_RETRIES))
+			break;
+		if (retries == 0)
+			error(msg);
+		else
+			debug(msg);
+		sleep (++retries);
+	}
+
 	if (alloc == NULL) {
 		if (allocation_interrupted) {
 			/* cancelled by signal */

@@ -116,6 +116,8 @@ documents those changes that are of interest to users and admins.
  -- If a job is being requeued, job step create requests will print a 
     warning and repeatedly retry rather than aborting.
  -- Add optional mode value to srun and sbatch --get-user-env option.
+ -- Print error message and retry job submit commands when MaxJobCount 
+    is reached. From Don Albert, Bull.
 
 * Changes in SLURM 1.2.19
 =========================
