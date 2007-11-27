@@ -2034,8 +2034,10 @@ static void _proc_get_user_env(char *optarg)
 
 	if ((optarg[0] >= '0') && (optarg[0] <= '9'))
 		opt.get_user_env_time = strtol(optarg, &end_ptr, 10);
-	else
+	else {
 		opt.get_user_env_time = 0;
+		end_ptr = optarg;
+	}
  
 	if ((end_ptr == NULL) || (end_ptr[0] == '\0'))
 		return;
