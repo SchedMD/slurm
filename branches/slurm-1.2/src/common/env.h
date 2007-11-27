@@ -238,15 +238,20 @@ void env_array_set_environment(char **env_array);
 
 /*
  * Return an array of strings representing the specified user's default
- * environment variables, as determined by calling (more-or-less)
- * "/bin/su - <username> -c /usr/bin/env".
+ * environment variables following a two-prongged approach.
+ * 1. Execute (more or less): "/bin/su - <username> -c /usr/bin/env"
+ *    Depending upon the user's login scripts, this may take a very
+ *    long time to complete or possibly never return
+ * 2. Load the user environment from a cache file. This is used
+ *    in the event that option 1 times out.
  *
  * timeout value is in seconds or zero for default (8 secs)
+ * mode is 1 for short ("su <user>"), 2 for long ("su - <user>")
  * On error, returns NULL.
  *
  * NOTE: The calling process must have an effective uid of root for
  * this function to succeed.
  */
-char **env_array_user_default(const char *username, int timeout);
+char **env_array_user_default(const char *username, int timeout, int mode);
 
 #endif
