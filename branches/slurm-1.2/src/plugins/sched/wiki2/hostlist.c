@@ -179,8 +179,7 @@ static char * _task_list(struct job_record *job_ptr)
 			break;
 		}
 		task_cnt = job_ptr->alloc_lps[i];
-		if (job_ptr->details &&
-		    (job_ptr->details->cpus_per_task != (uint16_t) NO_VAL))
+		if (job_ptr->details && job_ptr->details->cpus_per_task)
 			task_cnt /= job_ptr->details->cpus_per_task;
 		for (j=0; j<task_cnt; j++) {
 			if (buf)
@@ -272,8 +271,7 @@ static char * _task_list_exp(struct job_record *job_ptr)
 		}
 
 		task_cnt = job_ptr->alloc_lps[i];
-		if (job_ptr->details &&
-		    (job_ptr->details->cpus_per_task != (uint16_t) NO_VAL))
+		if (job_ptr->details && job_ptr->details->cpus_per_task)
 			task_cnt /= job_ptr->details->cpus_per_task;
 		if (reps == task_cnt) {
 			/* append to existing hostlist record */
