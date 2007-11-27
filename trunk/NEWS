@@ -22,6 +22,8 @@ documents those changes that are of interest to users and admins.
     information is not found in the "slurm.conf" file, but a scheduler plugin 
     specific configuration (e.g. "wiki.conf").
  -- sview partition information reported now includes partition priority.
+ -- Expand job dependency specification to support concurrent execution, 
+    testing of job exit status and multiple job IDs.
 
 * Changes in SLURM 1.3.0-pre4
 =============================

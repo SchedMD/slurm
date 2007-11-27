@@ -357,7 +357,7 @@ int dump_all_job_state(void)
  *	checkpoint. Execute this after loading the configuration file data.
  * RET 0 or error code
  */
-int load_all_job_state(void)
+extern int load_all_job_state(void)
 {
 	int data_allocated, data_read = 0, error_code = 0;
 	uint32_t data_size = 0;
@@ -484,7 +484,6 @@ static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer)
 	pack32(dump_job_ptr->time_limit, buffer);
 	pack32(dump_job_ptr->priority, buffer);
 	pack32(dump_job_ptr->alloc_sid, buffer);
-	pack32(dump_job_ptr->dependency, buffer);
 	pack32(dump_job_ptr->num_procs, buffer);
 	pack32(dump_job_ptr->exit_code, buffer);
 	pack32(dump_job_ptr->db_index, buffer);
@@ -520,6 +519,7 @@ static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer)
 	packstr(dump_job_ptr->alloc_node, buffer);
 	packstr(dump_job_ptr->account, buffer);
 	packstr(dump_job_ptr->comment, buffer);
+	packstr(dump_job_ptr->dependency, buffer);
 	packstr(dump_job_ptr->network, buffer);
 	packstr(dump_job_ptr->mail_user, buffer);
 
@@ -550,7 +550,7 @@ static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer)
 static int _load_job_state(Buf buffer)
 {
 	uint32_t job_id, user_id, group_id, time_limit, priority, alloc_sid;
-	uint32_t dependency, exit_code, num_procs, db_index;
+	uint32_t exit_code, num_procs, db_index;
 	time_t start_time, end_time, suspend_time, pre_sus_time;
 	uint16_t job_state, next_step_id, details, batch_flag, step_flag;
 	uint16_t kill_on_node_fail, kill_on_step_done, name_len;
@@ -558,6 +558,7 @@ static int _load_job_state(Buf buffer)
 	char *nodes = NULL, *partition = NULL, *name = NULL, *resp_host = NULL;
 	char *account = NULL, *network = NULL, *mail_user = NULL;
 	char *comment = NULL, *nodes_completing = NULL, *alloc_node = NULL;
+	char *dependency = NULL;
 	struct job_record *job_ptr;
 	struct part_record *part_ptr;
 	int error_code;
@@ -569,7 +570,6 @@ static int _load_job_state(Buf buffer)
 	safe_unpack32(&time_limit, buffer);
 	safe_unpack32(&priority, buffer);
 	safe_unpack32(&alloc_sid, buffer);
-	safe_unpack32(&dependency, buffer);
 	safe_unpack32(&num_procs, buffer);
 	safe_unpack32(&exit_code, buffer);
 	safe_unpack32(&db_index, buffer);
@@ -601,6 +601,7 @@ static int _load_job_state(Buf buffer)
 	safe_unpackstr_xmalloc(&alloc_node, &name_len, buffer);
 	safe_unpackstr_xmalloc(&account, &name_len, buffer);
 	safe_unpackstr_xmalloc(&comment, &name_len, buffer);
+	safe_unpackstr_xmalloc(&dependency, &name_len, buffer);
 	safe_unpackstr_xmalloc(&network, &name_len, buffer);
 	safe_unpackstr_xmalloc(&mail_user, &name_len, buffer);
 
@@ -738,6 +739,7 @@ unpack_error:
 	xfree(alloc_node);
 	xfree(account);
 	xfree(comment);
+	xfree(dependency);
 	xfree(resp_host);
 	xfree(mail_user);
 	select_g_free_jobinfo(&select_jobinfo);
@@ -1133,7 +1135,7 @@ void dump_job_desc(job_desc_msg_t * job_specs)
 	long job_min_procs, job_min_sockets, job_min_cores, job_min_threads;
 	long job_min_memory, job_max_memory, job_min_tmp_disk, num_procs;
 	long time_limit, priority, contiguous;
-	long kill_on_node_fail, shared, immediate, dependency;
+	long kill_on_node_fail, shared, immediate;
 	long cpus_per_task, no_requeue, num_tasks, overcommit;
 	long ntasks_per_node, ntasks_per_socket, ntasks_per_core;
 	char buf[100];
@@ -1239,13 +1241,12 @@ void dump_job_desc(job_desc_msg_t * job_specs)
 	       job_specs->work_dir,
 	       job_specs->alloc_node, job_specs->alloc_sid);
 
-	dependency = (job_specs->dependency != NO_VAL) ?
-		(long) job_specs->dependency : -1L;
 	debug3("   resp_host=%s alloc_resp_port=%u  other_port=%u",
 		job_specs->resp_host, 
 		job_specs->alloc_resp_port, job_specs->other_port);
-	debug3("   dependency=%ld account=%s comment=%s",
-	       dependency, job_specs->account, job_specs->comment);
+	debug3("   dependency=%s account=%s comment=%s",
+	       job_specs->dependency, job_specs->account, 
+	       job_specs->comment);
 
 	num_tasks = (job_specs->num_tasks != (uint16_t) NO_VAL) ?
 		(long) job_specs->num_tasks : -1L;
@@ -1926,10 +1927,9 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 		goto cleanup;
 	}
 
-
 	if ((error_code =_validate_job_create_req(job_desc)))
 		goto cleanup;
-	
+
 	if ((error_code = _copy_job_desc_to_job_record(job_desc,
 						       job_pptr,
 						       part_ptr,
@@ -1938,10 +1938,9 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 		error_code = ESLURM_ERROR_ON_DESC_TO_RECORD_COPY;
 		goto cleanup;
 	}
-	
+
 	job_ptr = *job_pptr;
-	if (job_ptr->dependency == job_ptr->job_id) {
-		info("User specified self as dependent job");
+	if (update_job_dependency(job_ptr, job_desc->dependency)) {
 		error_code = ESLURM_DEPENDENCY;
 		goto cleanup;
 	}
@@ -2434,8 +2433,6 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 	job_ptr->account    = xstrdup(job_desc->account);
 	job_ptr->network    = xstrdup(job_desc->network);
 	job_ptr->comment    = xstrdup(job_desc->comment);
-	if (job_desc->dependency != NO_VAL) /* leave as zero */
-		job_ptr->dependency = job_desc->dependency;
 
 	if (job_desc->priority != NO_VAL) /* already confirmed submit_uid==0 */
 		job_ptr->priority = job_desc->priority;
@@ -2516,7 +2513,6 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 	job_ptr->select_jobinfo = 
 		select_g_copy_jobinfo(job_desc->select_jobinfo);
 	detail_ptr->mc_ptr = _set_multi_core_data(job_desc);	
-
 	*job_rec_ptr = job_ptr;
 	return SLURM_SUCCESS;
 }
@@ -2781,6 +2777,9 @@ static void _list_delete_job(void *job_entry)
 	xfree(job_ptr->alloc_lps);
 	xfree(job_ptr->used_lps);
 	xfree(job_ptr->comment);
+	xfree(job_ptr->dependency);
+	if (job_ptr->depend_list)
+		list_destroy(job_ptr->depend_list);
 	select_g_free_jobinfo(&job_ptr->select_jobinfo);
 	if (job_ptr->step_list) {
 		delete_step_records(job_ptr, 0);
@@ -2952,8 +2951,8 @@ void pack_job(struct job_record *dump_job_ptr, Buf buffer)
 	packstr(dump_job_ptr->account, buffer);
 	packstr(dump_job_ptr->network, buffer);
 	packstr(dump_job_ptr->comment, buffer);
+	packstr(dump_job_ptr->dependency, buffer);
 
-	pack32(dump_job_ptr->dependency, buffer);
 	pack32(dump_job_ptr->exit_code, buffer);
 
 	pack16(dump_job_ptr->num_cpu_groups, buffer);
@@ -3788,14 +3787,14 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 		}
 	}
 
-	if (job_specs->dependency != NO_VAL) {
+	if (job_specs->dependency) {
 		if (!IS_JOB_PENDING(job_ptr))
 			error_code = ESLURM_DISABLED;
-		else if (job_specs->dependency == job_ptr->job_id)
+		else if (update_job_dependency(job_ptr, job_specs->dependency)
+			 != SLURM_SUCCESS) {
 			error_code = ESLURM_DEPENDENCY;
-		else {
-			job_ptr->dependency = job_specs->dependency;
-			info("update_job: setting dependency to %u for " 
+		} else {
+			info("update_job: setting dependency to %s for " 
 			     "job_id %u",  job_ptr->dependency, 
 			     job_ptr->job_id);
 		}
@@ -4424,27 +4423,30 @@ extern void job_completion_logger(struct job_record  *job_ptr)
  */
 extern bool job_independent(struct job_record *job_ptr)
 {
-	struct job_record *dep_ptr;
 	struct job_details *detail_ptr = job_ptr->details;
+	int rc;
 
 	if (detail_ptr && (detail_ptr->begin_time > time(NULL))) {
 		job_ptr->state_reason = WAIT_TIME;
 		return false;	/* not yet time */
 	}
-		
-	if (job_ptr->dependency == 0)
-		return true;
 
-	dep_ptr = find_job_record(job_ptr->dependency);
-	if (dep_ptr == NULL)
+	rc = test_job_dependency(job_ptr);
+	if (rc == 0)
 		return true;
-
-	if (((dep_ptr->job_state & JOB_COMPLETING) == 0) &&
-	    (dep_ptr->job_state >= JOB_COMPLETE))
-		return true;
-
-	job_ptr->state_reason = WAIT_DEPENDENCY;
-	return false;	/* job exists and incomplete */
+	else if (rc == 1) {
+		job_ptr->state_reason = WAIT_DEPENDENCY;
+		return false;
+	} else {	/* rc == 2 */
+		time_t now = time(NULL);
+		info("Job dependency can't be satisfied, cancelling job %u",
+			job_ptr->job_id);
+		job_ptr->job_state	= JOB_CANCELLED;
+		job_ptr->start_time	= now;
+		job_ptr->end_time	= now;
+		job_completion_logger(job_ptr);
+		return false;
+	}
 }
 /*
  * determine if job is ready to execute per the node select plugin

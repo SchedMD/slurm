@@ -189,7 +189,7 @@ static slurm_errtab_t slurm_errtab[] = {
 	{ ESLURM_DISABLED,
 	  "Requested operation is presently disabled"		},
 	{ ESLURM_DEPENDENCY,
-	  "Immediate execution impossible, job dependency problem"},
+	  "Job dependency problem"				},
  	{ ESLURM_BATCH_ONLY,
 	  "Only batch jobs are accepted or processed"		},
 	{ ESLURM_TASKDIST_ARBITRARY_UNSUPPORTED,

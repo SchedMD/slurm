@@ -2035,10 +2035,9 @@ _unpack_job_info_members(job_info_t * job, Buf buffer)
 	safe_unpackstr_xmalloc(&job->account, &uint16_tmp, buffer);
 	safe_unpackstr_xmalloc(&job->network, &uint16_tmp, buffer);
 	safe_unpackstr_xmalloc(&job->comment, &uint16_tmp, buffer);
+	safe_unpackstr_xmalloc(&job->dependency, &uint16_tmp, buffer);
 
-	safe_unpack32(&job->dependency, buffer);
 	safe_unpack32(&job->exit_code, buffer);
-
 	safe_unpack16(&job->num_cpu_groups, buffer);
 	safe_unpack32_array(&job->cpus_per_node, &uint32_tmp, buffer);
 	safe_unpack32_array(&job->cpu_count_reps, &uint32_tmp, buffer);
@@ -2117,17 +2116,23 @@ unpack_error:
 	xfree(job->nodes);
 	xfree(job->partition);
 	xfree(job->account);
+	xfree(job->network);
+	xfree(job->comment);
+	xfree(job->dependency);
+	xfree(job->cpus_per_node);
+	xfree(job->cpu_count_reps);
 	xfree(job->name);
 	xfree(job->alloc_node);
 	xfree(job->node_inx);
 	select_g_free_jobinfo(&job->select_jobinfo);
 	xfree(job->features);
+	xfree(job->work_dir);
+	xfree(job->command);
 	xfree(job->req_nodes);
 	xfree(job->req_node_inx);
 	xfree(job->exc_nodes);
 	xfree(job->exc_node_inx);
-	xfree(job->network);
-	xfree(job->comment);
+
 	return SLURM_ERROR;
 }
 
@@ -2495,7 +2500,7 @@ _pack_job_desc_msg(job_desc_msg_t * job_desc_ptr, Buf buffer)
 
 	packstr(job_desc_ptr->partition, buffer);
 	pack32(job_desc_ptr->priority, buffer);
-	pack32(job_desc_ptr->dependency, buffer);
+	packstr(job_desc_ptr->dependency, buffer);
 	packstr(job_desc_ptr->account, buffer);
 	packstr(job_desc_ptr->comment, buffer);
 	pack16(job_desc_ptr->nice, buffer);
@@ -2624,7 +2629,7 @@ _unpack_job_desc_msg(job_desc_msg_t ** job_desc_buffer_ptr, Buf buffer)
 
 	safe_unpackstr_xmalloc(&job_desc_ptr->partition, &uint16_tmp, buffer);
 	safe_unpack32(&job_desc_ptr->priority, buffer);
-	safe_unpack32(&job_desc_ptr->dependency, buffer);
+	safe_unpackstr_xmalloc(&job_desc_ptr->dependency, &uint16_tmp, buffer);
 	safe_unpackstr_xmalloc(&job_desc_ptr->account, &uint16_tmp, buffer);
 	safe_unpackstr_xmalloc(&job_desc_ptr->comment, &uint16_tmp, buffer);
 	safe_unpack16(&job_desc_ptr->nice, buffer);
@@ -2688,11 +2693,15 @@ _unpack_job_desc_msg(job_desc_msg_t ** job_desc_buffer_ptr, Buf buffer)
 	return SLURM_SUCCESS;
 
 unpack_error:
-	select_g_free_jobinfo(&job_desc_ptr->select_jobinfo);
+
 	xfree(job_desc_ptr->features);
 	xfree(job_desc_ptr->name);
 	xfree(job_desc_ptr->partition);
+	xfree(job_desc_ptr->dependency);
+	xfree(job_desc_ptr->account);
+	xfree(job_desc_ptr->comment);
 	xfree(job_desc_ptr->req_nodes);
+	xfree(job_desc_ptr->exc_nodes);
 	xfree(job_desc_ptr->environment);
 	xfree(job_desc_ptr->script);
 	xfree(job_desc_ptr->argv);
@@ -2702,6 +2711,7 @@ unpack_error:
 	xfree(job_desc_ptr->work_dir);
 	xfree(job_desc_ptr->network);
 	xfree(job_desc_ptr->mail_user);
+	select_g_free_jobinfo(&job_desc_ptr->select_jobinfo);
 	xfree(job_desc_ptr);
 	*job_desc_buffer_ptr = NULL;
 	return SLURM_ERROR;
