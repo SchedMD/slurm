@@ -3790,13 +3790,10 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 	if (job_specs->dependency) {
 		if (!IS_JOB_PENDING(job_ptr))
 			error_code = ESLURM_DISABLED;
-#ifdef FIXME
-		else if (job_specs->dependency == job_ptr->job_id)
+		else if (update_job_dependency(job_ptr, job_specs->dependency)
+			 != SLURM_SUCCESS) {
 			error_code = ESLURM_DEPENDENCY;
-#endif
-		else {
-			xfree(job_ptr->dependency);
-			job_ptr->dependency = job_specs->dependency;
+		} else {
 			info("update_job: setting dependency to %s for " 
 			     "job_id %u",  job_ptr->dependency, 
 			     job_ptr->job_id);

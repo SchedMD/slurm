@@ -494,6 +494,7 @@ extern int update_job_dependency(struct job_record *job_ptr, char *new_depend)
 	List new_depend_list = NULL;
 	struct depend_spec *dep_ptr;
 	struct job_record *dep_job_ptr;
+	char dep_buf[32];
 
 	/* Clear dependencies on NULL or empty dependency input */
 	if ((new_depend == NULL) || (new_depend[0] == '\0')) {
@@ -519,6 +520,8 @@ extern int update_job_dependency(struct job_record *job_ptr, char *new_depend)
 			dep_job_ptr = find_job_record(job_id);
 			if (!dep_job_ptr)	/* assume already done */
 				break;
+			snprintf(dep_buf, sizeof(dep_buf), "afterany:%u", job_id);
+			new_depend = dep_buf;
 			dep_ptr = xmalloc(sizeof(struct depend_spec));
 			dep_ptr->depend_type = SLURM_DEPEND_AFTER_ANY;
 			dep_ptr->job_id = job_id;
