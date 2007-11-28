@@ -44,7 +44,9 @@ The following table describes this new functionality in more detail:
 <TD>Whole nodes are allocated to jobs. A node may run more than one job.</TD>
 </TR><TR>
 <TD ROWSPAN=2>SelectType=<B>select/cons_res</B><BR>
-SelectTypeParameters=CR_Core|CR_Core_Memory</TD>
+Plus one of the following:<BR>
+SelectTypeParameters=<B>CR_Core</B><BR>
+SelectTypeParameters=<B>CR_Core_Memory</B></TD>
 <TD>Shared=NO</TD>
 <TD>Cores are allocated to jobs. No core will run more than one job.</TD>
 </TR><TR>
@@ -52,7 +54,9 @@ SelectTypeParameters=CR_Core|CR_Core_Memory</TD>
 <TD>Cores are allocated to jobs. A core may run more than one job.</TD>
 </TR><TR>
 <TD ROWSPAN=2>SelectType=<B>select/cons_res</B><BR>
-SelectTypeParameters=CR_CPU|CR_CPU_Memory</TD>
+Plus one of the following:<BR>
+SelectTypeParameters=<B>CR_CPU</B><BR>
+SelectTypeParameters=<B>CR_CPU_Memory</B></TD>
 <TD>Shared=NO</TD>
 <TD>CPUs are allocated to jobs. No CPU will run more than one job.</TD>
 </TR><TR>
@@ -60,7 +64,9 @@ SelectTypeParameters=CR_CPU|CR_CPU_Memory</TD>
 <TD>CPUs are allocated to jobs. A CPU may run more than one job.</TD>
 </TR><TR>
 <TD ROWSPAN=2>SelectType=<B>select/cons_res</B><BR>
-SelectTypeParameters=CR_Socket|CR_Socket_Memory</TD>
+Plus one of the following:<BR>
+SelectTypeParameters=<B>CR_Socket</B><BR>
+SelectTypeParameters=<B>CR_Socket_Memory</B></TD>
 <TD>Shared=NO</TD>
 <TD>Sockets are allocated to jobs. No socket will run more than one job.</TD>
 </TR><TR>
@@ -151,7 +157,7 @@ to begin running "on top of" the existing jobs. This happens with the
 
 <H3>Memory Management</H3>
 <P>
-The management of memory as a consumable resource remains unchanged: 
+The management of memory as a consumable resource remains unchanged:
 </P>
 <TABLE CELLPADDING=3 CELLSPACING=1 BORDER=1>
 <TR><TH>Selection Setting</TH>
@@ -162,12 +168,19 @@ The management of memory as a consumable resource remains unchanged:
 considering if there is enough free memory. Swapping could occur!</TD>
 </TR><TR>
 <TD>SelectType=<B>select/cons_res</B><BR>
-SelectTypeParameters=CR_[Core|CPU|Socket]</TD>
+Plus one of the following:<BR>
+SelectTypeParameters=<B>CR_Core</B><BR>
+SelectTypeParameters=<B>CR_CPU</B><BR>
+SelectTypeParameters=<B>CR_Socket</B></TD>
 <TD>Memory allocation is not tracked. Jobs are allocated to consumable resources
 without considering if there is enough free memory. Swapping could occur!</TD>
 </TR><TR>
 <TD>SelectType=<B>select/cons_res</B><BR>
-SelectTypeParameters=CR_Memory|CR_[Core|CPU|Socket]_Memory</TD>
+Plus one of the following:<BR>
+SelectTypeParameters=<B>CR_Memory</B><BR>
+SelectTypeParameters=<B>CR_Core_Memory</B><BR>
+SelectTypeParameters=<B>CR_CPU_Memory</B><BR>
+SelectTypeParameters=<B>CR_Socket_Memory</B></TD>
 <TD>Memory allocation for all jobs are tracked. Nodes that do not have enough
 available memory to meet the job's memory requirement will not be allocated to
 the job.</TD>
