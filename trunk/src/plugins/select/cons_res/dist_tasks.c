@@ -98,15 +98,13 @@ int compute_c_b_task_dist(struct select_cr_job *job)
 
 /* scan all rows looking for the best fit, and return the offset */
 int _find_offset(struct select_cr_job *job, const int job_index,
-		 uint16_t cores, uint16_t sockets,
+		 uint16_t cores, uint16_t sockets, uint32_t maxcores,
 		 const select_type_plugin_info_t cr_type,
 		 struct node_cr_record *this_cr_node)
 {
 	struct part_cr_record *p_ptr;
 	int i, j, index, offset, skip;
-	uint16_t acpus, asockets, freecpus, last_freecpus = 0;
-	uint32_t maxtasks = job->alloc_cpus[job_index];
-	uint16_t uint16_tmp, threads, usable_threads;
+	uint16_t acores, asockets, freecpus, last_freecpus = 0;
 
 	p_ptr = get_cr_part_ptr(this_cr_node, job->partition);
 	if (p_ptr == NULL)
@@ -115,14 +113,9 @@ int _find_offset(struct select_cr_job *job, const int job_index,
 		fatal("cons_res: find_offset: could not find part %s",
 		      job->partition);
 
-	/* get thread count per core */
-	get_resources_this_node(&uint16_tmp,  &uint16_tmp, &uint16_tmp, 
-				&threads, this_cr_node, job->job_id);
-	usable_threads = MIN(job->max_threads, threads);
-
 	index = -1;
 	for (i = 0; i < p_ptr->num_rows; i++) {
-		acpus = 0;
+		acores = 0;
 		asockets = 0;
 		skip = 0;
 		offset = i * this_cr_node->num_sockets;
@@ -131,9 +124,9 @@ int _find_offset(struct select_cr_job *job, const int job_index,
 							job->min_cores) {
 				/* count the number of unusable sockets */
 				skip++;
-				acpus += cores;
+				acores += cores;
 			} else { 
-				acpus += p_ptr->alloc_cores[offset+j];
+				acores += p_ptr->alloc_cores[offset+j];
 			}
 			if(p_ptr->alloc_cores[offset+j])
 				asockets++;
@@ -147,9 +140,8 @@ int _find_offset(struct select_cr_job *job, const int job_index,
 				continue;
 		}
 		
-		freecpus = (cores * sockets) - acpus;
-		freecpus *= usable_threads;
-		if (freecpus < maxtasks)
+		freecpus = (cores * sockets) - acores;
+		if (freecpus < maxcores)
 			continue;
 
 		if (index < 0) {
@@ -179,9 +171,9 @@ void _job_assign_tasks(struct select_cr_job *job,
 	uint16_t cores, cpus, sockets, threads;
 	uint16_t usable_cores, usable_sockets, usable_threads;
 	uint16_t *avail_cores;
-	uint32_t taskcount, last_taskcount;
+	uint32_t corecount, last_corecount;
 	uint16_t asockets, offset, total;
-	uint32_t maxtasks = job->alloc_cpus[job_index];
+	uint32_t maxcores, reqcores, maxtasks = job->alloc_cpus[job_index];
 	struct part_cr_record *p_ptr;
 	
 	p_ptr = get_cr_part_ptr(this_cr_node, job->partition);
@@ -200,15 +192,25 @@ void _job_assign_tasks(struct select_cr_job *job,
 	usable_cores   = MIN(job->max_cores,   cores);
 	usable_threads = MIN(job->max_threads, threads);
 
-	offset = _find_offset(job, job_index, cores, sockets, cr_type,
+	/* determine the number of required cores. When multiple threads
+	 * are available, the maxtasks value may not reflect the requested
+	 * core count, which is what we are seeking here. */
+	maxcores = maxtasks / usable_threads;
+	while ((maxcores * usable_threads) < maxtasks)
+		maxcores++;
+	reqcores = job->min_cores * job->min_sockets;
+	if (maxcores < reqcores)
+		maxcores = reqcores;
+
+	offset = _find_offset(job, job_index, cores, sockets, maxcores, cr_type,
 			      this_cr_node);
 	job->node_offset[job_index] = offset;
 
 	debug3("job_assign_task %u s_ min %u u %u c_ min %u u %u"
-	       " t_ min %u u %u task %u offset %u", 
+	       " t_ min %u u %u task %u core %u offset %u", 
 	       job->job_id, job->min_sockets, usable_sockets, 
 	       job->min_cores, usable_cores, job->min_threads, 
-	       usable_threads, maxtasks, offset);
+	       usable_threads, maxtasks, maxcores, offset);
 
 	avail_cores = xmalloc(sizeof(uint16_t) * sockets);
 	for (i = 0; i < sockets; i++) {
@@ -218,7 +220,7 @@ void _job_assign_tasks(struct select_cr_job *job,
 	total = 0;
 	asockets = 0;
 	for (i = 0; i < sockets; i++) {
-		if ((total >= maxtasks) && (asockets >= job->min_sockets)) {
+		if ((total >= maxcores) && (asockets >= job->min_sockets)) {
 			break;
 		}
 		if (this_cr_node->node_ptr->cores <=
@@ -237,7 +239,7 @@ void _job_assign_tasks(struct select_cr_job *job,
 			avail_cores[i] = 0;
 		}
 		if (avail_cores[i] > 0) {
-			total += avail_cores[i]*usable_threads;
+			total += avail_cores[i];
 			asockets++;
 		}
 	}
@@ -263,42 +265,42 @@ void _job_assign_tasks(struct select_cr_job *job,
 	}
 	
 	if (asockets < job->min_sockets) {
-		error("cons_res: %u maxtasks %u Cannot satisfy"
+		error("cons_res: %u maxcores %u Cannot satisfy"
 		      " request -B %u:%u: Using -B %u:%u",
-		      job->job_id, maxtasks, job->min_sockets, 
+		      job->job_id, maxcores, job->min_sockets, 
 		      job->min_cores, asockets, job->min_cores);
 	}
 
-	taskcount = 0;
+	corecount = 0;
 	if (cyclic) {
 		/* distribute tasks cyclically across the sockets */
-		for (i=1; taskcount<maxtasks; i++) {
-			last_taskcount = taskcount;
-			for (j=0; ((j<sockets) && (taskcount<maxtasks)); j++) {
+		for (i=1; corecount<maxcores; i++) {
+			last_corecount = corecount;
+			for (j=0; ((j<sockets) && (corecount<maxcores)); j++) {
 				if (avail_cores[j] == 0)
 					continue;
 				if (i<=avail_cores[j]) {
 					job->alloc_cores[job_index][j]++;
-					taskcount += usable_threads;
+					corecount++;
 				}
 			}
-			if (last_taskcount == taskcount) {
+			if (last_corecount == corecount) {
 				/* Avoid possible infinite loop on error */
 				fatal("_job_assign_tasks failure");
 			}
 		}
 	} else {
 		/* distribute tasks in blocks across the sockets */
-		for (j=0; ((j<sockets) && (taskcount<maxtasks)); j++) {
-			last_taskcount = taskcount;
+		for (j=0; ((j<sockets) && (corecount<maxcores)); j++) {
+			last_corecount = corecount;
 			if (avail_cores[j] == 0)
 				continue;
 			for (i = 0; (i < avail_cores[j]) && 
-				    (taskcount<maxtasks); i++) {
+				    (corecount<maxcores); i++) {
 				job->alloc_cores[job_index][j]++;
-				taskcount += usable_threads;
+				corecount++;
 			}
-			if (last_taskcount == taskcount) {
+			if (last_corecount == corecount) {
 				/* Avoid possible infinite loop on error */
 				fatal("_job_assign_tasks failure");
 			}

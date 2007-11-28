@@ -106,7 +106,7 @@ int slurm_get_avail_procs(const uint16_t max_sockets,
 	    	*cores = 1;
 	if (*sockets <= 0)
 	    	*sockets = *cpus / *cores / *threads;
-	for (i = 0 ; i < *sockets; i++) {
+	for (i = 0 ; alloc_cores && i < *sockets; i++) {
 		allocated_cores += alloc_cores[i];
 		if (alloc_cores[i])
 			allocated_sockets++;
@@ -124,7 +124,7 @@ int slurm_get_avail_procs(const uint16_t max_sockets,
 	info("get_avail_procs %u %s cr_type %d cpus %u  alloc_ c %u s %u",
 			job_id, name, cr_type, *cpus, allocated_cores,
 			allocated_sockets);
-	for (i = 0; i < *sockets; i++)
+	for (i = 0; alloc_cores && i < *sockets; i++)
 		info("get_avail_procs %u %s alloc_cores[%d] = %u", 
 		     job_id, name, i, alloc_cores[i]);
 #endif
