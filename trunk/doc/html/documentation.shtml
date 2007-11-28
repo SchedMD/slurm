@@ -9,7 +9,7 @@
 (Tutorial, The 7th International Conference on Linux Clusters, May 2006)</li>
 <li><a href="slurm_v1.2.pdf">Resource Management at LLNL, SLURM Version 1.2
 (April 2007)</li>
-<li><a href="http://www.llnl.gov/LCdocs/slurm">SLURM Reference Manual</a></li>
+<li><a href="https://computing.llnl.gov/LCdocs/slurm">SLURM Reference Manual</a></li>
 <li><a href="mc_support.shtml">Support for Multi-core/Multi-threaded Architectures</a></li>
 <li><a href="quickstart.shtml#mpi">Guide to MPI Use</a></li>
 <li><a href="bluegene.shtml">Blue Gene User and Administrator Guide</a></li>
@@ -54,6 +54,6 @@ Jobs throuh LSF</a></li>
 <li><a href="taskplugins.shtml">Task Plugin Programmer Guide</a></li>
 </ul>
 
-<p style="text-align:center;">Last modified 21 November 2007</p>
+<p style="text-align:center;">Last modified 28 November 2007</p>
 
 <!--#include virtual="footer.txt"-->
