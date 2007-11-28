@@ -87,7 +87,7 @@ struct part_cr_record {
  * node_cr_record.node_state assists with the unique state of each node.
  * NOTES:
  * - If node is in use by Shared=NO part, some CPUs/memory may be available
- * - Caution with NODE_CR_AVAILBLE: a Sharing partition could be full!!
+ * - Caution with NODE_CR_AVAILABLE: a Sharing partition could be full!!
  */
 enum node_cr_state {
 	NODE_CR_RESERVED, /* node is NOT available for use by any other jobs */
