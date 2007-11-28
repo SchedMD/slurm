@@ -94,7 +94,7 @@ static struct job_option_info * job_option_info_unpack (Buf buf)
 {
 	struct job_option_info *ji = xmalloc (sizeof (*ji));
 	uint32_t type;
-	uint16_t len;
+	uint32_t len;
 
 	if (unpack32 (&type, buf) != SLURM_SUCCESS)
 		goto error;
@@ -196,7 +196,7 @@ int job_options_pack (job_options_t opts, Buf buf)
 int job_options_unpack (job_options_t opts, Buf buf)
 {
 	uint32_t count;
-	uint16_t len;
+	uint32_t len;
 	char *   tag;
 	int      i;
 

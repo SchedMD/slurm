@@ -327,7 +327,7 @@ slurm_auth_unpack( Buf buf )
 {
 	slurm_auth_credential_t *cred;
 	char    *type;
-	uint16_t size;
+	uint32_t size;
 	uint32_t version;
 	
 	if ( buf == NULL ) {

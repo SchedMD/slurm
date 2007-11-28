@@ -280,7 +280,7 @@ slurm_auth_unpack( Buf buf )
 	char *tmpstr;
 	uint32_t tmpint;
 	uint32_t version;
-	uint16_t size;
+	uint32_t size;
 	
 	if ( buf == NULL ) {
 		plugin_errno = SLURM_AUTH_BADARG;

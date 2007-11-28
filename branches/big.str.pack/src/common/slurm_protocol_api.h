@@ -674,7 +674,7 @@ int inline slurm_unpack_slurm_addr_no_alloc(slurm_addr * slurm_address,
  * returns		- SLURM error code
  */
 void inline slurm_pack_slurm_addr_array(slurm_addr * slurm_address,
-					uint16_t size_val, Buf buffer);
+					uint32_t size_val, Buf buffer);
 /* slurm_unpack_slurm_addr_array
  * unpacks an array of slurm_addrs from a buffer
  * OUT slurm_address	- slurm_addr to unpack to
@@ -683,7 +683,7 @@ void inline slurm_pack_slurm_addr_array(slurm_addr * slurm_address,
  * returns		- SLURM error code
  */
 int inline slurm_unpack_slurm_addr_array(slurm_addr ** slurm_address,
-					 uint16_t * size_val, Buf buffer);
+					 uint32_t * size_val, Buf buffer);
 
 /**********************************************************************\
  * simplified communication routines 

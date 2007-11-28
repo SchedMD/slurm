@@ -134,7 +134,7 @@ struct select_cr_job {
 	uint32_t job_id;	/* job ID, default set by SLURM        */
 	uint16_t state;		/* job state information               */
 	uint32_t nprocs;	/* --nprocs=n,      -n n               */
-	uint16_t nhosts;	/* number of hosts allocated to job    */
+	uint32_t nhosts;	/* number of hosts allocated to job    */
 	char **host;		/* hostname vector                     */
 	uint16_t *cpus;		/* number of processors on each host,
 				 * if using Moab scheduler (sched/wiki2)

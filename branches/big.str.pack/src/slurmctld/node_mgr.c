@@ -402,15 +402,15 @@ extern int load_all_node_state ( bool state_only )
 {
 	char *node_name, *reason = NULL, *data = NULL, *state_file, *features;
 	int data_allocated, data_read = 0, error_code = 0, node_cnt = 0;
-	uint16_t node_state, name_len;
+	uint16_t node_state;
 	uint16_t cpus = 1, sockets = 1, cores = 1, threads = 1;
-	uint32_t real_memory, tmp_disk, data_size = 0;
+	uint32_t real_memory, tmp_disk, data_size = 0, name_len;
 	struct node_record *node_ptr;
 	int state_fd;
 	time_t time_stamp, now = time(NULL);
 	Buf buffer;
 	char *ver_str = NULL;
-	uint16_t ver_str_len;
+	uint32_t ver_str_len;
 
 	/* read the file */
 	state_file = xstrdup (slurmctld_conf.state_save_location);

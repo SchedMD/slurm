@@ -155,7 +155,7 @@ int _find_offset(struct select_cr_job *job, const int job_index,
 	}
 	if (index < 0)
 		fatal("job_assign_task: failure in computing offset");
-	
+
 	return index * this_cr_node->num_sockets;
 }
 
@@ -458,7 +458,7 @@ int cr_plane_dist(struct select_cr_job *job,
 		  const select_type_plugin_info_t cr_type)
 {
 	uint32_t maxtasks  = job->nprocs;
-	uint16_t num_hosts = job->nhosts;
+	uint32_t num_hosts = job->nhosts;
 	int i, j, k, host_index, cr_cpu = 0;
 	uint32_t taskcount = 0, last_taskcount;
 	int job_index = -1;

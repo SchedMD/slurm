@@ -424,7 +424,7 @@ static void _dump_trigger_state(trig_mgr_info_t *trig_ptr, Buf buffer)
 static int _load_trigger_state(Buf buffer)
 {
 	trig_mgr_info_t *trig_ptr;
-	uint16_t str_len;
+	uint32_t str_len;
 
 	trig_ptr = xmalloc(sizeof(trig_mgr_info_t));
 	safe_unpack32   (&trig_ptr->trig_id,   buffer);
@@ -564,7 +564,7 @@ extern int trigger_state_restore(void)
 	Buf buffer;
 	time_t buf_time;
 	char *ver_str = NULL;
-	uint16_t ver_str_len;
+	uint32_t ver_str_len;
 
 	/* read the file */
 	state_file = xstrdup(slurmctld_conf.state_save_location);

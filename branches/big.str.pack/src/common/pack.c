@@ -333,9 +333,9 @@ int unpack8(uint8_t * valp, Buf buffer)
  * size_val to network byte order and store at buffer followed by 
  * the data at valp. Adjust buffer counters.
  */
-void packmem(char *valp, uint16_t size_val, Buf buffer)
+void packmem(char *valp, uint32_t size_val, Buf buffer)
 {
-	uint16_t ns = htons(size_val);
+	uint32_t ns = htonl(size_val);
 
 	if (remaining_buf(buffer) < (sizeof(ns) + size_val)) {
 		buffer->size += (size_val + BUF_SIZE);
@@ -360,15 +360,15 @@ void packmem(char *valp, uint16_t size_val, Buf buffer)
  * NOTE: valp is set to point into the buffer bufp, a copy of 
  *	the data is not made
  */
-int unpackmem_ptr(char **valp, uint16_t * size_valp, Buf buffer)
+int unpackmem_ptr(char **valp, uint32_t * size_valp, Buf buffer)
 {
-	uint16_t ns;
+	uint32_t ns;
 
 	if (remaining_buf(buffer) < sizeof(ns))
 		return SLURM_ERROR;
 
 	memcpy(&ns, &buffer->head[buffer->processed], sizeof(ns));
-	*size_valp = ntohs(ns);
+	*size_valp = ntohl(ns);
 	buffer->processed += sizeof(ns);
 
 	if (*size_valp > 0) {
@@ -390,15 +390,15 @@ int unpackmem_ptr(char **valp, uint16_t * size_valp, Buf buffer)
  * NOTE: The caller is responsible for the management of valp and 
  * insuring it has sufficient size
  */
-int unpackmem(char *valp, uint16_t * size_valp, Buf buffer)
+int unpackmem(char *valp, uint32_t * size_valp, Buf buffer)
 {
-	uint16_t ns;
+	uint32_t ns;
 
 	if (remaining_buf(buffer) < sizeof(ns))
 		return SLURM_ERROR;
 
 	memcpy(&ns, &buffer->head[buffer->processed], sizeof(ns));
-	*size_valp = ntohs(ns);
+	*size_valp = ntohl(ns);
 	buffer->processed += sizeof(ns);
 
 	if (*size_valp > 0) {
@@ -420,15 +420,15 @@ int unpackmem(char *valp, uint16_t * size_valp, Buf buffer)
  *	the caller is responsible for calling xfree() on *valp
  *	if non-NULL (set to NULL on zero size buffer value)
  */
-int unpackmem_xmalloc(char **valp, uint16_t * size_valp, Buf buffer)
+int unpackmem_xmalloc(char **valp, uint32_t * size_valp, Buf buffer)
 {
-	uint16_t ns;
+	uint32_t ns;
 
 	if (remaining_buf(buffer) < sizeof(ns))
 		return SLURM_ERROR;
 
 	memcpy(&ns, &buffer->head[buffer->processed], sizeof(ns));
-	*size_valp = ntohs(ns);
+	*size_valp = ntohl(ns);
 	buffer->processed += sizeof(ns);
 
 	if (*size_valp > 0) {
@@ -452,7 +452,7 @@ int unpackmem_xmalloc(char **valp, uint16_t * size_valp, Buf buffer)
  *	the caller is responsible for calling free() on *valp
  *	if non-NULL (set to NULL on zero size buffer value)
  */
-int unpackmem_malloc(char **valp, uint16_t * size_valp, Buf buffer)
+int unpackmem_malloc(char **valp, uint32_t * size_valp, Buf buffer)
 {
 	uint16_t ns;
 
@@ -460,7 +460,7 @@ int unpackmem_malloc(char **valp, uint16_t * size_valp, Buf buffer)
 		return SLURM_ERROR;
 
 	memcpy(&ns, &buffer->head[buffer->processed], sizeof(ns));
-	*size_valp = ntohs(ns);
+	*size_valp = ntohl(ns);
 	buffer->processed += sizeof(ns);
 
 	if (*size_valp > 0) {
@@ -480,10 +480,10 @@ int unpackmem_malloc(char **valp, uint16_t * size_valp, Buf buffer)
  * (size_val), convert size_val to network byte order and store in the  
  * buffer followed by the data at valp. Adjust buffer counters. 
  */
-void packstr_array(char **valp, uint16_t size_val, Buf buffer)
+void packstr_array(char **valp, uint32_t size_val, Buf buffer)
 {
 	int i;
-	uint16_t ns = htons(size_val);
+	uint32_t ns = htonl(size_val);
 
 	if (remaining_buf(buffer) < sizeof(ns)) {
 		buffer->size += BUF_SIZE;
@@ -507,23 +507,23 @@ void packstr_array(char **valp, uint16_t size_val, Buf buffer)
  *	the caller is responsible for calling xfree on *valp
  *	if non-NULL (set to NULL on zero size buffer value)
  */
-int unpackstr_array(char ***valp, uint16_t * size_valp, Buf buffer)
+int unpackstr_array(char ***valp, uint32_t * size_valp, Buf buffer)
 {
 	int i;
-	uint16_t ns;
-	uint16_t uint16_tmp;
+	uint32_t ns;
+	uint32_t uint32_tmp;
 
 	if (remaining_buf(buffer) < sizeof(ns))
 		return SLURM_ERROR;
 
 	memcpy(&ns, &buffer->head[buffer->processed], sizeof(ns));
-	*size_valp = ntohs(ns);
+	*size_valp = ntohl(ns);
 	buffer->processed += sizeof(ns);
 
 	if (*size_valp > 0) {
 		*valp = xmalloc(sizeof(char *) * (*size_valp + 1));
 		for (i = 0; i < *size_valp; i++) {
-			if (unpackmem_xmalloc(&(*valp)[i], &uint16_tmp, buffer))
+			if (unpackmem_xmalloc(&(*valp)[i], &uint32_tmp, buffer))
 				return SLURM_ERROR;
 		}
 		(*valp)[i] = NULL;	/* NULL terminated array so that execle */
