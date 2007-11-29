@@ -6,7 +6,7 @@ INCLUDES = -I$(top_srcdir)
 
 bin_PROGRAMS = salloc
 
-salloc_SOURCES = salloc.c salloc.h opt.c opt.h msg.c msg.h
+salloc_SOURCES = salloc.c salloc.h opt.c opt.h
 
 convenience_libs = $(top_builddir)/src/api/libslurmhelper.la
 

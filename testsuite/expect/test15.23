@@ -53,7 +53,7 @@ set env(SALLOC_TIMELIMIT)     2
 set matches 0
 set salloc_pid [spawn $salloc -N1 $bin_bash]
 expect {
-	-re "debug:  Entering _msg_thr_create" {
+	-re "debug:  Entering _msg_thr_internal" {
 		incr matches
 		exp_continue
 	}

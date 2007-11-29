@@ -49,7 +49,6 @@
 
 #include "src/salloc/salloc.h"
 #include "src/salloc/opt.h"
-#include "src/salloc/msg.h"
 
 #define MAX_RETRIES 3
 
@@ -70,6 +69,11 @@ static void _pending_callback(uint32_t job_id);
 static void _ignore_signal(int signo);
 static void _exit_on_signal(int signo);
 static void _signal_while_allocating(int signo);
+static void _job_complete_handler(srun_job_complete_msg_t *msg);
+static void _timeout_handler(srun_timeout_msg_t *msg);
+static void _user_msg_handler(srun_user_msg_t *msg);
+static void _ping_handler(srun_ping_msg_t *msg);
+static void _node_fail_handler(srun_node_fail_msg_t *msg);
 
 int main(int argc, char *argv[])
 {
@@ -77,7 +81,7 @@ int main(int argc, char *argv[])
 	job_desc_msg_t desc;
 	resource_allocation_response_msg_t *alloc;
 	time_t before, after;
-	salloc_msg_thread_t *msg_thr;
+	allocation_msg_thread_t *msg_thr;
 	char **env = NULL;
 	int status = 0;
 	int errnum = 0;
@@ -86,6 +90,7 @@ int main(int argc, char *argv[])
 	pid_t rc_pid = 0;
 	int rc = 0;
 	static char *msg = "Slurm job queue full, sleeping and retrying.";
+	slurm_allocation_callbacks_t callbacks;
 
 	log_init(xbasename(argv[0]), logopt, 0, NULL);
 	if (initialize_and_process_args(argc, argv) < 0) {
@@ -107,8 +112,13 @@ int main(int argc, char *argv[])
 		exit(1);
 	}
 
+	callbacks.ping = _ping_handler;
+	callbacks.timeout = _timeout_handler;
+	callbacks.job_complete = _job_complete_handler;
+	callbacks.user_msg = _user_msg_handler;
+	callbacks.node_fail = _node_fail_handler;
 	/* create message thread to handle pings and such from slurmctld */
-	msg_thr = msg_thr_create(&desc.other_port);
+	msg_thr = slurm_allocation_msg_thr_create(&desc.other_port, &callbacks);
 
 	xsignal(SIGHUP, _signal_while_allocating);
 	xsignal(SIGINT, _signal_while_allocating);
@@ -140,7 +150,7 @@ int main(int argc, char *argv[])
 		} else {
 			error("Failed to allocate resources: %m");
 		}
-		msg_thr_destroy(msg_thr);
+		slurm_allocation_msg_thr_destroy(msg_thr);
 		exit(1);
 	}
 	after = time(NULL);
@@ -228,7 +238,7 @@ relinquish:
 	pthread_mutex_unlock(&allocation_state_lock);
 
 	slurm_free_resource_allocation_response_msg(alloc);
-	msg_thr_destroy(msg_thr);
+	slurm_allocation_msg_thr_destroy(msg_thr);
 
 	/*
 	 * Figure out what return code we should use.  If the user's command
@@ -410,4 +420,68 @@ static void _ignore_signal(int signo)
 static void _exit_on_signal(int signo)
 {
 	exit_flag = true;
+}
+
+/* This typically signifies the job was cancelled by scancel */
+static void _job_complete_handler(srun_job_complete_msg_t *comp)
+{
+	if (comp->step_id == NO_VAL) {
+		pthread_mutex_lock(&allocation_state_lock);
+		if (allocation_state != REVOKED) {
+			/* If the allocation_state is already REVOKED, then
+			 * no need to print this message.  We probably
+			 * relinquished the allocation ourself.
+			 */
+			info("Job allocation %u has been revoked.",
+			     comp->job_id);
+		}
+		if (allocation_state == GRANTED
+		    && command_pid > -1
+		    && opt.kill_command_signal_set) {
+			verbose("Sending signal %d to command \"%s\", pid %d",
+				opt.kill_command_signal,
+				command_argv[0], command_pid);
+			kill(command_pid, opt.kill_command_signal);
+		}
+		allocation_state = REVOKED;
+		pthread_mutex_unlock(&allocation_state_lock);
+	} else {
+		verbose("Job step %u.%u is finished.",
+			comp->job_id, comp->step_id);
+	}
+}
+
+/*
+ * Job has been notified of it's approaching time limit. 
+ * Job will be killed shortly after timeout.
+ * This RPC can arrive multiple times with the same or updated timeouts.
+ * FIXME: We may want to signal the job or perform other action for this.
+ * FIXME: How much lead time do we want for this message? Some jobs may 
+ *	require tens of minutes to gracefully terminate.
+ */
+static void _timeout_handler(srun_timeout_msg_t *msg)
+{
+	static time_t last_timeout = 0;
+
+	if (msg->timeout != last_timeout) {
+		last_timeout = msg->timeout;
+		verbose("Job allocation time limit to be reached at %s", 
+			ctime(&msg->timeout));
+	}
+}
+
+static void _user_msg_handler(srun_user_msg_t *msg)
+{
+	info("%s", msg->msg);
+}
+
+static void _ping_handler(srun_ping_msg_t *msg) 
+{
+	/* the api will respond so there really isn't anything to do
+	   here */
+}
+
+static void _node_fail_handler(srun_node_fail_msg_t *msg)
+{
+	error("Node failure on %s", msg->nodelist);
 }
