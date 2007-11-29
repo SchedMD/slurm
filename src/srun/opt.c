@@ -78,7 +78,6 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 #include "src/common/slurm_rlimits_info.h"
-#include "src/common/parse_time.h"
 #include "src/common/plugstack.h"
 #include "src/common/optz.h"
 #include "src/api/pmi_server.h"
@@ -1885,6 +1884,10 @@ void set_options(const int argc, char **argv, int first)
 			break;
 		case LONG_OPT_BEGIN:
 			opt.begin = parse_time(optarg);
+			if (opt.begin == 0) {
+				fatal("Invalid time specification %s",
+				      optarg);
+			}
 			break;
 		case LONG_OPT_MAIL_TYPE:
 			opt.mail_type |= _parse_mail_type(optarg);
