@@ -127,6 +127,9 @@ documents those changes that are of interest to users and admins.
  -- Add optional mode value to srun and sbatch --get-user-env option.
  -- Print error message and retry job submit commands when MaxJobCount 
     is reached. From Don Albert, Bull.
+ -- Treat invalid begin time specification as a fatal error in sbatch and 
+    srun. From Don Albert, Bull.
+ -- Validate begin time specification to avoid hours >24, minutes >59, etc.
 
 * Changes in SLURM 1.2.19
 =========================

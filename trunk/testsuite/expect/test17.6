@@ -42,7 +42,7 @@ set tasks       0
 print_header $test_id
 
 #
-# Submit a slurm job that will execute 'id' on 4 tasks (or try anyway)
+# Submit a slurm job that will execute 'id' on $task_cnt tasks (or try anyway)
 #
 file delete $file_in $file_out
 make_bash_script $file_in "$srun $bin_id"
