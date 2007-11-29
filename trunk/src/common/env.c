@@ -48,7 +48,7 @@
 #include <unistd.h>
 #include <sys/poll.h>
 #include <sys/types.h>
-
+#include <sys/param.h>		/* MAXPATHLEN */
 #include "src/common/macros.h"
 #include "slurm/slurm.h"
 #include "src/common/log.h"
@@ -160,7 +160,7 @@ setenvfs(const char *fmt, ...)
 	int rc;
 
 	va_start(ap, fmt);
-	vsnprintf(buf, ENV_BUFSIZE, fmt, ap);
+	vsnprintf(buf, sizeof(buf), fmt, ap);
 	va_end(ap);
 	
 	bufcpy = xstrdup(buf);
@@ -179,7 +179,7 @@ setenvf(char ***envp, const char *name, const char *fmt, ...)
 	char *bufcpy;
 
 	va_start(ap, fmt);
-	vsnprintf (buf, ENV_BUFSIZE, fmt, ap);
+	vsnprintf (buf, sizeof(buf), fmt, ap);
 	va_end(ap);
 	bufcpy = xstrdup(buf);
 	
@@ -977,7 +977,7 @@ int env_array_append_fmt(char ***array_ptr, const char *name,
 	}
 
 	va_start(ap, value_fmt);
-	vsnprintf (buf, ENV_BUFSIZE, value_fmt, ap);
+	vsnprintf (buf, sizeof(buf), value_fmt, ap);
 	va_end(ap);
 	
 	ep = _find_name_in_env(*array_ptr, name);
@@ -1053,7 +1053,7 @@ int env_array_overwrite_fmt(char ***array_ptr, const char *name,
 	}
 
 	va_start(ap, value_fmt);
-	vsnprintf (buf, ENV_BUFSIZE, value_fmt, ap);
+	vsnprintf (buf, sizeof(buf), value_fmt, ap);
 	va_end(ap);
 	
 	xstrfmtcat (str, "%s=%s", name, buf);
@@ -1172,11 +1172,11 @@ static int _env_array_entry_splitter(const char *entry,
  */
 static int _env_array_putenv(const char *string)
 {
-	char name[ENV_BUFSIZE];
+	char name[256];
 	char value[ENV_BUFSIZE];
 
-	if (!_env_array_entry_splitter(string, name, ENV_BUFSIZE, value, 
-				       ENV_BUFSIZE))
+	if (!_env_array_entry_splitter(string, name, sizeof(name),
+				       value, sizeof(value)))
 		return 0;
 	if (setenv(name, value, 1) == -1)
 		return 0;
@@ -1208,16 +1208,16 @@ void env_array_set_environment(char **env_array)
 void env_array_merge(char ***dest_array, const char **src_array)
 {
 	char **ptr;
-	char name[ENV_BUFSIZE];
+	char name[256];
 	char value[ENV_BUFSIZE];
 
 	if (src_array == NULL)
 		return;
 
 	for (ptr = (char **)src_array; *ptr != NULL; ptr++) {
-		_env_array_entry_splitter(*ptr, name, ENV_BUFSIZE, value, 
-					  ENV_BUFSIZE);
-		env_array_overwrite(dest_array, name, value);
+		if (_env_array_entry_splitter(*ptr, name, sizeof(name),
+					      value, sizeof(value)))
+			env_array_overwrite(dest_array, name, value);
 	}
 }
 
@@ -1244,8 +1244,8 @@ static void _strip_cr_nl(char *line)
  */
 char **_load_env_cache(const char *username)
 {
-	char *state_save_loc, fname[ENV_BUFSIZE];
-	char line[ENV_BUFSIZE], name[ENV_BUFSIZE], value[ENV_BUFSIZE];
+	char *state_save_loc, fname[MAXPATHLEN];
+	char line[ENV_BUFSIZE], name[256], value[ENV_BUFSIZE];
 	char **env = NULL;
 	FILE *fp;
 	int i;
@@ -1267,12 +1267,12 @@ char **_load_env_cache(const char *username)
 	info("Getting cached environment variables at %s", fname);
 	env = env_array_create();
 	while (1) {
-		if (!fgets(line, ENV_BUFSIZE, fp))
+		if (!fgets(line, sizeof(line), fp))
 			break;
 		_strip_cr_nl(line);
-		_env_array_entry_splitter(line, name, ENV_BUFSIZE, value, 
-					  ENV_BUFSIZE);
-		env_array_overwrite(&env, name, value);
+		if (_env_array_entry_splitter(line, name, sizeof(name),
+					      value, sizeof(value)))
+			env_array_overwrite(&env, name, value);
 	}
 	fclose(fp);
 	return env;
@@ -1298,7 +1298,7 @@ char **env_array_user_default(const char *username, int timeout, int mode)
 {
 	FILE *su;
 	char line[ENV_BUFSIZE];
-	char name[ENV_BUFSIZE];
+	char name[128];
 	char value[ENV_BUFSIZE];
 	char **env = NULL;
 	char *starttoken = "XXXXSLURMSTARTPARSINGHEREXXXX";
@@ -1381,7 +1381,7 @@ char **env_array_user_default(const char *username, int timeout, int mode)
 		}
 		if (!(ufds.revents & POLLIN))
 			break;
-		while (fgets(line, ENV_BUFSIZE, su)) {
+		while (fgets(line, sizeof(line), su)) {
 			if (!strncmp(line, starttoken, len)) {
 				found = 1;
 				break;
@@ -1421,16 +1421,16 @@ char **env_array_user_default(const char *username, int timeout, int mode)
 		/* stop at the line containing the stoptoken string */
 		if (!(ufds.revents & POLLIN))
 			break;
-		if ((fgets(line, ENV_BUFSIZE, su) == 0) ||
+		if ((fgets(line, sizeof(line), su) == 0) ||
 		    (!strncmp(line, stoptoken, len))) {
 			found = 1;
 			break;
 		}
 
 		_strip_cr_nl(line);
-		_env_array_entry_splitter(line, name, ENV_BUFSIZE, value, 
-					  ENV_BUFSIZE);
-		env_array_overwrite(&env, name, value);
+		if (_env_array_entry_splitter(line, name, sizeof(name),
+					      value, sizeof(value)))
+			env_array_overwrite(&env, name, value);
 	}
 	close(fildes[0]);
 
