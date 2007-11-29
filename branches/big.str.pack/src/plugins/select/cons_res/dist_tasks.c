@@ -81,13 +81,15 @@ int compute_c_b_task_dist(struct select_cr_job *job)
 			over_subscribe = true;
 		if (last_taskid == taskid) {
 			/* avoid infinite loop */
-			fatal("compute_c_b_task_dist failure");
+			error("compute_c_b_task_dist failure");
+			abort();
 		}
 	}
 
 #if (CR_DEBUG)	
 	for (i = 0; i < job->nhosts; i++) {
-		info("cons_res _c_b_task_dist %u host %s nprocs %u maxtasks %u cpus %u alloc_cpus %u", 
+		info("cons_res _c_b_task_dist %u host %s nprocs %u "
+		     "maxtasks %u cpus %u alloc_cpus %u", 
 		     job->job_id, job->host[i], job->nprocs, 
 		     maxtasks, job->cpus[i], job->alloc_cpus[i]);
 	}
@@ -107,11 +109,13 @@ int _find_offset(struct select_cr_job *job, const int job_index,
 	uint16_t acores, asockets, freecpus, last_freecpus = 0;
 
 	p_ptr = get_cr_part_ptr(this_cr_node, job->partition);
-	if (p_ptr == NULL)
+	if (p_ptr == NULL) {
 		/* this should never happen, because p_ptr */
 		/* exists in the callers of this function  */
-		fatal("cons_res: find_offset: could not find part %s",
+		error("cons_res: find_offset: could not find part %s",
 		      job->partition);
+		abort();
+	}
 
 	index = -1;
 	for (i = 0; i < p_ptr->num_rows; i++) {
@@ -132,14 +136,14 @@ int _find_offset(struct select_cr_job *job, const int job_index,
 				asockets++;
 		}
 		/* make sure we have the required number of usable sockets */
-		if (skip && (sockets - skip) < job->min_sockets)
+		if (skip && ((sockets - skip) < job->min_sockets))
 			continue;
 		/* CR_SOCKET needs UNALLOCATED sockets */
-		if (cr_type == CR_SOCKET || cr_type == CR_SOCKET_MEMORY) {
+		if ((cr_type == CR_SOCKET) || (cr_type == CR_SOCKET_MEMORY)) {
 			if (sockets - asockets < job->min_sockets)
 				continue;
 		}
-		
+
 		freecpus = (cores * sockets) - acores;
 		if (freecpus < maxcores)
 			continue;
@@ -153,8 +157,10 @@ int _find_offset(struct select_cr_job *job, const int job_index,
 			last_freecpus = freecpus;
 		}
 	}
-	if (index < 0)
-		fatal("job_assign_task: failure in computing offset");
+	if (index < 0) {
+		error("job_assign_task: failure in computing offset");
+		abort();
+	}
 
 	return index * this_cr_node->num_sockets;
 }
@@ -177,11 +183,13 @@ void _job_assign_tasks(struct select_cr_job *job,
 	struct part_cr_record *p_ptr;
 	
 	p_ptr = get_cr_part_ptr(this_cr_node, job->partition);
-	if (p_ptr == NULL)
+	if (p_ptr == NULL) {
 		/* this should never happen, because p_ptr */
 		/* exists in the callers of this function  */
-		fatal("cons_res: assign_tasks: could not find part %s",
+		error("cons_res: assign_tasks: could not find part %s",
 		      job->partition);
+		abort();
+	}
 
 	/* get hardware info for this node */	
 	get_resources_this_node(&cpus,  &sockets, &cores, &threads, 
@@ -286,7 +294,8 @@ void _job_assign_tasks(struct select_cr_job *job,
 			}
 			if (last_corecount == corecount) {
 				/* Avoid possible infinite loop on error */
-				fatal("_job_assign_tasks failure");
+				error("_job_assign_tasks failure");
+				abort();
 			}
 		}
 	} else {
@@ -302,7 +311,8 @@ void _job_assign_tasks(struct select_cr_job *job,
 			}
 			if (last_corecount == corecount) {
 				/* Avoid possible infinite loop on error */
-				fatal("_job_assign_tasks failure");
+				error("_job_assign_tasks failure");
+				abort();
 			}
 		}
 	}
@@ -490,7 +500,8 @@ int cr_plane_dist(struct select_cr_job *job,
 		}
 		if (last_taskcount == taskcount) {
 			/* avoid possible infinite loop on error */
-			fatal("cr_plane_dist failure");
+			error("cr_plane_dist failure");
+			abort();
 		}
 	}
 

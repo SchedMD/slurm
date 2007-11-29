@@ -41,6 +41,7 @@
 
 #include <fcntl.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <slurm/slurm.h>
 #include <slurm/slurm_errno.h>
 
