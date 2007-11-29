@@ -1,12 +1,20 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins.
 
+* Changes in SLURM 1.3.0-pre8
+=============================
+ -- Modify how strings are packed in the RPCs, Maximum string size 
+    increased from 64KB (16-bit size field) to 4GB (32-bit size field).
+
+* Changes in SLURM 1.3.0-pre7
+=============================
+ -- Fix a bug in the processing of srun's --exclusive option for a job step.
+
 * Changes in SLURM 1.3.0-pre6
 =============================
  -- Add support for configurable number of jobs to share resources using the 
     partition Shared parameter in slurm.conf (e.g. "Shared=FORCE:3" for two 
     jobs to share the resources). From Chris Holmes, HP.
- -- Fix a bug in the processing of srun's --exclusive option for a job step.
  -- Made salloc use api instead of local code for message handling
 
 * Changes in SLURM 1.3.0-pre5

@@ -965,7 +965,7 @@ slurm_cred_pack(slurm_cred_t cred, Buf buffer)
 slurm_cred_t
 slurm_cred_unpack(Buf buffer)
 {
-	uint16_t     len;
+	uint32_t     len;
 	uint32_t     tmpint;
 	slurm_cred_t cred = NULL;
 	char       **sigp;

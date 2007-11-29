@@ -446,7 +446,7 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 				 * 0 otherwise,default=1 */
 	char **environment;	/* environment variables to set for job, 
 				 *  name=value pairs, one per line */
-	uint16_t env_size;	/* element count in environment */
+	uint32_t env_size;	/* element count in environment */
 	char *features;		/* comma separated list of required features, 
 				 * default NONE */
 	uint16_t immediate;	/* 1 if allocate to run or fail immediately, 
@@ -500,7 +500,7 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 	uint16_t ntasks_per_core;/* number of tasks to invoke on each core */
 	char *script;		/* the actual job script, default NONE */
 	char **argv;		/* arguments to the script */
-	uint16_t argc;		/* number of arguments to the script */
+	uint32_t argc;		/* number of arguments to the script */
 	char *err;		/* pathname of stderr */
 	char *in;		/* pathname of stdin */
 	char *out;		/* pathname of stdout */
@@ -643,7 +643,7 @@ typedef struct job_info_msg {
 } job_info_msg_t;
 
 typedef struct slurm_step_layout {
-	uint16_t node_cnt;	/* node count */
+	uint32_t node_cnt;	/* node count */
 	uint32_t task_cnt;	/* total number of tasks in the step */
 	char *node_list;        /* list of nodes in step */
 	/* Array of length "node_cnt". Each element of the array
@@ -741,9 +741,9 @@ typedef struct {
 } slurm_step_ctx_params_t;
 
 typedef struct {
-	uint16_t argc;
+	uint32_t argc;
 	char **argv;
-	uint16_t envc;
+	uint32_t envc;
 	char **env;
 	char *cwd;
 	bool user_managed_io;

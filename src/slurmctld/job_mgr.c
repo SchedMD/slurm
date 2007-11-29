@@ -134,7 +134,7 @@ static void _pack_pending_job_details(struct job_details *detail_ptr,
 static int  _purge_job_record(uint32_t job_id);
 static void _purge_lost_batch_jobs(int node_inx, time_t now);
 static void _read_data_array_from_file(char *file_name, char ***data,
-				       uint16_t * size);
+				       uint32_t * size);
 static void _read_data_from_file(char *file_name, char **data);
 static void _remove_defunct_batch_dirs(List batch_dirs);
 static int  _reset_detail_bitmaps(struct job_record *job_ptr);
@@ -153,7 +153,7 @@ static int  _validate_job_desc(job_desc_msg_t * job_desc_msg, int allocate,
 static void _validate_job_files(List batch_dirs);
 static int  _write_data_to_file(char *file_name, char *data);
 static int  _write_data_array_to_file(char *file_name, char **data,
-				      uint16_t size);
+				      uint32_t size);
 static void _xmit_new_end_time(struct job_record *job_ptr);
 
 /* 
@@ -367,7 +367,7 @@ extern int load_all_job_state(void)
 	time_t buf_time;
 	uint32_t saved_job_id;
 	char *ver_str = NULL;
-	uint16_t ver_str_len;
+	uint32_t ver_str_len;
 
 	/* read the file */
 	state_file = xstrdup(slurmctld_conf.state_save_location);
@@ -550,10 +550,10 @@ static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer)
 static int _load_job_state(Buf buffer)
 {
 	uint32_t job_id, user_id, group_id, time_limit, priority, alloc_sid;
-	uint32_t exit_code, num_procs, db_index;
+	uint32_t exit_code, num_procs, db_index, name_len;
 	time_t start_time, end_time, suspend_time, pre_sus_time;
 	uint16_t job_state, next_step_id, details, batch_flag, step_flag;
-	uint16_t kill_on_node_fail, kill_on_step_done, name_len;
+	uint16_t kill_on_node_fail, kill_on_step_done;
 	uint16_t alloc_resp_port, other_port, mail_type, state_reason;
 	char *nodes = NULL, *partition = NULL, *name = NULL, *resp_host = NULL;
 	char *account = NULL, *network = NULL, *mail_user = NULL;
@@ -795,9 +795,9 @@ static int _load_job_details(struct job_record *job_ptr, Buf buffer)
 	uint32_t min_nodes, max_nodes;
 	uint32_t job_min_procs, total_procs;
 	uint32_t job_min_memory, job_max_memory, job_min_tmp_disk;
-	uint32_t num_tasks;
-	uint16_t argc = 0, shared, contiguous, ntasks_per_node;
-	uint16_t cpus_per_task, name_len, no_requeue, overcommit;
+	uint32_t num_tasks, name_len, argc = 0;
+	uint16_t shared, contiguous, ntasks_per_node;
+	uint16_t cpus_per_task, no_requeue, overcommit;
 	time_t begin_time, submit_time;
 	int i;
 	multi_core_data_t *mc_ptr;
@@ -2077,7 +2077,7 @@ _copy_job_desc_to_file(job_desc_msg_t * job_desc, uint32_t job_id)
  * IN size - number of elements in data
  */
 static int
-_write_data_array_to_file(char *file_name, char **data, uint16_t size)
+_write_data_array_to_file(char *file_name, char **data, uint32_t size)
 {
 	int fd, i, pos, nwrite, amount;
 
@@ -2087,8 +2087,8 @@ _write_data_array_to_file(char *file_name, char **data, uint16_t size)
 		return ESLURM_WRITING_TO_FILE;
 	}
 
-	amount = write(fd, &size, sizeof(uint16_t));
-	if (amount < sizeof(uint16_t)) {
+	amount = write(fd, &size, sizeof(uint32_t));
+	if (amount < sizeof(uint32_t)) {
 		error("Error writing file %s, %m", file_name);
 		close(fd);
 		return ESLURM_WRITING_TO_FILE;
@@ -2161,7 +2161,7 @@ static int _write_data_to_file(char *file_name, char *data)
  * RET point to array of string pointers containing environment variables
  * NOTE: READ lock_slurmctld config before entry
  */
-char **get_job_env(struct job_record *job_ptr, uint16_t * env_size)
+char **get_job_env(struct job_record *job_ptr, uint32_t * env_size)
 {
 	char job_dir[30], *file_name, **environment = NULL;
 
@@ -2204,11 +2204,11 @@ char *get_job_script(struct job_record *job_ptr)
  * NOTE: The output format of this must be identical with _xduparray2()
  */
 static void
-_read_data_array_from_file(char *file_name, char ***data, uint16_t * size)
+_read_data_array_from_file(char *file_name, char ***data, uint32_t * size)
 {
 	int fd, pos, buf_size, amount, i;
 	char *buffer, **array_ptr;
-	uint16_t rec_cnt;
+	uint32_t rec_cnt;
 
 	xassert(file_name);
 	xassert(data);
@@ -2222,8 +2222,8 @@ _read_data_array_from_file(char *file_name, char ***data, uint16_t * size)
 		return;
 	}
 
-	amount = read(fd, &rec_cnt, sizeof(uint16_t));
-	if (amount < sizeof(uint16_t)) {
+	amount = read(fd, &rec_cnt, sizeof(uint32_t));
+	if (amount < sizeof(uint32_t)) {
 		if (amount != 0)	/* incomplete write */
 			error("Error reading file %s, %m", file_name);
 		else 

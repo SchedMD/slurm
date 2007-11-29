@@ -88,7 +88,7 @@ static int _task_layout_hostfile(slurm_step_layout_t *step_layout,
 slurm_step_layout_t *slurm_step_layout_create(
 	const char *tlist,
 	uint32_t *cpus_per_node, uint32_t *cpu_count_reps, 
-	uint16_t num_hosts, 
+	uint32_t num_hosts, 
 	uint32_t num_tasks,
 	uint16_t task_dist,
 	uint16_t plane_size)
@@ -154,7 +154,7 @@ slurm_step_layout_t *fake_slurm_step_layout_create(
 	const char *tlist,
 	uint32_t *cpus_per_node, 
 	uint32_t *cpu_count_reps,
-	uint16_t node_cnt, 
+	uint32_t node_cnt, 
 	uint32_t task_cnt) 
 {
 	uint32_t cpn = 1;
@@ -287,7 +287,7 @@ extern void pack_slurm_step_layout(slurm_step_layout_t *step_layout,
 	if(!i)
 		return;
 	packstr(step_layout->node_list, buffer);
-	pack16(step_layout->node_cnt, buffer);
+	pack32(step_layout->node_cnt, buffer);
 	pack32(step_layout->task_cnt, buffer);
 /* 	slurm_pack_slurm_addr_array(step_layout->node_addr,  */
 /* 				    step_layout->node_cnt, buffer); */
@@ -301,7 +301,7 @@ extern void pack_slurm_step_layout(slurm_step_layout_t *step_layout,
 extern int unpack_slurm_step_layout(slurm_step_layout_t **layout, Buf buffer)
 {
 	uint16_t uint16_tmp;
-	uint32_t num_tids;
+	uint32_t num_tids, uint32_tmp;
 	slurm_step_layout_t *step_layout = NULL;
 	int i;
 	
@@ -316,17 +316,17 @@ extern int unpack_slurm_step_layout(slurm_step_layout_t **layout, Buf buffer)
 	step_layout->node_cnt = 0;
 	step_layout->tids = NULL;
 	step_layout->tasks = NULL;
-	safe_unpackstr_xmalloc(&step_layout->node_list, &uint16_tmp, buffer);
-	safe_unpack16(&step_layout->node_cnt, buffer);
+	safe_unpackstr_xmalloc(&step_layout->node_list, &uint32_tmp, buffer);
+	safe_unpack32(&step_layout->node_cnt, buffer);
 	safe_unpack32(&step_layout->task_cnt, buffer);
 	
 /* 	if (slurm_unpack_slurm_addr_array(&(step_layout->node_addr),  */
-/* 					  &uint16_tmp, buffer)) */
+/* 					  &uint32_tmp, buffer)) */
 /* 		goto unpack_error; */
-/* 	if (uint16_tmp != step_layout->node_cnt) */
+/* 	if (uint32_tmp != step_layout->node_cnt) */
 /* 		goto unpack_error; */
 	
-	step_layout->tasks = xmalloc(sizeof(uint16_t) * step_layout->node_cnt);
+	step_layout->tasks = xmalloc(sizeof(uint32_t) * step_layout->node_cnt);
 	step_layout->tids = xmalloc(sizeof(uint32_t *) 
 				    * step_layout->node_cnt);
 	for(i = 0; i < step_layout->node_cnt; i++) {
@@ -415,7 +415,7 @@ static int _init_task_layout(slurm_step_layout_t *step_layout,
 	i = hostlist_count(hl);
 	if(step_layout->node_cnt > i)
 		step_layout->node_cnt = i;
-	debug("laying out the %d tasks on %d hosts %s\n", 
+	debug("laying out the %u tasks on %u hosts %s\n", 
 	      step_layout->task_cnt, step_layout->node_cnt,
 	      step_layout->node_list);
 	if(step_layout->node_cnt < 1) {

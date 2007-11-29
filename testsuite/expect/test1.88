@@ -176,7 +176,7 @@ if {[wait_for_file $file_out] == 0} {
                 }
         }
 	if {$matches == 0} {
-		send_user "\nFAILURE: No MPI communications occured\n"
+		send_user "\nFAILURE: No MPI communications occurred\n"
 		send_user "  The version of MPI you are using may be incompatible "
 		send_user "with the configured switch\n"
 		send_user "  Core files may be present from failed MPI tasks\n\n"

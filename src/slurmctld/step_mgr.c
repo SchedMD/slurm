@@ -1584,9 +1584,9 @@ extern void dump_job_step_state(struct step_record *step_ptr, Buf buffer)
 extern int load_step_state(struct job_record *job_ptr, Buf buffer)
 {
 	struct step_record *step_ptr = NULL;
-	uint16_t step_id, cyclic_alloc, name_len, port, batch_step, bit_cnt;
+	uint16_t step_id, cyclic_alloc, port, batch_step, bit_cnt;
 	uint16_t ckpt_interval;
-	uint32_t exit_code;
+	uint32_t exit_code, name_len;
 	time_t start_time, pre_sus_time, ckpt_time;
 	char *host = NULL;
 	char *name = NULL, *network = NULL, *bit_fmt = NULL;

@@ -419,8 +419,8 @@ typedef struct launch_tasks_request_msg {
 	uint32_t  uid;
 	uint32_t  gid;
 	uint16_t  *tasks_to_launch;
-	uint16_t  envc;
-	uint16_t  argc;
+	uint32_t  envc;
+	uint32_t  argc;
 	uint16_t  multi_prog;
 	uint16_t  *cpus_allocated;
 	uint16_t  max_sockets;
@@ -544,9 +544,9 @@ typedef struct batch_job_launch_msg {
 	char *in;		/* pathname of stdin */
 	char *out;		/* pathname of stdout */
 	char *work_dir;		/* full pathname of working directory */
-	uint16_t argc;
+	uint32_t argc;
 	char **argv;
-	uint16_t envc;		/* element count in environment */
+	uint32_t envc;		/* element count in environment */
 	char **environment;	/* environment variables to set for job, 
 				 *   name=value pairs, one per line */
 	select_jobinfo_t select_jobinfo;	/* opaque data type */
@@ -566,7 +566,7 @@ typedef struct job_id_response_msg {
 typedef struct srun_exec_msg {
 	uint32_t job_id;	/* slurm job_id */
 	uint32_t step_id;	/* step_id or NO_VAL */
-	uint16_t argc;		/* argument count */
+	uint32_t argc;		/* argument count */
 	char **  argv;		/* program arguments */
 } srun_exec_msg_t;
 

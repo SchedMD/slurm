@@ -648,7 +648,7 @@ extern struct part_record *find_part_record (char *name);
  * OUT env_size - number of elements to read
  * RET point to array of string pointers containing environment variables
  */
-extern char **get_job_env (struct job_record *job_ptr, uint16_t *env_size);
+extern char **get_job_env (struct job_record *job_ptr, uint32_t *env_size);
 
 /* 
  * get_job_script - return the script for a given job

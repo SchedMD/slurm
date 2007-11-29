@@ -1835,11 +1835,11 @@ int slurm_unpack_slurm_addr_no_alloc(slurm_addr * slurm_address,
  * returns		- SLURM error code
  */
 void slurm_pack_slurm_addr_array(slurm_addr * slurm_address,
-				 uint16_t size_val, Buf buffer)
+				 uint32_t size_val, Buf buffer)
 {
 	int i = 0;
-	uint16_t nl = htons(size_val);
-	pack16((uint16_t)nl, buffer);
+	uint32_t nl = htonl(size_val);
+	pack32(nl, buffer);
 	
 	for (i = 0; i < size_val; i++) {
 		slurm_pack_slurm_addr(slurm_address + i, buffer);
@@ -1855,14 +1855,14 @@ void slurm_pack_slurm_addr_array(slurm_addr * slurm_address,
  * returns		- SLURM error code
  */
 int slurm_unpack_slurm_addr_array(slurm_addr ** slurm_address,
-			    uint16_t * size_val, Buf buffer)
+			    uint32_t * size_val, Buf buffer)
 {
 	int i = 0;
-	uint16_t nl;
+	uint32_t nl;
 
 	*slurm_address = NULL;
-	safe_unpack16(&nl, buffer);
-	*size_val = ntohs(nl);
+	safe_unpack32(&nl, buffer);
+	*size_val = ntohl(nl);
 	*slurm_address = xmalloc((*size_val) * sizeof(slurm_addr));
 
 	for (i = 0; i < *size_val; i++) {
