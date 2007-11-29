@@ -1134,7 +1134,7 @@ static int _fake_unpack_adapters(Buf buf)
 	safe_unpack32(&adapter_count, buf);
 	for (i = 0; i < adapter_count; i++) {
 		/* no copy, just advances buf counters */
-		unpackmem_ptr(&dummyptr, &dummy16, buf);
+		safe_unpackmem_ptr(&dummyptr, &dummy16, buf);
 		if (dummy16 != FED_ADAPTERNAME_LEN)
 			goto unpack_error;
 		safe_unpack16(&dummy16, buf);
@@ -1186,7 +1186,7 @@ _unpack_nodeinfo(fed_nodeinfo_t *n, Buf buf, bool believe_window_status)
 	safe_unpack32(&magic, buf);
 	if(magic != FED_NODEINFO_MAGIC)
 		slurm_seterrno_ret(EBADMAGIC_FEDNODEINFO);
-	unpackmem_ptr(&name_ptr, &size, buf);
+	safe_unpackmem_ptr(&name_ptr, &size, buf);
 	if(size != FED_HOSTLEN)
 		goto unpack_error;
 	memcpy(name, name_ptr, size);
@@ -1234,7 +1234,7 @@ _unpack_nodeinfo(fed_nodeinfo_t *n, Buf buf, bool believe_window_status)
 	safe_unpack32(&tmp_n->adapter_count, buf);
 	for(i = 0; i < tmp_n->adapter_count; i++) {
 		tmp_a = tmp_n->adapter_list + i;
-		unpackmem_ptr(&name_ptr, &size, buf);
+		safe_unpackmem_ptr(&name_ptr, &size, buf);
 		if(size != FED_ADAPTERNAME_LEN)
 			goto unpack_error;
 		memcpy(tmp_a->name, name_ptr, size);
@@ -1978,7 +1978,7 @@ _unpack_tableinfo(fed_tableinfo_t *tableinfo, Buf buf)
 		safe_unpack16(&tableinfo->table[i]->lid, buf);
 		safe_unpack16(&tableinfo->table[i]->window_id, buf);
 	}
-	unpackmem_ptr(&name_ptr, &size, buf);
+	safe_unpackmem_ptr(&name_ptr, &size, buf);
 	if (size != FED_ADAPTERNAME_LEN)
 		goto unpack_error;
 	memcpy(tableinfo->adapter_name, name_ptr, size);
@@ -2003,7 +2003,7 @@ fed_unpack_jobinfo(fed_jobinfo_t *j, Buf buf)
 	safe_unpack32(&j->magic, buf);
 	assert(j->magic == FED_JOBINFO_MAGIC);
 	safe_unpack16(&j->job_key, buf);
-	unpackmem(j->job_desc, &size, buf);
+	safe_unpackmem(j->job_desc, &size, buf);
 	if(size != DESCLEN)
 		goto unpack_error;
 	safe_unpack32(&j->window_memory, buf);

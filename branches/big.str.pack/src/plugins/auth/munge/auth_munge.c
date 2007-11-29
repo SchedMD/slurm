@@ -325,7 +325,7 @@ slurm_auth_pack( slurm_auth_credential_t *cred, Buf buf )
 slurm_auth_credential_t *
 slurm_auth_unpack( Buf buf )
 {
-	slurm_auth_credential_t *cred;
+	slurm_auth_credential_t *cred = NULL;
 	char    *type;
 	uint32_t size;
 	uint32_t version;
@@ -338,20 +338,14 @@ slurm_auth_unpack( Buf buf )
 	/*
 	 * Get the authentication type.
 	 */
-	if ( unpackmem_ptr( &type, &size, buf ) != SLURM_SUCCESS ) {
-		plugin_errno = SLURM_AUTH_UNPACK;
-		return NULL;
-	}
+	safe_unpackmem_ptr( &type, &size, buf );
 	
 	if (( type == NULL )
 	||  ( strcmp( type, plugin_type ) != 0 )) {
 		plugin_errno = SLURM_AUTH_MISMATCH;
 		return NULL;
 	}
-	if ( unpack32( &version, buf ) != SLURM_SUCCESS ) {
-		plugin_errno = SLURM_AUTH_UNPACK;
-		return NULL;
-	}	
+	safe_unpack32( &version, buf );
 	if ( version != plugin_version ) {
 		plugin_errno = SLURM_AUTH_MISMATCH;
 		return NULL;
@@ -367,13 +361,11 @@ slurm_auth_unpack( Buf buf )
 
 	xassert(cred->magic = MUNGE_MAGIC);
 
-	if (unpackstr_malloc(&cred->m_str, &size, buf) < 0) {
-		plugin_errno = SLURM_AUTH_UNPACK;
-		goto unpack_error;
-	}
+	safe_unpackstr_malloc(&cred->m_str, &size, buf);
 	return cred;
 
  unpack_error:
+	plugin_errno = SLURM_AUTH_UNPACK;
 	xfree( cred );
 	return NULL;
 }

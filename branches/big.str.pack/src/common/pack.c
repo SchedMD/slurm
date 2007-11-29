@@ -454,7 +454,7 @@ int unpackmem_xmalloc(char **valp, uint32_t * size_valp, Buf buffer)
  */
 int unpackmem_malloc(char **valp, uint32_t * size_valp, Buf buffer)
 {
-	uint16_t ns;
+	uint32_t ns;
 
 	if (remaining_buf(buffer) < sizeof(ns))
 		return SLURM_ERROR;
