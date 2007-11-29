@@ -117,6 +117,10 @@ _get_time(char *time_str, int *pos, int *hour, int *minute, int * second)
 	if ((time_str[offset] < '0') || (time_str[offset] > '9'))
 		goto prob;
 	hr = (hr * 10) + time_str[offset++] - '0';
+	if (hr > 23) {
+		offset -= 2;
+		goto prob;
+	}
 	if (time_str[offset] != ':')
 		goto prob;
 	offset++;
@@ -128,6 +132,10 @@ _get_time(char *time_str, int *pos, int *hour, int *minute, int * second)
 	if ((time_str[offset] < '0') || (time_str[offset] > '9'))
 		goto prob;
 	min = (min * 10)  + time_str[offset++] - '0';
+	if (min > 59) {
+		offset -= 2;
+		goto prob;
+	}
 
 	/* get optional second */
 	if (time_str[offset] == ':') {
@@ -138,6 +146,10 @@ _get_time(char *time_str, int *pos, int *hour, int *minute, int * second)
 		if ((time_str[offset] < '0') || (time_str[offset] > '9'))
 			goto prob;
 		sec = (sec * 10)  + time_str[offset++] - '0';
+		if (sec > 59) {
+			offset -= 2;
+			goto prob;
+		}
 	} else
 		sec = 0;
 
@@ -146,8 +158,20 @@ _get_time(char *time_str, int *pos, int *hour, int *minute, int * second)
 	}
 	if (strncasecmp(time_str+offset, "pm", 2)== 0) {
 		hr += 12;
+		if (hr > 23) {
+			if (hr == 24)
+				hr = 12;
+			else
+				goto prob;
+		}
 		offset += 2;
 	} else if (strncasecmp(time_str+offset, "am", 2) == 0) {
+		if (hr > 11) {
+			if (hr == 12)
+				hr = 0;
+			else
+				goto prob;
+		}
 		offset += 2;
 	}
 
