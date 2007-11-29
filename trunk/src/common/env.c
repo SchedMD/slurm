@@ -77,7 +77,7 @@ strong_alias(env_array_overwrite_fmt,	slurm_env_array_overwrite_fmt);
 
 #define SU_WAIT_MSEC 8000	/* 8000 msec for /bin/su to return user 
 				 * env vars for --get-user-env option */
-#define ENV_BUFSIZE (64 * 1024)
+#define ENV_BUFSIZE (256 * 1024)
 
 /*
  *  Return pointer to `name' entry in environment if found, or

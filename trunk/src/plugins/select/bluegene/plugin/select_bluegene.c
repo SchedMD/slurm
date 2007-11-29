@@ -337,7 +337,7 @@ extern int select_p_state_restore(char *dir_name)
 	List results = NULL;
 	int data_allocated, data_read = 0;
 	char *ver_str = NULL;
-	uint16_t ver_str_len;
+	uint32_t ver_str_len;
 	struct passwd *pw_ent = NULL;
 	int blocks = 0;
 

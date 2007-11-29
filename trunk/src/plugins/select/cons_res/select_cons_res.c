@@ -1147,12 +1147,12 @@ static int _cr_read_state_buffer(int fd, char **data_p, int *data_size_p)
 static int _cr_pack_job(struct select_cr_job *job, Buf buffer)
 {
     	int i;
-	uint16_t nhosts = job->nhosts;
+	uint32_t nhosts = job->nhosts;
 
 	pack32(job->job_id, buffer);
 	pack16(job->state, buffer);
 	pack32(job->nprocs, buffer);
-	pack16(job->nhosts, buffer);
+	pack32(job->nhosts, buffer);
 	pack16(job->node_req, buffer);
 
 	packstr_array(job->host, nhosts, buffer);
@@ -1189,30 +1189,30 @@ static int _cr_pack_job(struct select_cr_job *job, Buf buffer)
 static int _cr_unpack_job(struct select_cr_job *job, Buf buffer)
 {
     	int i;
-    	uint16_t len16, have_alloc_cores;
+    	uint16_t have_alloc_cores;
     	uint32_t len32;
-	int32_t nhosts = 0;
+	uint32_t nhosts = 0;
 	char *bit_fmt = NULL;
 	uint16_t bit_cnt; 
 
 	safe_unpack32(&job->job_id, buffer);
 	safe_unpack16(&job->state, buffer);
 	safe_unpack32(&job->nprocs, buffer);
-	safe_unpack16(&job->nhosts, buffer);
+	safe_unpack32(&job->nhosts, buffer);
 	safe_unpack16(&bit_cnt, buffer);
 	nhosts = job->nhosts;
 	job->node_req = bit_cnt;
 	
-	safe_unpackstr_array(&job->host, &len16, buffer);
-	if (len16 != nhosts) {
+	safe_unpackstr_array(&job->host, &len32, buffer);
+	if (len32 != nhosts) {
 		error("cons_res unpack_job: expected %u hosts, saw %u",
-				nhosts, len16);
+				nhosts, len32);
 		goto unpack_error;
 	}
 
 	safe_unpack16_array(&job->cpus, &len32, buffer);
 	safe_unpack16_array(&job->alloc_cpus, &len32, buffer);
-	safe_unpackstr_xmalloc(&job->partition, &len16, buffer);
+	safe_unpackstr_xmalloc(&job->partition, &len32, buffer);
 	safe_unpack16_array(&job->node_offset, &len32, buffer);
 
 	safe_unpack16(&have_alloc_cores, buffer);
@@ -1239,7 +1239,7 @@ static int _cr_unpack_job(struct select_cr_job *job, Buf buffer)
 	safe_unpack16(&job->min_cores, buffer);
 	safe_unpack16(&job->min_threads, buffer);
 
-	safe_unpackstr_xmalloc(&bit_fmt, &len16, buffer);
+	safe_unpackstr_xmalloc(&bit_fmt, &len32, buffer);
 	safe_unpack16(&bit_cnt, buffer);
 	if (bit_fmt) {
                 job->node_bitmap = bit_alloc(bit_cnt);
@@ -1422,7 +1422,7 @@ extern int select_p_state_restore(char *dir_name)
 	char *file_name = NULL;
 	struct select_cr_job *job;
 	Buf buffer = NULL;
-	uint16_t len16;
+	uint32_t len32;
 	char *data = NULL;
 	int data_size = 0;
 	char *restore_plugin_type = NULL;
@@ -1463,7 +1463,7 @@ extern int select_p_state_restore(char *dir_name)
 	data = NULL;    /* now in buffer, don't xfree() */
 
 	/*** retrieve the plugin type ***/
-	safe_unpackstr_xmalloc(&restore_plugin_type, &len16, buffer);
+	safe_unpackstr_xmalloc(&restore_plugin_type, &len32, buffer);
 	safe_unpack32(&restore_plugin_version, buffer);
 	safe_unpack16(&restore_plugin_crtype,  buffer);
 	safe_unpack32(&restore_pstate_version, buffer);
@@ -1525,7 +1525,7 @@ extern int select_p_state_restore(char *dir_name)
 	for (i = 0; i < prev_select_node_cnt; i++) {
 		/*** don't restore prev_select_node_ptr[i].node_ptr ***/
 		safe_unpackstr_xmalloc(&(prev_select_node_ptr[i].name), 
-				       &len16, buffer);
+				       &len32, buffer);
 		safe_unpack16(&prev_select_node_ptr[i].num_sockets, buffer);
 		prev_select_node_ptr[i].node_ptr     = NULL;
 		prev_select_node_ptr[i].node_state   = NODE_CR_AVAILABLE;

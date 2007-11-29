@@ -63,7 +63,7 @@
 extern slurm_step_layout_t *slurm_step_layout_create(const char *tlist,
 						     uint32_t *cpus_per_node, 
 						     uint32_t *cpu_count_reps,
-						     uint16_t node_cnt, 
+						     uint32_t node_cnt, 
 						     uint32_t task_cnt,
 						     uint16_t task_dist,
 						     uint16_t plane_size);
@@ -86,7 +86,7 @@ extern slurm_step_layout_t *fake_slurm_step_layout_create(
 	const char *tlist,
 	uint32_t *cpus_per_node, 
 	uint32_t *cpu_count_reps,
-	uint16_t node_cnt, 
+	uint32_t node_cnt, 
 	uint32_t task_cnt);
 
 /* copys structure for step layout */

@@ -94,19 +94,16 @@ static struct job_option_info * job_option_info_unpack (Buf buf)
 {
 	struct job_option_info *ji = xmalloc (sizeof (*ji));
 	uint32_t type;
-	uint16_t len;
+	uint32_t len;
 
-	if (unpack32 (&type, buf) != SLURM_SUCCESS)
-		goto error;
-	if (unpackstr_xmalloc (&ji->option, &len, buf) != SLURM_SUCCESS)
-		goto error;
-	if (unpackstr_xmalloc (&ji->optarg, &len, buf) != SLURM_SUCCESS)
-		goto error;
+	safe_unpack32 (&type, buf);
+	safe_unpackstr_xmalloc (&ji->option, &len, buf);
+	safe_unpackstr_xmalloc (&ji->optarg, &len, buf);
 
 	ji->type = (int) type;
 	return (ji);
 
-    error:
+  unpack_error:
 	job_option_info_destroy (ji);
 	return (NULL);
 }
@@ -196,19 +193,18 @@ int job_options_pack (job_options_t opts, Buf buf)
 int job_options_unpack (job_options_t opts, Buf buf)
 {
 	uint32_t count;
-	uint16_t len;
-	char *   tag;
+	uint32_t len;
+	char *   tag = NULL;
 	int      i;
 
-	if (unpackstr_xmalloc (&tag, &len, buf) != SLURM_SUCCESS)
-		return (SLURM_ERROR);
+	safe_unpackstr_xmalloc (&tag, &len, buf);
 
 	if (strncmp (tag, JOB_OPTIONS_PACK_TAG, len) != 0) {
 		xfree(tag);
 		return (-1);
 	}
 	xfree(tag);
-	unpack32 (&count, buf);
+	safe_unpack32 (&count, buf);
 
 	for (i = 0; i < count; i++) {
 		struct job_option_info *ji;
@@ -218,6 +214,10 @@ int job_options_unpack (job_options_t opts, Buf buf)
 	}
 
 	return (0);
+
+  unpack_error:
+	xfree(tag);
+	return SLURM_ERROR;
 }
 
 /*

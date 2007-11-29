@@ -389,10 +389,10 @@ int load_all_part_state(void)
 	char *part_name, *allow_groups, *nodes, *state_file, *data = NULL;
 	uint32_t max_time, max_nodes, min_nodes;
 	time_t time;
-	uint16_t name_len, def_part_flag, hidden, root_only;
+	uint16_t def_part_flag, hidden, root_only;
 	uint16_t max_share, priority, state_up;
 	struct part_record *part_ptr;
-	uint32_t data_size = 0;
+	uint32_t data_size = 0, name_len;
 	int data_allocated, data_read = 0, error_code = 0, part_cnt = 0;
 	int state_fd;
 	Buf buffer;

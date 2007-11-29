@@ -60,17 +60,17 @@ extern void pack_slurmd_conf_lite(slurmd_conf_t *conf, Buf buffer)
 
 extern int unpack_slurmd_conf_lite_no_alloc(slurmd_conf_t *conf, Buf buffer)
 {
-	uint16_t uint16_tmp;
 	uint32_t uint32_tmp;
-	safe_unpackstr_xmalloc(&conf->hostname, &uint16_tmp, buffer);
+
+	safe_unpackstr_xmalloc(&conf->hostname, &uint32_tmp, buffer);
 	safe_unpack16(&conf->sockets, buffer);
 	safe_unpack16(&conf->cores, buffer);
 	safe_unpack16(&conf->threads, buffer);
-	safe_unpackstr_xmalloc(&conf->spooldir, &uint16_tmp, buffer);
-	safe_unpackstr_xmalloc(&conf->node_name, &uint16_tmp, buffer);
-	safe_unpackstr_xmalloc(&conf->logfile, &uint16_tmp, buffer);
-	safe_unpackstr_xmalloc(&conf->task_prolog, &uint16_tmp, buffer);
-	safe_unpackstr_xmalloc(&conf->task_epilog, &uint16_tmp, buffer);
+	safe_unpackstr_xmalloc(&conf->spooldir,    &uint32_tmp, buffer);
+	safe_unpackstr_xmalloc(&conf->node_name,   &uint32_tmp, buffer);
+	safe_unpackstr_xmalloc(&conf->logfile,     &uint32_tmp, buffer);
+	safe_unpackstr_xmalloc(&conf->task_prolog, &uint32_tmp, buffer);
+	safe_unpackstr_xmalloc(&conf->task_epilog, &uint32_tmp, buffer);
 	safe_unpack16(&conf->job_acct_gather_freq, buffer);
 	safe_unpack16(&conf->propagate_prio, buffer);
 	safe_unpack32(&uint32_tmp, buffer);
