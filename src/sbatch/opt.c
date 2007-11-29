@@ -1107,6 +1107,10 @@ static void _set_options(int argc, char **argv)
 			break;
 		case LONG_OPT_BEGIN:
 			opt.begin = parse_time(optarg);
+			if (opt.begin == 0) {
+				fatal("Invalid time specification %s",
+				      optarg);
+			}
 			break;
 		case LONG_OPT_MAIL_TYPE:
 			opt.mail_type |= parse_mail_type(optarg);
