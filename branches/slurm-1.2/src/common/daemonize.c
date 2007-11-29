@@ -139,12 +139,14 @@ read_pidfile(const char *pidfile, int *pidfd)
 
 	if (fscanf(fp, "%lu", &pid) < 1) {
 		error ("Possible corrupt pidfile `%s'", pidfile);
+		(void) close(fd);
 		return ((pid_t) 0);
 	}
 
 	if ((lpid = fd_is_read_lock_blocked(fd)) == (pid_t) 0) {
 		verbose ("pidfile not locked, assuming no running daemon");
-		return (lpid);
+		(void) close(fd);
+		return ((pid_t) 0);
 	}
 
 	if (lpid != (pid_t) pid) 
@@ -154,7 +156,7 @@ read_pidfile(const char *pidfile, int *pidfd)
 	if (pidfd != NULL)
 		*pidfd = fd;
 	else 
-		(void) close(fd); /* Ignore errors */
+		(void) close(fd);
 
 	return (lpid);
 }
