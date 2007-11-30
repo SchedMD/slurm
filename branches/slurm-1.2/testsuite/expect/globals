@@ -67,6 +67,11 @@ cset squeue      "${slurm_dir}/bin/squeue"
 cset srun        "${slurm_dir}/bin/srun"
 cset strigger    "${slurm_dir}/bin/strigger"
 
+cset pbsnodes    "${slurm_dir}/bin/pbsnodes"
+cset qdel        "${slurm_dir}/bin/qdel"
+cset qstat       "${slurm_dir}/bin/qstat"
+cset qsub        "${slurm_dir}/bin/qsub"
+
 # If length of string partition is zero, use output of function 
 #	default_partition, otherwise use the partition explicitly 
 #	named in your globals.local file (or below) for poe commands
