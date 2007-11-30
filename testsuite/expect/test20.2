@@ -54,9 +54,12 @@ if {[file executable $qdel] == 0} {
 
 set job_id 0
 make_bash_script $file_in "sleep 60"
-spawn $qsub -o $file_out -f eo -N $job_name $file_in
+spawn $qsub -o $file_out -N $job_name $file_in
 expect {
-# GET JOB ID HERE
+	-re "Submitted batch job ($number)" {
+		set job_id $expect_out(1,string)
+		exp_continue
+	}
 	timeout {
 		send_user "\nFAILURE: qsub not responding\n"
 		set exit_code 1
@@ -71,7 +74,7 @@ if {$job_id == 0} {
 }
 
 set matches 0
-spawn $qstat -f $job_id
+spawn $qstat $job_id
 expect {
 	-re "$job_name" {
 		incr matches
