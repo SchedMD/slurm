@@ -343,7 +343,7 @@ sub job_time_used
 
 	if (($job->{'job_state'} == JOB_RUNNING)
 	    ||  ($job->{'end_time'} == 0)) {
-		$end_time = localtime;
+		$end_time = time;
 	} else {
 		$end_time = $job->{'end_time'};
 	}
