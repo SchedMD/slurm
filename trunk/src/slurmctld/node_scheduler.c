@@ -93,15 +93,16 @@ static int  _build_node_list(struct job_record *job_ptr,
 static void _feature_list_delete(void *x);
 static void _filter_nodes_in_set(struct node_set *node_set_ptr,
 				 struct job_details *detail_ptr);
-static int _job_count_bitmap(bitstr_t * bitmap, bitstr_t * jobmap,
-			     int job_cnt); 
 static int _match_feature(char *seek, char *available);
 static int _nodes_in_sets(bitstr_t *req_bitmap, 
 			  struct node_set * node_set_ptr, 
 			  int node_set_size);
+#ifndef HAVE_BG
 static int _pick_best_load(struct job_record *job_ptr, bitstr_t * bitmap, 
 			uint32_t min_nodes, uint32_t max_nodes, 
 			uint32_t req_nodes, bool test_only);
+
+#endif
 static int _pick_best_nodes(struct node_set *node_set_ptr,
 			    int node_set_size, bitstr_t ** select_bitmap,
 			    struct job_record *job_ptr,
@@ -270,7 +271,7 @@ static int _match_feature(char *seek, char *available)
 	return found;
 }
 
-
+#ifndef HAVE_BG
 /*
  * _pick_best_load - Given a specification of scheduling requirements, 
  *	identify the nodes which "best" satisfy the request.
@@ -344,6 +345,7 @@ _job_count_bitmap(bitstr_t * bitmap, bitstr_t * jobmap, int job_cnt)
 	}
 	return count;
 }
+#endif
 
 /*
  * Decide if a job can share nodes with other jobs based on the

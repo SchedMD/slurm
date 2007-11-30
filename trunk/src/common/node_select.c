@@ -632,13 +632,10 @@ static int _unpack_node_info(bg_info_record_t *bg_info_record, Buf buffer)
 	uint32_t uint32_tmp;
 	char *bp_inx_str;
 	
-	safe_unpackstr_xmalloc(&(bg_info_record->nodes), &uint16_tmp, buffer);
-	safe_unpackstr_xmalloc(&(bg_info_record->ionodes), &uint16_tmp,
-			       buffer);
-	safe_unpackstr_xmalloc(&bg_info_record->owner_name, &uint16_tmp, 
-			       buffer);
-	safe_unpackstr_xmalloc(&bg_info_record->bg_block_id, &uint16_tmp, 
-			       buffer);
+	safe_unpackstr_xmalloc(&(bg_info_record->nodes),     &uint32_tmp, buffer);
+	safe_unpackstr_xmalloc(&(bg_info_record->ionodes),   &uint32_tmp, buffer);
+	safe_unpackstr_xmalloc(&bg_info_record->owner_name,  &uint32_tmp, buffer);
+	safe_unpackstr_xmalloc(&bg_info_record->bg_block_id, &uint32_tmp, buffer);
 
 	safe_unpack16(&uint16_tmp, buffer);
 	bg_info_record->state     = (int) uint16_tmp;
@@ -652,27 +649,27 @@ static int _unpack_node_info(bg_info_record_t *bg_info_record, Buf buffer)
 	bg_info_record->nodecard = (int) uint16_tmp;
 	safe_unpack32(&uint32_tmp, buffer);
 	bg_info_record->node_cnt = (int) uint32_tmp;
-	safe_unpackstr_xmalloc(&bp_inx_str, &uint16_tmp, buffer);
+	safe_unpackstr_xmalloc(&bp_inx_str, &uint32_tmp, buffer);
 	if (bp_inx_str == NULL) {
 		bg_info_record->bp_inx = bitfmt2int("");
 	} else {
 		bg_info_record->bp_inx = bitfmt2int(bp_inx_str);
 		xfree(bp_inx_str);
 	}
-	safe_unpackstr_xmalloc(&bp_inx_str, &uint16_tmp, buffer);
+	safe_unpackstr_xmalloc(&bp_inx_str, &uint32_tmp, buffer);
 	if (bp_inx_str == NULL) {
 		bg_info_record->ionode_inx = bitfmt2int("");
 	} else {
 		bg_info_record->ionode_inx = bitfmt2int(bp_inx_str);
 		xfree(bp_inx_str);
 	}
-	safe_unpackstr_xmalloc(&bg_info_record->blrtsimage, &uint16_tmp, 
+	safe_unpackstr_xmalloc(&bg_info_record->blrtsimage,   &uint32_tmp, 
 			       buffer);
-	safe_unpackstr_xmalloc(&bg_info_record->linuximage, &uint16_tmp, 
+	safe_unpackstr_xmalloc(&bg_info_record->linuximage,   &uint32_tmp, 
 			       buffer);
-	safe_unpackstr_xmalloc(&bg_info_record->mloaderimage, &uint16_tmp, 
+	safe_unpackstr_xmalloc(&bg_info_record->mloaderimage, &uint32_tmp, 
 			       buffer);
-	safe_unpackstr_xmalloc(&bg_info_record->ramdiskimage, &uint16_tmp, 
+	safe_unpackstr_xmalloc(&bg_info_record->ramdiskimage, &uint32_tmp, 
 			       buffer);
 
 	return SLURM_SUCCESS;
@@ -1046,7 +1043,7 @@ extern int  select_g_pack_jobinfo  (select_jobinfo_t jobinfo, Buf buffer)
 extern int  select_g_unpack_jobinfo(select_jobinfo_t jobinfo, Buf buffer)
 {
 	int i;
-	uint16_t uint16_tmp;
+	uint32_t uint32_tmp;
 
 	for (i=0; i<SYSTEM_DIMENSIONS; i++) {
 		safe_unpack16(&(jobinfo->start[i]), buffer);
@@ -1059,12 +1056,12 @@ extern int  select_g_unpack_jobinfo(select_jobinfo_t jobinfo, Buf buffer)
 	safe_unpack32(&(jobinfo->node_cnt), buffer);
 	safe_unpack32(&(jobinfo->max_procs), buffer);
 
-	safe_unpackstr_xmalloc(&(jobinfo->bg_block_id), &uint16_tmp, buffer);
-	safe_unpackstr_xmalloc(&(jobinfo->ionodes), &uint16_tmp, buffer);
-	safe_unpackstr_xmalloc(&(jobinfo->blrtsimage), &uint16_tmp, buffer);
-	safe_unpackstr_xmalloc(&(jobinfo->linuximage), &uint16_tmp, buffer);
-	safe_unpackstr_xmalloc(&(jobinfo->mloaderimage), &uint16_tmp, buffer);
-	safe_unpackstr_xmalloc(&(jobinfo->ramdiskimage), &uint16_tmp, buffer);
+	safe_unpackstr_xmalloc(&(jobinfo->bg_block_id),  &uint32_tmp, buffer);
+	safe_unpackstr_xmalloc(&(jobinfo->ionodes),      &uint32_tmp, buffer);
+	safe_unpackstr_xmalloc(&(jobinfo->blrtsimage),   &uint32_tmp, buffer);
+	safe_unpackstr_xmalloc(&(jobinfo->linuximage),   &uint32_tmp, buffer);
+	safe_unpackstr_xmalloc(&(jobinfo->mloaderimage), &uint32_tmp, buffer);
+	safe_unpackstr_xmalloc(&(jobinfo->ramdiskimage), &uint32_tmp, buffer);
 
 	return SLURM_SUCCESS;
 
