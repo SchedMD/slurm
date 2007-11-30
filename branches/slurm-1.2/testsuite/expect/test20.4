@@ -41,10 +41,18 @@ if {[file executable $pbsnodes] == 0} {
 	exit 0
 }
 
-set matches 0
+set match_state 0
+set match_pcpus 0
 spawn $pbsnodes
 expect {
-# CHECK FOR DESIRED OUTPUT HERE
+	-re "state" {
+		incr match_state
+		exp_continue
+	}
+	-re "pcpus" {
+		incr match_pcpus
+		exp_continue
+	}
 	timeout {
 		send_user "\nFAILURE: pbsnodes not responding\n"
 		set exit_code 1
@@ -53,7 +61,7 @@ expect {
 		wait
 	}
 }
-if {$matches != 0} {
+if {($match_state == 0) || ($match_pcpus == 0)} {
 	send_user "\nFAILURE: pbsnodes output failure\n"
 	set exit_code 1
 }
