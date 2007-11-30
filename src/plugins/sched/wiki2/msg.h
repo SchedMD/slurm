@@ -116,6 +116,7 @@ extern int	job_notify_wiki(char *cmd_ptr, int *err_code, char **err_msg);
 extern int	job_release_task(char *cmd_ptr, int *err_code, char **err_msg);
 extern int	job_requeue_wiki(char *cmd_ptr, int *err_code, char **err_msg);
 extern int	job_signal_wiki(char *cmd_ptr, int *err_code, char **err_msg);
+extern int	job_will_run(char *cmd_ptr, int *err_code, char **err_msg);
 extern char * 	moab2slurm_task_list(char *moab_tasklist, int *task_cnt);
 extern int	parse_wiki_config(void);
 extern char *	slurm_job2moab_task_list(struct job_record *job_ptr);
