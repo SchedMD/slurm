@@ -87,7 +87,8 @@ expect {
 set matches 0
 spawn $qdel $job_id
 expect {
-	-re "Invalid job id" {
+	-re "already completing or completed" {
+		send_user "\nThis error was expected, no worries\n"
 		incr matches
 		exp_continue
 	}
