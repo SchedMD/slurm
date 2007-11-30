@@ -1,4 +1,4 @@
-#! /usr/local/bin/perl -w
+#! /usr/bin/perl -w
 ###############################################################################
 #
 # qstat - queries slurm jobs in familar pbs format.
