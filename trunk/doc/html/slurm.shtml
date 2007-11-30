@@ -43,11 +43,12 @@ a Linux cluster at Barcelona Supercomputer Center
 with 10,240 PowerPC processors and a Myrinet switch</li>
 </ul>
 <p>SLURM is actively being developed, distributed and supported by 
+<a href="http://www.llnl.gov">Lawrence Livermore National Laboratory</a>
 <a href="http://www.hp.com">Hewlett-Packard</a>,
 <a href="http://www.bull.com">Bull</a>,
 <a href="http://www.clusterresources.com">Cluster Resources</a> and
 <a href="http://www.sicortex.com">SiCortex</a>.</p>
 
-<p style="text-align:center;">Last modified 28 November 2007</p>
+<p style="text-align:center;">Last modified 29 November 2007</p>
 
 <!--#include virtual="footer.txt"-->
