@@ -2254,7 +2254,7 @@ _check_rdma_job_count(char *adapter)
 
 	rc = ntbl_rdma_jobs(NTBL_VERSION, adapter,
 			    &job_count, &job_keys);
-	if (rc != NTBL_SUCESSS) {
+	if (rc != NTBL_SUCCESS) {
 		error("ntbl_rdma_jobs(): %d", rc);
 		return SLURM_ERROR;
 	}
