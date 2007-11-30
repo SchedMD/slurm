@@ -17,11 +17,9 @@ install-binSCRIPTS: $(bin_SCRIPTS)
 	@$(NORMAL_INSTALL)
 	test -z "$(bindir)" || $(MKDIR_P) "$(DESTDIR)$(bindir)"
 	@list='$(bin_SCRIPTS)'; for p in $$list; do \
-	   echo " $(INSTALL_PROGRAM_ENV) $(LIBTOOL) --mode=install $(binSCRIPT_INSTALL) '$(top_srcdir)/contribs/torque/$$p.pl' '$(DESTDIR)$(bindir)/$$p.pl'"; \
-	   $(INSTALL_PROGRAM_ENV) $(LIBTOOL) --mode=install $(binSCRIPT_INSTALL) "$(top_srcdir)/contribs/torque/$$p.pl" "$(DESTDIR)$(bindir)/$$p.pl" || exit 1; \
-	   echo "sed 's%use lib .*%use lib qw(${exec_prefix}/lib ${exec_prefix}/lib/perl5);%' $(DESTDIR)$(bindir)/$$p.pl > $(DESTDIR)$(bindir)/$$p"; \
-	   sed 's%use lib .*%use lib qw(@libdir@ @libdir@/perl5);%' $(DESTDIR)$(bindir)/$$p.pl >$(DESTDIR)$(bindir)/$$p; \
-	  $(RM) $(DESTDIR)$(bindir)/$$p.pl;\
+	   echo "sed 's%use lib .*%use lib qw(${exec_prefix}/lib ${exec_prefix}/lib/perl5);%' $(top_srcdir)/contribs/torque/$$p.pl > $(DESTDIR)$(bindir)/$$p"; \
+	   sed 's%use lib .*%use lib qw(@libdir@ @libdir@/perl5);%' $(top_srcdir)/contribs/torque/$$p.pl >$(DESTDIR)$(bindir)/$$p; \
+	   chmod 755 $(DESTDIR)$(bindir)/$$p;\
 	done
 
 uninstall-binSCRIPTS:
