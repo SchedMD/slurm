@@ -77,8 +77,8 @@ DESTDIR_BUG
 # AIX has problems with not always having the correct
 # flags so we have to add some :)
 my $os = lc(`uname`);
-my $other_ld_flags = "";
-$other_ld_flags = "-brtl -G -bnoentry -bgcbypass:1000 -bexpfull"
+my $other_ld_flags = "-Wl,-rpath,@top_builddir@/src/api/.libs -Wl,-rpath,@prefix@/lib";
+$other_ld_flags = " -brtl -G -bnoentry -bgcbypass:1000 -bexpfull"
 	if $os =~ "aix";
 
 WriteMakefile(
