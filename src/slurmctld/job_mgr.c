@@ -3383,8 +3383,11 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 	last_job_update = now;
 
 	if ((job_specs->time_limit != NO_VAL) && (!IS_JOB_FINISHED(job_ptr))) {
-		if (super_user ||
-		    (job_ptr->time_limit > job_specs->time_limit)) {
+		if (job_ptr->time_limit == job_specs->time_limit) {
+			verbose("update_job: new time limit identical to old "
+				"time limit %u", job_specs->job_id);
+		} else if (super_user ||
+			   (job_ptr->time_limit > job_specs->time_limit)) {
 			time_t old_time =  job_ptr->time_limit;
 			if (old_time == INFINITE)	/* one year in mins */
 				old_time = (365 * 24 * 60);
