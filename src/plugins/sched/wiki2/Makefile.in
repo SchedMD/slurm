@@ -78,8 +78,9 @@ sched_wiki2_la_LIBADD =
 am_sched_wiki2_la_OBJECTS = cancel_job.lo crypto.lo event.lo \
 	get_jobs.lo get_nodes.lo hostlist.lo initialize.lo \
 	job_add_task.lo job_modify.lo job_notify.lo \
-	job_release_task.lo job_requeue.lo job_signal.lo msg.lo \
-	resume_job.lo sched_wiki.lo start_job.lo suspend_job.lo
+	job_release_task.lo job_requeue.lo job_signal.lo \
+	job_will_run.lo msg.lo resume_job.lo sched_wiki.lo \
+	start_job.lo suspend_job.lo
 sched_wiki2_la_OBJECTS = $(am_sched_wiki2_la_OBJECTS)
 sched_wiki2_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
@@ -282,6 +283,7 @@ sched_wiki2_la_SOURCES = \
 	job_release_task.c \
 	job_requeue.c	\
 	job_signal.c	\
+	job_will_run.c  \
 	msg.c		\
 	msg.h		\
 	resume_job.c	\
@@ -372,6 +374,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/job_release_task.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/job_requeue.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/job_signal.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/job_will_run.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/msg.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/resume_job.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sched_wiki.Plo@am__quote@
