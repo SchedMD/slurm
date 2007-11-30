@@ -141,9 +141,10 @@ const char plugin_name[] =
     "Consumable Resources (CR) Node Selection plugin";
 const char plugin_type[] = "select/cons_res";
 const uint32_t plugin_version = 90;
-const uint32_t pstate_version = 4;	/* version control on saved state */
+const uint32_t pstate_version = 5;	/* version control on saved state */
 
-#define CR_JOB_STATE_SUSPENDED 1
+#define CR_JOB_ALLOCATED_CPUS  0x1
+#define CR_JOB_ALLOCATED_MEM   0x2
 
 select_type_plugin_info_t cr_type = CR_CPU; /* cr_type is overwritten in init() */
 
@@ -161,6 +162,9 @@ static int prev_select_node_cnt = 0;
 static uint16_t select_fast_schedule;
 
 List select_cr_job_list = NULL; /* List of select_cr_job(s) that are still active */
+static uint32_t last_verified_job_id = 0;
+/* verify the job list after every CR_VERIFY_JOB_CYCLE jobs have finished */
+#define CR_VERIFY_JOB_CYCLE 2000
 
 #if(0)
 /* 
@@ -686,6 +690,36 @@ static void _clear_job_list(void)
 	slurm_mutex_unlock(&cr_mutex);
 }
 
+void _verify_select_job_list(uint32_t job_id)
+{
+	ListIterator job_iterator;
+	struct select_cr_job *job;
+
+	if (list_count(select_cr_job_list) < 1) {
+		last_verified_job_id = job_id;
+		return;
+	}
+	if (job_id > last_verified_job_id &&
+	    (job_id < (last_verified_job_id + CR_VERIFY_JOB_CYCLE))) {
+		return;
+	}
+
+	last_verified_job_id = job_id;
+	slurm_mutex_lock(&cr_mutex);
+	job_iterator = list_iterator_create(select_cr_job_list);
+	while ((job = (struct select_cr_job *) list_next(job_iterator))) {
+		if (find_job_record(job->job_id) == NULL) {
+			list_remove(job_iterator);
+			debug2("cons_res: _verify_job_list: removing nonexistent job %u",
+				job->job_id);
+			_xfree_select_cr_job(job);
+		}
+	}
+	list_iterator_destroy(job_iterator);
+	slurm_mutex_unlock(&cr_mutex);	
+	last_cr_update_time = time(NULL);
+}
+
 /* Append a specific select_cr_job to select_cr_job_list. If the
  * select_job already exists then it is deleted and re-added otherwise
  * it is just added to the list.
@@ -809,10 +843,30 @@ static int _synchronize_bitmaps(bitstr_t ** partially_idle_bitmap)
 	return rc;
 }
 
+/* allocate resources to the given job
+ *
+ * if suspend = 0 then fully add job
+ * if suspend = 1 then only add memory
+ */
 static int _add_job_to_nodes(struct select_cr_job *job, char *pre_err,
-			     uint16_t setmem)
+			     uint16_t suspend)
 {
 	int i, j, rc = SLURM_SUCCESS;
+	uint16_t add_memory = 0;
+	uint16_t memset = job->state & CR_JOB_ALLOCATED_MEM;
+	uint16_t cpuset = job->state & CR_JOB_ALLOCATED_CPUS;
+
+	if (memset && cpuset)
+		return rc;
+	if (!memset &&
+	    (cr_type == CR_CORE_MEMORY || cr_type == CR_CPU_MEMORY ||
+	     cr_type == CR_MEMORY || cr_type == CR_SOCKET_MEMORY)) {
+		job->state |= CR_JOB_ALLOCATED_MEM;
+		add_memory = 1;
+	}
+	if (!cpuset && !suspend)
+		job->state |= CR_JOB_ALLOCATED_CPUS;
+
 	for (i = 0; i < job->nhosts; i++) {
 		struct node_cr_record *this_node;
 		struct part_cr_record *p_ptr;
@@ -825,14 +879,18 @@ static int _add_job_to_nodes(struct select_cr_job *job, char *pre_err,
 			rc = SLURM_ERROR;
 			continue;
 		}
-		/* Update this node's allocated resources */
-		if (setmem &&
-		    (cr_type == CR_CORE_MEMORY || cr_type == CR_CPU_MEMORY ||
-		     cr_type == CR_MEMORY || cr_type == CR_SOCKET_MEMORY)) {
+		/* Update this node's allocated resources, starting with
+		 * memory (if applicable) */
+		
+		if (add_memory) {
 			this_node->alloc_memory += job->alloc_memory[i];
 		}
-		this_node->node_state = job->node_req;
 
+		if (cpuset || suspend)
+			continue;
+
+		this_node->node_state = job->node_req;
+		
 		chk_resize_node(this_node, this_node->node_ptr->sockets);
 		p_ptr = get_cr_part_ptr(this_node, job->partition);
 		if (p_ptr == NULL) {
@@ -847,7 +905,7 @@ static int _add_job_to_nodes(struct select_cr_job *job, char *pre_err,
 		 * other rows. However, this may be futile if they are all
 		 * currently full.
 		 * For now, we're going to be lazy and simply NOT "allocate"
-		 * this job (hey - you get what you pay for). ;-)
+		 * this job on the node(s) (hey - you get what you pay for). ;-)
 		 * This just means that we will not be accounting for this
 		 * job when determining available space for future jobs,
 		 * which is relatively harmless (hey, there was space when
@@ -857,8 +915,10 @@ static int _add_job_to_nodes(struct select_cr_job *job, char *pre_err,
 		 * (if requested). 
 		 */
 		offset = job->node_offset[i];
-		if (offset > (this_node->num_sockets * (p_ptr->num_rows - 1)))
-			return SLURM_ERROR;
+		if (offset > (this_node->num_sockets * (p_ptr->num_rows - 1))) {
+			rc = SLURM_ERROR;
+			continue;
+		}
 
 		switch (cr_type) {
 		case CR_SOCKET_MEMORY:
@@ -899,13 +959,37 @@ static int _add_job_to_nodes(struct select_cr_job *job, char *pre_err,
 				pre_err, job->job_id, this_node->name, 
 				j, p_ptr->alloc_cores[offset+j]);
 	}
+	last_cr_update_time = time(NULL);
 	return rc;
 }
 
+/* deallocate resources that were assigned to this job 
+ *
+ * if remove_all = 1: deallocate all resources
+ * if remove_all = 0: the job has been suspended, so just deallocate CPUs
+ */
 static int _rm_job_from_nodes(struct select_cr_job *job, char *pre_err,
-			      uint16_t setmem)
+			      uint16_t remove_all)
 {
 	int i, j, k, rc = SLURM_SUCCESS;
+
+	uint16_t memset = job->state & CR_JOB_ALLOCATED_MEM;
+	uint16_t cpuset = job->state & CR_JOB_ALLOCATED_CPUS;
+	uint16_t remove_memory = 0;
+
+	if (!memset && !cpuset)
+		return rc;
+	if (!cpuset && !remove_all)
+		return rc;
+	if (memset && remove_all &&
+	    (cr_type == CR_CORE_MEMORY || cr_type == CR_CPU_MEMORY ||
+	     cr_type == CR_MEMORY || cr_type == CR_SOCKET_MEMORY)) {
+	 	remove_memory = 1;
+		job->state &= ~CR_JOB_ALLOCATED_MEM;
+	 }
+	 if (cpuset)
+	 	job->state &= ~CR_JOB_ALLOCATED_CPUS;
+	
 	for (i = 0; i < job->nhosts; i++) {
 		struct node_cr_record *this_node;
 		struct part_cr_record *p_ptr;
@@ -919,10 +1003,9 @@ static int _rm_job_from_nodes(struct select_cr_job *job, char *pre_err,
 			continue;
 		}
 
-		/* Updating this node allocated resources */
-		if (setmem &&
-		    (cr_type == CR_CORE_MEMORY || cr_type == CR_CPU_MEMORY ||
-		     cr_type == CR_MEMORY || cr_type == CR_SOCKET_MEMORY)) {
+		/* Update this nodes allocated resources, beginning with
+		 * memory (if applicable) */
+		if (remove_memory) {
 			if (this_node->alloc_memory >= job->alloc_memory[i])
 				this_node->alloc_memory -= job->alloc_memory[i];
 			else {
@@ -933,6 +1016,9 @@ static int _rm_job_from_nodes(struct select_cr_job *job, char *pre_err,
 			}
 		}
 		
+		if (!cpuset)
+			continue;
+		
 		chk_resize_node(this_node, this_node->node_ptr->sockets);
 		p_ptr = get_cr_part_ptr(this_node, job->partition);
 		if (p_ptr == NULL) {
@@ -942,11 +1028,13 @@ static int _rm_job_from_nodes(struct select_cr_job *job, char *pre_err,
 		}
 
 		/* If the offset is no longer valid, then the job was never
-		 * "allocated" on any cores (see add_job_to_nodes).
-		 * Therefore just return. */
+		 * "allocated" on these cores (see add_job_to_nodes).
+		 * Therefore just continue. */
 		offset = job->node_offset[i];
-		if (offset > (this_node->num_sockets * (p_ptr->num_rows - 1)))
-			return SLURM_ERROR;
+		if (offset > (this_node->num_sockets * (p_ptr->num_rows - 1))) {
+			rc = SLURM_ERROR;
+			continue;
+		}
 		
 		switch(cr_type) {
 		case CR_SOCKET_MEMORY:
@@ -1013,6 +1101,7 @@ static int _rm_job_from_nodes(struct select_cr_job *job, char *pre_err,
 				pre_err, job->job_id, this_node->name, 
 				j, p_ptr->alloc_cores[offset+j]);
 	}
+	last_cr_update_time = time(NULL);
 	return rc;
 }
 
@@ -2576,17 +2665,14 @@ extern int select_p_job_ready(struct job_record *job_ptr)
 
 extern int select_p_job_fini(struct job_record *job_ptr)
 {
-	int rc = SLURM_SUCCESS;
 	struct select_cr_job *job = NULL;
 	ListIterator iterator;
 
 	xassert(job_ptr);
 	xassert(job_ptr->magic == JOB_MAGIC);
 
-	if (list_count(select_cr_job_list) == 0) {
-		last_cr_update_time = time(NULL);
-		return rc;
-	}
+	if (list_count(select_cr_job_list) == 0)
+		return SLURM_SUCCESS;
 
 	iterator = list_iterator_create(select_cr_job_list);
 	while ((job = (struct select_cr_job *) list_next(iterator))) {
@@ -2597,12 +2683,10 @@ extern int select_p_job_fini(struct job_record *job_ptr)
 		error("select_p_job_fini: could not find data for job %d",
 			job_ptr->job_id);
 		list_iterator_destroy(iterator);
-		last_cr_update_time = time(NULL);
 		return SLURM_ERROR;
 	}
 	
-	if (!(job->state & CR_JOB_STATE_SUSPENDED))
-		rc = _rm_job_from_nodes(job, "select_p_job_fini", 1);
+	_rm_job_from_nodes(job, "select_p_job_fini", (uint16_t)1);
 
 	slurm_mutex_lock(&cr_mutex);
 	list_remove(iterator);
@@ -2613,20 +2697,17 @@ extern int select_p_job_fini(struct job_record *job_ptr)
 	debug3("cons_res: select_p_job_fini Job_id %u: list_count: %d",
 		job_ptr->job_id, list_count(select_cr_job_list));
 
+	_verify_select_job_list(job_ptr->job_id);
 	last_cr_update_time = time(NULL);
-	if (rc != SLURM_SUCCESS) {
-		error(" error for %u in select/cons_res: select_p_job_fini",
-		      job_ptr->job_id);
-	}
 
-	return rc;
+	return SLURM_SUCCESS;
 }
 
 extern int select_p_job_suspend(struct job_record *job_ptr)
 {
 	ListIterator job_iterator;
 	struct select_cr_job *job;
-	int rc = ESLURM_INVALID_JOB_ID;
+	int rc;
  
 	xassert(job_ptr);
 	xassert(select_cr_job_list);
@@ -2635,30 +2716,23 @@ extern int select_p_job_suspend(struct job_record *job_ptr)
 	if (job_iterator == NULL)
 		fatal("list_iterator_create: %m");
 	while ((job = (struct select_cr_job *) list_next(job_iterator))) {
-		if (job->job_id != job_ptr->job_id)
-			continue;
-		if (job->state & CR_JOB_STATE_SUSPENDED) {
-			error("cons_res: job %u already suspended",
-				job->job_id);
+		if (job->job_id == job_ptr->job_id)
 			break;
-		}
-
-		last_cr_update_time = time(NULL);
-		job->state |= CR_JOB_STATE_SUSPENDED;
-		rc = _rm_job_from_nodes(job, "select_p_job_suspend", 0);
-		rc = SLURM_SUCCESS;
-		break;
 	}
 	list_iterator_destroy(job_iterator);
 
-	return rc;
+	if (!job)
+		return ESLURM_INVALID_JOB_ID;
+
+	rc = _rm_job_from_nodes(job, "select_p_job_suspend", (uint16_t)0);
+	return SLURM_SUCCESS;
 }
 
 extern int select_p_job_resume(struct job_record *job_ptr)
 {
 	ListIterator job_iterator;
 	struct select_cr_job *job;
-	int rc = ESLURM_INVALID_JOB_ID;
+	int rc;
 
 	xassert(job_ptr);
 	xassert(select_cr_job_list);
@@ -2668,23 +2742,16 @@ extern int select_p_job_resume(struct job_record *job_ptr)
 		fatal("list_iterator_create: %m");
 
 	while ((job = (struct select_cr_job *) list_next(job_iterator))) {
-		if (job->job_id != job_ptr->job_id)
-			continue;
-		if ((job->state & CR_JOB_STATE_SUSPENDED) == 0) {
-			error("select: job %s not suspended",
-				job->job_id);
+		if (job->job_id == job_ptr->job_id)
 			break;
-		}
-
-		last_cr_update_time = time(NULL);
-		job->state &= (~CR_JOB_STATE_SUSPENDED);
-		rc = _add_job_to_nodes(job, "select_p_job_resume", 0);
-		rc = SLURM_SUCCESS;
-		break;
 	}
 	list_iterator_destroy(job_iterator);
 
-	return rc;
+	if (!job)
+		return ESLURM_INVALID_JOB_ID;
+	
+	rc = _add_job_to_nodes(job, "select_p_job_resume", (uint16_t)0);
+	return SLURM_SUCCESS;
 }
 
 extern int select_p_pack_node_info(time_t last_query_time,
@@ -2852,7 +2919,7 @@ extern int select_p_get_select_nodeinfo(struct node_record *node_ptr,
 
 extern int select_p_update_nodeinfo(struct job_record *job_ptr)
 {
-	int rc = SLURM_SUCCESS, job_id;
+	int rc = SLURM_SUCCESS;
 	struct select_cr_job *job = NULL;
 	ListIterator iterator;
 
@@ -2861,26 +2928,19 @@ extern int select_p_update_nodeinfo(struct job_record *job_ptr)
 
 	if ((job_ptr->job_state != JOB_RUNNING)
 	&&  (job_ptr->job_state != JOB_SUSPENDED))
-		return rc;
-
-	job_id = job_ptr->job_id;
+		return SLURM_SUCCESS;
 
 	iterator = list_iterator_create(select_cr_job_list);
-	while ((job = (struct select_cr_job *) list_next(iterator)) 
-	       != NULL) {
-		if (job->job_id != job_id)
-			continue;
-
-		if (job_ptr->job_state == JOB_SUSPENDED) {
-			job->state |= CR_JOB_STATE_SUSPENDED;
-		} else {
-			job->state &= (~CR_JOB_STATE_SUSPENDED);
-			rc = _add_job_to_nodes(job, "select_p_update_nodeinfo", 1);
-		}
-		break;
+	while ((job = (struct select_cr_job *) list_next(iterator)) != NULL) {
+		if (job->job_id == job_ptr->job_id)
+			break;
 	}
 	list_iterator_destroy(iterator);
 	
+	if (!job)
+		return SLURM_SUCCESS;
+	
+	rc = _add_job_to_nodes(job, "select_p_update_nodeinfo", (uint16_t)0);
 	return rc;
 }
 
@@ -2945,6 +3005,8 @@ extern int select_p_reconfigure(void)
 {
 	ListIterator job_iterator;
 	struct select_cr_job *job;
+	struct job_record *job_ptr;
+	uint16_t addme, suspend;
 	int rc;
 
 	select_fast_schedule = slurm_get_fast_schedule();
@@ -2963,12 +3025,36 @@ extern int select_p_reconfigure(void)
 	slurm_mutex_lock(&cr_mutex);
 	job_iterator = list_iterator_create(select_cr_job_list);
 	while ((job = (struct select_cr_job *) list_next(job_iterator))) {
-		_add_job_to_nodes(job, "select_p_reconfigure", 1);
+		addme = suspend = 0;
+		if ((job_ptr = find_job_record(job->job_id))) {
+			if (job_ptr->job_state != JOB_RUNNING &&
+			    job_ptr->job_state != JOB_SUSPENDED)
+				continue;
+			if (job_ptr->job_state == JOB_SUSPENDED)
+				suspend = 1;
+		} else {
+			/* stale job */
+			list_remove(job_iterator);
+			debug2("cons_res: select_p_reconfigure: removing nonexistent job %u",
+				job->job_id);
+			_xfree_select_cr_job(job);
+		}
+		if (job->state & CR_JOB_ALLOCATED_MEM) {
+			job->state |= ~ CR_JOB_ALLOCATED_MEM;
+			addme = 1;
+		}
+		if (job->state & CR_JOB_ALLOCATED_CPUS) {
+			job->state |= ~ CR_JOB_ALLOCATED_CPUS;
+			addme = 1;
+		}
+		if (addme)
+			_add_job_to_nodes(job, "select_p_reconfigure", suspend);
 		/* ignore any errors. partition and/or node config 
 		 * may have changed while jobs remain running */
 	}
 	list_iterator_destroy(job_iterator);
 	slurm_mutex_unlock(&cr_mutex);
+	last_cr_update_time = time(NULL);
 
 	return SLURM_SUCCESS;
 }
