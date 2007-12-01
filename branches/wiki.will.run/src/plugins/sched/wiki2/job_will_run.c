@@ -1,7 +1,7 @@
 /*****************************************************************************\
  *  job_will_run.c - Process Wiki job will_run test
  *****************************************************************************
- *  Copyright (C) 2006 The Regents of the University of California.
+ *  Copyright (C) 2006-2007 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
  *  UCRL-CODE-226842.
@@ -240,7 +240,7 @@ static char *	_copy_nodelist_no_dup(char *node_list)
  * IN bitmap - bitmap pointer
  * RET pointer to node list or NULL on error 
  * globals: node_record_table_ptr - pointer to node table
- * NOTE: the caller must xfree the memory at node_list when no longer required
+ * NOTE: the caller must xfree the returned pointer when no longer required
  */
 extern char *	bitmap2wiki_node_name(bitstr_t *bitmap)
 {
