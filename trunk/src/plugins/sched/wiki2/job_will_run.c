@@ -189,6 +189,12 @@ static int	_will_run_test(uint32_t jobid, char *hostlist,
 			"SC=1 Job %d runnable later TASKLIST:%s",
 			jobid, picked_node_list);
 		*err_msg = reply_msg;
+	} else if (rc == ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE) {
+		*err_code = 1;
+		snprintf(reply_msg, sizeof(reply_msg),
+			"SC=1 Job %d not runnable with current configuration",
+			jobid);
+		*err_msg = reply_msg;
 	} else {
 		char *err_str = slurm_strerror(rc);
 		error("wiki: job %d never runnable on hosts=%s %s", 
