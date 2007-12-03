@@ -211,7 +211,7 @@ scontrol_update_job (int argc, char *argv[])
 						 (char **) NULL, 10);
 		else if (strncasecmp(argv[i], "TimeLimit=", 10) == 0) {
 			int time_limit = time_str2mins(&argv[i][10]);
-			if (time_limit < 0) {
+			if ((time_limit < 0) && (time_limit != INFINITE)) {
 				error("Invalid TimeLimit value");
 				exit_code = 1;
 				return 0;

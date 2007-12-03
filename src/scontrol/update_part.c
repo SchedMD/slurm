@@ -58,7 +58,7 @@ scontrol_update_part (int argc, char *argv[])
 			part_msg.name = &argv[i][14];
 		else if (strncasecmp(argv[i], "MaxTime=", 8) == 0) {
 			int max_time = time_str2mins(&argv[i][8]);
-			if (max_time < 0) {
+			if ((max_time < 0) && (max_time != INFINITE)) {
 				exit_code = 1;
 				error("Invalid input %s", argv[i]);
 				return 0;

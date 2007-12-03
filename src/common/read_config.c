@@ -472,7 +472,7 @@ static int parse_partitionname(void **dest, slurm_parser_enum_t type,
 			p->max_time = INFINITE;
 		else {
 			int max_time = time_str2mins(tmp);
-			if (max_time < 0) {
+			if ((max_time < 0) && (max_time != INFINITE)) {
 				error("Bad value \"%s\" for MaxTime", tmp);
 				destroy_partitionname(p);
 				s_p_hashtbl_destroy(tbl);
