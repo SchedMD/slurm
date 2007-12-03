@@ -460,7 +460,7 @@ slurm_make_time_str (time_t *time, char *string, int size)
  *   days-hr:min:sec
  *   days-hr
  * output:
- *   minutes  (or -1 on error) (or INFINITE value defined in slurm.h
+ *   minutes  (or -2 on error, INFINITE is -1 as defined in slurm.h)
  *   if unlimited is the value of string)
  */
 extern int time_str2mins(char *string)
@@ -470,8 +470,8 @@ extern int time_str2mins(char *string)
 
 	if ((string == NULL) || (string[0] == '\0'))
 		return -1;	/* invalid input */
-
-	if (!strcasecmp(string, "UNLIMITED")) {
+	if ((!strcasecmp(string, "INFINITE")) ||
+	    (!strcasecmp(string, "UNLIMITED"))) {
 		return INFINITE;
 	}
 
@@ -480,7 +480,7 @@ extern int time_str2mins(char *string)
 			tmp = (tmp * 10) + (string[i] - '0');
 		} else if (string[i] == '-') {
 			if (days != -1)
-				return -1;	/* invalid input */
+				return -2;	/* invalid input */
 			days = tmp;
 			tmp = 0;
 		} else if ((string[i] == ':') || (string[i] == '\0')) {
@@ -493,10 +493,10 @@ extern int time_str2mins(char *string)
 				min = sec;
 				sec = tmp;
 			} else
-				return -1;	/* invalid input */
+				return -2;	/* invalid input */
 			tmp = 0;
 		} else
-			return -1;		/* invalid input */
+			return -2;		/* invalid input */
 
 		if (string[i] == '\0')
 			break;

@@ -261,8 +261,10 @@ int main(int argc, char *argv[])
 	/* init job credential stuff */
 	slurmctld_config.cred_ctx = slurm_cred_creator_ctx_create(
 			slurmctld_conf.job_credential_private_key);
-	if (!slurmctld_config.cred_ctx)
-		fatal("slurm_cred_creator_ctx_create: %m");
+	if (!slurmctld_config.cred_ctx) {
+		fatal("slurm_cred_creator_ctx_create(%s): %m",
+			slurmctld_conf.job_credential_private_key);
+	}
 
 
 	/* Not used in creator

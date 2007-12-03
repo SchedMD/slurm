@@ -1931,7 +1931,7 @@ static bool _opt_verify(void)
 
 	if (opt.time_limit_str) {
 		opt.time_limit = time_str2mins(opt.time_limit_str);
-		if (opt.time_limit < 0) {
+		if ((opt.time_limit < 0) && (opt.time_limit != INFINITE)) {
 			error("Invalid time limit specification");
 			exit(1);
 		}
@@ -1941,7 +1941,7 @@ static bool _opt_verify(void)
 
 	if (opt.ckpt_interval_str) {
 		opt.ckpt_interval = time_str2mins(opt.ckpt_interval_str);
-		if (opt.ckpt_interval < 0) {
+		if ((opt.ckpt_interval < 0) && (opt.ckpt_interval != INFINITE)) {
 			error("Invalid checkpoint interval specification");
 			exit(1);
 		}

@@ -144,7 +144,7 @@ function displayfile()
    "AuthType=auth/" + get_radio_value(document.config.auth_type) + "<br>" +
    get_field("JobCredentialPrivateKey", document.config.private_key) + "<br>" +
    get_field("JobCredentialPublicCertificate", document.config.public_key) + "<br>" +
-   "CryptoType=" + get_radio_value(document.config.crypto_type) + "<br>" +
+   "CryptoType=crypto/" + get_radio_value(document.config.crypto_type) + "<br>" +
    "StateSaveLocation=" + document.config.state_save_location.value + "<br>" +
    "SlurmdSpoolDir=" + document.config.slurmd_spool_dir.value + "<br>" +
    "SwitchType=switch/" + get_radio_value(document.config.switch_type) + "<br>" +
@@ -441,8 +441,11 @@ Select one value for <B>SchedulerType</B>:<BR>
 First-Out (FIFO)<BR>
 <input type="radio" name="sched_type" value="backfill" checked> <B>Backfill</B>: 
 FIFO with backfill<BR>
-<input type="radio" name="sched_type" value="wiki"> <B>Wiki</B>: Wiki interface to Maui 
-(configuration parameters SchedulerAuth and SchedulerPort must specified)<BR>
+<input type="radio" name="sched_type" value="wiki"> <B>Wiki</B>: Wiki interface 
+to Maui (configuration parameters <B>SchedulerAuth</B> and <B>SchedulerPort</B>
+must specified)<BR>
+<input type="radio" name="sched_type" value="wiki2"> <B>Wiki2</B>: Wiki interface 
+to Moab (configuration parameter <B>SchedulerPort</B> must specified)<BR>
 <P>
 <input type="text" name="scheduler_port" value="7321"> <B>SchedulerPort</B>: scheduler 
 communcations port (used by Wiki only)
@@ -730,6 +733,6 @@ before terminating all remaining tasks. A value of zero indicates unlimited wait
 </FORM>
 <HR>
 <p class="footer">UCRL-WEB-225274<br>
-Last modified 12 October 2007</p>
+Last modified 2 December 2007</p>
 </BODY>
 

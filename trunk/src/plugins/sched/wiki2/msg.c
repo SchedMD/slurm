@@ -205,7 +205,7 @@ static char * _get_wiki_conf_path(void)
 		val = default_slurm_config_file;
 
 	/* Replace file name on end of path */
-	i = strlen(val) + 1;
+	i = strlen(val) + 10;
 	path = xmalloc(i);
 	strcpy(path, val);
 	val = strrchr(path, (int)'/');

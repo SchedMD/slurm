@@ -5,6 +5,7 @@ documents those changes that are of interest to users and admins.
 =============================
  -- Modify how strings are packed in the RPCs, Maximum string size 
     increased from 64KB (16-bit size field) to 4GB (32-bit size field).
+ -- Fix bug that prevented time value of "INFINITE" from being processed.
 
 * Changes in SLURM 1.3.0-pre7
 =============================

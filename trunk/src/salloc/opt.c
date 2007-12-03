@@ -1044,7 +1044,7 @@ static bool _opt_verify(void)
 
 	if (opt.time_limit_str) {
 		opt.time_limit = time_str2mins(opt.time_limit_str);
-		if (opt.time_limit < 0) {
+		if ((opt.time_limit < 0) && (opt.time_limit != INFINITE)) {
 			error("Invalid time limit specification");
 			exit(1);
 		}

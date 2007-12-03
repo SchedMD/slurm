@@ -348,7 +348,7 @@ _slurm_crypto_get_ops( slurm_crypto_context_t *c )
 static int _slurm_crypto_init(void)
 {
 	char	*crypto_type = NULL;
-	int	retval=SLURM_SUCCESS;
+	int	retval = SLURM_SUCCESS;
 
 	slurm_mutex_lock( &g_crypto_context_lock );
 	if ( g_crypto_context )
@@ -363,7 +363,7 @@ static int _slurm_crypto_init(void)
 	}
 	
 	if ( _slurm_crypto_get_ops( g_crypto_context ) == NULL ) {
-		error( "cannot resolve job accounting plugin operations" );
+		error( "cannot resolve crypto plugin operations" );
 		_slurm_crypto_context_destroy( g_crypto_context );
 		g_crypto_context = NULL;
 		retval = SLURM_ERROR;
