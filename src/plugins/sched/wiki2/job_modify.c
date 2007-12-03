@@ -40,7 +40,8 @@
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/slurmctld.h"
 
-static void	_null_term(char *str)
+/* Given a string, replace the first space found with '\0' */
+extern void	null_term(char *str)
 {
 	char *tmp_ptr;
 	for (tmp_ptr=str; ; tmp_ptr++) {
@@ -147,11 +148,13 @@ static int	_job_modify(uint32_t jobid, char *bank_ptr,
 		}
 
 host_fini:	if (rc) {
-			info("wiki: change job %u invalid hostlist %s", jobid, new_hostlist);
+			info("wiki: change job %u invalid hostlist %s", 
+				jobid, new_hostlist);
 			xfree(job_ptr->details->req_nodes);
 			return EINVAL;
 		} else {
-			info("wiki: change job %u hostlist %s", jobid, new_hostlist);
+			info("wiki: change job %u hostlist %s", 
+				jobid, new_hostlist);
 		}
 	}
 
@@ -231,17 +234,17 @@ extern int	job_modify_wiki(char *cmd_ptr, int *err_code, char **err_msg)
 	if (bank_ptr) {
 		bank_ptr[4] = ':';
 		bank_ptr += 5;
-		_null_term(bank_ptr);
+		null_term(bank_ptr);
 	}
 	if (depend_ptr) {
 		depend_ptr[6] = ':';
 		depend_ptr += 7;
-		_null_term(depend_ptr);
+		null_term(depend_ptr);
 	}
 	if (host_ptr) {
 		host_ptr[8] = ':';
 		host_ptr += 9;
-		_null_term(bank_ptr);
+		null_term(bank_ptr);
 	}
 	if (nodes_ptr) {
 		nodes_ptr[5] = ':';
@@ -251,7 +254,7 @@ extern int	job_modify_wiki(char *cmd_ptr, int *err_code, char **err_msg)
 	if (part_ptr) {
 		part_ptr[9] = ':';
 		part_ptr += 10;
-		_null_term(part_ptr);
+		null_term(part_ptr);
 	}
 	if (time_ptr) {
 		time_ptr[9] = ':';

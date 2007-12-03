@@ -338,6 +338,11 @@ extern int parse_wiki_config(void)
 	return SLURM_SUCCESS;
 }
 
+/*
+ * Return a string containing any scheduling plugin configuration information 
+ * that we want to expose via "scontrol show configuration".
+ * NOTE: the caller must xfree the returned pointer
+ */
 extern char *	get_wiki_conf(void)
 {
 	int i, first = 1;
