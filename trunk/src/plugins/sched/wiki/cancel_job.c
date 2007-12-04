@@ -113,7 +113,7 @@ static int	_cancel_job(uint32_t jobid, int *err_code, char **err_msg)
 		goto fini;
 	}
 
-	debug("wiki: cancel job %u", jobid);
+	info("wiki: cancel job %u", jobid);
 
  fini:	unlock_slurmctld(job_write_lock);
 	return rc;

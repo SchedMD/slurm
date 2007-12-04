@@ -73,7 +73,7 @@ License: GPL
 Group: System Environment/Base
 Source: %{name}-%{version}-%{release}.tgz
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}
-URL: http://www.llnl.gov/linux/slurm
+URL: https://computing.llnl.gov/linux/slurm/
 
 %description 
 SLURM is an open source, fault-tolerant, and highly

@@ -103,7 +103,9 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 1.2.21
 =========================
- -- fixed torque wrappers to look in the correct spot for the perl api
+ -- Fixed torque wrappers to look in the correct spot for the perl api
+ -- Do not treat user resetting his time limit to the current value as
+    an error.
 
 * Changes in SLURM 1.2.20
 =========================
