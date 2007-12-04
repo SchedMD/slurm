@@ -80,8 +80,11 @@ reject_msg_t reject_msgs[REJECT_MSG_MAX];
 
 /*
  * get_jobs - get information on specific job(s) changed since some time
- * cmd_ptr IN - CMD=GETJOBS ARG=[<UPDATETIME>:<JOBID>[:<JOBID>]...]
+ * cmd_ptr IN   - CMD=GETJOBS ARG=[<UPDATETIME>:<JOBID>[:<JOBID>]...]
  *                              [<UPDATETIME>:ALL]
+ * err_code OUT - 0 or an error code
+ * err_msg OUT  - response message
+ * NOTE: xfree() err_msg if err_code is zero
  * RET 0 on success, -1 on failure
  *
  * Response format
@@ -113,7 +116,6 @@ reject_msg_t reject_msgs[REJECT_MSG_MAX];
  * [#<JOBID>;...];			additional jobs, if any
  *
  */
-/* RET 0 on success, -1 on failure */
 extern int	get_jobs(char *cmd_ptr, int *err_code, char **err_msg)
 {
 	char *arg_ptr = NULL, *tmp_char = NULL, *tmp_buf = NULL, *buf = NULL;
