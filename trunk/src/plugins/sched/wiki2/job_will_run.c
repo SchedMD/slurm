@@ -41,17 +41,30 @@
 #include "src/slurmctld/node_scheduler.h"
 #include "src/slurmctld/state_save.h"
 
-static char *	_copy_nodelist_no_dup(char *node_list);
-static int	_will_run_test(uint32_t jobid, char *hostlist, 
-			int *err_code, char **err_msg);
+static char *	_will_run_test(uint32_t jobid, char *job_list, 
+			char *exclude_list, int *err_code, char **err_msg);
 
-/* RET 0 on success, -1 on failure */
+/*
+ * get_jobs - get information on specific job(s) changed since some time
+ * cmd_ptr IN   - CMD=JOBWILLRUN ARG=<JOBID> AFTER=<JOBID>[:<JOBID>...]
+ *                              [EXCLUDE=<node_list>]
+ * err_code OUT - 0 on success or some error code
+ * err_msg OUT  - error message or the JOBID from ordered list after 
+ *                which the specified job can start (no JOBID if job 
+ *                can start immediately) and the assigned node list.
+ *                ARG=<JOBID> [AFTER=<JOBID>] NODES=<node_list>
+ * NOTE: xfree() err_msg if err_code is zero
+ * RET 0 on success, -1 on failure
+ */
 extern int	job_will_run(char *cmd_ptr, int *err_code, char **err_msg)
 {
-	char *arg_ptr, *task_ptr, *node_ptr, *tmp_char;
-	int i;
+	char *arg_ptr, *tmp_char, *job_list, *exclude_list;
+	char *buf, *tmp_buf;
+	int buf_size;
 	uint32_t jobid;
-	char host_string[MAXHOSTRANGELEN];
+	/* Locks: write job, read node and partition info */
+	slurmctld_lock_t job_write_lock = {
+		NO_LOCK, WRITE_LOCK, READ_LOCK, READ_LOCK };
 
 	arg_ptr = strstr(cmd_ptr, "ARG=");
 	if (arg_ptr == NULL) {
@@ -68,114 +81,120 @@ extern int	job_will_run(char *cmd_ptr, int *err_code, char **err_msg)
 		return -1;
 	}
 
-	task_ptr = strstr(cmd_ptr, "TASKLIST=");
-	if (task_ptr) {
-		hostlist_t hl;
-		node_ptr = task_ptr + 9;
-		for (i=0; node_ptr[i]!='\0'; i++) {
-			if (node_ptr[i] == ':')
-				node_ptr[i] = ',';
-		}
-		hl = hostlist_create(node_ptr);
-		i = hostlist_ranged_string(hl, sizeof(host_string), host_string);
-		hostlist_destroy(hl);
-		if (i < 0) {
-			*err_code = -300;
-			*err_msg = "JOBWILLRUN has invalid TASKLIST";
-			error("wiki: JOBWILLRUN has invalid TASKLIST");
-			return -1;
-		}
+	job_list = strstr(cmd_ptr, "AFTER=");
+	if (job_list) {
+		job_list += 6;
+		null_term(job_list);
 	} else {
-		/* no restrictions on nodes available for use */
-		strcpy(host_string, "");
+		*err_code = -300;
+		*err_msg = "Invalid AFTER value";
+		error("wiki: JOBWILLRUN has invalid jobid");
+		return -1;
 	}
 
-	if (_will_run_test(jobid, host_string, err_code, err_msg) != 0)
-		return -1;
+	exclude_list = strstr(cmd_ptr, "EXCLUDE=");
+	if (exclude_list) {
+		exclude_list += 8;
+		null_term(exclude_list);
+	}
 
+	lock_slurmctld(job_write_lock);
+	buf = _will_run_test(jobid, job_list, exclude_list, err_code,
+			     err_msg);
+	unlock_slurmctld(job_write_lock);
+
+	if (!buf) {
+		info("wiki: JOBWILLRUN failed for job %u", jobid);
+		return -1;
+	}
+
+	buf_size = strlen(buf);
+	tmp_buf = xmalloc(buf_size + 32);
+	sprintf(tmp_buf, "SC=0 ARG=%s", buf);
+	xfree(buf);
+	*err_code = 0;
+	*err_msg = tmp_buf;
 	return 0;
 }
 
-static int	_will_run_test(uint32_t jobid, char *hostlist,
-			int *err_code, char **err_msg)
+static char *	_will_run_test(uint32_t jobid, char *job_list, 
+			char *exclude_list, int *err_code, char **err_msg)
 {
-	int rc = 0, i;
 	struct job_record *job_ptr;
-	/* Write lock on job info, read lock on node info */
-	slurmctld_lock_t job_write_lock = {
-		NO_LOCK, WRITE_LOCK, READ_LOCK, NO_LOCK };
-	char *new_node_list, *picked_node_list = NULL;
-	bitstr_t *new_bitmap, *save_exc_bitmap, *save_req_bitmap;
-	uint32_t save_prio;
-	bitstr_t *picked_node_bitmap = NULL;
-	/* Just create a big static message buffer to avoid dealing with
-	 * xmalloc/xfree. We'll switch to compressed node naming soon
-	 * and this buffer can be set smaller then. */
-	static char reply_msg[16384];
+	bitstr_t *save_exc_bitmap = NULL, *new_bitmap = NULL;
+	uint32_t save_prio, *jobid_list = NULL;
+	struct job_record **job_ptr_list;
+	int i, job_list_size;
+	char *tmp_char;
 
-	lock_slurmctld(job_write_lock);
 	job_ptr = find_job_record(jobid);
 	if (job_ptr == NULL) {
 		*err_code = -700;
 		*err_msg = "No such job";
 		error("wiki: Failed to find job %u", jobid);
-		rc = -1;
-		unlock_slurmctld(job_write_lock);
-		return rc;
+		return NULL;
 	}
 
-	if ((job_ptr->details == NULL)
-	||  (job_ptr->job_state != JOB_PENDING)) {
+	if ((job_ptr->details == NULL) ||
+	    (job_ptr->job_state != JOB_PENDING)) {
 		*err_code = -700;
 		*err_msg = "Job not pending, can't test  will_run";
 		error("wiki: Attempt to test will_run of non-pending job %u",
 			jobid);
-		rc = -1;
-		unlock_slurmctld(job_write_lock);
-		return rc;
+		return NULL;
 	}
 
-	new_node_list = _copy_nodelist_no_dup(hostlist);
-	if (hostlist && (new_node_list == NULL)) {
-		*err_code = -700;
-		*err_msg = "Invalid TASKLIST";
-		error("wiki: Attempt to set invalid node list for job %u, %s",
-			jobid, hostlist);
-		rc = -1;
-		unlock_slurmctld(job_write_lock);
-		return rc;
+	/* parse the job list */
+	job_list_size = strlen(job_list) + 1;
+	jobid_list = xmalloc(job_list_size * sizeof(uint32_t));
+	job_ptr_list = xmalloc(job_list_size * sizeof (struct job_record *));
+	tmp_char = job_list;
+	for (i=0; i<job_list_size; ) {
+		jobid_list[i] = strtoul(tmp_char, &tmp_char, 10);
+		if ((tmp_char[0] != '\0') && (!isspace(tmp_char[0])) &&
+		    (tmp_char[0] != ':')) {
+			*err_code = -300;
+			*err_msg = "Invalid AFTER value";
+			error("wiki: Invalid AFTER value of %s", job_list);
+			xfree(jobid_list);
+			xfree(job_ptr_list);
+			return NULL;
+		}
+		job_ptr_list[i] = find_job_record(jobid_list[i]);
+		if (job_ptr_list[i])
+			i++;
+		else {
+			error("wiki: willrun AFTER job %u not found", 
+				jobid_list[i]);
+			jobid_list[i] = 0;
+		}
+		if (tmp_char[0] == ':')
+			tmp_char++;
+		else
+			break;
 	}
 
-	if (node_name2bitmap(new_node_list, false, &new_bitmap) != 0) {
-		*err_code = -700;
-		*err_msg = "Invalid TASKLIST";
-		error("wiki: Attempt to set invalid node list for job %u, %s",
-			jobid, hostlist);
-		rc = -1;
-		xfree(new_node_list);
-		unlock_slurmctld(job_write_lock);
-		return rc;
-	}
-
-	/* Put the inverse of this on the excluded node list, 
-	 * Remove any required nodes, and test */
-	save_exc_bitmap = job_ptr->details->exc_node_bitmap;
-	if (hostlist[0]) {	/* empty hostlist, all nodes usable */
-		bit_not(new_bitmap);
+	if (exclude_list) {
+		if (node_name2bitmap(exclude_list, false, &new_bitmap) != 0) {
+			*err_code = -700;
+			*err_msg = "Invalid EXCLUDE value";
+			error("wiki: Attempt to set invalid exclude node "
+				"list for job %u, %s",
+				jobid, exclude_list);
+			return NULL;
+		}
+		save_exc_bitmap = job_ptr->details->exc_node_bitmap;
 		job_ptr->details->exc_node_bitmap = new_bitmap;
 	}
-	save_req_bitmap = job_ptr->details->req_node_bitmap;
-	job_ptr->details->req_node_bitmap = bit_alloc(node_record_count);
+
+	/* test when the job can execute */
 	save_prio = job_ptr->priority;
 	job_ptr->priority = 1;
 
+#if 0
+	/* execute will_run logic here */
+	/* Note that last jobid_list entry has a value of zero */
 	rc = select_nodes(job_ptr, true, &picked_node_bitmap);
-	if (picked_node_bitmap) {
-		picked_node_list = bitmap2wiki_node_name(picked_node_bitmap);
-		i = strlen(picked_node_list);
-		if ((i + 64) > sizeof(reply_msg))
-			error("wiki: will_run buffer overflow");
-	}
 
 	if (rc == SLURM_SUCCESS) {
 		*err_code = 0;
@@ -186,13 +205,13 @@ static int	_will_run_test(uint32_t jobid, char *hostlist,
 	} else if (rc == ESLURM_NODES_BUSY) {
 		*err_code = 1;
 		snprintf(reply_msg, sizeof(reply_msg),
-			"SC=1 Job %d runnable later TASKLIST:%s",
+			"SC=1 Job %u runnable later TASKLIST:%s",
 			jobid, picked_node_list);
 		*err_msg = reply_msg;
 	} else if (rc == ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE) {
 		*err_code = 1;
 		snprintf(reply_msg, sizeof(reply_msg),
-			"SC=1 Job %d not runnable with current configuration",
+			"SC=1 Job %u not runnable with current configuration",
 			jobid);
 		*err_msg = reply_msg;
 	} else {
@@ -205,37 +224,21 @@ static int	_will_run_test(uint32_t jobid, char *hostlist,
 			jobid, err_str);
 		*err_msg = reply_msg;
 	}
+#endif
 
-	/* Restore job's state, release memory */
-	xfree(picked_node_list);
-	FREE_NULL_BITMAP(picked_node_bitmap);
-	xfree(new_node_list);
-	bit_free(new_bitmap);
-	FREE_NULL_BITMAP(job_ptr->details->req_node_bitmap);
-	job_ptr->details->exc_node_bitmap = save_exc_bitmap;
-	job_ptr->details->req_node_bitmap = save_req_bitmap;
+	/* Restore job's state, release allocated memory */
+	if (save_exc_bitmap)
+		job_ptr->details->exc_node_bitmap = save_exc_bitmap;
+	FREE_NULL_BITMAP(new_bitmap);
 	job_ptr->priority = save_prio;
-	unlock_slurmctld(job_write_lock);
- 	return rc;
-}
+	xfree(jobid_list);
+	xfree(job_ptr_list);
 
-static char *	_copy_nodelist_no_dup(char *node_list)
-{
-	int   new_size = 128;
-	char *new_str;
-	hostlist_t hl = hostlist_create(node_list);
-
-	if (hl == NULL)
-		return NULL;
-
-	hostlist_uniq(hl);
-	new_str = xmalloc(new_size);
-	while (hostlist_ranged_string(hl, new_size, new_str) == -1) {
-		new_size *= 2;
-		xrealloc(new_str, new_size);
-	}
-	hostlist_destroy(hl);
-	return new_str;
+#if 1
+	*err_code = -810;
+	*err_msg  = "JOBWILLRUN not yet supported";
+ 	return NULL;
+#endif
 }
 
 /*
