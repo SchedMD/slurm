@@ -49,8 +49,11 @@ static char *	_get_node_state(struct node_record *node_ptr);
 
 /*
  * get_nodes - get information on specific node(s) changed since some time
- * cmd_ptr IN - CMD=GETNODES ARG=[<UPDATETIME>:<NODEID>[:<NODEID>]...]
+ * cmd_ptr IN   - CMD=GETNODES ARG=[<UPDATETIME>:<NODEID>[:<NODEID>]...]
  *                               [<UPDATETIME>:ALL]
+ * err_code OUT - 0 or an error code
+ * err_msg OUT  - response message
+ * NOTE: xfree() err_msg if err_code is zero
  * RET 0 on success, -1 on failure
  *
  * Response format
