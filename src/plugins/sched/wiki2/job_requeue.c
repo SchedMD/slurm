@@ -78,6 +78,7 @@ extern int	job_requeue_wiki(char *cmd_ptr, int *err_code, char **err_msg)
 			FREE_NULL_BITMAP(job_ptr->details->
 					 req_node_bitmap);
 		}
+		info("wiki: requeued job %u", jobid);
 	} else {
 		*err_code = -700;
 		*err_msg = slurm_strerror(slurm_rc);
