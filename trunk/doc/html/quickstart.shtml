@@ -290,7 +290,8 @@ option to launch jobs. For example:
 $MPI_ROOT/bin/mpirun -TCP -srun -N8 ./a.out
 </pre></p>
 
-<p><a href="http://www-unix.mcs.anl.gov/mpi/mpich2/"><b>MPICH2</b></a> jobs 
+<p><a href="http://www.mcs.anl.gov/research/projects/mpich2/"><b>
+MPICH2</b></a> jobs 
 are launched using the <b>srun</b> command. Just link your program with 
 SLURM's implementation of the PMI library so that tasks can communicate
 host and port information at startup. (The system administrator can add
@@ -330,7 +331,7 @@ $ mpicc ...
 $ srun -n16 --mpi=mpichmx a.out
 </pre>
 
-<p><a href="http://nowlab.cse.ohio-state.edu/projects/mpi-iba"><b>MVAPICH</b></a>
+<p><a href="http://mvapich.cse.ohio-state.edu/"><b>MVAPICH</b></a>
 jobs can be launched directly by <b>srun</b> command.
 SLURM's <i>mvapich</i> MPI plugin must be used to establish communications 
 between the laucnhed tasks. This can be accomplished either using the SLURM 

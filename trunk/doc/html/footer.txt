@@ -1,13 +1,13 @@
 </div> <!-- closes "content" -->
 
 <div id="footer">
-<div id="left">&nbsp;&nbsp;<span class="ucrlnum">UCRL-WEB-225274 |</span> <a href="http://www.llnl.gov/disclaimer.html" target="_blank" class="privacy">Privacy &amp; Legal Notice</a></div>
+<div id="left">&nbsp;&nbsp;<span class="ucrlnum">UCRL-WEB-225274 |</span> <a href="https://www.llnl.gov/disclaimer.html" target="_blank" class="privacy">Privacy &amp; Legal Notice</a></div>
 <div id="right"><span class="ucrlnum">November 28, 2006&nbsp;&nbsp;</span></div>
 </div>
 
 <div id="footer2">
 <div id="left2"><img src="sponsors.gif" width="129" height="30" border="0" usemap="#Map2"></div>
-<div id="center2"><a href="http://www.llnl.gov/" target="_blank" class="footer">Lawrence Livermore National Laboratory</a><br />
+<div id="center2"><a href="https://www.llnl.gov/" target="_blank" class="footer">Lawrence Livermore National Laboratory</a><br />
 <span class="smalltextblue">7000 East Avenue &#8226; Livermore, CA 94550</span></div>
 <div id="right2"><span class="smalltextblue">Operated by
 Lawrence Livermore National Security, LLC, for the</span> 
@@ -21,7 +21,7 @@ National Nuclear Security Administration</a></div>
 </div> <!-- closes "container" -->
 
 <map name="Map">
-<area shape="rect" coords="571,1,799,15" href="http://www.llnl.gov/">
+<area shape="rect" coords="571,1,799,15" href="https://www.llnl.gov/">
 </map>
 <map name="Map2">
 <area shape="rect" coords="1,1,92,30" href="http://www.nnsa.doe.gov/" target="_blank" alt="NNSA logo links to the NNSA Web site">

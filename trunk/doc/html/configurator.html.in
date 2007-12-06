@@ -4,7 +4,7 @@ Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 Written by Morris Jette <jette1@llnl.gov> and Danny Auble <da@llnl.gov>
 
 This file is part of SLURM, a resource management program.
-For details, see <http://www.llnl.gov/linux/slurm/>.
+For details, see <https://www.llnl.gov/linux/slurm/>.
 
 SLURM is free software; you can redistribute it and/or modify it under
 the terms of the GNU General Public License as published by the Free
@@ -266,9 +266,9 @@ file. It will appear on your web browser. Save the file in text format
 as <I>slurm.conf</I> for use by SLURM.
 
 <P>For more information about SLURM, see
-<A HREF="http://www.llnl.gov/linux/slurm">http://www.llnl.gov/linux/slurm</A>
+<A HREF="https://computing.llnl.gov/linux/slurm/">https://computing.llnl.gov/linux/slurm/</A>
 <P>
-<A HREF="http://www.llnl.gov/disclaimer.html"><B>Privacy and legal notice</B></A>
+<A HREF="https://www.llnl.gov/disclaimer.html"><B>Privacy and legal notice</B></A>
 
 <H2>Control Machines</H2>
 Define the hostname of the computer on which the SLURM controller and
@@ -393,12 +393,12 @@ not recommended production use<br>
 <input type="radio" name="auth_type" value="authd"> <B>Authd</B>: Brent Chun's 
 <A href="http://www.theether.org/authd/">authd</A><BR>
 <input type="radio" name="auth_type" value="munge" checked> <B>Munge</B>: LLNL's 
-<A href="http://home.gna.org/munge">Munge</A><BR>
+<A href="http://home.gna.org/munge/">Munge</A><BR>
 <P>
 Library used for job step cryptographic signature generation.<BR>
 Select one value for <B>CryptoType</B>:<BR>
 <input type="radio" name="crypto_type" value="munge"><B>Munge</B>: LLNL's 
-<A href="http://home.gna.org/munge">Munge</A><BR>
+<A href="http://home.gna.org/munge/">Munge</A><BR>
 <input type="radio" name="crypto_type" value="openssl" checked> <B>OpenSSL</B>:
 <A href="http://www.openssl.org/">OpenSSL</A>
 <P>
