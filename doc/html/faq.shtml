@@ -564,7 +564,10 @@ limit from being propagated:<i>PropagateResourceLimitsExcept=MEMLOCK</i>.</p>
 <p>We also have a PAM module for SLURM that prevents users from 
 logging into nodes that they have not been allocated (except for user 
 root, which can always login. pam_slurm is available for download from
-<a href="ftp://ftp.llnl.gov/pub/linux/pam_slurm/">ftp://ftp.llnl.gov/pub/linux/pam_slurm</a>
+<a href="https://sourceforge.net/projects/slurm/">
+https://sourceforge.net/projects/slurm/</a> or use the
+<a href="http://www.debian.org/">Debian</a> package
+named <i>libpam-slurm</i>.
 The use of pam_slurm does not require <i>UsePAM</i> being set. The 
 two uses of PAM are independent.
 
@@ -857,6 +860,6 @@ SLURM output expecting the old format (e.g. LSF, Maui or Moab).
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 9 November 2007</p>
+<p style="text-align:center;">Last modified 6 December 2007</p>
 
 <!--#include virtual="footer.txt"-->
