@@ -61,15 +61,15 @@ set nodelist_name ""
 set timeout $max_job_delay
 set srun_pid [spawn $srun -v -N1 -l $bin_printenv SLURMD_NODENAME]
 expect {
-	-re "on host ($alpha_numeric)," {
+	-re "on host ($alpha_numeric_under)," {
 		set nodelist_name $expect_out(1,string)
 		exp_continue
 	}
-	-re "^0: ($alpha_numeric)" {
+	-re "^0: ($alpha_numeric_under)" {
 		set host_0 $expect_out(1,string)
 		exp_continue
 	}
-	-re "\n0: ($alpha_numeric)" {
+	-re "\n0: ($alpha_numeric_under)" {
 		set host_0 $expect_out(1,string)
 		exp_continue
 	}
@@ -122,7 +122,7 @@ expect {
 	-re "error: .*exit code 1" {
 		exp_continue
 	}
-	-re "0: ($alpha_numeric)" {
+	-re "0: ($alpha_numeric_under)" {
 		set host_1 $expect_out(1,string)
 		exp_continue
 	}
@@ -276,7 +276,7 @@ for {set inx 0} {$inx < $interations} {incr inx} {
 			set failures 1
 			exp_continue
 		}
-		-re "0: ($alpha_numeric)" {
+		-re "0: ($alpha_numeric_under)" {
 			set host_0 $expect_out(1,string)
 			exp_continue
 		}

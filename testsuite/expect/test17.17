@@ -50,11 +50,11 @@ print_header $test_id
 set timeout $max_job_delay
 set srun_pid [spawn $srun -v -N1 -l -t1 $bin_hostname]
 expect {
-	-re "on host ($alpha_numeric)," {
+	-re "on host ($alpha_numeric_under)," {
 		set nodelist_name $expect_out(1,string)
 		exp_continue
 	}
-	-re "0: ($alpha_numeric)" {
+	-re "0: ($alpha_numeric_under)" {
 		set host_name $expect_out(1,string)
 		exp_continue
 	}
@@ -113,7 +113,7 @@ set waited 1
 set timeout [expr $timeout + 5]
 set srun_pid [spawn $srun -N1 --nodelist=$nodelist_name -t1 --share $scontrol -o show job $job_id1]
 expect {
-	-re "Partition=($alpha_numeric)" {
+	-re "Partition=($alpha_numeric_under)" {
 		set partition $expect_out(1,string)
 		exp_continue
 	}
