@@ -149,7 +149,7 @@ expect {
 #
 spawn $bin_id -un 
 expect {
-	-re "($alpha_numeric)" {
+	-re "($alpha_numeric_under)" {
 		set this_user $expect_out(1,string)
 		exp_continue
 	}
@@ -159,7 +159,7 @@ expect {
 }
 spawn $squeue --format=%u --noheader --user=$this_user 
 expect {
-	-re "($alpha_numeric)" {
+	-re "($alpha_numeric_under)" {
 		if {[string compare $expect_out(1,string) $this_user]} {
 			send_user "\nFAILURE: squeue user filter failure\n"
 			set exit_code 1
@@ -190,7 +190,7 @@ expect {
 }
 spawn $squeue --format=%u --noheader --user=$this_uid
 expect {
-	-re "($alpha_numeric)" {
+	-re "($alpha_numeric_under)" {
 		if {[string compare $expect_out(1,string) $this_user]} {
 			send_user "\nFAILURE: squeue user filter failure\n"
 			set exit_code 1
@@ -211,7 +211,7 @@ expect {
 #
 spawn $squeue --format=%u --noheader --user=$this_uid --node=dummy_name
 expect {
-	-re "($alpha_numeric)" {
+	-re "($alpha_numeric_under)" {
 		send_user "\nFAILURE: squeue node filter failure\n"
 		set exit_code 1
 	}
@@ -227,7 +227,7 @@ expect {
 set node_name_set 0
 spawn $squeue --format=%N --noheader --jobs=$job_id1 --states=RUNNING
 expect {
-	-re "($alpha_numeric)" {
+	-re "($alpha_numeric_under)" {
 		set node_name $expect_out(1,string)
 		set node_name_set 1
 		exp_continue
@@ -243,7 +243,7 @@ expect {
 if {$node_name_set == 1} {
 	spawn $squeue --format=%u --noheader --user=$this_uid --node=$node_name
 	expect {
-		-re "($alpha_numeric)" {
+		-re "($alpha_numeric_under)" {
 			set node_name_set 0
 			exp_continue
 		}
@@ -269,11 +269,12 @@ set partition1 ""
 set partition2 ""
 spawn $squeue --format=%P --noheader 
 expect {
-	-re "($alpha_numeric)" {
+	-re "($alpha_numeric_under)" {
 		if {![string compare $partition1 ""]} {
 			set partition1 $expect_out(1,string)
+			exp_continue
 		}
-		if {[string compare $expect_out(1,string) $partition1]} {
+		if {![string compare $expect_out(1,string) $partition1]} {
 			set partition2 $expect_out(1,string)
 		}
 		exp_continue
@@ -287,11 +288,11 @@ expect {
 	}
 }
 if {[string compare partition2 ""]} {
-	set partition1 $partition2
+	set partition2 $partition1
 }
 spawn $squeue --format=%P --noheader --partitions=$partition1
 expect {
-	-re "($alpha_numeric)" {
+	-re "($alpha_numeric_under)" {
 		if {[string compare $expect_out(1,string) $partition1]} {
 			send_user "\nFAILURE: squeue partition filter error\n"
 			set exit_code 1
