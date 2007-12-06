@@ -5,7 +5,7 @@
 <h2>Overview</h2>
 
 <p>This document describes the unique features of SLURM on the
-<a href="http://www.research.ibm.com/bluegene">IBM BlueGene</a> systems. 
+<a href="http://www.research.ibm.com/bluegene/">IBM BlueGene</a> systems. 
 You should be familiar with the SLURM's mode of operation on Linux clusters 
 before studying the relatively few differences in BlueGene operation 
 described in this document.</p>

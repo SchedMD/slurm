@@ -190,7 +190,7 @@ authentication infrastructure is provided by a dynamically loaded
 plugin chosen at runtame via the <b>AuthType</b> keyword in the SLURM 
 configuration file.  Currently available authentication types include
 <a href="http://www.theether.org/authd/">authd</a>, 
-<a href="http://home.gna.org/munge">munge</a>, and none.
+<a href="http://home.gna.org/munge/">munge</a>, and none.
 The default authentication infrastructure is "none". This permits any user to execute 
 any job as another user. This may be fine for testing purposes, but certainly not for production 
 use. <b>Configure some AuthType value other than "none" if you want any security.</b>

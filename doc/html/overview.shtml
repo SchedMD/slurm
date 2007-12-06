@@ -12,7 +12,7 @@ monitoring work (normally a parallel job) on the set of allocated nodes. Finally
 it arbitrates contention for resources by managing a queue of pending work.</p>
 
 <p>SLURM has been developed through the collaborative efforts of 
-<a href="http://www.llnl.gov/">Lawrence Livermore National Laboratory (LLNL)</a>,
+<a href="https://www.llnl.gov/">Lawrence Livermore National Laboratory (LLNL)</a>,
 <a href="http://www.hp.com/">Hewlett-Packard</a>, 
 <a href="http://www.bull.com/">Bull</a>, and
 <a href="http://www.lnxi.com/">Linux NetworX</a>.
