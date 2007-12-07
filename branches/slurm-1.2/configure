@@ -898,6 +898,9 @@ ac_ct_F77
 LIBTOOL
 WITH_GNU_LD_TRUE
 WITH_GNU_LD_FALSE
+HAVE_PERL_CORE_DIR_TRUE
+HAVE_PERL_CORE_DIR_FALSE
+HAVE_PERL_CORE_DIR
 NUMA_LIBS
 HAVE_NUMA_TRUE
 HAVE_NUMA_FALSE
@@ -1578,6 +1581,7 @@ Optional Packages:
   --with-pic              try to use only PIC/non-PIC objects [default=use
                           both]
   --with-tags[=TAGS]      include additional configurations [automatic]
+  --with-site-perl=PATH   specify path to site perl directory
   --with-db2-dir=PATH     Specify path to DB2 library's parent directory
   --with-bg-serial=NAME   set BG_SERIAL value BGL
   --with-xcpu=PATH        specify path to XCPU directory
@@ -7101,7 +7105,7 @@ ia64-*-hpux*)
   ;;
 *-*-irix6*)
   # Find out which ABI we are using.
-  echo '#line 7104 "configure"' > conftest.$ac_ext
+  echo '#line 7108 "configure"' > conftest.$ac_ext
   if { (eval echo "$as_me:$LINENO: \"$ac_compile\"") >&5
   (eval $ac_compile) 2>&5
   ac_status=$?
@@ -8892,11 +8896,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:8895: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:8899: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:8899: \$? = $ac_status" >&5
+   echo "$as_me:8903: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -9182,11 +9186,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:9185: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:9189: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:9189: \$? = $ac_status" >&5
+   echo "$as_me:9193: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -9286,11 +9290,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:9289: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:9293: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:9293: \$? = $ac_status" >&5
+   echo "$as_me:9297: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -11648,7 +11652,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<EOF
-#line 11651 "configure"
+#line 11655 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -11748,7 +11752,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<EOF
-#line 11751 "configure"
+#line 11755 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -14168,11 +14172,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:14171: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:14175: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:14175: \$? = $ac_status" >&5
+   echo "$as_me:14179: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -14272,11 +14276,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:14275: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:14279: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:14279: \$? = $ac_status" >&5
+   echo "$as_me:14283: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -15849,11 +15853,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:15852: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:15856: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:15856: \$? = $ac_status" >&5
+   echo "$as_me:15860: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -15953,11 +15957,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:15956: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:15960: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:15960: \$? = $ac_status" >&5
+   echo "$as_me:15964: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -18153,11 +18157,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:18156: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:18160: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:18160: \$? = $ac_status" >&5
+   echo "$as_me:18164: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -18443,11 +18447,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:18446: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:18450: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:18450: \$? = $ac_status" >&5
+   echo "$as_me:18454: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -18547,11 +18551,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:18550: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:18554: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:18554: \$? = $ac_status" >&5
+   echo "$as_me:18558: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -21695,6 +21699,51 @@ cat >>confdefs.h <<\_ACEOF
 #define STDC_HEADERS 1
 _ACEOF
 
+fi
+
+
+
+
+   { echo "$as_me:$LINENO: checking for PERL site dir" >&5
+echo $ECHO_N "checking for PERL site dir... $ECHO_C" >&6; }
+
+   perl_dir=`perl -MConfig -e 'print $Config{archlib};'`
+
+
+# Check whether --with-site-perl was given.
+if test "${with_site_perl+set}" = set; then
+  withval=$with_site_perl;  perl_dir=$withval
+
+fi
+
+
+   ac_perl='Not Found'
+   ac_have_perl_core="no"
+   if test -d "$perl_dir/CORE" ; then
+         ac_perl=$perl_dir
+	 ac_have_perl_core="yes"
+
+cat >>confdefs.h <<_ACEOF
+#define PERL_SITE_DIR "$perl_dir"
+_ACEOF
+
+
+cat >>confdefs.h <<_ACEOF
+#define PERL_CORE_DIR "$perl_dir/CORE"
+_ACEOF
+
+   fi
+
+
+   { echo "$as_me:$LINENO: result: $ac_perl" >&5
+echo "${ECHO_T}$ac_perl" >&6; }
+
+ if test "x$ac_perl" != "xNot Found"; then
+  HAVE_PERL_CORE_DIR_TRUE=
+  HAVE_PERL_CORE_DIR_FALSE='#'
+else
+  HAVE_PERL_CORE_DIR_TRUE='#'
+  HAVE_PERL_CORE_DIR_FALSE=
 fi
 
 
@@ -26178,7 +26227,7 @@ _ACEOF
 
 
 
-ac_config_files="$ac_config_files Makefile config.xml auxdir/Makefile contribs/Makefile contribs/perlapi/Makefile contribs/perlapi/libslurm-perl/Makefile.PL contribs/torque/Makefile src/Makefile src/api/Makefile src/common/Makefile src/sacct/Makefile src/salloc/Makefile src/sbatch/Makefile src/sattach/Makefile src/srun/Makefile src/slaunch/Makefile src/slurmd/Makefile src/slurmd/slurmd/Makefile src/slurmd/slurmstepd/Makefile src/slurmctld/Makefile src/sbcast/Makefile src/scontrol/Makefile src/scancel/Makefile src/squeue/Makefile src/sinfo/Makefile src/smap/Makefile src/strigger/Makefile src/sview/Makefile src/plugins/Makefile src/plugins/auth/Makefile src/plugins/auth/authd/Makefile src/plugins/auth/munge/Makefile src/plugins/auth/none/Makefile src/plugins/checkpoint/Makefile src/plugins/checkpoint/aix/Makefile src/plugins/checkpoint/none/Makefile src/plugins/checkpoint/ompi/Makefile src/plugins/jobacct/Makefile src/plugins/jobacct/linux/Makefile src/plugins/jobacct/aix/Makefile src/plugins/jobacct/none/Makefile src/plugins/jobcomp/Makefile src/plugins/jobcomp/filetxt/Makefile src/plugins/jobcomp/none/Makefile src/plugins/jobcomp/script/Makefile src/plugins/proctrack/Makefile src/plugins/proctrack/aix/Makefile src/plugins/proctrack/pgid/Makefile src/plugins/proctrack/linuxproc/Makefile src/plugins/proctrack/rms/Makefile src/plugins/proctrack/sgi_job/Makefile src/plugins/sched/Makefile src/plugins/sched/backfill/Makefile src/plugins/sched/builtin/Makefile src/plugins/sched/gang/Makefile src/plugins/sched/hold/Makefile src/plugins/sched/wiki/Makefile src/plugins/sched/wiki2/Makefile src/plugins/select/Makefile src/plugins/select/bluegene/Makefile src/plugins/select/bluegene/block_allocator/Makefile src/plugins/select/bluegene/plugin/Makefile src/plugins/select/linear/Makefile src/plugins/select/cons_res/Makefile src/plugins/switch/Makefile src/plugins/switch/elan/Makefile src/plugins/switch/none/Makefile src/plugins/switch/federation/Makefile src/plugins/mpi/Makefile src/plugins/mpi/mpich1_p4/Makefile src/plugins/mpi/mpich1_shmem/Makefile src/plugins/mpi/mpichgm/Makefile src/plugins/mpi/mpichmx/Makefile src/plugins/mpi/mvapich/Makefile src/plugins/mpi/lam/Makefile src/plugins/mpi/none/Makefile src/plugins/mpi/openmpi/Makefile src/plugins/task/Makefile src/plugins/task/affinity/Makefile src/plugins/task/none/Makefile doc/Makefile doc/man/Makefile doc/html/Makefile doc/html/configurator.html testsuite/Makefile testsuite/expect/Makefile testsuite/slurm_unit/Makefile testsuite/slurm_unit/common/Makefile testsuite/slurm_unit/slurmctld/Makefile testsuite/slurm_unit/slurmd/Makefile testsuite/slurm_unit/api/Makefile testsuite/slurm_unit/api/manual/Makefile"
+ac_config_files="$ac_config_files Makefile config.xml auxdir/Makefile contribs/Makefile contribs/perlapi/Makefile contribs/perlapi/libslurm-perl/Makefile.PL contribs/torque/Makefile src/Makefile src/api/Makefile src/common/Makefile src/sacct/Makefile src/salloc/Makefile src/sbatch/Makefile src/sattach/Makefile src/srun/Makefile src/slaunch/Makefile src/slurmd/Makefile src/slurmd/slurmd/Makefile src/slurmd/slurmstepd/Makefile src/slurmctld/Makefile src/sbcast/Makefile src/scontrol/Makefile src/scancel/Makefile src/squeue/Makefile src/sinfo/Makefile src/smap/Makefile src/strigger/Makefile src/sview/Makefile src/plugins/Makefile src/plugins/auth/Makefile src/plugins/auth/authd/Makefile src/plugins/auth/munge/Makefile src/plugins/auth/none/Makefile src/plugins/checkpoint/Makefile src/plugins/checkpoint/aix/Makefile src/plugins/checkpoint/none/Makefile src/plugins/checkpoint/ompi/Makefile src/plugins/jobacct/Makefile src/plugins/jobacct/linux/Makefile src/plugins/jobacct/aix/Makefile src/plugins/jobacct/none/Makefile src/plugins/jobacct/gold/Makefile src/plugins/jobcomp/Makefile src/plugins/jobcomp/filetxt/Makefile src/plugins/jobcomp/none/Makefile src/plugins/jobcomp/script/Makefile src/plugins/proctrack/Makefile src/plugins/proctrack/aix/Makefile src/plugins/proctrack/pgid/Makefile src/plugins/proctrack/linuxproc/Makefile src/plugins/proctrack/rms/Makefile src/plugins/proctrack/sgi_job/Makefile src/plugins/sched/Makefile src/plugins/sched/backfill/Makefile src/plugins/sched/builtin/Makefile src/plugins/sched/gang/Makefile src/plugins/sched/hold/Makefile src/plugins/sched/wiki/Makefile src/plugins/sched/wiki2/Makefile src/plugins/select/Makefile src/plugins/select/bluegene/Makefile src/plugins/select/bluegene/block_allocator/Makefile src/plugins/select/bluegene/plugin/Makefile src/plugins/select/linear/Makefile src/plugins/select/cons_res/Makefile src/plugins/switch/Makefile src/plugins/switch/elan/Makefile src/plugins/switch/none/Makefile src/plugins/switch/federation/Makefile src/plugins/mpi/Makefile src/plugins/mpi/mpich1_p4/Makefile src/plugins/mpi/mpich1_shmem/Makefile src/plugins/mpi/mpichgm/Makefile src/plugins/mpi/mpichmx/Makefile src/plugins/mpi/mvapich/Makefile src/plugins/mpi/lam/Makefile src/plugins/mpi/none/Makefile src/plugins/mpi/openmpi/Makefile src/plugins/task/Makefile src/plugins/task/affinity/Makefile src/plugins/task/none/Makefile doc/Makefile doc/man/Makefile doc/html/Makefile doc/html/configurator.html testsuite/Makefile testsuite/expect/Makefile testsuite/slurm_unit/Makefile testsuite/slurm_unit/common/Makefile testsuite/slurm_unit/slurmctld/Makefile testsuite/slurm_unit/slurmd/Makefile testsuite/slurm_unit/api/Makefile testsuite/slurm_unit/api/manual/Makefile"
 
 
 cat >confcache <<\_ACEOF
@@ -26330,6 +26379,13 @@ if test -z "${WITH_GNU_LD_TRUE}" && test -z "${WITH_GNU_LD_FALSE}"; then
   { { echo "$as_me:$LINENO: error: conditional \"WITH_GNU_LD\" was never defined.
 Usually this means the macro was only invoked conditionally." >&5
 echo "$as_me: error: conditional \"WITH_GNU_LD\" was never defined.
+Usually this means the macro was only invoked conditionally." >&2;}
+   { (exit 1); exit 1; }; }
+fi
+if test -z "${HAVE_PERL_CORE_DIR_TRUE}" && test -z "${HAVE_PERL_CORE_DIR_FALSE}"; then
+  { { echo "$as_me:$LINENO: error: conditional \"HAVE_PERL_CORE_DIR\" was never defined.
+Usually this means the macro was only invoked conditionally." >&5
+echo "$as_me: error: conditional \"HAVE_PERL_CORE_DIR\" was never defined.
 Usually this means the macro was only invoked conditionally." >&2;}
    { (exit 1); exit 1; }; }
 fi
@@ -26928,6 +26984,7 @@ do
     "src/plugins/jobacct/linux/Makefile") CONFIG_FILES="$CONFIG_FILES src/plugins/jobacct/linux/Makefile" ;;
     "src/plugins/jobacct/aix/Makefile") CONFIG_FILES="$CONFIG_FILES src/plugins/jobacct/aix/Makefile" ;;
     "src/plugins/jobacct/none/Makefile") CONFIG_FILES="$CONFIG_FILES src/plugins/jobacct/none/Makefile" ;;
+    "src/plugins/jobacct/gold/Makefile") CONFIG_FILES="$CONFIG_FILES src/plugins/jobacct/gold/Makefile" ;;
     "src/plugins/jobcomp/Makefile") CONFIG_FILES="$CONFIG_FILES src/plugins/jobcomp/Makefile" ;;
     "src/plugins/jobcomp/filetxt/Makefile") CONFIG_FILES="$CONFIG_FILES src/plugins/jobcomp/filetxt/Makefile" ;;
     "src/plugins/jobcomp/none/Makefile") CONFIG_FILES="$CONFIG_FILES src/plugins/jobcomp/none/Makefile" ;;
@@ -27213,6 +27270,9 @@ ac_ct_F77!$ac_ct_F77$ac_delim
 LIBTOOL!$LIBTOOL$ac_delim
 WITH_GNU_LD_TRUE!$WITH_GNU_LD_TRUE$ac_delim
 WITH_GNU_LD_FALSE!$WITH_GNU_LD_FALSE$ac_delim
+HAVE_PERL_CORE_DIR_TRUE!$HAVE_PERL_CORE_DIR_TRUE$ac_delim
+HAVE_PERL_CORE_DIR_FALSE!$HAVE_PERL_CORE_DIR_FALSE$ac_delim
+HAVE_PERL_CORE_DIR!$HAVE_PERL_CORE_DIR$ac_delim
 NUMA_LIBS!$NUMA_LIBS$ac_delim
 HAVE_NUMA_TRUE!$HAVE_NUMA_TRUE$ac_delim
 HAVE_NUMA_FALSE!$HAVE_NUMA_FALSE$ac_delim
@@ -27270,7 +27330,7 @@ WITH_AUTHD_FALSE!$WITH_AUTHD_FALSE$ac_delim
 LTLIBOBJS!$LTLIBOBJS$ac_delim
 _ACEOF
 
-  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 89; then
+  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 92; then
     break
   elif $ac_last_try; then
     { { echo "$as_me:$LINENO: error: could not make $CONFIG_STATUS" >&5

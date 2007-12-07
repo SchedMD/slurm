@@ -35,7 +35,7 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
-subdir = src/plugins/jobacct/none
+subdir = src/plugins/jobacct/gold
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/auxdir/acx_pthread.m4 \
@@ -74,12 +74,12 @@ am__strip_dir = `echo $$p | sed -e 's|^.*/||'`;
 am__installdirs = "$(DESTDIR)$(pkglibdir)"
 pkglibLTLIBRARIES_INSTALL = $(INSTALL)
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
-jobacct_none_la_LIBADD =
-am_jobacct_none_la_OBJECTS = jobacct_none.lo
-jobacct_none_la_OBJECTS = $(am_jobacct_none_la_OBJECTS)
-jobacct_none_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
+jobacct_gold_la_LIBADD =
+am_jobacct_gold_la_OBJECTS = jobacct_gold.lo
+jobacct_gold_la_OBJECTS = $(am_jobacct_gold_la_OBJECTS)
+jobacct_gold_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
-	$(jobacct_none_la_LDFLAGS) $(LDFLAGS) -o $@
+	$(jobacct_gold_la_LDFLAGS) $(LDFLAGS) -o $@
 DEFAULT_INCLUDES = -I. -I$(top_builddir) -I$(top_builddir)/slurm@am__isrc@
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
 am__depfiles_maybe = depfiles
@@ -92,8 +92,8 @@ CCLD = $(CC)
 LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
-SOURCES = $(jobacct_none_la_SOURCES)
-DIST_SOURCES = $(jobacct_none_la_SOURCES)
+SOURCES = $(jobacct_gold_la_SOURCES)
+DIST_SOURCES = $(jobacct_gold_la_SOURCES)
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -137,6 +137,7 @@ HAVEPKGCONFIG = @HAVEPKGCONFIG@
 HAVE_AIX = @HAVE_AIX@
 HAVE_ELAN = @HAVE_ELAN@
 HAVE_FEDERATION = @HAVE_FEDERATION@
+HAVE_PERL_CORE_DIR = @HAVE_PERL_CORE_DIR@
 HAVE_SOME_CURSES = @HAVE_SOME_CURSES@
 INSTALL = @INSTALL@
 INSTALL_DATA = @INSTALL_DATA@
@@ -255,12 +256,13 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
 PLUGIN_FLAGS = -module -avoid-version --export-dynamic 
-INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common
-pkglib_LTLIBRARIES = jobacct_none.la
+@HAVE_PERL_CORE_DIR_FALSE@INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common
+@HAVE_PERL_CORE_DIR_TRUE@INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common -I$(PERL_CORE_DIR)
+pkglib_LTLIBRARIES = jobacct_gold.la
 
-# Null job completion logging plugin.
-jobacct_none_la_SOURCES = jobacct_none.c
-jobacct_none_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
+# Gold job completion logging plugin.
+jobacct_gold_la_SOURCES = jobacct_gold.c
+jobacct_gold_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
 all: all-am
 
 .SUFFIXES:
@@ -274,9 +276,9 @@ $(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.am  $(am__confi
 	      exit 1;; \
 	  esac; \
 	done; \
-	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign  src/plugins/jobacct/none/Makefile'; \
+	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign  src/plugins/jobacct/gold/Makefile'; \
 	cd $(top_srcdir) && \
-	  $(AUTOMAKE) --foreign  src/plugins/jobacct/none/Makefile
+	  $(AUTOMAKE) --foreign  src/plugins/jobacct/gold/Makefile
 .PRECIOUS: Makefile
 Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
 	@case '$?' in \
@@ -321,8 +323,8 @@ clean-pkglibLTLIBRARIES:
 	  echo "rm -f \"$${dir}/so_locations\""; \
 	  rm -f "$${dir}/so_locations"; \
 	done
-jobacct_none.la: $(jobacct_none_la_OBJECTS) $(jobacct_none_la_DEPENDENCIES) 
-	$(jobacct_none_la_LINK) -rpath $(pkglibdir) $(jobacct_none_la_OBJECTS) $(jobacct_none_la_LIBADD) $(LIBS)
+jobacct_gold.la: $(jobacct_gold_la_OBJECTS) $(jobacct_gold_la_DEPENDENCIES) 
+	$(jobacct_gold_la_LINK) -rpath $(pkglibdir) $(jobacct_gold_la_OBJECTS) $(jobacct_gold_la_LIBADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -330,7 +332,7 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/jobacct_none.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/jobacct_gold.Plo@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<

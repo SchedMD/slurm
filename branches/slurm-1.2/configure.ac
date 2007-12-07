@@ -66,6 +66,12 @@ AC_HEADER_TIME
 AC_HEADER_STDC
 
 
+dnl Checks for perl.
+dnl
+X_AC_PERL
+AM_CONDITIONAL(HAVE_PERL_CORE_DIR, test "x$ac_perl" != "xNot Found")
+AC_SUBST(HAVE_PERL_CORE_DIR)
+
 dnl Checks for structures.
 dnl
 X_AC__SYSTEM_CONFIGURATION
@@ -295,6 +301,7 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/jobacct/linux/Makefile
 		 src/plugins/jobacct/aix/Makefile
 		 src/plugins/jobacct/none/Makefile
+		 src/plugins/jobacct/gold/Makefile
 		 src/plugins/jobcomp/Makefile
 		 src/plugins/jobcomp/filetxt/Makefile
 		 src/plugins/jobcomp/none/Makefile
