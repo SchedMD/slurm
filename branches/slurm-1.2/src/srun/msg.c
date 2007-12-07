@@ -1323,11 +1323,11 @@ par_thr(void *arg)
 			update_job_state(job, c);
 			break;
 		case PIPE_TASK_STATE:
-			debug("PIPE_TASK_STATE, c = %d", c);
 			if(tid == -1) {
 				tid = c;
 				continue;
 			}
+			debug("PIPE_TASK_STATE tid=%d, state=%d", tid, c);
 			slurm_mutex_lock(&job->task_mutex);
 			job->task_state[tid] = c;
 			if(c == SRUN_TASK_FAILED)
@@ -1340,14 +1340,12 @@ par_thr(void *arg)
 			tid = -1;
 			break;
 		case PIPE_TASK_EXITCODE:
-			debug("PIPE_TASK_EXITCODE");
 			if(tid == -1) {
-				debug("  setting tid");
 				tid = c;
 				continue;
 			}
+			debug("PIPE_TASK_EXITCODE tid=%d code=%d", tid, c);
 			slurm_mutex_lock(&job->task_mutex);
-			debug("  setting task %d exitcode %d", tid, c);
 			job->tstatus[tid] = c;
 			slurm_mutex_unlock(&job->task_mutex);
 			tid = -1;
