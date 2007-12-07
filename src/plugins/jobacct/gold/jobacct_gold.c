@@ -50,6 +50,10 @@
 #  include <inttypes.h>
 #endif
 
+#ifdef HAVE_PERL_CORE_DIR
+#  include <perl.h>
+#endif
+
 #include <stdio.h>
 #include <slurm/slurm_errno.h>
 
