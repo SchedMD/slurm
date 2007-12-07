@@ -1306,6 +1306,8 @@ par_thr(void *arg)
 	//slurm_uid = (uid_t) slurm_get_slurm_user_id();
 	close(msg_par->msg_pipe[0]); // close read end of pipe
 	close(par_msg->msg_pipe[1]); // close write end of pipe 
+	/* Note: On some message types, we read a task ID as the 
+	 * first number then read status or exit code as the second */
 	while(read(par_msg->msg_pipe[0], &c, sizeof(int)) 
 	      == sizeof(int)) {
 		// getting info from msg thread
