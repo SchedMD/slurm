@@ -1344,6 +1344,7 @@ static void _print_feature_list(uint32_t job_id, List feature_list)
 	}
 	list_iterator_destroy(feat_iter);
 	info("Job %u feature list: %s", job_id, buf);
+	xfree(buf);
 }
 
 static void _feature_list_delete(void *x)
