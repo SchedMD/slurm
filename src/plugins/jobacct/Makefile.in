@@ -119,6 +119,7 @@ HAVEPKGCONFIG = @HAVEPKGCONFIG@
 HAVE_AIX = @HAVE_AIX@
 HAVE_ELAN = @HAVE_ELAN@
 HAVE_FEDERATION = @HAVE_FEDERATION@
+HAVE_PERL_CORE_DIR = @HAVE_PERL_CORE_DIR@
 HAVE_SOME_CURSES = @HAVE_SOME_CURSES@
 INSTALL = @INSTALL@
 INSTALL_DATA = @INSTALL_DATA@
@@ -235,7 +236,7 @@ target_os = @target_os@
 target_vendor = @target_vendor@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-SUBDIRS = linux aix none
+SUBDIRS = linux aix none gold
 all: all-recursive
 
 .SUFFIXES:

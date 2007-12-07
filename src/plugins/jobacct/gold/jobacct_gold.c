@@ -1,6 +1,6 @@
 
 /*****************************************************************************\
- *  jobacct_none.c - NO-OP slurm job completion logging plugin.
+ *  jobacct_gold.c - NO-OP slurm job completion logging plugin.
  *****************************************************************************
  *
  *  Copyright (C) 2005 Hewlett-Packard Development Company, L.P.
@@ -35,7 +35,7 @@
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
  *
- *  This file is patterned after jobcomp_none.c, written by Morris Jette and
+ *  This file is patterned after jobcomp_gold.c, written by Morris Jette and
  *  Copyright (C) 2002 The Regents of the University of California.
 \*****************************************************************************/
 
@@ -86,8 +86,8 @@
  * minimum versions for their plugins as the job accounting API 
  * matures.
  */
-const char plugin_name[] = "Job accounting NOT_INVOKED plugin";
-const char plugin_type[] = "jobacct/none";
+const char plugin_name[] = "Job accounting GOLD plugin";
+const char plugin_type[] = "jobacct/gold";
 const uint32_t plugin_version = 100;
 
 /*
@@ -199,7 +199,7 @@ int jobacct_p_suspend_slurmctld(struct job_record *job_ptr)
 
 int jobacct_p_startpoll(int frequency)
 {
-	info("jobacct NONE plugin loaded");
+	info("jobacct GOLD plugin loaded");
 	debug3("slurmd_jobacct_init() called");
 	
 	return SLURM_SUCCESS;
