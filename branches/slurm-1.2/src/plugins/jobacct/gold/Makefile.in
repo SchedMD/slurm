@@ -265,11 +265,10 @@ AUTOMAKE_OPTIONS = foreign
 PLUGIN_FLAGS = -module -avoid-version --export-dynamic 
 
 # Gold job completion logging plugin.
-@HAVE_PERL_CORE_DIR_TRUE@INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common -I$(PERL_CORE_DIR)
-@HAVE_PERL_CORE_DIR_TRUE@PERLCORELIBS = -L$(PERL_CORE_DIR) -lperl
+@HAVE_PERL_CORE_DIR_TRUE@INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common $(PERL_INCLUDES)
 @HAVE_PERL_CORE_DIR_TRUE@pkglib_LTLIBRARIES = jobacct_gold.la
 @HAVE_PERL_CORE_DIR_TRUE@jobacct_gold_la_SOURCES = jobacct_gold.c
-@HAVE_PERL_CORE_DIR_TRUE@jobacct_gold_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS) $(PERLCORELIBS)
+@HAVE_PERL_CORE_DIR_TRUE@jobacct_gold_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS) $(PERL_LIBS)
 @HAVE_PERL_CORE_DIR_FALSE@EXTRA_jobacct_gold_la_SOURCES = jobacct_gold.c
 all: all-am
 
