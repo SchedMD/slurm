@@ -21790,8 +21790,8 @@ cat >>confdefs.h <<_ACEOF
 #define PERL_CORE_DIR "$perl_dir/CORE"
 _ACEOF
 
-	    ;
-	    ;
+
+
 	else
             { echo "$as_me:$LINENO: WARNING: *** PERL test program execution failed." >&5
 echo "$as_me: WARNING: *** PERL test program execution failed." >&2;}

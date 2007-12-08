@@ -47,8 +47,8 @@ AC_DEFUN([X_AC_PERL],
             AC_MSG_RESULT([PERL test program built properly.])    
             AC_DEFINE_UNQUOTED(PERL_SITE_DIR, "$perl_dir", [Define location of PERL directory])
             AC_DEFINE_UNQUOTED(PERL_CORE_DIR, "$perl_dir/CORE", [Define location of PERL CORE directory])
-	    AC_SUBST(PERL_INCLUDES);
-	    AC_SUBST(PERL_LIBS);
+	    AC_SUBST(PERL_INCLUDES)
+	    AC_SUBST(PERL_LIBS)
 	else
             AC_MSG_WARN([*** PERL test program execution failed.])
         fi	
