@@ -51,7 +51,8 @@
 #endif
 
 #ifdef HAVE_PERL_CORE_DIR
-#  include <perl.h>
+#  include <EXTERN.h>               /* from the Perl distribution     */
+#  include <perl.h>                 /* from the Perl distribution     */
 #endif
 
 #include <stdio.h>

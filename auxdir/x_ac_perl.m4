@@ -16,7 +16,7 @@
 
 AC_DEFUN([X_AC_PERL],
 [
-   AC_MSG_CHECKING([for PERL site dir])
+   AC_MSG_CHECKING([perl usability])
 
    perl_dir=`perl -MConfig -e 'print $Config{archlib};'`
 
@@ -24,17 +24,31 @@ AC_DEFUN([X_AC_PERL],
     AS_HELP_STRING(--with-site-perl=PATH,specify path to site perl directory),
     [ perl_dir=$withval ]
    )
-
+ 
    ac_perl='Not Found'
-   ac_have_perl_core="no"
    if test -d "$perl_dir/CORE" ; then
          ac_perl=$perl_dir
-	 ac_have_perl_core="yes"
-         AC_DEFINE_UNQUOTED(PERL_SITE_DIR, "$perl_dir", [Define location of PERL directory])
-         AC_DEFINE_UNQUOTED(PERL_CORE_DIR, "$perl_dir/CORE", [Define location of PERL CORE directory])
+ 	 save_LIBS="$LIBS"
+   	 LIBS="$save_LIBS -L$perl_dir/CORE -lperl"
+ 	 save_CFLAGS="$CFLAGS"
+   	 CFLAGS="$save_CFLAGS -I$perl_dir/CORE"
+	 AC_TRY_LINK([#include <EXTERN.h>
+	    	      #include <perl.h>],
+		      [PerlInterpreter * interp; interp=perl_alloc();],
+		      [],[ac_perl="Not Found"])
+         
+        LIBS="$save_LIBS"
+        CFLAGSS="$save_CFLAGS"
+        if test "$ac_perl" != "Not Found"; then
+            AC_MSG_RESULT([PERL test program built properly.])    
+            AC_DEFINE_UNQUOTED(PERL_SITE_DIR, "$perl_dir", [Define location of PERL directory])
+            AC_DEFINE_UNQUOTED(PERL_CORE_DIR, "$perl_dir/CORE", [Define location of PERL CORE directory])
+	else
+            AC_MSG_WARN([*** PERL test program execution failed.])
+        fi	
+  
+         
    fi
-   
-
-   AC_MSG_RESULT($ac_perl)
+ 
 ])
 
