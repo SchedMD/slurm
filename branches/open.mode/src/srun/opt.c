@@ -107,6 +107,7 @@
 #define OPT_NCORES      0x11
 #define OPT_NTHREADS    0x12
 #define OPT_EXCLUSIVE   0x13
+#define OPT_OPEN_MODE   0x14
 
 /* generic getopt_long flags, integers and *not* valid characters */
 #define LONG_OPT_HELP        0x100
@@ -161,6 +162,7 @@
 #define LONG_OPT_GET_USER_ENV    0x145
 #define LONG_OPT_PTY             0x146
 #define LONG_OPT_CHECKPOINT      0x147
+#define LONG_OPT_OPEN_MODE       0x148
 
 /*---- global variables, defined in opt.h ----*/
 int _verbose;
@@ -698,6 +700,7 @@ static void _opt_default()
 	}
 	
 	opt.pty = false;
+	opt.open_mode = 0;
 }
 
 /*---[ env var processing ]-----------------------------------------------*/
@@ -766,6 +769,7 @@ env_vars_t env_vars[] = {
 {"SLURM_TASK_EPILOG",   OPT_STRING,     &opt.task_epilog,   NULL             },
 {"SLURM_WORKING_DIR",   OPT_STRING,     &opt.cwd,           &opt.cwd_set     },
 {"SLURM_EXCLUSIVE",     OPT_EXCLUSIVE,  NULL,               NULL             },
+{"SLURM_OPEN_MODE",     OPT_OPEN_MODE,  NULL,               NULL             },
 {NULL, 0, NULL, NULL}
 };
 
@@ -852,6 +856,15 @@ _process_env_var(env_vars_t *e, const char *val)
 	case OPT_EXCLUSIVE:
 		opt.exclusive = true;
 		opt.shared = 0;
+		break;
+
+	case OPT_OPEN_MODE:
+		if ((val[0] == 'a') || (val[0] == 'A'))
+			opt.open_mode = OPEN_MODE_APPEND;
+		else if ((val[0] == 't') || (val[0] == 'T'))
+			opt.open_mode = OPEN_MODE_TRUNCATE;
+		else
+			error("Invalid SLURM_OPEN_MODE: %s. Ignored", val);
 		break;
 
 	case OPT_CORE:
@@ -1011,6 +1024,7 @@ static void set_options(const int argc, char **argv)
 		{"get-user-env",     optional_argument, 0, LONG_OPT_GET_USER_ENV},
 		{"pty",              no_argument,       0, LONG_OPT_PTY},
 		{"checkpoint",       required_argument, 0, LONG_OPT_CHECKPOINT},
+		{"open-mode",        required_argument, 0, LONG_OPT_OPEN_MODE},
 		{NULL,               0,                 0, 0}
 	};
 	char *opt_string = "+aAbB:c:C:d:D:e:g:Hi:IjJ:kKlm:n:N:"
@@ -1517,6 +1531,16 @@ static void set_options(const int argc, char **argv)
 		case LONG_OPT_CHECKPOINT:
 			xfree(opt.ckpt_interval_str);
 			opt.ckpt_interval_str = xstrdup(optarg);
+			break;
+		case LONG_OPT_OPEN_MODE:
+			if ((optarg[0] == 'a') || (optarg[0] == 'A'))
+				opt.open_mode = OPEN_MODE_APPEND;
+			else if ((optarg[0] == 't') || (optarg[0] == 'T'))
+				opt.open_mode = OPEN_MODE_TRUNCATE;
+			else {
+				error("Invalid --open-mode argument: %s. Ignored", 
+				      optarg);
+			}
 			break;
 		default:
 			if (spank_process_option (opt_char, optarg) < 0) {

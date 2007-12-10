@@ -188,6 +188,7 @@ typedef struct slurmd_job {
 
 	char          *batchdir;
 	jobacctinfo_t *jobacct;
+	uint8_t        open_mode;	/* stdout/err append or truncate */
 	uint8_t        pty;		/* set if creating pseudo tty       */
 	job_options_t  options;
 } slurmd_job_t;

@@ -151,28 +151,6 @@ find_fname(void *obj, void *key)
 	return 0;
 }
 
-static int
-_trunc_file(char *path)
-{
-	int flags = O_CREAT|O_TRUNC|O_WRONLY;
-	int fd;
-       
-	do {
-		fd = open(path, flags, 0644);
-	} while ((fd < 0) && (errno == EINTR));
-
-	if (fd < 0) {
-		error("Unable to open `%s': %m", path);
-		return -1;
-	} else
-		debug3("opened and truncated `%s'", path);
-
-	if (close(fd) < 0)
-		error("Unable to close `%s': %m", path);
-
-	return 0;
-}
-
 static void
 fname_free(void *name)
 {
@@ -194,31 +172,4 @@ int fname_single_task_io (const char *fmt)
 		return (int)taskid;
 
 	return -1;
-}
-
-int 
-fname_trunc_all(slurmd_job_t *job, const char *fmt)
-{
-	int i, rc = SLURM_SUCCESS;
-	char *fname;
-	ListIterator filei;
-	List files = NULL;
-
-	if (fname_single_task_io (fmt) >= 0)
-		return (0);
-
-	files = list_create((ListDelF)fname_free);
-	for (i = 0; i < job->ntasks; i++) {
-		fname = fname_create(job, fmt, job->task[i]->gtid);
-		if (!list_find_first(files, (ListFindF) find_fname, fname))
-			list_append(files, (void *)fname);
-	}	
-
-	filei = list_iterator_create(files);
-	while ((fname = list_next(filei))) {
-		if ((rc = _trunc_file(fname)) < 0)
-			break;
-	}
-	list_destroy(files);
-	return rc;
 }
