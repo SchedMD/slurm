@@ -2466,6 +2466,7 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 	detail_ptr->argv = job_desc->argv;
 	job_desc->argv   = (char **) NULL; /* nothing left */
 	job_desc->argc   = 0;		   /* nothing left */
+	detail_ptr->open_mode = job_desc->open_mode;
 	detail_ptr->min_nodes = job_desc->min_nodes;
 	detail_ptr->max_nodes = job_desc->max_nodes;
 	if (job_desc->req_nodes) {

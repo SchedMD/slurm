@@ -2523,6 +2523,7 @@ int _launch_batch_step(job_desc_msg_t *job_desc_msg, uid_t uid,
 	launch_msg_ptr->err = xstrdup(job_desc_msg->err);
 	launch_msg_ptr->in = xstrdup(job_desc_msg->in);
 	launch_msg_ptr->out = xstrdup(job_desc_msg->out);
+	launch_msg_ptr->open_mode = job_desc_msg->open_mode;
 	launch_msg_ptr->work_dir = xstrdup(job_desc_msg->work_dir);
 	launch_msg_ptr->argc = job_desc_msg->argc;
 	launch_msg_ptr->argv = _xduparray(job_desc_msg->argc,
