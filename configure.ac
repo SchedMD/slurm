@@ -67,6 +67,12 @@ AC_HEADER_TIME
 AC_HEADER_STDC
 
 
+dnl Checks for perl.
+dnl
+X_AC_PERL
+AM_CONDITIONAL(HAVE_PERL_CORE_DIR, test "x$ac_perl" != "xNot Found")
+AC_SUBST(HAVE_PERL_CORE_DIR)
+
 dnl Checks for structures.
 dnl
 X_AC__SYSTEM_CONFIGURATION

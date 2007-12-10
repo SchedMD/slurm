@@ -2242,17 +2242,18 @@ _read_data_array_from_file(char *file_name, char ***data, uint32_t * size)
 	buf_size = BUF_SIZE;
 	buffer = xmalloc(buf_size);
 	while (1) {
-		amount = read(fd, &buffer[pos], buf_size);
+		amount = read(fd, &buffer[pos], BUF_SIZE);
 		if (amount < 0) {
 			error("Error reading file %s, %m", file_name);
 			xfree(buffer);
 			close(fd);
 			return;
 		}
-		if (amount < buf_size)	/* end of file */
+		if (amount < BUF_SIZE)	/* end of file */
 			break;
 		pos += amount;
-		xrealloc(buffer, (pos + buf_size));
+		buf_size += amount;
+		xrealloc(buffer, buf_size);
 	}
 	close(fd);
 
@@ -2298,17 +2299,18 @@ void _read_data_from_file(char *file_name, char **data)
 	buf_size = BUF_SIZE;
 	buffer = xmalloc(buf_size);
 	while (1) {
-		amount = read(fd, &buffer[pos], buf_size);
+		amount = read(fd, &buffer[pos], BUF_SIZE);
 		if (amount < 0) {
 			error("Error reading file %s, %m", file_name);
 			xfree(buffer);
 			close(fd);
 			return;
 		}
-		if (amount < buf_size)	/* end of file */
+		if (amount < BUF_SIZE)	/* end of file */
 			break;
 		pos += amount;
-		xrealloc(buffer, (pos + buf_size));
+		buf_size += amount;
+		xrealloc(buffer, buf_size);
 	}
 
 	*data = buffer;
