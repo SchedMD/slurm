@@ -291,6 +291,12 @@
 /* Define to the version of this package. */
 #undef PACKAGE_VERSION
 
+/* Define location of PERL CORE directory */
+#undef PERL_CORE_DIR
+
+/* Define location of PERL directory */
+#undef PERL_SITE_DIR
+
 /* Define the project's name. */
 #undef PROJECT
 
