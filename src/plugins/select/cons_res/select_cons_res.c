@@ -624,16 +624,16 @@ static uint16_t _get_task_count(struct job_record *job_ptr, const int index,
 }		
 
 /* xfree an array of node_cr_record */
-static void _xfree_select_nodes(struct node_cr_record *ptr, int select_node_cnt)
+static void _xfree_select_nodes(struct node_cr_record *ptr, int count)
 {
 	int i;
 	
 	if (ptr == NULL)
 		return;
 
-	for (i = 0; i < select_node_cnt; i++) {
+	for (i = 0; i < count; i++) {
 		xfree(ptr[i].name);
-		_destroy_node_part_array(ptr);
+		_destroy_node_part_array(&(ptr[i]));
 		ptr[i].num_sockets = 0;
 	}
 	xfree(ptr);
@@ -1372,6 +1372,7 @@ extern int select_p_state_save(char *dir_name)
         if (state_fd < 0) {
                 error ("Can't save state, error creating file %s",
                         file_name);
+		xfree(file_name);
                 return SLURM_ERROR;
 	}
 
