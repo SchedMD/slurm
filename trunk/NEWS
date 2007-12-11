@@ -108,6 +108,8 @@ documents those changes that are of interest to users and admins.
  -- Fixed torque wrappers to look in the correct spot for the perl api
  -- Do not treat user resetting his time limit to the current value as
     an error.
+ -- Set correct executable names for Totalview when --multi-prog option 
+    is used and more than one node is allocated to the job step.
 
 * Changes in SLURM 1.2.20
 =========================
