@@ -11,6 +11,8 @@ documents those changes that are of interest to users and admins.
  -- When a batch job gets requeued, record in accounting logs that 
     the job was cancelled, the requeued job's submit time will be 
     set to the time of its requeue so it looks like a different job.
+ -- Prevent communication problems if the slurmd/slurmstepd have a 
+    different JobAcct plugin configured than slurmctld.
 
 * Changes in SLURM 1.2.20
 =========================
