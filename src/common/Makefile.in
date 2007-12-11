@@ -308,7 +308,7 @@ AUTOMAKE_OPTIONS = foreign
 @HAVE_UNSETENV_TRUE@build_unsetenv_src = 
 @HAVE_UNSETENV_FALSE@extra_unsetenv_src = 
 @HAVE_UNSETENV_TRUE@extra_unsetenv_src = unsetenv.c unsetenv.h
-INCLUDES = -I$(top_srcdir) $(SSL_CPPFLAGS) 
+INCLUDES = -I$(top_srcdir) $(SSL_CPPFLAGS) $(PERL_INCLUDES)
 noinst_LTLIBRARIES = \
 	libcommon.la 			\
 	libdaemonize.la 		\
@@ -396,7 +396,7 @@ libspank_la_SOURCES = \
 	optz.c      optz.h
 
 libcommon_la_LIBADD = $(SSL_LIBS) -ldl
-libcommon_la_LDFLAGS = $(LIB_LDFLAGS) $(SSL_LDFLAGS)
+libcommon_la_LDFLAGS = $(LIB_LDFLAGS) $(SSL_LDFLAGS) $(PERL_LIBS)
 all: all-am
 
 .SUFFIXES:
