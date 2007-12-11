@@ -158,6 +158,7 @@ void jobacct_p_pack(struct jobacctinfo *jobacct, Buf buffer)
 
 int jobacct_p_unpack(struct jobacctinfo **jobacct, Buf buffer)
 {
+	*jobacct = NULL;
 	return SLURM_SUCCESS;
 }
 
