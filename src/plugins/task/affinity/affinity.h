@@ -61,8 +61,13 @@
 #include <sys/utsname.h>
 #include <unistd.h>
 
-#define _GNU_SOURCE
-#define __USE_GNU
+#ifndef   _GNU_SOURCE
+#  define _GNU_SOURCE
+#endif
+#ifndef   __USE_GNU
+#define   __USE_GNU
+#endif
+
 #include <sched.h> /* SMB */
 
 #ifdef HAVE_STDLIB_H

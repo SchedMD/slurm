@@ -46,7 +46,9 @@
 #  include <inttypes.h>
 #endif
 
-#define __USE_XOPEN_EXTENDED /* getpgid */
+#ifndef   __USE_XOPEN_EXTENDED
+#  define __USE_XOPEN_EXTENDED /* getpgid */
+#endif
 #include <unistd.h>
 
 #include <sys/types.h>
