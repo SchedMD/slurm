@@ -213,7 +213,7 @@ static void _handle_update_mpir_proctable(int fd, srun_job_t *job)
 	   call the Breakpoint */
 	if (tasks_recorded == job->step_layout->task_cnt) {
 		if (opt.multi_prog)
-			set_multi_name(ntasks);
+			set_multi_name(tasks_recorded);
 		MPIR_debug_state = MPIR_DEBUG_SPAWNED;
 		MPIR_Breakpoint();
 		if (opt.debugger_test)
