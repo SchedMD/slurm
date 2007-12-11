@@ -82,6 +82,7 @@
 #include "src/common/mpi.h"
 #include "src/common/slurm_rlimits_info.h"
 #include "src/common/plugstack.h"
+#include "src/common/read_config.h"
 
 #include "src/srun/allocate.h"
 #include "src/srun/srun_job.h"
@@ -347,6 +348,7 @@ int srun(int ac, char **av)
 	launch_params.cpu_bind_type = opt.cpu_bind_type;
 	launch_params.mem_bind = opt.mem_bind;
 	launch_params.mem_bind_type = opt.mem_bind_type;	
+	launch_params.open_mode = opt.open_mode;
 	launch_params.pty = opt.pty;
 	launch_params.max_sockets     = opt.max_sockets_per_node;
 	launch_params.max_cores       = opt.max_cores_per_socket;
@@ -752,6 +754,21 @@ static void
 _set_stdio_fds(srun_job_t *job, slurm_step_io_fds_t *cio_fds)
 {
 	bool err_shares_out = false;
+	int file_flags;
+
+	if (opt.open_mode == OPEN_MODE_APPEND)
+		file_flags = O_CREAT|O_WRONLY|O_APPEND;
+	else if (opt.open_mode == OPEN_MODE_TRUNCATE)
+		file_flags = O_CREAT|O_WRONLY|O_APPEND|O_TRUNC;
+	else {
+		slurm_ctl_conf_t *conf;
+		conf = slurm_conf_lock();
+		if (conf->job_file_append)
+			file_flags = O_CREAT|O_WRONLY|O_APPEND;
+		else
+			file_flags = O_CREAT|O_WRONLY|O_APPEND|O_TRUNC;
+		slurm_conf_unlock();
+	}
 
 	/*
 	 * create stdin file descriptor
@@ -784,7 +801,7 @@ _set_stdio_fds(srun_job_t *job, slurm_step_io_fds_t *cio_fds)
 			cio_fds->out.fd = STDOUT_FILENO;
 		} else {
 			cio_fds->out.fd = open(job->ofname->name,
-					       O_CREAT|O_WRONLY|O_TRUNC, 0644);
+					       file_flags, 0644);
 			if (cio_fds->out.fd == -1)
 				fatal("Could not open stdout file: %m");
 		}
@@ -808,7 +825,7 @@ _set_stdio_fds(srun_job_t *job, slurm_step_io_fds_t *cio_fds)
 			cio_fds->err.fd = STDERR_FILENO;
 		} else {
 			cio_fds->err.fd = open(job->efname->name,
-					       O_CREAT|O_WRONLY|O_TRUNC, 0644);
+					       file_flags, 0644);
 			if (cio_fds->err.fd == -1)
 				fatal("Could not open stderr file: %m");
 		}

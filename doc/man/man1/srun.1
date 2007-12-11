@@ -657,6 +657,12 @@ If the specified file already exists, it will be overwritten.
 If \fB\-\-error\fR is not also specified on the command line, both
 stdout and stderr will directed to the file specified by \fB\-\-output\fR.
 
+.TP
+\fB\-\-open\-mode\fR=append|truncate
+Open the output and error files using append or truncate mode as specified.
+The default value is specified by the system configuration parameter
+\fIJobFileAppend\fR.
+
 .TP 
 \fB\-P\fR, \fB\-\-dependency\fR[=]<\fIdependency_list\fR>
 Defer the start of this job until the specified dependencies have been
@@ -1194,6 +1200,9 @@ Same as \fB\-\-no\-rotate\fR
 .TP
 \fBSLURM_NPROCS\fR
 Same as \fB\-n, \-\-ntasks\fR=\fIn\fR
+.TP
+\fBSLURM_OPEN_MODE\fR
+Same as \fB\-\-open\-mode\fR
 .TP
 \fBSLURM_OVERCOMMIT\fR
 Same as \fB\-O, \-\-overcommit\fR

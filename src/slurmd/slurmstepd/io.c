@@ -802,12 +802,18 @@ _init_task_stdio_fds(slurmd_task_info_t *task, slurmd_job_t *job)
 	int file_flags;
 
 	/* set files for opening stdout/err */
-	conf = slurm_conf_lock();
-	if (conf->job_file_append)
+	if (job->open_mode == OPEN_MODE_APPEND)
 		file_flags = O_CREAT|O_WRONLY|O_APPEND;
-	else
+	else if (job->open_mode == OPEN_MODE_TRUNCATE)
 		file_flags = O_CREAT|O_WRONLY|O_APPEND|O_TRUNC;
-	slurm_conf_unlock();
+	else {
+		conf = slurm_conf_lock();
+		if (conf->job_file_append)
+			file_flags = O_CREAT|O_WRONLY|O_APPEND;
+		else
+			file_flags = O_CREAT|O_WRONLY|O_APPEND|O_TRUNC;
+		slurm_conf_unlock();
+	}
 
 	/*
 	 *  Initialize stdin

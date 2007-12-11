@@ -252,6 +252,8 @@ static int fill_job_desc_from_opts(job_desc_msg_t *desc)
 	desc->out  = opt.ofname;
 	desc->work_dir = opt.cwd;
 	desc->no_requeue = opt.no_requeue;
+	if (opt.open_mode)
+		desc->open_mode = opt.open_mode;
 
 	return 0;
 }

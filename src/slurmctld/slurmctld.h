@@ -299,7 +299,8 @@ struct job_details {
 	uint16_t task_dist;		/* task layout for this job. Only useful
                                          * when Consumable Resources is enabled */
 	uint32_t num_tasks;		/* number of tasks to start */
-	uint16_t overcommit;		/* processors being over subscribed */
+	uint8_t open_mode;		/* stdout/err append or trunctate */
+	uint8_t overcommit;		/* processors being over subscribed */
 	uint16_t cpus_per_task;		/* number of processors required for 
 					 * each task */
 	uint16_t ntasks_per_node;	/* number of tasks on each node */

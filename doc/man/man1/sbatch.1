@@ -448,6 +448,12 @@ Instruct SLURM to connect the batch script's standard output directly to the
 file name specified in the "\fIfilename pattern\fR".
 See the \fB\-\-input\fR option for filename specification options.
 
+.TP
+\fB\-\-open\-mode\fR=append|truncate
+Open the output and error files using append or truncate mode as specified.
+The default value is specified by the system configuration parameter
+\fIJobFileAppend\fR.
+
 .TP 
 \fB\-p\fR, \fB\-\-partition\fR[=]<\fIpartition name\fR>
 Request a specific partition for the resource allocation.  If not specified, the
@@ -624,6 +630,9 @@ Same as \fB\-\-no\-requeue\fR.
 .TP
 \fBSBATCH_NO_ROTATE\fR
 Same as \fB\-R\fR or \fB\-\-no\-rotate\fR.
+.TP
+\fBSLURM_OPEN_MODE\fR
+Same as \fB\-\-open\-mode\fR.
 .TP
 \fBSLURM_OVERCOMMIT\fR
 Same as \fB\-O, \-\-overcommit\fR

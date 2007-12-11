@@ -336,6 +336,10 @@ typedef enum task_dist_states {
 	SLURM_DIST_UNKNOWN	/* unknown dist */
 } task_dist_states_t;
 
+/* Open stdout/err file mode, 0 for system default (JobFileAppend) */
+#define OPEN_MODE_APPEND	1
+#define OPEN_MODE_TRUNCATE	2
+
 typedef enum cpu_bind_type {	/* cpu binding type from --cpu_bind=... */
 	/* the following auto-binding flags are mutually exclusive */
 	CPU_BIND_TO_THREADS= 0x01, /* =threads */ 
@@ -504,6 +508,8 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 	char *err;		/* pathname of stderr */
 	char *in;		/* pathname of stdin */
 	char *out;		/* pathname of stdout */
+	uint8_t open_mode;	/* out/err open mode truncate or append,
+				 * see OPEN_MODE_* */
 	uint32_t user_id;	/* set only if different from current UID, 
 				 * can only be explicitly set by user root */
 	uint32_t group_id;	/* group to assume, if run as root. */ 
@@ -528,7 +534,7 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 	uint16_t other_port;
 
 	char *dependency;	/* syncrhonize job execution with other jobs */
-	uint16_t overcommit;	/* over subscribe resources, for batch only */
+	uint8_t overcommit;	/* over subscribe resources, for batch only */
 	uint32_t num_tasks;	/* number of tasks to be started, for batch only */
 	uint16_t nice;		/* requested priority change, 
 				 * NICE_OFFSET == no change */
@@ -780,6 +786,7 @@ typedef struct {
 	uint16_t plane_size;
 
 	char *mpi_plugin_name;
+	uint8_t open_mode;
 	bool pty;
 } slurm_step_launch_params_t;
 

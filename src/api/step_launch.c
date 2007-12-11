@@ -236,7 +236,8 @@ int slurm_step_launch (slurm_step_ctx_t *ctx,
 	launch.task_dist	= params->task_dist;
 	launch.plane_size	= params->plane_size;
 	launch.pty              = params->pty;
-	launch.options = job_options_create();
+	launch.open_mode        = params->open_mode;
+	launch.options          = job_options_create();
 	launch.complete_nodelist = 
 		xstrdup(ctx->step_resp->step_layout->node_list);
 	spank_set_remote_options (launch.options);

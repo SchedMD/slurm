@@ -85,7 +85,8 @@ void slurm_init_job_desc_msg(job_desc_msg_t * job_desc_msg)
 	job_desc_msg->ntasks_per_node   = (uint16_t) NO_VAL;
 	job_desc_msg->ntasks_per_socket = (uint16_t) NO_VAL;
 	job_desc_msg->num_tasks   = NO_VAL;
-	job_desc_msg->overcommit  = (uint16_t) NO_VAL;
+	job_desc_msg->open_mode   = 0;	/* system default */
+	job_desc_msg->overcommit  = (uint8_t) NO_VAL;
 	job_desc_msg->partition   = NULL;
 	job_desc_msg->plane_size  = (uint16_t) NO_VAL;
 	job_desc_msg->priority    = NO_VAL;
