@@ -42,7 +42,7 @@ AC_DEFUN([X_AC_PERL],
 		      [],[ac_perl="Not Found"])
          
         LIBS="$save_LIBS"
-        CFLAGSS="$save_CFLAGS"
+        CFLAGS="$save_CFLAGS"
         if test "$ac_perl" != "Not Found"; then
             AC_MSG_RESULT([PERL test program built properly.])    
             AC_DEFINE_UNQUOTED(PERL_SITE_DIR, "$perl_dir", [Define location of PERL directory])
