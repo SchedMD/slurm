@@ -39,7 +39,9 @@
 #include <stdio.h>
 #include <time.h>
 #include <strings.h>
-#define __USE_ISOC99 /* isblank() */
+#ifndef   __USE_ISOC99
+#  define __USE_ISOC99 /* isblank() */
+#endif
 #include <ctype.h>
 
 #include <slurm/slurm.h>
