@@ -21776,7 +21776,7 @@ rm -f core conftest.err conftest.$ac_objext conftest_ipa8_conftest.oo \
       conftest$ac_exeext conftest.$ac_ext
 
         LIBS="$save_LIBS"
-        CFLAGSS="$save_CFLAGS"
+        CFLAGS="$save_CFLAGS"
         if test "$ac_perl" != "Not Found"; then
             { echo "$as_me:$LINENO: result: PERL test program built properly." >&5
 echo "${ECHO_T}PERL test program built properly." >&6; }

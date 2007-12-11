@@ -50,17 +50,20 @@
 #  include <inttypes.h>
 #endif
 
-#ifdef HAVE_PERL_CORE_DIR
-#  include <EXTERN.h>               /* from the Perl distribution     */
-#  include <perl.h>                 /* from the Perl distribution     */
-#endif
+#include <EXTERN.h> 
+#include <perl.h>
 
 #include <stdio.h>
 #include <slurm/slurm_errno.h>
 
+#include "src/common/xmalloc.h"
+#include "src/common/list.h"
+#include "src/common/xstring.h"
+
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmd/slurmd/slurmd.h"
 #include "src/common/slurm_jobacct.h"
+
 
 /*
  * These variables are required by the generic plugin interface.  If they
@@ -94,6 +97,26 @@
 const char plugin_name[] = "Job accounting GOLD plugin";
 const char plugin_type[] = "jobacct/gold";
 const uint32_t plugin_version = 100;
+
+static PerlInterpreter *my_perl = NULL;
+
+static void _xs_init(pTHX);
+extern void boot_DynaLoader (pTHX_ CV* cv);
+
+/* if you see something like this...
+ * Can't load module Socket, dynamic loading not available in this perl.
+ * (You may need to build a new perl executable which either supports
+ * dynamic loading or has the Socket module statically linked into it.)
+ * 
+ * Add them like this with a new newXS so they can be dynamically loaded.
+ */
+static void _xs_init(pTHX)
+{
+        char *file = __FILE__;
+	dXSUB_SYS;
+ 	/* DynaLoader is a special case */
+        newXS("DynaLoader::boot_DynaLoader", boot_DynaLoader, file);
+}  
 
 /*
  * init() is called when the plugin is loaded, before any other functions
@@ -167,18 +190,51 @@ int jobacct_p_unpack(struct jobacctinfo **jobacct, Buf buffer)
 }
 
 
-int jobacct_p_init_slurmctld(char *job_acct_log)
+int jobacct_p_init_slurmctld(char *location)
 {
+	char *gold_dir = NULL;	
+	char tmp[256];
+	char *embedding[] = { "", "-e", "0" };
+
+	debug2("jobacct_init() called");
+	if(!location) {
+		gold_dir = xstrdup("/home/da/gold/snowflake"); //slurm_get_jobacct_storage_loc();
+	} else {
+		gold_dir = xstrdup(location);
+	}
+	if (*gold_dir != '/')
+		fatal("JobAcctLogfile must specify an absolute pathname");
+	
+	my_perl = perl_alloc();
+	perl_construct( my_perl );
+	
+	perl_parse(my_perl, _xs_init, 3, embedding, NULL);
+	perl_run(my_perl);
+	
+	snprintf(tmp, sizeof(tmp), 
+		 "use lib qw(%s/lib %s/lib/perl5); "
+		 "use Gold::LLNLPrivate;",
+		 gold_dir, gold_dir);
+
+	eval_pv(tmp, TRUE);
+
 	return SLURM_SUCCESS;
 }
 
 int jobacct_p_fini_slurmctld()
 {
+	perl_destruct(my_perl);
+	perl_free(my_perl);
+	
 	return SLURM_SUCCESS;
 }
 
 int jobacct_p_job_start_slurmctld(struct job_record *job_ptr)
 {
+	STRLEN n_a;
+	eval_pv("%user = %{LLNLPrivate::get_gold_users('da')};"
+		"$default = $user{'DefaultProject'}", TRUE);
+	info("default project is %s", SvPV(get_sv("$default", FALSE), n_a));
 	return SLURM_SUCCESS;
 }
 
