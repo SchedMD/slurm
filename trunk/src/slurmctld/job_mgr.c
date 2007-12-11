@@ -764,7 +764,9 @@ void _dump_job_details(struct job_details *detail_ptr, Buf buffer)
 	pack16(detail_ptr->cpus_per_task, buffer);
 	pack16(detail_ptr->ntasks_per_node, buffer);
 	pack16(detail_ptr->no_requeue, buffer);
-	pack16(detail_ptr->overcommit, buffer);
+
+	pack8(detail_ptr->open_mode, buffer);
+	pack8(detail_ptr->overcommit, buffer);
 
 	pack32(detail_ptr->job_min_procs, buffer);
 	pack32(detail_ptr->job_min_memory, buffer);
@@ -797,7 +799,8 @@ static int _load_job_details(struct job_record *job_ptr, Buf buffer)
 	uint32_t job_min_memory, job_max_memory, job_min_tmp_disk;
 	uint32_t num_tasks, name_len, argc = 0;
 	uint16_t shared, contiguous, ntasks_per_node;
-	uint16_t cpus_per_task, no_requeue, overcommit;
+	uint16_t cpus_per_task, no_requeue;
+	uint8_t open_mode, overcommit;
 	time_t begin_time, submit_time;
 	int i;
 	multi_core_data_t *mc_ptr;
@@ -813,7 +816,9 @@ static int _load_job_details(struct job_record *job_ptr, Buf buffer)
 	safe_unpack16(&cpus_per_task, buffer);
 	safe_unpack16(&ntasks_per_node, buffer);
 	safe_unpack16(&no_requeue, buffer);
-	safe_unpack16(&overcommit, buffer);
+
+	safe_unpack8(&open_mode, buffer);
+	safe_unpack8(&overcommit, buffer);
 
 	safe_unpack32(&job_min_procs, buffer);
 	safe_unpack32(&job_min_memory, buffer);
@@ -875,6 +880,7 @@ static int _load_job_details(struct job_record *job_ptr, Buf buffer)
 	job_ptr->details->job_max_memory = job_max_memory;
 	job_ptr->details->job_min_tmp_disk = job_min_tmp_disk;
 	job_ptr->details->no_requeue = no_requeue;
+	job_ptr->details->open_mode = open_mode;
 	job_ptr->details->overcommit = overcommit;
 	job_ptr->details->begin_time = begin_time;
 	job_ptr->details->submit_time = submit_time;
@@ -1250,12 +1256,13 @@ void dump_job_desc(job_desc_msg_t * job_specs)
 
 	num_tasks = (job_specs->num_tasks != (uint16_t) NO_VAL) ?
 		(long) job_specs->num_tasks : -1L;
-	overcommit = (job_specs->overcommit != (uint16_t) NO_VAL) ?
+	overcommit = (job_specs->overcommit != (uint8_t) NO_VAL) ?
 		(long) job_specs->overcommit : -1L;
 	debug3("   mail_type=%u mail_user=%s nice=%d num_tasks=%d "
-	       "overcommit=%d",
+	       "open_mode=%u overcommit=%d",
 	       job_specs->mail_type, job_specs->mail_user,
-	       (int)job_specs->nice - NICE_OFFSET, num_tasks, overcommit);
+	       (int)job_specs->nice - NICE_OFFSET, num_tasks,
+	       job_specs->open_mode, overcommit);
 
 	slurm_make_time_str(&job_specs->begin_time, buf, sizeof(buf));
 	cpus_per_task = (job_specs->cpus_per_task != (uint16_t) NO_VAL) ?
@@ -2461,6 +2468,7 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 	detail_ptr->argv = job_desc->argv;
 	job_desc->argv   = (char **) NULL; /* nothing left */
 	job_desc->argc   = 0;		   /* nothing left */
+	detail_ptr->open_mode = job_desc->open_mode;
 	detail_ptr->min_nodes = job_desc->min_nodes;
 	detail_ptr->max_nodes = job_desc->max_nodes;
 	if (job_desc->req_nodes) {
@@ -2509,7 +2517,7 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 		detail_ptr->out = xstrdup(job_desc->out);
 	if (job_desc->work_dir)
 		detail_ptr->work_dir = xstrdup(job_desc->work_dir);
-	if (job_desc->overcommit != (uint16_t) NO_VAL)
+	if (job_desc->overcommit != (uint8_t) NO_VAL)
 		detail_ptr->overcommit = job_desc->overcommit;
 	detail_ptr->begin_time = job_desc->begin_time;
 	job_ptr->select_jobinfo = 

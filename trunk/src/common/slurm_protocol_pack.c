@@ -2502,7 +2502,9 @@ _pack_job_desc_msg(job_desc_msg_t * job_desc_ptr, Buf buffer)
 	packstr(job_desc_ptr->account, buffer);
 	packstr(job_desc_ptr->comment, buffer);
 	pack16(job_desc_ptr->nice, buffer);
-	pack16(job_desc_ptr->overcommit, buffer);
+
+	pack8(job_desc_ptr->open_mode, buffer);
+	pack8(job_desc_ptr->overcommit, buffer);
 	pack32(job_desc_ptr->num_tasks, buffer);
 
 	packstr(job_desc_ptr->req_nodes, buffer);
@@ -2631,7 +2633,9 @@ _unpack_job_desc_msg(job_desc_msg_t ** job_desc_buffer_ptr, Buf buffer)
 	safe_unpackstr_xmalloc(&job_desc_ptr->account, &uint32_tmp, buffer);
 	safe_unpackstr_xmalloc(&job_desc_ptr->comment, &uint32_tmp, buffer);
 	safe_unpack16(&job_desc_ptr->nice, buffer);
-	safe_unpack16(&job_desc_ptr->overcommit, buffer);
+
+	safe_unpack8(&job_desc_ptr->open_mode, buffer);
+	safe_unpack8(&job_desc_ptr->overcommit, buffer);
 	safe_unpack32(&job_desc_ptr->num_tasks, buffer);
 
 	safe_unpackstr_xmalloc(&job_desc_ptr->req_nodes, &uint32_tmp, buffer);
@@ -3035,6 +3039,8 @@ _pack_launch_tasks_request_msg(launch_tasks_request_msg_t * msg, Buf buffer)
 	switch_pack_jobinfo(msg->switch_job, buffer);
 	job_options_pack(msg->options, buffer);
 	packstr(msg->complete_nodelist, buffer);
+
+	pack8(msg->open_mode, buffer);
 	pack8(msg->pty, buffer);
 }
 
@@ -3128,6 +3134,8 @@ _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **
 		goto unpack_error;
 	}
 	safe_unpackstr_xmalloc(&msg->complete_nodelist, &uint32_tmp, buffer);	
+
+	safe_unpack8(&msg->open_mode, buffer);
 	safe_unpack8(&msg->pty, buffer);
 	return SLURM_SUCCESS;
 
@@ -3626,7 +3634,9 @@ _pack_batch_job_launch_msg(batch_job_launch_msg_t * msg, Buf buffer)
 	pack32((uint32_t)msg->gid, buffer);
 	pack32((uint32_t)msg->nprocs, buffer);
 
-	pack16((uint16_t)msg->overcommit, buffer);
+	pack8(msg->open_mode, buffer);
+	pack8(msg->overcommit, buffer);
+
 	pack16((uint16_t)msg->num_cpu_groups, buffer);
 	pack32_array(msg->cpus_per_node, msg->num_cpu_groups, buffer);
 	pack32_array(msg->cpu_count_reps, msg->num_cpu_groups, buffer);
@@ -3666,7 +3676,9 @@ _unpack_batch_job_launch_msg(batch_job_launch_msg_t ** msg, Buf buffer)
 	safe_unpack32(&launch_msg_ptr->gid, buffer);
 	safe_unpack32(&launch_msg_ptr->nprocs, buffer);
 
-	safe_unpack16(&launch_msg_ptr->overcommit, buffer);
+	safe_unpack8(&launch_msg_ptr->open_mode, buffer);
+	safe_unpack8(&launch_msg_ptr->overcommit, buffer);
+
 	safe_unpack16(&launch_msg_ptr->num_cpu_groups, buffer);
 	safe_unpack32_array((uint32_t **) &(launch_msg_ptr->cpus_per_node), 
 			    &uint32_tmp,

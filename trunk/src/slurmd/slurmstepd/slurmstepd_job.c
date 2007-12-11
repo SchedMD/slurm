@@ -261,8 +261,8 @@ job_create(launch_tasks_request_msg_t *msg)
 	job->task_flags  = msg->task_flags;
 	job->switch_job  = msg->switch_job;
 	job->pty         = msg->pty;
-
-	job->options =    msg->options;
+	job->open_mode   = msg->open_mode;
+	job->options     = msg->options;
 	
 	list_append(job->sruns, (void *) srun);
 
@@ -317,8 +317,9 @@ job_batch_job_create(batch_job_launch_msg_t *msg)
 	job->stepid  = msg->step_id;
 	job->batch   = true;
 	job->multi_prog = 0;
+	job->open_mode  = msg->open_mode;
 	job->overcommit = (bool) msg->overcommit;
-	job->node_name = xstrdup(conf->node_name);
+	job->node_name  = xstrdup(conf->node_name);
 
 	job->uid     = (uid_t) msg->uid;
 	job->gid     = (gid_t) msg->gid;

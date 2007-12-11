@@ -1,7 +1,7 @@
 /*****************************************************************************\
  *  opt.c - options processing for sbatch
  *****************************************************************************
- *  Copyright (C) 2002-2006 The Regents of the University of California.
+ *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Mark Grondona <grondona1@llnl.gov>, et. al.
  *  UCRL-CODE-226842.
@@ -84,6 +84,7 @@
 #define OPT_MULTI	0x0f
 #define OPT_EXCLUSIVE	0x10
 #define OPT_OVERCOMMIT	0x11
+#define OPT_OPEN_MODE	0x12
 
 /* generic getopt_long flags, integers and *not* valid characters */
 #define LONG_OPT_JOBID       0x105
@@ -120,6 +121,7 @@
 #define LONG_OPT_RAMDISK_IMAGE   0x143
 #define LONG_OPT_REBOOT          0x144
 #define LONG_OPT_GET_USER_ENV    0x146
+#define LONG_OPT_OPEN_MODE       0x147
 
 /*---- global variables, defined in opt.h ----*/
 opt_t opt;
@@ -321,6 +323,7 @@ env_vars_t env_vars[] = {
   {"SBATCH_RAMDISK_IMAGE", OPT_STRING,     &opt.ramdiskimage,  NULL           },
   {"SBATCH_TIMELIMIT",     OPT_STRING,     &opt.time_limit_str,NULL           },
   {"SBATCH_EXCLUSIVE",     OPT_EXCLUSIVE,  NULL,               NULL           },
+  {"SBATCH_OPEN_MODE",     OPT_OPEN_MODE,  NULL,               NULL           },
   {NULL, 0, NULL, NULL}
 };
 
@@ -424,6 +427,15 @@ _process_env_var(env_vars_t *e, const char *val)
 		opt.overcommit = true;
 		break;
 
+	case OPT_OPEN_MODE:
+		if ((val[0] == 'a') || (val[0] == 'A'))
+			opt.open_mode = OPEN_MODE_APPEND;
+		else if ((val[0] == 't') || (val[0] == 'T'))
+			opt.open_mode = OPEN_MODE_TRUNCATE;
+		else
+			error("Invalid SBATCH_OPEN_MODE: %s. Ignored", val);
+		break;
+
 	default:
 		/* do nothing */
 		break;
@@ -502,6 +514,7 @@ static struct option long_options[] = {
 	{"tasks-per-node",required_argument, 0, LONG_OPT_NTASKSPERNODE},
 	{"wrap",          required_argument, 0, LONG_OPT_WRAP},
 	{"get-user-env",  optional_argument, 0, LONG_OPT_GET_USER_ENV},
+	{"open-mode",     required_argument, 0, LONG_OPT_OPEN_MODE},
 	{NULL,            0,                 0, 0}
 };
 
@@ -1224,6 +1237,16 @@ static void _set_options(int argc, char **argv)
 			else
 				opt.get_user_env_time = 0;
 			break;
+		case LONG_OPT_OPEN_MODE:
+			if ((optarg[0] == 'a') || (optarg[0] == 'A'))
+				opt.open_mode = OPEN_MODE_APPEND;
+			else if ((optarg[0] == 't') || (optarg[0] == 'T'))
+				opt.open_mode = OPEN_MODE_TRUNCATE;
+			else {
+				error("Invalid --open-mode argument: %s. "
+				      "Ignored", optarg);
+			}
+			break;
 		default:
 			fatal("Unrecognized command line parameter %c",
 			      opt_char);
@@ -1785,6 +1808,14 @@ static bool _opt_verify(void)
 			opt.immediate = false;
 		}
 		xfree(sched_name);
+	}
+
+	if (opt.open_mode) {
+		/* Propage mode to spawned job using environment variable */
+		if (opt.open_mode == OPEN_MODE_APPEND)
+			setenvf(NULL, "SLURM_OPEN_MODE", "a");
+		else
+			setenvf(NULL, "SLURM_OPEN_MODE", "t");
 	}
 
 	return verified;

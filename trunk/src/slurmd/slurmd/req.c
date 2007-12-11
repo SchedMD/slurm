@@ -822,7 +822,7 @@ _rpc_batch_job(slurm_msg_t *msg)
 		 rc = ESLURMD_CREDENTIAL_REVOKED;	/* job already ran */
 	}
 
-	if (req->step_id != SLURM_BATCH_SCRIPT && req->step_id != 0)
+	if ((req->step_id != SLURM_BATCH_SCRIPT) && (req->step_id != 0))
 		first_job_run = false;
 		
 	/*
