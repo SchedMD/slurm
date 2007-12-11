@@ -8,6 +8,9 @@ documents those changes that are of interest to users and admins.
     an error.
  -- Set correct executable names for Totalview when --multi-prog option 
     is used and more than one node is allocated to the job step.
+ -- When a batch job gets requeued, record in accounting logs that 
+    the job was cancelled, the requeued job's submit time will be 
+    set to the time of its requeue so it looks like a different job.
 
 * Changes in SLURM 1.2.20
 =========================
