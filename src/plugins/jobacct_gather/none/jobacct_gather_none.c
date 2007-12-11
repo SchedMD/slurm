@@ -119,6 +119,7 @@ extern void jobacct_gather_p_pack(struct jobacctinfo *jobacct, Buf buffer)
 
 extern int jobacct_gather_p_unpack(struct jobacctinfo **jobacct, Buf buffer)
 {
+	*jobacct = NULL;
 	return SLURM_SUCCESS;
 }
 
