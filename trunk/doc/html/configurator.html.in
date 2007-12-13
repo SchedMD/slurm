@@ -249,7 +249,7 @@ function displayfile()
 </HEAD>
 <BODY>
 <FORM name=config>
-<H1>SLURM Configration Tool, Version @SLURM_MAJOR@.@SLURM_MINOR@</H1>
+<H1>SLURM Version @SLURM_MAJOR@.@SLURM_MINOR@ Configration Tool</H1>
 <P>This form can be used to create a SLURM configuration file with 
 you controlling many of the important configuration parameters.</P>
 
