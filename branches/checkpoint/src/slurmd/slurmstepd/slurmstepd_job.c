@@ -202,6 +202,7 @@ job_create(launch_tasks_request_msg_t *msg)
 	job->cpu_bind = xstrdup(msg->cpu_bind);
 	job->mem_bind_type = msg->mem_bind_type;
 	job->mem_bind = xstrdup(msg->mem_bind);
+	job->ckpt_path = xstrdup(msg->ckpt_path);
 
 	job->env     = _array_copy(msg->envc, msg->env);
 	job->eio     = eio_handle_create();
@@ -229,6 +230,7 @@ job_create(launch_tasks_request_msg_t *msg)
 	job->envtp->cpu_bind = NULL;
 	job->envtp->mem_bind_type = 0;
 	job->envtp->mem_bind = NULL;
+	job->envtp->ckpt_path = NULL;
 	
 	memcpy(&resp_addr, &msg->orig_addr, sizeof(slurm_addr));
 	slurm_set_addr(&resp_addr,
@@ -342,6 +344,7 @@ job_batch_job_create(batch_job_launch_msg_t *msg)
 	job->envtp->cpu_bind = NULL;
 	job->envtp->mem_bind_type = 0;
 	job->envtp->mem_bind = NULL;
+	job->envtp->ckpt_path = NULL;
 	
 	srun = srun_info_create(NULL, NULL, NULL);
 

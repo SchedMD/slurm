@@ -104,6 +104,7 @@ static int  _terminate_all_steps(uint32_t jobid, bool batch);
 static void _rpc_launch_tasks(slurm_msg_t *);
 static void _rpc_batch_job(slurm_msg_t *);
 static void _rpc_signal_tasks(slurm_msg_t *);
+static void _rpc_checkpoint_tasks(slurm_msg_t *);
 static void _rpc_terminate_tasks(slurm_msg_t *);
 static void _rpc_timelimit(slurm_msg_t *);
 static void _rpc_reattach_tasks(slurm_msg_t *);
@@ -177,6 +178,11 @@ slurmd_req(slurm_msg_t *msg)
 		debug2("Processing RPC: REQUEST_SIGNAL_TASKS");
 		_rpc_signal_tasks(msg);
 		slurm_free_kill_tasks_msg(msg->data);
+		break;
+	case REQUEST_CHECKPOINT_TASKS:
+		debug2("Processing RPC: REQUEST_CHECKPOINT_TASKS");
+		_rpc_checkpoint_tasks(msg);
+		slurm_free_checkpoint_tasks_msg(msg->data);
 		break;
 	case REQUEST_TERMINATE_TASKS:
 		debug2("Processing RPC: REQUEST_TERMINATE_TASKS");
@@ -1058,6 +1064,50 @@ done3:
 done2:
 	close(fd);
 done:
+	slurm_send_rc_msg(msg, rc);
+}
+
+static void
+_rpc_checkpoint_tasks(slurm_msg_t *msg)
+{
+	int               fd;
+	int               rc = SLURM_SUCCESS;
+	uid_t             req_uid = g_slurm_auth_get_uid(msg->auth_cred);
+	checkpoint_tasks_msg_t *req = (checkpoint_tasks_msg_t *) msg->data;
+	slurmstepd_info_t *step;
+
+	fd = stepd_connect(conf->spooldir, conf->node_name,
+			   req->job_id, req->job_step_id);
+	if (fd == -1) {
+		debug("checkpoint for nonexistant %u.%u stepd_connect failed: %m",
+		      req->job_id, req->job_step_id);
+		rc = ESLURM_INVALID_JOB_ID;
+		goto done;
+	}
+	if ((step = stepd_get_info(fd)) == NULL) {
+		debug("checkpoint for nonexistent job %u.%u requested",
+		      req->job_id, req->job_step_id);
+		rc = ESLURM_INVALID_JOB_ID;
+		goto done2;
+	}
+
+	if ((req_uid != step->uid) && (!_slurm_authorized_user(req_uid))) {
+		debug("checkpoint req from uid %ld for job %u.%u owned by uid %ld",
+		      (long) req_uid, req->job_id, req->job_step_id,
+		      (long) step->uid);
+		rc = ESLURM_USER_ID_MISSING;     /* or bad in this case */
+		goto done3;
+	}
+
+	rc = stepd_checkpoint(fd, req->signal, req->timestamp);
+	if (rc == -1)
+		rc = ESLURMD_JOB_NOTRUNNING;
+
+ done3:
+	xfree(step);
+ done2:
+	close(fd);
+ done:
 	slurm_send_rc_msg(msg, rc);
 }
 

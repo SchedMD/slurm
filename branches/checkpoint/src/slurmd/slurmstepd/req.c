@@ -72,6 +72,7 @@ static int _handle_info(int fd, slurmd_job_t *job);
 static int _handle_signal_process_group(int fd, slurmd_job_t *job, uid_t uid);
 static int _handle_signal_task_local(int fd, slurmd_job_t *job, uid_t uid);
 static int _handle_signal_container(int fd, slurmd_job_t *job, uid_t uid);
+static int _handle_checkpoint_tasks(int fd, slurmd_job_t *job, uid_t uid);
 static int _handle_attach(int fd, slurmd_job_t *job, uid_t uid);
 static int _handle_pid_in_container(int fd, slurmd_job_t *job);
 static int _handle_daemon_pid(int fd, slurmd_job_t *job);
@@ -464,6 +465,10 @@ _handle_request(int fd, slurmd_job_t *job, uid_t uid, gid_t gid)
 		debug("Handling REQUEST_SIGNAL_CONTAINER");
 		rc = _handle_signal_container(fd, job, uid);
 		break;
+	case REQUEST_CHECKPOINT_TASKS:
+		debug("Handling REQUEST_CHECKPOINT_TASKS");
+		rc = _handle_checkpoint_tasks(fd, job, uid);
+		break;
 	case REQUEST_STATE:
 		debug("Handling REQUEST_STATE");
 		rc = _handle_state(fd, job);
@@ -740,6 +745,76 @@ done:
 	return SLURM_SUCCESS;
 rwfail:
 	return SLURM_FAILURE;
+}
+
+static int
+_handle_checkpoint_tasks(int fd, slurmd_job_t *job, uid_t uid)
+{
+	static time_t last_timestamp = 0;
+	int rc = SLURM_SUCCESS;
+	int signal;
+	time_t timestamp;
+
+	debug3("_handle_checkpoint_tasks for job %u.%u",
+	       job->jobid, job->stepid);
+
+	safe_read(fd, &signal, sizeof(int));
+	safe_read(fd, &timestamp, sizeof(time_t));
+
+	debug3("  uid = %d", uid);
+	if (uid != job->uid && !_slurm_authorized_user(uid)) {
+		debug("checkpoint req from uid %ld for job %u.%u owned by uid %ld",
+		      (long)uid, job->jobid, job->stepid, (long)job->uid);
+		rc = EPERM;
+		goto done;
+	}
+
+	if (timestamp == last_timestamp) {
+		debug("duplicate checkpoint req for job %u.%u, timestamp %ld. discarded.",
+		      job->jobid, job->stepid, (long)timestamp);
+		rc = ESLURM_ALREADY_DONE; /* EINPROGRESS? */
+		goto done;
+	}
+
+       /*
+        * Sanity checks
+        */
+       if (job->pgid <= (pid_t)1) {
+               debug ("step %u.%u invalid [jmgr_pid:%d pgid:%u]",
+                       job->jobid, job->stepid, job->jmgr_pid, job->pgid);
+               rc = ESLURMD_JOB_NOTRUNNING;
+               goto done;
+       }
+
+       /*
+        * Signal the process group
+        */
+       pthread_mutex_lock(&suspend_mutex);
+       if (suspended) {
+               rc = ESLURMD_STEP_SUSPENDED;
+               pthread_mutex_unlock(&suspend_mutex);
+               goto done;
+       }
+
+       /* TODO: send timestamp with signal */
+       if (killpg(job->pgid, signal) == -1) {
+               rc = -1;        /* Most probable ESRCH, resulting in ESLURMD_JOB_NOTRUNNING */
+               verbose("Error sending signal %d to %u.%u, pgid %d, errno: %d: %s",
+                       signal, job->jobid, job->stepid, job->pgid,
+                       errno, slurm_strerror(rc));
+       } else {
+               last_timestamp = timestamp;
+               verbose("Sent signal %d to %u.%u, pgid %d",
+                       signal, job->jobid, job->stepid, job->pgid);
+       }
+       pthread_mutex_unlock(&suspend_mutex);
+
+done:
+       /* Send the return code */
+       safe_write(fd, &rc, sizeof(int));
+       return SLURM_SUCCESS;
+rwfail:
+       return SLURM_FAILURE;
 }
 
 static int

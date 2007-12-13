@@ -435,6 +435,7 @@ struct 	step_record {
 	char *host;			/* host for srun communications */
 	uint16_t batch_step;		/* 1 if batch job step, 0 otherwise */
 	uint16_t ckpt_interval;		/* checkpoint interval in minutes */
+	char *ckpt_path;	        /* path to store checkpoint image files */
 	uint16_t exclusive;	/* FIXME */
 	time_t ckpt_time;		/* time of last checkpoint */
 	switch_jobinfo_t switch_job;	/* switch context, opaque */

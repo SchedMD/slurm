@@ -99,6 +99,7 @@ create_step_record (struct job_record *job_ptr)
 	step_ptr->step_id = (job_ptr->next_step_id)++;
 	step_ptr->start_time = time ( NULL ) ;
 	step_ptr->jobacct = jobacct_gather_g_create(NULL);
+	step_ptr->ckpt_path = NULL;
 	if (list_append (job_ptr->step_list, step_ptr) == NULL)
 		fatal ("create_step_record: unable to allocate memory");
 
@@ -143,6 +144,7 @@ delete_step_records (struct job_record *job_ptr, int filter)
 		FREE_NULL_BITMAP(step_ptr->exit_node_bitmap);
 		if (step_ptr->network)
 			xfree(step_ptr->network);
+		xfree(step_ptr->ckpt_path);
 		xfree(step_ptr);
 	}		
 
@@ -190,6 +192,7 @@ delete_step_record (struct job_record *job_ptr, uint32_t step_id)
 			FREE_NULL_BITMAP(step_ptr->exit_node_bitmap);
 			if (step_ptr->network)
 				xfree(step_ptr->network);
+			xfree(step_ptr->ckpt_path);
 			xfree(step_ptr);
 			error_code = 0;
 			break;
@@ -220,8 +223,8 @@ dump_step_desc(job_step_create_request_msg_t *step_spec)
 	debug3("   host=%s port=%u name=%s network=%s checkpoint=%u", 
 		step_spec->host, step_spec->port, step_spec->name,
 		step_spec->network, step_spec->ckpt_interval);
-	debug3("   exclusive=%u immediate=%u",
-		step_spec->exclusive, step_spec->immediate);
+	debug3("   checkpoint-path=%s exclusive=%u immediate=%u",
+	        step_spec->ckpt_path, step_spec->exclusive, step_spec->immediate);
 }
 
 
@@ -873,6 +876,7 @@ step_create(job_step_create_request_msg_t *step_specs,
 	step_ptr->ckpt_time = now;
 	step_ptr->exit_code = NO_VAL;
 	step_ptr->exclusive = step_specs->exclusive;
+	step_ptr->ckpt_path = xstrdup(step_specs->ckpt_path);
 
 	/* step's name and network default to job's values if not 
 	 * specified in the step specification */
@@ -884,7 +888,7 @@ step_create(job_step_create_request_msg_t *step_specs,
 		step_ptr->network = xstrdup(step_specs->network);
 	else
 		step_ptr->network = xstrdup(job_ptr->network);
-
+	
 	/* a batch script does not need switch info */
 	if (!batch_step) {
 		step_ptr->step_layout = 
@@ -1015,6 +1019,7 @@ static void _pack_ctld_job_step_info(struct step_record *step_ptr, Buf buffer)
 	packstr(step_ptr->name, buffer);
 	packstr(step_ptr->network, buffer);
 	pack_bit_fmt(step_ptr->step_node_bitmap, buffer);
+	packstr(step_ptr->ckpt_path, buffer);
 	
 }
 
@@ -1306,6 +1311,61 @@ extern int job_step_checkpoint_comp(checkpoint_comp_msg_t *ckpt_ptr,
 }
 
 /*
+ * job_step_checkpoint_task_comp - note task checkpoint completion
+ * IN ckpt_ptr - checkpoint task complete status message
+ * IN uid - user id of the user issuing the RPC
+ * IN conn_fd - file descriptor on which to send reply
+ * RET 0 on success, otherwise ESLURM error code
+ */
+extern int job_step_checkpoint_task_comp(checkpoint_task_comp_msg_t *ckpt_ptr,
+		uid_t uid, slurm_fd conn_fd)
+{
+	int rc = SLURM_SUCCESS;
+	struct job_record *job_ptr;
+	struct step_record *step_ptr;
+	slurm_msg_t resp_msg;
+	return_code_msg_t rc_msg;
+	
+	slurm_msg_t_init(&resp_msg);
+		
+	/* find the job */
+	job_ptr = find_job_record (ckpt_ptr->job_id);
+	if (job_ptr == NULL) {
+		rc = ESLURM_INVALID_JOB_ID;
+		goto reply;
+	}
+	if ((uid != job_ptr->user_id) && (uid != 0)) {
+		rc = ESLURM_ACCESS_DENIED;
+		goto reply;
+	}
+	if (job_ptr->job_state == JOB_PENDING) {
+		rc = ESLURM_JOB_PENDING;
+		goto reply;
+	} else if ((job_ptr->job_state != JOB_RUNNING)
+	&&         (job_ptr->job_state != JOB_SUSPENDED)) {
+		rc = ESLURM_ALREADY_DONE;
+		goto reply;
+	}
+ 
+	step_ptr = find_step_record(job_ptr, ckpt_ptr->step_id);
+	if (step_ptr == NULL) {
+		rc = ESLURM_INVALID_JOB_ID;
+		goto reply;
+	} else {
+		rc = checkpoint_task_comp((void *)step_ptr, ckpt_ptr->task_id,
+			ckpt_ptr->begin_time, ckpt_ptr->error_code, ckpt_ptr->error_msg);
+		last_job_update = time(NULL);
+	}
+
+    reply:
+	rc_msg.return_code = rc;
+	resp_msg.msg_type  = RESPONSE_SLURM_RC;
+	resp_msg.data      = &rc_msg;
+	(void) slurm_send_node_msg(conn_fd, &resp_msg);
+	return rc;
+}
+
+/*
  * step_partial_comp - Note the completion of a job step on at least
  *	some of its nodes
  * IN req     - step_completion_msg RPC from slurmstepd
@@ -1568,6 +1628,7 @@ extern void dump_job_step_state(struct step_record *step_ptr, Buf buffer)
 	packstr(step_ptr->host,  buffer);
 	packstr(step_ptr->name, buffer);
 	packstr(step_ptr->network, buffer);
+	packstr(step_ptr->ckpt_path, buffer);
 	pack16(step_ptr->batch_step, buffer);
 	if (!step_ptr->batch_step) {
 		pack_slurm_step_layout(step_ptr->step_layout, buffer);
@@ -1588,7 +1649,7 @@ extern int load_step_state(struct job_record *job_ptr, Buf buffer)
 	uint16_t ckpt_interval;
 	uint32_t exit_code, name_len;
 	time_t start_time, pre_sus_time, ckpt_time;
-	char *host = NULL;
+	char *host = NULL, *ckpt_path = NULL;
 	char *name = NULL, *network = NULL, *bit_fmt = NULL;
 	switch_jobinfo_t switch_tmp = NULL;
 	check_jobinfo_t check_tmp = NULL;
@@ -1612,6 +1673,7 @@ extern int load_step_state(struct job_record *job_ptr, Buf buffer)
 	safe_unpackstr_xmalloc(&host, &name_len, buffer);
 	safe_unpackstr_xmalloc(&name, &name_len, buffer);
 	safe_unpackstr_xmalloc(&network, &name_len, buffer);
+	safe_unpackstr_xmalloc(&ckpt_path, &name_len, buffer);
 	safe_unpack16(&batch_step, buffer);
 	if (!batch_step) {
 		if (unpack_slurm_step_layout(&step_layout, buffer))
@@ -1642,6 +1704,7 @@ extern int load_step_state(struct job_record *job_ptr, Buf buffer)
 	step_ptr->cyclic_alloc = cyclic_alloc;
 	step_ptr->name         = name;
 	step_ptr->network      = network;
+	step_ptr->ckpt_path    = ckpt_path;
 	step_ptr->port         = port;
 	step_ptr->ckpt_interval= ckpt_interval;
 	step_ptr->host         = host;
@@ -1685,6 +1748,7 @@ extern int load_step_state(struct job_record *job_ptr, Buf buffer)
 	xfree(host);
 	xfree(name);
 	xfree(network);
+	xfree(ckpt_path);
 	xfree(bit_fmt);
 	if (switch_tmp)
 		switch_free_jobinfo(switch_tmp);

@@ -348,6 +348,7 @@ exec_task(slurmd_job_t *job, int i, int waitfd)
 	job->envtp->mem_bind = xstrdup(job->mem_bind);
 	job->envtp->mem_bind_type = job->mem_bind_type;
 	job->envtp->distribution = -1;
+	job->envtp->ckpt_path = xstrdup(job->ckpt_path);
 	setup_env(job->envtp);
 	setenvf(&job->envtp->env, "SLURMD_NODENAME", "%s", conf->node_name);
 	job->env = job->envtp->env;

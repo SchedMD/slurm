@@ -165,6 +165,9 @@ static int _unpack_task_user_managed_io_stream_msg(task_user_managed_io_msg_t **
 static void _pack_cancel_tasks_msg(kill_tasks_msg_t * msg, Buf buffer);
 static int _unpack_cancel_tasks_msg(kill_tasks_msg_t ** msg_ptr, Buf buffer);
 
+static void _pack_checkpoint_tasks_msg(checkpoint_tasks_msg_t * msg, Buf buffer);
+static int _unpack_checkpoint_tasks_msg(checkpoint_tasks_msg_t ** msg_ptr, Buf buffer);
+
 static void _pack_launch_tasks_response_msg(launch_tasks_response_msg_t *
 					    msg, Buf buffer);
 static int _unpack_launch_tasks_response_msg(launch_tasks_response_msg_t **
@@ -299,6 +302,10 @@ static int  _unpack_checkpoint_resp_msg(checkpoint_resp_msg_t **msg_ptr,
 static void _pack_checkpoint_comp(checkpoint_comp_msg_t *msg, Buf buffer);
 static int  _unpack_checkpoint_comp(checkpoint_comp_msg_t **msg_ptr, 
 				    Buf buffer);
+
+static void _pack_checkpoint_task_comp(checkpoint_task_comp_msg_t *msg, Buf buffer);
+static int  _unpack_checkpoint_task_comp(checkpoint_task_comp_msg_t **msg_ptr, 
+					 Buf buffer);
 
 static void _pack_suspend_msg(suspend_msg_t *msg, Buf buffer);
 static int  _unpack_suspend_msg(suspend_msg_t **msg_ptr, Buf buffer);
@@ -525,6 +532,10 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 		_pack_cancel_tasks_msg((kill_tasks_msg_t *) msg->data,
 				       buffer);
 		break;
+	case REQUEST_CHECKPOINT_TASKS:
+		_pack_checkpoint_tasks_msg((checkpoint_tasks_msg_t *) msg->data,
+					   buffer);
+		break;
 	case REQUEST_JOB_STEP_INFO:
 		_pack_job_step_info_req_msg((job_step_info_request_msg_t
 					     *) msg->data, buffer);
@@ -647,6 +658,10 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 		break;
 	case REQUEST_CHECKPOINT_COMP:
 		_pack_checkpoint_comp((checkpoint_comp_msg_t *)msg->data, 
+				      buffer);
+		break;
+	case REQUEST_CHECKPOINT_TASK_COMP:
+		_pack_checkpoint_task_comp((checkpoint_task_comp_msg_t *)msg->data, 
 				      buffer);
 		break;
 	case RESPONSE_CHECKPOINT:
@@ -836,6 +851,10 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 		rc = _unpack_cancel_tasks_msg((kill_tasks_msg_t **) &
 					      (msg->data), buffer);
 		break;
+	case REQUEST_CHECKPOINT_TASKS:
+		rc = _unpack_checkpoint_tasks_msg((checkpoint_tasks_msg_t **) &
+						  (msg->data), buffer);
+		break;
 	case REQUEST_JOB_STEP_INFO:
 		rc = _unpack_job_step_info_req_msg(
 			(job_step_info_request_msg_t **)
@@ -975,6 +994,10 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 	case REQUEST_CHECKPOINT_COMP:
 		rc = _unpack_checkpoint_comp((checkpoint_comp_msg_t **)
 					     & msg->data, buffer);
+		break;
+	case REQUEST_CHECKPOINT_TASK_COMP:
+		rc = _unpack_checkpoint_task_comp((checkpoint_task_comp_msg_t **)
+						  & msg->data, buffer);
 		break;
 	case RESPONSE_CHECKPOINT:
 	case RESPONSE_CHECKPOINT_COMP:
@@ -1529,6 +1552,7 @@ _pack_job_step_create_request_msg(job_step_create_request_msg_t
 	packstr(msg->name, buffer);
 	packstr(msg->network, buffer);
 	packstr(msg->node_list, buffer);
+	packstr(msg->ckpt_path, buffer);
 
 	pack8(msg->overcommit, buffer);
 }
@@ -1563,6 +1587,7 @@ _unpack_job_step_create_request_msg(job_step_create_request_msg_t ** msg,
 	safe_unpackstr_xmalloc(&(tmp_ptr->name), &uint32_tmp, buffer);
 	safe_unpackstr_xmalloc(&(tmp_ptr->network), &uint32_tmp, buffer);
 	safe_unpackstr_xmalloc(&(tmp_ptr->node_list), &uint32_tmp, buffer);
+	safe_unpackstr_xmalloc(&(tmp_ptr->ckpt_path), &uint16_tmp, buffer);
 
 	safe_unpack8(&(tmp_ptr->overcommit), buffer);
 
@@ -1914,6 +1939,7 @@ _unpack_job_step_info_members(job_step_info_t * step, Buf buffer)
 	safe_unpackstr_xmalloc(&step->name, &uint32_tmp, buffer);
 	safe_unpackstr_xmalloc(&step->network, &uint32_tmp, buffer);
 	safe_unpackstr_xmalloc(&node_inx_str, &uint32_tmp, buffer);
+	safe_unpackstr_xmalloc(&step->ckpt_path, &uint16_tmp, buffer);
 	if (node_inx_str == NULL)
 		step->node_inx = bitfmt2int("");
 	else {
@@ -3042,6 +3068,7 @@ _pack_launch_tasks_request_msg(launch_tasks_request_msg_t * msg, Buf buffer)
 
 	pack8(msg->open_mode, buffer);
 	pack8(msg->pty, buffer);
+	packstr(msg->ckpt_path, buffer);
 }
 
 static int
@@ -3137,6 +3164,7 @@ _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **
 
 	safe_unpack8(&msg->open_mode, buffer);
 	safe_unpack8(&msg->pty, buffer);
+	safe_unpackstr_xmalloc(&msg->ckpt_path, &uint16_tmp, buffer);
 	return SLURM_SUCCESS;
 
 unpack_error:
@@ -3192,6 +3220,35 @@ _unpack_cancel_tasks_msg(kill_tasks_msg_t ** msg_ptr, Buf buffer)
 	safe_unpack32(&msg->job_id, buffer);
 	safe_unpack32(&msg->job_step_id, buffer);
 	safe_unpack32(&msg->signal, buffer);
+	return SLURM_SUCCESS;
+
+unpack_error:
+	xfree(msg);
+	*msg_ptr = NULL;
+	return SLURM_ERROR;
+}
+
+static void
+_pack_checkpoint_tasks_msg(checkpoint_tasks_msg_t * msg, Buf buffer)
+{
+	pack32((uint32_t)msg->job_id, buffer);
+	pack32((uint32_t)msg->job_step_id, buffer);
+	pack32((uint32_t)msg->signal, buffer);
+	pack_time((time_t)msg->timestamp, buffer);
+}
+
+static int
+_unpack_checkpoint_tasks_msg(checkpoint_tasks_msg_t ** msg_ptr, Buf buffer)
+{
+	checkpoint_tasks_msg_t *msg;
+
+	msg = xmalloc(sizeof(checkpoint_tasks_msg_t));
+	*msg_ptr = msg;
+
+	safe_unpack32(&msg->job_id, buffer);
+	safe_unpack32(&msg->job_step_id, buffer);
+	safe_unpack32(&msg->signal, buffer);
+	safe_unpack_time(&msg->timestamp, buffer);
 	return SLURM_SUCCESS;
 
 unpack_error:
@@ -4041,6 +4098,44 @@ _unpack_checkpoint_comp(checkpoint_comp_msg_t **msg_ptr, Buf buffer)
 	safe_unpack32(& msg -> step_id , buffer ) ;
 	safe_unpack32(& msg -> error_code , buffer ) ;
 	safe_unpackstr_xmalloc ( & msg -> error_msg, & uint32_tmp , buffer ) ;
+	safe_unpack_time ( & msg -> begin_time , buffer ) ;
+	return SLURM_SUCCESS;
+
+unpack_error:
+	*msg_ptr = NULL;
+	xfree (msg->error_msg);
+	xfree (msg);
+	return SLURM_ERROR;
+}
+
+static void
+_pack_checkpoint_task_comp(checkpoint_task_comp_msg_t *msg, Buf buffer)
+{
+	xassert ( msg != NULL );
+
+	pack32((uint32_t)msg -> job_id,  buffer ) ;
+	pack32((uint32_t)msg -> step_id, buffer ) ;
+	pack32((uint32_t)msg -> task_id, buffer ) ;
+	pack32((uint32_t)msg -> error_code, buffer ) ;
+	packstr ( msg -> error_msg, buffer ) ;
+	pack_time ( msg -> begin_time, buffer ) ;
+}
+
+static int
+_unpack_checkpoint_task_comp(checkpoint_task_comp_msg_t **msg_ptr, Buf buffer)
+{
+	uint16_t uint16_tmp;
+	checkpoint_task_comp_msg_t * msg;
+	xassert ( msg_ptr != NULL );
+
+	msg = xmalloc ( sizeof (checkpoint_task_comp_msg_t) );
+	*msg_ptr = msg ;
+
+	safe_unpack32(& msg -> job_id  , buffer ) ;
+	safe_unpack32(& msg -> step_id , buffer ) ;
+	safe_unpack32(& msg -> task_id , buffer ) ;
+	safe_unpack32(& msg -> error_code , buffer ) ;
+	safe_unpackstr_xmalloc ( & msg -> error_msg, & uint16_tmp , buffer ) ;
 	safe_unpack_time ( & msg -> begin_time , buffer ) ;
 	return SLURM_SUCCESS;
 

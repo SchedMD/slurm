@@ -41,6 +41,10 @@
 #endif
 
 #include <string.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
+#include <stdlib.h>
 #include <slurm/slurm.h>
 
 #include "src/common/checkpoint.h"
@@ -293,4 +297,116 @@ _handle_rc_msg(slurm_msg_t *msg)
 	slurm_free_return_code_msg(msg->data);
 	slurm_seterrno(rc);
 	return rc;
+}
+
+/*
+ * slurm_checkpoint_task_complete - note the completion of a task's checkpoint
+ *	operation.
+ * IN job_id  - job on which to perform operation
+ * IN step_id - job step on which to perform operation
+ * IN task_id - task which completed the operation
+ * IN begin_time - time at which checkpoint began
+ * IN error_code - error code, highest value for all complete calls is preserved
+ * IN error_msg - error message, preserved for highest error_code
+ * RET 0 or a slurm error code
+ */
+extern int slurm_checkpoint_task_complete (uint32_t job_id, uint32_t step_id,
+		uint32_t task_id, time_t begin_time, uint32_t error_code, char *error_msg)
+{
+	int rc;
+	slurm_msg_t msg;
+	checkpoint_task_comp_msg_t req;
+
+	slurm_msg_t_init(&msg);
+	req.job_id       = job_id;
+	req.step_id      = step_id;
+	req.task_id      = task_id;
+	req.begin_time   = begin_time;
+	req.error_code   = error_code;
+	req.error_msg    = error_msg;
+	msg.msg_type     = REQUEST_CHECKPOINT_TASK_COMP;
+	msg.data         = &req;
+
+	if (slurm_send_recv_controller_rc_msg(&msg, &rc) < 0)
+		return SLURM_ERROR;
+	if (rc)
+		slurm_seterrno_ret(rc);
+	return SLURM_SUCCESS;
+}
+
+extern char * __progname;
+/*
+ * slurm_get_checkpoint_file_path - return the checkpoint file
+ *      path of this process, creating the directory if needed.
+ * IN len: length of the file path buffer
+ * OUT buf: buffer to store the checkpoint file path
+ * RET: 0 on success, -1 on failure with errno set
+ */
+extern int
+slurm_get_checkpoint_file_path(size_t len, char *buf)
+{
+       char *ckpt_path, *job_id, *step_id, *proc_id;
+       struct stat mystat;
+       int idx;
+
+       len --;                 /* for a terminating 0 */
+
+       ckpt_path = getenv("SLURM_CHECKPOINT_PATH");
+       if (ckpt_path == NULL) { /* this should not happen since the program may chdir */
+               ckpt_path = getcwd(buf, len);
+               if (ckpt_path == NULL)  /* ERANGE: len is too short */
+                       return -1;
+       } else {
+               if (snprintf(buf, len, "%s", ckpt_path) >= len) { /* glibc >= 2.1 */
+                       errno = ERANGE;
+                       return -1;
+               }
+               ckpt_path = buf;
+       }
+       idx = strlen(ckpt_path) - 1;
+       while (idx > 0 && ckpt_path[idx] == '/')
+               ckpt_path[idx --] = 0;
+
+       if (stat(ckpt_path, &mystat) < 0)
+               return -1;
+       if (! S_ISDIR(mystat.st_mode)) {
+               errno = ENOTDIR;
+               return -1;
+       }
+
+       job_id = getenv("SLURM_JOBID");
+       step_id = getenv("SLURM_STEPID");
+       proc_id = getenv("SLURM_PROCID");
+       if (job_id == NULL || step_id == NULL || proc_id == NULL) {
+               errno = ENODATA;
+               return -1;
+       }
+       idx = strlen(buf);
+       if (snprintf(buf + idx, len - idx, "/%s.%s", job_id, step_id) >= len - idx) {
+               errno = ERANGE;
+               return -1;
+       }
+
+       if (stat(buf, &mystat) < 0) {
+               if (errno == ENOENT) { /* dir does not exists */
+                       if (mkdir(buf, 0750) < 0 && errno != EEXIST)
+                               return -1;
+                       if (stat(buf, &mystat) < 0)
+                               return -1;
+               }
+               else
+                       return -1;
+       }
+       if (! S_ISDIR(mystat.st_mode)) {
+               errno = ENOTDIR;
+               return -1;
+       }
+
+       idx = strlen(buf);
+       if (snprintf(buf + idx, len - idx, "/%s.%s.ckpt", __progname, proc_id) >= len - idx) {
+               errno = ERANGE;
+               return -1;
+       }
+
+       return 0;
 }
