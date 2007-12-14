@@ -82,9 +82,9 @@ The slurmctld daemon must be restarted for a change in \fBCheckpointType\fR
 to take effect. 
 Acceptable values at present include
 "checkpoint/aix" (only on AIX systems),
-"checkpoint/ompi" (requires OpenMPI version 1.3 or higher), and
+"checkpoint/ompi" (requires OpenMPI version 1.3 or higher),
+"checkpoint/xlch" (for XLC, requires that SlurmUser be root), and
 "checkpoint/none".
-(only on AIX systems). 
 The default value is "checkpoint/none".
 
 .TP
