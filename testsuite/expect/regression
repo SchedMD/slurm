@@ -53,10 +53,10 @@ fi
 BEGIN_TIME=`date +%s`
 for major in `seq 1 20`; do
 	for minor in `seq 1 100`; do
-		TEST=./test${major}.${minor}
-		if [ ! -f $TEST ]; then continue; fi
+		TEST=test${major}.${minor}
+		if [ ! -f ./$TEST ]; then continue; fi
 
-		$TEST
+		./$TEST
 		if [ $? -eq 0 ]
 		then
 			COMPLETIONS=$((COMPLETIONS+1))
