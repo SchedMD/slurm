@@ -51,7 +51,6 @@ am__aclocal_m4_deps = $(top_srcdir)/auxdir/acx_pthread.m4 \
 	$(top_srcdir)/auxdir/x_ac_munge.m4 \
 	$(top_srcdir)/auxdir/x_ac_ncurses.m4 \
 	$(top_srcdir)/auxdir/x_ac_pam.m4 \
-	$(top_srcdir)/auxdir/x_ac_perl.m4 \
 	$(top_srcdir)/auxdir/x_ac_ptrace.m4 \
 	$(top_srcdir)/auxdir/x_ac_readline.m4 \
 	$(top_srcdir)/auxdir/x_ac_setpgrp.m4 \
@@ -145,7 +144,6 @@ HAVEPKGCONFIG = @HAVEPKGCONFIG@
 HAVE_AIX = @HAVE_AIX@
 HAVE_ELAN = @HAVE_ELAN@
 HAVE_FEDERATION = @HAVE_FEDERATION@
-HAVE_PERL_CORE_DIR = @HAVE_PERL_CORE_DIR@
 HAVE_SOME_CURSES = @HAVE_SOME_CURSES@
 INSTALL = @INSTALL@
 INSTALL_DATA = @INSTALL_DATA@
@@ -176,8 +174,6 @@ PACKAGE_TARNAME = @PACKAGE_TARNAME@
 PACKAGE_VERSION = @PACKAGE_VERSION@
 PAM_LIBS = @PAM_LIBS@
 PATH_SEPARATOR = @PATH_SEPARATOR@
-PERL_INCLUDES = @PERL_INCLUDES@
-PERL_LIBS = @PERL_LIBS@
 PLPA_LIBS = @PLPA_LIBS@
 PROCTRACKDIR = @PROCTRACKDIR@
 PROJECT = @PROJECT@

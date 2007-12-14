@@ -52,7 +52,6 @@ am__aclocal_m4_deps = $(top_srcdir)/auxdir/acx_pthread.m4 \
 	$(top_srcdir)/auxdir/x_ac_munge.m4 \
 	$(top_srcdir)/auxdir/x_ac_ncurses.m4 \
 	$(top_srcdir)/auxdir/x_ac_pam.m4 \
-	$(top_srcdir)/auxdir/x_ac_perl.m4 \
 	$(top_srcdir)/auxdir/x_ac_ptrace.m4 \
 	$(top_srcdir)/auxdir/x_ac_readline.m4 \
 	$(top_srcdir)/auxdir/x_ac_setpgrp.m4 \
@@ -75,15 +74,11 @@ am__installdirs = "$(DESTDIR)$(pkglibdir)"
 pkglibLTLIBRARIES_INSTALL = $(INSTALL)
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
 jobacct_gold_la_LIBADD =
-am__jobacct_gold_la_SOURCES_DIST = jobacct_gold.c
-@HAVE_PERL_CORE_DIR_TRUE@am_jobacct_gold_la_OBJECTS = jobacct_gold.lo
-am__EXTRA_jobacct_gold_la_SOURCES_DIST = jobacct_gold.c
+am_jobacct_gold_la_OBJECTS = jobacct_gold.lo
 jobacct_gold_la_OBJECTS = $(am_jobacct_gold_la_OBJECTS)
 jobacct_gold_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
 	$(jobacct_gold_la_LDFLAGS) $(LDFLAGS) -o $@
-@HAVE_PERL_CORE_DIR_TRUE@am_jobacct_gold_la_rpath = -rpath \
-@HAVE_PERL_CORE_DIR_TRUE@	$(pkglibdir)
 DEFAULT_INCLUDES = -I. -I$(top_builddir) -I$(top_builddir)/slurm@am__isrc@
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
 am__depfiles_maybe = depfiles
@@ -96,9 +91,8 @@ CCLD = $(CC)
 LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
-SOURCES = $(jobacct_gold_la_SOURCES) $(EXTRA_jobacct_gold_la_SOURCES)
-DIST_SOURCES = $(am__jobacct_gold_la_SOURCES_DIST) \
-	$(am__EXTRA_jobacct_gold_la_SOURCES_DIST)
+SOURCES = $(jobacct_gold_la_SOURCES)
+DIST_SOURCES = $(jobacct_gold_la_SOURCES)
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -142,7 +136,6 @@ HAVEPKGCONFIG = @HAVEPKGCONFIG@
 HAVE_AIX = @HAVE_AIX@
 HAVE_ELAN = @HAVE_ELAN@
 HAVE_FEDERATION = @HAVE_FEDERATION@
-HAVE_PERL_CORE_DIR = @HAVE_PERL_CORE_DIR@
 HAVE_SOME_CURSES = @HAVE_SOME_CURSES@
 INSTALL = @INSTALL@
 INSTALL_DATA = @INSTALL_DATA@
@@ -173,8 +166,6 @@ PACKAGE_TARNAME = @PACKAGE_TARNAME@
 PACKAGE_VERSION = @PACKAGE_VERSION@
 PAM_LIBS = @PAM_LIBS@
 PATH_SEPARATOR = @PATH_SEPARATOR@
-PERL_INCLUDES = @PERL_INCLUDES@
-PERL_LIBS = @PERL_LIBS@
 PLPA_LIBS = @PLPA_LIBS@
 PROCTRACKDIR = @PROCTRACKDIR@
 PROJECT = @PROJECT@
@@ -265,11 +256,10 @@ AUTOMAKE_OPTIONS = foreign
 PLUGIN_FLAGS = -module -avoid-version --export-dynamic 
 
 # Gold job completion logging plugin.
-@HAVE_PERL_CORE_DIR_TRUE@INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common $(PERL_INCLUDES)
-@HAVE_PERL_CORE_DIR_TRUE@pkglib_LTLIBRARIES = jobacct_gold.la
-@HAVE_PERL_CORE_DIR_TRUE@jobacct_gold_la_SOURCES = jobacct_gold.c
-@HAVE_PERL_CORE_DIR_TRUE@jobacct_gold_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS) $(PERL_LIBS)
-@HAVE_PERL_CORE_DIR_FALSE@EXTRA_jobacct_gold_la_SOURCES = jobacct_gold.c
+INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common
+pkglib_LTLIBRARIES = jobacct_gold.la
+jobacct_gold_la_SOURCES = jobacct_gold.c
+jobacct_gold_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
 all: all-am
 
 .SUFFIXES:
@@ -331,7 +321,7 @@ clean-pkglibLTLIBRARIES:
 	  rm -f "$${dir}/so_locations"; \
 	done
 jobacct_gold.la: $(jobacct_gold_la_OBJECTS) $(jobacct_gold_la_DEPENDENCIES) 
-	$(jobacct_gold_la_LINK) $(am_jobacct_gold_la_rpath) $(jobacct_gold_la_OBJECTS) $(jobacct_gold_la_LIBADD) $(LIBS)
+	$(jobacct_gold_la_LINK) -rpath $(pkglibdir) $(jobacct_gold_la_OBJECTS) $(jobacct_gold_la_LIBADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
