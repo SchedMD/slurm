@@ -294,7 +294,7 @@ int _slurm_send_timeout(slurm_fd fd, char *buf, size_t size,
 			sent = SLURM_ERROR;
 			goto done;			
 		}
-
+		
                 rc = _slurm_send(fd, &buf[sent], (size - sent), flags);
                 if (rc < 0) {
  			if (errno == EINTR)

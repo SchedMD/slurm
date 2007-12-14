@@ -898,11 +898,6 @@ ac_ct_F77
 LIBTOOL
 WITH_GNU_LD_TRUE
 WITH_GNU_LD_FALSE
-PERL_INCLUDES
-PERL_LIBS
-HAVE_PERL_CORE_DIR_TRUE
-HAVE_PERL_CORE_DIR_FALSE
-HAVE_PERL_CORE_DIR
 NUMA_LIBS
 HAVE_NUMA_TRUE
 HAVE_NUMA_FALSE
@@ -1591,7 +1586,6 @@ Optional Packages:
   --with-pic              try to use only PIC/non-PIC objects [default=use
                           both]
   --with-tags[=TAGS]      include additional configurations [automatic]
-  --with-site-perl=PATH   specify path to site perl directory
   --with-db2-dir=PATH     Specify path to DB2 library's parent directory
   --with-bg-serial=NAME   set BG_SERIAL value BGL
   --with-xcpu=PATH        specify path to XCPU directory
@@ -7115,7 +7109,7 @@ ia64-*-hpux*)
   ;;
 *-*-irix6*)
   # Find out which ABI we are using.
-  echo '#line 7118 "configure"' > conftest.$ac_ext
+  echo '#line 7112 "configure"' > conftest.$ac_ext
   if { (eval echo "$as_me:$LINENO: \"$ac_compile\"") >&5
   (eval $ac_compile) 2>&5
   ac_status=$?
@@ -8906,11 +8900,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:8909: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:8903: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:8913: \$? = $ac_status" >&5
+   echo "$as_me:8907: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -9196,11 +9190,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:9199: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:9193: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:9203: \$? = $ac_status" >&5
+   echo "$as_me:9197: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -9300,11 +9294,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:9303: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:9297: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:9307: \$? = $ac_status" >&5
+   echo "$as_me:9301: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -11662,7 +11656,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<EOF
-#line 11665 "configure"
+#line 11659 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -11762,7 +11756,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<EOF
-#line 11765 "configure"
+#line 11759 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -14182,11 +14176,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:14185: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:14179: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:14189: \$? = $ac_status" >&5
+   echo "$as_me:14183: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -14286,11 +14280,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:14289: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:14283: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:14293: \$? = $ac_status" >&5
+   echo "$as_me:14287: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -15863,11 +15857,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:15866: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:15860: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:15870: \$? = $ac_status" >&5
+   echo "$as_me:15864: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -15967,11 +15961,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:15970: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:15964: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:15974: \$? = $ac_status" >&5
+   echo "$as_me:15968: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -18167,11 +18161,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:18170: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:18164: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:18174: \$? = $ac_status" >&5
+   echo "$as_me:18168: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -18457,11 +18451,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:18460: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:18454: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:18464: \$? = $ac_status" >&5
+   echo "$as_me:18458: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -18561,11 +18555,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:18564: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:18558: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:18568: \$? = $ac_status" >&5
+   echo "$as_me:18562: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -21266,6 +21260,7 @@ fi
 
 
 
+
 for ac_header in mcheck.h values.h socket.h sys/socket.h  \
                  stdbool.h sys/ipc.h sys/shm.h sys/sem.h errno.h \
                  stdlib.h dirent.h pthread.h sys/prctl.h \
@@ -21273,6 +21268,7 @@ for ac_header in mcheck.h values.h socket.h sys/socket.h  \
                  sys/systemcfg.h ncurses.h curses.h sys/dr.h sys/vfs.h \
                  pam/pam_appl.h security/pam_appl.h sys/sysctl.h \
                  pty.h utmp.h \
+		 sys/syslog.h \
 
 do
 as_ac_Header=`echo "ac_cv_header_$ac_header" | $as_tr_sh`
@@ -21712,112 +21708,6 @@ cat >>confdefs.h <<\_ACEOF
 #define STDC_HEADERS 1
 _ACEOF
 
-fi
-
-
-
-
-   { echo "$as_me:$LINENO: checking perl usability" >&5
-echo $ECHO_N "checking perl usability... $ECHO_C" >&6; }
-
-   perl_dir=`perl -MConfig -e 'print $Config{archlib};'`
-
-
-# Check whether --with-site-perl was given.
-if test "${with_site_perl+set}" = set; then
-  withval=$with_site_perl;  perl_dir=$withval
-
-fi
-
-   PERL_INCLUDES="`perl -MExtUtils::Embed -e ccopts`"
-   PERL_LIBS="`perl -MExtUtils::Embed -e ldopts`"
-
-   ac_perl='Not Found'
-   if test -d "$perl_dir/CORE" ; then
-         ac_perl=$perl_dir
- 	 save_LIBS="$LIBS"
-   	 LIBS="$save_LIBS $PERL_LIBS"
- #  	 LIBS="$save_LIBS -L$perl_dir/CORE -lperl"
- 	 save_CFLAGS="$CFLAGS"
-   	 CFLAGS="$save_CFLAGS $PERL_INCLUDES"
- #	 CFLAGS="$save_CFLAGS -I$perl_dir/CORE"
-	 cat >conftest.$ac_ext <<_ACEOF
-/* confdefs.h.  */
-_ACEOF
-cat confdefs.h >>conftest.$ac_ext
-cat >>conftest.$ac_ext <<_ACEOF
-/* end confdefs.h.  */
-#include <EXTERN.h>
-	    	      #include <perl.h>
-int
-main ()
-{
-PerlInterpreter * interp; interp=perl_alloc();
-  ;
-  return 0;
-}
-_ACEOF
-rm -f conftest.$ac_objext conftest$ac_exeext
-if { (ac_try="$ac_link"
-case "(($ac_try" in
-  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
-  *) ac_try_echo=$ac_try;;
-esac
-eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
-  (eval "$ac_link") 2>conftest.er1
-  ac_status=$?
-  grep -v '^ *+' conftest.er1 >conftest.err
-  rm -f conftest.er1
-  cat conftest.err >&5
-  echo "$as_me:$LINENO: \$? = $ac_status" >&5
-  (exit $ac_status); } && {
-	 test -z "$ac_c_werror_flag" ||
-	 test ! -s conftest.err
-       } && test -s conftest$ac_exeext &&
-       $as_test_x conftest$ac_exeext; then
-  :
-else
-  echo "$as_me: failed program was:" >&5
-sed 's/^/| /' conftest.$ac_ext >&5
-
-	ac_perl="Not Found"
-fi
-
-rm -f core conftest.err conftest.$ac_objext conftest_ipa8_conftest.oo \
-      conftest$ac_exeext conftest.$ac_ext
-
-        LIBS="$save_LIBS"
-        CFLAGS="$save_CFLAGS"
-        if test "$ac_perl" != "Not Found"; then
-            { echo "$as_me:$LINENO: result: PERL test program built properly." >&5
-echo "${ECHO_T}PERL test program built properly." >&6; }
-
-cat >>confdefs.h <<_ACEOF
-#define PERL_SITE_DIR "$perl_dir"
-_ACEOF
-
-
-cat >>confdefs.h <<_ACEOF
-#define PERL_CORE_DIR "$perl_dir/CORE"
-_ACEOF
-
-
-
-	else
-            { echo "$as_me:$LINENO: WARNING: *** PERL test program execution failed." >&5
-echo "$as_me: WARNING: *** PERL test program execution failed." >&2;}
-        fi
-
-
-   fi
-
-
- if test "x$ac_perl" != "xNot Found"; then
-  HAVE_PERL_CORE_DIR_TRUE=
-  HAVE_PERL_CORE_DIR_FALSE='#'
-else
-  HAVE_PERL_CORE_DIR_TRUE='#'
-  HAVE_PERL_CORE_DIR_FALSE=
 fi
 
 
@@ -26532,6 +26422,8 @@ cat >>conftest.$ac_ext <<_ACEOF
 
   #include <stdlib.h>
   #include <openssl/rand.h>
+  #include <openssl/hmac.h>
+  #include <openssl/sha.h>
   #define SIZE 8
   int main(void)
   {
@@ -27164,13 +27056,6 @@ if test -z "${WITH_GNU_LD_TRUE}" && test -z "${WITH_GNU_LD_FALSE}"; then
   { { echo "$as_me:$LINENO: error: conditional \"WITH_GNU_LD\" was never defined.
 Usually this means the macro was only invoked conditionally." >&5
 echo "$as_me: error: conditional \"WITH_GNU_LD\" was never defined.
-Usually this means the macro was only invoked conditionally." >&2;}
-   { (exit 1); exit 1; }; }
-fi
-if test -z "${HAVE_PERL_CORE_DIR_TRUE}" && test -z "${HAVE_PERL_CORE_DIR_FALSE}"; then
-  { { echo "$as_me:$LINENO: error: conditional \"HAVE_PERL_CORE_DIR\" was never defined.
-Usually this means the macro was only invoked conditionally." >&5
-echo "$as_me: error: conditional \"HAVE_PERL_CORE_DIR\" was never defined.
 Usually this means the macro was only invoked conditionally." >&2;}
    { (exit 1); exit 1; }; }
 fi
@@ -28070,11 +27955,6 @@ ac_ct_F77!$ac_ct_F77$ac_delim
 LIBTOOL!$LIBTOOL$ac_delim
 WITH_GNU_LD_TRUE!$WITH_GNU_LD_TRUE$ac_delim
 WITH_GNU_LD_FALSE!$WITH_GNU_LD_FALSE$ac_delim
-PERL_INCLUDES!$PERL_INCLUDES$ac_delim
-PERL_LIBS!$PERL_LIBS$ac_delim
-HAVE_PERL_CORE_DIR_TRUE!$HAVE_PERL_CORE_DIR_TRUE$ac_delim
-HAVE_PERL_CORE_DIR_FALSE!$HAVE_PERL_CORE_DIR_FALSE$ac_delim
-HAVE_PERL_CORE_DIR!$HAVE_PERL_CORE_DIR$ac_delim
 NUMA_LIBS!$NUMA_LIBS$ac_delim
 HAVE_NUMA_TRUE!$HAVE_NUMA_TRUE$ac_delim
 HAVE_NUMA_FALSE!$HAVE_NUMA_FALSE$ac_delim
@@ -28133,6 +28013,11 @@ MUNGE_LDFLAGS!$MUNGE_LDFLAGS$ac_delim
 WITH_MUNGE_TRUE!$WITH_MUNGE_TRUE$ac_delim
 WITH_MUNGE_FALSE!$WITH_MUNGE_FALSE$ac_delim
 AUTHD_LIBS!$AUTHD_LIBS$ac_delim
+AUTHD_CFLAGS!$AUTHD_CFLAGS$ac_delim
+WITH_AUTHD_TRUE!$WITH_AUTHD_TRUE$ac_delim
+WITH_AUTHD_FALSE!$WITH_AUTHD_FALSE$ac_delim
+UTIL_LIBS!$UTIL_LIBS$ac_delim
+LTLIBOBJS!$LTLIBOBJS$ac_delim
 _ACEOF
 
   if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 97; then
@@ -28167,54 +28052,6 @@ N; s/^.*\n//; s/[,\\&]/\\&/g; s/@/@|#_!!_#|/g; b n
 ' >>$CONFIG_STATUS <conf$$subs.sed
 rm -f conf$$subs.sed
 cat >>$CONFIG_STATUS <<_ACEOF
-CEOF$ac_eof
-_ACEOF
-
-
-ac_delim='%!_!# '
-for ac_last_try in false false false false false :; do
-  cat >conf$$subs.sed <<_ACEOF
-AUTHD_CFLAGS!$AUTHD_CFLAGS$ac_delim
-WITH_AUTHD_TRUE!$WITH_AUTHD_TRUE$ac_delim
-WITH_AUTHD_FALSE!$WITH_AUTHD_FALSE$ac_delim
-UTIL_LIBS!$UTIL_LIBS$ac_delim
-LTLIBOBJS!$LTLIBOBJS$ac_delim
-_ACEOF
-
-  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 5; then
-    break
-  elif $ac_last_try; then
-    { { echo "$as_me:$LINENO: error: could not make $CONFIG_STATUS" >&5
-echo "$as_me: error: could not make $CONFIG_STATUS" >&2;}
-   { (exit 1); exit 1; }; }
-  else
-    ac_delim="$ac_delim!$ac_delim _$ac_delim!! "
-  fi
-done
-
-ac_eof=`sed -n '/^CEOF[0-9]*$/s/CEOF/0/p' conf$$subs.sed`
-if test -n "$ac_eof"; then
-  ac_eof=`echo "$ac_eof" | sort -nru | sed 1q`
-  ac_eof=`expr $ac_eof + 1`
-fi
-
-cat >>$CONFIG_STATUS <<_ACEOF
-cat >"\$tmp/subs-3.sed" <<\CEOF$ac_eof
-/@[a-zA-Z_][a-zA-Z_0-9]*@/!b end
-_ACEOF
-sed '
-s/[,\\&]/\\&/g; s/@/@|#_!!_#|/g
-s/^/s,@/; s/!/@,|#_!!_#|/
-:n
-t n
-s/'"$ac_delim"'$/,g/; t
-s/$/\\/; p
-N; s/^.*\n//; s/[,\\&]/\\&/g; s/@/@|#_!!_#|/g; b n
-' >>$CONFIG_STATUS <conf$$subs.sed
-rm -f conf$$subs.sed
-cat >>$CONFIG_STATUS <<_ACEOF
-:end
-s/|#_!!_#|//g
 CEOF$ac_eof
 _ACEOF
 
@@ -28468,7 +28305,7 @@ s&@abs_top_builddir@&$ac_abs_top_builddir&;t t
 s&@INSTALL@&$ac_INSTALL&;t t
 s&@MKDIR_P@&$ac_MKDIR_P&;t t
 $ac_datarootdir_hack
-" $ac_file_inputs | sed -f "$tmp/subs-1.sed" | sed -f "$tmp/subs-2.sed" | sed -f "$tmp/subs-3.sed" >$tmp/out
+" $ac_file_inputs | sed -f "$tmp/subs-1.sed" | sed -f "$tmp/subs-2.sed" | sed 's/|#_!!_#|//g' >$tmp/out
 
 test -z "$ac_datarootdir_hack$ac_datarootdir_seen" &&
   { ac_out=`sed -n '/\${datarootdir}/p' "$tmp/out"`; test -n "$ac_out"; } &&
