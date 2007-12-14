@@ -13,6 +13,8 @@ documents those changes that are of interest to users and admins.
     set to the time of its requeue so it looks like a different job.
  -- Prevent communication problems if the slurmd/slurmstepd have a 
     different JobAcct plugin configured than slurmctld.
+ -- In sched/wiki2, add support for MODIFYJOB option "JOBNAME=<name>"
+    to modify a job's name.
 
 * Changes in SLURM 1.2.20
 =========================
