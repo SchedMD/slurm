@@ -14,7 +14,7 @@
 
 @SET_MAKE@
 
-# Makefile for checkpoint/aix plugin
+# Makefile for checkpoint/xlch plugin
 
 VPATH = @srcdir@
 pkgdatadir = $(datadir)/@PACKAGE@

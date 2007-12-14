@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  checkpoint_xlch.c - XLC slurm checkpoint plugin.
+ *  checkpoint_xlch.c - XLCH slurm checkpoint plugin.
  *  $Id: checkpoint_xlch.c 0001 2006-10-31 10:55:11Z hjcao $
  *****************************************************************************
  *  Copied from checkpoint_aix.c
@@ -145,7 +145,7 @@ extern char *scch_path;
  * as 100 or 1000.  Various SLURM versions will likely require a certain
  * minimum versions for their plugins as the checkpoint API matures.
  */
-const char plugin_name[]       	= "XLC checkpoint plugin";
+const char plugin_name[]       	= "XLCH checkpoint plugin";
 const char plugin_type[]       	= "checkpoint/xlch";
 const uint32_t plugin_version	= 10;
 

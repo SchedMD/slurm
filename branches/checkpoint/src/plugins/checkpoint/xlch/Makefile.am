@@ -1,4 +1,4 @@
-# Makefile for checkpoint/aix plugin
+# Makefile for checkpoint/xlch plugin
 
 AUTOMAKE_OPTIONS = foreign
 

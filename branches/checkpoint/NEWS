@@ -8,7 +8,7 @@ documents those changes that are of interest to users and admins.
  -- Fix bug that prevented time value of "INFINITE" from being processed.
  -- Add new srun/sbatch option "--open-mode" to control how output/error 
     files are opened ("t" for truncate, "a" for append).
- -- Added checkpoint/xlch plugin for use with XLC (Hongjia Cao, NUDT).
+ -- Added checkpoint/xlch plugin for use with XLCH (Hongjia Cao, NUDT).
 
 * Changes in SLURM 1.3.0-pre7
 =============================
