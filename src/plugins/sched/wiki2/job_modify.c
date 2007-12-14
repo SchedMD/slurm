@@ -72,9 +72,10 @@ static int32_t _get_depend_id(char *str)
 static int	_job_modify(uint32_t jobid, char *bank_ptr, 
 			int32_t depend_id, char *new_hostlist,
 			uint32_t new_node_cnt, char *part_name_ptr, 
-			uint32_t new_time_limit)
+			uint32_t new_time_limit, char *name_ptr)
 {
 	struct job_record *job_ptr;
+	time_t now = time(NULL);
 
 	job_ptr = find_job_record(jobid);
 	if (job_ptr == NULL) {
@@ -101,13 +102,19 @@ static int	_job_modify(uint32_t jobid, char *bank_ptr,
 		job_ptr->end_time = job_ptr->end_time +
 				((job_ptr->time_limit -
 				  old_time) * 60);
-		last_job_update = time(NULL);
+		last_job_update = now;
 	}
 	if (bank_ptr) {
 		info("wiki: change job %u bank %s", jobid, bank_ptr);
 		xfree(job_ptr->account);
 		job_ptr->account = xstrdup(bank_ptr);
-		last_job_update = time(NULL);
+		last_job_update = now;
+	}
+
+	if (name_ptr) {
+		info("wiki: change job %u name %s", jobid, name_ptr);
+		strncpy(job_ptr->name, name_ptr, sizeof(job_ptr->name));
+		last_job_update = now;
 	}
 
 	if (new_hostlist) {
@@ -176,7 +183,7 @@ host_fini:	if (rc) {
 			jobid, part_name_ptr);
 		strncpy(job_ptr->partition, part_name_ptr, MAX_SLURM_NAME);
 		job_ptr->part_ptr = part_ptr;
-		last_job_update = time(NULL);
+		last_job_update = now;
 	}
 
 	if (new_node_cnt) {
@@ -187,7 +194,7 @@ host_fini:	if (rc) {
 				job_ptr->details->max_nodes = new_node_cnt;
 			info("wiki: change job %u min_nodes to %u",
 				jobid, new_node_cnt);
-			last_job_update = time(NULL);
+			last_job_update = now;
 		} else {
 			error("wiki: MODIFYJOB node count of non-pending "
 				"job %u", jobid);
@@ -205,8 +212,8 @@ host_fini:	if (rc) {
 extern int	job_modify_wiki(char *cmd_ptr, int *err_code, char **err_msg)
 {
 	char *arg_ptr, *bank_ptr, *depend_ptr, *nodes_ptr;
-	char *host_ptr, *part_ptr, *time_ptr, *tmp_char;
-	int slurm_rc;
+	char *host_ptr, *name_ptr, *part_ptr, *time_ptr, *tmp_char;
+	int i, slurm_rc;
 	int depend_id = -1;
 	uint32_t jobid, new_node_cnt = 0, new_time_limit = 0;
 	static char reply_msg[128];
@@ -234,6 +241,7 @@ extern int	job_modify_wiki(char *cmd_ptr, int *err_code, char **err_msg)
 	}
 	bank_ptr   = strstr(cmd_ptr, "BANK=");
 	depend_ptr = strstr(cmd_ptr, "DEPEND=");
+	name_ptr   = strstr(cmd_ptr, "JOBNAME=");
 	host_ptr   = strstr(cmd_ptr, "HOSTLIST=");
 	nodes_ptr  = strstr(cmd_ptr, "NODES=");
 	part_ptr   = strstr(cmd_ptr, "PARTITION=");
@@ -258,7 +266,37 @@ extern int	job_modify_wiki(char *cmd_ptr, int *err_code, char **err_msg)
 	if (host_ptr) {
 		host_ptr[8] = ':';
 		host_ptr += 9;
-		_null_term(bank_ptr);
+		_null_term(host_ptr);
+	}
+	if (name_ptr) {
+		name_ptr[7] = ':';
+		name_ptr += 8;
+		if (name_ptr[0] == '\"') {
+			name_ptr++;
+			for (i=0; i<MAX_JOBNAME_LEN; i++) {
+				if (name_ptr[i] == '\0')
+					break;
+				if (name_ptr[i] == '\"') {
+					name_ptr[i] = '\0';
+					break;
+				}
+			}
+			if (i == MAX_JOBNAME_LEN)
+				name_ptr[i-1] = '\0';
+		} else if (name_ptr[0] == '\'') {
+			name_ptr++;
+			for (i=0; i<MAX_JOBNAME_LEN; i++) {
+				if (name_ptr[i] == '\0')
+					break;
+				if (name_ptr[i] == '\'') {
+					name_ptr[i] = '\0';
+					break;
+				}
+			}
+			if (i == MAX_JOBNAME_LEN)
+				name_ptr[i-1] = '\0';
+		} else
+			_null_term(name_ptr);
 	}
 	if (nodes_ptr) {
 		nodes_ptr[5] = ':';
@@ -287,7 +325,7 @@ extern int	job_modify_wiki(char *cmd_ptr, int *err_code, char **err_msg)
 
 	lock_slurmctld(job_write_lock);
 	slurm_rc = _job_modify(jobid, bank_ptr, depend_id, host_ptr,
-			new_node_cnt, part_ptr, new_time_limit);
+			new_node_cnt, part_ptr, new_time_limit, name_ptr);
 	unlock_slurmctld(job_write_lock);
 	if (slurm_rc != SLURM_SUCCESS) {
 		*err_code = -700;
