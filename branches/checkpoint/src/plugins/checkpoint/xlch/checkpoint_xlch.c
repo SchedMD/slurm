@@ -54,7 +54,9 @@
 
 #include <signal.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <time.h>
+#include <unistd.h>
 #include <slurm/slurm.h>
 #include <slurm/slurm_errno.h>
 
@@ -83,10 +85,12 @@ struct check_job_info {
 	pthread_mutex_t mutex;
 };
 
-static void _send_sig(uint32_t job_id, uint32_t step_id, uint16_t signal, char *nodelist);
-static int  _step_sig(struct step_record * step_ptr, uint16_t wait, uint16_t signal, uint16_t sig_timeout);
-static void _send_ckpt(uint32_t job_id, uint32_t step_id, uint16_t signal, time_t timestamp, char *nodelist);
-static int _step_ckpt(struct step_record * step_ptr, uint16_t wait, uint16_t signal, uint16_t sig_timeout);
+static void _send_sig(uint32_t job_id, uint32_t step_id, uint16_t signal, 
+		      char *nodelist);
+static void _send_ckpt(uint32_t job_id, uint32_t step_id, uint16_t signal, 
+		       time_t timestamp, char *nodelist);
+static int _step_ckpt(struct step_record * step_ptr, uint16_t wait, 
+		      uint16_t signal, uint16_t sig_timeout);
 
 /* checkpoint request timeout processing */
 static pthread_t	ckpt_agent_tid = 0;
@@ -268,8 +272,6 @@ extern int slurm_ckpt_op ( uint16_t op, uint16_t data,
 extern int slurm_ckpt_comp ( struct step_record * step_ptr, time_t event_time,
 		uint32_t error_code, char *error_msg )
 {
-	struct check_job_info *check_ptr;
-
 	error("checkpoint/xlch: slurm_ckpt_comp not implemented");
 	return SLURM_FAILURE; 
 }
@@ -286,12 +288,14 @@ extern int slurm_ckpt_task_comp ( struct step_record * step_ptr, uint32_t task_i
 
 	/* XXX: we need a mutex here, since in proc_req only JOB_READ locked */
 	debug3("slurm_ckpt_task_comp: job %u.%hu, task %u, error %d",
-	       step_ptr->job_ptr->job_id, step_ptr->step_id, task_id, error_code);
+	       step_ptr->job_ptr->job_id, step_ptr->step_id, task_id,
+	       error_code);
 
 	slurm_mutex_lock (&check_ptr->mutex);
 
 	/*
-	 * for now we do not use event_time to identify operation and always set it 0
+	 * for now we do not use event_time to identify operation and always 
+	 * set it 0
 	 * TODO: consider send event_time to the task via sigqueue().
 	 */
 	if (event_time && (event_time != check_ptr->time_stamp)) {
@@ -305,7 +309,8 @@ extern int slurm_ckpt_task_comp ( struct step_record * step_ptr, uint32_t task_i
 	}
 	
 	if ((uint16_t)task_id >= check_ptr->task_cnt) {
-		error ("invalid task_id %u, task_cnt: %hu", task_id, check_ptr->task_cnt);
+		error("invalid task_id %u, task_cnt: %hu", task_id, 
+		      check_ptr->task_cnt);
 		rc = EINVAL;
 		goto out;
 	}
@@ -334,10 +339,12 @@ extern int slurm_ckpt_task_comp ( struct step_record * step_ptr, uint32_t task_i
 		FREE_NULL_BITMAP (check_ptr->replied);
 
 		if (check_ptr->sig_done) {
-			info ("checkpoint step %u.%hu done, sending signal %hu", step_ptr->job_ptr->job_id,
+			info ("checkpoint step %u.%hu done, sending signal %hu", 
+			      step_ptr->job_ptr->job_id,
 			      step_ptr->step_id, check_ptr->sig_done);
 			_send_sig(step_ptr->job_ptr->job_id, step_ptr->step_id,
-				  check_ptr->sig_done, step_ptr->step_layout->node_list);
+				  check_ptr->sig_done, 
+				  step_ptr->step_layout->node_list);
 		}
 
 		_on_ckpt_complete(step_ptr, check_ptr->error_code); /* how about we execute a program? */
@@ -352,11 +359,9 @@ extern int slurm_ckpt_task_comp ( struct step_record * step_ptr, uint32_t task_i
 
 extern int slurm_ckpt_alloc_job(check_jobinfo_t *jobinfo)
 {
-	struct check_job_info *check_ptr = xmalloc(sizeof(struct check_job_info));
-	if (check_ptr == NULL) {
-		error ("checkpoint_xlch: alloc_job: memory exhausted");
-		return SLURM_ERROR;
-	}
+	struct check_job_info *check_ptr;
+
+	check_ptr = xmalloc(sizeof(struct check_job_info));
 	slurm_mutex_init (&check_ptr->mutex);
 	*jobinfo = (check_jobinfo_t) check_ptr;
 	return SLURM_SUCCESS;
@@ -393,7 +398,7 @@ extern int slurm_ckpt_pack_job(check_jobinfo_t jobinfo, Buf buffer)
 
 extern int slurm_ckpt_unpack_job(check_jobinfo_t jobinfo, Buf buffer)
 {
-	uint16_t uint16_tmp;
+	uint32_t uint32_tmp;
 	char *task_inx_str;
 	struct check_job_info *check_ptr =
 		(struct check_job_info *)jobinfo;
@@ -402,7 +407,7 @@ extern int slurm_ckpt_unpack_job(check_jobinfo_t jobinfo, Buf buffer)
 	safe_unpack16(&check_ptr->task_cnt, buffer);
 	safe_unpack16(&check_ptr->reply_cnt, buffer);
 	safe_unpack16(&check_ptr->wait_time, buffer);
-	safe_unpackstr_xmalloc(&task_inx_str, &uint16_tmp, buffer);
+	safe_unpackstr_xmalloc(&task_inx_str, &uint32_tmp, buffer);
 	if (task_inx_str == NULL)
 		check_ptr->replied = NULL;
 	else {
@@ -412,7 +417,7 @@ extern int slurm_ckpt_unpack_job(check_jobinfo_t jobinfo, Buf buffer)
 	}
 
 	safe_unpack32(&check_ptr->error_code, buffer);
-	safe_unpackstr_xmalloc(&check_ptr->error_msg, &uint16_tmp, buffer);
+	safe_unpackstr_xmalloc(&check_ptr->error_msg, &uint32_tmp, buffer);
 	safe_unpack_time(&check_ptr->time_stamp, buffer);
 	
 	return SLURM_SUCCESS; 
@@ -474,7 +479,6 @@ static int _step_ckpt(struct step_record * step_ptr, uint16_t wait,
 {
 	struct check_job_info *check_ptr;
 	struct job_record *job_ptr;
-	int i;
 
 	xassert(step_ptr);
 	check_ptr = (struct check_job_info *) step_ptr->check_job;
@@ -489,7 +493,8 @@ static int _step_ckpt(struct step_record * step_ptr, uint16_t wait,
 		return ESLURM_DISABLED;
 
 	if (!check_ptr->task_cnt) {
-		error("_step_ckpt: job %u.%u has no tasks to checkpoint", job_ptr->job_id,
+		error("_step_ckpt: job %u.%u has no tasks to checkpoint", 
+			job_ptr->job_id,
 			step_ptr->step_id);
 		return ESLURM_INVALID_NODE_NAME;
 	}
@@ -624,10 +629,11 @@ static int _on_ckpt_complete(struct step_record *step_ptr, uint32_t error_code)
 	
 	if (cpid == 0) {
 		/*
-		 * We don't fork and wait the child process because the job read lock is held.
-		 * It could take minutes to delete/move the checkpoint image files.
-		 * So there is a race condition of the user requesting another checkpoint
-		 * before SCCH finishes.
+		 * We don't fork and wait the child process because the job 
+		 * read lock is held. It could take minutes to delete/move 
+		 * the checkpoint image files. So there is a race condition
+		 * of the user requesting another checkpoint before SCCH
+		 * finishes.
 		 */
 		/* fork twice to avoid zombies */
 		if ((cpid = fork()) < 0) {
@@ -648,11 +654,13 @@ static int _on_ckpt_complete(struct step_record *step_ptr, uint32_t error_code)
 			 */
 			if (geteuid() == 0) { /* root */
 				if (setgid(step_ptr->job_ptr->group_id) < 0) {
-					error ("_on_ckpt_complete: failed to setgid: %m");
+					error ("_on_ckpt_complete: failed to "
+						"setgid: %m");
 					exit(127);
 				}
 				if (setuid(step_ptr->job_ptr->user_id) < 0) {
-					error ("_on_ckpt_complete: failed to setuid: %m");
+					error ("_on_ckpt_complete: failed to "
+						"setuid: %m");
 					exit(127);
 				}
 			}

@@ -2366,12 +2366,13 @@ inline static void  _slurm_rpc_checkpoint_task_comp(slurm_msg_t * msg)
 {
 	int error_code = SLURM_SUCCESS;
 	DEF_TIMERS;
-	checkpoint_task_comp_msg_t *ckpt_ptr = (checkpoint_comp_msg_t *) msg->data;
+	checkpoint_task_comp_msg_t *ckpt_ptr;
 	/* Locks: read job */
 	slurmctld_lock_t job_read_lock = {
 		NO_LOCK, READ_LOCK, NO_LOCK, NO_LOCK };
 	uid_t uid;
 
+	ckpt_ptr = (checkpoint_task_comp_msg_t *) msg->data;
 	START_TIMER;
 	debug2("Processing RPC: REQUEST_CHECKPOINT_TASK_COMP");
 	uid = g_slurm_auth_get_uid(msg->auth_cred);

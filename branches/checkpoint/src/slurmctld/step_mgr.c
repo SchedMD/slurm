@@ -1352,8 +1352,9 @@ extern int job_step_checkpoint_task_comp(checkpoint_task_comp_msg_t *ckpt_ptr,
 		rc = ESLURM_INVALID_JOB_ID;
 		goto reply;
 	} else {
-		rc = checkpoint_task_comp((void *)step_ptr, ckpt_ptr->task_id,
-			ckpt_ptr->begin_time, ckpt_ptr->error_code, ckpt_ptr->error_msg);
+		rc = checkpoint_task_comp((void *)step_ptr, 
+			ckpt_ptr->task_id, ckpt_ptr->begin_time, 
+			ckpt_ptr->error_code, ckpt_ptr->error_msg);
 		last_job_update = time(NULL);
 	}
 

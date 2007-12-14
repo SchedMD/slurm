@@ -710,6 +710,7 @@ extern void slurm_msg_t_init (slurm_msg_t *msg);
 extern void slurm_msg_t_copy(slurm_msg_t *dest, slurm_msg_t *src);
 
 /* free message functions */
+void slurm_free_checkpoint_tasks_msg(checkpoint_tasks_msg_t * msg);
 void inline slurm_free_last_update_msg(last_update_msg_t * msg);
 void inline slurm_free_return_code_msg(return_code_msg_t * msg);
 void inline slurm_free_job_alloc_info_msg(job_alloc_info_msg_t * msg);

@@ -1587,7 +1587,7 @@ _unpack_job_step_create_request_msg(job_step_create_request_msg_t ** msg,
 	safe_unpackstr_xmalloc(&(tmp_ptr->name), &uint32_tmp, buffer);
 	safe_unpackstr_xmalloc(&(tmp_ptr->network), &uint32_tmp, buffer);
 	safe_unpackstr_xmalloc(&(tmp_ptr->node_list), &uint32_tmp, buffer);
-	safe_unpackstr_xmalloc(&(tmp_ptr->ckpt_path), &uint16_tmp, buffer);
+	safe_unpackstr_xmalloc(&(tmp_ptr->ckpt_path), &uint32_tmp, buffer);
 
 	safe_unpack8(&(tmp_ptr->overcommit), buffer);
 
@@ -1939,7 +1939,7 @@ _unpack_job_step_info_members(job_step_info_t * step, Buf buffer)
 	safe_unpackstr_xmalloc(&step->name, &uint32_tmp, buffer);
 	safe_unpackstr_xmalloc(&step->network, &uint32_tmp, buffer);
 	safe_unpackstr_xmalloc(&node_inx_str, &uint32_tmp, buffer);
-	safe_unpackstr_xmalloc(&step->ckpt_path, &uint16_tmp, buffer);
+	safe_unpackstr_xmalloc(&step->ckpt_path, &uint32_tmp, buffer);
 	if (node_inx_str == NULL)
 		step->node_inx = bitfmt2int("");
 	else {
@@ -3164,7 +3164,7 @@ _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **
 
 	safe_unpack8(&msg->open_mode, buffer);
 	safe_unpack8(&msg->pty, buffer);
-	safe_unpackstr_xmalloc(&msg->ckpt_path, &uint16_tmp, buffer);
+	safe_unpackstr_xmalloc(&msg->ckpt_path, &uint32_tmp, buffer);
 	return SLURM_SUCCESS;
 
 unpack_error:
@@ -4124,7 +4124,7 @@ _pack_checkpoint_task_comp(checkpoint_task_comp_msg_t *msg, Buf buffer)
 static int
 _unpack_checkpoint_task_comp(checkpoint_task_comp_msg_t **msg_ptr, Buf buffer)
 {
-	uint16_t uint16_tmp;
+	uint32_t uint32_tmp;
 	checkpoint_task_comp_msg_t * msg;
 	xassert ( msg_ptr != NULL );
 
@@ -4135,7 +4135,7 @@ _unpack_checkpoint_task_comp(checkpoint_task_comp_msg_t **msg_ptr, Buf buffer)
 	safe_unpack32(& msg -> step_id , buffer ) ;
 	safe_unpack32(& msg -> task_id , buffer ) ;
 	safe_unpack32(& msg -> error_code , buffer ) ;
-	safe_unpackstr_xmalloc ( & msg -> error_msg, & uint16_tmp , buffer ) ;
+	safe_unpackstr_xmalloc ( & msg -> error_msg, & uint32_tmp , buffer ) ;
 	safe_unpack_time ( & msg -> begin_time , buffer ) ;
 	return SLURM_SUCCESS;
 

@@ -1027,7 +1027,7 @@ static void set_options(const int argc, char **argv)
 		{"get-user-env",     optional_argument, 0, LONG_OPT_GET_USER_ENV},
 		{"pty",              no_argument,       0, LONG_OPT_PTY},
 		{"checkpoint",       required_argument, 0, LONG_OPT_CHECKPOINT},
-		("checkpoint-path",  required_argument, 0, LONG_OPT_CHECKPOINT_PATH},
+		{"checkpoint-path",  required_argument, 0, LONG_OPT_CHECKPOINT_PATH},
 		{"open-mode",        required_argument, 0, LONG_OPT_OPEN_MODE},
 		{NULL,               0,                 0, 0}
 	};
