@@ -155,6 +155,7 @@ typedef enum {
 	REQUEST_CHECKPOINT,
 	RESPONSE_CHECKPOINT,
 	REQUEST_CHECKPOINT_COMP,
+	REQUEST_CHECKPOINT_TASK_COMP,
 	RESPONSE_CHECKPOINT_COMP,
 	REQUEST_SUSPEND,
 	RESPONSE_SUSPEND,
@@ -173,6 +174,7 @@ typedef enum {
 	RESPONSE_LAUNCH_TASKS,
 	MESSAGE_TASK_EXIT,
 	REQUEST_SIGNAL_TASKS,
+	REQUEST_CHECKPOINT_TASKS,
 	REQUEST_TERMINATE_TASKS,
 	REQUEST_REATTACH_TASKS,
 	RESPONSE_REATTACH_TASKS,
@@ -364,6 +366,13 @@ typedef struct kill_tasks_msg {
 	uint32_t signal;
 } kill_tasks_msg_t;
 
+typedef struct checkpoint_tasks_msg {
+	uint32_t job_id;
+	uint32_t job_step_id;
+	uint32_t signal;
+	time_t timestamp;
+} checkpoint_tasks_msg_t;
+
 typedef struct epilog_complete_msg {
 	uint32_t job_id;
 	uint32_t return_code;
@@ -398,6 +407,7 @@ typedef struct job_step_specs {
 	char *node_list;	/* list of required nodes */
 	char *network;		/* network use spec */
 	char *name;		/* name of the job step, default "" */
+	char *ckpt_path;	/* path to store checkpoint image files */
 	uint8_t overcommit;     /* flag, 1 to allow overcommit of processors,
 				   0 to disallow overcommit. default is 0 */
 } job_step_create_request_msg_t;
@@ -472,6 +482,7 @@ typedef struct launch_tasks_request_msg {
 	switch_jobinfo_t switch_job;	/* switch credential for the job */
 	job_options_t options;  /* Arbitrary job options */
 	char *complete_nodelist;
+	char *ckpt_path;	/* checkpoint path */
 } launch_tasks_request_msg_t;
 
 typedef struct task_user_managed_io_msg {
@@ -587,6 +598,15 @@ typedef struct checkpoint_comp_msg {
 	char *   error_msg;	/* error message on failure */
 } checkpoint_comp_msg_t;
 
+typedef struct checkpoint_task_comp_msg {
+	uint32_t job_id;	/* slurm job_id */
+	uint32_t step_id;	/* slurm step_id */
+	uint32_t task_id;	/* task id */
+	time_t   begin_time;	/* time checkpoint began */
+	uint32_t error_code;	/* error code on failure */
+	char *   error_msg;	/* error message on failure */
+} checkpoint_task_comp_msg_t;
+
 typedef struct checkpoint_resp_msg {
 	time_t   event_time;	/* time of checkpoint start/finish */
 	uint32_t error_code;	/* error code on failure */
@@ -690,6 +710,7 @@ extern void slurm_msg_t_init (slurm_msg_t *msg);
 extern void slurm_msg_t_copy(slurm_msg_t *dest, slurm_msg_t *src);
 
 /* free message functions */
+void slurm_free_checkpoint_tasks_msg(checkpoint_tasks_msg_t * msg);
 void inline slurm_free_last_update_msg(last_update_msg_t * msg);
 void inline slurm_free_return_code_msg(return_code_msg_t * msg);
 void inline slurm_free_job_alloc_info_msg(job_alloc_info_msg_t * msg);
@@ -757,6 +778,7 @@ void inline slurm_free_srun_timeout_msg(srun_timeout_msg_t * msg);
 void inline slurm_free_srun_user_msg(srun_user_msg_t * msg);
 void inline slurm_free_checkpoint_msg(checkpoint_msg_t *msg);
 void inline slurm_free_checkpoint_comp_msg(checkpoint_comp_msg_t *msg);
+void inline slurm_free_checkpoint_task_comp_msg(checkpoint_task_comp_msg_t *msg);
 void inline slurm_free_checkpoint_resp_msg(checkpoint_resp_msg_t *msg);
 void inline slurm_free_suspend_msg(suspend_msg_t *msg);
 void slurm_free_resource_allocation_response_msg (

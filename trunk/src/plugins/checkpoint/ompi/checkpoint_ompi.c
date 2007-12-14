@@ -307,3 +307,10 @@ static int _ckpt_step(struct step_record * step_ptr, uint16_t wait, int vacate)
 		job_ptr->job_id, step_ptr->step_id);
 	return SLURM_SUCCESS;
 }
+
+extern int slurm_ckpt_task_comp ( struct step_record * step_ptr, uint32_t task_id,
+				  time_t event_time, uint32_t error_code, char *error_msg )
+{
+	return SLURM_SUCCESS;
+}
+

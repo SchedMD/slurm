@@ -179,7 +179,7 @@
 #define	list_insert		slurm_list_insert
 #define	list_find		slurm_list_find
 #define	list_remove		slurm_list_remove
-#define	list_delete		slurm_list_delete
+#define	list_delete_item	slurm_list_delete_item
 #define	list_install_fork_handlers slurm_list_install_fork_handlers
 
 /* log.[ch] functions */

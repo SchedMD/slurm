@@ -133,6 +133,11 @@ slurmstepd_info_t *stepd_get_info(int fd);
 int stepd_signal(int fd, int signal);
 
 /*
+ * Send a checkpoint request to all tasks of a job step.
+ */
+int stepd_checkpoint(int fd, int signal, time_t timestamp);
+
+/*
  * Send a signal to a single task in a job step.
  */
 int stepd_signal_task_local(int fd, int signal, int ltaskid); 

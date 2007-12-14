@@ -81,6 +81,7 @@ static job_step_create_request_msg_t *_create_step_request(
 	step_req->exclusive  = step_params->exclusive;
 	step_req->immediate  = step_params->immediate;
 	step_req->ckpt_interval = step_params->ckpt_interval;
+	step_req->ckpt_path = xstrdup(step_params->ckpt_path);
 	step_req->task_dist = step_params->task_dist;
 	step_req->plane_size = step_params->plane_size;
 	step_req->node_list = xstrdup(step_params->node_list);
@@ -439,6 +440,7 @@ extern void slurm_step_ctx_params_t_init (slurm_step_ctx_params_t *ptr)
 	ptr->task_dist = SLURM_DIST_CYCLIC;
 	ptr->plane_size = (uint16_t)NO_VAL;
 	ptr->ckpt_interval = 0;
+	ptr->ckpt_path = NULL;
 
 	ptr->uid = getuid();
 

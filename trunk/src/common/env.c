@@ -653,7 +653,11 @@ int setup_env(env_t *env)
 		error("Can't set SLURM_PTY_WIN_ROW env variable");
 		rc = SLURM_FAILURE;
 	}
-
+	if (env->ckpt_path 
+        && setenvf(&env->env, "SLURM_CHECKPOINT_PATH", "%s", env->ckpt_path)) {
+		error("Can't set SLURM_CHECKPOINT_PATH env variable");
+		rc = SLURM_FAILURE;
+	}
 	return rc;
 }
 

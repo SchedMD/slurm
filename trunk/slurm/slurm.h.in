@@ -742,6 +742,7 @@ typedef struct {
 				   "false" to accept at most one task per
 				   processor. "false" by default. */
 	uint16_t ckpt_interval;	/* checkpoint interval in minutes */
+	char *ckpt_path;	/* path to store checkpoint image files */
 	uint16_t verbose_level; /* for extra logging decisions in step
 				   launch api */
 } slurm_step_ctx_params_t;
@@ -788,6 +789,7 @@ typedef struct {
 	char *mpi_plugin_name;
 	uint8_t open_mode;
 	bool pty;
+	char *ckpt_path;
 } slurm_step_launch_params_t;
 
 typedef struct {
@@ -818,6 +820,7 @@ typedef struct {
 				 * start_range_1, end_range_1,
 				 * start_range_2, .., -1  */
 	uint16_t ckpt_interval;	/* checkpoint interval in minutes */
+	char *ckpt_path;	/* path to store checkpoint image files */
 } job_step_info_t;
 
 typedef struct job_step_info_response_msg {
@@ -1959,6 +1962,21 @@ extern int slurm_checkpoint_complete PARAMS(( uint32_t job_id,
 		uint32_t error_code, char *error_msg ));
 
 /*
+ * slurm_checkpoint_task_complete - note the completion of a task's checkpoint
+ *	operation.
+ * IN job_id  - job on which to perform operation
+ * IN step_id - job step on which to perform operation
+ * IN task_id - task which completed the operation
+ * IN begin_time - time at which checkpoint began
+ * IN error_code - error code, highest value for all complete calls is preserved
+ * IN error_msg - error message, preserved for highest error_code
+ * RET 0 or a slurm error code
+ */
+extern int slurm_checkpoint_task_complete (uint32_t job_id, uint32_t step_id,
+					   uint32_t task_id, time_t begin_time, 
+					   uint32_t error_code, char *error_msg);
+
+/*
  * slurm_checkpoint_error - gather error information for the last checkpoint
  *	operation for some job step
  * IN job_id  - job on which to perform operation
@@ -1974,6 +1992,15 @@ extern int slurm_checkpoint_complete PARAMS(( uint32_t job_id,
 extern int slurm_checkpoint_error PARAMS(( uint32_t job_id, 
 		uint32_t step_id, uint32_t *error_code, 
 		char **error_msg ));
+
+/*
+ * slurm_get_checkpoint_file_path - return the checkpoint file
+ *      path of this process, creating the directory if needed.
+ * IN len: length of the file path buffer
+ * OUT buf: buffer to store the checkpoint file path
+ * RET: 0 on success, -1 on failure with errno set
+ */
+extern int slurm_get_checkpoint_file_path(size_t len, char *buf);
 
 /*****************************************************************************\
  *      SLURM HOSTLIST FUNCTIONS

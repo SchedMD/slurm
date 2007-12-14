@@ -89,6 +89,7 @@ static int          _make_step_cred(struct step_record *step_rec,
 inline static void  _slurm_rpc_allocate_resources(slurm_msg_t * msg);
 inline static void  _slurm_rpc_checkpoint(slurm_msg_t * msg);
 inline static void  _slurm_rpc_checkpoint_comp(slurm_msg_t * msg);
+inline static void  _slurm_rpc_checkpoint_task_comp(slurm_msg_t * msg);
 inline static void  _slurm_rpc_delete_partition(slurm_msg_t * msg);
 inline static void  _slurm_rpc_complete_job_allocation(slurm_msg_t * msg);
 inline static void  _slurm_rpc_complete_batch_script(slurm_msg_t * msg);
@@ -250,6 +251,10 @@ void slurmctld_req (slurm_msg_t * msg)
 	case REQUEST_CHECKPOINT_COMP:
 		_slurm_rpc_checkpoint_comp(msg);
 		slurm_free_checkpoint_comp_msg(msg->data);
+		break;
+	case REQUEST_CHECKPOINT_TASK_COMP:
+		_slurm_rpc_checkpoint_task_comp(msg);
+		slurm_free_checkpoint_task_comp_msg(msg->data);
 		break;
 	case REQUEST_SUSPEND:
 		_slurm_rpc_suspend(msg);
@@ -2353,6 +2358,37 @@ inline static void  _slurm_rpc_checkpoint_comp(slurm_msg_t * msg)
 			slurm_strerror(error_code));
 	} else {
 		info("_slurm_rpc_checkpoint_comp %u.%u %s",
+			ckpt_ptr->job_id, ckpt_ptr->step_id, TIME_STR);
+	}
+}
+
+inline static void  _slurm_rpc_checkpoint_task_comp(slurm_msg_t * msg)
+{
+	int error_code = SLURM_SUCCESS;
+	DEF_TIMERS;
+	checkpoint_task_comp_msg_t *ckpt_ptr;
+	/* Locks: read job */
+	slurmctld_lock_t job_read_lock = {
+		NO_LOCK, READ_LOCK, NO_LOCK, NO_LOCK };
+	uid_t uid;
+
+	ckpt_ptr = (checkpoint_task_comp_msg_t *) msg->data;
+	START_TIMER;
+	debug2("Processing RPC: REQUEST_CHECKPOINT_TASK_COMP");
+	uid = g_slurm_auth_get_uid(msg->auth_cred);
+
+	/* do RPC call and send reply */
+	lock_slurmctld(job_read_lock);
+	error_code = job_step_checkpoint_task_comp(ckpt_ptr, uid, msg->conn_fd);
+	unlock_slurmctld(job_read_lock);
+	END_TIMER2("_slurm_rpc_checkpoint_task_comp");
+
+	if (error_code) {
+		info("_slurm_rpc_checkpoint_task_comp %u.%u: %s",
+			ckpt_ptr->job_id, ckpt_ptr->step_id,
+			slurm_strerror(error_code));
+	} else {
+		info("_slurm_rpc_checkpoint_task_comp %u.%u %s",
 			ckpt_ptr->job_id, ckpt_ptr->step_id, TIME_STR);
 	}
 }

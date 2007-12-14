@@ -157,6 +157,7 @@ int srun(int ac, char **av)
 	env->nodeid = -1;
 	env->cli = NULL;
 	env->env = NULL;
+	env->ckpt_path = NULL;
 
 	logopt.stderr_level += _slurm_debug_env_val();
 	log_init(xbasename(av[0]), logopt, 0, NULL);
@@ -357,6 +358,7 @@ int srun(int ac, char **av)
 	launch_params.ntasks_per_node   = opt.ntasks_per_node;
 	launch_params.ntasks_per_socket = opt.ntasks_per_socket;
 	launch_params.ntasks_per_core   = opt.ntasks_per_core;
+	launch_params.ckpt_path = xstrdup(opt.ckpt_path);
 
 	/* job structure should now be filled in */
 	_setup_signals();
