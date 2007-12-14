@@ -324,6 +324,7 @@ void slurm_free_job_step_create_request_msg(job_step_create_request_msg_t *
 		xfree(msg->name);
 		xfree(msg->network);
 		xfree(msg->node_list);
+		xfree(msg->ckpt_path);
 		xfree(msg);
 	}
 }
@@ -424,6 +425,8 @@ void slurm_free_launch_tasks_request_msg(launch_tasks_request_msg_t * msg)
 	xfree(msg->task_epilog);
 	xfree(msg->complete_nodelist);
 
+	xfree(msg->ckpt_path);
+
 	if (msg->switch_job)
 		switch_free_jobinfo(msg->switch_job);
 
@@ -468,6 +471,11 @@ void slurm_free_reattach_tasks_response_msg(reattach_tasks_response_msg_t *msg)
 }
 
 void slurm_free_kill_tasks_msg(kill_tasks_msg_t * msg)
+{
+	xfree(msg);
+}
+
+void slurm_free_checkpoint_tasks_msg(checkpoint_tasks_msg_t * msg)
 {
 	xfree(msg);
 }
@@ -530,6 +538,14 @@ void inline slurm_free_checkpoint_msg(checkpoint_msg_t *msg)
 }
 
 void inline slurm_free_checkpoint_comp_msg(checkpoint_comp_msg_t *msg)
+{
+	if (msg) {
+		xfree(msg->error_msg);
+		xfree(msg);
+	}
+}
+
+void inline slurm_free_checkpoint_task_comp_msg(checkpoint_task_comp_msg_t *msg)
 {
 	if (msg) {
 		xfree(msg->error_msg);
@@ -997,6 +1013,7 @@ static void _slurm_free_job_step_info_members (job_step_info_t * msg)
 	if (msg != NULL) {
 		xfree(msg->partition);
 		xfree(msg->nodes);
+		xfree(msg->ckpt_path);
 	}
 }
 
@@ -1192,6 +1209,9 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 	case REQUEST_CHECKPOINT_COMP:
 		slurm_free_checkpoint_comp_msg(data);
 		break;
+	case REQUEST_CHECKPOINT_TASK_COMP:
+		slurm_free_checkpoint_task_comp_msg(data);
+		break;
 	case REQUEST_SUSPEND:
 		slurm_free_suspend_msg(data);
 		break;
@@ -1219,6 +1239,9 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 	case REQUEST_SIGNAL_TASKS:
 	case REQUEST_TERMINATE_TASKS:
 		slurm_free_kill_tasks_msg(data);
+		break;
+	case REQUEST_CHECKPOINT_TASKS:
+		slurm_free_checkpoint_tasks_msg(data);
 		break;
 	case REQUEST_KILL_TIMELIMIT:
 		slurm_free_timelimit_msg(data);

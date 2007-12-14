@@ -73,6 +73,7 @@ typedef struct env_options {
 	uint16_t pty_port;	/* used to communicate window size changes */
 	uint8_t ws_col;		/* window size, columns */
 	uint8_t ws_row;		/* window size, row count */
+	char *ckpt_path;	/* --ckpt-path=                 */
 } env_t;
 
 

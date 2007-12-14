@@ -78,6 +78,9 @@ extern int checkpoint_op(uint16_t op, uint16_t data, void * step_ptr,
 extern int checkpoint_comp(void * step_ptr, time_t event_time, uint32_t error_code,
 		char *error_msg);
 
+extern int checkpoint_task_comp(void * step_ptr, uint32_t task_id, 
+			time_t event_time, uint32_t error_code, char *error_msg);
+
 /* gather checkpoint error info */
 extern int checkpoint_error(void * step_ptr, 
 		uint16_t *ckpt_errno, char **ckpt_strerror);

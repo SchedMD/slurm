@@ -42,6 +42,7 @@ COMMAND CHANGES
   specified job id. 
 * Support has been added for a much richer job dependency specification 
   including testing of exit codes and multiple dependencies.
+* The srun option --checkpoint-path has been added
 
 CONFIGURATION FILE CHANGES
 
@@ -75,6 +76,7 @@ CONFIGURATION FILE CHANGES
 * The partition MaxTime format now accepts minutes, minutes:seconds, 
   hours:minutes:seconds, days-hours, days-hours:minutes, 
   days-hours:minutes:seconds or "UNLIMITED".
+* Checkpoint plugin added for XLCH.
 * See "man slurm.conf" for more information.
 
 OTHER CHANGES

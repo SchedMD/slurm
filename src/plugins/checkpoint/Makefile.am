@@ -1,3 +1,3 @@
 # Makefile for checkpoint plugins
 
-SUBDIRS = aix none ompi
+SUBDIRS = aix none ompi xlch

@@ -316,6 +316,26 @@ rwfail:
 }
 
 /*
+ * Send a checkpoint request to all tasks of a job step.
+ */
+int
+stepd_checkpoint(int fd, int signal, time_t timestamp)
+{
+	int req = REQUEST_CHECKPOINT_TASKS;
+	int rc;
+
+	safe_write(fd, &req, sizeof(int));
+	safe_write(fd, &signal, sizeof(int));
+	safe_write(fd, &timestamp, sizeof(time_t));
+
+	/* Receive the return code */
+	safe_read(fd, &rc, sizeof(int));
+	return rc;
+ rwfail:
+	return -1;
+}
+
+/*
  * Send a signal to a single task in a job step.
  */
 int
