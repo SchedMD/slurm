@@ -15,6 +15,7 @@ documents those changes that are of interest to users and admins.
     different JobAcct plugin configured than slurmctld.
  -- In sched/wiki2, add support for MODIFYJOB option "JOBNAME=<name>"
     to modify a job's name.
+ -- Add configuration check for sys/syslog.h and include it as needed.
 
 * Changes in SLURM 1.2.20
 =========================
