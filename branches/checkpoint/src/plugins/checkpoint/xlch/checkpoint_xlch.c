@@ -444,7 +444,7 @@ static void _send_ckpt(uint32_t job_id, uint32_t step_id, uint16_t signal,
 	agent_args->msg_type		= REQUEST_CHECKPOINT_TASKS;
 	agent_args->retry		= 1; /* keep retrying until all nodes receives the request */
 	agent_args->msg_args		= ckpt_tasks_msg;
-	agent_args->hostlist = hostlist_create(nodelist);
+	agent_args->hostlist 		= hostlist_create(nodelist);
 	agent_args->node_count		= hostlist_count(agent_args->hostlist);
 
 	agent_queue_request(agent_args);
@@ -570,7 +570,7 @@ static void _ckpt_enqueue_timeout(uint32_t job_id, uint32_t step_id,
 	rec->signal     = signal;
 	rec->start_time	= start_time;
 	rec->end_time	= start_time + wait_time;
-	rec->nodelist  = xstrdup(nodelist);
+	rec->nodelist	= xstrdup(nodelist);
 	/* debug("enqueue %u.%u %u", job_id, step_id, wait_time); */
 	list_enqueue(ckpt_timeout_list, rec);
 	slurm_mutex_unlock(&ckpt_agent_mutex);
@@ -664,9 +664,12 @@ static int _on_ckpt_complete(struct step_record *step_ptr, uint32_t error_code)
 					exit(127);
 				}
 			}
-			snprintf(str_job, 11, "%u", step_ptr->job_ptr->job_id);
-			snprintf(str_step, 11, "%hu", step_ptr->step_id);
-			snprintf(str_err, 11, "%u", error_code);
+			snprintf(str_job,  sizeof(str_job),  "%u",  
+				 step_ptr->job_ptr->job_id);
+			snprintf(str_step, sizeof(str_step), "%hu", 
+				 step_ptr->step_id);
+			snprintf(str_err,  sizeof(str_err),  "%u",  
+				 error_code);
 
 			args[0] = scch_path;
 			args[1] = str_job;
