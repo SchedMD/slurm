@@ -87,6 +87,8 @@ AC_DEFUN([X_AC_SLURM_WITH_SSL], [
   		AC_RUN_IFELSE([AC_LANG_SOURCE([[
   #include <stdlib.h>
   #include <openssl/rand.h>
+  #include <openssl/hmac.h>
+  #include <openssl/sha.h>
   #define SIZE 8
   int main(void) 
   {

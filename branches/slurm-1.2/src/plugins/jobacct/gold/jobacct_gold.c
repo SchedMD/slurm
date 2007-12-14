@@ -50,8 +50,9 @@
 #  include <inttypes.h>
 #endif
 
-#include <EXTERN.h> 
-#include <perl.h>
+#include <openssl/hmac.h>
+#include <openssl/sha.h>
+#include <netdb.h>
 
 #include <stdio.h>
 #include <slurm/slurm_errno.h>
@@ -63,7 +64,11 @@
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmd/slurmd/slurmd.h"
 #include "src/common/slurm_jobacct.h"
+#include "src/common/slurm_protocol_api.h"
+#include "src/common/slurm_protocol_interface.h"
 
+#define SOCKET_ERROR -1
+#define MAX_SHUTDOWN_RETRY 5
 
 /*
  * These variables are required by the generic plugin interface.  If they
@@ -98,25 +103,183 @@ const char plugin_name[] = "Job accounting GOLD plugin";
 const char plugin_type[] = "jobacct/gold";
 const uint32_t plugin_version = 100;
 
-static PerlInterpreter *my_perl = NULL;
+static slurm_fd gold_fd; // gold connection 
+static char *gold_keyfile = NULL;
+static char *gold_host = NULL;
+static uint16_t gold_port = 0;
+static char basis_64[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
-static void _xs_init(pTHX);
-extern void boot_DynaLoader (pTHX_ CV* cv);
+static int _is_base64(unsigned char c) {
+	if((c >= '/' && c <= '9') 
+	   || (c >= 'A' && c <= 'Z')
+	   || (c >= 'a' && c <= 'z')
+	   || (c == '+')) 
+		return 1;
+	return 0;
+}
 
-/* if you see something like this...
- * Can't load module Socket, dynamic loading not available in this perl.
- * (You may need to build a new perl executable which either supports
- * dynamic loading or has the Socket module statically linked into it.)
- * 
- * Add them like this with a new newXS so they can be dynamically loaded.
- */
-static void _xs_init(pTHX)
+/* must free with xfree after use */
+char *_encode_base64(unsigned char const* in_str, unsigned int in_len)
 {
-        char *file = __FILE__;
-	dXSUB_SYS;
- 	/* DynaLoader is a special case */
-        newXS("DynaLoader::boot_DynaLoader", boot_DynaLoader, file);
-}  
+	char *ret = NULL;
+	int i = 0;
+	int j = 0;
+	unsigned char char_array_3[3];
+	unsigned char char_array_4[4];
+	int pos = 0;
+	/* calculate the length of the result */
+	int rlen = (in_len+2) / 3 * 4;	 /* encoded bytes */
+
+	rlen++; /* for the eol */
+	ret = xmalloc(rlen);
+	
+	debug2("encoding %s", in_str);
+
+	while (in_len--) {
+		char_array_3[i++] = *(in_str++);
+		if (i == 3) {
+			char_array_4[0] = (char_array_3[0] & 0xfc) >> 2;
+			char_array_4[1] = ((char_array_3[0] & 0x03) << 4)
+				+ ((char_array_3[1] & 0xf0) >> 4);
+			char_array_4[2] = ((char_array_3[1] & 0x0f) << 2)
+				+ ((char_array_3[2] & 0xc0) >> 6);
+			char_array_4[3] = char_array_3[2] & 0x3f;
+			
+			for(i = 0; (i <4) ; i++)
+				ret[pos++] = basis_64[char_array_4[i]];
+			i = 0;
+		}
+	}
+	
+	if (i) {
+		for(j = i; j < 3; j++)
+			char_array_3[j] = '\0';
+		
+		char_array_4[0] = (char_array_3[0] & 0xfc) >> 2;
+		char_array_4[1] = ((char_array_3[0] & 0x03) << 4)
+			+ ((char_array_3[1] & 0xf0) >> 4);
+		char_array_4[2] = ((char_array_3[1] & 0x0f) << 2)
+			+ ((char_array_3[2] & 0xc0) >> 6);
+		char_array_4[3] = char_array_3[2] & 0x3f;
+		
+		for (j = 0; (j < i + 1); j++)
+			ret[pos++] = basis_64[char_array_4[j]];
+		
+		while((i++ < 3))
+			ret[pos++] = '=';
+		
+	}
+
+	debug2("encoded %s", ret);
+	
+	return ret;
+}
+
+/* must free with xfree after use */
+char *_decode_base64(const char *in_str)
+{
+	int pos = 0;
+	int in_len = strlen(in_str);
+	int i = 0;
+	int j = 0;
+	int in_pos = 0;
+	unsigned char char_array_4[4], char_array_3[3];
+	char *ret = NULL;
+
+	int rlen = in_len * 3 / 4; /* always enough, but sometimes too
+				    * much */
+       	
+	debug2("decoding %s", in_str);
+
+	ret = xmalloc(sizeof(char)*rlen);
+	memset(ret, 0, rlen);
+	
+	while (in_len-- && ( in_str[in_pos] != '=')
+	       && _is_base64(in_str[in_pos])) {
+		char_array_4[i++] = in_str[in_pos];
+		in_pos++;
+		if (i == 4) {
+			for (i=0; i<4; i++) {
+				int found = 0;
+				while(basis_64[found] 
+				      && basis_64[found] != char_array_4[i])
+					found++;
+				if(!basis_64[found]) 
+					found = 0;
+				char_array_4[i] = found;
+			}
+			char_array_3[0] = (char_array_4[0] << 2) 
+				+ ((char_array_4[1] & 0x30) >> 4);
+			char_array_3[1] = ((char_array_4[1] & 0xf) << 4) 
+				+ ((char_array_4[2] & 0x3c) >> 2);
+			char_array_3[2] = ((char_array_4[2] & 0x3) << 6)
+				+ char_array_4[3];
+			for (i = 0; i<3; i++)
+				ret[pos++] = char_array_3[i];
+			i = 0;
+		}
+	}
+
+	if (i) {
+		for (j=i; j<4; j++)
+			char_array_4[j] = 0;
+
+		for (j=0; j<4; j++) {
+			int found = 0;
+			while(basis_64[found] 
+			      && basis_64[found] != char_array_4[j])
+				found++;
+			if(!basis_64[found]) 
+				found = 0;
+			
+			char_array_4[j] = found;
+		}
+
+		char_array_3[0] = (char_array_4[0] << 2) 
+			+ ((char_array_4[1] & 0x30) >> 4);
+		char_array_3[1] = ((char_array_4[1] & 0xf) << 4)
+			+ ((char_array_4[2] & 0x3c) >> 2);
+		char_array_3[2] = ((char_array_4[2] & 0x3) << 6) 
+			+ char_array_4[3];
+
+		for (j = 0; (j < i - 1); j++)
+			ret[pos++] = char_array_3[j];
+	}
+
+	debug2("decoded %s", ret);
+
+	return ret;
+}
+
+int _start_gold_communication()
+{
+	static slurm_addr gold_addr;
+	static int gold_addr_set = 0;
+	char *header = "POST /SSSRMAP3 HTTP/1.1\r\nContent-Type: text/xml; charset=\"utf-8\"\r\nTransfer-Encoding: chunked\r\n\r\n";
+	int rc = 0;
+	
+	if(!gold_addr_set) {
+		slurm_set_addr(&gold_addr, gold_port, gold_host);
+		gold_addr_set = 1;
+	}
+	
+	if ((gold_fd = slurm_open_msg_conn(&gold_addr)) < 0) {
+		error("_start_communication to %s: %m", gold_host);
+		return SLURM_ERROR;
+	}
+
+	info("sending header \"%s\" %d", header, strlen(header));
+	rc = _slurm_send_timeout(gold_fd, header, strlen(header),
+				 SLURM_PROTOCOL_NO_SEND_RECV_FLAGS,
+				 (slurm_get_msg_timeout() * 1000));
+	
+	if (rc < 0) 
+		error("slurm_msg_sendto: %m");
+	
+
+	return SLURM_SUCCESS;
+
+}
 
 /*
  * init() is called when the plugin is loaded, before any other functions
@@ -190,51 +353,75 @@ int jobacct_p_unpack(struct jobacctinfo **jobacct, Buf buffer)
 }
 
 
-int jobacct_p_init_slurmctld(char *location)
+int jobacct_p_init_slurmctld(char *gold_info)
 {
-	char *gold_dir = NULL;	
-	char tmp[256];
-	char *embedding[] = { "", "-e", "0" };
+	char *total = "/etc/gold/auth_key:localhost:7112";
+	int found = 0;
+	int i=0, j=0;
 
 	debug2("jobacct_init() called");
-	if(!location) {
-		gold_dir = xstrdup("/home/da/gold/snowflake"); //slurm_get_jobacct_storage_loc();
-	} else {
-		gold_dir = xstrdup(location);
+	if(gold_info) 
+		total = gold_info;
+	i = 0;
+	while(total[j]) {
+		if(total[j] == ':') {
+			switch(found) {
+			case 0: // keyfile name
+				gold_keyfile = xstrndup(total+i, j-i);
+				break;
+			case 1: // host name
+				gold_host = xstrndup(total+i, j-i);
+				break;
+			case 2: // port
+				gold_port = atoi(total+i);
+				break;
+			}
+			found++;
+			i = j+1;	
+		}
+		j++;
 	}
-	if (*gold_dir != '/')
-		fatal("JobAcctLogfile must specify an absolute pathname");
-	
-	my_perl = perl_alloc();
-	perl_construct( my_perl );
-	
-	perl_parse(my_perl, _xs_init, 3, embedding, NULL);
-	perl_run(my_perl);
-	
-	snprintf(tmp, sizeof(tmp), 
-		 "use lib qw(%s/lib %s/lib/perl5); "
-		 "use Gold::LLNLPrivate;",
-		 gold_dir, gold_dir);
+	if(!gold_port) 
+		gold_port = atoi(total+i);
 
-	eval_pv(tmp, TRUE);
-
+	if (!gold_keyfile || *gold_keyfile != '/')
+		fatal("JobAcctLogfile should be in the format of "
+		      "gold_auth_key_file_path:goldd_host:goldd_port "
+		      "bad key file");
+	if(!gold_host)
+		fatal("JobAcctLogfile should be in the format of "
+		      "gold_auth_key_file_path:goldd_host:goldd_port "
+		      "bad host");
+	if(!gold_port) 
+		fatal("JobAcctLogfile should be in the format of "
+		      "gold_auth_key_file_path:goldd_host:goldd_port "
+		      "bad port");
+	
+	debug2("got %s %s %d", gold_keyfile, gold_host, gold_port);
+	_start_gold_communication();
 	return SLURM_SUCCESS;
 }
 
 int jobacct_p_fini_slurmctld()
 {
-	perl_destruct(my_perl);
-	perl_free(my_perl);
+	int retry = 0;
 	
+	/* 
+	 *  Attempt to close an open connection
+	 */
+	while ((slurm_shutdown_msg_conn(gold_fd) < 0) && (errno == EINTR) ) {
+		if (retry++ > MAX_SHUTDOWN_RETRY) {
+			break;
+		}
+	}
+
+	xfree(gold_keyfile);
+	xfree(gold_host);
 	return SLURM_SUCCESS;
 }
 
 int jobacct_p_job_start_slurmctld(struct job_record *job_ptr)
 {
-	STRLEN n_a;
-	eval_pv("%user = %{LLNLPrivate::get_gold_users('da')};"
-		"$default = $user{'DefaultProject'}", TRUE);
-	info("default project is %s", SvPV(get_sv("$default", FALSE), n_a));
 	return SLURM_SUCCESS;
 }
 
