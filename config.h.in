@@ -221,6 +221,9 @@
 /* Define to 1 if you have the <sys/sysctl.h> header file. */
 #undef HAVE_SYS_SYSCTL_H
 
+/* Define to 1 if you have the <sys/syslog.h> header file. */
+#undef HAVE_SYS_SYSLOG_H
+
 /* Define to 1 if you have the <sys/systemcfg.h> header file. */
 #undef HAVE_SYS_SYSTEMCFG_H
 
@@ -290,12 +293,6 @@
 
 /* Define to the version of this package. */
 #undef PACKAGE_VERSION
-
-/* Define location of PERL CORE directory */
-#undef PERL_CORE_DIR
-
-/* Define location of PERL directory */
-#undef PERL_SITE_DIR
 
 /* Define the project's name. */
 #undef PROJECT

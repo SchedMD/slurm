@@ -59,7 +59,6 @@
 
 #include <stdarg.h>
 #include <errno.h>
-#include <syslog.h>
 
 #ifdef WITH_PTHREADS
 #  include <pthread.h>

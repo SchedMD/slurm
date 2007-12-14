@@ -39,6 +39,10 @@
 #  include "config.h"
 #endif
 
+#ifdef HAVE_SYS_SYSLOG_H
+#  include <sys/syslog.h>
+#endif
+
 #include <ctype.h>
 #include <errno.h>
 #include <fcntl.h>
