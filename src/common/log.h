@@ -45,6 +45,14 @@
 #ifndef _LOG_H
 #define _LOG_H
 
+#ifdef HAVE_CONFIG_H
+#  include "config.h"
+#endif
+
+#ifdef HAVE_SYS_SYSLOG_H
+#  include <sys/syslog.h>
+#endif
+
 #include <syslog.h> 	
 #include <stdio.h>
 
