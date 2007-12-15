@@ -350,6 +350,8 @@ int srun(int ac, char **av)
 	launch_params.mem_bind = opt.mem_bind;
 	launch_params.mem_bind_type = opt.mem_bind_type;	
 	launch_params.open_mode = opt.open_mode;
+	if (opt.acctg_freq >= 0)
+		launch_params.acctg_freq = opt.acctg_freq;
 	launch_params.pty = opt.pty;
 	launch_params.max_sockets     = opt.max_sockets_per_node;
 	launch_params.max_cores       = opt.max_cores_per_socket;

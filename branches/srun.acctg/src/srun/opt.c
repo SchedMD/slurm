@@ -108,6 +108,7 @@
 #define OPT_NTHREADS    0x12
 #define OPT_EXCLUSIVE   0x13
 #define OPT_OPEN_MODE   0x14
+#define OPT_ACCTG_FREQ  0x15
 
 /* generic getopt_long flags, integers and *not* valid characters */
 #define LONG_OPT_HELP        0x100
@@ -164,6 +165,7 @@
 #define LONG_OPT_CHECKPOINT      0x147
 #define LONG_OPT_CHECKPOINT_PATH 0x148
 #define LONG_OPT_OPEN_MODE       0x149
+#define LONG_OPT_ACCTG_FREQ      0x14a
 
 /*---- global variables, defined in opt.h ----*/
 int _verbose;
@@ -703,6 +705,7 @@ static void _opt_default()
 	
 	opt.pty = false;
 	opt.open_mode = 0;
+	opt.acctg_freq = -1;
 }
 
 /*---[ env var processing ]-----------------------------------------------*/
@@ -773,6 +776,7 @@ env_vars_t env_vars[] = {
 {"SLURM_WORKING_DIR",   OPT_STRING,     &opt.cwd,           &opt.cwd_set     },
 {"SLURM_EXCLUSIVE",     OPT_EXCLUSIVE,  NULL,               NULL             },
 {"SLURM_OPEN_MODE",     OPT_OPEN_MODE,  NULL,               NULL             },
+{"SLURM_ACCTG_FREQ",    OPT_INT,        &opt.acctg_freq,    NULL             },
 {NULL, 0, NULL, NULL}
 };
 
@@ -1029,6 +1033,7 @@ static void set_options(const int argc, char **argv)
 		{"checkpoint",       required_argument, 0, LONG_OPT_CHECKPOINT},
 		{"checkpoint-path",  required_argument, 0, LONG_OPT_CHECKPOINT_PATH},
 		{"open-mode",        required_argument, 0, LONG_OPT_OPEN_MODE},
+		{"acctg-freq",       required_argument, 0, LONG_OPT_ACCTG_FREQ},
 		{NULL,               0,                 0, 0}
 	};
 	char *opt_string = "+aAbB:c:C:d:D:e:g:Hi:IjJ:kKlm:n:N:"
@@ -1545,6 +1550,10 @@ static void set_options(const int argc, char **argv)
 				error("Invalid --open-mode argument: %s. Ignored", 
 				      optarg);
 			}
+			break;
+		case LONG_OPT_ACCTG_FREQ:
+			opt.acctg_freq = _get_int(optarg, "acctg-freq",
+                                true);
 			break;
 		case LONG_OPT_CHECKPOINT_PATH:
 			xfree(opt.ckpt_path);

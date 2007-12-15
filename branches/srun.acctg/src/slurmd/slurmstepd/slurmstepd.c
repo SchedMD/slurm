@@ -230,6 +230,7 @@ _init_from_slurmd(int sock, char **argv,
 
 	log_init(argv[0], conf->log_opts, LOG_DAEMON, conf->logfile);
 	/* acct info */
+/* FIXME */
 	jobacct_gather_g_startpoll(conf->job_acct_gather_freq);
 	
 	switch_g_slurmd_step_init();

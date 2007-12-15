@@ -510,6 +510,7 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 	char *out;		/* pathname of stdout */
 	uint8_t open_mode;	/* out/err open mode truncate or append,
 				 * see OPEN_MODE_* */
+	uint16_t acctg_freq;	/* accounting polling interval (seconds) */
 	uint32_t user_id;	/* set only if different from current UID, 
 				 * can only be explicitly set by user root */
 	uint32_t group_id;	/* group to assume, if run as root. */ 
@@ -788,6 +789,7 @@ typedef struct {
 
 	char *mpi_plugin_name;
 	uint8_t open_mode;
+	uint16_t acctg_freq;
 	bool pty;
 	char *ckpt_path;
 } slurm_step_launch_params_t;
