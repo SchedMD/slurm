@@ -519,7 +519,7 @@ static struct option long_options[] = {
 	{"wrap",          required_argument, 0, LONG_OPT_WRAP},
 	{"get-user-env",  optional_argument, 0, LONG_OPT_GET_USER_ENV},
 	{"open-mode",     required_argument, 0, LONG_OPT_OPEN_MODE},
-	{"acctg-freq",     required_argument, 0, LONG_OPT_ACCTG_FREQ},
+	{"acctg-freq",    required_argument, 0, LONG_OPT_ACCTG_FREQ},
 	{NULL,            0,                 0, 0}
 };
 
@@ -1825,6 +1825,9 @@ static bool _opt_verify(void)
 		else
 			setenvf(NULL, "SLURM_OPEN_MODE", "t");
 	}
+
+	if (opt.acctg_freq >= 0)
+		setenvf(NULL, "SLURM_ACCTG_FREQ", "%d", opt.acctg_freq); 
 
 	return verified;
 }
