@@ -254,6 +254,8 @@ static int fill_job_desc_from_opts(job_desc_msg_t *desc)
 	desc->no_requeue = opt.no_requeue;
 	if (opt.open_mode)
 		desc->open_mode = opt.open_mode;
+	if (opt.acctg_freq >= 0)
+		desc->acctg_freq = opt.acctg_freq;
 
 	return 0;
 }

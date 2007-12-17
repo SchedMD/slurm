@@ -91,8 +91,9 @@ extern int jobacct_gather_g_unpack(jobacctinfo_t **jobacct, Buf buffer);
 extern void jobacct_gather_g_aggregate(jobacctinfo_t *dest,
 				       jobacctinfo_t *from);
 
-extern int jobacct_gather_g_startpoll(int frequency);
-extern int jobacct_gather_g_endpoll();
+extern void jobacct_gather_g_change_poll(uint16_t frequency);
+extern int  jobacct_gather_g_startpoll(uint16_t frequency);
+extern int  jobacct_gather_g_endpoll();
 extern void jobacct_gather_g_suspend_poll();
 extern void jobacct_gather_g_resume_poll();
 

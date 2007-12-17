@@ -462,6 +462,7 @@ typedef struct launch_tasks_request_msg {
 				     1 for "user manged" IO */
 	uint8_t open_mode;	/* stdout/err append or truncate */
 	uint8_t pty;		/* use pseudo tty */
+	uint16_t acctg_freq;	/* accounting polling interval */
 
 	/********** START "normal" IO only options **********/
 	/* These options are ignored if user_managed_io is 1 */
@@ -565,6 +566,7 @@ typedef struct batch_job_launch_msg {
 	slurm_cred_t cred;
 	uint8_t open_mode;	/* stdout/err append or truncate */
 	uint8_t overcommit;	/* if resources being over subscribed */
+	uint16_t acctg_freq;	/* accounting polling interval */
 } batch_job_launch_msg_t;
 
 typedef struct job_id_request_msg {

@@ -399,7 +399,7 @@ extern void jobacct_gather_p_aggregate(struct jobacctinfo *dest,
  * initialization here.
  */
 
-extern int jobacct_gather_p_startpoll(int frequency)
+extern int jobacct_gather_p_startpoll(uint16_t frequency)
 {
 	int rc = SLURM_SUCCESS;
 	
@@ -447,6 +447,16 @@ extern int jobacct_gather_p_endpoll()
 	jobacct_shutdown = true;
 
 	return SLURM_SUCCESS;
+}
+
+extern void jobacct_gather_p_change_poll(uint16_t frequency)
+{
+#ifdef HAVE_AIX
+	freq = frequency;
+	if (freq == 0)
+		jobacct_shutdown = true;
+#endif
+	return;
 }
 
 extern void jobacct_gather_p_suspend_poll()

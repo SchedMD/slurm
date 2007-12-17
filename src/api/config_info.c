@@ -155,6 +155,8 @@ void slurm_print_ctl_conf ( FILE* out,
 		slurm_ctl_conf_ptr->inactive_limit);
 	fprintf(out, "JobAcctGatherFrequency  = %u\n",
 		slurm_ctl_conf_ptr->job_acct_gather_freq);
+	fprintf(out, "JobAcctGatherType       = %s\n",
+		slurm_ctl_conf_ptr->job_acct_gather_type);
 	fprintf(out, "JobAcctStorageType      = %s\n", 
 		slurm_ctl_conf_ptr->job_acct_storage_type);
 	fprintf(out, "JobAcctStorageLoc       = %s\n", 

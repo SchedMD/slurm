@@ -1,4 +1,3 @@
-
 /*****************************************************************************\
  *  jobacct_none.c - NO-OP slurm job completion logging plugin.
  *****************************************************************************
@@ -129,16 +128,19 @@ extern void jobacct_gather_p_aggregate(struct jobacctinfo *dest,
 	return;
 }
 
-extern int jobacct_gather_p_startpoll(int frequency)
+extern int jobacct_gather_p_startpoll(uint16_t frequency)
 {
-	info("%s loaded", plugin_name);
-	
 	return SLURM_SUCCESS;
 }
 
 extern int jobacct_gather_p_endpoll()
 {
 	return SLURM_SUCCESS;
+}
+
+extern void jobacct_gather_p_change_poll(uint16_t frequency)
+{
+	return;
 }
 
 extern void jobacct_gather_p_suspend_poll()

@@ -54,6 +54,7 @@
 #include "src/common/fd.h"
 #include "src/common/log.h"
 #include "src/common/eio.h"
+#include "src/common/slurm_jobacct_gather.h"
 #include "src/common/slurm_protocol_api.h"
 
 #include "src/slurmd/slurmd/slurmd.h"
@@ -155,7 +156,7 @@ job_create(launch_tasks_request_msg_t *msg)
 	srun_info_t   *srun = NULL;
 	slurm_addr     resp_addr;
 	slurm_addr     io_addr;
-	int           nodeid = NO_VAL;
+	int            nodeid = NO_VAL;
 	
 	xassert(msg != NULL);
 	xassert(msg->complete_nodelist != NULL);
@@ -258,6 +259,8 @@ job_create(launch_tasks_request_msg_t *msg)
 	job->nodeid  = nodeid;
 	job->debug   = msg->slurmd_debug;
 	job->cpus    = msg->cpus_allocated[nodeid];
+	if (msg->acctg_freq != (uint16_t) NO_VAL)
+		jobacct_gather_g_change_poll(msg->acctg_freq);
 	job->multi_prog  = msg->multi_prog;
 	job->timelimit   = (time_t) -1;
 	job->task_flags  = msg->task_flags;
@@ -318,6 +321,8 @@ job_batch_job_create(batch_job_launch_msg_t *msg)
 	job->jobid   = msg->job_id;
 	job->stepid  = msg->step_id;
 	job->batch   = true;
+	if (msg->acctg_freq != (uint16_t) NO_VAL)
+		jobacct_gather_g_change_poll(msg->acctg_freq);
 	job->multi_prog = 0;
 	job->open_mode  = msg->open_mode;
 	job->overcommit = (bool) msg->overcommit;

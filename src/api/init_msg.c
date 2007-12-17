@@ -56,6 +56,7 @@
 void slurm_init_job_desc_msg(job_desc_msg_t * job_desc_msg)
 {
 	job_desc_msg->account     = NULL;
+	job_desc_msg->acctg_freq  = (uint16_t) NO_VAL;
 	job_desc_msg->alloc_node  = NULL;
 	job_desc_msg->alloc_sid   = NO_VAL;
 	job_desc_msg->comment     = NULL;
