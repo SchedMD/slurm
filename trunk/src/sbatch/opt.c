@@ -1253,7 +1253,7 @@ static void _set_options(int argc, char **argv)
 			}
 			break;
 		case LONG_OPT_ACCTG_FREQ:
-			opt.acctg_freq = _get_int(optarg, "nice");
+			opt.acctg_freq = _get_int(optarg, "acctg-freq");
 			break;
 		default:
 			fatal("Unrecognized command line parameter %c",

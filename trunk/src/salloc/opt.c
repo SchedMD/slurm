@@ -87,6 +87,7 @@
 #define OPT_JOBID       0x11
 #define OPT_EXCLUSIVE   0x12
 #define OPT_OVERCOMMIT  0x13
+#define OPT_ACCTG_FREQ  0x14
 
 /* generic getopt_long flags, integers and *not* valid characters */
 #define LONG_OPT_JOBID       0x105
@@ -122,6 +123,7 @@
 #define LONG_OPT_NTASKSPERCORE   0x138
 #define LONG_OPT_JOBMEM          0x13a
 #define LONG_OPT_HINT            0x13b
+#define LONG_OPT_ACCTG_FREQ      0x13c
 
 /*---- global variables, defined in opt.h ----*/
 opt_t opt;
@@ -279,6 +281,7 @@ static void _opt_default()
 	opt.egid	    = (gid_t) -1;
 	
 	opt.bell            = BELL_AFTER_DELAY;
+	opt.acctg_freq      = -1;
 }
 
 /*---[ env var processing ]-----------------------------------------------*/
@@ -314,6 +317,7 @@ env_vars_t env_vars[] = {
   {"SALLOC_NO_BELL",       OPT_NO_BELL,    NULL,               NULL           },
   {"SALLOC_EXCLUSIVE",     OPT_EXCLUSIVE,  NULL,               NULL           },
   {"SALLOC_OVERCOMMIT",    OPT_OVERCOMMIT, NULL,               NULL           },
+  {"SALLOC_ACCTG_FREQ",    OPT_INT,        &opt.acctg_freq,    NULL           },
   {NULL, 0, NULL, NULL}
 };
 
@@ -521,6 +525,7 @@ void set_options(const int argc, char **argv)
 		{"linux-image",   required_argument, 0, LONG_OPT_LINUX_IMAGE},
 		{"mloader-image", required_argument, 0, LONG_OPT_MLOADER_IMAGE},
 		{"ramdisk-image", required_argument, 0, LONG_OPT_RAMDISK_IMAGE},
+		{"acctg-freq",    required_argument, 0, LONG_OPT_ACCTG_FREQ},
 		{NULL,            0,                 0, 0}
 	};
 	char *opt_string = "+a:B:c:C:d:F:g:hHIJ:kK:m:n:N:Op:qR:st:uU:vVw:W:x:";
@@ -863,6 +868,9 @@ void set_options(const int argc, char **argv)
 		case LONG_OPT_RAMDISK_IMAGE:
 			xfree(opt.ramdiskimage);
 			opt.ramdiskimage = xstrdup(optarg);
+			break;
+		case LONG_OPT_ACCTG_FREQ:
+			opt.acctg_freq = _get_int(optarg, "acctg-freq");
 			break;
 		default:
 			fatal("Unrecognized command line parameter %c",
