@@ -10,7 +10,7 @@ documents those changes that are of interest to users and admins.
     files are opened ("t" for truncate, "a" for append).
  -- Added checkpoint/xlch plugin for use with XLCH (Hongjia Cao, NUDT).
  -- Added srun option --checkpoint-path for use with XLCH (Hongjia Cao, NUDT).
- -- Added new srun/sbatch option "--acctg-freq" for user control over 
+ -- Added new srun/salloc/sbatch option "--acctg-freq" for user control over 
     accounting data collection polling interval.
 
 * Changes in SLURM 1.3.0-pre7

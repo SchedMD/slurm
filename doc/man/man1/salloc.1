@@ -14,6 +14,14 @@ The command may be any program the user wishes.  Some typical commands are xterm
 .LP 
 
 .TP
+\fB\-\-acctg\-freq\fR=\fIseconds\fR
+Define the job accounting sampling interval.
+This can be used to override the \fIJobAcctGatherFrequency\fR parameter in SLURM's
+configuration file, \fIslurm.conf\fR.
+A value of zero disables real the periodic job sampling and provides accounting
+information only on job termination (reducing SLURM interference with the job).
+
+.TP
 \fB\-B\fR \fB\-\-extra\-node\-info\fR=\fIsockets\fR[:\fIcores\fR[:\fIthreads\fR]]
 Request a specific allocation of resources with details as to the
 number and type of computational resources within a cluster:
@@ -513,6 +521,9 @@ variables settings.
 .TP 22 
 \fBSALLOC_ACCOUNT\fR
 Same as \fB\-\-account\fR.
+.TP
+\fBSALLOC_ACCTG_FREQ\fR
+Same as \fB\-\-acctg\-freq\fR.
 .TP
 \fBSALLOC_BELL\fR
 Same as \fB\-\-bell\fR.

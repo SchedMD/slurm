@@ -92,6 +92,7 @@ typedef struct salloc_options {
 
 	bool hold;		/* --hold, -H			*/
 	bool no_kill;		/* --no-kill, -k		*/
+	int	acctg_freq;	/* --acctg-freq=secs		*/
 	bool overcommit;	/* --overcommit -O		*/
 	int kill_command_signal;/* --kill-command, -K           */
 	bool kill_command_signal_set;

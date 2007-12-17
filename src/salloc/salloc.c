@@ -192,6 +192,10 @@ int main(int argc, char *argv[])
 		env_array_append_fmt(&env, "SLURM_OVERCOMMIT", "%d", 
 			opt.overcommit);
 	}
+	if (opt.acctg_freq >= 0) {
+		env_array_append_fmt(&env, "SLURM_ACCTG_FREQ", "%d",
+			opt.acctg_freq);
+	}
 	env_array_set_environment(env);
 	env_array_free(env);
 	pthread_mutex_lock(&allocation_state_lock);
