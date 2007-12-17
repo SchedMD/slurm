@@ -79,7 +79,6 @@
 
 #define DETAILS_FLAG 0xdddd
 #define MAX_RETRIES  10
-#define MAX_STR_LEN  1024
 #define SLURM_CREATE_JOB_FLAG_NO_ALLOCATE_0 0
 #define STEP_FLAG 0xbbbb
 #define TOP_PRIORITY 0xffff0000	/* large, but leave headroom for higher */
@@ -2025,25 +2024,80 @@ cleanup:
  * RET 0 or error code */
 static int _validate_job_create_req(job_desc_msg_t * job_desc)
 {
+	if (job_desc->account && (strlen(job_desc->account) > MAX_STR_LEN)) {
+		info("_validate_job_create_req: strlen(account) too big (%d)",
+		     strlen(job_desc->features));
+		return ESLURM_PATHNAME_TOO_LONG;
+	}
+	if (job_desc->alloc_node && (strlen(job_desc->alloc_node) > MAX_STR_LEN)) {
+		info("_validate_job_create_req: strlen(alloc_node) too big (%d)",
+		     strlen(job_desc->features));
+		return ESLURM_PATHNAME_TOO_LONG;
+	}
+	if (job_desc->comment && (strlen(job_desc->comment) > MAX_STR_LEN)) {
+		info("_validate_job_create_req: strlen(comment) too big (%d)",
+		     strlen(job_desc->features));
+		return ESLURM_PATHNAME_TOO_LONG;
+	}
+	if (job_desc->blrtsimage && (strlen(job_desc->blrtsimage) > MAX_STR_LEN)) {
+		info("_validate_job_create_req: strlen(blrtsimage) too big (%d)",
+		     strlen(job_desc->features));
+		return ESLURM_PATHNAME_TOO_LONG;
+	}
+	if (job_desc->dependency && (strlen(job_desc->dependency) > MAX_STR_LEN)) {
+		info("_validate_job_create_req: strlen(dependency) too big (%d)",
+		     strlen(job_desc->features));
+		return ESLURM_PATHNAME_TOO_LONG;
+	}
 	if (job_desc->err && (strlen(job_desc->err) > MAX_STR_LEN)) {
 		info("_validate_job_create_req: strlen(err) too big (%d)",
 		     strlen(job_desc->err));
 		return ESLURM_PATHNAME_TOO_LONG;
 	}
+	if (job_desc->features && (strlen(job_desc->features) > MAX_STR_LEN)) {
+		info("_validate_job_create_req: strlen(features) too big (%d)",
+		     strlen(job_desc->features));
+		return ESLURM_PATHNAME_TOO_LONG;
+	}
 	if (job_desc->in && (strlen(job_desc->in) > MAX_STR_LEN)) {
 		info("_validate_job_create_req: strlen(in) too big (%d)",
 		     strlen(job_desc->in));
-		return  ESLURM_PATHNAME_TOO_LONG;
+		return ESLURM_PATHNAME_TOO_LONG;
+	}
+	if (job_desc->linuximage && (strlen(job_desc->linuximage) > MAX_STR_LEN)) {
+		info("_validate_job_create_req: strlen(linuximage) too big (%d)",
+		     strlen(job_desc->features));
+		return ESLURM_PATHNAME_TOO_LONG;
+	}
+	if (job_desc->mail_user && (strlen(job_desc->mail_user) > MAX_STR_LEN)) {
+		info("_validate_job_create_req: strlen(mail_user) too big (%d)",
+		     strlen(job_desc->in));
+		return ESLURM_PATHNAME_TOO_LONG;
+	}
+	if (job_desc->mloaderimage && (strlen(job_desc->mloaderimage) > MAX_STR_LEN)) {
+		info("_validate_job_create_req: strlen(mloaderimage) too big (%d)",
+		     strlen(job_desc->features));
+		return ESLURM_PATHNAME_TOO_LONG;
+	}
+	if (job_desc->network && (strlen(job_desc->network) > MAX_STR_LEN)) {
+		info("_validate_job_create_req: strlen(network) too big (%d)",
+		     strlen(job_desc->features));
+		return ESLURM_PATHNAME_TOO_LONG;
 	}
 	if (job_desc->out && (strlen(job_desc->out) > MAX_STR_LEN)) {
 		info("_validate_job_create_req: strlen(out) too big (%d)",
 		     strlen(job_desc->out));
-		return  ESLURM_PATHNAME_TOO_LONG;
+		return ESLURM_PATHNAME_TOO_LONG;
+	}
+	if (job_desc->ramdiskimage && (strlen(job_desc->ramdiskimage) > MAX_STR_LEN)) {
+		info("_validate_job_create_req: strlen(ramdiskimage) too big (%d)",
+		     strlen(job_desc->features));
+		return ESLURM_PATHNAME_TOO_LONG;
 	}
 	if (job_desc->work_dir && (strlen(job_desc->work_dir) > MAX_STR_LEN)) {
 		info("_validate_job_create_req: strlen(work_dir) too big (%d)",
 		     strlen(job_desc->work_dir));
-		return  ESLURM_PATHNAME_TOO_LONG;
+		return ESLURM_PATHNAME_TOO_LONG;
 	}
 	return SLURM_SUCCESS;
 }
