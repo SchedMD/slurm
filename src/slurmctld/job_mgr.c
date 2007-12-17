@@ -3249,7 +3249,8 @@ static void _reset_step_bitmaps(struct job_record *job_ptr)
 			      job_ptr->job_id, step_ptr->step_id);
 			delete_step_record (job_ptr, step_ptr->step_id);
 		}
-		step_alloc_lps(step_ptr);
+		if (step_ptr->step_node_bitmap)
+			step_alloc_lps(step_ptr);
 	}
 
 	list_iterator_destroy (step_iterator);
