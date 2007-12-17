@@ -437,7 +437,7 @@ struct 	step_record {
 	uint16_t batch_step;		/* 1 if batch job step, 0 otherwise */
 	uint16_t ckpt_interval;		/* checkpoint interval in minutes */
 	char *ckpt_path;	        /* path to store checkpoint image files */
-	uint16_t exclusive;	/* FIXME */
+	uint16_t exclusive;		/* dedicated resources for the step */
 	time_t ckpt_time;		/* time of last checkpoint */
 	switch_jobinfo_t switch_job;	/* switch context, opaque */
 	check_jobinfo_t check_job;	/* checkpoint context, opaque */
