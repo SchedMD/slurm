@@ -2,7 +2,7 @@
  *  slurm_jobacct_gather.c - implementation-independent job accounting logging 
  *  functions
  *****************************************************************************
- *  Copyright (C) 2003 The Regents of the University of California.
+ *  Copyright (C) 2003-2007/ The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Jay Windley <jwindley@lnxi.com>, Morris Jette <jette1@llnl.com>
  *  UCRL-CODE-226842.
@@ -78,8 +78,9 @@ typedef struct slurm_jobacct_gather_ops {
 	int (*jobacct_gather_unpack)  (jobacctinfo_t **jobacct, Buf buffer);
 	void (*jobacct_gather_aggregate)     (jobacctinfo_t *dest, 
 					      jobacctinfo_t *from);
-	int (*jobacct_gather_startpoll)      (int frequency);
-	int (*jobacct_gather_endpoll)	      ();
+	int (*jobacct_gather_startpoll)      (uint16_t frequency);
+	int (*jobacct_gather_endpoll)	     ();
+	void (*jobacct_gather_change_poll)   (uint16_t frequency);
 	void (*jobacct_gather_suspend_poll)  ();
 	void (*jobacct_gather_resume_poll)   ();
 	int (*jobacct_gather_set_proctrack_container_id)(uint32_t id);
@@ -177,6 +178,7 @@ _slurm_jobacct_gather_get_ops( slurm_jobacct_gather_context_t *c )
 		"jobacct_gather_p_aggregate",
 		"jobacct_gather_p_startpoll",
 		"jobacct_gather_p_endpoll",
+		"jobacct_gather_p_change_poll",
 		"jobacct_gather_p_suspend_poll",
 		"jobacct_gather_p_resume_poll",
 		"jobacct_gather_p_set_proctrack_container_id",
@@ -386,7 +388,7 @@ extern void jobacct_gather_g_aggregate(jobacctinfo_t *dest,
 	return;
 }
 
-extern int jobacct_gather_g_startpoll(int frequency)
+extern int jobacct_gather_g_startpoll(uint16_t frequency)
 {
 	int retval = SLURM_SUCCESS;
 	if (_slurm_jobacct_gather_init() < 0)
@@ -412,6 +414,19 @@ extern int jobacct_gather_g_endpoll()
 		retval = (*(g_jobacct_gather_context->ops.jobacct_gather_endpoll))();
 	slurm_mutex_unlock( &g_jobacct_gather_context_lock );	
 	return retval;
+}
+
+extern void jobacct_gather_g_change_poll(uint16_t frequency)
+{
+	if (_slurm_jobacct_gather_init() < 0)
+		return;
+
+	slurm_mutex_lock( &g_jobacct_gather_context_lock );
+	if ( g_jobacct_gather_context ) 
+		(*(g_jobacct_gather_context->ops.jobacct_gather_change_poll))
+			(frequency);
+	
+	slurm_mutex_unlock( &g_jobacct_gather_context_lock );
 }
 
 extern void jobacct_gather_g_suspend_poll()

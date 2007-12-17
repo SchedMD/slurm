@@ -1553,7 +1553,7 @@ static void set_options(const int argc, char **argv)
 			break;
 		case LONG_OPT_ACCTG_FREQ:
 			opt.acctg_freq = _get_int(optarg, "acctg-freq",
-                                true);
+                                false);
 			break;
 		case LONG_OPT_CHECKPOINT_PATH:
 			xfree(opt.ckpt_path);

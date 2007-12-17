@@ -238,6 +238,7 @@ int slurm_step_launch (slurm_step_ctx_t *ctx,
 	launch.plane_size	= params->plane_size;
 	launch.pty              = params->pty;
 	launch.ckpt_path        = params->ckpt_path;
+	launch.acctg_freq	= params->acctg_freq;
 	launch.open_mode        = params->open_mode;
 	launch.options          = job_options_create();
 	launch.complete_nodelist = 
