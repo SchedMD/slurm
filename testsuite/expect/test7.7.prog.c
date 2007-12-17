@@ -328,7 +328,7 @@ static void _modify_job(long my_job_id)
 
 	snprintf(out_msg, sizeof(out_msg),
 		"TS=%u AUTH=root DT=CMD=MODIFYJOB ARG=%ld "
-		/* "JOBNAME=foo" */
+		/* "JOBNAME=foo " */
 		/* "PARTITION=pdebug " */
 		/* "NODES=2 " */ 
 		/* "DEPEND=afterany:3 " */
