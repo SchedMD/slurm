@@ -200,6 +200,7 @@ typedef struct srun_options {
 	char *mail_user;	/* --mail-user			*/
 	char *ctrl_comm_ifhn;	/* --ctrl-comm-ifhn		*/
 	uint8_t open_mode;	/* --open-mode=append|truncate	*/
+	int acctg_freq;		/* --acctg-freq=secs		*/
 	bool pty;		/* --pty			*/
 	int argc;		/* length of argv array		*/
 	char **argv;		/* left over on command line	*/

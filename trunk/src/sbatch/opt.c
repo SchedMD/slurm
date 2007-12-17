@@ -85,6 +85,7 @@
 #define OPT_EXCLUSIVE	0x10
 #define OPT_OVERCOMMIT	0x11
 #define OPT_OPEN_MODE	0x12
+#define OPT_ACCTG_FREQ  0x13
 
 /* generic getopt_long flags, integers and *not* valid characters */
 #define LONG_OPT_JOBID       0x105
@@ -122,6 +123,7 @@
 #define LONG_OPT_REBOOT          0x144
 #define LONG_OPT_GET_USER_ENV    0x146
 #define LONG_OPT_OPEN_MODE       0x147
+#define LONG_OPT_ACCTG_FREQ      0x148
 
 /*---- global variables, defined in opt.h ----*/
 opt_t opt;
@@ -284,6 +286,7 @@ static void _opt_default()
 
 	opt.get_user_env_time = -1;
 	opt.get_user_env_mode = -1;
+	opt.acctg_freq        = -1;
 }
 
 /*---[ env var processing ]-----------------------------------------------*/
@@ -324,6 +327,7 @@ env_vars_t env_vars[] = {
   {"SBATCH_TIMELIMIT",     OPT_STRING,     &opt.time_limit_str,NULL           },
   {"SBATCH_EXCLUSIVE",     OPT_EXCLUSIVE,  NULL,               NULL           },
   {"SBATCH_OPEN_MODE",     OPT_OPEN_MODE,  NULL,               NULL           },
+  {"SBATCH_ACCTG_FREQ",    OPT_INT,        &opt.acctg_freq,    NULL           },
   {NULL, 0, NULL, NULL}
 };
 
@@ -515,6 +519,7 @@ static struct option long_options[] = {
 	{"wrap",          required_argument, 0, LONG_OPT_WRAP},
 	{"get-user-env",  optional_argument, 0, LONG_OPT_GET_USER_ENV},
 	{"open-mode",     required_argument, 0, LONG_OPT_OPEN_MODE},
+	{"acctg-freq",     required_argument, 0, LONG_OPT_ACCTG_FREQ},
 	{NULL,            0,                 0, 0}
 };
 
@@ -1136,7 +1141,7 @@ static void _set_options(int argc, char **argv)
 			break;
 		case LONG_OPT_NICE:
 			if (optarg)
-				opt.nice = strtol(optarg, NULL, 10);
+				opt.nice = _get_int(optarg, "nice");
 			else
 				opt.nice = 100;
 			if (abs(opt.nice) > NICE_OFFSET) {
@@ -1246,6 +1251,9 @@ static void _set_options(int argc, char **argv)
 				error("Invalid --open-mode argument: %s. "
 				      "Ignored", optarg);
 			}
+			break;
+		case LONG_OPT_ACCTG_FREQ:
+			opt.acctg_freq = _get_int(optarg, "nice");
 			break;
 		default:
 			fatal("Unrecognized command line parameter %c",
