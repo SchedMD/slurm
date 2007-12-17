@@ -802,7 +802,14 @@ step_create(job_step_create_request_msg_t *step_specs,
 	    && (!strcmp(slurmctld_conf.switch_type, "switch/elan"))) {
 		return ESLURM_TASKDIST_ARBITRARY_UNSUPPORTED;
 	}
-	
+
+	if ((step_specs->host      && (strlen(step_specs->host)      > MAX_STR_LEN)) ||
+	    (step_specs->node_list && (strlen(step_specs->node_list) > MAX_STR_LEN)) ||
+	    (step_specs->network   && (strlen(step_specs->network)   > MAX_STR_LEN)) ||
+	    (step_specs->name      && (strlen(step_specs->name)      > MAX_STR_LEN)) ||
+	    (step_specs->ckpt_path && (strlen(step_specs->ckpt_path) > MAX_STR_LEN)))
+		return ESLURM_PATHNAME_TOO_LONG;
+
 	/* if the overcommit flag is checked we 0 out the cpu_count
 	 * which makes it so we don't check to see the available cpus
 	 */	 
