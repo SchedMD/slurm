@@ -134,7 +134,7 @@ static slurm_errtab_t slurm_errtab[] = {
 	{ ESLURM_DUPLICATE_JOB_ID, 
 	  "Duplicate job id"					},
 	{ ESLURM_PATHNAME_TOO_LONG,
-	  "Pathname of a file or directory too long"   		},
+	  "Pathname of a file, directory or other parameter too long" },
 	{ ESLURM_NOT_TOP_PRIORITY,
 	  "Immediate execution impossible, insufficient priority" },
 	{ ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE,
@@ -198,6 +198,8 @@ static slurm_errtab_t slurm_errtab[] = {
 	  "Requested more tasks than available processors"	},
 	{ ESLURM_JOB_HELD,
 	  "Job is in held state, pending scheduler release"	},
+	{ ESLURM_INVALID_BANK_ACCOUNT,
+	  "Invalid bank account specified"			},
 
 	/* slurmd error codes */
 
