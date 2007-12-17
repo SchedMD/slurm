@@ -37,7 +37,6 @@ set file_out    "test$test_id.output"
 set file_err    "test$test_id.error"
 set exit_code            0
 set login_grp_info       ""
-set job_grp_info         ""
 set got_job_grps         0
 set got_login_grps       0
 set got_sleep_err        0
@@ -61,7 +60,7 @@ exec echo "$bin_echo INITIAL_VALUE" >$file_out
 #
 spawn $bin_id
 expect {
-	-re "(uid=.*\n)" {
+	-re "(uid=$number)" {
 		set login_grp_info $expect_out(1,string)
 		set got_login_grps 1
 		exp_continue
@@ -99,8 +98,7 @@ if {[wait_for_file $file_out] == 0} {
 			send_user "\nFAILURE: stdout file not truncated\n"
 			set exit_code 1
 		}
-		-re "(uid=.*\n)" {
-			set job_grp_info $expect_out(1,string)
+		-re "$login_grp_info" {
 			incr got_job_grps
 			exp_continue
 		}
@@ -116,10 +114,6 @@ if {$got_login_grps == 0} {
 }
 if {$got_job_grps != 1} {
 	send_user "\nFAILURE: User and group ID info missing from stdout\n"
-	set exit_code 1
-}
-if {[string compare $login_grp_info $job_grp_info] != 0} {
-	send_user "\nFAILURE: Login and slurm user info mismatch\n"
 	set exit_code 1
 }
 
@@ -182,8 +176,7 @@ set got_job_grps 0
 if {[wait_for_file $file_out] == 0} {
 	spawn $bin_cat $file_out
 	expect {
-		-re "(uid=.*\n)" {
-			set job_grp_info $expect_out(1,string)
+		-re "$login_grp_info" {
 			incr got_job_grps
 			exp_continue
 		}
