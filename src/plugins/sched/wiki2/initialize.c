@@ -65,6 +65,8 @@ extern int	initialize_wiki(char *cmd_ptr, int *err_code, char **err_msg)
 			use_host_exp = 1;
 		else if (exp_ptr[0] == 'F')
 			use_host_exp = 0;
+		else if (exp_ptr[0] == 'N')
+			use_host_exp = 2;
 		else {
 			*err_code = -300;
 			*err_msg = "INITIALIZE has invalid USEHOSTEXP";

@@ -36,12 +36,16 @@
 \*****************************************************************************/
 
 #include "./msg.h"
+#include "src/common/hostlist.h"
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/slurmctld.h"
 
 static char *	_dump_all_nodes(int *node_cnt, int state_info);
-static char *	_dump_node(struct node_record *node_ptr, int state_info);
+static char *	_dump_node(struct node_record *node_ptr, hostlist_t hl, 
+			   int state_info);
 static char *	_get_node_state(struct node_record *node_ptr);
+static int	_same_info(struct node_record *node1_ptr, 
+			   struct node_record *node2_ptr, int state_info);
 
 #define SLURM_INFO_ALL		0
 #define SLURM_INFO_VOLITILE	1
@@ -111,7 +115,7 @@ extern int	get_nodes(char *cmd_ptr, int *err_code, char **err_msg)
 		node_name = strtok_r(tmp_char, ":", &tmp2_char);
 		while (node_name) {
 			node_ptr = find_node_record(node_name);
-			tmp_buf = _dump_node(node_ptr, state_info);
+			tmp_buf = _dump_node(node_ptr, NULL, state_info);
 			if (node_rec_cnt > 0)
 				xstrcat(buf, "#");
 			xstrcat(buf, tmp_buf);
@@ -135,27 +139,128 @@ extern int	get_nodes(char *cmd_ptr, int *err_code, char **err_msg)
 
 static char *	_dump_all_nodes(int *node_cnt, int state_info)
 {
-	int i, cnt = 0;
+	int i, cnt = 0, rc;
 	struct node_record *node_ptr = node_record_table_ptr;
 	char *tmp_buf = NULL, *buf = NULL;
-
+	struct node_record *uniq_node_ptr = NULL;
+	hostlist_t hl = NULL;
+	
 	for (i=0; i<node_record_count; i++, node_ptr++) {
 		if (node_ptr->name == NULL)
 			continue;
-		tmp_buf = _dump_node(node_ptr, state_info);
+		if (use_host_exp == 2) {
+			rc = _same_info(uniq_node_ptr, node_ptr, state_info);
+			if (rc == 0) {
+				uniq_node_ptr = node_ptr;
+				if (hl) {
+					hostlist_push(hl, node_ptr->name);
+				} else {
+					hl = hostlist_create(node_ptr->name);
+					if (hl == NULL)
+						fatal("malloc failure");
+				}
+				continue;
+			} else {
+				tmp_buf = _dump_node(uniq_node_ptr, hl, 
+						     state_info);
+				hostlist_destroy(hl);
+				hl = hostlist_create(node_ptr->name);
+				if (hl == NULL)
+					fatal("malloc failure");
+				uniq_node_ptr = node_ptr;
+			}
+		} else {
+			tmp_buf = _dump_node(node_ptr, hl, state_info);
+		}
 		if (cnt > 0)
 			xstrcat(buf, "#");
 		xstrcat(buf, tmp_buf);
 		xfree(tmp_buf);
 		cnt++;
 	}
+
+	if (hl) {
+		tmp_buf = _dump_node(uniq_node_ptr, hl, state_info);
+		hostlist_destroy(hl);
+		if (cnt > 0)
+			xstrcat(buf, "#");
+		xstrcat(buf, tmp_buf);
+		xfree(tmp_buf);
+		cnt++;
+	}
+
 	*node_cnt = cnt;
 	return buf;
 }
 
-static char *	_dump_node(struct node_record *node_ptr, int state_info)
+/* Determine if node1 and node2 have the same parameters that we report to Moab
+ * RET 0 of node1 is NULL or their parameters are the same
+ *     >0 otherwise
+ */
+static int	_same_info(struct node_record *node1_ptr, 
+			   struct node_record *node2_ptr, int state_info)
 {
-	char tmp[512], *buf = NULL;
+	int i;
+
+	if (node1_ptr == NULL)	/* first record, treat as a match */
+		return 0;
+
+	if (node1_ptr->node_state != node2_ptr->node_state)
+		return 1;
+	if (((node1_ptr->reason == NULL) && node2_ptr->reason) ||
+	    ((node2_ptr->reason == NULL) && node1_ptr->reason))
+		return 2;
+	if (node1_ptr->reason && node2_ptr->reason &&
+	    strcmp(node1_ptr->reason, node2_ptr->reason))
+		return 2;
+	if (state_info == SLURM_INFO_STATE)
+		return 0;
+
+	if (slurmctld_conf.fast_schedule) {
+		/* config from slurm.conf */
+		if (node1_ptr->config_ptr->cpus != node2_ptr->config_ptr->cpus)
+			return 3;
+	} else {
+		/* config as reported by slurmd */
+		if (node1_ptr->cpus != node2_ptr->cpus)
+			return 4;
+	}
+	if (node1_ptr->part_cnt != node2_ptr->part_cnt)
+		return 5;
+	for (i=0; i<node1_ptr->part_cnt; i++) {
+		if (node1_ptr->part_pptr[i] !=  node2_ptr->part_pptr[i])
+			return 6;
+	}
+	if (state_info == SLURM_INFO_VOLITILE)
+		return 0;
+
+	if (slurmctld_conf.fast_schedule) {
+		/* config from slurm.conf */
+		if ((node1_ptr->config_ptr->real_memory != 
+		     node2_ptr->config_ptr->real_memory) ||
+		    (node1_ptr->config_ptr->tmp_disk != 
+		     node2_ptr->config_ptr->tmp_disk) ||
+		    (node1_ptr->config_ptr->cpus != 
+		     node2_ptr->config_ptr->cpus))
+			return 7;
+	} else {
+		if ((node1_ptr->real_memory != node2_ptr->real_memory) ||
+		    (node1_ptr->tmp_disk    != node2_ptr->tmp_disk) ||
+		    (node1_ptr->cpus        != node2_ptr->cpus))
+			return 8;
+	}
+	if ((node1_ptr->config_ptr->feature != 
+	     node2_ptr->config_ptr->feature) ||
+	    strcmp(node1_ptr->config_ptr->feature, 
+	           node2_ptr->config_ptr->feature))
+		return 9;
+	return 0;
+}
+
+static char *	_dump_node(struct node_record *node_ptr, hostlist_t hl, 
+			   int state_info)
+{
+	char tmp[16*1024], *buf = NULL;
 	int i;
 	uint32_t cpu_cnt;
 
@@ -163,9 +268,17 @@ static char *	_dump_node(struct node_record *node_ptr, int state_info)
 		return NULL;
 
 	/* SLURM_INFO_STATE or SLURM_INFO_VOLITILE or SLURM_INFO_ALL */
-	snprintf(tmp, sizeof(tmp), "%s:STATE=%s;",
-		node_ptr->name, 
-		_get_node_state(node_ptr));
+	if (hl) {
+		hostlist_sort(hl);
+		hostlist_uniq(hl);
+		hostlist_ranged_string(hl, sizeof(tmp), tmp);
+		 xstrcat(buf, tmp);
+	} else {
+		snprintf(tmp, sizeof(tmp), "%s", node_ptr->name);
+		xstrcat(buf, tmp);
+	}
+
+	snprintf(tmp, sizeof(tmp), ":STATE=%s;", _get_node_state(node_ptr));
 	xstrcat(buf, tmp);
 	if (node_ptr->reason) {
 		snprintf(tmp, sizeof(tmp), "CAT=\"%s\";", node_ptr->reason);
