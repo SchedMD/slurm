@@ -12,6 +12,8 @@ documents those changes that are of interest to users and admins.
  -- Added srun option --checkpoint-path for use with XLCH (Hongjia Cao, NUDT).
  -- Added new srun/salloc/sbatch option "--acctg-freq" for user control over 
     accounting data collection polling interval.
+ -- In sched/wiki2 add support for hostlist expression use in GETNODES command
+    with HostFormat=2 in the wiki.conf file.
 
 * Changes in SLURM 1.3.0-pre7
 =============================

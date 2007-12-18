@@ -1,4 +1,4 @@
-.TH "wiki.conf" "5" "August 2007" "wiki.conf 1.2" "Slurm configuration file"
+.TH "wiki.conf" "5" "December 2007" "wiki.conf 1.2" "Slurm configuration file"
 .SH "NAME"
 wiki.conf \- Slurm configuration file for wiki and wiki2 scheduler plugins
 .SH "DESCRIPTION"
@@ -81,8 +81,11 @@ No data compression. Each host name is listed individually.
 .TP
 \fB1\fR
 SLURM hostlist expressions are exchanged with task counts
-(e.g. "tux[0\-16]*2").
-This is currently experimental.
+(e.g. "tux[0\-16]*2") in job state information and job 
+initiation requests.
+.TP
+\fB2\fR
+SLURM hostlist expressions are used to report node state information.
 .RE
 
 .TP

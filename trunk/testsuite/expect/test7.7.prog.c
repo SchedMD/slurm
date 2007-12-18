@@ -390,7 +390,7 @@ static void _initialize(void)
 	char out_msg[128];
 
 	snprintf(out_msg, sizeof(out_msg),
-		"TS=%u AUTH=root DT=CMD=INITIALIZE ARG=USEHOSTEXP=T EPORT=%u",
+		"TS=%u AUTH=root DT=CMD=INITIALIZE ARG=USEHOSTEXP=N EPORT=%u",
 		(uint32_t) now, e_port);
 	_xmit(out_msg);
 }
