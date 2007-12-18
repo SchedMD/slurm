@@ -40,7 +40,16 @@
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/slurmctld.h"
 
-/* RET 0 on success, -1 on failure */
+/*
+ * initialize_wiki - used by Moab to communication desired format information
+ * cmd_ptr IN   - CMD=INITIALIZE EPORT=<port> USEHOSTEXP=[N|T|F]
+ *                USEHOSTEXP=N : use hostlist expression for GETNODES messages
+ *                USEHOSTEXP=T : use hostlist expression for GETJOBS messages
+ *                USEHOSTEXP=F : use no hostlist expressions
+ * err_code OUT - 0 or an error code
+ * err_msg OUT  - response message
+ * RET 0 on success, -1 on failure
+ */
 extern int	initialize_wiki(char *cmd_ptr, int *err_code, char **err_msg)
 {
 	char *arg_ptr, *eport_ptr, *exp_ptr, *use_ptr;
@@ -75,7 +84,9 @@ extern int	initialize_wiki(char *cmd_ptr, int *err_code, char **err_msg)
 		}
 	}
 
-	if (use_host_exp)
+	if      (use_host_exp == 2)
+		use_ptr = "N";
+	else if (use_host_exp == 1)
 		use_ptr = "T";
 	else
 		use_ptr = "F";
