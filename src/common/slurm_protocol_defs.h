@@ -94,7 +94,8 @@ typedef enum {
 	RESPONSE_SHUTDOWN,
 	REQUEST_PING,
 	REQUEST_CONTROL,
-
+	REQUEST_SET_DEBUG_LEVEL,
+	
 	REQUEST_BUILD_INFO = 2001,
 	RESPONSE_BUILD_INFO,
 	REQUEST_JOB_INFO,
@@ -387,6 +388,10 @@ typedef struct shutdown_msg {
 typedef struct last_update_msg {
 	time_t last_update;
 } last_update_msg_t;
+
+typedef struct set_debug_level_msg {
+	int32_t debug_level;
+} set_debug_level_msg_t;
 
 typedef struct job_step_specs {
 	uint32_t job_id;	/* job ID */
@@ -712,7 +717,7 @@ extern void slurm_msg_t_init (slurm_msg_t *msg);
 extern void slurm_msg_t_copy(slurm_msg_t *dest, slurm_msg_t *src);
 
 /* free message functions */
-void slurm_free_checkpoint_tasks_msg(checkpoint_tasks_msg_t * msg);
+void inline slurm_free_checkpoint_tasks_msg(checkpoint_tasks_msg_t * msg);
 void inline slurm_free_last_update_msg(last_update_msg_t * msg);
 void inline slurm_free_return_code_msg(return_code_msg_t * msg);
 void inline slurm_free_job_alloc_info_msg(job_alloc_info_msg_t * msg);
@@ -721,6 +726,7 @@ void inline slurm_free_job_step_info_request_msg(
 		job_step_info_request_msg_t *msg);
 void inline slurm_free_node_info_request_msg(node_info_request_msg_t *msg);
 void inline slurm_free_part_info_request_msg(part_info_request_msg_t *msg);
+void inline slurm_free_set_debug_level_msg(set_debug_level_msg_t *msg);
 
 #define	slurm_free_timelimit_msg(msg) \
 	slurm_free_kill_job_msg(msg)

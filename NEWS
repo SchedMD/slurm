@@ -14,6 +14,8 @@ documents those changes that are of interest to users and admins.
     accounting data collection polling interval.
  -- In sched/wiki2 add support for hostlist expression use in GETNODES command
     with HostFormat=2 in the wiki.conf file.
+ -- Added new scontrol option "setdebug" that can change the slurmctld daemons
+    debug level at any time (Hongjia Cao, NUDT).
 
 * Changes in SLURM 1.3.0-pre7
 =============================

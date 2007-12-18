@@ -229,6 +229,7 @@ int main(int argc, char *argv[])
 		fatal("Unable to initialize StateSaveLocation");
 
 	if (daemonize) {
+		slurmctld_config.daemonize = 1;
 		error_code = daemon(1, 1);
 		log_alter(log_opts, LOG_DAEMON, 
 			  slurmctld_conf.slurmctld_logfile);
@@ -252,6 +253,8 @@ int main(int argc, char *argv[])
 					slurmctld_conf.state_save_location);
 			}
 		}
+	} else {
+		slurmctld_config.daemonize = 0;
 	}
 	info("slurmctld version %s started", SLURM_VERSION);
 
