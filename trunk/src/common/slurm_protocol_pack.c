@@ -336,6 +336,9 @@ static int  _unpack_slurmd_status(slurmd_status_t **msg_ptr, Buf buffer);
 static void _pack_job_notify(job_notify_msg_t *msg, Buf buffer);
 static int  _unpack_job_notify(job_notify_msg_t **msg_ptr, Buf buffer);
 
+static void _pack_set_debug_level_msg(set_debug_level_msg_t * msg, Buf buffer);
+static int _unpack_set_debug_level_msg(set_debug_level_msg_t ** msg_ptr, Buf buffer);
+
 /* pack_header
  * packs a slurm protocol header that proceeds every slurm message
  * IN header - the header structure to pack
@@ -711,6 +714,9 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 	case REQUEST_JOB_NOTIFY:
 		_pack_job_notify((job_notify_msg_t *) msg->data, buffer);
 		break;
+	case REQUEST_SET_DEBUG_LEVEL:
+		_pack_set_debug_level_msg((set_debug_level_msg_t *)msg->data, buffer);
+		break;
 	default:
 		debug("No pack method for msg type %u", msg->msg_type);
 		return EINVAL;
@@ -1053,6 +1059,9 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 	case REQUEST_JOB_NOTIFY:
 		rc =  _unpack_job_notify((job_notify_msg_t **)
 					 &msg->data, buffer);
+		break;
+	case REQUEST_SET_DEBUG_LEVEL:
+		rc = _unpack_set_debug_level_msg((set_debug_level_msg_t **)&(msg->data), buffer);
 		break;
 	default:
 		debug("No unpack method for msg type %u", msg->msg_type);
@@ -4593,6 +4602,30 @@ unpack_error:
 	*msg_ptr = NULL;
 	return SLURM_ERROR;
 }
+
+static void
+_pack_set_debug_level_msg(set_debug_level_msg_t * msg, Buf buffer)
+{
+	pack32(msg->debug_level, buffer);
+}
+
+static int
+_unpack_set_debug_level_msg(set_debug_level_msg_t ** msg_ptr, Buf buffer)
+{
+	set_debug_level_msg_t *msg;
+	
+	msg = xmalloc(sizeof(set_debug_level_msg_t));
+	*msg_ptr = msg;
+	
+	safe_unpack32(&msg->debug_level, buffer);
+	return SLURM_SUCCESS;
+	
+ unpack_error:
+	xfree(msg);
+	*msg_ptr = NULL;
+	return SLURM_ERROR;
+}
+
 
 /* template 
    void pack_ ( * msg , Buf buffer )

@@ -126,6 +126,7 @@ inline static void  _slurm_rpc_update_node(slurm_msg_t * msg);
 inline static void  _slurm_rpc_update_partition(slurm_msg_t * msg);
 inline static void  _slurm_rpc_end_time(slurm_msg_t * msg);
 inline static void  _update_cred_key(void);
+inline static void  _slurm_rpc_set_debug_level(slurm_msg_t *msg);
 
 
 /*
@@ -295,6 +296,10 @@ void slurmctld_req (slurm_msg_t * msg)
 	case REQUEST_JOB_NOTIFY:
 		_slurm_rpc_job_notify(msg);
 		slurm_free_job_notify_msg(msg->data);
+		break;
+	case REQUEST_SET_DEBUG_LEVEL:
+		_slurm_rpc_set_debug_level(msg);
+		slurm_free_set_debug_level_msg(msg->data);
 		break;
 	default:
 		error("invalid RPC msg_type=%d", msg->msg_type);
@@ -2707,3 +2712,62 @@ inline static void  _slurm_rpc_job_notify(slurm_msg_t * msg)
 	slurm_send_rc_msg(msg, error_code);
 }
 
+/* defined in controller.c */
+inline static void  _slurm_rpc_set_debug_level(slurm_msg_t *msg)
+{
+	int debug_level;
+	uid_t uid;
+	slurmctld_lock_t config_read_lock =
+		{ READ_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
+	set_debug_level_msg_t *request_msg = (set_debug_level_msg_t *) msg->data;
+	log_options_t log_opts = LOG_OPTS_INITIALIZER;
+	slurm_ctl_conf_t *conf;
+
+	debug2("Processing RPC: REQUEST_SET_DEBUG_LEVEL");
+
+	uid = g_slurm_auth_get_uid(msg->auth_cred);
+	if (!validate_super_user(uid)) {
+		error("set debug level request from non-super user uid=%d", 
+		      uid);
+		slurm_send_rc_msg(msg, EACCES);
+		return;
+	}
+
+	/* NOTE: not offset by LOG_LEVEL_INFO, since it's inconveniet
+	 * to provide negative values for scontrol */
+	debug_level = MIN (request_msg->debug_level, (LOG_LEVEL_END - 1));
+	debug_level = MAX (debug_level, LOG_LEVEL_QUIET);
+
+	info ("Setting debug level to %d", debug_level);
+
+	lock_slurmctld (config_read_lock);
+
+	if (slurmctld_config.daemonize) {
+		log_opts.stderr_level = LOG_LEVEL_QUIET;
+		if (slurmctld_conf.slurmctld_logfile) {
+			log_opts.logfile_level = debug_level;
+			log_opts.syslog_level = LOG_LEVEL_QUIET;
+		} else {
+			log_opts.syslog_level = debug_level;
+			log_opts.logfile_level = LOG_LEVEL_QUIET;
+		}
+	} else {
+		log_opts.syslog_level = LOG_LEVEL_QUIET;
+		log_opts.stderr_level = debug_level;
+		if (slurmctld_conf.slurmctld_logfile)
+			log_opts.logfile_level = debug_level;
+		else
+			log_opts.logfile_level = LOG_LEVEL_QUIET;
+	}
+
+	log_alter(log_opts, LOG_DAEMON, slurmctld_conf.slurmctld_logfile);
+
+	unlock_slurmctld (config_read_lock);
+
+	conf = slurm_conf_lock();
+	conf->slurmctld_debug = debug_level;
+	slurm_conf_unlock();
+	slurmctld_conf.last_update = time(NULL);
+
+	slurm_send_rc_msg(msg, SLURM_SUCCESS);
+}

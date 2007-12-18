@@ -165,3 +165,39 @@ _send_message_controller (enum controller_id dest, slurm_msg_t *req)
         return rc;
 }
 
+/*
+ * slurm_set_debug_level - issue RPC to set slurm controller debug level
+ * IN debug_level - requested debug level
+ * RET 0 on success, otherwise return -1 and set errno to indicate the error
+ */
+int
+slurm_set_debug_level (uint32_t debug_level)
+{
+	int rc;
+	slurm_msg_t req_msg;
+	slurm_msg_t resp_msg;
+	set_debug_level_msg_t req;
+
+	slurm_msg_t_init(&req_msg);
+	slurm_msg_t_init(&resp_msg);
+
+	req.debug_level  = debug_level;
+	req_msg.msg_type = REQUEST_SET_DEBUG_LEVEL;
+	req_msg.data     = &req;
+
+	if (slurm_send_recv_controller_msg(&req_msg, &resp_msg) < 0)
+		return SLURM_ERROR;
+
+	switch (resp_msg.msg_type) {
+	case RESPONSE_SLURM_RC:
+		rc = ((return_code_msg_t *) resp_msg.data)->return_code;
+		slurm_free_return_code_msg(resp_msg.data);
+		if (rc)
+			slurm_seterrno_ret(rc);
+		break;
+	default:
+		slurm_seterrno_ret(SLURM_UNEXPECTED_MSG_ERROR);
+		break;
+	}
+        return SLURM_PROTOCOL_SUCCESS;
+}
