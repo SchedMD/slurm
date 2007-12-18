@@ -856,7 +856,7 @@ int slurm_receive_msg(slurm_fd fd, slurm_msg_t *msg, int timeout)
 	}
 	//info("ret_cnt = %d",header.ret_cnt);
 	if(header.ret_cnt > 0) {
-		error("we recieved more than one message back use "
+		error("we received more than one message back use "
 		      "slurm_receive_msgs instead");
 		header.ret_cnt = 0;
 		list_destroy(header.ret_list);
@@ -1165,7 +1165,7 @@ int slurm_receive_msg_and_forward(slurm_fd fd, slurm_addr *orig_addr,
 		goto total_return;
 	}
 	if(header.ret_cnt > 0) {
-		error("we recieved more than one message back use "
+		error("we received more than one message back use "
 		      "slurm_receive_msgs instead");
 		header.ret_cnt = 0;
 		list_destroy(header.ret_list);
