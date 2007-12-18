@@ -74,7 +74,8 @@ am__installdirs = "$(DESTDIR)$(pkglibdir)"
 pkglibLTLIBRARIES_INSTALL = $(INSTALL)
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
 jobacct_gold_la_LIBADD =
-am_jobacct_gold_la_OBJECTS = jobacct_gold.lo
+am_jobacct_gold_la_OBJECTS = jobacct_gold.lo gold_interface.lo \
+	base64.lo
 jobacct_gold_la_OBJECTS = $(am_jobacct_gold_la_OBJECTS)
 jobacct_gold_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
@@ -258,7 +259,10 @@ PLUGIN_FLAGS = -module -avoid-version --export-dynamic
 # Gold job completion logging plugin.
 INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common
 pkglib_LTLIBRARIES = jobacct_gold.la
-jobacct_gold_la_SOURCES = jobacct_gold.c
+jobacct_gold_la_SOURCES = jobacct_gold.c \
+			gold_interface.c gold_interface.h \
+			base64.c base64.h
+
 jobacct_gold_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
 all: all-am
 
@@ -329,6 +333,8 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/base64.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/gold_interface.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/jobacct_gold.Plo@am__quote@
 
 .c.o:
