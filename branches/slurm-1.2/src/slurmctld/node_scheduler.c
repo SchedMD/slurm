@@ -1410,6 +1410,7 @@ extern void build_node_details(struct job_record *job_ptr)
         int error_code = SLURM_SUCCESS;
 	int node_inx = 0, cpu_inx = -1;
         int cr_count = 0;
+	uint32_t total_procs = 0;
 
 	if ((job_ptr->node_bitmap == NULL) || (job_ptr->nodes == NULL)) {
 		/* No nodes allocated, we're done... */
@@ -1456,6 +1457,7 @@ extern void build_node_details(struct job_record *job_ptr)
 				
 				job_ptr->cpus_per_node[cpu_inx] =
 					job_ptr->num_procs;
+				total_procs += job_ptr->num_procs;
 				job_ptr->cpu_count_reps[cpu_inx] = 1;
 				goto cleanup;
 			}
@@ -1487,7 +1489,8 @@ extern void build_node_details(struct job_record *job_ptr)
 				job_ptr->cpu_count_reps[cpu_inx] = 1;
 			} else
 				job_ptr->cpu_count_reps[cpu_inx]++;
-			
+			total_procs +=  usable_lps;
+
 		} else {
 			error("Invalid node %s in JobId=%u",
 			      this_node_name, job_ptr->job_id);
@@ -1503,6 +1506,8 @@ extern void build_node_details(struct job_record *job_ptr)
 		      job_ptr->job_id, job_ptr->node_cnt, node_inx);
 	}
 	job_ptr->num_cpu_groups = cpu_inx + 1;
+	if (job_ptr->details)
+		job_ptr->details->total_procs = total_procs;
 }
 
 /*

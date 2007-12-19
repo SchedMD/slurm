@@ -333,7 +333,7 @@ struct job_record {
 	char *nodes_completing;		/* nodes still in completing state
 					 * for this job, used to insure
 					 * epilog is not re-run for job */
-	uint32_t num_procs;		/* count of required/allocated processors */
+	uint32_t num_procs;		/* count of required processors */
 	uint32_t time_limit;		/* time_limit minutes or INFINITE,
 					 * NO_VAL implies partition max_time */
 	time_t start_time;		/* time execution begins, 
