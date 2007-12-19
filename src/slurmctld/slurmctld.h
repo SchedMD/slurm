@@ -301,7 +301,9 @@ struct job_details {
 	uint32_t total_procs;		/* number of allocated processors, 
 					   for accounting */
 	time_t submit_time;		/* time of submission */
-	time_t begin_time;		/* start after this time */
+	time_t begin_time;		/* start at this time (srun --being), 
+					 * resets to time first eligible
+					 * (all dependencies satisfied) */
 	char *work_dir;			/* pathname of working directory */
 	char **argv;			/* arguments for a batch job script */
 	uint16_t argc;			/* count of argv elements */
@@ -1200,6 +1202,12 @@ extern void save_all_state(void);
  *	order (by submit time), so the sorting should be pretty fast.
  */
 extern int schedule (void);
+
+/*
+ * set_job_elig_time - set the eligible time for pending jobs once their 
+ *	dependencies are lifted (in job->details->begin_time)
+ */
+extern void set_job_elig_time(void);
 
 /*
  * set_node_down - make the specified node's state DOWN if possible

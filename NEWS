@@ -22,6 +22,8 @@ documents those changes that are of interest to users and admins.
     file specify...  
     JobAcctType=jobacct/gold
     JobAcctLogFile=CLUSTER_NAME:GOLD_AUTH_KEY_FILE:GOLDD_HOST:GOLDD_PORT7112
+ -- In slurmctld job record, set begin_time to time when all of a job's
+    dependencies are met.
 
 * Changes in SLURM 1.2.20
 =========================
