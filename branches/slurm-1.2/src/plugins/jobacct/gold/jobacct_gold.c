@@ -161,6 +161,9 @@ static char *_get_account_id(char *user, char *project, char *machine)
 
 		destroy_gold_name_value(name_val);
 		destroy_gold_response_entry(resp_entry);
+	} else {
+		error("no account found returning 0");
+		gold_account_id = xstrdup("0");
 	}
 
 	destroy_gold_response(gold_response);
@@ -178,7 +181,7 @@ static int _add_edit_job(struct job_record *job_ptr, gold_object_t action)
 	char *gold_account_id = NULL;
 	char *user = uid_to_string((uid_t)job_ptr->user_id);
 	char *jname = NULL;
-	int tmp = 0, i = 0;
+	int ncpus=0, tmp = 0, i = 0;
 	char *account = NULL;
 	char *nodes = "(null)";
 
@@ -201,7 +204,13 @@ static int _add_edit_job(struct job_record *job_ptr, gold_object_t action)
 	
 	if (job_ptr->nodes && job_ptr->nodes[0])
 		nodes = job_ptr->nodes;
-		
+	
+	for (i=0; i < job_ptr->num_cpu_groups; i++) {
+		ncpus += (job_ptr->cpus_per_node[i])
+			* (job_ptr->cpu_count_reps[i]);
+		info("got %d from %d * %d", ncpus, job_ptr->cpus_per_node[i],
+		     job_ptr->cpu_count_reps[i]);
+	}
 
 	if(action == GOLD_ACTION_CREATE) {
 		snprintf(tmp_buff, sizeof(tmp_buff), "%u", job_ptr->job_id);
@@ -214,50 +223,10 @@ static int _add_edit_job(struct job_record *job_ptr, gold_object_t action)
 					    gold_account_id);
 		xfree(gold_account_id);
 
-		gold_request_add_assignment(gold_request, "Partition",
-					    job_ptr->partition);
-
-		snprintf(tmp_buff, sizeof(tmp_buff), "%u", job_ptr->num_procs);
-		gold_request_add_assignment(gold_request, "RequestedCPUS",
-					    tmp_buff);
-		gold_request_add_assignment(gold_request, "AllocatedCPUS",
-					    tmp_buff);
-
-		gold_request_add_assignment(gold_request, "NodeList",
-					    nodes);
-
-		gold_request_add_assignment(gold_request, "JobName",
-					    jname);
-
-/* 		gold_request_add_assignment(gold_request, "CPUSecondsReserved", */
-/* 					    ); */
-
 		snprintf(tmp_buff, sizeof(tmp_buff), "%u",
 			 (int)job_ptr->details->submit_time);
 		gold_request_add_assignment(gold_request, "SubmitTime",
 					    tmp_buff);
-
-		snprintf(tmp_buff, sizeof(tmp_buff), "%u",
-			 (int)job_ptr->details->begin_time);
-		gold_request_add_assignment(gold_request, "EligibleTime",
-					    tmp_buff);
-
-		snprintf(tmp_buff, sizeof(tmp_buff), "%u",
-			 (int)job_ptr->start_time);
-		gold_request_add_assignment(gold_request, "StartTime",
-					    tmp_buff);
-		
-		snprintf(tmp_buff, sizeof(tmp_buff), "%u",
-			 job_ptr->job_state & (~JOB_COMPLETING));
-		gold_request_add_assignment(gold_request, "State",
-					    tmp_buff);
-		
-		snprintf(tmp_buff, sizeof(tmp_buff), "%u",
-			 (int)job_ptr->exit_code);
-		gold_request_add_assignment(gold_request, "ExitCode",
-					    tmp_buff);
-		
-
 
 	} else if (action == GOLD_ACTION_MODIFY) {
 		snprintf(tmp_buff, sizeof(tmp_buff), "%u", job_ptr->job_id);
@@ -267,27 +236,60 @@ static int _add_edit_job(struct job_record *job_ptr, gold_object_t action)
 			 (int)job_ptr->details->submit_time);
 		gold_request_add_condition(gold_request, "SubmitTime",
 					   tmp_buff);
-		
-		gold_request_add_assignment(gold_request, "NodeList",
-					    nodes);
-
+				
 		snprintf(tmp_buff, sizeof(tmp_buff), "%u",
 			 (int)job_ptr->end_time);
 		gold_request_add_assignment(gold_request, "EndTime",
-					    tmp_buff);
+					    tmp_buff);		
 		
 		snprintf(tmp_buff, sizeof(tmp_buff), "%u",
-			 job_ptr->job_state & (~JOB_COMPLETING));
-		gold_request_add_assignment(gold_request, "State",
+			 (int)job_ptr->exit_code);
+		gold_request_add_assignment(gold_request, "ExitCode",
 					    tmp_buff);
-		
 
 	} else {
 		destroy_gold_request(gold_request);
 		error("_add_edit_job: bad action given %d", action);		
 		return rc;
 	}
+
+	gold_request_add_assignment(gold_request, "Partition",
+				    job_ptr->partition);
+	
+	snprintf(tmp_buff, sizeof(tmp_buff), "%u", job_ptr->num_procs);
+	gold_request_add_assignment(gold_request, "RequestedCPUS",
+				    tmp_buff);
+	snprintf(tmp_buff, sizeof(tmp_buff), "%u", ncpus);
+	gold_request_add_assignment(gold_request, "AllocatedCPUS",
+				    tmp_buff);
+
+	gold_request_add_assignment(gold_request, "NodeList",
+				    nodes);
+
+	gold_request_add_assignment(gold_request, "JobName",
+				    jname);
 	xfree(jname);
+
+/* 	gold_request_add_assignment(gold_request, "CPUSecondsReserved", */
+/* 	     		            ); */
+
+
+	snprintf(tmp_buff, sizeof(tmp_buff), "%u",
+		 (int)job_ptr->details->begin_time);
+	gold_request_add_assignment(gold_request, "EligibleTime",
+				    tmp_buff);
+
+	snprintf(tmp_buff, sizeof(tmp_buff), "%u",
+		 (int)job_ptr->start_time);
+	gold_request_add_assignment(gold_request, "StartTime",
+				    tmp_buff);
+		
+	snprintf(tmp_buff, sizeof(tmp_buff), "%u",
+		 job_ptr->job_state & (~JOB_COMPLETING));
+	gold_request_add_assignment(gold_request, "State",
+				    tmp_buff);
+
+	
 
 	gold_response = get_gold_response(gold_request);	
 	destroy_gold_request(gold_request);
@@ -460,7 +462,7 @@ int jobacct_p_fini_slurmctld()
 int jobacct_p_job_start_slurmctld(struct job_record *job_ptr)
 {
 	gold_object_t action = GOLD_ACTION_CREATE;
-
+	
 	if(_check_for_job(job_ptr->job_id, job_ptr->details->submit_time)) {
 		error("It looks like this job is already in GOLD.  "
 		      "This shouldn't happen, we are going to overwrite "
@@ -474,19 +476,29 @@ int jobacct_p_job_start_slurmctld(struct job_record *job_ptr)
 int jobacct_p_job_complete_slurmctld(struct job_record *job_ptr) 
 {
 	gold_object_t action = GOLD_ACTION_MODIFY;
-
-	/* if(!_check_for_job(job_ptr->job_id, job_ptr->details->submit_time)) { */
-/* 		error("Couldn't find this job entry.  " */
-/* 		      "This shouldn't happen, we are going to create one."); */
-/* 		action = GOLD_ACTION_CREATE; */
-/* 	} */
+	
+	if(!_check_for_job(job_ptr->job_id, job_ptr->details->submit_time)) {
+		error("Couldn't find this job entry.  "
+		      "This shouldn't happen, we are going to create one.");
+		action = GOLD_ACTION_CREATE;
+	}
 
 	return _add_edit_job(job_ptr, action);
 }
 
 int jobacct_p_step_start_slurmctld(struct step_record *step)
 {
-	return SLURM_SUCCESS;	
+	gold_object_t action = GOLD_ACTION_MODIFY;
+	
+	if(!_check_for_job(step->job_ptr->job_id,
+			   step->job_ptr->details->submit_time)) {
+		error("Couldn't find this job entry.  "
+		      "This shouldn't happen, we are going to create one.");
+		action = GOLD_ACTION_CREATE;
+	}
+
+	return _add_edit_job(step->job_ptr, action);
+
 }
 
 int jobacct_p_step_complete_slurmctld(struct step_record *step)
