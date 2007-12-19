@@ -1004,6 +1004,7 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 	uint32_t min_nodes, max_nodes, req_nodes;
 	int super_user = false;
 	enum job_state_reason fail_reason;
+	time_t now = time(NULL);
 
 	xassert(job_ptr);
 	xassert(job_ptr->magic == JOB_MAGIC);
@@ -1037,7 +1038,7 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 		 fail_reason = WAIT_PART_NODE_LIMIT;
 	if (fail_reason != WAIT_NO_REASON) {
 		job_ptr->state_reason = fail_reason;
-		last_job_update = time(NULL);
+		last_job_update = now;
 		if (job_ptr->priority == 0)	/* user/admin hold */
 			return ESLURM_JOB_HELD;
 		job_ptr->priority = 1;	/* sys hold, move to end of queue */
@@ -1104,7 +1105,7 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 			       job_ptr->job_id);
 			if (job_ptr->priority != 0)  /* Move to end of queue */
 				job_ptr->priority = 1;
-			last_job_update = time(NULL);
+			last_job_update = now;
 		} else if (error_code == ESLURM_NODES_BUSY)
 			slurm_sched_job_is_pending();
 		goto cleanup;
@@ -1140,7 +1141,7 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 		error("select_g_update_nodeinfo(%u): %m", job_ptr->job_id);
 		/* not critical ... by now */
 	}
-	job_ptr->start_time = job_ptr->time_last_active = time(NULL);
+	job_ptr->start_time = job_ptr->time_last_active = now;
 	if (job_ptr->time_limit == NO_VAL)
 		job_ptr->time_limit = part_ptr->max_time;
 	if (job_ptr->time_limit == INFINITE)
