@@ -74,6 +74,7 @@ typedef struct sbatch_options {
 	int nice;		/* --nice			*/
 	char *account;		/* --account, -U acct_name	*/
 	char *comment;		/* --comment			*/
+	char *propagate;	/* --propagate[=RLIMIT_CORE,...]*/
 
 	int immediate;		/* -i, --immediate      	*/
 

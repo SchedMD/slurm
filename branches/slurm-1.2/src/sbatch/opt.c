@@ -85,6 +85,7 @@
 #define OPT_OVERCOMMIT	0x11
 
 /* generic getopt_long flags, integers and *not* valid characters */
+#define LONG_OPT_PROPAGATE   0x100
 #define LONG_OPT_JOBID       0x105
 #define LONG_OPT_TMP         0x106
 #define LONG_OPT_MEM         0x107
@@ -444,6 +445,8 @@ static void _opt_default()
 	opt.euid	    = (uid_t) -1;
 	opt.egid	    = (gid_t) -1;
 	
+	opt.propagate	    = NULL;  /* propagate specific rlimits */
+
 	opt.ifname = xstrdup("/dev/null");
 	opt.ofname = NULL;
 	opt.efname = NULL;
@@ -661,6 +664,7 @@ static struct option long_options[] = {
 	{"ntasks-per-node", required_argument,0,LONG_OPT_TASKSPERNODE}, 
 	{"wrap",          required_argument, 0, LONG_OPT_WRAP},
 	{"get-user-env",  optional_argument, 0, LONG_OPT_GET_USER_ENV},
+	{"propagate",     optional_argument, 0, LONG_OPT_PROPAGATE},
 	{NULL,            0,                 0, 0}
 };
 
@@ -1304,6 +1308,13 @@ static void _set_options(int argc, char **argv)
 			else
 				opt.get_user_env_time = 0;
 			break;
+		case LONG_OPT_PROPAGATE:
+			xfree(opt.propagate);
+			if (optarg)
+				opt.propagate = xstrdup(optarg);
+			else
+				opt.propagate = xstrdup("ALL");
+			break;
 		default:
 			fatal("Unrecognized command line parameter %c",
 			      opt_char);
@@ -1791,6 +1802,11 @@ static bool _opt_verify(void)
 		xfree(sched_name);
 	}
 
+	if (opt.propagate && parse_rlimits( opt.propagate, PROPAGATE_RLIMITS)) {
+		error( "--propagate=%s is not valid.", opt.propagate );
+		verified = false;
+	}
+
 	return verified;
 }
 
@@ -2118,6 +2134,8 @@ static void _opt_list()
 	info("mail_type      : %s", _print_mail_type(opt.mail_type));
 	info("mail_user      : %s", opt.mail_user);
 	info("tasks-per-node : %d", opt.tasks_per_node);
+	info("propagate      : %s",
+	     opt.propagate == NULL ? "NONE" : opt.propagate);
 	str = print_commandline();
 	info("remote command : `%s'", str);
 	xfree(str);
@@ -2142,7 +2160,7 @@ static void _usage(void)
 "              [--mloader-image=path] [--ramdisk-image=path]\n"
 #endif
 "              [--mail-type=type] [--mail-user=user][--nice[=value]]\n"
-"              [--no-requeue] [--ntasks-per-node=n]\n"
+"              [--no-requeue] [--ntasks-per-node=n] [--propagate]\n"
 "              [--nodefile=file] [--nodelist=hosts] [--exclude=hosts]\n"
 "              executable [args...]\n");
 }
@@ -2184,6 +2202,7 @@ static void _help(void)
 "      --uid=user_id           user ID to run job as (user root only)\n"
 "      --get-user-env          used by Moab.  See srun man page.\n"
 "      --no-requeue            if set, do not permit the job to be requeued\n"
+"      --propagate[=rlimits]   propagate all [or specific list of] rlimits\n"
 "\n"
 "Constraint options:\n"
 "      --mincpus=n             minimum number of cpus per node\n"
