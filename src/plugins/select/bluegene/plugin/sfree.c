@@ -113,7 +113,10 @@ int main(int argc, char *argv[])
 	
 	bridge_init();
 	if (!have_db2) {
-		printf("must be on BG SN to resolve.\n");
+		error("Required libraries can not be found "
+		       "to access the Bluegene system.\nPlease "
+		       "set your LD_LIBRARY_PATH correctly to "
+		       "point to them.");
 		exit(0);
 	}
 

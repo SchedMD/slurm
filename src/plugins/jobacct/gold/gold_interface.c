@@ -395,9 +395,10 @@ extern gold_response_t *get_gold_response(gold_request_t *gold_request)
 		   "<Body><Request action=\"%s\" actor=\"%s\">"
 		   "<Object>%s</Object>",
 		   action, "slurm", object);
-	if(innerds) 
+	if(innerds) {
 		xstrcat(gold_request->body, innerds);
-
+		xfree(innerds);
+	}
 	xstrcat(gold_request->body, "</Request></Body>");
 
 	SHA1((unsigned char *)gold_request->body, strlen(gold_request->body),

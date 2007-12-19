@@ -64,7 +64,7 @@ int main_xcord = 1;
 int main_ycord = 1;
 WINDOW *grid_win = NULL;
 WINDOW *text_win = NULL;
-		
+
 /************
  * Functions *
  ************/
@@ -111,7 +111,10 @@ int main(int argc, char *argv[])
 			
 #ifdef HAVE_BG_FILES
 		if (!have_db2) {
-			printf("must be on BG SN to resolve.\n");
+			printf("Required libraries can not be found "
+			       "to access the Bluegene system.\nPlease "
+			       "set your LD_LIBRARY_PATH correctly to "
+			       "point to them.\n");
 			goto part_fini;
 		}
 
@@ -149,7 +152,7 @@ int main(int argc, char *argv[])
 		}
 part_fini:
 #else
-		printf("must be on BG SN to resolve.\n");
+		printf("Must be on BG System to resolve.\n");
 #endif
 		ba_fini();
 		exit(0);
@@ -245,7 +248,7 @@ part_fini:
 			break;
 #else
 		default:
-			error("must be on a BG SYSTEM to run this command");
+			error("Must be on a BG SYSTEM to run this command");
 			endwin();
 			ba_fini();
 			exit(0);
