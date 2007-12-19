@@ -211,7 +211,7 @@ static int _add_edit_job(struct job_record *job_ptr, gold_object_t action)
 		info("got %d from %d * %d", ncpus, job_ptr->cpus_per_node[i],
 		     job_ptr->cpu_count_reps[i]);
 	}
-
+info("total procs is  %d", job_ptr->details->total_procs);
 	if(action == GOLD_ACTION_CREATE) {
 		snprintf(tmp_buff, sizeof(tmp_buff), "%u", job_ptr->job_id);
 		gold_request_add_assignment(gold_request, "JobId", tmp_buff);

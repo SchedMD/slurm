@@ -145,8 +145,8 @@ extern bool job_is_completing(void)
  */
 extern void set_job_elig_time(void)
 {
-	struct job_record *job_ptr;
-	struct part_record *part_ptr = job_ptr->part_ptr;
+	struct job_record *job_ptr = NULL;
+	struct part_record *part_ptr = NULL;
 	ListIterator job_iterator;
 	slurmctld_lock_t job_write_lock =
 		{ READ_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK };
