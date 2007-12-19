@@ -115,9 +115,8 @@ typedef struct {
 } gold_response_t;
 
 
-extern int init_gold(char *keyfile, char *host, uint16_t port);
+extern int init_gold(char *machine, char *keyfile, char *host, uint16_t port);
 extern int fini_gold();
-extern int start_gold_communication();
 
 extern gold_request_t *create_gold_request(gold_object_t object,
 					   gold_object_t action);
@@ -131,5 +130,9 @@ extern int gold_request_add_selection(gold_request_t *gold_request, char *name);
 
 extern gold_response_t *get_gold_response(gold_request_t *gold_request);
 extern int destroy_gold_response(gold_response_t *gold_response);
+
+extern void destroy_gold_name_value(void *object);
+extern void destroy_gold_char(void *object);
+extern void destroy_gold_response_entry(void *object);
 
 #endif

@@ -45,30 +45,14 @@
 #include "src/common/slurm_protocol_interface.h"
 #include "src/common/slurm_protocol_api.h"
 
-#define MAX_SHUTDOWN_RETRY 5
+#define MAX_RETRY 5
 
 static slurm_fd gold_fd; // gold connection 
+static char *gold_machine = NULL;
 static char *gold_key = NULL;
 static char *gold_host = NULL;
 static uint16_t gold_port = 0;
 static int gold_init = 0;
-
-static void _destroy_gold_name_value(void *object)
-{
-	gold_name_value_t *name_val = (gold_name_value_t *)object;
-
-	if(name_val) {
-		xfree(name_val->name);
-		xfree(name_val->value);
-		xfree(name_val);
-	}
-}
-
-static void _destroy_gold_char(void *object)
-{
-	char *name_val = (char *)object;
-	xfree(name_val);
-}
 
 static char *_get_return_value(char *gold_msg, int *i)
 {
@@ -123,13 +107,12 @@ static gold_response_entry_t *_create_response_entry(char *object,
 	 * add this if it is 
 	 */
 	(*i) += (olen + 1); //assume what is coming in is the name
-	resp_entry->name_val = list_create(_destroy_gold_name_value);
+	resp_entry->name_val = list_create(destroy_gold_name_value);
 	while(gold_msg[*i]) {
 		if(!strncmp(gold_msg+(*i), object, olen)) {
 			(*i) += (olen + 1); //get to the end of the object
 			break;
-		} else if(gold_msg[*i] == '<'
-		   && gold_msg[*i+1] != '/') {
+		} else if(gold_msg[(*i)] == '<' && gold_msg[(*i)+1] != '/') {
 			// found the front of a selection
 			(*i)++;
 			
@@ -137,71 +120,16 @@ static gold_response_entry_t *_create_response_entry(char *object,
 			name_val->name = _get_return_name(gold_msg, i);
 			name_val->value = _get_return_value(gold_msg, i);
 			
-			info("got %s = %s", name_val->name, name_val->value);
+			debug3("got %s = %s", name_val->name, name_val->value);
 			list_push(resp_entry->name_val, name_val);
 		}
 		(*i)++;
 	}
 
-
 	return resp_entry;
 }
 
-extern int init_gold(char *keyfile, char *host, uint16_t port)
-{
-	int fp;
-	char key[256];
-	int i, bytes_read;
-	
-	if(!keyfile || !host) {
-		error("init_gold: No keyfile or host given");
-		return SLURM_ERROR;
-	}
-
-	fp = open(keyfile, O_RDONLY);
-	bytes_read = read(fp, key, sizeof(key));
-	if ( bytes_read == -1) {
-		fatal("Error reading hash key from keyfile (%s): %m\n",
-		      keyfile);
-	}
-	key[bytes_read] = '\0'; /* Null terminate the string */
-	for (i = 0; i<bytes_read; i++) /* Remove carriage return if any */
-	{
-		if (key[i] == '\n' || key[i] == '\r') {
-			key[i] = '\0';
-			break;
-		}
-	}
-	
-	/* Close the file */
-	close(fp);
-	info("got the tolken as %s\n", key);
-	gold_key = xstrdup(key);
-	gold_host = xstrdup(host);
-	gold_port = port;
-	gold_init = 1;
-	
-	return SLURM_SUCCESS;
-}
-
-extern int fini_gold()
-{
-	int retry = 0;
-	gold_init = 0;
-	xfree(gold_key);
-	xfree(gold_host);
-	/* 
-	 *  Attempt to close an open connection
-	 */
-	while ((slurm_shutdown_msg_conn(gold_fd) < 0) && (errno == EINTR)) {
-		if (retry++ > MAX_SHUTDOWN_RETRY) {
-			break;
-		}
-	}
-	return SLURM_SUCCESS;
-}
-
-extern int start_gold_communication()
+static int _start_communication()
 {
 	static slurm_addr gold_addr;
 	static int gold_addr_set = 0;
@@ -224,7 +152,7 @@ extern int start_gold_communication()
 		return SLURM_ERROR;
 	}
 
-	debug("Connected to %s(%d)", gold_host, gold_port);
+	debug3("Connected to %s(%d)", gold_host, gold_port);
 	rc = _slurm_send_timeout(gold_fd, init_msg, strlen(init_msg),
 				 SLURM_PROTOCOL_NO_SEND_RECV_FLAGS,
 				 (slurm_get_msg_timeout() * 1000));
@@ -233,6 +161,70 @@ extern int start_gold_communication()
 		error("_slurm_send_timeout: %m");
 		return SLURM_ERROR;
 	}
+	return SLURM_SUCCESS;
+}
+
+static int _end_communication()
+{
+	int rc = SLURM_SUCCESS;
+	int retry = 0;
+	/* 
+	 *  Attempt to close an open connection
+	 */
+	while ((slurm_shutdown_msg_conn(gold_fd) < 0) && (errno == EINTR)) {
+		if (retry++ > MAX_RETRY) {
+			rc = SLURM_ERROR;
+			break;
+		}
+	}
+	return rc;
+}
+
+extern int init_gold(char *machine, char *keyfile, char *host, uint16_t port)
+{
+	int fp;
+	char key[256];
+	int i, bytes_read;
+	
+	if(!keyfile || !host || !machine) {
+		error("init_gold: Either no keyfile or host or machine given");
+		return SLURM_ERROR;
+	}
+
+	fp = open(keyfile, O_RDONLY);
+	bytes_read = read(fp, key, sizeof(key));
+	if ( bytes_read == -1) {
+		fatal("Error reading hash key from keyfile (%s): %m\n",
+		      keyfile);
+	}
+	key[bytes_read] = '\0'; /* Null terminate the string */
+	for (i = 0; i<bytes_read; i++) /* Remove carriage return if any */
+	{
+		if (key[i] == '\n' || key[i] == '\r') {
+			key[i] = '\0';
+			break;
+		}
+	}
+	
+	/* Close the file */
+	close(fp);
+	info("got the tolken as %s\n", key);
+	gold_machine = xstrdup(machine);
+	gold_key = xstrdup(key);
+	gold_host = xstrdup(host);
+	gold_port = port;
+	gold_init = 1;
+	
+	return SLURM_SUCCESS;
+}
+
+extern int fini_gold()
+{
+	gold_init = 0;
+	xfree(gold_machine);
+	xfree(gold_key);
+	xfree(gold_host);
+	
 	return SLURM_SUCCESS;
 }
 
@@ -245,9 +237,9 @@ extern gold_request_t *create_gold_request(gold_object_t object,
 
 	gold_request->object = object;
 	gold_request->action = action;
-	gold_request->assignments = list_create(_destroy_gold_name_value);
-	gold_request->conditions = list_create(_destroy_gold_name_value);
-	gold_request->selections = list_create(_destroy_gold_char);
+	gold_request->assignments = list_create(destroy_gold_name_value);
+	gold_request->conditions = list_create(destroy_gold_name_value);
+	gold_request->selections = list_create(destroy_gold_char);
 	
 	return gold_request;
 }
@@ -261,6 +253,9 @@ extern int destroy_gold_request(gold_request_t *gold_request)
 			list_destroy(gold_request->conditions);
 		if(gold_request->selections)
 			list_destroy(gold_request->selections);
+		xfree(gold_request->body);
+		xfree(gold_request->digest);
+		xfree(gold_request->signature);
 		xfree(gold_request);
 	}
 	return SLURM_SUCCESS;
@@ -423,37 +418,36 @@ extern gold_response_t *get_gold_response(gold_request_t *gold_request)
 	
 	snprintf(tmp_buff, sizeof(tmp_buff), "%X\r\n",
 		 (unsigned int)strlen(gold_msg));	
+
+	/* I wish gold could do persistant connections but it only
+	 * does one and then ends it so we have to do that also so
+	 * every time we start a connection we have to finish it.
+	 */
+	if(_start_communication() == SLURM_ERROR) 
+		return NULL;
+		
 	rc = _slurm_send_timeout(gold_fd, tmp_buff, strlen(tmp_buff),
 				 SLURM_PROTOCOL_NO_SEND_RECV_FLAGS,
 				 timeout);
 	
 	if (rc < 0) {
-		debug("get_gold_response: "
-		      "connection with gold is gone reconnecting.");
-		if(start_gold_communication() == SLURM_ERROR) 
-			return NULL;
-		rc = _slurm_send_timeout(gold_fd, tmp_buff, strlen(tmp_buff),
-					 SLURM_PROTOCOL_NO_SEND_RECV_FLAGS,
-					 timeout);
-		if (rc < 0) {
-			error("get_gold_response: 1"
-			      "_slurm_send_timeout: %m");
-			return NULL;
-		}
+		error("get_gold_response 1: _slurm_send_timeout: %m");
+		goto error;
 	}
 
-	info("sending '%s'", gold_msg);
+	debug2("sending %d '%s'", rc, gold_msg);
 
 	xstrcat(gold_msg, "0\r\n");
 	rc = _slurm_send_timeout(gold_fd, gold_msg, strlen(gold_msg),
 				 SLURM_PROTOCOL_NO_SEND_RECV_FLAGS,
 				 timeout);
-	xfree(gold_msg);
 	if (rc < 0) {
-		error("get_gold_response: 2"
-		      "_slurm_send_timeout: %m");
-		return NULL;
+		error("get_gold_response 2: _slurm_send_timeout: %m");
+		goto error;
 	}
+	
+	xfree(gold_msg);
+	
 	/* we will always get this header 
 	 * HTTP/1.1 200 OK 17
 	 * Content-Type: text/xml; charset="utf-8" 42
@@ -464,7 +458,7 @@ extern gold_response_t *get_gold_response(gold_request_t *gold_request)
 	if(_slurm_recv_timeout(gold_fd, tmp_buff, 87, 0, timeout) < 0) {
 		error("get_gold_response: "
 		      "couldn't get the header of the message");
-		return NULL;
+		goto error;
 	}
 	debug5("got the header '%s'", tmp_buff);
 	
@@ -489,38 +483,93 @@ extern gold_response_t *get_gold_response(gold_request_t *gold_request)
 	if(_slurm_recv_timeout(gold_fd, gold_msg, ret_len, 0, timeout) < 0) {
 		error("get_gold_response: "
 		      "couldn't get the message");
-		return NULL;
+		goto error;
 	}
-	info("got back '%s'", gold_msg);
+
+	debug2("got back '%s'", gold_msg);
+	if(_slurm_recv_timeout(gold_fd, tmp_buff, 3, 0, timeout) < 0) {
+		error("get_gold_response: "
+		      "couldn't get the end of the message");
+		goto error;
+	}
 	
 	gold_response = xmalloc(sizeof(gold_response_t));
-	gold_response->entries = list_create(_destroy_gold_name_value);
+	gold_response->entries = list_create(destroy_gold_response_entry);
 	i = 0;
 	while(gold_msg[i]) {
 		if(!strncmp(gold_msg+i, "<Code>", 6)) {
 			i+=6;
 			gold_response->rc = atoi(gold_msg+i);
+		} else if(!strncmp(gold_msg+i, "<Count>", 7)) {
+			i+=7;
+			gold_response->entry_cnt = atoi(gold_msg+i);
+		} else if(!strncmp(gold_msg+i, "<Message>", 9)) {
+			int msg_end = 0;
+
+			i+=9;
+			msg_end = i;
+			while(gold_msg[msg_end] != '<') 
+				msg_end++;
+			
+			gold_response->message = 
+				xstrndup(gold_msg+i, msg_end-i);
+			i = msg_end + 10;
 		} else if(!strncmp(gold_msg+i, object, strlen(object))) {
-			list_push(gold_response->entries,
-				  _create_response_entry(object, gold_msg, &i));
+			gold_response_entry_t *resp_entry =
+				_create_response_entry(object, gold_msg, &i);
+			list_push(gold_response->entries, resp_entry);
 		}
 		i++;	
 	}
-
-
-	
 	xfree(gold_msg);
-	
-	return NULL;
+
+error:
+	/* I wish gold could do persistant connections but it only
+	 * does one and then ends it so we have to do that also so
+	 * every time we start a connection we have to finish it.
+	 */
+	_end_communication();
+
+	return gold_response;
+
 }
 
 extern int destroy_gold_response(gold_response_t *gold_response)
 {
 	if(gold_response) {
 		xfree(gold_response->message);
-		if(gold_response->entries)
+		if(gold_response->entries) 
 			list_destroy(gold_response->entries);
+		
 		xfree(gold_response);
 	}
 	return SLURM_SUCCESS;
 }
+
+extern void destroy_gold_name_value(void *object)
+{
+	gold_name_value_t *name_val = (gold_name_value_t *)object;
+
+	if(name_val) {
+		xfree(name_val->name);
+		xfree(name_val->value);
+		xfree(name_val);
+	}
+}
+
+extern void destroy_gold_char(void *object)
+{
+	char *name_val = (char *)object;
+	xfree(name_val);
+}
+
+extern void destroy_gold_response_entry(void *object)
+{
+	gold_response_entry_t *resp_entry = (gold_response_entry_t *)object;
+
+	if(resp_entry) {
+		list_destroy(resp_entry->name_val);
+		xfree(resp_entry);
+	}
+}
+
