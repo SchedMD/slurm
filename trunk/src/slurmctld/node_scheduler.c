@@ -1148,6 +1148,7 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 	uint32_t min_nodes, max_nodes, req_nodes;
 	int super_user = false;
 	enum job_state_reason fail_reason;
+	time_t now = time(NULL);
 
 	xassert(job_ptr);
 	xassert(job_ptr->magic == JOB_MAGIC);
@@ -1181,7 +1182,7 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 		 fail_reason = WAIT_PART_NODE_LIMIT;
 	if (fail_reason != WAIT_NO_REASON) {
 		job_ptr->state_reason = fail_reason;
-		last_job_update = time(NULL);
+		last_job_update = now;
 		if (job_ptr->priority == 0)	/* user/admin hold */
 			return ESLURM_JOB_HELD;
 		job_ptr->priority = 1;	/* sys hold, move to end of queue */
@@ -1248,7 +1249,7 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 			       job_ptr->job_id);
 			if (job_ptr->priority != 0)  /* Move to end of queue */
 				job_ptr->priority = 1;
-			last_job_update = time(NULL);
+			last_job_update = now;
 		} else if (error_code == ESLURM_NODES_BUSY)
 			slurm_sched_job_is_pending();
 		goto cleanup;
@@ -1284,7 +1285,7 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 		error("select_g_update_nodeinfo(%u): %m", job_ptr->job_id);
 		/* not critical ... by now */
 	}
-	job_ptr->start_time = job_ptr->time_last_active = time(NULL);
+	job_ptr->start_time = job_ptr->time_last_active = now;
 	if (job_ptr->time_limit == NO_VAL)
 		job_ptr->time_limit = part_ptr->max_time;
 	if (job_ptr->time_limit == INFINITE)
@@ -1719,6 +1720,7 @@ extern void build_node_details(struct job_record *job_ptr)
         int error_code = SLURM_SUCCESS;
 	int node_inx = 0, cpu_inx = -1;
         int cr_count = 0;
+	uint32_t total_procs = 0;
 
 	if ((job_ptr->node_bitmap == NULL) || (job_ptr->nodes == NULL)) {
 		/* No nodes allocated, we're done... */
@@ -1768,6 +1770,7 @@ extern void build_node_details(struct job_record *job_ptr)
 				
 				job_ptr->cpus_per_node[cpu_inx] =
 					job_ptr->num_procs;
+				total_procs += job_ptr->num_procs;
 				job_ptr->cpu_count_reps[cpu_inx] = 1;
 				job_ptr->alloc_lps[0] = job_ptr->num_procs;
 				job_ptr->used_lps[0]  = 0;
@@ -1803,7 +1806,8 @@ extern void build_node_details(struct job_record *job_ptr)
 				job_ptr->cpu_count_reps[cpu_inx] = 1;
 			} else
 				job_ptr->cpu_count_reps[cpu_inx]++;
-			
+			total_procs +=  usable_lps;
+
 		} else {
 			error("Invalid node %s in JobId=%u",
 			      this_node_name, job_ptr->job_id);
@@ -1819,6 +1823,8 @@ extern void build_node_details(struct job_record *job_ptr)
 		      job_ptr->job_id, job_ptr->node_cnt, node_inx);
 	}
 	job_ptr->num_cpu_groups = cpu_inx + 1;
+	if (job_ptr->details)
+		job_ptr->details->total_procs = total_procs;
 }
 
 /*

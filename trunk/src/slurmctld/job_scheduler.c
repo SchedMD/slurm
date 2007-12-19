@@ -144,6 +144,46 @@ extern bool job_is_completing(void)
 	return completing;
 }
 
+/*
+ * set_job_elig_time - set the eligible time for pending jobs once their
+ *      dependencies are lifted (in job->details->begin_time)
+ */
+extern void set_job_elig_time(void)
+{
+	struct job_record *job_ptr = NULL;
+	struct part_record *part_ptr = NULL;
+	ListIterator job_iterator;
+	slurmctld_lock_t job_write_lock =
+		{ READ_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK };
+	time_t now = time(NULL);
+
+	lock_slurmctld(job_write_lock);
+	job_iterator = list_iterator_create(job_list);
+	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
+		part_ptr = job_ptr->part_ptr;
+		if (job_ptr->job_state != JOB_PENDING)
+			continue;
+		if (part_ptr == NULL)
+			continue;
+		if ((job_ptr->details == NULL) || job_ptr->details->begin_time)
+			continue;
+		if (part_ptr->state_up == 0)
+			continue;
+		if ((job_ptr->time_limit != NO_VAL) &&
+		    (job_ptr->time_limit > part_ptr->max_time))
+			continue;
+		if ((job_ptr->details->max_nodes != 0) &&
+		    ((job_ptr->details->max_nodes < part_ptr->min_nodes) ||
+		     (job_ptr->details->min_nodes > part_ptr->max_nodes)))
+			continue;
+		if (!job_independent(job_ptr))
+			continue;
+		job_ptr->details->begin_time = now;
+	}
+	list_iterator_destroy(job_iterator);
+	unlock_slurmctld(job_write_lock);
+}
+
 /* 
  * schedule - attempt to schedule all pending jobs
  *	pending jobs for each partition will be scheduled in priority  

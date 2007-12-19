@@ -128,6 +128,12 @@ documents those changes that are of interest to users and admins.
     to modify a job's name.
  -- Add configuration check for sys/syslog.h and include it as needed.
  -- Add --propagate option to sbatch for control over limit propagation.
+ -- Added Gold interface to the jobacct plugin.  To configure in the config
+    file specify...  
+    JobAcctType=jobacct/gold
+    JobAcctLogFile=CLUSTER_NAME:GOLD_AUTH_KEY_FILE:GOLDD_HOST:GOLDD_PORT7112
+ -- In slurmctld job record, set begin_time to time when all of a job's
+    dependencies are met.
 
 * Changes in SLURM 1.2.20
 =========================
