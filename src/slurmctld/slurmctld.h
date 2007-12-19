@@ -320,7 +320,9 @@ struct job_details {
 	uint32_t total_procs;		/* number of allocated processors, 
 					   for accounting */
 	time_t submit_time;		/* time of submission */
-	time_t begin_time;		/* start after this time */
+	time_t begin_time;		/* start at this time (srun --being), 
+					 * resets to time first eligible
+					 * (all dependencies satisfied) */
 	char *work_dir;			/* pathname of working directory */
 	char **argv;			/* arguments for a batch job script */
 	uint16_t argc;			/* count of argv elements */
@@ -350,7 +352,7 @@ struct job_record {
 	char *nodes_completing;		/* nodes still in completing state
 					 * for this job, used to insure
 					 * epilog is not re-run for job */
-	uint32_t num_procs;		/* count of required/allocated processors */
+	uint32_t num_procs;		/* count of required processors */
 	uint32_t time_limit;		/* time_limit minutes or INFINITE,
 					 * NO_VAL implies partition max_time */
 	time_t start_time;		/* time execution begins, 
@@ -1248,6 +1250,12 @@ extern void save_all_state(void);
  *	order (by submit time), so the sorting should be pretty fast.
  */
 extern int schedule (void);
+
+/*
+ * set_job_elig_time - set the eligible time for pending jobs once their 
+ *	dependencies are lifted (in job->details->begin_time)
+ */
+extern void set_job_elig_time(void);
 
 /*
  * set_node_down - make the specified node's state DOWN if possible

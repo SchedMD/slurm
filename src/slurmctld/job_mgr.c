@@ -1378,13 +1378,14 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 	error_code = _job_create(job_specs, allocate, will_run,
 				 &job_ptr, submit_uid);
 	*job_pptr = job_ptr;
+	time_t now = time(NULL);
 	
 	if (error_code) {
 		if (immediate && job_ptr) {
 			job_ptr->job_state = JOB_FAILED;
 			job_ptr->exit_code = 1;
 			job_ptr->state_reason = FAIL_BAD_CONSTRAINTS;
-			job_ptr->start_time = job_ptr->end_time = time(NULL);
+			job_ptr->start_time = job_ptr->end_time = now;
 			jobacct_storage_g_job_start(job_ptr);
 			job_completion_logger(job_ptr);
 		}
@@ -1417,7 +1418,7 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 		job_ptr->job_state  = JOB_FAILED;
 		job_ptr->exit_code  = 1;
 		job_ptr->state_reason = FAIL_BAD_CONSTRAINTS;
-		job_ptr->start_time = job_ptr->end_time = time(NULL);
+		job_ptr->start_time = job_ptr->end_time = now;
 		jobacct_storage_g_job_start(job_ptr);
 		job_completion_logger(job_ptr);
 		if (!independent)
@@ -1435,18 +1436,23 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 	error_code = select_nodes(job_ptr, no_alloc, NULL);
 	jobacct_storage_g_job_start(job_ptr);
 	if (!test_only) {
-		last_job_update = time(NULL);
+		last_job_update = now;
 		slurm_sched_schedule();	/* work for external scheduler */
 	}
-	if ((error_code == ESLURM_NODES_BUSY)
-	    ||  (error_code == ESLURM_JOB_HELD)
-	    ||  (error_code == ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE)) {
+	if (independent &&
+	    (job_ptr->details && (job_ptr->details->begin_time == 0)) &&
+	    ((error_code == SLURM_SUCCESS) || (error_code == ESLURM_NODES_BUSY)))
+		job_ptr->details->begin_time = now;
+ 
+	if ((error_code == ESLURM_NODES_BUSY) ||
+	    (error_code == ESLURM_JOB_HELD) ||
+	    (error_code == ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE)) {
 		/* Not fatal error, but job can't be scheduled right now */
 		if (immediate) {
 			job_ptr->job_state  = JOB_FAILED;
 			job_ptr->exit_code  = 1;
 			job_ptr->state_reason = FAIL_BAD_CONSTRAINTS;
-			job_ptr->start_time = job_ptr->end_time = time(NULL);
+			job_ptr->start_time = job_ptr->end_time = now;
 			job_completion_logger(job_ptr);
 		} else {	/* job remains queued */
 			if (error_code == ESLURM_NODES_BUSY) {
@@ -1460,7 +1466,7 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 		job_ptr->job_state  = JOB_FAILED;
 		job_ptr->exit_code  = 1;
 		job_ptr->state_reason = FAIL_BAD_CONSTRAINTS;
-		job_ptr->start_time = job_ptr->end_time = time(NULL);
+		job_ptr->start_time = job_ptr->end_time = now;
 		job_completion_logger(job_ptr);
 		return error_code;
 	}
@@ -1468,7 +1474,7 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 	if (will_run) {		/* job would run, flag job destruction */
 		job_ptr->job_state  = JOB_FAILED;
 		job_ptr->exit_code  = 1;
-		job_ptr->start_time = job_ptr->end_time = time(NULL);
+		job_ptr->start_time = job_ptr->end_time = now;
 	} 
 	return SLURM_SUCCESS;
 }
