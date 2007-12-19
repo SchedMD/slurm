@@ -1871,8 +1871,10 @@ void set_options(const int argc, char **argv, int first)
 			break;
 		case LONG_OPT_PROPAGATE:
 			xfree(opt.propagate);
-			if (optarg) opt.propagate = xstrdup(optarg);
-			else	    opt.propagate = xstrdup("ALL");
+			if (optarg)
+				opt.propagate = xstrdup(optarg);
+			else
+				opt.propagate = xstrdup("ALL");
 			break;
 		case LONG_OPT_PROLOG:
 			xfree(opt.prolog);

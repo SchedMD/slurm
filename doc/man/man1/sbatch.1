@@ -310,6 +310,50 @@ default behaviour is to allow the slurm controller to select the default
 partition as designated by the system administrator.
 
 .TP
+\fB\-\-propagate\fR[=\fIrlimits\fR]
+Allows users to specify which of the modifiable (soft) resource limits
+to propagate to the compute nodes and apply to their jobs.  If
+\fIrlimits\fR is not specified, then all resource limits will be
+propagated.
+The following rlimit names are supported by Slurm (although some
+options may not be supported on some systems):
+.RS
+.TP 10
+\fBALL\fR
+All limits listed below
+.TP
+\fBAS\fR
+The maximum address space for a processes
+.TP
+\fBCORE\fR
+The maximum size of core file
+.TP
+\fBCPU\fR
+The maximum amount of CPU time
+.TP
+\fBDATA\fR
+The maximum size of a process's data segment
+.TP
+\fBFSIZE\fR
+The maximum size of files created
+.TP
+\fBMEMLOCK\fR
+The maximum size that may be locked into memory
+.TP
+\fBNOFILE\fR
+The maximum number of open files
+.TP
+\fBNPROC\fR
+The maximum number of processes available
+.TP
+\fBRSS\fR
+The maximum resident set size
+.TP
+\fBSTACK\fR
+The maximum stack size
+.RE
+
+.TP
 \fB\-q\fR, \fB\-\-quiet\fR
 Suppress informational messages from sbatch. Errors will still be displayed.
 

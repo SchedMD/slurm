@@ -40,19 +40,22 @@
 
 #include <slurm/slurm.h>
 
+#include "src/common/env.h"
+#include "src/common/read_config.h"
+#include "src/common/slurm_rlimits_info.h"
 #include "src/common/xstring.h"
 #include "src/common/xmalloc.h"
-#include "src/common/env.h"
 
 #include "src/sbatch/opt.h"
 
 #define MAX_RETRIES 3
 
-static int fill_job_desc_from_opts(job_desc_msg_t *desc);
+static int   fill_job_desc_from_opts(job_desc_msg_t *desc);
 static void *get_script_buffer(const char *filename, int *size);
 static void  set_prio_process_env(void);
 static int   set_umask_env(void);
 static char *script_wrap(char *command_string);
+static int  _set_rlimit_env(void);
 
 int main(int argc, char *argv[])
 {
@@ -87,6 +90,7 @@ int main(int argc, char *argv[])
 		fatal("sbatch parameter parsing");
 	}
 
+	(void) _set_rlimit_env();
 	set_prio_process_env();
 	set_umask_env();
 	slurm_init_job_desc_msg(&desc);
@@ -401,4 +405,60 @@ static char *script_wrap(char *command_string)
 	xstrcat(script, "\n");
 
 	return script;
+}
+
+/* Set SLURM_RLIMIT_* environment variables with current resource 
+ * limit values, reset RLIMIT_NOFILE to maximum possible value */
+static int _set_rlimit_env(void)
+{
+	int                  rc = SLURM_SUCCESS;
+	struct rlimit        rlim[1];
+	unsigned long        cur;
+	char                 name[64], *format;
+	slurm_rlimits_info_t *rli;
+
+	/* Load default limits to be propagated from slurm.conf */
+	slurm_conf_lock();
+	slurm_conf_unlock();
+
+	for (rli = get_slurm_rlimits_info(); rli->name != NULL; rli++ ) {
+
+		if (getrlimit (rli->resource, rlim) < 0) {
+			error ("getrlimit (RLIMIT_%s): %m", rli->name);
+			rc = SLURM_FAILURE;
+			continue;
+		}
+		
+		cur = (unsigned long) rlim->rlim_cur;
+		snprintf(name, sizeof(name), "SLURM_RLIMIT_%s", rli->name);
+		if (opt.propagate && rli->propagate_flag == PROPAGATE_RLIMITS)
+			/*
+			 * Prepend 'U' to indicate user requested propagate
+			 */
+			format = "U%lu";
+		else
+			format = "%lu";
+		
+		if (setenvf (NULL, name, format, cur) < 0) {
+			error ("unable to set %s in environment", name);
+			rc = SLURM_FAILURE;
+			continue;
+		}
+		
+		debug ("propagating RLIMIT_%s=%lu", rli->name, cur);
+	}
+
+	/* 
+	 *  Now increase NOFILE to the max available for this srun
+	 */
+	if (getrlimit (RLIMIT_NOFILE, rlim) < 0)
+	 	return (error ("getrlimit (RLIMIT_NOFILE): %m"));
+
+	if (rlim->rlim_cur < rlim->rlim_max) {
+		rlim->rlim_cur = rlim->rlim_max;
+		if (setrlimit (RLIMIT_NOFILE, rlim) < 0) 
+			return (error ("Unable to increase max no. files: %m"));
+	}
+
+	return rc;
 }
