@@ -418,18 +418,18 @@ extern int load_all_job_state(void)
          * see if the header contains a "VERXXX" string, we need to make
          * sure that there is enough data in the buffer to compare against.
          */
-	if (size_buf(buffer) >= sizeof(uint16_t) + strlen(JOB_STATE_VERSION))
+	if (size_buf(buffer) >= sizeof(uint32_t) + strlen(JOB_STATE_VERSION))
 	{
 	        char *ptr = get_buf_data(buffer);
 
-	        if (memcmp(&ptr[sizeof(uint16_t)], JOB_STATE_VERSION, 3) == 0)
+	        if (memcmp(&ptr[sizeof(uint32_t)], JOB_STATE_VERSION, 3) == 0)
 		{
 		        safe_unpackstr_xmalloc(&ver_str, &ver_str_len, buffer);
 		        debug3("Version string in job_state header is %s",
 			       ver_str);
 		}
 	}
-	if (ver_str && (strcmp(ver_str, JOB_STATE_VERSION) != 0)) {
+	if ((!ver_str) || (strcmp(ver_str, JOB_STATE_VERSION) != 0)) {
 		error("***********************************************");
 		error("Can not recover job state, incompatable version");
 		error("***********************************************");
