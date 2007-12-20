@@ -208,10 +208,10 @@ static int _add_edit_job(struct job_record *job_ptr, gold_object_t action)
 	for (i=0; i < job_ptr->num_cpu_groups; i++) {
 		ncpus += (job_ptr->cpus_per_node[i])
 			* (job_ptr->cpu_count_reps[i]);
-		info("got %d from %d * %d", ncpus, job_ptr->cpus_per_node[i],
-		     job_ptr->cpu_count_reps[i]);
+		//info("got %d from %d * %d", ncpus, job_ptr->cpus_per_node[i],
+		//   job_ptr->cpu_count_reps[i]);
 	}
-info("total procs is  %d", job_ptr->details->total_procs);
+//info("total procs is  %d", job_ptr->details->total_procs);
 	if(action == GOLD_ACTION_CREATE) {
 		snprintf(tmp_buff, sizeof(tmp_buff), "%u", job_ptr->job_id);
 		gold_request_add_assignment(gold_request, "JobId", tmp_buff);
@@ -236,7 +236,7 @@ info("total procs is  %d", job_ptr->details->total_procs);
 			 (int)job_ptr->details->submit_time);
 		gold_request_add_condition(gold_request, "SubmitTime",
 					   tmp_buff);
-				
+								
 		snprintf(tmp_buff, sizeof(tmp_buff), "%u",
 			 (int)job_ptr->end_time);
 		gold_request_add_assignment(gold_request, "EndTime",
