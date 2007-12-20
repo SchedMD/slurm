@@ -230,6 +230,9 @@ void delete_job_details(struct job_record *job_entry)
 	xfree(job_entry->details->mc_ptr);
 	if (job_entry->details->feature_list)
 		list_destroy(job_entry->details->feature_list);
+	xfree(job_entry->details->dependency);
+	if (job_entry->details->depend_list)
+		list_destroy(job_entry->details->depend_list);
 	xfree(job_entry->details);
 }
 
@@ -519,7 +522,6 @@ static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer)
 	packstr(dump_job_ptr->alloc_node, buffer);
 	packstr(dump_job_ptr->account, buffer);
 	packstr(dump_job_ptr->comment, buffer);
-	packstr(dump_job_ptr->dependency, buffer);
 	packstr(dump_job_ptr->network, buffer);
 	packstr(dump_job_ptr->mail_user, buffer);
 
@@ -558,7 +560,6 @@ static int _load_job_state(Buf buffer)
 	char *nodes = NULL, *partition = NULL, *name = NULL, *resp_host = NULL;
 	char *account = NULL, *network = NULL, *mail_user = NULL;
 	char *comment = NULL, *nodes_completing = NULL, *alloc_node = NULL;
-	char *dependency = NULL;
 	struct job_record *job_ptr;
 	struct part_record *part_ptr;
 	int error_code;
@@ -602,7 +603,6 @@ static int _load_job_state(Buf buffer)
 	safe_unpackstr_xmalloc(&alloc_node, &name_len, buffer);
 	safe_unpackstr_xmalloc(&account, &name_len, buffer);
 	safe_unpackstr_xmalloc(&comment, &name_len, buffer);
-	safe_unpackstr_xmalloc(&dependency, &name_len, buffer);
 	safe_unpackstr_xmalloc(&network, &name_len, buffer);
 	safe_unpackstr_xmalloc(&mail_user, &name_len, buffer);
 
@@ -679,7 +679,6 @@ static int _load_job_state(Buf buffer)
 	job_ptr->tot_sus_time = tot_sus_time;
 	job_ptr->job_state    = job_state;
 	job_ptr->next_step_id = next_step_id;
-	job_ptr->dependency   = dependency;
 	job_ptr->exit_code    = exit_code;
 	job_ptr->state_reason = state_reason;
 	job_ptr->num_procs    = num_procs;
@@ -741,7 +740,6 @@ unpack_error:
 	xfree(alloc_node);
 	xfree(account);
 	xfree(comment);
-	xfree(dependency);
 	xfree(resp_host);
 	xfree(mail_user);
 	select_g_free_jobinfo(&select_jobinfo);
@@ -778,9 +776,10 @@ void _dump_job_details(struct job_details *detail_ptr, Buf buffer)
 	pack_time(detail_ptr->begin_time, buffer);
 	pack_time(detail_ptr->submit_time, buffer);
 
-	packstr(detail_ptr->req_nodes, buffer);
-	packstr(detail_ptr->exc_nodes, buffer);
-	packstr(detail_ptr->features,  buffer);
+	packstr(detail_ptr->req_nodes,  buffer);
+	packstr(detail_ptr->exc_nodes,  buffer);
+	packstr(detail_ptr->features,   buffer);
+	packstr(detail_ptr->dependency, buffer);
 
 	packstr(detail_ptr->err,       buffer);
 	packstr(detail_ptr->in,        buffer);
@@ -795,6 +794,7 @@ void _dump_job_details(struct job_details *detail_ptr, Buf buffer)
 static int _load_job_details(struct job_record *job_ptr, Buf buffer)
 {
 	char *req_nodes = NULL, *exc_nodes = NULL, *features = NULL;
+	char *dependency = NULL;
 	char *err = NULL, *in = NULL, *out = NULL, *work_dir = NULL;
 	char **argv = (char **) NULL;
 	uint32_t min_nodes, max_nodes;
@@ -831,9 +831,10 @@ static int _load_job_details(struct job_record *job_ptr, Buf buffer)
 	safe_unpack_time(&begin_time, buffer);
 	safe_unpack_time(&submit_time, buffer);
 
-	safe_unpackstr_xmalloc(&req_nodes, &name_len, buffer);
-	safe_unpackstr_xmalloc(&exc_nodes, &name_len, buffer);
-	safe_unpackstr_xmalloc(&features,  &name_len, buffer);
+	safe_unpackstr_xmalloc(&req_nodes,  &name_len, buffer);
+	safe_unpackstr_xmalloc(&exc_nodes,  &name_len, buffer);
+	safe_unpackstr_xmalloc(&features,   &name_len, buffer);
+	safe_unpackstr_xmalloc(&dependency, &name_len, buffer);
 
 	safe_unpackstr_xmalloc(&err, &name_len, buffer);
 	safe_unpackstr_xmalloc(&in,  &name_len, buffer);
@@ -899,6 +900,7 @@ static int _load_job_details(struct job_record *job_ptr, Buf buffer)
 	job_ptr->details->argc = argc;
 	job_ptr->details->argv = argv;
 	job_ptr->details->mc_ptr = mc_ptr;
+	job_ptr->details->dependency = dependency;
 	
 	return SLURM_SUCCESS;
 
@@ -906,6 +908,7 @@ unpack_error:
 	xfree(req_nodes);
 	xfree(exc_nodes);
 	xfree(features);
+	xfree(dependency);
 	xfree(err);
 	xfree(in);
 	xfree(out);
@@ -2877,9 +2880,6 @@ static void _list_delete_job(void *job_entry)
 	xfree(job_ptr->alloc_lps);
 	xfree(job_ptr->used_lps);
 	xfree(job_ptr->comment);
-	xfree(job_ptr->dependency);
-	if (job_ptr->depend_list)
-		list_destroy(job_ptr->depend_list);
 	select_g_free_jobinfo(&job_ptr->select_jobinfo);
 	if (job_ptr->step_list) {
 		delete_step_records(job_ptr, 0);
@@ -3051,7 +3051,6 @@ void pack_job(struct job_record *dump_job_ptr, Buf buffer)
 	packstr(dump_job_ptr->account, buffer);
 	packstr(dump_job_ptr->network, buffer);
 	packstr(dump_job_ptr->comment, buffer);
-	packstr(dump_job_ptr->dependency, buffer);
 
 	pack32(dump_job_ptr->exit_code, buffer);
 
@@ -3090,8 +3089,9 @@ static void _pack_default_job_details(struct job_details *detail_ptr,
 	char *cmd_line = NULL;
 
 	if (detail_ptr) {
-		packstr(detail_ptr->features, buffer);
-		packstr(detail_ptr->work_dir, buffer);
+		packstr(detail_ptr->features,   buffer);
+		packstr(detail_ptr->work_dir,   buffer);
+		packstr(detail_ptr->dependency, buffer);
 		if (detail_ptr->argv) {
 			for (i=0; detail_ptr->argv[i]; i++) {
 				if (cmd_line)
@@ -3895,14 +3895,14 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 	}
 
 	if (job_specs->dependency) {
-		if (!IS_JOB_PENDING(job_ptr))
+		if ((!IS_JOB_PENDING(job_ptr)) || (job_ptr->details == NULL))
 			error_code = ESLURM_DISABLED;
 		else if (update_job_dependency(job_ptr, job_specs->dependency)
 			 != SLURM_SUCCESS) {
 			error_code = ESLURM_DEPENDENCY;
 		} else {
 			info("update_job: setting dependency to %s for " 
-			     "job_id %u",  job_ptr->dependency, 
+			     "job_id %u",  job_ptr->details->dependency, 
 			     job_ptr->job_id);
 		}
 	}
