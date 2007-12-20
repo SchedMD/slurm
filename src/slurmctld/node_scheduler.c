@@ -106,6 +106,8 @@ static int _pick_best_load(struct job_record *job_ptr, bitstr_t * bitmap,
 			   uint32_t min_nodes, uint32_t max_nodes, 
 			   uint32_t req_nodes, bool test_only);
 
+static int _job_count_bitmap(bitstr_t * bitmap, bitstr_t * jobmap,
+			     int job_cnt); 
 #endif
 static int _pick_best_nodes(struct node_set *node_set_ptr,
 			    int node_set_size, bitstr_t ** select_bitmap,
@@ -113,8 +115,6 @@ static int _pick_best_nodes(struct node_set *node_set_ptr,
 			    struct part_record *part_ptr,
 			    uint32_t min_nodes, uint32_t max_nodes,
 			    uint32_t req_nodes);
-static int _job_count_bitmap(bitstr_t * bitmap, bitstr_t * jobmap,
-			     int job_cnt); 
 static void _print_feature_list(uint32_t job_id, List feature_list);
 static bitstr_t *_valid_features(struct job_details *detail_ptr, 
 				 char *available);
@@ -329,7 +329,6 @@ _pick_best_load(struct job_record *job_ptr, bitstr_t * bitmap,
 	FREE_NULL_BITMAP(basemap);
 	return error_code;
 }
-#endif
 
 /*
  * Set the bits in 'jobmap' that correspond to bits in the 'bitmap'
@@ -352,6 +351,7 @@ _job_count_bitmap(bitstr_t * bitmap, bitstr_t * jobmap, int job_cnt)
 	}
 	return count;
 }
+#endif
 
 /*
  * Decide if a job can share nodes with other jobs based on the

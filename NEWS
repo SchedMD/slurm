@@ -113,6 +113,10 @@ documents those changes that are of interest to users and admins.
     Moved existing digital signature logic into new plugin: crypto/openssl.
     Added new support for crypto/munge (available with GPL license).
 
+* Changes in SLURM 1.2.22
+=========================
+
+
 * Changes in SLURM 1.2.21
 =========================
  -- Fixed torque wrappers to look in the correct spot for the perl api

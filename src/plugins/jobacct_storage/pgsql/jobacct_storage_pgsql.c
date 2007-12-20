@@ -371,8 +371,7 @@ extern int jobacct_storage_p_fini()
 extern int jobacct_storage_p_job_start(struct job_record *job_ptr)
 {
 #ifdef HAVE_PGSQL
-	int	i,
-		rc=SLURM_SUCCESS;
+	int	rc=SLURM_SUCCESS;
 	char	*jname, *account, *nodes;
 	long	priority;
 	int track_steps = 0;
