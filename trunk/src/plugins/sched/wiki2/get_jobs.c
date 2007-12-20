@@ -371,10 +371,10 @@ static void	_get_job_comment(struct job_record *job_ptr,
 	size = snprintf(buffer, buf_size, "COMMENT=\"");
 
 	/* JOB DEPENDENCY */
-	if (job_ptr->dependency) {
+	if (job_ptr->details && job_ptr->details->dependency) {
 		/* Kludge for job dependency set via srun */
 		size += snprintf((buffer + size), (buf_size - size),
-			"DEPEND=%s", job_ptr->dependency);
+			"DEPEND=%s", job_ptr->details->dependency);
 		field_sep = "?";
 	}
 

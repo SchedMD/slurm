@@ -1132,10 +1132,11 @@ static int _restore_job_dependencies(void)
 
 	job_iterator = list_iterator_create(job_list);
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
-		if (job_ptr->dependency == NULL)
+		if ((job_ptr->details == NULL) ||
+		    (job_ptr->details->dependency == NULL))
 			continue;
-		new_depend = job_ptr->dependency;
-		job_ptr->dependency = NULL;
+		new_depend = job_ptr->details->dependency;
+		job_ptr->details->dependency = NULL;
 		rc = update_job_dependency(job_ptr, new_depend);
 		if (rc != SLURM_SUCCESS) {
 			error("Invalid dependencies discarded for job %u: %s",

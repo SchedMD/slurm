@@ -498,10 +498,11 @@ extern void print_job_dependency(struct job_record *job_ptr)
 	char *dep_str;
 
 	info("Dependency information for job %u", job_ptr->job_id);
-	if (!job_ptr->depend_list)
+	if ((job_ptr->details == NULL) ||
+	    (job_ptr->details->depend_list == NULL))
 		return;
 
-	depend_iter = list_iterator_create(job_ptr->depend_list);
+	depend_iter = list_iterator_create(job_ptr->details->depend_list);
 	if (!depend_iter)
 		fatal("list_iterator_create memory allocation failure");
 	while ((dep_ptr = list_next(depend_iter))) {
@@ -532,10 +533,11 @@ extern int test_job_dependency(struct job_record *job_ptr)
 	struct depend_spec *dep_ptr;
 	bool failure = false;
 
-	if (!job_ptr->depend_list)
+	if ((job_ptr->details == NULL) ||
+	    (job_ptr->details->depend_list == NULL))
 		return 0;
 
-	depend_iter = list_iterator_create(job_ptr->depend_list);
+	depend_iter = list_iterator_create(job_ptr->details->depend_list);
 	if (!depend_iter)
 		fatal("list_iterator_create memory allocation failure");
 	while ((dep_ptr = list_next(depend_iter))) {
@@ -603,11 +605,14 @@ extern int update_job_dependency(struct job_record *job_ptr, char *new_depend)
 	struct job_record *dep_job_ptr;
 	char dep_buf[32];
 
+	if (job_ptr->details == NULL)
+		return EINVAL;
+
 	/* Clear dependencies on NULL or empty dependency input */
 	if ((new_depend == NULL) || (new_depend[0] == '\0')) {
-		xfree(job_ptr->dependency);
-		if (job_ptr->depend_list)
-			list_destroy(job_ptr->depend_list);
+		xfree(job_ptr->details->dependency);
+		if (job_ptr->details->depend_list)
+			list_destroy(job_ptr->details->depend_list);
 		return rc;
 
 	}
@@ -682,11 +687,11 @@ extern int update_job_dependency(struct job_record *job_ptr, char *new_depend)
 	}
 
 	if (rc == SLURM_SUCCESS) {
-		xfree(job_ptr->dependency);
-		job_ptr->dependency = xstrdup(new_depend);
-		if (job_ptr->depend_list)
-			list_destroy(job_ptr->depend_list);
-		job_ptr->depend_list = new_depend_list;
+		xfree(job_ptr->details->dependency);
+		job_ptr->details->dependency = xstrdup(new_depend);
+		if (job_ptr->details->depend_list)
+			list_destroy(job_ptr->details->depend_list);
+		job_ptr->details->depend_list = new_depend_list;
 #if _DEBUG
 		print_job_dependency(job_ptr);
 #endif

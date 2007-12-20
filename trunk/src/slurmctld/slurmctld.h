@@ -328,6 +328,8 @@ struct job_details {
 	uint16_t argc;			/* count of argv elements */
 	uint16_t no_requeue;		/* don't requeue job if set */
 	multi_core_data_t *mc_ptr;	/* multi-core specific data */
+	char *dependency;		/* wait for other jobs */
+	List depend_list;		/* list of job_ptr:state pairs */
 };
 
 struct job_record {
@@ -383,8 +385,6 @@ struct job_record {
 	uint16_t other_port;		/* port for client communications */
 	char *account;			/* account number to charge */
 	char *comment;			/* arbitrary comment */
-	char *dependency;		/* wait for other jobs */
-	List depend_list;		/* list of job_ptr:state pairs */
 	char *network;			/* network/switch requirement spec */
 	struct job_record *job_next;	/* next entry with same hash index */
         uint16_t cr_enabled;            /* specify if if Consumable
