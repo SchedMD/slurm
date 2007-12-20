@@ -836,8 +836,7 @@ mvapich_print_abort_message (mvapich_state_t *st, int rank,
 		msglen = 0;
 	}
 
-	host = slurm_step_layout_host_name(
-		sl, slurm_step_layout_host_id(sl, rank));
+	host = slurm_step_layout_host_name (sl, rank);
 
 	if (dest >= 0) {
 		const char *dsthost = slurm_step_layout_host_name (sl, dest);
@@ -855,10 +854,9 @@ mvapich_print_abort_message (mvapich_state_t *st, int rank,
 				st->job->jobid, st->job->stepid, 
 				rank, host, dest, dsthost, msgstr);
 		closelog();
-	}
-	else {
+	} else {
 		info ("mvapich: %M: ABORT from MPI rank %d [on %s]", 
-				rank, host);
+		      rank, host);
 		/*
 		 *  Log the abort event to syslog
 		 *   so that system administrators know about possible HW events.
