@@ -312,8 +312,7 @@ extern int jobacct_storage_p_fini()
 extern int jobacct_storage_p_job_start(struct job_record *job_ptr)
 {
 #ifdef HAVE_MYSQL
-		int	i,
-		ncpus=0,
+	int	i,
 		rc=SLURM_SUCCESS;
 	char	*jname, *account, *nodes;
 	long	priority;
@@ -332,9 +331,6 @@ extern int jobacct_storage_p_job_start(struct job_record *job_ptr)
 	}
 
 	debug2("mysql_jobacct_job_start() called");
-	for (i=0; i < job_ptr->num_cpu_groups; i++)
-		ncpus += (job_ptr->cpus_per_node[i])
-			* (job_ptr->cpu_count_reps[i]);
 	priority = (job_ptr->priority == NO_VAL) ?
 		-1L : (long) job_ptr->priority;
 
@@ -386,7 +382,7 @@ try_again:
 			 (int)job_ptr->start_time,
 			 jname, track_steps,
 			 job_ptr->job_state & (~JOB_COMPLETING),
-			 priority, job_ptr->num_procs,
+			 priority, job_ptr->details->total_procs,
 			 nodes, account);
 		rc = mysql_db_query(jobacct_mysql_db, query);
 	} else if(!reinit) {
@@ -499,7 +495,7 @@ extern int jobacct_storage_p_step_start(struct step_record *step_ptr)
 	
 #else
 	if(!step_ptr->step_layout || !step_ptr->step_layout->task_cnt) {
-		cpus = step_ptr->job_ptr->num_procs;
+		cpus = step_ptr->job_ptr->details->total_procs;
 		snprintf(node_list, BUFFER_SIZE, "%s", step_ptr->job_ptr->nodes);
 	} else {
 		cpus = step_ptr->step_layout->task_cnt;
@@ -577,7 +573,7 @@ extern int jobacct_storage_p_step_complete(struct step_record *step_ptr)
 	
 #else
 	if(!step_ptr->step_layout || !step_ptr->step_layout->task_cnt)
-		cpus = step_ptr->job_ptr->num_procs;
+		cpus = step_ptr->job_ptr->details->total_procs;
 	else 
 		cpus = step_ptr->step_layout->task_cnt;
 #endif

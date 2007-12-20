@@ -329,6 +329,7 @@ _pick_best_load(struct job_record *job_ptr, bitstr_t * bitmap,
 	FREE_NULL_BITMAP(basemap);
 	return error_code;
 }
+#endif
 
 /*
  * Set the bits in 'jobmap' that correspond to bits in the 'bitmap'
@@ -351,7 +352,6 @@ _job_count_bitmap(bitstr_t * bitmap, bitstr_t * jobmap, int job_cnt)
 	}
 	return count;
 }
-#endif
 
 /*
  * Decide if a job can share nodes with other jobs based on the
