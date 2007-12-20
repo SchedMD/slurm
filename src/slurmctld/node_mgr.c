@@ -410,7 +410,6 @@ extern int load_all_node_state ( bool state_only )
 	time_t time_stamp, now = time(NULL);
 	Buf buffer;
 	char *ver_str = NULL;
-	uint32_t ver_str_len;
 
 	/* read the file */
 	state_file = xstrdup (slurmctld_conf.state_save_location);
@@ -451,17 +450,19 @@ extern int load_all_node_state ( bool state_only )
 	 * Check the data version so that when the format changes, we 
 	 * we don't try to unpack data using the wrong format routines
 	 */
-	if (size_buf(buffer) >= sizeof(uint16_t) + strlen(NODE_STATE_VERSION)) {
+	if (size_buf(buffer) >= sizeof(uint32_t) + strlen(NODE_STATE_VERSION)) {
 		char *ptr = get_buf_data(buffer);
 
-		if (memcmp( &ptr[sizeof(uint16_t)], NODE_STATE_VERSION, 3) == 0) {
-			safe_unpackstr_xmalloc( &ver_str, &ver_str_len, buffer);
+		if (memcmp( &ptr[sizeof(uint32_t)], NODE_STATE_VERSION, 3) == 0) {
+			safe_unpackstr_xmalloc( &ver_str, &name_len, buffer);
 			debug3("Version string in node_state header is %s",
 				ver_str);
 		}
 	}
-	if (ver_str && (strcmp(ver_str, NODE_STATE_VERSION) != 0)) {
+	if ((!ver_str) || (strcmp(ver_str, NODE_STATE_VERSION) != 0)) {
+		error("*****************************************************");
 		error("Can not recover node state, data version incompatable");
+		error("*****************************************************");
 		xfree(ver_str);
 		free_buf(buffer);
 		return EFAULT;
