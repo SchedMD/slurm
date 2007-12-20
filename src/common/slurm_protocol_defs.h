@@ -390,7 +390,7 @@ typedef struct last_update_msg {
 } last_update_msg_t;
 
 typedef struct set_debug_level_msg {
-	int32_t debug_level;
+	uint32_t debug_level;
 } set_debug_level_msg_t;
 
 typedef struct job_step_specs {
