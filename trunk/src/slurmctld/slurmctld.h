@@ -361,6 +361,7 @@ struct job_record {
 					 * actual or expected */
 	time_t suspend_time;		/* time job last suspended or resumed */
 	time_t pre_sus_time;		/* time job ran prior to last suspend */
+	time_t tot_sus_time;		/* total time in suspend state */
 	time_t time_last_active;	/* time of last job activity */
 	uint32_t priority;		/* relative priority of the job,
 					 * zero == held (don't initiate) */
@@ -436,6 +437,7 @@ struct 	step_record {
 					 * implicitly the same as suspend_time
 					 * in the job record */
 	time_t pre_sus_time;		/* time step ran prior to last suspend */
+	time_t tot_sus_time;		/* total time in suspended state */
 	bitstr_t *step_node_bitmap;	/* bitmap of nodes allocated to job 
 					   step */
 	uint16_t port;			/* port for srun communications */
@@ -1229,6 +1231,9 @@ extern void reset_job_priority(void);
  *      saved (preserves interactive updates)
  */
 extern void restore_node_features(void);
+
+/* Update time stamps for job step resume */
+extern void resume_job_step(struct job_record *job_ptr);
 
 /* run_backup - this is the backup controller, it should run in standby 
  *	mode, assuming control when the primary controller stops responding */
