@@ -38,6 +38,11 @@ set non_bg      0
 
 print_header $test_id
 
+if { [test_bluegene] == 0 } {
+	send_user "\nWARNING: This test is only compatable with bluegene systems\n"
+	exit 0
+}
+
 #
 # Test smap resolve ablilty
 # for XYZ coords to Rack Midplane
