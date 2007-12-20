@@ -65,6 +65,9 @@
 #include "src/slurmctld/sched_plugin.h"
 #include "src/slurmctld/slurmctld.h"
 
+/* Change PART_STATE_VERSION value when changing the state save format */
+#define PART_STATE_VERSION      "VER001"
+
 /* Global variables */
 struct part_record default_part;	/* default configuration values */
 List part_list = NULL;			/* partition list */
@@ -283,6 +286,7 @@ int dump_all_part_state(void)
 
 	START_TIMER;
 	/* write header: time */
+	packstr(PART_STATE_VERSION, buffer);
 	pack_time(time(NULL), buffer);
 
 	/* write partition records to buffer */
@@ -396,6 +400,7 @@ int load_all_part_state(void)
 	int data_allocated, data_read = 0, error_code = 0, part_cnt = 0;
 	int state_fd;
 	Buf buffer;
+	char *ver_str;
 
 	/* read the file */
 	state_file = xstrdup(slurmctld_conf.state_save_location);
@@ -432,6 +437,29 @@ int load_all_part_state(void)
 	unlock_state_files();
 
 	buffer = create_buf(data, data_size);
+
+	/*
+	 * Check the data version so that when the format changes, we
+	 * we don't try to unpack data using the wrong format routines
+	 */
+	if (size_buf(buffer) >= sizeof(uint32_t) + strlen(PART_STATE_VERSION)) {
+		char *ptr = get_buf_data(buffer);
+
+		if (memcmp( &ptr[sizeof(uint32_t)], PART_STATE_VERSION, 3) == 0) {
+			safe_unpackstr_xmalloc( &ver_str, &name_len, buffer);
+			debug3("Version string in part_state header is %s",
+				ver_str);
+		}
+	}
+	if ((!ver_str) || (strcmp(ver_str, PART_STATE_VERSION) != 0)) {
+		error("**********************************************************");
+		error("Can not recover partition state, data version incompatable");
+		error("**********************************************************");
+		xfree(ver_str);
+		free_buf(buffer);
+		return EFAULT;
+	}
+	xfree(ver_str);
 	safe_unpack_time(&time, buffer);
 
 	while (remaining_buf(buffer) > 0) {

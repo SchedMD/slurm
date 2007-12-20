@@ -17,6 +17,7 @@ documents those changes that are of interest to users and admins.
  -- Added new scontrol option "setdebug" that can change the slurmctld daemons
     debug level at any time (Hongjia Cao, NUDT).
  -- Track total total suspend time for jobs and steps for accounting purposes.
+ -- Add version information to partition state file.
 
 * Changes in SLURM 1.3.0-pre7
 =============================
