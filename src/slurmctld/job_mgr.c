@@ -491,6 +491,7 @@ static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer)
 	pack_time(dump_job_ptr->end_time, buffer);
 	pack_time(dump_job_ptr->suspend_time, buffer);
 	pack_time(dump_job_ptr->pre_sus_time, buffer);
+	pack_time(dump_job_ptr->tot_sus_time, buffer);
 
 	pack16(dump_job_ptr->job_state, buffer);
 	pack16(dump_job_ptr->next_step_id, buffer);
@@ -550,7 +551,7 @@ static int _load_job_state(Buf buffer)
 {
 	uint32_t job_id, user_id, group_id, time_limit, priority, alloc_sid;
 	uint32_t exit_code, num_procs, db_index, name_len;
-	time_t start_time, end_time, suspend_time, pre_sus_time;
+	time_t start_time, end_time, suspend_time, pre_sus_time, tot_sus_time;
 	uint16_t job_state, next_step_id, details, batch_flag, step_flag;
 	uint16_t kill_on_node_fail, kill_on_step_done;
 	uint16_t alloc_resp_port, other_port, mail_type, state_reason;
@@ -577,6 +578,7 @@ static int _load_job_state(Buf buffer)
 	safe_unpack_time(&end_time, buffer);
 	safe_unpack_time(&suspend_time, buffer);
 	safe_unpack_time(&pre_sus_time, buffer);
+	safe_unpack_time(&tot_sus_time, buffer);
 
 	safe_unpack16(&job_state, buffer);
 	safe_unpack16(&next_step_id, buffer);
@@ -674,6 +676,7 @@ static int _load_job_state(Buf buffer)
 	job_ptr->end_time     = end_time;
 	job_ptr->suspend_time = suspend_time;
 	job_ptr->pre_sus_time = pre_sus_time;
+	job_ptr->tot_sus_time = tot_sus_time;
 	job_ptr->job_state    = job_state;
 	job_ptr->next_step_id = next_step_id;
 	job_ptr->dependency   = dependency;
@@ -986,10 +989,12 @@ extern int kill_job_by_part_name(char *part_name)
 			job_ptr->job_state = JOB_NODE_FAIL | JOB_COMPLETING;
 			job_ptr->exit_code = MAX(job_ptr->exit_code, 1);
 			job_ptr->state_reason = FAIL_DOWN_PARTITION;
-			if (suspended)
+			if (suspended) {
 				job_ptr->end_time = job_ptr->suspend_time;
-			else
-				job_ptr->end_time = time(NULL);
+				job_ptr->tot_sus_time += 
+					difftime(now, job_ptr->suspend_time);
+			} else
+				job_ptr->end_time = now;
 			job_completion_logger(job_ptr);
 			deallocate_nodes(job_ptr, false, suspended);
 		} else if (job_ptr->job_state == JOB_PENDING) {
@@ -1086,9 +1091,11 @@ extern int kill_running_job_by_node_name(char *node_name, bool step_test)
 				slurm_sched_requeue(job_ptr, requeue_msg);
 				job_ptr->time_last_active  = now;
 				job_ptr->job_state = JOB_PENDING | JOB_COMPLETING;
-				if (suspended)
+				if (suspended) {
 					job_ptr->end_time = job_ptr->suspend_time;
-				else
+					job_ptr->tot_sus_time += 
+						difftime(now, job_ptr->suspend_time);
+				} else
 					job_ptr->end_time = now;
 				deallocate_nodes(job_ptr, false, suspended);
 
@@ -1108,10 +1115,12 @@ extern int kill_running_job_by_node_name(char *node_name, bool step_test)
 				job_ptr->exit_code = 
 					MAX(job_ptr->exit_code, 1);
 				job_ptr->state_reason = FAIL_DOWN_NODE;
-				if (suspended)
+				if (suspended) {
 					job_ptr->end_time =
 						job_ptr->suspend_time;
-				else
+					job_ptr->tot_sus_time += 
+						difftime(now, job_ptr->suspend_time);
+				} else
 					job_ptr->end_time = time(NULL);
 				job_completion_logger(job_ptr);
 				deallocate_nodes(job_ptr, false, suspended);
@@ -1503,9 +1512,11 @@ extern int job_fail(uint32_t job_id)
 	if ((job_ptr->job_state == JOB_RUNNING) || suspended) {
 		/* No need to signal steps, deallocate kills them */
 		job_ptr->time_last_active       = now;
-		if (suspended)
+		if (suspended) {
 			job_ptr->end_time       = job_ptr->suspend_time;
-		else
+			job_ptr->tot_sus_time  += 
+				difftime(now, job_ptr->suspend_time);
+		} else
 			job_ptr->end_time       = now;
 		last_job_update                 = now;
 		job_ptr->job_state = JOB_FAILED | JOB_COMPLETING;
@@ -1581,6 +1592,7 @@ extern int job_signal(uint32_t job_id, uint16_t signal, uint16_t batch_flag,
 	    &&  (signal == SIGKILL)) {
 		last_job_update         = now;
 		job_ptr->end_time       = job_ptr->suspend_time;
+		job_ptr->tot_sus_time  += difftime(now, job_ptr->suspend_time);
 		job_ptr->job_state      = JOB_CANCELLED | JOB_COMPLETING;
 		deallocate_nodes(job_ptr, false, true);
 		job_completion_logger(job_ptr);
@@ -1724,9 +1736,11 @@ extern int job_complete(uint32_t job_id, uid_t uid, bool requeue,
 			job_ptr->state_reason = FAIL_TIMEOUT;
 		} else
 			job_ptr->job_state = JOB_COMPLETE | job_comp_flag;
-		if (suspended)
+		if (suspended) {
 			job_ptr->end_time = job_ptr->suspend_time;
-		else
+			job_ptr->tot_sus_time += 
+				difftime(now, job_ptr->suspend_time);
+		} else
 			job_ptr->end_time = now;
 		job_completion_logger(job_ptr);
 	}
@@ -3187,6 +3201,7 @@ void reset_job_bitmaps(void)
 	struct job_record  *job_ptr;
 	struct part_record *part_ptr;
 	bool job_fail = false;
+	time_t now = time(NULL);
 
 	xassert(job_list);
 
@@ -3252,6 +3267,8 @@ void reset_job_bitmaps(void)
 				job_ptr->end_time = job_ptr->suspend_time;
 				job_ptr->job_state = JOB_NODE_FAIL |
 					JOB_COMPLETING;
+				job_ptr->tot_sus_time += 
+					difftime(now, job_ptr->suspend_time);
 			}
 			job_ptr->exit_code = MAX(job_ptr->exit_code, 1);
 			job_ptr->state_reason = FAIL_DOWN_NODE;
@@ -3260,7 +3277,7 @@ void reset_job_bitmaps(void)
 	}
 
 	list_iterator_destroy(job_iterator);
-	last_job_update = time(NULL);
+	last_job_update = now;
 }
 
 static int _reset_detail_bitmaps(struct job_record *job_ptr)
@@ -4822,12 +4839,15 @@ extern int job_suspend(suspend_msg_t *sus_ptr, uid_t uid,
 			goto reply;
 		_suspend_job(job_ptr, sus_ptr->op);
 		job_ptr->job_state = JOB_RUNNING;
+		job_ptr->tot_sus_time +=
+			difftime(now, job_ptr->suspend_time);
 		if (job_ptr->time_limit != INFINITE) {
 			/* adjust effective time_limit */
 			job_ptr->end_time = now +
 				(job_ptr->time_limit * 60)
 				- job_ptr->pre_sus_time;
 		}
+		resume_job_step(job_ptr);
 	}
 
 	job_ptr->time_last_active = now;

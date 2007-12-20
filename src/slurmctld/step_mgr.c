@@ -1582,12 +1582,10 @@ _suspend_job_step(struct job_record *job_ptr,
 	if ((job_ptr->suspend_time)
 	&&  (job_ptr->suspend_time > step_ptr->start_time)) {
 		step_ptr->pre_sus_time +=
-			difftime(now,
-			job_ptr->suspend_time);
+			difftime(now, job_ptr->suspend_time);
 	} else {
 		step_ptr->pre_sus_time +=
-			difftime(now,
-			step_ptr->start_time);
+			difftime(now, step_ptr->start_time);
 	}
 
 }
@@ -1607,6 +1605,34 @@ suspend_job_step(struct job_record *job_ptr)
 	list_iterator_destroy (step_iterator);
 }
 
+static void 
+_resume_job_step(struct job_record *job_ptr, 
+		struct step_record *step_ptr, time_t now)
+{
+	if ((job_ptr->suspend_time) &&
+	    (job_ptr->suspend_time < step_ptr->start_time)) {
+		step_ptr->tot_sus_time +=
+			difftime(now, step_ptr->start_time);
+	} else {
+		step_ptr->tot_sus_time +=
+			difftime(now, job_ptr->suspend_time);
+	}
+}
+
+/* Update time stamps for job step resume */
+extern void
+resume_job_step(struct job_record *job_ptr)
+{
+	time_t now = time(NULL);
+	ListIterator step_iterator;
+	struct step_record *step_ptr;
+
+	step_iterator = list_iterator_create (job_ptr->step_list);
+	while ((step_ptr = (struct step_record *) list_next (step_iterator))) {
+		_resume_job_step(job_ptr, step_ptr, now);
+	}
+	list_iterator_destroy (step_iterator);
+}
 
 
 /*
@@ -1631,6 +1657,7 @@ extern void dump_job_step_state(struct step_record *step_ptr, Buf buffer)
 
 	pack_time(step_ptr->start_time, buffer);
 	pack_time(step_ptr->pre_sus_time, buffer);
+	pack_time(step_ptr->tot_sus_time, buffer);
 	pack_time(step_ptr->ckpt_time, buffer);
 
 	packstr(step_ptr->host,  buffer);
@@ -1656,7 +1683,7 @@ extern int load_step_state(struct job_record *job_ptr, Buf buffer)
 	uint16_t step_id, cyclic_alloc, port, batch_step, bit_cnt;
 	uint16_t ckpt_interval;
 	uint32_t exit_code, name_len;
-	time_t start_time, pre_sus_time, ckpt_time;
+	time_t start_time, pre_sus_time, tot_sus_time, ckpt_time;
 	char *host = NULL, *ckpt_path = NULL;
 	char *name = NULL, *network = NULL, *bit_fmt = NULL;
 	switch_jobinfo_t switch_tmp = NULL;
@@ -1676,6 +1703,7 @@ extern int load_step_state(struct job_record *job_ptr, Buf buffer)
 	
 	safe_unpack_time(&start_time, buffer);
 	safe_unpack_time(&pre_sus_time, buffer);
+	safe_unpack_time(&tot_sus_time, buffer);
 	safe_unpack_time(&ckpt_time, buffer);
 
 	safe_unpackstr_xmalloc(&host, &name_len, buffer);
@@ -1720,6 +1748,7 @@ extern int load_step_state(struct job_record *job_ptr, Buf buffer)
 	host                   = NULL;  /* re-used, nothing left to free */
 	step_ptr->start_time   = start_time;
 	step_ptr->pre_sus_time = pre_sus_time;
+	step_ptr->tot_sus_time = tot_sus_time;
 	step_ptr->ckpt_time    = ckpt_time;
 
 	slurm_step_layout_destroy(step_ptr->step_layout);
