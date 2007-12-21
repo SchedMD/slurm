@@ -561,7 +561,7 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 }
 
 /*
- * _pick_best_nodes - from a weigh order list of all nodes satisfying a 
+ * _pick_best_nodes - from a weight order list of all nodes satisfying a 
  *	job's specifications, select the "best" for use
  * IN node_set_ptr - pointer to node specification information
  * IN node_set_size - number of entries in records pointed to by node_set_ptr
@@ -1823,8 +1823,7 @@ extern void build_node_details(struct job_record *job_ptr)
 		      job_ptr->job_id, job_ptr->node_cnt, node_inx);
 	}
 	job_ptr->num_cpu_groups = cpu_inx + 1;
-	if (job_ptr->details)
-		job_ptr->details->total_procs = total_procs;
+	job_ptr->total_procs = total_procs;
 }
 
 /*

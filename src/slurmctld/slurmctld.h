@@ -317,8 +317,6 @@ struct job_details {
 	char *err;			/* pathname of job's stderr file */
 	char *in;			/* pathname of job's stdin file */
 	char *out;			/* pathname of job's stdout file */
-	uint32_t total_procs;		/* number of allocated processors, 
-					   for accounting */
 	time_t submit_time;		/* time of submission */
 	time_t begin_time;		/* start at this time (srun --being), 
 					 * resets to time first eligible
@@ -355,6 +353,8 @@ struct job_record {
 					 * for this job, used to insure
 					 * epilog is not re-run for job */
 	uint32_t num_procs;		/* count of required processors */
+	uint32_t total_procs;		/* number of allocated processors, 
+					   for accounting */
 	uint32_t time_limit;		/* time_limit minutes or INFINITE,
 					 * NO_VAL implies partition max_time */
 	time_t start_time;		/* time execution begins, 
