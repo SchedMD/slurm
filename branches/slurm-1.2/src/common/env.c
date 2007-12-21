@@ -1315,7 +1315,7 @@ char **env_array_user_default(const char *username, int timeout, int mode)
 		close(2);
 		open("/dev/null", O_WRONLY);
 		snprintf(cmdstr, sizeof(cmdstr),
-			 "echo; echo; echo; echo %s; env; echo %s",
+			 "/bin/echo; /bin/echo; /bin/echo; /bin/echo %s; /bin/env; /bin/echo %s",
 			 starttoken, stoptoken);
 		if      (mode == 1)
 			execl("/bin/su", "su", username, "-c", cmdstr, NULL);
