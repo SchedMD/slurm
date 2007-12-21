@@ -610,7 +610,7 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 	int max_feature, min_feature;
 	bool runable_ever  = false;	/* Job can ever run */
 	bool runable_avail = false;	/* Job can run with available nodes */
-	uint32_t cr_enabled = 0;
+	static uint32_t cr_enabled = NO_VAL;
 	int shared = 0;
 	select_type_plugin_info_t cr_type = SELECT_TYPE_INFO_NONE; 
 
@@ -619,17 +619,24 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 		return ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE;
 	}
 
-        /* Is Consumable Resources enabled? */
-        error_code = select_g_get_info_from_plugin (SELECT_CR_PLUGIN, 
-						    &cr_enabled);
-        if (error_code != SLURM_SUCCESS)
-                return error_code;
+	/* Are Consumable Resources enabled? */
+	if (cr_enabled == NO_VAL) {
+		cr_enabled = 0;	/* select/linear and bluegene are no-ops */
+		error_code = select_g_get_info_from_plugin (SELECT_CR_PLUGIN, 
+							    &cr_enabled);
+		if (error_code != SLURM_SUCCESS) {
+			cr_enabled = NO_VAL;
+			return error_code;
+		}
+	}
 
 	shared = _resolve_shared_status(job_ptr->details->shared,
 					part_ptr->max_share, cr_enabled);
 	job_ptr->details->shared = shared;
 
 	if (cr_enabled) {
+		/* Determine which nodes might be used by this job based upon
+		 * its ability to share resources */
 		job_ptr->cr_enabled = cr_enabled; /* CR enabled for this job */
 
 		cr_type = (select_type_plugin_info_t) slurmctld_conf.
@@ -660,8 +667,9 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
         }
 
 	if (job_ptr->details->req_node_bitmap) {  /* specific nodes required */
-		/* we have already confirmed that all of these nodes have a
-		 * usable configuration and are in the proper partition */
+		/* We have already confirmed that all of these nodes have a
+		 * usable configuration and are in the proper partition.
+		 * Check that these nodes can be used by this job. */
 		if (min_nodes != 0) {
 			total_nodes = bit_set_count(
 				job_ptr->details->req_node_bitmap);
@@ -723,7 +731,9 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 		if ((j >= 0) && (j > max_feature))
 			max_feature = j;
 	}
-		
+
+	/* Accumulate resources for this job based upon its required 
+	 * features (possibly with node counts). */
 	for (j = min_feature; j <= max_feature; j++) {
 		for (i = 0; i < node_set_size; i++) {
 
@@ -829,6 +839,8 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 				avail_bitmap = backup_bitmap;
 			}
 		} /* for (i = 0; i < node_set_size; i++) */
+
+
 #ifndef HAVE_BG
 		pick_code = 1;
 		if (job_ptr->details->req_node_bitmap &&
@@ -1234,6 +1246,7 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 	if (max_nodes < min_nodes) {
 		error_code = ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE;
 	} else {
+		/* Select resources for the job here */
 		error_code = _get_req_features(node_set_ptr, node_set_size,
 					       &select_bitmap, job_ptr,
 					       part_ptr, min_nodes, max_nodes,
@@ -1471,6 +1484,9 @@ static int _build_feature_list(struct job_record *job_ptr)
 
 /*
  * _build_node_list - identify which nodes could be allocated to a job
+ *	based upon node features, memory, processors, etc. Note that a
+ *	bitmap is set to indicate which of the job's features that the
+ *	nodes satisfy.
  * IN job_ptr - pointer to node to be scheduled
  * OUT node_set_pptr - list of node sets which could be used for the job
  * OUT node_set_size - number of node_set entries
@@ -1836,7 +1852,7 @@ extern void build_node_details(struct job_record *job_ptr)
  *	_valid_features("[fs1|fs2|fs3|fs4]", "fs3") returns a bitmap with
  *	the third bit set. For another example
  *	_valid_features("[fs1|fs2|fs3|fs4]", "fs1,fs3") returns a bitmap 
- *	with the first and third bits set. This function returns a bitmap
+ *	with the first and third bits set. The function returns a bitmap
  *	with the first bit set if requirements are satisfied without a 
  *	mutually exclusive feature list.
  */

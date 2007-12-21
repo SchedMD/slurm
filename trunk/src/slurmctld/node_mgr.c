@@ -446,20 +446,9 @@ extern int load_all_node_state ( bool state_only )
 
 	buffer = create_buf (data, data_size);
 
-	/*
-	 * Check the data version so that when the format changes, we 
-	 * we don't try to unpack data using the wrong format routines
-	 */
-	if (size_buf(buffer) >= sizeof(uint32_t) + strlen(NODE_STATE_VERSION)) {
-		char *ptr = get_buf_data(buffer);
-
-		if (memcmp( &ptr[sizeof(uint32_t)], NODE_STATE_VERSION, 3) == 0) {
-			safe_unpackstr_xmalloc( &ver_str, &name_len, buffer);
-			debug3("Version string in node_state header is %s",
-				ver_str);
-		}
-	}
-	if ((!ver_str) || (strcmp(ver_str, NODE_STATE_VERSION) != 0)) {
+	safe_unpackstr_xmalloc( &ver_str, &name_len, buffer);
+	debug3("Version string in node_state header is %s", ver_str);
+	if (strcmp(ver_str, NODE_STATE_VERSION) != 0) {
 		error("*****************************************************");
 		error("Can not recover node state, data version incompatable");
 		error("*****************************************************");
@@ -468,6 +457,7 @@ extern int load_all_node_state ( bool state_only )
 		return EFAULT;
 	}
 	xfree(ver_str);
+
 	safe_unpack_time (&time_stamp, buffer);
 
 	while (remaining_buf (buffer) > 0) {

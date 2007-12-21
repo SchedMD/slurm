@@ -409,30 +409,9 @@ extern int load_all_job_state(void)
 
 	buffer = create_buf(data, data_size);
 
-        /*
-         * The old header of the "job_state" file simply contained a
-         * timestamp, while the new header contains a "VERXXX" at the
-         * beginning (VER001, VER002, etc), a timestamp, and the last
-         * job id. To determine if we're looking at an old header or
-         * new header, we first check if the file begins with "VER".
-         *
-         * Each field is preceeded by two bytes which contains the field
-         * size.  Since we are bypassing the "pack" functions in order
-         * see if the header contains a "VERXXX" string, we need to make
-         * sure that there is enough data in the buffer to compare against.
-         */
-	if (size_buf(buffer) >= sizeof(uint32_t) + strlen(JOB_STATE_VERSION))
-	{
-	        char *ptr = get_buf_data(buffer);
-
-	        if (memcmp(&ptr[sizeof(uint32_t)], JOB_STATE_VERSION, 3) == 0)
-		{
-		        safe_unpackstr_xmalloc(&ver_str, &ver_str_len, buffer);
-		        debug3("Version string in job_state header is %s",
-			       ver_str);
-		}
-	}
-	if ((!ver_str) || (strcmp(ver_str, JOB_STATE_VERSION) != 0)) {
+	safe_unpackstr_xmalloc(&ver_str, &ver_str_len, buffer);
+	debug3("Version string in job_state header is %s", ver_str);
+	if (strcmp(ver_str, JOB_STATE_VERSION) != 0) {
 		error("***********************************************");
 		error("Can not recover job state, incompatable version");
 		error("***********************************************");
@@ -2830,11 +2809,11 @@ static int _validate_job_desc(job_desc_msg_t * job_desc_msg, int allocate,
 	if (job_desc_msg->job_min_threads == (uint16_t) NO_VAL)
 		job_desc_msg->job_min_threads = 1; /* default 1 thread per core */
 	if (job_desc_msg->job_min_memory == NO_VAL)
-		job_desc_msg->job_min_memory = 1;  /* default 1MB mem per node */
+		job_desc_msg->job_min_memory = 0;  /* default 0MB mem per node */
 	if (job_desc_msg->job_max_memory == NO_VAL)
-		job_desc_msg->job_max_memory = 1;  /* default 1MB mem per node */
+		job_desc_msg->job_max_memory = 0;  /* default 0MB mem per node */
 	if (job_desc_msg->job_min_tmp_disk == NO_VAL)
-		job_desc_msg->job_min_tmp_disk = 1;/* default 1MB disk per node */
+		job_desc_msg->job_min_tmp_disk = 0;/* default 0MB disk per node */
 
 	return SLURM_SUCCESS;
 }
