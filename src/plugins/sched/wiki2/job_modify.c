@@ -320,6 +320,7 @@ extern int	job_modify_wiki(char *cmd_ptr, int *err_code, char **err_msg)
 	if (start_ptr) {
 		start_ptr[12] = ':';
 		start_ptr += 13;
+		_null_term(start_ptr);
 	}	
 	if (nodes_ptr) {
 		nodes_ptr[5] = ':';
