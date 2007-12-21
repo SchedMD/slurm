@@ -618,7 +618,6 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	 * 1) geometry requested
 	 * 2) min/max nodes (BPs) requested
 	 * 3) type: TORUS or MESH or NAV (torus else mesh)
-	 * 4) use: VIRTUAL or COPROCESSOR
 	 * 
 	 * note: we don't have to worry about security at this level
 	 * as the SLURM block logic will handle access rights.
@@ -626,6 +625,40 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 
 	return submit_job(job_ptr, bitmap, min_nodes, max_nodes, 
 			  req_nodes, test_only);
+}
+
+/*
+ * select_p_will_run - Given a specification of scheduling requirements, 
+ *	identify the nodes which "best" satify the request and when
+ *	they will be avaliable. The specified 
+ *	nodes may be DOWN or BUSY at the time of this test as may be used 
+ *	to deterime if a job could ever run.
+ * IN job_ptr - pointer to job being scheduled
+ * IN/OUT bitmap - usable nodes are set on input, nodes not required to 
+ *	satisfy the request are cleared, other left set
+ * IN min_nodes - minimum count of nodes
+ * IN max_nodes - maximum count of nodes (0==don't care)
+ * IN req_nodes - requested (or desired) count of nodes
+ * RET NULL on failure, select_will_run_t on success
+ * NOTE: bitmap must be a superset of req_nodes at the time that 
+ *	select_p_will_run is called
+ */
+extern int select_p_will_run(struct job_record *job_ptr,
+			     bitstr_t *bitmap,
+			     uint32_t min_nodes, 
+			     uint32_t max_nodes, 
+			     uint32_t req_nodes)
+{
+	/* bg block test - is there a block where we have:
+	 * 1) geometry requested
+	 * 2) min/max nodes (BPs) requested
+	 * 3) type: TORUS or MESH or NAV (torus else mesh)
+	 * 
+	 * note: we don't have to worry about security at this level
+	 * as the SLURM block logic will handle access rights.
+	 */
+
+	return job_will_run(job_ptr, bitmap, min_nodes, max_nodes, req_nodes);
 }
 
 extern int select_p_job_begin(struct job_record *job_ptr)

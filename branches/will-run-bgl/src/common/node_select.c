@@ -82,6 +82,11 @@ typedef struct slurm_select_ops {
 						uint32_t max_nodes,
 						uint32_t req_nodes,
 						bool test_only);
+	int             (*will_run)            (struct job_record *job_ptr,
+						bitstr_t *bitmap, 
+						uint32_t min_nodes, 
+						uint32_t max_nodes,
+						uint32_t req_nodes);
 	int		(*job_begin)	       (struct job_record *job_ptr);
 	int		(*job_ready)	       (struct job_record *job_ptr);
 	int		(*job_fini)	       (struct job_record *job_ptr);
@@ -133,6 +138,7 @@ struct select_jobinfo {
 	uint16_t rotate;	/* permit geometry rotation if set */
 	char *bg_block_id;	/* Blue Gene block ID */
 	uint16_t magic;		/* magic number */
+	char *nodes;            /* node list given for estimated start */ 
 	char *ionodes;          /* for bg to tell which ionodes of a small
 				 * block the job is running */ 
 	uint32_t node_cnt;      /* how many cnodes in block */ 
@@ -143,6 +149,7 @@ struct select_jobinfo {
 	char *linuximage;       /* LinuxImage for this block */
 	char *mloaderimage;     /* mloaderImage for this block */
 	char *ramdiskimage;     /* RamDiskImage for this block */
+	time_t est_job_start;  /* Estimated start time of job */
 };
 #endif
 
@@ -168,6 +175,7 @@ static slurm_select_ops_t * _select_get_ops(slurm_select_context_t *c)
 		"select_p_node_init",
 		"select_p_block_init",
 		"select_p_job_test",
+		"select_p_will_run",
 		"select_p_job_begin",
 		"select_p_job_ready",
 		"select_p_job_fini",
@@ -523,8 +531,8 @@ extern int select_g_reconfigure (void)
  * IN test_only - if true, only test if ever could run, not necessarily now 
  */
 extern int select_g_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
-		uint32_t min_nodes, uint32_t max_nodes, uint32_t req_nodes, 
-		bool test_only)
+			     uint32_t min_nodes, uint32_t max_nodes, 
+			     uint32_t req_nodes, bool test_only)
 {
 	if (slurm_select_init() < 0)
 		return SLURM_ERROR;
@@ -532,6 +540,36 @@ extern int select_g_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	return (*(g_select_context->ops.job_test))(job_ptr, bitmap, 
 						   min_nodes, max_nodes, 
 						   req_nodes, test_only);
+}
+
+/*
+ * select_g_will_run - Given a specification of scheduling requirements, 
+ *	identify the nodes which "best" satify the request and when
+ *	they will be avaliable. The specified 
+ *	nodes may be DOWN or BUSY at the time of this test as may be used 
+ *	to deterime if a job could ever run.
+ * IN job_ptr - pointer to job being scheduled
+ * IN/OUT bitmap - usable nodes are set on input, nodes not required to 
+ *	satisfy the request are cleared, other left set
+ * IN min_nodes - minimum count of nodes
+ * IN max_nodes - maximum count of nodes (0==don't care)
+ * IN req_nodes - requested (or desired) count of nodes
+ * NOTE: bitmap must be a superset of req_nodes at the time that 
+ *	select_p_will_run is called
+ */
+extern int select_g_will_run(struct job_record *job_ptr,
+					    bitstr_t *bitmap,
+					    uint32_t min_nodes, 
+					    uint32_t max_nodes, 
+					    uint32_t req_nodes)
+{
+	if (slurm_select_init() < 0)
+		return SLURM_SUCCESS;
+
+	return (*(g_select_context->ops.will_run))(job_ptr, bitmap, 
+						   min_nodes, max_nodes, 
+						   req_nodes);
+
 }
 
 /*
@@ -632,10 +670,12 @@ static int _unpack_node_info(bg_info_record_t *bg_info_record, Buf buffer)
 	uint32_t uint32_tmp;
 	char *bp_inx_str;
 	
-	safe_unpackstr_xmalloc(&(bg_info_record->nodes),     &uint32_tmp, buffer);
-	safe_unpackstr_xmalloc(&(bg_info_record->ionodes),   &uint32_tmp, buffer);
-	safe_unpackstr_xmalloc(&bg_info_record->owner_name,  &uint32_tmp, buffer);
-	safe_unpackstr_xmalloc(&bg_info_record->bg_block_id, &uint32_tmp, buffer);
+	safe_unpackstr_xmalloc(&(bg_info_record->nodes), &uint32_tmp, buffer);
+	safe_unpackstr_xmalloc(&(bg_info_record->ionodes), &uint32_tmp, buffer);
+	safe_unpackstr_xmalloc(&bg_info_record->owner_name,
+			       &uint32_tmp, buffer);
+	safe_unpackstr_xmalloc(&bg_info_record->bg_block_id,
+			       &uint32_tmp, buffer);
 
 	safe_unpack16(&uint16_tmp, buffer);
 	bg_info_record->state     = (int) uint16_tmp;
@@ -721,6 +761,7 @@ extern int select_g_alloc_jobinfo (select_jobinfo_t *jobinfo)
 	(*jobinfo)->rotate = (uint16_t) NO_VAL;
 	(*jobinfo)->bg_block_id = NULL;
 	(*jobinfo)->magic = JOBINFO_MAGIC;
+	(*jobinfo)->nodes = NULL;
 	(*jobinfo)->ionodes = NULL;
 	(*jobinfo)->node_cnt = NO_VAL;
 	(*jobinfo)->max_procs =  NO_VAL;
@@ -743,6 +784,7 @@ extern int select_g_set_jobinfo (select_jobinfo_t jobinfo,
 	int i, rc = SLURM_SUCCESS;
 	uint16_t *uint16 = (uint16_t *) data;
 	uint32_t *uint32 = (uint32_t *) data;
+	time_t *time = (time_t *) data;
 	char *tmp_char = (char *) data;
 
 	if (jobinfo == NULL) {
@@ -777,6 +819,10 @@ extern int select_g_set_jobinfo (select_jobinfo_t jobinfo,
 		xfree(jobinfo->bg_block_id);
 		jobinfo->bg_block_id = xstrdup(tmp_char);
 		break;
+	case SELECT_DATA_NODES:
+		xfree(jobinfo->nodes);
+		jobinfo->nodes = xstrdup(tmp_char);
+		break;
 	case SELECT_DATA_IONODES:
 		xfree(jobinfo->ionodes);
 		jobinfo->ionodes = xstrdup(tmp_char);
@@ -810,6 +856,9 @@ extern int select_g_set_jobinfo (select_jobinfo_t jobinfo,
 		xfree(jobinfo->ramdiskimage);
 		jobinfo->ramdiskimage = xstrdup(tmp_char);
 		break;	
+	case SELECT_DATA_EST_START:
+		jobinfo->est_job_start = *time;
+		break;
 	default:
 		debug("select_g_set_jobinfo data_type %d invalid", 
 		      data_type);
@@ -830,6 +879,7 @@ extern int select_g_get_jobinfo (select_jobinfo_t jobinfo,
 	int i, rc = SLURM_SUCCESS;
 	uint16_t *uint16 = (uint16_t *) data;
 	uint32_t *uint32 = (uint32_t *) data;
+	time_t *time = (time_t *) data;
 	char **tmp_char = (char **) data;
 
 	if (jobinfo == NULL) {
@@ -867,6 +917,13 @@ extern int select_g_get_jobinfo (select_jobinfo_t jobinfo,
 			*tmp_char = NULL;
 		else
 			*tmp_char = xstrdup(jobinfo->bg_block_id);
+		break;
+	case SELECT_DATA_NODES:
+		if ((jobinfo->nodes == NULL)
+		    ||  (jobinfo->nodes[0] == '\0'))
+			*tmp_char = NULL;
+		else
+			*tmp_char = xstrdup(jobinfo->nodes);
 		break;
 	case SELECT_DATA_IONODES:
 		if ((jobinfo->ionodes == NULL)
@@ -912,6 +969,9 @@ extern int select_g_get_jobinfo (select_jobinfo_t jobinfo,
 		else
 			*tmp_char = xstrdup(jobinfo->ramdiskimage);
 		break;
+	case SELECT_DATA_EST_START:
+		*time = jobinfo->est_job_start;
+		break;
 	default:
 		debug("select_g_get_jobinfo data_type %d invalid", 
 		      data_type);
@@ -947,6 +1007,7 @@ extern select_jobinfo_t select_g_copy_jobinfo(select_jobinfo_t jobinfo)
 		rc->rotate = jobinfo->rotate;
 		rc->bg_block_id = xstrdup(jobinfo->bg_block_id);
 		rc->magic = JOBINFO_MAGIC;
+		rc->nodes = xstrdup(jobinfo->nodes);
 		rc->ionodes = xstrdup(jobinfo->ionodes);
 		rc->node_cnt = jobinfo->node_cnt;
 		rc->altered = jobinfo->altered;
@@ -955,6 +1016,7 @@ extern select_jobinfo_t select_g_copy_jobinfo(select_jobinfo_t jobinfo)
 		rc->linuximage = xstrdup(jobinfo->linuximage);
 		rc->mloaderimage = xstrdup(jobinfo->mloaderimage);
 		rc->ramdiskimage = xstrdup(jobinfo->ramdiskimage);
+		rc->est_job_start = jobinfo->est_job_start;
 		
 	}
 
@@ -977,6 +1039,7 @@ extern int select_g_free_jobinfo  (select_jobinfo_t *jobinfo)
 	} else {
 		(*jobinfo)->magic = 0;
 		xfree((*jobinfo)->bg_block_id);
+		xfree((*jobinfo)->nodes);
 		xfree((*jobinfo)->ionodes);
 		xfree((*jobinfo)->blrtsimage);
 		xfree((*jobinfo)->linuximage);
@@ -1011,24 +1074,31 @@ extern int  select_g_pack_jobinfo  (select_jobinfo_t jobinfo, Buf buffer)
 		pack32(jobinfo->max_procs, buffer);
 
 		packstr(jobinfo->bg_block_id, buffer);
+		packstr(jobinfo->nodes, buffer);
 		packstr(jobinfo->ionodes, buffer);
 		packstr(jobinfo->blrtsimage, buffer);
 		packstr(jobinfo->linuximage, buffer);
 		packstr(jobinfo->mloaderimage, buffer);
 		packstr(jobinfo->ramdiskimage, buffer);
+		pack_time(jobinfo->est_job_start, buffer);
 	} else {
+		/* pack space for 3 positions for start and for geo
+		 * then 1 for conn_type, reboot, and rotate
+		 */
 		for (i=0; i<((SYSTEM_DIMENSIONS*2)+3); i++)
 			pack16((uint16_t) 0, buffer);
 
-		pack32((uint32_t) 0, buffer);
-		pack32((uint32_t) 0, buffer);
+		pack32((uint32_t) 0, buffer); //node_cnt
+		pack32((uint32_t) 0, buffer); //max_procs
 
-		packstr("", buffer);
-		packstr("", buffer);
-		packstr("", buffer);
-		packstr("", buffer);
-		packstr("", buffer);
-		packstr("", buffer);
+		packstr("", buffer); //bg_block_id
+		packstr("", buffer); //nodes
+		packstr("", buffer); //ionodes
+		packstr("", buffer); //blrts
+		packstr("", buffer); //linux
+		packstr("", buffer); //mloader
+		packstr("", buffer); //ramdisk
+		pack_time(0, buffer); //est_job_start
 	}
 
 	return SLURM_SUCCESS;
@@ -1058,11 +1128,13 @@ extern int  select_g_unpack_jobinfo(select_jobinfo_t jobinfo, Buf buffer)
 
 	safe_unpackstr_xmalloc(&(jobinfo->bg_block_id),  &uint32_tmp, buffer);
 	safe_unpackstr_xmalloc(&(jobinfo->ionodes),      &uint32_tmp, buffer);
+	safe_unpackstr_xmalloc(&(jobinfo->nodes),      &uint32_tmp, buffer);
 	safe_unpackstr_xmalloc(&(jobinfo->blrtsimage),   &uint32_tmp, buffer);
 	safe_unpackstr_xmalloc(&(jobinfo->linuximage),   &uint32_tmp, buffer);
 	safe_unpackstr_xmalloc(&(jobinfo->mloaderimage), &uint32_tmp, buffer);
 	safe_unpackstr_xmalloc(&(jobinfo->ramdiskimage), &uint32_tmp, buffer);
-
+	safe_unpack_time(&(jobinfo->est_job_start), buffer);
+	
 	return SLURM_SUCCESS;
 
       unpack_error:
@@ -1164,6 +1236,13 @@ extern char *select_g_sprint_jobinfo(select_jobinfo_t jobinfo,
 	case SELECT_PRINT_BG_ID:
 		snprintf(buf, size, "%s", jobinfo->bg_block_id);
 		break;
+	case SELECT_PRINT_NODES:
+		if(jobinfo->ionodes && jobinfo->ionodes[0]) 
+			snprintf(buf, size, "%s[%s]",
+				 jobinfo->nodes, jobinfo->ionodes);
+		else
+			snprintf(buf, size, "%s", jobinfo->nodes);
+		break;
 	case SELECT_PRINT_CONNECTION:
 		snprintf(buf, size, "%s", 
 			 _job_conn_type_string(jobinfo->conn_type));
@@ -1218,6 +1297,9 @@ extern char *select_g_sprint_jobinfo(select_jobinfo_t jobinfo,
 			tmp_image = jobinfo->ramdiskimage;
 		snprintf(buf, size, "%s", tmp_image);		
 		break;		
+	case SELECT_PRINT_EST_START:
+		snprintf(buf, size, "%u", (int)jobinfo->est_job_start);
+		break;
 	default:
 		error("select_g_sprint_jobinfo: bad mode %d", mode);
 		if (size > 0)

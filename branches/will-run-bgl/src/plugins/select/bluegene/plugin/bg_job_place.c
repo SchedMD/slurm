@@ -951,3 +951,82 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 	
 	return rc;
 }
+
+/*
+ * Try to find resources and when they are avaliable for a given job request
+ * IN job_ptr - pointer to job record in slurmctld
+ * IN/OUT bitmap - nodes availble for assignment to job, clear those not to
+ *	be used
+ * IN min_nodes, max_nodes  - minimum and maximum number of nodes to allocate
+ *	to this job (considers slurm block limits)
+ * RET NULL on failure, select_will_run_t on success
+ */
+extern int job_will_run(struct job_record *job_ptr,
+			bitstr_t *slurm_block_bitmap,
+			uint32_t min_nodes, uint32_t max_nodes,
+			uint32_t req_nodes)
+{
+	int spec = 1; /* this will be like, keep TYPE a priority, etc,  */
+	bg_record_t* record = NULL;
+	char buf[100];
+	int rc = SLURM_SUCCESS;
+	uint16_t tmp16 = (uint16_t)NO_VAL;
+	
+	select_g_sprint_jobinfo(job_ptr->select_jobinfo, buf, sizeof(buf), 
+				SELECT_PRINT_MIXED);
+	debug("bluegene:submit_job: %s nodes=%u-%u-%u", 
+	      buf, min_nodes, req_nodes, max_nodes);
+	select_g_sprint_jobinfo(job_ptr->select_jobinfo, buf, sizeof(buf), 
+				SELECT_PRINT_BLRTS_IMAGE);
+	debug2("BlrtsImage=%s", buf);
+	select_g_sprint_jobinfo(job_ptr->select_jobinfo, buf, sizeof(buf), 
+				SELECT_PRINT_LINUX_IMAGE);
+	debug2("LinuxImage=%s", buf);
+	select_g_sprint_jobinfo(job_ptr->select_jobinfo, buf, sizeof(buf), 
+				SELECT_PRINT_MLOADER_IMAGE);
+	debug2("MloaderImage=%s", buf);
+	select_g_sprint_jobinfo(job_ptr->select_jobinfo, buf, sizeof(buf), 
+				SELECT_PRINT_RAMDISK_IMAGE);
+	debug2("RamDiskImage=%s", buf);
+	
+	if(bluegene_layout_mode == LAYOUT_DYNAMIC)
+		slurm_mutex_lock(&create_dynamic_mutex);
+	
+	rc = _find_best_block_match(job_ptr, slurm_block_bitmap, min_nodes, 
+				    max_nodes, req_nodes, spec, 
+				    &record, 1);
+	
+	if(rc == SLURM_SUCCESS) {
+		
+		if((record->ionodes)
+		   && (job_ptr->part_ptr->max_share <= 1))
+			error("Small block used in "
+			      "non-shared partition");
+		
+		/* set the block id and info about block */
+		select_g_set_jobinfo(job_ptr->select_jobinfo,
+				     SELECT_DATA_IONODES, 
+				     record->ionodes);
+		select_g_set_jobinfo(job_ptr->select_jobinfo,
+				     SELECT_DATA_NODES, 
+				     record->nodes);
+		select_g_set_jobinfo(job_ptr->select_jobinfo,
+				     SELECT_DATA_NODE_CNT, 
+				     &record->node_cnt);
+		select_g_set_jobinfo(job_ptr->select_jobinfo,
+				     SELECT_DATA_GEOMETRY, 
+				     &record->geo);
+		tmp16 = record->conn_type;
+		select_g_set_jobinfo(job_ptr->select_jobinfo,
+				     SELECT_DATA_CONN_TYPE, 
+				     &tmp16);
+		
+		select_g_set_jobinfo(job_ptr->select_jobinfo,
+				     SELECT_DATA_BLOCK_ID,
+				     "unassigned");
+	}
+	if(bluegene_layout_mode == LAYOUT_DYNAMIC)
+		slurm_mutex_unlock(&create_dynamic_mutex);
+	
+	return rc;
+}

@@ -167,6 +167,28 @@ extern int select_g_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 			uint32_t req_nodes, bool test_only);
 
 /*
+ * select_g_will_run - Given a specification of scheduling requirements, 
+ *	identify the nodes which "best" satify the request and when
+ *	they will be avaliable. The specified 
+ *	nodes may be DOWN or BUSY at the time of this test as may be used 
+ *	to deterime if a job could ever run.
+ * IN/OUT job_ptr - pointer to job being scheduled
+ * IN/OUT bitmap - usable nodes are set on input, nodes not required to 
+ *	satisfy the request are cleared, other left set
+ * IN min_nodes - minimum count of nodes
+ * IN max_nodes - maximum count of nodes (0==don't care)
+ * IN req_nodes - requested (or desired) count of nodes
+ * RET 0 on success 1 on failure
+ * NOTE: bitmap must be a superset of req_nodes at the time that 
+ *	select_p_will_run is called
+ */
+extern int select_g_will_run(struct job_record *job_ptr,
+			     bitstr_t *bitmap,
+			     uint32_t min_nodes, 
+			     uint32_t max_nodes, 
+			     uint32_t req_nodes);
+
+/*
  * Note initiation of job is about to begin. Called immediately 
  * after select_g_job_test(). Executed from slurmctld.
  * IN job_ptr - pointer to job being initiated

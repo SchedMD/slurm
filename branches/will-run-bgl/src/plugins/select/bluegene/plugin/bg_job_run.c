@@ -72,6 +72,7 @@ typedef struct bg_update {
 	enum update_op op;	/* start | terminate | sync */
 	uid_t uid;		/* new user */
 	uint32_t job_id;	/* SLURM job id */	
+	time_t end_time;        /* estimated time job will end */
 	uint16_t reboot;	/* reboot block before starting job */
 	pm_partition_id_t bg_block_id;
 	char *blrtsimage;       /* BlrtsImage for this block */
@@ -213,6 +214,7 @@ static void _sync_agent(bg_update_t *bg_update_ptr)
 	}
 	slurm_mutex_lock(&block_state_mutex);
 	bg_record->job_running = bg_update_ptr->job_id;
+	bg_record->est_job_end = bg_update_ptr->end_time;
 	if(!block_exist_in_list(bg_job_block_list, bg_record)) {
 		list_push(bg_job_block_list, bg_record);
 		num_unused_cpus -= bg_record->bp_count*bg_record->cpus_per_bp;
@@ -607,9 +609,10 @@ static void _term_agent(bg_update_t *bg_update_ptr)
 		}
 			
 		slurm_mutex_lock(&block_state_mutex);
-		if(bg_record->job_running > NO_JOB_RUNNING)
+		if(bg_record->job_running > NO_JOB_RUNNING) {
 			bg_record->job_running = NO_JOB_RUNNING;
-		
+			bg_record->est_job_end = 0;
+		}
 		/* remove user from list */
 		
 		slurm_conf_lock();
@@ -845,6 +848,8 @@ extern int start_job(struct job_record *job_ptr)
 	bg_update_ptr->op = START_OP;
 	bg_update_ptr->uid = job_ptr->user_id;
 	bg_update_ptr->job_id = job_ptr->job_id;
+	bg_update_ptr->end_time = job_ptr->end_time;
+
 	select_g_get_jobinfo(job_ptr->select_jobinfo,
 			     SELECT_DATA_BLOCK_ID, 
 			     &(bg_update_ptr->bg_block_id));
@@ -894,6 +899,7 @@ extern int start_job(struct job_record *job_ptr)
 		job_ptr->num_procs = (bg_record->cpus_per_bp *
 				      bg_record->bp_count);
 		bg_record->job_running = bg_update_ptr->job_id;
+		bg_record->est_job_end = bg_update_ptr->end_time;
 		if(!block_exist_in_list(bg_job_block_list, bg_record)) {
 			list_push(bg_job_block_list, bg_record);
 			num_unused_cpus -= 
@@ -1023,6 +1029,7 @@ extern int sync_jobs(List job_list)
 			bg_update_ptr->op = SYNC_OP;
 			bg_update_ptr->uid = job_ptr->user_id;
 			bg_update_ptr->job_id = job_ptr->job_id;
+			bg_update_ptr->end_time = job_ptr->end_time;
 			_block_op(bg_update_ptr);
 		}
 		list_iterator_destroy(job_iterator);

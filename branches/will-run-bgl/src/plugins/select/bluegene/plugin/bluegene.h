@@ -100,6 +100,8 @@ typedef struct bg_record {
 					   are on.  NULL if not a small block*/
 	int job_running;                /* job id if there is a job running 
 					   on the block */
+	time_t est_job_end;             /* if job_running time job is
+					   estimated to end */
 	int cpus_per_bp;                /* count of cpus per base part */
 	uint32_t node_cnt;              /* count of nodes per block */
 	uint16_t quarter;               /* used for small blocks 

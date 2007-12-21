@@ -54,7 +54,20 @@
  * RET - SLURM_SUCCESS if job runnable now, error code otherwise 
  */
 extern int submit_job(struct job_record *job_ptr, bitstr_t *bitmap,
-		uint32_t min_nodes, uint32_t max_nodes, uint32_t req_nodes, 
-		bool test_only);
+		      uint32_t min_nodes, uint32_t max_nodes,
+		      uint32_t req_nodes, bool test_only);
+/*
+ * Try to find resources and when they are avaliable for a given job request
+ * IN job_ptr - pointer to job record in slurmctld
+ * IN/OUT bitmap - nodes availble for assignment to job, clear those not to
+ *	be used
+ * IN min_nodes, max_nodes  - minimum and maximum number of nodes to allocate
+ *	to this job (considers slurm block limits)
+ * RET NULL on failure, select_will_run_t on success
+ */
+extern int job_will_run(struct job_record *job_ptr,
+			bitstr_t *slurm_block_bitmap,
+			uint32_t min_nodes, uint32_t max_nodes,
+			uint32_t req_nodes);
 
 #endif /* _BG_JOB_PLACE_H_ */
