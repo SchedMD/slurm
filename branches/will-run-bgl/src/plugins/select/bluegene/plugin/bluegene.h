@@ -176,6 +176,7 @@ extern void print_bg_record(bg_record_t *record);
 extern void destroy_bg_record(void *object);
 extern int block_exist_in_list(List my_list, bg_record_t *bg_record);
 extern void process_nodes(bg_record_t *bg_reord);
+extern List copy_bg_list(List in_list);
 extern void copy_bg_record(bg_record_t *fir_record, bg_record_t *sec_record);
 
 /* return bg_record from a bg_list */

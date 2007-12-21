@@ -470,11 +470,39 @@ extern void process_nodes(bg_record_t *bg_record)
 	return;
 }
 
+/* 
+ * NOTE: This function does not do a mutex lock so if you are copying the
+ * main bg_list you need to lock 'block_state_mutex' before calling
+ */
+extern List copy_bg_list(List in_list) 
+{
+	bg_record_t *bg_record = NULL;
+	bg_record_t *new_record = NULL;
+	List out_list = list_create(destroy_bg_record);
+	ListIterator itr = list_iterator_create(in_list);
+
+	while ((bg_record = (bg_record_t *) list_next(itr))) { 
+		new_record = xmalloc(sizeof(bg_record_t));
+		copy_bg_record(bg_record, new_record);
+		list_append(out_list, new_record);
+	}
+
+	list_iterator_destroy(itr);
+	
+	return out_list;	
+}
+
 extern void copy_bg_record(bg_record_t *fir_record, bg_record_t *sec_record)
 {
 	int i;
 	ListIterator itr = NULL;
 	ba_node_t *ba_node = NULL, *new_ba_node = NULL;
+	
+	if(!fir_record || !sec_record) {
+		error("copy_bg_record: "
+		      "given a null for either first record or second record");
+		return;
+	}
 
 	xfree(sec_record->bg_block_id);
 	sec_record->bg_block_id = xstrdup(fir_record->bg_block_id);

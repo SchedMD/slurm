@@ -676,7 +676,6 @@ static int _unpack_node_info(bg_info_record_t *bg_info_record, Buf buffer)
 			       &uint32_tmp, buffer);
 	safe_unpackstr_xmalloc(&bg_info_record->bg_block_id,
 			       &uint32_tmp, buffer);
-
 	safe_unpack16(&uint16_tmp, buffer);
 	bg_info_record->state     = (int) uint16_tmp;
 	safe_unpack16(&uint16_tmp, buffer);
@@ -711,10 +710,11 @@ static int _unpack_node_info(bg_info_record_t *bg_info_record, Buf buffer)
 			       buffer);
 	safe_unpackstr_xmalloc(&bg_info_record->ramdiskimage, &uint32_tmp, 
 			       buffer);
-
+	
 	return SLURM_SUCCESS;
 
 unpack_error:
+	error("_unpack_node_info: error unpacking here");
 	_free_node_info(bg_info_record);
 	return SLURM_ERROR;
 }
