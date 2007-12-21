@@ -72,7 +72,8 @@ static int32_t _get_depend_id(char *str)
 static int	_job_modify(uint32_t jobid, char *bank_ptr, 
 			int32_t depend_id, char *new_hostlist,
 			uint32_t new_node_cnt, char *part_name_ptr, 
-			uint32_t new_time_limit, char *name_ptr)
+			uint32_t new_time_limit, char *name_ptr,
+			char *start_ptr)
 {
 	struct job_record *job_ptr;
 	time_t now = time(NULL);
@@ -104,11 +105,27 @@ static int	_job_modify(uint32_t jobid, char *bank_ptr,
 				  old_time) * 60);
 		last_job_update = now;
 	}
+
 	if (bank_ptr) {
 		info("wiki: change job %u bank %s", jobid, bank_ptr);
 		xfree(job_ptr->account);
 		job_ptr->account = xstrdup(bank_ptr);
 		last_job_update = now;
+	}
+
+	if (start_ptr) {
+		char *end_ptr;
+		uint32_t begin_time = strtol(start_ptr, &end_ptr, 10);
+		if ((job_ptr->job_state == JOB_PENDING) &&
+		    (job_ptr->details)) {
+			info("wiki: change job %u begin time to %u", 
+				jobid, begin_time);
+			job_ptr->details->begin_time = begin_time;
+		} else {
+			error("wiki: MODIFYJOB begin_time of non-pending "
+				"job %u", jobid);
+			return ESLURM_DISABLED;
+		}
 	}
 
 	if (name_ptr) {
@@ -208,10 +225,11 @@ host_fini:	if (rc) {
 /* Modify a job:
  *	CMD=MODIFYJOB ARG=<jobid> PARTITION=<name> NODES=<number>
  *		DEPEND=afterany:<jobid> TIMELIMT=<seconds> BANK=<name>
+ *		MINSTARTTIME=<uts>
  * RET 0 on success, -1 on failure */
 extern int	job_modify_wiki(char *cmd_ptr, int *err_code, char **err_msg)
 {
-	char *arg_ptr, *bank_ptr, *depend_ptr, *nodes_ptr;
+	char *arg_ptr, *bank_ptr, *depend_ptr, *nodes_ptr, *start_ptr;
 	char *host_ptr, *name_ptr, *part_ptr, *time_ptr, *tmp_char;
 	int i, slurm_rc;
 	int depend_id = -1;
@@ -243,6 +261,7 @@ extern int	job_modify_wiki(char *cmd_ptr, int *err_code, char **err_msg)
 	depend_ptr = strstr(cmd_ptr, "DEPEND=");
 	name_ptr   = strstr(cmd_ptr, "JOBNAME=");
 	host_ptr   = strstr(cmd_ptr, "HOSTLIST=");
+	start_ptr  = strstr(cmd_ptr, "MINSTARTTIME=");
 	nodes_ptr  = strstr(cmd_ptr, "NODES=");
 	part_ptr   = strstr(cmd_ptr, "PARTITION=");
 	time_ptr   = strstr(cmd_ptr, "TIMELIMIT=");
@@ -298,6 +317,10 @@ extern int	job_modify_wiki(char *cmd_ptr, int *err_code, char **err_msg)
 		} else
 			_null_term(name_ptr);
 	}
+	if (start_ptr) {
+		start_ptr[12] = ':';
+		start_ptr += 13;
+	}	
 	if (nodes_ptr) {
 		nodes_ptr[5] = ':';
 		nodes_ptr += 6;
@@ -325,7 +348,8 @@ extern int	job_modify_wiki(char *cmd_ptr, int *err_code, char **err_msg)
 
 	lock_slurmctld(job_write_lock);
 	slurm_rc = _job_modify(jobid, bank_ptr, depend_id, host_ptr,
-			new_node_cnt, part_ptr, new_time_limit, name_ptr);
+			new_node_cnt, part_ptr, new_time_limit, name_ptr,
+			start_ptr);
 	unlock_slurmctld(job_write_lock);
 	if (slurm_rc != SLURM_SUCCESS) {
 		*err_code = -700;
