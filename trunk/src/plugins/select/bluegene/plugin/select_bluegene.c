@@ -384,17 +384,9 @@ extern int select_p_state_restore(char *dir_name)
 	 * Check the data version so that when the format changes, we 
 	 * we don't try to unpack data using the wrong format routines
 	 */
-	if(size_buf(buffer)
-	   >= sizeof(uint16_t) + strlen(BLOCK_STATE_VERSION)) {
-	        char *ptr = get_buf_data(buffer);
-		
-	        if (!memcmp(&ptr[sizeof(uint16_t)], BLOCK_STATE_VERSION, 3)) {
-		        safe_unpackstr_xmalloc(&ver_str, &ver_str_len, buffer);
-		        debug3("Version string in block_state header is %s",
-			       ver_str);
-		}
-	}
-	if (ver_str && (strcmp(ver_str, BLOCK_STATE_VERSION) != 0)) {
+	safe_unpackstr_xmalloc(&ver_str, &ver_str_len, buffer);
+	debug3("Version string in block_state header is %s", ver_str);
+	if ((!ver_str) || (strcmp(ver_str, BLOCK_STATE_VERSION) != 0)) {
 		error("Can not recover block state, "
 		      "data version incompatable");
 		xfree(ver_str);

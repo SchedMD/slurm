@@ -400,7 +400,7 @@ int load_all_part_state(void)
 	int data_allocated, data_read = 0, error_code = 0, part_cnt = 0;
 	int state_fd;
 	Buf buffer;
-	char *ver_str;
+	char *ver_str = NULL;
 
 	/* read the file */
 	state_file = xstrdup(slurmctld_conf.state_save_location);
@@ -440,7 +440,7 @@ int load_all_part_state(void)
 
 	safe_unpackstr_xmalloc( &ver_str, &name_len, buffer);
 	debug3("Version string in part_state header is %s", ver_str);
-	if (strcmp(ver_str, PART_STATE_VERSION) != 0) {
+	if ((!ver_str) || (strcmp(ver_str, PART_STATE_VERSION) != 0)) {
 		error("**********************************************************");
 		error("Can not recover partition state, data version incompatable");
 		error("**********************************************************");
