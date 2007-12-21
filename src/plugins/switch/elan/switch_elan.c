@@ -233,7 +233,7 @@ int switch_p_libstate_restore (char *dir_name, bool recover)
 	int error_code = SLURM_SUCCESS;
 	int state_fd, data_allocated = 0, data_read = 0, data_size = 0;
 	char *ver_str = NULL;
-	uint16_t ver_str_len;
+	uint32_t ver_str_len;
 
 	if (!recover)	/* clean start, no recovery */
 		return qsw_init(NULL);
@@ -271,16 +271,9 @@ int switch_p_libstate_restore (char *dir_name, bool recover)
 	if (error_code == SLURM_SUCCESS) {
 		buffer = create_buf (data, data_size);
 		data = NULL;    /* now in buffer, don't xfree() */
-		if (buffer && (size_buf(buffer) >= sizeof(uint16_t) + 
-				strlen(QSW_STATE_VERSION))) {
-			char *ptr = get_buf_data(buffer);
-
-			if (!memcmp(&ptr[sizeof(uint16_t)], 
-					QSW_STATE_VERSION, 3)) {
-				unpackstr_xmalloc(&ver_str, &ver_str_len, 
-						buffer);
-				debug3("qsw_state file version: %s", ver_str);
-			}
+		if (buffer) {
+			unpackstr_xmalloc(&ver_str, &ver_str_len, buffer);
+			debug3("qsw_state file version: %s", ver_str);
 		}
 	}
 

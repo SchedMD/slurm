@@ -411,7 +411,7 @@ extern int load_all_job_state(void)
 
 	safe_unpackstr_xmalloc(&ver_str, &ver_str_len, buffer);
 	debug3("Version string in job_state header is %s", ver_str);
-	if (strcmp(ver_str, JOB_STATE_VERSION) != 0) {
+	if ((!ver_str) || strcmp(ver_str, JOB_STATE_VERSION) != 0) {
 		error("***********************************************");
 		error("Can not recover job state, incompatable version");
 		error("***********************************************");
