@@ -441,7 +441,7 @@ try_again:
 			 (int)job_ptr->start_time,
 			 jname, track_steps,
 			 job_ptr->job_state & (~JOB_COMPLETING),
-			 priority, job_ptr->details->total_procs,
+			 priority, job_ptr->total_procs,
 			 nodes, account);
 		rc = pgsql_db_query(jobacct_pgsql_db, query);
 	} else if(!reinit) {
@@ -554,7 +554,7 @@ extern int jobacct_storage_p_step_start(struct step_record *step_ptr)
 	
 #else
 	if(!step_ptr->step_layout || !step_ptr->step_layout->task_cnt) {
-		cpus = step_ptr->job_ptr->details->total_procs;
+		cpus = step_ptr->job_ptr->total_procs;
 		snprintf(node_list, BUFFER_SIZE, "%s", step_ptr->job_ptr->nodes);
 	} else {
 		cpus = step_ptr->step_layout->task_cnt;
@@ -632,7 +632,7 @@ extern int jobacct_storage_p_step_complete(struct step_record *step_ptr)
 	
 #else
 	if(!step_ptr->step_layout || !step_ptr->step_layout->task_cnt)
-		cpus = step_ptr->job_ptr->details->total_procs;
+		cpus = step_ptr->job_ptr->total_procs;
 	else 
 		cpus = step_ptr->step_layout->task_cnt;
 #endif

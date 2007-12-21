@@ -323,7 +323,7 @@ extern int jobacct_storage_p_job_start(struct job_record *job_ptr)
 	tmp = snprintf(buf, BUFFER_SIZE,
 		       "%d %s %d %ld %u %s %s",
 		       JOB_START, jname,
-		       track_steps, priority, job_ptr->details->total_procs,
+		       track_steps, priority, job_ptr->total_procs,
 		       nodes, account);
 
 	rc = _print_record(job_ptr, job_ptr->start_time, buf);
@@ -393,7 +393,7 @@ extern int jobacct_storage_p_step_start(struct step_record *step_ptr)
 	
 #else
 	if(!step_ptr->step_layout || !step_ptr->step_layout->task_cnt) {
-		cpus = step_ptr->job_ptr->details->total_procs;
+		cpus = step_ptr->job_ptr->total_procs;
 		snprintf(node_list, BUFFER_SIZE, "%s", step_ptr->job_ptr->nodes);
 	} else {
 		cpus = step_ptr->step_layout->task_cnt;
@@ -509,7 +509,7 @@ extern int jobacct_storage_p_step_complete(struct step_record *step_ptr)
 	
 #else
 	if(!step_ptr->step_layout || !step_ptr->step_layout->task_cnt) {
-		cpus = step_ptr->job_ptr->details->total_procs;
+		cpus = step_ptr->job_ptr->total_procs;
 		snprintf(node_list, BUFFER_SIZE, "%s", step_ptr->job_ptr->nodes);
 	
 	} else {
