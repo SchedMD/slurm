@@ -3,7 +3,8 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 1.2.22
 =========================
-
+ -- In sched/wiki2, add support for MODIFYJOB option "MINSTARTTIME=<time>"
+    to modify a job's earliest start time.
 
 * Changes in SLURM 1.2.21
 =========================
