@@ -71,6 +71,11 @@
 
 #define SELECT_DEBUG 0
 
+static int _job_count_bitmap(bitstr_t * bitmap, bitstr_t * jobmap, int job_cnt);
+static int _job_test(struct job_record *job_ptr, bitstr_t *bitmap,
+			uint32_t min_nodes, uint32_t max_nodes, 
+			uint32_t req_nodes);
+
 /*
  * These variables are required by the generic plugin interface.  If they
  * are not found in the plugin, the plugin loader will ignore it.
@@ -391,6 +396,77 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 			uint32_t min_nodes, uint32_t max_nodes, 
 			uint32_t req_nodes, bool test_only)
 {
+	multi_core_data_t *mc_ptr = job_ptr->details->mc_ptr;
+	bitstr_t *tmp_map;
+	int i, j, rc = EINVAL, max_share = 1, prev_cnt = -1, set_cnt;
+
+	xassert(bitmap);
+	if (mc_ptr) {
+		debug3("job min-[max]: -N %u-[%u]:%u-[%u]:%u-[%u]:%u-[%u]",
+			job_ptr->details->min_nodes, 
+			job_ptr->details->max_nodes,
+			mc_ptr->min_sockets, mc_ptr->max_sockets,
+			mc_ptr->min_cores,   mc_ptr->max_cores,
+			mc_ptr->min_threads, mc_ptr->max_threads);
+		debug3("job ntasks-per: -node=%u -socket=%u -core=%u",
+			job_ptr->details->ntasks_per_node,
+			mc_ptr->ntasks_per_socket, mc_ptr->ntasks_per_core);
+	}
+
+	set_cnt = bit_set_count(bitmap);
+	if (set_cnt < min_nodes)
+		return EINVAL;
+	if (job_ptr->details->shared)
+		max_share = job_ptr->part_ptr->max_share & ~SHARED_FORCE;
+	max_share = MAX(1, max_share);
+	if (max_nodes)
+		max_share = MIN(max_nodes, max_share);
+	max_share = MIN(max_share, set_cnt);
+
+	tmp_map = bit_copy(bitmap);
+	for (i=0; i<max_share; i++) {
+		j = _job_count_bitmap(bitmap, tmp_map, i);
+		if ((j == prev_cnt) || (j < min_nodes))
+			continue;
+		prev_cnt = j;
+		rc = _job_test(job_ptr, tmp_map, min_nodes, max_nodes, 
+			       req_nodes);
+		if (rc != SLURM_SUCCESS)
+			continue;
+		bit_and(bitmap, tmp_map);
+		break;
+	}
+	bit_free(tmp_map);
+	return rc;
+}
+
+/*
+ * Set the bits in 'jobmap' that correspond to bits in the 'bitmap'
+ * that are running 'job_cnt' jobs or less, and clear the rest.
+ */
+static int _job_count_bitmap(bitstr_t * bitmap, bitstr_t * jobmap, int job_cnt)
+{
+	int i, count = 0;
+	bitoff_t size = bit_size(bitmap);
+
+	for (i = 0; i < size; i++) {
+		if (bit_test(bitmap, i) &&
+		    (node_record_table_ptr[i].run_job_cnt <= job_cnt)) {
+			bit_set(jobmap, i);
+			count++;
+		} else {
+			bit_clear(jobmap, i);
+		}
+	}
+	return count;
+}
+
+/* _job_test - does most of the real work for select_p_job_test(), which 
+ *	pretty much just handles load-leveling and max_share logic */
+static int _job_test(struct job_record *job_ptr, bitstr_t *bitmap,
+			uint32_t min_nodes, uint32_t max_nodes, 
+			uint32_t req_nodes)
+{
 	int i, index, error_code = EINVAL, sufficient;
 	int *consec_nodes;	/* how many nodes we can add from this 
 				 * consecutive set of nodes */
@@ -405,19 +481,6 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	int best_fit_nodes, best_fit_cpus, best_fit_req;
 	int best_fit_location = 0, best_fit_sufficient;
 	int avail_cpus;
-	multi_core_data_t *mc_ptr = job_ptr->details->mc_ptr;
-
-	xassert(bitmap);
-	if (mc_ptr) {
-		debug3("job min-[max]: -N %u-[%u]:%u-[%u]:%u-[%u]:%u-[%u]",
-			job_ptr->details->min_nodes,   job_ptr->details->max_nodes,
-			mc_ptr->min_sockets, mc_ptr->max_sockets,
-			mc_ptr->min_cores,   mc_ptr->max_cores,
-			mc_ptr->min_threads, mc_ptr->max_threads);
-		debug3("job ntasks-per: -node=%u -socket=%u -core=%u",
-			job_ptr->details->ntasks_per_node,
-			mc_ptr->ntasks_per_socket, mc_ptr->ntasks_per_core);
-	}
 
 	consec_index = 0;
 	consec_size  = 50;	/* start allocation for 50 sets of 
