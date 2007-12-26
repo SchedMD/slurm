@@ -645,6 +645,7 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 				if (avail_bitmap == NULL)
 					fatal("bit_copy malloc failure");
 			}
+			avail_nodes = bit_set_count(avail_bitmap);
 			tried_sched = false;	/* need to test these nodes */
 
 			if (shared) {
@@ -658,7 +659,6 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 					avail_bitmap)))
 				continue;
 
-			avail_nodes = bit_set_count(avail_bitmap);
 			if ((avail_nodes  < min_nodes) ||
 			    ((req_nodes   > min_nodes) &&
 			     (avail_nodes < req_nodes)))
@@ -694,9 +694,7 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 
 		/* try to get req_nodes now for this feature */
 		if (avail_bitmap && (!tried_sched)
-		&&  (req_nodes   >  min_nodes) 
 		&&  (avail_nodes >= min_nodes)
-		&&  (avail_nodes <  req_nodes)
 		&&  ((job_ptr->details->req_node_bitmap == NULL) ||
 		     bit_super_set(job_ptr->details->req_node_bitmap, 
                                         avail_bitmap))) {
