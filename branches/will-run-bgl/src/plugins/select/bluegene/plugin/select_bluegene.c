@@ -583,7 +583,9 @@ extern int select_p_state_restore(char *dir_name)
 	FREE_NULL_BITMAP(node_bitmap);
 	list_iterator_destroy(itr);
 
+	slurm_mutex_lock(&block_state_mutex);
 	sort_bg_record_inc_size(bg_list);
+	slurm_mutex_unlock(&block_state_mutex);
 		
 	info("Recovered %d blocks", blocks);
 	select_g_free_node_info(&node_select_ptr);

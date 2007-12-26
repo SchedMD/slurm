@@ -1127,8 +1127,8 @@ extern int  select_g_unpack_jobinfo(select_jobinfo_t jobinfo, Buf buffer)
 	safe_unpack32(&(jobinfo->max_procs), buffer);
 
 	safe_unpackstr_xmalloc(&(jobinfo->bg_block_id),  &uint32_tmp, buffer);
-	safe_unpackstr_xmalloc(&(jobinfo->ionodes),      &uint32_tmp, buffer);
 	safe_unpackstr_xmalloc(&(jobinfo->nodes),      &uint32_tmp, buffer);
+	safe_unpackstr_xmalloc(&(jobinfo->ionodes),      &uint32_tmp, buffer);
 	safe_unpackstr_xmalloc(&(jobinfo->blrtsimage),   &uint32_tmp, buffer);
 	safe_unpackstr_xmalloc(&(jobinfo->linuximage),   &uint32_tmp, buffer);
 	safe_unpackstr_xmalloc(&(jobinfo->mloaderimage), &uint32_tmp, buffer);
