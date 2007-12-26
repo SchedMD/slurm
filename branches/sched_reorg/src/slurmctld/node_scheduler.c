@@ -491,6 +491,7 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 	int max_feature, min_feature;
 	bool runable_ever  = false;	/* Job can ever run */
 	bool runable_avail = false;	/* Job can run with available nodes */
+	bool tried_sched = false;	/* Tried to schedule with avail nodes */
 	static uint32_t cr_enabled = NO_VAL;
 	select_type_plugin_info_t cr_type = SELECT_TYPE_INFO_NONE; 
 	int shared = 0;
@@ -615,7 +616,15 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 			if (!bit_test(node_set_ptr[i].feature_bits, j))
 				continue;
 
-			bit_or(total_bitmap, node_set_ptr[i].my_bitmap);
+			if (total_bitmap)
+				bit_or(total_bitmap, node_set_ptr[i].my_bitmap);
+			else {
+				total_bitmap = bit_copy(
+						node_set_ptr[i].my_bitmap);
+				if (total_bitmap == NULL)
+					fatal("bit_copy malloc failure");
+			}
+
 			bit_and(node_set_ptr[i].my_bitmap, avail_node_bitmap);
 			if (partially_idle_node_bitmap) {
 				bit_and(node_set_ptr[i].my_bitmap,
@@ -628,7 +637,15 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 				bit_and(node_set_ptr[i].my_bitmap,
 					idle_node_bitmap);
 			}
-			bit_or(avail_bitmap, node_set_ptr[i].my_bitmap);
+			if (avail_bitmap)
+				bit_or(avail_bitmap, node_set_ptr[i].my_bitmap);
+			else {
+				avail_bitmap = bit_copy(
+					node_set_ptr[i].my_bitmap);
+				if (avail_bitmap == NULL)
+					fatal("bit_copy malloc failure");
+			}
+			tried_sched = false;	/* need to test these nodes */
 
 			if (shared) {
 				/* Keep accumulating so we can pick the
@@ -641,6 +658,12 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 					avail_bitmap)))
 				continue;
 
+			avail_nodes = bit_set_count(avail_bitmap);
+			if ((avail_nodes  < min_nodes) ||
+			    ((req_nodes   > min_nodes) &&
+			     (avail_nodes < req_nodes)))
+				continue;	/* Keep accumulating nodes */
+
 			/* NOTE: select_g_job_test() is destructive of
 			 * avail_bitmap, so save a backup copy */
 			backup_bitmap = bit_copy(avail_bitmap);
@@ -650,7 +673,6 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 						      max_nodes,
 						      req_nodes,
 						      false);
-
 			if (pick_code == SLURM_SUCCESS) {
 				FREE_NULL_BITMAP(backup_bitmap);
 				if (bit_set_count(avail_bitmap) > max_nodes) {
@@ -664,15 +686,14 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 				*select_bitmap = avail_bitmap;
 				return SLURM_SUCCESS;
 			} else {
+				tried_sched = true;	/* test failed */
 				FREE_NULL_BITMAP(avail_bitmap);
 				avail_bitmap = backup_bitmap;
 			}
 		} /* for (i = 0; i < node_set_size; i++) */
-		avail_nodes = bit_set_count(avail_bitmap);
 
 		/* try to get req_nodes now for this feature */
-		if (avail_bitmap
-		&&  (!shared)		/* already tested above */
+		if (avail_bitmap && (!tried_sched)
 		&&  (req_nodes   >  min_nodes) 
 		&&  (avail_nodes >= min_nodes)
 		&&  (avail_nodes <  req_nodes)
@@ -694,7 +715,8 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 
 		/* determine if job could possibly run (if all configured 
 		 * nodes available) */
-
+		if (total_bitmap)
+			total_nodes = bit_set_count(total_bitmap);
 		if (total_bitmap
 		&&  (!runable_ever || !runable_avail)
 		&&  (total_nodes >= min_nodes)
