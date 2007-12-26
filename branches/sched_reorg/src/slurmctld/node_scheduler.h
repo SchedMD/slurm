@@ -55,15 +55,6 @@ extern void allocate_nodes(struct job_record *job_ptr);
 extern void build_node_details(struct job_record *job_ptr);
 
 /*
- * count_cpus - report how many cpus are associated with the identified nodes 
- * IN bitmap - map of nodes to tally
- * RET cpu count
- * globals: node_record_count - number of nodes configured
- *	node_record_table_ptr - pointer to global node table
- */
-extern int count_cpus(bitstr_t *bitmap);
-
-/*
  * deallocate_nodes - for a given job, deallocate its nodes and make
  *	their state NODE_STATE_COMPLETING
  * IN job_ptr - pointer to terminating job (already in some COMPLETING state)
