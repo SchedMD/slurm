@@ -676,7 +676,7 @@ cleanup:
 }
 
 /*
- * count_cpus - report how many cpus are associated with the identified nodes 
+ * _count_cpus - report how many cpus are associated with the identified nodes 
  * IN bitmap - map of nodes to tally
  * RET cpu count
  * globals: node_record_count - number of nodes configured
