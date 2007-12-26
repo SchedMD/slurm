@@ -416,12 +416,17 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	set_cnt = bit_set_count(bitmap);
 	if (set_cnt < min_nodes)
 		return EINVAL;
-	if (job_ptr->details->shared)
-		max_share = job_ptr->part_ptr->max_share & ~SHARED_FORCE;
-	max_share = MAX(1, max_share);
-	if (max_nodes)
-		max_share = MIN(max_nodes, max_share);
-	max_share = MIN(max_share, set_cnt);
+	if (test_only)
+		max_share = set_cnt;
+	else {
+		if (job_ptr->details->shared)
+			max_share = job_ptr->part_ptr->max_share & 
+					~SHARED_FORCE;
+		max_share = MAX(1, max_share);
+		if (max_nodes)
+			max_share = MIN(max_nodes, max_share);
+		max_share = MIN(max_share, set_cnt);
+	}
 
 	tmp_map = bit_copy(bitmap);
 	for (i=0; i<max_share; i++) {
