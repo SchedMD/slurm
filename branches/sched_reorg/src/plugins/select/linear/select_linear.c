@@ -75,7 +75,9 @@ static int _job_count_bitmap(bitstr_t * bitmap, bitstr_t * jobmap, int job_cnt);
 static int _job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 			uint32_t min_nodes, uint32_t max_nodes, 
 			uint32_t req_nodes);
-
+static int _find_job_mate(struct job_record *job_ptr, bitstr_t *bitmap,
+			uint32_t min_nodes, uint32_t max_nodes,
+			uint32_t req_nodes);
 /*
  * These variables are required by the generic plugin interface.  If they
  * are not found in the plugin, the plugin loader will ignore it.
@@ -420,10 +422,12 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 		min_share = max_share = 999;
 	else {
 		min_share = 0;
-		if (job_ptr->details->shared)
+		if (job_ptr->details->shared) {
 			max_share = job_ptr->part_ptr->max_share & 
 					~SHARED_FORCE;
-		max_share = MAX(1, max_share);
+			max_share = MAX(1, max_share);
+		} else
+			max_share = 1;
 	}
 
 	tmp_map = bit_copy(bitmap);
@@ -432,12 +436,23 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 		if ((j == prev_cnt) || (j < min_nodes))
 			continue;
 		prev_cnt = j;
+		if ((!test_only) && (i > 0)) {
+			/* We need to share, try to suitable job
+			 * to share nodes with */
+			rc = _find_job_mate(job_ptr, tmp_map, 
+					    min_nodes, max_nodes, req_nodes);
+			if (rc == SLURM_SUCCESS) {
+				bit_and(bitmap, tmp_map);
+				break;
+			}
+		}
 		rc = _job_test(job_ptr, tmp_map, min_nodes, max_nodes, 
 			       req_nodes);
-		if (rc != SLURM_SUCCESS)
-			continue;
-		bit_and(bitmap, tmp_map);
-		break;
+		if (rc == SLURM_SUCCESS) {
+			bit_and(bitmap, tmp_map);
+			break;
+		}
+		continue;
 	}
 	bit_free(tmp_map);
 	return rc;
@@ -462,6 +477,32 @@ static int _job_count_bitmap(bitstr_t * bitmap, bitstr_t * jobmap, int job_cnt)
 		}
 	}
 	return count;
+}
+
+/* _find_job_mate - does most of the real work for select_p_job_test(), 
+ *	in trying to find a suitable job to mate this one with. This is 
+ *	a pretty simple algorithm now, but could try to match the job 
+ *	with multiple jobs that add up to the proper size or a single 
+ *	job plus a few idle nodes. */
+static int _find_job_mate(struct job_record *job_ptr, bitstr_t *bitmap,
+			  uint32_t min_nodes, uint32_t max_nodes,
+			  uint32_t req_nodes)
+{
+	ListIterator job_iterator;
+	struct job_record *job_scan_ptr;
+
+	job_iterator = list_iterator_create(job_list);
+	while ((job_scan_ptr = (struct job_record *) list_next(job_iterator))) {
+		if ((job_scan_ptr->part_ptr == job_ptr->part_ptr) &&
+		    (job_scan_ptr->job_state == JOB_RUNNING) &&
+		    (job_scan_ptr->node_cnt == req_nodes) &&
+		    bit_super_set(job_scan_ptr->node_bitmap, bitmap)) {
+			bit_and(bitmap, job_scan_ptr->node_bitmap);
+			return SLURM_SUCCESS;
+		}
+	}
+	list_iterator_destroy(job_iterator);
+	return EINVAL;
 }
 
 /* _job_test - does most of the real work for select_p_job_test(), which 
