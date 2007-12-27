@@ -82,14 +82,10 @@ typedef struct slurm_select_ops {
 						uint32_t max_nodes,
 						uint32_t req_nodes,
 						bool test_only);
-	int             (*will_run)            (struct job_record *job_ptr,
-						bitstr_t *bitmap, 
-						uint32_t min_nodes, 
-						uint32_t max_nodes,
-						uint32_t req_nodes);
 	int		(*job_begin)	       (struct job_record *job_ptr);
 	int		(*job_ready)	       (struct job_record *job_ptr);
 	int		(*job_fini)	       (struct job_record *job_ptr);
+	int		(*job_update_end_time) (struct job_record *job_ptr);
 	int		(*job_suspend)	       (struct job_record *job_ptr);
 	int		(*job_resume)	       (struct job_record *job_ptr);
 	int		(*pack_node_info)      (time_t last_query_time,
@@ -175,10 +171,10 @@ static slurm_select_ops_t * _select_get_ops(slurm_select_context_t *c)
 		"select_p_node_init",
 		"select_p_block_init",
 		"select_p_job_test",
-		"select_p_will_run",
 		"select_p_job_begin",
 		"select_p_job_ready",
 		"select_p_job_fini",
+		"select_p_job_update_end_time",
 		"select_p_job_suspend",
 		"select_p_job_resume",
 		"select_p_pack_node_info",
@@ -543,36 +539,6 @@ extern int select_g_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 }
 
 /*
- * select_g_will_run - Given a specification of scheduling requirements, 
- *	identify the nodes which "best" satify the request and when
- *	they will be avaliable. The specified 
- *	nodes may be DOWN or BUSY at the time of this test as may be used 
- *	to deterime if a job could ever run.
- * IN job_ptr - pointer to job being scheduled
- * IN/OUT bitmap - usable nodes are set on input, nodes not required to 
- *	satisfy the request are cleared, other left set
- * IN min_nodes - minimum count of nodes
- * IN max_nodes - maximum count of nodes (0==don't care)
- * IN req_nodes - requested (or desired) count of nodes
- * NOTE: bitmap must be a superset of req_nodes at the time that 
- *	select_p_will_run is called
- */
-extern int select_g_will_run(struct job_record *job_ptr,
-					    bitstr_t *bitmap,
-					    uint32_t min_nodes, 
-					    uint32_t max_nodes, 
-					    uint32_t req_nodes)
-{
-	if (slurm_select_init() < 0)
-		return SLURM_SUCCESS;
-
-	return (*(g_select_context->ops.will_run))(job_ptr, bitmap, 
-						   min_nodes, max_nodes, 
-						   req_nodes);
-
-}
-
-/*
  * Note initiation of job is about to begin. Called immediately 
  * after select_g_job_test(). Executed from slurmctld.
  * IN job_ptr - pointer to job being initiated
@@ -610,6 +576,20 @@ extern int select_g_job_fini(struct job_record *job_ptr)
 
 	return (*(g_select_context->ops.job_fini))(job_ptr);
 }
+
+/*
+ * Suspend a job. Executed from slurmctld.
+ * IN job_ptr - pointer to job being suspended
+ * RET SLURM_SUCCESS or error code
+ */
+extern int select_g_job_update_end_time(struct job_record *job_ptr)
+{
+	if (slurm_select_init() < 0)
+		return SLURM_ERROR;
+
+	return (*(g_select_context->ops.job_update_end_time))(job_ptr);
+}
+
 /*
  * Suspend a job. Executed from slurmctld.
  * IN job_ptr - pointer to job being suspended

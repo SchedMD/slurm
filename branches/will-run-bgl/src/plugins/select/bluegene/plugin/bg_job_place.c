@@ -57,6 +57,7 @@ _STMT_START {		\
 pthread_mutex_t create_dynamic_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 static void _rotate_geo(uint16_t *req_geometry, int rot_cnt);
+static int _bg_record_sort_aval_inc(bg_record_t* rec_a, bg_record_t* rec_b); 
 static int _get_user_groups(uint32_t user_id, uint32_t group_id, 
 			     gid_t *groups, int max_groups, int *ngroups);
 static int _test_image_perms(char *image_name, List image_list, 
@@ -73,10 +74,10 @@ static bg_record_t *_find_matching_block(List block_list,
 					 ba_request_t *request,
 					 uint32_t max_procs,
 					 int allow, int check_image,
-					 int created, int test_only);
+					 int created, bool test_only);
 static int _check_for_booted_overlapping_blocks(
 	List block_list, ListIterator bg_record_itr,
-	bg_record_t *bg_record, int overlap_check, int test_only);
+	bg_record_t *bg_record, int overlap_check, bool test_only);
 static int _dynamically_request(List block_list, ba_request_t *request,
 				bitstr_t* slurm_block_bitmap,
 				char *user_req_nodes);
@@ -108,6 +109,45 @@ static void _rotate_geo(uint16_t *req_geometry, int rot_cnt)
 	}
 }
 
+/* 
+ * Comparator used for sorting blocks smallest to largest
+ * 
+ * returns: -1: rec_a >rec_b   0: rec_a == rec_b   1: rec_a < rec_b
+ * 
+ */
+static int _bg_record_sort_aval_inc(bg_record_t* rec_a, bg_record_t* rec_b)
+{
+	int size_a = rec_a->node_cnt;
+	int size_b = rec_b->node_cnt;
+
+	if(rec_a->est_job_end < rec_b->est_job_end)
+		return -1;
+	else if(rec_a->est_job_end > rec_b->est_job_end)
+		return 1;
+
+	if (size_a < size_b)
+		return -1;
+	else if (size_a > size_b)
+		return 1;
+	if(rec_a->nodes && rec_b->nodes) {
+		size_a = strcmp(rec_a->nodes, rec_b->nodes);
+		if (size_a < 0)
+			return -1;
+		else if (size_a > 0)
+			return 1;
+	}
+	if (rec_a->quarter < rec_b->quarter)
+		return -1;
+	else if (rec_a->quarter > rec_b->quarter)
+		return 1;
+
+	if(rec_a->nodecard < rec_b->nodecard)
+		return -1;
+	else if(rec_a->nodecard > rec_b->nodecard)
+		return 1;
+
+	return 0;
+}
 
 /*
  * Get a list of groups associated with a specific user_id
@@ -163,14 +203,13 @@ static int _test_image_perms(char *image_name, List image_list,
 
 	itr = list_iterator_create(image_list);
 	while ((image = list_next(itr))) {
-		if (!strcasecmp(image->name, image_name) ||
-		    !strcasecmp(image->name, "*")) {
+		if (!strcasecmp(image->name, image_name)
+		    || !strcasecmp(image->name, "*")) {
 			if (image->def) {
 				allow = 1;
 				break;
 			}
-			if (!image->groups ||
-			    !list_count(image->groups)) {
+			if (!image->groups || !list_count(image->groups)) {
 				allow = 1;
 				break;
 			}
@@ -184,8 +223,7 @@ static int _test_image_perms(char *image_name, List image_list,
 				cache_user = job_ptr->user_id;
 			}
 			itr2 = list_iterator_create(image->groups);
-			while ((allow == 0) &&
-			       (image_group = list_next(itr2))) {
+			while (!allow && (image_group = list_next(itr2))) {
 				for (i=0; i<ngroups; i++) {
 					if (image_group->gid
 					    == groups[i]) {
@@ -253,7 +291,6 @@ static int _add_to_request_list(uint16_t *start,
 				uint32_t req_procs, int start_req) 
 {
 	ba_request_t *try_request = NULL; 
-	int i = 0;
 
 	/* 
 	   add request to list so we don't try again until 
@@ -266,8 +303,8 @@ static int _add_to_request_list(uint16_t *start,
 	try_request->save_name = NULL;
 	try_request->elongate_geos = NULL;
 	try_request->start_req = start_req;
-	for(i=0; i<BA_SYSTEM_DIMENSIONS; i++) 
-		try_request->start[i] = start[i];
+	memcpy(try_request->start, start, 
+	       sizeof(uint16_t) * BA_SYSTEM_DIMENSIONS);
 	slurm_mutex_lock(&request_list_mutex);
 	list_push(bg_request_list, try_request);
 	slurm_mutex_unlock(&request_list_mutex);
@@ -344,7 +381,7 @@ static bg_record_t *_find_matching_block(List block_list,
 					 ba_request_t *request,
 					 uint32_t max_procs,
 					 int allow, int check_image,
-					 int overlap_check, int test_only)
+					 int overlap_check, bool test_only)
 {
 	bg_record_t *bg_record = NULL;
 	ListIterator itr = NULL;
@@ -471,18 +508,20 @@ static bg_record_t *_find_matching_block(List block_list,
 			
 			for (rot_cnt=0; rot_cnt<6; rot_cnt++) {		
 				if ((bg_record->geo[X] >= request->geometry[X])
-				&&  (bg_record->geo[Y] >= request->geometry[Y])
-				&&  (bg_record->geo[Z] >= request->geometry[Z])) {
+				    && (bg_record->geo[Y]
+					>= request->geometry[Y])
+				    && (bg_record->geo[Z]
+					>= request->geometry[Z])) {
 					match = true;
 					break;
 				}
-				if (!request->rotate) {
+				if (!request->rotate) 
 					break;
-				}
+				
 				_rotate_geo((uint16_t *)request->geometry,
 					    rot_cnt);
 			}
-
+			
 			if (!match) 
 				continue;	/* Not usable */
 		}
@@ -490,13 +529,13 @@ static bg_record_t *_find_matching_block(List block_list,
 		break;
 	}
 	list_iterator_destroy(itr);
-
+	
 	return bg_record;
 }
 
 static int _check_for_booted_overlapping_blocks(
 	List block_list, ListIterator bg_record_itr,
-	bg_record_t *bg_record, int overlap_check, int test_only)
+	bg_record_t *bg_record, int overlap_check, bool test_only)
 {
 	bg_record_t *found_record = NULL;
 	ListIterator itr = NULL;
@@ -591,18 +630,15 @@ static int _dynamically_request(List block_list, ba_request_t *request,
 	memcpy(start_geo, request->geometry, sizeof(int)*BA_SYSTEM_DIMENSIONS);
 	debug2("going to create %d", request->size);
 	lists_of_lists = list_create(NULL);
-	if(user_req_nodes) {
+	if(user_req_nodes) 
 		list_append(lists_of_lists, bg_job_block_list);
-	} else {
+	else {
 		list_append(lists_of_lists, block_list);
-		if(list_count(block_list)
-		   != list_count(bg_booted_block_list)) {
-			list_append(lists_of_lists, 
-				    bg_booted_block_list);
+		if(list_count(block_list) != list_count(bg_booted_block_list)) {
+			list_append(lists_of_lists, bg_booted_block_list);
 			if(list_count(bg_booted_block_list) 
 			   != list_count(bg_job_block_list)) 
-				list_append(lists_of_lists, 
-					    bg_job_block_list);
+				list_append(lists_of_lists, bg_job_block_list);
 		} else if(list_count(block_list) 
 			  != list_count(bg_job_block_list)) 
 			list_append(lists_of_lists, bg_job_block_list);
@@ -628,6 +664,7 @@ static int _dynamically_request(List block_list, ba_request_t *request,
 	
 	}
 	list_iterator_destroy(itr);
+
 	if(lists_of_lists)
 		list_destroy(lists_of_lists);
 
@@ -890,15 +927,16 @@ static int _find_best_block_match(List block_list,
 		}
 		
 		if(bluegene_layout_mode != LAYOUT_DYNAMIC) {
-			if(test_only) 
-				_add_to_request_list(start,
-						     req_procs, start_req);
-			
-			goto not_dynamic;
+			if(test_only) {
+				info(" I am here");
+				_add_to_request_list(start, req_procs,
+						     start_req);
+			}
+			goto no_match;
 		}
 
 		if(create_try)
-			goto not_dynamic;
+			goto no_match;
 		
 		if((rc = _dynamically_request(block_list, &request, 
 					      slurm_block_bitmap, 
@@ -927,10 +965,7 @@ static int _find_best_block_match(List block_list,
 				break;
 			} 
 			
-			_add_to_request_list(
-				start, 
-				req_procs,
-				start_req);
+			_add_to_request_list(start, req_procs, start_req);
 			
 			slurm_conf_lock();
 			snprintf(tmp_char, sizeof(tmp_char), "%s%s", 
@@ -938,20 +973,24 @@ static int _find_best_block_match(List block_list,
 				 request.save_name);
 			slurm_conf_unlock();
 			
-			if (node_name2bitmap(tmp_char, false,
-					     &tmp_bitmap)) 
+			if (node_name2bitmap(tmp_char, false, &tmp_bitmap)) 
 				fatal("Unable to convert nodes %s to bitmap", 
 				      tmp_char);
 			
 			bit_and(slurm_block_bitmap, tmp_bitmap);
 			FREE_NULL_BITMAP(tmp_bitmap);
+			info("got %s", tmp_char);
+			/* (*found_bg_record) = xmalloc(sizeof(bg_record_t)); */
+/* 			(*found_bg_record)->nodes = xstrdup(request.save_name); */
+/* 			(*found_bg_record)-> */
 			xfree(request.save_name);
 			goto end_it;
 		} else {
 			break;
 		}
 	}
-not_dynamic:
+
+no_match:
 	debug("_find_best_block_match none found");
 	rc = SLURM_ERROR;
 
@@ -1043,6 +1082,7 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 	slurm_mutex_unlock(&block_state_mutex);
 	END_TIMER2("submit");
 	info("got time of %s", TIME_STR);
+	list_sort(block_list, (ListCmpF)_bg_record_sort_aval_inc);
 	
 	rc = _find_best_block_match(block_list,
 				    job_ptr, slurm_block_bitmap, min_nodes, 
@@ -1051,6 +1091,8 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 	
 	if(rc == SLURM_SUCCESS) {
 		if(!bg_record) {
+			//ListIterator itr = NULL;
+			
 			debug2("can run, but block not made");
 			select_g_set_jobinfo(job_ptr->select_jobinfo,
 					     SELECT_DATA_BLOCK_ID,
@@ -1062,26 +1104,35 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 			} else 
 				i = 1;
 			min_nodes *= bluegene_bp_node_cnt/i;
+			
+			/* itr = list_iterator_create(block_list); */
+/* 			while(bg_record = list_next(itr)) { */
+			
+/* 			} */
+			
 			select_g_set_jobinfo(job_ptr->select_jobinfo,
 					     SELECT_DATA_NODE_CNT,
 					     &min_nodes);
 			
-			for(i=0; i<BA_SYSTEM_DIMENSIONS; i++)
-				geo[i] = 0;
+			memset(geo, 0, sizeof(uint16_t) * BA_SYSTEM_DIMENSIONS);
 			select_g_set_jobinfo(job_ptr->select_jobinfo,
 					     SELECT_DATA_GEOMETRY, 
-					     &geo);
-			
+					     &geo);			
 		} else {
 			if((bg_record->ionodes)
 			   && (job_ptr->part_ptr->max_share <= 1))
 				error("Small block used in "
 				      "non-shared partition");
-
+			info("can start job at %u on %s",
+			     bg_record->est_job_end,
+			     bg_record->nodes);
 			/* set the block id and info about block */
 			select_g_set_jobinfo(job_ptr->select_jobinfo,
 					     SELECT_DATA_BLOCK_ID, 
 					     bg_record->bg_block_id);
+			select_g_set_jobinfo(job_ptr->select_jobinfo,
+					     SELECT_DATA_NODES, 
+					     bg_record->nodes);
 			select_g_set_jobinfo(job_ptr->select_jobinfo,
 					     SELECT_DATA_IONODES, 
 					     bg_record->ionodes);
@@ -1091,6 +1142,9 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 			select_g_set_jobinfo(job_ptr->select_jobinfo,
 					     SELECT_DATA_GEOMETRY, 
 					     &bg_record->geo);
+			select_g_set_jobinfo(job_ptr->select_jobinfo,
+					     SELECT_DATA_EST_START, 
+					     &bg_record->est_job_end);
 			tmp16 = bg_record->conn_type;
 			select_g_set_jobinfo(job_ptr->select_jobinfo,
 					     SELECT_DATA_CONN_TYPE, 
