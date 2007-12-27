@@ -427,11 +427,13 @@ int cr_dist(struct select_cr_job *job, int cyclic,
 		info("cons_res _cr_dist %u host %d %s alloc_cpus %u", 
 		     job->job_id, host_index, this_cr_node->node_ptr->name, 
 		     job->alloc_cpus[job_index]);
-		for(i=0; !cr_cpu && i<job->num_sockets[job_index];i+=2)
-			info("cons_res: _cr_dist: %u alloc_cores[%d][%d]=%u, [%d][%d]=%u", 
-			     job->job_id, job_index, i, 
-			     job->alloc_cores[job_index][i], job_index, i+1,
-			     job->alloc_cores[job_index][i+1]);
+		for(i=0; !cr_cpu && i<job->num_sockets[job_index];i+=2) {
+			info("cons_res: _cr_dist: %u " 
+			     "alloc_cores[%d][%d]=%u, [%d][%d]=%u", 
+			     job->job_id, 
+			     job_index, i, job->alloc_cores[job_index][i], 
+			     job_index, i+1, job->alloc_cores[job_index][i+1]);
+		}
 #endif
 	}
 	return rc;
@@ -446,17 +448,21 @@ int cr_exclusive_dist(struct select_cr_job *job,
 		      const select_type_plugin_info_t cr_type)
 {
 	int i, j;
-	int host_index = 0;
+	int host_index = 0, get_cores = 0;
+
+	if ((cr_type == CR_CORE)   || (cr_type == CR_CORE_MEMORY) ||
+	    (cr_type == CR_SOCKET) || (cr_type == CR_SOCKET_MEMORY))
+		get_cores = 1;
 
 	for (i = 0; i < node_record_count; i++) {
 		if (bit_test(job->node_bitmap, i) == 0)
 			continue;
 		job->alloc_cpus[host_index] = node_record_table_ptr[i].cpus;
-		if ((cr_type == CR_CORE)   || (cr_type == CR_CORE_MEMORY) ||
-		    (cr_type == CR_SOCKET) || (cr_type == CR_SOCKET_MEMORY)) {
-			for (j = 0; j < node_record_table_ptr[i].sockets; j++)
+		if (get_cores) {
+			for (j = 0; j < node_record_table_ptr[i].sockets; j++) {
 				job->alloc_cores[host_index][j] = 
 					node_record_table_ptr[i].cores; 
+			}
 		}
 		host_index++;
 	}
