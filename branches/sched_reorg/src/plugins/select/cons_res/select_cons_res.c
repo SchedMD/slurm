@@ -2092,35 +2092,14 @@ int _is_node_busy(struct node_cr_record *this_node)
 	return 0;
 }
 
-/* remove nodes from the bitmap that don't have enough memory to
+/*
+ * Determine which of these nodes are usable by this job
+ *
+ * remove nodes from the bitmap that don't have enough memory to
  * support the job. Return SLURM_ERROR if a required node doesn't
  * have enough memory.
- */
-int _rm_lowmem_nodes(struct job_record *job_ptr, bitstr_t * bitmap)
-{
-	int i, free_mem, rc = SLURM_SUCCESS;
-	if (!job_ptr->details)
-		return rc;
-	for (i = 0; i < node_record_count; i++) {
-		if (!bit_test(bitmap, i))
-			continue;
-		if (select_fast_schedule) {
-			free_mem = select_node_ptr[i].node_ptr->config_ptr->real_memory;
-		} else {
-			free_mem = select_node_ptr[i].node_ptr->real_memory;
-		}
-		free_mem -= select_node_ptr[i].alloc_memory;
-		if (free_mem < job_ptr->details->job_max_memory) {
-			bit_clear(bitmap, i);
-			if (job_ptr->details->req_node_bitmap &&
-			    bit_test(job_ptr->details->req_node_bitmap, i))
-				rc = SLURM_ERROR;
-		}
-	}
-	return rc;
-}
-
-/* if node_state = NODE_CR_RESERVED, clear bitmap (if node is required
+ *
+ * if node_state = NODE_CR_RESERVED, clear bitmap (if node is required
  *                                   then should we return NODE_BUSY!?!)
  *                  NOTE: THIS SHOULD BE CAUGHT IN _pick_best_nodes()!!!
  *
@@ -2134,11 +2113,30 @@ int _rm_lowmem_nodes(struct job_record *job_ptr, bitstr_t * bitmap)
 int _verify_node_state(struct job_record *job_ptr, bitstr_t * bitmap,
 		      enum node_cr_state job_node_req)
 {
-	int i;
+	int i, free_mem;
 
 	for (i = 0; i < node_record_count; i++) {
 		if (!bit_test(bitmap, i))
 			continue;
+
+		if (job_ptr->details->job_max_memory) {
+			if (select_fast_schedule) {
+				free_mem = select_node_ptr[i].node_ptr->
+					config_ptr->real_memory;
+			} else {
+				free_mem = select_node_ptr[i].node_ptr->
+					real_memory;
+			}
+			free_mem -= select_node_ptr[i].alloc_memory;
+			if (free_mem < job_ptr->details->job_max_memory) {
+				bit_clear(bitmap, i);
+				if (job_ptr->details->req_node_bitmap &&
+				    bit_test(job_ptr->details->req_node_bitmap, i))
+					return SLURM_ERROR;
+				continue;
+			}
+		}
+
 		if (select_node_ptr[i].node_state == NODE_CR_RESERVED) {
 			bit_clear(bitmap, i);
 			if (job_ptr->details &&
@@ -2380,12 +2378,13 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t * bitmap,
 
 	xassert(bitmap);
 
-	if (job_ptr->details) {
-		layout_ptr = job_ptr->details->req_node_layout;
-		mc_ptr = job_ptr->details->mc_ptr;
-		reqmap = job_ptr->details->req_node_bitmap;
-	}
+	if (!job_ptr->details)
+		return EINVAL;
 
+
+	layout_ptr = job_ptr->details->req_node_layout;
+	mc_ptr = job_ptr->details->mc_ptr;
+	reqmap = job_ptr->details->req_node_bitmap;
 	job_node_req = _get_job_node_req(job_ptr);
 
 	debug3("cons_res: select_p_job_test: job %d node_req %d, test_only %d",
@@ -2393,17 +2392,17 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t * bitmap,
 	debug3("cons_res: select_p_job_test: min_n %u max_n %u req_n %u",
 	       min_nodes, max_nodes, req_nodes);
 	
-	/* check node_state and update bitmap if necessary */
+	/* check node_state and update bitmap as necessary */
 	if (!test_only) {
+#if 0
+		/* Done in slurmctld/node_scheduler.c: _pick_best_nodes() */
+		if ((cr_type != CR_CORE_MEMORY) && (cr_type != CR_CPU_MEMORY) &&
+		    (cr_type != CR_MEMORY) && (cr_type != CR_SOCKET_MEMORY))
+			job_ptr->details->job_max_memory = 0;
+#endif
 		error_code = _verify_node_state(job_ptr, bitmap, job_node_req);
 		if (error_code != SLURM_SUCCESS)
 			return error_code;
-		/* if tracking memory, then remove any low-memory nodes */
-		if ((cr_type == CR_CORE_MEMORY) || (cr_type == CR_CPU_MEMORY) ||
-		    (cr_type == CR_MEMORY) || (cr_type == CR_SOCKET_MEMORY))
-			error_code = _rm_lowmem_nodes(job_ptr, bitmap);
-			if (error_code != SLURM_SUCCESS)
-				return error_code;
 	}
 
 	/* This is the case if -O/--overcommit  is true */ 
