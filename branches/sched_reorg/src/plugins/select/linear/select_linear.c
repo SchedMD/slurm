@@ -401,7 +401,7 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	multi_core_data_t *mc_ptr = job_ptr->details->mc_ptr;
 	bitstr_t *tmp_map;
 	int i, j, rc = EINVAL, prev_cnt = -1;
-	int min_share, max_share;
+	int min_share = 0, max_share = 0;
 
 	xassert(bitmap);
 	if (mc_ptr) {
@@ -418,10 +418,10 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 
 	if (bit_set_count(bitmap) < min_nodes)
 		return EINVAL;
-	if (test_only)
-		min_share = max_share = 999;
-	else {
-		min_share = 0;
+	if (test_only) {
+		min_share = 64;
+		max_share = min_share + 1;
+	} else {
 		if (job_ptr->details->shared) {
 			max_share = job_ptr->part_ptr->max_share & 
 					~SHARED_FORCE;
