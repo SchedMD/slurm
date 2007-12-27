@@ -2468,11 +2468,12 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t * bitmap,
 				 *      busy_rows value is < 'row'.
 				 * Why? to select a new row for these
 				 *      nodes when appropriate */
-				if (busy_rows[i] == -1 || busy_rows[i] >= row)
+				if ((busy_rows[i] == -1) || 
+				    (busy_rows[i] >= row))
 					continue;
 				if (sh_tasks[i] == al_tasks[i])
 					continue;
-				if (try == 1 && sh_tasks[i] != 0)
+				if ((try == 1) && (sh_tasks[i] != 0))
 					continue;
 				sh_tasks[i] = al_tasks[i];
 			}

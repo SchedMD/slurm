@@ -167,16 +167,16 @@ int _find_offset(struct select_cr_job *job, const int job_index,
 
 /*  _job_assign_tasks: Assign tasks to hardware for block and cyclic
  *  distributions */
-void _job_assign_tasks(struct select_cr_job *job, 
-		       struct node_cr_record *this_cr_node,
-		       const int job_index, 
-		       const select_type_plugin_info_t cr_type,
-		       const int cyclic) 
+static int _job_assign_tasks(struct select_cr_job *job, 
+			struct node_cr_record *this_cr_node,
+			const int job_index, 
+			const select_type_plugin_info_t cr_type,
+			const int cyclic) 
 {
-	int i, j;
+	int i, j, rc = SLURM_SUCCESS;
 	uint16_t cores, cpus, sockets, threads;
 	uint16_t usable_cores, usable_sockets, usable_threads;
-	uint16_t *avail_cores;
+	uint16_t *avail_cores = NULL;
 	uint32_t corecount, last_corecount;
 	uint16_t asockets, offset, total;
 	uint32_t maxcores, reqcores, maxtasks = job->alloc_cpus[job_index];
@@ -188,7 +188,7 @@ void _job_assign_tasks(struct select_cr_job *job,
 		/* exists in the callers of this function  */
 		error("cons_res: assign_tasks: could not find part %s",
 		      job->partition);
-		abort();
+		return SLURM_ERROR;
 	}
 
 	/* get hardware info for this node */	
@@ -221,9 +221,7 @@ void _job_assign_tasks(struct select_cr_job *job,
 	       usable_threads, maxtasks, maxcores, offset);
 
 	avail_cores = xmalloc(sizeof(uint16_t) * sockets);
-	for (i = 0; i < sockets; i++) {
-		avail_cores[i] = 0;
-	}
+	/* initialized to zero by xmalloc */
 
 	total = 0;
 	asockets = 0;
@@ -295,7 +293,8 @@ void _job_assign_tasks(struct select_cr_job *job,
 			if (last_corecount == corecount) {
 				/* Avoid possible infinite loop on error */
 				error("_job_assign_tasks failure");
-				abort();
+				rc = SLURM_ERROR;
+				goto fini;
 			}
 		}
 	} else {
@@ -312,11 +311,13 @@ void _job_assign_tasks(struct select_cr_job *job,
 			if (last_corecount == corecount) {
 				/* Avoid possible infinite loop on error */
 				error("_job_assign_tasks failure");
-				abort();
+				rc = SLURM_ERROR;
+				goto fini;
 			}
 		}
 	}
-	xfree(avail_cores);
+ fini:	xfree(avail_cores);
+	return rc;
 }
 
 uint16_t _get_cpu_offset(struct select_cr_job *job, int index,
@@ -420,8 +421,9 @@ int cr_dist(struct select_cr_job *job, int cyclic,
 			for (i = 0; i < job->num_sockets[job_index]; i++)
 				job->alloc_cores[job_index][i] = 0;
 
-			_job_assign_tasks(job, this_cr_node, job_index, cr_type,
-					  cyclic);
+			if (_job_assign_tasks(job, this_cr_node, job_index, 
+					      cr_type, cyclic) != SLURM_SUCCESS)
+				return SLURM_ERROR;
 		}
 #if(CR_DEBUG)
 		info("cons_res _cr_dist %u host %d %s alloc_cpus %u", 
@@ -554,8 +556,9 @@ int cr_plane_dist(struct select_cr_job *job,
 			for (j = 0; j < job->num_sockets[job_index]; j++)
 				job->alloc_cores[job_index][j] = 0;
 
-			_job_assign_tasks(job, this_cr_node, job_index, cr_type,
-					  0);
+			if (_job_assign_tasks(job, this_cr_node, job_index, 
+					      cr_type, 0) != SLURM_SUCCESS)
+				return SLURM_ERROR;
 		}
 #if(CR_DEBUG)
 		info("cons_res _cr_plane_dist %u host %d %s alloc_cpus %u", 
