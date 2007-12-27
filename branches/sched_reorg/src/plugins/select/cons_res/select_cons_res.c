@@ -2140,7 +2140,6 @@ int _verify_node_state(struct job_record *job_ptr, bitstr_t * bitmap,
 		if (!bit_test(bitmap, i))
 			continue;
 		if (select_node_ptr[i].node_state == NODE_CR_RESERVED) {
-			/* this should have been caught in _pick_best_nodes() */
 			bit_clear(bitmap, i);
 			if (job_ptr->details &&
 			    job_ptr->details->req_node_bitmap &&
@@ -2343,9 +2342,8 @@ int _load_arrays(struct job_record *job_ptr, bitstr_t *bitmap, int **a_rows,
 /*
  * select_p_job_test - Given a specification of scheduling requirements, 
  *	identify the nodes which "best" satisfy the request.
- * 	"best" is defined as either single set of consecutive nodes satisfying 
- *	the request and leaving the minimum number of unused nodes OR 
- *	the fewest number of consecutive node sets
+ * 	"best" is defined as either a minimal number of consecutive nodes
+ *	or if sharing resources then sharing them with a job of similar size.
  * IN job_ptr - pointer to job being scheduled
  * IN/OUT bitmap - usable nodes are set on input, nodes not required to 
  *	satisfy the request are cleared, other left set
@@ -2401,8 +2399,8 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t * bitmap,
 		if (error_code != SLURM_SUCCESS)
 			return error_code;
 		/* if tracking memory, then remove any low-memory nodes */
-		if (cr_type == CR_CORE_MEMORY || cr_type == CR_CPU_MEMORY ||
-		    cr_type == CR_MEMORY || cr_type == CR_SOCKET_MEMORY)
+		if ((cr_type == CR_CORE_MEMORY) || (cr_type == CR_CPU_MEMORY) ||
+		    (cr_type == CR_MEMORY) || (cr_type == CR_SOCKET_MEMORY))
 			error_code = _rm_lowmem_nodes(job_ptr, bitmap);
 			if (error_code != SLURM_SUCCESS)
 				return error_code;
