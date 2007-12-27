@@ -82,7 +82,8 @@ int compute_c_b_task_dist(struct select_cr_job *job)
 		if (last_taskid == taskid) {
 			/* avoid infinite loop */
 			error("compute_c_b_task_dist failure");
-			abort();
+			rc = SLURM_ERROR;
+			break;
 		}
 	}
 
@@ -99,10 +100,10 @@ int compute_c_b_task_dist(struct select_cr_job *job)
 }
 
 /* scan all rows looking for the best fit, and return the offset */
-int _find_offset(struct select_cr_job *job, const int job_index,
-		 uint16_t cores, uint16_t sockets, uint32_t maxcores,
-		 const select_type_plugin_info_t cr_type,
-		 struct node_cr_record *this_cr_node)
+static int _find_offset(struct select_cr_job *job, const int job_index,
+			uint16_t cores, uint16_t sockets, uint32_t maxcores,
+			const select_type_plugin_info_t cr_type,
+			struct node_cr_record *this_cr_node)
 {
 	struct part_cr_record *p_ptr;
 	int i, j, index, offset, skip;
@@ -132,7 +133,7 @@ int _find_offset(struct select_cr_job *job, const int job_index,
 			} else { 
 				acores += p_ptr->alloc_cores[offset+j];
 			}
-			if(p_ptr->alloc_cores[offset+j])
+			if (p_ptr->alloc_cores[offset+j])
 				asockets++;
 		}
 		/* make sure we have the required number of usable sockets */
@@ -320,8 +321,8 @@ static int _job_assign_tasks(struct select_cr_job *job,
 	return rc;
 }
 
-uint16_t _get_cpu_offset(struct select_cr_job *job, int index,
-			 struct node_cr_record *this_node)
+static uint16_t _get_cpu_offset(struct select_cr_job *job, int index,
+				struct node_cr_record *this_node)
 {
 	int i, set = 0;
 	uint16_t cpus, sockets, cores, threads, besto = 0, offset = 0;
@@ -371,8 +372,8 @@ uint16_t _get_cpu_offset(struct select_cr_job *job, int index,
  * In the consumable resources environment we need to determine the
  * layout schema within slurmctld.
 */
-int cr_dist(struct select_cr_job *job, int cyclic,
-	    const select_type_plugin_info_t cr_type)
+extern int cr_dist(struct select_cr_job *job, int cyclic,
+		   const select_type_plugin_info_t cr_type)
 {
 	int i, cr_cpu = 0, rc = SLURM_SUCCESS; 
 	uint32_t taskcount = 0;
@@ -446,8 +447,8 @@ int cr_dist(struct select_cr_job *job, int cyclic,
  * case we do not need to compute the number of tasks on each nodes
  * since it should be set to the number of cpus.
  */
-int cr_exclusive_dist(struct select_cr_job *job,
-		      const select_type_plugin_info_t cr_type)
+extern int cr_exclusive_dist(struct select_cr_job *job,
+		 	     const select_type_plugin_info_t cr_type)
 {
 	int i, j;
 	int host_index = 0, get_cores = 0;
@@ -471,9 +472,9 @@ int cr_exclusive_dist(struct select_cr_job *job,
 	return SLURM_SUCCESS;
 }
 
-int cr_plane_dist(struct select_cr_job *job, 
-		  const uint16_t plane_size,
-		  const select_type_plugin_info_t cr_type)
+extern int cr_plane_dist(struct select_cr_job *job, 
+			 const uint16_t plane_size,
+			 const select_type_plugin_info_t cr_type)
 {
 	uint32_t maxtasks  = job->nprocs;
 	uint32_t num_hosts = job->nhosts;

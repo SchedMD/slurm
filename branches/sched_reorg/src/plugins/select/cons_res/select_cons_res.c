@@ -204,8 +204,7 @@ static int _cr_hash_index (const char *name)
 	int index = 0;
 	int j;
 
-	if ((select_node_cnt == 0)
-	||  (name == NULL))
+	if ((select_node_cnt == 0) || (name == NULL))
 		return 0;	/* degenerate case */
 
 	/* Multiply each character by its numerical position in the
@@ -226,7 +225,7 @@ static int _cr_hash_index (const char *name)
  * NOTE: manages memory for cr_node_hash_table
  * Inspired from rehash_nodes() in slurmctld/node_mgr.c
  */
-void _build_cr_node_hash_table (void)
+static void _build_cr_node_hash_table (void)
 {
 	int i, inx;
 
@@ -256,7 +255,7 @@ void _build_cr_node_hash_table (void)
  *         cr_node_hash_table - table of hash indecies
  * Inspired from find_node_record (char *name) in slurmctld/node_mgr.c 
  */
-struct node_cr_record * find_cr_node_record (const char *name) 
+extern struct node_cr_record * find_cr_node_record (const char *name) 
 {
 	int i;
 
@@ -299,7 +298,7 @@ struct node_cr_record * find_cr_node_record (const char *name)
 	return (struct node_cr_record *) NULL;
 }
 
-void _destroy_node_part_array(struct node_cr_record *this_cr_node)
+static void _destroy_node_part_array(struct node_cr_record *this_cr_node)
 {
 	struct part_cr_record *p_ptr;
 
@@ -313,7 +312,7 @@ void _destroy_node_part_array(struct node_cr_record *this_cr_node)
 	this_cr_node->parts = NULL;
 }
 
-void _create_node_part_array(struct node_cr_record *this_cr_node)
+static void _create_node_part_array(struct node_cr_record *this_cr_node)
 {
 	struct node_record *node_ptr;
 	struct part_cr_record *p_ptr;
@@ -356,8 +355,8 @@ void _create_node_part_array(struct node_cr_record *this_cr_node)
 
 }
 
-struct part_cr_record *get_cr_part_ptr(struct node_cr_record *this_node,
-				     const char *part_name)
+extern struct part_cr_record *get_cr_part_ptr(struct node_cr_record *this_node,
+					      const char *part_name)
 {
 	struct part_cr_record *p_ptr;
 
@@ -374,7 +373,7 @@ struct part_cr_record *get_cr_part_ptr(struct node_cr_record *this_node,
 	return NULL;
 }
 
-void chk_resize_node(struct node_cr_record *node, uint16_t sockets)
+static void _chk_resize_node(struct node_cr_record *node, uint16_t sockets)
 {
 	struct part_cr_record *p_ptr;
 
@@ -395,7 +394,8 @@ void chk_resize_node(struct node_cr_record *node, uint16_t sockets)
 	}
 }
 
-void chk_resize_job(struct select_cr_job *job, uint16_t node_id, uint16_t sockets)
+static void _chk_resize_job(struct select_cr_job *job, uint16_t node_id, 
+			    uint16_t sockets)
 {
 	if ((job->alloc_cores[node_id] == NULL) ||
 	    		(sockets > job->num_sockets[node_id])) {
@@ -409,12 +409,10 @@ void chk_resize_job(struct select_cr_job *job, uint16_t node_id, uint16_t socket
 	}
 }
 
-void get_resources_this_node(uint16_t *cpus, 
-			     uint16_t *sockets, 
-			     uint16_t *cores,
-			     uint16_t *threads, 
-			     struct node_cr_record *this_cr_node,
-			     uint32_t jobid)
+extern void get_resources_this_node(uint16_t *cpus, uint16_t *sockets, 
+				    uint16_t *cores, uint16_t *threads, 
+				    struct node_cr_record *this_cr_node,
+				    uint32_t jobid)
 {
 	if (select_fast_schedule) {
 		*cpus    = this_cr_node->node_ptr->config_ptr->cpus;
@@ -446,8 +444,8 @@ void get_resources_this_node(uint16_t *cpus,
  * RETURN - the maximum number of free cores/cpus/sockets found in the given
  *          row_index (if 0 then node is full; if 'max_cpus' then node is free)
  */
-uint16_t _get_cpu_data (struct part_cr_record *p_ptr, int num_sockets,
-			uint16_t max_cpus, int *row_index, int *free_row)
+static uint16_t _get_cpu_data (struct part_cr_record *p_ptr, int num_sockets,
+			       uint16_t max_cpus, int *row_index, int *free_row)
 {
 	int i, j, index;
 	uint16_t alloc_count = 0;
@@ -527,7 +525,7 @@ static uint16_t _get_task_count(struct job_record *job_ptr, const int index,
 	get_resources_this_node(&cpus, &sockets, &cores, &threads, 
 				this_node, job_ptr->job_id);
 
-	chk_resize_node(this_node, sockets);
+	_chk_resize_node(this_node, sockets);
 	alloc_cores = xmalloc(sockets * sizeof(uint16_t));
 	/* array is zero filled by xmalloc() */
 
@@ -693,7 +691,7 @@ static void _clear_job_list(void)
 	slurm_mutex_unlock(&cr_mutex);
 }
 
-void _verify_select_job_list(uint32_t job_id)
+static void _verify_select_job_list(uint32_t job_id)
 {
 	ListIterator job_iterator;
 	struct select_cr_job *job;
@@ -750,7 +748,7 @@ static void _append_to_job_list(struct select_cr_job *new_job)
 }
 
 /* find the maximum number of idle cpus from all partitions */
-uint16_t _count_idle_cpus(struct node_cr_record *this_node)
+static uint16_t _count_idle_cpus(struct node_cr_record *this_node)
 {
 	struct part_cr_record *p_ptr;
 	int i, j, index, idlecpus;
@@ -895,7 +893,7 @@ static int _add_job_to_nodes(struct select_cr_job *job, char *pre_err,
 
 		this_node->node_state = job->node_req;
 		
-		chk_resize_node(this_node, this_node->node_ptr->sockets);
+		_chk_resize_node(this_node, this_node->node_ptr->sockets);
 		p_ptr = get_cr_part_ptr(this_node, job->partition);
 		if (p_ptr == NULL) {
 			error("%s: could not find part %s", pre_err,
@@ -929,7 +927,7 @@ static int _add_job_to_nodes(struct select_cr_job *job, char *pre_err,
 		case CR_SOCKET:
 		case CR_CORE_MEMORY:
 		case CR_CORE:
-			chk_resize_job(job, i, this_node->num_sockets);
+			_chk_resize_job(job, i, this_node->num_sockets);
 			for (j = 0; j < this_node->num_sockets; j++) {
 				p_ptr->alloc_cores[offset+j] +=
 							job->alloc_cores[i][j];
@@ -991,8 +989,8 @@ static int _rm_job_from_nodes(struct select_cr_job *job, char *pre_err,
 	     (cr_type == CR_MEMORY) || (cr_type == CR_SOCKET_MEMORY))) {
 	 	remove_memory = 1;
 		job->state &= ~CR_JOB_ALLOCATED_MEM;
-	 }
-	 if (cpuset)
+	}
+	if (cpuset)
 	 	job->state &= ~CR_JOB_ALLOCATED_CPUS;
 	
 	for (i = 0; i < job->nhosts; i++) {
@@ -1024,7 +1022,7 @@ static int _rm_job_from_nodes(struct select_cr_job *job, char *pre_err,
 		if (!cpuset)
 			continue;
 		
-		chk_resize_node(this_node, this_node->node_ptr->sockets);
+		_chk_resize_node(this_node, this_node->node_ptr->sockets);
 		p_ptr = get_cr_part_ptr(this_node, job->partition);
 		if (p_ptr == NULL) {
 			error("%s: could not find part %s", pre_err,
@@ -1046,7 +1044,7 @@ static int _rm_job_from_nodes(struct select_cr_job *job, char *pre_err,
 		case CR_SOCKET:
 		case CR_CORE_MEMORY:
 		case CR_CORE:
-			chk_resize_job(job, i, this_node->num_sockets);
+			_chk_resize_job(job, i, this_node->num_sockets);
 			for (j = 0; j < this_node->num_sockets; j++) {
 				if (p_ptr->alloc_cores[offset+j] >= 
 						job->alloc_cores[i][j])
@@ -1110,9 +1108,8 @@ static int _rm_job_from_nodes(struct select_cr_job *job, char *pre_err,
 	return rc;
 }
 
-static bool
-_enough_nodes(int avail_nodes, int rem_nodes, 
-	      uint32_t min_nodes, uint32_t req_nodes)
+static bool _enough_nodes(int avail_nodes, int rem_nodes, 
+			  uint32_t min_nodes, uint32_t req_nodes)
 {
 	int needed_nodes;
 
@@ -1496,7 +1493,7 @@ static void _cr_restore_node_data(void)
 		select_node_ptr[i].node_state = NODE_CR_AVAILABLE;
 		/* recreate to ensure that everything is zero'd out */
 		_create_node_part_array(&(select_node_ptr[i]));
-		chk_resize_node(&(select_node_ptr[i]),
+		_chk_resize_node(&(select_node_ptr[i]),
 			    prev_select_node_ptr[prev_i].num_sockets);
 	}
 
@@ -1763,9 +1760,10 @@ static int _get_task_cnt(struct job_record *job_ptr, const int node_index,
 	return tasks;
 }
 
-int _eval_nodes(struct job_record *job_ptr, bitstr_t * bitmap,
-		uint32_t min_nodes, uint32_t max_nodes, uint32_t req_nodes,
-		int *task_cnt, int *freq, int array_size)
+static int _eval_nodes(struct job_record *job_ptr, bitstr_t * bitmap,
+		       uint32_t min_nodes, uint32_t max_nodes,
+		       uint32_t req_nodes, int *task_cnt, int *freq, 
+		       int array_size)
 {
 	int i, f, index, error_code = SLURM_ERROR;
 	int *consec_nodes;	/* how many nodes we can add from this 
@@ -1993,9 +1991,10 @@ int _eval_nodes(struct job_record *job_ptr, bitstr_t * bitmap,
 /* this is an intermediary step between select_p_job_test and _eval_nodes
  * to tackle the knapsack problem. This code incrementally removes nodes
  * with low task counts for the job and re-evaluates each result */
-int _select_nodes(struct job_record *job_ptr, bitstr_t * bitmap,
-		  uint32_t min_nodes, uint32_t max_nodes, uint32_t req_nodes,
-		  int *task_cnt, int *freq, int array_size)
+static int _select_nodes(struct job_record *job_ptr, bitstr_t * bitmap,
+			 uint32_t min_nodes, uint32_t max_nodes, 
+			 uint32_t req_nodes, int *task_cnt, int *freq, 
+			 int array_size)
 {
 	int i, b, count, ec, most_tasks = 0;
 	bitstr_t *origmap, *reqmap = NULL;
@@ -2064,7 +2063,7 @@ int _select_nodes(struct job_record *job_ptr, bitstr_t * bitmap,
 }
 
 /* test to see if any shared partitions are running jobs */
-int _is_node_sharing(struct node_cr_record *this_node)
+static int _is_node_sharing(struct node_cr_record *this_node)
 {
 	int i, size;
 	struct part_cr_record *p_ptr = this_node->parts;
@@ -2082,7 +2081,7 @@ int _is_node_sharing(struct node_cr_record *this_node)
 }
 
 /* test to see if the given node has any jobs running on it */
-int _is_node_busy(struct node_cr_record *this_node)
+static int _is_node_busy(struct node_cr_record *this_node)
 {
 	int i, size;
 	struct part_cr_record *p_ptr = this_node->parts;
@@ -2113,8 +2112,8 @@ int _is_node_busy(struct node_cr_record *this_node)
  *  - job_node_req = NODE_CR_RESERVED, then we need idle nodes
  *  - job_node_req = NODE_CR_ONE_ROW, then we need idle or non-sharing nodes
  */
-int _verify_node_state(struct job_record *job_ptr, bitstr_t * bitmap,
-		      enum node_cr_state job_node_req)
+static int _verify_node_state(struct job_record *job_ptr, bitstr_t * bitmap,
+			      enum node_cr_state job_node_req)
 {
 	int i, free_mem;
 
@@ -2138,8 +2137,8 @@ int _verify_node_state(struct job_record *job_ptr, bitstr_t * bitmap,
 		if (select_node_ptr[i].node_state == NODE_CR_RESERVED) {
 			goto clear_bit;
 		} else if (select_node_ptr[i].node_state == NODE_CR_ONE_ROW) {
-			if (job_node_req == NODE_CR_RESERVED ||
-			    job_node_req == NODE_CR_AVAILABLE)
+			if ((job_node_req == NODE_CR_RESERVED) ||
+			    (job_node_req == NODE_CR_AVAILABLE))
 				goto clear_bit;
 			/* cannot use this node if it is running jobs
 			 * in sharing partitions */
@@ -2172,7 +2171,7 @@ int _verify_node_state(struct job_record *job_ptr, bitstr_t * bitmap,
  * - can the job run on shared nodes?   (NODE_CR_ONE_ROW)
  * - can the job run on overcommitted resources? (NODE_CR_AVAILABLE)
  */
-enum node_cr_state _get_job_node_req(struct job_record *job_ptr)
+static enum node_cr_state _get_job_node_req(struct job_record *job_ptr)
 {
 	int max_share = job_ptr->part_ptr->max_share;
 	
@@ -2193,8 +2192,8 @@ enum node_cr_state _get_job_node_req(struct job_record *job_ptr)
 	return NODE_CR_ONE_ROW;
 }
 
-int _get_allocated_rows(struct job_record *job_ptr, int n,
-			enum node_cr_state job_node_req)
+static int _get_allocated_rows(struct job_record *job_ptr, int n,
+			       enum node_cr_state job_node_req)
 {
 	struct part_cr_record *p_ptr;
 	int i, j, rows = 0;
@@ -2214,9 +2213,10 @@ int _get_allocated_rows(struct job_record *job_ptr, int n,
 	return rows;
 }
 
-int _load_arrays(struct job_record *job_ptr, bitstr_t *bitmap, int **a_rows,
-		 int **s_tasks, int **a_tasks, int **freq, bool test_only,
-		 enum node_cr_state job_node_req)
+static int _load_arrays(struct job_record *job_ptr, bitstr_t *bitmap, 
+			int **a_rows, int **s_tasks, int **a_tasks, 
+			int **freq, bool test_only,
+			enum node_cr_state job_node_req)
 {
 	int i, index = 0, size = 32;
 	int *busy_rows, *shr_tasks, *all_tasks, *num_nodes;
@@ -2554,7 +2554,7 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t * bitmap,
 		job->alloc_memory[j] = job_ptr->details->job_max_memory; 
 		if ((cr_type == CR_CORE) || (cr_type == CR_CORE_MEMORY)||
 		    (cr_type == CR_SOCKET) || (cr_type == CR_SOCKET_MEMORY)) {
-			chk_resize_job(job, j, node_record_table_ptr[i].sockets);
+			_chk_resize_job(job, j, node_record_table_ptr[i].sockets);
 			job->num_sockets[j] = node_record_table_ptr[i].sockets;
 			for (k = 0; k < job->num_sockets[j]; k++)
 				job->alloc_cores[j][k] = 0;
