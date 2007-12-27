@@ -422,6 +422,14 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 		min_share = 64;
 		max_share = min_share + 1;
 	} else {
+		/* Multiple partitions can share individual nodes, each 
+		 * partition with a different max_share value. To properly
+		 * handle that, we would want to use the minimum max_share
+		 * value for each partition to which each node belongs. See
+		 * _create_node_part_array() in cons_res/select_cons_res.c
+		 * for an example of how this can be done. The logic below 
+		 * just uses the max_share value of the current job's 
+		 * partition, which should suffice for now. */
 		if (job_ptr->details->shared) {
 			max_share = job_ptr->part_ptr->max_share & 
 					~SHARED_FORCE;
