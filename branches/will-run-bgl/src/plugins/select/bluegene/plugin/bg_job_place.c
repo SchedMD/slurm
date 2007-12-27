@@ -76,7 +76,10 @@ static bg_record_t *_find_matching_block(List block_list,
 					 int created, int test_only);
 static int _check_for_booted_overlapping_blocks(
 	List block_list, ListIterator bg_record_itr,
-	bg_record_t *bg_record, int created, int test_only);
+	bg_record_t *bg_record, int overlap_check, int test_only);
+static int _dynamically_request(List block_list, ba_request_t *request,
+				bitstr_t* slurm_block_bitmap,
+				char *user_req_nodes);
 static int _find_best_block_match(List block_list, 
 				  struct job_record* job_ptr,
 				  bitstr_t* slurm_block_bitmap,
@@ -209,7 +212,7 @@ static int _check_requests(uint16_t *start, uint32_t req_procs, int start_req)
 	
 	slurm_mutex_lock(&request_list_mutex);
 	itr = list_iterator_create(bg_request_list);
-	info("got %d requests", list_count(bg_request_list));
+
 	while ((try_request = list_next(itr))) {
 		if(start_req) {
 			if ((try_request->start[X] != start[X])
@@ -232,7 +235,7 @@ static int _check_requests(uint16_t *start, uint32_t req_procs, int start_req)
 			       alpha_num[start[Y]],
 			       alpha_num[start[Z]]);
 		}
-		info("does %d == %d", try_request->procs, req_procs);
+
 		if(try_request->procs == req_procs) {
 			debug("already tried to create but "
 			      "can't right now.");
@@ -341,7 +344,7 @@ static bg_record_t *_find_matching_block(List block_list,
 					 ba_request_t *request,
 					 uint32_t max_procs,
 					 int allow, int check_image,
-					 int created, int test_only)
+					 int overlap_check, int test_only)
 {
 	bg_record_t *bg_record = NULL;
 	ListIterator itr = NULL;
@@ -416,7 +419,8 @@ static bg_record_t *_find_matching_block(List block_list,
 		
 		
 		if(_check_for_booted_overlapping_blocks(
-			   block_list, itr, bg_record, created, test_only))
+			   block_list, itr, bg_record,
+			   overlap_check, test_only))
 			continue;
 		
 		if(check_image) {
@@ -492,7 +496,7 @@ static bg_record_t *_find_matching_block(List block_list,
 
 static int _check_for_booted_overlapping_blocks(
 	List block_list, ListIterator bg_record_itr,
-	bg_record_t *bg_record, int created, int test_only)
+	bg_record_t *bg_record, int overlap_check, int test_only)
 {
 	bg_record_t *found_record = NULL;
 	ListIterator itr = NULL;
@@ -521,9 +525,9 @@ static int _check_for_booted_overlapping_blocks(
 			 * we choose something else
 			 */
 			if(bluegene_layout_mode == LAYOUT_OVERLAP
-			   && ((created == 0 && bg_record->state 
+			   && ((overlap_check == 0 && bg_record->state 
 				!= RM_PARTITION_READY)
-			       || (created == 1 && found_record->state 
+			       || (overlap_check == 1 && found_record->state 
 				   != RM_PARTITION_FREE))) {
 				rc = 1;
 				break;
@@ -569,6 +573,67 @@ static int _check_for_booted_overlapping_blocks(
 }
 
 /*
+ *
+ * Return SLURM_SUCCESS on successful create, SLURM_ERROR for no create 
+ */
+
+static int _dynamically_request(List block_list, ba_request_t *request,
+				bitstr_t* slurm_block_bitmap,
+				char *user_req_nodes)
+{
+	List lists_of_lists = NULL;
+	List temp_list = NULL;
+	ListIterator itr = NULL;
+	int rc = SLURM_ERROR;
+	int create_try = 0;
+	int start_geo[BA_SYSTEM_DIMENSIONS];
+
+	memcpy(start_geo, request->geometry, sizeof(int)*BA_SYSTEM_DIMENSIONS);
+	debug2("going to create %d", request->size);
+	lists_of_lists = list_create(NULL);
+	if(user_req_nodes) {
+		list_append(lists_of_lists, bg_job_block_list);
+	} else {
+		list_append(lists_of_lists, block_list);
+		if(list_count(block_list)
+		   != list_count(bg_booted_block_list)) {
+			list_append(lists_of_lists, 
+				    bg_booted_block_list);
+			if(list_count(bg_booted_block_list) 
+			   != list_count(bg_job_block_list)) 
+				list_append(lists_of_lists, 
+					    bg_job_block_list);
+		} else if(list_count(block_list) 
+			  != list_count(bg_job_block_list)) 
+			list_append(lists_of_lists, bg_job_block_list);
+	}
+	itr = list_iterator_create(lists_of_lists);
+	while ((temp_list = (List)list_next(itr))) {
+		create_try++;
+		
+		/* 1- try empty space
+		   2- we see if we can create one in the 
+		   unused bps
+		   3- see if we can create one in the non 
+		   job running bps
+		*/
+		debug("trying with %d", create_try);
+		if(create_dynamic_block(block_list, request, temp_list) 
+		   == SLURM_SUCCESS) {
+			rc = SLURM_SUCCESS;
+			break;
+		}
+		memcpy(request->geometry, start_geo,
+		       sizeof(int)*BA_SYSTEM_DIMENSIONS);
+	
+	}
+	list_iterator_destroy(itr);
+	if(lists_of_lists)
+		list_destroy(lists_of_lists);
+
+	return rc;
+}
+/*
  * finds the best match for a given job request 
  * 
  * IN - int spec right now holds the place for some type of
@@ -587,7 +652,6 @@ static int _find_best_block_match(List block_list,
 				  bg_record_t** found_bg_record, 
 				  bool test_only)
 {
-	ListIterator itr;
 	bg_record_t *bg_record = NULL;
 	uint16_t req_geometry[BA_SYSTEM_DIMENSIONS];
 	uint16_t start[BA_SYSTEM_DIMENSIONS];
@@ -595,14 +659,11 @@ static int _find_best_block_match(List block_list,
 	uint32_t req_procs = job_ptr->num_procs;
 	ba_request_t request; 
 	int i;
-	int created = 0;
+	int overlap_check = 0;
 	int allow = 0;
 	int check_image = 1;
 	uint32_t max_procs = (uint32_t)NO_VAL;
-	List lists_of_lists = NULL;
-	List temp_list = NULL;
 	char tmp_char[256];
-	bitstr_t* tmp_bitmap = NULL;
 	int start_req = 0;
 	static int total_cpus = 0;
 	char *blrtsimage = NULL;        /* BlrtsImage for this request */
@@ -610,6 +671,7 @@ static int _find_best_block_match(List block_list,
 	char *mloaderimage = NULL;      /* mloaderImage for this request */
 	char *ramdiskimage = NULL;      /* RamDiskImage for this request */
 	int rc = SLURM_SUCCESS;
+	int create_try = 0;
 
 	if(!total_cpus)
 		total_cpus = DIM_SIZE[X] * DIM_SIZE[Y] * DIM_SIZE[Z] 
@@ -767,180 +829,127 @@ static int _find_best_block_match(List block_list,
 	if(max_procs == (uint32_t)NO_VAL) 
 		max_procs = max_nodes * procs_per_node;
 	
-try_again:	
-	bg_record = _find_matching_block(block_list, 
-					 job_ptr,
-					 slurm_block_bitmap,
-					 &request,
-					 max_procs,
-					 allow, check_image,
-					 created, test_only);
 
-	/* set the bitmap and do other allocation activities */
-	if (bg_record) {
-		if(!test_only) {
-			if(check_block_bp_states(
-				   bg_record->bg_block_id) 
-			   == SLURM_ERROR) {
-				error("_find_best_block_match: Marking "
-				      "block %s in an error state "
-				      "because of bad bps.",
-				      bg_record->bg_block_id);
-				bg_record->job_running =
-					BLOCK_ERROR_STATE;
-				bg_record->state = RM_PARTITION_ERROR;
-				trigger_block_error();
-				goto try_again;
+	while(1) {
+		bg_record = _find_matching_block(block_list, 
+						 job_ptr,
+						 slurm_block_bitmap,
+						 &request,
+						 max_procs,
+						 allow, check_image,
+						 overlap_check, test_only);
+		
+		/* set the bitmap and do other allocation activities */
+		if (bg_record) {
+			if(!test_only) {
+				if(check_block_bp_states(
+					   bg_record->bg_block_id) 
+				   == SLURM_ERROR) {
+					error("_find_best_block_match: Marking "
+					      "block %s in an error state "
+					      "because of bad bps.",
+					      bg_record->bg_block_id);
+					bg_record->job_running =
+						BLOCK_ERROR_STATE;
+					bg_record->state = RM_PARTITION_ERROR;
+					trigger_block_error();
+					continue;
+				}
 			}
-		}
-		format_node_name(bg_record, tmp_char, sizeof(tmp_char));
-	
-		debug("_find_best_block_match %s <%s>", 
-			bg_record->bg_block_id, 
-			tmp_char);
-		bit_and(slurm_block_bitmap, bg_record->bitmap);
-		rc = SLURM_SUCCESS;
-		*found_bg_record = bg_record;
-		goto end_it;
-	}
-
-	/* see if we can just reset the image and reboot the block */
-	if(allow) {
-		check_image = 0;
-		allow = 0;
-		goto try_again;
-	}
-
-	check_image = 1;
-	/* all these assume that the *bg_record is NULL */
-	if(bluegene_layout_mode == LAYOUT_OVERLAP && !test_only && created<2) {
-		created++;
-		goto try_again;
-	}
-		
-	if(bluegene_layout_mode != LAYOUT_DYNAMIC) {
-		if(test_only) 
-			_add_to_request_list(start, req_procs, start_req);
-		
-		goto not_dynamic;
-	}
-
-	if(test_only) {
-		for(i=0; i<BA_SYSTEM_DIMENSIONS; i++) 
-			request.start[i] = start[i];
+			format_node_name(bg_record, tmp_char, sizeof(tmp_char));
 			
-		for(i=0; i<BA_SYSTEM_DIMENSIONS; i++) 
-			request.geometry[i] = req_geometry[i];
-			
-		request.save_name = NULL;
-		request.elongate_geos = NULL;
-		request.size = target_size;
-		request.procs = req_procs;
-		request.conn_type = conn_type;
-		request.rotate = rotate;
-		request.elongate = true;
-		request.start_req = start_req;
-		request.blrtsimage = blrtsimage;
-		request.linuximage = linuximage;
-		request.mloaderimage = mloaderimage;
-		request.ramdiskimage = ramdiskimage;
-	
-		debug("trying with all free blocks");
-		if(create_dynamic_block(block_list, &request, NULL)
-		   == SLURM_ERROR) {
-			error("this job will never run on "
-			      "this system");
-			xfree(request.save_name);
-			rc = SLURM_ERROR;
+			debug("_find_best_block_match %s <%s>", 
+			      bg_record->bg_block_id, 
+			      tmp_char);
+			bit_and(slurm_block_bitmap, bg_record->bitmap);
+			rc = SLURM_SUCCESS;
+			*found_bg_record = bg_record;
 			goto end_it;
 		} else {
+			/* this gets altered in _find_matching_block so we
+			   reset it */
+			for(i=0; i<BA_SYSTEM_DIMENSIONS; i++) 
+				request.geometry[i] = req_geometry[i];
+		}
+		
+		/* see if we can just reset the image and reboot the block */
+		if(allow) {
+			check_image = 0;
+			allow = 0;
+			continue;
+		}
+		
+		check_image = 1;
+
+		/* all these assume that the *bg_record is NULL */
+
+		if(bluegene_layout_mode == LAYOUT_OVERLAP
+		   && !test_only && overlap_check < 2) {
+			overlap_check++;
+			continue;
+		}
+		
+		if(bluegene_layout_mode != LAYOUT_DYNAMIC) {
+			if(test_only) 
+				_add_to_request_list(start,
+						     req_procs, start_req);
+			
+			goto not_dynamic;
+		}
+
+		if(create_try)
+			goto not_dynamic;
+		
+		if((rc = _dynamically_request(block_list, &request, 
+					      slurm_block_bitmap, 
+					      job_ptr->details->req_nodes))
+		   == SLURM_SUCCESS) {
+			create_try = 1;
+			continue;
+		}
+			
+
+		if(test_only) {
+			char tmp_char[256];
+			bitstr_t* tmp_bitmap = NULL;
+
+			debug("trying with empty machine");
+			if(create_dynamic_block(block_list, &request, NULL)
+			   == SLURM_ERROR) {
+				error("this job will never run on "
+				      "this system");
+				xfree(request.save_name);
+				break;
+			} 
 			if(!request.save_name) {
 				error("no name returned from "
 				      "create_dynamic_block");
-				rc = SLURM_ERROR;
-				goto end_it;
+				break;
 			} 
-
-			_add_to_request_list(start, req_procs, start_req);
-		
+			
+			_add_to_request_list(
+				start, 
+				req_procs,
+				start_req);
+			
 			slurm_conf_lock();
 			snprintf(tmp_char, sizeof(tmp_char), "%s%s", 
 				 slurmctld_conf.node_prefix,
 				 request.save_name);
 			slurm_conf_unlock();
-			if (node_name2bitmap(tmp_char, 
-					     false, 
-					     &tmp_bitmap)) {
+			
+			if (node_name2bitmap(tmp_char, false,
+					     &tmp_bitmap)) 
 				fatal("Unable to convert nodes %s to bitmap", 
 				      tmp_char);
-			}
 			
 			bit_and(slurm_block_bitmap, tmp_bitmap);
 			FREE_NULL_BITMAP(tmp_bitmap);
 			xfree(request.save_name);
-			rc = SLURM_SUCCESS;
 			goto end_it;
-		}
-	} else if(!created) {
-		debug2("going to create %d", target_size);
-		lists_of_lists = list_create(NULL);
-		if(job_ptr->details->req_nodes) {
-			list_append(lists_of_lists, bg_job_block_list);
 		} else {
-			list_append(lists_of_lists, bg_list);
-			if(list_count(bg_list)
-			   != list_count(bg_booted_block_list)) {
-				list_append(lists_of_lists, 
-					    bg_booted_block_list);
-				if(list_count(bg_booted_block_list) 
-				   != list_count(bg_job_block_list)) 
-					list_append(lists_of_lists, 
-						    bg_job_block_list);
-			} else if(list_count(bg_list) 
-				  != list_count(bg_job_block_list)) 
-				list_append(lists_of_lists, bg_job_block_list);
+			break;
 		}
-		itr = list_iterator_create(lists_of_lists);
-		while ((temp_list = (List)list_next(itr))) {
-			created++;
-
-			for(i=0; i<BA_SYSTEM_DIMENSIONS; i++) 
-				request.start[i] = start[i];
-			
-			for(i=0; i<BA_SYSTEM_DIMENSIONS; i++) 
-				request.geometry[i] = req_geometry[i];
-			
-			request.save_name = NULL;
-			request.elongate_geos = NULL;
-			request.size = target_size;
-			request.procs = req_procs;
-			request.conn_type = conn_type;
-			request.rotate = rotate;
-			request.elongate = true;
-			request.start_req = start_req;
-			request.blrtsimage = blrtsimage;
-			request.linuximage = linuximage;
-			request.mloaderimage = mloaderimage;
-			request.ramdiskimage = ramdiskimage;
-			/* 1- try empty space
-			   2- we see if we can create one in the 
-			   unused bps
-			   3- see if we can create one in the non 
-			   job running bps
-			*/
-			debug("trying with %d", created);
-			if(create_dynamic_block(block_list, 
-						&request, temp_list) 
-			   == SLURM_SUCCESS) {
-				list_iterator_destroy(itr);
-				list_destroy(lists_of_lists);
-				lists_of_lists = NULL;
-				goto try_again;
-			}
-		}
-		list_iterator_destroy(itr);
-		if(lists_of_lists)
-			list_destroy(lists_of_lists);
 	}
 not_dynamic:
 	debug("_find_best_block_match none found");
