@@ -2735,6 +2735,8 @@ extern int select_p_get_extra_jobinfo(struct node_record *node_ptr,
 				      void *data)
 {
 	int rc = SLURM_SUCCESS, i;
+	struct select_cr_job *job;
+	ListIterator iterator;
 	uint16_t *tmp_16 = (uint16_t *) data;
 
 	xassert(job_ptr);
@@ -2742,16 +2744,12 @@ extern int select_p_get_extra_jobinfo(struct node_record *node_ptr,
 
 	switch (cr_info) {
 	case SELECT_AVAIL_CPUS:
-	{
-		struct select_cr_job *job = NULL;
-		ListIterator iterator =
-			list_iterator_create(select_cr_job_list);
+		job = NULL;
+		iterator = list_iterator_create(select_cr_job_list);
 		xassert(node_ptr);
-		xassert(node_ptr->magic == NODE_MAGIC);
 
 		*tmp_16 = 0;
-		while ((job =
-			(struct select_cr_job *) list_next(iterator)) != NULL) {
+		while ((job = (struct select_cr_job *) list_next(iterator))) {
 			if (job->job_id != job_ptr->job_id)
 				continue;
 			for (i = 0; i < job->nhosts; i++) { 
@@ -2786,7 +2784,6 @@ extern int select_p_get_extra_jobinfo(struct node_record *node_ptr,
 	     cleanup:
 		list_iterator_destroy(iterator);
 		break;
-	}
 	default:
 		error("select_g_get_extra_jobinfo cr_info %d invalid", cr_info);
 		rc = SLURM_ERROR;
@@ -2803,42 +2800,13 @@ extern int select_p_get_select_nodeinfo(struct node_record *node_ptr,
 	int rc = SLURM_SUCCESS, i, j;
 	struct node_cr_record *this_cr_node;
 	struct part_cr_record *p_ptr;
+	uint16_t *tmp_16;
 
 	xassert(node_ptr);
-	xassert(node_ptr->magic == NODE_MAGIC);
 
 	switch (dinfo) {
-	case SELECT_AVAIL_MEMORY:
-	{
-		uint32_t *tmp_32 = (uint32_t *) data;
-
-		*tmp_32 = 0;
-		if ((cr_type == CR_CPU_MEMORY) || (cr_type == CR_CORE_MEMORY) ||
-		    (cr_type == CR_MEMORY) || (cr_type == CR_SOCKET_MEMORY)) {
-			this_cr_node = find_cr_node_record (node_ptr->name);
-			if (this_cr_node == NULL) {
-				error(" cons_res: could not find node %s",
-				      node_ptr->name);
-				rc = SLURM_ERROR;
-				return rc;
-			}
-
-			if (select_fast_schedule)
-				*tmp_32 = node_ptr->config_ptr->real_memory;
-			else
-				*tmp_32 = node_ptr->real_memory;
-
-			if (*tmp_32 < this_cr_node->alloc_memory)
-				*tmp_32 = 0;
-			else
-				*tmp_32 -= this_cr_node->alloc_memory;
-		}
-		break;
-	}
 	case SELECT_ALLOC_CPUS: 
-	{
-		uint16_t *tmp_16 = (uint16_t *) data;
-		uint16_t tmp;
+		tmp_16 = (uint16_t *) data;
 		*tmp_16 = 0;
 	        this_cr_node = find_cr_node_record (node_ptr->name);
 		if (this_cr_node == NULL) {
@@ -2852,7 +2820,7 @@ extern int select_p_get_select_nodeinfo(struct node_record *node_ptr,
 		for (p_ptr = this_cr_node->parts; p_ptr; p_ptr = p_ptr->next) {
 			i = 0;
 			for (j = 0; j < p_ptr->num_rows; j++) {
-				tmp = 0;
+				uint16_t tmp = 0;
 				for (; i < this_cr_node->num_sockets; i++)
 					tmp += p_ptr->alloc_cores[i] *
 							node_ptr->threads;
@@ -2861,22 +2829,6 @@ extern int select_p_get_select_nodeinfo(struct node_record *node_ptr,
 			}
 		}
 		break;
-	}
-	case SELECT_AVAIL_CPUS: 
-	{
-		uint16_t *tmp_16 = (uint16_t *) data;
-		*tmp_16 = 0;
-	        this_cr_node = find_cr_node_record (node_ptr->name);
-		if (this_cr_node == NULL) {
-		        error(" cons_res: could not find node %s",
-			      node_ptr->name);
-			rc = SLURM_ERROR;
-			return rc;
-		}
-		/* count the highest number of idle cores on this node */
-		*tmp_16 = _count_idle_cpus(this_cr_node);
-		break;
-	}
 	default:
 		error("select_g_get_select_nodeinfo info %d invalid", dinfo);
 		rc = SLURM_ERROR;

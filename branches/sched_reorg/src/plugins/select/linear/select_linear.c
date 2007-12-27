@@ -215,8 +215,7 @@ static int _fini_status_pthread(void)
 }
 #endif
 
-static bool 
-_enough_nodes(int avail_nodes, int rem_nodes, 
+static bool _enough_nodes(int avail_nodes, int rem_nodes, 
 		uint32_t min_nodes, uint32_t req_nodes)
 {
 	int needed_nodes;
@@ -317,19 +316,19 @@ static uint16_t _get_avail_cpus(struct job_record *job_ptr, int index)
 	multi_core_data_t *mc_ptr = NULL;
 	int min_sockets = 0, min_cores = 0;
 
-	if (job_ptr->details) {
-		if (job_ptr->details->cpus_per_task)
-			cpus_per_task = job_ptr->details->cpus_per_task;
-		if (job_ptr->details->ntasks_per_node)
-			ntasks_per_node = job_ptr->details->ntasks_per_node;
-		mc_ptr = job_ptr->details->mc_ptr;
-	}
-	if (mc_ptr) {
-		max_sockets       = job_ptr->details->mc_ptr->max_sockets;
-		max_cores         = job_ptr->details->mc_ptr->max_cores;
-		max_threads       = job_ptr->details->mc_ptr->max_threads;
-		ntasks_per_socket = job_ptr->details->mc_ptr->ntasks_per_socket;
-		ntasks_per_core   = job_ptr->details->mc_ptr->ntasks_per_core;
+	if (job_ptr->details == NULL)
+		return (uint16_t) 0;
+
+	if (job_ptr->details->cpus_per_task)
+		cpus_per_task = job_ptr->details->cpus_per_task;
+	if (job_ptr->details->ntasks_per_node)
+		ntasks_per_node = job_ptr->details->ntasks_per_node;
+	if ((mc_ptr = job_ptr->details->mc_ptr)) {
+		max_sockets       = mc_ptr->max_sockets;
+		max_cores         = mc_ptr->max_cores;
+		max_threads       = mc_ptr->max_threads;
+		ntasks_per_socket = mc_ptr->ntasks_per_socket;
+		ntasks_per_core   = mc_ptr->ntasks_per_core;
 	}
 
 	node_ptr = &(select_node_ptr[index]);
@@ -404,6 +403,9 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	int min_share = 0, max_share = 0;
 
 	xassert(bitmap);
+	if (job_ptr->details == NULL)
+		return EINVAL;
+
 	if (mc_ptr) {
 		debug3("job min-[max]: -N %u-[%u]:%u-[%u]:%u-[%u]:%u-[%u]",
 			job_ptr->details->min_nodes, 
@@ -445,8 +447,8 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 			continue;
 		prev_cnt = j;
 		if ((!test_only) && (i > 0)) {
-			/* We need to share, try to suitable job
-			 * to share nodes with */
+			/* We need to share. 
+			 * Try to find suitable job to share nodes with. */
 			rc = _find_job_mate(job_ptr, tmp_map, 
 					    min_nodes, max_nodes, req_nodes);
 			if (rc == SLURM_SUCCESS) {
@@ -831,14 +833,14 @@ extern int select_p_get_extra_jobinfo (struct node_record *node_ptr,
                                        void *data)
 {
 	int rc = SLURM_SUCCESS;
+	uint16_t *tmp_16;
 
 	xassert(job_ptr);
 	xassert(job_ptr->magic == JOB_MAGIC);
 
 	switch (info) {
 	case SELECT_AVAIL_CPUS:
-	{
-		uint16_t *tmp_16 = (uint16_t *) data;
+		tmp_16 = (uint16_t *) data;
 
 		if ((job_ptr->details->cpus_per_task > 1)
 		||  (job_ptr->details->mc_ptr)) {
@@ -852,7 +854,6 @@ extern int select_p_get_extra_jobinfo (struct node_record *node_ptr,
 			}
 		}
 		break;
-	}
 	default:
 		error("select_g_get_extra_jobinfo info %d invalid", info);
 		rc = SLURM_ERROR;
