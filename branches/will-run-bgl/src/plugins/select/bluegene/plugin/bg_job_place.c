@@ -407,7 +407,7 @@ static bg_record_t *_find_matching_block(List block_list,
 			      bg_record->bg_block_id);			
 			continue;
 		} else if((bg_record->job_running != NO_JOB_RUNNING) 
-			  //&& (bg_record->job_running != job_ptr->job_id)
+			  && (bg_record->job_running != job_ptr->job_id)
 			  && !test_only) {
 			debug("block %s in use by %s job %d", 
 			      bg_record->bg_block_id,
@@ -1214,7 +1214,7 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 					     SELECT_DATA_BLOCK_ID, 
 					     bg_record->bg_block_id);
 			
-//				bg_record->job_running = job_ptr->job_id;
+				bg_record->job_running = job_ptr->job_id;
 			}
 		}
 	}
