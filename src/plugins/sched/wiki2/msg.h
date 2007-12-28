@@ -82,11 +82,12 @@
 #include "src/slurmctld/slurmctld.h"
 
 /* Global configuration parameters */
-#define E_HOST_SIZE  256
-#define EXC_PART_CNT  10
-#define KEY_SIZE      32
-#define PRIO_HOLD      0
-#define PRIO_DECREMENT 1
+#define E_HOST_SIZE	256
+#define EXC_PART_CNT	10
+#define KEY_SIZE	32
+#define PRIO_HOLD	0
+#define PRIO_DECREMENT	1
+#define MAX_COMMENT_LEN	512
 extern int	init_prio_mode;
 extern char 	auth_key[KEY_SIZE];
 extern char	e_host[E_HOST_SIZE];
