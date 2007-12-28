@@ -151,6 +151,46 @@ static int _bg_record_sort_aval_inc(bg_record_t* rec_a, bg_record_t* rec_b)
 	return 0;
 }
 
+/* 
+ * Comparator used for sorting blocks smallest to largest
+ * 
+ * returns: -1: rec_a >rec_b   0: rec_a == rec_b   1: rec_a < rec_b
+ * 
+ */
+static int _bg_record_sort_aval_dec(bg_record_t* rec_a, bg_record_t* rec_b)
+{
+	int size_a = rec_a->node_cnt;
+	int size_b = rec_b->node_cnt;
+
+	if(rec_a->est_job_end > rec_b->est_job_end)
+		return -1;
+	else if(rec_a->est_job_end < rec_b->est_job_end)
+		return 1;
+
+	if (size_a < size_b)
+		return -1;
+	else if (size_a > size_b)
+		return 1;
+	if(rec_a->nodes && rec_b->nodes) {
+		size_a = strcmp(rec_a->nodes, rec_b->nodes);
+		if (size_a < 0)
+			return -1;
+		else if (size_a > 0)
+			return 1;
+	}
+	if (rec_a->quarter < rec_b->quarter)
+		return -1;
+	else if (rec_a->quarter > rec_b->quarter)
+		return 1;
+
+	if(rec_a->nodecard < rec_b->nodecard)
+		return -1;
+	else if(rec_a->nodecard > rec_b->nodecard)
+		return 1;
+
+	return 0;
+}
+
 /*
  * Get a list of groups associated with a specific user_id
  * Return 0 on success, -1 on failure
@@ -684,7 +724,7 @@ static int _dynamically_request(List block_list, int *blocks_added,
 			}
 			list_destroy(new_blocks);
 			list_sort(block_list,
-				  (ListCmpF)_bg_record_sort_aval_inc);
+				  (ListCmpF)_bg_record_sort_aval_dec);
 	
 			rc = SLURM_SUCCESS;
 			break;
@@ -1128,7 +1168,7 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 	block_list = copy_bg_list(bg_list);
 	slurm_mutex_unlock(&block_state_mutex);
 	
-	list_sort(block_list, (ListCmpF)_bg_record_sort_aval_inc);
+	list_sort(block_list, (ListCmpF)_bg_record_sort_aval_dec);
 	block_list_count = list_count(block_list);
 
 	rc = _find_best_block_match(block_list, &blocks_added,
