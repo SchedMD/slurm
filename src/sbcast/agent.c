@@ -146,7 +146,7 @@ extern void send_rpc(file_bcast_msg_t *bcast_msg,
 		hl = hostlist_create(alloc_resp->node_list);
 		
 		i = 0;
-		while(i < alloc_resp->node_cnt) {
+		while (i < alloc_resp->node_cnt) {
 			int j = 0;
 			name = hostlist_shift(hl);
 			if(!name) {
@@ -170,8 +170,6 @@ extern void send_rpc(file_bcast_msg_t *bcast_msg,
 			slurm_msg_t_init(&thread_info[threads_used].msg);
 			thread_info[threads_used].msg.msg_type =
 				REQUEST_FILE_BCAST;
-			thread_info[threads_used].msg.data = bcast_msg;
-						
 			threads_used++;
 		}
 		xfree(span);
@@ -187,6 +185,7 @@ extern void send_rpc(file_bcast_msg_t *bcast_msg,
 		error("pthread_attr_setdetachstate error %m");
 
 	for (i=0; i<threads_used; i++) {
+		thread_info[i].msg.data = bcast_msg;
 		slurm_mutex_lock(&agent_cnt_mutex);
 		agent_cnt++;
 		slurm_mutex_unlock(&agent_cnt_mutex);
