@@ -36,7 +36,7 @@ source ./globals
 set test_id     "1.86"
 set exit_code   0
 set file_in     "test$test_id.input"
-set prompt      "SLURM_QA_PROMPT: "
+set prompt      "PROMPT: "
 
 print_header $test_id
 

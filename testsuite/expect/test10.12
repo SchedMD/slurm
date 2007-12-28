@@ -49,7 +49,7 @@ if { [test_bluegene] == 0 } {
 #
 spawn $smap --resolve 000
 expect {
-	-re "must be on BG SN to resolve." {
+	-re "Must be on BG" {
 		set non_bg 1
 		exp_continue;
 	}

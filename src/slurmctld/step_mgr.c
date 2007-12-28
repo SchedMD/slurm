@@ -71,6 +71,7 @@
 #define STEP_DEBUG 0
 #define MAX_RETRIES 10
 
+static int  _count_cpus(bitstr_t *bitmap);
 static void _pack_ctld_job_step_info(struct step_record *step, Buf buffer);
 static bitstr_t * _pick_step_nodes (struct job_record  *job_ptr, 
 				    job_step_create_request_msg_t *step_spec,
@@ -430,7 +431,7 @@ _pick_step_nodes (struct job_record  *job_ptr,
 
 	bitstr_t *nodes_avail = NULL, *nodes_idle = NULL;
 	bitstr_t *nodes_picked = NULL, *node_tmp = NULL;
-	int error_code, nodes_picked_cnt=0, cpus_picked_cnt, i;
+	int error_code, nodes_picked_cnt=0, cpus_picked_cnt = 0, i;
 	ListIterator step_iterator;
 	struct step_record *step_p;
 #if STEP_DEBUG
@@ -452,7 +453,6 @@ _pick_step_nodes (struct job_record  *job_ptr,
 	 * Do not use nodes that have no unused CPUs */
 	if (step_spec->exclusive) {
 		int i, j=0, avail, tot_cpus = 0;
-		cpus_picked_cnt = 0;
 		for (i=bit_ffs(job_ptr->node_bitmap); i<node_record_count; 
 		     i++) {
 			if (!bit_test(job_ptr->node_bitmap, i))
@@ -649,7 +649,8 @@ _pick_step_nodes (struct job_record  *job_ptr,
 	}
 	
 	if (step_spec->cpu_count) {
-		cpus_picked_cnt = count_cpus(nodes_picked);
+		/* make sure the selected nodes have enough cpus */
+		cpus_picked_cnt = _count_cpus(nodes_picked);
 		/* user is requesting more cpus than we got from the
 		 * picked nodes we should return with an error */
 		if(step_spec->cpu_count > cpus_picked_cnt) {
@@ -672,6 +673,29 @@ cleanup:
 	FREE_NULL_BITMAP(nodes_picked);
 	*return_code = ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE;
 	return NULL;
+}
+
+/*
+ * _count_cpus - report how many cpus are associated with the identified nodes 
+ * IN bitmap - map of nodes to tally
+ * RET cpu count
+ * globals: node_record_count - number of nodes configured
+ *	node_record_table_ptr - pointer to global node table
+ */
+static int _count_cpus(bitstr_t *bitmap)
+{
+	int i, sum;
+
+	sum = 0;
+	for (i = 0; i < node_record_count; i++) {
+		if (bit_test(bitmap, i) != 1)
+			continue;
+		if (slurmctld_conf.fast_schedule)
+			sum += node_record_table_ptr[i].config_ptr->cpus;
+		else
+			sum += node_record_table_ptr[i].cpus;
+	}
+	return sum;
 }
 
 /* Update a job's record of allocated CPUs when a job step gets scheduled */

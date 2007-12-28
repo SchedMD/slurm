@@ -183,9 +183,9 @@ static void _bcast_file(void)
 	file_bcast_msg_t bcast_msg;
 	char *buffer[FILE_BLOCKS];
 
-	/* NOTE: packmem() uses 16 bits to express a block size, 
-	 * buf_size must be no larger than 64k - 1 */
-	buf_size = MIN((63 * 1024), f_stat.st_size);
+	/* NOTE: packmem() uses 32 bits to express a block size
+	 * buf_size can be enlarged if desired */
+	buf_size = MIN((64 * 1024), f_stat.st_size);
 
 	bcast_msg.fname		= params.dst_fname;
 	bcast_msg.block_no	= 1;
