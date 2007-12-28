@@ -54,6 +54,7 @@ _STMT_START {		\
 	(b) = (t);	\
 } _STMT_END
 
+
 pthread_mutex_t create_dynamic_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 static void _rotate_geo(uint16_t *req_geometry, int rot_cnt);
@@ -78,10 +79,11 @@ static bg_record_t *_find_matching_block(List block_list,
 static int _check_for_booted_overlapping_blocks(
 	List block_list, ListIterator bg_record_itr,
 	bg_record_t *bg_record, int overlap_check, bool test_only);
-static int _dynamically_request(List block_list, ba_request_t *request,
+static int _dynamically_request(List block_list, int *blocks_added,
+				ba_request_t *request,
 				bitstr_t* slurm_block_bitmap,
 				char *user_req_nodes);
-static int _find_best_block_match(List block_list, 
+static int _find_best_block_match(List block_list, int *blocks_added,
 				  struct job_record* job_ptr,
 				  bitstr_t* slurm_block_bitmap,
 				  uint32_t min_nodes, 
@@ -405,6 +407,7 @@ static bg_record_t *_find_matching_block(List block_list,
 			      bg_record->bg_block_id);			
 			continue;
 		} else if((bg_record->job_running != NO_JOB_RUNNING) 
+			  //&& (bg_record->job_running != job_ptr->job_id)
 			  && !test_only) {
 			debug("block %s in use by %s job %d", 
 			      bg_record->bg_block_id,
@@ -616,7 +619,8 @@ static int _check_for_booted_overlapping_blocks(
  * Return SLURM_SUCCESS on successful create, SLURM_ERROR for no create 
  */
 
-static int _dynamically_request(List block_list, ba_request_t *request,
+static int _dynamically_request(List block_list, int *blocks_added,
+				ba_request_t *request,
 				bitstr_t* slurm_block_bitmap,
 				char *user_req_nodes)
 {
@@ -675,6 +679,7 @@ static int _dynamically_request(List block_list, ba_request_t *request,
 					}
 					list_append(block_list, bg_record);
 					print_bg_record(bg_record);
+					(*blocks_added) = 1;
 				}
 			}
 			list_destroy(new_blocks);
@@ -711,6 +716,7 @@ static int _dynamically_request(List block_list, ba_request_t *request,
  * 
  */
 static int _find_best_block_match(List block_list, 
+				  int *blocks_added,
 				  struct job_record* job_ptr, 
 				  bitstr_t* slurm_block_bitmap,
 				  uint32_t min_nodes, uint32_t max_nodes,
@@ -967,7 +973,7 @@ static int _find_best_block_match(List block_list,
 		if(create_try)
 			goto no_match;
 		
-		if((rc = _dynamically_request(block_list, &request, 
+		if((rc = _dynamically_request(block_list, blocks_added, &request, 
 					      slurm_block_bitmap, 
 					      job_ptr->details->req_nodes))
 		   == SLURM_SUCCESS) {
@@ -1045,28 +1051,32 @@ static int _sync_block_lists(List full_list, List incomp_list)
 	ListIterator itr2;
 	bg_record_t *bg_record = NULL;
 	bg_record_t *new_record = NULL;
+	int count = 0;
 
 	itr = list_iterator_create(full_list);
 	itr2 = list_iterator_create(incomp_list);
 	while((new_record = list_next(itr))) {
 		while((bg_record = list_next(itr2))) {
-			if(!strcmp(bg_record->bg_block_id,
-				   new_record->bg_block_id))
+			if(bit_equal(bg_record->bitmap, new_record->bitmap)
+			   && bit_equal(bg_record->ionode_bitmap,
+					new_record->ionode_bitmap))
 				break;
 		} 
 
 		if(!bg_record) {
 			bg_record = xmalloc(sizeof(bg_record_t));
 			copy_bg_record(new_record, bg_record);
+			debug4("adding %s", bg_record->bg_block_id);
 			list_append(incomp_list, bg_record);
-		}
+			count++;
+		} 
 		list_iterator_reset(itr2);
 	}
 	list_iterator_destroy(itr);
 	list_iterator_destroy(itr2);
 	sort_bg_record_inc_size(incomp_list);
 
-	return SLURM_SUCCESS;
+	return count;
 }
 
 
@@ -1090,6 +1100,9 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 	int i, rc = SLURM_SUCCESS;
 	uint16_t geo[BA_SYSTEM_DIMENSIONS];
 	uint16_t tmp16 = (uint16_t)NO_VAL;
+	List block_list = NULL;
+	int block_list_count = 0;
+	int blocks_added = 0;
 	
 	if(bluegene_layout_mode == LAYOUT_DYNAMIC)
 		slurm_mutex_lock(&create_dynamic_mutex);
@@ -1111,16 +1124,14 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 				SELECT_PRINT_RAMDISK_IMAGE);
 	debug2("RamDiskImage=%s", buf);
 	
-	DEF_TIMERS;
-	START_TIMER;
 	slurm_mutex_lock(&block_state_mutex);
-	List block_list = copy_bg_list(bg_list);
+	block_list = copy_bg_list(bg_list);
 	slurm_mutex_unlock(&block_state_mutex);
-	END_TIMER2("submit");
-	info("got time of %s", TIME_STR);
-	list_sort(block_list, (ListCmpF)_bg_record_sort_aval_inc);
 	
-	rc = _find_best_block_match(block_list,
+	list_sort(block_list, (ListCmpF)_bg_record_sort_aval_inc);
+	block_list_count = list_count(block_list);
+
+	rc = _find_best_block_match(block_list, &blocks_added,
 				    job_ptr, slurm_block_bitmap, min_nodes, 
 				    max_nodes, req_nodes, spec, 
 				    &bg_record, test_only);
@@ -1129,9 +1140,9 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 		if(bg_record && !bg_record->bg_block_id) {
 			//ListIterator itr = NULL;
 			
-			info("can start job at %u on %s on unmade block",
-			     bg_record->est_job_end,
-			     bg_record->nodes);
+			debug2("%d can start job at %u on %s on unmade block",
+			       test_only, bg_record->est_job_end,
+			       bg_record->nodes);
 			select_g_set_jobinfo(job_ptr->select_jobinfo,
 					     SELECT_DATA_BLOCK_ID,
 					     "unassigned");
@@ -1170,13 +1181,10 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 			   && (job_ptr->part_ptr->max_share <= 1))
 				error("Small block used in "
 				      "non-shared partition");
-			info("can start job at %u on %s",
-			     bg_record->est_job_end,
-			     bg_record->nodes);
+			debug("%d can start job at %u on %s",
+			      test_only, bg_record->est_job_end,
+			      bg_record->nodes);
 			/* set the block id and info about block */
-			select_g_set_jobinfo(job_ptr->select_jobinfo,
-					     SELECT_DATA_BLOCK_ID, 
-					     bg_record->bg_block_id);
 			select_g_set_jobinfo(job_ptr->select_jobinfo,
 					     SELECT_DATA_NODE_CNT, 
 					     &bg_record->node_cnt);
@@ -1197,17 +1205,25 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 			select_g_set_jobinfo(job_ptr->select_jobinfo,
 					     SELECT_DATA_CONN_TYPE, 
 					     &tmp16);
+			if(test_only) {
+				select_g_set_jobinfo(job_ptr->select_jobinfo,
+						     SELECT_DATA_BLOCK_ID,
+						     "unassigned");
+			} else {
+				select_g_set_jobinfo(job_ptr->select_jobinfo,
+					     SELECT_DATA_BLOCK_ID, 
+					     bg_record->bg_block_id);
+			
+//				bg_record->job_running = job_ptr->job_id;
+			}
 		}
-		if(test_only) {
-			select_g_set_jobinfo(job_ptr->select_jobinfo,
-					     SELECT_DATA_BLOCK_ID,
-					     "unassigned");
-		} 
 	}
 
 	if(bluegene_layout_mode == LAYOUT_DYNAMIC) {		
 		slurm_mutex_lock(&block_state_mutex);
-		_sync_block_lists(block_list, bg_list);
+		if(blocks_added) 
+			_sync_block_lists(block_list, bg_list);
+		
 		slurm_mutex_unlock(&block_state_mutex);
 		slurm_mutex_unlock(&create_dynamic_mutex);
 	}

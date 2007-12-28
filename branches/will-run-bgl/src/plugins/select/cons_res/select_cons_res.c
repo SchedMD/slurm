@@ -2704,6 +2704,11 @@ extern int select_p_job_fini(struct job_record *job_ptr)
 	return SLURM_SUCCESS;
 }
 
+extern int select_p_job_update_end_time(struct job_record *job_ptr)
+{
+	return SLURM_SUCESS;
+}
+
 extern int select_p_job_suspend(struct job_record *job_ptr)
 {
 	ListIterator job_iterator;

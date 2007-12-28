@@ -910,7 +910,7 @@ extern int start_job(struct job_record *job_ptr)
 			list_push(bg_booted_block_list, bg_record);
 		slurm_mutex_unlock(&block_state_mutex);
 	} else {
-		error("bg_record %s does exist, requested for job (%d)", 
+		fatal("bg_record %s doesn't exist, requested for job (%d)", 
 		      bg_update_ptr->bg_block_id, job_ptr->job_id);
 		_bg_list_del(bg_update_ptr);
 		return SLURM_ERROR;
