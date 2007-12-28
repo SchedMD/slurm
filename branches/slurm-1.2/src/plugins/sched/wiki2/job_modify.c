@@ -40,6 +40,7 @@
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/slurmctld.h"
 
+/* Given a string, replace the first space found with '\0' */
 extern void	null_term(char *str)
 {
 	char *tmp_ptr;
