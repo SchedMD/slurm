@@ -54,7 +54,7 @@
  * RET - SLURM_SUCCESS if job runnable now, error code otherwise 
  */
 extern int submit_job(struct job_record *job_ptr, bitstr_t *bitmap,
-		uint32_t min_nodes, uint32_t max_nodes, uint32_t req_nodes, 
-		bool test_only);
+		      uint32_t min_nodes, uint32_t max_nodes,
+		      uint32_t req_nodes, bool test_only);
 
 #endif /* _BG_JOB_PLACE_H_ */

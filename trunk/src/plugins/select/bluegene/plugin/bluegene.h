@@ -100,6 +100,8 @@ typedef struct bg_record {
 					   are on.  NULL if not a small block*/
 	int job_running;                /* job id if there is a job running 
 					   on the block */
+	time_t est_job_end;             /* if job_running time job is
+					   estimated to end */
 	int cpus_per_bp;                /* count of cpus per base part */
 	uint32_t node_cnt;              /* count of nodes per block */
 	uint16_t quarter;               /* used for small blocks 
@@ -174,6 +176,7 @@ extern void print_bg_record(bg_record_t *record);
 extern void destroy_bg_record(void *object);
 extern int block_exist_in_list(List my_list, bg_record_t *bg_record);
 extern void process_nodes(bg_record_t *bg_reord);
+extern List copy_bg_list(List in_list);
 extern void copy_bg_record(bg_record_t *fir_record, bg_record_t *sec_record);
 
 /* return bg_record from a bg_list */
@@ -213,7 +216,8 @@ extern void *bluegene_agent(void *args);
  * RET - success of fitting all configurations
  */
 extern int create_defined_blocks(bg_layout_t overlapped);
-extern int create_dynamic_block(ba_request_t *request, List my_block_list);
+extern List create_dynamic_block(List block_list,
+				 ba_request_t *request, List my_block_list);
 extern int create_full_system_block();
 
 extern int bg_free_block(bg_record_t *bg_record);

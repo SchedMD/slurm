@@ -226,7 +226,7 @@ extern void destroy_image_group_list(void *ptr);
 extern void destroy_image(void *ptr);
 extern void destroy_ba_node(void *ptr);
 
-/**
+/*
  * create a block request.  Note that if the geometry is given,
  * then size is ignored.  If elongate is true, the algorithm will try
  * to fit that a block of cubic shape and then it will try other
@@ -246,23 +246,23 @@ extern void destroy_ba_node(void *ptr);
  */
 extern int new_ba_request(ba_request_t* ba_request);
 
-/**
+/*
  * delete a block request 
  */
 extern void delete_ba_request(void *arg);
 
-/**
+/*
  * empty a list that we don't want to destroy the memory of the
  * elements always returns 1
 */
 extern int empty_null_destroy_list(void *arg, void *key);
 
-/**
+/*
  * print a block request 
  */
 extern void print_ba_request(ba_request_t* ba_request);
 
-/**
+/*
  * Initialize internal structures by either reading previous block
  * configurations from a file or by running the graph solver.
  * 
@@ -271,7 +271,7 @@ extern void print_ba_request(ba_request_t* ba_request);
  * return: success or error of the intialization.
  */
 extern void ba_init();
-/**
+/*
  */
 extern void init_wires();
 /** 

@@ -1280,10 +1280,26 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 	xfree(job_ptr->nodes);
 
 	job_ptr->node_bitmap = select_bitmap;
+
+	/* we need to have these times set to know when the endtime
+	 * is for the job when we place it
+	 */
+	job_ptr->start_time = job_ptr->time_last_active = now;
+	if (job_ptr->time_limit == NO_VAL)
+		job_ptr->time_limit = part_ptr->max_time;
+	if (job_ptr->time_limit == INFINITE)
+		job_ptr->end_time = job_ptr->start_time + 
+				    (365 * 24 * 60 * 60); /* secs in year */
+	else
+		job_ptr->end_time = job_ptr->start_time + 
+				    (job_ptr->time_limit * 60);   /* secs */
+
 	if (select_g_job_begin(job_ptr) != SLURM_SUCCESS) {
 		/* Leave job queued, something is hosed */
 		error("select_g_job_begin(%u): %m", job_ptr->job_id);
 		error_code = ESLURM_NODES_BUSY;
+		job_ptr->start_time = job_ptr->time_last_active 
+			= job_ptr->end_time = 0;
 		goto cleanup;
 	}
 
@@ -1298,15 +1314,6 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 		error("select_g_update_nodeinfo(%u): %m", job_ptr->job_id);
 		/* not critical ... by now */
 	}
-	job_ptr->start_time = job_ptr->time_last_active = now;
-	if (job_ptr->time_limit == NO_VAL)
-		job_ptr->time_limit = part_ptr->max_time;
-	if (job_ptr->time_limit == INFINITE)
-		job_ptr->end_time = job_ptr->start_time + 
-				    (365 * 24 * 60 * 60); /* secs in year */
-	else
-		job_ptr->end_time = job_ptr->start_time + 
-				    (job_ptr->time_limit * 60);   /* secs */
 	if (job_ptr->mail_type & MAIL_JOB_BEGIN)
 		mail_job_info(job_ptr, MAIL_JOB_BEGIN);
 
