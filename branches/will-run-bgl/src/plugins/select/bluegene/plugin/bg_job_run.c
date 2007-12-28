@@ -206,8 +206,7 @@ static void _sync_agent(bg_update_t *bg_update_ptr)
 {
 	bg_record_t * bg_record = NULL;
 	
-	bg_record = 
-		find_bg_record_in_list(bg_list, bg_update_ptr->bg_block_id);
+	bg_record = find_bg_record_in_list(bg_list, bg_update_ptr->bg_block_id);
 	if(!bg_record) {
 		error("No block %s", bg_update_ptr->bg_block_id);
 		return;
@@ -219,6 +218,8 @@ static void _sync_agent(bg_update_t *bg_update_ptr)
 		list_push(bg_job_block_list, bg_record);
 		num_unused_cpus -= bg_record->bp_count*bg_record->cpus_per_bp;
 	}
+	if(!block_exist_in_list(bg_booted_block_list, bg_record)) 
+		list_push(bg_booted_block_list, bg_record);
 	slurm_mutex_unlock(&block_state_mutex);
 
 	if(bg_record->state == RM_PARTITION_READY) {
@@ -1023,9 +1024,11 @@ extern int sync_jobs(List job_list)
 				continue;
 			}
 
-			debug3("Queue sync of job %u in BG block %s",
+			debug3("Queue sync of job %u in BG block %s "
+			       "ending at %d",
 			       job_ptr->job_id, 
-			       bg_update_ptr->bg_block_id);
+			       bg_update_ptr->bg_block_id,
+			       job_ptr->end_time);
 			bg_update_ptr->op = SYNC_OP;
 			bg_update_ptr->uid = job_ptr->user_id;
 			bg_update_ptr->job_id = job_ptr->job_id;

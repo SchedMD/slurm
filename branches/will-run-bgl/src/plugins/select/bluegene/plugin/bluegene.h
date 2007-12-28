@@ -216,8 +216,8 @@ extern void *bluegene_agent(void *args);
  * RET - success of fitting all configurations
  */
 extern int create_defined_blocks(bg_layout_t overlapped);
-extern int create_dynamic_block(List block_list,
-				ba_request_t *request, List my_block_list);
+extern List create_dynamic_block(List block_list,
+				 ba_request_t *request, List my_block_list);
 extern int create_full_system_block();
 
 extern int bg_free_block(bg_record_t *bg_record);

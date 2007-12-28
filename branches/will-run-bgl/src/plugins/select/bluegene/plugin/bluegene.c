@@ -111,9 +111,9 @@ static int  _validate_config_nodes(void);
 static int  _bg_record_cmpf_inc(bg_record_t *rec_a, bg_record_t *rec_b);
 static int _delete_old_blocks(void);
 static char *_get_bg_conf(void);
-static int _split_block(List block_list,
+static int _split_block(List block_list, List new_blocks,
 			bg_record_t *bg_record, int procs);
-static int _breakup_blocks(List block_list,
+static int _breakup_blocks(List block_list, List new_blocks,
 			   ba_request_t *request, List my_block_list);
 static bg_record_t *_create_small_record(bg_record_t *bg_record, 
 					 uint16_t quarter, uint16_t nodecard);
@@ -1173,19 +1173,19 @@ extern int create_defined_blocks(bg_layout_t overlapped)
 
 
 /*
- * create_dynamic_block - create a new block to be used for a new
- * job allocation.  This will be added to the booted and job bg_lists.
- * RET - success of fitting configuration in the running system.
+ * create_dynamic_block - create new block(s) to be used for a new
+ * job allocation.
+ * RET - a list of created blocks or NULL on failure errno is set.
  */
-extern int create_dynamic_block(List block_list, 
-				ba_request_t *request, List my_block_list)
+extern List create_dynamic_block(List block_list, 
+				 ba_request_t *request, List my_block_list)
 {
 	int rc = SLURM_SUCCESS;
 	
 	ListIterator itr;
 	bg_record_t *bg_record = NULL;
 	List results = NULL;
-	List requests = NULL;
+	List new_blocks = NULL;
 	uint16_t num_quarter=0, num_nodecard=0;
 	bitstr_t *my_bitmap = NULL;
 	int geo[BA_SYSTEM_DIMENSIONS];
@@ -1193,11 +1193,10 @@ extern int create_dynamic_block(List block_list,
 	blockreq_t blockreq;
 
 	slurm_mutex_lock(&block_state_mutex);
-		
 	if(my_block_list) {
 		reset_ba_system(true);
 		itr = list_iterator_create(my_block_list);
-		while ((bg_record = (bg_record_t *) list_next(itr)) != NULL) {
+		while ((bg_record = list_next(itr))) {
 			if(!my_bitmap) {
 				my_bitmap = 
 					bit_alloc(bit_size(bg_record->bitmap));
@@ -1220,15 +1219,13 @@ extern int create_dynamic_block(List block_list,
 					   bg_record->bg_block_list)
 				   == SLURM_ERROR) {
 					debug2("something happened in "
-					      "the load of %s",
-					      bg_record->bg_block_id);
+					       "the load of %s",
+					       bg_record->bg_block_id);
 					list_iterator_destroy(itr);
-					slurm_mutex_unlock(&block_state_mutex);
 					FREE_NULL_BITMAP(my_bitmap);
-					return SLURM_ERROR;
+					rc = SLURM_ERROR;
+					goto finished;
 				}
-				//set_node_list(bg_record->bg_block_list);
-/* #endif	 */
 			}
 		}
 		list_iterator_destroy(itr);
@@ -1261,9 +1258,12 @@ extern int create_dynamic_block(List block_list,
 			}
 			num_quarter=4;
 		}
-		
-		if(_breakup_blocks(block_list, request, my_block_list)
+		new_blocks = list_create(destroy_bg_record);
+		if(_breakup_blocks(block_list, new_blocks, 
+				   request, my_block_list)
 		   != SLURM_SUCCESS) {
+			list_destroy(new_blocks);
+			new_blocks = NULL;
 			debug2("small block not able to be placed");
 			//rc = SLURM_ERROR;
 		} else 
@@ -1279,7 +1279,7 @@ extern int create_dynamic_block(List block_list,
 		      request->geometry[X], 
 		      request->geometry[Y], 
 		      request->geometry[Z]);
-		rc = SLURM_ERROR;
+		rc = ESLURM_INTERCONNECT_FAILURE;
 		goto finished;
 	} 
 	
@@ -1319,7 +1319,7 @@ extern int create_dynamic_block(List block_list,
 				else
 					results = list_create(NULL);
 				if (!allocate_block(request, results)){
-					debug2("allocate failure for size %d "
+					debug2("1 allocate failure for size %d "
 					       "base partitions", 
 					       request->size);
 					rc = SLURM_ERROR;
@@ -1333,6 +1333,7 @@ extern int create_dynamic_block(List block_list,
 		for(i=0; i<BA_SYSTEM_DIMENSIONS; i++) 
 			request->start[i] = (uint16_t) NO_VAL;
 	}
+
 no_list:
 	if(!bg_record) {		
 		rc = SLURM_SUCCESS;
@@ -1343,16 +1344,16 @@ no_list:
 			results = list_create(NULL);
 		if (!allocate_block(request, results)) {
 			debug("allocate failure for size %d base partitions", 
-			      request->size);
+			       request->size);
 			rc = SLURM_ERROR;
 		}
 	}
 
-	if(rc == SLURM_ERROR || !my_block_list) {
+	if(rc != SLURM_SUCCESS) 
 		goto finished;
-	}
+	
 	/*set up bg_record(s) here */
-	requests = list_create(destroy_bg_record);
+	new_blocks = list_create(destroy_bg_record);
 	
 	blockreq.block = request->save_name;
 	blockreq.blrtsimage = request->blrtsimage;
@@ -1363,38 +1364,21 @@ no_list:
 	blockreq.nodecards = num_nodecard;
 	blockreq.quarters = num_quarter;
 
-	add_bg_record(requests, results, &blockreq);
-
-	while((bg_record = (bg_record_t *) list_pop(requests)) != NULL) {
-		if(block_exist_in_list(block_list, bg_record))
-			destroy_bg_record(bg_record);
-		else {
-			if(configure_block(bg_record) == SLURM_ERROR) {
-				destroy_bg_record(bg_record);
-				error("create_dynamic_block: "
-				      "unable to configure block in api");
-				goto finished;
-			}
-			
-			list_append(block_list, bg_record);
-			print_bg_record(bg_record);
-		}
-	}
+	add_bg_record(new_blocks, results, &blockreq);
 
 finished:
-	if(my_block_list)
-		xfree(request->save_name);
-	if(request->elongate_geos)
+	xfree(request->save_name);
+	
+	if(request->elongate_geos) {
 		list_destroy(request->elongate_geos);
+		request->elongate_geos = NULL;
+	}
 	if(results)
 		list_destroy(results);
-	if(requests)
-		list_destroy(requests);
-	
-	sort_bg_record_inc_size(block_list);
+	errno = rc;
 	slurm_mutex_unlock(&block_state_mutex);
-	
-	return rc;
+
+	return new_blocks;
 }
 
 extern int create_full_system_block()
@@ -2805,7 +2789,8 @@ static char *_get_bg_conf(void)
 	return rc;
 }
 
-static int _split_block(List block_list, bg_record_t *bg_record, int procs) 
+static int _split_block(List block_list, List new_blocks,
+			bg_record_t *bg_record, int procs) 
 {
 	bg_record_t *found_record = NULL;
 	bool full_bp = false; 
@@ -2855,18 +2840,8 @@ static int _split_block(List block_list, bg_record_t *bg_record, int procs)
 		found_record = _create_small_record(bg_record,
 						    quarter,
 						    nodecard);
-		if(block_exist_in_list(block_list, found_record)) {
-			destroy_bg_record(found_record);
-		} else {
-			if(configure_block(found_record) == SLURM_ERROR) {
-				destroy_bg_record(found_record);
-				error("_split_block: "
-				      "unable to configure block in api");
-				return SLURM_ERROR;
-			}
-			list_append(block_list, found_record);
-			print_bg_record(found_record);
-		}
+		list_append(new_blocks, found_record);
+				
 		node_cnt += bluegene_bp_node_cnt/small_size;
 		if(node_cnt == 128) {
 			node_cnt = 0;
@@ -2877,7 +2852,7 @@ static int _split_block(List block_list, bg_record_t *bg_record, int procs)
 	return SLURM_SUCCESS;
 }
 
-static int _breakup_blocks(List block_list,
+static int _breakup_blocks(List block_list, List new_blocks,
 			   ba_request_t *request, List my_block_list)
 {
 	int rc = SLURM_ERROR;
@@ -2962,20 +2937,8 @@ static int _breakup_blocks(List block_list,
 					bg_record,
 					last_quarter,
 					(uint16_t) NO_VAL);
-				if(block_exist_in_list(block_list, bg_record))
-					destroy_bg_record(bg_record);
-				else {
-					if(configure_block(bg_record)
-					   == SLURM_ERROR) {
-						destroy_bg_record(bg_record);
-						error("_breakup_blocks: "
-						      "unable to configure "
-						      "block in api");
-						return SLURM_ERROR;
-					}
-					list_append(block_list, bg_record);
-					print_bg_record(bg_record);
-				}
+				list_append(new_blocks, bg_record);
+							
 				rc = SLURM_SUCCESS;
 				goto finished;	
 			}
@@ -3058,20 +3021,8 @@ static int _breakup_blocks(List block_list,
 					bg_record,
 					last_quarter,
 					(uint16_t) NO_VAL);
-				if(block_exist_in_list(block_list, bg_record))
-					destroy_bg_record(bg_record);
-				else {
-					if(configure_block(bg_record)
-					   == SLURM_ERROR) {
-						destroy_bg_record(bg_record);
-						error("_breakup_blocks: "
-						      "unable to configure "
-						      "block in api 2");
-						return SLURM_ERROR;
-					}
-					list_append(block_list, bg_record);
-					print_bg_record(bg_record);
-				}
+				list_append(new_blocks, bg_record);
+								
 				rc = SLURM_SUCCESS;
 				goto finished;	
 			}
@@ -3097,7 +3048,7 @@ found_one:
 			rc = SLURM_SUCCESS;
 			goto finished;	
 		}
-		_split_block(block_list, bg_record, request->procs);
+		_split_block(block_list, new_blocks, bg_record, request->procs);
 		rc = SLURM_SUCCESS;
 		goto finished;
 	}
