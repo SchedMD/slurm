@@ -1,7 +1,7 @@
 /*****************************************************************************\
  *  cancel_job.c - Process Wiki cancel job request
  *****************************************************************************
- *  Copyright (C) 2006 The Regents of the University of California.
+ *  Copyright (C) 2006-2007 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
  *  UCRL-CODE-226842.
@@ -39,17 +39,21 @@
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/slurmctld.h"
 
-#define TYPE_ADMIN   0
-#define TYPE_TIMEOUT 1
+#define TYPE_ADMIN	0
+#define TYPE_TIMEOUT	1
 
-static int	_cancel_job(uint32_t jobid, int *err_code, char **err_msg);
-static int	_timeout_job(uint32_t jobid, int *err_code, char **err_msg);
+static int	_cancel_job(uint32_t jobid, char *comment_ptr, 
+			    int *err_code, char **err_msg);
+static int	_timeout_job(uint32_t jobid, char *comment_ptr,
+			     int *err_code, char **err_msg);
 
-/* RET 0 on success, -1 on failure */
+/* Cancel a job:
+ *	CMD=CANCELJOB ARG=<jobid> TYPE=<reason> [COMMENT=<whatever>]
+ * RET 0 on success, -1 on failure */
 extern int	cancel_job(char *cmd_ptr, int *err_code, char **err_msg)
 {
-	char *arg_ptr, *tmp_char;
-	int cancel_type = TYPE_ADMIN;
+	char *arg_ptr, *comment_ptr, *type_ptr, *tmp_char;
+	int cancel_type = TYPE_ADMIN, i;
 	uint32_t jobid;
 	static char reply_msg[128];
 
@@ -68,13 +72,54 @@ extern int	cancel_job(char *cmd_ptr, int *err_code, char **err_msg)
 		return -1;
 	}
 
-	if      (strstr(cmd_ptr, "TYPE=TIMEOUT") != 0)
+	comment_ptr = strstr(cmd_ptr, "COMMENT=");
+	type_ptr    = strstr(cmd_ptr, "TYPE=");
+
+	if (comment_ptr) {
+		comment_ptr[7] = ':';
+		comment_ptr += 8;
+		if (comment_ptr[0] == '\"') {
+			comment_ptr++;
+			for (i=0; i<MAX_COMMENT_LEN; i++) {
+				if (comment_ptr[i] == '\0')
+					break;
+				if (comment_ptr[i] == '\"') {
+					comment_ptr[i] = '\0';
+					break;
+				}
+			}
+			if (i == MAX_COMMENT_LEN)
+				comment_ptr[i-1] = '\0';
+		} else if (comment_ptr[0] == '\'') {
+			comment_ptr++;
+			for (i=0; i<MAX_COMMENT_LEN; i++) {
+				if (comment_ptr[i] == '\0')
+					break;
+				if (comment_ptr[i] == '\'') {
+					comment_ptr[i] = '\0';
+					break;
+				}
+			}
+			if (i == MAX_COMMENT_LEN)
+				comment_ptr[i-1] = '\0';
+		} else
+			null_term(comment_ptr);
+	}
+
+	if (type_ptr == NULL) {
+		*err_code = -300;
+		*err_msg = "No TYPE value";
+		error("wiki: CANCELJOB has no TYPE specification");
+		return -1;
+	}
+	type_ptr += 5;
+	if      (strncmp(type_ptr, "TIMEOUT", 7) == 0)
 		cancel_type = TYPE_TIMEOUT;
-	else if (strstr(cmd_ptr, "TYPE=WALLCLOCK") != 0)
+	else if (strncmp(type_ptr, "WALLCLOCK", 9) == 0)
 		cancel_type = TYPE_TIMEOUT;
-	else if (strstr(cmd_ptr, "TYPE=ADMIN") != 0)
+	else if (strncmp(type_ptr, "ADMIN", 5) == 0)
 		cancel_type = TYPE_ADMIN;
-	else if (strstr(cmd_ptr, "TYPE=") != 0) {
+	else {
 		*err_code = -300;
 		*err_msg = "Invalid TYPE value";
 		error("wiki: CANCELJOB has invalid TYPE");
@@ -82,10 +127,10 @@ extern int	cancel_job(char *cmd_ptr, int *err_code, char **err_msg)
 	}
 	
 	if (cancel_type == TYPE_ADMIN) {
-		if (_cancel_job(jobid, err_code, err_msg) != 0)
+		if (_cancel_job(jobid, comment_ptr, err_code, err_msg) != 0)
 			return -1;
 	} else {
-		if (_timeout_job(jobid, err_code, err_msg) != 0)
+		if (_timeout_job(jobid, comment_ptr, err_code, err_msg) != 0)
 			return -1;
 	}
 
@@ -96,7 +141,8 @@ extern int	cancel_job(char *cmd_ptr, int *err_code, char **err_msg)
 }
 
 /* Cancel a job now */
-static int	_cancel_job(uint32_t jobid, int *err_code, char **err_msg)
+static int	_cancel_job(uint32_t jobid, char *comment_ptr,
+			    int *err_code, char **err_msg)
 {
 	int rc = 0, slurm_rc;
 	/* Write lock on job info */
@@ -104,6 +150,19 @@ static int	_cancel_job(uint32_t jobid, int *err_code, char **err_msg)
 		NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
 
 	lock_slurmctld(job_write_lock);
+	if (comment_ptr) {
+		struct job_record *job_ptr = find_job_record(jobid);
+		if (job_ptr == NULL) {
+			*err_code = -700;
+			*err_msg = "No such job";
+			error("wiki: Failed to find job %u", jobid);
+			rc = -1;
+			goto fini;
+		}
+		xfree(job_ptr->comment);
+		job_ptr->comment = xstrdup(comment_ptr);
+	}
+
 	slurm_rc = job_signal(jobid, SIGKILL, 0, 0);
 	if (slurm_rc != SLURM_SUCCESS) {
 		*err_code = -700;
@@ -121,7 +180,8 @@ static int	_cancel_job(uint32_t jobid, int *err_code, char **err_msg)
 }
 
 /* Set timeout for specific job, the job will be purged soon */
-static int	_timeout_job(uint32_t jobid, int *err_code, char **err_msg)
+static int	_timeout_job(uint32_t jobid, char *comment_ptr,
+			     int *err_code, char **err_msg)
 {
 	int rc = 0;
 	struct job_record *job_ptr;
@@ -139,6 +199,10 @@ static int	_timeout_job(uint32_t jobid, int *err_code, char **err_msg)
 		goto fini;
 	}
 
+	if (comment_ptr) {
+		xfree(job_ptr->comment);
+		job_ptr->comment = xstrdup(comment_ptr);
+	}
 	job_ptr->end_time = time(NULL);
 	debug("wiki: set end time for job %u", jobid);
 
