@@ -82,11 +82,12 @@
 #include "src/slurmctld/slurmctld.h"
 
 /* Global configuration parameters */
-#define E_HOST_SIZE  256
-#define EXC_PART_CNT  10
-#define KEY_SIZE      32
-#define PRIO_HOLD      0
-#define PRIO_DECREMENT 1
+#define E_HOST_SIZE	256
+#define EXC_PART_CNT	10
+#define KEY_SIZE	32
+#define PRIO_HOLD	0
+#define PRIO_DECREMENT	1
+#define MAX_COMMENT_LEN	512
 extern int	init_prio_mode;
 extern char 	auth_key[KEY_SIZE];
 extern char	e_host[E_HOST_SIZE];
@@ -102,6 +103,11 @@ extern int	event_notify(int event_code, char *desc);
 extern int	spawn_msg_thread(void);
 extern void	term_msg_thread(void);
 extern char *   bitmap2wiki_node_name(bitstr_t *bitmap);
+
+/*
+ * Given a string, replace the first space found with '\0'
+ */
+extern void	null_term(char *str);
 
 /* Functions called from within msg.c (rather than creating a bunch 
  * more header files with one function definition each */

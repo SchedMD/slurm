@@ -56,7 +56,7 @@ static int _conn_wiki_port(char *host, int port)
 	bzero((char *) &wiki_addr, sizeof(wiki_addr));
 	wiki_addr.sin_family = AF_INET;
 	wiki_addr.sin_port   = htons(port);
-	memcpy(&wiki_addr.sin_addr.s_addr, hptr->h_addr, hptr->h_length);		
+	memcpy(&wiki_addr.sin_addr.s_addr, hptr->h_addr, hptr->h_length);
 	sock_fd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 	if (connect(sock_fd, (struct sockaddr *) &wiki_addr, 
 			sizeof(wiki_addr))) {
@@ -282,7 +282,9 @@ static void _cancel_job(long my_job_id)
 	char out_msg[128];
 
 	snprintf(out_msg, sizeof(out_msg),
-		"TS=%u AUTH=root DT=CMD=CANCELJOB ARG=%ld TYPE=ADMIN",
+		"TS=%u AUTH=root DT=CMD=CANCELJOB ARG=%ld "
+		"TYPE=ADMIN "
+		"COMMENT=\"cancel comment\" ",
 		(uint32_t) now, my_job_id);
 	_xmit(out_msg);
 }
@@ -293,8 +295,9 @@ static void _start_job(long my_job_id)
 	char out_msg[128];
 
 	snprintf(out_msg, sizeof(out_msg),
-		"TS=%u AUTH=root DT=CMD=STARTJOB ARG=%ld TASKLIST=",
-		/* Empty TASKLIST means we don't care */
+		"TS=%u AUTH=root DT=CMD=STARTJOB ARG=%ld "
+		"COMMENT=\'start comment\' "
+		"TASKLIST=",	/* Empty TASKLIST means we don't care */
 		(uint32_t) now, my_job_id);
 	_xmit(out_msg);
 }

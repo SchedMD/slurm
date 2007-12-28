@@ -40,7 +40,7 @@
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/slurmctld.h"
 
-static void	_null_term(char *str)
+extern void	null_term(char *str)
 {
 	char *tmp_ptr;
 	for (tmp_ptr=str; ; tmp_ptr++) {
@@ -180,11 +180,13 @@ static int	_job_modify(uint32_t jobid, char *bank_ptr,
 		}
 
 host_fini:	if (rc) {
-			info("wiki: change job %u invalid hostlist %s", jobid, new_hostlist);
+			info("wiki: change job %u invalid hostlist %s", 
+				jobid, new_hostlist);
 			xfree(job_ptr->details->req_nodes);
 			return EINVAL;
 		} else {
-			info("wiki: change job %u hostlist %s", jobid, new_hostlist);
+			info("wiki: change job %u hostlist %s", 
+				jobid, new_hostlist);
 		}
 	}
 
@@ -268,7 +270,7 @@ extern int	job_modify_wiki(char *cmd_ptr, int *err_code, char **err_msg)
 	if (bank_ptr) {
 		bank_ptr[4] = ':';
 		bank_ptr += 5;
-		_null_term(bank_ptr);
+		null_term(bank_ptr);
 	}
 	if (depend_ptr) {
 		depend_ptr[6] = ':';
@@ -285,7 +287,7 @@ extern int	job_modify_wiki(char *cmd_ptr, int *err_code, char **err_msg)
 	if (host_ptr) {
 		host_ptr[8] = ':';
 		host_ptr += 9;
-		_null_term(host_ptr);
+		null_term(host_ptr);
 	}
 	if (name_ptr) {
 		name_ptr[7] = ':';
@@ -315,12 +317,12 @@ extern int	job_modify_wiki(char *cmd_ptr, int *err_code, char **err_msg)
 			if (i == MAX_JOBNAME_LEN)
 				name_ptr[i-1] = '\0';
 		} else
-			_null_term(name_ptr);
+			null_term(name_ptr);
 	}
 	if (start_ptr) {
 		start_ptr[12] = ':';
 		start_ptr += 13;
-		_null_term(start_ptr);
+		null_term(start_ptr);
 	}	
 	if (nodes_ptr) {
 		nodes_ptr[5] = ':';
@@ -330,7 +332,7 @@ extern int	job_modify_wiki(char *cmd_ptr, int *err_code, char **err_msg)
 	if (part_ptr) {
 		part_ptr[9] = ':';
 		part_ptr += 10;
-		_null_term(part_ptr);
+		null_term(part_ptr);
 	}
 	if (time_ptr) {
 		time_ptr[9] = ':';

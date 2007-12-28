@@ -44,12 +44,15 @@
 #include "src/slurmctld/state_save.h"
 
 static int	_start_job(uint32_t jobid, int task_cnt, char *hostlist, 
-			char *tasklist, int *err_code, char **err_msg);
+			char *tasklist, char *comment_ptr, 
+			int *err_code, char **err_msg);
 
-/* RET 0 on success, -1 on failure */
+/* Start a job:
+ *	CMD=STARTJOB ARG=<jobid> TASKLIST=<node_list> [COMMENT=<whatever>]
+ * RET 0 on success, -1 on failure */
 extern int	start_job(char *cmd_ptr, int *err_code, char **err_msg)
 {
-	char *arg_ptr, *task_ptr, *tasklist, *tmp_char;
+	char *arg_ptr, *comment_ptr, *task_ptr, *tasklist, *tmp_char;
 	int i, rc, task_cnt;
 	uint32_t jobid;
 	hostlist_t hl = (hostlist_t) NULL;
@@ -71,7 +74,40 @@ extern int	start_job(char *cmd_ptr, int *err_code, char **err_msg)
 		return -1;
 	}
 
-	task_ptr = strstr(cmd_ptr, "TASKLIST=");
+	comment_ptr = strstr(cmd_ptr, "COMMENT=");
+	task_ptr    = strstr(cmd_ptr, "TASKLIST=");
+
+	if (comment_ptr) {
+		comment_ptr[7] = ':';
+		comment_ptr += 8;
+		if (comment_ptr[0] == '\"') {
+			comment_ptr++;
+			for (i=0; i<MAX_COMMENT_LEN; i++) {
+				if (comment_ptr[i] == '\0')
+					break;
+				if (comment_ptr[i] == '\"') {
+					comment_ptr[i] = '\0';
+					break;
+				}
+			}
+			if (i == MAX_COMMENT_LEN)
+				comment_ptr[i-1] = '\0';
+		} else if (comment_ptr[0] == '\'') {
+			comment_ptr++;
+			for (i=0; i<MAX_COMMENT_LEN; i++) {
+				if (comment_ptr[i] == '\0')
+					break;
+				if (comment_ptr[i] == '\'') {
+					comment_ptr[i] = '\0';
+					break;
+				}
+			}
+			if (i == MAX_COMMENT_LEN)
+				comment_ptr[i-1] = '\0';
+		} else
+			null_term(comment_ptr);
+	}
+
 	if (task_ptr == NULL) {
 		*err_code = -300;
 		*err_msg = "STARTJOB lacks TASKLIST";
@@ -103,7 +139,7 @@ extern int	start_job(char *cmd_ptr, int *err_code, char **err_msg)
 		return -1;
 	}
 
-	rc = _start_job(jobid, task_cnt, host_string, tasklist, 
+	rc = _start_job(jobid, task_cnt, host_string, tasklist, comment_ptr,
 			err_code, err_msg);
 	xfree(tasklist);
 	if (rc == 0) {
@@ -121,11 +157,13 @@ extern int	start_job(char *cmd_ptr, int *err_code, char **err_msg)
  * hostlist  (IN) - SLURM hostlist expression with no repeated hostnames
  * tasklist  (IN/OUT) - comma separated list of hosts with tasks to be started,
  *                  list hostname once per task to start
+ * comment_ptr (IN) - new comment field for the job or NULL for no change
  * err_code (OUT) - Moab error code
  * err_msg  (OUT) - Moab error message
  */
 static int	_start_job(uint32_t jobid, int task_cnt, char *hostlist, 
-			char *tasklist, int *err_code, char **err_msg)
+			char *tasklist, char *comment_ptr, 
+			int *err_code, char **err_msg)
 {
 	int rc = 0, old_task_cnt = 1;
 	struct job_record *job_ptr;
@@ -165,6 +203,11 @@ static int	_start_job(uint32_t jobid, int task_cnt, char *hostlist,
 			jobid, job_state_string(job_ptr->job_state));
 		rc = -1;
 		goto fini;
+	}
+
+	if (comment_ptr) {
+		xfree(job_ptr->comment);
+		job_ptr->comment = xstrdup(comment_ptr);
 	}
 
 	new_node_list = xstrdup(hostlist);
