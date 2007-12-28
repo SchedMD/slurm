@@ -309,6 +309,7 @@ extern bool node_already_down(char *node_name)
 {
 	uint16_t base_state;
 	struct node_record *node_ptr = find_node_record(node_name);
+	
 	if (node_ptr) {
 		base_state = node_ptr->node_state & 
 			(~NODE_STATE_NO_RESPOND);

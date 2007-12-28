@@ -261,6 +261,7 @@ enum select_data_type {
 	SELECT_DATA_ROTATE,	/* data-> uint16_t rotate */
 	SELECT_DATA_CONN_TYPE,	/* data-> uint16_t connection_type */
 	SELECT_DATA_BLOCK_ID,	/* data-> char *bg_block_id */
+	SELECT_DATA_NODES,	/* data-> char *nodes */
 	SELECT_DATA_IONODES,	/* data-> char *ionodes */
 	SELECT_DATA_NODE_CNT,	/* data-> uint32_t node_cnt */
 	SELECT_DATA_ALTERED,    /* data-> uint16_t altered */
@@ -269,7 +270,9 @@ enum select_data_type {
 	SELECT_DATA_LINUX_IMAGE,/* data-> char *linuximage */
 	SELECT_DATA_MLOADER_IMAGE,/* data-> char *mloaderimage */
 	SELECT_DATA_RAMDISK_IMAGE,/* data-> char *ramdiskimage */
-	SELECT_DATA_REBOOT	/* data-> uint16_t reboot */
+	SELECT_DATA_REBOOT,	/* data-> uint16_t reboot */
+	SELECT_DATA_EST_START   /* data-> time_t etimated time job
+				 * will start*/
 };
 
 enum select_print_mode {
@@ -277,6 +280,7 @@ enum select_print_mode {
 	SELECT_PRINT_DATA,	/* Print just the data */
 	SELECT_PRINT_MIXED,	/* Print "field=value" */
 	SELECT_PRINT_BG_ID,	/* Print just the BG_ID */
+	SELECT_PRINT_NODES,	/* Print the nodelist */
 	SELECT_PRINT_CONNECTION,/* Print just the CONNECTION type */
 	SELECT_PRINT_ROTATE,    /* Print just the ROTATE */
 	SELECT_PRINT_GEOMETRY,	/* Print just the GEO */
@@ -286,7 +290,8 @@ enum select_print_mode {
 	SELECT_PRINT_LINUX_IMAGE,/* Print just the LINUX IMAGE */
 	SELECT_PRINT_MLOADER_IMAGE,/* Print just the MLOADER IMAGE */
 	SELECT_PRINT_RAMDISK_IMAGE,/* Print just the RAMDISK IMAGE */
-	SELECT_PRINT_REBOOT	/* Print just the REBOOT */
+	SELECT_PRINT_REBOOT,	/* Print just the REBOOT */
+	SELECT_PRINT_EST_START  /* Print just the EST_START */
 };
 
 enum select_node_cnt {

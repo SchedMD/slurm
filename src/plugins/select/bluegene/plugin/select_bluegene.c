@@ -45,7 +45,7 @@
 
 /* Change BLOCK_STATE_VERSION value when changing the state save
  * format i.e. pack_block() */
-#define BLOCK_STATE_VERSION      "VER000"
+#define BLOCK_STATE_VERSION      "VER001"
 
 /* global */
 int procs_per_node = 512;
@@ -80,7 +80,7 @@ int procs_per_node = 512;
  */
 const char plugin_name[]       	= "Blue Gene node selection plugin";
 const char plugin_type[]       	= "select/bluegene";
-const uint32_t plugin_version	= 90;
+const uint32_t plugin_version	= 100;
 
 /* pthread stuff for updating BG node status */
 static pthread_t bluegene_thread = 0;
@@ -384,9 +384,16 @@ extern int select_p_state_restore(char *dir_name)
 	 * Check the data version so that when the format changes, we 
 	 * we don't try to unpack data using the wrong format routines
 	 */
-	safe_unpackstr_xmalloc(&ver_str, &ver_str_len, buffer);
-	debug3("Version string in block_state header is %s", ver_str);
-	if ((!ver_str) || (strcmp(ver_str, BLOCK_STATE_VERSION) != 0)) {
+	if(size_buf(buffer)
+	   >= sizeof(uint32_t) + strlen(BLOCK_STATE_VERSION)) {
+	        char *ptr = get_buf_data(buffer);
+		if (!memcmp(&ptr[sizeof(uint32_t)], BLOCK_STATE_VERSION, 3)) {
+		        safe_unpackstr_xmalloc(&ver_str, &ver_str_len, buffer);
+		        debug3("Version string in block_state header is %s",
+			       ver_str);
+		}
+	}
+	if (ver_str && (strcmp(ver_str, BLOCK_STATE_VERSION) != 0)) {
 		error("Can not recover block state, "
 		      "data version incompatable");
 		xfree(ver_str);
@@ -394,9 +401,10 @@ extern int select_p_state_restore(char *dir_name)
 		return EFAULT;
 	}
 	xfree(ver_str);
-	if(select_g_unpack_node_info(&node_select_ptr, buffer) == SLURM_ERROR) 
+	if(select_g_unpack_node_info(&node_select_ptr, buffer) == SLURM_ERROR) { 
+		error("select_p_state_restore: problem unpacking node_info");
 		goto unpack_error;
-	
+	}
 	reset_ba_system(false);
 
 	node_bitmap = bit_alloc(node_record_count);	
@@ -408,6 +416,21 @@ extern int select_p_state_restore(char *dir_name)
 		bit_nclear(node_bitmap, 0, bit_size(node_bitmap) - 1);
 		bit_nclear(ionode_bitmap, 0, bit_size(ionode_bitmap) - 1);
 		
+		j = 0;
+		while(bg_info_record->bp_inx[j] >= 0) {
+			if (bg_info_record->bp_inx[j+1]
+			    >= node_record_count) {
+				fatal("Job state recovered incompatable with "
+					"bluegene.conf. bp=%u state=%d",
+					node_record_count,
+					bg_info_record->bp_inx[j+1]);
+			}
+			bit_nset(node_bitmap,
+				 bg_info_record->bp_inx[j],
+				 bg_info_record->bp_inx[j+1]);
+			j += 2;
+		}		
+
 		j = 0;
 		while(bg_info_record->ionode_inx[j] >= 0) {
 			if (bg_info_record->ionode_inx[j+1]
@@ -426,9 +449,10 @@ extern int select_p_state_restore(char *dir_name)
 		while((bg_record = list_next(itr))) {
 			if(bit_equal(bg_record->bitmap, node_bitmap)
 			   && bit_equal(bg_record->ionode_bitmap,
-					ionode_bitmap)) 
+					ionode_bitmap))
 				break;			
 		}
+
 		list_iterator_reset(itr);
 		if(bg_record) {
 			slurm_mutex_lock(&block_state_mutex);
@@ -448,9 +472,10 @@ extern int select_p_state_restore(char *dir_name)
 			continue;
 #endif
 			if(bluegene_layout_mode != LAYOUT_DYNAMIC) {
-				error("Only adding state save blocks in "
-				      "Dynamic block creation Mode not "
-				      "adding %s",
+				error("Evidently we found a block (%s) which "
+				      "we had before but no longer care about. "
+				      "We are not adding it since we aren't "
+				      "using Dynamic mode",
 				      bg_info_record->bg_block_id);
 				continue;
 			}
@@ -558,7 +583,9 @@ extern int select_p_state_restore(char *dir_name)
 	FREE_NULL_BITMAP(node_bitmap);
 	list_iterator_destroy(itr);
 
+	slurm_mutex_lock(&block_state_mutex);
 	sort_bg_record_inc_size(bg_list);
+	slurm_mutex_unlock(&block_state_mutex);
 		
 	info("Recovered %d blocks", blocks);
 	select_g_free_node_info(&node_select_ptr);
@@ -610,7 +637,6 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	 * 1) geometry requested
 	 * 2) min/max nodes (BPs) requested
 	 * 3) type: TORUS or MESH or NAV (torus else mesh)
-	 * 4) use: VIRTUAL or COPROCESSOR
 	 * 
 	 * note: we don't have to worry about security at this level
 	 * as the SLURM block logic will handle access rights.
@@ -628,6 +654,32 @@ extern int select_p_job_begin(struct job_record *job_ptr)
 extern int select_p_job_fini(struct job_record *job_ptr)
 {
 	return term_job(job_ptr);
+}
+
+extern int select_p_job_update_end_time(struct job_record *job_ptr)
+{
+	int rc = SLURM_ERROR;
+	char *block_id = NULL;
+	bg_record_t *bg_record = NULL;
+	
+	rc = select_g_get_jobinfo(job_ptr->select_jobinfo,
+				  SELECT_DATA_BLOCK_ID, &block_id);
+	if (rc == SLURM_SUCCESS) {
+		bg_record = find_bg_record_in_list(bg_list, block_id);
+		slurm_mutex_lock(&block_state_mutex);
+		
+		if(bg_record) {
+			if(bg_record->job_running != job_ptr->job_id) 
+				rc = SLURM_ERROR;
+			else 
+				bg_record->est_job_end = job_ptr->end_time;
+		} else 
+			rc = SLURM_ERROR;
+		slurm_mutex_unlock(&block_state_mutex);
+		xfree(block_id);
+	}
+
+	return rc;
 }
 
 extern int select_p_job_suspend(struct job_record *job_ptr)

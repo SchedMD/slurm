@@ -54,16 +54,43 @@ _STMT_START {		\
 	(b) = (t);	\
 } _STMT_END
 
-static int  _find_best_block_match(struct job_record* job_ptr,
-				   bitstr_t* slurm_block_bitmap, uint32_t min_nodes, 
-				   uint32_t max_nodes, uint32_t req_nodes,
-				   int spec, bg_record_t** found_bg_record,
-				   bool test_only);
-static int  _get_user_groups(uint32_t user_id, uint32_t group_id, 
-			     gid_t *groups, int max_groups, int *ngroups);
+
+pthread_mutex_t create_dynamic_mutex = PTHREAD_MUTEX_INITIALIZER;
+
 static void _rotate_geo(uint16_t *req_geometry, int rot_cnt);
-static int  _test_image_perms(char *image_name, List image_list, 
+static int _bg_record_sort_aval_inc(bg_record_t* rec_a, bg_record_t* rec_b); 
+static int _get_user_groups(uint32_t user_id, uint32_t group_id, 
+			     gid_t *groups, int max_groups, int *ngroups);
+static int _test_image_perms(char *image_name, List image_list, 
 			      struct job_record* job_ptr);
+static int _check_requests(uint16_t *start, uint32_t req_procs, int start_req);
+static int _add_to_request_list(uint16_t *start, 
+				uint32_t req_procs, int start_req);
+static int _check_images(struct job_record* job_ptr,
+			 char **blrtsimage, char **linuximage,
+			 char **mloaderimage, char **ramdiskimage);
+static bg_record_t *_find_matching_block(List block_list, 
+					 struct job_record* job_ptr, 
+					 bitstr_t* slurm_block_bitmap,
+					 ba_request_t *request,
+					 uint32_t max_procs,
+					 int allow, int check_image,
+					 int created, bool test_only);
+static int _check_for_booted_overlapping_blocks(
+	List block_list, ListIterator bg_record_itr,
+	bg_record_t *bg_record, int overlap_check, bool test_only);
+static int _dynamically_request(List block_list, int *blocks_added,
+				ba_request_t *request,
+				bitstr_t* slurm_block_bitmap,
+				char *user_req_nodes);
+static int _find_best_block_match(List block_list, int *blocks_added,
+				  struct job_record* job_ptr,
+				  bitstr_t* slurm_block_bitmap,
+				  uint32_t min_nodes, 
+				  uint32_t max_nodes, uint32_t req_nodes,
+				  int spec, bg_record_t** found_bg_record,
+				  bool test_only);
+static int _sync_block_lists(List full_list, List incomp_list);
 
 /* Rotate a 3-D geometry array through its six permutations */
 static void _rotate_geo(uint16_t *req_geometry, int rot_cnt)
@@ -84,7 +111,85 @@ static void _rotate_geo(uint16_t *req_geometry, int rot_cnt)
 	}
 }
 
-pthread_mutex_t create_dynamic_mutex = PTHREAD_MUTEX_INITIALIZER;
+/* 
+ * Comparator used for sorting blocks smallest to largest
+ * 
+ * returns: -1: rec_a >rec_b   0: rec_a == rec_b   1: rec_a < rec_b
+ * 
+ */
+static int _bg_record_sort_aval_inc(bg_record_t* rec_a, bg_record_t* rec_b)
+{
+	int size_a = rec_a->node_cnt;
+	int size_b = rec_b->node_cnt;
+
+	if(rec_a->est_job_end < rec_b->est_job_end)
+		return -1;
+	else if(rec_a->est_job_end > rec_b->est_job_end)
+		return 1;
+
+	if (size_a < size_b)
+		return -1;
+	else if (size_a > size_b)
+		return 1;
+	if(rec_a->nodes && rec_b->nodes) {
+		size_a = strcmp(rec_a->nodes, rec_b->nodes);
+		if (size_a < 0)
+			return -1;
+		else if (size_a > 0)
+			return 1;
+	}
+	if (rec_a->quarter < rec_b->quarter)
+		return -1;
+	else if (rec_a->quarter > rec_b->quarter)
+		return 1;
+
+	if(rec_a->nodecard < rec_b->nodecard)
+		return -1;
+	else if(rec_a->nodecard > rec_b->nodecard)
+		return 1;
+
+	return 0;
+}
+
+/* 
+ * Comparator used for sorting blocks smallest to largest
+ * 
+ * returns: -1: rec_a >rec_b   0: rec_a == rec_b   1: rec_a < rec_b
+ * 
+ */
+static int _bg_record_sort_aval_dec(bg_record_t* rec_a, bg_record_t* rec_b)
+{
+	int size_a = rec_a->node_cnt;
+	int size_b = rec_b->node_cnt;
+
+	if(rec_a->est_job_end > rec_b->est_job_end)
+		return -1;
+	else if(rec_a->est_job_end < rec_b->est_job_end)
+		return 1;
+
+	if (size_a < size_b)
+		return -1;
+	else if (size_a > size_b)
+		return 1;
+	if(rec_a->nodes && rec_b->nodes) {
+		size_a = strcmp(rec_a->nodes, rec_b->nodes);
+		if (size_a < 0)
+			return -1;
+		else if (size_a > 0)
+			return 1;
+	}
+	if (rec_a->quarter < rec_b->quarter)
+		return -1;
+	else if (rec_a->quarter > rec_b->quarter)
+		return 1;
+
+	if(rec_a->nodecard < rec_b->nodecard)
+		return -1;
+	else if(rec_a->nodecard > rec_b->nodecard)
+		return 1;
+
+	return 0;
+}
 
 /*
  * Get a list of groups associated with a specific user_id
@@ -140,14 +245,13 @@ static int _test_image_perms(char *image_name, List image_list,
 
 	itr = list_iterator_create(image_list);
 	while ((image = list_next(itr))) {
-		if (!strcasecmp(image->name, image_name) ||
-		    !strcasecmp(image->name, "*")) {
+		if (!strcasecmp(image->name, image_name)
+		    || !strcasecmp(image->name, "*")) {
 			if (image->def) {
 				allow = 1;
 				break;
 			}
-			if (!image->groups ||
-			    !list_count(image->groups)) {
+			if (!image->groups || !list_count(image->groups)) {
 				allow = 1;
 				break;
 			}
@@ -161,8 +265,7 @@ static int _test_image_perms(char *image_name, List image_list,
 				cache_user = job_ptr->user_id;
 			}
 			itr2 = list_iterator_create(image->groups);
-			while ((allow == 0) &&
-			       (image_group = list_next(itr2))) {
+			while (!allow && (image_group = list_next(itr2))) {
 				for (i=0; i<ngroups; i++) {
 					if (image_group->gid
 					    == groups[i]) {
@@ -181,6 +284,466 @@ static int _test_image_perms(char *image_name, List image_list,
 	return allow;
 }
 
+static int _check_requests(uint16_t *start, uint32_t req_procs, int start_req)
+{
+	int found = 0;
+	ListIterator itr = NULL;
+	ba_request_t *try_request = NULL; 
+	
+	slurm_mutex_lock(&request_list_mutex);
+	itr = list_iterator_create(bg_request_list);
+
+	while ((try_request = list_next(itr))) {
+		if(start_req) {
+			if ((try_request->start[X] != start[X])
+			    || (try_request->start[Y] != start[Y])
+			    || (try_request->start[Z] != start[Z])) {
+				debug4("got %c%c%c looking for %c%c%c",
+				       alpha_num[try_request->start[X]],
+				       alpha_num[try_request->start[Y]],
+				       alpha_num[try_request->start[Z]],
+				       alpha_num[start[X]],
+				       alpha_num[start[Y]],
+				       alpha_num[start[Z]]);
+				continue;
+			}
+			debug3("found %c%c%c looking for %c%c%c",
+			       alpha_num[try_request->start[X]],
+			       alpha_num[try_request->start[Y]],
+			       alpha_num[try_request->start[Z]],
+			       alpha_num[start[X]],
+			       alpha_num[start[Y]],
+			       alpha_num[start[Z]]);
+		}
+
+		if(try_request->procs == req_procs) {
+			debug("already tried to create but "
+			      "can't right now.");
+			found = 1;
+			break;
+		}				
+	}
+	list_iterator_destroy(itr);
+	slurm_mutex_unlock(&request_list_mutex);
+
+	return found;
+}
+
+static int _add_to_request_list(uint16_t *start, 
+				uint32_t req_procs, int start_req) 
+{
+	ba_request_t *try_request = NULL; 
+
+	/* 
+	   add request to list so we don't try again until 
+	   something happens like a job finishing or 
+	   something so we can try again 
+	*/
+	debug2("adding request for %d", req_procs);
+	try_request = xmalloc(sizeof(ba_request_t));
+	try_request->procs = req_procs;
+	try_request->save_name = NULL;
+	try_request->elongate_geos = NULL;
+	try_request->start_req = start_req;
+	memcpy(try_request->start, start, 
+	       sizeof(uint16_t) * BA_SYSTEM_DIMENSIONS);
+	slurm_mutex_lock(&request_list_mutex);
+	list_push(bg_request_list, try_request);
+	slurm_mutex_unlock(&request_list_mutex);
+
+	return SLURM_SUCCESS;
+}
+
+static int _check_images(struct job_record* job_ptr,
+			 char **blrtsimage, char **linuximage,
+			 char **mloaderimage, char **ramdiskimage)
+{
+	int allow = 0;
+
+	select_g_get_jobinfo(job_ptr->select_jobinfo,
+			     SELECT_DATA_BLRTS_IMAGE, blrtsimage);
+	
+	if (*blrtsimage) {
+		allow = _test_image_perms(*blrtsimage, bg_blrtsimage_list, 
+					  job_ptr);
+		if (!allow) {
+			error("User %u:%u is not allowed to use BlrtsImage %s",
+			      job_ptr->user_id, job_ptr->group_id, *blrtsimage);
+			return SLURM_ERROR;
+		       
+		}
+	}
+
+	select_g_get_jobinfo(job_ptr->select_jobinfo,
+			     SELECT_DATA_LINUX_IMAGE, linuximage);
+	if (*linuximage) {
+		allow = _test_image_perms(*linuximage, bg_linuximage_list, 
+					  job_ptr);
+		if (!allow) {
+			error("User %u:%u is not allowed to use LinuxImage %s",
+			      job_ptr->user_id, job_ptr->group_id, *linuximage);
+			return SLURM_ERROR;
+		}
+	}
+
+	select_g_get_jobinfo(job_ptr->select_jobinfo,
+			     SELECT_DATA_MLOADER_IMAGE, mloaderimage);
+	if (*mloaderimage) {
+		allow = _test_image_perms(*mloaderimage, bg_mloaderimage_list, 
+					  job_ptr);
+		if(!allow) {
+			error("User %u:%u is not allowed "
+			      "to use MloaderImage %s",
+			      job_ptr->user_id, job_ptr->group_id, 
+			      *mloaderimage);
+			return SLURM_ERROR;
+		}
+	}
+
+	select_g_get_jobinfo(job_ptr->select_jobinfo,
+			     SELECT_DATA_RAMDISK_IMAGE, ramdiskimage);
+	if (*ramdiskimage) {
+		allow = _test_image_perms(*ramdiskimage, bg_ramdiskimage_list, 
+					  job_ptr);
+		if(!allow) {
+			error("User %u:%u is not allowed "
+			      "to use RamDiskImage %s",
+			      job_ptr->user_id, job_ptr->group_id, 
+			      *ramdiskimage);
+			return SLURM_ERROR;
+		}
+	}
+
+	return SLURM_SUCCESS;
+}
+
+static bg_record_t *_find_matching_block(List block_list, 
+					 struct job_record* job_ptr, 
+					 bitstr_t* slurm_block_bitmap,
+					 ba_request_t *request,
+					 uint32_t max_procs,
+					 int allow, int check_image,
+					 int overlap_check, bool test_only)
+{
+	bg_record_t *bg_record = NULL;
+	ListIterator itr = NULL;
+	uint32_t proc_cnt = 0;
+	char tmp_char[256];
+	
+	debug("number of blocks to check: %d state %d", 
+	      list_count(block_list),
+	      test_only);
+		
+	itr = list_iterator_create(block_list);
+	while ((bg_record = (bg_record_t*) list_next(itr))) {		
+		/* If test_only we want to fall through to tell the 
+		   scheduler that it is runnable just not right now. 
+		*/
+		debug3("%s job_running = %d", 
+		       bg_record->bg_block_id, bg_record->job_running);
+		/*block is messed up some how (BLOCK_ERROR_STATE) ignore it*/
+		if(bg_record->job_running == BLOCK_ERROR_STATE) {
+			debug("block %s is in an error state (can't use)", 
+			      bg_record->bg_block_id);			
+			continue;
+		} else if((bg_record->job_running != NO_JOB_RUNNING) 
+			  && (bg_record->job_running != job_ptr->job_id)
+			  && !test_only) {
+			debug("block %s in use by %s job %d", 
+			      bg_record->bg_block_id,
+			      bg_record->user_name,
+			      bg_record->job_running);
+			continue;
+		}
+		
+		/* Check processor count */
+		proc_cnt = bg_record->bp_count * bg_record->cpus_per_bp;
+		debug("asking for %u-%u looking at %d", 
+		       request->procs, max_procs, proc_cnt);
+		if ((proc_cnt < request->procs)
+		    || ((max_procs != NO_VAL) && (proc_cnt > max_procs))) {
+			/* We use the proccessor count per partition here
+			   mostly to see if we can run on a smaller partition. 
+			 */
+			convert_num_unit((float)proc_cnt, tmp_char, 
+					 sizeof(tmp_char), UNIT_NONE);
+			debug("block %s CPU count (%s) not suitable",
+			      bg_record->bg_block_id, 
+			      tmp_char);
+			continue;
+		}
+
+		/*
+		 * Next we check that this block's bitmap is within 
+		 * the set of nodes which the job can use. 
+		 * Nodes not available for the job could be down,
+		 * drained, allocated to some other job, or in some 
+		 * SLURM block not available to this job.
+		 */
+		if (!bit_super_set(bg_record->bitmap, slurm_block_bitmap)) {
+			debug("bg block %s has nodes not usable by this job",
+			      bg_record->bg_block_id);
+			continue;
+		}
+
+		/*
+		 * Insure that any required nodes are in this BG block
+		 */
+		if (job_ptr->details->req_node_bitmap
+		    && (!bit_super_set(job_ptr->details->req_node_bitmap,
+				       bg_record->bitmap))) {
+			debug("bg block %s lacks required nodes",
+				bg_record->bg_block_id);
+			continue;
+		}
+		
+		
+		if(_check_for_booted_overlapping_blocks(
+			   block_list, itr, bg_record,
+			   overlap_check, test_only))
+			continue;
+		
+		if(check_image) {
+			if(request->blrtsimage &&
+			   strcasecmp(request->blrtsimage,
+				      bg_record->blrtsimage)) {
+				allow = 1;
+				continue;
+			} else if(request->linuximage &&
+			   strcasecmp(request->linuximage,
+				      bg_record->linuximage)) {
+				allow = 1;
+				continue;
+			} else if(request->mloaderimage &&
+			   strcasecmp(request->mloaderimage, 
+				      bg_record->mloaderimage)) {
+				allow = 1;
+				continue;
+			} else if(request->ramdiskimage &&
+			   strcasecmp(request->ramdiskimage,
+				      bg_record->ramdiskimage)) {
+				allow = 1;
+				continue;
+			}			
+		}
+			
+		/***********************************************/
+		/* check the connection type specified matches */
+		/***********************************************/
+		if ((request->conn_type != bg_record->conn_type)
+		    && (request->conn_type != SELECT_NAV)) {
+			debug("bg block %s conn-type not usable asking for %s "
+			      "bg_record is %s", 
+			      bg_record->bg_block_id,
+			      convert_conn_type(request->conn_type),
+			      convert_conn_type(bg_record->conn_type));
+			continue;
+		} 
+
+		/*****************************************/
+		/* match up geometry as "best" possible  */
+		/*****************************************/
+		if (request->geometry[X] == (uint16_t)NO_VAL)
+			;	/* Geometry not specified */
+		else {	/* match requested geometry */
+			bool match = false;
+			int rot_cnt = 0;	/* attempt six rotations  */
+			
+			for (rot_cnt=0; rot_cnt<6; rot_cnt++) {		
+				if ((bg_record->geo[X] >= request->geometry[X])
+				    && (bg_record->geo[Y]
+					>= request->geometry[Y])
+				    && (bg_record->geo[Z]
+					>= request->geometry[Z])) {
+					match = true;
+					break;
+				}
+				if (!request->rotate) 
+					break;
+				
+				_rotate_geo((uint16_t *)request->geometry,
+					    rot_cnt);
+			}
+			
+			if (!match) 
+				continue;	/* Not usable */
+		}
+		debug2("we found one! %s", bg_record->bg_block_id);
+		break;
+	}
+	list_iterator_destroy(itr);
+	
+	return bg_record;
+}
+
+static int _check_for_booted_overlapping_blocks(
+	List block_list, ListIterator bg_record_itr,
+	bg_record_t *bg_record, int overlap_check, bool test_only)
+{
+	bg_record_t *found_record = NULL;
+	ListIterator itr = NULL;
+	int rc = 0;
+
+	/* this test only is for actually picking a block not testing */
+	if(test_only)
+		return rc;
+
+	/* Make sure no other partitions are under this partition 
+	   are booted and running jobs
+	*/
+	itr = list_iterator_create(block_list);
+	while ((found_record = (bg_record_t*)list_next(itr)) != NULL) {
+		if ((!found_record->bg_block_id)
+		    || (bg_record == found_record)) {
+			debug4("Don't need to look at myself %s %s",
+			       bg_record->bg_block_id,
+			       found_record->bg_block_id);
+			continue;
+		}
+		if(blocks_overlap(bg_record, found_record)) {
+			/* This test is here to check if the block we
+			 * chose is not booted or if there is a block
+			 * overlapping that we could avoid freeing if
+			 * we choose something else
+			 */
+			if(bluegene_layout_mode == LAYOUT_OVERLAP
+			   && ((overlap_check == 0 && bg_record->state 
+				!= RM_PARTITION_READY)
+			       || (overlap_check == 1 && found_record->state 
+				   != RM_PARTITION_FREE))) {
+				rc = 1;
+				break;
+			}
+
+			if(found_record->job_running != NO_JOB_RUNNING) {
+				if(found_record->job_running
+				   == BLOCK_ERROR_STATE)
+					error("can't use %s, "
+					      "overlapping block %s "
+					      "is in an error state.",
+					      bg_record->bg_block_id,
+					      found_record->bg_block_id);
+				else
+					debug("can't use %s, there is "
+					      "a job (%d) running on "
+					      "an overlapping "
+					      "block %s", 
+					      bg_record->bg_block_id,
+					      found_record->job_running,
+					      found_record->bg_block_id);
+				
+				if(bluegene_layout_mode == LAYOUT_DYNAMIC) {
+					/* this will remove and
+					 * destroy the memory for
+					 * bg_record
+					*/
+					List temp_list = list_create(NULL);
+					list_remove(bg_record_itr);
+					list_push(temp_list, bg_record);
+					num_block_to_free++;
+					free_block_list(temp_list);
+					list_destroy(temp_list);
+				} 
+				rc = 1;
+				break;
+			} 
+		} 
+	}
+	list_iterator_destroy(itr);
+
+	return rc;
+}
+
+/*
+ *
+ * Return SLURM_SUCCESS on successful create, SLURM_ERROR for no create 
+ */
+
+static int _dynamically_request(List block_list, int *blocks_added,
+				ba_request_t *request,
+				bitstr_t* slurm_block_bitmap,
+				char *user_req_nodes)
+{
+	List list_of_lists = NULL;
+	List temp_list = NULL;
+	List new_blocks = NULL;
+	ListIterator itr = NULL;
+	int rc = SLURM_ERROR;
+	int create_try = 0;
+	int start_geo[BA_SYSTEM_DIMENSIONS];
+	
+	memcpy(start_geo, request->geometry, sizeof(int)*BA_SYSTEM_DIMENSIONS);
+	debug2("going to create %d", request->size);
+	list_of_lists = list_create(NULL);
+	
+	if(user_req_nodes) 
+		list_append(list_of_lists, bg_job_block_list);
+	else {
+		list_append(list_of_lists, block_list);
+		if(list_count(block_list) != list_count(bg_booted_block_list)) {
+			list_append(list_of_lists, bg_booted_block_list);
+			if(list_count(bg_booted_block_list) 
+			   != list_count(bg_job_block_list)) 
+				list_append(list_of_lists, bg_job_block_list);
+		} else if(list_count(block_list) 
+			  != list_count(bg_job_block_list)) 
+			list_append(list_of_lists, bg_job_block_list);
+	}
+	itr = list_iterator_create(list_of_lists);
+	while ((temp_list = (List)list_next(itr))) {
+		create_try++;
+		
+		/* 1- try empty space
+		   2- we see if we can create one in the 
+		   unused bps
+		   3- see if we can create one in the non 
+		   job running bps
+		*/
+		debug("trying with %d", create_try);
+		if((new_blocks = create_dynamic_block(block_list,
+						      request, temp_list))) {
+			bg_record_t *bg_record = NULL;
+			rc = SLURM_SUCCESS;
+			while((bg_record = list_pop(new_blocks))) {
+				if(block_exist_in_list(block_list, bg_record))
+					destroy_bg_record(bg_record);
+				else {
+					if(configure_block(bg_record)
+					   == SLURM_ERROR) {
+						destroy_bg_record(bg_record);
+						error("_dynamically_request: "
+						      "unable to configure "
+						      "block");
+						rc = SLURM_ERROR;
+						break;
+					}
+					list_append(block_list, bg_record);
+					print_bg_record(bg_record);
+					(*blocks_added) = 1;
+				}
+			}
+			list_destroy(new_blocks);
+			list_sort(block_list,
+				  (ListCmpF)_bg_record_sort_aval_dec);
+	
+			rc = SLURM_SUCCESS;
+			break;
+		} else if (errno == ESLURM_INTERCONNECT_FAILURE) {
+			rc = SLURM_ERROR;
+			break;
+		} 
+					   
+		memcpy(request->geometry, start_geo,
+		       sizeof(int)*BA_SYSTEM_DIMENSIONS);
+	
+	}
+	list_iterator_destroy(itr);
+
+	if(list_of_lists)
+		list_destroy(list_of_lists);
+
+	return rc;
+}
 /*
  * finds the best match for a given job request 
  * 
@@ -192,34 +755,27 @@ static int _test_image_perms(char *image_name, List image_list,
  * returns 1 for error (no match)
  * 
  */
-static int _find_best_block_match(struct job_record* job_ptr, 
+static int _find_best_block_match(List block_list, 
+				  int *blocks_added,
+				  struct job_record* job_ptr, 
 				  bitstr_t* slurm_block_bitmap,
 				  uint32_t min_nodes, uint32_t max_nodes,
 				  uint32_t req_nodes, int spec,
 				  bg_record_t** found_bg_record, 
 				  bool test_only)
 {
-	ListIterator itr;
-	ListIterator itr2;
-	bg_record_t *record = NULL;
-	bg_record_t *found_record = NULL;
+	bg_record_t *bg_record = NULL;
 	uint16_t req_geometry[BA_SYSTEM_DIMENSIONS];
 	uint16_t start[BA_SYSTEM_DIMENSIONS];
 	uint16_t conn_type, rotate, target_size = 0;
 	uint32_t req_procs = job_ptr->num_procs;
-	uint32_t proc_cnt;
 	ba_request_t request; 
-	ba_request_t *try_request = NULL; 
 	int i;
-	int rot_cnt = 0;
-	int created = 0;
+	int overlap_check = 0;
 	int allow = 0;
 	int check_image = 1;
-	uint32_t max_procs = NO_VAL;
-	List lists_of_lists = NULL;
-	List temp_list = NULL;
+	uint32_t max_procs = (uint32_t)NO_VAL;
 	char tmp_char[256];
-	bitstr_t* tmp_bitmap = NULL;
 	int start_req = 0;
 	static int total_cpus = 0;
 	char *blrtsimage = NULL;        /* BlrtsImage for this request */
@@ -227,6 +783,7 @@ static int _find_best_block_match(struct job_record* job_ptr,
 	char *mloaderimage = NULL;      /* mloaderImage for this request */
 	char *ramdiskimage = NULL;      /* RamDiskImage for this request */
 	int rc = SLURM_SUCCESS;
+	int create_try = 0;
 
 	if(!total_cpus)
 		total_cpus = DIM_SIZE[X] * DIM_SIZE[Y] * DIM_SIZE[Z] 
@@ -238,16 +795,14 @@ static int _find_best_block_match(struct job_record* job_ptr,
 		return SLURM_ERROR;
 	}
 
-	slurm_mutex_lock(&block_state_mutex);
 	if(!test_only && req_procs > num_unused_cpus) {
 		debug2("asking for %u I only got %d", 
 		       req_procs, num_unused_cpus);
-		slurm_mutex_unlock(&block_state_mutex);
 		return SLURM_ERROR;
 	}
-	slurm_mutex_unlock(&block_state_mutex);
-	if(!bg_list) {
-		error("_find_best_block_match: There is no bg_list");
+
+	if(!block_list) {
+		error("_find_best_block_match: There is no block_list");
 		return SLURM_ERROR;
 	}
 	
@@ -256,49 +811,19 @@ static int _find_best_block_match(struct job_record* job_ptr,
 		
 	if(start[X] != (uint16_t)NO_VAL)
 		start_req = 1;
-	if(num_unused_cpus != total_cpus) {
+
+	if((num_unused_cpus != total_cpus) && !test_only) {
 		/* 
 		   see if we have already tried to create this 
 		   size but couldn't make it right now no reason 
 		   to try again 
 		*/
-		slurm_mutex_lock(&request_list_mutex);
-		itr = list_iterator_create(bg_request_list);
-		while ((try_request = list_next(itr))) {
-			if(start_req) {
-				if ((try_request->start[X] != start[X])
-				    || (try_request->start[Y] != start[Y])
-				    || (try_request->start[Z] != start[Z])) {
-					debug4("got %c%c%c looking for %c%c%c",
-					       alpha_num[try_request->start[X]],
-					       alpha_num[try_request->start[Y]],
-					       alpha_num[try_request->start[Z]],
-					       alpha_num[start[X]],
-					       alpha_num[start[Y]],
-					       alpha_num[start[Z]]);
-					continue;
-				}
-				debug3("found %c%c%c looking for %c%c%c",
-				       alpha_num[try_request->start[X]],
-				       alpha_num[try_request->start[Y]],
-				       alpha_num[try_request->start[Z]],
-				       alpha_num[start[X]],
-				       alpha_num[start[Y]],
-				       alpha_num[start[Z]]);
-			}
-			if(try_request->procs == req_procs) {
-				debug("already tried to create but "
-				      "can't right now.");
-				list_iterator_destroy(itr);
-				slurm_mutex_unlock(&request_list_mutex);
-				if(test_only)
-					return SLURM_SUCCESS;
-				else
-					return SLURM_ERROR;
-			}				
+		if(_check_requests(start, req_procs, start_req)) {
+			if(test_only)
+				return SLURM_SUCCESS;
+			else
+				return SLURM_ERROR;
 		}
-		list_iterator_destroy(itr);
-		slurm_mutex_unlock(&request_list_mutex);
 	}
 	select_g_get_jobinfo(job_ptr->select_jobinfo,
 			     SELECT_DATA_CONN_TYPE, &conn_type);
@@ -309,61 +834,10 @@ static int _find_best_block_match(struct job_record* job_ptr,
 	select_g_get_jobinfo(job_ptr->select_jobinfo,
 			     SELECT_DATA_MAX_PROCS, &max_procs);
 
-	select_g_get_jobinfo(job_ptr->select_jobinfo,
-			     SELECT_DATA_BLRTS_IMAGE, &blrtsimage);
-	if (blrtsimage) {
-		allow = _test_image_perms(blrtsimage, bg_blrtsimage_list, 
-					  job_ptr);
-		if (!allow) {
-			error("User %u:%u is not allowed to use BlrtsImage %s",
-			      job_ptr->user_id, job_ptr->group_id, blrtsimage);
-			rc = SLURM_ERROR;
-			goto end_it;
-		}
-	}
-
-	select_g_get_jobinfo(job_ptr->select_jobinfo,
-			     SELECT_DATA_LINUX_IMAGE, &linuximage);
-	if (linuximage) {
-		allow = _test_image_perms(linuximage, bg_linuximage_list, 
-					  job_ptr);
-		if (!allow) {
-			error("User %u:%u is not allowed to use LinuxImage %s",
-			      job_ptr->user_id, job_ptr->group_id, linuximage);
-			rc = SLURM_ERROR;
-			goto end_it;
-		}
-	}
-
-	select_g_get_jobinfo(job_ptr->select_jobinfo,
-			     SELECT_DATA_MLOADER_IMAGE, &mloaderimage);
-	if (mloaderimage) {
-		allow = _test_image_perms(mloaderimage, bg_mloaderimage_list, 
-					  job_ptr);
-		if(!allow) {
-			error("User %u:%u is not allowed "
-			      "to use MloaderImage %s",
-			      job_ptr->user_id, job_ptr->group_id, 
-			      mloaderimage);
-			rc = SLURM_ERROR;
-			goto end_it;
-		}
-	}
-
-	select_g_get_jobinfo(job_ptr->select_jobinfo,
-			     SELECT_DATA_RAMDISK_IMAGE, &ramdiskimage);
-	if (ramdiskimage) {
-		allow = _test_image_perms(ramdiskimage, bg_ramdiskimage_list, 
-					  job_ptr);
-		if(!allow) {
-			error("User %u:%u is not allowed "
-			      "to use RamDiskImage %s",
-			      job_ptr->user_id, job_ptr->group_id, 
-			      ramdiskimage);
-			rc = SLURM_ERROR;
-			goto end_it;
-		}
-	}
+	
+	if(_check_images(job_ptr, &blrtsimage, &linuximage,
+			 &mloaderimage, &ramdiskimage) == SLURM_ERROR)
+		goto end_it;
 	
 	if(req_geometry[X] != 0 && req_geometry[X] != (uint16_t)NO_VAL) {
 		target_size = 1;
@@ -379,7 +853,7 @@ static int _find_best_block_match(struct job_record* job_ptr,
 			min_nodes = target_size;
 		}
 		if(!req_nodes)
-			req_nodes = req_nodes;
+			req_nodes = min_nodes;
 	}
 	if (target_size == 0) {	/* no geometry specified */
 		if(job_ptr->details->req_nodes 
@@ -439,399 +913,165 @@ static int _find_best_block_match(struct job_record* job_ptr,
 		
 	*found_bg_record = NULL;
 	allow = 0;
-try_again:	
-	slurm_mutex_lock(&block_state_mutex);
-	debug("number of blocks to check: %d state %d", 
-	      list_count(bg_list),
-	      test_only);
-	itr = list_iterator_create(bg_list);
-	while ((record = (bg_record_t*) list_next(itr))) {		
-		/* If test_only we want to fall through to tell the 
-		   scheduler that it is runnable just not right now. 
-		*/
-		debug3("%s job_running = %d", 
-		       record->bg_block_id, record->job_running);
-		/*block is messed up some how (BLOCK_ERROR_STATE) ignore it*/
-		if(record->job_running == BLOCK_ERROR_STATE) {
-			debug("block %s is in an error state (can't use)", 
-			      record->bg_block_id);			
-			continue;
-		} else if((record->job_running != NO_JOB_RUNNING) 
-			  && !test_only) {
-			debug("block %s in use by %s job %d", 
-			      record->bg_block_id,
-			      record->user_name,
-			      record->job_running);
-			continue;
-		}
+
+	for(i=0; i<BA_SYSTEM_DIMENSIONS; i++) 
+		request.start[i] = start[i];
+	
+	for(i=0; i<BA_SYSTEM_DIMENSIONS; i++) 
+		request.geometry[i] = req_geometry[i];
+	
+	request.save_name = NULL;
+	request.elongate_geos = NULL;
+	request.size = target_size;
+	request.procs = req_procs;
+	request.conn_type = conn_type;
+	request.rotate = rotate;
+	request.elongate = true;
+	request.start_req = start_req;
+	request.blrtsimage = blrtsimage;
+	request.linuximage = linuximage;
+	request.mloaderimage = mloaderimage;
+	request.ramdiskimage = ramdiskimage;
+
+	select_g_get_jobinfo(job_ptr->select_jobinfo,
+			     SELECT_DATA_MAX_PROCS, &max_procs);
+	/* since we only look at procs after this and not nodes we
+	 *  need to set a max_procs if given
+	 */
+	if(max_procs == (uint32_t)NO_VAL) 
+		max_procs = max_nodes * procs_per_node;
+	
+
+	while(1) {
+		bg_record = _find_matching_block(block_list, 
+						 job_ptr,
+						 slurm_block_bitmap,
+						 &request,
+						 max_procs,
+						 allow, check_image,
+						 overlap_check, test_only);
 		
-		/* Check processor count */
-		proc_cnt = record->bp_count * record->cpus_per_bp;
-		debug3("asking for %u-%u looking at %d", 
-		      req_procs, max_procs, proc_cnt);
-		if ((proc_cnt < req_procs)
-		    || ((max_procs != NO_VAL) && (proc_cnt > max_procs))) {
-			/* We use the proccessor count per partition here
-			   mostly to see if we can run on a smaller partition. 
-			 */
-			convert_num_unit((float)proc_cnt, tmp_char, 
-					 sizeof(tmp_char), UNIT_NONE);
-			debug("block %s CPU count (%s) not suitable",
-			      record->bg_block_id, 
+		/* set the bitmap and do other allocation activities */
+		if (bg_record) {
+			if(!test_only) {
+				if(check_block_bp_states(
+					   bg_record->bg_block_id) 
+				   == SLURM_ERROR) {
+					error("_find_best_block_match: Marking "
+					      "block %s in an error state "
+					      "because of bad bps.",
+					      bg_record->bg_block_id);
+					bg_record->job_running =
+						BLOCK_ERROR_STATE;
+					bg_record->state = RM_PARTITION_ERROR;
+					trigger_block_error();
+					continue;
+				}
+			}
+			format_node_name(bg_record, tmp_char, sizeof(tmp_char));
+			
+			debug("_find_best_block_match %s <%s>", 
+			      bg_record->bg_block_id, 
 			      tmp_char);
-			continue;
-		}
-
-		/*
-		 * check that the number of nodes is suitable
-		 */
- 		debug3("asking for %u-%u bps looking at %d", 
-		      min_nodes, req_nodes, record->bp_count);
-		if ((record->bp_count < min_nodes)
-		    ||  (req_nodes != 0 && record->bp_count > req_nodes)
-		    ||  (record->bp_count < target_size)) {
-			convert_num_unit((float)record->node_cnt, tmp_char,
-					 sizeof(tmp_char), UNIT_NONE);
-			debug("block %s node count (%s) not suitable",
-			      record->bg_block_id,
-			      tmp_char);
-			continue;
-		}
-		
-		/*
-		 * Next we check that this block's bitmap is within 
-		 * the set of nodes which the job can use. 
-		 * Nodes not available for the job could be down,
-		 * drained, allocated to some other job, or in some 
-		 * SLURM block not available to this job.
-		 */
-		if (!bit_super_set(record->bitmap, slurm_block_bitmap)) {
-			debug("bg block %s has nodes not usable by this job",
-			      record->bg_block_id);
-			continue;
-		}
-
-		/*
-		 * Insure that any required nodes are in this BG block
-		 */
-		if (job_ptr->details->req_node_bitmap
-		    && (!bit_super_set(job_ptr->details->req_node_bitmap,
-				       record->bitmap))) {
-			debug("bg block %s lacks required nodes",
-				record->bg_block_id);
-			continue;
-		}
-				
-		/* Make sure no other partitions are under this partition 
-		   are booted and running jobs
-		*/
-		itr2 = list_iterator_create(bg_list);
-		while ((found_record = (bg_record_t*)
-			list_next(itr2)) != NULL) {
-			if ((!found_record->bg_block_id)
-			    || (!strcmp(record->bg_block_id, 
-					found_record->bg_block_id)))
-				continue;
-			if(blocks_overlap(record, found_record)) {
-				if(!test_only
-				   && bluegene_layout_mode == LAYOUT_OVERLAP) {
-					if(!created && record->state 
-						!= RM_PARTITION_READY)
-						break;
-					else if(created == 1 
-						&& found_record->state 
-						!= RM_PARTITION_FREE) {
-						break;
-					} 
-				}
-				if(!test_only && found_record->job_running
-				   != NO_JOB_RUNNING) {
-					if(found_record->job_running
-					   == BLOCK_ERROR_STATE)
-						error("can't use %s, "
-						      "overlapping block %s "
-						      "is in an error state.",
-						      record->bg_block_id,
-						      found_record->
-						      bg_block_id);
-					else
-						debug("can't use %s, there is "
-						      "a job (%d) running on "
-						      "an overlapping "
-						      "block %s", 
-						      record->bg_block_id,
-						      found_record->
-						      job_running,
-						      found_record->
-						      bg_block_id);
-				
-					if(bluegene_layout_mode == 
-					   LAYOUT_DYNAMIC) {
-						list_remove(itr);
-						temp_list = list_create(NULL);
-						list_push(temp_list, record);
-						num_block_to_free++;
-						free_block_list(temp_list);
-						list_destroy(temp_list);
-					} 
-					break;
-				} 
-			} 
-		}
-		list_iterator_destroy(itr2);
-
-		if(found_record) {
-			continue;
-		} 
-
-		if(check_image) {
-			if(blrtsimage &&
-			   strcasecmp(blrtsimage, record->blrtsimage)) {
-				allow = 1;
-				continue;
-			}
-			if(linuximage &&
-			   strcasecmp(linuximage, record->linuximage)) {
-				allow = 1;
-				continue;
-			}
-			if(mloaderimage &&
-			   strcasecmp(mloaderimage, record->mloaderimage)) {
-				allow = 1;
-				continue;
-			}
-			if(ramdiskimage &&
-			   strcasecmp(ramdiskimage, record->ramdiskimage)) {
-				allow = 1;
-				continue;
-			}			
-		}
-			
-		/***********************************************/
-		/* check the connection type specified matches */
-		/***********************************************/
-		if ((conn_type != record->conn_type)
-		    && (conn_type != SELECT_NAV)) {
-			debug("bg block %s conn-type not usable asking for %s "
-			      "record is %s", 
-			      record->bg_block_id,
-			      convert_conn_type(conn_type),
-			      convert_conn_type(record->conn_type));
-			continue;
-		} 
-
-		/*****************************************/
-		/* match up geometry as "best" possible  */
-		/*****************************************/
-		if (req_geometry[X] == (uint16_t)NO_VAL)
-			;	/* Geometry not specified */
-		else {	/* match requested geometry */
-			bool match = false;
-			rot_cnt = 0;	/* attempt six rotations  */
-			
-			for (rot_cnt=0; rot_cnt<6; rot_cnt++) {		
-				if ((record->geo[X] >= req_geometry[X])
-				&&  (record->geo[Y] >= req_geometry[Y])
-				&&  (record->geo[Z] >= req_geometry[Z])) {
-					match = true;
-					break;
-				}
-				if (!rotate) {
-					break;
-				}
-				_rotate_geo(req_geometry, rot_cnt);
-			}
-
-			if (!match) 
-				continue;	/* Not usable */
-		}
-		*found_bg_record = record;
-		debug2("we found one! %s", (*found_bg_record)->bg_block_id);
-		break;
-	}
-	list_iterator_destroy(itr);
-
-	/* set the bitmap and do other allocation activities */
-	if (*found_bg_record) {
-		if(!test_only) {
-			if(check_block_bp_states(
-				   (*found_bg_record)->bg_block_id) 
-			   == SLURM_ERROR) {
-				error("_find_best_block_match: Marking "
-				      "block %s in an error state "
-				      "because of bad bps.",
-				      (*found_bg_record)->bg_block_id);
-				(*found_bg_record)->job_running =
-					BLOCK_ERROR_STATE;
-				(*found_bg_record)->state = RM_PARTITION_ERROR;
-				slurm_mutex_unlock(&block_state_mutex);
-				trigger_block_error();
-				goto try_again;
-			}
-		}
-		format_node_name(*found_bg_record, tmp_char, sizeof(tmp_char));
-	
-		debug("_find_best_block_match %s <%s>", 
-			(*found_bg_record)->bg_block_id, 
-			tmp_char);
-		bit_and(slurm_block_bitmap, (*found_bg_record)->bitmap);
-		slurm_mutex_unlock(&block_state_mutex);
-		rc = SLURM_SUCCESS;
-		goto end_it;
-	}
-
-	/* see if we can just reset the image and reboot the block */
-	if(allow) {
-		check_image = 0;
-		allow = 0;
-		slurm_mutex_unlock(&block_state_mutex);
-		goto try_again;
-	}
-
-	check_image = 1;
-	/* all these assume that the *found_bg_record is NULL */
-	if(bluegene_layout_mode == LAYOUT_OVERLAP && !test_only && created<2) {
-		created++;
-		slurm_mutex_unlock(&block_state_mutex);
-		goto try_again;
-	}
-		
-	slurm_mutex_unlock(&block_state_mutex);
-	if(bluegene_layout_mode != LAYOUT_DYNAMIC)
-		goto not_dynamic;
-	
-	if(test_only) {
-		for(i=0; i<BA_SYSTEM_DIMENSIONS; i++) 
-			request.start[i] = start[i];
-			
-		for(i=0; i<BA_SYSTEM_DIMENSIONS; i++) 
-			request.geometry[i] = req_geometry[i];
-			
-		request.save_name = NULL;
-		request.elongate_geos = NULL;
-		request.size = target_size;
-		request.procs = req_procs;
-		request.conn_type = conn_type;
-		request.rotate = rotate;
-		request.elongate = true;
-		request.start_req = start_req;
-		request.blrtsimage = blrtsimage;
-		request.linuximage = linuximage;
-		request.mloaderimage = mloaderimage;
-		request.ramdiskimage = ramdiskimage;
-	
-		debug("trying with all free blocks");
-		if(create_dynamic_block(&request, NULL) == SLURM_ERROR) {
-			error("this job will never run on "
-			      "this system");
-			xfree(request.save_name);
-			rc = SLURM_ERROR;
-			goto end_it;
-		} else {
-			if(!request.save_name) {
-				error("no name returned from "
-				      "create_dynamic_block");
-				rc = SLURM_ERROR;
-				goto end_it;
-			} 
-
-			/* 
-			   add request to list so we don't try again until 
-			   something happens like a job finishing or 
-			   something so we can try again 
-			*/
-			debug3("adding %d %d", 
-			       request.procs, request.conn_type);
-			try_request = xmalloc(sizeof(ba_request_t));
-			try_request->procs = req_procs;
-			try_request->save_name = NULL;
-			try_request->elongate_geos = NULL;
-			try_request->start_req = request.start_req;
-			for(i=0; i<BA_SYSTEM_DIMENSIONS; i++) 
-				try_request->start[i] = start[i];
-			slurm_mutex_lock(&request_list_mutex);
-			list_push(bg_request_list, try_request);
-			slurm_mutex_unlock(&request_list_mutex);
-		
-			slurm_conf_lock();
-			snprintf(tmp_char, sizeof(tmp_char), "%s%s", 
-				 slurmctld_conf.node_prefix,
-				 request.save_name);
-			slurm_conf_unlock();
-			if (node_name2bitmap(tmp_char, 
-					     false, 
-					     &tmp_bitmap)) {
-				fatal("Unable to convert nodes %s to bitmap", 
-				      tmp_char);
-			}
-			
-			bit_and(slurm_block_bitmap, tmp_bitmap);
-			FREE_NULL_BITMAP(tmp_bitmap);
-			xfree(request.save_name);
+			bit_and(slurm_block_bitmap, bg_record->bitmap);
 			rc = SLURM_SUCCESS;
+			*found_bg_record = bg_record;
 			goto end_it;
-		}
-	} else if(!created) {
-		debug2("going to create %d", target_size);
-		lists_of_lists = list_create(NULL);
-		if(job_ptr->details->req_nodes) {
-			list_append(lists_of_lists, bg_job_block_list);
 		} else {
-			list_append(lists_of_lists, bg_list);
-			if(list_count(bg_list)
-			   != list_count(bg_booted_block_list)) {
-				list_append(lists_of_lists, 
-					    bg_booted_block_list);
-				if(list_count(bg_booted_block_list) 
-				   != list_count(bg_job_block_list)) 
-					list_append(lists_of_lists, 
-						    bg_job_block_list);
-			} else if(list_count(bg_list) 
-				  != list_count(bg_job_block_list)) 
-				list_append(lists_of_lists, bg_job_block_list);
-		}
-		itr = list_iterator_create(lists_of_lists);
-		while ((temp_list = (List)list_next(itr))) {
-			created++;
-
-			for(i=0; i<BA_SYSTEM_DIMENSIONS; i++) 
-				request.start[i] = start[i];
-			
+			/* this gets altered in _find_matching_block so we
+			   reset it */
 			for(i=0; i<BA_SYSTEM_DIMENSIONS; i++) 
 				request.geometry[i] = req_geometry[i];
-			
-			request.save_name = NULL;
-			request.elongate_geos = NULL;
-			request.size = target_size;
-			request.procs = req_procs;
-			request.conn_type = conn_type;
-			request.rotate = rotate;
-			request.elongate = true;
-			request.start_req = start_req;
-			request.blrtsimage = blrtsimage;
-			request.linuximage = linuximage;
-			request.mloaderimage = mloaderimage;
-			request.ramdiskimage = ramdiskimage;
-			/* 1- try empty space
-			   2- we see if we can create one in the 
-			   unused bps
-			   3- see if we can create one in the non 
-			   job running bps
-			*/
-			debug("trying with %d", created);
-			if(create_dynamic_block(&request, temp_list) 
-			   == SLURM_SUCCESS) {
-				list_iterator_destroy(itr);
-				list_destroy(lists_of_lists);
-				lists_of_lists = NULL;
-				goto try_again;
-			}
 		}
-		list_iterator_destroy(itr);
-		if(lists_of_lists)
-			list_destroy(lists_of_lists);
+		
+		/* see if we can just reset the image and reboot the block */
+		if(allow) {
+			check_image = 0;
+			allow = 0;
+			continue;
+		}
+		
+		check_image = 1;
+
+		/* all these assume that the *bg_record is NULL */
+
+		if(bluegene_layout_mode == LAYOUT_OVERLAP
+		   && !test_only && overlap_check < 2) {
+			overlap_check++;
+			continue;
+		}
+		
+		if(bluegene_layout_mode != LAYOUT_DYNAMIC) {
+			if(test_only) {
+				info(" I am here");
+				_add_to_request_list(start, req_procs,
+						     start_req);
+			}
+			goto no_match;
+		}
+
+		if(create_try)
+			goto no_match;
+		
+		if((rc = _dynamically_request(block_list, blocks_added, &request, 
+					      slurm_block_bitmap, 
+					      job_ptr->details->req_nodes))
+		   == SLURM_SUCCESS) {
+			create_try = 1;
+			continue;
+		}
+			
+
+		if(test_only) {
+			List new_blocks = NULL;
+			List job_list = NULL;
+			debug("trying with empty machine");
+			slurm_mutex_lock(&block_state_mutex);
+			job_list = copy_bg_list(bg_job_block_list);
+			slurm_mutex_unlock(&block_state_mutex);
+			list_sort(job_list, (ListCmpF)_bg_record_sort_aval_inc);
+			while(1) {
+				/* this gets altered in
+				 * create_dynamic_block so we reset it */
+				for(i=0; i<BA_SYSTEM_DIMENSIONS; i++) 
+					request.geometry[i] = req_geometry[i];
+
+				bg_record = list_pop(job_list);
+				if(bg_record)
+					debug2("taking off %d(%s) ends at %d",
+					       bg_record->job_running,
+					       bg_record->bg_block_id,
+					       bg_record->est_job_end);
+				if(!(new_blocks = create_dynamic_block(
+					     block_list, &request, job_list))) {
+					destroy_bg_record(bg_record);
+					if(errno == ESLURM_INTERCONNECT_FAILURE
+					   || !list_count(job_list)) {
+						error("this job will never "
+						      "run on this system");
+						break;
+					}
+					continue;
+				}
+				rc = SLURM_SUCCESS;
+				(*found_bg_record) = list_pop(new_blocks);
+				if(bg_record) {
+					(*found_bg_record)->est_job_end 
+						= bg_record->est_job_end; 
+					destroy_bg_record(bg_record);
+				}
+				list_destroy(new_blocks);
+				_add_to_request_list(start, req_procs,
+						     start_req);
+				break;
+			}
+			goto end_it;
+		} else {
+			break;
+		}
 	}
-not_dynamic:
+
+no_match:
 	debug("_find_best_block_match none found");
 	rc = SLURM_ERROR;
 
@@ -843,6 +1083,42 @@ end_it:
 		
 	return rc;
 }
+
+
+static int _sync_block_lists(List full_list, List incomp_list)
+{
+	ListIterator itr;
+	ListIterator itr2;
+	bg_record_t *bg_record = NULL;
+	bg_record_t *new_record = NULL;
+	int count = 0;
+
+	itr = list_iterator_create(full_list);
+	itr2 = list_iterator_create(incomp_list);
+	while((new_record = list_next(itr))) {
+		while((bg_record = list_next(itr2))) {
+			if(bit_equal(bg_record->bitmap, new_record->bitmap)
+			   && bit_equal(bg_record->ionode_bitmap,
+					new_record->ionode_bitmap))
+				break;
+		} 
+
+		if(!bg_record) {
+			bg_record = xmalloc(sizeof(bg_record_t));
+			copy_bg_record(new_record, bg_record);
+			debug4("adding %s", bg_record->bg_block_id);
+			list_append(incomp_list, bg_record);
+			count++;
+		} 
+		list_iterator_reset(itr2);
+	}
+	list_iterator_destroy(itr);
+	list_iterator_destroy(itr2);
+	sort_bg_record_inc_size(incomp_list);
+
+	return count;
+}
+
 
 /*
  * Try to find resources for a given job request
@@ -859,12 +1135,17 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 		      bool test_only)
 {
 	int spec = 1; /* this will be like, keep TYPE a priority, etc,  */
-	bg_record_t* record = NULL;
+	bg_record_t* bg_record = NULL;
 	char buf[100];
 	int i, rc = SLURM_SUCCESS;
 	uint16_t geo[BA_SYSTEM_DIMENSIONS];
 	uint16_t tmp16 = (uint16_t)NO_VAL;
+	List block_list = NULL;
+	int block_list_count = 0;
+	int blocks_added = 0;
 	
+	if(bluegene_layout_mode == LAYOUT_DYNAMIC)
+		slurm_mutex_lock(&create_dynamic_mutex);
 	
 	select_g_sprint_jobinfo(job_ptr->select_jobinfo, buf, sizeof(buf), 
 				SELECT_PRINT_MIXED);
@@ -883,16 +1164,25 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 				SELECT_PRINT_RAMDISK_IMAGE);
 	debug2("RamDiskImage=%s", buf);
 	
-	if(bluegene_layout_mode == LAYOUT_DYNAMIC)
-		slurm_mutex_lock(&create_dynamic_mutex);
+	slurm_mutex_lock(&block_state_mutex);
+	block_list = copy_bg_list(bg_list);
+	slurm_mutex_unlock(&block_state_mutex);
 	
-	rc = _find_best_block_match(job_ptr, slurm_block_bitmap, min_nodes, 
+	list_sort(block_list, (ListCmpF)_bg_record_sort_aval_dec);
+	block_list_count = list_count(block_list);
+
+	rc = _find_best_block_match(block_list, &blocks_added,
+				    job_ptr, slurm_block_bitmap, min_nodes, 
 				    max_nodes, req_nodes, spec, 
-				    &record, test_only);
+				    &bg_record, test_only);
 	
 	if(rc == SLURM_SUCCESS) {
-		if(!record) {
-			debug2("can run, but block not made");
+		if(bg_record && !bg_record->bg_block_id) {
+			//ListIterator itr = NULL;
+			
+			debug2("%d can start job at %u on %s on unmade block",
+			       test_only, bg_record->est_job_end,
+			       bg_record->nodes);
 			select_g_set_jobinfo(job_ptr->select_jobinfo,
 					     SELECT_DATA_BLOCK_ID,
 					     "unassigned");
@@ -903,51 +1193,82 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 			} else 
 				i = 1;
 			min_nodes *= bluegene_bp_node_cnt/i;
+			
+			/* itr = list_iterator_create(block_list); */
+/* 			while(bg_record = list_next(itr)) { */
+			
+/* 			} */
+			select_g_set_jobinfo(job_ptr->select_jobinfo,
+					     SELECT_DATA_EST_START, 
+					     &bg_record->est_job_end);
+			select_g_set_jobinfo(job_ptr->select_jobinfo,
+					     SELECT_DATA_NODES, 
+					     bg_record->nodes);
+			select_g_set_jobinfo(job_ptr->select_jobinfo,
+					     SELECT_DATA_IONODES, 
+					     bg_record->ionodes);
+			
 			select_g_set_jobinfo(job_ptr->select_jobinfo,
 					     SELECT_DATA_NODE_CNT,
 					     &min_nodes);
 			
-			for(i=0; i<BA_SYSTEM_DIMENSIONS; i++)
-				geo[i] = 0;
+			memset(geo, 0, sizeof(uint16_t) * BA_SYSTEM_DIMENSIONS);
 			select_g_set_jobinfo(job_ptr->select_jobinfo,
 					     SELECT_DATA_GEOMETRY, 
-					     &geo);
-			
-		} else {
-			slurm_mutex_lock(&block_state_mutex);
-
-			if((record->ionodes)
+					     &geo);			
+		} else if(bg_record) {
+			if((bg_record->ionodes)
 			   && (job_ptr->part_ptr->max_share <= 1))
 				error("Small block used in "
 				      "non-shared partition");
-
+			debug("%d can start job at %u on %s",
+			      test_only, bg_record->est_job_end,
+			      bg_record->nodes);
 			/* set the block id and info about block */
 			select_g_set_jobinfo(job_ptr->select_jobinfo,
-					     SELECT_DATA_BLOCK_ID, 
-					     record->bg_block_id);
-			select_g_set_jobinfo(job_ptr->select_jobinfo,
-					     SELECT_DATA_IONODES, 
-					     record->ionodes);
-			select_g_set_jobinfo(job_ptr->select_jobinfo,
 					     SELECT_DATA_NODE_CNT, 
-					     &record->node_cnt);
+					     &bg_record->node_cnt);
 			select_g_set_jobinfo(job_ptr->select_jobinfo,
 					     SELECT_DATA_GEOMETRY, 
-					     &record->geo);
-			tmp16 = record->conn_type;
+					     &bg_record->geo);
+					
+			select_g_set_jobinfo(job_ptr->select_jobinfo,
+					     SELECT_DATA_NODES, 
+					     bg_record->nodes);
+			select_g_set_jobinfo(job_ptr->select_jobinfo,
+					     SELECT_DATA_IONODES, 
+					     bg_record->ionodes);
+			select_g_set_jobinfo(job_ptr->select_jobinfo,
+					     SELECT_DATA_EST_START, 
+					     &bg_record->est_job_end);
+			tmp16 = bg_record->conn_type;
 			select_g_set_jobinfo(job_ptr->select_jobinfo,
 					     SELECT_DATA_CONN_TYPE, 
 					     &tmp16);
-			slurm_mutex_unlock(&block_state_mutex);
+			if(test_only) {
+				select_g_set_jobinfo(job_ptr->select_jobinfo,
+						     SELECT_DATA_BLOCK_ID,
+						     "unassigned");
+			} else {
+				select_g_set_jobinfo(job_ptr->select_jobinfo,
+					     SELECT_DATA_BLOCK_ID, 
+					     bg_record->bg_block_id);
+			
+				bg_record->job_running = job_ptr->job_id;
+			}
 		}
-		if(test_only) {
-			select_g_set_jobinfo(job_ptr->select_jobinfo,
-					     SELECT_DATA_BLOCK_ID,
-					     "unassigned");
-		} 
 	}
-	if(bluegene_layout_mode == LAYOUT_DYNAMIC)
+
+	if(bluegene_layout_mode == LAYOUT_DYNAMIC) {		
+		slurm_mutex_lock(&block_state_mutex);
+		if(blocks_added) 
+			_sync_block_lists(block_list, bg_list);
+		
+		slurm_mutex_unlock(&block_state_mutex);
 		slurm_mutex_unlock(&create_dynamic_mutex);
-	
+	}
+
+	list_destroy(block_list);
 	return rc;
 }
+

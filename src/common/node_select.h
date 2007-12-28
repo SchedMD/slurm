@@ -166,6 +166,7 @@ extern int select_g_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 			uint32_t min_nodes, uint32_t max_nodes, 
 			uint32_t req_nodes, bool test_only);
 
+
 /*
  * Note initiation of job is about to begin. Called immediately 
  * after select_g_job_test(). Executed from slurmctld.
@@ -185,6 +186,13 @@ extern int select_g_job_ready(struct job_record *job_ptr);
  * IN job_ptr - pointer to job being terminated
  */
 extern int select_g_job_fini(struct job_record *job_ptr);
+
+/*
+ * To be called when the end time of a job is changed.
+ * IN job_ptr - pointer to job being suspended
+ * RET SLURM_SUCCESS or error code
+ */
+extern int select_p_job_update_end_time(struct job_record *job_ptr);
 
 /*
  * Suspend a job. Executed from slurmctld.

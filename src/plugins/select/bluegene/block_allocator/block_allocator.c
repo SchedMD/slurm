@@ -404,8 +404,9 @@ extern int new_ba_request(ba_request_t* ba_request)
 			if ((geo[i] < 1) 
 			    ||  (geo[i] > DIM_SIZE[i])){
 				error("new_ba_request Error, "
-				      "request geometry is invalid %d "
-				      "DIMS are %c%c%c", 
+				      "request geometry is invalid %d can't be "
+				      "%d, DIMS are %c%c%c", 
+				      i,
 				      geo[i],
 				      alpha_num[DIM_SIZE[X]],
 				      alpha_num[DIM_SIZE[Y]],
@@ -1093,7 +1094,6 @@ extern ba_node_t *ba_copy_node(ba_node_t *ba_node)
  */
 extern int allocate_block(ba_request_t* ba_request, List results)
 {
-
 	if (!_initialized){
 		error("Error, configuration not initialized, "
 		      "calling ba_init(NULL)");
@@ -1252,9 +1252,12 @@ extern int copy_node_path(List nodes, List dest_nodes)
 			curr_switch = &ba_node->axis_switch[dim];
 			new_switch = &new_ba_node->axis_switch[dim];
 			if(curr_switch->int_wire[0].used) {
-				_copy_the_path(dest_nodes, 
-					       curr_switch, new_switch,
-					       0, dim);
+				if(!_copy_the_path(dest_nodes, 
+						   curr_switch, new_switch,
+						   0, dim)) {
+					rc = SLURM_ERROR;
+					break;
+				}
 			}
 		}
 		
@@ -2478,9 +2481,8 @@ static int _copy_the_path(List nodes, ba_switch_t *curr_switch,
 		next_mark_switch = &ba_node->axis_switch[dim];
 			
 	}
-	_copy_the_path(nodes, next_switch, next_mark_switch,
+	return _copy_the_path(nodes, next_switch, next_mark_switch,
 		       port_tar, dim);
-	return 1;
 }
 
 static int _find_yz_path(ba_node_t *ba_node, int *first, 
@@ -2776,8 +2778,8 @@ static int _reset_the_path(ba_switch_t *curr_switch, int source,
 #endif
 		.axis_switch[dim];
 
-	_reset_the_path(next_switch, port_tar, target, dim);
-	return 1;
+	return _reset_the_path(next_switch, port_tar, target, dim);
+//	return 1;
 }
 
 /*
@@ -3160,7 +3162,7 @@ start_again:
 #endif
 	}							
 requested_end:
-	debug("can't allocate");
+	debug2("1 can't allocate");
 	
 	return 0;
 }
