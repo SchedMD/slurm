@@ -55,31 +55,23 @@ if {[test_bluegene] == 0} {
 	exit $exit_code
 }
 
-#
-# Delete left-over input script files
-# Build input script file
-#
-exec $bin_rm -f $file_in
-exec echo "#!$bin_bash"    >$file_in
-exec echo "$bin_sleep $sleep_time "     >>$file_in
-exec $bin_chmod 700 $file_in
-
-#
+make_bash_script $file_in "$bin_sleep $sleep_time"
 set timeout [expr $max_job_delay + $sleep_time]
 
-# make a bunch of 32 cnode blocks
-
+# make a bunch of blocks of the specified size (node_cnt)
 proc run_batch_jobs { node_cnt job_cnt file_in } {
 	global sbatch srun number kill_srun
 	set start_cnt 0	
 	for {set inx 0} {$inx < $job_cnt} {incr inx} {
 		set sbatch_pid [spawn $sbatch --output=/dev/null -t2 -N$node_cnt-$node_cnt $file_in]
 		expect {
-			-re "More processors requested than permitted"
-			{
+			-re "More processors requested than permitted" {
 				send_user "This error was expected, no worries\n"
 				return -1
-	
+			}
+			-re "Requested node configuration is not available" {
+				send_user "This error was expected, no worries\n"
+				return -1
 			}
 			-re "Submitted batch job ($number)" {
 				incr start_cnt
@@ -141,12 +133,17 @@ proc wait_for_all_jobs { job_name } {
 	return $matches
 }
 
-if {[run_batch_jobs 32 $32node_block_cnt $file_in ] != 1} {
+#
+# Run the jobs here. We can be reasonably sure of running 
+# 512 cnode jobs (one midplane). Other sizes may not be supported
+# due to architecture (I/O node count) and/or slurm configuration
+#
+if {[run_batch_jobs 32 $32node_block_cnt $file_in ] == 0} {
 	send_user "\nFAILURE: 32 cnodes can't be created\n"
 	set exit_code 1	
 }
 
-if {[run_batch_jobs 128 $32node_block_cnt $file_in ] != 1} {
+if {[run_batch_jobs 128 $32node_block_cnt $file_in ] == 0} {
 	send_user "\nFAILURE: 128 cnodes can't be created\n"
 	set exit_code 1	
 }
@@ -156,7 +153,7 @@ if {[run_batch_jobs 512 $512node_block_cnt $file_in ] != 1} {
 	set exit_code 1	
 }
 
-if {[run_batch_jobs 1k $1knode_block_cnt $file_in ] != 1} {
+if {[run_batch_jobs 1k $1knode_block_cnt $file_in ] == 0} {
 	send_user "\nFAILURE: 1k cnodes can't be created\n"
 	set exit_code 1	
 }
@@ -181,7 +178,7 @@ if {[run_batch_jobs 32k $32knode_block_cnt $file_in ] == 0} {
 	set exit_code 1	
 }
 
-if {[run_batch_jobs 1k $1knode_block_cnt $file_in ] != 1} {
+if {[run_batch_jobs 1k $1knode_block_cnt $file_in ] == 0} {
 	send_user "\nFAILURE: 1k cnodes can't be created\n"
 	set exit_code 1	
 }
@@ -191,17 +188,17 @@ if {[run_batch_jobs 512 $512node_block_cnt $file_in ] != 1} {
 	set exit_code 1	
 }
 
-if {[run_batch_jobs 128 $128node_block_cnt $file_in ] != 1} {
+if {[run_batch_jobs 128 $128node_block_cnt $file_in ] == 0} {
 	send_user "\nFAILURE: 128 cnodes can't be created\n"
 	set exit_code 1	
 }
 
-if {[run_batch_jobs 32 $32node_block_cnt $file_in ] != 1} {
+if {[run_batch_jobs 32 $32node_block_cnt $file_in ] == 0} {
 	send_user "\nFAILURE: 32 cnodes can't be created\n"
 	set exit_code 1	
 }
 
-if {[run_batch_jobs 512 $512node_block_cnt $file_in ] != 1} {
+if {[run_batch_jobs 512 $512node_block_cnt $file_in ] == 0} {
 	send_user "\nFAILURE: 512 cnodes can't be created\n"
 	set exit_code 1	
 }
