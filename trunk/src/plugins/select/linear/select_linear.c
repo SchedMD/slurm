@@ -71,6 +71,13 @@
 
 #define SELECT_DEBUG 0
 
+static int _job_count_bitmap(bitstr_t * bitmap, bitstr_t * jobmap, int job_cnt);
+static int _job_test(struct job_record *job_ptr, bitstr_t *bitmap,
+			uint32_t min_nodes, uint32_t max_nodes, 
+			uint32_t req_nodes);
+static int _find_job_mate(struct job_record *job_ptr, bitstr_t *bitmap,
+			uint32_t min_nodes, uint32_t max_nodes,
+			uint32_t req_nodes);
 /*
  * These variables are required by the generic plugin interface.  If they
  * are not found in the plugin, the plugin loader will ignore it.
@@ -208,8 +215,7 @@ static int _fini_status_pthread(void)
 }
 #endif
 
-static bool 
-_enough_nodes(int avail_nodes, int rem_nodes, 
+static bool _enough_nodes(int avail_nodes, int rem_nodes, 
 		uint32_t min_nodes, uint32_t req_nodes)
 {
 	int needed_nodes;
@@ -310,19 +316,19 @@ static uint16_t _get_avail_cpus(struct job_record *job_ptr, int index)
 	multi_core_data_t *mc_ptr = NULL;
 	int min_sockets = 0, min_cores = 0;
 
-	if (job_ptr->details) {
-		if (job_ptr->details->cpus_per_task)
-			cpus_per_task = job_ptr->details->cpus_per_task;
-		if (job_ptr->details->ntasks_per_node)
-			ntasks_per_node = job_ptr->details->ntasks_per_node;
-		mc_ptr = job_ptr->details->mc_ptr;
-	}
-	if (mc_ptr) {
-		max_sockets       = job_ptr->details->mc_ptr->max_sockets;
-		max_cores         = job_ptr->details->mc_ptr->max_cores;
-		max_threads       = job_ptr->details->mc_ptr->max_threads;
-		ntasks_per_socket = job_ptr->details->mc_ptr->ntasks_per_socket;
-		ntasks_per_core   = job_ptr->details->mc_ptr->ntasks_per_core;
+	if (job_ptr->details == NULL)
+		return (uint16_t) 0;
+
+	if (job_ptr->details->cpus_per_task)
+		cpus_per_task = job_ptr->details->cpus_per_task;
+	if (job_ptr->details->ntasks_per_node)
+		ntasks_per_node = job_ptr->details->ntasks_per_node;
+	if ((mc_ptr = job_ptr->details->mc_ptr)) {
+		max_sockets       = mc_ptr->max_sockets;
+		max_cores         = mc_ptr->max_cores;
+		max_threads       = mc_ptr->max_threads;
+		ntasks_per_socket = mc_ptr->ntasks_per_socket;
+		ntasks_per_core   = mc_ptr->ntasks_per_core;
 	}
 
 	node_ptr = &(select_node_ptr[index]);
@@ -391,6 +397,130 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 			uint32_t min_nodes, uint32_t max_nodes, 
 			uint32_t req_nodes, bool test_only)
 {
+	multi_core_data_t *mc_ptr = job_ptr->details->mc_ptr;
+	bitstr_t *tmp_map;
+	int i, j, rc = EINVAL, prev_cnt = -1;
+	int min_share = 0, max_share = 0;
+
+	xassert(bitmap);
+	if (job_ptr->details == NULL)
+		return EINVAL;
+
+	if (mc_ptr) {
+		debug3("job min-[max]: -N %u-[%u]:%u-[%u]:%u-[%u]:%u-[%u]",
+			job_ptr->details->min_nodes, 
+			job_ptr->details->max_nodes,
+			mc_ptr->min_sockets, mc_ptr->max_sockets,
+			mc_ptr->min_cores,   mc_ptr->max_cores,
+			mc_ptr->min_threads, mc_ptr->max_threads);
+		debug3("job ntasks-per: -node=%u -socket=%u -core=%u",
+			job_ptr->details->ntasks_per_node,
+			mc_ptr->ntasks_per_socket, mc_ptr->ntasks_per_core);
+	}
+
+	if (bit_set_count(bitmap) < min_nodes)
+		return EINVAL;
+	if (test_only) {
+		min_share = 64;
+		max_share = min_share + 1;
+	} else {
+		/* Multiple partitions can share individual nodes, each 
+		 * partition with a different max_share value. To properly
+		 * handle that, we would want to use the minimum max_share
+		 * value for each partition to which each node belongs. See
+		 * _create_node_part_array() in cons_res/select_cons_res.c
+		 * for an example of how this can be done. The logic below 
+		 * just uses the max_share value of the current job's 
+		 * partition, which should suffice for now. */
+		if (job_ptr->details->shared) {
+			max_share = job_ptr->part_ptr->max_share & 
+					~SHARED_FORCE;
+			max_share = MAX(1, max_share);
+		} else
+			max_share = 1;
+	}
+
+	tmp_map = bit_copy(bitmap);
+	for (i=min_share; i<max_share; i++) {
+		j = _job_count_bitmap(bitmap, tmp_map, i);
+		if ((j == prev_cnt) || (j < min_nodes))
+			continue;
+		prev_cnt = j;
+		if ((!test_only) && (i > 0)) {
+			/* We need to share. 
+			 * Try to find suitable job to share nodes with. */
+			rc = _find_job_mate(job_ptr, tmp_map, 
+					    min_nodes, max_nodes, req_nodes);
+			if (rc == SLURM_SUCCESS) {
+				bit_and(bitmap, tmp_map);
+				break;
+			}
+		}
+		rc = _job_test(job_ptr, tmp_map, min_nodes, max_nodes, 
+			       req_nodes);
+		if (rc == SLURM_SUCCESS) {
+			bit_and(bitmap, tmp_map);
+			break;
+		}
+		continue;
+	}
+	bit_free(tmp_map);
+	return rc;
+}
+
+/*
+ * Set the bits in 'jobmap' that correspond to bits in the 'bitmap'
+ * that are running 'job_cnt' jobs or less, and clear the rest.
+ */
+static int _job_count_bitmap(bitstr_t * bitmap, bitstr_t * jobmap, int job_cnt)
+{
+	int i, count = 0;
+	bitoff_t size = bit_size(bitmap);
+
+	for (i = 0; i < size; i++) {
+		if (bit_test(bitmap, i) &&
+		    (node_record_table_ptr[i].run_job_cnt <= job_cnt)) {
+			bit_set(jobmap, i);
+			count++;
+		} else {
+			bit_clear(jobmap, i);
+		}
+	}
+	return count;
+}
+
+/* _find_job_mate - does most of the real work for select_p_job_test(), 
+ *	in trying to find a suitable job to mate this one with. This is 
+ *	a pretty simple algorithm now, but could try to match the job 
+ *	with multiple jobs that add up to the proper size or a single 
+ *	job plus a few idle nodes. */
+static int _find_job_mate(struct job_record *job_ptr, bitstr_t *bitmap,
+			  uint32_t min_nodes, uint32_t max_nodes,
+			  uint32_t req_nodes)
+{
+	ListIterator job_iterator;
+	struct job_record *job_scan_ptr;
+
+	job_iterator = list_iterator_create(job_list);
+	while ((job_scan_ptr = (struct job_record *) list_next(job_iterator))) {
+		if ((job_scan_ptr->part_ptr == job_ptr->part_ptr) &&
+		    (job_scan_ptr->job_state == JOB_RUNNING) &&
+		    (job_scan_ptr->node_cnt == req_nodes) &&
+		    bit_super_set(job_scan_ptr->node_bitmap, bitmap)) {
+			bit_and(bitmap, job_scan_ptr->node_bitmap);
+			return SLURM_SUCCESS;
+		}
+	}
+	list_iterator_destroy(job_iterator);
+	return EINVAL;
+}
+
+/* _job_test - does most of the real work for select_p_job_test(), which 
+ *	pretty much just handles load-leveling and max_share logic */
+static int _job_test(struct job_record *job_ptr, bitstr_t *bitmap,
+			uint32_t min_nodes, uint32_t max_nodes, 
+			uint32_t req_nodes)
+{
 	int i, index, error_code = EINVAL, sufficient;
 	int *consec_nodes;	/* how many nodes we can add from this 
 				 * consecutive set of nodes */
@@ -405,19 +535,6 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	int best_fit_nodes, best_fit_cpus, best_fit_req;
 	int best_fit_location = 0, best_fit_sufficient;
 	int avail_cpus;
-	multi_core_data_t *mc_ptr = job_ptr->details->mc_ptr;
-
-	xassert(bitmap);
-	if (mc_ptr) {
-		debug3("job min-[max]: -N %u-[%u]:%u-[%u]:%u-[%u]:%u-[%u]",
-			job_ptr->details->min_nodes,   job_ptr->details->max_nodes,
-			mc_ptr->min_sockets, mc_ptr->max_sockets,
-			mc_ptr->min_cores,   mc_ptr->max_cores,
-			mc_ptr->min_threads, mc_ptr->max_threads);
-		debug3("job ntasks-per: -node=%u -socket=%u -core=%u",
-			job_ptr->details->ntasks_per_node,
-			mc_ptr->ntasks_per_socket, mc_ptr->ntasks_per_core);
-	}
 
 	consec_index = 0;
 	consec_size  = 50;	/* start allocation for 50 sets of 
@@ -721,14 +838,14 @@ extern int select_p_get_extra_jobinfo (struct node_record *node_ptr,
                                        void *data)
 {
 	int rc = SLURM_SUCCESS;
+	uint16_t *tmp_16;
 
 	xassert(job_ptr);
 	xassert(job_ptr->magic == JOB_MAGIC);
 
 	switch (info) {
 	case SELECT_AVAIL_CPUS:
-	{
-		uint16_t *tmp_16 = (uint16_t *) data;
+		tmp_16 = (uint16_t *) data;
 
 		if ((job_ptr->details->cpus_per_task > 1)
 		||  (job_ptr->details->mc_ptr)) {
@@ -742,7 +859,6 @@ extern int select_p_get_extra_jobinfo (struct node_record *node_ptr,
 			}
 		}
 		break;
-	}
 	default:
 		error("select_g_get_extra_jobinfo info %d invalid", info);
 		rc = SLURM_ERROR;

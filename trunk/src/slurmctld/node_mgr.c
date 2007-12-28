@@ -902,7 +902,10 @@ static void _pack_node (struct node_record *dump_node_ptr, bool cr_flag,
 		pack16(allocated_cpus, buffer);
 	} else if ((dump_node_ptr->node_state & NODE_STATE_COMPLETING) ||
 		   (dump_node_ptr->node_state == NODE_STATE_ALLOCATED)) {
-		pack16(dump_node_ptr->config_ptr->cpus, buffer);
+		if (slurmctld_conf.fast_schedule)
+			pack16(dump_node_ptr->config_ptr->cpus, buffer);
+		else
+			pack16(dump_node_ptr->cpus, buffer);
 	} else {
 		pack16((uint16_t) 0, buffer);
 	}
