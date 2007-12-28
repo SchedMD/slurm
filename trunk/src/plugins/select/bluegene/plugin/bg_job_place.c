@@ -458,7 +458,7 @@ static bg_record_t *_find_matching_block(List block_list,
 		
 		/* Check processor count */
 		proc_cnt = bg_record->bp_count * bg_record->cpus_per_bp;
-		debug("asking for %u-%u looking at %d", 
+		debug3("asking for %u-%u looking at %d", 
 		       request->procs, max_procs, proc_cnt);
 		if ((proc_cnt < request->procs)
 		    || ((max_procs != NO_VAL) && (proc_cnt > max_procs))) {
@@ -1221,9 +1221,9 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 			   && (job_ptr->part_ptr->max_share <= 1))
 				error("Small block used in "
 				      "non-shared partition");
-			debug("%d can start job at %u on %s",
-			      test_only, bg_record->est_job_end,
-			      bg_record->nodes);
+			debug2("%d can start job at %u on %s",
+			       test_only, bg_record->est_job_end,
+			       bg_record->nodes);
 			/* set the block id and info about block */
 			select_g_set_jobinfo(job_ptr->select_jobinfo,
 					     SELECT_DATA_NODE_CNT, 
