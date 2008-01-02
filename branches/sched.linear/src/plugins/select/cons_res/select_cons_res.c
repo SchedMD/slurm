@@ -851,7 +851,7 @@ static int _synchronize_bitmaps(bitstr_t ** partially_idle_bitmap)
  * if suspend = 1 then only add memory
  */
 static int _add_job_to_nodes(struct select_cr_job *job, char *pre_err,
-			     uint16_t suspend)
+			     int suspend)
 {
 	int i, j, rc = SLURM_SUCCESS;
 	uint16_t add_memory = 0;
@@ -972,7 +972,7 @@ static int _add_job_to_nodes(struct select_cr_job *job, char *pre_err,
  * if remove_all = 0: the job has been suspended, so just deallocate CPUs
  */
 static int _rm_job_from_nodes(struct select_cr_job *job, char *pre_err,
-			      uint16_t remove_all)
+			      int remove_all)
 {
 	int i, j, k, rc = SLURM_SUCCESS;
 
@@ -2654,7 +2654,7 @@ extern int select_p_job_fini(struct job_record *job_ptr)
 		return SLURM_ERROR;
 	}
 	
-	_rm_job_from_nodes(job, "select_p_job_fini", (uint16_t)1);
+	_rm_job_from_nodes(job, "select_p_job_fini", 1);
 
 	slurm_mutex_lock(&cr_mutex);
 	list_remove(iterator);
@@ -2697,7 +2697,7 @@ extern int select_p_job_suspend(struct job_record *job_ptr)
 	if (!job)
 		return ESLURM_INVALID_JOB_ID;
 
-	rc = _rm_job_from_nodes(job, "select_p_job_suspend", (uint16_t)0);
+	rc = _rm_job_from_nodes(job, "select_p_job_suspend", 0);
 	return SLURM_SUCCESS;
 }
 
@@ -2723,7 +2723,7 @@ extern int select_p_job_resume(struct job_record *job_ptr)
 	if (!job)
 		return ESLURM_INVALID_JOB_ID;
 	
-	rc = _add_job_to_nodes(job, "select_p_job_resume", (uint16_t)0);
+	rc = _add_job_to_nodes(job, "select_p_job_resume", 0);
 	return SLURM_SUCCESS;
 }
 
@@ -2865,7 +2865,7 @@ extern int select_p_update_nodeinfo(struct job_record *job_ptr)
 	if (!job)
 		return SLURM_SUCCESS;
 	
-	rc = _add_job_to_nodes(job, "select_p_update_nodeinfo", (uint16_t)0);
+	rc = _add_job_to_nodes(job, "select_p_update_nodeinfo", 0);
 	return rc;
 }
 
@@ -2931,8 +2931,8 @@ extern int select_p_reconfigure(void)
 	ListIterator job_iterator;
 	struct select_cr_job *job;
 	struct job_record *job_ptr;
-	uint16_t addme, suspend;
-	int rc;
+	uint16_t addme;
+	int rc, suspend;
 
 	select_fast_schedule = slurm_get_fast_schedule();
 
