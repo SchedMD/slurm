@@ -71,7 +71,10 @@ expect {
 		wait
 	}
 }
-
+if {$job_id == 0} {
+	send_user "\nFAILURE: job submission failed\n"
+	exit 1
+}
 if {[wait_for_job $job_id RUNNING] != 0} {
 	send_user "\nFAILURE: error starting job $job_id\n"
 	cancel_job $job_id
