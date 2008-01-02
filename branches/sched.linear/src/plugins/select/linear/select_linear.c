@@ -1164,6 +1164,8 @@ static void _init_node_cr(void)
 	part_iterator = list_iterator_create(part_list);
 	while ((part_ptr = (struct part_record *) list_next(part_iterator))) {
 		for (i = 0; i < select_node_cnt; i++) {
+			if (part_ptr->node_bitmap == NULL)
+				break;
 			if (!bit_test(part_ptr->node_bitmap, i))
 				continue;
 			part_cr_ptr = xmalloc(sizeof(struct part_cr_record));
@@ -1189,6 +1191,8 @@ static void _init_node_cr(void)
 			job_memory = 0;
 
 		for (i = 0; i < select_node_cnt; i++) {
+			if (job_ptr->node_bitmap == NULL)
+				break;
 			if (!bit_test(job_ptr->node_bitmap, i))
 				continue;
 			node_cr_ptr[i].alloc_memory = job_memory;
