@@ -23,7 +23,8 @@ documents those changes that are of interest to users and admins.
  -- Major restructuring of node selection logic. select/linear now supports
     partition max_share parameter and tries to match like size jobs on the 
     same nodes to improve gang scheduling performance. Also supports treating 
-    memory as consumable resource for gang scheduling.
+    memory as consumable resource for job preemption and  gang scheduling if 
+    SelectTypeParameter=CR_Memory in slurm.conf.
 
 * Changes in SLURM 1.3.0-pre7
 =============================
