@@ -122,6 +122,7 @@ const uint32_t plugin_version	= 90;
 static struct node_record *select_node_ptr = NULL;
 static int select_node_cnt = 0;
 static uint16_t select_fast_schedule;
+static uint16_t cr_type;
 
 static struct node_cr_record *node_cr_ptr = NULL;
 static pthread_mutex_t cr_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -253,6 +254,8 @@ extern int init ( void )
 #ifdef HAVE_BG
 	fatal("%s is incompatable with Blue Gene", plugin_name);
 #endif
+	cr_type = (select_type_plugin_info_t)
+			slurmctld_conf.select_type_param;
 	return rc;
 }
 
@@ -419,10 +422,10 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 			uint32_t min_nodes, uint32_t max_nodes, 
 			uint32_t req_nodes, bool test_only)
 {
-	multi_core_data_t *mc_ptr = job_ptr->details->mc_ptr;
 	bitstr_t *tmp_map;
 	int i, j, rc = EINVAL, prev_cnt = -1;
 	int min_share = 0, max_share = 0;
+	uint32_t save_mem = 0;
 
 	xassert(bitmap);
 	if (job_ptr->details == NULL)
@@ -438,18 +441,6 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 		}
 	}
 
-	if (mc_ptr) {
-		debug3("job min-[max]: -N %u-[%u]:%u-[%u]:%u-[%u]:%u-[%u]",
-			job_ptr->details->min_nodes, 
-			job_ptr->details->max_nodes,
-			mc_ptr->min_sockets, mc_ptr->max_sockets,
-			mc_ptr->min_cores,   mc_ptr->max_cores,
-			mc_ptr->min_threads, mc_ptr->max_threads);
-		debug3("job ntasks-per: -node=%u -socket=%u -core=%u",
-			job_ptr->details->ntasks_per_node,
-			mc_ptr->ntasks_per_socket, mc_ptr->ntasks_per_core);
-	}
-
 	if (bit_set_count(bitmap) < min_nodes) {
 		slurm_mutex_unlock(&cr_mutex);
 		return EINVAL;
@@ -458,6 +449,8 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	if (test_only) {
 		min_share = 64;
 		max_share = min_share + 1;
+		save_mem = job_ptr->details->job_min_memory;
+		job_ptr->details->job_min_memory = 0;
 	} else {
 		/* Multiple partitions can share individual nodes, each 
 		 * partition with a different max_share value. To properly
@@ -501,6 +494,8 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	}
 	bit_free(tmp_map);
 	slurm_mutex_unlock(&cr_mutex);
+	if (save_mem)
+		job_ptr->details->job_min_memory = save_mem;
 	return rc;
 }
 
@@ -516,7 +511,8 @@ static int _job_count_bitmap(struct job_record *job_ptr,
 	uint32_t job_memory = 0;
 
 	xassert(node_cr_ptr);
-	if (job_ptr->details->job_min_memory != NO_VAL)
+	if ((job_ptr->details->job_min_memory != NO_VAL) &&
+	    (cr_type == CR_MEMORY))
 		job_memory = job_ptr->details->job_min_memory;
 
 	for (i = 0; i < node_record_count; i++) {
@@ -525,10 +521,18 @@ static int _job_count_bitmap(struct job_record *job_ptr,
 			continue;
 		}
 
-		if ((node_cr_ptr[i].alloc_memory + job_memory) >
-		    node_record_table_ptr[i].real_memory) {
-			bit_clear(jobmap, i);
-			continue;
+		if (select_fast_schedule) {
+			if ((node_cr_ptr[i].alloc_memory + job_memory) >
+			     node_record_table_ptr[i].config_ptr->real_memory) {
+				bit_clear(jobmap, i);
+				continue;
+			}
+		} else {
+			if ((node_cr_ptr[i].alloc_memory + job_memory) >
+			     node_record_table_ptr[i].real_memory) {
+				bit_clear(jobmap, i);
+				continue;
+			}
 		}
 
 		part_cr_ptr = node_cr_ptr[i].parts;
@@ -992,7 +996,8 @@ static int _rm_job_from_nodes(struct job_record *job_ptr, char *pre_err,
 	}
 
 	if (remove_all && job_ptr->details && 
-	    (job_ptr->details->job_min_memory != NO_VAL))
+	    (job_ptr->details->job_min_memory != NO_VAL) &&
+	    (cr_type == CR_MEMORY))
 		job_memory = job_ptr->details->job_min_memory;
 
 	for (i = 0; i < select_node_cnt; i++) {
@@ -1068,7 +1073,8 @@ static int _add_job_to_nodes(struct job_record *job_ptr, char *pre_err,
 	}
 
 	if (alloc_all && job_ptr->details && 
-	    (job_ptr->details->job_min_memory != NO_VAL))
+	    (job_ptr->details->job_min_memory != NO_VAL) &&
+	    (cr_type == CR_MEMORY))
 		job_memory = job_ptr->details->job_min_memory;
 
 	for (i = 0; i < select_node_cnt; i++) {
