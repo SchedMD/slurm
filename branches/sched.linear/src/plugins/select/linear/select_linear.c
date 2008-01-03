@@ -985,6 +985,7 @@ extern int select_p_reconfigure(void)
 {
 	slurm_mutex_lock(&cr_mutex);
 	_free_node_cr(node_cr_ptr);
+	node_cr_ptr = NULL;
 	_init_node_cr();
 	slurm_mutex_unlock(&cr_mutex);
 
