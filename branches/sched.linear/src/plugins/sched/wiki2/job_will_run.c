@@ -36,31 +36,29 @@
 \*****************************************************************************/
 
 #include "./msg.h"
+#include "src/common/node_select.h"
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/node_scheduler.h"
 #include "src/slurmctld/state_save.h"
 
-static char *	_will_run_test(uint32_t jobid, char *job_list, 
-			char *exclude_list, int *err_code, char **err_msg);
+static char *	_will_run_test(uint32_t jobid, char *node_list, 
+			int *err_code, char **err_msg);
 
 /*
  * get_jobs - get information on specific job(s) changed since some time
- * cmd_ptr IN   - CMD=JOBWILLRUN ARG=<JOBID> AFTER=<JOBID>[:<JOBID>...]
- *                              [EXCLUDE=<node_list>]
+ * cmd_ptr IN   - CMD=JOBWILLRUN ARG=<JOBID> AVAIL_NODES=<node_list>]
  * err_code OUT - 0 on success or some error code
  * err_msg OUT  - error message or the JOBID from ordered list after 
  *                which the specified job can start (no JOBID if job 
  *                can start immediately) and the assigned node list.
- *                ARG=<JOBID> [AFTER=<JOBID>] NODES=<node_list>
+ *                ARG=<JOBID> STARTDATE=<uts> HOSTLIST=<node_list>
  * NOTE: xfree() err_msg if err_code is zero
  * RET 0 on success, -1 on failure
  */
 extern int	job_will_run(char *cmd_ptr, int *err_code, char **err_msg)
 {
-	char *arg_ptr, *tmp_char, *job_list, *exclude_list;
-	char *buf, *tmp_buf;
-	int buf_size;
+	char *arg_ptr, *tmp_char, *avail_nodes, *buf, *tmp_buf;
 	uint32_t jobid;
 	/* Locks: write job, read node and partition info */
 	slurmctld_lock_t job_write_lock = {
@@ -81,35 +79,25 @@ extern int	job_will_run(char *cmd_ptr, int *err_code, char **err_msg)
 		return -1;
 	}
 
-	job_list = strstr(cmd_ptr, "AFTER=");
-	if (job_list) {
-		job_list += 6;
-		null_term(job_list);
+	avail_nodes = strstr(cmd_ptr, "AVAIL_NODES=");
+	if (avail_nodes) {
+		avail_nodes += 12;
+		null_term(avail_nodes);
 	} else {
 		*err_code = -300;
-		*err_msg = "Invalid AFTER value";
-		error("wiki: JOBWILLRUN has invalid jobid");
+		*err_msg = "Invalid AVAIL_NODES value";
+		error("wiki: JOBWILLRUN call lacks AVAIL_NODES argument");
 		return -1;
-	}
-
-	exclude_list = strstr(cmd_ptr, "EXCLUDE=");
-	if (exclude_list) {
-		exclude_list += 8;
-		null_term(exclude_list);
 	}
 
 	lock_slurmctld(job_write_lock);
-	buf = _will_run_test(jobid, job_list, exclude_list, err_code,
-			     err_msg);
+	buf = _will_run_test(jobid, avail_nodes, err_code, err_msg);
 	unlock_slurmctld(job_write_lock);
 
-	if (!buf) {
-		info("wiki: JOBWILLRUN failed for job %u", jobid);
+	if (!buf)
 		return -1;
-	}
 
-	buf_size = strlen(buf);
-	tmp_buf = xmalloc(buf_size + 32);
+	tmp_buf = xmalloc(strlen(buf) + 32);
 	sprintf(tmp_buf, "SC=0 ARG=%s", buf);
 	xfree(buf);
 	*err_code = 0;
@@ -117,21 +105,29 @@ extern int	job_will_run(char *cmd_ptr, int *err_code, char **err_msg)
 	return 0;
 }
 
-static char *	_will_run_test(uint32_t jobid, char *job_list, 
-			char *exclude_list, int *err_code, char **err_msg)
+static char *	_will_run_test(uint32_t jobid, char *node_list, 
+			int *err_code, char **err_msg)
 {
 	struct job_record *job_ptr;
-	bitstr_t *save_exc_bitmap = NULL, *new_bitmap = NULL;
-	uint32_t save_prio, *jobid_list = NULL;
-	struct job_record **job_ptr_list;
-	int i, job_list_size;
-	char *tmp_char;
+	struct part_record *part_ptr;
+	bitstr_t *avail_bitmap = NULL;
+	char *reply_msg;
+	uint32_t min_nodes, max_nodes, req_nodes;
+	int rc;
 
 	job_ptr = find_job_record(jobid);
 	if (job_ptr == NULL) {
 		*err_code = -700;
 		*err_msg = "No such job";
 		error("wiki: Failed to find job %u", jobid);
+		return NULL;
+	}
+
+	part_ptr = job_ptr->part_ptr;
+	if (part_ptr == NULL) {
+		*err_code = -700;
+		*err_msg = "Job lacks a partition";
+		error("wiki: Job %u lacks a partition", jobid);
 		return NULL;
 	}
 
@@ -144,101 +140,50 @@ static char *	_will_run_test(uint32_t jobid, char *job_list,
 		return NULL;
 	}
 
-	/* parse the job list */
-	job_list_size = strlen(job_list) + 1;
-	jobid_list = xmalloc(job_list_size * sizeof(uint32_t));
-	job_ptr_list = xmalloc(job_list_size * sizeof (struct job_record *));
-	tmp_char = job_list;
-	for (i=0; i<job_list_size; ) {
-		jobid_list[i] = strtoul(tmp_char, &tmp_char, 10);
-		if ((tmp_char[0] != '\0') && (!isspace(tmp_char[0])) &&
-		    (tmp_char[0] != ':')) {
-			*err_code = -300;
-			*err_msg = "Invalid AFTER value";
-			error("wiki: Invalid AFTER value of %s", job_list);
-			xfree(jobid_list);
-			xfree(job_ptr_list);
-			return NULL;
-		}
-		job_ptr_list[i] = find_job_record(jobid_list[i]);
-		if (job_ptr_list[i])
-			i++;
-		else {
-			error("wiki: willrun AFTER job %u not found", 
-				jobid_list[i]);
-			jobid_list[i] = 0;
-		}
-		if (tmp_char[0] == ':')
-			tmp_char++;
-		else
-			break;
+	if ((node_list == NULL) ||
+	    (node_name2bitmap(node_list, false, &avail_bitmap) != 0)) {
+		*err_code = -700;
+		*err_msg = "Invalid AVAIL_NODES value";
+		error("wiki: Attempt to set invalid available node "
+			"list for job %u, %s",
+			jobid, node_list);
+		return NULL;
 	}
 
-	if (exclude_list) {
-		if (node_name2bitmap(exclude_list, false, &new_bitmap) != 0) {
-			*err_code = -700;
-			*err_msg = "Invalid EXCLUDE value";
-			error("wiki: Attempt to set invalid exclude node "
-				"list for job %u, %s",
-				jobid, exclude_list);
-			return NULL;
-		}
-		save_exc_bitmap = job_ptr->details->exc_node_bitmap;
-		job_ptr->details->exc_node_bitmap = new_bitmap;
-	}
+	min_nodes = MAX(job_ptr->details->min_nodes, part_ptr->min_nodes);
+	if (job_ptr->details->max_nodes == 0)
+		max_nodes = part_ptr->max_nodes;
+	else
+		max_nodes = MIN(job_ptr->details->max_nodes, 
+				part_ptr->max_nodes);
+	max_nodes = MIN(max_nodes, 500000);	/* prevent overflows */
+	if (job_ptr->details->max_nodes)
+		req_nodes = max_nodes;
+	else
+		req_nodes = min_nodes;
 
-	/* test when the job can execute */
-	save_prio = job_ptr->priority;
-	job_ptr->priority = 1;
-
-#if 0
-	/* execute will_run logic here */
-	/* Note that last jobid_list entry has a value of zero */
-	rc = select_nodes(job_ptr, true, &picked_node_bitmap);
-
+	rc = select_g_job_test(job_ptr, avail_bitmap,
+			min_nodes, max_nodes, req_nodes, 
+			SELECT_MODE_WILL_RUN);
+	
 	if (rc == SLURM_SUCCESS) {
+		char *hostlist = bitmap2node_name(avail_bitmap);
+		reply_msg = xmalloc(strlen(hostlist) + 128);
+		sprintf(reply_msg, 
+			 "%u STARTDATE=%lu HOSTLIST=%s",
+			 jobid, job_ptr->start_time, hostlist);
+		xfree(hostlist);
 		*err_code = 0;
-		snprintf(reply_msg, sizeof(reply_msg),
-			"SC=0 Job %d runnable now TASKLIST:%s",
-			jobid, picked_node_list);
-		*err_msg = reply_msg;
-	} else if (rc == ESLURM_NODES_BUSY) {
-		*err_code = 1;
-		snprintf(reply_msg, sizeof(reply_msg),
-			"SC=1 Job %u runnable later TASKLIST:%s",
-			jobid, picked_node_list);
-		*err_msg = reply_msg;
-	} else if (rc == ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE) {
-		*err_code = 1;
-		snprintf(reply_msg, sizeof(reply_msg),
-			"SC=1 Job %u not runnable with current configuration",
-			jobid);
-		*err_msg = reply_msg;
+		return reply_msg;
 	} else {
-		char *err_str = slurm_strerror(rc);
-		error("wiki: job %d never runnable on hosts=%s %s", 
-			jobid, new_node_list, err_str);
 		*err_code = -740;
-		snprintf(reply_msg, sizeof(reply_msg), 
-			"SC=-740 Job %d not runable: %s", 
-			jobid, err_str);
-		*err_msg = reply_msg;
+		*err_msg = "Job not runable on selected nodes";
+		error("wiki: job %d not runnable on hosts=%s", 
+			jobid, node_list);
+		FREE_NULL_BITMAP(avail_bitmap);
+		return NULL;
 	}
-#endif
 
-	/* Restore job's state, release allocated memory */
-	if (save_exc_bitmap)
-		job_ptr->details->exc_node_bitmap = save_exc_bitmap;
-	FREE_NULL_BITMAP(new_bitmap);
-	job_ptr->priority = save_prio;
-	xfree(jobid_list);
-	xfree(job_ptr_list);
-
-#if 1
-	*err_code = -810;
-	*err_msg  = "JOBWILLRUN not yet supported";
- 	return NULL;
-#endif
 }
 
 /*
