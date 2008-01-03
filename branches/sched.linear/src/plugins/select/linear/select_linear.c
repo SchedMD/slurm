@@ -432,7 +432,7 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 			uint32_t min_nodes, uint32_t max_nodes, 
 			uint32_t req_nodes, int mode)
 {
-	bitstr_t *tmp_map;
+	bitstr_t *orig_map;
 	int i, j, rc = EINVAL, prev_cnt = -1;
 	int min_share = 0, max_share = 0;
 	uint32_t save_mem = 0;
@@ -478,29 +478,27 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 		job_ptr->details->job_min_memory = 0;
 	}
 
-	tmp_map = bit_copy(bitmap);
+	orig_map = bit_copy(bitmap);
 	for (i=min_share; i<max_share; i++) {
-		j = _job_count_bitmap(node_cr_ptr, job_ptr, bitmap, tmp_map, i);
+		j = _job_count_bitmap(node_cr_ptr, job_ptr, orig_map, bitmap, i);
 		if ((j == prev_cnt) || (j < min_nodes))
 			continue;
 		prev_cnt = j;
 		if ((mode == SELECT_MODE_RUN_NOW) && (i > 0)) {
 			/* We need to share. 
 			 * Try to find suitable job to share nodes with. */
-			rc = _find_job_mate(job_ptr, tmp_map, 
+			rc = _find_job_mate(job_ptr, bitmap, 
 					    min_nodes, max_nodes, req_nodes);
-			if (rc == SLURM_SUCCESS) {
-				bit_and(bitmap, tmp_map);
+			if (rc == SLURM_SUCCESS)
 				break;
-			}
 		}
-		rc = _job_test(job_ptr, tmp_map, min_nodes, max_nodes, 
+		rc = _job_test(job_ptr, bitmap, min_nodes, max_nodes, 
 			       req_nodes);
 		if (rc == SLURM_SUCCESS)
 			break;
 		continue;
 	}
-	bit_free(tmp_map);
+	bit_free(orig_map);
 	slurm_mutex_unlock(&cr_mutex);
 	if (save_mem)
 		job_ptr->details->job_min_memory = save_mem;
