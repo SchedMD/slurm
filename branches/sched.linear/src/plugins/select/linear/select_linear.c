@@ -1272,17 +1272,17 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	struct job_record *tmp_job_ptr, **tmp_job_pptr;
 	List cr_job_list;
 	ListIterator job_iterator;
-	bitstr_t *tmp_map;
+	bitstr_t *orig_map;
 	int i, rc = SLURM_ERROR;
 
 	/* Try to run with currently available nodes */
-	tmp_map = bit_copy(bitmap);
-	i = _job_count_bitmap(node_cr_ptr, job_ptr, bitmap, tmp_map, max_share);
+	orig_map = bit_copy(bitmap);
+	i = _job_count_bitmap(node_cr_ptr, job_ptr, orig_map, bitmap, max_share);
 	if (i >= min_nodes) {
-		rc = _job_test(job_ptr, tmp_map, min_nodes, max_nodes, 
+		rc = _job_test(job_ptr, bitmap, min_nodes, max_nodes, 
 			       req_nodes);
 		if (rc == SLURM_SUCCESS) {
-			bit_free(tmp_map);
+			bit_free(orig_map);
 			job_ptr->start_time = time(NULL);
 			return SLURM_SUCCESS;
 		}
@@ -1292,7 +1292,7 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	 * to determine when and where the job can start. */
 	exp_node_cr = _dup_node_cr(node_cr_ptr);
 	if (exp_node_cr == NULL) {
-		bit_free(tmp_map);
+		bit_free(orig_map);
 		return SLURM_ERROR;
 	}
 
@@ -1320,11 +1320,11 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 		tmp_job_ptr = *tmp_job_pptr;
 		_rm_job_from_nodes(exp_node_cr, tmp_job_ptr,
 				   "_will_run_test", 1);
-		i = _job_count_bitmap(exp_node_cr, job_ptr, bitmap, tmp_map, 
+		i = _job_count_bitmap(exp_node_cr, job_ptr, orig_map, bitmap, 
 				      max_share);
 		if (i < min_nodes)
 			continue;
-		rc = _job_test(job_ptr, tmp_map, min_nodes, max_nodes, 
+		rc = _job_test(job_ptr, bitmap, min_nodes, max_nodes, 
 			       req_nodes);
 		if (rc != SLURM_SUCCESS)
 			continue;
@@ -1334,7 +1334,7 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	list_iterator_destroy(job_iterator);
 	list_destroy(cr_job_list);
 
-	bit_free(tmp_map);
+	bit_free(orig_map);
 	return rc;
 }
 
