@@ -2315,8 +2315,9 @@ static int _load_arrays(struct job_record *job_ptr, bitstr_t *bitmap,
  * IN min_nodes - minimum count of nodes
  * IN req_nodes - requested (or desired) count of nodes
  * IN max_nodes - maximum count of nodes (0==don't care)
- * IN test_only - if true, only test if ever could run, not necessarily now,
- *	not used in this implementation
+ * IN mode - SELECT_MODE_RUN_NOW: try to schedule job now
+ *           SELECT_MODE_TEST_ONLY: test if job can ever run
+ *           SELECT_MODE_WILL_RUN: determine when and where job can run
  * RET zero on success, EINVAL otherwise
  * globals (passed via select_p_node_init): 
  *	node_record_count - count of nodes configured
@@ -2330,7 +2331,7 @@ static int _load_arrays(struct job_record *job_ptr, bitstr_t *bitmap,
  */
 extern int select_p_job_test(struct job_record *job_ptr, bitstr_t * bitmap,
 			     uint32_t min_nodes, uint32_t max_nodes, 
-			     uint32_t req_nodes, bool test_only)
+			     uint32_t req_nodes, int mode)
 {
 	int a, f, i, j, k, error_code, ll; /* ll = layout array index */
 	struct multi_core_data *mc_ptr = NULL;
@@ -2342,8 +2343,16 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t * bitmap,
 	int *busy_rows, *sh_tasks, *al_tasks, *freq;
 	bitstr_t *origmap, *reqmap = NULL;
 	int row, rows, try;
+	bool test_only;
 
 	xassert(bitmap);
+
+	if (mode == SELECT_MODE_TEST_ONLY)
+		test_only = true;
+	else if (mode == SELECT_MODE_TEST_ONLY)
+		test_only = false;
+	else	/* SELECT_MODE_WILL_RUN */
+		return EINVAL;	/* not yet supported */
 
 	if (!job_ptr->details)
 		return EINVAL;

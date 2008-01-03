@@ -152,6 +152,10 @@ extern int select_g_block_init(List part_list);
  * JOB-SPECIFIC SELECT CREDENTIAL MANAGEMENT FUNCIONS *
 \******************************************************/
 
+#define SELECT_MODE_RUN_NOW	0
+#define SELECT_MODE_TEST_ONLY	1
+#define SELECT_MODE_WILL_RUN	2
+
 /*
  * Select the "best" nodes for given job from those available
  * IN job_ptr - pointer to job being considered for initiation
@@ -160,11 +164,13 @@ extern int select_g_block_init(List part_list);
  * IN min_nodes - minimum number of nodes to allocate to job
  * IN max_nodes - maximum number of nodes to allocate to job
  * IN req_nodes - requested (or desired) count of nodes
- * IN test_only - if true, only test if ever could run, not necessarily now
+ * IN mode - SELECT_MODE_RUN_NOW: try to schedule job now
+ *           SELECT_MODE_TEST_ONLY: test if job can ever run
+ *           SELECT_MODE_WILL_RUN: determine when and where job can run
  */
 extern int select_g_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 			uint32_t min_nodes, uint32_t max_nodes, 
-			uint32_t req_nodes, bool test_only);
+			uint32_t req_nodes, int mode);
 
 
 /*

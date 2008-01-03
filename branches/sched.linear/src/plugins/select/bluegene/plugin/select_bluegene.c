@@ -624,15 +624,26 @@ extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)
  * IN min_nodes - minimum count of nodes
  * IN max_nodes - maximum count of nodes (0==don't care)
  * IN req_nodes - requested (or desired) count of nodes
- * IN test_only - if true, only test if ever could run, not necessarily now
+ * IN mode - SELECT_MODE_RUN_NOW: try to schedule job now
+ *           SELECT_MODE_TEST_ONLY: test if job can ever run
+ *           SELECT_MODE_WILL_RUN: determine when and where job can run
  * RET zero on success, EINVAL otherwise
  * NOTE: bitmap must be a superset of req_nodes at the time that 
  *	select_p_job_test is called
  */
 extern int select_p_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 			uint32_t min_nodes, uint32_t max_nodes, 
-			uint32_t req_nodes, bool test_only)
+			uint32_t req_nodes, int mode)
 {
+	bool test_only;
+
+	if (mode == SELECT_MODE_TEST_ONLY)
+		test_only = true;
+	else if (mode == SELECT_MODE_TEST_ONLY)
+		test_only = false;
+	else	/* SELECT_MODE_WILL_RUN */
+		return EINVAL;	/* not yet supported */
+
 	/* bg block test - is there a block where we have:
 	 * 1) geometry requested
 	 * 2) min/max nodes (BPs) requested

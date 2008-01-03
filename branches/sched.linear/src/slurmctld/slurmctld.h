@@ -296,9 +296,9 @@ struct job_details {
 	char *features;			/* required features */
 	List feature_list;		/* required features with node counts */
 	uint16_t shared;		/* 1 if job can share nodes,
-					   0 if job cannot share nodes,
-					   any other value accepts the default
-					   sharing policy. */
+					 * 0 if job cannot share nodes,
+					 * any other value accepts the default
+					 * sharing policy. */
 	uint16_t contiguous;		/* set if requires contiguous nodes */
 	uint16_t task_dist;		/* task layout for this job. Only useful
                                          * when Consumable Resources is enabled */

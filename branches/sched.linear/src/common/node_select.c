@@ -81,7 +81,7 @@ typedef struct slurm_select_ops {
 						uint32_t min_nodes, 
 						uint32_t max_nodes,
 						uint32_t req_nodes,
-						bool test_only);
+						int mode);
 	int		(*job_begin)	       (struct job_record *job_ptr);
 	int		(*job_ready)	       (struct job_record *job_ptr);
 	int		(*job_fini)	       (struct job_record *job_ptr);
@@ -524,18 +524,20 @@ extern int select_g_reconfigure (void)
  * IN min_nodes - minimum number of nodes to allocate to job
  * IN max_nodes - maximum number of nodes to allocate to job
  * IN req_nodes - requested (or desired) count of nodes
- * IN test_only - if true, only test if ever could run, not necessarily now 
+ * IN mode - SELECT_MODE_RUN_NOW: try to schedule job now
+ *           SELECT_MODE_TEST_ONLY: test if job can ever run
+ *           SELECT_MODE_WILL_RUN: determine when and where job can run
  */
 extern int select_g_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 			     uint32_t min_nodes, uint32_t max_nodes, 
-			     uint32_t req_nodes, bool test_only)
+			     uint32_t req_nodes, int mode)
 {
 	if (slurm_select_init() < 0)
 		return SLURM_ERROR;
 
 	return (*(g_select_context->ops.job_test))(job_ptr, bitmap, 
 						   min_nodes, max_nodes, 
-						   req_nodes, test_only);
+						   req_nodes, mode);
 }
 
 /*
