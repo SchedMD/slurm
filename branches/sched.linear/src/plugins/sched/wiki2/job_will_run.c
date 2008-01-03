@@ -85,7 +85,7 @@ extern int	job_will_run(char *cmd_ptr, int *err_code, char **err_msg)
 		null_term(avail_nodes);
 	} else {
 		*err_code = -300;
-		*err_msg = "Invalid AVAIL_NODES value";
+		*err_msg = "JOBWILLRUN call lacks AVAIL_NODES argument";
 		error("wiki: JOBWILLRUN call lacks AVAIL_NODES argument");
 		return -1;
 	}
@@ -148,6 +148,9 @@ static char *	_will_run_test(uint32_t jobid, char *node_list,
 			"list for job %u, %s",
 			jobid, node_list);
 		return NULL;
+	} else {
+		/* assume all nodes available to job for testing */
+		avail_bitmap = bit_copy(avail_node_bitmap);
 	}
 
 	min_nodes = MAX(job_ptr->details->min_nodes, part_ptr->min_nodes);
