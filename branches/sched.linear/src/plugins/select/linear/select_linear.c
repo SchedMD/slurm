@@ -459,12 +459,11 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	}
 
 	if (mode != SELECT_MODE_TEST_ONLY) {
-		if (job_ptr->details->shared) {
+		if (job_ptr->details->shared == 1) {
 			max_share = job_ptr->part_ptr->max_share & 
 					~SHARED_FORCE;
-			max_share = MAX(1, max_share);
-		} else
-			max_share = 1;
+		} else	/* ((shared == 0) || (shared == (uint16_t) NO_VAL)) */
+			max_share = 0;
 	}
 
 	if (mode == SELECT_MODE_WILL_RUN) {
@@ -474,14 +473,13 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 		slurm_mutex_unlock(&cr_mutex);
 		return rc;
 	} else if (mode == SELECT_MODE_TEST_ONLY) {
-		min_share = 64;
-		max_share = min_share + 1;
+		min_share = max_share = 64;
 		save_mem = job_ptr->details->job_min_memory;
 		job_ptr->details->job_min_memory = 0;
 	}
 
 	orig_map = bit_copy(bitmap);
-	for (i=min_share; i<max_share; i++) {
+	for (i=min_share; i<=max_share; i++) {
 		j = _job_count_bitmap(node_cr_ptr, job_ptr, orig_map, bitmap, i);
 		if ((j == prev_cnt) || (j < min_nodes))
 			continue;
@@ -1184,6 +1182,7 @@ static struct node_cr_record *_dup_node_cr(struct node_cr_record *node_cr_ptr)
 			part_cr_ptr = part_cr_ptr->next;
 		}
 	}
+	return new_node_cr_ptr;
 }
 
 static void _init_node_cr(void)
@@ -1270,7 +1269,7 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 			  int max_share, uint32_t req_nodes)
 {
 	struct node_cr_record *exp_node_cr;
-	struct job_record *tmp_job_ptr, *cr_job_list_ptr;
+	struct job_record *tmp_job_ptr, **tmp_job_pptr;
 	List cr_job_list;
 	ListIterator job_iterator;
 	bitstr_t *tmp_map;
@@ -1284,6 +1283,7 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 			       req_nodes);
 		if (rc == SLURM_SUCCESS) {
 			bit_free(tmp_map);
+			job_ptr->start_time = time(NULL);
 			return SLURM_SUCCESS;
 		}
 	}
@@ -1306,15 +1306,18 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 			error("Job %u has zero end_time", tmp_job_ptr->job_id);
 			continue;
 		}
-		cr_job_list_ptr = xmalloc(sizeof(struct job_record *));
-		cr_job_list_ptr = tmp_job_ptr;
-		list_append(cr_job_list, cr_job_list_ptr);
+		tmp_job_pptr = xmalloc(sizeof(struct job_record *));
+		*tmp_job_pptr = tmp_job_ptr;
+		list_append(cr_job_list, tmp_job_pptr);
 	}
 	list_iterator_destroy(job_iterator);
 	list_sort(cr_job_list, _cr_job_list_sort);
 
+	/* Remove the running jobs one at a time from exp_node_cr and try
+	 * scheduling the pending job after each one */
 	job_iterator = list_iterator_create(cr_job_list);
-	while ((tmp_job_ptr = (struct job_record *) list_next(job_iterator))) {
+	while ((tmp_job_pptr = (struct job_record **) list_next(job_iterator))) {
+		tmp_job_ptr = *tmp_job_pptr;
 		_rm_job_from_nodes(exp_node_cr, tmp_job_ptr,
 				   "_will_run_test", 1);
 		i = _job_count_bitmap(exp_node_cr, job_ptr, bitmap, tmp_map, 
