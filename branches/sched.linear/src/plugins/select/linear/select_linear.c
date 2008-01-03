@@ -276,6 +276,7 @@ extern int fini ( void )
 #endif
 	slurm_mutex_lock(&cr_mutex);
 	_free_node_cr(node_cr_ptr);
+	node_cr_ptr = NULL;
 	slurm_mutex_unlock(&cr_mutex);
 	return rc;
 }
@@ -317,6 +318,7 @@ extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)
 	 * have not yet had node bitmaps reset. */
 	slurm_mutex_lock(&cr_mutex);
 	_free_node_cr(node_cr_ptr);
+	node_cr_ptr = NULL;
 	slurm_mutex_unlock(&cr_mutex);
 
 	select_node_ptr = node_ptr;
