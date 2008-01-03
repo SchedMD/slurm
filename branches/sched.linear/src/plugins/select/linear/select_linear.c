@@ -1275,8 +1275,10 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	bitstr_t *orig_map;
 	int i, rc = SLURM_ERROR;
 
-	/* Try to run with currently available nodes */
+	bit_and(bitmap, avail_node_bitmap);
 	orig_map = bit_copy(bitmap);
+
+	/* Try to run with currently available nodes */
 	i = _job_count_bitmap(node_cr_ptr, job_ptr, orig_map, bitmap, max_share);
 	if (i >= min_nodes) {
 		rc = _job_test(job_ptr, bitmap, min_nodes, max_nodes, 
