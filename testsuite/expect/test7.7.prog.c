@@ -384,7 +384,7 @@ static void _job_will_run(long my_job_id)
 	snprintf(out_msg, sizeof(out_msg),
 		"TS=%u AUTH=root DT=CMD=JOBWILLRUN ARG=%ld %s",
 		(uint32_t) now, my_job_id,
-		"TASKLIST=");	/* put desired node list here */
+		"AVAIL_NODES=");	/* put desired node list here */
 	_xmit(out_msg);
 }
 

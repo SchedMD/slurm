@@ -639,7 +639,10 @@ The default value is "select/bluegene" for BlueGene systems.
 
 .TP
 \fBSelectTypeParameters\fR
-This only apply for \fISelectType=select/cons_res\fR.
+This only applies to \fISelectType=select/cons_res\fR except for the value 
+\fBCR_Memory\fR which also applies to \fISelectType=select/linear\fR in 
+order to support job preemption and gang scheduling  without oversubscribing 
+memory.
 .RS
 .TP
 \fBCR_CPU\fR
