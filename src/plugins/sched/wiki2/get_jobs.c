@@ -61,6 +61,7 @@ static uint32_t	_get_job_submit_time(struct job_record *job_ptr);
 static uint32_t	_get_job_suspend_time(struct job_record *job_ptr);
 static uint32_t	_get_job_tasks(struct job_record *job_ptr);
 static uint32_t	_get_job_time_limit(struct job_record *job_ptr);
+static int	_hidden_job(struct job_record *job_ptr);
 
 #define SLURM_INFO_ALL		0
 #define SLURM_INFO_VOLITILE	1
@@ -182,6 +183,24 @@ extern int	get_jobs(char *cmd_ptr, int *err_code, char **err_msg)
 	return 0;
 }
 
+static int	_hidden_job(struct job_record *job_ptr)
+{
+	int i;
+
+	if (job_ptr->job_id < slurmctld_conf.first_job_id) {
+		/* jobs submitted directly by Moab */
+		return 0;
+	}
+
+	for (i=0; i<HIDE_PART_CNT; i++) {
+		if (hide_part_ptr[i] == NULL)
+			break;
+		if (hide_part_ptr[i] == job_ptr->part_ptr)
+			return 1;
+	}
+	return 0;
+}
+
 static char *   _dump_all_jobs(int *job_cnt, int state_info)
 {
 	int cnt = 0;
@@ -191,6 +210,8 @@ static char *   _dump_all_jobs(int *job_cnt, int state_info)
 
 	job_iterator = list_iterator_create(job_list);
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
+		if (_hidden_job(job_ptr))
+			continue;
 		tmp_buf = _dump_job(job_ptr, state_info);
 		if (cnt > 0)
 			xstrcat(buf, "#");

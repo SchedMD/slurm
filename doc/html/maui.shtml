@@ -37,7 +37,7 @@ maui-3.2.6p9/maui.cfg.dist to maui.conf). Add the following configuration
 paramters to maui.conf:</p>
 <pre>
 RMCFG[host]       TYPE=WIKI
-RMPORT            7321            # or whatever you choose as a port
+RMPORT            7321            # selected port
 RMHOST            host
 RMAUTHTYPE[host]  NONE
 </pre>
@@ -108,22 +108,40 @@ includes a description of keywords presently only
 supported by the sched/wiki2 plugin for use with the 
 Moab Scheduler.</p>
 
-<p>Only two wiki.conf parameters are used by the sched/wiki plugin:
-<b>AuthKey</b> should match the key used to configure 
-Maui at build time and
-<b>ExcludePartitions</b> can be used for SLURM to directly 
-schedule jobs in select partitions without Maui control.
-Note that SLURM's wiki plugin does not include a mechanism
-to submit new jobs, so even without this key nobody could
-run jobs as another user.
-Note that Maui's use of an authentication key with SLURM 
-is still under development. 
-If that support is not in place and SLURM is configured 
-with an <b>AuthKey</b> then communications between Maui 
-and SLURM will fail and the SlurmctldLog file will contain 
-errors of this sort: <i>error: wiki: request lacks AUTH=</i>.
-If you see this error, remove <b>AuthKey</b> from SLURM's 
-configuration.</p>
+<p>The wiki.conf keywords currently supported by Maui include:</p>
+
+<p><b>AuthKey</b> is a DES based encryption key used to sign 
+communications between SLURM and Maui or Moab. 
+This use of this key is essential to insure that a user 
+not build his own program to cancel other user's jobs in 
+SLURM.
+This should be no more than 32-bit unsigned integer and match 
+the the encryption key in Maui (<i>--with-key</i> on the 
+configure line) or Moab (<i>KEY</i> parameter in the 
+<i>moab-private.cfg</i> file). 
+Note that SLURM's wiki plugin does not include a mechanism 
+to submit new jobs, so even without this key nobody could 
+run jobs as another user.</p>
+
+<p><b>ExcludePartitions</b> is used to identify partitions
+whose jobs are to be scheduled directly by SLURM rather 
+than Maui. 
+These jobs will be scheduled on a First-Come-First-Served 
+basis. 
+This may provide faster response times than Maui scheduling. 
+Maui will account for and report the jobs, but their initiation
+will be outside of Maui's control.
+Note that Maui controls for resource reservation, fair share 
+scheduling, etc. will not apply to the initiation of these jobs.
+If more than one partition is to be scheduled directly by
+Slurm, use a comma separator between their names.</p>
+
+<p><b>HidePartitionJobs</b> identifies partitions whose jobs are not 
+to be reported to Maui.
+These jobs will not be accounted for or otherwise visible to Maui.
+Any partitions listed here must also be listed in <b>ExcludePartitions</b>.
+If more than one partition is to have its jobs hidden, use a comma 
+separator between their names.</p>
 
 <p>Here is a sample <i>wiki.conf</i> file</p>
 <pre>
@@ -133,8 +151,10 @@ configuration.</p>
 # Matches Maui's --with-key configuration parameter
 AuthKey=42
 #
-# SLURM to directly schedule "debug" partition
+# SLURM to directly schedule "debug" partition 
+# and hide the jobs from Maui
 ExcludePartitions=debug
+HidePartitionJobs=debug
 </pre>
 </p>
 
