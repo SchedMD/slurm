@@ -55,6 +55,7 @@ char     e_host[E_HOST_SIZE] = "";
 char     e_host_bu[E_HOST_SIZE] = "";
 uint16_t e_port = 0;
 struct   part_record *exclude_part_ptr[EXC_PART_CNT];
+struct   part_record *hide_part_ptr[HIDE_PART_CNT];
 uint16_t job_aggregation_time = 10;	/* Default value is 10 seconds */
 int      init_prio_mode = PRIO_HOLD;
 uint16_t kill_wait;
@@ -230,11 +231,12 @@ extern int parse_wiki_config(void)
 		{"EHostBackup", S_P_STRING},
 		{"EPort", S_P_UINT16},
 		{"ExcludePartitions", S_P_STRING},
+		{"HidePartitionJobs", S_P_STRING},
 		{"JobAggregationTime", S_P_UINT16},
 		{"JobPriority", S_P_STRING}, 
 		{NULL} };
 	s_p_hashtbl_t *tbl;
-	char *exclude_partitions;
+	char *exclude_partitions, *hide_partitions;
 	char *key = NULL, *priority_mode = NULL, *wiki_conf;
 	struct stat buf;
 	slurm_ctl_conf_t *conf;
@@ -243,6 +245,8 @@ extern int parse_wiki_config(void)
 	/* Set default values */
 	for (i=0; i<EXC_PART_CNT; i++)
 		exclude_part_ptr[i] = NULL;
+	for (i=0; i<HIDE_PART_CNT; i++)
+		hide_part_ptr[i] = NULL;
 	conf = slurm_conf_lock();
 	strncpy(e_host, conf->control_addr, sizeof(e_host));
 	if (conf->backup_addr) {
@@ -297,6 +301,25 @@ extern int parse_wiki_config(void)
 				i++;
 			else
 				error("ExcludePartitions %s not found", tok);
+			tok = strtok_r(NULL, ",", &tok_p);
+		}
+	}
+
+	if (s_p_get_string(&hide_partitions, "HidePartitionJobs", tbl)) {
+		char *tok = NULL, *tok_p = NULL;
+		tok = strtok_r(hide_partitions, ",", &tok_p);
+		i = 0;
+		while (tok) {
+			if (i >= HIDE_PART_CNT) {
+				error("HidePartitionJobs has too many entries "
+				      "skipping %s and later entries");
+				break;
+			}	
+			hide_part_ptr[i] = find_part_record(tok);
+			if (hide_part_ptr[i])
+				i++;
+			else
+				error("HidePartitionJobs %s not found", tok);
 			tok = strtok_r(NULL, ",", &tok_p);
 		}
 	}

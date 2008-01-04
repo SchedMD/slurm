@@ -71,6 +71,16 @@ SLURM, use a comma separator between their names.
 This may provide faster response times than Moab/Maui scheduling. 
 
 .TP
+\fBHidePartitionJobs\fR
+Identifies partitions whose jobs are not to be reported to Moab/Maui.
+These jobs will not be accounted for or otherwise visible to Moab/Maui.
+Any partitions listed here must also be listed in \fBExcludePartitions\fR.
+This only effects jobs which are submitted using SLURM commands (i.e. 
+\fIsrun\fR, \fIsalloc\fR or \fIsbatch\fR, NOT \fImsub\fR from Moab).
+If more than one partition is to have its jobs hidden, use a comma 
+separator between their names.
+
+.TP
 \fBHostFormat\fR
 Controls the format of host lists exchanged between SLURM and Moab.
 The default value is "0".
