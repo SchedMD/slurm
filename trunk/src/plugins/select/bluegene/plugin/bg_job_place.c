@@ -114,7 +114,7 @@ static void _rotate_geo(uint16_t *req_geometry, int rot_cnt)
 /* 
  * Comparator used for sorting blocks smallest to largest
  * 
- * returns: -1: rec_a >rec_b   0: rec_a == rec_b   1: rec_a < rec_b
+ * returns: -1: rec_a < rec_b   0: rec_a == rec_b   1: rec_a > rec_b
  * 
  */
 static int _bg_record_sort_aval_inc(bg_record_t* rec_a, bg_record_t* rec_b)
@@ -122,10 +122,16 @@ static int _bg_record_sort_aval_inc(bg_record_t* rec_a, bg_record_t* rec_b)
 	int size_a = rec_a->node_cnt;
 	int size_b = rec_b->node_cnt;
 
-	if(rec_a->est_job_end < rec_b->est_job_end)
+	if(rec_a->job_ptr && !rec_b->job_ptr)
 		return -1;
-	else if(rec_a->est_job_end > rec_b->est_job_end)
+	else if(!rec_a->job_ptr && rec_b->job_ptr)
 		return 1;
+	else if(rec_a->job_ptr && rec_b->job_ptr) {
+		if(rec_a->job_ptr->start_time > rec_b->job_ptr->start_time)
+			return 1;
+		else if(rec_a->job_ptr->start_time < rec_b->job_ptr->start_time)
+			return -1;
+	}
 
 	if (size_a < size_b)
 		return -1;
@@ -162,10 +168,16 @@ static int _bg_record_sort_aval_dec(bg_record_t* rec_a, bg_record_t* rec_b)
 	int size_a = rec_a->node_cnt;
 	int size_b = rec_b->node_cnt;
 
-	if(rec_a->est_job_end > rec_b->est_job_end)
-		return -1;
-	else if(rec_a->est_job_end < rec_b->est_job_end)
+	if(rec_a->job_ptr && !rec_b->job_ptr)
 		return 1;
+	else if(!rec_a->job_ptr && rec_b->job_ptr)
+		return -1;
+	else if(rec_a->job_ptr && rec_b->job_ptr) {
+		if(rec_a->job_ptr->start_time > rec_b->job_ptr->start_time)
+			return -1;
+		else if(rec_a->job_ptr->start_time < rec_b->job_ptr->start_time)
+			return 1;
+	}
 
 	if (size_a < size_b)
 		return -1;
@@ -1041,7 +1053,7 @@ static int _find_best_block_match(List block_list,
 					debug2("taking off %d(%s) ends at %d",
 					       bg_record->job_running,
 					       bg_record->bg_block_id,
-					       bg_record->est_job_end);
+					       bg_record->job_ptr->start_time);
 				if(!(new_blocks = create_dynamic_block(
 					     block_list, &request, job_list))) {
 					destroy_bg_record(bg_record);
@@ -1056,8 +1068,8 @@ static int _find_best_block_match(List block_list,
 				rc = SLURM_SUCCESS;
 				(*found_bg_record) = list_pop(new_blocks);
 				if(bg_record) {
-					(*found_bg_record)->est_job_end 
-						= bg_record->est_job_end; 
+					(*found_bg_record)->job_ptr 
+						= bg_record->job_ptr; 
 					destroy_bg_record(bg_record);
 				}
 				list_destroy(new_blocks);
@@ -1138,12 +1150,12 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 	bg_record_t* bg_record = NULL;
 	char buf[100];
 	int i, rc = SLURM_SUCCESS;
-	uint16_t geo[BA_SYSTEM_DIMENSIONS];
 	uint16_t tmp16 = (uint16_t)NO_VAL;
 	List block_list = NULL;
 	int block_list_count = 0;
 	int blocks_added = 0;
-	
+	int starttime = time(NULL);
+
 	if(bluegene_layout_mode == LAYOUT_DYNAMIC)
 		slurm_mutex_lock(&create_dynamic_mutex);
 	
@@ -1177,85 +1189,73 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 				    &bg_record, test_only);
 	
 	if(rc == SLURM_SUCCESS) {
-		if(bg_record && !bg_record->bg_block_id) {
-			//ListIterator itr = NULL;
-			
-			debug2("%d can start job at %u on %s on unmade block",
-			       test_only, bg_record->est_job_end,
-			       bg_record->nodes);
-			select_g_set_jobinfo(job_ptr->select_jobinfo,
+		if(bg_record) {
+			if(bg_record->job_ptr && bg_record->job_ptr->end_time) 
+				starttime = bg_record->job_ptr->end_time;
+						
+			job_ptr->start_time = starttime;			
+
+			if(!bg_record->bg_block_id) {
+				uint16_t geo[BA_SYSTEM_DIMENSIONS];
+				
+				debug2("%d can start job at "
+				       "%u on %s on unmade block",
+				       test_only, starttime,
+				       bg_record->nodes);
+				select_g_set_jobinfo(job_ptr->select_jobinfo,
 					     SELECT_DATA_BLOCK_ID,
 					     "unassigned");
-			if(job_ptr->num_procs < bluegene_bp_node_cnt 
-				&& job_ptr->num_procs > 0) {
-				i = procs_per_node/job_ptr->num_procs;
-				debug2("divide by %d", i);
-			} else 
-				i = 1;
-			min_nodes *= bluegene_bp_node_cnt/i;
-			
-			/* itr = list_iterator_create(block_list); */
-/* 			while(bg_record = list_next(itr)) { */
-			
-/* 			} */
-			select_g_set_jobinfo(job_ptr->select_jobinfo,
-					     SELECT_DATA_EST_START, 
-					     &bg_record->est_job_end);
-			select_g_set_jobinfo(job_ptr->select_jobinfo,
-					     SELECT_DATA_NODES, 
-					     bg_record->nodes);
-			select_g_set_jobinfo(job_ptr->select_jobinfo,
-					     SELECT_DATA_IONODES, 
-					     bg_record->ionodes);
-			
-			select_g_set_jobinfo(job_ptr->select_jobinfo,
+				if(job_ptr->num_procs < bluegene_bp_node_cnt 
+				   && job_ptr->num_procs > 0) {
+					i = procs_per_node/job_ptr->num_procs;
+					debug2("divide by %d", i);
+				} else 
+					i = 1;
+				min_nodes *= bluegene_bp_node_cnt/i;
+				select_g_set_jobinfo(job_ptr->select_jobinfo,
 					     SELECT_DATA_NODE_CNT,
 					     &min_nodes);
+				memset(geo, 0, 
+				       sizeof(uint16_t) * BA_SYSTEM_DIMENSIONS);
+				select_g_set_jobinfo(job_ptr->select_jobinfo,
+						     SELECT_DATA_GEOMETRY, 
+						     &geo);
+			} else {
+				if((bg_record->ionodes)
+				   && (job_ptr->part_ptr->max_share <= 1))
+					error("Small block used in "
+					      "non-shared partition");
+				
+				debug2("%d can start job at %u on %s",
+				       test_only, starttime,
+				       bg_record->nodes);
+
+				select_g_set_jobinfo(job_ptr->select_jobinfo,
+						     SELECT_DATA_BLOCK_ID,
+						     bg_record->bg_block_id);
+				select_g_set_jobinfo(job_ptr->select_jobinfo,
+						     SELECT_DATA_NODE_CNT, 
+						     &bg_record->node_cnt);
+				select_g_set_jobinfo(job_ptr->select_jobinfo,
+						     SELECT_DATA_GEOMETRY, 
+						     &bg_record->geo);
+
+				tmp16 = bg_record->conn_type;
+				select_g_set_jobinfo(job_ptr->select_jobinfo,
+						     SELECT_DATA_CONN_TYPE, 
+						     &tmp16);
+			}
 			
-			memset(geo, 0, sizeof(uint16_t) * BA_SYSTEM_DIMENSIONS);
-			select_g_set_jobinfo(job_ptr->select_jobinfo,
-					     SELECT_DATA_GEOMETRY, 
-					     &geo);			
-		} else if(bg_record) {
-			if((bg_record->ionodes)
-			   && (job_ptr->part_ptr->max_share <= 1))
-				error("Small block used in "
-				      "non-shared partition");
-			debug2("%d can start job at %u on %s",
-			       test_only, bg_record->est_job_end,
-			       bg_record->nodes);
-			/* set the block id and info about block */
-			select_g_set_jobinfo(job_ptr->select_jobinfo,
-					     SELECT_DATA_NODE_CNT, 
-					     &bg_record->node_cnt);
-			select_g_set_jobinfo(job_ptr->select_jobinfo,
-					     SELECT_DATA_GEOMETRY, 
-					     &bg_record->geo);
-					
 			select_g_set_jobinfo(job_ptr->select_jobinfo,
 					     SELECT_DATA_NODES, 
 					     bg_record->nodes);
 			select_g_set_jobinfo(job_ptr->select_jobinfo,
 					     SELECT_DATA_IONODES, 
 					     bg_record->ionodes);
-			select_g_set_jobinfo(job_ptr->select_jobinfo,
-					     SELECT_DATA_EST_START, 
-					     &bg_record->est_job_end);
-			tmp16 = bg_record->conn_type;
-			select_g_set_jobinfo(job_ptr->select_jobinfo,
-					     SELECT_DATA_CONN_TYPE, 
-					     &tmp16);
-			if(test_only) {
-				select_g_set_jobinfo(job_ptr->select_jobinfo,
-						     SELECT_DATA_BLOCK_ID,
-						     "unassigned");
-			} else {
-				select_g_set_jobinfo(job_ptr->select_jobinfo,
-					     SELECT_DATA_BLOCK_ID, 
-					     bg_record->bg_block_id);
 			
-				bg_record->job_running = job_ptr->job_id;
-			}
+
+		} else {
+			error("we got a success, but no block back");
 		}
 	}
 

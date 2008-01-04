@@ -85,7 +85,6 @@ typedef struct slurm_select_ops {
 	int		(*job_begin)	       (struct job_record *job_ptr);
 	int		(*job_ready)	       (struct job_record *job_ptr);
 	int		(*job_fini)	       (struct job_record *job_ptr);
-	int		(*job_update_end_time) (struct job_record *job_ptr);
 	int		(*job_suspend)	       (struct job_record *job_ptr);
 	int		(*job_resume)	       (struct job_record *job_ptr);
 	int		(*pack_node_info)      (time_t last_query_time,
@@ -145,7 +144,6 @@ struct select_jobinfo {
 	char *linuximage;       /* LinuxImage for this block */
 	char *mloaderimage;     /* mloaderImage for this block */
 	char *ramdiskimage;     /* RamDiskImage for this block */
-	time_t est_job_start;  /* Estimated start time of job */
 };
 #endif
 
@@ -174,7 +172,6 @@ static slurm_select_ops_t * _select_get_ops(slurm_select_context_t *c)
 		"select_p_job_begin",
 		"select_p_job_ready",
 		"select_p_job_fini",
-		"select_p_job_update_end_time",
 		"select_p_job_suspend",
 		"select_p_job_resume",
 		"select_p_pack_node_info",
@@ -585,19 +582,6 @@ extern int select_g_job_fini(struct job_record *job_ptr)
  * IN job_ptr - pointer to job being suspended
  * RET SLURM_SUCCESS or error code
  */
-extern int select_g_job_update_end_time(struct job_record *job_ptr)
-{
-	if (slurm_select_init() < 0)
-		return SLURM_ERROR;
-
-	return (*(g_select_context->ops.job_update_end_time))(job_ptr);
-}
-
-/*
- * Suspend a job. Executed from slurmctld.
- * IN job_ptr - pointer to job being suspended
- * RET SLURM_SUCCESS or error code
- */
 extern int select_g_job_suspend(struct job_record *job_ptr)
 {
 	if (slurm_select_init() < 0)
@@ -767,7 +751,6 @@ extern int select_g_set_jobinfo (select_jobinfo_t jobinfo,
 	int i, rc = SLURM_SUCCESS;
 	uint16_t *uint16 = (uint16_t *) data;
 	uint32_t *uint32 = (uint32_t *) data;
-	time_t *time = (time_t *) data;
 	char *tmp_char = (char *) data;
 
 	if (jobinfo == NULL) {
@@ -839,9 +822,6 @@ extern int select_g_set_jobinfo (select_jobinfo_t jobinfo,
 		xfree(jobinfo->ramdiskimage);
 		jobinfo->ramdiskimage = xstrdup(tmp_char);
 		break;	
-	case SELECT_DATA_EST_START:
-		jobinfo->est_job_start = *time;
-		break;
 	default:
 		debug("select_g_set_jobinfo data_type %d invalid", 
 		      data_type);
@@ -862,7 +842,6 @@ extern int select_g_get_jobinfo (select_jobinfo_t jobinfo,
 	int i, rc = SLURM_SUCCESS;
 	uint16_t *uint16 = (uint16_t *) data;
 	uint32_t *uint32 = (uint32_t *) data;
-	time_t *time = (time_t *) data;
 	char **tmp_char = (char **) data;
 
 	if (jobinfo == NULL) {
@@ -952,9 +931,6 @@ extern int select_g_get_jobinfo (select_jobinfo_t jobinfo,
 		else
 			*tmp_char = xstrdup(jobinfo->ramdiskimage);
 		break;
-	case SELECT_DATA_EST_START:
-		*time = jobinfo->est_job_start;
-		break;
 	default:
 		debug("select_g_get_jobinfo data_type %d invalid", 
 		      data_type);
@@ -999,8 +975,6 @@ extern select_jobinfo_t select_g_copy_jobinfo(select_jobinfo_t jobinfo)
 		rc->linuximage = xstrdup(jobinfo->linuximage);
 		rc->mloaderimage = xstrdup(jobinfo->mloaderimage);
 		rc->ramdiskimage = xstrdup(jobinfo->ramdiskimage);
-		rc->est_job_start = jobinfo->est_job_start;
-		
 	}
 
 	return rc;
@@ -1063,7 +1037,6 @@ extern int  select_g_pack_jobinfo  (select_jobinfo_t jobinfo, Buf buffer)
 		packstr(jobinfo->linuximage, buffer);
 		packstr(jobinfo->mloaderimage, buffer);
 		packstr(jobinfo->ramdiskimage, buffer);
-		pack_time(jobinfo->est_job_start, buffer);
 	} else {
 		/* pack space for 3 positions for start and for geo
 		 * then 1 for conn_type, reboot, and rotate
@@ -1081,7 +1054,6 @@ extern int  select_g_pack_jobinfo  (select_jobinfo_t jobinfo, Buf buffer)
 		packstr("", buffer); //linux
 		packstr("", buffer); //mloader
 		packstr("", buffer); //ramdisk
-		pack_time(0, buffer); //est_job_start
 	}
 
 	return SLURM_SUCCESS;
@@ -1116,7 +1088,6 @@ extern int  select_g_unpack_jobinfo(select_jobinfo_t jobinfo, Buf buffer)
 	safe_unpackstr_xmalloc(&(jobinfo->linuximage),   &uint32_tmp, buffer);
 	safe_unpackstr_xmalloc(&(jobinfo->mloaderimage), &uint32_tmp, buffer);
 	safe_unpackstr_xmalloc(&(jobinfo->ramdiskimage), &uint32_tmp, buffer);
-	safe_unpack_time(&(jobinfo->est_job_start), buffer);
 	
 	return SLURM_SUCCESS;
 
@@ -1280,9 +1251,6 @@ extern char *select_g_sprint_jobinfo(select_jobinfo_t jobinfo,
 			tmp_image = jobinfo->ramdiskimage;
 		snprintf(buf, size, "%s", tmp_image);		
 		break;		
-	case SELECT_PRINT_EST_START:
-		snprintf(buf, size, "%u", (int)jobinfo->est_job_start);
-		break;
 	default:
 		error("select_g_sprint_jobinfo: bad mode %d", mode);
 		if (size > 0)

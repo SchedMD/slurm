@@ -618,7 +618,8 @@ extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)
  *	identify the nodes which "best" satify the request. The specified 
  *	nodes may be DOWN or BUSY at the time of this test as may be used 
  *	to deterime if a job could ever run.
- * IN job_ptr - pointer to job being scheduled
+ * IN/OUT job_ptr - pointer to job being scheduled start_time is set
+ *	when we can possibly start job.
  * IN/OUT bitmap - usable nodes are set on input, nodes not required to 
  *	satisfy the request are cleared, other left set
  * IN min_nodes - minimum count of nodes
@@ -632,19 +633,19 @@ extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)
  *	select_p_job_test is called
  */
 extern int select_p_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
-			uint32_t min_nodes, uint32_t max_nodes, 
-			uint32_t req_nodes, int mode)
+			     uint32_t min_nodes, uint32_t max_nodes, 
+			     uint32_t req_nodes, int mode)
 {
 	bool test_only;
 
-	if (mode == SELECT_MODE_TEST_ONLY)
+	if (mode == SELECT_MODE_TEST_ONLY || mode == SELECT_MODE_WILL_RUN)
 		test_only = true;
-	else if (mode == SELECT_MODE_TEST_ONLY)
+	else if (mode == SELECT_MODE_RUN_NOW)
 		test_only = false;
-	else	/* SELECT_MODE_WILL_RUN */
-		return EINVAL;	/* not yet supported */
+	else	
+		return EINVAL;	/* something not yet supported */
 
-	/* bg block test - is there a block where we have:
+	/* submit_job - is there a block where we have:
 	 * 1) geometry requested
 	 * 2) min/max nodes (BPs) requested
 	 * 3) type: TORUS or MESH or NAV (torus else mesh)
@@ -665,32 +666,6 @@ extern int select_p_job_begin(struct job_record *job_ptr)
 extern int select_p_job_fini(struct job_record *job_ptr)
 {
 	return term_job(job_ptr);
-}
-
-extern int select_p_job_update_end_time(struct job_record *job_ptr)
-{
-	int rc = SLURM_ERROR;
-	char *block_id = NULL;
-	bg_record_t *bg_record = NULL;
-	
-	rc = select_g_get_jobinfo(job_ptr->select_jobinfo,
-				  SELECT_DATA_BLOCK_ID, &block_id);
-	if (rc == SLURM_SUCCESS) {
-		bg_record = find_bg_record_in_list(bg_list, block_id);
-		slurm_mutex_lock(&block_state_mutex);
-		
-		if(bg_record) {
-			if(bg_record->job_running != job_ptr->job_id) 
-				rc = SLURM_ERROR;
-			else 
-				bg_record->est_job_end = job_ptr->end_time;
-		} else 
-			rc = SLURM_ERROR;
-		slurm_mutex_unlock(&block_state_mutex);
-		xfree(block_id);
-	}
-
-	return rc;
 }
 
 extern int select_p_job_suspend(struct job_record *job_ptr)

@@ -70,9 +70,8 @@ enum update_op {START_OP, TERM_OP, SYNC_OP};
 
 typedef struct bg_update {
 	enum update_op op;	/* start | terminate | sync */
-	uid_t uid;		/* new user */
-	uint32_t job_id;	/* SLURM job id */	
-	time_t end_time;        /* estimated time job will end */
+	struct job_record *job_ptr;	/* pointer to job running on
+					 * block or NULL if no job */
 	uint16_t reboot;	/* reboot block before starting job */
 	pm_partition_id_t bg_block_id;
 	char *blrtsimage;       /* BlrtsImage for this block */
@@ -212,8 +211,10 @@ static void _sync_agent(bg_update_t *bg_update_ptr)
 		return;
 	}
 	slurm_mutex_lock(&block_state_mutex);
-	bg_record->job_running = bg_update_ptr->job_id;
-	bg_record->est_job_end = bg_update_ptr->end_time;
+
+	bg_record->job_running = bg_update_ptr->job_ptr->job_id;
+	bg_record->job_ptr = bg_update_ptr->job_ptr;
+
 	if(!block_exist_in_list(bg_job_block_list, bg_record)) {
 		list_push(bg_job_block_list, bg_record);
 		num_unused_cpus -= bg_record->bp_count*bg_record->cpus_per_bp;
@@ -223,17 +224,17 @@ static void _sync_agent(bg_update_t *bg_update_ptr)
 	slurm_mutex_unlock(&block_state_mutex);
 
 	if(bg_record->state == RM_PARTITION_READY) {
-		if(bg_record->user_uid != bg_update_ptr->uid) {
+		if(bg_record->user_uid != bg_update_ptr->job_ptr->user_id) {
 			int set_user_rc = SLURM_SUCCESS;
 
 			slurm_mutex_lock(&block_state_mutex);
 			debug("User isn't correct for job %d on %s, "
 			      "fixing...", 
-			      bg_update_ptr->job_id,
+			      bg_update_ptr->job_ptr->job_id,
 			      bg_update_ptr->bg_block_id);
 			xfree(bg_record->target_name);
-			bg_record->target_name = 
-				xstrdup(uid_to_string(bg_update_ptr->uid));
+			bg_record->target_name = xstrdup(
+				uid_to_string(bg_update_ptr->job_ptr->user_id));
 			set_user_rc = set_block_user(bg_record);
 			slurm_mutex_unlock(&block_state_mutex);
 		
@@ -270,7 +271,7 @@ static void _start_agent(bg_update_t *bg_update_ptr)
 	if(!bg_record) {
 		error("block %s not found in bg_list",
 		      bg_update_ptr->bg_block_id);
-		(void) slurm_fail_job(bg_update_ptr->job_id);
+		(void) slurm_fail_job(bg_update_ptr->job_ptr->job_id);
 		slurm_mutex_unlock(&job_start_mutex);
 		return;
 	}
@@ -280,7 +281,7 @@ static void _start_agent(bg_update_t *bg_update_ptr)
 		slurm_mutex_unlock(&job_start_mutex);
 		debug("job %d finished during the queueing job "
 		      "(everything is ok)",
-		      bg_update_ptr->job_id);
+		      bg_update_ptr->job_ptr->job_id);
 		return;
 	}
 	if(bg_record->state == RM_PARTITION_DEALLOCATING) {
@@ -337,7 +338,7 @@ static void _start_agent(bg_update_t *bg_update_ptr)
 		slurm_mutex_unlock(&block_state_mutex);
 		slurm_mutex_unlock(&job_start_mutex);
 		debug("job %d already finished before boot",
-		      bg_update_ptr->job_id);
+		      bg_update_ptr->job_ptr->job_id);
 		return;
 	}
 
@@ -427,7 +428,7 @@ static void _start_agent(bg_update_t *bg_update_ptr)
 			   is a no-op if issued prior 
 			   to the script initiation do clean up just
 			   incase the fail job isn't ran */
-			(void) slurm_fail_job(bg_update_ptr->job_id);
+			(void) slurm_fail_job(bg_update_ptr->job_ptr->job_id);
 			slurm_mutex_lock(&block_state_mutex);
 			if (remove_from_bg_list(bg_job_block_list, bg_record)
 			    == SLURM_SUCCESS) {
@@ -446,14 +447,15 @@ static void _start_agent(bg_update_t *bg_update_ptr)
 		slurm_mutex_unlock(&job_start_mutex);
 		debug("job %d finished during the start of the boot "
 		      "(everything is ok)",
-		      bg_update_ptr->job_id);
+		      bg_update_ptr->job_ptr->job_id);
 		return;
 	}
 	slurm_mutex_lock(&block_state_mutex);
 		
 	bg_record->boot_count = 0;
 	xfree(bg_record->target_name);
-	bg_record->target_name = xstrdup(uid_to_string(bg_update_ptr->uid));
+	bg_record->target_name = xstrdup(
+		uid_to_string(bg_update_ptr->job_ptr->user_id));
 	debug("setting the target_name for Block %s to %s",
 	      bg_record->bg_block_id,
 	      bg_record->target_name);
@@ -612,7 +614,7 @@ static void _term_agent(bg_update_t *bg_update_ptr)
 		slurm_mutex_lock(&block_state_mutex);
 		if(bg_record->job_running > NO_JOB_RUNNING) {
 			bg_record->job_running = NO_JOB_RUNNING;
-			bg_record->est_job_end = 0;
+			bg_record->job_ptr = NULL;
 		}
 		/* remove user from list */
 		
@@ -847,9 +849,7 @@ extern int start_job(struct job_record *job_ptr)
 
 	bg_update_ptr = xmalloc(sizeof(bg_update_t));
 	bg_update_ptr->op = START_OP;
-	bg_update_ptr->uid = job_ptr->user_id;
-	bg_update_ptr->job_id = job_ptr->job_id;
-	bg_update_ptr->end_time = job_ptr->end_time;
+	bg_update_ptr->job_ptr = job_ptr;
 
 	select_g_get_jobinfo(job_ptr->select_jobinfo,
 			     SELECT_DATA_BLOCK_ID, 
@@ -899,8 +899,8 @@ extern int start_job(struct job_record *job_ptr)
 		slurm_mutex_lock(&block_state_mutex);
 		job_ptr->num_procs = (bg_record->cpus_per_bp *
 				      bg_record->bp_count);
-		bg_record->job_running = bg_update_ptr->job_id;
-		bg_record->est_job_end = bg_update_ptr->end_time;
+		bg_record->job_running = bg_update_ptr->job_ptr->job_id;
+		bg_record->job_ptr = bg_update_ptr->job_ptr;
 		if(!block_exist_in_list(bg_job_block_list, bg_record)) {
 			list_push(bg_job_block_list, bg_record);
 			num_unused_cpus -= 
@@ -939,8 +939,7 @@ int term_job(struct job_record *job_ptr)
 	
 	bg_update_ptr = xmalloc(sizeof(bg_update_t));
 	bg_update_ptr->op = TERM_OP;
-	bg_update_ptr->uid = job_ptr->user_id;
-	bg_update_ptr->job_id = job_ptr->job_id;
+	bg_update_ptr->job_ptr = job_ptr;
 	select_g_get_jobinfo(job_ptr->select_jobinfo,
 			     SELECT_DATA_BLOCK_ID, 
 			     &(bg_update_ptr->bg_block_id));
@@ -1030,9 +1029,7 @@ extern int sync_jobs(List job_list)
 			       bg_update_ptr->bg_block_id,
 			       job_ptr->end_time);
 			bg_update_ptr->op = SYNC_OP;
-			bg_update_ptr->uid = job_ptr->user_id;
-			bg_update_ptr->job_id = job_ptr->job_id;
-			bg_update_ptr->end_time = job_ptr->end_time;
+			bg_update_ptr->job_ptr = job_ptr;
 			_block_op(bg_update_ptr);
 		}
 		list_iterator_destroy(job_iterator);
