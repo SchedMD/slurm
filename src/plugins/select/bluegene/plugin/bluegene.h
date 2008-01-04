@@ -98,10 +98,11 @@ typedef struct bg_record {
 	bitstr_t *ionode_bitmap;        /* for small blocks bitmap to
 					   keep track which ionodes we
 					   are on.  NULL if not a small block*/
-	int job_running;                /* job id if there is a job running 
-					   on the block */
-	time_t est_job_end;             /* if job_running time job is
-					   estimated to end */
+	struct job_record *job_ptr;	/* pointer to job running on
+					 * block or NULL if no job */
+	int job_running;                /* job id of job running of if
+					 * block is in an error state
+					 * BLOCK_ERROR_STATE */
 	int cpus_per_bp;                /* count of cpus per base part */
 	uint32_t node_cnt;              /* count of nodes per block */
 	uint16_t quarter;               /* used for small blocks 

@@ -567,7 +567,7 @@ extern void copy_bg_record(bg_record_t *fir_record, bg_record_t *sec_record)
 		list_iterator_destroy(itr);
 	}
 	sec_record->job_running = fir_record->job_running;
-	sec_record->est_job_end = fir_record->est_job_end;
+	sec_record->job_ptr = fir_record->job_ptr;
 	sec_record->cpus_per_bp = fir_record->cpus_per_bp;
 	sec_record->node_cnt = fir_record->node_cnt;
 	sec_record->quarter = fir_record->quarter;
