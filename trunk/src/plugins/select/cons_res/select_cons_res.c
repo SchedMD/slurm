@@ -2349,7 +2349,7 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t * bitmap,
 
 	if (mode == SELECT_MODE_TEST_ONLY)
 		test_only = true;
-	else if (mode == SELECT_MODE_TEST_ONLY)
+	else if (mode == SELECT_MODE_RUN_NOW)
 		test_only = false;
 	else	/* SELECT_MODE_WILL_RUN */
 		return EINVAL;	/* not yet supported */
