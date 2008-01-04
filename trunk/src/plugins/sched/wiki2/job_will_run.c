@@ -140,8 +140,10 @@ static char *	_will_run_test(uint32_t jobid, char *node_list,
 		return NULL;
 	}
 
-	if ((node_list == NULL) ||
-	    (node_name2bitmap(node_list, false, &avail_bitmap) != 0)) {
+	if ((node_list == NULL) || (node_list[0] == '\0')) {
+		/* assume all nodes available to job for testing */
+		avail_bitmap = bit_copy(avail_node_bitmap);
+	} else if (node_name2bitmap(node_list, false, &avail_bitmap) != 0) {
 		*err_code = -700;
 		*err_msg = "Invalid AVAIL_NODES value";
 		error("wiki: Attempt to set invalid available node "
@@ -149,8 +151,8 @@ static char *	_will_run_test(uint32_t jobid, char *node_list,
 			jobid, node_list);
 		return NULL;
 	} else {
-		/* assume all nodes available to job for testing */
-		avail_bitmap = bit_copy(avail_node_bitmap);
+		/* Only consider nodes that are not DOWN or DRAINED */
+		bit_and(avail_bitmap, avail_node_bitmap);
 	}
 
 	min_nodes = MAX(job_ptr->details->min_nodes, part_ptr->min_nodes);
