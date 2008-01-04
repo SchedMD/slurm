@@ -353,7 +353,6 @@ rm -rf $RPM_BUILD_ROOT
 %doc RELEASE_NOTES
 %doc DISCLAIMER
 %doc COPYING
-%doc etc/slurm.conf.example
 %doc doc/html
 %{_bindir}/s*
 %{_sbindir}/slurmctld
