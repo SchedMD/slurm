@@ -8,6 +8,7 @@ documents those changes that are of interest to users and admins.
  -- In sbcast, fix bug with large files and causing sbcast to die.
  -- In sched/wiki2, add support for COMMENT= option in STARTJOB and CANCELJOB
     commands.
+ -- Avoid printing negative job run time in squeue due to clock skew.
 
 * Changes in SLURM 1.2.21
 =========================

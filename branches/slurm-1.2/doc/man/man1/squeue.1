@@ -158,6 +158,8 @@ Time used by the job or job step in days\-hours:minutes:seconds.
 The days and hours are printed only as needed.
 For job steps this field shows the elapsed time since execution began 
 and thus will be inaccurate for job steps which have been suspended.
+Clock skew between nodes in the cluster will cause the time to be inaccurate.
+If the time is obviously wrong (e.g. negative), it displays as "INVALID".
 .TP
 \fB%n\fR
 List of node names (or base partitions on BlueGene systems) explicitly 
