@@ -101,6 +101,13 @@ scheduling, etc. will not apply to the initiation of these jobs.
 If more than one partition is to be scheduled directly by
 Slurm, use a comma separator between their names.</p>
 
+<p><b>HidePartitionJobs</b> identifies partitions whose jobs are not 
+to be reported to Moab.
+These jobs will not be accounted for or otherwise visible to Moab.
+Any partitions listed here must also be listed in <b>ExcludePartitions</b>.
+If more than one partition is to have its jobs hidden, use a comma 
+separator between their names.</p>
+
 <p><b>HostFormat</b> controls the format of job task lists built 
 by Slurm and reported to Moab.
 The default value is "0", for which each host name is listed 
@@ -135,8 +142,10 @@ Possible values are "hold" and "run" with "hold" being the default.</p>
 # Matches KEY in moab-private.cfg
 AuthKey=123456789
 #
-# Slurm directly schedules jobs in the debug partitions
+# SLURM to directly schedule "debug" partition 
+# and hide the jobs from Moab
 ExcludePartitions=debug
+HidePartitionJobs=debug
 #
 # Have Moab control job scheduling
 JobPriority=hold
@@ -146,8 +155,8 @@ EPort=15017
 # Moab event notification host, where the Moab daemon runs
 #EHost=tux0
 #
-# Moab event notification throttle, matches JOBAGGREGATIONTIME
-# in moab.cfg (integer value in seconds)
+# Moab event notification throttle, 
+# matches JOBAGGREGATIONTIME in moab.cfg (seconds)
 JobAggregationTime=15
 </pre>
 </p>
