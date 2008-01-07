@@ -63,7 +63,7 @@
 
 static long int	_build_cache(char *user_name, char *cache_dir);
 static int	_get_cache_dir(char *buffer, int buf_size);
-static void	_parse_line(char *in_line, char **user_name, int *user_id);
+static int	_parse_line(char *in_line, char **user_name, int *user_id);
 
 main (int argc, char **argv)
 {
@@ -103,7 +103,8 @@ main (int argc, char **argv)
 	}
 
 	while (fgets(in_line, sizeof(in_line), passwd_fd)) {
-		_parse_line(in_line, &user_name, &user_id);
+		if (_parse_line(in_line, &user_name, &user_id) < 0)
+			continue;
 		if (user_id <= 100)
 			continue;
 		delta_t = _build_cache(user_name, cache_dir);
@@ -116,13 +117,18 @@ main (int argc, char **argv)
 	fclose(passwd_fd);
 }
 
-/* Given a line from /etc/passwd, return the user_name and user_id */
-static void _parse_line(char *in_line, char **user_name, int *user_id)
+/* Given a line from /etc/passwd, sets the user_name and user_id
+ * RET -1 if user can't login, 0 otherwise */
+static int _parse_line(char *in_line, char **user_name, int *user_id)
 {
-	char *tok;
-
+	char *tok, *shell;
+	
+	/* user name */
 	*user_name = strtok(in_line, ":");
+
 	(void) strtok(NULL, ":");
+
+	/* uid */
 	tok = strtok(NULL, ":");
 	if (tok)
 		*user_id = atoi(tok);
@@ -130,6 +136,23 @@ static void _parse_line(char *in_line, char **user_name, int *user_id)
 		printf("error parsing /etc/passwd: %s\n", in_line);
 		*user_id = 0;
 	}
+
+	(void) strtok(NULL, ":");	/* gid */
+	(void) strtok(NULL, ":");	/* name */
+	(void) strtok(NULL, ":");	/* home */
+
+	shell = strtok(NULL, ":");
+	if (shell) {
+		tok = strchr(shell, '\n');
+		if (tok)
+			tok[0] = '\0';
+		if ((strcmp(shell, "/sbin/nologin") == 0) ||
+		    (strcmp(shell, "/bin/false") == 0))
+			return -1;
+	}
+
+	return 0;
+
 }
 
 /* For a given user_name, get his environment variable by executing
