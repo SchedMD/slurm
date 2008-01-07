@@ -89,9 +89,9 @@ main (int argc, char **argv)
 
 	for (i=1; i<argc; i++) {
 		delta_t = _build_cache(argv[i], cache_dir);
-#if _DEBUG
+		if (delta_t < ((SU_WAIT_MSEC * 0.8) * 1000))
+			continue;
 		printf("WARNING: user %-8s time %ld usec\n", argv[i], delta_t);
-#endif
 	}
 	if (i > 1)
 		exit(0);
@@ -108,11 +108,9 @@ main (int argc, char **argv)
 		if (user_id <= 100)
 			continue;
 		delta_t = _build_cache(user_name, cache_dir);
-#if _DEBUG
 		if (delta_t < ((SU_WAIT_MSEC * 0.8) * 1000))
 			continue;
 		printf("WARNING: user %-8s time %ld usec\n", user_name, delta_t);
-#endif
 	}
 	fclose(passwd_fd);
 }
