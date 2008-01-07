@@ -1300,15 +1300,14 @@ char **_load_env_cache(const char *username)
  */
 char **env_array_user_default(const char *username, int timeout, int mode)
 {
-	FILE *su;
-	char line[ENV_BUFSIZE];
-	char name[128];
-	char value[ENV_BUFSIZE];
+	char *line, *last, name[128], value[ENV_BUFSIZE];
+	char buffer[ENV_BUFSIZE];
 	char **env = NULL;
 	char *starttoken = "XXXXSLURMSTARTPARSINGHEREXXXX";
 	char *stoptoken  = "XXXXSLURMSTOPPARSINGHEREXXXXX";
 	char cmdstr[256];
 	int fildes[2], found, fval, len, rc, timeleft;
+	int buf_read, buf_rem;
 	pid_t child;
 	struct timeval begin, now;
 	struct pollfd ufds;
@@ -1335,7 +1334,8 @@ char **env_array_user_default(const char *username, int timeout, int mode)
 		close(2);
 		open("/dev/null", O_WRONLY);
 		snprintf(cmdstr, sizeof(cmdstr),
-			 "/bin/echo; /bin/echo; /bin/echo; /bin/echo %s; /bin/env; /bin/echo %s",
+			 "/bin/echo; /bin/echo; /bin/echo; "
+			 "/bin/echo %s; /bin/env; /bin/echo %s",
 			 starttoken, stoptoken);
 		if      (mode == 1)
 			execl("/bin/su", "su", username, "-c", cmdstr, NULL);
@@ -1354,90 +1354,101 @@ char **env_array_user_default(const char *username, int timeout, int mode)
 	close(fildes[1]);
 	if ((fval = fcntl(fildes[0], F_GETFL, 0)) >= 0)
 		fcntl(fildes[0], F_SETFL, fval | O_NONBLOCK);
-	su= fdopen(fildes[0], "r");
 
 	gettimeofday(&begin, NULL);
 	ufds.fd = fildes[0];
 	ufds.events = POLLIN;
 
+	/* Read all of the output from /bin/su into buffer */
+	found = 0;
+	buf_read = 0;
+	bzero(buffer, sizeof(buffer));
+	while (1) {
+		gettimeofday(&now, NULL);
+		timeleft = SU_WAIT_MSEC;
+		timeleft -= (now.tv_sec -  begin.tv_sec)  * 1000;
+		timeleft -= (now.tv_usec - begin.tv_usec) / 1000;
+		if (timeleft <= 0) {
+			verbose("timeout waiting for /bin/su to complete");
+			break;
+		}
+		if ((rc = poll(&ufds, 1, timeleft)) <= 0) {
+			if (rc == 0) {
+				verbose("timeout waiting for /bin/su to complete");
+				break;
+			}
+			if ((errno == EINTR) || (errno == EAGAIN))
+				continue;
+			error("poll(): %m");
+			break;
+		}
+		if (!(ufds.revents & POLLIN)) {
+			if (ufds.revents & POLLHUP) {	/* EOF */
+				found = 1;		/* success */
+			} else if (ufds.revents & POLLERR) {
+				error("POLLERR");
+			} else {
+				error("poll() revents=%d", ufds.revents);
+			}
+			break;
+		}
+		buf_rem = sizeof(buffer) - buf_read;
+		if (buf_rem == 0) {
+			error("buffer overflow loading env vars");
+			break;
+		}
+		rc = read(fildes[0], &buffer[buf_read], buf_rem);
+		if (rc > 0)
+			buf_read += rc;
+		else if (rc == 0) {	/* EOF */
+			found = 1;	/* success */
+			break;
+		} else {		/* error */
+			error("read(env pipe): %m");
+			break;
+		}
+	}
+	close(fildes[0]);
+	if (!found) {
+		error("Failed to load current user environment variables");
+		_load_env_cache(username);
+	}
+
 	/* First look for the start token in the output */
 	len = strlen(starttoken);
 	found = 0;
-	while (!found) {
-		gettimeofday(&now, NULL);
-		if (timeout > 0)
-			timeleft = timeout * 1000;
-		else
-			timeleft = SU_WAIT_MSEC;
-		timeleft -= (now.tv_sec -  begin.tv_sec)  * 1000;
-		timeleft -= (now.tv_usec - begin.tv_usec) / 1000;
-		if (timeleft <= 0)
-			break;
-		if ((rc = poll(&ufds, 1, timeleft)) <= 0) {
-			if (rc == 0) {
-				verbose("timeout waiting for /bin/su to complete");
-				break;
-			}
-			if ((errno == EINTR) || (errno == EAGAIN))
-				continue;
-			error("poll: %m");
-			break;
-		}
-		if (!(ufds.revents & POLLIN))
-			break;
-		while (fgets(line, sizeof(line), su)) {
-			if (!strncmp(line, starttoken, len)) {
-				found = 1;
-				break;
-			}
-		}
-	}
-	if (!found) {
-		error("Failed to get current user environment variables");
-		close(fildes[0]);
-		return _load_env_cache(username);
-	}
-
-	/* Now read in the environment variable strings. */
-	env = env_array_create();
-	len = strlen(stoptoken);
-	found = 0;
-	while (!found) {
-		gettimeofday(&now, NULL);
-		if (timeout > 0)
-			timeleft = timeout * 1000;
-		else
-			timeleft = SU_WAIT_MSEC;
-		timeleft -= (now.tv_sec -  begin.tv_sec)  * 1000;
-		timeleft -= (now.tv_usec - begin.tv_usec) / 1000;
-		if (timeleft <= 0)
-			break;
-		if ((rc = poll(&ufds, 1, timeleft)) <= 0) {
-			if (rc == 0) {
-				verbose("timeout waiting for /bin/su to complete");
-				break;
-			}
-			if ((errno == EINTR) || (errno == EAGAIN))
-				continue;
-			error("poll: %m");
-			break;
-		}
-		/* stop at the line containing the stoptoken string */
-		if (!(ufds.revents & POLLIN))
-			break;
-		if ((fgets(line, sizeof(line), su) == 0) ||
-		    (!strncmp(line, stoptoken, len))) {
+	line = strtok_r(buffer, "\n", &last);
+	while (!found && line) {
+		if (!strncmp(line, starttoken, len)) {
 			found = 1;
 			break;
 		}
+		line = strtok_r(NULL, "\n", &last);
+	}
+	if (!found) {
+		error("Failed to get current user environment variables");
+		return _load_env_cache(username);
+	}
 
-		_strip_cr_nl(line);
-		if (_env_array_entry_splitter(line, name, sizeof(name),
+	/* Process environment variables until we find the stop token */
+	len = strlen(stoptoken);
+	found = 0;
+	env = env_array_create();
+	line = strtok_r(NULL, "\n", &last);
+	while (!found && line) {
+		if (!strncmp(line, stoptoken, len)) {
+			found = 1;
+			break;
+		}
+		if (_env_array_entry_splitter(line, name, sizeof(name), 
 					      value, sizeof(value)))
 			env_array_overwrite(&env, name, value);
+		line = strtok_r(NULL, "\n", &last);
 	}
-	close(fildes[0]);
+	if (!found) {
+		error("Failed to get all user environment variables");
+		return _load_env_cache(username);
+	}
 
 	return env;
 }
-
