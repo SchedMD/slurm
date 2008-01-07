@@ -11,6 +11,7 @@ documents those changes that are of interest to users and admins.
  -- Avoid printing negative job run time in squeue due to clock skew.
  -- In sched/wiki and sched/wiki2, add support for wiki.conf option
     HidePartitionJobs (see man pages for details).
+ -- Update to srun/sbatch --get-user-env option logic (needed by Moab).
 
 * Changes in SLURM 1.2.21
 =========================
