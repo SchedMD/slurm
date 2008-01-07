@@ -246,14 +246,14 @@ static long int _build_cache(char *user_name, char *cache_dir)
 			} else if (ufds.revents & POLLERR) {
 				printf("ERROR: POLLERR for %s\n", user_name);
 			} else {
-				printf("ERROR: poll() revents=%d for %s", 
+				printf("ERROR: poll() revents=%d for %s\n", 
 					ufds.revents, user_name);
 			}
 			break;
 		}
 		buf_rem = sizeof(buffer) - buf_read;
 		if (buf_rem == 0) {
-			printf("ERROR: buffer overflow for %s", user_name);
+			printf("ERROR: buffer overflow for %s\n", user_name);
 			break;
 		}
 		rc = read(fildes[0], &buffer[buf_read], buf_rem);
