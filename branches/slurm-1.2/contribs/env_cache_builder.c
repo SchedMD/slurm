@@ -55,6 +55,7 @@
 #include <string.h>
 #include <strings.h>
 #include <unistd.h>
+#include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 
@@ -300,6 +301,7 @@ static long int _build_cache(char *user_name, char *cache_dir)
 			out_file, user_name, strerror(errno));
 		return -1;
 	}
+	chmod(out_file, 0600);
 
 	/* Process environment variables until we find the stop token */
 	len = strlen(stoptoken);
