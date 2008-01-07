@@ -1280,7 +1280,7 @@ char **_load_env_cache(const char *username)
  */
 char **env_array_user_default(const char *username, int timeout, int mode)
 {
-	char *line, *last, name[ENV_BUFSIZE], value[ENV_BUFSIZE];
+	char *line, *last, name[128], value[ENV_BUFSIZE];
 	char buffer[64 * 1024];
 	char **env = NULL;
 	char *starttoken = "XXXXSLURMSTARTPARSINGHEREXXXX";
@@ -1420,9 +1420,9 @@ char **env_array_user_default(const char *username, int timeout, int mode)
 			found = 1;
 			break;
 		}
-		_env_array_entry_splitter(line, name, ENV_BUFSIZE, value, 
-					  ENV_BUFSIZE);
-		env_array_overwrite(&env, name, value);
+		if (_env_array_entry_splitter(line, name, sizeof(name), 
+					      value, sizeof(value)))
+			env_array_overwrite(&env, name, value);
 		line = strtok_r(NULL, "\n", &last);
 	}
 	if (!found) {
