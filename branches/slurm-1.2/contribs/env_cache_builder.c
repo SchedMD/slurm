@@ -82,7 +82,7 @@ main (int argc, char **argv)
 		exit(1);
 	strncat(cache_dir, "/env_cache", sizeof(cache_dir));
 	if (mkdir(cache_dir, 0500) && (errno != EEXIST)) {
-		printf("Could not create cache directory %s: %s", cache_dir,
+		printf("Could not create cache directory %s: %s\n", cache_dir,
 			strerror(errno));
 		exit(1);
 	}
@@ -242,7 +242,7 @@ static long int _build_cache(char *user_name, char *cache_dir)
 #if _DEBUG
 				printf("POLLHUP for %s\n", user_name);
 #endif
-				found = 1;	/* success */
+				found = 1;		/* success */
 			} else if (ufds.revents & POLLERR) {
 				printf("ERROR: POLLERR for %s\n", user_name);
 			} else {
