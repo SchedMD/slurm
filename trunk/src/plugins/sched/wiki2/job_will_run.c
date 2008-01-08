@@ -154,6 +154,16 @@ static char *	_will_run_test(uint32_t jobid, char *node_list,
 		/* Only consider nodes that are not DOWN or DRAINED */
 		bit_and(avail_bitmap, avail_node_bitmap);
 	}
+	if (job_ptr->details->exc_node_bitmap) {
+		bitstr_t *exc_node_mask = NULL;
+		exc_node_mask = bit_copy(job_ptr->details->exc_node_bitmap);
+		if (exc_node_mask == NULL)
+			fatal("bit_copy malloc failure");
+		bit_not(exc_node_mask);
+		bit_and(avail_bitmap, exc_node_mask);
+		FREE_NULL_BITMAP(exc_node_mask);
+	}
+
 
 	min_nodes = MAX(job_ptr->details->min_nodes, part_ptr->min_nodes);
 	if (job_ptr->details->max_nodes == 0)
