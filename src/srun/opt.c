@@ -1242,12 +1242,6 @@ static void set_options(const int argc, char **argv)
 		case (int)'w':
 			xfree(opt.nodelist);
 			opt.nodelist = xstrdup(optarg);
-#ifdef HAVE_BG
-			info("\tThe nodelist option should only be used if\n"
-			     "\tthe block you are asking for can be created.\n"
-			     "\tPlease consult smap before using this option\n"
-			     "\tor your job may be stuck with no way to run.");
-#endif
 			break;
 		case (int)'W':
 			opt.max_wait = _get_int(optarg, "wait", false);
@@ -1664,6 +1658,15 @@ static void _opt_args(int argc, char **argv)
 		setenv("SLURM_NETWORK", opt.network, 1);
 	}
 #endif
+
+	if (opt.nodelist && (!opt.test_only)) {
+#ifdef HAVE_BG
+		info("\tThe nodelist option should only be used if\n"
+		     "\tthe block you are asking for can be created.\n"
+		     "\tPlease consult smap before using this option\n"
+		     "\tor your job may be stuck with no way to run.");
+#endif
+	}
 
 	opt.argc = 0;
 	if (optind < argc) {
