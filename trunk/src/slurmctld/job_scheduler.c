@@ -712,7 +712,7 @@ extern int job_start_data(job_desc_msg_t *job_desc_msg,
 	struct part_record *part_ptr;
 	bitstr_t *avail_bitmap = NULL;
 	uint32_t min_nodes, max_nodes, req_nodes;
-	int rc;
+	int rc = SLURM_SUCCESS;
 
 	job_ptr = find_job_record(job_desc_msg->job_id);
 	if (job_ptr == NULL)
@@ -737,6 +737,7 @@ extern int job_start_data(job_desc_msg_t *job_desc_msg,
 		/* Only consider nodes that are not DOWN or DRAINED */
 		bit_and(avail_bitmap, avail_node_bitmap);
 	}
+
 	if (job_ptr->details->exc_node_bitmap) {
 		bitstr_t *exc_node_mask = NULL;
 		exc_node_mask = bit_copy(job_ptr->details->exc_node_bitmap);
@@ -746,23 +747,32 @@ extern int job_start_data(job_desc_msg_t *job_desc_msg,
 		bit_and(avail_bitmap, exc_node_mask);
 		FREE_NULL_BITMAP(exc_node_mask);
 	}
+	if (job_ptr->details->req_node_bitmap) {
+		if (!bit_super_set(job_ptr->details->req_node_bitmap, 
+				   avail_bitmap)) {
+			rc = ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE;
+		}
+	}
 
-	min_nodes = MAX(job_ptr->details->min_nodes, part_ptr->min_nodes);
-	if (job_ptr->details->max_nodes == 0)
-		max_nodes = part_ptr->max_nodes;
-	else
-		max_nodes = MIN(job_ptr->details->max_nodes, 
-				part_ptr->max_nodes);
-	max_nodes = MIN(max_nodes, 500000);	/* prevent overflows */
-	if (job_ptr->details->max_nodes)
-		req_nodes = max_nodes;
-	else
-		req_nodes = min_nodes;
+	if (rc == SLURM_SUCCESS) {
+		min_nodes = MAX(job_ptr->details->min_nodes, 
+				part_ptr->min_nodes);
+		if (job_ptr->details->max_nodes == 0)
+			max_nodes = part_ptr->max_nodes;
+		else
+			max_nodes = MIN(job_ptr->details->max_nodes, 
+					part_ptr->max_nodes);
+		max_nodes = MIN(max_nodes, 500000);	/* prevent overflows */
+		if (job_ptr->details->max_nodes)
+			req_nodes = max_nodes;
+		else
+			req_nodes = min_nodes;
 
-	rc = select_g_job_test(job_ptr, avail_bitmap,
-			min_nodes, max_nodes, req_nodes, 
-			SELECT_MODE_WILL_RUN);
-	
+		rc = select_g_job_test(job_ptr, avail_bitmap,
+				min_nodes, max_nodes, req_nodes, 
+				SELECT_MODE_WILL_RUN);
+	}
+
 	if (rc == SLURM_SUCCESS) {
 		will_run_response_msg_t *resp_data;
 		resp_data = xmalloc(sizeof(will_run_response_msg_t));
