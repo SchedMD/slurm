@@ -1,9 +1,9 @@
 /*****************************************************************************\
- *  block_functions.h - header for creating blocks in a static environment.
+ *  dynamic_block.h - header for creating blocks in a dynamic environment.
  *
- *  $Id: block_functions.h 12954 2008-01-04 20:37:49Z da $
+ *  $Id: dynamic_block.h 12954 2008-01-04 20:37:49Z da $
  *****************************************************************************
- *  Copyright (C) 2004 The Regents of the University of California.
+ *  Copyright (C) 2008 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Danny Auble <da@llnl.gov>
  *  
@@ -36,12 +36,14 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef _BLUEGENE_BLOCK_FUNCTIONS_H_
-#define _BLUEGENE_BLOCK_FUNCTIONS_H_
+#ifndef _BLUEGENE_DYNAMIC_BLOCK_H_
+#define _BLUEGENE_DYNAMIC_BLOCK_H_
 
 #include "bluegene.h"
 
 extern List create_dynamic_block(List block_list,
 				 ba_request_t *request, List my_block_list);
 
-#endif /* _BLUEGENE_BLOCK_FUNCTIONS_H_ */
+extern bg_record_t *create_small_record(bg_record_t *bg_record, 
+					uint16_t quarter, uint16_t nodecard);
+#endif /* _BLUEGENE_DYNAMIC_BLOCK_H_ */

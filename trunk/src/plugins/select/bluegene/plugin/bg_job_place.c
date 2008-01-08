@@ -43,6 +43,7 @@
 #include "src/common/node_select.h"
 #include "src/slurmctld/trigger_mgr.h"
 #include "bluegene.h"
+#include "dynamic_block.h"
 
 #define _DEBUG 0
 #define MAX_GROUPS 128
