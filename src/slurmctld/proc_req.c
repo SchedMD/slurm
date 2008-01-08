@@ -1197,6 +1197,7 @@ static void _slurm_rpc_job_will_run(slurm_msg_t * msg)
 	uid_t uid;
 	uint16_t port;	/* dummy value */
 	slurm_addr resp_addr;
+	will_run_response_msg_t *resp;
 
 	START_TIMER;
 	debug2("Processing RPC: REQUEST_JOB_WILL_RUN");
@@ -1220,8 +1221,12 @@ static void _slurm_rpc_job_will_run(slurm_msg_t * msg)
 	dump_job_desc(job_desc_msg);
 	if (error_code == SLURM_SUCCESS) {
 		lock_slurmctld(job_write_lock);
-		error_code = job_allocate(job_desc_msg, 
-				true, true, true, uid, &job_ptr);
+		if (job_desc_msg->job_id == NO_VAL) {
+			error_code = job_allocate(job_desc_msg, 
+					true, true, true, uid, &job_ptr);
+		} else {	/* existing job test */
+			error_code = job_start_data(job_desc_msg, &resp);
+		}
 		unlock_slurmctld(job_write_lock);
 		END_TIMER2("_slurm_rpc_job_will_run");
 	}
@@ -1231,9 +1236,19 @@ static void _slurm_rpc_job_will_run(slurm_msg_t * msg)
 		debug2("_slurm_rpc_job_will_run: %s", 
 			slurm_strerror(error_code));
 		slurm_send_rc_msg(msg, error_code);
+	} else if (job_desc_msg->job_id != NO_VAL) {
+		slurm_msg_t response_msg;
+		/* init response_msg structure */
+		slurm_msg_t_init(&response_msg);
+		response_msg.address = msg->address;
+		response_msg.msg_type = RESPONSE_JOB_WILL_RUN;
+		response_msg.data = resp;
+		slurm_send_node_msg(msg->conn_fd, &response_msg);
+		slurm_free_will_run_response_msg(resp);
 	} else {
 		debug2("_slurm_rpc_job_will_run success %s", TIME_STR);
-		slurm_send_rc_msg(msg, SLURM_SUCCESS);
+		if (job_desc_msg->job_id == NO_VAL)
+			slurm_send_rc_msg(msg, SLURM_SUCCESS);
 	}
 }
 

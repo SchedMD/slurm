@@ -616,6 +616,14 @@ void inline slurm_free_get_kvs_msg(kvs_get_msg_t *msg)
 	}
 }
 
+void inline slurm_free_will_run_response_msg(will_run_response_msg_t *msg)
+{
+        if (msg) {
+                xfree(msg->node_list);
+                xfree(msg);
+        }
+}
+
 char *job_state_string(enum job_states inx)
 {
 	if (inx & JOB_COMPLETING)

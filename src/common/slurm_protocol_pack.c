@@ -337,7 +337,12 @@ static void _pack_job_notify(job_notify_msg_t *msg, Buf buffer);
 static int  _unpack_job_notify(job_notify_msg_t **msg_ptr, Buf buffer);
 
 static void _pack_set_debug_level_msg(set_debug_level_msg_t * msg, Buf buffer);
-static int _unpack_set_debug_level_msg(set_debug_level_msg_t ** msg_ptr, Buf buffer);
+static int _unpack_set_debug_level_msg(set_debug_level_msg_t ** msg_ptr, 
+				       Buf buffer);
+
+static void _pack_will_run_response_msg(will_run_response_msg_t *msg, Buf buffer);
+static int  _unpack_will_run_response_msg(will_run_response_msg_t ** msg_ptr, 
+					  Buf buffer);
 
 /* pack_header
  * packs a slurm protocol header that proceeds every slurm message
@@ -487,10 +492,13 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 		break;
 	case RESPONSE_JOB_ALLOCATION_INFO_LITE:
 	case RESPONSE_RESOURCE_ALLOCATION:
-	case RESPONSE_JOB_WILL_RUN:
 		_pack_resource_allocation_response_msg
 			((resource_allocation_response_msg_t *) msg->data,
 			 buffer);
+		break;
+	case RESPONSE_JOB_WILL_RUN:
+		_pack_will_run_response_msg((will_run_response_msg_t *)
+					    msg->data, buffer);
 		break;
 	case RESPONSE_JOB_ALLOCATION_INFO:
 		_pack_job_alloc_info_response_msg(
@@ -806,10 +814,13 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 		break;
 	case RESPONSE_JOB_ALLOCATION_INFO_LITE:
 	case RESPONSE_RESOURCE_ALLOCATION:
-	case RESPONSE_JOB_WILL_RUN:
 		rc = _unpack_resource_allocation_response_msg(
 			(resource_allocation_response_msg_t **)
 			& (msg->data), buffer);
+		break;
+	case RESPONSE_JOB_WILL_RUN:
+		rc = _unpack_will_run_response_msg((will_run_response_msg_t **)
+						   &(msg->data), buffer);
 		break;
 	case RESPONSE_JOB_ALLOCATION_INFO:
 		rc = _unpack_job_alloc_info_response_msg(
@@ -4621,6 +4632,34 @@ _unpack_set_debug_level_msg(set_debug_level_msg_t ** msg_ptr, Buf buffer)
 	return SLURM_SUCCESS;
 	
  unpack_error:
+	xfree(msg);
+	*msg_ptr = NULL;
+	return SLURM_ERROR;
+}
+
+static void 
+_pack_will_run_response_msg(will_run_response_msg_t *msg, Buf buffer)
+{
+	pack32(msg->job_id, buffer);
+	pack_time(msg->start_time, buffer);
+	packstr(msg->node_list, buffer);
+}
+
+static int
+_unpack_will_run_response_msg(will_run_response_msg_t ** msg_ptr, Buf buffer)
+{
+	will_run_response_msg_t *msg;
+	uint32_t uint32_tmp;
+
+	msg = xmalloc(sizeof(will_run_response_msg_t));
+	safe_unpack32(&msg->job_id, buffer);
+	safe_unpack_time(&msg->start_time, buffer);
+	safe_unpackstr_xmalloc(&msg->node_list, &uint32_tmp, buffer);
+	*msg_ptr = msg;
+	return SLURM_SUCCESS;
+
+  unpack_error:
+	xfree(msg->node_list);
 	xfree(msg);
 	*msg_ptr = NULL;
 	return SLURM_ERROR;

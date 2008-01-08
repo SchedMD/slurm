@@ -939,6 +939,13 @@ extern int job_step_signal(uint32_t job_id, uint32_t step_id,
  */
 extern void job_time_limit (void);
 
+/* Determine if a pending job will run using only the specified nodes
+ * (in job_desc_msg->req_nodes), build response message and return 
+ * SLURM_SUCCESS on success. Otherwise return an error code. Caller 
+ * must free response message */
+extern int job_start_data(job_desc_msg_t *job_desc_msg, 
+			  will_run_response_msg_t **resp);
+
 /*
  * kill_job_by_part_name - Given a partition name, deallocate resource for 
  *	its jobs and kill them 
