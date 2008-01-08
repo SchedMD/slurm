@@ -201,7 +201,7 @@ static char *	_will_run_test(uint32_t jobid, char *node_list,
 		*err_code = 0;
 		return reply_msg;
 	} else {
-		*err_code = -740;
+		*err_code = -730;
 		*err_msg = "Job not runable on selected nodes";
 		error("wiki: job %d not runnable on hosts=%s", 
 			jobid, node_list);
