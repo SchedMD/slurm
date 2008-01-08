@@ -25,6 +25,7 @@ documents those changes that are of interest to users and admins.
     same nodes to improve gang scheduling performance. Also supports treating 
     memory as consumable resource for job preemption and  gang scheduling if 
     SelectTypeParameter=CR_Memory in slurm.conf.
+ -- BLUEGENE: Reorganized bluegene plugin for maintainability sake.
 
 * Changes in SLURM 1.3.0-pre7
 =============================

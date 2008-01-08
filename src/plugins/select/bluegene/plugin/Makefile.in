@@ -86,8 +86,9 @@ libsched_if64_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 select_bluegene_la_DEPENDENCIES =  \
 	../block_allocator/libbluegene_block_allocator.la
 am_select_bluegene_la_OBJECTS = select_bluegene.lo bg_job_place.lo \
-	bg_job_run.lo bg_block_info.lo bluegene.lo state_test.lo \
-	bg_switch_connections.lo block_sys.lo
+	bg_job_run.lo bg_block_info.lo bg_record_functions.lo \
+	bluegene.lo state_test.lo bg_switch_connections.lo \
+	block_sys.lo dynamic_block.lo defined_block.lo
 select_bluegene_la_OBJECTS = $(am_select_bluegene_la_OBJECTS)
 select_bluegene_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
@@ -309,10 +310,13 @@ select_bluegene_la_SOURCES = select_bluegene.c \
 				bg_job_place.c bg_job_place.h \
 				bg_job_run.c bg_job_run.h \
 				bg_block_info.c bg_block_info.h \
+				bg_record_functions.c bg_record_functions.h \
 				bluegene.c bluegene.h \
 				state_test.c state_test.h \
 				bg_switch_connections.c \
 				block_sys.c \
+				dynamic_block.c dynamic_block.h \
+				defined_block.c defined_block.h \
 				../wrap_rm_api.h
 
 select_bluegene_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
@@ -450,10 +454,13 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/bg_block_info.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/bg_job_place.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/bg_job_run.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/bg_record_functions.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/bg_switch_connections.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/block_sys.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/bluegene.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/bridge_linker.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/defined_block.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/dynamic_block.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libsched_if64.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/opts.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/select_bluegene.Plo@am__quote@
