@@ -304,6 +304,8 @@ struct job_details {
 	time_t begin_time;		/* start at this time (srun --being), 
 					 * resets to time first eligible
 					 * (all dependencies satisfied) */
+	uint32_t reserved_resources;	/* CPU minutes of resources reserved
+					 * for this job while it was pending */
 	char *work_dir;			/* pathname of working directory */
 	char **argv;			/* arguments for a batch job script */
 	uint16_t argc;			/* count of argv elements */
