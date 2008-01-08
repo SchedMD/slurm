@@ -1196,6 +1196,13 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 						
 			job_ptr->start_time = starttime;			
 
+			select_g_set_jobinfo(job_ptr->select_jobinfo,
+					     SELECT_DATA_NODES, 
+					     bg_record->nodes);
+			select_g_set_jobinfo(job_ptr->select_jobinfo,
+					     SELECT_DATA_IONODES, 
+					     bg_record->ionodes);
+			
 			if(!bg_record->bg_block_id) {
 				uint16_t geo[BA_SYSTEM_DIMENSIONS];
 				
@@ -1221,6 +1228,10 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 				select_g_set_jobinfo(job_ptr->select_jobinfo,
 						     SELECT_DATA_GEOMETRY, 
 						     &geo);
+				/* This is a fake record so we need to
+				 * destroy it after we get the info from
+				 * it */
+				destroy_bg_record(bg_record);
 			} else {
 				if((bg_record->ionodes)
 				   && (job_ptr->part_ptr->max_share <= 1))
@@ -1246,15 +1257,6 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 						     SELECT_DATA_CONN_TYPE, 
 						     &tmp16);
 			}
-			
-			select_g_set_jobinfo(job_ptr->select_jobinfo,
-					     SELECT_DATA_NODES, 
-					     bg_record->nodes);
-			select_g_set_jobinfo(job_ptr->select_jobinfo,
-					     SELECT_DATA_IONODES, 
-					     bg_record->ionodes);
-			
-
 		} else {
 			error("we got a success, but no block back");
 		}
