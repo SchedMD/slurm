@@ -63,7 +63,9 @@ extern pid_t getsid(pid_t pid);		/* missing from <unistd.h> */
 #include "src/common/xstring.h"
 #include "src/common/forward.h"
 #include "src/common/fd.h"
+#include "src/common/parse_time.h"
 #include "src/common/slurm_auth.h"
+#include "src/common/slurm_protocol_defs.h"
 
 #define BUFFER_SIZE 1024
 #define MAX_ALLOC_WAIT 60	/* seconds */
@@ -286,23 +288,39 @@ slurm_allocate_resources_blocking (const job_desc_msg_t *user_req,
  */
 int slurm_job_will_run (job_desc_msg_t *req)
 {
-	slurm_msg_t req_msg;
-	char host[64];
-	int rc;
+	slurm_msg_t req_msg, resp_msg;
+	will_run_response_msg_t *will_run_resp;
+	char buf[64];
 
 	/* req.immediate = true;    implicit */
 	if ((req->alloc_node == NULL)
-	&&  (gethostname_short(host, sizeof(host)) == 0))
-		req->alloc_node = host;
+	&&  (gethostname_short(buf, sizeof(buf)) == 0))
+		req->alloc_node = buf;
 	slurm_msg_t_init(&req_msg);
 	req_msg.msg_type = REQUEST_JOB_WILL_RUN;
 	req_msg.data     = req; 
 	
-	if (slurm_send_recv_controller_rc_msg(&req_msg, &rc) < 0)
+	if (slurm_send_recv_controller_msg(&req_msg, &resp_msg) < 0)
 		return SLURM_SOCKET_ERROR;
 
-	if (rc)
-		slurm_seterrno_ret(rc);
+	switch (resp_msg.msg_type) {
+	case RESPONSE_SLURM_RC:
+		if (_handle_rc_msg(&resp_msg) < 0)
+			return SLURM_PROTOCOL_ERROR;
+		break;
+	case RESPONSE_JOB_WILL_RUN:
+		will_run_resp = (will_run_response_msg_t *) resp_msg.data;
+		slurm_make_time_str(&will_run_resp->start_time,
+				    buf, sizeof(buf));
+		info("Job %u to start at %s on %s",
+			will_run_resp->job_id, buf,
+			will_run_resp->node_list);
+		slurm_free_will_run_response_msg(will_run_resp);
+		break;
+	default:
+		slurm_seterrno_ret(SLURM_UNEXPECTED_MSG_ERROR);
+		break;
+	}
 
 	return SLURM_PROTOCOL_SUCCESS;
 }
@@ -318,8 +336,7 @@ int
 slurm_job_step_create (job_step_create_request_msg_t *req, 
                        job_step_create_response_msg_t **resp)
 {
-	slurm_msg_t req_msg;
-	slurm_msg_t resp_msg;
+	slurm_msg_t req_msg, resp_msg;
 
 	slurm_msg_t_init(&req_msg);
 	slurm_msg_t_init(&resp_msg);

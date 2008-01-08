@@ -700,3 +700,72 @@ extern int update_job_dependency(struct job_record *job_ptr, char *new_depend)
 	}
 	return rc;
 }
+
+/* Determine if a pending job will run using only the specified nodes
+ * (in job_desc_msg->req_nodes), build response message and return 
+ * SLURM_SUCCESS on success. Otherwise return an error code. Caller 
+ * must free response message */
+extern int job_start_data(job_desc_msg_t *job_desc_msg, 
+			  will_run_response_msg_t **resp)
+{
+	struct job_record *job_ptr;
+	struct part_record *part_ptr;
+	bitstr_t *avail_bitmap = NULL;
+	uint32_t min_nodes, max_nodes, req_nodes;
+	int rc;
+
+	job_ptr = find_job_record(job_desc_msg->job_id);
+	if (job_ptr == NULL)
+		return ESLURM_INVALID_JOB_ID;
+
+	part_ptr = job_ptr->part_ptr;
+	if (part_ptr == NULL)
+		return ESLURM_INVALID_PARTITION_NAME;
+
+	if ((job_ptr->details == NULL) ||
+	    (job_ptr->job_state != JOB_PENDING))
+		return ESLURM_DISABLED;
+
+	if ((job_desc_msg->req_nodes == NULL) || 
+	    (job_desc_msg->req_nodes == '\0')) {
+		/* assume all nodes available to job for testing */
+		avail_bitmap = bit_copy(avail_node_bitmap);
+	} else if (node_name2bitmap(job_desc_msg->req_nodes, false, 
+				    &avail_bitmap) != 0) {
+		return ESLURM_INVALID_NODE_NAME;
+	} else {
+		/* Only consider nodes that are not DOWN or DRAINED */
+		bit_and(avail_bitmap, avail_node_bitmap);
+	}
+
+	min_nodes = MAX(job_ptr->details->min_nodes, part_ptr->min_nodes);
+	if (job_ptr->details->max_nodes == 0)
+		max_nodes = part_ptr->max_nodes;
+	else
+		max_nodes = MIN(job_ptr->details->max_nodes, 
+				part_ptr->max_nodes);
+	max_nodes = MIN(max_nodes, 500000);	/* prevent overflows */
+	if (job_ptr->details->max_nodes)
+		req_nodes = max_nodes;
+	else
+		req_nodes = min_nodes;
+
+	rc = select_g_job_test(job_ptr, avail_bitmap,
+			min_nodes, max_nodes, req_nodes, 
+			SELECT_MODE_WILL_RUN);
+	
+	if (rc == SLURM_SUCCESS) {
+		will_run_response_msg_t *resp_data;
+		resp_data = xmalloc(sizeof(will_run_response_msg_t));
+		resp_data->job_id     = job_ptr->job_id;
+		resp_data->start_time = job_ptr->start_time;
+		resp_data->node_list  = bitmap2node_name(avail_bitmap);
+		FREE_NULL_BITMAP(avail_bitmap);
+		*resp = resp_data;
+		return SLURM_SUCCESS;
+	} else {
+		FREE_NULL_BITMAP(avail_bitmap);
+		return ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE;
+	}
+
+}

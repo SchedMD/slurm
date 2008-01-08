@@ -1802,7 +1802,7 @@ static bool _opt_verify(void)
 	} 
 
 
-	if (opt.argc == 0) {
+	if ((opt.argc == 0) && (opt.test_only == false)) {
 		error("must supply remote command");
 		verified = false;
 	}

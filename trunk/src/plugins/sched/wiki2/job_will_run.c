@@ -178,6 +178,7 @@ static char *	_will_run_test(uint32_t jobid, char *node_list,
 			 "%u STARTDATE=%lu HOSTLIST=%s",
 			 jobid, job_ptr->start_time, hostlist);
 		xfree(hostlist);
+		FREE_NULL_BITMAP(avail_bitmap);
 		*err_code = 0;
 		return reply_msg;
 	} else {
