@@ -15,6 +15,8 @@ documents those changes that are of interest to users and admins.
  -- In slurmctld (for Moab) added job->details->reserved_resources field
     to report resources that were kept in reserve for job while it was 
     pending.
+ -- In sched/wiki (for Maui scheduler) report a pending job's node feature 
+    requirements.
 
 * Changes in SLURM 1.2.21
 =========================
