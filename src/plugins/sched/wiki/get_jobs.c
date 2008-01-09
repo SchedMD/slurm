@@ -50,6 +50,7 @@ static char *	_dump_job(struct job_record *job_ptr, int state_info);
 static char *	_get_group_name(gid_t gid);
 static uint16_t _get_job_cpus_per_task(struct job_record *job_ptr);
 static uint32_t	_get_job_end_time(struct job_record *job_ptr);
+static char *	_get_job_features(struct job_record *job_ptr);
 static uint32_t	_get_job_min_disk(struct job_record *job_ptr);
 static uint32_t	_get_job_min_mem(struct job_record *job_ptr);
 static uint32_t	_get_job_min_nodes(struct job_record *job_ptr);
@@ -234,6 +235,16 @@ static char *	_dump_job(struct job_record *job_ptr, int state_info)
 			"TASKLIST=%s;", hosts);
 		xstrcat(buf, tmp);
 		xfree(hosts);
+	}
+
+	if (job_ptr->job_state == JOB_PENDING) {
+		char *req_features = _get_job_features(job_ptr);
+		if (req_features) {
+			snprintf(tmp, sizeof(tmp),
+				"RFEATURES=%s;", req_features);
+			xstrcat(buf, tmp);
+			xfree(req_features);
+		}
 	}
 
 	if (job_ptr->job_state == JOB_FAILED) {
@@ -422,6 +433,35 @@ static char *	_get_job_state(struct job_record *job_ptr)
 		return "Completed";
 	else /* JOB_CANCELLED, JOB_FAILED, JOB_TIMEOUT, JOB_NODE_FAIL */
 		return "Removed";
+}
+
+/* Return a job's required features, if any joined with AND.
+ * If required features are joined by OR, then return NULL.
+ * Returned string must be xfreed. */
+static char * _get_job_features(struct job_record *job_ptr)
+{
+	int i;
+	char *rfeatures;
+
+	if ((job_ptr->details == NULL)
+	||  (job_ptr->details->features == NULL)
+	||  (job_ptr->details->features[0] == '\0'))
+		return NULL;
+
+	rfeatures = xstrdup(job_ptr->details->features);
+	/* Translate "&" to ":" */
+	for (i=0; ; i++) {
+		if (rfeatures[i] == '\0')
+			return rfeatures;
+		if (rfeatures[i] == '|')
+			break;
+		if (rfeatures[i] == '&')
+			rfeatures[i] = ':';
+	}
+
+	/* Found '|' (OR), which is not supported by Moab */
+	xfree(rfeatures);
+	return NULL;
 }
 
 static uint32_t	_get_job_end_time(struct job_record *job_ptr)
