@@ -38,6 +38,11 @@
 \*****************************************************************************/
 
 #include "bluegene.h"
+
+#ifndef HAVE_BG
+#include "defined_block.h"
+#endif
+
 #include "src/slurmctld/trigger_mgr.h"
 #include <fcntl.h>
  
@@ -215,7 +220,7 @@ extern int fini ( void )
 	}
 #else
 	/*looking for blocks only I created */
-	if (create_defined_blocks(bluegene_layout_mode) 
+	if (create_defined_blocks(bluegene_layout_mode, NULL) 
 			== SLURM_ERROR) {
 		/* error in creating the static blocks, so
 		 * blocks referenced by submitted jobs won't
