@@ -58,26 +58,37 @@ A node_name of \fBlocalhost\fR is mapped to the current host name.
 
 .TP
 \fB\-o <output_format>\fR, \fB\-\-format=<output_format>\fR
-Specify the information to be displayed.  
-The default format for jobs is 
-If the \fB\-\-long\fR option is specified, the default job format is 
-Format strings used internally by \fBsqueue\fR when running with
-various options are
+Specify the information to be displayed, its size and position 
+(right or left justified).  
+The default formats with various options are
 
 .RS
 .TP 15
-.I "default"
+\fIdefault\fR
 "%.7i %.9P %.8j %.8u %.2t %.9M %.6D %R"
 .TP
-.I "\-l, \-\-long"
+\fI\-l, \-\-long\fR
 ".7i %.9P %.8j %.8u %.8T %.9M %.9l %.6D %R"
 .TP
-.I "\-s, \-\-steps"
+\fI\-s, \-\-steps\fR
 "%10i %.8j %.9P %.8u %.9M %N"
 .RE
 
 .IP
-The field specifications available include: 
+The format of each field is "%[.][size]type".
+.RS
+.TP 8
+\fIsize\fR 
+is the minimum field size.
+If no size is specified, whatever is needed to print the information will be used.
+.TP
+\fI .\fR
+indicates the output should be left justified.
+By default, output is right justified.
+.RE
+
+.IP
+Valid \fItype\fR specifications include: 
 
 .RS
 .TP 4
@@ -241,12 +252,6 @@ Number of requested threads per core
 .TP
 \fB%z\fR 
 Extended processor information: number of requested sockets, cores, threads (S:C:T) per node
-.TP
-\fB%.<*>\fR 
-right justification of the field
-.TP
-\fB%<Number><*>\fR 
-size of field
 .RE
 
 .TP

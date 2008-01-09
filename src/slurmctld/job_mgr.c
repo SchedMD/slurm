@@ -3869,6 +3869,21 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 		}
 	}
 
+	if (job_specs->ntasks_per_node != (uint16_t) NO_VAL) {
+		if ((!IS_JOB_PENDING(job_ptr)) || (detail_ptr == NULL))
+			error_code = ESLURM_DISABLED;
+		else if (super_user) {
+			detail_ptr->ntasks_per_node = job_specs->ntasks_per_node;
+			info("update_job: setting ntasks_per_node to %u for "
+			     "job_id %u", job_specs->ntasks_per_node,
+			     job_specs->job_id);
+		} else {
+			error("Not super user: setting ntasks_oper_node to job %u",
+			      job_specs->job_id);
+			error_code = ESLURM_ACCESS_DENIED;
+		}
+	}
+
 	if (job_specs->dependency) {
 		if ((!IS_JOB_PENDING(job_ptr)) || (job_ptr->details == NULL))
 			error_code = ESLURM_DISABLED;

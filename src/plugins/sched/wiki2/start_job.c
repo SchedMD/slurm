@@ -207,6 +207,12 @@ static int	_start_job(uint32_t jobid, int task_cnt, char *hostlist,
 	}
 
 	if (comment_ptr) {
+		char *reserved = strstr(comment_ptr, "RESERVED:");
+		if (reserved) {
+			reserved += 9;
+			job_ptr->details->reserved_resources =
+				strtol(reserved, NULL, 10);
+		}
 		xfree(job_ptr->comment);
 		job_ptr->comment = xstrdup(comment_ptr);
 	}

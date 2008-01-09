@@ -132,6 +132,13 @@ documents those changes that are of interest to users and admins.
  -- In sched/wiki and sched/wiki2, add support for wiki.conf option
     HidePartitionJobs (see man pages for details).
  -- Update to srun/sbatch --get-user-env option logic (needed by Moab).
+ -- In slurmctld (for Moab) added job->details->reserved_resources field
+    to report resources that were kept in reserve for job while it was 
+    pending.
+ -- In sched/wiki (for Maui scheduler) report a pending job's node feature 
+    requirements (from Miguel Roa, BSC).
+ -- Permit a user to change a pending job's TasksPerNode specification 
+    using scontrol (from Miguel Roa, BSC).
 
 * Changes in SLURM 1.2.21
 =========================

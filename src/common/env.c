@@ -1365,7 +1365,10 @@ char **env_array_user_default(const char *username, int timeout, int mode)
 	bzero(buffer, sizeof(buffer));
 	while (1) {
 		gettimeofday(&now, NULL);
-		timeleft = SU_WAIT_MSEC;
+		if (timeout)
+			timeleft = timeout * 1000;
+		else
+			timeleft = SU_WAIT_MSEC;
 		timeleft -= (now.tv_sec -  begin.tv_sec)  * 1000;
 		timeleft -= (now.tv_usec - begin.tv_usec) / 1000;
 		if (timeleft <= 0) {

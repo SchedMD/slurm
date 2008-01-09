@@ -277,6 +277,12 @@ scontrol_update_job (int argc, char *argv[])
 						 (char **) NULL, 10);
 			update_cnt++;
 		}
+                else if (strncasecmp(argv[i], "TasksPerNode=", 13) == 0) {
+                        job_msg.ntasks_per_node =
+                                (uint16_t) strtol(&argv[i][13],
+                                                 (char **) NULL, 10);
+                        update_cnt++;
+                }
 		else if (strncasecmp(argv[i], "ReqThreads=", 11) == 0) {
 			job_msg.min_threads = 
 				(uint16_t) strtol(&argv[i][11],
