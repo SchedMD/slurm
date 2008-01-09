@@ -318,6 +318,7 @@ int main(int argc, char *argv[])
 			exit(0);
 		}
 		info("Running as primary controller");
+		node_acct_ready();
 		if (slurm_sched_init() != SLURM_SUCCESS)
 			fatal("failed to initialize scheduling plugin");
 
@@ -781,6 +782,7 @@ static void *_slurmctld_background(void *no_data)
 	static time_t last_timelimit_time;
 	static time_t last_assert_primary_time;
 	static time_t last_trigger;
+	static time_t last_node_acct;
 	time_t now;
 	int ping_interval;
 	DEF_TIMERS;
@@ -798,6 +800,9 @@ static void *_slurmctld_background(void *no_data)
 	 * (Might kill jobs on nodes set DOWN) */
 	slurmctld_lock_t node_write_lock = { 
 		READ_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK };
+	/* Locks: Read node */
+	slurmctld_lock_t node_read_lock = { 
+		NO_LOCK, NO_LOCK, READ_LOCK, NO_LOCK };
 	/* Locks: Write partition */
 	slurmctld_lock_t part_write_lock = { 
 		NO_LOCK, NO_LOCK, NO_LOCK, WRITE_LOCK };
@@ -816,6 +821,7 @@ static void *_slurmctld_background(void *no_data)
 		ping_interval = 60 * 60 * 24 * 356;	/* one year */
 	last_ping_node_time = now + (time_t)MIN_CHECKIN_TIME - ping_interval;
 	last_ping_srun_time = now;
+	last_node_acct = now;
 	(void) pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
 	(void) pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
 	debug3("_slurmctld_background pid = %u", getpid());
@@ -915,6 +921,14 @@ static void *_slurmctld_background(void *no_data)
 			save_all_state();
 		}
 
+		if (difftime(now, last_node_acct) >= PERIODIC_NODE_ACCT) {
+			/* Report current node state to account for added 
+			 * or reconfigured nodes */
+			last_node_acct = now;
+			lock_slurmctld(node_read_lock);
+			node_acct_ready();
+			unlock_slurmctld(node_read_lock);
+		}
 		/* Reassert this machine as the primary controller.
 		 * A network or security problem could result in 
 		 * the backup controller assuming control even 

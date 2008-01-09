@@ -53,4 +53,9 @@ extern void node_acct_up(struct node_record *node_ptr);
 /* Note the total processor count in a cluster */
 extern void node_acct_procs(char *cluster_name, uint32_t procs);
 
+/* Note that the cluster is up and ready for work.
+ * Generates a record of the cluster's processor count.
+ * This should be executed whenever the cluser's processor count changes. */
+extern void node_acct_ready(void);
+
 #endif /* !_HAVE_NODE_ACCT_H */

@@ -1522,6 +1522,7 @@ validate_node_specs (char *node_name, uint16_t cpus,
 				node_ptr->last_idle = now;
 			}
 			xfree(node_ptr->reason);
+			node_acct_up(node_ptr);
 		} else if ((base_state == NODE_STATE_DOWN) &&
 		           (slurmctld_conf.ret2service == 1) &&
 			   (node_ptr->reason != NULL) && 
@@ -1714,6 +1715,7 @@ extern int validate_nodes_via_front_end(uint32_t job_count,
 					node_ptr->last_idle = now;
 				}
 				xfree(node_ptr->reason);
+				node_acct_up(node_ptr);
 			} else if ((base_state == NODE_STATE_DOWN) &&
 			           (slurmctld_conf.ret2service == 1)) {
 				updated_job = true;
@@ -1953,7 +1955,6 @@ void set_node_down (char *name, char *reason)
 		return;
 	}
 
-	_make_node_down(node_ptr);
 	(void) kill_running_job_by_node_name(name, false);
 	if ((node_ptr->reason == NULL)
 	||  (strncmp(node_ptr->reason, "Not responding", 14) == 0)) {
@@ -1968,6 +1969,7 @@ void set_node_down (char *name, char *reason)
 		node_ptr->reason = xstrdup(reason);
 		xstrcat(node_ptr->reason, time_buf);
 	}
+	_make_node_down(node_ptr);
 
 	return;
 }
