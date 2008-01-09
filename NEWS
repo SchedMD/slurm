@@ -16,7 +16,9 @@ documents those changes that are of interest to users and admins.
     to report resources that were kept in reserve for job while it was 
     pending.
  -- In sched/wiki (for Maui scheduler) report a pending job's node feature 
-    requirements.
+    requirements (from Miguel Roa, BSC).
+ -- Permit a user to change a pending job's TasksPerNode specification 
+    using scontrol (from Miguel Roa, BSC).
 
 * Changes in SLURM 1.2.21
 =========================
