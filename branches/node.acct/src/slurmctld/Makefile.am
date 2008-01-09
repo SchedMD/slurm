@@ -22,8 +22,11 @@ slurmctld_SOURCES = 	\
 	job_scheduler.c \
 	locks.c   	\
 	locks.h  	\
+	node_acct.c	\
+	node_acct.h	\
 	node_mgr.c 	\
-	node_scheduler.c node_scheduler.h \
+	node_scheduler.c \
+	node_scheduler.h \
 	partition_mgr.c \
 	ping_nodes.c	\
 	ping_nodes.h	\

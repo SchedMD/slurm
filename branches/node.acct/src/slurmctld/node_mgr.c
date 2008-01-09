@@ -64,6 +64,7 @@
 #include "src/common/read_config.h"
 #include "src/slurmctld/agent.h"
 #include "src/slurmctld/locks.h"
+#include "src/slurmctld/node_acct.h"
 #include "src/slurmctld/ping_nodes.h"
 #include "src/slurmctld/proc_req.h"
 #include "src/slurmctld/sched_plugin.h"
@@ -984,11 +985,11 @@ void set_slurmd_addr (void)
  */
 int update_node ( update_node_msg_t * update_node_msg ) 
 {
-	int error_code = 0, base_state = 0, node_inx;
+	int error_code = 0, node_inx;
 	struct node_record *node_ptr = NULL;
 	char  *this_node_name = NULL;
 	hostlist_t host_list;
-	uint16_t node_flags = 0, state_val;
+	uint16_t base_state = 0, node_flags = 0, state_val;
 	time_t now = time(NULL);
 
 	if (update_node_msg -> node_names == NULL ) {
@@ -1018,6 +1019,14 @@ int update_node ( update_node_msg_t * update_node_msg )
 			break;
 		}
 		
+		if ((update_node_msg -> reason) && 
+		    (update_node_msg -> reason[0])) {
+			xfree(node_ptr->reason);
+			node_ptr->reason = xstrdup(update_node_msg->reason);
+			info ("update_node: node %s reason set to: %s",
+				this_node_name, node_ptr->reason);
+		}
+
 		if (state_val != (uint16_t) NO_VAL) {
 			base_state = node_ptr->node_state; 
 			if (!_valid_node_state_change(base_state, state_val)) {
@@ -1032,8 +1041,12 @@ int update_node ( update_node_msg_t * update_node_msg )
 		}
 		if (state_val != (uint16_t) NO_VAL) {
 			if (state_val == NODE_RESUME) {
-				node_ptr->node_state &= (~NODE_STATE_DRAIN);
 				base_state &= NODE_STATE_BASE;
+				if ((base_state == NODE_STATE_IDLE) &&
+					   (node_ptr->node_state & NODE_STATE_DRAIN)) {
+					node_acct_up(node_ptr);
+				}
+				node_ptr->node_state &= (~NODE_STATE_DRAIN);
 				if (base_state == NODE_STATE_DOWN)
 					state_val = NODE_STATE_IDLE;
 				else
@@ -1047,6 +1060,15 @@ int update_node ( update_node_msg_t * update_node_msg )
 							       false);
 			}
 			else if (state_val == NODE_STATE_IDLE) {
+				base_state &= NODE_STATE_BASE;
+				if (base_state == NODE_STATE_DOWN) {
+					trigger_node_up(node_ptr);
+					node_acct_up(node_ptr);
+				} else if ((base_state == NODE_STATE_IDLE) &&
+					   (node_ptr->node_state & NODE_STATE_DRAIN)) {
+					node_acct_up(node_ptr);
+				}
+
 				/* assume they want to clear DRAIN flag too */
 				node_ptr->node_state &= (~NODE_STATE_DRAIN);
 				bit_set (avail_node_bitmap, node_inx);
@@ -1065,6 +1087,9 @@ int update_node ( update_node_msg_t * update_node_msg )
 				bit_clear (avail_node_bitmap, node_inx);
 				state_val = node_ptr->node_state |
 					NODE_STATE_DRAIN;
+				if ((node_ptr->run_job_cnt  == 0) &&
+				    (node_ptr->comp_job_cnt == 0))
+					node_acct_down(node_ptr);
 			}
 			else {
 				info ("Invalid node state specified %d", 
@@ -1085,14 +1110,6 @@ int update_node ( update_node_msg_t * update_node_msg )
 					this_node_name, 
 					node_state_string(state_val));
 			}
-		}
-
-		if ((update_node_msg -> reason) && 
-		    (update_node_msg -> reason[0])) {
-			xfree(node_ptr->reason);
-			node_ptr->reason = xstrdup(update_node_msg->reason);
-			info ("update_node: node %s reason set to: %s",
-				this_node_name, node_ptr->reason);
 		}
 
 		base_state = node_ptr->node_state & NODE_STATE_BASE;
@@ -1300,6 +1317,11 @@ extern int drain_nodes ( char *nodes, char *reason )
 
 		xfree(node_ptr->reason);
 		node_ptr->reason = xstrdup(reason);
+		if ((node_ptr->run_job_cnt  == 0) &&
+		    (node_ptr->comp_job_cnt == 0)) {
+			/* no jobs, node is drained */
+			node_acct_down(node_ptr);
+		}
 
 		select_g_update_node_state(node_inx, node_ptr->node_state);
 
@@ -1518,6 +1540,7 @@ validate_node_specs (char *node_name, uint16_t cpus,
 			xfree(node_ptr->reason);
 			reset_job_priority();
 			trigger_node_up(node_ptr);
+			node_acct_up(node_ptr);
 		} else if ((base_state == NODE_STATE_ALLOCATED) &&
 			   (job_count == 0)) {	/* job vanished */
 			last_node_update = now;
@@ -1712,6 +1735,7 @@ extern int validate_nodes_via_front_end(uint32_t job_count,
 						node_ptr->name);
 				xfree(node_ptr->reason);
 				trigger_node_up(node_ptr);
+				node_acct_up(node_ptr);
 			} else if ((base_state == NODE_STATE_ALLOCATED) &&
 				   (jobs_on_node == 0)) {	/* job vanished */
 				updated_job = true;
@@ -1840,6 +1864,8 @@ static void _node_did_resp(struct node_record *node_ptr)
 		info("node_did_resp: node %s returned to service", 
 			node_ptr->name);
 		xfree(node_ptr->reason);
+		trigger_node_up(node_ptr);
+		node_acct_up(node_ptr);
 	}
 	base_state = node_ptr->node_state & NODE_STATE_BASE;
 	if ((base_state == NODE_STATE_IDLE) 
@@ -2138,6 +2164,8 @@ extern void make_node_comp(struct node_record *node_ptr,
 	if ((node_ptr->run_job_cnt  == 0)
 	&&  (node_ptr->comp_job_cnt == 0)) {
 		bit_set(idle_node_bitmap, inx);
+		if (node_ptr->node_state & NODE_STATE_DRAIN)
+			node_acct_down(node_ptr);
 	}
 
 	if (base_state == NODE_STATE_DOWN) {
@@ -2168,6 +2196,7 @@ static void _make_node_down(struct node_record *node_ptr)
 	bit_clear (up_node_bitmap,    inx);
 	select_g_update_node_state(inx, node_ptr->node_state);	
 	trigger_node_down(node_ptr);
+	node_acct_down(node_ptr);
 }
 
 /*
@@ -2240,6 +2269,7 @@ void make_node_idle(struct node_record *node_ptr,
 		debug3("make_node_idle: Node %s is DRAINED", 
 		       node_ptr->name);
 		node_ptr->last_idle = now;
+		node_acct_down(node_ptr);
 	} else if (node_ptr->run_job_cnt) {
 		node_ptr->node_state = NODE_STATE_ALLOCATED | node_flags;
 	} else {

@@ -79,6 +79,7 @@
 
 #include "src/slurmctld/agent.h"
 #include "src/slurmctld/locks.h"
+#include "src/slurmctld/node_acct.h"
 #include "src/slurmctld/ping_nodes.h"
 #include "src/slurmctld/proc_req.h"
 #include "src/slurmctld/read_config.h"
@@ -308,6 +309,8 @@ int main(int argc, char *argv[])
 					slurmctld_conf.slurm_conf,
 					slurm_strerror(error_code));
 			}
+			if (recover == 0)
+				node_acct_all_down("cold-start");
 		} else {
 			error("this host (%s) not valid controller (%s or %s)",
 				node_name, slurmctld_conf.control_machine,

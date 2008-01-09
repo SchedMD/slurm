@@ -71,11 +71,12 @@ sbinPROGRAMS_INSTALL = $(INSTALL_PROGRAM)
 PROGRAMS = $(sbin_PROGRAMS)
 am_slurmctld_OBJECTS = agent.$(OBJEXT) backup.$(OBJEXT) \
 	controller.$(OBJEXT) job_mgr.$(OBJEXT) job_scheduler.$(OBJEXT) \
-	locks.$(OBJEXT) node_mgr.$(OBJEXT) node_scheduler.$(OBJEXT) \
-	partition_mgr.$(OBJEXT) ping_nodes.$(OBJEXT) \
-	power_save.$(OBJEXT) proc_req.$(OBJEXT) read_config.$(OBJEXT) \
-	sched_plugin.$(OBJEXT) srun_comm.$(OBJEXT) \
-	state_save.$(OBJEXT) step_mgr.$(OBJEXT) trigger_mgr.$(OBJEXT)
+	locks.$(OBJEXT) node_acct.$(OBJEXT) node_mgr.$(OBJEXT) \
+	node_scheduler.$(OBJEXT) partition_mgr.$(OBJEXT) \
+	ping_nodes.$(OBJEXT) power_save.$(OBJEXT) proc_req.$(OBJEXT) \
+	read_config.$(OBJEXT) sched_plugin.$(OBJEXT) \
+	srun_comm.$(OBJEXT) state_save.$(OBJEXT) step_mgr.$(OBJEXT) \
+	trigger_mgr.$(OBJEXT)
 slurmctld_OBJECTS = $(am_slurmctld_OBJECTS)
 slurmctld_DEPENDENCIES = $(top_builddir)/src/common/libcommon.la \
 	$(top_builddir)/src/common/libdaemonize.la
@@ -271,8 +272,11 @@ slurmctld_SOURCES = \
 	job_scheduler.c \
 	locks.c   	\
 	locks.h  	\
+	node_acct.c	\
+	node_acct.h	\
 	node_mgr.c 	\
-	node_scheduler.c node_scheduler.h \
+	node_scheduler.c \
+	node_scheduler.h \
 	partition_mgr.c \
 	ping_nodes.c	\
 	ping_nodes.h	\
@@ -372,6 +376,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/job_mgr.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/job_scheduler.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/locks.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/node_acct.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/node_mgr.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/node_scheduler.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/partition_mgr.Po@am__quote@

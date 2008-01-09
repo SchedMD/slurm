@@ -15,6 +15,7 @@ documents those changes that are of interest to users and admins.
  -- In slurmctld (for Moab) added job->details->reserved_resources field
     to report resources that were kept in reserve for job while it was 
     pending.
+ -- Add support for node UP/DOWN event logging in jobacct/gold plugin.
 
 * Changes in SLURM 1.2.21
 =========================
