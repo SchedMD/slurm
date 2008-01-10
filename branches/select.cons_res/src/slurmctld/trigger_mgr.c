@@ -600,17 +600,8 @@ extern int trigger_state_restore(void)
 	unlock_state_files();
 
 	buffer = create_buf(data, data_size);
-	if (size_buf(buffer) >= sizeof(uint16_t) + 
-			strlen(TRIGGER_STATE_VERSION)) {
-	        char *ptr = get_buf_data(buffer);
-
-	        if (!memcmp(&ptr[sizeof(uint16_t)], TRIGGER_STATE_VERSION, 3)) {
-		        safe_unpackstr_xmalloc(&ver_str, &ver_str_len, buffer);
-		        debug3("Version string in trigger_state header is %s",
-			       ver_str);
-		}
-	}
-	if (ver_str && (strcmp(ver_str, TRIGGER_STATE_VERSION) != 0)) {
+	safe_unpackstr_xmalloc(&ver_str, &ver_str_len, buffer);
+	if (strcmp(ver_str, TRIGGER_STATE_VERSION) != 0) {
 		error("Can't recover trigger state, data version incompatable");
 		xfree(ver_str);
 		free_buf(buffer);
