@@ -1254,9 +1254,6 @@ static int _cr_pack_job(struct select_cr_job *job, Buf buffer)
 	}
 	pack32_array(job->alloc_memory, nhosts, buffer);
 
-	pack_bit_fmt(job->node_bitmap, buffer);
-	pack16(_bitstr_bits(job->node_bitmap), buffer);
-
 	return 0;
 }
 
@@ -1266,8 +1263,7 @@ static int _cr_unpack_job(struct select_cr_job *job, Buf buffer)
     	uint16_t have_alloc_cores;
     	uint32_t len32;
 	uint32_t nhosts = 0;
-	char *bit_fmt = NULL;
-	uint16_t bit_cnt; 
+	uint16_t bit_cnt;
 
 	safe_unpack32(&job->job_id, buffer);
 	safe_unpack16(&job->state, buffer);
@@ -1305,23 +1301,10 @@ static int _cr_unpack_job(struct select_cr_job *job, Buf buffer)
 	if (len32 != nhosts)
 		 goto unpack_error;
 
-	safe_unpackstr_xmalloc(&bit_fmt, &len32, buffer);
-	safe_unpack16(&bit_cnt, buffer);
-	if (bit_fmt) {
-                job->node_bitmap = bit_alloc(bit_cnt);
-                if (job->node_bitmap == NULL)
-                        fatal("bit_alloc: %m");
-                if (bit_unfmt(job->node_bitmap, bit_fmt)) {
-                        error("error recovering exit_node_bitmap from %s",
-                                bit_fmt);
-                }
-                xfree(bit_fmt);
-	}
 	return 0;
 
 unpack_error:
 	_xfree_select_cr_job(job);
-	xfree(bit_fmt);
 	return -1;
 }
 
@@ -1570,14 +1553,20 @@ extern int select_p_state_restore(char *dir_name)
 		if (_cr_unpack_job(job, buffer) != 0)
 			goto unpack_error;
 		job->job_ptr = find_job_record(job->job_id);
-		if (job->job_ptr) {
+		if (job->job_ptr == NULL) {
+			error("cons_res: recovered non-existent job %u",
+				job->job_id);
+			_xfree_select_cr_job(job);
+		} else if (node_name2bitmap(job->job_ptr->nodes, false, 
+				&job->node_bitmap) != SLURM_SUCCESS) {
+			/* NOTE: Nodes can be added or removed on restart */
+			error("cons_res: recovered job %u has invalid nodes %s",
+				job->job_id, job->job_ptr->nodes);
+			_xfree_select_cr_job(job);
+		} else {
 			list_append(select_cr_job_list, job);
 			debug2("recovered cons_res job data for job %u", 
 				job->job_id);
-		} else {
-			error("recovered cons_res job data for unexistent job %u", 
-				job->job_id);
-			_xfree_select_cr_job(job);
 		}
 	}
 

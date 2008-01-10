@@ -152,7 +152,11 @@ struct select_cr_job {
 	uint16_t *node_offset;	/* the node_cr_record->alloc_cores row to
 				 * which this job was assigned */
 	enum node_cr_state node_req;	/* see node_cr_state comments */
-	bitstr_t *node_bitmap;	/* bitmap of nodes allocated to job    */
+	bitstr_t *node_bitmap;	/* bitmap of nodes allocated to job, 
+				 * NOTE: The node_bitmap in slurmctld's job
+				 * structure clears bits as on completion.
+				 * This bitmap is persistent through lifetime
+				 * of the job. */
 };
 
 struct node_cr_record * find_cr_node_record (const char *name);
