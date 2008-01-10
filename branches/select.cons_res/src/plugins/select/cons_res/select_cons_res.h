@@ -132,6 +132,7 @@ struct node_cr_record {
  *** which should be incremented if any changes are made.
  **/
 struct select_cr_job {
+	struct job_record *job_ptr;	/* pointer to record in slurmctld */
 	uint32_t job_id;	/* job ID, default set by SLURM        */
 	uint16_t state;		/* job state information               */
 	uint32_t nprocs;	/* --nprocs=n,      -n n               */
@@ -152,12 +153,6 @@ struct select_cr_job {
 				 * which this job was assigned */
 	char *partition;	/* partition name for this job */
 	enum node_cr_state node_req;	/* see node_cr_state comments */
-	uint16_t max_sockets;
-	uint16_t max_cores;
-	uint16_t max_threads;
-	uint16_t min_sockets;
-	uint16_t min_cores;
-	uint16_t min_threads;
 	bitstr_t *node_bitmap;	/* bitmap of nodes allocated to job    */
 };
 
@@ -172,5 +167,7 @@ void get_resources_this_node(uint16_t *cpus,
 			     uint16_t *threads, 
 			     struct node_cr_record *this_cr_node,
 			     uint32_t jobid);
+
+extern struct multi_core_data * create_default_mc(void);
 
 #endif /* !_CONS_RES_H */

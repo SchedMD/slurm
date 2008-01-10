@@ -509,17 +509,18 @@ static uint16_t _get_task_count(struct job_record *job_ptr, const int index,
 
 	cpus_per_task   = job_ptr->details->cpus_per_task;
 	ntasks_per_node = job_ptr->details->ntasks_per_node;
+
+	if (!job_ptr->details->mc_ptr)
+		job_ptr->details->mc_ptr = create_default_mc();
 	mc_ptr = job_ptr->details->mc_ptr;
-	if (mc_ptr) {
-		min_sockets = mc_ptr->min_sockets;
-		max_sockets = mc_ptr->max_sockets;
-		min_cores   = mc_ptr->min_cores;
-		max_cores   = mc_ptr->max_cores;
-		min_threads = mc_ptr->min_threads;
-		max_threads = mc_ptr->max_threads;
-		ntasks_per_socket = mc_ptr->ntasks_per_socket;
-		ntasks_per_core   = mc_ptr->ntasks_per_core;
-	}
+	min_sockets = mc_ptr->min_sockets;
+	max_sockets = mc_ptr->max_sockets;
+	min_cores   = mc_ptr->min_cores;
+	max_cores   = mc_ptr->max_cores;
+	min_threads = mc_ptr->min_threads;
+	max_threads = mc_ptr->max_threads;
+	ntasks_per_socket = mc_ptr->ntasks_per_socket;
+	ntasks_per_core   = mc_ptr->ntasks_per_core;
 
 	this_node = &(select_node_ptr[index]);
 	get_resources_this_node(&cpus, &sockets, &cores, &threads, 
@@ -1264,13 +1265,6 @@ static int _cr_pack_job(struct select_cr_job *job, Buf buffer)
 	}
 	pack32_array(job->alloc_memory, nhosts, buffer);
 
-	pack16(job->max_sockets, buffer);
-	pack16(job->max_cores, buffer);
-	pack16(job->max_threads, buffer);
-	pack16(job->min_sockets, buffer);
-	pack16(job->min_cores, buffer);
-	pack16(job->min_threads, buffer);
-
 	pack_bit_fmt(job->node_bitmap, buffer);
 	pack16(_bitstr_bits(job->node_bitmap), buffer);
 
@@ -1322,13 +1316,6 @@ static int _cr_unpack_job(struct select_cr_job *job, Buf buffer)
 	safe_unpack32_array((uint32_t**)&job->alloc_memory, &len32, buffer);
 	if (len32 != nhosts)
 		 goto unpack_error;
-
-	safe_unpack16(&job->max_sockets, buffer);
-	safe_unpack16(&job->max_cores, buffer);
-	safe_unpack16(&job->max_threads, buffer);
-	safe_unpack16(&job->min_sockets, buffer);
-	safe_unpack16(&job->min_cores, buffer);
-	safe_unpack16(&job->min_threads, buffer);
 
 	safe_unpackstr_xmalloc(&bit_fmt, &len32, buffer);
 	safe_unpack16(&bit_cnt, buffer);
@@ -1595,12 +1582,13 @@ extern int select_p_state_restore(char *dir_name)
 		job = xmalloc(sizeof(struct select_cr_job));
 		if (_cr_unpack_job(job, buffer) != 0)
 			goto unpack_error;
-		if (find_job_record(job->job_id) != NULL) {
+		job->job_ptr = find_job_record(job->job_id);
+		if (job->job_ptr) {
 			list_append(select_cr_job_list, job);
 			debug2("recovered cons_res job data for job %u", 
 				job->job_id);
 		} else {
-			debug2("recovered cons_res job data for unexistent job %u", 
+			error("recovered cons_res job data for unexistent job %u", 
 				job->job_id);
 			_xfree_select_cr_job(job);
 		}
@@ -2337,7 +2325,6 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t * bitmap,
 	struct multi_core_data *mc_ptr = NULL;
 	static struct select_cr_job *job;
 	uint16_t * layout_ptr = NULL;
-	uint16_t plane_size = 0;
 	enum node_cr_state job_node_req;
 	int  array_size;
 	int *busy_rows, *sh_tasks, *al_tasks, *freq;
@@ -2358,6 +2345,8 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t * bitmap,
 		return EINVAL;
 
 	layout_ptr = job_ptr->details->req_node_layout;
+	if (!job_ptr->details->mc_ptr)
+		job_ptr->details->mc_ptr = create_default_mc();
 	mc_ptr = job_ptr->details->mc_ptr;
 	reqmap = job_ptr->details->req_node_bitmap;
 	job_node_req = _get_job_node_req(job_ptr);
@@ -2382,10 +2371,10 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t * bitmap,
 
 	/* This is the case if -O/--overcommit  is true */ 
 	debug3("job_ptr->num_procs %u", job_ptr->num_procs);
-	if (mc_ptr && (job_ptr->num_procs == job_ptr->details->min_nodes)) {
-		job_ptr->num_procs *= MAX(1,mc_ptr->min_threads);
-		job_ptr->num_procs *= MAX(1,mc_ptr->min_cores);
-		job_ptr->num_procs *= MAX(1,mc_ptr->min_sockets);
+	if (job_ptr->num_procs == job_ptr->details->min_nodes) {
+		job_ptr->num_procs *= MAX(1, mc_ptr->min_threads);
+		job_ptr->num_procs *= MAX(1, mc_ptr->min_cores);
+		job_ptr->num_procs *= MAX(1, mc_ptr->min_sockets);
 	}
 
 	/* compute condensed arrays of node allocation data */
@@ -2487,27 +2476,12 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t * bitmap,
 	
 	/* allocate the job and distribute the tasks appropriately */
 	job = xmalloc(sizeof(struct select_cr_job));
+	job->job_ptr = job_ptr;
 	job->job_id = job_ptr->job_id;
 	job->nhosts = bit_set_count(bitmap);
 	job->nprocs = MAX(job_ptr->num_procs, job->nhosts);
 	job->partition = xstrdup(job_ptr->partition);
 	job->node_req  = job_node_req;
-	if (mc_ptr) {
-		plane_size       = mc_ptr->plane_size;
-		job->max_sockets = mc_ptr->max_sockets;
-		job->max_cores   = mc_ptr->max_cores;
-		job->max_threads = mc_ptr->max_threads;
-		job->min_sockets = mc_ptr->min_sockets;
-		job->min_cores   = mc_ptr->min_cores;
-		job->min_threads = mc_ptr->min_threads;
-	} else {
-		job->max_sockets = 0xffff;
-		job->max_cores   = 0xffff;
-		job->max_threads = 0xffff;
-		job->min_sockets = 1;
-		job->min_cores   = 1;
-		job->min_threads = 1;
-	}
 
 	job->node_bitmap = bit_copy(bitmap);
 	if (job->node_bitmap == NULL)
@@ -2608,7 +2582,7 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t * bitmap,
 			error_code = cr_dist(job, 1, cr_type); 
 			break;
 		case SLURM_DIST_PLANE:
-			error_code = cr_plane_dist(job, plane_size, cr_type); 
+			error_code = cr_plane_dist(job, mc_ptr->plane_size, cr_type); 
 			break;
 		case SLURM_DIST_ARBITRARY:
 		default:
@@ -2986,4 +2960,21 @@ extern int select_p_reconfigure(void)
 	last_cr_update_time = time(NULL);
 
 	return SLURM_SUCCESS;
+}
+
+extern struct multi_core_data * create_default_mc(void)
+{
+	struct multi_core_data *mc_ptr;
+	mc_ptr = xmalloc(sizeof(struct multi_core_data));
+	mc_ptr->min_sockets = 1;
+	mc_ptr->max_sockets = 0xffff;
+	mc_ptr->min_cores   = 1;
+	mc_ptr->max_cores   = 0xffff;
+	mc_ptr->min_threads = 1;
+	mc_ptr->max_threads = 0xffff;
+/*	mc_ptr is already initialized to zero */
+/*	mc_ptr->ntasks_per_socket = 0; */
+/*	mc_ptr->ntasks_per_core   = 0; */
+/*	mc_ptr->plane_size        = 0; */
+	return mc_ptr;
 }
