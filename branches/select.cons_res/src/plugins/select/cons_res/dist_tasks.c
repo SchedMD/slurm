@@ -110,14 +110,9 @@ static int _find_offset(struct select_cr_job *job, const int job_index,
 	uint16_t acores, asockets, freecpus, last_freecpus = 0;
 	struct multi_core_data *mc_ptr;
 
-	p_ptr = get_cr_part_ptr(this_cr_node, job->partition);
-	if (p_ptr == NULL) {
-		/* this should never happen, because p_ptr */
-		/* exists in the callers of this function  */
-		error("cons_res: find_offset: could not find part %s",
-		      job->partition);
+	p_ptr = get_cr_part_ptr(this_cr_node, job->job_ptr->partition);
+	if (p_ptr == NULL)
 		abort();
-	}
 	mc_ptr = job->job_ptr->details->mc_ptr;
 
 	index = -1;
@@ -186,14 +181,9 @@ static int _job_assign_tasks(struct select_cr_job *job,
 	struct part_cr_record *p_ptr;
 	struct multi_core_data *mc_ptr;
 	
-	p_ptr = get_cr_part_ptr(this_cr_node, job->partition);
-	if (p_ptr == NULL) {
-		/* this should never happen, because p_ptr */
-		/* exists in the callers of this function  */
-		error("cons_res: assign_tasks: could not find part %s",
-		      job->partition);
+	p_ptr = get_cr_part_ptr(this_cr_node, job->job_ptr->partition);
+	if (p_ptr == NULL)
 		return SLURM_ERROR;
-	}
 
 	if ((job->job_ptr == NULL) || (job->job_ptr->details == NULL)) {
 		/* This should never happen */
@@ -339,10 +329,11 @@ static uint16_t _get_cpu_offset(struct select_cr_job *job, int index,
 	int i, set = 0;
 	uint16_t cpus, sockets, cores, threads, besto = 0, offset = 0;
 	struct part_cr_record *p_ptr;
-	p_ptr = get_cr_part_ptr(this_node, job->partition);
 
-	if (p_ptr->num_rows < 2)
+	p_ptr = get_cr_part_ptr(this_node, job->job_ptr->partition);
+	if ((p_ptr == NULL) || (p_ptr->num_rows < 2))
 		return offset;
+
 	get_resources_this_node(&cpus, &sockets, &cores, &threads,
 	        		this_node, job->job_id);
 	/* scan all rows looking for the best row for job->alloc_cpus[index] */

@@ -132,7 +132,7 @@ struct node_cr_record {
  *** which should be incremented if any changes are made.
  **/
 struct select_cr_job {
-	struct job_record *job_ptr;	/* pointer to record in slurmctld */
+	struct job_record *job_ptr;	/* pointer to slurmctld job record */
 	uint32_t job_id;	/* job ID, default set by SLURM        */
 	uint16_t state;		/* job state information               */
 	uint32_t nprocs;	/* --nprocs=n,      -n n               */
@@ -151,7 +151,6 @@ struct select_cr_job {
 				 * memory on each host */
 	uint16_t *node_offset;	/* the node_cr_record->alloc_cores row to
 				 * which this job was assigned */
-	char *partition;	/* partition name for this job */
 	enum node_cr_state node_req;	/* see node_cr_state comments */
 	bitstr_t *node_bitmap;	/* bitmap of nodes allocated to job    */
 };

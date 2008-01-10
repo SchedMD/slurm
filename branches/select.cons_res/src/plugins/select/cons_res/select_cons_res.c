@@ -137,11 +137,10 @@
  * as 100 or 1000.  Various SLURM versions will likely require a certain
  * minimum versions for their plugins as the node selection API matures.
  */
-const char plugin_name[] =
-    "Consumable Resources (CR) Node Selection plugin";
+const char plugin_name[] = "Consumable Resources (CR) Node Selection plugin";
 const char plugin_type[] = "select/cons_res";
 const uint32_t plugin_version = 90;
-const uint32_t pstate_version = 5;	/* version control on saved state */
+const uint32_t pstate_version = 6;	/* version control on saved state */
 
 #define CR_JOB_ALLOCATED_CPUS  0x1
 #define CR_JOB_ALLOCATED_MEM   0x2
@@ -370,6 +369,7 @@ extern struct part_cr_record *get_cr_part_ptr(struct node_cr_record *this_node,
 		if (strcmp(p_ptr->part_name, part_name) == 0)
 			return p_ptr;
 	}
+	error("cons_res: could not find partition %s", part_name);
 	return NULL;
 }
 
@@ -532,10 +532,7 @@ static uint16_t _get_task_count(struct job_record *job_ptr, const int index,
 
 	if (!all_available) {
 		p_ptr = get_cr_part_ptr(this_node, job_ptr->partition);
-		if (!p_ptr) {
-			error("cons_res: _get_task_count: could not find part %s", 
-			      job_ptr->part_ptr->name);
-		} else {
+		if (p_ptr) {
 			if (job_node_req == NODE_CR_ONE_ROW) {
 				/* need to scan over all partitions with
 				 * num_rows = 1 */
@@ -657,7 +654,6 @@ static void _xfree_select_cr_job(struct select_cr_job *job)
 	xfree(job->cpus);
 	xfree(job->alloc_cpus);	
 	xfree(job->node_offset);	
-	xfree(job->partition);	
 	xfree(job->alloc_memory);
 	if ((cr_type == CR_CORE)   || (cr_type == CR_CORE_MEMORY) ||
 	    (cr_type == CR_SOCKET) || (cr_type == CR_SOCKET_MEMORY)) {
@@ -895,12 +891,9 @@ static int _add_job_to_nodes(struct select_cr_job *job, char *pre_err,
 		this_node->node_state = job->node_req;
 		
 		_chk_resize_node(this_node, this_node->node_ptr->sockets);
-		p_ptr = get_cr_part_ptr(this_node, job->partition);
-		if (p_ptr == NULL) {
-			error("%s: could not find part %s", pre_err,
-			      job->partition);
+		p_ptr = get_cr_part_ptr(this_node, job->job_ptr->partition);
+		if (p_ptr == NULL)
 			continue;
-		}
 
 		/* The offset could be invalid if the sysadmin reduced the
 		 * number of shared rows after this job was allocated. In
@@ -1024,12 +1017,9 @@ static int _rm_job_from_nodes(struct select_cr_job *job, char *pre_err,
 			continue;
 		
 		_chk_resize_node(this_node, this_node->node_ptr->sockets);
-		p_ptr = get_cr_part_ptr(this_node, job->partition);
-		if (p_ptr == NULL) {
-			error("%s: could not find part %s", pre_err,
-			      job->partition);
+		p_ptr = get_cr_part_ptr(this_node, job->job_ptr->partition);
+		if (p_ptr == NULL)
 			continue;
-		}
 
 		/* If the offset is no longer valid, then the job was never
 		 * "allocated" on these cores (see add_job_to_nodes).
@@ -1250,7 +1240,6 @@ static int _cr_pack_job(struct select_cr_job *job, Buf buffer)
 	packstr_array(job->host, nhosts, buffer);
 	pack16_array(job->cpus, nhosts, buffer);
 	pack16_array(job->alloc_cpus, nhosts, buffer);
-	packstr(job->partition, buffer);
 	pack16_array(job->node_offset, nhosts, buffer);
 
 	if (job->alloc_cores) {
@@ -1297,7 +1286,6 @@ static int _cr_unpack_job(struct select_cr_job *job, Buf buffer)
 
 	safe_unpack16_array(&job->cpus, &len32, buffer);
 	safe_unpack16_array(&job->alloc_cpus, &len32, buffer);
-	safe_unpackstr_xmalloc(&job->partition, &len32, buffer);
 	safe_unpack16_array(&job->node_offset, &len32, buffer);
 
 	safe_unpack16(&have_alloc_cores, buffer);
@@ -1359,8 +1347,7 @@ extern int select_p_state_save(char *dir_name)
         (void) unlink(file_name);
         state_fd = creat (file_name, 0600);
         if (state_fd < 0) {
-                error ("Can't save state, error creating file %s",
-                        file_name);
+                error("Can't save state, error creating file %s", file_name);
 		xfree(file_name);
                 return SLURM_ERROR;
 	}
@@ -2187,8 +2174,9 @@ static int _get_allocated_rows(struct job_record *job_ptr, int n,
 	int i, j, rows = 0;
 	
 	p_ptr = get_cr_part_ptr(&(select_node_ptr[n]), job_ptr->partition);
-	if (!p_ptr)
+	if (p_ptr == NULL)
 		return rows;
+
 	for (i = 0; i < p_ptr->num_rows; i++) {
 		int offset = i * select_node_ptr[n].num_sockets;
 		for (j = 0; j < select_node_ptr[n].num_sockets; j++){
@@ -2480,7 +2468,6 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t * bitmap,
 	job->job_id = job_ptr->job_id;
 	job->nhosts = bit_set_count(bitmap);
 	job->nprocs = MAX(job_ptr->num_procs, job->nhosts);
-	job->partition = xstrdup(job_ptr->partition);
 	job->node_req  = job_node_req;
 
 	job->node_bitmap = bit_copy(bitmap);
