@@ -467,7 +467,6 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	}
 
 	if (mode == SELECT_MODE_WILL_RUN) {
-		/* Placeholder for will-run test */
 		rc = _will_run_test(job_ptr, bitmap, min_nodes, max_nodes,
 				    max_share, req_nodes);
 		slurm_mutex_unlock(&cr_mutex);
@@ -583,6 +582,7 @@ static int _find_job_mate(struct job_record *job_ptr, bitstr_t *bitmap,
 		if ((job_scan_ptr->part_ptr == job_ptr->part_ptr) &&
 		    (job_scan_ptr->job_state == JOB_RUNNING) &&
 		    (job_scan_ptr->node_cnt == req_nodes) &&
+		    (job_scan_ptr->total_procs >= job_ptr->num_procs) &&
 		    bit_super_set(job_scan_ptr->node_bitmap, bitmap)) {
 			bit_and(bitmap, job_scan_ptr->node_bitmap);
 			return SLURM_SUCCESS;
