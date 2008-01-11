@@ -93,7 +93,6 @@ enum node_cr_state {
  */
 struct node_cr_record {
 	struct node_record *node_ptr;	/* ptr to the actual node */
-	char *name;			/* reference copy of node_ptr name */
 	uint16_t num_sockets;		/* number of sockets in this node */
 	enum node_cr_state node_state;	/* see node_cr_state comments */
 	struct part_cr_record *parts;	/* ptr to singly-linked part_cr_record

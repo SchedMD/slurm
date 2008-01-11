@@ -504,11 +504,8 @@ static void _xfree_select_nodes(struct node_cr_record *ptr, int count)
 	if (ptr == NULL)
 		return;
 
-	for (i = 0; i < count; i++) {
-		xfree(ptr[i].name);
+	for (i = 0; i < count; i++)
 		_destroy_node_part_array(&(ptr[i]));
-		ptr[i].num_sockets = 0;
-	}
 	xfree(ptr);
 }
 
@@ -817,14 +814,16 @@ static int _add_job_to_nodes(struct select_cr_job *job, char *pre_err,
 
 		/* Remove debug only */
 		debug3("cons_res: %s: Job %u (+) node %s alloc_mem %u state %d",
-			pre_err, job->job_id, this_node->name,
+			pre_err, job->job_id, 
+			node_record_table_ptr[host_index].name,
 			this_node->alloc_memory, this_node->node_state);
 		debug3("cons_res: %s: Job %u (+) alloc_ cpus %u offset %u mem %u",
 			pre_err, job->job_id, job->alloc_cpus[i],
 			job->node_offset[i], job->alloc_memory[i]);
 		for (j = 0; j < this_node->num_sockets; j++)
 			debug3("cons_res: %s: Job %u (+) node %s alloc_cores[%d] %u",
-				pre_err, job->job_id, this_node->name, 
+				pre_err, job->job_id, 
+				node_record_table_ptr[host_index].name, 
 				j, p_ptr->alloc_cores[offset+j]);
 	}
 	last_cr_update_time = time(NULL);
@@ -913,7 +912,8 @@ static int _rm_job_from_nodes(struct select_cr_job *job, char *pre_err,
 							job->alloc_cores[i][j];
 				else {
 					error("%s: alloc_cores underflow on %s",
-					      pre_err, this_node->name);
+					      pre_err, 
+					      node_record_table_ptr[host_index].name);
 					p_ptr->alloc_cores[offset+j] = 0;
 					rc = SLURM_ERROR;
 				}
@@ -928,7 +928,8 @@ static int _rm_job_from_nodes(struct select_cr_job *job, char *pre_err,
 			else {
 				error("%s: CPU underflow (%u - %u) on %s",
 				      pre_err, p_ptr->alloc_cores[offset],
-				      job->alloc_cpus[i], this_node->name);
+				      job->alloc_cpus[i], 
+				      node_record_table_ptr[host_index].name);
 				p_ptr->alloc_cores[offset] = 0;
 				rc = SLURM_ERROR;  
 			}
@@ -962,7 +963,8 @@ static int _rm_job_from_nodes(struct select_cr_job *job, char *pre_err,
 			this_node->alloc_memory, offset);
 		for (j = 0; j < this_node->num_sockets; j++)
 			debug3("cons_res: %s: Job %u (-) node %s alloc_cores[%d] %u",
-				pre_err, job->job_id, this_node->name, 
+				pre_err, job->job_id, 
+				node_record_table_ptr[host_index].name, 
 				j, p_ptr->alloc_cores[offset+j]);
 	}
 	last_cr_update_time = time(NULL);
@@ -1436,7 +1438,6 @@ extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)
 
 	for (i = 0; i < select_node_cnt; i++) {
 		select_node_ptr[i].node_ptr = &node_ptr[i];
-		select_node_ptr[i].name     = xstrdup(node_ptr[i].name);
 		select_node_ptr[i].num_sockets = node_ptr[i].sockets;
 		select_node_ptr[i].node_state = NODE_CR_AVAILABLE;
 		select_node_ptr[i].alloc_memory = 0;
