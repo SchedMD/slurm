@@ -119,7 +119,6 @@ struct select_cr_job {
 	enum node_cr_state node_req;    /* see node_cr_state comments */
 	uint32_t nprocs;	/* --nprocs=n,      -n n               */
 	uint32_t nhosts;	/* number of hosts allocated to job    */
-	char **host;		/* hostname vector                     */
 	uint16_t *cpus;		/* number of processors on each host,
 				 * if using Moab scheduler (sched/wiki2)
 				 * then this will be initialized to the
