@@ -339,12 +339,16 @@ extern gold_response_t *get_gold_response(gold_request_t *gold_request)
 	case GOLD_OBJECT_JOB:
 		object = GOLD_OBJECT_JOB_STR;
 		break;
+	case GOLD_OBJECT_EVENT:
+		object = GOLD_OBJECT_EVENT_STR;
+		break;
 	case GOLD_OBJECT_ROLEUSER:
 		object = GOLD_OBJECT_ROLEUSER_STR;
 		break;
 	default:
 		error("get_gold_response: "
 		      "unsupported object %d", gold_request->object);
+		return NULL;
 	}
 
 	switch(gold_request->action) {
