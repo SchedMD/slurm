@@ -402,13 +402,11 @@ extern int cr_dist(struct select_cr_job *job, int cyclic,
 			continue;
 		job_index++;
 		
-		this_cr_node = find_cr_node_record(
-			node_record_table_ptr[host_index].name);
-		if (this_cr_node == NULL) {
-			error("cons_res: cr_dist: could not find node %s", 
-			      node_record_table_ptr[host_index].name);
+		if (select_node_ptr == NULL) {
+			error("cons_res: select_node_ptr is NULL");
 			return SLURM_ERROR;
 		}
+		this_cr_node = &select_node_ptr[host_index];
 		
 		if (job->cpus[job_index] == 0) {
 			error(" cons_res: %d no available cpus on node %s ",
@@ -537,14 +535,12 @@ extern int cr_plane_dist(struct select_cr_job *job,
 		if (bit_test(job->node_bitmap, host_index) == 0)
 			continue;
 		job_index++;
-		
-		this_cr_node = find_cr_node_record(
-			node_record_table_ptr[host_index].name);
-		if (this_cr_node == NULL) {
-			error("cons_res: cr_plane_dist: could not find node %s", 
-			      node_record_table_ptr[host_index].name);
+
+		if (select_node_ptr == NULL) {
+			error("cons_res: select_node_ptr is NULL");
 			return SLURM_ERROR;
 		}
+		this_cr_node = &select_node_ptr[host_index];
 		
 		if (job->cpus[job_index] == 0) {
 			error(" cons_res: no available cpus on node %s", 

@@ -62,18 +62,7 @@
  * has been assigned to a partition. SLURM allows a node to be
  * assigned to more than one partition. One or more partitions
  * may be configured to share the cores with more than one job.
- *
- *** NOTE: If any changes are made here, the following data structure has
- ***       persistent state which is maintained by select_cons_res.c:
- ***		select_p_state_save
- ***		select_p_state_restore
- ***		select_p_node_init
- *** 
- *** as well as tracked by version control
- ***		select_cons_res.c:pstate_version
- *** which should be incremented if any changes are made.
  */
-
 struct part_cr_record {
 	char *part_name;		/* name of partition */
 	uint16_t *alloc_cores;		/* core count per socket reserved by
@@ -98,17 +87,10 @@ enum node_cr_state {
 
 /* node_cr_record keeps track of the resources within a node which 
  * have been reserved by already scheduled jobs. 
+ *
+ * NOTE: The locations of these entries are synchronized with the 
+ * job records in slurmctld (entry X in both tables are the same).
  */
-/*** NOTE: If any changes are made here, the following data structure has
- ***       persistent state which is maintained by select_cons_res.c:
- ***		select_p_state_save
- ***		select_p_state_restore
- ***		select_p_node_init
- *** 
- *** as well as tracked by version control
- ***		select_cons_res.c:pstate_version
- *** which should be incremented if any changes are made.
- **/
 struct node_cr_record {
 	struct node_record *node_ptr;	/* ptr to the actual node */
 	char *name;			/* reference copy of node_ptr name */
@@ -118,8 +100,8 @@ struct node_cr_record {
 					 * list that contains alloc_core info */
 	uint32_t alloc_memory;		/* real memory reserved by already
 					 * scheduled jobs */
-	struct node_cr_record *node_next;/* next entry with same hash index */
 };
+extern struct node_cr_record *select_node_ptr;
 
 
 /*** NOTE: If any changes are made here, the following data structure has
@@ -132,9 +114,9 @@ struct node_cr_record {
  *** which should be incremented if any changes are made.
  **/
 struct select_cr_job {
-	struct job_record *job_ptr;	/* pointer to slurmctld job record */
+	/* Information preserved across reboots */
 	uint32_t job_id;	/* job ID, default set by SLURM        */
-	uint16_t state;		/* job state information               */
+	enum node_cr_state node_req;    /* see node_cr_state comments */
 	uint32_t nprocs;	/* --nprocs=n,      -n n               */
 	uint32_t nhosts;	/* number of hosts allocated to job    */
 	char **host;		/* hostname vector                     */
@@ -151,7 +133,10 @@ struct select_cr_job {
 				 * memory on each host */
 	uint16_t *node_offset;	/* the node_cr_record->alloc_cores row to
 				 * which this job was assigned */
-	enum node_cr_state node_req;	/* see node_cr_state comments */
+
+	/* Information re-established after reboot */
+	struct job_record *job_ptr;	/* pointer to slurmctld job record */
+	uint16_t state;		/* job state information               */
 	bitstr_t *node_bitmap;	/* bitmap of nodes allocated to job, 
 				 * NOTE: The node_bitmap in slurmctld's job
 				 * structure clears bits as on completion.
