@@ -561,6 +561,7 @@ void jobacct_p_resume_poll()
  * node registers with rather than the CPU count defined for the node in slurm.conf */
 #define SLURM_NODE_ACCT_REGISTER 1
 #endif
+#define DEBUG 1
 
 extern void jobacct_p_node_down_slurmctld(struct node_record *node_ptr)
 {
@@ -623,6 +624,10 @@ extern void jobacct_p_cluster_procs(char *cluster_name, uint32_t procs)
 	static uint32_t last_procs = 0;
 	char tmp[32];
 	time_t now = time(NULL);
+	gold_request_t *gold_request = NULL;
+	gold_response_t *gold_response = NULL;
+	char tmp_buff[50];
+	int rc = SLURM_ERROR;
 
 	if (procs == last_procs)
 		return;
@@ -635,7 +640,62 @@ extern void jobacct_p_cluster_procs(char *cluster_name, uint32_t procs)
 	     cluster_name, procs, tmp);
 #endif
 	
-	/* FIXME: WRITE TO DATABASE HERE */
+	gold_request = create_gold_request(GOLD_OBJECT_EVENT,
+					   GOLD_ACTION_MODIFY);
+	if(!gold_request) 
+		return;
+	
+	gold_request_add_condition(gold_request, "Machine", cluster_name);
+	gold_request_add_condition(gold_request, "EndTime", "0");
+
+	snprintf(tmp_buff, sizeof(tmp_buff), "%u", (int)now);
+	gold_request_add_assignment(gold_request, "EndTime", tmp_buff);		
+			
+	gold_response = get_gold_response(gold_request);	
+	destroy_gold_request(gold_request);
+
+	if(!gold_response) {
+		error("jobacct_p_cluster_procs: no response received");
+		return;
+	}
+
+	if(!gold_response->rc) 
+		rc = SLURM_SUCCESS;
+	else {
+		error("gold_response has non-zero rc(%d): %s",
+		      gold_response->rc,
+		      gold_response->message);
+	}
+	destroy_gold_response(gold_response);
+
+	/* now add the new one */
+	gold_request = create_gold_request(GOLD_OBJECT_EVENT,
+					   GOLD_ACTION_CREATE);
+	if(!gold_request) 
+		return;
+	
+	gold_request_add_assignment(gold_request, "Machine", cluster_name);
+	snprintf(tmp_buff, sizeof(tmp_buff), "%u", (int)now);
+	gold_request_add_assignment(gold_request, "StartTime", tmp_buff);
+	snprintf(tmp_buff, sizeof(tmp_buff), "%u", (int)procs);
+	gold_request_add_assignment(gold_request, "CPUCount", tmp_buff);
+			
+	gold_response = get_gold_response(gold_request);	
+	destroy_gold_request(gold_request);
+
+	if(!gold_response) {
+		error("jobacct_p_cluster_procs: no response received");
+		return;
+	}
+
+	if(!gold_response->rc) 
+		rc = SLURM_SUCCESS;
+	else {
+		error("gold_response has non-zero rc(%d): %s",
+		      gold_response->rc,
+		      gold_response->message);
+	}
+	destroy_gold_response(gold_response);
 }
 extern void jobacct_p_cluster_ready()
 {
