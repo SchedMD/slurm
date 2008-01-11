@@ -688,7 +688,7 @@ static int _synchronize_bitmaps(bitstr_t ** partially_idle_bitmap)
 	debug3("cons_res: Synch size avail %d size idle %d ",
 	       bit_size(avail_node_bitmap), bit_size(idle_node_bitmap));
 
-	for (i = 0; i < node_record_count; i++) {
+	for (i = 0; i < select_node_cnt; i++) {
 		if (bit_test(avail_node_bitmap, i) != 1)
 			continue;
 
@@ -735,7 +735,7 @@ static int _add_job_to_nodes(struct select_cr_job *job, char *pre_err,
 		job->state |= CR_JOB_ALLOCATED_CPUS;
 
 	i = -1;
-	for (host_index = 0; host_index < node_record_count; host_index++) {
+	for (host_index = 0; host_index < select_node_cnt; host_index++) {
 		struct node_cr_record *this_node;
 		struct part_cr_record *p_ptr;
 		uint16_t offset = 0;
@@ -858,7 +858,7 @@ static int _rm_job_from_nodes(struct select_cr_job *job, char *pre_err,
 	 	job->state &= ~CR_JOB_ALLOCATED_CPUS;
 
 	i = -1;
-	for (host_index = 0; host_index < node_record_count; host_index++) {
+	for (host_index = 0; host_index < select_node_cnt; host_index++) {
 		struct node_cr_record *this_node;
 		struct part_cr_record *p_ptr;
 		uint16_t offset;
@@ -1440,8 +1440,8 @@ extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)
 		select_node_ptr[i].node_ptr = &node_ptr[i];
 		select_node_ptr[i].num_sockets = node_ptr[i].sockets;
 		select_node_ptr[i].node_state = NODE_CR_AVAILABLE;
-		select_node_ptr[i].alloc_memory = 0;
-		select_node_ptr[i].parts = NULL;
+		/* xmalloc initialized everything to zero, 
+		 * including alloc_memory and parts */
 		_create_node_part_array(&(select_node_ptr[i]));
 	}
 
@@ -1838,7 +1838,7 @@ static int _verify_node_state(struct job_record *job_ptr, bitstr_t * bitmap,
 {
 	int i, free_mem;
 
-	for (i = 0; i < node_record_count; i++) {
+	for (i = 0; i < select_node_cnt; i++) {
 		if (!bit_test(bitmap, i))
 			continue;
 
