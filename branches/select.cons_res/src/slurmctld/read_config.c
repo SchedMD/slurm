@@ -773,9 +773,10 @@ int read_slurm_conf(int recover)
 	}
 
 	if ((select_g_node_init(node_record_table_ptr, node_record_count)
-			!= SLURM_SUCCESS) 
-	    || (select_g_block_init(part_list) != SLURM_SUCCESS) 
-	    || (select_g_state_restore(state_save_dir) != SLURM_SUCCESS)) { 
+			!= SLURM_SUCCESS) ||
+	    (select_g_block_init(part_list) != SLURM_SUCCESS) ||
+	    (select_g_state_restore(state_save_dir) != SLURM_SUCCESS) ||
+	    (select_g_job_init(job_list) != SLURM_SUCCESS)) { 
 		error("failed to initialize node selection plugin state");
 		abort();
 	}
@@ -788,11 +789,6 @@ int read_slurm_conf(int recover)
 
 	if ((error_code = _build_bitmaps()))
 		return error_code;
-	if (select_g_job_init(job_list) != 
-	    SLURM_SUCCESS) {	/* Must be after _build_bitmaps() */
-		error("failed to initialize node selection plugin state");
-		abort();
-	}
 	_restore_job_dependencies();
 	restore_node_features();
 #ifdef 	HAVE_ELAN
