@@ -556,6 +556,12 @@ void jobacct_p_resume_poll()
 	return;
 }
 
+#if (0)
+/* If defined and FastSchedule=0 in slurm.conf, then report the CPU count that a 
+ * node registers with rather than the CPU count defined for the node in slurm.conf */
+#define SLURM_NODE_ACCT_REGISTER 1
+#endif
+
 extern void jobacct_p_node_down_slurmctld(struct node_record *node_ptr)
 {
 	char tmp[32];
@@ -651,10 +657,14 @@ extern void jobacct_p_cluster_ready()
 				}
 			}
 		}
+#ifdef SLURM_NODE_ACCT_REGISTER
 		if (slurmctld_conf.fast_schedule)
 			procs += node_ptr->config_ptr->cpus;
 		else
 			procs += node_ptr->cpus;
+#else
+		procs += node_ptr->config_ptr->cpus;
+#endif
 	}
 
 	jobacct_p_cluster_procs(cluster_name, procs);
