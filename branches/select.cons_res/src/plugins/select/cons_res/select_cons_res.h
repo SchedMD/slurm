@@ -62,6 +62,10 @@
  * has been assigned to a partition. SLURM allows a node to be
  * assigned to more than one partition. One or more partitions
  * may be configured to share the cores with more than one job.
+ *
+ * NOTE: Partitions can be added and removed in real time, so we
+ * use the partition name and string comparision rather than
+ * comparing pointers to partition records.
  */
 struct part_cr_record {
 	char *part_name;		/* name of partition */
