@@ -39,11 +39,13 @@
 
 #include <stdlib.h>
 #include <ctype.h>
+#include <sys/stat.h>
 
 #include "src/common/xmalloc.h"
 #include "src/common/list.h"
 #include "src/common/xstring.h"
 #include "src/common/uid.h"
+#include <src/common/parse_time.h>
 
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmd/slurmd/slurmd.h"
@@ -552,4 +554,109 @@ void jobacct_p_suspend_poll()
 void jobacct_p_resume_poll()
 {
 	return;
+}
+
+extern void jobacct_p_node_down_slurmctld(struct node_record *node_ptr)
+{
+	char tmp[32];
+	time_t now = time(NULL);
+	uint16_t cpus;
+
+	if (slurmctld_conf.fast_schedule)
+		cpus = node_ptr->config_ptr->cpus;
+	else
+		cpus = node_ptr->cpus;
+
+	slurm_make_time_str(&now, tmp, sizeof(tmp));
+#if _DEBUG
+	info("Node_acct_down: %s at %s with %u cpus due to %s", 
+	     node_ptr->name, tmp, cpus, node_ptr->reason);
+#endif
+/* FIXME: WRITE TO DATABASE HERE */
+}
+
+extern void jobacct_p_node_all_down_slurmctld(char *reason)
+{
+	char *state_file, tmp[32];
+	struct stat stat_buf;
+	struct node_record *node_ptr;
+	int i;
+
+	state_file = xstrdup (slurmctld_conf.state_save_location);
+	xstrcat (state_file, "/node_state");
+	if (stat(state_file, &stat_buf)) {
+		error("node_acct_all_down: could not stat(%s) to record "
+		      "node down time", state_file);
+		xfree(state_file);
+		return;
+	}
+	xfree(state_file);
+
+	slurm_make_time_str(&stat_buf.st_mtime, tmp, sizeof(tmp));
+	node_ptr = node_record_table_ptr;
+	for (i = 0; i < node_record_count; i++, node_ptr++) {
+		if (node_ptr->name == '\0')
+			continue;
+		jobacct_p_node_down_slurmctld(node_ptr);
+	}
+}
+
+extern void jobacct_p_node_up_slurmctld(struct node_record *node_ptr)
+{
+	char tmp[32];
+	time_t now = time(NULL);
+
+	slurm_make_time_str(&now, tmp, sizeof(tmp));
+#if _DEBUG
+	info("Node_acct_up: %s at %s", node_ptr->name, tmp);
+#endif
+	/* FIXME: WRITE TO DATABASE HERE */
+}
+extern void jobacct_p_cluster_procs(char *cluster_name, uint32_t procs)
+{
+	static uint32_t last_procs = 0;
+	char tmp[32];
+	time_t now = time(NULL);
+
+	if (procs == last_procs)
+		return;
+	last_procs = procs;
+
+	/* Record the processor count */
+	slurm_make_time_str(&now, tmp, sizeof(tmp));
+#if _DEBUG
+	info("Node_acct_procs: %s has %u total CPUs at %s", 
+	     cluster_name, procs, tmp);
+#endif
+	
+	/* FIXME: WRITE TO DATABASE HERE */
+}
+extern void jobacct_p_cluster_ready()
+{
+	uint32_t procs = 0;
+	struct node_record *node_ptr;
+	int i, j;
+	char *cluster_name = NULL;
+
+	node_ptr = node_record_table_ptr;
+	for (i = 0; i < node_record_count; i++, node_ptr++) {
+		if (node_ptr->name == '\0')
+			continue;
+		if (cluster_name == NULL) {
+			cluster_name = xstrdup(node_ptr->name);
+			for (j = 0; cluster_name[j]; j++) {
+				if (isdigit(cluster_name[j])) {
+					cluster_name[j] = '\0';
+					break;
+				}
+			}
+		}
+		if (slurmctld_conf.fast_schedule)
+			procs += node_ptr->config_ptr->cpus;
+		else
+			procs += node_ptr->cpus;
+	}
+
+	jobacct_p_cluster_procs(cluster_name, procs);
+	xfree(cluster_name);
 }

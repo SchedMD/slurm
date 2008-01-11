@@ -102,5 +102,16 @@ extern jobacctinfo_t *jobacct_g_remove_task(pid_t pid);
 extern void jobacct_g_suspend_poll();
 extern void jobacct_g_resume_poll();
 
+/* functions only to be used by the gold plugin in 1.2 since we had to
+ * make some mods to get the plugin to work with node states also
+ */
+extern void jobacct_g_node_all_down_slurmctld(char *reason);
+extern void jobacct_g_node_down_slurmctld(struct node_record *node_ptr);
+extern void jobacct_g_node_up_slurmctld(struct node_record *node_ptr);
+extern void jobacct_g_cluster_procs(char *cluster_name, uint32_t procs);
+extern void jobacct_g_cluster_ready();
+
+
+
 #endif /*__SLURM_JOBACCT_H__*/
 

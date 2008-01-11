@@ -103,6 +103,12 @@ typedef struct slurm_jobacct_ops {
 	jobacctinfo_t *(*jobacct_remove_task)(pid_t pid);
 	void (*jobacct_suspend_poll)  ();
 	void (*jobacct_resume_poll)   ();
+	void (*jobacct_node_all_down) (char *reason);
+	void (*jobacct_node_down)     (struct node_record *node_ptr);
+	void (*jobacct_node_up)       (struct node_record *node_ptr);
+	void (*jobacct_cluster_procs) (char *cluster_name, uint32_t procs);
+	void (*jobacct_cluster_ready) ();
+
 } slurm_jobacct_ops_t;
 
 /*
@@ -207,7 +213,12 @@ _slurm_jobacct_get_ops( slurm_jobacct_context_t *c )
 		"jobacct_p_stat_task",
 		"jobacct_p_remove_task",
 		"jobacct_p_suspend_poll",
-		"jobacct_p_resume_poll"
+		"jobacct_p_resume_poll",
+		"jobacct_p_node_all_down_slurmctld",
+		"jobacct_p_node_down_slurmctld",
+		"jobacct_p_node_up_slurmctld",
+		"jobacct_p_cluster_procs",
+		"jobacct_p_cluster_ready"
 	};
 	int n_syms = sizeof( syms ) / sizeof( char * );
 	int rc = 0;
@@ -639,3 +650,59 @@ extern void jobacct_g_resume_poll()
 	return;
 }
 
+extern void jobacct_g_node_all_down_slurmctld(char *reason)
+{
+	if (_slurm_jobacct_init() < 0)
+		return;
+
+	slurm_mutex_lock( &g_jobacct_context_lock );
+	if ( g_jobacct_context )
+		(*(g_jobacct_context->ops.jobacct_node_all_down))(reason);
+	slurm_mutex_unlock( &g_jobacct_context_lock );
+	return;
+}
+extern void jobacct_g_node_down_slurmctld(struct node_record *node_ptr)
+{
+	if (_slurm_jobacct_init() < 0)
+		return;
+
+	slurm_mutex_lock( &g_jobacct_context_lock );
+	if ( g_jobacct_context )
+		(*(g_jobacct_context->ops.jobacct_node_down))(node_ptr);
+	slurm_mutex_unlock( &g_jobacct_context_lock );
+	return;
+}
+extern void jobacct_g_node_up_slurmctld(struct node_record *node_ptr)
+{
+	if (_slurm_jobacct_init() < 0)
+		return;
+
+	slurm_mutex_lock( &g_jobacct_context_lock );
+	if ( g_jobacct_context )
+		(*(g_jobacct_context->ops.jobacct_node_up))(node_ptr);
+	slurm_mutex_unlock( &g_jobacct_context_lock );
+	return;
+}
+extern void jobacct_g_cluster_procs(char *cluster_name, uint32_t procs)
+{
+	if (_slurm_jobacct_init() < 0)
+		return;
+
+	slurm_mutex_lock( &g_jobacct_context_lock );
+	if ( g_jobacct_context )
+		(*(g_jobacct_context->ops.jobacct_cluster_procs))(
+			cluster_name, procs);
+	slurm_mutex_unlock( &g_jobacct_context_lock );
+	return;
+}
+extern void jobacct_g_cluster_ready()
+{
+	if (_slurm_jobacct_init() < 0)
+		return;
+
+	slurm_mutex_lock( &g_jobacct_context_lock );
+	if ( g_jobacct_context )
+		(*(g_jobacct_context->ops.jobacct_cluster_ready))();
+	slurm_mutex_unlock( &g_jobacct_context_lock );
+	return;
+}

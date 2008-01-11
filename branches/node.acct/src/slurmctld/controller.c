@@ -79,7 +79,6 @@
 
 #include "src/slurmctld/agent.h"
 #include "src/slurmctld/locks.h"
-#include "src/slurmctld/node_acct.h"
 #include "src/slurmctld/ping_nodes.h"
 #include "src/slurmctld/proc_req.h"
 #include "src/slurmctld/read_config.h"
@@ -310,7 +309,7 @@ int main(int argc, char *argv[])
 					slurm_strerror(error_code));
 			}
 			if (recover == 0)
-				node_acct_all_down("cold-start");
+				jobacct_g_node_all_down_slurmctld("cold-start");
 		} else {
 			error("this host (%s) not valid controller (%s or %s)",
 				node_name, slurmctld_conf.control_machine,
@@ -318,7 +317,7 @@ int main(int argc, char *argv[])
 			exit(0);
 		}
 		info("Running as primary controller");
-		node_acct_ready();
+		jobacct_g_cluster_ready();
 		if (slurm_sched_init() != SLURM_SUCCESS)
 			fatal("failed to initialize scheduling plugin");
 
@@ -926,7 +925,7 @@ static void *_slurmctld_background(void *no_data)
 			 * or reconfigured nodes */
 			last_node_acct = now;
 			lock_slurmctld(node_read_lock);
-			node_acct_ready();
+			jobacct_g_cluster_ready();
 			unlock_slurmctld(node_read_lock);
 		}
 		/* Reassert this machine as the primary controller.

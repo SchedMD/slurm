@@ -307,6 +307,22 @@ void jobacct_p_resume_poll()
 	common_resume_poll();
 }
 
+extern void jobacct_p_node_all_down_slurmctld(char *reason)
+{
+}
+extern void jobacct_p_node_down_slurmctld(struct node_record *node_ptr)
+{
+}
+extern void jobacct_p_node_up_slurmctld(struct node_record *node_ptr)
+{
+}
+extern void jobacct_p_cluster_procs(char *cluster_name, uint32_t procs)
+{
+}
+extern void jobacct_p_cluster_ready()
+{
+}
+
 /* 
  * _get_offspring_data() -- collect memory usage data for the offspring
  *

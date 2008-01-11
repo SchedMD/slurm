@@ -70,6 +70,7 @@
 #define GOLD_OBJECT_MACHINE_STR "Machine"
 #define GOLD_OBJECT_JOB_STR "Job"
 #define GOLD_OBJECT_ROLEUSER_STR "RoleUser"
+#define GOLD_OBJECT_EVENT_STR "EventLog"
 
 typedef enum {
 	GOLD_ACTION_QUERY,
@@ -84,7 +85,8 @@ typedef enum {
 	GOLD_OBJECT_PROJECT,
 	GOLD_OBJECT_MACHINE,
 	GOLD_OBJECT_JOB,
-	GOLD_OBJECT_ROLEUSER
+	GOLD_OBJECT_ROLEUSER,
+	GOLD_OBJECT_EVENT
 } gold_object_t;
 
 typedef struct {
