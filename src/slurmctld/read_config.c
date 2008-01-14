@@ -77,6 +77,7 @@
 #include "src/slurmctld/trigger_mgr.h"
 
 static int  _build_bitmaps(void);
+static void _build_bitmaps_pre_select(void);
 static int  _init_all_slurm_conf(void);
 static void _purge_old_node_state(struct node_record *old_node_table_ptr, 
 				int old_node_record_count);
@@ -102,6 +103,54 @@ int node_record_count = 0;
 /* FIXME - declarations for temporarily moved functions */
 #define MULTIPLE_VALUE_MSG "Multiple values for %s, latest one used"
 
+/*
+ * _build_bitmaps_pre_select - recover some state for jobs and nodes prior to 
+ *	calling the select_* functions
+ */
+static void _build_bitmaps_pre_select(void)
+{
+	struct part_record   *part_ptr;
+	struct node_record   *node_ptr;
+	ListIterator part_iterator;
+	int i;
+	
+
+	/* scan partition table and identify nodes in each */
+	part_iterator = list_iterator_create(part_list);
+	if (part_iterator == NULL)
+		fatal ("memory allocation failure");
+
+	while ((part_ptr = (struct part_record *) list_next(part_iterator))) {
+		FREE_NULL_BITMAP(part_ptr->node_bitmap);
+
+		if ((part_ptr->nodes == NULL) || (part_ptr->nodes[0] == '\0'))
+			continue;
+
+		if (node_name2bitmap(part_ptr->nodes, false, 
+				     &part_ptr->node_bitmap)) {
+			fatal("Invalid node names in partition %s",
+			      part_ptr->name);
+		}
+
+		for (i=0; i<node_record_count; i++) {
+			if (bit_test(part_ptr->node_bitmap, i) == 0)
+				continue;
+			node_ptr = &node_record_table_ptr[i];
+			part_ptr->total_nodes++;
+			if (slurmctld_conf.fast_schedule)
+				part_ptr->total_cpus += 
+					node_ptr->config_ptr->cpus;
+			else
+				part_ptr->total_cpus += node_ptr->cpus;
+			node_ptr->part_cnt++;
+			xrealloc(node_ptr->part_pptr, (node_ptr->part_cnt *
+				sizeof(struct part_record *)));
+			node_ptr->part_pptr[node_ptr->part_cnt-1] = part_ptr;
+		}
+	}
+	list_iterator_destroy(part_iterator);
+	return;	
+}
 
 /*
  * _build_bitmaps - build node bitmaps to define which nodes are in which 
@@ -115,16 +164,11 @@ int node_record_count = 0;
  */
 static int _build_bitmaps(void)
 {
-	int i, j, error_code = SLURM_SUCCESS;
-	char *this_node_name;
+	int i, error_code = SLURM_SUCCESS;
 	ListIterator config_iterator;
-	ListIterator part_iterator;
 	struct config_record *config_ptr;
-	struct part_record   *part_ptr;
-	struct node_record   *node_ptr;
 	struct job_record    *job_ptr;
 	ListIterator job_iterator;
-	hostlist_t host_list;
 
 	last_node_update = time(NULL);
 	last_part_update = time(NULL);
@@ -209,56 +253,6 @@ static int _build_bitmaps(void)
 			bit_set(node_record_table_ptr[i].config_ptr->
 				node_bitmap, i);
 	}
-
-	/* scan partition table and identify nodes in each */
-	part_iterator = list_iterator_create(part_list);
-	if (part_iterator == NULL)
-		fatal ("memory allocation failure");
-
-	while ((part_ptr = (struct part_record *) list_next(part_iterator))) {
-		FREE_NULL_BITMAP(part_ptr->node_bitmap);
-		part_ptr->node_bitmap =
-		    (bitstr_t *) bit_alloc(node_record_count);
-		if (part_ptr->node_bitmap == NULL)
-			fatal ("bit_alloc malloc failure");
-
-		/* check for each node in the partition */
-		if ((part_ptr->nodes == NULL) || (part_ptr->nodes[0] == '\0'))
-			continue;
-
-		if ((host_list = hostlist_create(part_ptr->nodes)) == NULL) {
-			fatal("hostlist_create error for %s, %m",
-			      part_ptr->nodes);
-			continue;
-		}
-
-		while ((this_node_name = hostlist_shift(host_list))) {
-			node_ptr = find_node_record(this_node_name);
-			if (node_ptr == NULL) {
-				fatal("_build_bitmaps: node %s is referenced "
-					"but not defined in slurm.conf "
-					"(no NodeName specification)", 
-					this_node_name);
-				free(this_node_name);
-				continue;
-			}
-			j = node_ptr - node_record_table_ptr;
-			bit_set(part_ptr->node_bitmap, j);
-			part_ptr->total_nodes++;
-			if (slurmctld_conf.fast_schedule)
-				part_ptr->total_cpus += 
-					node_ptr->config_ptr->cpus;
-			else
-				part_ptr->total_cpus += node_ptr->cpus;
-			node_ptr->part_cnt++;
-			xrealloc(node_ptr->part_pptr, (node_ptr->part_cnt *
-				sizeof(struct part_record *)));
-			node_ptr->part_pptr[node_ptr->part_cnt-1] = part_ptr;
-			free(this_node_name);
-		}
-		hostlist_destroy(host_list);
-	}
-	list_iterator_destroy(part_iterator);
 	return error_code;
 }
 
@@ -772,11 +766,12 @@ int read_slurm_conf(int recover)
 		xfree(state_save_dir);
 	}
 
+	_build_bitmaps_pre_select();
 	if ((select_g_node_init(node_record_table_ptr, node_record_count)
-			!= SLURM_SUCCESS) 
-	    || (select_g_block_init(part_list) != SLURM_SUCCESS) 
-	    || (select_g_state_restore(state_save_dir) != SLURM_SUCCESS) 
-	    || (select_g_job_init(job_list) != SLURM_SUCCESS)) {
+			!= SLURM_SUCCESS) ||
+	    (select_g_block_init(part_list) != SLURM_SUCCESS) ||
+	    (select_g_state_restore(state_save_dir) != SLURM_SUCCESS) ||
+	    (select_g_job_init(job_list) != SLURM_SUCCESS)) { 
 		error("failed to initialize node selection plugin state");
 		abort();
 	}
