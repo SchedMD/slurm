@@ -108,15 +108,12 @@ static int _find_offset(struct select_cr_job *job, const int job_index,
 	struct part_cr_record *p_ptr;
 	int i, j, index, offset, skip;
 	uint16_t acores, asockets, freecpus, last_freecpus = 0;
+	struct multi_core_data *mc_ptr;
 
-	p_ptr = get_cr_part_ptr(this_cr_node, job->partition);
-	if (p_ptr == NULL) {
-		/* this should never happen, because p_ptr */
-		/* exists in the callers of this function  */
-		error("cons_res: find_offset: could not find part %s",
-		      job->partition);
+	p_ptr = get_cr_part_ptr(this_cr_node, job->job_ptr->partition);
+	if (p_ptr == NULL)
 		abort();
-	}
+	mc_ptr = job->job_ptr->details->mc_ptr;
 
 	index = -1;
 	for (i = 0; i < p_ptr->num_rows; i++) {
@@ -126,7 +123,7 @@ static int _find_offset(struct select_cr_job *job, const int job_index,
 		offset = i * this_cr_node->num_sockets;
 		for (j = 0; j < this_cr_node->num_sockets; j++) {
 			if ((cores - p_ptr->alloc_cores[offset+j]) <
-							job->min_cores) {
+							mc_ptr->min_cores) {
 				/* count the number of unusable sockets */
 				skip++;
 				acores += cores;
@@ -137,11 +134,11 @@ static int _find_offset(struct select_cr_job *job, const int job_index,
 				asockets++;
 		}
 		/* make sure we have the required number of usable sockets */
-		if (skip && ((sockets - skip) < job->min_sockets))
+		if (skip && ((sockets - skip) < mc_ptr->min_sockets))
 			continue;
 		/* CR_SOCKET needs UNALLOCATED sockets */
 		if ((cr_type == CR_SOCKET) || (cr_type == CR_SOCKET_MEMORY)) {
-			if (sockets - asockets < job->min_sockets)
+			if (sockets - asockets < mc_ptr->min_sockets)
 				continue;
 		}
 
@@ -182,24 +179,29 @@ static int _job_assign_tasks(struct select_cr_job *job,
 	uint16_t asockets, offset, total;
 	uint32_t maxcores, reqcores, maxtasks = job->alloc_cpus[job_index];
 	struct part_cr_record *p_ptr;
+	struct multi_core_data *mc_ptr;
 	
-	p_ptr = get_cr_part_ptr(this_cr_node, job->partition);
-	if (p_ptr == NULL) {
-		/* this should never happen, because p_ptr */
-		/* exists in the callers of this function  */
-		error("cons_res: assign_tasks: could not find part %s",
-		      job->partition);
+	p_ptr = get_cr_part_ptr(this_cr_node, job->job_ptr->partition);
+	if (p_ptr == NULL)
+		return SLURM_ERROR;
+
+	if ((job->job_ptr == NULL) || (job->job_ptr->details == NULL)) {
+		/* This should never happen */
+		error("cons_res: job %u has no details", job->job_id);
 		return SLURM_ERROR;
 	}
+	if (!job->job_ptr->details->mc_ptr)
+		job->job_ptr->details->mc_ptr = create_default_mc();
+	mc_ptr = job->job_ptr->details->mc_ptr;
 
 	/* get hardware info for this node */	
 	get_resources_this_node(&cpus,  &sockets, &cores, &threads, 
 				this_cr_node, job->job_id);
 
 	/* compute any job limits */	
-	usable_sockets = MIN(job->max_sockets, sockets);
-	usable_cores   = MIN(job->max_cores,   cores);
-	usable_threads = MIN(job->max_threads, threads);
+	usable_sockets = MIN(mc_ptr->max_sockets, sockets);
+	usable_cores   = MIN(mc_ptr->max_cores,   cores);
+	usable_threads = MIN(mc_ptr->max_threads, threads);
 
 	/* determine the number of required cores. When multiple threads
 	 * are available, the maxtasks value may not reflect the requested
@@ -207,7 +209,7 @@ static int _job_assign_tasks(struct select_cr_job *job,
 	maxcores = maxtasks / usable_threads;
 	while ((maxcores * usable_threads) < maxtasks)
 		maxcores++;
-	reqcores = job->min_cores * job->min_sockets;
+	reqcores = mc_ptr->min_cores * mc_ptr->min_sockets;
 	if (maxcores < reqcores)
 		maxcores = reqcores;
 
@@ -217,8 +219,8 @@ static int _job_assign_tasks(struct select_cr_job *job,
 
 	debug3("job_assign_task %u s_ min %u u %u c_ min %u u %u"
 	       " t_ min %u u %u task %u core %u offset %u", 
-	       job->job_id, job->min_sockets, usable_sockets, 
-	       job->min_cores, usable_cores, job->min_threads, 
+	       job->job_id, mc_ptr->min_sockets, usable_sockets, 
+	       mc_ptr->min_cores, usable_cores, mc_ptr->min_threads, 
 	       usable_threads, maxtasks, maxcores, offset);
 
 	avail_cores = xmalloc(sizeof(uint16_t) * sockets);
@@ -227,7 +229,7 @@ static int _job_assign_tasks(struct select_cr_job *job,
 	total = 0;
 	asockets = 0;
 	for (i = 0; i < sockets; i++) {
-		if ((total >= maxcores) && (asockets >= job->min_sockets)) {
+		if ((total >= maxcores) && (asockets >= mc_ptr->min_sockets)) {
 			break;
 		}
 		if (this_cr_node->node_ptr->cores <=
@@ -236,13 +238,13 @@ static int _job_assign_tasks(struct select_cr_job *job,
 		}
 		/* for CR_SOCKET, we only want to allocate empty sockets */
 		if ((cr_type == CR_SOCKET || cr_type == CR_SOCKET_MEMORY) &&
-		    p_ptr->alloc_cores[offset+i] > 0)
+		    (p_ptr->alloc_cores[offset+i] > 0))
 			continue;
 		avail_cores[i] = this_cr_node->node_ptr->cores - 
 				 p_ptr->alloc_cores[offset+i];
 		if (usable_cores <= avail_cores[i]) {
 			avail_cores[i] = usable_cores;
-		} else if (job->min_cores > avail_cores[i]) {
+		} else if (mc_ptr->min_cores > avail_cores[i]) {
 			avail_cores[i] = 0;
 		}
 		if (avail_cores[i] > 0) {
@@ -261,7 +263,7 @@ static int _job_assign_tasks(struct select_cr_job *job,
 		/* Should never get here but just in case */
 		error("cons_res: %u Zero sockets satisfy"
 		      " request -B %u:%u: Using alternative strategy",
-		      job->job_id, job->min_sockets, job->min_cores);
+		      job->job_id, mc_ptr->min_sockets, mc_ptr->min_cores);
 		for (i = 0; i < sockets; i++) {
 			if (this_cr_node->node_ptr->cores <=
 			    p_ptr->alloc_cores[offset+i])
@@ -271,11 +273,11 @@ static int _job_assign_tasks(struct select_cr_job *job,
 		}
 	}
 	
-	if (asockets < job->min_sockets) {
+	if (asockets < mc_ptr->min_sockets) {
 		error("cons_res: %u maxcores %u Cannot satisfy"
 		      " request -B %u:%u: Using -B %u:%u",
-		      job->job_id, maxcores, job->min_sockets, 
-		      job->min_cores, asockets, job->min_cores);
+		      job->job_id, maxcores, mc_ptr->min_sockets, 
+		      mc_ptr->min_cores, asockets, mc_ptr->min_cores);
 	}
 
 	corecount = 0;
@@ -327,10 +329,11 @@ static uint16_t _get_cpu_offset(struct select_cr_job *job, int index,
 	int i, set = 0;
 	uint16_t cpus, sockets, cores, threads, besto = 0, offset = 0;
 	struct part_cr_record *p_ptr;
-	p_ptr = get_cr_part_ptr(this_node, job->partition);
 
-	if (p_ptr->num_rows < 2)
+	p_ptr = get_cr_part_ptr(this_node, job->job_ptr->partition);
+	if ((p_ptr == NULL) || (p_ptr->num_rows < 2))
 		return offset;
+
 	get_resources_this_node(&cpus, &sockets, &cores, &threads,
 	        		this_node, job->job_id);
 	/* scan all rows looking for the best row for job->alloc_cpus[index] */
@@ -399,13 +402,11 @@ extern int cr_dist(struct select_cr_job *job, int cyclic,
 			continue;
 		job_index++;
 		
-		this_cr_node = find_cr_node_record(
-			node_record_table_ptr[host_index].name);
-		if (this_cr_node == NULL) {
-			error("cons_res: cr_dist: could not find node %s", 
-			      node_record_table_ptr[host_index].name);
+		if (select_node_ptr == NULL) {
+			error("cons_res: select_node_ptr is NULL");
 			return SLURM_ERROR;
 		}
+		this_cr_node = &select_node_ptr[host_index];
 		
 		if (job->cpus[job_index] == 0) {
 			error(" cons_res: %d no available cpus on node %s ",
@@ -521,8 +522,8 @@ extern int cr_plane_dist(struct select_cr_job *job,
 	}
 #endif
 
-	if (cr_type == CR_CPU || cr_type == CR_MEMORY ||
-	    cr_type == CR_CPU_MEMORY)
+	if ((cr_type == CR_CPU) || (cr_type == CR_MEMORY) ||
+	    (cr_type == CR_CPU_MEMORY))
 		cr_cpu = 1;
 
 	taskcount = 0;
@@ -534,14 +535,12 @@ extern int cr_plane_dist(struct select_cr_job *job,
 		if (bit_test(job->node_bitmap, host_index) == 0)
 			continue;
 		job_index++;
-		
-		this_cr_node = find_cr_node_record(
-			node_record_table_ptr[host_index].name);
-		if (this_cr_node == NULL) {
-			error("cons_res: cr_plane_dist: could not find node %s", 
-			      node_record_table_ptr[host_index].name);
+
+		if (select_node_ptr == NULL) {
+			error("cons_res: select_node_ptr is NULL");
 			return SLURM_ERROR;
 		}
+		this_cr_node = &select_node_ptr[host_index];
 		
 		if (job->cpus[job_index] == 0) {
 			error(" cons_res: no available cpus on node %s", 
