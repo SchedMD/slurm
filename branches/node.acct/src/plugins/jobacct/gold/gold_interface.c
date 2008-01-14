@@ -273,11 +273,13 @@ extern int gold_request_add_assignment(gold_request_t *gold_request,
 }
 
 extern int gold_request_add_condition(gold_request_t *gold_request, 
-				      char *name, char *value)
+				      char *name, char *value,
+				      gold_operator_t op)
 {
 	gold_name_value_t *name_val = xmalloc(sizeof(gold_name_value_t));
 	name_val->name = xstrdup(name);
 	name_val->value = xstrdup(value);
+	name_val->op = op;
 	list_push(gold_request->conditions, name_val);
 		
 	return SLURM_SUCCESS;
@@ -390,8 +392,37 @@ extern gold_response_t *get_gold_response(gold_request_t *gold_request)
 
 	itr = list_iterator_create(gold_request->conditions);
 	while((name_val = list_next(itr))) {
-		xstrfmtcat(innerds, "<Where name=\"%s\">%s</Where>",
-			   name_val->name, name_val->value);
+		if(name_val->op != GOLD_OPERATOR_NONE) {
+			char *op = NULL;
+			switch (name_val->op) {
+			case GOLD_OPERATOR_G :
+				op = "G";
+				break;
+			case GOLD_OPERATOR_GE :
+				op = "GE";
+				break;
+			case GOLD_OPERATOR_L :
+				op = "L";
+				break;
+			case GOLD_OPERATOR_LE :
+				op = "LE";
+				break;
+			default:
+				error("Unknown operator '%d' "
+				      "given to this condition %s = %s",
+				      name_val->op, name_val->name,
+				      name_val->value);
+				xfree(innerds);
+				list_iterator_destroy(itr);
+				return NULL;
+			}
+			xstrfmtcat(innerds,
+				   "<Where name=\"%s\" op=\"%s\">%s</Where>",
+				   name_val->name, op, name_val->value);
+		} else {
+			xstrfmtcat(innerds, "<Where name=\"%s\">%s</Where>",
+				   name_val->name, name_val->value);
+		}
 	}
 	list_iterator_destroy(itr);
 

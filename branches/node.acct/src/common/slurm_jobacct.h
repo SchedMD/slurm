@@ -105,11 +105,12 @@ extern void jobacct_g_resume_poll();
 /* functions only to be used by the gold plugin in 1.2 since we had to
  * make some mods to get the plugin to work with node states also
  */
-extern void jobacct_g_node_all_down_slurmctld(char *reason);
-extern void jobacct_g_node_down_slurmctld(struct node_record *node_ptr);
-extern void jobacct_g_node_up_slurmctld(struct node_record *node_ptr);
-extern void jobacct_g_cluster_procs(char *cluster_name, uint32_t procs);
-extern void jobacct_g_cluster_ready();
+extern int jobacct_g_node_all_down(time_t event_time, char *reason);
+extern int jobacct_g_node_down(struct node_record *node_ptr, time_t event_time,
+			       char *reason);
+extern int jobacct_g_node_up(struct node_record *node_ptr, time_t event_time);
+extern int jobacct_g_cluster_procs(uint32_t procs, time_t event_time);
+extern int jobacct_g_cluster_ready();
 
 
 

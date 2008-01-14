@@ -301,15 +301,18 @@ int main(int argc, char *argv[])
 			(void) _shutdown_backup_controller(SHUTDOWN_WAIT);
 			/* Now recover the remaining state information */
 			if (switch_restore(slurmctld_conf.state_save_location,
-					 recover ? true : false))
+					   recover ? true : false))
 				fatal(" failed to initialize switch plugin" );
 			if ((error_code = read_slurm_conf(recover))) {
 				fatal("read_slurm_conf reading %s: %s",
 					slurmctld_conf.slurm_conf,
 					slurm_strerror(error_code));
 			}
-			if (recover == 0)
-				jobacct_g_node_all_down_slurmctld("cold-start");
+			/* FIXME: Why are we setting all the nodes
+			   down? */
+/* 			if (recover == 0) */
+/* 				jobacct_g_node_all_down("cold-start",
+				                        time(NULL)); */
 		} else {
 			error("this host (%s) not valid controller (%s or %s)",
 				node_name, slurmctld_conf.control_machine,

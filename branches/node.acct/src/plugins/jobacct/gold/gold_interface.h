@@ -89,9 +89,18 @@ typedef enum {
 	GOLD_OBJECT_EVENT
 } gold_object_t;
 
+typedef enum {
+	GOLD_OPERATOR_NONE,
+	GOLD_OPERATOR_G,
+	GOLD_OPERATOR_GE,
+	GOLD_OPERATOR_L,
+	GOLD_OPERATOR_LE
+} gold_operator_t;
+
 typedef struct {
 	char *name;
 	char *value;
+	gold_operator_t op;
 } gold_name_value_t;
 
 typedef struct {
@@ -127,7 +136,8 @@ extern int destroy_gold_request(gold_request_t *gold_request);
 extern int gold_request_add_assignment(gold_request_t *gold_request, 
 				       char *name, char *value);
 extern int gold_request_add_condition(gold_request_t *gold_request, 
-				      char *name, char *value);
+				      char *name, char *value,
+				      gold_operator_t op);
 extern int gold_request_add_selection(gold_request_t *gold_request, char *name);
 
 extern gold_response_t *get_gold_response(gold_request_t *gold_request);

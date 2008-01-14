@@ -310,20 +310,27 @@ void jobacct_p_resume_poll()
 	common_resume_poll();
 }
 
-extern void jobacct_p_node_all_down_slurmctld(char *reason)
+extern int jobacct_p_node_all_down_slurmctld(time_t event_time, char *reason)
 {
+	return SLURM_SUCCESS;
 }
-extern void jobacct_p_node_down_slurmctld(struct node_record *node_ptr)
+extern int jobacct_p_node_down_slurmctld(struct node_record *node_ptr,
+					 time_t event_time, char *reason)
 {
+	return SLURM_SUCCESS;
 }
-extern void jobacct_p_node_up_slurmctld(struct node_record *node_ptr)
+extern int jobacct_p_node_up_slurmctld(struct node_record *node_ptr,
+				       time_t event_time)
 {
+	return SLURM_SUCCESS;
 }
-extern void jobacct_p_cluster_procs(char *cluster_name, uint32_t procs)
+extern int jobacct_p_cluster_procs(uint32_t procs, time_t event_time)
 {
+	return SLURM_SUCCESS;
 }
-extern void jobacct_p_cluster_ready()
+extern int jobacct_p_cluster_ready()
 {
+	return SLURM_SUCCESS;
 }
 
 #ifdef HAVE_AIX
