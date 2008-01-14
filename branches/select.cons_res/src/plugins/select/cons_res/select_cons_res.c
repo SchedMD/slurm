@@ -2189,6 +2189,7 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t * bitmap,
 
 	error_code = SLURM_ERROR;
 	rows = job_ptr->part_ptr->max_share & ~SHARED_FORCE;
+	rows = MAX(1, rows);	/* max_share == 0 for EXCLUSIVE */
 	for (row = 1; row <= rows; row++) {
 
 		/*
