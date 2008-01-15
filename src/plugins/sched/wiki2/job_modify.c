@@ -122,7 +122,8 @@ static int	_job_modify(uint32_t jobid, char *bank_ptr,
 
 	if (name_ptr) {
 		info("wiki: change job %u name %s", jobid, name_ptr);
-		strncpy(job_ptr->name, name_ptr, sizeof(job_ptr->name));
+		xfree(job_ptr->name);
+		job_ptr->name = xstrdup(name_ptr);
 		last_job_update = now;
 	}
 
@@ -192,7 +193,8 @@ host_fini:	if (rc) {
 		}
 		info("wiki: change job %u partition %s",
 			jobid, part_name_ptr);
-		strncpy(job_ptr->partition, part_name_ptr, MAX_SLURM_NAME);
+		xfree(job_ptr->partition);
+		job_ptr->partition = xstrdup(part_name_ptr);
 		job_ptr->part_ptr = part_ptr;
 		last_job_update = now;
 	}
@@ -278,7 +280,7 @@ extern int	job_modify_wiki(char *cmd_ptr, int *err_code, char **err_msg)
 		name_ptr += 8;
 		if (name_ptr[0] == '\"') {
 			name_ptr++;
-			for (i=0; i<MAX_JOBNAME_LEN; i++) {
+			for (i=0; ; i++) {
 				if (name_ptr[i] == '\0')
 					break;
 				if (name_ptr[i] == '\"') {
@@ -286,11 +288,9 @@ extern int	job_modify_wiki(char *cmd_ptr, int *err_code, char **err_msg)
 					break;
 				}
 			}
-			if (i == MAX_JOBNAME_LEN)
-				name_ptr[i-1] = '\0';
 		} else if (name_ptr[0] == '\'') {
 			name_ptr++;
-			for (i=0; i<MAX_JOBNAME_LEN; i++) {
+			for (i=0; ; i++) {
 				if (name_ptr[i] == '\0')
 					break;
 				if (name_ptr[i] == '\'') {
@@ -298,8 +298,6 @@ extern int	job_modify_wiki(char *cmd_ptr, int *err_code, char **err_msg)
 					break;
 				}
 			}
-			if (i == MAX_JOBNAME_LEN)
-				name_ptr[i-1] = '\0';
 		} else
 			null_term(name_ptr);
 	}
