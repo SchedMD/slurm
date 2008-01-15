@@ -583,9 +583,7 @@ static void _lllp_free_masks (launch_tasks_request_msg_t *req,
 }
 
 /* 
- * _task_layout_lllp_init
- *
- * task_layout_lllp_init performs common initialization required by:
+ * _task_layout_lllp_init performs common initialization required by:
  *	_task_layout_lllp_cyclic
  *	_task_layout_lllp_block
  *	_task_layout_lllp_plane
@@ -605,7 +603,7 @@ static int _task_layout_lllp_init(launch_tasks_request_msg_t *req,
 				  uint16_t *hw_threads,
 				  uint16_t *avail_cpus)
 {
-	int i;
+	int min_sockets = 1, min_cores = 1;;
 	uint16_t alloc_cores[conf->sockets];
 
 	if (req->cpu_bind_type & CPU_BIND_TO_THREADS) {
@@ -628,8 +626,6 @@ static int _task_layout_lllp_init(launch_tasks_request_msg_t *req,
 	*hw_cores   = *usable_cores;
 	*hw_threads = *usable_threads;
 
-	int min_sockets = 1;
-	int min_cores = 1;
 	*avail_cpus = slurm_get_avail_procs(req->max_sockets, 
 					    req->max_cores, 
 					    req->max_threads, 
@@ -645,9 +641,6 @@ static int _task_layout_lllp_init(launch_tasks_request_msg_t *req,
 					    req->job_id, conf->hostname);
 	/* Allocate masks array */
 	*masks_p = xmalloc(maxtasks * sizeof(bitstr_t*));
-	for (i = 0; i < maxtasks; i++) { 
-	    	(*masks_p)[i] = NULL;
-	}
 	return SLURM_SUCCESS;
 }
 
@@ -733,7 +726,6 @@ static int _task_layout_lllp_cyclic(launch_tasks_request_msg_t *req,
 				    bitstr_t ***masks_p)
 {
 	int retval, i, taskcount = 0, taskid = 0;
-	int over_subscribe  = 0, space_remaining = 0;
 	uint16_t socket_index = 0, core_index = 0, thread_index = 0;
 	uint16_t hw_sockets = 0, hw_cores = 0, hw_threads = 0;
 	uint16_t usable_cpus = 0, avail_cpus = 0;
@@ -758,54 +750,36 @@ static int _task_layout_lllp_cyclic(launch_tasks_request_msg_t *req,
 					&hw_cores, 
 					&hw_threads, 
 					&avail_cpus);
-	if (retval != SLURM_SUCCESS) {
+	if (retval != SLURM_SUCCESS)
 		return retval;
-	}
 	masks = *masks_p;
 
 	for (i=0; taskcount<maxtasks; i++) { 
-		space_remaining = 0;
-		socket_index = 0;
-		for (thread_index=0; ((thread_index<usable_threads)
-				      && (taskcount<maxtasks)); thread_index++) {
-			for (core_index=0; ((core_index<usable_cores)
-					    && (taskcount<maxtasks)); core_index++) {
-				for (socket_index=0; ((socket_index<usable_sockets)
-						      && (taskcount<maxtasks)); socket_index++) {
-					if ((socket_index<usable_sockets) || over_subscribe) {
-						if ((core_index<usable_cores) || over_subscribe) {
-							if ((thread_index<usable_threads) 
-							    || over_subscribe) {
-								bitstr_t *bitmask = NULL;
-								taskid = gtid[taskcount];
-								_single_mask(hw_sockets, 
-									     hw_cores, 
-									     hw_threads,
-									     socket_index, 
-									     core_index, 
-									     thread_index, 
-									     bind_to_exact_socket, 
-									     bind_to_exact_core,
-									     bind_to_exact_thread, 
-									     &bitmask);
-								xassert(masks[taskcount] == NULL);
-								xassert(taskcount < maxtasks);
-								masks[taskcount] = bitmask;
-								taskcount++;
-								if ((thread_index+1) < usable_threads)
-									space_remaining = 1;
-							}
-							if ((core_index+1) < usable_cores)
-								space_remaining = 1;
-						}
-					}
+		for (thread_index=0; thread_index<usable_threads; thread_index++) {
+			for (core_index=0; core_index<usable_cores; core_index++) {
+				for (socket_index=0; socket_index<usable_sockets; 
+						     socket_index++) {
+					bitstr_t *bitmask = NULL;
+					taskid = gtid[taskcount];
+					_single_mask(hw_sockets, 
+						     hw_cores, 
+						     hw_threads,
+						     socket_index, 
+						     core_index, 
+						     thread_index, 
+						     bind_to_exact_socket, 
+						     bind_to_exact_core,
+						     bind_to_exact_thread, 
+						     &bitmask);
+					xassert(masks[taskcount] == NULL);
+					masks[taskcount] = bitmask;
+					if (++taskcount >= maxtasks)
+						goto fini;
 				}
-				if (!space_remaining)
-					over_subscribe = 1;
 			}
 		}
 	}
-	return SLURM_SUCCESS;
+ fini:	return SLURM_SUCCESS;
 }
 
 /* 
@@ -1133,9 +1107,7 @@ _append_lllp_job_state(lllp_job_state_t *j)
 void
 lllp_ctx_destroy(void)
 {
-	if (lllp_reserved) {
-		xfree(lllp_reserved);
-	}
+	xfree(lllp_reserved);
 
     	if (lllp_ctx == NULL)
 		return;
@@ -1160,16 +1132,13 @@ lllp_ctx_alloc(void)
 
 	debug3("alloc LLLP");
 
-	if (lllp_reserved) {
-		xfree(lllp_reserved);
-	}
+	xfree(lllp_reserved);
 	num_lllp = conf->sockets * conf->cores * conf->threads;
 	if (conf->cpus > num_lllp) {
 	    	num_lllp = conf->cpus;
 	}
 	lllp_reserved_size = num_lllp;
 	lllp_reserved = xmalloc(num_lllp * sizeof(uint32_t));
-	memset(lllp_reserved, 0, num_lllp * sizeof(uint32_t));
 
 	if (lllp_ctx) {
 		lllp_ctx_destroy();
@@ -1529,8 +1498,7 @@ static void _cr_update_reservation(int reserve, uint32_t *reserved,
 	int num_bits = bit_size(mask);
 
 	for(i=0; i < num_bits; i++) {
-		if (bit_test(mask,i))
-		{
+		if (bit_test(mask,i)) {
 			if (reserve) {
 				/* reserve LLLP */
 				reserved[i]++;
@@ -1568,8 +1536,7 @@ static void _cr_update_lllp(int reserve, uint32_t job_id, uint32_t job_step_id,
 
 		_cr_reserve_unit(bitmap_test, conf->cr_type);
 
-		_cr_update_reservation(reserve, lllp_reserved, 
-				       bitmap_test);
+		_cr_update_reservation(reserve, lllp_reserved, bitmap_test);
 
 		bit_free(bitmap_test);	/* not currently stored with job_id */
 
