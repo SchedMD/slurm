@@ -279,9 +279,9 @@ static void _cr_job_list_del(void *x)
 }
 static int  _cr_job_list_sort(void *x, void *y)
 {
-	struct job_record *job1_ptr = (struct job_record *) x;
-	struct job_record *job2_ptr = (struct job_record *) y;
-	return (int) job1_ptr->end_time - job2_ptr->end_time;
+	struct job_record **job1_pptr = (struct job_record **) x;
+	struct job_record **job2_pptr = (struct job_record **) y;
+	return (int) difftime(job1_pptr[0]->end_time, job2_pptr[0]->end_time);
 }
 
 static void _create_node_part_array(struct node_cr_record *this_cr_node)
@@ -2272,7 +2272,7 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 		_rm_job_from_nodes(exp_node_cr, job, "_will_run_test", 1);
 		job->state = saved_state;
 		rc = _job_test(job_ptr, bitmap, min_nodes, max_nodes, 
-			       req_nodes, SELECT_MODE_RUN_NOW, job_node_req,
+			       req_nodes, SELECT_MODE_WILL_RUN, job_node_req,
 			       exp_node_cr);
 		if (rc == SLURM_SUCCESS) {
 			job_ptr->start_time = tmp_job_ptr->end_time;
@@ -2312,7 +2312,7 @@ static int _job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	/* check node_state and update bitmap as necessary */
 	if (mode == SELECT_MODE_TEST_ONLY)
 		test_only = true;
-	else
+	else	/* SELECT_MODE_RUN_NOW || SELECT_MODE_WILL_RUN  */ 
 		test_only = false;
 
 	if (!test_only) {
@@ -2427,7 +2427,7 @@ static int _job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	}
 
 	bit_free(origmap);
-	if (error_code != SLURM_SUCCESS) {
+	if ((error_code != SLURM_SUCCESS) || (mode == SELECT_MODE_WILL_RUN)) {
 		xfree(busy_rows);
 		xfree(sh_tasks);
 		xfree(al_tasks);
