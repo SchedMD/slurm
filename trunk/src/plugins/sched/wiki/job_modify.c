@@ -165,11 +165,11 @@ host_fini:	if (rc) {
 		}
 		info("wiki: change job %u partition %s",
 			jobid, part_name_ptr);
-		strncpy(job_ptr->partition, part_name_ptr, MAX_SLURM_NAME);
+		xfree(job_ptr->partition);
+		job_ptr->partition = xstrdup(part_name_ptr);
 		job_ptr->part_ptr = part_ptr;
 		last_job_update = time(NULL);
 	}
-
 	if (new_node_cnt) {
 		if (IS_JOB_PENDING(job_ptr) && job_ptr->details) {
 			job_ptr->details->min_nodes = new_node_cnt;

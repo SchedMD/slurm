@@ -164,7 +164,6 @@ extern int bg_recover;		/* state recovery mode */
 /*****************************************************************************\
  *  NODE parameters and data structures
 \*****************************************************************************/
-#define MAX_JOBNAME_LEN 256
 #define CONFIG_MAGIC 0xc065eded
 #define NODE_MAGIC   0x0de575ed
 
@@ -187,7 +186,7 @@ extern List config_list;	/* list of config_record entries */
 
 struct node_record {
 	uint32_t magic;			/* magic cookie for data integrity */
-	char name[MAX_SLURM_NAME];	/* name of the node. NULL==defunct */
+	char *name;			/* name of the node. NULL==defunct */
 	uint16_t node_state;		/* enum node_states, ORed with 
 					 * NODE_STATE_NO_RESPOND if not 
 					 * responding */
@@ -203,7 +202,7 @@ struct node_record {
 	uint16_t part_cnt;		/* number of associated partitions */
 	struct part_record **part_pptr;	/* array of pointers to partitions 
 					 * associated with this node*/
-	char comm_name[MAX_SLURM_NAME];	/* communications path name to node */
+	char *comm_name;		/* communications path name to node */
 	uint16_t port;			/* TCP port number of the slurmd */
 	slurm_addr slurm_addr;		/* network address */
 	uint16_t comp_job_cnt;		/* count of jobs completing on node */
@@ -235,7 +234,7 @@ extern bitstr_t *up_node_bitmap;	/* bitmap of up nodes, not DOWN */
 
 struct part_record {
 	uint32_t magic;		/* magic cookie to test data integrity */
-	char name[MAX_SLURM_NAME];/* name of the partition */
+	char *name;		/* name of the partition */
 	uint16_t hidden;	/* 1 if hidden by default */
 	uint32_t max_time;	/* minutes or INFINITE */
 	uint32_t max_nodes;	/* per job or INFINITE */
@@ -259,7 +258,7 @@ struct part_record {
 extern List part_list;			/* list of part_record entries */
 extern time_t last_part_update;		/* time of last part_list update */
 extern struct part_record default_part;	/* default configuration values */
-extern char default_part_name[MAX_SLURM_NAME];	/* name of default partition */
+extern char *default_part_name;		/* name of default partition */
 extern struct part_record *default_part_loc;	/* default partition ptr */
 
 /*****************************************************************************\
@@ -335,8 +334,8 @@ struct job_details {
 struct job_record {
 	uint32_t job_id;		/* job ID */
 	uint32_t magic;			/* magic cookie for data integrity */
-	char name[MAX_JOBNAME_LEN];	/* name of the job */
-	char partition[MAX_SLURM_NAME];	/* name of the partition */
+	char *name;			/* name of the job */
+	char *partition;		/* name of the partition */
 	struct part_record *part_ptr;	/* pointer to the partition record */
 	uint16_t batch_flag;		/* 1 or 2 if batch job (with script),
 					 * 2 indicates retry mode (one retry) */

@@ -186,7 +186,6 @@ create_node_record (struct config_record *config_ptr, char *node_name)
 	last_node_update = time (NULL);
 	xassert(config_ptr);
 	xassert(node_name); 
-	xassert(strlen (node_name) < MAX_SLURM_NAME);
 
 	/* round up the buffer size to reduce overhead of xrealloc */
 	old_buffer_size = (node_record_count) * sizeof (struct node_record);
@@ -202,7 +201,7 @@ create_node_record (struct config_record *config_ptr, char *node_name)
 	else if (old_buffer_size != new_buffer_size)
 		xrealloc (node_record_table_ptr, new_buffer_size);
 	node_ptr = node_record_table_ptr + (node_record_count++);
-	strcpy (node_ptr->name, node_name);
+	node_ptr->name = xstrdup(node_name);
 	node_ptr->last_response = (time_t)0;
 	node_ptr->config_ptr = config_ptr;
 	node_ptr->part_cnt = 0;
@@ -648,6 +647,8 @@ int init_node_conf (void)
 	int i;
 
 	for (i=0; i<node_record_count; i++) {
+		xfree(node_record_table_ptr[i].name);
+		xfree(node_record_table_ptr[i].comm_name);
 		xfree(node_record_table_ptr[i].features);
 		xfree(node_record_table_ptr[i].reason);
 	}
@@ -838,6 +839,9 @@ extern void pack_all_node (char **buffer_ptr, int *buffer_size,
 		if (((show_flags & SHOW_ALL) == 0)
 		&&  (_node_is_hidden(node_ptr)))
 			continue;
+		if ((node_ptr->name == NULL) ||
+		    (node_ptr->name[0] == '\0'))
+			continue;
 
 		_pack_node(node_ptr, cr_flag, buffer);
 		nodes_packed ++ ;
@@ -924,17 +928,19 @@ static void _pack_node (struct node_record *dump_node_ptr, bool cr_flag,
 void rehash_node (void) 
 {
 	int i, inx;
+	struct node_record *node_ptr = node_record_table_ptr;
 
 	xfree (node_hash_table);
 	node_hash_table = xmalloc (sizeof (struct node_record *) * 
 				node_record_count);
 
-	for (i = 0; i < node_record_count; i++) {
-		if (strlen (node_record_table_ptr[i].name) == 0)
+	for (i = 0; i < node_record_count; i++, node_ptr++) {
+		if ((node_ptr->name == NULL) ||
+		    (node_ptr->name[0] == '\0'))
 			continue;	/* vestigial record */
-		inx = _hash_index (node_record_table_ptr[i].name);
-		node_record_table_ptr[i].node_next = node_hash_table[inx];
-		node_hash_table[inx] = &node_record_table_ptr[i];
+		inx = _hash_index (node_ptr->name);
+		node_ptr->node_next = node_hash_table[inx];
+		node_hash_table[inx] = node_ptr;
 	}
 
 #if _DEBUG
@@ -957,7 +963,8 @@ void set_slurmd_addr (void)
 
 	START_TIMER;
 	for (i = 0; i < node_record_count; i++, node_ptr++) {
-		if (node_ptr->name[0] == '\0')
+		if ((node_ptr->name == NULL) ||
+		    (node_ptr->name[0] == '\0'))
 			continue;
 		if (node_ptr->port == 0)
 			node_ptr->port = slurmctld_conf.slurmd_port;
@@ -2274,6 +2281,8 @@ void node_fini(void)
 	}
 
 	for (i=0; i< node_record_count; i++) {
+		xfree(node_record_table_ptr[i].name);
+		xfree(node_record_table_ptr[i].comm_name);
 		xfree(node_record_table_ptr[i].part_pptr);
 		xfree(node_record_table_ptr[i].features);
 		xfree(node_record_table_ptr[i].reason);

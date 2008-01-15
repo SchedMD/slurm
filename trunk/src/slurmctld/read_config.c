@@ -97,7 +97,7 @@ static int  _sync_nodes_to_active_job(struct job_record *job_ptr);
 static void _validate_node_proc_count(void);
 #endif
 
-static char highest_node_name[MAX_SLURM_NAME] = "";
+static char *highest_node_name = NULL;
 int node_record_count = 0;
 
 /* FIXME - declarations for temporarily moved functions */
@@ -281,7 +281,7 @@ static int _init_all_slurm_conf(void)
 	if ((error_code = init_job_conf()))
 		return error_code;
 
-	strcpy(highest_node_name, "");
+	xfree(highest_node_name);
 	return 0;
 }
 
@@ -420,14 +420,16 @@ static int _build_single_nodeline_info(slurm_conf_node_t *node_ptr,
 		hostname = hostlist_shift(hostname_list);
 		address = hostlist_shift(address_list);
 #endif		
-		if (strcmp(alias, highest_node_name) <= 0) {
+		if (highest_node_name &&
+		    (strcmp(alias, highest_node_name) <= 0)) {
 			/* find_node_record locks this to get the
 			   alias so we need to unlock */
 			slurm_conf_unlock();
 			node_rec = find_node_record(alias);
 			slurm_conf_lock();			
 		} else {
-			strncpy(highest_node_name, alias, MAX_SLURM_NAME);
+			xfree(highest_node_name);
+			highest_node_name = xstrdup(alias);
 			node_rec = NULL;
 		}
 
@@ -437,7 +439,7 @@ static int _build_single_nodeline_info(slurm_conf_node_t *node_ptr,
 			    (state_val != NODE_STATE_UNKNOWN))
 				node_rec->node_state = state_val;
 			node_rec->last_response = (time_t) 0;
-			strncpy(node_rec->comm_name, address, MAX_SLURM_NAME);
+			node_rec->comm_name = xstrdup(address);
 
 			node_rec->port = node_ptr->port;
 			node_rec->reason = xstrdup(node_ptr->reason);
@@ -565,6 +567,7 @@ static int _build_all_nodeline_info(slurm_ctl_conf_t *conf)
 
 		_build_single_nodeline_info(node, config_ptr, conf);
 	}
+	xfree(highest_node_name);
 	return SLURM_SUCCESS;
 }
 
@@ -580,28 +583,23 @@ static int _build_single_partitionline_info(slurm_conf_partition_t *part)
 {
 	struct part_record *part_ptr;
 
-	if (strlen(part->name) >= MAX_SLURM_NAME) {
-		error("_parse_part_spec: partition name %s too long",
-		      part->name);
-		return EINVAL;
-	}
-
 	part_ptr = list_find_first(part_list, &list_find_part, part->name);
 	if (part_ptr == NULL) {
 		part_ptr = create_part_record();
-		strcpy(part_ptr->name, part->name);
+		part_ptr->name = xstrdup(part->name);
 	} else {
 		verbose("_parse_part_spec: duplicate entry for partition %s",
 			part->name);
 	}
 
 	if (part->default_flag) {
-		if ((strlen(default_part_name) > 0)
+		if (default_part_name
 		&&  strcmp(default_part_name, part->name))
 			info("_parse_part_spec: changing default partition "
 				"from %s to %s", 
 				default_part_name, part->name);
-		strcpy(default_part_name, part->name);
+		xfree(default_part_name);
+		default_part_name = xstrdup(part->name);
 		default_part_loc = part_ptr;
 	}
 	part_ptr->hidden    = part->hidden_flag ? 1 : 0;
@@ -870,6 +868,8 @@ static void _purge_old_node_state(struct node_record *old_node_table_ptr,
 	int i;
 
 	for (i = 0; i < old_node_record_count; i++) {
+		xfree(old_node_table_ptr[i].name);
+		xfree(old_node_table_ptr[i].comm_name);
 		xfree(old_node_table_ptr[i].part_pptr);
 		xfree(old_node_table_ptr[i].features);
 		xfree(old_node_table_ptr[i].reason);

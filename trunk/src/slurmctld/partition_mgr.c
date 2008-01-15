@@ -71,7 +71,7 @@
 /* Global variables */
 struct part_record default_part;	/* default configuration values */
 List part_list = NULL;			/* partition list */
-char default_part_name[MAX_SLURM_NAME];	/* name of default partition */
+char *default_part_name = NULL;		/* name of default partition */
 struct part_record *default_part_loc = NULL; /* default partition location */
 time_t last_part_update;	/* time of last update to partition records */
 
@@ -217,7 +217,7 @@ struct part_record *create_part_record(void)
 	    (struct part_record *) xmalloc(sizeof(struct part_record));
 
 	xassert (part_ptr->magic = PART_MAGIC);  /* set value */
-	strcpy(part_ptr->name, "DEFAULT");
+	part_ptr->name         = xstrdup("DEFAULT");
 	part_ptr->hidden       = default_part.hidden;
 	part_ptr->max_time     = default_part.max_time;
 	part_ptr->max_nodes    = default_part.max_nodes;
@@ -493,7 +493,8 @@ int load_all_part_state(void)
 			part_ptr->max_nodes = max_nodes;
 			part_ptr->min_nodes = min_nodes;
 			if (def_part_flag) {
-				strncpy(default_part_name, part_name, MAX_SLURM_NAME);
+				xfree(default_part_name);
+				default_part_name = xstrdup(part_name);
 				default_part_loc = part_ptr;
 			}
 			part_ptr->root_only = root_only;
@@ -547,7 +548,7 @@ int init_part_conf(void)
 {
 	last_part_update = time(NULL);
 
-	strcpy(default_part.name, "DEFAULT");
+	default_part.name        = xstrdup("DEFAULT");
 	default_part.hidden      = 0;
 	default_part.max_time    = INFINITE;
 	default_part.max_nodes   = INFINITE;
@@ -571,7 +572,7 @@ int init_part_conf(void)
 	if (part_list == NULL)
 		fatal ("memory allocation failure");
 
-	strcpy(default_part_name, "");
+	xfree(default_part_name);
 	default_part_loc = (struct part_record *) NULL;
 
 	return 0;
@@ -603,6 +604,7 @@ static void _list_delete_part(void *part_entry)
 			break;
 		}
 	}
+	xfree(part_ptr->name);
 	xfree(part_ptr->allow_groups);
 	xfree(part_ptr->allow_uids);
 	xfree(part_ptr->nodes);
@@ -623,8 +625,7 @@ int list_find_part(void *part_entry, void *key)
 	if (strcmp(key, "universal_key") == 0)
 		return 1;
 
-	if (strncmp(((struct part_record *) part_entry)->name,
-		    (char *) key, MAX_SLURM_NAME) == 0)
+	if (strcmp(((struct part_record *)part_entry)->name, (char *) key) == 0)
 		return 1;
 
 	return 0;
@@ -784,10 +785,8 @@ int update_part(update_part_msg_t * part_desc)
 	int error_code;
 	struct part_record *part_ptr;
 
-	if ((part_desc->name == NULL) ||
-	    (strlen(part_desc->name) >= MAX_SLURM_NAME)) {
-		error("update_part: invalid partition name  %s",
-		      part_desc->name);
+	if (part_desc->name == NULL) {
+		error("update_part: invalid partition name, NULL");
 		return ESLURM_INVALID_PARTITION_NAME;
 	}
 
@@ -799,7 +798,7 @@ int update_part(update_part_msg_t * part_desc)
 		info("update_part: partition %s does not exist, "
 			"being created", part_desc->name);
 		part_ptr = create_part_record();
-		strcpy(part_ptr->name, part_desc->name);
+		part_ptr->name = xstrdup(part_desc->name);
 	}
 
 	last_part_update = time(NULL);
@@ -863,11 +862,16 @@ int update_part(update_part_msg_t * part_desc)
 		part_ptr->priority = part_desc->priority;
 	}
 
-	if ((part_desc->default_part == 1) &&
-	    (strcmp(default_part_name, part_desc->name) != 0)) {
-		info("update_part: changing default partition from %s to %s", 
-		     default_part_name, part_desc->name);
-		strncpy(default_part_name, part_desc->name, MAX_SLURM_NAME);
+	if (part_desc->default_part == 1) {
+		if (default_part_name == NULL) {
+			info("update_part: setting default partition to %s", 
+			     part_desc->name);
+		} else if (strcmp(default_part_name, part_desc->name) != 0) {
+			info("update_part: changing default partition from %s to %s", 
+			     default_part_name, part_desc->name);
+		}
+		xfree(default_part_name);
+		default_part_name = xstrdup(part_desc->name);
 		default_part_loc = part_ptr;
 	}
 
@@ -1120,6 +1124,7 @@ void part_fini (void)
 		list_destroy(part_list);
 		part_list = NULL;
 	}
+	xfree(default_part_name);
 	default_part_loc = (struct part_record *) NULL;
 }
 

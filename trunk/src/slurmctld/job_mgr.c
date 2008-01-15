@@ -666,8 +666,8 @@ static int _load_job_state(Buf buffer)
 	job_ptr->total_procs  = total_procs;
 	job_ptr->db_index     = db_index;
 	job_ptr->time_last_active = time(NULL);
-	strncpy(job_ptr->name, name, MAX_JOBNAME_LEN);
-	xfree(name);
+	job_ptr->name = name;
+	name          = NULL;	/* reused, nothing left to free */
 	xfree(job_ptr->nodes);
 	job_ptr->nodes  = nodes;
 	nodes           = NULL;	/* reused, nothing left to free */
@@ -679,8 +679,8 @@ static int _load_job_state(Buf buffer)
 	xfree(job_ptr->alloc_node);
 	job_ptr->alloc_node = alloc_node;
 	alloc_node          = NULL;	/* reused, nothing left to free */
-	strncpy(job_ptr->partition, partition, MAX_SLURM_NAME);
-	xfree(partition);
+	job_ptr->partition = partition;
+	partition          = NULL;	/* reused, nothing left to free */
 	job_ptr->account = account;
 	account          = NULL;  /* reused, nothing left to free */
 	job_ptr->comment = comment;
@@ -2028,27 +2028,27 @@ static int _validate_job_create_req(job_desc_msg_t * job_desc)
 {
 	if (job_desc->account && (strlen(job_desc->account) > MAX_STR_LEN)) {
 		info("_validate_job_create_req: strlen(account) too big (%d)",
-		     strlen(job_desc->features));
+		     strlen(job_desc->account));
 		return ESLURM_PATHNAME_TOO_LONG;
 	}
 	if (job_desc->alloc_node && (strlen(job_desc->alloc_node) > MAX_STR_LEN)) {
 		info("_validate_job_create_req: strlen(alloc_node) too big (%d)",
-		     strlen(job_desc->features));
-		return ESLURM_PATHNAME_TOO_LONG;
-	}
-	if (job_desc->comment && (strlen(job_desc->comment) > MAX_STR_LEN)) {
-		info("_validate_job_create_req: strlen(comment) too big (%d)",
-		     strlen(job_desc->features));
+		     strlen(job_desc->alloc_node));
 		return ESLURM_PATHNAME_TOO_LONG;
 	}
 	if (job_desc->blrtsimage && (strlen(job_desc->blrtsimage) > MAX_STR_LEN)) {
 		info("_validate_job_create_req: strlen(blrtsimage) too big (%d)",
-		     strlen(job_desc->features));
+		     strlen(job_desc->blrtsimage));
+		return ESLURM_PATHNAME_TOO_LONG;
+	}
+	if (job_desc->comment && (strlen(job_desc->comment) > MAX_STR_LEN)) {
+		info("_validate_job_create_req: strlen(comment) too big (%d)",
+		     strlen(job_desc->comment));
 		return ESLURM_PATHNAME_TOO_LONG;
 	}
 	if (job_desc->dependency && (strlen(job_desc->dependency) > MAX_STR_LEN)) {
 		info("_validate_job_create_req: strlen(dependency) too big (%d)",
-		     strlen(job_desc->features));
+		     strlen(job_desc->dependency));
 		return ESLURM_PATHNAME_TOO_LONG;
 	}
 	if (job_desc->err && (strlen(job_desc->err) > MAX_STR_LEN)) {
@@ -2068,12 +2068,12 @@ static int _validate_job_create_req(job_desc_msg_t * job_desc)
 	}
 	if (job_desc->linuximage && (strlen(job_desc->linuximage) > MAX_STR_LEN)) {
 		info("_validate_job_create_req: strlen(linuximage) too big (%d)",
-		     strlen(job_desc->features));
+		     strlen(job_desc->linuximage));
 		return ESLURM_PATHNAME_TOO_LONG;
 	}
 	if (job_desc->mail_user && (strlen(job_desc->mail_user) > MAX_STR_LEN)) {
 		info("_validate_job_create_req: strlen(mail_user) too big (%d)",
-		     strlen(job_desc->in));
+		     strlen(job_desc->mail_user));
 		return ESLURM_PATHNAME_TOO_LONG;
 	}
 	if (job_desc->mloaderimage && (strlen(job_desc->mloaderimage) > MAX_STR_LEN)) {
@@ -2081,9 +2081,14 @@ static int _validate_job_create_req(job_desc_msg_t * job_desc)
 		     strlen(job_desc->features));
 		return ESLURM_PATHNAME_TOO_LONG;
 	}
+	if (job_desc->name && (strlen(job_desc->name) > MAX_STR_LEN)) {
+		info("_validate_job_create_req: strlen(name) too big (%d)",
+		     strlen(job_desc->name));
+		return ESLURM_PATHNAME_TOO_LONG;
+	}
 	if (job_desc->network && (strlen(job_desc->network) > MAX_STR_LEN)) {
 		info("_validate_job_create_req: strlen(network) too big (%d)",
-		     strlen(job_desc->features));
+		     strlen(job_desc->network));
 		return ESLURM_PATHNAME_TOO_LONG;
 	}
 	if (job_desc->out && (strlen(job_desc->out) > MAX_STR_LEN)) {
@@ -2091,9 +2096,14 @@ static int _validate_job_create_req(job_desc_msg_t * job_desc)
 		     strlen(job_desc->out));
 		return ESLURM_PATHNAME_TOO_LONG;
 	}
+	if (job_desc->partition && (strlen(job_desc->partition) > MAX_STR_LEN)) {
+		info("_validate_job_create_req: strlen(partition) too big (%d)",
+		     strlen(job_desc->partition));
+		return ESLURM_PATHNAME_TOO_LONG;
+	}
 	if (job_desc->ramdiskimage && (strlen(job_desc->ramdiskimage) > MAX_STR_LEN)) {
 		info("_validate_job_create_req: strlen(ramdiskimage) too big (%d)",
-		     strlen(job_desc->features));
+		     strlen(job_desc->ramdiskimage));
 		return ESLURM_PATHNAME_TOO_LONG;
 	}
 	if (job_desc->work_dir && (strlen(job_desc->work_dir) > MAX_STR_LEN)) {
@@ -2493,7 +2503,7 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 	if (error_code)
 		return error_code;
 
-	strncpy(job_ptr->partition, part_ptr->name, MAX_SLURM_NAME);
+	job_ptr->partition = xstrdup(part_ptr->name);
 	job_ptr->part_ptr = part_ptr;
 	if (job_desc->job_id != NO_VAL)		/* already confirmed unique */
 		job_ptr->job_id = job_desc->job_id;
@@ -2501,9 +2511,8 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 		_set_job_id(job_ptr);
 	_add_job_hash(job_ptr);
 
-	if (job_desc->name) {
-		strncpy(job_ptr->name, job_desc->name, MAX_JOBNAME_LEN);
-	}
+	if (job_desc->name)
+		job_ptr->name = xstrdup(job_desc->name);
 	job_ptr->user_id    = (uid_t) job_desc->user_id;
 	job_ptr->group_id   = (gid_t) job_desc->group_id;
 	job_ptr->job_state  = JOB_PENDING;
@@ -2735,10 +2744,6 @@ static int _validate_job_desc(job_desc_msg_t * job_desc_msg, int allocate,
 		debug("_validate_job_desc: job failed to specify group");
 		job_desc_msg->group_id = 0;	/* uses user default */
 	}
-	if ((job_desc_msg->name) &&
-	    (strlen(job_desc_msg->name) >= MAX_JOBNAME_LEN)) {
-		job_desc_msg->name[MAX_JOBNAME_LEN-1] = '\0';
-	}
 	if (job_desc_msg->contiguous == (uint16_t) NO_VAL)
 		job_desc_msg->contiguous = 0;
 
@@ -2846,9 +2851,11 @@ static void _list_delete_job(void *job_entry)
 
 	delete_job_details(job_ptr);
 	xfree(job_ptr->alloc_node);
+	xfree(job_ptr->name);
 	xfree(job_ptr->nodes);
 	xfree(job_ptr->nodes_completing);
 	FREE_NULL_BITMAP(job_ptr->node_bitmap);
+	xfree(job_ptr->partition);
 	xfree(job_ptr->cpus_per_node);
 	xfree(job_ptr->cpu_count_reps);
 	xfree(job_ptr->node_addr);
@@ -3776,7 +3783,8 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 	}
 
 	if (job_specs->name) {
-		strncpy(job_ptr->name, job_specs->name, MAX_JOBNAME_LEN);
+		xfree(job_ptr->name);
+		job_ptr->name = xstrdup(job_specs->name);
 		info("update_job: setting name to %s for job_id %u",
 		     job_specs->name, job_specs->job_id);
 	}
@@ -3788,8 +3796,8 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 		else if (tmp_part_ptr == NULL)
 			error_code = ESLURM_INVALID_PARTITION_NAME;
 		else if (super_user) {
-			strncpy(job_ptr->partition, job_specs->partition,
-				MAX_SLURM_NAME);
+			xfree(job_ptr->partition);
+			job_ptr->partition = xstrdup(job_specs->partition);
 			job_ptr->part_ptr = tmp_part_ptr;
 			info("update_job: setting partition to %s for "
 			     "job_id %u", job_specs->partition, 
