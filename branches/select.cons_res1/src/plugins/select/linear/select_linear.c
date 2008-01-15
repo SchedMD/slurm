@@ -1329,7 +1329,7 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	}
 	list_iterator_destroy(job_iterator);
 	list_destroy(cr_job_list);
-
+	_free_node_cr(exp_node_cr);
 	bit_free(orig_map);
 	return rc;
 }
