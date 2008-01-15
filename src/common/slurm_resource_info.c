@@ -132,6 +132,8 @@ int slurm_get_avail_procs(const uint16_t max_sockets,
 	switch(cr_type) {
 	/* For the following CR types, nodes have no notion of socket, core,
 	   and thread.  Only one level of logical processors */ 
+	case SELECT_TYPE_INFO_NONE:
+		/* Default for select/linear */
 	case CR_CPU:
 	case CR_CPU_MEMORY:
 		
