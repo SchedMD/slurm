@@ -234,7 +234,17 @@ static int _add_edit_job(struct job_record *job_ptr, gold_object_t action)
 			 (int)job_ptr->details->submit_time);
 		gold_request_add_assignment(gold_request, "SubmitTime",
 					    tmp_buff);
-
+		if(job_ptr->job_state != JOB_RUNNING) {
+			snprintf(tmp_buff, sizeof(tmp_buff), "%u",
+				 (int)job_ptr->end_time);
+			gold_request_add_assignment(gold_request, "EndTime",
+						    tmp_buff);		
+			
+			snprintf(tmp_buff, sizeof(tmp_buff), "%u",
+				 (int)job_ptr->exit_code);
+			gold_request_add_assignment(gold_request, "ExitCode",
+						    tmp_buff);
+		}
 	} else if (action == GOLD_ACTION_MODIFY) {
 		snprintf(tmp_buff, sizeof(tmp_buff), "%u", job_ptr->job_id);
 		gold_request_add_condition(gold_request, "JobId", tmp_buff,
@@ -266,10 +276,10 @@ static int _add_edit_job(struct job_record *job_ptr, gold_object_t action)
 				    job_ptr->partition);
 	
 	snprintf(tmp_buff, sizeof(tmp_buff), "%u", job_ptr->num_procs);
-	gold_request_add_assignment(gold_request, "RequestedCPUS",
+	gold_request_add_assignment(gold_request, "RequestedCPUCount",
 				    tmp_buff);
 	snprintf(tmp_buff, sizeof(tmp_buff), "%u", ncpus);
-	gold_request_add_assignment(gold_request, "AllocatedCPUS",
+	gold_request_add_assignment(gold_request, "AllocatedCPUCount",
 				    tmp_buff);
 
 	gold_request_add_assignment(gold_request, "NodeList",
