@@ -18,8 +18,9 @@ documents those changes that are of interest to users and admins.
     debug level at any time (Hongjia Cao, NUDT).
  -- Track total total suspend time for jobs and steps for accounting purposes.
  -- Add version information to partition state file.
- -- Added 'will-run' functionality to the bluegene plugin to return node 
-    list and time job can start based off other jobs running.
+ -- Added 'will-run' functionality to all of the select plugins (bluegene,
+    linear, and cons_res) to return node list and time job can start based 
+    on other jobs running.
  -- Major restructuring of node selection logic. select/linear now supports
     partition max_share parameter and tries to match like size jobs on the 
     same nodes to improve gang scheduling performance. Also supports treating 

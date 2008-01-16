@@ -409,7 +409,7 @@ extern int cr_dist(struct select_cr_job *job, int cyclic,
 		this_cr_node = &select_node_ptr[host_index];
 		
 		if (job->cpus[job_index] == 0) {
-			error(" cons_res: %d no available cpus on node %s ",
+			error("cons_res: %d no available cpus on node %s ",
 			      job->job_id,
 			      node_record_table_ptr[host_index].name);
 			continue;
@@ -543,7 +543,7 @@ extern int cr_plane_dist(struct select_cr_job *job,
 		this_cr_node = &select_node_ptr[host_index];
 		
 		if (job->cpus[job_index] == 0) {
-			error(" cons_res: no available cpus on node %s", 
+			error("cons_res: no available cpus on node %s", 
 			      node_record_table_ptr[host_index].name);
 			continue;
 		}
