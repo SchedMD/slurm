@@ -1,6 +1,7 @@
 .TH "SPANK" "8" "May 2006" "SPANK" "SLURM plug\-in architecture for Node and job (K)control"
 .SH "NAME"
 \fBSPANK\fR \- SLURM Plug\-in Architecture for Node and job (K)control 
+
 .SH "DESCRIPTION"
 This manual briefly describes the capabilities of the SLURM Plug\-in
 architecture for Node and job Kontrol (\fBSPANK\fR) as well as the \fBSPANK\fR
@@ -16,10 +17,12 @@ the \fBSPANK\fR infrastructure provides administrators and other developers
 a low cost, low effort ability to dynamically modify the runtime
 behavior of SLURM job launch.
 .LP
+
 .SH "SPANK PLUGINS"
 \fBSPANK\fR plugins are loaded in two separate contexts during a 
-\fBSLURM\fR job.  In "local" context, the plugin is loaded by \fBsrun\fR
-or other \fBSLURM\fR user interface. In local context, options provided by 
+\fBSLURM\fR job.  In "local" context, the plugin is loaded by \fBsrun\fR,
+\fBsbatch\fR or other \fBSLURM\fR user interface. 
+In local context, options provided by 
 plugins are read by \fBSPANK\fR, and these options are presented to the user. 
 In "remote" context, the plugin is loaded on a compute node of the job,
 in other words, the plugin is loaded by \fBslurmd\fR. In local context, only
@@ -36,7 +39,8 @@ just after job step is initialized. For local context, this is before
 user options are processed.
 .TP
 \fBslurm_spank_local_user_init\fR
-Called in local (srun) context only after all options have been processed.
+Called in local (\fBsrun\fR or \fBsbatch\fR) context only after all 
+options have been processed.
 .TP
 \fBslurm_spank_user_init\fR 
 Called after privileges are temporarily dropped. (remote context only)
@@ -56,7 +60,7 @@ Called for each task as its exit status is collected by SLURM.
 .TP
 \fBslurm_spank_exit\fR
 Called once just before \fBslurmstepd\fR exits in remote context.
-In local context, called before \fBsrun\fR exits.
+In local context, called before \fBsrun\fR or \fBsbatch\fR exits.
 .LP
 All of these functions have the same prototype, for example:
 .nf
@@ -104,6 +108,8 @@ User id for running job. (uid_t *) is third arg of \fBspank_get_item\fR
 .TP
 \fBS_JOB_STEPID\fR
 Job step id for running job. (uint32_t *) is third arg of \fBspank_get_item\fR
+For batch jobs (initiated by \fBsbatch\fR), the step id will be 
+\fBSLURM_BATCH_SCRIPT\fR as defined in the \fBslurm.h\fR file.
 .TP
 \fBS_TASK_EXIT_STATUS\fR
 Exit status for exited task. Only valid from \fBslurm_spank_task_exit\fR.
@@ -140,11 +146,13 @@ and \fBunsetenv\fR(3) may be used in local context.
 .LP
 See \fBspank.h\fR for more information, and \fBEXAMPLES\fR below for an example
 for \fBspank_getenv\fR usage.
+
 .SH "SPANK OPTIONS"
 .LP
 SPANK plugins also have an interface through which they may define
 and implement extra job options. These options are made available to
-the user through SLURM commands such as \fBsrun\fR(1), and if the
+the user through SLURM commands such as \fBsrun\fR(1) or 
+\fBsbatch\fR(1), and if the
 option is specified, its value is forwarded and registered with
 the plugin on the remote side. In this way, \fBSPANK\fR plugins
 may dynamically provide new options and functionality to SLURM.
@@ -198,8 +206,8 @@ registered with SLURM. \fBspank_opt_cb_f\fR is typedef'd in
 .fi
 Where \fIval\fR is the value of the \fIval\fR field in the \fBspank_option\fR
 struct, \fIoptarg\fR is the supplied argument if applicable, and \fIremote\fR
-is 0 if the function is being called from the "local" host (e.g. srun) or
-1 from the "remote" host (slurmd).
+is 0 if the function is being called from the "local" host 
+(e.g. \fBsrun\fR or \fBsbatch\fR) or 1 from the "remote" host (\fBslurmd\fR).
 .LP
 The last element of the array must filled with zeros. A
 \fBSPANK_OPTIONS_TABLE_END\fR macro is defined in \fB<slurm/spank.h>\fR
@@ -260,6 +268,7 @@ The \fBSPANK\fR config file is re\-read on each job launch, so editing
 the config file will not affect running jobs. However care should
 be taken so that a partially edited config file is not read by a
 launching job.  
+
 .SH "EXAMPLES"
 .LP
 Simple \fBSPANK\fR config file:
@@ -276,8 +285,8 @@ required          /usr/lib/slurm/test.so
 .fi
 .LP
 The following is a simple \fBSPANK\fR plugin to modify the nice value
-of job tasks. This plugin adds a \-\-renice=[prio] option to srun which
-users can use to set the priority of all remote tasks. Priority may
+of job tasks. This plugin adds a \-\-renice=[prio] option to \fBsrun\fR 
+which users can use to set the priority of all remote tasks. Priority may
 also be specified via a SLURM_RENICE environment variable. A minimum
 priority may be established via a "min_prio" parameter in \fBplugstack.conf\fR
 (See above for example).
@@ -452,4 +461,4 @@ details.
 \fB/usr/include/slurm/spank.h\fR \- SPANK header file.
 .SH "SEE ALSO"
 .LP
-\fBslurm.conf\fR(5)
+\fBsbatch\fR(1), \fBsrun\fR(1), \fBslurm.conf\fR(5)
