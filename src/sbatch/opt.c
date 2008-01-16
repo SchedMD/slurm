@@ -60,6 +60,7 @@
 #include "src/common/list.h"
 #include "src/common/log.h"
 #include "src/common/parse_time.h"
+#include "src/common/plugstack.h"
 #include "src/common/proc_args.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/uid.h"
@@ -877,10 +878,16 @@ static void _set_options(int argc, char **argv)
 {
 	int opt_char, option_index = 0;
 	char *tmp;
+	struct option *optz = spank_option_table_create (long_options);
+
+	if (!optz) {
+		error ("Unable to create option table");
+		exit (1);
+	}
 
 	optind = 0;
 	while((opt_char = getopt_long(argc, argv, opt_string,
-				      long_options, &option_index)) != -1) {
+				      optz, &option_index)) != -1) {
 		switch (opt_char) {
 		case '?':
 			fatal("Try \"sbatch --help\" for more information");
@@ -1267,6 +1274,8 @@ static void _set_options(int argc, char **argv)
 				opt.propagate = xstrdup("ALL");
 			break;
 		default:
+			if (spank_process_option (opt_char, optarg) < 0)
+				 exit (1);
 			fatal("Unrecognized command line parameter %c",
 			      opt_char);
 		}
@@ -1275,6 +1284,7 @@ static void _set_options(int argc, char **argv)
 	if (optind < argc) {
 		fatal("Invalid argument: %s", argv[optind]);
 	}
+	spank_option_table_destroy (optz);
 }
 
 static void _proc_get_user_env(char *optarg)
@@ -2160,6 +2170,9 @@ static void _help(void)
 "                              (see \"--hint=help\" for options)\n");
 	}
 	slurm_conf_unlock();
+
+	printf("\n");
+	spank_print_options (stdout, 6, 30);
 
         printf("\n"
 #ifdef HAVE_BG				/* Blue gene specific options */
