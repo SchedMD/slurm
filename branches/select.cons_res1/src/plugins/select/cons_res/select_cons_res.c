@@ -2329,7 +2329,6 @@ static int _job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	}
 
 	/* This is the case if -O/--overcommit  is true */ 
-	debug3("job_ptr->num_procs %u", job_ptr->num_procs);
 	if (job_ptr->num_procs == job_ptr->details->min_nodes) {
 		job_ptr->num_procs *= MAX(1, mc_ptr->min_threads);
 		job_ptr->num_procs *= MAX(1, mc_ptr->min_cores);
