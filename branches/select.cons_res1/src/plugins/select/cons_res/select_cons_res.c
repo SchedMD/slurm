@@ -713,7 +713,7 @@ static void _append_to_job_list(struct select_cr_job *new_job)
 	list_iterator_destroy(iterator);
 	list_append(select_cr_job_list, new_job);
 	slurm_mutex_unlock(&cr_mutex);
-	debug3 (" cons_res: _append_to_job_list job_id %u to list. "
+	debug3 ("cons_res: _append_to_job_list job_id %u to list. "
 		"list_count %d ", job_id, list_count(select_cr_job_list));
 }
 
