@@ -100,6 +100,12 @@
 				 * check-in before we ping them */
 #define SHUTDOWN_WAIT     2	/* Time to wait for backup server shutdown */
 
+#if (0)
+/* If defined and FastSchedule=0 in slurm.conf, then report the CPU count that a 
+ * node registers with rather than the CPU count defined for the node in slurm.conf */
+#define SLURM_NODE_ACCT_REGISTER 1
+#endif
+
 /**************************************************************************\
  * To test for memory leaks, set MEMORY_LEAK_DEBUG to 1 using 
  * "configure --enable-memory-leak-debug" then execute
@@ -152,6 +158,8 @@ static int controller_sigarray[] = {
 
 static void         _default_sigaction(int sig);
 inline static void  _free_server_thread(void);
+static int          _gold_cluster_ready();
+static int          _gold_mark_all_nodes_down(char *reason, time_t event_time);
 static void         _init_config(void);
 static void         _init_pidfile(void);
 static void         _kill_old_slurmctld(void);
@@ -308,11 +316,9 @@ int main(int argc, char *argv[])
 					slurmctld_conf.slurm_conf,
 					slurm_strerror(error_code));
 			}
-			/* FIXME: Why are we setting all the nodes
-			   down? */
-/* 			if (recover == 0) */
-/* 				jobacct_g_node_all_down("cold-start",
-				                        time(NULL)); */
+			if (recover == 0)
+				_gold_mark_all_nodes_down("cold-start",
+							  time(NULL));
 		} else {
 			error("this host (%s) not valid controller (%s or %s)",
 				node_name, slurmctld_conf.control_machine,
@@ -320,7 +326,7 @@ int main(int argc, char *argv[])
 			exit(0);
 		}
 		info("Running as primary controller");
-		jobacct_g_cluster_ready();
+		_gold_cluster_ready();
 		if (slurm_sched_init() != SLURM_SUCCESS)
 			fatal("failed to initialize scheduling plugin");
 
@@ -768,6 +774,61 @@ static void _free_server_thread(void)
 	pthread_cond_broadcast(&server_thread_cond);
 }
 
+static int _gold_cluster_ready()
+{
+	uint32_t procs = 0;
+	struct node_record *node_ptr;
+	int i;
+	int rc = SLURM_ERROR;
+	time_t event_time = time(NULL);
+
+	node_ptr = node_record_table_ptr;
+	for (i = 0; i < node_record_count; i++, node_ptr++) {
+		if (node_ptr->name == '\0')
+			continue;
+#ifdef SLURM_NODE_ACCT_REGISTER
+		if (slurmctld_conf.fast_schedule)
+			procs += node_ptr->config_ptr->cpus;
+		else
+			procs += node_ptr->cpus;
+#else
+		procs += node_ptr->config_ptr->cpus;
+#endif
+	}
+
+	rc = jobacct_g_cluster_procs(procs, event_time);
+
+	return rc;
+}
+
+static int _gold_mark_all_nodes_down(char *reason, time_t event_time)
+{
+	char *state_file;
+	struct stat stat_buf;
+	struct node_record *node_ptr;
+	int i;
+	int rc = SLURM_ERROR;
+
+	state_file = xstrdup (slurmctld_conf.state_save_location);
+	xstrcat (state_file, "/node_state");
+	if (stat(state_file, &stat_buf)) {
+		error("_gold_mark_all_nodes_down: could not stat(%s) to record "
+		      "node down time", state_file);
+		xfree(state_file);
+		return rc;
+	}
+	xfree(state_file);
+
+	node_ptr = node_record_table_ptr;
+	for (i = 0; i < node_record_count; i++, node_ptr++) {
+		if (node_ptr->name == '\0')
+			continue;
+		if((rc = jobacct_g_node_down(node_ptr, event_time, reason))
+		   == SLURM_ERROR) 
+			break;
+	}
+	return rc;
+}
 /*
  * _slurmctld_background - process slurmctld background activities
  *	purge defunct job records, save state, schedule jobs, and 
@@ -928,7 +989,7 @@ static void *_slurmctld_background(void *no_data)
 			 * or reconfigured nodes */
 			last_node_acct = now;
 			lock_slurmctld(node_read_lock);
-			jobacct_g_cluster_ready();
+			_gold_cluster_ready();
 			unlock_slurmctld(node_read_lock);
 		}
 		/* Reassert this machine as the primary controller.

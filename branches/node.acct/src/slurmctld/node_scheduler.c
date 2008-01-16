@@ -61,6 +61,7 @@
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
+#include "src/common/slurm_jobacct.h"
 
 #include "src/slurmctld/agent.h"
 #include "src/slurmctld/node_scheduler.h"
@@ -183,7 +184,7 @@ extern void deallocate_nodes(struct job_record *job_ptr, bool timeout,
 
 	if (select_g_job_fini(job_ptr) != SLURM_SUCCESS)
 		error("select_g_job_fini(%u): %m", job_ptr->job_id);
-
+	
 	agent_args = xmalloc(sizeof(agent_arg_t));
 	if (timeout)
 		agent_args->msg_type = REQUEST_KILL_TIMELIMIT;
@@ -225,6 +226,7 @@ extern void deallocate_nodes(struct job_record *job_ptr, bool timeout,
 		delete_step_records(job_ptr, 1);
 		slurm_sched_schedule();
 	}
+	
 	if (agent_args->node_count == 0) {
 		error("Job %u allocated no nodes to be killed on",
 		      job_ptr->job_id);
@@ -234,6 +236,11 @@ extern void deallocate_nodes(struct job_record *job_ptr, bool timeout,
 		xfree(agent_args);
 		return;
 	}
+	
+	/* log this in the accounting plugin since it was allocated
+	 * something */
+	jobacct_g_job_complete_slurmctld(job_ptr);
+	
 	agent_args->msg_args = kill_job;
 	agent_queue_request(agent_args);
 	return;
@@ -1152,6 +1159,8 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 				    (job_ptr->time_limit * 60);   /* secs */
 	if (job_ptr->mail_type & MAIL_JOB_BEGIN)
 		mail_job_info(job_ptr, MAIL_JOB_BEGIN);
+
+	jobacct_g_job_start_slurmctld(job_ptr);
 
       cleanup:
 	if (select_node_bitmap)

@@ -188,7 +188,7 @@ static int _add_edit_job(struct job_record *job_ptr, gold_object_t action)
 	char *gold_account_id = NULL;
 	char *user = uid_to_string((uid_t)job_ptr->user_id);
 	char *jname = NULL;
-	int ncpus=0, tmp = 0, i = 0;
+	int tmp = 0, i = 0;
 	char *account = NULL;
 	char *nodes = "(null)";
 
@@ -212,39 +212,24 @@ static int _add_edit_job(struct job_record *job_ptr, gold_object_t action)
 	if (job_ptr->nodes && job_ptr->nodes[0])
 		nodes = job_ptr->nodes;
 	
-	for (i=0; i < job_ptr->num_cpu_groups; i++) {
-		ncpus += (job_ptr->cpus_per_node[i])
-			* (job_ptr->cpu_count_reps[i]);
-		//info("got %d from %d * %d", ncpus, job_ptr->cpus_per_node[i],
-		//   job_ptr->cpu_count_reps[i]);
-	}
+	
 //info("total procs is  %d", job_ptr->details->total_procs);
 	if(action == GOLD_ACTION_CREATE) {
 		snprintf(tmp_buff, sizeof(tmp_buff), "%u", job_ptr->job_id);
 		gold_request_add_assignment(gold_request, "JobId", tmp_buff);
 		
-		gold_account_id = _get_account_id(user, account, 
-						  cluster_name);
-
-		gold_request_add_assignment(gold_request, "GoldAccountId",
-					    gold_account_id);
-		xfree(gold_account_id);
-
 		snprintf(tmp_buff, sizeof(tmp_buff), "%u",
 			 (int)job_ptr->details->submit_time);
 		gold_request_add_assignment(gold_request, "SubmitTime",
 					    tmp_buff);
-		if(job_ptr->job_state != JOB_RUNNING) {
-			snprintf(tmp_buff, sizeof(tmp_buff), "%u",
-				 (int)job_ptr->end_time);
-			gold_request_add_assignment(gold_request, "EndTime",
-						    tmp_buff);		
-			
-			snprintf(tmp_buff, sizeof(tmp_buff), "%u",
-				 (int)job_ptr->exit_code);
-			gold_request_add_assignment(gold_request, "ExitCode",
-						    tmp_buff);
-		}
+		
+		gold_account_id = _get_account_id(user, account, 
+						  cluster_name);
+		
+		gold_request_add_assignment(gold_request, "GoldAccountId",
+					    gold_account_id);
+		xfree(gold_account_id);
+		
 	} else if (action == GOLD_ACTION_MODIFY) {
 		snprintf(tmp_buff, sizeof(tmp_buff), "%u", job_ptr->job_id);
 		gold_request_add_condition(gold_request, "JobId", tmp_buff,
@@ -255,17 +240,6 @@ static int _add_edit_job(struct job_record *job_ptr, gold_object_t action)
 		gold_request_add_condition(gold_request, "SubmitTime",
 					   tmp_buff,
 					   GOLD_OPERATOR_NONE);
-								
-		snprintf(tmp_buff, sizeof(tmp_buff), "%u",
-			 (int)job_ptr->end_time);
-		gold_request_add_assignment(gold_request, "EndTime",
-					    tmp_buff);		
-		
-		snprintf(tmp_buff, sizeof(tmp_buff), "%u",
-			 (int)job_ptr->exit_code);
-		gold_request_add_assignment(gold_request, "ExitCode",
-					    tmp_buff);
-
 	} else {
 		destroy_gold_request(gold_request);
 		error("_add_edit_job: bad action given %d", action);		
@@ -275,10 +249,12 @@ static int _add_edit_job(struct job_record *job_ptr, gold_object_t action)
 	gold_request_add_assignment(gold_request, "Partition",
 				    job_ptr->partition);
 	
-	snprintf(tmp_buff, sizeof(tmp_buff), "%u", job_ptr->num_procs);
+	snprintf(tmp_buff, sizeof(tmp_buff), "%u",
+		 job_ptr->details->total_procs);
 	gold_request_add_assignment(gold_request, "RequestedCPUCount",
 				    tmp_buff);
-	snprintf(tmp_buff, sizeof(tmp_buff), "%u", ncpus);
+	snprintf(tmp_buff, sizeof(tmp_buff), "%u",
+		 job_ptr->details->total_procs);
 	gold_request_add_assignment(gold_request, "AllocatedCPUCount",
 				    tmp_buff);
 
@@ -288,7 +264,18 @@ static int _add_edit_job(struct job_record *job_ptr, gold_object_t action)
 	gold_request_add_assignment(gold_request, "JobName",
 				    jname);
 	xfree(jname);
-
+	
+	if(job_ptr->job_state != JOB_RUNNING) {
+		snprintf(tmp_buff, sizeof(tmp_buff), "%u",
+			 (int)job_ptr->end_time);
+		gold_request_add_assignment(gold_request, "EndTime",
+					    tmp_buff);		
+		
+		snprintf(tmp_buff, sizeof(tmp_buff), "%u",
+			 (int)job_ptr->exit_code);
+		gold_request_add_assignment(gold_request, "ExitCode",
+					    tmp_buff);
+	}
 /* 	gold_request_add_assignment(gold_request, "CPUSecondsReserved", */
 /* 	     		            ); */
 
@@ -306,9 +293,7 @@ static int _add_edit_job(struct job_record *job_ptr, gold_object_t action)
 	snprintf(tmp_buff, sizeof(tmp_buff), "%u",
 		 job_ptr->job_state & (~JOB_COMPLETING));
 	gold_request_add_assignment(gold_request, "State",
-				    tmp_buff);
-
-	
+				    tmp_buff);	
 
 	gold_response = get_gold_response(gold_request);	
 	destroy_gold_request(gold_request);
@@ -573,12 +558,6 @@ void jobacct_p_resume_poll()
 	return;
 }
 
-#if (0)
-/* If defined and FastSchedule=0 in slurm.conf, then report the CPU count that a 
- * node registers with rather than the CPU count defined for the node in slurm.conf */
-#define SLURM_NODE_ACCT_REGISTER 1
-#endif
-
 #define _DEBUG 0
 
 extern int jobacct_p_node_down(struct node_record *node_ptr, time_t event_time,
@@ -671,36 +650,6 @@ extern int jobacct_p_node_down(struct node_record *node_ptr, time_t event_time,
 	}
 	destroy_gold_response(gold_response);
 
-	return rc;
-}
-
-extern int jobacct_p_node_all_down(time_t event_time, char *reason)
-{
-	char *state_file, tmp[32];
-	struct stat stat_buf;
-	struct node_record *node_ptr;
-	int i;
-	int rc = SLURM_ERROR;
-
-	state_file = xstrdup (slurmctld_conf.state_save_location);
-	xstrcat (state_file, "/node_state");
-	if (stat(state_file, &stat_buf)) {
-		error("node_acct_all_down: could not stat(%s) to record "
-		      "node down time", state_file);
-		xfree(state_file);
-		return rc;
-	}
-	xfree(state_file);
-
-	slurm_make_time_str(&stat_buf.st_mtime, tmp, sizeof(tmp));
-	node_ptr = node_record_table_ptr;
-	for (i = 0; i < node_record_count; i++, node_ptr++) {
-		if (node_ptr->name == '\0')
-			continue;
-		if((rc = jobacct_p_node_down(node_ptr, event_time, reason))
-		   == SLURM_ERROR) 
-			break;
-	}
 	return rc;
 }
 
@@ -884,39 +833,6 @@ extern int jobacct_p_cluster_procs(uint32_t procs, time_t event_time)
 		      gold_response->message);
 	}
 	destroy_gold_response(gold_response);
-
-	return rc;
-}
-
-extern int jobacct_p_cluster_ready()
-{
-	uint32_t procs = 0;
-	struct node_record *node_ptr;
-	int i;
-	int rc = SLURM_ERROR;
-	time_t event_time = time(NULL);
-
-	if (!cluster_name) {
-		fatal("jobacct_p_cluster_ready: "
-		      "jobacct_p_init_slurmctld not ran yet");
-		return rc;
-	}
-
-	node_ptr = node_record_table_ptr;
-	for (i = 0; i < node_record_count; i++, node_ptr++) {
-		if (node_ptr->name == '\0')
-			continue;
-#ifdef SLURM_NODE_ACCT_REGISTER
-		if (slurmctld_conf.fast_schedule)
-			procs += node_ptr->config_ptr->cpus;
-		else
-			procs += node_ptr->cpus;
-#else
-		procs += node_ptr->config_ptr->cpus;
-#endif
-	}
-
-	rc = jobacct_p_cluster_procs(procs, event_time);
 
 	return rc;
 }
