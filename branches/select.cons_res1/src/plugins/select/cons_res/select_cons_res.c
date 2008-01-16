@@ -2416,6 +2416,15 @@ static int _job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 					al_tasks[i], freq[i]);
 			}
 
+			if (row > 1) {
+				/* We need to share resources. 
+				 * Try to find suitable job to share nodes with. */
+
+				/* FIXME: To be added. There is some simple logic 
+				 * to do this in select/linear.c:_find_job_mate(), 
+				 * but the data structures here are very different */
+			}
+
 			error_code = _select_nodes(job_ptr, bitmap, min_nodes,
 						   max_nodes, req_nodes,
 						   sh_tasks, freq, array_size);
