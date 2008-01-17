@@ -1511,6 +1511,8 @@ validate_node_specs (char *node_name, uint16_t cpus,
 			set_node_down(node_name, "Prolog failed");
 		}
 	} else {
+		info("base_state for %s is %s", node_ptr->name,
+		     node_state_string(base_state));
 		if (base_state == NODE_STATE_UNKNOWN) {
 			last_node_update = time (NULL);
 			reset_job_priority();
@@ -1590,7 +1592,7 @@ extern int validate_nodes_via_front_end(uint32_t job_count,
 	hostlist_t prolog_hostlist = NULL;
 	char host_str[64];
 	uint16_t base_state, node_flags;
-
+	info("hey I am here\n");
 	/* First validate the job info */
 	node_ptr = &node_record_table_ptr[0];	/* All msg send to node zero,
 				 * the front-end for the wholel cluster */
@@ -1858,6 +1860,7 @@ static void _node_did_resp(struct node_record *node_ptr)
 		last_node_update = now;
 		node_ptr->last_idle = now;
 		node_ptr->node_state = NODE_STATE_IDLE | node_flags;
+		jobacct_g_node_up(node_ptr, now);
 	}
 	if ((base_state == NODE_STATE_DOWN) &&
 	    (slurmctld_conf.ret2service == 1) &&
