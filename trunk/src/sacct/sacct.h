@@ -140,7 +140,9 @@ void print_ntasks(type_t type, void *object);
 void print_nvcsw(type_t type, void *object);
 void print_outblocks(type_t type, void *object);
 void print_partition(type_t type, void *object);
+#ifdef HAVE_BG
 void print_blockid(type_t type, void *object);
+#endif
 void print_pages(type_t type, void *object);
 void print_rss(type_t type, void *object);
 void print_status(type_t type, void *object);

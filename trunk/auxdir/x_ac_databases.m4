@@ -15,43 +15,48 @@ AC_DEFUN([X_AC_DATABASES],
 [
 	#Check for MySQL
 	ac_have_mysql="no"
-	AC_CHECK_HEADERS(mysql/mysql.h,
-			 [has_mysql_header="true"],
-			 [has_mysql_header="false"])
-   	if test "$has_mysql_header" = "true"; then	
-      		AC_CHECK_LIB(mysqlclient, mysql_init, [has_mysql_lib="true"], [has_mysql_lib="false"])
-      		if test "$has_mysql_lib" = "true"; then
-               		MYSQL_LIBS=" -lmysqlclient -lz"
-        		save_LIBS="$LIBS"
-        		LIBS="$MYSQL_LIBS $save_LIBS"
-        		AC_TRY_LINK([
-          			#include <mysql/mysql.h>
-        			],[
-          			int main()
-          			{
-					MYSQL mysql;
-            				(void) mysql_init(&mysql);
-					(void) mysql_close(&mysql);
-            		        }
-        		], [ac_have_mysql="yes"], [ac_have_mysql="no"])
-			LIBS="$save_LIBS"
-        		if test "$ac_have_mysql" == "yes"; then
-            			AC_MSG_RESULT([MySQL test program built properly.])
-            			AC_SUBST(MYSQL_LIBS)
-				AC_DEFINE(HAVE_MYSQL, 1, [Define to 1 if using MySQL libaries])
-	        	else
-        			AC_MSG_WARN([*** MySQL test program execution failed.])
-			fi        	
-      		else
-        		AC_MSG_WARN(mysqlclient lib not found: mysql support not available)
-      		fi
-   	else
-      		AC_MSG_WARN(mysql/mysql.h header not found: mysql support not available)
-   	fi 
+	### Check for mysql_config program
+    	AC_PATH_PROG(HAVEMYSQLCONFIG, mysql_config, no)
+	if test x$HAVEMYSQLCONFIG = xno; then
+        	AC_MSG_WARN([*** mysql_config not found. Evidently no MySQL install on system.])
+	else
+		# mysql_config puts -I on the front of the dir.  We don't 
+		# want that so we remove it.
+		MYSQL_CFLAGS=`$HAVEMYSQLCONFIG --cflags`
+		MYSQL_LIBS=`$HAVEMYSQLCONFIG --libs_r`
+		if test -z "$MYSQL_LIBS"; then
+			MYSQL_LIBS=`$HAVEMYSQLCONFIG --libs`
+		fi
+		save_CFLAGS="$CFLAGS"
+		save_LIBS="$LIBS"
+       		CFLAGS="$MYSQL_CFLAGS $save_CFLAGS"
+		LIBS="$MYSQL_LIBS $save_LIBS"
+		AC_TRY_LINK([#include <mysql.h>],[
+          		int main()
+          		{
+				MYSQL mysql;
+            			(void) mysql_init(&mysql);
+				(void) mysql_close(&mysql);
+            		}
+        		],
+			[ac_have_mysql="yes"],
+			[ac_have_mysql="no"])
+		CFLAGS="$save_CFLAGS"
+		LIBS="$save_LIBS"
+       		if test "$ac_have_mysql" == "yes"; then
+            		AC_MSG_RESULT([MySQL test program built properly.])
+            		AC_SUBST(MYSQL_LIBS)
+			AC_SUBST(MYSQL_CFLAGS)
+			AC_DEFINE(HAVE_MYSQL, 1, [Define to 1 if using MySQL libaries])
+	        else
+        		AC_MSG_WARN([*** MySQL test program execution failed.])
+		fi        	
+      	fi
+
 
 	#Check for PostgreSQL
-	ac_have_pgsql="no"
-	### Check for pkg-config program
+	ac_have_postgres="no"
+	### Check for pg_config program
     	AC_PATH_PROG(HAVEPGCONFIG, pg_config, no)
 	if test x$HAVEPGCONFIG = xno; then
         	AC_MSG_WARN([*** pg_config not found. Evidently no PostgreSQL install on system.])
@@ -71,16 +76,16 @@ AC_DEFUN([X_AC_DATABASES],
        				PGSQL_LIBS=" -lpq"
 	       			save_LIBS="$LIBS"
         			LIBS="$PGSQL_LIBS $save_LIBS"
-       				AC_TRY_LINK([
-      					#include <libpq-fe.h>
-      					],[
+       				AC_TRY_LINK([#include <libpq-fe.h>],[
           				int main()
        	  				{
 						PGconn     *conn;
 						conn = PQconnectdb("dbname = postgres");
        						(void) PQfinish(conn);
             			        }
-        			], [ac_have_pgsql="yes"], [ac_have_pgsql="no"])
+        				],
+					[ac_have_pgsql="yes"],
+					[ac_have_pgsql="no"])
 				LIBS="$save_LIBS"
        				if test "$ac_have_pgsql" == "yes"; then
     					AC_MSG_RESULT([PostgreSQL test program built properly.])

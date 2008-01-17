@@ -820,6 +820,7 @@ void print_partition(type_t type, void *object)
 	} 
 }
 
+#ifdef HAVE_BG
 void print_blockid(type_t type, void *object)
 { 
 	jobacct_job_rec_t *job = (jobacct_job_rec_t *)object;
@@ -865,6 +866,7 @@ void print_blockid(type_t type, void *object)
 		break;
 	} 
 }
+#endif
 
 void print_pages(type_t type, void *object)
 { 

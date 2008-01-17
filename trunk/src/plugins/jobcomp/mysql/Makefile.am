@@ -2,7 +2,7 @@
 
 AUTOMAKE_OPTIONS = foreign
 
-PLUGIN_FLAGS = -module -avoid-version --export-dynamic $(MYSQL_LIBS)
+PLUGIN_FLAGS = -module -avoid-version --export-dynamic
 
 INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common
 
@@ -12,5 +12,7 @@ pkglib_LTLIBRARIES = jobcomp_mysql.la
 jobcomp_mysql_la_SOURCES = jobcomp_mysql.c \
 			mysql_jobcomp_process.c mysql_jobcomp_process.h
 jobcomp_mysql_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
+jobcomp_mysql_la_LIBS = $(MYSQL_LIBS)
+jobcomp_mysql_la_CFLAGS = $(MYSQL_CFLAGS)
 jobcomp_mysql_la_LIBADD  = $(top_builddir)/src/common/libcommon.la
 
