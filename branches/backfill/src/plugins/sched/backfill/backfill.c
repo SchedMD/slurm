@@ -14,7 +14,7 @@
  *  "lx[06-08]", we can't start it without possibly delaying the higher 
  *  priority job.
  *****************************************************************************
- *  Copyright (C) 2003-2006 The Regents of the University of California.
+ *  Copyright (C) 2003-2008 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
  *  UCRL-CODE-226842.
@@ -94,7 +94,7 @@ static node_space_map_t node_space[MAX_JOB_CNT + 1];
 /* Set __DEBUG to get detailed logging for this thread without 
  * detailed logging for the entire slurmctld daemon */
 #define __DEBUG        0
-#define SLEEP_TIME     1
+#define SLEEP_TIME     5
 
 /*********************** local functions *********************/
 static int  _add_pending_job(struct job_record *job_ptr, 
@@ -113,6 +113,7 @@ static void _get_part_specs(struct part_record *part_ptr,
 static bool _has_state_changed(void);
 static bool _loc_restrict(struct job_record *job_ptr, part_specs_t *part_specs);
 static bool _more_work(void);
+static int  _part_prio_sort(void *x, void *y);
 static int  _sort_by_prio(void *x, void *y);
 static int  _sort_by_end(void *x, void *y);
 static int  _update_node_space_map(struct job_record *job_ptr);
@@ -185,11 +186,18 @@ backfill_agent(void *args)
 		filter_root = true;
 	while (!stop_backfill) {
 		sleep(SLEEP_TIME);      /* don't run continuously */
+
 		if ((!_more_work()) || stop_backfill)
 			continue;
 
 		gettimeofday(&tv1, NULL);
 		lock_slurmctld(all_locks);
+
+		/* make sure partitions are in order of decreasing
+		 * priority, backfill highest priority partitions 
+		 * first since they may have overlapping nodes */
+		list_sort(part_list, _part_prio_sort);
+
 		if ( _has_state_changed() ) {
 			ListIterator part_iterator;
 			struct part_record *part_ptr;
@@ -261,8 +269,7 @@ _has_state_changed(void)
 }
 
 /* Attempt to perform backfill scheduling on the specified partition */
-static void 
-_attempt_backfill(struct part_record *part_ptr)
+static void _attempt_backfill(struct part_record *part_ptr)
 {
 	int i, cg_hung = 0, error_code = 0;
 	uint32_t max_pending_prio = 0;
@@ -680,3 +687,13 @@ _change_prio(struct job_record *job_ptr, uint32_t prio)
 	last_job_update = time(NULL);
 }
 
+/* We want in order of decreasing priority, so the ordering here is
+ * the reverse of that defined in src/common/list.h */
+static int _part_prio_sort(void *x, void *y)
+{
+	struct part_record *part_ptr1 = (struct part_record *) x;
+	struct part_record *part_ptr2 = (struct part_record *) y;
+	int32_t prio1 = (int32_t) part_ptr1->priority;
+	int32_t prio2 = (int32_t) part_ptr2->priority;
+	return (int) (prio1 - prio2);
+}
