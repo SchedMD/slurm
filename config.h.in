@@ -101,9 +101,6 @@
 /* Define to 1 if using MySQL libaries */
 #undef HAVE_MYSQL
 
-/* Define to 1 if you have the <mysql/mysql.h> header file. */
-#undef HAVE_MYSQL_MYSQL_H
-
 /* Define to 1 if you have the <ncurses.h> header file. */
 #undef HAVE_NCURSES_H
 

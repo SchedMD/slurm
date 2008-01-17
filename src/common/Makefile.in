@@ -98,27 +98,44 @@ am__libcommon_la_SOURCES_DIST = xmalloc.c xmalloc.h xassert.c \
 	job_options.c job_options.h global_defaults.c timers.c \
 	timers.h slurm_xlator.h stepd_api.c stepd_api.h proc_args.c \
 	proc_args.h
-@HAVE_UNSETENV_FALSE@am__objects_1 = unsetenv.lo
-am_libcommon_la_OBJECTS = xmalloc.lo xassert.lo xstring.lo xsignal.lo \
-	forward.lo strlcpy.lo list.lo net.lo fd.lo log.lo cbuf.lo \
-	safeopen.lo bitstring.lo mpi.lo mysql_common.lo pack.lo \
-	parse_config.lo parse_spec.lo pgsql_common.lo plugin.lo \
-	plugrack.lo read_config.lo node_select.lo env.lo slurm_cred.lo \
-	slurm_errno.lo slurm_protocol_api.lo slurm_protocol_pack.lo \
-	slurm_protocol_util.lo slurm_protocol_socket_implementation.lo \
-	slurm_protocol_defs.lo slurm_rlimits_info.lo uid.lo \
-	util-net.lo slurm_auth.lo jobacct_common.lo \
-	slurm_jobacct_gather.lo slurm_jobacct_storage.lo \
-	slurm_jobcomp.lo switch.lo arg_desc.lo malloc.lo getopt.lo \
-	getopt1.lo $(am__objects_1) slurm_selecttype_info.lo \
-	slurm_resource_info.lo hostlist.lo slurm_step_layout.lo \
-	checkpoint.lo parse_time.lo job_options.lo global_defaults.lo \
-	timers.lo stepd_api.lo proc_args.lo
+@HAVE_UNSETENV_FALSE@am__objects_1 = libcommon_la-unsetenv.lo
+am_libcommon_la_OBJECTS = libcommon_la-xmalloc.lo \
+	libcommon_la-xassert.lo libcommon_la-xstring.lo \
+	libcommon_la-xsignal.lo libcommon_la-forward.lo \
+	libcommon_la-strlcpy.lo libcommon_la-list.lo \
+	libcommon_la-net.lo libcommon_la-fd.lo libcommon_la-log.lo \
+	libcommon_la-cbuf.lo libcommon_la-safeopen.lo \
+	libcommon_la-bitstring.lo libcommon_la-mpi.lo \
+	libcommon_la-mysql_common.lo libcommon_la-pack.lo \
+	libcommon_la-parse_config.lo libcommon_la-parse_spec.lo \
+	libcommon_la-pgsql_common.lo libcommon_la-plugin.lo \
+	libcommon_la-plugrack.lo libcommon_la-read_config.lo \
+	libcommon_la-node_select.lo libcommon_la-env.lo \
+	libcommon_la-slurm_cred.lo libcommon_la-slurm_errno.lo \
+	libcommon_la-slurm_protocol_api.lo \
+	libcommon_la-slurm_protocol_pack.lo \
+	libcommon_la-slurm_protocol_util.lo \
+	libcommon_la-slurm_protocol_socket_implementation.lo \
+	libcommon_la-slurm_protocol_defs.lo \
+	libcommon_la-slurm_rlimits_info.lo libcommon_la-uid.lo \
+	libcommon_la-util-net.lo libcommon_la-slurm_auth.lo \
+	libcommon_la-jobacct_common.lo \
+	libcommon_la-slurm_jobacct_gather.lo \
+	libcommon_la-slurm_jobacct_storage.lo \
+	libcommon_la-slurm_jobcomp.lo libcommon_la-switch.lo \
+	libcommon_la-arg_desc.lo libcommon_la-malloc.lo \
+	libcommon_la-getopt.lo libcommon_la-getopt1.lo \
+	$(am__objects_1) libcommon_la-slurm_selecttype_info.lo \
+	libcommon_la-slurm_resource_info.lo libcommon_la-hostlist.lo \
+	libcommon_la-slurm_step_layout.lo libcommon_la-checkpoint.lo \
+	libcommon_la-parse_time.lo libcommon_la-job_options.lo \
+	libcommon_la-global_defaults.lo libcommon_la-timers.lo \
+	libcommon_la-stepd_api.lo libcommon_la-proc_args.lo
 am__EXTRA_libcommon_la_SOURCES_DIST = unsetenv.c unsetenv.h
 libcommon_la_OBJECTS = $(am_libcommon_la_OBJECTS)
 libcommon_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
-	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
-	$(libcommon_la_LDFLAGS) $(LDFLAGS) -o $@
+	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(libcommon_la_CFLAGS) \
+	$(CFLAGS) $(libcommon_la_LDFLAGS) $(LDFLAGS) -o $@
 libdaemonize_la_LIBADD =
 am_libdaemonize_la_OBJECTS = daemonize.lo fd.lo
 libdaemonize_la_OBJECTS = $(am_libdaemonize_la_OBJECTS)
@@ -165,7 +182,7 @@ CCDEPMODE = @CCDEPMODE@
 CFLAGS = @CFLAGS@
 CMD_LDFLAGS = @CMD_LDFLAGS@
 CPP = @CPP@
-CPPFLAGS = $(PGSQL_CFLAGS)
+CPPFLAGS = @CPPFLAGS@
 CXX = @CXX@
 CXXCPP = @CXXCPP@
 CXXDEPMODE = @CXXDEPMODE@
@@ -186,6 +203,7 @@ FFLAGS = @FFLAGS@
 GREP = @GREP@
 GTK2_CFLAGS = @GTK2_CFLAGS@
 GTK2_LIBS = @GTK2_LIBS@
+HAVEMYSQLCONFIG = @HAVEMYSQLCONFIG@
 HAVEPGCONFIG = @HAVEPGCONFIG@
 HAVEPKGCONFIG = @HAVEPKGCONFIG@
 HAVE_AIX = @HAVE_AIX@
@@ -211,6 +229,7 @@ MKDIR_P = @MKDIR_P@
 MUNGE_CPPFLAGS = @MUNGE_CPPFLAGS@
 MUNGE_LDFLAGS = @MUNGE_LDFLAGS@
 MUNGE_LIBS = @MUNGE_LIBS@
+MYSQL_CFLAGS = @MYSQL_CFLAGS@
 MYSQL_LIBS = @MYSQL_LIBS@
 NCURSES = @NCURSES@
 NUMA_LIBS = @NUMA_LIBS@
@@ -411,6 +430,8 @@ libspank_la_SOURCES = \
 
 libcommon_la_LIBADD = $(SSL_LIBS) -ldl $(PGSQL_LIBS) $(MYSQL_LIBS)
 libcommon_la_LDFLAGS = $(LIB_LDFLAGS) $(SSL_LDFLAGS)
+libcommon_la_LIBS = $(PGSQL_LIBS) $(MYSQL_LIBS)
+libcommon_la_CFLAGS = $(PGSQL_CFLAGS) $(MYSQL_CFLAGS)
 all: all-am
 
 .SUFFIXES:
@@ -468,67 +489,68 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/arg_desc.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/bitstring.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cbuf.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/checkpoint.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/daemonize.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/eio.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/env.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/fd.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/forward.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/getopt.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/getopt1.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/global_defaults.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hostlist.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/io_hdr.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/job_options.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/jobacct_common.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/list.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/log.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/malloc.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mpi.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mysql_common.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/net.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/node_select.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcommon_la-arg_desc.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcommon_la-bitstring.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcommon_la-cbuf.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcommon_la-checkpoint.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcommon_la-env.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcommon_la-fd.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcommon_la-forward.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcommon_la-getopt.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcommon_la-getopt1.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcommon_la-global_defaults.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcommon_la-hostlist.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcommon_la-job_options.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcommon_la-jobacct_common.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcommon_la-list.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcommon_la-log.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcommon_la-malloc.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcommon_la-mpi.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcommon_la-mysql_common.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcommon_la-net.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcommon_la-node_select.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcommon_la-pack.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcommon_la-parse_config.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcommon_la-parse_spec.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcommon_la-parse_time.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcommon_la-pgsql_common.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcommon_la-plugin.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcommon_la-plugrack.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcommon_la-proc_args.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcommon_la-read_config.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcommon_la-safeopen.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcommon_la-slurm_auth.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcommon_la-slurm_cred.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcommon_la-slurm_errno.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcommon_la-slurm_jobacct_gather.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcommon_la-slurm_jobacct_storage.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcommon_la-slurm_jobcomp.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcommon_la-slurm_protocol_api.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcommon_la-slurm_protocol_defs.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcommon_la-slurm_protocol_pack.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcommon_la-slurm_protocol_socket_implementation.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcommon_la-slurm_protocol_util.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcommon_la-slurm_resource_info.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcommon_la-slurm_rlimits_info.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcommon_la-slurm_selecttype_info.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcommon_la-slurm_step_layout.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcommon_la-stepd_api.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcommon_la-strlcpy.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcommon_la-switch.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcommon_la-timers.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcommon_la-uid.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcommon_la-unsetenv.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcommon_la-util-net.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcommon_la-xassert.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcommon_la-xmalloc.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcommon_la-xsignal.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcommon_la-xstring.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/optz.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pack.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/parse_config.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/parse_spec.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/parse_time.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pgsql_common.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/plugin.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/plugrack.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/plugstack.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/proc_args.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/read_config.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/safeopen.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurm_auth.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurm_cred.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurm_errno.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurm_jobacct_gather.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurm_jobacct_storage.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurm_jobcomp.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurm_protocol_api.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurm_protocol_defs.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurm_protocol_pack.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurm_protocol_socket_implementation.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurm_protocol_util.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurm_resource_info.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurm_rlimits_info.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurm_selecttype_info.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurm_step_layout.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/stepd_api.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/strlcpy.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/switch.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/timers.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/uid.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/unsetenv.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/util-net.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/xassert.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/xmalloc.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/xsignal.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/xstring.Plo@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
@@ -550,6 +572,398 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$<' object='$@' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LTCOMPILE) -c -o $@ $<
+
+libcommon_la-xmalloc.lo: xmalloc.c
+@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libcommon_la_CFLAGS) $(CFLAGS) -MT libcommon_la-xmalloc.lo -MD -MP -MF $(DEPDIR)/libcommon_la-xmalloc.Tpo -c -o libcommon_la-xmalloc.lo `test -f 'xmalloc.c' || echo '$(srcdir)/'`xmalloc.c
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcommon_la-xmalloc.Tpo $(DEPDIR)/libcommon_la-xmalloc.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='xmalloc.c' object='libcommon_la-xmalloc.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libcommon_la_CFLAGS) $(CFLAGS) -c -o libcommon_la-xmalloc.lo `test -f 'xmalloc.c' || echo '$(srcdir)/'`xmalloc.c
+
+libcommon_la-xassert.lo: xassert.c
+@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libcommon_la_CFLAGS) $(CFLAGS) -MT libcommon_la-xassert.lo -MD -MP -MF $(DEPDIR)/libcommon_la-xassert.Tpo -c -o libcommon_la-xassert.lo `test -f 'xassert.c' || echo '$(srcdir)/'`xassert.c
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcommon_la-xassert.Tpo $(DEPDIR)/libcommon_la-xassert.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='xassert.c' object='libcommon_la-xassert.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libcommon_la_CFLAGS) $(CFLAGS) -c -o libcommon_la-xassert.lo `test -f 'xassert.c' || echo '$(srcdir)/'`xassert.c
+
+libcommon_la-xstring.lo: xstring.c
+@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libcommon_la_CFLAGS) $(CFLAGS) -MT libcommon_la-xstring.lo -MD -MP -MF $(DEPDIR)/libcommon_la-xstring.Tpo -c -o libcommon_la-xstring.lo `test -f 'xstring.c' || echo '$(srcdir)/'`xstring.c
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcommon_la-xstring.Tpo $(DEPDIR)/libcommon_la-xstring.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='xstring.c' object='libcommon_la-xstring.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libcommon_la_CFLAGS) $(CFLAGS) -c -o libcommon_la-xstring.lo `test -f 'xstring.c' || echo '$(srcdir)/'`xstring.c
+
+libcommon_la-xsignal.lo: xsignal.c
+@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libcommon_la_CFLAGS) $(CFLAGS) -MT libcommon_la-xsignal.lo -MD -MP -MF $(DEPDIR)/libcommon_la-xsignal.Tpo -c -o libcommon_la-xsignal.lo `test -f 'xsignal.c' || echo '$(srcdir)/'`xsignal.c
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcommon_la-xsignal.Tpo $(DEPDIR)/libcommon_la-xsignal.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='xsignal.c' object='libcommon_la-xsignal.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libcommon_la_CFLAGS) $(CFLAGS) -c -o libcommon_la-xsignal.lo `test -f 'xsignal.c' || echo '$(srcdir)/'`xsignal.c
+
+libcommon_la-forward.lo: forward.c
+@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libcommon_la_CFLAGS) $(CFLAGS) -MT libcommon_la-forward.lo -MD -MP -MF $(DEPDIR)/libcommon_la-forward.Tpo -c -o libcommon_la-forward.lo `test -f 'forward.c' || echo '$(srcdir)/'`forward.c
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcommon_la-forward.Tpo $(DEPDIR)/libcommon_la-forward.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='forward.c' object='libcommon_la-forward.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libcommon_la_CFLAGS) $(CFLAGS) -c -o libcommon_la-forward.lo `test -f 'forward.c' || echo '$(srcdir)/'`forward.c
+
+libcommon_la-strlcpy.lo: strlcpy.c
+@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libcommon_la_CFLAGS) $(CFLAGS) -MT libcommon_la-strlcpy.lo -MD -MP -MF $(DEPDIR)/libcommon_la-strlcpy.Tpo -c -o libcommon_la-strlcpy.lo `test -f 'strlcpy.c' || echo '$(srcdir)/'`strlcpy.c
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcommon_la-strlcpy.Tpo $(DEPDIR)/libcommon_la-strlcpy.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='strlcpy.c' object='libcommon_la-strlcpy.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libcommon_la_CFLAGS) $(CFLAGS) -c -o libcommon_la-strlcpy.lo `test -f 'strlcpy.c' || echo '$(srcdir)/'`strlcpy.c
+
+libcommon_la-list.lo: list.c
+@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libcommon_la_CFLAGS) $(CFLAGS) -MT libcommon_la-list.lo -MD -MP -MF $(DEPDIR)/libcommon_la-list.Tpo -c -o libcommon_la-list.lo `test -f 'list.c' || echo '$(srcdir)/'`list.c
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcommon_la-list.Tpo $(DEPDIR)/libcommon_la-list.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='list.c' object='libcommon_la-list.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libcommon_la_CFLAGS) $(CFLAGS) -c -o libcommon_la-list.lo `test -f 'list.c' || echo '$(srcdir)/'`list.c
+
+libcommon_la-net.lo: net.c
+@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libcommon_la_CFLAGS) $(CFLAGS) -MT libcommon_la-net.lo -MD -MP -MF $(DEPDIR)/libcommon_la-net.Tpo -c -o libcommon_la-net.lo `test -f 'net.c' || echo '$(srcdir)/'`net.c
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcommon_la-net.Tpo $(DEPDIR)/libcommon_la-net.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='net.c' object='libcommon_la-net.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libcommon_la_CFLAGS) $(CFLAGS) -c -o libcommon_la-net.lo `test -f 'net.c' || echo '$(srcdir)/'`net.c
+
+libcommon_la-fd.lo: fd.c
+@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libcommon_la_CFLAGS) $(CFLAGS) -MT libcommon_la-fd.lo -MD -MP -MF $(DEPDIR)/libcommon_la-fd.Tpo -c -o libcommon_la-fd.lo `test -f 'fd.c' || echo '$(srcdir)/'`fd.c
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcommon_la-fd.Tpo $(DEPDIR)/libcommon_la-fd.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='fd.c' object='libcommon_la-fd.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libcommon_la_CFLAGS) $(CFLAGS) -c -o libcommon_la-fd.lo `test -f 'fd.c' || echo '$(srcdir)/'`fd.c
+
+libcommon_la-log.lo: log.c
+@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libcommon_la_CFLAGS) $(CFLAGS) -MT libcommon_la-log.lo -MD -MP -MF $(DEPDIR)/libcommon_la-log.Tpo -c -o libcommon_la-log.lo `test -f 'log.c' || echo '$(srcdir)/'`log.c
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcommon_la-log.Tpo $(DEPDIR)/libcommon_la-log.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='log.c' object='libcommon_la-log.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libcommon_la_CFLAGS) $(CFLAGS) -c -o libcommon_la-log.lo `test -f 'log.c' || echo '$(srcdir)/'`log.c
+
+libcommon_la-cbuf.lo: cbuf.c
+@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libcommon_la_CFLAGS) $(CFLAGS) -MT libcommon_la-cbuf.lo -MD -MP -MF $(DEPDIR)/libcommon_la-cbuf.Tpo -c -o libcommon_la-cbuf.lo `test -f 'cbuf.c' || echo '$(srcdir)/'`cbuf.c
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcommon_la-cbuf.Tpo $(DEPDIR)/libcommon_la-cbuf.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='cbuf.c' object='libcommon_la-cbuf.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libcommon_la_CFLAGS) $(CFLAGS) -c -o libcommon_la-cbuf.lo `test -f 'cbuf.c' || echo '$(srcdir)/'`cbuf.c
+
+libcommon_la-safeopen.lo: safeopen.c
+@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libcommon_la_CFLAGS) $(CFLAGS) -MT libcommon_la-safeopen.lo -MD -MP -MF $(DEPDIR)/libcommon_la-safeopen.Tpo -c -o libcommon_la-safeopen.lo `test -f 'safeopen.c' || echo '$(srcdir)/'`safeopen.c
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcommon_la-safeopen.Tpo $(DEPDIR)/libcommon_la-safeopen.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='safeopen.c' object='libcommon_la-safeopen.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libcommon_la_CFLAGS) $(CFLAGS) -c -o libcommon_la-safeopen.lo `test -f 'safeopen.c' || echo '$(srcdir)/'`safeopen.c
+
+libcommon_la-bitstring.lo: bitstring.c
+@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libcommon_la_CFLAGS) $(CFLAGS) -MT libcommon_la-bitstring.lo -MD -MP -MF $(DEPDIR)/libcommon_la-bitstring.Tpo -c -o libcommon_la-bitstring.lo `test -f 'bitstring.c' || echo '$(srcdir)/'`bitstring.c
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcommon_la-bitstring.Tpo $(DEPDIR)/libcommon_la-bitstring.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='bitstring.c' object='libcommon_la-bitstring.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libcommon_la_CFLAGS) $(CFLAGS) -c -o libcommon_la-bitstring.lo `test -f 'bitstring.c' || echo '$(srcdir)/'`bitstring.c
+
+libcommon_la-mpi.lo: mpi.c
+@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libcommon_la_CFLAGS) $(CFLAGS) -MT libcommon_la-mpi.lo -MD -MP -MF $(DEPDIR)/libcommon_la-mpi.Tpo -c -o libcommon_la-mpi.lo `test -f 'mpi.c' || echo '$(srcdir)/'`mpi.c
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcommon_la-mpi.Tpo $(DEPDIR)/libcommon_la-mpi.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='mpi.c' object='libcommon_la-mpi.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libcommon_la_CFLAGS) $(CFLAGS) -c -o libcommon_la-mpi.lo `test -f 'mpi.c' || echo '$(srcdir)/'`mpi.c
+
+libcommon_la-mysql_common.lo: mysql_common.c
+@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libcommon_la_CFLAGS) $(CFLAGS) -MT libcommon_la-mysql_common.lo -MD -MP -MF $(DEPDIR)/libcommon_la-mysql_common.Tpo -c -o libcommon_la-mysql_common.lo `test -f 'mysql_common.c' || echo '$(srcdir)/'`mysql_common.c
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcommon_la-mysql_common.Tpo $(DEPDIR)/libcommon_la-mysql_common.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='mysql_common.c' object='libcommon_la-mysql_common.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libcommon_la_CFLAGS) $(CFLAGS) -c -o libcommon_la-mysql_common.lo `test -f 'mysql_common.c' || echo '$(srcdir)/'`mysql_common.c
+
+libcommon_la-pack.lo: pack.c
+@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libcommon_la_CFLAGS) $(CFLAGS) -MT libcommon_la-pack.lo -MD -MP -MF $(DEPDIR)/libcommon_la-pack.Tpo -c -o libcommon_la-pack.lo `test -f 'pack.c' || echo '$(srcdir)/'`pack.c
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcommon_la-pack.Tpo $(DEPDIR)/libcommon_la-pack.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='pack.c' object='libcommon_la-pack.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libcommon_la_CFLAGS) $(CFLAGS) -c -o libcommon_la-pack.lo `test -f 'pack.c' || echo '$(srcdir)/'`pack.c
+
+libcommon_la-parse_config.lo: parse_config.c
+@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libcommon_la_CFLAGS) $(CFLAGS) -MT libcommon_la-parse_config.lo -MD -MP -MF $(DEPDIR)/libcommon_la-parse_config.Tpo -c -o libcommon_la-parse_config.lo `test -f 'parse_config.c' || echo '$(srcdir)/'`parse_config.c
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcommon_la-parse_config.Tpo $(DEPDIR)/libcommon_la-parse_config.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='parse_config.c' object='libcommon_la-parse_config.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libcommon_la_CFLAGS) $(CFLAGS) -c -o libcommon_la-parse_config.lo `test -f 'parse_config.c' || echo '$(srcdir)/'`parse_config.c
+
+libcommon_la-parse_spec.lo: parse_spec.c
+@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libcommon_la_CFLAGS) $(CFLAGS) -MT libcommon_la-parse_spec.lo -MD -MP -MF $(DEPDIR)/libcommon_la-parse_spec.Tpo -c -o libcommon_la-parse_spec.lo `test -f 'parse_spec.c' || echo '$(srcdir)/'`parse_spec.c
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcommon_la-parse_spec.Tpo $(DEPDIR)/libcommon_la-parse_spec.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='parse_spec.c' object='libcommon_la-parse_spec.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libcommon_la_CFLAGS) $(CFLAGS) -c -o libcommon_la-parse_spec.lo `test -f 'parse_spec.c' || echo '$(srcdir)/'`parse_spec.c
+
+libcommon_la-pgsql_common.lo: pgsql_common.c
+@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libcommon_la_CFLAGS) $(CFLAGS) -MT libcommon_la-pgsql_common.lo -MD -MP -MF $(DEPDIR)/libcommon_la-pgsql_common.Tpo -c -o libcommon_la-pgsql_common.lo `test -f 'pgsql_common.c' || echo '$(srcdir)/'`pgsql_common.c
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcommon_la-pgsql_common.Tpo $(DEPDIR)/libcommon_la-pgsql_common.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='pgsql_common.c' object='libcommon_la-pgsql_common.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libcommon_la_CFLAGS) $(CFLAGS) -c -o libcommon_la-pgsql_common.lo `test -f 'pgsql_common.c' || echo '$(srcdir)/'`pgsql_common.c
+
+libcommon_la-plugin.lo: plugin.c
+@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libcommon_la_CFLAGS) $(CFLAGS) -MT libcommon_la-plugin.lo -MD -MP -MF $(DEPDIR)/libcommon_la-plugin.Tpo -c -o libcommon_la-plugin.lo `test -f 'plugin.c' || echo '$(srcdir)/'`plugin.c
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcommon_la-plugin.Tpo $(DEPDIR)/libcommon_la-plugin.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='plugin.c' object='libcommon_la-plugin.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libcommon_la_CFLAGS) $(CFLAGS) -c -o libcommon_la-plugin.lo `test -f 'plugin.c' || echo '$(srcdir)/'`plugin.c
+
+libcommon_la-plugrack.lo: plugrack.c
+@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libcommon_la_CFLAGS) $(CFLAGS) -MT libcommon_la-plugrack.lo -MD -MP -MF $(DEPDIR)/libcommon_la-plugrack.Tpo -c -o libcommon_la-plugrack.lo `test -f 'plugrack.c' || echo '$(srcdir)/'`plugrack.c
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcommon_la-plugrack.Tpo $(DEPDIR)/libcommon_la-plugrack.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='plugrack.c' object='libcommon_la-plugrack.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libcommon_la_CFLAGS) $(CFLAGS) -c -o libcommon_la-plugrack.lo `test -f 'plugrack.c' || echo '$(srcdir)/'`plugrack.c
+
+libcommon_la-read_config.lo: read_config.c
+@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libcommon_la_CFLAGS) $(CFLAGS) -MT libcommon_la-read_config.lo -MD -MP -MF $(DEPDIR)/libcommon_la-read_config.Tpo -c -o libcommon_la-read_config.lo `test -f 'read_config.c' || echo '$(srcdir)/'`read_config.c
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcommon_la-read_config.Tpo $(DEPDIR)/libcommon_la-read_config.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='read_config.c' object='libcommon_la-read_config.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libcommon_la_CFLAGS) $(CFLAGS) -c -o libcommon_la-read_config.lo `test -f 'read_config.c' || echo '$(srcdir)/'`read_config.c
+
+libcommon_la-node_select.lo: node_select.c
+@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libcommon_la_CFLAGS) $(CFLAGS) -MT libcommon_la-node_select.lo -MD -MP -MF $(DEPDIR)/libcommon_la-node_select.Tpo -c -o libcommon_la-node_select.lo `test -f 'node_select.c' || echo '$(srcdir)/'`node_select.c
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcommon_la-node_select.Tpo $(DEPDIR)/libcommon_la-node_select.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='node_select.c' object='libcommon_la-node_select.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libcommon_la_CFLAGS) $(CFLAGS) -c -o libcommon_la-node_select.lo `test -f 'node_select.c' || echo '$(srcdir)/'`node_select.c
+
+libcommon_la-env.lo: env.c
+@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libcommon_la_CFLAGS) $(CFLAGS) -MT libcommon_la-env.lo -MD -MP -MF $(DEPDIR)/libcommon_la-env.Tpo -c -o libcommon_la-env.lo `test -f 'env.c' || echo '$(srcdir)/'`env.c
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcommon_la-env.Tpo $(DEPDIR)/libcommon_la-env.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='env.c' object='libcommon_la-env.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libcommon_la_CFLAGS) $(CFLAGS) -c -o libcommon_la-env.lo `test -f 'env.c' || echo '$(srcdir)/'`env.c
+
+libcommon_la-slurm_cred.lo: slurm_cred.c
+@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libcommon_la_CFLAGS) $(CFLAGS) -MT libcommon_la-slurm_cred.lo -MD -MP -MF $(DEPDIR)/libcommon_la-slurm_cred.Tpo -c -o libcommon_la-slurm_cred.lo `test -f 'slurm_cred.c' || echo '$(srcdir)/'`slurm_cred.c
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcommon_la-slurm_cred.Tpo $(DEPDIR)/libcommon_la-slurm_cred.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='slurm_cred.c' object='libcommon_la-slurm_cred.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libcommon_la_CFLAGS) $(CFLAGS) -c -o libcommon_la-slurm_cred.lo `test -f 'slurm_cred.c' || echo '$(srcdir)/'`slurm_cred.c
+
+libcommon_la-slurm_errno.lo: slurm_errno.c
+@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libcommon_la_CFLAGS) $(CFLAGS) -MT libcommon_la-slurm_errno.lo -MD -MP -MF $(DEPDIR)/libcommon_la-slurm_errno.Tpo -c -o libcommon_la-slurm_errno.lo `test -f 'slurm_errno.c' || echo '$(srcdir)/'`slurm_errno.c
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcommon_la-slurm_errno.Tpo $(DEPDIR)/libcommon_la-slurm_errno.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='slurm_errno.c' object='libcommon_la-slurm_errno.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libcommon_la_CFLAGS) $(CFLAGS) -c -o libcommon_la-slurm_errno.lo `test -f 'slurm_errno.c' || echo '$(srcdir)/'`slurm_errno.c
+
+libcommon_la-slurm_protocol_api.lo: slurm_protocol_api.c
+@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libcommon_la_CFLAGS) $(CFLAGS) -MT libcommon_la-slurm_protocol_api.lo -MD -MP -MF $(DEPDIR)/libcommon_la-slurm_protocol_api.Tpo -c -o libcommon_la-slurm_protocol_api.lo `test -f 'slurm_protocol_api.c' || echo '$(srcdir)/'`slurm_protocol_api.c
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcommon_la-slurm_protocol_api.Tpo $(DEPDIR)/libcommon_la-slurm_protocol_api.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='slurm_protocol_api.c' object='libcommon_la-slurm_protocol_api.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libcommon_la_CFLAGS) $(CFLAGS) -c -o libcommon_la-slurm_protocol_api.lo `test -f 'slurm_protocol_api.c' || echo '$(srcdir)/'`slurm_protocol_api.c
+
+libcommon_la-slurm_protocol_pack.lo: slurm_protocol_pack.c
+@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libcommon_la_CFLAGS) $(CFLAGS) -MT libcommon_la-slurm_protocol_pack.lo -MD -MP -MF $(DEPDIR)/libcommon_la-slurm_protocol_pack.Tpo -c -o libcommon_la-slurm_protocol_pack.lo `test -f 'slurm_protocol_pack.c' || echo '$(srcdir)/'`slurm_protocol_pack.c
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcommon_la-slurm_protocol_pack.Tpo $(DEPDIR)/libcommon_la-slurm_protocol_pack.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='slurm_protocol_pack.c' object='libcommon_la-slurm_protocol_pack.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libcommon_la_CFLAGS) $(CFLAGS) -c -o libcommon_la-slurm_protocol_pack.lo `test -f 'slurm_protocol_pack.c' || echo '$(srcdir)/'`slurm_protocol_pack.c
+
+libcommon_la-slurm_protocol_util.lo: slurm_protocol_util.c
+@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libcommon_la_CFLAGS) $(CFLAGS) -MT libcommon_la-slurm_protocol_util.lo -MD -MP -MF $(DEPDIR)/libcommon_la-slurm_protocol_util.Tpo -c -o libcommon_la-slurm_protocol_util.lo `test -f 'slurm_protocol_util.c' || echo '$(srcdir)/'`slurm_protocol_util.c
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcommon_la-slurm_protocol_util.Tpo $(DEPDIR)/libcommon_la-slurm_protocol_util.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='slurm_protocol_util.c' object='libcommon_la-slurm_protocol_util.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libcommon_la_CFLAGS) $(CFLAGS) -c -o libcommon_la-slurm_protocol_util.lo `test -f 'slurm_protocol_util.c' || echo '$(srcdir)/'`slurm_protocol_util.c
+
+libcommon_la-slurm_protocol_socket_implementation.lo: slurm_protocol_socket_implementation.c
+@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libcommon_la_CFLAGS) $(CFLAGS) -MT libcommon_la-slurm_protocol_socket_implementation.lo -MD -MP -MF $(DEPDIR)/libcommon_la-slurm_protocol_socket_implementation.Tpo -c -o libcommon_la-slurm_protocol_socket_implementation.lo `test -f 'slurm_protocol_socket_implementation.c' || echo '$(srcdir)/'`slurm_protocol_socket_implementation.c
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcommon_la-slurm_protocol_socket_implementation.Tpo $(DEPDIR)/libcommon_la-slurm_protocol_socket_implementation.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='slurm_protocol_socket_implementation.c' object='libcommon_la-slurm_protocol_socket_implementation.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libcommon_la_CFLAGS) $(CFLAGS) -c -o libcommon_la-slurm_protocol_socket_implementation.lo `test -f 'slurm_protocol_socket_implementation.c' || echo '$(srcdir)/'`slurm_protocol_socket_implementation.c
+
+libcommon_la-slurm_protocol_defs.lo: slurm_protocol_defs.c
+@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libcommon_la_CFLAGS) $(CFLAGS) -MT libcommon_la-slurm_protocol_defs.lo -MD -MP -MF $(DEPDIR)/libcommon_la-slurm_protocol_defs.Tpo -c -o libcommon_la-slurm_protocol_defs.lo `test -f 'slurm_protocol_defs.c' || echo '$(srcdir)/'`slurm_protocol_defs.c
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcommon_la-slurm_protocol_defs.Tpo $(DEPDIR)/libcommon_la-slurm_protocol_defs.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='slurm_protocol_defs.c' object='libcommon_la-slurm_protocol_defs.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libcommon_la_CFLAGS) $(CFLAGS) -c -o libcommon_la-slurm_protocol_defs.lo `test -f 'slurm_protocol_defs.c' || echo '$(srcdir)/'`slurm_protocol_defs.c
+
+libcommon_la-slurm_rlimits_info.lo: slurm_rlimits_info.c
+@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libcommon_la_CFLAGS) $(CFLAGS) -MT libcommon_la-slurm_rlimits_info.lo -MD -MP -MF $(DEPDIR)/libcommon_la-slurm_rlimits_info.Tpo -c -o libcommon_la-slurm_rlimits_info.lo `test -f 'slurm_rlimits_info.c' || echo '$(srcdir)/'`slurm_rlimits_info.c
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcommon_la-slurm_rlimits_info.Tpo $(DEPDIR)/libcommon_la-slurm_rlimits_info.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='slurm_rlimits_info.c' object='libcommon_la-slurm_rlimits_info.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libcommon_la_CFLAGS) $(CFLAGS) -c -o libcommon_la-slurm_rlimits_info.lo `test -f 'slurm_rlimits_info.c' || echo '$(srcdir)/'`slurm_rlimits_info.c
+
+libcommon_la-uid.lo: uid.c
+@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libcommon_la_CFLAGS) $(CFLAGS) -MT libcommon_la-uid.lo -MD -MP -MF $(DEPDIR)/libcommon_la-uid.Tpo -c -o libcommon_la-uid.lo `test -f 'uid.c' || echo '$(srcdir)/'`uid.c
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcommon_la-uid.Tpo $(DEPDIR)/libcommon_la-uid.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='uid.c' object='libcommon_la-uid.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libcommon_la_CFLAGS) $(CFLAGS) -c -o libcommon_la-uid.lo `test -f 'uid.c' || echo '$(srcdir)/'`uid.c
+
+libcommon_la-util-net.lo: util-net.c
+@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libcommon_la_CFLAGS) $(CFLAGS) -MT libcommon_la-util-net.lo -MD -MP -MF $(DEPDIR)/libcommon_la-util-net.Tpo -c -o libcommon_la-util-net.lo `test -f 'util-net.c' || echo '$(srcdir)/'`util-net.c
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcommon_la-util-net.Tpo $(DEPDIR)/libcommon_la-util-net.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='util-net.c' object='libcommon_la-util-net.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libcommon_la_CFLAGS) $(CFLAGS) -c -o libcommon_la-util-net.lo `test -f 'util-net.c' || echo '$(srcdir)/'`util-net.c
+
+libcommon_la-slurm_auth.lo: slurm_auth.c
+@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libcommon_la_CFLAGS) $(CFLAGS) -MT libcommon_la-slurm_auth.lo -MD -MP -MF $(DEPDIR)/libcommon_la-slurm_auth.Tpo -c -o libcommon_la-slurm_auth.lo `test -f 'slurm_auth.c' || echo '$(srcdir)/'`slurm_auth.c
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcommon_la-slurm_auth.Tpo $(DEPDIR)/libcommon_la-slurm_auth.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='slurm_auth.c' object='libcommon_la-slurm_auth.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libcommon_la_CFLAGS) $(CFLAGS) -c -o libcommon_la-slurm_auth.lo `test -f 'slurm_auth.c' || echo '$(srcdir)/'`slurm_auth.c
+
+libcommon_la-jobacct_common.lo: jobacct_common.c
+@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libcommon_la_CFLAGS) $(CFLAGS) -MT libcommon_la-jobacct_common.lo -MD -MP -MF $(DEPDIR)/libcommon_la-jobacct_common.Tpo -c -o libcommon_la-jobacct_common.lo `test -f 'jobacct_common.c' || echo '$(srcdir)/'`jobacct_common.c
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcommon_la-jobacct_common.Tpo $(DEPDIR)/libcommon_la-jobacct_common.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='jobacct_common.c' object='libcommon_la-jobacct_common.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libcommon_la_CFLAGS) $(CFLAGS) -c -o libcommon_la-jobacct_common.lo `test -f 'jobacct_common.c' || echo '$(srcdir)/'`jobacct_common.c
+
+libcommon_la-slurm_jobacct_gather.lo: slurm_jobacct_gather.c
+@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libcommon_la_CFLAGS) $(CFLAGS) -MT libcommon_la-slurm_jobacct_gather.lo -MD -MP -MF $(DEPDIR)/libcommon_la-slurm_jobacct_gather.Tpo -c -o libcommon_la-slurm_jobacct_gather.lo `test -f 'slurm_jobacct_gather.c' || echo '$(srcdir)/'`slurm_jobacct_gather.c
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcommon_la-slurm_jobacct_gather.Tpo $(DEPDIR)/libcommon_la-slurm_jobacct_gather.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='slurm_jobacct_gather.c' object='libcommon_la-slurm_jobacct_gather.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libcommon_la_CFLAGS) $(CFLAGS) -c -o libcommon_la-slurm_jobacct_gather.lo `test -f 'slurm_jobacct_gather.c' || echo '$(srcdir)/'`slurm_jobacct_gather.c
+
+libcommon_la-slurm_jobacct_storage.lo: slurm_jobacct_storage.c
+@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libcommon_la_CFLAGS) $(CFLAGS) -MT libcommon_la-slurm_jobacct_storage.lo -MD -MP -MF $(DEPDIR)/libcommon_la-slurm_jobacct_storage.Tpo -c -o libcommon_la-slurm_jobacct_storage.lo `test -f 'slurm_jobacct_storage.c' || echo '$(srcdir)/'`slurm_jobacct_storage.c
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcommon_la-slurm_jobacct_storage.Tpo $(DEPDIR)/libcommon_la-slurm_jobacct_storage.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='slurm_jobacct_storage.c' object='libcommon_la-slurm_jobacct_storage.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libcommon_la_CFLAGS) $(CFLAGS) -c -o libcommon_la-slurm_jobacct_storage.lo `test -f 'slurm_jobacct_storage.c' || echo '$(srcdir)/'`slurm_jobacct_storage.c
+
+libcommon_la-slurm_jobcomp.lo: slurm_jobcomp.c
+@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libcommon_la_CFLAGS) $(CFLAGS) -MT libcommon_la-slurm_jobcomp.lo -MD -MP -MF $(DEPDIR)/libcommon_la-slurm_jobcomp.Tpo -c -o libcommon_la-slurm_jobcomp.lo `test -f 'slurm_jobcomp.c' || echo '$(srcdir)/'`slurm_jobcomp.c
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcommon_la-slurm_jobcomp.Tpo $(DEPDIR)/libcommon_la-slurm_jobcomp.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='slurm_jobcomp.c' object='libcommon_la-slurm_jobcomp.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libcommon_la_CFLAGS) $(CFLAGS) -c -o libcommon_la-slurm_jobcomp.lo `test -f 'slurm_jobcomp.c' || echo '$(srcdir)/'`slurm_jobcomp.c
+
+libcommon_la-switch.lo: switch.c
+@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libcommon_la_CFLAGS) $(CFLAGS) -MT libcommon_la-switch.lo -MD -MP -MF $(DEPDIR)/libcommon_la-switch.Tpo -c -o libcommon_la-switch.lo `test -f 'switch.c' || echo '$(srcdir)/'`switch.c
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcommon_la-switch.Tpo $(DEPDIR)/libcommon_la-switch.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='switch.c' object='libcommon_la-switch.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libcommon_la_CFLAGS) $(CFLAGS) -c -o libcommon_la-switch.lo `test -f 'switch.c' || echo '$(srcdir)/'`switch.c
+
+libcommon_la-arg_desc.lo: arg_desc.c
+@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libcommon_la_CFLAGS) $(CFLAGS) -MT libcommon_la-arg_desc.lo -MD -MP -MF $(DEPDIR)/libcommon_la-arg_desc.Tpo -c -o libcommon_la-arg_desc.lo `test -f 'arg_desc.c' || echo '$(srcdir)/'`arg_desc.c
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcommon_la-arg_desc.Tpo $(DEPDIR)/libcommon_la-arg_desc.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='arg_desc.c' object='libcommon_la-arg_desc.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libcommon_la_CFLAGS) $(CFLAGS) -c -o libcommon_la-arg_desc.lo `test -f 'arg_desc.c' || echo '$(srcdir)/'`arg_desc.c
+
+libcommon_la-malloc.lo: malloc.c
+@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libcommon_la_CFLAGS) $(CFLAGS) -MT libcommon_la-malloc.lo -MD -MP -MF $(DEPDIR)/libcommon_la-malloc.Tpo -c -o libcommon_la-malloc.lo `test -f 'malloc.c' || echo '$(srcdir)/'`malloc.c
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcommon_la-malloc.Tpo $(DEPDIR)/libcommon_la-malloc.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='malloc.c' object='libcommon_la-malloc.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libcommon_la_CFLAGS) $(CFLAGS) -c -o libcommon_la-malloc.lo `test -f 'malloc.c' || echo '$(srcdir)/'`malloc.c
+
+libcommon_la-getopt.lo: getopt.c
+@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libcommon_la_CFLAGS) $(CFLAGS) -MT libcommon_la-getopt.lo -MD -MP -MF $(DEPDIR)/libcommon_la-getopt.Tpo -c -o libcommon_la-getopt.lo `test -f 'getopt.c' || echo '$(srcdir)/'`getopt.c
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcommon_la-getopt.Tpo $(DEPDIR)/libcommon_la-getopt.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='getopt.c' object='libcommon_la-getopt.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libcommon_la_CFLAGS) $(CFLAGS) -c -o libcommon_la-getopt.lo `test -f 'getopt.c' || echo '$(srcdir)/'`getopt.c
+
+libcommon_la-getopt1.lo: getopt1.c
+@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libcommon_la_CFLAGS) $(CFLAGS) -MT libcommon_la-getopt1.lo -MD -MP -MF $(DEPDIR)/libcommon_la-getopt1.Tpo -c -o libcommon_la-getopt1.lo `test -f 'getopt1.c' || echo '$(srcdir)/'`getopt1.c
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcommon_la-getopt1.Tpo $(DEPDIR)/libcommon_la-getopt1.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='getopt1.c' object='libcommon_la-getopt1.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libcommon_la_CFLAGS) $(CFLAGS) -c -o libcommon_la-getopt1.lo `test -f 'getopt1.c' || echo '$(srcdir)/'`getopt1.c
+
+libcommon_la-unsetenv.lo: unsetenv.c
+@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libcommon_la_CFLAGS) $(CFLAGS) -MT libcommon_la-unsetenv.lo -MD -MP -MF $(DEPDIR)/libcommon_la-unsetenv.Tpo -c -o libcommon_la-unsetenv.lo `test -f 'unsetenv.c' || echo '$(srcdir)/'`unsetenv.c
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcommon_la-unsetenv.Tpo $(DEPDIR)/libcommon_la-unsetenv.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='unsetenv.c' object='libcommon_la-unsetenv.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libcommon_la_CFLAGS) $(CFLAGS) -c -o libcommon_la-unsetenv.lo `test -f 'unsetenv.c' || echo '$(srcdir)/'`unsetenv.c
+
+libcommon_la-slurm_selecttype_info.lo: slurm_selecttype_info.c
+@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libcommon_la_CFLAGS) $(CFLAGS) -MT libcommon_la-slurm_selecttype_info.lo -MD -MP -MF $(DEPDIR)/libcommon_la-slurm_selecttype_info.Tpo -c -o libcommon_la-slurm_selecttype_info.lo `test -f 'slurm_selecttype_info.c' || echo '$(srcdir)/'`slurm_selecttype_info.c
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcommon_la-slurm_selecttype_info.Tpo $(DEPDIR)/libcommon_la-slurm_selecttype_info.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='slurm_selecttype_info.c' object='libcommon_la-slurm_selecttype_info.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libcommon_la_CFLAGS) $(CFLAGS) -c -o libcommon_la-slurm_selecttype_info.lo `test -f 'slurm_selecttype_info.c' || echo '$(srcdir)/'`slurm_selecttype_info.c
+
+libcommon_la-slurm_resource_info.lo: slurm_resource_info.c
+@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libcommon_la_CFLAGS) $(CFLAGS) -MT libcommon_la-slurm_resource_info.lo -MD -MP -MF $(DEPDIR)/libcommon_la-slurm_resource_info.Tpo -c -o libcommon_la-slurm_resource_info.lo `test -f 'slurm_resource_info.c' || echo '$(srcdir)/'`slurm_resource_info.c
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcommon_la-slurm_resource_info.Tpo $(DEPDIR)/libcommon_la-slurm_resource_info.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='slurm_resource_info.c' object='libcommon_la-slurm_resource_info.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libcommon_la_CFLAGS) $(CFLAGS) -c -o libcommon_la-slurm_resource_info.lo `test -f 'slurm_resource_info.c' || echo '$(srcdir)/'`slurm_resource_info.c
+
+libcommon_la-hostlist.lo: hostlist.c
+@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libcommon_la_CFLAGS) $(CFLAGS) -MT libcommon_la-hostlist.lo -MD -MP -MF $(DEPDIR)/libcommon_la-hostlist.Tpo -c -o libcommon_la-hostlist.lo `test -f 'hostlist.c' || echo '$(srcdir)/'`hostlist.c
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcommon_la-hostlist.Tpo $(DEPDIR)/libcommon_la-hostlist.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='hostlist.c' object='libcommon_la-hostlist.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libcommon_la_CFLAGS) $(CFLAGS) -c -o libcommon_la-hostlist.lo `test -f 'hostlist.c' || echo '$(srcdir)/'`hostlist.c
+
+libcommon_la-slurm_step_layout.lo: slurm_step_layout.c
+@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libcommon_la_CFLAGS) $(CFLAGS) -MT libcommon_la-slurm_step_layout.lo -MD -MP -MF $(DEPDIR)/libcommon_la-slurm_step_layout.Tpo -c -o libcommon_la-slurm_step_layout.lo `test -f 'slurm_step_layout.c' || echo '$(srcdir)/'`slurm_step_layout.c
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcommon_la-slurm_step_layout.Tpo $(DEPDIR)/libcommon_la-slurm_step_layout.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='slurm_step_layout.c' object='libcommon_la-slurm_step_layout.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libcommon_la_CFLAGS) $(CFLAGS) -c -o libcommon_la-slurm_step_layout.lo `test -f 'slurm_step_layout.c' || echo '$(srcdir)/'`slurm_step_layout.c
+
+libcommon_la-checkpoint.lo: checkpoint.c
+@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libcommon_la_CFLAGS) $(CFLAGS) -MT libcommon_la-checkpoint.lo -MD -MP -MF $(DEPDIR)/libcommon_la-checkpoint.Tpo -c -o libcommon_la-checkpoint.lo `test -f 'checkpoint.c' || echo '$(srcdir)/'`checkpoint.c
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcommon_la-checkpoint.Tpo $(DEPDIR)/libcommon_la-checkpoint.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='checkpoint.c' object='libcommon_la-checkpoint.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libcommon_la_CFLAGS) $(CFLAGS) -c -o libcommon_la-checkpoint.lo `test -f 'checkpoint.c' || echo '$(srcdir)/'`checkpoint.c
+
+libcommon_la-parse_time.lo: parse_time.c
+@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libcommon_la_CFLAGS) $(CFLAGS) -MT libcommon_la-parse_time.lo -MD -MP -MF $(DEPDIR)/libcommon_la-parse_time.Tpo -c -o libcommon_la-parse_time.lo `test -f 'parse_time.c' || echo '$(srcdir)/'`parse_time.c
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcommon_la-parse_time.Tpo $(DEPDIR)/libcommon_la-parse_time.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='parse_time.c' object='libcommon_la-parse_time.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libcommon_la_CFLAGS) $(CFLAGS) -c -o libcommon_la-parse_time.lo `test -f 'parse_time.c' || echo '$(srcdir)/'`parse_time.c
+
+libcommon_la-job_options.lo: job_options.c
+@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libcommon_la_CFLAGS) $(CFLAGS) -MT libcommon_la-job_options.lo -MD -MP -MF $(DEPDIR)/libcommon_la-job_options.Tpo -c -o libcommon_la-job_options.lo `test -f 'job_options.c' || echo '$(srcdir)/'`job_options.c
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcommon_la-job_options.Tpo $(DEPDIR)/libcommon_la-job_options.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='job_options.c' object='libcommon_la-job_options.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libcommon_la_CFLAGS) $(CFLAGS) -c -o libcommon_la-job_options.lo `test -f 'job_options.c' || echo '$(srcdir)/'`job_options.c
+
+libcommon_la-global_defaults.lo: global_defaults.c
+@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libcommon_la_CFLAGS) $(CFLAGS) -MT libcommon_la-global_defaults.lo -MD -MP -MF $(DEPDIR)/libcommon_la-global_defaults.Tpo -c -o libcommon_la-global_defaults.lo `test -f 'global_defaults.c' || echo '$(srcdir)/'`global_defaults.c
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcommon_la-global_defaults.Tpo $(DEPDIR)/libcommon_la-global_defaults.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='global_defaults.c' object='libcommon_la-global_defaults.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libcommon_la_CFLAGS) $(CFLAGS) -c -o libcommon_la-global_defaults.lo `test -f 'global_defaults.c' || echo '$(srcdir)/'`global_defaults.c
+
+libcommon_la-timers.lo: timers.c
+@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libcommon_la_CFLAGS) $(CFLAGS) -MT libcommon_la-timers.lo -MD -MP -MF $(DEPDIR)/libcommon_la-timers.Tpo -c -o libcommon_la-timers.lo `test -f 'timers.c' || echo '$(srcdir)/'`timers.c
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcommon_la-timers.Tpo $(DEPDIR)/libcommon_la-timers.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='timers.c' object='libcommon_la-timers.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libcommon_la_CFLAGS) $(CFLAGS) -c -o libcommon_la-timers.lo `test -f 'timers.c' || echo '$(srcdir)/'`timers.c
+
+libcommon_la-stepd_api.lo: stepd_api.c
+@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libcommon_la_CFLAGS) $(CFLAGS) -MT libcommon_la-stepd_api.lo -MD -MP -MF $(DEPDIR)/libcommon_la-stepd_api.Tpo -c -o libcommon_la-stepd_api.lo `test -f 'stepd_api.c' || echo '$(srcdir)/'`stepd_api.c
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcommon_la-stepd_api.Tpo $(DEPDIR)/libcommon_la-stepd_api.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='stepd_api.c' object='libcommon_la-stepd_api.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libcommon_la_CFLAGS) $(CFLAGS) -c -o libcommon_la-stepd_api.lo `test -f 'stepd_api.c' || echo '$(srcdir)/'`stepd_api.c
+
+libcommon_la-proc_args.lo: proc_args.c
+@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libcommon_la_CFLAGS) $(CFLAGS) -MT libcommon_la-proc_args.lo -MD -MP -MF $(DEPDIR)/libcommon_la-proc_args.Tpo -c -o libcommon_la-proc_args.lo `test -f 'proc_args.c' || echo '$(srcdir)/'`proc_args.c
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcommon_la-proc_args.Tpo $(DEPDIR)/libcommon_la-proc_args.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='proc_args.c' object='libcommon_la-proc_args.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libcommon_la_CFLAGS) $(CFLAGS) -c -o libcommon_la-proc_args.lo `test -f 'proc_args.c' || echo '$(srcdir)/'`proc_args.c
 
 mostlyclean-libtool:
 	-rm -f *.lo

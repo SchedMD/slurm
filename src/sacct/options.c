@@ -88,7 +88,11 @@ void _dump_header(jobacct_header_t header)
 {
 	struct tm ts;
 	gmtime_r(&header.timestamp, &ts);
-	printf("%u %s %04d%02d%02d%02d%02d%02d %d %s %s ",
+	printf("%u %s %04d%02d%02d%02d%02d%02d %d"
+#ifdef HAVE_BG
+	       " %s"
+#endif
+	       " %s ",
 	       header.jobnum,
 	       header.partition,
 	       1900+(ts.tm_year),
@@ -98,7 +102,9 @@ void _dump_header(jobacct_header_t header)
 		  ts.tm_min,
 		  ts.tm_sec,
 	       (int)header.job_submit,
+#ifdef HAVE_BG
 	       header.blockid,	/* block id */
+#endif
 	       "-");	/* reserved 1 */
 }
 
@@ -1101,11 +1107,13 @@ void do_dump_completion(void)
 		       job->gid_name, job->node_cnt, job->nodelist, 
 		       job->jobname, job->state,
 		       job->timelimit);
+#ifdef HAVE_BG
 		if(job->blockid)
 			printf(" %s %s %s %s %u %s %s",
 			       job->blockid, job->connection, job->reboot,
 			       job->rotate, job->max_procs, job->geo,
 			       job->bg_start_point);
+#endif
 		printf("\n");
 	}
 	list_iterator_destroy(itr);

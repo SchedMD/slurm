@@ -153,7 +153,9 @@ void _print_header(void);
  */
 sacct_parameters_t params;
 fields_t fields[] = {{"account", print_account},
+#ifdef HAVE_BG
 		     {"blockid", print_blockid},
+#endif
 		     {"cpu", print_cpu},
 		     {"cputime", print_cputime}, 
 		     {"elapsed", print_elapsed},

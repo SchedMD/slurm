@@ -120,7 +120,9 @@ extern void free_jobacct_header(void *object)
 	jobacct_header_t *header = (jobacct_header_t *)object;
 	if(header) {
 		xfree(header->partition);
+#ifdef HAVE_BG
 		xfree(header->blockid);
+#endif
 	}
 }
 

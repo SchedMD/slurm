@@ -75,7 +75,9 @@ int _sacct_query(slurm_step_layout_t *step_layout, uint32_t job_id,
 
 	step.header.jobnum = job_id;
 	step.header.partition = NULL;
+#ifdef HAVE_BG
 	step.header.blockid = NULL;
+#endif
 	step.stepnum = step_id;
 	step.nodes = step_layout->node_list;
 	step.stepname = NULL;

@@ -431,7 +431,9 @@ static int _parse_header(char *f[], jobacct_header_t *header)
 	header->timestamp = atoi(f[F_TIMESTAMP]);
 	header->uid = atoi(f[F_UID]);
 	header->gid = atoi(f[F_GID]);
+#ifdef HAVE_BG
 	header->blockid = xstrdup(f[F_BLOCKID]);
+#endif
 	return SLURM_SUCCESS;
 }
 

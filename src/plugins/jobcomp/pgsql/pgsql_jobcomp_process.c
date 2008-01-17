@@ -174,8 +174,6 @@ extern void pgsql_jobcomp_process_get_jobs(List job_list,
 				atoi(PQgetvalue(result, i, JOBCOMP_REQ_GID));
 		job->gid_name = 
 			xstrdup(PQgetvalue(result, i, JOBCOMP_REQ_GROUP_NAME));
-		job->blockid =
-			xstrdup(PQgetvalue(result, i, JOBCOMP_REQ_BLOCKID));
 		job->jobname =
 			xstrdup(PQgetvalue(result, i, JOBCOMP_REQ_NAME));
 		job->nodelist =
@@ -183,16 +181,19 @@ extern void pgsql_jobcomp_process_get_jobs(List job_list,
 		if(PQgetvalue(result, i, JOBCOMP_REQ_NODECNT))
 			job->node_cnt =
 				atoi(PQgetvalue(result, i, JOBCOMP_REQ_NODECNT));
-		if(PQgetvalue(result, i, JOBCOMP_REQ_MAXPROCS))
-			job->max_procs =
-				atoi(PQgetvalue(result, i, 
-						JOBCOMP_REQ_MAXPROCS));
 		if(PQgetvalue(result, i, JOBCOMP_REQ_STATE)) {
 			int j = atoi(PQgetvalue(result, i, JOBCOMP_REQ_STATE));
 			job->state = xstrdup(job_state_string(j));
 		}
 		job->timelimit =
 			xstrdup(PQgetvalue(result, i, JOBCOMP_REQ_TIMELIMIT));
+#ifdef HAVE_BG
+		if(PQgetvalue(result, i, JOBCOMP_REQ_MAXPROCS))
+			job->max_procs =
+				atoi(PQgetvalue(result, i, 
+						JOBCOMP_REQ_MAXPROCS));
+		job->blockid =
+			xstrdup(PQgetvalue(result, i, JOBCOMP_REQ_BLOCKID));
 		job->connection =
 			xstrdup(PQgetvalue(result, i, JOBCOMP_REQ_CONNECTION));
 		job->reboot =
@@ -203,6 +204,7 @@ extern void pgsql_jobcomp_process_get_jobs(List job_list,
 			xstrdup(PQgetvalue(result, i, JOBCOMP_REQ_GEOMETRY));
 		job->bg_start_point =
 			xstrdup(PQgetvalue(result, i, JOBCOMP_REQ_START));
+#endif
 		list_append(job_list, job);
 
 	}

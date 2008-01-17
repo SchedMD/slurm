@@ -98,13 +98,15 @@ storage_field_t jobcomp_table_fields[] = {
 	{ "endtime", "int unsigned default 0 not null" },
 	{ "nodelist", "text" }, 
 	{ "nodecnt", "mediumint unsigned not null" },
-	{ "connection", "tinytext" },
+#ifdef HAVE_BG
+	{ "connect_type", "tinytext" },
 	{ "reboot", "tinytext" },
 	{ "rotate", "tinytext" },
 	{ "maxprocs", "mediumint unsigned default 0 not null" },
 	{ "geometry", "tinytext" },
 	{ "start", "tinytext" },
 	{ "blockid", "tinytext" },
+#endif
 	{ NULL, NULL}
 };
 
@@ -305,7 +307,7 @@ extern int slurm_jobcomp_log_record(struct job_record *job_ptr)
 	int rc = SLURM_SUCCESS;
 	char *usr_str = NULL, *grp_str = NULL, lim_str[32];
 #ifdef HAVE_BG
-	char connection[128];
+	char connect_type[128];
 	char reboot[4];
 	char rotate[4];
 	char maxprocs[20];
@@ -340,7 +342,7 @@ extern int slurm_jobcomp_log_record(struct job_record *job_ptr)
 
 #ifdef HAVE_BG
 	select_g_sprint_jobinfo(job_ptr->select_jobinfo,
-		connection, sizeof(connection), SELECT_PRINT_CONNECTION);
+		connect_type, sizeof(connect_type), SELECT_PRINT_CONNECTION);
 	select_g_sprint_jobinfo(job_ptr->select_jobinfo,
 		reboot, sizeof(reboot), SELECT_PRINT_REBOOT);
 	select_g_sprint_jobinfo(job_ptr->select_jobinfo,
@@ -359,7 +361,7 @@ extern int slurm_jobcomp_log_record(struct job_record *job_ptr)
 		 "name, state, "
 		 "partition, timelimit, starttime, endtime, nodelist, nodecnt"
 #ifdef HAVE_BG
-		 ", connection, reboot, rotate, maxprocs, geometry, "
+		 ", connect_type, reboot, rotate, maxprocs, geometry, "
 		 "start, blockid"
 #endif
 		 ") values (%u, %u, '%s', %u, '%s', '%s', %d, "
@@ -374,7 +376,7 @@ extern int slurm_jobcomp_log_record(struct job_record *job_ptr)
 		 (int)job_ptr->start_time, (int)job_ptr->end_time,
 		 job_ptr->nodes, job_ptr->node_cnt
 #ifdef HAVE_BG
-		 , connection, reboot, rotate, maxprocs, geometry,
+		 , connect_type, reboot, rotate, maxprocs, geometry,
 		 start, blockid
 #endif
 		 );

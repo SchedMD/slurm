@@ -112,7 +112,9 @@ typedef struct {
 typedef struct header {
 	uint32_t jobnum;
 	char	*partition;
+#ifdef HAVE_BG
 	char	*blockid;
+#endif
 	time_t 	job_submit;
 	time_t	timestamp;
 	uint32_t uid;

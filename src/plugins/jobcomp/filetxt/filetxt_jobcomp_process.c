@@ -143,20 +143,22 @@ static jobcomp_job_rec_t *_parse_line(List job_info_list)
 				job->gid = atoi(temp2);
 				job->gid_name = xstrdup(jobcomp_info->val);
 			}
-		} else if(!strcasecmp("Block_Id", jobcomp_info->name)) {
-			job->blockid = xstrdup(jobcomp_info->val);
 		} else if(!strcasecmp("Name", jobcomp_info->name)) {
 			job->jobname = xstrdup(jobcomp_info->val);
 		} else if(!strcasecmp("NodeList", jobcomp_info->name)) {
 			job->nodelist = xstrdup(jobcomp_info->val);
 		} else if(!strcasecmp("NodeCnt", jobcomp_info->name)) {
 			job->node_cnt = atoi(jobcomp_info->val);
-		} else if(!strcasecmp("MaxProcs", jobcomp_info->name)) {
-			job->max_procs = atoi(jobcomp_info->val);
 		} else if(!strcasecmp("JobState", jobcomp_info->name)) {
 			job->state = xstrdup(jobcomp_info->val);
 		} else if(!strcasecmp("Timelimit", jobcomp_info->name)) {
 			job->timelimit = xstrdup(jobcomp_info->val);
+		}
+#ifdef HAVE_BG
+		else if(!strcasecmp("MaxProcs", jobcomp_info->name)) {
+			job->max_procs = atoi(jobcomp_info->val);
+		} else if(!strcasecmp("Block_Id", jobcomp_info->name)) {
+			job->blockid = xstrdup(jobcomp_info->val);
 		} else if(!strcasecmp("Connection", jobcomp_info->name)) {
 			job->connection = xstrdup(jobcomp_info->val);
 		} else if(!strcasecmp("reboot", jobcomp_info->name)) {
@@ -167,7 +169,9 @@ static jobcomp_job_rec_t *_parse_line(List job_info_list)
 			job->geo = xstrdup(jobcomp_info->val);
 		} else if(!strcasecmp("start", jobcomp_info->name)) {
 			job->bg_start_point = xstrdup(jobcomp_info->val);
-		} else {
+		}
+#endif
+		else {
 			error("Unknown type %s: %s", jobcomp_info->name,
 			      jobcomp_info->val);
 		}

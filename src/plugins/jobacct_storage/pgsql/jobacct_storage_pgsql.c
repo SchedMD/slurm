@@ -104,7 +104,9 @@ static int _pgsql_jobacct_check_tables(char *user)
 		{ "submit", "bigint not null" },
 		{ "uid", "smallint not null" },
 		{ "gid", "smallint not null" },
+#ifdef HAVE_BG
 		{ "blockid", "text" },
+#endif
 		{ NULL, NULL}		
 	};
 
@@ -375,7 +377,9 @@ extern int jobacct_storage_p_job_start(struct job_record *job_ptr)
 	char	*jname, *account, *nodes;
 	long	priority;
 	int track_steps = 0;
+#ifdef HAVE_BG
 	char *block_id = NULL;
+#endif
 	char query[1024];
 	int reinit = 0;
 
@@ -416,18 +420,29 @@ extern int jobacct_storage_p_job_start(struct job_record *job_ptr)
 			     &block_id);
 		
 #endif
-	if(!block_id)
-		block_id = xstrdup("-");
 
 	job_ptr->requid = -1; /* force to -1 for sacct to know this
 			       * hasn't been set yet */
 	snprintf(query, sizeof(query),
-		 "insert into %s (jobid, partition, submit, uid, gid, "
-		 "blockid) values (%u, '%s', %u, %d, %d, '%s')",
+		 "insert into %s (jobid, partition, submit, uid, gid"
+#ifdef HAVE_BG
+		 ", blockid"
+#endif
+		 ") values (%u, '%s', %u, %d, %d"
+#ifdef HAVE_BG
+		 ", '%s'"
+#endif
+		 ")",
 		 index_table, job_ptr->job_id, job_ptr->partition,
 		 (int)job_ptr->details->submit_time, job_ptr->user_id,
-		 job_ptr->group_id, block_id);
+		 job_ptr->group_id
+#ifdef HAVE_BG
+		 , block_id
+#endif
+		);
+#ifdef HAVE_BG
 	xfree(block_id);
+#endif
 
 try_again:
 	if((job_ptr->db_index = pgsql_insert_ret_id(

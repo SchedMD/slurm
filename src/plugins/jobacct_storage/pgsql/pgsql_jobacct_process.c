@@ -82,7 +82,9 @@ extern void pgsql_jobacct_process_get_jobs(List job_list,
 		"t2.suspended",
 		"t1.uid",
 		"t1.gid",
+#ifdef HAVE_BG
 		"t1.blockid",
+#endif
 		"t2.name",
 		"t2.track_steps",
 		"t2.state",
@@ -154,7 +156,9 @@ extern void pgsql_jobacct_process_get_jobs(List job_list,
 		JOB_REQ_SUSPENDED,
 		JOB_REQ_UID,
 		JOB_REQ_GID,
+#ifdef HAVE_BG
 		JOB_REQ_BLOCKID,
+#endif
 		JOB_REQ_NAME,
 		JOB_REQ_TRACKSTEPS,
 		JOB_REQ_STATE,
@@ -285,9 +289,10 @@ extern void pgsql_jobacct_process_get_jobs(List job_list,
 		header.timestamp = atoi(PQgetvalue(result, i, JOB_REQ_START));
 		header.uid = atoi(PQgetvalue(result, i, JOB_REQ_UID));
 		header.gid = atoi(PQgetvalue(result, i, JOB_REQ_GID));
+#ifdef HAVE_BG
 		header.blockid = xstrdup(PQgetvalue(result, i,
 						    JOB_REQ_BLOCKID));
-
+#endif
 		job = create_jobacct_job_rec(header);
 		job->show_full = 1;
 		job->status = atoi(PQgetvalue(result, i, JOB_REQ_STATE));
@@ -368,8 +373,10 @@ extern void pgsql_jobacct_process_get_jobs(List job_list,
 			*/
 			header.partition = xstrdup(
 				PQgetvalue(result, j, JOB_REQ_PARTITION));
+#ifdef HAVE_BG
 			header.blockid = xstrdup(
 				PQgetvalue(result, j, JOB_REQ_BLOCKID));
+#endif
 			header.timestamp = atoi(
 				PQgetvalue(step_result, j, STEP_REQ_START));
 			/* set start of job if not set */

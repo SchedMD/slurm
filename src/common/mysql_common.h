@@ -57,8 +57,8 @@
 #include "src/common/xstring.h"
 
 #ifdef HAVE_MYSQL
-#include <mysql/mysql.h>
-#include <mysql/mysqld_error.h>
+#include <mysql.h>
+#include <mysqld_error.h>
 
 typedef struct {
 	uint32_t port;	

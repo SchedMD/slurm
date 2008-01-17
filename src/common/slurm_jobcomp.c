@@ -199,7 +199,6 @@ jobcomp_destroy_job(void *object)
 	jobcomp_job_rec_t *job = (jobcomp_job_rec_t *)object;
 	if (job) {
 		xfree(job->partition);
-		xfree(job->blockid);
 		xfree(job->start_time);
 		xfree(job->end_time);
 		xfree(job->uid_name);
@@ -208,11 +207,14 @@ jobcomp_destroy_job(void *object)
 		xfree(job->jobname);
 		xfree(job->state);
 		xfree(job->timelimit);
+#ifdef HAVE_BG
+		xfree(job->blockid);
 		xfree(job->connection);
 		xfree(job->reboot);
 		xfree(job->rotate);
 		xfree(job->geo);
 		xfree(job->bg_start_point);
+#endif
 		xfree(job);
 	}
 }

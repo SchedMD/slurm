@@ -6,6 +6,8 @@ documents those changes that are of interest to users and admins.
  -- Add spank support to sbatch. Note that spank_local_user() will be called 
     with step_layout=NULL and gid=SLURM_BATCH_SCRIPT and spank_fini() will 
     be called immediately afterwards.
+ -- Made configure use mysql_config to find location of mysql database install
+    Removed bluegene specific information from the general database tables.
 
 * Changes in SLURM 1.3.0-pre8
 =============================
