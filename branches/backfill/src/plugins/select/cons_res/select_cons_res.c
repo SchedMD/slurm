@@ -1899,8 +1899,6 @@ static int _select_nodes(struct job_record *job_ptr, bitstr_t * bitmap,
 		}
 	}
 	bit_free(origmap);
-	if (reqmap)
-		bit_free(reqmap);
 	return ec;
 }
 
