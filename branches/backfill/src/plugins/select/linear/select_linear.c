@@ -614,6 +614,10 @@ static int _job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	int best_fit_location = 0, best_fit_sufficient;
 	int avail_cpus;
 
+	if ((job_ptr->details->req_node_bitmap) &&
+	    (!bit_super_set(job_ptr->details->req_node_bitmap, bitmap)))
+		return error_code;
+
 	consec_index = 0;
 	consec_size  = 50;	/* start allocation for 50 sets of 
 				 * consecutive nodes */
