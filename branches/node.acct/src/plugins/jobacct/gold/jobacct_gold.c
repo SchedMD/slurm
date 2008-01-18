@@ -276,7 +276,7 @@ static int _add_edit_job(struct job_record *job_ptr, gold_object_t action)
 		gold_request_add_assignment(gold_request, "ExitCode",
 					    tmp_buff);
 	}
-/* 	gold_request_add_assignment(gold_request, "CPUSecondsReserved", */
+/* 	gold_request_add_assignment(gold_request, "ReservedCPUSeconds", */
 /* 	     		            ); */
 
 
