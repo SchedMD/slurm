@@ -515,7 +515,8 @@ extern int select_g_reconfigure (void)
 
 /*
  * Select the "best" nodes for given job from those available
- * IN job_ptr - pointer to job being considered for initiation
+ * IN/OUT job_ptr - pointer to job being considered for initiation,
+ *                  set's start_time when job expected to start
  * IN/OUT bitmap - map of nodes being considered for allocation on input,
  *                 map of nodes actually to be assigned on output
  * IN min_nodes - minimum number of nodes to allocate to job
