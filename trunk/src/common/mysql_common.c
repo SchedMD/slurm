@@ -146,7 +146,7 @@ extern int mysql_get_db_connection(MYSQL **mysql_db, char *db_name,
 			}
 		}
 		/* make sure reconnect is off */
-		mysql_options(*mysql_db, MYSQL_OPT_RECONNECT, &reconnect);
+		//mysql_options(*mysql_db, MYSQL_OPT_RECONNECT, &reconnect);
 	}
 	return rc;
 }
