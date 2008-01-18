@@ -1620,6 +1620,7 @@ static int _eval_nodes(struct job_record *job_ptr, bitstr_t * bitmap,
 	int avail_cpus, ll;	/* ll = layout array index */
 	struct multi_core_data *mc_ptr = NULL;
 	uint16_t * layout_ptr = NULL;
+	bool required_node;
 
 	xassert(bitmap);
 	
@@ -1655,12 +1656,12 @@ static int _eval_nodes(struct job_record *job_ptr, bitstr_t * bitmap,
 			f = 0;
 			i++;
 		}
-		bool required_node = false;
 		if (job_ptr->details->req_node_bitmap) {
 			required_node =
 				bit_test(job_ptr->details->req_node_bitmap,
 					 index);
-		}
+		} else
+			required_node = false;
 		if (layout_ptr && required_node)
 			ll++;
 		if (bit_test(bitmap, index)) {
@@ -1898,6 +1899,8 @@ static int _select_nodes(struct job_record *job_ptr, bitstr_t * bitmap,
 		}
 	}
 	bit_free(origmap);
+	if (reqmap)
+		bit_free(reqmap);
 	return ec;
 }
 
