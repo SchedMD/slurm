@@ -106,7 +106,6 @@ libspank_la_SOURCES = \
 libcommon_la_LIBADD   = $(SSL_LIBS) -ldl $(PGSQL_LIBS) $(MYSQL_LIBS)
 
 libcommon_la_LDFLAGS  = $(LIB_LDFLAGS) $(SSL_LDFLAGS)
-libcommon_la_LIBS = $(PGSQL_LIBS) $(MYSQL_LIBS)
 libcommon_la_CFLAGS = $(PGSQL_CFLAGS) $(MYSQL_CFLAGS)
 
 global_defaults.c : $(top_builddir)/config.h Makefile

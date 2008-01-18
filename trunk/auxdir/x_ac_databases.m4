@@ -67,40 +67,28 @@ AC_DEFUN([X_AC_DATABASES],
 		save_CFLAGS="$CFLAGS"
         	CFLAGS="$PGSQL_CFLAGS $save_CFLAGS"
                 
-		AC_CHECK_HEADERS($PGSQL_INCLUDEDIR/libpq-fe.h,
-			 [has_pgsql_header="true"],
-			 [has_pgsql_header="false"])
-	   	if test "$has_pgsql_header" = "true"; then	
-			AC_CHECK_LIB(pq, PQconnectdb, [has_pgsql_lib="true"], [has_pgsql_lib="false"])
-			if test "$has_pgsql_lib" = "true"; then
-       				PGSQL_LIBS=" -lpq"
-	       			save_LIBS="$LIBS"
-        			LIBS="$PGSQL_LIBS $save_LIBS"
-       				AC_TRY_LINK([#include <libpq-fe.h>],[
-          				int main()
-       	  				{
-						PGconn     *conn;
-						conn = PQconnectdb("dbname = postgres");
-       						(void) PQfinish(conn);
-            			        }
-        				],
-					[ac_have_pgsql="yes"],
-					[ac_have_pgsql="no"])
-				LIBS="$save_LIBS"
-       				if test "$ac_have_pgsql" == "yes"; then
-    					AC_MSG_RESULT([PostgreSQL test program built properly.])
-            				AC_SUBST(PGSQL_LIBS)
-					AC_SUBST(PGSQL_CFLAGS)
-					AC_DEFINE(HAVE_PGSQL, 1, [Define to 1 if using PostgreSQL libaries])
-		        	else	
-       					AC_MSG_WARN([*** PostgreSQL test program execution failed.])
-				fi        	
-      			else
-        			AC_MSG_WARN(libpq not found: PostgreSQL support not available)
-			fi			
-   		else	
-			AC_MSG_WARN(libpq-fe.h header not found: PostgreSQL support not available)
-  		fi 
-		CFLAGS="$save_CFLAGS"
-       	fi
+		PGSQL_LIBS=" -lpq"
+	       	save_LIBS="$LIBS"
+        	LIBS="$PGSQL_LIBS $save_LIBS"
+       		AC_TRY_LINK([#include <libpq-fe.h>],[
+          			int main()
+       	  			{
+					PGconn     *conn;
+					conn = PQconnectdb("dbname = postgres");
+       					(void) PQfinish(conn);
+            			}
+        			],
+			[ac_have_pgsql="yes"],
+			[ac_have_pgsql="no"])
+		LIBS="$save_LIBS"
+       		CFLAGS="$save_CFLAGS"
+		if test "$ac_have_pgsql" == "yes"; then
+    			AC_MSG_RESULT([PostgreSQL test program built properly.])
+            		AC_SUBST(PGSQL_LIBS)
+			AC_SUBST(PGSQL_CFLAGS)
+			AC_DEFINE(HAVE_PGSQL, 1, [Define to 1 if using PostgreSQL libaries])
+		else	
+       			AC_MSG_WARN([*** PostgreSQL test program execution failed.])
+		fi        	
+      	fi
 ])
