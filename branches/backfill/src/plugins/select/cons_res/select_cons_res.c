@@ -1526,7 +1526,7 @@ extern int select_p_job_init(List job_list)
  *                                    saved job data
  * Step 3: select_g_job_init        : creates global 'select_cr_job_list' if
  *                                    nothing was recovered from state file.
- *                                    Rebuilds select_node_ptr global array.		
+ *                                    Rebuilds select_node_ptr global array.
  * Step 4: select_g_update_nodeinfo : called from reset_job_bitmaps() with each
  *                                    valid recovered job_ptr AND from
  *                                    select_nodes(), this procedure adds job
@@ -2155,7 +2155,8 @@ static int _load_arrays(struct node_cr_record *select_node_ptr,
  *	identify the nodes which "best" satisfy the request.
  * 	"best" is defined as either a minimal number of consecutive nodes
  *	or if sharing resources then sharing them with a job of similar size.
- * IN job_ptr - pointer to job being scheduled
+ * IN/OUT job_ptr - pointer to job being considered for initiation,
+ *                  set's start_time when job expected to start
  * IN/OUT bitmap - usable nodes are set on input, nodes not required to 
  *	satisfy the request are cleared, other left set
  * IN min_nodes - minimum count of nodes

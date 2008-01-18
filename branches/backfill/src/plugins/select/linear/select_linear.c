@@ -410,7 +410,8 @@ static uint16_t _get_avail_cpus(struct job_record *job_ptr, int index)
  * 	"best" is defined as either single set of consecutive nodes satisfying 
  *	the request and leaving the minimum number of unused nodes OR 
  *	the fewest number of consecutive node sets
- * IN job_ptr - pointer to job being scheduled
+ * IN/OUT job_ptr - pointer to job being considered for initiation,
+ *                  set's start_time when job expected to start
  * IN/OUT bitmap - usable nodes are set on input, nodes not required to 
  *	satisfy the request are cleared, other left set
  * IN min_nodes - minimum count of nodes
