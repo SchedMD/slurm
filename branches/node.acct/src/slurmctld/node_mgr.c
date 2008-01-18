@@ -1511,8 +1511,6 @@ validate_node_specs (char *node_name, uint16_t cpus,
 			set_node_down(node_name, "Prolog failed");
 		}
 	} else {
-		info("base_state for %s is %s", node_ptr->name,
-		     node_state_string(base_state));
 		if (base_state == NODE_STATE_UNKNOWN) {
 			last_node_update = time (NULL);
 			reset_job_priority();
