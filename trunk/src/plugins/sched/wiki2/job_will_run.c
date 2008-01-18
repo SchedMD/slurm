@@ -156,19 +156,14 @@ static char *	_will_run_test(uint32_t jobid, char *node_list,
 	}
 
 	if (job_ptr->details->exc_node_bitmap) {
-		bitstr_t *exc_node_mask = NULL;
-		exc_node_mask = bit_copy(job_ptr->details->exc_node_bitmap);
-		if (exc_node_mask == NULL)
-			fatal("bit_copy malloc failure");
-		bit_not(exc_node_mask);
-		bit_and(avail_bitmap, exc_node_mask);
-		FREE_NULL_BITMAP(exc_node_mask);
+		bit_not(job_ptr->details->exc_node_bitmap);
+		bit_and(avail_bitmap, job_ptr->details->exc_node_bitmap);
+		bit_not(job_ptr->details->exc_node_bitmap);
 	}
-	if (job_ptr->details->req_node_bitmap) {
-		if (!bit_super_set(job_ptr->details->req_node_bitmap, 
-				   avail_bitmap)) {
-			rc = ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE;
-		}
+	if ((job_ptr->details->req_node_bitmap) &&
+	    (!bit_super_set(job_ptr->details->req_node_bitmap, 
+			    avail_bitmap))) {
+		rc = ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE;
 	}
 
 	if (rc == SLURM_SUCCESS) {
@@ -184,7 +179,12 @@ static char *	_will_run_test(uint32_t jobid, char *node_list,
 			req_nodes = max_nodes;
 		else
 			req_nodes = min_nodes;
-
+		if (min_nodes > max_nodes) {
+			/* job's min_nodes exceeds partitions max_nodes */
+			rc = EINVAL;
+		}
+	}
+	if (rc == SLURM_SUCCESS) {
 		rc = select_g_job_test(job_ptr, avail_bitmap,
 				min_nodes, max_nodes, req_nodes, 
 				SELECT_MODE_WILL_RUN);
