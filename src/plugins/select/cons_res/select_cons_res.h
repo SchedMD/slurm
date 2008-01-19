@@ -62,13 +62,9 @@
  * has been assigned to a partition. SLURM allows a node to be
  * assigned to more than one partition. One or more partitions
  * may be configured to share the cores with more than one job.
- *
- * NOTE: Partitions can be added and removed in real time, so we
- * use the partition name and string comparision rather than
- * comparing pointers to partition records.
  */
 struct part_cr_record {
-	char *part_name;		/* name of partition */
+	struct part_record *part_ptr;	/* ptr to slurmctld partition record */
 	uint16_t *alloc_cores;		/* core count per socket reserved by
 					 * already scheduled jobs */
 	uint16_t num_rows;		/* number of rows in alloc_cores. The
@@ -148,8 +144,9 @@ struct select_cr_job {
 
 struct node_cr_record * find_cr_node_record (const char *name);
 
+/* Find a partition record based upon pointer to slurmctld record */
 struct part_cr_record *get_cr_part_ptr(struct node_cr_record *this_node,
-				     const char *part_name);
+				      struct part_record *part_ptr);
 
 void get_resources_this_node(uint16_t *cpus, 
 			     uint16_t *sockets, 

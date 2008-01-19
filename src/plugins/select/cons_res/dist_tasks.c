@@ -110,7 +110,7 @@ static int _find_offset(struct select_cr_job *job, const int job_index,
 	uint16_t acores, asockets, freecpus, last_freecpus = 0;
 	struct multi_core_data *mc_ptr;
 
-	p_ptr = get_cr_part_ptr(this_cr_node, job->job_ptr->partition);
+	p_ptr = get_cr_part_ptr(this_cr_node, job->job_ptr->part_ptr);
 	if (p_ptr == NULL)
 		abort();
 	mc_ptr = job->job_ptr->details->mc_ptr;
@@ -181,7 +181,7 @@ static int _job_assign_tasks(struct select_cr_job *job,
 	struct part_cr_record *p_ptr;
 	struct multi_core_data *mc_ptr;
 	
-	p_ptr = get_cr_part_ptr(this_cr_node, job->job_ptr->partition);
+	p_ptr = get_cr_part_ptr(this_cr_node, job->job_ptr->part_ptr);
 	if (p_ptr == NULL)
 		return SLURM_ERROR;
 
@@ -330,7 +330,7 @@ static uint16_t _get_cpu_offset(struct select_cr_job *job, int index,
 	uint16_t cpus, sockets, cores, threads, besto = 0, offset = 0;
 	struct part_cr_record *p_ptr;
 
-	p_ptr = get_cr_part_ptr(this_node, job->job_ptr->partition);
+	p_ptr = get_cr_part_ptr(this_node, job->job_ptr->part_ptr);
 	if ((p_ptr == NULL) || (p_ptr->num_rows < 2))
 		return offset;
 

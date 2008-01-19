@@ -189,7 +189,7 @@ static void _dump_state(struct node_cr_record *select_node_ptr)
 		parts = select_node_ptr[i].parts;
 		while (parts) {
 			info("  part:%s rows:%u",
-				parts->part_name,
+				parts->part_ptr->name,
 				parts->num_rows);
 			cores = select_node_ptr[i].num_sockets * 
 				parts->num_rows;
@@ -245,7 +245,7 @@ static struct node_cr_record *_dup_node_cr(struct node_cr_record *node_cr_ptr)
 		part_cr_ptr = select_node_ptr[i].parts;
 		while (part_cr_ptr) {
 			new_part_cr_ptr = xmalloc(sizeof(struct part_cr_record));
-			new_part_cr_ptr->part_name  = xstrdup(part_cr_ptr->part_name);
+			new_part_cr_ptr->part_ptr   = part_cr_ptr->part_ptr;
 			new_part_cr_ptr->num_rows   = part_cr_ptr->num_rows;
 			j = sizeof(uint16_t) * part_cr_ptr->num_rows * 
 			    select_node_ptr[i].num_sockets;
@@ -266,10 +266,8 @@ static void _destroy_node_part_array(struct node_cr_record *this_cr_node)
 
 	if (!this_cr_node)
 		return;
-	for (p_ptr = this_cr_node->parts; p_ptr; p_ptr = p_ptr->next) {
-		xfree(p_ptr->part_name);
+	for (p_ptr = this_cr_node->parts; p_ptr; p_ptr = p_ptr->next)
 		xfree(p_ptr->alloc_cores);
-	}
 	xfree(this_cr_node->parts);
 }
 
@@ -303,7 +301,7 @@ static void _create_node_part_array(struct node_cr_record *this_cr_node)
 	        		      node_ptr->part_cnt);
 	for (i = 0; i < node_ptr->part_cnt; i++) {
 		p_ptr		 = &(this_cr_node->parts[i]);
-		p_ptr->part_name = xstrdup(node_ptr->part_pptr[i]->name);
+		p_ptr->part_ptr  = node_ptr->part_pptr[i];
 		p_ptr->num_rows  = node_ptr->part_pptr[i]->max_share;
 		if (p_ptr->num_rows & SHARED_FORCE)
 			p_ptr->num_rows &= (~SHARED_FORCE);
@@ -312,7 +310,7 @@ static void _create_node_part_array(struct node_cr_record *this_cr_node)
 			p_ptr->num_rows = 1;
 #if (CR_DEBUG)
 		info("cons_res: _create_node_part_array: part %s  num_rows %d",
-		     p_ptr->part_name, p_ptr->num_rows);
+		     p_ptr->part_ptr->name, p_ptr->num_rows);
 #endif
 		p_ptr->alloc_cores = xmalloc(sizeof(uint16_t) *
 		        		     this_cr_node->num_sockets *
@@ -335,22 +333,24 @@ static int _find_job_by_id(void *x, void *key)
 	return 0;
 }
 
+/* Find a partition record based upon pointer to slurmctld record */
 extern struct part_cr_record *get_cr_part_ptr(struct node_cr_record *this_node,
-					      const char *part_name)
+					      struct part_record *part_ptr)
 {
 	struct part_cr_record *p_ptr;
 
-	if (part_name == NULL)
+	if (part_ptr == NULL)
 		return NULL;
 
 	if (!this_node->parts)
 		_create_node_part_array(this_node);
 
 	for (p_ptr = this_node->parts; p_ptr; p_ptr = p_ptr->next) {
-		if (strcmp(p_ptr->part_name, part_name) == 0)
+		if (p_ptr->part_ptr == part_ptr)
 			return p_ptr;
 	}
-	error("cons_res: could not find partition %s", part_name);
+	error("cons_res: could not find partition %s", part_ptr->name);
+
 	return NULL;
 }
 
@@ -511,7 +511,7 @@ static uint16_t _get_task_count(struct node_cr_record *select_node_ptr,
 	/* array is zero filled by xmalloc() */
 
 	if (!all_available) {
-		p_ptr = get_cr_part_ptr(this_node, job_ptr->partition);
+		p_ptr = get_cr_part_ptr(this_node, job_ptr->part_ptr);
 		if (!p_ptr) {
 			error("cons_res: _get_task_count: could not find part %s",
 			      job_ptr->part_ptr->name);
@@ -867,7 +867,7 @@ static int _add_job_to_nodes(struct select_cr_job *job, char *pre_err,
 		this_node->node_state = job->node_req;
 		
 		_chk_resize_node(this_node, this_node->node_ptr->sockets);
-		p_ptr = get_cr_part_ptr(this_node, job->job_ptr->partition);
+		p_ptr = get_cr_part_ptr(this_node, job->job_ptr->part_ptr);
 		if (p_ptr == NULL) {
 			error("%s: could not find part %s", pre_err,
 			      job->job_ptr->partition);
@@ -998,7 +998,7 @@ static int _rm_job_from_nodes(struct node_cr_record *select_node_ptr,
 			continue;
 		
 		_chk_resize_node(this_node, this_node->node_ptr->sockets);
-		p_ptr = get_cr_part_ptr(this_node, job->job_ptr->partition);
+		p_ptr = get_cr_part_ptr(this_node, job->job_ptr->part_ptr);
 		if (p_ptr == NULL) {
 			error("%s: could not find part %s", pre_err,
 			      job->job_ptr->partition);
@@ -2040,7 +2040,7 @@ static int _get_allocated_rows(struct node_cr_record *select_node_ptr,
 	struct part_cr_record *p_ptr;
 	int i, j, rows = 0;
 	
-	p_ptr = get_cr_part_ptr(&(select_node_ptr[n]), job_ptr->partition);
+	p_ptr = get_cr_part_ptr(&(select_node_ptr[n]), job_ptr->part_ptr);
 	if (p_ptr == NULL)
 		return rows;
 
@@ -2437,6 +2437,9 @@ static int _job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	}
 
 	bit_free(origmap);
+
+	if ((mode != SELECT_MODE_WILL_RUN) && (job_ptr->part_ptr == NULL))
+		error_code = EINVAL;
 	if ((error_code != SLURM_SUCCESS) || (mode == SELECT_MODE_WILL_RUN)) {
 		xfree(busy_rows);
 		xfree(sh_tasks);
@@ -2871,19 +2874,20 @@ extern int select_p_reconfigure(void)
 	job_iterator = list_iterator_create(select_cr_job_list);
 	while ((job = (struct select_cr_job *) list_next(job_iterator))) {
 		suspend = 0;
-		if ((job_ptr = find_job_record(job->job_id))) {
-			if ((job_ptr->job_state != JOB_RUNNING) &&
-			    (job_ptr->job_state != JOB_SUSPENDED))
-				continue;
-			if (job_ptr->job_state == JOB_SUSPENDED)
-				suspend = 1;
-		} else {
-			/* stale job */
+		job_ptr = find_job_record(job->job_id);
+		if ((job_ptr == NULL) ||
+		    (job_ptr->part_ptr == NULL) ||
+		    ((job_ptr->job_state != JOB_RUNNING) &&
+		     (job_ptr->job_state != JOB_SUSPENDED))) {
 			list_remove(job_iterator);
-			debug2("cons_res: select_p_reconfigure: removing "
-				"nonexistent job %u", job->job_id);
+			error("cons_res: select_p_reconfigure: removing "
+				"nonexistent/invalid job %u", job->job_id);
 			_xfree_select_cr_job(job);
+			continue;
 		}
+
+		if (job_ptr->job_state == JOB_SUSPENDED)
+			suspend = 1;
 		if ((job->state & CR_JOB_ALLOCATED_MEM) ||
 		    (job->state & CR_JOB_ALLOCATED_CPUS)) {
 			job->state = 0;
