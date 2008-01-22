@@ -43,6 +43,7 @@
 
 #include "src/common/plugin.h"
 #include "src/common/log.h"
+#include "src/slurmctld/job_scheduler.h"
 #include "src/slurmctld/slurmctld.h"
 
 extern int	spawn_gang_thread(void);
