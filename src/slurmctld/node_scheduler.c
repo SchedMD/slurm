@@ -1145,8 +1145,10 @@ static int _build_feature_list(struct job_record *job_ptr)
 
 /*
  * job_req_node_filter - job reqeust node filter.
- * clear from a bitmap the nodes which can not be used for a job
- * test memory size, required features, processor count, etc.
+ *	clear from a bitmap the nodes which can not be used for a job
+ *	test memory size, required features, processor count, etc.
+ * NOTE: Does not support exclusive OR of features or feature counts.
+ *	It just matches first element of XOR and ignores count.
  * IN job_ptr - pointer to node to be scheduled
  * IN/OUT bitmap - set of nodes being considered for use
  * RET SLURM_SUCCESS or EINVAL if can't filter (exclusive OR of features)
@@ -1178,7 +1180,6 @@ extern int job_req_node_filter(struct job_record *job_ptr,
 		feature_bitmap = _valid_features(detail_ptr, config_ptr->feature);
 		if ((feature_bitmap == NULL) || (!bit_test(feature_bitmap, 0))) {
 			bit_clear(avail_bitmap, i);
-			FREE_NULL_BITMAP(feature_bitmap);
 			continue;
 		}
 		FREE_NULL_BITMAP(feature_bitmap);
@@ -1220,6 +1221,7 @@ extern int job_req_node_filter(struct job_record *job_ptr,
 			}
 		}
 	}
+	FREE_NULL_BITMAP(feature_bitmap);
 	return SLURM_SUCCESS;
 }
 
