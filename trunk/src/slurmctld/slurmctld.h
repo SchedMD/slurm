@@ -898,6 +898,17 @@ extern int job_complete (uint32_t job_id, uid_t uid, bool requeue,
 extern bool job_independent(struct job_record *job_ptr);
 
 /*
+ * job_req_node_filter - job reqeust node filter.
+ * clear from a bitmap the nodes which can not be used for a job
+ * test memory size, required features, processor count, etc.
+ * IN job_ptr - pointer to node to be scheduled
+ * IN/OUT bitmap - set of nodes being considered for use
+ * RET SLURM_SUCCESS or EINVAL if can't filter (exclusive OR of features)
+ */
+extern int job_req_node_filter(struct job_record *job_ptr, 
+			       bitstr_t *avail_bitmap);
+
+/*
  * job_requeue - Requeue a running or pending batch job
  * IN uid - user id of user issuing the RPC
  * IN job_id - id of the job to be requeued
