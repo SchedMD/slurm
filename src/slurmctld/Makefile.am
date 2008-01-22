@@ -20,10 +20,12 @@ slurmctld_SOURCES = 	\
 	controller.c 	\
 	job_mgr.c 	\
 	job_scheduler.c \
+	job_scheduler.h \
 	locks.c   	\
 	locks.h  	\
 	node_mgr.c 	\
-	node_scheduler.c node_scheduler.h \
+	node_scheduler.c \
+	node_scheduler.h \
 	partition_mgr.c \
 	ping_nodes.c	\
 	ping_nodes.h	\

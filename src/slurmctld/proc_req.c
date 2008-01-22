@@ -71,6 +71,7 @@
 #include "src/common/forward.h"
 
 #include "src/slurmctld/agent.h"
+#include "src/slurmctld/job_scheduler.h"
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/proc_req.h"
 #include "src/slurmctld/read_config.h"

@@ -1161,7 +1161,7 @@ extern int job_req_node_filter(struct job_record *job_ptr,
 	multi_core_data_t *mc_ptr;
 	struct node_record *node_ptr;
 	struct config_record *config_ptr;
-	bitstr_t *feature_bitmap;
+	bitstr_t *feature_bitmap = NULL;
 
 	if (detail_ptr == NULL) {
 		error("job_req_node_filter: job %u has no details", 

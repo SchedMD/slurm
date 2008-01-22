@@ -42,7 +42,6 @@
 #ifndef _AGENT_H
 #define _AGENT_H
 
-#include "src/slurmctld/agent.h"
 #include "src/slurmctld/slurmctld.h"
 
 #define AGENT_IS_THREAD  	 1	/* set if agent itself a thread of 

@@ -53,6 +53,7 @@
 #include "src/common/xstring.h"
 
 #include "src/slurmctld/agent.h"
+#include "src/slurmctld/job_scheduler.h"
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/node_scheduler.h"
 #include "src/slurmctld/slurmctld.h"
@@ -61,27 +62,17 @@
 #define _DEBUG 0
 #define MAX_RETRIES 10
 
-struct job_queue {
-	struct job_record *job_ptr;
-	uint32_t job_priority;
-	uint16_t part_priority;
-};
-
-static int  _build_job_queue(struct job_queue **job_queue);
 static void _depend_list_del(void *dep_ptr);
 static void _launch_job(struct job_record *job_ptr);
-static void _sort_job_queue(struct job_queue *job_queue,
-			    int job_queue_size);
 static char **_xduparray(uint16_t size, char ** array);
 
 /* 
- * _build_job_queue - build (non-priority ordered) list of pending jobs
+ * build_job_queue - build (non-priority ordered) list of pending jobs
  * OUT job_queue - pointer to job queue
  * RET number of entries in job_queue
- * global: job_list - global list of job records
  * NOTE: the buffer at *job_queue must be xfreed by the caller
  */
-static int _build_job_queue(struct job_queue **job_queue)
+extern int build_job_queue(struct job_queue **job_queue)
 {
 	ListIterator job_iterator;
 	struct job_record *job_ptr = NULL;
@@ -189,14 +180,12 @@ extern void set_job_elig_time(void)
  *	pending jobs for each partition will be scheduled in priority  
  *	order until a request fails
  * RET count of jobs scheduled
- * global: job_list - global list of job records
- *	last_job_update - time of last update to job table
  * Note: We re-build the queue every time. Jobs can not only be added 
  *	or removed from the queue, but have their priority or partition 
  *	changed with the update_job RPC. In general nodes will be in priority 
  *	order (by submit time), so the sorting should be pretty fast.
  */
-int schedule(void)
+extern int schedule(void)
 {
 	struct job_queue *job_queue;
 	int i, j, error_code, failed_part_cnt, job_queue_size, job_cnt = 0;
@@ -232,12 +221,12 @@ int schedule(void)
 		return SLURM_SUCCESS;
 	}
 	debug("Running job scheduler");
-	job_queue_size = _build_job_queue(&job_queue);
+	job_queue_size = build_job_queue(&job_queue);
 	if (job_queue_size == 0) {
 		unlock_slurmctld(job_write_lock);
 		return SLURM_SUCCESS;
 	}
-	_sort_job_queue(job_queue, job_queue_size);
+	sort_job_queue(job_queue, job_queue_size);
 
 	failed_part_cnt = 0;
 	failed_parts = NULL;
@@ -324,11 +313,11 @@ int schedule(void)
 
 
 /* 
- * _sort_job_queue - sort job_queue in decending priority order
+ * sort_job_queue - sort job_queue in decending priority order
  * IN job_queue_size - count of elements in the job queue
  * IN/OUT job_queue - pointer to sorted job queue
  */
-static void _sort_job_queue(struct job_queue *job_queue, int job_queue_size)
+extern void sort_job_queue(struct job_queue *job_queue, int job_queue_size)
 {
 	int i, j, top_prio_inx;
 	struct job_record *tmp_job_ptr;
