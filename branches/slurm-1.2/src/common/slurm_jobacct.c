@@ -103,6 +103,12 @@ typedef struct slurm_jobacct_ops {
 	jobacctinfo_t *(*jobacct_remove_task)(pid_t pid);
 	void (*jobacct_suspend_poll)  ();
 	void (*jobacct_resume_poll)   ();
+	int (*jobacct_node_down)      (struct node_record *node_ptr, 
+				       time_t event_time, char *reason);
+	int (*jobacct_node_up)        (struct node_record *node_ptr,
+				       time_t event_time);
+	int (*jobacct_cluster_procs)  (uint32_t procs, time_t event_time);
+	
 } slurm_jobacct_ops_t;
 
 /*
@@ -207,7 +213,10 @@ _slurm_jobacct_get_ops( slurm_jobacct_context_t *c )
 		"jobacct_p_stat_task",
 		"jobacct_p_remove_task",
 		"jobacct_p_suspend_poll",
-		"jobacct_p_resume_poll"
+		"jobacct_p_resume_poll",
+		"jobacct_p_node_down",
+		"jobacct_p_node_up",
+		"jobacct_p_cluster_procs"
 	};
 	int n_syms = sizeof( syms ) / sizeof( char * );
 	int rc = 0;
@@ -639,3 +648,45 @@ extern void jobacct_g_resume_poll()
 	return;
 }
 
+extern int jobacct_g_node_down(struct node_record *node_ptr, time_t event_time,
+			       char *reason)
+{
+	int retval = SLURM_SUCCESS;
+	if (_slurm_jobacct_init() < 0)
+		return SLURM_ERROR;
+
+	slurm_mutex_lock( &g_jobacct_context_lock );
+	if ( g_jobacct_context )
+		retval = (*(g_jobacct_context->ops.jobacct_node_down))
+			(node_ptr, event_time, reason);
+	slurm_mutex_unlock( &g_jobacct_context_lock );
+	return retval;
+}
+
+extern int jobacct_g_node_up(struct node_record *node_ptr, time_t event_time)
+{
+	int retval = SLURM_SUCCESS;
+	if (_slurm_jobacct_init() < 0)
+		return SLURM_ERROR;
+
+	slurm_mutex_lock( &g_jobacct_context_lock );
+	if ( g_jobacct_context )
+		retval = (*(g_jobacct_context->ops.jobacct_node_up))
+			(node_ptr, event_time);
+	slurm_mutex_unlock( &g_jobacct_context_lock );
+	return retval;
+}
+
+extern int jobacct_g_cluster_procs(uint32_t procs, time_t event_time)
+{
+	int retval = SLURM_SUCCESS;
+	if (_slurm_jobacct_init() < 0)
+		return SLURM_ERROR;
+
+	slurm_mutex_lock( &g_jobacct_context_lock );
+	if ( g_jobacct_context )
+		retval = (*(g_jobacct_context->ops.jobacct_cluster_procs))
+			(procs, event_time);
+	slurm_mutex_unlock( &g_jobacct_context_lock );
+	return retval;
+}

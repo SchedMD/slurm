@@ -47,12 +47,12 @@
 
 #define MAX_RETRY 5
 
-static slurm_fd gold_fd; // gold connection 
 static char *gold_machine = NULL;
 static char *gold_key = NULL;
 static char *gold_host = NULL;
 static uint16_t gold_port = 0;
 static int gold_init = 0;
+pthread_mutex_t gold_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 static char *_get_return_value(char *gold_msg, int *i)
 {
@@ -129,17 +129,18 @@ static gold_response_entry_t *_create_response_entry(char *object,
 	return resp_entry;
 }
 
-static int _start_communication()
+static slurm_fd _start_communication()
 {
 	static slurm_addr gold_addr;
 	static int gold_addr_set = 0;
 	char *init_msg = "POST /SSSRMAP3 HTTP/1.1\r\nContent-Type: text/xml; charset=\"utf-8\"\r\nTransfer-Encoding: chunked\r\n\r\n";
 	int rc = 0;
-	
+	slurm_fd gold_fd = 0;
+
 	if(!gold_init) {
 		error("start_gold_communication: "
 		      "need to run setup_gold_info before this");
-		return SLURM_ERROR;
+		return 0;
 	}
 	
 	if(!gold_addr_set) {
@@ -149,7 +150,7 @@ static int _start_communication()
 	
 	if ((gold_fd = slurm_open_msg_conn(&gold_addr)) < 0) {
 		error("start_gold_communication to %s: %m", gold_host);
-		return SLURM_ERROR;
+		return 0;
 	}
 
 	debug3("Connected to %s(%d)", gold_host, gold_port);
@@ -159,12 +160,12 @@ static int _start_communication()
 	
 	if (rc < 0) {
 		error("_slurm_send_timeout: %m");
-		return SLURM_ERROR;
+		return 0;
 	}
-	return SLURM_SUCCESS;
+	return gold_fd;
 }
 
-static int _end_communication()
+static int _end_communication(slurm_fd gold_fd)
 {
 	int rc = SLURM_SUCCESS;
 	int retry = 0;
@@ -208,7 +209,7 @@ extern int init_gold(char *machine, char *keyfile, char *host, uint16_t port)
 	
 	/* Close the file */
 	close(fp);
-	info("got the tolken as %s\n", key);
+	//debug4("got the tolken as %s\n", key);
 	gold_machine = xstrdup(machine);
 	gold_key = xstrdup(key);
 	gold_host = xstrdup(host);
@@ -273,11 +274,13 @@ extern int gold_request_add_assignment(gold_request_t *gold_request,
 }
 
 extern int gold_request_add_condition(gold_request_t *gold_request, 
-				      char *name, char *value)
+				      char *name, char *value,
+				      gold_operator_t op)
 {
 	gold_name_value_t *name_val = xmalloc(sizeof(gold_name_value_t));
 	name_val->name = xstrdup(name);
 	name_val->value = xstrdup(value);
+	name_val->op = op;
 	list_push(gold_request->conditions, name_val);
 		
 	return SLURM_SUCCESS;
@@ -309,6 +312,7 @@ extern gold_response_t *get_gold_response(gold_request_t *gold_request)
 	gold_name_value_t *name_val = NULL;
 	ListIterator itr = NULL;
 	int rc = 0, i = 0;
+	slurm_fd gold_fd = 0;
 
 	if(!gold_init) {
 		error("get_gold_response: "
@@ -339,12 +343,16 @@ extern gold_response_t *get_gold_response(gold_request_t *gold_request)
 	case GOLD_OBJECT_JOB:
 		object = GOLD_OBJECT_JOB_STR;
 		break;
+	case GOLD_OBJECT_EVENT:
+		object = GOLD_OBJECT_EVENT_STR;
+		break;
 	case GOLD_OBJECT_ROLEUSER:
 		object = GOLD_OBJECT_ROLEUSER_STR;
 		break;
 	default:
 		error("get_gold_response: "
 		      "unsupported object %d", gold_request->object);
+		return NULL;
 	}
 
 	switch(gold_request->action) {
@@ -386,8 +394,37 @@ extern gold_response_t *get_gold_response(gold_request_t *gold_request)
 
 	itr = list_iterator_create(gold_request->conditions);
 	while((name_val = list_next(itr))) {
-		xstrfmtcat(innerds, "<Where name=\"%s\">%s</Where>",
-			   name_val->name, name_val->value);
+		if(name_val->op != GOLD_OPERATOR_NONE) {
+			char *op = NULL;
+			switch (name_val->op) {
+			case GOLD_OPERATOR_G :
+				op = "G";
+				break;
+			case GOLD_OPERATOR_GE :
+				op = "GE";
+				break;
+			case GOLD_OPERATOR_L :
+				op = "L";
+				break;
+			case GOLD_OPERATOR_LE :
+				op = "LE";
+				break;
+			default:
+				error("Unknown operator '%d' "
+				      "given to this condition %s = %s",
+				      name_val->op, name_val->name,
+				      name_val->value);
+				xfree(innerds);
+				list_iterator_destroy(itr);
+				return NULL;
+			}
+			xstrfmtcat(innerds,
+				   "<Where name=\"%s\" op=\"%s\">%s</Where>",
+				   name_val->name, op, name_val->value);
+		} else {
+			xstrfmtcat(innerds, "<Where name=\"%s\">%s</Where>",
+				   name_val->name, name_val->value);
+		}
 	}
 	list_iterator_destroy(itr);
 
@@ -422,11 +459,15 @@ extern gold_response_t *get_gold_response(gold_request_t *gold_request)
 
 	/* I wish gold could do persistant connections but it only
 	 * does one and then ends it so we have to do that also so
-	 * every time we start a connection we have to finish it.
+	 * every time we start a connection we have to finish it. As
+	 * since we can only send one thing at a time we have to lock
+	 * the connection.
 	 */
-	if(_start_communication() == SLURM_ERROR) 
+//	slurm_mutex_lock(&gold_mutex);
+	if(!(gold_fd = _start_communication())) {
+		//slurm_mutex_unlock(&gold_mutex);
 		return NULL;
-		
+	}
 	rc = _slurm_send_timeout(gold_fd, tmp_buff, strlen(tmp_buff),
 				 SLURM_PROTOCOL_NO_SEND_RECV_FLAGS,
 				 timeout);
@@ -529,8 +570,9 @@ error:
 	 * does one and then ends it so we have to do that also so
 	 * every time we start a connection we have to finish it.
 	 */
-	_end_communication();
-
+	_end_communication(gold_fd);
+//	slurm_mutex_unlock(&gold_mutex);
+		
 	return gold_response;
 
 }
