@@ -154,7 +154,10 @@ static char *	_will_run_test(uint32_t jobid, char *node_list,
 		/* Only consider nodes that are not DOWN or DRAINED */
 		bit_and(avail_bitmap, avail_node_bitmap);
 	}
-
+	if (job_req_node_filter(job_ptr, avail_bitmap) != SLURM_SUCCESS) {
+		/* Job probably has invalid feature list */
+		rc = ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE;
+	}
 	if (job_ptr->details->exc_node_bitmap) {
 		bit_not(job_ptr->details->exc_node_bitmap);
 		bit_and(avail_bitmap, job_ptr->details->exc_node_bitmap);

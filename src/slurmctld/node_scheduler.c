@@ -1144,6 +1144,86 @@ static int _build_feature_list(struct job_record *job_ptr)
 }
 
 /*
+ * job_req_node_filter - job reqeust node filter.
+ * clear from a bitmap the nodes which can not be used for a job
+ * test memory size, required features, processor count, etc.
+ * IN job_ptr - pointer to node to be scheduled
+ * IN/OUT bitmap - set of nodes being considered for use
+ * RET SLURM_SUCCESS or EINVAL if can't filter (exclusive OR of features)
+ */
+extern int job_req_node_filter(struct job_record *job_ptr, 
+			       bitstr_t *avail_bitmap)
+{
+	int i;
+	struct job_details *detail_ptr = job_ptr->details;
+	multi_core_data_t *mc_ptr;
+	struct node_record *node_ptr;
+	struct config_record *config_ptr;
+	bitstr_t *feature_bitmap;
+
+	if (detail_ptr == NULL) {
+		error("job_req_node_filter: job %u has no details", 
+		      job_ptr->job_id);
+		return EINVAL;
+	}
+	if (_build_feature_list(job_ptr))
+		return EINVAL;
+
+	mc_ptr = detail_ptr->mc_ptr;
+	for (i=0; i< node_record_count; i++) {
+		if (!bit_test(avail_bitmap, i))
+			continue;
+		node_ptr = node_record_table_ptr + i;
+		config_ptr = node_ptr->config_ptr;
+		feature_bitmap = _valid_features(detail_ptr, config_ptr->feature);
+		if ((feature_bitmap == NULL) || (!bit_test(feature_bitmap, 0))) {
+			bit_clear(avail_bitmap, i);
+			FREE_NULL_BITMAP(feature_bitmap);
+			continue;
+		}
+		FREE_NULL_BITMAP(feature_bitmap);
+		if (slurmctld_conf.fast_schedule) {
+			if ((detail_ptr->job_min_procs    > config_ptr->cpus       )
+			||  (detail_ptr->job_min_memory   > config_ptr->real_memory) 
+			||  (detail_ptr->job_max_memory   > config_ptr->real_memory) 
+			||  (detail_ptr->job_min_tmp_disk > config_ptr->tmp_disk)) {
+				bit_clear(avail_bitmap, i);
+				continue;
+			}
+			if (mc_ptr
+			&&  ((mc_ptr->min_sockets     > config_ptr->sockets  )
+			||   (mc_ptr->min_cores       > config_ptr->cores    )
+			||   (mc_ptr->min_threads     > config_ptr->threads  )
+			||   (mc_ptr->job_min_sockets > config_ptr->sockets  )
+			||   (mc_ptr->job_min_cores   > config_ptr->cores    )
+			||   (mc_ptr->job_min_threads > config_ptr->threads  ))) {
+				bit_clear(avail_bitmap, i);
+				continue;
+			}
+		} else {
+			if ((detail_ptr->job_min_procs    > node_ptr->cpus       )
+			||  (detail_ptr->job_min_memory   > node_ptr->real_memory) 
+			||  (detail_ptr->job_max_memory   > node_ptr->real_memory) 
+			||  (detail_ptr->job_min_tmp_disk > node_ptr->tmp_disk)) {
+				bit_clear(avail_bitmap, i);
+				continue;
+			}
+			if (mc_ptr
+			&&  ((mc_ptr->min_sockets     > node_ptr->sockets  )
+			||   (mc_ptr->min_cores       > node_ptr->cores    )
+			||   (mc_ptr->min_threads     > node_ptr->threads  )
+			||   (mc_ptr->job_min_sockets > node_ptr->sockets  )
+			||   (mc_ptr->job_min_cores   > node_ptr->cores    )
+			||   (mc_ptr->job_min_threads > node_ptr->threads  ))) {
+				bit_clear(avail_bitmap, i);
+				continue;
+			}
+		}
+	}
+	return SLURM_SUCCESS;
+}
+
+/*
  * _build_node_list - identify which nodes could be allocated to a job
  *	based upon node features, memory, processors, etc. Note that a
  *	bitmap is set to indicate which of the job's features that the

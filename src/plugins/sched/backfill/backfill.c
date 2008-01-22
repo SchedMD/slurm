@@ -81,12 +81,18 @@ static pthread_mutex_t thread_flag_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 static List pend_job_list = NULL;
 
+/* Backfill scheduling has considerable overhead, 
+ * so only attempt it every BACKFILL_INTERVAL seconds */
+#ifndef BACKFILL_INTERVAL
+#  define BACKFILL_INTERVAL	10
+#endif
+
 /* Set __DEBUG to get detailed logging for this thread without 
  * detailed logging for the entire slurmctld daemon */
 #define __DEBUG			0
+
 #define MAX_BACKFILL_JOB_CNT	100
 #define ONE_DAY			(24 * 60 * 60)
-#define SLEEP_TIME		2
 
 /*********************** local functions *********************/
 static int  _add_pending_job(struct job_record *job_ptr, 
@@ -96,7 +102,6 @@ static void _backfill_part(struct part_record *part_ptr);
 static void _change_prio(struct job_record *job_ptr, uint32_t prio);
 static void _diff_tv_str(struct timeval *tv1,struct timeval *tv2,
 		char *tv_str, int len_tv_str);
-static bool _has_state_changed(void);
 static bool _more_work(void);
 static int  _part_prio_sort(void *x, void *y);
 static int  _sort_by_prio(void *x, void *y);
@@ -157,6 +162,8 @@ extern void *backfill_agent(void *args)
 	bool filter_root = false;
 	ListIterator part_iterator;
 	struct part_record *part_ptr;
+	time_t now;
+	static time_t last_backfill_time = 0;
 	/* Read config, node, and partitions; Write jobs */
 	slurmctld_lock_t all_locks = {
 		READ_LOCK, WRITE_LOCK, READ_LOCK, READ_LOCK };
@@ -164,10 +171,13 @@ extern void *backfill_agent(void *args)
 	if (slurm_get_root_filter())
 		filter_root = true;
 	while (!stop_backfill) {
-		sleep(SLEEP_TIME);      /* don't run continuously */
+		sleep(1);		/* don't run continuously */
 
-		if ((!_more_work()) || (!_has_state_changed()) || stop_backfill)
+		now = time(NULL);
+		if ((difftime(now, last_backfill_time) < BACKFILL_INTERVAL) ||
+		    stop_backfill || (!_more_work()))
 			continue;
+		last_backfill_time = now;
 
 		gettimeofday(&tv1, NULL);
 		lock_slurmctld(all_locks);
@@ -212,32 +222,29 @@ extern void run_backfill (void)
 	pthread_mutex_unlock( &thread_flag_mutex );
 }
 
+/* Report if any changes occurred to job, node or partition information */
 static bool _more_work (void)
 {
-	static bool rc;
-	pthread_mutex_lock( &thread_flag_mutex );
-	rc = new_work;
-	new_work = false;
-	pthread_mutex_unlock( &thread_flag_mutex );
-	return rc;
-}
-
-/* Report if any changes occurred to job, node or partition information */
-static bool _has_state_changed(void)
-{
+	bool rc;
 	static time_t backfill_job_time  = (time_t) 0;
-        static time_t backfill_node_time = (time_t) 0;
+	static time_t backfill_node_time = (time_t) 0;
 	static time_t backfill_part_time = (time_t) 0;
 
+	pthread_mutex_lock( &thread_flag_mutex );
 	if ( (backfill_job_time  == last_job_update ) &&
 	     (backfill_node_time == last_node_update) &&
-	     (backfill_part_time == last_part_update) )
-		return false;
-
-	backfill_job_time  = last_job_update;
-	backfill_node_time = last_node_update;
-	backfill_part_time = last_part_update;
-	return true;
+	     (backfill_part_time == last_part_update) &&
+	     (new_work == false) ) {
+		rc = false;
+	} else {
+		backfill_job_time  = last_job_update;
+		backfill_node_time = last_node_update;
+		backfill_part_time = last_part_update;
+		new_work = false;
+		rc = true;
+	}
+	pthread_mutex_unlock( &thread_flag_mutex );
+	return rc;
 }
 
 /* Attempt to perform backfill scheduling on the specified partition */
@@ -418,6 +425,8 @@ static void _backfill_part(struct part_record *part_ptr)
 		if (i >= node_space_recs)	/* job runs too long */
 			continue;
 		avail_bitmap = bit_copy(node_space[i].avail_bitmap);
+		if (job_req_node_filter(job_ptr, avail_bitmap))
+			continue;
 		if (job_ptr->details->exc_node_bitmap) {
 			bit_not(job_ptr->details->exc_node_bitmap);
 			bit_and(avail_bitmap, 
