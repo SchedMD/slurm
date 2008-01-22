@@ -93,7 +93,7 @@ extern int build_job_queue(struct job_queue **job_queue)
 		if (!job_independent(job_ptr))	/* waiting for other job */
 			continue;
 		if (job_buffer_size <= job_queue_size) {
-			job_buffer_size += 50;
+			job_buffer_size += 200;
 			xrealloc(my_job_queue, job_buffer_size *
 				 sizeof(struct job_queue));
 		}
