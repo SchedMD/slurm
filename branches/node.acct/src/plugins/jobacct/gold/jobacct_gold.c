@@ -53,6 +53,13 @@
 #include "src/common/slurm_protocol_api.h"
 
 
+typedef struct {
+	char *user;
+	char *project;
+	char *machine;
+	char *gold_id;
+} gold_account_t;
+
 /*
  * These variables are required by the generic plugin interface.  If they
  * are not found in the plugin, the plugin loader will ignore it.
@@ -91,12 +98,25 @@ const uint32_t plugin_version = 100;
  */
 
 static char *cluster_name = NULL;
+static List gold_account_list = NULL;
 
 /* _check_for_job 
  * IN jobid - job id to check for 
  * IN submit - timestamp for submit time of job
  * RET 0 for not found 1 for found
  */
+
+static void _destroy_gold_account(void *object)
+{
+	gold_account_t *gold_account = (gold_account_t *) object;
+	if(gold_account) {
+		xfree(gold_account->user);
+		xfree(gold_account->project);
+		xfree(gold_account->machine);
+		xfree(gold_account->gold_id);
+		xfree(gold_account);
+	}
+}
 
 static int _check_for_job(uint32_t jobid, time_t submit) 
 {
@@ -136,12 +156,29 @@ static int _check_for_job(uint32_t jobid, time_t submit)
 
 static char *_get_account_id(char *user, char *project, char *machine)
 {
-	gold_request_t *gold_request = create_gold_request(GOLD_OBJECT_ACCOUNT,
-							   GOLD_ACTION_QUERY);
+	gold_request_t *gold_request = NULL;
 	gold_response_t *gold_response = NULL;
 	char *gold_account_id = NULL;
 	gold_response_entry_t *resp_entry = NULL;
 	gold_name_value_t *name_val = NULL;
+	gold_account_t *gold_account = NULL;
+	ListIterator itr = list_iterator_create(gold_account_list);
+
+	while((gold_account = list_next(itr))) {
+		if(user && strcmp(gold_account->user, user))
+			continue;
+		if(project && strcmp(gold_account->project, project))
+			continue;
+		gold_account_id = xstrdup(gold_account->gold_id);
+		break;
+	}
+	list_iterator_destroy(itr);
+
+	if(gold_account_id) 
+		return gold_account_id;
+	
+	gold_request = create_gold_request(GOLD_OBJECT_ACCOUNT,
+					   GOLD_ACTION_QUERY);
 
 	gold_request_add_selection(gold_request, "Id");
 	gold_request_add_condition(gold_request, "User", user,
@@ -168,6 +205,15 @@ static char *_get_account_id(char *user, char *project, char *machine)
 
 		destroy_gold_name_value(name_val);
 		destroy_gold_response_entry(resp_entry);
+		/* no need to keep track of machine since this is
+		 * always going to be on the same machine.
+		 */
+		gold_account = xmalloc(sizeof(gold_account_t));
+		gold_account->user = xstrdup(user);
+		gold_account->gold_id = xstrdup(gold_account_id);
+		if(project)
+			gold_account->project = xstrdup(project);
+		list_push(gold_account_list, gold_account);
 	} else {
 		error("no account found returning 0");
 		gold_account_id = xstrdup("0");
@@ -397,8 +443,17 @@ int jobacct_p_init_slurmctld(char *gold_info)
 	uint16_t port = 0;
 
 	debug2("jobacct_init() called");
+	if(cluster_name) {
+		info("already called init");
+		return SLURM_SUCCESS;
+	}
 	if(gold_info) 
 		total = gold_info;
+
+	if(!gold_account_list) 
+		gold_account_list = list_create(_destroy_gold_account);
+
+	
 	i = 0;
 	while(total[j]) {
 		if(total[j] == ':') {
@@ -459,6 +514,8 @@ int jobacct_p_init_slurmctld(char *gold_info)
 int jobacct_p_fini_slurmctld()
 {
 	xfree(cluster_name);
+	if(gold_account_list) 
+		list_destroy(gold_account_list);
 	fini_gold();
 	return SLURM_SUCCESS;
 }
