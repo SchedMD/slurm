@@ -39,17 +39,26 @@
 
 #include <stdlib.h>
 #include <ctype.h>
+#include <sys/stat.h>
 
 #include "src/common/xmalloc.h"
 #include "src/common/list.h"
 #include "src/common/xstring.h"
 #include "src/common/uid.h"
+#include <src/common/parse_time.h>
 
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmd/slurmd/slurmd.h"
 #include "src/common/slurm_jobacct.h"
 #include "src/common/slurm_protocol_api.h"
 
+
+typedef struct {
+	char *user;
+	char *project;
+	char *machine;
+	char *gold_id;
+} gold_account_t;
 
 /*
  * These variables are required by the generic plugin interface.  If they
@@ -89,12 +98,25 @@ const uint32_t plugin_version = 100;
  */
 
 static char *cluster_name = NULL;
+static List gold_account_list = NULL;
 
 /* _check_for_job 
  * IN jobid - job id to check for 
  * IN submit - timestamp for submit time of job
  * RET 0 for not found 1 for found
  */
+
+static void _destroy_gold_account(void *object)
+{
+	gold_account_t *gold_account = (gold_account_t *) object;
+	if(gold_account) {
+		xfree(gold_account->user);
+		xfree(gold_account->project);
+		xfree(gold_account->machine);
+		xfree(gold_account->gold_id);
+		xfree(gold_account);
+	}
+}
 
 static int _check_for_job(uint32_t jobid, time_t submit) 
 {
@@ -110,10 +132,12 @@ static int _check_for_job(uint32_t jobid, time_t submit)
 	gold_request_add_selection(gold_request, "JobId");
 
 	snprintf(tmp_buff, sizeof(tmp_buff), "%u", jobid);
-	gold_request_add_condition(gold_request, "JobId", tmp_buff);
+	gold_request_add_condition(gold_request, "JobId", tmp_buff,
+				   GOLD_OPERATOR_NONE);
 
 	snprintf(tmp_buff, sizeof(tmp_buff), "%u", (int)submit);
-	gold_request_add_condition(gold_request, "SubmitTime", tmp_buff);
+	gold_request_add_condition(gold_request, "SubmitTime", tmp_buff,
+				   GOLD_OPERATOR_NONE);
 
 	gold_response = get_gold_response(gold_request);
 	destroy_gold_request(gold_request);
@@ -132,18 +156,38 @@ static int _check_for_job(uint32_t jobid, time_t submit)
 
 static char *_get_account_id(char *user, char *project, char *machine)
 {
-	gold_request_t *gold_request = create_gold_request(GOLD_OBJECT_ACCOUNT,
-							   GOLD_ACTION_QUERY);
+	gold_request_t *gold_request = NULL;
 	gold_response_t *gold_response = NULL;
 	char *gold_account_id = NULL;
 	gold_response_entry_t *resp_entry = NULL;
 	gold_name_value_t *name_val = NULL;
+	gold_account_t *gold_account = NULL;
+	ListIterator itr = list_iterator_create(gold_account_list);
+
+	while((gold_account = list_next(itr))) {
+		if(user && strcmp(gold_account->user, user))
+			continue;
+		if(project && strcmp(gold_account->project, project))
+			continue;
+		gold_account_id = xstrdup(gold_account->gold_id);
+		break;
+	}
+	list_iterator_destroy(itr);
+
+	if(gold_account_id) 
+		return gold_account_id;
+	
+	gold_request = create_gold_request(GOLD_OBJECT_ACCOUNT,
+					   GOLD_ACTION_QUERY);
 
 	gold_request_add_selection(gold_request, "Id");
-	gold_request_add_condition(gold_request, "User", user);
+	gold_request_add_condition(gold_request, "User", user,
+				   GOLD_OPERATOR_NONE);
 	if(project)
-		gold_request_add_condition(gold_request, "Project", project);
-	gold_request_add_condition(gold_request, "Machine", machine);
+		gold_request_add_condition(gold_request, "Project", project,
+					   GOLD_OPERATOR_NONE);
+	gold_request_add_condition(gold_request, "Machine", machine,
+				   GOLD_OPERATOR_NONE);
 		
 	gold_response = get_gold_response(gold_request);
 	destroy_gold_request(gold_request);
@@ -161,6 +205,15 @@ static char *_get_account_id(char *user, char *project, char *machine)
 
 		destroy_gold_name_value(name_val);
 		destroy_gold_response_entry(resp_entry);
+		/* no need to keep track of machine since this is
+		 * always going to be on the same machine.
+		 */
+		gold_account = xmalloc(sizeof(gold_account_t));
+		gold_account->user = xstrdup(user);
+		gold_account->gold_id = xstrdup(gold_account_id);
+		if(project)
+			gold_account->project = xstrdup(project);
+		list_push(gold_account_list, gold_account);
 	} else {
 		error("no account found returning 0");
 		gold_account_id = xstrdup("0");
@@ -181,7 +234,7 @@ static int _add_edit_job(struct job_record *job_ptr, gold_object_t action)
 	char *gold_account_id = NULL;
 	char *user = uid_to_string((uid_t)job_ptr->user_id);
 	char *jname = NULL;
-	int ncpus=0, tmp = 0, i = 0;
+	int tmp = 0, i = 0;
 	char *account = NULL;
 	char *nodes = "(null)";
 
@@ -205,48 +258,34 @@ static int _add_edit_job(struct job_record *job_ptr, gold_object_t action)
 	if (job_ptr->nodes && job_ptr->nodes[0])
 		nodes = job_ptr->nodes;
 	
-	for (i=0; i < job_ptr->num_cpu_groups; i++) {
-		ncpus += (job_ptr->cpus_per_node[i])
-			* (job_ptr->cpu_count_reps[i]);
-		//info("got %d from %d * %d", ncpus, job_ptr->cpus_per_node[i],
-		//   job_ptr->cpu_count_reps[i]);
-	}
+	
 //info("total procs is  %d", job_ptr->details->total_procs);
 	if(action == GOLD_ACTION_CREATE) {
 		snprintf(tmp_buff, sizeof(tmp_buff), "%u", job_ptr->job_id);
 		gold_request_add_assignment(gold_request, "JobId", tmp_buff);
 		
-		gold_account_id = _get_account_id(user, account, 
-						  cluster_name);
-
-		gold_request_add_assignment(gold_request, "GoldAccountId",
-					    gold_account_id);
-		xfree(gold_account_id);
-
 		snprintf(tmp_buff, sizeof(tmp_buff), "%u",
 			 (int)job_ptr->details->submit_time);
 		gold_request_add_assignment(gold_request, "SubmitTime",
 					    tmp_buff);
-
+		
+		gold_account_id = _get_account_id(user, account, 
+						  cluster_name);
+		
+		gold_request_add_assignment(gold_request, "GoldAccountId",
+					    gold_account_id);
+		xfree(gold_account_id);
+		
 	} else if (action == GOLD_ACTION_MODIFY) {
 		snprintf(tmp_buff, sizeof(tmp_buff), "%u", job_ptr->job_id);
-		gold_request_add_condition(gold_request, "JobId", tmp_buff);
+		gold_request_add_condition(gold_request, "JobId", tmp_buff,
+					   GOLD_OPERATOR_NONE);
 		
 		snprintf(tmp_buff, sizeof(tmp_buff), "%u",
 			 (int)job_ptr->details->submit_time);
 		gold_request_add_condition(gold_request, "SubmitTime",
-					   tmp_buff);
-								
-		snprintf(tmp_buff, sizeof(tmp_buff), "%u",
-			 (int)job_ptr->end_time);
-		gold_request_add_assignment(gold_request, "EndTime",
-					    tmp_buff);		
-		
-		snprintf(tmp_buff, sizeof(tmp_buff), "%u",
-			 (int)job_ptr->exit_code);
-		gold_request_add_assignment(gold_request, "ExitCode",
-					    tmp_buff);
-
+					   tmp_buff,
+					   GOLD_OPERATOR_NONE);
 	} else {
 		destroy_gold_request(gold_request);
 		error("_add_edit_job: bad action given %d", action);		
@@ -256,11 +295,13 @@ static int _add_edit_job(struct job_record *job_ptr, gold_object_t action)
 	gold_request_add_assignment(gold_request, "Partition",
 				    job_ptr->partition);
 	
-	snprintf(tmp_buff, sizeof(tmp_buff), "%u", job_ptr->num_procs);
-	gold_request_add_assignment(gold_request, "RequestedCPUS",
+	snprintf(tmp_buff, sizeof(tmp_buff), "%u",
+		 job_ptr->details->total_procs);
+	gold_request_add_assignment(gold_request, "RequestedCPUCount",
 				    tmp_buff);
-	snprintf(tmp_buff, sizeof(tmp_buff), "%u", ncpus);
-	gold_request_add_assignment(gold_request, "AllocatedCPUS",
+	snprintf(tmp_buff, sizeof(tmp_buff), "%u",
+		 job_ptr->details->total_procs);
+	gold_request_add_assignment(gold_request, "AllocatedCPUCount",
 				    tmp_buff);
 
 	gold_request_add_assignment(gold_request, "NodeList",
@@ -269,8 +310,19 @@ static int _add_edit_job(struct job_record *job_ptr, gold_object_t action)
 	gold_request_add_assignment(gold_request, "JobName",
 				    jname);
 	xfree(jname);
-
-/* 	gold_request_add_assignment(gold_request, "CPUSecondsReserved", */
+	
+	if(job_ptr->job_state != JOB_RUNNING) {
+		snprintf(tmp_buff, sizeof(tmp_buff), "%u",
+			 (int)job_ptr->end_time);
+		gold_request_add_assignment(gold_request, "EndTime",
+					    tmp_buff);		
+		
+		snprintf(tmp_buff, sizeof(tmp_buff), "%u",
+			 (int)job_ptr->exit_code);
+		gold_request_add_assignment(gold_request, "ExitCode",
+					    tmp_buff);
+	}
+/* 	gold_request_add_assignment(gold_request, "ReservedCPUSeconds", */
 /* 	     		            ); */
 
 
@@ -287,9 +339,7 @@ static int _add_edit_job(struct job_record *job_ptr, gold_object_t action)
 	snprintf(tmp_buff, sizeof(tmp_buff), "%u",
 		 job_ptr->job_state & (~JOB_COMPLETING));
 	gold_request_add_assignment(gold_request, "State",
-				    tmp_buff);
-
-	
+				    tmp_buff);	
 
 	gold_response = get_gold_response(gold_request);	
 	destroy_gold_request(gold_request);
@@ -393,8 +443,17 @@ int jobacct_p_init_slurmctld(char *gold_info)
 	uint16_t port = 0;
 
 	debug2("jobacct_init() called");
+	if(cluster_name) {
+		info("already called init");
+		return SLURM_SUCCESS;
+	}
 	if(gold_info) 
 		total = gold_info;
+
+	if(!gold_account_list) 
+		gold_account_list = list_create(_destroy_gold_account);
+
+	
 	i = 0;
 	while(total[j]) {
 		if(total[j] == ':') {
@@ -455,6 +514,8 @@ int jobacct_p_init_slurmctld(char *gold_info)
 int jobacct_p_fini_slurmctld()
 {
 	xfree(cluster_name);
+	if(gold_account_list) 
+		list_destroy(gold_account_list);
 	fini_gold();
 	return SLURM_SUCCESS;
 }
@@ -552,4 +613,283 @@ void jobacct_p_suspend_poll()
 void jobacct_p_resume_poll()
 {
 	return;
+}
+
+#define _DEBUG 0
+
+extern int jobacct_p_node_down(struct node_record *node_ptr, time_t event_time,
+			       char *reason)
+{
+	uint16_t cpus;
+	int rc = SLURM_ERROR;
+	gold_request_t *gold_request = NULL;
+	gold_response_t *gold_response = NULL;
+	char tmp_buff[50];
+
+	if (slurmctld_conf.fast_schedule)
+		cpus = node_ptr->config_ptr->cpus;
+	else
+		cpus = node_ptr->cpus;
+
+#if _DEBUG
+	slurm_make_time_str(&event_time, tmp_buff, sizeof(tmp_buff));
+	info("Node_acct_down: %s at %s with %u cpus due to %s", 
+	     node_ptr->name, tmp_buff, cpus, node_ptr->reason);
+#endif
+	/* If the node was already down end that record since the
+	 * reason will most likely be different
+	 */
+
+	gold_request = create_gold_request(GOLD_OBJECT_EVENT,
+					   GOLD_ACTION_MODIFY);
+	if(!gold_request) 
+		return rc;
+	
+	gold_request_add_condition(gold_request, "Machine", cluster_name,
+				   GOLD_OPERATOR_NONE);
+	gold_request_add_condition(gold_request, "EndTime", "0",
+				   GOLD_OPERATOR_NONE);
+	gold_request_add_condition(gold_request, "Name", node_ptr->name,
+				   GOLD_OPERATOR_NONE);
+
+	snprintf(tmp_buff, sizeof(tmp_buff), "%d", ((int)event_time - 1));
+	gold_request_add_assignment(gold_request, "EndTime", tmp_buff);		
+			
+	gold_response = get_gold_response(gold_request);	
+	destroy_gold_request(gold_request);
+
+	if(!gold_response) {
+		error("jobacct_p_cluster_procs: no response received");
+		return rc;
+	}
+
+	if(gold_response->rc) {
+		error("gold_response has non-zero rc(%d): %s",
+		      gold_response->rc,
+		      gold_response->message);
+		destroy_gold_response(gold_response);
+		return rc;
+	}
+	destroy_gold_response(gold_response);
+
+	/* now add the new one */
+	gold_request = create_gold_request(GOLD_OBJECT_EVENT,
+					   GOLD_ACTION_CREATE);
+	if(!gold_request) 
+		return rc;
+	
+	gold_request_add_assignment(gold_request, "Machine", cluster_name);
+	snprintf(tmp_buff, sizeof(tmp_buff), "%d", (int)event_time);
+	gold_request_add_assignment(gold_request, "StartTime", tmp_buff);
+	gold_request_add_assignment(gold_request, "Name", node_ptr->name);
+	snprintf(tmp_buff, sizeof(tmp_buff), "%u", node_ptr->cpus);
+	gold_request_add_assignment(gold_request, "CPUCount", tmp_buff);
+	if(reason)
+		gold_request_add_assignment(gold_request, "Reason", reason);
+	else	
+		gold_request_add_assignment(gold_request, "Reason", 
+					    node_ptr->reason);
+			
+	gold_response = get_gold_response(gold_request);	
+	destroy_gold_request(gold_request);
+
+	if(!gold_response) {
+		error("jobacct_p_cluster_procs: no response received");
+		return rc;
+	}
+
+	if(!gold_response->rc) 
+		rc = SLURM_SUCCESS;
+	else {
+		error("gold_response has non-zero rc(%d): %s",
+		      gold_response->rc,
+		      gold_response->message);
+	}
+	destroy_gold_response(gold_response);
+
+	return rc;
+}
+
+extern int jobacct_p_node_up(struct node_record *node_ptr, time_t event_time)
+{
+	int rc = SLURM_ERROR;
+	gold_request_t *gold_request = NULL;
+	gold_response_t *gold_response = NULL;
+	char tmp_buff[50];
+
+#if _DEBUG
+	slurm_make_time_str(&event_time, tmp_buff, sizeof(tmp_buff));
+	info("Node_acct_up: %s at %s", node_ptr->name, tmp_buff);
+#endif
+	/* FIXME: WRITE TO DATABASE HERE */
+
+	gold_request = create_gold_request(GOLD_OBJECT_EVENT,
+					   GOLD_ACTION_MODIFY);
+	if(!gold_request) 
+		return rc;
+	
+	gold_request_add_condition(gold_request, "Machine", cluster_name,
+				   GOLD_OPERATOR_NONE);
+	gold_request_add_condition(gold_request, "EndTime", "0",
+				   GOLD_OPERATOR_NONE);
+	gold_request_add_condition(gold_request, "Name", node_ptr->name,
+				   GOLD_OPERATOR_NONE);
+
+	snprintf(tmp_buff, sizeof(tmp_buff), "%d", ((int)event_time - 1));
+	gold_request_add_assignment(gold_request, "EndTime", tmp_buff);		
+			
+	gold_response = get_gold_response(gold_request);	
+	destroy_gold_request(gold_request);
+
+	if(!gold_response) {
+		error("jobacct_p_node_up: no response received");
+		return rc;
+	}
+
+	if(gold_response->rc) {
+		error("gold_response has non-zero rc(%d): %s",
+		      gold_response->rc,
+		      gold_response->message);
+		destroy_gold_response(gold_response);
+		return rc;
+	}
+	destroy_gold_response(gold_response);
+
+
+	return rc;
+}
+
+extern int jobacct_p_cluster_procs(uint32_t procs, time_t event_time)
+{
+	static uint32_t last_procs = -1;
+	gold_request_t *gold_request = NULL;
+	gold_response_t *gold_response = NULL;
+	char tmp_buff[50];
+	int rc = SLURM_ERROR;
+
+	if (procs == last_procs) {
+		debug3("we have the same procs as before no need to "
+		       "query the database.");
+		return SLURM_SUCCESS;
+	}
+	last_procs = procs;
+
+	/* Record the processor count */
+#if _DEBUG
+	slurm_make_time_str(&event_time, tmp_buff, sizeof(tmp_buff));
+	info("Node_acct_procs: %s has %u total CPUs at %s", 
+	     cluster_name, procs, tmp_buff);
+#endif
+	
+	/* get the last known one */
+	gold_request = create_gold_request(GOLD_OBJECT_EVENT,
+					   GOLD_ACTION_QUERY);
+	if(!gold_request) 
+		return rc;
+	gold_request_add_condition(gold_request, "Machine", cluster_name,
+				   GOLD_OPERATOR_NONE);
+	gold_request_add_condition(gold_request, "EndTime", "0",
+				   GOLD_OPERATOR_NONE);
+	gold_request_add_condition(gold_request, "Name", "NULL",
+				   GOLD_OPERATOR_NONE);
+
+	gold_request_add_selection(gold_request, "CPUCount");
+		
+	gold_response = get_gold_response(gold_request);	
+	destroy_gold_request(gold_request);
+
+	if(!gold_response) {
+		error("jobacct_p_cluster_procs: no response received");
+		return rc;
+	}
+
+	if(gold_response->entry_cnt > 0) {
+		gold_response_entry_t *resp_entry = 
+			list_pop(gold_response->entries);
+		gold_name_value_t *name_val = list_pop(resp_entry->name_val);
+
+		if(procs == atoi(name_val->value)) {
+			debug("System hasn't changed since last entry");
+			destroy_gold_name_value(name_val);
+			destroy_gold_response_entry(resp_entry);
+			destroy_gold_response(gold_response);
+			return SLURM_SUCCESS;
+		} else {
+			debug("System has changed from %s cpus to %d",
+			      name_val->value, procs);   
+		}
+
+		destroy_gold_name_value(name_val);
+		destroy_gold_response_entry(resp_entry);
+	} else {
+		debug("We don't have an entry for this machine "
+		      "most likely a first time running.");
+	}
+
+	destroy_gold_response(gold_response);
+	
+
+
+	gold_request = create_gold_request(GOLD_OBJECT_EVENT,
+					   GOLD_ACTION_MODIFY);
+	if(!gold_request) 
+		return rc;
+	
+	gold_request_add_condition(gold_request, "Machine", cluster_name,
+				   GOLD_OPERATOR_NONE);
+	gold_request_add_condition(gold_request, "EndTime", "0",
+				   GOLD_OPERATOR_NONE);
+	gold_request_add_condition(gold_request, "Name", "NULL",
+				   GOLD_OPERATOR_NONE);
+
+	snprintf(tmp_buff, sizeof(tmp_buff), "%d", ((int)event_time - 1));
+	gold_request_add_assignment(gold_request, "EndTime", tmp_buff);		
+			
+	gold_response = get_gold_response(gold_request);	
+	destroy_gold_request(gold_request);
+
+	if(!gold_response) {
+		error("jobacct_p_cluster_procs: no response received");
+		return rc;
+	}
+
+	if(gold_response->rc) {
+		error("gold_response has non-zero rc(%d): %s",
+		      gold_response->rc,
+		      gold_response->message);
+		destroy_gold_response(gold_response);
+		return rc;
+	}
+	destroy_gold_response(gold_response);
+
+	/* now add the new one */
+	gold_request = create_gold_request(GOLD_OBJECT_EVENT,
+					   GOLD_ACTION_CREATE);
+	if(!gold_request) 
+		return rc;
+	
+	gold_request_add_assignment(gold_request, "Machine", cluster_name);
+	snprintf(tmp_buff, sizeof(tmp_buff), "%d", (int)event_time);
+	gold_request_add_assignment(gold_request, "StartTime", tmp_buff);
+	snprintf(tmp_buff, sizeof(tmp_buff), "%u", procs);
+	gold_request_add_assignment(gold_request, "CPUCount", tmp_buff);
+			
+	gold_response = get_gold_response(gold_request);	
+	destroy_gold_request(gold_request);
+
+	if(!gold_response) {
+		error("jobacct_p_cluster_procs: no response received");
+		return rc;
+	}
+
+	if(!gold_response->rc) 
+		rc = SLURM_SUCCESS;
+	else {
+		error("gold_response has non-zero rc(%d): %s",
+		      gold_response->rc,
+		      gold_response->message);
+	}
+	destroy_gold_response(gold_response);
+
+	return rc;
 }

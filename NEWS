@@ -19,6 +19,9 @@ documents those changes that are of interest to users and admins.
     requirements (from Miguel Roa, BSC).
  -- Permit a user to change a pending job's TasksPerNode specification 
     using scontrol (from Miguel Roa, BSC).
+ -- Add support for node UP/DOWN event logging in jobacct/gold plugin
+    WARNING: using the jobacct/gold plugin slows the system startup set the
+    MessageTimeout variable in the slurm.conf to around 20+.
 
 * Changes in SLURM 1.2.21
 =========================
