@@ -63,7 +63,6 @@
 #define MAX_RETRIES 10
 
 static void _depend_list_del(void *dep_ptr);
-static void _launch_job(struct job_record *job_ptr);
 static char **_xduparray(uint16_t size, char ** array);
 
 /* 
@@ -285,7 +284,7 @@ extern int schedule(void)
 			     job_ptr->job_id, job_ptr->nodes);
 #endif
 			if (job_ptr->batch_flag)
-				_launch_job(job_ptr);
+				launch_job(job_ptr);
 			else
 				srun_allocate(job_ptr->job_id);
 			job_cnt++;
@@ -359,10 +358,11 @@ extern void sort_job_queue(struct job_queue *job_queue, int job_queue_size)
 	}
 }
 
-/* _launch_job - send an RPC to a slurmd to initiate a batch job 
+/*
+ * launch_job - send an RPC to a slurmd to initiate a batch job 
  * IN job_ptr - pointer to job that will be initiated
  */
-static void _launch_job(struct job_record *job_ptr)
+extern void launch_job(struct job_record *job_ptr)
 {
 	batch_job_launch_msg_t *launch_msg_ptr;
 	agent_arg_t *agent_arg_ptr;
@@ -373,9 +373,8 @@ static void _launch_job(struct job_record *job_ptr)
 		return;
 
 	/* Initialization of data structures */
-	launch_msg_ptr =
-	    (batch_job_launch_msg_t *)
-	    xmalloc(sizeof(batch_job_launch_msg_t));
+	launch_msg_ptr = (batch_job_launch_msg_t *)
+				xmalloc(sizeof(batch_job_launch_msg_t));
 	launch_msg_ptr->job_id = job_ptr->job_id;
 	launch_msg_ptr->step_id = NO_VAL;
 	launch_msg_ptr->uid = job_ptr->user_id;
@@ -727,6 +726,8 @@ extern int job_start_data(job_desc_msg_t *job_desc_msg,
 		bit_and(avail_bitmap, avail_node_bitmap);
 	}
 
+	if (job_req_node_filter(job_ptr, avail_bitmap))
+		rc = ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE;
 	if (job_ptr->details->exc_node_bitmap) {
 		bitstr_t *exc_node_mask = NULL;
 		exc_node_mask = bit_copy(job_ptr->details->exc_node_bitmap);

@@ -73,6 +73,12 @@ extern int job_start_data(job_desc_msg_t *job_desc_msg,
 			  will_run_response_msg_t **resp);
 
 /*
+ * launch_job - send an RPC to a slurmd to initiate a batch job 
+ * IN job_ptr - pointer to job that will be initiated
+ */
+extern void launch_job(struct job_record *job_ptr);
+
+/*
  * make_batch_job_cred - add a job credential to the batch_job_launch_msg
  * IN/OUT launch_msg_ptr - batch_job_launch_msg in which job_id, step_id, 
  *                         uid and nodes have already been set 
