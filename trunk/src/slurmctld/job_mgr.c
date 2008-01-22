@@ -69,6 +69,7 @@
 #include "src/common/slurm_protocol_pack.h"
 
 #include "src/slurmctld/agent.h"
+#include "src/slurmctld/job_scheduler.h"
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/node_scheduler.h"
 #include "src/slurmctld/proc_req.h"

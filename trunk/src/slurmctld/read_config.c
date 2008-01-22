@@ -68,6 +68,7 @@
 #include "src/common/slurm_jobacct_storage.h"
 #include "src/common/slurm_rlimits_info.h"
 
+#include "src/slurmctld/job_scheduler.h"
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/node_scheduler.h"
 #include "src/slurmctld/proc_req.h"

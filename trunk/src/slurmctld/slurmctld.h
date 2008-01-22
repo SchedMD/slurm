@@ -790,14 +790,6 @@ extern int job_end_time(job_alloc_info_msg_t *time_req_msg,
 extern void job_fini (void);
 
 /*
- * job_is_completing - Determine if jobs are in the process of completing.
- * RET - True of any job is in the process of completing
- * NOTE: This function can reduce resource fragmentation, which is a 
- * critical issue on Elan interconnect based systems.
- */
-extern bool job_is_completing(void);
-
-/*
  * job_fail - terminate a job due to initiation failure
  * IN job_id - id of the job to be killed
  * RET 0 on success, otherwise ESLURM error code
@@ -951,13 +943,6 @@ extern int job_step_signal(uint32_t job_id, uint32_t step_id,
  */
 extern void job_time_limit (void);
 
-/* Determine if a pending job will run using only the specified nodes
- * (in job_desc_msg->req_nodes), build response message and return 
- * SLURM_SUCCESS on success. Otherwise return an error code. Caller 
- * must free response message */
-extern int job_start_data(job_desc_msg_t *job_desc_msg, 
-			  will_run_response_msg_t **resp);
-
 /*
  * kill_job_by_part_name - Given a partition name, deallocate resource for 
  *	its jobs and kill them 
@@ -1040,14 +1025,6 @@ extern int load_all_part_state ( void );
  * IN/OUT buffer - location from which to get data, pointers automatically advanced
  */
 extern int load_step_state(struct job_record *job_ptr, Buf buffer);
-
-/* 
- * make_batch_job_cred - add a job credential to the batch_job_launch_msg
- * IN/OUT launch_msg_ptr - batch_job_launch_msg in which job_id, step_id,
- *                         uid and nodes have already been set
- * RET 0 or error code
- */
-extern int make_batch_job_cred(batch_job_launch_msg_t *launch_msg_ptr);
 
 /* make_node_alloc - flag specified node as allocated to a job
  * IN node_ptr - pointer to node being allocated
@@ -1204,9 +1181,6 @@ extern void part_filter_set(uid_t uid);
 /* part_fini - free all memory associated with partition records */
 void part_fini (void);
 
-/* Print a job's dependency information based upon job_ptr->depend_list */
-extern void print_job_dependency(struct job_record *job_ptr);
-
 /*
  * purge_old_job - purge old job records. 
  *	the jobs must have completed at least MIN_JOB_AGE minutes ago
@@ -1260,26 +1234,6 @@ extern void run_backup(void);
 
 /* save_all_state - save entire slurmctld state for later recovery */
 extern void save_all_state(void);
-
-/* 
- * schedule - attempt to schedule all pending jobs
- *	pending jobs for each partition will be scheduled in priority  
- *	order until a request fails
- * RET count of jobs scheduled
- * global: job_list - global list of job records
- *	last_job_update - time of last update to job table
- * Note: We re-build the queue every time. Jobs can not only be added 
- *	or removed from the queue, but have their priority or partition 
- *	changed with the update_job RPC. In general nodes will be in priority 
- *	order (by submit time), so the sorting should be pretty fast.
- */
-extern int schedule (void);
-
-/*
- * set_job_elig_time - set the eligible time for pending jobs once their 
- *	dependencies are lifted (in job->details->begin_time)
- */
-extern void set_job_elig_time(void);
 
 /*
  * set_node_down - make the specified node's state DOWN if possible
@@ -1392,14 +1346,6 @@ extern void suspend_job_step(struct job_record *job_ptr);
 extern int sync_job_files(void);
 
 /*
- * Determine if a job's dependencies are met
- * RET: 0 = no dependencies
- *      1 = dependencies remain
- *      2 = failure (job completion code not per dependency), delete the job
- */
-extern int test_job_dependency(struct job_record *job_ptr);
-
-/*
  * update_job - update a job's parameters per the supplied specifications
  * IN job_specs - a job's specification
  * IN uid - uid of user issuing RPC
@@ -1408,16 +1354,6 @@ extern int test_job_dependency(struct job_record *job_ptr);
  *	last_job_update - time of last job table update
  */
 extern int update_job (job_desc_msg_t * job_specs, uid_t uid);
-
-/*
- * Parse a job dependency string and use it to establish a "depend_spec"
- * list of dependencies. We accept both old format (a single job ID) and
- * new format (e.g. "afterok:123:124,after:128").
- * IN job_ptr - job record to have dependency and depend_list updated
- * IN new_depend - new dependency description
- * RET returns an error code from slurm_errno.h
- */
-extern int update_job_dependency(struct job_record *job_ptr, char *new_depend);
 
 /* Reset nodes_completing field for all jobs */
 extern void update_job_nodes_completing(void);

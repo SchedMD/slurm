@@ -89,6 +89,7 @@
 #include "src/common/uid.h"
 #include "src/common/forward.h"
 #include "src/slurmctld/agent.h"
+#include "src/slurmctld/job_scheduler.h"
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/ping_nodes.h"
 #include "src/slurmctld/slurmctld.h"
