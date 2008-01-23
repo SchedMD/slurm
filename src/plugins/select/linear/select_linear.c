@@ -69,7 +69,8 @@
 #include "src/slurmctld/proc_req.h"
 #include "src/plugins/select/linear/select_linear.h"
 
-#define SELECT_DEBUG 0
+#define SELECT_DEBUG	0
+#define NO_SHARE_LIMIT	0xfffe
 
 static int _add_job_to_nodes(struct node_cr_record *node_cr_ptr,
 			     struct job_record *job_ptr, char *pre_err, 
@@ -473,7 +474,7 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 		slurm_mutex_unlock(&cr_mutex);
 		return rc;
 	} else if (mode == SELECT_MODE_TEST_ONLY) {
-		min_share = max_share = 64;
+		min_share = max_share = NO_SHARE_LIMIT;
 		save_mem = job_ptr->details->job_min_memory;
 		job_ptr->details->job_min_memory = 0;
 	}
@@ -540,6 +541,13 @@ static int _job_count_bitmap(struct node_cr_record *node_cr_ptr,
 				bit_clear(jobmap, i);
 				continue;
 			}
+		}
+
+		if ((job_cnt != NO_SHARE_LIMIT) &&
+		    (node_cr_ptr[i].exclusive_jobid != 0)) {
+			/* already reserved by some exclusive job */
+			bit_clear(jobmap, i);
+			continue;
 		}
 
 		part_cr_ptr = node_cr_ptr[i].parts;
@@ -1024,6 +1032,8 @@ static int _rm_job_from_nodes(struct node_cr_record *node_cr_ptr,
 			error("%s: memory underflow for node %s",
 				pre_err, node_record_table_ptr[i].name);
 		}
+		if (node_cr_ptr[i].exclusive_jobid == job_ptr->job_id)
+			node_cr_ptr[i].exclusive_jobid = 0;
 		part_cr_ptr = node_cr_ptr[i].parts;
 		while (part_cr_ptr) {
 			if (part_cr_ptr->part_ptr != job_ptr->part_ptr) {
@@ -1075,7 +1085,7 @@ static int _add_job_to_nodes(struct node_cr_record *node_cr_ptr,
 			     struct job_record *job_ptr, char *pre_err, 
 			     int alloc_all)
 {
-	int i, rc = SLURM_SUCCESS;
+	int i, rc = SLURM_SUCCESS, exclusive = 0;
 	struct part_cr_record *part_cr_ptr;
 	uint32_t job_memory = 0;
 
@@ -1088,11 +1098,24 @@ static int _add_job_to_nodes(struct node_cr_record *node_cr_ptr,
 	    (job_ptr->details->job_min_memory != NO_VAL) &&
 	    (cr_type == CR_MEMORY))
 		job_memory = job_ptr->details->job_min_memory;
+	if (job_ptr->details->shared == 0)
+		exclusive = 1;
 
 	for (i = 0; i < select_node_cnt; i++) {
 		if (bit_test(job_ptr->node_bitmap, i) == 0)
 			continue;
 		node_cr_ptr[i].alloc_memory += job_memory;
+		if (exclusive) {
+			if (node_cr_ptr[i].exclusive_jobid) {
+				error("select/linear: conflicting exclusive "
+				      "jobs %u and %u on %s",
+				      job_ptr->job_id, 
+				      node_cr_ptr[i].exclusive_jobid,
+				      node_record_table_ptr[i].name);
+			}
+			node_cr_ptr[i].exclusive_jobid = job_ptr->job_id;
+		}
+
 		part_cr_ptr = node_cr_ptr[i].parts;
 		while (part_cr_ptr) {
 			if (part_cr_ptr->part_ptr != job_ptr->part_ptr) {
@@ -1146,8 +1169,9 @@ static inline void _dump_node_cr(struct node_cr_record *node_cr_ptr)
 	for (i = 0; i < select_node_cnt; i++) {
 		part_cr_ptr = node_cr_ptr[i].parts;
 		while (part_cr_ptr) {
-			info("Node:%s part:%s run:%u tot:%u",
+			info("Node:%s exclusive:%u part:%s run:%u tot:%u", 
 				node_record_table_ptr[i].name,
+				node_cr_ptr[i].exclusive_jobid,
 				part_cr_ptr->part_ptr->name,
 				part_cr_ptr->run_job_cnt,
 				part_cr_ptr->tot_job_cnt);
@@ -1171,6 +1195,8 @@ static struct node_cr_record *_dup_node_cr(struct node_cr_record *node_cr_ptr)
 
 	for (i = 0; i < select_node_cnt; i++) {
 		new_node_cr_ptr[i].alloc_memory = node_cr_ptr[i].alloc_memory;
+		new_node_cr_ptr[i].exclusive_jobid = 
+				node_cr_ptr[i].exclusive_jobid;
 		part_cr_ptr = node_cr_ptr[i].parts;
 		while (part_cr_ptr) {
 			new_part_cr_ptr = xmalloc(sizeof(struct part_cr_record));
@@ -1193,7 +1219,7 @@ static void _init_node_cr(void)
 	struct job_record *job_ptr;
 	ListIterator job_iterator;
 	uint32_t job_memory;
-	int i;
+	int exclusive, i;
 
 	if (node_cr_ptr)
 		return;
@@ -1230,12 +1256,26 @@ static void _init_node_cr(void)
 			job_memory = job_ptr->details->job_min_memory;
 		else
 			job_memory = 0;
+		if (job_ptr->details->shared == 0)
+			exclusive = 1;
+		else
+			exclusive = 0;
 
 		for (i = 0; i < select_node_cnt; i++) {
 			if (job_ptr->node_bitmap == NULL)
 				break;
 			if (!bit_test(job_ptr->node_bitmap, i))
 				continue;
+			if (exclusive) {
+				if (node_cr_ptr[i].exclusive_jobid) {
+					error("select/linear: conflicting "
+				 	      "exclusive jobs %u and %u on %s",
+				 	      job_ptr->job_id, 
+				 	      node_cr_ptr[i].exclusive_jobid,
+				 	      node_record_table_ptr[i].name);
+				}
+				node_cr_ptr[i].exclusive_jobid = job_ptr->job_id;
+			}
 			node_cr_ptr[i].alloc_memory = job_memory;
 			part_cr_ptr = node_cr_ptr[i].parts;
 			while (part_cr_ptr) {
