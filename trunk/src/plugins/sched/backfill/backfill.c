@@ -66,21 +66,21 @@
 #include "src/common/xstring.h"
 #include "src/slurmctld/job_scheduler.h"
 #include "src/slurmctld/locks.h"
+#include "src/slurmctld/node_scheduler.h"
 #include "src/slurmctld/slurmctld.h"
+#include "src/slurmctld/srun_comm.h"
 
 typedef struct node_space_map {
 	time_t begin_time;
 	time_t end_time;
 	bitstr_t *avail_bitmap;
+	int next;	/* next record, by time, zero termination */
 } node_space_map_t;
 
 /*********************** local variables *********************/
-static bool altered_job   = false;
 static bool new_work      = false;
 static bool stop_backfill = false;
 static pthread_mutex_t thread_flag_mutex = PTHREAD_MUTEX_INITIALIZER;
-
-static List pend_job_list = NULL;
 
 /* Backfill scheduling has considerable overhead, 
  * so only attempt it every BACKFILL_INTERVAL seconds */
@@ -90,47 +90,44 @@ static List pend_job_list = NULL;
 
 /* Set __DEBUG to get detailed logging for this thread without 
  * detailed logging for the entire slurmctld daemon */
-#define __DEBUG			0
+#define __DEBUG			1
 
 #define MAX_BACKFILL_JOB_CNT	100
 #define ONE_DAY			(24 * 60 * 60)
 
 /*********************** local functions *********************/
-static int  _add_pending_job(struct job_record *job_ptr, 
-		struct part_record *part_ptr);
-static void _attempt_backfill(struct part_record *part_ptr);
-static void _backfill_part(struct part_record *part_ptr);
-static void _change_prio(struct job_record *job_ptr, uint32_t prio);
+static void _add_reservation(uint32_t start_time, uint32_t end_reserve, 
+			     bitstr_t *res_bitmap, 
+			     node_space_map_t *node_space, 
+			     int *node_space_recs);
+static void _attempt_backfill(void);
 static void _diff_tv_str(struct timeval *tv1,struct timeval *tv2,
 		char *tv_str, int len_tv_str);
 static bool _more_work(void);
-static int  _part_prio_sort(void *x, void *y);
-static int  _sort_by_prio(void *x, void *y);
+static int _start_job(struct job_record *job_ptr, bitstr_t *avail_bitmap);
 
-/* list processing function, sort jobs by _decreasing_ priority */
-static int _sort_by_prio(void *x, void *y)
+#if __DEBUG
+/* Log resource allocate table */
+static void _dump_node_space_table(node_space_map_t *node_space_ptr)
 {
-	struct job_record *job_ptr1 = (struct job_record *) x;
-	struct job_record *job_ptr2 = (struct job_record *) y;
+	int i = 0;
+	char begin_buf[32], end_buf[32], *node_list;
 
-	if (job_ptr2->priority > job_ptr1->priority)
-		return 1;
-	else if (job_ptr2->priority > job_ptr1->priority)
-		return -1;
-	return 0;
+	info("=========================================");
+	while (1) {
+		slurm_make_time_str(&node_space_ptr[i].begin_time,
+				    begin_buf, sizeof(begin_buf));
+		slurm_make_time_str(&node_space_ptr[i].end_time,
+				    end_buf, sizeof(end_buf));
+		node_list = bitmap2node_name(node_space_ptr[i].avail_bitmap);
+		info("Begin:%s End:%s Nodes:%s", begin_buf, end_buf, node_list);
+		xfree(node_list);
+		if ((i = node_space_ptr[i].next) == 0)
+			break;
+	}
+	info("=========================================");
 }
-
-/* We want in order of decreasing priority, so the ordering here is
- * the reverse of that defined in src/common/list.h.
- * Partition priority is of type uint16_t */
-static int _part_prio_sort(void *x, void *y)
-{
-	struct part_record *part_ptr1 = (struct part_record *) x;
-	struct part_record *part_ptr2 = (struct part_record *) y;
-	int32_t prio1 = (int32_t) part_ptr1->priority;
-	int32_t prio2 = (int32_t) part_ptr2->priority;
-	return (int) (prio1 - prio2);
-}
+#endif
 
 /*
  * _diff_tv_str - build a string showing the time difference between two times
@@ -160,17 +157,12 @@ extern void *backfill_agent(void *args)
 {
 	struct timeval tv1, tv2;
 	char tv_str[20];
-	bool filter_root = false;
-	ListIterator part_iterator;
-	struct part_record *part_ptr;
 	time_t now;
 	static time_t last_backfill_time = 0;
 	/* Read config, node, and partitions; Write jobs */
 	slurmctld_lock_t all_locks = {
 		READ_LOCK, WRITE_LOCK, READ_LOCK, READ_LOCK };
 
-	if (slurm_get_root_filter())
-		filter_root = true;
 	while (!stop_backfill) {
 		sleep(1);		/* don't run continuously */
 
@@ -182,37 +174,199 @@ extern void *backfill_agent(void *args)
 
 		gettimeofday(&tv1, NULL);
 		lock_slurmctld(all_locks);
-
-		/* make sure partitions are in order of decreasing
-		 * priority, backfill highest priority partitions 
-		 * first since they may have overlapping nodes */
-		list_sort(part_list, _part_prio_sort);
-
-		/* identify partitions eligible for backfill */
-		part_iterator = list_iterator_create(part_list);
-		while ((part_ptr = (struct part_record *) 
-					list_next(part_iterator))) {
-			if ((part_ptr->state_up == 0) ||
-			    (part_ptr->node_bitmap == NULL))
-			 	continue;
-			if ((part_ptr->root_only) && filter_root)
-				continue;
-			_attempt_backfill(part_ptr);
-		}
-		list_iterator_destroy(part_iterator);
-
+		_attempt_backfill();
 		unlock_slurmctld(all_locks);
 		gettimeofday(&tv2, NULL);
 		_diff_tv_str(&tv1, &tv2, tv_str, 20);
 #if __DEBUG
 		info("backfill: completed, %s", tv_str);
 #endif
-		if (altered_job) {
-			altered_job = false;
-			schedule();	/* has own locks */
-		}
 	}
 	return NULL;
+}
+
+static void _attempt_backfill(void)
+{
+	bool filter_root = false;
+	struct job_queue *job_queue = NULL;
+	int i, j,job_queue_size, node_space_recs;
+	struct job_record *job_ptr;
+	struct part_record *part_ptr;
+	uint32_t end_time, end_reserve, time_limit;
+	uint32_t min_nodes, max_nodes, req_nodes;
+	bitstr_t *avail_bitmap = NULL;
+	time_t now = time(NULL);
+	node_space_map_t node_space[MAX_BACKFILL_JOB_CNT + 2];
+
+	if (slurm_get_root_filter())
+		filter_root = true;
+
+	job_queue_size = build_job_queue(&job_queue);
+	if (job_queue_size == 0)
+		return;
+
+	sort_job_queue(job_queue, job_queue_size);
+
+	node_space[0].begin_time = now;
+	node_space[0].end_time = now + ONE_DAY;
+	node_space[0].avail_bitmap = bit_alloc(node_record_count);
+	bit_or(node_space[0].avail_bitmap, avail_node_bitmap);
+	node_space[0].next = 1;
+
+	node_space[1].begin_time = node_space[0].end_time;
+	node_space[1].end_time = node_space[1].begin_time + ONE_DAY;
+	node_space[1].avail_bitmap = bit_alloc(node_record_count);
+	node_space[1].next = 0;
+	node_space_recs = 2;
+#if __DEBUG
+	_dump_node_space_table(node_space);
+#endif
+
+	for (i = 0; i < job_queue_size; i++) {
+		job_ptr = job_queue[i].job_ptr;
+		part_ptr = job_ptr->part_ptr;
+		if (part_ptr == NULL) {
+			part_ptr = find_part_record(job_ptr->partition);
+			xassert(part_ptr);
+			job_ptr->part_ptr = part_ptr;
+			error("partition pointer reset for job %u, part %s",
+			      job_ptr->job_id, job_ptr->partition);
+		}
+		if ((part_ptr->state_up == 0) ||
+		    (part_ptr->node_bitmap == NULL))
+		 	continue;
+		if ((part_ptr->root_only) && filter_root)
+			continue;
+
+		/* Determine minimum and maximum node counts */
+		min_nodes = MAX(job_ptr->details->min_nodes,
+				part_ptr->min_nodes);
+		if (job_ptr->details->max_nodes == 0)
+			max_nodes = part_ptr->max_nodes;
+		else
+			max_nodes = MIN(job_ptr->details->max_nodes,
+					part_ptr->max_nodes);
+		max_nodes = MIN(max_nodes, 500000);     /* prevent overflows */
+		if (job_ptr->details->max_nodes)
+			req_nodes = max_nodes;
+		else
+			req_nodes = min_nodes;
+		if (min_nodes > max_nodes) {
+			/* job's min_nodes exceeds partition's max_nodes */
+			continue;
+		}
+
+		/* Determine job's expected completion time */
+		if (job_ptr->time_limit == NO_VAL)
+			time_limit = part_ptr->max_time;
+		else
+			time_limit = job_ptr->time_limit;
+		if (time_limit > (ONE_DAY/60))
+			continue;	/* too long */
+		end_time = (time_limit * 60) + now;
+
+		/* Identify usable nodes for this job */
+		FREE_NULL_BITMAP(avail_bitmap);
+		avail_bitmap = bit_copy(part_ptr->node_bitmap);
+		for (j=0; ; ) {
+			if (node_space[j].end_time <= end_time) {
+				bit_and(avail_bitmap, 
+					node_space[j].avail_bitmap);
+			}
+			if ((j = node_space[j].next) == 0)
+				break;
+		}
+		if (job_req_node_filter(job_ptr, avail_bitmap))
+			continue;	/* problem with features */
+		if (job_ptr->details->exc_node_bitmap) {
+			bit_not(job_ptr->details->exc_node_bitmap);
+			bit_and(avail_bitmap, 
+				job_ptr->details->exc_node_bitmap);
+			bit_not(job_ptr->details->exc_node_bitmap);
+		}
+		if ((job_ptr->details->req_node_bitmap) &&
+		    (!bit_super_set(job_ptr->details->req_node_bitmap,
+				    avail_bitmap)))
+			continue;	/* required nodes missing */
+		if (bit_set_count(avail_bitmap) < min_nodes)
+			continue;	/* no nodes remain */
+
+		/* Try to schedule the job */
+		j = select_g_job_test(job_ptr, avail_bitmap,
+				min_nodes, max_nodes, req_nodes, 
+				SELECT_MODE_WILL_RUN);
+		if (j != SLURM_SUCCESS)
+			continue;	/* not runable */
+		if (job_ptr->start_time <= now) {
+			/* Start the job now */
+			_start_job(job_ptr, avail_bitmap);
+			break;
+		}
+		if (job_ptr->start_time > (now + ONE_DAY)) {
+			/* Starts too far in the future to worry about */
+			continue;
+		}
+
+		if (node_space_recs == MAX_BACKFILL_JOB_CNT) {
+			/* Already have too many jobs to deal with */
+			break;
+		}
+
+		/*
+		 * Add reservation to scheduling table
+		 */
+		end_reserve = job_ptr->start_time + (time_limit * 60);
+		bit_not(avail_bitmap);
+		_add_reservation(job_ptr->start_time, end_reserve, 
+				 avail_bitmap, node_space, &node_space_recs);
+#if __DEBUG
+		_dump_node_space_table(node_space);
+#endif
+	}
+	FREE_NULL_BITMAP(avail_bitmap);
+
+	for (i=0; ; ) {
+		bit_free(node_space[i].avail_bitmap);
+		if ((i = node_space[i].next) == 0)
+			break;
+	}
+	xfree(job_queue);
+}
+
+static int _start_job(struct job_record *job_ptr, bitstr_t *avail_bitmap)
+{
+	int rc;
+	bitstr_t *orig_exc_nodes = NULL;
+	static uint32_t fail_jobid = 0;
+
+	if (job_ptr->details->exc_node_bitmap)
+		orig_exc_nodes = job_ptr->details->exc_node_bitmap;
+	job_ptr->details->exc_node_bitmap = bit_copy(avail_bitmap);
+	bit_not(job_ptr->details->exc_node_bitmap);
+
+	rc = select_nodes(job_ptr, false, NULL);
+	bit_free(job_ptr->details->exc_node_bitmap);
+	job_ptr->details->exc_node_bitmap = orig_exc_nodes;
+	if (rc == SLURM_SUCCESS) {	
+		/* job initiated */
+		last_job_update = time(NULL);
+		info("backfill: JobId=%u NodeList=%s",
+		     job_ptr->job_id, job_ptr->nodes);
+		if (job_ptr->batch_flag)
+			launch_job(job_ptr);
+		else
+			srun_allocate(job_ptr->job_id);
+	} else if (job_ptr->job_id != fail_jobid) {
+		char *node_list = bitmap2node_name(avail_bitmap);
+		error("backfill: could not start JobId=%u on nodes:%s",
+		      job_ptr->job_id, node_list);
+		xfree(node_list);
+		fail_jobid = job_ptr->job_id;
+	} else {
+		debug3("backfill: could not start JobId=%u", job_ptr->job_id);
+	}
+
+	return rc;
 }
 
 /* trigger the attempt of a backfill */
@@ -248,291 +402,67 @@ static bool _more_work (void)
 	return rc;
 }
 
-/* Attempt to perform backfill scheduling on the specified partition */
-static void _attempt_backfill(struct part_record *part_ptr)
+/* Create a reservation for a job in the future */
+static void _add_reservation(uint32_t start_time, uint32_t end_reserve, 
+			     bitstr_t *res_bitmap, 
+			     node_space_map_t *node_space, 
+			     int *node_space_recs)
 {
-	int error_code = 0;
-	struct job_record *job_ptr;
-	ListIterator job_iterator;
+	int i, j, previous;
 
-#if __DEBUG
-	info("backfill: attempt on partition %s", part_ptr->name);
-#endif
-		
-	/* build lists of pending jobs in this partition */
-	pend_job_list = list_create(NULL);
-	job_iterator = list_iterator_create(job_list);
-	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
-		if ((job_ptr->part_ptr != part_ptr) ||
-		    (job_ptr->job_state != JOB_PENDING))
-			continue;
-
-		if (_add_pending_job(job_ptr, part_ptr)) {
-			error_code = 3;
+	for (j=0; ; ) {
+		if (node_space[j].end_time > start_time) {
+			/* insert start entry record */
+			i = *node_space_recs;
+			node_space[i].begin_time = start_time;
+			node_space[i].end_time = node_space[j].end_time;
+			node_space[j].end_time = start_time;
+			node_space[i].avail_bitmap = 
+				bit_copy(node_space[j].avail_bitmap);
+			node_space[i].next = node_space[j].next;
+			node_space[j].next = i;
+			(*node_space_recs)++;
 			break;
 		}
-	}
-	list_iterator_destroy(job_iterator);
-
-	if ((error_code == 0) &&
-	    (!list_is_empty(pend_job_list)))
-		_backfill_part(part_ptr);
-
-	list_destroy(pend_job_list);
-}
-
-/* Add specified pending job to our records 
- * RET 0 on success, otherwise an error code */
-static int _add_pending_job(struct job_record *job_ptr, 
-		struct part_record *part_ptr)
-{
-	struct job_details *detail_ptr = job_ptr->details;
-
-	if (job_ptr->priority == 0) {
-#if __DEBUG
-		info("backfill: pending job %u is held", job_ptr->job_id);
-#endif
-		return 0;	/* Skip this job */
-	}
-
-	if ((job_ptr->time_limit != NO_VAL) && 
-	    (job_ptr->time_limit > part_ptr->max_time)) {
-#if __DEBUG
-		info("backfill: pending job %u exceeds partition time limit", 
-			job_ptr->job_id);
-#endif
-		return 0;	/* Skip this job */
-	}
-
-	if (detail_ptr == NULL) {
-		error("backfill: pending job %u lacks details", 
-			job_ptr->job_id);
-		return 0;
-	}
-
-	if (detail_ptr->min_nodes > part_ptr->max_nodes) {
-#if __DEBUG
-		info("backfill: pending job %u exceeds partition node limit", 
-				job_ptr->job_id);
-#endif
-		return 0;	/* Skip this job */
-	}
-
-	if (!job_independent(job_ptr)) {
-#if __DEBUG
-		info("backfill: pending job %u dependent or waiting for "
-				"begin time", job_ptr->job_id);
-#endif
-		return 0;	/* Skip this job */
-	}
-
-#if __DEBUG
-	info("backfill: job:%u prio:%u pending on %u nodes", 
-	     job_ptr->job_id, job_ptr->priority, detail_ptr->min_nodes);
-#endif
-
-	list_append(pend_job_list, (void *) job_ptr);
-	return 0;
-}
-
-#if __DEBUG
-static void _dump_node_space_table(node_space_map_t *node_space_ptr,
-		int node_space_recs)
-{
-	int i;
-	char begin_buf[32], end_buf[32], *node_list;
-
-	info("=========================================");
-	for (i=0; i<node_space_recs; i++) {
-		slurm_make_time_str(&node_space_ptr[i].begin_time,
-				    begin_buf, sizeof(begin_buf));
-		slurm_make_time_str(&node_space_ptr[i].end_time,
-				    end_buf, sizeof(end_buf));
-		node_list = bitmap2node_name(node_space_ptr[i].avail_bitmap);
-		info("Begin:%s End:%s Nodes:%s", begin_buf, end_buf, node_list);
-		xfree(node_list);
-	}
-	info("=========================================");
-}
-#endif
-
-/* scan pending job queue and change the priority of any that 
- * can run now without delaying the expected initiation time 
- * of any higher priority job */
-static void _backfill_part(struct part_record *part_ptr)
-{
-	struct job_record *job_ptr;
-	ListIterator pend_job_iterate;
-	struct job_record *first_job = NULL;	/* just used as flag */
-	uint32_t min_nodes, max_nodes, req_nodes, end_time, time_limit;
-	bitstr_t *avail_bitmap;
-	time_t now = time(NULL), end_reserve;
-	int i, j, rc, node_space_recs;
-	node_space_map_t node_space[MAX_BACKFILL_JOB_CNT + 1];
-
-	node_space_recs = 1;
-	node_space[0].begin_time = now;
-	node_space[0].end_time = now + ONE_DAY;
-	node_space[0].avail_bitmap = bit_copy(part_ptr->node_bitmap);
-	bit_and(node_space[0].avail_bitmap, avail_node_bitmap);
-
-	node_space[1].begin_time = node_space[0].end_time;
-	node_space[1].end_time = node_space[1].begin_time + ONE_DAY;
-	node_space[1].avail_bitmap =  bit_alloc(node_record_count);
-	node_space_recs = 2;
-
-#if __DEBUG
-	_dump_node_space_table(node_space, node_space_recs);
-#endif
-
-	/* find job to possibly backfill */
-	list_sort(pend_job_list, _sort_by_prio);
-	pend_job_iterate = list_iterator_create(pend_job_list);
-	while ( (job_ptr = list_next(pend_job_iterate)) ) {
-		if (first_job == NULL)
-			first_job = job_ptr;
-
-		/* Determine minimum and maximum node counts */
-		min_nodes = MAX(job_ptr->details->min_nodes, 
-				part_ptr->min_nodes);
-		if (job_ptr->details->max_nodes == 0)
-			max_nodes = part_ptr->max_nodes;
-		else
-			max_nodes = MIN(job_ptr->details->max_nodes, 
-					part_ptr->max_nodes);
-		max_nodes = MIN(max_nodes, 500000);	/* prevent overflows */
-		if (job_ptr->details->max_nodes)
-			req_nodes = max_nodes;
-		else
-			req_nodes = min_nodes;
-		if (min_nodes > max_nodes) {
-			/* job's min_nodes exceeds partition's max_nodes */
-			continue;
-		}
-
-		/* Determine job's expected completion time */
-		if (job_ptr->time_limit == NO_VAL)
-			time_limit = part_ptr->max_time;
-		else
-			time_limit = job_ptr->time_limit;
-		if (time_limit > (ONE_DAY/60))
-			continue;
-		end_time = (time_limit * 60) + now;
-
-		for (i=0; i<node_space_recs; i++) {
-			if (end_time <= node_space[i].end_time)
-				break;
-		}
-		if (i >= node_space_recs)	/* job runs too long */
-			continue;
-		avail_bitmap = bit_copy(node_space[i].avail_bitmap);
-		if (job_req_node_filter(job_ptr, avail_bitmap))
-			continue;
-		if (job_ptr->details->exc_node_bitmap) {
-			bit_not(job_ptr->details->exc_node_bitmap);
-			bit_and(avail_bitmap, 
-				job_ptr->details->exc_node_bitmap);
-			bit_not(job_ptr->details->exc_node_bitmap);
-		}
-		if ((job_ptr->details->req_node_bitmap) &&
-		    (!bit_super_set(job_ptr->details->req_node_bitmap,
-				    avail_bitmap))) {
-			bit_free(avail_bitmap);
-			continue;
-		}
-
-		/* try to schedule the job */
-		rc = select_g_job_test(job_ptr, avail_bitmap,
-				min_nodes, max_nodes, req_nodes, 
-				SELECT_MODE_WILL_RUN);
-		if (rc != SLURM_SUCCESS) {
-			bit_free(avail_bitmap);
-			continue;
-		}
-		if (job_ptr->start_time <= (now + 1)) {
-			/* start the job now */
-			_change_prio(job_ptr, (first_job->priority + 1));
-			bit_free(avail_bitmap);
+		if (node_space[j].end_time == start_time) {
+			/* no need to insert start entry record */
 			break;
 		}
-		if (job_ptr->start_time > (now + ONE_DAY)) {
-			/* too far in the future to worry about */
-			bit_free(avail_bitmap);
-			continue;
-		}
-
-		if (node_space_recs == MAX_BACKFILL_JOB_CNT)
+		if ((j = node_space[j].next) == 0)
 			break;
+	}
 
-		/*
-		 * Add reservation to scheduling table
-		 */
-		end_reserve = job_ptr->start_time + (time_limit * 60);
-		bit_not(avail_bitmap);
-		for (i=0; i<node_space_recs; i++) {
-			if (node_space[i].begin_time >= job_ptr->start_time)
-				break;
-		}
-		if (node_space[i].begin_time > job_ptr->start_time) {
-			/* Need to shift existing records and add a new one */
-			for (j=node_space_recs; j>i; j--) {
-				node_space[j].begin_time = 
-						node_space[j-1].begin_time;
-				node_space[j].end_time = 
-						node_space[j-1].end_time;
-				node_space[j].avail_bitmap = 
-						node_space[j-1].avail_bitmap;
-			}
-			node_space[i].begin_time = job_ptr->start_time;
-			node_space[i].end_time = node_space[i-1].end_time;
-			node_space[i].avail_bitmap = bit_copy(
-					node_space[i-1].avail_bitmap);
-			node_space[i-1].end_time = job_ptr->start_time;
-			node_space_recs++;
-			if (node_space[i].end_time > end_reserve) {
-				node_space[i].end_time = end_reserve;
-				node_space[i+1].begin_time = end_reserve;
-			}
-		}
-
-		for ( ; i<node_space_recs; i++) {
-			bit_and(node_space[i].avail_bitmap, avail_bitmap);
-			if (node_space[i].end_time >= end_reserve)
-				break;
-		}
-		if (node_space[i].end_time > end_reserve) {
-			/* Need to shift existing records and add a new one */
-			for (j=node_space_recs; j>i; j--) {
-				node_space[j].begin_time = 
-						node_space[j-1].begin_time;
-				node_space[j].end_time = 
-						node_space[j-1].end_time;
-				node_space[j].avail_bitmap = 
-						node_space[j-1].avail_bitmap;
-			}
+	previous = 0;
+	for (j=0; ; ) {
+		if ((node_space[j].begin_time < end_reserve) &&
+		    (node_space[j].end_time   > end_reserve)) {
+			/* insert end entry record */
+			i = *node_space_recs;
+			node_space[i].begin_time = node_space[j].begin_time;
+			node_space[j].begin_time = end_reserve;
 			node_space[i].end_time = end_reserve;
-			node_space[i+1].begin_time = end_reserve;
-			node_space[i].avail_bitmap = bit_copy(
-					node_space[i+1].avail_bitmap);
-			node_space_recs++;
+			node_space[i].avail_bitmap = 
+				bit_copy(node_space[j].avail_bitmap);
+			node_space[i].next = j;
+			node_space[previous].next = i;
+			(*node_space_recs)++;
+			break;
 		}
-		bit_free(avail_bitmap);
-#if __DEBUG
-		_dump_node_space_table(node_space, node_space_recs);
-#endif
+		if (node_space[j].begin_time == end_reserve) {
+			/* no need to insert end entry record */
+			break;
+		}
+		previous = j;
+		if ((j = node_space[j].next) == 0)
+			break;
 	}
-	list_iterator_destroy(pend_job_iterate);
 
-	for (i=0; i<node_space_recs; i++)
-		bit_free(node_space[i].avail_bitmap);
-}
-
-/* Change the priority of a pending job to get it running now */
-static void _change_prio(struct job_record *job_ptr, uint32_t prio)
-{
-	info("backfill: set job %u to priority %u", job_ptr->job_id, prio);
-	job_ptr->priority = prio;
-	altered_job = true;
-	run_backfill();
-	last_job_update = time(NULL);
+	for (j=0; ; ) {
+		if ((node_space[j].begin_time >= start_time) &&
+		    (node_space[j].end_time   <= end_reserve)) {
+			bit_and(node_space[j].avail_bitmap, res_bitmap);
+		}
+		if ((j = node_space[j].next) == 0)
+			break;
+	}
 }
