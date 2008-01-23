@@ -22,6 +22,9 @@ documents those changes that are of interest to users and admins.
  -- Add support for node UP/DOWN event logging in jobacct/gold plugin
     WARNING: using the jobacct/gold plugin slows the system startup set the
     MessageTimeout variable in the slurm.conf to around 20+.
+ -- Added check at start of slurmctld to look for /tmp/slurm_gold_first if
+    there, and using the gold plugin slurm will make record of all nodes in
+    downed or drained state.
 
 * Changes in SLURM 1.2.21
 =========================
