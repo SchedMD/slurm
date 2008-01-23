@@ -316,9 +316,39 @@ int main(int argc, char *argv[])
 					slurmctld_conf.slurm_conf,
 					slurm_strerror(error_code));
 			}
+			
 			if (recover == 0)
 				_gold_mark_all_nodes_down("cold-start",
 							  time(NULL));
+			else if (!stat("/tmp/slurm_gold_first", &stat_buf)) {
+				/* this is here for when slurm is
+				 * started with gold for the first
+				 * time to log any downed nodes.
+				 */
+				struct node_record *node_ptr =
+					node_record_table_ptr;
+				int i=0;
+				time_t event_time = time(NULL);
+				debug("found /tmp/slurm_gold_first, "
+				      "setting nodes down");
+				for (i = 0;
+				     i < node_record_count;
+				     i++, node_ptr++) {
+					if (node_ptr->name == '\0'
+					    || !node_ptr->reason)
+						continue;
+					
+					if(jobacct_g_node_down(
+						   node_ptr,
+						   event_time,
+						   node_ptr->reason)
+					   == SLURM_ERROR) 
+						break;
+				}
+				 if(unlink("/tmp/slurm_gold_first") < 0)
+					 error("Error deleting "
+					       "/tmp/slurm_gold_first");
+			}
 		} else {
 			error("this host (%s) not valid controller (%s or %s)",
 				node_name, slurmctld_conf.control_machine,
