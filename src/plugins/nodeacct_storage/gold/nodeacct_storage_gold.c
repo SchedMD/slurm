@@ -178,7 +178,7 @@ extern int nodeacct_storage_p_node_down(struct node_record *node_ptr,
 	destroy_gold_request(gold_request);
 
 	if(!gold_response) {
-		error("nodeacct_p_cluster_procs: no response received");
+		error("nodeacct_storage_p_node_down: no response received");
 		return rc;
 	}
 
@@ -213,7 +213,7 @@ extern int nodeacct_storage_p_node_down(struct node_record *node_ptr,
 	destroy_gold_request(gold_request);
 
 	if(!gold_response) {
-		error("nodeacct_p_cluster_procs: no response received");
+		error("nodeacct_p_node_down: no response received");
 		return rc;
 	}
 
@@ -286,6 +286,7 @@ extern int nodeacct_storage_p_cluster_procs(uint32_t procs, time_t event_time)
 	gold_response_t *gold_response = NULL;
 	char tmp_buff[50];
 	int rc = SLURM_ERROR;
+	bool no_modify = 0;
 
 	if (procs == last_procs) {
 		debug3("we have the same procs as before no need to "
@@ -344,43 +345,46 @@ extern int nodeacct_storage_p_cluster_procs(uint32_t procs, time_t event_time)
 	} else {
 		debug("We don't have an entry for this machine "
 		      "most likely a first time running.");
+		no_modify = 1;
 	}
 
 	destroy_gold_response(gold_response);
 	
-
-
-	gold_request = create_gold_request(GOLD_OBJECT_EVENT,
-					   GOLD_ACTION_MODIFY);
-	if(!gold_request) 
-		return rc;
-	
-	gold_request_add_condition(gold_request, "Machine", cluster_name,
-				   GOLD_OPERATOR_NONE);
-	gold_request_add_condition(gold_request, "EndTime", "0",
-				   GOLD_OPERATOR_NONE);
-	gold_request_add_condition(gold_request, "Name", "NULL",
-				   GOLD_OPERATOR_NONE);
-
-	snprintf(tmp_buff, sizeof(tmp_buff), "%d", ((int)event_time - 1));
-	gold_request_add_assignment(gold_request, "EndTime", tmp_buff);		
-			
-	gold_response = get_gold_response(gold_request);	
-	destroy_gold_request(gold_request);
-
-	if(!gold_response) {
-		error("nodeacct_p_cluster_procs: no response received");
-		return rc;
-	}
-
-	if(gold_response->rc) {
-		error("gold_response has non-zero rc(%d): %s",
-		      gold_response->rc,
-		      gold_response->message);
+	if(no_modify) {
+		gold_request = create_gold_request(GOLD_OBJECT_EVENT,
+						   GOLD_ACTION_MODIFY);
+		if(!gold_request) 
+			return rc;
+		
+		gold_request_add_condition(gold_request, "Machine",
+					   cluster_name,
+					   GOLD_OPERATOR_NONE);
+		gold_request_add_condition(gold_request, "EndTime", "0",
+					   GOLD_OPERATOR_NONE);
+		gold_request_add_condition(gold_request, "Name", "NULL",
+					   GOLD_OPERATOR_NONE);
+		
+		snprintf(tmp_buff, sizeof(tmp_buff), "%d", 
+			 ((int)event_time - 1));
+		gold_request_add_assignment(gold_request, "EndTime", tmp_buff);	
+		
+		gold_response = get_gold_response(gold_request);	
+		destroy_gold_request(gold_request);
+		
+		if(!gold_response) {
+			error("jobacct_p_cluster_procs: no response received");
+			return rc;
+		}
+		
+		if(gold_response->rc) {
+			error("gold_response has non-zero rc(%d): %s",
+			      gold_response->rc,
+			      gold_response->message);
+			destroy_gold_response(gold_response);
+			return rc;
+		}
 		destroy_gold_response(gold_response);
-		return rc;
 	}
-	destroy_gold_response(gold_response);
 
 	/* now add the new one */
 	gold_request = create_gold_request(GOLD_OBJECT_EVENT,
