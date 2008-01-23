@@ -120,7 +120,6 @@ extern int mysql_get_db_connection(MYSQL **mysql_db, char *db_name,
 {
 	int rc = SLURM_SUCCESS;
 	bool storage_init = false;
-	my_bool reconnect = 0;
 
 	if(!(*mysql_db = mysql_init(*mysql_db)))
 		fatal("mysql_init failed: %s", mysql_error(*mysql_db));
@@ -146,8 +145,11 @@ extern int mysql_get_db_connection(MYSQL **mysql_db, char *db_name,
 			}
 		}
 #ifdef MYSQL_OPT_RECONNECT
+{
+		my_bool reconnect = 0;
 		/* make sure reconnect is off */
 		mysql_options(*mysql_db, MYSQL_OPT_RECONNECT, &reconnect);
+}
 #endif
 	}
 	return rc;
