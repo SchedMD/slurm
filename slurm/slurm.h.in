@@ -924,6 +924,7 @@ typedef struct slurm_ctl_conf {
 	time_t boot_time;	/* time slurmctld last booted */
 	uint16_t cache_groups;	/* cache /etc/groups to avoid initgroups(2) */
 	char *checkpoint_type;	/* checkpoint plugin type */
+	char *cluster_name;     /* general name of the entire cluster */
 	char *control_addr;	/* comm path of slurmctld primary server */
 	char *control_machine;	/* name of slurmctld primary server */
 	char *crypto_type;	/* cryptographic signature plugin */
@@ -962,6 +963,12 @@ typedef struct slurm_ctl_conf {
 	                         * purged from in memory records */
 	char *mpi_default;	/* Default version of MPI in use */
 	uint16_t msg_timeout;	/* message timeout */
+	char *node_acct_storage_loc; /* node accounting storage log location */
+	char *node_acct_storage_type;	/* node accounting storage type */
+	char *node_acct_storage_user;	/* node accounting storage user */
+	char *node_acct_storage_host;	/* node accounting storage host */
+	char *node_acct_storage_pass;	/* node accounting storage password */
+	uint32_t node_acct_storage_port;/* node accounting storage port */
 	char *node_prefix;      /* prefix of nodes in partition only set in 
 				   bluegene clusters NULL otherwise */
 	char *plugindir;	/* pathname to plugins */

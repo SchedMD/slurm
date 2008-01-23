@@ -60,7 +60,7 @@ extern char *default_plugstack;
 #define DEFAULT_JOB_ACCT_GATHER_FREQ  30
 #define DEFAULT_JOB_ACCT_STORAGE_TYPE "jobacct_storage/filetxt"
 #define JOB_ACCT_STORAGE_TYPE_NONE "jobacct_storage/none"
-#define DEFAULT_JOB_ACCT_STORAGE_LOC  "/var/log/slurm_accounting.log"
+#define DEFAULT_JOB_ACCT_STORAGE_LOC  "/var/log/slurm_jobacct.log"
 #define DEFAULT_JOB_ACCT_STORAGE_HOST "localhost"
 #define DEFAULT_JOB_ACCT_STORAGE_USER "root"
 #define DEFAULT_JOB_ACCT_STORAGE_PASS ""
@@ -80,6 +80,13 @@ extern char *default_plugstack;
 #define DEFAULT_MIN_JOB_AGE         300
 #define DEFAULT_MPI_DEFAULT         "none"
 #define DEFAULT_MSG_TIMEOUT         10
+#define DEFAULT_NODE_ACCT_STORAGE_TYPE "nodeacct_storage/none"
+#define NODE_ACCT_STORAGE_TYPE_NONE "nodeacct_storage/none"
+#define DEFAULT_NODE_ACCT_STORAGE_LOC  "/var/log/slurm_nodeacct.log"
+#define DEFAULT_NODE_ACCT_STORAGE_HOST "localhost"
+#define DEFAULT_NODE_ACCT_STORAGE_USER "root"
+#define DEFAULT_NODE_ACCT_STORAGE_PASS ""
+#define DEFAULT_NODE_ACCT_STORAGE_PORT 0
 #ifdef HAVE_AIX		/* AIX specific default configuration parameters */
 #  define DEFAULT_CHECKPOINT_TYPE   "checkpoint/aix"
 #  define DEFAULT_PROCTRACK_TYPE    "proctrack/aix"

@@ -1080,13 +1080,13 @@ extern int kill_running_job_by_node_name(char *node_name, bool step_test)
 						difftime(now, job_ptr->suspend_time);
 				} else
 					job_ptr->end_time = now;
-				deallocate_nodes(job_ptr, false, suspended);
-
+				
 				/* We want this job to look like it was cancelled in the
 				 * accounting logs. Set a new submit time so the restarted
 				 * job looks like a new job. */
 				save_state = job_ptr->job_state;
 				job_ptr->job_state  = JOB_CANCELLED;
+				deallocate_nodes(job_ptr, false, suspended);
 				job_completion_logger(job_ptr);
 				job_ptr->job_state = save_state;
 				job_ptr->details->submit_time = now;
@@ -1105,8 +1105,8 @@ extern int kill_running_job_by_node_name(char *node_name, bool step_test)
 						difftime(now, job_ptr->suspend_time);
 				} else
 					job_ptr->end_time = time(NULL);
-				job_completion_logger(job_ptr);
 				deallocate_nodes(job_ptr, false, suspended);
+				job_completion_logger(job_ptr);
 			}
 		}
 
@@ -1378,7 +1378,6 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 			job_ptr->exit_code = 1;
 			job_ptr->state_reason = FAIL_BAD_CONSTRAINTS;
 			job_ptr->start_time = job_ptr->end_time = now;
-			jobacct_storage_g_job_start(job_ptr);
 			job_completion_logger(job_ptr);
 		}
 		return error_code;
@@ -1411,7 +1410,6 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 		job_ptr->exit_code  = 1;
 		job_ptr->state_reason = FAIL_BAD_CONSTRAINTS;
 		job_ptr->start_time = job_ptr->end_time = now;
-		jobacct_storage_g_job_start(job_ptr);
 		job_completion_logger(job_ptr);
 		if (!independent)
 			return ESLURM_DEPENDENCY;
@@ -1426,7 +1424,6 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 	no_alloc = test_only || too_fragmented || 
 		(!top_prio) || (!independent);
 	error_code = select_nodes(job_ptr, no_alloc, NULL);
-	jobacct_storage_g_job_start(job_ptr);
 	if (!test_only) {
 		last_job_update = now;
 		slurm_sched_schedule();	/* work for external scheduler */
@@ -2015,6 +2012,7 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 		job_ptr->priority = 1;      /* Move to end of queue */
 		job_ptr->state_reason = fail_reason;
 	}
+	
 	
 cleanup:
 	FREE_NULL_BITMAP(req_bitmap);
@@ -4516,8 +4514,6 @@ extern void job_completion_logger(struct job_record  *job_ptr)
 			mail_job_info(job_ptr, MAIL_JOB_FAIL);
 	}
 
-	/* write out to logs */
-	jobacct_storage_g_job_complete(job_ptr);
 	g_slurm_jobcomp_write(job_ptr);
 }
 
@@ -4938,14 +4934,14 @@ extern int job_requeue (uid_t uid, uint32_t job_id, slurm_fd conn_fd)
 		job_ptr->end_time = job_ptr->suspend_time;
 	else
 		job_ptr->end_time = now;
-	deallocate_nodes(job_ptr, false, suspended);
-	xfree(job_ptr->details->req_node_layout);
 
 	/* We want this job to look like it was cancelled in the
 	 * accounting logs. Set a new submit time so the restarted
 	 * job looks like a new job. */
 	save_state = job_ptr->job_state;
 	job_ptr->job_state  = JOB_CANCELLED;
+	deallocate_nodes(job_ptr, false, suspended);
+	xfree(job_ptr->details->req_node_layout);
 	job_completion_logger(job_ptr);
 	job_ptr->job_state = save_state;
 	job_ptr->details->submit_time = now;

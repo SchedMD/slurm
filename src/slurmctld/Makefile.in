@@ -278,7 +278,7 @@ slurmctld_SOURCES = \
 	controller.c 	\
 	job_mgr.c 	\
 	job_scheduler.c \
-	job_scheduler.h	\
+	job_scheduler.h \
 	locks.c   	\
 	locks.h  	\
 	node_mgr.c 	\

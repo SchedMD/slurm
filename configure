@@ -25117,221 +25117,10 @@ echo "$as_me: WARNING: *** pg_config not found. Evidently no PostgreSQL install 
 		save_CFLAGS="$CFLAGS"
         	CFLAGS="$PGSQL_CFLAGS $save_CFLAGS"
 
-
-for ac_header in $PGSQL_INCLUDEDIR/libpq-fe.h
-do
-as_ac_Header=`echo "ac_cv_header_$ac_header" | $as_tr_sh`
-if { as_var=$as_ac_Header; eval "test \"\${$as_var+set}\" = set"; }; then
-  { echo "$as_me:$LINENO: checking for $ac_header" >&5
-echo $ECHO_N "checking for $ac_header... $ECHO_C" >&6; }
-if { as_var=$as_ac_Header; eval "test \"\${$as_var+set}\" = set"; }; then
-  echo $ECHO_N "(cached) $ECHO_C" >&6
-fi
-ac_res=`eval echo '${'$as_ac_Header'}'`
-	       { echo "$as_me:$LINENO: result: $ac_res" >&5
-echo "${ECHO_T}$ac_res" >&6; }
-else
-  # Is the header compilable?
-{ echo "$as_me:$LINENO: checking $ac_header usability" >&5
-echo $ECHO_N "checking $ac_header usability... $ECHO_C" >&6; }
-cat >conftest.$ac_ext <<_ACEOF
-/* confdefs.h.  */
-_ACEOF
-cat confdefs.h >>conftest.$ac_ext
-cat >>conftest.$ac_ext <<_ACEOF
-/* end confdefs.h.  */
-$ac_includes_default
-#include <$ac_header>
-_ACEOF
-rm -f conftest.$ac_objext
-if { (ac_try="$ac_compile"
-case "(($ac_try" in
-  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
-  *) ac_try_echo=$ac_try;;
-esac
-eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
-  (eval "$ac_compile") 2>conftest.er1
-  ac_status=$?
-  grep -v '^ *+' conftest.er1 >conftest.err
-  rm -f conftest.er1
-  cat conftest.err >&5
-  echo "$as_me:$LINENO: \$? = $ac_status" >&5
-  (exit $ac_status); } && {
-	 test -z "$ac_c_werror_flag" ||
-	 test ! -s conftest.err
-       } && test -s conftest.$ac_objext; then
-  ac_header_compiler=yes
-else
-  echo "$as_me: failed program was:" >&5
-sed 's/^/| /' conftest.$ac_ext >&5
-
-	ac_header_compiler=no
-fi
-
-rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
-{ echo "$as_me:$LINENO: result: $ac_header_compiler" >&5
-echo "${ECHO_T}$ac_header_compiler" >&6; }
-
-# Is the header present?
-{ echo "$as_me:$LINENO: checking $ac_header presence" >&5
-echo $ECHO_N "checking $ac_header presence... $ECHO_C" >&6; }
-cat >conftest.$ac_ext <<_ACEOF
-/* confdefs.h.  */
-_ACEOF
-cat confdefs.h >>conftest.$ac_ext
-cat >>conftest.$ac_ext <<_ACEOF
-/* end confdefs.h.  */
-#include <$ac_header>
-_ACEOF
-if { (ac_try="$ac_cpp conftest.$ac_ext"
-case "(($ac_try" in
-  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
-  *) ac_try_echo=$ac_try;;
-esac
-eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
-  (eval "$ac_cpp conftest.$ac_ext") 2>conftest.er1
-  ac_status=$?
-  grep -v '^ *+' conftest.er1 >conftest.err
-  rm -f conftest.er1
-  cat conftest.err >&5
-  echo "$as_me:$LINENO: \$? = $ac_status" >&5
-  (exit $ac_status); } >/dev/null && {
-	 test -z "$ac_c_preproc_warn_flag$ac_c_werror_flag" ||
-	 test ! -s conftest.err
-       }; then
-  ac_header_preproc=yes
-else
-  echo "$as_me: failed program was:" >&5
-sed 's/^/| /' conftest.$ac_ext >&5
-
-  ac_header_preproc=no
-fi
-
-rm -f conftest.err conftest.$ac_ext
-{ echo "$as_me:$LINENO: result: $ac_header_preproc" >&5
-echo "${ECHO_T}$ac_header_preproc" >&6; }
-
-# So?  What about this header?
-case $ac_header_compiler:$ac_header_preproc:$ac_c_preproc_warn_flag in
-  yes:no: )
-    { echo "$as_me:$LINENO: WARNING: $ac_header: accepted by the compiler, rejected by the preprocessor!" >&5
-echo "$as_me: WARNING: $ac_header: accepted by the compiler, rejected by the preprocessor!" >&2;}
-    { echo "$as_me:$LINENO: WARNING: $ac_header: proceeding with the compiler's result" >&5
-echo "$as_me: WARNING: $ac_header: proceeding with the compiler's result" >&2;}
-    ac_header_preproc=yes
-    ;;
-  no:yes:* )
-    { echo "$as_me:$LINENO: WARNING: $ac_header: present but cannot be compiled" >&5
-echo "$as_me: WARNING: $ac_header: present but cannot be compiled" >&2;}
-    { echo "$as_me:$LINENO: WARNING: $ac_header:     check for missing prerequisite headers?" >&5
-echo "$as_me: WARNING: $ac_header:     check for missing prerequisite headers?" >&2;}
-    { echo "$as_me:$LINENO: WARNING: $ac_header: see the Autoconf documentation" >&5
-echo "$as_me: WARNING: $ac_header: see the Autoconf documentation" >&2;}
-    { echo "$as_me:$LINENO: WARNING: $ac_header:     section \"Present But Cannot Be Compiled\"" >&5
-echo "$as_me: WARNING: $ac_header:     section \"Present But Cannot Be Compiled\"" >&2;}
-    { echo "$as_me:$LINENO: WARNING: $ac_header: proceeding with the preprocessor's result" >&5
-echo "$as_me: WARNING: $ac_header: proceeding with the preprocessor's result" >&2;}
-    { echo "$as_me:$LINENO: WARNING: $ac_header: in the future, the compiler will take precedence" >&5
-echo "$as_me: WARNING: $ac_header: in the future, the compiler will take precedence" >&2;}
-
-    ;;
-esac
-{ echo "$as_me:$LINENO: checking for $ac_header" >&5
-echo $ECHO_N "checking for $ac_header... $ECHO_C" >&6; }
-if { as_var=$as_ac_Header; eval "test \"\${$as_var+set}\" = set"; }; then
-  echo $ECHO_N "(cached) $ECHO_C" >&6
-else
-  eval "$as_ac_Header=\$ac_header_preproc"
-fi
-ac_res=`eval echo '${'$as_ac_Header'}'`
-	       { echo "$as_me:$LINENO: result: $ac_res" >&5
-echo "${ECHO_T}$ac_res" >&6; }
-
-fi
-if test `eval echo '${'$as_ac_Header'}'` = yes; then
-  cat >>confdefs.h <<_ACEOF
-#define `echo "HAVE_$ac_header" | $as_tr_cpp` 1
-_ACEOF
- has_pgsql_header="true"
-else
-  has_pgsql_header="false"
-fi
-
-done
-
-	   	if test "$has_pgsql_header" = "true"; then
-			{ echo "$as_me:$LINENO: checking for PQconnectdb in -lpq" >&5
-echo $ECHO_N "checking for PQconnectdb in -lpq... $ECHO_C" >&6; }
-if test "${ac_cv_lib_pq_PQconnectdb+set}" = set; then
-  echo $ECHO_N "(cached) $ECHO_C" >&6
-else
-  ac_check_lib_save_LIBS=$LIBS
-LIBS="-lpq  $LIBS"
-cat >conftest.$ac_ext <<_ACEOF
-/* confdefs.h.  */
-_ACEOF
-cat confdefs.h >>conftest.$ac_ext
-cat >>conftest.$ac_ext <<_ACEOF
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-char PQconnectdb ();
-int
-main ()
-{
-return PQconnectdb ();
-  ;
-  return 0;
-}
-_ACEOF
-rm -f conftest.$ac_objext conftest$ac_exeext
-if { (ac_try="$ac_link"
-case "(($ac_try" in
-  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
-  *) ac_try_echo=$ac_try;;
-esac
-eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
-  (eval "$ac_link") 2>conftest.er1
-  ac_status=$?
-  grep -v '^ *+' conftest.er1 >conftest.err
-  rm -f conftest.er1
-  cat conftest.err >&5
-  echo "$as_me:$LINENO: \$? = $ac_status" >&5
-  (exit $ac_status); } && {
-	 test -z "$ac_c_werror_flag" ||
-	 test ! -s conftest.err
-       } && test -s conftest$ac_exeext &&
-       $as_test_x conftest$ac_exeext; then
-  ac_cv_lib_pq_PQconnectdb=yes
-else
-  echo "$as_me: failed program was:" >&5
-sed 's/^/| /' conftest.$ac_ext >&5
-
-	ac_cv_lib_pq_PQconnectdb=no
-fi
-
-rm -f core conftest.err conftest.$ac_objext conftest_ipa8_conftest.oo \
-      conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS
-fi
-{ echo "$as_me:$LINENO: result: $ac_cv_lib_pq_PQconnectdb" >&5
-echo "${ECHO_T}$ac_cv_lib_pq_PQconnectdb" >&6; }
-if test $ac_cv_lib_pq_PQconnectdb = yes; then
-  has_pgsql_lib="true"
-else
-  has_pgsql_lib="false"
-fi
-
-			if test "$has_pgsql_lib" = "true"; then
-       				PGSQL_LIBS=" -lpq"
-	       			save_LIBS="$LIBS"
-        			LIBS="$PGSQL_LIBS $save_LIBS"
-       				cat >conftest.$ac_ext <<_ACEOF
+		PGSQL_LIBS=" -lpq"
+	       	save_LIBS="$LIBS"
+        	LIBS="$PGSQL_LIBS $save_LIBS"
+       		cat >conftest.$ac_ext <<_ACEOF
 /* confdefs.h.  */
 _ACEOF
 cat confdefs.h >>conftest.$ac_ext
@@ -25342,12 +25131,12 @@ int
 main ()
 {
 
-          				int main()
-       	  				{
-						PGconn     *conn;
-						conn = PQconnectdb("dbname = postgres");
-       						(void) PQfinish(conn);
-            			        }
+          			int main()
+       	  			{
+					PGconn     *conn;
+					conn = PQconnectdb("dbname = postgres");
+       					(void) PQfinish(conn);
+            			}
 
   ;
   return 0;
@@ -25381,9 +25170,10 @@ fi
 
 rm -f core conftest.err conftest.$ac_objext conftest_ipa8_conftest.oo \
       conftest$ac_exeext conftest.$ac_ext
-				LIBS="$save_LIBS"
-       				if test "$ac_have_pgsql" == "yes"; then
-    					{ echo "$as_me:$LINENO: result: PostgreSQL test program built properly." >&5
+		LIBS="$save_LIBS"
+       		CFLAGS="$save_CFLAGS"
+		if test "$ac_have_pgsql" == "yes"; then
+    			{ echo "$as_me:$LINENO: result: PostgreSQL test program built properly." >&5
 echo "${ECHO_T}PostgreSQL test program built properly." >&6; }
 
 
@@ -25392,20 +25182,11 @@ cat >>confdefs.h <<\_ACEOF
 #define HAVE_PGSQL 1
 _ACEOF
 
-		        	else
-       					{ echo "$as_me:$LINENO: WARNING: *** PostgreSQL test program execution failed." >&5
+		else
+       			{ echo "$as_me:$LINENO: WARNING: *** PostgreSQL test program execution failed." >&5
 echo "$as_me: WARNING: *** PostgreSQL test program execution failed." >&2;}
-				fi
-      			else
-        			{ echo "$as_me:$LINENO: WARNING: libpq not found: PostgreSQL support not available" >&5
-echo "$as_me: WARNING: libpq not found: PostgreSQL support not available" >&2;}
-			fi
-   		else
-			{ echo "$as_me:$LINENO: WARNING: libpq-fe.h header not found: PostgreSQL support not available" >&5
-echo "$as_me: WARNING: libpq-fe.h header not found: PostgreSQL support not available" >&2;}
-  		fi
-		CFLAGS="$save_CFLAGS"
-       	fi
+		fi
+      	fi
 
 
 
@@ -26741,7 +26522,7 @@ _ACEOF
 
 
 
-ac_config_files="$ac_config_files Makefile config.xml auxdir/Makefile contribs/Makefile contribs/perlapi/Makefile contribs/perlapi/libslurm-perl/Makefile.PL contribs/torque/Makefile src/Makefile src/api/Makefile src/common/Makefile src/sacct/Makefile src/salloc/Makefile src/sbatch/Makefile src/sattach/Makefile src/srun/Makefile src/slurmd/Makefile src/slurmd/slurmd/Makefile src/slurmd/slurmstepd/Makefile src/slurmctld/Makefile src/sbcast/Makefile src/scontrol/Makefile src/scancel/Makefile src/squeue/Makefile src/sinfo/Makefile src/smap/Makefile src/strigger/Makefile src/sview/Makefile src/plugins/Makefile src/plugins/auth/Makefile src/plugins/auth/authd/Makefile src/plugins/auth/munge/Makefile src/plugins/auth/none/Makefile src/plugins/checkpoint/Makefile src/plugins/checkpoint/aix/Makefile src/plugins/checkpoint/none/Makefile src/plugins/checkpoint/ompi/Makefile src/plugins/checkpoint/xlch/Makefile src/plugins/crypto/Makefile src/plugins/crypto/munge/Makefile src/plugins/crypto/openssl/Makefile src/plugins/jobacct_gather/Makefile src/plugins/jobacct_gather/linux/Makefile src/plugins/jobacct_gather/aix/Makefile src/plugins/jobacct_gather/none/Makefile src/plugins/jobacct_storage/Makefile src/plugins/jobacct_storage/filetxt/Makefile src/plugins/jobacct_storage/mysql/Makefile src/plugins/jobacct_storage/pgsql/Makefile src/plugins/jobacct_storage/none/Makefile src/plugins/jobcomp/Makefile src/plugins/jobcomp/filetxt/Makefile src/plugins/jobcomp/none/Makefile src/plugins/jobcomp/script/Makefile src/plugins/jobcomp/mysql/Makefile src/plugins/jobcomp/pgsql/Makefile src/plugins/proctrack/Makefile src/plugins/proctrack/aix/Makefile src/plugins/proctrack/pgid/Makefile src/plugins/proctrack/linuxproc/Makefile src/plugins/proctrack/rms/Makefile src/plugins/proctrack/sgi_job/Makefile src/plugins/sched/Makefile src/plugins/sched/backfill/Makefile src/plugins/sched/builtin/Makefile src/plugins/sched/gang/Makefile src/plugins/sched/hold/Makefile src/plugins/sched/wiki/Makefile src/plugins/sched/wiki2/Makefile src/plugins/select/Makefile src/plugins/select/bluegene/Makefile src/plugins/select/bluegene/block_allocator/Makefile src/plugins/select/bluegene/plugin/Makefile src/plugins/select/linear/Makefile src/plugins/select/cons_res/Makefile src/plugins/switch/Makefile src/plugins/switch/elan/Makefile src/plugins/switch/none/Makefile src/plugins/switch/federation/Makefile src/plugins/mpi/Makefile src/plugins/mpi/mpich1_p4/Makefile src/plugins/mpi/mpich1_shmem/Makefile src/plugins/mpi/mpichgm/Makefile src/plugins/mpi/mpichmx/Makefile src/plugins/mpi/mvapich/Makefile src/plugins/mpi/lam/Makefile src/plugins/mpi/none/Makefile src/plugins/mpi/openmpi/Makefile src/plugins/task/Makefile src/plugins/task/affinity/Makefile src/plugins/task/none/Makefile doc/Makefile doc/man/Makefile doc/html/Makefile doc/html/configurator.html testsuite/Makefile testsuite/expect/Makefile testsuite/slurm_unit/Makefile testsuite/slurm_unit/common/Makefile testsuite/slurm_unit/slurmctld/Makefile testsuite/slurm_unit/slurmd/Makefile testsuite/slurm_unit/api/Makefile testsuite/slurm_unit/api/manual/Makefile"
+ac_config_files="$ac_config_files Makefile config.xml auxdir/Makefile contribs/Makefile contribs/perlapi/Makefile contribs/perlapi/libslurm-perl/Makefile.PL contribs/torque/Makefile src/Makefile src/api/Makefile src/common/Makefile src/sacct/Makefile src/salloc/Makefile src/sbatch/Makefile src/sattach/Makefile src/srun/Makefile src/slurmd/Makefile src/slurmd/slurmd/Makefile src/slurmd/slurmstepd/Makefile src/slurmctld/Makefile src/sbcast/Makefile src/scontrol/Makefile src/scancel/Makefile src/squeue/Makefile src/sinfo/Makefile src/smap/Makefile src/strigger/Makefile src/sview/Makefile src/plugins/Makefile src/plugins/auth/Makefile src/plugins/auth/authd/Makefile src/plugins/auth/munge/Makefile src/plugins/auth/none/Makefile src/plugins/checkpoint/Makefile src/plugins/checkpoint/aix/Makefile src/plugins/checkpoint/none/Makefile src/plugins/checkpoint/ompi/Makefile src/plugins/checkpoint/xlch/Makefile src/plugins/crypto/Makefile src/plugins/crypto/munge/Makefile src/plugins/crypto/openssl/Makefile src/plugins/jobacct_gather/Makefile src/plugins/jobacct_gather/linux/Makefile src/plugins/jobacct_gather/aix/Makefile src/plugins/jobacct_gather/none/Makefile src/plugins/jobacct_storage/Makefile src/plugins/jobacct_storage/filetxt/Makefile src/plugins/jobacct_storage/gold/Makefile src/plugins/jobacct_storage/mysql/Makefile src/plugins/jobacct_storage/pgsql/Makefile src/plugins/jobacct_storage/none/Makefile src/plugins/jobcomp/Makefile src/plugins/jobcomp/filetxt/Makefile src/plugins/jobcomp/none/Makefile src/plugins/jobcomp/script/Makefile src/plugins/jobcomp/mysql/Makefile src/plugins/jobcomp/pgsql/Makefile src/plugins/nodeacct_storage/Makefile src/plugins/nodeacct_storage/gold/Makefile src/plugins/nodeacct_storage/mysql/Makefile src/plugins/nodeacct_storage/pgsql/Makefile src/plugins/nodeacct_storage/none/Makefile src/plugins/proctrack/Makefile src/plugins/proctrack/aix/Makefile src/plugins/proctrack/pgid/Makefile src/plugins/proctrack/linuxproc/Makefile src/plugins/proctrack/rms/Makefile src/plugins/proctrack/sgi_job/Makefile src/plugins/sched/Makefile src/plugins/sched/backfill/Makefile src/plugins/sched/builtin/Makefile src/plugins/sched/gang/Makefile src/plugins/sched/hold/Makefile src/plugins/sched/wiki/Makefile src/plugins/sched/wiki2/Makefile src/plugins/select/Makefile src/plugins/select/bluegene/Makefile src/plugins/select/bluegene/block_allocator/Makefile src/plugins/select/bluegene/plugin/Makefile src/plugins/select/linear/Makefile src/plugins/select/cons_res/Makefile src/plugins/switch/Makefile src/plugins/switch/elan/Makefile src/plugins/switch/none/Makefile src/plugins/switch/federation/Makefile src/plugins/mpi/Makefile src/plugins/mpi/mpich1_p4/Makefile src/plugins/mpi/mpich1_shmem/Makefile src/plugins/mpi/mpichgm/Makefile src/plugins/mpi/mpichmx/Makefile src/plugins/mpi/mvapich/Makefile src/plugins/mpi/lam/Makefile src/plugins/mpi/none/Makefile src/plugins/mpi/openmpi/Makefile src/plugins/task/Makefile src/plugins/task/affinity/Makefile src/plugins/task/none/Makefile doc/Makefile doc/man/Makefile doc/html/Makefile doc/html/configurator.html testsuite/Makefile testsuite/expect/Makefile testsuite/slurm_unit/Makefile testsuite/slurm_unit/common/Makefile testsuite/slurm_unit/slurmctld/Makefile testsuite/slurm_unit/slurmd/Makefile testsuite/slurm_unit/api/Makefile testsuite/slurm_unit/api/manual/Makefile"
 
 
 cat >confcache <<\_ACEOF
@@ -27503,6 +27284,7 @@ do
     "src/plugins/jobacct_gather/none/Makefile") CONFIG_FILES="$CONFIG_FILES src/plugins/jobacct_gather/none/Makefile" ;;
     "src/plugins/jobacct_storage/Makefile") CONFIG_FILES="$CONFIG_FILES src/plugins/jobacct_storage/Makefile" ;;
     "src/plugins/jobacct_storage/filetxt/Makefile") CONFIG_FILES="$CONFIG_FILES src/plugins/jobacct_storage/filetxt/Makefile" ;;
+    "src/plugins/jobacct_storage/gold/Makefile") CONFIG_FILES="$CONFIG_FILES src/plugins/jobacct_storage/gold/Makefile" ;;
     "src/plugins/jobacct_storage/mysql/Makefile") CONFIG_FILES="$CONFIG_FILES src/plugins/jobacct_storage/mysql/Makefile" ;;
     "src/plugins/jobacct_storage/pgsql/Makefile") CONFIG_FILES="$CONFIG_FILES src/plugins/jobacct_storage/pgsql/Makefile" ;;
     "src/plugins/jobacct_storage/none/Makefile") CONFIG_FILES="$CONFIG_FILES src/plugins/jobacct_storage/none/Makefile" ;;
@@ -27512,6 +27294,11 @@ do
     "src/plugins/jobcomp/script/Makefile") CONFIG_FILES="$CONFIG_FILES src/plugins/jobcomp/script/Makefile" ;;
     "src/plugins/jobcomp/mysql/Makefile") CONFIG_FILES="$CONFIG_FILES src/plugins/jobcomp/mysql/Makefile" ;;
     "src/plugins/jobcomp/pgsql/Makefile") CONFIG_FILES="$CONFIG_FILES src/plugins/jobcomp/pgsql/Makefile" ;;
+    "src/plugins/nodeacct_storage/Makefile") CONFIG_FILES="$CONFIG_FILES src/plugins/nodeacct_storage/Makefile" ;;
+    "src/plugins/nodeacct_storage/gold/Makefile") CONFIG_FILES="$CONFIG_FILES src/plugins/nodeacct_storage/gold/Makefile" ;;
+    "src/plugins/nodeacct_storage/mysql/Makefile") CONFIG_FILES="$CONFIG_FILES src/plugins/nodeacct_storage/mysql/Makefile" ;;
+    "src/plugins/nodeacct_storage/pgsql/Makefile") CONFIG_FILES="$CONFIG_FILES src/plugins/nodeacct_storage/pgsql/Makefile" ;;
+    "src/plugins/nodeacct_storage/none/Makefile") CONFIG_FILES="$CONFIG_FILES src/plugins/nodeacct_storage/none/Makefile" ;;
     "src/plugins/proctrack/Makefile") CONFIG_FILES="$CONFIG_FILES src/plugins/proctrack/Makefile" ;;
     "src/plugins/proctrack/aix/Makefile") CONFIG_FILES="$CONFIG_FILES src/plugins/proctrack/aix/Makefile" ;;
     "src/plugins/proctrack/pgid/Makefile") CONFIG_FILES="$CONFIG_FILES src/plugins/proctrack/pgid/Makefile" ;;
