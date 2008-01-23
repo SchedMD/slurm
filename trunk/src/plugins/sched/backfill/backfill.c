@@ -90,10 +90,15 @@ static pthread_mutex_t thread_flag_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 /* Set __DEBUG to get detailed logging for this thread without 
  * detailed logging for the entire slurmctld daemon */
-#define __DEBUG			0
+#define __DEBUG			1
 
+/* Do not attempt to build job/resource/time record for
+ * more than MAX_BACKFILL_JOB_CNT records */
 #define MAX_BACKFILL_JOB_CNT	100
-#define ONE_DAY			(24 * 60 * 60)
+
+/* Do not build job/resource/time record for more than this 
+ * far in the future, in seconds, currently one day */
+#define BACKFILL_WINDOW		(24 * 60 * 60)
 
 /*********************** local functions *********************/
 static void _add_reservation(uint32_t start_time, uint32_t end_reserve, 
@@ -208,16 +213,10 @@ static void _attempt_backfill(void)
 	sort_job_queue(job_queue, job_queue_size);
 
 	node_space[0].begin_time = now;
-	node_space[0].end_time = now + ONE_DAY;
+	node_space[0].end_time = now + BACKFILL_WINDOW;
 	node_space[0].avail_bitmap = bit_alloc(node_record_count);
 	bit_or(node_space[0].avail_bitmap, avail_node_bitmap);
-	node_space[0].next = 1;
-
-	node_space[1].begin_time = node_space[0].end_time;
-	node_space[1].end_time = node_space[1].begin_time + ONE_DAY;
-	node_space[1].avail_bitmap = bit_alloc(node_record_count);
-	node_space[1].next = 0;
-	node_space_recs = 2;
+	node_space[0].next = 0;
 #if __DEBUG
 	_dump_node_space_table(node_space);
 #endif
@@ -261,8 +260,6 @@ static void _attempt_backfill(void)
 			time_limit = part_ptr->max_time;
 		else
 			time_limit = job_ptr->time_limit;
-		if (time_limit > (ONE_DAY/60))
-			continue;	/* too long */
 		end_time = (time_limit * 60) + now;
 
 		/* Identify usable nodes for this job */
@@ -302,7 +299,7 @@ static void _attempt_backfill(void)
 			_start_job(job_ptr, avail_bitmap);
 			break;
 		}
-		if (job_ptr->start_time > (now + ONE_DAY)) {
+		if (job_ptr->start_time > (now + BACKFILL_WINDOW)) {
 			/* Starts too far in the future to worry about */
 			continue;
 		}
@@ -408,7 +405,7 @@ static void _add_reservation(uint32_t start_time, uint32_t end_reserve,
 			     node_space_map_t *node_space, 
 			     int *node_space_recs)
 {
-	int i, j, previous;
+	int i, j;
 
 	for (j=0; ; ) {
 		if (node_space[j].end_time > start_time) {
@@ -432,7 +429,12 @@ static void _add_reservation(uint32_t start_time, uint32_t end_reserve,
 			break;
 	}
 
-	previous = 0;
+#if 0
+	/* This records end of reservation so we maintain a full map
+	 * of when jobs start and end. Since we only care about starting 
+	 * jobs right now, the end of reservation time is not very useful
+	 * unless we want to track expected job initiation time, which 
+	 * would necessitate additional logic. */
 	for (j=0; ; ) {
 		if ((node_space[j].begin_time < end_reserve) &&
 		    (node_space[j].end_time   > end_reserve)) {
@@ -448,7 +450,7 @@ static void _add_reservation(uint32_t start_time, uint32_t end_reserve,
 			(*node_space_recs)++;
 			break;
 		}
-		if (node_space[j].begin_time == end_reserve) {
+		if (node_space[j].end_time == end_reserve) {
 			/* no need to insert end entry record */
 			break;
 		}
@@ -465,4 +467,12 @@ static void _add_reservation(uint32_t start_time, uint32_t end_reserve,
 		if ((j = node_space[j].next) == 0)
 			break;
 	}
+#else
+	for (j=0; ; ) {
+		if (node_space[j].begin_time >= start_time)
+			bit_and(node_space[j].avail_bitmap, res_bitmap);
+		if ((j = node_space[j].next) == 0)
+			break;
+	}
+#endif
 }
