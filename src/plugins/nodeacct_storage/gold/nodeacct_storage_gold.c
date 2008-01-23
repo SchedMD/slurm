@@ -47,10 +47,12 @@
 #endif
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <slurm/slurm_errno.h>
 
 #include "src/slurmctld/slurmctld.h"
 #include "src/common/slurm_nodeacct_storage.h"
+#include "gold_interface.h"
 
 /*
  * These variables are required by the generic plugin interface.  If they
@@ -81,11 +83,11 @@
  * minimum versions for their plugins as the job accounting API 
  * matures.
  */
-const char plugin_name[] = "Node accounting storage NOT_INVOKED plugin";
-const char plugin_type[] = "nodeacct_storage/none";
+const char plugin_name[] = "Node accounting storage GOLD plugin";
+const char plugin_type[] = "nodeacct_storage/gold";
 const uint32_t plugin_version = 100;
 
-#define DEFAULT_NODEACCT_LOC "localhost"
+static char *cluster_name = NULL;
 
 /*
  * init() is called when the plugin is loaded, before any other functions
@@ -93,6 +95,37 @@ const uint32_t plugin_version = 100;
  */
 extern int init ( void )
 {
+	char *keyfile = NULL;
+	char *host = NULL;
+	uint32_t port = 0;
+
+	if(!(cluster_name = slurm_get_cluster_name())) 
+		fatal("To run nodeacct_storage/gold you have to specify "
+		      "ClusterName in your slurm.conf");
+	if(!(keyfile = slurm_get_nodeacct_storage_pass())) 
+		fatal("To run nodeacct_storage/gold you have to set "
+		      "your gold keyfile as "
+		      "NodeAcctStoragePass in your slurm.conf");
+	
+	if(!(host = slurm_get_nodeacct_storage_host())) 
+		fatal("To run nodeacct_storage/gold you have to set "
+		      "your gold host as "
+		      "NodeAcctStorageHost in your slurm.conf");
+	
+	if(!(port = slurm_get_nodeacct_storage_port())) 
+		fatal("To run nodeacct_storage/gold you have to set "
+		      "your gold port as "
+		      "NodeAcctStoragePort in your slurm.conf");
+	
+
+	debug2("connecting from %s to gold with keyfile='%s' for %s(%d)",
+	       cluster_name, keyfile, host, port);
+
+	init_gold(cluster_name, keyfile, host, port);
+
+	xfree(keyfile);
+	xfree(host);
+
 	verbose("%s loaded", plugin_name);
 	return SLURM_SUCCESS;
 }
@@ -145,7 +178,7 @@ extern int nodeacct_storage_p_node_down(struct node_record *node_ptr,
 	destroy_gold_request(gold_request);
 
 	if(!gold_response) {
-		error("jobacct_p_cluster_procs: no response received");
+		error("nodeacct_p_cluster_procs: no response received");
 		return rc;
 	}
 
@@ -180,7 +213,7 @@ extern int nodeacct_storage_p_node_down(struct node_record *node_ptr,
 	destroy_gold_request(gold_request);
 
 	if(!gold_response) {
-		error("jobacct_p_cluster_procs: no response received");
+		error("nodeacct_p_cluster_procs: no response received");
 		return rc;
 	}
 
@@ -229,7 +262,7 @@ extern int nodeacct_storage_p_node_up(struct node_record *node_ptr,
 	destroy_gold_request(gold_request);
 
 	if(!gold_response) {
-		error("jobacct_p_node_up: no response received");
+		error("nodeacct_p_node_up: no response received");
 		return rc;
 	}
 
@@ -286,7 +319,7 @@ extern int nodeacct_storage_p_cluster_procs(uint32_t procs, time_t event_time)
 	destroy_gold_request(gold_request);
 
 	if(!gold_response) {
-		error("jobacct_p_cluster_procs: no response received");
+		error("nodeacct_p_cluster_procs: no response received");
 		return rc;
 	}
 
@@ -336,7 +369,7 @@ extern int nodeacct_storage_p_cluster_procs(uint32_t procs, time_t event_time)
 	destroy_gold_request(gold_request);
 
 	if(!gold_response) {
-		error("jobacct_p_cluster_procs: no response received");
+		error("nodeacct_p_cluster_procs: no response received");
 		return rc;
 	}
 
@@ -365,7 +398,7 @@ extern int nodeacct_storage_p_cluster_procs(uint32_t procs, time_t event_time)
 	destroy_gold_request(gold_request);
 
 	if(!gold_response) {
-		error("jobacct_p_cluster_procs: no response received");
+		error("nodeacct_p_cluster_procs: no response received");
 		return rc;
 	}
 

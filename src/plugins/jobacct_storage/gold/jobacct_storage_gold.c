@@ -50,7 +50,8 @@
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmd/slurmd/slurmd.h"
 #include "src/common/slurm_protocol_api.h"
-#include "src/common/jobacct_common.h"
+
+#include "gold_interface.h"
 
 
 typedef struct {
@@ -367,99 +368,60 @@ static int _add_edit_job(struct job_record *job_ptr, gold_object_t action)
  */
 extern int init ( void )
 {
+	char *keyfile = NULL;
+	char *host = NULL;
+	uint32_t port = 0;
+
+	if(!(cluster_name = slurm_get_cluster_name())) 
+		fatal("To run jobacct_storage/gold you have to specify "
+		      "ClusterName in your slurm.conf");
+	if(!(keyfile = slurm_get_jobacct_storage_pass())) 
+		fatal("To run jobacct_storage/gold you have to set "
+		      "your gold keyfile as "
+		      "JobAcctStoragePass in your slurm.conf");
+	
+	if(!(host = slurm_get_jobacct_storage_host())) 
+		fatal("To run jobacct_storage/gold you have to set "
+		      "your gold host as "
+		      "JobAcctStorageHost in your slurm.conf");
+	
+	if(!(port = slurm_get_jobacct_storage_port())) 
+		fatal("To run jobacct_storage/gold you have to set "
+		      "your gold port as "
+		      "JobAcctStoragePort in your slurm.conf");
+	
+
+	debug2("connecting from %s to gold with keyfile='%s' for %s(%d)",
+	       cluster_name, keyfile, host, port);
+
+	init_gold(cluster_name, keyfile, host, port);
+
+	if(!gold_account_list) 
+		gold_account_list = list_create(_destroy_gold_account);
+		
+	xfree(keyfile);
+	xfree(host);
+
 	verbose("%s loaded", plugin_name);
 	return SLURM_SUCCESS;
 }
 
 extern int fini ( void )
 {
+	xfree(cluster_name);
+	if(gold_account_list) 
+		list_destroy(gold_account_list);
+	fini_gold();
 	return SLURM_SUCCESS;
 }
 
 extern int jobacct_storage_p_init(char *gold_info)
 {
-	char *total = "localhost:/etc/gold/auth_key:localhost:7112";
-	int found = 0;
-	int i=0, j=0;
-	char *host = NULL;
-	char *keyfile = NULL;
-	uint16_t port = 0;
-
-	debug2("jobacct_init() called");
-	if(cluster_name) {
-		info("already called init");
-		return SLURM_SUCCESS;
-	}
-	if(gold_info) 
-		total = gold_info;
-
-	if(!gold_account_list) 
-		gold_account_list = list_create(_destroy_gold_account);
-
-	
-	i = 0;
-	while(total[j]) {
-		if(total[j] == ':') {
-			switch(found) {
-			case 0: // cluster_name name
-			        cluster_name = xstrndup(total+i, j-i);
-				break;
-			case 1: // keyfile name
-				keyfile = xstrndup(total+i, j-i);
-				break;
-			case 2: // host name
-				host = xstrndup(total+i, j-i);
-				break;
-			case 3: // port
-				port = atoi(total+i);
-				break;
-			}
-			found++;
-			i = j+1;	
-		}
-		j++;
-	}
-	if(!port) 
-		port = atoi(total+i);
-
-	if(!cluster_name)
-		fatal("JobAcctLogfile should be in the format of "
-		      "cluster_name:gold_auth_key_file_path:"
-		      "goldd_host:goldd_port "
-		      "bad cluster_name");
-	if (!keyfile || *keyfile != '/')
-		fatal("JobAcctLogfile should be in the format of "
-		      "cluster_name:gold_auth_key_file_path:"
-		      "goldd_host:goldd_port "
-		      "bad key file");
-	if(!host)
-		fatal("JobAcctLogfile should be in the format of "
-		      "cluster_name:gold_auth_key_file_path:"
-		      "goldd_host:goldd_port "
-		      "bad host");
-	if(!port) 
-		fatal("JobAcctLogfile should be in the format of "
-		      "cluster_name:gold_auth_key_file_path:"
-		      "goldd_host:goldd_port "
-		      "bad port");
-	
-	debug2("connecting from %s to gold with keyfile='%s' for %s(%d)",
-	       cluster_name, keyfile, host, port);
-
-	init_gold(cluster_name, keyfile, host, port);
-		
-	xfree(keyfile);
-	xfree(host);
-
 	return SLURM_SUCCESS;
 }
 
 int jobacct_storage_p_fini()
 {
-	xfree(cluster_name);
-	if(gold_account_list) 
-		list_destroy(gold_account_list);
-	fini_gold();
 	return SLURM_SUCCESS;
 }
 
