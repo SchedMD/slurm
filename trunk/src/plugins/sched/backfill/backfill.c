@@ -90,7 +90,7 @@ static pthread_mutex_t thread_flag_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 /* Set __DEBUG to get detailed logging for this thread without 
  * detailed logging for the entire slurmctld daemon */
-#define __DEBUG			1
+#define __DEBUG			0
 
 #define MAX_BACKFILL_JOB_CNT	100
 #define ONE_DAY			(24 * 60 * 60)
