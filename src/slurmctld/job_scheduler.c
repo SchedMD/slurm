@@ -174,6 +174,50 @@ extern void set_job_elig_time(void)
 	unlock_slurmctld(job_write_lock);
 }
 
+/* Test of part_ptr can still run jobs or if its nodes have
+ * already been reserved by higher priority jobs (those in
+ * the failed_parts array) */
+static bool _failed_partition(struct part_record *part_ptr,
+			      struct part_record **failed_parts, 
+			      int failed_part_cnt)
+{
+	int i;
+
+	for (i = 0; i < failed_part_cnt; i++) {
+		if (failed_parts[i] == part_ptr)
+			return true;
+	}
+	return false;
+}
+
+/* Add a partition to the failed_parts array, reserving its nodes
+ * from use by lower priority jobs. Also flags all partitions with
+ * nodes overlapping this partition. */
+static void _add_failed_partition(struct part_record *failed_part_ptr, 
+			      struct part_record **failed_parts, 
+			      int *failed_part_cnt)
+{
+	int count = *failed_part_cnt;
+	ListIterator part_iterator;
+	struct part_record *part_ptr;
+
+	failed_parts[count++] = failed_part_ptr;
+
+	/* We also need to add partitions that have overlapping nodes */
+	part_iterator = list_iterator_create(part_list);
+	while ((part_ptr = (struct part_record *) list_next(part_iterator))) {
+		if ((part_ptr == failed_part_ptr) ||
+		    (_failed_partition(part_ptr, failed_parts, count)) ||
+		    (!bit_overlap(part_ptr->node_bitmap, 
+				  failed_part_ptr->node_bitmap)))
+			continue;
+		failed_parts[count++] = part_ptr;
+	}
+	list_iterator_destroy(part_iterator);
+
+	*failed_part_cnt = count;
+}
+
 /* 
  * schedule - attempt to schedule all pending jobs
  *	pending jobs for each partition will be scheduled in priority  
@@ -187,9 +231,9 @@ extern void set_job_elig_time(void)
 extern int schedule(void)
 {
 	struct job_queue *job_queue;
-	int i, j, error_code, failed_part_cnt, job_queue_size, job_cnt = 0;
+	int i, error_code, failed_part_cnt = 0, job_queue_size, job_cnt = 0;
 	struct job_record *job_ptr;
-	struct part_record **failed_parts;
+	struct part_record **failed_parts = NULL;
 	/* Locks: Read config, write job, write node, read partition */
 	slurmctld_lock_t job_write_lock =
 	    { READ_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK };
@@ -227,18 +271,17 @@ extern int schedule(void)
 	}
 	sort_job_queue(job_queue, job_queue_size);
 
-	failed_part_cnt = 0;
-	failed_parts = NULL;
+	failed_parts = xmalloc(sizeof(struct part_record *) * 
+			       list_count(part_list));
+
 	for (i = 0; i < job_queue_size; i++) {
 		job_ptr = job_queue[i].job_ptr;
 		if (job_ptr->priority == 0)	/* held */
 			continue;
-		for (j = 0; j < failed_part_cnt; j++) {
-			if (failed_parts[j] == job_ptr->part_ptr)
-				break;
-		}
-		if (j < failed_part_cnt)
+		if (_failed_partition(job_ptr->part_ptr, failed_parts, 
+				      failed_part_cnt)) {
 			continue;
+		}
 
 		error_code = select_nodes(job_ptr, false, NULL);
 		if (error_code == ESLURM_NODES_BUSY) {
@@ -256,11 +299,8 @@ extern int schedule(void)
 			 * group all Blue Gene job partitions of type 
 			 * 2x2x2 coprocessor mesh into a single SLURM
 			 * partition, say "co-mesh-222") */
-			xrealloc(failed_parts,
-				 (failed_part_cnt + 1) * 
-				 sizeof(struct part_record *));
-			failed_parts[failed_part_cnt++] =
-			    job_ptr->part_ptr;
+			_add_failed_partition(job_ptr->part_ptr, failed_parts,
+				      &failed_part_cnt);
 #endif
 		} else if (error_code == SLURM_SUCCESS) {	
 			/* job initiated */
