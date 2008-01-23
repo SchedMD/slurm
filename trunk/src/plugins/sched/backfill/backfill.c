@@ -198,7 +198,7 @@ static void _attempt_backfill(void)
 {
 	bool filter_root = false;
 	struct job_queue *job_queue = NULL;
-	int i, j,job_queue_size, node_space_recs;
+	int i, j,job_queue_size, node_space_recs = 0;
 	struct job_record *job_ptr;
 	struct part_record *part_ptr;
 	uint32_t end_time, end_reserve, time_limit;
