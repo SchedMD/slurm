@@ -1590,7 +1590,7 @@ extern int validate_nodes_via_front_end(uint32_t job_count,
 	hostlist_t prolog_hostlist = NULL;
 	char host_str[64];
 	uint16_t base_state, node_flags;
-	info("hey I am here\n");
+
 	/* First validate the job info */
 	node_ptr = &node_record_table_ptr[0];	/* All msg send to node zero,
 				 * the front-end for the wholel cluster */
