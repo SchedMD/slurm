@@ -155,6 +155,12 @@ extern int slurm_set_auth_type(char *auth_type);
  */
 extern char *slurm_get_checkpoint_type(void);
 
+/* slurm_get_cluster_name
+ * returns the cluster name from slurmctld_conf object
+ * RET char *    - cluster name,  MUST be xfreed by caller
+ */
+char *slurm_get_cluster_name(void);
+
 /* slurm_get_crypto_type
  * returns the crypto_type from slurmctld_conf object
  * RET char *    - crypto type, MUST be xfreed by caller
@@ -259,6 +265,42 @@ char *slurm_get_jobcomp_pass(void);
  * RET uint32_t   - storage port
  */
 uint32_t slurm_get_jobcomp_port(void);
+
+/* slurm_get_nodeacct_storage_type
+ * returns the node accounting type from slurmctld_conf object
+ * RET char *    - node accounting type,  MUST be xfreed by caller
+ */
+char *slurm_get_nodeacct_storage_type(void);
+
+/* slurm_get_nodeacct_storage_loc
+ * returns the node accounting loc from slurmctld_conf object
+ * RET char *    - node accounting location,  MUST be xfreed by caller
+ */
+char *slurm_get_nodeacct_storage_loc(void);
+
+/* slurm_get_nodeacct_storage_user
+ * returns the storage user from slurmctld_conf object
+ * RET char *    - storage user,  MUST be xfreed by caller
+ */
+char *slurm_get_nodeacct_storage_user(void);
+
+/* slurm_get_nodeacct_storage_host
+ * returns the storage host from slurmctld_conf object
+ * RET char *    - storage host,  MUST be xfreed by caller
+ */
+char *slurm_get_nodeacct_storage_host(void);
+
+/* slurm_get_nodeacct_storage_pass
+ * returns the storage password from slurmctld_conf object
+ * RET char *    - storage password,  MUST be xfreed by caller
+ */
+char *slurm_get_nodeacct_storage_pass(void);
+
+/* slurm_get_nodeacct_storage_port
+ * returns the storage port from slurmctld_conf object
+ * RET uint32_t   - storage port
+ */
+uint32_t slurm_get_nodeacct_storage_port(void);
 
 /* slurm_get_propagate_prio_process
  * return the PropagatePrioProcess flag from slurmctld_conf object

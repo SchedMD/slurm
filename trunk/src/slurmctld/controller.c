@@ -70,6 +70,7 @@
 #include "src/common/read_config.h"
 #include "src/common/slurm_jobacct_gather.h"
 #include "src/common/slurm_jobacct_storage.h"
+#include "src/common/slurm_nodeacct_storage.h"
 #include "src/common/slurm_auth.h"
 #include "src/common/slurm_jobcomp.h"
 #include "src/common/slurm_protocol_api.h"
@@ -101,6 +102,12 @@
 #define MIN_CHECKIN_TIME  3	/* Nodes have this number of seconds to 
 				 * check-in before we ping them */
 #define SHUTDOWN_WAIT     2	/* Time to wait for backup server shutdown */
+
+#if (0)
+/* If defined and FastSchedule=0 in slurm.conf, then report the CPU count that a 
+ * node registers with rather than the CPU count defined for the node in slurm.conf */
+#define SLURM_NODE_ACCT_REGISTER 1
+#endif
 
 /**************************************************************************\
  * To test for memory leaks, set MEMORY_LEAK_DEBUG to 1 using 
@@ -154,6 +161,8 @@ static int controller_sigarray[] = {
 
 static void         _default_sigaction(int sig);
 inline static void  _free_server_thread(void);
+static int          _gold_cluster_ready();
+static int          _gold_mark_all_nodes_down(char *reason, time_t event_time);
 static void         _init_config(void);
 static void         _init_pidfile(void);
 static void         _kill_old_slurmctld(void);
@@ -308,13 +317,16 @@ int main(int argc, char *argv[])
 			(void) _shutdown_backup_controller(SHUTDOWN_WAIT);
 			/* Now recover the remaining state information */
 			if (switch_restore(slurmctld_conf.state_save_location,
-					 recover ? true : false))
+					   recover ? true : false))
 				fatal(" failed to initialize switch plugin" );
 			if ((error_code = read_slurm_conf(recover))) {
 				fatal("read_slurm_conf reading %s: %s",
 					slurmctld_conf.slurm_conf,
 					slurm_strerror(error_code));
 			}
+			if (recover == 0)
+				_gold_mark_all_nodes_down("cold-start",
+							  time(NULL));
 		} else {
 			error("this host (%s) not valid controller (%s or %s)",
 				node_name, slurmctld_conf.control_machine,
@@ -322,6 +334,7 @@ int main(int argc, char *argv[])
 			exit(0);
 		}
 		info("Running as primary controller");
+		_gold_cluster_ready();
 		if (slurm_sched_init() != SLURM_SUCCESS)
 			fatal("failed to initialize scheduling plugin");
 
@@ -783,6 +796,62 @@ static void _free_server_thread(void)
 	pthread_cond_broadcast(&server_thread_cond);
 }
 
+static int _gold_cluster_ready()
+{
+	uint32_t procs = 0;
+	struct node_record *node_ptr;
+	int i;
+	int rc = SLURM_ERROR;
+	time_t event_time = time(NULL);
+
+	node_ptr = node_record_table_ptr;
+	for (i = 0; i < node_record_count; i++, node_ptr++) {
+		if (node_ptr->name == '\0')
+			continue;
+#ifdef SLURM_NODE_ACCT_REGISTER
+		if (slurmctld_conf.fast_schedule)
+			procs += node_ptr->config_ptr->cpus;
+		else
+			procs += node_ptr->cpus;
+#else
+		procs += node_ptr->config_ptr->cpus;
+#endif
+	}
+
+	rc = nodeacct_storage_g_cluster_procs(procs, event_time);
+
+	return rc;
+}
+
+static int _gold_mark_all_nodes_down(char *reason, time_t event_time)
+{
+	char *state_file;
+	struct stat stat_buf;
+	struct node_record *node_ptr;
+	int i;
+	int rc = SLURM_ERROR;
+
+	state_file = xstrdup (slurmctld_conf.state_save_location);
+	xstrcat (state_file, "/node_state");
+	if (stat(state_file, &stat_buf)) {
+		error("_gold_mark_all_nodes_down: could not stat(%s) to record "
+		      "node down time", state_file);
+		xfree(state_file);
+		return rc;
+	}
+	xfree(state_file);
+
+	node_ptr = node_record_table_ptr;
+	for (i = 0; i < node_record_count; i++, node_ptr++) {
+		if (node_ptr->name == '\0')
+			continue;
+		if((rc = nodeacct_storage_g_node_down(node_ptr, event_time,
+						      reason))
+		   == SLURM_ERROR) 
+			break;
+	}
+	return rc;
+}
 /*
  * _slurmctld_background - process slurmctld background activities
  *	purge defunct job records, save state, schedule jobs, and 
@@ -799,6 +868,7 @@ static void *_slurmctld_background(void *no_data)
 	static time_t last_timelimit_time;
 	static time_t last_assert_primary_time;
 	static time_t last_trigger;
+	static time_t last_node_acct;
 	time_t now;
 	int ping_interval;
 	DEF_TIMERS;
@@ -816,6 +886,9 @@ static void *_slurmctld_background(void *no_data)
 	 * (Might kill jobs on nodes set DOWN) */
 	slurmctld_lock_t node_write_lock = { 
 		READ_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK };
+	/* Locks: Read node */
+	slurmctld_lock_t node_read_lock = { 
+		NO_LOCK, NO_LOCK, READ_LOCK, NO_LOCK };
 	/* Locks: Write partition */
 	slurmctld_lock_t part_write_lock = { 
 		NO_LOCK, NO_LOCK, NO_LOCK, WRITE_LOCK };
@@ -834,6 +907,7 @@ static void *_slurmctld_background(void *no_data)
 		ping_interval = 60 * 60 * 24 * 356;	/* one year */
 	last_ping_node_time = now + (time_t)MIN_CHECKIN_TIME - ping_interval;
 	last_ping_srun_time = now;
+	last_node_acct = now;
 	(void) pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
 	(void) pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
 	debug3("_slurmctld_background pid = %u", getpid());
@@ -934,6 +1008,14 @@ static void *_slurmctld_background(void *no_data)
 			save_all_state();
 		}
 
+		if (difftime(now, last_node_acct) >= PERIODIC_NODE_ACCT) {
+			/* Report current node state to account for added 
+			 * or reconfigured nodes */
+			last_node_acct = now;
+			lock_slurmctld(node_read_lock);
+			_gold_cluster_ready();
+			unlock_slurmctld(node_read_lock);
+		}
 		/* Reassert this machine as the primary controller.
 		 * A network or security problem could result in 
 		 * the backup controller assuming control even 

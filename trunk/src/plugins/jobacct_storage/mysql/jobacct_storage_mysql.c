@@ -769,9 +769,9 @@ extern int jobacct_storage_p_suspend(struct job_record *job_ptr)
  * note List needs to be freed when called
  */
 extern void jobacct_storage_p_get_jobs(List job_list,
-					List selected_steps,
-					List selected_parts,
-					void *params)
+				       List selected_steps,
+				       List selected_parts,
+				       void *params)
 {
 #ifdef HAVE_MYSQL
 	if(!jobacct_mysql_db || mysql_ping(jobacct_mysql_db) != 0) {
