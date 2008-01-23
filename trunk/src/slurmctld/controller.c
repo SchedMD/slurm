@@ -346,7 +346,7 @@ int main(int argc, char *argv[])
 					    || !node_ptr->reason)
 						continue;
 					
-					if(jobacct_g_node_down(
+					if(nodeacct_storage_g_node_down(
 						   node_ptr,
 						   event_time,
 						   node_ptr->reason)
