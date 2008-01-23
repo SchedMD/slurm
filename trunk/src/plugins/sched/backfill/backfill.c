@@ -76,6 +76,7 @@ typedef struct node_space_map {
 	bitstr_t *avail_bitmap;
 	int next;	/* next record, by time, zero termination */
 } node_space_map_t;
+int backfilled_jobs = 0;
 
 /*********************** local variables *********************/
 static bool new_work      = false;
@@ -90,7 +91,7 @@ static pthread_mutex_t thread_flag_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 /* Set __DEBUG to get detailed logging for this thread without 
  * detailed logging for the entire slurmctld daemon */
-#define __DEBUG			1
+#define __DEBUG			0
 
 /* Do not attempt to build job/resource/time record for
  * more than MAX_BACKFILL_JOB_CNT records */
@@ -164,14 +165,17 @@ extern void *backfill_agent(void *args)
 	char tv_str[20];
 	time_t now;
 	static time_t last_backfill_time = 0;
-	/* Read config, node, and partitions; Write jobs */
+	/* Read config, and partitions; Write jobs and nodes */
 	slurmctld_lock_t all_locks = {
-		READ_LOCK, WRITE_LOCK, READ_LOCK, READ_LOCK };
+		READ_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK };
 
 	while (!stop_backfill) {
 		sleep(1);		/* don't run continuously */
 
 		now = time(NULL);
+		/* Avoid resource fragmentation if important */
+		if (switch_no_frag() && job_is_completing())
+			continue;
 		if ((difftime(now, last_backfill_time) < BACKFILL_INTERVAL) ||
 		    stop_backfill || (!_more_work()))
 			continue;
@@ -347,20 +351,27 @@ static int _start_job(struct job_record *job_ptr, bitstr_t *avail_bitmap)
 	if (rc == SLURM_SUCCESS) {	
 		/* job initiated */
 		last_job_update = time(NULL);
-		info("backfill: JobId=%u NodeList=%s",
+		info("backfill: Started JobId=%u on %s",
 		     job_ptr->job_id, job_ptr->nodes);
 		if (job_ptr->batch_flag)
 			launch_job(job_ptr);
 		else
 			srun_allocate(job_ptr->job_id);
+		backfilled_jobs++;
+#if __DEBUG
+		info("backfill: Jobs backfilled: %d", backfilled_jobs);
+#endif
 	} else if (job_ptr->job_id != fail_jobid) {
 		char *node_list = bitmap2node_name(avail_bitmap);
-		error("backfill: could not start JobId=%u on nodes:%s",
-		      job_ptr->job_id, node_list);
+		/* This happens when a job has sharing disabled and
+		 * a selected node is still completing some job, 
+		 * which should be rare. */
+		verbose("backfill: Failed to start JobId=%u on %s: %s",
+			job_ptr->job_id, node_list, slurm_strerror(rc));
 		xfree(node_list);
 		fail_jobid = job_ptr->job_id;
 	} else {
-		debug3("backfill: could not start JobId=%u", job_ptr->job_id);
+		debug3("backfill: Failed to start JobId=%u", job_ptr->job_id);
 	}
 
 	return rc;
