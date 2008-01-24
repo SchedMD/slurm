@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  nodeacct_storage_pgsql.c - postgresql slurm node accounting plugin.
+ *  nodeacct_storage_slurmdbd.c - NO-OP slurm job completion logging plugin.
  *****************************************************************************
  *  Copyright (C) 2002-2008 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -81,8 +81,8 @@
  * minimum versions for their plugins as the job accounting API 
  * matures.
  */
-const char plugin_name[] = "Node accounting storage POSTGRESQL plugin";
-const char plugin_type[] = "nodeacct_storage/pgsql";
+const char plugin_name[] = "Node accounting storage SLURMDBD plugin";
+const char plugin_type[] = "nodeacct_storage/slurmdbd";
 const uint32_t plugin_version = 100;
 
 /*
