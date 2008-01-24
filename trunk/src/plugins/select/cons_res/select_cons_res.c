@@ -1106,10 +1106,12 @@ static bool _enough_nodes(int avail_nodes, int rem_nodes,
 extern int init(void)
 {
 #ifdef HAVE_XCPU
-	fatal("%s is incompatible with XCPU use", plugin_name);
+	error("%s is incompatible with XCPU use", plugin_name);
+	fatal("Use SelectType=select/linear");
 #endif
 #ifdef HAVE_BG
-	fatal("%s is incompatable with Blue Gene", plugin_name);
+	error("%s is incompatable with BlueGene", plugin_name);
+	fatal("Use SelectType=select/bluegene");
 #endif
 	cr_type = (select_type_plugin_info_t)
 			slurmctld_conf.select_type_param;
