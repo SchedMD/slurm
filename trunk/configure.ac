@@ -315,17 +315,20 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/jobacct_storage/mysql/Makefile
 		 src/plugins/jobacct_storage/pgsql/Makefile
 		 src/plugins/jobacct_storage/none/Makefile
+		 src/plugins/jobacct_storage/slurmdbd/Makefile
 		 src/plugins/jobcomp/Makefile
 		 src/plugins/jobcomp/filetxt/Makefile
 		 src/plugins/jobcomp/none/Makefile
 		 src/plugins/jobcomp/script/Makefile
 		 src/plugins/jobcomp/mysql/Makefile
 		 src/plugins/jobcomp/pgsql/Makefile
-		 src/plugins/nodeacct_storage/Makefile
-		 src/plugins/nodeacct_storage/gold/Makefile
-		 src/plugins/nodeacct_storage/mysql/Makefile
-		 src/plugins/nodeacct_storage/pgsql/Makefile
-		 src/plugins/nodeacct_storage/none/Makefile
+		 src/plugins/jobcomp/slurmdbd/Makefile
+		 src/plugins/clusteracct_storage/Makefile
+		 src/plugins/clusteracct_storage/gold/Makefile
+		 src/plugins/clusteracct_storage/mysql/Makefile
+		 src/plugins/clusteracct_storage/pgsql/Makefile
+		 src/plugins/clusteracct_storage/none/Makefile
+		 src/plugins/clusteracct_storage/slurmdbd/Makefile
 		 src/plugins/proctrack/Makefile
 		 src/plugins/proctrack/aix/Makefile
 		 src/plugins/proctrack/pgid/Makefile
