@@ -262,7 +262,8 @@ extern int init ( void )
 	rc = _init_status_pthread();
 #endif
 #ifdef HAVE_BG
-	fatal("%s is incompatable with Blue Gene", plugin_name);
+	error("%s is incompatable with BlueGene", plugin_name);
+	fatal("Use SelectType=select/bluegene");
 #endif
 	cr_type = (select_type_plugin_info_t)
 			slurmctld_conf.select_type_param;
