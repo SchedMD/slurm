@@ -330,7 +330,7 @@ static int _str2prio (const char *str, int *p2int);
  */
 struct spank_option spank_options[] =
 {
-    { "renice", "[prio]", "Re\-nice job tasks to priority [prio].", 1, 0,
+    { "renice", "[prio]", "Re\-nice job tasks to priority [prio].", 2, 0,
         (spank_opt_cb_f) _renice_opt_process
     },
     SPANK_OPTIONS_TABLE_END
