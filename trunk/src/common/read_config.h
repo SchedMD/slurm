@@ -80,13 +80,13 @@ extern char *default_plugstack;
 #define DEFAULT_MIN_JOB_AGE         300
 #define DEFAULT_MPI_DEFAULT         "none"
 #define DEFAULT_MSG_TIMEOUT         10
-#define DEFAULT_NODE_ACCT_STORAGE_TYPE "nodeacct_storage/none"
-#define NODE_ACCT_STORAGE_TYPE_NONE "nodeacct_storage/none"
-#define DEFAULT_NODE_ACCT_STORAGE_LOC  "/var/log/slurm_nodeacct.log"
-#define DEFAULT_NODE_ACCT_STORAGE_HOST "localhost"
-#define DEFAULT_NODE_ACCT_STORAGE_USER "root"
-#define DEFAULT_NODE_ACCT_STORAGE_PASS ""
-#define DEFAULT_NODE_ACCT_STORAGE_PORT 0
+#define DEFAULT_CLUSTER_ACCT_STORAGE_TYPE "clusteracct_storage/none"
+#define CLUSTER_ACCT_STORAGE_TYPE_NONE "clusteracct_storage/none"
+#define DEFAULT_CLUSTER_ACCT_STORAGE_LOC  "/var/log/slurm_clusteracct.log"
+#define DEFAULT_CLUSTER_ACCT_STORAGE_HOST "localhost"
+#define DEFAULT_CLUSTER_ACCT_STORAGE_USER "root"
+#define DEFAULT_CLUSTER_ACCT_STORAGE_PASS ""
+#define DEFAULT_CLUSTER_ACCT_STORAGE_PORT 0
 #ifdef HAVE_AIX		/* AIX specific default configuration parameters */
 #  define DEFAULT_CHECKPOINT_TYPE   "checkpoint/aix"
 #  define DEFAULT_PROCTRACK_TYPE    "proctrack/aix"

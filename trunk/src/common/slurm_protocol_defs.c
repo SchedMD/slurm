@@ -909,11 +909,11 @@ void slurm_free_ctl_conf(slurm_ctl_conf_info_msg_t * config_ptr)
 		xfree(config_ptr->job_credential_public_certificate);
 		xfree(config_ptr->mail_prog);
 		xfree(config_ptr->mpi_default);
-		xfree(config_ptr->node_acct_storage_loc);
-		xfree(config_ptr->node_acct_storage_type);
-		xfree(config_ptr->node_acct_storage_user);
-		xfree(config_ptr->node_acct_storage_host);
-		xfree(config_ptr->node_acct_storage_pass);
+		xfree(config_ptr->cluster_acct_storage_loc);
+		xfree(config_ptr->cluster_acct_storage_type);
+		xfree(config_ptr->cluster_acct_storage_user);
+		xfree(config_ptr->cluster_acct_storage_host);
+		xfree(config_ptr->cluster_acct_storage_pass);
 		xfree(config_ptr->node_prefix);
 		xfree(config_ptr->plugindir);
 		xfree(config_ptr->plugstack);

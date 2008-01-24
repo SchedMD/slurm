@@ -70,7 +70,7 @@
 #include "src/common/read_config.h"
 #include "src/common/slurm_jobacct_gather.h"
 #include "src/common/slurm_jobacct_storage.h"
-#include "src/common/slurm_nodeacct_storage.h"
+#include "src/common/slurm_clusteracct_storage.h"
 #include "src/common/slurm_auth.h"
 #include "src/common/slurm_jobcomp.h"
 #include "src/common/slurm_protocol_api.h"
@@ -346,7 +346,7 @@ int main(int argc, char *argv[])
 					    || !node_ptr->reason)
 						continue;
 					
-					if(nodeacct_storage_g_node_down(
+					if(clusteracct_storage_g_node_down(
 						   node_ptr,
 						   event_time,
 						   node_ptr->reason)
@@ -848,7 +848,7 @@ static int _gold_cluster_ready()
 #endif
 	}
 
-	rc = nodeacct_storage_g_cluster_procs(procs, event_time);
+	rc = clusteracct_storage_g_cluster_procs(procs, event_time);
 
 	return rc;
 }
@@ -875,8 +875,8 @@ static int _gold_mark_all_nodes_down(char *reason, time_t event_time)
 	for (i = 0; i < node_record_count; i++, node_ptr++) {
 		if (node_ptr->name == '\0')
 			continue;
-		if((rc = nodeacct_storage_g_node_down(node_ptr, event_time,
-						      reason))
+		if((rc = clusteracct_storage_g_node_down(node_ptr, event_time,
+							 reason))
 		   == SLURM_ERROR) 
 			break;
 	}

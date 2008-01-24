@@ -87,10 +87,10 @@ am__libcommon_la_SOURCES_DIST = xmalloc.c xmalloc.h xassert.c \
 	slurm_protocol_defs.h slurm_rlimits_info.h \
 	slurm_rlimits_info.c uid.c uid.h util-net.c util-net.h \
 	slurm_auth.c slurm_auth.h jobacct_common.c jobacct_common.h \
+	slurm_clusteracct_storage.c slurm_clusteracct_storage.h \
 	slurm_jobacct_gather.c slurm_jobacct_gather.h \
 	slurm_jobacct_storage.c slurm_jobacct_storage.h \
-	slurm_jobcomp.c slurm_jobcomp.h slurm_nodeacct_storage.c \
-	slurm_nodeacct_storage.h switch.c switch.h arg_desc.c \
+	slurm_jobcomp.c slurm_jobcomp.h switch.c switch.h arg_desc.c \
 	arg_desc.h macros.h malloc.c malloc.h getopt.h getopt.c \
 	getopt1.c unsetenv.c unsetenv.h slurm_selecttype_info.c \
 	slurm_resource_info.c slurm_resource_info.h hostlist.c \
@@ -121,10 +121,10 @@ am_libcommon_la_OBJECTS = libcommon_la-xmalloc.lo \
 	libcommon_la-slurm_rlimits_info.lo libcommon_la-uid.lo \
 	libcommon_la-util-net.lo libcommon_la-slurm_auth.lo \
 	libcommon_la-jobacct_common.lo \
+	libcommon_la-slurm_clusteracct_storage.lo \
 	libcommon_la-slurm_jobacct_gather.lo \
 	libcommon_la-slurm_jobacct_storage.lo \
-	libcommon_la-slurm_jobcomp.lo \
-	libcommon_la-slurm_nodeacct_storage.lo libcommon_la-switch.lo \
+	libcommon_la-slurm_jobcomp.lo libcommon_la-switch.lo \
 	libcommon_la-arg_desc.lo libcommon_la-malloc.lo \
 	libcommon_la-getopt.lo libcommon_la-getopt1.lo \
 	$(am__objects_1) libcommon_la-slurm_selecttype_info.lo \
@@ -391,10 +391,10 @@ libcommon_la_SOURCES = \
 	util-net.c util-net.h		\
 	slurm_auth.c slurm_auth.h	\
 	jobacct_common.c jobacct_common.h \
+	slurm_clusteracct_storage.c slurm_clusteracct_storage.h \
 	slurm_jobacct_gather.c slurm_jobacct_gather.h \
 	slurm_jobacct_storage.c slurm_jobacct_storage.h \
 	slurm_jobcomp.c slurm_jobcomp.h	\
-	slurm_nodeacct_storage.c slurm_nodeacct_storage.h \
 	switch.c switch.h		\
 	arg_desc.c arg_desc.h		\
 	macros.h			\
@@ -526,12 +526,12 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcommon_la-read_config.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcommon_la-safeopen.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcommon_la-slurm_auth.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcommon_la-slurm_clusteracct_storage.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcommon_la-slurm_cred.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcommon_la-slurm_errno.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcommon_la-slurm_jobacct_gather.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcommon_la-slurm_jobacct_storage.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcommon_la-slurm_jobcomp.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcommon_la-slurm_nodeacct_storage.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcommon_la-slurm_protocol_api.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcommon_la-slurm_protocol_defs.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcommon_la-slurm_protocol_pack.Plo@am__quote@
@@ -828,6 +828,13 @@ libcommon_la-jobacct_common.lo: jobacct_common.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libcommon_la_CFLAGS) $(CFLAGS) -c -o libcommon_la-jobacct_common.lo `test -f 'jobacct_common.c' || echo '$(srcdir)/'`jobacct_common.c
 
+libcommon_la-slurm_clusteracct_storage.lo: slurm_clusteracct_storage.c
+@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libcommon_la_CFLAGS) $(CFLAGS) -MT libcommon_la-slurm_clusteracct_storage.lo -MD -MP -MF $(DEPDIR)/libcommon_la-slurm_clusteracct_storage.Tpo -c -o libcommon_la-slurm_clusteracct_storage.lo `test -f 'slurm_clusteracct_storage.c' || echo '$(srcdir)/'`slurm_clusteracct_storage.c
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcommon_la-slurm_clusteracct_storage.Tpo $(DEPDIR)/libcommon_la-slurm_clusteracct_storage.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='slurm_clusteracct_storage.c' object='libcommon_la-slurm_clusteracct_storage.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libcommon_la_CFLAGS) $(CFLAGS) -c -o libcommon_la-slurm_clusteracct_storage.lo `test -f 'slurm_clusteracct_storage.c' || echo '$(srcdir)/'`slurm_clusteracct_storage.c
+
 libcommon_la-slurm_jobacct_gather.lo: slurm_jobacct_gather.c
 @am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libcommon_la_CFLAGS) $(CFLAGS) -MT libcommon_la-slurm_jobacct_gather.lo -MD -MP -MF $(DEPDIR)/libcommon_la-slurm_jobacct_gather.Tpo -c -o libcommon_la-slurm_jobacct_gather.lo `test -f 'slurm_jobacct_gather.c' || echo '$(srcdir)/'`slurm_jobacct_gather.c
 @am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcommon_la-slurm_jobacct_gather.Tpo $(DEPDIR)/libcommon_la-slurm_jobacct_gather.Plo
@@ -848,13 +855,6 @@ libcommon_la-slurm_jobcomp.lo: slurm_jobcomp.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='slurm_jobcomp.c' object='libcommon_la-slurm_jobcomp.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libcommon_la_CFLAGS) $(CFLAGS) -c -o libcommon_la-slurm_jobcomp.lo `test -f 'slurm_jobcomp.c' || echo '$(srcdir)/'`slurm_jobcomp.c
-
-libcommon_la-slurm_nodeacct_storage.lo: slurm_nodeacct_storage.c
-@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libcommon_la_CFLAGS) $(CFLAGS) -MT libcommon_la-slurm_nodeacct_storage.lo -MD -MP -MF $(DEPDIR)/libcommon_la-slurm_nodeacct_storage.Tpo -c -o libcommon_la-slurm_nodeacct_storage.lo `test -f 'slurm_nodeacct_storage.c' || echo '$(srcdir)/'`slurm_nodeacct_storage.c
-@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcommon_la-slurm_nodeacct_storage.Tpo $(DEPDIR)/libcommon_la-slurm_nodeacct_storage.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='slurm_nodeacct_storage.c' object='libcommon_la-slurm_nodeacct_storage.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libcommon_la_CFLAGS) $(CFLAGS) -c -o libcommon_la-slurm_nodeacct_storage.lo `test -f 'slurm_nodeacct_storage.c' || echo '$(srcdir)/'`slurm_nodeacct_storage.c
 
 libcommon_la-switch.lo: switch.c
 @am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libcommon_la_CFLAGS) $(CFLAGS) -MT libcommon_la-switch.lo -MD -MP -MF $(DEPDIR)/libcommon_la-switch.Tpo -c -o libcommon_la-switch.lo `test -f 'switch.c' || echo '$(srcdir)/'`switch.c
