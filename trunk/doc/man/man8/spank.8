@@ -40,7 +40,11 @@ user options are processed.
 .TP
 \fBslurm_spank_local_user_init\fR
 Called in local (\fBsrun\fR or \fBsbatch\fR) context only after all 
-options have been processed.
+options have been processed. 
+This is called after the job ID and step IDs are available.
+This happens in \fBsrun\fR after the allocation is made, but before 
+tasks are launched.
+This happens in \fBsbatch\fR after the job is submitted.
 .TP
 \fBslurm_spank_user_init\fR 
 Called after privileges are temporarily dropped. (remote context only)
