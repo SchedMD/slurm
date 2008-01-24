@@ -14,7 +14,7 @@
 
 @SET_MAKE@
 
-# Makefile for nodeacct_storage/gold plugin
+# Makefile for clusteracct_storage/gold plugin
 
 VPATH = @srcdir@
 pkgdatadir = $(datadir)/@PACKAGE@
@@ -74,14 +74,15 @@ am__strip_dir = `echo $$p | sed -e 's|^.*/||'`;
 am__installdirs = "$(DESTDIR)$(pkglibdir)"
 pkglibLTLIBRARIES_INSTALL = $(INSTALL)
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
-nodeacct_storage_gold_la_LIBADD =
-am_nodeacct_storage_gold_la_OBJECTS = nodeacct_storage_gold.lo \
+clusteracct_storage_gold_la_LIBADD =
+am_clusteracct_storage_gold_la_OBJECTS = clusteracct_storage_gold.lo \
 	gold_interface.lo base64.lo
-nodeacct_storage_gold_la_OBJECTS =  \
-	$(am_nodeacct_storage_gold_la_OBJECTS)
-nodeacct_storage_gold_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
-	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
-	$(nodeacct_storage_gold_la_LDFLAGS) $(LDFLAGS) -o $@
+clusteracct_storage_gold_la_OBJECTS =  \
+	$(am_clusteracct_storage_gold_la_OBJECTS)
+clusteracct_storage_gold_la_LINK = $(LIBTOOL) --tag=CC \
+	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
+	$(AM_CFLAGS) $(CFLAGS) $(clusteracct_storage_gold_la_LDFLAGS) \
+	$(LDFLAGS) -o $@
 DEFAULT_INCLUDES = -I. -I$(top_builddir) -I$(top_builddir)/slurm@am__isrc@
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
 am__depfiles_maybe = depfiles
@@ -94,8 +95,8 @@ CCLD = $(CC)
 LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
-SOURCES = $(nodeacct_storage_gold_la_SOURCES)
-DIST_SOURCES = $(nodeacct_storage_gold_la_SOURCES)
+SOURCES = $(clusteracct_storage_gold_la_SOURCES)
+DIST_SOURCES = $(clusteracct_storage_gold_la_SOURCES)
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -266,14 +267,14 @@ top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
 PLUGIN_FLAGS = -module -avoid-version --export-dynamic 
 INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common
-pkglib_LTLIBRARIES = nodeacct_storage_gold.la
+pkglib_LTLIBRARIES = clusteracct_storage_gold.la
 
 # Null job completion logging plugin.
-nodeacct_storage_gold_la_SOURCES = nodeacct_storage_gold.c \
+clusteracct_storage_gold_la_SOURCES = clusteracct_storage_gold.c \
 			gold_interface.c gold_interface.h \
 			base64.c base64.h
 
-nodeacct_storage_gold_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
+clusteracct_storage_gold_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
 all: all-am
 
 .SUFFIXES:
@@ -334,8 +335,8 @@ clean-pkglibLTLIBRARIES:
 	  echo "rm -f \"$${dir}/so_locations\""; \
 	  rm -f "$${dir}/so_locations"; \
 	done
-nodeacct_storage_gold.la: $(nodeacct_storage_gold_la_OBJECTS) $(nodeacct_storage_gold_la_DEPENDENCIES) 
-	$(nodeacct_storage_gold_la_LINK) -rpath $(pkglibdir) $(nodeacct_storage_gold_la_OBJECTS) $(nodeacct_storage_gold_la_LIBADD) $(LIBS)
+clusteracct_storage_gold.la: $(clusteracct_storage_gold_la_OBJECTS) $(clusteracct_storage_gold_la_DEPENDENCIES) 
+	$(clusteracct_storage_gold_la_LINK) -rpath $(pkglibdir) $(clusteracct_storage_gold_la_OBJECTS) $(clusteracct_storage_gold_la_LIBADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -344,8 +345,8 @@ distclean-compile:
 	-rm -f *.tab.c
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/base64.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/clusteracct_storage_gold.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/gold_interface.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/nodeacct_storage_gold.Plo@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
