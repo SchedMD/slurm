@@ -81,8 +81,8 @@
  * minimum versions for their plugins as the job accounting API 
  * matures.
  */
-const char plugin_name[] = "Node accounting storage NOT_INVOKED plugin";
-const char plugin_type[] = "nodeacct_storage/none";
+const char plugin_name[] = "Node accounting storage MYSQL plugin";
+const char plugin_type[] = "nodeacct_storage/mysql";
 const uint32_t plugin_version = 100;
 
 /*

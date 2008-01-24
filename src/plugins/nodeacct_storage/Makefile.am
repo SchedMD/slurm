@@ -1,3 +1,3 @@
 # Makefile for storage plugins
 
-SUBDIRS = gold mysql none pgsql
+SUBDIRS = gold mysql none pgsql slurmdbd
