@@ -106,7 +106,8 @@ reject_msg_t reject_msgs[REJECT_MSG_MAX];
  *	QUEUETIME=<uts>;		submission time
  *	STARTTIME=<uts>;		time execution started
  *	RCLASS=<partition>;		SLURM partition name
- *	RMEM=<MB>;			MB of memory required
+ *	DMEM=<MB>;			MB of memory required per task
+ *	[RMEM=<MB>;]			MB of memory required per node (DEFUNCT)
  *	RDISK=<MB>;			MB of disk space required
  *	[COMMENT=<whatever>;]		job dependency or account number
  *	[COMPLETETIME=<uts>;]		termination time
@@ -337,7 +338,7 @@ static char *	_dump_job(struct job_record *job_ptr, int state_info)
 	xstrcat(buf, tmp);
 
 	snprintf(tmp, sizeof(tmp),
-		"RMEM=%u;RDISK=%u;",
+		"DMEM=%u;RDISK=%u;",
 		_get_job_min_mem(job_ptr),
 		_get_job_min_disk(job_ptr));
 	xstrcat(buf, tmp);
