@@ -1428,10 +1428,6 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 		last_job_update = now;
 		slurm_sched_schedule();	/* work for external scheduler */
 	}
-	if (independent &&
-	    (job_ptr->details && (job_ptr->details->begin_time == 0)) &&
-	    ((error_code == SLURM_SUCCESS) || (error_code == ESLURM_NODES_BUSY)))
-		job_ptr->details->begin_time = now;
  
 	if ((error_code == ESLURM_NODES_BUSY) ||
 	    (error_code == ESLURM_JOB_HELD) ||
@@ -4526,17 +4522,20 @@ extern void job_completion_logger(struct job_record  *job_ptr)
 extern bool job_independent(struct job_record *job_ptr)
 {
 	struct job_details *detail_ptr = job_ptr->details;
+	time_t now = time(NULL);
 	int rc;
 
-	if (detail_ptr && (detail_ptr->begin_time > time(NULL))) {
+	if (detail_ptr && (detail_ptr->begin_time > now)) {
 		job_ptr->state_reason = WAIT_TIME;
 		return false;	/* not yet time */
 	}
 
 	rc = test_job_dependency(job_ptr);
-	if (rc == 0)
+	if (rc == 0) {
+		if (detail_ptr && (detail_ptr->begin_time == 0))
+			detail_ptr->begin_time = now;
 		return true;
-	else if (rc == 1) {
+	} else if (rc == 1) {
 		job_ptr->state_reason = WAIT_DEPENDENCY;
 		return false;
 	} else {	/* rc == 2 */
@@ -4550,6 +4549,7 @@ extern bool job_independent(struct job_record *job_ptr)
 		return false;
 	}
 }
+
 /*
  * determine if job is ready to execute per the node select plugin
  * IN job_id - job to test
