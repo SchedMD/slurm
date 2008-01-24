@@ -356,7 +356,7 @@ The \fB\-\-label\fR option will prepend lines of output with the remote
 task id.
 
 .TP
-\fB\-m\fR, \\fB\-\-relative\fR
+\fB\-m\fR, \fB\-\-relative\fR
 (\fIblock\fR|\fIcyclic\fR|\fIarbitrary\fR|\fIplane=<options>\fR)
 Specify an alternate distribution method for remote processes.
 .RS
@@ -410,7 +410,8 @@ The default value is the submitting user.
 
 .TP
 \fB\-\-mem\fR=\fIMB\fR
-Specify a minimum amount of real memory.
+Specify a minimum amount of real memory required per task in MB.
+Default value is unlimited.
 
 .TP
 \fB\-\-mem_bind\fR=[{\fIquiet,verbose\fR},]\fItype\fR
