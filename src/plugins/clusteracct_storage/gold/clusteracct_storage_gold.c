@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  nodeacct_storage_none.c - NO-OP slurm job completion logging plugin.
+ *  clusteracct_storage_none.c - NO-OP slurm job completion logging plugin.
  *****************************************************************************
  *  Copyright (C) 2002-2008 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -51,7 +51,7 @@
 #include <slurm/slurm_errno.h>
 
 #include "src/slurmctld/slurmctld.h"
-#include "src/common/slurm_nodeacct_storage.h"
+#include "src/common/slurm_clusteracct_storage.h"
 #include "gold_interface.h"
 
 /*
@@ -83,8 +83,8 @@
  * minimum versions for their plugins as the job accounting API 
  * matures.
  */
-const char plugin_name[] = "Node accounting storage GOLD plugin";
-const char plugin_type[] = "nodeacct_storage/gold";
+const char plugin_name[] = "Cluster accounting storage GOLD plugin";
+const char plugin_type[] = "clusteracct_storage/gold";
 const uint32_t plugin_version = 100;
 
 static char *cluster_name = NULL;
@@ -100,22 +100,22 @@ extern int init ( void )
 	uint32_t port = 0;
 
 	if(!(cluster_name = slurm_get_cluster_name())) 
-		fatal("To run nodeacct_storage/gold you have to specify "
+		fatal("To run clusteracct_storage/gold you have to specify "
 		      "ClusterName in your slurm.conf");
-	if(!(keyfile = slurm_get_nodeacct_storage_pass())) 
-		fatal("To run nodeacct_storage/gold you have to set "
+	if(!(keyfile = slurm_get_clusteracct_storage_pass())) 
+		fatal("To run clusteracct_storage/gold you have to set "
 		      "your gold keyfile as "
-		      "NodeAcctStoragePass in your slurm.conf");
+		      "ClusteracctStoragePass in your slurm.conf");
 	
-	if(!(host = slurm_get_nodeacct_storage_host())) 
-		fatal("To run nodeacct_storage/gold you have to set "
+	if(!(host = slurm_get_clusteracct_storage_host())) 
+		fatal("To run clusteracct_storage/gold you have to set "
 		      "your gold host as "
-		      "NodeAcctStorageHost in your slurm.conf");
+		      "ClusteracctStorageHost in your slurm.conf");
 	
-	if(!(port = slurm_get_nodeacct_storage_port())) 
-		fatal("To run nodeacct_storage/gold you have to set "
+	if(!(port = slurm_get_clusteracct_storage_port())) 
+		fatal("To run clusteracct_storage/gold you have to set "
 		      "your gold port as "
-		      "NodeAcctStoragePort in your slurm.conf");
+		      "ClusteracctStoragePort in your slurm.conf");
 	
 
 	debug2("connecting from %s to gold with keyfile='%s' for %s(%d)",
@@ -135,7 +135,7 @@ extern int fini ( void )
 	return SLURM_SUCCESS;
 }
 
-extern int nodeacct_storage_p_node_down(struct node_record *node_ptr,
+extern int clusteracct_storage_p_node_down(struct node_record *node_ptr,
 					time_t event_time,
 					char *reason)
 {
@@ -152,7 +152,7 @@ extern int nodeacct_storage_p_node_down(struct node_record *node_ptr,
 
 #if _DEBUG
 	slurm_make_time_str(&event_time, tmp_buff, sizeof(tmp_buff));
-	info("Node_acct_down: %s at %s with %u cpus due to %s", 
+	info("cluster_acct_down: %s at %s with %u cpus due to %s", 
 	     node_ptr->name, tmp_buff, cpus, node_ptr->reason);
 #endif
 	/* If the node was already down end that record since the
@@ -178,7 +178,7 @@ extern int nodeacct_storage_p_node_down(struct node_record *node_ptr,
 	destroy_gold_request(gold_request);
 
 	if(!gold_response) {
-		error("nodeacct_storage_p_node_down: no response received");
+		error("clusteracct_storage_p_node_down: no response received");
 		return rc;
 	}
 
@@ -213,7 +213,7 @@ extern int nodeacct_storage_p_node_down(struct node_record *node_ptr,
 	destroy_gold_request(gold_request);
 
 	if(!gold_response) {
-		error("nodeacct_p_node_down: no response received");
+		error("clusteracct_p_node_down: no response received");
 		return rc;
 	}
 
@@ -229,7 +229,7 @@ extern int nodeacct_storage_p_node_down(struct node_record *node_ptr,
 	return rc;
 }
 
-extern int nodeacct_storage_p_node_up(struct node_record *node_ptr,
+extern int clusteracct_storage_p_node_up(struct node_record *node_ptr,
 				      time_t event_time)
 {
 	int rc = SLURM_ERROR;
@@ -239,7 +239,7 @@ extern int nodeacct_storage_p_node_up(struct node_record *node_ptr,
 
 #if _DEBUG
 	slurm_make_time_str(&event_time, tmp_buff, sizeof(tmp_buff));
-	info("Node_acct_up: %s at %s", node_ptr->name, tmp_buff);
+	info("cluster_acct_up: %s at %s", node_ptr->name, tmp_buff);
 #endif
 	/* FIXME: WRITE TO DATABASE HERE */
 
@@ -262,7 +262,7 @@ extern int nodeacct_storage_p_node_up(struct node_record *node_ptr,
 	destroy_gold_request(gold_request);
 
 	if(!gold_response) {
-		error("nodeacct_p_node_up: no response received");
+		error("clusteracct_p_node_up: no response received");
 		return rc;
 	}
 
@@ -279,7 +279,7 @@ extern int nodeacct_storage_p_node_up(struct node_record *node_ptr,
 	return rc;
 }
 
-extern int nodeacct_storage_p_cluster_procs(uint32_t procs, time_t event_time)
+extern int clusteracct_storage_p_cluster_procs(uint32_t procs, time_t event_time)
 {
 	static uint32_t last_procs = -1;
 	gold_request_t *gold_request = NULL;
@@ -298,7 +298,7 @@ extern int nodeacct_storage_p_cluster_procs(uint32_t procs, time_t event_time)
 	/* Record the processor count */
 #if _DEBUG
 	slurm_make_time_str(&event_time, tmp_buff, sizeof(tmp_buff));
-	info("Node_acct_procs: %s has %u total CPUs at %s", 
+	info("cluster_acct_procs: %s has %u total CPUs at %s", 
 	     cluster_name, procs, tmp_buff);
 #endif
 	
@@ -320,7 +320,7 @@ extern int nodeacct_storage_p_cluster_procs(uint32_t procs, time_t event_time)
 	destroy_gold_request(gold_request);
 
 	if(!gold_response) {
-		error("nodeacct_p_cluster_procs: no response received");
+		error("clusteracct_p_cluster_procs: no response received");
 		return rc;
 	}
 
@@ -402,7 +402,7 @@ extern int nodeacct_storage_p_cluster_procs(uint32_t procs, time_t event_time)
 	destroy_gold_request(gold_request);
 
 	if(!gold_response) {
-		error("nodeacct_p_cluster_procs: no response received");
+		error("clusteracct_p_cluster_procs: no response received");
 		return rc;
 	}
 

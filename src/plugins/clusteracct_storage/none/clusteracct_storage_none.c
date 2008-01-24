@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  nodeacct_storage_none.c - NO-OP slurm job completion logging plugin.
+ *  clusteracct_storage_none.c - NO-OP slurm job completion logging plugin.
  *****************************************************************************
  *  Copyright (C) 2002-2008 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -50,7 +50,7 @@
 #include <slurm/slurm_errno.h>
 
 #include "src/slurmctld/slurmctld.h"
-#include "src/common/slurm_nodeacct_storage.h"
+#include "src/common/slurm_clusteracct_storage.h"
 
 /*
  * These variables are required by the generic plugin interface.  If they
@@ -81,8 +81,8 @@
  * minimum versions for their plugins as the job accounting API 
  * matures.
  */
-const char plugin_name[] = "Node accounting storage NOT_INVOKED plugin";
-const char plugin_type[] = "nodeacct_storage/none";
+const char plugin_name[] = "Cluster accounting storage NOT_INVOKED plugin";
+const char plugin_type[] = "clusteracct_storage/none";
 const uint32_t plugin_version = 100;
 
 /*
@@ -101,17 +101,18 @@ extern int fini ( void )
 }
 
 
-extern int nodeacct_storage_p_node_down(struct node_record *node_ptr,
+extern int clusteracct_storage_p_node_down(struct node_record *node_ptr,
 					time_t event_time, char *reason)
 {
 	return SLURM_SUCCESS;
 }
-extern int nodeacct_storage_p_node_up(struct node_record *node_ptr,
+extern int clusteracct_storage_p_node_up(struct node_record *node_ptr,
 				      time_t event_time)
 {
 	return SLURM_SUCCESS;
 }
-extern int nodeacct_storage_p_cluster_procs(uint32_t procs, time_t event_time)
+extern int clusteracct_storage_p_cluster_procs(uint32_t procs,
+					       time_t event_time)
 {
 	return SLURM_SUCCESS;
 }
