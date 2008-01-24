@@ -1418,11 +1418,7 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 		last_job_update = now;
 		slurm_sched_schedule();	/* work for external scheduler */
 	}
-	if (independent &&
-	    (job_ptr->details && (job_ptr->details->begin_time == 0)) &&
-	    ((error_code == SLURM_SUCCESS) || (error_code == ESLURM_NODES_BUSY)))
-		job_ptr->details->begin_time = now;
- 
+
 	if ((error_code == ESLURM_NODES_BUSY) ||
 	    (error_code == ESLURM_JOB_HELD) ||
 	    (error_code == ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE)) {
@@ -4421,25 +4417,31 @@ extern bool job_independent(struct job_record *job_ptr)
 {
 	struct job_record *dep_ptr;
 	struct job_details *detail_ptr = job_ptr->details;
+	time_t now = time(NULL);
 
-	if (detail_ptr && (detail_ptr->begin_time > time(NULL))) {
+	if (detail_ptr && (detail_ptr->begin_time > now)) {
 		job_ptr->state_reason = WAIT_TIME;
 		return false;	/* not yet time */
 	}
-		
+
 	if (job_ptr->dependency == 0)
-		return true;
+		goto indi;
 
 	dep_ptr = find_job_record(job_ptr->dependency);
 	if (dep_ptr == NULL)
-		return true;
+		goto indi;
 
 	if (((dep_ptr->job_state & JOB_COMPLETING) == 0) &&
 	    (dep_ptr->job_state >= JOB_COMPLETE))
-		return true;
+		goto indi;
 
 	job_ptr->state_reason = WAIT_DEPENDENCY;
 	return false;	/* job exists and incomplete */
+
+ indi:	/* job is independent, set begin time as needed */
+	if (detail_ptr && (detail_ptr->begin_time == 0))
+		detail_ptr->begin_time = now;
+	return true;
 }
 /*
  * determine if job is ready to execute per the node select plugin
