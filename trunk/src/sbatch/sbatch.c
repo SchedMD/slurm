@@ -71,6 +71,9 @@ int main(int argc, char *argv[])
 	int retries = 0;
 
 	log_init(xbasename(argv[0]), logopt, 0, NULL);
+	if (spank_init(NULL) < 0)
+		fatal("Plug-in initialization failed");
+
 	script_name = process_options_first_pass(argc, argv);
 	/* reinit log with new verbosity (if changed by command line) */
 	if (opt.verbose || opt.quiet) {
@@ -88,8 +91,6 @@ int main(int argc, char *argv[])
 	if (script_body == NULL)
 		exit(1);
 
-	if (spank_init(NULL) < 0)
-		fatal("Plug-in initialization failed");
 	if (process_options_second_pass((argc - opt.script_argc), argv,
 					script_body, script_size) < 0) {
 		fatal("sbatch parameter parsing");
