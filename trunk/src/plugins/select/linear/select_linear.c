@@ -514,7 +514,7 @@ static int _job_count_bitmap(struct node_cr_record *node_cr_ptr,
 			     struct job_record *job_ptr, 
 			     bitstr_t * bitmap, bitstr_t * jobmap, int job_cnt)
 {
-	int i, count = 0;
+	int i, count = 0, total_jobs;
 	struct part_cr_record *part_cr_ptr;
 	uint32_t job_memory = 0;
 
@@ -550,26 +550,30 @@ static int _job_count_bitmap(struct node_cr_record *node_cr_ptr,
 			continue;
 		}
 
+		total_jobs = 0;
 		part_cr_ptr = node_cr_ptr[i].parts;
 		while (part_cr_ptr) {
-			if (part_cr_ptr->part_ptr != job_ptr->part_ptr) {
-				part_cr_ptr = part_cr_ptr->next;
-				continue;
+			if (job_cnt == 0)
+				total_jobs += part_cr_ptr->run_job_cnt;
+			else if (part_cr_ptr->part_ptr == job_ptr->part_ptr) {
+				total_jobs += part_cr_ptr->run_job_cnt;
+				break;
 			}
-			if (part_cr_ptr->run_job_cnt <= job_cnt) {
-				bit_set(jobmap, i);
-				count++;
-			} else {
-				bit_clear(jobmap, i);
-			}
-			break;
+			part_cr_ptr = part_cr_ptr->next;
 		}
-		if (part_cr_ptr == NULL) {
+		if ((job_cnt != 0) && (part_cr_ptr == NULL)) {
 			error("_job_count_bitmap: could not find "
 				"partition %s for node %s",
 				job_ptr->part_ptr->name,
 				node_record_table_ptr[i].name);
 		}
+		if (total_jobs <= job_cnt) {
+			bit_set(jobmap, i);
+			count++;
+		} else {
+			bit_clear(jobmap, i);
+		}
+
 	}
 	return count;
 }

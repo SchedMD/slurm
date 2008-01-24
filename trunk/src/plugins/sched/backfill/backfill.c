@@ -203,6 +203,7 @@ static void _attempt_backfill(void)
 	struct part_record *part_ptr;
 	uint32_t end_time, end_reserve, time_limit;
 	uint32_t min_nodes, max_nodes, req_nodes;
+	uint16_t orig_shared;
 	bitstr_t *avail_bitmap = NULL;
 	time_t now = time(NULL);
 	node_space_map_t node_space[MAX_BACKFILL_JOB_CNT + 2];
@@ -292,10 +293,19 @@ static void _attempt_backfill(void)
 		if (bit_set_count(avail_bitmap) < min_nodes)
 			continue;	/* no nodes remain */
 
-		/* Try to schedule the job */
+		/* Try to schedule the job. First on dedicated nodes
+		 * then on shared nodes (if so configured). */
+		orig_shared = job_ptr->details->shared;
+		job_ptr->details->shared = 0;
 		j = select_g_job_test(job_ptr, avail_bitmap,
 				min_nodes, max_nodes, req_nodes, 
 				SELECT_MODE_WILL_RUN);
+		if ((j != SLURM_SUCCESS) && (orig_shared != 0)) {
+			job_ptr->details->shared = orig_shared;
+			j = select_g_job_test(job_ptr, avail_bitmap,
+					min_nodes, max_nodes, req_nodes, 
+					SELECT_MODE_WILL_RUN);
+		}
 		if (j != SLURM_SUCCESS)
 			continue;	/* not runable */
 		if (job_ptr->start_time <= now) {
@@ -365,7 +375,7 @@ static int _start_job(struct job_record *job_ptr, bitstr_t *avail_bitmap)
 		char *node_list = bitmap2node_name(avail_bitmap);
 		/* This happens when a job has sharing disabled and
 		 * a selected node is still completing some job, 
-		 * which should be rare. */
+		 * which should be a temporary situation. */
 		verbose("backfill: Failed to start JobId=%u on %s: %s",
 			job_ptr->job_id, node_list, slurm_strerror(rc));
 		xfree(node_list);
