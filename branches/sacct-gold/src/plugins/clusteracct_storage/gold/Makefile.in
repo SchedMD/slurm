@@ -74,9 +74,7 @@ am__strip_dir = `echo $$p | sed -e 's|^.*/||'`;
 am__installdirs = "$(DESTDIR)$(pkglibdir)"
 pkglibLTLIBRARIES_INSTALL = $(INSTALL)
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
-clusteracct_storage_gold_la_LIBADD =
-am_clusteracct_storage_gold_la_OBJECTS = clusteracct_storage_gold.lo \
-	gold_interface.lo base64.lo
+am_clusteracct_storage_gold_la_OBJECTS = clusteracct_storage_gold.lo
 clusteracct_storage_gold_la_OBJECTS =  \
 	$(am_clusteracct_storage_gold_la_OBJECTS)
 clusteracct_storage_gold_la_LINK = $(LIBTOOL) --tag=CC \
@@ -270,11 +268,14 @@ INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common
 pkglib_LTLIBRARIES = clusteracct_storage_gold.la
 
 # Null job completion logging plugin.
-clusteracct_storage_gold_la_SOURCES = clusteracct_storage_gold.c \
-			gold_interface.c gold_interface.h \
-			base64.c base64.h
-
+clusteracct_storage_gold_la_SOURCES = clusteracct_storage_gold.c
 clusteracct_storage_gold_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
+clusteracct_storage_gold_la_LIBADD = \
+	$(top_builddir)/src/database/libslurm_gold.la
+
+clusteracct_storage_gold_la_DEPENDENCIES = \
+	$(top_builddir)/src/database/libslurm_gold.la
+
 all: all-am
 
 .SUFFIXES:
@@ -344,9 +345,7 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/base64.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/clusteracct_storage_gold.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/gold_interface.Plo@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<

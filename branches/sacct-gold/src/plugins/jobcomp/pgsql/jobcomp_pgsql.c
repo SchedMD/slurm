@@ -36,7 +36,6 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#include "src/common/pgsql_common.h"
 #include "pgsql_jobcomp_process.h"
 #include <pwd.h>
 #include <grp.h>

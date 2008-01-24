@@ -52,7 +52,7 @@
 
 #include "src/slurmctld/slurmctld.h"
 #include "src/common/slurm_clusteracct_storage.h"
-#include "gold_interface.h"
+#include "src/database/gold_interface.h"
 
 /*
  * These variables are required by the generic plugin interface.  If they

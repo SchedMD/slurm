@@ -74,8 +74,7 @@ am__strip_dir = `echo $$p | sed -e 's|^.*/||'`;
 am__installdirs = "$(DESTDIR)$(pkglibdir)"
 pkglibLTLIBRARIES_INSTALL = $(INSTALL)
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
-jobacct_storage_mysql_la_DEPENDENCIES =  \
-	$(top_builddir)/src/common/libcommon.la
+am__DEPENDENCIES_1 =
 am_jobacct_storage_mysql_la_OBJECTS =  \
 	jobacct_storage_mysql_la-jobacct_storage_mysql.lo \
 	jobacct_storage_mysql_la-mysql_jobacct_process.lo
@@ -276,9 +275,13 @@ jobacct_storage_mysql_la_SOURCES = jobacct_storage_mysql.c \
 		mysql_jobacct_process.c mysql_jobacct_process.h 
 
 jobacct_storage_mysql_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
-jobacct_storage_mysql_la_LIBS = $(MYSQL_LIBS)
 jobacct_storage_mysql_la_CFLAGS = $(MYSQL_CFLAGS)
-jobacct_storage_mysql_la_LIBADD = $(top_builddir)/src/common/libcommon.la
+jobacct_storage_mysql_la_LIBADD = \
+	$(top_builddir)/src/database/libslurm_mysql.la $(MYSQL_LIBS)
+
+jobacct_storage_mysql_la_DEPENDENCIES = \
+	$(top_builddir)/src/database/libslurm_mysql.la
+
 all: all-am
 
 .SUFFIXES:

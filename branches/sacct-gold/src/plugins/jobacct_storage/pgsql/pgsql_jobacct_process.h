@@ -45,7 +45,7 @@
 
 #include "src/common/jobacct_common.h"
 #include "src/slurmctld/slurmctld.h"
-#include "src/common/pgsql_common.h"
+#include "src/database/pgsql_common.h"
 
 #ifdef HAVE_PGSQL
 

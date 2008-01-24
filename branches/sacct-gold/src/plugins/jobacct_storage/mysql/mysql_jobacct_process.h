@@ -45,7 +45,7 @@
 
 #include "src/common/jobacct_common.h"
 #include "src/slurmctld/slurmctld.h"
-#include "src/common/mysql_common.h"
+#include "src/database/mysql_common.h"
 
 #ifdef HAVE_MYSQL
 

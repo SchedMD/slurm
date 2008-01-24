@@ -74,15 +74,15 @@ am__strip_dir = `echo $$p | sed -e 's|^.*/||'`;
 am__installdirs = "$(DESTDIR)$(pkglibdir)"
 pkglibLTLIBRARIES_INSTALL = $(INSTALL)
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
-clusteracct_storage_mysql_la_LIBADD =
+am__DEPENDENCIES_1 =
 am_clusteracct_storage_mysql_la_OBJECTS =  \
-	clusteracct_storage_mysql.lo
+	clusteracct_storage_mysql_la-clusteracct_storage_mysql.lo
 clusteracct_storage_mysql_la_OBJECTS =  \
 	$(am_clusteracct_storage_mysql_la_OBJECTS)
 clusteracct_storage_mysql_la_LINK = $(LIBTOOL) --tag=CC \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
-	$(AM_CFLAGS) $(CFLAGS) $(clusteracct_storage_mysql_la_LDFLAGS) \
-	$(LDFLAGS) -o $@
+	$(clusteracct_storage_mysql_la_CFLAGS) $(CFLAGS) \
+	$(clusteracct_storage_mysql_la_LDFLAGS) $(LDFLAGS) -o $@
 DEFAULT_INCLUDES = -I. -I$(top_builddir) -I$(top_builddir)/slurm@am__isrc@
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
 am__depfiles_maybe = depfiles
@@ -272,6 +272,13 @@ pkglib_LTLIBRARIES = clusteracct_storage_mysql.la
 # Null job completion logging plugin.
 clusteracct_storage_mysql_la_SOURCES = clusteracct_storage_mysql.c
 clusteracct_storage_mysql_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
+clusteracct_storage_mysql_la_CFLAGS = $(MYSQL_CFLAGS)
+clusteracct_storage_mysql_la_LIBADD = \
+	$(top_builddir)/src/database/libslurm_mysql.la $(MYSQL_LIBS)
+
+clusteracct_storage_mysql_la_DEPENDENCIES = \
+	$(top_builddir)/src/database/libslurm_mysql.la
+
 all: all-am
 
 .SUFFIXES:
@@ -341,7 +348,7 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/clusteracct_storage_mysql.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/clusteracct_storage_mysql_la-clusteracct_storage_mysql.Plo@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
@@ -363,6 +370,13 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$<' object='$@' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LTCOMPILE) -c -o $@ $<
+
+clusteracct_storage_mysql_la-clusteracct_storage_mysql.lo: clusteracct_storage_mysql.c
+@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(clusteracct_storage_mysql_la_CFLAGS) $(CFLAGS) -MT clusteracct_storage_mysql_la-clusteracct_storage_mysql.lo -MD -MP -MF $(DEPDIR)/clusteracct_storage_mysql_la-clusteracct_storage_mysql.Tpo -c -o clusteracct_storage_mysql_la-clusteracct_storage_mysql.lo `test -f 'clusteracct_storage_mysql.c' || echo '$(srcdir)/'`clusteracct_storage_mysql.c
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/clusteracct_storage_mysql_la-clusteracct_storage_mysql.Tpo $(DEPDIR)/clusteracct_storage_mysql_la-clusteracct_storage_mysql.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='clusteracct_storage_mysql.c' object='clusteracct_storage_mysql_la-clusteracct_storage_mysql.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(clusteracct_storage_mysql_la_CFLAGS) $(CFLAGS) -c -o clusteracct_storage_mysql_la-clusteracct_storage_mysql.lo `test -f 'clusteracct_storage_mysql.c' || echo '$(srcdir)/'`clusteracct_storage_mysql.c
 
 mostlyclean-libtool:
 	-rm -f *.lo

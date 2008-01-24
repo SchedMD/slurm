@@ -35,7 +35,6 @@
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
-#include "gold_interface.h"
 
 #include <stdlib.h>
 #include <ctype.h>
@@ -51,8 +50,7 @@
 #include "src/slurmd/slurmd/slurmd.h"
 #include "src/common/slurm_protocol_api.h"
 
-#include "gold_interface.h"
-
+#include "src/database/gold_interface.h"
 
 typedef struct {
 	char *user;

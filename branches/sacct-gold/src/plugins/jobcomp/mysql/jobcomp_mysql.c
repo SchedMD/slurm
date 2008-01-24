@@ -36,7 +36,6 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#include "src/common/mysql_common.h"
 #include "mysql_jobcomp_process.h"
 #include <pwd.h>
 #include <grp.h>

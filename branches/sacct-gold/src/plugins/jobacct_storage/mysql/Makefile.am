@@ -12,7 +12,9 @@ pkglib_LTLIBRARIES = jobacct_storage_mysql.la
 jobacct_storage_mysql_la_SOURCES = jobacct_storage_mysql.c \
 		mysql_jobacct_process.c mysql_jobacct_process.h 
 jobacct_storage_mysql_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
-jobacct_storage_mysql_la_LIBS = $(MYSQL_LIBS)
 jobacct_storage_mysql_la_CFLAGS = $(MYSQL_CFLAGS)
-jobacct_storage_mysql_la_LIBADD  = $(top_builddir)/src/common/libcommon.la
+jobacct_storage_mysql_la_LIBADD = \
+	$(top_builddir)/src/database/libslurm_mysql.la $(MYSQL_LIBS)
+jobacct_storage_mysql_la_DEPENDENCIES = \
+	$(top_builddir)/src/database/libslurm_mysql.la
 
