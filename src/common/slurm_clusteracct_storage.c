@@ -1,7 +1,7 @@
 /*****************************************************************************\
- *  slurm_nodeacct_storage.c - storage plugin wrapper.
+ *  slurm_clusteracct_storage.c - storage plugin wrapper.
  *
- *  $Id: slurm_nodeacct_storage.c 10744 2007-01-11 20:09:18Z da $
+ *  $Id: slurm_clusteracct_storage.c 10744 2007-01-11 20:09:18Z da $
  *****************************************************************************
  *  Copyright (C) 2002-2006 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -44,7 +44,7 @@
 #include <pthread.h>
 
 #include "src/common/list.h"
-#include "src/common/slurm_nodeacct_storage.h"
+#include "src/common/slurm_clusteracct_storage.h"
 #include "src/common/plugin.h"
 #include "src/common/plugrack.h"
 #include "src/common/slurm_protocol_api.h"
@@ -55,50 +55,51 @@
  * Local data
  */
 
-typedef struct slurm_nodeacct_storage_ops {
+typedef struct slurm_clusteracct_storage_ops {
 	int  (*node_down)          (struct node_record *node_ptr,
 				    time_t event_time,
 				    char *reason);
 	int  (*node_up)            (struct node_record *node_ptr,
 				    time_t event_time);
 	int  (*cluster_procs)      (uint32_t procs, time_t event_time);
-} slurm_nodeacct_storage_ops_t;
+} slurm_clusteracct_storage_ops_t;
 
-typedef struct slurm_nodeacct_storage_context {
-	char	       	*nodeacct_storage_type;
+typedef struct slurm_clusteracct_storage_context {
+	char	       	*clusteracct_storage_type;
 	plugrack_t     	plugin_list;
 	plugin_handle_t	cur_plugin;
-	int		nodeacct_storage_errno;
-	slurm_nodeacct_storage_ops_t ops;
-} slurm_nodeacct_storage_context_t;
+	int		clusteracct_storage_errno;
+	slurm_clusteracct_storage_ops_t ops;
+} slurm_clusteracct_storage_context_t;
 
-static slurm_nodeacct_storage_context_t * g_nodeacct_storage_context = NULL;
-static pthread_mutex_t		g_nodeacct_storage_context_lock = 
-					PTHREAD_MUTEX_INITIALIZER;
+static slurm_clusteracct_storage_context_t *g_clusteracct_storage_context =
+	NULL;
+static pthread_mutex_t g_clusteracct_storage_context_lock = 
+	PTHREAD_MUTEX_INITIALIZER;
 
 /*
  * Local functions
  */
-static slurm_nodeacct_storage_ops_t *_nodeacct_storage_get_ops(
-	slurm_nodeacct_storage_context_t *c);
-static slurm_nodeacct_storage_context_t *_nodeacct_storage_context_create(
-	const char *nodeacct_storage_type);
-static int _nodeacct_storage_context_destroy(
-	slurm_nodeacct_storage_context_t *c);
+static slurm_clusteracct_storage_ops_t *_clusteracct_storage_get_ops(
+	slurm_clusteracct_storage_context_t *c);
+static slurm_clusteracct_storage_context_t *_clusteracct_storage_context_create(
+	const char *clusteracct_storage_type);
+static int _clusteracct_storage_context_destroy(
+	slurm_clusteracct_storage_context_t *c);
 
 /*
  * Locate and load the appropriate plugin
  */
-static slurm_nodeacct_storage_ops_t * _nodeacct_storage_get_ops(
-	slurm_nodeacct_storage_context_t *c)
+static slurm_clusteracct_storage_ops_t * _clusteracct_storage_get_ops(
+	slurm_clusteracct_storage_context_t *c)
 {
 	/*
-	 * Must be synchronized with slurm_nodeacct_storage_ops_t above.
+	 * Must be synchronized with slurm_clusteracct_storage_ops_t above.
 	 */
 	static const char *syms[] = {
-		"nodeacct_storage_p_node_down",
-		"nodeacct_storage_p_node_up",
-		"nodeacct_storage_p_cluster_procs"
+		"clusteracct_storage_p_node_down",
+		"clusteracct_storage_p_node_up",
+		"clusteracct_storage_p_cluster_procs"
 	};
 	int n_syms = sizeof( syms ) / sizeof( char * );
 
@@ -110,7 +111,8 @@ static slurm_nodeacct_storage_ops_t * _nodeacct_storage_get_ops(
 			error( "cannot create plugin manager" );
 			return NULL;
 		}
-		plugrack_set_major_type( c->plugin_list, "nodeacct_storage" );
+		plugrack_set_major_type( c->plugin_list,
+					 "clusteracct_storage" );
 		plugrack_set_paranoia( c->plugin_list,
 				       PLUGRACK_PARANOIA_NONE,
 				       0 );
@@ -120,10 +122,10 @@ static slurm_nodeacct_storage_ops_t * _nodeacct_storage_get_ops(
 	}
 
 	c->cur_plugin = plugrack_use_by_type( c->plugin_list, 
-					      c->nodeacct_storage_type );
+					      c->clusteracct_storage_type );
 	if ( c->cur_plugin == PLUGIN_INVALID_HANDLE ) {
-		error( "cannot find nodeacct_storage plugin for %s", 
-			c->nodeacct_storage_type );
+		error( "cannot find clusteracct_storage plugin for %s", 
+			c->clusteracct_storage_type );
 		return NULL;
 	}
 
@@ -132,7 +134,7 @@ static slurm_nodeacct_storage_ops_t * _nodeacct_storage_get_ops(
 			      n_syms,
 			      syms,
 			      (void **) &c->ops ) < n_syms ) {
-		error( "incomplete nodeacct_storage plugin detected" );
+		error( "incomplete clusteracct_storage plugin detected" );
 		return NULL;
 	}
 
@@ -140,31 +142,32 @@ static slurm_nodeacct_storage_ops_t * _nodeacct_storage_get_ops(
 }
 
 /*
- * Create a nodeacct_storage context
+ * Create a clusteracct_storage context
  */
-static slurm_nodeacct_storage_context_t *_nodeacct_storage_context_create(const char *nodeacct_storage_type)
+static slurm_clusteracct_storage_context_t *_clusteracct_storage_context_create(
+	const char *clusteracct_storage_type)
 {
-	slurm_nodeacct_storage_context_t *c;
+	slurm_clusteracct_storage_context_t *c;
 
-	if ( nodeacct_storage_type == NULL ) {
-		debug3( "_nodeacct_storage_context_create: no uler type" );
+	if ( clusteracct_storage_type == NULL ) {
+		debug3( "_clusteracct_storage_context_create: no uler type" );
 		return NULL;
 	}
 
-	c = xmalloc( sizeof( slurm_nodeacct_storage_context_t ) );
-	c->nodeacct_storage_type	= xstrdup( nodeacct_storage_type );
+	c = xmalloc( sizeof( slurm_clusteracct_storage_context_t ) );
+	c->clusteracct_storage_type	= xstrdup( clusteracct_storage_type );
 	c->plugin_list	= NULL;
 	c->cur_plugin	= PLUGIN_INVALID_HANDLE;
-	c->nodeacct_storage_errno	= SLURM_SUCCESS;
+	c->clusteracct_storage_errno	= SLURM_SUCCESS;
 
 	return c;
 }
 
 /*
- * Destroy a nodeacct_storage context
+ * Destroy a clusteracct_storage context
  */
-static int _nodeacct_storage_context_destroy( 
-	slurm_nodeacct_storage_context_t *c )
+static int _clusteracct_storage_context_destroy( 
+	slurm_clusteracct_storage_context_t *c )
 {
 	/*
 	 * Must check return code here because plugins might still
@@ -176,85 +179,89 @@ static int _nodeacct_storage_context_destroy(
 		}
 	}
 
-	xfree( c->nodeacct_storage_type );
+	xfree( c->clusteracct_storage_type );
 	xfree( c );
 
 	return SLURM_SUCCESS;
 }
 
 /*
- * Initialize context for nodeacct_storage plugin
+ * Initialize context for clusteracct_storage plugin
  */
-extern int slurm_nodeacct_storage_init(void)
+extern int slurm_clusteracct_storage_init(void)
 {
 	int retval = SLURM_SUCCESS;
-	char *nodeacct_storage_type = NULL;
+	char *clusteracct_storage_type = NULL;
 	
-	slurm_mutex_lock( &g_nodeacct_storage_context_lock );
+	slurm_mutex_lock( &g_clusteracct_storage_context_lock );
 
-	if ( g_nodeacct_storage_context )
+	if ( g_clusteracct_storage_context )
 		goto done;
 
-	nodeacct_storage_type = slurm_get_nodeacct_storage_type();
-	g_nodeacct_storage_context =
-		_nodeacct_storage_context_create(nodeacct_storage_type);
-	if ( g_nodeacct_storage_context == NULL ) {
-		error( "cannot create nodeacct_storage context for %s",
-			 nodeacct_storage_type );
+	clusteracct_storage_type = slurm_get_clusteracct_storage_type();
+	g_clusteracct_storage_context =
+		_clusteracct_storage_context_create(clusteracct_storage_type);
+	if ( g_clusteracct_storage_context == NULL ) {
+		error( "cannot create clusteracct_storage context for %s",
+			 clusteracct_storage_type );
 		retval = SLURM_ERROR;
 		goto done;
 	}
 
-	if ( _nodeacct_storage_get_ops( g_nodeacct_storage_context ) == NULL ) {
-		error( "cannot resolve nodeacct_storage plugin operations" );
-		_nodeacct_storage_context_destroy( g_nodeacct_storage_context );
-		g_nodeacct_storage_context = NULL;
+	if ( _clusteracct_storage_get_ops( g_clusteracct_storage_context )
+	     == NULL ) {
+		error( "cannot resolve clusteracct_storage plugin operations" );
+		_clusteracct_storage_context_destroy( 
+			g_clusteracct_storage_context);
+		g_clusteracct_storage_context = NULL;
 		retval = SLURM_ERROR;
 	}
 
  done:
-	slurm_mutex_unlock( &g_nodeacct_storage_context_lock );
-	xfree(nodeacct_storage_type);
+	slurm_mutex_unlock( &g_clusteracct_storage_context_lock );
+	xfree(clusteracct_storage_type);
 	return retval;
 }
 
-extern int slurm_nodeacct_storage_fini(void)
+extern int slurm_clusteracct_storage_fini(void)
 {
 	int rc;
 
-	if (!g_nodeacct_storage_context)
+	if (!g_clusteracct_storage_context)
 		return SLURM_SUCCESS;
 
-	rc = _nodeacct_storage_context_destroy( g_nodeacct_storage_context );
-	g_nodeacct_storage_context = NULL;
+	rc = _clusteracct_storage_context_destroy(
+		g_clusteracct_storage_context);
+	g_clusteracct_storage_context = NULL;
 	return rc;
 }
 
-extern int nodeacct_storage_g_node_down(struct node_record *node_ptr,
+extern int clusteracct_storage_g_node_down(struct node_record *node_ptr,
 					time_t event_time,
 					char *reason)
 {
-	if (slurm_nodeacct_storage_init() < 0)
+	if (slurm_clusteracct_storage_init() < 0)
 		return SLURM_ERROR;
- 	return (*(g_nodeacct_storage_context->ops.node_down))
+ 	return (*(g_clusteracct_storage_context->ops.node_down))
 		(node_ptr, event_time, reason);
 }
 
-extern int nodeacct_storage_g_node_up(struct node_record *node_ptr,
+extern int clusteracct_storage_g_node_up(struct node_record *node_ptr,
 				      time_t event_time)
 {
-	if (slurm_nodeacct_storage_init() < 0)
+	if (slurm_clusteracct_storage_init() < 0)
 		return SLURM_ERROR;
- 	return (*(g_nodeacct_storage_context->ops.node_up))
+ 	return (*(g_clusteracct_storage_context->ops.node_up))
 		(node_ptr, event_time);
 }
 
 
-extern int nodeacct_storage_g_cluster_procs(uint32_t procs, time_t event_time)
+extern int clusteracct_storage_g_cluster_procs(uint32_t procs,
+					       time_t event_time)
 {
-	if (slurm_nodeacct_storage_init() < 0)
+	if (slurm_clusteracct_storage_init() < 0)
 		return SLURM_ERROR;
- 	return (*(g_nodeacct_storage_context->ops.cluster_procs))
+ 	return (*(g_clusteracct_storage_context->ops.cluster_procs))
 		(procs, event_time);
 }
 

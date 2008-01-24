@@ -243,7 +243,7 @@ target_os = @target_os@
 target_vendor = @target_vendor@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-SUBDIRS = filetxt mysql pgsql none
+SUBDIRS = filetxt mysql pgsql none slurmdbd
 all: all-recursive
 
 .SUFFIXES:

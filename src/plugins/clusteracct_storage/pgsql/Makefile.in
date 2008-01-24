@@ -14,7 +14,7 @@
 
 @SET_MAKE@
 
-# Makefile for nodeacct_storage/mysql plugin
+# Makefile for nodeacct_storage/pgsql plugin
 
 VPATH = @srcdir@
 pkgdatadir = $(datadir)/@PACKAGE@
@@ -35,7 +35,7 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
-subdir = src/plugins/nodeacct_storage/mysql
+subdir = src/plugins/clusteracct_storage/pgsql
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/auxdir/acx_pthread.m4 \
@@ -74,13 +74,13 @@ am__strip_dir = `echo $$p | sed -e 's|^.*/||'`;
 am__installdirs = "$(DESTDIR)$(pkglibdir)"
 pkglibLTLIBRARIES_INSTALL = $(INSTALL)
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
-nodeacct_storage_mysql_la_LIBADD =
-am_nodeacct_storage_mysql_la_OBJECTS = nodeacct_storage_mysql.lo
-nodeacct_storage_mysql_la_OBJECTS =  \
-	$(am_nodeacct_storage_mysql_la_OBJECTS)
-nodeacct_storage_mysql_la_LINK = $(LIBTOOL) --tag=CC \
+nodeacct_storage_pgsql_la_LIBADD =
+am_nodeacct_storage_pgsql_la_OBJECTS = nodeacct_storage_pgsql.lo
+nodeacct_storage_pgsql_la_OBJECTS =  \
+	$(am_nodeacct_storage_pgsql_la_OBJECTS)
+nodeacct_storage_pgsql_la_LINK = $(LIBTOOL) --tag=CC \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
-	$(AM_CFLAGS) $(CFLAGS) $(nodeacct_storage_mysql_la_LDFLAGS) \
+	$(AM_CFLAGS) $(CFLAGS) $(nodeacct_storage_pgsql_la_LDFLAGS) \
 	$(LDFLAGS) -o $@
 DEFAULT_INCLUDES = -I. -I$(top_builddir) -I$(top_builddir)/slurm@am__isrc@
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
@@ -94,8 +94,8 @@ CCLD = $(CC)
 LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
-SOURCES = $(nodeacct_storage_mysql_la_SOURCES)
-DIST_SOURCES = $(nodeacct_storage_mysql_la_SOURCES)
+SOURCES = $(nodeacct_storage_pgsql_la_SOURCES)
+DIST_SOURCES = $(nodeacct_storage_pgsql_la_SOURCES)
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -266,11 +266,11 @@ top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
 PLUGIN_FLAGS = -module -avoid-version --export-dynamic 
 INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common
-pkglib_LTLIBRARIES = nodeacct_storage_mysql.la
+pkglib_LTLIBRARIES = nodeacct_storage_pgsql.la
 
 # Null job completion logging plugin.
-nodeacct_storage_mysql_la_SOURCES = nodeacct_storage_mysql.c
-nodeacct_storage_mysql_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
+nodeacct_storage_pgsql_la_SOURCES = nodeacct_storage_pgsql.c
+nodeacct_storage_pgsql_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
 all: all-am
 
 .SUFFIXES:
@@ -284,9 +284,9 @@ $(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.am  $(am__confi
 	      exit 1;; \
 	  esac; \
 	done; \
-	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign  src/plugins/nodeacct_storage/mysql/Makefile'; \
+	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign  src/plugins/clusteracct_storage/pgsql/Makefile'; \
 	cd $(top_srcdir) && \
-	  $(AUTOMAKE) --foreign  src/plugins/nodeacct_storage/mysql/Makefile
+	  $(AUTOMAKE) --foreign  src/plugins/clusteracct_storage/pgsql/Makefile
 .PRECIOUS: Makefile
 Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
 	@case '$?' in \
@@ -331,8 +331,8 @@ clean-pkglibLTLIBRARIES:
 	  echo "rm -f \"$${dir}/so_locations\""; \
 	  rm -f "$${dir}/so_locations"; \
 	done
-nodeacct_storage_mysql.la: $(nodeacct_storage_mysql_la_OBJECTS) $(nodeacct_storage_mysql_la_DEPENDENCIES) 
-	$(nodeacct_storage_mysql_la_LINK) -rpath $(pkglibdir) $(nodeacct_storage_mysql_la_OBJECTS) $(nodeacct_storage_mysql_la_LIBADD) $(LIBS)
+nodeacct_storage_pgsql.la: $(nodeacct_storage_pgsql_la_OBJECTS) $(nodeacct_storage_pgsql_la_DEPENDENCIES) 
+	$(nodeacct_storage_pgsql_la_LINK) -rpath $(pkglibdir) $(nodeacct_storage_pgsql_la_OBJECTS) $(nodeacct_storage_pgsql_la_LIBADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -340,7 +340,7 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/nodeacct_storage_mysql.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/nodeacct_storage_pgsql.Plo@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<

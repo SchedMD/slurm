@@ -1,7 +1,7 @@
 /*****************************************************************************\
- *  slurm_nodeacct_storage.h - Define storage plugin functions.
+ *  slurm_clusteracct_storage.h - Define storage plugin functions.
  *
- * $Id: slurm_nodeacct_storage.h 10574 2006-12-15 23:38:29Z jette $
+ * $Id: slurm_clusteracct_storage.h 10574 2006-12-15 23:38:29Z jette $
  *****************************************************************************
  *  Copyright (C) 2004-2008 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -37,25 +37,26 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef _SLURM_NODEACCT_STORAGE_H 
-#define _SLURM_NODEACCT_STORAGE_H
+#ifndef _SLURM_CLUSTERACCT_STORAGE_H 
+#define _SLURM_CLUSTERACCT_STORAGE_H
 
 #include "src/common/list.h"
 #include "src/slurmctld/slurmctld.h"
 #include <slurm/slurm.h>
 #include <slurm/slurm_errno.h>
 
-extern int slurm_nodeacct_storage_init(void); /* load the plugin */
-extern int slurm_nodeacct_storage_fini(void); /* unload the plugin */
+extern int slurm_clusteracct_storage_init(void); /* load the plugin */
+extern int slurm_clusteracct_storage_fini(void); /* unload the plugin */
 
 
-extern int nodeacct_storage_g_node_down(struct node_record *node_ptr,
-					time_t event_time,
-					char *reason);
+extern int clusteracct_storage_g_node_down(struct node_record *node_ptr,
+					   time_t event_time,
+					   char *reason);
 
-extern int nodeacct_storage_g_node_up(struct node_record *node_ptr,
-				      time_t event_time);
+extern int clusteracct_storage_g_node_up(struct node_record *node_ptr,
+					 time_t event_time);
 
-extern int nodeacct_storage_g_cluster_procs(uint32_t procs, time_t event_time);
+extern int clusteracct_storage_g_cluster_procs(uint32_t procs,
+					       time_t event_time);
 
-#endif /*_SLURM_NODEACCT_STORAGE_H*/
+#endif /*_SLURM_CLUSTERACCT_STORAGE_H*/

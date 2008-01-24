@@ -163,12 +163,12 @@ s_p_options_t slurm_conf_options[] = {
 	{"MaxMemPerTask", S_P_UINT32},
 	{"MessageTimeout", S_P_UINT16},
 	{"MinJobAge", S_P_UINT16},
-	{"NodeAcctStorageLoc", S_P_STRING},
-	{"NodeAcctStorageType", S_P_STRING},
-	{"NodeAcctStorageHost", S_P_STRING},
-	{"NodeAcctStorageUser", S_P_STRING},
-	{"NodeAcctStoragePass", S_P_STRING},
-	{"NodeAcctStoragePort", S_P_UINT32},
+	{"ClusterAcctStorageLoc", S_P_STRING},
+	{"ClusterAcctStorageType", S_P_STRING},
+	{"ClusterAcctStorageHost", S_P_STRING},
+	{"ClusterAcctStorageUser", S_P_STRING},
+	{"ClusterAcctStoragePass", S_P_STRING},
+	{"ClusterAcctStoragePort", S_P_UINT32},
 	{"MpichGmDirectSupport", S_P_LONG},
 	{"MpiDefault", S_P_STRING},
 	{"PluginDir", S_P_STRING},
@@ -1151,12 +1151,12 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	xfree (ctl_conf_ptr->mpi_default);
 	ctl_conf_ptr->msg_timeout		= (uint16_t) NO_VAL;
 	ctl_conf_ptr->next_job_id		= (uint32_t) NO_VAL;
-	xfree (ctl_conf_ptr->node_acct_storage_loc);
-	xfree (ctl_conf_ptr->node_acct_storage_type);
-	xfree (ctl_conf_ptr->node_acct_storage_user);
-	xfree (ctl_conf_ptr->node_acct_storage_host);
-	xfree (ctl_conf_ptr->node_acct_storage_pass);
-	ctl_conf_ptr->node_acct_storage_port             = 0;
+	xfree (ctl_conf_ptr->cluster_acct_storage_loc);
+	xfree (ctl_conf_ptr->cluster_acct_storage_type);
+	xfree (ctl_conf_ptr->cluster_acct_storage_user);
+	xfree (ctl_conf_ptr->cluster_acct_storage_host);
+	xfree (ctl_conf_ptr->cluster_acct_storage_pass);
+	ctl_conf_ptr->cluster_acct_storage_port             = 0;
 	xfree (ctl_conf_ptr->plugindir);
 	xfree (ctl_conf_ptr->plugstack);
 	ctl_conf_ptr->private_data              = 0;
@@ -1631,36 +1631,36 @@ validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	if (!s_p_get_string(&conf->mpi_default, "MpiDefault", hashtbl))
 		conf->mpi_default = xstrdup(DEFAULT_MPI_DEFAULT);
 
-	/* JobAcctStorageLoc replaces NodeAcctLogFile since it now represents
+	/* JobAcctStorageLoc replaces ClusterAcctLogFile since it now represents
 	 * the database name also depending on the storage type you
-	 * use so we still check NodeAcctLogFile for the same thing
+	 * use so we still check ClusterAcctLogFile for the same thing
 	 */
-	if (!s_p_get_string(&conf->node_acct_storage_loc,
-			    "NodeAcctStorageLoc", hashtbl))
-		conf->node_acct_storage_loc = 
-			xstrdup(DEFAULT_NODE_ACCT_STORAGE_LOC);
+	if (!s_p_get_string(&conf->cluster_acct_storage_loc,
+			    "ClusterAcctStorageLoc", hashtbl))
+		conf->cluster_acct_storage_loc = 
+			xstrdup(DEFAULT_CLUSTER_ACCT_STORAGE_LOC);
 	
-	if (!s_p_get_string(&conf->node_acct_storage_type,
-			    "NodeAcctStorageType", hashtbl)) {
-		conf->node_acct_storage_type =
-			xstrdup(DEFAULT_NODE_ACCT_STORAGE_TYPE);
+	if (!s_p_get_string(&conf->cluster_acct_storage_type,
+			    "ClusterAcctStorageType", hashtbl)) {
+		conf->cluster_acct_storage_type =
+			xstrdup(DEFAULT_CLUSTER_ACCT_STORAGE_TYPE);
 	}
-	if (!s_p_get_string(&conf->node_acct_storage_host,
-			    "NodeAcctStorageHost", hashtbl))
-		conf->node_acct_storage_host =
-			xstrdup(DEFAULT_NODE_ACCT_STORAGE_HOST);
-	if (!s_p_get_string(&conf->node_acct_storage_user,
-			    "NodeAcctStorageUser", hashtbl))
-		conf->node_acct_storage_user =
-			xstrdup(DEFAULT_NODE_ACCT_STORAGE_USER);
-	if (!s_p_get_string(&conf->node_acct_storage_pass,
-			    "NodeAcctStoragePass", hashtbl))
-		conf->node_acct_storage_pass =
-			xstrdup(DEFAULT_NODE_ACCT_STORAGE_PASS);
-	if (!s_p_get_uint32(&conf->node_acct_storage_port,
-			    "NodeAcctStoragePort", hashtbl))
-		conf->node_acct_storage_port =
-			DEFAULT_NODE_ACCT_STORAGE_PORT;
+	if (!s_p_get_string(&conf->cluster_acct_storage_host,
+			    "ClusterAcctStorageHost", hashtbl))
+		conf->cluster_acct_storage_host =
+			xstrdup(DEFAULT_CLUSTER_ACCT_STORAGE_HOST);
+	if (!s_p_get_string(&conf->cluster_acct_storage_user,
+			    "ClusterAcctStorageUser", hashtbl))
+		conf->cluster_acct_storage_user =
+			xstrdup(DEFAULT_CLUSTER_ACCT_STORAGE_USER);
+	if (!s_p_get_string(&conf->cluster_acct_storage_pass,
+			    "ClusterAcctStoragePass", hashtbl))
+		conf->cluster_acct_storage_pass =
+			xstrdup(DEFAULT_CLUSTER_ACCT_STORAGE_PASS);
+	if (!s_p_get_uint32(&conf->cluster_acct_storage_port,
+			    "ClusterAcctStoragePort", hashtbl))
+		conf->cluster_acct_storage_port =
+			DEFAULT_CLUSTER_ACCT_STORAGE_PORT;
 
 	if (!s_p_get_string(&conf->plugindir, "PluginDir", hashtbl))
 		conf->plugindir = xstrdup(default_plugin_path);
