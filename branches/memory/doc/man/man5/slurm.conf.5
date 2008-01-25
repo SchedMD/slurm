@@ -1362,6 +1362,11 @@ only if the individual jobs permit sharing (see the srun
 The default value is "NO".
 The "FORCE" and "YES" options can be followed by a colon and a job 
 count. For example "Shared=YES:4".
+If resources are to be shared, avoiding memory over\-subscription 
+is very important. 
+\fBSelectTypeParameters\fR should be configured to treat 
+memory as a consumable resource and the \fB\-\-mem\fR option 
+should be used for job allocations.
 
 .TP
 \fBState\fR

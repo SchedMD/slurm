@@ -532,7 +532,7 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 							select_type_param;
 		if ((cr_type == CR_CORE) ||
 		    (cr_type == CR_CPU)  || (cr_type == CR_SOCKET)) {
-			job_ptr->details->job_max_memory = 0;
+			job_ptr->details->job_min_memory = 0;
 		}
 
                 debug3("Job %u shared %d cr_enabled %d CR type %d num_procs %d", 
@@ -1195,7 +1195,6 @@ extern int job_req_node_filter(struct job_record *job_ptr,
 		if (slurmctld_conf.fast_schedule) {
 			if ((detail_ptr->job_min_procs    > config_ptr->cpus       )
 			||  (detail_ptr->job_min_memory   > config_ptr->real_memory) 
-			||  (detail_ptr->job_max_memory   > config_ptr->real_memory) 
 			||  (detail_ptr->job_min_tmp_disk > config_ptr->tmp_disk)) {
 				bit_clear(avail_bitmap, i);
 				continue;
@@ -1213,7 +1212,6 @@ extern int job_req_node_filter(struct job_record *job_ptr,
 		} else {
 			if ((detail_ptr->job_min_procs    > node_ptr->cpus       )
 			||  (detail_ptr->job_min_memory   > node_ptr->real_memory) 
-			||  (detail_ptr->job_max_memory   > node_ptr->real_memory) 
 			||  (detail_ptr->job_min_tmp_disk > node_ptr->tmp_disk)) {
 				bit_clear(avail_bitmap, i);
 				continue;
@@ -1285,7 +1283,6 @@ static int _build_node_list(struct job_record *job_ptr,
 		config_filter = 0;
 		if ((detail_ptr->job_min_procs    > config_ptr->cpus       )
 		||  (detail_ptr->job_min_memory   > config_ptr->real_memory) 
-		||  (detail_ptr->job_max_memory   > config_ptr->real_memory) 
 		||  (detail_ptr->job_min_tmp_disk > config_ptr->tmp_disk))
 			config_filter = 1;
 		if (mc_ptr

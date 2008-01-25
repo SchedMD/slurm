@@ -410,8 +410,12 @@ The default value is the submitting user.
 
 .TP
 \fB\-\-mem\fR[=]<\fIMB\fR>
-Specify a minimum amount of real memory per node in MegaBytes.
-Default value is zero. Also see \fB\-\-task\-mem\fR.
+Specify the real memory required per node in MegaBytes.
+If a value is specified, that quantity of memory will be 
+reserved for this job. 
+If no value is specified and real memory is exhausted on 
+any allocated node then the job is subject to cancellation.
+Also see \fB\-\-task\-mem\fR.
 
 .TP
 \fB\-\-mem_bind\fR=[{\fIquiet,verbose\fR},]\fItype\fR
@@ -1251,6 +1255,9 @@ Same as \fB\-o, \-\-output\fR=\fImode\fR
 .TP
 \fBSLURM_TASK_EPILOG\fR
 Same as \fB\-\-task\-epilog\fR=\fIexecutable\fR
+.TP
+\fBSLURM_TASK_MEM\fR
+Same as \fB\-\-task\-mem\fR
 .TP
 \fBSLURM_TASK_PROLOG\fR
 Same as \fB\-\-task\-prolog\fR=\fIexecutable\fR

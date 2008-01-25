@@ -870,19 +870,12 @@ int _print_job_min_memory(job_info_t * job, int width, bool right_justify,
 			  char* suffix)
 {
 	char min_mem[10];
-	char max_mem[10];
 	char tmp_char[21];
 	
 	if (job == NULL)	/* Print the Header instead */
 		_print_str("MIN_MEMORY", width, right_justify, true);
 	else {
 	    	tmp_char[0] = '\0';
-		if (job->job_max_memory < job->job_min_memory) {
-			convert_num_unit((float)job->job_max_memory, max_mem, 
-					 sizeof(max_mem), UNIT_NONE);
-			strcat(tmp_char, max_mem);
-			strcat(tmp_char, "-");
-		 }
 		convert_num_unit((float)job->job_min_memory, min_mem, 
 				 sizeof(min_mem), UNIT_NONE);
 		strcat(tmp_char, min_mem);
