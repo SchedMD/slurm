@@ -1,4 +1,4 @@
-.TH "slurm.conf" "5" "December 2007" "slurm.conf 1.3" "Slurm configuration file"
+.TH "slurm.conf" "5" "January 2008" "slurm.conf 1.3" "Slurm configuration file"
 .SH "NAME"
 slurm.conf \- Slurm configuration file 
 .SH "DESCRIPTION"
@@ -119,10 +119,9 @@ The default value is "crypto/openssl".
 
 .TP
 \fBDefMemPerTask\fR
-Default real memory size of spawned tasks in MB. 
-Used when \fBSchedulerType=sched/gang\fR to avoid over\-subscribing memory
-and causing paging.
-Also see \fBDefMemPerTask\fR.
+Default real memory size availble per task in MegaBytes. 
+Used to avoid over\-subscribing memory and causing paging.
+Also see \fBMaxMemPerTask\fR.
 The default value is 0 (unlimited).
 
 .TP
@@ -348,9 +347,8 @@ May not exceed 65533.
 
 .TP
 \fBMaxMemPerTask\fR
-Maximum real memory size of spawned tasks in MB. 
-Used when \fBSchedulerType=sched/gang\fR to avoid over\-subscribing memory
-and causing paging.
+Maximum real memory size available per task in MegaBytes. 
+Used to avoid over\-subscribing memory and causing paging.
 Also see \fBDefMemPerTask\fR.
 The default value is 0 (unlimited).
 
