@@ -1,4 +1,4 @@
-.TH "salloc" "1" "SLURM 1.3" "November 2007" "SLURM Commands"
+.TH "salloc" "1" "SLURM 1.3" "January 2008" "SLURM Commands"
 .SH "NAME"
 .LP 
 salloc \- Obtain a SLURM job allocation (a set of nodes), execute a command, and then release the allocation when the command is finished.
@@ -292,7 +292,13 @@ The default value is the username of the submitting user.
 
 .TP
 \fB\-\-mem\fR[=]<\fIMB\fR>
-Specify a minimum amount of real memory.
+Specify the real memory required per node in MegaBytes.
+If a value is specified, that quantity of memory will be 
+reserved for this job. 
+If no value is specified and real memory is exhausted on 
+any allocated node then the job is subject to cancellation.
+Also see \fB\-\-task\-mem\fR.
+
 
 .TP
 \fB\-\-mincores\fR[=]<\fIn\fR>
@@ -425,6 +431,13 @@ interval between signals is specified by the SLURM configuration parameter
 Acceptable time formats include "minutes", "minutes:seconds", 
 "hours:minutes:seconds", "days\-hours", "days\-hours:minutes" and 
 "days\-hours:minutes:seconds".
+
+.TP
+\fB\-\-task\-mem\fR[=]<\fIMB\fR>
+Mimimum memory available per task in MegaBytes.
+Default value is \fBDefMemPerTask\fR and the maximum value is
+\fBMaxMemPerTask\fR, both of which can be seen using the
+\fBscontrol show config\fR command.
 
 .TP
 \fB\-\-tmp\fR[=]<\fIMB\fR>

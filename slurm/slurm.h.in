@@ -465,7 +465,6 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 	uint16_t job_min_cores;    /* minimum cores per processor, default=0 */
 	uint16_t job_min_threads;  /* minimum threads per core, default=0 */
 	uint32_t job_min_memory;   /* minimum real memory per node, default=0 */
-	uint32_t job_max_memory;   /* maximum real memory per node, default=0 */
 	uint32_t job_min_tmp_disk; /* minimum tmp disk per node, default=0 */
 	char *partition;	/* name of requested partition, 
 				 * default in SLURM config */
@@ -621,7 +620,6 @@ typedef struct job_info {
 	uint16_t job_min_cores;    /* minimum cores per processor, default=0 */
 	uint16_t job_min_threads;  /* minimum threads per core, default=0 */
 	uint32_t job_min_memory;   /* minimum real memory per node, default=0 */
-	uint32_t job_max_memory;   /* maximum real memory per node, default=0 */
 	uint32_t job_min_tmp_disk; /* minimum tmp disk per node, default=0 */
 	char *req_nodes;	/* comma separated list of required nodes */
 	int *req_node_inx;	/* required list index pairs into node_table: 

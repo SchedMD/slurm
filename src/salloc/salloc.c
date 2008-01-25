@@ -196,6 +196,10 @@ int main(int argc, char *argv[])
 		env_array_append_fmt(&env, "SLURM_ACCTG_FREQ", "%d",
 			opt.acctg_freq);
 	}
+	if (opt.task_mem >= 0) {
+		env_array_append_fmt(&env, "SLURM_TASK_MEM", "%d",
+			opt.task_mem);
+	}
 	env_array_set_environment(env);
 	env_array_free(env);
 	pthread_mutex_lock(&allocation_state_lock);
@@ -328,8 +332,6 @@ static int fill_job_desc_from_opts(job_desc_msg_t *desc)
 		desc->job_min_cores = opt.mincores;
 	if (opt.minthreads > -1)
 		desc->job_min_threads = opt.minthreads;
-	if (opt.jobmem > -1)
-		desc->job_max_memory = opt.jobmem;
 	if (opt.realmem > -1)
 		desc->job_min_memory = opt.realmem;
 	if (opt.tmpdisk > -1)

@@ -303,8 +303,9 @@ struct job_details {
 					 * any other value accepts the default
 					 * sharing policy. */
 	uint16_t contiguous;		/* set if requires contiguous nodes */
-	uint16_t task_dist;		/* task layout for this job. Only useful
-                                         * when Consumable Resources is enabled */
+	uint16_t task_dist;		/* task layout for this job. Only
+					 * useful when Consumable Resources
+                                         * is enabled */
 	uint32_t num_tasks;		/* number of tasks to start */
 	uint8_t open_mode;		/* stdout/err append or trunctate */
 	uint8_t overcommit;		/* processors being over subscribed */
@@ -315,7 +316,6 @@ struct job_details {
 	/* job constraints: */
 	uint32_t job_min_procs;		/* minimum processors per node */
 	uint32_t job_min_memory;	/* minimum memory per node, MB */
-	uint32_t job_max_memory;	/* maximum memory per node, MB */
 	uint32_t job_min_tmp_disk;	/* minimum tempdisk per node, MB */
 	char *err;			/* pathname of job's stderr file */
 	char *in;			/* pathname of job's stdin file */

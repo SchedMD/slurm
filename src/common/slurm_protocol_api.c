@@ -182,6 +182,34 @@ void slurm_api_clear_config(void)
 /* 	slurm_mutex_lock(&config_lock); */
 /* } */
 
+/* slurm_get_def_mem_per_task
+ * RET DefMemPerTask value from slurm.conf
+ */
+uint32_t slurm_get_def_mem_per_task(void)
+{
+	uint32_t mem_per_task;
+	slurm_ctl_conf_t *conf;
+
+	conf = slurm_conf_lock();
+	mem_per_task = conf->def_mem_per_task;
+	slurm_conf_unlock();
+	return mem_per_task;
+}
+
+/* slurm_get_max_mem_per_task
+ * RET MaxMemPerTask value from slurm.conf
+ */
+uint32_t slurm_get_max_mem_per_task(void)
+{
+	uint32_t mem_per_task;
+	slurm_ctl_conf_t *conf;
+
+	conf = slurm_conf_lock();
+	mem_per_task = conf->max_mem_per_task;
+	slurm_conf_unlock();
+	return mem_per_task;
+}
+
 /* slurm_get_mpi_default
  * get default mpi value from slurmctld_conf object
  * RET char *   - mpi default value from slurm.conf,  MUST be xfreed by caller

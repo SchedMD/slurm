@@ -87,7 +87,6 @@ enum {
 	SORTID_LINUXIMAGE,
 #endif
 	SORTID_MAX_CORES,
-	SORTID_MAX_MEM,
 	SORTID_MAX_NODES,
 	SORTID_MAX_SOCKETS,
 #ifdef HAVE_BG
@@ -263,8 +262,6 @@ static display_data_t display_data_job[] = {
 	 FALSE, EDIT_NONE, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_MIN_MEM, "Min Memory", 
 	 FALSE, EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
-	{G_TYPE_STRING, SORTID_MAX_MEM, "Max Memory", 
-	 FALSE, EDIT_NONE, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_TMP_DISK, "Tmp Disk", 
 	 FALSE, EDIT_TEXTBOX, refresh_job, create_model_job, admin_edit_job},
 	{G_TYPE_STRING, SORTID_NICE, "Nice", 
@@ -1671,10 +1668,6 @@ static void _update_job_record(sview_job_info_t *sview_job_info_ptr,
 	gtk_tree_store_set(treestore, iter,
 			   SORTID_MIN_MEM, tmp_char, -1);
 
-	sprintf(tmp_char, "%u", job_ptr->job_max_memory);
-	gtk_tree_store_set(treestore, iter,
-			   SORTID_MAX_MEM, tmp_char, -1);
-	
 	sprintf(tmp_char, "%u", job_ptr->job_min_tmp_disk);
 	gtk_tree_store_set(treestore, iter,
 			   SORTID_TMP_DISK, tmp_char, -1);

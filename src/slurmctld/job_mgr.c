@@ -753,7 +753,6 @@ void _dump_job_details(struct job_details *detail_ptr, Buf buffer)
 
 	pack32(detail_ptr->job_min_procs, buffer);
 	pack32(detail_ptr->job_min_memory, buffer);
-	pack32(detail_ptr->job_max_memory, buffer);
 	pack32(detail_ptr->job_min_tmp_disk, buffer);
 	pack_time(detail_ptr->begin_time, buffer);
 	pack_time(detail_ptr->submit_time, buffer);
@@ -781,7 +780,7 @@ static int _load_job_details(struct job_record *job_ptr, Buf buffer)
 	char **argv = (char **) NULL;
 	uint32_t min_nodes, max_nodes;
 	uint32_t job_min_procs;
-	uint32_t job_min_memory, job_max_memory, job_min_tmp_disk;
+	uint32_t job_min_memory, job_min_tmp_disk;
 	uint32_t num_tasks, name_len, argc = 0;
 	uint16_t shared, contiguous, ntasks_per_node;
 	uint16_t acctg_freq, cpus_per_task, no_requeue;
@@ -807,7 +806,6 @@ static int _load_job_details(struct job_record *job_ptr, Buf buffer)
 
 	safe_unpack32(&job_min_procs, buffer);
 	safe_unpack32(&job_min_memory, buffer);
-	safe_unpack32(&job_max_memory, buffer);
 	safe_unpack32(&job_min_tmp_disk, buffer);
 	safe_unpack_time(&begin_time, buffer);
 	safe_unpack_time(&submit_time, buffer);
@@ -863,7 +861,6 @@ static int _load_job_details(struct job_record *job_ptr, Buf buffer)
 	job_ptr->details->ntasks_per_node = ntasks_per_node;
 	job_ptr->details->job_min_procs = job_min_procs;
 	job_ptr->details->job_min_memory = job_min_memory;
-	job_ptr->details->job_max_memory = job_max_memory;
 	job_ptr->details->job_min_tmp_disk = job_min_tmp_disk;
 	job_ptr->details->no_requeue = no_requeue;
 	job_ptr->details->open_mode = open_mode;
@@ -1142,7 +1139,7 @@ void dump_job_desc(job_desc_msg_t * job_specs)
 {
 	long job_id;
 	long job_min_procs, job_min_sockets, job_min_cores, job_min_threads;
-	long job_min_memory, job_max_memory, job_min_tmp_disk, num_procs;
+	long job_min_memory, job_min_tmp_disk, num_procs;
 	long time_limit, priority, contiguous, acctg_freq;
 	long kill_on_node_fail, shared, immediate;
 	long cpus_per_task, no_requeue, num_tasks, overcommit;
@@ -1183,12 +1180,10 @@ void dump_job_desc(job_desc_msg_t * job_specs)
 
 	job_min_memory   = (job_specs->job_min_memory != NO_VAL) ? 
 		(long) job_specs->job_min_memory : -1L;
-	job_max_memory   = (job_specs->job_max_memory != NO_VAL) ? 
-		(long) job_specs->job_max_memory : -1L;
 	job_min_tmp_disk = (job_specs->job_min_tmp_disk != NO_VAL) ? 
 		(long) job_specs->job_min_tmp_disk : -1L;
-	debug3("   job_min_memory=%ld job_max_memory=%ld job_min_tmp_disk=%ld",
-	       job_min_memory, job_max_memory, job_min_tmp_disk);
+	debug3("   job_min_memory=%ld job_min_tmp_disk=%ld",
+	       job_min_memory, job_min_tmp_disk);
 	immediate = (job_specs->immediate == 0) ? 0L : 1L;
 	debug3("   immediate=%ld features=%s",
 	       immediate, job_specs->features);
@@ -2579,8 +2574,6 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 					detail_ptr->cpus_per_task);
 	if (job_desc->job_min_memory != NO_VAL)
 		detail_ptr->job_min_memory = job_desc->job_min_memory;
-	if (job_desc->job_max_memory != NO_VAL)
-		detail_ptr->job_max_memory = job_desc->job_max_memory;
 	if (job_desc->job_min_tmp_disk != NO_VAL)
 		detail_ptr->job_min_tmp_disk = job_desc->job_min_tmp_disk;
 	if (job_desc->num_tasks != NO_VAL)
@@ -2810,8 +2803,6 @@ static int _validate_job_desc(job_desc_msg_t * job_desc_msg, int allocate,
 		job_desc_msg->job_min_threads = 1; /* default 1 thread per core */
 	if (job_desc_msg->job_min_memory == NO_VAL)
 		job_desc_msg->job_min_memory = 0;  /* default 0MB mem per node */
-	if (job_desc_msg->job_max_memory == NO_VAL)
-		job_desc_msg->job_max_memory = 0;  /* default 0MB mem per node */
 	if (job_desc_msg->job_min_tmp_disk == NO_VAL)
 		job_desc_msg->job_min_tmp_disk = 0;/* default 0MB disk per node */
 
@@ -3103,7 +3094,6 @@ static void _pack_pending_job_details(struct job_details *detail_ptr,
 		pack16(detail_ptr->job_min_procs, buffer);
 
 		pack32(detail_ptr->job_min_memory, buffer);
-		pack32(detail_ptr->job_max_memory, buffer);
 		pack32(detail_ptr->job_min_tmp_disk, buffer);
 
 		packstr(detail_ptr->req_nodes, buffer);
@@ -3121,7 +3111,6 @@ static void _pack_pending_job_details(struct job_details *detail_ptr,
 		pack16((uint16_t) 0, buffer);
 		pack16((uint16_t) 0, buffer);
 
-		pack32((uint32_t) 0, buffer);
 		pack32((uint32_t) 0, buffer);
 		pack32((uint32_t) 0, buffer);
 
