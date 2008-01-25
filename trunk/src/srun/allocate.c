@@ -449,8 +449,6 @@ job_desc_msg_create_from_opts ()
 		j->job_min_threads  = opt.job_min_threads;
 	if (opt.job_min_memory != NO_VAL)
 		j->job_min_memory   = opt.job_min_memory;
-	if (opt.job_max_memory != NO_VAL)
-		j->job_max_memory   = opt.job_max_memory;
 	if (opt.job_min_tmp_disk != NO_VAL)
 		j->job_min_tmp_disk = opt.job_min_tmp_disk;
 	if (opt.overcommit) {

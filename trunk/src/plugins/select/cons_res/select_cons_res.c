@@ -1964,7 +1964,7 @@ static int _verify_node_state(struct node_cr_record *select_node_ptr,
 		if (!bit_test(bitmap, i))
 			continue;
 
-		if (job_ptr->details->job_max_memory) {
+		if (job_ptr->details->job_min_memory) {
 			if (select_fast_schedule) {
 				free_mem = select_node_ptr[i].node_ptr->
 					config_ptr->real_memory;
@@ -1973,7 +1973,7 @@ static int _verify_node_state(struct node_cr_record *select_node_ptr,
 					real_memory;
 			}
 			free_mem -= select_node_ptr[i].alloc_memory;
-			if (free_mem < job_ptr->details->job_max_memory)
+			if (free_mem < job_ptr->details->job_min_memory)
 				goto clear_bit;
 		}
 
@@ -2324,7 +2324,7 @@ static int _job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 		/* Done in slurmctld/node_scheduler.c: _pick_best_nodes() */
 		if ((cr_type != CR_CORE_MEMORY) && (cr_type != CR_CPU_MEMORY) &&
 		    (cr_type != CR_MEMORY) && (cr_type != CR_SOCKET_MEMORY))
-			job_ptr->details->job_max_memory = 0;
+			job_ptr->details->job_min_memory = 0;
 #endif
 		error_code = _verify_node_state(select_node_ptr, job_ptr, 
 						bitmap, job_node_req);
@@ -2508,10 +2508,11 @@ static int _job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 			job->cpus[j] = 0;
 		}
 		job->alloc_cpus[j] = 0;
-		job->alloc_memory[j] = job_ptr->details->job_max_memory; 
+		job->alloc_memory[j] = job_ptr->details->job_min_memory; 
 		if ((cr_type == CR_CORE) || (cr_type == CR_CORE_MEMORY)||
 		    (cr_type == CR_SOCKET) || (cr_type == CR_SOCKET_MEMORY)) {
-			_chk_resize_job(job, j, node_record_table_ptr[i].sockets);
+			_chk_resize_job(job, j, 
+					node_record_table_ptr[i].sockets);
 			job->num_sockets[j] = node_record_table_ptr[i].sockets;
 			for (k = 0; k < job->num_sockets[j]; k++)
 				job->alloc_cores[j][k] = 0;
@@ -2539,8 +2540,8 @@ static int _job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 		error_code = cr_exclusive_dist(job, cr_type);
 	} else {
 		/* Determine the number of logical processors
-		   per node needed for this job */
-		/* Make sure below matches the layouts in
+		 * per node needed for this job.
+		 * Make sure below matches the layouts in
 		 * lllp_distribution in
 		 * plugins/task/affinity/dist_task.c */
 		switch(job_ptr->details->task_dist) {

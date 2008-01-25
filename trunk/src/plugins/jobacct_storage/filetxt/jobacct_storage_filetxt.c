@@ -292,7 +292,7 @@ extern int jobacct_storage_p_job_start(struct job_record *job_ptr)
 	priority = (job_ptr->priority == NO_VAL) ?
 		-1L : (long) job_ptr->priority;
 
-	if ((tmp = strlen(job_ptr->name))) {
+	if (job_ptr->name && (tmp = strlen(job_ptr->name))) {
 		jname = xmalloc(++tmp);
 		for (i=0; i<tmp; i++) {
 			if (isspace(job_ptr->name[i]))

@@ -249,7 +249,7 @@ int srun(int ac, char **av)
 			exit(1);
 		}
 #endif
-		if (opt.job_max_memory > 0) {		
+		if (opt.task_mem > 0) {		
 			(void) _change_rlimit_rss();
 		}
 	
@@ -577,8 +577,8 @@ static void  _set_prio_process_env(void)
 }
 
 /* 
- *  Change SLURM_RLIMIT_RSS to the user specified value --job-mem 
- *  or opt.job_max_memory 
+ *  Change SLURM_RLIMIT_RSS to the user specified value --task-mem 
+ *  or opt.task_mem 
  */
 static int _change_rlimit_rss(void)
 {
@@ -589,7 +589,7 @@ static int _change_rlimit_rss(void)
 	if (getrlimit (RLIMIT_RSS, rlim) < 0)
 		return (error ("getrlimit (RLIMIT_RSS): %m"));
 
-	new_cur = opt.job_max_memory*1024; 
+	new_cur = opt.task_mem*1024; 
 	if((new_cur > rlim->rlim_max) || (new_cur < 0))
 		rlim->rlim_cur = rlim->rlim_max;
 	else
