@@ -2228,7 +2228,7 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 
 	/* Try to run with currently available nodes */
 	rc = _job_test(job_ptr, bitmap, min_nodes, max_nodes, req_nodes, 
-		       SELECT_MODE_RUN_NOW, job_node_req, select_node_ptr);
+		       SELECT_MODE_WILL_RUN, job_node_req, select_node_ptr);
 	if (rc == SLURM_SUCCESS) {
 		bit_free(orig_map);
 		job_ptr->start_time = time(NULL);
