@@ -242,7 +242,7 @@ static int _add_edit_job(struct job_record *job_ptr, gold_object_t action)
 	if(!gold_request) 
 		return rc;
 
-	if ((tmp = strlen(job_ptr->name))) {
+	if (job_ptr->name && (tmp = strlen(job_ptr->name))) {
 		jname = xmalloc(++tmp);
 		for (i=0; i<tmp; i++) {
 			if (isspace(job_ptr->name[i]))
