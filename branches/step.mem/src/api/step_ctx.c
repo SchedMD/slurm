@@ -439,8 +439,6 @@ extern void slurm_step_ctx_params_t_init (slurm_step_ctx_params_t *ptr)
 	ptr->relative = (uint16_t)NO_VAL;
 	ptr->task_dist = SLURM_DIST_CYCLIC;
 	ptr->plane_size = (uint16_t)NO_VAL;
-	ptr->ckpt_interval = 0;
-	ptr->ckpt_path = NULL;
 
 	ptr->uid = getuid();
 
