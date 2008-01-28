@@ -224,8 +224,9 @@ dump_step_desc(job_step_create_request_msg_t *step_spec)
 	debug3("   host=%s port=%u name=%s network=%s checkpoint=%u", 
 		step_spec->host, step_spec->port, step_spec->name,
 		step_spec->network, step_spec->ckpt_interval);
-	debug3("   checkpoint-path=%s exclusive=%u immediate=%u",
-	        step_spec->ckpt_path, step_spec->exclusive, step_spec->immediate);
+	debug3("   checkpoint-path=%s exclusive=%u immediate=%u mem_per_task=%u",
+	        step_spec->ckpt_path, step_spec->exclusive, 
+		step_spec->immediate, step_spec->mem_per_task);
 }
 
 
@@ -903,6 +904,7 @@ step_create(job_step_create_request_msg_t *step_specs,
 	step_ptr->port = step_specs->port;
 	step_ptr->host = xstrdup(step_specs->host);
 	step_ptr->batch_step = batch_step;
+	step_ptr->mem_per_task = step_specs->mem_per_task;
 	step_ptr->ckpt_interval = step_specs->ckpt_interval;
 	step_ptr->ckpt_time = now;
 	step_ptr->exit_code = NO_VAL;
@@ -1671,6 +1673,7 @@ extern void dump_job_step_state(struct step_record *step_ptr, Buf buffer)
 	pack16(step_ptr->cyclic_alloc, buffer);
 	pack16(step_ptr->port, buffer);
 	pack16(step_ptr->ckpt_interval, buffer);
+	pack16(step_ptr->mem_per_task, buffer);
 
 	pack32(step_ptr->exit_code, buffer);
 	if (step_ptr->exit_code != NO_VAL) {
@@ -1705,7 +1708,7 @@ extern int load_step_state(struct job_record *job_ptr, Buf buffer)
 {
 	struct step_record *step_ptr = NULL;
 	uint16_t step_id, cyclic_alloc, port, batch_step, bit_cnt;
-	uint16_t ckpt_interval;
+	uint16_t ckpt_interval, mem_per_task;
 	uint32_t exit_code, name_len;
 	time_t start_time, pre_sus_time, tot_sus_time, ckpt_time;
 	char *host = NULL, *ckpt_path = NULL;
@@ -1718,6 +1721,7 @@ extern int load_step_state(struct job_record *job_ptr, Buf buffer)
 	safe_unpack16(&cyclic_alloc, buffer);
 	safe_unpack16(&port, buffer);
 	safe_unpack16(&ckpt_interval, buffer);
+	safe_unpack16(&mem_per_task, buffer);
 
 	safe_unpack32(&exit_code, buffer);
 	if (exit_code != NO_VAL) {
@@ -1767,6 +1771,7 @@ extern int load_step_state(struct job_record *job_ptr, Buf buffer)
 	step_ptr->ckpt_path    = ckpt_path;
 	step_ptr->port         = port;
 	step_ptr->ckpt_interval= ckpt_interval;
+	step_ptr->mem_per_task = mem_per_task;
 	step_ptr->host         = host;
 	step_ptr->batch_step   = batch_step;
 	host                   = NULL;  /* re-used, nothing left to free */

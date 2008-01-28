@@ -408,6 +408,7 @@ typedef struct job_step_specs {
 	uint16_t exclusive;	/* 1 if CPUs not shared with other steps */
 	uint16_t immediate;	/* 1 if allocate to run or fail immediately,
 				 * 0 if to be queued awaiting resources */
+	uint16_t mem_per_task;	/* MB memory required per task, 0=no limit */
 	char *host;		/* host to contact initiating srun */
 	char *node_list;	/* list of required nodes */
 	char *network;		/* network use spec */
