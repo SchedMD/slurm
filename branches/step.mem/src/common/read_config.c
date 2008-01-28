@@ -521,12 +521,12 @@ static int parse_partitionname(void **dest, slurm_parser_enum_t type,
 			else if (strncasecmp(tmp, "YES:", 4) == 0)
 				p->max_share = strtol(&tmp[4], (char **) NULL, 10);
 			else if (strcasecmp(tmp, "YES") == 0) 
-				p->max_share = 64;
+				p->max_share = 4;
 			else if (strncasecmp(tmp, "FORCE:", 6) == 0) {
 				p->max_share = strtol(&tmp[6], (char **) NULL, 10) |
 					SHARED_FORCE;
 			} else if (strcasecmp(tmp, "FORCE") == 0)
-				p->max_share = 64 | SHARED_FORCE;
+				p->max_share = 4 | SHARED_FORCE;
 #endif
 			else {
 				error("Bad value \"%s\" for Shared", tmp);

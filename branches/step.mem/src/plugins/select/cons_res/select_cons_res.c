@@ -1964,7 +1964,9 @@ static int _verify_node_state(struct node_cr_record *select_node_ptr,
 		if (!bit_test(bitmap, i))
 			continue;
 
-		if (job_ptr->details->job_min_memory) {
+		if ((job_ptr->details->job_min_memory) &&
+		    ((cr_type == CR_CORE_MEMORY) || (cr_type == CR_CPU_MEMORY) || 
+		     (cr_type == CR_MEMORY) || (cr_type == CR_SOCKET_MEMORY))) {
 			if (select_fast_schedule) {
 				free_mem = select_node_ptr[i].node_ptr->
 					config_ptr->real_memory;
@@ -2308,24 +2310,21 @@ static int _job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	bitstr_t *origmap, *reqmap = NULL;
 	int row, rows, try;
 	bool test_only;
+	uint32_t save_mem = 0;
 
 	layout_ptr = job_ptr->details->req_node_layout;
 	mc_ptr = job_ptr->details->mc_ptr;
 	reqmap = job_ptr->details->req_node_bitmap;
 
 	/* check node_state and update bitmap as necessary */
-	if (mode == SELECT_MODE_TEST_ONLY)
+	if (mode == SELECT_MODE_TEST_ONLY) {
 		test_only = true;
-	else	/* SELECT_MODE_RUN_NOW || SELECT_MODE_WILL_RUN  */ 
+		save_mem = job_ptr->details->job_min_memory;
+		job_ptr->details->job_min_memory = 0;
+	} else	/* SELECT_MODE_RUN_NOW || SELECT_MODE_WILL_RUN  */ 
 		test_only = false;
 
 	if (!test_only) {
-#if 0
-		/* Done in slurmctld/node_scheduler.c: _pick_best_nodes() */
-		if ((cr_type != CR_CORE_MEMORY) && (cr_type != CR_CPU_MEMORY) &&
-		    (cr_type != CR_MEMORY) && (cr_type != CR_SOCKET_MEMORY))
-			job_ptr->details->job_min_memory = 0;
-#endif
 		error_code = _verify_node_state(select_node_ptr, job_ptr, 
 						bitmap, job_node_req);
 		if (error_code != SLURM_SUCCESS)
@@ -2353,6 +2352,8 @@ static int _job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 		xfree(sh_tasks);
 		xfree(al_tasks);
 		xfree(freq);
+		if (save_mem)
+			job_ptr->details->job_min_memory = save_mem;
 		return error_code;
 	}
 
@@ -2508,7 +2509,9 @@ static int _job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 			job->cpus[j] = 0;
 		}
 		job->alloc_cpus[j] = 0;
-		job->alloc_memory[j] = job_ptr->details->job_min_memory; 
+		if ((cr_type == CR_CORE_MEMORY) || (cr_type == CR_CPU_MEMORY) ||
+		    (cr_type == CR_MEMORY) || (cr_type == CR_SOCKET_MEMORY))
+			job->alloc_memory[j] = job_ptr->details->job_min_memory; 
 		if ((cr_type == CR_CORE) || (cr_type == CR_CORE_MEMORY)||
 		    (cr_type == CR_SOCKET) || (cr_type == CR_SOCKET_MEMORY)) {
 			_chk_resize_job(job, j, 

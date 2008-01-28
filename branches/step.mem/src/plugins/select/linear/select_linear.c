@@ -520,8 +520,7 @@ static int _job_count_bitmap(struct node_cr_record *node_cr_ptr,
 	uint32_t job_memory = 0;
 
 	xassert(node_cr_ptr);
-	if ((job_ptr->details->job_min_memory != NO_VAL) &&
-	    (cr_type == CR_MEMORY))
+	if (job_ptr->details->job_min_memory  && (cr_type == CR_MEMORY))
 		job_memory = job_ptr->details->job_min_memory;
 
 	for (i = 0; i < node_record_count; i++) {
@@ -1023,8 +1022,7 @@ static int _rm_job_from_nodes(struct node_cr_record *node_cr_ptr,
 	}
 
 	if (remove_all && job_ptr->details && 
-	    (job_ptr->details->job_min_memory != NO_VAL) &&
-	    (cr_type == CR_MEMORY))
+	    job_ptr->details->job_min_memory && (cr_type == CR_MEMORY))
 		job_memory = job_ptr->details->job_min_memory;
 
 	for (i = 0; i < select_node_cnt; i++) {
@@ -1100,8 +1098,7 @@ static int _add_job_to_nodes(struct node_cr_record *node_cr_ptr,
 	}
 
 	if (alloc_all && job_ptr->details && 
-	    (job_ptr->details->job_min_memory != NO_VAL) &&
-	    (cr_type == CR_MEMORY))
+	    job_ptr->details->job_min_memory && (cr_type == CR_MEMORY))
 		job_memory = job_ptr->details->job_min_memory;
 	if (job_ptr->details->shared == 0)
 		exclusive = 1;
@@ -1256,8 +1253,7 @@ static void _init_node_cr(void)
 			continue;
 
 		if (job_ptr->details && 
-		    (job_ptr->details->job_min_memory != NO_VAL) &&
-		    (cr_type == CR_MEMORY))
+		    job_ptr->details->job_min_memory && (cr_type == CR_MEMORY))
 			job_memory = job_ptr->details->job_min_memory;
 		else
 			job_memory = 0;
