@@ -200,6 +200,8 @@ static slurm_errtab_t slurm_errtab[] = {
 	  "Job is in held state, pending scheduler release"	},
 	{ ESLURM_INVALID_BANK_ACCOUNT,
 	  "Invalid bank account specified"			},
+	{ ESLURM_INVALID_TASK_MEMORY,
+	  "Memory required by task is not available"		},
 
 	/* slurmd error codes */
 

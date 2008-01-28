@@ -185,6 +185,10 @@ delete_step_record (struct job_record *job_ptr, uint32_t step_id)
 				switch_free_jobinfo (step_ptr->switch_job);
 			}
 			checkpoint_free_jobinfo (step_ptr->check_job);
+
+			if (step_ptr->mem_per_task)
+				select_g_step_fini(step_ptr);
+
 			xfree(step_ptr->host);
 			xfree(step_ptr->name);
 			slurm_step_layout_destroy(step_ptr->step_layout);
@@ -794,7 +798,8 @@ step_create(job_step_create_request_msg_t *step_specs,
 	if (job_ptr == NULL)
 		return ESLURM_INVALID_JOB_ID ;
 
-	if ((job_ptr->job_state == JOB_SUSPENDED) || IS_JOB_PENDING(job_ptr))
+	if ((job_ptr->details == NULL) ||
+	    (job_ptr->job_state == JOB_SUSPENDED) || IS_JOB_PENDING(job_ptr))
 		return ESLURM_DISABLED;
 
 	if (batch_step) {
@@ -812,6 +817,16 @@ step_create(job_step_create_request_msg_t *step_specs,
 	if (IS_JOB_FINISHED(job_ptr) || 
 	    (job_ptr->end_time <= time(NULL)))
 		return ESLURM_ALREADY_DONE;
+
+	if (job_ptr->details->job_min_memory) {
+		/* use memory reserved by job, no limit on steps */
+		step_specs->mem_per_task = 0;
+	} else if (step_specs->mem_per_task) {
+		if (slurmctld_conf.max_mem_per_task &&
+		    (step_specs->mem_per_task > slurmctld_conf.max_mem_per_task))
+			return ESLURM_INVALID_TASK_MEMORY;
+	} else
+		step_specs->mem_per_task = slurmctld_conf.def_mem_per_task;
 
 	if ((step_specs->task_dist != SLURM_DIST_CYCLIC) &&
 	    (step_specs->task_dist != SLURM_DIST_BLOCK) &&
@@ -950,6 +965,13 @@ step_create(job_step_create_request_msg_t *step_specs,
 	if (checkpoint_alloc_jobinfo (&step_ptr->check_job) < 0)
 		fatal ("step_create: checkpoint_alloc_jobinfo error");
 	xfree(step_node_list);
+	if (step_ptr->mem_per_task &&
+	    (select_g_step_begin(step_ptr) != SLURM_SUCCESS)) {
+		error("No memory to allocate step for job %u", job_ptr->job_id);
+		step_ptr->mem_per_task = 0;	/* no memory to be freed */
+		delete_step_record (job_ptr, step_ptr->step_id);
+		return ESLURM_INVALID_TASK_MEMORY;
+	}
 	*new_step_record = step_ptr;
 	jobacct_storage_g_step_start(step_ptr);
 	return SLURM_SUCCESS;

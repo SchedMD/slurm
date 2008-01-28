@@ -1390,3 +1390,94 @@ static int  _cr_job_list_sort(void *x, void *y)
 	struct job_record **job2_pptr = (struct job_record **) y;
 	return (int) difftime(job1_pptr[0]->end_time, job2_pptr[0]->end_time);
 }
+
+extern int select_p_step_begin(struct step_record *step_ptr)
+{
+	slurm_step_layout_t *step_layout = step_ptr->step_layout;
+	int i, node_inx = -1;
+	uint32_t avail_mem, step_mem;
+
+info("step_begin: mem:%u", step_ptr->mem_per_task);
+	xassert(step_ptr->job_ptr);
+	xassert(step_ptr->job_ptr->details);
+	xassert(step_layout);
+	xassert(step_ptr->step_node_bitmap);
+	xassert(step_layout->node_cnt == 
+		bit_set_count(step_ptr->step_node_bitmap));
+
+	if (step_ptr->job_ptr->details->job_min_memory || 
+	    (cr_type != CR_MEMORY))
+		return SLURM_SUCCESS;
+
+	/* test if there is sufficient memory */
+	slurm_mutex_lock(&cr_mutex);
+	if (node_cr_ptr == NULL)
+		_init_node_cr();
+	for (i = 0; i < select_node_cnt; i++) {
+		if (bit_test(step_ptr->step_node_bitmap, i) == 0)
+			continue;
+		node_inx++;
+		step_mem = step_layout->tasks[node_inx] * step_ptr->mem_per_task;
+		if (select_fast_schedule)
+			avail_mem = node_record_table_ptr[i].
+				    config_ptr->real_memory;
+		else
+			avail_mem = node_record_table_ptr[i].real_memory;
+info("alloc %u need %u avail %u", node_cr_ptr[i].alloc_memory, step_mem, avail_mem);
+		if ((node_cr_ptr[i].alloc_memory + step_mem) > avail_mem) {
+			slurm_mutex_unlock(&cr_mutex);
+			return SLURM_ERROR;	/* no room */
+		}
+	}
+
+	/* reserve the memory */
+	node_inx = -1;
+	for (i = 0; i < select_node_cnt; i++) {
+		if (bit_test(step_ptr->step_node_bitmap, i) == 0)
+			continue;
+		node_inx++;
+		step_mem = step_layout->tasks[node_inx] * step_ptr->mem_per_task;
+		node_cr_ptr[i].alloc_memory += step_mem;
+	}
+	slurm_mutex_unlock(&cr_mutex);
+	return SLURM_SUCCESS;
+}
+
+extern int select_p_step_fini(struct step_record *step_ptr)
+{
+	slurm_step_layout_t *step_layout = step_ptr->step_layout;
+	int i, node_inx = -1;
+	uint32_t step_mem;
+
+info("step_fini: mem:%u", step_ptr->mem_per_task);
+	xassert(step_ptr->job_ptr);
+	xassert(step_ptr->job_ptr->details);
+	xassert(step_layout);
+	xassert(step_ptr->step_node_bitmap);
+	xassert(step_layout->node_cnt == 
+		bit_set_count(step_ptr->step_node_bitmap));
+
+	if (step_ptr->job_ptr->details->job_min_memory || 
+	    (cr_type != CR_MEMORY))
+		return SLURM_SUCCESS;
+
+	/* release the memory */
+	slurm_mutex_lock(&cr_mutex);
+	if (node_cr_ptr == NULL)
+		_init_node_cr();
+	for (i = 0; i < select_node_cnt; i++) {
+		if (bit_test(step_ptr->step_node_bitmap, i) == 0)
+			continue;
+		node_inx++;
+		step_mem = step_layout->tasks[node_inx] * step_ptr->mem_per_task;
+		if (node_cr_ptr[i].alloc_memory >= step_mem)
+			node_cr_ptr[i].alloc_memory -= step_mem;
+		else {
+			node_cr_ptr[i].alloc_memory = 0;
+			error("select/linear: alloc_memory underflow on %s",
+				node_record_table_ptr[i].name);
+		}
+	}
+	slurm_mutex_unlock(&cr_mutex);
+	return SLURM_SUCCESS;
+}

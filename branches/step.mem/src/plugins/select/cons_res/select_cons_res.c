@@ -2925,3 +2925,13 @@ extern struct multi_core_data * create_default_mc(void)
 /*	mc_ptr->plane_size        = 0; */
 	return mc_ptr;
 }
+
+extern int select_p_step_begin(struct step_record *step_ptr)
+{
+	return SLURM_SUCCESS;
+}
+
+extern int select_p_step_fini(struct step_record *step_ptr)
+{
+	return SLURM_SUCCESS;
+}
