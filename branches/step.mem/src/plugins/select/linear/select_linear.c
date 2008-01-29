@@ -5,7 +5,7 @@
  *
  *  $Id$
  *****************************************************************************
- *  Copyright (C) 2004-2006 The Regents of the University of California.
+ *  Copyright (C) 2004-2008 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
  *  UCRL-CODE-226842.
@@ -72,16 +72,19 @@
 #define SELECT_DEBUG	0
 #define NO_SHARE_LIMIT	0xfffe
 
-static int _add_job_to_nodes(struct node_cr_record *node_cr_ptr,
-			     struct job_record *job_ptr, char *pre_err, 
-			     int suspended);
+static int  _add_job_to_nodes(struct node_cr_record *node_cr_ptr,
+			      struct job_record *job_ptr, char *pre_err, 
+			      int suspended);
+static int  _add_step(struct step_record *step_ptr);
 static void _cr_job_list_del(void *x);
 static int  _cr_job_list_sort(void *x, void *y);
+static void _del_list_step(void *x);
 static void _dump_node_cr(struct node_cr_record *node_cr_ptr);
 static struct node_cr_record *_dup_node_cr(struct node_cr_record *node_cr_ptr);
 static int  _find_job_mate(struct job_record *job_ptr, bitstr_t *bitmap,
 			   uint32_t min_nodes, uint32_t max_nodes,
 			   uint32_t req_nodes);
+static int  _find_step(struct step_record *step_ptr);
 static void _free_node_cr(struct node_cr_record *node_cr_ptr);
 static void _init_node_cr(void);
 static int _job_count_bitmap(struct node_cr_record *node_cr_ptr,
@@ -90,6 +93,7 @@ static int _job_count_bitmap(struct node_cr_record *node_cr_ptr,
 static int _job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 		     uint32_t min_nodes, uint32_t max_nodes, 
 		     uint32_t req_nodes);
+static int _remove_step(struct step_record *step_ptr);
 static int _rm_job_from_nodes(struct node_cr_record *node_cr_ptr,
 			      struct job_record *job_ptr, char *pre_err, 
 			      int remove_all);
@@ -136,6 +140,7 @@ static uint16_t cr_type;
 
 static struct node_cr_record *node_cr_ptr = NULL;
 static pthread_mutex_t cr_mutex = PTHREAD_MUTEX_INITIALIZER;
+static List step_cr_list = NULL;
 
 #ifdef HAVE_XCPU
 #define XCPU_POLL_TIME 120
@@ -279,6 +284,9 @@ extern int fini ( void )
 	slurm_mutex_lock(&cr_mutex);
 	_free_node_cr(node_cr_ptr);
 	node_cr_ptr = NULL;
+	if (step_cr_list)
+		list_destroy(step_cr_list);
+	step_cr_list = NULL;
 	slurm_mutex_unlock(&cr_mutex);
 	return rc;
 }
@@ -321,6 +329,9 @@ extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)
 	slurm_mutex_lock(&cr_mutex);
 	_free_node_cr(node_cr_ptr);
 	node_cr_ptr = NULL;
+	if (step_cr_list)
+		list_destroy(step_cr_list);
+	step_cr_list = NULL;
 	slurm_mutex_unlock(&cr_mutex);
 
 	select_node_ptr = node_ptr;
@@ -927,7 +938,49 @@ extern int select_p_get_select_nodeinfo (struct node_record *node_ptr,
 
 extern int select_p_update_nodeinfo (struct job_record *job_ptr)
 {
-       return SLURM_SUCCESS;
+	int i, node_inx;
+	ListIterator step_iterator;
+	struct step_record *step_ptr;
+	uint32_t step_mem;
+
+	xassert(job_ptr);
+
+	if ((job_ptr->job_state != JOB_RUNNING)
+	&&  (job_ptr->job_state != JOB_SUSPENDED))
+		return SLURM_SUCCESS;
+	if ((cr_type != CR_MEMORY) || (job_ptr->details == NULL) || 
+	    (job_ptr->details->shared == 0) || job_ptr->details->job_min_memory)
+		return SLURM_SUCCESS;
+
+	slurm_mutex_lock(&cr_mutex);
+	if (node_cr_ptr == NULL)
+		_init_node_cr();
+	step_iterator = list_iterator_create (job_ptr->step_list);
+	while ((step_ptr = (struct step_record *) list_next (step_iterator))) {
+		if ((step_ptr->step_node_bitmap == NULL) ||
+		    (step_ptr->step_layout == NULL) ||
+		    (step_ptr->mem_per_task == 0) ||
+		    (_find_step(step_ptr)))	/* already added */
+			continue;
+#if SELECT_DEBUG
+		info("select_p_update_nodeinfo: %u.%u mem:%u", 
+		     step_ptr->job_ptr->job_id, step_ptr->step_id, 
+		     step_ptr->mem_per_task);
+#endif
+		node_inx = -1;
+		for (i = 0; i < select_node_cnt; i++) {
+			if (bit_test(step_ptr->step_node_bitmap, i) == 0)
+				continue;
+			node_inx++;
+			step_mem = step_ptr->step_layout->tasks[node_inx] * 
+				   step_ptr->mem_per_task;
+			node_cr_ptr[i].alloc_memory += step_mem;
+		}
+		_add_step(step_ptr);
+	}
+	list_iterator_destroy (step_iterator);
+	slurm_mutex_unlock(&cr_mutex);
+	return SLURM_SUCCESS;
 }
 
 extern int select_p_update_block (update_part_msg_t *part_desc_ptr)
@@ -996,6 +1049,9 @@ extern int select_p_reconfigure(void)
 	slurm_mutex_lock(&cr_mutex);
 	_free_node_cr(node_cr_ptr);
 	node_cr_ptr = NULL;
+	if (step_cr_list)
+		list_destroy(step_cr_list);
+	step_cr_list = NULL;
 	_init_node_cr();
 	slurm_mutex_unlock(&cr_mutex);
 
@@ -1223,8 +1279,10 @@ static void _init_node_cr(void)
 	ListIterator part_iterator;
 	struct job_record *job_ptr;
 	ListIterator job_iterator;
-	uint32_t job_memory;
-	int exclusive, i;
+	uint32_t job_memory, step_mem;
+	int exclusive, i, node_inx;
+	ListIterator step_iterator;
+	struct step_record *step_ptr;
 
 	if (node_cr_ptr)
 		return;
@@ -1299,6 +1357,40 @@ static void _init_node_cr(void)
 					node_record_table_ptr[i].name);
 			}
 		}
+
+		if (job_ptr->details->job_min_memory || 
+		    (job_ptr->details->shared == 0) || (cr_type != CR_MEMORY))
+			continue;
+
+		step_iterator = list_iterator_create (job_ptr->step_list);
+		while ((step_ptr = (struct step_record *) list_next (step_iterator))) {
+			if ((step_ptr->step_node_bitmap == NULL) ||
+			    (step_ptr->step_layout == NULL))
+				continue;
+
+			if (_find_step(step_ptr)) {
+				slurm_mutex_unlock(&cr_mutex);
+				error("_init_node_cr: duplicate for step %u.%u",
+				      job_ptr->job_id, step_ptr->step_id);
+				continue;
+			}
+
+			node_inx = -1;
+			for (i = 0; i < select_node_cnt; i++) {
+				if (bit_test(step_ptr->step_node_bitmap, i) == 0)
+					continue;
+				node_inx++;
+				step_mem = step_ptr->step_layout->tasks[node_inx] * 
+					   step_ptr->mem_per_task;
+				node_cr_ptr[i].alloc_memory += step_mem;
+			}
+#if SELECT_DEBUG
+			info("_init_node_cr: added %u.%u mem:%u", 
+			     job_ptr->job_id, step_ptr->step_id, step_mem);
+#endif
+			_add_step(step_ptr);
+		}
+		list_iterator_destroy (step_iterator);
 	}
 	list_iterator_destroy(job_iterator);
 	_dump_node_cr(node_cr_ptr);
@@ -1400,7 +1492,6 @@ extern int select_p_step_begin(struct step_record *step_ptr)
 	int i, node_inx = -1;
 	uint32_t avail_mem, step_mem;
 
-info("step_begin: mem:%u", step_ptr->mem_per_task);
 	xassert(step_ptr->job_ptr);
 	xassert(step_ptr->job_ptr->details);
 	xassert(step_layout);
@@ -1408,6 +1499,9 @@ info("step_begin: mem:%u", step_ptr->mem_per_task);
 	xassert(step_layout->node_cnt == 
 		bit_set_count(step_ptr->step_node_bitmap));
 
+#if SELECT_DEBUG
+	info("select_p_step_begin: mem:%u", step_ptr->mem_per_task);
+#endif
 	/* Don't track step memory use if job has reserved memory OR
 	 * job has whole node OR we don't track memory usage */
 	if (step_ptr->job_ptr->details->job_min_memory || 
@@ -1419,6 +1513,12 @@ info("step_begin: mem:%u", step_ptr->mem_per_task);
 	slurm_mutex_lock(&cr_mutex);
 	if (node_cr_ptr == NULL)
 		_init_node_cr();
+	if (_find_step(step_ptr)) {
+		slurm_mutex_unlock(&cr_mutex);
+		error("select_p_step_begin: duplicate for step %u.%u",
+		      step_ptr->job_ptr->job_id, step_ptr->step_id);
+		return SLURM_SUCCESS;
+	}
 	for (i = 0; i < select_node_cnt; i++) {
 		if (bit_test(step_ptr->step_node_bitmap, i) == 0)
 			continue;
@@ -1445,6 +1545,7 @@ info("alloc %u need %u avail %u", node_cr_ptr[i].alloc_memory, step_mem, avail_m
 		step_mem = step_layout->tasks[node_inx] * step_ptr->mem_per_task;
 		node_cr_ptr[i].alloc_memory += step_mem;
 	}
+	_add_step(step_ptr);
 	slurm_mutex_unlock(&cr_mutex);
 	return SLURM_SUCCESS;
 }
@@ -1455,7 +1556,6 @@ extern int select_p_step_fini(struct step_record *step_ptr)
 	int i, node_inx = -1;
 	uint32_t step_mem;
 
-info("step_fini: mem:%u", step_ptr->mem_per_task);
 	xassert(step_ptr->job_ptr);
 	xassert(step_ptr->job_ptr->details);
 	xassert(step_layout);
@@ -1463,6 +1563,9 @@ info("step_fini: mem:%u", step_ptr->mem_per_task);
 	xassert(step_layout->node_cnt == 
 		bit_set_count(step_ptr->step_node_bitmap));
 
+#if SELECT_DEBUG
+	info("select_p_step_fini: mem:%u", step_ptr->mem_per_task);
+#endif
 	/* Don't track step memory use if job has reserved memory OR
 	 * job has whole node OR we don't track memory usage */
 	if (step_ptr->job_ptr->details->job_min_memory || 
@@ -1474,6 +1577,12 @@ info("step_fini: mem:%u", step_ptr->mem_per_task);
 	slurm_mutex_lock(&cr_mutex);
 	if (node_cr_ptr == NULL)
 		_init_node_cr();
+	if (!_find_step(step_ptr)) {
+		slurm_mutex_unlock(&cr_mutex);
+		error("select_p_step_fini: could not find step %u.%u",
+		      step_ptr->job_ptr->job_id, step_ptr->step_id);
+		return SLURM_SUCCESS;
+	}
 	for (i = 0; i < select_node_cnt; i++) {
 		if (bit_test(step_ptr->step_node_bitmap, i) == 0)
 			continue;
@@ -1483,10 +1592,78 @@ info("step_fini: mem:%u", step_ptr->mem_per_task);
 			node_cr_ptr[i].alloc_memory -= step_mem;
 		else {
 			node_cr_ptr[i].alloc_memory = 0;
-			error("select/linear: alloc_memory underflow on %s",
+			error("select_p_step_fini: alloc_memory underflow on %s",
 				node_record_table_ptr[i].name);
 		}
 	}
+	_remove_step(step_ptr);
 	slurm_mutex_unlock(&cr_mutex);
 	return SLURM_SUCCESS;
+}
+
+/* return 1 if found, 0 otherwise */
+static int _find_step(struct step_record *step_ptr)
+{
+	ListIterator step_iterator;
+	struct step_cr_record *step;
+	int found = 0;
+
+	if (!step_cr_list)
+		return found;
+	step_iterator = list_iterator_create(step_cr_list);
+	if (step_iterator == NULL) {
+		fatal("list_iterator_create: memory allocation failure");
+		return found;
+	}
+	while ((step = list_next(step_iterator))) {
+		if ((step->job_id  == step_ptr->job_ptr->job_id) &&
+		    (step->step_id == step_ptr->step_id)) {
+			found = 1;
+			break;
+		}
+	}
+	list_iterator_destroy(step_iterator);
+	return found;
+}
+static int _add_step(struct step_record *step_ptr)
+{
+	struct step_cr_record *step = xmalloc(sizeof(struct step_cr_record));
+
+	step->job_id  = step_ptr->job_ptr->job_id;
+	step->step_id = step_ptr->step_id;
+	if (!step_cr_list)
+		step_cr_list = list_create(_del_list_step);
+	if (list_append(step_cr_list, step) == NULL) {
+		fatal("list_append: memory allocation failure");
+		return SLURM_ERROR;
+	}
+	return SLURM_SUCCESS;
+}
+static int _remove_step(struct step_record *step_ptr)
+{
+	ListIterator step_iterator;
+	struct step_cr_record *step;
+	int found = 0;
+
+	if (!step_cr_list)
+		return found;
+	step_iterator = list_iterator_create(step_cr_list);
+	if (step_iterator == NULL) {
+		fatal("list_iterator_create: memory allocation failure");
+		return found;
+	}
+	while ((step = list_next(step_iterator))) {
+		if ((step->job_id  == step_ptr->job_ptr->job_id) &&
+		    (step->step_id == step_ptr->step_id)) {
+			found = 1;
+			list_delete_item(step_iterator);
+			break;
+		}
+	}
+	list_iterator_destroy(step_iterator);
+	return found;
+}
+static void _del_list_step(void *x)
+{
+	xfree(x);
 }
