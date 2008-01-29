@@ -1169,11 +1169,14 @@ static inline void _dump_node_cr(struct node_cr_record *node_cr_ptr)
 		return;
 
 	for (i = 0; i < select_node_cnt; i++) {
+		info("Node:%s exclusive:%u alloc_mem:%u", 
+			node_record_table_ptr[i].name,
+			node_cr_ptr[i].exclusive_jobid,
+			node_cr_ptr[i].alloc_memory);
+
 		part_cr_ptr = node_cr_ptr[i].parts;
 		while (part_cr_ptr) {
-			info("Node:%s exclusive:%u part:%s run:%u tot:%u", 
-				node_record_table_ptr[i].name,
-				node_cr_ptr[i].exclusive_jobid,
+			info("  Part:%s run:%u tot:%u", 
 				part_cr_ptr->part_ptr->name,
 				part_cr_ptr->run_job_cnt,
 				part_cr_ptr->tot_job_cnt);
@@ -1277,7 +1280,7 @@ static void _init_node_cr(void)
 				}
 				node_cr_ptr[i].exclusive_jobid = job_ptr->job_id;
 			}
-			node_cr_ptr[i].alloc_memory = job_memory;
+			node_cr_ptr[i].alloc_memory += job_memory;
 			part_cr_ptr = node_cr_ptr[i].parts;
 			while (part_cr_ptr) {
 				if (part_cr_ptr->part_ptr != job_ptr->part_ptr) {
@@ -1405,7 +1408,10 @@ info("step_begin: mem:%u", step_ptr->mem_per_task);
 	xassert(step_layout->node_cnt == 
 		bit_set_count(step_ptr->step_node_bitmap));
 
+	/* Don't track step memory use if job has reserved memory OR
+	 * job has whole node OR we don't track memory usage */
 	if (step_ptr->job_ptr->details->job_min_memory || 
+	    (step_ptr->job_ptr->details->shared == 0) ||
 	    (cr_type != CR_MEMORY))
 		return SLURM_SUCCESS;
 
@@ -1457,7 +1463,10 @@ info("step_fini: mem:%u", step_ptr->mem_per_task);
 	xassert(step_layout->node_cnt == 
 		bit_set_count(step_ptr->step_node_bitmap));
 
+	/* Don't track step memory use if job has reserved memory OR
+	 * job has whole node OR we don't track memory usage */
 	if (step_ptr->job_ptr->details->job_min_memory || 
+	    (step_ptr->job_ptr->details->shared == 0) ||
 	    (cr_type != CR_MEMORY))
 		return SLURM_SUCCESS;
 
