@@ -5,7 +5,7 @@
 <p>This document contains SLURM administrator information specifically 
 for clusters containing 1,024 nodes or more. 
 Virtually all SLURM components have been validated (through emulation) 
-for clusters containing up to 16,384 compute nodes. 
+for clusters containing up to 65,536 compute nodes. 
 Getting good performance at that scale does require some tuning and 
 this document should help you off to a good start.
 A working knowledge of SLURM should be considered a prerequisite 
@@ -16,8 +16,8 @@ for this material.</p>
 <p>While allocating individual processors within a node is great 
 for smaller clusters, the overhead of keeping track of the individual 
 processors and memory within each node adds significant overhead. 
-For best scalability, the consumable resource plugin (<i>select/cons_res</i>)
-is best avoided.</p>
+For best scalability, allocate whole nodes using <i>select/linear</i>
+or <i>select/bluegene</i> and avoid <i>select/cons_res</i>.</p>
 
 <h2>Job Accounting Gather Plugin (JobAcctGatherType)</h2>
 
@@ -61,7 +61,7 @@ and thus should not be allocated work.
 Longer intervals decrease system noise on compute nodes (we do 
 synchronize these requests across the cluster, but there will 
 be some impact upon applications).
-For really large clusters, <i>SlurmdTimeoutl</i> values of 
+For really large clusters, <i>SlurmdTimeout</i> values of 
 120 seconds or more are reasonable.</p> 
 
 <p>If MPICH-2 is used, the srun command will manage the key-pairs
@@ -72,8 +72,15 @@ This can be done by setting an environment variable PMI_TIME before
 executing srun to launch the tasks. 
 The default value of PMI_TIME is 500 and this is the number of 
 microseconds alloted to transmit each key-pair. 
-We have executed up to 16,000 tasks with a value of PMI_TIME=4000.
+We have executed up to 16,000 tasks with a value of PMI_TIME=4000.</p>
 
-<p style="text-align:center;">Last modified 19 September 2006</p>
+<h2>Limits</h2>
+
+<p>The srun command automatically increases its open file limit to 
+the hard limit in order to process all of the standard input and output
+connections to the launched tasks. It is recommended that you set the
+open file hard limit to 8192 across the cluster.</p>
+
+<p style="text-align:center;">Last modified 29 January 2008</p>
 
 <!--#include virtual="footer.txt"-->

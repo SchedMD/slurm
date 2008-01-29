@@ -52,10 +52,12 @@ parallel for testing purposes?</a></li>
 <li><a href="#multi_slurmd">Can slurm emulate a larger cluster?</a></li>
 <li><a href="#extra_procs">Can SLURM emulate nodes with more 
 resources than physically exist on the node?</a></li>
-<li><a href="#credential_replayed">What does a "credential
-replayed" error in the <i>SlurmdLogFile</i> indicate?</a></li>
-<li><a href="#large_time">What does a "Warning: Note very large
-processing time" in the <i>SlurmctldLogFile</i> indicate?</a></li>
+<li><a href="#credential_replayed">What does a 
+&quot;credential replayed&quot; error in the <i>SlurmdLogFile</i> 
+indicate?</a></li>
+<li><a href="#large_time">What does 
+&quot;Warning: Note very large processing time&quot; 
+in the <i>SlurmctldLogFile</i> indicate?</a></li>
 <li><a href="#lightweight_core">How can I add support for lightweight
 core files?</a></li>
 <li><a href="#limit_propagation">Is resource limit propagation
@@ -69,6 +71,8 @@ generated?</a></li>
 errors generated?</a></li>
 <li><a href="#globus">Can SLURM be used with Globus?</li>
 <li><a href="#time_format">Can SLURM time output format include the year?</li>
+<li><a href="#file_limit">What causes the error 
+&quot;Unable to accept new connection: Too many open files&quot;?
 </ol>
 
 <h2>For Users</h2>
@@ -743,8 +747,9 @@ SLURM will use the resource specification for each node that is
 given in <i>slurm.conf</i> and will not check these specifications 
 against those actaully found on the node.
 
-<p><a name="credential_replayed"><b>16. What does a "credential 
-replayed" error in the <i>SlurmdLogFile</i> indicate?</b></a><br>
+<p><a name="credential_replayed"><b>16. What does a 
+&quot;credential replayed&quot; 
+error in the <i>SlurmdLogFile</i> indicate?</b></a><br>
 This error is indicative of the <i>slurmd</i> daemon not being able 
 to respond to job initiation requests from the <i>srun</i> command
 in a timely fashion (a few seconds).
@@ -768,8 +773,9 @@ value higher than the default 5 seconds.
 In earlier versions of Slurm, the <i>--msg-timeout</i> option 
 of <i>srun</i> serves a similar purpose.
 
-<p><a name="large_time"><b>17. What does a "Warning: Note very large
-processing time" in the <i>SlurmctldLogFile</i> indicate?</b></a><br>
+<p><a name="large_time"><b>17. What does 
+&quot;Warning: Note very large processing time&quot; 
+in the <i>SlurmctldLogFile</i> indicate?</b></a><br>
 This error is indicative of some operation taking an unexpectedly
 long time to complete, over one second to be specific.
 Setting the value of <i>SlurmctldDebug</i> configuration parameter 
@@ -857,6 +863,13 @@ Define &quot;ISO8601&quot; at SLURM build time to get the time format
 <i>YYY-MM-DDTHH:MM:SS</i>.
 Note that this change in format will break anything that parses 
 SLURM output expecting the old format (e.g. LSF, Maui or Moab).
+
+<p><a name="file_limit"><b>25. What causes the error 
+&quot;Unable to accept new connection: Too many open files&quot;?</b><br>
+The srun command automatically increases its open file limit to 
+the hard limit in order to process all of the standard input and output
+connections to the launched tasks. It is recommended that you set the
+open file hard limit to 8192 across the cluster.
 
 <p class="footer"><a href="#top">top</a></p>
 
