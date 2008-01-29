@@ -1494,14 +1494,13 @@ extern int select_p_step_begin(struct step_record *step_ptr)
 
 	xassert(step_ptr->job_ptr);
 	xassert(step_ptr->job_ptr->details);
-	xassert(step_layout);
 	xassert(step_ptr->step_node_bitmap);
-	xassert(step_layout->node_cnt == 
-		bit_set_count(step_ptr->step_node_bitmap));
 
 #if SELECT_DEBUG
 	info("select_p_step_begin: mem:%u", step_ptr->mem_per_task);
 #endif
+	if (step_layout == NULL)
+		return SLURM_SUCCESS;	/* batch script */
 	/* Don't track step memory use if job has reserved memory OR
 	 * job has whole node OR we don't track memory usage */
 	if (step_ptr->job_ptr->details->job_min_memory || 
@@ -1529,7 +1528,10 @@ extern int select_p_step_begin(struct step_record *step_ptr)
 				    config_ptr->real_memory;
 		else
 			avail_mem = node_record_table_ptr[i].real_memory;
-info("alloc %u need %u avail %u", node_cr_ptr[i].alloc_memory, step_mem, avail_mem);
+#if SELECT_DEBUG
+		info("alloc %u need %u avail %u", 
+		     node_cr_ptr[i].alloc_memory, step_mem, avail_mem);
+#endif
 		if ((node_cr_ptr[i].alloc_memory + step_mem) > avail_mem) {
 			slurm_mutex_unlock(&cr_mutex);
 			return SLURM_ERROR;	/* no room */
@@ -1558,14 +1560,13 @@ extern int select_p_step_fini(struct step_record *step_ptr)
 
 	xassert(step_ptr->job_ptr);
 	xassert(step_ptr->job_ptr->details);
-	xassert(step_layout);
 	xassert(step_ptr->step_node_bitmap);
-	xassert(step_layout->node_cnt == 
-		bit_set_count(step_ptr->step_node_bitmap));
 
 #if SELECT_DEBUG
 	info("select_p_step_fini: mem:%u", step_ptr->mem_per_task);
 #endif
+	if (step_layout == NULL)
+		return SLURM_SUCCESS;	/* batch script */
 	/* Don't track step memory use if job has reserved memory OR
 	 * job has whole node OR we don't track memory usage */
 	if (step_ptr->job_ptr->details->job_min_memory || 
@@ -1581,7 +1582,7 @@ extern int select_p_step_fini(struct step_record *step_ptr)
 		slurm_mutex_unlock(&cr_mutex);
 		error("select_p_step_fini: could not find step %u.%u",
 		      step_ptr->job_ptr->job_id, step_ptr->step_id);
-		return SLURM_SUCCESS;
+		return SLURM_ERROR;
 	}
 	for (i = 0; i < select_node_cnt; i++) {
 		if (bit_test(step_ptr->step_node_bitmap, i) == 0)
