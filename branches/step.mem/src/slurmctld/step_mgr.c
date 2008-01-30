@@ -742,6 +742,8 @@ static void _step_dealloc_lps(struct step_record *step_ptr)
 
 	i_first = bit_ffs(job_ptr->node_bitmap);
 	i_last  = bit_fls(job_ptr->node_bitmap);
+	if (i_first == -1)	/* empty bitmap */
+		return;
 	for (i_node = i_first; i_node <= i_last; i_node++) {
 		if (!bit_test(job_ptr->node_bitmap, i_node))
 			continue;
