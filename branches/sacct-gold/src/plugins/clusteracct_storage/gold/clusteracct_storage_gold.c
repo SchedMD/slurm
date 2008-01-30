@@ -165,11 +165,11 @@ extern int clusteracct_storage_p_node_down(struct node_record *node_ptr,
 		return rc;
 	
 	gold_request_add_condition(gold_request, "Machine", cluster_name,
-				   GOLD_OPERATOR_NONE);
+				   GOLD_OPERATOR_NONE, 0);
 	gold_request_add_condition(gold_request, "EndTime", "0",
-				   GOLD_OPERATOR_NONE);
+				   GOLD_OPERATOR_NONE, 0);
 	gold_request_add_condition(gold_request, "Name", node_ptr->name,
-				   GOLD_OPERATOR_NONE);
+				   GOLD_OPERATOR_NONE, 0);
 
 	snprintf(tmp_buff, sizeof(tmp_buff), "%d", ((int)event_time - 1));
 	gold_request_add_assignment(gold_request, "EndTime", tmp_buff);		
@@ -249,11 +249,11 @@ extern int clusteracct_storage_p_node_up(struct node_record *node_ptr,
 		return rc;
 	
 	gold_request_add_condition(gold_request, "Machine", cluster_name,
-				   GOLD_OPERATOR_NONE);
+				   GOLD_OPERATOR_NONE, 0);
 	gold_request_add_condition(gold_request, "EndTime", "0",
-				   GOLD_OPERATOR_NONE);
+				   GOLD_OPERATOR_NONE, 0);
 	gold_request_add_condition(gold_request, "Name", node_ptr->name,
-				   GOLD_OPERATOR_NONE);
+				   GOLD_OPERATOR_NONE, 0);
 
 	snprintf(tmp_buff, sizeof(tmp_buff), "%d", ((int)event_time - 1));
 	gold_request_add_assignment(gold_request, "EndTime", tmp_buff);		
@@ -308,11 +308,11 @@ extern int clusteracct_storage_p_cluster_procs(uint32_t procs, time_t event_time
 	if(!gold_request) 
 		return rc;
 	gold_request_add_condition(gold_request, "Machine", cluster_name,
-				   GOLD_OPERATOR_NONE);
+				   GOLD_OPERATOR_NONE, 0);
 	gold_request_add_condition(gold_request, "EndTime", "0",
-				   GOLD_OPERATOR_NONE);
+				   GOLD_OPERATOR_NONE, 0);
 	gold_request_add_condition(gold_request, "Name", "NULL",
-				   GOLD_OPERATOR_NONE);
+				   GOLD_OPERATOR_NONE, 0);
 
 	gold_request_add_selection(gold_request, "CPUCount");
 		
@@ -358,11 +358,11 @@ extern int clusteracct_storage_p_cluster_procs(uint32_t procs, time_t event_time
 		
 		gold_request_add_condition(gold_request, "Machine",
 					   cluster_name,
-					   GOLD_OPERATOR_NONE);
+					   GOLD_OPERATOR_NONE, 0);
 		gold_request_add_condition(gold_request, "EndTime", "0",
-					   GOLD_OPERATOR_NONE);
+					   GOLD_OPERATOR_NONE, 0);
 		gold_request_add_condition(gold_request, "Name", "NULL",
-					   GOLD_OPERATOR_NONE);
+					   GOLD_OPERATOR_NONE, 0);
 		
 		snprintf(tmp_buff, sizeof(tmp_buff), "%d", 
 			 ((int)event_time - 1));

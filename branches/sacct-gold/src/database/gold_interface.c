@@ -275,12 +275,14 @@ extern int gold_request_add_assignment(gold_request_t *gold_request,
 
 extern int gold_request_add_condition(gold_request_t *gold_request, 
 				      char *name, char *value,
-				      gold_operator_t op)
+				      gold_operator_t op,
+				      bool or_last)
 {
 	gold_name_value_t *name_val = xmalloc(sizeof(gold_name_value_t));
 	name_val->name = xstrdup(name);
 	name_val->value = xstrdup(value);
 	name_val->op = op;
+	name_val->or_last = or_last;
 	list_push(gold_request->conditions, name_val);
 		
 	return SLURM_SUCCESS;
@@ -394,6 +396,8 @@ extern gold_response_t *get_gold_response(gold_request_t *gold_request)
 
 	itr = list_iterator_create(gold_request->conditions);
 	while((name_val = list_next(itr))) {
+		xstrfmtcat(innerds, "<Where name=\"%s\"", name_val->name);
+
 		if(name_val->op != GOLD_OPERATOR_NONE) {
 			char *op = NULL;
 			switch (name_val->op) {
@@ -418,13 +422,14 @@ extern gold_response_t *get_gold_response(gold_request_t *gold_request)
 				list_iterator_destroy(itr);
 				return NULL;
 			}
-			xstrfmtcat(innerds,
-				   "<Where name=\"%s\" op=\"%s\">%s</Where>",
-				   name_val->name, op, name_val->value);
-		} else {
-			xstrfmtcat(innerds, "<Where name=\"%s\">%s</Where>",
-				   name_val->name, name_val->value);
-		}
+			
+			xstrfmtcat(innerds, " op=\"%s\"", op);
+		} 
+
+		if(name_val->or_last) 
+			xstrfmtcat(innerds, " conj=\"Or\" groups\"-1\"");
+
+		xstrfmtcat(innerds, ">%s</Where>", name_val->value);
 	}
 	list_iterator_destroy(itr);
 
