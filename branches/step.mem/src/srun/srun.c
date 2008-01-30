@@ -125,7 +125,6 @@ static int   _become_user (void);
 static void  _run_srun_prolog (srun_job_t *job);
 static void  _run_srun_epilog (srun_job_t *job);
 static int   _run_srun_script (srun_job_t *job, char *script);
-static int   _change_rlimit_rss(void);
 static int   _slurm_debug_env_val (void);
 static int   _call_spank_local_user (srun_job_t *job);
 static void  _set_stdio_fds(srun_job_t *job, slurm_step_io_fds_t *cio_fds);
@@ -249,9 +248,6 @@ int srun(int ac, char **av)
 			exit(1);
 		}
 #endif
-		if (opt.task_mem > 0) {		
-			(void) _change_rlimit_rss();
-		}
 	
 		if ( !(resp = allocate_nodes()) ) 
 			exit(1);
@@ -574,34 +570,6 @@ static void  _set_prio_process_env(void)
 	}
 
 	debug ("propagating SLURM_PRIO_PROCESS=%d", retval);
-}
-
-/* 
- *  Change SLURM_RLIMIT_RSS to the user specified value --task-mem 
- *  or opt.task_mem 
- */
-static int _change_rlimit_rss(void)
-{
-	struct rlimit        rlim[1];
-	long                 new_cur;
-	int                  rc = SLURM_SUCCESS;
-	
-	if (getrlimit (RLIMIT_RSS, rlim) < 0)
-		return (error ("getrlimit (RLIMIT_RSS): %m"));
-
-	new_cur = opt.task_mem*1024; 
-	if((new_cur > rlim->rlim_max) || (new_cur < 0))
-		rlim->rlim_cur = rlim->rlim_max;
-	else
-		rlim->rlim_cur = new_cur;
-
-	if (setenvf (NULL, "SLURM_RLIMIT_RSS", "%lu", rlim->rlim_cur) < 0)
-		error ("unable to set %s in environment", "RSS");
-
-	if (setrlimit (RLIMIT_RSS, rlim) < 0) 
-		return (error ("Unable to change memoryuse: %m"));
-
-	return rc;
 }
 
 /* Set SLURM_RLIMIT_* environment variables with current resource 
