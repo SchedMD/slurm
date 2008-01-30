@@ -1499,6 +1499,13 @@ extern int select_p_job_init(List job_list)
 
 	iterator = list_iterator_create(select_cr_job_list);
 	while ((job = (struct select_cr_job *) list_next(iterator))) {
+		job->job_ptr = find_job_record(job->job_id);
+		if (job->job_ptr == NULL) {
+			error("select_p_job_init: could not find job %u",
+			      job->job_id);
+			list_remove(iterator);
+			continue;
+		}
 		if (job->job_ptr->job_state == JOB_SUSPENDED)
 			suspend = 1;
 		else
