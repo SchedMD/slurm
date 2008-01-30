@@ -707,10 +707,14 @@ static int _count_cpus(bitstr_t *bitmap)
 extern void step_alloc_lps(struct step_record *step_ptr)
 {
 	struct job_record  *job_ptr = step_ptr->job_ptr;
-	int i_node;
+	int i_node, i_first, i_last;
 	int job_node_inx = -1, step_node_inx = -1;
 
-	for (i_node = bit_ffs(job_ptr->node_bitmap); ; i_node++) {
+	i_first = bit_ffs(job_ptr->node_bitmap);
+	i_last  = bit_fls(job_ptr->node_bitmap);
+	if (i_first == -1)	/* empty bitmap */
+		return;
+	for (i_node = i_first; i_node <= i_last; i_node++) {
 		if (!bit_test(job_ptr->node_bitmap, i_node))
 			continue;
 		job_node_inx++;
