@@ -441,25 +441,39 @@ extern int init ( void )
 	char *keyfile = NULL;
 	char *host = NULL;
 	uint32_t port = 0;
+	struct	stat statbuf;
 
 	if(!(cluster_name = slurm_get_cluster_name())) 
 		fatal("To run jobacct_storage/gold you have to specify "
 		      "ClusterName in your slurm.conf");
-	if(!(keyfile = slurm_get_jobacct_storage_pass())) 
-		fatal("To run jobacct_storage/gold you have to set "
+
+	if(!(keyfile = slurm_get_jobacct_storage_pass()) 
+	   || strlen(keyfile) < 1) {
+		keyfile = xstrdup("/etc/gold/auth_key");
+		debug2("No keyfile specified with JobAcctStoragePass, "
+		       "gold using default %s", keyfile);
+	}
+	
+
+	if(stat(keyfile, &statbuf)) {
+		fatal("Can't stat key file %s. "
+		      "To run jobacct_storage/gold you have to set "
 		      "your gold keyfile as "
-		      "JobAcctStoragePass in your slurm.conf");
-	
-	if(!(host = slurm_get_jobacct_storage_host())) 
-		fatal("To run jobacct_storage/gold you have to set "
-		      "your gold host as "
-		      "JobAcctStorageHost in your slurm.conf");
-	
-	if(!(port = slurm_get_jobacct_storage_port())) 
-		fatal("To run jobacct_storage/gold you have to set "
-		      "your gold port as "
-		      "JobAcctStoragePort in your slurm.conf");
-	
+		      "JobAcctStoragePass in your slurm.conf", keyfile);
+	}
+
+
+	if(!(host = slurm_get_jobacct_storage_host())) {
+		host = xstrdup("localhost");
+		debug2("No host specified with JobAcctStorageHost, "
+		       "gold using default %s", host);
+	}
+
+	if(!(port = slurm_get_jobacct_storage_port())) {
+		port = 7112;
+		debug2("No port specified with JobAcctStoragePort, "
+		       "gold using default %s", port);
+	}
 
 	debug2("connecting from %s to gold with keyfile='%s' for %s(%d)",
 	       cluster_name, keyfile, host, port);
@@ -576,7 +590,10 @@ extern int jobacct_storage_p_get_jobs(List job_list,
 
 	if(selected_steps && list_count(selected_steps)) {
 		itr = list_iterator_create(selected_steps);
-		set = 0;
+		if(list_count(selected_steps) > 1)
+			set = 2;
+		else
+			set = 0;
 		while((selected_step = list_next(itr))) {
 			snprintf(tmp_buff, sizeof(tmp_buff), "%u", 
 				 selected_step->jobid);
@@ -590,7 +607,10 @@ extern int jobacct_storage_p_get_jobs(List job_list,
 	}
 
 	if(selected_parts && list_count(selected_parts)) {
-		set = 0;
+		if(list_count(selected_parts) > 1)
+			set = 2;
+		else
+			set = 0;
 		itr = list_iterator_create(selected_parts);
 		while((selected_part = list_next(itr))) {
 			gold_request_add_condition(gold_request, "Partition",
@@ -717,7 +737,7 @@ extern int jobacct_storage_p_get_jobs(List job_list,
 				job->nodes = nodelist;
 			
 			if(gold_account) 
-				job->account = gold_account->project;
+				job->account = xstrdup(gold_account->project);
 			job->exitcode = exitcode;
 			list_append(job_list, job);
 		}

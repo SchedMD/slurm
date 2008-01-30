@@ -121,7 +121,7 @@ static gold_response_entry_t *_create_response_entry(char *object,
 			name_val->value = _get_return_value(gold_msg, i);
 			
 			debug3("got %s = %s", name_val->name, name_val->value);
-			list_push(resp_entry->name_val, name_val);
+			list_append(resp_entry->name_val, name_val);
 		}
 		(*i)++;
 	}
@@ -268,7 +268,7 @@ extern int gold_request_add_assignment(gold_request_t *gold_request,
 	gold_name_value_t *name_val = xmalloc(sizeof(gold_name_value_t));
 	name_val->name = xstrdup(name);
 	name_val->value = xstrdup(value);
-	list_push(gold_request->assignments, name_val);
+	list_append(gold_request->assignments, name_val);
 		
 	return SLURM_SUCCESS;
 }
@@ -276,21 +276,21 @@ extern int gold_request_add_assignment(gold_request_t *gold_request,
 extern int gold_request_add_condition(gold_request_t *gold_request, 
 				      char *name, char *value,
 				      gold_operator_t op,
-				      bool or_last)
+				      int or_statement)
 {
 	gold_name_value_t *name_val = xmalloc(sizeof(gold_name_value_t));
 	name_val->name = xstrdup(name);
 	name_val->value = xstrdup(value);
 	name_val->op = op;
-	name_val->or_last = or_last;
-	list_push(gold_request->conditions, name_val);
+	name_val->or_statement = or_statement;
+	list_append(gold_request->conditions, name_val);
 		
 	return SLURM_SUCCESS;
 }
 
 extern int gold_request_add_selection(gold_request_t *gold_request, char *name)
 {
-	list_push(gold_request->selections, xstrdup(name));
+	list_append(gold_request->selections, xstrdup(name));
 	return SLURM_SUCCESS;
 }
 
@@ -426,8 +426,10 @@ extern gold_response_t *get_gold_response(gold_request_t *gold_request)
 			xstrfmtcat(innerds, " op=\"%s\"", op);
 		} 
 
-		if(name_val->or_last) 
-			xstrfmtcat(innerds, " conj=\"Or\" groups\"-1\"");
+		if(name_val->or_statement == 1) 
+			xstrfmtcat(innerds, " conj=\"Or\" groups=\"-1\"");
+		else if (name_val->or_statement == 2)
+			xstrfmtcat(innerds, " conj=\"And\" groups=\"+1\"");
 
 		xstrfmtcat(innerds, ">%s</Where>", name_val->value);
 	}
@@ -564,7 +566,7 @@ extern gold_response_t *get_gold_response(gold_request_t *gold_request)
 		} else if(!strncmp(gold_msg+i, object, strlen(object))) {
 			gold_response_entry_t *resp_entry =
 				_create_response_entry(object, gold_msg, &i);
-			list_push(gold_response->entries, resp_entry);
+			list_append(gold_response->entries, resp_entry);
 		}
 		i++;	
 	}

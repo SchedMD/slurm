@@ -101,7 +101,7 @@ typedef struct {
 	char *name;
 	char *value;
 	gold_operator_t op;
-	bool or_last;
+	int or_statement; // 0 for nothing 1 for or last 2 for or next
 } gold_name_value_t;
 
 typedef struct {
@@ -139,7 +139,7 @@ extern int gold_request_add_assignment(gold_request_t *gold_request,
 extern int gold_request_add_condition(gold_request_t *gold_request, 
 				      char *name, char *value,
 				      gold_operator_t op,
-				      bool or_last);
+				      int or_statement);
 extern int gold_request_add_selection(gold_request_t *gold_request, char *name);
 
 extern gold_response_t *get_gold_response(gold_request_t *gold_request);

@@ -46,6 +46,7 @@
 #  include <inttypes.h>
 #endif
 
+#include <sys/stat.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <slurm/slurm_errno.h>
@@ -98,25 +99,38 @@ extern int init ( void )
 	char *keyfile = NULL;
 	char *host = NULL;
 	uint32_t port = 0;
+	struct	stat statbuf;
 
 	if(!(cluster_name = slurm_get_cluster_name())) 
 		fatal("To run clusteracct_storage/gold you have to specify "
 		      "ClusterName in your slurm.conf");
-	if(!(keyfile = slurm_get_clusteracct_storage_pass())) 
-		fatal("To run clusteracct_storage/gold you have to set "
+
+	if(!(keyfile = slurm_get_jobacct_storage_pass()) 
+	   || strlen(keyfile) < 1) {
+		keyfile = xstrdup("/etc/gold/auth_key");
+		debug2("No keyfile specified with JobAcctStoragePass, "
+		       "gold using default %s", keyfile);
+	}
+
+	if(stat(keyfile, &statbuf)) {
+		fatal("Can't stat key file %s. "
+		      "To run jobacct_storage/gold you have to set "
 		      "your gold keyfile as "
-		      "ClusteracctStoragePass in your slurm.conf");
+		      "JobAcctStoragePass in your slurm.conf");
+	}
+
+
+	if(!(host = slurm_get_jobacct_storage_host())) {
+		host = xstrdup("localhost");
+		debug2("No host specified with JobAcctStorageHost, "
+		       "gold using default %s", host);
+	}
 	
-	if(!(host = slurm_get_clusteracct_storage_host())) 
-		fatal("To run clusteracct_storage/gold you have to set "
-		      "your gold host as "
-		      "ClusteracctStorageHost in your slurm.conf");
-	
-	if(!(port = slurm_get_clusteracct_storage_port())) 
-		fatal("To run clusteracct_storage/gold you have to set "
-		      "your gold port as "
-		      "ClusteracctStoragePort in your slurm.conf");
-	
+	if(!(port = slurm_get_jobacct_storage_port())) {
+		port = 7112;
+		debug2("No port specified with JobAcctStoragePort, "
+		       "gold using default %s", port);
+	}
 
 	debug2("connecting from %s to gold with keyfile='%s' for %s(%d)",
 	       cluster_name, keyfile, host, port);
