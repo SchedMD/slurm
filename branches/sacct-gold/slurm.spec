@@ -369,9 +369,19 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man8/*
 %dir %{_sysconfdir}
 %dir %{_libdir}/slurm
+%{_libdir}/slurm/account_storage_gold.so
+%{_libdir}/slurm/account_storage_mysql.so
+%{_libdir}/slurm/account_storage_none.so
+%{_libdir}/slurm/account_storage_pgsql.so
+%{_libdir}/slurm/account_storage_slurmdbd.so
 %{_libdir}/slurm/checkpoint_none.so
 %{_libdir}/slurm/checkpoint_ompi.so
 %{_libdir}/slurm/checkpoint_xlch.so
+%{_libdir}/slurm/clusteracct_storage_gold.so
+%{_libdir}/slurm/clusteracct_storage_mysql.so
+%{_libdir}/slurm/clusteracct_storage_none.so
+%{_libdir}/slurm/clusteracct_storage_pgsql.so
+%{_libdir}/slurm/clusteracct_storage_slurmdbd.so
 %{_libdir}/slurm/jobacct_gather_aix.so
 %{_libdir}/slurm/jobacct_gather_linux.so
 %{_libdir}/slurm/jobacct_gather_none.so
@@ -387,11 +397,6 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/slurm/jobcomp_pgsql.so
 %{_libdir}/slurm/jobcomp_script.so
 %{_libdir}/slurm/jobcomp_slurmdbd.so
-%{_libdir}/slurm/nodeacct_storage_gold.so
-%{_libdir}/slurm/nodeacct_storage_mysql.so
-%{_libdir}/slurm/nodeacct_storage_none.so
-%{_libdir}/slurm/nodeacct_storage_pgsql.so
-%{_libdir}/slurm/nodeacct_storage_slurmdbd.so
 %{_libdir}/slurm/proctrack_pgid.so
 %{_libdir}/slurm/proctrack_linuxproc.so
 %{_libdir}/slurm/sched_backfill.so
