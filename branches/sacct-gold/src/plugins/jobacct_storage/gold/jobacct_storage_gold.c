@@ -749,6 +749,67 @@ extern int jobacct_storage_p_get_jobs(List job_list,
 }
 
 /* 
+ * get info from the storage 
+ * returns List of acct_rec_t *
+ * note List needs to be freed when called
+ */
+extern int jobacct_storage_p_get_accounts(List account_list,
+					  List selected_accounts,
+					  List selected_users,
+					  List selected_projects,
+					  char *cluster,
+					  void *params)
+{
+}
+
+/* 
+ * get info from the storage 
+ * returns List of acct_rec_t *
+ * note List needs to be freed when called
+ */
+extern int jobacct_storage_p_get_hourly_accounts(List account_list,
+						 List selected_accounts,
+						 List selected_users,
+						 List selected_projects,
+						 char *cluster,
+						 void *params)
+{
+
+}
+
+/* 
+ * get info from the storage 
+ * returns List of acct_rec_t *
+ * note List needs to be freed when called
+ */
+extern int jobacct_storage_p_get_daily_accounts(List account_list,
+						List selected_accounts,
+						List selected_users,
+						List selected_projects,
+						char *cluster,
+						void *params)
+{
+	
+}
+
+/* 
+ * get info from the storage 
+ * returns List of acct_rec_t *
+ * note List needs to be freed when called
+ */
+extern int jobacct_storage_p_get_monthly_accounts(List account_list,
+						  List selected_accounts,
+						  List selected_users,
+						  List selected_projects,
+						  char *cluster,
+						  void *params)
+{
+	
+}
+
+
+
+/* 
  * expire old info from the storage 
  */
 extern void jobacct_storage_p_archive(List selected_parts,
