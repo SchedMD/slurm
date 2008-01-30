@@ -294,6 +294,7 @@ AC_CONFIG_FILES([Makefile
 		 src/strigger/Makefile
 		 src/sview/Makefile
 		 src/plugins/Makefile
+		 src/plugins/account_storage/Makefile
 		 src/plugins/account_storage/gold/Makefile
 		 src/plugins/account_storage/mysql/Makefile
 		 src/plugins/account_storage/pgsql/Makefile

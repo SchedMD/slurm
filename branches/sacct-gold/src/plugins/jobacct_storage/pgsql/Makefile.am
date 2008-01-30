@@ -1,6 +1,5 @@
 # Makefile for jobacct_storage/pgsql plugin
 
-CPPFLAGS = $(PGSQL_CFLAGS)
 AUTOMAKE_OPTIONS = foreign
 
 PLUGIN_FLAGS = -module -avoid-version --export-dynamic
