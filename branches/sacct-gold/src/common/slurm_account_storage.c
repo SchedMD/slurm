@@ -56,20 +56,51 @@
  */
 
 typedef struct slurm_account_storage_ops {
-	int  (*account_storage_init)          (char *location);
-	int  (*account_storage_fini)          ();
-	int  (*account_storage_job_start)     (struct job_record *job_ptr);
-	int  (*account_storage_job_complete)  (struct job_record *job_ptr);
-	int  (*account_storage_step_start)    (struct step_record *step_ptr);
-	int  (*account_storage_step_complete) (struct step_record *step_ptr);
-	int  (*account_storage_job_suspend)   (struct job_record *job_ptr);
-	List (*account_storage_get_jobs)      (List job_list,
-				       List selected_steps,
-				       List selected_parts,
-				       void *params);	
-	void (*account_storage_archive)       (List selected_parts,
-				       void *params);
-	
+	int  (*add_users)          (List user_list);
+	int  (*add_projects)       (List project_list);
+	int  (*add_clusters)       (List cluster_list);
+	int  (*add_accounts)       (List account_list);
+	int  (*modify_users)       (List user_list);
+	int  (*modify_projects)    (List project_list);
+	int  (*modify_clusters)    (List cluster_list);
+	int  (*modify_accounts)    (List account_list);
+	int  (*remove_users)       (List user_list);
+	int  (*remove_projects)    (List project_list);
+	int  (*remove_clusters)    (List cluster_list);
+	int  (*remove_accounts)    (List account_list);
+	int  (*get_users)          (List user_list,
+				    List selected_users,
+				    void *params);
+	int  (*get_projects)       (List project_list,
+				    List selected_projects,
+				    void *param);
+	int  (*get_clusters)       (List cluster_list,
+				    List selected_clusters,
+				    void *params);
+	int  (*get_accounts)       (List account_list,
+				    List selected_accounts,
+				    List selected_users,
+				    List selected_projects,
+				    char *cluster,
+				    void *params);
+	int (*get_hourly_usage)    (List account_list,
+				    List selected_accounts,
+				    List selected_users,
+				    List selected_projects,
+				    char *cluster,
+				    void *params);
+	int (*get_daily_usage)     (List account_list,
+				    List selected_accounts,
+				    List selected_users,
+				    List selected_projects,
+				    char *cluster,
+				    void *params);
+	int (*get_monthly_usage)   (List account_list,
+				    List selected_accounts,
+				    List selected_users,
+				    List selected_projects,
+				    char *cluster,
+				    void *params);
 } slurm_account_storage_ops_t;
 
 typedef struct slurm_account_storage_context {
@@ -87,28 +118,42 @@ static pthread_mutex_t		g_account_storage_context_lock =
 /*
  * Local functions
  */
-static slurm_account_storage_ops_t *_account_storage_get_ops(slurm_account_storage_context_t *c);
-static slurm_account_storage_context_t *_account_storage_context_create(const char *account_storage_type);
-static int _account_storage_context_destroy(slurm_account_storage_context_t *c);
+static slurm_account_storage_ops_t *_account_storage_get_ops(
+	slurm_account_storage_context_t *c);
+static slurm_account_storage_context_t *_account_storage_context_create(
+	const char *account_storage_type);
+static int _account_storage_context_destroy(
+	slurm_account_storage_context_t *c);
 
 /*
  * Locate and load the appropriate plugin
  */
-static slurm_account_storage_ops_t * _account_storage_get_ops(slurm_account_storage_context_t *c)
+static slurm_account_storage_ops_t * _account_storage_get_ops(
+	slurm_account_storage_context_t *c)
 {
 	/*
 	 * Must be synchronized with slurm_account_storage_ops_t above.
 	 */
 	static const char *syms[] = {
-		"account_storage_p_init",
-		"account_storage_p_fini",
-		"account_storage_p_job_start",
-		"account_storage_p_job_complete",
-		"account_storage_p_step_start",
-		"account_storage_p_step_complete",
-		"account_storage_p_suspend",
-		"account_storage_p_get_jobs",
-		"account_storage_p_archive",
+		"account_storage_p_add_users",
+		"account_storage_p_add_projects",
+		"account_storage_p_add_clusters",
+		"account_storage_p_add_accounts",
+		"account_storage_p_modify_users",
+		"account_storage_p_modify_projects",
+		"account_storage_p_modify_clusters",
+		"account_storage_p_modify_accounts",
+		"account_storage_p_remove_users",
+		"account_storage_p_remove_projects",
+		"account_storage_p_remove_clusters",
+		"account_storage_p_remove_accounts",
+		"account_storage_p_get_users",
+		"account_storage_p_get_projects",
+		"account_storage_p_get_clusters",
+		"account_storage_p_get_accounts",
+		"account_storage_p_get_hourly_usage",
+		"account_storage_p_get_daily_usage",
+		"account_storage_p_get_monthly_usage"
 	};
 	int n_syms = sizeof( syms ) / sizeof( char * );
 
@@ -129,7 +174,8 @@ static slurm_account_storage_ops_t * _account_storage_get_ops(slurm_account_stor
 		xfree(plugin_dir);
 	}
 
-	c->cur_plugin = plugrack_use_by_type( c->plugin_list, c->account_storage_type );
+	c->cur_plugin = plugrack_use_by_type( c->plugin_list,
+					      c->account_storage_type );
 	if ( c->cur_plugin == PLUGIN_INVALID_HANDLE ) {
 		error( "cannot find account_storage plugin for %s", 
 			c->account_storage_type );
@@ -151,7 +197,8 @@ static slurm_account_storage_ops_t * _account_storage_get_ops(slurm_account_stor
 /*
  * Create a account_storage context
  */
-static slurm_account_storage_context_t *_account_storage_context_create(const char *account_storage_type)
+static slurm_account_storage_context_t *_account_storage_context_create(
+	const char *account_storage_type)
 {
 	slurm_account_storage_context_t *c;
 
@@ -172,7 +219,7 @@ static slurm_account_storage_context_t *_account_storage_context_create(const ch
 /*
  * Destroy a account_storage context
  */
-static int _account_storage_context_destroy( slurm_account_storage_context_t *c )
+static int _account_storage_context_destroy(slurm_account_storage_context_t *c)
 {
 	/*
 	 * Must check return code here because plugins might still
