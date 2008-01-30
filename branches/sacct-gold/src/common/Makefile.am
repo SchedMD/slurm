@@ -62,6 +62,7 @@ libcommon_la_SOURCES = 			\
 	util-net.c util-net.h		\
 	slurm_auth.c slurm_auth.h	\
 	jobacct_common.c jobacct_common.h \
+	slurm_account_storage.c slurm_account_storage.h \
 	slurm_clusteracct_storage.c slurm_clusteracct_storage.h \
 	slurm_jobacct_gather.c slurm_jobacct_gather.h \
 	slurm_jobacct_storage.c slurm_jobacct_storage.h \

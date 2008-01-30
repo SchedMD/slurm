@@ -64,9 +64,9 @@ typedef struct slurm_jobacct_storage_ops {
 	int  (*jobacct_storage_step_complete) (struct step_record *step_ptr);
 	int  (*jobacct_storage_job_suspend)   (struct job_record *job_ptr);
 	List (*jobacct_storage_get_jobs)      (List job_list,
-				       List selected_steps,
-				       List selected_parts,
-				       void *params);	
+					       List selected_steps,
+					       List selected_parts,
+					       void *params);	
 	void (*jobacct_storage_archive)       (List selected_parts,
 				       void *params);
 	
@@ -87,14 +87,17 @@ static pthread_mutex_t		g_jobacct_storage_context_lock =
 /*
  * Local functions
  */
-static slurm_jobacct_storage_ops_t *_jobacct_storage_get_ops(slurm_jobacct_storage_context_t *c);
-static slurm_jobacct_storage_context_t *_jobacct_storage_context_create(const char *jobacct_storage_type);
+static slurm_jobacct_storage_ops_t *_jobacct_storage_get_ops(
+	slurm_jobacct_storage_context_t *c);
+static slurm_jobacct_storage_context_t *_jobacct_storage_context_create(
+	const char *jobacct_storage_type);
 static int _jobacct_storage_context_destroy(slurm_jobacct_storage_context_t *c);
 
 /*
  * Locate and load the appropriate plugin
  */
-static slurm_jobacct_storage_ops_t * _jobacct_storage_get_ops(slurm_jobacct_storage_context_t *c)
+static slurm_jobacct_storage_ops_t * _jobacct_storage_get_ops(
+	slurm_jobacct_storage_context_t *c)
 {
 	/*
 	 * Must be synchronized with slurm_jobacct_storage_ops_t above.
@@ -129,7 +132,8 @@ static slurm_jobacct_storage_ops_t * _jobacct_storage_get_ops(slurm_jobacct_stor
 		xfree(plugin_dir);
 	}
 
-	c->cur_plugin = plugrack_use_by_type( c->plugin_list, c->jobacct_storage_type );
+	c->cur_plugin = plugrack_use_by_type( c->plugin_list,
+					      c->jobacct_storage_type );
 	if ( c->cur_plugin == PLUGIN_INVALID_HANDLE ) {
 		error( "cannot find jobacct_storage plugin for %s", 
 			c->jobacct_storage_type );
@@ -151,7 +155,8 @@ static slurm_jobacct_storage_ops_t * _jobacct_storage_get_ops(slurm_jobacct_stor
 /*
  * Create a jobacct_storage context
  */
-static slurm_jobacct_storage_context_t *_jobacct_storage_context_create(const char *jobacct_storage_type)
+static slurm_jobacct_storage_context_t *_jobacct_storage_context_create(
+	const char *jobacct_storage_type)
 {
 	slurm_jobacct_storage_context_t *c;
 
@@ -172,7 +177,7 @@ static slurm_jobacct_storage_context_t *_jobacct_storage_context_create(const ch
 /*
  * Destroy a jobacct_storage context
  */
-static int _jobacct_storage_context_destroy( slurm_jobacct_storage_context_t *c )
+static int _jobacct_storage_context_destroy(slurm_jobacct_storage_context_t *c)
 {
 	/*
 	 * Must check return code here because plugins might still
@@ -204,7 +209,8 @@ extern int slurm_jobacct_storage_init(void)
 		goto done;
 
 	jobacct_storage_type = slurm_get_jobacct_storage_type();
-	g_jobacct_storage_context = _jobacct_storage_context_create(jobacct_storage_type);
+	g_jobacct_storage_context = _jobacct_storage_context_create(
+		jobacct_storage_type);
 	if ( g_jobacct_storage_context == NULL ) {
 		error( "cannot create jobacct_storage context for %s",
 			 jobacct_storage_type );
@@ -246,7 +252,8 @@ extern int jobacct_storage_g_init (char *location)
 {
 	if (slurm_jobacct_storage_init() < 0)
 		return SLURM_ERROR;
-	return (*(g_jobacct_storage_context->ops.jobacct_storage_init))(location);
+	return (*(g_jobacct_storage_context->ops.jobacct_storage_init))(
+		location);
 }
 
 /*
