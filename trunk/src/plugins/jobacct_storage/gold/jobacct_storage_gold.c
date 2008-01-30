@@ -297,11 +297,11 @@ static int _add_edit_job(struct job_record *job_ptr, gold_object_t action)
 				    job_ptr->partition);
 	
 	snprintf(tmp_buff, sizeof(tmp_buff), "%u",
-		 job_ptr->details->total_procs);
+		 job_ptr->total_procs);
 	gold_request_add_assignment(gold_request, "RequestedCPUCount",
 				    tmp_buff);
 	snprintf(tmp_buff, sizeof(tmp_buff), "%u",
-		 job_ptr->details->total_procs);
+		 job_ptr->total_procs);
 	gold_request_add_assignment(gold_request, "AllocatedCPUCount",
 				    tmp_buff);
 
