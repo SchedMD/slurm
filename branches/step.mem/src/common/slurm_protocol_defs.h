@@ -434,6 +434,8 @@ typedef struct launch_tasks_request_msg {
 	uint32_t  nprocs;	/* number of processes in this job step   */
 	uint32_t  uid;
 	uint32_t  gid;
+	uint32_t  job_mem;	/* MB of memory reserved by job, 0 if no limit */
+	uint32_t  task_mem;	/* MB of memory reserved per task, 0 if no limit */
 	uint16_t  *tasks_to_launch;
 	uint32_t  envc;
 	uint32_t  argc;
