@@ -39,7 +39,10 @@
  *  Copyright (C) 2002 The Regents of the University of California.
 \*****************************************************************************/
 
+#include <signal.h>
 #include "src/common/jobacct_common.h"
+#include "src/common/slurm_protocol_api.h"
+#include "src/common/slurm_protocol_defs.h"
 #include "src/slurmd/common/proctrack.h"
 
 #ifdef HAVE_AIX
@@ -98,6 +101,7 @@ static int freq = 0;
 static int pagesize = 0;
 /* Finally, pre-define all the routines. */
 
+static void _acct_kill_job(void);
 static void _get_offspring_data(List prec_list, prec_t *ancestor, pid_t pid);
 static void _get_process_data();
 static void *_watch_tasks(void *arg);
@@ -175,9 +179,8 @@ static void _get_process_data()
 	struct procsinfo proc;
 	pid_t *pids = NULL;
 	int npids = 0;
-
 	int i;
-
+	uint32_t total_job_mem = 0;
 	int pid = 0;
 	static int processing = 0;
 	prec_t *prec = NULL;
@@ -268,6 +271,7 @@ static void _get_process_data()
 				/* tally their usage */
 				jobacct->max_rss = jobacct->tot_rss = 
 					MAX(jobacct->max_rss, (int)prec->rss);
+				total_job_mem += jobacct->max_rss;
 				jobacct->max_vsize = jobacct->tot_vsize = 
 					MAX(jobacct->max_vsize, 
 					    (int)prec->vsize);
@@ -287,6 +291,17 @@ static void _get_process_data()
 	}
 	list_iterator_destroy(itr);	
 	slurm_mutex_unlock(&jobacct_lock);
+
+	if (job_mem_limit) {
+		debug("Job %u memory used:%u limit:%u KB", 
+		      acct_job_id, total_job_mem, job_mem_limit);
+	}
+	if (total_job_mem > job_mem_limit) {
+		error("Job %u exceeded %u KB memory limit, being killed",
+		       acct_job_id, job_mem_limit);
+		_acct_kill_job();
+	}
+
 finished:
 	list_destroy(prec_list);
 	processing = 0;	
@@ -294,6 +309,25 @@ finished:
 	return;
 }
 
+/* _acct_kill_job() issue RPC to kill a slurm job */
+static void _acct_kill_job(void)
+{
+	slurm_msg_t msg;
+	job_step_kill_msg_t req;
+
+	slurm_msg_t_init(&msg);
+	/* 
+	 * Request message:
+	 */
+	req.job_id      = acct_job_id;
+	req.job_step_id = NO_VAL;
+	req.signal      = SIGKILL;
+	req.batch_flag  = 0;
+	msg.msg_type    = REQUEST_CANCEL_JOB_STEP;
+	msg.data        = &req;
+
+	slurm_send_only_controller_msg(&msg);
+}
 
 /* _watch_tasks() -- monitor slurm jobs and track their memory usage
  *
