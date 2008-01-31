@@ -140,6 +140,9 @@ documents those changes that are of interest to users and admins.
     Moved existing digital signature logic into new plugin: crypto/openssl.
     Added new support for crypto/munge (available with GPL license).
 
+* Changes in SLURM 1.2.23
+=========================
+
 * Changes in SLURM 1.2.22
 =========================
  -- In sched/wiki2, add support for MODIFYJOB option "MINSTARTTIME=<time>"
