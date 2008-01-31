@@ -129,6 +129,8 @@ int  slurm_cred_ctx_unpack(slurm_cred_ctx_t ctx, Buf buffer);
 typedef struct {
 	uint32_t jobid;
 	uint32_t stepid;
+	uint32_t job_mem;	/* MB of memory reserved for job */
+	uint32_t task_mem;	/* MB of memory reserved per task */
 	uid_t    uid;
 	char    *hostlist;
 	uint32_t alloc_lps_cnt;

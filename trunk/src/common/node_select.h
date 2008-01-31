@@ -283,6 +283,16 @@ extern int  select_g_unpack_jobinfo(select_jobinfo_t jobinfo, Buf buffer);
 extern char *select_g_sprint_jobinfo(select_jobinfo_t jobinfo,
 				     char *buf, size_t size, int mode);
 
+/* Prepare to start a job step, allocate memory as needed
+ * RET - slurm error code
+ */
+extern int select_g_step_begin(struct step_record *step_ptr);
+
+/* Prepare to terminate a job step, release memory as needed
+ * RET - slurm error code
+ */
+extern int select_g_step_fini(struct step_record *step_ptr);
+
 /******************************************************\
  * NODE-SELECT PLUGIN SPECIFIC INFORMATION FUNCTIONS  *
 \******************************************************/

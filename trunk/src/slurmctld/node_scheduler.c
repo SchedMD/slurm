@@ -530,11 +530,6 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 
 		cr_type = (select_type_plugin_info_t) slurmctld_conf.
 							select_type_param;
-		if ((cr_type == CR_CORE) ||
-		    (cr_type == CR_CPU)  || (cr_type == CR_SOCKET)) {
-			job_ptr->details->job_min_memory = 0;
-		}
-
                 debug3("Job %u shared %d cr_enabled %d CR type %d num_procs %d", 
 		     job_ptr->job_id, shared, cr_enabled, cr_type, 
 		     job_ptr->num_procs);

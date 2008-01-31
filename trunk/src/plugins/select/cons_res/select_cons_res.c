@@ -987,7 +987,7 @@ static int _rm_job_from_nodes(struct node_cr_record *select_node_ptr,
 			if (this_node->alloc_memory >= job->alloc_memory[i])
 				this_node->alloc_memory -= job->alloc_memory[i];
 			else {
-				error("%: alloc_memory underflow on %s",
+				error("%s: alloc_memory underflow on %s",
 				      pre_err, this_node->node_ptr->name);
 				this_node->alloc_memory = 0;
 				rc = SLURM_ERROR;  
@@ -1499,6 +1499,13 @@ extern int select_p_job_init(List job_list)
 
 	iterator = list_iterator_create(select_cr_job_list);
 	while ((job = (struct select_cr_job *) list_next(iterator))) {
+		job->job_ptr = find_job_record(job->job_id);
+		if (job->job_ptr == NULL) {
+			error("select_p_job_init: could not find job %u",
+			      job->job_id);
+			list_remove(iterator);
+			continue;
+		}
 		if (job->job_ptr->job_state == JOB_SUSPENDED)
 			suspend = 1;
 		else
@@ -1958,13 +1965,16 @@ static int _verify_node_state(struct node_cr_record *select_node_ptr,
 			      struct job_record *job_ptr, bitstr_t * bitmap,
 			      enum node_cr_state job_node_req)
 {
-	int i, free_mem;
+	int i;
+	uint32_t free_mem;
 
 	for (i = 0; i < select_node_cnt; i++) {
 		if (!bit_test(bitmap, i))
 			continue;
 
-		if (job_ptr->details->job_min_memory) {
+		if ((job_ptr->details->job_min_memory) &&
+		    ((cr_type == CR_CORE_MEMORY) || (cr_type == CR_CPU_MEMORY) || 
+		     (cr_type == CR_MEMORY) || (cr_type == CR_SOCKET_MEMORY))) {
 			if (select_fast_schedule) {
 				free_mem = select_node_ptr[i].node_ptr->
 					config_ptr->real_memory;
@@ -2308,24 +2318,21 @@ static int _job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	bitstr_t *origmap, *reqmap = NULL;
 	int row, rows, try;
 	bool test_only;
+	uint32_t save_mem = 0;
 
 	layout_ptr = job_ptr->details->req_node_layout;
 	mc_ptr = job_ptr->details->mc_ptr;
 	reqmap = job_ptr->details->req_node_bitmap;
 
 	/* check node_state and update bitmap as necessary */
-	if (mode == SELECT_MODE_TEST_ONLY)
+	if (mode == SELECT_MODE_TEST_ONLY) {
 		test_only = true;
-	else	/* SELECT_MODE_RUN_NOW || SELECT_MODE_WILL_RUN  */ 
+		save_mem = job_ptr->details->job_min_memory;
+		job_ptr->details->job_min_memory = 0;
+	} else	/* SELECT_MODE_RUN_NOW || SELECT_MODE_WILL_RUN  */ 
 		test_only = false;
 
 	if (!test_only) {
-#if 0
-		/* Done in slurmctld/node_scheduler.c: _pick_best_nodes() */
-		if ((cr_type != CR_CORE_MEMORY) && (cr_type != CR_CPU_MEMORY) &&
-		    (cr_type != CR_MEMORY) && (cr_type != CR_SOCKET_MEMORY))
-			job_ptr->details->job_min_memory = 0;
-#endif
 		error_code = _verify_node_state(select_node_ptr, job_ptr, 
 						bitmap, job_node_req);
 		if (error_code != SLURM_SUCCESS)
@@ -2353,6 +2360,8 @@ static int _job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 		xfree(sh_tasks);
 		xfree(al_tasks);
 		xfree(freq);
+		if (save_mem)
+			job_ptr->details->job_min_memory = save_mem;
 		return error_code;
 	}
 
@@ -2508,7 +2517,9 @@ static int _job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 			job->cpus[j] = 0;
 		}
 		job->alloc_cpus[j] = 0;
-		job->alloc_memory[j] = job_ptr->details->job_min_memory; 
+		if ((cr_type == CR_CORE_MEMORY) || (cr_type == CR_CPU_MEMORY) ||
+		    (cr_type == CR_MEMORY) || (cr_type == CR_SOCKET_MEMORY))
+			job->alloc_memory[j] = job_ptr->details->job_min_memory; 
 		if ((cr_type == CR_CORE) || (cr_type == CR_CORE_MEMORY)||
 		    (cr_type == CR_SOCKET) || (cr_type == CR_SOCKET_MEMORY)) {
 			_chk_resize_job(job, j, 
@@ -2921,4 +2932,144 @@ extern struct multi_core_data * create_default_mc(void)
 /*	mc_ptr->ntasks_per_core   = 0; */
 /*	mc_ptr->plane_size        = 0; */
 	return mc_ptr;
+}
+
+extern int select_p_step_begin(struct step_record *step_ptr)
+{
+	slurm_step_layout_t *step_layout = step_ptr->step_layout;
+	struct select_cr_job *job;
+	struct node_cr_record *this_node;
+	int job_node_inx, step_node_inx, host_index;
+	uint32_t avail_mem, step_mem;
+ 
+	xassert(select_cr_job_list);
+	xassert(step_ptr->job_ptr);
+	xassert(step_ptr->job_ptr->details);
+	xassert(step_ptr->step_node_bitmap);
+
+	if (step_layout == NULL)
+		return SLURM_SUCCESS;	/* batch script */
+	if (step_ptr->job_ptr->details->job_min_memory)
+		return SLURM_SUCCESS;
+	if ((cr_type != CR_CORE_MEMORY) && (cr_type != CR_CPU_MEMORY) &&
+	    (cr_type != CR_MEMORY) && (cr_type != CR_SOCKET_MEMORY))
+		return SLURM_SUCCESS;
+
+	job = list_find_first(select_cr_job_list, _find_job_by_id,
+			      &step_ptr->job_ptr->job_id);
+	if (!job) {
+		error("select_p_step_begin: could not find step %u.%u",
+		      step_ptr->job_ptr->job_id, step_ptr->step_id);
+		return ESLURM_INVALID_JOB_ID;
+	}
+
+	/* test if there is sufficient memory */
+	step_node_inx = -1;
+	for (host_index = 0; host_index < select_node_cnt; host_index++) {
+		if (bit_test(step_ptr->step_node_bitmap, host_index) == 0)
+			continue;
+		step_node_inx++;
+
+		this_node = &select_node_ptr[host_index];
+		step_mem = step_layout->tasks[step_node_inx] * 
+			   step_ptr->mem_per_task;
+		if (select_fast_schedule) {
+			avail_mem = select_node_ptr[host_index].node_ptr->
+				    config_ptr->real_memory;
+		} else {
+			avail_mem = select_node_ptr[host_index].node_ptr->
+				    real_memory;
+		}
+		if ((this_node->alloc_memory + step_mem) > avail_mem)
+			return SLURM_ERROR;	/* no room */
+	}
+
+	/* reserve the memory */
+	job_node_inx = -1;
+	step_node_inx = -1;
+	for (host_index = 0; host_index < select_node_cnt; host_index++) {
+		if (bit_test(job->node_bitmap, host_index) == 0)
+			continue;
+		job_node_inx++;
+		if (bit_test(step_ptr->step_node_bitmap, host_index) == 0)
+			continue;
+		step_node_inx++;
+
+		this_node = &select_node_ptr[host_index];
+		step_mem = step_layout->tasks[step_node_inx] * 
+			   step_ptr->mem_per_task;
+		job->alloc_memory[job_node_inx] += step_mem;
+		this_node->alloc_memory += step_mem;
+	}
+	last_cr_update_time = time(NULL);
+	return SLURM_SUCCESS;
+}
+
+extern int select_p_step_fini(struct step_record *step_ptr)
+{
+	slurm_step_layout_t *step_layout = step_ptr->step_layout;
+	struct select_cr_job *job;
+	struct node_cr_record *this_node;
+	int job_node_inx, step_node_inx, host_index, rc = SLURM_SUCCESS;
+	uint32_t step_mem;
+ 
+	xassert(select_cr_job_list);
+	xassert(step_ptr->job_ptr);
+	xassert(step_ptr->job_ptr->details);
+	xassert(step_ptr->step_node_bitmap);
+
+	if (step_layout == NULL)
+		return SLURM_SUCCESS;	/* batch script */
+	if (step_ptr->job_ptr->details->job_min_memory)
+		return SLURM_SUCCESS;
+	if ((cr_type != CR_CORE_MEMORY) && (cr_type != CR_CPU_MEMORY) &&
+	    (cr_type != CR_MEMORY) && (cr_type != CR_SOCKET_MEMORY))
+		return SLURM_SUCCESS;
+
+	job = list_find_first(select_cr_job_list, _find_job_by_id,
+			      &step_ptr->job_ptr->job_id);
+	if (!job) {
+		error("select_p_step_fini: could not find step %u.%u",
+		      step_ptr->job_ptr->job_id, step_ptr->step_id);
+		return ESLURM_INVALID_JOB_ID;
+	}
+
+	job_node_inx = -1;
+	step_node_inx = -1;
+	for (host_index = 0; host_index < select_node_cnt; host_index++) {
+		if (bit_test(job->node_bitmap, host_index) == 0)
+			continue;
+		job_node_inx++;
+		if (bit_test(step_ptr->step_node_bitmap, host_index) == 0)
+			continue;
+		step_node_inx++;
+
+		this_node = &select_node_ptr[host_index];
+		step_mem = step_layout->tasks[step_node_inx] * 
+			   step_ptr->mem_per_task;
+		if (job->alloc_memory[job_node_inx] >= step_mem)
+			job->alloc_memory[job_node_inx] -= step_mem;
+		else {
+			if (rc == SLURM_SUCCESS) {
+				error("select_p_step_fini: job alloc_memory "
+				      "underflow on %s",
+				      this_node->node_ptr->name);
+				rc = SLURM_ERROR;  
+			}
+			job->alloc_memory[host_index] = 0;
+		}
+		if (this_node->alloc_memory >= step_mem)
+			this_node->alloc_memory -= step_mem;
+		else {
+			if (rc == SLURM_SUCCESS) {
+				error("select_p_step_fini: node alloc_memory "
+				      "underflow on %s",
+				      this_node->node_ptr->name);
+				rc = SLURM_ERROR;  
+			}
+			this_node->alloc_memory = 0;
+		}
+	}
+	last_cr_update_time = time(NULL);
+	return rc;
 }

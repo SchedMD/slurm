@@ -2155,7 +2155,7 @@ static void _help(void)
 "Consumable resources related options:\n" 
 "      --exclusive             allocate nodes in exclusive mode when\n" 
 "                              cpu consumable resource is enabled\n"
-"      --job-mem=MB            maximum amount of real memory per node\n"
+"      --task-mem=MB           maximum amount of real memory per task\n"
 "                              required by the job.\n" 
 "                              --mem >= --job-mem if --mem is specified.\n" 
 "\n"

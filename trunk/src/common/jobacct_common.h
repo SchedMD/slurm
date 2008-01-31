@@ -227,6 +227,7 @@ extern int jobacct_common_unpack(struct jobacctinfo **jobacct, Buf buffer);
 
 extern int jobacct_common_endpoll();
 extern int jobacct_common_set_proctrack_container_id(uint32_t id);
+extern int jobacct_common_set_mem_limit(uint32_t job_id, uint32_t mem_limit);
 extern int jobacct_common_add_task(pid_t pid, jobacct_id_t *jobacct_id);
 extern struct jobacctinfo *jobacct_common_stat_task(pid_t pid);
 extern struct jobacctinfo *jobacct_common_remove_task(pid_t pid);
@@ -241,6 +242,8 @@ extern bool jobacct_suspended;
 extern List task_list;
 extern pthread_mutex_t jobacct_lock;
 extern uint32_t cont_id;
+extern uint32_t acct_job_id;
+extern uint32_t job_mem_limit;	/* job's memory limit in KB */
 extern bool pgid_plugin;
 
 #endif

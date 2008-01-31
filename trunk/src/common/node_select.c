@@ -107,6 +107,8 @@ typedef struct slurm_select_ops {
 	int             (*alter_node_cnt)      (enum select_node_cnt type,
 						void *data);
 	int		(*reconfigure)         (void);
+	int		(*step_begin)          (struct step_record *step_ptr);
+	int		(*step_fini)           (struct step_record *step_ptr);
 } slurm_select_ops_t;
 
 typedef struct slurm_select_context {
@@ -183,7 +185,9 @@ static slurm_select_ops_t * _select_get_ops(slurm_select_context_t *c)
                 "select_p_get_info_from_plugin",
 		"select_p_update_node_state",
 		"select_p_alter_node_cnt",
-		"select_p_reconfigure"
+		"select_p_reconfigure",
+		"select_p_step_begin",
+		"select_p_step_fini",
 	};
 	int n_syms = sizeof( syms ) / sizeof( char * );
 
@@ -611,6 +615,28 @@ extern int select_g_pack_node_info(time_t last_query_time, Buf *buffer)
 	
 	return (*(g_select_context->ops.pack_node_info))
 		(last_query_time, buffer);
+}
+
+/* Prepare to start a job step, allocate memory as needed
+ * RET - slurm error code
+ */
+extern int select_g_step_begin(struct step_record *step_ptr)
+{
+	if (slurm_select_init() < 0)
+		return SLURM_ERROR;
+
+	return (*(g_select_context->ops.step_begin))(step_ptr);
+}
+
+/* Prepare to terminate a job step, release memory as needed
+ * RET - slurm error code
+ */
+extern int select_g_step_fini(struct step_record *step_ptr)
+{
+	if (slurm_select_init() < 0)
+		return SLURM_ERROR;
+
+	return (*(g_select_context->ops.step_fini))(step_ptr);
 }
 
 #ifdef HAVE_BG		/* node selection specific logic */

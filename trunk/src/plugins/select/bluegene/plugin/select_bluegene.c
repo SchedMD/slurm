@@ -1278,3 +1278,12 @@ extern int select_p_reconfigure(void)
 	return SLURM_SUCCESS;
 }
 
+extern int select_p_step_begin(struct step_record *step_ptr)
+{
+	return SLURM_SUCCESS;
+}
+
+extern int select_p_step_fini(struct step_record *step_ptr)
+{
+	return SLURM_SUCCESS;
+}

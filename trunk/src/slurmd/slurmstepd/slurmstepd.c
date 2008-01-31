@@ -182,6 +182,8 @@ _init_from_slurmd(int sock, char **argv,
 	slurm_msg_t *msg = NULL;
 	int ngids = 0;
 	gid_t *gids = NULL;
+	uint16_t port;
+	char buf[16];
 
 	/* receive job type from slurmd */
 	safe_read(sock, &step_type, sizeof(int));
@@ -234,13 +236,9 @@ _init_from_slurmd(int sock, char **argv,
 	
 	switch_g_slurmd_step_init();
 
-	{
-		uint16_t port;
-		char buf[16];
-		slurm_get_ip_str(&step_complete.parent_addr, &port, buf, 16);
-		debug3("slurmstepd rank %d, parent address = %s, port = %u",
-		       step_complete.rank, buf, port);
-	}
+	slurm_get_ip_str(&step_complete.parent_addr, &port, buf, 16);
+	debug3("slurmstepd rank %d, parent address = %s, port = %u",
+	       step_complete.rank, buf, port);
 
 	/* receive cli from slurmd */
 	safe_read(sock, &len, sizeof(int));

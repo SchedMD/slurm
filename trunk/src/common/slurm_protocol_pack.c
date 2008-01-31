@@ -1567,6 +1567,7 @@ _pack_job_step_create_request_msg(job_step_create_request_msg_t
 	pack16(msg->ckpt_interval, buffer);
 	pack16(msg->exclusive, buffer);
 	pack16(msg->immediate, buffer);
+	pack16(msg->mem_per_task, buffer);
 
 	packstr(msg->host, buffer);
 	packstr(msg->name, buffer);
@@ -1602,6 +1603,7 @@ _unpack_job_step_create_request_msg(job_step_create_request_msg_t ** msg,
 	safe_unpack16(&(tmp_ptr->ckpt_interval), buffer);
 	safe_unpack16(&(tmp_ptr->exclusive), buffer);
 	safe_unpack16(&(tmp_ptr->immediate), buffer);
+	safe_unpack16(&(tmp_ptr->mem_per_task), buffer);
 
 	safe_unpackstr_xmalloc(&(tmp_ptr->host), &uint32_tmp, buffer);
 	safe_unpackstr_xmalloc(&(tmp_ptr->name), &uint32_tmp, buffer);
@@ -3035,6 +3037,8 @@ _pack_launch_tasks_request_msg(launch_tasks_request_msg_t * msg, Buf buffer)
 	pack32(msg->nprocs, buffer);
 	pack32(msg->uid, buffer);
 	pack32(msg->gid, buffer);
+	pack32(msg->job_mem, buffer);
+	pack32(msg->task_mem, buffer);
 
 	pack32(msg->nnodes, buffer);
 	pack16(msg->max_sockets, buffer);
@@ -3108,6 +3112,8 @@ _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **
 	safe_unpack32(&msg->nprocs, buffer);
 	safe_unpack32(&msg->uid, buffer);
 	safe_unpack32(&msg->gid, buffer);
+	safe_unpack32(&msg->job_mem, buffer);
+	safe_unpack32(&msg->task_mem, buffer);
 
 	safe_unpack32(&msg->nnodes, buffer);
 	safe_unpack16(&msg->max_sockets, buffer);
