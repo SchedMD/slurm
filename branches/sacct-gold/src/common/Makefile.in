@@ -85,6 +85,7 @@ am__libcommon_la_SOURCES_DIST = xmalloc.c xmalloc.h xassert.c \
 	slurm_protocol_defs.h slurm_rlimits_info.h \
 	slurm_rlimits_info.c uid.c uid.h util-net.c util-net.h \
 	slurm_auth.c slurm_auth.h jobacct_common.c jobacct_common.h \
+	slurm_account_storage.c slurm_account_storage.h \
 	slurm_clusteracct_storage.c slurm_clusteracct_storage.h \
 	slurm_jobacct_gather.c slurm_jobacct_gather.h \
 	slurm_jobacct_storage.c slurm_jobacct_storage.h \
@@ -107,13 +108,13 @@ am_libcommon_la_OBJECTS = xmalloc.lo xassert.lo xstring.lo xsignal.lo \
 	slurm_protocol_util.lo slurm_protocol_socket_implementation.lo \
 	slurm_protocol_defs.lo slurm_rlimits_info.lo uid.lo \
 	util-net.lo slurm_auth.lo jobacct_common.lo \
-	slurm_clusteracct_storage.lo slurm_jobacct_gather.lo \
-	slurm_jobacct_storage.lo slurm_jobcomp.lo switch.lo \
-	arg_desc.lo malloc.lo getopt.lo getopt1.lo $(am__objects_1) \
-	slurm_selecttype_info.lo slurm_resource_info.lo hostlist.lo \
-	slurm_step_layout.lo checkpoint.lo parse_time.lo \
-	job_options.lo global_defaults.lo timers.lo stepd_api.lo \
-	proc_args.lo
+	slurm_account_storage.lo slurm_clusteracct_storage.lo \
+	slurm_jobacct_gather.lo slurm_jobacct_storage.lo \
+	slurm_jobcomp.lo switch.lo arg_desc.lo malloc.lo getopt.lo \
+	getopt1.lo $(am__objects_1) slurm_selecttype_info.lo \
+	slurm_resource_info.lo hostlist.lo slurm_step_layout.lo \
+	checkpoint.lo parse_time.lo job_options.lo global_defaults.lo \
+	timers.lo stepd_api.lo proc_args.lo
 am__EXTRA_libcommon_la_SOURCES_DIST = unsetenv.c unsetenv.h
 libcommon_la_OBJECTS = $(am_libcommon_la_OBJECTS)
 libcommon_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
@@ -370,6 +371,7 @@ libcommon_la_SOURCES = \
 	util-net.c util-net.h		\
 	slurm_auth.c slurm_auth.h	\
 	jobacct_common.c jobacct_common.h \
+	slurm_account_storage.c slurm_account_storage.h \
 	slurm_clusteracct_storage.c slurm_clusteracct_storage.h \
 	slurm_jobacct_gather.c slurm_jobacct_gather.h \
 	slurm_jobacct_storage.c slurm_jobacct_storage.h \
@@ -502,6 +504,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/proc_args.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/read_config.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/safeopen.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurm_account_storage.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurm_auth.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurm_clusteracct_storage.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurm_cred.Plo@am__quote@

@@ -293,7 +293,8 @@ extern int clusteracct_storage_p_node_up(struct node_record *node_ptr,
 	return rc;
 }
 
-extern int clusteracct_storage_p_cluster_procs(uint32_t procs, time_t event_time)
+extern int clusteracct_storage_p_cluster_procs(uint32_t procs,
+					       time_t event_time)
 {
 	static uint32_t last_procs = -1;
 	gold_request_t *gold_request = NULL;

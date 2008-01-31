@@ -182,6 +182,36 @@ extern int slurm_set_tree_width(uint16_t tree_width);
  */
 extern uint16_t slurm_get_tree_width(void);
 
+/* slurm_get_account_storage_type
+ * returns the account storage type from slurmctld_conf object
+ * RET char *    - account storage type,  MUST be xfreed by caller
+ */
+char *slurm_get_account_storage_type(void);
+
+/* slurm_get_account_storage_user
+ * returns the storage user from slurmctld_conf object
+ * RET char *    - storage user,  MUST be xfreed by caller
+ */
+char *slurm_get_account_storage_user(void);
+
+/* slurm_get_account_storage_host
+ * returns the storage host from slurmctld_conf object
+ * RET char *    - storage host,  MUST be xfreed by caller
+ */
+char *slurm_get_account_storage_host(void);
+
+/* slurm_get_account_storage_pass
+ * returns the storage password from slurmctld_conf object
+ * RET char *    - storage password,  MUST be xfreed by caller
+ */
+char *slurm_get_account_storage_pass(void);
+
+/* slurm_get_account_storage_port
+ * returns the storage port from slurmctld_conf object
+ * RET uint32_t   - storage port
+ */
+uint32_t slurm_get_account_storage_port(void);
+
 /* slurm_get_jobacct_gather_type
  * returns the job accounting type from slurmctld_conf object
  * RET char *    - job accounting type,  MUST be xfreed by caller

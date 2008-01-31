@@ -280,7 +280,7 @@ extern int slurm_account_storage_fini(void)
 	if (!g_account_storage_context)
 		return SLURM_SUCCESS;
 
-	(*(g_account_storage_context->ops.account_storage_fini))();
+//	(*(g_account_storage_context->ops.account_storage_fini))();
 	rc = _account_storage_context_destroy( g_account_storage_context );
 	g_account_storage_context = NULL;
 	return rc;
@@ -484,5 +484,7 @@ extern int account_storage_g_get_monthly_usage(List account_list,
 					       char *cluster,
 					       void *params)
 {
-	
+	int rc = SLURM_SUCCESS;
+
+	return rc;
 }

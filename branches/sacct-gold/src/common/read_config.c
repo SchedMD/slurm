@@ -1631,10 +1631,6 @@ validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	if (!s_p_get_string(&conf->mpi_default, "MpiDefault", hashtbl))
 		conf->mpi_default = xstrdup(DEFAULT_MPI_DEFAULT);
 
-	/* JobAcctStorageLoc replaces ClusterAcctLogFile since it now represents
-	 * the database name also depending on the storage type you
-	 * use so we still check ClusterAcctLogFile for the same thing
-	 */
 	if (!s_p_get_string(&conf->cluster_acct_storage_loc,
 			    "ClusterAcctStorageLoc", hashtbl))
 		conf->cluster_acct_storage_loc = 
@@ -1661,6 +1657,28 @@ validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 			    "ClusterAcctStoragePort", hashtbl))
 		conf->cluster_acct_storage_port =
 			DEFAULT_CLUSTER_ACCT_STORAGE_PORT;
+
+	if (!s_p_get_string(&conf->account_storage_type,
+			    "AccountStorageType", hashtbl)) {
+		conf->account_storage_type =
+			xstrdup(DEFAULT_ACCOUNT_STORAGE_TYPE);
+	}
+	if (!s_p_get_string(&conf->account_storage_host,
+			    "AccountStorageHost", hashtbl))
+		conf->account_storage_host =
+			xstrdup(DEFAULT_ACCOUNT_STORAGE_HOST);
+	if (!s_p_get_string(&conf->account_storage_user,
+			    "AccountStorageUser", hashtbl))
+		conf->account_storage_user =
+			xstrdup(DEFAULT_ACCOUNT_STORAGE_USER);
+	if (!s_p_get_string(&conf->account_storage_pass,
+			    "AccountStoragePass", hashtbl))
+		conf->account_storage_pass =
+			xstrdup(DEFAULT_ACCOUNT_STORAGE_PASS);
+	if (!s_p_get_uint32(&conf->account_storage_port,
+			    "AccountStoragePort", hashtbl))
+		conf->account_storage_port =
+			DEFAULT_ACCOUNT_STORAGE_PORT;
 
 	if (!s_p_get_string(&conf->plugindir, "PluginDir", hashtbl))
 		conf->plugindir = xstrdup(default_plugin_path);

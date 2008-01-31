@@ -95,9 +95,6 @@ const char plugin_name[] = "Job accounting storage GOLD plugin";
 const char plugin_type[] = "jobacct_storage/gold";
 const uint32_t plugin_version = 100;
 
-/* for this first draft we are only supporting one cluster per slurm
- * 1.3 will probably do better than this.
- */
 
 static char *cluster_name = NULL;
 static List gold_account_list = NULL;
@@ -747,67 +744,6 @@ extern int jobacct_storage_p_get_jobs(List job_list,
 	
 	return rc;
 }
-
-/* 
- * get info from the storage 
- * returns List of acct_rec_t *
- * note List needs to be freed when called
- */
-extern int jobacct_storage_p_get_accounts(List account_list,
-					  List selected_accounts,
-					  List selected_users,
-					  List selected_projects,
-					  char *cluster,
-					  void *params)
-{
-}
-
-/* 
- * get info from the storage 
- * returns List of acct_rec_t *
- * note List needs to be freed when called
- */
-extern int jobacct_storage_p_get_hourly_accounts(List account_list,
-						 List selected_accounts,
-						 List selected_users,
-						 List selected_projects,
-						 char *cluster,
-						 void *params)
-{
-
-}
-
-/* 
- * get info from the storage 
- * returns List of acct_rec_t *
- * note List needs to be freed when called
- */
-extern int jobacct_storage_p_get_daily_accounts(List account_list,
-						List selected_accounts,
-						List selected_users,
-						List selected_projects,
-						char *cluster,
-						void *params)
-{
-	
-}
-
-/* 
- * get info from the storage 
- * returns List of acct_rec_t *
- * note List needs to be freed when called
- */
-extern int jobacct_storage_p_get_monthly_accounts(List account_list,
-						  List selected_accounts,
-						  List selected_users,
-						  List selected_projects,
-						  char *cluster,
-						  void *params)
-{
-	
-}
-
-
 
 /* 
  * expire old info from the storage 

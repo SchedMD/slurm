@@ -87,6 +87,12 @@ extern char *default_plugstack;
 #define DEFAULT_CLUSTER_ACCT_STORAGE_USER "root"
 #define DEFAULT_CLUSTER_ACCT_STORAGE_PASS ""
 #define DEFAULT_CLUSTER_ACCT_STORAGE_PORT 0
+#define ACCOUNT_STORAGE_TYPE_NONE "clusteracct_storage/none"
+#define DEFAULT_ACCOUNT_STORAGE_TYPE "account_storage/none"
+#define DEFAULT_ACCOUNT_STORAGE_HOST "localhost"
+#define DEFAULT_ACCOUNT_STORAGE_USER "root"
+#define DEFAULT_ACCOUNT_STORAGE_PASS ""
+#define DEFAULT_ACCOUNT_STORAGE_PORT 0
 #ifdef HAVE_AIX		/* AIX specific default configuration parameters */
 #  define DEFAULT_CHECKPOINT_TYPE   "checkpoint/aix"
 #  define DEFAULT_PROCTRACK_TYPE    "proctrack/aix"
