@@ -13,7 +13,10 @@ documents those changes that are of interest to users and admins.
     nodes, excluded nodes, contiguous, etc.).
  -- Modify scheduling logic to better support overlapping partitions.
  -- Add --task-mem option and remove --job-mem option from srun, salloc, and 
-    sbatch commands.
+    sbatch commands. Enforce step memory limit, if specified and there is
+    no job memory limit specified (--mem). Also see DefMemPerTask and
+    MaxMemPerTask in "man slurm.conf". Enforcement is dependent upon job
+    accounting being enabled with non-zero value for JoabAcctGatherFrequency.
 
 * Changes in SLURM 1.3.0-pre8
 =============================

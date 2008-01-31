@@ -39,7 +39,10 @@
 \*****************************************************************************/
 
 #include <fcntl.h>
+#include <signal.h>
 #include "src/common/jobacct_common.h"
+#include "src/common/slurm_protocol_api.h"
+#include "src/common/slurm_protocol_defs.h"
 #include "src/slurmd/common/proctrack.h"
 
 /*
@@ -93,6 +96,7 @@ static pthread_mutex_t reading_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 /* Finally, pre-define all local routines. */
 
+static void _acct_kill_job(void);
 static void _get_offspring_data(List prec_list, prec_t *ancestor, pid_t pid);
 static void _get_process_data();
 static int _get_process_data_line(FILE *in, prec_t *prec);
@@ -165,7 +169,7 @@ static void _get_process_data() {
 	List prec_list = NULL;
 	pid_t *pids = NULL;
 	int npids = 0;
-
+	uint32_t total_job_mem = 0;
 	int		i, fd;
 	ListIterator itr;
 	ListIterator itr2;
@@ -308,6 +312,7 @@ static void _get_process_data() {
 				/* tally their usage */
 				jobacct->max_rss = jobacct->tot_rss = 
 					MAX(jobacct->max_rss, prec->rss);
+				total_job_mem += jobacct->max_rss;
 				jobacct->max_vsize = jobacct->tot_vsize = 
 					MAX(jobacct->max_vsize, prec->vsize);
 				jobacct->max_pages = jobacct->tot_pages =
@@ -318,19 +323,48 @@ static void _get_process_data() {
 				debug2("%d size now %d %d time %d",
 				      jobacct->pid, jobacct->max_rss, 
 				      jobacct->max_vsize, jobacct->tot_cpu);
-				
 				break;
 			}
 		}
 		list_iterator_destroy(itr2);
 	}
-	list_iterator_destroy(itr);	
+	list_iterator_destroy(itr);
 	slurm_mutex_unlock(&jobacct_lock);
-	
+
+	if (job_mem_limit) {
+		debug("Job %u memory used:%u limit:%u KB", 
+		      acct_job_id, total_job_mem, job_mem_limit);
+	}
+	if (total_job_mem > job_mem_limit) {
+		error("Job %u exceeded %u KB memory limit, being killed",
+		       acct_job_id, job_mem_limit);
+		_acct_kill_job();
+	}
+
 finished:
 	list_destroy(prec_list);
 	processing = 0;	
 	return;
+}
+
+/* _acct_kill_job() issue RPC to kill a slurm job */
+static void _acct_kill_job(void)
+{
+	slurm_msg_t msg;
+	job_step_kill_msg_t req;
+
+	slurm_msg_t_init(&msg);
+	/* 
+	 * Request message:
+	 */
+	req.job_id      = acct_job_id;
+	req.job_step_id = NO_VAL;
+	req.signal      = SIGKILL;
+	req.batch_flag  = 0;
+	msg.msg_type    = REQUEST_CANCEL_JOB_STEP;
+	msg.data        = &req;
+
+	slurm_send_only_controller_msg(&msg);
 }
 
 /* _get_process_data_line() - get line of data from /proc/<pid>/stat

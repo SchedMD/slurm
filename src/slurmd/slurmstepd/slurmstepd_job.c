@@ -186,18 +186,27 @@ job_create(launch_tasks_request_msg_t *msg)
 		return NULL;
 	}
 	
-	job->state   = SLURMSTEPD_STEP_STARTING;
-	job->pwd     = pwd;
-	job->ntasks  = msg->tasks_to_launch[nodeid];
-	job->nprocs  = msg->nprocs;
-	job->jobid   = msg->job_id;
-	job->stepid  = msg->job_step_id;
+	job->state	= SLURMSTEPD_STEP_STARTING;
+	job->pwd	= pwd;
+	job->ntasks	= msg->tasks_to_launch[nodeid];
+	job->nprocs	= msg->nprocs;
+	job->jobid	= msg->job_id;
+	job->stepid	= msg->job_step_id;
+
+	job->job_mem	= msg->job_mem;
+	job->task_mem	= msg->task_mem;
+	if (job->job_mem)
+		jobacct_common_set_mem_limit(job->jobid, job->job_mem);
+	else if (job->task_mem && job->ntasks) {
+		jobacct_common_set_mem_limit(job->jobid, 
+					     (job->task_mem * job->ntasks));
+	}
 	
-	job->uid     = (uid_t) msg->uid;
-	job->gid     = (gid_t) msg->gid;
-	job->cwd     = xstrdup(msg->cwd);
-	job->task_dist  = msg->task_dist;
-	job->plane_size = msg->plane_size;
+	job->uid	= (uid_t) msg->uid;
+	job->gid	= (gid_t) msg->gid;
+	job->cwd	= xstrdup(msg->cwd);
+	job->task_dist	= msg->task_dist;
+	job->plane_size	= msg->plane_size;
 	
 	job->cpu_bind_type = msg->cpu_bind_type;
 	job->cpu_bind = xstrdup(msg->cpu_bind);

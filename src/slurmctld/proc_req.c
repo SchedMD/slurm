@@ -458,6 +458,8 @@ static int _make_step_cred(struct step_record *step_rec,
 	cred_arg.jobid    = step_rec->job_ptr->job_id;
 	cred_arg.stepid   = step_rec->step_id;
 	cred_arg.uid      = step_rec->job_ptr->user_id;
+	cred_arg.job_mem  = step_rec->job_ptr->details->job_min_memory;
+	cred_arg.task_mem = step_rec->mem_per_task;
 	cred_arg.hostlist = step_rec->step_layout->node_list;
         if(step_rec->job_ptr->details->shared == 0)
                 cred_arg.alloc_lps_cnt = 0;

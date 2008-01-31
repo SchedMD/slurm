@@ -152,6 +152,7 @@ enum {
 	ESLURM_JOB_HELD,
 	ESLURM_INVALID_CRYPTO_TYPE_CHANGE,
 	ESLURM_INVALID_BANK_ACCOUNT,
+	ESLURM_INVALID_TASK_MEMORY,
 
 	/* switch specific error codes, specific values defined in plugin module */
 	ESLURM_SWITCH_MIN = 3000,

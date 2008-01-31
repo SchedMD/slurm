@@ -2313,7 +2313,7 @@ static void _help(void)
 "      --exclusive             allocate nodes in exclusive mode when\n" 
 "                              cpu consumable resource is enabled\n"
 "                              or don't share CPUs for job steps\n"
-"      --job-mem=MB            maximum amount of real memory per node\n"
+"      --task-mem=MB           maximum amount of real memory per task\n"
 "                              required by the job.\n" 
 "                              --mem >= --job-mem if --mem is specified.\n" 
 "\n"

@@ -133,12 +133,12 @@ scontrol_update_part (int argc, char *argv[])
 				part_msg.max_share = (uint16_t) strtol(&argv[i][11], 
 					(char **) NULL, 10);
 			} else if (strncasecmp(&argv[i][7], "YES", 3) == 0) {
-				part_msg.max_share = (uint16_t) 64;
+				part_msg.max_share = (uint16_t) 4;
 			} else if (strncasecmp(&argv[i][7], "FORCE:", 6) == 0) {
 				part_msg.max_share = (uint16_t) strtol(&argv[i][13],
 					(char **) NULL, 10) | SHARED_FORCE;
 			} else if (strncasecmp(&argv[i][7], "FORCE", 5) == 0) {
-				part_msg.max_share = (uint16_t) 64 |
+				part_msg.max_share = (uint16_t) 4 |
 					SHARED_FORCE;
 			} else {
 				exit_code = 1;

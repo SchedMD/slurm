@@ -2802,7 +2802,7 @@ static int _validate_job_desc(job_desc_msg_t * job_desc_msg, int allocate,
 	if (job_desc_msg->job_min_threads == (uint16_t) NO_VAL)
 		job_desc_msg->job_min_threads = 1; /* default 1 thread per core */
 	if (job_desc_msg->job_min_memory == NO_VAL)
-		job_desc_msg->job_min_memory = 0;  /* default 0MB mem per node */
+		job_desc_msg->job_min_memory = 0;  /* default no memory limit */
 	if (job_desc_msg->job_min_tmp_disk == NO_VAL)
 		job_desc_msg->job_min_tmp_disk = 0;/* default 0MB disk per node */
 
@@ -3202,17 +3202,18 @@ void reset_job_bitmaps(void)
 		build_node_details(job_ptr);	/* set: num_cpu_groups, 
 						 * cpu_count_reps, node_cnt, 
 						 * cpus_per_node, node_addr */
+
+		if (_reset_detail_bitmaps(job_ptr))
+			job_fail = true;
+
+		_reset_step_bitmaps(job_ptr);
+
 		if (select_g_update_nodeinfo(job_ptr) != SLURM_SUCCESS) {
 			error("select_g_update_nodeinfo(%u): %m", 
 				job_ptr->job_id);
 			/* not critical ... ? */
 			/* probably job_fail should be set here */
 		}
-
-		if (_reset_detail_bitmaps(job_ptr))
-			job_fail = true;
-
-		_reset_step_bitmaps(job_ptr);
 
 		if ((job_ptr->kill_on_step_done)
 		    &&  (list_count(job_ptr->step_list) <= 1)) {

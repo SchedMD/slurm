@@ -69,4 +69,13 @@ struct node_cr_record {
 					 * otherwise value is zero */
 };
 
+/*
+ * step_cr_record keeps track of the steps which have been allocated memory
+ * independently of the job (ie. the job itself has no reserved memory
+ */
+struct step_cr_record {
+	uint32_t job_id;
+	uint32_t step_id;
+};
+
 #endif /* !_SELECT_LINEAR_H */

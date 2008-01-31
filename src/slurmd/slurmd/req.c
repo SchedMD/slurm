@@ -565,22 +565,21 @@ _forkexec_slurmstepd(slurmd_step_type_t type, void *req,
 /*
  * The job(step) credential is the only place to get a definitive
  * list of the nodes allocated to a job step.  We need to return
- * a hostset_t of the nodes.
- *
- * FIXME - Rewrite this to only take a slurm_cred_t and only return a
- *         slurm_cred_arg_t.  The other parameters, jobid, stepid, etc.
- *         should be checked one caller layer higher.
+ * a hostset_t of the nodes. Validate the incoming RPC, updating 
+ * job_mem and task_mem as needed.
  */
 static int
-_check_job_credential(slurm_cred_t cred, uint32_t jobid, 
-		      uint32_t stepid, uid_t uid, int tasks_to_launch,
-		      hostset_t *step_hset)
+_check_job_credential(launch_tasks_request_msg_t *req, uid_t uid,
+		      int tasks_to_launch, hostset_t *step_hset)
 {
 	slurm_cred_arg_t arg;
 	hostset_t        hset    = NULL;
 	bool             user_ok = _slurm_authorized_user(uid); 
 	int              host_index = -1;
 	int              rc;
+	slurm_cred_t     cred = req->cred;
+	uint32_t         jobid = req->job_id;
+	uint32_t         stepid = req->job_step_id;
 
 	/*
 	 * First call slurm_cred_verify() so that all valid
@@ -594,6 +593,11 @@ _check_job_credential(slurm_cred_t cred, uint32_t jobid,
 			      " %m, but continuing anyway.");
 		}
 	}
+
+	/* Overwrite any memory limits in the RPC with 
+	 * contents of the credential */
+	req->job_mem  = arg.job_mem;
+	req->task_mem = arg.task_mem;
 
 	/*
 	 * If uid is the slurm user id or root, do not bother
@@ -693,8 +697,6 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 	char     host[MAXHOSTNAMELEN];
 	uid_t    req_uid;
 	launch_tasks_request_msg_t *req = msg->data;
-	uint32_t jobid  = req->job_id;
-	uint32_t stepid = req->job_step_id;
 	bool     super_user = false;
 	bool     first_job_run;
 	slurm_addr self;
@@ -706,7 +708,7 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 	req_uid = g_slurm_auth_get_uid(msg->auth_cred);
 	memcpy(&req->orig_addr, &msg->orig_addr, sizeof(slurm_addr));
 
-	slurmd_launch_request(jobid, req, nodeid);
+	slurmd_launch_request(req->job_id, req, nodeid);
 
 	super_user = _slurm_authorized_user(req_uid);
 
@@ -722,8 +724,7 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 	     req->job_step_id, req->uid, req->gid, host, port);
 
 	first_job_run = !slurm_cred_jobid_cached(conf->vctx, req->job_id);
-	if (_check_job_credential(req->cred, jobid, stepid, req_uid,
-				  req->tasks_to_launch[nodeid],
+	if (_check_job_credential(req, req_uid, req->tasks_to_launch[nodeid],
 				  &step_hset) < 0) {
 		errnum = errno;
 		error("Invalid job credential from %ld@%s: %m", 
