@@ -45,6 +45,8 @@ bool jobacct_suspended = false;
 List task_list = NULL;
 pthread_mutex_t jobacct_lock = PTHREAD_MUTEX_INITIALIZER;
 uint32_t cont_id = (uint32_t)NO_VAL;
+uint32_t acct_job_id = 0;
+uint32_t job_mem_limit = 0;
 bool pgid_plugin = false;
 
 static void _pack_jobacct_id(jobacct_id_t *jobacct_id, Buf buffer)
@@ -575,6 +577,19 @@ extern int jobacct_common_set_proctrack_container_id(uint32_t id)
 	}
 	cont_id = id;
 
+	return SLURM_SUCCESS;
+}
+
+extern int jobacct_common_set_mem_limit(uint32_t job_id, uint32_t mem_limit)
+{
+	if ((job_id == 0) || (mem_limit == 0)) {
+		error("jobacct_common_set_mem_limit: jobid:%u mem_limit:%u",
+		      job_id, mem_limit);
+		return SLURM_ERROR;
+	}
+
+	acct_job_id   = job_id;
+	job_mem_limit = mem_limit * 1024;	/* MB to KB */
 	return SLURM_SUCCESS;
 }
 
