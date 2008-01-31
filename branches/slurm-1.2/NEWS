@@ -3,6 +3,9 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 1.2.23
 =========================
+ -- Fix for libpmi to not export unneed variables like xstr*
+ -- BLUEGENE - added per partition dynamic block creation
+ -- fix infinite loop bug in sview when there were multiple partitions
 
 * Changes in SLURM 1.2.22
 =========================

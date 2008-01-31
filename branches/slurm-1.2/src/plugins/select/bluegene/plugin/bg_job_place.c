@@ -287,6 +287,10 @@ static int _find_best_block_match(struct job_record* job_ptr,
 				       alpha_num[start[Z]]);
 			}
 			if(try_request->procs == req_procs) {
+				if(try_request->part_ptr 
+				   && (try_request->part_ptr
+				       != job_ptr->part_ptr))
+					continue;
 				debug("already tried to create but "
 				      "can't right now.");
 				list_iterator_destroy(itr);
@@ -471,8 +475,8 @@ try_again:
 		      req_procs, max_procs, proc_cnt);
 		if ((proc_cnt < req_procs)
 		    || ((max_procs != NO_VAL) && (proc_cnt > max_procs))) {
-			/* We use the proccessor count per partition here
-			   mostly to see if we can run on a smaller partition. 
+			/* We use the proccessor count per block here
+			   mostly to see if we can run on a smaller block. 
 			 */
 			convert_num_unit((float)proc_cnt, tmp_char, 
 					 sizeof(tmp_char), UNIT_NONE);
@@ -522,7 +526,7 @@ try_again:
 			continue;
 		}
 				
-		/* Make sure no other partitions are under this partition 
+		/* Make sure no other blocks are under this block 
 		   are booted and running jobs
 		*/
 		itr2 = list_iterator_create(bg_list);
@@ -719,7 +723,8 @@ try_again:
 		request.linuximage = linuximage;
 		request.mloaderimage = mloaderimage;
 		request.ramdiskimage = ramdiskimage;
-	
+		request.part_ptr = job_ptr->part_ptr;
+
 		debug("trying with all free blocks");
 		if(create_dynamic_block(&request, NULL) == SLURM_ERROR) {
 			error("this job will never run on "
@@ -747,6 +752,8 @@ try_again:
 			try_request->save_name = NULL;
 			try_request->elongate_geos = NULL;
 			try_request->start_req = request.start_req;
+			try_request->part_ptr = request.part_ptr;
+
 			for(i=0; i<BA_SYSTEM_DIMENSIONS; i++) 
 				try_request->start[i] = start[i];
 			slurm_mutex_lock(&request_list_mutex);
@@ -812,6 +819,8 @@ try_again:
 			request.linuximage = linuximage;
 			request.mloaderimage = mloaderimage;
 			request.ramdiskimage = ramdiskimage;
+			request.part_ptr = job_ptr->part_ptr;
+			
 			/* 1- try empty space
 			   2- we see if we can create one in the 
 			   unused bps

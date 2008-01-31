@@ -1386,7 +1386,7 @@ static List _create_part_info_list(partition_info_msg_t *part_info_ptr,
 	node_info_t *node_ptr = NULL;
 	static List info_list = NULL;
 	char *node_name = NULL;
-	int i, found = 0;
+	int i, j, found = 0;
 	ListIterator itr = NULL;
 	hostlist_t hl;
 #ifdef HAVE_BG
@@ -1451,9 +1451,9 @@ static List _create_part_info_list(partition_info_msg_t *part_info_ptr,
 			node_ptr = _find_node(node_name, node_info_ptr);
 			free(node_name);
 #ifdef HAVE_BG
-			for(i=0; i<3; i++) {
+			for(j=0; j<3; j++) {
 				int norm = 0;
-				switch(i) {
+				switch(j) {
 				case SVIEW_BG_IDLE_STATE:
 					/* get the idle node count if
 					 * we don't have any error or
