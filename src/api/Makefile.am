@@ -105,9 +105,8 @@ libslurm_la_LDFLAGS        = \
         $(OTHER_FLAGS)
 
 libpmi_la_SOURCES = pmi.c
-libpmi_la_LIBADD = $(convenience_libs)
+#libpmi_la_LIBADD = $(convenience_libs)
 libpmi_la_LDFLAGS = $(LIB_LDFLAGS) \
-        -version-info $(current):$(rev):$(age) \
         $(PMI_OTHER_FLAGS)
 
 force:
