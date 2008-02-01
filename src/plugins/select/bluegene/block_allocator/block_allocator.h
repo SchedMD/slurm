@@ -109,6 +109,7 @@ typedef struct {
 	bool rotate;
 	bool elongate; 
 	List elongate_geos;
+	struct part_record *part_ptr;	/* pointer to the partition record */	
 } ba_request_t; 
 
 typedef struct {

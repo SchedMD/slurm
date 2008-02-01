@@ -453,9 +453,6 @@ extern void *bluegene_agent(void *args)
 	return NULL;
 }
 
-
-
-
 /* must set the protecting mutex if any before this function is called */
 
 extern int remove_from_bg_list(List my_bg_list, bg_record_t *bg_record)
