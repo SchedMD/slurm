@@ -1017,7 +1017,7 @@ static struct spank_plugin_opt *_find_remote_option_by_name(const char
 	}
 
 	if (!(name = strchr(buf, ':'))) {
-		error("Malformed plugin option \"%s\" recieved. Ignoring",
+		error("Malformed plugin option \"%s\" received. Ignoring",
 		      str);
 		return (NULL);
 	}
