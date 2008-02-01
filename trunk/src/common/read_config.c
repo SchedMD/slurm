@@ -42,15 +42,14 @@
 #include <assert.h>
 #include <ctype.h>
 #include <errno.h>
-#include <pthread.h>
 #include <pwd.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
-#include <sys/utsname.h>
 #include <time.h>
 #include <unistd.h>
+#include <pthread.h>
 
 #include <slurm/slurm.h>
 
@@ -1011,18 +1010,27 @@ extern int slurm_conf_get_cpus_sct(const char *node_name,
  * (e.g. "linux123.foo.bar" becomes "linux123") 
  * OUT name
  */
-extern int
+int
 gethostname_short (char *name, size_t len)
 {
-	struct utsname buf;
+	int error_code, name_len;
+	char *dot_ptr, path_name[1024];
 
-	if (uname(&buf))
-		return errno;
+	error_code = gethostname (path_name, sizeof(path_name));
+	if (error_code)
+		return error_code;
 
-	if (strlen(buf.nodename) >= len)
+	dot_ptr = strchr (path_name, '.');
+	if (dot_ptr == NULL)
+		dot_ptr = path_name + strlen(path_name);
+	else
+		dot_ptr[0] = '\0';
+
+	name_len = (dot_ptr - path_name);
+	if (name_len > len)
 		return ENAMETOOLONG;
 
-	strcpy(name, buf.nodename);
+	strcpy (name, path_name);
 	return 0;
 }
 

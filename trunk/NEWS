@@ -17,6 +17,7 @@ documents those changes that are of interest to users and admins.
     no job memory limit specified (--mem). Also see DefMemPerTask and
     MaxMemPerTask in "man slurm.conf". Enforcement is dependent upon job
     accounting being enabled with non-zero value for JoabAcctGatherFrequency.
+ -- Change default node tmp_disk size to zero (for diskless nodes).
 
 * Changes in SLURM 1.3.0-pre8
 =============================
