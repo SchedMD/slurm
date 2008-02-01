@@ -1250,8 +1250,11 @@ extern int create_dynamic_block(ba_request_t *request, List my_block_list)
 						for (z = start[Z]; 
 						     z <= end[Z]; z++) {
 							ba_system_ptr->
-								grid[x][y][z].
-								used = 1;
+								grid[x]
+#ifdef HAVE_BG
+								[y][z]
+#endif
+								.used = 1;
 						}
 					}
 				}
@@ -1271,7 +1274,11 @@ extern int create_dynamic_block(ba_request_t *request, List my_block_list)
 				z = (number % HOSTLIST_BASE);
 				j+=3;
 
-				ba_system_ptr->grid[x][y][z].used = 1;
+				ba_system_ptr->grid[x]
+#ifdef HAVE_BG
+					[y][z]
+#endif
+					.used = 1;
 
 				if(nodes[j] != ',')
 					break;

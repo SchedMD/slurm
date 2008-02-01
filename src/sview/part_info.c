@@ -1386,10 +1386,11 @@ static List _create_part_info_list(partition_info_msg_t *part_info_ptr,
 	node_info_t *node_ptr = NULL;
 	static List info_list = NULL;
 	char *node_name = NULL;
-	int i, j, found = 0;
+	int i, found = 0;
 	ListIterator itr = NULL;
 	hostlist_t hl;
 #ifdef HAVE_BG
+	int j;
 	bg_info_record_t *bg_info_record = NULL;
 	int node_scaling = part_info_ptr->partition_array[0].node_scaling;
 	char *slurm_user = NULL;
