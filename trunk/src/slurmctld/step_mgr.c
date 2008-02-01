@@ -804,7 +804,8 @@ step_create(job_step_create_request_msg_t *step_specs,
 	if (job_ptr == NULL)
 		return ESLURM_INVALID_JOB_ID ;
 
-	if (job_ptr->job_state == JOB_SUSPENDED)
+	if ((job_ptr->details == NULL) || 
+	    (job_ptr->job_state == JOB_SUSPENDED))
 		return ESLURM_DISABLED;
 
 	if (IS_JOB_PENDING(job_ptr)) {

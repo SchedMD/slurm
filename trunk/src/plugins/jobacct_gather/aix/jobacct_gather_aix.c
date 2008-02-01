@@ -296,7 +296,8 @@ static void _get_process_data()
 		debug("Job %u memory used:%u limit:%u KB", 
 		      acct_job_id, total_job_mem, job_mem_limit);
 	}
-	if (total_job_mem > job_mem_limit) {
+	if (acct_job_id && job_mem_limit &&
+	    (total_job_mem > job_mem_limit)) {
 		error("Job %u exceeded %u KB memory limit, being killed",
 		       acct_job_id, job_mem_limit);
 		_acct_kill_job();
