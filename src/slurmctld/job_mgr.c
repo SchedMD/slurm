@@ -1064,6 +1064,7 @@ extern int kill_running_job_by_node_name(char *node_name, bool step_test)
 			} else if (job_ptr->batch_flag && job_ptr->details &&
 			           (job_ptr->details->no_requeue == 0)) {
 				uint16_t save_state;
+				srun_node_fail(job_ptr->job_id, node_name);
 				info("requeue job %u due to failure of node %s",
 				     job_ptr->job_id, node_name);
 				_set_job_prio(job_ptr);
