@@ -56,6 +56,7 @@
 #include <grp.h>
 
 #include "src/common/hostlist.h"
+#include "src/common/jobacct_common.h"
 #include "src/common/log.h"
 #include "src/common/macros.h"
 #include "src/common/node_select.h"
@@ -93,11 +94,18 @@ typedef struct {
 	gid_t *gids;
 } gids_t;
 
+typedef struct {
+	uint32_t job_id;
+	uint32_t job_mem;
+} job_mem_limits_t;
+
 static int  _abort_job(uint32_t job_id);
 static int  _abort_step(uint32_t job_id, uint32_t step_id);
 static char ** _build_env(uint32_t jobid, uid_t uid, char *bg_part_id);
 static void _destroy_env(char **env);
 static bool _slurm_authorized_user(uid_t uid);
+static void _job_limits_free(void *x);
+static int  _job_limits_match(void *x, void *key);
 static bool _job_still_running(uint32_t job_id);
 static int  _kill_all_active_steps(uint32_t jobid, int sig, bool batch);
 static int  _terminate_all_steps(uint32_t jobid, bool batch);
@@ -143,6 +151,9 @@ static pthread_mutex_t launch_mutex = PTHREAD_MUTEX_INITIALIZER;
 static time_t booted = 0;
 static time_t last_slurmctld_msg = 0;
 
+static pthread_mutex_t job_limits_mutex = PTHREAD_MUTEX_INITIALIZER;
+static List job_limits_list = NULL;
+
 void
 slurmd_req(slurm_msg_t *msg)
 {
@@ -154,6 +165,12 @@ slurmd_req(slurm_msg_t *msg)
 		if (waiters) {
 			list_destroy(waiters);
 			waiters = NULL;
+		}
+		if (job_limits_list) {
+			slurm_mutex_lock(&job_limits_mutex);
+			list_destroy(job_limits_list);
+			job_limits_list = NULL;
+			slurm_mutex_unlock(&job_limits_mutex);
 		}
 		return;
 	}
@@ -703,6 +720,7 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 	slurm_addr *cli = &msg->orig_addr;
 	socklen_t adlen;
 	hostset_t step_hset = NULL;
+	job_mem_limits_t *job_limits_ptr;
 	int nodeid = nodelist_find(req->complete_nodelist, conf->node_name);
 
 	req_uid = g_slurm_auth_get_uid(msg->auth_cred);
@@ -731,7 +749,7 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 		      (long) req_uid, host);
 		goto done;
 	}
-
+	
 #ifndef HAVE_FRONT_END
 	if (first_job_run) {
 		if (_run_prolog(req->job_id, req->uid, NULL) != 0) {
@@ -741,6 +759,24 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 		}
 	}
 #endif
+
+	if (req->job_mem) {
+		slurm_mutex_lock(&job_limits_mutex);
+		if (!job_limits_list)
+			job_limits_list = list_create(_job_limits_free);
+		job_limits_ptr = list_find_first (job_limits_list, 
+						  _job_limits_match, 
+						  &req->job_id);
+		if (!job_limits_ptr) {
+info("adding job %u mem limit %u", req->job_id, req->job_mem);
+			job_limits_ptr = xmalloc(sizeof(job_mem_limits_t));
+			job_limits_ptr->job_id = req->job_id;
+			list_append(job_limits_list, job_limits_ptr);
+		}
+		job_limits_ptr->job_mem = req->job_mem;
+		slurm_mutex_unlock(&job_limits_mutex);
+	}
+
 	adlen = sizeof(self);
 	_slurm_getsockname(msg->conn_fd, (struct sockaddr *)&self, &adlen);
 
@@ -976,6 +1012,118 @@ _rpc_shutdown(slurm_msg_t *msg)
 	/* Never return a message, slurmctld does not expect one */
 }
 
+static void _job_limits_free(void *x)
+{
+	xfree(x);
+}
+
+
+static int _job_limits_match(void *x, void *key)
+{
+	job_mem_limits_t *job_limits_ptr = (job_mem_limits_t *) x;
+	uint32_t *job_id = (uint32_t *) key;
+	if (job_limits_ptr->job_id == *job_id)
+		return 1;
+	return 0;
+}
+
+static void
+_enforce_job_mem_limit(void)
+{
+	List steps;
+	ListIterator step_iter, job_limits_iter;
+	job_mem_limits_t *job_limits_ptr;
+	step_loc_t *stepd;
+	int fd, i, job_inx, job_cnt = 0;
+	uint32_t step_rss;
+	stat_jobacct_msg_t acct_req;
+	stat_jobacct_msg_t *resp = NULL;
+	struct job_mem_info {
+		uint32_t job_id;
+		uint32_t mem_limit;	/* MB */
+		uint32_t mem_used;	/* KB */
+	};
+	struct job_mem_info *job_mem_info_ptr = NULL;
+	slurm_msg_t msg;
+	job_step_kill_msg_t kill_req;
+
+	if ((job_limits_list == NULL) || (list_count(job_limits_list) == 0))
+		return;
+	slurm_mutex_lock(&job_limits_mutex);
+	job_mem_info_ptr = xmalloc((list_count(job_limits_list) + 1) * 
+			   sizeof(struct job_mem_info));
+	job_cnt = 0;
+	job_limits_iter = list_iterator_create(job_limits_list);
+	while ((job_limits_ptr = list_next(job_limits_iter))) {
+		job_mem_info_ptr[job_cnt].job_id    = job_limits_ptr->job_id; 
+		job_mem_info_ptr[job_cnt].mem_limit = job_limits_ptr->job_mem;
+		job_cnt++;
+	}
+	list_iterator_destroy(job_limits_iter);
+	slurm_mutex_unlock(&job_limits_mutex);
+
+	steps = stepd_available(conf->spooldir, conf->node_name);
+	step_iter = list_iterator_create(steps);
+	while ((stepd = list_next(step_iter))) {
+		for (job_inx=0; job_inx<job_cnt; job_inx++) {
+			if (job_mem_info_ptr[job_inx].job_id == stepd->jobid)
+				break;
+		}
+		if (job_inx >= job_cnt)
+			continue;	/* job not being tracked */
+
+		fd = stepd_connect(stepd->directory, stepd->nodename,
+				   stepd->jobid, stepd->stepid);
+		if (fd == -1)
+			continue;	/* step completed */
+		acct_req.job_id  = stepd->jobid;
+		acct_req.step_id = stepd->stepid;
+		resp = xmalloc(sizeof(stat_jobacct_msg_t));
+		if (!stepd_stat_jobacct(fd, &acct_req, resp)) {
+			jobacct_common_getinfo((struct jobacctinfo *)
+					       resp->jobacct,
+					       JOBACCT_DATA_TOT_RSS,
+					       &step_rss);
+			//info("job %u.%u rss:%u",stepd->jobid, stepd->stepid, step_rss);
+			step_rss = MAX(step_rss, 1);
+			job_mem_info_ptr[job_inx].mem_used += step_rss;
+		}
+		slurm_free_stat_jobacct_msg(resp);
+		close(fd);
+	}
+	list_iterator_destroy(step_iter);
+	list_destroy(steps);
+
+	for (i=0; i<job_cnt; i++) {
+		if ((job_mem_info_ptr[i].mem_limit == 0) ||
+		    (job_mem_info_ptr[i].mem_used == 0)) {
+			/* no memory limit or no steps found, purge record */
+			slurm_mutex_lock(&job_limits_mutex);
+			list_delete_all(job_limits_list, _job_limits_match, 
+					&job_mem_info_ptr[i].job_id);
+			slurm_mutex_unlock(&job_limits_mutex);
+			break;
+		}
+		job_mem_info_ptr[i].mem_used /= 1024;	/* KB to MB */
+		if (job_mem_info_ptr[i].mem_used <=
+		    job_mem_info_ptr[i].mem_limit)
+			continue;
+
+		info("Job %u exceeded memory limit (%u>%u), cancelling it",
+		    job_mem_info_ptr[i].job_id, job_mem_info_ptr[i].mem_used,
+		    job_mem_info_ptr[i].mem_limit);
+		slurm_msg_t_init(&msg);
+		kill_req.job_id      = job_mem_info_ptr[i].job_id;
+		kill_req.job_step_id = NO_VAL;
+		kill_req.signal      = SIGKILL;
+		kill_req.batch_flag  = (uint16_t) 0;
+		msg.msg_type    = REQUEST_CANCEL_JOB_STEP;
+		msg.data        = &kill_req;
+		slurm_send_only_controller_msg(&msg);
+	}
+	xfree(job_mem_info_ptr);
+}
+
 static int
 _rpc_ping(slurm_msg_t *msg)
 {
@@ -999,6 +1147,9 @@ _rpc_ping(slurm_msg_t *msg)
 		error("Error responding to ping: %m");
 		send_registration_msg(SLURM_SUCCESS, false);
 	}
+
+	/* Take this opportunity to enforce any job memory limits */
+	_enforce_job_mem_limit();
 	return rc;
 }
 
@@ -1328,7 +1479,7 @@ _rpc_stat_jobacct(slurm_msg_t *msg)
 		
 	}
 	if (stepd_stat_jobacct(fd, req, resp) == SLURM_ERROR) {
-		debug("kill for nonexistent job %u.%u requested",
+		debug("accounting for nonexistent job %u.%u requested",
 		      req->job_id, req->step_id);
 	} 
 	close(fd);
