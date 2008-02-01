@@ -84,6 +84,7 @@ typedef struct {
 	uint32_t jobid;
 	uint32_t stepid;
 	uint32_t nodeid;
+	uint32_t job_mem_limit;		/* job's memory limit, MB */
 } slurmstepd_info_t;
 
 typedef struct {

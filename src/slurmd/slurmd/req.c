@@ -153,6 +153,7 @@ static time_t last_slurmctld_msg = 0;
 
 static pthread_mutex_t job_limits_mutex = PTHREAD_MUTEX_INITIALIZER;
 static List job_limits_list = NULL;
+static bool job_limits_loaded = false;
 
 void
 slurmd_req(slurm_msg_t *msg)
@@ -170,6 +171,7 @@ slurmd_req(slurm_msg_t *msg)
 		if (job_limits_list) {
 			list_destroy(job_limits_list);
 			job_limits_list = NULL;
+			job_limits_loaded = false;
 		}
 		slurm_mutex_unlock(&job_limits_mutex);
 		return;
@@ -768,12 +770,12 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 						  _job_limits_match, 
 						  &req->job_id);
 		if (!job_limits_ptr) {
-			//info("adding job %u with mem limit %u", req->job_id, req->job_mem);
+			//info("AddLim job:%u mem:%u",req->job_id,req->job_mem);
 			job_limits_ptr = xmalloc(sizeof(job_mem_limits_t));
 			job_limits_ptr->job_id = req->job_id;
 			list_append(job_limits_list, job_limits_ptr);
 		}
-		job_limits_ptr->job_mem = req->job_mem;
+		job_limits_ptr->job_mem = req->job_mem;	/* reset limit */
 		slurm_mutex_unlock(&job_limits_mutex);
 	}
 
@@ -1027,6 +1029,50 @@ static int _job_limits_match(void *x, void *key)
 	return 0;
 }
 
+/* Call only with job_limits_mutex locked */
+static void
+_load_job_limits(void)
+{
+	List steps;
+	ListIterator step_iter;
+	step_loc_t *stepd;
+	int fd;
+	job_mem_limits_t *job_limits_ptr;
+	slurmstepd_info_t *stepd_info_ptr;
+
+	if (!job_limits_list)
+		job_limits_list = list_create(_job_limits_free);
+	job_limits_loaded = true;
+
+	steps = stepd_available(conf->spooldir, conf->node_name);
+	step_iter = list_iterator_create(steps);
+	while ((stepd = list_next(step_iter))) {
+		job_limits_ptr = list_find_first(job_limits_list,
+						 _job_limits_match,
+						 &stepd->jobid);
+		if (job_limits_ptr)	/* already processed */
+			continue;
+		fd = stepd_connect(stepd->directory, stepd->nodename,
+				   stepd->jobid, stepd->stepid);
+		if (fd == -1)
+			continue;	/* step completed */
+		stepd_info_ptr = stepd_get_info(fd);
+		if (stepd_info_ptr && stepd_info_ptr->job_mem_limit) {
+			/* create entry for this job */
+			job_limits_ptr = xmalloc(sizeof(job_mem_limits_t));
+			job_limits_ptr->job_id  = stepd->jobid;
+			job_limits_ptr->job_mem = stepd_info_ptr->job_mem_limit;
+			debug("RecLim job:%u mem:%u", 
+			      stepd->jobid, stepd_info_ptr->job_mem_limit);
+			list_append(job_limits_list, job_limits_ptr);
+		}
+		xfree(stepd_info_ptr);
+		close(fd);
+	}
+	list_iterator_destroy(step_iter);
+	list_destroy(steps);
+}
+
 static void
 _enforce_job_mem_limit(void)
 {
@@ -1048,9 +1094,14 @@ _enforce_job_mem_limit(void)
 	job_notify_msg_t notify_req;
 	job_step_kill_msg_t kill_req;
 
-	if ((job_limits_list == NULL) || (list_count(job_limits_list) == 0))
-		return;
 	slurm_mutex_lock(&job_limits_mutex);
+	if (!job_limits_loaded)
+		_load_job_limits();
+	if (list_count(job_limits_list) == 0) {
+		slurm_mutex_unlock(&job_limits_mutex);
+		return;
+	}
+
 	job_mem_info_ptr = xmalloc((list_count(job_limits_list) + 1) * 
 			   sizeof(struct job_mem_info));
 	job_cnt = 0;
