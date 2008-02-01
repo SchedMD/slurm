@@ -42,18 +42,21 @@
 
 #include "php.h"
 #include "slurm_php.h"
+#include "slurm/slurm.h"
 
 static function_entry slurm_functions[] = {
     PHP_FE(hello_world, NULL)
+    PHP_FE(print_partitions, NULL)
     {NULL, NULL, NULL}
 };
 
-zend_module_entry slurm_module_entry = {
+zend_module_entry slurm_php_module_entry = {
 #if ZEND_MODULE_API_NO >= 20010901
     STANDARD_MODULE_HEADER,
 #endif
     SLURM_PHP_EXTNAME,
     slurm_functions,
+    NULL,
     NULL,
     NULL,
     NULL,
@@ -64,11 +67,28 @@ zend_module_entry slurm_module_entry = {
     STANDARD_MODULE_PROPERTIES
 };
 
-#ifdef COMPILE_DL_SLURM
-ZEND_GET_MODULE(slurm)
+#ifdef COMPILE_DL_SLURM_PHP
+ZEND_GET_MODULE(slurm_php)
 #endif
 
 PHP_FUNCTION(hello_world)
 {
-    RETURN_STRING("Hello World", 1);
+    RETURN_STRING("Hello World\n", 1);
+}
+
+PHP_FUNCTION(print_partitions)
+{
+	int error_code = SLURM_SUCCESS;
+	uint16_t show_flags = 0;
+	static partition_info_msg_t *new_part_ptr;
+	error_code = slurm_load_partitions((time_t) NULL, &new_part_ptr,
+					   show_flags);
+	if (error_code) {
+		slurm_perror("slurm_load_part");
+		RETURN_INT(error_code);
+	}
+
+	sinfo_list = list_create(_sinfo_list_delete);
+			
+	RETURN_INT(error_code);
 }

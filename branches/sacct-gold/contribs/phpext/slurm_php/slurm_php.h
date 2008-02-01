@@ -42,8 +42,9 @@
 #define SLURM_PHP_EXTNAME "slurm"
 
 PHP_FUNCTION(hello_world);
+PHP_FUNCTION(print_partitions);
 
-extern zend_module_entry slurm_module_entry;
-#define phpext_slurm_ptr &slurm_module_entry
+extern zend_module_entry slurm_php_module_entry;
+#define phpext_slurm_php_ptr &slurm_php_module_entry
 
 #endif

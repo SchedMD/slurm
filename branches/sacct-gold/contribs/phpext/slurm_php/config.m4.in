@@ -50,9 +50,9 @@ if test "$PHP_SLURM" != "no"; then
 		[AC_MSG_ERROR([wrong libslurm version or lib not found])],
 		[-L$SLURM_DIR -lslurm])
 	dnl
-	PHP_SUBST(SLURM_SHARED_LIBADD)
+	PHP_SUBST(SLURM_PHP_SHARED_LIBADD)
 	
-	#AC_DEFINE(HAVE_SLURM_PHP, 1, [Whether you have SLURM])
+	AC_DEFINE(HAVE_SLURM_PHP, 1, [Whether you have SLURM])
 	#PHP_EXTENSION(slurm_php, $ext_shared)
 	PHP_NEW_EXTENSION(slurm_php, @top_srcdir@/contribs/phpext/slurm_php/slurm_php.c, $ext_shared)
 fi
