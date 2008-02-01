@@ -10,6 +10,10 @@ VERSION_SCRIPT = \
 	version.map
 OTHER_FLAGS = \
 	-Wl,--version-script=$(VERSION_SCRIPT)
+PMI_VERSION_SCRIPT = \
+	pmi_version.map
+PMI_OTHER_FLAGS = \
+	-Wl,--version-script=$(PMI_VERSION_SCRIPT)
 endif
 
 # libslurm version information : 
@@ -46,7 +50,7 @@ lib_LTLIBRARIES = libslurm.la libpmi.la
 # need to be built before anything else.  For instance, this takes care
 # of libpmi.la's dependency on libslurm.la, as long as you use "make"
 # and NOT "make libpmi.la".
-BUILT_SOURCES = $(VERSION_SCRIPT) libslurm.la
+BUILT_SOURCES = $(VERSION_SCRIPT) $(PMI_VERSION_SCRIPT) libslurm.la
 
 # Note that libslurmhelper is mostly the same as libslurm, except that
 # it exports ALL symbols, including those from libcommon, libeio, etc.
@@ -102,8 +106,9 @@ libslurm_la_LDFLAGS        = \
         $(OTHER_FLAGS)
 
 libpmi_la_SOURCES = pmi.c
-libpmi_la_LIBADD = $(convenience_libs)
-libpmi_la_LDFLAGS = $(LIB_LDFLAGS)
+#libpmi_la_LIBADD = $(convenience_libs)
+libpmi_la_LDFLAGS = $(LIB_LDFLAGS) \
+        $(PMI_OTHER_FLAGS)
 
 force:
 $(convenience_libs) : force
@@ -120,8 +125,14 @@ $(VERSION_SCRIPT) :
 	 echo "  local: *;"; \
 	 echo "};") > $(VERSION_SCRIPT)
 
+$(PMI_VERSION_SCRIPT) :
+	(echo "{ global:"; \
+	 echo "   PMI_*;"; \
+	 echo "  local: *;"; \
+	 echo "};") > $(PMI_VERSION_SCRIPT)
+
 CLEANFILES = \
-	$(VERSION_SCRIPT)
+	$(VERSION_SCRIPT) $(PMI_VERSION_SCRIPT)
 
 DISTCLEANFILES = \
-	$(VERSION_SCRIPT)
+	$(VERSION_SCRIPT) $(PMI_VERSION_SCRIPT)

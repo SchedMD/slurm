@@ -106,6 +106,90 @@ extern List create_dynamic_block(List block_list,
 		debug("No list was given");
 	}
 
+	if(request->part_ptr) {
+		int j=0, number;
+		int x,y,z;
+		char *nodes = NULL;
+		bitstr_t *bitmap = bit_alloc(node_record_count);
+		
+		/* we want the bps that aren't in this partition to
+		 * mark them as used
+		 */
+		bit_or(bitmap, request->part_ptr->node_bitmap);
+		bit_not(bitmap);
+		nodes = bitmap2node_name(bitmap);
+		
+		while(nodes[j] != '\0') {
+			if ((nodes[j] == '[' || nodes[j] == ',')
+			    && (nodes[j+8] == ']' || nodes[j+8] == ',')
+			    && (nodes[j+4] == 'x' || nodes[j+4] == '-')) {
+				int start[BA_SYSTEM_DIMENSIONS];
+				int end[BA_SYSTEM_DIMENSIONS];
+
+				j++;
+				number = xstrntol(nodes + j,
+						  NULL, BA_SYSTEM_DIMENSIONS,
+						  HOSTLIST_BASE);
+				start[X] = number / 
+					(HOSTLIST_BASE * HOSTLIST_BASE);
+				start[Y] = (number % 
+					    (HOSTLIST_BASE * HOSTLIST_BASE))
+					/ HOSTLIST_BASE;
+				start[Z] = (number % HOSTLIST_BASE);
+				j += 4;
+				number = xstrntol(nodes + j,
+						NULL, 3, HOSTLIST_BASE);
+				end[X] = number /
+					(HOSTLIST_BASE * HOSTLIST_BASE);
+				end[Y] = (number 
+					  % (HOSTLIST_BASE * HOSTLIST_BASE))
+					/ HOSTLIST_BASE;
+				end[Z] = (number % HOSTLIST_BASE);
+				j += 3;
+				for (x = start[X]; x <= end[X]; x++) {
+					for (y = start[Y]; y <= end[Y]; y++) {
+						for (z = start[Z]; 
+						     z <= end[Z]; z++) {
+							ba_system_ptr->
+								grid[x]
+#ifdef HAVE_BG
+								[y][z]
+#endif
+								.used = 1;
+						}
+					}
+				}
+				
+				if(nodes[j] != ',')
+					break;
+				j--;
+			} else if((nodes[j] >= '0' && nodes[j] <= '9')
+				  || (nodes[j] >= 'A' && nodes[j] <= 'Z')) {
+				
+				number = xstrntol(nodes + j,
+						  NULL, BA_SYSTEM_DIMENSIONS,
+						  HOSTLIST_BASE);
+				x = number / (HOSTLIST_BASE * HOSTLIST_BASE);
+				y = (number % (HOSTLIST_BASE * HOSTLIST_BASE))
+					/ HOSTLIST_BASE;
+				z = (number % HOSTLIST_BASE);
+				j+=3;
+
+				ba_system_ptr->grid[x]
+#ifdef HAVE_BG
+					[y][z]
+#endif
+					.used = 1;
+
+				if(nodes[j] != ',')
+					break;
+			}
+			j++;
+		}
+		xfree(nodes);
+		FREE_NULL_BITMAP(bitmap);
+	}
+
 	if(request->size==1 && request->procs < bluegene_bp_node_cnt) {
 		request->conn_type = SELECT_SMALL;
 		if(request->procs == (procs_per_node/16)) {
@@ -373,6 +457,14 @@ static int _breakup_blocks(List block_list, List new_blocks,
 			continue;
 		if(bg_record->state != RM_PARTITION_FREE)
 			continue;
+		if (request->part_ptr->node_bitmap &&
+		    !bit_super_set(bg_record->bitmap,
+				   request->part_ptr->node_bitmap)) {
+			debug2("bg block %s has nodes not usable by this job",
+			       bg_record->bg_block_id);
+			continue;
+		}
+
 		if(request->start_req) {
 			if ((request->start[X] != bg_record->start[X])
 			    || (request->start[Y] != bg_record->start[Y])
@@ -457,6 +549,14 @@ static int _breakup_blocks(List block_list, List new_blocks,
 	       != NULL) {
 		if(bg_record->job_running != NO_JOB_RUNNING)
 			continue;
+		if (request->part_ptr->node_bitmap &&
+		    !bit_super_set(bg_record->bitmap,
+				   request->part_ptr->node_bitmap)) {
+			debug2("bg block %s has nodes not usable by this job",
+			       bg_record->bg_block_id);
+			continue;
+		}
+
 		if(request->start_req) {
 			if ((request->start[X] != bg_record->start[X])
 			    || (request->start[Y] != bg_record->start[Y])

@@ -64,8 +64,9 @@ static int _get_user_groups(uint32_t user_id, uint32_t group_id,
 			     gid_t *groups, int max_groups, int *ngroups);
 static int _test_image_perms(char *image_name, List image_list, 
 			      struct job_record* job_ptr);
-static int _check_requests(uint16_t *start, uint32_t req_procs, int start_req);
-static int _add_to_request_list(uint16_t *start, 
+static int _check_requests(uint16_t *start,  struct part_record *part_ptr,
+			   uint32_t req_procs, int start_req);
+static int _add_to_request_list(uint16_t *start, struct part_record *part_ptr,
 				uint32_t req_procs, int start_req);
 static int _check_images(struct job_record* job_ptr,
 			 char **blrtsimage, char **linuximage,
@@ -297,7 +298,8 @@ static int _test_image_perms(char *image_name, List image_list,
 	return allow;
 }
 
-static int _check_requests(uint16_t *start, uint32_t req_procs, int start_req)
+static int _check_requests(uint16_t *start, struct part_record *part_ptr,
+			   uint32_t req_procs, int start_req)
 {
 	int found = 0;
 	ListIterator itr = NULL;
@@ -330,8 +332,10 @@ static int _check_requests(uint16_t *start, uint32_t req_procs, int start_req)
 		}
 
 		if(try_request->procs == req_procs) {
-			debug("already tried to create but "
-			      "can't right now.");
+			if(try_request->part_ptr 
+			   && (try_request->part_ptr != part_ptr))
+				continue;
+			debug("already tried to create but can't right now.");
 			found = 1;
 			break;
 		}				
@@ -342,7 +346,7 @@ static int _check_requests(uint16_t *start, uint32_t req_procs, int start_req)
 	return found;
 }
 
-static int _add_to_request_list(uint16_t *start, 
+static int _add_to_request_list(uint16_t *start, struct part_record *part_ptr,
 				uint32_t req_procs, int start_req) 
 {
 	ba_request_t *try_request = NULL; 
@@ -358,6 +362,8 @@ static int _add_to_request_list(uint16_t *start,
 	try_request->save_name = NULL;
 	try_request->elongate_geos = NULL;
 	try_request->start_req = start_req;
+	try_request->part_ptr = part_ptr;
+
 	memcpy(try_request->start, start, 
 	       sizeof(uint16_t) * BA_SYSTEM_DIMENSIONS);
 	slurm_mutex_lock(&request_list_mutex);
@@ -475,8 +481,8 @@ static bg_record_t *_find_matching_block(List block_list,
 		       request->procs, max_procs, proc_cnt);
 		if ((proc_cnt < request->procs)
 		    || ((max_procs != NO_VAL) && (proc_cnt > max_procs))) {
-			/* We use the proccessor count per partition here
-			   mostly to see if we can run on a smaller partition. 
+			/* We use the proccessor count per block here
+			   mostly to see if we can run on a smaller block. 
 			 */
 			convert_num_unit((float)proc_cnt, tmp_char, 
 					 sizeof(tmp_char), UNIT_NONE);
@@ -601,7 +607,7 @@ static int _check_for_booted_overlapping_blocks(
 	if(test_only)
 		return rc;
 
-	/* Make sure no other partitions are under this partition 
+	/* Make sure no other blocks are under this block 
 	   are booted and running jobs
 	*/
 	itr = list_iterator_create(block_list);
@@ -831,7 +837,8 @@ static int _find_best_block_match(List block_list,
 		   size but couldn't make it right now no reason 
 		   to try again 
 		*/
-		if(_check_requests(start, req_procs, start_req)) {
+		if(_check_requests(start, job_ptr->part_ptr, 
+				   req_procs, start_req)) {
 			if(test_only)
 				return SLURM_SUCCESS;
 			else
@@ -945,6 +952,7 @@ static int _find_best_block_match(List block_list,
 	request.linuximage = linuximage;
 	request.mloaderimage = mloaderimage;
 	request.ramdiskimage = ramdiskimage;
+	request.part_ptr = job_ptr->part_ptr;
 
 	select_g_get_jobinfo(job_ptr->select_jobinfo,
 			     SELECT_DATA_MAX_PROCS, &max_procs);
@@ -1016,8 +1024,8 @@ static int _find_best_block_match(List block_list,
 		
 		if(bluegene_layout_mode != LAYOUT_DYNAMIC) {
 			if(test_only) {
-				info(" I am here");
-				_add_to_request_list(start, req_procs,
+				_add_to_request_list(start, job_ptr->part_ptr,
+						     req_procs,
 						     start_req);
 			}
 			goto no_match;
@@ -1026,7 +1034,8 @@ static int _find_best_block_match(List block_list,
 		if(create_try)
 			goto no_match;
 		
-		if((rc = _dynamically_request(block_list, blocks_added, &request, 
+		if((rc = _dynamically_request(block_list, blocks_added,
+					      &request, 
 					      slurm_block_bitmap, 
 					      job_ptr->details->req_nodes))
 		   == SLURM_SUCCESS) {
@@ -1074,7 +1083,8 @@ static int _find_best_block_match(List block_list,
 					destroy_bg_record(bg_record);
 				}
 				list_destroy(new_blocks);
-				_add_to_request_list(start, req_procs,
+				_add_to_request_list(start, job_ptr->part_ptr,
+						     req_procs,
 						     start_req);
 				break;
 			}

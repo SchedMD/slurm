@@ -864,8 +864,8 @@ static int _gold_mark_all_nodes_down(char *reason, time_t event_time)
 	state_file = xstrdup (slurmctld_conf.state_save_location);
 	xstrcat (state_file, "/node_state");
 	if (stat(state_file, &stat_buf)) {
-		error("_gold_mark_all_nodes_down: could not stat(%s) to record "
-		      "node down time", state_file);
+		debug("_gold_mark_all_nodes_down: could not stat(%s) "
+		      "to record node down time", state_file);
 		xfree(state_file);
 		return rc;
 	}

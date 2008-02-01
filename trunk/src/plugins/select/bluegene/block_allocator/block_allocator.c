@@ -1267,6 +1267,7 @@ extern int copy_node_path(List nodes, List dest_nodes)
 #endif	
 	return rc;
 }
+
 extern int check_and_set_node_list(List nodes)
 {
 	int rc = SLURM_ERROR;
