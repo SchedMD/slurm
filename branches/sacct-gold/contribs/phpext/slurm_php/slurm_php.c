@@ -43,6 +43,7 @@
 #include "php.h"
 #include "slurm_php.h"
 #include "slurm/slurm.h"
+#include "src/common/list.h"
 
 static function_entry slurm_functions[] = {
     PHP_FE(hello_world, NULL)
@@ -78,17 +79,21 @@ PHP_FUNCTION(hello_world)
 
 PHP_FUNCTION(print_partitions)
 {
+	List sinfo_list = NULL;
 	int error_code = SLURM_SUCCESS;
 	uint16_t show_flags = 0;
 	static partition_info_msg_t *new_part_ptr;
+	printf("hey\n");
+	slurm_info("got here!");
+	printf("hey\n");
 	error_code = slurm_load_partitions((time_t) NULL, &new_part_ptr,
 					   show_flags);
 	if (error_code) {
-		slurm_perror("slurm_load_part");
+		error("slurm_load_part");
 		RETURN_INT(error_code);
 	}
 
-	sinfo_list = list_create(_sinfo_list_delete);
+//	sinfo_list = list_create(_sinfo_list_delete);
 			
 	RETURN_INT(error_code);
 }

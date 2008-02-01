@@ -25,7 +25,7 @@ if test "$PHP_SLURM" != "no"; then
 		for i in $SLURMLIB_PATH ; do
 			if test -r $i/$SEARCH_FOR; then
 				SLURM_DIR=$i
-				PHP_ADD_LIBPATH($i, SLURM_SHARED_LIBADD)
+				PHP_ADD_LIBPATH($i, SLURM_PHP_SHARED_LIBADD)
     
 				AC_MSG_RESULT([found in $i])
 				
@@ -45,11 +45,12 @@ if test "$PHP_SLURM" != "no"; then
 	LIBSYMBOL=slurm_account_storage_init
 	
 	PHP_CHECK_LIBRARY($LIBNAME, $LIBSYMBOL,
-		[PHP_ADD_LIBRARY($LIBNAME, , SLURM_SHARED_LIBADD)
+		[PHP_ADD_LIBRARY($LIBNAME, , SLURM_PHP_SHARED_LIBADD)
     			AC_DEFINE(HAVE_SLURMLIB,1,[ ])],
 		[AC_MSG_ERROR([wrong libslurm version or lib not found])],
 		[-L$SLURM_DIR -lslurm])
-	dnl
+	
+	
 	PHP_SUBST(SLURM_PHP_SHARED_LIBADD)
 	
 	AC_DEFINE(HAVE_SLURM_PHP, 1, [Whether you have SLURM])
