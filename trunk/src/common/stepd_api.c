@@ -289,6 +289,7 @@ stepd_get_info(int fd)
 	safe_read(fd, &info->jobid, sizeof(uint32_t));
 	safe_read(fd, &info->stepid, sizeof(uint32_t));
 	safe_read(fd, &info->nodeid, sizeof(uint32_t));
+	safe_read(fd, &info->job_mem_limit, sizeof(uint32_t));
 
 	return info;
 rwfail:

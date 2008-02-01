@@ -545,6 +545,7 @@ _handle_info(int fd, slurmd_job_t *job)
 	safe_write(fd, &job->jobid, sizeof(uint32_t));
 	safe_write(fd, &job->stepid, sizeof(uint32_t));
 	safe_write(fd, &job->nodeid, sizeof(uint32_t));
+	safe_write(fd, &job->job_mem, sizeof(uint32_t));
 
 	return SLURM_SUCCESS;
 rwfail:
