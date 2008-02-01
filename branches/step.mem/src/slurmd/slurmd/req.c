@@ -1045,6 +1045,7 @@ _enforce_job_mem_limit(void)
 	};
 	struct job_mem_info *job_mem_info_ptr = NULL;
 	slurm_msg_t msg;
+	job_notify_msg_t notify_req;
 	job_step_kill_msg_t kill_req;
 
 	if ((job_limits_list == NULL) || (list_count(job_limits_list) == 0))
@@ -1112,7 +1113,15 @@ _enforce_job_mem_limit(void)
 		info("Job %u exceeded memory limit (%u>%u), cancelling it",
 		    job_mem_info_ptr[i].job_id, job_mem_info_ptr[i].mem_used,
 		    job_mem_info_ptr[i].mem_limit);
+		/* NOTE: Batch jobs may have no srun to get this message */
 		slurm_msg_t_init(&msg);
+		notify_req.job_id      = job_mem_info_ptr[i].job_id;
+		notify_req.job_step_id = NO_VAL;
+		notify_req.message     = "Exceeded job memory limit";
+		msg.msg_type    = REQUEST_JOB_NOTIFY;
+		msg.data        = &notify_req;
+		slurm_send_only_controller_msg(&msg);
+
 		kill_req.job_id      = job_mem_info_ptr[i].job_id;
 		kill_req.job_step_id = NO_VAL;
 		kill_req.signal      = SIGKILL;
