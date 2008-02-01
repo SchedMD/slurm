@@ -43,29 +43,29 @@
 #include "php.h"
 #include "slurm_php.h"
 
-static function_entry hello_functions[] = {
+static function_entry slurm_functions[] = {
     PHP_FE(hello_world, NULL)
     {NULL, NULL, NULL}
 };
 
-zend_module_entry hello_module_entry = {
+zend_module_entry slurm_module_entry = {
 #if ZEND_MODULE_API_NO >= 20010901
     STANDARD_MODULE_HEADER,
 #endif
-    PHP_HELLO_WORLD_EXTNAME,
-    hello_functions,
+    SLURM_PHP_EXTNAME,
+    slurm_functions,
     NULL,
     NULL,
     NULL,
     NULL,
 #if ZEND_MODULE_API_NO >= 20010901
-    PHP_HELLO_WORLD_VERSION,
+    SLURM_PHP_VERSION,
 #endif
     STANDARD_MODULE_PROPERTIES
 };
 
-#ifdef COMPILE_DL_HELLO
-ZEND_GET_MODULE(hello)
+#ifdef COMPILE_DL_SLURM
+ZEND_GET_MODULE(slurm)
 #endif
 
 PHP_FUNCTION(hello_world)
