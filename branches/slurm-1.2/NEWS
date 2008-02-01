@@ -6,6 +6,10 @@ documents those changes that are of interest to users and admins.
  -- Fix for libpmi to not export unneed variables like xstr*
  -- BLUEGENE - added per partition dynamic block creation
  -- fix infinite loop bug in sview when there were multiple partitions
+ -- Send message to srun command when a job is requeued due to node failure.
+    Note this will be overwritten in the output file unless JobFileAppend
+    is set in slurm.conf. In slurm version 1.3, srun's --open-mode=append
+    option will offer this control for each job.
 
 * Changes in SLURM 1.2.22
 =========================
