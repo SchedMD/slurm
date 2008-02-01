@@ -272,6 +272,8 @@ AC_CONFIG_FILES([Makefile
 		 contribs/perlapi/Makefile
 		 contribs/perlapi/libslurm-perl/Makefile.PL
 		 contribs/torque/Makefile
+		 contribs/phpext/Makefile
+		 contribs/phpext/slurm_php/config.m4
 		 src/Makefile 
 		 src/api/Makefile 
 		 src/common/Makefile

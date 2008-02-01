@@ -138,8 +138,8 @@ extern int init ( void )
 
 	init_gold(cluster_name, keyfile, host, port);
 
-	if(!gold_account_list) 
-		gold_account_list = list_create(_destroy_gold_account);
+//	if(!gold_account_list) 
+//		gold_account_list = list_create(_destroy_gold_account);
 		
 	xfree(keyfile);
 	xfree(host);
@@ -151,8 +151,8 @@ extern int init ( void )
 extern int fini ( void )
 {
 	xfree(cluster_name);
-	if(gold_account_list) 
-		list_destroy(gold_account_list);
+//	if(gold_account_list) 
+//		list_destroy(gold_account_list);
 	fini_gold();
 	return SLURM_SUCCESS;
 }

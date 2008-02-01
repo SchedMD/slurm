@@ -293,6 +293,9 @@ extern int slurm_account_storage_fini(void)
  */
 extern int account_storage_g_add_users(List user_list)
 {
+	if (slurm_account_storage_init() < 0)
+		return SLURM_ERROR;
+	return (*(g_account_storage_context->ops.add_users))(user_list);
 }
 
 /* 
@@ -302,6 +305,9 @@ extern int account_storage_g_add_users(List user_list)
  */
 extern int account_storage_g_add_projects(List project_list)
 {
+	if (slurm_account_storage_init() < 0)
+		return SLURM_ERROR;
+	return (*(g_account_storage_context->ops.add_projects))(project_list);
 }
 
 /* 
@@ -311,6 +317,9 @@ extern int account_storage_g_add_projects(List project_list)
  */
 extern int account_storage_g_add_clusters(List cluster_list)
 {
+	if (slurm_account_storage_init() < 0)
+		return SLURM_ERROR;
+	return (*(g_account_storage_context->ops.add_clusters))(cluster_list);
 }
 
 /* 
@@ -320,6 +329,9 @@ extern int account_storage_g_add_clusters(List cluster_list)
  */
 extern int account_storage_g_add_accounts(List account_list)
 {
+	if (slurm_account_storage_init() < 0)
+		return SLURM_ERROR;
+	return (*(g_account_storage_context->ops.add_accounts))(account_list);
 }
 
 /* 
@@ -329,6 +341,9 @@ extern int account_storage_g_add_accounts(List account_list)
  */
 extern int account_storage_g_modify_users(List user_list)
 {
+	if (slurm_account_storage_init() < 0)
+		return SLURM_ERROR;
+	return (*(g_account_storage_context->ops.modify_users))(user_list);
 }
 
 /* 
@@ -338,6 +353,10 @@ extern int account_storage_g_modify_users(List user_list)
  */
 extern int account_storage_g_modify_projects(List project_list)
 {
+	if (slurm_account_storage_init() < 0)
+		return SLURM_ERROR;
+	return (*(g_account_storage_context->ops.modify_projects))
+		(project_list);
 }
 
 /* 
@@ -347,6 +366,10 @@ extern int account_storage_g_modify_projects(List project_list)
  */
 extern int account_storage_g_modify_clusters(List cluster_list)
 {
+	if (slurm_account_storage_init() < 0)
+		return SLURM_ERROR;
+	return (*(g_account_storage_context->ops.modify_clusters))
+		(cluster_list);
 }
 
 /* 
@@ -356,6 +379,10 @@ extern int account_storage_g_modify_clusters(List cluster_list)
  */
 extern int account_storage_g_modify_accounts(List account_list)
 {
+	if (slurm_account_storage_init() < 0)
+		return SLURM_ERROR;
+	return (*(g_account_storage_context->ops.modify_accounts))
+		(account_list);
 }
 
 /* 
@@ -365,6 +392,9 @@ extern int account_storage_g_modify_accounts(List account_list)
  */
 extern int account_storage_g_remove_users(List user_list)
 {
+	if (slurm_account_storage_init() < 0)
+		return SLURM_ERROR;
+	return (*(g_account_storage_context->ops.remove_users))(user_list);
 }
 
 /* 
@@ -374,6 +404,10 @@ extern int account_storage_g_remove_users(List user_list)
  */
 extern int account_storage_g_remove_projects(List project_list)
 {
+	if (slurm_account_storage_init() < 0)
+		return SLURM_ERROR;
+	return (*(g_account_storage_context->ops.remove_projects))
+		(project_list);
 }
 
 /* 
@@ -383,6 +417,10 @@ extern int account_storage_g_remove_projects(List project_list)
  */
 extern int account_storage_g_remove_clusters(List cluster_list)
 {
+	if (slurm_account_storage_init() < 0)
+		return SLURM_ERROR;
+	return (*(g_account_storage_context->ops.remove_clusters))
+		(cluster_list);
 }
 
 /* 
@@ -392,6 +430,10 @@ extern int account_storage_g_remove_clusters(List cluster_list)
  */
 extern int account_storage_g_remove_accounts(List account_list)
 {
+	if (slurm_account_storage_init() < 0)
+		return SLURM_ERROR;
+	return (*(g_account_storage_context->ops.remove_accounts))
+		(account_list);
 }
 
 /* 
@@ -403,6 +445,11 @@ extern int account_storage_g_get_users(List user_list,
 				       List selected_users,
 				       void *params)
 {
+	if (slurm_account_storage_init() < 0)
+		return SLURM_ERROR;
+	return (*(g_account_storage_context->ops.get_users))(user_list,
+							     selected_users,
+							     params);
 }
 
 /* 
@@ -414,6 +461,10 @@ extern int account_storage_g_get_projects(List project_list,
 					  List selected_projects,
 					  void *params)
 {
+	if (slurm_account_storage_init() < 0)
+		return SLURM_ERROR;
+	return (*(g_account_storage_context->ops.get_projects))
+		(project_list, selected_projects, params);
 }
 
 /* 
@@ -425,7 +476,10 @@ extern int account_storage_g_get_clusters(List cluster_list,
 					  List selected_clusters,
 					  void *params)
 {
-
+	if (slurm_account_storage_init() < 0)
+		return SLURM_ERROR;
+	return (*(g_account_storage_context->ops.get_clusters))
+		(cluster_list, selected_clusters, params);
 }
 
 /* 
@@ -440,6 +494,11 @@ extern int account_storage_g_get_accounts(List account_list,
 					  char *cluster,
 					  void *params)
 {
+	if (slurm_account_storage_init() < 0)
+		return SLURM_ERROR;
+	return (*(g_account_storage_context->ops.get_accounts))
+		(account_list, selected_accounts, selected_users,
+		 selected_projects, cluster, params);
 }
 
 /* 
@@ -454,7 +513,11 @@ extern int account_storage_g_get_hourly_usage(List account_list,
 					      char *cluster,
 					      void *params)
 {
-
+	if (slurm_account_storage_init() < 0)
+		return SLURM_ERROR;
+	return (*(g_account_storage_context->ops.get_hourly_usage))
+		(account_list, selected_accounts, selected_users,
+		 selected_projects, cluster, params);
 }
 
 /* 
@@ -469,7 +532,11 @@ extern int account_storage_g_get_daily_usage(List account_list,
 					     char *cluster,
 					     void *params)
 {
-	
+	if (slurm_account_storage_init() < 0)
+		return SLURM_ERROR;
+	return (*(g_account_storage_context->ops.get_daily_usage))
+		(account_list, selected_accounts, selected_users,
+		 selected_projects, cluster, params);
 }
 
 /* 
@@ -484,7 +551,9 @@ extern int account_storage_g_get_monthly_usage(List account_list,
 					       char *cluster,
 					       void *params)
 {
-	int rc = SLURM_SUCCESS;
-
-	return rc;
+	if (slurm_account_storage_init() < 0)
+		return SLURM_ERROR;
+	return (*(g_account_storage_context->ops.get_monthly_usage))
+		(account_list, selected_accounts, selected_users,
+		 selected_projects, cluster, params);
 }

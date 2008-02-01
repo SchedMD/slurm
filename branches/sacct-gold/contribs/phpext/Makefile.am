@@ -32,10 +32,11 @@ install-exec-local:
 
 clean-generic:
 	@cd $(php_dir); \
-	$(phpize) --clean; \
+	$(MAKE) clean; \
 	cd ..;
 
 distclean-generic:
 	@cd $(php_dir); \
+	$(MAKE) clean; \
 	$(phpize) --clean; \
 	cd ..;
