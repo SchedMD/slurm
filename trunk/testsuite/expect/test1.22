@@ -84,6 +84,10 @@ set host_0      ""
 set timeout $max_job_delay
 set srun_pid [spawn $srun -N$node_cnt -n32 -O -l --threads=32 -t1 $bin_hostname]
 expect {
+	-re "Memory required by task is not available" {
+		send_user "\nWARNING: DefMemPerTask is configured too high for this test\n"
+		set host_0 "warn"
+	} 
 	-re "0: ($alpha_numeric)" {
 		set host_0 $expect_out(1,string)
 		exp_continue
