@@ -78,7 +78,6 @@ job_info_to_hv(job_info_t* job_info, HV* hv)
 	STORE_FIELD(hv, job_info, job_min_cores, uint16_t);
 	STORE_FIELD(hv, job_info, job_min_threads, uint16_t);
 	STORE_FIELD(hv, job_info, job_min_memory, uint32_t);
-	STORE_FIELD(hv, job_info, job_max_memory, uint32_t);
 	STORE_FIELD(hv, job_info, job_min_tmp_disk, uint32_t);
 	if(job_info->req_nodes)
 		STORE_FIELD(hv, job_info, req_nodes, charp);
@@ -88,7 +87,7 @@ job_info_to_hv(job_info_t* job_info, HV* hv)
 	/* TODO: exc_node_inx */
 	if(job_info->features)
 		STORE_FIELD(hv, job_info, features, charp);
-	STORE_FIELD(hv, job_info, dependency, uint32_t);
+	STORE_FIELD(hv, job_info, dependency, charp);
 	STORE_FIELD(hv, job_info, exit_code, uint32_t);
 	if(job_info->account)
 		STORE_FIELD(hv, job_info, account, charp);
