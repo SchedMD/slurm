@@ -387,11 +387,11 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/slurm/jobcomp_pgsql.so
 %{_libdir}/slurm/jobcomp_script.so
 %{_libdir}/slurm/jobcomp_slurmdbd.so
-%{_libdir}/slurm/nodeacct_storage_gold.so
-%{_libdir}/slurm/nodeacct_storage_mysql.so
-%{_libdir}/slurm/nodeacct_storage_none.so
-%{_libdir}/slurm/nodeacct_storage_pgsql.so
-%{_libdir}/slurm/nodeacct_storage_slurmdbd.so
+%{_libdir}/slurm/clusteracct_storage_gold.so
+%{_libdir}/slurm/clusteracct_storage_mysql.so
+%{_libdir}/slurm/clusteracct_storage_none.so
+%{_libdir}/slurm/clusteracct_storage_pgsql.so
+%{_libdir}/slurm/clusteracct_storage_slurmdbd.so
 %{_libdir}/slurm/proctrack_pgid.so
 %{_libdir}/slurm/proctrack_linuxproc.so
 %{_libdir}/slurm/sched_backfill.so
