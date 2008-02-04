@@ -153,6 +153,8 @@ documents those changes that are of interest to users and admins.
     Note this will be overwritten in the output file unless JobFileAppend
     is set in slurm.conf. In slurm version 1.3, srun's --open-mode=append
     option will offer this control for each job.
+ -- Change a node's default TmpDisk from 1MB to 0MB and change job's default 
+    disk space requirement from 1MB to 0MB.
 
 * Changes in SLURM 1.2.22
 =========================
