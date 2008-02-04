@@ -1,6 +1,10 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins.
 
+* Changes in SLURM 1.3.0-pre10
+==============================
+
+
 * Changes in SLURM 1.3.0-pre9
 =============================
  -- Add spank support to sbatch. Note that spank_local_user() will be called 
