@@ -1,9 +1,9 @@
 /*****************************************************************************\
- *  read_config.h - functions for reading slurmctld configuration
+ *  slurmdbd.c - function for SlurmDBD
  *****************************************************************************
- *  Copyright (C) 2003 The Regents of the University of California.
+ *  Copyright (C) 2002-2008 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Morris Jette <jette1@llnl.gov> et. al.
+ *  Written by Morris Jette <jette@llnl.gov>
  *  UCRL-CODE-226842.
  *  
  *  This file is part of SLURM, a resource management program.
@@ -35,22 +35,3 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef _HAVE_READ_CONFIG_H
-#define _HAVE_READ_CONFIG_H
-
-/*
- * read_slurm_conf - load the slurm configuration from the configured file. 
- * read_slurm_conf can be called more than once if so desired.
- * IN recover - replace job, node and/or partition data with last saved 
- *              state information depending upon value
- *              0 = use no saved state information
- *              1 = recover saved job state, 
- *                  node DOWN/DRAIN state and reason information
- *              1 = recover only saved job state information
- *              2 = recover all state saved from last slurmctld shutdown
- * RET SLURM_SUCCESS if no error, otherwise an error code
- * Note: Operates on common variables only
- */
-extern int read_slurm_conf(int recover);
-
-#endif /* !_HAVE_READ_CONFIG_H */

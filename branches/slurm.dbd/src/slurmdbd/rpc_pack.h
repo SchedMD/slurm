@@ -1,9 +1,9 @@
 /*****************************************************************************\
- *  read_config.h - functions for reading slurmctld configuration
+ *  rpc_pack.h - functions and definitions for un/packing RPCs.
  *****************************************************************************
- *  Copyright (C) 2003 The Regents of the University of California.
+ *  Copyright (C) 2002-2008 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Morris Jette <jette1@llnl.gov> et. al.
+ *  Written by Morris Jette <jette1@llnl.gov>
  *  UCRL-CODE-226842.
  *  
  *  This file is part of SLURM, a resource management program.
@@ -15,7 +15,7 @@
  *  any later version.
  *
  *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under 
+ *  to link the code of portions of this program with the OpenSSL library under
  *  certain conditions as described in each individual source file, and 
  *  distribute linked combinations including the two. You must obey the GNU 
  *  General Public License in all respects for all of the code used other than 
@@ -35,22 +35,8 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef _HAVE_READ_CONFIG_H
-#define _HAVE_READ_CONFIG_H
+#ifndef _RPC_PACK_H
+#define _RPC_PACK_H
 
-/*
- * read_slurm_conf - load the slurm configuration from the configured file. 
- * read_slurm_conf can be called more than once if so desired.
- * IN recover - replace job, node and/or partition data with last saved 
- *              state information depending upon value
- *              0 = use no saved state information
- *              1 = recover saved job state, 
- *                  node DOWN/DRAIN state and reason information
- *              1 = recover only saved job state information
- *              2 = recover all state saved from last slurmctld shutdown
- * RET SLURM_SUCCESS if no error, otherwise an error code
- * Note: Operates on common variables only
- */
-extern int read_slurm_conf(int recover);
 
-#endif /* !_HAVE_READ_CONFIG_H */
+#endif /* !_RPC_PACK_H */

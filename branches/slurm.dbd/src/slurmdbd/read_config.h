@@ -1,9 +1,9 @@
 /*****************************************************************************\
- *  read_config.h - functions for reading slurmctld configuration
+ *  read_config.h - functions and declarations for reading slurmdbd.conf
  *****************************************************************************
- *  Copyright (C) 2003 The Regents of the University of California.
+ *  Copyright (C) 2003-2008 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Morris Jette <jette1@llnl.gov> et. al.
+ *  Written by Morris Jette <jette1@llnl.gov>
  *  UCRL-CODE-226842.
  *  
  *  This file is part of SLURM, a resource management program.
@@ -38,19 +38,18 @@
 #ifndef _HAVE_READ_CONFIG_H
 #define _HAVE_READ_CONFIG_H
 
+/* SlurmDBD configuration parameters */
+time_t		last_update;		/* time slurmdbd.conf last read	*/
+uint16_t	slurmdbd_debug;		/* Debug level, default=3	*/
+char *		slurmdbd_logfile;	/* Log file			*/
+uint32_t	slurm_user_id;		/* uid of slurm_user_name	*/
+char *		slurm_user_name;	/* user that slurmctld runs as	*/
+
 /*
- * read_slurm_conf - load the slurm configuration from the configured file. 
- * read_slurm_conf can be called more than once if so desired.
- * IN recover - replace job, node and/or partition data with last saved 
- *              state information depending upon value
- *              0 = use no saved state information
- *              1 = recover saved job state, 
- *                  node DOWN/DRAIN state and reason information
- *              1 = recover only saved job state information
- *              2 = recover all state saved from last slurmctld shutdown
+ * read_slurmdbd_conf - load the SlurmDBD configuration from the slurmdbd.conf  
+ *	file. This function can be called more than once if so desired.
  * RET SLURM_SUCCESS if no error, otherwise an error code
- * Note: Operates on common variables only
  */
-extern int read_slurm_conf(int recover);
+extern int read_slurmdbd_conf(void);
 
 #endif /* !_HAVE_READ_CONFIG_H */

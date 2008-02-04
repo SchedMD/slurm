@@ -243,7 +243,7 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 SUBDIRS = common api slurmctld slurmd plugins srun sacct sbcast \
 	scontrol scancel squeue sinfo smap sview salloc \
-	sbatch sattach strigger
+	sbatch sattach strigger slurmdbd
 
 all: all-recursive
 
