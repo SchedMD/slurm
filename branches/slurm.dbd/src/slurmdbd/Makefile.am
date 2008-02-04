@@ -21,7 +21,7 @@ slurmdbd_SOURCES = 	\
 	rpc_pack.c	\
 	rpc_pack.h	\
 	slurmdbd.c  	\
-	slurmdbd.h	\
+	slurmdbd.h
 
 slurmdbd_LDFLAGS = -export-dynamic $(CMD_LDFLAGS) \
 			$(FEDERATION_LDFLAGS)	
