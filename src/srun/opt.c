@@ -2168,7 +2168,7 @@ static void _opt_args(int argc, char **argv)
 		char *fullpath;
 		char *cmd       = remote_argv[0];
 		bool search_cwd = (opt.batch || opt.allocate);
-		int  mode       = (search_cwd) ? R_OK : R_OK | X_OK;
+		int  mode       = (search_cwd) ? R_OK : X_OK;
 
 		if ((fullpath = _search_path(cmd, search_cwd, mode))) {
 			xfree(remote_argv[0]);
