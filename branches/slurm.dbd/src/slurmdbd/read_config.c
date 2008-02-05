@@ -45,6 +45,7 @@
 #include "src/common/macros.h"
 #include "src/common/log.h"
 #include "src/common/parse_config.h"
+#include "src/common/read_config.h"
 #include "src/common/xmalloc.h"
 #include "src/slurmdbd/read_config.h"
 

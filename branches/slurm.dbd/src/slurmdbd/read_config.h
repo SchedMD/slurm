@@ -35,8 +35,8 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef _HAVE_READ_CONFIG_H
-#define _HAVE_READ_CONFIG_H
+#ifndef _DBD_READ_CONFIG_H
+#define _DBD_READ_CONFIG_H
 
 #if HAVE_CONFIG_H
 #  include "config.h"
@@ -80,4 +80,4 @@ extern void free_slurmdbd_conf(void);
  */
 extern int read_slurmdbd_conf(void);
 
-#endif /* !_HAVE_READ_CONFIG_H */
+#endif /* !_DBD_READ_CONFIG_H */
