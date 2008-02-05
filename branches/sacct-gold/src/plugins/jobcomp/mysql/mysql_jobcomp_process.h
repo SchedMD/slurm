@@ -83,8 +83,7 @@ enum {
 	JOBCOMP_REQ_COUNT		
 };
 
-extern void mysql_jobcomp_process_get_jobs(List job_list,
-					   List selected_steps,
+extern List mysql_jobcomp_process_get_jobs(List selected_steps,
 					   List selected_parts,
 					   sacct_parameters_t *params);
 

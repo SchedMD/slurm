@@ -828,26 +828,26 @@ extern int jobacct_storage_p_suspend(struct job_record *job_ptr)
  * returns List of job_rec_t *
  * note List needs to be freed when called
  */
-extern void jobacct_storage_p_get_jobs(List job_list,
-					List selected_steps,
-					List selected_parts,
-					void *params)
+extern List jobacct_storage_p_get_jobs(List selected_steps,
+				       List selected_parts,
+				       void *params)
 {
+	List job_list = NULL;
 #ifdef HAVE_PGSQL
 	if(!jobacct_pgsql_db || PQstatus(jobacct_pgsql_db) != CONNECTION_OK) {
 		char *loc = slurm_get_jobacct_storage_loc();
 		if(jobacct_storage_p_init(loc) == SLURM_ERROR) {
 			xfree(loc);
-			return;
+			return job_list;
 		}
 		xfree(loc);
 	}
 
-	pgsql_jobacct_process_get_jobs(job_list,
-				       selected_steps, selected_parts,
-				       params);	
+	job_list = pgsql_jobacct_process_get_jobs(selected_steps, 
+						  selected_parts,
+						  params);	
 #endif
-	return;
+	return job_list;
 }
 
 /* 

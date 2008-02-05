@@ -301,14 +301,12 @@ int get_data(void)
 	ListIterator itr_step = NULL;
 
 	if(params.opt_completion) {
-		jobs = list_create(jobcomp_destroy_job);
-		g_slurm_jobcomp_get_jobs(jobs, selected_steps,
-					 selected_parts, &params);
+		jobs = g_slurm_jobcomp_get_jobs(selected_steps,
+						selected_parts, &params);
 		return SLURM_SUCCESS;
 	} else {
-		jobs = list_create(destroy_jobacct_job_rec);
-		jobacct_storage_g_get_jobs(jobs, selected_steps,
-					   selected_parts, &params);
+		jobs = jobacct_storage_g_get_jobs(selected_steps,
+						  selected_parts, &params);
 	}
 
 	if (params.opt_fdump) {

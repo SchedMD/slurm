@@ -414,26 +414,27 @@ extern char *slurm_jobcomp_strerror(int errnum)
  * in/out job_list List of job_rec_t *
  * note List needs to be freed when called
  */
-extern void slurm_jobcomp_get_jobs(List job_list, 
-				   List selected_steps,
+extern List slurm_jobcomp_get_jobs(List selected_steps,
 				   List selected_parts,
 				   void *params)
 {
+	List job_list = NULL;
+				   
 #ifdef HAVE_MYSQL
 	if(!jobcomp_mysql_db || mysql_ping(jobcomp_mysql_db) != 0) {
 		char *loc = slurm_get_jobcomp_loc();
 		if(slurm_jobcomp_set_location(loc) == SLURM_ERROR) {
 			xfree(loc);
-			return;
+			return job_list;
 		}
 		xfree(loc);
 	}
 
-	mysql_jobcomp_process_get_jobs(job_list, 
-				       selected_steps, selected_parts,
-				       params);	
+	job_list = mysql_jobcomp_process_get_jobs(selected_steps,
+						  selected_parts,
+						  params);	
 #endif 
-	return;
+	return job_list;
 }
 
 /* 

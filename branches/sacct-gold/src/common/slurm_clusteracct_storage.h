@@ -59,4 +59,14 @@ extern int clusteracct_storage_g_node_up(struct node_record *node_ptr,
 extern int clusteracct_storage_g_cluster_procs(uint32_t procs,
 					       time_t event_time);
 
+extern List clusteracct_storage_g_get_hourly_usage(char *cluster, time_t start, 
+						   time_t end, void *params);
+
+extern List clusteracct_storage_g_get_daily_usage(char *cluster, time_t start, 
+						  time_t end, void *params);
+
+extern List clusteracct_storage_g_get_monthly_usage(char *cluster, 
+						    time_t start, 
+						    time_t end,
+						    void *params);
 #endif /*_SLURM_CLUSTERACCT_STORAGE_H*/

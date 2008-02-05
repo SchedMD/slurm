@@ -59,8 +59,7 @@ static void _do_fdump(PGresult *result, int lc)
 	return;
 }
 
-extern void pgsql_jobcomp_process_get_jobs(List job_list,
-					   List selected_steps,
+extern List pgsql_jobcomp_process_get_jobs(List selected_steps,
 					   List selected_parts,
 					   sacct_parameters_t *params)
 {
@@ -77,6 +76,7 @@ extern void pgsql_jobcomp_process_get_jobs(List job_list,
 	jobcomp_job_rec_t *job = NULL;
 	char time_str[32];
 	time_t temp_time;
+	List job_list = NULL;
 
 	if(selected_steps && list_count(selected_steps)) {
 		set = 0;
@@ -136,10 +136,11 @@ extern void pgsql_jobcomp_process_get_jobs(List job_list,
 	if(!(result =
 	     pgsql_db_query_ret(jobcomp_pgsql_db, query))) {
 		xfree(query);
-		return;
+		return NULL;
 	}
 	xfree(query);
 	
+	job_list = list_create(jobcomp_destroy_job);
 	for (i = 0; i < PQntuples(result); i++) {
 		
 		if (params->opt_fdump) {
@@ -210,7 +211,7 @@ extern void pgsql_jobcomp_process_get_jobs(List job_list,
 	}
 	
 	PQclear(result);
-	return;
+	return job_list;
 }
 
 extern void pgsql_jobcomp_process_archive(List selected_parts,

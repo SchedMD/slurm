@@ -100,11 +100,10 @@ extern char *g_slurm_jobcomp_strerror(int errnum);
 
 /* 
  * get info from the storage 
- * in/out job_list List of job_rec_t *
+ * returns List of jobcomp_job_rec_t *
  * note List needs to be freed when called
  */
-extern void g_slurm_jobcomp_get_jobs(List job_list, 
-				     List selected_steps,
+extern List g_slurm_jobcomp_get_jobs(List selected_steps,
 				     List selected_parts,
 				     void *params);
 

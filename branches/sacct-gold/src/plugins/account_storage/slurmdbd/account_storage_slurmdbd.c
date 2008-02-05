@@ -138,8 +138,8 @@ extern int init ( void )
 
 	init_gold(cluster_name, keyfile, host, port);
 
-	if(!gold_account_list) 
-		gold_account_list = list_create(_destroy_gold_account);
+//	if(!gold_account_list) 
+//		gold_account_list = list_create(_destroy_gold_account);
 		
 	xfree(keyfile);
 	xfree(host);
@@ -151,8 +151,8 @@ extern int init ( void )
 extern int fini ( void )
 {
 	xfree(cluster_name);
-	if(gold_account_list) 
-		list_destroy(gold_account_list);
+//	if(gold_account_list) 
+//		list_destroy(gold_account_list);
 	fini_gold();
 	return SLURM_SUCCESS;
 }
@@ -164,6 +164,7 @@ extern int fini ( void )
  */
 extern int account_storage_p_add_users(List user_list)
 {
+	return SLURM_SUCCESS;
 }
 
 /* 
@@ -173,6 +174,7 @@ extern int account_storage_p_add_users(List user_list)
  */
 extern int account_storage_p_add_projects(List project_list)
 {
+	return SLURM_SUCCESS;
 }
 
 /* 
@@ -182,6 +184,7 @@ extern int account_storage_p_add_projects(List project_list)
  */
 extern int account_storage_p_add_clusters(List cluster_list)
 {
+	return SLURM_SUCCESS;
 }
 
 /* 
@@ -191,6 +194,7 @@ extern int account_storage_p_add_clusters(List cluster_list)
  */
 extern int account_storage_p_add_accounts(List account_list)
 {
+	return SLURM_SUCCESS;
 }
 
 /* 
@@ -200,6 +204,7 @@ extern int account_storage_p_add_accounts(List account_list)
  */
 extern int account_storage_p_modify_users(List user_list)
 {
+	return SLURM_SUCCESS;
 }
 
 /* 
@@ -209,6 +214,7 @@ extern int account_storage_p_modify_users(List user_list)
  */
 extern int account_storage_p_modify_projects(List project_list)
 {
+	return SLURM_SUCCESS;
 }
 
 /* 
@@ -218,6 +224,7 @@ extern int account_storage_p_modify_projects(List project_list)
  */
 extern int account_storage_p_modify_clusters(List cluster_list)
 {
+	return SLURM_SUCCESS;
 }
 
 /* 
@@ -227,6 +234,7 @@ extern int account_storage_p_modify_clusters(List cluster_list)
  */
 extern int account_storage_p_modify_accounts(List account_list)
 {
+	return SLURM_SUCCESS;
 }
 
 /* 
@@ -236,6 +244,7 @@ extern int account_storage_p_modify_accounts(List account_list)
  */
 extern int account_storage_p_remove_users(List user_list)
 {
+	return SLURM_SUCCESS;
 }
 
 /* 
@@ -245,6 +254,7 @@ extern int account_storage_p_remove_users(List user_list)
  */
 extern int account_storage_p_remove_projects(List project_list)
 {
+	return SLURM_SUCCESS;
 }
 
 /* 
@@ -254,6 +264,7 @@ extern int account_storage_p_remove_projects(List project_list)
  */
 extern int account_storage_p_remove_clusters(List cluster_list)
 {
+	return SLURM_SUCCESS;
 }
 
 /* 
@@ -263,6 +274,7 @@ extern int account_storage_p_remove_clusters(List cluster_list)
  */
 extern int account_storage_p_remove_accounts(List account_list)
 {
+	return SLURM_SUCCESS;
 }
 
 /* 
@@ -270,10 +282,10 @@ extern int account_storage_p_remove_accounts(List account_list)
  * returns List of user_rec_t *
  * note List needs to be freed when called
  */
-extern int account_storage_p_get_users(List user_list,
-				       List selected_users,
-				       void *params)
+extern List account_storage_p_get_users(List selected_users,
+					void *params)
 {
+	return NULL;
 }
 
 /* 
@@ -281,10 +293,10 @@ extern int account_storage_p_get_users(List user_list,
  * returns List of project_rec_t *
  * note List needs to be freed when called
  */
-extern int account_storage_p_get_projects(List project_list,
-					  List selected_projects,
-					  void *params)
+extern List account_storage_p_get_projects(List selected_projects,
+					   void *params)
 {
+	return NULL;
 }
 
 /* 
@@ -292,11 +304,10 @@ extern int account_storage_p_get_projects(List project_list,
  * returns List of cluster_rec_t *
  * note List needs to be freed when called
  */
-extern int account_storage_p_get_clusters(List cluster_list,
-					  List selected_clusters,
-					  void *params)
+extern List account_storage_p_get_clusters(List selected_clusters,
+					   void *params)
 {
-
+	return NULL;
 }
 
 /* 
@@ -304,13 +315,14 @@ extern int account_storage_p_get_clusters(List cluster_list,
  * returns List of acct_rec_t *
  * note List needs to be freed when called
  */
-extern int account_storage_p_get_accounts(List account_list,
-					  List selected_accounts,
-					  List selected_users,
-					  List selected_projects,
-					  char *cluster,
-					  void *params)
+extern List account_storage_p_get_accounts(List account_list,
+					   List selected_accounts,
+					   List selected_users,
+					   List selected_projects,
+					   char *cluster,
+					   void *params)
 {
+	return NULL;
 }
 
 /* 
@@ -318,42 +330,45 @@ extern int account_storage_p_get_accounts(List account_list,
  * returns List of acct_rec_t *
  * note List needs to be freed when called
  */
-extern int account_storage_p_get_hourly_usage(List account_list,
-					      List selected_accounts,
-					      List selected_users,
-					      List selected_projects,
-					      char *cluster,
-					      void *params)
-{
-
-}
-
-/* 
- * get info from the storage 
- * returns List of acct_rec_t *
- * note List needs to be freed when called
- */
-extern int account_storage_p_get_daily_usage(List account_list,
-					     List selected_accounts,
-					     List selected_users,
-					     List selected_projects,
-					     char *cluster,
-					     void *params)
-{
-	
-}
-
-/* 
- * get info from the storage 
- * returns List of acct_rec_t *
- * note List needs to be freed when called
- */
-extern int account_storage_p_get_monthly_usage(List account_list,
-					       List selected_accounts,
+extern List account_storage_p_get_hourly_usage(List selected_accounts,
 					       List selected_users,
 					       List selected_projects,
 					       char *cluster,
+					       time_t start, 
+					       time_t end,
 					       void *params)
 {
-	
+	return NULL;
+}
+
+/* 
+ * get info from the storage 
+ * returns List of acct_rec_t *
+ * note List needs to be freed when called
+ */
+extern List account_storage_p_get_daily_usage(List selected_accounts,
+					      List selected_users,
+					      List selected_projects,
+					      char *cluster,
+					      time_t start, 
+					      time_t end,
+					      void *params)
+{
+	return NULL;	
+}
+
+/* 
+ * get info from the storage 
+ * returns List of acct_rec_t *
+ * note List needs to be freed when called
+ */
+extern List account_storage_p_get_monthly_usage(List selected_accounts,
+						List selected_users,
+						List selected_projects,
+						char *cluster,
+						time_t start, 
+						time_t end,
+						void *params)
+{
+	return NULL;	
 }

@@ -63,12 +63,11 @@ typedef struct slurm_jobacct_storage_ops {
 	int  (*jobacct_storage_step_start)    (struct step_record *step_ptr);
 	int  (*jobacct_storage_step_complete) (struct step_record *step_ptr);
 	int  (*jobacct_storage_job_suspend)   (struct job_record *job_ptr);
-	List (*jobacct_storage_get_jobs)      (List job_list,
-					       List selected_steps,
+	List (*jobacct_storage_get_jobs)      (List selected_steps,
 					       List selected_parts,
 					       void *params);	
 	void (*jobacct_storage_archive)       (List selected_parts,
-				       void *params);
+					       void *params);
 	
 } slurm_jobacct_storage_ops_t;
 
@@ -327,16 +326,14 @@ extern int jobacct_storage_g_job_suspend (struct job_record *job_ptr)
  * returns List of job_rec_t *
  * note List needs to be freed when called
  */
-extern void jobacct_storage_g_get_jobs(List job_list,
-					List selected_steps,
-					List selected_parts,
-					void *params)
+extern List jobacct_storage_g_get_jobs(List selected_steps,
+				       List selected_parts,
+				       void *params)
 {
 	if (slurm_jobacct_storage_init() < 0)
-		return;
- 	(*(g_jobacct_storage_context->ops.jobacct_storage_get_jobs))
-		(job_list, selected_steps, selected_parts, params);
-	return;
+		return NULL;
+ 	return (*(g_jobacct_storage_context->ops.jobacct_storage_get_jobs))
+		(selected_steps, selected_parts, params);
 }
 
 /* 

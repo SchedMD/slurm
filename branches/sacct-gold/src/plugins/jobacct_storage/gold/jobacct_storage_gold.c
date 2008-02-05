@@ -563,10 +563,9 @@ extern int jobacct_storage_p_suspend(struct job_record *job_ptr)
  * returns List of job_rec_t *
  * note List needs to be freed when called
  */
-extern int jobacct_storage_p_get_jobs(List job_list,
-				      List selected_steps,
-				      List selected_parts,
-				      void *params)
+extern List jobacct_storage_p_get_jobs(List selected_steps,
+				       List selected_parts,
+				       void *params)
 {
 	gold_request_t *gold_request = create_gold_request(GOLD_OBJECT_JOB,
 							   GOLD_ACTION_QUERY);
@@ -574,16 +573,17 @@ extern int jobacct_storage_p_get_jobs(List job_list,
 	gold_response_entry_t *resp_entry = NULL;
 	gold_name_value_t *name_val = NULL;
 	char tmp_buff[50];
-	int rc = 0, set = 0;;
+	int set = 0;;
 	char *selected_part = NULL;
 	jobacct_selected_step_t *selected_step = NULL;
 	jobacct_job_rec_t *job = NULL;
 	jobacct_header_t header;
 	ListIterator itr = NULL;
 	ListIterator itr2 = NULL;
+	List job_list = NULL;
 
 	if(!gold_request) 
-		return rc;
+		return NULL;
 
 	if(selected_steps && list_count(selected_steps)) {
 		itr = list_iterator_create(selected_steps);
@@ -640,9 +640,10 @@ extern int jobacct_storage_p_get_jobs(List job_list,
 
 	if(!gold_response) {
 		error("_check_for_job: no response received");
-		return SLURM_ERROR;
+		return NULL;
 	}
-
+	
+	job_list = list_create(destroy_jobacct_job_rec);
 	if(gold_response->entry_cnt > 0) {
 		itr = list_iterator_create(gold_response->entries);
 		while((resp_entry = list_next(itr))) {
@@ -742,7 +743,7 @@ extern int jobacct_storage_p_get_jobs(List job_list,
 	}
 	destroy_gold_response(gold_response);
 	
-	return rc;
+	return job_list;
 }
 
 /* 

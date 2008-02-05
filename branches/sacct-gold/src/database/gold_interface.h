@@ -71,14 +71,23 @@
 #define GOLD_OBJECT_JOB_STR "Job"
 #define GOLD_OBJECT_ROLEUSER_STR "RoleUser"
 #define GOLD_OBJECT_EVENT_STR "EventLog"
+#define GOLD_OBJECT_MACHINE_HOUR_STR "MachineHourUsage"
+#define GOLD_OBJECT_MACHINE_DAY_STR "MachineDayUsage"
+#define GOLD_OBJECT_MACHINE_MONTH_STR "MachineMonthUsage"
+#define GOLD_OBJECT_ACCOUNT_HOUR_STR "AccountHourUsage"
+#define GOLD_OBJECT_ACCOUNT_DAY_STR "AccountDayUsage"
+#define GOLD_OBJECT_ACCOUNT_MONTH_STR "AccountMonthUsage"
 
 typedef enum {
 	GOLD_ACTION_QUERY,
 	GOLD_ACTION_CREATE,
 	GOLD_ACTION_MODIFY,
-	GOLD_ACTION_DELETE
+	GOLD_ACTION_DELETE,
+	GOLD_ACTION_COUNT
 } gold_action_t;
 
+/* When changing this you would also make GOLD_OBJECT_STR match
+ * defined in gold_interface.c */
 typedef enum {
 	GOLD_OBJECT_ACCOUNT,
 	GOLD_OBJECT_USER,
@@ -86,7 +95,14 @@ typedef enum {
 	GOLD_OBJECT_MACHINE,
 	GOLD_OBJECT_JOB,
 	GOLD_OBJECT_ROLEUSER,
-	GOLD_OBJECT_EVENT
+	GOLD_OBJECT_EVENT,
+	GOLD_OBJECT_MACHINE_HOUR,
+	GOLD_OBJECT_MACHINE_DAY,
+	GOLD_OBJECT_MACHINE_MONTH,
+	GOLD_OBJECT_ACCOUNT_HOUR,
+	GOLD_OBJECT_ACCOUNT_DAY,
+	GOLD_OBJECT_ACCOUNT_MONTH,
+	GOLD_OBJECT_COUNT
 } gold_object_t;
 
 typedef enum {
@@ -94,7 +110,8 @@ typedef enum {
 	GOLD_OPERATOR_G,
 	GOLD_OPERATOR_GE,
 	GOLD_OPERATOR_L,
-	GOLD_OPERATOR_LE
+	GOLD_OPERATOR_LE,
+	GOLD_OPERATOR_COUNT
 } gold_operator_t;
 
 typedef struct {
@@ -126,6 +143,7 @@ typedef struct {
 	int rc;
 } gold_response_t;
 
+extern char *GOLD_OBJECT_STR[];
 
 extern int init_gold(char *machine, char *keyfile, char *host, uint16_t port);
 extern int fini_gold();

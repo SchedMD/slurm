@@ -62,6 +62,12 @@ typedef struct slurm_clusteracct_storage_ops {
 	int  (*node_up)            (struct node_record *node_ptr,
 				    time_t event_time);
 	int  (*cluster_procs)      (uint32_t procs, time_t event_time);
+	List (*get_hourly_usage)   (char *cluster, time_t start, time_t end,
+				    void *params);
+	List (*get_daily_usage)    (char *cluster, time_t start, time_t end,
+				    void *params);
+	List (*get_monthly_usage)  (char *cluster, time_t start, time_t end,
+				    void *params);	
 } slurm_clusteracct_storage_ops_t;
 
 typedef struct slurm_clusteracct_storage_context {
@@ -100,6 +106,9 @@ static slurm_clusteracct_storage_ops_t * _clusteracct_storage_get_ops(
 		"clusteracct_storage_p_node_down",
 		"clusteracct_storage_p_node_up",
 		"clusteracct_storage_p_cluster_procs"
+		"clusteracct_storage_p_get_hourly_usage",
+		"clusteracct_storage_p_get_daily_usage",
+		"clusteracct_storage_p_get_monthly_usage"
 	};
 	int n_syms = sizeof( syms ) / sizeof( char * );
 
@@ -237,8 +246,8 @@ extern int slurm_clusteracct_storage_fini(void)
 }
 
 extern int clusteracct_storage_g_node_down(struct node_record *node_ptr,
-					time_t event_time,
-					char *reason)
+					   time_t event_time,
+					   char *reason)
 {
 	if (slurm_clusteracct_storage_init() < 0)
 		return SLURM_ERROR;
@@ -247,7 +256,7 @@ extern int clusteracct_storage_g_node_down(struct node_record *node_ptr,
 }
 
 extern int clusteracct_storage_g_node_up(struct node_record *node_ptr,
-				      time_t event_time)
+					 time_t event_time)
 {
 	if (slurm_clusteracct_storage_init() < 0)
 		return SLURM_ERROR;
@@ -266,3 +275,50 @@ extern int clusteracct_storage_g_cluster_procs(uint32_t procs,
 }
 
 
+/* 
+ * get info from the storage 
+ * returns List of clusteracct_rec_t *
+ * note List needs to be freed when called
+ */
+extern List clusteracct_storage_g_get_hourly_usage(char *cluster, 
+						   time_t start, 
+						   time_t end,
+						   void *params)
+{
+	if (slurm_clusteracct_storage_init() < 0)
+		return NULL;
+	return (*(g_clusteracct_storage_context->ops.get_hourly_usage))
+		(cluster, start, end, params);
+}
+
+/* 
+ * get info from the storage 
+ * returns List of clusteracct_rec_t *
+ * note List needs to be freed when called
+ */
+extern List clusteracct_storage_g_get_daily_usage(char *cluster, 
+						  time_t start, 
+						  time_t end,
+						  void *params)
+{
+	if (slurm_clusteracct_storage_init() < 0)
+		return NULL;
+	return (*(g_clusteracct_storage_context->ops.get_daily_usage))
+		(cluster, start, end, params);
+}
+
+/* 
+ * get info from the storage 
+ * fills in List of clusteracct_rec_t *
+ * note List needs to be freed when called
+ */
+extern List clusteracct_storage_g_get_monthly_usage(char *cluster, 
+						    time_t start, 
+						    time_t end,
+						    void *params)
+{
+	if (slurm_clusteracct_storage_init() < 0)
+		return NULL;
+	return (*(g_clusteracct_storage_context->ops.get_monthly_usage))
+		(cluster, start, end, params);
+}

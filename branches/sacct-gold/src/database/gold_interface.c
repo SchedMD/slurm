@@ -47,6 +47,24 @@
 
 #define MAX_RETRY 5
 
+/* This should be updated to match the gold_object_t enum */
+char *GOLD_OBJECT_STR[] = {
+	"Account", 
+	"User", 
+	"Project", 
+	"Machine", 
+	"Job", 
+	"RoleUser", 
+	"EventLog",
+	"MachineHourUsage", 
+	"MachineDayUsage", 
+	"MachineMonthUsage",
+	"AccountHourUsage", 
+	"AccountDayUsage", 
+	"AccountMonthUsage",
+	NULL
+};
+
 static char *gold_machine = NULL;
 static char *gold_key = NULL;
 static char *gold_host = NULL;
@@ -328,34 +346,12 @@ extern gold_response_t *get_gold_response(gold_request_t *gold_request)
 	if(!timeout) 
 		timeout = (slurm_get_msg_timeout() * 1000);
 	
-
-	switch(gold_request->object) {
-	case GOLD_OBJECT_ACCOUNT:
-		object = GOLD_OBJECT_ACCOUNT_STR;
-		break;
-	case GOLD_OBJECT_USER:
-		object = GOLD_OBJECT_USER_STR;
-		break;
-	case GOLD_OBJECT_PROJECT:
-		object = GOLD_OBJECT_PROJECT_STR;
-		break;
-	case GOLD_OBJECT_MACHINE:
-		object = GOLD_OBJECT_MACHINE_STR;
-		break;
-	case GOLD_OBJECT_JOB:
-		object = GOLD_OBJECT_JOB_STR;
-		break;
-	case GOLD_OBJECT_EVENT:
-		object = GOLD_OBJECT_EVENT_STR;
-		break;
-	case GOLD_OBJECT_ROLEUSER:
-		object = GOLD_OBJECT_ROLEUSER_STR;
-		break;
-	default:
+	if(gold_request->object >= GOLD_OBJECT_COUNT) {
 		error("get_gold_response: "
 		      "unsupported object %d", gold_request->object);
 		return NULL;
 	}
+	object = GOLD_OBJECT_STR[gold_request->object];
 
 	switch(gold_request->action) {
 	case GOLD_ACTION_QUERY:

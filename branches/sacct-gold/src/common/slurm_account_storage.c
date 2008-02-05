@@ -68,38 +68,37 @@ typedef struct slurm_account_storage_ops {
 	int  (*remove_projects)    (List project_list);
 	int  (*remove_clusters)    (List cluster_list);
 	int  (*remove_accounts)    (List account_list);
-	int  (*get_users)          (List user_list,
-				    List selected_users,
+	List (*get_users)          (List selected_users,
 				    void *params);
-	int  (*get_projects)       (List project_list,
-				    List selected_projects,
+	List (*get_projects)       (List selected_projects,
 				    void *param);
-	int  (*get_clusters)       (List cluster_list,
-				    List selected_clusters,
+	List (*get_clusters)       (List selected_clusters,
 				    void *params);
-	int  (*get_accounts)       (List account_list,
-				    List selected_accounts,
+	List (*get_accounts)       (List selected_accounts,
 				    List selected_users,
 				    List selected_projects,
 				    char *cluster,
 				    void *params);
-	int (*get_hourly_usage)    (List account_list,
-				    List selected_accounts,
+	List (*get_hourly_usage)   (List selected_accounts,
 				    List selected_users,
 				    List selected_projects,
 				    char *cluster,
+				    time_t start, 
+				    time_t end,
 				    void *params);
-	int (*get_daily_usage)     (List account_list,
-				    List selected_accounts,
+	List (*get_daily_usage)    (List selected_accounts,
 				    List selected_users,
 				    List selected_projects,
 				    char *cluster,
+				    time_t start, 
+				    time_t end,
 				    void *params);
-	int (*get_monthly_usage)   (List account_list,
-				    List selected_accounts,
+	List (*get_monthly_usage)  (List selected_accounts,
 				    List selected_users,
 				    List selected_projects,
 				    char *cluster,
+				    time_t start, 
+				    time_t end,
 				    void *params);
 } slurm_account_storage_ops_t;
 
@@ -441,14 +440,12 @@ extern int account_storage_g_remove_accounts(List account_list)
  * returns List of user_rec_t *
  * note List needs to be freed when called
  */
-extern int account_storage_g_get_users(List user_list,
-				       List selected_users,
-				       void *params)
+extern List account_storage_g_get_users(List selected_users,
+					void *params)
 {
 	if (slurm_account_storage_init() < 0)
-		return SLURM_ERROR;
-	return (*(g_account_storage_context->ops.get_users))(user_list,
-							     selected_users,
+		return NULL;
+	return (*(g_account_storage_context->ops.get_users))(selected_users,
 							     params);
 }
 
@@ -457,14 +454,13 @@ extern int account_storage_g_get_users(List user_list,
  * returns List of project_rec_t *
  * note List needs to be freed when called
  */
-extern int account_storage_g_get_projects(List project_list,
-					  List selected_projects,
-					  void *params)
+extern List account_storage_g_get_projects(List selected_projects,
+					   void *params)
 {
 	if (slurm_account_storage_init() < 0)
-		return SLURM_ERROR;
+		return NULL;
 	return (*(g_account_storage_context->ops.get_projects))
-		(project_list, selected_projects, params);
+		(selected_projects, params);
 }
 
 /* 
@@ -472,14 +468,13 @@ extern int account_storage_g_get_projects(List project_list,
  * returns List of cluster_rec_t *
  * note List needs to be freed when called
  */
-extern int account_storage_g_get_clusters(List cluster_list,
-					  List selected_clusters,
-					  void *params)
+extern List account_storage_g_get_clusters(List selected_clusters,
+					   void *params)
 {
 	if (slurm_account_storage_init() < 0)
-		return SLURM_ERROR;
+		return NULL;
 	return (*(g_account_storage_context->ops.get_clusters))
-		(cluster_list, selected_clusters, params);
+		(selected_clusters, params);
 }
 
 /* 
@@ -487,17 +482,16 @@ extern int account_storage_g_get_clusters(List cluster_list,
  * returns List of acct_rec_t *
  * note List needs to be freed when called
  */
-extern int account_storage_g_get_accounts(List account_list,
-					  List selected_accounts,
-					  List selected_users,
-					  List selected_projects,
-					  char *cluster,
-					  void *params)
+extern List account_storage_g_get_accounts(List selected_accounts,
+					   List selected_users,
+					   List selected_projects,
+					   char *cluster,
+					   void *params)
 {
 	if (slurm_account_storage_init() < 0)
-		return SLURM_ERROR;
+		return NULL;
 	return (*(g_account_storage_context->ops.get_accounts))
-		(account_list, selected_accounts, selected_users,
+		(selected_accounts, selected_users,
 		 selected_projects, cluster, params);
 }
 
@@ -506,54 +500,57 @@ extern int account_storage_g_get_accounts(List account_list,
  * returns List of acct_rec_t *
  * note List needs to be freed when called
  */
-extern int account_storage_g_get_hourly_usage(List account_list,
-					      List selected_accounts,
-					      List selected_users,
-					      List selected_projects,
-					      char *cluster,
-					      void *params)
-{
-	if (slurm_account_storage_init() < 0)
-		return SLURM_ERROR;
-	return (*(g_account_storage_context->ops.get_hourly_usage))
-		(account_list, selected_accounts, selected_users,
-		 selected_projects, cluster, params);
-}
-
-/* 
- * get info from the storage 
- * returns List of acct_rec_t *
- * note List needs to be freed when called
- */
-extern int account_storage_g_get_daily_usage(List account_list,
-					     List selected_accounts,
-					     List selected_users,
-					     List selected_projects,
-					     char *cluster,
-					     void *params)
-{
-	if (slurm_account_storage_init() < 0)
-		return SLURM_ERROR;
-	return (*(g_account_storage_context->ops.get_daily_usage))
-		(account_list, selected_accounts, selected_users,
-		 selected_projects, cluster, params);
-}
-
-/* 
- * get info from the storage 
- * returns List of acct_rec_t *
- * note List needs to be freed when called
- */
-extern int account_storage_g_get_monthly_usage(List account_list,
-					       List selected_accounts,
+extern List account_storage_g_get_hourly_usage(List selected_accounts,
 					       List selected_users,
 					       List selected_projects,
 					       char *cluster,
+					       time_t start,
+					       time_t end,
 					       void *params)
 {
 	if (slurm_account_storage_init() < 0)
-		return SLURM_ERROR;
+		return NULL;
+	return (*(g_account_storage_context->ops.get_hourly_usage))
+		(selected_accounts, selected_users,
+		 selected_projects, cluster, start, end, params);
+}
+
+/* 
+ * get info from the storage 
+ * returns List of acct_rec_t *
+ * note List needs to be freed when called
+ */
+extern List account_storage_g_get_daily_usage(List selected_accounts,
+					      List selected_users,
+					      List selected_projects,
+					      char *cluster,
+					      time_t start,
+					      time_t end,
+					      void *params)
+{
+	if (slurm_account_storage_init() < 0)
+		return NULL;
+	return (*(g_account_storage_context->ops.get_daily_usage))
+		(selected_accounts, selected_users,
+		 selected_projects, cluster, start, end, params);
+}
+
+/* 
+ * get info from the storage 
+ * returns List of acct_rec_t *
+ * note List needs to be freed when called
+ */
+extern List account_storage_g_get_monthly_usage(List selected_accounts,
+						List selected_users,
+						List selected_projects,
+						char *cluster,
+						time_t start,
+						time_t end,
+						void *params)
+{
+	if (slurm_account_storage_init() < 0)
+		return NULL;
 	return (*(g_account_storage_context->ops.get_monthly_usage))
-		(account_list, selected_accounts, selected_users,
-		 selected_projects, cluster, params);
+		(selected_accounts, selected_users,
+		 selected_projects, cluster, start, end, params);
 }

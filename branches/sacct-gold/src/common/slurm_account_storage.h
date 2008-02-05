@@ -137,50 +137,60 @@ extern int account_storage_g_remove_accounts(List account_list);
  * returns List of user_rec_t *
  * note List needs to be freed when called
  */
-extern int account_storage_g_get_users(List user_list,
-				       List selected_users,
-				       void *params);
+extern List account_storage_g_get_users(List selected_users,
+					void *params);
 
 /* 
  * get info from the storage 
  * returns List of project_rec_t *
  * note List needs to be freed when called
  */
-extern int account_storage_g_get_projects(List project_list,
-					  List selected_projects,
-					  void *params);
+extern List account_storage_g_get_projects(List selected_projects,
+					   void *params);
 
 /* 
  * get info from the storage 
  * returns List of cluster_rec_t *
  * note List needs to be freed when called
  */
-extern int account_storage_g_get_clusters(List cluster_list,
-					  List selected_clusters,
-					  void *params);
+extern List account_storage_g_get_clusters(List selected_clusters,
+					   void *params);
 
 /* 
  * get info from the storage 
  * returns List of acct_rec_t *
  * note List needs to be freed when called
  */
-extern int account_storage_g_get_accounts(List account_list,
-					  List selected_accounts,
-					  List selected_users,
-					  List selected_projects,
-					  char *cluster,
-					  void *params);
+extern List account_storage_g_get_accounts(List selected_accounts,
+					   List selected_users,
+					   List selected_projects,
+					   char *cluster,
+					   void *params);
 
 /* 
  * get info from the storage 
  * returns List of acct_rec_t *
  * note List needs to be freed when called
  */
-extern int account_storage_g_get_hourly_usage(List account_list,
-					      List selected_accounts,
+extern List account_storage_g_get_hourly_usage(List selected_accounts,
+					       List selected_users,
+					       List selected_projects,
+					       char *cluster,
+					       time_t start,
+					       time_t end,
+					       void *params);
+
+/* 
+ * get info from the storage 
+ * returns List of acct_rec_t *
+ * note List needs to be freed when called
+ */
+extern List account_storage_g_get_daily_usage(List selected_accounts,
 					      List selected_users,
 					      List selected_projects,
 					      char *cluster,
+					      time_t start,
+					      time_t end,
 					      void *params);
 
 /* 
@@ -188,23 +198,12 @@ extern int account_storage_g_get_hourly_usage(List account_list,
  * returns List of acct_rec_t *
  * note List needs to be freed when called
  */
-extern int account_storage_g_get_daily_usage(List account_list,
-					     List selected_accounts,
-					     List selected_users,
-					     List selected_projects,
-					     char *cluster,
-					     void *params);
-
-/* 
- * get info from the storage 
- * returns List of acct_rec_t *
- * note List needs to be freed when called
- */
-extern int account_storage_g_get_monthly_usage(List account_list,
-					       List selected_accounts,
-					       List selected_users,
-					       List selected_projects,
-					       char *cluster,
-					       void *params);
+extern List account_storage_g_get_monthly_usage(List selected_accounts,
+						List selected_users,
+						List selected_projects,
+						char *cluster,
+						time_t start,
+						time_t end,
+						void *params);
 
 #endif /*_SLURM_ACCOUNT_STORAGE_H*/
