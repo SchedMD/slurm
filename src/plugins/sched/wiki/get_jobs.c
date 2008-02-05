@@ -301,8 +301,14 @@ static char *	_dump_job(struct job_record *job_ptr, int state_info)
 	}
 
 	if (job_ptr->account) {
-		snprintf(tmp, sizeof(tmp),
-			"ACCOUNT=%s;", job_ptr->account);
+		/* allow QOS spec in form "qos-name" */
+		if (!strncmp(job_ptr->account,"qos-",4)) {
+			snprintf(tmp, sizeof(tmp),
+				 "QOS=%s;", job_ptr->account + 4);
+		} else {
+			snprintf(tmp, sizeof(tmp),
+				"ACCOUNT=%s;", job_ptr->account);
+		}
 		xstrcat(buf, tmp);
 	}
 
