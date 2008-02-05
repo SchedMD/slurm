@@ -39,11 +39,13 @@
 #define _HAVE_READ_CONFIG_H
 
 /* SlurmDBD configuration parameters */
-time_t		last_update;		/* time slurmdbd.conf last read	*/
-uint16_t	slurmdbd_debug;		/* Debug level, default=3	*/
-char *		slurmdbd_logfile;	/* Log file			*/
-uint32_t	slurm_user_id;		/* uid of slurm_user_name	*/
-char *		slurm_user_name;	/* user that slurmctld runs as	*/
+struct slurm_dbd_conf {
+	time_t		last_update;		/* time slurmdbd.conf read	*/
+	uint16_t	debug_level;		/* Debug level, default=3	*/
+	char *		log_file;		/* Log file			*/
+	char *		storage_password;	/* password for DB write	*/
+	char *		storage_user_name;	/* user authorized to write DB	*/
+};
 
 /*
  * read_slurmdbd_conf - load the SlurmDBD configuration from the slurmdbd.conf  
