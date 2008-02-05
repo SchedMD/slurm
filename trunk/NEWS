@@ -159,6 +159,10 @@ documents those changes that are of interest to users and admins.
     option will offer this control for each job.
  -- Change a node's default TmpDisk from 1MB to 0MB and change job's default 
     disk space requirement from 1MB to 0MB.
+ -- In sched/wiki (Maui scheduler) specify a QOS (quality of service) by 
+    specifying an account of the form "qos-name".
+ -- In select/linear, fix bug in scheduling required nodes that already have
+    a job running on them (req.load.patch from Chris Holmes, HP).
 
 * Changes in SLURM 1.2.22
 =========================

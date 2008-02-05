@@ -1692,7 +1692,7 @@ static void _opt_args(int argc, char **argv)
 	else if (opt.argc > 0) {
 		char *fullpath;
 
-		if ((fullpath = search_path(opt.cwd, opt.argv[0], false, R_OK|X_OK))) {
+		if ((fullpath = search_path(opt.cwd, opt.argv[0], false, X_OK))) {
 			xfree(opt.argv[0]);
 			opt.argv[0] = fullpath;
 		} 
