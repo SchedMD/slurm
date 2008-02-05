@@ -300,7 +300,7 @@ _pick_best_load(struct job_record *job_ptr, bitstr_t * bitmap,
 		uint32_t req_nodes, bool test_only)
 {
 	bitstr_t *basemap;
-	int i, error_code = EINVAL, node_cnt = 0, prev_cnt = 0, set_cnt;
+	int i, size, error_code = EINVAL, node_cnt = 0, prev_cnt = 0, set_cnt;
 
 	basemap = bit_copy(bitmap);
 	if (basemap == NULL)
@@ -311,7 +311,14 @@ _pick_best_load(struct job_record *job_ptr, bitstr_t * bitmap,
 	    ((req_nodes > min_nodes) && (set_cnt < req_nodes)))
 		return error_code;	/* not usable */
 
+	size = bit_size(bitmap);
 	for (i=0; node_cnt<set_cnt; i++) {
+		/* if req_nodes, then start with those as a baseline */
+		if (job_ptr->details && job_ptr->details->req_node_bitmap) {
+			bit_copybits(bitmap, job_ptr->details->req_node_bitmap);
+		} else {
+			bit_nclear(bitmap, 0, size);
+		}
 		node_cnt = _job_count_bitmap(basemap, bitmap, i);
 		if ((node_cnt == 0) || (node_cnt == prev_cnt))
 			continue;	/* nothing new to test */
@@ -332,7 +339,7 @@ _pick_best_load(struct job_record *job_ptr, bitstr_t * bitmap,
 
 /*
  * Set the bits in 'jobmap' that correspond to bits in the 'bitmap'
- * that are running 'job_cnt' jobs or less, and clear the rest.
+ * that are running 'job_cnt' jobs or less.
  */
 static int
 _job_count_bitmap(bitstr_t * bitmap, bitstr_t * jobmap, int job_cnt) 
@@ -345,8 +352,6 @@ _job_count_bitmap(bitstr_t * bitmap, bitstr_t * jobmap, int job_cnt)
 		    (node_record_table_ptr[i].run_job_cnt <= job_cnt)) {
 			bit_set(jobmap, i);
 			count++;
-		} else {
-			bit_clear(jobmap, i);
 		}
 	}
 	return count;
