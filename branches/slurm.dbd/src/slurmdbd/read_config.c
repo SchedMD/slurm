@@ -35,3 +35,123 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#include <stdlib.h>
+#include <string.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
+#include <slurm/slurm_errno.h>
+
+#include "src/common/macros.h"
+#include "src/common/log.h"
+#include "src/common/parse_config.h"
+#include "src/common/xmalloc.h"
+#include "src/slurmdbd/read_config.h"
+
+/* Global variables */
+pthread_mutex_t conf_mutex = PTHREAD_MUTEX_INITIALIZER;
+slurm_dbd_conf_t *slurmdbd_conf = NULL;
+
+/* Local functions */
+static char * _get_conf_path(void);
+
+/*
+ * free_slurmdbd_conf - free storage associated with the global variable 
+ *	slurmdbd_conf
+ */
+extern void free_slurmdbd_conf(void)
+{
+	slurm_mutex_lock(&conf_mutex);
+	if (slurmdbd_conf) {
+		xfree(slurmdbd_conf->log_file);
+		xfree(slurmdbd_conf->storage_password);
+		xfree(slurmdbd_conf->storage_user);
+		xfree(slurmdbd_conf);
+	}
+	slurm_mutex_unlock(&conf_mutex);
+}
+
+/*
+ * read_slurmdbd_conf - load the SlurmDBD configuration from the slurmdbd.conf  
+ *	file. Store result into global variable slurmdbd_conf. 
+ *	This function can be called more than once.
+ * RET SLURM_SUCCESS if no error, otherwise an error code
+ */
+extern int read_slurmdbd_conf(void)
+{
+	s_p_options_t options[] = {
+		{"DebugLevel", S_P_UINT16},
+		{"LogFile", S_P_STRING},
+		{"StoragePassword", S_P_STRING},
+		{"StorageUser", S_P_STRING},
+		{NULL} };
+	s_p_hashtbl_t *tbl;
+	char *conf_path;
+	struct stat buf;
+
+	/* Set default values */
+	slurm_mutex_lock(&conf_mutex);
+	if (slurmdbd_conf == NULL)
+		slurmdbd_conf = xmalloc(sizeof(slurm_dbd_conf_t));
+	slurmdbd_conf->debug_level = LOG_LEVEL_INFO;
+	xfree(slurmdbd_conf->log_file);
+	xfree(slurmdbd_conf->storage_password);
+	xfree(slurmdbd_conf->storage_user);
+
+	/* Get the slurmdbd.conf path and validate the file */
+	conf_path = _get_conf_path();
+	if ((conf_path == NULL) || (stat(conf_path, &buf) == -1)) {
+		slurm_mutex_unlock(&conf_mutex);
+		error("No slurmdbd.conf file (%s)", conf_path);
+		xfree(conf_path);
+		return SLURM_ERROR;
+	}
+	debug("Reading slurmdbd.conf file %s", conf_path);
+
+	tbl = s_p_hashtbl_create(options);
+	if (s_p_parse_file(tbl, conf_path) == SLURM_ERROR) {
+		fatal("Could not open/read/parse slurmdbd.conf file %s",
+		      conf_path);
+	}
+
+	s_p_get_uint16(&slurmdbd_conf->debug_level,	"DebugLevel", tbl);
+	s_p_get_string(&slurmdbd_conf->log_file,	"LogFile", tbl);
+	s_p_get_string(&slurmdbd_conf->storage_password,"StoragePassword", tbl);
+	s_p_get_string(&slurmdbd_conf->storage_user,	"StorageUser", tbl);
+
+	s_p_hashtbl_destroy(tbl);
+	xfree(conf_path);
+
+	debug("DebugLevel        = %u", slurmdbd_conf->debug_level);
+	debug("LogFile           = %s", slurmdbd_conf->log_file);
+	debug("StoragePassword   = %s", slurmdbd_conf->storage_password);
+	debug("StorageUser       = %s", slurmdbd_conf->storage_user);
+
+	slurm_mutex_unlock(&conf_mutex);
+	return SLURM_SUCCESS;
+}
+
+/* Return the pathname of the slurmdbd.conf file.
+ * xfree() the value returned */
+static char * _get_conf_path(void)
+{
+	char *val = getenv("SLURM_CONF");
+	char *path = NULL;
+	int i;
+
+	if (!val)
+		val = default_slurm_config_file;
+
+	/* Replace file name on end of path */
+	i = strlen(val) + 15;
+	path = xmalloc(i);
+	strcpy(path, val);
+	val = strrchr(path, (int)'/');
+	if (val)	/* absolute path */
+		val++;
+	else		/* not absolute path */
+		val = path;
+	strcpy(val, "slurmdbd.conf");
+
+	return path;
+}

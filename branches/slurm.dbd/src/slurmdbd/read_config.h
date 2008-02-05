@@ -38,14 +38,40 @@
 #ifndef _HAVE_READ_CONFIG_H
 #define _HAVE_READ_CONFIG_H
 
+#if HAVE_CONFIG_H
+#  include "config.h"
+#if HAVE_INTTYPES_H
+#  include <inttypes.h>
+#else  /* !HAVE_INTTYPES_H */
+#  if HAVE_STDINT_H
+#    include <stdint.h>
+#  endif
+#endif  /* HAVE_INTTYPES_H */
+#else   /* !HAVE_CONFIG_H */
+#include <stdint.h>
+#endif  /* HAVE_CONFIG_H */
+
+#include <time.h>
+
 /* SlurmDBD configuration parameters */
-struct slurm_dbd_conf {
-	time_t		last_update;		/* time slurmdbd.conf read	*/
+typedef struct slurm_dbd_conf {
+	time_t		last_update;	 	/* time slurmdbd.conf read	*/
 	uint16_t	debug_level;		/* Debug level, default=3	*/
 	char *		log_file;		/* Log file			*/
 	char *		storage_password;	/* password for DB write	*/
-	char *		storage_user_name;	/* user authorized to write DB	*/
-};
+	char *		storage_user;		/* user authorized to write DB	*/
+} slurm_dbd_conf_t;
+
+extern pthread_mutex_t conf_mutex;
+extern slurm_dbd_conf_t *slurmdbd_conf;
+
+
+/*
+ * free_slurmdbd_conf - free storage associated with the global variable 
+ *	slurmdbd_conf
+ */
+extern void free_slurmdbd_conf(void);
+
 
 /*
  * read_slurmdbd_conf - load the SlurmDBD configuration from the slurmdbd.conf  
