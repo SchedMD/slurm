@@ -47,13 +47,17 @@
 #include "src/common/parse_config.h"
 #include "src/common/read_config.h"
 #include "src/common/xmalloc.h"
+#include "src/common/xstring.h"
 #include "src/slurmdbd/read_config.h"
+
+#define _DEBUG 1
 
 /* Global variables */
 pthread_mutex_t conf_mutex = PTHREAD_MUTEX_INITIALIZER;
 slurm_dbd_conf_t *slurmdbd_conf = NULL;
 
 /* Local functions */
+static void _clear_slurmdbd_conf(void);
 static char * _get_conf_path(void);
 
 /*
@@ -63,13 +67,19 @@ static char * _get_conf_path(void);
 extern void free_slurmdbd_conf(void)
 {
 	slurm_mutex_lock(&conf_mutex);
+	_clear_slurmdbd_conf();
+	xfree(slurmdbd_conf);
+	slurm_mutex_unlock(&conf_mutex);
+}
+
+static void _clear_slurmdbd_conf(void)
+{
 	if (slurmdbd_conf) {
 		xfree(slurmdbd_conf->log_file);
+		xfree(slurmdbd_conf->pid_file);
 		xfree(slurmdbd_conf->storage_password);
 		xfree(slurmdbd_conf->storage_user);
-		xfree(slurmdbd_conf);
 	}
-	slurm_mutex_unlock(&conf_mutex);
 }
 
 /*
@@ -83,6 +93,7 @@ extern int read_slurmdbd_conf(void)
 	s_p_options_t options[] = {
 		{"DebugLevel", S_P_UINT16},
 		{"LogFile", S_P_STRING},
+		{"PidFile", S_P_STRING},
 		{"StoragePassword", S_P_STRING},
 		{"StorageUser", S_P_STRING},
 		{NULL} };
@@ -90,20 +101,19 @@ extern int read_slurmdbd_conf(void)
 	char *conf_path;
 	struct stat buf;
 
-	/* Set default values */
+	/* Set initial values */
 	slurm_mutex_lock(&conf_mutex);
 	if (slurmdbd_conf == NULL)
 		slurmdbd_conf = xmalloc(sizeof(slurm_dbd_conf_t));
 	slurmdbd_conf->debug_level = LOG_LEVEL_INFO;
-	xfree(slurmdbd_conf->log_file);
-	xfree(slurmdbd_conf->storage_password);
-	xfree(slurmdbd_conf->storage_user);
+	_clear_slurmdbd_conf();
 
 	/* Get the slurmdbd.conf path and validate the file */
 	conf_path = _get_conf_path();
 	if ((conf_path == NULL) || (stat(conf_path, &buf) == -1)) {
 		slurm_mutex_unlock(&conf_mutex);
 		info("No slurmdbd.conf file (%s)", conf_path);
+		slurmdbd_conf->pid_file = xstrdup(DEFAULT_SLURMDBD_PIDFILE);
 		xfree(conf_path);
 		return SLURM_SUCCESS;
 	}
@@ -117,16 +127,21 @@ extern int read_slurmdbd_conf(void)
 
 	s_p_get_uint16(&slurmdbd_conf->debug_level,	"DebugLevel", tbl);
 	s_p_get_string(&slurmdbd_conf->log_file,	"LogFile", tbl);
+	if (!s_p_get_string(&slurmdbd_conf->pid_file,	"PidFile", tbl))
+		slurmdbd_conf->pid_file = xstrdup(DEFAULT_SLURMDBD_PIDFILE);
 	s_p_get_string(&slurmdbd_conf->storage_password,"StoragePassword", tbl);
 	s_p_get_string(&slurmdbd_conf->storage_user,	"StorageUser", tbl);
 
 	s_p_hashtbl_destroy(tbl);
 	xfree(conf_path);
 
-	debug("DebugLevel        = %u", slurmdbd_conf->debug_level);
-	debug("LogFile           = %s", slurmdbd_conf->log_file);
-	debug("StoragePassword   = %s", slurmdbd_conf->storage_password);
-	debug("StorageUser       = %s", slurmdbd_conf->storage_user);
+#if _DEBUG
+	info("DebugLevel        = %u", slurmdbd_conf->debug_level);
+	info("LogFile           = %s", slurmdbd_conf->log_file);
+	info("PidFile           = %s", slurmdbd_conf->pid_file);
+	info("StoragePassword   = %s", slurmdbd_conf->storage_password);
+	info("StorageUser       = %s", slurmdbd_conf->storage_user);
+#endif
 
 	slurm_mutex_unlock(&conf_mutex);
 	return SLURM_SUCCESS;

@@ -41,12 +41,16 @@
 #ifdef WITH_PTHREADS
 #  include <pthread.h>
 #endif				/* WITH_PTHREADS */
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/resource.h>
+#include <sys/types.h>
 #include <unistd.h>
 
+#include "src/common/daemonize.h"
+#include "src/common/fd.h"
 #include "src/common/log.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
@@ -60,6 +64,7 @@ static int cold_start = 0;	/* do not recover any state information */
 
 /* Local functions */
 static void  _init_config(void);
+static void _kill_old_slurmdbd(void);
 static void _parse_commandline(int argc, char *argv[]);
 static void _update_logging(void);
 static void _update_logging(void);
@@ -74,6 +79,7 @@ int main(int argc, char *argv[])
 		exit(1);
 	_parse_commandline(argc, argv);
 	_update_logging();
+	_kill_old_slurmdbd();
 /* FIXME */
 
 	free_slurmdbd_conf();
@@ -188,4 +194,29 @@ static void _update_logging(void)
 	}
 
 	log_alter(log_opts, SYSLOG_FACILITY_DAEMON, slurmdbd_conf->log_file);
+}
+
+/* Kill the currently running slurmdbd */
+static void _kill_old_slurmdbd(void)
+{
+	int fd;
+	pid_t oldpid;
+
+	if (slurmdbd_conf->pid_file == NULL) {
+		error("No PidFile configured");
+		return;
+	}
+
+	oldpid = read_pidfile(slurmdbd_conf->pid_file, &fd);
+	if (oldpid != (pid_t) 0) {
+		info("killing old slurmdbd[%ld]", (long) oldpid);
+		kill(oldpid, SIGTERM);
+
+		/* 
+		 * Wait for previous daemon to terminate
+		 */
+		if (fd_get_readw_lock(fd) < 0) 
+			fatal("unable to wait for readw lock: %m");
+		(void) close(fd); /* Ignore errors */ 
+	}
 }

@@ -53,11 +53,14 @@
 
 #include <time.h>
 
+#define DEFAULT_SLURMDBD_PIDFILE	"/var/run/slurmdbd.pid"
+
 /* SlurmDBD configuration parameters */
 typedef struct slurm_dbd_conf {
 	time_t		last_update;	 	/* time slurmdbd.conf read	*/
 	uint16_t	debug_level;		/* Debug level, default=3	*/
 	char *		log_file;		/* Log file			*/
+	char *		pid_file;		/* where to store current PID	*/
 	char *		storage_password;	/* password for DB write	*/
 	char *		storage_user;		/* user authorized to write DB	*/
 } slurm_dbd_conf_t;
