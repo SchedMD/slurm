@@ -195,6 +195,16 @@ static int _clusteracct_storage_context_destroy(
 	return SLURM_SUCCESS;
 }
 
+extern void destroy_clusteracct_rec(void *object)
+{
+	clusteracct_rec_t *clusteracct_rec = (clusteracct_rec_t *)object;
+	if(clusteracct_rec) {
+		xfree(clusteracct_rec->cluster);
+		xfree(clusteracct_rec);
+	}
+}
+
+
 /*
  * Initialize context for clusteracct_storage plugin
  */

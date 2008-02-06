@@ -236,6 +236,50 @@ static int _account_storage_context_destroy(slurm_account_storage_context_t *c)
 	return SLURM_SUCCESS;
 }
 
+extern void destroy_account_user_rec(void *object)
+{
+	account_user_rec_t *account_user = (account_user_rec_t *)object;
+
+	if(account_user) {
+		xfree(account_user->name);
+		xfree(account_user->default_project);
+		xfree(account_user);
+	}
+}
+
+extern void destroy_account_project_rec(void *object)
+{
+	account_project_rec_t *account_project = (account_project_rec_t *)object;
+
+	if(account_project) {
+		xfree(account_project->name);
+		xfree(account_project->default_project);
+		xfree(account_project);
+	}
+}
+
+extern void destroy_account_cluster_rec(void *object)
+{
+	account_cluster_rec_t *account_cluster = (account_cluster_rec_t *)object;
+
+	if(account_cluster) {
+		xfree(account_cluster->name);
+		xfree(account_cluster->default_project);
+		xfree(account_cluster);
+	}
+}
+
+extern void destroy_account_acct_rec(void *object)
+{
+	account_acct_rec_t *account_acct = (account_acct_rec_t *)object;
+
+	if(account_acct) {
+		xfree(account_acct->name);
+		xfree(account_acct->default_project);
+		xfree(account_acct);
+	}
+}
+
 /*
  * Initialize context for account_storage plugin
  */
@@ -287,7 +331,7 @@ extern int slurm_account_storage_fini(void)
 
 /* 
  * add users to accounting system 
- * IN:  user_list List of user_rec_t *
+ * IN:  user_list List of account_user_rec_t *
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
 extern int account_storage_g_add_users(List user_list)
@@ -299,7 +343,7 @@ extern int account_storage_g_add_users(List user_list)
 
 /* 
  * add projects to accounting system 
- * IN:  project_list List of project_rec_t *
+ * IN:  project_list List of account_project_rec_t *
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
 extern int account_storage_g_add_projects(List project_list)
@@ -311,7 +355,7 @@ extern int account_storage_g_add_projects(List project_list)
 
 /* 
  * add clusters to accounting system 
- * IN:  cluster_list List of cluster_rec_t *
+ * IN:  cluster_list List of account_cluster_rec_t *
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
 extern int account_storage_g_add_clusters(List cluster_list)
@@ -323,7 +367,7 @@ extern int account_storage_g_add_clusters(List cluster_list)
 
 /* 
  * add accts to accounting system 
- * IN:  acct_list List of acct_rec_t *
+ * IN:  acct_list List of account_acct_rec_t *
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
 extern int account_storage_g_add_accounts(List account_list)
@@ -335,7 +379,7 @@ extern int account_storage_g_add_accounts(List account_list)
 
 /* 
  * modify existing users in the accounting system 
- * IN:  user_list List of user_rec_t *
+ * IN:  user_list List of account_user_rec_t *
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
 extern int account_storage_g_modify_users(List user_list)
@@ -347,7 +391,7 @@ extern int account_storage_g_modify_users(List user_list)
 
 /* 
  * modify existing projects in the accounting system 
- * IN:  project_list List of project_rec_t *
+ * IN:  project_list List of account_project_rec_t *
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
 extern int account_storage_g_modify_projects(List project_list)
@@ -360,7 +404,7 @@ extern int account_storage_g_modify_projects(List project_list)
 
 /* 
  * modify existing clusters in the accounting system 
- * IN:  cluster_list List of cluster_rec_t *
+ * IN:  cluster_list List of account_cluster_rec_t *
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
 extern int account_storage_g_modify_clusters(List cluster_list)
@@ -373,7 +417,7 @@ extern int account_storage_g_modify_clusters(List cluster_list)
 
 /* 
  * modify existing accounts in the accounting system 
- * IN:  account_list List of acct_rec_t *
+ * IN:  account_list List of account_acct_rec_t *
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
 extern int account_storage_g_modify_accounts(List account_list)
@@ -386,7 +430,7 @@ extern int account_storage_g_modify_accounts(List account_list)
 
 /* 
  * remove users from accounting system 
- * IN:  user_list List of user_rec_t *
+ * IN:  user_list List of account_user_rec_t *
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
 extern int account_storage_g_remove_users(List user_list)
@@ -398,7 +442,7 @@ extern int account_storage_g_remove_users(List user_list)
 
 /* 
  * remove projects from accounting system 
- * IN:  project_list List of project_rec_t *
+ * IN:  project_list List of account_project_rec_t *
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
 extern int account_storage_g_remove_projects(List project_list)
@@ -411,7 +455,7 @@ extern int account_storage_g_remove_projects(List project_list)
 
 /* 
  * remove clusters from accounting system 
- * IN:  cluster_list List of cluster_rec_t *
+ * IN:  cluster_list List of account_cluster_rec_t *
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
 extern int account_storage_g_remove_clusters(List cluster_list)
@@ -424,7 +468,7 @@ extern int account_storage_g_remove_clusters(List cluster_list)
 
 /* 
  * remove accounts from accounting system 
- * IN:  account_list List of acct_rec_t *
+ * IN:  account_list List of account_acct_rec_t *
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
 extern int account_storage_g_remove_accounts(List account_list)
@@ -437,7 +481,7 @@ extern int account_storage_g_remove_accounts(List account_list)
 
 /* 
  * get info from the storage 
- * returns List of user_rec_t *
+ * returns List of account_user_rec_t *
  * note List needs to be freed when called
  */
 extern List account_storage_g_get_users(List selected_users,
@@ -451,7 +495,7 @@ extern List account_storage_g_get_users(List selected_users,
 
 /* 
  * get info from the storage 
- * returns List of project_rec_t *
+ * returns List of account_project_rec_t *
  * note List needs to be freed when called
  */
 extern List account_storage_g_get_projects(List selected_projects,
@@ -465,7 +509,7 @@ extern List account_storage_g_get_projects(List selected_projects,
 
 /* 
  * get info from the storage 
- * returns List of cluster_rec_t *
+ * returns List of account_cluster_rec_t *
  * note List needs to be freed when called
  */
 extern List account_storage_g_get_clusters(List selected_clusters,
@@ -479,7 +523,7 @@ extern List account_storage_g_get_clusters(List selected_clusters,
 
 /* 
  * get info from the storage 
- * returns List of acct_rec_t *
+ * returns List of account_acct_rec_t *
  * note List needs to be freed when called
  */
 extern List account_storage_g_get_accounts(List selected_accounts,
@@ -497,7 +541,7 @@ extern List account_storage_g_get_accounts(List selected_accounts,
 
 /* 
  * get info from the storage 
- * returns List of acct_rec_t *
+ * returns List of account_acct_rec_t *
  * note List needs to be freed when called
  */
 extern List account_storage_g_get_hourly_usage(List selected_accounts,
@@ -517,7 +561,7 @@ extern List account_storage_g_get_hourly_usage(List selected_accounts,
 
 /* 
  * get info from the storage 
- * returns List of acct_rec_t *
+ * returns List of account_acct_rec_t *
  * note List needs to be freed when called
  */
 extern List account_storage_g_get_daily_usage(List selected_accounts,
@@ -537,7 +581,7 @@ extern List account_storage_g_get_daily_usage(List selected_accounts,
 
 /* 
  * get info from the storage 
- * returns List of acct_rec_t *
+ * returns List of account_acct_rec_t *
  * note List needs to be freed when called
  */
 extern List account_storage_g_get_monthly_usage(List selected_accounts,

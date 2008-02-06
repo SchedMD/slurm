@@ -45,6 +45,51 @@
 #include <slurm/slurm.h>
 #include <slurm/slurm_errno.h>
 
+enum {
+	ACCOUNT_ADMIN_NONE,
+	ACCOUNT_ADMIN_OPERATOR,
+	ACCOUNT_ADMIN_SUPER_USER
+} account_admin_level_t;
+
+typedef struct {
+	char *name;
+	uint32_t uid;
+	uint32_t gid;
+	char *default_project;
+	uint32_t expedite;
+	account_admin_level_t admin_level;
+} account_user_rec_t;
+
+typedef struct {
+	char *name;
+	char *description;
+	char *organization;
+	uint32_t expedite;
+} account_project_rec_t;
+
+typedef struct {
+	char *name;
+} account_cluster_rec_t;
+
+typedef struct {
+	uint32_t id;
+	char *user;
+	char *project;
+	char *machine;
+	uint32_t parent;
+	uint32_t fairshare;
+	uint32_t max_jobs;
+	uint32_t max_nodes_per_job;
+	uint32_t max_wall_duration_per_job;
+	uint32_t max_cpu_seonds_per_job;
+} account_acct_rec_t;
+
+extern void destroy_account_user_rec(void *object);
+extern void destroy_account_project_rec(void *object);
+extern void destroy_account_cluster_rec(void *object);
+extern void destroy_account_acct_rec(void *object);
+
+
 extern int slurm_account_storage_init(void); /* load the plugin */
 extern int slurm_account_storage_fini(void); /* unload the plugin */
 
