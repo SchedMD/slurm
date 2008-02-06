@@ -49,6 +49,7 @@
 #include <sys/types.h>
 #include <sys/param.h>
 #include <sys/resource.h>
+#include <sys/utsname.h>
 #include <unistd.h>
 #include <stdlib.h>
 #include <sys/mman.h>
@@ -451,6 +452,7 @@ _fill_registration_msg(slurm_node_registration_status_msg_t *msg)
 	step_loc_t *stepd;
 	int  n;
 	char *arch, *os;
+	struct utsname buf;
 
 	msg->node_name  = xstrdup (conf->node_name);
 	msg->cpus	 = conf->cpus;
@@ -464,10 +466,15 @@ _fill_registration_msg(slurm_node_registration_status_msg_t *msg)
 	       msg->cpus, msg->sockets, msg->cores, msg->threads,
 	       msg->real_memory, msg->tmp_disk);
 
+	uname(&buf);
 	if ((arch = getenv("SLURM_ARCH")))
 		msg->arch = xstrdup(arch);
+	else
+		msg->arch = xstrdup(buf.machine);
 	if ((os = getenv("SLURM_OS")))
 		msg->os   = xstrdup(os);
+	else
+		msg->os = xstrdup(buf.sysname);
 
 	if (msg->startup) {
 		if (switch_g_alloc_node_info(&msg->switch_nodeinfo))
