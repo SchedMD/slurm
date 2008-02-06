@@ -62,15 +62,17 @@ static int	_same_info(struct node_record *node1_ptr,
  *
  * Response format
  * ARG=<cnt>#<NODEID>:
- *	STATE=<state>;		Moab equivalent node state
- *	CCLASS=<[part:cpus]>;	SLURM partition with CPU count of node,
- *				make have more than one partition
- *	CMEMORY=<MB>;		MB of memory on node
- *	CDISK=<MB>;		MB of disk space on node
- *	CPROCS=<cpus>;		CPU count on node
- *	[FEATURE=<feature>;]	features associated with node, if any,
- *	[CAT=<reason>];		Reason for a node being down or drained
- *				colon separator
+ *	STATE=<state>;		 Moab equivalent node state
+ *	[CAT=<reason>];		 Reason for a node being down or drained
+ *				 colon separator
+ *	CCLASS=<[part:cpus]>;	 SLURM partition with CPU count of node,
+ *				 make have more than one partition
+ *	[ARCH=<architecture>;]	 Computer architecture
+ *	[OS=<operating_system>;] Operating system
+ *	CMEMORY=<MB>;		 MB of memory on node
+ *	CDISK=<MB>;		 MB of disk space on node
+ *	CPROCS=<cpus>;		 CPU count on node
+ *	[FEATURE=<feature>;]	 Features associated with node, if any
  *  [#<NODEID>:...];
  */
 extern int	get_nodes(char *cmd_ptr, int *err_code, char **err_msg)
@@ -307,6 +309,16 @@ static char *	_dump_node(struct node_record *node_ptr, hostlist_t hl,
 	}
 	if (i > 0)
 		xstrcat(buf, ";");
+
+	if (node_ptr->arch) {
+		snprintf(tmp, sizeof(tmp), "ARCH=%s;", node_ptr->arch);
+		xstrcat(buf, tmp);
+	}
+
+	if (node_ptr->os) {
+		snprintf(tmp, sizeof(tmp), "OS=%s;", node_ptr->os);
+		xstrcat(buf, tmp);
+	}
 
 	if (state_info == SLURM_INFO_VOLITILE)
 		return buf;

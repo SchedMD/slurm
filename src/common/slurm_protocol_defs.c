@@ -279,6 +279,8 @@ void slurm_free_node_registration_status_msg(
 {
 	if (msg) {
 		xfree(msg->node_name);
+		xfree(msg->arch);
+		xfree(msg->os);
 		xfree(msg->job_id);
 		xfree(msg->step_id);
 		if (msg->startup)
@@ -1064,7 +1066,9 @@ static void _slurm_free_node_info_members(node_info_t * node)
 {
 	if (node) {
 		xfree(node->name);
+		xfree(node->arch);
 		xfree(node->features);
+		xfree(node->os);
 		xfree(node->reason);
 	}
 }

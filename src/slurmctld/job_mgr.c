@@ -4038,50 +4038,49 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 /*
  * validate_jobs_on_node - validate that any jobs that should be on the node 
  *	are actually running, if not clean up the job records and/or node 
- *	records
- * IN node_name - node which should have jobs running
- * IN/OUT job_count - number of jobs which should be running on specified node
- * IN job_id_ptr - pointer to array of job_ids that should be on this node
- * IN step_id_ptr - pointer to array of job step ids that should be on node
+ *	records, call this function after validate_node_specs() sets the node 
+ *	state properly 
+ * IN reg_msg - node registration message
  */
-void
-validate_jobs_on_node(char *node_name, uint32_t * job_count,
-		      uint32_t * job_id_ptr, uint16_t * step_id_ptr)
+extern void validate_jobs_on_node(slurm_node_registration_status_msg_t *reg_msg)
 {
 	int i, node_inx, jobs_on_node;
 	struct node_record *node_ptr;
 	struct job_record *job_ptr;
 	time_t now = time(NULL);
 
-	node_ptr = find_node_record(node_name);
+	node_ptr = find_node_record(reg_msg->node_name);
 	if (node_ptr == NULL) {
-		error("slurmd registered on unknown node %s", node_name);
+		error("slurmd registered on unknown node %s", 
+			reg_msg->node_name);
 		return;
 	}
 	node_inx = node_ptr - node_record_table_ptr;
 
 	/* Check that jobs running are really supposed to be there */
-	for (i = 0; i < *job_count; i++) {
-		if ( (job_id_ptr[i] >= MIN_NOALLOC_JOBID) && 
-		     (job_id_ptr[i] <= MAX_NOALLOC_JOBID) ) {
+	for (i = 0; i < reg_msg->job_count; i++) {
+		if ( (reg_msg->job_id[i] >= MIN_NOALLOC_JOBID) && 
+		     (reg_msg->job_id[i] <= MAX_NOALLOC_JOBID) ) {
 			info("NoAllocate job %u.%u reported on node %s",
-				job_id_ptr[i], step_id_ptr[i], node_name);
+				reg_msg->job_id[i], reg_msg->step_id[i], 
+				reg_msg->node_name);
 			continue;
 		}
 
-		job_ptr = find_job_record(job_id_ptr[i]);
+		job_ptr = find_job_record(reg_msg->job_id[i]);
 		if (job_ptr == NULL) {
 			error("Orphan job %u.%u reported on node %s",
-			      job_id_ptr[i], step_id_ptr[i], node_name);
-			kill_job_on_node(job_id_ptr[i], job_ptr, node_ptr);
+				reg_msg->job_id[i], reg_msg->step_id[i], 
+				reg_msg->node_name);
+			kill_job_on_node(reg_msg->job_id[i], job_ptr, node_ptr);
 		}
 
 		else if ((job_ptr->job_state == JOB_RUNNING) ||
-				(job_ptr->job_state == JOB_SUSPENDED)) {
+			 (job_ptr->job_state == JOB_SUSPENDED)) {
 			if (bit_test(job_ptr->node_bitmap, node_inx)) {
 				debug3("Registered job %u.%u on node %s ",
-				       job_id_ptr[i], step_id_ptr[i], 
-				       node_name);
+				       reg_msg->job_id[i], reg_msg->step_id[i], 
+				       reg_msg->node_name);
 				if ((job_ptr->batch_flag) &&
 				    (node_inx == bit_ffs(
 						job_ptr->node_bitmap))) {
@@ -4090,10 +4089,10 @@ validate_jobs_on_node(char *node_name, uint32_t * job_count,
 					job_ptr->time_last_active = now;
 				}
 			} else {
-				error
-				    ("Registered job %u.%u on wrong node %s ",
-				     job_id_ptr[i], step_id_ptr[i], node_name);
-				kill_job_on_node(job_id_ptr[i], job_ptr, 
+				error("Registered job %u.%u on wrong node %s ",
+					reg_msg->job_id[i], reg_msg->step_id[i],
+					reg_msg->node_name);
+				kill_job_on_node(reg_msg->job_id[i], job_ptr, 
 						node_ptr);
 			}
 		}
@@ -4101,19 +4100,20 @@ validate_jobs_on_node(char *node_name, uint32_t * job_count,
 		else if (job_ptr->job_state & JOB_COMPLETING) {
 			/* Re-send kill request as needed, 
 			 * not necessarily an error */
-			kill_job_on_node(job_id_ptr[i], job_ptr, node_ptr);
+			kill_job_on_node(reg_msg->job_id[i], job_ptr, node_ptr);
 		}
 
 
 		else if (job_ptr->job_state == JOB_PENDING) {
 			error("Registered PENDING job %u.%u on node %s ",
-			      job_id_ptr[i], step_id_ptr[i], node_name);
+				reg_msg->job_id[i], reg_msg->step_id[i], 
+				reg_msg->node_name);
 			job_ptr->job_state = JOB_FAILED;
 			job_ptr->exit_code = 1;
 			job_ptr->state_reason = FAIL_SYSTEM;
-			last_job_update    = now;
+			last_job_update = now;
 			job_ptr->start_time = job_ptr->end_time  = now;
-			kill_job_on_node(job_id_ptr[i], job_ptr, node_ptr);
+			kill_job_on_node(reg_msg->job_id[i], job_ptr, node_ptr);
 			job_completion_logger(job_ptr);
 			delete_job_details(job_ptr);
 		}
@@ -4121,10 +4121,10 @@ validate_jobs_on_node(char *node_name, uint32_t * job_count,
 		else {		/* else job is supposed to be done */
 			error
 			    ("Registered job %u.%u in state %s on node %s ",
-			     job_id_ptr[i], step_id_ptr[i], 
+			     reg_msg->job_id[i], reg_msg->step_id[i], 
 			     job_state_string(job_ptr->job_state),
-			     node_name);
-			kill_job_on_node(job_id_ptr[i], job_ptr, node_ptr);
+			     reg_msg->node_name);
+			kill_job_on_node(reg_msg->job_id[i], job_ptr, node_ptr);
 		}
 	}
 
@@ -4132,14 +4132,14 @@ validate_jobs_on_node(char *node_name, uint32_t * job_count,
 	if (jobs_on_node)
 		_purge_lost_batch_jobs(node_inx, now);
 
-	if (jobs_on_node != *job_count) {
+	if (jobs_on_node != reg_msg->job_count) {
 		/* slurmd will not know of a job unless the job has
 		 * steps active at registration time, so this is not 
 		 * an error condition, slurmd is also reporting steps 
 		 * rather than jobs */
 		debug3("resetting job_count on node %s from %d to %d", 
-		     node_name, *job_count, jobs_on_node);
-		*job_count = jobs_on_node;
+			reg_msg->node_name, reg_msg->job_count, jobs_on_node);
+		reg_msg->job_count = jobs_on_node;
 	}
 
 	return;

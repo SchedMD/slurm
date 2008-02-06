@@ -846,7 +846,9 @@ typedef struct node_info {
 	uint32_t real_memory;	/* configured MB of real memory on the node */
 	uint32_t tmp_disk;	/* configured MB of total disk in TMP_FS */
 	uint32_t weight;	/* arbitrary priority of node for scheduling */
+	char *arch;		/* computer architecture */
 	char *features;		/* arbitrary list of features for node */
+	char *os;		/* operating system currently running */
 	char *reason;   	/* reason for node being DOWN or DRAINING */
 } node_info_t;
 

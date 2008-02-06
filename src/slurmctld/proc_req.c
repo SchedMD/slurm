@@ -1281,26 +1281,10 @@ static void _slurm_rpc_node_registration(slurm_msg_t * msg)
 		/* do RPC call */
 		lock_slurmctld(job_write_lock);
 #ifdef HAVE_FRONT_END		/* Operates only on front-end */
-		error_code = validate_nodes_via_front_end(
-					node_reg_stat_msg->job_count,
-					node_reg_stat_msg->job_id,
-					node_reg_stat_msg->step_id,
-					node_reg_stat_msg->status);
+		error_code = validate_nodes_via_front_end(node_reg_stat_msg);
 #else
-		validate_jobs_on_node(node_reg_stat_msg->node_name,
-					&node_reg_stat_msg->job_count,
-					node_reg_stat_msg->job_id,
-					node_reg_stat_msg->step_id);
-		error_code =
-		    validate_node_specs(node_reg_stat_msg->node_name,
-					node_reg_stat_msg->cpus,
-					node_reg_stat_msg->sockets,
-					node_reg_stat_msg->cores,
-					node_reg_stat_msg->threads,
-					node_reg_stat_msg->real_memory_size,
-					node_reg_stat_msg->temporary_disk_space,
-					node_reg_stat_msg->job_count,
-					node_reg_stat_msg->status);
+		validate_jobs_on_node(node_reg_stat_msg);
+		error_code = validate_node_specs(node_reg_stat_msg);
 #endif
 		unlock_slurmctld(job_write_lock);
 		END_TIMER2("_slurm_rpc_node_registration");
