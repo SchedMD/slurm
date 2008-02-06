@@ -54,6 +54,17 @@ static char *	_get_node_state(struct node_record *node_ptr);
  * RET 0 on success, -1 on failure
  *
  * Response format
+ * Response format
+ * ARG=<cnt>#<NODEID>:
+ *	STATE=<state>;		Moab equivalent node state
+ *	CMEMORY=<MB>;		MB of memory on node
+ *	CDISK=<MB>;		MB of disk space on node
+ *	CPROCS=<cpus>;		CPU count on node
+ *	[ARCH=<architecture>;]	Computer architecture
+ *	[FEATURE=<feature>;]	Features associated with node, if any
+ *	[OS=<operating_system>;]Operating system
+ *  [#<NODEID>:...];
+
  * ARG=<cnt>#<NODEID>:STATE=<state>;
  *                    FEATURE=<feature:feature>;
  *                    CMEMORY=<mb>;CDISK=<mb>;CPROC=<cpus>;
@@ -189,6 +200,16 @@ static char *	_dump_node(struct node_record *node_ptr, int state_info)
 			||  (tmp[i] == '|'))
 				tmp[i] = ':';
 		}
+		xstrcat(buf, tmp);
+	}
+
+	if (node_ptr->arch) {
+		snprintf(tmp, sizeof(tmp), "ARCH=%s;", node_ptr->arch);
+		xstrcat(buf, tmp);
+	}
+
+	if (node_ptr->os) {
+		snprintf(tmp, sizeof(tmp), "OS=%s;", node_ptr->os);
 		xstrcat(buf, tmp);
 	}
 

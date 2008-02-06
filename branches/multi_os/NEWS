@@ -3,7 +3,12 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 1.3.0-pre10
 ==============================
-
+ -- Add support for node-specific "arch" (architecture) and "os" (operating 
+    system) fields. These fields are set based upon values reported by the
+    slurmd daemon on each compute node using SLURM_ARCH and SLURM_OS environment 
+    variables and are intended to support changes in real time changes in 
+    operating system. These values are reported by "scontrol show node" plus 
+    the sched/wiki and sched/wiki2 plugins for Maui and Moab respectively.
 
 * Changes in SLURM 1.3.0-pre9
 =============================
