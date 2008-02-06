@@ -103,9 +103,9 @@ extern int read_slurmdbd_conf(void)
 	conf_path = _get_conf_path();
 	if ((conf_path == NULL) || (stat(conf_path, &buf) == -1)) {
 		slurm_mutex_unlock(&conf_mutex);
-		error("No slurmdbd.conf file (%s)", conf_path);
+		info("No slurmdbd.conf file (%s)", conf_path);
 		xfree(conf_path);
-		return SLURM_ERROR;
+		return SLURM_SUCCESS;
 	}
 	debug("Reading slurmdbd.conf file %s", conf_path);
 
