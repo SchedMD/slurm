@@ -1132,12 +1132,14 @@ _pack_node_registration_status_msg(slurm_node_registration_status_msg_t *
 	pack_time(msg->timestamp, buffer);
 	pack32((uint32_t)msg->status, buffer);
 	packstr(msg->node_name, buffer);
+	packstr(msg->arch, buffer);
+	packstr(msg->os, buffer);
 	pack16((uint32_t)msg->cpus, buffer);
 	pack16((uint32_t)msg->sockets, buffer);
 	pack16((uint32_t)msg->cores, buffer);
 	pack16((uint32_t)msg->threads, buffer);
-	pack32((uint32_t)msg->real_memory_size, buffer);
-	pack32((uint32_t)msg->temporary_disk_space, buffer);
+	pack32((uint32_t)msg->real_memory, buffer);
+	pack32((uint32_t)msg->tmp_disk, buffer);
 	pack32((uint32_t)msg->job_count, buffer);
 	for (i = 0; i < msg->job_count; i++) {
 		pack32((uint32_t)msg->job_id[i], buffer);
@@ -1168,12 +1170,14 @@ _unpack_node_registration_status_msg(slurm_node_registration_status_msg_t
 	/* load the data values */
 	safe_unpack32(&node_reg_ptr->status, buffer);
 	safe_unpackstr_xmalloc(&node_reg_ptr->node_name, &uint32_tmp, buffer);
+	safe_unpackstr_xmalloc(&node_reg_ptr->arch, &uint32_tmp, buffer);
+	safe_unpackstr_xmalloc(&node_reg_ptr->os, &uint32_tmp, buffer);
 	safe_unpack16(&node_reg_ptr->cpus, buffer);
 	safe_unpack16(&node_reg_ptr->sockets, buffer);
 	safe_unpack16(&node_reg_ptr->cores, buffer);
 	safe_unpack16(&node_reg_ptr->threads, buffer);
-	safe_unpack32(&node_reg_ptr->real_memory_size, buffer);
-	safe_unpack32(&node_reg_ptr->temporary_disk_space, buffer);
+	safe_unpack32(&node_reg_ptr->real_memory, buffer);
+	safe_unpack32(&node_reg_ptr->tmp_disk, buffer);
 	safe_unpack32(&node_reg_ptr->job_count, buffer);
 	node_reg_ptr->job_id =
 		xmalloc(sizeof(uint32_t) * node_reg_ptr->job_count);
@@ -1196,6 +1200,8 @@ _unpack_node_registration_status_msg(slurm_node_registration_status_msg_t
 
 unpack_error:
 	xfree(node_reg_ptr->node_name);
+	xfree(node_reg_ptr->arch);
+	xfree(node_reg_ptr->os);
 	xfree(node_reg_ptr->job_id);
 	xfree(node_reg_ptr->step_id);
 	switch_g_free_node_info(&node_reg_ptr->switch_nodeinfo);
@@ -1442,14 +1448,18 @@ _unpack_node_info_members(node_info_t * node, Buf buffer)
 	safe_unpack32(&node->weight, buffer);
 	safe_unpack16(&node->used_cpus, buffer);
 
+	safe_unpackstr_xmalloc(&node->arch, &uint32_tmp, buffer);
 	safe_unpackstr_xmalloc(&node->features, &uint32_tmp, buffer);
+	safe_unpackstr_xmalloc(&node->os, &uint32_tmp, buffer);
 	safe_unpackstr_xmalloc(&node->reason, &uint32_tmp, buffer);
 
 	return SLURM_SUCCESS;
 
 unpack_error:
 	xfree(node->name);
+	xfree(node->arch);
 	xfree(node->features);
+	xfree(node->os);
 	xfree(node->reason);
 	return SLURM_ERROR;
 }
