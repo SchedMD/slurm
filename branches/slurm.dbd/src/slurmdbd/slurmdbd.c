@@ -63,7 +63,9 @@ static int foreground = 0;	/* run process as a daemon */
 static int cold_start = 0;	/* do not recover any state information */
 
 /* Local functions */
-static void  _init_config(void);
+static void _daemonize(void);
+static void _init_config(void);
+static void _init_pidfile(void);
 static void _kill_old_slurmdbd(void);
 static void _parse_commandline(int argc, char *argv[]);
 static void _update_logging(void);
@@ -80,6 +82,11 @@ int main(int argc, char *argv[])
 	_parse_commandline(argc, argv);
 	_update_logging();
 	_kill_old_slurmdbd();
+	_init_pidfile();
+	if (foreground == 0)
+		_daemonize();
+	log_config();
+	info("slurmdbd version %s started", SLURM_VERSION);
 /* FIXME */
 
 	free_slurmdbd_conf();
@@ -157,18 +164,18 @@ static void _parse_commandline(int argc, char *argv[])
 static void _usage(char *prog_name)
 {
 	fprintf(stderr, "Usage: %s [OPTIONS]\n", prog_name);
-	fprintf(stderr, "  -c      "
-			"\tDo not recover state from last checkpoint.\n");
-	fprintf(stderr, "  -D      "
-			"\tRun daemon in foreground.\n");
-	fprintf(stderr, "  -h      "
-			"\tPrint this help message.\n");
-	fprintf(stderr, "  -L logfile "
-			"\tLog messages to the specified file.\n");
-	fprintf(stderr, "  -v      "
-			"\tVerbose mode. Multiple -v's increase verbosity.\n");
-	fprintf(stderr, "  -V      "
-			"\tPrint version information and exit.\n");
+	fprintf(stderr, "  -c         \t"
+			"Do not recover state from last checkpoint.\n");
+	fprintf(stderr, "  -D         \t"
+			"Run daemon in foreground.\n");
+	fprintf(stderr, "  -h         \t"
+			"Print this help message.\n");
+	fprintf(stderr, "  -L logfile \t"
+			"Log messages to the specified file.\n");
+	fprintf(stderr, "  -v         \t"
+			"Verbose mode. Multiple -v's increase verbosity.\n");
+	fprintf(stderr, "  -V         \t"
+			"Print version information and exit.\n");
 }
 
 /* Reset slurmctld logging based upon configuration parameters */
@@ -209,14 +216,53 @@ static void _kill_old_slurmdbd(void)
 
 	oldpid = read_pidfile(slurmdbd_conf->pid_file, &fd);
 	if (oldpid != (pid_t) 0) {
-		info("killing old slurmdbd[%ld]", (long) oldpid);
+		info("Killing old slurmdbd[%ld]", (long) oldpid);
 		kill(oldpid, SIGTERM);
 
 		/* 
 		 * Wait for previous daemon to terminate
 		 */
 		if (fd_get_readw_lock(fd) < 0) 
-			fatal("unable to wait for readw lock: %m");
+			fatal("Unable to wait for readw lock: %m");
 		(void) close(fd); /* Ignore errors */ 
+	}
+}
+
+static void _init_pidfile(void)
+{
+	int   fd;
+
+	if ((fd = create_pidfile(slurmdbd_conf->pid_file)) < 0)
+		return;
+
+	/*
+	 * Close fd here, otherwise we'll deadlock since create_pidfile()
+	 * flocks the pidfile.
+	 */
+	close(fd);
+}
+
+static void _daemonize(void)
+{
+	if (daemon(1, 1))
+		error("daemon(): %m");
+	log_alter(log_opts, LOG_DAEMON, slurmdbd_conf->log_file);
+		
+	if (slurmdbd_conf->log_file &&
+	    (slurmdbd_conf->log_file[0] == '/')) {
+		char *slash_ptr, *work_dir;
+		work_dir = xstrdup(slurmdbd_conf->log_file);
+		slash_ptr = strrchr(work_dir, '/');
+		if (slash_ptr == work_dir)
+			work_dir[1] = '\0';
+		else
+			slash_ptr[0] = '\0';
+		if (chdir(work_dir) < 0)
+			fatal("chdir(%s): %m", work_dir);
+		xfree(work_dir);
+	} else {
+		if (chdir(slurmdbd_conf->state_save_dir) < 0) {
+			fatal("chdir(%s): %m", slurmdbd_conf->state_save_dir);
+		}
 	}
 }

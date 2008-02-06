@@ -54,6 +54,7 @@
 #include <time.h>
 
 #define DEFAULT_SLURMDBD_PIDFILE	"/var/run/slurmdbd.pid"
+#define DEFAULT_STATE_SAVE_DIR		"/tmp"
 
 /* SlurmDBD configuration parameters */
 typedef struct slurm_dbd_conf {
@@ -61,6 +62,7 @@ typedef struct slurm_dbd_conf {
 	uint16_t	debug_level;		/* Debug level, default=3	*/
 	char *		log_file;		/* Log file			*/
 	char *		pid_file;		/* where to store current PID	*/
+	char *		state_save_dir;		/* directory used to save state	*/
 	char *		storage_password;	/* password for DB write	*/
 	char *		storage_user;		/* user authorized to write DB	*/
 } slurm_dbd_conf_t;
@@ -75,6 +77,8 @@ extern slurm_dbd_conf_t *slurmdbd_conf;
  */
 extern void free_slurmdbd_conf(void);
 
+/* Log the current configuration using verbose() */
+extern void log_config(void);
 
 /*
  * read_slurmdbd_conf - load the SlurmDBD configuration from the slurmdbd.conf  
