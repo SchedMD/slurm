@@ -240,11 +240,10 @@ int main(int argc, char *argv[])
 
 	if (daemonize) {
 		slurmctld_config.daemonize = 1;
-		error_code = daemon(1, 1);
+		if (daemon(1, 1))
+			error("daemon(): %m");
 		log_alter(log_opts, LOG_DAEMON, 
 			  slurmctld_conf.slurmctld_logfile);
-		if (error_code)
-			error("daemon error %d", error_code);
 		if (slurmctld_conf.slurmctld_logfile
 		&&  (slurmctld_conf.slurmctld_logfile[0] == '/')) {
 			char *slash_ptr, *work_dir;
