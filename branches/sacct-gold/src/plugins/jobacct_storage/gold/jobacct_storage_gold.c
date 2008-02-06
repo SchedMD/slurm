@@ -469,7 +469,7 @@ extern int init ( void )
 	if(!(port = slurm_get_jobacct_storage_port())) {
 		port = 7112;
 		debug2("No port specified with JobAcctStoragePort, "
-		       "gold using default %s", port);
+		       "gold using default %u", port);
 	}
 
 	debug2("connecting from %s to gold with keyfile='%s' for %s(%d)",

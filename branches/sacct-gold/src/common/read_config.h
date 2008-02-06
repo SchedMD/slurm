@@ -48,8 +48,11 @@ extern char *default_slurm_config_file;
 extern char *default_plugin_path;
 extern char *default_plugstack;
 
+#define DEFAULT_ACCOUNT_STORAGE_TYPE "account_storage/none"
 #define DEFAULT_AUTH_TYPE          "auth/none"
 #define DEFAULT_CACHE_GROUPS        0
+#define DEFAULT_CLUSTER_ACCT_STORAGE_TYPE "clusteracct_storage/none"
+#define DEFAULT_CLUSTER_ACCT_STORAGE_LOC  "/var/log/slurm_clusteracct.log"
 #define DEFAULT_CRYPTO_TYPE        "crypto/openssl"
 #define DEFAULT_FAST_SCHEDULE       1
 #define DEFAULT_FIRST_JOB_ID        1
@@ -61,16 +64,8 @@ extern char *default_plugstack;
 #define DEFAULT_JOB_ACCT_STORAGE_TYPE "jobacct_storage/filetxt"
 #define JOB_ACCT_STORAGE_TYPE_NONE "jobacct_storage/none"
 #define DEFAULT_JOB_ACCT_STORAGE_LOC  "/var/log/slurm_jobacct.log"
-#define DEFAULT_JOB_ACCT_STORAGE_HOST "localhost"
-#define DEFAULT_JOB_ACCT_STORAGE_USER "root"
-#define DEFAULT_JOB_ACCT_STORAGE_PASS ""
-#define DEFAULT_JOB_ACCT_STORAGE_PORT 0
 #define DEFAULT_JOB_COMP_TYPE "jobcomp/none"
 #define DEFAULT_JOB_COMP_LOC  "/var/log/slurm_jobcomp.log"
-#define DEFAULT_JOB_COMP_HOST "localhost"
-#define DEFAULT_JOB_COMP_USER "root"
-#define DEFAULT_JOB_COMP_PASS ""
-#define DEFAULT_JOB_COMP_PORT 0
 #define DEFAULT_KILL_TREE           0
 #define DEFAULT_KILL_WAIT           30
 #define DEFAULT_MAIL_PROG           "/bin/mail"
@@ -80,19 +75,6 @@ extern char *default_plugstack;
 #define DEFAULT_MIN_JOB_AGE         300
 #define DEFAULT_MPI_DEFAULT         "none"
 #define DEFAULT_MSG_TIMEOUT         10
-#define DEFAULT_CLUSTER_ACCT_STORAGE_TYPE "clusteracct_storage/none"
-#define CLUSTER_ACCT_STORAGE_TYPE_NONE "clusteracct_storage/none"
-#define DEFAULT_CLUSTER_ACCT_STORAGE_LOC  "/var/log/slurm_clusteracct.log"
-#define DEFAULT_CLUSTER_ACCT_STORAGE_HOST "localhost"
-#define DEFAULT_CLUSTER_ACCT_STORAGE_USER "root"
-#define DEFAULT_CLUSTER_ACCT_STORAGE_PASS ""
-#define DEFAULT_CLUSTER_ACCT_STORAGE_PORT 0
-#define ACCOUNT_STORAGE_TYPE_NONE "clusteracct_storage/none"
-#define DEFAULT_ACCOUNT_STORAGE_TYPE "account_storage/none"
-#define DEFAULT_ACCOUNT_STORAGE_HOST "localhost"
-#define DEFAULT_ACCOUNT_STORAGE_USER "root"
-#define DEFAULT_ACCOUNT_STORAGE_PASS ""
-#define DEFAULT_ACCOUNT_STORAGE_PORT 0
 #ifdef HAVE_AIX		/* AIX specific default configuration parameters */
 #  define DEFAULT_CHECKPOINT_TYPE   "checkpoint/aix"
 #  define DEFAULT_PROCTRACK_TYPE    "proctrack/aix"
@@ -118,6 +100,10 @@ extern char *default_plugstack;
 #define DEFAULT_SLURMD_PIDFILE      "/var/run/slurmd.pid"
 #define DEFAULT_SLURMD_TIMEOUT      300
 #define DEFAULT_SPOOLDIR            "/var/spool/slurmd"
+#define DEFAULT_STORAGE_HOST        "localhost"
+#define DEFAULT_STORAGE_USER        "root"
+#define DEFAULT_STORAGE_PASS        ""
+#define DEFAULT_STORAGE_PORT        0
 #define DEFAULT_SUSPEND_RATE        60
 #define DEFAULT_SUSPEND_TIME        0
 #define DEFAULT_SWITCH_TYPE         "switch/none"

@@ -129,7 +129,7 @@ extern int init ( void )
 	if(!(port = slurm_get_jobacct_storage_port())) {
 		port = 7112;
 		debug2("No port specified with JobAcctStoragePort, "
-		       "gold using default %s", port);
+		       "gold using default %u", port);
 	}
 
 	debug2("connecting from %s to gold with keyfile='%s' for %s(%d)",
@@ -435,36 +435,38 @@ extern int clusteracct_storage_p_cluster_procs(uint32_t procs,
 
 /* 
  * get info from the storage 
- * fills in List of clusteracct_rec_t *
+ * returns List of clusteracct_rec_t *
  * note List needs to be freed when called
  */
-extern int clusteracct_storage_p_get_hourly_usage(List cluster_list,
-						  char *cluster, void *params)
+extern List clusteracct_storage_p_get_hourly_usage(char *cluster, time_t start, 
+						  time_t end, void *params)
 {
 
-	return SLURM_SUCCESS;
+	return NULL;
 }
 
 /* 
  * get info from the storage 
- * fills in List of clusteracct_rec_t *
+ * returns List of clusteracct_rec_t *
  * note List needs to be freed when called
  */
-extern int clusteracct_storage_p_get_daily_usage(List cluster_list,
-						 char *cluster, void *params)
+extern List clusteracct_storage_p_get_daily_usage(char *cluster, time_t start, 
+						  time_t end, void *params)
 {
 	
-	return SLURM_SUCCESS;
+	return NULL;
 }
 
 /* 
  * get info from the storage 
- * fills in List of clusteracct_rec_t *
+ * returns List of clusteracct_rec_t *
  * note List needs to be freed when called
  */
-extern int clusteracct_storage_p_get_monthly_usage(List cluster_list,
-						   char *cluster, void *params)
+extern List clusteracct_storage_p_get_monthly_usage(char *cluster, 
+						    time_t start, 
+						    time_t end,
+						    void *params)
 {
 	
-	return SLURM_SUCCESS;
+	return NULL;
 }

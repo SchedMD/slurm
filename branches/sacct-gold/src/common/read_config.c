@@ -121,6 +121,11 @@ static void validate_and_set_defaults(slurm_ctl_conf_t *conf,
 
 s_p_options_t slurm_conf_options[] = {
 	{"AuthType", S_P_STRING},
+	{"AccountStorageType", S_P_STRING},
+	{"AccountStorageHost", S_P_STRING},
+	{"AccountStorageUser", S_P_STRING},
+	{"AccountStoragePass", S_P_STRING},
+	{"AccountStoragePort", S_P_UINT32},	
 	{"CheckpointType", S_P_STRING},
 	{"CacheGroups", S_P_UINT16},
 	{"BackupAddr", S_P_STRING},
@@ -129,6 +134,11 @@ s_p_options_t slurm_conf_options[] = {
 	{"ControlMachine", S_P_STRING},
 	{"ClusterName", S_P_STRING},
 	{"CryptoType", S_P_STRING},
+	{"DefaultStorageType", S_P_STRING},
+	{"DefaultStorageHost", S_P_STRING},
+	{"DefaultStorageUser", S_P_STRING},
+	{"DefaultStoragePass", S_P_STRING},
+	{"DefaultStoragePort", S_P_UINT32},	
 	{"DefMemPerTask", S_P_UINT32},
 	{"Epilog", S_P_STRING},
 	{"FastSchedule", S_P_UINT16},
@@ -1051,6 +1061,15 @@ free_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr, bool purge_node_hash)
 	xfree (ctl_conf_ptr->control_machine);
 	xfree (ctl_conf_ptr->crypto_type);
 	xfree (ctl_conf_ptr->epilog);
+	xfree (ctl_conf_ptr->account_storage_type);
+	xfree (ctl_conf_ptr->account_storage_user);
+	xfree (ctl_conf_ptr->account_storage_host);
+	xfree (ctl_conf_ptr->account_storage_pass);
+	xfree (ctl_conf_ptr->cluster_acct_storage_loc);
+	xfree (ctl_conf_ptr->cluster_acct_storage_type);
+	xfree (ctl_conf_ptr->cluster_acct_storage_user);
+	xfree (ctl_conf_ptr->cluster_acct_storage_host);
+	xfree (ctl_conf_ptr->cluster_acct_storage_pass);
 	xfree (ctl_conf_ptr->job_acct_gather_type);
 	xfree (ctl_conf_ptr->job_acct_storage_loc);
 	xfree (ctl_conf_ptr->job_acct_storage_type);
@@ -1113,6 +1132,11 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	ctl_conf_ptr->last_update		= time(NULL);
 	xfree (ctl_conf_ptr->authtype);
 	ctl_conf_ptr->cache_groups		= (uint16_t) NO_VAL;
+	xfree (ctl_conf_ptr->account_storage_type);
+	xfree (ctl_conf_ptr->account_storage_user);
+	xfree (ctl_conf_ptr->account_storage_host);
+	xfree (ctl_conf_ptr->account_storage_pass);
+	ctl_conf_ptr->account_storage_port             = 0;
 	xfree (ctl_conf_ptr->checkpoint_type);
 	xfree (ctl_conf_ptr->cluster_name);
 	xfree (ctl_conf_ptr->backup_addr);
@@ -1426,7 +1450,10 @@ validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	char *temp_str = NULL;
 	long long_suspend_time;
 	bool truth;
-
+	char *default_storage_type = NULL, *default_storage_host = NULL;
+	char *default_storage_user = NULL, *default_storage_pass = NULL;
+	uint32_t default_storage_port = 0;
+		
 	if (s_p_get_string(&conf->backup_controller, "BackupController",
 			   hashtbl)
 	    && strcasecmp("localhost", conf->backup_controller) == 0) {
@@ -1467,6 +1494,12 @@ validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 		xfree(conf->backup_addr);
 		xfree(conf->backup_controller);
 	}
+
+	s_p_get_string(&default_storage_type, "DefaultStorageType", hashtbl);
+	s_p_get_string(&default_storage_host, "DefaultStorageHost", hashtbl);
+	s_p_get_string(&default_storage_user, "DefaultStorageUser", hashtbl);
+	s_p_get_string(&default_storage_pass, "DefaultStoragePass", hashtbl);
+	s_p_get_uint32(&default_storage_port, "DefaultStoragePort", hashtbl);
 
 	if (!s_p_get_string(&conf->job_credential_private_key,
 			    "JobCredentialPrivateKey", hashtbl))
@@ -1565,46 +1598,92 @@ validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 			conf->job_acct_storage_type =
 				xstrdup(JOB_ACCT_STORAGE_TYPE_NONE);
 		} else {
-			conf->job_acct_storage_type =
-				xstrdup(DEFAULT_JOB_ACCT_STORAGE_TYPE);
+			if(default_storage_type)
+				conf->job_acct_storage_type =
+					xstrdup_printf("jobacct_storage/%s",
+						       default_storage_type);
+			else
+				conf->job_acct_storage_type =
+					xstrdup(DEFAULT_JOB_ACCT_STORAGE_TYPE);
 		}
 	}
 	if (!s_p_get_string(&conf->job_acct_storage_host, "JobAcctStorageHost",
-			    hashtbl))
-		conf->job_acct_storage_host =
-			xstrdup(DEFAULT_JOB_ACCT_STORAGE_HOST);
+			    hashtbl)) {
+		if(default_storage_host)
+			conf->job_acct_storage_host =
+				xstrdup(default_storage_host);
+		else
+			conf->job_acct_storage_host =
+				xstrdup(DEFAULT_STORAGE_HOST);
+	}
 	if (!s_p_get_string(&conf->job_acct_storage_user, "JobAcctStorageUser",
-			    hashtbl))
-		conf->job_acct_storage_user =
-			xstrdup(DEFAULT_JOB_ACCT_STORAGE_USER);
+			    hashtbl)) {
+		if(default_storage_user)
+			conf->job_acct_storage_user =
+				xstrdup(default_storage_user);
+		else
+			conf->job_acct_storage_user =
+				xstrdup(DEFAULT_STORAGE_USER);
+	}
 	if (!s_p_get_string(&conf->job_acct_storage_pass, "JobAcctStoragePass",
-			    hashtbl))
-		conf->job_acct_storage_pass =
-			xstrdup(DEFAULT_JOB_ACCT_STORAGE_PASS);
+			    hashtbl)) {
+		if(default_storage_pass)
+			conf->job_acct_storage_pass =
+				xstrdup(default_storage_pass);
+		else
+			conf->job_acct_storage_pass =
+				xstrdup(DEFAULT_STORAGE_PASS);
+	}
 	if (!s_p_get_uint32(&conf->job_acct_storage_port, "JobAcctStoragePort",
-			    hashtbl))
-		conf->job_acct_storage_port =
-			DEFAULT_JOB_ACCT_STORAGE_PORT;
-
-	if (!s_p_get_string(&conf->job_comp_type, "JobCompType", hashtbl))
-		conf->job_comp_type = xstrdup(DEFAULT_JOB_COMP_TYPE);
-
-	if (!s_p_get_string(&conf->job_comp_loc, "JobCompLoc", hashtbl))
+			    hashtbl)) {
+		if(default_storage_port)
+			conf->job_acct_storage_port = default_storage_port;
+		else
+			conf->job_acct_storage_port =
+				DEFAULT_STORAGE_PORT;
+	}
+	if (!s_p_get_string(&conf->job_comp_type, "JobCompType", hashtbl)) {
+		if(default_storage_type)
+			conf->job_comp_type =
+				xstrdup_printf("jobcomp/%s",
+					       default_storage_type);
+		else
+			conf->job_comp_type = xstrdup(DEFAULT_JOB_COMP_TYPE);
+	}
+	if (!s_p_get_string(&conf->job_comp_loc, "JobCompLoc", hashtbl)) 
 		conf->job_comp_loc = xstrdup(DEFAULT_JOB_COMP_LOC);
 
 	if (!s_p_get_string(&conf->job_comp_host, "JobCompHost",
-			    hashtbl))
-		conf->job_comp_host = xstrdup(DEFAULT_JOB_COMP_HOST);
+			    hashtbl)) {
+		if(default_storage_host)
+			conf->job_comp_host =
+				xstrdup(default_storage_host);
+		else
+			conf->job_comp_host = xstrdup(DEFAULT_STORAGE_HOST);
+	}
 	if (!s_p_get_string(&conf->job_comp_user, "JobCompUser",
-			    hashtbl))
-		conf->job_comp_user = xstrdup(DEFAULT_JOB_COMP_USER);
+			    hashtbl)) {
+		if(default_storage_user)
+			conf->job_comp_user =
+				xstrdup(default_storage_user);
+		else
+			conf->job_comp_user = xstrdup(DEFAULT_STORAGE_USER);
+	}
 	if (!s_p_get_string(&conf->job_comp_pass, "JobCompPass",
-			    hashtbl))
-		conf->job_comp_pass = xstrdup(DEFAULT_JOB_COMP_PASS);
+			    hashtbl)) {
+		if(default_storage_pass)
+			conf->job_comp_pass =
+				xstrdup(default_storage_pass);
+		else
+			conf->job_comp_pass = xstrdup(DEFAULT_STORAGE_PASS);
+	}
 	if (!s_p_get_uint32(&conf->job_comp_port, "JobCompPort",
-			    hashtbl))
-		conf->job_comp_port = DEFAULT_JOB_COMP_PORT;
-
+			    hashtbl)) {
+		if(default_storage_port)
+			conf->job_comp_port = default_storage_port;
+		else
+			conf->job_comp_port = DEFAULT_STORAGE_PORT;
+	}
 	if (!s_p_get_uint16(&conf->job_file_append, "JobFileAppend", hashtbl))
 		conf->job_file_append = 0;
 
@@ -1638,48 +1717,93 @@ validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	
 	if (!s_p_get_string(&conf->cluster_acct_storage_type,
 			    "ClusterAcctStorageType", hashtbl)) {
-		conf->cluster_acct_storage_type =
-			xstrdup(DEFAULT_CLUSTER_ACCT_STORAGE_TYPE);
+		if(default_storage_type)
+			conf->cluster_acct_storage_type =
+				xstrdup_printf("clusteracct_storage/%s",
+					       default_storage_type);
+		else	
+			conf->cluster_acct_storage_type =
+				xstrdup(DEFAULT_CLUSTER_ACCT_STORAGE_TYPE);
 	}
 	if (!s_p_get_string(&conf->cluster_acct_storage_host,
-			    "ClusterAcctStorageHost", hashtbl))
-		conf->cluster_acct_storage_host =
-			xstrdup(DEFAULT_CLUSTER_ACCT_STORAGE_HOST);
+			    "ClusterAcctStorageHost", hashtbl)) {
+		if(default_storage_host)
+			conf->cluster_acct_storage_host =
+				xstrdup(default_storage_host);
+		else
+			conf->cluster_acct_storage_host =
+				xstrdup(DEFAULT_STORAGE_HOST);
+	}
 	if (!s_p_get_string(&conf->cluster_acct_storage_user,
-			    "ClusterAcctStorageUser", hashtbl))
-		conf->cluster_acct_storage_user =
-			xstrdup(DEFAULT_CLUSTER_ACCT_STORAGE_USER);
+			    "ClusterAcctStorageUser", hashtbl)) {
+		if(default_storage_user)
+			conf->cluster_acct_storage_user =
+				xstrdup(default_storage_user);
+		else
+			conf->cluster_acct_storage_user =
+				xstrdup(DEFAULT_STORAGE_USER);
+	}
 	if (!s_p_get_string(&conf->cluster_acct_storage_pass,
-			    "ClusterAcctStoragePass", hashtbl))
-		conf->cluster_acct_storage_pass =
-			xstrdup(DEFAULT_CLUSTER_ACCT_STORAGE_PASS);
+			    "ClusterAcctStoragePass", hashtbl)) {
+		if(default_storage_pass)
+			conf->cluster_acct_storage_pass =
+				xstrdup(default_storage_pass);
+		else
+			conf->cluster_acct_storage_pass =
+				xstrdup(DEFAULT_STORAGE_PASS);
+	}
 	if (!s_p_get_uint32(&conf->cluster_acct_storage_port,
-			    "ClusterAcctStoragePort", hashtbl))
-		conf->cluster_acct_storage_port =
-			DEFAULT_CLUSTER_ACCT_STORAGE_PORT;
-
+			    "ClusterAcctStoragePort", hashtbl)) {
+		if(default_storage_port)
+			conf->cluster_acct_storage_port = default_storage_port;
+		else
+			conf->cluster_acct_storage_port =
+				DEFAULT_STORAGE_PORT;
+	}
 	if (!s_p_get_string(&conf->account_storage_type,
 			    "AccountStorageType", hashtbl)) {
-		conf->account_storage_type =
-			xstrdup(DEFAULT_ACCOUNT_STORAGE_TYPE);
+		if(default_storage_type)
+			conf->account_storage_type =
+				xstrdup_printf("account_storage/%s",
+					       default_storage_type);
+		else	
+			conf->account_storage_type =
+				xstrdup(DEFAULT_ACCOUNT_STORAGE_TYPE);
 	}
 	if (!s_p_get_string(&conf->account_storage_host,
-			    "AccountStorageHost", hashtbl))
-		conf->account_storage_host =
-			xstrdup(DEFAULT_ACCOUNT_STORAGE_HOST);
+			    "AccountStorageHost", hashtbl)) {
+		if(default_storage_host)
+			conf->account_storage_host =
+				xstrdup(default_storage_host);
+		else
+			conf->account_storage_host =
+				xstrdup(DEFAULT_STORAGE_HOST);
+	}
 	if (!s_p_get_string(&conf->account_storage_user,
-			    "AccountStorageUser", hashtbl))
-		conf->account_storage_user =
-			xstrdup(DEFAULT_ACCOUNT_STORAGE_USER);
+			    "AccountStorageUser", hashtbl)) {
+		if(default_storage_user)
+			conf->account_storage_user =
+				xstrdup(default_storage_user);
+		else
+			conf->account_storage_user =
+				xstrdup(DEFAULT_STORAGE_USER);
+	}
 	if (!s_p_get_string(&conf->account_storage_pass,
-			    "AccountStoragePass", hashtbl))
-		conf->account_storage_pass =
-			xstrdup(DEFAULT_ACCOUNT_STORAGE_PASS);
+			    "AccountStoragePass", hashtbl)) {
+		if(default_storage_pass)
+			conf->account_storage_pass =
+				xstrdup(default_storage_pass);
+		else
+			conf->account_storage_pass =
+				xstrdup(DEFAULT_STORAGE_PASS);
+	}
 	if (!s_p_get_uint32(&conf->account_storage_port,
-			    "AccountStoragePort", hashtbl))
-		conf->account_storage_port =
-			DEFAULT_ACCOUNT_STORAGE_PORT;
-
+			    "AccountStoragePort", hashtbl)) {
+		if(default_storage_port)
+			conf->account_storage_port = default_storage_port;
+		else
+			conf->account_storage_port = DEFAULT_STORAGE_PORT;
+	}
 	if (!s_p_get_string(&conf->plugindir, "PluginDir", hashtbl))
 		conf->plugindir = xstrdup(default_plugin_path);
 
@@ -1894,6 +2018,10 @@ validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	if (!s_p_get_uint16(&conf->unkillable_timeout,
 			    "UnkillableStepTimeout", hashtbl))
 		conf->unkillable_timeout = DEFAULT_UNKILLABLE_TIMEOUT;
+	xfree(default_storage_type);
+	xfree(default_storage_host);
+	xfree(default_storage_user);
+	xfree(default_storage_pass);
 }
 
 /*

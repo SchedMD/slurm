@@ -105,7 +105,7 @@ static slurm_clusteracct_storage_ops_t * _clusteracct_storage_get_ops(
 	static const char *syms[] = {
 		"clusteracct_storage_p_node_down",
 		"clusteracct_storage_p_node_up",
-		"clusteracct_storage_p_cluster_procs"
+		"clusteracct_storage_p_cluster_procs",
 		"clusteracct_storage_p_get_hourly_usage",
 		"clusteracct_storage_p_get_daily_usage",
 		"clusteracct_storage_p_get_monthly_usage"
@@ -143,7 +143,8 @@ static slurm_clusteracct_storage_ops_t * _clusteracct_storage_get_ops(
 			      n_syms,
 			      syms,
 			      (void **) &c->ops ) < n_syms ) {
-		error( "incomplete clusteracct_storage plugin detected" );
+		error( "incomplete clusteracct_storage plugin detected: "
+		       "Expecting %d", n_syms);
 		return NULL;
 	}
 
