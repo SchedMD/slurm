@@ -233,6 +233,12 @@ static int	_same_info(struct node_record *node1_ptr,
 		if (node1_ptr->part_pptr[i] !=  node2_ptr->part_pptr[i])
 			return 6;
 	}
+	if (node1_ptr->arch && node2_ptr->arch) &&
+	    strcmp(node1_ptr->arch, node2_ptr->arch))
+		return 7
+	if (node1_ptr->os && node2_ptr->os &&
+	    strcmp(node1_ptr->os, node2_ptr->os))
+		return 8;
 	if (state_info == SLURM_INFO_VOLITILE)
 		return 0;
 
@@ -244,18 +250,18 @@ static int	_same_info(struct node_record *node1_ptr,
 		     node2_ptr->config_ptr->tmp_disk) ||
 		    (node1_ptr->config_ptr->cpus != 
 		     node2_ptr->config_ptr->cpus))
-			return 7;
+			return 9;
 	} else {
 		if ((node1_ptr->real_memory != node2_ptr->real_memory) ||
 		    (node1_ptr->tmp_disk    != node2_ptr->tmp_disk) ||
 		    (node1_ptr->cpus        != node2_ptr->cpus))
-			return 8;
+			return 10;
 	}
 	if ((node1_ptr->config_ptr->feature != 
 	     node2_ptr->config_ptr->feature) ||
 	    strcmp(node1_ptr->config_ptr->feature, 
 	           node2_ptr->config_ptr->feature))
-		return 9;
+		return 11;
 	return 0;
 }
 
