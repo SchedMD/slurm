@@ -935,6 +935,7 @@ DEBUG_MODULES_TRUE
 DEBUG_MODULES_FALSE
 SLURMCTLD_PORT
 SLURMD_PORT
+SLURMDBD_PORT
 ELAN_LIBS
 HAVE_ELAN_TRUE
 HAVE_ELAN_FALSE
@@ -1593,6 +1594,7 @@ Optional Packages:
   --with-xcpu=PATH        specify path to XCPU directory
   --with-slurmctld-port=N set slurmctld default port 6817
   --with-slurmd-port=N    set slurmd default port 6818
+  --with-slurmdbd-port=N  set slurmdbd default port 6819
   --without-readline      compile without readline support
   --with-ssl=PATH         Specify path to OpenSSL installation
   --with-munge=PATH       Specify path to munge installation
@@ -7111,7 +7113,7 @@ ia64-*-hpux*)
   ;;
 *-*-irix6*)
   # Find out which ABI we are using.
-  echo '#line 7114 "configure"' > conftest.$ac_ext
+  echo '#line 7116 "configure"' > conftest.$ac_ext
   if { (eval echo "$as_me:$LINENO: \"$ac_compile\"") >&5
   (eval $ac_compile) 2>&5
   ac_status=$?
@@ -8902,11 +8904,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:8905: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:8907: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:8909: \$? = $ac_status" >&5
+   echo "$as_me:8911: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -9192,11 +9194,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:9195: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:9197: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:9199: \$? = $ac_status" >&5
+   echo "$as_me:9201: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -9296,11 +9298,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:9299: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:9301: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:9303: \$? = $ac_status" >&5
+   echo "$as_me:9305: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -11658,7 +11660,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<EOF
-#line 11661 "configure"
+#line 11663 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -11758,7 +11760,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<EOF
-#line 11761 "configure"
+#line 11763 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -14178,11 +14180,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:14181: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:14183: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:14185: \$? = $ac_status" >&5
+   echo "$as_me:14187: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -14282,11 +14284,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:14285: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:14287: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:14289: \$? = $ac_status" >&5
+   echo "$as_me:14291: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -15859,11 +15861,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:15862: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:15864: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:15866: \$? = $ac_status" >&5
+   echo "$as_me:15868: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -15963,11 +15965,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:15966: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:15968: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:15970: \$? = $ac_status" >&5
+   echo "$as_me:15972: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -18163,11 +18165,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:18166: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:18168: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:18170: \$? = $ac_status" >&5
+   echo "$as_me:18172: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -18453,11 +18455,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:18456: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:18458: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:18460: \$? = $ac_status" >&5
+   echo "$as_me:18462: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -18557,11 +18559,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:18560: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:18562: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:18564: \$? = $ac_status" >&5
+   echo "$as_me:18566: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -25366,7 +25368,6 @@ fi
   { echo "$as_me:$LINENO: checking for slurmctld default port" >&5
 echo $ECHO_N "checking for slurmctld default port... $ECHO_C" >&6; }
 
-
 # Check whether --with-slurmctld-port was given.
 if test "${with_slurmctld_port+set}" = set; then
   withval=$with_slurmctld_port;  if test `expr match "$withval" '[0-9]*$'` -gt 0; then
@@ -25379,10 +25380,10 @@ fi
   { echo "$as_me:$LINENO: result: ${slurmctldport=6817}" >&5
 echo "${ECHO_T}${slurmctldport=6817}" >&6; }
 
-
 cat >>confdefs.h <<_ACEOF
 #define SLURMCTLD_PORT $slurmctldport
 _ACEOF
+
 
 
 
@@ -25401,12 +25402,31 @@ fi
   { echo "$as_me:$LINENO: result: ${slurmdport=6818}" >&5
 echo "${ECHO_T}${slurmdport=6818}" >&6; }
 
-
 cat >>confdefs.h <<_ACEOF
 #define SLURMD_PORT $slurmdport
 _ACEOF
 
 
+
+
+  { echo "$as_me:$LINENO: checking for slurmdbd default port" >&5
+echo $ECHO_N "checking for slurmdbd default port... $ECHO_C" >&6; }
+
+# Check whether --with-slurmdbd-port was given.
+if test "${with_slurmdbd_port+set}" = set; then
+  withval=$with_slurmdbd_port;  if test `expr match "$withval" '[0-9]*$'` -gt 0; then
+            slurmdbdport="$withval"
+          fi
+
+
+fi
+
+  { echo "$as_me:$LINENO: result: ${slurmdbdport=6817}" >&5
+echo "${ECHO_T}${slurmdbdport=6817}" >&6; }
+
+cat >>confdefs.h <<_ACEOF
+#define SLURMDBD_PORT $slurmdbdport
+_ACEOF
 
 
 
@@ -27621,6 +27641,7 @@ DEBUG_MODULES_TRUE!$DEBUG_MODULES_TRUE$ac_delim
 DEBUG_MODULES_FALSE!$DEBUG_MODULES_FALSE$ac_delim
 SLURMCTLD_PORT!$SLURMCTLD_PORT$ac_delim
 SLURMD_PORT!$SLURMD_PORT$ac_delim
+SLURMDBD_PORT!$SLURMDBD_PORT$ac_delim
 ELAN_LIBS!$ELAN_LIBS$ac_delim
 HAVE_ELAN_TRUE!$HAVE_ELAN_TRUE$ac_delim
 HAVE_ELAN_FALSE!$HAVE_ELAN_FALSE$ac_delim
@@ -27646,7 +27667,6 @@ WITH_MUNGE_FALSE!$WITH_MUNGE_FALSE$ac_delim
 AUTHD_LIBS!$AUTHD_LIBS$ac_delim
 AUTHD_CFLAGS!$AUTHD_CFLAGS$ac_delim
 WITH_AUTHD_TRUE!$WITH_AUTHD_TRUE$ac_delim
-WITH_AUTHD_FALSE!$WITH_AUTHD_FALSE$ac_delim
 _ACEOF
 
   if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 97; then
@@ -27688,11 +27708,12 @@ _ACEOF
 ac_delim='%!_!# '
 for ac_last_try in false false false false false :; do
   cat >conf$$subs.sed <<_ACEOF
+WITH_AUTHD_FALSE!$WITH_AUTHD_FALSE$ac_delim
 UTIL_LIBS!$UTIL_LIBS$ac_delim
 LTLIBOBJS!$LTLIBOBJS$ac_delim
 _ACEOF
 
-  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 2; then
+  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 3; then
     break
   elif $ac_last_try; then
     { { echo "$as_me:$LINENO: error: could not make $CONFIG_STATUS" >&5
