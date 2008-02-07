@@ -38,9 +38,7 @@
 #ifdef HAVE_CONFIG_H
 #  include "config.h"
 #endif
-#ifdef WITH_PTHREADS
-#  include <pthread.h>
-#endif				/* WITH_PTHREADS */
+#include <pthread.h>
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -53,28 +51,41 @@
 #include "src/common/fd.h"
 #include "src/common/log.h"
 #include "src/common/xmalloc.h"
+#include "src/common/xsignal.h"
 #include "src/common/xstring.h"
 #include "src/slurmdbd/read_config.h"
 
-/* Log to stderr and syslog until becomes a daemon */
-log_options_t log_opts = LOG_OPTS_INITIALIZER;
-static int debug_level = 0;	/* incremented for -v on command line */
-static int foreground = 0;	/* run process as a daemon */
-static int cold_start = 0;	/* do not recover any state information */
+/* Local variables */
+static int    cold_start = 0;		/* recover no state information if set */
+static int    dbd_sigarray[] = {	/* blocked signals for this process */
+			SIGINT,  SIGTERM, SIGCHLD, SIGUSR1,
+			SIGUSR2, SIGTSTP, SIGXCPU, SIGQUIT,
+			SIGPIPE, SIGALRM, SIGABRT, SIGHUP, 0 };
+static int    debug_level = 0;		/* incremented for -v on command line */
+static int    dump_core = 0;		/* set to abort() on shutdown */
+static int    foreground = 0;		/* run process as a daemon */
+static log_options_t log_opts = 	/* Log to stderr & syslog */
+			LOG_OPTS_INITIALIZER;
+static time_t shutdown_time = 0;	/* when shutdown request arrived */
+static pthread_t signal_handler_thread;	/* thread ID for signal hander */
 
 /* Local functions */
-static void _daemonize(void);
-static void _init_config(void);
-static void _init_pidfile(void);
-static void _kill_old_slurmdbd(void);
-static void _parse_commandline(int argc, char *argv[]);
-static void _update_logging(void);
-static void _update_logging(void);
-static void _usage(char *prog_name);
+static void  _daemonize(void);
+static void  _default_sigaction(int sig);
+static void  _init_config(void);
+static void  _init_pidfile(void);
+static void  _kill_old_slurmdbd(void);
+static void  _parse_commandline(int argc, char *argv[]);
+static void *_signal_handler(void *no_data);
+static void  _update_logging(void);
+static void  _update_logging(void);
+static void  _usage(char *prog_name);
 
 /* main - slurmctld main function, start various threads and process RPCs */
 int main(int argc, char *argv[])
 {
+	pthread_attr_t thread_attr;
+
 	_init_config();
 	log_init(argv[0], log_opts, LOG_DAEMON, NULL);
 	if (read_slurmdbd_conf())
@@ -82,13 +93,28 @@ int main(int argc, char *argv[])
 	_parse_commandline(argc, argv);
 	_update_logging();
 	_kill_old_slurmdbd();
-	_init_pidfile();
 	if (foreground == 0)
 		_daemonize();
+	_init_pidfile();
 	log_config();
+	if (xsignal_block(dbd_sigarray) < 0)
+		error("Unable to block signals");
 	info("slurmdbd version %s started", SLURM_VERSION);
+
+	/* Create attached thread for signal handling */
+	slurm_attr_init(&thread_attr);
+	if (pthread_create(&signal_handler_thread, &thread_attr,
+			   _signal_handler, NULL))
+		fatal("pthread_create %m");
+	slurm_attr_destroy(&thread_attr);
 /* FIXME */
 
+	pthread_join(signal_handler_thread,  NULL);
+	if (slurmdbd_conf->pid_file &&
+	    (unlink(slurmdbd_conf->pid_file) < 0)) {
+		verbose("Unable to remove pidfile '%s': %m",
+			slurmdbd_conf->pid_file);
+	}
 	free_slurmdbd_conf();
 	exit(0);
 }
@@ -232,14 +258,13 @@ static void _init_pidfile(void)
 {
 	int   fd;
 
+	if (slurmdbd_conf->pid_file == NULL) {
+		error("No PidFile configured");
+		return;
+	}
+
 	if ((fd = create_pidfile(slurmdbd_conf->pid_file)) < 0)
 		return;
-
-	/*
-	 * Close fd here, otherwise we'll deadlock since create_pidfile()
-	 * flocks the pidfile.
-	 */
-	close(fd);
 }
 
 static void _daemonize(void)
@@ -265,4 +290,66 @@ static void _daemonize(void)
 			fatal("chdir(%s): %m", slurmdbd_conf->state_save_dir);
 		}
 	}
+}
+
+/* _signal_handler - Process daemon-wide signals */
+static void *_signal_handler(void *no_data)
+{
+	int rc, sig;
+	int sig_array[] = {SIGINT, SIGTERM, SIGHUP, SIGABRT, 0};
+	sigset_t set;
+
+	(void) pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
+	(void) pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
+
+	/* Make sure no required signals are ignored (possibly inherited) */
+	_default_sigaction(SIGINT);
+	_default_sigaction(SIGTERM);
+	_default_sigaction(SIGHUP);
+	_default_sigaction(SIGABRT);
+
+	while (1) {
+		xsignal_sigset_create(sig_array, &set);
+		rc = sigwait(&set, &sig);
+		if (rc == EINTR)
+			continue;
+		switch (sig) {
+		case SIGHUP:	/* kill -1 */
+			info("Reconfigure signal (SIGHUP) received");
+			read_slurmdbd_conf();
+			break;
+		case SIGINT:	/* kill -2  or <CTRL-C> */
+		case SIGTERM:	/* kill -15 */
+			info("Terminate signal (SIGINT or SIGTERM) received");
+			shutdown_time = time(NULL);
+/* FIXME: send message to handler to wake the thread */
+			return NULL;	/* Normal termination */
+			break;
+		case SIGABRT:	/* abort */
+			info("SIGABRT received");
+			shutdown_time = time(NULL);
+			dump_core = 1;
+/* FIXME: send message to handler to wake the thread */
+			return NULL;
+		default:
+			error("Invalid signal (%d) received", sig);
+		}
+	}
+
+}
+
+static void _default_sigaction(int sig)
+{
+	struct sigaction act;
+
+	if (sigaction(sig, NULL, &act)) {
+		error("sigaction(%d): %m", sig);
+		return;
+	}
+	if (act.sa_handler != SIG_IGN)
+		return;
+
+	act.sa_handler = SIG_DFL;
+	if (sigaction(sig, &act, NULL))
+		error("sigaction(%d): %m", sig);
 }
