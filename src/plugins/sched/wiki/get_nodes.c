@@ -107,6 +107,11 @@ extern int	get_nodes(char *cmd_ptr, int *err_code, char **err_msg)
 		node_name = strtok_r(tmp_char, ":", &tmp2_char);
 		while (node_name) {
 			node_ptr = find_node_record(node_name);
+			if (node_ptr == NULL) {
+				error("sched/wiki2: bad hostname %s",
+				      node_name);
+				continue;
+			}
 			tmp_buf = _dump_node(node_ptr, state_info);
 			if (node_rec_cnt > 0)
 				xstrcat(buf, "#");

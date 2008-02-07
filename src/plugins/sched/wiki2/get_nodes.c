@@ -112,21 +112,31 @@ extern int	get_nodes(char *cmd_ptr, int *err_code, char **err_msg)
 		buf = _dump_all_nodes(&node_rec_cnt, state_info);
 	} else {
 		struct node_record *node_ptr = NULL;
-		char *node_name = NULL, *tmp2_char = NULL;
+		char *node_name, *slurm_hosts;
+		int node_cnt;
+		hostset_t slurm_hostset;
 
-		node_name = strtok_r(tmp_char, ":", &tmp2_char);
-		while (node_name) {
-			node_ptr = find_node_record(node_name);
-			if (!node_ptr)
-				continue;
-			tmp_buf = _dump_node(node_ptr, NULL, state_info);
-			if (node_rec_cnt > 0)
-				xstrcat(buf, "#");
-			xstrcat(buf, tmp_buf);
-			xfree(tmp_buf);
-			node_rec_cnt++;
-			node_name = strtok_r(NULL, ":", &tmp2_char);
+		slurm_hosts = moab2slurm_task_list(tmp_char, &node_cnt);
+		if ((slurm_hostset = hostset_create(slurm_hosts))) {
+			while ((node_name = hostset_shift(slurm_hostset))) {
+				node_ptr = find_node_record(node_name);
+				if (node_ptr == NULL) {
+					error("sched/wiki2: bad hostname %s", 
+					      node_name);
+					continue;
+				}
+				tmp_buf = _dump_node(node_ptr, NULL, state_info);
+				if (node_rec_cnt > 0)
+					xstrcat(buf, "#");
+				xstrcat(buf, tmp_buf);
+				xfree(tmp_buf);
+				node_rec_cnt++;
+			}
+			hostset_destroy(slurm_hostset);
+		} else {
+			error("hostset_create(%s): %m", slurm_hosts);
 		}
+		xfree(slurm_hosts);
 	}
 	unlock_slurmctld(node_read_lock);
 
