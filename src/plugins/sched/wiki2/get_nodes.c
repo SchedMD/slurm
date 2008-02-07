@@ -117,6 +117,8 @@ extern int	get_nodes(char *cmd_ptr, int *err_code, char **err_msg)
 		node_name = strtok_r(tmp_char, ":", &tmp2_char);
 		while (node_name) {
 			node_ptr = find_node_record(node_name);
+			if (!node_ptr)
+				continue;
 			tmp_buf = _dump_node(node_ptr, NULL, state_info);
 			if (node_rec_cnt > 0)
 				xstrcat(buf, "#");
@@ -233,9 +235,9 @@ static int	_same_info(struct node_record *node1_ptr,
 		if (node1_ptr->part_pptr[i] !=  node2_ptr->part_pptr[i])
 			return 6;
 	}
-	if (node1_ptr->arch && node2_ptr->arch) &&
+	if (node1_ptr->arch && node2_ptr->arch &&
 	    strcmp(node1_ptr->arch, node2_ptr->arch))
-		return 7
+		return 7;
 	if (node1_ptr->os && node2_ptr->os &&
 	    strcmp(node1_ptr->os, node2_ptr->os))
 		return 8;
