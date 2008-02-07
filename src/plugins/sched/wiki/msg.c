@@ -349,24 +349,47 @@ extern int parse_wiki_config(void)
 			continue;
 		info("ExcludePartitions  = %s", exclude_part_ptr[i]->name);
 	}
+	for (i=0; i<HIDE_PART_CNT; i++) {
+		if (!hide_part_ptr[i])
+			continue;
+		info("HidePartitionJobs  = %s, hide_ptr_ptr[i]->name);
+	}
 #endif
 	return SLURM_SUCCESS;
 }
 
 extern char *	get_wiki_conf(void)
 {
-	int i, first = 1;
-	char *conf = NULL;
+	int i, first;
+	char buf[20], *conf = NULL;
 
+	snprintf(buf, sizeof(buf), "HostFormat=%u", use_host_exp);
+	xstrcat(conf, buf);
+
+	first = 1;
 	for (i=0; i<EXC_PART_CNT; i++) {
 		if (!exclude_part_ptr[i])
 			continue;
 		if (first) {
-			xstrcat(conf, "ExcludePartitions=");
+			xstrcat(conf, ";ExcludePartitions=");
 			first = 0;
 		} else
 			xstrcat(conf, ",");
 		xstrcat(conf, exclude_part_ptr[i]->name);
+	}
+
+	first = 1;
+	for (i=0; i<HIDE_PART_CNT; i++) {
+		if (!hide_part_ptr[i])
+			continue;
+		if (first) {
+			if (conf)
+				xstrcat(conf, ";");
+			xstrcat(conf, ";HidePartitionJobs=");
+			first = 0;
+		} else
+			xstrcat(conf, ",");
+		xstrcat(conf, hide_part_ptr[i]->name);
 	}
 
 	return conf;
