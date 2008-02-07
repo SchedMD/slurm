@@ -168,7 +168,7 @@ strong_alias(hostset_nth,		slurm_hostset_nth);
 /* ----[ Internal Data Structures ]---- */
 
 
-char *alpha_num = "0123456789ABCDEFGHIJKLMNOPQRSTUZWXYZ";
+char *alpha_num = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
 #ifdef HAVE_BG		
 /* logic for block node description */
