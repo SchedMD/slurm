@@ -54,9 +54,9 @@
 #include "src/common/xsignal.h"
 #include "src/common/xstring.h"
 #include "src/slurmdbd/read_config.h"
+#include "src/slurmdbd/rpc_mgr.h"
 
 /* Local variables */
-static int    cold_start = 0;		/* recover no state information if set */
 static int    dbd_sigarray[] = {	/* blocked signals for this process */
 			SIGINT,  SIGTERM, SIGCHLD, SIGUSR1,
 			SIGUSR2, SIGTSTP, SIGXCPU, SIGQUIT,
@@ -66,6 +66,7 @@ static int    dump_core = 0;		/* set to abort() on shutdown */
 static int    foreground = 0;		/* run process as a daemon */
 static log_options_t log_opts = 	/* Log to stderr & syslog */
 			LOG_OPTS_INITIALIZER;
+static pthread_t rpc_handler_thread;	/* thread ID for RPC hander */
 static time_t shutdown_time = 0;	/* when shutdown request arrived */
 static pthread_t signal_handler_thread;	/* thread ID for signal hander */
 
@@ -107,9 +108,15 @@ int main(int argc, char *argv[])
 			   _signal_handler, NULL))
 		fatal("pthread_create %m");
 	slurm_attr_destroy(&thread_attr);
-/* FIXME */
 
-	pthread_join(signal_handler_thread,  NULL);
+	/* Create attached thread to process incoming RPCs */
+	slurm_attr_init(&thread_attr);
+	if (pthread_create(&rpc_handler_thread, &thread_attr, rpc_mgr, NULL))
+		fatal("pthread_create error %m");
+	slurm_attr_destroy(&thread_attr);
+
+	pthread_join(signal_handler_thread, NULL);
+	pthread_join(rpc_handler_thread, NULL);
 	if (slurmdbd_conf->pid_file &&
 	    (unlink(slurmdbd_conf->pid_file) < 0)) {
 		verbose("Unable to remove pidfile '%s': %m",
@@ -119,6 +126,7 @@ int main(int argc, char *argv[])
 	exit(0);
 }
 
+/* Reset some of the processes resource limits to the hard limits */
 static void  _init_config(void)
 {
 	struct rlimit rlim;
@@ -158,9 +166,6 @@ static void _parse_commandline(int argc, char *argv[])
 	opterr = 0;
 	while ((c = getopt(argc, argv, "cDhL:vV")) != -1)
 		switch (c) {
-		case 'c':
-			cold_start = 1;
-			break;
 		case 'D':
 			foreground = 1;
 			break;
@@ -190,8 +195,6 @@ static void _parse_commandline(int argc, char *argv[])
 static void _usage(char *prog_name)
 {
 	fprintf(stderr, "Usage: %s [OPTIONS]\n", prog_name);
-	fprintf(stderr, "  -c         \t"
-			"Do not recover state from last checkpoint.\n");
 	fprintf(stderr, "  -D         \t"
 			"Run daemon in foreground.\n");
 	fprintf(stderr, "  -h         \t"
@@ -254,6 +257,7 @@ static void _kill_old_slurmdbd(void)
 	}
 }
 
+/* Create the PidFile if one is configured */
 static void _init_pidfile(void)
 {
 	int   fd;
@@ -267,6 +271,8 @@ static void _init_pidfile(void)
 		return;
 }
 
+/* Become a daemon (child of init) and 
+ * "cd" to the LogFile directory (if one is configured) */
 static void _daemonize(void)
 {
 	if (daemon(1, 1))
@@ -285,10 +291,6 @@ static void _daemonize(void)
 		if (chdir(work_dir) < 0)
 			fatal("chdir(%s): %m", work_dir);
 		xfree(work_dir);
-	} else {
-		if (chdir(slurmdbd_conf->state_save_dir) < 0) {
-			fatal("chdir(%s): %m", slurmdbd_conf->state_save_dir);
-		}
 	}
 }
 
@@ -322,14 +324,14 @@ static void *_signal_handler(void *no_data)
 		case SIGTERM:	/* kill -15 */
 			info("Terminate signal (SIGINT or SIGTERM) received");
 			shutdown_time = time(NULL);
-/* FIXME: send message to handler to wake the thread */
+			rpc_mgr_wake();
 			return NULL;	/* Normal termination */
 			break;
 		case SIGABRT:	/* abort */
 			info("SIGABRT received");
 			shutdown_time = time(NULL);
 			dump_core = 1;
-/* FIXME: send message to handler to wake the thread */
+			rpc_mgr_wake();
 			return NULL;
 		default:
 			error("Invalid signal (%d) received", sig);
@@ -338,6 +340,8 @@ static void *_signal_handler(void *no_data)
 
 }
 
+/* Reset some signals to their default state to clear any 
+ * inherited signal states */
 static void _default_sigaction(int sig)
 {
 	struct sigaction act;

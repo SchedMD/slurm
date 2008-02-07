@@ -71,7 +71,7 @@ am__installdirs = "$(DESTDIR)$(sbindir)"
 sbinPROGRAMS_INSTALL = $(INSTALL_PROGRAM)
 PROGRAMS = $(sbin_PROGRAMS)
 am_slurmdbd_OBJECTS = agent.$(OBJEXT) read_config.$(OBJEXT) \
-	rpc_pack.$(OBJEXT) slurmdbd.$(OBJEXT)
+	rpc_pack.$(OBJEXT) rpc_mgr.$(OBJEXT) slurmdbd.$(OBJEXT)
 slurmdbd_OBJECTS = $(am_slurmdbd_OBJECTS)
 slurmdbd_DEPENDENCIES = $(top_builddir)/src/common/libcommon.la \
 	$(top_builddir)/src/common/libdaemonize.la
@@ -273,6 +273,8 @@ slurmdbd_SOURCES = \
 	read_config.h		\
 	rpc_pack.c		\
 	rpc_pack.h		\
+	rpc_mgr.c		\
+	rpc_mgr.h		\
 	slurmdbd.c  		\
 	slurmdbd.h
 
@@ -353,6 +355,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/agent.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/read_config.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rpc_pack.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rpc_mgr.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurmdbd.Po@am__quote@
 
 .c.o:
