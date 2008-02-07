@@ -46,6 +46,7 @@ static char *	_dump_node(struct node_record *node_ptr, hostlist_t hl,
 static char *	_get_node_state(struct node_record *node_ptr);
 static int	_same_info(struct node_record *node1_ptr, 
 			   struct node_record *node2_ptr, int state_info);
+static int	_str_cmp(char *s1, char *s2);
 
 #define SLURM_INFO_ALL		0
 #define SLURM_INFO_VOLITILE	1
@@ -78,7 +79,7 @@ static int	_same_info(struct node_record *node1_ptr,
 extern int	get_nodes(char *cmd_ptr, int *err_code, char **err_msg)
 {
 	char *arg_ptr = NULL, *tmp_char = NULL, *tmp_buf = NULL, *buf = NULL;
-	time_t update_time;
+	time_t update_time;static int	_str_cmp(char *s1, char *s2);
 	/* Locks: read node, read partition */
 	slurmctld_lock_t node_read_lock = {
 		NO_LOCK, NO_LOCK, READ_LOCK, READ_LOCK };
@@ -221,11 +222,7 @@ static int	_same_info(struct node_record *node1_ptr,
 
 	if (node1_ptr->node_state != node2_ptr->node_state)
 		return 1;
-	if (((node1_ptr->reason == NULL) && node2_ptr->reason) ||
-	    ((node2_ptr->reason == NULL) && node1_ptr->reason))
-		return 2;
-	if (node1_ptr->reason && node2_ptr->reason &&
-	    strcmp(node1_ptr->reason, node2_ptr->reason))
+	if (_str_cmp(node1_ptr->reason, node2_ptr->reason))
 		return 2;
 	if (state_info == SLURM_INFO_STATE)
 		return 0;
@@ -245,11 +242,9 @@ static int	_same_info(struct node_record *node1_ptr,
 		if (node1_ptr->part_pptr[i] !=  node2_ptr->part_pptr[i])
 			return 6;
 	}
-	if (node1_ptr->arch && node2_ptr->arch &&
-	    strcmp(node1_ptr->arch, node2_ptr->arch))
+	if (_str_cmp(node1_ptr->arch, node2_ptr->arch))
 		return 7;
-	if (node1_ptr->os && node2_ptr->os &&
-	    strcmp(node1_ptr->os, node2_ptr->os))
+	if (_str_cmp(node1_ptr->os, node2_ptr->os))
 		return 8;
 	if (state_info == SLURM_INFO_VOLITILE)
 		return 0;
@@ -269,10 +264,8 @@ static int	_same_info(struct node_record *node1_ptr,
 		    (node1_ptr->cpus        != node2_ptr->cpus))
 			return 10;
 	}
-	if ((node1_ptr->config_ptr->feature != 
-	     node2_ptr->config_ptr->feature) ||
-	    strcmp(node1_ptr->config_ptr->feature, 
-	           node2_ptr->config_ptr->feature))
+	if (_str_cmp(node1_ptr->config_ptr->feature, 
+		     node2_ptr->config_ptr->feature))
 		return 11;
 	return 0;
 }
@@ -394,4 +387,17 @@ static char *	_get_node_state(struct node_record *node_ptr)
 		return "Idle";
 	
 	return "Unknown";
+}
+
+/* Like strcmp(), but can handle NULL pointers */
+static int	_str_cmp(char *s1, char *s2)
+{
+	if (s1 && s2)
+		return strcmp(s1, s2);
+
+	if ((s1 == NULL) && (s2 == NULL))
+		return 0;
+
+	/* One pointer is valid and the other is NULL */
+	return 1;
 }
