@@ -90,6 +90,64 @@ const uint32_t plugin_version = 100;
 
 static char *cluster_name = NULL;
 
+
+static List _get_list_from_response(gold_response_t *gold_response, char *name);
+
+
+static List _get_list_from_response(gold_response_t *gold_response, char *name)
+{
+	ListIterator itr = NULL;
+	ListIterator itr2 = NULL;
+	List cluster_list = NULL;
+	clusteracct_rec_t *clusteracct_rec = NULL;
+	gold_response_entry_t *resp_entry = NULL;
+	gold_name_value_t *name_val = NULL;
+	
+	if(gold_response->entry_cnt <= 0) {
+		debug2("_get_list_from_response: No entries given");
+		return NULL;
+	}
+	cluster_list = list_create(destroy_clusteracct_rec);
+	
+	itr = list_iterator_create(gold_response->entries);
+	while((resp_entry = list_next(itr))) {
+		clusteracct_rec = xmalloc(sizeof(clusteracct_rec_t));
+		clusteracct_rec->cluster = xstrdup(name);
+		itr2 = list_iterator_create(resp_entry->name_val);
+		while((name_val = list_next(itr2))) {
+			if(!strcmp(name_val->name, "CPUCount")) {
+				clusteracct_rec->cpu_count = 
+					atoi(name_val->value);
+			} else if(!strcmp(name_val->name, 
+					  "IdleCPUSeconds")) {
+				clusteracct_rec->idle_secs = 
+					atoi(name_val->value);
+			} else if(!strcmp(name_val->name, 
+					  "DownCPUSeconds")) {
+				clusteracct_rec->down_secs = 
+					atoi(name_val->value);
+			} else if(!strcmp(name_val->name, 
+					  "AllocatedCPUSeconds")) {
+				clusteracct_rec->alloc_secs = 
+					atoi(name_val->value);
+			} else if(!strcmp(name_val->name, 
+					  "ReservedCPUSeconds")) {
+				clusteracct_rec->resv_secs = 
+					atoi(name_val->value);
+			} else {
+				error("Unknown name val of '%s' = '%s'",
+				      name_val->name, name_val->value);
+			}
+		}
+		list_iterator_destroy(itr2);
+		list_append(cluster_list, clusteracct_rec);
+	}
+	list_iterator_destroy(itr);
+
+	return cluster_list;
+}
+
+
 /*
  * init() is called when the plugin is loaded, before any other functions
  * are called.  Put global initialization here.
@@ -439,10 +497,60 @@ extern int clusteracct_storage_p_cluster_procs(uint32_t procs,
  * note List needs to be freed when called
  */
 extern List clusteracct_storage_p_get_hourly_usage(char *cluster, time_t start, 
-						  time_t end, void *params)
+						   time_t end, void *params)
 {
+	gold_request_t *gold_request = NULL;
+	gold_response_t *gold_response = NULL;
+	char tmp_buff[50];
+	List cluster_list = NULL;
 
-	return NULL;
+	if(!cluster) {
+		error("clusteracct_storage_p_get_hourly_usage:"
+		      "no cluster name given to query.");
+		return NULL;
+	}
+	/* get the last known one */
+	gold_request = create_gold_request(GOLD_OBJECT_MACHINE_HOUR_USAGE,
+					   GOLD_ACTION_QUERY);
+	if(!gold_request) 
+		return NULL;
+	gold_request_add_condition(gold_request, "Machine", cluster,
+				   GOLD_OPERATOR_NONE, 0);
+	if(start) {
+		snprintf(tmp_buff, sizeof(tmp_buff), "%d", (int)start);
+		gold_request_add_condition(gold_request, "PeriodStart",
+					   tmp_buff,
+					   GOLD_OPERATOR_GE, 0);
+	}
+	if(end) {	
+		snprintf(tmp_buff, sizeof(tmp_buff), "%u", (int)end);
+		gold_request_add_condition(gold_request, "PeriodStart",
+					   tmp_buff,
+					   GOLD_OPERATOR_L, 0);
+	}
+
+	gold_request_add_selection(gold_request, "CPUCount");
+	gold_request_add_selection(gold_request, "IdleCPUSeconds");
+	gold_request_add_selection(gold_request, "DownCPUSeconds");
+	gold_request_add_selection(gold_request, "AllocatedCPUSeconds");
+	gold_request_add_selection(gold_request, "ReservedCPUSeconds");
+		
+	gold_response = get_gold_response(gold_request);	
+	destroy_gold_request(gold_request);
+
+	if(!gold_response) {
+		error("clusteracct_p_cluster_procs: no response received");
+		return NULL;
+	}
+
+	if(gold_response->entry_cnt > 0) {
+		cluster_list = _get_list_from_response(gold_response, cluster);
+	} else {
+		debug("We don't have an entry for this machine for this time");
+	}
+	destroy_gold_response(gold_response);
+
+	return cluster_list;
 }
 
 /* 
@@ -453,8 +561,58 @@ extern List clusteracct_storage_p_get_hourly_usage(char *cluster, time_t start,
 extern List clusteracct_storage_p_get_daily_usage(char *cluster, time_t start, 
 						  time_t end, void *params)
 {
-	
-	return NULL;
+	gold_request_t *gold_request = NULL;
+	gold_response_t *gold_response = NULL;
+	char tmp_buff[50];
+	List cluster_list = NULL;
+
+	if(!cluster) {
+		error("clusteracct_storage_p_get_daily_usage:"
+		      "no cluster name given to query.");
+		return NULL;
+	}
+	/* get the last known one */
+	gold_request = create_gold_request(GOLD_OBJECT_MACHINE_DAY_USAGE,
+					   GOLD_ACTION_QUERY);
+	if(!gold_request) 
+		return NULL;
+	gold_request_add_condition(gold_request, "Machine", cluster,
+				   GOLD_OPERATOR_NONE, 0);
+	if(start) {
+		snprintf(tmp_buff, sizeof(tmp_buff), "%d", (int)start);
+		gold_request_add_condition(gold_request, "PeriodStart",
+					   tmp_buff,
+					   GOLD_OPERATOR_GE, 0);
+	}
+	if(end) {	
+		snprintf(tmp_buff, sizeof(tmp_buff), "%u", (int)end);
+		gold_request_add_condition(gold_request, "PeriodStart",
+					   tmp_buff,
+					   GOLD_OPERATOR_L, 0);
+	}
+
+	gold_request_add_selection(gold_request, "CPUCount");
+	gold_request_add_selection(gold_request, "IdleCPUSeconds");
+	gold_request_add_selection(gold_request, "DownCPUSeconds");
+	gold_request_add_selection(gold_request, "AllocatedCPUSeconds");
+	gold_request_add_selection(gold_request, "ReservedCPUSeconds");
+		
+	gold_response = get_gold_response(gold_request);	
+	destroy_gold_request(gold_request);
+
+	if(!gold_response) {
+		error("clusteracct_p_cluster_procs: no response received");
+		return NULL;
+	}
+
+	if(gold_response->entry_cnt > 0) {
+		cluster_list = _get_list_from_response(gold_response, cluster);
+	} else {
+		debug("We don't have an entry for this machine for this time");
+	}
+	destroy_gold_response(gold_response);
+
+	return cluster_list;
 }
 
 /* 
@@ -467,6 +625,56 @@ extern List clusteracct_storage_p_get_monthly_usage(char *cluster,
 						    time_t end,
 						    void *params)
 {
-	
-	return NULL;
+	gold_request_t *gold_request = NULL;
+	gold_response_t *gold_response = NULL;
+	char tmp_buff[50];
+	List cluster_list = NULL;
+
+	if(!cluster) {
+		error("clusteracct_storage_p_get_monthly_usage:"
+		      "no cluster name given to query.");
+		return NULL;
+	}
+	/* get the last known one */
+	gold_request = create_gold_request(GOLD_OBJECT_MACHINE_MONTH_USAGE,
+					   GOLD_ACTION_QUERY);
+	if(!gold_request) 
+		return NULL;
+	gold_request_add_condition(gold_request, "Machine", cluster,
+				   GOLD_OPERATOR_NONE, 0);
+	if(start) {
+		snprintf(tmp_buff, sizeof(tmp_buff), "%d", (int)start);
+		gold_request_add_condition(gold_request, "PeriodStart",
+					   tmp_buff,
+					   GOLD_OPERATOR_GE, 0);
+	}
+	if(end) {	
+		snprintf(tmp_buff, sizeof(tmp_buff), "%u", (int)end);
+		gold_request_add_condition(gold_request, "PeriodStart",
+					   tmp_buff,
+					   GOLD_OPERATOR_L, 0);
+	}
+
+	gold_request_add_selection(gold_request, "CPUCount");
+	gold_request_add_selection(gold_request, "IdleCPUSeconds");
+	gold_request_add_selection(gold_request, "DownCPUSeconds");
+	gold_request_add_selection(gold_request, "AllocatedCPUSeconds");
+	gold_request_add_selection(gold_request, "ReservedCPUSeconds");
+		
+	gold_response = get_gold_response(gold_request);	
+	destroy_gold_request(gold_request);
+
+	if(!gold_response) {
+		error("clusteracct_p_cluster_procs: no response received");
+		return NULL;
+	}
+
+	if(gold_response->entry_cnt > 0) {
+		cluster_list = _get_list_from_response(gold_response, cluster);
+	} else {
+		debug("We don't have an entry for this machine for this time");
+	}
+	destroy_gold_response(gold_response);
+
+	return cluster_list;
 }

@@ -47,7 +47,7 @@
 
 typedef struct {
 	char *cluster; /* cluster name */
-	uint32_t *cpu_count; /* number of cpus during time period */
+	uint32_t cpu_count; /* number of cpus during time period */
 	time_t *period_start; /* when this record was started */
 	time_t *period_end; /* when it ended */
 	uint32_t idle_secs; /* number of cpu seconds idle */

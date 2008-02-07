@@ -57,14 +57,18 @@
 
 typedef struct slurm_account_storage_ops {
 	int  (*add_users)          (List user_list);
+	int  (*add_coord)          (char *project, List user_list);
 	int  (*add_projects)       (List project_list);
 	int  (*add_clusters)       (List cluster_list);
 	int  (*add_accounts)       (List account_list);
 	int  (*modify_users)       (List user_list);
+	int  (*modify_user_admin_level)(account_admin_level_t level, 
+					List user_list);
 	int  (*modify_projects)    (List project_list);
 	int  (*modify_clusters)    (List cluster_list);
 	int  (*modify_accounts)    (List account_list);
 	int  (*remove_users)       (List user_list);
+	int  (*remove_coord)       (char *project, List user_list);
 	int  (*remove_projects)    (List project_list);
 	int  (*remove_clusters)    (List cluster_list);
 	int  (*remove_accounts)    (List account_list);
@@ -135,14 +139,17 @@ static slurm_account_storage_ops_t * _account_storage_get_ops(
 	 */
 	static const char *syms[] = {
 		"account_storage_p_add_users",
+		"account_storage_p_add_coord",
 		"account_storage_p_add_projects",
 		"account_storage_p_add_clusters",
 		"account_storage_p_add_accounts",
 		"account_storage_p_modify_users",
+		"account_storage_p_modify_user_admin_level",
 		"account_storage_p_modify_projects",
 		"account_storage_p_modify_clusters",
 		"account_storage_p_modify_accounts",
 		"account_storage_p_remove_users",
+		"account_storage_p_remove_coord",
 		"account_storage_p_remove_projects",
 		"account_storage_p_remove_clusters",
 		"account_storage_p_remove_accounts",
@@ -249,22 +256,26 @@ extern void destroy_account_user_rec(void *object)
 
 extern void destroy_account_project_rec(void *object)
 {
-	account_project_rec_t *account_project = (account_project_rec_t *)object;
+	account_project_rec_t *account_project =
+		(account_project_rec_t *)object;
 
 	if(account_project) {
 		xfree(account_project->name);
-		xfree(account_project->default_project);
+		xfree(account_project->description);
+		xfree(account_project->organization);
+		if(account_project->coodinators)
+			list_destroy(account_project->coodinators);
 		xfree(account_project);
 	}
 }
 
 extern void destroy_account_cluster_rec(void *object)
 {
-	account_cluster_rec_t *account_cluster = (account_cluster_rec_t *)object;
+	account_cluster_rec_t *account_cluster =
+		(account_cluster_rec_t *)object;
 
 	if(account_cluster) {
 		xfree(account_cluster->name);
-		xfree(account_cluster->default_project);
 		xfree(account_cluster);
 	}
 }
@@ -274,8 +285,9 @@ extern void destroy_account_acct_rec(void *object)
 	account_acct_rec_t *account_acct = (account_acct_rec_t *)object;
 
 	if(account_acct) {
-		xfree(account_acct->name);
-		xfree(account_acct->default_project);
+		xfree(account_acct->user);
+		xfree(account_acct->project);
+		xfree(account_acct->cluster);
 		xfree(account_acct);
 	}
 }
@@ -329,11 +341,6 @@ extern int slurm_account_storage_fini(void)
 	return rc;
 }
 
-/* 
- * add users to accounting system 
- * IN:  user_list List of account_user_rec_t *
- * RET: SLURM_SUCCESS on success SLURM_ERROR else
- */
 extern int account_storage_g_add_users(List user_list)
 {
 	if (slurm_account_storage_init() < 0)
@@ -341,11 +348,14 @@ extern int account_storage_g_add_users(List user_list)
 	return (*(g_account_storage_context->ops.add_users))(user_list);
 }
 
-/* 
- * add projects to accounting system 
- * IN:  project_list List of account_project_rec_t *
- * RET: SLURM_SUCCESS on success SLURM_ERROR else
- */
+extern int account_storage_g_add_coord(char *project, List user_list)
+{
+	if (slurm_account_storage_init() < 0)
+		return SLURM_ERROR;
+	return (*(g_account_storage_context->ops.add_coord))
+		(project, user_list);
+}
+
 extern int account_storage_g_add_projects(List project_list)
 {
 	if (slurm_account_storage_init() < 0)
@@ -353,11 +363,6 @@ extern int account_storage_g_add_projects(List project_list)
 	return (*(g_account_storage_context->ops.add_projects))(project_list);
 }
 
-/* 
- * add clusters to accounting system 
- * IN:  cluster_list List of account_cluster_rec_t *
- * RET: SLURM_SUCCESS on success SLURM_ERROR else
- */
 extern int account_storage_g_add_clusters(List cluster_list)
 {
 	if (slurm_account_storage_init() < 0)
@@ -365,11 +370,6 @@ extern int account_storage_g_add_clusters(List cluster_list)
 	return (*(g_account_storage_context->ops.add_clusters))(cluster_list);
 }
 
-/* 
- * add accts to accounting system 
- * IN:  acct_list List of account_acct_rec_t *
- * RET: SLURM_SUCCESS on success SLURM_ERROR else
- */
 extern int account_storage_g_add_accounts(List account_list)
 {
 	if (slurm_account_storage_init() < 0)
@@ -377,16 +377,20 @@ extern int account_storage_g_add_accounts(List account_list)
 	return (*(g_account_storage_context->ops.add_accounts))(account_list);
 }
 
-/* 
- * modify existing users in the accounting system 
- * IN:  user_list List of account_user_rec_t *
- * RET: SLURM_SUCCESS on success SLURM_ERROR else
- */
 extern int account_storage_g_modify_users(List user_list)
 {
 	if (slurm_account_storage_init() < 0)
 		return SLURM_ERROR;
 	return (*(g_account_storage_context->ops.modify_users))(user_list);
+}
+
+extern int account_storage_g_modify_user_admin_level(
+	account_admin_level_t level, List user_list)
+{
+	if (slurm_account_storage_init() < 0)
+		return SLURM_ERROR;
+	return (*(g_account_storage_context->ops.modify_user_admin_level))
+		(level, user_list);
 }
 
 /* 

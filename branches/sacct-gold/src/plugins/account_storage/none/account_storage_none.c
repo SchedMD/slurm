@@ -90,6 +90,8 @@ const uint32_t plugin_version = 100;
 
 static char *cluster_name = NULL;
 
+
+
 /*
  * init() is called when the plugin is loaded, before any other functions
  * are called.  Put global initialization here.
@@ -130,7 +132,7 @@ extern int init ( void )
 	if(!(port = slurm_get_account_storage_port())) {
 		port = 7112;
 		debug2("No port specified with AccountStoragePort, "
-		       "gold using default %s", port);
+		       "gold using default %u", port);
 	}
 
 	debug2("connecting from %s to gold with keyfile='%s' for %s(%d)",
@@ -163,6 +165,16 @@ extern int fini ( void )
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
 extern int account_storage_p_add_users(List user_list)
+{
+	return SLURM_SUCCESS;
+}
+
+/* 
+ * add users as project coordinators 
+ * IN:  user_list List of user_rec_t *
+ * RET: SLURM_SUCCESS on success SLURM_ERROR else
+ */
+extern int account_storage_p_add_coord(char *project, List user_list)
 {
 	return SLURM_SUCCESS;
 }
@@ -208,6 +220,18 @@ extern int account_storage_p_modify_users(List user_list)
 }
 
 /* 
+ * modify existing users admin level in the accounting system 
+ * IN:  level account_admin_level_t
+ * IN:  user_list List of char *
+ * RET: SLURM_SUCCESS on success SLURM_ERROR else
+ */
+extern int account_storage_p_modify_user_admin_level(
+	account_admin_level_t level, List user_list)
+{
+	return SLURM_SUCCESS;
+}
+
+/* 
  * modify existing projects in the accounting system 
  * IN:  project_list List of project_rec_t *
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
@@ -239,7 +263,7 @@ extern int account_storage_p_modify_accounts(List account_list)
 
 /* 
  * remove users from accounting system 
- * IN:  user_list List of user_rec_t *
+ * IN:  user_list List of char * (user names)
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
 extern int account_storage_p_remove_users(List user_list)
@@ -248,8 +272,21 @@ extern int account_storage_p_remove_users(List user_list)
 }
 
 /* 
+ * remove users from being a coordinator of an account
+ * IN: project name of project
+ * IN: user_list List of char * (user names)
+ * RET: SLURM_SUCCESS on success SLURM_ERROR else
+ */
+extern int account_storage_p_remove_coord(char *project, List user_list)
+{
+	return SLURM_SUCCESS;
+}
+
+/* 
  * remove projects from accounting system 
- * IN:  project_list List of project_rec_t *
+ * IN:  project_list List of char * (project names) with either id set
+ *      or user, project or cluster or a combination for multiple
+ *      fitting the same specs
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
 extern int account_storage_p_remove_projects(List project_list)
@@ -259,7 +296,7 @@ extern int account_storage_p_remove_projects(List project_list)
 
 /* 
  * remove clusters from accounting system 
- * IN:  cluster_list List of cluster_rec_t *
+ * IN:  cluster_list List of char * (cluster names)
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
 extern int account_storage_p_remove_clusters(List cluster_list)

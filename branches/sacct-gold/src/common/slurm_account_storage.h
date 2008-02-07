@@ -45,7 +45,7 @@
 #include <slurm/slurm.h>
 #include <slurm/slurm_errno.h>
 
-enum {
+typedef enum {
 	ACCOUNT_ADMIN_NONE,
 	ACCOUNT_ADMIN_OPERATOR,
 	ACCOUNT_ADMIN_SUPER_USER
@@ -65,6 +65,7 @@ typedef struct {
 	char *description;
 	char *organization;
 	uint32_t expedite;
+	List coodinators;
 } account_project_rec_t;
 
 typedef struct {
@@ -75,7 +76,7 @@ typedef struct {
 	uint32_t id;
 	char *user;
 	char *project;
-	char *machine;
+	char *cluster;
 	uint32_t parent;
 	uint32_t fairshare;
 	uint32_t max_jobs;
@@ -99,6 +100,14 @@ extern int slurm_account_storage_fini(void); /* unload the plugin */
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
 extern int account_storage_g_add_users(List user_list);
+
+/* 
+ * add users as project coordinators 
+ * IN:  user_list List of char *
+ * RET: SLURM_SUCCESS on success SLURM_ERROR else
+ */
+extern int account_storage_g_add_coord(char *project, List user_list);
+
 
 /* 
  * add projects to accounting system 
@@ -129,6 +138,15 @@ extern int account_storage_g_add_accounts(List account_list);
 extern int account_storage_g_modify_users(List user_list);
 
 /* 
+ * modify existing users admin level in the accounting system 
+ * IN:  level account_admin_level_t
+ * IN:  user_list List of char *
+ * RET: SLURM_SUCCESS on success SLURM_ERROR else
+ */
+extern int account_storage_g_modify_user_admin_level(
+	account_admin_level_t level, List user_list);
+
+/* 
  * modify existing projects in the accounting system 
  * IN:  project_list List of project_rec_t *
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
@@ -151,21 +169,29 @@ extern int account_storage_g_modify_accounts(List account_list);
 
 /* 
  * remove users from accounting system 
- * IN:  user_list List of user_rec_t *
+ * IN:  user_list List of char *
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
 extern int account_storage_g_remove_users(List user_list);
 
 /* 
+ * remove users from being a coordinator of an account
+ * IN: project name of project
+ * IN: user_list List of char * (user names)
+ * RET: SLURM_SUCCESS on success SLURM_ERROR else
+ */
+extern int account_storage_g_remove_coord(char *project, List user_list);
+
+/* 
  * remove projects from accounting system 
- * IN:  project_list List of project_rec_t *
+ * IN:  project_list List of char *
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
 extern int account_storage_g_remove_projects(List project_list);
 
 /* 
  * remove clusters from accounting system 
- * IN:  cluster_list List of cluster_rec_t *
+ * IN:  cluster_list List of char *
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
 extern int account_storage_g_remove_clusters(List cluster_list);
