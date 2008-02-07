@@ -190,6 +190,7 @@ static bool _failed_partition(struct part_record *part_ptr,
 	return false;
 }
 
+#ifndef HAVE_BG
 /* Add a partition to the failed_parts array, reserving its nodes
  * from use by lower priority jobs. Also flags all partitions with
  * nodes overlapping this partition. */
@@ -217,6 +218,7 @@ static void _add_failed_partition(struct part_record *failed_part_ptr,
 
 	*failed_part_cnt = count;
 }
+#endif
 
 /* 
  * schedule - attempt to schedule all pending jobs
