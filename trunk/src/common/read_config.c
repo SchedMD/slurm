@@ -156,6 +156,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"JobCredentialPrivateKey", S_P_STRING},
 	{"JobCredentialPublicCertificate", S_P_STRING},
 	{"JobFileAppend", S_P_UINT16},
+	{"GetEnvTimeout", S_P_UINT16},
 	{"KillTree", S_P_UINT16, defunct_option},
 	{"KillWait", S_P_UINT16},
 	{"MailProg", S_P_STRING},
@@ -1607,6 +1608,9 @@ validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 
 	if (!s_p_get_uint16(&conf->job_file_append, "JobFileAppend", hashtbl))
 		conf->job_file_append = 0;
+
+	if (!s_p_get_uint16(&conf->get_env_timeout, "GetEnvTimeout", hashtbl))
+		conf->get_env_timeout = DEFAULT_GET_ENV_TIMEOUT;
 
 	if (!s_p_get_uint16(&conf->kill_wait, "KillWait", hashtbl))
 		conf->kill_wait = DEFAULT_KILL_WAIT;

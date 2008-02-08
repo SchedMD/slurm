@@ -53,6 +53,7 @@ extern char *default_plugstack;
 #define DEFAULT_CRYPTO_TYPE        "crypto/openssl"
 #define DEFAULT_FAST_SCHEDULE       1
 #define DEFAULT_FIRST_JOB_ID        1
+#define DEFAULT_GET_ENV_TIMEOUT     2
 /* NOTE: DEFAULT_INACTIVE_LIMIT must be 0 for Blue Gene/L systems */
 #define DEFAULT_INACTIVE_LIMIT      0
 #define DEFAULT_JOB_ACCT_GATHER_TYPE  "jobacct_gather/none"
