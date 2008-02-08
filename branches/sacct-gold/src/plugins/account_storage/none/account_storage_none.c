@@ -90,7 +90,280 @@ const uint32_t plugin_version = 100;
 
 static char *cluster_name = NULL;
 
+static List _get_record_list_from_response(gold_response_t *gold_response);
+static List _get_account_accounting_list_from_response(
+	gold_response_t *gold_response,
+	account_record_rec_t *account_rec,
+	uint32_t time_diff);
+static List _get_user_list_from_response(gold_response_t *gold_response);
+static List _get_account_list_from_response(gold_response_t *gold_response);
+static List _get_cluster_list_from_response(gold_response_t *gold_response);
 
+
+static List _get_record_list_from_response(gold_response_t *gold_response)
+{
+	ListIterator itr = NULL;
+	ListIterator itr2 = NULL;
+	List record_list = NULL;
+	account_record_rec_t *account_rec = NULL;
+	gold_response_entry_t *resp_entry = NULL;
+	gold_name_value_t *name_val = NULL;
+	
+	if(gold_response->entry_cnt <= 0) {
+		debug2("_get_record_list_from_response: No entries given");
+		return NULL;
+	}
+	record_list = list_create(destroy_account_record_rec);
+	
+	itr = list_iterator_create(gold_response->entries);
+	while((resp_entry = list_next(itr))) {
+		account_rec = xmalloc(sizeof(account_record_rec_t));
+
+		itr2 = list_iterator_create(resp_entry->name_val);
+		while((name_val = list_next(itr2))) {
+			if(!strcmp(name_val->name, "Id")) {
+				account_rec->id = 
+					atoi(name_val->value);
+			} else if(!strcmp(name_val->name, 
+					  "Parent")) {
+				account_rec->parent = 
+					atoi(name_val->value);
+			} else if(!strcmp(name_val->name, 
+					  "FairShare")) {
+				account_rec->fairshare = 
+					atoi(name_val->value);
+			} else if(!strcmp(name_val->name, 
+					  "MaxJobs")) {
+				account_rec->max_jobs = 
+					atoi(name_val->value);
+			} else if(!strcmp(name_val->name, 
+					  "MaxNodesPerJob")) {
+				account_rec->max_nodes_per_job = 
+					atoi(name_val->value);
+			} else if(!strcmp(name_val->name, 
+					  "MaxWallDurationPerJob")) {
+				account_rec->max_wall_duration_per_job = 
+					atoi(name_val->value);
+			} else if(!strcmp(name_val->name, 
+					  "MaxProcSecondsPerJob")) {
+				account_rec->max_cpu_seconds_per_job = 
+					atoi(name_val->value);
+			} else if(!strcmp(name_val->name, 
+					  "User")) {
+				account_rec->user = 
+					xstrdup(name_val->value);
+			} else if(!strcmp(name_val->name, 
+					  "Project")) {
+				account_rec->account = 
+					xstrdup(name_val->value);
+			} else if(!strcmp(name_val->name, 
+					  "Machine")) {
+				account_rec->cluster = 
+					xstrdup(name_val->value);
+			} else {
+				error("Unknown name val of '%s' = '%s'",
+				      name_val->name, name_val->value);
+			}
+		}
+		list_iterator_destroy(itr2);
+		list_append(record_list, account_rec);
+	}
+	list_iterator_destroy(itr);
+
+	return record_list;
+}
+
+static List _get_account_accounting_list_from_response(
+	gold_response_t *gold_response,
+	account_record_rec_t *account_rec,
+	uint32_t time_diff)
+{
+	ListIterator itr = NULL;
+	ListIterator itr2 = NULL;
+	List accounting_list = NULL;
+	account_accounting_rec_t *accounting_rec = NULL;
+	gold_response_entry_t *resp_entry = NULL;
+	gold_name_value_t *name_val = NULL;
+	
+	if(gold_response->entry_cnt <= 0) {
+		debug2("_get_accounting_list_from_response: No entries given");
+		return NULL;
+	}
+	accounting_list = list_create(destroy_account_accounting_rec);
+	
+	itr = list_iterator_create(gold_response->entries);
+	while((resp_entry = list_next(itr))) {
+		accounting_rec = xmalloc(sizeof(account_accounting_rec_t));
+
+		itr2 = list_iterator_create(resp_entry->name_val);
+		while((name_val = list_next(itr2))) {
+			if(!strcmp(name_val->name, "PeriodStart")) {
+				accounting_rec->period_start = 
+					atoi(name_val->value);
+				accounting_rec->period_end = 
+					accounting_rec->period_start +
+					time_diff;
+			} else if(!strcmp(name_val->name, "AllocatedCPUSecs")) {
+				accounting_rec->alloc_secs = 
+					atoi(name_val->value);
+			} else if(!strcmp(name_val->name, "Account")) {
+				if(account_rec->id != atoi(name_val->value)) {
+					error("wrong account not adding");
+					destroy_account_accounting_rec(
+						accounting_rec);
+					break;
+				}
+			} else {
+				error("Unknown name val of '%s' = '%s'",
+				      name_val->name, name_val->value);
+			}
+		}
+		list_iterator_destroy(itr2);
+		if(accounting_rec)
+			list_append(accounting_list, accounting_rec);
+	}
+	list_iterator_destroy(itr);
+
+	return accounting_list;
+	
+}
+
+static List _get_user_list_from_response(gold_response_t *gold_response)
+{
+	ListIterator itr = NULL;
+	ListIterator itr2 = NULL;
+	List user_list = NULL;
+	account_user_rec_t *user_rec = NULL;
+	gold_response_entry_t *resp_entry = NULL;
+	gold_name_value_t *name_val = NULL;
+	
+	if(gold_response->entry_cnt <= 0) {
+		debug2("_get_user_list_from_response: No entries given");
+		return NULL;
+	}
+	user_list = list_create(destroy_account_user_rec);
+	
+	itr = list_iterator_create(gold_response->entries);
+	while((resp_entry = list_next(itr))) {
+		user_rec = xmalloc(sizeof(account_user_rec_t));
+
+		itr2 = list_iterator_create(resp_entry->name_val);
+		while((name_val = list_next(itr2))) {
+			if(!strcmp(name_val->name, "Name")) {
+				struct passwd *passwd_ptr = NULL;
+				user_rec->name = 
+					xstrdup(name_val->value);
+				passwd_ptr = getpwnam(user_rec->name);
+				if(passwd_ptr) {
+					user_rec->uid = passwd_ptr->pw_uid;
+					user_rec->gid = passwd_ptr->pw_gid;
+				}
+				
+			} else if(!strcmp(name_val->name, "Expedite")) {
+				user_rec->expedite = 
+					atoi(name_val->value);
+			} else if(!strcmp(name_val->name, "DefaultProject")) {
+				user_rec->default_account = 
+					xstrdup(name_val->value);
+			} else {
+				error("Unknown name val of '%s' = '%s'",
+				      name_val->name, name_val->value);
+			}
+		}
+		list_iterator_destroy(itr2);
+		list_append(user_list, user_rec);
+	}
+	list_iterator_destroy(itr);
+
+	return user_list;
+}
+
+static List _get_account_list_from_response(gold_response_t *gold_response)
+{
+	ListIterator itr = NULL;
+	ListIterator itr2 = NULL;
+	List account_list = NULL;
+	account_acct_rec_t *account_rec = NULL;
+	gold_response_entry_t *resp_entry = NULL;
+	gold_name_value_t *name_val = NULL;
+	
+	if(gold_response->entry_cnt <= 0) {
+		debug2("_get_account_list_from_response: No entries given");
+		return NULL;
+	}
+	account_list = list_create(destroy_account_acct_rec);
+	
+	itr = list_iterator_create(gold_response->entries);
+	while((resp_entry = list_next(itr))) {
+		account_rec = xmalloc(sizeof(account_acct_rec_t));
+
+		itr2 = list_iterator_create(resp_entry->name_val);
+		while((name_val = list_next(itr2))) {
+			if(!strcmp(name_val->name, "Expedite")) {
+				account_rec->expedite = 
+					atoi(name_val->value);
+			} else if(!strcmp(name_val->name, 
+					  "Name")) {
+				account_rec->name = 
+					xstrdup(name_val->value);
+			} else if(!strcmp(name_val->name, 
+					  "Organization")) {
+				account_rec->organization = 
+					xstrdup(name_val->value);
+			} else if(!strcmp(name_val->name, 
+					  "Description")) {
+				account_rec->description = 
+					xstrdup(name_val->value);
+			} else {
+				error("Unknown name val of '%s' = '%s'",
+				      name_val->name, name_val->value);
+			}
+		}
+		list_iterator_destroy(itr2);
+		list_append(account_list, account_rec);
+	}
+	list_iterator_destroy(itr);
+
+	return account_list;
+}
+
+static List _get_cluster_list_from_response(gold_response_t *gold_response)
+{
+	ListIterator itr = NULL;
+	ListIterator itr2 = NULL;
+	List cluster_list = NULL;
+	account_cluster_rec_t *cluster_rec = NULL;
+	gold_response_entry_t *resp_entry = NULL;
+	gold_name_value_t *name_val = NULL;
+	
+	if(gold_response->entry_cnt <= 0) {
+		debug2("_get_cluster_list_from_response: No entries given");
+		return NULL;
+	}
+	cluster_list = list_create(destroy_account_cluster_rec);
+	
+	itr = list_iterator_create(gold_response->entries);
+	while((resp_entry = list_next(itr))) {
+		cluster_rec = xmalloc(sizeof(account_cluster_rec_t));
+
+		itr2 = list_iterator_create(resp_entry->name_val);
+		while((name_val = list_next(itr2))) {
+			if(!strcmp(name_val->name, 
+					  "Name")) {
+				cluster_rec->name = 
+					xstrdup(name_val->value);
+			} else {
+				error("Unknown name val of '%s' = '%s'",
+				      name_val->name, name_val->value);
+			}
+		}
+		list_iterator_destroy(itr2);
+		list_append(cluster_list, cluster_rec);
+	}
+	list_iterator_destroy(itr);
+
+	return cluster_list;
+}
 
 /*
  * init() is called when the plugin is loaded, before any other functions
@@ -159,253 +432,335 @@ extern int fini ( void )
 	return SLURM_SUCCESS;
 }
 
-/* 
- * add users to accounting system 
- * IN:  user_list List of user_rec_t *
- * RET: SLURM_SUCCESS on success SLURM_ERROR else
- */
 extern int account_storage_p_add_users(List user_list)
 {
 	return SLURM_SUCCESS;
 }
 
-/* 
- * add users as project coordinators 
- * IN:  user_list List of user_rec_t *
- * RET: SLURM_SUCCESS on success SLURM_ERROR else
- */
-extern int account_storage_p_add_coord(char *project, List user_list)
+extern int account_storage_p_add_coord(char *account, List user_list)
 {
 	return SLURM_SUCCESS;
 }
 
-/* 
- * add projects to accounting system 
- * IN:  project_list List of project_rec_t *
- * RET: SLURM_SUCCESS on success SLURM_ERROR else
- */
-extern int account_storage_p_add_projects(List project_list)
-{
-	return SLURM_SUCCESS;
-}
-
-/* 
- * add clusters to accounting system 
- * IN:  cluster_list List of cluster_rec_t *
- * RET: SLURM_SUCCESS on success SLURM_ERROR else
- */
-extern int account_storage_p_add_clusters(List cluster_list)
-{
-	return SLURM_SUCCESS;
-}
-
-/* 
- * add accts to accounting system 
- * IN:  acct_list List of acct_rec_t *
- * RET: SLURM_SUCCESS on success SLURM_ERROR else
- */
 extern int account_storage_p_add_accounts(List account_list)
 {
 	return SLURM_SUCCESS;
 }
 
-/* 
- * modify existing users in the accounting system 
- * IN:  user_list List of user_rec_t *
- * RET: SLURM_SUCCESS on success SLURM_ERROR else
- */
+extern int account_storage_p_add_clusters(List cluster_list)
+{
+	return SLURM_SUCCESS;
+}
+
+extern int account_storage_p_add_records(List record_list)
+{
+	return SLURM_SUCCESS;
+}
+
 extern int account_storage_p_modify_users(List user_list)
 {
 	return SLURM_SUCCESS;
 }
 
-/* 
- * modify existing users admin level in the accounting system 
- * IN:  level account_admin_level_t
- * IN:  user_list List of char *
- * RET: SLURM_SUCCESS on success SLURM_ERROR else
- */
 extern int account_storage_p_modify_user_admin_level(
 	account_admin_level_t level, List user_list)
 {
 	return SLURM_SUCCESS;
 }
 
-/* 
- * modify existing projects in the accounting system 
- * IN:  project_list List of project_rec_t *
- * RET: SLURM_SUCCESS on success SLURM_ERROR else
- */
-extern int account_storage_p_modify_projects(List project_list)
-{
-	return SLURM_SUCCESS;
-}
-
-/* 
- * modify existing clusters in the accounting system 
- * IN:  cluster_list List of cluster_rec_t *
- * RET: SLURM_SUCCESS on success SLURM_ERROR else
- */
-extern int account_storage_p_modify_clusters(List cluster_list)
-{
-	return SLURM_SUCCESS;
-}
-
-/* 
- * modify existing accounts in the accounting system 
- * IN:  account_list List of acct_rec_t *
- * RET: SLURM_SUCCESS on success SLURM_ERROR else
- */
 extern int account_storage_p_modify_accounts(List account_list)
 {
 	return SLURM_SUCCESS;
 }
 
-/* 
- * remove users from accounting system 
- * IN:  user_list List of char * (user names)
- * RET: SLURM_SUCCESS on success SLURM_ERROR else
- */
+extern int account_storage_p_modify_clusters(List cluster_list)
+{
+	return SLURM_SUCCESS;
+}
+
+extern int account_storage_p_modify_records(List record_list)
+{
+	return SLURM_SUCCESS;
+}
+
 extern int account_storage_p_remove_users(List user_list)
 {
 	return SLURM_SUCCESS;
 }
 
-/* 
- * remove users from being a coordinator of an account
- * IN: project name of project
- * IN: user_list List of char * (user names)
- * RET: SLURM_SUCCESS on success SLURM_ERROR else
- */
-extern int account_storage_p_remove_coord(char *project, List user_list)
+extern int account_storage_p_remove_coord(char *account, List user_list)
 {
 	return SLURM_SUCCESS;
 }
 
-/* 
- * remove projects from accounting system 
- * IN:  project_list List of char * (project names) with either id set
- *      or user, project or cluster or a combination for multiple
- *      fitting the same specs
- * RET: SLURM_SUCCESS on success SLURM_ERROR else
- */
-extern int account_storage_p_remove_projects(List project_list)
-{
-	return SLURM_SUCCESS;
-}
-
-/* 
- * remove clusters from accounting system 
- * IN:  cluster_list List of char * (cluster names)
- * RET: SLURM_SUCCESS on success SLURM_ERROR else
- */
-extern int account_storage_p_remove_clusters(List cluster_list)
-{
-	return SLURM_SUCCESS;
-}
-
-/* 
- * remove accounts from accounting system 
- * IN:  account_list List of acct_rec_t *
- * RET: SLURM_SUCCESS on success SLURM_ERROR else
- */
 extern int account_storage_p_remove_accounts(List account_list)
 {
 	return SLURM_SUCCESS;
 }
 
-/* 
- * get info from the storage 
- * returns List of user_rec_t *
- * note List needs to be freed when called
- */
+extern int account_storage_p_remove_clusters(List cluster_list)
+{
+	return SLURM_SUCCESS;
+}
+
+extern int account_storage_p_remove_records(List record_list)
+{
+	return SLURM_SUCCESS;
+}
+
 extern List account_storage_p_get_users(List selected_users,
 					void *params)
 {
-	return NULL;
+	gold_request_t *gold_request = create_gold_request(GOLD_OBJECT_USER,
+							   GOLD_ACTION_QUERY);
+	gold_response_t *gold_response = NULL;
+	char *temp_char = NULL;
+	List user_list = NULL;
+	ListIterator itr = NULL;
+	int set = 0;
+
+	if(!gold_request) 
+		return NULL;
+
+	if(selected_users && list_count(selected_users)) {
+		itr = list_iterator_create(selected_users);
+		if(list_count(selected_users) > 1)
+			set = 2;
+		else
+			set = 0;
+		while((temp_char = list_next(itr))) {
+			gold_request_add_condition(gold_request, "Name",
+						   temp_char,
+						   GOLD_OPERATOR_NONE,
+						   set);
+			set = 1;
+		}
+		list_iterator_destroy(itr);
+	}
+
+	gold_request_add_selection(gold_request, "Name");
+	gold_request_add_selection(gold_request, "DefaultProject");
+	gold_request_add_selection(gold_request, "Expedite");
+		
+	gold_response = get_gold_response(gold_request);	
+	destroy_gold_request(gold_request);
+
+	if(!gold_response) {
+		error("clusteracct_p_cluster_procs: no response received");
+		return NULL;
+	}
+
+	if(gold_response->entry_cnt > 0) {
+		user_list = _get_user_list_from_response(gold_response);
+	} else {
+		debug("We don't have an entry for this machine for this time");
+	}
+	destroy_gold_response(gold_response);
+
+	return user_list;
 }
 
-/* 
- * get info from the storage 
- * returns List of project_rec_t *
- * note List needs to be freed when called
- */
-extern List account_storage_p_get_projects(List selected_projects,
+extern List account_storage_p_get_accounts(List selected_accounts,
 					   void *params)
 {
-	return NULL;
+	gold_request_t *gold_request = create_gold_request(GOLD_OBJECT_PROJECT,
+							   GOLD_ACTION_QUERY);
+	gold_response_t *gold_response = NULL;
+	char *temp_char = NULL;
+	List account_list = NULL;
+	ListIterator itr = NULL;
+	int set = 0;
+
+	if(!gold_request) 
+		return NULL;
+
+	if(selected_accounts && list_count(selected_accounts)) {
+		itr = list_iterator_create(selected_accounts);
+		if(list_count(selected_accounts) > 1)
+			set = 2;
+		else
+			set = 0;
+		while((temp_char = list_next(itr))) {
+			gold_request_add_condition(gold_request, "Name",
+						   temp_char,
+						   GOLD_OPERATOR_NONE,
+						   set);
+			set = 1;
+		}
+		list_iterator_destroy(itr);
+	}
+
+	gold_request_add_selection(gold_request, "Name");
+	gold_request_add_selection(gold_request, "Organization");
+	gold_request_add_selection(gold_request, "Description");
+	gold_request_add_selection(gold_request, "Expedite");
+		
+	gold_response = get_gold_response(gold_request);	
+	destroy_gold_request(gold_request);
+
+	if(!gold_response) {
+		error("clusteracct_p_cluster_procs: no response received");
+		return NULL;
+	}
+
+	if(gold_response->entry_cnt > 0) {
+		account_list = _get_account_list_from_response(gold_response);
+	} else {
+		debug("We don't have an entry for this machine for this time");
+	}
+	destroy_gold_response(gold_response);
+
+	return account_list;
 }
 
-/* 
- * get info from the storage 
- * returns List of cluster_rec_t *
- * note List needs to be freed when called
- */
 extern List account_storage_p_get_clusters(List selected_clusters,
 					   void *params)
 {
-	return NULL;
+	gold_request_t *gold_request = create_gold_request(GOLD_OBJECT_MACHINE,
+							   GOLD_ACTION_QUERY);
+	gold_response_t *gold_response = NULL;
+	char *temp_char = NULL;
+	List cluster_list = NULL;
+	ListIterator itr = NULL;
+	int set = 0;
+
+	if(!gold_request) 
+		return NULL;
+
+	if(selected_clusters && list_count(selected_clusters)) {
+		itr = list_iterator_create(selected_clusters);
+		if(list_count(selected_clusters) > 1)
+			set = 2;
+		else
+			set = 0;
+		while((temp_char = list_next(itr))) {
+			gold_request_add_condition(gold_request, "Name",
+						   temp_char,
+						   GOLD_OPERATOR_NONE,
+						   set);
+			set = 1;
+		}
+		list_iterator_destroy(itr);
+	}
+
+	gold_request_add_selection(gold_request, "Name");
+		
+	gold_response = get_gold_response(gold_request);	
+	destroy_gold_request(gold_request);
+
+	if(!gold_response) {
+		error("clusteracct_p_cluster_procs: no response received");
+		return NULL;
+	}
+
+	if(gold_response->entry_cnt > 0) {
+		cluster_list = _get_cluster_list_from_response(gold_response);
+	} else {
+		debug("We don't have an entry for this machine for this time");
+	}
+	destroy_gold_response(gold_response);
+
+	return cluster_list;
 }
 
-/* 
- * get info from the storage 
- * returns List of acct_rec_t *
- * note List needs to be freed when called
- */
-extern List account_storage_p_get_accounts(List account_list,
-					   List selected_accounts,
-					   List selected_users,
-					   List selected_projects,
-					   char *cluster,
-					   void *params)
+extern List account_storage_p_get_records(List selected_users,
+					  List selected_accounts,
+					  List selected_parts,
+					  char *cluster,
+					  void *params)
 {
-	return NULL;
+
+	gold_request_t *gold_request = create_gold_request(GOLD_OBJECT_ACCOUNT,
+							   GOLD_ACTION_QUERY);
+	gold_response_t *gold_response = NULL;
+	char *temp_char = NULL;
+	List record_list = NULL;
+	ListIterator itr = NULL;
+	int set = 0;
+
+	if(!gold_request) 
+		return NULL;
+
+	if(selected_users && list_count(selected_users)) {
+		itr = list_iterator_create(selected_users);
+		if(list_count(selected_users) > 1)
+			set = 2;
+		else
+			set = 0;
+		while((temp_char = list_next(itr))) {
+			gold_request_add_condition(gold_request, "User",
+						   temp_char,
+						   GOLD_OPERATOR_NONE,
+						   set);
+			set = 1;
+		}
+		list_iterator_destroy(itr);
+	}
+	if(selected_accounts && list_count(selected_accounts)) {
+		itr = list_iterator_create(selected_accounts);
+		if(list_count(selected_accounts) > 1)
+			set = 2;
+		else
+			set = 0;
+		while((temp_char = list_next(itr))) {
+			gold_request_add_condition(gold_request, "Project",
+						   temp_char,
+						   GOLD_OPERATOR_NONE,
+						   set);
+			set = 1;
+		}
+		list_iterator_destroy(itr);
+	}
+
+	gold_request_add_selection(gold_request, "Id");
+	gold_request_add_selection(gold_request, "User");
+	gold_request_add_selection(gold_request, "Project");
+	gold_request_add_selection(gold_request, "Machine");
+	gold_request_add_selection(gold_request, "Parent");
+	gold_request_add_selection(gold_request, "FairShare");
+	gold_request_add_selection(gold_request, "MaxJobs");
+	gold_request_add_selection(gold_request, "MaxNodesPerJob");
+	gold_request_add_selection(gold_request, "MaxWallDurationPerJob");
+	gold_request_add_selection(gold_request, "MaxProcSecondsPerJob");
+		
+	gold_response = get_gold_response(gold_request);	
+	destroy_gold_request(gold_request);
+
+	if(!gold_response) {
+		error("account_storage_p_get_records: no response received");
+		return NULL;
+	}
+
+	if(gold_response->entry_cnt > 0) {
+		record_list = _get_record_list_from_response(gold_response);
+	} else {
+		debug("We don't have an entry for this machine for this time");
+	}
+	destroy_gold_response(gold_response);
+
+	return record_list;
 }
 
-/* 
- * get info from the storage 
- * returns List of acct_rec_t *
- * note List needs to be freed when called
- */
-extern List account_storage_p_get_hourly_usage(List selected_accounts,
-					       List selected_users,
-					       List selected_projects,
-					       char *cluster,
-					       time_t start, 
-					       time_t end,
-					       void *params)
-{
-	return NULL;
-}
-
-/* 
- * get info from the storage 
- * returns List of acct_rec_t *
- * note List needs to be freed when called
- */
-extern List account_storage_p_get_daily_usage(List selected_accounts,
-					      List selected_users,
-					      List selected_projects,
-					      char *cluster,
+extern int account_storage_p_get_hourly_usage(account_record_rec_t *acct_rec,
 					      time_t start, 
 					      time_t end,
 					      void *params)
 {
-	return NULL;	
+	return SLURM_SUCCESS;
 }
 
-/* 
- * get info from the storage 
- * returns List of acct_rec_t *
- * note List needs to be freed when called
- */
-extern List account_storage_p_get_monthly_usage(List selected_accounts,
-						List selected_users,
-						List selected_projects,
-						char *cluster,
-						time_t start, 
-						time_t end,
-						void *params)
+extern int account_storage_p_get_daily_usage(account_record_rec_t *acct_rec,
+					     time_t start, 
+					     time_t end,
+					     void *params)
 {
-	return NULL;	
+	return SLURM_SUCCESS;	
+}
+
+extern int account_storage_p_get_monthly_usage(account_record_rec_t *acct_rec,
+					       time_t start, 
+					       time_t end,
+					       void *params)
+{
+	return SLURM_SUCCESS;	
 }

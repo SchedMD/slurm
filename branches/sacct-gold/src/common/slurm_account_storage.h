@@ -55,7 +55,7 @@ typedef struct {
 	char *name;
 	uint32_t uid;
 	uint32_t gid;
-	char *default_project;
+	char *default_account;
 	uint32_t expedite;
 	account_admin_level_t admin_level;
 } account_user_rec_t;
@@ -66,29 +66,47 @@ typedef struct {
 	char *organization;
 	uint32_t expedite;
 	List coodinators;
-} account_project_rec_t;
+} account_acct_rec_t;
 
 typedef struct {
 	char *name;
+	List accounting_list; /* list of clusteracct_rec_t *'s */
 } account_cluster_rec_t;
 
 typedef struct {
-	uint32_t id;
-	char *user;
-	char *project;
-	char *cluster;
-	uint32_t parent;
-	uint32_t fairshare;
-	uint32_t max_jobs;
-	uint32_t max_nodes_per_job;
-	uint32_t max_wall_duration_per_job;
-	uint32_t max_cpu_seonds_per_job;
-} account_acct_rec_t;
+	time_t period_start; 
+	time_t period_end;
+	uint32_t alloc_secs; /* number of cpu seconds allocated */
+} account_accounting_rec_t;
+
+typedef struct {
+	uint32_t id; /* id identifing a combination of
+			user-account-cluster(-partition) */
+	char *user;  /* user associated to record */
+	char *account; /* account/project associated to record */
+	char *cluster; /* cluster associated to record */
+	char *partition; /* optional partition in a cluster 
+			    associated to record */
+	uint32_t parent; /* if there is a parent record to this */
+	uint32_t lft; /* left most record in this group */
+	uint32_t rgt; /* right most record in this group */
+	uint32_t fairshare; /* fairshare number */
+	uint32_t max_jobs; /* max number of jobs this record can run
+			      at a time */
+	uint32_t max_nodes_per_job; /* max number of nodes this
+				       record can allocate per job */
+	uint32_t max_wall_duration_per_job; /* longest time this
+					       record can run a job */
+	uint32_t max_cpu_seconds_per_job; /* max number of cpu seconds
+					     this record can have per job */
+	List accounting_list; /* list of account_accounting_rec_t *'s */
+} account_record_rec_t;
 
 extern void destroy_account_user_rec(void *object);
-extern void destroy_account_project_rec(void *object);
-extern void destroy_account_cluster_rec(void *object);
 extern void destroy_account_acct_rec(void *object);
+extern void destroy_account_cluster_rec(void *object);
+extern void destroy_account_accounting_rec(void *object);
+extern void destroy_account_record_rec(void *object);
 
 
 extern int slurm_account_storage_init(void); /* load the plugin */
@@ -96,43 +114,44 @@ extern int slurm_account_storage_fini(void); /* unload the plugin */
 
 /* 
  * add users to accounting system 
- * IN:  user_list List of user_rec_t *
+ * IN:  user_list List of account_user_rec_t *
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
 extern int account_storage_g_add_users(List user_list);
 
 /* 
- * add users as project coordinators 
+ * add users as account coordinators 
+ * IN:  account name of account
  * IN:  user_list List of char *
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
-extern int account_storage_g_add_coord(char *project, List user_list);
+extern int account_storage_g_add_coord(char *account, List user_list);
 
 
 /* 
- * add projects to accounting system 
- * IN:  project_list List of project_rec_t *
+ * add accounts to accounting system 
+ * IN:  account_list List of account_acct_rec_t *
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
-extern int account_storage_g_add_projects(List project_list);
+extern int account_storage_g_add_accounts(List account_list);
 
 /* 
  * add clusters to accounting system 
- * IN:  cluster_list List of cluster_rec_t *
+ * IN:  cluster_list List of account_cluster_rec_t *
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
 extern int account_storage_g_add_clusters(List cluster_list);
 
 /* 
  * add accts to accounting system 
- * IN:  acct_list List of acct_rec_t *
+ * IN:  record_list List of account_record_rec_t *
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
-extern int account_storage_g_add_accounts(List account_list);
+extern int account_storage_g_add_records(List record_list);
 
 /* 
  * modify existing users in the accounting system 
- * IN:  user_list List of user_rec_t *
+ * IN:  user_list List of account_user_rec_t *
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
 extern int account_storage_g_modify_users(List user_list);
@@ -147,25 +166,25 @@ extern int account_storage_g_modify_user_admin_level(
 	account_admin_level_t level, List user_list);
 
 /* 
- * modify existing projects in the accounting system 
- * IN:  project_list List of project_rec_t *
+ * modify existing accounts in the accounting system 
+ * IN:  account_list List of account_acct_rec_t *
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
-extern int account_storage_g_modify_projects(List project_list);
+extern int account_storage_g_modify_accounts(List account_list);
 
 /* 
  * modify existing clusters in the accounting system 
- * IN:  cluster_list List of cluster_rec_t *
+ * IN:  cluster_list List of account_cluster_rec_t *
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
 extern int account_storage_g_modify_clusters(List cluster_list);
 
 /* 
- * modify existing accounts in the accounting system 
- * IN:  account_list List of acct_rec_t *
+ * modify existing records in the accounting system 
+ * IN:  record_list List of account_record_rec_t *
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
-extern int account_storage_g_modify_accounts(List account_list);
+extern int account_storage_g_modify_records(List record_list);
 
 /* 
  * remove users from accounting system 
@@ -176,18 +195,18 @@ extern int account_storage_g_remove_users(List user_list);
 
 /* 
  * remove users from being a coordinator of an account
- * IN: project name of project
+ * IN: account name of account
  * IN: user_list List of char * (user names)
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
-extern int account_storage_g_remove_coord(char *project, List user_list);
+extern int account_storage_g_remove_coord(char *account, List user_list);
 
 /* 
- * remove projects from accounting system 
- * IN:  project_list List of char *
+ * remove accounts from accounting system 
+ * IN:  account_list List of char *
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
-extern int account_storage_g_remove_projects(List project_list);
+extern int account_storage_g_remove_accounts(List account_list);
 
 /* 
  * remove clusters from accounting system 
@@ -197,15 +216,17 @@ extern int account_storage_g_remove_projects(List project_list);
 extern int account_storage_g_remove_clusters(List cluster_list);
 
 /* 
- * remove accounts from accounting system 
- * IN:  account_list List of acct_rec_t *
+ * remove records from accounting system 
+ * IN:  record_list List of account_record_rec_t *
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
-extern int account_storage_g_remove_accounts(List account_list);
+extern int account_storage_g_remove_records(List record_list);
 
 /* 
  * get info from the storage 
- * returns List of user_rec_t *
+ * IN:  selected_users List of char *
+ * IN:  params void *
+ * returns List of account_user_rec_t *
  * note List needs to be freed when called
  */
 extern List account_storage_g_get_users(List selected_users,
@@ -213,15 +234,19 @@ extern List account_storage_g_get_users(List selected_users,
 
 /* 
  * get info from the storage 
- * returns List of project_rec_t *
+ * IN:  selected_accounts List of char *
+ * IN:  params void *
+ * returns List of account_acct_rec_t *
  * note List needs to be freed when called
  */
-extern List account_storage_g_get_projects(List selected_projects,
+extern List account_storage_g_get_accounts(List selected_accounts,
 					   void *params);
 
 /* 
  * get info from the storage 
- * returns List of cluster_rec_t *
+ * IN:  selected_clusters List of char *
+ * IN:  params void *
+ * returns List of account_cluster_rec_t *
  * note List needs to be freed when called
  */
 extern List account_storage_g_get_clusters(List selected_clusters,
@@ -229,52 +254,57 @@ extern List account_storage_g_get_clusters(List selected_clusters,
 
 /* 
  * get info from the storage 
- * returns List of acct_rec_t *
+ * IN:  selected_users List of char *
+ * IN:  selected_accounts List of char *
+ * IN:  selected_parts List of char *
+ * IN:  cluster name of cluster
+ * IN:  params void *
+ * returns List of account_record_rec_t *
  * note List needs to be freed when called
  */
-extern List account_storage_g_get_accounts(List selected_accounts,
-					   List selected_users,
-					   List selected_projects,
-					   char *cluster,
-					   void *params);
+extern List account_storage_g_get_records(List selected_users,
+					  List selected_accounts,
+					  List selected_parts,
+					  char *cluster,
+					  void *params);
 
 /* 
  * get info from the storage 
- * returns List of acct_rec_t *
- * note List needs to be freed when called
+ * IN/OUT:  acct_rec account_record_rec_t with the id set
+ * IN:  start time stamp for records >=
+ * IN:  end time stamp for records <
+ * IN:  params void *
+ * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
-extern List account_storage_g_get_hourly_usage(List selected_accounts,
-					       List selected_users,
-					       List selected_projects,
-					       char *cluster,
-					       time_t start,
-					       time_t end,
-					       void *params);
-
-/* 
- * get info from the storage 
- * returns List of acct_rec_t *
- * note List needs to be freed when called
- */
-extern List account_storage_g_get_daily_usage(List selected_accounts,
-					      List selected_users,
-					      List selected_projects,
-					      char *cluster,
+extern int account_storage_g_get_hourly_usage(account_record_rec_t *acct_rec,
 					      time_t start,
 					      time_t end,
 					      void *params);
 
 /* 
  * get info from the storage 
- * returns List of acct_rec_t *
- * note List needs to be freed when called
+ * IN/OUT:  acct_rec account_record_rec_t with the id set
+ * IN:  start time stamp for records >=
+ * IN:  end time stamp for records <
+ * IN:  params void *
+ * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
-extern List account_storage_g_get_monthly_usage(List selected_accounts,
-						List selected_users,
-						List selected_projects,
-						char *cluster,
-						time_t start,
-						time_t end,
-						void *params);
+extern int account_storage_g_get_daily_usage(account_record_rec_t *acct_rec,
+					     time_t start,
+					     time_t end,
+					     void *params);
+
+/* 
+ * get info from the storage 
+ * IN/OUT:  acct_rec account_record_rec_t with the id set
+ * IN:  start time stamp for records >=
+ * IN:  end time stamp for records <
+ * IN:  params void *
+ * RET: SLURM_SUCCESS on success SLURM_ERROR else
+ */
+extern int account_storage_g_get_monthly_usage(account_record_rec_t *acct_rec,
+					       time_t start,
+					       time_t end,
+					       void *params);
 
 #endif /*_SLURM_ACCOUNT_STORAGE_H*/

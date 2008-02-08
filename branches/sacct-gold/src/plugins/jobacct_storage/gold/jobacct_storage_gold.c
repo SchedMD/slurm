@@ -573,7 +573,7 @@ extern List jobacct_storage_p_get_jobs(List selected_steps,
 	gold_response_entry_t *resp_entry = NULL;
 	gold_name_value_t *name_val = NULL;
 	char tmp_buff[50];
-	int set = 0;;
+	int set = 0;
 	char *selected_part = NULL;
 	jobacct_selected_step_t *selected_step = NULL;
 	jobacct_job_rec_t *job = NULL;
