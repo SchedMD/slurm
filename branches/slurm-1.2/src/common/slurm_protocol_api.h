@@ -96,6 +96,11 @@ int inline slurm_set_api_config(slurm_protocol_config_t * protocol_conf);
  */
 inline slurm_protocol_config_t *slurm_get_api_config();
 
+/* slurm_get_env_timeout
+ * return default timeout for srun/sbatch --get-user-env option
+ */
+int inline slurm_get_env_timeout(void);
+
 /* slurm_get_mpi_default
  * get default mpi value from slurmctld_conf object
  * RET char *   - mpi default value from slurm.conf,  MUST be xfreed by caller

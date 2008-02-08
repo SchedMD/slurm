@@ -21,6 +21,8 @@ documents those changes that are of interest to users and admins.
     HOSTNAME to the execution host of the batch script.
  -- Modify salloc and sbatch to accept both "--tasks" and "--ntasks" as 
     equivalent options for compatibility with srun.
+ -- Add configuration parameter GetEnvTimeout for use with Moab. See 
+    "man slurm.conf" for details.
 
 * Changes in SLURM 1.2.22
 =========================

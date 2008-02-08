@@ -868,6 +868,7 @@ typedef struct slurm_ctl_conf {
 	char *job_comp_type;	/* job completion logger type */
 	char *job_comp_loc;	/* job completion logging location */
 	uint16_t job_file_append; /* if set, append to stdout/err file */
+	uint16_t get_env_timeout; /* secs allowed for srun --get-user-env */
 	uint16_t kill_wait;	/* seconds between SIGXCPU to SIGKILL 
 				 * on job termination */
 	char *mail_prog;	/* pathname of mail program */
