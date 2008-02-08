@@ -261,11 +261,12 @@ static int fill_job_desc_from_opts(job_desc_msg_t *desc)
 		struct passwd *pw = NULL;
 		pw = getpwuid(opt.uid);
 		if (pw != NULL) {
-			desc->environment = env_array_user_default(pw->pw_name,
+			desc->environment = env_array_user_default(
+						pw->pw_name,
 						opt.get_user_env_time,
 						opt.get_user_env_mode);
-			/* FIXME - should we abort if j->environment
-			 * is NULL? */
+			if (desc->environment == NULL)
+				exit(1);	/* error already logged */
 		}
 	}
 	env_array_merge(&desc->environment, (const char **)environ);

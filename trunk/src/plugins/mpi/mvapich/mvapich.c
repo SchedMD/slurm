@@ -320,8 +320,12 @@ static int mvapich_read_n (mvapich_state_t *st,  struct mvapich_info *mvi,
 			return (-1);
 		}
 
-		if (n == 0) /* unexpected EOF */
+		if (n == 0) { /* unexpected EOF */
+			error ("mvapich: rank %d: "
+			       "Unexpected EOF (%dB left to read)", 
+			       mvi->rank, nleft);
 			return (-1);
+		}
 
 		nleft -= n;
 		p += n;
@@ -554,52 +558,55 @@ static void mvapich_bcast_hostids (mvapich_state_t *st)
 }
 
 /* Write size bytes from buf into socket for rank */
-static void mvapich_send (mvapich_state_t *st, void* buf, int size, int rank)
+static int mvapich_send (mvapich_state_t *st, void* buf, int size, int rank)
 {
 	struct mvapich_info *mvi = st->mvarray [rank];
-	if (mvapich_write_n (st, mvi, buf, size) < 0)
-		error ("mvapich: write hostid rank %d: %m", mvi->rank);
+	return (mvapich_write_n (st, mvi, buf, size));
 }
 
 /* Read size bytes from socket for rank into buf */
-static void mvapich_recv (mvapich_state_t *st, void* buf, int size, int rank)
+static int mvapich_recv (mvapich_state_t *st, void* buf, int size, int rank)
 {
 	struct mvapich_info *mvi = st->mvarray [rank];
-	if (mvapich_read_n (st, mvi, buf, size) <= 0) 
-		error("mvapich reading from %d: %m", mvi->rank);
-}
-
-/* Read an integer from socket for rank */
-static int mvapich_recv_int (mvapich_state_t *st, int rank)
-{
-	int buf;
-	mvapich_recv(st, &buf, sizeof(buf), rank);
-	return buf;
+	return (mvapich_read_n (st, mvi, buf, size)); 
 }
 
 /* Scatter data in buf to ranks using chunks of size bytes */
-static void mvapich_scatterbcast (mvapich_state_t *st, void* buf, int size)
+static int mvapich_scatterbcast (mvapich_state_t *st, void* buf, int size)
 {
-	int i;
-	for (i = 0; i < st->nprocs; i++)
-		mvapich_send(st, buf + i*size, size, i);
+	int i, rc;
+	int n = 0;
+
+	for (i = 0; i < st->nprocs; i++) {
+		if ((rc = mvapich_send (st, buf + i*size, size, i)) <= 0) 
+			return (-1);
+		n += rc;
+	}
+	return (n);
 }
 
 /* Broadcast buf to each rank, which is size bytes big */
-static void mvapich_allgatherbcast (mvapich_state_t *st, void* buf, int size)
+static int mvapich_allgatherbcast (mvapich_state_t *st, void* buf, int size)
 {
-	int i;
-	for (i = 0; i < st->nprocs; i++)
-		mvapich_send(st, buf, size, i);
+	int i, rc;
+	int n = 0;
+
+	for (i = 0; i < st->nprocs; i++) {
+		if ((rc = mvapich_send (st, buf, size, i)) <= 0)
+			return (-1);
+		n += rc;
+	}
+	return (n);
 }
 
 /* Perform alltoall using data in buf with elements of size bytes */
-static void mvapich_alltoallbcast (mvapich_state_t *st, void* buf, int size)
+static int mvapich_alltoallbcast (mvapich_state_t *st, void* buf, int size)
 {
 	int pbufsize = size * st->nprocs;
 	void* pbuf = xmalloc(pbufsize);	
+	int i, src, rc;
+	int n = 0;
 
-	int i, src;
 	for (i = 0; i < st->nprocs; i++) {
 		for (src = 0; src < st->nprocs; src++) {
 			memcpy( pbuf + size*src,
@@ -607,22 +614,141 @@ static void mvapich_alltoallbcast (mvapich_state_t *st, void* buf, int size)
 				size
 				);
 		}
-		mvapich_send(st, pbuf, pbufsize, i);
+		if ((rc = mvapich_send (st, pbuf, pbufsize, i)) <= 0)
+			goto out;
+		n += rc;
 	}
 	
+    out:
 	xfree(pbuf);
+	return (rc < 0 ? rc : n);
 }
 
-/* Check that new == curr value if curr has been initialized */
-static int set_current (int curr, int new)
+static int recv_common_value (mvapich_state_t *st, int *valp, int rank)
 {
-	if (curr == -1)
-		curr = new;
-	if (new != curr) {
-		error("PMGR unexpected value: received %d, expecting %d", 
-			new, curr);
+	int val;
+	if (mvapich_recv (st, &val, sizeof (int), rank) <= 0) {
+		error ("mvapich: recv: rank %d: %m\n", rank);
+		return (-1);
 	}
-	return curr;
+
+	/*
+	 *  If value is uninitialized, set it to current value,
+	 *   otherwise ensure that current value matches previous
+	 */
+	if (*valp == -1)
+		*valp = val;
+	else if (val != *valp) {
+		error ("mvapich: PMGR: unexpected value from rank %d: "
+		       "expected %d, recvd %d", rank, *valp, val);
+		return (-1);
+	}
+	return (0);
+}
+
+/* 
+ * PMGR_BCAST (root, size of message, then message data (from root only))
+ */
+static int process_pmgr_bcast (mvapich_state_t *st, int *rootp, int *sizep, 
+		void ** bufp, int rank)
+{
+	if (recv_common_value (st, rootp, rank) < 0)
+		return (-1);
+	if (recv_common_value (st, sizep, rank) < 0)
+		return (-1);
+	if (rank != *rootp)
+		return (0);
+
+	/* 
+	 *  Recv data from root 
+	 */
+	*bufp = xmalloc (*sizep);
+	if (mvapich_recv (st, *bufp, *sizep, rank) < 0) {
+		error ("mvapich: PMGR_BCAST: Failed to recv from root: %m");
+		return (-1);
+	}
+	return (0);
+}
+
+/*
+ * PMGR_GATHER (root, size of message, then message data)
+ */
+static int process_pmgr_gather (mvapich_state_t *st, int *rootp, 
+		int *sizep, void **bufp, int rank)
+{
+	if (recv_common_value (st, rootp, rank) < 0)
+		return (-1);
+	if (recv_common_value (st, sizep, rank) < 0)
+		return (-1);
+	if (*bufp == NULL)
+		*bufp = xmalloc (*sizep * st->nprocs);
+		
+	if (mvapich_recv(st, (*bufp) + (*sizep)*rank, *sizep, rank) < 0) {
+		error ("mvapich: PMGR_/GATHER: rank %d: recv: %m", rank);
+		return (-1);
+	}
+	return (0);
+}
+
+/*
+ * PMGR_SCATTER (root, size of message, then message data)
+ */
+static int process_pmgr_scatter (mvapich_state_t *st, int *rootp, 
+		int *sizep, void **bufp, int rank)
+{
+	if (recv_common_value (st, rootp, rank) < 0)
+		return (-1);
+	if (recv_common_value (st, sizep, rank) < 0)
+		return (-1);
+	if (rank != *rootp)
+		return (0);
+
+	if (*bufp == NULL)
+		*bufp = xmalloc (*sizep * st->nprocs);
+		
+	if (mvapich_recv(st, *bufp, (*sizep) * st->nprocs, rank) < 0) {
+		error ("mvapich: PMGR_SCATTER: rank %d: recv: %m", rank);
+		return (-1);
+	}
+	return (0);
+}
+
+/*
+ * PMGR_ALLGATHER (size of message, then message data)
+ */
+static int process_pmgr_allgather (mvapich_state_t *st, int *sizep, 
+		void **bufp, int rank)
+{
+	if (recv_common_value (st, sizep, rank) < 0)
+		return (-1);
+	if (*bufp == NULL)
+		*bufp = xmalloc (*sizep * st->nprocs);
+	if (mvapich_recv (st, (*bufp) + *sizep*rank, *sizep, rank) < 0) {
+		error ("mvapich: PMGR_ALLGATHER: rank %d: %m", rank);
+		return (-1);
+	}
+	return (0);
+}
+
+/*
+ * PMGR_ALLTOALL (size of message, then message data)
+ */
+static int process_pmgr_alltoall (mvapich_state_t *st, int *sizep, 
+		void **bufp, int rank)
+{
+	if (recv_common_value (st, sizep, rank) < 0)
+		return (-1);
+
+	if (*bufp == NULL)
+		*bufp = xmalloc (*sizep * st->nprocs * st->nprocs);
+	if (mvapich_recv ( st, 
+	                   *bufp + (*sizep * st->nprocs)*rank,
+	                   *sizep * st->nprocs, rank ) < 0) {
+		error ("mvapich: PMGR_ALLTOALL: recv: rank %d: %m", rank);
+		return (-1);
+	}
+
+	return (0);
 }
 
 /* 
@@ -643,7 +769,7 @@ static int set_current (int curr, int new)
  * Note: Although there are op codes available for PMGR_OPEN and
  * PMGR_ABORT, neither is fully implemented and should not be used.
  */
-static void mvapich_processops (mvapich_state_t *st)
+static int mvapich_processops (mvapich_state_t *st)
 {
 	/* Until a 'CLOSE' or 'ABORT' message is seen, we continuously 
 	 *  loop processing ops
@@ -663,57 +789,57 @@ static void mvapich_processops (mvapich_state_t *st)
 		struct mvapich_info *mvi = st->mvarray [i];
 
 		// read in opcode
-		opcode = set_current(opcode, mvapich_recv_int(st, i));
+		if (recv_common_value (st, &opcode, i) < 0) {
+			error ("mvapich: rank %d: Failed to read opcode: %m", 
+				mvi->rank);
+			return (-1);
+		}
 
 		// read in additional data depending on current opcode
 		int rank, code;
 		switch(opcode) {
 		case 0: // PMGR_OPEN (followed by rank)
-			rank = mvapich_recv_int(st, i);
+			if (mvapich_recv (st, &rank, sizeof (int), i) <= 0) {
+				error ("mvapich: PMGR_OPEN: recv: %m");
+				exit = 1;
+			}
 			break;
 		case 1: // PMGR_CLOSE (no data, close the socket)
 			close(mvi->fd);
 			break;
 		case 2: // PMGR_ABORT (followed by exit code)
-			code = mvapich_recv_int(st, i);
+			if (mvapich_recv (st, &code, sizeof (int), i) <= 0) {
+				error ("mvapich: PMGR_ABORT: recv: %m");
+			}
 			error("mvapich abort with code %d from rank %d", 
 				code, i);
 			break;
 		case 3: // PMGR_BARRIER (no data)
 			break;
-		case 4: // PMGR_BCAST (root, size of message, 
-			// then message data (from root only))
-			root = set_current(root, mvapich_recv_int(st, i));
-			size = set_current(size, mvapich_recv_int(st, i));
-			if (!buf) buf = (void*) xmalloc(size);
-			if (i == root) mvapich_recv(st, buf, size, i);
+		case 4: // PMGR_BCAST
+			if (process_pmgr_bcast (st, &root, &size, &buf, i) < 0)
+				return (-1);
 			break;
-		case 5: // PMGR_GATHER (root, size of message, 
-			// then message data)
-			root = set_current(root, mvapich_recv_int(st, i));
-			size = set_current(size, mvapich_recv_int(st, i));
-			if (!buf) buf = (void*) xmalloc(size * st->nprocs);
-			mvapich_recv(st, buf + size*i, size, i);
+		case 5: // PMGR_GATHER 
+			if (process_pmgr_gather (st, &root, &size, &buf, i) < 0)
+				return (-1);
 			break;
-		case 6: // PMGR_SCATTER (root, size of message, 
-			// then message data)
-			root = set_current(root, mvapich_recv_int(st, i));
-			size = set_current(size, mvapich_recv_int(st, i));
-			if (!buf) buf = (void*) xmalloc(size * st->nprocs);
-			if (i == root) mvapich_recv(st, buf, size * st->nprocs, i);
+		case 6: // PMGR_SCATTER 
+			if (process_pmgr_scatter (st, &root, 
+			                          &size, &buf, i) < 0)
+				return (-1);
 			break;
-		case 7: // PMGR_ALLGATHER (size of message, then message data)
-			size = set_current(size, mvapich_recv_int(st, i));
-			if (!buf) buf = (void*) xmalloc(size * st->nprocs);
-			mvapich_recv(st, buf + size*i, size, i);
+		case 7: // PMGR_ALLGATHER 
+			if (process_pmgr_allgather (st, &size, &buf, i) < 0)
+				return (-1);
 			break;
-		case 8: // PMGR_ALLTOALL (size of message, then message data)
-			size = set_current(size, mvapich_recv_int(st, i));
-			if (!buf) buf = (void*) xmalloc(size * st->nprocs * st->nprocs);
-			mvapich_recv(st, buf + (size*st->nprocs)*i, size * st->nprocs, i);
+		case 8: // PMGR_ALLTOALL 
+			if (process_pmgr_alltoall (st, &size, &buf, i) < 0)
+				return (-1);
 			break;
 		default:
 			error("Unrecognized PMGR opcode: %d", opcode);
+			return (-1);
 		}
 	}
 
@@ -767,6 +893,7 @@ static void mvapich_processops (mvapich_state_t *st)
 	xfree(buf);
   } // while(!exit)
   mvapich_debug ("Completed processing PMGR opcodes");
+  return (0);
 }
 
 static void mvapich_bcast (mvapich_state_t *st)
@@ -1125,6 +1252,7 @@ static void *mvapich_thr(void *arg)
 	int first = 1;
 
 	debug ("mvapich-0.9.x/gen2: thread started: %ld", pthread_self ());
+	info ("mvapich debug version");
 
 	mvapich_mvarray_create (st);
 
@@ -1158,7 +1286,8 @@ again:
 	}
 
 	if (st->protocol_version == 8) {
-		mvapich_processops(st);
+		if (mvapich_processops(st) < 0)
+			goto fail;
 	} else {
 		mvapich_debug ("bcasting mvapich info to %d tasks", st->nprocs);
 		mvapich_bcast (st);
