@@ -561,12 +561,14 @@ job_desc_msg_create_from_opts (char *script)
 			struct passwd *pw = NULL;
 			pw = getpwuid(opt.uid);
 			if (pw != NULL) {
-				j->environment =
-					env_array_user_default(pw->pw_name,
+				j->environment = env_array_user_default(
+							pw->pw_name,
 							opt.get_user_env_time,
 							opt.get_user_env_mode);
-				/* FIXME - should we abort if j->environment
-				   is NULL? */
+				if (j->environment == NULL)
+					exit(1);    /* error already logged */
+				env_array_overwrite(&j->environment, 
+						    "ENVIRONMENT", "BATCH");
 			}
 		}
 		env_array_merge(&j->environment, (const char **)environ);
