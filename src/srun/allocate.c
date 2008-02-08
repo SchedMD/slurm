@@ -567,8 +567,6 @@ job_desc_msg_create_from_opts (char *script)
 							opt.get_user_env_mode);
 				if (j->environment == NULL)
 					exit(1);    /* error already logged */
-				env_array_overwrite(&j->environment, 
-						    "ENVIRONMENT", "BATCH");
 			}
 		}
 		env_array_merge(&j->environment, (const char **)environ);
