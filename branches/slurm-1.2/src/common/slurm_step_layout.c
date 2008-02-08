@@ -679,12 +679,12 @@ static int _task_layout_plane(slurm_step_layout_t *step_layout,
 		return SLURM_ERROR;
 	}
 
+#if(0)
+	/* debugging only */
 	for (i=0; i < step_layout->node_cnt; i++) {
 		info("tasks[%d]: %u", i, step_layout->tasks[i]);
 	}
 	
-#if(0)
-	/* debugging only */
 	for (i=0; i < step_layout->node_cnt; i++) {
 		info ("Host %d _plane_ # of tasks %u", i, step_layout->tasks[i]);
 		for (j=0; j<step_layout->tasks[i]; j++) {
