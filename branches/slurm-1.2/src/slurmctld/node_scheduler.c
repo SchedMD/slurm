@@ -300,24 +300,25 @@ _pick_best_load(struct job_record *job_ptr, bitstr_t * bitmap,
 		uint32_t req_nodes, bool test_only)
 {
 	bitstr_t *basemap;
-	int i, size, error_code = EINVAL, node_cnt = 0, prev_cnt = 0, set_cnt;
-
-	basemap = bit_copy(bitmap);
-	if (basemap == NULL)
-		fatal("bit_copy malloc failure");
+	int i, max_bit, error_code = EINVAL;
+	int  node_cnt = 0, prev_cnt = 0, set_cnt;
 
 	set_cnt = bit_set_count(bitmap);
 	if ((set_cnt < min_nodes) ||
 	    ((req_nodes > min_nodes) && (set_cnt < req_nodes)))
 		return error_code;	/* not usable */
 
-	size = bit_size(bitmap);
+	basemap = bit_copy(bitmap);
+	if (basemap == NULL)
+		fatal("bit_copy malloc failure");
+
+	max_bit = bit_size(bitmap) - 1;
 	for (i=0; node_cnt<set_cnt; i++) {
 		/* if req_nodes, then start with those as a baseline */
 		if (job_ptr->details && job_ptr->details->req_node_bitmap) {
 			bit_copybits(bitmap, job_ptr->details->req_node_bitmap);
 		} else {
-			bit_nclear(bitmap, 0, size);
+			bit_nclear(bitmap, 0, max_bit);
 		}
 		node_cnt = _job_count_bitmap(basemap, bitmap, i);
 		if ((node_cnt == 0) || (node_cnt == prev_cnt))
