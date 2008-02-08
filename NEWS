@@ -172,6 +172,9 @@ documents those changes that are of interest to users and admins.
     specifying an account of the form "qos-name".
  -- In select/linear, fix bug in scheduling required nodes that already have
     a job running on them (req.load.patch from Chris Holmes, HP).
+ -- Change timeout for srun/sbatch --get-user-env option to 2 secs, don't get 
+    DISPLAY environment variables, but explicitly set ENVIRONMENT=BATCH and 
+    HOSTNAME to the execution host of the batch script.
 
 * Changes in SLURM 1.2.22
 =========================
