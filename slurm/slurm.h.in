@@ -937,6 +937,7 @@ typedef struct slurm_ctl_conf {
 	uint32_t next_job_id;	/* next slurm generated job_id to assign */
 	uint16_t fast_schedule;	/* 1 to *not* check configurations by node 
 				 * (only check configuration file, faster) */
+	uint16_t get_env_timeout; /* timeout for srun --get-user-env option */
 	uint16_t inactive_limit;/* seconds of inactivity before a
 				 * inactive resource allocation is released */
 	char *job_acct_gather_type; /* job accounting gather type */
@@ -957,7 +958,6 @@ typedef struct slurm_ctl_conf {
 	char *job_credential_private_key;	/* path to private key */
 	char *job_credential_public_certificate;/* path to public certificate*/
 	uint16_t job_file_append; /* if set, append to stdout/err file */
-	uint16_t get_env_timeout; /* secs allowed for srun --get-user-env */
 	uint16_t kill_wait;	/* seconds between SIGXCPU to SIGKILL 
 				 * on job termination */
 	char *mail_prog;	/* pathname of mail program */

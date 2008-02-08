@@ -147,7 +147,9 @@ void slurm_print_ctl_conf ( FILE* out,
 	fprintf(out, "FastSchedule            = %u\n",
 		slurm_ctl_conf_ptr->fast_schedule);
 	fprintf(out, "FirstJobId              = %u\n",
-		 slurm_ctl_conf_ptr->first_job_id);
+		slurm_ctl_conf_ptr->first_job_id);
+	fprintf(out, "GetEnvTimeout           = %u\n",
+		slurm_ctl_conf_ptr->get_env_timeout);
 #ifdef HAVE_XCPU
 	fprintf(out, "HAVE_XCPU               = %d\n", HAVE_XCPU);
 #endif
