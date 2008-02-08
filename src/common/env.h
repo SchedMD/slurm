@@ -116,6 +116,7 @@ void env_array_for_job(char ***dest,
  *	SLURM_JOB_NODELIST
  *	SLURM_JOB_CPUS_PER_NODE
  *	ENVIRONMENT=BATCH
+ *	HOSTNAME
  *	LOADLBATCH (AIX only)
  *
  * Sets OBSOLETE variables:
@@ -125,7 +126,9 @@ void env_array_for_job(char ***dest,
  *	SLURM_TASKS_PER_NODE <- poorly named, really CPUs per node
  *	? probably only needed for users...
  */
-void env_array_for_batch_job(char ***dest, const batch_job_launch_msg_t *batch);
+extern void env_array_for_batch_job(char ***dest, 
+				    const batch_job_launch_msg_t *batch,
+				    const char* node_name);
 
 /*
  * Set in "dest the environment variables relevant to a SLURM job step,
