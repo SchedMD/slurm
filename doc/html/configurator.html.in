@@ -159,6 +159,7 @@ function displayfile()
    "InactiveLimit=" + document.config.inactive_limit.value + "<br>" +
    "MinJobAge=" + document.config.min_job_age.value + "<br>" +
    "KillWait=" + document.config.kill_wait.value + "<br>" +
+   "#GetEnvTimeout=2 <br>" +
    "#UnkillableStepProgram= <br>" +
    "#UnkillableStepTimeout=60 <br>" +
    "Waittime=" + document.config.wait_time.value + "<br>" +
