@@ -799,6 +799,7 @@ env_array_for_job(char ***dest, const resource_allocation_response_msg_t *alloc)
  *	SLURM_JOB_NODELIST
  *	SLURM_JOB_CPUS_PER_NODE
  *	ENVIRONMENT=BATCH
+ *	HOSTNAME
  *	LOADLBATCH (AIX only)
  *
  * Sets OBSOLETE variables:
@@ -808,8 +809,9 @@ env_array_for_job(char ***dest, const resource_allocation_response_msg_t *alloc)
  *	SLURM_TASKS_PER_NODE <- poorly named, really CPUs per node
  *	? probably only needed for users...
  */
-void
-env_array_for_batch_job(char ***dest, const batch_job_launch_msg_t *batch)
+extern void
+env_array_for_batch_job(char ***dest, const batch_job_launch_msg_t *batch,
+			const char *node_name)
 {
 	char *tmp;
 	uint32_t num_nodes = 0;
@@ -829,6 +831,8 @@ env_array_for_batch_job(char ***dest, const batch_job_launch_msg_t *batch)
 					batch->cpu_count_reps);
 	env_array_overwrite_fmt(dest, "SLURM_JOB_CPUS_PER_NODE", "%s", tmp);
 	env_array_overwrite_fmt(dest, "ENVIRONMENT", "BATCH");
+	if (node_name)
+		env_array_overwrite_fmt(dest, "HOSTNAME", "%s", node_name);
 #ifdef HAVE_AIX
 	/* this puts the "poe" command into batch mode */
 	env_array_overwrite(dest, "LOADLBATCH", "yes");
