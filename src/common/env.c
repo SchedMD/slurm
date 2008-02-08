@@ -53,6 +53,7 @@
 #include "slurm/slurm.h"
 #include "src/common/log.h"
 #include "src/common/env.h"
+#include "src/common/read_config.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
@@ -75,8 +76,6 @@ strong_alias(env_array_append_fmt,	slurm_env_array_append_fmt);
 strong_alias(env_array_overwrite,	slurm_env_array_overwrite);
 strong_alias(env_array_overwrite_fmt,	slurm_env_array_overwrite_fmt);
 
-#define SU_WAIT_MSEC 2000	/* 2 sec default for /bin/su to return user
-				 * env vars for --get-user-env option */
 #define ENV_BUFSIZE (256 * 1024)
 
 /*
@@ -1377,15 +1376,14 @@ char **env_array_user_default(const char *username, int timeout, int mode)
 	ufds.events = POLLIN;
 
 	/* Read all of the output from /bin/su into buffer */
+	if ((timeout == 0) && ((timeout = slurm_get_env_timeout()) == 0))
+		timeleft = DEFAULT_GET_ENV_TIMEOUT;
 	found = 0;
 	buf_read = 0;
 	bzero(buffer, sizeof(buffer));
 	while (1) {
 		gettimeofday(&now, NULL);
-		if (timeout)
-			timeleft = timeout * 1000;
-		else
-			timeleft = SU_WAIT_MSEC;
+		timeleft = timeout * 1000;
 		timeleft -= (now.tv_sec -  begin.tv_sec)  * 1000;
 		timeleft -= (now.tv_usec - begin.tv_usec) / 1000;
 		if (timeleft <= 0) {

@@ -210,6 +210,20 @@ uint32_t slurm_get_max_mem_per_task(void)
 	return mem_per_task;
 }
 
+/* slurm_get_env_timeout
+ * return default timeout for srun/sbatch --get-user-env option
+ */
+int inline slurm_get_env_timeout(void)
+{
+        int timeout;
+        slurm_ctl_conf_t *conf;
+
+        conf = slurm_conf_lock();
+        timeout = conf->get_env_timeout;
+        slurm_conf_unlock();
+        return timeout;
+}
+
 /* slurm_get_mpi_default
  * get default mpi value from slurmctld_conf object
  * RET char *   - mpi default value from slurm.conf,  MUST be xfreed by caller
