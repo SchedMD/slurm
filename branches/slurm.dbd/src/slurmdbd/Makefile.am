@@ -16,6 +16,8 @@ slurmdbd_LDADD = 					\
 slurmdbd_SOURCES = 		\
 	agent.c			\
 	agent.h			\
+	proc_req.c		\
+	proc_req.h		\
 	read_config.c		\
 	read_config.h		\
 	rpc_pack.c		\

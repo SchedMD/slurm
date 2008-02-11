@@ -66,7 +66,6 @@ static int    dbd_sigarray[] = {	/* blocked signals for this process */
 			SIGUSR2, SIGTSTP, SIGXCPU, SIGQUIT,
 			SIGPIPE, SIGALRM, SIGABRT, SIGHUP, 0 };
 static int    debug_level = 0;		/* incremented for -v on command line */
-static int    dump_core = 0;		/* set to abort() on shutdown */
 static int    foreground = 0;		/* run process as a daemon */
 static log_options_t log_opts = 	/* Log to stderr & syslog */
 			LOG_OPTS_INITIALIZER;
@@ -118,9 +117,9 @@ int main(int argc, char *argv[])
 		fatal("pthread_create error %m");
 	slurm_attr_destroy(&thread_attr);
 
-	/* Daemon is operational here */
+	/* Daemon is fully operational here */
 
-	/* Termination here */
+	/* Daemon termination handled here */
 	pthread_join(signal_handler_thread, NULL);
 	pthread_join(rpc_handler_thread, NULL);
 	if (slurmdbd_conf->pid_file &&
@@ -328,10 +327,10 @@ static void *_signal_handler(void *no_data)
 			return NULL;	/* Normal termination */
 		case SIGABRT:	/* abort */
 			info("SIGABRT received");
+			abort();	/* Should terminate here */
 			shutdown_time = time(NULL);
-			dump_core = 1;
 			rpc_mgr_wake();
-			return NULL;	/* Normal termination */
+			return NULL;
 		default:
 			error("Invalid signal (%d) received", sig);
 		}

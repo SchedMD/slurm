@@ -41,23 +41,27 @@
 #endif
 #include <pthread.h>
 #include <signal.h>
+#include <poll.h>
 
+#include "src/common/fd.h"
 #include "src/common/log.h"
 #include "src/common/macros.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xsignal.h"
+#include "src/slurmdbd/proc_req.h"
 #include "src/slurmdbd/read_config.h"
 #include "src/slurmdbd/slurmdbd.h"
 
 #define MAX_THREAD_COUNT 2
 
 /* Local functions */
-static void            _free_server_thread(pthread_t my_tid);
-static void *          _service_connection(void *arg);
-static void            _sig_handler(int signal);
-static int             _wait_for_server_thread(void);
-static void            _wait_for_thread_fini(void);
+static bool   _fd_readable(slurm_fd fd);
+static void   _free_server_thread(pthread_t my_tid);
+static void * _service_connection(void *arg);
+static void   _sig_handler(int signal);
+static int    _wait_for_server_thread(void);
+static void   _wait_for_thread_fini(void);
 
 /* Local variables */
 static pthread_t       master_thread_id = 0, slave_thread_id[MAX_THREAD_COUNT];
@@ -165,8 +169,62 @@ extern void rpc_mgr_wake(void)
 
 static void * _service_connection(void *arg)
 {
+	connection_arg_t *conn = (connection_arg_t *) arg;
+	slurm_msg_t *msg;
+
+	debug2("Opened connection %d", conn->newsockfd);
+	while (1) {
+		if (_fd_readable(conn->newsockfd))
+			break;
+		msg = xmalloc(sizeof(slurm_msg_t));
+		slurm_msg_t_init(msg);
+		if (slurm_receive_msg(conn->newsockfd, msg, 0) != 0) {
+			error("slurm_receive_msg: %m");
+			break;
+		}
+		proc_req(msg);		/* process the request */
+		slurm_free_msg(msg);
+	}
+	if ((conn->newsockfd >= 0) &&
+	    slurm_close_accepted_conn(conn->newsockfd) < 0)
+		error ("close(%d): %m",  conn->newsockfd);
+	xfree(arg);
 	_free_server_thread(pthread_self());
 	return NULL;
+}
+
+/* Wait until a file is readable, return false if can not be read */
+static bool _fd_readable(slurm_fd fd)
+{
+	struct pollfd ufds;
+	int rc;
+
+	ufds.fd     = fd;
+	ufds.events = POLLIN;
+	fd_set_nonblocking(fd);
+	while (1) {
+		rc = poll(&ufds, 1, -1);
+		if ((errno == EINTR) || (errno == EAGAIN) || (rc == 0))
+			continue;
+		if (ufds.revents & POLLHUP) {
+			debug2("Connection %d closed", fd);
+			return false;
+		}
+		if (ufds.revents & POLLNVAL) {
+			error("Connection %d is invalid", fd);
+			return false;
+		}
+		if (ufds.revents & POLLERR) {
+			error("Connection %d experienced an error", fd);
+			return false;
+		}
+		if ((ufds.revents & POLLIN) == 0) {
+			error("Connection %d events %d", fd, ufds.revents);
+			return false;
+		}
+		break;
+	}
+	return true;
 }
 
 /* Increment thread_count and don't return until its value is no larger 
