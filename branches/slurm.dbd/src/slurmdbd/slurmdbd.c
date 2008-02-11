@@ -98,9 +98,9 @@ int main(int argc, char *argv[])
 		_daemonize();
 	_init_pidfile();
 	log_config();
+	info("slurmdbd version %s started", SLURM_VERSION);
 	if (xsignal_block(dbd_sigarray) < 0)
 		error("Unable to block signals");
-	info("slurmdbd version %s started", SLURM_VERSION);
 
 	/* Create attached thread for signal handling */
 	slurm_attr_init(&thread_attr);
@@ -115,6 +115,9 @@ int main(int argc, char *argv[])
 		fatal("pthread_create error %m");
 	slurm_attr_destroy(&thread_attr);
 
+	/* Daemon is operational here */
+
+	/* Termination here */
 	pthread_join(signal_handler_thread, NULL);
 	pthread_join(rpc_handler_thread, NULL);
 	if (slurmdbd_conf->pid_file &&
@@ -164,7 +167,7 @@ static void _parse_commandline(int argc, char *argv[])
 	int c = 0;
 
 	opterr = 0;
-	while ((c = getopt(argc, argv, "cDhL:vV")) != -1)
+	while ((c = getopt(argc, argv, "DhvV")) != -1)
 		switch (c) {
 		case 'D':
 			foreground = 1;
@@ -172,10 +175,6 @@ static void _parse_commandline(int argc, char *argv[])
 		case 'h':
 			_usage(argv[0]);
 			exit(0);
-			break;
-		case 'L':
-			xfree(slurmdbd_conf->log_file);
-			slurmdbd_conf->log_file = xstrdup(optarg);
 			break;
 		case 'v':
 			debug_level++;
@@ -199,8 +198,6 @@ static void _usage(char *prog_name)
 			"Run daemon in foreground.\n");
 	fprintf(stderr, "  -h         \t"
 			"Print this help message.\n");
-	fprintf(stderr, "  -L logfile \t"
-			"Log messages to the specified file.\n");
 	fprintf(stderr, "  -v         \t"
 			"Verbose mode. Multiple -v's increase verbosity.\n");
 	fprintf(stderr, "  -V         \t"

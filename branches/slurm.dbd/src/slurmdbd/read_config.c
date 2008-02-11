@@ -75,7 +75,6 @@ static void _clear_slurmdbd_conf(void)
 	if (slurmdbd_conf) {
 		xfree(slurmdbd_conf->log_file);
 		xfree(slurmdbd_conf->pid_file);
-		xfree(slurmdbd_conf->state_save_dir);
 		xfree(slurmdbd_conf->storage_password);
 		xfree(slurmdbd_conf->storage_user);
 	}
@@ -90,10 +89,10 @@ static void _clear_slurmdbd_conf(void)
 extern int read_slurmdbd_conf(void)
 {
 	s_p_options_t options[] = {
+		{"DbdPort", S_P_UINT16},
 		{"DebugLevel", S_P_UINT16},
 		{"LogFile", S_P_STRING},
 		{"PidFile", S_P_STRING},
-		{"StateSaveDir", S_P_STRING},
 		{"StoragePassword", S_P_STRING},
 		{"StorageUser", S_P_STRING},
 		{NULL} };
@@ -121,14 +120,14 @@ extern int read_slurmdbd_conf(void)
 		 	     conf_path);
 		}
 
+		s_p_get_uint16(&slurmdbd_conf->dbd_port,
+				"DbdPort", tbl);
 		s_p_get_uint16(&slurmdbd_conf->debug_level,
 				"DebugLevel", tbl);
 		s_p_get_string(&slurmdbd_conf->log_file,
 				"LogFile", tbl);
 		s_p_get_string(&slurmdbd_conf->pid_file,
 				"PidFile", tbl);
-		s_p_get_string(&slurmdbd_conf->state_save_dir,
-				"StateSaveDir", tbl);
 		s_p_get_string(&slurmdbd_conf->storage_password,
 				"StoragePassword", tbl);
 		s_p_get_string(&slurmdbd_conf->storage_user,
@@ -140,8 +139,8 @@ extern int read_slurmdbd_conf(void)
 	xfree(conf_path);
 	if (slurmdbd_conf->pid_file == NULL)
 		slurmdbd_conf->pid_file = xstrdup(DEFAULT_SLURMDBD_PIDFILE);
-	if (slurmdbd_conf->state_save_dir == NULL)
-		slurmdbd_conf->state_save_dir = xstrdup(DEFAULT_STATE_SAVE_DIR);
+	if (slurmdbd_conf->dbd_port == 0)
+		slurmdbd_conf->dbd_port = SLURMDBD_PORT;
 
 	slurm_mutex_unlock(&conf_mutex);
 	return SLURM_SUCCESS;
@@ -150,12 +149,12 @@ extern int read_slurmdbd_conf(void)
 /* Log the current configuration using verbose() */
 extern void log_config(void)
 {
-	verbose("DebugLevel        = %u", slurmdbd_conf->debug_level);
-	verbose("LogFile           = %s", slurmdbd_conf->log_file);
-	verbose("PidFile           = %s", slurmdbd_conf->pid_file);
-	verbose("StateSaveDir      = %s", slurmdbd_conf->state_save_dir);
-	verbose("StoragePassword   = %s", slurmdbd_conf->storage_password);
-	verbose("StorageUser       = %s", slurmdbd_conf->storage_user);
+	debug2("DbdPort           = %u", slurmdbd_conf->dbd_port);
+	debug2("DebugLevel        = %u", slurmdbd_conf->debug_level);
+	debug2("LogFile           = %s", slurmdbd_conf->log_file);
+	debug2("PidFile           = %s", slurmdbd_conf->pid_file);
+	debug2("StoragePassword   = %s", slurmdbd_conf->storage_password);
+	debug2("StorageUser       = %s", slurmdbd_conf->storage_user);
 }
 
 /* Return the pathname of the slurmdbd.conf file.
