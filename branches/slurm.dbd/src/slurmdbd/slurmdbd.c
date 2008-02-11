@@ -1,7 +1,8 @@
 /*****************************************************************************\
- *  slurmdbd.c - function for SlurmDBD
+ *  slurmdbd.c - functions for SlurmDBD
  *****************************************************************************
- *  Copyright (C) 2002-2008 The Regents of the University of California.
+ *  Copyright (C) 2002-2007 The Regents of the University of California.
+ *  Copyright (C) 2008 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette@llnl.gov>
  *  UCRL-CODE-226842.
@@ -56,6 +57,9 @@
 #include "src/slurmdbd/read_config.h"
 #include "src/slurmdbd/rpc_mgr.h"
 
+/* Global variables */
+time_t shutdown_time = 0;		/* when shutdown request arrived */
+
 /* Local variables */
 static int    dbd_sigarray[] = {	/* blocked signals for this process */
 			SIGINT,  SIGTERM, SIGCHLD, SIGUSR1,
@@ -67,7 +71,6 @@ static int    foreground = 0;		/* run process as a daemon */
 static log_options_t log_opts = 	/* Log to stderr & syslog */
 			LOG_OPTS_INITIALIZER;
 static pthread_t rpc_handler_thread;	/* thread ID for RPC hander */
-static time_t shutdown_time = 0;	/* when shutdown request arrived */
 static pthread_t signal_handler_thread;	/* thread ID for signal hander */
 
 /* Local functions */
@@ -323,13 +326,12 @@ static void *_signal_handler(void *no_data)
 			shutdown_time = time(NULL);
 			rpc_mgr_wake();
 			return NULL;	/* Normal termination */
-			break;
 		case SIGABRT:	/* abort */
 			info("SIGABRT received");
 			shutdown_time = time(NULL);
 			dump_core = 1;
 			rpc_mgr_wake();
-			return NULL;
+			return NULL;	/* Normal termination */
 		default:
 			error("Invalid signal (%d) received", sig);
 		}

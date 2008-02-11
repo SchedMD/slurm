@@ -1,7 +1,8 @@
 /*****************************************************************************\
  *  read_config.h - functions and declarations for reading slurmdbd.conf
  *****************************************************************************
- *  Copyright (C) 2003-2008 The Regents of the University of California.
+ *  Copyright (C) 2003-2007 The Regents of the University of California.
+ *  Copyright (C) 2008 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
  *  UCRL-CODE-226842.
@@ -75,6 +76,9 @@ extern slurm_dbd_conf_t *slurmdbd_conf;
  *	slurmdbd_conf
  */
 extern void free_slurmdbd_conf(void);
+
+/* Return the DbdPort value */
+extern uint16_t get_dbd_port(void);
 
 /* Log the current configuration using verbose() */
 extern void log_config(void);

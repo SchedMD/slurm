@@ -1,7 +1,8 @@
 /*****************************************************************************\
  *  read_config.c - functions for reading slurmdbd.conf
  *****************************************************************************
- *  Copyright (C) 2003-2008 The Regents of the University of California.
+ *  Copyright (C) 2003-2007 The Regents of the University of California.
+ *  Copyright (C) 2008 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
  *  UCRL-CODE-226842.
@@ -155,6 +156,17 @@ extern void log_config(void)
 	debug2("PidFile           = %s", slurmdbd_conf->pid_file);
 	debug2("StoragePassword   = %s", slurmdbd_conf->storage_password);
 	debug2("StorageUser       = %s", slurmdbd_conf->storage_user);
+}
+
+/* Return the DbdPort value */
+extern uint16_t get_dbd_port(void)
+{
+	uint16_t port;
+
+	slurm_mutex_lock(&conf_mutex);
+	port = slurmdbd_conf->dbd_port;
+	slurm_mutex_unlock(&conf_mutex);
+	return port;
 }
 
 /* Return the pathname of the slurmdbd.conf file.
