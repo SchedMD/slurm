@@ -85,20 +85,20 @@ am__libcommon_la_SOURCES_DIST = xmalloc.c xmalloc.h xassert.c \
 	slurm_protocol_socket_common.h slurm_protocol_common.h \
 	slurm_protocol_interface.h slurm_protocol_defs.c \
 	slurm_protocol_defs.h slurm_rlimits_info.h \
-	slurm_rlimits_info.c uid.c uid.h util-net.c util-net.h \
-	slurm_auth.c slurm_auth.h jobacct_common.c jobacct_common.h \
-	slurm_clusteracct_storage.c slurm_clusteracct_storage.h \
-	slurm_jobacct_gather.c slurm_jobacct_gather.h \
-	slurm_jobacct_storage.c slurm_jobacct_storage.h \
-	slurm_jobcomp.c slurm_jobcomp.h switch.c switch.h arg_desc.c \
-	arg_desc.h macros.h malloc.c malloc.h getopt.h getopt.c \
-	getopt1.c unsetenv.c unsetenv.h slurm_selecttype_info.c \
-	slurm_resource_info.c slurm_resource_info.h hostlist.c \
-	hostlist.h slurm_step_layout.c slurm_step_layout.h \
-	checkpoint.c checkpoint.h parse_time.c parse_time.h \
-	job_options.c job_options.h global_defaults.c timers.c \
-	timers.h slurm_xlator.h stepd_api.c stepd_api.h proc_args.c \
-	proc_args.h
+	slurm_rlimits_info.c slurmdbd_defs.c slurmdbd_defs.h uid.c \
+	uid.h util-net.c util-net.h slurm_auth.c slurm_auth.h \
+	jobacct_common.c jobacct_common.h slurm_clusteracct_storage.c \
+	slurm_clusteracct_storage.h slurm_jobacct_gather.c \
+	slurm_jobacct_gather.h slurm_jobacct_storage.c \
+	slurm_jobacct_storage.h slurm_jobcomp.c slurm_jobcomp.h \
+	switch.c switch.h arg_desc.c arg_desc.h macros.h malloc.c \
+	malloc.h getopt.h getopt.c getopt1.c unsetenv.c unsetenv.h \
+	slurm_selecttype_info.c slurm_resource_info.c \
+	slurm_resource_info.h hostlist.c hostlist.h \
+	slurm_step_layout.c slurm_step_layout.h checkpoint.c \
+	checkpoint.h parse_time.c parse_time.h job_options.c \
+	job_options.h global_defaults.c timers.c timers.h \
+	slurm_xlator.h stepd_api.c stepd_api.h proc_args.c proc_args.h
 @HAVE_UNSETENV_FALSE@am__objects_1 = libcommon_la-unsetenv.lo
 am_libcommon_la_OBJECTS = libcommon_la-xmalloc.lo \
 	libcommon_la-xassert.lo libcommon_la-xstring.lo \
@@ -118,7 +118,8 @@ am_libcommon_la_OBJECTS = libcommon_la-xmalloc.lo \
 	libcommon_la-slurm_protocol_util.lo \
 	libcommon_la-slurm_protocol_socket_implementation.lo \
 	libcommon_la-slurm_protocol_defs.lo \
-	libcommon_la-slurm_rlimits_info.lo libcommon_la-uid.lo \
+	libcommon_la-slurm_rlimits_info.lo \
+	libcommon_la-slurmdbd_defs.lo libcommon_la-uid.lo \
 	libcommon_la-util-net.lo libcommon_la-slurm_auth.lo \
 	libcommon_la-jobacct_common.lo \
 	libcommon_la-slurm_clusteracct_storage.lo \
@@ -388,6 +389,7 @@ libcommon_la_SOURCES = \
 	slurm_protocol_defs.h		\
 	slurm_rlimits_info.h		\
 	slurm_rlimits_info.c		\
+	slurmdbd_defs.c slurmdbd_defs.h	\
 	uid.c uid.h			\
 	util-net.c util-net.h		\
 	slurm_auth.c slurm_auth.h	\
@@ -542,6 +544,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcommon_la-slurm_rlimits_info.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcommon_la-slurm_selecttype_info.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcommon_la-slurm_step_layout.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcommon_la-slurmdbd_defs.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcommon_la-stepd_api.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcommon_la-strlcpy.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcommon_la-switch.Plo@am__quote@
@@ -800,6 +803,13 @@ libcommon_la-slurm_rlimits_info.lo: slurm_rlimits_info.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='slurm_rlimits_info.c' object='libcommon_la-slurm_rlimits_info.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libcommon_la_CFLAGS) $(CFLAGS) -c -o libcommon_la-slurm_rlimits_info.lo `test -f 'slurm_rlimits_info.c' || echo '$(srcdir)/'`slurm_rlimits_info.c
+
+libcommon_la-slurmdbd_defs.lo: slurmdbd_defs.c
+@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libcommon_la_CFLAGS) $(CFLAGS) -MT libcommon_la-slurmdbd_defs.lo -MD -MP -MF $(DEPDIR)/libcommon_la-slurmdbd_defs.Tpo -c -o libcommon_la-slurmdbd_defs.lo `test -f 'slurmdbd_defs.c' || echo '$(srcdir)/'`slurmdbd_defs.c
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libcommon_la-slurmdbd_defs.Tpo $(DEPDIR)/libcommon_la-slurmdbd_defs.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='slurmdbd_defs.c' object='libcommon_la-slurmdbd_defs.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libcommon_la_CFLAGS) $(CFLAGS) -c -o libcommon_la-slurmdbd_defs.lo `test -f 'slurmdbd_defs.c' || echo '$(srcdir)/'`slurmdbd_defs.c
 
 libcommon_la-uid.lo: uid.c
 @am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libcommon_la_CFLAGS) $(CFLAGS) -MT libcommon_la-uid.lo -MD -MP -MF $(DEPDIR)/libcommon_la-uid.Tpo -c -o libcommon_la-uid.lo `test -f 'uid.c' || echo '$(srcdir)/'`uid.c
