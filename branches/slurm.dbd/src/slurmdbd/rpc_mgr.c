@@ -50,16 +50,17 @@
 #include "src/slurmdbd/read_config.h"
 #include "src/slurmdbd/slurmdbd.h"
 
-#define MAX_THREAD_COUNT 100
+#define MAX_THREAD_COUNT 2
 
 /* Local functions */
-static void            _free_server_thread(void);
+static void            _free_server_thread(pthread_t my_tid);
 static void *          _service_connection(void *arg);
 static void            _sig_handler(int signal);
-static bool            _wait_for_server_thread(void);
+static int             _wait_for_server_thread(void);
+static void            _wait_for_thread_fini(void);
 
 /* Local variables */
-static pthread_t       my_thread_id = 0;
+static pthread_t       master_thread_id = 0, slave_thread_id[MAX_THREAD_COUNT];
 static int             thread_count = 0;
 static pthread_mutex_t thread_count_lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t  thread_count_cond = PTHREAD_COND_INITIALIZER;
@@ -74,14 +75,12 @@ extern void *rpc_mgr(void *no_data)
 {
 	pthread_attr_t thread_attr_rpc_req;
 	slurm_fd sockfd, newsockfd;
-	int sigarray[] = {SIGUSR1, 0};
+	int i, retry_cnt, sigarray[] = {SIGUSR1, 0};
 	slurm_addr cli_addr;
-	pthread_t thread_id_rpc_req;
-	int no_thread;
 	connection_arg_t *conn_arg = NULL;
 
 	slurm_mutex_lock(&thread_count_lock);
-	my_thread_id = pthread_self();
+	master_thread_id = pthread_self();
 	slurm_mutex_unlock(&thread_count_lock);
 
 	(void) pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
@@ -109,7 +108,7 @@ extern void *rpc_mgr(void *no_data)
 	/*
 	 * Process incoming RPCs until told to shutdown
 	 */
-	while (_wait_for_server_thread()) {
+	while ((i = _wait_for_server_thread()) >= 0) {
 		/*
 		 * accept needed for stream implementation is a no-op in 
 		 * message implementation that just passes sockfd to newsockfd
@@ -117,66 +116,82 @@ extern void *rpc_mgr(void *no_data)
 		if ((newsockfd = slurm_accept_msg_conn(sockfd,
 						       &cli_addr)) ==
 		    SLURM_SOCKET_ERROR) {
-			_free_server_thread();
+			_free_server_thread((pthread_t) 0);
 			if (errno != EINTR)
 				error("slurm_accept_msg_conn: %m");
 			continue;
 		}
 		conn_arg = xmalloc(sizeof(connection_arg_t));
 		conn_arg->newsockfd = newsockfd;
-		if (shutdown_time)
-			no_thread = 1;
-		else if (pthread_create(&thread_id_rpc_req,
-					&thread_attr_rpc_req,
-					_service_connection,
-					(void *) conn_arg)) {
-			error("pthread_create: %m");
-			no_thread = 1;
-		} else
-			no_thread = 0;
-
-		if (no_thread)	/* process within this process */
-			_service_connection((void *) conn_arg);
+		retry_cnt = 0;
+		while (pthread_create(&slave_thread_id[i],
+				      &thread_attr_rpc_req,
+				      _service_connection,
+				      (void *) conn_arg)) {
+			if (retry_cnt > 0) {
+				error("pthread_create failure, "
+				      "aborting RPC: %m");
+				close(newsockfd);
+				break;
+			}
+			error("pthread_create failure: %m");
+			retry_cnt++;
+			usleep(1000);	/* retry in 1 msec */
+		}
 	}
 
 	debug3("rpc_mgr shutting down");
 	slurm_attr_destroy(&thread_attr_rpc_req);
 	(void) slurm_shutdown_msg_engine(sockfd);
+	_wait_for_thread_fini();
 	pthread_exit((void *) 0);
 	return NULL;
 }
 
-/* Wake up the RPC manager so that it can exit */
+/* Wake up the RPC manager and all spawned threads so they can exit */
 extern void rpc_mgr_wake(void)
 {
+	int i;
+
 	slurm_mutex_lock(&thread_count_lock);
-	if (my_thread_id)
-		pthread_kill(my_thread_id, SIGUSR1);
+	if (master_thread_id)
+		pthread_kill(master_thread_id, SIGUSR1);
+	for (i=0; i<MAX_THREAD_COUNT; i++) {
+		if (slave_thread_id[i])
+			pthread_kill(slave_thread_id[i], SIGUSR1);
+	}
 	slurm_mutex_unlock(&thread_count_lock);
 }
 
 static void * _service_connection(void *arg)
 {
-	_free_server_thread();
+	_free_server_thread(pthread_self());
 	return NULL;
 }
 
-/* Increment slurmctld_config.server_thread_count and don't return 
- * until its value is no larger than MAX_SERVER_THREADS,
- * RET true unless shutdown in progress */
-static bool _wait_for_server_thread(void)
+/* Increment thread_count and don't return until its value is no larger 
+ *	than MAX_THREAD_COUNT,
+ * RET index of free index in slave_pthread_id or -1 to exit */
+static int _wait_for_server_thread(void)
 {
 	bool print_it = true;
-	bool rc = true;
+	int i, rc = -1;
 
 	slurm_mutex_lock(&thread_count_lock);
 	while (1) {
-		if (shutdown_time) {
-			rc = false;
+		if (shutdown_time)
 			break;
-		}
+
 		if (thread_count < MAX_THREAD_COUNT) {
 			thread_count++;
+			for (i=0; i<MAX_THREAD_COUNT; i++) {
+				if (slave_thread_id[i])
+					continue;
+				rc = i;
+				break;
+			}
+			if (rc == -1)
+				fatal("No free slave_thread_id");
 			break;
 		} else {
 			/* wait for state change and retry, 
@@ -203,15 +218,59 @@ static bool _wait_for_server_thread(void)
 	return rc;
 }
 
-static void _free_server_thread(void)
+/* my_tid IN - Thread ID of spawned thread, 0 if no thread spawned */
+static void _free_server_thread(pthread_t my_tid)
 {
+	int i;
+
 	slurm_mutex_lock(&thread_count_lock);
 	if (thread_count > 0)
 		thread_count--;
 	else
 		error("thread_count underflow");
+
+	if (my_tid) {
+		for (i=0; i<MAX_THREAD_COUNT; i++) {
+			if (slave_thread_id[i] != my_tid)
+				continue;
+			slave_thread_id[i] = (pthread_t) 0;
+			break;
+		}
+		if (i >= MAX_THREAD_COUNT)
+			error("Could not find slave_thread_id");
+	}
+
 	slurm_mutex_unlock(&thread_count_lock);
 	pthread_cond_broadcast(&thread_count_cond);
+}
+
+/* Wait for all RPC handler threads to exit.
+ * After one second, start sending SIGKILL to the threads. */
+static void _wait_for_thread_fini(void)
+{
+	int i, j;
+
+	if (thread_count == 0)
+		return;
+	sleep(1);	/* Give the threads 1 second to clean up */
+
+	for (i=0; ; i++) {
+		if (thread_count == 0)
+			return;
+
+		slurm_mutex_lock(&thread_count_lock);
+		for (j=0; j<MAX_THREAD_COUNT; j++) {
+			if (slave_thread_id[j] == 0)
+				continue;
+			info("rpc_mgr sending SIGKILL to thread %d", 
+			     slave_thread_id[j]);
+			if (pthread_kill(slave_thread_id[j], SIGKILL)) {
+				slave_thread_id[j] = 0;
+				thread_count--;
+			}
+		}
+		slurm_mutex_unlock(&thread_count_lock);
+	}
 }
 
 static void _sig_handler(int signal)
