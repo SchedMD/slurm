@@ -60,6 +60,7 @@ libcommon_la_SOURCES = 			\
 	slurm_protocol_defs.h		\
 	slurm_rlimits_info.h		\
 	slurm_rlimits_info.c		\
+	slurmdbd_defs.c slurmdbd_defs.h	\
 	uid.c uid.h			\
 	util-net.c util-net.h		\
 	slurm_auth.c slurm_auth.h	\
