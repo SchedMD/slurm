@@ -11,3 +11,4 @@ pkglib_LTLIBRARIES = jobacct_storage_slurmdbd.la
 # Null job completion logging plugin.
 jobacct_storage_slurmdbd_la_SOURCES = jobacct_storage_slurmdbd.c
 jobacct_storage_slurmdbd_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
+jobacct_storage_slurmdbd_la_LIBADD  = $(top_builddir)/src/common/libcommon.la

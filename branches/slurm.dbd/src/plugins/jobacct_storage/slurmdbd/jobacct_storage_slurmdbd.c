@@ -217,7 +217,7 @@ extern int jobacct_storage_p_job_start(struct job_record *job_ptr)
 	Buf buffer = init_buf(1024);
 
 	msg.job_id  = job_ptr->job_id;
-	dbd_pack_job_start_msg(&msg, buffer);
+	slurm_dbd_pack_job_start_msg(&msg, buffer);
 	rc = _send_msg(buffer);
 	free_buf(buffer);
 	return rc;
@@ -233,7 +233,7 @@ extern int jobacct_storage_p_job_complete(struct job_record *job_ptr)
 	Buf buffer = init_buf(1024);
 
 	msg.job_id  = job_ptr->job_id;
-	dbd_pack_job_complete_msg(&msg, buffer);
+	slurm_dbd_pack_job_complete_msg(&msg, buffer);
 	rc = _send_msg(buffer);
 	free_buf(buffer);
 	return rc;
@@ -250,7 +250,7 @@ extern int jobacct_storage_p_step_start(struct step_record *step_ptr)
 
 	msg.job_id  = step_ptr->job_ptr->job_id;
 	msg.step_id = step_ptr->step_id;
-	dbd_pack_step_start_msg(&msg, buffer);
+	slurm_dbd_pack_step_start_msg(&msg, buffer);
 	rc = _send_msg(buffer);
 	free_buf(buffer);
 	return rc;
@@ -267,7 +267,7 @@ extern int jobacct_storage_p_step_complete(struct step_record *step_ptr)
 
 	msg.job_id  = step_ptr->job_ptr->job_id;
 	msg.step_id = step_ptr->step_id;
-	dbd_pack_step_complete_msg(&msg, buffer);
+	slurm_dbd_pack_step_complete_msg(&msg, buffer);
 	rc = _send_msg(buffer);
 	free_buf(buffer);
 	return rc;
@@ -283,7 +283,7 @@ extern int jobacct_storage_p_suspend(struct job_record *job_ptr)
 	Buf buffer = init_buf(1024);
 
 	msg.job_id = job_ptr->job_id;
-	dbd_pack_job_suspend_msg(&msg, buffer);
+	slurm_dbd_pack_job_suspend_msg(&msg, buffer);
 	rc = _send_msg(buffer);
 	free_buf(buffer);
 	return rc;
@@ -303,7 +303,7 @@ extern void jobacct_storage_p_get_jobs(List job_list,
 	Buf buffer = init_buf(1024);
 
 	msg.job_id = NO_VAL;
-	dbd_pack_get_jobs_msg(&msg, buffer);
+	slurm_dbd_pack_get_jobs_msg(&msg, buffer);
 	_send_msg(buffer);
 	free_buf(buffer);
 	return;

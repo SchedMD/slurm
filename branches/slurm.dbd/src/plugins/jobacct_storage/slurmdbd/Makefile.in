@@ -74,7 +74,8 @@ am__strip_dir = `echo $$p | sed -e 's|^.*/||'`;
 am__installdirs = "$(DESTDIR)$(pkglibdir)"
 pkglibLTLIBRARIES_INSTALL = $(INSTALL)
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
-jobacct_storage_slurmdbd_la_LIBADD =
+jobacct_storage_slurmdbd_la_DEPENDENCIES =  \
+	$(top_builddir)/src/common/libcommon.la
 am_jobacct_storage_slurmdbd_la_OBJECTS = jobacct_storage_slurmdbd.lo
 jobacct_storage_slurmdbd_la_OBJECTS =  \
 	$(am_jobacct_storage_slurmdbd_la_OBJECTS)
@@ -272,6 +273,7 @@ pkglib_LTLIBRARIES = jobacct_storage_slurmdbd.la
 # Null job completion logging plugin.
 jobacct_storage_slurmdbd_la_SOURCES = jobacct_storage_slurmdbd.c
 jobacct_storage_slurmdbd_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
+jobacct_storage_slurmdbd_la_LIBADD = $(top_builddir)/src/common/libcommon.la
 all: all-am
 
 .SUFFIXES:

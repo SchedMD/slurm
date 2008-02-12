@@ -102,28 +102,28 @@ typedef struct dbd_step_start_msg {
  * Slurm DBD message processing functions
 \*****************************************************************************/
 
-void inline dbd_free_get_jobs_msg(dbd_get_jobs_msg_t *msg);
-void inline dbd_free_job_complete_msg(dbd_job_comp_msg_t *msg);
-void inline dbd_free_job_start_msg(dbd_job_start_msg_t *msg);
-void inline dbd_free_job_submit_msg(dbd_job_submit_msg_t *msg);
-void inline dbd_free_job_suspend_msg(dbd_job_suspend_msg_t *msg);
-void inline dbd_free_step_complete_msg(dbd_step_comp_msg_t *msg);
-void inline dbd_free_step_start_msg(dbd_step_start_msg_t *msg);
+void inline slurm_dbd_free_get_jobs_msg(dbd_get_jobs_msg_t *msg);
+void inline slurm_dbd_free_job_complete_msg(dbd_job_comp_msg_t *msg);
+void inline slurm_dbd_free_job_start_msg(dbd_job_start_msg_t *msg);
+void inline slurm_dbd_free_job_submit_msg(dbd_job_submit_msg_t *msg);
+void inline slurm_dbd_free_job_suspend_msg(dbd_job_suspend_msg_t *msg);
+void inline slurm_dbd_free_step_complete_msg(dbd_step_comp_msg_t *msg);
+void inline slurm_dbd_free_step_start_msg(dbd_step_start_msg_t *msg);
 
-void inline dbd_pack_get_jobs_msg(dbd_get_jobs_msg_t *msg,       Buf buffer);
-void inline dbd_pack_job_complete_msg(dbd_job_comp_msg_t *msg,   Buf buffer);
-void inline dbd_pack_job_start_msg(dbd_job_start_msg_t *msg,     Buf buffer);
-void inline dbd_pack_job_submit_msg(dbd_job_submit_msg_t *msg,   Buf buffer);
-void inline dbd_pack_job_suspend_msg(dbd_job_suspend_msg_t *msg, Buf buffer);
-void inline dbd_pack_step_complete_msg(dbd_step_comp_msg_t *msg, Buf buffer);
-void inline dbd_pack_step_start_msg(dbd_step_start_msg_t *msg,   Buf buffer);
+void inline slurm_dbd_pack_get_jobs_msg(dbd_get_jobs_msg_t *msg,       Buf buffer);
+void inline slurm_dbd_pack_job_complete_msg(dbd_job_comp_msg_t *msg,   Buf buffer);
+void inline slurm_dbd_pack_job_start_msg(dbd_job_start_msg_t *msg,     Buf buffer);
+void inline slurm_dbd_pack_job_submit_msg(dbd_job_submit_msg_t *msg,   Buf buffer);
+void inline slurm_dbd_pack_job_suspend_msg(dbd_job_suspend_msg_t *msg, Buf buffer);
+void inline slurm_dbd_pack_step_complete_msg(dbd_step_comp_msg_t *msg, Buf buffer);
+void inline slurm_dbd_pack_step_start_msg(dbd_step_start_msg_t *msg,   Buf buffer);
 
-int inline dbd_unpack_get_jobs_msg(dbd_get_jobs_msg_t **msg,       Buf buffer);
-int inline dbd_unpack_job_complete_msg(dbd_job_comp_msg_t **msg,   Buf buffer);
-int inline dbd_unpack_job_start_msg(dbd_job_start_msg_t **msg,     Buf buffer);
-int inline dbd_unpack_job_submit_msg(dbd_job_submit_msg_t **msg,   Buf buffer);
-int inline dbd_unpack_job_suspend_msg(dbd_job_suspend_msg_t **msg, Buf buffer);
-int inline dbd_unpack_step_complete_msg(dbd_step_comp_msg_t **msg, Buf buffer);
-int inline dbd_unpack_step_start_msg(dbd_step_start_msg_t **msg,   Buf buffer);
+int inline slurm_dbd_unpack_get_jobs_msg(dbd_get_jobs_msg_t **msg,       Buf buffer);
+int inline slurm_dbd_unpack_job_complete_msg(dbd_job_comp_msg_t **msg,   Buf buffer);
+int inline slurm_dbd_unpack_job_start_msg(dbd_job_start_msg_t **msg,     Buf buffer);
+int inline slurm_dbd_unpack_job_submit_msg(dbd_job_submit_msg_t **msg,   Buf buffer);
+int inline slurm_dbd_unpack_job_suspend_msg(dbd_job_suspend_msg_t **msg, Buf buffer);
+int inline slurm_dbd_unpack_step_complete_msg(dbd_step_comp_msg_t **msg, Buf buffer);
+int inline slurm_dbd_unpack_step_start_msg(dbd_step_start_msg_t **msg,   Buf buffer);
 
 #endif	/* !_SLURMDBD_DEFS_H */

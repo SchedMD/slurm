@@ -55,31 +55,31 @@ extern int proc_req(slurm_msg_t *msg)
 	switch (msg->msg_type) {
 	case DBD_GET_JOBS:
 		_get_jobs(msg);
-		dbd_free_get_jobs_msg(msg->data);
+		slurm_dbd_free_get_jobs_msg(msg->data);
 		break;
 	case DBD_JOB_COMPLETE:
 		_job_complete(msg);
-		dbd_free_job_complete_msg(msg->data);
+		slurm_dbd_free_job_complete_msg(msg->data);
 		break;
 	case DBD_JOB_START:
 		_job_start(msg);
-		dbd_free_job_start_msg(msg->data);
+		slurm_dbd_free_job_start_msg(msg->data);
 		break;
 	case DBD_JOB_SUBMIT:
 		_job_submit(msg);
-		dbd_free_job_submit_msg(msg->data);
+		slurm_dbd_free_job_submit_msg(msg->data);
 		break;
 	case DBD_JOB_SUSPEND:
 		_job_suspend(msg);
-		dbd_free_job_suspend_msg(msg->data);
+		slurm_dbd_free_job_suspend_msg(msg->data);
 		break;
 	case DBD_STEP_COMPLETE:
 		_step_complete(msg);
-		dbd_free_step_complete_msg(msg->data);
+		slurm_dbd_free_step_complete_msg(msg->data);
 		break;
 	case DBD_STEP_START:
 		_step_start(msg);
-		dbd_free_step_start_msg(msg->data);
+		slurm_dbd_free_step_start_msg(msg->data);
 		break;
 	default:
 		error("invalid RPC msg_type=%d", msg->msg_type);

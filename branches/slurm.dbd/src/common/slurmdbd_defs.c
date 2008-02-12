@@ -56,37 +56,37 @@
 /*
  * Free data structures
  */
-void inline dbd_free_get_jobs_msg(dbd_get_jobs_msg_t *msg)
+void inline slurm_dbd_free_get_jobs_msg(dbd_get_jobs_msg_t *msg)
 {
 	xfree(msg);
 }
 
-void inline dbd_free_job_complete_msg(dbd_job_comp_msg_t *msg)
+void inline slurm_dbd_free_job_complete_msg(dbd_job_comp_msg_t *msg)
 {
 	xfree(msg);
 }
 
-void inline dbd_free_job_start_msg(dbd_job_start_msg_t *msg)
+void inline slurm_dbd_free_job_start_msg(dbd_job_start_msg_t *msg)
 {
 	xfree(msg);
 }
 
-void inline dbd_free_job_submit_msg(dbd_job_submit_msg_t *msg)
+void inline slurm_dbd_free_job_submit_msg(dbd_job_submit_msg_t *msg)
 {
 	xfree(msg);
 }
 
-void inline dbd_free_job_suspend_msg(dbd_job_suspend_msg_t *msg)
+void inline slurm_dbd_free_job_suspend_msg(dbd_job_suspend_msg_t *msg)
 {
 	xfree(msg);
 }
 
-void inline dbd_free_step_complete_msg(dbd_step_comp_msg_t *msg)
+void inline slurm_dbd_free_step_complete_msg(dbd_step_comp_msg_t *msg)
 {
 	xfree(msg);
 }
 
-void inline dbd_free_step_start_msg(dbd_step_start_msg_t *msg)
+void inline slurm_dbd_free_step_start_msg(dbd_step_start_msg_t *msg)
 {
 	xfree(msg);
 }
@@ -94,12 +94,14 @@ void inline dbd_free_step_start_msg(dbd_step_start_msg_t *msg)
 /*
  * Pack and unpack data structures
  */
-void inline dbd_pack_get_jobs_msg(dbd_get_jobs_msg_t *msg, Buf buffer)
+void inline 
+slurm_dbd_pack_get_jobs_msg(dbd_get_jobs_msg_t *msg, Buf buffer)
 {
 	pack32(msg->job_id, buffer);
 }
 
-int inline dbd_unpack_get_jobs_msg(dbd_get_jobs_msg_t **msg, Buf buffer)
+int inline 
+slurm_dbd_unpack_get_jobs_msg(dbd_get_jobs_msg_t **msg, Buf buffer)
 {
 	dbd_get_jobs_msg_t *msg_ptr = xmalloc(sizeof(dbd_get_jobs_msg_t));
 	*msg = msg_ptr;
@@ -112,12 +114,14 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-void inline dbd_pack_job_complete_msg(dbd_job_comp_msg_t *msg, Buf buffer)
+void inline 
+slurm_dbd_pack_job_complete_msg(dbd_job_comp_msg_t *msg, Buf buffer)
 {
 	pack32(msg->job_id, buffer);
 }
 
-int inline dbd_unpack_job_complete_msg(dbd_job_comp_msg_t **msg, Buf buffer)
+int inline 
+slurm_dbd_unpack_job_complete_msg(dbd_job_comp_msg_t **msg, Buf buffer)
 {
 	dbd_job_comp_msg_t *msg_ptr = xmalloc(sizeof(dbd_job_comp_msg_t));
 	*msg = msg_ptr;
@@ -130,12 +134,14 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-void inline dbd_pack_job_start_msg(dbd_job_start_msg_t *msg, Buf buffer)
+void inline 
+slurm_dbd_pack_job_start_msg(dbd_job_start_msg_t *msg, Buf buffer)
 {
 	pack32(msg->job_id, buffer);
 }
 
-int inline dbd_unpack_job_start_msg(dbd_job_start_msg_t **msg, Buf buffer)
+int inline 
+slurm_dbd_unpack_job_start_msg(dbd_job_start_msg_t **msg, Buf buffer)
 {
 	dbd_job_start_msg_t *msg_ptr = xmalloc(sizeof(dbd_job_start_msg_t));
 	*msg = msg_ptr;
@@ -148,12 +154,14 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-void inline dbd_pack_job_submit_msg(dbd_job_submit_msg_t *msg, Buf buffer)
+void inline 
+slurm_dbd_pack_job_submit_msg(dbd_job_submit_msg_t *msg, Buf buffer)
 {
 	pack32(msg->job_id, buffer);
 }
 
-int inline dbd_unpack_job_submit_msg(dbd_job_submit_msg_t **msg, Buf buffer)
+int inline 
+slurm_dbd_unpack_job_submit_msg(dbd_job_submit_msg_t **msg, Buf buffer)
 {
 	dbd_job_submit_msg_t *msg_ptr = xmalloc(sizeof(dbd_job_submit_msg_t));
 	*msg = msg_ptr;
@@ -166,12 +174,14 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-void inline dbd_pack_job_suspend_msg(dbd_job_suspend_msg_t *msg, Buf buffer)
+void inline 
+slurm_dbd_pack_job_suspend_msg(dbd_job_suspend_msg_t *msg, Buf buffer)
 {
 	pack32(msg->job_id, buffer);
 }
 
-int inline dbd_unpack_job_suspend_msg(dbd_job_suspend_msg_t **msg, Buf buffer)
+int inline 
+slurm_dbd_unpack_job_suspend_msg(dbd_job_suspend_msg_t **msg, Buf buffer)
 {
 	dbd_job_suspend_msg_t *msg_ptr = xmalloc(sizeof(dbd_job_suspend_msg_t));
 	*msg = msg_ptr;
@@ -184,13 +194,15 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-void inline dbd_pack_step_complete_msg(dbd_step_comp_msg_t *msg, Buf buffer)
+void inline 
+slurm_dbd_pack_step_complete_msg(dbd_step_comp_msg_t *msg, Buf buffer)
 {
 	pack32(msg->job_id, buffer);
 	pack32(msg->step_id, buffer);
 }
 
-int inline dbd_unpack_step_complete_msg(dbd_step_comp_msg_t **msg, Buf buffer)
+int inline 
+slurm_dbd_unpack_step_complete_msg(dbd_step_comp_msg_t **msg, Buf buffer)
 {
 	dbd_step_comp_msg_t *msg_ptr = xmalloc(sizeof(dbd_step_comp_msg_t));
 	*msg = msg_ptr;
@@ -204,13 +216,15 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-void inline dbd_pack_step_start_msg(dbd_step_start_msg_t *msg, Buf buffer)
+void inline 
+slurm_dbd_pack_step_start_msg(dbd_step_start_msg_t *msg, Buf buffer)
 {
 	pack32(msg->job_id, buffer);
 	pack32(msg->step_id, buffer);
 }
 
-int inline dbd_unpack_step_start_msg(dbd_step_start_msg_t **msg, Buf buffer)
+int inline 
+slurm_dbd_unpack_step_start_msg(dbd_step_start_msg_t **msg, Buf buffer)
 {
 	dbd_step_start_msg_t *msg_ptr = xmalloc(sizeof(dbd_step_start_msg_t));
 	*msg = msg_ptr;
