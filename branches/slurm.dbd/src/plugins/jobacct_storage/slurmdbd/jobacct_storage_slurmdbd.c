@@ -47,10 +47,21 @@
 #endif
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <slurm/slurm_errno.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
 
+#include "src/common/pack.h"
+#include "src/common/slurmdbd_defs.h"
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmd/slurmd/slurmd.h"
+
+static uint16_t slurmdbd_port;
+
+static char * _get_conf_path(void);
+static int    _read_slurmdbd_conf(void);
 
 /*
  * These variables are required by the generic plugin interface.  If they
@@ -97,6 +108,7 @@ extern int init ( void )
 		   only tell us once. */
 		verbose("%s loaded", plugin_name);
 		first = 0;
+		_read_slurmdbd_conf();
 	} else {
 		debug4("%s loaded", plugin_name);
 	}
@@ -108,6 +120,76 @@ extern int fini ( void )
 {
 	return SLURM_SUCCESS;
 }
+
+/* Read the slurmdbd.conf file to get the DbdPort value */
+static int _read_slurmdbd_conf(void)
+{
+	s_p_options_t options[] = {
+		{"DbdPort", S_P_UINT16},
+		{"DebugLevel", S_P_UINT16},
+		{"LogFile", S_P_STRING},
+		{"PidFile", S_P_STRING},
+		{"StoragePassword", S_P_STRING},
+		{"StorageUser", S_P_STRING},
+		{NULL} };
+	s_p_hashtbl_t *tbl;
+	char *conf_path;
+	struct stat buf;
+
+	/* Get the slurmdbd.conf path and validate the file */
+	conf_path = _get_conf_path();
+	if ((conf_path == NULL) || (stat(conf_path, &buf) == -1)) {
+		info("No slurmdbd.conf file (%s)", conf_path);
+	} else {
+		debug("Reading slurmdbd.conf file %s", conf_path);
+
+		tbl = s_p_hashtbl_create(options);
+		if (s_p_parse_file(tbl, conf_path) == SLURM_ERROR) {
+			fatal("Could not open/read/parse slurmdbd.conf file %s",
+		 	     conf_path);
+		}
+
+		if (!s_p_get_uint16(&slurmdbd_port, "DbdPort", tbl))
+			slurmdbd_port = SLURMDBD_PORT;
+
+		s_p_hashtbl_destroy(tbl);
+	}
+
+	xfree(conf_path);
+
+	return SLURM_SUCCESS;
+}
+
+/* Return the pathname of the slurmdbd.conf file.
+ * xfree() the value returned */
+static char * _get_conf_path(void)
+{
+	char *val = getenv("SLURM_CONF");
+	char *path = NULL;
+	int i;
+
+	if (!val)
+		val = default_slurm_config_file;
+
+	/* Replace file name on end of path */
+	i = strlen(val) + 15;
+	path = xmalloc(i);
+	strcpy(path, val);
+	val = strrchr(path, (int)'/');
+	if (val)	/* absolute path */
+		val++;
+	else		/* not absolute path */
+		val = path;
+	strcpy(val, "slurmdbd.conf");
+
+	return path;
+}
+
+static int _send_msg(Buf buffer)
+{
+	return SLURM_SUCCESS;
+}
+
 /* 
  * Initialize the storage make sure tables are created and in working
  * order
@@ -130,7 +212,15 @@ extern int jobacct_storage_p_fini()
  */
 extern int jobacct_storage_p_job_start(struct job_record *job_ptr)
 {
-	return SLURM_SUCCESS;
+	int rc;
+	dbd_job_start_msg_t msg;
+	Buf buffer = init_buf(1024);
+
+	msg.job_id  = job_ptr->job_id;
+	dbd_pack_job_start_msg(&msg, buffer);
+	rc = _send_msg(buffer);
+	free_buf(buffer);
+	return rc;
 }
 
 /* 
@@ -138,7 +228,15 @@ extern int jobacct_storage_p_job_start(struct job_record *job_ptr)
  */
 extern int jobacct_storage_p_job_complete(struct job_record *job_ptr)
 {
-	return SLURM_SUCCESS;
+	int rc;
+	dbd_job_comp_msg_t msg;
+	Buf buffer = init_buf(1024);
+
+	msg.job_id  = job_ptr->job_id;
+	dbd_pack_job_complete_msg(&msg, buffer);
+	rc = _send_msg(buffer);
+	free_buf(buffer);
+	return rc;
 }
 
 /* 
@@ -146,7 +244,16 @@ extern int jobacct_storage_p_job_complete(struct job_record *job_ptr)
  */
 extern int jobacct_storage_p_step_start(struct step_record *step_ptr)
 {
-	return SLURM_SUCCESS;
+	int rc;
+	dbd_step_start_msg_t msg;
+	Buf buffer = init_buf(1024);
+
+	msg.job_id  = step_ptr->job_ptr->job_id;
+	msg.step_id = step_ptr->step_id;
+	dbd_pack_step_start_msg(&msg, buffer);
+	rc = _send_msg(buffer);
+	free_buf(buffer);
+	return rc;
 }
 
 /* 
@@ -154,7 +261,16 @@ extern int jobacct_storage_p_step_start(struct step_record *step_ptr)
  */
 extern int jobacct_storage_p_step_complete(struct step_record *step_ptr)
 {
-	return SLURM_SUCCESS;
+	int rc;
+	dbd_step_comp_msg_t msg;
+	Buf buffer = init_buf(1024);
+
+	msg.job_id  = step_ptr->job_ptr->job_id;
+	msg.step_id = step_ptr->step_id;
+	dbd_pack_step_complete_msg(&msg, buffer);
+	rc = _send_msg(buffer);
+	free_buf(buffer);
+	return rc;
 }
 
 /* 
@@ -162,7 +278,15 @@ extern int jobacct_storage_p_step_complete(struct step_record *step_ptr)
  */
 extern int jobacct_storage_p_suspend(struct job_record *job_ptr)
 {
-	return SLURM_SUCCESS;
+	int rc;
+	dbd_job_suspend_msg_t msg;
+	Buf buffer = init_buf(1024);
+
+	msg.job_id = job_ptr->job_id;
+	dbd_pack_job_suspend_msg(&msg, buffer);
+	rc = _send_msg(buffer);
+	free_buf(buffer);
+	return rc;
 }
 
 /* 
@@ -175,6 +299,13 @@ extern void jobacct_storage_p_get_jobs(List job_list,
 					List selected_parts,
 					void *params)
 {
+	dbd_get_jobs_msg_t msg;
+	Buf buffer = init_buf(1024);
+
+	msg.job_id = NO_VAL;
+	dbd_pack_get_jobs_msg(&msg, buffer);
+	_send_msg(buffer);
+	free_buf(buffer);
 	return;
 }
 

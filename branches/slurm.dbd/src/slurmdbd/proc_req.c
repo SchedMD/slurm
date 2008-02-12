@@ -46,6 +46,7 @@ static void  _job_start(slurm_msg_t *msg);
 static void  _job_submit(slurm_msg_t *msg);
 static void  _job_suspend(slurm_msg_t *msg);
 static void  _step_complete(slurm_msg_t *msg);
+static void  _step_start(slurm_msg_t *msg);
 
 /* Process an incoming RPC
  * RET SLURM_SUCCESS or error code */
@@ -75,6 +76,10 @@ extern int proc_req(slurm_msg_t *msg)
 	case DBD_STEP_COMPLETE:
 		_step_complete(msg);
 		dbd_free_step_complete_msg(msg->data);
+		break;
+	case DBD_STEP_START:
+		_step_start(msg);
+		dbd_free_step_start_msg(msg->data);
 		break;
 	default:
 		error("invalid RPC msg_type=%d", msg->msg_type);
@@ -127,4 +132,12 @@ static void  _step_complete(slurm_msg_t *msg)
 
 	info("DBD_STEP_COMPLETE: %u.%u", 
 	     step_comp_msg->job_id, step_comp_msg->step_id);
+}
+
+static void  _step_start(slurm_msg_t *msg)
+{
+	dbd_step_start_msg_t *step_start_msg = (dbd_step_start_msg_t *) msg->data;
+
+	info("DBD_STEP_START: %u.%u", 
+	     step_start_msg->job_id, step_start_msg->step_id);
 }
