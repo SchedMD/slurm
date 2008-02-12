@@ -287,10 +287,6 @@ static int _find_best_block_match(struct job_record* job_ptr,
 				       alpha_num[start[Z]]);
 			}
 			if(try_request->procs == req_procs) {
-				if(try_request->part_ptr 
-				   && (try_request->part_ptr
-				       != job_ptr->part_ptr))
-					continue;
 				debug("already tried to create but "
 				      "can't right now.");
 				list_iterator_destroy(itr);
@@ -723,7 +719,7 @@ try_again:
 		request.linuximage = linuximage;
 		request.mloaderimage = mloaderimage;
 		request.ramdiskimage = ramdiskimage;
-		request.part_ptr = job_ptr->part_ptr;
+		request.avail_node_bitmap = slurm_block_bitmap;
 
 		debug("trying with all free blocks");
 		if(create_dynamic_block(&request, NULL) == SLURM_ERROR) {
@@ -752,7 +748,6 @@ try_again:
 			try_request->save_name = NULL;
 			try_request->elongate_geos = NULL;
 			try_request->start_req = request.start_req;
-			try_request->part_ptr = request.part_ptr;
 
 			for(i=0; i<BA_SYSTEM_DIMENSIONS; i++) 
 				try_request->start[i] = start[i];
@@ -819,7 +814,7 @@ try_again:
 			request.linuximage = linuximage;
 			request.mloaderimage = mloaderimage;
 			request.ramdiskimage = ramdiskimage;
-			request.part_ptr = job_ptr->part_ptr;
+			request.avail_node_bitmap = slurm_block_bitmap;
 			
 			/* 1- try empty space
 			   2- we see if we can create one in the 
