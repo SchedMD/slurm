@@ -835,12 +835,14 @@ int update_part(update_part_msg_t * part_desc)
 		xfree(part_ptr->allow_uids);
 		if ((strcasecmp(part_desc->allow_groups, "ALL") == 0) ||
 		    (part_desc->allow_groups[0] == '\0')) {
-			info("update_part: setting allow_groups to ALL for partition %s", 
+			info("update_part: setting allow_groups to ALL for "
+				"partition %s", 
 				part_desc->name);
 		} else {
 			part_ptr->allow_groups = part_desc->allow_groups;
 			part_desc->allow_groups = NULL;
-			info("update_part: setting allow_groups to %s for partition %s", 
+			info("update_part: setting allow_groups to %s for "
+				"partition %s", 
 				part_ptr->allow_groups, part_desc->name);
 			part_ptr->allow_uids =
 				_get_groups_members(part_ptr->allow_groups);
@@ -852,8 +854,14 @@ int update_part(update_part_msg_t * part_desc)
 
 		if (part_desc->nodes[0] == '\0')
 			part_ptr->nodes = NULL;	/* avoid empty string */
-		else
+		else {
+			int i;
 			part_ptr->nodes = xstrdup(part_desc->nodes);
+			for (i=0; part_ptr->nodes[i]; i++) {
+				if (part_ptr->nodes[i] == ' ')
+					part_ptr->nodes[i] = ',';
+			}
+		}
 
 		error_code = _build_part_bitmap(part_ptr);
 		if (error_code) {
@@ -861,7 +869,7 @@ int update_part(update_part_msg_t * part_desc)
 			part_ptr->nodes = backup_node_list;
 		} else {
 			info("update_part: setting nodes to %s for partition %s", 
-			     part_desc->nodes, part_desc->name);
+			     part_ptr->nodes, part_desc->name);
 			xfree(backup_node_list);
 		}
 	}

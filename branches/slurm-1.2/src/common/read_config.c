@@ -457,6 +457,13 @@ static int parse_partitionname(void **dest, slurm_parser_enum_t type,
 		if (!s_p_get_string(&p->nodes, "Nodes", tbl)
 		    && !s_p_get_string(&p->nodes, "Nodes", dflt))
 			p->nodes = NULL;
+		else {
+			int i;
+			for (i=0; p->nodes[i]; i++) {
+				if (p->nodes[i] == ' ')
+					p->nodes[i] = ',';
+			}
+		}
 
 		if (!s_p_get_boolean(&p->root_only_flag, "RootOnly", tbl)
 		    && !s_p_get_boolean(&p->root_only_flag, "RootOnly", dflt))
