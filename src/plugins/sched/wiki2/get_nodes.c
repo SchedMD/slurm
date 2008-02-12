@@ -79,7 +79,7 @@ static int	_str_cmp(char *s1, char *s2);
 extern int	get_nodes(char *cmd_ptr, int *err_code, char **err_msg)
 {
 	char *arg_ptr = NULL, *tmp_char = NULL, *tmp_buf = NULL, *buf = NULL;
-	time_t update_time;static int	_str_cmp(char *s1, char *s2);
+	time_t update_time;
 	/* Locks: read node, read partition */
 	slurmctld_lock_t node_read_lock = {
 		NO_LOCK, NO_LOCK, READ_LOCK, READ_LOCK };

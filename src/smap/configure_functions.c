@@ -213,7 +213,7 @@ static int _create_allocation(char *com, List allocated_blocks)
 	request->nodecards = 0;
 	request->quarters = 0;
 	request->passthrough = false;
-	request->part_ptr = NULL;
+	request->avail_node_bitmap = NULL;
 
 	while(i<len) {				
 		if(!strncasecmp(com+i, "mesh", 4)) {
@@ -863,7 +863,7 @@ static int _copy_allocation(char *com, List allocated_blocks)
 		request->rotate_count= 0;
 		request->elongate_count = 0;
 	       	request->elongate_geos = list_create(NULL);
-		request->part_ptr = NULL;
+		request->avail_node_bitmap = NULL;
 
 		results_i = list_iterator_create(request->elongate_geos);
 		while ((geo_ptr = list_next(results_i)) != NULL) {
