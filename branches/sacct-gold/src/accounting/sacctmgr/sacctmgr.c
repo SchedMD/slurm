@@ -49,18 +49,13 @@ int input_words;	/* number of words of input permitted */
 int one_liner;		/* one record per line if =1 */
 int quiet_flag;		/* quiet=1, verbose=-1, normal=0 */
 
+static void	_show_it (int argc, char *argv[]);
+static void	_create_it (int argc, char *argv[]);
+static void	_update_it (int argc, char *argv[]);
 static void	_delete_it (int argc, char *argv[]);
 static int	_get_command (int *argc, char *argv[]);
-static void     _ping_slurmctld(char *control_machine, char *backup_controller);
-static void	_print_config (char *config_param);
-static void     _print_daemons (void);
-static void	_print_ping (void);
-static void	_print_slurmd(char *hostlist);
 static void     _print_version( void );
 static int	_process_command (int argc, char *argv[]);
-static void	_update_it (int argc, char *argv[]);
-static int	_update_bluegene_block (int argc, char *argv[]);
-static int      _update_bluegene_subbp (int argc, char *argv[]);
 static void	_usage ();
 
 int 
@@ -256,50 +251,17 @@ _get_command (int *argc, char **argv)
 	return 0;		
 }
 
-/* 
- * _print_config - print the specified configuration parameter and value 
- * IN config_param - NULL to print all parameters and values
- */
-static void 
-_print_config (char *config_param)
+
+static void _print_version(void)
 {
-	int error_code;
-	static slurm_ctl_conf_info_msg_t *old_slurm_ctl_conf_ptr = NULL;
-	slurm_ctl_conf_info_msg_t  *slurm_ctl_conf_ptr = NULL;
-
-	if (old_slurm_ctl_conf_ptr) {
-		error_code = slurm_load_ctl_conf (
-				old_slurm_ctl_conf_ptr->last_update,
-			 &slurm_ctl_conf_ptr);
-		if (error_code == SLURM_SUCCESS)
-			slurm_free_ctl_conf(old_slurm_ctl_conf_ptr);
-		else if (slurm_get_errno () == SLURM_NO_CHANGE_IN_DATA) {
-			slurm_ctl_conf_ptr = old_slurm_ctl_conf_ptr;
-			error_code = SLURM_SUCCESS;
-			if (quiet_flag == -1)
-				printf ("slurm_load_ctl_conf no change in data\n");
-		}
+	printf("%s %s\n", PACKAGE, SLURM_VERSION);
+	if (quiet_flag == -1) {
+		long version = slurm_api_version();
+		printf("slurm_api_version: %ld, %ld.%ld.%ld\n", version,
+			SLURM_VERSION_MAJOR(version), 
+			SLURM_VERSION_MINOR(version),
+			SLURM_VERSION_MICRO(version));
 	}
-	else
-		error_code = slurm_load_ctl_conf ((time_t) NULL, 
-						  &slurm_ctl_conf_ptr);
-
-	if (error_code) {
-		exit_code = 1;
-		if (quiet_flag != 1)
-			slurm_perror ("slurm_load_ctl_conf error");
-	}
-	else
-		old_slurm_ctl_conf_ptr = slurm_ctl_conf_ptr;
-
-
-	if (error_code == SLURM_SUCCESS) {
-		slurm_print_ctl_conf (stdout, slurm_ctl_conf_ptr) ;
-		fprintf(stdout, "\n"); 
-	}
-	if (slurm_ctl_conf_ptr)
-		_ping_slurmctld (slurm_ctl_conf_ptr->control_machine,
-				 slurm_ctl_conf_ptr->backup_controller);
 }
 
 /*
@@ -317,34 +279,9 @@ _process_command (int argc, char *argv[])
 		exit_code = 1;
 		if (quiet_flag == -1)
 			fprintf(stderr, "no input");
-	}
-	else if (strncasecmp (argv[0], "abort", 5) == 0) {
-		/* require full command name */
-		if (argc > 2) {
-			exit_code = 1;
-			fprintf (stderr,
-				 "too many arguments for keyword:%s\n", 
-				 argv[0]);
-		}
-		error_code = slurm_shutdown (1);
-		if (error_code) {
-			exit_code = 1;
-			if (quiet_flag != 1)
-				slurm_perror ("slurm_shutdown error");
-		}
-	}
-	else if (strncasecmp (argv[0], "all", 3) == 0)
+	} else if (strncasecmp (argv[0], "all", 3) == 0) {
 		all_flag = 1;
-	else if (strncasecmp (argv[0], "completing", 3) == 0) {
-		if (argc > 1) {
-			exit_code = 1;
-			fprintf (stderr, 
-				 "too many arguments for keyword:%s\n", 
-				 argv[0]);
-		}
-		scontrol_print_completing();
-	}
-	else if (strncasecmp (argv[0], "exit", 1) == 0) {
+	} else if (strncasecmp (argv[0], "exit", 1) == 0) {
 		if (argc > 1) {
 			exit_code = 1;
 			fprintf (stderr, 
@@ -352,8 +289,7 @@ _process_command (int argc, char *argv[])
 				 argv[0]);
 		}
 		exit_flag = 1;
-	}
-	else if (strncasecmp (argv[0], "help", 2) == 0) {
+	} else if (strncasecmp (argv[0], "help", 2) == 0) {
 		if (argc > 1) {
 			exit_code = 1;
 			fprintf (stderr, 
@@ -361,10 +297,9 @@ _process_command (int argc, char *argv[])
 				 argv[0]);
 		}
 		_usage ();
-	}
-	else if (strncasecmp (argv[0], "hide", 2) == 0)
+	} else if (strncasecmp (argv[0], "hide", 2) == 0) {
 		all_flag = 0;
-	else if (strncasecmp (argv[0], "oneliner", 1) == 0) {
+	} else if (strncasecmp (argv[0], "oneliner", 1) == 0) {
 		if (argc > 1) {
 			exit_code = 1;
 			fprintf (stderr, 
@@ -372,31 +307,7 @@ _process_command (int argc, char *argv[])
 				 argv[0]);
 		}
 		one_liner = 1;
-	}
-	else if (strncasecmp (argv[0], "pidinfo", 3) == 0) {
-		if (argc > 2) {
-			exit_code = 1;
-			fprintf (stderr, 
-				 "too many arguments for keyword:%s\n", 
-				 argv[0]);
-		} else if (argc < 2) {
-			exit_code = 1;
-			fprintf (stderr, 
-				 "missing argument for keyword:%s\n", 
-				 argv[0]);
-		} else
-			scontrol_pid_info ((pid_t) atol (argv[1]) );
-	}
-	else if (strncasecmp (argv[0], "ping", 3) == 0) {
-		if (argc > 1) {
-			exit_code = 1;
-			fprintf (stderr, 
-				 "too many arguments for keyword:%s\n",
-				 argv[0]);
-		}
-		_print_ping ();
-	}
-	else if (strncasecmp (argv[0], "quiet", 4) == 0) {
+	} else if (strncasecmp (argv[0], "quiet", 4) == 0) {
 		if (argc > 1) {
 			exit_code = 1;
 			fprintf (stderr, "too many arguments for keyword:%s\n",
@@ -412,254 +323,41 @@ _process_command (int argc, char *argv[])
 				 argv[0]);
 		}
 		exit_flag = 1;
-	}
-	else if (strncasecmp (argv[0], "reconfigure", 3) == 0) {
-		if (argc > 2) {
-			exit_code = 1;
-			fprintf (stderr, "too many arguments for keyword:%s\n",
-			         argv[0]);
-		}
-		error_code = slurm_reconfigure ();
-		if (error_code) {
-			exit_code = 1;
-			if (quiet_flag != 1)
-				slurm_perror ("slurm_reconfigure error");
-		}
-	}
-	else if (strncasecmp (argv[0], "checkpoint", 5) == 0) {
-		if (argc > 3) {
-			exit_code = 1;
-			if (quiet_flag != 1)
-				fprintf(stderr, 
-				        "too many arguments for keyword:%s\n", 
-				        argv[0]);
-		}
-		else if (argc < 3) {
+	} else if (strncasecmp (argv[0], "create", 6) == 0) {
+		if (argc < 2) {
 			exit_code = 1;
 			if (quiet_flag != 1)
 				fprintf(stderr, 
 				        "too few arguments for keyword:%s\n", 
 				        argv[0]);
 		}
-		else {
-			error_code = scontrol_checkpoint(argv[1], argv[2]);
-			if (error_code) {
-				exit_code = 1;
-				if (quiet_flag != 1)
-					slurm_perror ("slurm_checkpoint error");
-			}
-		}
-	}
-	else if (strncasecmp (argv[0], "requeue", 3) == 0) {
-		if (argc > 2) {
-			exit_code = 1;
-			if (quiet_flag != 1)
-				fprintf(stderr,
-					"too many arguments for keyword:%s\n",
-					argv[0]);
-		} else if (argc < 2) {
-			exit_code = 1;
-			if (quiet_flag != 1)
-				fprintf(stderr,
-					"too few arguments for keyword:%s\n",
-					argv[0]);
-		} else {
-			error_code = scontrol_requeue(argv[1]);
-			if (error_code) {
-				exit_code = 1;
-				if (quiet_flag != 1)
-					slurm_perror ("slurm_requeue error");
-			}
-		}
-				
-	}
-	else if ((strncasecmp (argv[0], "suspend", 3) == 0)
-	||       (strncasecmp (argv[0], "resume", 3) == 0)) {
-		if (argc > 2) {
-			exit_code = 1;
-			if (quiet_flag != 1)
-				fprintf(stderr,
-					"too many arguments for keyword:%s\n",
-					argv[0]);
-		}
-		else if (argc < 2) {
-			exit_code = 1;
-			if (quiet_flag != 1)
-				fprintf(stderr,
-					"too few arguments for keyword:%s\n",
-					argv[0]);
-		} else {
-			error_code =scontrol_suspend(argv[0], argv[1]);
-			if (error_code) {
-				exit_code = 1;
-				if (quiet_flag != 1)
-					slurm_perror ("slurm_suspend error");
-			}
-		}
-	}
-	else if (strncasecmp (argv[0], "setdebug", 4) == 0) {
-		if (argc > 2) {
-			exit_code = 1;
-			if (quiet_flag != 1)
-				fprintf(stderr, "too many arguments for keyword:%s\n",
-					argv[0]);
-		} else if (argc < 2) {
-			exit_code = 1;
-			if (quiet_flag != 1)
-				fprintf(stderr, "too few arguments for keyword:%s\n",
-					argv[0]);
-		} else {
-			int level = -1;
-			char *endptr;
-			char *levels[] = {
-				"quiet", "fatal", "error", "info", "verbose",
-				"debug", "debug2", "debug3", "debug4", "debug5", NULL};
-			int index = 0;
-			while (levels[index]) {
-				if (strcasecmp(argv[1], levels[index]) == 0) {
-					level = index;
-					break;
-				}
-				index ++;
-			}
-			if (level == -1) {
-				level = (int)strtoul (argv[1], &endptr, 10);    /* effective levels: 0 - 9 */
-				if (*endptr != '\0' || level > 9) {
-					level = -1;
-					exit_code = 1;
-					if (quiet_flag != 1)
-						fprintf(stderr, "invalid debug level: %s\n",
-							argv[1]);
-				}
-			}
-			if (level != -1) {
-				error_code = slurm_set_debug_level(level);
-				if (error_code) {
-					exit_code = 1;
-					if (quiet_flag != 1)
-						slurm_perror ("slurm_set_debug_level error");
-				}
-			}
-		}
-	}
-	else if (strncasecmp (argv[0], "show", 3) == 0) {
-		if (argc > 3) {
-			exit_code = 1;
-			if (quiet_flag != 1)
-				fprintf(stderr, 
-				        "too many arguments for keyword:%s\n", 
-				        argv[0]);
-		}
-		else if (argc < 2) {
+		_create_it((argc - 1), &argv[1]);
+	} else if (strncasecmp (argv[0], "show", 3) == 0) {
+		if (argc < 2) {
 			exit_code = 1;
 			if (quiet_flag != 1)
 				fprintf(stderr, 
 				        "too few arguments for keyword:%s\n", 
 				        argv[0]);
 		}
-		else if (strncasecmp (argv[1], "config", 3) == 0) {
-			if (argc > 2)
-				_print_config (argv[2]);
-			else
-				_print_config (NULL);
-		}
-		else if (strncasecmp (argv[1], "daemons", 3) == 0) {
-			if (argc > 2) {
-				exit_code = 1;
-				if (quiet_flag != 1)
-					fprintf(stderr,
-					        "too many arguments for keyword:%s\n", 
-					        argv[0]);
-			}
-			_print_daemons ();
-		}
-		else if (strncasecmp (argv[1], "jobs", 3) == 0) {
-			if (argc > 2)
-				sacctmgr_print_job (argv[2]);
-			else
-				sacctmgr_print_job (NULL);
-		}
-		else if (strncasecmp (argv[1], "hostnames", 5) == 0) {
-			if (argc > 2)
-				sacctmgr_print_hosts(argv[2]);
-			else
-				sacctmgr_print_hosts(getenv("SLURM_NODELIST"));
-		}
-		else if (strncasecmp (argv[1], "hostlist", 5) == 0) {
-			if (argc != 3) {
-				exit_code = 1;
-				fprintf(stderr, "invalid encode argument\n");
-				_usage();
-			} else if (sacctmgr_encode_hostlist(argv[2]))
-				exit_code = 1;
-		}
-		else if (strncasecmp (argv[1], "nodes", 3) == 0) {
-			if (argc > 2)
-				sacctmgr_print_node_list (argv[2]);
-			else
-				sacctmgr_print_node_list (NULL);
-		}
-		else if (strncasecmp (argv[1], "partitions", 3) == 0) {
-			if (argc > 2)
-				sacctmgr_print_part (argv[2]);
-			else
-				sacctmgr_print_part (NULL);
-		}
-		else if (strncasecmp (argv[1], "slurmd", 6) == 0) {
-			if (argc > 2)
-				_print_slurmd(argv[2]);
-			else
-				_print_slurmd(NULL);
-		}
-		else if (strncasecmp (argv[1], "steps", 3) == 0) {
-			if (argc > 2)
-				sacctmgr_print_step (argv[2]);
-			else
-				sacctmgr_print_step (NULL);
-		}
-		else {
-			exit_code = 1;
-			if (quiet_flag != 1)
-				fprintf (stderr,
-					 "invalid entity:%s for keyword:%s \n",
-					 argv[1], argv[0]);
-		}		
-
-	}
-	else if (strncasecmp (argv[0], "shutdown", 8) == 0) {
-		/* require full command name */
-		if (argc > 2) {
-			exit_code = 1;
-			fprintf (stderr,
-				 "too many arguments for keyword:%s\n", 
-				 argv[0]);
-		}
-		error_code = slurm_shutdown (0);
-		if (error_code) {
-			exit_code = 1;
-			if (quiet_flag != 1)
-				slurm_perror ("slurm_shutdown error");
-		}
-	}
-	else if (strncasecmp (argv[0], "update", 1) == 0) {
+		_show_it((argc - 1), &argv[1]);
+	} else if (strncasecmp (argv[0], "update", 1) == 0) {
 		if (argc < 2) {
 			exit_code = 1;
 			fprintf (stderr, "too few arguments for %s keyword\n",
 				 argv[0]);
 			return 0;
 		}		
-		_update_it ((argc - 1), &argv[1]);
-	}
-	else if (strncasecmp (argv[0], "delete", 3) == 0) {
+		_update_it((argc - 1), &argv[1]);
+	} else if (strncasecmp (argv[0], "delete", 3) == 0) {
 		if (argc < 2) {
 			exit_code = 1;
 			fprintf (stderr, "too few arguments for %s keyword\n",
 				 argv[0]);
 			return 0;
 		}
-		_delete_it ((argc - 1), &argv[1]);
-	}
-	else if (strncasecmp (argv[0], "verbose", 4) == 0) {
+		_delete_it((argc - 1), &argv[1]);
+	} else if (strncasecmp (argv[0], "verbose", 4) == 0) {
 		if (argc > 1) {
 			exit_code = 1;
 			fprintf (stderr,
@@ -667,8 +365,7 @@ _process_command (int argc, char *argv[])
 				 argv[0]);
 		}		
 		quiet_flag = -1;
-	}
-	else if (strncasecmp (argv[0], "version", 4) == 0) {
+	} else if (strncasecmp (argv[0], "version", 4) == 0) {
 		if (argc > 1) {
 			exit_code = 1;
 			fprintf (stderr,
@@ -676,30 +373,7 @@ _process_command (int argc, char *argv[])
 				 argv[0]);
 		}		
 		_print_version();
-	}
-	else if (strncasecmp (argv[0], "listpids", 8) == 0) {
-		if (argc > 3) {
-			exit_code = 1;
-			fprintf (stderr, 
-				 "too many arguments for keyword:%s\n", 
-				 argv[0]);
-		} else {
-			sacctmgr_list_pids (argc == 1 ? NULL : argv[1],
-					    argc <= 2 ? NULL : argv[2]);
-		}
-	}
-	else if (strncasecmp (argv[0], "notify", 6) == 0) {
-		if (argc < 3) {
-			exit_code = 1;
-			fprintf (stderr, 
-				 "too few arguments for keyword:%s\n", 
-				 argv[0]);
-		} else if (sacctmgr_job_notify(argc-1, &argv[1])) {
-			exit_code = 1;
-			slurm_perror("job notify failure");
-		}
-	}
-	else {
+	} else {
 		exit_code = 1;
 		fprintf (stderr, "invalid keyword: %s\n", argv[0]);
 	}
@@ -719,16 +393,16 @@ static void _create_it (int argc, char *argv[])
 
 	/* First identify the entity to create */
 	for (i=0; i<argc; i++) {
-		if (strncasecmp (argv[i], "Association", 6) == 0) {
-			error_code = sacctmgr_create_record(argc, argv);
+		if (strncasecmp (argv[i], "Association", 11) == 0) {
+			error_code = sacctmgr_create_association(argc, argv);
 			break;
-		} else if (strncasecmp (argv[i], "UserName=", 9) == 0) {
+		} else if (strncasecmp (argv[i], "User", 4) == 0) {
 			error_code = sacctmgr_create_user(argc, argv);
 			break;
-		} else if (strncasecmp (argv[i], "AccountName=", 12) == 0) {
+		} else if (strncasecmp (argv[i], "Account", 7) == 0) {
 			error_code = sacctmgr_create_account(argc, argv);
 			break;
-		} else if (strncasecmp (argv[i], "ClusterName=", 12) == 0) {
+		} else if (strncasecmp (argv[i], "Cluster", 7) == 0) {
 			error_code = sacctmgr_create_cluster(argc, argv);
 			break;
 		}		
@@ -747,40 +421,40 @@ static void _create_it (int argc, char *argv[])
 }
 
 /* 
- * _delete_it - delete the slurm configuration per the supplied arguments 
+ * _show_it - list the slurm configuration per the supplied arguments 
  * IN argc - count of arguments
  * IN argv - list of arguments
  */
-static void _delete_it (int argc, char *argv[]) 
+static void _show_it (int argc, char *argv[]) 
 {
 	int i, error_code = SLURM_SUCCESS;
 
-	/* First identify the entity to delete */
+	/* First identify the entity to list */
 	for (i=0; i<argc; i++) {
-		if (strncasecmp (argv[i], "Association", 6) == 0) {
-			error_code = sacctmgr_delete_record(argc, argv);
+		if (strncasecmp (argv[i], "Association", 11) == 0) {
+			error_code = sacctmgr_list_association(argc, argv);
 			break;
-		} else if (strncasecmp (argv[i], "UserName=", 9) == 0) {
-			error_code = sacctmgr_delete_user(argc, argv);
+		} else if (strncasecmp (argv[i], "User", 4) == 0) {
+			error_code = sacctmgr_list_user(argc, argv);
 			break;
-		} else if (strncasecmp (argv[i], "AccountName=", 12) == 0) {
-			error_code = sacctmgr_delete_account(argc, argv);
+		} else if (strncasecmp (argv[i], "Account", 7) == 0) {
+			error_code = sacctmgr_list_account(argc, argv);
 			break;
-		} else if (strncasecmp (argv[i], "ClusterName=", 12) == 0) {
-			error_code = sacctmgr_delete_cluster(argc, argv);
+		} else if (strncasecmp (argv[i], "Cluster", 7) == 0) {
+			error_code = sacctmgr_list_cluster(argc, argv);
 			break;
 		}		
 	}
 	
 	if (i >= argc) {
 		exit_code = 1;
-		fprintf(stderr, "No valid entity in delete command\n");
+		fprintf(stderr, "No valid entity in list command\n");
 		fprintf(stderr, "Input line must include \"Association\", ");
 		fprintf(stderr, "\"UserName\", \"AccountName\", ");
 		fprintf(stderr, "or \"ClusterName\"\n");
 	} else if (error_code) {
 		exit_code = 1;
-		slurm_perror ("sacctmgr_delete error");
+		slurm_perror ("sacctmgr_list error");
 	}
 }
 
@@ -796,16 +470,16 @@ static void _update_it (int argc, char *argv[])
 
 	/* First identify the entity to update */
 	for (i=0; i<argc; i++) {
-		if (strncasecmp (argv[i], "Association", 6) == 0) {
-			error_code = sacctmgr_update_record(argc, argv);
+		if (strncasecmp (argv[i], "Association", 11) == 0) {
+			error_code = sacctmgr_update_association(argc, argv);
 			break;
-		} else if (strncasecmp (argv[i], "UserName=", 9) == 0) {
+		} else if (strncasecmp (argv[i], "User", 4) == 0) {
 			error_code = sacctmgr_update_user(argc, argv);
 			break;
-		} else if (strncasecmp (argv[i], "AccountName=", 12) == 0) {
+		} else if (strncasecmp (argv[i], "Account", 7) == 0) {
 			error_code = sacctmgr_update_account(argc, argv);
 			break;
-		} else if (strncasecmp (argv[i], "ClusterName=", 12) == 0) {
+		} else if (strncasecmp (argv[i], "Cluster", 7) == 0) {
 			error_code = sacctmgr_update_cluster(argc, argv);
 			break;
 		}		
@@ -823,9 +497,46 @@ static void _update_it (int argc, char *argv[])
 	}
 }
 
+/* 
+ * _delete_it - delete the slurm configuration per the supplied arguments 
+ * IN argc - count of arguments
+ * IN argv - list of arguments
+ */
+static void _delete_it (int argc, char *argv[]) 
+{
+	int i, error_code = SLURM_SUCCESS;
+
+	/* First identify the entity to delete */
+	for (i=0; i<argc; i++) {
+		if (strncasecmp (argv[i], "Association", 11) == 0) {
+			error_code = sacctmgr_delete_association(argc, argv);
+			break;
+		} else if (strncasecmp (argv[i], "User", 4) == 0) {
+			error_code = sacctmgr_delete_user(argc, argv);
+			break;
+		} else if (strncasecmp (argv[i], "Account", 7) == 0) {
+			error_code = sacctmgr_delete_account(argc, argv);
+			break;
+		} else if (strncasecmp (argv[i], "Cluster", 7) == 0) {
+			error_code = sacctmgr_delete_cluster(argc, argv);
+			break;
+		}		
+	}
+	
+	if (i >= argc) {
+		exit_code = 1;
+		fprintf(stderr, "No valid entity in delete command\n");
+		fprintf(stderr, "Input line must include \"Association\", ");
+		fprintf(stderr, "\"UserName\", \"AccountName\", ");
+		fprintf(stderr, "or \"ClusterName\"\n");
+	} else if (error_code) {
+		exit_code = 1;
+		slurm_perror ("sacctmgr_delete error");
+	}
+}
+
 /* _usage - show the valid sacctmgr commands */
-void
-_usage () {
+void _usage () {
 	printf ("\
 sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
     Valid <OPTION> values are:                                             \n\

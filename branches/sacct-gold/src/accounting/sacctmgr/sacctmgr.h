@@ -90,5 +90,24 @@ extern int input_words;	/* number of words of input permitted */
 extern int one_liner;	/* one record per line if =1 */
 extern int quiet_flag;	/* quiet=1, verbose=-1, normal=0 */
 
+extern int sacctmgr_create_association(int argc, char *argv[]);
+extern int sacctmgr_create_user(int argc, char *argv[]);
+extern int sacctmgr_create_account(int argc, char *argv[]);
+extern int sacctmgr_create_cluster(int argc, char *argv[]);
+
+extern int sacctmgr_list_association(int argc, char *argv[]);
+extern int sacctmgr_list_user(int argc, char *argv[]);
+extern int sacctmgr_list_account(int argc, char *argv[]);
+extern int sacctmgr_list_cluster(int argc, char *argv[]);
+
+extern int sacctmgr_update_association(int argc, char *argv[]);
+extern int sacctmgr_update_user(int argc, char *argv[]);
+extern int sacctmgr_update_account(int argc, char *argv[]);
+extern int sacctmgr_update_cluster(int argc, char *argv[]);
+
+extern int sacctmgr_delete_association(int argc, char *argv[]);
+extern int sacctmgr_delete_user(int argc, char *argv[]);
+extern int sacctmgr_delete_account(int argc, char *argv[]);
+extern int sacctmgr_delete_cluster(int argc, char *argv[]);
 
 #endif

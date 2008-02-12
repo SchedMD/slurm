@@ -1,7 +1,6 @@
 /*****************************************************************************\
- *  sacctmgr.c - administration tool for slurm's accounting. 
- *	         provides interface to read, write, update, and configure
- *               accounting.
+ *  account_functions.c - functions dealing with accounts in the
+ *                        accounting system.
  *****************************************************************************
  *  Copyright (C) 2002-2008 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -38,3 +37,27 @@
 \*****************************************************************************/
 
 #include "sacctmgr.h"
+
+extern int sacctmgr_create_account(int argc, char *argv[])
+{
+	int rc = SLURM_SUCCESS;
+	return rc;
+}
+
+extern int sacctmgr_list_account(int argc, char *argv[])
+{
+	int rc = SLURM_SUCCESS;
+	return rc;
+}
+
+extern int sacctmgr_update_account(int argc, char *argv[])
+{
+	int rc = SLURM_SUCCESS;
+	return rc;
+}
+
+extern int sacctmgr_delete_account(int argc, char *argv[])
+{
+	int rc = SLURM_SUCCESS;
+	return rc;
+}

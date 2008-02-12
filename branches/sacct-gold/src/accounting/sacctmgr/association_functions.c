@@ -1,7 +1,6 @@
 /*****************************************************************************\
- *  sacctmgr.c - administration tool for slurm's accounting. 
- *	         provides interface to read, write, update, and configure
- *               accounting.
+ *  association_functions.c - functions dealing with associations in the
+ *                        accounting system.
  *****************************************************************************
  *  Copyright (C) 2002-2008 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -38,3 +37,27 @@
 \*****************************************************************************/
 
 #include "sacctmgr.h"
+
+extern int sacctmgr_create_association(int argc, char *argv[])
+{
+	int rc = SLURM_SUCCESS;
+	return rc;
+}
+
+extern int sacctmgr_list_association(int argc, char *argv[])
+{
+	int rc = SLURM_SUCCESS;
+	return rc;
+}
+
+extern int sacctmgr_update_association(int argc, char *argv[])
+{
+	int rc = SLURM_SUCCESS;
+	return rc;
+}
+
+extern int sacctmgr_delete_association(int argc, char *argv[])
+{
+	int rc = SLURM_SUCCESS;
+	return rc;
+}
