@@ -1,5 +1,5 @@
 
-SUBDIRS = common api database slurmctld slurmd plugins srun sacct sbcast \
+SUBDIRS = common api accounting database slurmctld slurmd plugins srun sbcast \
 	scontrol scancel squeue sinfo smap sview salloc \
 	sbatch sattach strigger
 

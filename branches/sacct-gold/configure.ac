@@ -278,7 +278,9 @@ AC_CONFIG_FILES([Makefile
 		 src/api/Makefile 
 		 src/common/Makefile
 		 src/database/Makefile
-		 src/sacct/Makefile
+		 src/accounting/Makefile
+		 src/accounting/sacct/Makefile
+		 src/accounting/sacctmgr/Makefile
 		 src/salloc/Makefile 
 		 src/sbatch/Makefile 
 		 src/sattach/Makefile
