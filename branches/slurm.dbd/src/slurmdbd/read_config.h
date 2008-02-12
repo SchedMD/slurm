@@ -59,6 +59,8 @@
 /* SlurmDBD configuration parameters */
 typedef struct slurm_dbd_conf {
 	time_t		last_update;	 	/* time slurmdbd.conf read	*/
+	char *		dbd_addr;		/* network address of Slurm DBD	*/
+	char *		dbd_host;		/* hostname of Slurm DBD	*/
 	uint16_t	dbd_port;		/* port number for RPCs to DBD	*/
 	uint16_t	debug_level;		/* Debug level, default=3	*/
 	char *		log_file;		/* Log file			*/

@@ -74,6 +74,8 @@ extern void free_slurmdbd_conf(void)
 static void _clear_slurmdbd_conf(void)
 {
 	if (slurmdbd_conf) {
+		xfree(slurmdbd_conf->dbd_addr);
+		xfree(slurmdbd_conf->dbd_host);
 		xfree(slurmdbd_conf->log_file);
 		xfree(slurmdbd_conf->pid_file);
 		xfree(slurmdbd_conf->storage_password);
@@ -90,6 +92,8 @@ static void _clear_slurmdbd_conf(void)
 extern int read_slurmdbd_conf(void)
 {
 	s_p_options_t options[] = {
+		{"DbdAddr", S_P_STRING},
+		{"DbdHost", S_P_STRING},
 		{"DbdPort", S_P_UINT16},
 		{"DebugLevel", S_P_UINT16},
 		{"LogFile", S_P_STRING},
@@ -121,6 +125,16 @@ extern int read_slurmdbd_conf(void)
 		 	     conf_path);
 		}
 
+		if (!s_p_get_string(&slurmdbd_conf->dbd_host,
+				    "DbdHost", tbl)) {
+			error("slurmdbd.conf lacks DbdHost parameter");
+			slurmdbd_conf->dbd_host = xstrdup("localhost");
+		}
+		if (!s_p_get_string(&slurmdbd_conf->dbd_addr,
+				    "DbdAddr", tbl)) {
+			slurmdbd_conf->dbd_addr = 
+					xstrdup(slurmdbd_conf->dbd_host);
+		}
 		s_p_get_uint16(&slurmdbd_conf->dbd_port,
 				"DbdPort", tbl);
 		s_p_get_uint16(&slurmdbd_conf->debug_level,
@@ -150,6 +164,8 @@ extern int read_slurmdbd_conf(void)
 /* Log the current configuration using verbose() */
 extern void log_config(void)
 {
+	debug2("DbdAddr           = %s", slurmdbd_conf->dbd_addr);
+	debug2("DbdHost           = %s", slurmdbd_conf->dbd_host);
 	debug2("DbdPort           = %u", slurmdbd_conf->dbd_port);
 	debug2("DebugLevel        = %u", slurmdbd_conf->debug_level);
 	debug2("LogFile           = %s", slurmdbd_conf->log_file);

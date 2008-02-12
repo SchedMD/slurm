@@ -46,6 +46,7 @@
 #  include <inttypes.h>
 #endif
 
+#include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <slurm/slurm_errno.h>
@@ -55,12 +56,18 @@
 
 #include "src/common/pack.h"
 #include "src/common/slurmdbd_defs.h"
+#include "src/common/xstring.h"
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmd/slurmd/slurmd.h"
 
-static uint16_t slurmdbd_port;
+static char *   slurmdbd_addr = NULL;
+static char *   slurmdbd_host = NULL;
+static uint16_t slurmdbd_port = 0;
+static slurm_fd slurmdbd_fd   = -1;
+static pthread_mutex_t slurmdbd_lock = PTHREAD_MUTEX_INITIALIZER;
 
 static char * _get_conf_path(void);
+static void   _open_slurmdbd_fd(void);
 static int    _read_slurmdbd_conf(void);
 
 /*
@@ -102,13 +109,12 @@ const uint32_t plugin_version = 100;
  */
 extern int init ( void )
 {
-	static int first = 1;
-	if(first) {
+	if (slurmdbd_fd < 0) {
 		/* since this can be loaded from many different places
 		   only tell us once. */
 		verbose("%s loaded", plugin_name);
-		first = 0;
 		_read_slurmdbd_conf();
+		_open_slurmdbd_fd();
 	} else {
 		debug4("%s loaded", plugin_name);
 	}
@@ -118,13 +124,61 @@ extern int init ( void )
 
 extern int fini ( void )
 {
+	slurm_mutex_lock(&slurmdbd_lock);
+	if (slurmdbd_fd >= 0) {
+		close(slurmdbd_fd);
+		slurmdbd_fd = -1;
+	}
+	xfree(slurmdbd_addr);
+	xfree(slurmdbd_host);
+	slurm_mutex_unlock(&slurmdbd_lock);
 	return SLURM_SUCCESS;
+}
+
+/* Open a connection to the Slurm DBD and set slurm_fd */
+static void _open_slurmdbd_fd(void)
+{
+	slurm_addr dbd_addr;
+
+	slurm_mutex_lock(&slurmdbd_lock);
+	if (slurmdbd_fd < 0) {
+		slurm_set_addr(&dbd_addr, slurmdbd_port, slurmdbd_addr);
+		if (dbd_addr.sin_port == 0)
+			error("Unable to locate SlurmDBD host %s:%s", 
+			      slurmdbd_host, slurmdbd_addr);
+		else {
+			slurmdbd_fd = slurm_open_msg_conn(&dbd_addr);
+			if (slurmdbd_fd < 0)
+				error("slurmdbd: slurm_open_msg_conn: %m");
+		}
+	}
+#if 0
+/* FIXME: Send an authentication message now */
+static int
+_send_and_recv_msg(slurm_fd fd, slurm_msg_t *req,
+                   slurm_msg_t *resp, int timeout)
+{
+        int retry = 0;
+        int rc = -1;
+        slurm_msg_t_init(resp);
+
+        if (slurm_send_node_msg(fd, req) >= 0) {
+                /* no need to adjust and timeouts here since we are not
+                   forwarding or expecting anything other than 1 message
+                   and the regular timeout will be altered in
+                   slurm_receive_msg if it is 0 */
+                rc = slurm_receive_msg(fd, resp, timeout);
+        }
+#endif
+	slurm_mutex_unlock(&slurmdbd_lock);
 }
 
 /* Read the slurmdbd.conf file to get the DbdPort value */
 static int _read_slurmdbd_conf(void)
 {
 	s_p_options_t options[] = {
+		{"DbdAddr", S_P_STRING},
+		{"DbdHost", S_P_STRING},
 		{"DbdPort", S_P_UINT16},
 		{"DebugLevel", S_P_UINT16},
 		{"LogFile", S_P_STRING},
@@ -149,6 +203,13 @@ static int _read_slurmdbd_conf(void)
 		 	     conf_path);
 		}
 
+		if (!s_p_get_string(&slurmdbd_host,"DbdHost", tbl)) {
+			error("slurmdbd.conf lacks DbdHost parameter");
+			slurmdbd_host = xstrdup("localhost");
+		}
+		if (!s_p_get_string(&slurmdbd_addr, "DbdAddr", tbl)) {
+			slurmdbd_addr = xstrdup(slurmdbd_host);
+		}
 		if (!s_p_get_uint16(&slurmdbd_port, "DbdPort", tbl))
 			slurmdbd_port = SLURMDBD_PORT;
 
@@ -187,6 +248,9 @@ static char * _get_conf_path(void)
 
 static int _send_msg(Buf buffer)
 {
+	if (slurmdbd_fd < 0)
+		_open_slurmdbd_fd();
+
 	return SLURM_SUCCESS;
 }
 

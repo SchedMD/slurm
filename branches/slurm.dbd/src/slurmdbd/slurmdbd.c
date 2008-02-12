@@ -51,6 +51,7 @@
 #include "src/common/daemonize.h"
 #include "src/common/fd.h"
 #include "src/common/log.h"
+#include "src/common/read_config.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xsignal.h"
 #include "src/common/xstring.h"
@@ -88,6 +89,7 @@ static void  _usage(char *prog_name);
 int main(int argc, char *argv[])
 {
 	pthread_attr_t thread_attr;
+	char node_name[128];
 
 	_init_config();
 	log_init(argv[0], log_opts, LOG_DAEMON, NULL);
@@ -95,6 +97,14 @@ int main(int argc, char *argv[])
 		exit(1);
 	_parse_commandline(argc, argv);
 	_update_logging();
+	if (gethostname_short(node_name, sizeof(node_name)))
+		fatal("getnodename: %m");
+	if (slurmdbd_conf->dbd_host &&
+	    strcmp(slurmdbd_conf->dbd_host, node_name) &&
+	    strcmp(slurmdbd_conf->dbd_host, "localhost")) {
+		fatal("This host not configured to run SlurmDBD (%s != %s)",
+		      node_name, slurmdbd_conf->dbd_host);
+	}
 	_kill_old_slurmdbd();
 	if (foreground == 0)
 		_daemonize();
