@@ -51,12 +51,20 @@ typedef enum {
 	ACCOUNT_ADMIN_SUPER_USER
 } account_admin_level_t;
 
+typedef enum {
+	ACCOUNT_EXPEDITE_NOTSET,
+	ACCOUNT_EXPEDITE_NORMAL,
+	ACCOUNT_EXPEDITE_EXPEDITE,
+	ACCOUNT_EXPEDITE_STANDBY,
+	ACCOUNT_EXPEDITE_EXEMPT	
+} account_expedite_level_t;
+
 typedef struct {
 	char *name;
 	uint32_t uid;
 	uint32_t gid;
 	char *default_account;
-	uint32_t expedite;
+	account_expedite_level_t expedite;
 	account_admin_level_t admin_level;
 } account_user_rec_t;
 
@@ -64,18 +72,18 @@ typedef struct {
 	char *name;
 	char *description;
 	char *organization;
-	uint32_t expedite;
+	account_expedite_level_t expedite;
 	List coodinators;
 } account_acct_rec_t;
 
 typedef struct {
 	char *name;
-	List accounting_list; /* list of clusteracct_rec_t *'s */
+	List accounting_list; /* list of clusteracct_rec_t *'s from
+			       * slurm_clusteracct_storage.h */
 } account_cluster_rec_t;
 
 typedef struct {
 	time_t period_start; 
-	time_t period_end;
 	uint32_t alloc_secs; /* number of cpu seconds allocated */
 } account_accounting_rec_t;
 

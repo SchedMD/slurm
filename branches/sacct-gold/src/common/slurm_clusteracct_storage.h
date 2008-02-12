@@ -41,15 +41,18 @@
 #define _SLURM_CLUSTERACCT_STORAGE_H
 
 #include "src/common/list.h"
+#include "src/common/slurm_account_storage.h"
 #include "src/slurmctld/slurmctld.h"
 #include <slurm/slurm.h>
 #include <slurm/slurm_errno.h>
 
+/* this type is the type that is stored in the account_cluster_rec_t
+ * accounting list
+ */
+
 typedef struct {
-	char *cluster; /* cluster name */
 	uint32_t cpu_count; /* number of cpus during time period */
 	time_t period_start; /* when this record was started */
-	time_t period_end; /* when it ended */
 	uint32_t idle_secs; /* number of cpu seconds idle */
 	uint32_t down_secs; /* number of cpu seconds down */
 	uint32_t alloc_secs; /* number of cpu seconds allocated */
@@ -72,14 +75,40 @@ extern int clusteracct_storage_g_node_up(struct node_record *node_ptr,
 extern int clusteracct_storage_g_cluster_procs(uint32_t procs,
 					       time_t event_time);
 
-extern List clusteracct_storage_g_get_hourly_usage(char *cluster, time_t start, 
-						   time_t end, void *params);
+/* 
+ * get info from the storage 
+ * IN/OUT:  cluster_rec account_cluster_rec_t with the name set
+ * IN:  start time stamp for records >=
+ * IN:  end time stamp for records <
+ * IN:  params void *
+ * RET: SLURM_SUCCESS on success SLURM_ERROR else
+ */
+extern int clusteracct_storage_g_get_hourly_usage(
+	account_cluster_rec_t *cluster_rec, time_t start, 
+	time_t end, void *params);
 
-extern List clusteracct_storage_g_get_daily_usage(char *cluster, time_t start, 
-						  time_t end, void *params);
+/* 
+ * get info from the storage 
+ * IN/OUT:  cluster_rec account_cluster_rec_t with the name set
+ * IN:  start time stamp for records >=
+ * IN:  end time stamp for records <
+ * IN:  params void *
+ * RET: SLURM_SUCCESS on success SLURM_ERROR else
+ */
+extern int clusteracct_storage_g_get_daily_usage(
+	account_cluster_rec_t *cluster_rec, time_t start, 
+	time_t end, void *params);
 
-extern List clusteracct_storage_g_get_monthly_usage(char *cluster, 
-						    time_t start, 
-						    time_t end,
-						    void *params);
+/* 
+ * get info from the storage 
+ * IN/OUT:  cluster_rec account_cluster_rec_t with the name set
+ * IN:  start time stamp for records >=
+ * IN:  end time stamp for records <
+ * IN:  params void *
+ * RET: SLURM_SUCCESS on success SLURM_ERROR else
+ */
+extern int clusteracct_storage_g_get_monthly_usage(
+	account_cluster_rec_t *cluster_rec, 
+	time_t start, time_t end, void *params);
+
 #endif /*_SLURM_CLUSTERACCT_STORAGE_H*/

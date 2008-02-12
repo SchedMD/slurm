@@ -91,14 +91,13 @@ const uint32_t plugin_version = 100;
 static char *cluster_name = NULL;
 
 static List _get_record_list_from_response(gold_response_t *gold_response);
-static List _get_account_accounting_list_from_response(
+static int _get_account_accounting_list_from_response(
 	gold_response_t *gold_response,
-	account_record_rec_t *account_rec,
-	uint32_t time_diff);
+	account_record_rec_t *account_rec);
 static List _get_user_list_from_response(gold_response_t *gold_response);
 static List _get_account_list_from_response(gold_response_t *gold_response);
 static List _get_cluster_list_from_response(gold_response_t *gold_response);
-
+static int _remove_record_accounting(char *record);
 
 static List _get_record_list_from_response(gold_response_t *gold_response)
 {
@@ -173,23 +172,23 @@ static List _get_record_list_from_response(gold_response_t *gold_response)
 	return record_list;
 }
 
-static List _get_account_accounting_list_from_response(
+static int _get_account_accounting_list_from_response(
 	gold_response_t *gold_response,
-	account_record_rec_t *account_rec,
-	uint32_t time_diff)
+	account_record_rec_t *account_rec)
 {
 	ListIterator itr = NULL;
 	ListIterator itr2 = NULL;
-	List accounting_list = NULL;
 	account_accounting_rec_t *accounting_rec = NULL;
 	gold_response_entry_t *resp_entry = NULL;
 	gold_name_value_t *name_val = NULL;
 	
 	if(gold_response->entry_cnt <= 0) {
 		debug2("_get_accounting_list_from_response: No entries given");
-		return NULL;
+		return SLURM_ERROR;
 	}
-	accounting_list = list_create(destroy_account_accounting_rec);
+	if(!account_rec->accounting_list)
+		account_rec->accounting_list =
+			list_create(destroy_account_accounting_rec);
 	
 	itr = list_iterator_create(gold_response->entries);
 	while((resp_entry = list_next(itr))) {
@@ -200,31 +199,20 @@ static List _get_account_accounting_list_from_response(
 			if(!strcmp(name_val->name, "PeriodStart")) {
 				accounting_rec->period_start = 
 					atoi(name_val->value);
-				accounting_rec->period_end = 
-					accounting_rec->period_start +
-					time_diff;
 			} else if(!strcmp(name_val->name, "AllocatedCPUSecs")) {
 				accounting_rec->alloc_secs = 
 					atoi(name_val->value);
-			} else if(!strcmp(name_val->name, "Account")) {
-				if(account_rec->id != atoi(name_val->value)) {
-					error("wrong account not adding");
-					destroy_account_accounting_rec(
-						accounting_rec);
-					break;
-				}
 			} else {
 				error("Unknown name val of '%s' = '%s'",
 				      name_val->name, name_val->value);
 			}
 		}
 		list_iterator_destroy(itr2);
-		if(accounting_rec)
-			list_append(accounting_list, accounting_rec);
+		list_append(account_rec->accounting_list, accounting_rec);
 	}
 	list_iterator_destroy(itr);
 
-	return accounting_list;
+	return SLURM_SUCCESS;
 	
 }
 
@@ -365,6 +353,116 @@ static List _get_cluster_list_from_response(gold_response_t *gold_response)
 	return cluster_list;
 }
 
+static int _remove_record_accounting(char *record)
+{
+	gold_request_t *gold_request = NULL;
+	gold_response_t *gold_response = NULL;
+	int rc = SLURM_SUCCESS;
+
+	gold_request = create_gold_request(
+		GOLD_OBJECT_ACCOUNT_HOUR_USAGE,
+		GOLD_ACTION_DELETE);
+	if(!gold_request) { 
+		error("couldn't create gold_request");
+		rc = SLURM_ERROR;
+		return rc;
+	}
+	
+	gold_request_add_condition(gold_request, "Account",
+				   record,
+				   GOLD_OPERATOR_NONE, 0);
+			       
+	gold_response = get_gold_response(gold_request);	
+	destroy_gold_request(gold_request);
+
+	if(!gold_response) {
+		error("account_storage_p_modify_records: "
+		      "no response received");
+		rc = SLURM_ERROR;
+		return rc;
+	}
+		
+	if(gold_response->rc) {
+		error("gold_response has non-zero rc(%d): %s",
+		      gold_response->rc,
+		      gold_response->message);
+		destroy_gold_response(gold_response);
+		rc = SLURM_ERROR;
+		return rc;
+	}
+
+
+	gold_request = create_gold_request(
+		GOLD_OBJECT_ACCOUNT_DAY_USAGE,
+		GOLD_ACTION_DELETE);
+	if(!gold_request) { 
+		error("couldn't create gold_request");
+		rc = SLURM_ERROR;
+		return rc;
+	}
+	
+
+	gold_request_add_condition(gold_request, "Account",
+				   record,
+				   GOLD_OPERATOR_NONE, 0);
+	
+	gold_response = get_gold_response(gold_request);	
+	destroy_gold_request(gold_request);
+
+	if(!gold_response) {
+		error("account_storage_p_modify_records: "
+		      "no response received");
+		rc = SLURM_ERROR;
+		return rc;
+	}
+		
+	if(gold_response->rc) {
+		error("gold_response has non-zero rc(%d): %s",
+		      gold_response->rc,
+		      gold_response->message);
+		destroy_gold_response(gold_response);
+		rc = SLURM_ERROR;
+		return rc;
+	}
+
+	gold_request = create_gold_request(
+		GOLD_OBJECT_ACCOUNT_MONTH_USAGE,
+		GOLD_ACTION_DELETE);
+	if(!gold_request) { 
+		error("couldn't create gold_request");
+		rc = SLURM_ERROR;
+		return rc;
+	}
+
+	gold_request_add_condition(gold_request, "Account",
+				   record,
+				   GOLD_OPERATOR_NONE, 0);
+	       
+	gold_response = get_gold_response(gold_request);	
+	destroy_gold_request(gold_request);
+
+	if(!gold_response) {
+		error("account_storage_p_modify_records: "
+		      "no response received");
+		rc = SLURM_ERROR;
+		return rc;
+	}
+		
+	if(gold_response->rc) {
+		error("gold_response has non-zero rc(%d): %s",
+		      gold_response->rc,
+		      gold_response->message);
+		destroy_gold_response(gold_response);
+		rc = SLURM_ERROR;
+		return rc;
+	}
+
+	destroy_gold_response(gold_response);		
+
+
+	return rc; 
+}
+
 /*
  * init() is called when the plugin is loaded, before any other functions
  * are called.  Put global initialization here.
@@ -434,7 +532,62 @@ extern int fini ( void )
 
 extern int account_storage_p_add_users(List user_list)
 {
-	return SLURM_SUCCESS;
+	ListIterator itr = NULL;
+	int rc = SLURM_SUCCESS;
+	gold_request_t *gold_request = NULL;
+	gold_response_t *gold_response = NULL;
+	account_user_rec_t *object = NULL;
+	char tmp_buff[50];
+
+	itr = list_iterator_create(user_list);
+	while((object = list_next(itr))) {
+		if(!object->name || !object->default_account) {
+			error("We need a user name and "
+			      "default account to add.");
+			rc = SLURM_ERROR;
+			continue;
+		}
+		gold_request = create_gold_request(GOLD_OBJECT_USER,
+						   GOLD_ACTION_CREATE);
+		if(!gold_request) { 
+			error("couldn't create gold_request");
+			rc = SLURM_ERROR;
+			break;
+		}
+		gold_request_add_assignment(gold_request, "Name",
+					    object->name);		
+		gold_request_add_assignment(gold_request, "DefaultProject",
+					    object->default_account);		
+
+		if(object->expedite != ACCOUNT_EXPEDITE_NOTSET) {
+			snprintf(tmp_buff, sizeof(tmp_buff), "%u",
+				 object->expedite-1);
+			gold_request_add_assignment(gold_request, "Expedite",
+						    tmp_buff);
+		}		
+		gold_response = get_gold_response(gold_request);	
+		destroy_gold_request(gold_request);
+
+		if(!gold_response) {
+			error("account_storage_p_add_users: "
+			      "no response received");
+			rc = SLURM_ERROR;
+			break;
+		}
+		
+		if(gold_response->rc) {
+			error("gold_response has non-zero rc(%d): %s",
+			      gold_response->rc,
+			      gold_response->message);
+			destroy_gold_response(gold_response);
+			rc = SLURM_ERROR;
+			break;
+		}
+		destroy_gold_response(gold_response);		
+	}
+	list_iterator_destroy(itr);
+	
+	return rc;
 }
 
 extern int account_storage_p_add_coord(char *account, List user_list)
@@ -444,33 +597,485 @@ extern int account_storage_p_add_coord(char *account, List user_list)
 
 extern int account_storage_p_add_accounts(List account_list)
 {
-	return SLURM_SUCCESS;
+	ListIterator itr = NULL;
+	int rc = SLURM_SUCCESS;
+	gold_request_t *gold_request = NULL;
+	gold_response_t *gold_response = NULL;
+	account_acct_rec_t *object = NULL;
+	char tmp_buff[50];
+
+	itr = list_iterator_create(account_list);
+	while((object = list_next(itr))) {
+		if(!object->name || !object->description
+		   || !object->organization) {
+			error("We need a account name, description, and "
+			      "organization to add one.");
+			rc = SLURM_ERROR;
+			continue;
+		}
+		gold_request = create_gold_request(GOLD_OBJECT_PROJECT,
+						   GOLD_ACTION_CREATE);
+		if(!gold_request) { 
+			error("couldn't create gold_request");
+			rc = SLURM_ERROR;
+			break;
+		}
+		gold_request_add_assignment(gold_request, "Name",
+					    object->name);		
+		gold_request_add_assignment(gold_request, "Description",
+					    object->description);		
+		gold_request_add_assignment(gold_request, "Organization",
+					    object->organization);		
+		snprintf(tmp_buff, sizeof(tmp_buff), "%u", object->expedite);
+		gold_request_add_assignment(gold_request, "Expedite",
+					    tmp_buff);		
+		gold_response = get_gold_response(gold_request);	
+		destroy_gold_request(gold_request);
+
+		if(!gold_response) {
+			error("account_storage_p_add_accounts: "
+			      "no response received");
+			rc = SLURM_ERROR;
+			break;
+		}
+		
+		if(gold_response->rc) {
+			error("gold_response has non-zero rc(%d): %s",
+			      gold_response->rc,
+			      gold_response->message);
+			destroy_gold_response(gold_response);
+			rc = SLURM_ERROR;
+			break;
+		}
+		destroy_gold_response(gold_response);		
+	}
+	list_iterator_destroy(itr);
+	
+	return rc;
 }
 
 extern int account_storage_p_add_clusters(List cluster_list)
 {
-	return SLURM_SUCCESS;
+	ListIterator itr = NULL;
+	int rc = SLURM_SUCCESS;
+	gold_request_t *gold_request = NULL;
+	gold_response_t *gold_response = NULL;
+	account_cluster_rec_t *object = NULL;
+
+	itr = list_iterator_create(cluster_list);
+	while((object = list_next(itr))) {
+		if(!object->name) {
+			error("We need a cluster name to add.");
+			rc = SLURM_ERROR;
+			continue;
+		}
+		gold_request = create_gold_request(GOLD_OBJECT_MACHINE,
+						   GOLD_ACTION_CREATE);
+		if(!gold_request) { 
+			error("couldn't create gold_request");
+			rc = SLURM_ERROR;
+			break;
+		}
+		gold_request_add_assignment(gold_request, "Name",
+					    object->name);		
+
+		gold_response = get_gold_response(gold_request);	
+		destroy_gold_request(gold_request);
+
+		if(!gold_response) {
+			error("account_storage_p_add_clusters: "
+			      "no response received");
+			rc = SLURM_ERROR;
+			break;
+		}
+		
+		if(gold_response->rc) {
+			error("gold_response has non-zero rc(%d): %s",
+			      gold_response->rc,
+			      gold_response->message);
+			destroy_gold_response(gold_response);
+			rc = SLURM_ERROR;
+			break;
+		}
+		destroy_gold_response(gold_response);		
+	}
+	list_iterator_destroy(itr);
+	
+	return rc;
 }
 
 extern int account_storage_p_add_records(List record_list)
 {
-	return SLURM_SUCCESS;
+	ListIterator itr = NULL;
+	int rc = SLURM_SUCCESS;
+	gold_request_t *gold_request = NULL;
+	gold_response_t *gold_response = NULL;
+	account_record_rec_t *object = NULL;
+	char tmp_buff[50];
+
+	itr = list_iterator_create(record_list);
+	while((object = list_next(itr))) {
+		if(!object->cluster || !object->account) {
+			error("We need a record cluster and "
+			      "account to add one.");
+			rc = SLURM_ERROR;
+			continue;
+		}
+		gold_request = create_gold_request(GOLD_OBJECT_ACCOUNT,
+						   GOLD_ACTION_CREATE);
+		if(!gold_request) { 
+			error("couldn't create gold_request");
+			rc = SLURM_ERROR;
+			break;
+		}
+		if(object->user)
+			gold_request_add_assignment(gold_request, "User",
+						    object->user);		
+		gold_request_add_assignment(gold_request, "Project",
+					    object->account);		
+		gold_request_add_assignment(gold_request, "Machine",
+					    object->cluster);		
+		
+		if(object->parent) {
+			snprintf(tmp_buff, sizeof(tmp_buff), "%u",
+				 object->parent);
+			gold_request_add_assignment(gold_request, "Parent",
+						    tmp_buff);		
+		}
+
+		if(object->fairshare) {
+			snprintf(tmp_buff, sizeof(tmp_buff), "%u",
+				 object->fairshare);
+			gold_request_add_assignment(gold_request, "Fairshare",
+						    tmp_buff);		
+		}
+
+		if(object->max_jobs) {
+			snprintf(tmp_buff, sizeof(tmp_buff), "%u", 
+				 object->max_jobs);
+			gold_request_add_assignment(gold_request, "MaxJobs",
+						    tmp_buff);
+		}
+		
+		if(object->max_nodes_per_job) {
+			snprintf(tmp_buff, sizeof(tmp_buff), "%u",
+				 object->max_nodes_per_job);
+			gold_request_add_assignment(gold_request,
+						    "MaxNodesPerJob",
+						    tmp_buff);
+		}
+
+		if(object->max_wall_duration_per_job) {
+			snprintf(tmp_buff, sizeof(tmp_buff), "%u",
+				 object->max_wall_duration_per_job);
+			gold_request_add_assignment(gold_request,
+						    "MaxWallDurationPerJob",
+						    tmp_buff);		
+		}
+
+		if(object->max_cpu_seconds_per_job) {
+			snprintf(tmp_buff, sizeof(tmp_buff), "%u",
+				 object->max_cpu_seconds_per_job);
+			gold_request_add_assignment(gold_request,
+						    "MaxProcSecondsPerJob",
+						    tmp_buff);		
+		}
+
+		gold_response = get_gold_response(gold_request);	
+		destroy_gold_request(gold_request);
+
+		if(!gold_response) {
+			error("account_storage_p_add_records: "
+			      "no response received");
+			rc = SLURM_ERROR;
+			break;
+		}
+		
+		if(gold_response->rc) {
+			error("gold_response has non-zero rc(%d): %s",
+			      gold_response->rc,
+			      gold_response->message);
+			destroy_gold_response(gold_response);
+			rc = SLURM_ERROR;
+			break;
+		}
+		destroy_gold_response(gold_response);		
+	}
+	list_iterator_destroy(itr);
+	
+	return rc;
 }
 
 extern int account_storage_p_modify_users(List user_list)
 {
-	return SLURM_SUCCESS;
+	ListIterator itr = NULL;
+	int rc = SLURM_SUCCESS;
+	gold_request_t *gold_request = NULL;
+	gold_response_t *gold_response = NULL;
+	account_user_rec_t *object = NULL;
+	char tmp_buff[50];
+
+	itr = list_iterator_create(user_list);
+	while((object = list_next(itr))) {
+		if(!object->name) {
+			error("We need a user name to modify.");
+			rc = SLURM_ERROR;
+			continue;
+		}
+		gold_request = create_gold_request(GOLD_OBJECT_USER,
+						   GOLD_ACTION_MODIFY);
+		if(!gold_request) { 
+			error("couldn't create gold_request");
+			rc = SLURM_ERROR;
+			break;
+		}
+
+		gold_request_add_condition(gold_request, "Name",
+					   object->name,
+					   GOLD_OPERATOR_NONE, 0);
+
+		if(object->default_account) 
+			gold_request_add_assignment(gold_request,
+						    "DefaultProject",
+						    object->default_account);
+		
+		if(object->expedite != ACCOUNT_EXPEDITE_NOTSET) {
+			snprintf(tmp_buff, sizeof(tmp_buff), "%u",
+				 object->expedite-1);
+			gold_request_add_assignment(gold_request, "Expedite",
+						    tmp_buff);		
+		}
+		gold_response = get_gold_response(gold_request);	
+		destroy_gold_request(gold_request);
+
+		if(!gold_response) {
+			error("account_storage_p_modify_users: "
+			      "no response received");
+			rc = SLURM_ERROR;
+			break;
+		}
+		
+		if(gold_response->rc) {
+			error("gold_response has non-zero rc(%d): %s",
+			      gold_response->rc,
+			      gold_response->message);
+			destroy_gold_response(gold_response);
+			rc = SLURM_ERROR;
+			break;
+		}
+		destroy_gold_response(gold_response);		
+	}
+	list_iterator_destroy(itr);
+	
+	return rc;
 }
 
 extern int account_storage_p_modify_user_admin_level(
 	account_admin_level_t level, List user_list)
 {
-	return SLURM_SUCCESS;
+	ListIterator itr = NULL;
+	int rc = SLURM_SUCCESS;
+	gold_request_t *gold_request = NULL;
+	gold_response_t *gold_response = NULL;
+	char *object = NULL;
+
+	itr = list_iterator_create(user_list);
+	while((object = list_next(itr))) {
+		if(!object) {
+			error("We need a user name to modify.");
+			rc = SLURM_ERROR;
+			continue;
+		}
+		if(level == ACCOUNT_ADMIN_NONE) {
+			gold_request = create_gold_request(GOLD_OBJECT_ROLEUSER,
+							   GOLD_ACTION_DELETE);
+			if(!gold_request) { 
+				error("couldn't create gold_request");
+				rc = SLURM_ERROR;
+				break;
+			}
+			gold_request_add_condition(gold_request, "Name",
+						   object,
+						   GOLD_OPERATOR_NONE, 0);
+			
+			gold_request_add_condition(gold_request,
+						   "Role",
+						   "SystemAdmin",
+						   GOLD_OPERATOR_NONE, 2);
+			
+			gold_request_add_condition(gold_request,
+						   "Role",
+						   "Operator",
+						   GOLD_OPERATOR_NONE, 1);
+		} else {
+			gold_request = create_gold_request(GOLD_OBJECT_ROLEUSER,
+							   GOLD_ACTION_CREATE);
+			if(!gold_request) { 
+				error("couldn't create gold_request");
+				rc = SLURM_ERROR;
+				break;
+			}
+			gold_request_add_assignment(gold_request, "Name",
+					    object);
+			if(level == ACCOUNT_ADMIN_SUPER_USER)
+				gold_request_add_assignment(gold_request,
+							    "Role",
+							    "SystemAdmin");
+			else if(level == ACCOUNT_ADMIN_OPERATOR)
+				gold_request_add_assignment(gold_request,
+							    "Role",
+							    "Operator");
+		}
+
+		gold_response = get_gold_response(gold_request);	
+		destroy_gold_request(gold_request);
+
+		if(!gold_response) {
+			error("account_storage_p_modify_users: "
+			      "no response received");
+			rc = SLURM_ERROR;
+			break;
+		}
+		
+		if(gold_response->rc) {
+			error("gold_response has non-zero rc(%d): %s",
+			      gold_response->rc,
+			      gold_response->message);
+			destroy_gold_response(gold_response);
+			rc = SLURM_ERROR;
+			break;
+		}
+		destroy_gold_response(gold_response);	
+
+		if(level != ACCOUNT_ADMIN_NONE) {
+			gold_request = create_gold_request(GOLD_OBJECT_ROLEUSER,
+							   GOLD_ACTION_DELETE);
+			if(!gold_request) { 
+				error("couldn't create gold_request");
+				rc = SLURM_ERROR;
+				break;
+			}
+			gold_request_add_condition(gold_request, "Name",
+						   object,
+						   GOLD_OPERATOR_NONE, 0);
+			
+			if(level == ACCOUNT_ADMIN_SUPER_USER) {
+				gold_request_add_condition(gold_request,
+							   "Role",
+							   "Operator",
+							   GOLD_OPERATOR_NONE,
+							   0);
+			} else if (level == ACCOUNT_ADMIN_OPERATOR) {
+				gold_request_add_condition(gold_request,
+							   "Role",
+							   "SystemAdmin",
+							   GOLD_OPERATOR_NONE,
+							   0);
+			} else {
+				error("Unknown admin level %d", level);
+				destroy_gold_request(gold_request);
+				rc = SLURM_ERROR;
+				break;
+			}
+
+
+			if(!gold_request) { 
+				error("couldn't create gold_request");
+				rc = SLURM_ERROR;
+				break;
+			}
+			gold_response = get_gold_response(gold_request);	
+			destroy_gold_request(gold_request);
+			
+			if(!gold_response) {
+				error("account_storage_p_modify_users: "
+				      "no response received");
+				rc = SLURM_ERROR;
+				break;
+			}
+			
+			if(gold_response->rc) {
+				error("gold_response has non-zero rc(%d): %s",
+				      gold_response->rc,
+				      gold_response->message);
+				destroy_gold_response(gold_response);
+				rc = SLURM_ERROR;
+				break;
+			}
+			destroy_gold_response(gold_response);	
+		}
+	}
+	list_iterator_destroy(itr);
+	
+	return rc;
 }
 
 extern int account_storage_p_modify_accounts(List account_list)
 {
-	return SLURM_SUCCESS;
+	ListIterator itr = NULL;
+	int rc = SLURM_SUCCESS;
+	gold_request_t *gold_request = NULL;
+	gold_response_t *gold_response = NULL;
+	account_acct_rec_t *object = NULL;
+	char tmp_buff[50];
+
+	itr = list_iterator_create(account_list);
+	while((object = list_next(itr))) {
+		if(!object->name) {
+			error("We need a account name to modify.");
+			rc = SLURM_ERROR;
+			continue;
+		}
+		gold_request = create_gold_request(GOLD_OBJECT_PROJECT,
+						   GOLD_ACTION_MODIFY);
+		if(!gold_request) { 
+			error("couldn't create gold_request");
+			rc = SLURM_ERROR;
+			break;
+		}
+
+		gold_request_add_condition(gold_request, "Name",
+					   object->name,
+					   GOLD_OPERATOR_NONE, 0);
+
+		if(object->description) 
+			gold_request_add_assignment(gold_request,
+						    "Description",
+						    object->description);
+		if(object->organization) 
+			gold_request_add_assignment(gold_request,
+						    "Organization",
+						    object->organization);
+		
+		if(object->expedite != ACCOUNT_EXPEDITE_NOTSET) {
+			snprintf(tmp_buff, sizeof(tmp_buff), "%u",
+				 object->expedite-1);
+			gold_request_add_assignment(gold_request, "Expedite",
+						    tmp_buff);		
+		}
+		gold_response = get_gold_response(gold_request);	
+		destroy_gold_request(gold_request);
+
+		if(!gold_response) {
+			error("account_storage_p_modify_accounts: "
+			      "no response received");
+			rc = SLURM_ERROR;
+			break;
+		}
+		
+		if(gold_response->rc) {
+			error("gold_response has non-zero rc(%d): %s",
+			      gold_response->rc,
+			      gold_response->message);
+			destroy_gold_response(gold_response);
+			rc = SLURM_ERROR;
+			break;
+		}
+		destroy_gold_response(gold_response);		
+	}
+	list_iterator_destroy(itr);
+	
+	return rc;
 }
 
 extern int account_storage_p_modify_clusters(List cluster_list)
@@ -480,12 +1085,166 @@ extern int account_storage_p_modify_clusters(List cluster_list)
 
 extern int account_storage_p_modify_records(List record_list)
 {
-	return SLURM_SUCCESS;
+	ListIterator itr = NULL;
+	int rc = SLURM_SUCCESS;
+	gold_request_t *gold_request = NULL;
+	gold_response_t *gold_response = NULL;
+	account_record_rec_t *object = NULL;
+	char tmp_buff[50];
+	int set = 0;
+
+	itr = list_iterator_create(record_list);
+	while((object = list_next(itr))) {
+		set = 0;
+		gold_request = create_gold_request(GOLD_OBJECT_ACCOUNT,
+						   GOLD_ACTION_MODIFY);
+		if(!gold_request) { 
+			error("couldn't create gold_request");
+			rc = SLURM_ERROR;
+			break;
+		}
+		if(object->id) {
+			snprintf(tmp_buff, sizeof(tmp_buff), "%u",
+				 object->id);			
+			gold_request_add_condition(gold_request, "id",
+						   tmp_buff,
+						   GOLD_OPERATOR_NONE, 0);
+			set = 1;
+		}
+		
+		if(object->user) {
+			gold_request_add_condition(gold_request, "User",
+						   object->user,
+						   GOLD_OPERATOR_NONE, 0);
+			set = 1;			
+		}
+		if(object->account) {
+			gold_request_add_condition(gold_request, "Project",
+						   object->account,
+						   GOLD_OPERATOR_NONE, 0);
+			set = 1;			
+		}
+		if(object->cluster) {
+			gold_request_add_condition(gold_request, "Machine",
+						   object->cluster,
+						   GOLD_OPERATOR_NONE, 0);
+			set = 1;			
+		}
+		if(!set) {
+			error("account_storage_p_modify_records: "
+			      "no accounts specified");
+			destroy_gold_request(gold_request);
+			continue;
+		}
+		
+		if(object->fairshare) {
+			snprintf(tmp_buff, sizeof(tmp_buff), "%u",
+				 object->fairshare);
+			gold_request_add_assignment(gold_request, "Fairshare",
+						    tmp_buff);		
+		}
+
+		if(object->max_jobs) {
+			snprintf(tmp_buff, sizeof(tmp_buff), "%u", 
+				 object->max_jobs);
+			gold_request_add_assignment(gold_request, "MaxJobs",
+						    tmp_buff);
+		}
+		
+		if(object->max_nodes_per_job) {
+			snprintf(tmp_buff, sizeof(tmp_buff), "%u",
+				 object->max_nodes_per_job);
+			gold_request_add_assignment(gold_request,
+						    "MaxNodesPerJob",
+						    tmp_buff);
+		}
+
+		if(object->max_wall_duration_per_job) {
+			snprintf(tmp_buff, sizeof(tmp_buff), "%u",
+				 object->max_wall_duration_per_job);
+			gold_request_add_assignment(gold_request,
+						    "MaxWallDurationPerJob",
+						    tmp_buff);		
+		}
+
+		if(object->max_cpu_seconds_per_job) {
+			snprintf(tmp_buff, sizeof(tmp_buff), "%u",
+				 object->max_cpu_seconds_per_job);
+			gold_request_add_assignment(gold_request,
+						    "MaxProcSecondsPerJob",
+						    tmp_buff);		
+		}
+
+		gold_response = get_gold_response(gold_request);	
+		destroy_gold_request(gold_request);
+
+		if(!gold_response) {
+			error("account_storage_p_modify_records: "
+			      "no response received");
+			rc = SLURM_ERROR;
+			break;
+		}
+		
+		if(gold_response->rc) {
+			error("gold_response has non-zero rc(%d): %s",
+			      gold_response->rc,
+			      gold_response->message);
+			destroy_gold_response(gold_response);
+			rc = SLURM_ERROR;
+			break;
+		}
+		destroy_gold_response(gold_response);		
+	}
+	list_iterator_destroy(itr);
+	
+	return rc;
 }
 
 extern int account_storage_p_remove_users(List user_list)
 {
-	return SLURM_SUCCESS;
+	ListIterator itr = NULL;
+	int rc = SLURM_SUCCESS;
+	gold_request_t *gold_request = NULL;
+	gold_response_t *gold_response = NULL;
+	char *object = NULL;
+
+	itr = list_iterator_create(user_list);
+	while((object = list_next(itr))) {
+		gold_request = create_gold_request(GOLD_OBJECT_USER,
+						   GOLD_ACTION_DELETE);
+		if(!gold_request) { 
+			error("account_storage_p_remove_users: "
+			      "couldn't create gold_request");
+			rc = SLURM_ERROR;
+			break;
+		}
+		gold_request_add_condition(gold_request, "Name", object,
+					   GOLD_OPERATOR_NONE, 0);
+
+		gold_response = get_gold_response(gold_request);	
+		destroy_gold_request(gold_request);
+
+		if(!gold_response) {
+			error("account_storage_p_remove_users: "
+			      "no response received");
+			rc = SLURM_ERROR;
+			break;
+		}
+		
+		if(gold_response->rc) {
+			error("account_storage_p_remove_users: "
+			      "gold_response has non-zero rc(%d): %s",
+			      gold_response->rc,
+			      gold_response->message);
+			destroy_gold_response(gold_response);
+			rc = SLURM_ERROR;
+			break;
+		}
+		destroy_gold_response(gold_response);		
+	}
+	list_iterator_destroy(itr);
+	
+	return rc;
 }
 
 extern int account_storage_p_remove_coord(char *account, List user_list)
@@ -495,17 +1254,300 @@ extern int account_storage_p_remove_coord(char *account, List user_list)
 
 extern int account_storage_p_remove_accounts(List account_list)
 {
-	return SLURM_SUCCESS;
+	ListIterator itr = NULL;
+	int rc = SLURM_SUCCESS;
+	gold_request_t *gold_request = NULL;
+	gold_response_t *gold_response = NULL;
+	char *object = NULL;
+
+	itr = list_iterator_create(account_list);
+	while((object = list_next(itr))) {
+		gold_request = create_gold_request(GOLD_OBJECT_PROJECT,
+						   GOLD_ACTION_DELETE);
+		if(!gold_request) { 
+			error("account_storage_p_remove_accounts: "
+			      "couldn't create gold_request");
+			rc = SLURM_ERROR;
+			break;
+		}
+		gold_request_add_condition(gold_request, "Name", object,
+					   GOLD_OPERATOR_NONE, 0);
+
+		gold_response = get_gold_response(gold_request);	
+		destroy_gold_request(gold_request);
+
+		if(!gold_response) {
+			error("account_storage_p_remove_accounts: "
+			      "no response received");
+			rc = SLURM_ERROR;
+			break;
+		}
+		
+		if(gold_response->rc) {
+			error("account_storage_p_remove_accounts: "
+			      "gold_response has non-zero rc(%d): %s",
+			      gold_response->rc,
+			      gold_response->message);
+			destroy_gold_response(gold_response);
+			rc = SLURM_ERROR;
+			break;
+		}
+		destroy_gold_response(gold_response);		
+	}
+	list_iterator_destroy(itr);
+	
+	return rc;
 }
 
 extern int account_storage_p_remove_clusters(List cluster_list)
 {
-	return SLURM_SUCCESS;
+	ListIterator itr = NULL;
+	int rc = SLURM_SUCCESS;
+	gold_request_t *gold_request = NULL;
+	gold_response_t *gold_response = NULL;
+	char *object = NULL;
+
+	itr = list_iterator_create(cluster_list);
+	while((object = list_next(itr))) {
+		gold_request = create_gold_request(GOLD_OBJECT_MACHINE,
+						   GOLD_ACTION_DELETE);
+		if(!gold_request) { 
+			error("account_storage_p_remove_clusters: "
+			      "couldn't create gold_request");
+			rc = SLURM_ERROR;
+			break;
+		}
+		gold_request_add_condition(gold_request, "Name", object,
+					   GOLD_OPERATOR_NONE, 0);
+
+		gold_response = get_gold_response(gold_request);	
+		destroy_gold_request(gold_request);
+
+		if(!gold_response) {
+			error("account_storage_p_remove_clusters: "
+			      "no response received");
+			rc = SLURM_ERROR;
+			break;
+		}
+		
+		if(gold_response->rc) {
+			error("account_storage_p_remove_clusters: "
+			      "gold_response has non-zero rc(%d): %s",
+			      gold_response->rc,
+			      gold_response->message);
+			destroy_gold_response(gold_response);
+			rc = SLURM_ERROR;
+			break;
+		}
+		destroy_gold_response(gold_response);
+
+		gold_request = create_gold_request(
+			GOLD_OBJECT_MACHINE_HOUR_USAGE,
+			GOLD_ACTION_DELETE);
+		if(!gold_request) { 
+			error("account_storage_p_remove_clusters: "
+			      "couldn't create gold_request");
+			rc = SLURM_ERROR;
+			break;
+		}
+		gold_request_add_condition(gold_request, "Machine", object,
+					   GOLD_OPERATOR_NONE, 0);
+
+		gold_response = get_gold_response(gold_request);	
+		destroy_gold_request(gold_request);
+
+		if(!gold_response) {
+			error("account_storage_p_remove_clusters: "
+			      "no response received");
+			rc = SLURM_ERROR;
+			break;
+		}
+		
+		if(gold_response->rc) {
+			error("account_storage_p_remove_clusters: "
+			      "gold_response has non-zero rc(%d): %s",
+			      gold_response->rc,
+			      gold_response->message);
+			destroy_gold_response(gold_response);
+			rc = SLURM_ERROR;
+			break;
+		}
+		destroy_gold_response(gold_response);
+
+		gold_request = create_gold_request(
+			GOLD_OBJECT_MACHINE_DAY_USAGE,
+			GOLD_ACTION_DELETE);
+		if(!gold_request) { 
+			error("account_storage_p_remove_clusters: "
+			      "couldn't create gold_request");
+			rc = SLURM_ERROR;
+			break;
+		}
+		gold_request_add_condition(gold_request, "Machine", object,
+					   GOLD_OPERATOR_NONE, 0);
+
+		gold_response = get_gold_response(gold_request);	
+		destroy_gold_request(gold_request);
+
+		if(!gold_response) {
+			error("account_storage_p_remove_clusters: "
+			      "no response received");
+			rc = SLURM_ERROR;
+			break;
+		}
+		
+		if(gold_response->rc) {
+			error("account_storage_p_remove_clusters: "
+			      "gold_response has non-zero rc(%d): %s",
+			      gold_response->rc,
+			      gold_response->message);
+			destroy_gold_response(gold_response);
+			rc = SLURM_ERROR;
+			break;
+		}
+		destroy_gold_response(gold_response);
+
+		gold_request = create_gold_request(
+			GOLD_OBJECT_MACHINE_MONTH_USAGE,
+			GOLD_ACTION_DELETE);
+		if(!gold_request) { 
+			error("account_storage_p_remove_clusters: "
+			      "couldn't create gold_request");
+			rc = SLURM_ERROR;
+			break;
+		}
+		gold_request_add_condition(gold_request, "Machine", object,
+					   GOLD_OPERATOR_NONE, 0);
+
+		gold_response = get_gold_response(gold_request);	
+		destroy_gold_request(gold_request);
+
+		if(!gold_response) {
+			error("account_storage_p_remove_clusters: "
+			      "no response received");
+			rc = SLURM_ERROR;
+			break;
+		}
+		
+		if(gold_response->rc) {
+			error("account_storage_p_remove_clusters: "
+			      "gold_response has non-zero rc(%d): %s",
+			      gold_response->rc,
+			      gold_response->message);
+			destroy_gold_response(gold_response);
+			rc = SLURM_ERROR;
+			break;
+		}
+		destroy_gold_response(gold_response);
+	}
+	list_iterator_destroy(itr);
+	
+	return rc;
 }
 
 extern int account_storage_p_remove_records(List record_list)
 {
-	return SLURM_SUCCESS;
+	ListIterator itr = NULL;
+	int rc = SLURM_SUCCESS;
+	gold_request_t *gold_request = NULL;
+	gold_response_t *gold_response = NULL;
+	account_record_rec_t *object = NULL;
+	char tmp_buff[50];
+	int set = 0;
+
+	itr = list_iterator_create(record_list);
+	while((object = list_next(itr))) {
+		set = 0;
+		gold_request = create_gold_request(GOLD_OBJECT_ACCOUNT,
+						   GOLD_ACTION_DELETE);
+		if(!gold_request) { 
+			error("couldn't create gold_request");
+			rc = SLURM_ERROR;
+			break;
+		}
+		if(object->id) {
+			snprintf(tmp_buff, sizeof(tmp_buff), "%u",
+				 object->id);			
+			gold_request_add_condition(gold_request, "id",
+						   tmp_buff,
+						   GOLD_OPERATOR_NONE, 0);
+			set = 1;
+		}
+		
+		if(object->user) {
+			gold_request_add_condition(gold_request, "User",
+						   object->user,
+						   GOLD_OPERATOR_NONE, 0);
+			set = 1;			
+		}
+		if(object->account) {
+			gold_request_add_condition(gold_request, "Project",
+						   object->account,
+						   GOLD_OPERATOR_NONE, 0);
+			set = 1;			
+		}
+		if(object->cluster) {
+			gold_request_add_condition(gold_request, "Machine",
+						   object->cluster,
+						   GOLD_OPERATOR_NONE, 0);
+			set = 1;			
+		}
+		if(!set) {
+			error("account_storage_p_modify_records: "
+			      "no accounts specified");
+			destroy_gold_request(gold_request);
+			continue;
+		}
+		
+		gold_response = get_gold_response(gold_request);	
+		destroy_gold_request(gold_request);
+
+		if(!gold_response) {
+			error("account_storage_p_modify_records: "
+			      "no response received");
+			rc = SLURM_ERROR;
+			break;
+		}
+		
+		if(gold_response->rc) {
+			error("gold_response has non-zero rc(%d): %s",
+			      gold_response->rc,
+			      gold_response->message);
+			destroy_gold_response(gold_response);
+			rc = SLURM_ERROR;
+			break;
+		}
+
+		if(gold_response->entry_cnt > 0) {
+			ListIterator itr = NULL;
+			ListIterator itr2 = NULL;
+			gold_response_entry_t *resp_entry = NULL;
+			gold_name_value_t *name_val = NULL;
+	
+			itr = list_iterator_create(gold_response->entries);
+			while((resp_entry = list_next(itr))) {
+				itr2 = list_iterator_create(
+					resp_entry->name_val);
+				while((name_val = list_next(itr2))) {
+					if(!strcmp(name_val->name, "Id")) {
+						_remove_record_accounting(
+							name_val->value);
+						break;
+					}
+				}
+				list_iterator_destroy(itr2);
+				
+			}
+			list_iterator_destroy(itr);
+		} else {
+			debug3("no records found");
+		}
+		destroy_gold_response(gold_response);		
+
+	}
+	list_iterator_destroy(itr);
+	
+	return rc;
 }
 
 extern List account_storage_p_get_users(List selected_users,
@@ -746,7 +1788,61 @@ extern int account_storage_p_get_hourly_usage(account_record_rec_t *acct_rec,
 					      time_t end,
 					      void *params)
 {
-	return SLURM_SUCCESS;
+	gold_request_t *gold_request = NULL;
+	gold_response_t *gold_response = NULL;
+	int rc = SLURM_ERROR;
+	char tmp_buff[50];
+
+	if(!acct_rec || acct_rec->id) {
+		error("account_storage_p_get_hourly_usage: "
+		      "We need an id to go off to query off of");
+		return rc;
+	}
+
+	gold_request = create_gold_request(
+		GOLD_OBJECT_ACCOUNT_HOUR_USAGE, GOLD_ACTION_QUERY);
+
+	if(!gold_request) 
+		return rc;
+
+	snprintf(tmp_buff, sizeof(tmp_buff), "%u", acct_rec->id);
+	gold_request_add_condition(gold_request, "Account", tmp_buff,
+				   GOLD_OPERATOR_NONE, 0);
+
+	if(start) {
+		snprintf(tmp_buff, sizeof(tmp_buff), "%d", (int)start);
+		gold_request_add_condition(gold_request, "PeriodStart",
+					   tmp_buff,
+					   GOLD_OPERATOR_GE, 0);
+	}
+	if(end) {	
+		snprintf(tmp_buff, sizeof(tmp_buff), "%u", (int)end);
+		gold_request_add_condition(gold_request, "PeriodStart",
+					   tmp_buff,
+					   GOLD_OPERATOR_L, 0);
+	}
+
+	gold_request_add_selection(gold_request, "PeriodStart");
+	gold_request_add_selection(gold_request, "AllocatedCPUSecs");
+
+	gold_response = get_gold_response(gold_request);	
+	destroy_gold_request(gold_request);
+
+	if(!gold_response) {
+		error("account_storage_p_get_hourly_usage: "
+		      "no response received");
+		return rc;
+	}
+
+	if(gold_response->entry_cnt > 0) {
+		rc = _get_account_accounting_list_from_response(
+			gold_response, acct_rec);
+	} else {
+		debug("We don't have an entry for this machine for this time");
+	}
+	destroy_gold_response(gold_response);
+
+	return rc;
 }
 
 extern int account_storage_p_get_daily_usage(account_record_rec_t *acct_rec,
@@ -754,7 +1850,61 @@ extern int account_storage_p_get_daily_usage(account_record_rec_t *acct_rec,
 					     time_t end,
 					     void *params)
 {
-	return SLURM_SUCCESS;	
+	gold_request_t *gold_request = NULL;
+	gold_response_t *gold_response = NULL;
+	int rc = SLURM_ERROR;
+	char tmp_buff[50];
+
+	if(!acct_rec || acct_rec->id) {
+		error("account_storage_p_get_daily_usage: "
+		      "We need an id to go off to query off of");
+		return rc;
+	}
+
+	gold_request = create_gold_request(
+		GOLD_OBJECT_ACCOUNT_DAY_USAGE, GOLD_ACTION_QUERY);
+
+	if(!gold_request) 
+		return rc;
+
+	snprintf(tmp_buff, sizeof(tmp_buff), "%u", acct_rec->id);
+	gold_request_add_condition(gold_request, "Account", tmp_buff,
+				   GOLD_OPERATOR_NONE, 0);
+
+	if(start) {
+		snprintf(tmp_buff, sizeof(tmp_buff), "%d", (int)start);
+		gold_request_add_condition(gold_request, "PeriodStart",
+					   tmp_buff,
+					   GOLD_OPERATOR_GE, 0);
+	}
+	if(end) {	
+		snprintf(tmp_buff, sizeof(tmp_buff), "%u", (int)end);
+		gold_request_add_condition(gold_request, "PeriodStart",
+					   tmp_buff,
+					   GOLD_OPERATOR_L, 0);
+	}
+
+	gold_request_add_selection(gold_request, "PeriodStart");
+	gold_request_add_selection(gold_request, "AllocatedCPUSecs");
+
+	gold_response = get_gold_response(gold_request);	
+	destroy_gold_request(gold_request);
+
+	if(!gold_response) {
+		error("account_storage_p_get_daily_usage: "
+		      "no response received");
+		return rc;
+	}
+
+	if(gold_response->entry_cnt > 0) {
+		rc = _get_account_accounting_list_from_response(
+			gold_response, acct_rec);
+	} else {
+		debug("We don't have an entry for this machine for this time");
+	}
+	destroy_gold_response(gold_response);
+
+	return rc;
 }
 
 extern int account_storage_p_get_monthly_usage(account_record_rec_t *acct_rec,
@@ -762,5 +1912,59 @@ extern int account_storage_p_get_monthly_usage(account_record_rec_t *acct_rec,
 					       time_t end,
 					       void *params)
 {
-	return SLURM_SUCCESS;	
+	gold_request_t *gold_request = NULL;
+	gold_response_t *gold_response = NULL;
+	int rc = SLURM_ERROR;
+	char tmp_buff[50];
+
+	if(!acct_rec || acct_rec->id) {
+		error("account_storage_p_get_monthly_usage: "
+		      "We need an id to go off to query off of");
+		return rc;
+	}
+
+	gold_request = create_gold_request(
+		GOLD_OBJECT_ACCOUNT_MONTH_USAGE, GOLD_ACTION_QUERY);
+
+	if(!gold_request) 
+		return rc;
+
+	snprintf(tmp_buff, sizeof(tmp_buff), "%u", acct_rec->id);
+	gold_request_add_condition(gold_request, "Account", tmp_buff,
+				   GOLD_OPERATOR_NONE, 0);
+
+	if(start) {
+		snprintf(tmp_buff, sizeof(tmp_buff), "%d", (int)start);
+		gold_request_add_condition(gold_request, "PeriodStart",
+					   tmp_buff,
+					   GOLD_OPERATOR_GE, 0);
+	}
+	if(end) {	
+		snprintf(tmp_buff, sizeof(tmp_buff), "%u", (int)end);
+		gold_request_add_condition(gold_request, "PeriodStart",
+					   tmp_buff,
+					   GOLD_OPERATOR_L, 0);
+	}
+
+	gold_request_add_selection(gold_request, "PeriodStart");
+	gold_request_add_selection(gold_request, "AllocatedCPUSecs");
+
+	gold_response = get_gold_response(gold_request);	
+	destroy_gold_request(gold_request);
+
+	if(!gold_response) {
+		error("account_storage_p_get_monthly_usage: "
+		      "no response received");
+		return rc;
+	}
+
+	if(gold_response->entry_cnt > 0) {
+		rc = _get_account_accounting_list_from_response(
+			gold_response, acct_rec);
+	} else {
+		debug("We don't have an entry for this machine for this time");
+	}
+	destroy_gold_response(gold_response);
+
+	return rc;
 }

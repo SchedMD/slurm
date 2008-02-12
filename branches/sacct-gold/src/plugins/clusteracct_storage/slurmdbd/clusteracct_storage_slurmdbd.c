@@ -118,38 +118,27 @@ extern int clusteracct_storage_p_cluster_procs(uint32_t procs,
 }
 
 
-/* 
- * get info from the storage 
- * fills in List of clusteracct_rec_t *
- * note List needs to be freed when called
- */
-extern int clusteracct_storage_p_get_hourly_usage(List cluster_list,
-						  char *cluster, void *params)
+extern int clusteracct_storage_p_get_hourly_usage(
+	account_cluster_rec_t *cluster_rec, time_t start, 
+	time_t end, void *params)
 {
 
 	return SLURM_SUCCESS;
 }
 
-/* 
- * get info from the storage 
- * fills in List of clusteracct_rec_t *
- * note List needs to be freed when called
- */
-extern int clusteracct_storage_p_get_daily_usage(List cluster_list,
-						 char *cluster, void *params)
+extern int clusteracct_storage_p_get_daily_usage(
+	account_cluster_rec_t *cluster_rec, time_t start, 
+	time_t end, void *params)
 {
 	
 	return SLURM_SUCCESS;
 }
 
-/* 
- * get info from the storage 
- * fills in List of clusteracct_rec_t *
- * note List needs to be freed when called
- */
-extern int clusteracct_storage_p_get_monthly_usage(List cluster_list,
-						   char *cluster, void *params)
+extern int clusteracct_storage_p_get_monthly_usage(
+	account_cluster_rec_t *cluster_rec, time_t start, 
+	time_t end, void *params)
 {
 	
 	return SLURM_SUCCESS;
 }
+

@@ -91,32 +91,38 @@ const uint32_t plugin_version = 100;
 static char *cluster_name = NULL;
 
 
-static List _get_list_from_response(gold_response_t *gold_response, char *name);
+static int _get_list_from_response(gold_response_t *gold_response, 
+				   account_cluster_rec_t *cluster_rec);
 
 
-static List _get_list_from_response(gold_response_t *gold_response, char *name)
+static int _get_list_from_response(gold_response_t *gold_response,
+				   account_cluster_rec_t *cluster_rec)
 {
 	ListIterator itr = NULL;
 	ListIterator itr2 = NULL;
-	List cluster_list = NULL;
 	clusteracct_rec_t *clusteracct_rec = NULL;
 	gold_response_entry_t *resp_entry = NULL;
 	gold_name_value_t *name_val = NULL;
 	
 	if(gold_response->entry_cnt <= 0) {
 		debug2("_get_list_from_response: No entries given");
-		return NULL;
+		return SLURM_ERROR;
 	}
-	cluster_list = list_create(destroy_clusteracct_rec);
+	if(!cluster_rec->accounting_list)
+		cluster_rec->accounting_list = 
+			list_create(destroy_clusteracct_rec);
 	
 	itr = list_iterator_create(gold_response->entries);
 	while((resp_entry = list_next(itr))) {
 		clusteracct_rec = xmalloc(sizeof(clusteracct_rec_t));
-		clusteracct_rec->cluster = xstrdup(name);
 		itr2 = list_iterator_create(resp_entry->name_val);
 		while((name_val = list_next(itr2))) {
 			if(!strcmp(name_val->name, "CPUCount")) {
 				clusteracct_rec->cpu_count = 
+					atoi(name_val->value);
+			} else if(!strcmp(name_val->name, 
+					  "PeriodStart")) {
+				clusteracct_rec->period_start = 
 					atoi(name_val->value);
 			} else if(!strcmp(name_val->name, 
 					  "IdleCPUSeconds")) {
@@ -140,11 +146,11 @@ static List _get_list_from_response(gold_response_t *gold_response, char *name)
 			}
 		}
 		list_iterator_destroy(itr2);
-		list_append(cluster_list, clusteracct_rec);
+		list_append(cluster_rec->accounting_list, clusteracct_rec);
 	}
 	list_iterator_destroy(itr);
 
-	return cluster_list;
+	return SLURM_SUCCESS;
 }
 
 
@@ -208,8 +214,8 @@ extern int fini ( void )
 }
 
 extern int clusteracct_storage_p_node_down(struct node_record *node_ptr,
-					time_t event_time,
-					char *reason)
+					   time_t event_time,
+					   char *reason)
 {
 	uint16_t cpus;
 	int rc = SLURM_ERROR;
@@ -302,7 +308,7 @@ extern int clusteracct_storage_p_node_down(struct node_record *node_ptr,
 }
 
 extern int clusteracct_storage_p_node_up(struct node_record *node_ptr,
-				      time_t event_time)
+					 time_t event_time)
 {
 	int rc = SLURM_ERROR;
 	gold_request_t *gold_request = NULL;
@@ -491,30 +497,27 @@ extern int clusteracct_storage_p_cluster_procs(uint32_t procs,
 	return rc;
 }
 
-/* 
- * get info from the storage 
- * returns List of clusteracct_rec_t *
- * note List needs to be freed when called
- */
-extern List clusteracct_storage_p_get_hourly_usage(char *cluster, time_t start, 
-						   time_t end, void *params)
+extern int clusteracct_storage_p_get_hourly_usage(
+	account_cluster_rec_t *cluster_rec, time_t start, 
+	time_t end, void *params)
 {
 	gold_request_t *gold_request = NULL;
 	gold_response_t *gold_response = NULL;
 	char tmp_buff[50];
-	List cluster_list = NULL;
+	int rc = SLURM_ERROR;
 
-	if(!cluster) {
+	if(!cluster_rec || !cluster_rec->name) {
 		error("clusteracct_storage_p_get_hourly_usage:"
 		      "no cluster name given to query.");
-		return NULL;
+		return rc;
 	}
 	/* get the last known one */
 	gold_request = create_gold_request(GOLD_OBJECT_MACHINE_HOUR_USAGE,
 					   GOLD_ACTION_QUERY);
 	if(!gold_request) 
-		return NULL;
-	gold_request_add_condition(gold_request, "Machine", cluster,
+		return rc;
+
+	gold_request_add_condition(gold_request, "Machine", cluster_rec->name,
 				   GOLD_OPERATOR_NONE, 0);
 	if(start) {
 		snprintf(tmp_buff, sizeof(tmp_buff), "%d", (int)start);
@@ -530,6 +533,7 @@ extern List clusteracct_storage_p_get_hourly_usage(char *cluster, time_t start,
 	}
 
 	gold_request_add_selection(gold_request, "CPUCount");
+	gold_request_add_selection(gold_request, "PeriodStart");
 	gold_request_add_selection(gold_request, "IdleCPUSeconds");
 	gold_request_add_selection(gold_request, "DownCPUSeconds");
 	gold_request_add_selection(gold_request, "AllocatedCPUSeconds");
@@ -539,44 +543,41 @@ extern List clusteracct_storage_p_get_hourly_usage(char *cluster, time_t start,
 	destroy_gold_request(gold_request);
 
 	if(!gold_response) {
-		error("clusteracct_p_cluster_procs: no response received");
-		return NULL;
+		error("clusteracct_p_get_hourly_usage: no response received");
+		return rc;
 	}
 
 	if(gold_response->entry_cnt > 0) {
-		cluster_list = _get_list_from_response(gold_response, cluster);
+		rc = _get_list_from_response(gold_response, cluster_rec);
 	} else {
 		debug("We don't have an entry for this machine for this time");
 	}
 	destroy_gold_response(gold_response);
 
-	return cluster_list;
+	return rc;
 }
 
-/* 
- * get info from the storage 
- * returns List of clusteracct_rec_t *
- * note List needs to be freed when called
- */
-extern List clusteracct_storage_p_get_daily_usage(char *cluster, time_t start, 
-						  time_t end, void *params)
+extern int clusteracct_storage_p_get_daily_usage(
+	account_cluster_rec_t *cluster_rec, time_t start, 
+	time_t end, void *params)
 {
 	gold_request_t *gold_request = NULL;
 	gold_response_t *gold_response = NULL;
 	char tmp_buff[50];
-	List cluster_list = NULL;
+	int rc = SLURM_ERROR;
 
-	if(!cluster) {
+	if(!cluster_rec || !cluster_rec->name) {
 		error("clusteracct_storage_p_get_daily_usage:"
 		      "no cluster name given to query.");
-		return NULL;
+		return rc;
 	}
 	/* get the last known one */
 	gold_request = create_gold_request(GOLD_OBJECT_MACHINE_DAY_USAGE,
 					   GOLD_ACTION_QUERY);
 	if(!gold_request) 
-		return NULL;
-	gold_request_add_condition(gold_request, "Machine", cluster,
+		return rc;
+
+	gold_request_add_condition(gold_request, "Machine", cluster_rec->name,
 				   GOLD_OPERATOR_NONE, 0);
 	if(start) {
 		snprintf(tmp_buff, sizeof(tmp_buff), "%d", (int)start);
@@ -592,6 +593,7 @@ extern List clusteracct_storage_p_get_daily_usage(char *cluster, time_t start,
 	}
 
 	gold_request_add_selection(gold_request, "CPUCount");
+	gold_request_add_selection(gold_request, "PeriodStart");
 	gold_request_add_selection(gold_request, "IdleCPUSeconds");
 	gold_request_add_selection(gold_request, "DownCPUSeconds");
 	gold_request_add_selection(gold_request, "AllocatedCPUSeconds");
@@ -601,46 +603,41 @@ extern List clusteracct_storage_p_get_daily_usage(char *cluster, time_t start,
 	destroy_gold_request(gold_request);
 
 	if(!gold_response) {
-		error("clusteracct_p_cluster_procs: no response received");
-		return NULL;
+		error("clusteracct_p_get_daily_usage: no response received");
+		return rc;
 	}
 
 	if(gold_response->entry_cnt > 0) {
-		cluster_list = _get_list_from_response(gold_response, cluster);
+		rc = _get_list_from_response(gold_response, cluster_rec);
 	} else {
 		debug("We don't have an entry for this machine for this time");
 	}
 	destroy_gold_response(gold_response);
 
-	return cluster_list;
+	return rc;
 }
 
-/* 
- * get info from the storage 
- * returns List of clusteracct_rec_t *
- * note List needs to be freed when called
- */
-extern List clusteracct_storage_p_get_monthly_usage(char *cluster, 
-						    time_t start, 
-						    time_t end,
-						    void *params)
+extern int clusteracct_storage_p_get_monthly_usage(
+	account_cluster_rec_t *cluster_rec, time_t start, 
+	time_t end, void *params)
 {
 	gold_request_t *gold_request = NULL;
 	gold_response_t *gold_response = NULL;
 	char tmp_buff[50];
-	List cluster_list = NULL;
+	int rc = SLURM_ERROR;
 
-	if(!cluster) {
+	if(!cluster_rec || !cluster_rec->name) {
 		error("clusteracct_storage_p_get_monthly_usage:"
 		      "no cluster name given to query.");
-		return NULL;
+		return rc;
 	}
 	/* get the last known one */
 	gold_request = create_gold_request(GOLD_OBJECT_MACHINE_MONTH_USAGE,
 					   GOLD_ACTION_QUERY);
 	if(!gold_request) 
-		return NULL;
-	gold_request_add_condition(gold_request, "Machine", cluster,
+		return rc;
+
+	gold_request_add_condition(gold_request, "Machine", cluster_rec->name,
 				   GOLD_OPERATOR_NONE, 0);
 	if(start) {
 		snprintf(tmp_buff, sizeof(tmp_buff), "%d", (int)start);
@@ -656,6 +653,7 @@ extern List clusteracct_storage_p_get_monthly_usage(char *cluster,
 	}
 
 	gold_request_add_selection(gold_request, "CPUCount");
+	gold_request_add_selection(gold_request, "PeriodStart");
 	gold_request_add_selection(gold_request, "IdleCPUSeconds");
 	gold_request_add_selection(gold_request, "DownCPUSeconds");
 	gold_request_add_selection(gold_request, "AllocatedCPUSeconds");
@@ -665,16 +663,17 @@ extern List clusteracct_storage_p_get_monthly_usage(char *cluster,
 	destroy_gold_request(gold_request);
 
 	if(!gold_response) {
-		error("clusteracct_p_cluster_procs: no response received");
-		return NULL;
+		error("clusteracct_storage_p_get_monthly_usage: "
+		      "no response received");
+		return rc;
 	}
 
 	if(gold_response->entry_cnt > 0) {
-		cluster_list = _get_list_from_response(gold_response, cluster);
+		rc = _get_list_from_response(gold_response, cluster_rec);
 	} else {
 		debug("We don't have an entry for this machine for this time");
 	}
 	destroy_gold_response(gold_response);
 
-	return cluster_list;
+	return rc;
 }

@@ -267,6 +267,8 @@ extern void destroy_account_cluster_rec(void *object)
 
 	if(account_cluster) {
 		xfree(account_cluster->name);
+		if(account_cluster->accounting_list)
+			list_destroy(account_cluster->accounting_list);
 		xfree(account_cluster);
 	}
 }

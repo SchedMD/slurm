@@ -91,10 +91,9 @@ const uint32_t plugin_version = 100;
 static char *cluster_name = NULL;
 
 static List _get_record_list_from_response(gold_response_t *gold_response);
-static List _get_account_accounting_list_from_response(
+static int _get_account_accounting_list_from_response(
 	gold_response_t *gold_response,
-	account_record_rec_t *account_rec,
-	uint32_t time_diff);
+	account_record_rec_t *account_rec);
 static List _get_user_list_from_response(gold_response_t *gold_response);
 static List _get_account_list_from_response(gold_response_t *gold_response);
 static List _get_cluster_list_from_response(gold_response_t *gold_response);
@@ -173,23 +172,23 @@ static List _get_record_list_from_response(gold_response_t *gold_response)
 	return record_list;
 }
 
-static List _get_account_accounting_list_from_response(
+static int _get_account_accounting_list_from_response(
 	gold_response_t *gold_response,
-	account_record_rec_t *account_rec,
-	uint32_t time_diff)
+	account_record_rec_t *account_rec)
 {
 	ListIterator itr = NULL;
 	ListIterator itr2 = NULL;
-	List accounting_list = NULL;
 	account_accounting_rec_t *accounting_rec = NULL;
 	gold_response_entry_t *resp_entry = NULL;
 	gold_name_value_t *name_val = NULL;
 	
 	if(gold_response->entry_cnt <= 0) {
 		debug2("_get_accounting_list_from_response: No entries given");
-		return NULL;
+		return SLURM_ERROR;
 	}
-	accounting_list = list_create(destroy_account_accounting_rec);
+	if(!account_rec->accounting_list)
+		account_rec->accounting_list =
+			list_create(destroy_account_accounting_rec);
 	
 	itr = list_iterator_create(gold_response->entries);
 	while((resp_entry = list_next(itr))) {
@@ -200,31 +199,20 @@ static List _get_account_accounting_list_from_response(
 			if(!strcmp(name_val->name, "PeriodStart")) {
 				accounting_rec->period_start = 
 					atoi(name_val->value);
-				accounting_rec->period_end = 
-					accounting_rec->period_start +
-					time_diff;
 			} else if(!strcmp(name_val->name, "AllocatedCPUSecs")) {
 				accounting_rec->alloc_secs = 
 					atoi(name_val->value);
-			} else if(!strcmp(name_val->name, "Account")) {
-				if(account_rec->id != atoi(name_val->value)) {
-					error("wrong account not adding");
-					destroy_account_accounting_rec(
-						accounting_rec);
-					break;
-				}
 			} else {
 				error("Unknown name val of '%s' = '%s'",
 				      name_val->name, name_val->value);
 			}
 		}
 		list_iterator_destroy(itr2);
-		if(accounting_rec)
-			list_append(accounting_list, accounting_rec);
+		list_append(account_rec->accounting_list, accounting_rec);
 	}
 	list_iterator_destroy(itr);
 
-	return accounting_list;
+	return SLURM_SUCCESS;
 	
 }
 
@@ -746,7 +734,61 @@ extern int account_storage_p_get_hourly_usage(account_record_rec_t *acct_rec,
 					      time_t end,
 					      void *params)
 {
-	return SLURM_SUCCESS;
+	gold_request_t *gold_request = NULL;
+	gold_response_t *gold_response = NULL;
+	int rc = SLURM_ERROR;
+	char tmp_buff[50];
+
+	if(!acct_rec || acct_rec->id) {
+		error("account_storage_p_get_hourly_usage: "
+		      "We need an id to go off to query off of");
+		return rc;
+	}
+
+	gold_request = create_gold_request(
+		GOLD_OBJECT_ACCOUNT_HOUR_USAGE, GOLD_ACTION_QUERY);
+
+	if(!gold_request) 
+		return rc;
+
+	snprintf(tmp_buff, sizeof(tmp_buff), "%u", acct_rec->id);
+	gold_request_add_condition(gold_request, "Account", tmp_buff,
+				   GOLD_OPERATOR_NONE, 0);
+
+	if(start) {
+		snprintf(tmp_buff, sizeof(tmp_buff), "%d", (int)start);
+		gold_request_add_condition(gold_request, "PeriodStart",
+					   tmp_buff,
+					   GOLD_OPERATOR_GE, 0);
+	}
+	if(end) {	
+		snprintf(tmp_buff, sizeof(tmp_buff), "%u", (int)end);
+		gold_request_add_condition(gold_request, "PeriodStart",
+					   tmp_buff,
+					   GOLD_OPERATOR_L, 0);
+	}
+
+	gold_request_add_selection(gold_request, "PeriodStart");
+	gold_request_add_selection(gold_request, "AllocatedCPUSecs");
+
+	gold_response = get_gold_response(gold_request);	
+	destroy_gold_request(gold_request);
+
+	if(!gold_response) {
+		error("account_storage_p_get_hourly_usage: "
+		      "no response received");
+		return rc;
+	}
+
+	if(gold_response->entry_cnt > 0) {
+		rc = _get_account_accounting_list_from_response(
+			gold_response, acct_rec);
+	} else {
+		debug("We don't have an entry for this machine for this time");
+	}
+	destroy_gold_response(gold_response);
+
+	return rc;
 }
 
 extern int account_storage_p_get_daily_usage(account_record_rec_t *acct_rec,
@@ -754,7 +796,61 @@ extern int account_storage_p_get_daily_usage(account_record_rec_t *acct_rec,
 					     time_t end,
 					     void *params)
 {
-	return SLURM_SUCCESS;	
+	gold_request_t *gold_request = NULL;
+	gold_response_t *gold_response = NULL;
+	int rc = SLURM_ERROR;
+	char tmp_buff[50];
+
+	if(!acct_rec || acct_rec->id) {
+		error("account_storage_p_get_daily_usage: "
+		      "We need an id to go off to query off of");
+		return rc;
+	}
+
+	gold_request = create_gold_request(
+		GOLD_OBJECT_ACCOUNT_DAY_USAGE, GOLD_ACTION_QUERY);
+
+	if(!gold_request) 
+		return rc;
+
+	snprintf(tmp_buff, sizeof(tmp_buff), "%u", acct_rec->id);
+	gold_request_add_condition(gold_request, "Account", tmp_buff,
+				   GOLD_OPERATOR_NONE, 0);
+
+	if(start) {
+		snprintf(tmp_buff, sizeof(tmp_buff), "%d", (int)start);
+		gold_request_add_condition(gold_request, "PeriodStart",
+					   tmp_buff,
+					   GOLD_OPERATOR_GE, 0);
+	}
+	if(end) {	
+		snprintf(tmp_buff, sizeof(tmp_buff), "%u", (int)end);
+		gold_request_add_condition(gold_request, "PeriodStart",
+					   tmp_buff,
+					   GOLD_OPERATOR_L, 0);
+	}
+
+	gold_request_add_selection(gold_request, "PeriodStart");
+	gold_request_add_selection(gold_request, "AllocatedCPUSecs");
+
+	gold_response = get_gold_response(gold_request);	
+	destroy_gold_request(gold_request);
+
+	if(!gold_response) {
+		error("account_storage_p_get_daily_usage: "
+		      "no response received");
+		return rc;
+	}
+
+	if(gold_response->entry_cnt > 0) {
+		rc = _get_account_accounting_list_from_response(
+			gold_response, acct_rec);
+	} else {
+		debug("We don't have an entry for this machine for this time");
+	}
+	destroy_gold_response(gold_response);
+
+	return rc;
 }
 
 extern int account_storage_p_get_monthly_usage(account_record_rec_t *acct_rec,
@@ -762,5 +858,59 @@ extern int account_storage_p_get_monthly_usage(account_record_rec_t *acct_rec,
 					       time_t end,
 					       void *params)
 {
-	return SLURM_SUCCESS;	
+	gold_request_t *gold_request = NULL;
+	gold_response_t *gold_response = NULL;
+	int rc = SLURM_ERROR;
+	char tmp_buff[50];
+
+	if(!acct_rec || acct_rec->id) {
+		error("account_storage_p_get_monthly_usage: "
+		      "We need an id to go off to query off of");
+		return rc;
+	}
+
+	gold_request = create_gold_request(
+		GOLD_OBJECT_ACCOUNT_MONTH_USAGE, GOLD_ACTION_QUERY);
+
+	if(!gold_request) 
+		return rc;
+
+	snprintf(tmp_buff, sizeof(tmp_buff), "%u", acct_rec->id);
+	gold_request_add_condition(gold_request, "Account", tmp_buff,
+				   GOLD_OPERATOR_NONE, 0);
+
+	if(start) {
+		snprintf(tmp_buff, sizeof(tmp_buff), "%d", (int)start);
+		gold_request_add_condition(gold_request, "PeriodStart",
+					   tmp_buff,
+					   GOLD_OPERATOR_GE, 0);
+	}
+	if(end) {	
+		snprintf(tmp_buff, sizeof(tmp_buff), "%u", (int)end);
+		gold_request_add_condition(gold_request, "PeriodStart",
+					   tmp_buff,
+					   GOLD_OPERATOR_L, 0);
+	}
+
+	gold_request_add_selection(gold_request, "PeriodStart");
+	gold_request_add_selection(gold_request, "AllocatedCPUSecs");
+
+	gold_response = get_gold_response(gold_request);	
+	destroy_gold_request(gold_request);
+
+	if(!gold_response) {
+		error("account_storage_p_get_monthly_usage: "
+		      "no response received");
+		return rc;
+	}
+
+	if(gold_response->entry_cnt > 0) {
+		rc = _get_account_accounting_list_from_response(
+			gold_response, acct_rec);
+	} else {
+		debug("We don't have an entry for this machine for this time");
+	}
+	destroy_gold_response(gold_response);
+
+	return rc;
 }
