@@ -614,6 +614,10 @@ static int _load_job_state(Buf buffer)
 		      job_id, kill_on_node_fail);
 		goto unpack_error;
 	}
+	if (partition == NULL) {
+		error("No partition for job %u", job_id);
+		goto unpack_error;
+	}
 	part_ptr = find_part_record (partition);
 	if (part_ptr == NULL) {
 		verbose("Invalid partition (%s) for job_id %u", 

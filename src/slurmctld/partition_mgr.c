@@ -622,6 +622,9 @@ static void _list_delete_part(void *part_entry)
  */
 int list_find_part(void *part_entry, void *key)
 {
+	if (key == NULL)
+		return 0;
+
 	if (strcmp(key, "universal_key") == 0)
 		return 1;
 
