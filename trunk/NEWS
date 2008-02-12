@@ -179,6 +179,8 @@ documents those changes that are of interest to users and admins.
     equivalent options for compatibility with srun.
  -- Add configuration parameter GetEnvTimeout for use with Moab. See 
     "man slurm.conf" for details.
+ -- If a partition's node list contains space separators, replace them with 
+    commas for easier parsing.
 
 * Changes in SLURM 1.2.22
 =========================
