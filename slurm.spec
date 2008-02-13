@@ -219,7 +219,7 @@ SLURM process tracking plugin for SGI job containers.
     %{?with_proctrack}	\
     %{?with_ssl}		\
     %{?with_munge}      \
-	%{!?with_readline:--without-readline} \
+	%{!?slurm_with_readline:--without-readline} \
     %{?with_cflags}
 
 make %{?_smp_mflags} 
