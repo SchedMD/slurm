@@ -273,8 +273,6 @@ static void _print_version(void)
 static int
 _process_command (int argc, char *argv[]) 
 {
-	int error_code;
-
 	if (argc < 1) {
 		exit_code = 1;
 		if (quiet_flag == -1)

@@ -94,11 +94,20 @@ extern int sacctmgr_list_user(int argc, char *argv[])
 	list_destroy(spec_list);
 	
 	itr = list_iterator_create(user_list);
-	printf("Name\t\tDefault Account\n");
+	printf("%-30s %-30s %-10s\n%-30s %-30s %-10s\n",
+	       "Name", "Default Account", "Expedite",
+	       "------------------------------",
+	       "------------------------------",
+	       "----------");
+	
 	while((user = list_next(itr))) {
-		printf("User=%s ", user->name);
-		printf("Default Account=%s\n", user->default_account);
+		printf("%-30s %-30s %-10d\n",
+		       user->name, user->default_account,
+		       user->expedite);
 	}
+
+	printf("\n");
+
 	list_iterator_destroy(itr);
 	list_destroy(user_list);
 	return rc;

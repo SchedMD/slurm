@@ -118,6 +118,6 @@ extern int print_secs(long time, int width, bool right, bool cut_output)
 			 "%ld:%2.2ld",
 		         minutes, seconds);
 
-	_print_str(str, width, right, cut_output);
+	print_str(str, width, right, cut_output);
 	return SLURM_SUCCESS;
 }
