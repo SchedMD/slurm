@@ -55,7 +55,8 @@
 
 /* SLURM DBD message types */
 typedef enum {
-	DBD_GET_JOBS = 1400,
+	DBD_INIT = 1400,
+	DBD_GET_JOBS,
 	DBD_JOB_COMPLETE,
 	DBD_JOB_START,
 	DBD_JOB_SUBMIT,
@@ -66,11 +67,20 @@ typedef enum {
 
 /*****************************************************************************\
  * Slurm DBD protocol data structures
+ *
+ * NOTE: The message sent over the wire has the format:
+ *	uint32_t message size;
+ *	uint16_t slurmdbd_msg_type_t;	See above
+ *	dbd_*_msg;			One of the message formats below
 \*****************************************************************************/
 
 typedef struct dbd_get_jobs_msg {
 	uint32_t job_id;	/* optional job ID filter or NO_VAL */
 } dbd_get_jobs_msg_t;
+
+typedef struct dbd_init_msg {
+	uint32_t uid;		/* Add authentication information here */
+} dbd_init_msg_t;
 
 typedef struct dbd_job_comp_msg {
 	uint32_t job_id;
@@ -103,6 +113,7 @@ typedef struct dbd_step_start_msg {
 \*****************************************************************************/
 
 void inline slurm_dbd_free_get_jobs_msg(dbd_get_jobs_msg_t *msg);
+void inline slurm_dbd_free_init_msg(dbd_init_msg_t *msg);
 void inline slurm_dbd_free_job_complete_msg(dbd_job_comp_msg_t *msg);
 void inline slurm_dbd_free_job_start_msg(dbd_job_start_msg_t *msg);
 void inline slurm_dbd_free_job_submit_msg(dbd_job_submit_msg_t *msg);
@@ -111,6 +122,7 @@ void inline slurm_dbd_free_step_complete_msg(dbd_step_comp_msg_t *msg);
 void inline slurm_dbd_free_step_start_msg(dbd_step_start_msg_t *msg);
 
 void inline slurm_dbd_pack_get_jobs_msg(dbd_get_jobs_msg_t *msg,       Buf buffer);
+void inline slurm_dbd_pack_init_msg(dbd_init_msg_t *msg,               Buf buffer);
 void inline slurm_dbd_pack_job_complete_msg(dbd_job_comp_msg_t *msg,   Buf buffer);
 void inline slurm_dbd_pack_job_start_msg(dbd_job_start_msg_t *msg,     Buf buffer);
 void inline slurm_dbd_pack_job_submit_msg(dbd_job_submit_msg_t *msg,   Buf buffer);
@@ -119,6 +131,7 @@ void inline slurm_dbd_pack_step_complete_msg(dbd_step_comp_msg_t *msg, Buf buffe
 void inline slurm_dbd_pack_step_start_msg(dbd_step_start_msg_t *msg,   Buf buffer);
 
 int inline slurm_dbd_unpack_get_jobs_msg(dbd_get_jobs_msg_t **msg,       Buf buffer);
+int inline slurm_dbd_unpack_init_msg(dbd_init_msg_t **msg,               Buf buffer);
 int inline slurm_dbd_unpack_job_complete_msg(dbd_job_comp_msg_t **msg,   Buf buffer);
 int inline slurm_dbd_unpack_job_start_msg(dbd_job_start_msg_t **msg,     Buf buffer);
 int inline slurm_dbd_unpack_job_submit_msg(dbd_job_submit_msg_t **msg,   Buf buffer);

@@ -35,109 +35,180 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#include "src/common/pack.h"
 #include "src/common/slurmdbd_defs.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_defs.h"
 
 /* Local functions */
-static void  _get_jobs(slurm_msg_t *msg);
-static void  _job_complete(slurm_msg_t *msg);
-static void  _job_start(slurm_msg_t *msg);
-static void  _job_submit(slurm_msg_t *msg);
-static void  _job_suspend(slurm_msg_t *msg);
-static void  _step_complete(slurm_msg_t *msg);
-static void  _step_start(slurm_msg_t *msg);
+static int   _get_jobs(Buf buffer);
+static int   _init_conn(Buf buffer);
+static int   _job_complete(Buf buffer);
+static int   _job_start(Buf buffer);
+static int   _job_submit(Buf buffer);
+static int   _job_suspend(Buf buffer);
+static int   _step_complete(Buf buffer);
+static int   _step_start(Buf bufferg);
 
 /* Process an incoming RPC
  * RET SLURM_SUCCESS or error code */
-extern int proc_req(slurm_msg_t *msg)
+extern int proc_req(char *msg, uint32_t msg_size)
 {
-	switch (msg->msg_type) {
+	int rc = SLURM_SUCCESS;
+	uint16_t msg_type;
+	Buf buffer;
+
+	buffer = create_buf(msg, msg_size);  /* puts msg into buffer struct */
+	safe_unpack16(&msg_type, buffer);
+
+	switch (msg_type) {
+	case DBD_INIT:
+		rc = _init_conn(buffer);
+		break;
 	case DBD_GET_JOBS:
-		_get_jobs(msg);
-		slurm_dbd_free_get_jobs_msg(msg->data);
+		rc = _get_jobs(buffer);
 		break;
 	case DBD_JOB_COMPLETE:
-		_job_complete(msg);
-		slurm_dbd_free_job_complete_msg(msg->data);
+		rc = _job_complete(buffer);
 		break;
 	case DBD_JOB_START:
-		_job_start(msg);
-		slurm_dbd_free_job_start_msg(msg->data);
+		rc = _job_start(buffer);
 		break;
 	case DBD_JOB_SUBMIT:
-		_job_submit(msg);
-		slurm_dbd_free_job_submit_msg(msg->data);
+		rc = _job_submit(buffer);
 		break;
 	case DBD_JOB_SUSPEND:
-		_job_suspend(msg);
-		slurm_dbd_free_job_suspend_msg(msg->data);
+		rc = _job_suspend(buffer);
 		break;
 	case DBD_STEP_COMPLETE:
-		_step_complete(msg);
-		slurm_dbd_free_step_complete_msg(msg->data);
+		rc = _step_complete(buffer);
 		break;
 	case DBD_STEP_START:
-		_step_start(msg);
-		slurm_dbd_free_step_start_msg(msg->data);
+		rc = _step_start(buffer);
 		break;
 	default:
-		error("invalid RPC msg_type=%d", msg->msg_type);
-		slurm_send_rc_msg(msg, EINVAL);
+		error("invalid RPC msg_type=%d", msg_type);
+		rc = EINVAL;
 		break;
 	}
+
+	xfer_buf_data(buffer);	/* delete buffer struct without xfree of msg */
+	return rc;
+
+unpack_error:
+	free_buf(buffer);
+	return SLURM_ERROR;
+}
+
+static int _get_jobs(Buf buffer)
+{
+	dbd_get_jobs_msg_t *get_jobs_msg;
+
+	if (slurm_dbd_unpack_get_jobs_msg(&get_jobs_msg, buffer) !=
+	    SLURM_SUCCESS) {
+		error("Failed to unpack DBD_GET_JOBS message");
+		return SLURM_ERROR;
+	}
+
+	info("DBD_GET_JOBS: job filter %u", get_jobs_msg->job_id);
+	slurm_dbd_free_get_jobs_msg(get_jobs_msg);
 	return SLURM_SUCCESS;
 }
 
-static void  _get_jobs(slurm_msg_t *msg)
+static int _init_conn(Buf buffer)
 {
-	dbd_get_jobs_msg_t *get_jobs_msg = (dbd_get_jobs_msg_t *) msg->data;
-
-	info("DBD_GET_JOBS: job filter %u", get_jobs_msg->job_id);
+	info("DBD_INIT message received");
+	return SLURM_SUCCESS;
 }
 
-static void  _job_complete(slurm_msg_t *msg)
+static int  _job_complete(Buf buffer)
 {
-	dbd_job_comp_msg_t *job_comp_msg = (dbd_job_comp_msg_t *) msg->data;
+	dbd_job_comp_msg_t *job_comp_msg;
+
+	if (slurm_dbd_unpack_job_complete_msg(&job_comp_msg, buffer) !=
+	    SLURM_SUCCESS) {
+		error("Failed to unpack DBD_JOB_COMPLETE message");
+		return SLURM_ERROR;
+	}
 
 	info("DBD_JOB_COMPLETE: %u", job_comp_msg->job_id);
+	slurm_dbd_free_job_complete_msg(job_comp_msg);
+	return SLURM_SUCCESS;
 }
 
-static void  _job_start(slurm_msg_t *msg)
+static int  _job_start(Buf buffer)
 {
-	dbd_job_start_msg_t *job_start_msg = (dbd_job_start_msg_t *) msg->data;
+	dbd_job_start_msg_t *job_start_msg;
+
+	if (slurm_dbd_unpack_job_start_msg(&job_start_msg, buffer) !=
+	    SLURM_SUCCESS) {
+		error("Failed to unpack DBD_JOB_START message");
+		return SLURM_ERROR;
+	}
 
 	info("DBD_JOB_START: %u", job_start_msg->job_id);
+	slurm_dbd_free_job_start_msg(job_start_msg);
+	return SLURM_SUCCESS;
 }
 
-static void  _job_submit(slurm_msg_t *msg)
+static int  _job_submit(Buf buffer)
 {
-	dbd_job_submit_msg_t *job_submit_msg = 
-				(dbd_job_submit_msg_t *) msg->data;
+	dbd_job_submit_msg_t *job_submit_msg;
+
+	if (slurm_dbd_unpack_job_submit_msg(&job_submit_msg, buffer) !=
+	    SLURM_SUCCESS) {
+		error("Failed to unpack DBD_JOB_SUBMIT message");
+		return SLURM_ERROR;
+	}
 
 	info("DBD_JOB_SUBMIT: %u", job_submit_msg->job_id);
+	slurm_dbd_free_job_submit_msg(job_submit_msg);
+	return SLURM_SUCCESS;
 }
 
-static void  _job_suspend(slurm_msg_t *msg)
+static int  _job_suspend(Buf buffer)
 {
-	dbd_job_suspend_msg_t *job_suspend_msg = 
-				(dbd_job_suspend_msg_t *) msg->data;
+	dbd_job_suspend_msg_t *job_suspend_msg;
+
+	if (slurm_dbd_unpack_job_suspend_msg(&job_suspend_msg, buffer) !=
+	    SLURM_SUCCESS) {
+		error("Failed to unpack DBD_JOB_SUSPEND message");
+		return SLURM_ERROR;
+	}
 
 	info("DBD_JOB_SUSPEND: %u", job_suspend_msg->job_id);
+	slurm_dbd_free_job_suspend_msg(job_suspend_msg);
+	return SLURM_SUCCESS;
 }
 
-static void  _step_complete(slurm_msg_t *msg)
+static int  _step_complete(Buf buffer)
 {
-	dbd_step_comp_msg_t *step_comp_msg = (dbd_step_comp_msg_t *) msg->data;
+	dbd_step_comp_msg_t *step_comp_msg;
+
+	if (slurm_dbd_unpack_step_complete_msg(&step_comp_msg, buffer) !=
+	    SLURM_SUCCESS) {
+		error("Failed to unpack DBD_STEP_COMPLETE message");
+		return SLURM_ERROR;
+	}
 
 	info("DBD_STEP_COMPLETE: %u.%u", 
 	     step_comp_msg->job_id, step_comp_msg->step_id);
+	slurm_dbd_free_step_complete_msg(step_comp_msg);
+	return SLURM_SUCCESS;
 }
 
-static void  _step_start(slurm_msg_t *msg)
+static int  _step_start(Buf buffer)
 {
-	dbd_step_start_msg_t *step_start_msg = (dbd_step_start_msg_t *) msg->data;
+	dbd_step_start_msg_t *step_start_msg;
+
+	if (slurm_dbd_unpack_step_start_msg(&step_start_msg, buffer) !=
+	    SLURM_SUCCESS) {
+		error("Failed to unpack DBD_STEP_START message");
+		return SLURM_ERROR;
+	}
 
 	info("DBD_STEP_START: %u.%u", 
 	     step_start_msg->job_id, step_start_msg->step_id);
+	slurm_dbd_free_step_start_msg(step_start_msg);
+	return SLURM_SUCCESS;
 }

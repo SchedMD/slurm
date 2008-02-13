@@ -46,6 +46,7 @@
 #  include <inttypes.h>
 #endif
 
+#include <arpa/inet.h>
 #include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -70,6 +71,8 @@ static void   _close_slurmdbd_fd(void);
 static char * _get_conf_path(void);
 static void   _open_slurmdbd_fd(void);
 static int    _read_slurmdbd_conf(void);
+static int    _send_init_msg(void);
+static int    _send_msg(Buf buffer);
 
 /*
  * These variables are required by the generic plugin interface.  If they
@@ -151,18 +154,28 @@ static void _open_slurmdbd_fd(void)
 				error("slurmdbd: slurm_open_msg_conn: %m");
 		}
 	}
-	if (slurmdbd_fd >= 0) {
-		/* FIXME: Send an authentication message now */
-		write(slurmdbd_fd, "OPEN", 5);
-	}
+	if (slurmdbd_fd >= 0)
+		_send_init_msg();
+}
+
+static int _send_init_msg(void)
+{
+	int rc;
+	dbd_init_msg_t msg;
+	Buf buffer = init_buf(1024);
+
+	pack16((uint16_t) DBD_INIT, buffer);
+	msg.uid  = 0;	/* just a placeholder */
+	slurm_dbd_pack_init_msg(&msg, buffer);
+	rc = _send_msg(buffer);
+	free_buf(buffer);
+	return rc;
 }
 
 /* Send termination message to Slurm DBD and close the connection */
 static void _close_slurmdbd_fd(void)
 {
 	if (slurmdbd_fd >= 0) {
-		/* FIXME: Send a termination message now */
-		write(slurmdbd_fd, "FINI", 5);
 		close(slurmdbd_fd);
 		slurmdbd_fd = -1;
 	}
@@ -243,11 +256,28 @@ static char * _get_conf_path(void)
 
 static int _send_msg(Buf buffer)
 {
-	slurm_mutex_lock(&slurmdbd_lock);
+	uint32_t msg_size, nw_size;
+	char *msg;
+	ssize_t msg_wrote;
+
 	if (slurmdbd_fd < 0)
-		_open_slurmdbd_fd();
-	write(slurmdbd_fd, "SEND", 5);
-	slurm_mutex_unlock(&slurmdbd_lock);
+		return SLURM_ERROR;
+
+	msg_size = size_buf(buffer);
+	nw_size = htonl(msg_size);
+	msg_wrote = write(slurmdbd_fd, &nw_size, sizeof(nw_size));
+	if (msg_wrote != sizeof(nw_size))
+		return SLURM_ERROR;
+
+	msg = get_buf_data(buffer);
+	while (msg_size > 0) {
+		msg_wrote = write(slurmdbd_fd, msg, msg_size);
+		if (msg_wrote <= 0)
+			return SLURM_ERROR;
+		msg += msg_wrote;
+		msg_size -= msg_wrote;
+	}
+
 	return SLURM_SUCCESS;
 }
 
@@ -277,6 +307,7 @@ extern int jobacct_storage_p_job_start(struct job_record *job_ptr)
 	dbd_job_start_msg_t msg;
 	Buf buffer = init_buf(1024);
 
+	pack16((uint16_t) DBD_JOB_START, buffer);
 	msg.job_id  = job_ptr->job_id;
 	slurm_dbd_pack_job_start_msg(&msg, buffer);
 	rc = _send_msg(buffer);
@@ -293,6 +324,7 @@ extern int jobacct_storage_p_job_complete(struct job_record *job_ptr)
 	dbd_job_comp_msg_t msg;
 	Buf buffer = init_buf(1024);
 
+	pack16((uint16_t) DBD_JOB_COMPLETE, buffer);
 	msg.job_id  = job_ptr->job_id;
 	slurm_dbd_pack_job_complete_msg(&msg, buffer);
 	rc = _send_msg(buffer);
@@ -309,6 +341,7 @@ extern int jobacct_storage_p_step_start(struct step_record *step_ptr)
 	dbd_step_start_msg_t msg;
 	Buf buffer = init_buf(1024);
 
+	pack16((uint16_t) DBD_STEP_START, buffer);
 	msg.job_id  = step_ptr->job_ptr->job_id;
 	msg.step_id = step_ptr->step_id;
 	slurm_dbd_pack_step_start_msg(&msg, buffer);
@@ -326,6 +359,7 @@ extern int jobacct_storage_p_step_complete(struct step_record *step_ptr)
 	dbd_step_comp_msg_t msg;
 	Buf buffer = init_buf(1024);
 
+	pack16((uint16_t) DBD_STEP_COMPLETE, buffer);
 	msg.job_id  = step_ptr->job_ptr->job_id;
 	msg.step_id = step_ptr->step_id;
 	slurm_dbd_pack_step_complete_msg(&msg, buffer);
@@ -343,6 +377,7 @@ extern int jobacct_storage_p_suspend(struct job_record *job_ptr)
 	dbd_job_suspend_msg_t msg;
 	Buf buffer = init_buf(1024);
 
+	pack16((uint16_t) DBD_JOB_SUSPEND, buffer);
 	msg.job_id = job_ptr->job_id;
 	slurm_dbd_pack_job_suspend_msg(&msg, buffer);
 	rc = _send_msg(buffer);
@@ -363,6 +398,7 @@ extern void jobacct_storage_p_get_jobs(List job_list,
 	dbd_get_jobs_msg_t msg;
 	Buf buffer = init_buf(1024);
 
+	pack16((uint16_t) DBD_GET_JOBS, buffer);
 	msg.job_id = NO_VAL;
 	slurm_dbd_pack_get_jobs_msg(&msg, buffer);
 	_send_msg(buffer);

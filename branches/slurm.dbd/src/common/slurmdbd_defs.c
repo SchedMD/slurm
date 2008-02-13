@@ -61,6 +61,11 @@ void inline slurm_dbd_free_get_jobs_msg(dbd_get_jobs_msg_t *msg)
 	xfree(msg);
 }
 
+void inline slurm_dbd_free_init_msg(dbd_init_msg_t *msg)
+{
+	xfree(msg);
+}
+
 void inline slurm_dbd_free_job_complete_msg(dbd_job_comp_msg_t *msg)
 {
 	xfree(msg);
@@ -106,6 +111,26 @@ slurm_dbd_unpack_get_jobs_msg(dbd_get_jobs_msg_t **msg, Buf buffer)
 	dbd_get_jobs_msg_t *msg_ptr = xmalloc(sizeof(dbd_get_jobs_msg_t));
 	*msg = msg_ptr;
 	safe_unpack32(&msg_ptr->job_id, buffer);
+	return SLURM_SUCCESS;
+
+unpack_error:
+	xfree(msg_ptr);
+	*msg = NULL;
+	return SLURM_ERROR;
+}
+
+void inline 
+slurm_dbd_pack_init_msg(dbd_init_msg_t *msg, Buf buffer)
+{
+	pack32(msg->uid, buffer);
+}
+
+int inline 
+slurm_dbd_unpack_init_msg(dbd_init_msg_t **msg, Buf buffer)
+{
+	dbd_init_msg_t *msg_ptr = xmalloc(sizeof(dbd_init_msg_t));
+	*msg = msg_ptr;
+	safe_unpack32(&msg_ptr->uid, buffer);
 	return SLURM_SUCCESS;
 
 unpack_error:

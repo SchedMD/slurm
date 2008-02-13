@@ -39,6 +39,7 @@
 #ifdef HAVE_CONFIG_H
 #  include "config.h"
 #endif
+#include <arpa/inet.h>
 #include <pthread.h>
 #include <signal.h>
 #include <sys/poll.h>
@@ -171,19 +172,49 @@ extern void rpc_mgr_wake(void)
 static void * _service_connection(void *arg)
 {
 	connection_arg_t *conn = (connection_arg_t *) arg;
-	char *msg;
-	ssize_t msg_read;
+	uint32_t nw_size, msg_size;
+	char *msg = NULL;
+	ssize_t msg_read, offset;
 	bool fini = false;
 
 	debug2("Opened connection %d", conn->newsockfd);
 	while (!fini) {
 		if (!_fd_readable(conn->newsockfd))
 			break;		/* problem with this socket */
-		msg = xmalloc(10);
-		msg_read = read(conn->newsockfd, msg, 10);
-		debug("Read %d bytes: %s", msg_read, msg);
-		//proc_req(msg, msg_read);	/* process the request */
-		if ((msg_read == 0) || (strcmp(msg, "FINI") == 0))
+		msg_read = read(conn->newsockfd, &nw_size, sizeof(nw_size));
+		if (msg_read == 0)	/* EOF */
+			break;
+		if (msg_read != sizeof(nw_size)) {
+			error("Could not read msg_size from connection %d",
+			      conn->newsockfd);
+			break;
+		}
+		msg_size = ntohl(nw_size);
+		if ((msg_size < 2) || (msg_size > 1000000)) {
+			error("Invalid msg_size (%u) from connection %d",
+			      conn->newsockfd);
+			break;
+		}
+
+		msg = xmalloc(msg_size);
+		offset = 0;
+		while (msg_size > offset) {
+			if (!_fd_readable(conn->newsockfd))
+				break;		/* problem with this socket */
+			msg_read = read(conn->newsockfd, (msg + offset), 
+					(msg_size - offset));
+			if (msg_read <= 0) {
+				error("read(%d): %m", conn->newsockfd);
+				break;
+			}
+			offset += msg_read;
+		}
+		if (msg_size == offset) {
+			if (proc_req(msg, msg_size) != SLURM_SUCCESS) {
+				error("Processing message from connection %d",
+				      conn->newsockfd);
+			}
+		} else
 			fini = true;
 		xfree(msg);
 	}
@@ -330,6 +361,7 @@ static void _wait_for_thread_fini(void)
 			}
 		}
 		slurm_mutex_unlock(&thread_count_lock);
+		sleep(1);
 	}
 }
 

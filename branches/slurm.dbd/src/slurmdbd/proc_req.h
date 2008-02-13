@@ -42,6 +42,6 @@
 
 /* Process an incoming RPC
  * RET SLURM_SUCCESS or error code */
-extern int proc_req(slurm_msg_t *msg);
+extern int proc_req(char *msg, uint32_t msg_size);
 
 #endif /* !_PROC_REQ */
