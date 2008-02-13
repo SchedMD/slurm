@@ -41,7 +41,7 @@
 #endif
 #include <pthread.h>
 #include <signal.h>
-#include <poll.h>
+#include <sys/poll.h>
 
 #include "src/common/fd.h"
 #include "src/common/log.h"
@@ -125,6 +125,7 @@ extern void *rpc_mgr(void *no_data)
 				error("slurm_accept_msg_conn: %m");
 			continue;
 		}
+		fd_set_nonblocking(newsockfd);
 		conn_arg = xmalloc(sizeof(connection_arg_t));
 		conn_arg->newsockfd = newsockfd;
 		retry_cnt = 0;
@@ -170,24 +171,26 @@ extern void rpc_mgr_wake(void)
 static void * _service_connection(void *arg)
 {
 	connection_arg_t *conn = (connection_arg_t *) arg;
-	slurm_msg_t *msg;
+	char *msg;
+	ssize_t msg_read;
+	bool fini = false;
 
 	debug2("Opened connection %d", conn->newsockfd);
-	while (1) {
-		if (_fd_readable(conn->newsockfd))
-			break;
-		msg = xmalloc(sizeof(slurm_msg_t));
-		slurm_msg_t_init(msg);
-		if (slurm_receive_msg(conn->newsockfd, msg, 0) != 0) {
-			error("slurm_receive_msg: %m");
-			break;
-		}
-		proc_req(msg);		/* process the request */
-		slurm_free_msg(msg);
+	while (!fini) {
+		if (!_fd_readable(conn->newsockfd))
+			break;		/* problem with this socket */
+		msg = xmalloc(10);
+		msg_read = read(conn->newsockfd, msg, 10);
+		debug("Read %d bytes: %s", msg_read, msg);
+		//proc_req(msg, msg_read);	/* process the request */
+		if ((msg_read == 0) || (strcmp(msg, "FINI") == 0))
+			fini = true;
+		xfree(msg);
 	}
-	if ((conn->newsockfd >= 0) &&
-	    slurm_close_accepted_conn(conn->newsockfd) < 0)
-		error ("close(%d): %m",  conn->newsockfd);
+	if (slurm_close_accepted_conn(conn->newsockfd) < 0)
+		error("close(%d): %m",  conn->newsockfd);
+	else
+		debug2("Closed connection %d", conn->newsockfd);
 	xfree(arg);
 	_free_server_thread(pthread_self());
 	return NULL;
@@ -201,7 +204,6 @@ static bool _fd_readable(slurm_fd fd)
 
 	ufds.fd     = fd;
 	ufds.events = POLLIN;
-	fd_set_nonblocking(fd);
 	while (1) {
 		rc = poll(&ufds, 1, -1);
 		if ((errno == EINTR) || (errno == EAGAIN) || (rc == 0))

@@ -66,6 +66,7 @@ static uint16_t slurmdbd_port = 0;
 static slurm_fd slurmdbd_fd   = -1;
 static pthread_mutex_t slurmdbd_lock = PTHREAD_MUTEX_INITIALIZER;
 
+static void   _close_slurmdbd_fd(void);
 static char * _get_conf_path(void);
 static void   _open_slurmdbd_fd(void);
 static int    _read_slurmdbd_conf(void);
@@ -109,6 +110,7 @@ const uint32_t plugin_version = 100;
  */
 extern int init ( void )
 {
+	slurm_mutex_lock(&slurmdbd_lock);
 	if (slurmdbd_fd < 0) {
 		/* since this can be loaded from many different places
 		   only tell us once. */
@@ -118,6 +120,7 @@ extern int init ( void )
 	} else {
 		debug4("%s loaded", plugin_name);
 	}
+	slurm_mutex_unlock(&slurmdbd_lock);
 
 	return SLURM_SUCCESS;
 }
@@ -125,10 +128,7 @@ extern int init ( void )
 extern int fini ( void )
 {
 	slurm_mutex_lock(&slurmdbd_lock);
-	if (slurmdbd_fd >= 0) {
-		close(slurmdbd_fd);
-		slurmdbd_fd = -1;
-	}
+	_close_slurmdbd_fd();
 	xfree(slurmdbd_addr);
 	xfree(slurmdbd_host);
 	slurm_mutex_unlock(&slurmdbd_lock);
@@ -140,7 +140,6 @@ static void _open_slurmdbd_fd(void)
 {
 	slurm_addr dbd_addr;
 
-	slurm_mutex_lock(&slurmdbd_lock);
 	if (slurmdbd_fd < 0) {
 		slurm_set_addr(&dbd_addr, slurmdbd_port, slurmdbd_addr);
 		if (dbd_addr.sin_port == 0)
@@ -152,25 +151,21 @@ static void _open_slurmdbd_fd(void)
 				error("slurmdbd: slurm_open_msg_conn: %m");
 		}
 	}
-#if 0
-/* FIXME: Send an authentication message now */
-static int
-_send_and_recv_msg(slurm_fd fd, slurm_msg_t *req,
-                   slurm_msg_t *resp, int timeout)
-{
-        int retry = 0;
-        int rc = -1;
-        slurm_msg_t_init(resp);
+	if (slurmdbd_fd >= 0) {
+		/* FIXME: Send an authentication message now */
+		write(slurmdbd_fd, "OPEN", 5);
+	}
+}
 
-        if (slurm_send_node_msg(fd, req) >= 0) {
-                /* no need to adjust and timeouts here since we are not
-                   forwarding or expecting anything other than 1 message
-                   and the regular timeout will be altered in
-                   slurm_receive_msg if it is 0 */
-                rc = slurm_receive_msg(fd, resp, timeout);
-        }
-#endif
-	slurm_mutex_unlock(&slurmdbd_lock);
+/* Send termination message to Slurm DBD and close the connection */
+static void _close_slurmdbd_fd(void)
+{
+	if (slurmdbd_fd >= 0) {
+		/* FIXME: Send a termination message now */
+		write(slurmdbd_fd, "FINI", 5);
+		close(slurmdbd_fd);
+		slurmdbd_fd = -1;
+	}
 }
 
 /* Read the slurmdbd.conf file to get the DbdPort value */
@@ -248,9 +243,11 @@ static char * _get_conf_path(void)
 
 static int _send_msg(Buf buffer)
 {
+	slurm_mutex_lock(&slurmdbd_lock);
 	if (slurmdbd_fd < 0)
 		_open_slurmdbd_fd();
-
+	write(slurmdbd_fd, "SEND", 5);
+	slurm_mutex_unlock(&slurmdbd_lock);
 	return SLURM_SUCCESS;
 }
 
