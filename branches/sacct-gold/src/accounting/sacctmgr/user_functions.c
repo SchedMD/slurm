@@ -37,6 +37,12 @@
 
 #include "sacctmgr.h"
 
+static void _destroy_char(void *object)
+{
+	char *tmp = (char *)object;
+	xfree(tmp);
+}
+
 extern int sacctmgr_create_user(int argc, char *argv[])
 {
 	int rc = SLURM_SUCCESS;
@@ -46,6 +52,55 @@ extern int sacctmgr_create_user(int argc, char *argv[])
 extern int sacctmgr_list_user(int argc, char *argv[])
 {
 	int rc = SLURM_SUCCESS;
+	List spec_list = list_create(_destroy_char);
+	List user_list;;
+	char *tmp_char = NULL;
+	char *name = NULL;
+	int i, j, start = 0;;
+	ListIterator itr = NULL;
+	account_user_rec_t *user = NULL;
+
+	for (i=0; i<argc; i++) {
+		if (strncasecmp(argv[i], "Name=", 5) == 0) {
+			tmp_char = &argv[i][5];
+			j = 0;
+			if(tmp_char[j] == '\"')
+				j++;
+			start = j;
+			while(tmp_char[j]) {
+				if(tmp_char[j] == '\"')
+					break;
+				else if(tmp_char[j] == ',') {
+					if(j-start > 0) {
+						name = xmalloc((j-start+1));
+						memcpy(name, tmp_char+start,
+						       (j-start));
+						list_push(spec_list, name);
+					}
+					j++;
+					start = j;
+				}
+				j++;
+			}
+			if(j-start > 0) {
+				name = xmalloc((j-start)+1);
+				memcpy(name, tmp_char+start, (j-start));
+				list_push(spec_list, name);
+			}
+		}
+	}
+
+	user_list = account_storage_g_get_users(spec_list, NULL);
+	list_destroy(spec_list);
+	
+	itr = list_iterator_create(user_list);
+	printf("Name\t\tDefault Account\n");
+	while((user = list_next(itr))) {
+		printf("User=%s ", user->name);
+		printf("Default Account=%s\n", user->default_account);
+	}
+	list_iterator_destroy(itr);
+	list_destroy(user_list);
 	return rc;
 }
 

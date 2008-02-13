@@ -35,7 +35,7 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
-bin_PROGRAMS = scontrol$(EXEEXT)
+bin_PROGRAMS = sacctmgr$(EXEEXT)
 subdir = src/accounting/sacctmgr
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -69,14 +69,15 @@ CONFIG_CLEAN_FILES =
 am__installdirs = "$(DESTDIR)$(bindir)"
 binPROGRAMS_INSTALL = $(INSTALL_PROGRAM)
 PROGRAMS = $(bin_PROGRAMS)
-am_scontrol_OBJECTS = user_functions.$(OBJEXT) \
+am_sacctmgr_OBJECTS = user_functions.$(OBJEXT) \
 	cluster_functions.$(OBJEXT) account_functions.$(OBJEXT) \
-	association_functions.$(OBJEXT) sacctmgr.$(OBJEXT)
-scontrol_OBJECTS = $(am_scontrol_OBJECTS)
+	association_functions.$(OBJEXT) sacctmgr.$(OBJEXT) \
+	print.$(OBJEXT)
+sacctmgr_OBJECTS = $(am_sacctmgr_OBJECTS)
 am__DEPENDENCIES_1 =
-scontrol_DEPENDENCIES = $(convenience_libs) $(am__DEPENDENCIES_1)
-scontrol_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
-	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(scontrol_LDFLAGS) \
+sacctmgr_DEPENDENCIES = $(convenience_libs) $(am__DEPENDENCIES_1)
+sacctmgr_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
+	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(sacctmgr_LDFLAGS) \
 	$(LDFLAGS) -o $@
 DEFAULT_INCLUDES = -I. -I$(top_builddir) -I$(top_builddir)/slurm@am__isrc@
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
@@ -90,8 +91,8 @@ CCLD = $(CC)
 LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
-SOURCES = $(scontrol_SOURCES)
-DIST_SOURCES = $(scontrol_SOURCES)
+SOURCES = $(sacctmgr_SOURCES)
+DIST_SOURCES = $(sacctmgr_SOURCES)
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -261,20 +262,21 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
 INCLUDES = -I$(top_srcdir)
-scontrol_SOURCES = \
+sacctmgr_SOURCES = \
 	user_functions.c	\
 	cluster_functions.c	\
 	account_functions.c	\
 	association_functions.c   \
 	sacctmgr.c	\
-	sacctmgr.h	
+	sacctmgr.h	\
+	print.c
 
 convenience_libs = $(top_builddir)/src/api/libslurmhelper.la
-scontrol_LDADD = \
+sacctmgr_LDADD = \
 	$(convenience_libs) \
 	$(READLINE_LIBS)
 
-scontrol_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
+sacctmgr_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
 all: all-am
 
 .SUFFIXES:
@@ -336,9 +338,9 @@ clean-binPROGRAMS:
 	  echo " rm -f $$p $$f"; \
 	  rm -f $$p $$f ; \
 	done
-scontrol$(EXEEXT): $(scontrol_OBJECTS) $(scontrol_DEPENDENCIES) 
-	@rm -f scontrol$(EXEEXT)
-	$(scontrol_LINK) $(scontrol_OBJECTS) $(scontrol_LDADD) $(LIBS)
+sacctmgr$(EXEEXT): $(sacctmgr_OBJECTS) $(sacctmgr_DEPENDENCIES) 
+	@rm -f sacctmgr$(EXEEXT)
+	$(sacctmgr_LINK) $(sacctmgr_OBJECTS) $(sacctmgr_LDADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -349,6 +351,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/account_functions.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/association_functions.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cluster_functions.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/print.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sacctmgr.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/user_functions.Po@am__quote@
 

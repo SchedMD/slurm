@@ -110,4 +110,9 @@ extern int sacctmgr_delete_user(int argc, char *argv[]);
 extern int sacctmgr_delete_account(int argc, char *argv[]);
 extern int sacctmgr_delete_cluster(int argc, char *argv[]);
 
+extern void print_header(void);
+extern int  print_str(char *str, int width, bool right, bool cut_output);
+extern void print_date(void);
+extern int print_secs(long time, int width, bool right, bool cut_output);
+
 #endif
