@@ -1,9 +1,8 @@
 /*****************************************************************************\
  *  slurmctld.h - definitions of functions and structures for slurmcltd use
- *
- *  $Id$
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
+ *  Copyright (C) 2008 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov> et. al.
  *  UCRL-CODE-226842.
@@ -331,7 +330,7 @@ struct job_details {
 	char *work_dir;			/* pathname of working directory */
 	char **argv;			/* arguments for a batch job script */
 	uint16_t argc;			/* count of argv elements */
-	uint16_t no_requeue;		/* don't requeue job if set */
+	uint16_t requeue;		/* controls ability requeue job */
 	multi_core_data_t *mc_ptr;	/* multi-core specific data */
 	char *dependency;		/* wait for other jobs */
 	List depend_list;		/* list of job_ptr:state pairs */

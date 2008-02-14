@@ -749,7 +749,7 @@ void _dump_job_details(struct job_details *detail_ptr, Buf buffer)
 	pack16(detail_ptr->contiguous, buffer);
 	pack16(detail_ptr->cpus_per_task, buffer);
 	pack16(detail_ptr->ntasks_per_node, buffer);
-	pack16(detail_ptr->no_requeue, buffer);
+	pack16(detail_ptr->requeue, buffer);
 	pack16(detail_ptr->acctg_freq, buffer);
 
 	pack8(detail_ptr->open_mode, buffer);
@@ -787,7 +787,7 @@ static int _load_job_details(struct job_record *job_ptr, Buf buffer)
 	uint32_t job_min_memory, job_min_tmp_disk;
 	uint32_t num_tasks, name_len, argc = 0;
 	uint16_t shared, contiguous, ntasks_per_node;
-	uint16_t acctg_freq, cpus_per_task, no_requeue;
+	uint16_t acctg_freq, cpus_per_task, requeue;
 	uint8_t open_mode, overcommit;
 	time_t begin_time, submit_time;
 	int i;
@@ -802,7 +802,7 @@ static int _load_job_details(struct job_record *job_ptr, Buf buffer)
 	safe_unpack16(&contiguous, buffer);
 	safe_unpack16(&cpus_per_task, buffer);
 	safe_unpack16(&ntasks_per_node, buffer);
-	safe_unpack16(&no_requeue, buffer);
+	safe_unpack16(&requeue, buffer);
 	safe_unpack16(&acctg_freq, buffer);
 
 	safe_unpack8(&open_mode, buffer);
@@ -834,9 +834,9 @@ static int _load_job_details(struct job_record *job_ptr, Buf buffer)
 		      job_ptr->job_id, contiguous);
 		goto unpack_error;
 	}
-	if ((no_requeue > 1) || (overcommit > 1)) {
-		error("Invalid data for job %u: no_requeue=%u overcommit=%u",
-		      no_requeue, overcommit);
+	if ((requeue > 1) || (overcommit > 1)) {
+		error("Invalid data for job %u: requeue=%u overcommit=%u",
+		      requeue, overcommit);
 		goto unpack_error;
 	}
 
@@ -866,7 +866,7 @@ static int _load_job_details(struct job_record *job_ptr, Buf buffer)
 	job_ptr->details->job_min_procs = job_min_procs;
 	job_ptr->details->job_min_memory = job_min_memory;
 	job_ptr->details->job_min_tmp_disk = job_min_tmp_disk;
-	job_ptr->details->no_requeue = no_requeue;
+	job_ptr->details->requeue = requeue;
 	job_ptr->details->open_mode = open_mode;
 	job_ptr->details->overcommit = overcommit;
 	job_ptr->details->begin_time = begin_time;
@@ -1063,7 +1063,7 @@ extern int kill_running_job_by_node_name(char *node_name, bool step_test)
 				      node_name, job_ptr->job_id);
 				_excise_node_from_job(job_ptr, node_ptr);
 			} else if (job_ptr->batch_flag && job_ptr->details &&
-			           (job_ptr->details->no_requeue == 0)) {
+			           (job_ptr->details->requeue > 0)) {
 				uint16_t save_state;
 				char requeue_msg[128];
 
@@ -1149,7 +1149,7 @@ void dump_job_desc(job_desc_msg_t * job_specs)
 	long job_min_memory, job_min_tmp_disk, num_procs;
 	long time_limit, priority, contiguous, acctg_freq;
 	long kill_on_node_fail, shared, immediate;
-	long cpus_per_task, no_requeue, num_tasks, overcommit;
+	long cpus_per_task, requeue, num_tasks, overcommit;
 	long ntasks_per_node, ntasks_per_socket, ntasks_per_core;
 	char buf[100];
 
@@ -1274,10 +1274,10 @@ void dump_job_desc(job_desc_msg_t * job_specs)
 	slurm_make_time_str(&job_specs->begin_time, buf, sizeof(buf));
 	cpus_per_task = (job_specs->cpus_per_task != (uint16_t) NO_VAL) ?
 		(long) job_specs->cpus_per_task : -1L;
-	no_requeue = (job_specs->no_requeue != (uint16_t) NO_VAL) ?
-		(long) job_specs->no_requeue : -1L;
-	debug3("   network=%s begin=%s cpus_per_task=%ld no_requeue=%ld", 
-	       job_specs->network, buf, cpus_per_task, no_requeue);
+	requeue = (job_specs->requeue != (uint16_t) NO_VAL) ?
+		(long) job_specs->requeue : -1L;
+	debug3("   network=%s begin=%s cpus_per_task=%ld requeue=%ld", 
+	       job_specs->network, buf, cpus_per_task, requeue);
 
 	ntasks_per_node = (job_specs->ntasks_per_node != (uint16_t) NO_VAL) ?
 		(long) job_specs->ntasks_per_node : -1L;
@@ -2570,11 +2570,13 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 	if (job_desc->task_dist != (uint16_t) NO_VAL)
 		detail_ptr->task_dist = job_desc->task_dist;
 	if (job_desc->cpus_per_task != (uint16_t) NO_VAL)
-		detail_ptr->cpus_per_task = job_desc->cpus_per_task;
+		detail_ptr->cpus_per_task = MIN(job_desc->cpus_per_task, 1);
 	if (job_desc->ntasks_per_node != (uint16_t) NO_VAL)
 		detail_ptr->ntasks_per_node = job_desc->ntasks_per_node;
-	if (job_desc->no_requeue != (uint16_t) NO_VAL)
-		detail_ptr->no_requeue = job_desc->no_requeue;
+	if (job_desc->requeue != (uint16_t) NO_VAL)
+		detail_ptr->requeue = MIN(job_desc->requeue, 1);
+	else
+		detail_ptr->requeue = slurmctld_conf.job_requeue;
 	if (job_desc->job_min_procs != (uint16_t) NO_VAL)
 		detail_ptr->job_min_procs = job_desc->job_min_procs;
 	detail_ptr->job_min_procs = MAX(detail_ptr->job_min_procs,
@@ -4892,7 +4894,7 @@ extern int job_requeue (uid_t uid, uint32_t job_id, slurm_fd conn_fd)
 		rc = ESLURM_ALREADY_DONE;
 		goto reply;
 	}
-	if ((job_ptr->details == NULL) || job_ptr->details->no_requeue) {
+	if ((job_ptr->details == NULL) || (job_ptr->details->requeue == 0)) {
 		rc = ESLURM_DISABLED;
 		goto reply;
 	}

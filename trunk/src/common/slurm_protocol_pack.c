@@ -1,9 +1,8 @@
 /****************************************************************************\
  *  slurm_protocol_pack.c - functions to pack and unpack structures for RPCs
- *
- *  $Id$
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
+ *  Copyright (C) 2008 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Kevin Tew <tew1@llnl.gov>, et. al.
  *  UCRL-CODE-226842.
@@ -2238,6 +2237,7 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer)
 	packstr(build_ptr->job_credential_private_key, buffer);
 	packstr(build_ptr->job_credential_public_certificate, buffer);
 	pack16(build_ptr->job_file_append, buffer);
+	pack16(build_ptr->job_requeue, buffer);
 
 	pack16(build_ptr->kill_wait, buffer);
 
@@ -2381,6 +2381,7 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **
 			       job_credential_public_certificate,
 			       &uint32_tmp, buffer);
 	safe_unpack16(&build_ptr->job_file_append, buffer);
+	safe_unpack16(&build_ptr->job_requeue, buffer);
 
 	safe_unpack16(&build_ptr->kill_wait, buffer);
 
@@ -2581,7 +2582,7 @@ _pack_job_desc_msg(job_desc_msg_t * job_desc_ptr, Buf buffer)
 	packstr(job_desc_ptr->work_dir, buffer);
 
 	pack16(job_desc_ptr->immediate, buffer);
-	pack16(job_desc_ptr->no_requeue, buffer);
+	pack16(job_desc_ptr->requeue, buffer);
 	pack16(job_desc_ptr->shared, buffer);
 	pack16(job_desc_ptr->cpus_per_task, buffer);
 	pack16(job_desc_ptr->ntasks_per_node, buffer);
@@ -2712,7 +2713,7 @@ _unpack_job_desc_msg(job_desc_msg_t ** job_desc_buffer_ptr, Buf buffer)
 	safe_unpackstr_xmalloc(&job_desc_ptr->work_dir, &uint32_tmp, buffer);
 
 	safe_unpack16(&job_desc_ptr->immediate, buffer);
-	safe_unpack16(&job_desc_ptr->no_requeue, buffer);
+	safe_unpack16(&job_desc_ptr->requeue, buffer);
 	safe_unpack16(&job_desc_ptr->shared, buffer);
 	safe_unpack16(&job_desc_ptr->cpus_per_task, buffer);
 	safe_unpack16(&job_desc_ptr->ntasks_per_node, buffer);

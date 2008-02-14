@@ -13,6 +13,8 @@ documents those changes that are of interest to users and admins.
  -- In sched/wiki and sched/wiki2: add HostFormat and HidePartitionJobs to 
     "scontrol show config" SCHEDULER_CONF output.
  -- In sched/wiki2: accept hostname expression as input for GETNODES command.
+ -- Add JobRequeue configuration parameter and --requeue option to the sbatch
+    command.
  
 * Changes in SLURM 1.3.0-pre9
 =============================

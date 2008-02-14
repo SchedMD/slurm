@@ -2,6 +2,7 @@
  *  opt.c - options processing for sbatch
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
+ *  Copyright (C) 2008 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Mark Grondona <grondona1@llnl.gov>, et. al.
  *  UCRL-CODE-226842.
@@ -87,6 +88,8 @@
 #define OPT_OVERCOMMIT	0x11
 #define OPT_OPEN_MODE	0x12
 #define OPT_ACCTG_FREQ  0x13
+#define OPT_NO_REQUEUE  0x14
+#define OPT_REQUEUE     0x15
 
 /* generic getopt_long flags, integers and *not* valid characters */
 #define LONG_OPT_PROPAGATE   0x100
@@ -110,6 +113,7 @@
 #define LONG_OPT_NO_REQUEUE  0x116
 #define LONG_OPT_COMMENT     0x117
 #define LONG_OPT_WRAP        0x118
+#define LONG_OPT_REQUEUE     0x119
 #define LONG_OPT_SOCKETSPERNODE  0x130
 #define LONG_OPT_CORESPERSOCKET  0x131
 #define LONG_OPT_THREADSPERCORE  0x132
@@ -252,7 +256,7 @@ static void _opt_default()
 	opt.no_kill = false;
 
 	opt.immediate	= false;
-	opt.no_requeue	= false;
+	opt.requeue	= NO_VAL;
 	opt.overcommit	= false;
 
 	opt.quiet = 0;
@@ -323,7 +327,8 @@ env_vars_t env_vars[] = {
   {"SBATCH_JOB_NAME",      OPT_STRING,     &opt.job_name,      NULL           },
   {"SBATCH_LINUX_IMAGE",   OPT_STRING,     &opt.linuximage,    NULL           },
   {"SBATCH_MLOADER_IMAGE", OPT_STRING,     &opt.mloaderimage,  NULL           },
-  {"SBATCH_NO_REQUEUE",    OPT_BOOL,       &opt.no_requeue,    NULL           },
+  {"SBATCH_NO_REQUEUE",    OPT_NO_REQUEUE, NULL,               NULL           },
+  {"SBATCH_REQUEUE",       OPT_REQUEUE,    NULL,               NULL           },
   {"SBATCH_NO_ROTATE",     OPT_BOOL,       &opt.no_rotate,     NULL           },
   {"SBATCH_OVERCOMMIT",    OPT_OVERCOMMIT, NULL,               NULL           },
   {"SBATCH_PARTITION",     OPT_STRING,     &opt.partition,     NULL           },
@@ -444,6 +449,14 @@ _process_env_var(env_vars_t *e, const char *val)
 			error("Invalid SBATCH_OPEN_MODE: %s. Ignored", val);
 		break;
 
+	case OPT_NO_REQUEUE:
+		opt.requeue = 0;
+		break;
+
+	case OPT_REQUEUE:
+		opt.requeue = 1;
+		break;
+
 	default:
 		/* do nothing */
 		break;
@@ -509,6 +522,7 @@ static struct option long_options[] = {
 	{"mail-user",     required_argument, 0, LONG_OPT_MAIL_USER},
 	{"nice",          optional_argument, 0, LONG_OPT_NICE},
 	{"no-requeue",    no_argument,       0, LONG_OPT_NO_REQUEUE},
+	{"requeue",       no_argument,       0, LONG_OPT_REQUEUE},
 	{"comment",       required_argument, 0, LONG_OPT_COMMENT},
 	{"sockets-per-node", required_argument, 0, LONG_OPT_SOCKETSPERNODE},
 	{"cores-per-socket", required_argument, 0, LONG_OPT_CORESPERSOCKET},
@@ -1183,7 +1197,10 @@ static void _set_options(int argc, char **argv)
 			}
 			break;
 		case LONG_OPT_NO_REQUEUE:
-			opt.no_requeue = true;
+			opt.requeue = 0;
+			break;
+		case LONG_OPT_REQUEUE:
+			opt.requeue = 1;
 			break;
 		case LONG_OPT_COMMENT:
 			xfree(opt.comment);
@@ -2023,7 +2040,8 @@ static void _opt_list()
 		info("plane size   : %u", opt.plane_size);
 	info("verbose        : %d", opt.verbose);
 	info("immediate      : %s", tf_(opt.immediate));
-	info("no-requeue     : %s", tf_(opt.no_requeue));
+	if (opt.requeue != NO_VAL)
+		info("requeue        : %u", opt.requeue);
 	info("overcommit     : %s", tf_(opt.overcommit));
 	if (opt.time_limit == INFINITE)
 		info("time_limit     : INFINITE");
@@ -2097,7 +2115,7 @@ static void _usage(void)
 "              [--mloader-image=path] [--ramdisk-image=path]\n"
 #endif
 "              [--mail-type=type] [--mail-user=user][--nice[=value]]\n"
-"              [--no-requeue] [--ntasks-per-node=n] [--propagate]\n"
+"              [--requeue] [--no-requeue] [--ntasks-per-node=n] [--propagate]\n"
 "              [--nodefile=file] [--nodelist=hosts] [--exclude=hosts]\n"
 "              executable [args...]\n");
 }
@@ -2141,6 +2159,7 @@ static void _help(void)
 "      --uid=user_id           user ID to run job as (user root only)\n"
 "      --get-user-env          used by Moab.  See srun man page.\n"
 "      --no-requeue            if set, do not permit the job to be requeued\n"
+"      --requeue               if set, permit the job to be requeued\n"
 "      --propagate[=rlimits]   propagate all [or specific list of] rlimits\n"
 "\n"
 "Constraint options:\n"

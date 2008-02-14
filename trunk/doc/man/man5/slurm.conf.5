@@ -1,4 +1,4 @@
-.TH "slurm.conf" "5" "January 2008" "slurm.conf 1.3" "Slurm configuration file"
+.TH "slurm.conf" "5" "February 2008" "slurm.conf 1.3" "Slurm configuration file"
 .SH "NAME"
 slurm.conf \- Slurm configuration file 
 .SH "DESCRIPTION"
@@ -321,6 +321,17 @@ exist when the job is started.
 If \fBJobFileAppend\fR is set to a value of 1, then append to 
 the existing file.
 By default, any existing file is truncated.
+
+.TP
+\fBJobRequeue\fR
+This option controls what to do by default after a node failure. 
+If \fBJobRequeue\fR is set to a value of 1, then any job running 
+on the failed node will be requeued for execution on different nodes.
+If \fBJobRequeue\fR is set to a value of 0, then any job running 
+on the failed node will be terminated.
+Use the \fBsbatch\fR \fI\-\-no\-requeue\fR or \fI\-\-requeue\fR 
+option to change the default behavior for individual jobs.
+The default value is 1.
 
 .TP
 \fBKillTree\fR
