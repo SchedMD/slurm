@@ -37,56 +37,44 @@
 
 #include "sacctmgr.h"
 
-static void _destroy_char(void *object)
-{
-	char *tmp = (char *)object;
-	xfree(tmp);
-}
-
 extern int sacctmgr_create_user(int argc, char *argv[])
 {
 	int rc = SLURM_SUCCESS;
 	return rc;
 }
 
-extern int sacctmgr_list_user(int argc, char *argv[])
+extern int sacctmgr_list_user(char *names)
 {
 	int rc = SLURM_SUCCESS;
-	List spec_list = list_create(_destroy_char);
-	List user_list;;
-	char *tmp_char = NULL;
+	List spec_list = list_create(destroy_char);
+	List user_list;
 	char *name = NULL;
-	int i, j, start = 0;;
+	int i=0, start = 0;;
 	ListIterator itr = NULL;
 	account_user_rec_t *user = NULL;
-
-	for (i=0; i<argc; i++) {
-		if (strncasecmp(argv[i], "Name=", 5) == 0) {
-			tmp_char = &argv[i][5];
-			j = 0;
-			if(tmp_char[j] == '\"')
-				j++;
-			start = j;
-			while(tmp_char[j]) {
-				if(tmp_char[j] == '\"')
-					break;
-				else if(tmp_char[j] == ',') {
-					if(j-start > 0) {
-						name = xmalloc((j-start+1));
-						memcpy(name, tmp_char+start,
-						       (j-start));
-						list_push(spec_list, name);
-					}
-					j++;
-					start = j;
+	
+	if(names) {
+		if (names[i] == '\"' || names[i] == '\'')
+			i++;
+		start = i;
+		while(names[i]) {
+			if(names[i] == '\"' || names[i] == '\'')
+				break;
+			else if(names[i] == ',') {
+				if(i-start > 0) {
+					name = xmalloc((i-start+1));
+					memcpy(name, names+start, (i-start));
+					list_push(spec_list, name);
 				}
-				j++;
+				i++;
+				start = i;
 			}
-			if(j-start > 0) {
-				name = xmalloc((j-start)+1);
-				memcpy(name, tmp_char+start, (j-start));
-				list_push(spec_list, name);
-			}
+			i++;
+		}
+		if(i-start > 0) {
+			name = xmalloc((i-start)+1);
+			memcpy(name, names+start, (i-start));
+			list_push(spec_list, name);
 		}
 	}
 
@@ -94,16 +82,16 @@ extern int sacctmgr_list_user(int argc, char *argv[])
 	list_destroy(spec_list);
 	
 	itr = list_iterator_create(user_list);
-	printf("%-30s %-30s %-10s\n%-30s %-30s %-10s\n",
+	printf("%-15s %-15s %-10s\n%-15s %-15s %-10s\n",
 	       "Name", "Default Account", "Expedite",
-	       "------------------------------",
-	       "------------------------------",
+	       "---------------",
+	       "---------------",
 	       "----------");
 	
 	while((user = list_next(itr))) {
-		printf("%-30s %-30s %-10d\n",
+		printf("%-15.15s %-15.15s %-10.10s\n",
 		       user->name, user->default_account,
-		       user->expedite);
+		       account_expedite_str(user->expedite));
 	}
 
 	printf("\n");

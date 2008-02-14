@@ -249,7 +249,7 @@ static List _get_user_list_from_response(gold_response_t *gold_response)
 				
 			} else if(!strcmp(name_val->name, "Expedite")) {
 				user_rec->expedite = 
-					atoi(name_val->value);
+					atoi(name_val->value)+1;
 			} else if(!strcmp(name_val->name, "DefaultProject")) {
 				user_rec->default_account = 
 					xstrdup(name_val->value);
@@ -289,7 +289,7 @@ static List _get_account_list_from_response(gold_response_t *gold_response)
 		while((name_val = list_next(itr2))) {
 			if(!strcmp(name_val->name, "Expedite")) {
 				account_rec->expedite = 
-					atoi(name_val->value);
+					atoi(name_val->value)+1;
 			} else if(!strcmp(name_val->name, 
 					  "Name")) {
 				account_rec->name = 
@@ -626,9 +626,12 @@ extern int account_storage_p_add_accounts(List account_list)
 					    object->description);		
 		gold_request_add_assignment(gold_request, "Organization",
 					    object->organization);		
-		snprintf(tmp_buff, sizeof(tmp_buff), "%u", object->expedite);
-		gold_request_add_assignment(gold_request, "Expedite",
-					    tmp_buff);		
+		if(object->expedite != ACCOUNT_EXPEDITE_NOTSET) {
+			snprintf(tmp_buff, sizeof(tmp_buff), "%u",
+				 object->expedite-1);
+			gold_request_add_assignment(gold_request, "Expedite",
+						    tmp_buff);
+		}		
 		gold_response = get_gold_response(gold_request);	
 		destroy_gold_request(gold_request);
 
@@ -1580,6 +1583,16 @@ extern List account_storage_p_get_users(List selected_users,
 		list_iterator_destroy(itr);
 	}
 
+	gold_request_add_condition(gold_request, "Active",
+				   "True",
+				   GOLD_OPERATOR_NONE,
+				   0);
+
+	gold_request_add_condition(gold_request, "Special",
+				   "False",
+				   GOLD_OPERATOR_NONE,
+				   0);
+
 	gold_request_add_selection(gold_request, "Name");
 	gold_request_add_selection(gold_request, "DefaultProject");
 	gold_request_add_selection(gold_request, "Expedite");
@@ -1631,6 +1644,16 @@ extern List account_storage_p_get_accounts(List selected_accounts,
 		}
 		list_iterator_destroy(itr);
 	}
+
+	gold_request_add_condition(gold_request, "Active",
+				   "True",
+				   GOLD_OPERATOR_NONE,
+				   0);
+
+	gold_request_add_condition(gold_request, "Special",
+				   "False",
+				   GOLD_OPERATOR_NONE,
+				   0);
 
 	gold_request_add_selection(gold_request, "Name");
 	gold_request_add_selection(gold_request, "Organization");
@@ -1685,6 +1708,16 @@ extern List account_storage_p_get_clusters(List selected_clusters,
 		list_iterator_destroy(itr);
 	}
 
+	gold_request_add_condition(gold_request, "Active",
+				   "True",
+				   GOLD_OPERATOR_NONE,
+				   0);
+
+	gold_request_add_condition(gold_request, "Special",
+				   "False",
+				   GOLD_OPERATOR_NONE,
+				   0);
+	
 	gold_request_add_selection(gold_request, "Name");
 		
 	gold_response = get_gold_response(gold_request);	
@@ -1753,6 +1786,16 @@ extern List account_storage_p_get_associations(List selected_users,
 		}
 		list_iterator_destroy(itr);
 	}
+
+	gold_request_add_condition(gold_request, "Active",
+				   "True",
+				   GOLD_OPERATOR_NONE,
+				   0);
+
+	gold_request_add_condition(gold_request, "Special",
+				   "False",
+				   GOLD_OPERATOR_NONE,
+				   0);
 
 	gold_request_add_selection(gold_request, "Id");
 	gold_request_add_selection(gold_request, "User");

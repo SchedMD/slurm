@@ -44,9 +44,63 @@ extern int sacctmgr_create_account(int argc, char *argv[])
 	return rc;
 }
 
-extern int sacctmgr_list_account(int argc, char *argv[])
+extern int sacctmgr_list_account(char *names)
 {
 	int rc = SLURM_SUCCESS;
+	List spec_list = list_create(destroy_char);
+	List account_list;
+	char *name = NULL;
+	int i=0, start = 0;;
+	ListIterator itr = NULL;
+	account_account_rec_t *account = NULL;
+	
+	if(names) {
+		if (names[i] == '\"' || names[i] == '\'')
+			i++;
+		start = i;
+		while(names[i]) {
+			if(names[i] == '\"' || names[i] == '\'')
+				break;
+			else if(names[i] == ',') {
+				if(i-start > 0) {
+					name = xmalloc((i-start+1));
+					memcpy(name, names+start, (i-start));
+					list_push(spec_list, name);
+				}
+				i++;
+				start = i;
+			}
+			i++;
+		}
+		if(i-start > 0) {
+			name = xmalloc((i-start)+1);
+			memcpy(name, names+start, (i-start));
+			list_push(spec_list, name);
+		}
+	}
+
+	account_list = account_storage_g_get_accounts(spec_list, NULL);
+	list_destroy(spec_list);
+	
+	itr = list_iterator_create(account_list);
+	printf("%-15s %-15s %-15s %-10s\n%-15s %-15s %-15s %-10s\n",
+	       "Name", "Description", "Organization", "Expedite",
+	       "---------------",
+	       "---------------",
+	       "---------------",
+	       "----------");
+	
+	while((account = list_next(itr))) {
+		printf("%-15.15s %-15.15s %-15.15s %-10.10s\n",
+		       account->name, account->description,
+		       account->organization,
+		       account_expedite_str(account->expedite));
+	}
+
+	printf("\n");
+
+	list_iterator_destroy(itr);
+	list_destroy(account_list);
 	return rc;
 }
 

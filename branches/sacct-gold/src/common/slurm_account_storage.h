@@ -116,6 +116,8 @@ extern void destroy_account_cluster_rec(void *object);
 extern void destroy_account_accounting_rec(void *object);
 extern void destroy_account_association_rec(void *object);
 
+extern char *account_expedite_str(account_expedite_level_t level);
+extern char *account_admin_level_str(account_admin_level_t level);
 
 extern int slurm_account_storage_init(void); /* load the plugin */
 extern int slurm_account_storage_fini(void); /* unload the plugin */

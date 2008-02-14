@@ -299,6 +299,50 @@ extern void destroy_account_association_rec(void *object)
 	}
 }
 
+extern char *account_expedite_str(account_expedite_level_t level)
+{
+	switch(level) {
+	case ACCOUNT_EXPEDITE_NOTSET:
+		return "Not Set";
+		break;
+	case ACCOUNT_EXPEDITE_NORMAL:
+		return "Normal";
+		break;
+	case ACCOUNT_EXPEDITE_EXPEDITE:
+		return "Expedite";
+		break;
+	case ACCOUNT_EXPEDITE_STANDBY:
+		return "Standby";
+		break;
+	case ACCOUNT_EXPEDITE_EXEMPT:
+		return "Exempt";
+		break;
+	default:
+		return "Unknown";
+		break;
+	}
+	return "Unknown";
+}
+
+extern char *account_admin_level_str(account_admin_level_t level)
+{
+	switch(level) {
+	case ACCOUNT_ADMIN_NONE:
+		return "None";
+		break;
+	case ACCOUNT_ADMIN_OPERATOR:
+		return "Operator";
+		break;
+	case ACCOUNT_ADMIN_SUPER_USER:
+		return "Administrator";
+		break;
+	default:
+		return "Unknown";
+		break;
+	}
+	return "Unknown";
+}
+
 /*
  * Initialize context for account_storage plugin
  */

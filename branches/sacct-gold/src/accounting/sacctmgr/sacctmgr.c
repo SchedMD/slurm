@@ -40,6 +40,12 @@
 #include "sacctmgr.h"
 
 #define OPT_LONG_HIDE   0x102
+#define BUFFER_SIZE 4096
+
+FILE *history_fp = NULL;
+int history_pos = 0;
+int history_count = 0;
+char **history = NULL;
 
 char *command_name;
 int all_flag;		/* display even hidden partitions */
@@ -141,7 +147,6 @@ main (int argc, char *argv[])
 		exit_flag = 1;
 	else
 		error_code = _get_command (&input_field_count, input_fields);
-
 	while (error_code == SLURM_SUCCESS) {
 		error_code = _process_command (input_field_count, 
 					       input_fields);
@@ -149,7 +154,7 @@ main (int argc, char *argv[])
 			break;
 		error_code = _get_command (&input_field_count, input_fields);
 	}			
-
+	
 	exit(exit_code);
 }
 
@@ -163,7 +168,6 @@ getline(const char *prompt)
 	char buf[4096];
 	char *line;
 	int len;
-
 	printf("%s", prompt);
 
 	fgets(buf, 4096, stdin);
@@ -425,32 +429,29 @@ static void _create_it (int argc, char *argv[])
  */
 static void _show_it (int argc, char *argv[]) 
 {
-	int i, error_code = SLURM_SUCCESS;
-
+	int error_code = SLURM_SUCCESS;
+	char *spec = NULL;
+	if(argc > 1)
+		spec = argv[1];	
+		
 	/* First identify the entity to list */
-	for (i=0; i<argc; i++) {
-		if (strncasecmp (argv[i], "Association", 11) == 0) {
-			error_code = sacctmgr_list_association(argc, argv);
-			break;
-		} else if (strncasecmp (argv[i], "User", 4) == 0) {
-			error_code = sacctmgr_list_user(argc, argv);
-			break;
-		} else if (strncasecmp (argv[i], "Account", 7) == 0) {
-			error_code = sacctmgr_list_account(argc, argv);
-			break;
-		} else if (strncasecmp (argv[i], "Cluster", 7) == 0) {
-			error_code = sacctmgr_list_cluster(argc, argv);
-			break;
-		}		
-	}
-	
-	if (i >= argc) {
+	if (strncasecmp (argv[0], "Association", 11) == 0) {
+		error_code = sacctmgr_list_association(argc, argv);
+	} else if (strncasecmp (argv[0], "User", 4) == 0) {
+		error_code = sacctmgr_list_user(spec);
+	} else if (strncasecmp (argv[0], "Account", 7) == 0) {
+		error_code = sacctmgr_list_account(spec);
+	} else if (strncasecmp (argv[0], "Cluster", 7) == 0) {
+		error_code = sacctmgr_list_cluster(spec);
+	} else {
 		exit_code = 1;
 		fprintf(stderr, "No valid entity in list command\n");
 		fprintf(stderr, "Input line must include \"Association\", ");
 		fprintf(stderr, "\"UserName\", \"AccountName\", ");
 		fprintf(stderr, "or \"ClusterName\"\n");
-	} else if (error_code) {
+	} 
+	
+	if (error_code) {
 		exit_code = 1;
 		slurm_perror ("sacctmgr_list error");
 	}
@@ -623,3 +624,4 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
   are distinct).                                                       \n\n");
 
 }
+

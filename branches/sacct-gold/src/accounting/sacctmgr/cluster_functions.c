@@ -44,9 +44,55 @@ extern int sacctmgr_create_cluster(int argc, char *argv[])
 	return rc;
 }
 
-extern int sacctmgr_list_cluster(int argc, char *argv[])
+extern int sacctmgr_list_cluster(char *names)
 {
 	int rc = SLURM_SUCCESS;
+	List spec_list = list_create(destroy_char);
+	List cluster_list;
+	char *name = NULL;
+	int i=0, start = 0;;
+	ListIterator itr = NULL;
+	account_cluster_rec_t *cluster = NULL;
+
+	if(names) {
+		if (names[i] == '\"' || names[i] == '\'')
+			i++;
+		start = i;
+		while(names[i]) {
+			if(names[i] == '\"' || names[i] == '\'')
+				break;
+			else if(names[i] == ',') {
+				if(i-start > 0) {
+					name = xmalloc((i-start+1));
+					memcpy(name, names+start, (i-start));
+					list_push(spec_list, name);
+				}
+				i++;
+				start = i;
+			}
+			i++;
+		}
+		if(i-start > 0) {
+			name = xmalloc((i-start)+1);
+			memcpy(name, names+start, (i-start));
+			list_push(spec_list, name);
+		}
+	}
+
+	cluster_list = account_storage_g_get_clusters(spec_list, NULL);
+	list_destroy(spec_list);
+	
+	itr = list_iterator_create(cluster_list);
+	printf("%-15s\n%-15s\n", "Name", "---------------");
+	
+	while((cluster = list_next(itr))) {
+		printf("%-15.15s\n", cluster->name);
+	}
+
+	printf("\n");
+
+	list_iterator_destroy(itr);
+	list_destroy(cluster_list);
 	return rc;
 }
 
