@@ -25,6 +25,7 @@ documents those changes that are of interest to users and admins.
     "man slurm.conf" for details.
  -- If a partition's node list contains space separators, replace them with 
     commas for easier parsing.
+ -- BLUEGENE - fixed bug in geometry specs when creating a block.
 
 * Changes in SLURM 1.2.22
 =========================

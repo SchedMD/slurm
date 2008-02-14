@@ -407,6 +407,7 @@ extern void process_nodes(bg_record_t *bg_record)
 					start);
 				if(bg_record->nodes[j] != ',')
 					break;
+				j--;
 			}
 			j++;
 		}
@@ -423,6 +424,8 @@ extern void process_nodes(bg_record_t *bg_record)
 
 	itr = list_iterator_create(bg_record->bg_block_list);
 	while ((ba_node = list_next(itr)) != NULL) {
+		if(!ba_node->used)
+			continue;
 		debug4("%c%c%c is included in this block",
 		       alpha_num[ba_node->coord[X]],
 		       alpha_num[ba_node->coord[Y]],
@@ -1210,21 +1213,20 @@ extern int create_dynamic_block(ba_request_t *request, List my_block_list)
 		int x,y,z;
 		char *nodes = NULL;
 		bitstr_t *bitmap = bit_alloc(node_record_count);
-		
+		int start[BA_SYSTEM_DIMENSIONS];
+		int end[BA_SYSTEM_DIMENSIONS];
+
 		/* we want the bps that aren't in this partition to
 		 * mark them as used
 		 */
 		bit_or(bitmap, request->avail_node_bitmap);
 		bit_not(bitmap);
 		nodes = bitmap2node_name(bitmap);
-		
+		//info("not using %s", nodes);
 		while(nodes[j] != '\0') {
 			if ((nodes[j] == '[' || nodes[j] == ',')
 			    && (nodes[j+8] == ']' || nodes[j+8] == ',')
 			    && (nodes[j+4] == 'x' || nodes[j+4] == '-')) {
-				int start[BA_SYSTEM_DIMENSIONS];
-				int end[BA_SYSTEM_DIMENSIONS];
-
 				j++;
 				number = xstrntol(nodes + j,
 						  NULL, BA_SYSTEM_DIMENSIONS,
@@ -1273,15 +1275,15 @@ extern int create_dynamic_block(ba_request_t *request, List my_block_list)
 					/ HOSTLIST_BASE;
 				z = (number % HOSTLIST_BASE);
 				j+=3;
-
 				ba_system_ptr->grid[x]
 #ifdef HAVE_BG
 					[y][z]
 #endif
 					.used = 1;
 
-				if(nodes[j] != ',')
+				if(nodes[j] != ',') 
 					break;
+				j--;
 			}
 			j++;
 		}
@@ -2445,7 +2447,7 @@ static int _addto_node_list(bg_record_t *bg_record, int *start, int *end)
 		      alpha_num[DIM_SIZE[X]], alpha_num[DIM_SIZE[Y]], 
 		      alpha_num[DIM_SIZE[Z]]);
 	}
-	debug3("bluegene.conf: %c%c%cx%c%c%c",
+	debug3("adding bps: %c%c%cx%c%c%c",
 	       alpha_num[start[X]], alpha_num[start[Y]], alpha_num[start[Z]],
 	       alpha_num[end[X]], alpha_num[end[Y]], alpha_num[end[Z]]);
 	debug3("slurm.conf:    %c%c%c",
@@ -2464,6 +2466,7 @@ static int _addto_node_list(bg_record_t *bg_record, int *start, int *end)
 				slurm_conf_unlock();
 				ba_node = ba_copy_node(
 					&ba_system_ptr->grid[x][y][z]);
+				ba_node->used = 1;
 				list_append(bg_record->bg_block_list, ba_node);
 				node_count++;
 			}

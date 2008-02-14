@@ -173,7 +173,7 @@ typedef struct
  * ba_node_t: node within the allocation system.
  */
 typedef struct {
-	/* set if using this node in a block*/
+	/* set if using this node in a block */
 	bool used;
 
 	/* coordinates */
