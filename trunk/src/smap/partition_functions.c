@@ -425,6 +425,7 @@ static int _marknodes(db2_block_info_t *block_ptr, int count)
 							0);
 			if(block_ptr->nodes[j] != ',')
 				break;
+			j--;
 		}
 		j++;
 	}
@@ -914,6 +915,7 @@ static int _make_nodelist(char *nodes, List nodelist)
 			_addto_nodelist(nodelist, start, start);
 			if(nodes[j] != ',')
 				break;
+			j--;
 		}
 		j++;
 	}

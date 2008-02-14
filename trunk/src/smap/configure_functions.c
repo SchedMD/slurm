@@ -1107,6 +1107,7 @@ static int _add_bg_record(blockreq_t *blockreq, List allocated_blocks)
 			bp_count++;
 			if(nodes[j] != ',')
 				break;
+			j--;
 		}
 		j++;
 	}

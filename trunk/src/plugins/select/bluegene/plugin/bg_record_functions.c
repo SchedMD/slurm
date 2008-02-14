@@ -227,6 +227,7 @@ extern void process_nodes(bg_record_t *bg_record)
 					start);
 				if(bg_record->nodes[j] != ',')
 					break;
+				j--;
 			}
 			j++;
 		}
@@ -243,6 +244,8 @@ extern void process_nodes(bg_record_t *bg_record)
 
 	itr = list_iterator_create(bg_record->bg_block_list);
 	while ((ba_node = list_next(itr)) != NULL) {
+		if(!ba_node->used)
+			continue;
 		debug4("%c%c%c is included in this block",
 		       alpha_num[ba_node->coord[X]],
 		       alpha_num[ba_node->coord[Y]],
@@ -794,7 +797,7 @@ static int _addto_node_list(bg_record_t *bg_record, int *start, int *end)
 		      alpha_num[DIM_SIZE[X]], alpha_num[DIM_SIZE[Y]], 
 		      alpha_num[DIM_SIZE[Z]]);
 	}
-	debug3("bluegene.conf: %c%c%cx%c%c%c",
+	debug3("adding bps: %c%c%cx%c%c%c",
 	       alpha_num[start[X]], alpha_num[start[Y]], alpha_num[start[Z]],
 	       alpha_num[end[X]], alpha_num[end[Y]], alpha_num[end[Z]]);
 	debug3("slurm.conf:    %c%c%c",
@@ -813,6 +816,7 @@ static int _addto_node_list(bg_record_t *bg_record, int *start, int *end)
 				slurm_conf_unlock();
 				ba_node = ba_copy_node(
 					&ba_system_ptr->grid[x][y][z]);
+				ba_node->used = 1;
 				list_append(bg_record->bg_block_list, ba_node);
 				node_count++;
 			}

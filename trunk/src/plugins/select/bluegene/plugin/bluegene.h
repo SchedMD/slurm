@@ -72,8 +72,6 @@ extern List bg_list;			/* List of configured BG blocks */
 extern List bg_job_block_list;  	/* jobs running in these blocks */
 extern List bg_booted_block_list;  	/* blocks that are booted */
 extern List bg_freeing_list;  	        /* blocks that being freed */
-extern List bg_request_list;  	        /* list of request that can't 
-					   be made just yet */
 extern List bg_blrtsimage_list;
 extern List bg_linuximage_list;
 extern List bg_mloaderimage_list;
@@ -133,7 +131,6 @@ extern void *bluegene_agent(void *args);
 
 extern int bg_free_block(bg_record_t *bg_record);
 extern int remove_from_bg_list(List my_bg_list, bg_record_t *bg_record);
-extern int remove_from_request_list();
 extern void *mult_free_block(void *args);
 extern void *mult_destroy_block(void *args);
 extern int free_block_list(List delete_list);
