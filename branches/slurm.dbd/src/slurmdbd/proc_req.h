@@ -38,10 +38,11 @@
 #ifndef _PROC_REQ_H
 #define _PROC_REQ_H
 
+#include "src/common/macros.h"
 #include "src/common/slurm_protocol_defs.h"
 
 /* Process an incoming RPC
  * RET SLURM_SUCCESS or error code */
-extern int proc_req(char *msg, uint32_t msg_size);
+extern int proc_req(char *msg, uint32_t msg_size, bool first);
 
 #endif /* !_PROC_REQ */

@@ -53,6 +53,9 @@
 
 #include "src/common/pack.h"
 
+/* Increment SLURM_DBD_VERSION if any of the RPCs change */
+#define SLURM_DBD_VERSION 01
+
 /* SLURM DBD message types */
 typedef enum {
 	DBD_INIT = 1400,
@@ -80,7 +83,8 @@ typedef struct dbd_get_jobs_msg {
 } dbd_get_jobs_msg_t;
 
 typedef struct dbd_init_msg {
-	uint32_t uid;		/* Add authentication information here */
+	uint16_t version;
+	/* Add authentication information here */
 } dbd_init_msg_t;
 
 typedef struct dbd_job_comp_msg {

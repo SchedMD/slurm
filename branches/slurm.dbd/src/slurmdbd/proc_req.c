@@ -35,6 +35,7 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#include "src/common/macros.h"
 #include "src/common/pack.h"
 #include "src/common/slurmdbd_defs.h"
 #include "src/common/slurm_protocol_api.h"
@@ -52,7 +53,7 @@ static int   _step_start(Buf bufferg);
 
 /* Process an incoming RPC
  * RET SLURM_SUCCESS or error code */
-extern int proc_req(char *msg, uint32_t msg_size)
+extern int proc_req(char *msg, uint32_t msg_size, bool first)
 {
 	int rc = SLURM_SUCCESS;
 	uint16_t msg_type;
@@ -61,35 +62,40 @@ extern int proc_req(char *msg, uint32_t msg_size)
 	buffer = create_buf(msg, msg_size);  /* puts msg into buffer struct */
 	safe_unpack16(&msg_type, buffer);
 
-	switch (msg_type) {
-	case DBD_INIT:
-		rc = _init_conn(buffer);
-		break;
-	case DBD_GET_JOBS:
-		rc = _get_jobs(buffer);
-		break;
-	case DBD_JOB_COMPLETE:
-		rc = _job_complete(buffer);
-		break;
-	case DBD_JOB_START:
-		rc = _job_start(buffer);
-		break;
-	case DBD_JOB_SUBMIT:
-		rc = _job_submit(buffer);
-		break;
-	case DBD_JOB_SUSPEND:
-		rc = _job_suspend(buffer);
-		break;
-	case DBD_STEP_COMPLETE:
-		rc = _step_complete(buffer);
-		break;
-	case DBD_STEP_START:
-		rc = _step_start(buffer);
-		break;
-	default:
-		error("invalid RPC msg_type=%d", msg_type);
+	if (first && (msg_type != DBD_INIT)) {
+		error("Initial RPC not DBD_INIT type (%d)", msg_type);
 		rc = EINVAL;
-		break;
+	} else {
+		switch (msg_type) {
+		case DBD_INIT:
+			rc = _init_conn(buffer);
+			break;
+		case DBD_GET_JOBS:
+			rc = _get_jobs(buffer);
+			break;
+		case DBD_JOB_COMPLETE:
+			rc = _job_complete(buffer);
+			break;
+		case DBD_JOB_START:
+			rc = _job_start(buffer);
+			break;
+		case DBD_JOB_SUBMIT:
+			rc = _job_submit(buffer);
+			break;
+		case DBD_JOB_SUSPEND:
+			rc = _job_suspend(buffer);
+			break;
+		case DBD_STEP_COMPLETE:
+			rc = _step_complete(buffer);
+			break;
+		case DBD_STEP_START:
+			rc = _step_start(buffer);
+			break;
+		default:
+			error("invalid RPC msg_type=%d", msg_type);
+			rc = EINVAL;
+			break;
+		}
 	}
 
 	xfer_buf_data(buffer);	/* delete buffer struct without xfree of msg */
@@ -117,7 +123,20 @@ static int _get_jobs(Buf buffer)
 
 static int _init_conn(Buf buffer)
 {
-	info("DBD_INIT message received");
+	dbd_init_msg_t *init_msg;
+
+	if (slurm_dbd_unpack_init_msg(&init_msg, buffer) != SLURM_SUCCESS) {
+		error("Failed to unpack DBD_INIT message");
+		return SLURM_ERROR;
+	}
+	if (init_msg->version != SLURM_DBD_VERSION) {
+		error("Incompatable RPC version (%d != %d)",
+			init_msg->version, SLURM_DBD_VERSION);
+		return SLURM_ERROR;
+	}
+
+	info("DBD_INIT: %u", init_msg->version);
+	slurm_dbd_free_init_msg(init_msg);
 	return SLURM_SUCCESS;
 }
 

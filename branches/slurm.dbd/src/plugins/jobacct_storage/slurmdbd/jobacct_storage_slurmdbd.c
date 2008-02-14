@@ -171,7 +171,7 @@ static int _send_init_msg(void)
 	Buf buffer = init_buf(1024);
 
 	pack16((uint16_t) DBD_INIT, buffer);
-	msg.uid  = 0;	/* just a placeholder */
+	msg.version  = SLURM_DBD_VERSION;
 	slurm_dbd_pack_init_msg(&msg, buffer);
 	rc = _send_msg(buffer);
 	free_buf(buffer);
@@ -316,8 +316,10 @@ static int _get_return_code(void)
 	else if (slurm_dbd_unpack_rc_msg(&msg, buffer) == SLURM_SUCCESS) {
 		rc = msg->return_code;
 		slurm_dbd_free_rc_msg(msg);
-	}
-info("slurmdbd: rc=%d", rc);
+		if (rc != SLURM_SUCCESS)
+			error("slurmdbd: DBD_RC is %d", rc);
+	} else
+		error("slurmdbd: unpack message error");
 
  unpack_error:
 	free_buf(buffer);

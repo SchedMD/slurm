@@ -127,7 +127,7 @@ unpack_error:
 void inline 
 slurm_dbd_pack_init_msg(dbd_init_msg_t *msg, Buf buffer)
 {
-	pack32(msg->uid, buffer);
+	pack16(msg->version, buffer);
 }
 
 int inline 
@@ -135,7 +135,7 @@ slurm_dbd_unpack_init_msg(dbd_init_msg_t **msg, Buf buffer)
 {
 	dbd_init_msg_t *msg_ptr = xmalloc(sizeof(dbd_init_msg_t));
 	*msg = msg_ptr;
-	safe_unpack32(&msg_ptr->uid, buffer);
+	safe_unpack16(&msg_ptr->version, buffer);
 	return SLURM_SUCCESS;
 
 unpack_error:

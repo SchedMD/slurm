@@ -178,7 +178,7 @@ static void * _service_connection(void *arg)
 	uint32_t nw_size, msg_size;
 	char *msg = NULL;
 	ssize_t msg_read, offset;
-	bool fini = false;
+	bool fini = false, first=true;
 	int rc;
 
 	debug2("Opened connection %d", conn->newsockfd);
@@ -214,10 +214,12 @@ static void * _service_connection(void *arg)
 			offset += msg_read;
 		}
 		if (msg_size == offset) {
-			rc = proc_req(msg, msg_size);
+			rc = proc_req(msg, msg_size, first);
+			first = false;
 			if (rc != SLURM_SUCCESS) {
 				error("Processing message from connection %d",
 				      conn->newsockfd);
+				fini = true;
 			}
 		} else {
 			rc = SLURM_ERROR;
