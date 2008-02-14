@@ -74,6 +74,7 @@ extern void free_slurmdbd_conf(void)
 static void _clear_slurmdbd_conf(void)
 {
 	if (slurmdbd_conf) {
+		xfree(slurmdbd_conf->auth_type);
 		xfree(slurmdbd_conf->dbd_addr);
 		xfree(slurmdbd_conf->dbd_host);
 		xfree(slurmdbd_conf->log_file);
@@ -92,6 +93,7 @@ static void _clear_slurmdbd_conf(void)
 extern int read_slurmdbd_conf(void)
 {
 	s_p_options_t options[] = {
+		{"AuthType", S_P_STRING},
 		{"DbdAddr", S_P_STRING},
 		{"DbdHost", S_P_STRING},
 		{"DbdPort", S_P_UINT16},
@@ -125,24 +127,13 @@ extern int read_slurmdbd_conf(void)
 		 	     conf_path);
 		}
 
-		if (!s_p_get_string(&slurmdbd_conf->dbd_host,
-				    "DbdHost", tbl)) {
-			error("slurmdbd.conf lacks DbdHost parameter");
-			slurmdbd_conf->dbd_host = xstrdup("localhost");
-		}
-		if (!s_p_get_string(&slurmdbd_conf->dbd_addr,
-				    "DbdAddr", tbl)) {
-			slurmdbd_conf->dbd_addr = 
-					xstrdup(slurmdbd_conf->dbd_host);
-		}
-		s_p_get_uint16(&slurmdbd_conf->dbd_port,
-				"DbdPort", tbl);
-		s_p_get_uint16(&slurmdbd_conf->debug_level,
-				"DebugLevel", tbl);
-		s_p_get_string(&slurmdbd_conf->log_file,
-				"LogFile", tbl);
-		s_p_get_string(&slurmdbd_conf->pid_file,
-				"PidFile", tbl);
+		s_p_get_string(&slurmdbd_conf->auth_type, "AuthType", tbl);
+		s_p_get_string(&slurmdbd_conf->dbd_host, "DbdHost", tbl);
+		s_p_get_string(&slurmdbd_conf->dbd_addr, "DbdAddr", tbl);
+		s_p_get_uint16(&slurmdbd_conf->dbd_port, "DbdPort", tbl);
+		s_p_get_uint16(&slurmdbd_conf->debug_level, "DebugLevel", tbl);
+		s_p_get_string(&slurmdbd_conf->log_file, "LogFile", tbl);
+		s_p_get_string(&slurmdbd_conf->pid_file, "PidFile", tbl);
 		s_p_get_string(&slurmdbd_conf->storage_password,
 				"StoragePassword", tbl);
 		s_p_get_string(&slurmdbd_conf->storage_user,
@@ -152,6 +143,14 @@ extern int read_slurmdbd_conf(void)
 	}
 
 	xfree(conf_path);
+	if (slurmdbd_conf->auth_type == NULL)
+		slurmdbd_conf->auth_type = xstrdup(DEFAULT_SLURMDBD_AUTHTYPE);
+	if (slurmdbd_conf->dbd_host == NULL) {
+		error("slurmdbd.conf lacks DbdHost parameter");
+		slurmdbd_conf->dbd_host = xstrdup("localhost");
+	}
+	if (slurmdbd_conf->dbd_addr == NULL)
+		slurmdbd_conf->dbd_addr = xstrdup(slurmdbd_conf->dbd_host);
 	if (slurmdbd_conf->pid_file == NULL)
 		slurmdbd_conf->pid_file = xstrdup(DEFAULT_SLURMDBD_PIDFILE);
 	if (slurmdbd_conf->dbd_port == 0)
@@ -164,6 +163,7 @@ extern int read_slurmdbd_conf(void)
 /* Log the current configuration using verbose() */
 extern void log_config(void)
 {
+	debug2("AuthType          = %s", slurmdbd_conf->auth_type);
 	debug2("DbdAddr           = %s", slurmdbd_conf->dbd_addr);
 	debug2("DbdHost           = %s", slurmdbd_conf->dbd_host);
 	debug2("DbdPort           = %u", slurmdbd_conf->dbd_port);

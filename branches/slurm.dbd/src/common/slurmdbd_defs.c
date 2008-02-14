@@ -86,6 +86,11 @@ void inline slurm_dbd_free_job_suspend_msg(dbd_job_suspend_msg_t *msg)
 	xfree(msg);
 }
 
+void inline slurm_dbd_free_rc_msg(dbd_rc_msg_t *msg)
+{
+	xfree(msg);
+}
+
 void inline slurm_dbd_free_step_complete_msg(dbd_step_comp_msg_t *msg)
 {
 	xfree(msg);
@@ -211,6 +216,26 @@ slurm_dbd_unpack_job_suspend_msg(dbd_job_suspend_msg_t **msg, Buf buffer)
 	dbd_job_suspend_msg_t *msg_ptr = xmalloc(sizeof(dbd_job_suspend_msg_t));
 	*msg = msg_ptr;
 	safe_unpack32(&msg_ptr->job_id, buffer);
+	return SLURM_SUCCESS;
+
+unpack_error:
+	xfree(msg_ptr);
+	*msg = NULL;
+	return SLURM_ERROR;
+}
+
+void inline 
+slurm_dbd_pack_rc_msg(dbd_rc_msg_t *msg, Buf buffer)
+{
+	pack32(msg->return_code, buffer);
+}
+
+int inline 
+slurm_dbd_unpack_rc_msg(dbd_rc_msg_t **msg, Buf buffer)
+{
+	dbd_rc_msg_t *msg_ptr = xmalloc(sizeof(dbd_rc_msg_t));
+	*msg = msg_ptr;
+	safe_unpack32(&msg_ptr->return_code, buffer);
 	return SLURM_SUCCESS;
 
 unpack_error:

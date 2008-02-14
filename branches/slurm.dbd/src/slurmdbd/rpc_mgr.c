@@ -48,6 +48,7 @@
 #include "src/common/log.h"
 #include "src/common/macros.h"
 #include "src/common/slurm_protocol_api.h"
+#include "src/common/slurmdbd_defs.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xsignal.h"
 #include "src/slurmdbd/proc_req.h"
@@ -58,7 +59,9 @@
 
 /* Local functions */
 static bool   _fd_readable(slurm_fd fd);
+static bool   _fd_writeable(slurm_fd fd);
 static void   _free_server_thread(pthread_t my_tid);
+static int    _send_resp(slurm_fd fd, int rc);
 static void * _service_connection(void *arg);
 static void   _sig_handler(int signal);
 static int    _wait_for_server_thread(void);
@@ -71,7 +74,7 @@ static pthread_mutex_t thread_count_lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t  thread_count_cond = PTHREAD_COND_INITIALIZER;
 
 typedef struct connection_arg {
-	int newsockfd;
+	slurm_fd newsockfd;
 } connection_arg_t;
 
 
@@ -176,6 +179,7 @@ static void * _service_connection(void *arg)
 	char *msg = NULL;
 	ssize_t msg_read, offset;
 	bool fini = false;
+	int rc;
 
 	debug2("Opened connection %d", conn->newsockfd);
 	while (!fini) {
@@ -210,12 +214,16 @@ static void * _service_connection(void *arg)
 			offset += msg_read;
 		}
 		if (msg_size == offset) {
-			if (proc_req(msg, msg_size) != SLURM_SUCCESS) {
+			rc = proc_req(msg, msg_size);
+			if (rc != SLURM_SUCCESS) {
 				error("Processing message from connection %d",
 				      conn->newsockfd);
 			}
-		} else
+		} else {
+			rc = SLURM_ERROR;
 			fini = true;
+		}
+		_send_resp(conn->newsockfd, rc);
 		xfree(msg);
 	}
 	if (slurm_close_accepted_conn(conn->newsockfd) < 0)
@@ -225,6 +233,48 @@ static void * _service_connection(void *arg)
 	xfree(arg);
 	_free_server_thread(pthread_self());
 	return NULL;
+}
+
+static int _send_resp(slurm_fd fd, int rc)
+{
+	uint32_t msg_size, nw_size;
+	ssize_t msg_wrote;
+	dbd_rc_msg_t msg;
+	char *out_buf;
+	Buf buffer;
+
+	if ((fd < 0) || (!_fd_writeable(fd)))
+		return SLURM_ERROR;
+
+	buffer = init_buf(1024);
+	pack16((uint16_t) DBD_RC, buffer);
+	msg.return_code  = rc;
+	slurm_dbd_pack_rc_msg(&msg, buffer);
+
+	msg_size = size_buf(buffer);
+	nw_size = htonl(msg_size);
+	if (!_fd_writeable(fd))
+		goto io_err;
+	msg_wrote = write(fd, &nw_size, sizeof(nw_size));
+	if (msg_wrote != sizeof(nw_size))
+		goto io_err;
+
+	out_buf = get_buf_data(buffer);
+	while (msg_size > 0) {
+		if (!_fd_writeable(fd))
+			goto io_err;
+		msg_wrote = write(fd, out_buf, msg_size);
+		if (msg_wrote <= 0)
+			goto io_err;
+		out_buf  += msg_wrote;
+		msg_size -= msg_wrote;
+	}
+	free_buf(buffer);
+	return SLURM_SUCCESS;
+
+io_err:
+	free_buf(buffer);
+	return SLURM_ERROR;
 }
 
 /* Wait until a file is readable, return false if can not be read */
@@ -260,6 +310,39 @@ static bool _fd_readable(slurm_fd fd)
 	return true;
 }
 
+/* Wait until a file is writeable, 
+ * RET false if can not be written to within 5 seconds */
+static bool _fd_writeable(slurm_fd fd)
+{
+	struct pollfd ufds;
+	int rc;
+
+	ufds.fd     = fd;
+	ufds.events = POLLOUT;
+	while (1) {
+		rc = poll(&ufds, 1, 5);
+		if ((errno == EINTR) || (errno == EAGAIN) || (rc == 0))
+			continue;
+		if (ufds.revents & POLLHUP) {
+			debug2("Connection %d closed", fd);
+			return false;
+		}
+		if (ufds.revents & POLLNVAL) {
+			error("Connection %d is invalid", fd);
+			return false;
+		}
+		if (ufds.revents & POLLERR) {
+			error("Connection %d experienced an error", fd);
+			return false;
+		}
+		if ((ufds.revents & POLLOUT) == 0) {
+			error("Connection %d events %d", fd, ufds.revents);
+			return false;
+		}
+		break;
+	}
+	return true;
+}
 /* Increment thread_count and don't return until its value is no larger 
  *	than MAX_THREAD_COUNT,
  * RET index of free index in slave_pthread_id or -1 to exit */
@@ -281,8 +364,11 @@ static int _wait_for_server_thread(void)
 				rc = i;
 				break;
 			}
-			if (rc == -1)
+			if (rc == -1) {
+				/* thread_count and slave_thread_id 
+				 * out of sync */
 				fatal("No free slave_thread_id");
+			}
 			break;
 		} else {
 			/* wait for state change and retry, 

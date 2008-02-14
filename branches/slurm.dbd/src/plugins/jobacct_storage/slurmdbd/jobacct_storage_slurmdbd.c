@@ -51,6 +51,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <slurm/slurm_errno.h>
+#include <sys/poll.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
@@ -68,9 +69,14 @@ static slurm_fd slurmdbd_fd   = -1;
 static pthread_mutex_t slurmdbd_lock = PTHREAD_MUTEX_INITIALIZER;
 
 static void   _close_slurmdbd_fd(void);
+static bool   _fd_readable(slurm_fd fd);
+static bool   _fd_writeable(slurm_fd fd);
 static char * _get_conf_path(void);
+static int    _get_return_code(void);
 static void   _open_slurmdbd_fd(void);
+static Buf    _recv_msg(void);
 static int    _read_slurmdbd_conf(void);
+static void   _reopen_slurmdbd_fd(void);
 static int    _send_init_msg(void);
 static int    _send_msg(Buf buffer);
 
@@ -181,10 +187,19 @@ static void _close_slurmdbd_fd(void)
 	}
 }
 
+/* Reopen the Slurm DBD connection due to some error */
+static void _reopen_slurmdbd_fd(void)
+{
+	info("slurmdbd: reopening connection");
+	_close_slurmdbd_fd();
+	_open_slurmdbd_fd();
+}
+
 /* Read the slurmdbd.conf file to get the DbdPort value */
 static int _read_slurmdbd_conf(void)
 {
 	s_p_options_t options[] = {
+		{"AuthType", S_P_STRING},
 		{"DbdAddr", S_P_STRING},
 		{"DbdHost", S_P_STRING},
 		{"DbdPort", S_P_UINT16},
@@ -215,9 +230,8 @@ static int _read_slurmdbd_conf(void)
 			error("slurmdbd.conf lacks DbdHost parameter");
 			slurmdbd_host = xstrdup("localhost");
 		}
-		if (!s_p_get_string(&slurmdbd_addr, "DbdAddr", tbl)) {
+		if (!s_p_get_string(&slurmdbd_addr, "DbdAddr", tbl))
 			slurmdbd_addr = xstrdup(slurmdbd_host);
-		}
 		if (!s_p_get_uint16(&slurmdbd_port, "DbdPort", tbl))
 			slurmdbd_port = SLURMDBD_PORT;
 
@@ -263,6 +277,8 @@ static int _send_msg(Buf buffer)
 	if (slurmdbd_fd < 0)
 		return SLURM_ERROR;
 
+	if (!_fd_writeable(slurmdbd_fd))
+		return SLURM_ERROR;
 	msg_size = size_buf(buffer);
 	nw_size = htonl(msg_size);
 	msg_wrote = write(slurmdbd_fd, &nw_size, sizeof(nw_size));
@@ -271,6 +287,8 @@ static int _send_msg(Buf buffer)
 
 	msg = get_buf_data(buffer);
 	while (msg_size > 0) {
+		if (!_fd_writeable(slurmdbd_fd))
+			return SLURM_ERROR;
 		msg_wrote = write(slurmdbd_fd, msg, msg_size);
 		if (msg_wrote <= 0)
 			return SLURM_ERROR;
@@ -279,6 +297,153 @@ static int _send_msg(Buf buffer)
 	}
 
 	return SLURM_SUCCESS;
+}
+
+static int _get_return_code(void)
+{
+	Buf buffer;
+	uint16_t msg_type;
+	dbd_rc_msg_t *msg;
+	int rc = SLURM_ERROR;
+
+	buffer = _recv_msg();
+	if (buffer == NULL)
+		return rc;
+
+	safe_unpack16(&msg_type, buffer);
+	if (msg_type != DBD_RC)
+		error("slurmdbd: bad message type %d != DBD_RC", msg_type);
+	else if (slurm_dbd_unpack_rc_msg(&msg, buffer) == SLURM_SUCCESS) {
+		rc = msg->return_code;
+		slurm_dbd_free_rc_msg(msg);
+	}
+info("slurmdbd: rc=%d", rc);
+
+ unpack_error:
+	free_buf(buffer);
+	return rc;
+}
+
+static Buf _recv_msg(void)
+{
+	uint32_t msg_size, nw_size;
+	char *msg;
+	ssize_t msg_read, offset;
+	Buf buffer;
+
+	if (slurmdbd_fd < 0)
+		return NULL;
+
+	if (!_fd_readable(slurmdbd_fd))
+		return NULL;
+	msg_read = read(slurmdbd_fd, &nw_size, sizeof(nw_size));
+	if (msg_read != sizeof(nw_size))
+		return NULL;
+	msg_size = ntohl(nw_size);
+	if ((msg_size < 2) || (msg_size > 1000000)) {
+		error("slurmdbd: Invalid msg_size (%u)");
+		return NULL;
+	}
+
+	msg = xmalloc(msg_size);
+	offset = 0;
+	while (msg_size > offset) {
+		if (!_fd_readable(slurmdbd_fd))
+			break;		/* problem with this socket */
+		msg_read = read(slurmdbd_fd, (msg + offset), 
+				(msg_size - offset));
+		if (msg_read <= 0) {
+			error("slurmdbd: read: %m");
+			break;
+		}
+		offset += msg_read;
+	}
+	if (msg_size != offset) {
+		error("slurmdbd: only read %d of %d bytes", offset, msg_size);
+		xfree(msg);
+		return NULL;
+	}
+
+	buffer = create_buf(msg, msg_size);
+	if (buffer == NULL)
+		fatal("create_buf: malloc failure");
+	return buffer;
+}
+
+/* Wait until a file is readable, return false if can not be read */
+static bool _fd_readable(slurm_fd fd)
+{
+	struct pollfd ufds;
+	static int msg_timeout = -1;
+	int rc;
+
+	if (msg_timeout == -1)
+		msg_timeout = slurm_get_msg_timeout() * 1000;
+
+	ufds.fd     = fd;
+	ufds.events = POLLIN;
+	while (1) {
+		rc = poll(&ufds, 1, -1);
+		if ((errno == EINTR) || (errno == EAGAIN) || (rc == 0))
+			continue;
+		if (ufds.revents & POLLHUP) {
+			debug2("SlurmDBD connection closed");
+			return false;
+		}
+		if (ufds.revents & POLLNVAL) {
+			error("SlurmDBD connection is invalid");
+			return false;
+		}
+		if (ufds.revents & POLLERR) {
+			error("SlurmDBD connection experienced an error");
+			return false;
+		}
+		if ((ufds.revents & POLLIN) == 0) {
+			error("SlurmDBD connection %d events %d", 
+				fd, ufds.revents);
+			return false;
+		}
+		break;
+	}
+	return true;
+}
+
+/* Wait until a file is writable, return false if can not be written to */
+static bool _fd_writeable(slurm_fd fd)
+{
+	struct pollfd ufds;
+	static int msg_timeout = -1;
+	int rc;
+
+	if (msg_timeout == -1)
+		msg_timeout = slurm_get_msg_timeout() * 1000;
+
+	ufds.fd     = fd;
+	ufds.events = POLLOUT;
+	while (1) {
+		rc = poll(&ufds, 1, -1);
+		if ((errno == EINTR) || (errno == EAGAIN) || (rc == 0))
+			continue;
+		if (ufds.revents & POLLHUP) {
+			debug2("SlurmDBD connection closed");
+			return false;
+		}
+		if (ufds.revents & POLLNVAL) {
+			error("SlurmDBD connection is invalid");
+			return false;
+		}
+		if (ufds.revents & POLLERR) {
+			error("SlurmDBD connection experienced an error: %m");
+			return false;
+		}
+		if ((ufds.revents & POLLOUT) == 0) {
+			error("SlurmDBD connection %d events %d", 
+				fd, ufds.revents);
+			return false;
+		}
+		break;
+	}
+	return true;
 }
 
 /* 
@@ -307,11 +472,17 @@ extern int jobacct_storage_p_job_start(struct job_record *job_ptr)
 	dbd_job_start_msg_t msg;
 	Buf buffer = init_buf(1024);
 
+	slurm_mutex_lock(&slurmdbd_lock);
 	pack16((uint16_t) DBD_JOB_START, buffer);
 	msg.job_id  = job_ptr->job_id;
 	slurm_dbd_pack_job_start_msg(&msg, buffer);
 	rc = _send_msg(buffer);
 	free_buf(buffer);
+	if (rc == SLURM_SUCCESS)
+		rc = _get_return_code();
+	if (rc != SLURM_SUCCESS)
+		_reopen_slurmdbd_fd();
+	slurm_mutex_unlock(&slurmdbd_lock);
 	return rc;
 }
 
@@ -324,11 +495,17 @@ extern int jobacct_storage_p_job_complete(struct job_record *job_ptr)
 	dbd_job_comp_msg_t msg;
 	Buf buffer = init_buf(1024);
 
+	slurm_mutex_lock(&slurmdbd_lock);
 	pack16((uint16_t) DBD_JOB_COMPLETE, buffer);
 	msg.job_id  = job_ptr->job_id;
 	slurm_dbd_pack_job_complete_msg(&msg, buffer);
 	rc = _send_msg(buffer);
 	free_buf(buffer);
+	if (rc == SLURM_SUCCESS)
+		rc = _get_return_code();
+	if (rc != SLURM_SUCCESS)
+		_reopen_slurmdbd_fd();
+	slurm_mutex_unlock(&slurmdbd_lock);
 	return rc;
 }
 
@@ -341,12 +518,18 @@ extern int jobacct_storage_p_step_start(struct step_record *step_ptr)
 	dbd_step_start_msg_t msg;
 	Buf buffer = init_buf(1024);
 
+	slurm_mutex_lock(&slurmdbd_lock);
 	pack16((uint16_t) DBD_STEP_START, buffer);
 	msg.job_id  = step_ptr->job_ptr->job_id;
 	msg.step_id = step_ptr->step_id;
 	slurm_dbd_pack_step_start_msg(&msg, buffer);
 	rc = _send_msg(buffer);
 	free_buf(buffer);
+	if (rc == SLURM_SUCCESS)
+		rc = _get_return_code();
+	if (rc != SLURM_SUCCESS)
+		_reopen_slurmdbd_fd();
+	slurm_mutex_unlock(&slurmdbd_lock);
 	return rc;
 }
 
@@ -359,12 +542,18 @@ extern int jobacct_storage_p_step_complete(struct step_record *step_ptr)
 	dbd_step_comp_msg_t msg;
 	Buf buffer = init_buf(1024);
 
+	slurm_mutex_lock(&slurmdbd_lock);
 	pack16((uint16_t) DBD_STEP_COMPLETE, buffer);
 	msg.job_id  = step_ptr->job_ptr->job_id;
 	msg.step_id = step_ptr->step_id;
 	slurm_dbd_pack_step_complete_msg(&msg, buffer);
 	rc = _send_msg(buffer);
 	free_buf(buffer);
+	if (rc == SLURM_SUCCESS)
+		rc = _get_return_code();
+	if (rc != SLURM_SUCCESS)
+		_reopen_slurmdbd_fd();
+	slurm_mutex_unlock(&slurmdbd_lock);
 	return rc;
 }
 
@@ -377,11 +566,17 @@ extern int jobacct_storage_p_suspend(struct job_record *job_ptr)
 	dbd_job_suspend_msg_t msg;
 	Buf buffer = init_buf(1024);
 
+	slurm_mutex_lock(&slurmdbd_lock);
 	pack16((uint16_t) DBD_JOB_SUSPEND, buffer);
 	msg.job_id = job_ptr->job_id;
 	slurm_dbd_pack_job_suspend_msg(&msg, buffer);
 	rc = _send_msg(buffer);
 	free_buf(buffer);
+	if (rc == SLURM_SUCCESS)
+		rc = _get_return_code();
+	if (rc != SLURM_SUCCESS)
+		_reopen_slurmdbd_fd();
+	slurm_mutex_unlock(&slurmdbd_lock);
 	return rc;
 }
 
@@ -395,14 +590,6 @@ extern void jobacct_storage_p_get_jobs(List job_list,
 					List selected_parts,
 					void *params)
 {
-	dbd_get_jobs_msg_t msg;
-	Buf buffer = init_buf(1024);
-
-	pack16((uint16_t) DBD_GET_JOBS, buffer);
-	msg.job_id = NO_VAL;
-	slurm_dbd_pack_get_jobs_msg(&msg, buffer);
-	_send_msg(buffer);
-	free_buf(buffer);
 	return;
 }
 

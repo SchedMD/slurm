@@ -54,11 +54,13 @@
 
 #include <time.h>
 
+#define DEFAULT_SLURMDBD_AUTHTYPE	"auth/none"
 #define DEFAULT_SLURMDBD_PIDFILE	"/var/run/slurmdbd.pid"
 
 /* SlurmDBD configuration parameters */
 typedef struct slurm_dbd_conf {
 	time_t		last_update;	 	/* time slurmdbd.conf read	*/
+	char *		auth_type;		/* authentication mechanism	*/
 	char *		dbd_addr;		/* network address of Slurm DBD	*/
 	char *		dbd_host;		/* hostname of Slurm DBD	*/
 	uint16_t	dbd_port;		/* port number for RPCs to DBD	*/
