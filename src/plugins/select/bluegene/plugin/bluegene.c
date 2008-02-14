@@ -59,8 +59,6 @@ List bg_found_block_list = NULL;  	/* found bg blocks already on system */
 List bg_job_block_list = NULL;  	/* jobs running in these blocks */
 List bg_booted_block_list = NULL;  	/* blocks that are booted */
 List bg_freeing_list = NULL;  	        /* blocks that being freed */
-List bg_request_list = NULL;  	        /* list of request that can't 
-					   be made just yet */
 
 List bg_blrtsimage_list = NULL;
 List bg_linuximage_list = NULL;
@@ -80,7 +78,6 @@ uint16_t bridge_api_verb = 0;
 bool agent_fini = false;
 time_t last_bg_update;
 pthread_mutex_t block_state_mutex = PTHREAD_MUTEX_INITIALIZER;
-pthread_mutex_t request_list_mutex = PTHREAD_MUTEX_INITIALIZER;
 int num_block_to_free = 0;
 int num_block_freed = 0;
 int blocks_are_created = 0;
@@ -185,13 +182,6 @@ extern void fini_bg(void)
 	while(destroy_cnt > 0)
 		usleep(1000);
 	
-	slurm_mutex_lock(&request_list_mutex);
-	if (bg_request_list) {
-		list_destroy(bg_request_list);
-		bg_request_list = NULL;
-	}
-	slurm_mutex_unlock(&request_list_mutex);
-		
 	if(bg_blrtsimage_list) {
 		list_destroy(bg_blrtsimage_list);
 		bg_blrtsimage_list = NULL;
@@ -1617,31 +1607,6 @@ extern int remove_from_bg_list(List my_bg_list, bg_record_t *bg_record)
 	return rc;
 }
 
-extern int remove_from_request_list()
-{
-	ba_request_t *try_request = NULL; 
-	ListIterator itr;
-	int rc = SLURM_ERROR;
-
-	/* 
-	   remove all requests out of the list.
-	*/
-		
-	slurm_mutex_lock(&request_list_mutex);
-	itr = list_iterator_create(bg_request_list);
-	while ((try_request = list_next(itr)) != NULL) {
-		debug3("removing size %d", 
-		       try_request->procs);
-		list_remove(itr);
-		delete_ba_request(try_request);
-		//list_iterator_reset(itr);
-		rc = SLURM_SUCCESS;
-	}
-	list_iterator_destroy(itr);
-	slurm_mutex_unlock(&request_list_mutex);
-	return rc;
-}
-
 extern int bg_free_block(bg_record_t *bg_record)
 {
 #ifdef HAVE_BG_FILES
@@ -1790,8 +1755,6 @@ extern void *mult_destroy_block(void *args)
 		 * tool such as smap it will be in a nice order
 		 */
 		sort_bg_record_inc_size(bg_freeing_list);
-		
-		remove_from_request_list();
 		
 		slurm_mutex_lock(&block_state_mutex);
 		if(remove_from_bg_list(bg_job_block_list, bg_record) 
@@ -2523,12 +2486,6 @@ static void _set_bg_lists()
 		list_destroy(bg_list);
 	bg_list = list_create(destroy_bg_record);
 
-	slurm_mutex_lock(&request_list_mutex);
-	if(bg_request_list) 
-		list_destroy(bg_request_list);
-	bg_request_list = list_create(delete_ba_request);
-	slurm_mutex_unlock(&request_list_mutex);
-	
 	slurm_mutex_unlock(&block_state_mutex);	
 	
 	if(bg_blrtsimage_list)
