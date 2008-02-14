@@ -372,7 +372,8 @@ static Buf _recv_msg(void)
 	return buffer;
 }
 
-/* Wait until a file is readable, return false if can not be read */
+/* Wait until a file is readable, 
+ * RET false if can not be read */
 static bool _fd_readable(slurm_fd fd)
 {
 	struct pollfd ufds;
@@ -386,7 +387,7 @@ static bool _fd_readable(slurm_fd fd)
 	ufds.events = POLLIN;
 	while (1) {
 		rc = poll(&ufds, 1, -1);
-		if ((errno == EINTR) || (errno == EAGAIN) || (rc == 0))
+		if ((rc == 0) && ((errno == EINTR) || (errno == EAGAIN)))
 			continue;
 		if (ufds.revents & POLLHUP) {
 			debug2("SlurmDBD connection closed");
@@ -410,21 +411,18 @@ static bool _fd_readable(slurm_fd fd)
 	return true;
 }
 
-/* Wait until a file is writable, return false if can not be written to */
+/* Wait until a file is writable, 
+ * RET false if can not be written to within 5 seconds */
 static bool _fd_writeable(slurm_fd fd)
 {
 	struct pollfd ufds;
-	static int msg_timeout = -1;
 	int rc;
-
-	if (msg_timeout == -1)
-		msg_timeout = slurm_get_msg_timeout() * 1000;
 
 	ufds.fd     = fd;
 	ufds.events = POLLOUT;
 	while (1) {
-		rc = poll(&ufds, 1, -1);
-		if ((errno == EINTR) || (errno == EAGAIN) || (rc == 0))
+		rc = poll(&ufds, 1, 5000);
+		if ((rc == 0) && ((errno == EINTR) || (errno == EAGAIN)))
 			continue;
 		if (ufds.revents & POLLHUP) {
 			debug2("SlurmDBD connection closed");
