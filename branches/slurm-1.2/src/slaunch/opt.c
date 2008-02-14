@@ -1145,6 +1145,9 @@ void set_options(const int argc, char **argv)
 #ifdef HAVE_BG
 			info("\tThe nodelist option should only be used if\n"
 			     "\tthe block you are asking for can be created.\n"
+			     "\tIt should also include all the midplanes you\n"
+			     "\twant to use, partial lists may not\n"
+			     "\twork correctly.\n"
 			     "\tPlease consult smap before using this option\n"
 			     "\tor your job may be stuck with no way to run.");
 #endif

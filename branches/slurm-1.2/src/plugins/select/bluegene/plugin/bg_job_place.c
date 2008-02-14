@@ -719,7 +719,11 @@ try_again:
 		request.linuximage = linuximage;
 		request.mloaderimage = mloaderimage;
 		request.ramdiskimage = ramdiskimage;
-		request.avail_node_bitmap = slurm_block_bitmap;
+		if(job_ptr->details->req_node_bitmap) 
+			request.avail_node_bitmap = 
+				job_ptr->details->req_node_bitmap;
+		else
+			request.avail_node_bitmap = slurm_block_bitmap;
 
 		debug("trying with all free blocks");
 		if(create_dynamic_block(&request, NULL) == SLURM_ERROR) {
@@ -814,7 +818,11 @@ try_again:
 			request.linuximage = linuximage;
 			request.mloaderimage = mloaderimage;
 			request.ramdiskimage = ramdiskimage;
-			request.avail_node_bitmap = slurm_block_bitmap;
+			if(job_ptr->details->req_node_bitmap) 
+				request.avail_node_bitmap = 
+					job_ptr->details->req_node_bitmap;
+			else
+				request.avail_node_bitmap = slurm_block_bitmap;
 			
 			/* 1- try empty space
 			   2- we see if we can create one in the 
