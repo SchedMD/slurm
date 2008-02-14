@@ -64,9 +64,6 @@ static int _get_user_groups(uint32_t user_id, uint32_t group_id,
 			     gid_t *groups, int max_groups, int *ngroups);
 static int _test_image_perms(char *image_name, List image_list, 
 			      struct job_record* job_ptr);
-static int _check_requests(uint16_t *start, uint32_t req_procs, int start_req);
-static int _add_to_request_list(uint16_t *start,
-				uint32_t req_procs, int start_req);
 static int _check_images(struct job_record* job_ptr,
 			 char **blrtsimage, char **linuximage,
 			 char **mloaderimage, char **ramdiskimage);
@@ -295,77 +292,6 @@ static int _test_image_perms(char *image_name, List image_list,
 	list_iterator_destroy(itr);
 
 	return allow;
-}
-
-static int _check_requests(uint16_t *start, 
-			   uint32_t req_procs, int start_req)
-{
-	int found = 0;
-	ListIterator itr = NULL;
-	ba_request_t *try_request = NULL; 
-	
-	slurm_mutex_lock(&request_list_mutex);
-	itr = list_iterator_create(bg_request_list);
-
-	while ((try_request = list_next(itr))) {
-		if(start_req) {
-			if ((try_request->start[X] != start[X])
-			    || (try_request->start[Y] != start[Y])
-			    || (try_request->start[Z] != start[Z])) {
-				debug4("got %c%c%c looking for %c%c%c",
-				       alpha_num[try_request->start[X]],
-				       alpha_num[try_request->start[Y]],
-				       alpha_num[try_request->start[Z]],
-				       alpha_num[start[X]],
-				       alpha_num[start[Y]],
-				       alpha_num[start[Z]]);
-				continue;
-			}
-			debug3("found %c%c%c looking for %c%c%c",
-			       alpha_num[try_request->start[X]],
-			       alpha_num[try_request->start[Y]],
-			       alpha_num[try_request->start[Z]],
-			       alpha_num[start[X]],
-			       alpha_num[start[Y]],
-			       alpha_num[start[Z]]);
-		}
-
-		if(try_request->procs == req_procs) {
-			debug("already tried to create but can't right now.");
-			found = 1;
-			break;
-		}				
-	}
-	list_iterator_destroy(itr);
-	slurm_mutex_unlock(&request_list_mutex);
-
-	return found;
-}
-
-static int _add_to_request_list(uint16_t *start, 
-				uint32_t req_procs, int start_req) 
-{
-	ba_request_t *try_request = NULL; 
-
-	/* 
-	   add request to list so we don't try again until 
-	   something happens like a job finishing or 
-	   something so we can try again 
-	*/
-	debug2("adding request for %d", req_procs);
-	try_request = xmalloc(sizeof(ba_request_t));
-	try_request->procs = req_procs;
-	try_request->save_name = NULL;
-	try_request->elongate_geos = NULL;
-	try_request->start_req = start_req;
-
-	memcpy(try_request->start, start, 
-	       sizeof(uint16_t) * BA_SYSTEM_DIMENSIONS);
-	slurm_mutex_lock(&request_list_mutex);
-	list_push(bg_request_list, try_request);
-	slurm_mutex_unlock(&request_list_mutex);
-
-	return SLURM_SUCCESS;
 }
 
 static int _check_images(struct job_record* job_ptr,
@@ -826,19 +752,6 @@ static int _find_best_block_match(List block_list,
 	if(start[X] != (uint16_t)NO_VAL)
 		start_req = 1;
 
-	if((num_unused_cpus != total_cpus) && !test_only) {
-		/* 
-		   see if we have already tried to create this 
-		   size but couldn't make it right now no reason 
-		   to try again 
-		*/
-		if(_check_requests(start, req_procs, start_req)) {
-			if(test_only)
-				return SLURM_SUCCESS;
-			else
-				return SLURM_ERROR;
-		}
-	}
 	select_g_get_jobinfo(job_ptr->select_jobinfo,
 			     SELECT_DATA_CONN_TYPE, &conn_type);
 	select_g_get_jobinfo(job_ptr->select_jobinfo,
@@ -946,7 +859,11 @@ static int _find_best_block_match(List block_list,
 	request.linuximage = linuximage;
 	request.mloaderimage = mloaderimage;
 	request.ramdiskimage = ramdiskimage;
-	request.avail_node_bitmap = slurm_block_bitmap;
+	if(job_ptr->details->req_node_bitmap) 
+		request.avail_node_bitmap = 
+			job_ptr->details->req_node_bitmap;
+	else
+		request.avail_node_bitmap = slurm_block_bitmap;
 
 	select_g_get_jobinfo(job_ptr->select_jobinfo,
 			     SELECT_DATA_MAX_PROCS, &max_procs);
@@ -1016,15 +933,6 @@ static int _find_best_block_match(List block_list,
 			continue;
 		}
 		
-		if(bluegene_layout_mode != LAYOUT_DYNAMIC) {
-			if(test_only) {
-				_add_to_request_list(start,
-						     req_procs,
-						     start_req);
-			}
-			goto no_match;
-		}
-
 		if(create_try)
 			goto no_match;
 		
@@ -1077,9 +985,6 @@ static int _find_best_block_match(List block_list,
 					destroy_bg_record(bg_record);
 				}
 				list_destroy(new_blocks);
-				_add_to_request_list(start,
-						     req_procs,
-						     start_req);
 				break;
 			}
 			goto end_it;

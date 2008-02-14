@@ -111,6 +111,8 @@ extern List create_dynamic_block(List block_list,
 		int x,y,z;
 		char *nodes = NULL;
 		bitstr_t *bitmap = bit_alloc(node_record_count);
+		int start[BA_SYSTEM_DIMENSIONS];
+		int end[BA_SYSTEM_DIMENSIONS];
 		
 		/* we want the bps that aren't in this partition to
 		 * mark them as used
@@ -119,12 +121,11 @@ extern List create_dynamic_block(List block_list,
 		bit_not(bitmap);
 		nodes = bitmap2node_name(bitmap);
 		
+		//info("not using %s", nodes);
 		while(nodes[j] != '\0') {
 			if ((nodes[j] == '[' || nodes[j] == ',')
 			    && (nodes[j+8] == ']' || nodes[j+8] == ',')
 			    && (nodes[j+4] == 'x' || nodes[j+4] == '-')) {
-				int start[BA_SYSTEM_DIMENSIONS];
-				int end[BA_SYSTEM_DIMENSIONS];
 
 				j++;
 				number = xstrntol(nodes + j,
@@ -183,6 +184,7 @@ extern List create_dynamic_block(List block_list,
 
 				if(nodes[j] != ',')
 					break;
+				j--;
 			}
 			j++;
 		}

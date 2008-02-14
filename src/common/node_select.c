@@ -1177,16 +1177,20 @@ extern char *select_g_sprint_jobinfo(select_jobinfo_t jobinfo,
 			sprintf(start_char, "None");
 		else {
 			snprintf(start_char, sizeof(start_char), 
-				"%1ux%1ux%1u", jobinfo->start[0],
-				jobinfo->start[1], jobinfo->start[2]);
+				"%cx%cx%c",
+				 alpha_num[jobinfo->start[0]],
+				 alpha_num[jobinfo->start[1]],
+				 alpha_num[jobinfo->start[2]]);
 		} 
 		snprintf(buf, size, 
-			 "%7.7s %6.6s %6.6s %9s    %1ux%1ux%1u %5s %-16s",
+			 "%7.7s %6.6s %6.6s %9s    %cx%cx%c %5s %-16s",
 			 _job_conn_type_string(jobinfo->conn_type),
 			 _yes_no_string(jobinfo->reboot),
 			 _yes_no_string(jobinfo->rotate),
 			 max_procs_char,
-			 geometry[0], geometry[1], geometry[2],
+			 alpha_num[geometry[0]],
+			 alpha_num[geometry[1]],
+			 alpha_num[geometry[2]],
 			 start_char, jobinfo->bg_block_id);
 		break;
 	case SELECT_PRINT_MIXED:
@@ -1200,18 +1204,22 @@ extern char *select_g_sprint_jobinfo(select_jobinfo_t jobinfo,
 			sprintf(start_char, "None");
 		else {
 			snprintf(start_char, sizeof(start_char),
-				"%1ux%1ux%1u", jobinfo->start[0],
-				jobinfo->start[1], jobinfo->start[2]);
+				"%cx%cx%c",
+				 alpha_num[jobinfo->start[0]],
+				 alpha_num[jobinfo->start[1]],
+				 alpha_num[jobinfo->start[2]]);
 		}
 		
 		snprintf(buf, size, 
 			 "Connection=%s Reboot=%s Rotate=%s MaxProcs=%s "
-			 "Geometry=%1ux%1ux%1u Start=%s Block_ID=%s",
+			 "Geometry=%cx%cx%c Start=%s Block_ID=%s",
 			 _job_conn_type_string(jobinfo->conn_type),
 			 _yes_no_string(jobinfo->reboot),
 			 _yes_no_string(jobinfo->rotate),
 			 max_procs_char,
-			 geometry[0], geometry[1], geometry[2],
+			 alpha_num[geometry[0]],
+			 alpha_num[geometry[1]],
+			 alpha_num[geometry[2]],
 			 start_char, jobinfo->bg_block_id);
 		break;
 	case SELECT_PRINT_BG_ID:
@@ -1237,16 +1245,20 @@ extern char *select_g_sprint_jobinfo(select_jobinfo_t jobinfo,
 			 _yes_no_string(jobinfo->rotate));
 		break;
 	case SELECT_PRINT_GEOMETRY:
-		snprintf(buf, size, "%1ux%1ux%1u",
-			 geometry[0], geometry[1], geometry[2]);
+		snprintf(buf, size, "%cx%cx%c",
+			 alpha_num[geometry[0]],
+			 alpha_num[geometry[1]],
+			 alpha_num[geometry[2]]);
 		break;
 	case SELECT_PRINT_START:
 		if (jobinfo->start[0] == (uint16_t) NO_VAL)
 			sprintf(buf, "None");
 		else {
 			snprintf(buf, size, 
-				 "%1ux%1ux%1u", jobinfo->start[0],
-				 jobinfo->start[1], jobinfo->start[2]);
+				 "%cx%cx%c",
+				 alpha_num[jobinfo->start[0]],
+				 alpha_num[jobinfo->start[1]],
+				 alpha_num[jobinfo->start[2]]);
 		} 
 	case SELECT_PRINT_MAX_PROCS:
 		if (jobinfo->max_procs == NO_VAL)

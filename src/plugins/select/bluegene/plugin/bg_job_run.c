@@ -594,9 +594,6 @@ static void _term_agent(bg_update_t *bg_update_ptr)
 		      bg_record->bg_block_id,
 		      bg_record->user_name);
 
-		if(bluegene_layout_mode == LAYOUT_DYNAMIC) 
-			remove_from_request_list();
-		
 		if(job_remove_failed) {
 			char time_str[32];
 			slurm_make_time_str(&now, time_str, sizeof(time_str));
