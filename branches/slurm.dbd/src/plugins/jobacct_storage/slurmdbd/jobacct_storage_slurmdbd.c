@@ -53,9 +53,11 @@
 #include <slurm/slurm_errno.h>
 #include <sys/poll.h>
 #include <sys/stat.h>
+#include <sys/time.h>
 #include <sys/types.h>
 #include <unistd.h>
 
+#include "src/common/fd.h"
 #include "src/common/pack.h"
 #include "src/common/slurmdbd_defs.h"
 #include "src/common/xstring.h"
@@ -70,7 +72,7 @@ static pthread_mutex_t slurmdbd_lock = PTHREAD_MUTEX_INITIALIZER;
 
 static void   _close_slurmdbd_fd(void);
 static bool   _fd_readable(slurm_fd fd);
-static bool   _fd_writeable(slurm_fd fd);
+static int    _fd_writeable(slurm_fd fd);
 static char * _get_conf_path(void);
 static int    _get_return_code(void);
 static void   _open_slurmdbd_fd(void);
@@ -79,6 +81,7 @@ static int    _read_slurmdbd_conf(void);
 static void   _reopen_slurmdbd_fd(void);
 static int    _send_init_msg(void);
 static int    _send_msg(Buf buffer);
+static int    _tot_wait (struct timeval *start_time);
 
 /*
  * These variables are required by the generic plugin interface.  If they
@@ -158,6 +161,8 @@ static void _open_slurmdbd_fd(void)
 			slurmdbd_fd = slurm_open_msg_conn(&dbd_addr);
 			if (slurmdbd_fd < 0)
 				error("slurmdbd: slurm_open_msg_conn: %m");
+			else
+				fd_set_nonblocking(slurmdbd_fd);
 		}
 	}
 	if (slurmdbd_fd >= 0)
@@ -195,7 +200,7 @@ static void _reopen_slurmdbd_fd(void)
 	_open_slurmdbd_fd();
 }
 
-/* Read the slurmdbd.conf file to get the DbdPort value */
+/* Read the slurmdbd.conf file to get the DbdAddr and DbdPort values */
 static int _read_slurmdbd_conf(void)
 {
 	s_p_options_t options[] = {
@@ -271,15 +276,23 @@ static char * _get_conf_path(void)
 static int _send_msg(Buf buffer)
 {
 	uint32_t msg_size, nw_size;
-	char *msg;
+	char *msg, tmp[1];
 	ssize_t msg_wrote;
+	int rc;
 
 	if (slurmdbd_fd < 0)
 		return SLURM_ERROR;
 
-	if (!_fd_writeable(slurmdbd_fd))
+	rc =_fd_writeable(slurmdbd_fd);
+	if (rc == -1) {
+re_open:	/* SlurmDBD shutdown, try to reopen a connection now */
+		_reopen_slurmdbd_fd();
+		rc = _fd_writeable(slurmdbd_fd);
+	}
+	if (rc < 1)
 		return SLURM_ERROR;
-	msg_size = size_buf(buffer);
+
+	msg_size = get_buf_offset(buffer);
 	nw_size = htonl(msg_size);
 	msg_wrote = write(slurmdbd_fd, &nw_size, sizeof(nw_size));
 	if (msg_wrote != sizeof(nw_size))
@@ -287,7 +300,10 @@ static int _send_msg(Buf buffer)
 
 	msg = get_buf_data(buffer);
 	while (msg_size > 0) {
-		if (!_fd_writeable(slurmdbd_fd))
+		rc = _fd_writeable(slurmdbd_fd);
+		if (rc == -1)
+			goto re_open;
+		if (rc < 1)
 			return SLURM_ERROR;
 		msg_wrote = write(slurmdbd_fd, msg, msg_size);
 		if (msg_wrote <= 0)
@@ -372,21 +388,36 @@ static Buf _recv_msg(void)
 	return buffer;
 }
 
+/* Return time in msec since "start time" */
+static int _tot_wait (struct timeval *start_time)
+{
+	struct timeval end_time;
+	int msec_delay;
+
+	gettimeofday(&end_time, NULL);
+	msec_delay =   (end_time.tv_sec  - start_time->tv_sec ) * 1000;
+	msec_delay += ((end_time.tv_usec - start_time->tv_usec + 500) / 1000);
+	return msec_delay;
+}
+
 /* Wait until a file is readable, 
  * RET false if can not be read */
 static bool _fd_readable(slurm_fd fd)
 {
 	struct pollfd ufds;
 	static int msg_timeout = -1;
-	int rc;
+	int rc, time_left;
+	struct timeval tstart;
 
 	if (msg_timeout == -1)
 		msg_timeout = slurm_get_msg_timeout() * 1000;
 
 	ufds.fd     = fd;
 	ufds.events = POLLIN;
+	gettimeofday(&tstart, NULL);
 	while (1) {
-		rc = poll(&ufds, 1, -1);
+		time_left = msg_timeout - _tot_wait(&tstart);
+		rc = poll(&ufds, 1, time_left);
 		if ((rc == 0) && ((errno == EINTR) || (errno == EAGAIN)))
 			continue;
 		if (ufds.revents & POLLHUP) {
@@ -412,38 +443,45 @@ static bool _fd_readable(slurm_fd fd)
 }
 
 /* Wait until a file is writable, 
- * RET false if can not be written to within 5 seconds */
-static bool _fd_writeable(slurm_fd fd)
+ * RET 1 if file can be written now,
+ *     0 if can not be written to within 5 seconds
+ *     -1 if file has been closed POLLHUP
+ */
+static int _fd_writeable(slurm_fd fd)
 {
 	struct pollfd ufds;
-	int rc;
+	int msg_timeout = 5000;
+	int rc, time_left;
+	struct timeval tstart;
 
 	ufds.fd     = fd;
 	ufds.events = POLLOUT;
+	gettimeofday(&tstart, NULL);
 	while (1) {
-		rc = poll(&ufds, 1, 5000);
+		time_left = msg_timeout - _tot_wait(&tstart);
+		rc = poll(&ufds, 1, time_left);
 		if ((rc == 0) && ((errno == EINTR) || (errno == EAGAIN)))
 			continue;
 		if (ufds.revents & POLLHUP) {
-			debug2("SlurmDBD connection closed");
-			return false;
+			debug2("SlurmDBD connection is closed");
+			return -1;
 		}
 		if (ufds.revents & POLLNVAL) {
 			error("SlurmDBD connection is invalid");
-			return false;
+			return 0;
 		}
 		if (ufds.revents & POLLERR) {
 			error("SlurmDBD connection experienced an error: %m");
-			return false;
+			return 0;
 		}
 		if ((ufds.revents & POLLOUT) == 0) {
 			error("SlurmDBD connection %d events %d", 
 				fd, ufds.revents);
-			return false;
+			return 0;
 		}
 		break;
 	}
-	return true;
+	return 1;
 }
 
 /* 

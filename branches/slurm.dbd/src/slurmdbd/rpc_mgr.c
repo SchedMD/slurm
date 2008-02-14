@@ -43,6 +43,7 @@
 #include <pthread.h>
 #include <signal.h>
 #include <sys/poll.h>
+#include <sys/time.h>
 
 #include "src/common/fd.h"
 #include "src/common/log.h"
@@ -55,7 +56,7 @@
 #include "src/slurmdbd/read_config.h"
 #include "src/slurmdbd/slurmdbd.h"
 
-#define MAX_THREAD_COUNT 2
+#define MAX_THREAD_COUNT 50
 
 /* Local functions */
 static bool   _fd_readable(slurm_fd fd);
@@ -64,6 +65,7 @@ static void   _free_server_thread(pthread_t my_tid);
 static int    _send_resp(slurm_fd fd, int rc);
 static void * _service_connection(void *arg);
 static void   _sig_handler(int signal);
+static int    _tot_wait (struct timeval *start_time);
 static int    _wait_for_server_thread(void);
 static void   _wait_for_thread_fini(void);
 
@@ -225,7 +227,7 @@ static void * _service_connection(void *arg)
 			rc = SLURM_ERROR;
 			fini = true;
 		}
-		_send_resp(conn->newsockfd, rc);
+		rc = _send_resp(conn->newsockfd, rc);
 		xfree(msg);
 	}
 	if (slurm_close_accepted_conn(conn->newsockfd) < 0)
@@ -253,7 +255,7 @@ static int _send_resp(slurm_fd fd, int rc)
 	msg.return_code  = rc;
 	slurm_dbd_pack_rc_msg(&msg, buffer);
 
-	msg_size = size_buf(buffer);
+	msg_size = get_buf_offset(buffer);
 	nw_size = htonl(msg_size);
 	if (!_fd_writeable(fd))
 		goto io_err;
@@ -277,6 +279,18 @@ static int _send_resp(slurm_fd fd, int rc)
 io_err:
 	free_buf(buffer);
 	return SLURM_ERROR;
+}
+
+/* Return time in msec since "start time" */
+static int _tot_wait (struct timeval *start_time)
+{
+	struct timeval end_time;
+	int msec_delay;
+
+	gettimeofday(&end_time, NULL);
+	msec_delay =   (end_time.tv_sec  - start_time->tv_sec ) * 1000;
+	msec_delay += ((end_time.tv_usec - start_time->tv_usec + 500) / 1000);
+	return msec_delay;
 }
 
 /* Wait until a file is readable, return false if can not be read */
@@ -317,12 +331,16 @@ static bool _fd_readable(slurm_fd fd)
 static bool _fd_writeable(slurm_fd fd)
 {
 	struct pollfd ufds;
-	int rc;
+	int msg_timeout = 5000;
+	int rc, time_left;
+	struct timeval tstart;
 
 	ufds.fd     = fd;
 	ufds.events = POLLOUT;
+	gettimeofday(&tstart, NULL);
 	while (1) {
-		rc = poll(&ufds, 1, 5000);
+		time_left = msg_timeout - _tot_wait(&tstart);
+		rc = poll(&ufds, 1, time_left);
 		if ((rc == 0) && ((errno == EINTR) || (errno == EAGAIN)))
 			continue;
 		if (ufds.revents & POLLHUP) {
@@ -345,6 +363,7 @@ static bool _fd_writeable(slurm_fd fd)
 	}
 	return true;
 }
+
 /* Increment thread_count and don't return until its value is no larger 
  *	than MAX_THREAD_COUNT,
  * RET index of free index in slave_pthread_id or -1 to exit */
@@ -445,7 +464,10 @@ static void _wait_for_thread_fini(void)
 			     slave_thread_id[j]);
 			if (pthread_kill(slave_thread_id[j], SIGKILL)) {
 				slave_thread_id[j] = 0;
-				thread_count--;
+				if (thread_count > 0)
+					thread_count--;
+				else
+					error("thread_count underflow");
 			}
 		}
 		slurm_mutex_unlock(&thread_count_lock);
