@@ -1919,7 +1919,8 @@ void node_not_resp (char *name, time_t msg_time)
 		error ("node_not_resp unable to find node %s", name);
 		return;
 	}
-	error("Node %s not responding", node_ptr->name);
+	if ((node_ptr->node_state & NODE_STATE_BASE) != NODE_STATE_DOWN)
+		error("Node %s not responding", node_ptr->name);
 	_node_not_resp(node_ptr, msg_time);
 #endif
 }
