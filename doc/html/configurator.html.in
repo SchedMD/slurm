@@ -184,6 +184,8 @@ function displayfile()
    "MinJobAge=" + document.config.min_job_age.value + "<br>" +
    "KillWait=" + document.config.kill_wait.value + "<br>" +
    "#GetEnvTimeout=2 <br>" +
+   "#HealthCheckInterval=0 <br>" +
+   "#HealthCheckProgram= <br>" +
    "#UnkillableStepProgram= <br>" +
    "#UnkillableStepTimeout=60 <br>" +
    "Waittime=" + document.config.wait_time.value + "<br>" +
@@ -218,6 +220,8 @@ function displayfile()
    get_field("JobAcctStoragePort",document.config.job_acct_storage_port) + "<br>" +
    get_field("JobAcctStorageUser",document.config.job_acct_storage_user) + "<br>" +
    get_field("JobAcctStoragePass",document.config.job_acct_storage_pass) + "<br>" +
+   "#SlurmDbdAddr= <br>" +
+   "#SlurmDbdPort=6819 <br>" +
    "# <br>" +
    "# POWER SAVE MODE FOR IDLE NODES (optional) <br>" +
    "#SuspendTime= <br>" +

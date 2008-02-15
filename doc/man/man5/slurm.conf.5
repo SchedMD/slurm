@@ -176,6 +176,21 @@ load it from a cache file. Applies when the srun or sbatch
 \fI--get-user-env\fR option is used. Default value is 2 seconds.
 
 .TP
+\fBHealthCheckInterval\fR
+The interval in seconds between executions of \fBHealthCheckProgram\fR.
+The default value is zero, which disables execution.
+
+.TP
+\fBHealthCheckProgram\fR
+Fully qualified pathname of a script to execute as user root periodically 
+on all compute nodes that are not in the DOWN state. This may be used to 
+verify the node is fully operational and DRAIN the it otherwise.
+The interval is controlled using the \fBHealthCheckInterval\fR parameter.
+Note that the \fBHealthCheckProgram\fR will be executed at the same time 
+on all nodes to minimize its impact upon parallel programs. 
+By default, no program will be executed.
+
+.TP
 \fBInactiveLimit\fR
 The interval, in seconds, a job or job step is permitted to be inactive
 before it is terminated. A job or job step is considered inactive if 
@@ -655,10 +670,13 @@ The default value is "select/bluegene" for BlueGene systems.
 
 .TP
 \fBSelectTypeParameters\fR
-This only applies to \fISelectType=select/cons_res\fR except for the value 
-\fBCR_Memory\fR which also applies to \fISelectType=select/linear\fR in 
-order to support job preemption and gang scheduling  without oversubscribing 
-memory.
+The permitted values of \fBSelectTypeParameters\fR depend upon the 
+configured value of \fBSelectType\fR.
+\fBSelectType=select/bluegene\fR supports no \fBSelectTypeParameters\fR.
+The only supported option for \fBSelectType=select/linear\fR is 
+\fBCR_Memory\fR, which treats memory as a consumable resource and 
+prevents memory over subscription with job preemption or gang scheduling.
+The following values are supported for \fBSelectType=select/cons_res\fR:
 .RS
 .TP
 \fBCR_CPU\fR
@@ -796,6 +814,20 @@ readable and writable by both systems.
 The default value is "/tmp".
 If any slurm daemons terminate abnormally, their core files will also be written 
 into this directory.
+
+.TP
+\fBSlurmDbdAddr\fR
+Name that the Slurm DBD (Data Base Daemon) should be referred to 
+in establishing a communications path. This should be specified 
+if the Slurm DBD is used for recording accounting information. 
+The format can either be a hostname or an IP address.
+The default value is "localhost".
+
+.TP
+\fBSlurmDbdPort\fR
+The port to be used for communications with the Slurm DBD (Data Base Daemon)
+if configured for recording accounting information.
+The default value is 6819.
 
 .TP
 \fBSrunEpilog\fR
