@@ -2216,6 +2216,9 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer)
 
 	pack16(build_ptr->get_env_timeout, buffer);
 
+	pack16(build_ptr->health_check_interval, buffer);
+	packstr(build_ptr->health_check_program, buffer);
+
 	pack16(build_ptr->inactive_limit, buffer);
 
 	pack16(build_ptr->job_acct_gather_freq, buffer);
@@ -2271,13 +2274,17 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer)
 	packstr(build_ptr->schedtype, buffer);
 	packstr(build_ptr->select_type, buffer);
 	pack16(build_ptr->select_type_param, buffer);
+
+	packstr(build_ptr->slurm_conf, buffer);
 	pack32(build_ptr->slurm_user_id, buffer);
 	packstr(build_ptr->slurm_user_name, buffer);
+
 	pack16(build_ptr->slurmctld_debug, buffer);
 	packstr(build_ptr->slurmctld_logfile, buffer);
 	packstr(build_ptr->slurmctld_pidfile, buffer);
 	pack32(build_ptr->slurmctld_port, buffer);
 	pack16(build_ptr->slurmctld_timeout, buffer);
+
 	pack16(build_ptr->slurmd_debug, buffer);
 	packstr(build_ptr->slurmd_logfile, buffer);
 	packstr(build_ptr->slurmd_pidfile, buffer);
@@ -2286,7 +2293,10 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer)
 #endif
 	packstr(build_ptr->slurmd_spooldir, buffer);
 	pack16(build_ptr->slurmd_timeout, buffer);
-	packstr(build_ptr->slurm_conf, buffer);
+
+	packstr(build_ptr->slurmdbd_addr, buffer);
+	pack16(build_ptr->slurmdbd_port, buffer);
+
 	packstr(build_ptr->srun_epilog, buffer);
 	packstr(build_ptr->srun_prolog, buffer);
 	packstr(build_ptr->state_save_location, buffer);
@@ -2350,6 +2360,10 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **
 	safe_unpack32(&build_ptr->first_job_id, buffer);
 
 	safe_unpack16(&build_ptr->get_env_timeout, buffer);
+
+	safe_unpack16(&build_ptr->health_check_interval, buffer);
+	safe_unpackstr_xmalloc(&build_ptr->health_check_program,
+			       &uint32_tmp, buffer);
 
 	safe_unpack16(&build_ptr->inactive_limit, buffer);
 
@@ -2419,9 +2433,13 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **
 	safe_unpackstr_xmalloc(&build_ptr->schedtype, &uint32_tmp, buffer);
 	safe_unpackstr_xmalloc(&build_ptr->select_type, &uint32_tmp, buffer);
 	safe_unpack16(&build_ptr->select_type_param, buffer);
+
+	safe_unpackstr_xmalloc(&build_ptr->slurm_conf,
+			       &uint32_tmp, buffer);
 	safe_unpack32(&build_ptr->slurm_user_id, buffer);
 	safe_unpackstr_xmalloc(&build_ptr->slurm_user_name,
 			       &uint32_tmp, buffer);
+
 	safe_unpack16(&build_ptr->slurmctld_debug, buffer);
 	safe_unpackstr_xmalloc(&build_ptr->slurmctld_logfile,
 			       &uint32_tmp, buffer);
@@ -2429,6 +2447,7 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **
 			       &uint32_tmp, buffer);
 	safe_unpack32(&build_ptr->slurmctld_port, buffer);
 	safe_unpack16(&build_ptr->slurmctld_timeout, buffer);
+
 	safe_unpack16(&build_ptr->slurmd_debug, buffer);
 	safe_unpackstr_xmalloc(&build_ptr->slurmd_logfile, &uint32_tmp,
 			       buffer);
@@ -2440,7 +2459,11 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **
 	safe_unpackstr_xmalloc(&build_ptr->slurmd_spooldir, &uint32_tmp,
 			       buffer);
 	safe_unpack16(&build_ptr->slurmd_timeout, buffer);
-	safe_unpackstr_xmalloc(&build_ptr->slurm_conf,  &uint32_tmp, buffer);
+
+	safe_unpackstr_xmalloc(&build_ptr->slurmdbd_addr, &uint32_tmp,
+			       buffer);
+	safe_unpack16(&build_ptr->slurmdbd_port, buffer);
+
 	safe_unpackstr_xmalloc(&build_ptr->srun_epilog, &uint32_tmp, buffer);
 	safe_unpackstr_xmalloc(&build_ptr->srun_prolog, &uint32_tmp, buffer);
 	safe_unpackstr_xmalloc(&build_ptr->state_save_location,
@@ -2493,6 +2516,7 @@ unpack_error:
 	xfree(build_ptr->job_comp_pass);
 	xfree(build_ptr->job_credential_private_key);
 	xfree(build_ptr->job_credential_public_certificate);
+	xfree(build_ptr->health_check_program);
 	xfree(build_ptr->mail_prog);
 	xfree(build_ptr->mpi_default);
 	xfree(build_ptr->plugindir);
@@ -2512,6 +2536,7 @@ unpack_error:
 	xfree(build_ptr->slurmd_logfile);
 	xfree(build_ptr->slurmd_pidfile);
 	xfree(build_ptr->slurmd_spooldir);
+	xfree(build_ptr->slurmdbd_addr);
 	xfree(build_ptr->state_save_location);
 	xfree(build_ptr->suspend_exc_nodes);
 	xfree(build_ptr->suspend_exc_parts);

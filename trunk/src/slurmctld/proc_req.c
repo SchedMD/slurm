@@ -332,6 +332,8 @@ void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
 	conf_ptr->fast_schedule       = conf->fast_schedule;
 	conf_ptr->first_job_id        = conf->first_job_id;
 	conf_ptr->inactive_limit      = conf->inactive_limit;
+	conf_ptr->health_check_interval = conf->health_check_interval;
+	conf_ptr->health_check_program = xstrdup(conf->health_check_program);
 	conf_ptr->job_acct_storage_loc = xstrdup(conf->job_acct_storage_loc);
 	conf_ptr->job_acct_storage_type = xstrdup(conf->job_acct_storage_type);
 	conf_ptr->job_acct_storage_user = xstrdup(conf->job_acct_storage_user);
@@ -394,6 +396,8 @@ void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
 	conf_ptr->slurmd_port         = conf->slurmd_port;
 	conf_ptr->slurmd_spooldir     = xstrdup(conf->slurmd_spooldir);
 	conf_ptr->slurmd_timeout      = conf->slurmd_timeout;
+	conf_ptr->slurmdbd_addr       = xstrdup(conf->slurmdbd_addr);
+	conf_ptr->slurmdbd_port       = conf->slurmdbd_port;
 	conf_ptr->slurm_conf          = xstrdup(conf->slurm_conf);
 	conf_ptr->state_save_location = xstrdup(conf->state_save_location);
 	conf_ptr->suspend_exc_nodes   = xstrdup(conf->suspend_exc_nodes);

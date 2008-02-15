@@ -150,6 +150,10 @@ void slurm_print_ctl_conf ( FILE* out,
 		slurm_ctl_conf_ptr->first_job_id);
 	fprintf(out, "GetEnvTimeout           = %u\n",
 		slurm_ctl_conf_ptr->get_env_timeout);
+	fprintf(out, "HealthCheckInterval     = %u\n",
+		slurm_ctl_conf_ptr->health_check_interval);
+	fprintf(out, "HealthCheckProgram      = %s\n",
+		slurm_ctl_conf_ptr->health_check_program);
 #ifdef HAVE_XCPU
 	fprintf(out, "HAVE_XCPU               = %d\n", HAVE_XCPU);
 #endif
@@ -277,6 +281,10 @@ void slurm_print_ctl_conf ( FILE* out,
 		slurm_ctl_conf_ptr->slurmd_spooldir);
 	fprintf(out, "SlurmdTimeout           = %u\n", 
 		slurm_ctl_conf_ptr->slurmd_timeout);
+	fprintf(out, "SlurmDbdAddr            = %s\n", 
+		slurm_ctl_conf_ptr->slurmdbd_addr);
+	fprintf(out, "SlurmDbdPort            = %u\n", 
+		slurm_ctl_conf_ptr->slurmdbd_port);
 	fprintf(out, "SLURM_CONFIG_FILE       = %s\n", 
 		slurm_ctl_conf_ptr->slurm_conf);
 	fprintf(out, "SLURM_VERSION           = %s\n", SLURM_VERSION);
