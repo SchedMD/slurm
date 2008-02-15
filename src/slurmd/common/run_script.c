@@ -72,7 +72,11 @@ run_script(const char *name, const char *path, uint32_t jobid,
 	if (path == NULL || path[0] == '\0')
 		return 0;
 
-	debug("[job %u] attempting to run %s [%s]", jobid, name, path);
+	if (jobid) {
+		debug("[job %u] attempting to run %s [%s]", 
+			jobid, name, path);
+	} else
+		debug("attempting to run %s [%s]", name, path);
 
 	if (access(path, R_OK | X_OK) < 0) {
 		debug("Not running %s [%s]: %m", name, path);
