@@ -460,7 +460,7 @@ static int parse_partitionname(void **dest, slurm_parser_enum_t type,
 		else {
 			int i;
 			for (i=0; p->nodes[i]; i++) {
-				if (p->nodes[i] == ' ')
+				if (isspace(p->nodes[i]))
 					p->nodes[i] = ',';
 			}
 		}
