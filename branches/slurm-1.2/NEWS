@@ -8,7 +8,7 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 1.2.23
 =========================
- -- Fix for libpmi to not export unneed variables like xstr*
+ -- Fix for libpmi to not export unneeded variables like xstr*
  -- BLUEGENE - added per partition dynamic block creation
  -- fix infinite loop bug in sview when there were multiple partitions
  -- Send message to srun command when a job is requeued due to node failure.
@@ -21,13 +21,13 @@ documents those changes that are of interest to users and admins.
     specifying an account of the form "qos-name".
  -- In select/linear, fix bug in scheduling required nodes that already have
     a job running on them (req.load.patch from Chris Holmes, HP).
- -- Change timeout for srun/sbatch --get-user-env option to 2 secs, don't get 
-    DISPLAY environment variables, but explicitly set ENVIRONMENT=BATCH and 
-    HOSTNAME to the execution host of the batch script.
+ -- For use with Moab only: change timeout for srun/sbatch --get-user-env 
+    option to 2 secs, don't get DISPLAY environment variables, but explicitly 
+    set ENVIRONMENT=BATCH and HOSTNAME to the execution host of the batch script.
+ -- Add configuration parameter GetEnvTimeout for use with Moab. See
+    "man slurm.conf" for details.
  -- Modify salloc and sbatch to accept both "--tasks" and "--ntasks" as 
     equivalent options for compatibility with srun.
- -- Add configuration parameter GetEnvTimeout for use with Moab. See 
-    "man slurm.conf" for details.
  -- If a partition's node list contains space separators, replace them with 
     commas for easier parsing.
  -- BLUEGENE - fixed bug in geometry specs when creating a block.
