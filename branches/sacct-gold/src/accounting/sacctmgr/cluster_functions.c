@@ -54,30 +54,7 @@ extern int sacctmgr_list_cluster(char *names)
 	ListIterator itr = NULL;
 	account_cluster_rec_t *cluster = NULL;
 
-	if(names) {
-		if (names[i] == '\"' || names[i] == '\'')
-			i++;
-		start = i;
-		while(names[i]) {
-			if(names[i] == '\"' || names[i] == '\'')
-				break;
-			else if(names[i] == ',') {
-				if(i-start > 0) {
-					name = xmalloc((i-start+1));
-					memcpy(name, names+start, (i-start));
-					list_push(spec_list, name);
-				}
-				i++;
-				start = i;
-			}
-			i++;
-		}
-		if(i-start > 0) {
-			name = xmalloc((i-start)+1);
-			memcpy(name, names+start, (i-start));
-			list_push(spec_list, name);
-		}
-	}
+	addto_char_list(spec_list, names);
 
 	cluster_list = account_storage_g_get_clusters(spec_list, NULL);
 	list_destroy(spec_list);

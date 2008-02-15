@@ -590,7 +590,8 @@ extern int account_storage_p_add_users(List user_list)
 	return rc;
 }
 
-extern int account_storage_p_add_coord(char *account, List user_list)
+extern int account_storage_p_add_coord(char *account,
+				       account_user_cond_t *user_q)
 {
 	return SLURM_SUCCESS;
 }
@@ -809,7 +810,8 @@ extern int account_storage_p_add_associations(List association_list)
 	return rc;
 }
 
-extern int account_storage_p_modify_users(List user_list)
+extern int account_storage_p_modify_users(account_user_cond_t *user_q,
+					  account_user_rec_t *user)
 {
 	ListIterator itr = NULL;
 	int rc = SLURM_SUCCESS;
@@ -818,7 +820,19 @@ extern int account_storage_p_modify_users(List user_list)
 	account_user_rec_t *object = NULL;
 	char tmp_buff[50];
 
-	itr = list_iterator_create(user_list);
+	if(!user_q) {
+		error("account_storage_p_modify_users: "
+		      "we need conditions to modify");
+		return SLURM_ERROR;
+	}
+
+	if(!user) {
+		error("account_storage_p_modify_users: "
+		      "we need something to change");
+		return SLURM_ERROR;
+	}
+
+	itr = list_iterator_create(user_q->user_list);
 	while((object = list_next(itr))) {
 		if(!object->name) {
 			error("We need a user name to modify.");
@@ -874,7 +888,7 @@ extern int account_storage_p_modify_users(List user_list)
 }
 
 extern int account_storage_p_modify_user_admin_level(
-	account_admin_level_t level, List user_list)
+	account_user_cond_t *user_q, account_admin_level_t level)
 {
 	ListIterator itr = NULL;
 	int rc = SLURM_SUCCESS;
@@ -1013,7 +1027,8 @@ extern int account_storage_p_modify_user_admin_level(
 	return rc;
 }
 
-extern int account_storage_p_modify_accounts(List account_list)
+extern int account_storage_p_modify_accounts(account_account_cond_t *account_q,
+					     account_account_rec_t *account)
 {
 	ListIterator itr = NULL;
 	int rc = SLURM_SUCCESS;
@@ -1081,12 +1096,14 @@ extern int account_storage_p_modify_accounts(List account_list)
 	return rc;
 }
 
-extern int account_storage_p_modify_clusters(List cluster_list)
+extern int account_storage_p_modify_clusters(account_cluster_cond_t *cluster_q,
+					     account_cluster_rec_t *cluster)
 {
 	return SLURM_SUCCESS;
 }
 
-extern int account_storage_p_modify_associations(List association_list)
+extern int account_storage_p_modify_associations(
+	account_association_cond_t *assoc_q, account_association_rec_t *assoc)
 {
 	ListIterator itr = NULL;
 	int rc = SLURM_SUCCESS;
@@ -1203,7 +1220,7 @@ extern int account_storage_p_modify_associations(List association_list)
 	return rc;
 }
 
-extern int account_storage_p_remove_users(List user_list)
+extern int account_storage_p_remove_users(account_user_cond_t *user_q)
 {
 	ListIterator itr = NULL;
 	int rc = SLURM_SUCCESS;
@@ -1250,12 +1267,13 @@ extern int account_storage_p_remove_users(List user_list)
 	return rc;
 }
 
-extern int account_storage_p_remove_coord(char *account, List user_list)
+extern int account_storage_p_remove_coord(char *account,
+					  account_user_cond_t *user_q)
 {
 	return SLURM_SUCCESS;
 }
 
-extern int account_storage_p_remove_accounts(List account_list)
+extern int account_storage_p_remove_accounts(account_account_cond_t *account_q)
 {
 	ListIterator itr = NULL;
 	int rc = SLURM_SUCCESS;
@@ -1302,7 +1320,7 @@ extern int account_storage_p_remove_accounts(List account_list)
 	return rc;
 }
 
-extern int account_storage_p_remove_clusters(List cluster_list)
+extern int account_storage_p_remove_clusters(account_account_cond_t *cluster_q)
 {
 	ListIterator itr = NULL;
 	int rc = SLURM_SUCCESS;
@@ -1448,7 +1466,8 @@ extern int account_storage_p_remove_clusters(List cluster_list)
 	return rc;
 }
 
-extern int account_storage_p_remove_associations(List association_list)
+extern int account_storage_p_remove_associations(
+	account_association_cond_t *assoc_q)
 {
 	ListIterator itr = NULL;
 	int rc = SLURM_SUCCESS;
@@ -1553,8 +1572,7 @@ extern int account_storage_p_remove_associations(List association_list)
 	return rc;
 }
 
-extern List account_storage_p_get_users(List selected_users,
-					void *params)
+extern List account_storage_p_get_users(account_user_cond_t *user_q)
 {
 	gold_request_t *gold_request = create_gold_request(GOLD_OBJECT_USER,
 							   GOLD_ACTION_QUERY);
@@ -1615,8 +1633,7 @@ extern List account_storage_p_get_users(List selected_users,
 	return user_list;
 }
 
-extern List account_storage_p_get_accounts(List selected_accounts,
-					   void *params)
+extern List account_storage_p_get_accounts(account_account_cond_t *account_q)
 {
 	gold_request_t *gold_request = create_gold_request(GOLD_OBJECT_PROJECT,
 							   GOLD_ACTION_QUERY);
@@ -1678,8 +1695,7 @@ extern List account_storage_p_get_accounts(List selected_accounts,
 	return account_list;
 }
 
-extern List account_storage_p_get_clusters(List selected_clusters,
-					   void *params)
+extern List account_storage_p_get_clusters(account_account_cond_t *cluster_q)
 {
 	gold_request_t *gold_request = create_gold_request(GOLD_OBJECT_MACHINE,
 							   GOLD_ACTION_QUERY);
@@ -1738,11 +1754,8 @@ extern List account_storage_p_get_clusters(List selected_clusters,
 	return cluster_list;
 }
 
-extern List account_storage_p_get_associations(List selected_users,
-					       List selected_accounts,
-					       List selected_parts,
-					       char *cluster,
-					       void *params)
+extern List account_storage_p_get_associations(
+	account_association_cond_t *assoc_q)
 {
 
 	gold_request_t *gold_request = create_gold_request(GOLD_OBJECT_ACCOUNT,
@@ -1829,15 +1842,15 @@ extern List account_storage_p_get_associations(List selected_users,
 }
 
 extern int account_storage_p_get_hourly_usage(
-	account_association_rec_t *acct_rec,
-	time_t start, time_t end, void *params)
+	account_association_rec_t *acct_assoc,
+	time_t start, time_t end)
 {
 	gold_request_t *gold_request = NULL;
 	gold_response_t *gold_response = NULL;
 	int rc = SLURM_ERROR;
 	char tmp_buff[50];
 
-	if(!acct_rec || acct_rec->id) {
+	if(!acct_assoc || acct_assoc->id) {
 		error("account_storage_p_get_hourly_usage: "
 		      "We need an id to go off to query off of");
 		return rc;
@@ -1849,7 +1862,7 @@ extern int account_storage_p_get_hourly_usage(
 	if(!gold_request) 
 		return rc;
 
-	snprintf(tmp_buff, sizeof(tmp_buff), "%u", acct_rec->id);
+	snprintf(tmp_buff, sizeof(tmp_buff), "%u", acct_assoc->id);
 	gold_request_add_condition(gold_request, "Account", tmp_buff,
 				   GOLD_OPERATOR_NONE, 0);
 
@@ -1880,7 +1893,7 @@ extern int account_storage_p_get_hourly_usage(
 
 	if(gold_response->entry_cnt > 0) {
 		rc = _get_account_accounting_list_from_response(
-			gold_response, acct_rec);
+			gold_response, acct_assoc);
 	} else {
 		debug("We don't have an entry for this machine for this time");
 	}
@@ -1890,15 +1903,15 @@ extern int account_storage_p_get_hourly_usage(
 }
 
 extern int account_storage_p_get_daily_usage(
-	account_association_rec_t *acct_rec,
-	time_t start, time_t end, void *params)
+	account_association_rec_t *acct_assoc,
+	time_t start, time_t end)
 {
 	gold_request_t *gold_request = NULL;
 	gold_response_t *gold_response = NULL;
 	int rc = SLURM_ERROR;
 	char tmp_buff[50];
 
-	if(!acct_rec || acct_rec->id) {
+	if(!acct_assoc || acct_assoc->id) {
 		error("account_storage_p_get_daily_usage: "
 		      "We need an id to go off to query off of");
 		return rc;
@@ -1910,7 +1923,7 @@ extern int account_storage_p_get_daily_usage(
 	if(!gold_request) 
 		return rc;
 
-	snprintf(tmp_buff, sizeof(tmp_buff), "%u", acct_rec->id);
+	snprintf(tmp_buff, sizeof(tmp_buff), "%u", acct_assoc->id);
 	gold_request_add_condition(gold_request, "Account", tmp_buff,
 				   GOLD_OPERATOR_NONE, 0);
 
@@ -1941,7 +1954,7 @@ extern int account_storage_p_get_daily_usage(
 
 	if(gold_response->entry_cnt > 0) {
 		rc = _get_account_accounting_list_from_response(
-			gold_response, acct_rec);
+			gold_response, acct_assoc);
 	} else {
 		debug("We don't have an entry for this machine for this time");
 	}
@@ -1951,15 +1964,15 @@ extern int account_storage_p_get_daily_usage(
 }
 
 extern int account_storage_p_get_monthly_usage(
-	account_association_rec_t *acct_rec,
-	time_t start, time_t end, void *params)
+	account_association_rec_t *acct_assoc,
+	time_t start, time_t end)
 {
 	gold_request_t *gold_request = NULL;
 	gold_response_t *gold_response = NULL;
 	int rc = SLURM_ERROR;
 	char tmp_buff[50];
 
-	if(!acct_rec || acct_rec->id) {
+	if(!acct_assoc || acct_assoc->id) {
 		error("account_storage_p_get_monthly_usage: "
 		      "We need an id to go off to query off of");
 		return rc;
@@ -1971,7 +1984,7 @@ extern int account_storage_p_get_monthly_usage(
 	if(!gold_request) 
 		return rc;
 
-	snprintf(tmp_buff, sizeof(tmp_buff), "%u", acct_rec->id);
+	snprintf(tmp_buff, sizeof(tmp_buff), "%u", acct_assoc->id);
 	gold_request_add_condition(gold_request, "Account", tmp_buff,
 				   GOLD_OPERATOR_NONE, 0);
 
@@ -2002,7 +2015,7 @@ extern int account_storage_p_get_monthly_usage(
 
 	if(gold_response->entry_cnt > 0) {
 		rc = _get_account_accounting_list_from_response(
-			gold_response, acct_rec);
+			gold_response, acct_assoc);
 	} else {
 		debug("We don't have an entry for this machine for this time");
 	}

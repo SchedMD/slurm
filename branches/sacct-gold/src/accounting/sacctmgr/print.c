@@ -127,3 +127,34 @@ extern void destroy_char(void *object)
 	char *tmp = (char *)object;
 	xfree(tmp);
 }
+
+extern void addto_char_list(List *char_list, char *names)
+{
+	int i=0, start=0;
+	char *name = NULL;
+
+	if(names && char_list) {
+		if (names[i] == '\"' || names[i] == '\'')
+			i++;
+		start = i;
+		while(names[i]) {
+			if(names[i] == '\"' || names[i] == '\'')
+				break;
+			else if(names[i] == ',') {
+				if(i-start > 0) {
+					name = xmalloc((i-start+1));
+					memcpy(name, names+start, (i-start));
+					list_push(char_list, name);
+				}
+				i++;
+				start = i;
+			}
+			i++;
+		}
+		if(i-start > 0) {
+			name = xmalloc((i-start)+1);
+			memcpy(name, names+start, (i-start));
+			list_push(char_list, name);
+		}
+	}	
+} 

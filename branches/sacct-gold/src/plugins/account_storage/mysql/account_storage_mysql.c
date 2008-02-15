@@ -91,7 +91,8 @@ extern int account_storage_p_add_users(List user_list)
 	return SLURM_SUCCESS;
 }
 
-extern int account_storage_p_add_coord(char *account, List user_list)
+extern int account_storage_p_add_coord(char *account, 
+				       account_user_cond_t *user_q)
 {
 	return SLURM_SUCCESS;
 }
@@ -111,87 +112,89 @@ extern int account_storage_p_add_associations(List association_list)
 	return SLURM_SUCCESS;
 }
 
-extern int account_storage_p_modify_users(List user_list)
+extern int account_storage_p_modify_users(account_user_cond_t *user_q,
+					  account_user_rec_t *user)
 {
 	return SLURM_SUCCESS;
 }
 
 extern int account_storage_p_modify_user_admin_level(
-	account_admin_level_t level, List user_list)
+	account_user_cond_t *user_q, account_admin_level_t level)
 {
 	return SLURM_SUCCESS;
 }
 
-extern int account_storage_p_modify_accounts(List account_list)
+extern int account_storage_p_modify_accounts(account_account_cond_t *account_q,
+					     account_account_rec_t *account)
 {
 	return SLURM_SUCCESS;
 }
 
-extern int account_storage_p_modify_clusters(List cluster_list)
+extern int account_storage_p_modify_clusters(account_cluster_cond_t *cluster_q,
+					     account_cluster_rec_t *cluster)
 {
 	return SLURM_SUCCESS;
 }
 
-extern int account_storage_p_modify_associations(List association_list)
+extern int account_storage_p_modify_associations(
+	account_association_cond_t *assoc_q, account_association_rec_t *assoc)
 {
 	return SLURM_SUCCESS;
 }
 
-extern int account_storage_p_remove_users(List user_list)
+extern int account_storage_p_remove_users(account_user_cond_t *user_q)
 {
 	return SLURM_SUCCESS;
 }
 
-extern int account_storage_p_remove_coord(char *account, List user_list)
+extern int account_storage_p_remove_coord(char *account, 
+					  account_user_cond_t *user_q)
 {
 	return SLURM_SUCCESS;
 }
 
-extern int account_storage_p_remove_accounts(List account_list)
+extern int account_storage_p_remove_accounts(
+	account_account_cond_t *account_q)
 {
 	return SLURM_SUCCESS;
 }
 
-extern int account_storage_p_remove_clusters(List cluster_list)
+extern int account_storage_p_remove_clusters(
+	account_account_cond_t *cluster_q)
 {
 	return SLURM_SUCCESS;
 }
 
-extern int account_storage_p_remove_associations(List association_list)
+extern int account_storage_p_remove_associations(
+	account_association_cond_t *assoc_q)
 {
 	return SLURM_SUCCESS;
 }
 
-extern List account_storage_p_get_users(List selected_users,
-					void *params)
+extern List account_storage_p_get_users(account_user_cond_t *user_q)
 {
 	return NULL;
 }
 
-extern List account_storage_p_get_accounts(List selected_accounts,
-					   void *params)
+extern List account_storage_p_get_accounts(account_account_cond_t *account_q)
 {
 	return NULL;
 }
 
-extern List account_storage_p_get_clusters(List selected_clusters,
-					   void *params)
+extern List account_storage_p_get_clusters(account_account_cond_t *cluster_q)
 {
 	return NULL;
 }
 
-extern List account_storage_p_get_associations(List selected_users,
-					       List selected_accounts,
-					       List selected_parts,
-					       char *cluster,
-					       void *params)
+extern List account_storage_p_get_associations(
+	account_association_cond_t *assoc_q)
 {
 	return NULL;
 }
 
 extern int account_storage_p_get_hourly_usage(
-	account_association_rec_t *acct_rec,
-	time_t start, time_t end, void *params)
+	account_association_rec_t *acct_assoc,
+	time_t start, time_t end)
 {
 	int rc = SLURM_SUCCESS;
 
@@ -199,8 +202,8 @@ extern int account_storage_p_get_hourly_usage(
 }
 
 extern int account_storage_p_get_daily_usage(
-	account_association_rec_t *acct_rec,
-	time_t start, time_t end, void *params)
+	account_association_rec_t *acct_assoc,
+	time_t start, time_t end)
 {
 	int rc = SLURM_SUCCESS;
 
@@ -208,9 +211,10 @@ extern int account_storage_p_get_daily_usage(
 }
 
 extern int account_storage_p_get_monthly_usage(
-	account_association_rec_t *acct_rec,
-	time_t start, time_t end, void *params)
+	account_association_rec_t *acct_assoc,
+	time_t start, time_t end)
 {
 	int rc = SLURM_SUCCESS;
 	return rc;
 }
+

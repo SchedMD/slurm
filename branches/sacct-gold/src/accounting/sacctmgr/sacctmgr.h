@@ -116,5 +116,6 @@ extern int  print_str(char *str, int width, bool right, bool cut_output);
 extern void print_date(void);
 extern int print_secs(long time, int width, bool right, bool cut_output);
 extern void destroy_char(void *object);
+extern void addto_char_list(List *char_list, char *names);
 
 #endif
