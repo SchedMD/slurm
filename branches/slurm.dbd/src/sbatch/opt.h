@@ -97,7 +97,7 @@ typedef struct sbatch_options {
 
 	bool hold;		/* --hold, -H			*/
 	bool no_kill;		/* --no-kill, -k		*/
-	bool no_requeue;	/* --no-requeue			*/
+	int requeue;		/* --requeue and --no-requeue	*/
 	uint8_t open_mode;	/* --open-mode			*/
 	int acctg_freq;		/* --acctg-freq=secs		*/
 	bool overcommit;	/* --overcommit -O		*/

@@ -1,9 +1,8 @@
 /*****************************************************************************\
  *  slurmctld.h - definitions of functions and structures for slurmcltd use
- *
- *  $Id$
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
+ *  Copyright (C) 2008 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov> et. al.
  *  UCRL-CODE-226842.
@@ -216,6 +215,8 @@ struct node_record {
 	char *features;			/* associated features, used only
 					 * for state save/restore, DO NOT
 					 * use for scheduling purposes */
+	char *arch;			/* computer architecture */
+	char *os;			/* operating system currently running */
 	struct node_record *node_next;	/* next entry with same hash index */ 
 };
 
@@ -329,7 +330,7 @@ struct job_details {
 	char *work_dir;			/* pathname of working directory */
 	char **argv;			/* arguments for a batch job script */
 	uint16_t argc;			/* count of argv elements */
-	uint16_t no_requeue;		/* don't requeue job if set */
+	uint16_t requeue;		/* controls ability requeue job */
 	multi_core_data_t *mc_ptr;	/* multi-core specific data */
 	char *dependency;		/* wait for other jobs */
 	List depend_list;		/* list of job_ptr:state pairs */
@@ -1398,53 +1399,29 @@ extern int validate_group (struct part_record *part_ptr, uid_t run_uid);
  *	are actually running, if not clean up the job records and/or node 
  *	records, call this function after validate_node_specs() sets the node 
  *	state properly 
- * IN node_name - node which should have jobs running
- * IN/OUT job_count - number of jobs which should be running on specified node
- * IN job_id_ptr - pointer to array of job_ids that should be on this node
- * IN step_id_ptr - pointer to array of job step ids that should be on node
+ * IN reg_msg - node registration message
  */
-extern void validate_jobs_on_node ( char *node_name, uint32_t *job_count, 
-			uint32_t *job_id_ptr, uint16_t *step_id_ptr);
+extern void validate_jobs_on_node(slurm_node_registration_status_msg_t *reg_msg);
 
 /*
  * validate_node_specs - validate the node's specifications as valid, 
- *   if not set state to down, in any case update last_response
- * IN node_name - name of the node
- * IN cpus - number of cpus measured
- * IN sockets - number of sockets per cpu measured
- * IN cores - number of cores per socket measured
- * IN threads - number of threads per core measured
- * IN real_memory - mega_bytes of real_memory measured
- * IN tmp_disk - mega_bytes of tmp_disk measured
- * IN job_count - number of jobs allocated to this node
- * IN status - node status code
+ *	if not set state to down, in any case update last_response
+ * IN reg_msg - node registration message
  * RET 0 if no error, ENOENT if no such node, EINVAL if values too low
- * global: node_record_table_ptr - pointer to global node table
+ * NOTE: READ lock_slurmctld config before entry
  */
-extern int validate_node_specs (char *node_name,
-				uint16_t cpus,
-				uint16_t sockets,
-				uint16_t cores,
-				uint16_t threads,
-				uint32_t real_memory,
-				uint32_t tmp_disk, uint32_t job_count,
-				uint32_t status);
+extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg);
 
 /*
  * validate_nodes_via_front_end - validate all nodes on a cluster as having
  *	a valid configuration as soon as the front-end registers. Individual
  *	nodes will not register with this configuration
- * IN job_count - number of jobs which should be running on cluster
- * IN job_id_ptr - pointer to array of job_ids that should be on cluster
- * IN step_id_ptr - pointer to array of job step ids that should be on cluster
- * IN status - cluster status code
+ * IN reg_msg - node registration message
  * RET 0 if no error, SLURM error code otherwise
- * global: node_record_table_ptr - pointer to global node table
  * NOTE: READ lock_slurmctld config before entry
  */
-extern int validate_nodes_via_front_end(uint32_t job_count, 
-			uint32_t *job_id_ptr, uint16_t *step_id_ptr,
-			uint32_t status);
+extern int validate_nodes_via_front_end(
+		slurm_node_registration_status_msg_t *reg_msg);
 
 /*
  * validate_super_user - validate that the uid is authorized to see 

@@ -168,7 +168,7 @@ strong_alias(hostset_nth,		slurm_hostset_nth);
 /* ----[ Internal Data Structures ]---- */
 
 
-char *alpha_num = "0123456789ABCDEFGHIJKLMNOPQRSTUZWXYZ";
+char *alpha_num = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
 #ifdef HAVE_BG		
 /* logic for block node description */
@@ -1558,7 +1558,8 @@ error:
  * RET 1 if str contained a valid number or range,
  *	0 if conversion of str to a range failed.
  */
-static int _parse_box_range(char *str, struct _range *ranges, int len, int *count)
+static int _parse_box_range(char *str, struct _range *ranges,
+			    int len, int *count)
 {
 	int a[3], b[3], i1, i2, i;
 	char new_str[8];
@@ -2411,14 +2412,28 @@ _get_boxes(char *buf, int max_len)
 				start_box = i;
 			end_box = i;
 		}
+
+
 		if (((len+8) < max_len) && (start_box != -1)
 		    && ((is_box == 0) || (i == axis_max_x))) {
-			sprintf(buf+len,"%c%c%cx%c%c%c,",
-				alpha_num[start_box], alpha_num[axis_min_y],
-				alpha_num[axis_min_z],
-				alpha_num[end_box], alpha_num[axis_max_y],
-				alpha_num[axis_max_z]);
-			len += 8;
+			if(start_box == end_box
+			   && axis_min_y == axis_max_y
+			   && axis_min_z == axis_max_z) {
+				sprintf(buf+len,"%c%c%c,",
+					alpha_num[start_box],
+					alpha_num[axis_min_y],
+					alpha_num[axis_min_z]);
+				len += 4;
+			} else {
+				sprintf(buf+len,"%c%c%cx%c%c%c,",
+					alpha_num[start_box],
+					alpha_num[axis_min_y],
+					alpha_num[axis_min_z],
+					alpha_num[end_box], 
+					alpha_num[axis_max_y],
+					alpha_num[axis_max_z]);
+				len += 8;
+			}
 			start_box = -1;
 			end_box = -1;
 		}

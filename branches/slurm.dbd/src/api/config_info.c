@@ -1,8 +1,8 @@
 /****************************************************************************\
  *  config_info.c - get/print the system configuration information of slurm
- *  $Id$
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
+ *  Copyright (C) 2008 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov> and Kevin Tew <tew1@llnl.gov>.
  *  UCRL-CODE-226842.
@@ -147,7 +147,13 @@ void slurm_print_ctl_conf ( FILE* out,
 	fprintf(out, "FastSchedule            = %u\n",
 		slurm_ctl_conf_ptr->fast_schedule);
 	fprintf(out, "FirstJobId              = %u\n",
-		 slurm_ctl_conf_ptr->first_job_id);
+		slurm_ctl_conf_ptr->first_job_id);
+	fprintf(out, "GetEnvTimeout           = %u\n",
+		slurm_ctl_conf_ptr->get_env_timeout);
+	fprintf(out, "HealthCheckInterval     = %u\n",
+		slurm_ctl_conf_ptr->health_check_interval);
+	fprintf(out, "HealthCheckProgram      = %s\n",
+		slurm_ctl_conf_ptr->health_check_program);
 #ifdef HAVE_XCPU
 	fprintf(out, "HAVE_XCPU               = %d\n", HAVE_XCPU);
 #endif
@@ -183,6 +189,8 @@ void slurm_print_ctl_conf ( FILE* out,
 		slurm_ctl_conf_ptr->job_credential_public_certificate);
 	fprintf(out, "JobFileAppend           = %u\n",
 		slurm_ctl_conf_ptr->job_file_append);
+	fprintf(out, "JobRequeue              = %u\n",
+		slurm_ctl_conf_ptr->job_requeue);
 	fprintf(out, "KillWait                = %u\n", 
 		slurm_ctl_conf_ptr->kill_wait);
 	fprintf(out, "MailProg                = %s\n",
@@ -273,6 +281,10 @@ void slurm_print_ctl_conf ( FILE* out,
 		slurm_ctl_conf_ptr->slurmd_spooldir);
 	fprintf(out, "SlurmdTimeout           = %u\n", 
 		slurm_ctl_conf_ptr->slurmd_timeout);
+	fprintf(out, "SlurmDbdAddr            = %s\n", 
+		slurm_ctl_conf_ptr->slurmdbd_addr);
+	fprintf(out, "SlurmDbdPort            = %u\n", 
+		slurm_ctl_conf_ptr->slurmdbd_port);
 	fprintf(out, "SLURM_CONFIG_FILE       = %s\n", 
 		slurm_ctl_conf_ptr->slurm_conf);
 	fprintf(out, "SLURM_VERSION           = %s\n", SLURM_VERSION);

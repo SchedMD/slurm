@@ -46,6 +46,7 @@ static char *	_dump_node(struct node_record *node_ptr, hostlist_t hl,
 static char *	_get_node_state(struct node_record *node_ptr);
 static int	_same_info(struct node_record *node1_ptr, 
 			   struct node_record *node2_ptr, int state_info);
+static int	_str_cmp(char *s1, char *s2);
 
 #define SLURM_INFO_ALL		0
 #define SLURM_INFO_VOLITILE	1
@@ -62,15 +63,17 @@ static int	_same_info(struct node_record *node1_ptr,
  *
  * Response format
  * ARG=<cnt>#<NODEID>:
- *	STATE=<state>;		Moab equivalent node state
- *	CCLASS=<[part:cpus]>;	SLURM partition with CPU count of node,
- *				make have more than one partition
- *	CMEMORY=<MB>;		MB of memory on node
- *	CDISK=<MB>;		MB of disk space on node
- *	CPROCS=<cpus>;		CPU count on node
- *	[FEATURE=<feature>;]	features associated with node, if any,
- *	[CAT=<reason>];		Reason for a node being down or drained
- *				colon separator
+ *	STATE=<state>;		 Moab equivalent node state
+ *	[CAT=<reason>];		 Reason for a node being down or drained
+ *				 colon separator
+ *	CCLASS=<[part:cpus]>;	 SLURM partition with CPU count of node,
+ *				 make have more than one partition
+ *	[ARCH=<architecture>;]	 Computer architecture
+ *	[OS=<operating_system>;] Operating system
+ *	CMEMORY=<MB>;		 MB of memory on node
+ *	CDISK=<MB>;		 MB of disk space on node
+ *	CPROCS=<cpus>;		 CPU count on node
+ *	[FEATURE=<feature>;]	 Features associated with node, if any
  *  [#<NODEID>:...];
  */
 extern int	get_nodes(char *cmd_ptr, int *err_code, char **err_msg)
@@ -110,19 +113,31 @@ extern int	get_nodes(char *cmd_ptr, int *err_code, char **err_msg)
 		buf = _dump_all_nodes(&node_rec_cnt, state_info);
 	} else {
 		struct node_record *node_ptr = NULL;
-		char *node_name = NULL, *tmp2_char = NULL;
+		char *node_name, *slurm_hosts;
+		int node_cnt;
+		hostset_t slurm_hostset;
 
-		node_name = strtok_r(tmp_char, ":", &tmp2_char);
-		while (node_name) {
-			node_ptr = find_node_record(node_name);
-			tmp_buf = _dump_node(node_ptr, NULL, state_info);
-			if (node_rec_cnt > 0)
-				xstrcat(buf, "#");
-			xstrcat(buf, tmp_buf);
-			xfree(tmp_buf);
-			node_rec_cnt++;
-			node_name = strtok_r(NULL, ":", &tmp2_char);
+		slurm_hosts = moab2slurm_task_list(tmp_char, &node_cnt);
+		if ((slurm_hostset = hostset_create(slurm_hosts))) {
+			while ((node_name = hostset_shift(slurm_hostset))) {
+				node_ptr = find_node_record(node_name);
+				if (node_ptr == NULL) {
+					error("sched/wiki2: bad hostname %s", 
+					      node_name);
+					continue;
+				}
+				tmp_buf = _dump_node(node_ptr, NULL, state_info);
+				if (node_rec_cnt > 0)
+					xstrcat(buf, "#");
+				xstrcat(buf, tmp_buf);
+				xfree(tmp_buf);
+				node_rec_cnt++;
+			}
+			hostset_destroy(slurm_hostset);
+		} else {
+			error("hostset_create(%s): %m", slurm_hosts);
 		}
+		xfree(slurm_hosts);
 	}
 	unlock_slurmctld(node_read_lock);
 
@@ -207,11 +222,7 @@ static int	_same_info(struct node_record *node1_ptr,
 
 	if (node1_ptr->node_state != node2_ptr->node_state)
 		return 1;
-	if (((node1_ptr->reason == NULL) && node2_ptr->reason) ||
-	    ((node2_ptr->reason == NULL) && node1_ptr->reason))
-		return 2;
-	if (node1_ptr->reason && node2_ptr->reason &&
-	    strcmp(node1_ptr->reason, node2_ptr->reason))
+	if (_str_cmp(node1_ptr->reason, node2_ptr->reason))
 		return 2;
 	if (state_info == SLURM_INFO_STATE)
 		return 0;
@@ -231,6 +242,10 @@ static int	_same_info(struct node_record *node1_ptr,
 		if (node1_ptr->part_pptr[i] !=  node2_ptr->part_pptr[i])
 			return 6;
 	}
+	if (_str_cmp(node1_ptr->arch, node2_ptr->arch))
+		return 7;
+	if (_str_cmp(node1_ptr->os, node2_ptr->os))
+		return 8;
 	if (state_info == SLURM_INFO_VOLITILE)
 		return 0;
 
@@ -242,18 +257,16 @@ static int	_same_info(struct node_record *node1_ptr,
 		     node2_ptr->config_ptr->tmp_disk) ||
 		    (node1_ptr->config_ptr->cpus != 
 		     node2_ptr->config_ptr->cpus))
-			return 7;
+			return 9;
 	} else {
 		if ((node1_ptr->real_memory != node2_ptr->real_memory) ||
 		    (node1_ptr->tmp_disk    != node2_ptr->tmp_disk) ||
 		    (node1_ptr->cpus        != node2_ptr->cpus))
-			return 8;
+			return 10;
 	}
-	if ((node1_ptr->config_ptr->feature != 
-	     node2_ptr->config_ptr->feature) ||
-	    strcmp(node1_ptr->config_ptr->feature, 
-	           node2_ptr->config_ptr->feature))
-		return 9;
+	if (_str_cmp(node1_ptr->config_ptr->feature, 
+		     node2_ptr->config_ptr->feature))
+		return 11;
 	return 0;
 }
 
@@ -307,6 +320,16 @@ static char *	_dump_node(struct node_record *node_ptr, hostlist_t hl,
 	}
 	if (i > 0)
 		xstrcat(buf, ";");
+
+	if (node_ptr->arch) {
+		snprintf(tmp, sizeof(tmp), "ARCH=%s;", node_ptr->arch);
+		xstrcat(buf, tmp);
+	}
+
+	if (node_ptr->os) {
+		snprintf(tmp, sizeof(tmp), "OS=%s;", node_ptr->os);
+		xstrcat(buf, tmp);
+	}
 
 	if (state_info == SLURM_INFO_VOLITILE)
 		return buf;
@@ -364,4 +387,17 @@ static char *	_get_node_state(struct node_record *node_ptr)
 		return "Idle";
 	
 	return "Unknown";
+}
+
+/* Like strcmp(), but can handle NULL pointers */
+static int	_str_cmp(char *s1, char *s2)
+{
+	if (s1 && s2)
+		return strcmp(s1, s2);
+
+	if ((s1 == NULL) && (s2 == NULL))
+		return 0;
+
+	/* One pointer is valid and the other is NULL */
+	return 1;
 }

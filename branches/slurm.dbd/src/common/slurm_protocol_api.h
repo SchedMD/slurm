@@ -3,6 +3,7 @@
  *	definitions
  *****************************************************************************
  *  Copyright (C) 2002-2006 The Regents of the University of California.
+ *  Copyright (C) 2008 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Kevin Tew <tew1@llnl.gov>, et. al.
  *  UCRL-CODE-226842.
@@ -106,6 +107,11 @@ uint32_t slurm_get_def_mem_per_task(void);
  */
 uint32_t slurm_get_max_mem_per_task(void);
 
+/* slurm_get_env_timeout
+ * return default timeout for srun/sbatch --get-user-env option
+ */
+int inline slurm_get_env_timeout(void);
+
 /* slurm_get_mpi_default
  * get default mpi value from slurmctld_conf object
  * RET char *   - mpi default value from slurm.conf,  MUST be xfreed by caller
@@ -133,6 +139,24 @@ int inline slurm_api_set_default_config();
 /* slurm_api_clear_config
  * execute this only at program termination to free all memory */
 void inline slurm_api_clear_config(void);
+
+/* slurm_get_health_check_program
+ * get health_check_program from slurmctld_conf object from slurmctld_conf object
+ * RET char *   - health_check_program, MUST be xfreed by caller
+ */
+char *slurm_get_health_check_program(void);
+
+/* slurm_get_slurmdbd_addr
+ * get slurm_dbd_addr from slurmctld_conf object from slurmctld_conf object
+ * RET char *   - slurmdbd_addr, MUST be xfreed by caller
+ */
+char *slurm_get_slurmdbd_addr(void);
+
+/* slurm_get_slurmdbd_port
+ * get slurm_dbd_port from slurmctld_conf object from slurmctld_conf object
+ * RET uint16_t   - dbd_port
+ */
+uint16_t slurm_get_slurmdbd_port(void);
 
 /* slurm_get_plugin_dir
  * get plugin directory from slurmctld_conf object from slurmctld_conf object 

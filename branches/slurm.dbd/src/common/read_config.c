@@ -2,6 +2,7 @@
  *  read_config.c - read the overall slurm configuration file
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
+ *  Copyright (C) 2008 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>.
  *  UCRL-CODE-226842.
@@ -125,9 +126,15 @@ s_p_options_t slurm_conf_options[] = {
 	{"CacheGroups", S_P_UINT16},
 	{"BackupAddr", S_P_STRING},
 	{"BackupController", S_P_STRING},
+	{"ClusterAcctStorageLoc", S_P_STRING},
+	{"ClusterAcctStorageType", S_P_STRING},
+	{"ClusterAcctStorageHost", S_P_STRING},
+	{"ClusterAcctStorageUser", S_P_STRING},
+	{"ClusterAcctStoragePass", S_P_STRING},
+	{"ClusterAcctStoragePort", S_P_UINT32},
+	{"ClusterName", S_P_STRING},
 	{"ControlAddr", S_P_STRING},
 	{"ControlMachine", S_P_STRING},
-	{"ClusterName", S_P_STRING},
 	{"CryptoType", S_P_STRING},
 	{"DefMemPerTask", S_P_UINT32},
 	{"Epilog", S_P_STRING},
@@ -135,6 +142,8 @@ s_p_options_t slurm_conf_options[] = {
 	{"FirstJobId", S_P_UINT32},
 	{"HashBase", S_P_LONG, defunct_option},
 	{"HeartbeatInterval", S_P_LONG, defunct_option},
+	{"HealthCheckInterval", S_P_UINT16},
+	{"HealthCheckProgram", S_P_STRING},
 	{"InactiveLimit", S_P_UINT16},
 	{"JobAcctType", S_P_STRING},
 	{"JobAcctGatherType", S_P_STRING},
@@ -156,6 +165,8 @@ s_p_options_t slurm_conf_options[] = {
 	{"JobCredentialPrivateKey", S_P_STRING},
 	{"JobCredentialPublicCertificate", S_P_STRING},
 	{"JobFileAppend", S_P_UINT16},
+	{"JobRequeue", S_P_UINT16},
+	{"GetEnvTimeout", S_P_UINT16},
 	{"KillTree", S_P_UINT16, defunct_option},
 	{"KillWait", S_P_UINT16},
 	{"MailProg", S_P_STRING},
@@ -163,12 +174,6 @@ s_p_options_t slurm_conf_options[] = {
 	{"MaxMemPerTask", S_P_UINT32},
 	{"MessageTimeout", S_P_UINT16},
 	{"MinJobAge", S_P_UINT16},
-	{"ClusterAcctStorageLoc", S_P_STRING},
-	{"ClusterAcctStorageType", S_P_STRING},
-	{"ClusterAcctStorageHost", S_P_STRING},
-	{"ClusterAcctStorageUser", S_P_STRING},
-	{"ClusterAcctStoragePass", S_P_STRING},
-	{"ClusterAcctStoragePort", S_P_UINT32},
 	{"MpichGmDirectSupport", S_P_LONG},
 	{"MpiDefault", S_P_STRING},
 	{"PluginDir", S_P_STRING},
@@ -201,6 +206,8 @@ s_p_options_t slurm_conf_options[] = {
 	{"SlurmdPort", S_P_UINT32},
 	{"SlurmdSpoolDir", S_P_STRING},
 	{"SlurmdTimeout", S_P_UINT16},
+	{"SlurmDbdAddr", S_P_STRING},
+	{"SlurmDbdPort", S_P_UINT16},
 	{"SrunEpilog", S_P_STRING},
 	{"SrunProlog", S_P_STRING},
 	{"StateSaveLocation", S_P_STRING},
@@ -501,6 +508,13 @@ static int parse_partitionname(void **dest, slurm_parser_enum_t type,
 		if (!s_p_get_string(&p->nodes, "Nodes", tbl)
 		    && !s_p_get_string(&p->nodes, "Nodes", dflt))
 			p->nodes = NULL;
+		else {
+			int i;
+			for (i=0; p->nodes[i]; i++) {
+				if (p->nodes[i] == ' ')
+					p->nodes[i] = ',';
+			}
+		}
 
 		if (!s_p_get_boolean(&p->root_only_flag, "RootOnly", tbl)
 		    && !s_p_get_boolean(&p->root_only_flag, "RootOnly", dflt))
@@ -1064,6 +1078,7 @@ free_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr, bool purge_node_hash)
 	xfree (ctl_conf_ptr->job_comp_pass);
 	xfree (ctl_conf_ptr->job_credential_private_key);
 	xfree (ctl_conf_ptr->job_credential_public_certificate);
+	xfree (ctl_conf_ptr->health_check_program);
 	xfree (ctl_conf_ptr->mail_prog);
 	xfree (ctl_conf_ptr->mpi_default);
 	xfree (ctl_conf_ptr->node_prefix);
@@ -1086,6 +1101,7 @@ free_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr, bool purge_node_hash)
 	xfree (ctl_conf_ptr->srun_epilog);
 	xfree (ctl_conf_ptr->srun_prolog);
 	xfree (ctl_conf_ptr->slurmd_spooldir);
+	xfree (ctl_conf_ptr->slurmdbd_addr);
 	xfree (ctl_conf_ptr->state_save_location);
 	xfree (ctl_conf_ptr->suspend_exc_nodes);
 	xfree (ctl_conf_ptr->suspend_exc_parts);
@@ -1114,6 +1130,12 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	xfree (ctl_conf_ptr->authtype);
 	ctl_conf_ptr->cache_groups		= (uint16_t) NO_VAL;
 	xfree (ctl_conf_ptr->checkpoint_type);
+	xfree (ctl_conf_ptr->cluster_acct_storage_loc);
+	xfree (ctl_conf_ptr->cluster_acct_storage_type);
+	xfree (ctl_conf_ptr->cluster_acct_storage_user);
+	xfree (ctl_conf_ptr->cluster_acct_storage_host);
+	xfree (ctl_conf_ptr->cluster_acct_storage_pass);
+	ctl_conf_ptr->cluster_acct_storage_port             = 0;
 	xfree (ctl_conf_ptr->cluster_name);
 	xfree (ctl_conf_ptr->backup_addr);
 	xfree (ctl_conf_ptr->backup_controller);
@@ -1124,6 +1146,8 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	xfree (ctl_conf_ptr->epilog);
 	ctl_conf_ptr->fast_schedule		= (uint16_t) NO_VAL;
 	ctl_conf_ptr->first_job_id		= (uint32_t) NO_VAL;
+	ctl_conf_ptr->health_check_interval	= 0;
+	xfree(ctl_conf_ptr->health_check_program);
 	ctl_conf_ptr->inactive_limit		= (uint16_t) NO_VAL;
 	xfree (ctl_conf_ptr->job_acct_gather_type);
 	ctl_conf_ptr->job_acct_gather_freq             = 0;
@@ -1139,10 +1163,10 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	xfree (ctl_conf_ptr->job_comp_host);
 	xfree (ctl_conf_ptr->job_comp_pass);
 	ctl_conf_ptr->job_comp_port             = 0;
-
 	xfree (ctl_conf_ptr->job_credential_private_key);
 	xfree (ctl_conf_ptr->job_credential_public_certificate);
 	ctl_conf_ptr->job_file_append		= (uint16_t) NO_VAL;
+	ctl_conf_ptr->job_requeue		= (uint16_t) NO_VAL;
 	ctl_conf_ptr->kill_wait			= (uint16_t) NO_VAL;
 	xfree (ctl_conf_ptr->mail_prog);
 	ctl_conf_ptr->max_job_cnt		= (uint16_t) NO_VAL;
@@ -1151,12 +1175,6 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	xfree (ctl_conf_ptr->mpi_default);
 	ctl_conf_ptr->msg_timeout		= (uint16_t) NO_VAL;
 	ctl_conf_ptr->next_job_id		= (uint32_t) NO_VAL;
-	xfree (ctl_conf_ptr->cluster_acct_storage_loc);
-	xfree (ctl_conf_ptr->cluster_acct_storage_type);
-	xfree (ctl_conf_ptr->cluster_acct_storage_user);
-	xfree (ctl_conf_ptr->cluster_acct_storage_host);
-	xfree (ctl_conf_ptr->cluster_acct_storage_pass);
-	ctl_conf_ptr->cluster_acct_storage_port             = 0;
 	xfree (ctl_conf_ptr->plugindir);
 	xfree (ctl_conf_ptr->plugstack);
 	ctl_conf_ptr->private_data              = 0;
@@ -1187,6 +1205,8 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
  	ctl_conf_ptr->slurmd_port		= (uint32_t) NO_VAL;
 	xfree (ctl_conf_ptr->slurmd_spooldir);
 	ctl_conf_ptr->slurmd_timeout		= (uint16_t) NO_VAL;
+	ctl_conf_ptr->slurmdbd_port		= (uint16_t) NO_VAL;
+	xfree (ctl_conf_ptr->slurmdbd_addr);
 	xfree (ctl_conf_ptr->state_save_location);
 	xfree (ctl_conf_ptr->suspend_exc_nodes);
 	xfree (ctl_conf_ptr->suspend_exc_parts);
@@ -1608,6 +1628,17 @@ validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	if (!s_p_get_uint16(&conf->job_file_append, "JobFileAppend", hashtbl))
 		conf->job_file_append = 0;
 
+	if (!s_p_get_uint16(&conf->job_requeue, "JobRequeue", hashtbl))
+		conf->job_requeue = 1;
+	else if (conf->job_requeue > 1)
+		conf->job_requeue = 1;
+
+	if (!s_p_get_uint16(&conf->get_env_timeout, "GetEnvTimeout", hashtbl))
+		conf->get_env_timeout = DEFAULT_GET_ENV_TIMEOUT;
+
+	s_p_get_uint16(&conf->health_check_interval, "HealthCheckInterval", hashtbl);
+	s_p_get_string(&conf->health_check_program, "HealthCheckProgram", hashtbl);
+
 	if (!s_p_get_uint16(&conf->kill_wait, "KillWait", hashtbl))
 		conf->kill_wait = DEFAULT_KILL_WAIT;
 
@@ -1622,8 +1653,10 @@ validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 
 	if (!s_p_get_uint16(&conf->msg_timeout, "MessageTimeout", hashtbl))
 		conf->msg_timeout = DEFAULT_MSG_TIMEOUT;
-	else if (conf->msg_timeout > 100)
-		info("WARNING: MessageTimeout is too high for effective fault-tolerance");
+	else if (conf->msg_timeout > 100) {
+		info("WARNING: MessageTimeout is too high for effective "
+			"fault-tolerance");
+	}
 
 	if (!s_p_get_uint16(&conf->min_job_age, "MinJobAge", hashtbl))
 		conf->min_job_age = DEFAULT_MIN_JOB_AGE;
@@ -1812,6 +1845,10 @@ validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 
 	if (!s_p_get_uint16(&conf->slurmd_timeout, "SlurmdTimeout", hashtbl))
 		conf->slurmd_timeout = DEFAULT_SLURMD_TIMEOUT;
+
+	s_p_get_string(&conf->slurmdbd_addr, "SlurmDbdAddr", hashtbl);
+	if (!s_p_get_uint16(&conf->slurmdbd_port, "SlurmDbdPort", hashtbl))
+		conf->slurmdbd_port = SLURMDBD_PORT;
 
 	s_p_get_string(&conf->srun_prolog, "SrunProlog", hashtbl);
 	s_p_get_string(&conf->srun_epilog, "SrunEpilog", hashtbl);

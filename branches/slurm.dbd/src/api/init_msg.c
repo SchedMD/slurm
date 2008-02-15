@@ -118,7 +118,7 @@ void slurm_init_job_desc_msg(job_desc_msg_t * job_desc_msg)
 	job_desc_msg->mail_type   = 0;
 	job_desc_msg->mail_user   = NULL;
 	job_desc_msg->begin_time  = 0;
-	job_desc_msg->no_requeue  = (uint16_t) NO_VAL;
+	job_desc_msg->requeue  = (uint16_t) NO_VAL;
 #if SYSTEM_DIMENSIONS
 {
 	int i;

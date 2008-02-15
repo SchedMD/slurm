@@ -1,7 +1,8 @@
 /*****************************************************************************\
  *  slurm_protocol_api.c - high-level slurm communication functions
  *****************************************************************************
- *  Copyright (C) 2002-2006 The Regents of the University of California.
+ *  Copyright (C) 2002-2007 The Regents of the University of California.
+ *  Copyright (C) 2008 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Kevin Tew <tew1@llnl.gov>, et. al.
  *  UCRL-CODE-226842.
@@ -210,6 +211,20 @@ uint32_t slurm_get_max_mem_per_task(void)
 	return mem_per_task;
 }
 
+/* slurm_get_env_timeout
+ * return default timeout for srun/sbatch --get-user-env option
+ */
+int inline slurm_get_env_timeout(void)
+{
+        int timeout;
+        slurm_ctl_conf_t *conf;
+
+        conf = slurm_conf_lock();
+        timeout = conf->get_env_timeout;
+        slurm_conf_unlock();
+        return timeout;
+}
+
 /* slurm_get_mpi_default
  * get default mpi value from slurmctld_conf object
  * RET char *   - mpi default value from slurm.conf,  MUST be xfreed by caller
@@ -405,6 +420,51 @@ extern int slurm_set_auth_type(char *auth_type)
 	conf->authtype = xstrdup(auth_type);
 	slurm_conf_unlock();
 	return 0;
+}
+
+/* slurm_get_health_check_program
+ * get health_check_program from slurmctld_conf object from slurmctld_conf object
+ * RET char *   - health_check_program, MUST be xfreed by caller
+ */
+char *slurm_get_health_check_program(void)
+{
+	char *health_check_program;
+	slurm_ctl_conf_t *conf;
+
+	conf = slurm_conf_lock();
+	health_check_program = xstrdup(conf->health_check_program);
+	slurm_conf_unlock();
+	return health_check_program;
+}
+
+/* slurm_get_slurmdbd_addr
+ * get slurm_dbd_addr from slurmctld_conf object from slurmctld_conf object
+ * RET char *   - slurmdbd_addr, MUST be xfreed by caller
+ */
+char *slurm_get_slurmdbd_addr(void)
+{
+	char *slurmdbd_addr;
+	slurm_ctl_conf_t *conf;
+
+	conf = slurm_conf_lock();
+	slurmdbd_addr = xstrdup(conf->slurmdbd_addr);
+	slurm_conf_unlock();
+	return slurmdbd_addr;
+}
+
+/* slurm_get_slurmdbd_port
+ * get slurm_dbd_port from slurmctld_conf object from slurmctld_conf object
+ * RET uint16_t   - dbd_port
+ */
+uint16_t slurm_get_slurmdbd_port(void)
+{
+	uint16_t slurmdbd_port;
+	slurm_ctl_conf_t *conf;
+
+	conf = slurm_conf_lock();
+	slurmdbd_port = conf->slurmdbd_port;
+	slurm_conf_unlock();
+	return slurmdbd_port;
 }
 
 /* slurm_get_jobacct_gather_type

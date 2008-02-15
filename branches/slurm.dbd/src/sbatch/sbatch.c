@@ -261,11 +261,12 @@ static int fill_job_desc_from_opts(job_desc_msg_t *desc)
 		struct passwd *pw = NULL;
 		pw = getpwuid(opt.uid);
 		if (pw != NULL) {
-			desc->environment = env_array_user_default(pw->pw_name,
+			desc->environment = env_array_user_default(
+						pw->pw_name,
 						opt.get_user_env_time,
 						opt.get_user_env_mode);
-			/* FIXME - should we abort if j->environment
-			 * is NULL? */
+			if (desc->environment == NULL)
+				exit(1);	/* error already logged */
 		}
 	}
 	env_array_merge(&desc->environment, (const char **)environ);
@@ -276,7 +277,8 @@ static int fill_job_desc_from_opts(job_desc_msg_t *desc)
 	desc->in   = opt.ifname;
 	desc->out  = opt.ofname;
 	desc->work_dir = opt.cwd;
-	desc->no_requeue = opt.no_requeue;
+	if (opt.requeue != NO_VAL)
+		desc->requeue = opt.requeue;
 	if (opt.open_mode)
 		desc->open_mode = opt.open_mode;
 	if (opt.acctg_freq >= 0)

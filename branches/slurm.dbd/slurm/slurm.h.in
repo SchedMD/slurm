@@ -2,6 +2,7 @@
  *  slurm.h - Definitions for all of the SLURM RPCs
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
+ *  Copyright (C) 2008 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>, 
  *	Joey Ekstrom <ekstrom1@llnl.gov> et. al.
@@ -549,7 +550,7 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 	time_t begin_time;	/* delay initiation until this time */
 	uint16_t mail_type;	/* see MAIL_JOB_ definitions above */
 	char *mail_user;	/* user to receive notification */
-	uint16_t no_requeue;	/* disable job requeue option */
+	uint16_t requeue;	/* enable or disable job requeue option */
 /*
  * The following parameters are only meaningful on a Blue Gene
  * system at present. Some will be of value on other system. Don't remove these
@@ -846,7 +847,9 @@ typedef struct node_info {
 	uint32_t real_memory;	/* configured MB of real memory on the node */
 	uint32_t tmp_disk;	/* configured MB of total disk in TMP_FS */
 	uint32_t weight;	/* arbitrary priority of node for scheduling */
+	char *arch;		/* computer architecture */
 	char *features;		/* arbitrary list of features for node */
+	char *os;		/* operating system currently running */
 	char *reason;   	/* reason for node being DOWN or DRAINING */
 } node_info_t;
 
@@ -935,6 +938,9 @@ typedef struct slurm_ctl_conf {
 	uint32_t next_job_id;	/* next slurm generated job_id to assign */
 	uint16_t fast_schedule;	/* 1 to *not* check configurations by node 
 				 * (only check configuration file, faster) */
+	uint16_t get_env_timeout; /* timeout for srun --get-user-env option */
+	uint16_t health_check_interval;	/* secs between health checks */
+	char * health_check_program;	/* pathname of health check program */
 	uint16_t inactive_limit;/* seconds of inactivity before a
 				 * inactive resource allocation is released */
 	char *job_acct_gather_type; /* job accounting gather type */
@@ -955,6 +961,7 @@ typedef struct slurm_ctl_conf {
 	char *job_credential_private_key;	/* path to private key */
 	char *job_credential_public_certificate;/* path to public certificate*/
 	uint16_t job_file_append; /* if set, append to stdout/err file */
+	uint16_t job_requeue;	/* If set, jobs get requeued on node failre */
 	uint16_t kill_wait;	/* seconds between SIGXCPU to SIGKILL 
 				 * on job termination */
 	char *mail_prog;	/* pathname of mail program */
@@ -1011,6 +1018,8 @@ typedef struct slurm_ctl_conf {
 	char *slurmd_pidfile;   /* where to put slurmd pidfile           */
 	uint16_t slurmd_timeout;/* how long slurmctld waits for slurmd before 
 				 * considering node DOWN */
+	char *slurmdbd_addr;	/* comm path for Slurm DBD */
+	uint16_t slurmdbd_port;	/* port for Slurm DBD socket */
 	char *slurm_conf;	/* pathname of slurm config file */
 	char *srun_prolog;      /* srun prolog program */
 	char *srun_epilog;      /* srun epilog program */

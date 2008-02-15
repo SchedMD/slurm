@@ -109,7 +109,7 @@ typedef struct {
 	bool rotate;
 	bool elongate; 
 	List elongate_geos;
-	struct part_record *part_ptr;	/* pointer to the partition record */	
+	bitstr_t *avail_node_bitmap;	/* pointer to available nodes */	
 } ba_request_t; 
 
 typedef struct {
@@ -173,7 +173,7 @@ typedef struct
  * ba_node_t: node within the allocation system.
  */
 typedef struct {
-	/* set if using this node in a block*/
+	/* set if using this node in a block */
 	bool used;
 
 	/* coordinates */

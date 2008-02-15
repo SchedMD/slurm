@@ -95,6 +95,7 @@ typedef enum {
 	REQUEST_PING,
 	REQUEST_CONTROL,
 	REQUEST_SET_DEBUG_LEVEL,
+	REQUEST_HEALTH_CHECK,
 	
 	REQUEST_BUILD_INFO = 2001,
 	RESPONSE_BUILD_INFO,
@@ -690,12 +691,14 @@ typedef struct will_run_response_msg {
 typedef struct slurm_node_registration_status_msg {
 	time_t timestamp;
 	char *node_name;
+	char *arch;
+	char *os;
 	uint16_t cpus;
 	uint16_t sockets;
 	uint16_t cores;
 	uint16_t threads;
-	uint32_t real_memory_size;
-	uint32_t temporary_disk_space;
+	uint32_t real_memory;
+	uint32_t tmp_disk;
 	uint32_t job_count;	/* number of associate job_id's */
 	uint32_t *job_id;	/* IDs of running job (if any) */
 	uint16_t *step_id;	/* IDs of running job steps (if any) */

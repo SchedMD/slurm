@@ -2,10 +2,9 @@
  *  slurm_protocol_defs.c - functions for initializing and releasing 
  *	storage for RPC data structures. these are the functions used by 
  *	the slurm daemons directly, not for user client use.
- *
- *  $Id$
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
+ *  Copyright (C) 2008 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Kevin Tew <tew1@llnl.gov> et. al.
  *  UCRL-CODE-226842.
@@ -279,6 +278,8 @@ void slurm_free_node_registration_status_msg(
 {
 	if (msg) {
 		xfree(msg->node_name);
+		xfree(msg->arch);
+		xfree(msg->os);
 		xfree(msg->job_id);
 		xfree(msg->step_id);
 		if (msg->startup)
@@ -886,11 +887,17 @@ void slurm_free_ctl_conf(slurm_ctl_conf_info_msg_t * config_ptr)
 		xfree(config_ptr->backup_addr);
 		xfree(config_ptr->backup_controller);
 		xfree(config_ptr->checkpoint_type);
+		xfree(config_ptr->cluster_acct_storage_loc);
+		xfree(config_ptr->cluster_acct_storage_type);
+		xfree(config_ptr->cluster_acct_storage_user);
+		xfree(config_ptr->cluster_acct_storage_host);
+		xfree(config_ptr->cluster_acct_storage_pass);
 		xfree(config_ptr->cluster_name);
 		xfree(config_ptr->control_addr);
 		xfree(config_ptr->control_machine);
 		xfree(config_ptr->crypto_type);
 		xfree(config_ptr->epilog);
+		xfree(config_ptr->health_check_program);
 		xfree(config_ptr->job_acct_gather_type);
 		xfree(config_ptr->job_acct_storage_loc);
 		xfree(config_ptr->job_acct_storage_type);
@@ -906,11 +913,6 @@ void slurm_free_ctl_conf(slurm_ctl_conf_info_msg_t * config_ptr)
 		xfree(config_ptr->job_credential_public_certificate);
 		xfree(config_ptr->mail_prog);
 		xfree(config_ptr->mpi_default);
-		xfree(config_ptr->cluster_acct_storage_loc);
-		xfree(config_ptr->cluster_acct_storage_type);
-		xfree(config_ptr->cluster_acct_storage_user);
-		xfree(config_ptr->cluster_acct_storage_host);
-		xfree(config_ptr->cluster_acct_storage_pass);
 		xfree(config_ptr->node_prefix);
 		xfree(config_ptr->plugindir);
 		xfree(config_ptr->plugstack);
@@ -922,13 +924,14 @@ void slurm_free_ctl_conf(slurm_ctl_conf_info_msg_t * config_ptr)
 		xfree(config_ptr->sched_conf);
 		xfree(config_ptr->schedtype);
 		xfree(config_ptr->select_type);
+		xfree(config_ptr->slurm_conf);
 		xfree(config_ptr->slurm_user_name);
 		xfree(config_ptr->slurmctld_pidfile);
 		xfree(config_ptr->slurmctld_logfile);
 		xfree(config_ptr->slurmd_logfile);
 		xfree(config_ptr->slurmd_pidfile);
 		xfree(config_ptr->slurmd_spooldir);
-		xfree(config_ptr->slurm_conf);
+		xfree(config_ptr->slurmdbd_addr);
 		xfree(config_ptr->srun_epilog);
 		xfree(config_ptr->srun_prolog);
 		xfree(config_ptr->state_save_location);
@@ -1061,7 +1064,9 @@ static void _slurm_free_node_info_members(node_info_t * node)
 {
 	if (node) {
 		xfree(node->name);
+		xfree(node->arch);
 		xfree(node->features);
+		xfree(node->os);
 		xfree(node->reason);
 	}
 }
@@ -1297,6 +1302,7 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 	case REQUEST_SHUTDOWN_IMMEDIATE:
 	case RESPONSE_FORWARD_FAILED:
 	case REQUEST_DAEMON_STATUS:
+	case REQUEST_HEALTH_CHECK:
 		/* No body to free */
 		break;
 

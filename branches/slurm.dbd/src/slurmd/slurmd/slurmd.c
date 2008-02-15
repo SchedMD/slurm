@@ -49,6 +49,7 @@
 #include <sys/types.h>
 #include <sys/param.h>
 #include <sys/resource.h>
+#include <sys/utsname.h>
 #include <unistd.h>
 #include <stdlib.h>
 #include <sys/mman.h>
@@ -449,20 +450,31 @@ _fill_registration_msg(slurm_node_registration_status_msg_t *msg)
 	List steps;
 	ListIterator i;
 	step_loc_t *stepd;
-	int          n;
+	int  n;
+	char *arch, *os;
+	struct utsname buf;
 
-	msg->node_name = xstrdup (conf->node_name);
-	msg->cpus	= conf->cpus;
-	msg->sockets	= conf->sockets;
-	msg->cores	= conf->cores;
-	msg->threads	= conf->threads;
-
-	msg->real_memory_size     = conf->real_memory_size;
-	msg->temporary_disk_space = conf->tmp_disk_space;
+	msg->node_name  = xstrdup (conf->node_name);
+	msg->cpus	 = conf->cpus;
+	msg->sockets	 = conf->sockets;
+	msg->cores	 = conf->cores;
+	msg->threads	 = conf->threads;
+	msg->real_memory = conf->real_memory_size;
+	msg->tmp_disk    = conf->tmp_disk_space;
 
 	debug3("Procs=%u Sockets=%u Cores=%u Threads=%u Memory=%u TmpDisk=%u",
 	       msg->cpus, msg->sockets, msg->cores, msg->threads,
-	       msg->real_memory_size, msg->temporary_disk_space);
+	       msg->real_memory, msg->tmp_disk);
+
+	uname(&buf);
+	if ((arch = getenv("SLURM_ARCH")))
+		msg->arch = xstrdup(arch);
+	else
+		msg->arch = xstrdup(buf.machine);
+	if ((os = getenv("SLURM_OS")))
+		msg->os   = xstrdup(os);
+	else
+		msg->os = xstrdup(buf.sysname);
 
 	if (msg->startup) {
 		if (switch_g_alloc_node_info(&msg->switch_nodeinfo))
@@ -618,6 +630,8 @@ _read_config()
 	_free_and_set(&conf->epilog,   xstrdup(cf->epilog));
 	_free_and_set(&conf->prolog,   xstrdup(cf->prolog));
 	_free_and_set(&conf->tmpfs,    xstrdup(cf->tmp_fs));
+	_free_and_set(&conf->health_check_program, 
+		      xstrdup(cf->health_check_program));
 	_free_and_set(&conf->spooldir, xstrdup(cf->slurmd_spooldir));
 	_massage_pathname(&conf->spooldir);
 	_free_and_set(&conf->pidfile,  xstrdup(cf->slurmd_pidfile));
@@ -723,6 +737,7 @@ _print_conf()
 	debug3("TmpDisk     = %u",       conf->tmp_disk_space);
 	debug3("Epilog      = `%s'",     conf->epilog);
 	debug3("Logfile     = `%s'",     cf->slurmd_logfile);
+	debug3("HealthCheck = `%s'",     conf->health_check_program);
 	debug3("NodeName    = %s",       conf->node_name);
 	debug3("Port        = %u",       conf->port);
 	debug3("Prolog      = `%s'",     conf->prolog);
@@ -759,6 +774,7 @@ _init_conf()
 	conf->block_map_inv = NULL;
 	conf->conffile    = NULL;
 	conf->epilog      = NULL;
+	conf->health_check_program = NULL;
 	conf->logfile     = NULL;
 	conf->pubkey      = NULL;
 	conf->prolog      = NULL;
@@ -788,6 +804,7 @@ _destroy_conf()
 	if(conf) {
 		xfree(conf->block_map);
 		xfree(conf->block_map_inv);
+		xfree(conf->health_check_program);
 		xfree(conf->hostname);
 		xfree(conf->node_name);
 		xfree(conf->conffile);

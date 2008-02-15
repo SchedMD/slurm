@@ -3,8 +3,21 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 1.3.0-pre10
 ==============================
-
-
+ -- Add support for node-specific "arch" (architecture) and "os" (operating 
+    system) fields. These fields are set based upon values reported by the
+    slurmd daemon on each compute node using SLURM_ARCH and SLURM_OS environment 
+    variables (if set, the uname function otherwise) and are intended to support
+    changes in real time changes in operating system. These values are reported
+    by "scontrol show node" plus the sched/wiki and sched/wiki2 plugins for Maui
+    and Moab respectively.
+ -- In sched/wiki and sched/wiki2: add HostFormat and HidePartitionJobs to 
+    "scontrol show config" SCHEDULER_CONF output.
+ -- In sched/wiki2: accept hostname expression as input for GETNODES command.
+ -- Add JobRequeue configuration parameter and --requeue option to the sbatch
+    command.
+ -- Add HealthCheckInterval and HealthCheckProgram configuration parameters.
+ -- Add SlurmDbdAddr and SlurmDbdPort configuration parameters.
+ 
 * Changes in SLURM 1.3.0-pre9
 =============================
  -- Add spank support to sbatch. Note that spank_local_user() will be called 
@@ -159,6 +172,19 @@ documents those changes that are of interest to users and admins.
     option will offer this control for each job.
  -- Change a node's default TmpDisk from 1MB to 0MB and change job's default 
     disk space requirement from 1MB to 0MB.
+ -- In sched/wiki (Maui scheduler) specify a QOS (quality of service) by 
+    specifying an account of the form "qos-name".
+ -- In select/linear, fix bug in scheduling required nodes that already have
+    a job running on them (req.load.patch from Chris Holmes, HP).
+ -- Change timeout for srun/sbatch --get-user-env option to 2 secs, don't get 
+    DISPLAY environment variables, but explicitly set ENVIRONMENT=BATCH and 
+    HOSTNAME to the execution host of the batch script.
+ -- Modify salloc and sbatch to accept both "--tasks" and "--ntasks" as 
+    equivalent options for compatibility with srun.
+ -- Add configuration parameter GetEnvTimeout for use with Moab. See 
+    "man slurm.conf" for details.
+ -- If a partition's node list contains space separators, replace them with 
+    commas for easier parsing.
 
 * Changes in SLURM 1.2.22
 =========================

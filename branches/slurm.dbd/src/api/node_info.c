@@ -147,6 +147,18 @@ slurm_sprint_node_table (node_info_t * node_ptr, int one_liner )
 		node_ptr->weight, node_ptr->features,
 		node_ptr->reason);
 	xstrcat(out, tmp_line);
+
+	/****** Line 3 (optional) ******/
+	if (node_ptr->arch || node_ptr->os) {
+		if (one_liner)
+			xstrcat(out, " ");
+		else
+			xstrcat(out, "\n   ");
+		snprintf(tmp_line, sizeof(tmp_line),
+			"Arch=%s OS=%s",
+			node_ptr->arch, node_ptr->os);
+		xstrcat(out, tmp_line);
+	}
 	xstrcat(out, "\n");
 
 	return out;

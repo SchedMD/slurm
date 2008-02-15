@@ -53,6 +53,7 @@
 #include "slurm/slurm.h"
 #include "src/common/log.h"
 #include "src/common/env.h"
+#include "src/common/read_config.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
@@ -75,8 +76,6 @@ strong_alias(env_array_append_fmt,	slurm_env_array_append_fmt);
 strong_alias(env_array_overwrite,	slurm_env_array_overwrite);
 strong_alias(env_array_overwrite_fmt,	slurm_env_array_overwrite_fmt);
 
-#define SU_WAIT_MSEC 8000	/* 8000 msec for /bin/su to return user 
-				 * env vars for --get-user-env option */
 #define ENV_BUFSIZE (256 * 1024)
 
 /*
@@ -130,6 +129,18 @@ _extend_env(char ***envp)
 		--ep;
 
 	return (++ep);
+}
+
+/* return true if the environment variables should not be set for 
+ *	srun's --get-user-env option */
+static bool _discard_env(char *name, char *value)
+{
+	if ((strcmp(name, "DISPLAY")     == 0) ||
+	    (strcmp(name, "ENVIRONMENT") == 0) ||
+	    (strcmp(name, "HOSTNAME")    == 0))
+		return true;
+
+	return false;
 }
 
 /*
@@ -807,6 +818,7 @@ env_array_for_job(char ***dest, const resource_allocation_response_msg_t *alloc)
  *	SLURM_JOB_NODELIST
  *	SLURM_JOB_CPUS_PER_NODE
  *	ENVIRONMENT=BATCH
+ *	HOSTNAME
  *	LOADLBATCH (AIX only)
  *
  * Sets OBSOLETE variables:
@@ -816,8 +828,9 @@ env_array_for_job(char ***dest, const resource_allocation_response_msg_t *alloc)
  *	SLURM_TASKS_PER_NODE <- poorly named, really CPUs per node
  *	? probably only needed for users...
  */
-void
-env_array_for_batch_job(char ***dest, const batch_job_launch_msg_t *batch)
+extern void
+env_array_for_batch_job(char ***dest, const batch_job_launch_msg_t *batch,
+			const char *node_name)
 {
 	char *tmp;
 	uint32_t num_nodes = 0;
@@ -837,6 +850,8 @@ env_array_for_batch_job(char ***dest, const batch_job_launch_msg_t *batch)
 					batch->cpu_count_reps);
 	env_array_overwrite_fmt(dest, "SLURM_JOB_CPUS_PER_NODE", "%s", tmp);
 	env_array_overwrite_fmt(dest, "ENVIRONMENT", "BATCH");
+	if (node_name)
+		env_array_overwrite_fmt(dest, "HOSTNAME", "%s", node_name);
 #ifdef HAVE_AIX
 	/* this puts the "poe" command into batch mode */
 	env_array_overwrite(dest, "LOADLBATCH", "yes");
@@ -1274,8 +1289,9 @@ char **_load_env_cache(const char *username)
 		if (!fgets(line, sizeof(line), fp))
 			break;
 		_strip_cr_nl(line);
-		if (_env_array_entry_splitter(line, name, sizeof(name),
-					      value, sizeof(value)))
+		if (_env_array_entry_splitter(line, name, sizeof(name), 
+					      value, sizeof(value)) &&
+		    (!_discard_env(name, value)))
 			env_array_overwrite(&env, name, value);
 	}
 	fclose(fp);
@@ -1291,7 +1307,7 @@ char **_load_env_cache(const char *username)
  * 2. Load the user environment from a cache file. This is used
  *    in the event that option 1 times out.
  *
- * timeout value is in seconds or zero for default (8 secs) 
+ * timeout value is in seconds or zero for default (2 secs) 
  * mode is 1 for short ("su <user>"), 2 for long ("su - <user>")
  * On error, returns NULL.
  *
@@ -1313,7 +1329,7 @@ char **env_array_user_default(const char *username, int timeout, int mode)
 	struct pollfd ufds;
 
 	if (geteuid() != (uid_t)0) {
-		info("WARNING: you must be root to use --get-user-env");
+		fatal("WARNING: you must be root to use --get-user-env");
 		return NULL;
 	}
 
@@ -1360,15 +1376,14 @@ char **env_array_user_default(const char *username, int timeout, int mode)
 	ufds.events = POLLIN;
 
 	/* Read all of the output from /bin/su into buffer */
+	if ((timeout == 0) && ((timeout = slurm_get_env_timeout()) == 0))
+		timeleft = DEFAULT_GET_ENV_TIMEOUT;
 	found = 0;
 	buf_read = 0;
 	bzero(buffer, sizeof(buffer));
 	while (1) {
 		gettimeofday(&now, NULL);
-		if (timeout)
-			timeleft = timeout * 1000;
-		else
-			timeleft = SU_WAIT_MSEC;
+		timeleft = timeout * 1000;
 		timeleft -= (now.tv_sec -  begin.tv_sec)  * 1000;
 		timeleft -= (now.tv_usec - begin.tv_usec) / 1000;
 		if (timeleft <= 0) {
@@ -1414,7 +1429,7 @@ char **env_array_user_default(const char *username, int timeout, int mode)
 	close(fildes[0]);
 	if (!found) {
 		error("Failed to load current user environment variables");
-		_load_env_cache(username);
+		return _load_env_cache(username);
 	}
 
 	/* First look for the start token in the output */
@@ -1444,12 +1459,14 @@ char **env_array_user_default(const char *username, int timeout, int mode)
 			break;
 		}
 		if (_env_array_entry_splitter(line, name, sizeof(name), 
-					      value, sizeof(value)))
+					      value, sizeof(value)) &&
+		    (!_discard_env(name, value)))
 			env_array_overwrite(&env, name, value);
 		line = strtok_r(NULL, "\n", &last);
 	}
 	if (!found) {
 		error("Failed to get all user environment variables");
+		env_array_free(env);
 		return _load_env_cache(username);
 	}
 

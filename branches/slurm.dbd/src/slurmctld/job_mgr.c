@@ -614,6 +614,10 @@ static int _load_job_state(Buf buffer)
 		      job_id, kill_on_node_fail);
 		goto unpack_error;
 	}
+	if (partition == NULL) {
+		error("No partition for job %u", job_id);
+		goto unpack_error;
+	}
 	part_ptr = find_part_record (partition);
 	if (part_ptr == NULL) {
 		verbose("Invalid partition (%s) for job_id %u", 
@@ -745,7 +749,7 @@ void _dump_job_details(struct job_details *detail_ptr, Buf buffer)
 	pack16(detail_ptr->contiguous, buffer);
 	pack16(detail_ptr->cpus_per_task, buffer);
 	pack16(detail_ptr->ntasks_per_node, buffer);
-	pack16(detail_ptr->no_requeue, buffer);
+	pack16(detail_ptr->requeue, buffer);
 	pack16(detail_ptr->acctg_freq, buffer);
 
 	pack8(detail_ptr->open_mode, buffer);
@@ -783,7 +787,7 @@ static int _load_job_details(struct job_record *job_ptr, Buf buffer)
 	uint32_t job_min_memory, job_min_tmp_disk;
 	uint32_t num_tasks, name_len, argc = 0;
 	uint16_t shared, contiguous, ntasks_per_node;
-	uint16_t acctg_freq, cpus_per_task, no_requeue;
+	uint16_t acctg_freq, cpus_per_task, requeue;
 	uint8_t open_mode, overcommit;
 	time_t begin_time, submit_time;
 	int i;
@@ -798,7 +802,7 @@ static int _load_job_details(struct job_record *job_ptr, Buf buffer)
 	safe_unpack16(&contiguous, buffer);
 	safe_unpack16(&cpus_per_task, buffer);
 	safe_unpack16(&ntasks_per_node, buffer);
-	safe_unpack16(&no_requeue, buffer);
+	safe_unpack16(&requeue, buffer);
 	safe_unpack16(&acctg_freq, buffer);
 
 	safe_unpack8(&open_mode, buffer);
@@ -830,9 +834,9 @@ static int _load_job_details(struct job_record *job_ptr, Buf buffer)
 		      job_ptr->job_id, contiguous);
 		goto unpack_error;
 	}
-	if ((no_requeue > 1) || (overcommit > 1)) {
-		error("Invalid data for job %u: no_requeue=%u overcommit=%u",
-		      no_requeue, overcommit);
+	if ((requeue > 1) || (overcommit > 1)) {
+		error("Invalid data for job %u: requeue=%u overcommit=%u",
+		      requeue, overcommit);
 		goto unpack_error;
 	}
 
@@ -862,7 +866,7 @@ static int _load_job_details(struct job_record *job_ptr, Buf buffer)
 	job_ptr->details->job_min_procs = job_min_procs;
 	job_ptr->details->job_min_memory = job_min_memory;
 	job_ptr->details->job_min_tmp_disk = job_min_tmp_disk;
-	job_ptr->details->no_requeue = no_requeue;
+	job_ptr->details->requeue = requeue;
 	job_ptr->details->open_mode = open_mode;
 	job_ptr->details->overcommit = overcommit;
 	job_ptr->details->begin_time = begin_time;
@@ -1059,7 +1063,7 @@ extern int kill_running_job_by_node_name(char *node_name, bool step_test)
 				      node_name, job_ptr->job_id);
 				_excise_node_from_job(job_ptr, node_ptr);
 			} else if (job_ptr->batch_flag && job_ptr->details &&
-			           (job_ptr->details->no_requeue == 0)) {
+			           (job_ptr->details->requeue > 0)) {
 				uint16_t save_state;
 				char requeue_msg[128];
 
@@ -1145,7 +1149,7 @@ void dump_job_desc(job_desc_msg_t * job_specs)
 	long job_min_memory, job_min_tmp_disk, num_procs;
 	long time_limit, priority, contiguous, acctg_freq;
 	long kill_on_node_fail, shared, immediate;
-	long cpus_per_task, no_requeue, num_tasks, overcommit;
+	long cpus_per_task, requeue, num_tasks, overcommit;
 	long ntasks_per_node, ntasks_per_socket, ntasks_per_core;
 	char buf[100];
 
@@ -1270,10 +1274,10 @@ void dump_job_desc(job_desc_msg_t * job_specs)
 	slurm_make_time_str(&job_specs->begin_time, buf, sizeof(buf));
 	cpus_per_task = (job_specs->cpus_per_task != (uint16_t) NO_VAL) ?
 		(long) job_specs->cpus_per_task : -1L;
-	no_requeue = (job_specs->no_requeue != (uint16_t) NO_VAL) ?
-		(long) job_specs->no_requeue : -1L;
-	debug3("   network=%s begin=%s cpus_per_task=%ld no_requeue=%ld", 
-	       job_specs->network, buf, cpus_per_task, no_requeue);
+	requeue = (job_specs->requeue != (uint16_t) NO_VAL) ?
+		(long) job_specs->requeue : -1L;
+	debug3("   network=%s begin=%s cpus_per_task=%ld requeue=%ld", 
+	       job_specs->network, buf, cpus_per_task, requeue);
 
 	ntasks_per_node = (job_specs->ntasks_per_node != (uint16_t) NO_VAL) ?
 		(long) job_specs->ntasks_per_node : -1L;
@@ -2566,11 +2570,13 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 	if (job_desc->task_dist != (uint16_t) NO_VAL)
 		detail_ptr->task_dist = job_desc->task_dist;
 	if (job_desc->cpus_per_task != (uint16_t) NO_VAL)
-		detail_ptr->cpus_per_task = job_desc->cpus_per_task;
+		detail_ptr->cpus_per_task = MIN(job_desc->cpus_per_task, 1);
 	if (job_desc->ntasks_per_node != (uint16_t) NO_VAL)
 		detail_ptr->ntasks_per_node = job_desc->ntasks_per_node;
-	if (job_desc->no_requeue != (uint16_t) NO_VAL)
-		detail_ptr->no_requeue = job_desc->no_requeue;
+	if (job_desc->requeue != (uint16_t) NO_VAL)
+		detail_ptr->requeue = MIN(job_desc->requeue, 1);
+	else
+		detail_ptr->requeue = slurmctld_conf.job_requeue;
 	if (job_desc->job_min_procs != (uint16_t) NO_VAL)
 		detail_ptr->job_min_procs = job_desc->job_min_procs;
 	detail_ptr->job_min_procs = MAX(detail_ptr->job_min_procs,
@@ -4038,50 +4044,49 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 /*
  * validate_jobs_on_node - validate that any jobs that should be on the node 
  *	are actually running, if not clean up the job records and/or node 
- *	records
- * IN node_name - node which should have jobs running
- * IN/OUT job_count - number of jobs which should be running on specified node
- * IN job_id_ptr - pointer to array of job_ids that should be on this node
- * IN step_id_ptr - pointer to array of job step ids that should be on node
+ *	records, call this function after validate_node_specs() sets the node 
+ *	state properly 
+ * IN reg_msg - node registration message
  */
-void
-validate_jobs_on_node(char *node_name, uint32_t * job_count,
-		      uint32_t * job_id_ptr, uint16_t * step_id_ptr)
+extern void validate_jobs_on_node(slurm_node_registration_status_msg_t *reg_msg)
 {
 	int i, node_inx, jobs_on_node;
 	struct node_record *node_ptr;
 	struct job_record *job_ptr;
 	time_t now = time(NULL);
 
-	node_ptr = find_node_record(node_name);
+	node_ptr = find_node_record(reg_msg->node_name);
 	if (node_ptr == NULL) {
-		error("slurmd registered on unknown node %s", node_name);
+		error("slurmd registered on unknown node %s", 
+			reg_msg->node_name);
 		return;
 	}
 	node_inx = node_ptr - node_record_table_ptr;
 
 	/* Check that jobs running are really supposed to be there */
-	for (i = 0; i < *job_count; i++) {
-		if ( (job_id_ptr[i] >= MIN_NOALLOC_JOBID) && 
-		     (job_id_ptr[i] <= MAX_NOALLOC_JOBID) ) {
+	for (i = 0; i < reg_msg->job_count; i++) {
+		if ( (reg_msg->job_id[i] >= MIN_NOALLOC_JOBID) && 
+		     (reg_msg->job_id[i] <= MAX_NOALLOC_JOBID) ) {
 			info("NoAllocate job %u.%u reported on node %s",
-				job_id_ptr[i], step_id_ptr[i], node_name);
+				reg_msg->job_id[i], reg_msg->step_id[i], 
+				reg_msg->node_name);
 			continue;
 		}
 
-		job_ptr = find_job_record(job_id_ptr[i]);
+		job_ptr = find_job_record(reg_msg->job_id[i]);
 		if (job_ptr == NULL) {
 			error("Orphan job %u.%u reported on node %s",
-			      job_id_ptr[i], step_id_ptr[i], node_name);
-			kill_job_on_node(job_id_ptr[i], job_ptr, node_ptr);
+				reg_msg->job_id[i], reg_msg->step_id[i], 
+				reg_msg->node_name);
+			kill_job_on_node(reg_msg->job_id[i], job_ptr, node_ptr);
 		}
 
 		else if ((job_ptr->job_state == JOB_RUNNING) ||
-				(job_ptr->job_state == JOB_SUSPENDED)) {
+			 (job_ptr->job_state == JOB_SUSPENDED)) {
 			if (bit_test(job_ptr->node_bitmap, node_inx)) {
 				debug3("Registered job %u.%u on node %s ",
-				       job_id_ptr[i], step_id_ptr[i], 
-				       node_name);
+				       reg_msg->job_id[i], reg_msg->step_id[i], 
+				       reg_msg->node_name);
 				if ((job_ptr->batch_flag) &&
 				    (node_inx == bit_ffs(
 						job_ptr->node_bitmap))) {
@@ -4090,10 +4095,10 @@ validate_jobs_on_node(char *node_name, uint32_t * job_count,
 					job_ptr->time_last_active = now;
 				}
 			} else {
-				error
-				    ("Registered job %u.%u on wrong node %s ",
-				     job_id_ptr[i], step_id_ptr[i], node_name);
-				kill_job_on_node(job_id_ptr[i], job_ptr, 
+				error("Registered job %u.%u on wrong node %s ",
+					reg_msg->job_id[i], reg_msg->step_id[i],
+					reg_msg->node_name);
+				kill_job_on_node(reg_msg->job_id[i], job_ptr, 
 						node_ptr);
 			}
 		}
@@ -4101,19 +4106,20 @@ validate_jobs_on_node(char *node_name, uint32_t * job_count,
 		else if (job_ptr->job_state & JOB_COMPLETING) {
 			/* Re-send kill request as needed, 
 			 * not necessarily an error */
-			kill_job_on_node(job_id_ptr[i], job_ptr, node_ptr);
+			kill_job_on_node(reg_msg->job_id[i], job_ptr, node_ptr);
 		}
 
 
 		else if (job_ptr->job_state == JOB_PENDING) {
 			error("Registered PENDING job %u.%u on node %s ",
-			      job_id_ptr[i], step_id_ptr[i], node_name);
+				reg_msg->job_id[i], reg_msg->step_id[i], 
+				reg_msg->node_name);
 			job_ptr->job_state = JOB_FAILED;
 			job_ptr->exit_code = 1;
 			job_ptr->state_reason = FAIL_SYSTEM;
-			last_job_update    = now;
+			last_job_update = now;
 			job_ptr->start_time = job_ptr->end_time  = now;
-			kill_job_on_node(job_id_ptr[i], job_ptr, node_ptr);
+			kill_job_on_node(reg_msg->job_id[i], job_ptr, node_ptr);
 			job_completion_logger(job_ptr);
 			delete_job_details(job_ptr);
 		}
@@ -4121,10 +4127,10 @@ validate_jobs_on_node(char *node_name, uint32_t * job_count,
 		else {		/* else job is supposed to be done */
 			error
 			    ("Registered job %u.%u in state %s on node %s ",
-			     job_id_ptr[i], step_id_ptr[i], 
+			     reg_msg->job_id[i], reg_msg->step_id[i], 
 			     job_state_string(job_ptr->job_state),
-			     node_name);
-			kill_job_on_node(job_id_ptr[i], job_ptr, node_ptr);
+			     reg_msg->node_name);
+			kill_job_on_node(reg_msg->job_id[i], job_ptr, node_ptr);
 		}
 	}
 
@@ -4132,14 +4138,14 @@ validate_jobs_on_node(char *node_name, uint32_t * job_count,
 	if (jobs_on_node)
 		_purge_lost_batch_jobs(node_inx, now);
 
-	if (jobs_on_node != *job_count) {
+	if (jobs_on_node != reg_msg->job_count) {
 		/* slurmd will not know of a job unless the job has
 		 * steps active at registration time, so this is not 
 		 * an error condition, slurmd is also reporting steps 
 		 * rather than jobs */
 		debug3("resetting job_count on node %s from %d to %d", 
-		     node_name, *job_count, jobs_on_node);
-		*job_count = jobs_on_node;
+			reg_msg->node_name, reg_msg->job_count, jobs_on_node);
+		reg_msg->job_count = jobs_on_node;
 	}
 
 	return;
@@ -4888,7 +4894,7 @@ extern int job_requeue (uid_t uid, uint32_t job_id, slurm_fd conn_fd)
 		rc = ESLURM_ALREADY_DONE;
 		goto reply;
 	}
-	if ((job_ptr->details == NULL) || job_ptr->details->no_requeue) {
+	if ((job_ptr->details == NULL) || (job_ptr->details->requeue == 0)) {
 		rc = ESLURM_DISABLED;
 		goto reply;
 	}

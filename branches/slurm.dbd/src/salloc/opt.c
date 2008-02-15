@@ -477,6 +477,7 @@ void set_options(const int argc, char **argv)
 		{"no-kill",       no_argument,       0, 'k'},
 		{"kill-command",  optional_argument, 0, 'K'},
 		{"distribution",  required_argument, 0, 'm'},
+		{"tasks",         required_argument, 0, 'n'},
 		{"ntasks",        required_argument, 0, 'n'},
 		{"nodes",         required_argument, 0, 'N'},
 		{"overcommit",    no_argument,       0, 'O'},
@@ -675,6 +676,9 @@ void set_options(const int argc, char **argv)
 #ifdef HAVE_BG
 			info("\tThe nodelist option should only be used if\n"
 			     "\tthe block you are asking for can be created.\n"
+			     "\tIt should also include all the midplanes you\n"
+			     "\twant to use, partial lists may not\n"
+			     "\twork correctly.\n"
 			     "\tPlease consult smap before using this option\n"
 			     "\tor your job may be stuck with no way to run.");
 #endif

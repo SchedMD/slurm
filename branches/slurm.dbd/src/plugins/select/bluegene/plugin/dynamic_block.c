@@ -106,25 +106,26 @@ extern List create_dynamic_block(List block_list,
 		debug("No list was given");
 	}
 
-	if(request->part_ptr) {
+	if(request->avail_node_bitmap) {
 		int j=0, number;
 		int x,y,z;
 		char *nodes = NULL;
 		bitstr_t *bitmap = bit_alloc(node_record_count);
+		int start[BA_SYSTEM_DIMENSIONS];
+		int end[BA_SYSTEM_DIMENSIONS];
 		
 		/* we want the bps that aren't in this partition to
 		 * mark them as used
 		 */
-		bit_or(bitmap, request->part_ptr->node_bitmap);
+		bit_or(bitmap, request->avail_node_bitmap);
 		bit_not(bitmap);
 		nodes = bitmap2node_name(bitmap);
 		
+		//info("not using %s", nodes);
 		while(nodes[j] != '\0') {
 			if ((nodes[j] == '[' || nodes[j] == ',')
 			    && (nodes[j+8] == ']' || nodes[j+8] == ',')
 			    && (nodes[j+4] == 'x' || nodes[j+4] == '-')) {
-				int start[BA_SYSTEM_DIMENSIONS];
-				int end[BA_SYSTEM_DIMENSIONS];
 
 				j++;
 				number = xstrntol(nodes + j,
@@ -183,6 +184,7 @@ extern List create_dynamic_block(List block_list,
 
 				if(nodes[j] != ',')
 					break;
+				j--;
 			}
 			j++;
 		}
@@ -457,9 +459,9 @@ static int _breakup_blocks(List block_list, List new_blocks,
 			continue;
 		if(bg_record->state != RM_PARTITION_FREE)
 			continue;
-		if (request->part_ptr->node_bitmap &&
+		if (request->avail_node_bitmap &&
 		    !bit_super_set(bg_record->bitmap,
-				   request->part_ptr->node_bitmap)) {
+				   request->avail_node_bitmap)) {
 			debug2("bg block %s has nodes not usable by this job",
 			       bg_record->bg_block_id);
 			continue;
@@ -549,9 +551,9 @@ static int _breakup_blocks(List block_list, List new_blocks,
 	       != NULL) {
 		if(bg_record->job_running != NO_JOB_RUNNING)
 			continue;
-		if (request->part_ptr->node_bitmap &&
+		if (request->avail_node_bitmap &&
 		    !bit_super_set(bg_record->bitmap,
-				   request->part_ptr->node_bitmap)) {
+				   request->avail_node_bitmap)) {
 			debug2("bg block %s has nodes not usable by this job",
 			       bg_record->bg_block_id);
 			continue;

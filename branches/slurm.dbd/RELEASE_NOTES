@@ -66,6 +66,11 @@ CONFIGURATION FILE CHANGES
   time slices.
 * Added new parameters "DefMemPerTask" and "MaxMemPerTask" any task that exceeds
   the specified size will be terminated.
+* Added new parameter "JobRequeue" to control default job behavior after a node 
+  failure (requeue or kill the job).
+* Added new parameter "GetEnvTimeout" for use with the Moab scheduler. This 
+  controls how long to allow the sbatch --get-user-env option to load a user's 
+  environment variables.
 * Added new partition parameter "Priority". A job's scheduling priority is based
   upon two factors. First the priority of its partition and the job's priority. 
   Since nodes can be configured in multiple partitions, this can be used to configure

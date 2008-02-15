@@ -1,9 +1,8 @@
 /****************************************************************************\
  *  slurm_protocol_pack.c - functions to pack and unpack structures for RPCs
- *
- *  $Id$
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
+ *  Copyright (C) 2008 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Kevin Tew <tew1@llnl.gov>, et. al.
  *  UCRL-CODE-226842.
@@ -481,6 +480,7 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 	case REQUEST_PING:
 	case REQUEST_CONTROL:
 	case REQUEST_DAEMON_STATUS:
+	case REQUEST_HEALTH_CHECK:
 		/* Message contains no body/information */
 		break;
 	case REQUEST_SHUTDOWN:
@@ -802,6 +802,7 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 	case REQUEST_PING:
 	case REQUEST_CONTROL:
 	case REQUEST_DAEMON_STATUS:
+	case REQUEST_HEALTH_CHECK:
 		/* Message contains no body/information */
 		break;
 	case REQUEST_SHUTDOWN:
@@ -1132,12 +1133,14 @@ _pack_node_registration_status_msg(slurm_node_registration_status_msg_t *
 	pack_time(msg->timestamp, buffer);
 	pack32((uint32_t)msg->status, buffer);
 	packstr(msg->node_name, buffer);
+	packstr(msg->arch, buffer);
+	packstr(msg->os, buffer);
 	pack16((uint32_t)msg->cpus, buffer);
 	pack16((uint32_t)msg->sockets, buffer);
 	pack16((uint32_t)msg->cores, buffer);
 	pack16((uint32_t)msg->threads, buffer);
-	pack32((uint32_t)msg->real_memory_size, buffer);
-	pack32((uint32_t)msg->temporary_disk_space, buffer);
+	pack32((uint32_t)msg->real_memory, buffer);
+	pack32((uint32_t)msg->tmp_disk, buffer);
 	pack32((uint32_t)msg->job_count, buffer);
 	for (i = 0; i < msg->job_count; i++) {
 		pack32((uint32_t)msg->job_id[i], buffer);
@@ -1168,12 +1171,14 @@ _unpack_node_registration_status_msg(slurm_node_registration_status_msg_t
 	/* load the data values */
 	safe_unpack32(&node_reg_ptr->status, buffer);
 	safe_unpackstr_xmalloc(&node_reg_ptr->node_name, &uint32_tmp, buffer);
+	safe_unpackstr_xmalloc(&node_reg_ptr->arch, &uint32_tmp, buffer);
+	safe_unpackstr_xmalloc(&node_reg_ptr->os, &uint32_tmp, buffer);
 	safe_unpack16(&node_reg_ptr->cpus, buffer);
 	safe_unpack16(&node_reg_ptr->sockets, buffer);
 	safe_unpack16(&node_reg_ptr->cores, buffer);
 	safe_unpack16(&node_reg_ptr->threads, buffer);
-	safe_unpack32(&node_reg_ptr->real_memory_size, buffer);
-	safe_unpack32(&node_reg_ptr->temporary_disk_space, buffer);
+	safe_unpack32(&node_reg_ptr->real_memory, buffer);
+	safe_unpack32(&node_reg_ptr->tmp_disk, buffer);
 	safe_unpack32(&node_reg_ptr->job_count, buffer);
 	node_reg_ptr->job_id =
 		xmalloc(sizeof(uint32_t) * node_reg_ptr->job_count);
@@ -1196,6 +1201,8 @@ _unpack_node_registration_status_msg(slurm_node_registration_status_msg_t
 
 unpack_error:
 	xfree(node_reg_ptr->node_name);
+	xfree(node_reg_ptr->arch);
+	xfree(node_reg_ptr->os);
 	xfree(node_reg_ptr->job_id);
 	xfree(node_reg_ptr->step_id);
 	switch_g_free_node_info(&node_reg_ptr->switch_nodeinfo);
@@ -1442,14 +1449,18 @@ _unpack_node_info_members(node_info_t * node, Buf buffer)
 	safe_unpack32(&node->weight, buffer);
 	safe_unpack16(&node->used_cpus, buffer);
 
+	safe_unpackstr_xmalloc(&node->arch, &uint32_tmp, buffer);
 	safe_unpackstr_xmalloc(&node->features, &uint32_tmp, buffer);
+	safe_unpackstr_xmalloc(&node->os, &uint32_tmp, buffer);
 	safe_unpackstr_xmalloc(&node->reason, &uint32_tmp, buffer);
 
 	return SLURM_SUCCESS;
 
 unpack_error:
 	xfree(node->name);
+	xfree(node->arch);
 	xfree(node->features);
+	xfree(node->os);
 	xfree(node->reason);
 	return SLURM_ERROR;
 }
@@ -2205,6 +2216,11 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer)
 	pack16(build_ptr->fast_schedule, buffer);
 	pack32(build_ptr->first_job_id, buffer);
 
+	pack16(build_ptr->get_env_timeout, buffer);
+
+	pack16(build_ptr->health_check_interval, buffer);
+	packstr(build_ptr->health_check_program, buffer);
+
 	pack16(build_ptr->inactive_limit, buffer);
 
 	pack16(build_ptr->job_acct_gather_freq, buffer);
@@ -2226,6 +2242,7 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer)
 	packstr(build_ptr->job_credential_private_key, buffer);
 	packstr(build_ptr->job_credential_public_certificate, buffer);
 	pack16(build_ptr->job_file_append, buffer);
+	pack16(build_ptr->job_requeue, buffer);
 
 	pack16(build_ptr->kill_wait, buffer);
 
@@ -2259,13 +2276,17 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer)
 	packstr(build_ptr->schedtype, buffer);
 	packstr(build_ptr->select_type, buffer);
 	pack16(build_ptr->select_type_param, buffer);
+
+	packstr(build_ptr->slurm_conf, buffer);
 	pack32(build_ptr->slurm_user_id, buffer);
 	packstr(build_ptr->slurm_user_name, buffer);
+
 	pack16(build_ptr->slurmctld_debug, buffer);
 	packstr(build_ptr->slurmctld_logfile, buffer);
 	packstr(build_ptr->slurmctld_pidfile, buffer);
 	pack32(build_ptr->slurmctld_port, buffer);
 	pack16(build_ptr->slurmctld_timeout, buffer);
+
 	pack16(build_ptr->slurmd_debug, buffer);
 	packstr(build_ptr->slurmd_logfile, buffer);
 	packstr(build_ptr->slurmd_pidfile, buffer);
@@ -2274,7 +2295,10 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer)
 #endif
 	packstr(build_ptr->slurmd_spooldir, buffer);
 	pack16(build_ptr->slurmd_timeout, buffer);
-	packstr(build_ptr->slurm_conf, buffer);
+
+	packstr(build_ptr->slurmdbd_addr, buffer);
+	pack16(build_ptr->slurmdbd_port, buffer);
+
 	packstr(build_ptr->srun_epilog, buffer);
 	packstr(build_ptr->srun_prolog, buffer);
 	packstr(build_ptr->state_save_location, buffer);
@@ -2337,6 +2361,12 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **
 	safe_unpack16(&build_ptr->fast_schedule, buffer);
 	safe_unpack32(&build_ptr->first_job_id, buffer);
 
+	safe_unpack16(&build_ptr->get_env_timeout, buffer);
+
+	safe_unpack16(&build_ptr->health_check_interval, buffer);
+	safe_unpackstr_xmalloc(&build_ptr->health_check_program,
+			       &uint32_tmp, buffer);
+
 	safe_unpack16(&build_ptr->inactive_limit, buffer);
 
 	safe_unpack16(&build_ptr->job_acct_gather_freq, buffer);
@@ -2367,6 +2397,7 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **
 			       job_credential_public_certificate,
 			       &uint32_tmp, buffer);
 	safe_unpack16(&build_ptr->job_file_append, buffer);
+	safe_unpack16(&build_ptr->job_requeue, buffer);
 
 	safe_unpack16(&build_ptr->kill_wait, buffer);
 
@@ -2404,9 +2435,13 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **
 	safe_unpackstr_xmalloc(&build_ptr->schedtype, &uint32_tmp, buffer);
 	safe_unpackstr_xmalloc(&build_ptr->select_type, &uint32_tmp, buffer);
 	safe_unpack16(&build_ptr->select_type_param, buffer);
+
+	safe_unpackstr_xmalloc(&build_ptr->slurm_conf,
+			       &uint32_tmp, buffer);
 	safe_unpack32(&build_ptr->slurm_user_id, buffer);
 	safe_unpackstr_xmalloc(&build_ptr->slurm_user_name,
 			       &uint32_tmp, buffer);
+
 	safe_unpack16(&build_ptr->slurmctld_debug, buffer);
 	safe_unpackstr_xmalloc(&build_ptr->slurmctld_logfile,
 			       &uint32_tmp, buffer);
@@ -2414,6 +2449,7 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **
 			       &uint32_tmp, buffer);
 	safe_unpack32(&build_ptr->slurmctld_port, buffer);
 	safe_unpack16(&build_ptr->slurmctld_timeout, buffer);
+
 	safe_unpack16(&build_ptr->slurmd_debug, buffer);
 	safe_unpackstr_xmalloc(&build_ptr->slurmd_logfile, &uint32_tmp,
 			       buffer);
@@ -2425,7 +2461,11 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **
 	safe_unpackstr_xmalloc(&build_ptr->slurmd_spooldir, &uint32_tmp,
 			       buffer);
 	safe_unpack16(&build_ptr->slurmd_timeout, buffer);
-	safe_unpackstr_xmalloc(&build_ptr->slurm_conf,  &uint32_tmp, buffer);
+
+	safe_unpackstr_xmalloc(&build_ptr->slurmdbd_addr, &uint32_tmp,
+			       buffer);
+	safe_unpack16(&build_ptr->slurmdbd_port, buffer);
+
 	safe_unpackstr_xmalloc(&build_ptr->srun_epilog, &uint32_tmp, buffer);
 	safe_unpackstr_xmalloc(&build_ptr->srun_prolog, &uint32_tmp, buffer);
 	safe_unpackstr_xmalloc(&build_ptr->state_save_location,
@@ -2478,6 +2518,7 @@ unpack_error:
 	xfree(build_ptr->job_comp_pass);
 	xfree(build_ptr->job_credential_private_key);
 	xfree(build_ptr->job_credential_public_certificate);
+	xfree(build_ptr->health_check_program);
 	xfree(build_ptr->mail_prog);
 	xfree(build_ptr->mpi_default);
 	xfree(build_ptr->plugindir);
@@ -2497,6 +2538,7 @@ unpack_error:
 	xfree(build_ptr->slurmd_logfile);
 	xfree(build_ptr->slurmd_pidfile);
 	xfree(build_ptr->slurmd_spooldir);
+	xfree(build_ptr->slurmdbd_addr);
 	xfree(build_ptr->state_save_location);
 	xfree(build_ptr->suspend_exc_nodes);
 	xfree(build_ptr->suspend_exc_parts);
@@ -2567,7 +2609,7 @@ _pack_job_desc_msg(job_desc_msg_t * job_desc_ptr, Buf buffer)
 	packstr(job_desc_ptr->work_dir, buffer);
 
 	pack16(job_desc_ptr->immediate, buffer);
-	pack16(job_desc_ptr->no_requeue, buffer);
+	pack16(job_desc_ptr->requeue, buffer);
 	pack16(job_desc_ptr->shared, buffer);
 	pack16(job_desc_ptr->cpus_per_task, buffer);
 	pack16(job_desc_ptr->ntasks_per_node, buffer);
@@ -2698,7 +2740,7 @@ _unpack_job_desc_msg(job_desc_msg_t ** job_desc_buffer_ptr, Buf buffer)
 	safe_unpackstr_xmalloc(&job_desc_ptr->work_dir, &uint32_tmp, buffer);
 
 	safe_unpack16(&job_desc_ptr->immediate, buffer);
-	safe_unpack16(&job_desc_ptr->no_requeue, buffer);
+	safe_unpack16(&job_desc_ptr->requeue, buffer);
 	safe_unpack16(&job_desc_ptr->shared, buffer);
 	safe_unpack16(&job_desc_ptr->cpus_per_task, buffer);
 	safe_unpack16(&job_desc_ptr->ntasks_per_node, buffer);
