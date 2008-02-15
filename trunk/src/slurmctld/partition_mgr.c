@@ -906,7 +906,7 @@ int update_part(update_part_msg_t * part_desc)
 			int i;
 			part_ptr->nodes = xstrdup(part_desc->nodes);
 			for (i=0; part_ptr->nodes[i]; i++) {
-				if (part_ptr->nodes[i] == ' ')
+				if (isspace(part_ptr->nodes[i]))
 					part_ptr->nodes[i] = ',';
 			}
 		}

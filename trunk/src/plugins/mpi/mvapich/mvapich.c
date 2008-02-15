@@ -1252,7 +1252,6 @@ static void *mvapich_thr(void *arg)
 	int first = 1;
 
 	debug ("mvapich-0.9.x/gen2: thread started: %ld", pthread_self ());
-	info ("mvapich debug version");
 
 	mvapich_mvarray_create (st);
 
