@@ -3,6 +3,7 @@
  *	Note: there is a global node table (node_record_table_ptr)
  *****************************************************************************
  *  Copyright (C) 2003-2006 The Regents of the University of California.
+ *  Copyright (C) 2008 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov> et. al.
  *  UCRL-CODE-226842.
@@ -65,6 +66,8 @@
 static pthread_mutex_t lock_mutex = PTHREAD_MUTEX_INITIALIZER;
 static int ping_count = 0;
 
+static void _run_health_check(void);
+
 /* struct timeval start_time, end_time; */
 
 /*
@@ -112,15 +115,17 @@ void ping_end (void)
 	else
 		fatal ("ping_count < 0");
 	slurm_mutex_unlock(&lock_mutex);
-	
-	/* gettimeofday(&end_time, NULL); */
-/* 	start = start_time.tv_sec; */
-/* 	start *= 1000000; */
-/* 	start += start_time.tv_usec; */
-/* 	end = end_time.tv_sec; */
-/* 	end *= 1000000; */
-/* 	end += end_time.tv_usec; */
-/* 	info("done with ping took %ld",(end-start)); */
+
+#if 0
+	gettimeofday(&end_time, NULL);
+	start = start_time.tv_sec;
+	start *= 1000000;
+	start += start_time.tv_usec;
+	end = end_time.tv_sec;
+	end *= 1000000;
+	end += end_time.tv_usec;
+	info("done with ping took %ld",(end-start));
+#endif
 }
 
 /*
@@ -133,12 +138,22 @@ void ping_nodes (void)
 	int i;
 	time_t now, still_live_time, node_dead_time;
 	static time_t last_ping_time = (time_t) 0;
+	static time_t last_health_check = (time_t) 0;
 	uint16_t base_state, no_resp_flag;
 	bool restart_flag;
 	hostlist_t down_hostlist = NULL;
 	char host_str[MAX_SLURM_NAME];
 	agent_arg_t *ping_agent_args = NULL;
 	agent_arg_t *reg_agent_args = NULL;
+
+	now = time (NULL);
+	if (slurmctld_conf.health_check_interval &&
+	    (difftime(now, last_health_check) >= 
+	     slurmctld_conf.health_check_interval)) {
+		last_health_check = now;
+		_run_health_check();
+		return;
+	}
 	
 	ping_agent_args = xmalloc (sizeof (agent_arg_t));
 	ping_agent_args->msg_type = REQUEST_PING;
@@ -160,7 +175,6 @@ void ping_nodes (void)
 	 * Because of this, we extend the SlurmdTimeout by the 
 	 * time needed to complete a ping of all nodes.
 	 */
-	now = time (NULL);
 	if ((slurmctld_conf.slurmd_timeout == 0) 
 	||  (last_ping_time == (time_t) 0)) {
 		node_dead_time = (time_t) 0;
@@ -268,5 +282,48 @@ void ping_nodes (void)
 			sizeof(host_str), host_str);
 		error("Nodes %s not responding, setting DOWN", host_str);
 		hostlist_destroy(down_hostlist);
+	}
+}
+
+static void _run_health_check(void)
+{
+	int i;
+	uint16_t base_state;
+	char host_str[MAX_SLURM_NAME];
+	agent_arg_t *check_agent_args = NULL;
+	
+	check_agent_args = xmalloc (sizeof (agent_arg_t));
+	check_agent_args->msg_type = REQUEST_HEALTH_CHECK;
+	check_agent_args->retry = 0;
+	check_agent_args->hostlist = hostlist_create("");
+
+	for (i = 0; i < node_record_count; i++) {
+		struct node_record *node_ptr;
+		
+		node_ptr   = &node_record_table_ptr[i];
+		base_state = node_ptr->node_state & NODE_STATE_BASE;
+
+		if (base_state == NODE_STATE_DOWN)
+			continue;
+
+#ifdef HAVE_FRONT_END		/* Operate only on front-end */
+		if (i > 0)
+			continue;
+#endif
+
+		hostlist_push(check_agent_args->hostlist, node_ptr->name);
+		check_agent_args->node_count++;
+	}
+
+	if (check_agent_args->node_count == 0) {
+		hostlist_destroy(check_agent_args->hostlist);
+		xfree (check_agent_args);
+	} else {
+		hostlist_uniq(check_agent_args->hostlist);
+		hostlist_ranged_string(check_agent_args->hostlist, 
+			sizeof(host_str), host_str);
+		verbose("Spawning health check agent for %s", host_str);
+		ping_begin();
+		agent_queue_request(check_agent_args);
 	}
 }

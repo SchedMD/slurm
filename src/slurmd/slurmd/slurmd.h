@@ -99,7 +99,7 @@ typedef struct slurmd_config {
 	char         *logfile;		/* slurmd logfile, if any          */
 	char         *spooldir;		/* SlurmdSpoolDir	           */
 	char         *pidfile;		/* PidFile location		   */
-
+	char         *health_check_program;	/* run on RPC request      */
 	char         *tmpfs;		/* directory of tmp FS             */
 	char         *pubkey;		/* location of job cred public key */
 	char         *epilog;		/* Path to Epilog script	   */
