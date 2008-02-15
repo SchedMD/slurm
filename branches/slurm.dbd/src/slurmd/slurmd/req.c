@@ -1137,7 +1137,9 @@ _enforce_job_mem_limit(void)
 		acct_req.job_id  = stepd->jobid;
 		acct_req.step_id = stepd->stepid;
 		resp = xmalloc(sizeof(stat_jobacct_msg_t));
-		if (!stepd_stat_jobacct(fd, &acct_req, resp)) {
+		if ((!stepd_stat_jobacct(fd, &acct_req, resp)) &&
+		    (resp->jobacct)) {
+			/* resp->jobacct is NULL if account is disabled */
 			jobacct_common_getinfo((struct jobacctinfo *)
 					       resp->jobacct,
 					       JOBACCT_DATA_TOT_RSS,
