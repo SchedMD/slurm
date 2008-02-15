@@ -251,6 +251,7 @@ static int	_start_job(uint32_t jobid, int task_cnt, char *hostlist,
 	 * performs many string compares. */
 	xfree(job_ptr->details->req_node_layout);
 	if (task_cnt && cr_enabled) {
+		uint16_t cpus_per_task = MAX(1, job_ptr->details->cpus_per_task);
 		job_ptr->details->req_node_layout = (uint16_t *)
 			xmalloc(bit_set_count(new_bitmap) * sizeof(uint16_t));
 		bsize = bit_size(new_bitmap);
@@ -268,7 +269,8 @@ static int	_start_job(uint32_t jobid, int task_cnt, char *hostlist,
 					if ((node_idx[node_name_len] == ',') ||
 				 	    (node_idx[node_name_len] == '\0')) {
 						job_ptr->details->
-							req_node_layout[ll]++;
+							req_node_layout[ll] +=
+							cpus_per_task;
 					}
 					node_cur = strchr(node_idx, ',');
 					if (node_cur)
