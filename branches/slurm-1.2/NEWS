@@ -1,6 +1,11 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins.
 
+* Changes in SLURM 1.2.24
+=========================
+ -- Add support for Moab and Maui to start jobs with select/cons_res plugin 
+    and jobs requiring more than one CPU per task.
+
 * Changes in SLURM 1.2.23
 =========================
  -- Fix for libpmi to not export unneed variables like xstr*
