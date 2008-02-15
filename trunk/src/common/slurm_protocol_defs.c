@@ -1305,6 +1305,7 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 	case REQUEST_SHUTDOWN_IMMEDIATE:
 	case RESPONSE_FORWARD_FAILED:
 	case REQUEST_DAEMON_STATUS:
+	case REQUEST_HEALTH_CHECK:
 		/* No body to free */
 		break;
 

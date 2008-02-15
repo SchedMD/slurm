@@ -125,6 +125,7 @@ static void _rpc_reconfig(slurm_msg_t *msg);
 static void _rpc_pid2jid(slurm_msg_t *msg);
 static int  _rpc_file_bcast(slurm_msg_t *msg);
 static int  _rpc_ping(slurm_msg_t *);
+static int  _rpc_health_check(slurm_msg_t *);
 static int  _rpc_step_complete(slurm_msg_t *msg);
 static int  _rpc_stat_jobacct(slurm_msg_t *msg);
 static int  _rpc_daemon_status(slurm_msg_t *msg);
@@ -260,6 +261,11 @@ slurmd_req(slurm_msg_t *msg)
 		break;
 	case REQUEST_PING:
 		_rpc_ping(msg);
+		last_slurmctld_msg = time(NULL);
+		/* No body to free */
+		break;
+	case REQUEST_HEALTH_CHECK:
+		_rpc_health_check(msg);
 		last_slurmctld_msg = time(NULL);
 		/* No body to free */
 		break;
@@ -1213,6 +1219,40 @@ _rpc_ping(slurm_msg_t *msg)
 	return rc;
 }
 
+static int
+_rpc_health_check(slurm_msg_t *msg)
+{
+	int        rc = SLURM_SUCCESS;
+	uid_t req_uid = g_slurm_auth_get_uid(msg->auth_cred);
+
+	if (!_slurm_authorized_user(req_uid)) {
+		error("Security violation, ping RPC from uid %u",
+		      (unsigned int) req_uid);
+		rc = ESLURM_USER_ID_MISSING;	/* or bad in this case */
+	}
+
+	/* Return result. If the reply can't be sent this indicates that
+	 * 1. The network is broken OR
+	 * 2. slurmctld has died    OR
+	 * 3. slurmd was paged out due to full memory
+	 * If the reply request fails, we send an registration message to 
+	 * slurmctld in hopes of avoiding having the node set DOWN due to
+	 * slurmd paging and not being able to respond in a timely fashion. */
+	if (slurm_send_rc_msg(msg, rc) < 0) {
+		error("Error responding to ping: %m");
+		send_registration_msg(SLURM_SUCCESS, false);
+	}
+
+	if ((rc == SLURM_SUCCESS) && (conf->health_check_program)) {
+		char *env[1] = { NULL };
+		rc = run_script("health_check", conf->health_check_program, 
+				0, 60, env);
+	}
+
+	/* Take this opportunity to enforce any job memory limits */
+	_enforce_job_mem_limit();
+	return rc;
+}
 static void
 _rpc_signal_tasks(slurm_msg_t *msg)
 {

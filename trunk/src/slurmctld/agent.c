@@ -1,10 +1,9 @@
 /*****************************************************************************\
  *  agent.c - parallel background communication functions. This is where  
  *	logic could be placed for broadcast communications.
- *
- *  $Id$
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
+ *  Copyright (C) 2008 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>, et. al.
  *  Derived from pdsh written by Jim Garlick <garlick1@llnl.gov>
@@ -723,6 +722,7 @@ finished:	;
 		}
 	}
 	if ((agent_ptr->msg_type == REQUEST_PING) ||
+	    (agent_ptr->msg_type == REQUEST_HEALTH_CHECK) ||
 	    (agent_ptr->msg_type == REQUEST_NODE_REGISTRATION_STATUS))
 		ping_end();
 #else

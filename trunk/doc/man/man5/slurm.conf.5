@@ -187,7 +187,9 @@ on all compute nodes that are not in the DOWN state. This may be used to
 verify the node is fully operational and DRAIN the it otherwise.
 The interval is controlled using the \fBHealthCheckInterval\fR parameter.
 Note that the \fBHealthCheckProgram\fR will be executed at the same time 
-on all nodes to minimize its impact upon parallel programs. 
+on all nodes to minimize its impact upon parallel programs.
+This program is will be killed if it does not terminate normally within
+60 seconds. 
 By default, no program will be executed.
 
 .TP

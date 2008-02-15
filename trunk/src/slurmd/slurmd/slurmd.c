@@ -630,6 +630,8 @@ _read_config()
 	_free_and_set(&conf->epilog,   xstrdup(cf->epilog));
 	_free_and_set(&conf->prolog,   xstrdup(cf->prolog));
 	_free_and_set(&conf->tmpfs,    xstrdup(cf->tmp_fs));
+	_free_and_set(&conf->health_check_program, 
+		      xstrdup(cf->health_check_program));
 	_free_and_set(&conf->spooldir, xstrdup(cf->slurmd_spooldir));
 	_massage_pathname(&conf->spooldir);
 	_free_and_set(&conf->pidfile,  xstrdup(cf->slurmd_pidfile));
@@ -735,6 +737,7 @@ _print_conf()
 	debug3("TmpDisk     = %u",       conf->tmp_disk_space);
 	debug3("Epilog      = `%s'",     conf->epilog);
 	debug3("Logfile     = `%s'",     cf->slurmd_logfile);
+	debug3("HealthCheck = `%s'",     conf->health_check_program);
 	debug3("NodeName    = %s",       conf->node_name);
 	debug3("Port        = %u",       conf->port);
 	debug3("Prolog      = `%s'",     conf->prolog);
@@ -771,6 +774,7 @@ _init_conf()
 	conf->block_map_inv = NULL;
 	conf->conffile    = NULL;
 	conf->epilog      = NULL;
+	conf->health_check_program = NULL;
 	conf->logfile     = NULL;
 	conf->pubkey      = NULL;
 	conf->prolog      = NULL;
@@ -800,6 +804,7 @@ _destroy_conf()
 	if(conf) {
 		xfree(conf->block_map);
 		xfree(conf->block_map_inv);
+		xfree(conf->health_check_program);
 		xfree(conf->hostname);
 		xfree(conf->node_name);
 		xfree(conf->conffile);
