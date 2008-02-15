@@ -158,6 +158,7 @@ function displayfile()
    "CacheGroups=" + get_radio_value(document.config.cache_groups) + "<br>" +
    "#CheckpointType=checkpoint/none <br>" +
    "#FirstJobId=1 <br>" +
+   "#JobRequeue=1 <br>" +
    "ReturnToService=" + get_radio_value(document.config.return_to_service) + "<br>" +
    "#MaxJobCount=2000 <br>" +
    "#PlugStackConfig= <br>" +
