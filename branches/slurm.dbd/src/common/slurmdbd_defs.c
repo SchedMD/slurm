@@ -60,13 +60,14 @@
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/xmalloc.h"
 
-static pthread_cond_t  slurmdbd_cond = PTHREAD_COND_INITIALIZER;
-static pthread_mutex_t slurmdbd_lock = PTHREAD_MUTEX_INITIALIZER;
-static slurm_fd  slurmdbd_fd    = -1;
+static pthread_mutex_t agent_lock = PTHREAD_MUTEX_INITIALIZER;
+static pthread_cond_t  agent_cond = PTHREAD_COND_INITIALIZER;
 static List      agent_list     = (List) NULL;
 static pthread_t agent_tid      = 0;
 static time_t    agent_shutdown = 0;
 
+static pthread_mutex_t slurmdbd_lock = PTHREAD_MUTEX_INITIALIZER;
+static slurm_fd  slurmdbd_fd    = -1;
 
 static void * _agent(void *x);
 static void   _agent_queue_del(void *x);
@@ -90,9 +91,12 @@ static int    _tot_wait (struct timeval *start_time);
 /* Open a socket connection to SlurmDbd */
 extern int slurm_open_slurmdbd_conn(void)
 {
-	slurm_mutex_lock(&slurmdbd_lock);
+	slurm_mutex_lock(&agent_lock);
 	if ((agent_tid == 0) || (agent_list == NULL))
 		_create_agent();
+	slurm_mutex_unlock(&agent_lock);
+
+	slurm_mutex_lock(&slurmdbd_lock);
 	if (slurmdbd_fd < 0)
 		_open_slurmdbd_fd();
 	slurm_mutex_unlock(&slurmdbd_lock);
@@ -103,10 +107,14 @@ extern int slurm_open_slurmdbd_conn(void)
 /* Close the SlurmDBD socket connection */
 extern int slurm_close_slurmdbd_conn(void)
 {
+	slurm_mutex_lock(&agent_lock);
+	_shutdown_agent();
+	slurm_mutex_lock(&agent_lock);
+
 	slurm_mutex_lock(&slurmdbd_lock);
 	_close_slurmdbd_fd();
-	_shutdown_agent();
 	slurm_mutex_unlock(&slurmdbd_lock);
+
 	return SLURM_SUCCESS;
 }
 
@@ -123,11 +131,13 @@ extern int slurm_send_slurmdbd_recv_rc_msg(slurmdbd_msg_t *req, int *resp_code)
 
 	slurm_mutex_lock(&slurmdbd_lock);
 	if (slurmdbd_fd < 0) {
-		error("slurmdbd: sending message before opening connection");
-		/* slurm_open_slurmdbd_conn() should have been called first,
-		 * but we'll be accomodating and open the connection here
-		 * too. However this will slow the RPC down. */
+		/* Either slurm_open_slurmdbd_conn() was not executed or
+		 * the connection to Slurm DBD has been closed */
 		_open_slurmdbd_fd();
+		if (slurmdbd_fd < 0) {
+			slurm_mutex_unlock(&slurmdbd_lock);
+			return SLURM_ERROR;
+		}
 	}
 
 	buffer = init_buf(1024);
@@ -185,26 +195,6 @@ extern int slurm_send_slurmdbd_msg(slurmdbd_msg_t *req)
 {
 	Buf buffer;
 
-	slurm_mutex_lock(&slurmdbd_lock);
-	if (slurmdbd_fd < 0) {
-		error("slurmdbd: sending message before opening connection");
-		/* slurm_open_slurmdbd_conn() should have been called first,
-		 * but we'll be accomodating and open the connection here
-		 * too. However this will slow the RPC down. */
-		_open_slurmdbd_fd();
-		if (slurmdbd_fd < 0) {
-			slurm_mutex_unlock(&slurmdbd_lock);
-			return SLURM_ERROR;
-		}
-	}
-	if ((agent_tid == 0) || (agent_list == NULL)) {
-		_create_agent();
-		if ((agent_tid == 0) || (agent_list == NULL)) {
-			slurm_mutex_unlock(&slurmdbd_lock);
-			return SLURM_ERROR;
-		}
-	}
-
 	buffer = init_buf(1024);
 	pack16(req->msg_type, buffer);
 	switch (req->msg_type) {
@@ -232,12 +222,22 @@ extern int slurm_send_slurmdbd_msg(slurmdbd_msg_t *req)
 			error("slurmdbd: Invalid send message type %u",
 			      req->msg_type);
 			free_buf(buffer);
-			slurm_mutex_unlock(&slurmdbd_lock);
 			return SLURM_ERROR;
 	}
+
+	slurm_mutex_lock(&agent_lock);
+	if ((agent_tid == 0) || (agent_list == NULL)) {
+		_create_agent();
+		if ((agent_tid == 0) || (agent_list == NULL)) {
+			slurm_mutex_unlock(&agent_lock);
+			free_buf(buffer);
+			return SLURM_ERROR;
+		}
+	}
+
 	list_enqueue(agent_list, buffer);
-	slurm_mutex_unlock(&slurmdbd_lock);
-	pthread_cond_broadcast(&slurmdbd_cond);
+	slurm_mutex_unlock(&agent_lock);
+	pthread_cond_broadcast(&agent_cond);
 	return SLURM_SUCCESS;
 }
 
@@ -531,6 +531,9 @@ static int _fd_writeable(slurm_fd fd)
 	return 1;
 }
 
+/****************************************************************************
+ * Functions for agent to manage queue of pending message for the Slurm DBD
+ ****************************************************************************/
 static void _create_agent(void)
 {
 	if (agent_list == NULL) {
@@ -563,7 +566,7 @@ static void _shutdown_agent(void)
 
 	if (agent_tid) {
 		agent_shutdown = time(NULL);
-		pthread_cond_broadcast(&slurmdbd_cond);
+		pthread_cond_broadcast(&agent_cond);
 		usleep(1000);
 		for (i=0; i<2; i++) {
 			if (i)
@@ -590,22 +593,33 @@ static void *_agent(void *x)
 	static time_t fail_time = 0;
 
 	while (agent_shutdown == 0) {
-		slurm_mutex_lock(&slurmdbd_lock);
-		cnt = list_count(agent_list);
-		if ((cnt == 0) ||
-		    (fail_time && (difftime(time(NULL), fail_time) < 10))) {
-			pthread_cond_wait(&slurmdbd_cond, &slurmdbd_lock);
+
+		if (slurmdbd_fd < 0) {
+			/* Either slurm_open_slurmdbd_conn() was not executed or
+			 * the connection to Slurm DBD has been closed */
+			slurm_mutex_lock(&slurmdbd_lock);
+			_open_slurmdbd_fd();
 			slurm_mutex_unlock(&slurmdbd_lock);
+		}
+
+		slurm_mutex_lock(&agent_lock);
+		cnt = list_count(agent_list);
+		if ((cnt == 0) || (slurmdbd_fd < 0) ||
+		    (fail_time && (difftime(time(NULL), fail_time) < 10))) {
+			pthread_cond_wait(&agent_cond, &agent_lock);
+			slurm_mutex_unlock(&agent_lock);
 			continue;
 		}
 info("slurmdbd: agent queue size %u", cnt);
 		/* Leave item on the queue until processing complete */
 		buffer = (Buf) list_peek(agent_list);
-		if (buffer == NULL) {
-			slurm_mutex_unlock(&slurmdbd_lock);
+		slurm_mutex_unlock(&agent_lock);
+		if (buffer == NULL)
 			continue;
-		}
 
+		/* NOTE: agent_lock is not set here, so we can add more
+		 * requests to the queue while waiting for this RPC to 
+		 * complete .*/
 		rc = _send_msg(buffer);
 		if (rc != SLURM_SUCCESS)
 			error("slurmdbd: Failure sending message");
@@ -614,6 +628,8 @@ info("slurmdbd: agent queue size %u", cnt);
 			if (rc != SLURM_SUCCESS)
 				error("slurmdbd: Failure getting response");
 		}
+
+		slurm_mutex_lock(&agent_lock);
 		if (rc == SLURM_SUCCESS) {
 			buffer = (Buf) list_dequeue(agent_list);
 			free_buf(buffer);
@@ -622,10 +638,10 @@ info("slurmdbd: agent queue size %u", cnt);
 			fail_time = time(NULL);
 			abstime.tv_sec = 10;
 			abstime.tv_nsec = 0;
-			pthread_cond_timedwait(&slurmdbd_cond, &slurmdbd_lock,
+			pthread_cond_timedwait(&agent_cond, &agent_lock,
 					       &abstime);
 		}
-		slurm_mutex_unlock(&slurmdbd_lock);
+		slurm_mutex_unlock(&agent_lock);
 	}
 info("slurmdbd: agent shutdown");
 	return NULL;
