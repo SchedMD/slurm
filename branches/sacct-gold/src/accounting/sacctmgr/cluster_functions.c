@@ -60,10 +60,14 @@ extern int sacctmgr_list_cluster(char *names)
 	list_destroy(spec_list);
 	
 	itr = list_iterator_create(cluster_list);
-	printf("%-15s\n%-15s\n", "Name", "---------------");
+	printf("%-15s %-15s\n%-15s %-15s\n", "Name", "Interface Node",
+	       "---------------",
+	       "---------------");
 	
 	while((cluster = list_next(itr))) {
-		printf("%-15.15s\n", cluster->name);
+		printf("%-15.15s %-15.15s\n",
+		       cluster->name,
+		       cluster->interface_node);
 	}
 
 	printf("\n");

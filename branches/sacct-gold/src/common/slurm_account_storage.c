@@ -64,8 +64,7 @@ typedef struct slurm_account_storage_ops {
 	int  (*add_associations)   (List association_list);
 	int  (*modify_users)       (account_user_cond_t *user_q,
 				    account_user_rec_t *user);
-	int  (*modify_user_admin_level)(account_user_cond_t *user_q,
-					account_admin_level_t level);
+	int  (*modify_user_admin_level)(account_user_cond_t *user_q);
 	int  (*modify_accounts)    (account_account_cond_t *account_q,
 				    account_account_rec_t *account);
 	int  (*modify_clusters)    (account_cluster_cond_t *cluster_q,
@@ -323,6 +322,9 @@ extern char *account_expedite_str(account_expedite_level_t level)
 extern char *account_admin_level_str(account_admin_level_t level)
 {
 	switch(level) {
+	case ACCOUNT_ADMIN_NOTSET:
+		return "Not Set";
+		break;
 	case ACCOUNT_ADMIN_NONE:
 		return "None";
 		break;
@@ -435,12 +437,12 @@ extern int account_storage_g_modify_users(account_user_cond_t *user_q,
 }
 
 extern int account_storage_g_modify_user_admin_level(
-	account_user_cond_t *user_q, account_admin_level_t level)
+	account_user_cond_t *user_q)
 {
 	if (slurm_account_storage_init() < 0)
 		return SLURM_ERROR;
 	return (*(g_account_storage_context->ops.modify_user_admin_level))
-		(user_q, level);
+		(user_q);
 }
 
 extern int account_storage_g_modify_accounts(account_account_cond_t *account_q,

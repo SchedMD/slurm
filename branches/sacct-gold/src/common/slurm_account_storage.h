@@ -46,6 +46,7 @@
 #include <slurm/slurm_errno.h>
 
 typedef enum {
+	ACCOUNT_ADMIN_NOTSET,
 	ACCOUNT_ADMIN_NONE,
 	ACCOUNT_ADMIN_OPERATOR,
 	ACCOUNT_ADMIN_SUPER_USER
@@ -115,13 +116,14 @@ typedef struct {
 	List user_list; /* list of char * */
 	List def_account_list; /* list of char * */
 	account_admin_level_t admin_level;
+	account_expedite_level_t expedite;	
 } account_user_cond_t;
 
 typedef struct {
 	List account_list; /* list of char * */
 	List description_list; /* list of char * */
 	List organization_list; /* list of char * */
-	account_admin_level_t admin_level;
+	account_expedite_level_t expedite;	
 } account_account_cond_t;
 
 typedef struct {
@@ -200,11 +202,10 @@ extern int account_storage_g_modify_users(account_user_cond_t *user_q,
 /* 
  * modify existing users admin level in the accounting system 
  * IN:  account_user_cond_t *user_q,
- * IN:  level account_admin_level_t
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
 extern int account_storage_g_modify_user_admin_level(
-	account_user_cond_t *user_q, account_admin_level_t level);
+	account_user_cond_t *user_q);
 
 /* 
  * modify existing accounts in the accounting system 
