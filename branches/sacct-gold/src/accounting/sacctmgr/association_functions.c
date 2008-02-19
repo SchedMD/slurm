@@ -47,36 +47,42 @@ extern int sacctmgr_create_association(int argc, char *argv[])
 extern int sacctmgr_list_association(int argc, char *argv[])
 {
 	int rc = SLURM_SUCCESS;
-	List id_list = list_create(destroy_char);
-	List user_list = list_create(destroy_char);
-	List account_list = list_create(destroy_char);
-	List cluster_list = list_create(destroy_char);
+	account_association_cond_t *assoc_cond =
+		xmalloc(sizeof(account_association_cond_t));
 	List assoc_list = NULL;
 	account_association_rec_t *assoc = NULL;
+	int i=0;
+	ListIterator itr = NULL;
+
+	assoc_cond->id_list = list_create(destroy_char);
+	assoc_cond->user_list = list_create(destroy_char);
+	assoc_cond->account_list = list_create(destroy_char);
+	assoc_cond->cluster_list = list_create(destroy_char);
 
 	for (i=0; i<argc; i++) {
-		if (strncasecmp (argv[i], "Id=", 3) == 0) {
-			addto_char_list(id_list, argv[i]+3);
-			break;
-		} else if (strncasecmp (argv[i], "User=", 4) == 0) {
-			addto_char_list(user_list, argv[i]+3);
-			break;
-		} else if (strncasecmp (argv[i], "Account=", 7) == 0) {
-			addto_char_list(account_list, argv[i]+3);
-			break;
-		} else if (strncasecmp (argv[i], "Cluster=", 7) == 0) {
-			addto_char_list(cluster_list, argv[i]+3);
-			break;
+		if (strncasecmp (argv[i], "Ids=", 4) == 0) {
+			addto_char_list(assoc_cond->id_list, argv[i]+3);
+		} else if (strncasecmp (argv[i], "Users=", 6) == 0) {
+			addto_char_list(assoc_cond->user_list, argv[i]+6);
+		} else if (strncasecmp (argv[i], "Accounts=", 9) == 0) {
+			addto_char_list(assoc_cond->account_list, argv[i]+9);
+		} else if (strncasecmp (argv[i], "Clusters=", 9) == 0) {
+			addto_char_list(assoc_cond->cluster_list, argv[i]+9);
+		} else {
+			error("Valid options are 'Ids=' 'Users=' 'Accounts=' "
+			      "and 'Clusters='");
 		}		
 	}
 
-	assoc_list = account_storage_g_get_clusters(
-		id_list, user_list, account_list, cluster_list, NULL);
-	list_destroy(spec_list);
+	assoc_list = account_storage_g_get_associations(assoc_cond);
+	destroy_account_association_cond(assoc_cond);
 	
+	if(!assoc_list) 
+		return SLURM_ERROR;
+
 	itr = list_iterator_create(assoc_list);
-	printf("%-6s %-10s %-10s %-10s %-10s %-9s %-7s %-8s %-7 %-10\n"
-	       "%-6s %-10s %-10s %-10s %-10s %-9s %-7s %-8s %-7 %-10\n", 
+	printf("%-6s %-10s %-10s %-10s %-10s %-9s %-7s %-8s %-7s %-10s\n"
+	       "%-6s %-10s %-10s %-10s %-10s %-9s %-7s %-8s %-7s %-10s\n", 
 	       "Id", "User", "Account", "Cluster", "Partition", "FairShare", 
 	       "MaxJobs", "MaxNodes", "MaxWall", "MaxCPUSecs",
 	       "------", "----------", "----------", "----------", 
@@ -84,15 +90,15 @@ extern int sacctmgr_list_association(int argc, char *argv[])
 	       "----------");
 	
 	while((assoc = list_next(itr))) {
-		printf("%-6.6u\n", assoc->id);
-		printf("%-10.10s\n", assoc->user);
-		printf("%-10.10s\n", assoc->account);
-		printf("%-10.10s\n", assoc->cluster);
-		printf("%-10.10s\n", assoc->partition);
-		printf("%-9.9u\n", assoc->fairshare);
-		printf("%-7.7u\n", assoc->max_jobs);
-		printf("%-8.8u\n", assoc->max_nodes_per_job);
-		printf("%-7.7u\n", assoc->max_wall_duration_per_job);
+		printf("%-6.6u ", assoc->id);
+		printf("%-10.10s ", assoc->user);
+		printf("%-10.10s ", assoc->account);
+		printf("%-10.10s ", assoc->cluster);
+		printf("%-10.10s ", assoc->partition);
+		printf("%-9.9u ", assoc->fairshare);
+		printf("%-7.7u ", assoc->max_jobs);
+		printf("%-8.8u ", assoc->max_nodes_per_job);
+		printf("%-7.7u ", assoc->max_wall_duration_per_job);
 		printf("%-10.10u\n", assoc->max_cpu_seconds_per_job);
 	}
 

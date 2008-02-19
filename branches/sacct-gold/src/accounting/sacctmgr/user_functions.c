@@ -43,44 +43,42 @@ extern int sacctmgr_create_user(int argc, char *argv[])
 	return rc;
 }
 
-extern int sacctmgr_list_user(char *names)
+extern int sacctmgr_list_user(int argc, char *argv[])
 {
 	int rc = SLURM_SUCCESS;
-	List spec_list = list_create(destroy_char);
+	account_user_cond_t *user_cond = xmalloc(sizeof(account_user_cond_t));
 	List user_list;
-	char *name = NULL;
-	int i=0, start = 0;;
+	int i=0;
 	ListIterator itr = NULL;
 	account_user_rec_t *user = NULL;
+
+	user_cond->user_list = list_create(destroy_char);
+	user_cond->def_account_list = list_create(destroy_char);
 	
-	if(names) {
-		if (names[i] == '\"' || names[i] == '\'')
-			i++;
-		start = i;
-		while(names[i]) {
-			if(names[i] == '\"' || names[i] == '\'')
-				break;
-			else if(names[i] == ',') {
-				if(i-start > 0) {
-					name = xmalloc((i-start+1));
-					memcpy(name, names+start, (i-start));
-					list_push(spec_list, name);
-				}
-				i++;
-				start = i;
-			}
-			i++;
-		}
-		if(i-start > 0) {
-			name = xmalloc((i-start)+1);
-			memcpy(name, names+start, (i-start));
-			list_push(spec_list, name);
-		}
+	for (i=0; i<argc; i++) {
+		if (strncasecmp (argv[i], "Names=", 6) == 0) {
+			addto_char_list(user_cond->user_list, argv[i]+6);
+		} else if (strncasecmp (argv[i], "DefaultAccounts=", 16) == 0) {
+			addto_char_list(user_cond->def_account_list,
+					argv[i]+16);
+		} else if (strncasecmp (argv[i], "ExpediteLevel=", 14) == 0) {
+			user_cond->expedite =
+				str_2_account_expedite(argv[i]+14);
+		} else if (strncasecmp (argv[i], "AdminLevel=", 11) == 0) {
+			user_cond->admin_level = 
+				str_2_account_admin_level(argv[i]+11);
+		} else {
+			error("Valid options are 'Names=' 'DefaultAccounts=' "
+			      "'ExpediteLevel=' and 'AdminLevel='");
+		}		
 	}
 
-	user_list = account_storage_g_get_users(spec_list, NULL);
-	list_destroy(spec_list);
-	
+	user_list = account_storage_g_get_users(user_cond);
+	destroy_account_user_cond(user_cond);
+
+	if(!user_list) 
+		return SLURM_ERROR;
+
 	itr = list_iterator_create(user_list);
 	printf("%-15s %-15s %-10s\n%-15s %-15s %-10s\n",
 	       "Name", "Default Account", "Expedite",

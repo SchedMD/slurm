@@ -146,8 +146,15 @@ extern void destroy_account_cluster_rec(void *object);
 extern void destroy_account_accounting_rec(void *object);
 extern void destroy_account_association_rec(void *object);
 
+extern void destroy_account_user_cond(void *object);
+extern void destroy_account_account_cond(void *object);
+extern void destroy_account_cluster_cond(void *object);
+extern void destroy_account_association_cond(void *object);
+
 extern char *account_expedite_str(account_expedite_level_t level);
+extern account_expedite_level_t str_2_account_expedite(char *level);
 extern char *account_admin_level_str(account_admin_level_t level);
+extern account_admin_level_t str_2_account_admin_level(char *level);
 
 extern int slurm_account_storage_init(void); /* load the plugin */
 extern int slurm_account_storage_fini(void); /* unload the plugin */
@@ -260,11 +267,11 @@ extern int account_storage_g_remove_accounts(
 
 /* 
  * remove clusters from accounting system 
- * IN:  account_account_cond_t *cluster_q
+ * IN:  account_cluster_cond_t *cluster_q
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
 extern int account_storage_g_remove_clusters(
-	account_account_cond_t *cluster_q);
+	account_cluster_cond_t *cluster_q);
 
 /* 
  * remove associations from accounting system 
@@ -299,7 +306,7 @@ extern List account_storage_g_get_accounts(account_account_cond_t *account_q);
  * returns List of account_cluster_rec_t *
  * note List needs to be freed when called
  */
-extern List account_storage_g_get_clusters(account_account_cond_t *cluster_q);
+extern List account_storage_g_get_clusters(account_cluster_cond_t *cluster_q);
 
 /* 
  * get info from the storage 

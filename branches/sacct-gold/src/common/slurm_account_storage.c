@@ -75,11 +75,11 @@ typedef struct slurm_account_storage_ops {
 	int  (*remove_coord)       (char *account,
 				    account_user_cond_t *user_q);
 	int  (*remove_accounts)    (account_account_cond_t *account_q);
-	int  (*remove_clusters)    (account_account_cond_t *cluster_q);
+	int  (*remove_clusters)    (account_cluster_cond_t *cluster_q);
 	int  (*remove_associations)(account_association_cond_t *assoc_q);
 	List (*get_users)          (account_user_cond_t *user_q);
 	List (*get_accounts)       (account_account_cond_t *account_q);
-	List (*get_clusters)       (account_account_cond_t *cluster_q);
+	List (*get_clusters)       (account_cluster_cond_t *cluster_q);
 	List (*get_associations)   (account_association_cond_t *assoc_q);
 	int (*get_hourly_usage)    (account_association_rec_t *acct_assoc,
 				    time_t start, 
@@ -262,6 +262,7 @@ extern void destroy_account_cluster_rec(void *object)
 
 	if(account_cluster) {
 		xfree(account_cluster->name);
+		xfree(account_cluster->interface_node);
 		if(account_cluster->accounting_list)
 			list_destroy(account_cluster->accounting_list);
 		xfree(account_cluster);
@@ -294,6 +295,65 @@ extern void destroy_account_association_rec(void *object)
 	}
 }
 
+extern void destroy_account_user_cond(void *object)
+{
+	account_user_cond_t *account_user = (account_user_cond_t *)object;
+
+	if(account_user) {
+		if(account_user->user_list)
+			list_destroy(account_user->user_list);
+		if(account_user->def_account_list)
+			list_destroy(account_user->def_account_list);
+		xfree(account_user);
+	}
+}
+
+extern void destroy_account_account_cond(void *object)
+{
+	account_account_cond_t *account_account =
+		(account_account_cond_t *)object;
+
+	if(account_account) {
+		if(account_account->account_list)
+			list_destroy(account_account->account_list);
+		if(account_account->description_list)
+			list_destroy(account_account->description_list);
+		if(account_account->organization_list)
+			list_destroy(account_account->organization_list);
+		xfree(account_account);
+	}
+}
+
+extern void destroy_account_cluster_cond(void *object)
+{
+	account_cluster_cond_t *account_cluster =
+		(account_cluster_cond_t *)object;
+
+	if(account_cluster) {
+		if(account_cluster->cluster_list)
+			list_destroy(account_cluster->cluster_list);
+		xfree(account_cluster);
+	}
+}
+
+extern void destroy_account_association_cond(void *object)
+{
+	account_association_cond_t *account_association = 
+		(account_association_cond_t *)object;
+
+	if(account_association) {
+		if(account_association->id_list)
+			list_destroy(account_association->id_list);
+		if(account_association->user_list)
+			list_destroy(account_association->user_list);
+		if(account_association->account_list)
+			list_destroy(account_association->account_list);
+		if(account_association->cluster_list)
+			list_destroy(account_association->cluster_list);
+		xfree(account_association);
+	}
+}
+
 extern char *account_expedite_str(account_expedite_level_t level)
 {
 	switch(level) {
@@ -319,6 +379,23 @@ extern char *account_expedite_str(account_expedite_level_t level)
 	return "Unknown";
 }
 
+extern account_expedite_level_t str_2_account_expedite(char *level)
+{
+	if(!level) {
+		return ACCOUNT_EXPEDITE_NOTSET;
+	} else if(!strcasecmp(level, "Normal")) {
+		return ACCOUNT_EXPEDITE_NORMAL;
+	} else if(!strcasecmp(level, "Expedite")) {
+		return ACCOUNT_EXPEDITE_EXPEDITE;
+	} else if(!strcasecmp(level, "Standby")) {
+		return ACCOUNT_EXPEDITE_STANDBY;
+	} else if(!strcasecmp(level, "Exempt")) {
+		return ACCOUNT_EXPEDITE_EXEMPT;
+	} else {
+		return ACCOUNT_EXPEDITE_NOTSET;		
+	}
+}
+
 extern char *account_admin_level_str(account_admin_level_t level)
 {
 	switch(level) {
@@ -339,6 +416,21 @@ extern char *account_admin_level_str(account_admin_level_t level)
 		break;
 	}
 	return "Unknown";
+}
+
+extern account_admin_level_t str_2_account_admin_level(char *level)
+{
+	if(!level) {
+		return ACCOUNT_ADMIN_NOTSET;
+	} else if(!strcasecmp(level, "None")) {
+		return ACCOUNT_ADMIN_NONE;
+	} else if(!strcasecmp(level, "Operator")) {
+		return ACCOUNT_ADMIN_OPERATOR;
+	} else if(!strcasecmp(level, "SuperUser")) {
+		return ACCOUNT_ADMIN_SUPER_USER;
+	} else {
+		return ACCOUNT_ADMIN_NOTSET;		
+	}	
 }
 
 /*
@@ -496,7 +588,7 @@ extern int account_storage_g_remove_accounts(account_account_cond_t *account_q)
 		(account_q);
 }
 
-extern int account_storage_g_remove_clusters(account_account_cond_t *cluster_q)
+extern int account_storage_g_remove_clusters(account_cluster_cond_t *cluster_q)
 {
 	if (slurm_account_storage_init() < 0)
 		return SLURM_ERROR;
@@ -528,7 +620,7 @@ extern List account_storage_g_get_accounts(account_account_cond_t *account_q)
 		(account_q);
 }
 
-extern List account_storage_g_get_clusters(account_account_cond_t *cluster_q)
+extern List account_storage_g_get_clusters(account_cluster_cond_t *cluster_q)
 {
 	if (slurm_account_storage_init() < 0)
 		return NULL;

@@ -44,20 +44,30 @@ extern int sacctmgr_create_cluster(int argc, char *argv[])
 	return rc;
 }
 
-extern int sacctmgr_list_cluster(char *names)
+extern int sacctmgr_list_cluster(int argc, char *argv[])
 {
 	int rc = SLURM_SUCCESS;
-	List spec_list = list_create(destroy_char);
+	account_cluster_cond_t *cluster_cond =
+		xmalloc(sizeof(account_cluster_cond_t));
 	List cluster_list;
-	char *name = NULL;
-	int i=0, start = 0;;
+	int i=0;
 	ListIterator itr = NULL;
 	account_cluster_rec_t *cluster = NULL;
 
-	addto_char_list(spec_list, names);
+	cluster_cond->cluster_list = list_create(destroy_char);
+	for (i=0; i<argc; i++) {
+		if (strncasecmp (argv[i], "Names=", 6) == 0) {
+			addto_char_list(cluster_cond->cluster_list, argv[i]+6);
+		} else {
+			error("Only 'Names=' is supported as an option");
+		}		
+	}
 
-	cluster_list = account_storage_g_get_clusters(spec_list, NULL);
-	list_destroy(spec_list);
+	cluster_list = account_storage_g_get_clusters(cluster_cond);
+	destroy_account_cluster_cond(cluster_cond);
+	
+	if(!cluster_list) 
+		return SLURM_ERROR;
 	
 	itr = list_iterator_create(cluster_list);
 	printf("%-15s %-15s\n%-15s %-15s\n", "Name", "Interface Node",

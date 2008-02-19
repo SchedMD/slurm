@@ -396,16 +396,20 @@ static void _create_it (int argc, char *argv[])
 	/* First identify the entity to create */
 	for (i=0; i<argc; i++) {
 		if (strncasecmp (argv[i], "Association", 11) == 0) {
-			error_code = sacctmgr_create_association(argc, argv);
+			error_code = sacctmgr_create_association(
+				(argc - 1), &argv[1]);
 			break;
 		} else if (strncasecmp (argv[i], "User", 4) == 0) {
-			error_code = sacctmgr_create_user(argc, argv);
+			error_code = sacctmgr_create_user(
+				(argc - 1), &argv[1]);
 			break;
 		} else if (strncasecmp (argv[i], "Account", 7) == 0) {
-			error_code = sacctmgr_create_account(argc, argv);
+			error_code = sacctmgr_create_account(
+				(argc - 1), &argv[1]);
 			break;
 		} else if (strncasecmp (argv[i], "Cluster", 7) == 0) {
-			error_code = sacctmgr_create_cluster(argc, argv);
+			error_code = sacctmgr_create_cluster(
+				(argc - 1), &argv[1]);
 			break;
 		}		
 	}
@@ -430,19 +434,16 @@ static void _create_it (int argc, char *argv[])
 static void _show_it (int argc, char *argv[]) 
 {
 	int error_code = SLURM_SUCCESS;
-	char *spec = NULL;
-	if(argc > 1)
-		spec = argv[1];	
 		
 	/* First identify the entity to list */
 	if (strncasecmp (argv[0], "Association", 11) == 0) {
-		error_code = sacctmgr_list_association(argc, argv);
+		error_code = sacctmgr_list_association((argc - 1), &argv[1]);
 	} else if (strncasecmp (argv[0], "User", 4) == 0) {
-		error_code = sacctmgr_list_user(spec);
+		error_code = sacctmgr_list_user((argc - 1), &argv[1]);
 	} else if (strncasecmp (argv[0], "Account", 7) == 0) {
-		error_code = sacctmgr_list_account(spec);
+		error_code = sacctmgr_list_account((argc - 1), &argv[1]);
 	} else if (strncasecmp (argv[0], "Cluster", 7) == 0) {
-		error_code = sacctmgr_list_cluster(spec);
+		error_code = sacctmgr_list_cluster((argc - 1), &argv[1]);
 	} else {
 		exit_code = 1;
 		fprintf(stderr, "No valid entity in list command\n");
@@ -470,16 +471,19 @@ static void _update_it (int argc, char *argv[])
 	/* First identify the entity to update */
 	for (i=0; i<argc; i++) {
 		if (strncasecmp (argv[i], "Association", 11) == 0) {
-			error_code = sacctmgr_update_association(argc, argv);
+			error_code = sacctmgr_update_association(
+				(argc - 1), &argv[1]);
 			break;
 		} else if (strncasecmp (argv[i], "User", 4) == 0) {
-			error_code = sacctmgr_update_user(argc, argv);
+			error_code = sacctmgr_update_user((argc - 1), &argv[1]);
 			break;
 		} else if (strncasecmp (argv[i], "Account", 7) == 0) {
-			error_code = sacctmgr_update_account(argc, argv);
+			error_code = sacctmgr_update_account(
+				(argc - 1), &argv[1]);
 			break;
 		} else if (strncasecmp (argv[i], "Cluster", 7) == 0) {
-			error_code = sacctmgr_update_cluster(argc, argv);
+			error_code = sacctmgr_update_cluster(
+				(argc - 1), &argv[1]);
 			break;
 		}		
 	}
@@ -508,16 +512,19 @@ static void _delete_it (int argc, char *argv[])
 	/* First identify the entity to delete */
 	for (i=0; i<argc; i++) {
 		if (strncasecmp (argv[i], "Association", 11) == 0) {
-			error_code = sacctmgr_delete_association(argc, argv);
+			error_code = sacctmgr_delete_association(
+				(argc - 1), &argv[1]);
 			break;
 		} else if (strncasecmp (argv[i], "User", 4) == 0) {
-			error_code = sacctmgr_delete_user(argc, argv);
+			error_code = sacctmgr_delete_user((argc - 1), &argv[1]);
 			break;
 		} else if (strncasecmp (argv[i], "Account", 7) == 0) {
-			error_code = sacctmgr_delete_account(argc, argv);
+			error_code = sacctmgr_delete_account(
+				(argc - 1), &argv[1]);
 			break;
 		} else if (strncasecmp (argv[i], "Cluster", 7) == 0) {
-			error_code = sacctmgr_delete_cluster(argc, argv);
+			error_code = sacctmgr_delete_cluster(
+				(argc - 1), &argv[1]);
 			break;
 		}		
 	}

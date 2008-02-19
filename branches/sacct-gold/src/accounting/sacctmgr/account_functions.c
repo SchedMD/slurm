@@ -44,44 +44,47 @@ extern int sacctmgr_create_account(int argc, char *argv[])
 	return rc;
 }
 
-extern int sacctmgr_list_account(char *names)
+extern int sacctmgr_list_account(int argc, char *argv[])
 {
 	int rc = SLURM_SUCCESS;
-	List spec_list = list_create(destroy_char);
+	account_account_cond_t *account_cond =
+		xmalloc(sizeof(account_account_cond_t));
 	List account_list;
-	char *name = NULL;
-	int i=0, start = 0;;
+	int i=0;
 	ListIterator itr = NULL;
 	account_account_rec_t *account = NULL;
 	
-	if(names) {
-		if (names[i] == '\"' || names[i] == '\'')
-			i++;
-		start = i;
-		while(names[i]) {
-			if(names[i] == '\"' || names[i] == '\'')
-				break;
-			else if(names[i] == ',') {
-				if(i-start > 0) {
-					name = xmalloc((i-start+1));
-					memcpy(name, names+start, (i-start));
-					list_push(spec_list, name);
-				}
-				i++;
-				start = i;
-			}
-			i++;
-		}
-		if(i-start > 0) {
-			name = xmalloc((i-start)+1);
-			memcpy(name, names+start, (i-start));
-			list_push(spec_list, name);
-		}
+	account_cond->account_list = list_create(destroy_char);
+	account_cond->description_list = list_create(destroy_char);
+	account_cond->organization_list = list_create(destroy_char);
+
+	for (i=0; i<argc; i++) {
+		if (strncasecmp (argv[i], "Names=", 6) == 0) {
+			addto_char_list(account_cond->account_list, argv[i]+6);
+		} else if (strncasecmp (argv[i], "Description=", 12) == 0) {
+			addto_char_list(account_cond->description_list,
+					argv[i]+12);
+		} else if (strncasecmp (argv[i], "Organization=", 13) == 0) {
+			addto_char_list(account_cond->organization_list,
+					argv[i]+13);
+		} else if (strncasecmp (argv[i], "ExpediteLevel=", 14) == 0) {
+			account_cond->expedite =
+				str_2_account_expedite(argv[i]+14);
+		} else {
+			error("Valid options are 'Names=' "
+			      "'Descriptions=' 'Oranizations=' "
+			      "and 'ExpediteLevel='");
+		}		
 	}
 
-	account_list = account_storage_g_get_accounts(spec_list, NULL);
-	list_destroy(spec_list);
+
+	account_list = account_storage_g_get_accounts(account_cond);
+	destroy_account_account_cond(account_cond);
 	
+	if(!account_list) 
+		return SLURM_ERROR;
+	
+
 	itr = list_iterator_create(account_list);
 	printf("%-15s %-15s %-15s %-10s\n%-15s %-15s %-15s %-10s\n",
 	       "Name", "Description", "Organization", "Expedite",

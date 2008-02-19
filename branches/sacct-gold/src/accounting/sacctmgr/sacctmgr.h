@@ -97,9 +97,9 @@ extern int sacctmgr_create_account(int argc, char *argv[]);
 extern int sacctmgr_create_cluster(int argc, char *argv[]);
 
 extern int sacctmgr_list_association(int argc, char *argv[]);
-extern int sacctmgr_list_user(char *names);
-extern int sacctmgr_list_account(char *names);
-extern int sacctmgr_list_cluster(char *names);
+extern int sacctmgr_list_user(int argc, char *argv[]);
+extern int sacctmgr_list_account(int argc, char *argv[]);
+extern int sacctmgr_list_cluster(int argc, char *argv[]);
 
 extern int sacctmgr_update_association(int argc, char *argv[]);
 extern int sacctmgr_update_user(int argc, char *argv[]);
@@ -116,6 +116,6 @@ extern int  print_str(char *str, int width, bool right, bool cut_output);
 extern void print_date(void);
 extern int print_secs(long time, int width, bool right, bool cut_output);
 extern void destroy_char(void *object);
-extern void addto_char_list(List *char_list, char *names);
+extern void addto_char_list(List char_list, char *names);
 
 #endif

@@ -117,10 +117,6 @@ static List _get_association_list_from_response(gold_response_t *gold_response)
 	gold_response_entry_t *resp_entry = NULL;
 	gold_name_value_t *name_val = NULL;
 	
-	if(gold_response->entry_cnt <= 0) {
-		debug2("_get_association_list_from_response: No entries given");
-		return NULL;
-	}
 	association_list = list_create(destroy_account_association_rec);
 	
 	itr = list_iterator_create(gold_response->entries);
@@ -191,10 +187,6 @@ static int _get_account_accounting_list_from_response(
 	gold_response_entry_t *resp_entry = NULL;
 	gold_name_value_t *name_val = NULL;
 	
-	if(gold_response->entry_cnt <= 0) {
-		debug2("_get_accounting_list_from_response: No entries given");
-		return SLURM_ERROR;
-	}
 	if(!account_rec->accounting_list)
 		account_rec->accounting_list =
 			list_create(destroy_account_accounting_rec);
@@ -234,10 +226,6 @@ static List _get_user_list_from_response(gold_response_t *gold_response)
 	gold_response_entry_t *resp_entry = NULL;
 	gold_name_value_t *name_val = NULL;
 	
-	if(gold_response->entry_cnt <= 0) {
-		debug2("_get_user_list_from_response: No entries given");
-		return NULL;
-	}
 	user_list = list_create(destroy_account_user_rec);
 	
 	itr = list_iterator_create(gold_response->entries);
@@ -284,10 +272,6 @@ static List _get_account_list_from_response(gold_response_t *gold_response)
 	gold_response_entry_t *resp_entry = NULL;
 	gold_name_value_t *name_val = NULL;
 	
-	if(gold_response->entry_cnt <= 0) {
-		debug2("_get_account_list_from_response: No entries given");
-		return NULL;
-	}
 	account_list = list_create(destroy_account_account_rec);
 	
 	itr = list_iterator_create(gold_response->entries);
@@ -333,10 +317,6 @@ static List _get_cluster_list_from_response(gold_response_t *gold_response)
 	gold_response_entry_t *resp_entry = NULL;
 	gold_name_value_t *name_val = NULL;
 	
-	if(gold_response->entry_cnt <= 0) {
-		debug2("_get_cluster_list_from_response: No entries given");
-		return NULL;
-	}
 	cluster_list = list_create(destroy_account_cluster_rec);
 	
 	itr = list_iterator_create(gold_response->entries);
@@ -918,7 +898,7 @@ extern int account_storage_p_modify_user_admin_level(
 	char *object = NULL;
 	int set = 0;
 
-	if(!user_q) {
+	if(!user_q || user_q->admin_level == ACCOUNT_ADMIN_NOTSET) {
 		error("account_storage_p_modify_users: "
 		      "we need conditions to modify");
 		return SLURM_ERROR;
@@ -1854,11 +1834,8 @@ extern List account_storage_p_get_users(account_user_cond_t *user_q)
 		return NULL;
 	}
 
-	if(gold_response->entry_cnt > 0) {
-		user_list = _get_user_list_from_response(gold_response);
-	} else {
-		debug("We don't have an entry for this machine for this time");
-	}
+	user_list = _get_user_list_from_response(gold_response);
+	
 	destroy_gold_response(gold_response);
 
 	return user_list;
@@ -1966,11 +1943,8 @@ extern List account_storage_p_get_accounts(account_account_cond_t *account_q)
 		return NULL;
 	}
 
-	if(gold_response->entry_cnt > 0) {
-		account_list = _get_account_list_from_response(gold_response);
-	} else {
-		debug("We don't have an entry for this machine for this time");
-	}
+	account_list = _get_account_list_from_response(gold_response);
+	
 	destroy_gold_response(gold_response);
 
 	return account_list;
@@ -2032,11 +2006,8 @@ extern List account_storage_p_get_clusters(account_cluster_cond_t *cluster_q)
 		return NULL;
 	}
 
-	if(gold_response->entry_cnt > 0) {
-		cluster_list = _get_cluster_list_from_response(gold_response);
-	} else {
-		debug("We don't have an entry for this machine for this time");
-	}
+	cluster_list = _get_cluster_list_from_response(gold_response);
+	
 	destroy_gold_response(gold_response);
 
 	return cluster_list;
@@ -2172,12 +2143,8 @@ extern List account_storage_p_get_associations(
 		return NULL;
 	}
 
-	if(gold_response->entry_cnt > 0) {
-		association_list = 
-			_get_association_list_from_response(gold_response);
-	} else {
-		debug("We don't have an entry for this machine for this time");
-	}
+	association_list = _get_association_list_from_response(gold_response);
+
 	destroy_gold_response(gold_response);
 
 	return association_list;
@@ -2233,12 +2200,9 @@ extern int account_storage_p_get_hourly_usage(
 		return rc;
 	}
 
-	if(gold_response->entry_cnt > 0) {
-		rc = _get_account_accounting_list_from_response(
-			gold_response, acct_assoc);
-	} else {
-		debug("We don't have an entry for this machine for this time");
-	}
+	rc = _get_account_accounting_list_from_response(
+		gold_response, acct_assoc);
+
 	destroy_gold_response(gold_response);
 
 	return rc;
@@ -2294,12 +2258,9 @@ extern int account_storage_p_get_daily_usage(
 		return rc;
 	}
 
-	if(gold_response->entry_cnt > 0) {
-		rc = _get_account_accounting_list_from_response(
-			gold_response, acct_assoc);
-	} else {
-		debug("We don't have an entry for this machine for this time");
-	}
+	rc = _get_account_accounting_list_from_response(
+		gold_response, acct_assoc);
+
 	destroy_gold_response(gold_response);
 
 	return rc;
@@ -2355,12 +2316,9 @@ extern int account_storage_p_get_monthly_usage(
 		return rc;
 	}
 
-	if(gold_response->entry_cnt > 0) {
-		rc = _get_account_accounting_list_from_response(
-			gold_response, acct_assoc);
-	} else {
-		debug("We don't have an entry for this machine for this time");
-	}
+	rc = _get_account_accounting_list_from_response(
+		gold_response, acct_assoc);
+
 	destroy_gold_response(gold_response);
 
 	return rc;

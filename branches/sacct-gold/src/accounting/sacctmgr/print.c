@@ -128,7 +128,7 @@ extern void destroy_char(void *object)
 	xfree(tmp);
 }
 
-extern void addto_char_list(List *char_list, char *names)
+extern void addto_char_list(List char_list, char *names)
 {
 	int i=0, start=0;
 	char *name = NULL;
