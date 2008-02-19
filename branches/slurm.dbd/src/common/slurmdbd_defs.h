@@ -137,6 +137,7 @@ extern int slurm_send_slurmdbd_msg(slurmdbd_msg_t *req);
  * Returns SLURM_SUCCESS or an error code */
 extern int slurm_send_slurmdbd_recv_rc_msg(slurmdbd_msg_t *req, int *rc);
 
+/* Free various SlurmDBD message structures */
 void inline slurm_dbd_free_get_jobs_msg(dbd_get_jobs_msg_t *msg);
 void inline slurm_dbd_free_init_msg(dbd_init_msg_t *msg);
 void inline slurm_dbd_free_job_complete_msg(dbd_job_comp_msg_t *msg);
@@ -147,6 +148,7 @@ void inline slurm_dbd_free_rc_msg(dbd_rc_msg_t *msg);
 void inline slurm_dbd_free_step_complete_msg(dbd_step_comp_msg_t *msg);
 void inline slurm_dbd_free_step_start_msg(dbd_step_start_msg_t *msg);
 
+/* Pack various SlurmDBD message structures into a buffer */
 void inline slurm_dbd_pack_get_jobs_msg(dbd_get_jobs_msg_t *msg,       Buf buffer);
 void inline slurm_dbd_pack_init_msg(dbd_init_msg_t *msg,               Buf buffer);
 void inline slurm_dbd_pack_job_complete_msg(dbd_job_comp_msg_t *msg,   Buf buffer);
@@ -157,6 +159,7 @@ void inline slurm_dbd_pack_rc_msg(dbd_rc_msg_t *msg,                   Buf buffe
 void inline slurm_dbd_pack_step_complete_msg(dbd_step_comp_msg_t *msg, Buf buffer);
 void inline slurm_dbd_pack_step_start_msg(dbd_step_start_msg_t *msg,   Buf buffer);
 
+/* Unpack various SlurmDBD message structures from a buffer */
 int inline slurm_dbd_unpack_get_jobs_msg(dbd_get_jobs_msg_t **msg,       Buf buffer);
 int inline slurm_dbd_unpack_init_msg(dbd_init_msg_t **msg,               Buf buffer);
 int inline slurm_dbd_unpack_job_complete_msg(dbd_job_comp_msg_t **msg,   Buf buffer);
