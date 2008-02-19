@@ -24,7 +24,7 @@ $(perl_dir)/Makefile:	$(perl_dir)/Makefile.PL
 			${LN_S} -f ../${srcdir}/$$f $$f; \
 		done; \
 	fi
-	@cd $(perl_dir) && $(perlpath) Makefile.PL $(PERL_MM_PARAMS) prefix=${prefix} INSTALLDIRS=perl LIB=@libdir@/perl5 installman1dir=@mandir@/man1 installman3dir=@mandir@/man3
+	@cd $(perl_dir) && $(perlpath) Makefile.PL $(PERL_MM_PARAMS) prefix=${prefix}
 
 #
 # Note on linking logic below
@@ -39,7 +39,7 @@ all-local: $(perl_dir)/Makefile #libslurm
 if HAVE_AIX
 	@cd $(perl_dir) && \
 	if [ ! -f Makefile ]; then \
-		$(perlpath) Makefile.PL $(PERL_MM_PARAMS) prefix=${prefix} INSTALLDIRS=perl LIB=@libdir@/perl5 installman1dir=@mandir@/man1 installman3dir=@mandir@/man3; \
+		$(perlpath) Makefile.PL $(PERL_MM_PARAMS) prefix=${prefix}; \
 	fi && \
 	($(MAKE) CC="$(CC)" CCFLAGS="$(PERL_CFLAGS) -g -static $(CFLAGS)" $(PERL_EXTRA_OPTS) || \
 	 $(MAKE) CC="$(CC)" CCFLAGS="$(PERL_CFLAGS) -g -static $(CFLAGS)" $(PERL_EXTRA_OPTS)) && \
@@ -47,7 +47,7 @@ if HAVE_AIX
 else
 	@cd $(perl_dir) && \
 	if [ ! -f Makefile ]; then \
-		$(perlpath) Makefile.PL $(PERL_MM_PARAMS) prefix=${prefix} INSTALLDIRS=perl LIB=@libdir@/perl5 installman1dir=@mandir@/man1 installman3dir=@mandir@/man3; \
+		$(perlpath) Makefile.PL $(PERL_MM_PARAMS) prefix=${prefix}; \
 	fi && \
 	($(MAKE) CC="$(CC)" LD="$(CC) $(CFLAGS)" CCFLAGS="$(PERL_CFLAGS) -g -static $(CFLAGS)" $(PERL_EXTRA_OPTS) || \
 	 $(MAKE) CC="$(CC)" LD="$(CC) $(CFLAGS)" CCFLAGS="$(PERL_CFLAGS) -g -static $(CFLAGS)" $(PERL_EXTRA_OPTS)) && \

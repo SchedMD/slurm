@@ -112,8 +112,9 @@ BuildRequires: readline-devel
 # http://slforums.typo3-factory.net/index.php?showtopic=11378
 %define _unpackaged_files_terminate_build      0
 
-
-%define _perlarch %(perl -e 'use Config; $T=$Config{installsitearch}; $P=$Config{installprefix}; $T =~ s/$P//; print $T;') 
+# First we remove $prefix/local and then just prefix to make 
+# sure we get the correct installdir
+%define _perlarch %(perl -e 'use Config; $T=$Config{installsitearch}; $P=$Config{installprefix}; $P1="$P/local"; $T =~ s/$P1//; $T =~ s/$P//; print $T;') 
 
 %define _perldir %{_prefix}%{_perlarch}
 
@@ -289,6 +290,10 @@ test -f $RPM_BUILD_ROOT/%{_perldir}/Slurm.pm &&
   echo "%{_perldir}/Slurm.pm"                 >> $LIST
 test -f $RPM_BUILD_ROOT/%{_perldir}/auto/Slurm/Slurm.so &&
   echo "%{_perldir}/auto/Slurm/Slurm.so"      >> $LIST
+test -f $RPM_BUILD_ROOT/%{_perldir}/auto/Slurm/Slurm.bs &&
+  echo "%{_perldir}/auto/Slurm/Slurm.bs"      >> $LIST
+test -f $RPM_BUILD_ROOT/%{_perldir}/auto/Slurm/autosplit.ix &&
+  echo "%{_perldir}/auto/Slurm/autosplit.ix"      >> $LIST
 
 LIST=./torque.files
 touch $LIST
