@@ -119,7 +119,7 @@ extern int account_storage_p_modify_users(account_user_cond_t *user_q,
 }
 
 extern int account_storage_p_modify_user_admin_level(
-	account_user_cond_t *user_q, account_admin_level_t level)
+	account_user_cond_t *user_q)
 {
 	return SLURM_SUCCESS;
 }
