@@ -90,16 +90,16 @@ extern int sacctmgr_list_association(int argc, char *argv[])
 	       "----------");
 	
 	while((assoc = list_next(itr))) {
-		printf("%-6.6u ", assoc->id);
+		printf("%-6u ", assoc->id);
 		printf("%-10.10s ", assoc->user);
 		printf("%-10.10s ", assoc->account);
 		printf("%-10.10s ", assoc->cluster);
 		printf("%-10.10s ", assoc->partition);
-		printf("%-9.9u ", assoc->fairshare);
-		printf("%-7.7u ", assoc->max_jobs);
-		printf("%-8.8u ", assoc->max_nodes_per_job);
-		printf("%-7.7u ", assoc->max_wall_duration_per_job);
-		printf("%-10.10u\n", assoc->max_cpu_seconds_per_job);
+		printf("%-9u ", assoc->fairshare);
+		printf("%-7u ", assoc->max_jobs);
+		printf("%-8u ", assoc->max_nodes_per_job);
+		printf("%-7u ", assoc->max_wall_duration_per_job);
+		printf("%-10u\n", assoc->max_cpu_seconds_per_job);
 	}
 
 	printf("\n");

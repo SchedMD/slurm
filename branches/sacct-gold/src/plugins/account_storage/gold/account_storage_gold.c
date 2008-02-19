@@ -2113,16 +2113,6 @@ extern List account_storage_p_get_associations(
 		error("lft && rgt don't work with gold.");
 	}
 
-	gold_request_add_condition(gold_request, "Active",
-				   "True",
-				   GOLD_OPERATOR_NONE,
-				   0);
-
-	gold_request_add_condition(gold_request, "Special",
-				   "False",
-				   GOLD_OPERATOR_NONE,
-				   0);
-
 	gold_request_add_selection(gold_request, "Id");
 	gold_request_add_selection(gold_request, "User");
 	gold_request_add_selection(gold_request, "Project");
