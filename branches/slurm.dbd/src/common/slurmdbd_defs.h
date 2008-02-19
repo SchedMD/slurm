@@ -71,12 +71,12 @@ typedef enum {
 
 /*****************************************************************************\
  * Slurm DBD protocol data structures
- *
- * NOTE: The message sent over the wire has the format:
- *	uint32_t message size;
- *	uint16_t slurmdbd_msg_type_t;	See above
- *	dbd_*_msg;			One of the message formats below
 \*****************************************************************************/
+
+typedef struct slurmdbd_msg {
+	uint16_t msg_type;	/* see slurmdbd_msg_type_t above */
+	void * data;		/* pointer to a message type below */
+} slurmdbd_msg_t;
 
 typedef struct dbd_get_jobs_msg {
 	uint32_t job_id;	/* optional job ID filter or NO_VAL */
@@ -120,6 +120,16 @@ typedef struct dbd_step_start_msg {
 /*****************************************************************************\
  * Slurm DBD message processing functions
 \*****************************************************************************/
+/* Open a socket connection to SlurmDbd */
+extern int slurm_open_slurmdbd_conn(void);
+
+/* Close the SlurmDBD socket connection */
+extern int slurm_close_slurmdbd_conn(void);
+
+/* Send an RPC to the SlurmDBD and wait for the reply.
+ * The RPC will not be queued when an error occurs.
+ * Returns SLURM_SUCCESS or an error code */
+extern int slurm_send_recv_slurmdbd_rc_msg(slurmdbd_msg_t *req, int *rc);
 
 void inline slurm_dbd_free_get_jobs_msg(dbd_get_jobs_msg_t *msg);
 void inline slurm_dbd_free_init_msg(dbd_init_msg_t *msg);

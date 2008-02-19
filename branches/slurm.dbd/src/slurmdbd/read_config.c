@@ -146,7 +146,7 @@ extern int read_slurmdbd_conf(void)
 	if (slurmdbd_conf->auth_type == NULL)
 		slurmdbd_conf->auth_type = xstrdup(DEFAULT_SLURMDBD_AUTHTYPE);
 	if (slurmdbd_conf->dbd_host == NULL) {
-		error("slurmdbd.conf lacks DbdHost parameter");
+		error("slurmdbd.conf lacks DbdHost parameter, using 'localhost'");
 		slurmdbd_conf->dbd_host = xstrdup("localhost");
 	}
 	if (slurmdbd_conf->dbd_addr == NULL)
