@@ -140,7 +140,6 @@ extern int jobacct_storage_p_fini()
  */
 extern int jobacct_storage_p_job_start(struct job_record *job_ptr)
 {
-	int rc;
 	slurmdbd_msg_t msg;
 	dbd_job_start_msg_t req;
 
@@ -148,11 +147,8 @@ extern int jobacct_storage_p_job_start(struct job_record *job_ptr)
 	msg.msg_type = DBD_JOB_START;
 	msg.data = &req;
 
-	if (slurm_send_recv_slurmdbd_rc_msg(&msg, &rc) < 0)
-		return SLURM_FAILURE;
-
-	if (rc)
-		slurm_seterrno_ret(rc);
+	if (slurm_send_slurmdbd_msg(&msg) < 0)
+		return SLURM_ERROR;
 
 	return SLURM_SUCCESS;
 }
@@ -162,7 +158,6 @@ extern int jobacct_storage_p_job_start(struct job_record *job_ptr)
  */
 extern int jobacct_storage_p_job_complete(struct job_record *job_ptr)
 {
-	int rc;
 	slurmdbd_msg_t msg;
 	dbd_job_comp_msg_t req;
 
@@ -170,11 +165,8 @@ extern int jobacct_storage_p_job_complete(struct job_record *job_ptr)
 	msg.msg_type = DBD_JOB_COMPLETE;
 	msg.data = &req;
 
-	if (slurm_send_recv_slurmdbd_rc_msg(&msg, &rc) < 0)
-		return SLURM_FAILURE;
-
-	if (rc)
-		slurm_seterrno_ret(rc);
+	if (slurm_send_slurmdbd_msg(&msg) < 0)
+		return SLURM_ERROR;
 
 	return SLURM_SUCCESS;
 }
@@ -184,7 +176,6 @@ extern int jobacct_storage_p_job_complete(struct job_record *job_ptr)
  */
 extern int jobacct_storage_p_step_start(struct step_record *step_ptr)
 {
-	int rc;
 	slurmdbd_msg_t msg;
 	dbd_step_start_msg_t req;
 
@@ -193,11 +184,8 @@ extern int jobacct_storage_p_step_start(struct step_record *step_ptr)
 	msg.msg_type = DBD_STEP_START;
 	msg.data = &req;
 
-	if (slurm_send_recv_slurmdbd_rc_msg(&msg, &rc) < 0)
-		return SLURM_FAILURE;
-
-	if (rc)
-		slurm_seterrno_ret(rc);
+	if (slurm_send_slurmdbd_msg(&msg) < 0)
+		return SLURM_ERROR;
 
 	return SLURM_SUCCESS;
 }
@@ -207,7 +195,6 @@ extern int jobacct_storage_p_step_start(struct step_record *step_ptr)
  */
 extern int jobacct_storage_p_step_complete(struct step_record *step_ptr)
 {
-	int rc;
 	slurmdbd_msg_t msg;
 	dbd_step_comp_msg_t req;
 
@@ -216,11 +203,8 @@ extern int jobacct_storage_p_step_complete(struct step_record *step_ptr)
 	msg.msg_type = DBD_STEP_COMPLETE;
 	msg.data = &req;
 
-	if (slurm_send_recv_slurmdbd_rc_msg(&msg, &rc) < 0)
-		return SLURM_FAILURE;
-
-	if (rc)
-		slurm_seterrno_ret(rc);
+	if (slurm_send_slurmdbd_msg(&msg) < 0)
+		return SLURM_ERROR;
 
 	return SLURM_SUCCESS;
 }
@@ -230,7 +214,6 @@ extern int jobacct_storage_p_step_complete(struct step_record *step_ptr)
  */
 extern int jobacct_storage_p_suspend(struct job_record *job_ptr)
 {
-	int rc;
 	slurmdbd_msg_t msg;
 	dbd_job_suspend_msg_t req;
 
@@ -238,11 +221,8 @@ extern int jobacct_storage_p_suspend(struct job_record *job_ptr)
 	msg.msg_type = DBD_JOB_SUSPEND;
 	msg.data = &req;
 
-	if (slurm_send_recv_slurmdbd_rc_msg(&msg, &rc) < 0)
-		return SLURM_FAILURE;
-
-	if (rc)
-		slurm_seterrno_ret(rc);
+	if (slurm_send_slurmdbd_msg(&msg) < 0)
+		return SLURM_ERROR;
 
 	return SLURM_SUCCESS;
 }

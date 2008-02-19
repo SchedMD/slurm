@@ -120,16 +120,22 @@ typedef struct dbd_step_start_msg {
 /*****************************************************************************\
  * Slurm DBD message processing functions
 \*****************************************************************************/
+
 /* Open a socket connection to SlurmDbd */
 extern int slurm_open_slurmdbd_conn(void);
 
 /* Close the SlurmDBD socket connection */
 extern int slurm_close_slurmdbd_conn(void);
 
-/* Send an RPC to the SlurmDBD and wait for the reply.
- * The RPC will not be queued when an error occurs.
+/* Send an RPC to the SlurmDBD. Do not wait for the reply. The RPC
+ * will be queued and processed later if the SlurmDBD is not responding.
  * Returns SLURM_SUCCESS or an error code */
-extern int slurm_send_recv_slurmdbd_rc_msg(slurmdbd_msg_t *req, int *rc);
+extern int slurm_send_slurmdbd_msg(slurmdbd_msg_t *req);
+
+/* Send an RPC to the SlurmDBD and wait for the return code reply.
+ * The RPC will not be queued if an error occurs.
+ * Returns SLURM_SUCCESS or an error code */
+extern int slurm_send_slurmdbd_recv_rc_msg(slurmdbd_msg_t *req, int *rc);
 
 void inline slurm_dbd_free_get_jobs_msg(dbd_get_jobs_msg_t *msg);
 void inline slurm_dbd_free_init_msg(dbd_init_msg_t *msg);

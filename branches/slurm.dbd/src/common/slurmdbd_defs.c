@@ -51,6 +51,7 @@
 #include <arpa/inet.h>
 #include <pthread.h>
 #include <sys/poll.h>
+#include <time.h>
 
 #include "slurm/slurm_errno.h"
 #include "src/common/fd.h"
@@ -59,11 +60,18 @@
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/xmalloc.h"
 
-static slurm_fd slurmdbd_fd   = -1;
+static pthread_cond_t  slurmdbd_cond = PTHREAD_COND_INITIALIZER;
 static pthread_mutex_t slurmdbd_lock = PTHREAD_MUTEX_INITIALIZER;
+static slurm_fd  slurmdbd_fd    = -1;
+static List      agent_list     = (List) NULL;
+static pthread_t agent_tid      = 0;
+static time_t    agent_shutdown = 0;
 
 
+static void * _agent(void *x);
+static void   _agent_queue_del(void *x);
 static void   _close_slurmdbd_fd(void);
+static void   _create_agent(void);
 static bool   _fd_readable(slurm_fd fd);
 static int    _fd_writeable(slurm_fd fd);
 static int    _get_return_code(void);
@@ -72,14 +80,19 @@ static Buf    _recv_msg(void);
 static void   _reopen_slurmdbd_fd(void);
 static int    _send_init_msg(void);
 static int    _send_msg(Buf buffer);
+static void   _shutdown_agent(void);
 static int    _tot_wait (struct timeval *start_time);
 
 /****************************************************************************
  * Socket open/close/read/write functions
  ****************************************************************************/
+
+/* Open a socket connection to SlurmDbd */
 extern int slurm_open_slurmdbd_conn(void)
 {
 	slurm_mutex_lock(&slurmdbd_lock);
+	if ((agent_tid == 0) || (agent_list == NULL))
+		_create_agent();
 	if (slurmdbd_fd < 0)
 		_open_slurmdbd_fd();
 	slurm_mutex_unlock(&slurmdbd_lock);
@@ -87,15 +100,20 @@ extern int slurm_open_slurmdbd_conn(void)
 	return SLURM_SUCCESS;
 }
 
+/* Close the SlurmDBD socket connection */
 extern int slurm_close_slurmdbd_conn(void)
 {
 	slurm_mutex_lock(&slurmdbd_lock);
 	_close_slurmdbd_fd();
+	_shutdown_agent();
 	slurm_mutex_unlock(&slurmdbd_lock);
 	return SLURM_SUCCESS;
 }
 
-extern int slurm_send_recv_slurmdbd_rc_msg(slurmdbd_msg_t *req, int *resp_code)
+/* Send an RPC to the SlurmDBD and wait for the return code reply.
+ * The RPC will not be queued if an error occurs.
+ * Returns SLURM_SUCCESS or an error code */
+extern int slurm_send_slurmdbd_recv_rc_msg(slurmdbd_msg_t *req, int *resp_code)
 {
 	int rc;
 	Buf buffer;
@@ -103,13 +121,13 @@ extern int slurm_send_recv_slurmdbd_rc_msg(slurmdbd_msg_t *req, int *resp_code)
 	xassert(resp_code);
 	*resp_code = SLURM_ERROR;
 
+	slurm_mutex_lock(&slurmdbd_lock);
 	if (slurmdbd_fd < 0) {
+		error("slurmdbd: sending message before opening connection");
 		/* slurm_open_slurmdbd_conn() should have been called first,
 		 * but we'll be accomodating and open the connection here
 		 * too. However this will slow the RPC down. */
-		slurm_open_slurmdbd_conn();
-		if (slurmdbd_fd < 0)
-			return SLURM_ERROR;
+		_open_slurmdbd_fd();
 	}
 
 	buffer = init_buf(1024);
@@ -143,6 +161,7 @@ extern int slurm_send_recv_slurmdbd_rc_msg(slurmdbd_msg_t *req, int *resp_code)
 			error("slurmdbd: Invalid message type %u",
 			      req->msg_type);
 			free_buf(buffer);
+			slurm_mutex_unlock(&slurmdbd_lock);
 			return SLURM_ERROR;
 	}
 
@@ -150,10 +169,75 @@ extern int slurm_send_recv_slurmdbd_rc_msg(slurmdbd_msg_t *req, int *resp_code)
 	free_buf(buffer);
 	if (rc != SLURM_SUCCESS) {
 		error("slurmdbd: Sending message type %u", req->msg_type);
+		slurm_mutex_unlock(&slurmdbd_lock);
 		return SLURM_ERROR;
 	}
 
 	*resp_code = _get_return_code();
+	slurm_mutex_unlock(&slurmdbd_lock);
+	return SLURM_SUCCESS;
+}
+
+/* Send an RPC to the SlurmDBD. Do not wait for the reply. The RPC
+ * will be queued and processed later if the SlurmDBD is not responding.
+ * Returns SLURM_SUCCESS or an error code */
+extern int slurm_send_slurmdbd_msg(slurmdbd_msg_t *req)
+{
+	Buf buffer;
+
+	slurm_mutex_lock(&slurmdbd_lock);
+	if (slurmdbd_fd < 0) {
+		error("slurmdbd: sending message before opening connection");
+		/* slurm_open_slurmdbd_conn() should have been called first,
+		 * but we'll be accomodating and open the connection here
+		 * too. However this will slow the RPC down. */
+		_open_slurmdbd_fd();
+		if (slurmdbd_fd < 0) {
+			slurm_mutex_unlock(&slurmdbd_lock);
+			return SLURM_ERROR;
+		}
+	}
+	if ((agent_tid == 0) || (agent_list == NULL)) {
+		_create_agent();
+		if ((agent_tid == 0) || (agent_list == NULL)) {
+			slurm_mutex_unlock(&slurmdbd_lock);
+			return SLURM_ERROR;
+		}
+	}
+
+	buffer = init_buf(1024);
+	pack16(req->msg_type, buffer);
+	switch (req->msg_type) {
+		case DBD_JOB_COMPLETE:
+			slurm_dbd_pack_job_complete_msg(
+				(dbd_job_comp_msg_t *) req->data, buffer);
+			break;
+		case DBD_JOB_START:
+			slurm_dbd_pack_job_start_msg(
+				(dbd_job_start_msg_t *) req->data, buffer);
+			break;
+		case DBD_JOB_SUSPEND:
+			slurm_dbd_pack_job_suspend_msg(
+				(dbd_job_suspend_msg_t *) req->data, buffer);
+			break;
+		case DBD_STEP_COMPLETE:
+			slurm_dbd_pack_step_complete_msg(
+				(dbd_step_comp_msg_t *) req->data, buffer);
+			break;
+		case DBD_STEP_START:
+			slurm_dbd_pack_step_start_msg(
+				(dbd_step_start_msg_t *) req->data, buffer);
+			break;
+		default:
+			error("slurmdbd: Invalid send message type %u",
+			      req->msg_type);
+			free_buf(buffer);
+			slurm_mutex_unlock(&slurmdbd_lock);
+			return SLURM_ERROR;
+	}
+	list_enqueue(agent_list, buffer);
+	slurm_mutex_unlock(&slurmdbd_lock);
+	pthread_cond_broadcast(&slurmdbd_cond);
 	return SLURM_SUCCESS;
 }
 
@@ -200,20 +284,23 @@ static void _open_slurmdbd_fd(void)
 static int _send_init_msg(void)
 {
 	int rc;
-	slurmdbd_msg_t msg;
+	Buf buffer;
 	dbd_init_msg_t req;
 
+	buffer = init_buf(1024);
+	pack16((uint16_t) DBD_INIT, buffer);
 	req.version  = SLURM_DBD_VERSION;
-	msg.msg_type = DBD_INIT;
-	msg.data = &req;
+	slurm_dbd_pack_init_msg(&req, buffer);
 
-	if (slurm_send_recv_slurmdbd_rc_msg(&msg, &rc) < 0)
-		return SLURM_ERROR;
+	rc = _send_msg(buffer);
+	free_buf(buffer);
+	if (rc != SLURM_SUCCESS) {
+		error("slurmdbd: Sending DBD_INIT message");
+		return rc;
+	}
 
-	if (rc)
-		slurm_seterrno_ret(rc);
-
-	return SLURM_SUCCESS;
+	rc = _get_return_code();
+	return rc;
 }
 
 /* Close the SlurmDbd connection */
@@ -442,6 +529,106 @@ static int _fd_writeable(slurm_fd fd)
 		break;
 	}
 	return 1;
+}
+
+static void _create_agent(void)
+{
+	if (agent_list == NULL) {
+		agent_list = list_create(_agent_queue_del);
+		if (agent_list == NULL)
+			fatal("list_create: malloc failure");
+		/* load from state save file */
+	}
+
+	if (agent_tid == 0) {
+		pthread_attr_t agent_attr;
+		slurm_attr_init(&agent_attr);
+		pthread_attr_setdetachstate(&agent_attr, 
+					    PTHREAD_CREATE_DETACHED);
+		if (pthread_create(&agent_tid, &agent_attr, _agent, NULL) ||
+		    (agent_tid == 0))
+			fatal("pthread_create: %m");
+	}
+}
+
+static void _agent_queue_del(void *x)
+{
+	Buf buffer = (Buf) x;
+	free_buf(buffer);
+}
+
+static void _shutdown_agent(void)
+{
+	int i;
+
+	if (agent_tid) {
+		agent_shutdown = time(NULL);
+		pthread_cond_broadcast(&slurmdbd_cond);
+		usleep(1000);
+		for (i=0; i<2; i++) {
+			if (i)
+				sleep(1);
+			if (pthread_kill(agent_tid, 0) == ESRCH)
+				break;
+		}
+		pthread_kill(agent_tid, SIGKILL);
+		agent_tid = 0;
+	}
+
+	if (agent_list) {
+		/* save the list to a state save file */
+		list_destroy(agent_list);
+		agent_list = NULL;
+	}
+}
+
+static void *_agent(void *x)
+{
+	int cnt, rc;
+	Buf buffer;
+	struct timespec abstime;
+	static time_t fail_time = 0;
+
+	while (agent_shutdown == 0) {
+		slurm_mutex_lock(&slurmdbd_lock);
+		cnt = list_count(agent_list);
+		if ((cnt == 0) ||
+		    (fail_time && (difftime(time(NULL), fail_time) < 10))) {
+			pthread_cond_wait(&slurmdbd_cond, &slurmdbd_lock);
+			slurm_mutex_unlock(&slurmdbd_lock);
+			continue;
+		}
+info("slurmdbd: agent queue size %u", cnt);
+		/* Leave item on the queue until processing complete */
+		buffer = (Buf) list_peek(agent_list);
+		if (buffer == NULL) {
+			slurm_mutex_unlock(&slurmdbd_lock);
+			continue;
+		}
+
+		rc = _send_msg(buffer);
+		if (rc != SLURM_SUCCESS)
+			error("slurmdbd: Failure sending message");
+		else {
+			rc = _get_return_code();
+			if (rc != SLURM_SUCCESS)
+				error("slurmdbd: Failure getting response");
+		}
+		if (rc == SLURM_SUCCESS) {
+			buffer = (Buf) list_dequeue(agent_list);
+			free_buf(buffer);
+			fail_time = 0;
+		} else {
+			fail_time = time(NULL);
+			abstime.tv_sec = 10;
+			abstime.tv_nsec = 0;
+			pthread_cond_timedwait(&slurmdbd_cond, &slurmdbd_lock,
+					       &abstime);
+		}
+		slurm_mutex_unlock(&slurmdbd_lock);
+	}
+info("slurmdbd: agent shutdown");
+	return NULL;
 }
 
 /****************************************************************************
