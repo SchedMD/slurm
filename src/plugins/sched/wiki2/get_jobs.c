@@ -324,6 +324,10 @@ static char *	_dump_job(struct job_record *job_ptr, time_t update_time)
 		xstrcat(buf, tmp);
 	}
 
+	snprintf(tmp, sizeof(tmp),
+		"NAME=\"%s\";", job_ptr->name);
+	xstrcat(buf, tmp);
+
 	if (job_ptr->details &&
 	    (update_time > job_ptr->details->submit_time))
 		return buf;
@@ -332,10 +336,6 @@ static char *	_dump_job(struct job_record *job_ptr, time_t update_time)
 		"UNAME=%s;GNAME=%s;",
 		uid_to_string((uid_t) job_ptr->user_id),
 		_get_group_name(job_ptr->group_id));
-	xstrcat(buf, tmp);
-
-	snprintf(tmp, sizeof(tmp),
-		"NAME=\"%s\";", job_ptr->name);
 	xstrcat(buf, tmp);
 
 	return buf;
