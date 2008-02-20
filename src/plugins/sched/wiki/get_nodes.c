@@ -39,13 +39,9 @@
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/slurmctld.h"
 
-static char *	_dump_all_nodes(int *node_cnt, int state_info);
-static char *	_dump_node(struct node_record *node_ptr, int state_info);
+static char *	_dump_all_nodes(int *node_cnt, time_t update_time);
+static char *	_dump_node(struct node_record *node_ptr, time_t update_time);
 static char *	_get_node_state(struct node_record *node_ptr);
-
-#define SLURM_INFO_ALL		0
-#define SLURM_INFO_VOLITILE	1
-#define SLURM_INFO_STATE	2
 
 /*
  * get_nodes - get information on specific node(s) changed since some time
@@ -72,7 +68,7 @@ extern int	get_nodes(char *cmd_ptr, int *err_code, char **err_msg)
 	/* Locks: read node, read partition */
 	slurmctld_lock_t node_read_lock = {
 		NO_LOCK, NO_LOCK, READ_LOCK, READ_LOCK };
-	int node_rec_cnt = 0, buf_size = 0, state_info;
+	int node_rec_cnt = 0, buf_size = 0;
 
 	arg_ptr = strstr(cmd_ptr, "ARG=");
 	if (arg_ptr == NULL) {
@@ -90,16 +86,9 @@ extern int	get_nodes(char *cmd_ptr, int *err_code, char **err_msg)
 	}
 	tmp_char++;
 	lock_slurmctld(node_read_lock);
-	if (update_time == 0)
-		state_info = SLURM_INFO_ALL;
-	else if (update_time > last_node_update)
-		state_info = SLURM_INFO_STATE;
-	else
-		state_info = SLURM_INFO_VOLITILE;
-
 	if (strncmp(tmp_char, "ALL", 3) == 0) {
 		/* report all nodes */
-		buf = _dump_all_nodes(&node_rec_cnt, state_info);
+		buf = _dump_all_nodes(&node_rec_cnt, update_time);
 	} else {
 		struct node_record *node_ptr;
 		char *node_name, *tmp2_char;
@@ -112,7 +101,7 @@ extern int	get_nodes(char *cmd_ptr, int *err_code, char **err_msg)
 				      node_name);
 				continue;
 			}
-			tmp_buf = _dump_node(node_ptr, state_info);
+			tmp_buf = _dump_node(node_ptr, update_time);
 			if (node_rec_cnt > 0)
 				xstrcat(buf, "#");
 			xstrcat(buf, tmp_buf);
@@ -134,7 +123,7 @@ extern int	get_nodes(char *cmd_ptr, int *err_code, char **err_msg)
 	return 0;
 }
 
-static char *	_dump_all_nodes(int *node_cnt, int state_info)
+static char *	_dump_all_nodes(int *node_cnt, time_t update_time)
 {
 	int i, cnt = 0;
 	struct node_record *node_ptr = node_record_table_ptr;
@@ -143,7 +132,7 @@ static char *	_dump_all_nodes(int *node_cnt, int state_info)
 	for (i=0; i<node_record_count; i++, node_ptr++) {
 		if (node_ptr->name == NULL)
 			continue;
-		tmp_buf = _dump_node(node_ptr, state_info);
+		tmp_buf = _dump_node(node_ptr, update_time);
 		if (cnt > 0)
 			xstrcat(buf, "#");
 		xstrcat(buf, tmp_buf);
@@ -154,7 +143,7 @@ static char *	_dump_all_nodes(int *node_cnt, int state_info)
 	return buf;
 }
 
-static char *	_dump_node(struct node_record *node_ptr, int state_info)
+static char *	_dump_node(struct node_record *node_ptr, time_t update_time)
 {
 	char tmp[512], *buf = NULL;
 	int i;
@@ -162,7 +151,6 @@ static char *	_dump_node(struct node_record *node_ptr, int state_info)
 	if (!node_ptr)
 		return NULL;
 
-	/* SLURM_INFO_STATE or SLURM_INFO_VOLITILE or SLURM_INFO_ALL */
 	snprintf(tmp, sizeof(tmp), "%s:STATE=%s;",
 		node_ptr->name, 
 		_get_node_state(node_ptr));
@@ -178,11 +166,9 @@ static char *	_dump_node(struct node_record *node_ptr, int state_info)
 		xstrcat(buf, tmp);
 	}
 
-	if ((state_info == SLURM_INFO_STATE) ||
-	    (state_info == SLURM_INFO_VOLITILE))
+	if (update_time > 0)
 		return buf;
 
-	/* SLURM_INFO_ALL only */
 	if (slurmctld_conf.fast_schedule) {
 		/* config from slurm.conf */
 		snprintf(tmp, sizeof(tmp),
