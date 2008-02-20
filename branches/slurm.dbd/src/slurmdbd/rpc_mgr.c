@@ -303,8 +303,12 @@ static bool _fd_readable(slurm_fd fd)
 	ufds.events = POLLIN;
 	while (1) {
 		rc = poll(&ufds, 1, -1);
-		if ((rc == 0) && ((errno == EINTR) || (errno == EAGAIN)))
-			continue;
+		if (rc == -1) {
+			if ((errno == EINTR) || (errno == EAGAIN))
+				continue;
+			error("poll: %m");
+			return false;
+		}
 		if (ufds.revents & POLLHUP) {
 			debug2("Connection %d closed", fd);
 			return false;
@@ -341,8 +345,16 @@ static bool _fd_writeable(slurm_fd fd)
 	while (1) {
 		time_left = msg_timeout - _tot_wait(&tstart);
 		rc = poll(&ufds, 1, time_left);
-		if ((rc == 0) && ((errno == EINTR) || (errno == EAGAIN)))
-			continue;
+		if (rc == -1) {
+			if ((errno == EINTR) || (errno == EAGAIN))
+				continue;
+			error("poll: %m");
+			return false;
+		}
+		if (rc == 0) {
+			error("write timeout");
+			return false;
+		}
 		if (ufds.revents & POLLHUP) {
 			debug2("Connection %d closed", fd);
 			return false;
