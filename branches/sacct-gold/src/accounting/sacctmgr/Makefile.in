@@ -72,7 +72,7 @@ PROGRAMS = $(bin_PROGRAMS)
 am_sacctmgr_OBJECTS = user_functions.$(OBJEXT) \
 	cluster_functions.$(OBJEXT) account_functions.$(OBJEXT) \
 	association_functions.$(OBJEXT) sacctmgr.$(OBJEXT) \
-	print.$(OBJEXT)
+	common.$(OBJEXT)
 sacctmgr_OBJECTS = $(am_sacctmgr_OBJECTS)
 am__DEPENDENCIES_1 =
 sacctmgr_DEPENDENCIES = $(convenience_libs) $(am__DEPENDENCIES_1)
@@ -269,7 +269,7 @@ sacctmgr_SOURCES = \
 	association_functions.c   \
 	sacctmgr.c	\
 	sacctmgr.h	\
-	print.c
+	common.c
 
 convenience_libs = $(top_builddir)/src/api/libslurmhelper.la
 sacctmgr_LDADD = \
@@ -351,7 +351,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/account_functions.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/association_functions.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cluster_functions.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/print.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/common.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sacctmgr.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/user_functions.Po@am__quote@
 

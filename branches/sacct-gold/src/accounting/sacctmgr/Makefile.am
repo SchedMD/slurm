@@ -13,7 +13,7 @@ sacctmgr_SOURCES =	\
 	association_functions.c   \
 	sacctmgr.c	\
 	sacctmgr.h	\
-	print.c
+	common.c
 
 convenience_libs = $(top_builddir)/src/api/libslurmhelper.la
 
