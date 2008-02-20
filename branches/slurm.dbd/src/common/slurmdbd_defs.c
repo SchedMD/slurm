@@ -49,8 +49,12 @@
 #endif				/*  HAVE_CONFIG_H */
 
 #include <arpa/inet.h>
+#include <fcntl.h>
 #include <pthread.h>
+#include <stdio.h>
 #include <sys/poll.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 #include <time.h>
 
 #include "slurm/slurm_errno.h"
@@ -59,6 +63,10 @@
 #include "src/common/slurmdbd_defs.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/xmalloc.h"
+#include "src/common/xsignal.h"
+#include "src/common/xstring.h"
+
+#define DBD_MAGIC 0xDEAD3219
 
 static pthread_mutex_t agent_lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t  agent_cond = PTHREAD_COND_INITIALIZER;
@@ -76,11 +84,15 @@ static void   _create_agent(void);
 static bool   _fd_readable(slurm_fd fd);
 static int    _fd_writeable(slurm_fd fd);
 static int    _get_return_code(void);
+static void   _load_dbd_state(void);
 static void   _open_slurmdbd_fd(void);
 static Buf    _recv_msg(void);
 static void   _reopen_slurmdbd_fd(void);
+static int    _save_dbd_rec(int fd, Buf buffer);
+static void   _save_dbd_state(void);
 static int    _send_init_msg(void);
 static int    _send_msg(Buf buffer);
+static void   _sig_handler(int signal);
 static void   _shutdown_agent(void);
 static int    _tot_wait (struct timeval *start_time);
 
@@ -107,9 +119,8 @@ extern int slurm_open_slurmdbd_conn(void)
 /* Close the SlurmDBD socket connection */
 extern int slurm_close_slurmdbd_conn(void)
 {
-	slurm_mutex_lock(&agent_lock);
+	/* NOTE: agent_lock not needed for _shutdown_agent() */
 	_shutdown_agent();
-	slurm_mutex_lock(&agent_lock);
 
 	slurm_mutex_lock(&slurmdbd_lock);
 	_close_slurmdbd_fd();
@@ -234,7 +245,6 @@ extern int slurm_send_slurmdbd_msg(slurmdbd_msg_t *req)
 			return SLURM_ERROR;
 		}
 	}
-
 	list_enqueue(agent_list, buffer);
 	slurm_mutex_unlock(&agent_lock);
 	pthread_cond_broadcast(&agent_cond);
@@ -424,7 +434,10 @@ static Buf _recv_msg(void)
 		offset += msg_read;
 	}
 	if (msg_size != offset) {
-		error("slurmdbd: only read %d of %d bytes", offset, msg_size);
+		if (agent_shutdown == 0) {
+			error("slurmdbd: only read %d of %d bytes", 
+			      offset, msg_size);
+		}	/* else in shutdown mode */
 		xfree(msg);
 		return NULL;
 	}
@@ -462,11 +475,17 @@ static bool _fd_readable(slurm_fd fd)
 	ufds.fd     = fd;
 	ufds.events = POLLIN;
 	gettimeofday(&tstart, NULL);
-	while (1) {
+	while (agent_shutdown == 0) {
 		time_left = msg_timeout - _tot_wait(&tstart);
 		rc = poll(&ufds, 1, time_left);
-		if ((rc == 0) && ((errno == EINTR) || (errno == EAGAIN)))
-			continue;
+		if (rc == -1) {
+			if ((errno == EINTR) || (errno == EAGAIN))
+				continue;
+			error("poll: %m");
+			return false;
+		}
+		if (rc == 0)
+			return false;
 		if (ufds.revents & POLLHUP) {
 			debug2("SlurmDBD connection closed");
 			return false;
@@ -484,9 +503,10 @@ static bool _fd_readable(slurm_fd fd)
 				fd, ufds.revents);
 			return false;
 		}
-		break;
+		/* revents == POLLIN */
+		return true;
 	}
-	return true;
+	return false;
 }
 
 /* Wait until a file is writable, 
@@ -504,11 +524,17 @@ static int _fd_writeable(slurm_fd fd)
 	ufds.fd     = fd;
 	ufds.events = POLLOUT;
 	gettimeofday(&tstart, NULL);
-	while (1) {
+	while (agent_shutdown == 0) {
 		time_left = msg_timeout - _tot_wait(&tstart);
 		rc = poll(&ufds, 1, time_left);
-		if ((rc == 0) && ((errno == EINTR) || (errno == EAGAIN)))
-			continue;
+		if (rc == -1) {
+			if ((errno == EINTR) || (errno == EAGAIN))
+				continue;
+			error("poll: %m");
+			return -1;
+		}
+		if (rc == 0)
+			return 0;
 		if (ufds.revents & POLLHUP) {
 			debug2("SlurmDBD connection is closed");
 			return -1;
@@ -526,9 +552,10 @@ static int _fd_writeable(slurm_fd fd)
 				fd, ufds.revents);
 			return 0;
 		}
-		break;
+		/* revents == POLLOUT */
+		return 1;
 	}
-	return 1;
+	return 0;
 }
 
 /****************************************************************************
@@ -540,7 +567,7 @@ static void _create_agent(void)
 		agent_list = list_create(_agent_queue_del);
 		if (agent_list == NULL)
 			fatal("list_create: malloc failure");
-		/* load from state save file */
+		_load_dbd_state();
 	}
 
 	if (agent_tid == 0) {
@@ -567,21 +594,16 @@ static void _shutdown_agent(void)
 	if (agent_tid) {
 		agent_shutdown = time(NULL);
 		pthread_cond_broadcast(&agent_cond);
-		usleep(1000);
-		for (i=0; i<2; i++) {
-			if (i)
-				sleep(1);
-			if (pthread_kill(agent_tid, 0) == ESRCH)
-				break;
+		for (i=0; ((i<10) && agent_tid); i++) {
+			usleep(10000);
+			pthread_cond_broadcast(&agent_cond);
+			if (pthread_kill(agent_tid, SIGUSR1))
+				agent_tid = 0;
 		}
-		pthread_kill(agent_tid, SIGKILL);
-		agent_tid = 0;
-	}
-
-	if (agent_list) {
-		/* save the list to a state save file */
-		list_destroy(agent_list);
-		agent_list = NULL;
+		if (agent_tid) {
+			error("slurmdbd: agent failed to shutdown gracefully");
+		} else
+			agent_shutdown = 0;
 	}
 }
 
@@ -589,30 +611,45 @@ static void *_agent(void *x)
 {
 	int cnt, rc;
 	Buf buffer;
-	struct timespec abstime;
+	struct timespec abs_time;
 	static time_t fail_time = 0;
+	int sigarray[] = {SIGUSR1, 0};
+
+	/* Prepare to catch SIGUSR1 to interrupt pending
+	 * I/O and terminate in a timely fashion. */
+	xsignal(SIGUSR1, _sig_handler);
+	xsignal_unblock(sigarray);
 
 	while (agent_shutdown == 0) {
 
 		if (slurmdbd_fd < 0) {
-			/* Either slurm_open_slurmdbd_conn() was not executed or
-			 * the connection to Slurm DBD has been closed */
+			/* Either slurm_open_slurmdbd_conn() was not executed
+			 * or the connection to Slurm DBD has been closed */
 			slurm_mutex_lock(&slurmdbd_lock);
 			_open_slurmdbd_fd();
 			slurm_mutex_unlock(&slurmdbd_lock);
 		}
 
 		slurm_mutex_lock(&agent_lock);
-		cnt = list_count(agent_list);
+		if (agent_list)
+			cnt = list_count(agent_list);
+		else
+			cnt = 0;
 		if ((cnt == 0) || (slurmdbd_fd < 0) ||
 		    (fail_time && (difftime(time(NULL), fail_time) < 10))) {
-			pthread_cond_wait(&agent_cond, &agent_lock);
+			abs_time.tv_sec  = time(NULL) + 10;
+			abs_time.tv_nsec = 0;
+			rc = pthread_cond_timedwait(&agent_cond, &agent_lock,
+						    &abs_time);
 			slurm_mutex_unlock(&agent_lock);
 			continue;
-		}
-info("slurmdbd: agent queue size %u", cnt);
+		} else if (cnt > 0)
+			info("slurmdbd: agent queue size %u", cnt);
 		/* Leave item on the queue until processing complete */
-		buffer = (Buf) list_peek(agent_list);
+		if (agent_list)
+			buffer = (Buf) list_peek(agent_list);
+		else
+			buffer = NULL;
 		slurm_mutex_unlock(&agent_lock);
 		if (buffer == NULL)
 			continue;
@@ -621,30 +658,111 @@ info("slurmdbd: agent queue size %u", cnt);
 		 * requests to the queue while waiting for this RPC to 
 		 * complete .*/
 		rc = _send_msg(buffer);
-		if (rc != SLURM_SUCCESS)
+		if (rc != SLURM_SUCCESS) {
+			if (agent_shutdown)
+				break;
 			error("slurmdbd: Failure sending message");
-		else {
+		} else {
 			rc = _get_return_code();
-			if (rc != SLURM_SUCCESS)
+			if (rc != SLURM_SUCCESS) {
+				if (agent_shutdown)
+					break;
 				error("slurmdbd: Failure getting response");
+			}
 		}
 
 		slurm_mutex_lock(&agent_lock);
-		if (rc == SLURM_SUCCESS) {
+		if (agent_list && (rc == SLURM_SUCCESS)) {
 			buffer = (Buf) list_dequeue(agent_list);
 			free_buf(buffer);
 			fail_time = 0;
 		} else {
 			fail_time = time(NULL);
-			abstime.tv_sec = 10;
-			abstime.tv_nsec = 0;
-			pthread_cond_timedwait(&agent_cond, &agent_lock,
-					       &abstime);
 		}
 		slurm_mutex_unlock(&agent_lock);
 	}
-info("slurmdbd: agent shutdown");
+
+	slurm_mutex_lock(&agent_lock);
+	_save_dbd_state();
+	if (agent_list) {
+		list_destroy(agent_list);
+		agent_list = NULL;
+	}
+	slurm_mutex_unlock(&agent_lock);
 	return NULL;
+}
+
+static void _save_dbd_state(void)
+{
+	char *dbd_fname;
+	Buf buffer;
+	int fd, rc, wrote = 0;
+
+	dbd_fname = slurm_get_state_save_location();
+	xstrcat(dbd_fname, "/dbd.messages");
+	fd = open(dbd_fname, O_WRONLY | O_CREAT | O_TRUNC);
+	if (fd < 0) {
+		error("slurmdbd: Creating state save file %s", dbd_fname);
+	} else if (agent_list) {
+		while ((buffer = list_dequeue(agent_list))) {
+			rc = _save_dbd_rec(fd, buffer);
+			free_buf(buffer);
+			if (rc != SLURM_SUCCESS)
+				break;
+			wrote++;
+		}
+	}
+	if (fd >= 0) {
+		info("slurmdbd: saved %d pending RPCs", wrote);
+		(void) close(fd);
+	}
+	xfree(dbd_fname);
+}
+
+static void _load_dbd_state(void)
+{
+}
+
+static int _save_dbd_rec(int fd, Buf buffer)
+{
+	ssize_t size, wrote;
+	uint32_t msg_size = get_buf_offset(buffer);
+	uint32_t magic = DBD_MAGIC;
+	char *msg = get_buf_data(buffer);
+
+	size = sizeof(msg_size);
+	wrote = write(fd, &msg_size, size);
+	if (wrote != size) {
+		error("slurmdbd: state save error: %m");
+		return SLURM_ERROR;
+	}
+
+	wrote = 0;
+	while (wrote < msg_size) {
+		wrote = write(fd, msg, msg_size);
+		if (wrote > 0) {
+			msg += wrote;
+			msg_size -= wrote;
+		} else if ((wrote == -1) && (errno == EINTR))
+			continue;
+		else {
+			error("slurmdbd: state save error: %m");
+			return SLURM_ERROR;
+		}
+	}	
+
+	size = sizeof(magic);
+	wrote = write(fd, &magic, size);
+	if (wrote != size) {
+		error("slurmdbd: state save error: %m");
+		return SLURM_ERROR;
+	}
+
+	return SLURM_SUCCESS;
+}
+
+static void _sig_handler(int signal)
+{
 }
 
 /****************************************************************************

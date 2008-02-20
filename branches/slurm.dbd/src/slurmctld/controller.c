@@ -436,6 +436,8 @@ int main(int argc, char *argv[])
 		verbose("Unable to remove pidfile '%s': %m",
 			slurmctld_conf.slurmctld_pidfile);
 
+	slurm_jobacct_storage_fini();	/* Save pending message traffic */
+
 #ifdef MEMORY_LEAK_DEBUG
 	/* This should purge all allocated memory,   *\
 	\*   Anything left over represents a leak.   */
@@ -463,7 +465,6 @@ int main(int argc, char *argv[])
 	g_slurm_jobcomp_fini();
 	jobacct_storage_g_fini();
 	slurm_jobacct_gather_fini();
-	slurm_jobacct_storage_fini();
 	slurm_sched_fini();
 	slurm_select_fini();
 	checkpoint_fini();

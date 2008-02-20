@@ -114,7 +114,6 @@ extern int init ( void )
 
 extern int fini ( void )
 {
-	slurm_close_slurmdbd_conn();
 	return SLURM_SUCCESS;
 }
 
@@ -132,6 +131,7 @@ extern int jobacct_storage_p_init(char *location)
  */
 extern int jobacct_storage_p_fini()
 {
+	slurm_close_slurmdbd_conn();
 	return SLURM_SUCCESS;
 }
 
