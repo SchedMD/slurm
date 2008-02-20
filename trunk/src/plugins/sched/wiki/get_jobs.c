@@ -45,8 +45,8 @@
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/slurmctld.h"
 
-static char *	_dump_all_jobs(int *job_cnt, int state_info);
-static char *	_dump_job(struct job_record *job_ptr, int state_info);
+static char *	_dump_all_jobs(int *job_cnt, time_t update_time);
+static char *	_dump_job(struct job_record *job_ptr, time_t update_time);
 static char *	_get_group_name(gid_t gid);
 static uint16_t _get_job_cpus_per_task(struct job_record *job_ptr);
 static uint32_t	_get_job_end_time(struct job_record *job_ptr);
@@ -61,11 +61,6 @@ static uint32_t	_get_job_tasks(struct job_record *job_ptr);
 static uint32_t	_get_job_time_limit(struct job_record *job_ptr);
 static int	_hidden_job(struct job_record *job_ptr);
 static char *	_task_list(struct job_record *job_ptr);
-
-
-#define SLURM_INFO_ALL		0
-#define SLURM_INFO_VOLITILE	1
-#define SLURM_INFO_STATE	2
 
 /*
  * get_jobs - get information on specific job(s) changed since some time
@@ -102,7 +97,7 @@ extern int	get_jobs(char *cmd_ptr, int *err_code, char **err_msg)
 	/* Locks: read job, partition */
 	slurmctld_lock_t job_read_lock = {
 		NO_LOCK, READ_LOCK, NO_LOCK, READ_LOCK };
-	int job_rec_cnt = 0, buf_size = 0, state_info;
+	int job_rec_cnt = 0, buf_size = 0;
 
 	arg_ptr = strstr(cmd_ptr, "ARG=");
 	if (arg_ptr == NULL) {
@@ -126,16 +121,9 @@ extern int	get_jobs(char *cmd_ptr, int *err_code, char **err_msg)
 	}
 	tmp_char++;
 	lock_slurmctld(job_read_lock);
-	if (update_time == 0)
-		state_info = SLURM_INFO_ALL;
-	else if (update_time > last_job_update)
-		state_info = SLURM_INFO_STATE;
-	else
-		state_info = SLURM_INFO_VOLITILE;
-
 	if (strncmp(tmp_char, "ALL", 3) == 0) {
 		/* report all jobs */
-		buf = _dump_all_jobs(&job_rec_cnt, state_info);
+		buf = _dump_all_jobs(&job_rec_cnt, update_time);
 	} else {
 		struct job_record *job_ptr;
 		char *job_name, *tmp2_char;
@@ -145,7 +133,7 @@ extern int	get_jobs(char *cmd_ptr, int *err_code, char **err_msg)
 		while (job_name) {
 			job_id = (uint32_t) strtoul(job_name, NULL, 10);
 			job_ptr = find_job_record(job_id);
-			tmp_buf = _dump_job(job_ptr, state_info);
+			tmp_buf = _dump_job(job_ptr, update_time);
 			if (job_rec_cnt > 0)
 				xstrcat(buf, "#");
 			xstrcat(buf, tmp_buf);
@@ -180,7 +168,7 @@ static int	_hidden_job(struct job_record *job_ptr)
 	return 0;
 }
 
-static char *   _dump_all_jobs(int *job_cnt, int state_info)
+static char *   _dump_all_jobs(int *job_cnt, time_t update_time)
 {
 	int cnt = 0;
 	struct job_record *job_ptr;
@@ -191,7 +179,7 @@ static char *   _dump_all_jobs(int *job_cnt, int state_info)
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
 		if (_hidden_job(job_ptr))
 			continue;
-		tmp_buf = _dump_job(job_ptr, state_info);
+		tmp_buf = _dump_job(job_ptr, update_time);
 		if (cnt > 0)
 			xstrcat(buf, "#");
 		xstrcat(buf, tmp_buf);
@@ -202,7 +190,7 @@ static char *   _dump_all_jobs(int *job_cnt, int state_info)
 	return buf;
 }
 
-static char *	_dump_job(struct job_record *job_ptr, int state_info)
+static char *	_dump_job(struct job_record *job_ptr, time_t update_time)
 {
 	char tmp[16384], *buf = NULL;
 	uint32_t end_time, suspend_time;
@@ -210,15 +198,13 @@ static char *	_dump_job(struct job_record *job_ptr, int state_info)
 	if (!job_ptr)
 		return NULL;
 
-	/* SLURM_INFO_STATE or SLURM_INFO_VOLITILE or SLURM_INFO_ALL */
 	snprintf(tmp, sizeof(tmp), "%u:STATE=%s;",
 		job_ptr->job_id, _get_job_state(job_ptr));
 	xstrcat(buf, tmp);
 
-	if (state_info == SLURM_INFO_STATE)
+	if (update_time > last_job_update)
 		return buf;
 
-	/* SLURM_INFO_VOLITILE or SLURM_INFO_ALL */
 	if ((job_ptr->job_state == JOB_PENDING)
 	&&  (job_ptr->details)
 	&&  (job_ptr->details->req_nodes)
@@ -318,10 +304,10 @@ static char *	_dump_job(struct job_record *job_ptr, int state_info)
 		xstrcat(buf,tmp);
 	}
 
-	if (state_info == SLURM_INFO_VOLITILE)
+	if (job_ptr->details &&
+	    (update_time > job_ptr->details->submit_time))
 		return buf;
 
-	/* SLURM_INFO_ALL only */
 	snprintf(tmp, sizeof(tmp),
 		"UNAME=%s;GNAME=%s;",
 		uid_to_string((uid_t) job_ptr->user_id),
