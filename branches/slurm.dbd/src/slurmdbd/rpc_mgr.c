@@ -303,6 +303,8 @@ static bool _fd_readable(slurm_fd fd)
 	ufds.events = POLLIN;
 	while (1) {
 		rc = poll(&ufds, 1, -1);
+		if (shutdown_time)
+			return false;
 		if (rc == -1) {
 			if ((errno == EINTR) || (errno == EAGAIN))
 				continue;
@@ -345,6 +347,8 @@ static bool _fd_writeable(slurm_fd fd)
 	while (1) {
 		time_left = msg_timeout - _tot_wait(&tstart);
 		rc = poll(&ufds, 1, time_left);
+		if (shutdown_time)
+			return false;
 		if (rc == -1) {
 			if ((errno == EINTR) || (errno == EAGAIN))
 				continue;
@@ -462,7 +466,17 @@ static void _wait_for_thread_fini(void)
 
 	if (thread_count == 0)
 		return;
-	sleep(1);	/* Give the threads 1 second to clean up */
+	usleep(500000);	/* Give the threads 500 msec to clean up */
+
+	/* Interupt any hung I/O */
+	slurm_mutex_lock(&thread_count_lock);
+	for (j=0; j<MAX_THREAD_COUNT; j++) {
+		if (slave_thread_id[j] == 0)
+			continue;
+		pthread_kill(slave_thread_id[j], SIGUSR1);
+	}
+	slurm_mutex_unlock(&thread_count_lock);
+	usleep(100000);	/* Give the threads 100 msec to clean up */
 
 	for (i=0; ; i++) {
 		if (thread_count == 0)
@@ -472,7 +486,7 @@ static void _wait_for_thread_fini(void)
 		for (j=0; j<MAX_THREAD_COUNT; j++) {
 			if (slave_thread_id[j] == 0)
 				continue;
-			info("rpc_mgr sending SIGKILL to thread %d", 
+			info("rpc_mgr sending SIGKILL to thread %u", 
 			     slave_thread_id[j]);
 			if (pthread_kill(slave_thread_id[j], SIGKILL)) {
 				slave_thread_id[j] = 0;
