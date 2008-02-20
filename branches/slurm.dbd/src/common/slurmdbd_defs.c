@@ -66,7 +66,8 @@
 #include "src/common/xsignal.h"
 #include "src/common/xstring.h"
 
-#define DBD_MAGIC 0xDEAD3219
+#define DBD_MAGIC	0xDEAD3219
+#define MAX_AGENT_QUEUE	2000
 
 static pthread_mutex_t agent_lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t  agent_cond = PTHREAD_COND_INITIALIZER;
@@ -84,6 +85,7 @@ static void   _create_agent(void);
 static bool   _fd_readable(slurm_fd fd);
 static int    _fd_writeable(slurm_fd fd);
 static int    _get_return_code(void);
+static Buf    _load_dbd_rec(int fd);
 static void   _load_dbd_state(void);
 static void   _open_slurmdbd_fd(void);
 static Buf    _recv_msg(void);
@@ -205,6 +207,7 @@ extern int slurm_send_slurmdbd_recv_rc_msg(slurmdbd_msg_t *req, int *resp_code)
 extern int slurm_send_slurmdbd_msg(slurmdbd_msg_t *req)
 {
 	Buf buffer;
+	int cnt, rc = SLURM_SUCCESS;
 
 	buffer = init_buf(1024);
 	pack16(req->msg_type, buffer);
@@ -245,10 +248,16 @@ extern int slurm_send_slurmdbd_msg(slurmdbd_msg_t *req)
 			return SLURM_ERROR;
 		}
 	}
-	list_enqueue(agent_list, buffer);
+	cnt = list_count(agent_list);
+	if (cnt < MAX_AGENT_QUEUE) {
+		list_enqueue(agent_list, buffer);
+	} else {
+		error("slurmdbd: agent queue is full, restart Slurm DBD!");
+		rc = SLURM_ERROR;
+	}
 	slurm_mutex_unlock(&agent_lock);
 	pthread_cond_broadcast(&agent_cond);
-	return SLURM_SUCCESS;
+	return rc;
 }
 
 /* Open a connection to the Slurm DBD and set slurmdbd_fd */
@@ -622,16 +631,18 @@ static void *_agent(void *x)
 
 	while (agent_shutdown == 0) {
 
-		if (slurmdbd_fd < 0) {
-			/* Either slurm_open_slurmdbd_conn() was not executed
-			 * or the connection to Slurm DBD has been closed */
+		if ((slurmdbd_fd < 0) && 
+		    (difftime(time(NULL), fail_time) >= 10)) {
+			/* The connection to Slurm DBD is not open */
 			slurm_mutex_lock(&slurmdbd_lock);
 			_open_slurmdbd_fd();
+			if (slurmdbd_fd < 0)
+				fail_time = time(NULL);
 			slurm_mutex_unlock(&slurmdbd_lock);
 		}
 
 		slurm_mutex_lock(&agent_lock);
-		if (agent_list)
+		if (agent_list && slurmdbd_fd)
 			cnt = list_count(agent_list);
 		else
 			cnt = 0;
@@ -643,7 +654,7 @@ static void *_agent(void *x)
 						    &abs_time);
 			slurm_mutex_unlock(&agent_lock);
 			continue;
-		} else if (cnt > 0)
+		} else if ((cnt > 0) && ((cnt % 50) == 0))
 			info("slurmdbd: agent queue size %u", cnt);
 		/* Leave item on the queue until processing complete */
 		if (agent_list)
@@ -721,6 +732,30 @@ static void _save_dbd_state(void)
 
 static void _load_dbd_state(void)
 {
+	char *dbd_fname;
+	Buf buffer;
+	int fd, recovered = 0;
+
+	dbd_fname = slurm_get_state_save_location();
+	xstrcat(dbd_fname, "/dbd.messages");
+	fd = open(dbd_fname, O_RDONLY);
+	if (fd < 0) {
+		error("slurmdbd: Opening state save file %s", dbd_fname);
+	} else {
+		while (1) {
+			buffer = _load_dbd_rec(fd);
+			if (buffer == NULL)
+				break;
+			if (list_enqueue(agent_list, buffer) == NULL)
+				fatal("slurmdbd: list_enqueue, no memory");
+			recovered++;
+		}
+	}
+	if (fd >= 0) {
+		info("slurmdbd: recovered %d pending RPCs", recovered);
+		(void) close(fd);
+	}
+	xfree(dbd_fname);
 }
 
 static int _save_dbd_rec(int fd, Buf buffer)
@@ -759,6 +794,57 @@ static int _save_dbd_rec(int fd, Buf buffer)
 	}
 
 	return SLURM_SUCCESS;
+}
+
+static Buf _load_dbd_rec(int fd)
+{
+	ssize_t size, rd_size;
+	uint32_t msg_size, magic;
+	char *msg;
+	Buf buffer;
+
+	size = sizeof(msg_size);
+	rd_size = read(fd, &msg_size, size);
+	if (rd_size == 0)
+		return (Buf) NULL;
+	if (rd_size != size) {
+		error("slurmdbd: state recover error: %m");
+		return (Buf) NULL;
+	}
+	if (msg_size > 2048) {
+		error("slurmdbd: state recover error, msg_size=%u", msg_size);
+		return (Buf) NULL;
+	}
+
+	buffer = init_buf((int) msg_size);
+	if (buffer == NULL)
+		fatal("slurmdbd: create_buf malloc failure");
+	set_buf_offset(buffer, msg_size);
+	msg = get_buf_data(buffer);
+	rd_size = 0;
+	while (rd_size < msg_size) {
+		rd_size = read(fd, msg + rd_size, msg_size);
+		if (rd_size > 0) {
+			msg += rd_size;
+			msg_size -= rd_size;
+		} else if ((rd_size == -1) && (errno == EINTR))
+			continue;
+		else {
+			error("slurmdbd: state recover error: %m");
+			free_buf(buffer);
+			return (Buf) NULL;
+		}
+	}
+
+	size = sizeof(magic);
+	rd_size = read(fd, &magic, size);
+	if ((rd_size != size) || (magic != DBD_MAGIC)) {
+		error("slurmdbd: state recover error");
+		free_buf(buffer);
+		return (Buf) NULL;
+	}
+
+	return buffer;
 }
 
 static void _sig_handler(int signal)
