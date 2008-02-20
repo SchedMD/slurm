@@ -1,6 +1,11 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins.
 
+* Changes in SLURM 1.2.24
+=========================
+ -- In sched/wiki and sched/wiki2, support non-zero UPDATE_TIME specification
+    for GETNODES and GETJOBS commands.
+
 * Changes in SLURM 1.2.23
 =========================
  -- Fix for libpmi to not export unneeded variables like xstr*
