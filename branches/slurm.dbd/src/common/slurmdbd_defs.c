@@ -52,6 +52,7 @@
 #include <fcntl.h>
 #include <pthread.h>
 #include <stdio.h>
+#include <syslog.h>
 #include <sys/poll.h>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -67,7 +68,7 @@
 #include "src/common/xstring.h"
 
 #define DBD_MAGIC	0xDEAD3219
-#define MAX_AGENT_QUEUE	2000
+#define MAX_AGENT_QUEUE	10000
 
 static pthread_mutex_t agent_lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t  agent_cond = PTHREAD_COND_INITIALIZER;
@@ -208,6 +209,7 @@ extern int slurm_send_slurmdbd_msg(slurmdbd_msg_t *req)
 {
 	Buf buffer;
 	int cnt, rc = SLURM_SUCCESS;
+	static time_t syslog_time = 0;
 
 	buffer = init_buf(1024);
 	pack16(req->msg_type, buffer);
@@ -249,10 +251,17 @@ extern int slurm_send_slurmdbd_msg(slurmdbd_msg_t *req)
 		}
 	}
 	cnt = list_count(agent_list);
-	if (cnt < MAX_AGENT_QUEUE) {
+	if ((cnt >= (MAX_AGENT_QUEUE / 2)) &&
+	    (difftime(time(NULL), syslog_time) > 120)) {
+		/* Record critical error every 120 seconds */
+		syslog_time = time(NULL);
+		error("slurmdbd: agent queue filling, RESTART SLURM DBD NOW");
+		syslog(LOG_CRIT, "*** RESTART SLURM DBD NOW ***");
+	}
+	if (cnt < MAX_AGENT_QUEUE)
 		list_enqueue(agent_list, buffer);
-	} else {
-		error("slurmdbd: agent queue is full, restart Slurm DBD!");
+	else {
+		error("slurmdbd: agent queue is full, discarding request");
 		rc = SLURM_ERROR;
 	}
 	slurm_mutex_unlock(&agent_lock);
@@ -631,14 +640,13 @@ static void *_agent(void *x)
 
 	while (agent_shutdown == 0) {
 
+		slurm_mutex_lock(&slurmdbd_lock);
 		if ((slurmdbd_fd < 0) && 
 		    (difftime(time(NULL), fail_time) >= 10)) {
 			/* The connection to Slurm DBD is not open */
-			slurm_mutex_lock(&slurmdbd_lock);
 			_open_slurmdbd_fd();
 			if (slurmdbd_fd < 0)
 				fail_time = time(NULL);
-			slurm_mutex_unlock(&slurmdbd_lock);
 		}
 
 		slurm_mutex_lock(&agent_lock);
@@ -648,6 +656,7 @@ static void *_agent(void *x)
 			cnt = 0;
 		if ((cnt == 0) || (slurmdbd_fd < 0) ||
 		    (fail_time && (difftime(time(NULL), fail_time) < 10))) {
+			slurm_mutex_unlock(&slurmdbd_lock);
 			abs_time.tv_sec  = time(NULL) + 10;
 			abs_time.tv_nsec = 0;
 			rc = pthread_cond_timedwait(&agent_cond, &agent_lock,
@@ -662,12 +671,14 @@ static void *_agent(void *x)
 		else
 			buffer = NULL;
 		slurm_mutex_unlock(&agent_lock);
-		if (buffer == NULL)
+		if (buffer == NULL) {
+			slurm_mutex_unlock(&slurmdbd_lock);
 			continue;
+		}
 
-		/* NOTE: agent_lock is not set here, so we can add more
+		/* NOTE: agent_lock is clear here, so we can add more
 		 * requests to the queue while waiting for this RPC to 
-		 * complete .*/
+		 * complete. */
 		rc = _send_msg(buffer);
 		if (rc != SLURM_SUCCESS) {
 			if (agent_shutdown)
@@ -681,6 +692,7 @@ static void *_agent(void *x)
 				error("slurmdbd: Failure getting response");
 			}
 		}
+		slurm_mutex_unlock(&slurmdbd_lock);
 
 		slurm_mutex_lock(&agent_lock);
 		if (agent_list && (rc == SLURM_SUCCESS)) {
@@ -724,7 +736,8 @@ static void _save_dbd_state(void)
 		}
 	}
 	if (fd >= 0) {
-		info("slurmdbd: saved %d pending RPCs", wrote);
+		if (wrote)
+			info("slurmdbd: saved %d pending RPCs", wrote);
 		(void) close(fd);
 	}
 	xfree(dbd_fname);
@@ -752,7 +765,8 @@ static void _load_dbd_state(void)
 		}
 	}
 	if (fd >= 0) {
-		info("slurmdbd: recovered %d pending RPCs", recovered);
+		if (recovered)
+			info("slurmdbd: recovered %d pending RPCs", recovered);
 		(void) close(fd);
 	}
 	xfree(dbd_fname);
