@@ -126,7 +126,7 @@ hv_to_job_desc_msg(HV* hv, job_desc_msg_t* job_desc_msg)
 	FETCH_FIELD(hv, job_desc_msg, begin_time, time_t, FALSE);
 	FETCH_FIELD(hv, job_desc_msg, mail_type, uint16_t, FALSE);
 	FETCH_FIELD(hv, job_desc_msg, mail_user, charp, FALSE);
-	FETCH_FIELD(hv, job_desc_msg, no_requeue, uint16_t, FALSE);
+	FETCH_FIELD(hv, job_desc_msg, requeue, uint16_t, FALSE);
 	/* geometry */
 #if SYSTEM_DIMENSIONS
 	if((svp = hv_fetch(hv, "geometry", 8, FALSE))) {
