@@ -69,6 +69,7 @@
 
 #define DBD_MAGIC	0xDEAD3219
 #define MAX_AGENT_QUEUE	10000
+#define MAX_DBD_MSG_LEN 16384
 
 static pthread_mutex_t agent_lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t  agent_cond = PTHREAD_COND_INITIALIZER;
@@ -89,6 +90,7 @@ static int    _get_return_code(void);
 static Buf    _load_dbd_rec(int fd);
 static void   _load_dbd_state(void);
 static void   _open_slurmdbd_fd(void);
+static int    _purge_job_start_req(void);
 static Buf    _recv_msg(void);
 static void   _reopen_slurmdbd_fd(void);
 static int    _save_dbd_rec(int fd, Buf buffer);
@@ -154,7 +156,7 @@ extern int slurm_send_slurmdbd_recv_rc_msg(slurmdbd_msg_t *req, int *resp_code)
 		}
 	}
 
-	buffer = init_buf(1024);
+	buffer = init_buf(MAX_DBD_MSG_LEN);
 	pack16(req->msg_type, buffer);
 	switch (req->msg_type) {
 		case DBD_INIT:
@@ -211,7 +213,7 @@ extern int slurm_send_slurmdbd_msg(slurmdbd_msg_t *req)
 	int cnt, rc = SLURM_SUCCESS;
 	static time_t syslog_time = 0;
 
-	buffer = init_buf(1024);
+	buffer = init_buf(MAX_DBD_MSG_LEN);
 	pack16(req->msg_type, buffer);
 	switch (req->msg_type) {
 		case DBD_JOB_COMPLETE:
@@ -258,6 +260,8 @@ extern int slurm_send_slurmdbd_msg(slurmdbd_msg_t *req)
 		error("slurmdbd: agent queue filling, RESTART SLURM DBD NOW");
 		syslog(LOG_CRIT, "*** RESTART SLURM DBD NOW ***");
 	}
+	if (cnt == (MAX_AGENT_QUEUE - 1))
+		cnt -= _purge_job_start_req();
 	if (cnt < MAX_AGENT_QUEUE)
 		list_enqueue(agent_list, buffer);
 	else {
@@ -825,7 +829,7 @@ static Buf _load_dbd_rec(int fd)
 		error("slurmdbd: state recover error: %m");
 		return (Buf) NULL;
 	}
-	if (msg_size > 2048) {
+	if (msg_size > MAX_DBD_MSG_LEN) {
 		error("slurmdbd: state recover error, msg_size=%u", msg_size);
 		return (Buf) NULL;
 	}
@@ -863,6 +867,35 @@ static Buf _load_dbd_rec(int fd)
 
 static void _sig_handler(int signal)
 {
+}
+
+/* Purge queued job/step start records from the agent queue
+ * RET number of records purged */
+static int _purge_job_start_req(void)
+{
+	int purged = 0;
+	ListIterator iter;
+	uint16_t msg_type;
+	uint32_t offset;
+	Buf buffer;
+
+	iter = list_iterator_create(agent_list);
+	while ((buffer = list_next(iter))) {
+		offset = get_buf_offset(buffer);
+		if (offset < 2)
+			continue;
+		set_buf_offset(buffer, 0);
+		unpack16(&msg_type, buffer);
+		set_buf_offset(buffer, offset);
+		if ((msg_type == DBD_JOB_START) ||
+		    (msg_type == DBD_STEP_START)) {
+			list_remove(iter);
+			purged++;
+		}
+	}
+	list_iterator_destroy(iter);
+	info("slurmdbd: purge %d job/step start records", purged);
+	return purged;
 }
 
 /****************************************************************************
