@@ -139,6 +139,7 @@ step_complete_t step_complete = {
 	{},
 	-1,
 	-1,
+	true,
 	(bitstr_t *)NULL,
 	0,
         NULL
@@ -478,6 +479,8 @@ _wait_for_children_slurmstepd(slurmd_job_t *job)
 		step_complete.step_rc = MAX(step_complete.step_rc,
 					 WEXITSTATUS(job->task[i]->estatus));
 
+	step_complete.wait_children = false;
+
 	pthread_mutex_unlock(&step_complete.lock);
 }
 
@@ -495,6 +498,7 @@ _one_step_complete_msg(slurmd_job_t *job, int first, int last)
 	int rc = -1;
 	int retcode;
 	int i;
+	static bool acct_sent = false;
 
 	debug2("_one_step_complete_msg: first=%d, last=%d", first, last);
 	msg.job_id = job->jobid;
@@ -504,9 +508,12 @@ _one_step_complete_msg(slurmd_job_t *job, int first, int last)
 	msg.step_rc = step_complete.step_rc;
 	msg.jobacct = jobacct_gather_g_create(NULL);
 	/************* acct stuff ********************/
-	jobacct_gather_g_aggregate(step_complete.jobacct, job->jobacct);
-	jobacct_gather_g_getinfo(step_complete.jobacct, JOBACCT_DATA_TOTAL, 
-			  msg.jobacct);
+	if(!acct_sent) {
+		jobacct_gather_g_aggregate(step_complete.jobacct, job->jobacct);
+		jobacct_gather_g_getinfo(step_complete.jobacct, JOBACCT_DATA_TOTAL, 
+				  msg.jobacct);
+		acct_sent = true;
+	}
 	/*********************************************/	
 	slurm_msg_t_init(&req);
 	req.msg_type = REQUEST_STEP_COMPLETE;

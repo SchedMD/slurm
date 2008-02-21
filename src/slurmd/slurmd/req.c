@@ -102,6 +102,7 @@ typedef struct {
 static int  _abort_job(uint32_t job_id);
 static int  _abort_step(uint32_t job_id, uint32_t step_id);
 static char ** _build_env(uint32_t jobid, uid_t uid, char *bg_part_id);
+static void _delay_rpc(int host_inx, int host_cnt, int usec_per_rpc);
 static void _destroy_env(char **env);
 static bool _slurm_authorized_user(uid_t uid);
 static void _job_limits_free(void *x);
@@ -134,6 +135,7 @@ static int  _run_epilog(uint32_t jobid, uid_t uid, char *bg_part_id);
 
 static bool _pause_for_job_completion(uint32_t jobid, char *nodes, 
 		int maxtime);
+static void _sync_messages_kill(kill_job_msg_t *req);
 static int _waiter_init (uint32_t jobid);
 static int _waiter_complete (uint32_t jobid);
 
@@ -2122,8 +2124,6 @@ _epilog_complete(uint32_t jobid, int rc)
 
 	slurm_msg_t_init(&msg);
 	
-	_wait_state_completed(jobid, 5);
-
 	req.job_id      = jobid;
 	req.return_code = rc;
 	req.node_name   = conf->node_name;
@@ -2489,8 +2489,75 @@ _rpc_terminate_job(slurm_msg_t *msg)
 		debug("completed epilog for jobid %u", req->job_id);
 	
     done:
-	_epilog_complete(req->job_id, rc);
+	_wait_state_completed(req->job_id, 5);
 	_waiter_complete(req->job_id);
+	_sync_messages_kill(req);
+	_epilog_complete(req->job_id, rc);
+}
+
+/* On a parallel job, every slurmd may send the EPILOG_COMPLETE
+ * message to the slurmctld at the same time, resulting in lost
+ * messages. We add a delay here to spead out the message traffic
+ * assuming synchronized clocks across the cluster. 
+ * Allow 10 msec processing time in slurmctld for each RPC. */
+static void _sync_messages_kill(kill_job_msg_t *req)
+{
+	int host_cnt, host_inx;
+	char *host;
+	hostset_t hosts;
+
+	hosts = hostset_create(req->nodes);
+	host_cnt = hostset_count(hosts);
+	if (host_cnt <= 32)
+		goto fini;
+	if (conf->hostname == NULL)
+		goto fini;	/* should never happen */
+
+	for (host_inx=0; host_inx<host_cnt; host_inx++) {
+		host = hostset_shift(hosts);
+		if (host == NULL)
+			break;
+		if (strcmp(host, conf->node_name) == 0) {
+			free(host);
+			break;
+		}
+		free(host);
+	}
+	_delay_rpc(host_inx, host_cnt, 10000);
+
+ fini:	hostset_destroy(hosts);
+}
+
+/* Delay a message based upon the host index, total host count and RPC_TIME. 
+ * This logic depends upon synchronized clocks across the cluster. */
+static void _delay_rpc(int host_inx, int host_cnt, int usec_per_rpc)
+{
+	struct timeval tv1;
+	uint32_t cur_time;	/* current time in usec (just 9 digits) */
+	uint32_t tot_time;	/* total time expected for all RPCs */
+	uint32_t offset_time;	/* relative time within tot_time */
+	uint32_t target_time;	/* desired time to issue the RPC */
+	uint32_t delta_time;
+
+again:	if (gettimeofday(&tv1, NULL)) {
+		usleep(host_inx * usec_per_rpc);
+		return;
+	}
+
+	cur_time = (tv1.tv_sec % 1000) + tv1.tv_usec;
+	tot_time = host_cnt * usec_per_rpc;
+	offset_time = cur_time % tot_time;
+	target_time = host_inx * usec_per_rpc;
+	if (target_time < offset_time)
+		delta_time = target_time - offset_time + tot_time;
+	else
+		delta_time = target_time - offset_time;
+	if (usleep(delta_time)) {
+		if (errno == EINVAL) /* usleep for more than 1 sec */
+			usleep(900000);
+		/* errno == EINTR */
+		goto again;
+	}
 }
 
 /*

@@ -1132,6 +1132,12 @@ _handle_completion(int fd, slurmd_job_t *job, uid_t uid)
 	 * Record the completed nodes
 	 */
 	pthread_mutex_lock(&step_complete.lock);
+	if (! step_complete.wait_children) {
+		rc = -1;
+		errnum = ETIMEDOUT; /* not used anyway */
+		goto timeout;
+	}
+
 /* 	debug2("Setting range %d(bit %d) through %d(bit %d)", */
 /* 	       first, first-(step_complete.rank+1), */
 /* 	       last, last-(step_complete.rank+1)); */
@@ -1146,6 +1152,7 @@ _handle_completion(int fd, slurmd_job_t *job, uid_t uid)
 	
 	/************* acct stuff ********************/
 	jobacct_gather_g_aggregate(step_complete.jobacct, jobacct);
+timeout:
 	jobacct_gather_g_destroy(jobacct);
 	/*********************************************/
 	
