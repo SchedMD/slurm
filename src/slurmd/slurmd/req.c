@@ -2213,7 +2213,7 @@ static void _sync_messages_kill(kill_job_msg_t *req)
 		host = hostset_shift(hosts);
 		if (host == NULL)
 			break;
-		if (strcmp(host, conf->hostname) == 0) {
+		if (strcmp(host, conf->node_name) == 0) {
 			free(host);
 			break;
 		}
