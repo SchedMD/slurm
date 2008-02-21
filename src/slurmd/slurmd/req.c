@@ -2204,7 +2204,7 @@ static void _sync_messages_kill(kill_job_msg_t *req)
 
 	hosts = hostset_create(req->nodes);
 	host_cnt = hostset_count(hosts);
-	if (host_cnt <= 2)
+	if (host_cnt <= 32)
 		goto fini;
 	if (conf->hostname == NULL)
 		goto fini;	/* should never happen */
@@ -2235,7 +2235,7 @@ static void _delay_rpc(int host_inx, int host_cnt, int usec_per_rpc)
 	uint32_t target_time;	/* desired time to issue the RPC */
 	uint32_t delta_time;
 
- again:	if (gettimeofday(&tv1, NULL)) {
+again:	if (gettimeofday(&tv1, NULL)) {
 		usleep(host_inx * usec_per_rpc);
 		return;
 	}
