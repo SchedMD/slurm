@@ -96,7 +96,7 @@ typedef struct {
 static int  _abort_job(uint32_t job_id);
 static int  _abort_step(uint32_t job_id, uint32_t step_id);
 static char ** _build_env(uint32_t jobid, uid_t uid, char *bg_part_id);
-static void _delay_rpc(int host_inx, int host_cnt, int msec_per_rpc);
+static void _delay_rpc(int host_inx, int host_cnt, int usec_per_rpc);
 static void _destroy_env(char **env);
 static bool _slurm_authorized_user(uid_t uid);
 static bool _job_still_running(uint32_t job_id);
@@ -1820,8 +1820,6 @@ _epilog_complete(uint32_t jobid, int rc)
 
 	slurm_msg_t_init(&msg);
 	
-	_wait_state_completed(jobid, 5);
-
 	req.job_id      = jobid;
 	req.return_code = rc;
 	req.node_name   = conf->node_name;
@@ -2187,23 +2185,26 @@ _rpc_terminate_job(slurm_msg_t *msg)
 		debug("completed epilog for jobid %u", req->job_id);
 	
     done:
+	_wait_state_completed(req->job_id, 5);
+	_waiter_complete(req->job_id);
 	_sync_messages_kill(req);
 	_epilog_complete(req->job_id, rc);
-	_waiter_complete(req->job_id);
 }
 
 /* On a parallel job, every slurmd may send the EPILOG_COMPLETE
  * message to the slurmctld at the same time, resulting in lost
  * messages. We add a delay here to spead out the message traffic
- * assuming synchronized clocks across the cluster. */
+ * assuming synchronized clocks across the cluster. 
+ * Allow 10 msec processing time in slurmctld for each RPC. */
 static void _sync_messages_kill(kill_job_msg_t *req)
 {
 	int host_cnt, host_inx;
 	char *host;
-	hostset_t hosts = hostset_create(req->nodes);
+	hostset_t hosts;
 
+	hosts = hostset_create(req->nodes);
 	host_cnt = hostset_count(hosts);
-	if (host_cnt <= 32)
+	if (host_cnt <= 2)
 		goto fini;
 	if (conf->hostname == NULL)
 		goto fini;	/* should never happen */
@@ -2218,64 +2219,40 @@ static void _sync_messages_kill(kill_job_msg_t *req)
 		}
 		free(host);
 	}
-	_delay_rpc(host_inx, host_cnt, 10);
+	_delay_rpc(host_inx, host_cnt, 10000);
 
  fini:	hostset_destroy(hosts);
 }
 
 /* Delay a message based upon the host index, total host count and RPC_TIME. 
  * This logic depends upon synchronized clocks across the cluster. */
-static void _delay_rpc(int host_inx, int host_cnt, int msec_per_rpc)
+static void _delay_rpc(int host_inx, int host_cnt, int usec_per_rpc)
 {
-	struct timeval tv1, tv2;
+	struct timeval tv1;
 	uint32_t cur_time;	/* current time in usec (just 9 digits) */
 	uint32_t tot_time;	/* total time expected for all RPCs */
 	uint32_t offset_time;	/* relative time within tot_time */
 	uint32_t target_time;	/* desired time to issue the RPC */
-	uint32_t delta_time, error_time;
-	int retries = 0;
+	uint32_t delta_time;
 
-again:	if (gettimeofday(&tv1, NULL)) {
-		usleep(host_inx * msec_per_rpc);
+ again:	if (gettimeofday(&tv1, NULL)) {
+		usleep(host_inx * usec_per_rpc);
 		return;
 	}
 
 	cur_time = (tv1.tv_sec % 1000) + tv1.tv_usec;
-	tot_time = host_cnt * msec_per_rpc;
+	tot_time = host_cnt * usec_per_rpc;
 	offset_time = cur_time % tot_time;
-	target_time = host_inx * msec_per_rpc;
+	target_time = host_inx * usec_per_rpc;
 	if (target_time < offset_time)
 		delta_time = target_time - offset_time + tot_time;
 	else
 		delta_time = target_time - offset_time;
 	if (usleep(delta_time)) {
-		if (errno == EINVAL)
+		if (errno == EINVAL) /* usleep for more than 1 sec */
 			usleep(900000);
 		/* errno == EINTR */
 		goto again;
-	}
-
-	/* Verify we are active at the right time. If current time is different
-	 * from target by more than 15*msec_per_rpc, then start over. If 
-	 * msec_per_rpc is set appropriately, then slurmctld should have no 
-	 * more than 30 RPCs for this job in the queue at one time in the 
-	 * worst case. */
-	if (gettimeofday(&tv2, NULL))
-		return;
-	tot_time = (tv2.tv_sec - tv1.tv_sec) * 1000000;
-	tot_time += tv2.tv_usec;
-	tot_time -= tv1.tv_usec;
-	if (tot_time >= delta_time)
-		error_time = tot_time - delta_time;
-	else
-		error_time = delta_time - tot_time;
-	if (error_time > (15*msec_per_rpc)) {	/* too far off */
-#if 0
-		info("delta=%u tot=%u err=%u", 
-			delta_time, tot_time, error_time);
-#endif
-		if ((++retries) <= 2)
-			goto again;
 	}
 }
 
