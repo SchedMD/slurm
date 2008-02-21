@@ -40,6 +40,30 @@
 extern int sacctmgr_create_user(int argc, char *argv[])
 {
 	int rc = SLURM_SUCCESS;
+	List user_list = NULL;
+	int i=0;
+	ListIterator itr = NULL;
+	account_user_rec_t *user = NULL;
+	List name_list = list_create(destroy_char);
+	char *default_acct = NULL;
+	account_expedite_level_t expedite = 0;
+	account_admin_level_t admin_level = 0;
+
+	for (i=0; i<argc; i++) {
+		if (strncasecmp (argv[i], "Names=", 6) == 0) {
+			addto_char_list(name_list, argv[i]+6);
+		} else if (strncasecmp (argv[i], "DefaultAccount=", 15) == 0) {
+			default_acct = xstrdup(argv[i]+15);
+		} else if (strncasecmp (argv[i], "ExpediteLevel=", 14) == 0) {
+			expedite = str_2_account_expedite(argv[i]+14);
+		} else if (strncasecmp (argv[i], "AdminLevel=", 11) == 0) {
+			admin_level = str_2_account_admin_level(argv[i]+11);
+		} else {
+			error("Valid options are 'Names=' 'DefaultAccount=' "
+			      "'ExpediteLevel=' and 'AdminLevel='");
+		}		
+	}
+
 	return rc;
 }
 

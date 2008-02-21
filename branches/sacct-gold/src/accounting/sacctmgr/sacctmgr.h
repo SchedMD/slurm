@@ -84,12 +84,41 @@
 #define CKPT_WAIT	10
 #define	MAX_INPUT_FIELDS 128
 
+typedef enum {
+	SACCTMGR_ACTION_NOTSET,
+	SACCTMGR_USER_ADD,
+	SACCTMGR_USER_MODIFY,
+	SACCTMGR_USER_REMOVE,
+	SACCTMGR_ACCOUNT_ADD,
+	SACCTMGR_ACCOUNT_MODIFY,
+	SACCTMGR_ACCOUNT_REMOVE,
+	SACCTMGR_CLUSTER_ADD,
+	SACCTMGR_CLUSTER_MODIFY,
+	SACCTMGR_CLUSTER_REMOVE,
+	SACCTMGR_ASSOCIATION_ADD,
+	SACCTMGR_ASSOCIATION_MODIFY,
+	SACCTMGR_ASSOCIATION_REMOVE,
+	SACCTMGR_ADMIN_MODIFY,
+	SACCTMGR_COORD_ADD,
+	SACCTMGR_COORD_REMOVE
+} sacctmgr_action_type_t;
+
+typedef struct {
+	sacctmgr_action_type_t type;
+	void *cond; /* if the action has a condition typecast to an
+		     * account_*_cond_t * */
+	void *rec; /* if the action has a record typecast to an
+		    * account_*_rec_t * or char * for type COORD */
+	List list; /* if the action has a list */
+} sacctmgr_action_t;
+
 extern char *command_name;
 extern int exit_code;	/* sacctmgr's exit code, =1 on any error at any time */
 extern int exit_flag;	/* program to terminate if =1 */
 extern int input_words;	/* number of words of input permitted */
 extern int one_liner;	/* one record per line if =1 */
 extern int quiet_flag;	/* quiet=1, verbose=-1, normal=0 */
+extern List action_list; /* list of sacctmgr_action_t * */
 
 extern int sacctmgr_create_association(int argc, char *argv[]);
 extern int sacctmgr_create_user(int argc, char *argv[]);

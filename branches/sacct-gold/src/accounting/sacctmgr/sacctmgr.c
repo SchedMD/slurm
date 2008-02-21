@@ -54,6 +54,7 @@ int exit_flag;		/* program to terminate if =1 */
 int input_words;	/* number of words of input permitted */
 int one_liner;		/* one record per line if =1 */
 int quiet_flag;		/* quiet=1, verbose=-1, normal=0 */
+List action_list;
 
 static void	_show_it (int argc, char *argv[]);
 static void	_create_it (int argc, char *argv[]);
@@ -62,6 +63,8 @@ static void	_delete_it (int argc, char *argv[]);
 static int	_get_command (int *argc, char *argv[]);
 static void     _print_version( void );
 static int	_process_command (int argc, char *argv[]);
+static void     _commit ();
+static void     _destroy_sacctmgr_action(void *object);
 static void	_usage ();
 
 int 
@@ -91,6 +94,7 @@ main (int argc, char *argv[])
 	input_field_count = 0;
 	quiet_flag        = 0;
 	log_init("sacctmgr", opts, SYSLOG_FACILITY_DAEMON, NULL);
+	action_list = list_create(_destroy_sacctmgr_action);
 
 	if (getenv ("SACCTMGR_ALL"))
 		all_flag= 1;
@@ -154,7 +158,9 @@ main (int argc, char *argv[])
 			break;
 		error_code = _get_command (&input_field_count, input_fields);
 	}			
-	
+
+	list_destroy(action_list);
+
 	exit(exit_code);
 }
 
@@ -289,6 +295,23 @@ _process_command (int argc, char *argv[])
 			fprintf (stderr, 
 				 "too many arguments for keyword:%s\n", 
 				 argv[0]);
+		}
+		if(list_count(action_list) > 0) {
+			int ans = 0;
+			printf("There are %d action(s) that haven't been "
+			       "committed yet, would you like to commit "
+			       "before exit?\n", list_count(action_list));
+			while(ans != 'Y' || ans != 'y'
+			      || ans != 'N' || ans != 'n'
+			      || ans != 13) {
+				if(ans) 
+					printf("Y or N only\n");
+				
+				printf("(Y/n): ");
+				ans = fgetc(stdin);
+			}
+			if(ans != 'N' || ans != 'n') 
+				_commit();			
 		}
 		exit_flag = 1;
 	} else if (strncasecmp (argv[0], "help", 2) == 0) {
@@ -540,6 +563,76 @@ static void _delete_it (int argc, char *argv[])
 		slurm_perror ("sacctmgr_delete error");
 	}
 }
+
+static void _commit ()
+{
+
+}
+
+static void _destroy_sacctmgr_action(void *object)
+{
+	sacctmgr_action_t *action = (sacctmgr_action_t *)object;
+	
+	if(action) {
+		if(action->list)
+			list_destroy(action->list);
+			
+		switch(action->type) {
+		case SACCTMGR_ACTION_NOTSET:
+		case SACCTMGR_USER_ADD:
+		case SACCTMGR_ACCOUNT_ADD:
+		case SACCTMGR_CLUSTER_ADD:
+		case SACCTMGR_ASSOCIATION_ADD:
+			/* These only have a list so there isn't
+			 * anything else to free 
+			 */
+			break;
+		case SACCTMGR_USER_MODIFY:
+			destroy_account_user_rec(action->rec);
+			destroy_account_user_cond(action->cond);
+			break;
+		case SACCTMGR_USER_REMOVE:
+			break;
+		case SACCTMGR_ACCOUNT_MODIFY:
+			destroy_account_account_rec(action->rec);
+			destroy_account_account_cond(action->cond);
+			break;
+		case SACCTMGR_ACCOUNT_REMOVE:
+			destroy_account_account_cond(action->cond);
+			break;
+		case SACCTMGR_CLUSTER_MODIFY:
+			destroy_account_cluster_rec(action->rec);
+			destroy_account_cluster_cond(action->cond);
+			break;
+		case SACCTMGR_CLUSTER_REMOVE:
+			destroy_account_cluster_cond(action->cond);
+			break;
+		case SACCTMGR_ASSOCIATION_MODIFY:
+			destroy_account_association_rec(action->rec);
+			destroy_account_association_cond(action->cond);
+			break;
+		case SACCTMGR_ASSOCIATION_REMOVE:
+			destroy_account_association_cond(action->cond);
+			break;
+		case SACCTMGR_ADMIN_MODIFY:
+			destroy_account_user_cond(action->cond);
+			break;
+		case SACCTMGR_COORD_ADD:
+			xfree(action->rec);
+			destroy_account_user_cond(action->cond);
+			break;
+		case SACCTMGR_COORD_REMOVE:
+			xfree(action->rec);
+			destroy_account_user_cond(action->cond);
+			break;	
+		default:
+			error("unknown action %d", action->type);
+			break;
+		}
+		xfree(action);
+	}
+}
+
 
 /* _usage - show the valid sacctmgr commands */
 void _usage () {
