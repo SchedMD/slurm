@@ -17,6 +17,7 @@ documents those changes that are of interest to users and admins.
     command.
  -- Add HealthCheckInterval and HealthCheckProgram configuration parameters.
  -- Add SlurmDbdAddr and SlurmDbdPort configuration parameters.
+ -- Modify select/linear to achieve better load leveling with gang scheduler.
  
 * Changes in SLURM 1.3.0-pre9
 =============================

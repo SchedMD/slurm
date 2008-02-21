@@ -89,7 +89,8 @@ static void _free_node_cr(struct node_cr_record *node_cr_ptr);
 static void _init_node_cr(void);
 static int _job_count_bitmap(struct node_cr_record *node_cr_ptr,
 			     struct job_record *job_ptr, 
-			     bitstr_t * bitmap, bitstr_t * jobmap, int job_cnt);
+			     bitstr_t * bitmap, bitstr_t * jobmap, 
+			     int run_job_cnt, int tot_job_cnt);
 static int _job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 		     uint32_t min_nodes, uint32_t max_nodes, 
 		     uint32_t req_nodes);
@@ -449,7 +450,7 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 			uint32_t req_nodes, int mode)
 {
 	bitstr_t *orig_map;
-	int i, j, rc = EINVAL, prev_cnt = -1;
+	int max_run_job, j, sus_jobs, rc = EINVAL, prev_cnt = -1;
 	int min_share = 0, max_share = 0;
 	uint32_t save_mem = 0;
 
@@ -492,24 +493,32 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	}
 
 	orig_map = bit_copy(bitmap);
-	for (i=min_share; i<=max_share; i++) {
-		j = _job_count_bitmap(node_cr_ptr, job_ptr, orig_map, bitmap, i);
-		if ((j == prev_cnt) || (j < min_nodes))
-			continue;
-		prev_cnt = j;
-		if ((mode == SELECT_MODE_RUN_NOW) && (i > 0)) {
-			/* We need to share. 
-			 * Try to find suitable job to share nodes with. */
-			rc = _find_job_mate(job_ptr, bitmap, 
-					    min_nodes, max_nodes, req_nodes);
+	for (max_run_job=min_share; max_run_job<=max_share; max_run_job++) {
+		for (sus_jobs=0; ((sus_jobs<5) && (rc != SLURM_SUCCESS)); 
+		     sus_jobs++) {
+			if (max_run_job == max_share)
+				sus_jobs = 999;
+			j = _job_count_bitmap(node_cr_ptr, job_ptr, 
+					      orig_map, bitmap, 
+					      max_run_job, 
+					      max_run_job + sus_jobs);
+			if ((j == prev_cnt) || (j < min_nodes))
+				continue;
+			prev_cnt = j;
+			if ((mode == SELECT_MODE_RUN_NOW) && (max_run_job > 0)) {
+				/* We need to share. 
+				 * Try to find suitable job to share nodes with */
+				rc = _find_job_mate(job_ptr, bitmap, min_nodes, 
+						    max_nodes, req_nodes);
+				if (rc == SLURM_SUCCESS)
+					break;
+			}
+			rc = _job_test(job_ptr, bitmap, min_nodes, max_nodes, 
+				       req_nodes);
 			if (rc == SLURM_SUCCESS)
 				break;
+			continue;
 		}
-		rc = _job_test(job_ptr, bitmap, min_nodes, max_nodes, 
-			       req_nodes);
-		if (rc == SLURM_SUCCESS)
-			break;
-		continue;
 	}
 	bit_free(orig_map);
 	slurm_mutex_unlock(&cr_mutex);
@@ -524,9 +533,10 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
  */
 static int _job_count_bitmap(struct node_cr_record *node_cr_ptr,
 			     struct job_record *job_ptr, 
-			     bitstr_t * bitmap, bitstr_t * jobmap, int job_cnt)
+			     bitstr_t * bitmap, bitstr_t * jobmap, 
+			     int run_job_cnt, int tot_job_cnt)
 {
-	int i, count = 0, total_jobs;
+	int i, count = 0, total_jobs, total_run_jobs;
 	struct part_cr_record *part_cr_ptr;
 	uint32_t job_memory = 0;
 
@@ -554,7 +564,7 @@ static int _job_count_bitmap(struct node_cr_record *node_cr_ptr,
 			}
 		}
 
-		if ((job_cnt != NO_SHARE_LIMIT) &&
+		if ((run_job_cnt != NO_SHARE_LIMIT) &&
 		    (node_cr_ptr[i].exclusive_jobid != 0)) {
 			/* already reserved by some exclusive job */
 			bit_clear(jobmap, i);
@@ -562,23 +572,27 @@ static int _job_count_bitmap(struct node_cr_record *node_cr_ptr,
 		}
 
 		total_jobs = 0;
+		total_run_jobs = 0;
 		part_cr_ptr = node_cr_ptr[i].parts;
 		while (part_cr_ptr) {
-			if (job_cnt == 0)
-				total_jobs += part_cr_ptr->run_job_cnt;
-			else if (part_cr_ptr->part_ptr == job_ptr->part_ptr) {
-				total_jobs += part_cr_ptr->run_job_cnt;
+			if (run_job_cnt == 0) {
+				total_run_jobs += part_cr_ptr->run_job_cnt;
+				total_jobs     += part_cr_ptr->tot_job_cnt;
+			} else if (part_cr_ptr->part_ptr == job_ptr->part_ptr) {
+				total_run_jobs += part_cr_ptr->run_job_cnt;
+				total_jobs     += part_cr_ptr->tot_job_cnt; 
 				break;
 			}
 			part_cr_ptr = part_cr_ptr->next;
 		}
-		if ((job_cnt != 0) && (part_cr_ptr == NULL)) {
+		if ((run_job_cnt != 0) && (part_cr_ptr == NULL)) {
 			error("_job_count_bitmap: could not find "
 				"partition %s for node %s",
 				job_ptr->part_ptr->name,
 				node_record_table_ptr[i].name);
 		}
-		if (total_jobs <= job_cnt) {
+		if ((total_run_jobs <= run_job_cnt) &&
+		    (total_jobs     <= tot_job_cnt)) {
 			bit_set(jobmap, i);
 			count++;
 		} else {
@@ -1414,7 +1428,7 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	orig_map = bit_copy(bitmap);
 
 	/* Try to run with currently available nodes */
-	i = _job_count_bitmap(node_cr_ptr, job_ptr, orig_map, bitmap, max_share);
+	i = _job_count_bitmap(node_cr_ptr, job_ptr, orig_map, bitmap, max_share, max_share);
 	if (i >= min_nodes) {
 		rc = _job_test(job_ptr, bitmap, min_nodes, max_nodes, 
 			       req_nodes);
@@ -1460,7 +1474,7 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 		_rm_job_from_nodes(exp_node_cr, tmp_job_ptr,
 				   "_will_run_test", 1);
 		i = _job_count_bitmap(exp_node_cr, job_ptr, orig_map, bitmap, 
-				      max_share);
+				      max_share, max_share);
 		if (i < min_nodes)
 			continue;
 		rc = _job_test(job_ptr, bitmap, min_nodes, max_nodes, 
