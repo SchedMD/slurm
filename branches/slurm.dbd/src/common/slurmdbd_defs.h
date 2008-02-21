@@ -58,15 +58,14 @@
 
 /* SLURM DBD message types */
 typedef enum {
-	DBD_INIT = 1400,
-	DBD_GET_JOBS,
-	DBD_JOB_COMPLETE,
-	DBD_JOB_START,
-	DBD_JOB_SUBMIT,
-	DBD_JOB_SUSPEND,
-	DBD_RC,
-	DBD_STEP_COMPLETE,
-	DBD_STEP_START
+	DBD_INIT = 1400,	/* Connection initialization	*/
+	DBD_GET_JOBS,		/* Get job information		*/
+	DBD_JOB_COMPLETE,	/* Record job completion 	*/
+	DBD_JOB_START,		/* Record job starting		*/
+	DBD_JOB_SUSPEND,	/* Record job suspension	*/
+	DBD_RC,			/* Return code from operation	*/
+	DBD_STEP_COMPLETE,	/* Record step completion	*/
+	DBD_STEP_START		/* Record step starting		*/
 } slurmdbd_msg_type_t;
 
 /*****************************************************************************\
@@ -94,10 +93,6 @@ typedef struct dbd_job_comp_msg {
 typedef struct dbd_job_start_msg {
 	uint32_t job_id;
 } dbd_job_start_msg_t;
-
-typedef struct dbd_job_submit_msg {
-	uint32_t job_id;
-} dbd_job_submit_msg_t;
 
 typedef struct dbd_job_suspend_msg {
 	uint32_t job_id;
@@ -142,7 +137,6 @@ void inline slurm_dbd_free_get_jobs_msg(dbd_get_jobs_msg_t *msg);
 void inline slurm_dbd_free_init_msg(dbd_init_msg_t *msg);
 void inline slurm_dbd_free_job_complete_msg(dbd_job_comp_msg_t *msg);
 void inline slurm_dbd_free_job_start_msg(dbd_job_start_msg_t *msg);
-void inline slurm_dbd_free_job_submit_msg(dbd_job_submit_msg_t *msg);
 void inline slurm_dbd_free_job_suspend_msg(dbd_job_suspend_msg_t *msg);
 void inline slurm_dbd_free_rc_msg(dbd_rc_msg_t *msg);
 void inline slurm_dbd_free_step_complete_msg(dbd_step_comp_msg_t *msg);
@@ -153,7 +147,6 @@ void inline slurm_dbd_pack_get_jobs_msg(dbd_get_jobs_msg_t *msg,       Buf buffe
 void inline slurm_dbd_pack_init_msg(dbd_init_msg_t *msg,               Buf buffer);
 void inline slurm_dbd_pack_job_complete_msg(dbd_job_comp_msg_t *msg,   Buf buffer);
 void inline slurm_dbd_pack_job_start_msg(dbd_job_start_msg_t *msg,     Buf buffer);
-void inline slurm_dbd_pack_job_submit_msg(dbd_job_submit_msg_t *msg,   Buf buffer);
 void inline slurm_dbd_pack_job_suspend_msg(dbd_job_suspend_msg_t *msg, Buf buffer);
 void inline slurm_dbd_pack_rc_msg(dbd_rc_msg_t *msg,                   Buf buffer);
 void inline slurm_dbd_pack_step_complete_msg(dbd_step_comp_msg_t *msg, Buf buffer);
@@ -164,7 +157,6 @@ int inline slurm_dbd_unpack_get_jobs_msg(dbd_get_jobs_msg_t **msg,       Buf buf
 int inline slurm_dbd_unpack_init_msg(dbd_init_msg_t **msg,               Buf buffer);
 int inline slurm_dbd_unpack_job_complete_msg(dbd_job_comp_msg_t **msg,   Buf buffer);
 int inline slurm_dbd_unpack_job_start_msg(dbd_job_start_msg_t **msg,     Buf buffer);
-int inline slurm_dbd_unpack_job_submit_msg(dbd_job_submit_msg_t **msg,   Buf buffer);
 int inline slurm_dbd_unpack_job_suspend_msg(dbd_job_suspend_msg_t **msg, Buf buffer);
 int inline slurm_dbd_unpack_rc_msg(dbd_rc_msg_t **msg,                   Buf buffer);
 int inline slurm_dbd_unpack_step_complete_msg(dbd_step_comp_msg_t **msg, Buf buffer);

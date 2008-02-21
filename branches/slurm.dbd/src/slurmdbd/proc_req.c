@@ -46,7 +46,6 @@ static int   _get_jobs(Buf buffer);
 static int   _init_conn(Buf buffer);
 static int   _job_complete(Buf buffer);
 static int   _job_start(Buf buffer);
-static int   _job_submit(Buf buffer);
 static int   _job_suspend(Buf buffer);
 static int   _step_complete(Buf buffer);
 static int   _step_start(Buf bufferg);
@@ -78,9 +77,6 @@ extern int proc_req(char *msg, uint32_t msg_size, bool first)
 			break;
 		case DBD_JOB_START:
 			rc = _job_start(buffer);
-			break;
-		case DBD_JOB_SUBMIT:
-			rc = _job_submit(buffer);
 			break;
 		case DBD_JOB_SUSPEND:
 			rc = _job_suspend(buffer);
@@ -167,21 +163,6 @@ static int  _job_start(Buf buffer)
 
 	info("DBD_JOB_START: %u", job_start_msg->job_id);
 	slurm_dbd_free_job_start_msg(job_start_msg);
-	return SLURM_SUCCESS;
-}
-
-static int  _job_submit(Buf buffer)
-{
-	dbd_job_submit_msg_t *job_submit_msg;
-
-	if (slurm_dbd_unpack_job_submit_msg(&job_submit_msg, buffer) !=
-	    SLURM_SUCCESS) {
-		error("Failed to unpack DBD_JOB_SUBMIT message");
-		return SLURM_ERROR;
-	}
-
-	info("DBD_JOB_SUBMIT: %u", job_submit_msg->job_id);
-	slurm_dbd_free_job_submit_msg(job_submit_msg);
 	return SLURM_SUCCESS;
 }
 
