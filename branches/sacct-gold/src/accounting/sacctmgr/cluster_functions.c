@@ -87,7 +87,7 @@ extern int sacctmgr_list_cluster(int argc, char *argv[])
 	return rc;
 }
 
-extern int sacctmgr_update_cluster(int argc, char *argv[])
+extern int sacctmgr_modify_cluster(int argc, char *argv[])
 {
 	int rc = SLURM_SUCCESS;
 	return rc;

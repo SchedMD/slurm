@@ -44,6 +44,7 @@
 
 #include "src/common/slurm_protocol_interface.h"
 #include "src/common/slurm_protocol_api.h"
+#include "src/common/uid.h"
 
 #define MAX_RETRY 5
 
@@ -434,7 +435,7 @@ extern gold_response_t *get_gold_response(gold_request_t *gold_request)
 	xstrfmtcat(gold_request->body,
 		   "<Body><Request action=\"%s\" actor=\"%s\">"
 		   "<Object>%s</Object>",
-		   action, "slurm", object);
+		   action, uid_to_string(geteuid()), object);
 	if(innerds) {
 		xstrcat(gold_request->body, innerds);
 		xfree(innerds);

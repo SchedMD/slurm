@@ -54,17 +54,17 @@ int exit_flag;		/* program to terminate if =1 */
 int input_words;	/* number of words of input permitted */
 int one_liner;		/* one record per line if =1 */
 int quiet_flag;		/* quiet=1, verbose=-1, normal=0 */
+int execute_flag;       /* immediate execute=1, else = 0 */
 List action_list;
 
 static void	_show_it (int argc, char *argv[]);
 static void	_create_it (int argc, char *argv[]);
-static void	_update_it (int argc, char *argv[]);
+static void	_modify_it (int argc, char *argv[]);
 static void	_delete_it (int argc, char *argv[]);
 static int	_get_command (int *argc, char *argv[]);
 static void     _print_version( void );
 static int	_process_command (int argc, char *argv[]);
 static void     _commit ();
-static void     _destroy_sacctmgr_action(void *object);
 static void	_usage ();
 
 int 
@@ -79,6 +79,7 @@ main (int argc, char *argv[])
 		{"all",      0, 0, 'a'},
 		{"help",     0, 0, 'h'},
 		{"hide",     0, 0, OPT_LONG_HIDE},
+		{"immediate",0, 0, 'i'},
 		{"oneliner", 0, 0, 'o'},
 		{"quiet",    0, 0, 'q'},
 		{"usage",    0, 0, 'h'},
@@ -89,17 +90,18 @@ main (int argc, char *argv[])
 
 	command_name      = argv[0];
 	all_flag          = 0;
+	execute_flag      = 0;
 	exit_code         = 0;
 	exit_flag         = 0;
 	input_field_count = 0;
 	quiet_flag        = 0;
 	log_init("sacctmgr", opts, SYSLOG_FACILITY_DAEMON, NULL);
-	action_list = list_create(_destroy_sacctmgr_action);
+	action_list = list_create(destroy_sacctmgr_action);
 
 	if (getenv ("SACCTMGR_ALL"))
 		all_flag= 1;
 
-	while((opt_char = getopt_long(argc, argv, "ahoqvV",
+	while((opt_char = getopt_long(argc, argv, "ahioqvV",
 			long_options, &option_index)) != -1) {
 		switch (opt_char) {
 		case (int)'?':
@@ -115,6 +117,9 @@ main (int argc, char *argv[])
 			break;
 		case OPT_LONG_HIDE:
 			all_flag = 0;
+			break;
+		case (int)'i':
+			execute_flag = 1;
 			break;
 		case (int)'o':
 			one_liner = 1;
@@ -158,7 +163,27 @@ main (int argc, char *argv[])
 			break;
 		error_code = _get_command (&input_field_count, input_fields);
 	}			
-
+	if(list_count(action_list) > 0) {
+		int ans = 0;
+		printf("Would you like to commit these changes?\n");
+		while(ans != 'Y' && ans != 'y'
+		      && ans != 'N' && ans != 'n'
+		      && ans != '\n') {
+			if(ans) {
+				getchar(); //grab the \n
+				printf("Y or N please\n");
+			}
+			printf("(Y/n): ");
+			ans = getchar();
+		}
+		
+		if(ans != 'N' && ans != 'n')
+			_commit();			
+		else 
+			printf("Changes discarded.\n");
+		
+	}
+		
 	list_destroy(action_list);
 
 	exit(exit_code);
@@ -301,17 +326,20 @@ _process_command (int argc, char *argv[])
 			printf("There are %d action(s) that haven't been "
 			       "committed yet, would you like to commit "
 			       "before exit?\n", list_count(action_list));
-			while(ans != 'Y' || ans != 'y'
-			      || ans != 'N' || ans != 'n'
-			      || ans != 13) {
-				if(ans) 
-					printf("Y or N only\n");
-				
+			while(ans != 'Y' && ans != 'y'
+			      && ans != 'N' && ans != 'n'
+			      && ans != '\n') {
+				if(ans) {
+					getchar();  //grab the \n
+					printf("Y or N please\n");
+				}
 				printf("(Y/n): ");
-				ans = fgetc(stdin);
+				ans = getchar();
 			}
-			if(ans != 'N' || ans != 'n') 
+			if(ans != 'N' && ans != 'n') 
 				_commit();			
+			else 
+				printf("Changes discarded.\n");
 		}
 		exit_flag = 1;
 	} else if (strncasecmp (argv[0], "help", 2) == 0) {
@@ -324,6 +352,8 @@ _process_command (int argc, char *argv[])
 		_usage ();
 	} else if (strncasecmp (argv[0], "hide", 2) == 0) {
 		all_flag = 0;
+	} else if (strncasecmp (argv[0], "immediate", 9) == 0) {
+		execute_flag = 1;
 	} else if (strncasecmp (argv[0], "oneliner", 1) == 0) {
 		if (argc > 1) {
 			exit_code = 1;
@@ -339,8 +369,7 @@ _process_command (int argc, char *argv[])
 				 argv[0]);
 		}
 		quiet_flag = 1;
-	}
-	else if (strncasecmp (argv[0], "quit", 4) == 0) {
+	} else if (strncasecmp (argv[0], "quit", 4) == 0) {
 		if (argc > 1) {
 			exit_code = 1;
 			fprintf (stderr, 
@@ -366,14 +395,14 @@ _process_command (int argc, char *argv[])
 				        argv[0]);
 		}
 		_show_it((argc - 1), &argv[1]);
-	} else if (strncasecmp (argv[0], "update", 1) == 0) {
+	} else if (strncasecmp (argv[0], "modify", 1) == 0) {
 		if (argc < 2) {
 			exit_code = 1;
 			fprintf (stderr, "too few arguments for %s keyword\n",
 				 argv[0]);
 			return 0;
 		}		
-		_update_it((argc - 1), &argv[1]);
+		_modify_it((argc - 1), &argv[1]);
 	} else if (strncasecmp (argv[0], "delete", 3) == 0) {
 		if (argc < 2) {
 			exit_code = 1;
@@ -402,7 +431,7 @@ _process_command (int argc, char *argv[])
 		exit_code = 1;
 		fprintf (stderr, "invalid keyword: %s\n", argv[0]);
 	}
-
+		
 	return 0;
 }
 
@@ -445,7 +474,6 @@ static void _create_it (int argc, char *argv[])
 		fprintf(stderr, "or \"ClusterName\"\n");
 	} else if (error_code) {
 		exit_code = 1;
-		slurm_perror ("sacctmgr_create error");
 	}
 }
 
@@ -477,35 +505,34 @@ static void _show_it (int argc, char *argv[])
 	
 	if (error_code) {
 		exit_code = 1;
-		slurm_perror ("sacctmgr_list error");
 	}
 }
 
 
 /* 
- * _update_it - update the slurm configuration per the supplied arguments 
+ * _modify_it - modify the slurm configuration per the supplied arguments 
  * IN argc - count of arguments
  * IN argv - list of arguments
  */
-static void _update_it (int argc, char *argv[]) 
+static void _modify_it (int argc, char *argv[]) 
 {
 	int i, error_code = SLURM_SUCCESS;
 
-	/* First identify the entity to update */
+	/* First identify the entity to modify */
 	for (i=0; i<argc; i++) {
 		if (strncasecmp (argv[i], "Association", 11) == 0) {
-			error_code = sacctmgr_update_association(
+			error_code = sacctmgr_modify_association(
 				(argc - 1), &argv[1]);
 			break;
 		} else if (strncasecmp (argv[i], "User", 4) == 0) {
-			error_code = sacctmgr_update_user((argc - 1), &argv[1]);
+			error_code = sacctmgr_modify_user((argc - 1), &argv[1]);
 			break;
 		} else if (strncasecmp (argv[i], "Account", 7) == 0) {
-			error_code = sacctmgr_update_account(
+			error_code = sacctmgr_modify_account(
 				(argc - 1), &argv[1]);
 			break;
 		} else if (strncasecmp (argv[i], "Cluster", 7) == 0) {
-			error_code = sacctmgr_update_cluster(
+			error_code = sacctmgr_modify_cluster(
 				(argc - 1), &argv[1]);
 			break;
 		}		
@@ -513,13 +540,12 @@ static void _update_it (int argc, char *argv[])
 	
 	if (i >= argc) {
 		exit_code = 1;
-		fprintf(stderr, "No valid entity in update command\n");
+		fprintf(stderr, "No valid entity in modify command\n");
 		fprintf(stderr, "Input line must include \"Association\", ");
-		fprintf(stderr, "\"UserName\", \"AccountName\", ");
-		fprintf(stderr, "or \"ClusterName\"\n");
+		fprintf(stderr, "\"User\", \"Account\", ");
+		fprintf(stderr, "or \"Cluster\"\n");
 	} else if (error_code) {
 		exit_code = 1;
-		slurm_perror ("sacctmgr_update error");
 	}
 }
 
@@ -556,83 +582,94 @@ static void _delete_it (int argc, char *argv[])
 		exit_code = 1;
 		fprintf(stderr, "No valid entity in delete command\n");
 		fprintf(stderr, "Input line must include \"Association\", ");
-		fprintf(stderr, "\"UserName\", \"AccountName\", ");
-		fprintf(stderr, "or \"ClusterName\"\n");
+		fprintf(stderr, "\"User\", \"Account\", ");
+		fprintf(stderr, "or \"Cluster\"\n");
 	} else if (error_code) {
 		exit_code = 1;
-		slurm_perror ("sacctmgr_delete error");
 	}
 }
 
 static void _commit ()
 {
+	int rc = SLURM_SUCCESS;
+	ListIterator itr = NULL;
+	sacctmgr_action_t *action = NULL;
 
-}
-
-static void _destroy_sacctmgr_action(void *object)
-{
-	sacctmgr_action_t *action = (sacctmgr_action_t *)object;
+	if(!action_list) {
+		error("No actions to commit");
+		return;
+	}
 	
-	if(action) {
-		if(action->list)
-			list_destroy(action->list);
-			
+	itr = list_iterator_create(action_list);
+	while((action = list_next(itr))) {
+		if(rc != SLURM_SUCCESS) {
+			error("_commit: last command returned error.");
+			break;
+		}
 		switch(action->type) {
 		case SACCTMGR_ACTION_NOTSET:
-		case SACCTMGR_USER_ADD:
-		case SACCTMGR_ACCOUNT_ADD:
-		case SACCTMGR_CLUSTER_ADD:
-		case SACCTMGR_ASSOCIATION_ADD:
-			/* These only have a list so there isn't
-			 * anything else to free 
-			 */
+			error("This action does not have a type.");
+			break;
+		case SACCTMGR_USER_CREATE:
+			rc = account_storage_g_add_users(action->list);		
+			break;
+		case SACCTMGR_ACCOUNT_CREATE:
+			rc = account_storage_g_add_accounts(action->list);
+			break;
+		case SACCTMGR_CLUSTER_CREATE:
+			rc = account_storage_g_add_clusters(action->list);
+			break;
+		case SACCTMGR_ASSOCIATION_CREATE:
+			rc = account_storage_g_add_associations(action->list);
 			break;
 		case SACCTMGR_USER_MODIFY:
-			destroy_account_user_rec(action->rec);
-			destroy_account_user_cond(action->cond);
+			rc = account_storage_g_modify_users(action->cond,
+							    action->rec);
 			break;
-		case SACCTMGR_USER_REMOVE:
+		case SACCTMGR_USER_DELETE:
+			rc = account_storage_g_remove_users(action->cond);
 			break;
 		case SACCTMGR_ACCOUNT_MODIFY:
-			destroy_account_account_rec(action->rec);
-			destroy_account_account_cond(action->cond);
+			rc = account_storage_g_modify_accounts(action->cond,
+							       action->rec);
 			break;
-		case SACCTMGR_ACCOUNT_REMOVE:
-			destroy_account_account_cond(action->cond);
+		case SACCTMGR_ACCOUNT_DELETE:
+			rc = account_storage_g_remove_accounts(action->cond);
 			break;
 		case SACCTMGR_CLUSTER_MODIFY:
-			destroy_account_cluster_rec(action->rec);
-			destroy_account_cluster_cond(action->cond);
+			rc = account_storage_g_modify_clusters(action->cond,
+							       action->rec);
 			break;
-		case SACCTMGR_CLUSTER_REMOVE:
-			destroy_account_cluster_cond(action->cond);
+		case SACCTMGR_CLUSTER_DELETE:
+			rc = account_storage_g_remove_clusters(action->cond);
 			break;
 		case SACCTMGR_ASSOCIATION_MODIFY:
-			destroy_account_association_rec(action->rec);
-			destroy_account_association_cond(action->cond);
+			rc = account_storage_g_modify_associations(action->cond,
+								   action->rec);
 			break;
-		case SACCTMGR_ASSOCIATION_REMOVE:
-			destroy_account_association_cond(action->cond);
+		case SACCTMGR_ASSOCIATION_DELETE:
+			rc = account_storage_g_remove_associations(
+				action->cond);
 			break;
 		case SACCTMGR_ADMIN_MODIFY:
-			destroy_account_user_cond(action->cond);
+			rc = account_storage_g_modify_user_admin_level(
+				action->cond);
 			break;
-		case SACCTMGR_COORD_ADD:
-			xfree(action->rec);
-			destroy_account_user_cond(action->cond);
+		case SACCTMGR_COORD_CREATE:
+			rc = account_storage_g_add_coord(action->rec,
+							 action->cond);
 			break;
-		case SACCTMGR_COORD_REMOVE:
-			xfree(action->rec);
-			destroy_account_user_cond(action->cond);
+		case SACCTMGR_COORD_DELETE:
+			rc = account_storage_g_remove_coord(action->rec,
+							    action->cond);
 			break;	
 		default:
 			error("unknown action %d", action->type);
 			break;
 		}
-		xfree(action);
 	}
+	list_iterator_destroy(itr);
 }
-
 
 /* _usage - show the valid sacctmgr commands */
 void _usage () {
@@ -642,6 +679,7 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
      -a or --all: equivalent to \"all\" command                            \n\
      -h or --help: equivalent to \"help\" command                          \n\
      --hide: equivalent to \"hide\" command                                \n\
+     -i or --immediate: equivalent to \"immediate\" command                \n\
      -o or --oneliner: equivalent to \"oneliner\" command                  \n\
      -q or --quiet: equivalent to \"quiet\" command                        \n\
      -v or --verbose: equivalent to \"verbose\" command                    \n\
@@ -652,76 +690,67 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
   terminated.                                                              \n\
                                                                            \n\
     Valid <COMMAND> values are:                                            \n\
-     abort                    shutdown slurm controller immediately        \n\
-                              generating a core file.                      \n\
-     all                      display information about all partitions,    \n\
-                              including hidden partitions.                 \n\
-     checkpoint <CH_OP><step> perform a checkpoint operation on identified \n\
-                              job step \n\
-     completing               display jobs in completing state along with  \n\
-                              their completing or down nodes               \n\
-     delete <SPECIFICATIONS>  delete the specified partition, kill its jobs\n\
+     all                      display information about all entities,      \n\
+                              including hidden/deleted ones.               \n\
+     create <ENTITY> <SPECS>  create entity                                \n\
+     commit                   commit changes done with create, modify,     \n\
+                              or delete                                    \n\
+     delete <ENTITY> <SPECS>  delete the specified entity(s)               \n\
      exit                     terminate sacctmgr                           \n\
      help                     print this description of use.               \n\
-     hide                     do not display information about hidden partitions.\n\
-     listpids <job_id<.step>> List pids associated with the given jobid, or\n\
-                              all jobs if no id is given (This will only   \n\
-                              display the processes on the node which the  \n\
-                              sacctmgr is ran on, and only for those       \n\
-                              processes spawned by SLURM and their         \n\
-                              descendants)                                 \n\
-     notify <job_id> msg      send message to specified job                \n\
+     hide                     do not display information about             \n\
+                              hidden/deleted entities.                     \n\
+     immediate                commit changes immediately                   \n\
+     modify <ENTITY> <SPECS>  modify entity                                \n\
      oneliner                 report output one record per line.           \n\
-     pidinfo <pid>            return slurm job information for given pid.  \n\
-     ping                     print status of slurmctld daemons.           \n\
      quiet                    print no messages other than error messages. \n\
      quit                     terminate this command.                      \n\
-     reconfigure              re-read configuration files.                 \n\
-     requeue <job_id>         re-queue a batch job                         \n\
-     setdebug <LEVEL>         reset slurmctld debug level                  \n\
-     show <ENTITY> [<ID>]     display state of identified entity, default  \n\
-                              is all records.                              \n\
-     shutdown                 shutdown slurm controller.                   \n\
-     suspend <job_id>         susend specified job                         \n\
-     resume <job_id>          resume previously suspended job              \n\
-     setdebug <level>         set slurmctld debug level                    \n\
-     update <SPECIFICATIONS>  update job, node, partition, or bluegene     \n\
-                              block/subbp configuration                    \n\
+     show <ENTITY> [<SPECS>]  display state of identified entity, default  \n\
+                              is all.                                      \n\
      verbose                  enable detailed logging.                     \n\
      version                  display tool version number.                 \n\
      !!                       Repeat the last command entered.             \n\
                                                                            \n\
-  <ENTITY> may be \"config\", \"daemons\", \"job\", \"node\", \"partition\"\n\
-           \"hostlist\", \"hostnames\", \"slurmd\",                        \n\
-           (for BlueGene only: \"block\", \"subbp\" or \"step\").          \n\
+  <ENTITY> may be \"user\", \"cluster\", \"account\", or \"association\".  \n\
                                                                            \n\
-  <ID> may be a configuration parameter name, job id, node name, partition \n\
-       name, job step id, or hostlist or pathname to a list of host names. \n\
+  <SPECS> are different for each command entity pair.                      \n\
+       show user          - Names=, DefaultAccounts=, ExpediteLevel=,      \n\
+                            and AdminLevel=                                \n\
+       create user        - Names=, DefaultAccount=, ExpediteLevel=,       \n\
+                            and AdminLevel=                                \n\
+       modify user        - Names=, DefaultAccounts=, ExpediteLevel=,      \n\
+                            and AdminLevel=                                \n\
+       delete user        - Names=, DefaultAccounts=, ExpediteLevel=,      \n\
+                            and AdminLevel=                                \n\
                                                                            \n\
-  <HOSTLIST> may either be a comma separated list of host names or the     \n\
-       absolute pathname of a file (with leading '/' containing host names \n\
-       either separated by commas or new-lines                             \n\
+       show account       - Names=, Descriptions=, ExpediteLevel=,         \n\
+                            and Organizations=                             \n\
+       create account     - Names=, Descriptions=, ExpediteLevel=,         \n\
+                            and Organizations=                             \n\
+       modify account     - Names=, Descriptions=, ExpediteLevel=,         \n\
+                            and Organizations=                             \n\
+       delete account     - Names=, Descriptions=, ExpediteLevel=,         \n\
+                            and Organizations=                             \n\
                                                                            \n\
-  <LEVEL> may be an integer value like SlurmctldDebug in the slurm.conf    \n\
-       file or the name of the most detailed errors to report (e.g. \"info\",\n\
-       \"verbose\", \"debug\", \"debug2\", etc.).                          \n\
+       show cluster       - Names=                                         \n\
+       create cluster     - Name=, and InterfaceNode=                      \n\
+       modify cluster     - Name=, and InterfaceNode=                      \n\
+       delete cluster     - Names=                                         \n\
                                                                            \n\
-  Node names may be specified using simple range expressions,              \n\
-  (e.g. \"lx[10-20]\" corresponsds to lx10, lx11, lx12, ...)               \n\
-  The job step id is the job id followed by a period and the step id.      \n\
+       show association   - Ids=, Users=, Accounts=, Clusters=,            \n\
+                            and Partitions=                                \n\
+       create association - User=, Account=, Cluster=, Partition=,         \n\
+                            FairShare=, MaxJobs=, MaxNodes=, MaxWall=, and \n\
+                            MaxCPUSecs=                                    \n\
+       modify association - Ids=, Users=, Accounts=, Clusters=, Partitions=,\n\
+                            FairShare=, MaxJobs=, MaxNodes=, MaxWall=, and \n\
+                            MaxCPUSecs=                                    \n\
+       delete association - Ids=, Users=, Accounts=, Clusters=,            \n\
+                            and Partitions=                                \n\
                                                                            \n\
-  <SPECIFICATIONS> are specified in the same format as the configuration   \n\
-  file. You may wish to use the \"show\" keyword then use its output as    \n\
-  input for the update keyword, editing as needed.  Bluegene blocks/subbps \n\
-  are only able to be set to an error or free state.                       \n\
-  (Bluegene systems only)                                                  \n\
                                                                            \n\
-  <CH_OP> identify checkpoint operations and may be \"able\", \"disable\", \n\
-  \"enable\", \"create\", \"vacate\", \"restart\", or \"error\".           \n\
                                                                            \n\
-  All commands and options are case-insensitive, although node names and   \n\
-  partition names tests are case-sensitive (node names \"LX\" and \"lx\"   \n\
-  are distinct).                                                       \n\n");
-
+  All commands entitys, and options are case-insensitive.               \n\n");
+	
 }
 

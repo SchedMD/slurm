@@ -61,12 +61,12 @@ extern int sacctmgr_list_account(int argc, char *argv[])
 	for (i=0; i<argc; i++) {
 		if (strncasecmp (argv[i], "Names=", 6) == 0) {
 			addto_char_list(account_cond->account_list, argv[i]+6);
-		} else if (strncasecmp (argv[i], "Description=", 12) == 0) {
+		} else if (strncasecmp (argv[i], "Descriptions=", 13) == 0) {
 			addto_char_list(account_cond->description_list,
-					argv[i]+12);
-		} else if (strncasecmp (argv[i], "Organization=", 13) == 0) {
-			addto_char_list(account_cond->organization_list,
 					argv[i]+13);
+		} else if (strncasecmp (argv[i], "Organizations=", 14) == 0) {
+			addto_char_list(account_cond->organization_list,
+					argv[i]+14);
 		} else if (strncasecmp (argv[i], "ExpediteLevel=", 14) == 0) {
 			account_cond->expedite =
 				str_2_account_expedite(argv[i]+14);
@@ -107,7 +107,7 @@ extern int sacctmgr_list_account(int argc, char *argv[])
 	return rc;
 }
 
-extern int sacctmgr_update_account(int argc, char *argv[])
+extern int sacctmgr_modify_account(int argc, char *argv[])
 {
 	int rc = SLURM_SUCCESS;
 	return rc;

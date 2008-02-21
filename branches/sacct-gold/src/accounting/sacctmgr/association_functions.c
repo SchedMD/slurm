@@ -110,7 +110,7 @@ extern int sacctmgr_list_association(int argc, char *argv[])
 	return rc;
 }
 
-extern int sacctmgr_update_association(int argc, char *argv[])
+extern int sacctmgr_modify_association(int argc, char *argv[])
 {
 	int rc = SLURM_SUCCESS;
 	return rc;

@@ -46,8 +46,10 @@ extern int sacctmgr_create_user(int argc, char *argv[])
 	account_user_rec_t *user = NULL;
 	List name_list = list_create(destroy_char);
 	char *default_acct = NULL;
-	account_expedite_level_t expedite = 0;
-	account_admin_level_t admin_level = 0;
+	account_expedite_level_t expedite = ACCOUNT_EXPEDITE_NOTSET;
+	account_admin_level_t admin_level = ACCOUNT_ADMIN_NOTSET;
+	char *name = NULL;
+	sacctmgr_action_t *action = NULL;
 
 	for (i=0; i<argc; i++) {
 		if (strncasecmp (argv[i], "Names=", 6) == 0) {
@@ -62,6 +64,37 @@ extern int sacctmgr_create_user(int argc, char *argv[])
 			error("Valid options are 'Names=' 'DefaultAccount=' "
 			      "'ExpediteLevel=' and 'AdminLevel='");
 		}		
+	}
+	if(!list_count(name_list)) {
+		list_destroy(name_list);
+		info("Need name of user to add."); 
+		return SLURM_SUCCESS;
+	} else if(!default_acct) {
+		list_destroy(name_list);
+		info("Need a default account for these users to add."); 
+		return SLURM_SUCCESS;
+	}
+
+	action = xmalloc(sizeof(sacctmgr_action_t));
+	action->type = SACCTMGR_USER_CREATE;
+	action->list = list_create(destroy_account_user_rec);
+
+	itr = list_iterator_create(name_list);
+	while((name = list_next(itr))) {
+		user = xmalloc(sizeof(account_user_rec_t));
+		user->name = xstrdup(name);
+		user->default_account = xstrdup(default_acct);
+		user->expedite = expedite;
+		user->admin_level = admin_level;
+		list_append(action->list, user);
+	}
+	list_iterator_destroy(itr);
+
+	if(execute_flag) {
+		rc = account_storage_g_add_users(action->list);
+		destroy_sacctmgr_action(action);
+	} else {
+		list_push(action_list, action);
 	}
 
 	return rc;
@@ -123,7 +156,7 @@ extern int sacctmgr_list_user(int argc, char *argv[])
 	return rc;
 }
 
-extern int sacctmgr_update_user(int argc, char *argv[])
+extern int sacctmgr_modify_user(int argc, char *argv[])
 {
 	int rc = SLURM_SUCCESS;
 	return rc;

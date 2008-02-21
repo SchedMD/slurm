@@ -86,21 +86,21 @@
 
 typedef enum {
 	SACCTMGR_ACTION_NOTSET,
-	SACCTMGR_USER_ADD,
+	SACCTMGR_USER_CREATE,
 	SACCTMGR_USER_MODIFY,
-	SACCTMGR_USER_REMOVE,
-	SACCTMGR_ACCOUNT_ADD,
+	SACCTMGR_USER_DELETE,
+	SACCTMGR_ACCOUNT_CREATE,
 	SACCTMGR_ACCOUNT_MODIFY,
-	SACCTMGR_ACCOUNT_REMOVE,
-	SACCTMGR_CLUSTER_ADD,
+	SACCTMGR_ACCOUNT_DELETE,
+	SACCTMGR_CLUSTER_CREATE,
 	SACCTMGR_CLUSTER_MODIFY,
-	SACCTMGR_CLUSTER_REMOVE,
-	SACCTMGR_ASSOCIATION_ADD,
+	SACCTMGR_CLUSTER_DELETE,
+	SACCTMGR_ASSOCIATION_CREATE,
 	SACCTMGR_ASSOCIATION_MODIFY,
-	SACCTMGR_ASSOCIATION_REMOVE,
+	SACCTMGR_ASSOCIATION_DELETE,
 	SACCTMGR_ADMIN_MODIFY,
-	SACCTMGR_COORD_ADD,
-	SACCTMGR_COORD_REMOVE
+	SACCTMGR_COORD_CREATE,
+	SACCTMGR_COORD_DELETE
 } sacctmgr_action_type_t;
 
 typedef struct {
@@ -118,6 +118,7 @@ extern int exit_flag;	/* program to terminate if =1 */
 extern int input_words;	/* number of words of input permitted */
 extern int one_liner;	/* one record per line if =1 */
 extern int quiet_flag;	/* quiet=1, verbose=-1, normal=0 */
+extern int execute_flag;/* immediate execute=1, else = 0 */
 extern List action_list; /* list of sacctmgr_action_t * */
 
 extern int sacctmgr_create_association(int argc, char *argv[]);
@@ -130,21 +131,23 @@ extern int sacctmgr_list_user(int argc, char *argv[]);
 extern int sacctmgr_list_account(int argc, char *argv[]);
 extern int sacctmgr_list_cluster(int argc, char *argv[]);
 
-extern int sacctmgr_update_association(int argc, char *argv[]);
-extern int sacctmgr_update_user(int argc, char *argv[]);
-extern int sacctmgr_update_account(int argc, char *argv[]);
-extern int sacctmgr_update_cluster(int argc, char *argv[]);
+extern int sacctmgr_modify_association(int argc, char *argv[]);
+extern int sacctmgr_modify_user(int argc, char *argv[]);
+extern int sacctmgr_modify_account(int argc, char *argv[]);
+extern int sacctmgr_modify_cluster(int argc, char *argv[]);
 
 extern int sacctmgr_delete_association(int argc, char *argv[]);
 extern int sacctmgr_delete_user(int argc, char *argv[]);
 extern int sacctmgr_delete_account(int argc, char *argv[]);
 extern int sacctmgr_delete_cluster(int argc, char *argv[]);
 
+/* common.c */
 extern void print_header(void);
 extern int  print_str(char *str, int width, bool right, bool cut_output);
 extern void print_date(void);
 extern int print_secs(long time, int width, bool right, bool cut_output);
 extern void destroy_char(void *object);
 extern void addto_char_list(List char_list, char *names);
+extern void destroy_sacctmgr_action(void *object);
 
 #endif
