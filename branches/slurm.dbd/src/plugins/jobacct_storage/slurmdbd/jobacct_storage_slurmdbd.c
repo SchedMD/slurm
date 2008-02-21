@@ -241,7 +241,8 @@ extern void jobacct_storage_p_get_jobs(List job_list,
 }
 
 /* 
- * expire old info from the storage 
+ * Expire old info from the storage
+ * Not applicable for any database
  */
 extern void jobacct_storage_p_archive(List selected_parts,
 				       void *params)
