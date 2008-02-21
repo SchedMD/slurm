@@ -7,6 +7,8 @@ documents those changes that are of interest to users and admins.
     for GETNODES and GETJOBS commands.
  -- Bug fix for sending accounting information multiple times for same 
     info.  patch from Hongjia Cao (NUDT).
+ -- Spread out in time the EPILOG_COMPLETE messages from slurmd to slurmctld
+    to avoid message congestions and retransmission.
 
 * Changes in SLURM 1.2.23
 =========================
