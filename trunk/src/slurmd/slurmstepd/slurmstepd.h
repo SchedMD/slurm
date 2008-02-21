@@ -55,6 +55,7 @@ typedef struct {
 	slurm_addr parent_addr;
 	int children;
 	int max_depth;
+	bool wait_children;
 	bitstr_t *bits;
 	int step_rc;
 	jobacctinfo_t *jobacct;
