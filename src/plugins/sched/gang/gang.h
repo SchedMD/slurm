@@ -46,7 +46,11 @@
 #include "src/slurmctld/job_scheduler.h"
 #include "src/slurmctld/slurmctld.h"
 
-extern int	spawn_gang_thread(void);
-extern void	term_gang_thread(void);
+extern int 	gs_init(void);
+extern int 	gs_fini(void);
+extern int	gs_job_start(struct job_record *job_ptr);
+extern int	gs_job_scan(void);
+extern int	gs_job_fini(struct job_record *job_ptr);
+extern int	gs_reconfig(void);
 
 #endif

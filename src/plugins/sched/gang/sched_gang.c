@@ -50,7 +50,7 @@ static int plugin_errno = SLURM_SUCCESS;
 extern int init( void )
 {
 	verbose( "gang scheduler plugin loaded" );
-	return spawn_gang_thread();
+	return gs_init();
 }
 
 /**************************************************************************/
@@ -58,7 +58,7 @@ extern int init( void )
 /**************************************************************************/
 extern void fini( void )
 {
-	term_gang_thread();
+	gs_fini();
 }
 
 /**************************************************************************/
@@ -66,7 +66,7 @@ extern void fini( void )
 /**************************************************************************/
 int slurm_sched_plugin_reconfig( void )
 {
-	return SLURM_SUCCESS;
+	return gs_reconfig();
 }
 
 /***************************************************************************/
@@ -74,7 +74,20 @@ int slurm_sched_plugin_reconfig( void )
 /***************************************************************************/
 extern int slurm_sched_plugin_schedule( void )
 {
-	return SLURM_SUCCESS;
+	/* synchronize job listings */
+	debug3("sched/gang: slurm_sched_schedule called");
+	return gs_job_scan();
+}
+
+/***************************************************************************/
+/*  TAG(                   slurm_sched_plugin_newalloc                   ) */
+/***************************************************************************/
+extern int slurm_sched_plugin_newalloc( struct job_record *job_ptr )
+{
+	if (!job_ptr)
+		return SLURM_ERROR;
+	debug3("sched/gang: slurm_sched_newalloc called");
+	return gs_job_start(job_ptr);
 }
 
 
@@ -85,6 +98,8 @@ extern uint32_t
 slurm_sched_plugin_initial_priority( uint32_t last_prio,
 				     struct job_record *job_ptr )
 {
+	/* ignored for timeslicing, but will be used to support priority */
+
 	if (last_prio >= 2)
 		return (last_prio - 1);
 	else
@@ -96,7 +111,8 @@ slurm_sched_plugin_initial_priority( uint32_t last_prio,
 /**************************************************************************/
 void slurm_sched_plugin_job_is_pending( void )
 {
-	/* No action required */
+	/* synchronize job listings? Here? */
+	/*return gs_job_scan();*/
 }
 
 /**************************************************************************/
@@ -104,7 +120,7 @@ void slurm_sched_plugin_job_is_pending( void )
 /**************************************************************************/
 void slurm_sched_plugin_partition_change( void )
 {
-        /* No action required */
+        gs_reconfig();
 }
 
 /**************************************************************************/

@@ -92,6 +92,14 @@ to indicate the reason for failure.</p>
 the plugin should return SLURM_ERROR and set the errno to an appropriate value 
 to indicate the reason for failure.</p>
 
+<p class="commandline">int slurm_sched_plugin_newalloc (void);</p>
+<p style="margin-left:.2in"><b>Description</b>: Note the successful allocation of resources to a job.</p>
+<p style="margin-left:.2in"><b>Arguments</b>: Pointer to the slurmctld job structure. This can be used to
+get partition, allocated resources, time limit, etc.</p>
+<p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On failure, 
+the plugin should return SLURM_ERROR and set the errno to an appropriate value 
+to indicate the reason for failure.</p>
+
 <p class="commandline">uint32_t slurm_sched_plugin_initial_priority (
 uint32_t last_prio, struct job_record *job_ptr);</p>
 <p style="margin-left:.2in"><b>Description</b>: Establish the initial priority of a new job.</p>

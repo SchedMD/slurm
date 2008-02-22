@@ -89,9 +89,8 @@ int compute_c_b_task_dist(struct select_cr_job *job)
 
 #if (CR_DEBUG)	
 	for (i = 0; i < job->nhosts; i++) {
-		info("cons_res _c_b_task_dist %u host %s nprocs %u "
-		     "maxtasks %u cpus %u alloc_cpus %u", 
-		     job->job_id, job->host[i], job->nprocs, 
+		info("cons_res _c_b_task_dist %u host_index %d nprocs %u maxtasks %u cpus %u alloc_cpus %u", 
+		     job->job_id, i, job->nprocs, 
 		     maxtasks, job->cpus[i], job->alloc_cpus[i]);
 	}
 #endif	
@@ -517,8 +516,8 @@ extern int cr_plane_dist(struct select_cr_job *job,
 
 #if(CR_DEBUG)	
 	for (i = 0; i < job->nhosts; i++) {
-		info("cons_res _cr_plane_dist %u host %s alloc_cpus %u ", 
-		     job->job_id, job->host[i],  job->alloc_cpus[i]);
+		info("cons_res _cr_plane_dist %u host_index %d alloc_cpus %u ", 
+		     job->job_id, i, job->alloc_cpus[i]);
 	}
 #endif
 

@@ -72,6 +72,11 @@ int slurm_sched_reconfig( void );
 int slurm_sched_schedule( void );
 
 /*
+ * Note the successful allocation of resources to a job.
+ */
+int slurm_sched_newalloc( struct job_record *job_ptr );
+
+/*
  * Supply the initial SLURM priority for a newly-submitted job.
  */
 uint32_t slurm_sched_initial_priority( uint32_t max_prio, 
