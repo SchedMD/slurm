@@ -222,20 +222,15 @@ _load_phys_res_cnt()
 {
 	int i, array_size = GS_CPU_ARRAY_INCREMENT;
 	uint32_t adder;
-	if (gs_cpus_per_res)
-		xfree(gs_cpus_per_res);
-	gs_cpus_per_res = NULL;
-	if (gs_cpu_count_reps)
-		xfree(gs_cpu_count_reps);
-	gs_cpu_count_reps = NULL;
+
+	xfree(gs_cpus_per_res);
+	xfree(gs_cpu_count_reps);
 	gs_num_groups = 0;
 	if (gr_type == GS_NODE || gr_type == GS_SOCKET)
 		return;
 
 	gs_cpus_per_res   = xmalloc(array_size * sizeof(uint16_t));
 	gs_cpu_count_reps = xmalloc(array_size * sizeof(uint32_t));
-	gs_cpus_per_res[0] = 0;
-	gs_cpu_count_reps[0] = 0;
 	for (i = 0; i < node_record_count; i++) {
 		uint16_t res = _compute_resources(i, 0);
 		if (gs_cpus_per_res[gs_num_groups] == res) {
@@ -301,31 +296,17 @@ _destroy_parts() {
 		xfree(tmp->part_name);
 		for (i = 0; i < tmp->num_jobs; i++) {
 			j_ptr = tmp->job_list[i];
-			if (j_ptr->bitmap) {
+			if (j_ptr->bitmap)
 				bit_free(j_ptr->bitmap);
-				j_ptr->bitmap = NULL;
-			}
-			if (j_ptr->alloc_cpus) {
-				xfree(j_ptr->alloc_cpus);
-				j_ptr->alloc_cpus = NULL;
-			}
+			xfree(j_ptr->alloc_cpus);
 			xfree(j_ptr);
 		}
-		if (tmp->job_list) {
-			xfree(tmp->job_list);
-			tmp->job_list = NULL;
-		}
-		if (tmp->active_bitmap) {
+		if (tmp->active_bitmap)
 			bit_free(tmp->active_bitmap);
-			tmp->active_bitmap = NULL;
-		}
-		if (tmp->active_cpus) {
-			xfree(tmp->active_cpus);
-			tmp->active_cpus = NULL;
-		}
+		xfree(tmp->active_cpus);
+		xfree(tmp->job_list);
 	}
 	xfree(gs_part_list);
-	gs_part_list = NULL;
 }
 
 /* just build the gs_part_list. The job_list will be created */
@@ -347,17 +328,10 @@ _build_parts() {
 		fatal ("memory allocation failure");
 
 	gs_part_list = xmalloc(num_parts * sizeof(struct gs_part));
-
 	i = 0;
 	while ((p_ptr = (struct part_record *) list_next(part_iterator))) {
 		gs_part_list[i].part_name = xstrdup(p_ptr->name);
-		gs_part_list[i].num_jobs = 0;
-		gs_part_list[i].job_list = NULL;
-		gs_part_list[i].job_list_size = 0;
-		gs_part_list[i].jobs_running = 0;
-		gs_part_list[i].active_bitmap = NULL;
-		gs_part_list[i].array_size = 0;
-		gs_part_list[i].active_cpus = NULL;
+		/* everything else is already set to zero/NULL */
 		gs_part_list[i].next = &(gs_part_list[i+1]);
 		i++;
 	}
@@ -563,8 +537,8 @@ static void
 _load_alloc_cpus(struct gs_job *j_ptr, bitstr_t *nodemap)
 {
 	int i, a, alloc_index, sz;
-	if (j_ptr->alloc_cpus)
-		xfree(j_ptr->alloc_cpus);
+
+	xfree(j_ptr->alloc_cpus);
 	sz = bit_set_count(j_ptr->bitmap);
 	j_ptr->alloc_cpus = xmalloc(sz * sizeof(uint16_t));
 
@@ -648,8 +622,7 @@ _add_job_to_part(struct gs_part *p_ptr, uint32_t job_id, bitstr_t *job_bitmap)
 		p_ptr->job_list_size = default_job_list_size;
 		p_ptr->job_list = xmalloc(p_ptr->job_list_size *
 						sizeof(struct gs_job *));
-		for (i = 0; i < p_ptr->job_list_size; i++)
-			p_ptr->job_list[i] = NULL;
+		/* job_list is initialized to be NULL filled */
 	}
 	/* protect against duplicates */
 	for (i = 0; i < p_ptr->num_jobs; i++) {
@@ -745,10 +718,7 @@ _remove_job_from_part(uint32_t job_id, struct gs_part *p_ptr)
 		_signal_job(j_ptr->job_id, GS_RESUME);
 	}
 	bit_free(j_ptr->bitmap);
-	j_ptr->bitmap = NULL;
-	if (j_ptr->alloc_cpus)
-		xfree(j_ptr->alloc_cpus);
-	j_ptr->alloc_cpus = NULL;
+	xfree(j_ptr->alloc_cpus);
 	xfree(j_ptr);
 
 	/* in order to remove this job from the active row,
@@ -914,14 +884,8 @@ gs_fini()
 	
 	pthread_mutex_lock(&data_mutex);
 	_destroy_parts();
-	if (gs_cpus_per_res) {
-		xfree(gs_cpus_per_res);
-		gs_cpus_per_res = NULL;
-	}
-	if (gs_cpu_count_reps) {
-		xfree(gs_cpu_count_reps);
-		gs_cpu_count_reps = NULL;
-	}
+	xfree(gs_cpus_per_res);
+	xfree(gs_cpu_count_reps);
 	gs_num_groups = 0;
 	pthread_mutex_unlock(&data_mutex);
 	debug3("sched/gang: leaving gs_fini");

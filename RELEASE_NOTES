@@ -75,6 +75,11 @@ CONFIGURATION FILE CHANGES
   upon two factors. First the priority of its partition and the job's priority. 
   Since nodes can be configured in multiple partitions, this can be used to configure
   high priority partitions (queues).
+* Added new parameters "HealthCheckInterval" and "HealthCheckProgram" to automatically
+  test the health of compute nodes.
+* Added "EpilogMsgTime" to prevent a burst of EpilogComplete messages from being 
+  sent at the same time from many slurmd daemons to slurmctld. This should help
+  prevent lost messages and improve throughput for large jobs.
 * The partition parameter "Shared" now has a job count. For example:
   Shared=YES:4     (Up to 4 jobs may share each resource)
   Shared=FORCE:2   (Up to 2 jobs must share each resource)
@@ -82,6 +87,7 @@ CONFIGURATION FILE CHANGES
   hours:minutes:seconds, days-hours, days-hours:minutes, 
   days-hours:minutes:seconds or "UNLIMITED".
 * Checkpoint plugin added for XLCH.
+* Added sched/gang plugin for time-slicing of parallel jobs.
 * See "man slurm.conf" for more information.
 
 OTHER CHANGES

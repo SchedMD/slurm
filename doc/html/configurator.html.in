@@ -183,6 +183,7 @@ function displayfile()
    "InactiveLimit=" + document.config.inactive_limit.value + "<br>" +
    "MinJobAge=" + document.config.min_job_age.value + "<br>" +
    "KillWait=" + document.config.kill_wait.value + "<br>" +
+   "#EpilogMsgTime=2000 <br>" +
    "#GetEnvTimeout=2 <br>" +
    "#HealthCheckInterval=0 <br>" +
    "#HealthCheckProgram= <br>" +

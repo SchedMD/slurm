@@ -934,10 +934,12 @@ typedef struct slurm_ctl_conf {
 	char *crypto_type;	/* cryptographic signature plugin */
 	uint32_t def_mem_per_task; /* default MB memory per spawned task */
 	char *epilog;		/* pathname of job epilog */
+	uint32_t epilog_msg_time;  /* usecs for slurmctld to process an
+				 * epilog complete message */
+	uint16_t fast_schedule;	/* 1 to *not* check configurations by node
+				 * (only check configuration file, faster) */
 	uint32_t first_job_id;	/* first slurm generated job_id to assign */
 	uint32_t next_job_id;	/* next slurm generated job_id to assign */
-	uint16_t fast_schedule;	/* 1 to *not* check configurations by node 
-				 * (only check configuration file, faster) */
 	uint16_t get_env_timeout; /* timeout for srun --get-user-env option */
 	uint16_t health_check_interval;	/* secs between health checks */
 	char * health_check_program;	/* pathname of health check program */

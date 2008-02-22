@@ -51,6 +51,7 @@ extern char *default_plugstack;
 #define DEFAULT_AUTH_TYPE          "auth/none"
 #define DEFAULT_CACHE_GROUPS        0
 #define DEFAULT_CRYPTO_TYPE        "crypto/openssl"
+#define DEFAULT_EPILOG_MSG_TIME     2000
 #define DEFAULT_FAST_SCHEDULE       1
 #define DEFAULT_FIRST_JOB_ID        1
 #define DEFAULT_GET_ENV_TIMEOUT     2

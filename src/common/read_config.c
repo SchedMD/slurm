@@ -138,6 +138,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"CryptoType", S_P_STRING},
 	{"DefMemPerTask", S_P_UINT32},
 	{"Epilog", S_P_STRING},
+	{"EpilogMsgTime", S_P_UINT32},
 	{"FastSchedule", S_P_UINT16},
 	{"FirstJobId", S_P_UINT32},
 	{"HashBase", S_P_LONG, defunct_option},
@@ -1144,6 +1145,7 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	xfree (ctl_conf_ptr->crypto_type);
 	ctl_conf_ptr->def_mem_per_task          = 0;
 	xfree (ctl_conf_ptr->epilog);
+	ctl_conf_ptr->epilog_msg_time		= (uint32_t) NO_VAL;
 	ctl_conf_ptr->fast_schedule		= (uint16_t) NO_VAL;
 	ctl_conf_ptr->first_job_id		= (uint32_t) NO_VAL;
 	ctl_conf_ptr->health_check_interval	= 0;
@@ -1515,6 +1517,9 @@ validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 		conf->def_mem_per_task = DEFAULT_MEM_PER_TASK;
 
 	s_p_get_string(&conf->epilog, "Epilog", hashtbl);
+
+	if (!s_p_get_uint32(&conf->epilog_msg_time, "EpilogMsgTime", hashtbl))
+		conf->epilog_msg_time = DEFAULT_EPILOG_MSG_TIME;
 
 	if (!s_p_get_uint16(&conf->fast_schedule, "FastSchedule", hashtbl))
 		conf->fast_schedule = DEFAULT_FAST_SCHEDULE;
