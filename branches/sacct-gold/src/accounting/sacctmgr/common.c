@@ -224,3 +224,26 @@ extern void destroy_sacctmgr_action(void *object)
 	}
 }
 
+extern int commit_check(char *warning) 
+{
+	int ans = 0;
+
+	printf("%s\n", warning);
+	while(ans != 'Y' && ans != 'y'
+	      && ans != 'N' && ans != 'n'
+	      && ans != '\n') {
+		if(ans) {
+			getchar();  //grab the \n
+			printf("Y or N please\n");
+		}
+		printf("(N/y): ");
+		ans = getchar();
+	}
+	if(ans != '\n')
+		getchar(); //grab the \n
+	
+	if(ans == 'Y' || ans == 'y') 
+		return 1;			
+	
+	return 0;
+}

@@ -383,13 +383,13 @@ extern account_expedite_level_t str_2_account_expedite(char *level)
 {
 	if(!level) {
 		return ACCOUNT_EXPEDITE_NOTSET;
-	} else if(!strcasecmp(level, "Normal")) {
+	} else if(!strncasecmp(level, "Normal", 1)) {
 		return ACCOUNT_EXPEDITE_NORMAL;
-	} else if(!strcasecmp(level, "Expedite")) {
+	} else if(!strncasecmp(level, "Expedite", 3)) {
 		return ACCOUNT_EXPEDITE_EXPEDITE;
-	} else if(!strcasecmp(level, "Standby")) {
+	} else if(!strncasecmp(level, "Standby", 1)) {
 		return ACCOUNT_EXPEDITE_STANDBY;
-	} else if(!strcasecmp(level, "Exempt")) {
+	} else if(!strncasecmp(level, "Exempt", 3)) {
 		return ACCOUNT_EXPEDITE_EXEMPT;
 	} else {
 		return ACCOUNT_EXPEDITE_NOTSET;		
@@ -422,11 +422,12 @@ extern account_admin_level_t str_2_account_admin_level(char *level)
 {
 	if(!level) {
 		return ACCOUNT_ADMIN_NOTSET;
-	} else if(!strcasecmp(level, "None")) {
+	} else if(!strncasecmp(level, "None", 1)) {
 		return ACCOUNT_ADMIN_NONE;
-	} else if(!strcasecmp(level, "Operator")) {
+	} else if(!strncasecmp(level, "Operator", 1)) {
 		return ACCOUNT_ADMIN_OPERATOR;
-	} else if(!strcasecmp(level, "SuperUser")) {
+	} else if(!strncasecmp(level, "SuperUser", 1) 
+		  || !strncasecmp(level, "Admin", 1)) {
 		return ACCOUNT_ADMIN_SUPER_USER;
 	} else {
 		return ACCOUNT_ADMIN_NOTSET;		

@@ -37,10 +37,75 @@
 
 #include "sacctmgr.h"
 
+static int _set_cond(int *start, int argc, char *argv[],
+		      account_user_cond_t *user_cond)
+{
+	int i;
+	int set = 0;
+
+	for (i=(*start); i<argc; i++) {
+		if (strncasecmp (argv[i], "Names=", 6) == 0) {
+			addto_char_list(user_cond->user_list, argv[i]+6);
+			set = 1;
+		} else if (strncasecmp (argv[i], "DefaultAccounts=", 16) == 0) {
+			addto_char_list(user_cond->def_account_list,
+					argv[i]+16);
+			set = 1;
+		} else if (strncasecmp (argv[i], "ExpediteLevel=", 14) == 0) {
+			user_cond->expedite =
+				str_2_account_expedite(argv[i]+14);
+			set = 1;
+		} else if (strncasecmp (argv[i], "AdminLevel=", 11) == 0) {
+			user_cond->admin_level = 
+				str_2_account_admin_level(argv[i]+11);
+			set = 1;
+		} else if (strncasecmp (argv[i], "Set", 3) == 0) {
+			i--;
+			break;
+		} else {
+			addto_char_list(user_cond->user_list, argv[i]);
+			set = 1;
+		}		
+	}	
+	(*start) = i;
+
+	return set;
+}
+
+static int _set_rec(int *start, int argc, char *argv[],
+		     account_user_rec_t *user)
+{
+	int i;
+	int set = 0;
+
+	for (i=(*start); i<argc; i++) {
+		if (strncasecmp (argv[i], "DefaultAccount=", 15) == 0) {
+			user->default_account = xstrdup(argv[i]+15);
+			set = 1;
+		} else if (strncasecmp (argv[i], "ExpediteLevel=", 14) == 0) {
+			user->expedite =
+				str_2_account_expedite(argv[i]+14);
+			set = 1;
+		} else if (strncasecmp (argv[i], "AdminLevel=", 11) == 0) {
+			user->admin_level = 
+				str_2_account_admin_level(argv[i]+11);
+			set = 1;
+		} else if (strncasecmp (argv[i], "Where", 5) == 0) {
+			i--;
+			break;
+		} else {
+			printf(" error: Valid options are 'DefaultAccount=' "
+			       "'ExpediteLevel=' and 'AdminLevel='\n");
+		}		
+	}	
+	(*start) = i;
+
+	return set;
+}
+
 extern int sacctmgr_create_user(int argc, char *argv[])
 {
 	int rc = SLURM_SUCCESS;
-	List user_list = NULL;
 	int i=0;
 	ListIterator itr = NULL;
 	account_user_rec_t *user = NULL;
@@ -49,8 +114,8 @@ extern int sacctmgr_create_user(int argc, char *argv[])
 	account_expedite_level_t expedite = ACCOUNT_EXPEDITE_NOTSET;
 	account_admin_level_t admin_level = ACCOUNT_ADMIN_NOTSET;
 	char *name = NULL;
-	sacctmgr_action_t *action = NULL;
-
+	List user_list = NULL;
+	
 	for (i=0; i<argc; i++) {
 		if (strncasecmp (argv[i], "Names=", 6) == 0) {
 			addto_char_list(name_list, argv[i]+6);
@@ -61,24 +126,20 @@ extern int sacctmgr_create_user(int argc, char *argv[])
 		} else if (strncasecmp (argv[i], "AdminLevel=", 11) == 0) {
 			admin_level = str_2_account_admin_level(argv[i]+11);
 		} else {
-			error("Valid options are 'Names=' 'DefaultAccount=' "
-			      "'ExpediteLevel=' and 'AdminLevel='");
+			addto_char_list(name_list, argv[i]);
 		}		
 	}
 	if(!list_count(name_list)) {
 		list_destroy(name_list);
-		info("Need name of user to add."); 
+		printf(" Need name of user to add.\n"); 
 		return SLURM_SUCCESS;
 	} else if(!default_acct) {
 		list_destroy(name_list);
-		info("Need a default account for these users to add."); 
+		printf(" Need a default account for these users to add.\n"); 
 		return SLURM_SUCCESS;
 	}
 
-	action = xmalloc(sizeof(sacctmgr_action_t));
-	action->type = SACCTMGR_USER_CREATE;
-	action->list = list_create(destroy_account_user_rec);
-
+	user_list = list_create(destroy_account_user_rec);
 	itr = list_iterator_create(name_list);
 	while((name = list_next(itr))) {
 		user = xmalloc(sizeof(account_user_rec_t));
@@ -86,14 +147,17 @@ extern int sacctmgr_create_user(int argc, char *argv[])
 		user->default_account = xstrdup(default_acct);
 		user->expedite = expedite;
 		user->admin_level = admin_level;
-		list_append(action->list, user);
+		list_append(user_list, user);
 	}
 	list_iterator_destroy(itr);
 
 	if(execute_flag) {
-		rc = account_storage_g_add_users(action->list);
-		destroy_sacctmgr_action(action);
+		rc = account_storage_g_add_users(user_list);
+		list_destroy(user_list);
 	} else {
+		sacctmgr_action_t *action = xmalloc(sizeof(sacctmgr_action_t));
+		action->type = SACCTMGR_USER_CREATE;
+		action->list = list_create(destroy_account_user_rec);
 		list_push(action_list, action);
 	}
 
@@ -112,23 +176,7 @@ extern int sacctmgr_list_user(int argc, char *argv[])
 	user_cond->user_list = list_create(destroy_char);
 	user_cond->def_account_list = list_create(destroy_char);
 	
-	for (i=0; i<argc; i++) {
-		if (strncasecmp (argv[i], "Names=", 6) == 0) {
-			addto_char_list(user_cond->user_list, argv[i]+6);
-		} else if (strncasecmp (argv[i], "DefaultAccounts=", 16) == 0) {
-			addto_char_list(user_cond->def_account_list,
-					argv[i]+16);
-		} else if (strncasecmp (argv[i], "ExpediteLevel=", 14) == 0) {
-			user_cond->expedite =
-				str_2_account_expedite(argv[i]+14);
-		} else if (strncasecmp (argv[i], "AdminLevel=", 11) == 0) {
-			user_cond->admin_level = 
-				str_2_account_admin_level(argv[i]+11);
-		} else {
-			error("Valid options are 'Names=' 'DefaultAccounts=' "
-			      "'ExpediteLevel=' and 'AdminLevel='");
-		}		
-	}
+	_set_cond(&i, argc, argv, user_cond);
 
 	user_list = account_storage_g_get_users(user_cond);
 	destroy_account_user_cond(user_cond);
@@ -159,11 +207,80 @@ extern int sacctmgr_list_user(int argc, char *argv[])
 extern int sacctmgr_modify_user(int argc, char *argv[])
 {
 	int rc = SLURM_SUCCESS;
+	account_user_cond_t *user_cond = xmalloc(sizeof(account_user_cond_t));
+	account_user_rec_t *user = xmalloc(sizeof(account_user_rec_t));
+	int i=0;
+	int cond_set = 0, rec_set = 0;
+
+	user_cond->user_list = list_create(destroy_char);
+	user_cond->def_account_list = list_create(destroy_char);
+	
+	for (i=0; i<argc; i++) {
+		if (strncasecmp (argv[i], "Where", 5) == 0) {
+			i++;
+			if(_set_cond(&i, argc, argv, user_cond))
+				cond_set = 1;
+		} else if (strncasecmp (argv[i], "Set", 3) == 0) {
+			i++;
+			if(_set_rec(&i, argc, argv, user))
+				rec_set = 1;
+		} else {
+			if(_set_cond(&i, argc, argv, user_cond))
+				cond_set = 1;
+		}
+	}
+
+	if(!rec_set) {
+		printf(" You didn't give me anything to set\n");
+		destroy_account_user_cond(user_cond);
+		destroy_account_user_rec(user);
+		return SLURM_ERROR;
+	} else if(!cond_set) {
+		if(!commit_check("You didn't set any conditions with 'WHERE'.\n"
+				 "Are you sure you want to continue?")) {
+			printf("Aborted\n");
+			return SLURM_SUCCESS;
+		}		
+	}
+
+	if(execute_flag) {
+		rc = account_storage_g_modify_users(user_cond, user);
+		destroy_account_user_cond(user_cond);
+		destroy_account_user_rec(user);
+	} else {
+		sacctmgr_action_t *action = xmalloc(sizeof(sacctmgr_action_t));
+		action->type = SACCTMGR_USER_MODIFY;
+		action->cond = user_cond;
+		action->rec = user;
+		list_push(action_list, action);
+	}
+
 	return rc;
 }
 
 extern int sacctmgr_delete_user(int argc, char *argv[])
 {
 	int rc = SLURM_SUCCESS;
+	account_user_cond_t *user_cond = xmalloc(sizeof(account_user_cond_t));
+	int i=0;
+
+	user_cond->user_list = list_create(destroy_char);
+	user_cond->def_account_list = list_create(destroy_char);
+	
+	if(!_set_cond(&i, argc, argv, user_cond)) {
+		printf(" No conditions given to remove, not executing.\n");
+		return SLURM_ERROR;
+	}
+
+	if(execute_flag) {
+		rc = account_storage_g_remove_users(user_cond);
+		destroy_account_user_cond(user_cond);
+	} else {
+		sacctmgr_action_t *action = xmalloc(sizeof(sacctmgr_action_t));
+		action->type = SACCTMGR_USER_DELETE;
+		action->cond = user_cond;
+		list_push(action_list, action);
+	}
+
 	return rc;
 }

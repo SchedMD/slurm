@@ -162,29 +162,18 @@ main (int argc, char *argv[])
 		if (error_code || exit_flag)
 			break;
 		error_code = _get_command (&input_field_count, input_fields);
-	}			
-	if(list_count(action_list) > 0) {
-		int ans = 0;
-		printf("Would you like to commit these changes?\n");
-		while(ans != 'Y' && ans != 'y'
-		      && ans != 'N' && ans != 'n'
-		      && ans != '\n') {
-			if(ans) {
-				getchar(); //grab the \n
-				printf("Y or N please\n");
-			}
-			printf("(Y/n): ");
-			ans = getchar();
-		}
-		
-		if(ans != 'N' && ans != 'n')
-			_commit();			
-		else 
-			printf("Changes discarded.\n");
-		
 	}
-		
-	list_destroy(action_list);
+
+	if(action_list) {
+		if(list_count(action_list) > 0) {
+			if(commit_check("Would you like to commit "
+					"these changes?")) 
+				_commit();			
+			else 
+				printf("Changes discarded.\n");
+		}
+		list_destroy(action_list);
+	}
 
 	exit(exit_code);
 }
@@ -322,24 +311,18 @@ _process_command (int argc, char *argv[])
 				 argv[0]);
 		}
 		if(list_count(action_list) > 0) {
-			int ans = 0;
-			printf("There are %d action(s) that haven't been "
-			       "committed yet, would you like to commit "
-			       "before exit?\n", list_count(action_list));
-			while(ans != 'Y' && ans != 'y'
-			      && ans != 'N' && ans != 'n'
-			      && ans != '\n') {
-				if(ans) {
-					getchar();  //grab the \n
-					printf("Y or N please\n");
-				}
-				printf("(Y/n): ");
-				ans = getchar();
-			}
-			if(ans != 'N' && ans != 'n') 
+			char tmp_char[255];
+
+			snprintf(tmp_char, sizeof(tmp_char),
+				 "There are %d action(s) that haven't been "
+				 "committed yet, would you like to commit "
+				 "before exit?", list_count(action_list));
+			if(commit_check(tmp_char)) 
 				_commit();			
 			else 
 				printf("Changes discarded.\n");
+			list_destroy(action_list);
+			action_list = NULL;
 		}
 		exit_flag = 1;
 	} else if (strncasecmp (argv[0], "help", 2) == 0) {
