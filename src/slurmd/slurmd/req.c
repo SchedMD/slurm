@@ -2509,7 +2509,7 @@ static void _sync_messages_kill(kill_job_msg_t *req)
 
 	hosts = hostset_create(req->nodes);
 	host_cnt = hostset_count(hosts);
-	if (host_cnt <= 32)
+	if (host_cnt <= 64)
 		goto fini;
 	if (conf->hostname == NULL)
 		goto fini;	/* should never happen */
