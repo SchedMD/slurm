@@ -57,6 +57,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <time.h>
+#include <unistd.h>
 
 #include "slurm/slurm_errno.h"
 #include "src/common/fd.h"
@@ -842,6 +843,7 @@ static void _load_dbd_state(void)
 		if (recovered)
 			info("slurmdbd: recovered %d pending RPCs", recovered);
 		(void) close(fd);
+		(void) unlink(dbd_fname);	/* clear save state */
 	}
 	xfree(dbd_fname);
 }
