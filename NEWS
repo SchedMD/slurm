@@ -18,6 +18,11 @@ documents those changes that are of interest to users and admins.
  -- Add HealthCheckInterval and HealthCheckProgram configuration parameters.
  -- Add SlurmDbdAddr and SlurmDbdPort configuration parameters.
  -- Modify select/linear to achieve better load leveling with gang scheduler.
+ -- Develop the sched/gang plugin to support select/linear and
+    select/cons_res. If sched/gang is enabled and Shared=FORCE is configured
+    for a partition, this plugin will gang-schedule or "timeslice" jobs that
+    share common resources within the partition. Note that resources that are
+    shared across partitions are not gang-scheduled.
  
 * Changes in SLURM 1.3.0-pre9
 =============================
