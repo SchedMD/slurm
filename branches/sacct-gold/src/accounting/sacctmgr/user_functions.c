@@ -170,7 +170,7 @@ static void _print_rec(account_user_rec_t *user)
 	}
 	
 	if(user->name) 
-		printf("  Name = %s\n", user->name);	
+		printf("  Name            = %s\n", user->name);	
 		
 	if(user->default_account) 
 		printf("  Default Account = %s\n", user->default_account);
@@ -205,8 +205,12 @@ extern int sacctmgr_create_user(int argc, char *argv[])
 			addto_char_list(name_list, argv[i]+5);
 		} else if (strncasecmp (argv[i], "DefaultAccount=", 15) == 0) {
 			default_acct = xstrdup(argv[i]+15);
+		} else if (strncasecmp (argv[i], "Expedite=", 8) == 0) {
+			expedite = str_2_account_expedite(argv[i]+8);
 		} else if (strncasecmp (argv[i], "ExpediteLevel=", 14) == 0) {
 			expedite = str_2_account_expedite(argv[i]+14);
+		} else if (strncasecmp (argv[i], "Admin=", 5) == 0) {
+			admin_level = str_2_account_admin_level(argv[i]+5);
 		} else if (strncasecmp (argv[i], "AdminLevel=", 11) == 0) {
 			admin_level = str_2_account_admin_level(argv[i]+11);
 		} else {

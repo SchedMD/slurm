@@ -97,7 +97,8 @@ typedef struct {
 	char *cluster; /* cluster associated to association */
 	char *partition; /* optional partition in a cluster 
 			    associated to association */
-	uint32_t parent; /* if there is a parent association to this */
+	char *parent_account; /* name of parent account */
+	uint32_t parent; /* parent id associated to this */
 	uint32_t lft; /* left most association in this group */
 	uint32_t rgt; /* right most association in this group */
 	uint32_t fairshare; /* fairshare number */
@@ -135,7 +136,9 @@ typedef struct {
 	List user_list; /* list of char * */
 	List account_list; /* list of char * */
 	List cluster_list; /* list of char * */
-	uint32_t parent; /* associations with this parent */
+	List partition_list; /* list of char * */
+	char *parent_account; /* name of parent account */
+	uint32_t parent; /* parent account id */
 	uint32_t lft; /* left most association */
 	uint32_t rgt; /* right most association */
 } account_association_cond_t;

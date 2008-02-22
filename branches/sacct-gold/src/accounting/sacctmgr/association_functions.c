@@ -45,8 +45,44 @@ static int _set_cond(int *start, int argc, char *argv[],
 	int set = 0;
 
 	for (i=(*start); i<argc; i++) {
-		if (strncasecmp (argv[i], "Name=", 5) == 0) {
-			addto_char_list(association_cond->id_list, argv[i]+5);
+		if (strncasecmp (argv[i], "Id=", 3) == 0) {
+			addto_char_list(association_cond->id_list, argv[i]+3);
+			set = 1;
+		} else if (strncasecmp (argv[i], "Ids=", 4) == 0) {
+			addto_char_list(association_cond->id_list, argv[i]+4);
+			set = 1;
+		} else if (strncasecmp (argv[i], "User=", 5) == 0) {
+			addto_char_list(association_cond->user_list, argv[i]+5);
+			set = 1;
+		} else if (strncasecmp (argv[i], "Users=", 6) == 0) {
+			addto_char_list(association_cond->user_list, argv[i]+6);
+			set = 1;
+		} else if (strncasecmp (argv[i], "Account=", 8) == 0) {
+			addto_char_list(association_cond->account_list,
+					argv[i]+8);
+			set = 1;
+		} else if (strncasecmp (argv[i], "Accounts=", 9) == 0) {
+			addto_char_list(association_cond->account_list,
+					argv[i]+9);
+			set = 1;
+		} else if (strncasecmp (argv[i], "Cluster=", 8) == 0) {
+			addto_char_list(association_cond->cluster_list,
+					argv[i]+8);
+			set = 1;
+		} else if (strncasecmp (argv[i], "Clusters=", 9) == 0) {
+			addto_char_list(association_cond->cluster_list,
+					argv[i]+9);
+			set = 1;
+		} else if (strncasecmp (argv[i], "Partition=", 10) == 0) {
+			addto_char_list(association_cond->partition_list,
+					argv[i]+10);
+			set = 1;
+		} else if (strncasecmp (argv[i], "Partitions=", 11) == 0) {
+			addto_char_list(association_cond->partition_list,
+					argv[i]+11);
+			set = 1;
+		} else if (strncasecmp (argv[i], "Parent=", 7) == 0) {
+			association_cond->parent_account = xstrdup(argv[i]+7);
 			set = 1;
 		} else if (strncasecmp (argv[i], "Set", 3) == 0) {
 			i--;
@@ -68,7 +104,41 @@ static int _set_rec(int *start, int argc, char *argv[],
 	int set = 0;
 
 	for (i=(*start); i<argc; i++) {
-		 if (strncasecmp (argv[i], "Where", 5) == 0) {
+		if (strncasecmp (argv[i], "Id=", 3) == 0) {
+			association->id = atoi(argv[i]+3);
+			set = 1;
+		} else if (strncasecmp (argv[i], "User=", 5) == 0) {
+			association->user = xstrdup(argv[i]+5);
+			set = 1;
+		} else if (strncasecmp (argv[i], "Account=", 8) == 0) {
+			association->account = xstrdup(argv[i]+8);
+			set = 1;
+		} else if (strncasecmp (argv[i], "Cluster=", 8) == 0) {
+			association->cluster = xstrdup(argv[i]+8);
+			set = 1;
+		} else if (strncasecmp (argv[i], "Partition=", 10) == 0) {
+			association->partition = xstrdup(argv[i]+10);
+			set = 1;
+		} else if (strncasecmp (argv[i], "Parent=", 7) == 0) {
+			association->parent_account = xstrdup(argv[i]+7);
+			set = 1;
+		} else if (strncasecmp (argv[i], "FairShare=", 10) == 0) {
+			association->fairshare = atoi(argv[i]+10);
+			set = 1;
+		} else if (strncasecmp (argv[i], "MaxJobs=", 8) == 0) {
+			association->max_jobs = atoi(argv[i]+8);
+			set = 1;
+		} else if (strncasecmp (argv[i], "MaxNodes=", 9) == 0) {
+			association->max_nodes_per_job = atoi(argv[i]+9);
+			set = 1;
+		} else if (strncasecmp (argv[i], "MaxWall=", 8) == 0) {
+			association->max_wall_duration_per_job =
+				atoi(argv[i]+8);
+			set = 1;
+		} else if (strncasecmp (argv[i], "MaxCPUSecs=", 11) == 0) {
+			association->max_cpu_seconds_per_job = atoi(argv[i]+11);
+			set = 1;
+		} else if (strncasecmp (argv[i], "Where", 5) == 0) {
 			i--;
 			break;
 		} else {
@@ -82,9 +152,103 @@ static int _set_rec(int *start, int argc, char *argv[],
 
 }
 
+static void _print_cond(account_association_cond_t *association_cond)
+{
+	ListIterator itr = NULL;
+	char *tmp_char = NULL;
+
+	if(!association_cond) {
+		error("no account_association_cond_t * given");
+		return;
+	}
+
+	if(association_cond->id_list && list_count(association_cond->id_list)) {
+		itr = list_iterator_create(association_cond->id_list);
+		printf("  Id        = %s\n", (char *)list_next(itr));
+		while((tmp_char = list_next(itr))) {
+			printf("           or %s\n", tmp_char);
+		}
+	}
+
+	if(association_cond->user_list
+	   && list_count(association_cond->user_list)) {
+		itr = list_iterator_create(association_cond->user_list);
+		printf("  User      = %s\n", (char *)list_next(itr));
+		while((tmp_char = list_next(itr))) {
+			printf("           or %s\n", tmp_char);
+		}
+	}
+
+	if(association_cond->account_list
+	   && list_count(association_cond->account_list)) {
+		itr = list_iterator_create(association_cond->account_list);
+		printf("  Account   = %s\n", (char *)list_next(itr));
+		while((tmp_char = list_next(itr))) {
+			printf("           or %s\n", tmp_char);
+		}
+	}
+
+	if(association_cond->cluster_list
+	   && list_count(association_cond->cluster_list)) {
+		itr = list_iterator_create(association_cond->cluster_list);
+		printf("  Cluster   = %s\n", (char *)list_next(itr));
+		while((tmp_char = list_next(itr))) {
+			printf("           or %s\n", tmp_char);
+		}
+	}
+
+	if(association_cond->partition_list
+	   && list_count(association_cond->partition_list)) {
+		itr = list_iterator_create(association_cond->partition_list);
+		printf("  Partition = %s\n", (char *)list_next(itr));
+		while((tmp_char = list_next(itr))) {
+			printf("           or %s\n", tmp_char);
+		}
+	}
+
+	if(association_cond->parent_account)
+		printf("  Parent    = %s\n", association_cond->parent_account);
+
+}
+
+static void _print_rec(account_association_rec_t *association)
+{
+	if(!association) {
+		error("no account_association_rec_t * given");
+		return;
+	}
+	
+	if(association->id) 
+		printf("  Id         = %u\n", association->id);	
+		
+	if(association->user) 
+		printf("  User       = %s\n", association->user);
+	if(association->account) 
+		printf("  Account    = %s\n", association->account);
+	if(association->cluster) 
+		printf("  Cluster    = %s\n", association->cluster);
+	if(association->partition) 
+		printf("  Partition  = %s\n", association->partition);
+	if(association->parent_account) 
+		printf("  Parent     = %s\n", association->parent_account);
+	if(association->fairshare) 
+		printf("  FairShare  = %u\n", association->fairshare);
+	if(association->max_jobs) 
+		printf("  MaxJobs    = %u\n", association->max_jobs);
+	if(association->max_nodes_per_job) 
+		printf("  MaxNodes   = %u\n", association->max_nodes_per_job);
+	if(association->max_wall_duration_per_job) 
+		printf("  MaxWall    = %u\n",
+		       association->max_wall_duration_per_job);
+	if(association->max_cpu_seconds_per_job) 
+		printf("  MaxCPUSecs = %u\n",
+		       association->max_cpu_seconds_per_job);
+}
+
 extern int sacctmgr_create_association(int argc, char *argv[])
 {
 	int rc = SLURM_SUCCESS;
+
 	return rc;
 }
 
