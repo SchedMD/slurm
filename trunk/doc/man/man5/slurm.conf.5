@@ -131,6 +131,17 @@ node when a user's job completes (e.g. "/usr/local/slurm/epilog"). This may
 be used to purge files, disable user login, etc. By default there is no epilog.
 
 .TP
+\fBEpilogMsgTime\fR
+The number of microseconds the the slurmctld daemon requires to process
+an epilog completion message from the slurmd dameons. This parameter can
+be used to prevent a burst of epilog completion messages from being sent 
+at the same time which should help prevent lost messages and improve 
+throughput for large jobs.
+The default value is 2000 microseconds.
+For a 1000 node job, this spreads the epilog completion messages out over
+two seconds.
+
+.TP
 \fBFastSchedule\fR
 Controls how a nodes configuration specifications in slurm.conf are used.
 If the number of node configuration entries in the configuration file

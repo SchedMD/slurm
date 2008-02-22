@@ -107,6 +107,11 @@ uint32_t slurm_get_def_mem_per_task(void);
  */
 uint32_t slurm_get_max_mem_per_task(void);
 
+/* slurm_get_epilog_msg_time
+ * RET EpilogMsgTime value from slurm.conf
+ */
+uint32_t slurm_get_epilog_msg_time(void);
+
 /* slurm_get_env_timeout
  * return default timeout for srun/sbatch --get-user-env option
  */
