@@ -38,6 +38,50 @@
 
 #include "sacctmgr.h"
 
+static int _set_cond(int *start, int argc, char *argv[],
+		     account_association_cond_t *association_cond)
+{
+	int i;
+	int set = 0;
+
+	for (i=(*start); i<argc; i++) {
+		if (strncasecmp (argv[i], "Name=", 5) == 0) {
+			addto_char_list(association_cond->id_list, argv[i]+5);
+			set = 1;
+		} else if (strncasecmp (argv[i], "Set", 3) == 0) {
+			i--;
+			break;
+		} else {
+			addto_char_list(association_cond->id_list, argv[i]);
+			set = 1;
+		}
+	}
+	(*start) = i;
+
+	return set;
+}
+
+static int _set_rec(int *start, int argc, char *argv[],
+		    account_association_rec_t *association)
+{
+	int i;
+	int set = 0;
+
+	for (i=(*start); i<argc; i++) {
+		 if (strncasecmp (argv[i], "Where", 5) == 0) {
+			i--;
+			break;
+		} else {
+			printf(" error: Valid options are 'DefaultAccount=' "
+			       "'ExpediteLevel=' and 'AdminLevel='\n");
+		}
+	}
+	(*start) = i;
+
+	return set;
+
+}
+
 extern int sacctmgr_create_association(int argc, char *argv[])
 {
 	int rc = SLURM_SUCCESS;

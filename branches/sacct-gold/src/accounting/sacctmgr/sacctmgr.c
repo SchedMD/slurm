@@ -303,6 +303,8 @@ _process_command (int argc, char *argv[])
 			fprintf(stderr, "no input");
 	} else if (strncasecmp (argv[0], "all", 3) == 0) {
 		all_flag = 1;
+	} else if (strncasecmp (argv[0], "commit", 6) == 0) {
+		_commit();
 	} else if (strncasecmp (argv[0], "exit", 1) == 0) {
 		if (argc > 1) {
 			exit_code = 1;
