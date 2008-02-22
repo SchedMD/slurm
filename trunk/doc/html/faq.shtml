@@ -22,6 +22,7 @@ name for a batch job?</a></li>
 <li><a href="#parallel_make">Can the <i>make</i> command utilize the resources 
 allocated to a SLURM job?</a></li>
 <li><a href="#terminal">Can tasks be launched with a remote terminal?</a></li>
+<li><a href="#force">What does &quot;srun: Force Terminated job&quot; indicate?</a></li>
 </ol>
 <h2>For Administrators</h2>
 <ol>
@@ -440,6 +441,21 @@ fi
 exec screen -S $SCREENSESSION -rd
 </pre>
 
+<p><a name="force"><b>16. What does &quot;srun: Force Terminated job&quot; 
+indicate?</b></a><br>
+The srun command normally terminates when the standard output and 
+error I/O from the spawned tasks end. This does not necessarily 
+happen at the same time that a job step is terminated. For example, 
+a file system problem could render a spawned tasks non-killable 
+at the same time that I/O to srun is pending. Alternately a network 
+problem could prevent the I/O from being transmitted to srun.
+In any event, the srun command is notified when a job step is 
+terminated, either upon reaching its time limit or being explicitly 
+killed. If the srun has not already terminated, the message 
+&quot;srun: Force Terminated job&quot; is printed. 
+If the job step's I/O does not terminate in a timely fashion
+thereafter, pending I/O is abandoned and the srun command 
+exits.</p>
 
 <p class="footer"><a href="#top">top</a></p>
 
@@ -873,6 +889,6 @@ open file hard limit to 8192 across the cluster.
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 6 December 2007</p>
+<p style="text-align:center;">Last modified 22 February 2008</p>
 
 <!--#include virtual="footer.txt"-->
