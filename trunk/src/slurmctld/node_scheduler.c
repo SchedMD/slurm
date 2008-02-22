@@ -975,6 +975,8 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 
 	jobacct_storage_g_job_start(job_ptr);
 
+	slurm_sched_newalloc(job_ptr);
+
       cleanup:
 	if (select_node_bitmap)
 		*select_node_bitmap = select_bitmap;

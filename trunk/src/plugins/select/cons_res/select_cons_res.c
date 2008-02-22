@@ -765,7 +765,7 @@ static uint16_t _count_idle_cpus(struct node_cr_record *this_node)
 				     j++, index++) {
 				 	if ((cr_type == CR_SOCKET) ||
 				 	    (cr_type == CR_SOCKET_MEMORY)) {
-						if (p_ptr->alloc_cores[i])
+						if (p_ptr->alloc_cores[index])
 							tmpcpus -= cores;
 					} else {
 						tmpcpus -= p_ptr->
@@ -789,11 +789,13 @@ static uint16_t _count_idle_cpus(struct node_cr_record *this_node)
 
 static int _synchronize_bitmaps(bitstr_t ** partially_idle_bitmap)
 {
-	int rc = SLURM_SUCCESS, i, idlecpus;
-	bitstr_t *bitmap = bit_alloc(bit_size(avail_node_bitmap));
+	int rc = SLURM_SUCCESS;
+	int size, i, idlecpus = bit_set_count(avail_node_bitmap);
+	size = bit_size(avail_node_bitmap);
+	bitstr_t *bitmap = bit_alloc(size);
 
-	debug3("cons_res: Synch size avail %d size idle %d ",
-	       bit_size(avail_node_bitmap), bit_size(idle_node_bitmap));
+	debug3("cons_res: synch_bm: size avail %d (%d set) size idle %d ",
+	       size, idlecpus, bit_size(idle_node_bitmap));
 
 	for (i = 0; i < select_node_cnt; i++) {
 		if (bit_test(avail_node_bitmap, i) != 1)
@@ -808,6 +810,8 @@ static int _synchronize_bitmaps(bitstr_t ** partially_idle_bitmap)
 		if (idlecpus)
 			bit_set(bitmap, i);
 	}
+	idlecpus = bit_set_count(bitmap);
+	debug3("cons_res: synch found %d partially idle nodes", idlecpus);
 
 	*partially_idle_bitmap = bitmap;
 	if (rc != SLURM_SUCCESS)
@@ -2208,7 +2212,10 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t * bitmap,
 	       job_ptr->job_id, job_node_req, mode);
 	debug3("cons_res: select_p_job_test: min_n %u max_n %u req_n %u",
 	       min_nodes, max_nodes, req_nodes);
-	
+
+#if (CR_DEBUG)
+	_dump_state(select_node_ptr);
+#endif
 	if (mode == SELECT_MODE_WILL_RUN) {
 		return _will_run_test(job_ptr, bitmap, min_nodes, max_nodes,
 				      req_nodes, job_node_req);
@@ -2482,10 +2489,14 @@ static int _job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 							   sizeof(uint16_t));
 		job->alloc_cores   = (uint16_t **) xmalloc(job->nhosts * 
 							   sizeof(uint16_t *));
-		for (i = 0; i < job->nhosts; i++) {
-			job->num_sockets[i] = node_record_table_ptr[i].sockets;
-			job->alloc_cores[i] = (uint16_t *) xmalloc(
-				job->num_sockets[i] * sizeof(uint16_t));
+		j = 0;
+		for (i = 0; i < select_node_cnt; i++) {
+			if (!bit_test(job->node_bitmap, i))
+				continue;
+			job->num_sockets[j] = select_node_ptr[i].num_sockets;
+			job->alloc_cores[j] = (uint16_t *) xmalloc(
+				job->num_sockets[j] * sizeof(uint16_t));
+			j++;
 		}
 	}
 
@@ -2522,9 +2533,7 @@ static int _job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 			job->alloc_memory[j] = job_ptr->details->job_min_memory; 
 		if ((cr_type == CR_CORE) || (cr_type == CR_CORE_MEMORY)||
 		    (cr_type == CR_SOCKET) || (cr_type == CR_SOCKET_MEMORY)) {
-			_chk_resize_job(job, j, 
-					node_record_table_ptr[i].sockets);
-			job->num_sockets[j] = node_record_table_ptr[i].sockets;
+			_chk_resize_job(job, j, job->num_sockets[j]);
 			for (k = 0; k < job->num_sockets[j]; k++)
 				job->alloc_cores[j][k] = 0;
 		}
@@ -2642,6 +2651,12 @@ extern int select_p_job_fini(struct job_record *job_ptr)
 
 extern int select_p_job_suspend(struct job_record *job_ptr)
 {
+/*
+ * Currently do nothing. The select plugin should not "subtract" jobs
+ * from the node allocations because it's needs that information to
+ * properly distribute new jobs across all nodes - including nodes
+ * with suspended jobs.
+ *
 	struct select_cr_job *job;
 	int rc;
  
@@ -2655,11 +2670,14 @@ extern int select_p_job_suspend(struct job_record *job_ptr)
 
 	rc = _rm_job_from_nodes(select_node_ptr, job, 
 				"select_p_job_suspend", 0);
-	return SLURM_SUCCESS;
+*/	return SLURM_SUCCESS;
 }
 
 extern int select_p_job_resume(struct job_record *job_ptr)
 {
+/*
+ * See explanation in select_p_job_suspend
+ *
 	struct select_cr_job *job;
 	int rc;
 
@@ -2672,7 +2690,29 @@ extern int select_p_job_resume(struct job_record *job_ptr)
 		return ESLURM_INVALID_JOB_ID;
 	
 	rc = _add_job_to_nodes(job, "select_p_job_resume", 0);
-	return SLURM_SUCCESS;
+*/	return SLURM_SUCCESS;
+}
+
+extern uint16_t select_p_get_job_cores(uint32_t job_id, int alloc_index, int s)
+{
+	struct select_cr_job *job = list_find_first(select_cr_job_list,
+						    _find_job_by_id, &job_id);
+	if (!job || alloc_index >= job->nhosts)
+		return 0;
+	if (cr_type == CR_CORE   || cr_type == CR_CORE_MEMORY ||
+	    cr_type == CR_SOCKET || cr_type == CR_SOCKET_MEMORY) {
+		if (job->num_sockets == NULL || job->alloc_cores == NULL)
+			return 0;
+		if (s >= job->num_sockets[alloc_index]) 
+			return 0;
+
+		return job->alloc_cores[alloc_index][s];
+	}
+	/* else return the total cpu count for the given node */
+	if (job->alloc_cpus == NULL)
+		return 0;
+
+	return job->alloc_cpus[alloc_index];
 }
 
 extern int select_p_pack_node_info(time_t last_query_time,
