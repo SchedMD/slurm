@@ -237,6 +237,35 @@ extern void jobacct_storage_p_get_jobs(List job_list,
 					List selected_parts,
 					void *params)
 {
+	slurmdbd_msg_t req, resp;
+	dbd_get_jobs_msg_t get_msg;
+	dbd_got_jobs_msg_t *got_msg;
+	ListIterator iter;
+	uint32_t *job_list_ptr;
+	int i = 0, rc;
+
+	get_msg.job_count = list_count(job_list);
+	get_msg.job_ids = xmalloc(sizeof(uint32_t) * get_msg.job_count);
+	iter = list_iterator_create(job_list);
+	while ((job_list_ptr = (uint32_t *) list_next(iter))) {
+		get_msg.job_ids[i++] = *job_list_ptr;
+	}
+	list_iterator_destroy(iter);
+
+	req.msg_type = DBD_GET_JOBS;
+	req.data = &get_msg;
+	rc = slurm_send_recv_slurmdbd_msg(&req, &resp);
+	xfree(get_msg.job_ids);
+	if (resp.msg_type != DBD_GOT_JOBS) {
+		error("slurmdbd: response type not DBD_GOT_JOBS: %u", 
+		      resp.msg_type);
+	} else {
+		got_msg = (dbd_got_jobs_msg_t *) resp.data;
+		info("got_jobs: cnt=%u", got_msg->job_count);
+		for (i=0; i<got_msg->job_count; i++)
+			info("  job_id[%d]=%u", i, got_msg->job_ids[i]);
+		slurm_dbd_free_got_jobs_msg(got_msg);
+	}
 	return;
 }
 

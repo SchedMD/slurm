@@ -140,10 +140,40 @@ extern int slurm_close_slurmdbd_conn(void)
 extern int slurm_send_slurmdbd_recv_rc_msg(slurmdbd_msg_t *req, int *resp_code)
 {
 	int rc;
+	slurmdbd_msg_t *resp;
+
+	xassert(req);
+	xassert(resp_code);
+
+	resp = xmalloc(sizeof(slurmdbd_msg_t));
+	rc = slurm_send_recv_slurmdbd_msg(req, resp);
+	if (rc != SLURM_SUCCESS)
+		;	/* error message already sent */
+	else if (resp->msg_type != DBD_RC) {
+		error("slurmdbd: response is type DBD_RC: %d", resp->msg_type);
+		rc = SLURM_ERROR;
+	} else {	/* resp->msg_type == DBD_RC */
+		dbd_rc_msg_t *msg = resp->data;
+		*resp_code = msg->return_code;
+		slurm_dbd_free_rc_msg(msg);
+	}
+	xfree(resp);
+
+	return rc;
+}
+
+/* Send an RPC to the SlurmDBD and wait for an arbitrary reply message.
+ * The RPC will not be queued if an error occurs.
+ * The "resp" message must be freed by the caller.
+ * Returns SLURM_SUCCESS or an error code */
+extern int slurm_send_recv_slurmdbd_msg(slurmdbd_msg_t *req, 
+					slurmdbd_msg_t *resp)
+{
+	int rc;
 	Buf buffer;
 
-	xassert(resp_code);
-	*resp_code = SLURM_ERROR;
+	xassert(req);
+	xassert(resp);
 
 	slurm_mutex_lock(&slurmdbd_lock);
 	if (slurmdbd_fd < 0) {
@@ -162,6 +192,10 @@ extern int slurm_send_slurmdbd_recv_rc_msg(slurmdbd_msg_t *req, int *resp_code)
 		case DBD_INIT:
 			slurm_dbd_pack_init_msg(
 				(dbd_init_msg_t *) req->data, buffer);
+			break;
+		case DBD_GET_JOBS:
+			slurm_dbd_pack_get_jobs_msg(
+				(dbd_get_jobs_msg_t *) req->data, buffer);
 			break;
 		case DBD_JOB_COMPLETE:
 			slurm_dbd_pack_job_complete_msg(
@@ -199,9 +233,31 @@ extern int slurm_send_slurmdbd_recv_rc_msg(slurmdbd_msg_t *req, int *resp_code)
 		return SLURM_ERROR;
 	}
 
-	*resp_code = _get_return_code();
+	buffer = _recv_msg();
+	if (buffer == NULL) {
+		error("slurmdbd: Getting response to message type %u", 
+		      req->msg_type);
+		slurm_mutex_unlock(&slurmdbd_lock);
+		return SLURM_ERROR;
+	}
+
+
+	safe_unpack16(&resp->msg_type, buffer);
+	if (resp->msg_type == DBD_RC) {
+		if (slurm_dbd_unpack_rc_msg((dbd_rc_msg_t **)&resp->data, 
+					    buffer))
+			rc = SLURM_ERROR;
+	} else
+		error("slurmdbd: bad message type %d", resp->msg_type);
+
+	free_buf(buffer);
 	slurm_mutex_unlock(&slurmdbd_lock);
 	return SLURM_SUCCESS;
+
+ unpack_error:
+	free_buf(buffer);
+	slurm_mutex_unlock(&slurmdbd_lock);
+	return SLURM_ERROR;
 }
 
 /* Send an RPC to the SlurmDBD. Do not wait for the reply. The RPC
@@ -898,12 +954,23 @@ static int _purge_job_start_req(void)
 	return purged;
 }
 
-/****************************************************************************
+/****************************************************************************\
  * Free data structures
- ****************************************************************************/
+\****************************************************************************/
 void inline slurm_dbd_free_get_jobs_msg(dbd_get_jobs_msg_t *msg)
 {
-	xfree(msg);
+	if (msg) {
+		xfree(msg->job_ids);
+		xfree(msg);
+	}
+}
+
+void inline slurm_dbd_free_got_jobs_msg(dbd_got_jobs_msg_t *msg)
+{
+	if (msg) {
+		xfree(msg->job_ids);
+		xfree(msg);
+	}
 }
 
 void inline slurm_dbd_free_init_msg(dbd_init_msg_t *msg)
@@ -941,24 +1008,70 @@ void inline slurm_dbd_free_step_start_msg(dbd_step_start_msg_t *msg)
 	xfree(msg);
 }
 
-/****************************************************************************
+/****************************************************************************\
  * Pack and unpack data structures
- ****************************************************************************/
+\****************************************************************************/
 void inline 
 slurm_dbd_pack_get_jobs_msg(dbd_get_jobs_msg_t *msg, Buf buffer)
 {
-	pack32(msg->job_id, buffer);
+	int i;
+
+	pack32(msg->job_count, buffer);
+	for (i=0; i<msg->job_count; i++)
+		pack32(msg->job_ids[i], buffer);
 }
 
 int inline 
 slurm_dbd_unpack_get_jobs_msg(dbd_get_jobs_msg_t **msg, Buf buffer)
 {
-	dbd_get_jobs_msg_t *msg_ptr = xmalloc(sizeof(dbd_get_jobs_msg_t));
+	int i;
+	dbd_get_jobs_msg_t *msg_ptr;
+
+	msg_ptr = xmalloc(sizeof(dbd_get_jobs_msg_t));
 	*msg = msg_ptr;
-	safe_unpack32(&msg_ptr->job_id, buffer);
+	safe_unpack32(&msg_ptr->job_count, buffer);
+	if (msg_ptr->job_count > 16384)
+		goto unpack_error;
+	msg_ptr->job_ids = xmalloc(sizeof(uint32_t) * msg_ptr->job_count);
+	for (i=0; i<msg_ptr->job_count; i++)
+		safe_unpack32(&msg_ptr->job_ids[i], buffer);
 	return SLURM_SUCCESS;
 
 unpack_error:
+	xfree(msg_ptr->job_ids);
+	xfree(msg_ptr);
+	*msg = NULL;
+	return SLURM_ERROR;
+}
+
+void inline 
+slurm_dbd_pack_got_jobs_msg(dbd_got_jobs_msg_t *msg, Buf buffer)
+{
+	int i;
+
+	pack32(msg->job_count, buffer);
+	for (i=0; i<msg->job_count; i++)
+		pack32(msg->job_ids[i], buffer);
+}
+
+int inline 
+slurm_dbd_unpack_got_jobs_msg(dbd_got_jobs_msg_t **msg, Buf buffer)
+{
+	int i;
+	dbd_got_jobs_msg_t *msg_ptr;
+
+	msg_ptr = xmalloc(sizeof(dbd_got_jobs_msg_t));
+	*msg = msg_ptr;
+	safe_unpack32(&msg_ptr->job_count, buffer);
+	if (msg_ptr->job_count > 16384)
+		goto unpack_error;
+	msg_ptr->job_ids = xmalloc(sizeof(uint32_t) * msg_ptr->job_count);
+	for (i=0; i<msg_ptr->job_count; i++)
+		safe_unpack32(&msg_ptr->job_ids[i], buffer);
+	return SLURM_SUCCESS;
+
+unpack_error:
+	xfree(msg_ptr->job_ids);
 	xfree(msg_ptr);
 	*msg = NULL;
 	return SLURM_ERROR;

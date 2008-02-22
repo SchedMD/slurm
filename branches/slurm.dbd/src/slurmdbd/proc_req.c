@@ -104,6 +104,7 @@ unpack_error:
 
 static int _get_jobs(Buf buffer)
 {
+	int i;
 	dbd_get_jobs_msg_t *get_jobs_msg;
 
 	if (slurm_dbd_unpack_get_jobs_msg(&get_jobs_msg, buffer) !=
@@ -112,7 +113,9 @@ static int _get_jobs(Buf buffer)
 		return SLURM_ERROR;
 	}
 
-	info("DBD_GET_JOBS: job filter %u", get_jobs_msg->job_id);
+	info("DBD_GET_JOBS: job count %u", get_jobs_msg->job_count);
+	for (i=0; i<get_jobs_msg->job_count; i++)
+		info("DBD_GET_JOBS: job_id[%d] %u", i, get_jobs_msg->job_ids[i]);
 	slurm_dbd_free_get_jobs_msg(get_jobs_msg);
 	return SLURM_SUCCESS;
 }
