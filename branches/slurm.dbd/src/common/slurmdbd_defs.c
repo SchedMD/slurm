@@ -243,12 +243,26 @@ extern int slurm_send_recv_slurmdbd_msg(slurmdbd_msg_t *req,
 
 
 	safe_unpack16(&resp->msg_type, buffer);
-	if (resp->msg_type == DBD_RC) {
-		if (slurm_dbd_unpack_rc_msg((dbd_rc_msg_t **)&resp->data, 
-					    buffer))
-			rc = SLURM_ERROR;
-	} else
-		error("slurmdbd: bad message type %d", resp->msg_type);
+	switch (resp->msg_type) {
+		case DBD_RC:
+			if (slurm_dbd_unpack_rc_msg(
+						(dbd_rc_msg_t **)
+						&resp->data, buffer))
+				rc = SLURM_ERROR;
+			else
+				rc = SLURM_SUCCESS;
+			break;
+		case DBD_GOT_JOBS:
+			if (slurm_dbd_unpack_got_jobs_msg(
+						(dbd_got_jobs_msg_t **)
+						&resp->data, buffer))
+				rc = SLURM_ERROR;
+			else
+				rc = SLURM_SUCCESS;
+			break;
+		default:
+			error("slurmdbd: bad message type %d", resp->msg_type);
+	}
 
 	free_buf(buffer);
 	slurm_mutex_unlock(&slurmdbd_lock);

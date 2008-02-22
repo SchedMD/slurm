@@ -1,7 +1,6 @@
 /*****************************************************************************\
  *  rpc_mgr.h - functions and definitions for processing RPCs.
  *****************************************************************************
- *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Copyright (C) 2008 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
@@ -38,6 +37,12 @@
 
 #ifndef _RPC_MGR_H
 #define _RPC_MGR_H
+
+#include "src/common/pack.h"
+
+/* Return a buffer containing a DBD_RC (return code) message
+ * caller must free returned buffer */
+extern Buf make_dbd_rc_msg(int rc);
 
 /* Process incoming RPCs. Meant to execute as a pthread */
 extern void *rpc_mgr(void *no_data);

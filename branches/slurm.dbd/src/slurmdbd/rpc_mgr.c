@@ -54,6 +54,7 @@
 #include "src/common/xsignal.h"
 #include "src/slurmdbd/proc_req.h"
 #include "src/slurmdbd/read_config.h"
+#include "src/slurmdbd/rpc_mgr.h"
 #include "src/slurmdbd/slurmdbd.h"
 
 #define MAX_THREAD_COUNT 50
@@ -62,7 +63,7 @@
 static bool   _fd_readable(slurm_fd fd);
 static bool   _fd_writeable(slurm_fd fd);
 static void   _free_server_thread(pthread_t my_tid);
-static int    _send_resp(slurm_fd fd, int rc);
+static int    _send_resp(slurm_fd fd, Buf buffer);
 static void * _service_connection(void *arg);
 static void   _sig_handler(int signal);
 static int    _tot_wait (struct timeval *start_time);
@@ -181,6 +182,7 @@ static void * _service_connection(void *arg)
 	char *msg = NULL;
 	ssize_t msg_read, offset;
 	bool fini = false, first=true;
+	Buf buffer = NULL;
 	int rc;
 
 	debug2("Opened connection %d", conn->newsockfd);
@@ -216,7 +218,7 @@ static void * _service_connection(void *arg)
 			offset += msg_read;
 		}
 		if (msg_size == offset) {
-			rc = proc_req(msg, msg_size, first);
+			rc = proc_req(msg, msg_size, first, &buffer);
 			first = false;
 			if (rc != SLURM_SUCCESS) {
 				error("Processing message from connection %d",
@@ -224,10 +226,11 @@ static void * _service_connection(void *arg)
 				fini = true;
 			}
 		} else {
-			rc = SLURM_ERROR;
+			buffer = make_dbd_rc_msg(SLURM_ERROR);
 			fini = true;
 		}
-		rc = _send_resp(conn->newsockfd, rc);
+
+		rc = _send_resp(conn->newsockfd, buffer);
 		xfree(msg);
 	}
 	if (slurm_close_accepted_conn(conn->newsockfd) < 0)
@@ -239,21 +242,28 @@ static void * _service_connection(void *arg)
 	return NULL;
 }
 
-static int _send_resp(slurm_fd fd, int rc)
+/* Return a buffer containing a DBD_RC (return code) message
+ * caller must free returned buffer */
+extern Buf make_dbd_rc_msg(int rc)
 {
-	uint32_t msg_size, nw_size;
-	ssize_t msg_wrote;
-	dbd_rc_msg_t msg;
-	char *out_buf;
 	Buf buffer;
 
-	if ((fd < 0) || (!_fd_writeable(fd)))
-		return SLURM_ERROR;
-
+	dbd_rc_msg_t msg;
 	buffer = init_buf(1024);
 	pack16((uint16_t) DBD_RC, buffer);
 	msg.return_code  = rc;
 	slurm_dbd_pack_rc_msg(&msg, buffer);
+	return buffer;
+}
+
+static int _send_resp(slurm_fd fd, Buf buffer)
+{
+	uint32_t msg_size, nw_size;
+	ssize_t msg_wrote;
+	char *out_buf;
+
+	if ((fd < 0) || (!_fd_writeable(fd)))
+		goto io_err;
 
 	msg_size = get_buf_offset(buffer);
 	nw_size = htonl(msg_size);

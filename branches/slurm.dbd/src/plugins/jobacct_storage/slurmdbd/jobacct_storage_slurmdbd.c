@@ -256,7 +256,9 @@ extern void jobacct_storage_p_get_jobs(List job_list,
 	req.data = &get_msg;
 	rc = slurm_send_recv_slurmdbd_msg(&req, &resp);
 	xfree(get_msg.job_ids);
-	if (resp.msg_type != DBD_GOT_JOBS) {
+	if (rc != SLURM_SUCCESS)
+		error("slurmdbd: DBD_GET_JOBS failure: %m");
+	else if (resp.msg_type != DBD_GOT_JOBS) {
 		error("slurmdbd: response type not DBD_GOT_JOBS: %u", 
 		      resp.msg_type);
 	} else {

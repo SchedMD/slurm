@@ -39,10 +39,15 @@
 #define _PROC_REQ_H
 
 #include "src/common/macros.h"
+#include "src/common/pack.h"
 #include "src/common/slurm_protocol_defs.h"
 
 /* Process an incoming RPC
+ * msg IN - incoming message
+ * msg_size IN - size of msg (bytes)
+ * first IN - set if first message received on the socket
+ * buffer OUT - outgoing response, must be freed by caller
  * RET SLURM_SUCCESS or error code */
-extern int proc_req(char *msg, uint32_t msg_size, bool first);
+extern int proc_req(char *msg, uint32_t msg_size, bool first, Buf *buffer);
 
 #endif /* !_PROC_REQ */
