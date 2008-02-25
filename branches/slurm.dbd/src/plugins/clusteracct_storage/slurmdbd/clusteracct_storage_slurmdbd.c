@@ -87,6 +87,8 @@ const char plugin_name[] = "Cluster accounting storage SLURMDBD plugin";
 const char plugin_type[] = "clusteracct_storage/slurmdbd";
 const uint32_t plugin_version = 100;
 
+static char *cluster_name = NULL;
+
 /*
  * init() is called when the plugin is loaded, before any other functions
  * are called.  Put global initialization here.
@@ -100,6 +102,9 @@ extern int init ( void )
 		   only tell us once. */
 		verbose("%s loaded", plugin_name);
 		slurm_open_slurmdbd_conn();
+		if (!(cluster_name = slurm_get_cluster_name()))
+			fatal("To run clusteracct_storage/slurmdbd you must specify "
+			      "ClusterName in your slurm.conf");
 		first = 0;
 	} else {
 		debug4("%s loaded", plugin_name);
@@ -110,6 +115,7 @@ extern int init ( void )
 
 extern int fini ( void )
 {
+	xfree(cluster_name);
 	return SLURM_SUCCESS;
 }
 
@@ -158,10 +164,10 @@ extern int clusteracct_storage_p_cluster_procs(uint32_t procs,
 	slurmdbd_msg_t msg;
 	dbd_cluster_procs_msg_t req;
 
-	req.cluster_name = "TBD";	/* probably want to pass as argument */
+	req.cluster_name = cluster_name;
 	req.proc_count   = procs;
 	req.event_time   = event_time;
-	msg.msg_type = DBD_NODE_STATE;
+	msg.msg_type = DBD_CLUSTER_PROCS;
 	msg.data = &req;
 
 	if (slurm_send_slurmdbd_msg(&msg) < 0)

@@ -132,6 +132,7 @@ extern int init ( void )
 
 extern int fini ( void )
 {
+	xfree(cluster_name);
 	return SLURM_SUCCESS;
 }
 
