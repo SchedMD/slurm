@@ -74,7 +74,8 @@ am__strip_dir = `echo $$p | sed -e 's|^.*/||'`;
 am__installdirs = "$(DESTDIR)$(pkglibdir)"
 pkglibLTLIBRARIES_INSTALL = $(INSTALL)
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
-clusteracct_storage_slurmdbd_la_LIBADD =
+clusteracct_storage_slurmdbd_la_DEPENDENCIES =  \
+	$(top_builddir)/src/common/libcommon.la
 am_clusteracct_storage_slurmdbd_la_OBJECTS =  \
 	clusteracct_storage_slurmdbd.lo
 clusteracct_storage_slurmdbd_la_OBJECTS =  \
