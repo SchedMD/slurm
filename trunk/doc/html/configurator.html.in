@@ -160,7 +160,7 @@ function displayfile()
    "#FirstJobId=1 <br>" +
    "#JobRequeue=1 <br>" +
    "ReturnToService=" + get_radio_value(document.config.return_to_service) + "<br>" +
-   "#MaxJobCount=2000 <br>" +
+   "#MaxJobCount=5000 <br>" +
    "#PlugStackConfig= <br>" +
    "#PrivateData=0 <br>" +
    "#PropagatePrioProcess=0 <br>" +
