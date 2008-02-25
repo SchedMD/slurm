@@ -759,7 +759,21 @@ _remove_job_from_part(uint32_t job_id, struct gs_part *p_ptr)
  * locked by the caller! 
  *
  * concerns: make sure we don't add a job that we've just removed?
- */
+ *
+ * FIXME: add support for retrieving signal state, in case of failover.
+ *        We're doing this instead of storing and retrieving sched/gang
+ *        state. Rationale below:
+ *
+ * This inspires the question: do we need to keep state info? Or can it
+ * all be retrieved from existing state info? NO - we should preserve job
+ * order and sig_state.
+ *
+ * State info is used only for failover scenarios. Without state info, jobs
+ * would be re-ordered in _scan_slurm_job_list based on their order in the
+ * current master job list. We could add code to try to reconstruct
+ * timeslice order based on the state of the jobs during recovery. Sig state
+ * could be recovered from _scan_slurm_job_list too...
+*/
 static void
 _scan_slurm_job_list()
 {
@@ -1028,7 +1042,7 @@ gs_reconfig()
 				/* FIXME: should we resume it if necessary?? */
 				continue;
 			}
-			_add_job_to_part(p_ptr, job_ptr->job_id,
+			_add_job_to_part(newp_ptr, job_ptr->job_id,
 					 job_ptr->node_bitmap);
 			/* if a job in p_ptr was GS_SUSPEND but is now
 			 * GS_FILLER in new_ptr, then it needs to be resumed!
@@ -1049,29 +1063,6 @@ gs_reconfig()
 
 	pthread_mutex_unlock(&data_mutex);
 	debug3("sched/gang: leaving gs_reconfig");
-	return SLURM_SUCCESS;
-}
-
-/* This inspires the question: do we need to keep state info? Or can it
- all be retrieved from existing state info? NO - we should preserve job
- order and sig_state.
- *
- State info is used only for failover scenarios. Without state info, jobs
- would be re-ordered in _scan_slurm_job_list based on their order in the
- current master job list. We could add code to try to reconstruct
- timeslice order based on the state of the jobs during recovery. Sig state
- could be recovered from _scan_slurm_job_list too...
-*/
-extern int
-gs_state_save()
-{
-	return SLURM_SUCCESS;
-}
-
-/* ? */
-extern int
-gs_state_restore()
-{
 	return SLURM_SUCCESS;
 }
 
