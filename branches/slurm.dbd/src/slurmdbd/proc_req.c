@@ -130,8 +130,9 @@ static int _cluster_procs(Buf in_buffer, Buf *out_buffer)
 		return SLURM_ERROR;
 	}
 
-	info("DBD_CLUSTER_PROCS: %s:%u", 
-	     cluster_procs_msg->cluster_name, cluster_procs_msg->proc_count);
+	info("DBD_CLUSTER_PROCS: %s:%u@%u", 
+	     cluster_procs_msg->cluster_name, cluster_procs_msg->proc_count,
+	     cluster_procs_msg->event_time);
 	slurm_dbd_free_cluster_procs_msg(cluster_procs_msg);
 	*out_buffer = make_dbd_rc_msg(SLURM_SUCCESS);
 	return SLURM_SUCCESS;
@@ -249,10 +250,11 @@ static int _node_state(Buf in_buffer, Buf *out_buffer)
 		return SLURM_ERROR;
 	}
 
-	info("DBD_NODE_STATE: %s:%s:%u", 
+	info("DBD_NODE_STATE: %s:%s:%s@%u", 
 	     node_state_msg->hostlist,
-	     _node_state_string(node_state_msg->new_state), 
-	     node_state_msg->trans_time);
+	     _node_state_string(node_state_msg->new_state),
+	     node_state_msg->reason, 
+	     node_state_msg->event_time);
 	slurm_dbd_free_node_state_msg(node_state_msg);
 	*out_buffer = make_dbd_rc_msg(SLURM_SUCCESS);
 	return SLURM_SUCCESS;

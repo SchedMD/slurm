@@ -131,6 +131,8 @@ void slurm_print_ctl_conf ( FILE* out,
 		slurm_ctl_conf_ptr->cache_groups);
 	fprintf(out, "CheckpointType          = %s\n",
 		slurm_ctl_conf_ptr->checkpoint_type);
+	fprintf(out, "ClusterName             = %s\n",
+		slurm_ctl_conf_ptr->cluster_name);
 	fprintf(out, "ControlAddr             = %s\n", 
 		slurm_ctl_conf_ptr->control_addr);
 	fprintf(out, "ControlMachine          = %s\n", 

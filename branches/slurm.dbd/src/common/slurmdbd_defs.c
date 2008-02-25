@@ -1042,6 +1042,7 @@ void inline slurm_dbd_free_node_state_msg(dbd_node_state_msg_t *msg)
 {
 	if (msg) {
 		xfree(msg->hostlist);
+		xfree(msg->reason);
 		xfree(msg);
 	}
 }
@@ -1063,7 +1064,8 @@ void inline
 slurm_dbd_pack_cluster_procs_msg(dbd_cluster_procs_msg_t *msg, Buf buffer)
 {
 	packstr(msg->cluster_name, buffer);
-	pack32(msg->proc_count, buffer);
+	pack32(msg->proc_count,    buffer);
+	pack_time(msg->event_time, buffer);
 }
 int inline
 slurm_dbd_unpack_cluster_procs_msg(dbd_cluster_procs_msg_t **msg, Buf buffer)
@@ -1075,6 +1077,7 @@ slurm_dbd_unpack_cluster_procs_msg(dbd_cluster_procs_msg_t **msg, Buf buffer)
 	*msg = msg_ptr;
 	safe_unpackstr_xmalloc(&msg_ptr->cluster_name, &uint32_tmp, buffer);
 	safe_unpack32(&msg_ptr->proc_count, buffer);
+	safe_unpack_time(&msg_ptr->event_time, buffer);
 	return SLURM_SUCCESS;
 
 unpack_error:
@@ -1261,8 +1264,9 @@ void inline
 slurm_dbd_pack_node_state_msg(dbd_node_state_msg_t *msg, Buf buffer)
 {
 	packstr(msg->hostlist, buffer);
+	packstr(msg->reason, buffer);
 	pack16(msg->new_state, buffer);
-	pack_time(msg->trans_time, buffer);
+	pack_time(msg->event_time, buffer);
 }
 
 int inline
@@ -1274,12 +1278,14 @@ slurm_dbd_unpack_node_state_msg(dbd_node_state_msg_t **msg, Buf buffer)
 	msg_ptr = xmalloc(sizeof(dbd_node_state_msg_t));
 	*msg = msg_ptr;
 	safe_unpackstr_xmalloc(&msg_ptr->hostlist, &uint32_tmp, buffer);
+	safe_unpackstr_xmalloc(&msg_ptr->reason,   &uint32_tmp, buffer);
 	safe_unpack16(&msg_ptr->new_state, buffer);
-	safe_unpack_time(&msg_ptr->trans_time, buffer);
+	safe_unpack_time(&msg_ptr->event_time, buffer);
 	return SLURM_SUCCESS;
 
 unpack_error:
 	xfree(msg_ptr->hostlist);
+	xfree(msg_ptr->reason);
 	xfree(msg_ptr);
 	*msg = NULL;
 	return SLURM_ERROR;

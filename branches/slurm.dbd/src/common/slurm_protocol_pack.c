@@ -2205,6 +2205,7 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer)
 
 	pack16(build_ptr->cache_groups, buffer);
 	packstr(build_ptr->checkpoint_type, buffer);
+	packstr(build_ptr->cluster_name, buffer);
 	packstr(build_ptr->control_addr, buffer);
 	packstr(build_ptr->control_machine, buffer);
 	packstr(build_ptr->crypto_type, buffer);
@@ -2348,6 +2349,7 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **
 	safe_unpack16(&build_ptr->cache_groups, buffer);
 	safe_unpackstr_xmalloc(&build_ptr->checkpoint_type, &uint32_tmp,
 			       buffer);
+	safe_unpackstr_xmalloc(&build_ptr->cluster_name, &uint32_tmp, buffer);
 	safe_unpackstr_xmalloc(&build_ptr->control_addr, &uint32_tmp, buffer);
 	safe_unpackstr_xmalloc(&build_ptr->control_machine, &uint32_tmp,
 			       buffer);
@@ -2501,10 +2503,12 @@ unpack_error:
 	xfree(build_ptr->backup_addr);
 	xfree(build_ptr->backup_controller);
 	xfree(build_ptr->checkpoint_type);
+	xfree(build_ptr->cluster_name);
 	xfree(build_ptr->control_addr);
 	xfree(build_ptr->control_machine);
 	xfree(build_ptr->crypto_type);
 	xfree(build_ptr->epilog);
+	xfree(build_ptr->health_check_program);
 	xfree(build_ptr->job_acct_gather_type);
 	xfree(build_ptr->job_acct_storage_loc);
 	xfree(build_ptr->job_acct_storage_type);
@@ -2518,9 +2522,9 @@ unpack_error:
 	xfree(build_ptr->job_comp_pass);
 	xfree(build_ptr->job_credential_private_key);
 	xfree(build_ptr->job_credential_public_certificate);
-	xfree(build_ptr->health_check_program);
 	xfree(build_ptr->mail_prog);
 	xfree(build_ptr->mpi_default);
+	xfree(build_ptr->node_prefix);
 	xfree(build_ptr->plugindir);
 	xfree(build_ptr->plugstack);
 	xfree(build_ptr->proctrack_type);
@@ -2539,18 +2543,18 @@ unpack_error:
 	xfree(build_ptr->slurmd_pidfile);
 	xfree(build_ptr->slurmd_spooldir);
 	xfree(build_ptr->slurmdbd_addr);
+	xfree(build_ptr->srun_epilog);
+	xfree(build_ptr->srun_prolog);
 	xfree(build_ptr->state_save_location);
 	xfree(build_ptr->suspend_exc_nodes);
 	xfree(build_ptr->suspend_exc_parts);
 	xfree(build_ptr->suspend_program);
 	xfree(build_ptr->switch_type);
+	xfree(build_ptr->node_prefix);
 	xfree(build_ptr->task_epilog);
 	xfree(build_ptr->task_prolog);
 	xfree(build_ptr->task_plugin);
 	xfree(build_ptr->tmp_fs);
-	xfree(build_ptr->srun_prolog);
-	xfree(build_ptr->srun_epilog);
-	xfree(build_ptr->node_prefix);
 	xfree(build_ptr->unkillable_program);
 	xfree(build_ptr);
 	*build_buffer_ptr = NULL;

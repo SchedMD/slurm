@@ -83,6 +83,7 @@ typedef struct slurmdbd_msg {
 typedef struct dbd_cluster_procs_msg {
 	char *cluster_name;	/* name of cluster */
 	uint32_t proc_count;	/* total processor count */
+	time_t event_time;	/* time of transition */
 } dbd_cluster_procs_msg_t;
 
 typedef struct dbd_get_jobs_msg {
@@ -120,8 +121,9 @@ typedef struct dbd_rc_msg {
 #define DBD_NODE_STATE_UP    2
 typedef struct dbd_node_state_msg {
 	char *hostlist;		/* name of hosts */
+	char *reason;		/* explanation for the node's state */
 	uint16_t new_state;	/* new state of host, see DBD_NODE_STATE_* */
-	time_t trans_time;	/* time of transition */
+	time_t event_time;	/* time of transition */
 } dbd_node_state_msg_t;
 
 typedef struct dbd_step_comp_msg {

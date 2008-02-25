@@ -1,7 +1,8 @@
 /*****************************************************************************\
  *  clusteracct_storage_slurmdbd.c - NO-OP slurm job completion logging plugin.
  *****************************************************************************
- *  Copyright (C) 2002-2008 The Regents of the University of California.
+ *  Copyright (C) 2002-2007 The Regents of the University of California.
+ *  Copyright (C) 2008 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Danny Auble <da@llnl.gov>
  *  UCRL-CODE-226842.
@@ -49,8 +50,9 @@
 #include <stdio.h>
 #include <slurm/slurm_errno.h>
 
-#include "src/slurmctld/slurmctld.h"
 #include "src/common/slurm_clusteracct_storage.h"
+#include "src/common/slurmdbd_defs.h"
+#include "src/slurmctld/slurmctld.h"
 
 /*
  * These variables are required by the generic plugin interface.  If they
@@ -91,7 +93,18 @@ const uint32_t plugin_version = 100;
  */
 extern int init ( void )
 {
-	verbose("%s loaded", plugin_name);
+	static int first = 1;
+
+	if (first) {
+		/* since this can be loaded from many different places
+		   only tell us once. */
+		verbose("%s loaded", plugin_name);
+		slurm_open_slurmdbd_conn();
+		first = 0;
+	} else {
+		debug4("%s loaded", plugin_name);
+	}
+
 	return SLURM_SUCCESS;
 }
 
@@ -104,16 +117,56 @@ extern int fini ( void )
 extern int clusteracct_storage_p_node_down(struct node_record *node_ptr,
 					time_t event_time, char *reason)
 {
+	slurmdbd_msg_t msg;
+	dbd_node_state_msg_t req;
+
+	req.hostlist   = node_ptr->name;
+	req.new_state  = DBD_NODE_STATE_DOWN;
+	req.event_time = event_time;
+	req.reason     = reason;
+	msg.msg_type = DBD_NODE_STATE;
+	msg.data = &req;
+
+	if (slurm_send_slurmdbd_msg(&msg) < 0)
+		return SLURM_ERROR;
+
 	return SLURM_SUCCESS;
 }
+
 extern int clusteracct_storage_p_node_up(struct node_record *node_ptr,
 				      time_t event_time)
 {
+	slurmdbd_msg_t msg;
+	dbd_node_state_msg_t req;
+
+	req.hostlist   = node_ptr->name;
+	req.new_state  = DBD_NODE_STATE_UP;
+	req.event_time = event_time;
+	req.reason     = NULL;
+	msg.msg_type = DBD_NODE_STATE;
+	msg.data = &req;
+
+	if (slurm_send_slurmdbd_msg(&msg) < 0)
+		return SLURM_ERROR;
+
 	return SLURM_SUCCESS;
 }
+
 extern int clusteracct_storage_p_cluster_procs(uint32_t procs,
 					       time_t event_time)
 {
+	slurmdbd_msg_t msg;
+	dbd_cluster_procs_msg_t req;
+
+	req.cluster_name = "TBD";	/* probably want to pass as argument */
+	req.proc_count   = procs;
+	req.event_time   = event_time;
+	msg.msg_type = DBD_NODE_STATE;
+	msg.data = &req;
+
+	if (slurm_send_slurmdbd_msg(&msg) < 0)
+		return SLURM_ERROR;
+
 	return SLURM_SUCCESS;
 }
 
