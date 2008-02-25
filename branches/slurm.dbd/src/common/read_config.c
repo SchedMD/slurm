@@ -1801,11 +1801,7 @@ validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 			       conf->slurm_user_name);
 			xfree(conf->slurm_user_name);
 		} else {
-			if (slurm_passwd->pw_uid > 0xffff)
-				error("SlurmUser numeric overflow, "
-				      "will be fixed soon");
-			else
-				conf->slurm_user_id = slurm_passwd->pw_uid;
+			conf->slurm_user_id = slurm_passwd->pw_uid;
 		}
 	}
 
