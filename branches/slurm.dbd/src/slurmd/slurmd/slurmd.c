@@ -922,7 +922,7 @@ _slurmd_init()
 		return SLURM_FAILURE;
 	if (slurmd_task_init() != SLURM_SUCCESS)
 		return SLURM_FAILURE;
-	if (slurm_auth_init() != SLURM_SUCCESS)
+	if (slurm_auth_init(NULL) != SLURM_SUCCESS)
 		return SLURM_FAILURE;
 
 	if (getrlimit(RLIMIT_NOFILE,&rlim) == 0) {

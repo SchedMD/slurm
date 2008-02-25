@@ -60,6 +60,7 @@
 /* SlurmDBD configuration parameters */
 typedef struct slurm_dbd_conf {
 	time_t		last_update;	 	/* time slurmdbd.conf read	*/
+	uint16_t	auth_port;		/* authentication port		*/
 	char *		auth_type;		/* authentication mechanism	*/
 	char *		dbd_addr;		/* network address of Slurm DBD	*/
 	char *		dbd_host;		/* hostname of Slurm DBD	*/
@@ -67,6 +68,8 @@ typedef struct slurm_dbd_conf {
 	uint16_t	debug_level;		/* Debug level, default=3	*/
 	char *		log_file;		/* Log file			*/
 	char *		pid_file;		/* where to store current PID	*/
+	uint32_t	slurm_user_id;		/* uid of slurm_user_name	*/
+	char *		slurm_user_name;	/* user that slurmcdtld runs as	*/
 	char *		storage_password;	/* password for DB write	*/
 	char *		storage_user;		/* user authorized to write DB	*/
 } slurm_dbd_conf_t;

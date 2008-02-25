@@ -287,17 +287,20 @@ _slurm_auth_context_destroy( slurm_auth_context_t c )
 }
 
 int inline
-slurm_auth_init( void )
+slurm_auth_init( char *auth_type )
 {
         int retval = SLURM_SUCCESS;
-	char *auth_type = NULL;
-
+	char *auth_type_local = NULL;
+	
         slurm_mutex_lock( &context_lock );
 
         if ( g_context ) 
                 goto done;
 
-	auth_type = slurm_get_auth_type();
+	if (auth_type == NULL) {
+		auth_type_local = slurm_get_auth_type();
+		auth_type = auth_type_local;
+	}
 	if (strcmp(auth_type, "auth/dummy") == 0) {
 		info( "warning: %s plugin selected", auth_type);
 		auth_dummy = true;
@@ -320,7 +323,7 @@ slurm_auth_init( void )
         }
 
  done:
-	xfree(auth_type);
+	xfree(auth_type_local);
         slurm_mutex_unlock( &context_lock );
         return retval;
 }
@@ -352,7 +355,7 @@ g_slurm_auth_create( void *hosts, int timeout )
         void **argv;
         void *ret;
 
-	if ( slurm_auth_init() < 0 )
+	if ( slurm_auth_init(NULL) < 0 )
 		return NULL;
 
 	if ( auth_dummy )
@@ -370,7 +373,7 @@ g_slurm_auth_create( void *hosts, int timeout )
 int
 g_slurm_auth_destroy( void *cred )
 {
-        if ( slurm_auth_init() < 0 )
+        if ( slurm_auth_init(NULL) < 0 )
                 return SLURM_ERROR;
 
 	if ( auth_dummy )	/* don't worry about leak in testing */
@@ -385,7 +388,7 @@ g_slurm_auth_verify( void *cred, void *hosts, int timeout )
         int ret;
         void **argv;
 
-        if ( slurm_auth_init() < 0 )
+        if ( slurm_auth_init(NULL) < 0 )
                 return SLURM_ERROR;
 
 	if ( auth_dummy )
@@ -403,7 +406,7 @@ g_slurm_auth_verify( void *cred, void *hosts, int timeout )
 uid_t
 g_slurm_auth_get_uid( void *cred )
 {
-	if (( slurm_auth_init() < 0 ) || auth_dummy )
+	if (( slurm_auth_init(NULL) < 0 ) || auth_dummy )
                 return SLURM_AUTH_NOBODY;
         
         return (*(g_context->ops.get_uid))( cred );
@@ -412,7 +415,7 @@ g_slurm_auth_get_uid( void *cred )
 gid_t
 g_slurm_auth_get_gid( void *cred )
 {
-	if (( slurm_auth_init() < 0 ) || auth_dummy )
+	if (( slurm_auth_init(NULL) < 0 ) || auth_dummy )
                 return SLURM_AUTH_NOBODY;
         
         return (*(g_context->ops.get_gid))( cred );
@@ -421,7 +424,7 @@ g_slurm_auth_get_gid( void *cred )
 int
 g_slurm_auth_pack( void *cred, Buf buf )
 {
-        if ( slurm_auth_init() < 0 )
+        if ( slurm_auth_init(NULL) < 0 )
                 return SLURM_ERROR;
  
 	if ( auth_dummy )
@@ -433,7 +436,7 @@ g_slurm_auth_pack( void *cred, Buf buf )
 void *
 g_slurm_auth_unpack( Buf buf )
 {
-	if (( slurm_auth_init() < 0 ) || auth_dummy )
+	if (( slurm_auth_init(NULL) < 0 ) || auth_dummy )
                 return NULL;
         
         return (*(g_context->ops.unpack))( buf );
@@ -442,7 +445,7 @@ g_slurm_auth_unpack( Buf buf )
 int
 g_slurm_auth_print( void *cred, FILE *fp )
 {
-        if ( slurm_auth_init() < 0 )
+        if ( slurm_auth_init(NULL) < 0 )
                 return SLURM_ERROR;
 
 	if ( auth_dummy )
@@ -454,7 +457,7 @@ g_slurm_auth_print( void *cred, FILE *fp )
 int
 g_slurm_auth_errno( void *cred )
 {
-        if (( slurm_auth_init() < 0 ) || auth_dummy )
+        if (( slurm_auth_init(NULL) < 0 ) || auth_dummy )
                 return SLURM_ERROR;
 
         return (*(g_context->ops.sa_errno))( cred );
@@ -466,7 +469,7 @@ g_slurm_auth_errstr( int slurm_errno )
         static char auth_init_msg[] = "authentication initialization failure";
         char *generic;
 
-	if (( slurm_auth_init() < 0 ) || auth_dummy )
+	if (( slurm_auth_init(NULL) < 0 ) || auth_dummy )
 		return auth_init_msg;
 
         if (( generic = (char *) slurm_auth_generic_errstr( slurm_errno ) ))

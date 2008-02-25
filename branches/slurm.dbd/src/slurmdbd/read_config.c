@@ -36,6 +36,7 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#include <pwd.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
@@ -79,6 +80,7 @@ static void _clear_slurmdbd_conf(void)
 		xfree(slurmdbd_conf->dbd_host);
 		xfree(slurmdbd_conf->log_file);
 		xfree(slurmdbd_conf->pid_file);
+		xfree(slurmdbd_conf->slurm_user_name);
 		xfree(slurmdbd_conf->storage_password);
 		xfree(slurmdbd_conf->storage_user);
 	}
@@ -93,6 +95,7 @@ static void _clear_slurmdbd_conf(void)
 extern int read_slurmdbd_conf(void)
 {
 	s_p_options_t options[] = {
+		{"AuthPort", S_P_UINT16},
 		{"AuthType", S_P_STRING},
 		{"DbdAddr", S_P_STRING},
 		{"DbdHost", S_P_STRING},
@@ -100,6 +103,7 @@ extern int read_slurmdbd_conf(void)
 		{"DebugLevel", S_P_UINT16},
 		{"LogFile", S_P_STRING},
 		{"PidFile", S_P_STRING},
+		{"SlurmUser", S_P_STRING},
 		{"StoragePassword", S_P_STRING},
 		{"StorageUser", S_P_STRING},
 		{NULL} };
@@ -127,6 +131,7 @@ extern int read_slurmdbd_conf(void)
 		 	     conf_path);
 		}
 
+		s_p_get_uint16(&slurmdbd_conf->auth_port, "AuthPort", tbl);
 		s_p_get_string(&slurmdbd_conf->auth_type, "AuthType", tbl);
 		s_p_get_string(&slurmdbd_conf->dbd_host, "DbdHost", tbl);
 		s_p_get_string(&slurmdbd_conf->dbd_addr, "DbdAddr", tbl);
@@ -134,6 +139,7 @@ extern int read_slurmdbd_conf(void)
 		s_p_get_uint16(&slurmdbd_conf->debug_level, "DebugLevel", tbl);
 		s_p_get_string(&slurmdbd_conf->log_file, "LogFile", tbl);
 		s_p_get_string(&slurmdbd_conf->pid_file, "PidFile", tbl);
+		s_p_get_string(&slurmdbd_conf->slurm_user_name, "SlurmUser", tbl);
 		s_p_get_string(&slurmdbd_conf->storage_password,
 				"StoragePassword", tbl);
 		s_p_get_string(&slurmdbd_conf->storage_user,
@@ -155,7 +161,19 @@ extern int read_slurmdbd_conf(void)
 		slurmdbd_conf->pid_file = xstrdup(DEFAULT_SLURMDBD_PIDFILE);
 	if (slurmdbd_conf->dbd_port == 0)
 		slurmdbd_conf->dbd_port = SLURMDBD_PORT;
-
+	if (slurmdbd_conf->slurm_user_name) {
+		struct passwd *slurm_passwd;
+		slurm_passwd = getpwnam(slurmdbd_conf->slurm_user_name);
+		if (slurm_passwd == NULL) {
+			fatal("Invalid user for SlurmUser %s, ignored",
+			      slurmdbd_conf->slurm_user_name);
+		} else
+			slurmdbd_conf->slurm_user_id = slurm_passwd->pw_uid;
+	} else {
+		slurmdbd_conf->slurm_user_name = xstrdup("root");
+		slurmdbd_conf->slurm_user_id = 0;
+	}
+				
 	slurm_mutex_unlock(&conf_mutex);
 	return SLURM_SUCCESS;
 }
@@ -163,6 +181,7 @@ extern int read_slurmdbd_conf(void)
 /* Log the current configuration using verbose() */
 extern void log_config(void)
 {
+	debug2("AuthPort          = %u", slurmdbd_conf->auth_port);
 	debug2("AuthType          = %s", slurmdbd_conf->auth_type);
 	debug2("DbdAddr           = %s", slurmdbd_conf->dbd_addr);
 	debug2("DbdHost           = %s", slurmdbd_conf->dbd_host);
@@ -170,6 +189,8 @@ extern void log_config(void)
 	debug2("DebugLevel        = %u", slurmdbd_conf->debug_level);
 	debug2("LogFile           = %s", slurmdbd_conf->log_file);
 	debug2("PidFile           = %s", slurmdbd_conf->pid_file);
+	debug2("SlurmUser         = %s(%u)", 
+		slurmdbd_conf->slurm_user_name, slurmdbd_conf->slurm_user_id); 
 	debug2("StoragePassword   = %s", slurmdbd_conf->storage_password);
 	debug2("StorageUser       = %s", slurmdbd_conf->storage_user);
 }

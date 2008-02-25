@@ -207,6 +207,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"SlurmdSpoolDir", S_P_STRING},
 	{"SlurmdTimeout", S_P_UINT16},
 	{"SlurmDbdAddr", S_P_STRING},
+	{"SlurmDbdAuthPort", S_P_UINT16},
 	{"SlurmDbdPort", S_P_UINT16},
 	{"SrunEpilog", S_P_STRING},
 	{"SrunProlog", S_P_STRING},
@@ -1205,6 +1206,7 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
  	ctl_conf_ptr->slurmd_port		= (uint32_t) NO_VAL;
 	xfree (ctl_conf_ptr->slurmd_spooldir);
 	ctl_conf_ptr->slurmd_timeout		= (uint16_t) NO_VAL;
+	ctl_conf_ptr->slurmdbd_auth_port	= 0;
 	ctl_conf_ptr->slurmdbd_port		= (uint16_t) NO_VAL;
 	xfree (ctl_conf_ptr->slurmdbd_addr);
 	xfree (ctl_conf_ptr->state_save_location);
@@ -1845,6 +1847,7 @@ validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	s_p_get_string(&conf->slurmdbd_addr, "SlurmDbdAddr", hashtbl);
 	if (!s_p_get_uint16(&conf->slurmdbd_port, "SlurmDbdPort", hashtbl))
 		conf->slurmdbd_port = SLURMDBD_PORT;
+	s_p_get_uint16(&conf->slurmdbd_auth_port, "SlurmDbdAuthPort", hashtbl);
 
 	s_p_get_string(&conf->srun_prolog, "SrunProlog", hashtbl);
 	s_p_get_string(&conf->srun_epilog, "SrunEpilog", hashtbl);

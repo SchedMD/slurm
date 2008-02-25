@@ -52,6 +52,7 @@
 #include "src/common/fd.h"
 #include "src/common/log.h"
 #include "src/common/read_config.h"
+#include "src/common/slurm_auth.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xsignal.h"
 #include "src/common/xstring.h"
@@ -104,6 +105,10 @@ int main(int argc, char *argv[])
 	    strcmp(slurmdbd_conf->dbd_host, "localhost")) {
 		fatal("This host not configured to run SlurmDBD (%s != %s)",
 		      node_name, slurmdbd_conf->dbd_host);
+	}
+	if (slurm_auth_init(slurmdbd_conf->auth_type) != SLURM_SUCCESS) {
+		fatal("Unable to initialize %s authentication plugin",
+			slurmdbd_conf->auth_type);
 	}
 	_kill_old_slurmdbd();
 	if (foreground == 0)

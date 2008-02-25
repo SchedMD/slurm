@@ -136,8 +136,10 @@ int slurm_auth_context_destroy( slurm_auth_context_t ctxt );
 
 /*
  * Prepare the global context.
+ * auth_type IN: authentication mechanism (e.g. "auth/munge") or 
+ *	NULL to select based upon slurm_get_auth_type() results
  */
-extern int slurm_auth_init( void );
+extern int slurm_auth_init( char *auth_type );
 
 /*
  * Destroy global context, free memory.
@@ -147,7 +149,7 @@ extern int slurm_auth_fini( void );
 /*
  * Static bindings for the global authentication context.
  */
-extern void	*g_slurm_auth_create( void *hosts, int timeout );
+extern void *	g_slurm_auth_create( void *hosts, int timeout );
 extern int	g_slurm_auth_destroy( void *cred );
 extern int	g_slurm_auth_verify( void *cred, void *hosts, int timeout );
 extern uid_t	g_slurm_auth_get_uid( void *cred );

@@ -285,6 +285,8 @@ void slurm_print_ctl_conf ( FILE* out,
 		slurm_ctl_conf_ptr->slurmd_timeout);
 	fprintf(out, "SlurmDbdAddr            = %s\n", 
 		slurm_ctl_conf_ptr->slurmdbd_addr);
+	fprintf(out, "SlurmDbdAuthPort        = %u\n",
+		slurm_ctl_conf_ptr->slurmdbd_auth_port);
 	fprintf(out, "SlurmDbdPort            = %u\n", 
 		slurm_ctl_conf_ptr->slurmdbd_port);
 	fprintf(out, "SLURM_CONFIG_FILE       = %s\n", 
