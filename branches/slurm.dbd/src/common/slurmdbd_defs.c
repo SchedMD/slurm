@@ -190,13 +190,17 @@ extern int slurm_send_recv_slurmdbd_msg(slurmdbd_msg_t *req,
 	buffer = init_buf(MAX_DBD_MSG_LEN);
 	pack16(req->msg_type, buffer);
 	switch (req->msg_type) {
-		case DBD_INIT:
-			slurm_dbd_pack_init_msg(
-				(dbd_init_msg_t *) req->data, buffer);
+		case DBD_CLUSTER_PROCS:
+			slurm_dbd_pack_cluster_procs_msg(
+				(dbd_cluster_procs_msg_t *) req->data, buffer);
 			break;
 		case DBD_GET_JOBS:
 			slurm_dbd_pack_get_jobs_msg(
 				(dbd_get_jobs_msg_t *) req->data, buffer);
+			break;
+		case DBD_INIT:
+			slurm_dbd_pack_init_msg(
+				(dbd_init_msg_t *) req->data, buffer);
 			break;
 		case DBD_JOB_COMPLETE:
 			slurm_dbd_pack_job_complete_msg(
@@ -209,6 +213,10 @@ extern int slurm_send_recv_slurmdbd_msg(slurmdbd_msg_t *req,
 		case DBD_JOB_SUSPEND:
 			slurm_dbd_pack_job_suspend_msg(
 				(dbd_job_suspend_msg_t *) req->data, buffer);
+			break;
+		case DBD_NODE_STATE:
+			slurm_dbd_pack_node_state_msg(
+				(dbd_node_state_msg_t *) req->data, buffer);
 			break;
 		case DBD_STEP_COMPLETE:
 			slurm_dbd_pack_step_complete_msg(
@@ -287,6 +295,10 @@ extern int slurm_send_slurmdbd_msg(slurmdbd_msg_t *req)
 	buffer = init_buf(MAX_DBD_MSG_LEN);
 	pack16(req->msg_type, buffer);
 	switch (req->msg_type) {
+		case DBD_CLUSTER_PROCS:
+			slurm_dbd_pack_cluster_procs_msg(
+				(dbd_cluster_procs_msg_t *) req->data, buffer);
+			break;
 		case DBD_JOB_COMPLETE:
 			slurm_dbd_pack_job_complete_msg(
 				(dbd_job_comp_msg_t *) req->data, buffer);
@@ -298,6 +310,10 @@ extern int slurm_send_slurmdbd_msg(slurmdbd_msg_t *req)
 		case DBD_JOB_SUSPEND:
 			slurm_dbd_pack_job_suspend_msg(
 				(dbd_job_suspend_msg_t *) req->data, buffer);
+			break;
+		case DBD_NODE_STATE:
+			slurm_dbd_pack_node_state_msg(
+				(dbd_node_state_msg_t *) req->data, buffer);
 			break;
 		case DBD_STEP_COMPLETE:
 			slurm_dbd_pack_step_complete_msg(
@@ -973,6 +989,14 @@ static int _purge_job_start_req(void)
 /****************************************************************************\
  * Free data structures
 \****************************************************************************/
+void inline slurm_dbd_free_cluster_procs_msg(dbd_cluster_procs_msg_t *msg)
+{
+	if (msg) {
+		xfree(msg->cluster_name);
+		xfree(msg);
+	}
+}
+
 void inline slurm_dbd_free_get_jobs_msg(dbd_get_jobs_msg_t *msg)
 {
 	if (msg) {
@@ -1014,6 +1038,14 @@ void inline slurm_dbd_free_rc_msg(dbd_rc_msg_t *msg)
 	xfree(msg);
 }
 
+void inline slurm_dbd_free_node_state_msg(dbd_node_state_msg_t *msg)
+{
+	if (msg) {
+		xfree(msg->hostlist);
+		xfree(msg);
+	}
+}
+
 void inline slurm_dbd_free_step_complete_msg(dbd_step_comp_msg_t *msg)
 {
 	xfree(msg);
@@ -1027,6 +1059,31 @@ void inline slurm_dbd_free_step_start_msg(dbd_step_start_msg_t *msg)
 /****************************************************************************\
  * Pack and unpack data structures
 \****************************************************************************/
+void inline
+slurm_dbd_pack_cluster_procs_msg(dbd_cluster_procs_msg_t *msg, Buf buffer)
+{
+	packstr(msg->cluster_name, buffer);
+	pack32(msg->proc_count, buffer);
+}
+int inline
+slurm_dbd_unpack_cluster_procs_msg(dbd_cluster_procs_msg_t **msg, Buf buffer)
+{
+	dbd_cluster_procs_msg_t *msg_ptr;
+	uint32_t uint32_tmp;
+
+	msg_ptr = xmalloc(sizeof(dbd_cluster_procs_msg_t));
+	*msg = msg_ptr;
+	safe_unpackstr_xmalloc(&msg_ptr->cluster_name, &uint32_tmp, buffer);
+	safe_unpack32(&msg_ptr->proc_count, buffer);
+	return SLURM_SUCCESS;
+
+unpack_error:
+	xfree(msg_ptr->cluster_name);
+	xfree(msg_ptr);
+	*msg = NULL;
+	return SLURM_ERROR;
+}
+
 void inline 
 slurm_dbd_pack_get_jobs_msg(dbd_get_jobs_msg_t *msg, Buf buffer)
 {
@@ -1198,6 +1255,34 @@ slurm_dbd_pack_step_complete_msg(dbd_step_comp_msg_t *msg, Buf buffer)
 {
 	pack32(msg->job_id, buffer);
 	pack32(msg->step_id, buffer);
+}
+
+void inline 
+slurm_dbd_pack_node_state_msg(dbd_node_state_msg_t *msg, Buf buffer)
+{
+	packstr(msg->hostlist, buffer);
+	pack16(msg->new_state, buffer);
+	pack_time(msg->trans_time, buffer);
+}
+
+int inline
+slurm_dbd_unpack_node_state_msg(dbd_node_state_msg_t **msg, Buf buffer)
+{
+	dbd_node_state_msg_t *msg_ptr;
+	uint32_t uint32_tmp;
+
+	msg_ptr = xmalloc(sizeof(dbd_node_state_msg_t));
+	*msg = msg_ptr;
+	safe_unpackstr_xmalloc(&msg_ptr->hostlist, &uint32_tmp, buffer);
+	safe_unpack16(&msg_ptr->new_state, buffer);
+	safe_unpack_time(&msg_ptr->trans_time, buffer);
+	return SLURM_SUCCESS;
+
+unpack_error:
+	xfree(msg_ptr->hostlist);
+	xfree(msg_ptr);
+	*msg = NULL;
+	return SLURM_ERROR;
 }
 
 int inline 

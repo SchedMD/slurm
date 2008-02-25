@@ -58,15 +58,17 @@
 
 /* SLURM DBD message types */
 typedef enum {
-	DBD_INIT = 1400,	/* Connection initialization	*/
-	DBD_GET_JOBS,		/* Get job information		*/
-	DBD_GOT_JOBS,		/* Response to DBD_GET_JOBS	*/
-	DBD_JOB_COMPLETE,	/* Record job completion 	*/
-	DBD_JOB_START,		/* Record job starting		*/
-	DBD_JOB_SUSPEND,	/* Record job suspension	*/
-	DBD_RC,			/* Return code from operation	*/
-	DBD_STEP_COMPLETE,	/* Record step completion	*/
-	DBD_STEP_START		/* Record step starting		*/
+	DBD_INIT = 1400,	/* Connection initialization		*/
+	DBD_CLUSTER_PROCS,	/* Record tota processors on cluster	*/
+	DBD_GET_JOBS,		/* Get job information			*/
+	DBD_GOT_JOBS,		/* Response to DBD_GET_JOBS		*/
+	DBD_JOB_COMPLETE,	/* Record job completion 		*/
+	DBD_JOB_START,		/* Record job starting			*/
+	DBD_JOB_SUSPEND,	/* Record job suspension		*/
+	DBD_RC,			/* Return code from operation		*/
+	DBD_NODE_STATE,		/* Record node state transition		*/
+	DBD_STEP_COMPLETE,	/* Record step completion		*/
+	DBD_STEP_START		/* Record step starting			*/
 } slurmdbd_msg_type_t;
 
 /*****************************************************************************\
@@ -77,6 +79,11 @@ typedef struct slurmdbd_msg {
 	uint16_t msg_type;	/* see slurmdbd_msg_type_t above */
 	void * data;		/* pointer to a message type below */
 } slurmdbd_msg_t;
+
+typedef struct dbd_cluster_procs_msg {
+	char *cluster_name;	/* name of cluster */
+	uint32_t proc_count;	/* total processor count */
+} dbd_cluster_procs_msg_t;
 
 typedef struct dbd_get_jobs_msg {
 	uint32_t job_count;	/* count of job ID filters */
@@ -108,6 +115,14 @@ typedef struct dbd_job_suspend_msg {
 typedef struct dbd_rc_msg {
 	uint32_t return_code;
 } dbd_rc_msg_t;
+
+#define DBD_NODE_STATE_DOWN  1
+#define DBD_NODE_STATE_UP    2
+typedef struct dbd_node_state_msg {
+	char *hostlist;		/* name of hosts */
+	uint16_t new_state;	/* new state of host, see DBD_NODE_STATE_* */
+	time_t trans_time;	/* time of transition */
+} dbd_node_state_msg_t;
 
 typedef struct dbd_step_comp_msg {
 	uint32_t job_id;
@@ -149,6 +164,7 @@ extern int slurm_send_slurmdbd_recv_rc_msg(slurmdbd_msg_t *req, int *rc);
 /*****************************************************************************\
  * Free various SlurmDBD message structures
 \*****************************************************************************/
+void inline slurm_dbd_free_cluster_procs_msg(dbd_cluster_procs_msg_t *msg);
 void inline slurm_dbd_free_get_jobs_msg(dbd_get_jobs_msg_t *msg);
 void inline slurm_dbd_free_got_jobs_msg(dbd_got_jobs_msg_t *msg);
 void inline slurm_dbd_free_init_msg(dbd_init_msg_t *msg);
@@ -156,12 +172,15 @@ void inline slurm_dbd_free_job_complete_msg(dbd_job_comp_msg_t *msg);
 void inline slurm_dbd_free_job_start_msg(dbd_job_start_msg_t *msg);
 void inline slurm_dbd_free_job_suspend_msg(dbd_job_suspend_msg_t *msg);
 void inline slurm_dbd_free_rc_msg(dbd_rc_msg_t *msg);
+void inline slurm_dbd_free_node_state_msg(dbd_node_state_msg_t *msg);
 void inline slurm_dbd_free_step_complete_msg(dbd_step_comp_msg_t *msg);
 void inline slurm_dbd_free_step_start_msg(dbd_step_start_msg_t *msg);
 
 /*****************************************************************************\
  * Pack various SlurmDBD message structures into a buffer
 \*****************************************************************************/
+void inline slurm_dbd_pack_cluster_procs_msg(dbd_cluster_procs_msg_t *msg,
+								       Buf buffer);
 void inline slurm_dbd_pack_get_jobs_msg(dbd_get_jobs_msg_t *msg,       Buf buffer);
 void inline slurm_dbd_pack_got_jobs_msg(dbd_got_jobs_msg_t *msg,       Buf buffer);
 void inline slurm_dbd_pack_init_msg(dbd_init_msg_t *msg,               Buf buffer);
@@ -169,12 +188,15 @@ void inline slurm_dbd_pack_job_complete_msg(dbd_job_comp_msg_t *msg,   Buf buffe
 void inline slurm_dbd_pack_job_start_msg(dbd_job_start_msg_t *msg,     Buf buffer);
 void inline slurm_dbd_pack_job_suspend_msg(dbd_job_suspend_msg_t *msg, Buf buffer);
 void inline slurm_dbd_pack_rc_msg(dbd_rc_msg_t *msg,                   Buf buffer);
+void inline slurm_dbd_pack_node_state_msg(dbd_node_state_msg_t *msg,   Buf buffer);
 void inline slurm_dbd_pack_step_complete_msg(dbd_step_comp_msg_t *msg, Buf buffer);
 void inline slurm_dbd_pack_step_start_msg(dbd_step_start_msg_t *msg,   Buf buffer);
 
 /*****************************************************************************\
  * Unpack various SlurmDBD message structures from a buffer
 \*****************************************************************************/
+int inline slurm_dbd_unpack_cluster_procs_msg(dbd_cluster_procs_msg_t **msg,
+									 Buf buffer);
 int inline slurm_dbd_unpack_get_jobs_msg(dbd_get_jobs_msg_t **msg,       Buf buffer);
 int inline slurm_dbd_unpack_got_jobs_msg(dbd_got_jobs_msg_t **msg,       Buf buffer);
 int inline slurm_dbd_unpack_init_msg(dbd_init_msg_t **msg,               Buf buffer);
@@ -182,6 +204,7 @@ int inline slurm_dbd_unpack_job_complete_msg(dbd_job_comp_msg_t **msg,   Buf buf
 int inline slurm_dbd_unpack_job_start_msg(dbd_job_start_msg_t **msg,     Buf buffer);
 int inline slurm_dbd_unpack_job_suspend_msg(dbd_job_suspend_msg_t **msg, Buf buffer);
 int inline slurm_dbd_unpack_rc_msg(dbd_rc_msg_t **msg,                   Buf buffer);
+int inline slurm_dbd_unpack_node_state_msg(dbd_node_state_msg_t **msg,   Buf buffer);
 int inline slurm_dbd_unpack_step_complete_msg(dbd_step_comp_msg_t **msg, Buf buffer);
 int inline slurm_dbd_unpack_step_start_msg(dbd_step_start_msg_t **msg,   Buf buffer);
 

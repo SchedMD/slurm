@@ -43,11 +43,14 @@
 #include "src/slurmdbd/rpc_mgr.h"
 
 /* Local functions */
+static int   _cluster_procs(Buf in_buffer, Buf *out_buffer);
 static int   _get_jobs(Buf in_buffer, Buf *out_buffer);
 static int   _init_conn(Buf in_buffer, Buf *out_buffer);
 static int   _job_complete(Buf in_buffer, Buf *out_buffer);
 static int   _job_start(Buf in_buffer, Buf *out_buffer);
 static int   _job_suspend(Buf in_buffer, Buf *out_buffer);
+static int   _node_state(Buf in_buffer, Buf *out_buffer);
+static char *_node_state_string(uint16_t node_state);
 static int   _step_complete(Buf in_buffer, Buf *out_buffer);
 static int   _step_start(Buf in_buffer, Buf *out_buffer);
 
@@ -72,11 +75,14 @@ extern int proc_req(char *msg, uint32_t msg_size, bool first, Buf *out_buffer)
 		*out_buffer = make_dbd_rc_msg(rc);
 	} else {
 		switch (msg_type) {
-		case DBD_INIT:
-			rc = _init_conn(in_buffer, out_buffer);
+		case DBD_CLUSTER_PROCS:
+			rc = _cluster_procs(in_buffer, out_buffer);
 			break;
 		case DBD_GET_JOBS:
 			rc = _get_jobs(in_buffer, out_buffer);
+			break;
+		case DBD_INIT:
+			rc = _init_conn(in_buffer, out_buffer);
 			break;
 		case DBD_JOB_COMPLETE:
 			rc = _job_complete(in_buffer, out_buffer);
@@ -86,6 +92,9 @@ extern int proc_req(char *msg, uint32_t msg_size, bool first, Buf *out_buffer)
 			break;
 		case DBD_JOB_SUSPEND:
 			rc = _job_suspend(in_buffer, out_buffer);
+			break;
+		case DBD_NODE_STATE:
+			rc = _node_state(in_buffer, out_buffer);
 			break;
 		case DBD_STEP_COMPLETE:
 			rc = _step_complete(in_buffer, out_buffer);
@@ -108,6 +117,24 @@ extern int proc_req(char *msg, uint32_t msg_size, bool first, Buf *out_buffer)
 unpack_error:
 	free_buf(in_buffer);
 	return SLURM_ERROR;
+}
+
+static int _cluster_procs(Buf in_buffer, Buf *out_buffer)
+{
+	dbd_cluster_procs_msg_t *cluster_procs_msg;
+
+	if (slurm_dbd_unpack_cluster_procs_msg(&cluster_procs_msg, in_buffer) !=
+	    SLURM_SUCCESS) {
+		error("Failed to unpack DBD_CLUSTER_PROCS message");
+		*out_buffer = make_dbd_rc_msg(SLURM_ERROR);
+		return SLURM_ERROR;
+	}
+
+	info("DBD_CLUSTER_PROCS: %s:%u", 
+	     cluster_procs_msg->cluster_name, cluster_procs_msg->proc_count);
+	slurm_dbd_free_cluster_procs_msg(cluster_procs_msg);
+	*out_buffer = make_dbd_rc_msg(SLURM_SUCCESS);
+	return SLURM_SUCCESS;
 }
 
 static int _get_jobs(Buf in_buffer, Buf *out_buffer)
@@ -209,6 +236,37 @@ static int  _job_suspend(Buf in_buffer, Buf *out_buffer)
 	slurm_dbd_free_job_suspend_msg(job_suspend_msg);
 	*out_buffer = make_dbd_rc_msg(SLURM_SUCCESS);
 	return SLURM_SUCCESS;
+}
+
+static int _node_state(Buf in_buffer, Buf *out_buffer)
+{
+	dbd_node_state_msg_t *node_state_msg;
+
+	if (slurm_dbd_unpack_node_state_msg(&node_state_msg, in_buffer) !=
+	    SLURM_SUCCESS) {
+		error("Failed to unpack DBD_NODE_STATE message");
+		*out_buffer = make_dbd_rc_msg(SLURM_ERROR);
+		return SLURM_ERROR;
+	}
+
+	info("DBD_NODE_STATE: %s:%s:%u", 
+	     node_state_msg->hostlist,
+	     _node_state_string(node_state_msg->new_state), 
+	     node_state_msg->trans_time);
+	slurm_dbd_free_node_state_msg(node_state_msg);
+	*out_buffer = make_dbd_rc_msg(SLURM_SUCCESS);
+	return SLURM_SUCCESS;
+}
+
+static char *_node_state_string(uint16_t node_state)
+{
+	switch(node_state) {
+		case DBD_NODE_STATE_DOWN:
+			return "DOWN";
+		case DBD_NODE_STATE_UP:
+			return "UP";
+	}
+	return "UNKNOWN";
 }
 
 static int  _step_complete(Buf in_buffer, Buf *out_buffer)
