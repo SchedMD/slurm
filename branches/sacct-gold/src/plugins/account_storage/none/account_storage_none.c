@@ -1,7 +1,7 @@
 /*****************************************************************************\
- *  account_storage_none.c - account interface to none.
+ *  accounting_storage_none.c - account interface to none.
  *
- *  $Id: account_storage_none.c 13061 2008-01-22 21:23:56Z da $
+ *  $Id: accounting_storage_none.c 13061 2008-01-22 21:23:56Z da $
  *****************************************************************************
  *  Copyright (C) 2004-2008 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -36,7 +36,7 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#include "src/common/slurm_account_storage.h"
+#include "src/common/slurm_accounting_storage.h"
 
 /*
  * These variables are required by the generic plugin interface.  If they
@@ -67,8 +67,8 @@
  * minimum versions for their plugins as the job accounting API 
  * matures.
  */
-const char plugin_name[] = "Account storage NOT INVOKED plugin";
-const char plugin_type[] = "account_storage/none";
+const char plugin_name[] = "Accounting storage NOT INVOKED plugin";
+const char plugin_type[] = "accounting_storage/none";
 const uint32_t plugin_version = 100;
 
 /*
@@ -86,134 +86,165 @@ extern int fini ( void )
 	return SLURM_SUCCESS;
 }
 
-extern int account_storage_p_add_users(List user_list)
+extern int acct_storage_p_add_users(List user_list)
 {
 	return SLURM_SUCCESS;
 }
 
-extern int account_storage_p_add_coord(char *account, 
-				       account_user_cond_t *user_q)
+extern int acct_storage_p_add_coord(char *acct, acct_user_cond_t *user_q)
 {
 	return SLURM_SUCCESS;
 }
 
-extern int account_storage_p_add_accounts(List account_list)
+extern int acct_storage_p_add_accts(List acct_list)
 {
 	return SLURM_SUCCESS;
 }
 
-extern int account_storage_p_add_clusters(List cluster_list)
+extern int acct_storage_p_add_clusters(List cluster_list)
 {
 	return SLURM_SUCCESS;
 }
 
-extern int account_storage_p_add_associations(List association_list)
+extern int acct_storage_p_add_associations(List association_list)
 {
 	return SLURM_SUCCESS;
 }
 
-extern int account_storage_p_modify_users(account_user_cond_t *user_q,
-					  account_user_rec_t *user)
+extern int acct_storage_p_modify_users(acct_user_cond_t *user_q,
+				       acct_user_rec_t *user)
 {
 	return SLURM_SUCCESS;
 }
 
-extern int account_storage_p_modify_user_admin_level(
-	account_user_cond_t *user_q)
+extern int acct_storage_p_modify_user_admin_level(acct_user_cond_t *user_q)
 {
 	return SLURM_SUCCESS;
 }
 
-extern int account_storage_p_modify_accounts(account_account_cond_t *account_q,
-					     account_account_rec_t *account)
+extern int acct_storage_p_modify_accts(acct_account_cond_t *acct_q,
+				       acct_account_rec_t *acct)
 {
 	return SLURM_SUCCESS;
 }
 
-extern int account_storage_p_modify_clusters(account_cluster_cond_t *cluster_q,
-					     account_cluster_rec_t *cluster)
+extern int acct_storage_p_modify_clusters(acct_cluster_cond_t *cluster_q,
+					  acct_cluster_rec_t *cluster)
 {
 	return SLURM_SUCCESS;
 }
 
-extern int account_storage_p_modify_associations(
-	account_association_cond_t *assoc_q, account_association_rec_t *assoc)
+extern int acct_storage_p_modify_associations(acct_association_cond_t *assoc_q,
+					      acct_association_rec_t *assoc)
 {
 	return SLURM_SUCCESS;
 }
 
-extern int account_storage_p_remove_users(account_user_cond_t *user_q)
+extern int acct_storage_p_remove_users(acct_user_cond_t *user_q)
 {
 	return SLURM_SUCCESS;
 }
 
-extern int account_storage_p_remove_coord(char *account, 
-					  account_user_cond_t *user_q)
+extern int acct_storage_p_remove_coord(char *acct, acct_user_cond_t *user_q)
 {
 	return SLURM_SUCCESS;
 }
 
-extern int account_storage_p_remove_accounts(
-	account_account_cond_t *account_q)
+extern int acct_storage_p_remove_accts(acct_account_cond_t *acct_q)
 {
 	return SLURM_SUCCESS;
 }
 
-extern int account_storage_p_remove_clusters(
-	account_account_cond_t *cluster_q)
+extern int acct_storage_p_remove_clusters(acct_account_cond_t *cluster_q)
 {
 	return SLURM_SUCCESS;
 }
 
-extern int account_storage_p_remove_associations(
-	account_association_cond_t *assoc_q)
+extern int acct_storage_p_remove_associations(acct_association_cond_t *assoc_q)
 {
 	return SLURM_SUCCESS;
 }
 
-extern List account_storage_p_get_users(account_user_cond_t *user_q)
+extern List acct_storage_p_get_users(acct_user_cond_t *user_q)
 {
 	return NULL;
 }
 
-extern List account_storage_p_get_accounts(account_account_cond_t *account_q)
+extern List acct_storage_p_get_accts(acct_account_cond_t *acct_q)
 {
 	return NULL;
 }
 
-extern List account_storage_p_get_clusters(account_account_cond_t *cluster_q)
+extern List acct_storage_p_get_clusters(acct_account_cond_t *cluster_q)
 {
 	return NULL;
 }
 
-extern List account_storage_p_get_associations(
-	account_association_cond_t *assoc_q)
+extern List acct_storage_p_get_associations(acct_association_cond_t *assoc_q)
 {
 	return NULL;
 }
 
-extern int account_storage_p_get_hourly_usage(
-	account_association_rec_t *acct_assoc,
-	time_t start, time_t end)
+extern int acct_storage_p_get_hourly_usage(acct_association_rec_t *acct_assoc,
+					   time_t start, time_t end)
 {
 	int rc = SLURM_SUCCESS;
 
 	return rc;
 }
 
-extern int account_storage_p_get_daily_usage(
-	account_association_rec_t *acct_assoc,
-	time_t start, time_t end)
+extern int acct_storage_p_get_daily_usage(acct_association_rec_t *acct_assoc,
+					  time_t start, time_t end)
 {
 	int rc = SLURM_SUCCESS;
 
 	return rc;
 }
 
-extern int account_storage_p_get_monthly_usage(
-	account_association_rec_t *acct_assoc,
-	time_t start, time_t end)
+extern int acct_storage_p_get_monthly_usage(acct_association_rec_t *acct_assoc,
+					    time_t start, time_t end)
 {
 	int rc = SLURM_SUCCESS;
 	return rc;
 }
+
+extern int clusteracct_storage_p_node_down(struct node_record *node_ptr,
+					   time_t event_time, char *reason)
+{
+	return SLURM_SUCCESS;
+}
+extern int clusteracct_storage_p_node_up(struct node_record *node_ptr,
+					 time_t event_time)
+{
+	return SLURM_SUCCESS;
+}
+extern int clusteracct_storage_p_cluster_procs(uint32_t procs,
+					       time_t event_time)
+{
+	return SLURM_SUCCESS;
+}
+
+extern int clusteracct_storage_p_get_hourly_usage(
+	acct_cluster_rec_t *cluster_rec, time_t start, 
+	time_t end, void *params)
+{
+
+	return SLURM_SUCCESS;
+}
+
+extern int clusteracct_storage_p_get_daily_usage(
+	acct_cluster_rec_t *cluster_rec, time_t start, 
+	time_t end, void *params)
+{
+	
+	return SLURM_SUCCESS;
+}
+
+extern int clusteracct_storage_p_get_monthly_usage(
+	acct_cluster_rec_t *cluster_rec, time_t start, 
+	time_t end, void *params)
+{
+	
+	return SLURM_SUCCESS;
+}
+

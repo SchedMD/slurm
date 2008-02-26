@@ -64,7 +64,7 @@
 #define GOLD_ACTION_MODIFY_STR "Modify"
 #define GOLD_ACTION_DELETE_STR "Delete"
 
-#define GOLD_OBJECT_ACCOUNT_STR "Account"
+#define GOLD_OBJECT_ACCT_STR "Account"
 #define GOLD_OBJECT_USER_STR "User"
 #define GOLD_OBJECT_PROJECT_STR "Project"
 #define GOLD_OBJECT_MACHINE_STR "Machine"
@@ -74,9 +74,9 @@
 #define GOLD_OBJECT_MACHINE_HOUR_STR "MachineHourUsage"
 #define GOLD_OBJECT_MACHINE_DAY_STR "MachineDayUsage"
 #define GOLD_OBJECT_MACHINE_MONTH_STR "MachineMonthUsage"
-#define GOLD_OBJECT_ACCOUNT_HOUR_STR "AccountHourUsage"
-#define GOLD_OBJECT_ACCOUNT_DAY_STR "AccountDayUsage"
-#define GOLD_OBJECT_ACCOUNT_MONTH_STR "AccountMonthUsage"
+#define GOLD_OBJECT_ACCT_HOUR_STR "AccountHourUsage"
+#define GOLD_OBJECT_ACCT_DAY_STR "AccountDayUsage"
+#define GOLD_OBJECT_ACCT_MONTH_STR "AccountMonthUsage"
 
 typedef enum {
 	GOLD_ACTION_QUERY,
@@ -89,7 +89,7 @@ typedef enum {
 /* When changing this you would also make GOLD_OBJECT_STR match
  * defined in gold_interface.c */
 typedef enum {
-	GOLD_OBJECT_ACCOUNT,
+	GOLD_OBJECT_ACCT,
 	GOLD_OBJECT_USER,
 	GOLD_OBJECT_PROJECT,
 	GOLD_OBJECT_MACHINE,
@@ -99,9 +99,9 @@ typedef enum {
 	GOLD_OBJECT_MACHINE_HOUR_USAGE,
 	GOLD_OBJECT_MACHINE_DAY_USAGE,
 	GOLD_OBJECT_MACHINE_MONTH_USAGE,
-	GOLD_OBJECT_ACCOUNT_HOUR_USAGE,
-	GOLD_OBJECT_ACCOUNT_DAY_USAGE,
-	GOLD_OBJECT_ACCOUNT_MONTH_USAGE,
+	GOLD_OBJECT_ACCT_HOUR_USAGE,
+	GOLD_OBJECT_ACCT_DAY_USAGE,
+	GOLD_OBJECT_ACCT_MONTH_USAGE,
 	GOLD_OBJECT_COUNT
 } gold_object_t;
 
