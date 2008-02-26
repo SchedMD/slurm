@@ -63,6 +63,7 @@
 #include "src/common/fd.h"
 #include "src/common/pack.h"
 #include "src/common/slurmdbd_defs.h"
+#include "src/common/slurm_auth.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xsignal.h"
@@ -1156,15 +1157,42 @@ unpack_error:
 void inline 
 slurm_dbd_pack_init_msg(dbd_init_msg_t *msg, Buf buffer)
 {
+	int rc;
+	void *auth_cred;
+
 	pack16(msg->version, buffer);
+/* FIXME: May need to use distinct auth plugin/port from slurmctld */
+	auth_cred = g_slurm_auth_create(NULL, 2);
+	if (auth_cred == NULL) {
+		error("Creating authentication credential: %s",
+			 g_slurm_auth_errstr(g_slurm_auth_errno(NULL)));
+	} else {
+		rc = g_slurm_auth_pack(auth_cred, buffer);
+		(void) g_slurm_auth_destroy(auth_cred);
+		if (rc) {
+			error("Packing authentication credential: %s",
+				g_slurm_auth_errstr(g_slurm_auth_errno(auth_cred)));
+		}
+	}
+
 }
 
 int inline 
 slurm_dbd_unpack_init_msg(dbd_init_msg_t **msg, Buf buffer)
 {
+	void *auth_cred;
+
 	dbd_init_msg_t *msg_ptr = xmalloc(sizeof(dbd_init_msg_t));
 	*msg = msg_ptr;
 	safe_unpack16(&msg_ptr->version, buffer);
+	auth_cred = g_slurm_auth_unpack(buffer);
+	if (auth_cred == NULL) {
+		error("Unpacking authentication credential: %s",
+			g_slurm_auth_errstr(g_slurm_auth_errno(NULL)));
+		goto unpack_error;
+	}
+	msg_ptr->uid = g_slurm_auth_get_uid(auth_cred);
+	g_slurm_auth_destroy(auth_cred);
 	return SLURM_SUCCESS;
 
 unpack_error:

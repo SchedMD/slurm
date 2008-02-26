@@ -40,27 +40,29 @@
 #include "src/common/slurmdbd_defs.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_defs.h"
+#include "src/slurmdbd/read_config.h"
 #include "src/slurmdbd/rpc_mgr.h"
 
 /* Local functions */
-static int   _cluster_procs(Buf in_buffer, Buf *out_buffer);
+static int   _cluster_procs(Buf in_buffer, Buf *out_buffer, uint32_t *uid);
 static int   _get_jobs(Buf in_buffer, Buf *out_buffer);
-static int   _init_conn(Buf in_buffer, Buf *out_buffer);
-static int   _job_complete(Buf in_buffer, Buf *out_buffer);
-static int   _job_start(Buf in_buffer, Buf *out_buffer);
-static int   _job_suspend(Buf in_buffer, Buf *out_buffer);
-static int   _node_state(Buf in_buffer, Buf *out_buffer);
+static int   _init_conn(Buf in_buffer, Buf *out_buffer, uint32_t *uid);
+static int   _job_complete(Buf in_buffer, Buf *out_buffer, uint32_t *uid);
+static int   _job_start(Buf in_buffer, Buf *out_buffer, uint32_t *uid);
+static int   _job_suspend(Buf in_buffer, Buf *out_buffer, uint32_t *uid);
+static int   _node_state(Buf in_buffer, Buf *out_buffer, uint32_t *uid);
 static char *_node_state_string(uint16_t node_state);
-static int   _step_complete(Buf in_buffer, Buf *out_buffer);
-static int   _step_start(Buf in_buffer, Buf *out_buffer);
+static int   _step_complete(Buf in_buffer, Buf *out_buffer, uint32_t *uid);
+static int   _step_start(Buf in_buffer, Buf *out_buffer, uint32_t *uid);
 
 /* Process an incoming RPC
  * msg IN - incoming message
- * msg_size IN - size of msg (byte28
+ * msg_size IN - size of msg in bytes
  * first IN - set if first message received on the socket
  * buffer OUT - outgoing response, must be freed by caller
  * RET SLURM_SUCCESS or error code */
-extern int proc_req(char *msg, uint32_t msg_size, bool first, Buf *out_buffer)
+extern int 
+proc_req(char *msg, uint32_t msg_size, bool first, Buf *out_buffer, uint32_t *uid)
 {
 	int rc = SLURM_SUCCESS;
 	uint16_t msg_type;
@@ -76,31 +78,38 @@ extern int proc_req(char *msg, uint32_t msg_size, bool first, Buf *out_buffer)
 	} else {
 		switch (msg_type) {
 		case DBD_CLUSTER_PROCS:
-			rc = _cluster_procs(in_buffer, out_buffer);
+			rc = _cluster_procs(in_buffer, out_buffer, uid);
 			break;
 		case DBD_GET_JOBS:
 			rc = _get_jobs(in_buffer, out_buffer);
 			break;
 		case DBD_INIT:
-			rc = _init_conn(in_buffer, out_buffer);
+			if (first)
+				rc = _init_conn(in_buffer, out_buffer, uid);
+			else {
+				error("DBD_INIT sent after connection "
+					"established");
+				rc = EINVAL;
+				*out_buffer = make_dbd_rc_msg(rc);
+			}
 			break;
 		case DBD_JOB_COMPLETE:
-			rc = _job_complete(in_buffer, out_buffer);
+			rc = _job_complete(in_buffer, out_buffer, uid);
 			break;
 		case DBD_JOB_START:
-			rc = _job_start(in_buffer, out_buffer);
+			rc = _job_start(in_buffer, out_buffer, uid);
 			break;
 		case DBD_JOB_SUSPEND:
-			rc = _job_suspend(in_buffer, out_buffer);
+			rc = _job_suspend(in_buffer, out_buffer, uid);
 			break;
 		case DBD_NODE_STATE:
-			rc = _node_state(in_buffer, out_buffer);
+			rc = _node_state(in_buffer, out_buffer, uid);
 			break;
 		case DBD_STEP_COMPLETE:
-			rc = _step_complete(in_buffer, out_buffer);
+			rc = _step_complete(in_buffer, out_buffer, uid);
 			break;
 		case DBD_STEP_START:
-			rc = _step_start(in_buffer, out_buffer);
+			rc = _step_start(in_buffer, out_buffer, uid);
 			break;
 		default:
 			error("invalid RPC msg_type=%d", msg_type);
@@ -119,10 +128,15 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-static int _cluster_procs(Buf in_buffer, Buf *out_buffer)
+static int _cluster_procs(Buf in_buffer, Buf *out_buffer, uint32_t *uid)
 {
 	dbd_cluster_procs_msg_t *cluster_procs_msg;
 
+	if (*uid != slurmdbd_conf->slurm_user_id) {
+		error("DBD_CLUSTER_PROCS message from invalid uid %u", *uid);
+		*out_buffer = make_dbd_rc_msg(ESLURM_ACCESS_DENIED);
+		return SLURM_ERROR;
+	}
 	if (slurm_dbd_unpack_cluster_procs_msg(&cluster_procs_msg, in_buffer) !=
 	    SLURM_SUCCESS) {
 		error("Failed to unpack DBD_CLUSTER_PROCS message");
@@ -167,7 +181,7 @@ static int _get_jobs(Buf in_buffer, Buf *out_buffer)
 	return SLURM_SUCCESS;
 }
 
-static int _init_conn(Buf in_buffer, Buf *out_buffer)
+static int _init_conn(Buf in_buffer, Buf *out_buffer, uint32_t *uid)
 {
 	dbd_init_msg_t *init_msg;
 
@@ -181,17 +195,23 @@ static int _init_conn(Buf in_buffer, Buf *out_buffer)
 			init_msg->version, SLURM_DBD_VERSION);
 		return SLURM_ERROR;
 	}
+	*uid = init_msg->uid;
 
-	info("DBD_INIT: %u", init_msg->version);
+	info("DBD_INIT: %u from uid:%u", init_msg->version, init_msg->uid);
 	slurm_dbd_free_init_msg(init_msg);
 	*out_buffer = make_dbd_rc_msg(SLURM_SUCCESS);
 	return SLURM_SUCCESS;
 }
 
-static int  _job_complete(Buf in_buffer, Buf *out_buffer)
+static int  _job_complete(Buf in_buffer, Buf *out_buffer, uint32_t *uid)
 {
 	dbd_job_comp_msg_t *job_comp_msg;
 
+	if (*uid != slurmdbd_conf->slurm_user_id) {
+		error("DBD_JOB_COMPLETE message from invalid uid %u", *uid);
+		*out_buffer = make_dbd_rc_msg(ESLURM_ACCESS_DENIED);
+		return SLURM_ERROR;
+	}
 	if (slurm_dbd_unpack_job_complete_msg(&job_comp_msg, in_buffer) !=
 	    SLURM_SUCCESS) {
 		error("Failed to unpack DBD_JOB_COMPLETE message");
@@ -205,10 +225,15 @@ static int  _job_complete(Buf in_buffer, Buf *out_buffer)
 	return SLURM_SUCCESS;
 }
 
-static int  _job_start(Buf in_buffer, Buf *out_buffer)
+static int  _job_start(Buf in_buffer, Buf *out_buffer, uint32_t *uid)
 {
 	dbd_job_start_msg_t *job_start_msg;
 
+	if (*uid != slurmdbd_conf->slurm_user_id) {
+		error("DBD_JOB_START message from invalid uid %u", *uid);
+		*out_buffer = make_dbd_rc_msg(ESLURM_ACCESS_DENIED);
+		return SLURM_ERROR;
+	}
 	if (slurm_dbd_unpack_job_start_msg(&job_start_msg, in_buffer) !=
 	    SLURM_SUCCESS) {
 		error("Failed to unpack DBD_JOB_START message");
@@ -222,10 +247,15 @@ static int  _job_start(Buf in_buffer, Buf *out_buffer)
 	return SLURM_SUCCESS;
 }
 
-static int  _job_suspend(Buf in_buffer, Buf *out_buffer)
+static int  _job_suspend(Buf in_buffer, Buf *out_buffer, uint32_t *uid)
 {
 	dbd_job_suspend_msg_t *job_suspend_msg;
 
+	if (*uid != slurmdbd_conf->slurm_user_id) {
+		error("DBD_JOB_SUSPEND message from invalid uid %u", *uid);
+		*out_buffer = make_dbd_rc_msg(ESLURM_ACCESS_DENIED);
+		return SLURM_ERROR;
+	}
 	if (slurm_dbd_unpack_job_suspend_msg(&job_suspend_msg, in_buffer) !=
 	    SLURM_SUCCESS) {
 		error("Failed to unpack DBD_JOB_SUSPEND message");
@@ -239,10 +269,15 @@ static int  _job_suspend(Buf in_buffer, Buf *out_buffer)
 	return SLURM_SUCCESS;
 }
 
-static int _node_state(Buf in_buffer, Buf *out_buffer)
+static int _node_state(Buf in_buffer, Buf *out_buffer, uint32_t *uid)
 {
 	dbd_node_state_msg_t *node_state_msg;
 
+	if (*uid != slurmdbd_conf->slurm_user_id) {
+		error("DBD_NODE_STATE message from invalid uid %u", *uid);
+		*out_buffer = make_dbd_rc_msg(ESLURM_ACCESS_DENIED);
+		return SLURM_ERROR;
+	}
 	if (slurm_dbd_unpack_node_state_msg(&node_state_msg, in_buffer) !=
 	    SLURM_SUCCESS) {
 		error("Failed to unpack DBD_NODE_STATE message");
@@ -271,10 +306,15 @@ static char *_node_state_string(uint16_t node_state)
 	return "UNKNOWN";
 }
 
-static int  _step_complete(Buf in_buffer, Buf *out_buffer)
+static int  _step_complete(Buf in_buffer, Buf *out_buffer, uint32_t *uid)
 {
 	dbd_step_comp_msg_t *step_comp_msg;
 
+	if (*uid != slurmdbd_conf->slurm_user_id) {
+		error("DBD_STEP_COMPLETE message from invalid uid %u", *uid);
+		*out_buffer = make_dbd_rc_msg(ESLURM_ACCESS_DENIED);
+		return SLURM_ERROR;
+	}
 	if (slurm_dbd_unpack_step_complete_msg(&step_comp_msg, in_buffer) !=
 	    SLURM_SUCCESS) {
 		error("Failed to unpack DBD_STEP_COMPLETE message");
@@ -289,11 +329,16 @@ static int  _step_complete(Buf in_buffer, Buf *out_buffer)
 	return SLURM_SUCCESS;
 }
 
-static int  _step_start(Buf in_buffer, Buf *out_buffer)
+static int  _step_start(Buf in_buffer, Buf *out_buffer, uint32_t *uid)
 {
 	dbd_step_start_msg_t *step_start_msg;
 
-	if (slurm_dbd_unpack_step_start_msg(&step_start_msg, in_buffer) !=	    
+	if (*uid != slurmdbd_conf->slurm_user_id) {
+		error("DBD_STEP_START message from invalid uid %u", *uid);
+		*out_buffer = make_dbd_rc_msg(ESLURM_ACCESS_DENIED);
+		return SLURM_ERROR;
+	}
+	if (slurm_dbd_unpack_step_start_msg(&step_start_msg, in_buffer) !=
 	    SLURM_SUCCESS) {
 		error("Failed to unpack DBD_STEP_START message");
 		*out_buffer = make_dbd_rc_msg(SLURM_ERROR);

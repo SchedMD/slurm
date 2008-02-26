@@ -97,8 +97,9 @@ typedef struct dbd_got_jobs_msg {
 } dbd_got_jobs_msg_t;
 
 typedef struct dbd_init_msg {
-	uint16_t version;
-	/* Add authentication information here */
+	uint16_t version;	/* protocol version */
+	uint32_t uid;		/* UID originating connection,
+				 * filled by authtentication plugin*/
 } dbd_init_msg_t;
 
 typedef struct dbd_job_comp_msg {

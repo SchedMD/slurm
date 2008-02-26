@@ -178,10 +178,10 @@ extern void rpc_mgr_wake(void)
 static void * _service_connection(void *arg)
 {
 	connection_arg_t *conn = (connection_arg_t *) arg;
-	uint32_t nw_size, msg_size;
+	uint32_t nw_size, msg_size, uid;
 	char *msg = NULL;
 	ssize_t msg_read, offset;
-	bool fini = false, first=true;
+	bool fini = false, first = true;
 	Buf buffer = NULL;
 	int rc;
 
@@ -218,7 +218,7 @@ static void * _service_connection(void *arg)
 			offset += msg_read;
 		}
 		if (msg_size == offset) {
-			rc = proc_req(msg, msg_size, first, &buffer);
+			rc = proc_req(msg, msg_size, first, &buffer, &uid);
 			first = false;
 			if (rc != SLURM_SUCCESS) {
 				error("Processing message from connection %d",

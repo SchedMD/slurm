@@ -48,6 +48,7 @@
  * first IN - set if first message received on the socket
  * buffer OUT - outgoing response, must be freed by caller
  * RET SLURM_SUCCESS or error code */
-extern int proc_req(char *msg, uint32_t msg_size, bool first, Buf *buffer);
+extern int proc_req(char *msg, uint32_t msg_size, bool first, Buf *buffer, 
+		    uint32_t *uid);
 
 #endif /* !_PROC_REQ */
