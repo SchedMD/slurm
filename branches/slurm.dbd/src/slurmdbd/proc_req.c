@@ -219,7 +219,8 @@ static int  _job_complete(Buf in_buffer, Buf *out_buffer, uint32_t *uid)
 		return SLURM_ERROR;
 	}
 
-	info("DBD_JOB_COMPLETE: %u", job_comp_msg->job_id);
+	info("DBD_JOB_COMPLETE: id:%u name:%s", 
+	     job_comp_msg->job_id, job_comp_msg->name);
 	slurm_dbd_free_job_complete_msg(job_comp_msg);
 	*out_buffer = make_dbd_rc_msg(SLURM_SUCCESS);
 	return SLURM_SUCCESS;
@@ -241,7 +242,8 @@ static int  _job_start(Buf in_buffer, Buf *out_buffer, uint32_t *uid)
 		return SLURM_ERROR;
 	}
 
-	info("DBD_JOB_START: %u", job_start_msg->job_id);
+	info("DBD_JOB_START: id:%u name:%s", 
+	     job_start_msg->job_id, job_start_msg->name);
 	slurm_dbd_free_job_start_msg(job_start_msg);
 	*out_buffer = make_dbd_rc_msg(SLURM_SUCCESS);
 	return SLURM_SUCCESS;

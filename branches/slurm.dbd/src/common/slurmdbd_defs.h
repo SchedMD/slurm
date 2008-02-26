@@ -103,11 +103,27 @@ typedef struct dbd_init_msg {
 } dbd_init_msg_t;
 
 typedef struct dbd_job_comp_msg {
+	char *   account;
+	time_t   end_time;
+	uint32_t exit_code;
 	uint32_t job_id;
+	uint16_t job_state;
+	char *   name;
+	char *   nodes;
+	uint32_t priority;
+	time_t   start_time;
+	uint32_t total_procs;
 } dbd_job_comp_msg_t;
 
 typedef struct dbd_job_start_msg {
+	char *   account;
 	uint32_t job_id;
+	uint16_t job_state;
+	char *   name;
+	char *   nodes;
+	uint32_t priority;
+	time_t   start_time;
+	uint32_t total_procs;
 } dbd_job_start_msg_t;
 
 typedef struct dbd_job_suspend_msg {

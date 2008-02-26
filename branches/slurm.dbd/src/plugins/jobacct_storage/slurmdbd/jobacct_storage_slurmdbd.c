@@ -1,9 +1,9 @@
 /*****************************************************************************\
  *  jobacct_storage_slurmdbd.c - SlurmDBD slurm job accounting plugin.
  *****************************************************************************
- *  Copyright (C) 2002-2008 The Regents of the University of California.
+ *  Copyright (C) 2008 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Danny Aubke <da@llnl.gov>.
+ *  Written by Morris Jette <jette1@llnl.gov>.
  *  UCRL-CODE-226842.
  *  
  *  This file is part of SLURM, a resource management program.
@@ -143,9 +143,17 @@ extern int jobacct_storage_p_job_start(struct job_record *job_ptr)
 	slurmdbd_msg_t msg;
 	dbd_job_start_msg_t req;
 
-	req.job_id  = job_ptr->job_id;
-	msg.msg_type = DBD_JOB_START;
-	msg.data = &req;
+	req.account     = job_ptr->account;
+	req.job_id      = job_ptr->job_id;
+	req.job_state   = job_ptr->job_state & (~JOB_COMPLETING);
+	req.name        = job_ptr->name;
+	req.nodes       = job_ptr->nodes;
+	req.priority    = job_ptr->priority;
+	req.start_time  = job_ptr->start_time;
+	req.total_procs = job_ptr->total_procs;
+
+	msg.msg_type    = DBD_JOB_START;
+	msg.data        = &req;
 
 	if (slurm_send_slurmdbd_msg(&msg) < 0)
 		return SLURM_ERROR;
@@ -161,9 +169,19 @@ extern int jobacct_storage_p_job_complete(struct job_record *job_ptr)
 	slurmdbd_msg_t msg;
 	dbd_job_comp_msg_t req;
 
-	req.job_id  = job_ptr->job_id;
-	msg.msg_type = DBD_JOB_COMPLETE;
-	msg.data = &req;
+	req.account     = job_ptr->account;
+	req.end_time    = job_ptr->end_time;
+	req.exit_code   = job_ptr->exit_code;
+	req.job_id      = job_ptr->job_id;
+	req.job_state   = job_ptr->job_state & (~JOB_COMPLETING);
+	req.name        = job_ptr->name;
+	req.nodes       = job_ptr->nodes;
+	req.priority    = job_ptr->priority;
+	req.start_time  = job_ptr->start_time;
+	req.total_procs = job_ptr->total_procs;
+
+	msg.msg_type    = DBD_JOB_COMPLETE;
+	msg.data        = &req;
 
 	if (slurm_send_slurmdbd_msg(&msg) < 0)
 		return SLURM_ERROR;

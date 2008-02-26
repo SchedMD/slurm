@@ -1021,12 +1021,22 @@ void inline slurm_dbd_free_init_msg(dbd_init_msg_t *msg)
 
 void inline slurm_dbd_free_job_complete_msg(dbd_job_comp_msg_t *msg)
 {
-	xfree(msg);
+	if (msg) {
+		xfree(msg->account);
+		xfree(msg->name);
+		xfree(msg->nodes);
+		xfree(msg);
+	}
 }
 
 void inline slurm_dbd_free_job_start_msg(dbd_job_start_msg_t *msg)
 {
-	xfree(msg);
+	if (msg) {
+		xfree(msg->account);
+		xfree(msg->name);
+		xfree(msg->nodes);
+		xfree(msg);
+	}
 }
 
 void inline slurm_dbd_free_job_suspend_msg(dbd_job_suspend_msg_t *msg)
@@ -1204,18 +1214,40 @@ unpack_error:
 void inline 
 slurm_dbd_pack_job_complete_msg(dbd_job_comp_msg_t *msg, Buf buffer)
 {
+	packstr(msg->account, buffer);
+	pack_time(msg->end_time, buffer);
+	pack32(msg->exit_code, buffer);
 	pack32(msg->job_id, buffer);
+	pack16(msg->job_state, buffer);
+	packstr(msg->name, buffer);
+	packstr(msg->nodes, buffer);
+	pack32(msg->priority, buffer);
+	pack_time(msg->start_time, buffer);
+	pack32(msg->total_procs, buffer);
 }
 
 int inline 
 slurm_dbd_unpack_job_complete_msg(dbd_job_comp_msg_t **msg, Buf buffer)
 {
+	uint32_t uint32_tmp;
 	dbd_job_comp_msg_t *msg_ptr = xmalloc(sizeof(dbd_job_comp_msg_t));
 	*msg = msg_ptr;
+	safe_unpackstr_xmalloc(&msg_ptr->account, &uint32_tmp, buffer);
+	safe_unpack_time(&msg_ptr->end_time, buffer);
+	safe_unpack32(&msg_ptr->exit_code, buffer);
 	safe_unpack32(&msg_ptr->job_id, buffer);
+	safe_unpack16(&msg_ptr->job_state, buffer);
+	safe_unpackstr_xmalloc(&msg_ptr->name, &uint32_tmp, buffer);
+	safe_unpackstr_xmalloc(&msg_ptr->nodes, &uint32_tmp, buffer);
+	safe_unpack32(&msg_ptr->priority, buffer);
+	safe_unpack_time(&msg_ptr->start_time, buffer);
+	safe_unpack32(&msg_ptr->total_procs, buffer);
 	return SLURM_SUCCESS;
 
 unpack_error:
+	xfree(msg_ptr->account);
+	xfree(msg_ptr->name);
+	xfree(msg_ptr->nodes);
 	xfree(msg_ptr);
 	*msg = NULL;
 	return SLURM_ERROR;
@@ -1224,18 +1256,36 @@ unpack_error:
 void inline 
 slurm_dbd_pack_job_start_msg(dbd_job_start_msg_t *msg, Buf buffer)
 {
+	packstr(msg->account, buffer);
 	pack32(msg->job_id, buffer);
+	pack16(msg->job_state, buffer);
+	packstr(msg->name, buffer);
+	packstr(msg->nodes, buffer);
+	pack32(msg->priority, buffer);
+	pack_time(msg->start_time, buffer);
+	pack32(msg->total_procs, buffer);
 }
 
 int inline 
 slurm_dbd_unpack_job_start_msg(dbd_job_start_msg_t **msg, Buf buffer)
 {
+	uint32_t uint32_tmp;
 	dbd_job_start_msg_t *msg_ptr = xmalloc(sizeof(dbd_job_start_msg_t));
 	*msg = msg_ptr;
+	safe_unpackstr_xmalloc(&msg_ptr->account, &uint32_tmp, buffer);
 	safe_unpack32(&msg_ptr->job_id, buffer);
+	safe_unpack16(&msg_ptr->job_state, buffer);
+	safe_unpackstr_xmalloc(&msg_ptr->name, &uint32_tmp, buffer);
+	safe_unpackstr_xmalloc(&msg_ptr->nodes, &uint32_tmp, buffer);
+	safe_unpack32(&msg_ptr->priority, buffer);
+	safe_unpack_time(&msg_ptr->start_time, buffer);
+	safe_unpack32(&msg_ptr->total_procs, buffer);
 	return SLURM_SUCCESS;
 
 unpack_error:
+	xfree(msg_ptr->account);
+	xfree(msg_ptr->name);
+	xfree(msg_ptr->nodes);
 	xfree(msg_ptr);
 	*msg = NULL;
 	return SLURM_ERROR;
