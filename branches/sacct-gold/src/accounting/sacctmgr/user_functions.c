@@ -38,7 +38,7 @@
 #include "sacctmgr.h"
 
 static int _set_cond(int *start, int argc, char *argv[],
-		     account_user_cond_t *user_cond)
+		     acct_user_cond_t *user_cond)
 {
 	int i;
 	int set = 0;
@@ -51,28 +51,28 @@ static int _set_cond(int *start, int argc, char *argv[],
 			addto_char_list(user_cond->user_list, argv[i]+6);
 			set = 1;
 		} else if (strncasecmp (argv[i], "DefaultAccount=", 15) == 0) {
-			addto_char_list(user_cond->def_account_list,
+			addto_char_list(user_cond->def_acct_list,
 					argv[i]+15);
 			set = 1;
 		} else if (strncasecmp (argv[i], "DefaultAccounts=", 16) == 0) {
-			addto_char_list(user_cond->def_account_list,
+			addto_char_list(user_cond->def_acct_list,
 					argv[i]+16);
 			set = 1;
 		} else if (strncasecmp (argv[i], "Expedite=", 9) == 0) {
 			user_cond->expedite =
-				str_2_account_expedite(argv[i]+9);
+				str_2_acct_expedite(argv[i]+9);
 			set = 1;
 		} else if (strncasecmp (argv[i], "ExpediteLevel=", 14) == 0) {
 			user_cond->expedite =
-				str_2_account_expedite(argv[i]+14);
+				str_2_acct_expedite(argv[i]+14);
 			set = 1;
 		} else if (strncasecmp (argv[i], "Admin=", 6) == 0) {
 			user_cond->admin_level = 
-				str_2_account_admin_level(argv[i]+6);
+				str_2_acct_admin_level(argv[i]+6);
 			set = 1;			
 		} else if (strncasecmp (argv[i], "AdminLevel=", 11) == 0) {
 			user_cond->admin_level = 
-				str_2_account_admin_level(argv[i]+11);
+				str_2_acct_admin_level(argv[i]+11);
 			set = 1;
 		} else if (strncasecmp (argv[i], "Set", 3) == 0) {
 			i--;
@@ -88,30 +88,30 @@ static int _set_cond(int *start, int argc, char *argv[],
 }
 
 static int _set_rec(int *start, int argc, char *argv[],
-		    account_user_rec_t *user)
+		    acct_user_rec_t *user)
 {
 	int i;
 	int set = 0;
 
 	for (i=(*start); i<argc; i++) {
 		if (strncasecmp (argv[i], "DefaultAccount=", 15) == 0) {
-			user->default_account = xstrdup(argv[i]+15);
+			user->default_acct = xstrdup(argv[i]+15);
 			set = 1;
 		} else if (strncasecmp (argv[i], "Expedite=", 9) == 0) {
 			user->expedite =
-				str_2_account_expedite(argv[i]+9);
+				str_2_acct_expedite(argv[i]+9);
 			set = 1;
 		} else if (strncasecmp (argv[i], "ExpediteLevel=", 14) == 0) {
 			user->expedite =
-				str_2_account_expedite(argv[i]+14);
+				str_2_acct_expedite(argv[i]+14);
 			set = 1;
 		} else if (strncasecmp (argv[i], "Admin=", 6) == 0) {
 			user->admin_level = 
-				str_2_account_admin_level(argv[i]+6);
+				str_2_acct_admin_level(argv[i]+6);
 			set = 1;
 		} else if (strncasecmp (argv[i], "AdminLevel=", 11) == 0) {
 			user->admin_level = 
-				str_2_account_admin_level(argv[i]+11);
+				str_2_acct_admin_level(argv[i]+11);
 			set = 1;
 		} else if (strncasecmp (argv[i], "Where", 5) == 0) {
 			i--;
@@ -126,13 +126,13 @@ static int _set_rec(int *start, int argc, char *argv[],
 	return set;
 }
 
-static void _print_cond(account_user_cond_t *user_cond)
+static void _print_cond(acct_user_cond_t *user_cond)
 {
 	ListIterator itr = NULL;
 	char *tmp_char = NULL;
 
 	if(!user_cond) {
-		error("no account_user_cond_t * given");
+		error("no acct_user_cond_t * given");
 		return;
 	}
 
@@ -144,44 +144,44 @@ static void _print_cond(account_user_cond_t *user_cond)
 		}
 	}
 
-	if(user_cond->def_account_list
-	   && list_count(user_cond->def_account_list)) {
-		itr = list_iterator_create(user_cond->def_account_list);
+	if(user_cond->def_acct_list
+	   && list_count(user_cond->def_acct_list)) {
+		itr = list_iterator_create(user_cond->def_acct_list);
 		printf("  Default Account = %s\n", (char *)list_next(itr));
 		while((tmp_char = list_next(itr))) {
 			printf("                 or %s\n", tmp_char);
 		}
 	}
 
-	if(user_cond->expedite != ACCOUNT_EXPEDITE_NOTSET)
+	if(user_cond->expedite != ACCT_EXPEDITE_NOTSET)
 		printf("  Expedite        = %s\n", 
-		       account_expedite_str(user_cond->expedite));
+		       acct_expedite_str(user_cond->expedite));
 
-	if(user_cond->admin_level != ACCOUNT_ADMIN_NOTSET)
+	if(user_cond->admin_level != ACCT_ADMIN_NOTSET)
 		printf("  Admin Level     = %s\n", 
-		       account_admin_level_str(user_cond->admin_level));
+		       acct_admin_level_str(user_cond->admin_level));
 }
 
-static void _print_rec(account_user_rec_t *user)
+static void _print_rec(acct_user_rec_t *user)
 {
 	if(!user) {
-		error("no account_user_rec_t * given");
+		error("no acct_user_rec_t * given");
 		return;
 	}
 	
 	if(user->name) 
 		printf("  Name            = %s\n", user->name);	
 		
-	if(user->default_account) 
-		printf("  Default Account = %s\n", user->default_account);
+	if(user->default_acct) 
+		printf("  Default Account = %s\n", user->default_acct);
 		
-	if(user->expedite != ACCOUNT_EXPEDITE_NOTSET)
+	if(user->expedite != ACCT_EXPEDITE_NOTSET)
 		printf("  Expedite        = %s\n", 
-		       account_expedite_str(user->expedite));
+		       acct_expedite_str(user->expedite));
 
-	if(user->admin_level != ACCOUNT_ADMIN_NOTSET)
+	if(user->admin_level != ACCT_ADMIN_NOTSET)
 		printf("  Admin Level     = %s\n", 
-		       account_admin_level_str(user->admin_level));
+		       acct_admin_level_str(user->admin_level));
 }
 
 
@@ -193,13 +193,13 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 	ListIterator itr_a = NULL;
 	ListIterator itr_c = NULL;
 	ListIterator itr_p = NULL;
-	account_user_rec_t *user = NULL;
-	account_association_rec_t *assoc = NULL;
-	account_association_rec_t *temp_assoc = NULL;
+	acct_user_rec_t *user = NULL;
+	acct_association_rec_t *assoc = NULL;
+	acct_association_rec_t *temp_assoc = NULL;
 	char *default_acct = NULL;
-	account_association_cond_t *assoc_cond = NULL;
-	account_expedite_level_t expedite = ACCOUNT_EXPEDITE_NOTSET;
-	account_admin_level_t admin_level = ACCOUNT_ADMIN_NOTSET;
+	acct_association_cond_t *assoc_cond = NULL;
+	acct_expedite_level_t expedite = ACCT_EXPEDITE_NOTSET;
+	acct_admin_level_t admin_level = ACCT_ADMIN_NOTSET;
 	char *name = NULL, *account = NULL, *cluster = NULL, *partition = NULL;
 	int partition_set = 0;
 	List user_list = NULL;
@@ -218,9 +218,9 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 		return SLURM_ERROR;
 	}
 
-	assoc_cond = xmalloc(sizeof(account_association_cond_t));
+	assoc_cond = xmalloc(sizeof(acct_association_cond_t));
 	assoc_cond->user_list = list_create(destroy_char);
-	assoc_cond->account_list = list_create(destroy_char);
+	assoc_cond->acct_list = list_create(destroy_char);
 	assoc_cond->cluster_list = list_create(destroy_char);
 	assoc_cond->partition_list = list_create(destroy_char);
 
@@ -231,16 +231,16 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 			addto_char_list(assoc_cond->user_list, argv[i]+5);
 		} else if (strncasecmp (argv[i], "DefaultAccount=", 15) == 0) {
 			default_acct = xstrdup(argv[i]+15);
-			addto_char_list(assoc_cond->account_list,
+			addto_char_list(assoc_cond->acct_list,
 					argv[i]+15);
 		} else if (strncasecmp (argv[i], "Expedite=", 8) == 0) {
-			expedite = str_2_account_expedite(argv[i]+8);
+			expedite = str_2_acct_expedite(argv[i]+8);
 		} else if (strncasecmp (argv[i], "ExpediteLevel=", 14) == 0) {
-			expedite = str_2_account_expedite(argv[i]+14);
+			expedite = str_2_acct_expedite(argv[i]+14);
 		} else if (strncasecmp (argv[i], "Admin=", 5) == 0) {
-			admin_level = str_2_account_admin_level(argv[i]+5);
+			admin_level = str_2_acct_admin_level(argv[i]+5);
 		} else if (strncasecmp (argv[i], "AdminLevel=", 11) == 0) {
-			admin_level = str_2_account_admin_level(argv[i]+11);
+			admin_level = str_2_acct_admin_level(argv[i]+11);
 		} else if (strncasecmp (argv[i], "FairShare=", 10) == 0) {
 			fairshare = atoi(argv[i]+10);
 			limit_set = 1;
@@ -257,10 +257,10 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 			max_cpu_seconds_per_job = atoi(argv[i]+11);
 			limit_set = 1;
 		} else if (strncasecmp (argv[i], "Account=", 8) == 0) {
-			addto_char_list(assoc_cond->account_list,
+			addto_char_list(assoc_cond->acct_list,
 					argv[i]+8);
 		} else if (strncasecmp (argv[i], "Accounts=", 9) == 0) {
-			addto_char_list(assoc_cond->account_list,
+			addto_char_list(assoc_cond->acct_list,
 					argv[i]+9);
 		} else if (strncasecmp (argv[i], "Cluster=", 8) == 0) {
 			addto_char_list(assoc_cond->cluster_list,
@@ -280,17 +280,17 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 	}
 
 	if(!list_count(assoc_cond->user_list)) {
-		destroy_account_association_cond(assoc_cond);
+		destroy_acct_association_cond(assoc_cond);
 		printf(" Need name of user to add.\n"); 
 		return SLURM_SUCCESS;
 	} else if(!default_acct) {
-		destroy_account_association_cond(assoc_cond);
+		destroy_acct_association_cond(assoc_cond);
 		printf(" Need a default account for these users to add.\n"); 
 		return SLURM_SUCCESS;
 	}
 
 	if(!list_count(assoc_cond->cluster_list)) {
-		account_cluster_rec_t *cluster_rec = NULL;
+		acct_cluster_rec_t *cluster_rec = NULL;
 		itr_c = list_iterator_create(sacctmgr_cluster_list);
 		while((cluster_rec = list_next(itr_c))) {
 			list_append(assoc_cond->cluster_list, 
@@ -306,9 +306,9 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 	itr = list_iterator_create(assoc_cond->user_list);
 	while((name = list_next(itr))) {
 		if(!sacctmgr_find_user(name)) {
-			user = xmalloc(sizeof(account_user_rec_t));
+			user = xmalloc(sizeof(acct_user_rec_t));
 			user->name = xstrdup(name);
-			user->default_account = xstrdup(default_acct);
+			user->default_acct = xstrdup(default_acct);
 			user->expedite = expedite;
 			user->admin_level = admin_level;
 			xstrfmtcat(user_str, "  %s\n", name);
@@ -317,7 +317,7 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 			list_append(sacctmgr_user_list, user);
 		}
 
-		itr_a = list_iterator_create(assoc_cond->account_list);
+		itr_a = list_iterator_create(assoc_cond->acct_list);
 		while((account = list_next(itr_a))) {
 			itr_c = list_iterator_create(assoc_cond->cluster_list);
 			while((cluster = list_next(itr_c))) {
@@ -348,9 +348,10 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 						   name, account,
 						   cluster, partition))
 						continue;
-					assoc = xmalloc(sizeof(account_association_rec_t));
+					assoc = xmalloc(
+						sizeof(acct_association_rec_t));
 					assoc->user = xstrdup(name);
-					assoc->account = xstrdup(account);
+					assoc->acct = xstrdup(account);
 					assoc->cluster = xstrdup(cluster);
 					assoc->partition = xstrdup(partition);
 					assoc->parent = temp_assoc->id;
@@ -375,9 +376,9 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 						continue;
 					
 				assoc = xmalloc(
-					sizeof(account_association_rec_t));
+					sizeof(acct_association_rec_t));
 				assoc->user = xstrdup(name);
-				assoc->account = xstrdup(account);
+				assoc->acct = xstrdup(account);
 				assoc->cluster = xstrdup(cluster);
 				assoc->parent = temp_assoc->id;
 				assoc->fairshare = fairshare;
@@ -401,13 +402,13 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 		printf(" Adding User(s)\n%s", user_str);
 		printf(" Settings =\n");
 		printf("  Default Account = %s\n", default_acct);
-		if(expedite != ACCOUNT_EXPEDITE_NOTSET)
+		if(expedite != ACCT_EXPEDITE_NOTSET)
 			printf("  Expedite        = %s\n", 
-			       account_expedite_str(expedite));
+			       acct_expedite_str(expedite));
 		
-		if(admin_level != ACCOUNT_ADMIN_NOTSET)
+		if(admin_level != ACCT_ADMIN_NOTSET)
 			printf("  Admin Level     = %s\n", 
-			       account_admin_level_str(admin_level));
+			       acct_admin_level_str(admin_level));
 	}
 
 	if(list_count(assoc_list))
@@ -419,13 +420,13 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 			       "\tA = %s"
 			       "\tC = %s"
 			       "\tP = %s\n",
-			       assoc->user, assoc->account, assoc->cluster,
+			       assoc->user, assoc->acct, assoc->cluster,
 			       assoc->partition);
 		else 
 			printf("  U = %s"
 			       "\tA = %s"
 			       "\tC = %s\n",
-			       assoc->user, assoc->account, assoc->cluster);
+			       assoc->user, assoc->acct, assoc->cluster);
 	}
 	list_iterator_destroy(itr);
 
@@ -451,10 +452,10 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 
 	if(execute_flag) {
 		if(list_count(user_list))
-			rc = account_storage_g_add_users(user_list);
+			rc = acct_storage_g_add_users(user_list);
 		list_destroy(user_list);
 		if(list_count(assoc_list))
-			rc = account_storage_g_add_associations(assoc_list);
+			rc = acct_storage_g_add_associations(assoc_list);
 		list_destroy(assoc_list);
 	} else {
 		sacctmgr_action_t *action = NULL;
@@ -481,19 +482,19 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 extern int sacctmgr_list_user(int argc, char *argv[])
 {
 	int rc = SLURM_SUCCESS;
-	account_user_cond_t *user_cond = xmalloc(sizeof(account_user_cond_t));
+	acct_user_cond_t *user_cond = xmalloc(sizeof(acct_user_cond_t));
 	List user_list;
 	int i=0;
 	ListIterator itr = NULL;
-	account_user_rec_t *user = NULL;
+	acct_user_rec_t *user = NULL;
 
 	user_cond->user_list = list_create(destroy_char);
-	user_cond->def_account_list = list_create(destroy_char);
+	user_cond->def_acct_list = list_create(destroy_char);
 	
 	_set_cond(&i, argc, argv, user_cond);
 
-	user_list = account_storage_g_get_users(user_cond);
-	destroy_account_user_cond(user_cond);
+	user_list = acct_storage_g_get_users(user_cond);
+	destroy_acct_user_cond(user_cond);
 
 	if(!user_list) 
 		return SLURM_ERROR;
@@ -507,8 +508,8 @@ extern int sacctmgr_list_user(int argc, char *argv[])
 	
 	while((user = list_next(itr))) {
 		printf("%-15.15s %-15.15s %-10.10s\n",
-		       user->name, user->default_account,
-		       account_expedite_str(user->expedite));
+		       user->name, user->default_acct,
+		       acct_expedite_str(user->expedite));
 	}
 
 	printf("\n");
@@ -521,13 +522,13 @@ extern int sacctmgr_list_user(int argc, char *argv[])
 extern int sacctmgr_modify_user(int argc, char *argv[])
 {
 	int rc = SLURM_SUCCESS;
-	account_user_cond_t *user_cond = xmalloc(sizeof(account_user_cond_t));
-	account_user_rec_t *user = xmalloc(sizeof(account_user_rec_t));
+	acct_user_cond_t *user_cond = xmalloc(sizeof(acct_user_cond_t));
+	acct_user_rec_t *user = xmalloc(sizeof(acct_user_rec_t));
 	int i=0;
 	int cond_set = 0, rec_set = 0;
 
 	user_cond->user_list = list_create(destroy_char);
-	user_cond->def_account_list = list_create(destroy_char);
+	user_cond->def_acct_list = list_create(destroy_char);
 	
 	for (i=0; i<argc; i++) {
 		if (strncasecmp (argv[i], "Where", 5) == 0) {
@@ -546,8 +547,8 @@ extern int sacctmgr_modify_user(int argc, char *argv[])
 
 	if(!rec_set) {
 		printf(" You didn't give me anything to set\n");
-		destroy_account_user_cond(user_cond);
-		destroy_account_user_rec(user);
+		destroy_acct_user_cond(user_cond);
+		destroy_acct_user_rec(user);
 		return SLURM_ERROR;
 	} else if(!cond_set) {
 		if(!commit_check("You didn't set any conditions with 'WHERE'.\n"
@@ -563,9 +564,9 @@ extern int sacctmgr_modify_user(int argc, char *argv[])
 	_print_cond(user_cond);
 
 	if(execute_flag) {
-		rc = account_storage_g_modify_users(user_cond, user);
-		destroy_account_user_cond(user_cond);
-		destroy_account_user_rec(user);
+		rc = acct_storage_g_modify_users(user_cond, user);
+		destroy_acct_user_cond(user_cond);
+		destroy_acct_user_rec(user);
 	} else {
 		sacctmgr_action_t *action = xmalloc(sizeof(sacctmgr_action_t));
 		action->type = SACCTMGR_USER_MODIFY;
@@ -580,11 +581,11 @@ extern int sacctmgr_modify_user(int argc, char *argv[])
 extern int sacctmgr_delete_user(int argc, char *argv[])
 {
 	int rc = SLURM_SUCCESS;
-	account_user_cond_t *user_cond = xmalloc(sizeof(account_user_cond_t));
+	acct_user_cond_t *user_cond = xmalloc(sizeof(acct_user_cond_t));
 	int i=0;
 
 	user_cond->user_list = list_create(destroy_char);
-	user_cond->def_account_list = list_create(destroy_char);
+	user_cond->def_acct_list = list_create(destroy_char);
 	
 	if(!_set_cond(&i, argc, argv, user_cond)) {
 		printf(" No conditions given to remove, not executing.\n");
@@ -595,8 +596,8 @@ extern int sacctmgr_delete_user(int argc, char *argv[])
 	_print_cond(user_cond);
 
 	if(execute_flag) {
-		rc = account_storage_g_remove_users(user_cond);
-		destroy_account_user_cond(user_cond);
+		rc = acct_storage_g_remove_users(user_cond);
+		destroy_acct_user_cond(user_cond);
 	} else {
 		sacctmgr_action_t *action = xmalloc(sizeof(sacctmgr_action_t));
 		action->type = SACCTMGR_USER_DELETE;

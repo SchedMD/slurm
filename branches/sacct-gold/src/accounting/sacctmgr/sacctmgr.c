@@ -588,57 +588,57 @@ static void _commit ()
 			error("This action does not have a type.");
 			break;
 		case SACCTMGR_USER_CREATE:
-			rc = account_storage_g_add_users(action->list);		
+			rc = acct_storage_g_add_users(action->list);		
 			break;
 		case SACCTMGR_ACCOUNT_CREATE:
-			rc = account_storage_g_add_accounts(action->list);
+			rc = acct_storage_g_add_accounts(action->list);
 			break;
 		case SACCTMGR_CLUSTER_CREATE:
-			rc = account_storage_g_add_clusters(action->list);
+			rc = acct_storage_g_add_clusters(action->list);
 			break;
 		case SACCTMGR_ASSOCIATION_CREATE:
-			rc = account_storage_g_add_associations(action->list);
+			rc = acct_storage_g_add_associations(action->list);
 			break;
 		case SACCTMGR_USER_MODIFY:
-			rc = account_storage_g_modify_users(action->cond,
-							    action->rec);
+			rc = acct_storage_g_modify_users(action->cond,
+							 action->rec);
 			break;
 		case SACCTMGR_USER_DELETE:
-			rc = account_storage_g_remove_users(action->cond);
+			rc = acct_storage_g_remove_users(action->cond);
 			break;
 		case SACCTMGR_ACCOUNT_MODIFY:
-			rc = account_storage_g_modify_accounts(action->cond,
-							       action->rec);
+			rc = acct_storage_g_modify_accounts(action->cond,
+							    action->rec);
 			break;
 		case SACCTMGR_ACCOUNT_DELETE:
-			rc = account_storage_g_remove_accounts(action->cond);
+			rc = acct_storage_g_remove_accounts(action->cond);
 			break;
 		case SACCTMGR_CLUSTER_MODIFY:
-			rc = account_storage_g_modify_clusters(action->cond,
-							       action->rec);
+			rc = acct_storage_g_modify_clusters(action->cond,
+							    action->rec);
 			break;
 		case SACCTMGR_CLUSTER_DELETE:
-			rc = account_storage_g_remove_clusters(action->cond);
+			rc = acct_storage_g_remove_clusters(action->cond);
 			break;
 		case SACCTMGR_ASSOCIATION_MODIFY:
-			rc = account_storage_g_modify_associations(action->cond,
-								   action->rec);
+			rc = acct_storage_g_modify_associations(action->cond,
+								action->rec);
 			break;
 		case SACCTMGR_ASSOCIATION_DELETE:
-			rc = account_storage_g_remove_associations(
+			rc = acct_storage_g_remove_associations(
 				action->cond);
 			break;
 		case SACCTMGR_ADMIN_MODIFY:
-			rc = account_storage_g_modify_user_admin_level(
+			rc = acct_storage_g_modify_user_admin_level(
 				action->cond);
 			break;
 		case SACCTMGR_COORD_CREATE:
-			rc = account_storage_g_add_coord(action->rec,
-							 action->cond);
+			rc = acct_storage_g_add_coord(action->rec,
+						      action->cond);
 			break;
 		case SACCTMGR_COORD_DELETE:
-			rc = account_storage_g_remove_coord(action->rec,
-							    action->cond);
+			rc = acct_storage_g_remove_coord(action->rec,
+							 action->cond);
 			break;	
 		default:
 			error("unknown action %d", action->type);

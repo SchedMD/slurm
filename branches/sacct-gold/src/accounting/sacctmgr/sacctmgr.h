@@ -77,8 +77,7 @@
 #include <slurm/slurm.h>
 
 #include "src/common/xstring.h"
-#include "src/common/slurm_account_storage.h"
-#include "src/common/slurm_clusteracct_storage.h"
+#include "src/common/slurm_accounting_storage.h"
 #include "src/common/slurm_jobacct_storage.h"
 
 #define CKPT_WAIT	10
@@ -157,16 +156,16 @@ extern int commit_check(char *warning);
 extern int sacctmgr_init();
 
 /* do not free the objects returned from these functions */
-extern account_association_rec_t *sacctmgr_find_association(char *user,
-							    char *account,
-							    char *cluster,
-							    char *partition);
-extern account_association_rec_t *sacctmgr_find_parent_assoc(char *account,
-							     char *cluster);
-extern account_association_rec_t *sacctmgr_find_account_base_assoc(
+extern acct_association_rec_t *sacctmgr_find_association(char *user,
+							 char *account,
+							 char *cluster,
+							 char *partition);
+extern acct_association_rec_t *sacctmgr_find_parent_assoc(char *account,
+							  char *cluster);
+extern acct_association_rec_t *sacctmgr_find_account_base_assoc(
 	char *account, char *cluster);
-extern account_user_rec_t *sacctmgr_find_user(char *name);
-extern account_account_rec_t *sacctmgr_find_account(char *name);
-extern account_cluster_rec_t *sacctmgr_find_cluster(char *name);
+extern acct_user_rec_t *sacctmgr_find_user(char *name);
+extern acct_account_rec_t *sacctmgr_find_account(char *name);
+extern acct_cluster_rec_t *sacctmgr_find_cluster(char *name);
 
 #endif

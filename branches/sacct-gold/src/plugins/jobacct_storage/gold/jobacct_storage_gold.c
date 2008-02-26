@@ -176,7 +176,7 @@ static char *_get_account_id(char *user, char *project, char *machine)
 	if(gold_account_id) 
 		return gold_account_id;
 	
-	gold_request = create_gold_request(GOLD_OBJECT_ACCOUNT,
+	gold_request = create_gold_request(GOLD_OBJECT_ACCT,
 					   GOLD_ACTION_QUERY);
 
 	gold_request_add_selection(gold_request, "Id");
@@ -247,7 +247,7 @@ static gold_account_t *_get_struct_from_account_id(char *gold_account_id)
 	if(gold_account) 
 		return gold_account;
 	
-	gold_request = create_gold_request(GOLD_OBJECT_ACCOUNT,
+	gold_request = create_gold_request(GOLD_OBJECT_ACCT,
 					   GOLD_ACTION_QUERY);
 
 	gold_request_add_selection(gold_request, "User");

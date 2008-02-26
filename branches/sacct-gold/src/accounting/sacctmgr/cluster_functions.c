@@ -39,7 +39,7 @@
 #include "sacctmgr.h"
 
 static int _set_cond(int *start, int argc, char *argv[],
-		     account_cluster_cond_t *cluster_cond)
+		     acct_cluster_cond_t *cluster_cond)
 {
 	int i;
 	int set = 0;
@@ -65,7 +65,7 @@ static int _set_cond(int *start, int argc, char *argv[],
 }
 
 static int _set_rec(int *start, int argc, char *argv[],
-		    account_cluster_rec_t *cluster)
+		    acct_cluster_rec_t *cluster)
 {
 	int i;
 	int set = 0;
@@ -90,13 +90,13 @@ static int _set_rec(int *start, int argc, char *argv[],
 
 }
 
-static void _print_cond(account_cluster_cond_t *cluster_cond)
+static void _print_cond(acct_cluster_cond_t *cluster_cond)
 {
 	ListIterator itr = NULL;
 	char *tmp_char = NULL;
 
 	if(!cluster_cond) {
-		error("no account_cluster_cond_t * given");
+		error("no acct_cluster_cond_t * given");
 		return;
 	}
 
@@ -115,7 +115,7 @@ extern int sacctmgr_add_cluster(int argc, char *argv[])
 {
 	int rc = SLURM_SUCCESS;
 	int i=0;
-	account_cluster_rec_t *cluster = xmalloc(sizeof(account_cluster_rec_t));
+	acct_cluster_rec_t *cluster = xmalloc(sizeof(acct_cluster_rec_t));
 	List cluster_list = NULL;
 
 	for (i=0; i<argc; i++) {
@@ -130,7 +130,7 @@ extern int sacctmgr_add_cluster(int argc, char *argv[])
 		}		
 	}
 	if(!cluster->name) {
-		destroy_account_cluster_rec(cluster);
+		destroy_acct_cluster_rec(cluster);
 		printf(" Need name of cluster to add.\n"); 
 		return SLURM_SUCCESS;
 	}
@@ -139,16 +139,16 @@ extern int sacctmgr_add_cluster(int argc, char *argv[])
 	printf("  Name           = %s", cluster->name);
 	if(cluster->interface_node)
 		printf("  Interface Node = %s", cluster->interface_node);
-	cluster_list = list_create(destroy_account_cluster_rec);
+	cluster_list = list_create(destroy_acct_cluster_rec);
 	list_push(cluster_list, cluster);
 
 	if(execute_flag) {
-		rc = account_storage_g_add_clusters(cluster_list);
+		rc = acct_storage_g_add_clusters(cluster_list);
 		list_destroy(cluster_list);
 	} else {
 		sacctmgr_action_t *action = xmalloc(sizeof(sacctmgr_action_t));
 		action->type = SACCTMGR_CLUSTER_CREATE;
-		action->list = list_create(destroy_account_cluster_rec);
+		action->list = list_create(destroy_acct_cluster_rec);
 		list_push(sacctmgr_action_list, action);
 	}
 
@@ -158,12 +158,12 @@ extern int sacctmgr_add_cluster(int argc, char *argv[])
 extern int sacctmgr_list_cluster(int argc, char *argv[])
 {
 	int rc = SLURM_SUCCESS;
-	account_cluster_cond_t *cluster_cond =
-		xmalloc(sizeof(account_cluster_cond_t));
+	acct_cluster_cond_t *cluster_cond =
+		xmalloc(sizeof(acct_cluster_cond_t));
 	List cluster_list;
 	int i=0;
 	ListIterator itr = NULL;
-	account_cluster_rec_t *cluster = NULL;
+	acct_cluster_rec_t *cluster = NULL;
 
 	cluster_cond->cluster_list = list_create(destroy_char);
 	for (i=0; i<argc; i++) {
@@ -176,8 +176,8 @@ extern int sacctmgr_list_cluster(int argc, char *argv[])
 		}		
 	}
 
-	cluster_list = account_storage_g_get_clusters(cluster_cond);
-	destroy_account_cluster_cond(cluster_cond);
+	cluster_list = acct_storage_g_get_clusters(cluster_cond);
+	destroy_acct_cluster_cond(cluster_cond);
 	
 	if(!cluster_list) 
 		return SLURM_ERROR;
@@ -204,9 +204,9 @@ extern int sacctmgr_modify_cluster(int argc, char *argv[])
 {
 	int rc = SLURM_SUCCESS;
 	int i=0;
-	account_cluster_cond_t *cluster_cond =
-		xmalloc(sizeof(account_cluster_cond_t));
-	account_cluster_rec_t *cluster = xmalloc(sizeof(account_cluster_rec_t));
+	acct_cluster_cond_t *cluster_cond =
+		xmalloc(sizeof(acct_cluster_cond_t));
+	acct_cluster_rec_t *cluster = xmalloc(sizeof(acct_cluster_rec_t));
 	List cluster_list = NULL;
 	int cond_set = 0, rec_set = 0;
 
@@ -229,8 +229,8 @@ extern int sacctmgr_modify_cluster(int argc, char *argv[])
 
 	if(!rec_set) {
 		printf(" You didn't give me anything to set\n");
-		destroy_account_cluster_cond(cluster_cond);
-		destroy_account_cluster_rec(cluster);
+		destroy_acct_cluster_cond(cluster_cond);
+		destroy_acct_cluster_rec(cluster);
 		return SLURM_ERROR;
 	} else if(!cond_set) {
 		if(!commit_check("You didn't set any conditions with 'WHERE'.\n"
@@ -245,13 +245,13 @@ extern int sacctmgr_modify_cluster(int argc, char *argv[])
 	printf("\n Where\n");
 	_print_cond(cluster_cond);
 
-	cluster_list = list_create(destroy_account_cluster_rec);
+	cluster_list = list_create(destroy_acct_cluster_rec);
 	list_push(cluster_list, cluster);
 
 	if(execute_flag) {
-		rc = account_storage_g_modify_clusters(cluster_cond, cluster);
-		destroy_account_cluster_cond(cluster_cond);
-		destroy_account_cluster_rec(cluster);
+		rc = acct_storage_g_modify_clusters(cluster_cond, cluster);
+		destroy_acct_cluster_cond(cluster_cond);
+		destroy_acct_cluster_rec(cluster);
 	} else {
 		sacctmgr_action_t *action = xmalloc(sizeof(sacctmgr_action_t));
 		action->type = SACCTMGR_CLUSTER_MODIFY;
@@ -266,7 +266,8 @@ extern int sacctmgr_modify_cluster(int argc, char *argv[])
 extern int sacctmgr_delete_cluster(int argc, char *argv[])
 {
 	int rc = SLURM_SUCCESS;
-	account_cluster_cond_t *cluster_cond = xmalloc(sizeof(account_cluster_cond_t));
+	acct_cluster_cond_t *cluster_cond =
+		xmalloc(sizeof(acct_cluster_cond_t));
 	int i=0;
 
 	cluster_cond->cluster_list = list_create(destroy_char);
@@ -280,8 +281,8 @@ extern int sacctmgr_delete_cluster(int argc, char *argv[])
 	_print_cond(cluster_cond);
 
 	if(execute_flag) {
-		rc = account_storage_g_remove_clusters(cluster_cond);
-		destroy_account_cluster_cond(cluster_cond);
+		rc = acct_storage_g_remove_clusters(cluster_cond);
+		destroy_acct_cluster_cond(cluster_cond);
 	} else {
 		sacctmgr_action_t *action = xmalloc(sizeof(sacctmgr_action_t));
 		action->type = SACCTMGR_CLUSTER_DELETE;

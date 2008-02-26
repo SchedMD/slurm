@@ -200,43 +200,43 @@ extern void destroy_sacctmgr_action(void *object)
 			 */
 			break;
 		case SACCTMGR_USER_MODIFY:
-			destroy_account_user_rec(action->rec);
-			destroy_account_user_cond(action->cond);
+			destroy_acct_user_rec(action->rec);
+			destroy_acct_user_cond(action->cond);
 			break;
 		case SACCTMGR_USER_DELETE:
-			destroy_account_user_cond(action->cond);
+			destroy_acct_user_cond(action->cond);
 			break;
 		case SACCTMGR_ACCOUNT_MODIFY:
-			destroy_account_account_rec(action->rec);
-			destroy_account_account_cond(action->cond);
+			destroy_acct_account_rec(action->rec);
+			destroy_acct_account_cond(action->cond);
 			break;
 		case SACCTMGR_ACCOUNT_DELETE:
-			destroy_account_account_cond(action->cond);
+			destroy_acct_account_cond(action->cond);
 			break;
 		case SACCTMGR_CLUSTER_MODIFY:
-			destroy_account_cluster_rec(action->rec);
-			destroy_account_cluster_cond(action->cond);
+			destroy_acct_cluster_rec(action->rec);
+			destroy_acct_cluster_cond(action->cond);
 			break;
 		case SACCTMGR_CLUSTER_DELETE:
-			destroy_account_cluster_cond(action->cond);
+			destroy_acct_cluster_cond(action->cond);
 			break;
 		case SACCTMGR_ASSOCIATION_MODIFY:
-			destroy_account_association_rec(action->rec);
-			destroy_account_association_cond(action->cond);
+			destroy_acct_association_rec(action->rec);
+			destroy_acct_association_cond(action->cond);
 			break;
 		case SACCTMGR_ASSOCIATION_DELETE:
-			destroy_account_association_cond(action->cond);
+			destroy_acct_association_cond(action->cond);
 			break;
 		case SACCTMGR_ADMIN_MODIFY:
-			destroy_account_user_cond(action->cond);
+			destroy_acct_user_cond(action->cond);
 			break;
 		case SACCTMGR_COORD_CREATE:
 			xfree(action->rec);
-			destroy_account_user_cond(action->cond);
+			destroy_acct_user_cond(action->cond);
 			break;
 		case SACCTMGR_COORD_DELETE:
 			xfree(action->rec);
-			destroy_account_user_cond(action->cond);
+			destroy_acct_user_cond(action->cond);
 			break;	
 		default:
 			error("unknown action %d", action->type);
@@ -279,13 +279,13 @@ extern int sacctmgr_init()
 	sacctmgr_action_list = list_create(destroy_sacctmgr_action);
 
 	if(!sacctmgr_user_list)
-		sacctmgr_user_list = account_storage_g_get_users(NULL);
+		sacctmgr_user_list = acct_storage_g_get_users(NULL);
 	if(!sacctmgr_account_list)
-		sacctmgr_account_list = account_storage_g_get_accounts(NULL);
+		sacctmgr_account_list = acct_storage_g_get_accounts(NULL);
 	if(!sacctmgr_cluster_list)
-		sacctmgr_cluster_list = account_storage_g_get_clusters(NULL);
+		sacctmgr_cluster_list = acct_storage_g_get_clusters(NULL);
 	if(!sacctmgr_association_list)
-		sacctmgr_association_list = account_storage_g_get_associations(
+		sacctmgr_association_list = acct_storage_g_get_associations(
 			NULL);
 
 	inited = 1;
@@ -293,13 +293,13 @@ extern int sacctmgr_init()
 	return SLURM_SUCCESS;
 }
 
-extern account_association_rec_t *sacctmgr_find_association(char *user,
-							    char *account,
-							    char *cluster,
-							    char *partition)
+extern acct_association_rec_t *sacctmgr_find_association(char *user,
+							 char *account,
+							 char *cluster,
+							 char *partition)
 {
 	ListIterator itr = NULL;
-	account_association_rec_t * assoc = NULL;
+	acct_association_rec_t * assoc = NULL;
 	
 	if(!sacctmgr_association_list)
 		return NULL;
@@ -307,8 +307,8 @@ extern account_association_rec_t *sacctmgr_find_association(char *user,
 	itr = list_iterator_create(sacctmgr_association_list);
 	while((assoc = list_next(itr))) {
 		if((user && (!assoc->user || strcasecmp(user, assoc->user))) 
-		   || (account && (!assoc->account 
-				   || strcasecmp(account, assoc->account)))
+		   || (account && (!assoc->acct 
+				   || strcasecmp(account, assoc->acct)))
 		   || (cluster && (!assoc->cluster 
 				   || strcasecmp(cluster, assoc->cluster)))
 		   || (partition && (!assoc->partition 
@@ -322,11 +322,11 @@ extern account_association_rec_t *sacctmgr_find_association(char *user,
 	return assoc;
 }
 
-extern account_association_rec_t *sacctmgr_find_parent_assoc(char *account,
-							     char *cluster)
+extern acct_association_rec_t *sacctmgr_find_parent_assoc(char *account,
+							  char *cluster)
 {
 	ListIterator itr = NULL;
-	account_association_rec_t *assoc = NULL;
+	acct_association_rec_t *assoc = NULL;
 	uint32_t par_id = 0;
 
 	if(!sacctmgr_association_list || !account || !cluster)
@@ -344,7 +344,7 @@ extern account_association_rec_t *sacctmgr_find_parent_assoc(char *account,
 				continue;
 		}
 		if((assoc->user && strcmp(assoc->user, "NONE"))
-		   || strcasecmp(account, assoc->account)
+		   || strcasecmp(account, assoc->acct)
 		   || strcasecmp(cluster, assoc->cluster))
 			continue;
 		list_iterator_reset(itr);
@@ -355,11 +355,11 @@ extern account_association_rec_t *sacctmgr_find_parent_assoc(char *account,
 	return assoc;
 }
 
-extern account_association_rec_t *sacctmgr_find_account_base_assoc(
-	char *account, char *cluster)
+extern acct_association_rec_t *sacctmgr_find_account_base_assoc(char *account,
+								char *cluster)
 {
 	ListIterator itr = NULL;
-	account_association_rec_t *assoc = NULL;
+	acct_association_rec_t *assoc = NULL;
 	char *temp = "root";
 
 	if(!sacctmgr_association_list || !cluster)
@@ -371,7 +371,7 @@ extern account_association_rec_t *sacctmgr_find_account_base_assoc(
 	itr = list_iterator_create(sacctmgr_association_list);
 	while((assoc = list_next(itr))) {
 		if((assoc->user && strcmp(assoc->user, "NONE"))
-		   || strcasecmp(temp, assoc->account)
+		   || strcasecmp(temp, assoc->acct)
 		   || strcasecmp(cluster, assoc->cluster))
 			continue;
 		
@@ -382,10 +382,10 @@ extern account_association_rec_t *sacctmgr_find_account_base_assoc(
 	return assoc;
 }
 
-extern account_user_rec_t *sacctmgr_find_user(char *name)
+extern acct_user_rec_t *sacctmgr_find_user(char *name)
 {
 	ListIterator itr = NULL;
-	account_user_rec_t *user = NULL;
+	acct_user_rec_t *user = NULL;
 	
 	if(!sacctmgr_user_list || !name)
 		return NULL;
@@ -400,10 +400,10 @@ extern account_user_rec_t *sacctmgr_find_user(char *name)
 	return user;
 }
 
-extern account_account_rec_t *sacctmgr_find_account(char *name)
+extern acct_account_rec_t *sacctmgr_find_account(char *name)
 {
 	ListIterator itr = NULL;
-	account_account_rec_t *account = NULL;
+	acct_account_rec_t *account = NULL;
 	
 	if(!sacctmgr_account_list || !name)
 		return NULL;
@@ -418,10 +418,10 @@ extern account_account_rec_t *sacctmgr_find_account(char *name)
 	return account;
 }
 
-extern account_cluster_rec_t *sacctmgr_find_cluster(char *name)
+extern acct_cluster_rec_t *sacctmgr_find_cluster(char *name)
 {
 	ListIterator itr = NULL;
-	account_cluster_rec_t *cluster = NULL;
+	acct_cluster_rec_t *cluster = NULL;
 	
 	if(!sacctmgr_cluster_list || !name)
 		return NULL;

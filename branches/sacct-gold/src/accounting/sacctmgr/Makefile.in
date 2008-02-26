@@ -71,8 +71,7 @@ binPROGRAMS_INSTALL = $(INSTALL_PROGRAM)
 PROGRAMS = $(bin_PROGRAMS)
 am_sacctmgr_OBJECTS = user_functions.$(OBJEXT) \
 	cluster_functions.$(OBJEXT) account_functions.$(OBJEXT) \
-	association_functions.$(OBJEXT) sacctmgr.$(OBJEXT) \
-	common.$(OBJEXT)
+	sacctmgr.$(OBJEXT) common.$(OBJEXT)
 sacctmgr_OBJECTS = $(am_sacctmgr_OBJECTS)
 am__DEPENDENCIES_1 =
 sacctmgr_DEPENDENCIES = $(convenience_libs) $(am__DEPENDENCIES_1)
@@ -266,7 +265,6 @@ sacctmgr_SOURCES = \
 	user_functions.c	\
 	cluster_functions.c	\
 	account_functions.c	\
-	association_functions.c   \
 	sacctmgr.c	\
 	sacctmgr.h	\
 	common.c
@@ -349,7 +347,6 @@ distclean-compile:
 	-rm -f *.tab.c
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/account_functions.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/association_functions.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cluster_functions.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/common.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sacctmgr.Po@am__quote@

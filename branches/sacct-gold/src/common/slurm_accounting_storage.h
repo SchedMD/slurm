@@ -184,8 +184,7 @@ extern int acct_storage_g_add_users(List user_list);
  * IN:  acct_user_cond_t *user_q
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
-extern int acct_storage_g_add_coord(char *acct,
-				       acct_user_cond_t *user_q);
+extern int acct_storage_g_add_coord(char *acct, acct_user_cond_t *user_q);
 
 
 /* 
@@ -216,7 +215,7 @@ extern int acct_storage_g_add_associations(List association_list);
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
 extern int acct_storage_g_modify_users(acct_user_cond_t *user_q,
-					  acct_user_rec_t *user);
+				       acct_user_rec_t *user);
 
 /* 
  * modify existing users admin level in the accounting system 
@@ -242,7 +241,7 @@ extern int acct_storage_g_modify_accounts(acct_account_cond_t *acct_q,
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
 extern int acct_storage_g_modify_clusters(acct_cluster_cond_t *cluster_q,
-					     acct_cluster_rec_t *cluster);
+					  acct_cluster_rec_t *cluster);
 
 /* 
  * modify existing associations in the accounting system 
@@ -250,8 +249,8 @@ extern int acct_storage_g_modify_clusters(acct_cluster_cond_t *cluster_q,
  * IN:  acct_association_rec_t *assoc
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
-extern int acct_storage_g_modify_associations(
-	acct_association_cond_t *assoc_q, acct_association_rec_t *assoc);
+extern int acct_storage_g_modify_associations(acct_association_cond_t *assoc_q,
+					      acct_association_rec_t *assoc);
 
 /* 
  * remove users from accounting system 
@@ -266,32 +265,28 @@ extern int acct_storage_g_remove_users(acct_user_cond_t *user_q);
  * IN: acct_user_cond_t *user_q
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
-extern int acct_storage_g_remove_coord(char *acct,
-					  acct_user_cond_t *user_q);
+extern int acct_storage_g_remove_coord(char *acct, acct_user_cond_t *user_q);
 
 /* 
  * remove accounts from accounting system 
  * IN:  acct_account_cond_t *acct_q
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
-extern int acct_storage_g_remove_accounts(
-	acct_account_cond_t *acct_q);
+extern int acct_storage_g_remove_accounts(acct_account_cond_t *acct_q);
 
 /* 
  * remove clusters from accounting system 
  * IN:  acct_cluster_cond_t *cluster_q
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
-extern int acct_storage_g_remove_clusters(
-	acct_cluster_cond_t *cluster_q);
+extern int acct_storage_g_remove_clusters(acct_cluster_cond_t *cluster_q);
 
 /* 
  * remove associations from accounting system 
  * IN:  acct_association_cond_t *assoc_q
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
-extern int acct_storage_g_remove_associations(
-	acct_association_cond_t *assoc_q);
+extern int acct_storage_g_remove_associations(acct_association_cond_t *assoc_q);
 
 /* 
  * get info from the storage 
@@ -327,8 +322,7 @@ extern List acct_storage_g_get_clusters(acct_cluster_cond_t *cluster_q);
  * returns List of acct_association_rec_t *
  * note List needs to be freed when called
  */
-extern List acct_storage_g_get_associations(
-	acct_association_cond_t *assoc_q);
+extern List acct_storage_g_get_associations(acct_association_cond_t *assoc_q);
 
 /* 
  * get info from the storage 
@@ -338,9 +332,8 @@ extern List acct_storage_g_get_associations(
  * IN:  params void *
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
-extern int acct_storage_g_get_hourly_usage(
-	acct_association_rec_t *acct_assoc,
-	time_t start, time_t end);
+extern int acct_storage_g_get_hourly_usage(acct_association_rec_t *acct_assoc,
+					   time_t start, time_t end);
 
 /* 
  * get info from the storage 
@@ -350,9 +343,8 @@ extern int acct_storage_g_get_hourly_usage(
  * IN:  params void *
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
-extern int acct_storage_g_get_daily_usage(
-	acct_association_rec_t *acct_assoc,
-	time_t start, time_t end);
+extern int acct_storage_g_get_daily_usage(acct_association_rec_t *acct_assoc,
+					  time_t start, time_t end);
 
 /* 
  * get info from the storage 
@@ -362,9 +354,8 @@ extern int acct_storage_g_get_daily_usage(
  * IN:  params void *
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
-extern int acct_storage_g_get_monthly_usage(
-	acct_association_rec_t *acct_assoc,
-	time_t start, time_t end);
+extern int acct_storage_g_get_monthly_usage(acct_association_rec_t *acct_assoc,
+					    time_t start, time_t end);
 
 
 /*********************** CLUSTER ACCOUNTING STORAGE **************************/

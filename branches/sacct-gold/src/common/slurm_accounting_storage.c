@@ -522,8 +522,7 @@ extern int acct_storage_g_add_users(List user_list)
 	return (*(g_acct_storage_context->ops.add_users))(user_list);
 }
 
-extern int acct_storage_g_add_coord(char *acct,
-				       acct_user_cond_t *user_q)
+extern int acct_storage_g_add_coord(char *acct, acct_user_cond_t *user_q)
 {
 	if (slurm_acct_storage_init() < 0)
 		return SLURM_ERROR;
@@ -531,7 +530,7 @@ extern int acct_storage_g_add_coord(char *acct,
 		(acct, user_q);
 }
 
-extern int acct_storage_g_add_accts(List acct_list)
+extern int acct_storage_g_add_accounts(List acct_list)
 {
 	if (slurm_acct_storage_init() < 0)
 		return SLURM_ERROR;
@@ -554,15 +553,14 @@ extern int acct_storage_g_add_associations(List association_list)
 }
 
 extern int acct_storage_g_modify_users(acct_user_cond_t *user_q,
-					  acct_user_rec_t *user)
+				       acct_user_rec_t *user)
 {
 	if (slurm_acct_storage_init() < 0)
 		return SLURM_ERROR;
 	return (*(g_acct_storage_context->ops.modify_users))(user_q, user);
 }
 
-extern int acct_storage_g_modify_user_admin_level(
-	acct_user_cond_t *user_q)
+extern int acct_storage_g_modify_user_admin_level(acct_user_cond_t *user_q)
 {
 	if (slurm_acct_storage_init() < 0)
 		return SLURM_ERROR;
@@ -570,8 +568,8 @@ extern int acct_storage_g_modify_user_admin_level(
 		(user_q);
 }
 
-extern int acct_storage_g_modify_accts(acct_account_cond_t *acct_q,
-					     acct_account_rec_t *acct)
+extern int acct_storage_g_modify_accounts(acct_account_cond_t *acct_q,
+					  acct_account_rec_t *acct)
 {
 	if (slurm_acct_storage_init() < 0)
 		return SLURM_ERROR;
@@ -580,7 +578,7 @@ extern int acct_storage_g_modify_accts(acct_account_cond_t *acct_q,
 }
 
 extern int acct_storage_g_modify_clusters(acct_cluster_cond_t *cluster_q,
-					     acct_cluster_rec_t *cluster)
+					  acct_cluster_rec_t *cluster)
 {
 	if (slurm_acct_storage_init() < 0)
 		return SLURM_ERROR;
@@ -588,8 +586,8 @@ extern int acct_storage_g_modify_clusters(acct_cluster_cond_t *cluster_q,
 		(cluster_q, cluster);
 }
 
-extern int acct_storage_g_modify_associations(
-	acct_association_cond_t *assoc_q, acct_association_rec_t *assoc)
+extern int acct_storage_g_modify_associations(acct_association_cond_t *assoc_q,
+					      acct_association_rec_t *assoc)
 {
 	if (slurm_acct_storage_init() < 0)
 		return SLURM_ERROR;
@@ -604,8 +602,7 @@ extern int acct_storage_g_remove_users(acct_user_cond_t *user_q)
 	return (*(g_acct_storage_context->ops.remove_users))(user_q);
 }
 
-extern int acct_storage_g_remove_coord(char *acct,
-					  acct_user_cond_t *user_q)
+extern int acct_storage_g_remove_coord(char *acct, acct_user_cond_t *user_q)
 {
 	if (slurm_acct_storage_init() < 0)
 		return SLURM_ERROR;
@@ -613,7 +610,7 @@ extern int acct_storage_g_remove_coord(char *acct,
 		(acct, user_q);
 }
 
-extern int acct_storage_g_remove_accts(acct_account_cond_t *acct_q)
+extern int acct_storage_g_remove_accounts(acct_account_cond_t *acct_q)
 {
 	if (slurm_acct_storage_init() < 0)
 		return SLURM_ERROR;
@@ -629,8 +626,7 @@ extern int acct_storage_g_remove_clusters(acct_cluster_cond_t *cluster_q)
 		(cluster_q);
 }
 
-extern int acct_storage_g_remove_associations(
-	acct_association_cond_t *assoc_q)
+extern int acct_storage_g_remove_associations(acct_association_cond_t *assoc_q)
 {
 	if (slurm_acct_storage_init() < 0)
 		return SLURM_ERROR;
@@ -645,7 +641,7 @@ extern List acct_storage_g_get_users(acct_user_cond_t *user_q)
 	return (*(g_acct_storage_context->ops.get_users))(user_q);
 }
 
-extern List acct_storage_g_get_accts(acct_account_cond_t *acct_q)
+extern List acct_storage_g_get_accounts(acct_account_cond_t *acct_q)
 {
 	if (slurm_acct_storage_init() < 0)
 		return NULL;
@@ -661,8 +657,7 @@ extern List acct_storage_g_get_clusters(acct_cluster_cond_t *cluster_q)
 		(cluster_q);
 }
 
-extern List acct_storage_g_get_associations(
-	acct_association_cond_t *assoc_q)
+extern List acct_storage_g_get_associations(acct_association_cond_t *assoc_q)
 {
 	if (slurm_acct_storage_init() < 0)
 		return NULL;
@@ -670,9 +665,8 @@ extern List acct_storage_g_get_associations(
 		(assoc_q);
 }
 
-extern int acct_storage_g_get_hourly_usage(
-	acct_association_rec_t *acct_assoc,
-	time_t start, time_t end)
+extern int acct_storage_g_get_hourly_usage(acct_association_rec_t *acct_assoc,
+					   time_t start, time_t end)
 {
 	if (slurm_acct_storage_init() < 0)
 		return SLURM_ERROR;
@@ -680,9 +674,8 @@ extern int acct_storage_g_get_hourly_usage(
 		(acct_assoc, start, end);
 }
 
-extern int acct_storage_g_get_daily_usage(
-	acct_association_rec_t *acct_assoc,
-	time_t start, time_t end)
+extern int acct_storage_g_get_daily_usage(acct_association_rec_t *acct_assoc,
+					  time_t start, time_t end)
 {
 	if (slurm_acct_storage_init() < 0)
 		return SLURM_ERROR;
@@ -690,9 +683,8 @@ extern int acct_storage_g_get_daily_usage(
 		(acct_assoc, start, end);
 }
 
-extern int acct_storage_g_get_monthly_usage(
-	acct_association_rec_t *acct_assoc,
-	time_t start, time_t end)
+extern int acct_storage_g_get_monthly_usage(acct_association_rec_t *acct_assoc,
+					    time_t start, time_t end)
 {
 	if (slurm_acct_storage_init() < 0)
 		return SLURM_ERROR;

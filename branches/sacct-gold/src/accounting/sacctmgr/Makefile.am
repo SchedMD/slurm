@@ -10,7 +10,6 @@ sacctmgr_SOURCES =	\
 	user_functions.c	\
 	cluster_functions.c	\
 	account_functions.c	\
-	association_functions.c   \
 	sacctmgr.c	\
 	sacctmgr.h	\
 	common.c
