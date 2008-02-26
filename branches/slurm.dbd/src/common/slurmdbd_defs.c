@@ -1172,7 +1172,7 @@ slurm_dbd_pack_init_msg(dbd_init_msg_t *msg, Buf buffer)
 
 	pack16(msg->version, buffer);
 /* FIXME: May need to use distinct auth plugin/port from slurmctld */
-	auth_cred = g_slurm_auth_create(NULL, 2);
+	auth_cred = g_slurm_auth_create(NULL, 2, NULL);
 	if (auth_cred == NULL) {
 		error("Creating authentication credential: %s",
 			 g_slurm_auth_errstr(g_slurm_auth_errno(NULL)));
@@ -1201,7 +1201,7 @@ slurm_dbd_unpack_init_msg(dbd_init_msg_t **msg, Buf buffer)
 			g_slurm_auth_errstr(g_slurm_auth_errno(NULL)));
 		goto unpack_error;
 	}
-	msg_ptr->uid = g_slurm_auth_get_uid(auth_cred);
+	msg_ptr->uid = g_slurm_auth_get_uid(auth_cred, NULL);
 	g_slurm_auth_destroy(auth_cred);
 	return SLURM_SUCCESS;
 

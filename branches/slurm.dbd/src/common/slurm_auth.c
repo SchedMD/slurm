@@ -59,11 +59,11 @@ static bool auth_dummy = false;	/* for security testing */
  * end of the structure.
  */
 typedef struct slurm_auth_ops {
-        void *       (*create)    ( void *argv[] );
+        void *       (*create)    ( void *argv[], char *auth_info );
         int          (*destroy)   ( void *cred );
-        int          (*verify)    ( void *cred, void *argv[] );
-        uid_t        (*get_uid)   ( void *cred );
-        gid_t        (*get_gid)   ( void *cred );
+        int          (*verify)    ( void *cred, void *argv[], char *auth_info );
+        uid_t        (*get_uid)   ( void *cred, char *auth_info );
+        gid_t        (*get_gid)   ( void *cred, char *auth_info );
         int          (*pack)      ( void *cred, Buf buf );
         void *       (*unpack)    ( Buf buf );
         int          (*print)     ( void *cred, FILE *fp );
@@ -350,7 +350,7 @@ slurm_auth_fini( void )
  */
           
 void *
-g_slurm_auth_create( void *hosts, int timeout )
+g_slurm_auth_create( void *hosts, int timeout, char *auth_info )
 {
         void **argv;
         void *ret;
@@ -365,7 +365,7 @@ g_slurm_auth_create( void *hosts, int timeout )
                 return NULL;
         }
        
-        ret = (*(g_context->ops.create))( argv );
+        ret = (*(g_context->ops.create))( argv, auth_info );
         xfree( argv );
         return ret;
 }
@@ -383,7 +383,7 @@ g_slurm_auth_destroy( void *cred )
 }
 
 int
-g_slurm_auth_verify( void *cred, void *hosts, int timeout )
+g_slurm_auth_verify( void *cred, void *hosts, int timeout, char *auth_info )
 {
         int ret;
         void **argv;
@@ -398,27 +398,27 @@ g_slurm_auth_verify( void *cred, void *hosts, int timeout )
                 return SLURM_ERROR;
         }
         
-        ret = (*(g_context->ops.verify))( cred, argv );
+        ret = (*(g_context->ops.verify))( cred, argv, auth_info );
         xfree( argv );
         return ret;
 }
 
 uid_t
-g_slurm_auth_get_uid( void *cred )
+g_slurm_auth_get_uid( void *cred, char *auth_info )
 {
 	if (( slurm_auth_init(NULL) < 0 ) || auth_dummy )
                 return SLURM_AUTH_NOBODY;
         
-        return (*(g_context->ops.get_uid))( cred );
+        return (*(g_context->ops.get_uid))( cred, auth_info );
 }
 
 gid_t
-g_slurm_auth_get_gid( void *cred )
+g_slurm_auth_get_gid( void *cred, char *auth_info )
 {
 	if (( slurm_auth_init(NULL) < 0 ) || auth_dummy )
                 return SLURM_AUTH_NOBODY;
         
-        return (*(g_context->ops.get_gid))( cred );
+        return (*(g_context->ops.get_gid))( cred, auth_info );
 }
 
 int

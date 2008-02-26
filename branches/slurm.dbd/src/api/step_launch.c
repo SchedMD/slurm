@@ -919,7 +919,7 @@ _task_user_managed_io_handler(struct step_launch_state *sls,
 static void
 _handle_msg(struct step_launch_state *sls, slurm_msg_t *msg)
 {
-	uid_t req_uid = g_slurm_auth_get_uid(msg->auth_cred);
+	uid_t req_uid = g_slurm_auth_get_uid(msg->auth_cred, NULL);
 	uid_t uid = getuid();
 	srun_user_msg_t *um;
 	int rc;

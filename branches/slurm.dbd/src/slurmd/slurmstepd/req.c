@@ -385,7 +385,7 @@ _handle_accept(void *arg)
 		free_buf(buffer);
 		goto fail;
 	}
-	rc = g_slurm_auth_verify(auth_cred, NULL, 2);
+	rc = g_slurm_auth_verify(auth_cred, NULL, 2, NULL);
 	if (rc != SLURM_SUCCESS) {
 		error("Verifying authentication credential: %s",
 		      g_slurm_auth_errstr(g_slurm_auth_errno(auth_cred)));
@@ -395,8 +395,8 @@ _handle_accept(void *arg)
 	}
 
 	/* Get the uid & gid from the credential, then destroy it. */
-	uid = g_slurm_auth_get_uid(auth_cred);
-	gid = g_slurm_auth_get_gid(auth_cred);
+	uid = g_slurm_auth_get_uid(auth_cred, NULL);
+	gid = g_slurm_auth_get_gid(auth_cred, NULL);
 	debug3("  Identity: uid=%d, gid=%d", uid, gid);
 	g_slurm_auth_destroy(auth_cred);
 	free_buf(buffer);

@@ -1260,7 +1260,7 @@ int slurm_receive_msg(slurm_fd fd, slurm_msg_t *msg, int timeout)
 		rc = ESLURM_PROTOCOL_INCOMPLETE_PACKET;
 		goto total_return;
 	}
-	rc = g_slurm_auth_verify( auth_cred, NULL, 2 );
+	rc = g_slurm_auth_verify( auth_cred, NULL, 2, NULL );
 	
 	if (rc != SLURM_SUCCESS) {
 		error( "authentication: %s ",
@@ -1410,7 +1410,7 @@ List slurm_receive_msgs(slurm_fd fd, int steps, int timeout)
 		rc = ESLURM_PROTOCOL_INCOMPLETE_PACKET;
 		goto total_return;
 	}
-	rc = g_slurm_auth_verify( auth_cred, NULL, 2 );
+	rc = g_slurm_auth_verify( auth_cred, NULL, 2, NULL );
 	
 	if(rc != SLURM_SUCCESS) {
 		error("authentication: %s ",
@@ -1607,7 +1607,7 @@ int slurm_receive_msg_and_forward(slurm_fd fd, slurm_addr *orig_addr,
 		rc = ESLURM_PROTOCOL_INCOMPLETE_PACKET;
 		goto total_return;
 	}
-	rc = g_slurm_auth_verify( auth_cred, NULL, 2 );
+	rc = g_slurm_auth_verify( auth_cred, NULL, 2, NULL );
 	
 	if (rc != SLURM_SUCCESS) {
 		error( "authentication: %s ",
@@ -1694,7 +1694,7 @@ int slurm_send_node_msg(slurm_fd fd, slurm_msg_t * msg)
 	/* 
 	 * Initialize header with Auth credential and message type.
 	 */
-	auth_cred = g_slurm_auth_create(NULL, 2);
+	auth_cred = g_slurm_auth_create(NULL, 2, NULL);
 	if (auth_cred == NULL) {
 		error("authentication: %s",
 		       g_slurm_auth_errstr(g_slurm_auth_errno(NULL)) );
