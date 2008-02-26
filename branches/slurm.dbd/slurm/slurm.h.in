@@ -1019,7 +1019,7 @@ typedef struct slurm_ctl_conf {
 	uint16_t slurmd_timeout;/* how long slurmctld waits for slurmd before 
 				 * considering node DOWN */
 	char *slurmdbd_addr;	/* comm path for Slurm DBD */
-	uint16_t slurmdbd_auth_port;	/* Slurm DBD authentication port */
+	char * slurmdbd_auth_info;	/* Slurm DBD authentication info */
 	uint16_t slurmdbd_port;	/* port for Slurm DBD socket */
 	char *slurm_conf;	/* pathname of slurm config file */
 	char *srun_prolog;      /* srun prolog program */

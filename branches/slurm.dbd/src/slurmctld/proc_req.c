@@ -398,7 +398,7 @@ void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
 	conf_ptr->slurmd_spooldir     = xstrdup(conf->slurmd_spooldir);
 	conf_ptr->slurmd_timeout      = conf->slurmd_timeout;
 	conf_ptr->slurmdbd_addr       = xstrdup(conf->slurmdbd_addr);
-	conf_ptr->slurmdbd_auth_port  = conf->slurmdbd_auth_port;
+	conf_ptr->slurmdbd_auth_info  = xstrdup(conf->slurmdbd_auth_info);
 	conf_ptr->slurmdbd_port       = conf->slurmdbd_port;
 	conf_ptr->slurm_conf          = xstrdup(conf->slurm_conf);
 	conf_ptr->state_save_location = xstrdup(conf->state_save_location);

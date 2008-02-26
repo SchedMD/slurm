@@ -95,7 +95,7 @@ static void _clear_slurmdbd_conf(void)
 extern int read_slurmdbd_conf(void)
 {
 	s_p_options_t options[] = {
-		{"AuthPort", S_P_UINT16},
+		{"AuthInfo", S_P_STRING},
 		{"AuthType", S_P_STRING},
 		{"DbdAddr", S_P_STRING},
 		{"DbdHost", S_P_STRING},
@@ -131,7 +131,7 @@ extern int read_slurmdbd_conf(void)
 		 	     conf_path);
 		}
 
-		s_p_get_uint16(&slurmdbd_conf->auth_port, "AuthPort", tbl);
+		s_p_get_string(&slurmdbd_conf->auth_info, "AuthInfo", tbl);
 		s_p_get_string(&slurmdbd_conf->auth_type, "AuthType", tbl);
 		s_p_get_string(&slurmdbd_conf->dbd_host, "DbdHost", tbl);
 		s_p_get_string(&slurmdbd_conf->dbd_addr, "DbdAddr", tbl);
@@ -181,7 +181,7 @@ extern int read_slurmdbd_conf(void)
 /* Log the current configuration using verbose() */
 extern void log_config(void)
 {
-	debug2("AuthPort          = %u", slurmdbd_conf->auth_port);
+	debug2("AuthInfo          = %s", slurmdbd_conf->auth_info);
 	debug2("AuthType          = %s", slurmdbd_conf->auth_type);
 	debug2("DbdAddr           = %s", slurmdbd_conf->dbd_addr);
 	debug2("DbdHost           = %s", slurmdbd_conf->dbd_host);

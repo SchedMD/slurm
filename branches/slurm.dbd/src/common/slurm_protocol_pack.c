@@ -2298,7 +2298,7 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer)
 	pack16(build_ptr->slurmd_timeout, buffer);
 
 	packstr(build_ptr->slurmdbd_addr, buffer);
-	pack16(build_ptr->slurmdbd_auth_port, buffer);
+	packstr(build_ptr->slurmdbd_auth_info, buffer);
 	pack16(build_ptr->slurmdbd_port, buffer);
 
 	packstr(build_ptr->srun_epilog, buffer);
@@ -2467,7 +2467,8 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **
 
 	safe_unpackstr_xmalloc(&build_ptr->slurmdbd_addr, &uint32_tmp,
 			       buffer);
-	safe_unpack16(&build_ptr->slurmdbd_auth_port, buffer);
+	safe_unpackstr_xmalloc(&build_ptr->slurmdbd_auth_info, &uint32_tmp,
+			       buffer);
 	safe_unpack16(&build_ptr->slurmdbd_port, buffer);
 
 	safe_unpackstr_xmalloc(&build_ptr->srun_epilog, &uint32_tmp, buffer);
@@ -2545,6 +2546,7 @@ unpack_error:
 	xfree(build_ptr->slurmd_pidfile);
 	xfree(build_ptr->slurmd_spooldir);
 	xfree(build_ptr->slurmdbd_addr);
+	xfree(build_ptr->slurmdbd_auth_info);
 	xfree(build_ptr->srun_epilog);
 	xfree(build_ptr->srun_prolog);
 	xfree(build_ptr->state_save_location);

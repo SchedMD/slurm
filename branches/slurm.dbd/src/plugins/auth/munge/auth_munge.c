@@ -2,7 +2,8 @@
  *  auth_munge.c - SLURM auth implementation via Chris Dunlap's Munge
  *  $Id$
  *****************************************************************************
- *  Copyright (C) 2002 The Regents of the University of California.
+ *  Copyright (C) 2002-2007 The Regents of the University of California.
+ *  Copyright (C) 2008 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Mark Grondona <mgrondona@llnl.gov> 
  *  UCRL-CODE-226842.
@@ -153,11 +154,19 @@ slurm_auth_create( void *argv[] )
 	munge_err_t e = EMUNGE_SUCCESS;
 	munge_ctx_t ctx = munge_ctx_create();
 	SigFunc *ohandler;
+	char *socket = NULL;
 
 	if (ctx == NULL) {
 		error("munge_ctx_create failure");
 		return NULL;
 	}
+
+	if (munge_ctx_get(ctx, MUNGE_OPT_SOCKET, &socket) != EMUNGE_SUCCESS) {
+		error("munge_ctx_get failure");
+		munge_ctx_destroy(ctx);
+		return NULL;
+	}
+	info("munge socket %s", socket);
 
 	cred = xmalloc(sizeof(*cred));
 	cred->verified = false;

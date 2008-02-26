@@ -60,7 +60,7 @@
 /* SlurmDBD configuration parameters */
 typedef struct slurm_dbd_conf {
 	time_t		last_update;	 	/* time slurmdbd.conf read	*/
-	uint16_t	auth_port;		/* authentication port		*/
+	char *		auth_info;		/* authentication info		*/
 	char *		auth_type;		/* authentication mechanism	*/
 	char *		dbd_addr;		/* network address of Slurm DBD	*/
 	char *		dbd_host;		/* hostname of Slurm DBD	*/
