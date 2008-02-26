@@ -111,7 +111,7 @@ static void _print_cond(account_cluster_cond_t *cluster_cond)
 }
 
 
-extern int sacctmgr_create_cluster(int argc, char *argv[])
+extern int sacctmgr_add_cluster(int argc, char *argv[])
 {
 	int rc = SLURM_SUCCESS;
 	int i=0;
@@ -149,7 +149,7 @@ extern int sacctmgr_create_cluster(int argc, char *argv[])
 		sacctmgr_action_t *action = xmalloc(sizeof(sacctmgr_action_t));
 		action->type = SACCTMGR_CLUSTER_CREATE;
 		action->list = list_create(destroy_account_cluster_rec);
-		list_push(action_list, action);
+		list_push(sacctmgr_action_list, action);
 	}
 
 	return rc;
@@ -257,7 +257,7 @@ extern int sacctmgr_modify_cluster(int argc, char *argv[])
 		action->type = SACCTMGR_CLUSTER_MODIFY;
 		action->cond = cluster_cond;
 		action->rec = cluster;
-		list_push(action_list, action);
+		list_push(sacctmgr_action_list, action);
 	}
 
 	return rc;
@@ -286,7 +286,7 @@ extern int sacctmgr_delete_cluster(int argc, char *argv[])
 		sacctmgr_action_t *action = xmalloc(sizeof(sacctmgr_action_t));
 		action->type = SACCTMGR_CLUSTER_DELETE;
 		action->cond = cluster_cond;
-		list_push(action_list, action);
+		list_push(sacctmgr_action_list, action);
 	}
 
 	return rc;

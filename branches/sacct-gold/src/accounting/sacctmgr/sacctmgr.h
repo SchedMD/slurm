@@ -119,12 +119,16 @@ extern int input_words;	/* number of words of input permitted */
 extern int one_liner;	/* one record per line if =1 */
 extern int quiet_flag;	/* quiet=1, verbose=-1, normal=0 */
 extern int execute_flag;/* immediate execute=1, else = 0 */
-extern List action_list; /* list of sacctmgr_action_t * */
+extern List sacctmgr_action_list; /* list of sacctmgr_action_t * */
+extern List sacctmgr_user_list; /* list of current users */
+extern List sacctmgr_association_list; /* list of current associations */
+extern List sacctmgr_account_list; /* list of current accounts */
+extern List sacctmgr_cluster_list; /* list of current clusters */
 
-extern int sacctmgr_create_association(int argc, char *argv[]);
-extern int sacctmgr_create_user(int argc, char *argv[]);
-extern int sacctmgr_create_account(int argc, char *argv[]);
-extern int sacctmgr_create_cluster(int argc, char *argv[]);
+extern int sacctmgr_add_association(int argc, char *argv[]);
+extern int sacctmgr_add_user(int argc, char *argv[]);
+extern int sacctmgr_add_account(int argc, char *argv[]);
+extern int sacctmgr_add_cluster(int argc, char *argv[]);
 
 extern int sacctmgr_list_association(int argc, char *argv[]);
 extern int sacctmgr_list_user(int argc, char *argv[]);
@@ -150,5 +154,19 @@ extern void destroy_char(void *object);
 extern void addto_char_list(List char_list, char *names);
 extern void destroy_sacctmgr_action(void *object);
 extern int commit_check(char *warning);
+extern int sacctmgr_init();
+
+/* do not free the objects returned from these functions */
+extern account_association_rec_t *sacctmgr_find_association(char *user,
+							    char *account,
+							    char *cluster,
+							    char *partition);
+extern account_association_rec_t *sacctmgr_find_parent_assoc(char *account,
+							     char *cluster);
+extern account_association_rec_t *sacctmgr_find_account_base_assoc(
+	char *account, char *cluster);
+extern account_user_rec_t *sacctmgr_find_user(char *name);
+extern account_account_rec_t *sacctmgr_find_account(char *name);
+extern account_cluster_rec_t *sacctmgr_find_cluster(char *name);
 
 #endif

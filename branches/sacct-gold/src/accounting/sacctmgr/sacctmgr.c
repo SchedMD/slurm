@@ -55,10 +55,14 @@ int input_words;	/* number of words of input permitted */
 int one_liner;		/* one record per line if =1 */
 int quiet_flag;		/* quiet=1, verbose=-1, normal=0 */
 int execute_flag;       /* immediate execute=1, else = 0 */
-List action_list;
+List sacctmgr_action_list = NULL;
+List sacctmgr_user_list = NULL;
+List sacctmgr_association_list = NULL;
+List sacctmgr_account_list = NULL;
+List sacctmgr_cluster_list = NULL;
 
 static void	_show_it (int argc, char *argv[]);
-static void	_create_it (int argc, char *argv[]);
+static void	_add_it (int argc, char *argv[]);
 static void	_modify_it (int argc, char *argv[]);
 static void	_delete_it (int argc, char *argv[]);
 static int	_get_command (int *argc, char *argv[]);
@@ -96,7 +100,6 @@ main (int argc, char *argv[])
 	input_field_count = 0;
 	quiet_flag        = 0;
 	log_init("sacctmgr", opts, SYSLOG_FACILITY_DAEMON, NULL);
-	action_list = list_create(destroy_sacctmgr_action);
 
 	if (getenv ("SACCTMGR_ALL"))
 		all_flag= 1;
@@ -164,15 +167,15 @@ main (int argc, char *argv[])
 		error_code = _get_command (&input_field_count, input_fields);
 	}
 
-	if(action_list) {
-		if(list_count(action_list) > 0) {
+	if(sacctmgr_action_list) {
+		if(list_count(sacctmgr_action_list) > 0) {
 			if(commit_check("Would you like to commit "
 					"these changes?")) 
 				_commit();			
 			else 
 				printf("Changes discarded.\n");
 		}
-		list_destroy(action_list);
+		list_destroy(sacctmgr_action_list);
 	}
 
 	exit(exit_code);
@@ -312,19 +315,20 @@ _process_command (int argc, char *argv[])
 				 "too many arguments for keyword:%s\n", 
 				 argv[0]);
 		}
-		if(list_count(action_list) > 0) {
+		if(list_count(sacctmgr_action_list) > 0) {
 			char tmp_char[255];
 
 			snprintf(tmp_char, sizeof(tmp_char),
 				 "There are %d action(s) that haven't been "
 				 "committed yet, would you like to commit "
-				 "before exit?", list_count(action_list));
+				 "before exit?", 
+				 list_count(sacctmgr_action_list));
 			if(commit_check(tmp_char)) 
 				_commit();			
 			else 
 				printf("Changes discarded.\n");
-			list_destroy(action_list);
-			action_list = NULL;
+			list_destroy(sacctmgr_action_list);
+			sacctmgr_action_list = NULL;
 		}
 		exit_flag = 1;
 	} else if (strncasecmp (argv[0], "help", 2) == 0) {
@@ -362,7 +366,7 @@ _process_command (int argc, char *argv[])
 				 argv[0]);
 		}
 		exit_flag = 1;
-	} else if (strncasecmp (argv[0], "create", 6) == 0) {
+	} else if (strncasecmp (argv[0], "add", 3) == 0) {
 		if (argc < 2) {
 			exit_code = 1;
 			if (quiet_flag != 1)
@@ -370,7 +374,7 @@ _process_command (int argc, char *argv[])
 				        "too few arguments for keyword:%s\n", 
 				        argv[0]);
 		}
-		_create_it((argc - 1), &argv[1]);
+		_add_it((argc - 1), &argv[1]);
 	} else if (strncasecmp (argv[0], "show", 3) == 0) {
 		if (argc < 2) {
 			exit_code = 1;
@@ -420,32 +424,28 @@ _process_command (int argc, char *argv[])
 	return 0;
 }
 
-
 /* 
- * _create_it - create the slurm configuration per the supplied arguments 
+ * _add_it - add the entity per the supplied arguments 
  * IN argc - count of arguments
  * IN argv - list of arguments
  */
-static void _create_it (int argc, char *argv[]) 
+static void _add_it (int argc, char *argv[]) 
 {
 	int i, error_code = SLURM_SUCCESS;
+	sacctmgr_init();
 
-	/* First identify the entity to create */
+	/* First identify the entity to add */
 	for (i=0; i<argc; i++) {
-		if (strncasecmp (argv[i], "Association", 11) == 0) {
-			error_code = sacctmgr_create_association(
-				(argc - 1), &argv[1]);
-			break;
-		} else if (strncasecmp (argv[i], "User", 4) == 0) {
-			error_code = sacctmgr_create_user(
+		if (strncasecmp (argv[i], "User", 4) == 0) {
+			error_code = sacctmgr_add_user(
 				(argc - 1), &argv[1]);
 			break;
 		} else if (strncasecmp (argv[i], "Account", 7) == 0) {
-			error_code = sacctmgr_create_account(
+			error_code = sacctmgr_add_account(
 				(argc - 1), &argv[1]);
 			break;
 		} else if (strncasecmp (argv[i], "Cluster", 7) == 0) {
-			error_code = sacctmgr_create_cluster(
+			error_code = sacctmgr_add_cluster(
 				(argc - 1), &argv[1]);
 			break;
 		}		
@@ -453,7 +453,7 @@ static void _create_it (int argc, char *argv[])
 	
 	if (i >= argc) {
 		exit_code = 1;
-		fprintf(stderr, "No valid entity in create command\n");
+		fprintf(stderr, "No valid entity in add command\n");
 		fprintf(stderr, "Input line must include \"Association\", ");
 		fprintf(stderr, "\"UserName\", \"AccountName\", ");
 		fprintf(stderr, "or \"ClusterName\"\n");
@@ -472,9 +472,7 @@ static void _show_it (int argc, char *argv[])
 	int error_code = SLURM_SUCCESS;
 		
 	/* First identify the entity to list */
-	if (strncasecmp (argv[0], "Association", 11) == 0) {
-		error_code = sacctmgr_list_association((argc - 1), &argv[1]);
-	} else if (strncasecmp (argv[0], "User", 4) == 0) {
+	if (strncasecmp (argv[0], "User", 4) == 0) {
 		error_code = sacctmgr_list_user((argc - 1), &argv[1]);
 	} else if (strncasecmp (argv[0], "Account", 7) == 0) {
 		error_code = sacctmgr_list_account((argc - 1), &argv[1]);
@@ -483,9 +481,9 @@ static void _show_it (int argc, char *argv[])
 	} else {
 		exit_code = 1;
 		fprintf(stderr, "No valid entity in list command\n");
-		fprintf(stderr, "Input line must include \"Association\", ");
-		fprintf(stderr, "\"UserName\", \"AccountName\", ");
-		fprintf(stderr, "or \"ClusterName\"\n");
+		fprintf(stderr, "Input line must include ");
+		fprintf(stderr, "\"User\", \"Account\", ");
+		fprintf(stderr, "or \"Cluster\"\n");
 	} 
 	
 	if (error_code) {
@@ -503,13 +501,11 @@ static void _modify_it (int argc, char *argv[])
 {
 	int i, error_code = SLURM_SUCCESS;
 
+	sacctmgr_init();
+
 	/* First identify the entity to modify */
 	for (i=0; i<argc; i++) {
-		if (strncasecmp (argv[i], "Association", 11) == 0) {
-			error_code = sacctmgr_modify_association(
-				(argc - 1), &argv[1]);
-			break;
-		} else if (strncasecmp (argv[i], "User", 4) == 0) {
+		if (strncasecmp (argv[i], "User", 4) == 0) {
 			error_code = sacctmgr_modify_user((argc - 1), &argv[1]);
 			break;
 		} else if (strncasecmp (argv[i], "Account", 7) == 0) {
@@ -526,7 +522,7 @@ static void _modify_it (int argc, char *argv[])
 	if (i >= argc) {
 		exit_code = 1;
 		fprintf(stderr, "No valid entity in modify command\n");
-		fprintf(stderr, "Input line must include \"Association\", ");
+		fprintf(stderr, "Input line must include ");
 		fprintf(stderr, "\"User\", \"Account\", ");
 		fprintf(stderr, "or \"Cluster\"\n");
 	} else if (error_code) {
@@ -545,11 +541,7 @@ static void _delete_it (int argc, char *argv[])
 
 	/* First identify the entity to delete */
 	for (i=0; i<argc; i++) {
-		if (strncasecmp (argv[i], "Association", 11) == 0) {
-			error_code = sacctmgr_delete_association(
-				(argc - 1), &argv[1]);
-			break;
-		} else if (strncasecmp (argv[i], "User", 4) == 0) {
+		if (strncasecmp (argv[i], "User", 4) == 0) {
 			error_code = sacctmgr_delete_user((argc - 1), &argv[1]);
 			break;
 		} else if (strncasecmp (argv[i], "Account", 7) == 0) {
@@ -566,7 +558,7 @@ static void _delete_it (int argc, char *argv[])
 	if (i >= argc) {
 		exit_code = 1;
 		fprintf(stderr, "No valid entity in delete command\n");
-		fprintf(stderr, "Input line must include \"Association\", ");
+		fprintf(stderr, "Input line must include ");
 		fprintf(stderr, "\"User\", \"Account\", ");
 		fprintf(stderr, "or \"Cluster\"\n");
 	} else if (error_code) {
@@ -580,17 +572,17 @@ static void _commit ()
 	ListIterator itr = NULL;
 	sacctmgr_action_t *action = NULL;
 
-	if(!action_list) {
+	if(!sacctmgr_action_list) {
 		error("No actions to commit");
 		return;
 	}
 	
-	itr = list_iterator_create(action_list);
+	itr = list_iterator_create(sacctmgr_action_list);
 	while((action = list_next(itr))) {
-		if(rc != SLURM_SUCCESS) {
-			error("_commit: last command returned error.");
-			break;
-		}
+		/* if(rc != SLURM_SUCCESS) { */
+/* 			error("_commit: last command returned error."); */
+/* 			break; */
+/* 		} */
 		switch(action->type) {
 		case SACCTMGR_ACTION_NOTSET:
 			error("This action does not have a type.");
@@ -667,6 +659,7 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
      -i or --immediate: equivalent to \"immediate\" command                \n\
      -o or --oneliner: equivalent to \"oneliner\" command                  \n\
      -q or --quiet: equivalent to \"quiet\" command                        \n\
+     -s or --associations: equivalent to \"associations\" command          \n\
      -v or --verbose: equivalent to \"verbose\" command                    \n\
      -V or --version: equivalent to \"version\" command                    \n\
                                                                            \n\
@@ -677,7 +670,9 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
     Valid <COMMAND> values are:                                            \n\
      all                      display information about all entities,      \n\
                               including hidden/deleted ones.               \n\
-     create <ENTITY> <SPECS>  create entity                                \n\
+     add <ENTITY> <SPECS>     add entity                                   \n\
+     associations             when using show/list will list the           \n\
+                              associations asspciated with the entity.     \n\
      commit                   commit changes done with create, modify,     \n\
                               or delete                                    \n\
      delete <ENTITY> <SPECS>  delete the specified entity(s)               \n\
@@ -686,12 +681,13 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
      hide                     do not display information about             \n\
                               hidden/deleted entities.                     \n\
      immediate                commit changes immediately                   \n\
+     list <ENTITY> [<SPECS>]  display info of identified entity, default   \n\
+                              is display all.                              \n\
      modify <ENTITY> <SPECS>  modify entity                                \n\
      oneliner                 report output one record per line.           \n\
      quiet                    print no messages other than error messages. \n\
      quit                     terminate this command.                      \n\
-     show <ENTITY> [<SPECS>]  display state of identified entity, default  \n\
-                              is all.                                      \n\
+     show                     same as list                                 \n\
      verbose                  enable detailed logging.                     \n\
      version                  display tool version number.                 \n\
      !!                       Repeat the last command entered.             \n\
@@ -699,40 +695,28 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
   <ENTITY> may be \"user\", \"cluster\", \"account\", or \"association\".  \n\
                                                                            \n\
   <SPECS> are different for each command entity pair.                      \n\
-       show user          - Names=, DefaultAccounts=, ExpediteLevel=,      \n\
+       list user          - Names=, DefaultAccounts=, ExpediteLevel=,      \n\
                             and AdminLevel=                                \n\
-       create user        - Names=, DefaultAccount=, ExpediteLevel=,       \n\
+       add user           - Names=, DefaultAccount=, ExpediteLevel=,       \n\
                             and AdminLevel=                                \n\
        modify user        - Names=, DefaultAccounts=, ExpediteLevel=,      \n\
                             and AdminLevel=                                \n\
        delete user        - Names=, DefaultAccounts=, ExpediteLevel=,      \n\
                             and AdminLevel=                                \n\
                                                                            \n\
-       show account       - Names=, Descriptions=, ExpediteLevel=,         \n\
+       list account       - Names=, Descriptions=, ExpediteLevel=,         \n\
                             and Organizations=                             \n\
-       create account     - Names=, Descriptions=, ExpediteLevel=,         \n\
+       add account        - Names=, Descriptions=, ExpediteLevel=,         \n\
                             and Organizations=                             \n\
        modify account     - Names=, Descriptions=, ExpediteLevel=,         \n\
                             and Organizations=                             \n\
        delete account     - Names=, Descriptions=, ExpediteLevel=,         \n\
                             and Organizations=                             \n\
                                                                            \n\
-       show cluster       - Names=                                         \n\
-       create cluster     - Name=, and InterfaceNode=                      \n\
+       list cluster       - Names=                                         \n\
+       add cluster        - Name=, and InterfaceNode=                      \n\
        modify cluster     - Name=, and InterfaceNode=                      \n\
        delete cluster     - Names=                                         \n\
-                                                                           \n\
-       show association   - Ids=, Users=, Accounts=, Clusters=,            \n\
-                            and Partitions=                                \n\
-       create association - User=, Account=, Cluster=, Partition=,         \n\
-                            FairShare=, MaxJobs=, MaxNodes=, MaxWall=, and \n\
-                            MaxCPUSecs=                                    \n\
-       modify association - Ids=, Users=, Accounts=, Clusters=, Partitions=,\n\
-                            FairShare=, MaxJobs=, MaxNodes=, MaxWall=, and \n\
-                            MaxCPUSecs=                                    \n\
-       delete association - Ids=, Users=, Accounts=, Clusters=,            \n\
-                            and Partitions=                                \n\
-                                                                           \n\
                                                                            \n\
                                                                            \n\
   All commands entitys, and options are case-insensitive.               \n\n");

@@ -189,24 +189,39 @@ static void _print_rec(account_account_rec_t *account)
 }
 
 
-extern int sacctmgr_create_account(int argc, char *argv[])
+extern int sacctmgr_add_account(int argc, char *argv[])
 {
 	int rc = SLURM_SUCCESS;
 	int i=0;
-	ListIterator itr = NULL;
+	ListIterator itr = NULL, itr_c = NULL;
 	account_account_rec_t *account = NULL;
+	account_association_rec_t *assoc = NULL;
+	account_association_rec_t *temp_assoc = NULL;
 	List name_list = list_create(destroy_char);
+	List cluster_list = list_create(destroy_char);
 	char *description = NULL;
 	char *organization = NULL;
-	account_expedite_level_t expedite = ACCOUNT_EXPEDITE_NOTSET;
+	char *parent = NULL;
+	char *cluster = NULL;
 	char *name = NULL;
+	account_expedite_level_t expedite = ACCOUNT_EXPEDITE_NOTSET;
 	List account_list = NULL;
+	List assoc_list = NULL;
+	uint32_t fairshare = 1; 
+	uint32_t max_jobs = 0; 
+	uint32_t max_nodes_per_job = 0;
+	uint32_t max_wall_duration_per_job = 0;
+	uint32_t max_cpu_seconds_per_job = 0;
+	char *account_str = NULL;
+	int limit_set = 0;
 	
 	for (i=0; i<argc; i++) {
 		if (strncasecmp (argv[i], "Names=", 6) == 0) {
 			addto_char_list(name_list, argv[i]+6);
 		} else if (strncasecmp (argv[i], "Name=", 5) == 0) {
 			addto_char_list(name_list, argv[i]+5);
+		} else if (strncasecmp (argv[i], "Parent=", 7) == 0) {
+			parent = xstrdup(argv[i]+7);
 		} else if (strncasecmp (argv[i], "Description=", 12) == 0) {
 			description = xstrdup(argv[i]+12);
 		} else if (strncasecmp (argv[i], "Organization=", 13) == 0) {
@@ -215,6 +230,27 @@ extern int sacctmgr_create_account(int argc, char *argv[])
 			expedite = str_2_account_expedite(argv[i]+8);
 		} else if (strncasecmp (argv[i], "ExpediteLevel=", 14) == 0) {
 			expedite = str_2_account_expedite(argv[i]+14);
+		} else if (strncasecmp (argv[i], "FairShare=", 10) == 0) {
+			fairshare = atoi(argv[i]+10);
+			limit_set = 1;
+		} else if (strncasecmp (argv[i], "MaxJobs=", 8) == 0) {
+			max_jobs = atoi(argv[i]+8);
+			limit_set = 1;
+		} else if (strncasecmp (argv[i], "MaxNodes=", 9) == 0) {
+			max_nodes_per_job = atoi(argv[i]+9);
+			limit_set = 1;
+		} else if (strncasecmp (argv[i], "MaxWall=", 8) == 0) {
+			max_wall_duration_per_job = atoi(argv[i]+8);
+			limit_set = 1;
+		} else if (strncasecmp (argv[i], "MaxCPUSecs=", 11) == 0) {
+			max_cpu_seconds_per_job = atoi(argv[i]+11);
+			limit_set = 1;
+		} else if (strncasecmp (argv[i], "Cluster=", 8) == 0) {
+			addto_char_list(cluster_list,
+					argv[i]+8);
+		} else if (strncasecmp (argv[i], "Clusters=", 9) == 0) {
+			addto_char_list(cluster_list,
+					argv[i]+9);
 		} else {
 			addto_char_list(name_list, argv[i]);
 		}		
@@ -232,40 +268,148 @@ extern int sacctmgr_create_account(int argc, char *argv[])
 		list_destroy(name_list);
 		printf(" Need an organization for these accounts to add.\n"); 
 		return SLURM_SUCCESS;
+	} 
+
+	if(!parent)
+		parent = xstrdup("root");
+
+	if(!list_count(cluster_list)) {
+		account_cluster_rec_t *cluster_rec = NULL;
+		itr_c = list_iterator_create(sacctmgr_cluster_list);
+		while((cluster_rec = list_next(itr_c))) {
+			list_append(cluster_list, 
+				    cluster_rec->name);
+		}
+		list_iterator_destroy(itr_c);
 	}
 
-	printf(" Adding Account(s)\n");
 		
-	account_list = list_create(destroy_account_account_rec);
+	/* we are adding these lists to the global lists and will be
+	   freed when they are */
+	account_list = list_create(NULL);
+	assoc_list = list_create(NULL);
 	itr = list_iterator_create(name_list);
 	while((name = list_next(itr))) {
-		account = xmalloc(sizeof(account_account_rec_t));
-		account->name = xstrdup(name);
-		account->description = xstrdup(description);
-		account->organization = xstrdup(organization);
-		account->expedite = expedite;
-		printf("\t%s", name);
+		if(!sacctmgr_find_account(name)) {
+			account = xmalloc(sizeof(account_account_rec_t));
+			account->name = xstrdup(name);
+			account->description = xstrdup(description);
+			account->organization = xstrdup(organization);
+			account->expedite = expedite;
+			xstrfmtcat(account_str, "  %s\n", name);
+			list_append(account_list, account);
+			list_append(sacctmgr_account_list, account);
+		}
 
-		list_append(account_list, account);
+		itr_c = list_iterator_create(cluster_list);
+		while((cluster = list_next(itr_c))) {
+			if(sacctmgr_find_association(NULL, name,
+						     cluster, NULL))
+				continue;
+			temp_assoc = sacctmgr_find_account_base_assoc(
+				parent, cluster);
+			if(!temp_assoc) {
+				printf(" error: Parent account '%s' "
+				       "doesn't exist on "
+				       "cluster %s\n"
+				       "        Contact your admin "
+				       "to add this account.\n",
+				       parent, cluster);
+				break;
+			}/*  else  */
+/* 					printf("got %u %s %s %s %s\n", */
+/* 					       temp_assoc->id, */
+/* 					       temp_assoc->user, */
+/* 					       temp_assoc->account, */
+/* 					       temp_assoc->cluster, */
+/* 					       temp_assoc->parent_account); */
+			
+			
+			assoc = xmalloc(sizeof(account_association_rec_t));
+			assoc->account = xstrdup(name);
+			assoc->cluster = xstrdup(cluster);
+			assoc->parent = temp_assoc->id;
+			assoc->parent_account = xstrdup(temp_assoc->account);
+			assoc->fairshare = fairshare;
+			assoc->max_jobs = max_jobs;
+			assoc->max_nodes_per_job = max_nodes_per_job;
+			assoc->max_wall_duration_per_job =
+				max_wall_duration_per_job;
+			assoc->max_cpu_seconds_per_job = 
+				max_cpu_seconds_per_job;
+			list_append(assoc_list, assoc);
+			list_append(sacctmgr_association_list, assoc);
+		}
+		list_iterator_destroy(itr_c);
+	}
+	list_iterator_destroy(itr);
+	list_destroy(name_list);
+	list_destroy(cluster_list);
+
+	if(account_str) {
+		printf(" Adding Account(s)\n%s",account_str);
+		printf(" Settings =\n");
+		printf("  Description  = %s\n", description);
+		printf("  Organization = %s\n", organization);
+		
+		if(expedite != ACCOUNT_EXPEDITE_NOTSET)
+			printf("  Expedite     = %s\n", 
+			       account_expedite_str(expedite));
+	}
+
+	if(list_count(assoc_list))
+		printf(" Association =\n");
+	itr = list_iterator_create(assoc_list);
+	while((assoc = list_next(itr))) {
+		printf("  A = %s"
+		       "\tC = %s\n",
+		       assoc->account, assoc->cluster);
 	}
 	list_iterator_destroy(itr);
 
-	printf(" Settings =\n");
-	printf("  Description = %s\n", description);
-	printf("  Organization = %s\n", organization);
-	
-	if(expedite != ACCOUNT_EXPEDITE_NOTSET)
-		printf("  Expedite        = %s\n", 
-		       account_expedite_str(expedite));
-	
+	if(limit_set) {
+		printf(" Settings =\n");
+		if(fairshare)
+			printf("  Fairshare       = %u\n", fairshare);
+		if(max_jobs)
+			printf("  MaxJobs         = %u\n", max_jobs);
+		if(max_nodes_per_job)
+			printf("  MaxNodes        = %u\n", max_nodes_per_job);
+		if(max_wall_duration_per_job)
+			printf("  MaxWall         = %u\n",
+			       max_wall_duration_per_job);
+		if(max_cpu_seconds_per_job)
+			printf("  MaxCPUSecs      = %u\n",
+			       max_cpu_seconds_per_job);
+	}
+
+	if(!list_count(account_list) && !list_count(assoc_list))
+		printf(" Nothing new added.\n");
+
 	if(execute_flag) {
-		rc = account_storage_g_add_accounts(account_list);
+		if(list_count(account_list))
+			rc = account_storage_g_add_accounts(account_list);
 		list_destroy(account_list);
+		if(list_count(assoc_list))
+			rc = account_storage_g_add_associations(assoc_list);
+		list_destroy(assoc_list);
 	} else {
-		sacctmgr_action_t *action = xmalloc(sizeof(sacctmgr_action_t));
-		action->type = SACCTMGR_ACCOUNT_CREATE;
-		action->list = list_create(destroy_account_account_rec);
-		list_push(action_list, action);
+		sacctmgr_action_t *action = NULL;
+
+		if(list_count(account_list)) {
+			action = xmalloc(sizeof(sacctmgr_action_t));
+			action->type = SACCTMGR_ACCOUNT_CREATE;
+			action->list = account_list;
+			list_push(sacctmgr_action_list, action);
+		}
+
+		if(list_count(assoc_list)) {
+			action = xmalloc(sizeof(sacctmgr_action_t));
+			action->type = SACCTMGR_ASSOCIATION_CREATE;
+			action->list = assoc_list;
+			list_append(sacctmgr_action_list, action);
+		} else 
+			list_destroy(assoc_list);
 	}
 	
 	return rc;
@@ -389,7 +533,7 @@ extern int sacctmgr_modify_account(int argc, char *argv[])
 		action->type = SACCTMGR_ACCOUNT_MODIFY;
 		action->cond = account_cond;
 		action->rec = account;
-		list_push(action_list, action);
+		list_push(sacctmgr_action_list, action);
 	}
 
 	return rc;
@@ -421,7 +565,7 @@ extern int sacctmgr_delete_account(int argc, char *argv[])
 		sacctmgr_action_t *action = xmalloc(sizeof(sacctmgr_action_t));
 		action->type = SACCTMGR_ACCOUNT_DELETE;
 		action->cond = account_cond;
-		list_push(action_list, action);
+		list_push(sacctmgr_action_list, action);
 	}
 
 	return rc;

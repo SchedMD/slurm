@@ -713,14 +713,28 @@ extern int account_storage_p_add_associations(List association_list)
 			rc = SLURM_ERROR;
 			break;
 		}
-		if(object->user)
+		if(object->user) {
 			gold_request_add_assignment(gold_request, "User",
 						    object->user);		
+			snprintf(tmp_buff, sizeof(tmp_buff), 
+				 "%s on %s for %s",
+				 object->account,
+				 object->cluster,
+				 object->user);
+		} else 
+			snprintf(tmp_buff, sizeof(tmp_buff), 
+				 "%s of %s on %s",
+				 object->account,
+				 object->parent_account,
+				 object->cluster);
+			
+		gold_request_add_assignment(gold_request, "Name", tmp_buff);
+
 		gold_request_add_assignment(gold_request, "Project",
 					    object->account);		
 		gold_request_add_assignment(gold_request, "Machine",
-					    object->cluster);		
-		
+					    object->cluster);	
+			
 		if(object->parent) {
 			snprintf(tmp_buff, sizeof(tmp_buff), "%u",
 				 object->parent);
@@ -731,7 +745,7 @@ extern int account_storage_p_add_associations(List association_list)
 		if(object->fairshare) {
 			snprintf(tmp_buff, sizeof(tmp_buff), "%u",
 				 object->fairshare);
-			gold_request_add_assignment(gold_request, "Fairshare",
+			gold_request_add_assignment(gold_request, "FairShare",
 						    tmp_buff);		
 		}
 
@@ -1759,17 +1773,14 @@ extern List account_storage_p_get_users(account_user_cond_t *user_q)
 	int set = 0;
 	char tmp_buff[50];
 
-	if(!user_q) {
-		error("account_storage_p_get_users: "
-		      "we need conditions to request");
-		return NULL;
-	}
-
 	gold_request = create_gold_request(GOLD_OBJECT_USER,
 					   GOLD_ACTION_QUERY);
 
 	if(!gold_request) 
 		return NULL;
+
+	if(!user_q) 
+		goto empty;
 
 	if(user_q->user_list && list_count(user_q->user_list)) {
 		itr = list_iterator_create(user_q->user_list);
@@ -1812,6 +1823,7 @@ extern List account_storage_p_get_users(account_user_cond_t *user_q)
 					   GOLD_OPERATOR_NONE, 0);		
 	}
 
+empty:
 	gold_request_add_condition(gold_request, "Active",
 				   "True",
 				   GOLD_OPERATOR_NONE,
@@ -1851,16 +1863,14 @@ extern List account_storage_p_get_accounts(account_account_cond_t *account_q)
 	char *object = NULL;
 	char tmp_buff[50];
 
-	if(!account_q) {
-		error("account_storage_p_get_accounts: "
-		      "we need conditions to request");
-		return NULL;
-	}
 
 	gold_request = create_gold_request(GOLD_OBJECT_PROJECT,
 					   GOLD_ACTION_QUERY);
 	if(!gold_request) 
 		return NULL;
+
+	if(!account_q) 
+		goto empty;
 
 	if(account_q->account_list && list_count(account_q->account_list)) {
 		itr = list_iterator_create(account_q->account_list);
@@ -1919,7 +1929,7 @@ extern List account_storage_p_get_accounts(account_account_cond_t *account_q)
 					   tmp_buff,
 					   GOLD_OPERATOR_NONE, 0);		
 	}
-
+empty:
 	gold_request_add_condition(gold_request, "Active",
 				   "True",
 				   GOLD_OPERATOR_NONE,
@@ -1959,16 +1969,14 @@ extern List account_storage_p_get_clusters(account_cluster_cond_t *cluster_q)
 	int set = 0;
 	char *object = NULL;
 
-	if(!cluster_q) {
-		error("account_storage_p_modify_clusters: "
-		      "we need conditions to request");
-		return NULL;
-	}
 
 	gold_request = create_gold_request(GOLD_OBJECT_MACHINE,
 					   GOLD_ACTION_QUERY);
 	if(!gold_request) 
 		return NULL;
+
+	if(!cluster_q) 
+		goto empty;
 
 	if(cluster_q->cluster_list && list_count(cluster_q->cluster_list)) {
 		itr = list_iterator_create(cluster_q->cluster_list);
@@ -1986,6 +1994,7 @@ extern List account_storage_p_get_clusters(account_cluster_cond_t *cluster_q)
 		list_iterator_destroy(itr);
 	}
 
+empty:
 	gold_request_add_condition(gold_request, "Active",
 				   "True",
 				   GOLD_OPERATOR_NONE,
@@ -2025,18 +2034,15 @@ extern List account_storage_p_get_associations(
 	char *object = NULL;
 	char tmp_buff[50];
 
-	if(!assoc_q) {
-		error("account_storage_p_get_associations: "
-		      "we need conditions to query");
-		return NULL;
-	}
-
 	gold_request = create_gold_request(GOLD_OBJECT_ACCOUNT,
 					   GOLD_ACTION_QUERY);
 	
 	if(!gold_request) 
 		return NULL;
 
+	if(!assoc_q) 
+		goto empty;
+	
 	if(assoc_q->id_list && list_count(assoc_q->id_list)) {
 		itr = list_iterator_create(assoc_q->id_list);
 		if(list_count(assoc_q->id_list) > 1)
@@ -2113,6 +2119,7 @@ extern List account_storage_p_get_associations(
 		error("lft && rgt don't work with gold.");
 	}
 
+empty:
 	gold_request_add_selection(gold_request, "Id");
 	gold_request_add_selection(gold_request, "User");
 	gold_request_add_selection(gold_request, "Project");

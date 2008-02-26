@@ -245,7 +245,7 @@ static void _print_rec(account_association_rec_t *association)
 		       association->max_cpu_seconds_per_job);
 }
 
-extern int sacctmgr_create_association(int argc, char *argv[])
+extern int sacctmgr_add_association(int argc, char *argv[])
 {
 	int rc = SLURM_SUCCESS;
 
