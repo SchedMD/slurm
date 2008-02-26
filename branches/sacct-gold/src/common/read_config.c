@@ -121,11 +121,11 @@ static void validate_and_set_defaults(slurm_ctl_conf_t *conf,
 
 s_p_options_t slurm_conf_options[] = {
 	{"AuthType", S_P_STRING},
-	{"AccountStorageType", S_P_STRING},
-	{"AccountStorageHost", S_P_STRING},
-	{"AccountStorageUser", S_P_STRING},
-	{"AccountStoragePass", S_P_STRING},
-	{"AccountStoragePort", S_P_UINT32},	
+	{"AccountingStorageType", S_P_STRING},
+	{"AccountingStorageHost", S_P_STRING},
+	{"AccountingStorageUser", S_P_STRING},
+	{"AccountingStoragePass", S_P_STRING},
+	{"AccountingStoragePort", S_P_UINT32},	
 	{"CheckpointType", S_P_STRING},
 	{"CacheGroups", S_P_UINT16},
 	{"BackupAddr", S_P_STRING},
@@ -173,12 +173,6 @@ s_p_options_t slurm_conf_options[] = {
 	{"MaxMemPerTask", S_P_UINT32},
 	{"MessageTimeout", S_P_UINT16},
 	{"MinJobAge", S_P_UINT16},
-	{"ClusterAcctStorageLoc", S_P_STRING},
-	{"ClusterAcctStorageType", S_P_STRING},
-	{"ClusterAcctStorageHost", S_P_STRING},
-	{"ClusterAcctStorageUser", S_P_STRING},
-	{"ClusterAcctStoragePass", S_P_STRING},
-	{"ClusterAcctStoragePort", S_P_UINT32},
 	{"MpichGmDirectSupport", S_P_LONG},
 	{"MpiDefault", S_P_STRING},
 	{"PluginDir", S_P_STRING},
@@ -1061,15 +1055,10 @@ free_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr, bool purge_node_hash)
 	xfree (ctl_conf_ptr->control_machine);
 	xfree (ctl_conf_ptr->crypto_type);
 	xfree (ctl_conf_ptr->epilog);
-	xfree (ctl_conf_ptr->account_storage_type);
-	xfree (ctl_conf_ptr->account_storage_user);
-	xfree (ctl_conf_ptr->account_storage_host);
-	xfree (ctl_conf_ptr->account_storage_pass);
-	xfree (ctl_conf_ptr->cluster_acct_storage_loc);
-	xfree (ctl_conf_ptr->cluster_acct_storage_type);
-	xfree (ctl_conf_ptr->cluster_acct_storage_user);
-	xfree (ctl_conf_ptr->cluster_acct_storage_host);
-	xfree (ctl_conf_ptr->cluster_acct_storage_pass);
+	xfree (ctl_conf_ptr->accounting_storage_type);
+	xfree (ctl_conf_ptr->accounting_storage_user);
+	xfree (ctl_conf_ptr->accounting_storage_host);
+	xfree (ctl_conf_ptr->accounting_storage_pass);
 	xfree (ctl_conf_ptr->job_acct_gather_type);
 	xfree (ctl_conf_ptr->job_acct_storage_loc);
 	xfree (ctl_conf_ptr->job_acct_storage_type);
@@ -1132,11 +1121,11 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	ctl_conf_ptr->last_update		= time(NULL);
 	xfree (ctl_conf_ptr->authtype);
 	ctl_conf_ptr->cache_groups		= (uint16_t) NO_VAL;
-	xfree (ctl_conf_ptr->account_storage_type);
-	xfree (ctl_conf_ptr->account_storage_user);
-	xfree (ctl_conf_ptr->account_storage_host);
-	xfree (ctl_conf_ptr->account_storage_pass);
-	ctl_conf_ptr->account_storage_port             = 0;
+	xfree (ctl_conf_ptr->accounting_storage_type);
+	xfree (ctl_conf_ptr->accounting_storage_user);
+	xfree (ctl_conf_ptr->accounting_storage_host);
+	xfree (ctl_conf_ptr->accounting_storage_pass);
+	ctl_conf_ptr->accounting_storage_port             = 0;
 	xfree (ctl_conf_ptr->checkpoint_type);
 	xfree (ctl_conf_ptr->cluster_name);
 	xfree (ctl_conf_ptr->backup_addr);
@@ -1175,12 +1164,6 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	xfree (ctl_conf_ptr->mpi_default);
 	ctl_conf_ptr->msg_timeout		= (uint16_t) NO_VAL;
 	ctl_conf_ptr->next_job_id		= (uint32_t) NO_VAL;
-	xfree (ctl_conf_ptr->cluster_acct_storage_loc);
-	xfree (ctl_conf_ptr->cluster_acct_storage_type);
-	xfree (ctl_conf_ptr->cluster_acct_storage_user);
-	xfree (ctl_conf_ptr->cluster_acct_storage_host);
-	xfree (ctl_conf_ptr->cluster_acct_storage_pass);
-	ctl_conf_ptr->cluster_acct_storage_port             = 0;
 	xfree (ctl_conf_ptr->plugindir);
 	xfree (ctl_conf_ptr->plugstack);
 	ctl_conf_ptr->private_data              = 0;
@@ -1710,99 +1693,49 @@ validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	if (!s_p_get_string(&conf->mpi_default, "MpiDefault", hashtbl))
 		conf->mpi_default = xstrdup(DEFAULT_MPI_DEFAULT);
 
-	if (!s_p_get_string(&conf->cluster_acct_storage_loc,
-			    "ClusterAcctStorageLoc", hashtbl))
-		conf->cluster_acct_storage_loc = 
-			xstrdup(DEFAULT_CLUSTER_ACCT_STORAGE_LOC);
-	
-	if (!s_p_get_string(&conf->cluster_acct_storage_type,
-			    "ClusterAcctStorageType", hashtbl)) {
+	if (!s_p_get_string(&conf->accounting_storage_type,
+			    "AccountingStorageType", hashtbl)) {
 		if(default_storage_type)
-			conf->cluster_acct_storage_type =
-				xstrdup_printf("clusteracct_storage/%s",
+			conf->accounting_storage_type =
+				xstrdup_printf("accounting_storage/%s",
 					       default_storage_type);
 		else	
-			conf->cluster_acct_storage_type =
-				xstrdup(DEFAULT_CLUSTER_ACCT_STORAGE_TYPE);
+			conf->accounting_storage_type =
+				xstrdup(DEFAULT_ACCOUNTING_STORAGE_TYPE);
 	}
-	if (!s_p_get_string(&conf->cluster_acct_storage_host,
-			    "ClusterAcctStorageHost", hashtbl)) {
+	if (!s_p_get_string(&conf->accounting_storage_host,
+			    "AccountingStorageHost", hashtbl)) {
 		if(default_storage_host)
-			conf->cluster_acct_storage_host =
+			conf->accounting_storage_host =
 				xstrdup(default_storage_host);
 		else
-			conf->cluster_acct_storage_host =
+			conf->accounting_storage_host =
 				xstrdup(DEFAULT_STORAGE_HOST);
 	}
-	if (!s_p_get_string(&conf->cluster_acct_storage_user,
-			    "ClusterAcctStorageUser", hashtbl)) {
+	if (!s_p_get_string(&conf->accounting_storage_user,
+			    "AccountingStorageUser", hashtbl)) {
 		if(default_storage_user)
-			conf->cluster_acct_storage_user =
+			conf->accounting_storage_user =
 				xstrdup(default_storage_user);
 		else
-			conf->cluster_acct_storage_user =
+			conf->accounting_storage_user =
 				xstrdup(DEFAULT_STORAGE_USER);
 	}
-	if (!s_p_get_string(&conf->cluster_acct_storage_pass,
-			    "ClusterAcctStoragePass", hashtbl)) {
+	if (!s_p_get_string(&conf->accounting_storage_pass,
+			    "AccountingStoragePass", hashtbl)) {
 		if(default_storage_pass)
-			conf->cluster_acct_storage_pass =
+			conf->accounting_storage_pass =
 				xstrdup(default_storage_pass);
 		else
-			conf->cluster_acct_storage_pass =
+			conf->accounting_storage_pass =
 				xstrdup(DEFAULT_STORAGE_PASS);
 	}
-	if (!s_p_get_uint32(&conf->cluster_acct_storage_port,
-			    "ClusterAcctStoragePort", hashtbl)) {
+	if (!s_p_get_uint32(&conf->accounting_storage_port,
+			    "AccountingStoragePort", hashtbl)) {
 		if(default_storage_port)
-			conf->cluster_acct_storage_port = default_storage_port;
+			conf->accounting_storage_port = default_storage_port;
 		else
-			conf->cluster_acct_storage_port =
-				DEFAULT_STORAGE_PORT;
-	}
-	if (!s_p_get_string(&conf->account_storage_type,
-			    "AccountStorageType", hashtbl)) {
-		if(default_storage_type)
-			conf->account_storage_type =
-				xstrdup_printf("account_storage/%s",
-					       default_storage_type);
-		else	
-			conf->account_storage_type =
-				xstrdup(DEFAULT_ACCOUNT_STORAGE_TYPE);
-	}
-	if (!s_p_get_string(&conf->account_storage_host,
-			    "AccountStorageHost", hashtbl)) {
-		if(default_storage_host)
-			conf->account_storage_host =
-				xstrdup(default_storage_host);
-		else
-			conf->account_storage_host =
-				xstrdup(DEFAULT_STORAGE_HOST);
-	}
-	if (!s_p_get_string(&conf->account_storage_user,
-			    "AccountStorageUser", hashtbl)) {
-		if(default_storage_user)
-			conf->account_storage_user =
-				xstrdup(default_storage_user);
-		else
-			conf->account_storage_user =
-				xstrdup(DEFAULT_STORAGE_USER);
-	}
-	if (!s_p_get_string(&conf->account_storage_pass,
-			    "AccountStoragePass", hashtbl)) {
-		if(default_storage_pass)
-			conf->account_storage_pass =
-				xstrdup(default_storage_pass);
-		else
-			conf->account_storage_pass =
-				xstrdup(DEFAULT_STORAGE_PASS);
-	}
-	if (!s_p_get_uint32(&conf->account_storage_port,
-			    "AccountStoragePort", hashtbl)) {
-		if(default_storage_port)
-			conf->account_storage_port = default_storage_port;
-		else
-			conf->account_storage_port = DEFAULT_STORAGE_PORT;
+			conf->accounting_storage_port = DEFAULT_STORAGE_PORT;
 	}
 	if (!s_p_get_string(&conf->plugindir, "PluginDir", hashtbl))
 		conf->plugindir = xstrdup(default_plugin_path);

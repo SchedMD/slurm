@@ -48,11 +48,9 @@ extern char *default_slurm_config_file;
 extern char *default_plugin_path;
 extern char *default_plugstack;
 
-#define DEFAULT_ACCOUNT_STORAGE_TYPE "account_storage/none"
+#define DEFAULT_ACCOUNTING_STORAGE_TYPE "accounting_storage/none"
 #define DEFAULT_AUTH_TYPE          "auth/none"
 #define DEFAULT_CACHE_GROUPS        0
-#define DEFAULT_CLUSTER_ACCT_STORAGE_TYPE "clusteracct_storage/none"
-#define DEFAULT_CLUSTER_ACCT_STORAGE_LOC  "/var/log/slurm_clusteracct.log"
 #define DEFAULT_CRYPTO_TYPE        "crypto/openssl"
 #define DEFAULT_FAST_SCHEDULE       1
 #define DEFAULT_FIRST_JOB_ID        1

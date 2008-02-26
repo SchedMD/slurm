@@ -182,35 +182,35 @@ extern int slurm_set_tree_width(uint16_t tree_width);
  */
 extern uint16_t slurm_get_tree_width(void);
 
-/* slurm_get_account_storage_type
- * returns the account storage type from slurmctld_conf object
- * RET char *    - account storage type,  MUST be xfreed by caller
+/* slurm_get_accounting_storage_type
+ * returns the accounting storage type from slurmctld_conf object
+ * RET char *    - accounting storage type,  MUST be xfreed by caller
  */
-char *slurm_get_account_storage_type(void);
+char *slurm_get_accounting_storage_type(void);
 
-/* slurm_get_account_storage_user
+/* slurm_get_accounting_storage_user
  * returns the storage user from slurmctld_conf object
  * RET char *    - storage user,  MUST be xfreed by caller
  */
-char *slurm_get_account_storage_user(void);
+char *slurm_get_accounting_storage_user(void);
 
-/* slurm_get_account_storage_host
+/* slurm_get_accounting_storage_host
  * returns the storage host from slurmctld_conf object
  * RET char *    - storage host,  MUST be xfreed by caller
  */
-char *slurm_get_account_storage_host(void);
+char *slurm_get_accounting_storage_host(void);
 
-/* slurm_get_account_storage_pass
+/* slurm_get_accounting_storage_pass
  * returns the storage password from slurmctld_conf object
  * RET char *    - storage password,  MUST be xfreed by caller
  */
-char *slurm_get_account_storage_pass(void);
+char *slurm_get_accounting_storage_pass(void);
 
-/* slurm_get_account_storage_port
+/* slurm_get_accounting_storage_port
  * returns the storage port from slurmctld_conf object
  * RET uint32_t   - storage port
  */
-uint32_t slurm_get_account_storage_port(void);
+uint32_t slurm_get_accounting_storage_port(void);
 
 /* slurm_get_jobacct_gather_type
  * returns the job accounting type from slurmctld_conf object
@@ -295,42 +295,6 @@ char *slurm_get_jobcomp_pass(void);
  * RET uint32_t   - storage port
  */
 uint32_t slurm_get_jobcomp_port(void);
-
-/* slurm_get_clusteracct_storage_type
- * returns the node accounting type from slurmctld_conf object
- * RET char *    - node accounting type,  MUST be xfreed by caller
- */
-char *slurm_get_clusteracct_storage_type(void);
-
-/* slurm_get_clusteracct_storage_loc
- * returns the node accounting loc from slurmctld_conf object
- * RET char *    - node accounting location,  MUST be xfreed by caller
- */
-char *slurm_get_clusteracct_storage_loc(void);
-
-/* slurm_get_clusteracct_storage_user
- * returns the storage user from slurmctld_conf object
- * RET char *    - storage user,  MUST be xfreed by caller
- */
-char *slurm_get_clusteracct_storage_user(void);
-
-/* slurm_get_clusteracct_storage_host
- * returns the storage host from slurmctld_conf object
- * RET char *    - storage host,  MUST be xfreed by caller
- */
-char *slurm_get_clusteracct_storage_host(void);
-
-/* slurm_get_clusteracct_storage_pass
- * returns the storage password from slurmctld_conf object
- * RET char *    - storage password,  MUST be xfreed by caller
- */
-char *slurm_get_clusteracct_storage_pass(void);
-
-/* slurm_get_clusteracct_storage_port
- * returns the storage port from slurmctld_conf object
- * RET uint32_t   - storage port
- */
-uint32_t slurm_get_clusteracct_storage_port(void);
 
 /* slurm_get_propagate_prio_process
  * return the PropagatePrioProcess flag from slurmctld_conf object

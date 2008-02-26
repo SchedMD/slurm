@@ -379,78 +379,78 @@ extern int slurm_set_auth_type(char *auth_type)
 	return 0;
 }
 
-/* slurm_get_account_storage_type
- * returns the account storage type from slurmctld_conf object
- * RET char *    - account storage type,  MUST be xfreed by caller
+/* slurm_get_accounting_storage_type
+ * returns the accounting storage type from slurmctld_conf object
+ * RET char *    - accounting storage type,  MUST be xfreed by caller
  */
-char *slurm_get_account_storage_type(void)
+char *slurm_get_accounting_storage_type(void)
 {
-	char *account_type;
+	char *accounting_type;
 	slurm_ctl_conf_t *conf;
 
 	conf = slurm_conf_lock();
-	account_type = xstrdup(conf->account_storage_type);
+	accounting_type = xstrdup(conf->accounting_storage_type);
 	slurm_conf_unlock();
-	return account_type;
+	return accounting_type;
 	
 }
 
-/* slurm_get_account_storage_user
+/* slurm_get_accounting_storage_user
  * returns the storage user from slurmctld_conf object
  * RET char *    - storage user,  MUST be xfreed by caller
  */
-char *slurm_get_account_storage_user(void)
+char *slurm_get_accounting_storage_user(void)
 {
 	char *storage_user;
 	slurm_ctl_conf_t *conf;
 
 	conf = slurm_conf_lock();
-	storage_user = xstrdup(conf->account_storage_user);
+	storage_user = xstrdup(conf->accounting_storage_user);
 	slurm_conf_unlock();
 	return storage_user;	
 }
 
-/* slurm_get_account_storage_host
+/* slurm_get_accounting_storage_host
  * returns the storage host from slurmctld_conf object
  * RET char *    - storage host,  MUST be xfreed by caller
  */
-char *slurm_get_account_storage_host(void)
+char *slurm_get_accounting_storage_host(void)
 {
 	char *storage_host;
 	slurm_ctl_conf_t *conf;
 
 	conf = slurm_conf_lock();
-	storage_host = xstrdup(conf->account_storage_host);
+	storage_host = xstrdup(conf->accounting_storage_host);
 	slurm_conf_unlock();
 	return storage_host;	
 }
 
-/* slurm_get_account_storage_pass
+/* slurm_get_accounting_storage_pass
  * returns the storage password from slurmctld_conf object
  * RET char *    - storage password,  MUST be xfreed by caller
  */
-char *slurm_get_account_storage_pass(void)
+char *slurm_get_accounting_storage_pass(void)
 {
 	char *storage_pass;
 	slurm_ctl_conf_t *conf;
 
 	conf = slurm_conf_lock();
-	storage_pass = xstrdup(conf->account_storage_pass);
+	storage_pass = xstrdup(conf->accounting_storage_pass);
 	slurm_conf_unlock();
 	return storage_pass;	
 }
 
-/* slurm_get_account_storage_port
+/* slurm_get_accounting_storage_port
  * returns the storage port from slurmctld_conf object
  * RET uint32_t   - storage port
  */
-uint32_t slurm_get_account_storage_port(void)
+uint32_t slurm_get_accounting_storage_port(void)
 {
 	uint32_t storage_port;
 	slurm_ctl_conf_t *conf;
 
 	conf = slurm_conf_lock();
-	storage_port = conf->account_storage_port;
+	storage_port = conf->accounting_storage_port;
 	slurm_conf_unlock();
 	return storage_port;
 	
@@ -663,97 +663,6 @@ uint32_t slurm_get_jobcomp_port(void)
 
 	conf = slurm_conf_lock();
 	storage_port = conf->job_comp_port;
-	slurm_conf_unlock();
-	return storage_port;
-	
-}
-
-/* slurm_get_clusteracct_storage_type
- * returns the storage type from slurmctld_conf object
- * RET char *    - storage type,  MUST be xfreed by caller
- */
-char *slurm_get_clusteracct_storage_type(void)
-{
-	char *storage_type;
-	slurm_ctl_conf_t *conf;
-
-	conf = slurm_conf_lock();
-	storage_type = xstrdup(conf->cluster_acct_storage_type);
-	slurm_conf_unlock();
-	return storage_type;	
-}
-
-/* slurm_get_clusteracct_storage_loc
- * returns the job accounting loc from the slurmctld_conf object
- * RET char *    - job accounting loc,  MUST be xfreed by caller
- */
-char *slurm_get_clusteracct_storage_loc(void)
-{
-	char *clusteracct_loc;
-	slurm_ctl_conf_t *conf;
-
-	conf = slurm_conf_lock();
-	clusteracct_loc = xstrdup(conf->cluster_acct_storage_loc);
-	slurm_conf_unlock();
-	return clusteracct_loc;
-}
-
-/* slurm_get_clusteracct_storage_user
- * returns the storage user from slurmctld_conf object
- * RET char *    - storage user,  MUST be xfreed by caller
- */
-char *slurm_get_clusteracct_storage_user(void)
-{
-	char *storage_user;
-	slurm_ctl_conf_t *conf;
-
-	conf = slurm_conf_lock();
-	storage_user = xstrdup(conf->cluster_acct_storage_user);
-	slurm_conf_unlock();
-	return storage_user;	
-}
-
-/* slurm_get_clusteracct_storage_host
- * returns the storage host from slurmctld_conf object
- * RET char *    - storage host,  MUST be xfreed by caller
- */
-char *slurm_get_clusteracct_storage_host(void)
-{
-	char *storage_host;
-	slurm_ctl_conf_t *conf;
-
-	conf = slurm_conf_lock();
-	storage_host = xstrdup(conf->cluster_acct_storage_host);
-	slurm_conf_unlock();
-	return storage_host;	
-}
-
-/* slurm_get_clusteracct_storage_pass
- * returns the storage password from slurmctld_conf object
- * RET char *    - storage password,  MUST be xfreed by caller
- */
-char *slurm_get_clusteracct_storage_pass(void)
-{
-	char *storage_pass;
-	slurm_ctl_conf_t *conf;
-
-	conf = slurm_conf_lock();
-	storage_pass = xstrdup(conf->cluster_acct_storage_pass);
-	slurm_conf_unlock();
-	return storage_pass;	
-}
-
-/* slurm_get_clusteracct_storage_port
- * returns the storage port from slurmctld_conf object
- * RET uint32_t   - storage port
- */
-uint32_t slurm_get_clusteracct_storage_port(void)
-{
-	uint32_t storage_port;
-	slurm_ctl_conf_t *conf;
-
-	conf = slurm_conf_lock();
-	storage_port = conf->cluster_acct_storage_port;
 	slurm_conf_unlock();
 	return storage_port;
 	
