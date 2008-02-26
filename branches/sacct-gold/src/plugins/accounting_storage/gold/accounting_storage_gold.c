@@ -1,7 +1,7 @@
 /*****************************************************************************\
- *  account_storage_gold.c - account interface to gold.
+ *  accounting_storage_gold.c - accounting interface to gold.
  *
- *  $Id: account_gold.c 13061 2008-01-22 21:23:56Z da $
+ *  $Id: accounting_gold.c 13061 2008-01-22 21:23:56Z da $
  *****************************************************************************
  *  Copyright (C) 2004-2008 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -84,8 +84,8 @@
  * minimum versions for their plugins as the job accounting API 
  * matures.
  */
-const char plugin_name[] = "Account storage GOLD plugin";
-const char plugin_type[] = "account_storage/gold";
+const char plugin_name[] = "Accounting storage GOLD plugin";
+const char plugin_type[] = "accounting_storage/gold";
 const uint32_t plugin_version = 100;
 
 static char *cluster_name = NULL;
