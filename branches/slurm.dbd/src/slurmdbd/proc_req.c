@@ -185,7 +185,8 @@ static int _init_conn(Buf in_buffer, Buf *out_buffer, uint32_t *uid)
 {
 	dbd_init_msg_t *init_msg;
 
-	if (slurm_dbd_unpack_init_msg(&init_msg, in_buffer) != SLURM_SUCCESS) {
+	if (slurm_dbd_unpack_init_msg(&init_msg, in_buffer, 
+				      slurmdbd_conf->auth_info) != SLURM_SUCCESS) {
 		error("Failed to unpack DBD_INIT message");
 		*out_buffer = make_dbd_rc_msg(SLURM_ERROR);
 		return SLURM_ERROR;

@@ -50,8 +50,10 @@
 #include <stdio.h>
 #include <slurm/slurm_errno.h>
 
+#include "src/common/read_config.h"
 #include "src/common/slurm_clusteracct_storage.h"
 #include "src/common/slurmdbd_defs.h"
+#include "src/common/xstring.h"
 #include "src/slurmctld/slurmctld.h"
 
 /*
@@ -87,7 +89,8 @@ const char plugin_name[] = "Cluster accounting storage SLURMDBD plugin";
 const char plugin_type[] = "clusteracct_storage/slurmdbd";
 const uint32_t plugin_version = 100;
 
-static char *cluster_name = NULL;
+static char *cluster_name       = NULL;
+static char *slurmdbd_auth_info = NULL;
 
 /*
  * init() is called when the plugin is loaded, before any other functions
@@ -100,11 +103,14 @@ extern int init ( void )
 	if (first) {
 		/* since this can be loaded from many different places
 		   only tell us once. */
-		verbose("%s loaded", plugin_name);
-		slurm_open_slurmdbd_conn();
 		if (!(cluster_name = slurm_get_cluster_name()))
-			fatal("To run clusteracct_storage/slurmdbd you must specify "
-			      "ClusterName in your slurm.conf");
+			fatal("%s requires ClusterName in slurm.conf", plugin_name);
+		
+		slurmdbd_auth_info = slurm_get_slurmdbd_auth_info();
+		verbose("%s loaded SlurmdDbdAuthInfo=%s",
+			plugin_name, slurmdbd_auth_info);
+		slurm_open_slurmdbd_conn(slurmdbd_auth_info);
+
 		first = 0;
 	} else {
 		debug4("%s loaded", plugin_name);
@@ -116,6 +122,7 @@ extern int init ( void )
 extern int fini ( void )
 {
 	xfree(cluster_name);
+	xfree(slurmdbd_auth_info);
 	return SLURM_SUCCESS;
 }
 

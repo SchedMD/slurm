@@ -80,7 +80,8 @@ static pthread_t agent_tid      = 0;
 static time_t    agent_shutdown = 0;
 
 static pthread_mutex_t slurmdbd_lock = PTHREAD_MUTEX_INITIALIZER;
-static slurm_fd  slurmdbd_fd    = -1;
+static slurm_fd  slurmdbd_fd         = -1;
+static char *    slurmdbd_auth_info  = NULL;
 
 static void * _agent(void *x);
 static void   _agent_queue_del(void *x);
@@ -108,7 +109,7 @@ static int    _tot_wait (struct timeval *start_time);
  ****************************************************************************/
 
 /* Open a socket connection to SlurmDbd */
-extern int slurm_open_slurmdbd_conn(void)
+extern int slurm_open_slurmdbd_conn(char *auth_info)
 {
 	slurm_mutex_lock(&agent_lock);
 	if ((agent_tid == 0) || (agent_list == NULL))
@@ -116,6 +117,9 @@ extern int slurm_open_slurmdbd_conn(void)
 	slurm_mutex_unlock(&agent_lock);
 
 	slurm_mutex_lock(&slurmdbd_lock);
+	xfree(slurmdbd_auth_info);
+	if (auth_info)
+		slurmdbd_auth_info = xstrdup(auth_info);
 	if (slurmdbd_fd < 0)
 		_open_slurmdbd_fd();
 	slurm_mutex_unlock(&slurmdbd_lock);
@@ -131,6 +135,7 @@ extern int slurm_close_slurmdbd_conn(void)
 
 	slurm_mutex_lock(&slurmdbd_lock);
 	_close_slurmdbd_fd();
+	xfree(slurmdbd_auth_info);
 	slurm_mutex_unlock(&slurmdbd_lock);
 
 	return SLURM_SUCCESS;
@@ -201,7 +206,8 @@ extern int slurm_send_recv_slurmdbd_msg(slurmdbd_msg_t *req,
 			break;
 		case DBD_INIT:
 			slurm_dbd_pack_init_msg(
-				(dbd_init_msg_t *) req->data, buffer);
+				(dbd_init_msg_t *) req->data, buffer, 
+				slurmdbd_auth_info);
 			break;
 		case DBD_JOB_COMPLETE:
 			slurm_dbd_pack_job_complete_msg(
@@ -410,7 +416,7 @@ static int _send_init_msg(void)
 	buffer = init_buf(1024);
 	pack16((uint16_t) DBD_INIT, buffer);
 	req.version  = SLURM_DBD_VERSION;
-	slurm_dbd_pack_init_msg(&req, buffer);
+	slurm_dbd_pack_init_msg(&req, buffer, slurmdbd_auth_info);
 
 	rc = _send_msg(buffer);
 	free_buf(buffer);
@@ -1165,14 +1171,13 @@ unpack_error:
 }
 
 void inline 
-slurm_dbd_pack_init_msg(dbd_init_msg_t *msg, Buf buffer)
+slurm_dbd_pack_init_msg(dbd_init_msg_t *msg, Buf buffer, char *auth_info)
 {
 	int rc;
 	void *auth_cred;
 
 	pack16(msg->version, buffer);
-/* FIXME: May need to use distinct auth plugin/port from slurmctld */
-	auth_cred = g_slurm_auth_create(NULL, 2, NULL);
+	auth_cred = g_slurm_auth_create(NULL, 2, auth_info);
 	if (auth_cred == NULL) {
 		error("Creating authentication credential: %s",
 			 g_slurm_auth_errstr(g_slurm_auth_errno(NULL)));
@@ -1188,7 +1193,7 @@ slurm_dbd_pack_init_msg(dbd_init_msg_t *msg, Buf buffer)
 }
 
 int inline 
-slurm_dbd_unpack_init_msg(dbd_init_msg_t **msg, Buf buffer)
+slurm_dbd_unpack_init_msg(dbd_init_msg_t **msg, Buf buffer, char *auth_info)
 {
 	void *auth_cred;
 
@@ -1201,7 +1206,7 @@ slurm_dbd_unpack_init_msg(dbd_init_msg_t **msg, Buf buffer)
 			g_slurm_auth_errstr(g_slurm_auth_errno(NULL)));
 		goto unpack_error;
 	}
-	msg_ptr->uid = g_slurm_auth_get_uid(auth_cred, NULL);
+	msg_ptr->uid = g_slurm_auth_get_uid(auth_cred, auth_info);
 	g_slurm_auth_destroy(auth_cred);
 	return SLURM_SUCCESS;
 

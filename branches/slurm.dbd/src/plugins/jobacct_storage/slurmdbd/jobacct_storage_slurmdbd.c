@@ -55,6 +55,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#include "src/common/read_config.h"
 #include "src/common/slurmdbd_defs.h"
 #include "src/slurmctld/slurmctld.h"
 
@@ -90,6 +91,7 @@
 const char plugin_name[] = "Job accounting storage SLURMDBD plugin";
 const char plugin_type[] = "jobacct_storage/slurmdbd";
 const uint32_t plugin_version = 100;
+static char *slurmdbd_auth_info = NULL;
 
 /*
  * init() is called when the plugin is loaded, before any other functions
@@ -102,8 +104,10 @@ extern int init ( void )
 	if (first) {
 		/* since this can be loaded from many different places
 		   only tell us once. */
-		verbose("%s loaded", plugin_name);
-		slurm_open_slurmdbd_conn();
+		slurmdbd_auth_info = slurm_get_slurmdbd_auth_info();
+		verbose("%s loaded, SlurmDbdAuthInfo=%s", 
+			plugin_name, slurmdbd_auth_info);
+		slurm_open_slurmdbd_conn(slurmdbd_auth_info);
 		first = 0;
 	} else {
 		debug4("%s loaded", plugin_name);
@@ -114,6 +118,7 @@ extern int init ( void )
 
 extern int fini ( void )
 {
+	xfree(slurmdbd_auth_info);
 	return SLURM_SUCCESS;
 }
 

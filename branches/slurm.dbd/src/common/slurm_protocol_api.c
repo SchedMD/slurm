@@ -257,6 +257,24 @@ uint16_t slurm_get_msg_timeout(void)
         return msg_timeout;
 }
 
+/* slurm_get_slurmdbd_auth_info
+ * get default SlurmDbdAuthInfo from slurmctld_conf object
+ * RET char *   - auth_info default value from slurm.conf,  MUST be xfreed by caller
+ */
+char *slurm_get_slurmdbd_auth_info(void)
+{
+        char *slurmdbd_auth_info;
+        slurm_ctl_conf_t *conf;
+
+        conf = slurm_conf_lock();
+        if (conf->slurmdbd_auth_info && conf->slurmdbd_auth_info[0])
+                slurmdbd_auth_info = xstrdup(conf->slurmdbd_auth_info);
+        else
+                slurmdbd_auth_info = NULL;
+        slurm_conf_unlock();
+        return slurmdbd_auth_info;
+}
+
 /* slurm_get_plugin_dir
  * get plugin directory from slurmctld_conf object
  * RET char *   - plugin directory, MUST be xfreed by caller

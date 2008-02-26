@@ -157,8 +157,8 @@ typedef struct dbd_step_start_msg {
  * Slurm DBD message processing functions
 \*****************************************************************************/
 
-/* Open a socket connection to SlurmDbd */
-extern int slurm_open_slurmdbd_conn(void);
+/* Open a socket connection to SlurmDbd using SlurmdbdAuthInfo specified */
+extern int slurm_open_slurmdbd_conn(char *auth_info);
 
 /* Close the SlurmDBD socket connection */
 extern int slurm_close_slurmdbd_conn(void);
@@ -202,7 +202,8 @@ void inline slurm_dbd_pack_cluster_procs_msg(dbd_cluster_procs_msg_t *msg,
 								       Buf buffer);
 void inline slurm_dbd_pack_get_jobs_msg(dbd_get_jobs_msg_t *msg,       Buf buffer);
 void inline slurm_dbd_pack_got_jobs_msg(dbd_got_jobs_msg_t *msg,       Buf buffer);
-void inline slurm_dbd_pack_init_msg(dbd_init_msg_t *msg,               Buf buffer);
+void inline slurm_dbd_pack_init_msg(dbd_init_msg_t *msg,               Buf buffer,
+				    char *auth_info);
 void inline slurm_dbd_pack_job_complete_msg(dbd_job_comp_msg_t *msg,   Buf buffer);
 void inline slurm_dbd_pack_job_start_msg(dbd_job_start_msg_t *msg,     Buf buffer);
 void inline slurm_dbd_pack_job_suspend_msg(dbd_job_suspend_msg_t *msg, Buf buffer);
@@ -218,7 +219,8 @@ int inline slurm_dbd_unpack_cluster_procs_msg(dbd_cluster_procs_msg_t **msg,
 									 Buf buffer);
 int inline slurm_dbd_unpack_get_jobs_msg(dbd_get_jobs_msg_t **msg,       Buf buffer);
 int inline slurm_dbd_unpack_got_jobs_msg(dbd_got_jobs_msg_t **msg,       Buf buffer);
-int inline slurm_dbd_unpack_init_msg(dbd_init_msg_t **msg,               Buf buffer);
+int inline slurm_dbd_unpack_init_msg(dbd_init_msg_t **msg,               Buf buffer,
+				     char *auth_info);
 int inline slurm_dbd_unpack_job_complete_msg(dbd_job_comp_msg_t **msg,   Buf buffer);
 int inline slurm_dbd_unpack_job_start_msg(dbd_job_start_msg_t **msg,     Buf buffer);
 int inline slurm_dbd_unpack_job_suspend_msg(dbd_job_suspend_msg_t **msg, Buf buffer);

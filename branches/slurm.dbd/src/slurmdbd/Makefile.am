@@ -20,8 +20,6 @@ slurmdbd_SOURCES = 		\
 	proc_req.h		\
 	read_config.c		\
 	read_config.h		\
-	rpc_pack.c		\
-	rpc_pack.h		\
 	rpc_mgr.c		\
 	rpc_mgr.h		\
 	slurmdbd.c  		\

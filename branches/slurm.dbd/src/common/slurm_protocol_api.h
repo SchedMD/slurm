@@ -123,6 +123,12 @@ char *slurm_get_mpi_default(void);
  */
 uint16_t inline slurm_get_msg_timeout(void);
 
+/* slurm_get_slurmdbd_auth_info
+ * get default SlurmDbdAuthInfo from slurmctld_conf object
+ * RET char *   - auth_info default value from slurm.conf,  MUST be xfreed by caller
+ */
+char *slurm_get_slurmdbd_auth_info(void);
+
 /* slurm_api_set_conf_file
  *      set slurm configuration file to a non-default value
  * pathname IN - pathname of slurm configuration file to be used
