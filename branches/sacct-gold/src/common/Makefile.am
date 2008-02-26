@@ -64,6 +64,7 @@ libcommon_la_SOURCES = 			\
 	jobacct_common.c jobacct_common.h \
 	slurm_accounting_storage.c slurm_accounting_storage.h \
 	slurm_jobacct_gather.c slurm_jobacct_gather.h \
+	slurm_jobacct_storage.c slurm_jobacct_storage.h \
 	slurm_jobcomp.c slurm_jobcomp.h	\
 	switch.c switch.h		\
 	arg_desc.c arg_desc.h		\

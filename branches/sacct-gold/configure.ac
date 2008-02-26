@@ -298,12 +298,12 @@ AC_CONFIG_FILES([Makefile
 		 src/strigger/Makefile
 		 src/sview/Makefile
 		 src/plugins/Makefile
-		 src/plugins/account_storage/Makefile
-		 src/plugins/account_storage/gold/Makefile
-		 src/plugins/account_storage/mysql/Makefile
-		 src/plugins/account_storage/pgsql/Makefile
-		 src/plugins/account_storage/none/Makefile
-		 src/plugins/account_storage/slurmdbd/Makefile
+		 src/plugins/accounting_storage/Makefile
+		 src/plugins/accounting_storage/gold/Makefile
+		 src/plugins/accounting_storage/mysql/Makefile
+		 src/plugins/accounting_storage/pgsql/Makefile
+		 src/plugins/accounting_storage/none/Makefile
+		 src/plugins/accounting_storage/slurmdbd/Makefile
 		 src/plugins/auth/Makefile
 		 src/plugins/auth/authd/Makefile
 		 src/plugins/auth/munge/Makefile
@@ -313,12 +313,6 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/checkpoint/none/Makefile
 		 src/plugins/checkpoint/ompi/Makefile
 		 src/plugins/checkpoint/xlch/Makefile
-		 src/plugins/clusteracct_storage/Makefile
-		 src/plugins/clusteracct_storage/gold/Makefile
-		 src/plugins/clusteracct_storage/mysql/Makefile
-		 src/plugins/clusteracct_storage/pgsql/Makefile
-		 src/plugins/clusteracct_storage/none/Makefile
-		 src/plugins/clusteracct_storage/slurmdbd/Makefile
 		 src/plugins/crypto/Makefile
 		 src/plugins/crypto/munge/Makefile
 		 src/plugins/crypto/openssl/Makefile

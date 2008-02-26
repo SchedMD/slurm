@@ -14,7 +14,7 @@
 
 @SET_MAKE@
 
-# Makefile for account_storage/pgsql plugin
+# Makefile for accounting_storage/pgsql plugin
 
 VPATH = @srcdir@
 pkgdatadir = $(datadir)/@PACKAGE@
@@ -35,7 +35,7 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
-subdir = src/plugins/account_storage/pgsql
+subdir = src/plugins/accounting_storage/pgsql
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/auxdir/acx_pthread.m4 \
@@ -75,14 +75,14 @@ am__installdirs = "$(DESTDIR)$(pkglibdir)"
 pkglibLTLIBRARIES_INSTALL = $(INSTALL)
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
 am__DEPENDENCIES_1 =
-am_account_storage_pgsql_la_OBJECTS =  \
-	account_storage_pgsql_la-account_storage_pgsql.lo
-account_storage_pgsql_la_OBJECTS =  \
-	$(am_account_storage_pgsql_la_OBJECTS)
-account_storage_pgsql_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
-	$(LIBTOOLFLAGS) --mode=link $(CCLD) \
-	$(account_storage_pgsql_la_CFLAGS) $(CFLAGS) \
-	$(account_storage_pgsql_la_LDFLAGS) $(LDFLAGS) -o $@
+am_accounting_storage_pgsql_la_OBJECTS =  \
+	accounting_storage_pgsql_la-accounting_storage_pgsql.lo
+accounting_storage_pgsql_la_OBJECTS =  \
+	$(am_accounting_storage_pgsql_la_OBJECTS)
+accounting_storage_pgsql_la_LINK = $(LIBTOOL) --tag=CC \
+	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
+	$(accounting_storage_pgsql_la_CFLAGS) $(CFLAGS) \
+	$(accounting_storage_pgsql_la_LDFLAGS) $(LDFLAGS) -o $@
 DEFAULT_INCLUDES = -I. -I$(top_builddir) -I$(top_builddir)/slurm@am__isrc@
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
 am__depfiles_maybe = depfiles
@@ -95,8 +95,8 @@ CCLD = $(CC)
 LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
-SOURCES = $(account_storage_pgsql_la_SOURCES)
-DIST_SOURCES = $(account_storage_pgsql_la_SOURCES)
+SOURCES = $(accounting_storage_pgsql_la_SOURCES)
+DIST_SOURCES = $(accounting_storage_pgsql_la_SOURCES)
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -267,16 +267,16 @@ top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
 PLUGIN_FLAGS = -module -avoid-version --export-dynamic
 INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common
-pkglib_LTLIBRARIES = account_storage_pgsql.la
+pkglib_LTLIBRARIES = accounting_storage_pgsql.la
 
 # Pgsql storage plugin.
-account_storage_pgsql_la_SOURCES = account_storage_pgsql.c
-account_storage_pgsql_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
-account_storage_pgsql_la_CFLAGS = $(PGSQL_CFLAGS)
-account_storage_pgsql_la_LIBADD = \
+accounting_storage_pgsql_la_SOURCES = accounting_storage_pgsql.c
+accounting_storage_pgsql_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
+accounting_storage_pgsql_la_CFLAGS = $(PGSQL_CFLAGS)
+accounting_storage_pgsql_la_LIBADD = \
 	$(top_builddir)/src/database/libslurm_pgsql.la $(PGSQL_LIBS)
 
-account_storage_pgsql_la_DEPENDENCIES = \
+accounting_storage_pgsql_la_DEPENDENCIES = \
 	$(top_builddir)/src/database/libslurm_pgsql.la
 
 all: all-am
@@ -292,9 +292,9 @@ $(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.am  $(am__confi
 	      exit 1;; \
 	  esac; \
 	done; \
-	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign  src/plugins/account_storage/pgsql/Makefile'; \
+	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign  src/plugins/accounting_storage/pgsql/Makefile'; \
 	cd $(top_srcdir) && \
-	  $(AUTOMAKE) --foreign  src/plugins/account_storage/pgsql/Makefile
+	  $(AUTOMAKE) --foreign  src/plugins/accounting_storage/pgsql/Makefile
 .PRECIOUS: Makefile
 Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
 	@case '$?' in \
@@ -339,8 +339,8 @@ clean-pkglibLTLIBRARIES:
 	  echo "rm -f \"$${dir}/so_locations\""; \
 	  rm -f "$${dir}/so_locations"; \
 	done
-account_storage_pgsql.la: $(account_storage_pgsql_la_OBJECTS) $(account_storage_pgsql_la_DEPENDENCIES) 
-	$(account_storage_pgsql_la_LINK) -rpath $(pkglibdir) $(account_storage_pgsql_la_OBJECTS) $(account_storage_pgsql_la_LIBADD) $(LIBS)
+accounting_storage_pgsql.la: $(accounting_storage_pgsql_la_OBJECTS) $(accounting_storage_pgsql_la_DEPENDENCIES) 
+	$(accounting_storage_pgsql_la_LINK) -rpath $(pkglibdir) $(accounting_storage_pgsql_la_OBJECTS) $(accounting_storage_pgsql_la_LIBADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -348,7 +348,7 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/account_storage_pgsql_la-account_storage_pgsql.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/accounting_storage_pgsql_la-accounting_storage_pgsql.Plo@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
@@ -371,12 +371,12 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LTCOMPILE) -c -o $@ $<
 
-account_storage_pgsql_la-account_storage_pgsql.lo: account_storage_pgsql.c
-@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(account_storage_pgsql_la_CFLAGS) $(CFLAGS) -MT account_storage_pgsql_la-account_storage_pgsql.lo -MD -MP -MF $(DEPDIR)/account_storage_pgsql_la-account_storage_pgsql.Tpo -c -o account_storage_pgsql_la-account_storage_pgsql.lo `test -f 'account_storage_pgsql.c' || echo '$(srcdir)/'`account_storage_pgsql.c
-@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/account_storage_pgsql_la-account_storage_pgsql.Tpo $(DEPDIR)/account_storage_pgsql_la-account_storage_pgsql.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='account_storage_pgsql.c' object='account_storage_pgsql_la-account_storage_pgsql.lo' libtool=yes @AMDEPBACKSLASH@
+accounting_storage_pgsql_la-accounting_storage_pgsql.lo: accounting_storage_pgsql.c
+@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(accounting_storage_pgsql_la_CFLAGS) $(CFLAGS) -MT accounting_storage_pgsql_la-accounting_storage_pgsql.lo -MD -MP -MF $(DEPDIR)/accounting_storage_pgsql_la-accounting_storage_pgsql.Tpo -c -o accounting_storage_pgsql_la-accounting_storage_pgsql.lo `test -f 'accounting_storage_pgsql.c' || echo '$(srcdir)/'`accounting_storage_pgsql.c
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/accounting_storage_pgsql_la-accounting_storage_pgsql.Tpo $(DEPDIR)/accounting_storage_pgsql_la-accounting_storage_pgsql.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='accounting_storage_pgsql.c' object='accounting_storage_pgsql_la-accounting_storage_pgsql.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(account_storage_pgsql_la_CFLAGS) $(CFLAGS) -c -o account_storage_pgsql_la-account_storage_pgsql.lo `test -f 'account_storage_pgsql.c' || echo '$(srcdir)/'`account_storage_pgsql.c
+@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(accounting_storage_pgsql_la_CFLAGS) $(CFLAGS) -c -o accounting_storage_pgsql_la-accounting_storage_pgsql.lo `test -f 'accounting_storage_pgsql.c' || echo '$(srcdir)/'`accounting_storage_pgsql.c
 
 mostlyclean-libtool:
 	-rm -f *.lo

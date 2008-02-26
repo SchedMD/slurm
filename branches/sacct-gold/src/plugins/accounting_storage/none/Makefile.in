@@ -14,7 +14,7 @@
 
 @SET_MAKE@
 
-# Makefile for account_storage/none plugin
+# Makefile for accounting_storage/none plugin
 
 VPATH = @srcdir@
 pkgdatadir = $(datadir)/@PACKAGE@
@@ -35,7 +35,7 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
-subdir = src/plugins/account_storage/none
+subdir = src/plugins/accounting_storage/none
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/auxdir/acx_pthread.m4 \
@@ -74,13 +74,14 @@ am__strip_dir = `echo $$p | sed -e 's|^.*/||'`;
 am__installdirs = "$(DESTDIR)$(pkglibdir)"
 pkglibLTLIBRARIES_INSTALL = $(INSTALL)
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
-account_storage_none_la_LIBADD =
-am_account_storage_none_la_OBJECTS = account_storage_none.lo
-account_storage_none_la_OBJECTS =  \
-	$(am_account_storage_none_la_OBJECTS)
-account_storage_none_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
-	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
-	$(account_storage_none_la_LDFLAGS) $(LDFLAGS) -o $@
+accounting_storage_none_la_LIBADD =
+am_accounting_storage_none_la_OBJECTS = accounting_storage_none.lo
+accounting_storage_none_la_OBJECTS =  \
+	$(am_accounting_storage_none_la_OBJECTS)
+accounting_storage_none_la_LINK = $(LIBTOOL) --tag=CC \
+	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
+	$(AM_CFLAGS) $(CFLAGS) $(accounting_storage_none_la_LDFLAGS) \
+	$(LDFLAGS) -o $@
 DEFAULT_INCLUDES = -I. -I$(top_builddir) -I$(top_builddir)/slurm@am__isrc@
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
 am__depfiles_maybe = depfiles
@@ -93,8 +94,8 @@ CCLD = $(CC)
 LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
-SOURCES = $(account_storage_none_la_SOURCES)
-DIST_SOURCES = $(account_storage_none_la_SOURCES)
+SOURCES = $(accounting_storage_none_la_SOURCES)
+DIST_SOURCES = $(accounting_storage_none_la_SOURCES)
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -265,9 +266,9 @@ top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
 PLUGIN_FLAGS = -module -avoid-version --export-dynamic 
 INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common
-pkglib_LTLIBRARIES = account_storage_none.la
-account_storage_none_la_SOURCES = account_storage_none.c
-account_storage_none_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
+pkglib_LTLIBRARIES = accounting_storage_none.la
+accounting_storage_none_la_SOURCES = accounting_storage_none.c
+accounting_storage_none_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
 all: all-am
 
 .SUFFIXES:
@@ -281,9 +282,9 @@ $(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.am  $(am__confi
 	      exit 1;; \
 	  esac; \
 	done; \
-	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign  src/plugins/account_storage/none/Makefile'; \
+	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign  src/plugins/accounting_storage/none/Makefile'; \
 	cd $(top_srcdir) && \
-	  $(AUTOMAKE) --foreign  src/plugins/account_storage/none/Makefile
+	  $(AUTOMAKE) --foreign  src/plugins/accounting_storage/none/Makefile
 .PRECIOUS: Makefile
 Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
 	@case '$?' in \
@@ -328,8 +329,8 @@ clean-pkglibLTLIBRARIES:
 	  echo "rm -f \"$${dir}/so_locations\""; \
 	  rm -f "$${dir}/so_locations"; \
 	done
-account_storage_none.la: $(account_storage_none_la_OBJECTS) $(account_storage_none_la_DEPENDENCIES) 
-	$(account_storage_none_la_LINK) -rpath $(pkglibdir) $(account_storage_none_la_OBJECTS) $(account_storage_none_la_LIBADD) $(LIBS)
+accounting_storage_none.la: $(accounting_storage_none_la_OBJECTS) $(accounting_storage_none_la_DEPENDENCIES) 
+	$(accounting_storage_none_la_LINK) -rpath $(pkglibdir) $(accounting_storage_none_la_OBJECTS) $(accounting_storage_none_la_LIBADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -337,7 +338,7 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/account_storage_none.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/accounting_storage_none.Plo@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
