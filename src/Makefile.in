@@ -169,6 +169,7 @@ SEMAPHORE_SOURCES = @SEMAPHORE_SOURCES@
 SET_MAKE = @SET_MAKE@
 SHELL = @SHELL@
 SLURMCTLD_PORT = @SLURMCTLD_PORT@
+SLURMDBD_PORT = @SLURMDBD_PORT@
 SLURMD_PORT = @SLURMD_PORT@
 SLURM_API_AGE = @SLURM_API_AGE@
 SLURM_API_CURRENT = @SLURM_API_CURRENT@
@@ -243,7 +244,7 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 SUBDIRS = common api accounting database slurmctld slurmd plugins srun sbcast \
 	scontrol scancel squeue sinfo smap sview salloc \
-	sbatch sattach strigger
+	sbatch sattach strigger slurmdbd
 
 all: all-recursive
 

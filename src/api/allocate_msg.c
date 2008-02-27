@@ -314,7 +314,7 @@ static void _handle_job_complete(struct allocation_msg_thread *msg_thr,
 static void
 _handle_msg(struct allocation_msg_thread *msg_thr, slurm_msg_t *msg)
 {
-	uid_t req_uid = g_slurm_auth_get_uid(msg->auth_cred);
+	uid_t req_uid = g_slurm_auth_get_uid(msg->auth_cred, NULL);
 	uid_t uid = getuid();
 	
 	if ((req_uid != slurm_uid) && (req_uid != 0) && (req_uid != uid)) {

@@ -172,7 +172,7 @@ extern int fini ( void )
  * NULL if it cannot allocate a credential.
  */
 slurm_auth_credential_t *
-slurm_auth_create( void *argv[] )
+slurm_auth_create( void *argv[], char *auth_info )
 {
 	slurm_auth_credential_t *cred;
 
@@ -205,7 +205,7 @@ slurm_auth_destroy( slurm_auth_credential_t *cred )
  * Return SLURM_SUCCESS if the credential is in order and valid.
  */
 int
-slurm_auth_verify( slurm_auth_credential_t *cred, void *argv[] )
+slurm_auth_verify( slurm_auth_credential_t *cred, void *argv[], char *auth_info )
 {
 	return SLURM_SUCCESS;
 }
@@ -215,7 +215,7 @@ slurm_auth_verify( slurm_auth_credential_t *cred, void *argv[] )
  * is not assured until slurm_auth_verify() has been called for it.
  */
 uid_t
-slurm_auth_get_uid( slurm_auth_credential_t *cred )
+slurm_auth_get_uid( slurm_auth_credential_t *cred, char *auth_info )
 {
 	if ( cred == NULL ) {
 		plugin_errno = SLURM_AUTH_BADARG;
@@ -230,7 +230,7 @@ slurm_auth_get_uid( slurm_auth_credential_t *cred )
  * above for details on correct behavior.
  */
 gid_t
-slurm_auth_get_gid( slurm_auth_credential_t *cred )
+slurm_auth_get_gid( slurm_auth_credential_t *cred, char *auth_info )
 {
 	if ( cred == NULL ) {
 		plugin_errno = SLURM_AUTH_BADARG;

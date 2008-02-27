@@ -677,7 +677,7 @@ static int _build_all_partitionline_info()
  *              1 = recover saved job and trigger state, 
  *                  node DOWN/DRAIN/FAIL state and reason information
  *              2 = recover all state saved from last slurmctld shutdown
- * RET 0 if no error, otherwise an error code
+ * RET SLURM_SUCCESS if no error, otherwise an error code
  * Note: Operates on common variables only
  */
 int read_slurm_conf(int recover)

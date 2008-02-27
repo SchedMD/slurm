@@ -83,20 +83,20 @@ am__libcommon_la_SOURCES_DIST = xmalloc.c xmalloc.h xassert.c \
 	slurm_protocol_socket_common.h slurm_protocol_common.h \
 	slurm_protocol_interface.h slurm_protocol_defs.c \
 	slurm_protocol_defs.h slurm_rlimits_info.h \
-	slurm_rlimits_info.c uid.c uid.h util-net.c util-net.h \
-	slurm_auth.c slurm_auth.h jobacct_common.c jobacct_common.h \
-	slurm_accounting_storage.c slurm_accounting_storage.h \
-	slurm_jobacct_gather.c slurm_jobacct_gather.h \
-	slurm_jobacct_storage.c slurm_jobacct_storage.h \
-	slurm_jobcomp.c slurm_jobcomp.h switch.c switch.h arg_desc.c \
-	arg_desc.h macros.h malloc.c malloc.h getopt.h getopt.c \
-	getopt1.c unsetenv.c unsetenv.h slurm_selecttype_info.c \
-	slurm_resource_info.c slurm_resource_info.h hostlist.c \
-	hostlist.h slurm_step_layout.c slurm_step_layout.h \
-	checkpoint.c checkpoint.h parse_time.c parse_time.h \
-	job_options.c job_options.h global_defaults.c timers.c \
-	timers.h slurm_xlator.h stepd_api.c stepd_api.h proc_args.c \
-	proc_args.h
+	slurm_rlimits_info.c slurmdbd_defs.c slurmdbd_defs.h uid.c \
+	uid.h util-net.c util-net.h slurm_auth.c slurm_auth.h \
+	jobacct_common.c jobacct_common.h slurm_accounting_storage.c \
+	slurm_accounting_storage.h slurm_jobacct_gather.c \
+	slurm_jobacct_gather.h slurm_jobacct_storage.c \
+	slurm_jobacct_storage.h slurm_jobcomp.c slurm_jobcomp.h \
+	switch.c switch.h arg_desc.c arg_desc.h macros.h malloc.c \
+	malloc.h getopt.h getopt.c getopt1.c unsetenv.c unsetenv.h \
+	slurm_selecttype_info.c slurm_resource_info.c \
+	slurm_resource_info.h hostlist.c hostlist.h \
+	slurm_step_layout.c slurm_step_layout.h checkpoint.c \
+	checkpoint.h parse_time.c parse_time.h job_options.c \
+	job_options.h global_defaults.c timers.c timers.h \
+	slurm_xlator.h stepd_api.c stepd_api.h proc_args.c proc_args.h
 @HAVE_UNSETENV_FALSE@am__objects_1 = unsetenv.lo
 am_libcommon_la_OBJECTS = xmalloc.lo xassert.lo xstring.lo xsignal.lo \
 	forward.lo strlcpy.lo list.lo net.lo fd.lo log.lo cbuf.lo \
@@ -105,8 +105,8 @@ am_libcommon_la_OBJECTS = xmalloc.lo xassert.lo xstring.lo xsignal.lo \
 	node_select.lo env.lo slurm_cred.lo slurm_errno.lo \
 	slurm_protocol_api.lo slurm_protocol_pack.lo \
 	slurm_protocol_util.lo slurm_protocol_socket_implementation.lo \
-	slurm_protocol_defs.lo slurm_rlimits_info.lo uid.lo \
-	util-net.lo slurm_auth.lo jobacct_common.lo \
+	slurm_protocol_defs.lo slurm_rlimits_info.lo slurmdbd_defs.lo \
+	uid.lo util-net.lo slurm_auth.lo jobacct_common.lo \
 	slurm_accounting_storage.lo slurm_jobacct_gather.lo \
 	slurm_jobacct_storage.lo slurm_jobcomp.lo switch.lo \
 	arg_desc.lo malloc.lo getopt.lo getopt1.lo $(am__objects_1) \
@@ -242,6 +242,7 @@ SEMAPHORE_SOURCES = @SEMAPHORE_SOURCES@
 SET_MAKE = @SET_MAKE@
 SHELL = @SHELL@
 SLURMCTLD_PORT = @SLURMCTLD_PORT@
+SLURMDBD_PORT = @SLURMDBD_PORT@
 SLURMD_PORT = @SLURMD_PORT@
 SLURM_API_AGE = @SLURM_API_AGE@
 SLURM_API_CURRENT = @SLURM_API_CURRENT@
@@ -366,6 +367,7 @@ libcommon_la_SOURCES = \
 	slurm_protocol_defs.h		\
 	slurm_rlimits_info.h		\
 	slurm_rlimits_info.c		\
+	slurmdbd_defs.c slurmdbd_defs.h	\
 	uid.c uid.h			\
 	util-net.c util-net.h		\
 	slurm_auth.c slurm_auth.h	\
@@ -518,6 +520,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurm_rlimits_info.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurm_selecttype_info.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurm_step_layout.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurmdbd_defs.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/stepd_api.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/strlcpy.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/switch.Plo@am__quote@
