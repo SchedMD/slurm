@@ -89,7 +89,7 @@ const char plugin_type[] = "accounting_storage/gold";
 const uint32_t plugin_version = 100;
 
 static char *cluster_name = NULL;
-
+static List gold_association_list = NULL;
 
 static void _destroy_char(void *object);
 static List _get_association_list_from_response(gold_response_t *gold_response);
@@ -554,9 +554,7 @@ extern int init ( void )
 
 	init_gold(cluster_name, keyfile, host, port);
 
-//	if(!gold_acct_list) 
-//		gold_acct_list = list_create(_destroy_gold_acct);
-		
+	xfree(cluster_name);
 	xfree(keyfile);
 	xfree(host);
 
@@ -567,8 +565,8 @@ extern int init ( void )
 extern int fini ( void )
 {
 	xfree(cluster_name);
-//	if(gold_acct_list) 
-//		list_destroy(gold_acct_list);
+	if(gold_association_list)
+		list_destroy(gold_association_list);
 	fini_gold();
 	return SLURM_SUCCESS;
 }
@@ -870,6 +868,60 @@ extern int acct_storage_p_add_associations(List association_list)
 	list_iterator_destroy(itr);
 	
 	return rc;
+}
+
+extern uint32_t acct_storage_p_get_assoc_id(acct_association_rec_t *assoc)
+{
+	uint32_t id = (uint32_t)NO_VAL;
+	uint32_t non_part = (uint32_t)NO_VAL;
+	ListIterator itr = NULL;
+	acct_association_rec_t * found_assoc = NULL;
+
+	if(!gold_association_list) {
+		acct_association_cond_t assoc_q;
+		memset(&assoc_q, 0, sizeof(acct_association_cond_t));
+		assoc_q.cluster_list = list_create(_destroy_char);
+		list_push(assoc_q.cluster_list, cluster_name);
+		gold_association_list =
+			acct_storage_g_get_associations(&assoc_q);
+		list_destroy(assoc_q.cluster_list);
+	}
+
+	if(!assoc->cluster || !assoc->acct) {
+		error("acct_storage_p_get_assoc_id: "
+		      "You need to supply a cluster and account name to get"
+		      "an association.");
+		return id;
+	}
+
+	itr = list_iterator_create(gold_association_list);
+	while((found_assoc = list_next(itr))) {
+		if((!found_assoc->acct 
+		    || strcasecmp(assoc->acct, found_assoc->acct))
+		   || (!assoc->cluster 
+		       || strcasecmp(assoc->cluster, found_assoc->cluster))
+		   || (assoc->user 
+		       && (!found_assoc->user 
+			   || strcasecmp(assoc->user, found_assoc->user)))
+		   || (!assoc->user && found_assoc->user 
+		       && strcasecmp("none", found_assoc->user)))
+			continue;
+		if(assoc->partition
+		   && (!assoc->partition 
+		       || strcasecmp(assoc->partition, 
+				     found_assoc->partition))) {
+			non_part = assoc->id;
+			continue;
+		}
+		id = assoc->id;
+		break;
+	}
+	list_iterator_destroy(itr);
+
+	if(id == (uint32_t)NO_VAL)
+		id = non_part;
+
+	return id;
 }
 
 extern int acct_storage_p_modify_users(acct_user_cond_t *user_q,
