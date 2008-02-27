@@ -103,6 +103,7 @@ typedef struct dbd_init_msg {
 } dbd_init_msg_t;
 
 typedef struct dbd_job_comp_msg {
+	uint32_t assoc_id;	/* accounting association id */
 	char *   account;	/* bank account */
 	time_t   end_time;	/* job termintation time */
 	uint32_t exit_code;	/* job exit code or signal */
@@ -117,16 +118,23 @@ typedef struct dbd_job_comp_msg {
 
 typedef struct dbd_job_start_msg {
 	char *   account;	/* bank account */
+	uint32_t assoc_id;	/* accounting association id */
+#ifdef HAVE_BG
+	char *   block_id;      /* Bluegene block id */
+#endif
+	time_t   eligible_time;	/* time job becomes eligible to run */
 	uint32_t job_id;	/* job ID */
 	uint16_t job_state;	/* job state */
 	char *   name;		/* job name */
 	char *   nodes;		/* hosts allocated to the job */
 	uint32_t priority;	/* job priority */
 	time_t   start_time;	/* job start time */
+	time_t   submit_time;	/* job submit time */
 	uint32_t total_procs;	/* count of allocated processors */
 } dbd_job_start_msg_t;
 
 typedef struct dbd_job_suspend_msg {
+	uint32_t assoc_id;	/* accounting association id */
 	uint32_t job_id;	/* job ID */
 	uint16_t job_state;	/* job state */
 	time_t   suspend_time;	/* job suspend or resume time */
@@ -146,6 +154,8 @@ typedef struct dbd_node_state_msg {
 } dbd_node_state_msg_t;
 
 typedef struct dbd_step_comp_msg {
+	uint32_t assoc_id;	/* accounting association id */
+	time_t   end_time;	/* job termintation time */
 	uint32_t job_id;	/* job ID */
 	char *   name;		/* step name */
 	char *   nodes;		/* hosts allocated to the step */
@@ -156,6 +166,7 @@ typedef struct dbd_step_comp_msg {
 } dbd_step_comp_msg_t;
 
 typedef struct dbd_step_start_msg {
+	uint32_t assoc_id;	/* accounting association id */
 	uint32_t job_id;	/* job ID */
 	char *   name;		/* step name */
 	char *   nodes;		/* hosts allocated to the step */
