@@ -103,31 +103,33 @@ typedef struct dbd_init_msg {
 } dbd_init_msg_t;
 
 typedef struct dbd_job_comp_msg {
-	char *   account;
-	time_t   end_time;
-	uint32_t exit_code;
-	uint32_t job_id;
-	uint16_t job_state;
-	char *   name;
-	char *   nodes;
-	uint32_t priority;
-	time_t   start_time;
-	uint32_t total_procs;
+	char *   account;	/* bank account */
+	time_t   end_time;	/* job termintation time */
+	uint32_t exit_code;	/* job exit code or signal */
+	uint32_t job_id;	/* job ID */
+	uint16_t job_state;	/* job state */
+	char *   name;		/* job name */
+	char *   nodes;		/* hosts allocated to the job */
+	uint32_t priority;	/* job priority */
+	time_t   start_time;	/* job start time */
+	uint32_t total_procs;	/* count of allocated processors */
 } dbd_job_comp_msg_t;
 
 typedef struct dbd_job_start_msg {
-	char *   account;
-	uint32_t job_id;
-	uint16_t job_state;
-	char *   name;
-	char *   nodes;
-	uint32_t priority;
-	time_t   start_time;
-	uint32_t total_procs;
+	char *   account;	/* bank account */
+	uint32_t job_id;	/* job ID */
+	uint16_t job_state;	/* job state */
+	char *   name;		/* job name */
+	char *   nodes;		/* hosts allocated to the job */
+	uint32_t priority;	/* job priority */
+	time_t   start_time;	/* job start time */
+	uint32_t total_procs;	/* count of allocated processors */
 } dbd_job_start_msg_t;
 
 typedef struct dbd_job_suspend_msg {
-	uint32_t job_id;
+	uint32_t job_id;	/* job ID */
+	uint16_t job_state;	/* job state */
+	time_t   suspend_time;	/* job suspend or resume time */
 } dbd_job_suspend_msg_t;
 
 typedef struct dbd_rc_msg {
@@ -137,20 +139,30 @@ typedef struct dbd_rc_msg {
 #define DBD_NODE_STATE_DOWN  1
 #define DBD_NODE_STATE_UP    2
 typedef struct dbd_node_state_msg {
-	char *hostlist;		/* name of hosts */
-	char *reason;		/* explanation for the node's state */
-	uint16_t new_state;	/* new state of host, see DBD_NODE_STATE_* */
 	time_t event_time;	/* time of transition */
+	char *hostlist;		/* name of hosts */
+	uint16_t new_state;	/* new state of host, see DBD_NODE_STATE_* */
+	char *reason;		/* explanation for the node's state */
 } dbd_node_state_msg_t;
 
 typedef struct dbd_step_comp_msg {
-	uint32_t job_id;
-	uint32_t step_id;
+	uint32_t job_id;	/* job ID */
+	char *   name;		/* step name */
+	char *   nodes;		/* hosts allocated to the step */
+	uint32_t req_uid;	/* requester user ID */
+	time_t   start_time;	/* step start time */
+	uint32_t step_id;	/* step ID */
+	uint32_t total_procs;	/* count of allocated processors */
 } dbd_step_comp_msg_t;
 
 typedef struct dbd_step_start_msg {
-	uint32_t job_id;
-	uint32_t step_id;
+	uint32_t job_id;	/* job ID */
+	char *   name;		/* step name */
+	char *   nodes;		/* hosts allocated to the step */
+	uint32_t req_uid;	/* requester user ID */
+	time_t   start_time;	/* step start time */
+	uint32_t step_id;	/* step ID */
+	uint32_t total_procs;	/* count of allocated processors */
 } dbd_step_start_msg_t;
 
 /*****************************************************************************\

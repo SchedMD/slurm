@@ -55,6 +55,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#include "src/common/jobacct_common.h"
 #include "src/common/read_config.h"
 #include "src/common/slurmdbd_defs.h"
 #include "src/slurmctld/slurmctld.h"
@@ -199,13 +200,48 @@ extern int jobacct_storage_p_job_complete(struct job_record *job_ptr)
  */
 extern int jobacct_storage_p_step_start(struct step_record *step_ptr)
 {
+	uint32_t cpus = 0;
+	char node_list[BUFFER_SIZE];
 	slurmdbd_msg_t msg;
 	dbd_step_start_msg_t req;
 
-	req.job_id  = step_ptr->job_ptr->job_id;
-	req.step_id = step_ptr->step_id;
-	msg.msg_type = DBD_STEP_START;
-	msg.data = &req;
+#ifdef HAVE_BG
+	char *ionodes = NULL;
+
+	cpus = step_ptr->job_ptr->num_procs;
+	select_g_get_jobinfo(step_ptr->job_ptr->select_jobinfo, 
+			     SELECT_DATA_IONODES, 
+			     &ionodes);
+	if (ionodes) {
+		snprintf(node_list, BUFFER_SIZE, 
+			 "%s[%s]", step_ptr->job_ptr->nodes, ionodes);
+		xfree(ionodes);
+	} else {
+		snprintf(node_list, BUFFER_SIZE, "%s",
+			 step_ptr->job_ptr->nodes);
+	}
+	
+#else
+	if (!step_ptr->step_layout || !step_ptr->step_layout->task_cnt) {
+		cpus = step_ptr->job_ptr->total_procs;
+		snprintf(node_list, BUFFER_SIZE, "%s", step_ptr->job_ptr->nodes);
+	} else {
+		cpus = step_ptr->step_layout->task_cnt;
+		snprintf(node_list, BUFFER_SIZE, "%s", 
+			 step_ptr->step_layout->node_list);
+	}
+#endif
+
+	req.job_id      = step_ptr->job_ptr->job_id;
+	req.name        = step_ptr->name;
+	req.nodes       = node_list;
+	req.req_uid     = step_ptr->job_ptr->requid;
+	req.start_time  = step_ptr->start_time;
+	req.step_id     = step_ptr->step_id;
+	req.total_procs = cpus;
+
+	msg.msg_type    = DBD_STEP_START;
+	msg.data        = &req;
 
 	if (slurm_send_slurmdbd_msg(&msg) < 0)
 		return SLURM_ERROR;
@@ -218,13 +254,48 @@ extern int jobacct_storage_p_step_start(struct step_record *step_ptr)
  */
 extern int jobacct_storage_p_step_complete(struct step_record *step_ptr)
 {
+	uint32_t cpus = 0;
+	char node_list[BUFFER_SIZE];
 	slurmdbd_msg_t msg;
 	dbd_step_comp_msg_t req;
 
-	req.job_id  = step_ptr->job_ptr->job_id;
-	req.step_id = step_ptr->step_id;
-	msg.msg_type = DBD_STEP_COMPLETE;
-	msg.data = &req;
+#ifdef HAVE_BG
+	char *ionodes = NULL;
+
+	cpus = step_ptr->job_ptr->num_procs;
+	select_g_get_jobinfo(step_ptr->job_ptr->select_jobinfo, 
+			     SELECT_DATA_IONODES, 
+			     &ionodes);
+	if (ionodes) {
+		snprintf(node_list, BUFFER_SIZE, 
+			 "%s[%s]", step_ptr->job_ptr->nodes, ionodes);
+		xfree(ionodes);
+	} else {
+		snprintf(node_list, BUFFER_SIZE, "%s",
+			 step_ptr->job_ptr->nodes);
+	}
+	
+#else
+	if (!step_ptr->step_layout || !step_ptr->step_layout->task_cnt) {
+		cpus = step_ptr->job_ptr->total_procs;
+		snprintf(node_list, BUFFER_SIZE, "%s", step_ptr->job_ptr->nodes);
+	} else {
+		cpus = step_ptr->step_layout->task_cnt;
+		snprintf(node_list, BUFFER_SIZE, "%s", 
+			 step_ptr->step_layout->node_list);
+	}
+#endif
+
+	req.job_id      = step_ptr->job_ptr->job_id;
+	req.name        = step_ptr->name;
+	req.nodes       = node_list;
+	req.req_uid     = step_ptr->job_ptr->requid;
+	req.start_time  = step_ptr->start_time;
+	req.step_id     = step_ptr->step_id;
+	req.total_procs = cpus;
+
+	msg.msg_type    = DBD_STEP_COMPLETE;
+	msg.data        = &req;
 
 	if (slurm_send_slurmdbd_msg(&msg) < 0)
 		return SLURM_ERROR;
@@ -240,9 +311,11 @@ extern int jobacct_storage_p_suspend(struct job_record *job_ptr)
 	slurmdbd_msg_t msg;
 	dbd_job_suspend_msg_t req;
 
-	req.job_id = job_ptr->job_id;
-	msg.msg_type = DBD_JOB_SUSPEND;
-	msg.data = &req;
+	req.job_id       = job_ptr->job_id;
+	req.job_state    = job_ptr->job_state & (~JOB_COMPLETING);
+	req.suspend_time = job_ptr->suspend_time;
+	msg.msg_type     = DBD_JOB_SUSPEND;
+	msg.data         = &req;
 
 	if (slurm_send_slurmdbd_msg(&msg) < 0)
 		return SLURM_ERROR;

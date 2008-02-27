@@ -60,6 +60,7 @@ static int   _step_start(Buf in_buffer, Buf *out_buffer, uint32_t *uid);
  * msg_size IN - size of msg in bytes
  * first IN - set if first message received on the socket
  * buffer OUT - outgoing response, must be freed by caller
+ * uid IN/OUT - user ID who initiated the RPC
  * RET SLURM_SUCCESS or error code */
 extern int 
 proc_req(char *msg, uint32_t msg_size, bool first, Buf *out_buffer, uint32_t *uid)
@@ -112,7 +113,7 @@ proc_req(char *msg, uint32_t msg_size, bool first, Buf *out_buffer, uint32_t *ui
 			rc = _step_start(in_buffer, out_buffer, uid);
 			break;
 		default:
-			error("invalid RPC msg_type=%d", msg_type);
+			error("Invalid RPC msg_type=%d", msg_type);
 			rc = EINVAL;
 			*out_buffer = make_dbd_rc_msg(rc);
 			break;
@@ -144,7 +145,7 @@ static int _cluster_procs(Buf in_buffer, Buf *out_buffer, uint32_t *uid)
 		return SLURM_ERROR;
 	}
 
-	info("DBD_CLUSTER_PROCS: %s:%u@%u", 
+	info("DBD_CLUSTER_PROCS: CLUSTER_NAME:%s PROC_COUNT:%u TIME:%u", 
 	     cluster_procs_msg->cluster_name, cluster_procs_msg->proc_count,
 	     cluster_procs_msg->event_time);
 	slurm_dbd_free_cluster_procs_msg(cluster_procs_msg);
@@ -166,9 +167,9 @@ static int _get_jobs(Buf in_buffer, Buf *out_buffer)
 		return SLURM_ERROR;
 	}
 
-	info("DBD_GET_JOBS: job count %u", get_jobs_msg->job_count);
+	info("DBD_GET_JOBS: JOB_COUNT:%u", get_jobs_msg->job_count);
 	for (i=0; i<get_jobs_msg->job_count; i++)
-		info("DBD_GET_JOBS: job_id[%d] %u", i, get_jobs_msg->job_ids[i]);
+		info("DBD_GET_JOBS: JOB_ID[%d]:%u", i, get_jobs_msg->job_ids[i]);
 	slurm_dbd_free_get_jobs_msg(get_jobs_msg);
 
 	got_jobs_msg.job_count = 2;
@@ -198,7 +199,7 @@ static int _init_conn(Buf in_buffer, Buf *out_buffer, uint32_t *uid)
 	}
 	*uid = init_msg->uid;
 
-	info("DBD_INIT: %u from uid:%u", init_msg->version, init_msg->uid);
+	info("DBD_INIT: VERSION:%u UID:%u", init_msg->version, init_msg->uid);
 	slurm_dbd_free_init_msg(init_msg);
 	*out_buffer = make_dbd_rc_msg(SLURM_SUCCESS);
 	return SLURM_SUCCESS;
@@ -220,7 +221,7 @@ static int  _job_complete(Buf in_buffer, Buf *out_buffer, uint32_t *uid)
 		return SLURM_ERROR;
 	}
 
-	info("DBD_JOB_COMPLETE: id:%u name:%s", 
+	info("DBD_JOB_COMPLETE: ID:%u NAME:%s", 
 	     job_comp_msg->job_id, job_comp_msg->name);
 	slurm_dbd_free_job_complete_msg(job_comp_msg);
 	*out_buffer = make_dbd_rc_msg(SLURM_SUCCESS);
@@ -243,7 +244,7 @@ static int  _job_start(Buf in_buffer, Buf *out_buffer, uint32_t *uid)
 		return SLURM_ERROR;
 	}
 
-	info("DBD_JOB_START: id:%u name:%s", 
+	info("DBD_JOB_START: ID:%u NAME:%s", 
 	     job_start_msg->job_id, job_start_msg->name);
 	slurm_dbd_free_job_start_msg(job_start_msg);
 	*out_buffer = make_dbd_rc_msg(SLURM_SUCCESS);
@@ -266,7 +267,9 @@ static int  _job_suspend(Buf in_buffer, Buf *out_buffer, uint32_t *uid)
 		return SLURM_ERROR;
 	}
 
-	info("DBD_JOB_SUSPEND: %u", job_suspend_msg->job_id);
+	info("DBD_JOB_SUSPEND: ID:%u STATE:%s", 
+	     job_suspend_msg->job_id, 
+	     job_state_string((enum job_states) job_suspend_msg->job_state));
 	slurm_dbd_free_job_suspend_msg(job_suspend_msg);
 	*out_buffer = make_dbd_rc_msg(SLURM_SUCCESS);
 	return SLURM_SUCCESS;
@@ -288,7 +291,7 @@ static int _node_state(Buf in_buffer, Buf *out_buffer, uint32_t *uid)
 		return SLURM_ERROR;
 	}
 
-	info("DBD_NODE_STATE: %s:%s:%s@%u", 
+	info("DBD_NODE_STATE: NODE:%s STATE:%s REASON:%s TIME:%u", 
 	     node_state_msg->hostlist,
 	     _node_state_string(node_state_msg->new_state),
 	     node_state_msg->reason, 
@@ -325,8 +328,9 @@ static int  _step_complete(Buf in_buffer, Buf *out_buffer, uint32_t *uid)
 		return SLURM_ERROR;
 	}
 
-	info("DBD_STEP_COMPLETE: %u.%u", 
-	     step_comp_msg->job_id, step_comp_msg->step_id);
+	info("DBD_STEP_COMPLETE: ID:%u.%u NAME:%s", 
+	     step_comp_msg->job_id, step_comp_msg->step_id,
+	     step_comp_msg->name);
 	slurm_dbd_free_step_complete_msg(step_comp_msg);
 	*out_buffer = make_dbd_rc_msg(SLURM_SUCCESS);
 	return SLURM_SUCCESS;
@@ -348,8 +352,9 @@ static int  _step_start(Buf in_buffer, Buf *out_buffer, uint32_t *uid)
 		return SLURM_ERROR;
 	}
 
-	info("DBD_STEP_START: %u.%u", 
-	     step_start_msg->job_id, step_start_msg->step_id);
+	info("DBD_STEP_START: ID:%u.%u NAME:%s", 
+	     step_start_msg->job_id, step_start_msg->step_id,
+	     step_start_msg->name);
 	slurm_dbd_free_step_start_msg(step_start_msg);
 	*out_buffer = make_dbd_rc_msg(SLURM_SUCCESS);
 	return SLURM_SUCCESS;
