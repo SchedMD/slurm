@@ -163,9 +163,9 @@ X_AC_DEBUG
 AM_CONDITIONAL(DEBUG_MODULES, test "x$ac_debug" = "xtrue")
 
 
-dnl check for slurmd and slurmctld default ports
+dnl check for slurmctld, slurmd and slurmdbd default ports
 dnl
-X_AC_SLURM_PORTS([6817], [6818])
+X_AC_SLURM_PORTS([6817], [6818], [6819])
 
 
 dnl check for whether to include Elan support

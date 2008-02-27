@@ -25421,8 +25421,8 @@ if test "${with_slurmdbd_port+set}" = set; then
 
 fi
 
-  { echo "$as_me:$LINENO: result: ${slurmdbdport=6817}" >&5
-echo "${ECHO_T}${slurmdbdport=6817}" >&6; }
+  { echo "$as_me:$LINENO: result: ${slurmdbdport=6819}" >&5
+echo "${ECHO_T}${slurmdbdport=6819}" >&6; }
 
 cat >>confdefs.h <<_ACEOF
 #define SLURMDBD_PORT $slurmdbdport
