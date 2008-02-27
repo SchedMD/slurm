@@ -837,6 +837,18 @@ The format can either be a hostname or an IP address.
 The default value is "localhost".
 
 .TP
+\fBSlurmDbdAuthInfo\fR
+Additional information to be used for authentication of communications 
+with the Slurm DBD (Data Base Daemon) if configured for recording accounting 
+information.
+The interpretation of this option is specific to the configured \fBAuthType\fR.
+In the case of \fIauth/munge\fR, this can be configured to use a Munge daemon 
+specifically configured to provide authentication between clusters while the 
+default Munge daemon provides authentication within a cluster. 
+The default value is NULL, which results in the default authentication 
+mechanism being used.
+
+.TP
 \fBSlurmDbdPort\fR
 The port to be used for communications with the Slurm DBD (Data Base Daemon)
 if configured for recording accounting information.

@@ -1,9 +1,9 @@
 /*****************************************************************************\
  *  jobacct_storage_slurmdbd.c - SlurmDBD slurm job accounting plugin.
  *****************************************************************************
- *  Copyright (C) 2002-2008 The Regents of the University of California.
+ *  Copyright (C) 2008 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Danny Aubke <da@llnl.gov>.
+ *  Written by Morris Jette <jette1@llnl.gov>.
  *  UCRL-CODE-226842.
  *  
  *  This file is part of SLURM, a resource management program.
@@ -47,10 +47,18 @@
 #endif
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <slurm/slurm_errno.h>
+#include <sys/poll.h>
+#include <sys/stat.h>
+#include <sys/time.h>
+#include <sys/types.h>
+#include <unistd.h>
 
+#include "src/common/jobacct_common.h"
+#include "src/common/read_config.h"
+#include "src/common/slurmdbd_defs.h"
 #include "src/slurmctld/slurmctld.h"
-#include "src/slurmd/slurmd/slurmd.h"
 
 /*
  * These variables are required by the generic plugin interface.  If they
@@ -84,6 +92,7 @@
 const char plugin_name[] = "Job accounting storage SLURMDBD plugin";
 const char plugin_type[] = "jobacct_storage/slurmdbd";
 const uint32_t plugin_version = 100;
+static char *slurmdbd_auth_info = NULL;
 
 /*
  * init() is called when the plugin is loaded, before any other functions
@@ -92,10 +101,14 @@ const uint32_t plugin_version = 100;
 extern int init ( void )
 {
 	static int first = 1;
-	if(first) {
+
+	if (first) {
 		/* since this can be loaded from many different places
 		   only tell us once. */
-		verbose("%s loaded", plugin_name);
+		slurmdbd_auth_info = slurm_get_slurmdbd_auth_info();
+		verbose("%s loaded, SlurmDbdAuthInfo=%s", 
+			plugin_name, slurmdbd_auth_info);
+		slurm_open_slurmdbd_conn(slurmdbd_auth_info);
 		first = 0;
 	} else {
 		debug4("%s loaded", plugin_name);
@@ -106,8 +119,10 @@ extern int init ( void )
 
 extern int fini ( void )
 {
+	xfree(slurmdbd_auth_info);
 	return SLURM_SUCCESS;
 }
+
 /* 
  * Initialize the storage make sure tables are created and in working
  * order
@@ -122,6 +137,7 @@ extern int jobacct_storage_p_init(char *location)
  */
 extern int jobacct_storage_p_fini()
 {
+	slurm_close_slurmdbd_conn();
 	return SLURM_SUCCESS;
 }
 
@@ -130,6 +146,24 @@ extern int jobacct_storage_p_fini()
  */
 extern int jobacct_storage_p_job_start(struct job_record *job_ptr)
 {
+	slurmdbd_msg_t msg;
+	dbd_job_start_msg_t req;
+
+	req.account     = job_ptr->account;
+	req.job_id      = job_ptr->job_id;
+	req.job_state   = job_ptr->job_state & (~JOB_COMPLETING);
+	req.name        = job_ptr->name;
+	req.nodes       = job_ptr->nodes;
+	req.priority    = job_ptr->priority;
+	req.start_time  = job_ptr->start_time;
+	req.total_procs = job_ptr->total_procs;
+
+	msg.msg_type    = DBD_JOB_START;
+	msg.data        = &req;
+
+	if (slurm_send_slurmdbd_msg(&msg) < 0)
+		return SLURM_ERROR;
+
 	return SLURM_SUCCESS;
 }
 
@@ -138,6 +172,26 @@ extern int jobacct_storage_p_job_start(struct job_record *job_ptr)
  */
 extern int jobacct_storage_p_job_complete(struct job_record *job_ptr)
 {
+	slurmdbd_msg_t msg;
+	dbd_job_comp_msg_t req;
+
+	req.account     = job_ptr->account;
+	req.end_time    = job_ptr->end_time;
+	req.exit_code   = job_ptr->exit_code;
+	req.job_id      = job_ptr->job_id;
+	req.job_state   = job_ptr->job_state & (~JOB_COMPLETING);
+	req.name        = job_ptr->name;
+	req.nodes       = job_ptr->nodes;
+	req.priority    = job_ptr->priority;
+	req.start_time  = job_ptr->start_time;
+	req.total_procs = job_ptr->total_procs;
+
+	msg.msg_type    = DBD_JOB_COMPLETE;
+	msg.data        = &req;
+
+	if (slurm_send_slurmdbd_msg(&msg) < 0)
+		return SLURM_ERROR;
+
 	return SLURM_SUCCESS;
 }
 
@@ -146,6 +200,52 @@ extern int jobacct_storage_p_job_complete(struct job_record *job_ptr)
  */
 extern int jobacct_storage_p_step_start(struct step_record *step_ptr)
 {
+	uint32_t cpus = 0;
+	char node_list[BUFFER_SIZE];
+	slurmdbd_msg_t msg;
+	dbd_step_start_msg_t req;
+
+#ifdef HAVE_BG
+	char *ionodes = NULL;
+
+	cpus = step_ptr->job_ptr->num_procs;
+	select_g_get_jobinfo(step_ptr->job_ptr->select_jobinfo, 
+			     SELECT_DATA_IONODES, 
+			     &ionodes);
+	if (ionodes) {
+		snprintf(node_list, BUFFER_SIZE, 
+			 "%s[%s]", step_ptr->job_ptr->nodes, ionodes);
+		xfree(ionodes);
+	} else {
+		snprintf(node_list, BUFFER_SIZE, "%s",
+			 step_ptr->job_ptr->nodes);
+	}
+	
+#else
+	if (!step_ptr->step_layout || !step_ptr->step_layout->task_cnt) {
+		cpus = step_ptr->job_ptr->total_procs;
+		snprintf(node_list, BUFFER_SIZE, "%s", step_ptr->job_ptr->nodes);
+	} else {
+		cpus = step_ptr->step_layout->task_cnt;
+		snprintf(node_list, BUFFER_SIZE, "%s", 
+			 step_ptr->step_layout->node_list);
+	}
+#endif
+
+	req.job_id      = step_ptr->job_ptr->job_id;
+	req.name        = step_ptr->name;
+	req.nodes       = node_list;
+	req.req_uid     = step_ptr->job_ptr->requid;
+	req.start_time  = step_ptr->start_time;
+	req.step_id     = step_ptr->step_id;
+	req.total_procs = cpus;
+
+	msg.msg_type    = DBD_STEP_START;
+	msg.data        = &req;
+
+	if (slurm_send_slurmdbd_msg(&msg) < 0)
+		return SLURM_ERROR;
+
 	return SLURM_SUCCESS;
 }
 
@@ -154,6 +254,52 @@ extern int jobacct_storage_p_step_start(struct step_record *step_ptr)
  */
 extern int jobacct_storage_p_step_complete(struct step_record *step_ptr)
 {
+	uint32_t cpus = 0;
+	char node_list[BUFFER_SIZE];
+	slurmdbd_msg_t msg;
+	dbd_step_comp_msg_t req;
+
+#ifdef HAVE_BG
+	char *ionodes = NULL;
+
+	cpus = step_ptr->job_ptr->num_procs;
+	select_g_get_jobinfo(step_ptr->job_ptr->select_jobinfo, 
+			     SELECT_DATA_IONODES, 
+			     &ionodes);
+	if (ionodes) {
+		snprintf(node_list, BUFFER_SIZE, 
+			 "%s[%s]", step_ptr->job_ptr->nodes, ionodes);
+		xfree(ionodes);
+	} else {
+		snprintf(node_list, BUFFER_SIZE, "%s",
+			 step_ptr->job_ptr->nodes);
+	}
+	
+#else
+	if (!step_ptr->step_layout || !step_ptr->step_layout->task_cnt) {
+		cpus = step_ptr->job_ptr->total_procs;
+		snprintf(node_list, BUFFER_SIZE, "%s", step_ptr->job_ptr->nodes);
+	} else {
+		cpus = step_ptr->step_layout->task_cnt;
+		snprintf(node_list, BUFFER_SIZE, "%s", 
+			 step_ptr->step_layout->node_list);
+	}
+#endif
+
+	req.job_id      = step_ptr->job_ptr->job_id;
+	req.name        = step_ptr->name;
+	req.nodes       = node_list;
+	req.req_uid     = step_ptr->job_ptr->requid;
+	req.start_time  = step_ptr->start_time;
+	req.step_id     = step_ptr->step_id;
+	req.total_procs = cpus;
+
+	msg.msg_type    = DBD_STEP_COMPLETE;
+	msg.data        = &req;
+
+	if (slurm_send_slurmdbd_msg(&msg) < 0)
+		return SLURM_ERROR;
+
 	return SLURM_SUCCESS;
 }
 
@@ -162,6 +308,18 @@ extern int jobacct_storage_p_step_complete(struct step_record *step_ptr)
  */
 extern int jobacct_storage_p_suspend(struct job_record *job_ptr)
 {
+	slurmdbd_msg_t msg;
+	dbd_job_suspend_msg_t req;
+
+	req.job_id       = job_ptr->job_id;
+	req.job_state    = job_ptr->job_state & (~JOB_COMPLETING);
+	req.suspend_time = job_ptr->suspend_time;
+	msg.msg_type     = DBD_JOB_SUSPEND;
+	msg.data         = &req;
+
+	if (slurm_send_slurmdbd_msg(&msg) < 0)
+		return SLURM_ERROR;
+
 	return SLURM_SUCCESS;
 }
 
@@ -174,11 +332,43 @@ extern List jobacct_storage_p_get_jobs(List selected_steps,
 				       List selected_parts,
 				       void *params)
 {
+	slurmdbd_msg_t req, resp;
+	dbd_get_jobs_msg_t get_msg;
+	dbd_got_jobs_msg_t *got_msg;
+	ListIterator iter;
+	uint32_t *job_list_ptr;
+	int i = 0, rc;
+
+	get_msg.job_count = list_count(job_list);
+	get_msg.job_ids = xmalloc(sizeof(uint32_t) * get_msg.job_count);
+	iter = list_iterator_create(job_list);
+	while ((job_list_ptr = (uint32_t *) list_next(iter))) {
+		get_msg.job_ids[i++] = *job_list_ptr;
+	}
+	list_iterator_destroy(iter);
+
+	req.msg_type = DBD_GET_JOBS;
+	req.data = &get_msg;
+	rc = slurm_send_recv_slurmdbd_msg(&req, &resp);
+	xfree(get_msg.job_ids);
+	if (rc != SLURM_SUCCESS)
+		error("slurmdbd: DBD_GET_JOBS failure: %m");
+	else if (resp.msg_type != DBD_GOT_JOBS) {
+		error("slurmdbd: response type not DBD_GOT_JOBS: %u", 
+		      resp.msg_type);
+	} else {
+		got_msg = (dbd_got_jobs_msg_t *) resp.data;
+		info("got_jobs: cnt=%u", got_msg->job_count);
+		for (i=0; i<got_msg->job_count; i++)
+			info("  job_id[%d]=%u", i, got_msg->job_ids[i]);
+		slurm_dbd_free_got_jobs_msg(got_msg);
+	}
 	return NULL;
 }
 
 /* 
- * expire old info from the storage 
+ * Expire old info from the storage
+ * Not applicable for any database
  */
 extern void jobacct_storage_p_archive(List selected_parts,
 				       void *params)

@@ -1,8 +1,8 @@
 /*****************************************************************************\
  *  src/slurmd/slurmd/req.c - slurmd request handling
- *  $Id$
  *****************************************************************************
  *  Copyright (C) 2002-2006 The Regents of the University of California.
+ *  Copyright (C) 2008 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Mark Grondona <mgrondona@llnl.gov>.
  *  UCRL-CODE-226842.
@@ -733,7 +733,7 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 	job_mem_limits_t *job_limits_ptr;
 	int nodeid = nodelist_find(req->complete_nodelist, conf->node_name);
 
-	req_uid = g_slurm_auth_get_uid(msg->auth_cred);
+	req_uid = g_slurm_auth_get_uid(msg->auth_cred, NULL);
 	memcpy(&req->orig_addr, &msg->orig_addr, sizeof(slurm_addr));
 
 	slurmd_launch_request(req->job_id, req, nodeid);
@@ -857,7 +857,7 @@ _rpc_batch_job(slurm_msg_t *msg)
 	batch_job_launch_msg_t *req = (batch_job_launch_msg_t *)msg->data;
 	bool     first_job_run = true;
 	int      rc = SLURM_SUCCESS;
-	uid_t    req_uid = g_slurm_auth_get_uid(msg->auth_cred);
+	uid_t    req_uid = g_slurm_auth_get_uid(msg->auth_cred, NULL);
 	char    *bg_part_id = NULL;
 	bool	replied = false;
 	slurm_addr *cli = &msg->orig_addr;
@@ -994,7 +994,7 @@ _abort_step(uint32_t job_id, uint32_t step_id)
 static void
 _rpc_reconfig(slurm_msg_t *msg)
 {
-	uid_t req_uid = g_slurm_auth_get_uid(msg->auth_cred);
+	uid_t req_uid = g_slurm_auth_get_uid(msg->auth_cred, NULL);
 
 	if (!_slurm_authorized_user(req_uid))
 		error("Security violation, reconfig RPC from uid %u",
@@ -1008,7 +1008,7 @@ _rpc_reconfig(slurm_msg_t *msg)
 static void
 _rpc_shutdown(slurm_msg_t *msg)
 {
-	uid_t req_uid = g_slurm_auth_get_uid(msg->auth_cred);
+	uid_t req_uid = g_slurm_auth_get_uid(msg->auth_cred, NULL);
 	
 	forward_wait(msg);
 	if (!_slurm_authorized_user(req_uid))
@@ -1198,7 +1198,7 @@ static int
 _rpc_ping(slurm_msg_t *msg)
 {
 	int        rc = SLURM_SUCCESS;
-	uid_t req_uid = g_slurm_auth_get_uid(msg->auth_cred);
+	uid_t req_uid = g_slurm_auth_get_uid(msg->auth_cred, NULL);
 
 	if (!_slurm_authorized_user(req_uid)) {
 		error("Security violation, ping RPC from uid %u",
@@ -1227,7 +1227,7 @@ static int
 _rpc_health_check(slurm_msg_t *msg)
 {
 	int        rc = SLURM_SUCCESS;
-	uid_t req_uid = g_slurm_auth_get_uid(msg->auth_cred);
+	uid_t req_uid = g_slurm_auth_get_uid(msg->auth_cred, NULL);
 
 	if (!_slurm_authorized_user(req_uid)) {
 		error("Security violation, ping RPC from uid %u",
@@ -1257,12 +1257,13 @@ _rpc_health_check(slurm_msg_t *msg)
 	_enforce_job_mem_limit();
 	return rc;
 }
+
 static void
 _rpc_signal_tasks(slurm_msg_t *msg)
 {
 	int               fd;
 	int               rc = SLURM_SUCCESS;
-	uid_t             req_uid = g_slurm_auth_get_uid(msg->auth_cred);
+	uid_t             req_uid = g_slurm_auth_get_uid(msg->auth_cred, NULL);
 	kill_tasks_msg_t *req = (kill_tasks_msg_t *) msg->data;
 	slurmstepd_info_t *step;
 
@@ -1328,7 +1329,7 @@ _rpc_checkpoint_tasks(slurm_msg_t *msg)
 {
 	int               fd;
 	int               rc = SLURM_SUCCESS;
-	uid_t             req_uid = g_slurm_auth_get_uid(msg->auth_cred);
+	uid_t             req_uid = g_slurm_auth_get_uid(msg->auth_cred, NULL);
 	checkpoint_tasks_msg_t *req = (checkpoint_tasks_msg_t *) msg->data;
 	slurmstepd_info_t *step;
 
@@ -1392,7 +1393,7 @@ _rpc_terminate_tasks(slurm_msg_t *msg)
 		goto done2;
 	} 
 
-	req_uid = g_slurm_auth_get_uid(msg->auth_cred);
+	req_uid = g_slurm_auth_get_uid(msg->auth_cred, NULL);
 	if ((req_uid != step->uid) && (!_slurm_authorized_user(req_uid))) {
 		debug("kill req from uid %ld for job %u.%u owned by uid %ld",
 		      (long) req_uid, req->job_id, req->job_step_id, 
@@ -1433,7 +1434,7 @@ _rpc_step_complete(slurm_msg_t *msg)
 
 	/* step completionmessages are only allowed from other slurmstepd,
 	   so only root or SlurmUser is allowed here */
-	req_uid = g_slurm_auth_get_uid(msg->auth_cred);
+	req_uid = g_slurm_auth_get_uid(msg->auth_cred, NULL);
 	if (!_slurm_authorized_user(req_uid)) {
 		debug("step completion from uid %ld for job %u.%u",
 		      (long) req_uid, req->job_id, req->job_step_id);
@@ -1542,7 +1543,7 @@ _rpc_stat_jobacct(slurm_msg_t *msg)
 	debug3("Entering _rpc_stat_jobacct");
 	/* step completion messages are only allowed from other slurmstepd,
 	   so only root or SlurmUser is allowed here */
-	req_uid = g_slurm_auth_get_uid(msg->auth_cred);
+	req_uid = g_slurm_auth_get_uid(msg->auth_cred, NULL);
 	
 	job_uid = _get_job_uid(req->job_id);
 	if (job_uid < 0) {
@@ -1605,7 +1606,7 @@ _rpc_stat_jobacct(slurm_msg_t *msg)
 static void
 _rpc_timelimit(slurm_msg_t *msg)
 {
-	uid_t           uid = g_slurm_auth_get_uid(msg->auth_cred);
+	uid_t           uid = g_slurm_auth_get_uid(msg->auth_cred, NULL);
 	kill_job_msg_t *req = msg->data;
 	int             nsteps;
 
@@ -1683,8 +1684,8 @@ _rpc_file_bcast(slurm_msg_t *msg)
 {
 	file_bcast_msg_t *req = msg->data;
 	int i, fd, flags, offset, inx, rc;
-	uid_t req_uid = g_slurm_auth_get_uid(msg->auth_cred);
-	uid_t req_gid = g_slurm_auth_get_gid(msg->auth_cred);
+	uid_t req_uid = g_slurm_auth_get_uid(msg->auth_cred, NULL);
+	uid_t req_gid = g_slurm_auth_get_gid(msg->auth_cred, NULL);
 	pid_t child;
 
 #if 0
@@ -1812,7 +1813,7 @@ _rpc_reattach_tasks(slurm_msg_t *msg)
 	nodeid = step->nodeid;
 	debug2("_rpc_reattach_tasks: nodeid %d in the job step", nodeid);
 
-	req_uid = g_slurm_auth_get_uid(msg->auth_cred);
+	req_uid = g_slurm_auth_get_uid(msg->auth_cred, NULL);
 	if ((req_uid != step->uid) && (!_slurm_authorized_user(req_uid))) {
 		error("uid %ld attempt to attach to job %u.%u owned by %ld",
 		      (long) req_uid, req->job_id, req->job_step_id,
@@ -2156,7 +2157,7 @@ static void
 _rpc_signal_job(slurm_msg_t *msg)
 {
 	signal_job_msg_t *req = msg->data;
-	uid_t req_uid = g_slurm_auth_get_uid(msg->auth_cred);
+	uid_t req_uid = g_slurm_auth_get_uid(msg->auth_cred, NULL);
 	long job_uid;
 	List steps;
 	ListIterator i;
@@ -2263,7 +2264,7 @@ static void
 _rpc_suspend_job(slurm_msg_t *msg)
 {
 	suspend_msg_t *req = msg->data;
-	uid_t req_uid = g_slurm_auth_get_uid(msg->auth_cred);
+	uid_t req_uid = g_slurm_auth_get_uid(msg->auth_cred, NULL);
 	long job_uid;
 	List steps;
 	ListIterator i;
@@ -2354,7 +2355,7 @@ _rpc_terminate_job(slurm_msg_t *msg)
 {
 	int             rc     = SLURM_SUCCESS;
 	kill_job_msg_t *req    = msg->data;
-	uid_t           uid    = g_slurm_auth_get_uid(msg->auth_cred);
+	uid_t           uid    = g_slurm_auth_get_uid(msg->auth_cred, NULL);
 	int             nsteps = 0;
 	int		delay;
 	char           *bg_part_id = NULL;
@@ -2660,7 +2661,7 @@ static void
 _rpc_update_time(slurm_msg_t *msg)
 {
 	int   rc      = SLURM_SUCCESS;
-	uid_t req_uid = g_slurm_auth_get_uid(msg->auth_cred);
+	uid_t req_uid = g_slurm_auth_get_uid(msg->auth_cred, NULL);
 
 	if ((req_uid != conf->slurm_user_id) && (req_uid != 0)) {
 		rc = ESLURM_USER_ID_MISSING;

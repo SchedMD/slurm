@@ -131,18 +131,6 @@ extern void srun_node_fail (uint32_t job_id, char *node_name)
 		return;
 	bit_position = node_ptr - node_record_table_ptr;
 
-	if (job_ptr->other_port && job_ptr->alloc_node && job_ptr->resp_host) {
-		addr = xmalloc(sizeof(struct sockaddr_in));
-		slurm_set_addr(addr, job_ptr->other_port, job_ptr->resp_host);
-		msg_arg = xmalloc(sizeof(srun_node_fail_msg_t));
-		msg_arg->job_id   = job_id;
-		msg_arg->step_id  = NO_VAL;
-		msg_arg->nodelist = xstrdup(node_name);
-		_srun_agent_launch(addr, job_ptr->alloc_node, SRUN_NODE_FAIL,
-				   msg_arg);
-	}
-
-
 	step_iterator = list_iterator_create(job_ptr->step_list);
 	while ((step_ptr = (struct step_record *) list_next(step_iterator))) {
 		if (!bit_test(step_ptr->step_node_bitmap, bit_position))
@@ -162,6 +150,17 @@ extern void srun_node_fail (uint32_t job_id, char *node_name)
 				   msg_arg);
 	}	
 	list_iterator_destroy(step_iterator);
+
+	if (job_ptr->other_port && job_ptr->alloc_node && job_ptr->resp_host) {
+		addr = xmalloc(sizeof(struct sockaddr_in));
+		slurm_set_addr(addr, job_ptr->other_port, job_ptr->resp_host);
+		msg_arg = xmalloc(sizeof(srun_node_fail_msg_t));
+		msg_arg->job_id   = job_id;
+		msg_arg->step_id  = NO_VAL;
+		msg_arg->nodelist = xstrdup(node_name);
+		_srun_agent_launch(addr, job_ptr->alloc_node, SRUN_NODE_FAIL,
+				   msg_arg);
+	}
 }
 
 /* srun_ping - ping all srun commands that have not been heard from recently */

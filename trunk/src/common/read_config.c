@@ -218,6 +218,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"SlurmdSpoolDir", S_P_STRING},
 	{"SlurmdTimeout", S_P_UINT16},
 	{"SlurmDbdAddr", S_P_STRING},
+	{"SlurmDbdAuthInfo", S_P_STRING},
 	{"SlurmDbdPort", S_P_UINT16},
 	{"SrunEpilog", S_P_STRING},
 	{"SrunProlog", S_P_STRING},
@@ -1117,6 +1118,7 @@ free_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr, bool purge_node_hash)
 	xfree (ctl_conf_ptr->srun_prolog);
 	xfree (ctl_conf_ptr->slurmd_spooldir);
 	xfree (ctl_conf_ptr->slurmdbd_addr);
+	xfree (ctl_conf_ptr->slurmdbd_auth_info);
 	xfree (ctl_conf_ptr->state_save_location);
 	xfree (ctl_conf_ptr->suspend_exc_nodes);
 	xfree (ctl_conf_ptr->suspend_exc_parts);
@@ -1220,8 +1222,9 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
  	ctl_conf_ptr->slurmd_port		= (uint32_t) NO_VAL;
 	xfree (ctl_conf_ptr->slurmd_spooldir);
 	ctl_conf_ptr->slurmd_timeout		= (uint16_t) NO_VAL;
-	ctl_conf_ptr->slurmdbd_port		= (uint16_t) NO_VAL;
 	xfree (ctl_conf_ptr->slurmdbd_addr);
+	xfree (ctl_conf_ptr->slurmdbd_auth_info);
+	ctl_conf_ptr->slurmdbd_port		= (uint16_t) NO_VAL;
 	xfree (ctl_conf_ptr->state_save_location);
 	xfree (ctl_conf_ptr->suspend_exc_nodes);
 	xfree (ctl_conf_ptr->suspend_exc_parts);
@@ -1887,11 +1890,7 @@ validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 			       conf->slurm_user_name);
 			xfree(conf->slurm_user_name);
 		} else {
-			if (slurm_passwd->pw_uid > 0xffff)
-				error("SlurmUser numeric overflow, "
-				      "will be fixed soon");
-			else
-				conf->slurm_user_id = slurm_passwd->pw_uid;
+			conf->slurm_user_id = slurm_passwd->pw_uid;
 		}
 	}
 
@@ -1933,14 +1932,9 @@ validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 		conf->slurmd_timeout = DEFAULT_SLURMD_TIMEOUT;
 
 	s_p_get_string(&conf->slurmdbd_addr, "SlurmDbdAddr", hashtbl);
-	if (!s_p_get_uint16(&conf->slurmdbd_port, "SlurmDbdPort", hashtbl)) {
-#ifdef SLURMDBD_PORT
-		/* FIXME: To be added with merge slurmdbd svn branch */
+	s_p_get_string(&conf->slurmdbd_auth_info, "SlurmDbdAuthInfo", hashtbl);
+	if (!s_p_get_uint16(&conf->slurmdbd_port, "SlurmDbdPort", hashtbl))
 		conf->slurmdbd_port = SLURMDBD_PORT;
-#else
-		conf->slurmdbd_port = 6819;
-#endif
-	}
 
 	s_p_get_string(&conf->srun_prolog, "SrunProlog", hashtbl);
 	s_p_get_string(&conf->srun_epilog, "SrunEpilog", hashtbl);

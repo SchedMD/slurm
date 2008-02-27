@@ -439,9 +439,6 @@ void slurm_free_launch_tasks_request_msg(launch_tasks_request_msg_t * msg)
 
 void slurm_free_task_user_managed_io_stream_msg(task_user_managed_io_msg_t *msg)
 {
-	if (msg == NULL)
-		return;
-
 	xfree(msg);
 }
 

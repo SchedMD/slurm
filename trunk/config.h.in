@@ -322,6 +322,9 @@
 /* Define the default port number for slurmctld */
 #undef SLURMCTLD_PORT
 
+/* Define the default port number for slurmdbd */
+#undef SLURMDBD_PORT
+
 /* Define the default port number for slurmd */
 #undef SLURMD_PORT
 

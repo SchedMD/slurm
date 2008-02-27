@@ -240,11 +240,10 @@ int main(int argc, char *argv[])
 
 	if (daemonize) {
 		slurmctld_config.daemonize = 1;
-		error_code = daemon(1, 1);
+		if (daemon(1, 1))
+			error("daemon(): %m");
 		log_alter(log_opts, LOG_DAEMON, 
 			  slurmctld_conf.slurmctld_logfile);
-		if (error_code)
-			error("daemon error %d", error_code);
 		if (slurmctld_conf.slurmctld_logfile
 		&&  (slurmctld_conf.slurmctld_logfile[0] == '/')) {
 			char *slash_ptr, *work_dir;
@@ -298,7 +297,13 @@ int main(int argc, char *argv[])
 			SLURM_SUCCESS )
 		fatal( "failed to initialize checkpoint plugin" );
 	if (slurm_select_init() != SLURM_SUCCESS )
-		fatal( "failed to initialize node selection plugin state");
+		fatal( "failed to initialize node selection plugin");
+	if (slurm_acct_storage_init() != SLURM_SUCCESS )
+		fatal( "failed to initialize clusteracct_storage plugin");
+	if (slurm_jobacct_gather_init() != SLURM_SUCCESS )
+		fatal( "failed to initialize jobacct_gather plugin");
+	if (slurm_jobacct_storage_init() != SLURM_SUCCESS )
+		fatal( "failed to initialize jobacct_storage plugin");
 
 	while (1) {
 		/* initialization for each primary<->backup switch */
@@ -437,6 +442,8 @@ int main(int argc, char *argv[])
 		verbose("Unable to remove pidfile '%s': %m",
 			slurmctld_conf.slurmctld_pidfile);
 
+	slurm_jobacct_storage_fini();	/* Save pending message traffic */
+
 #ifdef MEMORY_LEAK_DEBUG
 	/* This should purge all allocated memory,   *\
 	\*   Anything left over represents a leak.   */
@@ -463,8 +470,8 @@ int main(int argc, char *argv[])
 	 * unplug after other data structures are purged */
 	g_slurm_jobcomp_fini();
 	jobacct_storage_g_fini();
+	slurm_clusteracct_storage_fini();
 	slurm_jobacct_gather_fini();
-	slurm_jobacct_storage_fini();
 	slurm_accounting_storage_fini();
 	slurm_sched_fini();
 	slurm_select_fini();

@@ -16,7 +16,7 @@ documents those changes that are of interest to users and admins.
  -- Add JobRequeue configuration parameter and --requeue option to the sbatch
     command.
  -- Add HealthCheckInterval and HealthCheckProgram configuration parameters.
- -- Add SlurmDbdAddr and SlurmDbdPort configuration parameters.
+ -- Add SlurmDbdAddr, SlurmDbdAuthInfo and SlurmDbdPort configuration parameters.
  -- Modify select/linear to achieve better load leveling with gang scheduler.
  -- Develop the sched/gang plugin to support select/linear and
     select/cons_res. If sched/gang is enabled and Shared=FORCE is configured

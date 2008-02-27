@@ -271,6 +271,24 @@ uint16_t slurm_get_msg_timeout(void)
         return msg_timeout;
 }
 
+/* slurm_get_slurmdbd_auth_info
+ * get default SlurmDbdAuthInfo from slurmctld_conf object
+ * RET char *   - auth_info default value from slurm.conf,  MUST be xfreed by caller
+ */
+char *slurm_get_slurmdbd_auth_info(void)
+{
+        char *slurmdbd_auth_info;
+        slurm_ctl_conf_t *conf;
+
+        conf = slurm_conf_lock();
+        if (conf->slurmdbd_auth_info && conf->slurmdbd_auth_info[0])
+                slurmdbd_auth_info = xstrdup(conf->slurmdbd_auth_info);
+        else
+                slurmdbd_auth_info = NULL;
+        slurm_conf_unlock();
+        return slurmdbd_auth_info;
+}
+
 /* slurm_get_plugin_dir
  * get plugin directory from slurmctld_conf object
  * RET char *   - plugin directory, MUST be xfreed by caller
@@ -1260,7 +1278,7 @@ int slurm_receive_msg(slurm_fd fd, slurm_msg_t *msg, int timeout)
 		rc = ESLURM_PROTOCOL_INCOMPLETE_PACKET;
 		goto total_return;
 	}
-	rc = g_slurm_auth_verify( auth_cred, NULL, 2 );
+	rc = g_slurm_auth_verify( auth_cred, NULL, 2, NULL );
 	
 	if (rc != SLURM_SUCCESS) {
 		error( "authentication: %s ",
@@ -1410,7 +1428,7 @@ List slurm_receive_msgs(slurm_fd fd, int steps, int timeout)
 		rc = ESLURM_PROTOCOL_INCOMPLETE_PACKET;
 		goto total_return;
 	}
-	rc = g_slurm_auth_verify( auth_cred, NULL, 2 );
+	rc = g_slurm_auth_verify( auth_cred, NULL, 2, NULL );
 	
 	if(rc != SLURM_SUCCESS) {
 		error("authentication: %s ",
@@ -1607,7 +1625,7 @@ int slurm_receive_msg_and_forward(slurm_fd fd, slurm_addr *orig_addr,
 		rc = ESLURM_PROTOCOL_INCOMPLETE_PACKET;
 		goto total_return;
 	}
-	rc = g_slurm_auth_verify( auth_cred, NULL, 2 );
+	rc = g_slurm_auth_verify( auth_cred, NULL, 2, NULL );
 	
 	if (rc != SLURM_SUCCESS) {
 		error( "authentication: %s ",
@@ -1694,7 +1712,7 @@ int slurm_send_node_msg(slurm_fd fd, slurm_msg_t * msg)
 	/* 
 	 * Initialize header with Auth credential and message type.
 	 */
-	auth_cred = g_slurm_auth_create(NULL, 2);
+	auth_cred = g_slurm_auth_create(NULL, 2, NULL);
 	if (auth_cred == NULL) {
 		error("authentication: %s",
 		       g_slurm_auth_errstr(g_slurm_auth_errno(NULL)) );
