@@ -334,8 +334,9 @@ man5_MANS = man5/bluegene.conf.5 \
 
 man8_MANS = man8/slurmctld.8 \
 	man8/slurmd.8 \
-	man8/spank.8 \
-	man8/slurmstepd.8
+	man8/slurmdbd.8 \
+	man8/slurmstepd.8 \
+	man8/spank.8
 
 all: all-am
 
