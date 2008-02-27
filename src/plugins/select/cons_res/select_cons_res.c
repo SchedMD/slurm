@@ -2651,14 +2651,11 @@ extern int select_p_job_fini(struct job_record *job_ptr)
 	return SLURM_SUCCESS;
 }
 
+/* NOTE: This function is not called with sched/gang because it needs
+ * to track how many jobs are running or suspended on each node.
+ * This sum is compared with the partition's Shared parameter */
 extern int select_p_job_suspend(struct job_record *job_ptr)
 {
-/*
- * Currently do nothing. The select plugin should not "subtract" jobs
- * from the node allocations because it's needs that information to
- * properly distribute new jobs across all nodes - including nodes
- * with suspended jobs.
- *
 	struct select_cr_job *job;
 	int rc;
  
@@ -2672,14 +2669,12 @@ extern int select_p_job_suspend(struct job_record *job_ptr)
 
 	rc = _rm_job_from_nodes(select_node_ptr, job, 
 				"select_p_job_suspend", 0);
-*/	return SLURM_SUCCESS;
+	return SLURM_SUCCESS;
 }
 
+/* See NOTE with select_p_job_suspend above */
 extern int select_p_job_resume(struct job_record *job_ptr)
 {
-/*
- * See explanation in select_p_job_suspend
- *
 	struct select_cr_job *job;
 	int rc;
 
@@ -2692,7 +2687,7 @@ extern int select_p_job_resume(struct job_record *job_ptr)
 		return ESLURM_INVALID_JOB_ID;
 	
 	rc = _add_job_to_nodes(job, "select_p_job_resume", 0);
-*/	return SLURM_SUCCESS;
+	return SLURM_SUCCESS;
 }
 
 extern uint16_t select_p_get_job_cores(uint32_t job_id, int alloc_index, int s)

@@ -1427,6 +1427,12 @@ The "FORCE" and "YES" options can be followed by a colon and a job
 count. For example "Shared=YES:4".
 If resources are to be shared, avoiding memory over\-subscription 
 is very important. 
+With sched/gang this count is the maximum number of jobs permitted
+on each resource in either running or suspended state (i.e. the total 
+number of jobs being time sliced).
+With other schedulers, this count is the maximum number of running 
+jobs on each resource (node, socket or core depending upon the 
+\fBSelectTypeParameters\fR).
 \fBSelectTypeParameters\fR should be configured to treat 
 memory as a consumable resource and the \fB\-\-mem\fR option 
 should be used for job allocations.
