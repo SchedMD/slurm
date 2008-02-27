@@ -6,6 +6,7 @@
  *  $Id$
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
+ *  Copyright (C) 2008 Lawrence Livermore National Security
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
  *  UCRL-CODE-226842.
@@ -4661,11 +4662,21 @@ static void _suspend_job(struct job_record *job_ptr, uint16_t op)
 /* Specified job is being suspended, release allocated nodes */
 static int _suspend_job_nodes(struct job_record *job_ptr)
 {
-	int i, rc;
+	int i, rc = SLURM_SUCCESS;
 	struct node_record *node_ptr = node_record_table_ptr;
 	uint16_t base_state, node_flags;
+	static bool sched_gang_test = false;
+	static bool sched_gang = false;
 
-	if ((rc = select_g_job_suspend(job_ptr)) != SLURM_SUCCESS)
+	if (!sched_gang_test) {
+		char *sched_type = slurm_get_sched_type();
+		if (strcmp(sched_type, "sched/gang") == 0)
+			sched_gang = true;
+		xfree(sched_type);
+		sched_gang_test = true;
+	}
+	if ((sched_gang == false) &&
+	    ((rc = select_g_job_suspend(job_ptr)) != SLURM_SUCCESS))
 		return rc;
 
 	for (i=0; i<node_record_count; i++, node_ptr++) {
@@ -4713,11 +4724,21 @@ static int _suspend_job_nodes(struct job_record *job_ptr)
 /* Specified job is being resumed, re-allocate the nodes */
 static int _resume_job_nodes(struct job_record *job_ptr)
 {
-	int i, rc;
+	int i, rc = SLURM_SUCCESS;
 	struct node_record *node_ptr = node_record_table_ptr;
 	uint16_t base_state, node_flags;
+	static bool sched_gang_test = false;
+	static bool sched_gang = false;
 
-	if ((rc = select_g_job_resume(job_ptr)) != SLURM_SUCCESS)
+	if (!sched_gang_test) {
+		char *sched_type = slurm_get_sched_type();
+		if (strcmp(sched_type, "sched/gang") == 0)
+			sched_gang = true;
+		xfree(sched_type);
+		sched_gang_test = true;
+	}
+	if ((sched_gang == false) &&
+	    ((rc = select_g_job_resume(job_ptr)) != SLURM_SUCCESS))
 		return rc;
 
 	for (i=0; i<node_record_count; i++, node_ptr++) {
