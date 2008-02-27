@@ -47,7 +47,7 @@ static char *	_will_run_test(uint32_t jobid, char *node_list,
 
 /*
  * get_jobs - get information on specific job(s) changed since some time
- * cmd_ptr IN   - CMD=JOBWILLRUN ARG=<JOBID> AVAIL_NODES=<node_list>]
+ * cmd_ptr IN   - CMD=JOBWILLRUN ARG=<JOBID> AVAIL_NODES=<node_list>
  * err_code OUT - 0 on success or some error code
  * err_msg OUT  - error message or the JOBID from ordered list after 
  *                which the specified job can start (no JOBID if job 
