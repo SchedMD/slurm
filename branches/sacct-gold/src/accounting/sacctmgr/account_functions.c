@@ -401,7 +401,8 @@ extern int sacctmgr_add_account(int argc, char *argv[])
 			action->type = SACCTMGR_ACCOUNT_CREATE;
 			action->list = acct_list;
 			list_push(sacctmgr_action_list, action);
-		}
+		} else
+			list_destroy(acct_list);
 
 		if(list_count(assoc_list)) {
 			action = xmalloc(sizeof(sacctmgr_action_t));

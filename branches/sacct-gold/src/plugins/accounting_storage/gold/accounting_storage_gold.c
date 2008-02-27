@@ -783,11 +783,16 @@ extern int acct_storage_p_add_associations(List association_list)
 				 object->acct,
 				 object->cluster,
 				 object->user);
-		} else 
+		} else if(object->parent_acct)
 			snprintf(tmp_buff, sizeof(tmp_buff), 
 				 "%s of %s on %s",
 				 object->acct,
 				 object->parent_acct,
+				 object->cluster);
+		else
+			snprintf(tmp_buff, sizeof(tmp_buff), 
+				 "%s on %s",
+				 object->acct,
 				 object->cluster);
 			
 		gold_request_add_assignment(gold_request, "Name", tmp_buff);

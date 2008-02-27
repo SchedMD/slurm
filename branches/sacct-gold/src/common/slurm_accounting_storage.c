@@ -141,21 +141,21 @@ static slurm_acct_storage_ops_t * _acct_storage_get_ops(
 	static const char *syms[] = {
 		"acct_storage_p_add_users",
 		"acct_storage_p_add_coord",
-		"acct_storage_p_add_accounts",
+		"acct_storage_p_add_accts",
 		"acct_storage_p_add_clusters",
 		"acct_storage_p_add_associations",
 		"acct_storage_p_modify_users",
 		"acct_storage_p_modify_user_admin_level",
-		"acct_storage_p_modify_accounts",
+		"acct_storage_p_modify_accts",
 		"acct_storage_p_modify_clusters",
 		"acct_storage_p_modify_associations",
 		"acct_storage_p_remove_users",
 		"acct_storage_p_remove_coord",
-		"acct_storage_p_remove_accounts",
+		"acct_storage_p_remove_accts",
 		"acct_storage_p_remove_clusters",
 		"acct_storage_p_remove_associations",
 		"acct_storage_p_get_users",
-		"acct_storage_p_get_accounts",
+		"acct_storage_p_get_accts",
 		"acct_storage_p_get_clusters",
 		"acct_storage_p_get_associations",
 		"acct_storage_p_get_hourly_usage",
@@ -179,7 +179,7 @@ static slurm_acct_storage_ops_t * _acct_storage_get_ops(
 			error( "cannot create plugin manager" );
 			return NULL;
 		}
-		plugrack_set_major_type( c->plugin_list, "acct_storage" );
+		plugrack_set_major_type( c->plugin_list, "accounting_storage" );
 		plugrack_set_paranoia( c->plugin_list,
 				       PLUGRACK_PARANOIA_NONE,
 				       0 );
@@ -191,7 +191,7 @@ static slurm_acct_storage_ops_t * _acct_storage_get_ops(
 	c->cur_plugin = plugrack_use_by_type( c->plugin_list,
 					      c->acct_storage_type );
 	if ( c->cur_plugin == PLUGIN_INVALID_HANDLE ) {
-		error( "cannot find acct_storage plugin for %s", 
+		error( "cannot find accounting_storage plugin for %s", 
 			c->acct_storage_type );
 		return NULL;
 	}

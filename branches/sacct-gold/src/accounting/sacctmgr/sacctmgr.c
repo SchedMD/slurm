@@ -375,7 +375,8 @@ _process_command (int argc, char *argv[])
 				        argv[0]);
 		}
 		_add_it((argc - 1), &argv[1]);
-	} else if (strncasecmp (argv[0], "show", 3) == 0) {
+	} else if (strncasecmp (argv[0], "show", 3) == 0
+		   || strncasecmp (argv[0], "list", 3) == 0) {
 		if (argc < 2) {
 			exit_code = 1;
 			if (quiet_flag != 1)
@@ -538,6 +539,8 @@ static void _modify_it (int argc, char *argv[])
 static void _delete_it (int argc, char *argv[]) 
 {
 	int i, error_code = SLURM_SUCCESS;
+
+	sacctmgr_init();
 
 	/* First identify the entity to delete */
 	for (i=0; i<argc; i++) {

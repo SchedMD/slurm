@@ -154,6 +154,7 @@ extern void addto_char_list(List char_list, char *names);
 extern void destroy_sacctmgr_action(void *object);
 extern int commit_check(char *warning);
 extern int sacctmgr_init();
+extern int sacctmgr_remove_from_list(List list, void *object);
 
 /* do not free the objects returned from these functions */
 extern acct_association_rec_t *sacctmgr_find_association(char *user,
