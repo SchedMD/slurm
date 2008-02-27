@@ -1150,12 +1150,6 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	xfree (ctl_conf_ptr->accounting_storage_pass);
 	ctl_conf_ptr->accounting_storage_port             = 0;
 	xfree (ctl_conf_ptr->checkpoint_type);
-	xfree (ctl_conf_ptr->cluster_acct_storage_loc);
-	xfree (ctl_conf_ptr->cluster_acct_storage_type);
-	xfree (ctl_conf_ptr->cluster_acct_storage_user);
-	xfree (ctl_conf_ptr->cluster_acct_storage_host);
-	xfree (ctl_conf_ptr->cluster_acct_storage_pass);
-	ctl_conf_ptr->cluster_acct_storage_port             = 0;
 	xfree (ctl_conf_ptr->cluster_name);
 	xfree (ctl_conf_ptr->backup_addr);
 	xfree (ctl_conf_ptr->backup_controller);

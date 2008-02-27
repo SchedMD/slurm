@@ -894,11 +894,6 @@ void slurm_free_ctl_conf(slurm_ctl_conf_info_msg_t * config_ptr)
 		xfree(config_ptr->backup_addr);
 		xfree(config_ptr->backup_controller);
 		xfree(config_ptr->checkpoint_type);
-		xfree(config_ptr->cluster_acct_storage_loc);
-		xfree(config_ptr->cluster_acct_storage_type);
-		xfree(config_ptr->cluster_acct_storage_user);
-		xfree(config_ptr->cluster_acct_storage_host);
-		xfree(config_ptr->cluster_acct_storage_pass);
 		xfree(config_ptr->cluster_name);
 		xfree(config_ptr->control_addr);
 		xfree(config_ptr->control_machine);
