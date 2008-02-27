@@ -1068,6 +1068,10 @@ gethostname_short (char *name, size_t len)
 extern void
 free_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr, bool purge_node_hash)
 {
+	xfree (ctl_conf_ptr->accounting_storage_host);
+	xfree (ctl_conf_ptr->accounting_storage_pass);
+	xfree (ctl_conf_ptr->accounting_storage_type);
+	xfree (ctl_conf_ptr->accounting_storage_user);
 	xfree (ctl_conf_ptr->authtype);
 	xfree (ctl_conf_ptr->backup_addr);
 	xfree (ctl_conf_ptr->backup_controller);
@@ -1076,10 +1080,7 @@ free_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr, bool purge_node_hash)
 	xfree (ctl_conf_ptr->control_machine);
 	xfree (ctl_conf_ptr->crypto_type);
 	xfree (ctl_conf_ptr->epilog);
-	xfree (ctl_conf_ptr->accounting_storage_type);
-	xfree (ctl_conf_ptr->accounting_storage_user);
-	xfree (ctl_conf_ptr->accounting_storage_host);
-	xfree (ctl_conf_ptr->accounting_storage_pass);
+	xfree (ctl_conf_ptr->health_check_program);
 	xfree (ctl_conf_ptr->job_acct_gather_type);
 	xfree (ctl_conf_ptr->job_acct_storage_loc);
 	xfree (ctl_conf_ptr->job_acct_storage_type);
@@ -1093,7 +1094,6 @@ free_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr, bool purge_node_hash)
 	xfree (ctl_conf_ptr->job_comp_pass);
 	xfree (ctl_conf_ptr->job_credential_private_key);
 	xfree (ctl_conf_ptr->job_credential_public_certificate);
-	xfree (ctl_conf_ptr->health_check_program);
 	xfree (ctl_conf_ptr->mail_prog);
 	xfree (ctl_conf_ptr->mpi_default);
 	xfree (ctl_conf_ptr->node_prefix);
