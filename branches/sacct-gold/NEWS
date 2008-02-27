@@ -12,6 +12,13 @@ documents those changes that are of interest to users and admins.
     plugins. It now supports select/cons_res and all job options (required
     nodes, excluded nodes, contiguous, etc.).
  -- Modify scheduling logic to better support overlapping partitions.
+ -- Move all database common files from src/common to new lib in src/database
+ -- Move sacct to src/accounting added sacctmgr for scontrol like operations 
+    to accounting infrastructure.
+ -- Basic functions of sacctmgr in place to make for administration of 
+    accounting.
+ -- Moved clusteracct_storage plugin to accounting_storage plugin,
+    jobacct_storage is still it's own plugin for now.
 
 * Changes in SLURM 1.3.0-pre8
 =============================
