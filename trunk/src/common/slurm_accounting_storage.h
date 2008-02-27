@@ -231,7 +231,7 @@ extern int acct_storage_g_modify_user_admin_level(
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
 extern int acct_storage_g_modify_accounts(acct_account_cond_t *acct_q,
-					     acct_account_rec_t *acct);
+					  acct_account_rec_t *acct);
 
 /* 
  * modify existing clusters in the accounting system 
@@ -316,9 +316,17 @@ extern List acct_storage_g_get_clusters(acct_cluster_cond_t *cluster_q);
 
 /* 
  * get info from the storage 
+ * IN:  acct_assoc - acct_association_rec_t with at least cluster and
+ *                   account set for account association.  To get user
+ *                   association set user, and optional partition.
+ * RET: uint32_t representing association id (uint32_t)NO_VAL on failure.
+ */
+extern uint32_t acct_storage_g_get_assoc_id(acct_association_rec_t *assoc);
+
+/* 
+ * get info from the storage 
  * IN:  acct_association_cond_t *
- * IN:  params void *
- * returns List of acct_association_rec_t *
+ * RET: List of acct_association_rec_t *
  * note List needs to be freed when called
  */
 extern List acct_storage_g_get_associations(acct_association_cond_t *assoc_q);
@@ -328,10 +336,9 @@ extern List acct_storage_g_get_associations(acct_association_cond_t *assoc_q);
  * IN/OUT:  acct_assoc acct_association_rec_t with the id set
  * IN:  start time stamp for records >=
  * IN:  end time stamp for records <
- * IN:  params void *
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
-extern int acct_storage_g_get_hourly_usage(acct_association_rec_t *acct_assoc,
+extern int acct_storage_g_get_hourly_usage(acct_association_rec_t *assoc,
 					   time_t start, time_t end);
 
 /* 
@@ -339,10 +346,9 @@ extern int acct_storage_g_get_hourly_usage(acct_association_rec_t *acct_assoc,
  * IN/OUT:  acct_assoc acct_association_rec_t with the id set
  * IN:  start time stamp for records >=
  * IN:  end time stamp for records <
- * IN:  params void *
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
-extern int acct_storage_g_get_daily_usage(acct_association_rec_t *acct_assoc,
+extern int acct_storage_g_get_daily_usage(acct_association_rec_t *assoc,
 					  time_t start, time_t end);
 
 /* 
@@ -353,7 +359,7 @@ extern int acct_storage_g_get_daily_usage(acct_association_rec_t *acct_assoc,
  * IN:  params void *
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
-extern int acct_storage_g_get_monthly_usage(acct_association_rec_t *acct_assoc,
+extern int acct_storage_g_get_monthly_usage(acct_association_rec_t *assoc,
 					    time_t start, time_t end);
 
 

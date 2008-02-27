@@ -150,6 +150,11 @@ extern int acct_storage_p_add_associations(List association_list)
 	return SLURM_SUCCESS;
 }
 
+extern uint32_t acct_storage_p_get_assoc_id(acct_association_rec_t *assoc)
+{
+	return 0;
+}
+
 extern int acct_storage_p_modify_users(acct_user_cond_t *user_q,
 				       acct_user_rec_t *user)
 {

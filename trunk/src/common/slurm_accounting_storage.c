@@ -62,6 +62,7 @@ typedef struct slurm_acct_storage_ops {
 	int  (*add_accts)       (List acct_list);
 	int  (*add_clusters)       (List cluster_list);
 	int  (*add_associations)   (List association_list);
+	uint32_t (*find_assoc_id)  (acct_association_rec_t *assoc);
 	int  (*modify_users)       (acct_user_cond_t *user_q,
 				    acct_user_rec_t *user);
 	int  (*modify_user_admin_level)(acct_user_cond_t *user_q);
@@ -144,6 +145,7 @@ static slurm_acct_storage_ops_t * _acct_storage_get_ops(
 		"acct_storage_p_add_accts",
 		"acct_storage_p_add_clusters",
 		"acct_storage_p_add_associations",
+		"acct_storage_p_find_assoc_id",
 		"acct_storage_p_modify_users",
 		"acct_storage_p_modify_user_admin_level",
 		"acct_storage_p_modify_accts",
@@ -550,6 +552,14 @@ extern int acct_storage_g_add_associations(List association_list)
 		return SLURM_ERROR;
 	return (*(g_acct_storage_context->ops.add_associations))
 		(association_list);
+}
+
+extern uint32_t acct_storage_g_get_assoc_id(acct_association_rec_t *assoc)
+{
+	if (slurm_acct_storage_init() < 0)
+		return SLURM_ERROR;
+
+	return (*(g_acct_storage_context->ops.find_assoc_id))(assoc);
 }
 
 extern int acct_storage_g_modify_users(acct_user_cond_t *user_q,
