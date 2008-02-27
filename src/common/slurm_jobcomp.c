@@ -65,7 +65,7 @@ typedef struct slurm_jobcomp_ops {
 	int          (*job_write) ( struct job_record *job_ptr);
 	int          (*sa_errno)  ( void );
 	char *       (*job_strerror)  ( int errnum );
-	void         (*get_jobs)  ( List job_list, List selected_steps,
+	List         (*get_jobs)  ( List selected_steps,
 				    List selected_parts, void *params );
 	void         (*archive)   ( List selected_parts, void *params );
 } slurm_jobcomp_ops_t;
@@ -314,18 +314,18 @@ g_slurm_jobcomp_strerror(int errnum)
 	return retval;
 }
 
-extern void
-g_slurm_jobcomp_get_jobs(List job_list, List selected_steps,
+extern List
+g_slurm_jobcomp_get_jobs(List selected_steps,
 			 List selected_parts, void *params)
 {
 	slurm_mutex_lock( &context_lock );
 	if ( g_context )
-		(*(g_context->ops.get_jobs))
-			(job_list, selected_steps, selected_parts, params);
+		return (*(g_context->ops.get_jobs))
+			(selected_steps, selected_parts, params);
 	else
 		error ("slurm_jobcomp plugin context not initialized");
 	slurm_mutex_unlock( &context_lock );
-	return;
+	return NULL ;
 }
 
 extern void

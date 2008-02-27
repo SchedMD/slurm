@@ -51,8 +51,7 @@ static void _do_fdump(List job_list)
 	return;
 }
 
-extern void mysql_jobacct_process_get_jobs(List job_list,
-					   List selected_steps,
+extern List mysql_jobacct_process_get_jobs(List selected_steps,
 					   List selected_parts,
 					   sacct_parameters_t *params)
 {
@@ -71,7 +70,8 @@ extern void mysql_jobacct_process_get_jobs(List job_list,
 	jobacct_step_rec_t *step = NULL;
 	jobacct_header_t header;
 	time_t now = time(NULL);
-
+	List job_list = list_create(destroy_jobacct_job_rec);
+		
 	/* if this changes you will need to edit the corresponding 
 	 * enum below also t1 is job_index and t2 is job_table */
 	char *job_req_inx[] = {
@@ -275,7 +275,8 @@ extern void mysql_jobacct_process_get_jobs(List job_list,
 	if(!(result =
 	     mysql_db_query_ret(jobacct_mysql_db, query))) {
 		xfree(query);
-		return;
+		list_destroy(job_list);
+		return NULL;
 	}
 	xfree(query);
 
@@ -361,7 +362,8 @@ extern void mysql_jobacct_process_get_jobs(List job_list,
 		if(!(step_result = mysql_db_query_ret(
 			     jobacct_mysql_db, query))) {
 			xfree(query);
-			return;
+			list_destroy(job_list);
+			return NULL;
 		}
 		xfree(query);
 		while ((step_row = mysql_fetch_row(step_result))) {
@@ -485,7 +487,7 @@ extern void mysql_jobacct_process_get_jobs(List job_list,
 	if (params->opt_fdump) 
 		_do_fdump(job_list);
 
-	return;
+	return job_list;
 }
 
 extern void mysql_jobacct_process_archive(List selected_parts,

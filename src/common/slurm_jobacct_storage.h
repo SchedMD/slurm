@@ -85,11 +85,10 @@ extern int jobacct_storage_g_job_suspend (struct job_record *job_ptr);
 
 /* 
  * get info from the storage 
- * in/out job_list List of job_rec_t *
+ * returns List of jobacct_job_rec_t *
  * note List needs to be freed when called
  */
-extern void jobacct_storage_g_get_jobs(List job_list,
-				       List selected_steps,
+extern List jobacct_storage_g_get_jobs(List selected_steps,
 				       List selected_parts,
 				       void *params);
 

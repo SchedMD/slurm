@@ -768,25 +768,25 @@ extern int jobacct_storage_p_suspend(struct job_record *job_ptr)
  * returns List of job_rec_t *
  * note List needs to be freed when called
  */
-extern void jobacct_storage_p_get_jobs(List job_list,
-				       List selected_steps,
+extern List jobacct_storage_p_get_jobs(List selected_steps,
 				       List selected_parts,
 				       void *params)
 {
+	List job_list = NULL;
 #ifdef HAVE_MYSQL
 	if(!jobacct_mysql_db || mysql_ping(jobacct_mysql_db) != 0) {
 		char *loc = slurm_get_jobacct_storage_loc();
 		if(jobacct_storage_p_init(loc) == SLURM_ERROR) {
 			xfree(loc);
-			return;
+			return NULL;
 		}
 		xfree(loc);
 	}
-	mysql_jobacct_process_get_jobs(job_list,
-				       selected_steps, selected_parts,
-				       params);	
+	job_list = mysql_jobacct_process_get_jobs(selected_steps,
+						  selected_parts,
+						  params);	
 #endif
-	return;
+	return job_list;
 }
 
 /* 

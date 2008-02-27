@@ -119,11 +119,10 @@ char *slurm_jobcomp_strerror( int errnum )
 	        return NULL;
 }
 
-void slurm_jobcomp_get_jobs(List job_list, 
-			    List selected_steps, List selected_parts,
+List slurm_jobcomp_get_jobs(List selected_steps, List selected_parts,
 			    void *params)
 {
-	return;
+	return NULL;
 }
 
 void slurm_jobcomp_archive(List selected_parts,

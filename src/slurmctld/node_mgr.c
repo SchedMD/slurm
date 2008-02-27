@@ -62,7 +62,7 @@
 #include "src/common/xstring.h"
 #include "src/common/node_select.h"
 #include "src/common/read_config.h"
-#include "src/common/slurm_clusteracct_storage.h"
+#include "src/common/slurm_accounting_storage.h"
 #include "src/slurmctld/agent.h"
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/ping_nodes.h"

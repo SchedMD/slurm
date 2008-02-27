@@ -174,12 +174,11 @@ extern int jobacct_storage_p_suspend(struct job_record *job_ptr)
  * returns List of job_rec_t *
  * note List needs to be freed when called
  */
-extern void jobacct_storage_p_get_jobs(List job_list,
-					List selected_steps,
-					List selected_parts,
-					void *params)
+extern List jobacct_storage_p_get_jobs(List selected_steps,
+				       List selected_parts,
+				       void *params)
 {
-	return;
+	return NULL;
 }
 
 /* 

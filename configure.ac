@@ -272,10 +272,15 @@ AC_CONFIG_FILES([Makefile
 		 contribs/perlapi/Makefile
 		 contribs/perlapi/libslurm-perl/Makefile.PL
 		 contribs/torque/Makefile
+		 contribs/phpext/Makefile
+		 contribs/phpext/slurm_php/config.m4
 		 src/Makefile 
 		 src/api/Makefile 
 		 src/common/Makefile
-		 src/sacct/Makefile
+		 src/database/Makefile
+		 src/accounting/Makefile
+		 src/accounting/sacct/Makefile
+		 src/accounting/sacctmgr/Makefile
 		 src/salloc/Makefile 
 		 src/sbatch/Makefile 
 		 src/sattach/Makefile
@@ -293,6 +298,12 @@ AC_CONFIG_FILES([Makefile
 		 src/strigger/Makefile
 		 src/sview/Makefile
 		 src/plugins/Makefile
+		 src/plugins/accounting_storage/Makefile
+		 src/plugins/accounting_storage/gold/Makefile
+		 src/plugins/accounting_storage/mysql/Makefile
+		 src/plugins/accounting_storage/pgsql/Makefile
+		 src/plugins/accounting_storage/none/Makefile
+		 src/plugins/accounting_storage/slurmdbd/Makefile
 		 src/plugins/auth/Makefile
 		 src/plugins/auth/authd/Makefile
 		 src/plugins/auth/munge/Makefile
@@ -323,12 +334,6 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/jobcomp/mysql/Makefile
 		 src/plugins/jobcomp/pgsql/Makefile
 		 src/plugins/jobcomp/slurmdbd/Makefile
-		 src/plugins/clusteracct_storage/Makefile
-		 src/plugins/clusteracct_storage/gold/Makefile
-		 src/plugins/clusteracct_storage/mysql/Makefile
-		 src/plugins/clusteracct_storage/pgsql/Makefile
-		 src/plugins/clusteracct_storage/none/Makefile
-		 src/plugins/clusteracct_storage/slurmdbd/Makefile
 		 src/plugins/proctrack/Makefile
 		 src/plugins/proctrack/aix/Makefile
 		 src/plugins/proctrack/pgid/Makefile

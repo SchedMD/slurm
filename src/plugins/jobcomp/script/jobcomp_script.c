@@ -563,14 +563,13 @@ extern int fini ( void )
  * in/out job_list List of job_rec_t *
  * note List needs to be freed when called
  */
-extern void slurm_jobcomp_get_jobs(List job_list, 
-				   List selected_steps,
+extern List slurm_jobcomp_get_jobs(List selected_steps,
 				   List selected_parts,
 				   void *params)
 {
 
 	info("This function is not implemented.");
-	return;
+	return NULL;
 }
 
 /* 

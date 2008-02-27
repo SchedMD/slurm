@@ -1,0 +1,21 @@
+README for the php extension for SLURM.
+
+This was made primarily for SLURMWEB to connect to slurm.  Any extra
+interactions are welcome.
+
+to compile...
+
+phpize
+./configure
+make
+
+this should make modules/slurm_php.so
+
+make install as root
+should install this where your extensions are in your php install
+
+in your php.ini file add the line
+
+extension=slurm.so
+
+and you should be able to use the functions here.

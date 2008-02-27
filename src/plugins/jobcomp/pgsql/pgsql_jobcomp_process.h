@@ -43,7 +43,7 @@
 #ifndef _HAVE_PGSQL_JOBCOMP_PROCESS_H
 #define _HAVE_PGSQL_JOBCOMP_PROCESS_H
 
-#include "src/common/pgsql_common.h"
+#include "src/database/pgsql_common.h"
 #include "src/common/slurm_jobacct_gather.h"
 #include "src/common/slurm_jobcomp.h"
 
@@ -81,8 +81,7 @@ enum {
 	JOBCOMP_REQ_COUNT		
 };
 
-extern void pgsql_jobcomp_process_get_jobs(List job_list,
-					   List selected_steps,
+extern List pgsql_jobcomp_process_get_jobs(List selected_steps,
 					   List selected_parts,
 					   sacct_parameters_t *params);
 
