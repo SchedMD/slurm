@@ -369,7 +369,7 @@ extern int jobacct_storage_p_job_start(struct job_record *job_ptr)
 #ifdef HAVE_BG
 		 ", blockid"
 #endif
-		 ") values (%u, '%s', %u, %d, %d"
+		 ") values (%u, '%s', %d, %u, %u"
 #ifdef HAVE_BG
 		 ", '%s'"
 #endif
@@ -391,7 +391,7 @@ try_again:
 		snprintf(query, sizeof(query),
 			 "insert into %s (id, start, name, track_steps, "
 			 "state, priority, cpus, nodelist, account) "
-			 "values (%d, %u, '%s', %d, %d, %ld, %u, '%s', '%s')",
+			 "values (%u, %d, '%s', %d, %d, %ld, %u, '%s', '%s')",
 			 job_table, job_ptr->db_index, 
 			 (int)job_ptr->start_time,
 			 jname, track_steps,
@@ -455,7 +455,7 @@ extern int jobacct_storage_p_job_complete(struct job_record *job_ptr)
 		snprintf(query, sizeof(query),
 			 "update %s set start=%u, end=%u, state=%d, "
 			 "nodelist='%s', account='%s', comp_code=%u, "
-			 "kill_requid=%d where id=%u",
+			 "kill_requid=%u where id=%u",
 			 job_table, (int)job_ptr->start_time,
 			 (int)job_ptr->end_time, 
 			 job_ptr->job_state & (~JOB_COMPLETING),
@@ -510,7 +510,8 @@ extern int jobacct_storage_p_step_start(struct step_record *step_ptr)
 #else
 	if(!step_ptr->step_layout || !step_ptr->step_layout->task_cnt) {
 		cpus = step_ptr->job_ptr->total_procs;
-		snprintf(node_list, BUFFER_SIZE, "%s", step_ptr->job_ptr->nodes);
+		snprintf(node_list, BUFFER_SIZE, "%s",
+			 step_ptr->job_ptr->nodes);
 	} else {
 		cpus = step_ptr->step_layout->task_cnt;
 		snprintf(node_list, BUFFER_SIZE, "%s", 
@@ -524,7 +525,7 @@ extern int jobacct_storage_p_step_start(struct step_record *step_ptr)
 		snprintf(query, sizeof(query),
 			 "insert into %s (id, stepid, start, name, state, "
 			 "cpus, nodelist, kill_requid) "
-			 "values (%d, %u, %u, '%s', %d, %u, '%s', %d)",
+			 "values (%d, %u, %u, '%s', %d, %u, '%s', %u)",
 			 step_table, step_ptr->job_ptr->db_index,
 			 step_ptr->step_id, 
 			 (int)step_ptr->start_time, step_ptr->name,
@@ -533,7 +534,7 @@ extern int jobacct_storage_p_step_start(struct step_record *step_ptr)
 		rc = mysql_db_query(jobacct_mysql_db, query);
 		if(rc != SLURM_ERROR) {
 			snprintf(query, sizeof(query),
-				 "insert into %s (id, stepid) values (%d, %u)",
+				 "insert into %s (id, stepid) values (%u, %u)",
 				 rusage_table, step_ptr->job_ptr->db_index,
 				 step_ptr->step_id);
 			rc = mysql_db_query(jobacct_mysql_db, query);
@@ -617,7 +618,7 @@ extern int jobacct_storage_p_step_complete(struct step_record *step_ptr)
 	if(step_ptr->job_ptr->db_index) {
 		snprintf(query, sizeof(query),
 			 "update %s set end=%u, state=%d, "
-			 "kill_requid=%d, comp_code=%u, "
+			 "kill_requid=%u, comp_code=%u, "
 			 "max_vsize=%u, max_vsize_task=%u, "
 			 "max_vsize_node=%u, ave_vsize=%.2f, "
 			 "max_rss=%u, max_rss_task=%u, "

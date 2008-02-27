@@ -167,7 +167,7 @@ static int _print_record(struct job_record *job_ptr,
 	slurm_mutex_lock( &logfile_lock );
 
 	if (fprintf(LOGFILE,
-		    "%u %s %u %u %d %d %s - %s\n",
+		    "%u %s %d %d %u %u %s - %s\n",
 		    job_ptr->job_id, job_ptr->partition,
 		    (int)job_ptr->details->submit_time, (int)time, 
 		    job_ptr->user_id, job_ptr->group_id, block_id, data)
@@ -350,7 +350,7 @@ extern int jobacct_storage_p_job_complete(struct job_record *job_ptr)
 	}
 	/* leave the requid as a %d since we want to see if it is -1
 	   in sacct */
-	snprintf(buf, BUFFER_SIZE, "%d %u %d %d %u",
+	snprintf(buf, BUFFER_SIZE, "%d %d %d %u %u",
 		 JOB_TERMINATED,
 		 (int) (job_ptr->end_time - job_ptr->start_time),
 		 job_ptr->job_state & (~JOB_COMPLETING),
@@ -623,7 +623,7 @@ extern int jobacct_storage_p_suspend(struct job_record *job_ptr)
 	/* here we are really just going for a marker in time to tell when
 	 * the process was suspended or resumed (check job state), we don't 
 	 * really need to keep track of anything else */
-	snprintf(buf, BUFFER_SIZE, "%d %u %d",
+	snprintf(buf, BUFFER_SIZE, "%d %d %d",
 		 JOB_SUSPEND,
 		 elapsed,
 		 job_ptr->job_state & (~JOB_COMPLETING));/* job status */
