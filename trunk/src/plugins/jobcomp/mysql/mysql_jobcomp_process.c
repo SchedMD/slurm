@@ -58,8 +58,7 @@ static void _do_fdump(MYSQL_ROW row, int lc)
 	return;
 }
 
-extern void mysql_jobcomp_process_get_jobs(List job_list,
-					   List selected_steps,
+extern List mysql_jobcomp_process_get_jobs(List selected_steps,
 					   List selected_parts,
 					   sacct_parameters_t *params)
 {
@@ -78,7 +77,8 @@ extern void mysql_jobcomp_process_get_jobs(List job_list,
 	jobcomp_job_rec_t *job = NULL;
 	char time_str[32];
 	time_t temp_time;
-
+	List job_list = list_create(jobcomp_destroy_job);
+		
 	if(selected_steps && list_count(selected_steps)) {
 		set = 0;
 		xstrcat(extra, " where (");
@@ -137,7 +137,8 @@ extern void mysql_jobcomp_process_get_jobs(List job_list,
 	if(!(result =
 	     mysql_db_query_ret(jobcomp_mysql_db, query))) {
 		xfree(query);
-		return;
+		list_destroy(job_list);
+		return NULL;
 	}
 	xfree(query);
 
@@ -194,7 +195,7 @@ extern void mysql_jobcomp_process_get_jobs(List job_list,
 		
 	mysql_free_result(result);
 	
-	return;
+	return job_list;
 }
 
 extern void mysql_jobcomp_process_archive(List selected_parts,

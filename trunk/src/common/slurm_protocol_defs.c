@@ -887,6 +887,10 @@ void slurm_free_ctl_conf(slurm_ctl_conf_info_msg_t * config_ptr)
 {
 	if (config_ptr) {
 		xfree(config_ptr->authtype);
+		xfree(config_ptr->accounting_storage_type);
+		xfree(config_ptr->accounting_storage_user);
+		xfree(config_ptr->accounting_storage_host);
+		xfree(config_ptr->accounting_storage_pass);
 		xfree(config_ptr->backup_addr);
 		xfree(config_ptr->backup_controller);
 		xfree(config_ptr->checkpoint_type);

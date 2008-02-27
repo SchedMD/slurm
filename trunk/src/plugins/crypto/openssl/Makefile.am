@@ -22,7 +22,7 @@ crypto_openssl_la_SOURCES =	\
 #  available in slurmctld (slurm_setenvpf)
 
 crypto_openssl_la_LIBADD  = $(SSL_LIBS) \
-			$(top_builddir)/src/api/libslurm.la
+			$(top_builddir)/src/common/libcommon.la
 
 crypto_openssl_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
 

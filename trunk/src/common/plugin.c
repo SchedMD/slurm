@@ -220,8 +220,12 @@ plugin_get_syms( plugin_handle_t plug,
         count = 0;
         for ( i = 0; i < n_syms; ++i ) {
                 ptrs[ i ] = dlsym( plug, names[ i ] );
-                if ( ptrs[ i ] ) ++count;
-        }
+                if ( ptrs[ i ] ) 
+			++count;
+		else 
+			error("Couldn't find sym '%s' in the plugin",
+			      names[ i ]);
+	}
 
         return count;
 }

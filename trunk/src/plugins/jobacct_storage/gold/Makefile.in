@@ -74,9 +74,7 @@ am__strip_dir = `echo $$p | sed -e 's|^.*/||'`;
 am__installdirs = "$(DESTDIR)$(pkglibdir)"
 pkglibLTLIBRARIES_INSTALL = $(INSTALL)
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
-jobacct_storage_gold_la_LIBADD =
-am_jobacct_storage_gold_la_OBJECTS = jobacct_storage_gold.lo \
-	gold_interface.lo base64.lo
+am_jobacct_storage_gold_la_OBJECTS = jobacct_storage_gold.lo
 jobacct_storage_gold_la_OBJECTS =  \
 	$(am_jobacct_storage_gold_la_OBJECTS)
 jobacct_storage_gold_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
@@ -269,11 +267,14 @@ PLUGIN_FLAGS = -module -avoid-version --export-dynamic
 # Gold job completion logging plugin.
 INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common
 pkglib_LTLIBRARIES = jobacct_storage_gold.la
-jobacct_storage_gold_la_SOURCES = jobacct_storage_gold.c \
-			gold_interface.c gold_interface.h \
-			base64.c base64.h
-
+jobacct_storage_gold_la_SOURCES = jobacct_storage_gold.c
 jobacct_storage_gold_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
+jobacct_storage_gold_la_LIBADD = \
+	$(top_builddir)/src/database/libslurm_gold.la
+
+jobacct_storage_gold_la_DEPENDENCIES = \
+	$(top_builddir)/src/database/libslurm_gold.la
+
 all: all-am
 
 .SUFFIXES:
@@ -343,8 +344,6 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/base64.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/gold_interface.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/jobacct_storage_gold.Plo@am__quote@
 
 .c.o:

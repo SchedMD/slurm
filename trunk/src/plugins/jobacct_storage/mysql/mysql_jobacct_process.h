@@ -45,7 +45,7 @@
 
 #include "src/common/jobacct_common.h"
 #include "src/slurmctld/slurmctld.h"
-#include "src/common/mysql_common.h"
+#include "src/database/mysql_common.h"
 
 #ifdef HAVE_MYSQL
 
@@ -57,8 +57,7 @@ extern char *job_table;
 extern char *step_table;
 extern char *rusage_table;
 
-extern void mysql_jobacct_process_get_jobs(List job_list,
-					   List selected_steps,
+extern List mysql_jobacct_process_get_jobs(List selected_steps,
 					   List selected_parts,
 					   sacct_parameters_t *params);
 

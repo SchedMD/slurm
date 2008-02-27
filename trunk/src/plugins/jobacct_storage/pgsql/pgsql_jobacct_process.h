@@ -45,7 +45,7 @@
 
 #include "src/common/jobacct_common.h"
 #include "src/slurmctld/slurmctld.h"
-#include "src/common/pgsql_common.h"
+#include "src/database/pgsql_common.h"
 
 #ifdef HAVE_PGSQL
 
@@ -57,8 +57,7 @@ extern char *job_table;
 extern char *step_table;
 extern char *rusage_table;
 
-extern void pgsql_jobacct_process_get_jobs(List job_list,
-					   List selected_steps,
+extern List pgsql_jobacct_process_get_jobs(List selected_steps,
 					   List selected_parts,
 					   sacct_parameters_t *params);
 
