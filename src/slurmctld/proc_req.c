@@ -1478,7 +1478,7 @@ static void _slurm_rpc_reconfigure_controller(slurm_msg_t * msg)
 	uid_t uid;
 
 	START_TIMER;
-	debug2("Processing RPC: REQUEST_RECONFIGURE");
+	info("Processing RPC: REQUEST_RECONFIGURE");
 	uid = g_slurm_auth_get_uid(msg->auth_cred);
 	if (!validate_super_user(uid)) {
 		error("Security violation, RECONFIGURE RPC from uid=%u",

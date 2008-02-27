@@ -1097,6 +1097,7 @@ extern int kill_running_job_by_node_name(char *node_name, bool step_test)
 			} else {
 				info("Killing job_id %u on failed node %s",
 				     job_ptr->job_id, node_name);
+				srun_node_fail(job_ptr->job_id, node_name);
 				job_ptr->job_state = JOB_NODE_FAIL | 
 					JOB_COMPLETING;
 				job_ptr->exit_code = 

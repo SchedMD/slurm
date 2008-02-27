@@ -832,6 +832,7 @@ _node_fail_handler(struct step_launch_state *sls, slurm_msg_t *fail_msg)
 	int i, j;
 	int node_id, num_tasks;
 
+	error("Node failure on %s", nf->nodelist);
 	fail_nodes = hostset_create(nf->nodelist);
 	fail_itr = hostset_iterator_create(fail_nodes);
 	num_node_ids = hostset_count(fail_nodes);
