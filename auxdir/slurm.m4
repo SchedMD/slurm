@@ -48,7 +48,7 @@ AC_DEFUN([X_AC_SLURM_PORTS],
           fi
         ]
   )
-  AC_MSG_RESULT(${slurmdbdport=$1})
+  AC_MSG_RESULT(${slurmdbdport=$3})
   AC_DEFINE_UNQUOTED(SLURMDBD_PORT, [$slurmdbdport],
                      [Define the default port number for slurmdbd])
   AC_SUBST(SLURMDBD_PORT)
