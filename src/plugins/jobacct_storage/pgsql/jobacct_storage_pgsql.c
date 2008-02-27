@@ -428,7 +428,7 @@ extern int jobacct_storage_p_job_start(struct job_record *job_ptr)
 #ifdef HAVE_BG
 		 ", blockid"
 #endif
-		 ") values (%u, '%s', %u, %d, %d"
+		 ") values (%u, '%s', %u, %u, %u"
 #ifdef HAVE_BG
 		 ", '%s'"
 #endif
@@ -451,7 +451,7 @@ try_again:
 		snprintf(query, sizeof(query),
 			 "insert into %s (id, start, name, track_steps, "
 			 "state, priority, cpus, nodelist, account) "
-			 "values (%d, %u, '%s', %d, %d, %ld, %u, '%s', '%s')",
+			 "values (%u, %u, '%s', %d, %d, %ld, %u, '%s', '%s')",
 			 job_table, job_ptr->db_index, 
 			 (int)job_ptr->start_time,
 			 jname, track_steps,
@@ -570,7 +570,8 @@ extern int jobacct_storage_p_step_start(struct step_record *step_ptr)
 #else
 	if(!step_ptr->step_layout || !step_ptr->step_layout->task_cnt) {
 		cpus = step_ptr->job_ptr->total_procs;
-		snprintf(node_list, BUFFER_SIZE, "%s", step_ptr->job_ptr->nodes);
+		snprintf(node_list, BUFFER_SIZE, "%s",
+			 step_ptr->job_ptr->nodes);
 	} else {
 		cpus = step_ptr->step_layout->task_cnt;
 		snprintf(node_list, BUFFER_SIZE, "%s", 

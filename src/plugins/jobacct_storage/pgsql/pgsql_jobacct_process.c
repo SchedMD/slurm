@@ -227,7 +227,7 @@ extern List pgsql_jobacct_process_get_jobs(List selected_steps,
 		while((selected_step = list_next(itr))) {
 			if(set) 
 				xstrcat(extra, " or ");
-			tmp = xstrdup_printf("t1.jobid=%d",
+			tmp = xstrdup_printf("t1.jobid=%u",
 					      selected_step->jobid);
 			xstrcat(extra, tmp);
 			set = 1;
@@ -330,7 +330,7 @@ extern List pgsql_jobacct_process_get_jobs(List selected_steps,
 				else 
 					xstrcat(extra, " and (");
 			
-				tmp = xstrdup_printf("t1.stepid=%d",
+				tmp = xstrdup_printf("t1.stepid=%u",
 						     selected_step->stepid);
 				xstrcat(extra, tmp);
 				set = 1;
