@@ -202,6 +202,7 @@ documents those changes that are of interest to users and admins.
     equivalent options for compatibility with srun.
  -- If a partition's node list contains space separators, replace them with 
     commas for easier parsing.
+ -- BLUEGENE - fixed bug in geometry specs when creating a block.
  -- Add support for Moab and Maui to start jobs with select/cons_res plugin
     and jobs requiring more than one CPU per task.
 
