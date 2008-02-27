@@ -166,7 +166,7 @@ static void _update_existing(acct_cluster_cond_t *cluster_cond,
 			if(!(assoc = sacctmgr_find_association(
 				     NULL, "template_account",
 				     tmp_char, NULL))) {
-				printf(" Can't find template account for %s "
+				printf(" Can't find template account for '%s' "
 				       "something is messed up.\n", tmp_char);
 				continue;
 			}
@@ -238,7 +238,7 @@ extern int sacctmgr_add_cluster(int argc, char *argv[])
 				error("can only add one cluster at a time.\n");
 			else {
 				cluster->name = xstrdup(argv[i]);
-				assoc->cluster = xstrdup(argv[i]+5);
+				assoc->cluster = xstrdup(argv[i]);
 			}
 		}		
 	}
@@ -256,7 +256,7 @@ extern int sacctmgr_add_cluster(int argc, char *argv[])
 	}
 
 	printf(" Adding Cluster(s)\n");
-	printf("  Name           = %s", cluster->name);
+	printf("  Name           = %s\n", cluster->name);
 	if(cluster->interface_node)
 		printf("  Interface Node = %s", cluster->interface_node);
 
@@ -264,17 +264,17 @@ extern int sacctmgr_add_cluster(int argc, char *argv[])
 
 	if(assoc->fairshare < 0)
 		assoc->fairshare = 1;
-	printf("  Fairshare       = %u\n", assoc->fairshare);
+	printf("  Fairshare     = %u\n", assoc->fairshare);
 
 	if(assoc->max_jobs)
-		printf("  MaxJobs         = %u\n", assoc->max_jobs);
+		printf("  MaxJobs       = %u\n", assoc->max_jobs);
 	if(assoc->max_nodes_per_job)
-		printf("  MaxNodes        = %u\n", assoc->max_nodes_per_job);
+		printf("  MaxNodes      = %u\n", assoc->max_nodes_per_job);
 	if(assoc->max_wall_duration_per_job)
-		printf("  MaxWall         = %u\n",
+		printf("  MaxWall       = %u\n",
 		       assoc->max_wall_duration_per_job);
 	if(assoc->max_cpu_seconds_per_job)
-		printf("  MaxCPUSecs      = %u\n",
+		printf("  MaxCPUSecs    = %u\n",
 		       assoc->max_cpu_seconds_per_job);
 	
 	cluster_list = list_create(NULL);

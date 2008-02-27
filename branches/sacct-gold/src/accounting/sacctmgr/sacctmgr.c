@@ -329,6 +329,9 @@ _process_command (int argc, char *argv[])
 				printf("Changes discarded.\n");
 			list_destroy(sacctmgr_action_list);
 			sacctmgr_action_list = NULL;
+		} else {
+			list_destroy(sacctmgr_action_list);
+			sacctmgr_action_list = NULL;
 		}
 		exit_flag = 1;
 	} else if (strncasecmp (argv[0], "help", 2) == 0) {
