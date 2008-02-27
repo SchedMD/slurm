@@ -585,7 +585,7 @@ extern int jobacct_storage_p_step_start(struct step_record *step_ptr)
 		snprintf(query, sizeof(query),
 			 "insert into %s (id, stepid, start, name, state, "
 			 "cpus, nodelist, kill_requid) "
-			 "values (%d, %u, %u, '%s', %d, %u, '%s', %d)",
+			 "values (%u, %u, %u, '%s', %d, %u, '%s', %u)",
 			 step_table, step_ptr->job_ptr->db_index,
 			 step_ptr->step_id, 
 			 (int)step_ptr->start_time, step_ptr->name,
@@ -594,7 +594,7 @@ extern int jobacct_storage_p_step_start(struct step_record *step_ptr)
 		rc = pgsql_db_query(jobacct_pgsql_db, query);
 		if(rc != SLURM_ERROR) {
 			snprintf(query, sizeof(query),
-				 "insert into %s (id, stepid) values (%d, %u)",
+				 "insert into %s (id, stepid) values (%u, %u)",
 				 rusage_table, step_ptr->job_ptr->db_index,
 				 step_ptr->step_id);
 			rc = pgsql_db_query(jobacct_pgsql_db, query);
@@ -678,7 +678,7 @@ extern int jobacct_storage_p_step_complete(struct step_record *step_ptr)
 	if(step_ptr->job_ptr->db_index) {
 		snprintf(query, sizeof(query),
 			 "update %s set endtime=%u, state=%d, "
-			 "kill_requid=%d, comp_code=%u, "
+			 "kill_requid=%u, comp_code=%u, "
 			 "max_vsize=%u, max_vsize_task=%u, "
 			 "max_vsize_node=%u, ave_vsize=%.2f, "
 			 "max_rss=%u, max_rss_task=%u, "
