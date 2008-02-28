@@ -1227,13 +1227,16 @@ extern int test_job_list(List req_list)
 				   && bg_record->job_ptr->end_time) 
 					starttime =
 						bg_record->job_ptr->end_time;
+
+				bg_record->job_ptr = will_run->job_ptr;
+
 				if(will_run->job_ptr->start_time) {
 					if(will_run->job_ptr->start_time
 					   < starttime) {
 						rc = SLURM_ERROR;
 						break;
 					}
-
+					
 					continue;
 				} 
 				
