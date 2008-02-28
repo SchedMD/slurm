@@ -173,6 +173,7 @@ static void _slurmd_job_log_init(slurmd_job_t *job);
 static void _wait_for_io(slurmd_job_t *job);
 static int  _send_exit_msg(slurmd_job_t *job, uint32_t *tid, int n, 
 		int status);
+static void _wait_for_children_slurmstepd(slurmd_job_t *job);
 static int  _send_pending_exit_msgs(slurmd_job_t *job);
 static void _send_step_complete_msgs(slurmd_job_t *job);
 static void _wait_for_all_tasks(slurmd_job_t *job);
@@ -242,8 +243,9 @@ _batch_finish(slurmd_job_t *job, int rc)
 	if ((job->stepid == NO_VAL) || (job->stepid == SLURM_BATCH_SCRIPT)) {
 		verbose("job %u completed with slurm_rc = %d, job_rc = %d",
 			job->jobid, rc, step_complete.step_rc);
-		_send_complete_batch_script_msg(job, rc, step_complete.step_rc);
+		_send_complete_batch_script_msg(job, rc, job->task[0]->estatus);
 	} else {
+		_wait_for_children_slurmstepd(job);
 		verbose("job %u.%u completed with slurm_rc = %d, job_rc = %d",
 			job->jobid, job->stepid, rc, step_complete.step_rc);
 		_send_step_complete_msgs(job);
@@ -509,7 +511,6 @@ _one_step_complete_msg(slurmd_job_t *job, int first, int last)
 	msg.range_first = first;
 	msg.range_last = last;
 	msg.step_rc = step_complete.step_rc;
-	info("step rc = %d", msg.step_rc);
 	msg.jobacct = jobacct_g_alloc(NULL);
 	/************* acct stuff ********************/
 	if(!acct_sent) {

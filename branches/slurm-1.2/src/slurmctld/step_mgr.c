@@ -1255,6 +1255,7 @@ extern int step_partial_comp(step_complete_msg_t *req, int *rem,
 		step_ptr->exit_code = req->step_rc;
 		if (max_rc)
 			*max_rc = step_ptr->exit_code;
+		jobacct_g_aggregate(step_ptr->jobacct, req->jobacct);
 		/* we don't want to delete the step record here since
 		   right after we delete this step again if we delete
 		   it here we won't find it when we try the second
