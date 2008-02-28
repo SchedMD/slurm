@@ -57,6 +57,15 @@ _STMT_START {		\
 
 
 pthread_mutex_t create_dynamic_mutex = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t job_list_test_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+/* This list is for the test_job_list function because we will be
+ * adding and removing blocks off the bg_job_block_list and don't want
+ * to ruin that list in submit_job it should = bg_job_block_list
+ * otherwise it should be a copy of that list.
+ */
+List job_block_test_list = NULL;
+
 
 static void _rotate_geo(uint16_t *req_geometry, int rot_cnt);
 static int _bg_record_sort_aval_inc(bg_record_t* rec_a, bg_record_t* rec_b); 
@@ -617,17 +626,17 @@ static int _dynamically_request(List block_list, int *blocks_added,
 	list_of_lists = list_create(NULL);
 	
 	if(user_req_nodes) 
-		list_append(list_of_lists, bg_job_block_list);
+		list_append(list_of_lists, job_block_test_list);
 	else {
 		list_append(list_of_lists, block_list);
 		if(list_count(block_list) != list_count(bg_booted_block_list)) {
 			list_append(list_of_lists, bg_booted_block_list);
 			if(list_count(bg_booted_block_list) 
-			   != list_count(bg_job_block_list)) 
-				list_append(list_of_lists, bg_job_block_list);
+			   != list_count(job_block_test_list)) 
+				list_append(list_of_lists, job_block_test_list);
 		} else if(list_count(block_list) 
-			  != list_count(bg_job_block_list)) 
-			list_append(list_of_lists, bg_job_block_list);
+			  != list_count(job_block_test_list)) 
+			list_append(list_of_lists, job_block_test_list);
 	}
 	itr = list_iterator_create(list_of_lists);
 	while ((temp_list = (List)list_next(itr))) {
@@ -648,14 +657,20 @@ static int _dynamically_request(List block_list, int *blocks_added,
 				if(block_exist_in_list(block_list, bg_record))
 					destroy_bg_record(bg_record);
 				else {
-					if(configure_block(bg_record)
-					   == SLURM_ERROR) {
-						destroy_bg_record(bg_record);
-						error("_dynamically_request: "
-						      "unable to configure "
-						      "block");
-						rc = SLURM_ERROR;
-						break;
+					if(job_block_test_list 
+					   == bg_job_block_list) {
+						if(configure_block(bg_record)
+						   == SLURM_ERROR) {
+							destroy_bg_record(
+								bg_record);
+							error("_dynamically_"
+							      "request: "
+							      "unable to "
+							      "configure "
+							      "block");
+							rc = SLURM_ERROR;
+							break;
+						}
 					}
 					list_append(block_list, bg_record);
 					print_bg_record(bg_record);
@@ -945,7 +960,10 @@ static int _find_best_block_match(List block_list,
 			List job_list = NULL;
 			debug("trying with empty machine");
 			slurm_mutex_lock(&block_state_mutex);
-			job_list = copy_bg_list(bg_job_block_list);
+			if(job_block_test_list == bg_job_block_list) 
+				job_list = copy_bg_list(job_block_test_list);
+			else
+				job_list = job_block_test_list;
 			slurm_mutex_unlock(&block_state_mutex);
 			list_sort(job_list, (ListCmpF)_bg_record_sort_aval_inc);
 			while(1) {
@@ -977,6 +995,27 @@ static int _find_best_block_match(List block_list,
 					(*found_bg_record)->job_ptr 
 						= bg_record->job_ptr; 
 					destroy_bg_record(bg_record);
+				}
+					
+				if(job_block_test_list != bg_job_block_list) {
+					list_append(block_list,
+						    (*found_bg_record));
+					while((bg_record = 
+					       list_pop(new_blocks))) {
+						if(block_exist_in_list(
+							   block_list,
+							   bg_record))
+							destroy_bg_record(
+								bg_record);
+						else {
+							list_append(block_list,
+								    bg_record);
+//					print_bg_record(bg_record);
+						}
+					}
+				} else {
+					list_append(block_list,
+						    (*found_bg_record));
 				}
 				list_destroy(new_blocks);
 				break;
@@ -1061,7 +1100,9 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 
 	if(bluegene_layout_mode == LAYOUT_DYNAMIC)
 		slurm_mutex_lock(&create_dynamic_mutex);
-	
+
+	job_block_test_list = bg_job_block_list;
+
 	select_g_sprint_jobinfo(job_ptr->select_jobinfo, buf, sizeof(buf), 
 				SELECT_PRINT_MIXED);
 	debug("bluegene:submit_job: %s nodes=%u-%u-%u", 
@@ -1190,9 +1231,13 @@ extern int test_job_list(List req_list)
 	ListIterator itr = NULL;
 	select_will_run_t *will_run = NULL;
 
+	slurm_mutex_lock(&job_list_test_mutex);
+
 	if(bluegene_layout_mode == LAYOUT_DYNAMIC)
 		slurm_mutex_lock(&create_dynamic_mutex);
-	
+
+	job_block_test_list = copy_bg_list(bg_job_block_list);
+
 	slurm_mutex_lock(&block_state_mutex);
 	block_list = copy_bg_list(bg_list);
 	slurm_mutex_unlock(&block_state_mutex);
@@ -1227,9 +1272,13 @@ extern int test_job_list(List req_list)
 				   && bg_record->job_ptr->end_time) 
 					starttime =
 						bg_record->job_ptr->end_time;
+				if(!block_exist_in_list(job_block_test_list,
+						       bg_record))
+					list_append(job_block_test_list,
+						    bg_record);
 
 				bg_record->job_ptr = will_run->job_ptr;
-
+				
 				if(will_run->job_ptr->start_time) {
 					if(will_run->job_ptr->start_time
 					   < starttime) {
@@ -1332,6 +1381,10 @@ extern int test_job_list(List req_list)
 	
 
 	list_destroy(block_list);
+	list_destroy(job_block_test_list);
+	
+	slurm_mutex_unlock(&job_list_test_mutex);
+
 	return rc;
 
 }
