@@ -158,7 +158,7 @@ static int _get_jobs(Buf in_buffer, Buf *out_buffer)
 	int i;
 	dbd_get_jobs_msg_t *get_jobs_msg;
 	dbd_got_jobs_msg_t got_jobs_msg;
-	uint32_t jobs[2];
+	dbd_job_info_t jobs[2];
 
 	if (slurm_dbd_unpack_get_jobs_msg(&get_jobs_msg, in_buffer) !=
 	    SLURM_SUCCESS) {
@@ -168,14 +168,29 @@ static int _get_jobs(Buf in_buffer, Buf *out_buffer)
 	}
 
 	info("DBD_GET_JOBS: JOB_COUNT:%u", get_jobs_msg->job_count);
-	for (i=0; i<get_jobs_msg->job_count; i++)
-		info("DBD_GET_JOBS: JOB_ID[%d]:%u", i, get_jobs_msg->job_ids[i]);
+	for (i=0; i<get_jobs_msg->job_count; i++) {
+		info("DBD_GET_JOBS: JOB_ID[%d]:%u.%u", i, 
+		     get_jobs_msg->job_ids[i], get_jobs_msg->step_ids[i]);
+	}
+	info("DBD_GET_JOBS: PART_COUNT:%u", get_jobs_msg->part_count);
+	for (i=0; i<get_jobs_msg->part_count; i++) {
+		info("DBD_GET_JOBS: PART_NAME[%d]:%s", i, 
+		     get_jobs_msg->part_name[i]);
+	}
 	slurm_dbd_free_get_jobs_msg(get_jobs_msg);
 
-	got_jobs_msg.job_count = 2;
-	jobs[0] = 1234;
-	jobs[1] = 5678;
-	got_jobs_msg.job_ids = jobs;
+	got_jobs_msg.job_count	= 2;
+	got_jobs_msg.job_info	= jobs;
+	jobs[0].block_id	= "block0";
+	jobs[0].job_id		= 1234;
+	jobs[0].name		= "name0";
+	jobs[0].nodes		= "nodes0";
+	jobs[0].part_name	= "part0";
+	jobs[1].block_id	= "block1";
+	jobs[1].job_id		= 5678;
+	jobs[1].name		= "name1";
+	jobs[1].nodes		= "nodes1";
+	jobs[1].part_name	= "part1";
 	*out_buffer = init_buf(1024);
 	pack16((uint16_t) DBD_GOT_JOBS, *out_buffer);
 	slurm_dbd_pack_got_jobs_msg(&got_jobs_msg, *out_buffer);

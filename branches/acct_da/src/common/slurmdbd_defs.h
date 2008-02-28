@@ -89,11 +89,30 @@ typedef struct dbd_cluster_procs_msg {
 typedef struct dbd_get_jobs_msg {
 	uint32_t job_count;	/* count of job ID filters */
 	uint32_t *job_ids;	/* array of job ID filters */
+	uint32_t *step_ids;	/* array of step ID filters */
+	uint32_t part_count;	/* count of partition name filters */
+	char **part_name;	/* partition name */
 } dbd_get_jobs_msg_t;
 
+typedef struct dbd_job_info {
+	char *   block_id;      /* Bluegene block id */
+	time_t   eligible_time;	/* time job becomes eligible to run */
+	time_t   end_time;	/* job termintation time */
+	uint32_t exit_code;	/* job exit code or signal */
+	uint32_t job_id;	/* job ID */
+	uint16_t job_state;	/* job state */
+	char *   name;		/* job name */
+	char *   nodes;		/* hosts allocated to the job */
+	char *   part_name;	/* job's partition */
+	uint32_t priority;	/* job priority */
+	time_t   start_time;	/* job start time */
+	time_t   submit_time;	/* job submit time */
+	uint32_t total_procs;	/* count of allocated processors */
+} dbd_job_info_t;
+	
 typedef struct dbd_got_jobs_msg {
 	uint32_t job_count;	/* count of job IDs */
-	uint32_t *job_ids;	/* array of job IDs */
+	dbd_job_info_t *job_info; /* array of job info */
 } dbd_got_jobs_msg_t;
 
 typedef struct dbd_init_msg {
