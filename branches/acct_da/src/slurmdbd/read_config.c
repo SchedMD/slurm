@@ -78,10 +78,14 @@ static void _clear_slurmdbd_conf(void)
 		xfree(slurmdbd_conf->auth_type);
 		xfree(slurmdbd_conf->dbd_addr);
 		xfree(slurmdbd_conf->dbd_host);
+		slurmdbd_conf->dbd_port = 0;
 		xfree(slurmdbd_conf->log_file);
 		xfree(slurmdbd_conf->pid_file);
 		xfree(slurmdbd_conf->slurm_user_name);
+		xfree(slurmdbd_conf->storage_host);
 		xfree(slurmdbd_conf->storage_password);
+		slurmdbd_conf->storage_port = 0;
+		xfree(slurmdbd_conf->storage_type);
 		xfree(slurmdbd_conf->storage_user);
 	}
 }
@@ -104,7 +108,10 @@ extern int read_slurmdbd_conf(void)
 		{"LogFile", S_P_STRING},
 		{"PidFile", S_P_STRING},
 		{"SlurmUser", S_P_STRING},
+		{"StorageHost", S_P_STRING},
 		{"StoragePassword", S_P_STRING},
+		{"StoragePort", S_P_UINT16},
+		{"StorageType", S_P_STRING},
 		{"StorageUser", S_P_STRING},
 		{NULL} };
 	s_p_hashtbl_t *tbl;
@@ -140,8 +147,13 @@ extern int read_slurmdbd_conf(void)
 		s_p_get_string(&slurmdbd_conf->log_file, "LogFile", tbl);
 		s_p_get_string(&slurmdbd_conf->pid_file, "PidFile", tbl);
 		s_p_get_string(&slurmdbd_conf->slurm_user_name, "SlurmUser", tbl);
+		s_p_get_string(&slurmdbd_conf->storage_host,
+				"StorageHost", tbl);
 		s_p_get_string(&slurmdbd_conf->storage_password,
 				"StoragePassword", tbl);
+		s_p_get_uint16(&slurmdbd_conf->storage_port, "StoragePort", tbl);
+		s_p_get_string(&slurmdbd_conf->storage_type,
+				"StorageType", tbl);
 		s_p_get_string(&slurmdbd_conf->storage_user,
 				"StorageUser", tbl);
 
@@ -191,7 +203,10 @@ extern void log_config(void)
 	debug2("PidFile           = %s", slurmdbd_conf->pid_file);
 	debug2("SlurmUser         = %s(%u)", 
 		slurmdbd_conf->slurm_user_name, slurmdbd_conf->slurm_user_id); 
+	debug2("StorageHost       = %s", slurmdbd_conf->storage_host);
 	debug2("StoragePassword   = %s", slurmdbd_conf->storage_password);
+	debug2("StoragePort       = %u", slurmdbd_conf->storage_port);
+	debug2("StorageType       = %s", slurmdbd_conf->storage_type);
 	debug2("StorageUser       = %s", slurmdbd_conf->storage_user);
 }
 
