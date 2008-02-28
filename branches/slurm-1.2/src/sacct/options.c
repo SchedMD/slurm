@@ -205,6 +205,10 @@ void _help_msg(void)
 	       "\n"
 	       "Options:\n"
 	       "\n"
+	       "-A, --Account\n"
+	       "    Equivalent to \"--fields=jobid,jobname,start,end,cpu,\n"
+	       "    vsize_short,status,exitcode\". This option has no effect\n"
+	       "    if --dump is specified.\n"
 	       "-a, --all\n"
 	       "    Display job accounting data for all users. By default, only\n"
 	       "    data for the current user is displayed for users other than\n"
@@ -277,6 +281,8 @@ void _help_msg(void)
 	       "-P --purge\n"
 	       "    Used in conjunction with --expire to remove invalid data\n"
 	       "    from the job accounting log.\n"
+	       "-r --raw\n"
+	       "    don't format data leave in raw format\n"
 	       "-s <state-list>, --state=<state-list>\n"
 	       "    Select jobs based on their current status: running (r),\n"
 	       "    completed (cd), failed (f), timeout (to), and node_fail (nf).\n"
@@ -317,6 +323,7 @@ void _init_params()
 	params.opt_long = 0;		/* --long */
 	params.opt_lowmem = 0;		/* --low_memory */
 	params.opt_purge = 0;		/* --purge */
+	params.opt_raw = 0;		/* --raw */
 	params.opt_total = 0;		/* --total */
 	params.opt_uid = -1;		/* --uid (-1=wildcard, 0=root) */
 	params.opt_verbose = 0;		/* --verbose */
@@ -575,6 +582,7 @@ void parse_command_line(int argc, char **argv)
 
 	static struct option long_options[] = {
 		{"all", 0,0, 'a'},
+		{"Account", 0,0, 'A'},
 		{"brief", 0, 0, 'b'},
 		{"duplicates", 0, &params.opt_dup, 1},
 		{"dump", 0, 0, 'd'},
@@ -594,6 +602,7 @@ void parse_command_line(int argc, char **argv)
 		{"noheader", 0, &params.opt_header, 0},
 		{"partition", 1, 0, 'p'},
 		{"purge", 0, 0, 'P'},
+		{"raw", 0, 0, 'r'},
 		{"state", 1, 0, 's'},
 		{"total", 0, 0,  't'},
 		{"uid", 1, 0, 'u'},
@@ -611,7 +620,7 @@ void parse_command_line(int argc, char **argv)
 	opterr = 1;		/* Let getopt report problems to the user */
 
 	while (1) {		/* now cycle through the command line */
-		c = getopt_long(argc, argv, "abde:F:f:g:hj:J:lOPp:s:StUu:Vv",
+		c = getopt_long(argc, argv, "aAbde:F:f:g:hj:J:lOPp:rs:StUu:Vv",
 				long_options, &optionIndex);
 		if (c == -1)
 			break;
@@ -619,6 +628,16 @@ void parse_command_line(int argc, char **argv)
 		case 'a':
 			params.opt_uid = -1;
 			break;
+		case 'A':
+			params.opt_field_list =
+				xrealloc(params.opt_field_list,
+					 (params.opt_field_list==NULL? 0 :
+					  sizeof(params.opt_field_list)) +
+					 sizeof(ACCOUNT_FIELDS)+1);
+			strcat(params.opt_field_list, ACCOUNT_FIELDS);
+			strcat(params.opt_field_list, ",");
+			break;
+			
 		case 'b':
 			params.opt_field_list =
 				xrealloc(params.opt_field_list,
@@ -762,7 +781,9 @@ void parse_command_line(int argc, char **argv)
 			strcat(params.opt_partition_list, optarg);
 			strcat(params.opt_partition_list, ",");
 			break;
-
+		case 'r':
+			params.opt_raw = 1;
+			break;
 		case 's':
 			params.opt_state_list =
 				xrealloc(params.opt_state_list,
@@ -774,12 +795,15 @@ void parse_command_line(int argc, char **argv)
 			break;
 
 		case 'S':
-			if(!params.opt_field_list) {
-				params.opt_field_list = 
-					xmalloc(sizeof(STAT_FIELDS)+1);
-				strcat(params.opt_field_list, STAT_FIELDS);
-				strcat(params.opt_field_list, ",");
-			}
+			params.opt_field_list =
+				xrealloc(params.opt_field_list,
+					 (params.opt_field_list==NULL? 0 :
+					  strlen(params.opt_field_list)) +
+					 sizeof(STAT_FIELDS)+1);
+			
+			strcat(params.opt_field_list, STAT_FIELDS);
+			strcat(params.opt_field_list, ",");
+			
 			params.opt_stat = 1;
 			break;
 
@@ -859,6 +883,7 @@ void parse_command_line(int argc, char **argv)
 			"\topt_lowmem=%d\n"
 			"\topt_partition_list=%s\n"
 			"\topt_purge=%d\n"
+			"\topt_raw=%d\n"
 			"\topt_state_list=%s\n"
 			"\topt_total=%d\n"
 			"\topt_uid=%d\n"
@@ -877,6 +902,7 @@ void parse_command_line(int argc, char **argv)
 			params.opt_lowmem,
 			params.opt_partition_list,
 			params.opt_purge,
+			params.opt_raw,
 			params.opt_state_list,
 			params.opt_total,
 			params.opt_uid,

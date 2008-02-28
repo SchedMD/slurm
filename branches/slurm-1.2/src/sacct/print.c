@@ -897,12 +897,20 @@ void print_start(type_t type, void *object)
 		printf("%-14s", "--------------");
 		break;
 	case JOB:
+		if(params.opt_raw) {
+			printf("%14d", (int)job->header.timestamp);
+			break;
+		}
 		slurm_make_time_str(&job->header.timestamp, 
 				    time_str, 
 				    sizeof(time_str));
 		printf("%-14s", time_str);
 		break;
 	case JOBSTEP:
+		if(params.opt_raw) {
+			printf("%14d", (int)step->header.timestamp);
+			break;
+		}
 		slurm_make_time_str(&step->header.timestamp, 
 				    time_str, 
 				    sizeof(time_str));
@@ -925,12 +933,20 @@ void print_end(type_t type, void *object)
 		printf("%-14s", "--------------");
 		break;
 	case JOB:
+		if(params.opt_raw) {
+			printf("%14d", (int)job->end);
+			break;
+		}
 		slurm_make_time_str(&job->end, 
 				    time_str, 
 				    sizeof(time_str));
 		printf("%-14s", time_str);
 		break;
 	case JOBSTEP:
+		if(params.opt_raw) {
+			printf("%14d", (int)step->end);
+			break;
+		}
 		slurm_make_time_str(&step->end, 
 				    time_str, 
 				    sizeof(time_str));
@@ -1097,6 +1113,46 @@ void print_vsize(type_t type, void *object)
 			 sacct.max_vsize_id.taskid, 
 			 buf2);
 		printf("%-50s", outbuf);
+		break;
+	} 
+}
+
+void print_vsize_short(type_t type, void *object)
+{ 
+	job_rec_t *job = (job_rec_t *)object;
+	step_rec_t *step = (step_rec_t *)object;
+	char outbuf[FORMAT_STRING_SIZE];
+	char buf1[FORMAT_STRING_SIZE];
+	sacct_t sacct;
+
+	switch(type) {
+	case HEADLINE:
+		printf("%10s", "MaxVSIZE");
+		break;
+	case UNDERSCORE:
+		printf("%10s", "----------");
+		break;
+	case JOB:
+		sacct = job->sacct;
+		if(params.opt_raw) {
+			printf("%10d", sacct.max_vsize);
+			break;
+		}
+		convert_num_unit((float)sacct.max_vsize, 
+				 buf1, sizeof(buf1),UNIT_NONE);
+		snprintf(outbuf, FORMAT_STRING_SIZE, "%s", buf1);
+		printf("%10s", outbuf);
+		break;
+	case JOBSTEP:
+		sacct = step->sacct;
+		if(params.opt_raw) {
+			printf("%10d", sacct.max_vsize);
+			break;
+		}
+		convert_num_unit((float)sacct.max_vsize, 
+				 buf1, sizeof(buf1),UNIT_NONE);
+		snprintf(outbuf, FORMAT_STRING_SIZE, "%s", buf1);
+		printf("%10s", outbuf);
 		break;
 	} 
 }
