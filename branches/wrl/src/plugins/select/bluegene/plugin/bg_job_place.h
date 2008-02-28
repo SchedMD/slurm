@@ -57,4 +57,6 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *bitmap,
 		      uint32_t min_nodes, uint32_t max_nodes,
 		      uint32_t req_nodes, bool test_only);
 
+extern int test_job_list(List req_list);
+
 #endif /* _BG_JOB_PLACE_H_ */
