@@ -229,7 +229,10 @@ mgr_launch_tasks_setup(launch_tasks_request_msg_t *msg, slurm_addr *cli,
 static void
 _batch_finish(slurmd_job_t *job, int rc)
 {
-	int status = job->task[0]->estatus;
+	int i;
+	for (i = 0; i < job->ntasks; i++)
+		step_complete.step_rc = MAX(step_complete.step_rc,
+					    WEXITSTATUS(job->task[i]->estatus));
 
 	if (job->argv[0] && (unlink(job->argv[0]) < 0))
 		error("unlink(%s): %m", job->argv[0]);
@@ -238,11 +241,11 @@ _batch_finish(slurmd_job_t *job, int rc)
 	xfree(job->batchdir);
 	if ((job->stepid == NO_VAL) || (job->stepid == SLURM_BATCH_SCRIPT)) {
 		verbose("job %u completed with slurm_rc = %d, job_rc = %d",
-			job->jobid, rc, status);
-		_send_complete_batch_script_msg(job, rc, status);
+			job->jobid, rc, step_complete.step_rc);
+		_send_complete_batch_script_msg(job, rc, step_complete.step_rc);
 	} else {
 		verbose("job %u.%u completed with slurm_rc = %d, job_rc = %d",
-			job->jobid, job->stepid, rc, status);
+			job->jobid, job->stepid, rc, step_complete.step_rc);
 		_send_step_complete_msgs(job);
 	}
 }
@@ -506,6 +509,7 @@ _one_step_complete_msg(slurmd_job_t *job, int first, int last)
 	msg.range_first = first;
 	msg.range_last = last;
 	msg.step_rc = step_complete.step_rc;
+	info("step rc = %d", msg.step_rc);
 	msg.jobacct = jobacct_g_alloc(NULL);
 	/************* acct stuff ********************/
 	if(!acct_sent) {
