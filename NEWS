@@ -5,6 +5,7 @@ documents those changes that are of interest to users and admins.
 =========================
  -- Bug fix for setting exit code in accounting for batch script.
  -- Add salloc option, --no-shell (for LSF).
+ -- Added new options for sacct output
 
 * Changes in SLURM 1.2.24
 =========================

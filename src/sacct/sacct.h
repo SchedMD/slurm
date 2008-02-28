@@ -66,6 +66,7 @@
  * which have no logical jobsteps. */
 #define BATCH_JOB_TIMESTAMP 0
 
+#define ACCOUNT_FIELDS "jobid,jobname,start,end,cpu,vsize_short,status,exitcode"
 #define BRIEF_FIELDS "jobid,status,exitcode"
 #define DEFAULT_FIELDS "jobid,jobname,partition,ncpus,status,exitcode"
 #define STAT_FIELDS "jobid,vsize,rss,pages,cputime,ntasks,status"
@@ -262,6 +263,7 @@ typedef struct sacct_parameters {
 	int opt_long;		/* --long */
 	int opt_lowmem;		/* --low_memory */
 	int opt_purge;		/* --purge */
+	int opt_raw;		/* --raw */
 	int opt_total;		/* --total */
 	int opt_uid;		/* --uid (-1=wildcard, 0=root) */
 	int opt_verbose;	/* --verbose */
@@ -334,6 +336,7 @@ void print_uid(type_t type, void *object);
 void print_user(type_t type, void *object);
 void print_usercpu(type_t type, void *object);
 void print_vsize(type_t type, void *object);
+void print_vsize_short(type_t type, void *object);
 void print_cputime(type_t type, void *object);
 void print_account(type_t type, void *object);
 

@@ -195,6 +195,7 @@ fields_t fields[] = {{"account", print_account},
 		     {"user", print_user}, 
 		     {"usercpu", print_usercpu}, 
 		     {"vsize", print_vsize}, 
+		     {"vsize_short", print_vsize_short}, 
 		     {NULL, NULL}};
 
 long input_error = 0;		/* Muddle through bad data, but complain! */
