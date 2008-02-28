@@ -1252,7 +1252,7 @@ extern int step_partial_comp(step_complete_msg_t *req, int *rem,
 	if (step_ptr->batch_step) {
 		if(rem)
 			*rem = 0;
-		step_ptr->exit_code = 0;
+		step_ptr->exit_code = req->step_rc;
 		if (max_rc)
 			*max_rc = step_ptr->exit_code;
 		/* we don't want to delete the step record here since
