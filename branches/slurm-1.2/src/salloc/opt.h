@@ -1,8 +1,8 @@
 /*****************************************************************************\
  *  opt.h - definitions for salloc option processing
- *  $Id$
  *****************************************************************************
- *  Copyright (C) 2002-2006 The Regents of the University of California.
+ *  Copyright (C) 2002-2007 The Regents of the University of California.
+ *  Copyright (C) 2008 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Mark Grondona <grondona1@llnl.gov>,
  *    Christopher J. Morrone <morrone2@llnl.gov>, et. al.
@@ -113,6 +113,7 @@ typedef struct salloc_options {
 	uint16_t mail_type;	/* --mail-type			*/
 	char *mail_user;	/* --mail-user			*/
 	bell_flag_t bell;       /* --bell, --no-bell            */
+	bool no_shell;		/* --no-shell                   */
 } opt_t;
 
 extern opt_t opt;

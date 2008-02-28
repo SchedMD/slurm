@@ -1,10 +1,9 @@
 /*****************************************************************************\
  *  salloc.c - Request a SLURM job allocation and
  *             launch a user-specified command.
- *
- *  $Id$
  *****************************************************************************
- *  Copyright (C) 2006 The Regents of the University of California.
+ *  Copyright (C) 2006-2007 The Regents of the University of California.
+ *  Copyright (C) 2008 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Christopher J. Morrone <morrone2@llnl.gov>
  *  UCRL-CODE-226842.
@@ -163,6 +162,8 @@ int main(int argc, char *argv[])
 		&& ((after - before) > DEFAULT_BELL_DELAY))) {
 		ring_terminal_bell();
 	}
+	if (opt.no_shell)
+		exit(0);
 	if (allocation_interrupted) {
 		/* salloc process received a signal after
 		 * slurm_allocate_resources_blocking returned with the
