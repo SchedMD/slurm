@@ -53,7 +53,7 @@ const char *_jobstep_format =
 "%d "
 "%u "	/* stepid */
 "%d "	/* completion status */
-"%d "	/* completion code */
+"%u "	/* completion code */
 "%u "	/* nprocs */
 "%u "	/* number of cpus */
 "%u "	/* elapsed seconds */
@@ -96,7 +96,7 @@ const char *_jobstep_format =
 "%u "	/* max pages node */
 "%u "	/* min cpu node */
 "%s "   /* account */
-"%d";   /* requester user id */
+"%u";   /* requester user id */
 
 /*
  * Print the record to the log file.
@@ -255,7 +255,7 @@ extern int common_job_complete_slurmctld(struct job_record *job_ptr)
 	}
 	/* leave the requid as a %d since we want to see if it is -1
 	   in sacct */
-	snprintf(buf, BUFFER_SIZE, "%d %u %d %d",
+	snprintf(buf, BUFFER_SIZE, "%d %u %d %u",
 		 JOB_TERMINATED,
 		 (int) (job_ptr->end_time - job_ptr->start_time),
 		 job_ptr->job_state & (~JOB_COMPLETING),
