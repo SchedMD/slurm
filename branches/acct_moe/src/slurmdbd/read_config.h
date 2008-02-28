@@ -70,7 +70,10 @@ typedef struct slurm_dbd_conf {
 	char *		pid_file;		/* where to store current PID	*/
 	uint32_t	slurm_user_id;		/* uid of slurm_user_name	*/
 	char *		slurm_user_name;	/* user that slurmcdtld runs as	*/
+	char *		storage_host;		/* host where DB is running	*/
 	char *		storage_password;	/* password for DB write	*/
+	uint16_t	storage_port;		/* port DB is listening to	*/
+	char *		storage_type;		/* DB to be used for storage	*/
 	char *		storage_user;		/* user authorized to write DB	*/
 } slurm_dbd_conf_t;
 
