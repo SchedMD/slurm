@@ -1,6 +1,11 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins.
 
+* Changes in SLURM 1.2.25
+=========================
+ -- Bug fix for setting exit code in accounting for batch script.
+ -- Add salloc option, --no-shell (for LSF).
+
 * Changes in SLURM 1.2.24
 =========================
  -- In sched/wiki and sched/wiki2, support non-zero UPDATE_TIME specification
@@ -11,7 +16,6 @@ documents those changes that are of interest to users and admins.
     bridge log rotate
  -- Spread out in time the EPILOG_COMPLETE messages from slurmd to slurmctld
     to avoid message congestions and retransmission.
- -- Bug fix for setting rc for batch script.
 
 * Changes in SLURM 1.2.23
 =========================
