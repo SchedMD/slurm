@@ -148,18 +148,30 @@ extern int jobacct_storage_p_job_start(struct job_record *job_ptr)
 {
 	slurmdbd_msg_t msg;
 	dbd_job_start_msg_t req;
+	char *block_id = NULL;
 
-	req.account     = job_ptr->account;
-	req.job_id      = job_ptr->job_id;
-	req.job_state   = job_ptr->job_state & (~JOB_COMPLETING);
-	req.name        = job_ptr->name;
-	req.nodes       = job_ptr->nodes;
-	req.priority    = job_ptr->priority;
-	req.start_time  = job_ptr->start_time;
-	req.total_procs = job_ptr->total_procs;
+	req.assoc_id      = 0;	/* FIXME */
+#ifdef HAVE_BG
+	select_g_get_jobinfo(job_ptr->select_jobinfo, 
+			     SELECT_DATA_BLOCK_ID, 
+			     &block_id);
+#endif
+	req.block_id      = block_id;
+	xfree(block_id);
+	if (job_ptr->details)
+		req.eligible_time = job_ptr->details->begin_time;
+	req.job_id        = job_ptr->job_id;
+	req.job_state     = job_ptr->job_state & (~JOB_COMPLETING);
+	req.name          = job_ptr->name;
+	req.nodes         = job_ptr->nodes;
+	req.priority      = job_ptr->priority;
+	req.start_time    = job_ptr->start_time;
+	if (job_ptr->details)
+		req.submit_time   = job_ptr->details->submit_time;
+	req.total_procs   = job_ptr->total_procs;
 
-	msg.msg_type    = DBD_JOB_START;
-	msg.data        = &req;
+	msg.msg_type      = DBD_JOB_START;
+	msg.data          = &req;
 
 	if (slurm_send_slurmdbd_msg(&msg) < 0)
 		return SLURM_ERROR;
@@ -175,7 +187,7 @@ extern int jobacct_storage_p_job_complete(struct job_record *job_ptr)
 	slurmdbd_msg_t msg;
 	dbd_job_comp_msg_t req;
 
-	req.account     = job_ptr->account;
+	req.assoc_id    = 0;	/* FIXME */
 	req.end_time    = job_ptr->end_time;
 	req.exit_code   = job_ptr->exit_code;
 	req.job_id      = job_ptr->job_id;
@@ -232,6 +244,7 @@ extern int jobacct_storage_p_step_start(struct step_record *step_ptr)
 	}
 #endif
 
+	req.assoc_id    = 0;	/* FIXME */
 	req.job_id      = step_ptr->job_ptr->job_id;
 	req.name        = step_ptr->name;
 	req.nodes       = node_list;
@@ -286,6 +299,8 @@ extern int jobacct_storage_p_step_complete(struct step_record *step_ptr)
 	}
 #endif
 
+	req.assoc_id    = 0;	/* FIXME */
+	req.end_time    = time(NULL);	/* called at step completion */
 	req.job_id      = step_ptr->job_ptr->job_id;
 	req.name        = step_ptr->name;
 	req.nodes       = node_list;
@@ -311,6 +326,7 @@ extern int jobacct_storage_p_suspend(struct job_record *job_ptr)
 	slurmdbd_msg_t msg;
 	dbd_job_suspend_msg_t req;
 
+	req.assoc_id     = 0;	/* FIXME */
 	req.job_id       = job_ptr->job_id;
 	req.job_state    = job_ptr->job_state & (~JOB_COMPLETING);
 	req.suspend_time = job_ptr->suspend_time;
