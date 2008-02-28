@@ -11,6 +11,7 @@ documents those changes that are of interest to users and admins.
     bridge log rotate
  -- Spread out in time the EPILOG_COMPLETE messages from slurmd to slurmctld
     to avoid message congestions and retransmission.
+ -- Bug fix for setting rc for batch script.
 
 * Changes in SLURM 1.2.23
 =========================
