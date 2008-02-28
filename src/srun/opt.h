@@ -156,7 +156,7 @@ typedef struct srun_options {
 	bool labelio;		/* --label-output, -l		*/
 	bool unbuffered;        /* --unbuffered,   -u           */
 	bool allocate;		/* --allocate, 	   -A		*/
-	bool noshell;		/* --noshell                    */
+	bool noshell;		/* --no-shell                   */
 	bool overcommit;	/* --overcommit,   -O		*/
 	bool batch;		/* --batch,   -b		*/
 	bool no_kill;		/* --no-kill, -k		*/
