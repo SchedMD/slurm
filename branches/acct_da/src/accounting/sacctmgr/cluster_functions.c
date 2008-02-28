@@ -190,6 +190,7 @@ static void _update_existing(acct_cluster_cond_t *cluster_cond,
 				assoc->max_cpu_seconds_per_job = 
 					new_assoc->max_cpu_seconds_per_job;	
 		}
+		list_iterator_destroy(itr);
 	}
 }
 	

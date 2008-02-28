@@ -39,7 +39,8 @@
 #include "sacctmgr.h"
 
 static int _set_cond(int *start, int argc, char *argv[],
-		     acct_account_cond_t *acct_cond)
+		     acct_account_cond_t *acct_cond,
+		     acct_association_cond_t *assoc_cond)
 {
 	int i;
 	int set = 0;
@@ -89,7 +90,8 @@ static int _set_cond(int *start, int argc, char *argv[],
 }
 
 static int _set_rec(int *start, int argc, char *argv[],
-		    acct_account_rec_t *acct)
+		    acct_account_rec_t *acct,
+		    acct_association_rec_t *assoc)
 {
 	int i;
 	int set = 0;
@@ -165,6 +167,71 @@ static void _print_cond(acct_account_cond_t *acct_cond)
 		printf("  Expedite     = %s\n", 
 		       acct_expedite_str(acct_cond->expedite));
 }
+
+/* static void _update_existing(acct_account_cond_t *acct_cond, */
+/* 			     acct_account_rec_t *new_acct, */
+/* 			     acct_association_rec_t *new_assoc) */
+/* { */
+/* 	ListIterator itr = NULL; */
+/* 	char *tmp_char = NULL; */
+/* 	acct_account_rec_t *acct = NULL; */
+/* 	acct_association_rec_t *assoc = NULL; */
+
+/* 	if(!acct_cond) { */
+/* 		error("no acct_account_cond_t * given"); */
+/* 		return; */
+/* 	} */
+
+/* 	if(acct_cond->acct_list */
+/* 	   && list_count(acct_cond->acct_list)) { */
+/* 		itr = list_iterator_create(acct_cond->acct_list); */
+/* 		while((tmp_char = list_next(itr))) { */
+/* 			if(!(acct = sacctmgr_find_account(tmp_char))) { */
+/* 				printf(" Acct '%s' does not exist, " */
+/* 				       "not removing.\n", tmp_char); */
+/* 				list_remove(itr); */
+/* 				continue; */
+/* 			} */
+
+/* 			if(!new_acct) { */
+/* 				sacctmgr_remove_from_list(sacctmgr_account_list, */
+/* 							  acct); */
+/* 			} else if(new_acct->interface_node) { */
+/* 				xfree(acct->interface_node); */
+/* 				acct->interface_node = */
+/* 					xstrdup(new_acct->interface_node); */
+/* 			} */
+
+/* 			if(!(assoc = sacctmgr_find_association( */
+/* 				     NULL, "template_acct", */
+/* 				     tmp_char, NULL))) { */
+/* 				printf(" Can't find template account for '%s' " */
+/* 				       "something is messed up.\n", tmp_char); */
+/* 				continue; */
+/* 			} */
+/* 			if(!new_assoc) { */
+/* 				sacctmgr_remove_from_list( */
+/* 					sacctmgr_association_list, assoc); */
+/* 				continue; */
+/* 			} */
+
+/* 			if(new_assoc->fairshare) */
+/* 				assoc->fairshare = new_assoc->fairshare; */
+/* 			if(new_assoc->max_jobs) */
+/* 				assoc->max_jobs = new_assoc->max_jobs; */
+/* 			if(new_assoc->max_nodes_per_job) */
+/* 				assoc->max_nodes_per_job = */
+/* 					new_assoc->max_nodes_per_job; */
+/* 			if(new_assoc->max_wall_duration_per_job) */
+/* 				assoc->max_wall_duration_per_job =  */
+/* 					new_assoc->max_wall_duration_per_job; */
+/* 			if(new_assoc->max_cpu_seconds_per_job) */
+/* 				assoc->max_cpu_seconds_per_job =  */
+/* 					new_assoc->max_cpu_seconds_per_job;	 */
+/* 		} */
+/* 		list_iterator_destroy(itr); */
+/* 	} */
+/* } */
 
 static void _print_rec(acct_account_rec_t *acct)
 {
@@ -485,24 +552,30 @@ extern int sacctmgr_modify_account(int argc, char *argv[])
 	acct_account_cond_t *acct_cond = 
 		xmalloc(sizeof(acct_account_cond_t));
 	acct_account_rec_t *acct = xmalloc(sizeof(acct_account_rec_t));
+	acct_association_rec_t *assoc = xmalloc(sizeof(acct_association_rec_t));
+	acct_association_cond_t *assoc_cond =
+		xmalloc(sizeof(acct_association_cond_t));
+
 	int i=0;
 	int cond_set = 0, rec_set = 0;
 
 	acct_cond->acct_list = list_create(destroy_char);
 	acct_cond->description_list = list_create(destroy_char);
 	acct_cond->organization_list = list_create(destroy_char);
+	assoc_cond->cluster_list = list_create(destroy_char);
+	assoc_cond->acct_list = list_create(destroy_char);
 	
 	for (i=0; i<argc; i++) {
 		if (strncasecmp (argv[i], "Where", 5) == 0) {
 			i++;
-			if(_set_cond(&i, argc, argv, acct_cond))
+			if(_set_cond(&i, argc, argv, acct_cond, assoc_cond))
 				cond_set = 1;
 		} else if (strncasecmp (argv[i], "Set", 3) == 0) {
 			i++;
-			if(_set_rec(&i, argc, argv, acct))
+			if(_set_rec(&i, argc, argv, acct, assoc))
 				rec_set = 1;
 		} else {
-			if(_set_cond(&i, argc, argv, acct_cond))
+			if(_set_cond(&i, argc, argv, acct_cond, assoc_cond))
 				cond_set = 1;
 		}
 	}
@@ -545,13 +618,16 @@ extern int sacctmgr_delete_account(int argc, char *argv[])
 	int rc = SLURM_SUCCESS;
 	acct_account_cond_t *acct_cond =
 		xmalloc(sizeof(acct_account_cond_t));
+	acct_association_cond_t *assoc_cond =
+		xmalloc(sizeof(acct_association_cond_t));
 	int i=0;
 
 	acct_cond->acct_list = list_create(destroy_char);
 	acct_cond->description_list = list_create(destroy_char);
 	acct_cond->organization_list = list_create(destroy_char);
+	assoc_cond->acct_list = list_create(destroy_char);
 	
-	if(!_set_cond(&i, argc, argv, acct_cond)) {
+	if(!_set_cond(&i, argc, argv, acct_cond, assoc_cond)) {
 		printf(" No conditions given to remove, not executing.\n");
 		return SLURM_ERROR;
 	}
