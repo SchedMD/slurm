@@ -969,7 +969,6 @@ gs_job_scan(void)
 extern int
 gs_job_fini(struct job_record *job_ptr)
 {
-	int i;
 	struct gs_part *p_ptr;
 	
 	debug3("sched/gang: entering gs_job_fini");
@@ -981,7 +980,7 @@ gs_job_fini(struct job_record *job_ptr)
 		return SLURM_SUCCESS;
 	}
 
-	/*remove job from the partition */
+	/* remove job from the partition */
 	_remove_job_from_part(job_ptr->job_id, p_ptr);
 	_update_active_row(p_ptr);
 	pthread_mutex_unlock(&data_mutex);
