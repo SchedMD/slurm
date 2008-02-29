@@ -39,7 +39,7 @@
 
 const char		plugin_name[]	= "Gang Scheduler plugin";
 const char		plugin_type[]	= "sched/gang";
-const uint32_t		plugin_version	= 100;
+const uint32_t		plugin_version	= 101;
 
 /* A plugin-global errno. */
 static int plugin_errno = SLURM_SUCCESS;
@@ -88,6 +88,17 @@ extern int slurm_sched_plugin_newalloc( struct job_record *job_ptr )
 		return SLURM_ERROR;
 	debug3("sched/gang: slurm_sched_newalloc called");
 	return gs_job_start(job_ptr);
+}
+
+/***************************************************************************/
+/*  TAG(                   slurm_sched_plugin_freealloc                  ) */
+/***************************************************************************/
+extern int slurm_sched_plugin_freealloc( struct job_record *job_ptr )
+{
+	if (!job_ptr)
+		return SLURM_ERROR;
+	debug3("sched/gang: slurm_sched_freealloc called");
+	return gs_job_fini(job_ptr);
 }
 
 

@@ -966,6 +966,30 @@ gs_job_scan(void)
 	return SLURM_SUCCESS;
 }
 
+extern int
+gs_job_fini(struct job_record *job_ptr)
+{
+	int i;
+	struct gs_part *p_ptr;
+	
+	debug3("sched/gang: entering gs_job_fini");
+	pthread_mutex_lock(&data_mutex);
+	p_ptr = _find_gs_part(job_ptr->partition);
+	if (!p_ptr) {
+		pthread_mutex_unlock(&data_mutex);
+		debug3("sched/gang: leaving gs_job_fini");
+		return SLURM_SUCCESS;
+	}
+
+	/*remove job from the partition */
+	_remove_job_from_part(job_ptr->job_id, p_ptr);
+	_update_active_row(p_ptr);
+	pthread_mutex_unlock(&data_mutex);
+	debug3("sched/gang: leaving gs_job_fini");
+	
+	return SLURM_SUCCESS;
+}
+
 /* rebuild from scratch */
 /* A reconfigure can affect this plugin in these ways:
  * - partitions can be added or removed
