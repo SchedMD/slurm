@@ -6,6 +6,8 @@ documents those changes that are of interest to users and admins.
  -- Bug fix for setting exit code in accounting for batch script.
  -- Add salloc option, --no-shell (for LSF).
  -- Added new options for sacct output
+ -- mvapich: Ensure MPIRUN_ID is unique for all job steps within a job.
+    (Fixes crashes when running multiple job steps within a job on one node)
 
 * Changes in SLURM 1.2.24
 =========================
