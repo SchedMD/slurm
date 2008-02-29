@@ -161,6 +161,8 @@ static char *	_will_run_test(uint32_t *jobid, time_t *start_time,
 		fatal("list_create: malloc failure");
 
 	for (i=0; i<job_cnt; i++) {
+		debug2("wiki2: will_run job_id=%u start_time=%u node_list=%s",
+			jobid[i], start_time[i], node_list[i]);
 		job_ptr = find_job_record(jobid[i]);
 		if (job_ptr == NULL) {
 			*err_code = -700;
@@ -254,7 +256,7 @@ static char *	_will_run_test(uint32_t *jobid, time_t *start_time,
 		select_will_run->max_nodes   = max_nodes;
 		select_will_run->min_nodes   = min_nodes;
 		select_will_run->req_nodes   = req_nodes;
-		list_append(select_list, select_will_run); 
+		list_push(select_list, select_will_run); 
 	}
 	FREE_NULL_BITMAP(avail_bitmap);
 	if (i < job_cnt) {	/* error logged above */
