@@ -146,6 +146,8 @@ typedef struct srun_options {
 	bool hold;		/* --hold, -H			*/
 	bool labelio;		/* --label-output, -l		*/
 	bool unbuffered;        /* --unbuffered,   -u           */
+	bool allocate;		/* --allocate, 	   -A		*/
+	bool noshell;		/* --no-shell                   */
 	bool overcommit;	/* --overcommit,   -O		*/
 	bool no_kill;		/* --no-kill, -k		*/
 	bool kill_bad_exit;	/* --kill-on-bad-exit, -K	*/

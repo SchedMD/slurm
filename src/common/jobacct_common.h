@@ -96,6 +96,7 @@ typedef struct {
 	int opt_help;		/* --help */
 	int opt_long;		/* --long */
 	int opt_lowmem;		/* --low_memory */
+	int opt_raw;		/* --raw */
 	int opt_purge;		/* --purge */
 	int opt_total;		/* --total */
 	int opt_uid;		/* --uid (-1=wildcard, 0=root) */

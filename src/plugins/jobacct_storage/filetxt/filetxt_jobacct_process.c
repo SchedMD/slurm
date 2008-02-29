@@ -680,12 +680,12 @@ static void _process_step(List job_list, char *f[], int lc,
 	
 got_step:
 	
+	if ( job->exitcode == 0 )
+		job->exitcode = step->exitcode;
 		
 	if (job->job_terminated_seen == 0) {	/* If the job is still running,
 						   this is the most recent
 						   status */
-		if ( job->exitcode == 0 )
-			job->exitcode = step->exitcode;
 		job->status = JOB_RUNNING;
 		job->elapsed = step->header.timestamp - job->header.timestamp;
 	}

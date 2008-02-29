@@ -1078,6 +1078,10 @@ void print_start(type_t type, void *object)
 		printf("%-19s", "--------------------");
 		break;
 	case JOB:
+		if(params.opt_raw) {
+			printf("%19d", (int)job->header.timestamp);
+			break;
+		}
 		slurm_make_time_str(&job->header.timestamp, 
 				    time_str, 
 				    sizeof(time_str));
@@ -1087,6 +1091,10 @@ void print_start(type_t type, void *object)
 		printf("%-19s", jobcomp->start_time);
 		break;
 	case JOBSTEP:
+		if(params.opt_raw) {
+			printf("%19d", (int)step->header.timestamp);
+			break;
+		}
 		slurm_make_time_str(&step->header.timestamp, 
 				    time_str, 
 				    sizeof(time_str));
@@ -1133,6 +1141,10 @@ void print_end(type_t type, void *object)
 		printf("%-19s", "--------------------");
 		break;
 	case JOB:
+		if(params.opt_raw) {
+			printf("%19d", (int)job->end);
+			break;
+		}
 		slurm_make_time_str(&job->end, 
 				    time_str, 
 				    sizeof(time_str));
@@ -1142,6 +1154,10 @@ void print_end(type_t type, void *object)
 		printf("%-19s", jobcomp->end_time);
 		break;
 	case JOBSTEP:
+		if(params.opt_raw) {
+			printf("%19d", (int)step->end);
+			break;
+		}
 		slurm_make_time_str(&step->end, 
 				    time_str, 
 				    sizeof(time_str));
@@ -1330,6 +1346,49 @@ void print_vsize(type_t type, void *object)
 		break;
 	default:
 		printf("%-34s", "n/a");
+		break;
+	} 
+}
+
+void print_vsize_short(type_t type, void *object)
+{ 
+	jobacct_job_rec_t *job = (jobacct_job_rec_t *)object;
+	jobacct_step_rec_t *step = (jobacct_step_rec_t *)object;
+	char outbuf[FORMAT_STRING_SIZE];
+	char buf1[FORMAT_STRING_SIZE];
+	sacct_t sacct;
+	
+	switch(type) {
+	case HEADLINE:
+		printf("%-10s", "MaxVSIZE");
+		break;
+	case UNDERSCORE:
+		printf("%-10s", "----------");
+               break;
+	case JOB:
+		sacct = job->sacct;
+		if(params.opt_raw) {
+			printf("%-10d", sacct.max_vsize);
+			break;
+		}
+		convert_num_unit((float)sacct.max_vsize, 
+				 buf1, sizeof(buf1),UNIT_NONE);
+		snprintf(outbuf, FORMAT_STRING_SIZE, "%s", buf1);
+		printf("%-10s", outbuf);
+		break;
+	case JOBSTEP:
+		sacct = step->sacct;
+		if(params.opt_raw) {
+			printf("%-10d", sacct.max_vsize);
+			break;
+		}
+		convert_num_unit((float)sacct.max_vsize, 
+				 buf1, sizeof(buf1),UNIT_NONE);
+		snprintf(outbuf, FORMAT_STRING_SIZE, "%s", buf1);
+		printf("%-10s", outbuf);
+		break;
+	default:
+		printf("%-10s", "n/a");
 		break;
 	} 
 }

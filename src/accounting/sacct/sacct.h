@@ -63,6 +63,7 @@
 
 #define ERROR 2
 
+#define ACCOUNT_FIELDS "jobid,jobname,start,end,cpu,vsize_short,status,exitcode"
 #define BRIEF_FIELDS "jobid,status,exitcode"
 #define BRIEF_COMP_FIELDS "jobid,uid,status"
 #define DEFAULT_FIELDS "jobid,jobname,partition,ncpus,status,exitcode"
@@ -155,6 +156,7 @@ void print_uid(type_t type, void *object);
 void print_user(type_t type, void *object);
 void print_usercpu(type_t type, void *object);
 void print_vsize(type_t type, void *object);
+void print_vsize_short(type_t type, void *object);
 void print_cputime(type_t type, void *object);
 void print_account(type_t type, void *object);
 

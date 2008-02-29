@@ -577,14 +577,16 @@ extern status_t bridge_destroy_block(pm_partition_id_t pid)
 extern int bridge_set_log_params(char *api_file_name, unsigned int level)
 {
 	static FILE *fp = NULL;
+        FILE *fp2 = NULL;
 	int rc = SLURM_SUCCESS;
 
 	if(!bridge_init())
 		return SLURM_ERROR;
 	
 	slurm_mutex_lock(&api_file_mutex);
-	if(fp)
-		fclose(fp);
+	if(fp) 
+		fp2 = fp;
+	
 	fp = fopen(api_file_name, "a");
 	
 	if (fp == NULL) { 
@@ -596,6 +598,8 @@ extern int bridge_set_log_params(char *api_file_name, unsigned int level)
 
 	
 	(*(bridge_api.set_log_params))(fp, level);
+	if(fp2)
+		fclose(fp2);
 end_it:
 	slurm_mutex_unlock(&api_file_mutex);
 	return rc;
