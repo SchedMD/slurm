@@ -404,7 +404,7 @@ static bg_record_t *_find_matching_block(List block_list,
 			      bg_record->job_running);
 			continue;
 		}
-		
+
 		/* Check processor count */
 		proc_cnt = bg_record->bp_count * bg_record->cpus_per_bp;
 		debug3("asking for %u-%u looking at %d", 
@@ -990,6 +990,10 @@ static int _find_best_block_match(List block_list,
 					continue;
 				}
 				rc = SLURM_SUCCESS;
+				/* outside of the job_test_list this
+				 * gets destroyed later, so don't worry
+				 * about it now 
+				 */
 				(*found_bg_record) = list_pop(new_blocks);
 				if(bg_record) {
 					(*found_bg_record)->job_ptr 
@@ -1013,10 +1017,8 @@ static int _find_best_block_match(List block_list,
 //					print_bg_record(bg_record);
 						}
 					}
-				} else {
-					list_append(block_list,
-						    (*found_bg_record));
-				}
+				} 
+					
 				list_destroy(new_blocks);
 				break;
 			}
@@ -1221,9 +1223,10 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 extern int test_job_list(List req_list)
 {
 	bg_record_t* bg_record = NULL;
+	bg_record_t* new_record = NULL;
 	char buf[100];
-	int i, rc = SLURM_SUCCESS;
-	uint16_t tmp16 = (uint16_t)NO_VAL;
+	int rc = SLURM_SUCCESS;
+//	uint16_t tmp16 = (uint16_t)NO_VAL;
 	List block_list = NULL;
 	int block_list_count = 0;
 	int blocks_added = 0;
@@ -1232,7 +1235,7 @@ extern int test_job_list(List req_list)
 	select_will_run_t *will_run = NULL;
 
 	slurm_mutex_lock(&job_list_test_mutex);
-
+	
 	if(bluegene_layout_mode == LAYOUT_DYNAMIC)
 		slurm_mutex_lock(&create_dynamic_mutex);
 
@@ -1273,10 +1276,13 @@ extern int test_job_list(List req_list)
 					starttime =
 						bg_record->job_ptr->end_time;
 				if(!block_exist_in_list(job_block_test_list,
-						       bg_record))
+							bg_record)) {
+					new_record =
+						xmalloc(sizeof(bg_record_t));
+					copy_bg_record(bg_record, new_record);
 					list_append(job_block_test_list,
-						    bg_record);
-
+						    new_record);
+				}
 				bg_record->job_ptr = will_run->job_ptr;
 				
 				if(will_run->job_ptr->start_time) {
@@ -1301,74 +1307,80 @@ extern int test_job_list(List req_list)
 					SELECT_DATA_IONODES, 
 					bg_record->ionodes);
 				
-				if(!bg_record->bg_block_id) {
-					uint16_t geo[BA_SYSTEM_DIMENSIONS];
+/* 				if(!bg_record->bg_block_id) { */
+/* 					uint16_t geo[BA_SYSTEM_DIMENSIONS]; */
 					
-					debug2("test_job_list: "
-					       "can start job at "
-					       "%u on %s on unmade block",
-					       starttime,
-					       bg_record->nodes);
-					select_g_set_jobinfo(
-						will_run->job_ptr->select_jobinfo,
-						SELECT_DATA_BLOCK_ID,
-						"unassigned");
-					if(will_run->job_ptr->num_procs
-					   < bluegene_bp_node_cnt 
-					   && will_run->job_ptr->num_procs > 0) {
-						i = procs_per_node/
-							will_run->job_ptr->num_procs;
-						debug2("divide by %d", i);
-					} else 
-						i = 1;
-					will_run->min_nodes *= 
-						bluegene_bp_node_cnt/i;
-					select_g_set_jobinfo(
-						will_run->job_ptr->select_jobinfo,
-						SELECT_DATA_NODE_CNT,
-						&will_run->min_nodes);
-					memset(geo, 0, 
-					       sizeof(uint16_t) 
-					       * BA_SYSTEM_DIMENSIONS);
-					select_g_set_jobinfo(
-						will_run->job_ptr->select_jobinfo,
-						SELECT_DATA_GEOMETRY, 
-						&geo);
-					/* This is a fake record so we need to
-					 * destroy it after we get the info from
-					 * it */
-					destroy_bg_record(bg_record);
-				} else {
-					if((bg_record->ionodes)
-					   && (will_run->job_ptr->part_ptr->max_share
-					       <= 1))
-						error("Small block used in "
-						      "non-shared partition");
+/* 					debug2("test_job_list: " */
+/* 					       "can start job at " */
+/* 					       "%u on %s on unmade block", */
+/* 					       starttime, */
+/* 					       bg_record->nodes); */
+/* 					select_g_set_jobinfo( */
+/* 						will_run->job_ptr-> */
+/* 						select_jobinfo, */
+/* 						SELECT_DATA_BLOCK_ID, */
+/* 						"unassigned"); */
+/* 					if(will_run->job_ptr->num_procs */
+/* 					   < bluegene_bp_node_cnt  */
+/* 					   && will_run->job_ptr->num_procs */
+/* 					   > 0) { */
+/* 						i = procs_per_node/ */
+/* 							will_run->job_ptr-> */
+/* 							num_procs; */
+/* 						debug2("divide by %d", i); */
+/* 					} else  */
+/* 						i = 1; */
+/* 					will_run->min_nodes *=  */
+/* 						bluegene_bp_node_cnt/i; */
+/* 					select_g_set_jobinfo( */
+/* 						will_run->job_ptr-> */
+/* 						select_jobinfo, */
+/* 						SELECT_DATA_NODE_CNT, */
+/* 						&will_run->min_nodes); */
+/* 					memset(geo, 0,  */
+/* 					       sizeof(uint16_t)  */
+/* 					       * BA_SYSTEM_DIMENSIONS); */
+/* 					select_g_set_jobinfo( */
+/* 						will_run->job_ptr-> */
+/* 						select_jobinfo, */
+/* 						SELECT_DATA_GEOMETRY,  */
+/* 						&geo); */
+/* 				} else { */
+/* 					if((bg_record->ionodes) */
+/* 					   && (will_run->job_ptr->part_ptr-> */
+/* 					       max_share */
+/* 					       <= 1)) */
+/* 						error("Small block used in " */
+/* 						      "non-shared partition"); */
 					
-					debug2("test_job_list: "
-					       "can start job at %u on %s",
-					       starttime,
-					       bg_record->nodes);
+/* 					debug2("test_job_list: " */
+/* 					       "can start job at %u on %s", */
+/* 					       starttime, */
+/* 					       bg_record->nodes); */
 					
-					select_g_set_jobinfo(
-						will_run->job_ptr->select_jobinfo,
-						SELECT_DATA_BLOCK_ID,
-						bg_record->bg_block_id);
-					select_g_set_jobinfo(
-						will_run->job_ptr->select_jobinfo,
-						SELECT_DATA_NODE_CNT, 
-						&bg_record->node_cnt);
-					select_g_set_jobinfo(
-						will_run->job_ptr->select_jobinfo,
-						SELECT_DATA_GEOMETRY, 
-						&bg_record->geo);
+/* 					select_g_set_jobinfo( */
+/* 						will_run->job_ptr-> */
+/* 						select_jobinfo, */
+/* 						SELECT_DATA_BLOCK_ID, */
+/* 						bg_record->bg_block_id); */
+/* 					select_g_set_jobinfo( */
+/* 						will_run->job_ptr-> */
+/* 						select_jobinfo, */
+/* 						SELECT_DATA_NODE_CNT,  */
+/* 						&bg_record->node_cnt); */
+/* 					select_g_set_jobinfo( */
+/* 						will_run->job_ptr-> */
+/* 						select_jobinfo, */
+/* 						SELECT_DATA_GEOMETRY,  */
+/* 						&bg_record->geo); */
 					
-					tmp16 = bg_record->conn_type;
-					select_g_set_jobinfo(
-						will_run->job_ptr->select_jobinfo,
-						SELECT_DATA_CONN_TYPE, 
-						&tmp16);
-				}
+/* 					tmp16 = bg_record->conn_type; */
+/* 					select_g_set_jobinfo( */
+/* 						will_run->job_ptr-> */
+/* 						select_jobinfo, */
+/* 						SELECT_DATA_CONN_TYPE,  */
+/* 						&tmp16); */
+/* 				} */
 			} else {
 				error("we got a success, but no block back");
 			}
