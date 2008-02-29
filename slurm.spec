@@ -362,6 +362,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_bindir}/s*
 %{_sbindir}/slurmctld
 %{_sbindir}/slurmd
+%{_sbindir}/slurmdbd
 %{_sbindir}/slurmstepd
 %ifos aix5.3
 %{_sbindir}/srun
@@ -370,6 +371,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/slurm/src/*
 %{_mandir}/man1/*
 %{_mandir}/man5/slurm.*
+%{_mandir}/man5/slurmdbd.*
 %{_mandir}/man5/wiki.*
 %{_mandir}/man8/*
 %dir %{_sysconfdir}
