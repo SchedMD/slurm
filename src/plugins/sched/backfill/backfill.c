@@ -14,7 +14,8 @@
  *  "lx[06-08]", we can't start it without possibly delaying the higher 
  *  priority job.
  *****************************************************************************
- *  Copyright (C) 2003-2008 The Regents of the University of California.
+ *  Copyright (C) 2003-2007 The Regents of the University of California.
+ *  Copyright (C) 2008 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
  *  UCRL-CODE-226842.
