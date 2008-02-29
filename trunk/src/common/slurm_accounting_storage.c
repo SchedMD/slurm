@@ -3,7 +3,8 @@
  *
  *  $Id: slurm_accounting_storage.c 10744 2007-01-11 20:09:18Z da $
  *****************************************************************************
- *  Copyright (C) 2002-2008 The Regents of the University of California.
+ *  Copyright (C) 2002-2007 The Regents of the University of California.
+ *  Copyright (C) 2008 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Danny Aubke <da@llnl.gov>.
  *  UCRL-CODE-226842.

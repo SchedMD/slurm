@@ -3,7 +3,7 @@
  *
  *  $Id: dynamic_block.h 12954 2008-01-04 20:37:49Z da $
  *****************************************************************************
- *  Copyright (C) 2008 The Regents of the University of California.
+ *  Copyright (C) 2008 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Danny Auble <da@llnl.gov>
  *  
