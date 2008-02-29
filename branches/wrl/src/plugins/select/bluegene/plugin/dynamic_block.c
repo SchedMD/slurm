@@ -343,13 +343,39 @@ extern bg_record_t *create_small_record(bg_record_t *bg_record,
 {
 	bg_record_t *found_record = NULL;
 	int small_size = 4;
-	
+	ListIterator itr = NULL;
+	ba_node_t *new_ba_node = NULL;
+	ba_node_t *ba_node = NULL;
 	found_record = (bg_record_t*) xmalloc(sizeof(bg_record_t));
 				
 	found_record->job_running = NO_JOB_RUNNING;
 	found_record->user_name = xstrdup(bg_record->user_name);
 	found_record->user_uid = bg_record->user_uid;
 	found_record->bg_block_list = list_create(destroy_ba_node);
+	itr = list_iterator_create(bg_record->bg_block_list);
+	ba_node = list_next(itr);
+	list_iterator_destroy(itr);
+	if(!ba_node)
+		error("you gave me a list with no ba_nodes");
+	else {
+		int i=0,j=0;
+		new_ba_node = ba_copy_node(ba_node);
+		for (i=0; i<BA_SYSTEM_DIMENSIONS; i++){
+			for(j=0;j<NUM_PORTS_PER_NODE;j++) {
+				ba_node->axis_switch[i].int_wire[j].used = 0;	
+				if(i!=X) {
+					if(j==3 || j==4) 
+						ba_node->axis_switch[i].
+							int_wire[j].
+							used = 1;	
+				}
+				ba_node->axis_switch[i].int_wire[j].
+					port_tar = j;
+			}
+		}
+		list_append(found_record->bg_block_list, new_ba_node);
+		found_record->bp_count = 1;
+	}
 	found_record->nodes = xstrdup(bg_record->nodes);
 	found_record->blrtsimage = xstrdup(bg_record->blrtsimage);
 	found_record->linuximage = xstrdup(bg_record->linuximage);

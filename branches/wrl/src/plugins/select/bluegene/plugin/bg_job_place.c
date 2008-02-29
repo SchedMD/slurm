@@ -630,14 +630,16 @@ static int _dynamically_request(List block_list, int *blocks_added,
 		list_append(list_of_lists, job_block_test_list);
 	else {
 		list_append(list_of_lists, block_list);
-		if(list_count(block_list) != list_count(bg_booted_block_list)) {
+		if(job_block_test_list == bg_job_block_list &&
+		   list_count(block_list) != list_count(bg_booted_block_list)) {
 			list_append(list_of_lists, bg_booted_block_list);
 			if(list_count(bg_booted_block_list) 
 			   != list_count(job_block_test_list)) 
 				list_append(list_of_lists, job_block_test_list);
 		} else if(list_count(block_list) 
-			  != list_count(job_block_test_list)) 
+			  != list_count(job_block_test_list)) {
 			list_append(list_of_lists, job_block_test_list);
+		}
 	}
 	itr = list_iterator_create(list_of_lists);
 	while ((temp_list = (List)list_next(itr))) {
@@ -688,7 +690,7 @@ static int _dynamically_request(List block_list, int *blocks_added,
 			rc = SLURM_ERROR;
 			break;
 		} 
-					   
+
 		memcpy(request->geometry, start_geo,
 		       sizeof(int)*BA_SYSTEM_DIMENSIONS);
 	
@@ -1023,6 +1025,10 @@ static int _find_best_block_match(List block_list,
 				list_destroy(new_blocks);
 				break;
 			}
+
+			if(job_block_test_list == bg_job_block_list) 
+				list_destroy(job_list);
+
 			goto end_it;
 		} else {
 			break;
@@ -1273,9 +1279,20 @@ extern int test_job_list(List req_list)
 		if(rc == SLURM_SUCCESS) {
 			if(bg_record) {
 				if(bg_record->job_ptr
-				   && bg_record->job_ptr->end_time) 
+				   && bg_record->job_ptr->end_time) {
 					starttime =
 						bg_record->job_ptr->end_time;
+				}
+				bg_record->job_running =
+					will_run->job_ptr->job_id;
+				bg_record->job_ptr = will_run->job_ptr;
+				debug2("test_job_list: "
+				       "can run job %u on found block at %d"
+				       "nodes = %s",
+				       bg_record->job_ptr->job_id,
+				       starttime,
+				       bg_record->nodes);
+				
 				if(!block_exist_in_list(job_block_test_list,
 							bg_record)) {
 					new_record =
@@ -1284,13 +1301,13 @@ extern int test_job_list(List req_list)
 					list_append(job_block_test_list,
 						    new_record);
 				}
-				bg_record->job_running =
-					will_run->job_ptr->job_id;
-				bg_record->job_ptr = will_run->job_ptr;
-				
+
 				if(will_run->job_ptr->start_time) {
 					if(will_run->job_ptr->start_time
 					   < starttime) {
+						debug2("test_job_list: "
+						       "Time is later "
+						       "than one supplied.");
 						rc = SLURM_ERROR;
 						break;
 					}
@@ -1314,7 +1331,8 @@ extern int test_job_list(List req_list)
 						will_run->job_ptr->
 						part_ptr->max_time;
 				else
-					will_run->job_ptr->end_time = INFINITE;
+					will_run->job_ptr->end_time = 
+						starttime + 31536000; // + year
 						
 				select_g_set_jobinfo(
 					will_run->job_ptr->select_jobinfo,

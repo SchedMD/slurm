@@ -981,7 +981,7 @@ extern void init_wires()
 #else
 				source = &ba_system_ptr->grid[x];
 #endif
-				for(i=0; i<6; i++) {
+				for(i=0; i<NUM_PORTS_PER_NODE; i++) {
 					_switch_config(source, source, 
 						       X, i, i);
 					_switch_config(source, source, 
@@ -1309,23 +1309,35 @@ extern int check_and_set_node_list(List nodes)
 			curr_ba_switch = &curr_ba_node->axis_switch[i];
 			//info("checking dim %d", i);
 		
-			for(j=0; j<BA_SYSTEM_DIMENSIONS; j++) {
+			for(j=0; j<NUM_PORTS_PER_NODE; j++) {
 				//info("checking port %d", j);
 		
 				if(ba_switch->int_wire[j].used 
-				   && curr_ba_switch->int_wire[j].used) {
+				   && curr_ba_switch->int_wire[j].used
+					&& j != curr_ba_switch->
+				   int_wire[j].port_tar) {
 					debug3("%c%c%c dim %d port %d "
-					       "is already in use",
+					       "is already in use to %d",
 					       alpha_num[ba_node->coord[X]], 
 					       alpha_num[ba_node->coord[Y]],
 					       alpha_num[ba_node->coord[Z]], 
 					       i,
-					       j);
+					       j,
+					       curr_ba_switch->
+					       int_wire[j].port_tar);
 					rc = SLURM_ERROR;
 					goto end_it;
 				}
 				if(!ba_switch->int_wire[j].used)
 					continue;
+
+				/* info("setting %c%c%c dim %d port %d -> %d", */
+/* 				     alpha_num[ba_node->coord[X]],  */
+/* 				     alpha_num[ba_node->coord[Y]], */
+/* 				     alpha_num[ba_node->coord[Z]],  */
+/* 				     i, */
+/* 				     j, */
+/* 				     ba_switch->int_wire[j].port_tar); */
 				curr_ba_switch->int_wire[j].used = 1;
 				curr_ba_switch->int_wire[j].port_tar 
 					= ba_switch->int_wire[j].port_tar;
@@ -5015,7 +5027,7 @@ int main(int argc, char** argv)
 					ba_switch_t *wire =
 						&ba_system_ptr->
 						grid[x][y][z].axis_switch[dim];
-					for(j=0;j<6;j++)
+					for(j=0;j<NUM_PORTS_PER_NODE;j++)
 						info("\t%d -> %d -> %c%c%c %d "
 						     "Used = %d",
 						     j, wire->int_wire[j].
