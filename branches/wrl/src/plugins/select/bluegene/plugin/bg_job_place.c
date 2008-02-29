@@ -1283,6 +1283,8 @@ extern int test_job_list(List req_list)
 					list_append(job_block_test_list,
 						    new_record);
 				}
+				bg_record->job_running =
+					will_run->job_ptr->job_id;
 				bg_record->job_ptr = will_run->job_ptr;
 				
 				if(will_run->job_ptr->start_time) {
