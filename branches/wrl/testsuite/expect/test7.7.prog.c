@@ -382,9 +382,9 @@ static void _job_will_run(long my_job_id)
 	char out_msg[128];
 
 	snprintf(out_msg, sizeof(out_msg),
-		"TS=%u AUTH=root DT=CMD=JOBWILLRUN ARG=%ld %s",
+		"TS=%u AUTH=root DT=CMD=JOBWILLRUN ARG=%ld,%s",
 		(uint32_t) now, my_job_id,
-		"AVAIL_NODES=");	/* put desired node list here */
+		"");		/* put available node list here */
 	_xmit(out_msg);
 }
 

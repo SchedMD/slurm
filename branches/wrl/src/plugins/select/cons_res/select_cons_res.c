@@ -2241,7 +2241,8 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t * bitmap,
  */
 extern int select_p_job_list_test(List req_list)
 {
-	return 0;
+	/* not currently supported */
+	return EINVAL;
 }
 
 
