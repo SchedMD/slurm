@@ -54,7 +54,7 @@ static char *	_will_run_test(uint32_t *jobid, time_t *start_time,
  * job_will_run - Determine if, when and where a priority ordered list of jobs
  *		  can be initiated with the currently running jobs as a 
  *		  backgorund
- * cmd_ptr IN   - CMD=JOBWILLRUN ARG=<JOBID>[@<TIME>],<AVAIL_NODES>
+ * cmd_ptr IN   - CMD=JOBWILLRUN ARG=JOBID=<JOBID>[@<TIME>],<AVAIL_NODES>
  *		   [JOBID=<JOBID>[@<TIME>],<AVAIL_NODES>]...
  * err_code OUT - 0 on success or some error code
  * err_msg OUT  - error message if any of the specified jobs can not be started
@@ -86,6 +86,13 @@ extern int	job_will_run(char *cmd_ptr, int *err_code, char **err_msg)
 	arg_ptr += 4;
 
 	for (job_cnt=0; job_cnt<MAX_JOB_QUEUE; ) {
+		if (strncmp(arg_ptr, "JOBID=", 6)) {
+			*err_code = -300;
+			*err_msg = "Invalid ARG value";
+			error("wiki: JOBWILLRUN has invalid ARG value");
+			return -1;
+		}
+		arg_ptr += 6;
 		jobid[job_cnt] = strtoul(arg_ptr, &tmp_char, 10);
 		if (tmp_char[0] == '@')
 			start_time[job_cnt] = strtoul(tmp_char+1, &tmp_char, 10);
@@ -106,14 +113,9 @@ extern int	job_will_run(char *cmd_ptr, int *err_code, char **err_msg)
 			break;
 		while (isspace(tmp_char[0]))
 			tmp_char++;
-		if (isdigit(tmp_char[0]))
-			continue;
-		if (tmp_char[0]) {
-			*err_code = -300;
-			*err_msg = "Invalid ARG value";
-			error("wiki: JOBWILLRUN has invalid ARG value");
-			return -1;
-		}
+		if (tmp_char[0] == '\0')
+			break;
+		arg_ptr = tmp_char;
 	}
 
 	lock_slurmctld(job_write_lock);
