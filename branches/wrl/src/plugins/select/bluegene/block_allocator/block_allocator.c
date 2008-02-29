@@ -1052,11 +1052,11 @@ extern void ba_update_node_state(ba_node_t *ba_node, uint16_t state)
 	}
 
 #ifdef HAVE_BG
-	debug2("ba_update_node_state: new state of node[%c%c%c] is %s", 
+	debug2("ba_update_node_state: new state of [%c%c%c] is %s", 
 	       alpha_num[ba_node->coord[X]], alpha_num[ba_node->coord[Y]],
 	       alpha_num[ba_node->coord[Z]], node_state_string(state)); 
 #else
-	debug2("ba_update_node_state: new state of node[%d] is %s", 
+	debug2("ba_update_node_state: new state of [%d] is %s", 
 	       ba_node->coord[X],
 	       node_state_string(state)); 
 #endif

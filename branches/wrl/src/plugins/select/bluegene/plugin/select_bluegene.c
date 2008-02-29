@@ -1223,11 +1223,14 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 			if(tmp > 0)
 				job_desc->min_nodes += 
 					(bluegene_bp_node_cnt-tmp);
-		}
+		}				
 		tmp = job_desc->min_nodes / bluegene_bp_node_cnt;
 		
 		/* this means it is greater or equal to one bp */
 		if(tmp > 0) {
+			select_g_set_jobinfo(job_desc->select_jobinfo,
+					     SELECT_DATA_NODE_CNT,
+					     &job_desc->min_nodes);
 			job_desc->min_nodes = tmp;
 			job_desc->num_procs = procs_per_node * tmp;
 		} else { 
@@ -1243,6 +1246,10 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 				job_desc->min_nodes = 
 					bluegene_bp_node_cnt;
 			
+			select_g_set_jobinfo(job_desc->select_jobinfo,
+					     SELECT_DATA_NODE_CNT,
+					     &job_desc->min_nodes);
+
 			tmp = bluegene_bp_node_cnt/job_desc->min_nodes;
 			
 			job_desc->num_procs = procs_per_node/tmp;
