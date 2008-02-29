@@ -3556,7 +3556,7 @@ static int _set_external_wires(int dim, int count, ba_node_t* source,
 			break;
 		}
 	} else {
-		fatal("Do don't have a config to do a BG system with %d "
+		fatal("We don't have a config to do a BG system with %d "
 		      "in the X-dim.", DIM_SIZE[X]);
 	}
 #else
