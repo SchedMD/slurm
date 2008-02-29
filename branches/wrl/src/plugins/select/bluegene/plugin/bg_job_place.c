@@ -397,7 +397,8 @@ static bg_record_t *_find_matching_block(List block_list,
 			continue;
 		} else if((bg_record->job_running != NO_JOB_RUNNING) 
 			  && (bg_record->job_running != job_ptr->job_id)
-			  && !test_only) {
+			  && (!test_only 
+			      || job_block_test_list != bg_job_block_list)) {
 			debug("block %s in use by %s job %d", 
 			      bg_record->bg_block_id,
 			      bg_record->user_name,
@@ -1298,8 +1299,23 @@ extern int test_job_list(List req_list)
 				} 
 				
 				will_run->job_ptr->start_time = starttime;
-				
-				
+
+				if(will_run->job_ptr->time_limit != INFINITE
+				   && will_run->job_ptr->time_limit != NO_VAL) 
+					will_run->job_ptr->end_time =
+						starttime +
+						will_run->job_ptr->time_limit;
+				else if(will_run->job_ptr->part_ptr->max_time
+					!= INFINITE
+					&& will_run->job_ptr->
+					part_ptr->max_time != NO_VAL) 
+					will_run->job_ptr->end_time =
+						starttime +
+						will_run->job_ptr->
+						part_ptr->max_time;
+				else
+					will_run->job_ptr->end_time = INFINITE;
+						
 				select_g_set_jobinfo(
 					will_run->job_ptr->select_jobinfo,
 					SELECT_DATA_NODES, 
