@@ -1,7 +1,8 @@
 /*****************************************************************************\
  *  opt.c - options processing for salloc
  *****************************************************************************
- *  Copyright (C) 2002-2006 The Regents of the University of California.
+ *  Copyright (C) 2002-2007 The Regents of the University of California.
+ *  Copyright (C) 2008 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Mark Grondona <grondona1@llnl.gov>, et. al.
  *  UCRL-CODE-226842.
@@ -115,6 +116,7 @@
 #define LONG_OPT_LINUX_IMAGE     0x121
 #define LONG_OPT_MLOADER_IMAGE   0x122
 #define LONG_OPT_RAMDISK_IMAGE   0x123
+#define LONG_OPT_NOSHELL         0x124
 #define LONG_OPT_SOCKETSPERNODE  0x130
 #define LONG_OPT_CORESPERSOCKET  0x131
 #define LONG_OPT_THREADSPERCORE  0x132
@@ -282,6 +284,7 @@ static void _opt_default()
 	
 	opt.bell            = BELL_AFTER_DELAY;
 	opt.acctg_freq      = -1;
+	opt.no_shell	    = false;
 }
 
 /*---[ env var processing ]-----------------------------------------------*/
@@ -528,6 +531,7 @@ void set_options(const int argc, char **argv)
 		{"mloader-image", required_argument, 0, LONG_OPT_MLOADER_IMAGE},
 		{"ramdisk-image", required_argument, 0, LONG_OPT_RAMDISK_IMAGE},
 		{"acctg-freq",    required_argument, 0, LONG_OPT_ACCTG_FREQ},
+		{"no-shell",      no_argument,       0, LONG_OPT_NOSHELL},
 		{NULL,            0,                 0, 0}
 	};
 	char *opt_string = "+a:B:c:C:d:F:g:hHIJ:kK:m:n:N:Op:qR:st:uU:vVw:W:x:";
@@ -877,6 +881,9 @@ void set_options(const int argc, char **argv)
 		case LONG_OPT_ACCTG_FREQ:
 			opt.acctg_freq = _get_int(optarg, "acctg-freq");
 			break;
+		case LONG_OPT_NOSHELL:
+			opt.no_shell = true;
+			break;
 		default:
 			fatal("Unrecognized command line parameter %c",
 			      opt_char);
@@ -929,7 +936,7 @@ static bool _opt_verify(void)
 	if ((opt.job_name == NULL) && (command_argc > 0))
 		opt.job_name = base_name(command_argv[0]);
 
-	if (command_argc == 0) {
+	if ((opt.no_shell == false) && (command_argc == 0)) {
 		error("A local command is a required parameter!");
 		verified = false;
 	}

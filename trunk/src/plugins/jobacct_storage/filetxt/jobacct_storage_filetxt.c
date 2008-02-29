@@ -350,7 +350,7 @@ extern int jobacct_storage_p_job_complete(struct job_record *job_ptr)
 	}
 	/* leave the requid as a %d since we want to see if it is -1
 	   in sacct */
-	snprintf(buf, BUFFER_SIZE, "%d %d %d %u %u",
+	snprintf(buf, BUFFER_SIZE, "%d %d %d %d %u",
 		 JOB_TERMINATED,
 		 (int) (job_ptr->end_time - job_ptr->start_time),
 		 job_ptr->job_state & (~JOB_COMPLETING),
