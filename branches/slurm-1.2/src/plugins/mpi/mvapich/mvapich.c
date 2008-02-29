@@ -1366,6 +1366,15 @@ static void mvapich_state_destroy(mvapich_state_t *st)
 	xfree(st);
 }
 
+/*
+ *  Create a unique MPIRUN_ID for jobid/stepid pairs.
+ *  Combine the least significant bits of the jobid and stepid
+ */
+int mpirun_id_create(const mpi_plugin_client_info_t *job)
+{
+	return (int) ((job->jobid << 16) | (job->stepid & 0xffff));
+}
+
 extern mvapich_state_t *mvapich_thr_create(const mpi_plugin_client_info_t *job,
 					   char ***env)
 {
@@ -1405,12 +1414,12 @@ extern mvapich_state_t *mvapich_thr_create(const mpi_plugin_client_info_t *job,
 	 */
 	env_array_overwrite_fmt(env, "MPIRUN_PORT",   "%hu", port);
 	env_array_overwrite_fmt(env, "MPIRUN_NPROCS", "%d", st->nprocs);
-	env_array_overwrite_fmt(env, "MPIRUN_ID",     "%d", st->job->jobid);
+	env_array_overwrite_fmt(env, "MPIRUN_ID",     "%d", mpirun_id_create(job));
 	if (st->connect_once) {
 		env_array_overwrite_fmt(env, "MPIRUN_CONNECT_ONCE", "1");
 	}
 
-	verbose ("mvapich-0.9.[45] master listening on port %d", port);
+	verbose ("mvapich-0.9.[45] master listening on port %hu", port);
 
 	return st;
 }
