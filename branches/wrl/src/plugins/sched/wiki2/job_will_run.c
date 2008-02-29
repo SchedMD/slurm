@@ -170,9 +170,14 @@ static char *	_will_run_test(uint32_t *jobid, time_t *start_time,
 			error("wiki: Failed to find job %u", jobid[i]);
 			break;
 		}
+		if (job_ptr->job_state != JOB_PENDING) {
+			*err_code = -700;
+			*err_msg = "WillRun not applicable to non-pending job";
+			error("wiki: WillRun on non-pending job %u", jobid[i]);
+			break;
+		}
 
-		if (start_time[i])
-			job_ptr->start_time = start_time[i];
+		job_ptr->start_time = start_time[i];
 
 		part_ptr = job_ptr->part_ptr;
 		if (part_ptr == NULL) {
