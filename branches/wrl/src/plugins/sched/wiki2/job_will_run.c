@@ -111,6 +111,8 @@ extern int	job_will_run(char *cmd_ptr, int *err_code, char **err_msg)
 			tmp_char++;
 		if (tmp_char[0] == '\0')
 			break;
+		tmp_char[0] = '\0';	/* was space */
+		tmp_char++;
 		while (isspace(tmp_char[0]))
 			tmp_char++;
 		if (tmp_char[0] == '\0')
@@ -274,22 +276,32 @@ static char *	_will_run_test(uint32_t *jobid, time_t *start_time,
 
 	if (rc == SLURM_SUCCESS) {
 		char tmp_str[128];
+		ListIterator iter;
 		*err_code = 0;
+		iter = list_iterator_create(select_list);
+		if (iter == NULL)
+			fatal("list_iterator_create: malloc failure");
 		for (i=0; i<job_cnt; i++) {
+			select_will_run = list_next(iter);
+			if (select_will_run == NULL) {
+				error("wiki2: select_list size is bad");
+				break;
+			}
 			if (i)
 				xstrcat(reply_msg, " ");
 			else
 				xstrcat(reply_msg, "STARTINFO=");
 			snprintf(tmp_str, sizeof(tmp_str), "%u@%u,",
-				 select_will_run[i].job_ptr->job_id,
-				 (uint32_t) select_will_run[i].
+				 select_will_run->job_ptr->job_id,
+				 (uint32_t) select_will_run->
 					    job_ptr->start_time);
 			xstrcat(reply_msg, tmp_str);
-			hostlist = bitmap2node_name(select_will_run[i].
+			hostlist = bitmap2node_name(select_will_run->
 						    avail_nodes);
 			xstrcat(reply_msg, hostlist);
 			xfree(hostlist);
 		}
+		list_iterator_destroy(iter);
 	} else {
 		*err_code = -730;
 		*err_msg = "Jobs not runable on selected nodes";
