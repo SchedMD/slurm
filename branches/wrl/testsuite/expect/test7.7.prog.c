@@ -2,6 +2,7 @@
  *  test7.7.prog.c - Test of sched/wiki2 plugin
  *****************************************************************************
  *  Copyright (C) 2006-2007 The Regents of the University of California.
+ *  Copyright (C) 2008 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
  *  UCRL-CODE-226842.
@@ -32,6 +33,8 @@
 #include <sys/socket.h>
 
 #include "./test7.7.crypto.c"
+
+#define _DEBUG 0
 
 /* global variables */
 char *auth_key, *control_addr;
@@ -382,7 +385,7 @@ static void _job_will_run(long my_job_id)
 	char out_msg[128];
 
 	snprintf(out_msg, sizeof(out_msg),
-		"TS=%u AUTH=root DT=CMD=JOBWILLRUN ARG=%ld,%s",
+		"TS=%u AUTH=root DT=CMD=JOBWILLRUN ARG=JOBID=%ld,%s",
 		(uint32_t) now, my_job_id,
 		"");		/* put available node list here */
 	_xmit(out_msg);
@@ -396,6 +399,18 @@ static void _initialize(void)
 	snprintf(out_msg, sizeof(out_msg),
 		"TS=%u AUTH=root DT=CMD=INITIALIZE ARG=USEHOSTEXP=N EPORT=%u",
 		(uint32_t) now, e_port);
+	_xmit(out_msg);
+}
+
+static void _single_msg(void)
+{
+	time_t now = time(NULL);
+	char out_msg[1024];
+
+	snprintf(out_msg, sizeof(out_msg),
+		"TS=%u AUTH=root DT=CMD=%s",
+		(uint32_t) now, 
+		"JOBWILLRUN ARG=JOBID=65537,bgl[000x733] JOBID=65539,bgl[000x733] JOBID=65538,bgl[000x733]");
 	_xmit(out_msg);
 }
 
@@ -417,6 +432,9 @@ int main(int argc, char * argv[])
 		"is_bluegene=%d\n", 
 		auth_key, control_addr, e_port, job_id, sched_port, is_bluegene);
 
+#if _DEBUG
+	_single_msg();
+#else
 	_initialize();
 	_get_jobs();
 	_get_nodes();
@@ -442,7 +460,7 @@ int main(int argc, char * argv[])
 	sleep(15);
 	_start_job(job_id);
 	_get_jobs();
-
+#endif
 	printf("SUCCESS\n");
 	exit(0);
 }
