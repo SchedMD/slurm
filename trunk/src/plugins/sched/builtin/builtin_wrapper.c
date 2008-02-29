@@ -92,6 +92,15 @@ slurm_sched_plugin_newalloc( struct job_record *job_ptr )
 	return SLURM_SUCCESS;
 }
 
+/***************************************************************************/
+/*  TAG(                   slurm_sched_plugin_freealloc                  ) */
+/***************************************************************************/
+int
+slurm_sched_plugin_freealloc( struct job_record *job_ptr )
+{
+	return SLURM_SUCCESS;
+}
+
 
 /**************************************************************************/
 /* TAG(                   slurm_sched_plugin_initial_priority           ) */ 
