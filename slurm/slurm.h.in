@@ -551,6 +551,7 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 	uint16_t mail_type;	/* see MAIL_JOB_ definitions above */
 	char *mail_user;	/* user to receive notification */
 	uint16_t requeue;	/* enable or disable job requeue option */
+	char *licenses;		/* licenses required by the job */
 /*
  * The following parameters are only meaningful on a Blue Gene
  * system at present. Some will be of value on other system. Don't remove these
@@ -642,6 +643,7 @@ typedef struct job_info {
 	char *command;		/* command to be executed */
 	select_jobinfo_t select_jobinfo; /* opaque data type,
 			* process using select_g_get_jobinfo() */
+	char *licenses;		/* licenses required by the job */
 } job_info_t;
 
 typedef struct job_info_msg {
@@ -922,6 +924,12 @@ typedef struct partition_info_msg {
 
 typedef struct slurm_ctl_conf {
 	time_t last_update;	/* last update time of the build parameters */
+	char *accounting_storage_host; /* accounting storage host */
+	char *accounting_storage_pass; /* accounting storage
+					    password */
+	uint32_t accounting_storage_port;/* node accountinging storage port */
+	char *accounting_storage_type; /* accounting storage type */
+	char *accounting_storage_user; /* accounting storage user */
 	char *authtype;		/* authentication type */
 	char *backup_addr;	/* comm path of slurmctld secondary server */
 	char *backup_controller;/* name of slurmctld secondary server */
@@ -945,12 +953,6 @@ typedef struct slurm_ctl_conf {
 	char * health_check_program;	/* pathname of health check program */
 	uint16_t inactive_limit;/* seconds of inactivity before a
 				 * inactive resource allocation is released */
-	char *accounting_storage_type; /* accounting storage type */
-	char *accounting_storage_user; /* accounting storage user */
-	char *accounting_storage_host; /* accounting storage host */
-	char *accounting_storage_pass; /* accounting storage
-					    password */
-	uint32_t accounting_storage_port;/* node accountinging storage port */
 	char *job_acct_gather_type; /* job accounting gather type */
 	uint16_t job_acct_gather_freq; /* poll frequency for job accounting 
 					* gather plugins */
@@ -972,6 +974,7 @@ typedef struct slurm_ctl_conf {
 	uint16_t job_requeue;	/* If set, jobs get requeued on node failre */
 	uint16_t kill_wait;	/* seconds between SIGXCPU to SIGKILL 
 				 * on job termination */
+	char *licenses;		/* licenses available on this cluster */
 	char *mail_prog;	/* pathname of mail program */
 	uint16_t max_job_cnt;	/* maximum number of active jobs */
 	uint32_t max_mem_per_task; /* maximum MB memory per spawned task */

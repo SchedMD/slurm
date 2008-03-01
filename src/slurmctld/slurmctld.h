@@ -411,6 +411,7 @@ struct job_record {
 					 * allocated for this job */
 	uint32_t *used_lps;		/* number of logical processors
 					 * already allocated to job steps */
+	char *licenses;			/* licenses required by the job */
 	uint16_t mail_type;		/* see MAIL_JOB_* in slurm.h */
 	char *mail_user;		/* user to get e-mail notification */
 	uint32_t requid;            	/* requester user ID */

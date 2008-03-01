@@ -505,6 +505,7 @@ static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer)
 	packstr(dump_job_ptr->account, buffer);
 	packstr(dump_job_ptr->comment, buffer);
 	packstr(dump_job_ptr->network, buffer);
+	packstr(dump_job_ptr->licenses, buffer);
 	packstr(dump_job_ptr->mail_user, buffer);
 
 	select_g_pack_jobinfo(dump_job_ptr->select_jobinfo,
@@ -542,6 +543,7 @@ static int _load_job_state(Buf buffer)
 	char *nodes = NULL, *partition = NULL, *name = NULL, *resp_host = NULL;
 	char *account = NULL, *network = NULL, *mail_user = NULL;
 	char *comment = NULL, *nodes_completing = NULL, *alloc_node = NULL;
+	char *licenses = NULL;
 	struct job_record *job_ptr;
 	struct part_record *part_ptr;
 	int error_code;
@@ -587,6 +589,7 @@ static int _load_job_state(Buf buffer)
 	safe_unpackstr_xmalloc(&account, &name_len, buffer);
 	safe_unpackstr_xmalloc(&comment, &name_len, buffer);
 	safe_unpackstr_xmalloc(&network, &name_len, buffer);
+	safe_unpackstr_xmalloc(&licenses, &name_len, buffer);
 	safe_unpackstr_xmalloc(&mail_user, &name_len, buffer);
 
 	if (select_g_alloc_jobinfo(&select_jobinfo)
@@ -701,6 +704,8 @@ static int _load_job_state(Buf buffer)
 	resp_host = NULL;	/* reused, nothing left to free */
 	job_ptr->alloc_resp_port   = alloc_resp_port;
 	job_ptr->other_port        = other_port;
+	job_ptr->licenses          = licenses;
+	licenses = NULL;	/* reused, nothing left to free */
 	job_ptr->mail_type         = mail_type;
 	job_ptr->mail_user         = mail_user;
 	mail_user = NULL;	/* reused, nothing left to free */
@@ -729,6 +734,7 @@ unpack_error:
 	xfree(account);
 	xfree(comment);
 	xfree(resp_host);
+	xfree(licenses);
 	xfree(mail_user);
 	select_g_free_jobinfo(&select_jobinfo);
 	return SLURM_FAILURE;
@@ -1278,8 +1284,10 @@ void dump_job_desc(job_desc_msg_t * job_specs)
 		(long) job_specs->cpus_per_task : -1L;
 	requeue = (job_specs->requeue != (uint16_t) NO_VAL) ?
 		(long) job_specs->requeue : -1L;
-	debug3("   network=%s begin=%s cpus_per_task=%ld requeue=%ld", 
-	       job_specs->network, buf, cpus_per_task, requeue);
+	debug3("   network=%s begin=%s cpus_per_task=%ld requeue=%ld "
+	       "licenses=%s", 
+	       job_specs->network, buf, cpus_per_task, requeue,
+	       job_specs->licenses);
 
 	ntasks_per_node = (job_specs->ntasks_per_node != (uint16_t) NO_VAL) ?
 		(long) job_specs->ntasks_per_node : -1L;
@@ -2070,6 +2078,11 @@ static int _validate_job_create_req(job_desc_msg_t * job_desc)
 		     strlen(job_desc->linuximage));
 		return ESLURM_PATHNAME_TOO_LONG;
 	}
+	if (job_desc->licenses && (strlen(job_desc->licenses) > MAX_STR_LEN)) {
+		info("_validate_job_create_req: strlen(licenses) too big (%d)",
+		     strlen(job_desc->licenses));
+		return ESLURM_PATHNAME_TOO_LONG;
+	}
 	if (job_desc->mail_user && (strlen(job_desc->mail_user) > MAX_STR_LEN)) {
 		info("_validate_job_create_req: strlen(mail_user) too big (%d)",
 		     strlen(job_desc->mail_user));
@@ -2539,6 +2552,7 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 	job_ptr->num_procs = job_desc->num_procs;
         job_ptr->cr_enabled = 0;
 
+	job_ptr->licenses  = xstrdup(job_desc->licenses);
 	job_ptr->mail_type = job_desc->mail_type;
 	job_ptr->mail_user = xstrdup(job_desc->mail_user);
 
@@ -2858,6 +2872,7 @@ static void _list_delete_job(void *job_entry)
 	xfree(job_ptr->node_addr);
 	xfree(job_ptr->account);
 	xfree(job_ptr->resp_host);
+	xfree(job_ptr->licenses);
 	xfree(job_ptr->mail_user);
 	xfree(job_ptr->network);
 	xfree(job_ptr->alloc_lps);
@@ -3029,6 +3044,7 @@ void pack_job(struct job_record *dump_job_ptr, Buf buffer)
 	packstr(dump_job_ptr->account, buffer);
 	packstr(dump_job_ptr->network, buffer);
 	packstr(dump_job_ptr->comment, buffer);
+	packstr(dump_job_ptr->licenses, buffer);
 
 	pack32(dump_job_ptr->exit_code, buffer);
 

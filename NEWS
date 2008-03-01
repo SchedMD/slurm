@@ -32,7 +32,9 @@ documents those changes that are of interest to users and admins.
     accounting.
  -- Moved clusteracct_storage plugin to accounting_storage plugin,
     jobacct_storage is still it's own plugin for now.
- -- Added template for slurm php extention
+ -- Added template for slurm php extention.
+ -- Add infrastructure to support allocation of cluster-wide licenses to jobs.
+    Full support will be added some time after version 1.3.0 is released.
 
 * Changes in SLURM 1.3.0-pre9
 =============================

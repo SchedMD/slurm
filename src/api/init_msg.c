@@ -78,6 +78,7 @@ void slurm_init_job_desc_msg(job_desc_msg_t * job_desc_msg)
 	job_desc_msg->job_min_memory  = NO_VAL;
 	job_desc_msg->job_min_tmp_disk= NO_VAL;
 	job_desc_msg->kill_on_node_fail = (uint16_t) NO_VAL;
+	job_desc_msg->licenses    = NULL;
 	job_desc_msg->name        = NULL;
 	job_desc_msg->network     = NULL;
 	job_desc_msg->nice        = NICE_OFFSET;
