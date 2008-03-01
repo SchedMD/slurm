@@ -340,10 +340,11 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 
 	/****** Line 8 ******/
 	snprintf(tmp_line, sizeof(tmp_line),
-		"Shared=%s Contiguous=%d CPUs/task=%u", 
+		"Shared=%s Contiguous=%d CPUs/task=%u Licenses=%s", 
 		 (job_ptr->shared == 0 ? "0" :
 		  job_ptr->shared == 1 ? "1" : "OK"),
-		 job_ptr->contiguous, job_ptr->cpus_per_task);
+		 job_ptr->contiguous, job_ptr->cpus_per_task,
+		 job_ptr->licenses);
 	xstrcat(out, tmp_line);
 
 	if (one_liner)

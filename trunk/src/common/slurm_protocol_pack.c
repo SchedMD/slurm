@@ -2092,6 +2092,7 @@ _unpack_job_info_members(job_info_t * job, Buf buffer)
 	safe_unpackstr_xmalloc(&job->account, &uint32_tmp, buffer);
 	safe_unpackstr_xmalloc(&job->network, &uint32_tmp, buffer);
 	safe_unpackstr_xmalloc(&job->comment, &uint32_tmp, buffer);
+	safe_unpackstr_xmalloc(&job->licenses,   &uint32_tmp, buffer);
 
 	safe_unpack32(&job->exit_code, buffer);
 	safe_unpack16(&job->num_cpu_groups, buffer);
@@ -2184,6 +2185,7 @@ unpack_error:
 	xfree(job->features);
 	xfree(job->work_dir);
 	xfree(job->command);
+	xfree(job->licenses);
 	xfree(job->req_nodes);
 	xfree(job->req_node_inx);
 	xfree(job->exc_nodes);
@@ -2247,6 +2249,8 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer)
 	pack16(build_ptr->job_requeue, buffer);
 
 	pack16(build_ptr->kill_wait, buffer);
+
+	packstr(build_ptr->licenses, buffer);
 
 	packstr(build_ptr->mail_prog, buffer);
 	pack16(build_ptr->max_job_cnt, buffer);
@@ -2406,6 +2410,8 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **
 
 	safe_unpack16(&build_ptr->kill_wait, buffer);
 
+	safe_unpackstr_xmalloc(&build_ptr->licenses, &uint32_tmp, buffer);
+
 	safe_unpackstr_xmalloc(&build_ptr->mail_prog, &uint32_tmp, buffer);
 	safe_unpack16(&build_ptr->max_job_cnt, buffer);
 	safe_unpack32(&build_ptr->max_mem_per_task, buffer);
@@ -2528,6 +2534,7 @@ unpack_error:
 	xfree(build_ptr->job_credential_private_key);
 	xfree(build_ptr->job_credential_public_certificate);
 	xfree(build_ptr->health_check_program);
+	xfree(build_ptr->licenses);
 	xfree(build_ptr->mail_prog);
 	xfree(build_ptr->mpi_default);
 	xfree(build_ptr->node_prefix);
@@ -2645,6 +2652,7 @@ _pack_job_desc_msg(job_desc_msg_t * job_desc_ptr, Buf buffer)
 	packstr(job_desc_ptr->network, buffer);
 	pack_time(job_desc_ptr->begin_time, buffer);
 
+	packstr(job_desc_ptr->licenses, buffer);
 	pack16(job_desc_ptr->mail_type, buffer);
 	packstr(job_desc_ptr->mail_user, buffer);
 	if(job_desc_ptr->select_jobinfo)
@@ -2776,6 +2784,7 @@ _unpack_job_desc_msg(job_desc_msg_t ** job_desc_buffer_ptr, Buf buffer)
 	safe_unpackstr_xmalloc(&job_desc_ptr->network, &uint32_tmp, buffer);
 	safe_unpack_time(&job_desc_ptr->begin_time, buffer);
 
+	safe_unpackstr_xmalloc(&job_desc_ptr->licenses, &uint32_tmp, buffer);
 	safe_unpack16(&job_desc_ptr->mail_type, buffer);
 	safe_unpackstr_xmalloc(&job_desc_ptr->mail_user, &uint32_tmp, buffer);
 
@@ -2812,6 +2821,7 @@ unpack_error:
 	xfree(job_desc_ptr->out);
 	xfree(job_desc_ptr->work_dir);
 	xfree(job_desc_ptr->network);
+	xfree(job_desc_ptr->licenses);
 	xfree(job_desc_ptr->mail_user);
 	select_g_free_jobinfo(&job_desc_ptr->select_jobinfo);
 	xfree(job_desc_ptr);

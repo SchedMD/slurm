@@ -183,6 +183,7 @@ void slurm_free_job_desc_msg(job_desc_msg_t * msg)
 			xfree(msg->environment[i]);
 		xfree(msg->environment);
 		xfree(msg->features);
+		xfree(msg->licenses);
 		xfree(msg->mail_user);
 		xfree(msg->name);
 		xfree(msg->partition);
@@ -270,6 +271,7 @@ void slurm_free_job_info_members(job_info_t * job)
 		xfree(job->dependency);
 		xfree(job->work_dir);
 		xfree(job->command);
+		xfree(job->licenses);
 	}
 }
 
@@ -910,6 +912,7 @@ void slurm_free_ctl_conf(slurm_ctl_conf_info_msg_t * config_ptr)
 		xfree(config_ptr->job_comp_pass);
 		xfree(config_ptr->job_credential_private_key);
 		xfree(config_ptr->job_credential_public_certificate);
+		xfree(config_ptr->licenses);
 		xfree(config_ptr->mail_prog);
 		xfree(config_ptr->mpi_default);
 		xfree(config_ptr->node_prefix);

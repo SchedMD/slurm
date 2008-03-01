@@ -131,12 +131,6 @@ s_p_options_t slurm_conf_options[] = {
 	{"CacheGroups", S_P_UINT16},
 	{"BackupAddr", S_P_STRING},
 	{"BackupController", S_P_STRING},
-	{"ClusterAcctStorageLoc", S_P_STRING},
-	{"ClusterAcctStorageType", S_P_STRING},
-	{"ClusterAcctStorageHost", S_P_STRING},
-	{"ClusterAcctStorageUser", S_P_STRING},
-	{"ClusterAcctStoragePass", S_P_STRING},
-	{"ClusterAcctStoragePort", S_P_UINT32},
 	{"ClusterName", S_P_STRING},
 	{"ControlAddr", S_P_STRING},
 	{"ControlMachine", S_P_STRING},
@@ -180,6 +174,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"GetEnvTimeout", S_P_UINT16},
 	{"KillTree", S_P_UINT16, defunct_option},
 	{"KillWait", S_P_UINT16},
+	{"Licenses", S_P_STRING},
 	{"MailProg", S_P_STRING},
 	{"MaxJobCount", S_P_UINT16},
 	{"MaxMemPerTask", S_P_UINT32},
@@ -1095,6 +1090,7 @@ free_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr, bool purge_node_hash)
 	xfree (ctl_conf_ptr->job_comp_pass);
 	xfree (ctl_conf_ptr->job_credential_private_key);
 	xfree (ctl_conf_ptr->job_credential_public_certificate);
+	xfree (ctl_conf_ptr->licenses);
 	xfree (ctl_conf_ptr->mail_prog);
 	xfree (ctl_conf_ptr->mpi_default);
 	xfree (ctl_conf_ptr->node_prefix);
@@ -1185,6 +1181,7 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	ctl_conf_ptr->job_file_append		= (uint16_t) NO_VAL;
 	ctl_conf_ptr->job_requeue		= (uint16_t) NO_VAL;
 	ctl_conf_ptr->kill_wait			= (uint16_t) NO_VAL;
+	xfree (ctl_conf_ptr->licenses);
 	xfree (ctl_conf_ptr->mail_prog);
 	ctl_conf_ptr->max_job_cnt		= (uint16_t) NO_VAL;
 	ctl_conf_ptr->max_mem_per_task          = 0;
@@ -1717,6 +1714,8 @@ validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 
 	if (!s_p_get_uint16(&conf->kill_wait, "KillWait", hashtbl))
 		conf->kill_wait = DEFAULT_KILL_WAIT;
+
+	s_p_get_string(&conf->mail_prog, "Licenses", hashtbl);
 
 	if (!s_p_get_string(&conf->mail_prog, "MailProg", hashtbl))
 		conf->mail_prog = xstrdup(DEFAULT_MAIL_PROG);

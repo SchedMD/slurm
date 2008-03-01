@@ -197,6 +197,8 @@ void slurm_print_ctl_conf ( FILE* out,
 		slurm_ctl_conf_ptr->job_requeue);
 	fprintf(out, "KillWait                = %u\n", 
 		slurm_ctl_conf_ptr->kill_wait);
+	fprintf(out, "Licenses                = %s\n",
+		slurm_ctl_conf_ptr->licenses);
 	fprintf(out, "MailProg                = %s\n",
 		slurm_ctl_conf_ptr->mail_prog);
 	fprintf(out, "MaxJobCount             = %u\n", 
