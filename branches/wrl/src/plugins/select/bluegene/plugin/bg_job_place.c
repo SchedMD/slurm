@@ -1313,15 +1313,15 @@ extern int test_job_list(List req_list)
 						break;
 					}
 					
-					continue;
-				} 
-				
-				will_run->job_ptr->start_time = starttime;
+					//continue;
+				} else
+					will_run->job_ptr->start_time 
+						= starttime;
 
 				if(will_run->job_ptr->time_limit != INFINITE
 				   && will_run->job_ptr->time_limit != NO_VAL) 
 					will_run->job_ptr->end_time =
-						starttime +
+						will_run->job_ptr->start_time +
 						will_run->job_ptr->time_limit *
 						60;
 				else if(will_run->job_ptr->part_ptr->max_time
@@ -1329,12 +1329,13 @@ extern int test_job_list(List req_list)
 					&& will_run->job_ptr->
 					part_ptr->max_time != NO_VAL) 
 					will_run->job_ptr->end_time =
-						starttime +
+						will_run->job_ptr->start_time +
 						will_run->job_ptr->
 						part_ptr->max_time * 60;
 				else
 					will_run->job_ptr->end_time = 
-						starttime + 31536000; // + year
+						will_run->job_ptr->start_time +
+						31536000; // + year
 						
 				select_g_set_jobinfo(
 					will_run->job_ptr->select_jobinfo,
