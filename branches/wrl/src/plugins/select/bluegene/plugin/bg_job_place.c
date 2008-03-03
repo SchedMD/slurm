@@ -398,7 +398,8 @@ static bg_record_t *_find_matching_block(List block_list,
 		} else if((bg_record->job_running != NO_JOB_RUNNING) 
 			  && (bg_record->job_running != job_ptr->job_id)
 			  && (!test_only 
-			      || job_block_test_list != bg_job_block_list)) {
+			      || (job_block_test_list != bg_job_block_list
+				  && bluegene_layout_mode == LAYOUT_DYNAMIC))) {
 			debug("block %s in use by %s job %d", 
 			      bg_record->bg_block_id,
 			      bg_record->user_name,
