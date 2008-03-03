@@ -365,14 +365,17 @@ extern int acct_storage_g_get_monthly_usage(acct_association_rec_t *assoc,
 
 /*********************** CLUSTER ACCOUNTING STORAGE **************************/
 
-extern int clusteracct_storage_g_node_down(struct node_record *node_ptr,
+extern int clusteracct_storage_g_node_down(char *cluster,
+					   struct node_record *node_ptr,
 					   time_t event_time,
 					   char *reason);
 
-extern int clusteracct_storage_g_node_up(struct node_record *node_ptr,
+extern int clusteracct_storage_g_node_up(char *cluster,
+					 struct node_record *node_ptr,
 					 time_t event_time);
 
-extern int clusteracct_storage_g_cluster_procs(uint32_t procs,
+extern int clusteracct_storage_g_cluster_procs(char *cluster,
+					       uint32_t procs,
 					       time_t event_time);
 
 /* 

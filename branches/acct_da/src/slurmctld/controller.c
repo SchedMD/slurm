@@ -137,6 +137,7 @@ log_options_t log_opts = LOG_OPTS_INITIALIZER;
 /* Global variables */
 slurmctld_config_t slurmctld_config;
 int bg_recover = DEFAULT_RECOVER;
+char *slurmctld_cluster_name = NULL; /* name of cluster */
 
 /* Local variables */
 static int	daemonize = DEFAULT_DAEMONIZE;
@@ -267,6 +268,8 @@ int main(int argc, char *argv[])
 	}
 	info("slurmctld version %s started", SLURM_VERSION);
 
+	slurmctld_cluster_name = slurmctld_conf.cluster_name;
+
 	if ((error_code = gethostname_short(node_name, MAX_SLURM_NAME)))
 		fatal("getnodename error %s", slurm_strerror(error_code));
 
@@ -352,6 +355,7 @@ int main(int argc, char *argv[])
 						continue;
 					
 					if(clusteracct_storage_g_node_down(
+						   slurmctld_cluster_name,
 						   node_ptr,
 						   event_time,
 						   node_ptr->reason)
@@ -501,7 +505,7 @@ int main(int argc, char *argv[])
 			"threads\n\n", cnt);
 	}
 	log_fini();
-	
+
 	if (dump_core)
 		abort();
 	else
@@ -856,7 +860,8 @@ static int _gold_cluster_ready()
 #endif
 	}
 
-	rc = clusteracct_storage_g_cluster_procs(procs, event_time);
+	rc = clusteracct_storage_g_cluster_procs(slurmctld_cluster_name,
+						 procs, event_time);
 
 	return rc;
 }
@@ -883,7 +888,8 @@ static int _gold_mark_all_nodes_down(char *reason, time_t event_time)
 	for (i = 0; i < node_record_count; i++, node_ptr++) {
 		if (node_ptr->name == '\0')
 			continue;
-		if((rc = clusteracct_storage_g_node_down(node_ptr, event_time,
+		if((rc = clusteracct_storage_g_node_down(slurmctld_cluster_name,
+							 node_ptr, event_time,
 							 reason))
 		   == SLURM_ERROR) 
 			break;

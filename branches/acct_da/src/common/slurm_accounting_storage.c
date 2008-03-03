@@ -91,12 +91,15 @@ typedef struct slurm_acct_storage_ops {
 	int (*get_monthly_usage)   (acct_association_rec_t *acct_assoc,
 				    time_t start, 
 				    time_t end);
-	int  (*node_down)          (struct node_record *node_ptr,
+	int  (*node_down)          (char *cluster,
+				    struct node_record *node_ptr,
 				    time_t event_time,
 				    char *reason);
-	int  (*node_up)            (struct node_record *node_ptr,
+	int  (*node_up)            (char *cluster,
+				    struct node_record *node_ptr,
 				    time_t event_time);
-	int  (*cluster_procs)      (uint32_t procs, time_t event_time);
+	int  (*cluster_procs)      (char *cluster,
+				    uint32_t procs, time_t event_time);
 	int (*c_get_hourly_usage)  (acct_cluster_rec_t *cluster_rec, 
 				    time_t start, time_t end,
 				    void *params);
@@ -702,33 +705,36 @@ extern int acct_storage_g_get_monthly_usage(acct_association_rec_t *acct_assoc,
 		(acct_assoc, start, end);
 }
 
-extern int clusteracct_storage_g_node_down(struct node_record *node_ptr,
+extern int clusteracct_storage_g_node_down(char *cluster,
+					   struct node_record *node_ptr,
 					   time_t event_time,
 					   char *reason)
 {
 	if (slurm_acct_storage_init() < 0)
 		return SLURM_ERROR;
  	return (*(g_acct_storage_context->ops.node_down))
-		(node_ptr, event_time, reason);
+		(cluster, node_ptr, event_time, reason);
 }
 
-extern int clusteracct_storage_g_node_up(struct node_record *node_ptr,
+extern int clusteracct_storage_g_node_up(char *cluster,
+					 struct node_record *node_ptr,
 					 time_t event_time)
 {
 	if (slurm_acct_storage_init() < 0)
 		return SLURM_ERROR;
  	return (*(g_acct_storage_context->ops.node_up))
-		(node_ptr, event_time);
+		(cluster, node_ptr, event_time);
 }
 
 
-extern int clusteracct_storage_g_cluster_procs(uint32_t procs,
+extern int clusteracct_storage_g_cluster_procs(char *cluster,
+					       uint32_t procs,
 					       time_t event_time)
 {
 	if (slurm_acct_storage_init() < 0)
 		return SLURM_ERROR;
  	return (*(g_acct_storage_context->ops.cluster_procs))
-		(procs, event_time);
+		(cluster, procs, event_time);
 }
 
 

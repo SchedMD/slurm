@@ -152,75 +152,75 @@ static int _check_for_job(uint32_t jobid, time_t submit)
 	return rc;
 }
 
-static char *_get_account_id(char *user, char *project, char *machine)
-{
-	gold_request_t *gold_request = NULL;
-	gold_response_t *gold_response = NULL;
-	char *gold_account_id = NULL;
-	gold_response_entry_t *resp_entry = NULL;
-	gold_name_value_t *name_val = NULL;
-	gold_account_t *gold_account = NULL;
-	ListIterator itr = list_iterator_create(gold_account_list);
+/* static char *_get_account_id(char *user, char *project, char *machine) */
+/* { */
+/* 	gold_request_t *gold_request = NULL; */
+/* 	gold_response_t *gold_response = NULL; */
+/* 	char *gold_account_id = NULL; */
+/* 	gold_response_entry_t *resp_entry = NULL; */
+/* 	gold_name_value_t *name_val = NULL; */
+/* 	gold_account_t *gold_account = NULL; */
+/* 	ListIterator itr = list_iterator_create(gold_account_list); */
 
-	while((gold_account = list_next(itr))) {
-		if(user && strcmp(gold_account->user, user))
-			continue;
-		if(project && strcmp(gold_account->project, project))
-			continue;
-		gold_account_id = xstrdup(gold_account->gold_id);
-		break;
-	}
-	list_iterator_destroy(itr);
+/* 	while((gold_account = list_next(itr))) { */
+/* 		if(user && strcmp(gold_account->user, user)) */
+/* 			continue; */
+/* 		if(project && strcmp(gold_account->project, project)) */
+/* 			continue; */
+/* 		gold_account_id = xstrdup(gold_account->gold_id); */
+/* 		break; */
+/* 	} */
+/* 	list_iterator_destroy(itr); */
 
-	if(gold_account_id) 
-		return gold_account_id;
+/* 	if(gold_account_id)  */
+/* 		return gold_account_id; */
 	
-	gold_request = create_gold_request(GOLD_OBJECT_ACCT,
-					   GOLD_ACTION_QUERY);
+/* 	gold_request = create_gold_request(GOLD_OBJECT_ACCT, */
+/* 					   GOLD_ACTION_QUERY); */
 
-	gold_request_add_selection(gold_request, "Id");
-	gold_request_add_condition(gold_request, "User", user,
-				   GOLD_OPERATOR_NONE, 0);
-	if(project)
-		gold_request_add_condition(gold_request, "Project", project,
-					   GOLD_OPERATOR_NONE, 0);
-	gold_request_add_condition(gold_request, "Machine", machine,
-				   GOLD_OPERATOR_NONE, 0);
+/* 	gold_request_add_selection(gold_request, "Id"); */
+/* 	gold_request_add_condition(gold_request, "User", user, */
+/* 				   GOLD_OPERATOR_NONE, 0); */
+/* 	if(project) */
+/* 		gold_request_add_condition(gold_request, "Project", project, */
+/* 					   GOLD_OPERATOR_NONE, 0); */
+/* 	gold_request_add_condition(gold_request, "Machine", machine, */
+/* 				   GOLD_OPERATOR_NONE, 0); */
 		
-	gold_response = get_gold_response(gold_request);
-	destroy_gold_request(gold_request);
+/* 	gold_response = get_gold_response(gold_request); */
+/* 	destroy_gold_request(gold_request); */
 
-	if(!gold_response) {
-		error("_get_account_id: no response received");
-		return NULL;
-	}
+/* 	if(!gold_response) { */
+/* 		error("_get_account_id: no response received"); */
+/* 		return NULL; */
+/* 	} */
 
-	if(gold_response->entry_cnt > 0) {
-		resp_entry = list_pop(gold_response->entries);
-		name_val = list_pop(resp_entry->name_val);
+/* 	if(gold_response->entry_cnt > 0) { */
+/* 		resp_entry = list_pop(gold_response->entries); */
+/* 		name_val = list_pop(resp_entry->name_val); */
 
-		gold_account_id = xstrdup(name_val->value);
+/* 		gold_account_id = xstrdup(name_val->value); */
 
-		destroy_gold_name_value(name_val);
-		destroy_gold_response_entry(resp_entry);
-		/* no need to keep track of machine since this is
-		 * always going to be on the same machine.
-		 */
-		gold_account = xmalloc(sizeof(gold_account_t));
-		gold_account->user = xstrdup(user);
-		gold_account->gold_id = xstrdup(gold_account_id);
-		if(project)
-			gold_account->project = xstrdup(project);
-		list_push(gold_account_list, gold_account);
-	} else {
-		error("no account found returning 0");
-		gold_account_id = xstrdup("0");
-	}
+/* 		destroy_gold_name_value(name_val); */
+/* 		destroy_gold_response_entry(resp_entry); */
+/* 		/\* no need to keep track of machine since this is */
+/* 		 * always going to be on the same machine. */
+/* 		 *\/ */
+/* 		gold_account = xmalloc(sizeof(gold_account_t)); */
+/* 		gold_account->user = xstrdup(user); */
+/* 		gold_account->gold_id = xstrdup(gold_account_id); */
+/* 		if(project) */
+/* 			gold_account->project = xstrdup(project); */
+/* 		list_push(gold_account_list, gold_account); */
+/* 	} else { */
+/* 		error("no account found returning 0"); */
+/* 		gold_account_id = xstrdup("0"); */
+/* 	} */
 
-	destroy_gold_response(gold_response);
+/* 	destroy_gold_response(gold_response); */
 
-	return gold_account_id;
-}
+/* 	return gold_account_id; */
+/* } */
 
 static gold_account_t *_get_struct_from_account_id(char *gold_account_id)
 {
@@ -299,7 +299,7 @@ static int _add_edit_job(struct job_record *job_ptr, gold_object_t action)
 	char tmp_buff[50];
 	int rc = SLURM_ERROR;
 	char *gold_account_id = NULL;
-	char *user = uid_to_string((uid_t)job_ptr->user_id);
+//	char *user = uid_to_string((uid_t)job_ptr->user_id);
 	char *jname = NULL;
 	int tmp = 0, i = 0;
 	char *account = NULL;
@@ -335,9 +335,10 @@ static int _add_edit_job(struct job_record *job_ptr, gold_object_t action)
 			 (int)job_ptr->details->submit_time);
 		gold_request_add_assignment(gold_request, "SubmitTime",
 					    tmp_buff);
-		
-		gold_account_id = _get_account_id(user, account, 
-						  cluster_name);
+
+/* FIX ME: This should be the assoc id from the job_ptr */		
+/* 		gold_account_id = _get_account_id(user, account,  */
+/* 						  cluster_name); */
 		
 		gold_request_add_assignment(gold_request, "GoldAccountId",
 					    gold_account_id);
