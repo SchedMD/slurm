@@ -396,38 +396,44 @@ uninstall-am:
 	ps ps-am uninstall uninstall-am
 
 
+@HAVE_AIX_TRUE@	add_flags = "CC=\"$(CC)\" CCFLAGS=\"-g -static $(CFLAGS)\""
+@HAVE_AIX_FALSE@	add_flags = "CC=\"$(CC)\" LD=\"$(CC) $(CFLAGS)\" CCFLAGS=\"-g -static $(CFLAGS)\""
+
 all-local:
-@HAVE_AIX_TRUE@	@cd $(php_dir) && \
-@HAVE_AIX_TRUE@	if [ ! -f Makefile ]; then \
-@HAVE_AIX_TRUE@		if [ ! -f configure ]; then \
-@HAVE_AIX_TRUE@			$(phpize); \
-@HAVE_AIX_TRUE@		fi && \
-@HAVE_AIX_TRUE@		./configure; \
-@HAVE_AIX_TRUE@	fi && \
-@HAVE_AIX_TRUE@	$(MAKE) CC="$(CC)" CCFLAGS="-g -static $(CFLAGS)"; \
-@HAVE_AIX_TRUE@	cd ..;
-@HAVE_AIX_FALSE@	@cd $(php_dir) && \
-@HAVE_AIX_FALSE@	if [ ! -f Makefile ]; then \
-@HAVE_AIX_FALSE@		if [ ! -f configure ]; then \
-@HAVE_AIX_FALSE@			$(phpize); \
-@HAVE_AIX_FALSE@		fi && \
-@HAVE_AIX_FALSE@		./configure; \
-@HAVE_AIX_FALSE@	fi && \
-@HAVE_AIX_FALSE@	$(MAKE) CC="$(CC)" LD="$(CC) $(CFLAGS)" CCFLAGS="-g -static $(CFLAGS)"; \
-@HAVE_AIX_FALSE@	cd ..;
+	@cd $(php_dir) && \
+	if [ ! -f Makefile ]; then \
+		if [ ! -f configure ]; then \
+			$(phpize); \
+		fi && \
+		./configure; \
+		if [ ! -f Makefile ]; then \
+			exit 0;\
+		fi \
+	fi && \
+	$(MAKE) $(add_flags); \
+	cd ..;	
 
 install-exec-local:
 	@cd $(php_dir) && \
-	$(MAKE) DESTDIR=$(DESTDIR) install && \
+	if [ ! -f Makefile ]; then \
+		exit 0;\
+	fi && \
+	$(MAKE) DESTDIR=$(DESTDIR) $(add_flags) install && \
 	cd ..;
 
 clean-generic:
 	@cd $(php_dir); \
+	if [ ! -f Makefile ]; then \
+		exit 0;\
+	fi && \
 	$(MAKE) clean; \
 	cd ..;
 
 distclean-generic:
 	@cd $(php_dir); \
+	if [ ! -f Makefile ]; then \
+		exit 0;\
+	fi && \
 	$(MAKE) clean; \
 	$(phpize) --clean; \
 	cd ..;
