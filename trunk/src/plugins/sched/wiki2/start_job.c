@@ -116,28 +116,35 @@ extern int	start_job(char *cmd_ptr, int *err_code, char **err_msg)
 		return -1;
 	}
 	task_ptr += 9;	/* skip over "TASKLIST=" */
-	tasklist = moab2slurm_task_list(task_ptr, &task_cnt);
-	if (tasklist)
-		hl = hostlist_create(tasklist);
-	if ((tasklist == NULL) || (hl == NULL)) {
-		*err_code = -300;
-		*err_msg = "STARTJOB TASKLIST is invalid";
-		error("wiki: STARTJOB TASKLIST is invalid: %s",
-			task_ptr);
-		xfree(tasklist);
-		return -1;
-	}
-	hostlist_uniq(hl);
-	hostlist_sort(hl);
-	i = hostlist_ranged_string(hl, sizeof(host_string), host_string);
-	hostlist_destroy(hl);
-	if (i < 0) {
-		*err_code = -300;
-		*err_msg = "STARTJOB has invalid TASKLIST";
-		error("wiki: STARTJOB has invalid TASKLIST: %s",
-			host_string);
-		xfree(tasklist);
-		return -1;
+	if ((task_ptr[0] == '\0') || isspace(task_ptr[0])) {
+		/* No TASKLIST specification, useful for testing */
+		host_string[0] = '0';
+		task_cnt = 0;
+		tasklist = NULL;
+	} else {
+		tasklist = moab2slurm_task_list(task_ptr, &task_cnt);
+		if (tasklist)
+			hl = hostlist_create(tasklist);
+		if ((tasklist == NULL) || (hl == NULL)) {
+			*err_code = -300;
+			*err_msg = "STARTJOB TASKLIST is invalid";
+			error("wiki: STARTJOB TASKLIST is invalid: %s",
+			      task_ptr);
+			xfree(tasklist);
+			return -1;
+		}
+		hostlist_uniq(hl);
+		hostlist_sort(hl);
+		i = hostlist_ranged_string(hl, sizeof(host_string), host_string);
+		hostlist_destroy(hl);
+		if (i < 0) {
+			*err_code = -300;
+			*err_msg = "STARTJOB has invalid TASKLIST";
+			error("wiki: STARTJOB has invalid TASKLIST: %s",
+			      host_string);
+			xfree(tasklist);
+			return -1;
+		}
 	}
 
 	rc = _start_job(jobid, task_cnt, host_string, tasklist, comment_ptr,

@@ -35,6 +35,8 @@ documents those changes that are of interest to users and admins.
  -- Added template for slurm php extention.
  -- Add infrastructure to support allocation of cluster-wide licenses to jobs.
     Full support will be added some time after version 1.3.0 is released.
+ -- In sched/wiki2 with select/bluegene, add support for WILLRUN command
+    to accept multiple jobs with start time specifications.
 
 * Changes in SLURM 1.3.0-pre9
 =============================
