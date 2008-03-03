@@ -96,7 +96,6 @@ const char plugin_type[] = "jobacct_storage/gold";
 const uint32_t plugin_version = 100;
 
 
-static char *cluster_name = NULL;
 static List gold_account_list = NULL;
 
 /* _check_for_job 
@@ -440,10 +439,6 @@ extern int init ( void )
 	uint32_t port = 0;
 	struct	stat statbuf;
 
-	if(!(cluster_name = slurm_get_cluster_name())) 
-		fatal("To run jobacct_storage/gold you have to specify "
-		      "ClusterName in your slurm.conf");
-
 	if(!(keyfile = slurm_get_jobacct_storage_pass()) 
 	   || strlen(keyfile) < 1) {
 		keyfile = xstrdup("/etc/gold/auth_key");
@@ -472,14 +467,14 @@ extern int init ( void )
 		       "gold using default %u", port);
 	}
 
-	debug2("connecting from %s to gold with keyfile='%s' for %s(%d)",
-	       cluster_name, keyfile, host, port);
+	debug2("connecting to gold with keyfile='%s' for %s(%d)",
+	       keyfile, host, port);
 
-	init_gold(cluster_name, keyfile, host, port);
+	init_gold(keyfile, host, port);
 
 	if(!gold_account_list) 
 		gold_account_list = list_create(_destroy_gold_account);
-		
+	/* don't free cluster name here since it is used elsewhere */	
 	xfree(keyfile);
 	xfree(host);
 
@@ -489,7 +484,6 @@ extern int init ( void )
 
 extern int fini ( void )
 {
-	xfree(cluster_name);
 	if(gold_account_list) 
 		list_destroy(gold_account_list);
 	fini_gold();

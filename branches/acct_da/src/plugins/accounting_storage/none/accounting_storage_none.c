@@ -213,17 +213,20 @@ extern int acct_storage_p_get_monthly_usage(acct_association_rec_t *acct_assoc,
 	return rc;
 }
 
-extern int clusteracct_storage_p_node_down(struct node_record *node_ptr,
+extern int clusteracct_storage_p_node_down(char *cluster,
+					   struct node_record *node_ptr,
 					   time_t event_time, char *reason)
 {
 	return SLURM_SUCCESS;
 }
-extern int clusteracct_storage_p_node_up(struct node_record *node_ptr,
+extern int clusteracct_storage_p_node_up(char *cluster,
+					 struct node_record *node_ptr,
 					 time_t event_time)
 {
 	return SLURM_SUCCESS;
 }
-extern int clusteracct_storage_p_cluster_procs(uint32_t procs,
+extern int clusteracct_storage_p_cluster_procs(char *cluster,
+					       uint32_t procs,
 					       time_t event_time)
 {
 	return SLURM_SUCCESS;

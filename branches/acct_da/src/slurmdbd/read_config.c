@@ -109,7 +109,7 @@ extern int read_slurmdbd_conf(void)
 		{"PidFile", S_P_STRING},
 		{"SlurmUser", S_P_STRING},
 		{"StorageHost", S_P_STRING},
-		{"StoragePassword", S_P_STRING},
+		{"StoragePass", S_P_STRING},
 		{"StoragePort", S_P_UINT16},
 		{"StorageType", S_P_STRING},
 		{"StorageUser", S_P_STRING},
@@ -150,7 +150,7 @@ extern int read_slurmdbd_conf(void)
 		s_p_get_string(&slurmdbd_conf->storage_host,
 				"StorageHost", tbl);
 		s_p_get_string(&slurmdbd_conf->storage_password,
-				"StoragePassword", tbl);
+				"StoragePass", tbl);
 		s_p_get_uint16(&slurmdbd_conf->storage_port, "StoragePort", tbl);
 		s_p_get_string(&slurmdbd_conf->storage_type,
 				"StorageType", tbl);
@@ -204,7 +204,7 @@ extern void log_config(void)
 	debug2("SlurmUser         = %s(%u)", 
 		slurmdbd_conf->slurm_user_name, slurmdbd_conf->slurm_user_id); 
 	debug2("StorageHost       = %s", slurmdbd_conf->storage_host);
-	debug2("StoragePassword   = %s", slurmdbd_conf->storage_password);
+	debug2("StoragePass       = %s", slurmdbd_conf->storage_password);
 	debug2("StoragePort       = %u", slurmdbd_conf->storage_port);
 	debug2("StorageType       = %s", slurmdbd_conf->storage_type);
 	debug2("StorageUser       = %s", slurmdbd_conf->storage_user);

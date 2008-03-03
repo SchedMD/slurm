@@ -88,7 +88,6 @@ const char plugin_name[] = "Accounting storage GOLD plugin";
 const char plugin_type[] = "accounting_storage/gold";
 const uint32_t plugin_version = 100;
 
-static char *cluster_name = NULL;
 static List gold_association_list = NULL;
 
 static void _destroy_char(void *object);
@@ -517,10 +516,6 @@ extern int init ( void )
 	uint32_t port = 0;
 	struct	stat statbuf;
 
-	if(!(cluster_name = slurm_get_cluster_name())) 
-		fatal("To run acct_storage/gold you have to specify "
-		      "ClusterName in your slurm.conf");
-
 	if(!(keyfile = slurm_get_accounting_storage_pass()) 
 	   || strlen(keyfile) < 1) {
 		keyfile = xstrdup("/etc/gold/auth_key");
@@ -549,12 +544,11 @@ extern int init ( void )
 		       "gold using default %u", port);
 	}
 
-	debug2("connecting from %s to gold with keyfile='%s' for %s(%d)",
-	       cluster_name, keyfile, host, port);
+	debug2("connecting to gold with keyfile='%s' for %s(%d)",
+	       keyfile, host, port);
 
-	init_gold(cluster_name, keyfile, host, port);
+	init_gold(keyfile, host, port);
 
-	xfree(cluster_name);
 	xfree(keyfile);
 	xfree(host);
 
@@ -564,7 +558,6 @@ extern int init ( void )
 
 extern int fini ( void )
 {
-	xfree(cluster_name);
 	if(gold_association_list)
 		list_destroy(gold_association_list);
 	fini_gold();
@@ -872,20 +865,13 @@ extern int acct_storage_p_add_associations(List association_list)
 
 extern uint32_t acct_storage_p_get_assoc_id(acct_association_rec_t *assoc)
 {
-	uint32_t id = (uint32_t)NO_VAL;
-	uint32_t non_part = (uint32_t)NO_VAL;
 	ListIterator itr = NULL;
 	acct_association_rec_t * found_assoc = NULL;
+	uint32_t id = (uint32_t)NO_VAL;
 
-	if(!gold_association_list) {
-		acct_association_cond_t assoc_q;
-		memset(&assoc_q, 0, sizeof(acct_association_cond_t));
-		assoc_q.cluster_list = list_create(_destroy_char);
-		list_push(assoc_q.cluster_list, cluster_name);
-		gold_association_list =
-			acct_storage_g_get_associations(&assoc_q);
-		list_destroy(assoc_q.cluster_list);
-	}
+	if(!gold_association_list) 
+		gold_association_list = acct_storage_g_get_associations(NULL);
+
 
 	if(!assoc->cluster || !assoc->acct) {
 		error("acct_storage_p_get_assoc_id: "
@@ -910,16 +896,14 @@ extern uint32_t acct_storage_p_get_assoc_id(acct_association_rec_t *assoc)
 		   && (!assoc->partition 
 		       || strcasecmp(assoc->partition, 
 				     found_assoc->partition))) {
-			non_part = assoc->id;
+			id = assoc->id;
 			continue;
 		}
+
 		id = assoc->id;
 		break;
 	}
 	list_iterator_destroy(itr);
-
-	if(id == (uint32_t)NO_VAL)
-		id = non_part;
 
 	return id;
 }
@@ -2440,7 +2424,8 @@ extern int acct_storage_p_get_monthly_usage(
 	return rc;
 }
 
-extern int clusteracct_storage_p_node_down(struct node_record *node_ptr,
+extern int clusteracct_storage_p_node_down(char *cluster,
+					   struct node_record *node_ptr,
 					   time_t event_time,
 					   char *reason)
 {
@@ -2469,7 +2454,7 @@ extern int clusteracct_storage_p_node_down(struct node_record *node_ptr,
 	if(!gold_request) 
 		return rc;
 	
-	gold_request_add_condition(gold_request, "Machine", cluster_name,
+	gold_request_add_condition(gold_request, "Machine", cluster,
 				   GOLD_OPERATOR_NONE, 0);
 	gold_request_add_condition(gold_request, "EndTime", "0",
 				   GOLD_OPERATOR_NONE, 0);
@@ -2502,7 +2487,7 @@ extern int clusteracct_storage_p_node_down(struct node_record *node_ptr,
 	if(!gold_request) 
 		return rc;
 	
-	gold_request_add_assignment(gold_request, "Machine", cluster_name);
+	gold_request_add_assignment(gold_request, "Machine", cluster);
 	snprintf(tmp_buff, sizeof(tmp_buff), "%d", (int)event_time);
 	gold_request_add_assignment(gold_request, "StartTime", tmp_buff);
 	gold_request_add_assignment(gold_request, "Name", node_ptr->name);
@@ -2534,7 +2519,8 @@ extern int clusteracct_storage_p_node_down(struct node_record *node_ptr,
 	return rc;
 }
 
-extern int clusteracct_storage_p_node_up(struct node_record *node_ptr,
+extern int clusteracct_storage_p_node_up(char *cluster,
+					 struct node_record *node_ptr,
 					 time_t event_time)
 {
 	int rc = SLURM_ERROR;
@@ -2552,7 +2538,7 @@ extern int clusteracct_storage_p_node_up(struct node_record *node_ptr,
 	if(!gold_request) 
 		return rc;
 	
-	gold_request_add_condition(gold_request, "Machine", cluster_name,
+	gold_request_add_condition(gold_request, "Machine", cluster,
 				   GOLD_OPERATOR_NONE, 0);
 	gold_request_add_condition(gold_request, "EndTime", "0",
 				   GOLD_OPERATOR_NONE, 0);
@@ -2583,7 +2569,8 @@ extern int clusteracct_storage_p_node_up(struct node_record *node_ptr,
 	return rc;
 }
 
-extern int clusteracct_storage_p_cluster_procs(uint32_t procs,
+extern int clusteracct_storage_p_cluster_procs(char *cluster,
+					       uint32_t procs,
 					       time_t event_time)
 {
 	static uint32_t last_procs = -1;
@@ -2604,7 +2591,7 @@ extern int clusteracct_storage_p_cluster_procs(uint32_t procs,
 #if _DEBUG
 	slurm_make_time_str(&event_time, tmp_buff, sizeof(tmp_buff));
 	info("cluster_acct_procs: %s has %u total CPUs at %s", 
-	     cluster_name, procs, tmp_buff);
+	     cluster, procs, tmp_buff);
 #endif
 	
 	/* get the last known one */
@@ -2612,7 +2599,7 @@ extern int clusteracct_storage_p_cluster_procs(uint32_t procs,
 					   GOLD_ACTION_QUERY);
 	if(!gold_request) 
 		return rc;
-	gold_request_add_condition(gold_request, "Machine", cluster_name,
+	gold_request_add_condition(gold_request, "Machine", cluster,
 				   GOLD_OPERATOR_NONE, 0);
 	gold_request_add_condition(gold_request, "EndTime", "0",
 				   GOLD_OPERATOR_NONE, 0);
@@ -2662,7 +2649,7 @@ extern int clusteracct_storage_p_cluster_procs(uint32_t procs,
 			return rc;
 		
 		gold_request_add_condition(gold_request, "Machine",
-					   cluster_name,
+					   cluster,
 					   GOLD_OPERATOR_NONE, 0);
 		gold_request_add_condition(gold_request, "EndTime", "0",
 					   GOLD_OPERATOR_NONE, 0);
@@ -2697,7 +2684,7 @@ extern int clusteracct_storage_p_cluster_procs(uint32_t procs,
 	if(!gold_request) 
 		return rc;
 	
-	gold_request_add_assignment(gold_request, "Machine", cluster_name);
+	gold_request_add_assignment(gold_request, "Machine", cluster);
 	snprintf(tmp_buff, sizeof(tmp_buff), "%d", (int)event_time);
 	gold_request_add_assignment(gold_request, "StartTime", tmp_buff);
 	snprintf(tmp_buff, sizeof(tmp_buff), "%u", procs);

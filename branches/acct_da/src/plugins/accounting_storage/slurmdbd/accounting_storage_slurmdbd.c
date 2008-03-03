@@ -252,12 +252,14 @@ extern int acct_storage_p_get_monthly_usage(acct_association_rec_t *acct_assoc,
 	return rc;
 }
 
-extern int clusteracct_storage_p_node_down(struct node_record *node_ptr,
+extern int clusteracct_storage_p_node_down(char *cluster,
+					   struct node_record *node_ptr,
 					   time_t event_time, char *reason)
 {
 	slurmdbd_msg_t msg;
 	dbd_node_state_msg_t req;
 
+	req.cluster_name = cluster;
 	req.hostlist   = node_ptr->name;
 	req.new_state  = DBD_NODE_STATE_DOWN;
 	req.event_time = event_time;
@@ -270,12 +272,14 @@ extern int clusteracct_storage_p_node_down(struct node_record *node_ptr,
 
 	return SLURM_SUCCESS;
 }
-extern int clusteracct_storage_p_node_up(struct node_record *node_ptr,
+extern int clusteracct_storage_p_node_up(char *cluster,
+					 struct node_record *node_ptr,
 					 time_t event_time)
 {
 	slurmdbd_msg_t msg;
 	dbd_node_state_msg_t req;
 
+	req.cluster_name = cluster;
 	req.hostlist   = node_ptr->name;
 	req.new_state  = DBD_NODE_STATE_UP;
 	req.event_time = event_time;
@@ -288,13 +292,14 @@ extern int clusteracct_storage_p_node_up(struct node_record *node_ptr,
 
 	return SLURM_SUCCESS;
 }
-extern int clusteracct_storage_p_cluster_procs(uint32_t procs,
+extern int clusteracct_storage_p_cluster_procs(char *cluster,
+					       uint32_t procs,
 					       time_t event_time)
 {
 	slurmdbd_msg_t msg;
 	dbd_cluster_procs_msg_t req;
 
-	req.cluster_name = cluster_name;
+	req.cluster_name = cluster;
 	req.proc_count   = procs;
 	req.event_time   = event_time;
 	msg.msg_type     = DBD_CLUSTER_PROCS;
