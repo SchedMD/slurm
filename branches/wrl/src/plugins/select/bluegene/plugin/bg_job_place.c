@@ -945,7 +945,7 @@ static int _find_best_block_match(List block_list,
 			continue;
 		}
 		
-		if(create_try)
+		if(create_try || bluegene_layout_mode != LAYOUT_DYNAMIC)
 			goto no_match;
 		
 		if((rc = _dynamically_request(block_list, blocks_added,
