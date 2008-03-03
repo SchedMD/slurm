@@ -14,7 +14,7 @@ all-local:
 		if [ ! -f configure ]; then \
 			$(phpize); \
 		fi && \
-		./configure; \
+		./configure ; \
 		if [ ! -f Makefile ]; then \
 			exit 0;\
 		fi \
@@ -27,7 +27,7 @@ install-exec-local:
 	if [ ! -f Makefile ]; then \
 		exit 0;\
 	fi && \
-	$(MAKE) DESTDIR=$(DESTDIR) $(add_flags) install && \
+	$(MAKE) INSTALL_ROOT=$(DESTDIR) $(add_flags) install && \
 	cd ..;
 
 clean-generic:
