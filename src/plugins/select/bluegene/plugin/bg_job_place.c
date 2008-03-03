@@ -57,6 +57,15 @@ _STMT_START {		\
 
 
 pthread_mutex_t create_dynamic_mutex = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t job_list_test_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+/* This list is for the test_job_list function because we will be
+ * adding and removing blocks off the bg_job_block_list and don't want
+ * to ruin that list in submit_job it should = bg_job_block_list
+ * otherwise it should be a copy of that list.
+ */
+List job_block_test_list = NULL;
+
 
 static void _rotate_geo(uint16_t *req_geometry, int rot_cnt);
 static int _bg_record_sort_aval_inc(bg_record_t* rec_a, bg_record_t* rec_b); 
@@ -86,7 +95,7 @@ static int _find_best_block_match(List block_list, int *blocks_added,
 				  bitstr_t* slurm_block_bitmap,
 				  uint32_t min_nodes, 
 				  uint32_t max_nodes, uint32_t req_nodes,
-				  int spec, bg_record_t** found_bg_record,
+				  bg_record_t** found_bg_record,
 				  bool test_only);
 static int _sync_block_lists(List full_list, List incomp_list);
 
@@ -388,14 +397,16 @@ static bg_record_t *_find_matching_block(List block_list,
 			continue;
 		} else if((bg_record->job_running != NO_JOB_RUNNING) 
 			  && (bg_record->job_running != job_ptr->job_id)
-			  && !test_only) {
+			  && (!test_only 
+			      || (job_block_test_list != bg_job_block_list
+				  && bluegene_layout_mode == LAYOUT_DYNAMIC))) {
 			debug("block %s in use by %s job %d", 
 			      bg_record->bg_block_id,
 			      bg_record->user_name,
 			      bg_record->job_running);
 			continue;
 		}
-		
+
 		/* Check processor count */
 		proc_cnt = bg_record->bp_count * bg_record->cpus_per_bp;
 		debug3("asking for %u-%u looking at %d", 
@@ -617,17 +628,19 @@ static int _dynamically_request(List block_list, int *blocks_added,
 	list_of_lists = list_create(NULL);
 	
 	if(user_req_nodes) 
-		list_append(list_of_lists, bg_job_block_list);
+		list_append(list_of_lists, job_block_test_list);
 	else {
 		list_append(list_of_lists, block_list);
-		if(list_count(block_list) != list_count(bg_booted_block_list)) {
+		if(job_block_test_list == bg_job_block_list &&
+		   list_count(block_list) != list_count(bg_booted_block_list)) {
 			list_append(list_of_lists, bg_booted_block_list);
 			if(list_count(bg_booted_block_list) 
-			   != list_count(bg_job_block_list)) 
-				list_append(list_of_lists, bg_job_block_list);
+			   != list_count(job_block_test_list)) 
+				list_append(list_of_lists, job_block_test_list);
 		} else if(list_count(block_list) 
-			  != list_count(bg_job_block_list)) 
-			list_append(list_of_lists, bg_job_block_list);
+			  != list_count(job_block_test_list)) {
+			list_append(list_of_lists, job_block_test_list);
+		}
 	}
 	itr = list_iterator_create(list_of_lists);
 	while ((temp_list = (List)list_next(itr))) {
@@ -648,14 +661,20 @@ static int _dynamically_request(List block_list, int *blocks_added,
 				if(block_exist_in_list(block_list, bg_record))
 					destroy_bg_record(bg_record);
 				else {
-					if(configure_block(bg_record)
-					   == SLURM_ERROR) {
-						destroy_bg_record(bg_record);
-						error("_dynamically_request: "
-						      "unable to configure "
-						      "block");
-						rc = SLURM_ERROR;
-						break;
+					if(job_block_test_list 
+					   == bg_job_block_list) {
+						if(configure_block(bg_record)
+						   == SLURM_ERROR) {
+							destroy_bg_record(
+								bg_record);
+							error("_dynamically_"
+							      "request: "
+							      "unable to "
+							      "configure "
+							      "block");
+							rc = SLURM_ERROR;
+							break;
+						}
 					}
 					list_append(block_list, bg_record);
 					print_bg_record(bg_record);
@@ -672,7 +691,7 @@ static int _dynamically_request(List block_list, int *blocks_added,
 			rc = SLURM_ERROR;
 			break;
 		} 
-					   
+
 		memcpy(request->geometry, start_geo,
 		       sizeof(int)*BA_SYSTEM_DIMENSIONS);
 	
@@ -687,9 +706,6 @@ static int _dynamically_request(List block_list, int *blocks_added,
 /*
  * finds the best match for a given job request 
  * 
- * IN - int spec right now holds the place for some type of
- * specification as to the importance of certain job params, for
- * instance, geometry, type, size, etc.
  * 
  * OUT - block_id of matched block, NULL otherwise
  * returns 1 for error (no match)
@@ -700,7 +716,7 @@ static int _find_best_block_match(List block_list,
 				  struct job_record* job_ptr, 
 				  bitstr_t* slurm_block_bitmap,
 				  uint32_t min_nodes, uint32_t max_nodes,
-				  uint32_t req_nodes, int spec,
+				  uint32_t req_nodes,
 				  bg_record_t** found_bg_record, 
 				  bool test_only)
 {
@@ -835,9 +851,6 @@ static int _find_best_block_match(List block_list,
 		target_size = min_nodes;
 	}
 	
-	/* this is where we should have the control flow depending on
-	 * the spec arguement */
-		
 	*found_bg_record = NULL;
 	allow = 0;
 
@@ -933,7 +946,7 @@ static int _find_best_block_match(List block_list,
 			continue;
 		}
 		
-		if(create_try)
+		if(create_try || bluegene_layout_mode != LAYOUT_DYNAMIC)
 			goto no_match;
 		
 		if((rc = _dynamically_request(block_list, blocks_added,
@@ -951,7 +964,10 @@ static int _find_best_block_match(List block_list,
 			List job_list = NULL;
 			debug("trying with empty machine");
 			slurm_mutex_lock(&block_state_mutex);
-			job_list = copy_bg_list(bg_job_block_list);
+			if(job_block_test_list == bg_job_block_list) 
+				job_list = copy_bg_list(job_block_test_list);
+			else
+				job_list = job_block_test_list;
 			slurm_mutex_unlock(&block_state_mutex);
 			list_sort(job_list, (ListCmpF)_bg_record_sort_aval_inc);
 			while(1) {
@@ -978,15 +994,42 @@ static int _find_best_block_match(List block_list,
 					continue;
 				}
 				rc = SLURM_SUCCESS;
+				/* outside of the job_test_list this
+				 * gets destroyed later, so don't worry
+				 * about it now 
+				 */
 				(*found_bg_record) = list_pop(new_blocks);
 				if(bg_record) {
 					(*found_bg_record)->job_ptr 
 						= bg_record->job_ptr; 
 					destroy_bg_record(bg_record);
 				}
+					
+				if(job_block_test_list != bg_job_block_list) {
+					list_append(block_list,
+						    (*found_bg_record));
+					while((bg_record = 
+					       list_pop(new_blocks))) {
+						if(block_exist_in_list(
+							   block_list,
+							   bg_record))
+							destroy_bg_record(
+								bg_record);
+						else {
+							list_append(block_list,
+								    bg_record);
+//					print_bg_record(bg_record);
+						}
+					}
+				} 
+					
 				list_destroy(new_blocks);
 				break;
 			}
+
+			if(job_block_test_list == bg_job_block_list) 
+				list_destroy(job_list);
+
 			goto end_it;
 		} else {
 			break;
@@ -1056,7 +1099,6 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 		      uint32_t min_nodes, uint32_t max_nodes, uint32_t req_nodes, 
 		      bool test_only)
 {
-	int spec = 1; /* this will be like, keep TYPE a priority, etc,  */
 	bg_record_t* bg_record = NULL;
 	char buf[100];
 	int i, rc = SLURM_SUCCESS;
@@ -1068,7 +1110,9 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 
 	if(bluegene_layout_mode == LAYOUT_DYNAMIC)
 		slurm_mutex_lock(&create_dynamic_mutex);
-	
+
+	job_block_test_list = bg_job_block_list;
+
 	select_g_sprint_jobinfo(job_ptr->select_jobinfo, buf, sizeof(buf), 
 				SELECT_PRINT_MIXED);
 	debug("bluegene:submit_job: %s nodes=%u-%u-%u", 
@@ -1095,7 +1139,7 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 
 	rc = _find_best_block_match(block_list, &blocks_added,
 				    job_ptr, slurm_block_bitmap, min_nodes, 
-				    max_nodes, req_nodes, spec, 
+				    max_nodes, req_nodes,  
 				    &bg_record, test_only);
 	
 	if(rc == SLURM_SUCCESS) {
@@ -1184,3 +1228,214 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 	return rc;
 }
 
+extern int test_job_list(List req_list)
+{
+	bg_record_t* bg_record = NULL;
+	bg_record_t* new_record = NULL;
+	char buf[100];
+	int rc = SLURM_SUCCESS;
+//	uint16_t tmp16 = (uint16_t)NO_VAL;
+	List block_list = NULL;
+	int block_list_count = 0;
+	int blocks_added = 0;
+	int starttime = time(NULL);
+	ListIterator itr = NULL;
+	select_will_run_t *will_run = NULL;
+
+	slurm_mutex_lock(&job_list_test_mutex);
+	
+	if(bluegene_layout_mode == LAYOUT_DYNAMIC)
+		slurm_mutex_lock(&create_dynamic_mutex);
+
+	job_block_test_list = copy_bg_list(bg_job_block_list);
+
+	slurm_mutex_lock(&block_state_mutex);
+	block_list = copy_bg_list(bg_list);
+	slurm_mutex_unlock(&block_state_mutex);
+
+	itr = list_iterator_create(req_list);
+	while((will_run = list_next(itr))) {
+		if(!will_run->job_ptr) {
+			error("test_job_list: you need to give me a job_ptr");
+			rc = SLURM_ERROR;
+			break;
+		}
+		
+		select_g_sprint_jobinfo(will_run->job_ptr->select_jobinfo,
+					buf, sizeof(buf), 
+					SELECT_PRINT_MIXED);
+		debug("bluegene:submit_job_list: %s nodes=%u-%u-%u", 
+		      buf, will_run->min_nodes,
+		      will_run->req_nodes, will_run->max_nodes);
+		list_sort(block_list, (ListCmpF)_bg_record_sort_aval_dec);
+		block_list_count = list_count(block_list);
+		rc = _find_best_block_match(block_list, &blocks_added,
+					    will_run->job_ptr,
+					    will_run->avail_nodes,
+					    will_run->min_nodes, 
+					    will_run->max_nodes,
+					    will_run->req_nodes, 
+					    &bg_record, true);
+		
+		if(rc == SLURM_SUCCESS) {
+			if(bg_record) {
+				if(bg_record->job_ptr
+				   && bg_record->job_ptr->end_time) {
+					starttime =
+						bg_record->job_ptr->end_time;
+				}
+				bg_record->job_running =
+					will_run->job_ptr->job_id;
+				bg_record->job_ptr = will_run->job_ptr;
+				debug2("test_job_list: "
+				       "can run job %u on found block at %d"
+				       "nodes = %s",
+				       bg_record->job_ptr->job_id,
+				       starttime,
+				       bg_record->nodes);
+				
+				if(!block_exist_in_list(job_block_test_list,
+							bg_record)) {
+					new_record =
+						xmalloc(sizeof(bg_record_t));
+					copy_bg_record(bg_record, new_record);
+					list_append(job_block_test_list,
+						    new_record);
+				}
+
+				if(will_run->job_ptr->start_time) {
+					if(will_run->job_ptr->start_time
+					   < starttime) {
+						debug2("test_job_list: "
+						       "Time is later "
+						       "than one supplied.");
+						rc = SLURM_ERROR;
+						break;
+					}
+					
+					//continue;
+				} else
+					will_run->job_ptr->start_time 
+						= starttime;
+
+				if(will_run->job_ptr->time_limit != INFINITE
+				   && will_run->job_ptr->time_limit != NO_VAL) 
+					will_run->job_ptr->end_time =
+						will_run->job_ptr->start_time +
+						will_run->job_ptr->time_limit *
+						60;
+				else if(will_run->job_ptr->part_ptr->max_time
+					!= INFINITE
+					&& will_run->job_ptr->
+					part_ptr->max_time != NO_VAL) 
+					will_run->job_ptr->end_time =
+						will_run->job_ptr->start_time +
+						will_run->job_ptr->
+						part_ptr->max_time * 60;
+				else
+					will_run->job_ptr->end_time = 
+						will_run->job_ptr->start_time +
+						31536000; // + year
+						
+				select_g_set_jobinfo(
+					will_run->job_ptr->select_jobinfo,
+					SELECT_DATA_NODES, 
+					bg_record->nodes);
+				select_g_set_jobinfo(
+					will_run->job_ptr->select_jobinfo,
+					SELECT_DATA_IONODES, 
+					bg_record->ionodes);
+				
+/* 				if(!bg_record->bg_block_id) { */
+/* 					uint16_t geo[BA_SYSTEM_DIMENSIONS]; */
+					
+/* 					debug2("test_job_list: " */
+/* 					       "can start job at " */
+/* 					       "%u on %s on unmade block", */
+/* 					       starttime, */
+/* 					       bg_record->nodes); */
+/* 					select_g_set_jobinfo( */
+/* 						will_run->job_ptr-> */
+/* 						select_jobinfo, */
+/* 						SELECT_DATA_BLOCK_ID, */
+/* 						"unassigned"); */
+/* 					if(will_run->job_ptr->num_procs */
+/* 					   < bluegene_bp_node_cnt  */
+/* 					   && will_run->job_ptr->num_procs */
+/* 					   > 0) { */
+/* 						i = procs_per_node/ */
+/* 							will_run->job_ptr-> */
+/* 							num_procs; */
+/* 						debug2("divide by %d", i); */
+/* 					} else  */
+/* 						i = 1; */
+/* 					will_run->min_nodes *=  */
+/* 						bluegene_bp_node_cnt/i; */
+/* 					select_g_set_jobinfo( */
+/* 						will_run->job_ptr-> */
+/* 						select_jobinfo, */
+/* 						SELECT_DATA_NODE_CNT, */
+/* 						&will_run->min_nodes); */
+/* 					memset(geo, 0,  */
+/* 					       sizeof(uint16_t)  */
+/* 					       * BA_SYSTEM_DIMENSIONS); */
+/* 					select_g_set_jobinfo( */
+/* 						will_run->job_ptr-> */
+/* 						select_jobinfo, */
+/* 						SELECT_DATA_GEOMETRY,  */
+/* 						&geo); */
+/* 				} else { */
+/* 					if((bg_record->ionodes) */
+/* 					   && (will_run->job_ptr->part_ptr-> */
+/* 					       max_share */
+/* 					       <= 1)) */
+/* 						error("Small block used in " */
+/* 						      "non-shared partition"); */
+					
+/* 					debug2("test_job_list: " */
+/* 					       "can start job at %u on %s", */
+/* 					       starttime, */
+/* 					       bg_record->nodes); */
+					
+/* 					select_g_set_jobinfo( */
+/* 						will_run->job_ptr-> */
+/* 						select_jobinfo, */
+/* 						SELECT_DATA_BLOCK_ID, */
+/* 						bg_record->bg_block_id); */
+/* 					select_g_set_jobinfo( */
+/* 						will_run->job_ptr-> */
+/* 						select_jobinfo, */
+/* 						SELECT_DATA_NODE_CNT,  */
+/* 						&bg_record->node_cnt); */
+/* 					select_g_set_jobinfo( */
+/* 						will_run->job_ptr-> */
+/* 						select_jobinfo, */
+/* 						SELECT_DATA_GEOMETRY,  */
+/* 						&bg_record->geo); */
+					
+/* 					tmp16 = bg_record->conn_type; */
+/* 					select_g_set_jobinfo( */
+/* 						will_run->job_ptr-> */
+/* 						select_jobinfo, */
+/* 						SELECT_DATA_CONN_TYPE,  */
+/* 						&tmp16); */
+/* 				} */
+			} else {
+				error("we got a success, but no block back");
+			}
+		}
+	}
+	list_iterator_destroy(itr);
+
+	if(bluegene_layout_mode == LAYOUT_DYNAMIC) 		
+		slurm_mutex_unlock(&create_dynamic_mutex);
+	
+
+	list_destroy(block_list);
+	list_destroy(job_block_test_list);
+	
+	slurm_mutex_unlock(&job_list_test_mutex);
+
+	return rc;
+
+}

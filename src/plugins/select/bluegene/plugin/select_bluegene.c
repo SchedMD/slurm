@@ -663,6 +663,23 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 			  req_nodes, test_only);
 }
 
+/*
+ * select_p_job_list_test - Given a list of select_will_run_t's in
+ *	accending priority order we will see if we can start and
+ *	finish all the jobs without increasing the start times of the
+ *	jobs specified and fill in the est_start of requests with no
+ *	est_start.  If you are looking to see if one job will ever run
+ *	then use select_p_job_test instead.
+ * IN/OUT req_list - list of select_will_run_t's in asscending
+ *	             priority order on success of placement fill in
+ *	             est_start of request with time.
+ * RET zero on success, EINVAL otherwise
+ */
+extern int select_p_job_list_test(List req_list)
+{
+	return test_job_list(req_list);
+}
+
 extern int select_p_job_begin(struct job_record *job_ptr)
 {
 	return start_job(job_ptr);
@@ -1206,11 +1223,14 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 			if(tmp > 0)
 				job_desc->min_nodes += 
 					(bluegene_bp_node_cnt-tmp);
-		}
+		}				
 		tmp = job_desc->min_nodes / bluegene_bp_node_cnt;
 		
 		/* this means it is greater or equal to one bp */
 		if(tmp > 0) {
+			select_g_set_jobinfo(job_desc->select_jobinfo,
+					     SELECT_DATA_NODE_CNT,
+					     &job_desc->min_nodes);
 			job_desc->min_nodes = tmp;
 			job_desc->num_procs = procs_per_node * tmp;
 		} else { 
@@ -1226,6 +1246,10 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 				job_desc->min_nodes = 
 					bluegene_bp_node_cnt;
 			
+			select_g_set_jobinfo(job_desc->select_jobinfo,
+					     SELECT_DATA_NODE_CNT,
+					     &job_desc->min_nodes);
+
 			tmp = bluegene_bp_node_cnt/job_desc->min_nodes;
 			
 			job_desc->num_procs = procs_per_node/tmp;
