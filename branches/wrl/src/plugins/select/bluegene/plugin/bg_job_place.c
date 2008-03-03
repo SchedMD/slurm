@@ -1322,7 +1322,8 @@ extern int test_job_list(List req_list)
 				   && will_run->job_ptr->time_limit != NO_VAL) 
 					will_run->job_ptr->end_time =
 						starttime +
-						will_run->job_ptr->time_limit;
+						will_run->job_ptr->time_limit *
+						60;
 				else if(will_run->job_ptr->part_ptr->max_time
 					!= INFINITE
 					&& will_run->job_ptr->
@@ -1330,7 +1331,7 @@ extern int test_job_list(List req_list)
 					will_run->job_ptr->end_time =
 						starttime +
 						will_run->job_ptr->
-						part_ptr->max_time;
+						part_ptr->max_time * 60;
 				else
 					will_run->job_ptr->end_time = 
 						starttime + 31536000; // + year
