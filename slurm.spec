@@ -123,6 +123,7 @@ BuildRequires: openssl-devel >= 0.9.6 openssl >= 0.9.6
 %define _perlarch %(perl -e 'use Config; $T=$Config{installsitearch}; $P=$Config{installprefix}; $P1="$P/local"; $T =~ s/$P1//; $T =~ s/$P//; print $T;') 
 
 %define _perldir %{_prefix}%{_perlarch}
+%define _php_extdir %(php-config --extension-dir 2>/dev/null || echo %{_libdir}/php5)
 
 %package perlapi
 Summary: Perl API to SLURM.
