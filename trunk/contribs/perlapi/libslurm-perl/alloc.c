@@ -88,7 +88,7 @@ hv_to_job_desc_msg(HV* hv, job_desc_msg_t* job_desc_msg)
 			argv_av = (AV*)SvRV(*svp);
 			job_desc_msg->argc = av_len(argv_av) + 1;
 			if (job_desc_msg->argc > 0) {
-				Newz(0, job_desc_msg->argv, (int)(job_desc_msg->argc + 1), char*);
+				Newz(0, job_desc_msg->argv, (int32_t)(job_desc_msg->argc + 1), char*);
 				for(i = 0; i < job_desc_msg->argc; i ++) {
 					if((svp = av_fetch(argv_av, i, FALSE)))
 						*(job_desc_msg->argv + i) = (char*) SvPV_nolen(*svp);

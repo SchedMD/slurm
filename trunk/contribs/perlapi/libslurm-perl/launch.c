@@ -55,7 +55,7 @@ hv_to_slurm_step_launch_params(HV* hv, slurm_step_launch_params_t* params)
 			argv_av = (AV*)SvRV(*svp);
 			params->argc = av_len(argv_av) + 1;
 			if (params->argc > 0) {
-				Newz(0, params->argv, (int)(params->argc + 1), char*);
+				Newz(0, params->argv, (int32_t)(params->argc + 1), char*);
 				for(i = 0; i < params->argc; i ++) {
 					if((svp = av_fetch(argv_av, i, FALSE)))
 						*(params->argv + i) = (char*) SvPV_nolen(*svp);
