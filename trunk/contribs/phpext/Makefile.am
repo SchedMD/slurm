@@ -2,41 +2,47 @@ AUTOMAKE_OPTIONS = foreign
 php_dir = slurm_php
 phpize = /usr/bin/phpize
 
-all-local:
 if HAVE_AIX
-	@cd $(php_dir) && \
-	if [ ! -f Makefile ]; then \
-		if [ ! -f configure ]; then \
-			$(phpize); \
-		fi && \
-		./configure; \
-	fi && \
-	$(MAKE) CC="$(CC)" CCFLAGS="-g -static $(CFLAGS)"; \
-	cd ..;
+	add_flags = "CC=\"$(CC)\" CCFLAGS=\"-g -static $(CFLAGS)\""
 else
+	add_flags = "CC=\"$(CC)\" LD=\"$(CC) $(CFLAGS)\" CCFLAGS=\"-g -static $(CFLAGS)\""
+endif
+
+all-local:
 	@cd $(php_dir) && \
 	if [ ! -f Makefile ]; then \
 		if [ ! -f configure ]; then \
 			$(phpize); \
 		fi && \
 		./configure; \
+		if [ ! -f Makefile ]; then \
+			exit 0;\
+		fi \
 	fi && \
-	$(MAKE) CC="$(CC)" LD="$(CC) $(CFLAGS)" CCFLAGS="-g -static $(CFLAGS)"; \
-	cd ..;
-endif
+	$(MAKE) $(add_flags); \
+	cd ..;	
 
 install-exec-local:
 	@cd $(php_dir) && \
-	$(MAKE) DESTDIR=$(DESTDIR) install && \
+	if [ ! -f Makefile ]; then \
+		exit 0;\
+	fi && \
+	$(MAKE) DESTDIR=$(DESTDIR) $(add_flags) install && \
 	cd ..;
 
 clean-generic:
 	@cd $(php_dir); \
+	if [ ! -f Makefile ]; then \
+		exit 0;\
+	fi && \
 	$(MAKE) clean; \
 	cd ..;
 
 distclean-generic:
 	@cd $(php_dir); \
+	if [ ! -f Makefile ]; then \
+		exit 0;\
+	fi && \
 	$(MAKE) clean; \
 	$(phpize) --clean; \
 	cd ..;
