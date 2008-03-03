@@ -42,7 +42,7 @@ if test "$PHP_SLURM" != "no"; then
 	PHP_ADD_INCLUDE(@top_srcdir@)
 	
 	LIBNAME=slurm
-	LIBSYMBOL=slurm_account_storage_init
+	LIBSYMBOL=slurm_acct_storage_init
 	
 	PHP_CHECK_LIBRARY($LIBNAME, $LIBSYMBOL,
 		[PHP_ADD_LIBRARY($LIBNAME, , SLURM_PHP_SHARED_LIBADD)
