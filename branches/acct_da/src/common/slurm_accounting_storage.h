@@ -87,7 +87,8 @@ typedef struct {
 
 typedef struct {
 	char *name;
-	char *interface_node;
+	char *primary;
+	char *backup;
 	List accounting_list; /* list of cluster_accounting_rec_t *'s */
 } acct_cluster_rec_t;
 

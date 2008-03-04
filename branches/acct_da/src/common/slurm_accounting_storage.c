@@ -316,7 +316,8 @@ extern void destroy_acct_cluster_rec(void *object)
 
 	if(acct_cluster) {
 		xfree(acct_cluster->name);
-		xfree(acct_cluster->interface_node);
+		xfree(acct_cluster->primary);
+		xfree(acct_cluster->backup);
 		if(acct_cluster->accounting_list)
 			list_destroy(acct_cluster->accounting_list);
 		xfree(acct_cluster);

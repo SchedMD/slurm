@@ -261,3 +261,63 @@ extern int clusteracct_storage_p_get_monthly_usage(
 	return SLURM_SUCCESS;
 }
 
+/* 
+ * load into the storage the start of a job
+ */
+extern int jobacct_storage_p_job_start(struct job_record *job_ptr)
+{
+	return SLURM_SUCCESS;
+}
+
+/* 
+ * load into the storage the end of a job
+ */
+extern int jobacct_storage_p_job_complete(struct job_record *job_ptr)
+{
+	return SLURM_SUCCESS;
+}
+
+/* 
+ * load into the storage the start of a job step
+ */
+extern int jobacct_storage_p_step_start(struct step_record *step_ptr)
+{
+	return SLURM_SUCCESS;
+}
+
+/* 
+ * load into the storage the end of a job step
+ */
+extern int jobacct_storage_p_step_complete(struct step_record *step_ptr)
+{
+	return SLURM_SUCCESS;
+}
+
+/* 
+ * load into the storage a suspention of a job
+ */
+extern int jobacct_storage_p_suspend(struct job_record *job_ptr)
+{
+	return SLURM_SUCCESS;
+}
+
+/* 
+ * get info from the storage 
+ * returns List of job_rec_t *
+ * note List needs to be freed when called
+ */
+extern List jobacct_storage_p_get_jobs(List selected_steps,
+				       List selected_parts,
+				       void *params)
+{
+	return NULL;
+}
+
+/* 
+ * expire old info from the storage 
+ */
+extern void jobacct_storage_p_archive(List selected_parts,
+				       void *params)
+{
+	return;
+}

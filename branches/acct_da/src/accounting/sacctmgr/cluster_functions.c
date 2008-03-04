@@ -76,10 +76,12 @@ static int _set_rec(int *start, int argc, char *argv[],
 	int set = 0;
 
 	for (i=(*start); i<argc; i++) {
-		if (strncasecmp (argv[i], "InterfaceNode=", 14) == 0) {		
-			cluster->interface_node = xstrdup(argv[i]+14);
-		} else if (strncasecmp (argv[i], "Interface=", 10) == 0) {
-			cluster->interface_node = xstrdup(argv[i]+10);
+		if (strncasecmp (argv[i], "Primary=", 8) == 0) {		
+			cluster->primary = xstrdup(argv[i]+8);
+			set = 1;
+		} else if (strncasecmp (argv[i], "Backup=", 7) == 0) {		
+			cluster->backup = xstrdup(argv[i]+7);
+			set = 1;
 		} else if (strncasecmp (argv[i], "FairShare=", 10) == 0) {
 			assoc->fairshare = atoi(argv[i]+10);
 			set = 1;
@@ -99,7 +101,7 @@ static int _set_rec(int *start, int argc, char *argv[],
 			i--;
 			break;
 		} else {
-			printf(" error: Valid options are 'InterfaceNode='\n");
+			printf(" error: Valid options are 'Primary='\n");
 		}
 	}
 	(*start) = i;
@@ -157,10 +159,17 @@ static void _update_existing(acct_cluster_cond_t *cluster_cond,
 			if(!new_cluster) {
 				sacctmgr_remove_from_list(sacctmgr_cluster_list,
 							  cluster);
-			} else if(new_cluster->interface_node) {
-				xfree(cluster->interface_node);
-				cluster->interface_node =
-					xstrdup(new_cluster->interface_node);
+			} else {
+				if(new_cluster->primary) {
+					xfree(cluster->primary);
+					cluster->primary =
+						xstrdup(new_cluster->primary);
+				}
+				if(new_cluster->backup) {
+					xfree(cluster->backup);
+					cluster->backup =
+						xstrdup(new_cluster->backup);
+				}				
 			}
 
 			if(!(assoc = sacctmgr_find_association(
@@ -215,10 +224,10 @@ extern int sacctmgr_add_cluster(int argc, char *argv[])
 				cluster->name = xstrdup(argv[i]+5);
 				assoc->cluster = xstrdup(argv[i]+5);
 			}
-		} else if (strncasecmp (argv[i], "Interface=", 10) == 0) {
-			cluster->interface_node = xstrdup(argv[i]+10);
-		} else if (strncasecmp (argv[i], "InterfaceNode=", 14) == 0) {
-			cluster->interface_node = xstrdup(argv[i]+14);
+		} else if (strncasecmp (argv[i], "Backup=", 7) == 0) {
+			cluster->backup = xstrdup(argv[i]+7);
+		} else if (strncasecmp (argv[i], "Primary=", 8) == 0) {
+			cluster->primary = xstrdup(argv[i]+8);
 		} else if (strncasecmp (argv[i], "FairShare=", 10) == 0) {
 			assoc->fairshare = atoi(argv[i]+10);
 			limit_set = 1;
@@ -258,8 +267,10 @@ extern int sacctmgr_add_cluster(int argc, char *argv[])
 
 	printf(" Adding Cluster(s)\n");
 	printf("  Name           = %s\n", cluster->name);
-	if(cluster->interface_node)
-		printf("  Interface Node = %s", cluster->interface_node);
+	if(cluster->primary)
+		printf("  Primary Node  = %s", cluster->primary);
+	if(cluster->backup)
+		printf("  Backup Node   = %s", cluster->backup);
 
 	printf(" User Defaults =\n");
 
@@ -343,14 +354,17 @@ extern int sacctmgr_list_cluster(int argc, char *argv[])
 		return SLURM_ERROR;
 	
 	itr = list_iterator_create(cluster_list);
-	printf("%-15s %-15s\n%-15s %-15s\n", "Name", "Interface Node",
+	printf("%-15s %-15s %-15s\n%-15s %-15s %-15s\n",
+	       "Name", "Primary Node", "Backup Node",
+	       "---------------",
 	       "---------------",
 	       "---------------");
 	
 	while((cluster = list_next(itr))) {
-		printf("%-15.15s %-15.15s\n",
+		printf("%-15.15s %-15.15s %-15.15s\n",
 		       cluster->name,
-		       cluster->interface_node);
+		       cluster->primary,
+		       cluster->backup);
 	}
 
 	printf("\n");
@@ -391,7 +405,7 @@ extern int sacctmgr_modify_cluster(int argc, char *argv[])
 		}
 	}
 
-	if(!rec_set && !cluster->interface_node) {
+	if(!rec_set) {
 		printf(" You didn't give me anything to set\n");
 		destroy_acct_cluster_cond(assoc);
 		destroy_acct_cluster_cond(assoc_cond);
@@ -416,8 +430,10 @@ extern int sacctmgr_modify_cluster(int argc, char *argv[])
 	list_push(assoc_cond->acct_list, "template_account");
 
 	printf(" Setting\n");
-	if(cluster->interface_node)
-		printf("  InterfaceNode = %s\n", cluster->interface_node);
+	if(cluster->primary)
+		printf("  Primary Node  = %s\n", cluster->primary);
+	if(cluster->backup)
+		printf("  Backup Node   = %s\n", cluster->backup);
 	if(rec_set) 
 		printf(" User Defaults =\n");
 	if(assoc->fairshare)
