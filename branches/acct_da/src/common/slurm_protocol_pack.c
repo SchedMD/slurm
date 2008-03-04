@@ -2233,12 +2233,6 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer)
 
 	pack16(build_ptr->job_acct_gather_freq, buffer);
 	packstr(build_ptr->job_acct_gather_type, buffer);
-	packstr(build_ptr->job_acct_storage_loc, buffer);
-	packstr(build_ptr->job_acct_storage_type, buffer);
-	packstr(build_ptr->job_acct_storage_user, buffer);
-	packstr(build_ptr->job_acct_storage_host, buffer);
-	packstr(build_ptr->job_acct_storage_pass, buffer);
-	pack32((uint32_t)build_ptr->job_acct_storage_port, buffer);
 
 	packstr(build_ptr->job_comp_loc, buffer);
 	packstr(build_ptr->job_comp_type, buffer);
@@ -2391,17 +2385,6 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **
 	safe_unpack16(&build_ptr->job_acct_gather_freq, buffer);
 	safe_unpackstr_xmalloc(&build_ptr->job_acct_gather_type,
 			       &uint32_tmp, buffer);
-	safe_unpackstr_xmalloc(&build_ptr->job_acct_storage_loc,
-			       &uint32_tmp, buffer);
-	safe_unpackstr_xmalloc(&build_ptr->job_acct_storage_type,
-			       &uint32_tmp, buffer);
-	safe_unpackstr_xmalloc(&build_ptr->job_acct_storage_user,
-			       &uint32_tmp, buffer);
-	safe_unpackstr_xmalloc(&build_ptr->job_acct_storage_host,
-			       &uint32_tmp, buffer);
-	safe_unpackstr_xmalloc(&build_ptr->job_acct_storage_pass,
-			       &uint32_tmp, buffer);
-	safe_unpack32(&build_ptr->job_acct_storage_port, buffer);
 
 	safe_unpackstr_xmalloc(&build_ptr->job_comp_loc,  &uint32_tmp, buffer);
 	safe_unpackstr_xmalloc(&build_ptr->job_comp_type, &uint32_tmp, buffer);
@@ -2528,11 +2511,6 @@ unpack_error:
 	xfree(build_ptr->epilog);
 	xfree(build_ptr->health_check_program);
 	xfree(build_ptr->job_acct_gather_type);
-	xfree(build_ptr->job_acct_storage_loc);
-	xfree(build_ptr->job_acct_storage_type);
-	xfree(build_ptr->job_acct_storage_user);
-	xfree(build_ptr->job_acct_storage_host);
-	xfree(build_ptr->job_acct_storage_pass);
 	xfree(build_ptr->job_comp_loc);
 	xfree(build_ptr->job_comp_type);
 	xfree(build_ptr->job_comp_user);

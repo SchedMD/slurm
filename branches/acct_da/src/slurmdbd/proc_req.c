@@ -205,6 +205,7 @@ static int _get_jobs(Buf in_buffer, Buf *out_buffer)
 	return SLURM_SUCCESS;
 }
 
+
 static int _init_conn(Buf in_buffer, Buf *out_buffer, uint32_t *uid)
 {
 	dbd_init_msg_t *init_msg;
@@ -231,7 +232,9 @@ static int _init_conn(Buf in_buffer, Buf *out_buffer, uint32_t *uid)
 static int  _job_complete(Buf in_buffer, Buf *out_buffer, uint32_t *uid)
 {
 	dbd_job_comp_msg_t *job_comp_msg;
-
+	struct job_record job;
+	struct job_details details;
+	
 	if (*uid != slurmdbd_conf->slurm_user_id) {
 		error("DBD_JOB_COMPLETE message from invalid uid %u", *uid);
 		*out_buffer = make_dbd_rc_msg(ESLURM_ACCESS_DENIED);
@@ -246,6 +249,16 @@ static int  _job_complete(Buf in_buffer, Buf *out_buffer, uint32_t *uid)
 
 	info("DBD_JOB_COMPLETE: ID:%u NAME:%s", 
 	     job_comp_msg->job_id, job_comp_msg->name);
+
+	memset(&job, 0, sizeof(struct job_record));
+	memset(&details, 0, sizeof(struct job_details));
+	job.details = &details;
+	job.job_id = job_comp_msg->job_id;
+	job.assoc_id = job_comp_msg->assoc_id;
+	job.db_index = job_comp_msg->db_index;
+	job.name = job_comp_msg->name;
+	job.nodes = job_comp_msg->nodes;
+
 	slurm_dbd_free_job_complete_msg(job_comp_msg);
 	*out_buffer = make_dbd_rc_msg(SLURM_SUCCESS);
 	return SLURM_SUCCESS;

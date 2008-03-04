@@ -1077,11 +1077,6 @@ free_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr, bool purge_node_hash)
 	xfree (ctl_conf_ptr->epilog);
 	xfree (ctl_conf_ptr->health_check_program);
 	xfree (ctl_conf_ptr->job_acct_gather_type);
-	xfree (ctl_conf_ptr->job_acct_storage_loc);
-	xfree (ctl_conf_ptr->job_acct_storage_type);
-	xfree (ctl_conf_ptr->job_acct_storage_user);
-	xfree (ctl_conf_ptr->job_acct_storage_host);
-	xfree (ctl_conf_ptr->job_acct_storage_pass);
 	xfree (ctl_conf_ptr->job_comp_loc);
 	xfree (ctl_conf_ptr->job_comp_type);
 	xfree (ctl_conf_ptr->job_comp_user);
@@ -1161,12 +1156,6 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	ctl_conf_ptr->inactive_limit		= (uint16_t) NO_VAL;
 	xfree (ctl_conf_ptr->job_acct_gather_type);
 	ctl_conf_ptr->job_acct_gather_freq             = 0;
-	xfree (ctl_conf_ptr->job_acct_storage_loc);
-	xfree (ctl_conf_ptr->job_acct_storage_type);
-	xfree (ctl_conf_ptr->job_acct_storage_user);
-	xfree (ctl_conf_ptr->job_acct_storage_host);
-	xfree (ctl_conf_ptr->job_acct_storage_pass);
-	ctl_conf_ptr->job_acct_storage_port             = 0;
 	xfree (ctl_conf_ptr->job_comp_loc);
 	xfree (ctl_conf_ptr->job_comp_type);
 	xfree (ctl_conf_ptr->job_comp_user);
@@ -1586,75 +1575,6 @@ validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 		conf->job_acct_gather_type =
 			xstrdup(DEFAULT_JOB_ACCT_GATHER_TYPE);
 
-	/* JobAcctStorageLoc replaces JobAcctLogFile since it now represents
-	 * the database name also depending on the storage type you
-	 * use so we still check JobAcctLogFile for the same thing
-	 */
-	if (!s_p_get_string(&conf->job_acct_storage_loc,
-			    "JobAcctStorageLoc", hashtbl)
-	    && !s_p_get_string(&conf->job_acct_storage_loc,
-			       "JobAcctLogFile", hashtbl)) {
-		if(default_storage_loc)
-			conf->job_acct_storage_loc =
-				xstrdup(default_storage_loc);
-		else
-			conf->job_acct_storage_loc = 
-				xstrdup(DEFAULT_JOB_ACCT_STORAGE_LOC);
-	}
-	if (!s_p_get_string(&conf->job_acct_storage_type, "JobAcctStorageType",
-			    hashtbl)) {
-		/* if we aren't gathering then set the storage type to
-		 * none else use filetxt if they didn't say anything
-		 */
-		if(!strcmp(conf->job_acct_gather_type,
-			   DEFAULT_JOB_ACCT_GATHER_TYPE)) {
-			conf->job_acct_storage_type =
-				xstrdup(JOB_ACCT_STORAGE_TYPE_NONE);
-		} else {
-			if(default_storage_type)
-				conf->job_acct_storage_type =
-					xstrdup_printf("jobacct_storage/%s",
-						       default_storage_type);
-			else
-				conf->job_acct_storage_type =
-					xstrdup(DEFAULT_JOB_ACCT_STORAGE_TYPE);
-		}
-	}
-	if (!s_p_get_string(&conf->job_acct_storage_host, "JobAcctStorageHost",
-			    hashtbl)) {
-		if(default_storage_host)
-			conf->job_acct_storage_host =
-				xstrdup(default_storage_host);
-		else
-			conf->job_acct_storage_host =
-				xstrdup(DEFAULT_STORAGE_HOST);
-	}
-	if (!s_p_get_string(&conf->job_acct_storage_user, "JobAcctStorageUser",
-			    hashtbl)) {
-		if(default_storage_user)
-			conf->job_acct_storage_user =
-				xstrdup(default_storage_user);
-		else
-			conf->job_acct_storage_user =
-				xstrdup(DEFAULT_STORAGE_USER);
-	}
-	if (!s_p_get_string(&conf->job_acct_storage_pass, "JobAcctStoragePass",
-			    hashtbl)) {
-		if(default_storage_pass)
-			conf->job_acct_storage_pass =
-				xstrdup(default_storage_pass);
-		else
-			conf->job_acct_storage_pass =
-				xstrdup(DEFAULT_STORAGE_PASS);
-	}
-	if (!s_p_get_uint32(&conf->job_acct_storage_port, "JobAcctStoragePort",
-			    hashtbl)) {
-		if(default_storage_port)
-			conf->job_acct_storage_port = default_storage_port;
-		else
-			conf->job_acct_storage_port =
-				DEFAULT_STORAGE_PORT;
-	}
 	if (!s_p_get_string(&conf->job_comp_type, "JobCompType", hashtbl)) {
 		if(default_storage_type)
 			conf->job_comp_type =
@@ -1760,11 +1680,20 @@ validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 				xstrdup(DEFAULT_STORAGE_HOST);
 	}
 
+	/* AccountingStorageLoc replaces JobAcctLogFile since it now represents
+	 * the database name also depending on the storage type you
+	 * use so we still check JobAcctLogFile for the same thing
+	 */
 	if (!s_p_get_string(&conf->accounting_storage_loc,
-			    "AccountingStorageLoc", hashtbl)) {
+			    "AccountingStorageLoc", hashtbl)
+		&& !s_p_get_string(&conf->accounting_storage_loc,
+			       "JobAcctLogFile", hashtbl)) {
 		if(default_storage_loc)
 			conf->accounting_storage_loc =
 				xstrdup(default_storage_loc);
+		else
+			conf->accounting_storage_loc =
+				xstrdup(DEFAULT_STORAGE_LOC);
 	}
 
 	if (!s_p_get_string(&conf->accounting_storage_user,

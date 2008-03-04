@@ -146,11 +146,12 @@ extern int jobacct_storage_p_fini()
  */
 extern int jobacct_storage_p_job_start(struct job_record *job_ptr)
 {
-	slurmdbd_msg_t msg;
+	slurmdbd_msg_t msg, msg_rc;
 	dbd_job_start_msg_t req;
+	dbd_job_start_rc_msg_t resp;
 	char *block_id = NULL;
 
-	req.assoc_id      = 0;	/* FIXME */
+	req.assoc_id      = job_ptr->assoc_id;
 #ifdef HAVE_BG
 	select_g_get_jobinfo(job_ptr->select_jobinfo, 
 			     SELECT_DATA_BLOCK_ID, 
@@ -172,11 +173,20 @@ extern int jobacct_storage_p_job_start(struct job_record *job_ptr)
 
 	msg.msg_type      = DBD_JOB_START;
 	msg.data          = &req;
-
-	if (slurm_send_slurmdbd_msg(&msg) < 0)
-		return SLURM_ERROR;
-
-	return SLURM_SUCCESS;
+	rc = slurm_send_recv_slurmdbd_msg(&msg, &msg_rc);
+	if (rc != SLURM_SUCCESS) {
+		if (slurm_send_slurmdbd_msg(&msg) < 0)
+			return SLURM_ERROR;
+	} else if (msg_rc.msg_type != DBD_JOB_START_RC) {
+		error("slurmdbd: response type not DBD_GOT_JOBS: %u", 
+		      msg_rc.msg_type);
+	} else {
+		resp = (dbd_job_start_rc_msg_t *) msg_rc.data;
+		job_ptr->db_index = resp->db_index;
+		slurm_dbd_free_job_start_rc_msg(resp);
+	}
+	
+	return rc;
 }
 
 /* 
@@ -187,7 +197,7 @@ extern int jobacct_storage_p_job_complete(struct job_record *job_ptr)
 	slurmdbd_msg_t msg;
 	dbd_job_comp_msg_t req;
 
-	req.assoc_id    = 0;	/* FIXME */
+	req.assoc_id    = job_ptr->assoc_id;
 	req.end_time    = job_ptr->end_time;
 	req.exit_code   = job_ptr->exit_code;
 	req.job_id      = job_ptr->job_id;
@@ -196,6 +206,8 @@ extern int jobacct_storage_p_job_complete(struct job_record *job_ptr)
 	req.nodes       = job_ptr->nodes;
 	req.priority    = job_ptr->priority;
 	req.start_time  = job_ptr->start_time;
+	if (job_ptr->details)
+		req.submit_time   = job_ptr->details->submit_time;
 	req.total_procs = job_ptr->total_procs;
 
 	msg.msg_type    = DBD_JOB_COMPLETE;
@@ -236,7 +248,8 @@ extern int jobacct_storage_p_step_start(struct step_record *step_ptr)
 #else
 	if (!step_ptr->step_layout || !step_ptr->step_layout->task_cnt) {
 		cpus = step_ptr->job_ptr->total_procs;
-		snprintf(node_list, BUFFER_SIZE, "%s", step_ptr->job_ptr->nodes);
+		snprintf(node_list, BUFFER_SIZE, "%s",
+			 step_ptr->job_ptr->nodes);
 	} else {
 		cpus = step_ptr->step_layout->task_cnt;
 		snprintf(node_list, BUFFER_SIZE, "%s", 
@@ -244,12 +257,14 @@ extern int jobacct_storage_p_step_start(struct step_record *step_ptr)
 	}
 #endif
 
-	req.assoc_id    = 0;	/* FIXME */
+	req.assoc_id    = step_ptr->job_ptr->assoc_id;
 	req.job_id      = step_ptr->job_ptr->job_id;
 	req.name        = step_ptr->name;
 	req.nodes       = node_list;
 	req.req_uid     = step_ptr->job_ptr->requid;
 	req.start_time  = step_ptr->start_time;
+	if (step_ptr->job_ptr->details)
+		req.job_submit_time   = step_ptr->job_ptr->details->submit_time;
 	req.step_id     = step_ptr->step_id;
 	req.total_procs = cpus;
 
@@ -299,13 +314,15 @@ extern int jobacct_storage_p_step_complete(struct step_record *step_ptr)
 	}
 #endif
 
-	req.assoc_id    = 0;	/* FIXME */
+	req.assoc_id    = step_ptr->job_ptr->assoc_id;
 	req.end_time    = time(NULL);	/* called at step completion */
 	req.job_id      = step_ptr->job_ptr->job_id;
 	req.name        = step_ptr->name;
 	req.nodes       = node_list;
 	req.req_uid     = step_ptr->job_ptr->requid;
 	req.start_time  = step_ptr->start_time;
+	if (step_ptr->job_ptr->details)
+		req.job_submit_time   = step_ptr->job_ptr->details->submit_time;
 	req.step_id     = step_ptr->step_id;
 	req.total_procs = cpus;
 
@@ -329,6 +346,8 @@ extern int jobacct_storage_p_suspend(struct job_record *job_ptr)
 	req.assoc_id     = 0;	/* FIXME */
 	req.job_id       = job_ptr->job_id;
 	req.job_state    = job_ptr->job_state & (~JOB_COMPLETING);
+	if (job_ptr->details)
+		req.job_submit_time   = job_ptr->details->submit_time;
 	req.suspend_time = job_ptr->suspend_time;
 	msg.msg_type     = DBD_JOB_SUSPEND;
 	msg.data         = &req;

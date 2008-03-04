@@ -177,16 +177,6 @@ void slurm_print_ctl_conf ( FILE* out,
 		slurm_ctl_conf_ptr->job_acct_gather_freq);
 	fprintf(out, "JobAcctGatherType       = %s\n",
 		slurm_ctl_conf_ptr->job_acct_gather_type);
-	fprintf(out, "JobAcctStorageType      = %s\n", 
-		slurm_ctl_conf_ptr->job_acct_storage_type);
-	fprintf(out, "JobAcctStorageLoc       = %s\n", 
-		slurm_ctl_conf_ptr->job_acct_storage_loc);
-	fprintf(out, "JobAcctStorageHost      = %s\n", 
-		slurm_ctl_conf_ptr->job_acct_storage_host);
-	fprintf(out, "JobAcctStoragePort      = %u\n", 
-		slurm_ctl_conf_ptr->job_acct_storage_port);
-	fprintf(out, "JobAcctStorageUser      = %s\n", 
-		slurm_ctl_conf_ptr->job_acct_storage_user);
 	fprintf(out, "JobCompHost             = %s\n",
 		slurm_ctl_conf_ptr->job_comp_host);
 	fprintf(out, "JobCompLoc              = %s\n",

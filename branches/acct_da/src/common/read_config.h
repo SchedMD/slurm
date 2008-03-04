@@ -61,9 +61,7 @@ extern char *default_plugstack;
 #define DEFAULT_JOB_ACCT_GATHER_TYPE  "jobacct_gather/none"
 #define JOB_ACCT_GATHER_TYPE_NONE "jobacct_gather/none"
 #define DEFAULT_JOB_ACCT_GATHER_FREQ  30
-#define DEFAULT_JOB_ACCT_STORAGE_TYPE "jobacct_storage/filetxt"
-#define JOB_ACCT_STORAGE_TYPE_NONE "jobacct_storage/none"
-#define DEFAULT_JOB_ACCT_STORAGE_LOC  "/var/log/slurm_jobacct.log"
+#define ACCOUNTING_STORAGE_TYPE_NONE "accounting_storage/none"
 #define DEFAULT_JOB_COMP_TYPE "jobcomp/none"
 #define DEFAULT_JOB_COMP_LOC  "/var/log/slurm_jobcomp.log"
 #define DEFAULT_KILL_TREE           0
@@ -101,6 +99,7 @@ extern char *default_plugstack;
 #define DEFAULT_SLURMD_TIMEOUT      300
 #define DEFAULT_SPOOLDIR            "/var/spool/slurmd"
 #define DEFAULT_STORAGE_HOST        "localhost"
+#define DEFAULT_STORAGE_LOC         "/var/log/slurm_jobacct.log"
 #define DEFAULT_STORAGE_USER        "root"
 #define DEFAULT_STORAGE_PASS        ""
 #define DEFAULT_STORAGE_PORT        0

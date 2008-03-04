@@ -328,6 +328,7 @@ void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
 				        xstrdup(conf->accounting_storage_type);
 	conf_ptr->accounting_storage_user =
 					xstrdup(conf->accounting_storage_user);
+	conf_ptr->accounting_storage_port = conf->accounting_storage_port;
 	conf_ptr->authtype            = xstrdup(conf->authtype);
 	conf_ptr->backup_addr         = xstrdup(conf->backup_addr);
 	conf_ptr->backup_controller   = xstrdup(conf->backup_controller);
@@ -348,12 +349,6 @@ void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
 	conf_ptr->health_check_program = xstrdup(conf->health_check_program);
 	conf_ptr->job_acct_gather_freq  = conf->job_acct_gather_freq;
 	conf_ptr->job_acct_gather_type  = xstrdup(conf->job_acct_gather_type);
-	conf_ptr->job_acct_storage_loc = xstrdup(conf->job_acct_storage_loc);
-	conf_ptr->job_acct_storage_type = xstrdup(conf->job_acct_storage_type);
-	conf_ptr->job_acct_storage_user = xstrdup(conf->job_acct_storage_user);
-	conf_ptr->job_acct_storage_host = xstrdup(conf->job_acct_storage_host);
-	conf_ptr->job_acct_storage_pass = xstrdup(conf->job_acct_storage_pass);
-	conf_ptr->job_acct_storage_port = conf->job_acct_storage_port;
 	conf_ptr->job_comp_loc        = xstrdup(conf->job_comp_loc);
 	conf_ptr->job_comp_type       = xstrdup(conf->job_comp_type);
 	conf_ptr->job_comp_user       = xstrdup(conf->job_comp_user);

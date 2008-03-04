@@ -183,8 +183,6 @@ static slurm_acct_storage_ops_t * _acct_storage_get_ops(
 		"clusteracct_storage_p_get_hourly_usage",
 		"clusteracct_storage_p_get_daily_usage",
 		"clusteracct_storage_p_get_monthly_usage",
-		"jobacct_storage_p_init",
-		"jobacct_storage_p_fini",
 		"jobacct_storage_p_job_start",
 		"jobacct_storage_p_job_complete",
 		"jobacct_storage_p_step_start",
