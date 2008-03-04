@@ -49,8 +49,8 @@
 
 #ifdef HAVE_MYSQL
 
-extern MYSQL *jobacct_mysql_db;
-extern int jobacct_db_init;
+extern MYSQL *acct_mysql_db;
+//extern int acct_db_init;
 
 extern char *job_index;
 extern char *job_table;

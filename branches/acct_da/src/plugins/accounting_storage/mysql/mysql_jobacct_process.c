@@ -273,7 +273,7 @@ extern List mysql_jobacct_process_get_jobs(List selected_steps,
 
 	//info("query = %s", query);
 	if(!(result =
-	     mysql_db_query_ret(jobacct_mysql_db, query))) {
+	     mysql_db_query_ret(acct_mysql_db, query))) {
 		xfree(query);
 		list_destroy(job_list);
 		return NULL;
@@ -360,7 +360,7 @@ extern List mysql_jobacct_process_get_jobs(List selected_steps,
 		
 		//info("query = %s", query);
 		if(!(step_result = mysql_db_query_ret(
-			     jobacct_mysql_db, query))) {
+			     acct_mysql_db, query))) {
 			xfree(query);
 			list_destroy(job_list);
 			return NULL;

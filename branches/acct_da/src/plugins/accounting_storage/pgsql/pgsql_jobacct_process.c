@@ -271,7 +271,7 @@ extern List pgsql_jobacct_process_get_jobs(List selected_steps,
 
 	//info("query = %s", query);
 	if(!(result =
-	     pgsql_db_query_ret(jobacct_pgsql_db, query))) {
+	     pgsql_db_query_ret(acct_pgsql_db, query))) {
 		xfree(query);
 		list_destroy(job_list);
 		return NULL;
@@ -361,7 +361,7 @@ extern List pgsql_jobacct_process_get_jobs(List selected_steps,
 		
 		//info("query = %s", query);
 		if(!(step_result = pgsql_db_query_ret(
-			     jobacct_pgsql_db, query))) {
+			     acct_pgsql_db, query))) {
 			xfree(query);
 			list_destroy(job_list);
 			return NULL;

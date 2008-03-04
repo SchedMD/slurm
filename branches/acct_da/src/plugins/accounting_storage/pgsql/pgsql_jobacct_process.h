@@ -49,8 +49,7 @@
 
 #ifdef HAVE_PGSQL
 
-extern PGconn *jobacct_pgsql_db;
-extern int jobacct_db_init;
+extern PGconn *acct_pgsql_db;
 
 extern char *index_table;
 extern char *job_table;
