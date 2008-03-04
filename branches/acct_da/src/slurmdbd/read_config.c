@@ -75,12 +75,14 @@ extern void free_slurmdbd_conf(void)
 static void _clear_slurmdbd_conf(void)
 {
 	if (slurmdbd_conf) {
+		xfree(slurmdbd_conf->auth_info);
 		xfree(slurmdbd_conf->auth_type);
 		xfree(slurmdbd_conf->dbd_addr);
 		xfree(slurmdbd_conf->dbd_host);
 		slurmdbd_conf->dbd_port = 0;
 		xfree(slurmdbd_conf->log_file);
 		xfree(slurmdbd_conf->pid_file);
+		xfree(slurmdbd_conf->plugindir);
 		xfree(slurmdbd_conf->slurm_user_name);
 		xfree(slurmdbd_conf->storage_host);
 		xfree(slurmdbd_conf->storage_loc);
@@ -107,7 +109,9 @@ extern int read_slurmdbd_conf(void)
 		{"DbdPort", S_P_UINT16},
 		{"DebugLevel", S_P_UINT16},
 		{"LogFile", S_P_STRING},
+		{"MessageTimeout", S_P_UINT16},
 		{"PidFile", S_P_STRING},
+		{"PluginDir", S_P_STRING},
 		{"SlurmUser", S_P_STRING},
 		{"StorageHost", S_P_STRING},
 		{"StorageLoc", S_P_STRING},
@@ -147,8 +151,17 @@ extern int read_slurmdbd_conf(void)
 		s_p_get_uint16(&slurmdbd_conf->dbd_port, "DbdPort", tbl);
 		s_p_get_uint16(&slurmdbd_conf->debug_level, "DebugLevel", tbl);
 		s_p_get_string(&slurmdbd_conf->log_file, "LogFile", tbl);
+		if (!s_p_get_uint16(&slurmdbd_conf->msg_timeout,
+				    "MessageTimeout", tbl))
+			slurmdbd_conf->msg_timeout = DEFAULT_MSG_TIMEOUT;
+		else if (slurmdbd_conf->msg_timeout > 100) {
+			info("WARNING: MessageTimeout is too high for "
+			     "effective fault-tolerance");
+		}
 		s_p_get_string(&slurmdbd_conf->pid_file, "PidFile", tbl);
-		s_p_get_string(&slurmdbd_conf->slurm_user_name, "SlurmUser", tbl);
+		s_p_get_string(&slurmdbd_conf->plugindir, "PluginDir", tbl);
+		s_p_get_string(&slurmdbd_conf->slurm_user_name, "SlurmUser",
+			       tbl);
 		s_p_get_string(&slurmdbd_conf->storage_host,
 				"StorageHost", tbl);
 		s_p_get_string(&slurmdbd_conf->storage_loc,
@@ -178,6 +191,8 @@ extern int read_slurmdbd_conf(void)
 		slurmdbd_conf->pid_file = xstrdup(DEFAULT_SLURMDBD_PIDFILE);
 	if (slurmdbd_conf->dbd_port == 0)
 		slurmdbd_conf->dbd_port = SLURMDBD_PORT;
+	if(slurmdbd_conf->plugindir == NULL)
+		slurmdbd_conf->plugindir = xstrdup(default_plugin_path);
 	if (slurmdbd_conf->slurm_user_name) {
 		struct passwd *slurm_passwd;
 		slurm_passwd = getpwnam(slurmdbd_conf->slurm_user_name);
@@ -205,7 +220,9 @@ extern void log_config(void)
 	debug2("DbdPort           = %u", slurmdbd_conf->dbd_port);
 	debug2("DebugLevel        = %u", slurmdbd_conf->debug_level);
 	debug2("LogFile           = %s", slurmdbd_conf->log_file);
+	debug2("MessageTimeout    = %u", slurmdbd_conf->msg_timeout);
 	debug2("PidFile           = %s", slurmdbd_conf->pid_file);
+	debug2("PluginDir         = %s", slurmdbd_conf->plugindir);
 	debug2("SlurmUser         = %s(%u)", 
 		slurmdbd_conf->slurm_user_name, slurmdbd_conf->slurm_user_id); 
 	debug2("StorageHost       = %s", slurmdbd_conf->storage_host);
@@ -226,6 +243,17 @@ extern uint16_t get_dbd_port(void)
 	slurm_mutex_unlock(&conf_mutex);
 	return port;
 }
+
+extern void slurmdbd_conf_lock(void)
+{
+	slurm_mutex_lock(&conf_mutex);
+}
+
+extern void slurmdbd_conf_unlock(void)
+{
+	slurm_mutex_unlock(&conf_mutex);
+}
+
 
 /* Return the pathname of the slurmdbd.conf file.
  * xfree() the value returned */

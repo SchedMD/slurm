@@ -301,12 +301,10 @@ int main(int argc, char *argv[])
 		fatal( "failed to initialize checkpoint plugin" );
 	if (slurm_select_init() != SLURM_SUCCESS )
 		fatal( "failed to initialize node selection plugin");
-	if (slurm_acct_storage_init() != SLURM_SUCCESS )
-		fatal( "failed to initialize clusteracct_storage plugin");
+	if (slurm_acct_storage_init(NULL) != SLURM_SUCCESS )
+		fatal( "failed to initialize accounting_storage plugin");
 	if (slurm_jobacct_gather_init() != SLURM_SUCCESS )
 		fatal( "failed to initialize jobacct_gather plugin");
-	if (slurm_jobacct_storage_init() != SLURM_SUCCESS )
-		fatal( "failed to initialize jobacct_storage plugin");
 
 	while (1) {
 		/* initialization for each primary<->backup switch */
@@ -446,7 +444,7 @@ int main(int argc, char *argv[])
 		verbose("Unable to remove pidfile '%s': %m",
 			slurmctld_conf.slurmctld_pidfile);
 
-	slurm_jobacct_storage_fini();	/* Save pending message traffic */
+	slurm_acct_storage_fini();	/* Save pending message traffic */
 
 #ifdef MEMORY_LEAK_DEBUG
 	/* This should purge all allocated memory,   *\

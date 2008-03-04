@@ -168,7 +168,7 @@ extern acct_expedite_level_t str_2_acct_expedite(char *level);
 extern char *acct_admin_level_str(acct_admin_level_t level);
 extern acct_admin_level_t str_2_acct_admin_level(char *level);
 
-extern int slurm_acct_storage_init(void); /* load the plugin */
+extern int slurm_acct_storage_init(char *loc); /* load the plugin */
 extern int slurm_acct_storage_fini(void); /* unload the plugin */
 
 /* 
@@ -424,5 +424,43 @@ extern int clusteracct_storage_g_get_monthly_usage(
 	acct_cluster_rec_t *cluster_rec, 
 	time_t start, time_t end, void *params);
 
+/* 
+ * load into the storage the start of a job
+ */
+extern int jobacct_storage_g_job_start (struct job_record *job_ptr);
+
+/* 
+ * load into the storage the end of a job
+ */
+extern int jobacct_storage_g_job_complete (struct job_record *job_ptr);
+
+/* 
+ * load into the storage the start of a job step
+ */
+extern int jobacct_storage_g_step_start (struct step_record *step_ptr);
+
+/* 
+ * load into the storage the end of a job step
+ */
+extern int jobacct_storage_g_step_complete (struct step_record *step_ptr);
+
+/* 
+ * load into the storage a suspention of a job
+ */
+extern int jobacct_storage_g_job_suspend (struct job_record *job_ptr);
+
+/* 
+ * get info from the storage 
+ * returns List of jobacct_job_rec_t *
+ * note List needs to be freed when called
+ */
+extern List jobacct_storage_g_get_jobs(List selected_steps,
+				       List selected_parts,
+				       void *params);
+
+/* 
+ * expire old info from the storage 
+ */
+extern void jobacct_storage_g_archive(List selected_parts, void *params);
 
 #endif /*_SLURM_ACCOUNTING_STORAGE_H*/

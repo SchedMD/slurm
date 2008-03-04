@@ -693,7 +693,8 @@ void parse_command_line(int argc, char **argv)
 		if(params.opt_completion) 
 			params.opt_filein = slurm_get_jobcomp_loc();
 		else
-			params.opt_filein = slurm_get_jobacct_storage_loc();
+			params.opt_filein =
+				slurm_get_accounting_storage_loc();
 	}
 
 	if(params.opt_completion) {
@@ -707,12 +708,13 @@ void parse_command_line(int argc, char **argv)
 		}
 		xfree(acct_type);
 	} else {
-		jobacct_storage_g_init(params.opt_filein);
+		slurm_acct_storage_init(params.opt_filein);
 		
-		acct_type = slurm_get_jobacct_storage_type();
-		if ((strcmp(acct_type, "jobacct/none") == 0)
+		acct_type = slurm_get_accounting_storage_type();
+		if ((strcmp(acct_type, "accounting_storage/none") == 0)
 		    &&  (stat(params.opt_filein, &stat_buf) != 0)) {
-			fprintf(stderr, "SLURM accounting is disabled\n");
+			fprintf(stderr,
+				"SLURM accounting storage is disabled\n");
 			exit(1);
 		}
 		xfree(acct_type);
@@ -1304,5 +1306,5 @@ void sacct_fini()
 	if(params.opt_completion)
 		g_slurm_jobcomp_fini();
 	else
-		jobacct_storage_g_fini();
+		slurm_acct_storage_fini();
 }

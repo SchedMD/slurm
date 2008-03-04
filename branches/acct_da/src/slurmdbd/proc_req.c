@@ -135,6 +135,7 @@ unpack_error:
 static int _cluster_procs(Buf in_buffer, Buf *out_buffer, uint32_t *uid)
 {
 	dbd_cluster_procs_msg_t *cluster_procs_msg;
+	int rc = SLURM_ERROR;
 
 	if (*uid != slurmdbd_conf->slurm_user_id) {
 		error("DBD_CLUSTER_PROCS message from invalid uid %u", *uid);
@@ -151,9 +152,13 @@ static int _cluster_procs(Buf in_buffer, Buf *out_buffer, uint32_t *uid)
 	info("DBD_CLUSTER_PROCS: CLUSTER_NAME:%s PROC_COUNT:%u TIME:%u", 
 	     cluster_procs_msg->cluster_name, cluster_procs_msg->proc_count,
 	     cluster_procs_msg->event_time);
+	rc = clusteracct_storage_g_cluster_procs(
+		cluster_procs_msg->cluster_name,
+		cluster_procs_msg->proc_count,
+		cluster_procs_msg->event_time);
 	slurm_dbd_free_cluster_procs_msg(cluster_procs_msg);
-	*out_buffer = make_dbd_rc_msg(SLURM_SUCCESS);
-	return SLURM_SUCCESS;
+	*out_buffer = make_dbd_rc_msg(rc);
+	return rc;
 }
 
 static int _get_jobs(Buf in_buffer, Buf *out_buffer)

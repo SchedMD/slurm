@@ -100,8 +100,6 @@ int main(int argc, char *argv[])
 	_parse_commandline(argc, argv);
 	_update_logging();
 
-	slurmdbd_options = 1;
-
 	if (gethostname_short(node_name, sizeof(node_name)))
 		fatal("getnodename: %m");
 	if (slurmdbd_conf->dbd_host &&
@@ -114,7 +112,7 @@ int main(int argc, char *argv[])
 		fatal("Unable to initialize %s authentication plugin",
 			slurmdbd_conf->auth_type);
 	}
-	if (slurm_acct_storage_init()
+	if (slurm_acct_storage_init(NULL)
 	    != SLURM_SUCCESS) {
 		fatal("Unable to initialize %s accounting storage plugin",
 			slurmdbd_conf->storage_type);

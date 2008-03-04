@@ -59,23 +59,25 @@
 
 /* SlurmDBD configuration parameters */
 typedef struct slurm_dbd_conf {
-	time_t		last_update;	 	/* time slurmdbd.conf read	*/
-	char *		auth_info;		/* authentication info		*/
-	char *		auth_type;		/* authentication mechanism	*/
-	char *		dbd_addr;		/* network address of Slurm DBD	*/
-	char *		dbd_host;		/* hostname of Slurm DBD	*/
-	uint16_t	dbd_port;		/* port number for RPCs to DBD	*/
-	uint16_t	debug_level;		/* Debug level, default=3	*/
-	char *		log_file;		/* Log file			*/
-	char *		pid_file;		/* where to store current PID	*/
-	uint32_t	slurm_user_id;		/* uid of slurm_user_name	*/
-	char *		slurm_user_name;	/* user that slurmcdtld runs as	*/
-	char *		storage_host;		/* host where DB is running	*/
-	char *		storage_loc;		/* database name */
-	char *		storage_pass;   	/* password for DB write	*/
-	uint16_t	storage_port;		/* port DB is listening to	*/
-	char *		storage_type;		/* DB to be used for storage	*/
-	char *		storage_user;		/* user authorized to write DB	*/
+	time_t		last_update;	/* time slurmdbd.conf read	*/
+	char *		auth_info;	/* authentication info		*/
+	char *		auth_type;	/* authentication mechanism	*/
+	char *		dbd_addr;	/* network address of Slurm DBD	*/
+	char *		dbd_host;	/* hostname of Slurm DBD	*/
+	uint16_t	dbd_port;	/* port number for RPCs to DBD	*/
+	uint16_t	debug_level;	/* Debug level, default=3	*/
+	char *		log_file;	/* Log file			*/
+	uint16_t        msg_timeout;    /* message timeout */   
+	char *		pid_file;	/* where to store current PID	*/
+	char *		plugindir;	/* dir to look for plugins	*/
+	uint32_t	slurm_user_id;	/* uid of slurm_user_name	*/
+	char *		slurm_user_name;/* user that slurmcdtld runs as	*/
+	char *		storage_host;	/* host where DB is running	*/
+	char *		storage_loc;	/* database name */
+	char *		storage_pass;   /* password for DB write	*/
+	uint16_t	storage_port;	/* port DB is listening to	*/
+	char *		storage_type;	/* DB to be used for storage	*/
+	char *		storage_user;	/* user authorized to write DB	*/
 } slurm_dbd_conf_t;
 
 extern pthread_mutex_t conf_mutex;
@@ -90,6 +92,10 @@ extern void free_slurmdbd_conf(void);
 
 /* Return the DbdPort value */
 extern uint16_t get_dbd_port(void);
+
+/* lock and unlock the dbd_conf */
+extern void slurmdbd_conf_lock(void);
+extern void slurmdbd_conf_unlock(void);
 
 /* Log the current configuration using verbose() */
 extern void log_config(void);

@@ -52,6 +52,7 @@
 #include "src/slurmd/slurmd/slurmd.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_accounting_storage.h"
+#include "src/common/jobacct_common.h"
 
 #include "src/database/gold_interface.h"
 
@@ -90,6 +91,8 @@ const uint32_t plugin_version = 100;
 
 static List gold_association_list = NULL;
 
+static int _add_edit_job(struct job_record *job_ptr, gold_object_t action);
+static int _check_for_job(uint32_t jobid, time_t submit);
 static void _destroy_char(void *object);
 static List _get_association_list_from_response(gold_response_t *gold_response);
 static int _get_cluster_accounting_list_from_response(
@@ -103,6 +106,168 @@ static List _get_acct_list_from_response(gold_response_t *gold_response);
 static List _get_cluster_list_from_response(gold_response_t *gold_response);
 static int _remove_association_accounting(List id_list);
 
+
+static int _add_edit_job(struct job_record *job_ptr, gold_object_t action)
+{
+	gold_request_t *gold_request = create_gold_request(GOLD_OBJECT_JOB,
+							   action);
+	gold_response_t *gold_response = NULL;
+	char tmp_buff[50];
+	int rc = SLURM_ERROR;
+	char *jname = NULL;
+	int tmp = 0, i = 0;
+	char *account = NULL;
+	char *nodes = "(null)";
+
+	if(!gold_request) 
+		return rc;
+
+	if (job_ptr->name && (tmp = strlen(job_ptr->name))) {
+		jname = xmalloc(++tmp);
+		for (i=0; i<tmp; i++) {
+			if (isspace(job_ptr->name[i]))
+				jname[i]='_';
+			else
+				jname[i]=job_ptr->name[i];
+		}
+	} else
+		jname = xstrdup("allocation");
+	
+	if (job_ptr->account && job_ptr->account[0])
+		account = job_ptr->account;
+	
+	if (job_ptr->nodes && job_ptr->nodes[0])
+		nodes = job_ptr->nodes;
+	
+	
+//info("total procs is  %d", job_ptr->total_procs);
+	if(action == GOLD_ACTION_CREATE) {
+		snprintf(tmp_buff, sizeof(tmp_buff), "%u", job_ptr->job_id);
+		gold_request_add_assignment(gold_request, "JobId", tmp_buff);
+		
+		snprintf(tmp_buff, sizeof(tmp_buff), "%u",
+			 (int)job_ptr->details->submit_time);
+		gold_request_add_assignment(gold_request, "SubmitTime",
+					    tmp_buff);
+	} else if (action == GOLD_ACTION_MODIFY) {
+		snprintf(tmp_buff, sizeof(tmp_buff), "%u", job_ptr->job_id);
+		gold_request_add_condition(gold_request, "JobId", tmp_buff,
+					   GOLD_OPERATOR_NONE, 0);
+		
+		snprintf(tmp_buff, sizeof(tmp_buff), "%u",
+			 (int)job_ptr->details->submit_time);
+		gold_request_add_condition(gold_request, "SubmitTime",
+					   tmp_buff,
+					   GOLD_OPERATOR_NONE, 0);
+	} else {
+		destroy_gold_request(gold_request);
+		error("_add_edit_job: bad action given %d", action);		
+		return rc;
+	}
+
+	snprintf(tmp_buff, sizeof(tmp_buff), "%u", job_ptr->assoc_id);
+	gold_request_add_assignment(gold_request, "GoldAccountId", tmp_buff);
+
+	gold_request_add_assignment(gold_request, "Partition",
+				    job_ptr->partition);
+	
+	snprintf(tmp_buff, sizeof(tmp_buff), "%u", job_ptr->total_procs);
+	gold_request_add_assignment(gold_request, "RequestedCPUCount",
+				    tmp_buff);
+	snprintf(tmp_buff, sizeof(tmp_buff), "%u", job_ptr->total_procs);
+	gold_request_add_assignment(gold_request, "AllocatedCPUCount",
+				    tmp_buff);
+
+	gold_request_add_assignment(gold_request, "NodeList", nodes);
+
+	gold_request_add_assignment(gold_request, "JobName", jname);
+	xfree(jname);
+	
+	if(job_ptr->job_state != JOB_RUNNING) {
+		snprintf(tmp_buff, sizeof(tmp_buff), "%u",
+			 (int)job_ptr->end_time);
+		gold_request_add_assignment(gold_request, "EndTime",
+					    tmp_buff);		
+		
+		snprintf(tmp_buff, sizeof(tmp_buff), "%u",
+			 (int)job_ptr->exit_code);
+		gold_request_add_assignment(gold_request, "ExitCode",
+					    tmp_buff);
+	}
+/* 	gold_request_add_assignment(gold_request, "ReservedCPUSeconds", */
+/* 	     		            ); */
+
+
+	snprintf(tmp_buff, sizeof(tmp_buff), "%u",
+		 (int)job_ptr->details->begin_time);
+	gold_request_add_assignment(gold_request, "EligibleTime",
+				    tmp_buff);
+
+	snprintf(tmp_buff, sizeof(tmp_buff), "%u",
+		 (int)job_ptr->start_time);
+	gold_request_add_assignment(gold_request, "StartTime",
+				    tmp_buff);
+		
+	snprintf(tmp_buff, sizeof(tmp_buff), "%u",
+		 job_ptr->job_state & (~JOB_COMPLETING));
+	gold_request_add_assignment(gold_request, "State",
+				    tmp_buff);	
+
+	gold_response = get_gold_response(gold_request);	
+	destroy_gold_request(gold_request);
+
+	if(!gold_response) {
+		error("_add_edit_job: no response received");
+		return rc;
+	}
+
+	if(!gold_response->rc) 
+		rc = SLURM_SUCCESS;
+	else {
+		error("gold_response has non-zero rc(%d): %s",
+		      gold_response->rc,
+		      gold_response->message);
+	}
+	destroy_gold_response(gold_response);
+
+	return rc;
+}
+
+static int _check_for_job(uint32_t jobid, time_t submit) 
+{
+	gold_request_t *gold_request = create_gold_request(GOLD_OBJECT_JOB,
+							   GOLD_ACTION_QUERY);
+	gold_response_t *gold_response = NULL;
+	char tmp_buff[50];
+	int rc = 0;
+
+	if(!gold_request) 
+		return rc;
+
+	gold_request_add_selection(gold_request, "JobId");
+
+	snprintf(tmp_buff, sizeof(tmp_buff), "%u", jobid);
+	gold_request_add_condition(gold_request, "JobId", tmp_buff,
+				   GOLD_OPERATOR_NONE, 0);
+
+	snprintf(tmp_buff, sizeof(tmp_buff), "%u", (int)submit);
+	gold_request_add_condition(gold_request, "SubmitTime", tmp_buff,
+				   GOLD_OPERATOR_NONE, 0);
+
+	gold_response = get_gold_response(gold_request);
+	destroy_gold_request(gold_request);
+
+	if(!gold_response) {
+		error("_check_for_job: no response received");
+		return 0;
+	}
+
+	if(gold_response->entry_cnt > 0) 
+		rc = 1;
+	destroy_gold_response(gold_response);
+	
+	return rc;
+}
 
 static void _destroy_char(void *object)
 {
@@ -867,10 +1032,10 @@ extern int acct_storage_p_get_assoc_id(acct_association_rec_t *assoc)
 {
 	ListIterator itr = NULL;
 	acct_association_rec_t * found_assoc = NULL;
+	acct_association_rec_t * ret_assoc = NULL;
 
 	if(!gold_association_list) 
 		gold_association_list = acct_storage_g_get_associations(NULL);
-
 
 	if(!assoc->cluster || !assoc->acct) {
 		error("acct_storage_p_get_assoc_id: "
@@ -882,8 +1047,9 @@ extern int acct_storage_p_get_assoc_id(acct_association_rec_t *assoc)
 	assoc->id = NO_VAL;
 	itr = list_iterator_create(gold_association_list);
 	while((found_assoc = list_next(itr))) {
-		if((!found_assoc->acct 
-		    || strcasecmp(assoc->acct, found_assoc->acct))
+		if((assoc->id && assoc->id != found_assoc->id)
+		   || (!found_assoc->acct 
+		       || strcasecmp(assoc->acct, found_assoc->acct))
 		   || (!assoc->cluster 
 		       || strcasecmp(assoc->cluster, found_assoc->cluster))
 		   || (assoc->user 
@@ -896,16 +1062,27 @@ extern int acct_storage_p_get_assoc_id(acct_association_rec_t *assoc)
 		   && (!assoc->partition 
 		       || strcasecmp(assoc->partition, 
 				     found_assoc->partition))) {
-			assoc->id = found_assoc->id;
+			ret_assoc = found_assoc;
 			continue;
 		}
-		assoc->id = found_assoc->id;
+		ret_assoc = found_assoc;
 		break;
 	}
 	list_iterator_destroy(itr);
 
-	if(assoc->id == NO_VAL)
+	if(!ret_assoc)
 		return SLURM_ERROR;
+
+	assoc->id = ret_assoc->id;
+	if(!assoc->user)
+		assoc->user = ret_assoc->user;
+	if(!assoc->acct)
+		assoc->acct = ret_assoc->acct;
+	if(!assoc->cluster)
+		assoc->cluster = ret_assoc->cluster;
+	if(!assoc->partition)
+		assoc->partition = ret_assoc->partition;
+
 	return SLURM_SUCCESS;
 }
 
@@ -2898,4 +3075,256 @@ extern int clusteracct_storage_p_get_monthly_usage(
 	destroy_gold_response(gold_response);
 
 	return rc;
+}
+
+extern int jobacct_storage_p_job_start(struct job_record *job_ptr)
+{
+	gold_object_t action = GOLD_ACTION_CREATE;
+	
+	if(_check_for_job(job_ptr->job_id, job_ptr->details->submit_time)) {
+		error("It looks like this job is already in GOLD.  "
+		      "This shouldn't happen, we are going to overwrite "
+		      "old info.");
+		action = GOLD_ACTION_MODIFY;
+	}
+
+	return _add_edit_job(job_ptr, action);
+}
+
+extern int jobacct_storage_p_job_complete(struct job_record *job_ptr) 
+{
+	gold_object_t action = GOLD_ACTION_MODIFY;
+	
+	if(!_check_for_job(job_ptr->job_id, job_ptr->details->submit_time)) {
+		error("Couldn't find this job entry.  "
+		      "This shouldn't happen, we are going to create one.");
+		action = GOLD_ACTION_CREATE;
+	}
+
+	return _add_edit_job(job_ptr, action);
+}
+
+extern int jobacct_storage_p_step_start(struct step_record *step)
+{
+	gold_object_t action = GOLD_ACTION_MODIFY;
+	
+	if(!_check_for_job(step->job_ptr->job_id,
+			   step->job_ptr->details->submit_time)) {
+		error("Couldn't find this job entry.  "
+		      "This shouldn't happen, we are going to create one.");
+		action = GOLD_ACTION_CREATE;
+	}
+
+	return _add_edit_job(step->job_ptr, action);
+
+}
+
+extern int jobacct_storage_p_step_complete(struct step_record *step)
+{
+	return SLURM_SUCCESS;	
+}
+
+extern int jobacct_storage_p_suspend(struct job_record *job_ptr)
+{
+	return SLURM_SUCCESS;
+}
+
+/* 
+ * get info from the storage 
+ * returns List of job_rec_t *
+ * note List needs to be freed when called
+ */
+extern List jobacct_storage_p_get_jobs(List selected_steps,
+				       List selected_parts,
+				       void *params)
+{
+	gold_request_t *gold_request = create_gold_request(GOLD_OBJECT_JOB,
+							   GOLD_ACTION_QUERY);
+	gold_response_t *gold_response = NULL;
+	gold_response_entry_t *resp_entry = NULL;
+	gold_name_value_t *name_val = NULL;
+	char tmp_buff[50];
+	int set = 0;
+	char *selected_part = NULL;
+	jobacct_selected_step_t *selected_step = NULL;
+	jobacct_job_rec_t *job = NULL;
+	jobacct_header_t header;
+	ListIterator itr = NULL;
+	ListIterator itr2 = NULL;
+	List job_list = NULL;
+
+	if(!gold_request) 
+		return NULL;
+
+	if(selected_steps && list_count(selected_steps)) {
+		itr = list_iterator_create(selected_steps);
+		if(list_count(selected_steps) > 1)
+			set = 2;
+		else
+			set = 0;
+		while((selected_step = list_next(itr))) {
+			snprintf(tmp_buff, sizeof(tmp_buff), "%u", 
+				 selected_step->jobid);
+			gold_request_add_condition(gold_request, "JobId",
+						   tmp_buff,
+						   GOLD_OPERATOR_NONE,
+						   set);
+			set = 1;
+		}
+		list_iterator_destroy(itr);
+	}
+
+	if(selected_parts && list_count(selected_parts)) {
+		if(list_count(selected_parts) > 1)
+			set = 2;
+		else
+			set = 0;
+		itr = list_iterator_create(selected_parts);
+		while((selected_part = list_next(itr))) {
+			gold_request_add_condition(gold_request, "Partition",
+						   selected_part,
+						   GOLD_OPERATOR_NONE,
+						   set);
+			set = 1;
+		}
+		list_iterator_destroy(itr);
+	}
+
+	gold_request_add_selection(gold_request, "JobId");
+	gold_request_add_selection(gold_request, "GoldAccountId");
+	gold_request_add_selection(gold_request, "Partition");
+	gold_request_add_selection(gold_request, "RequestedCPUCount");
+	gold_request_add_selection(gold_request, "AllocatedCPUCount");
+	gold_request_add_selection(gold_request, "NodeList");
+	gold_request_add_selection(gold_request, "JobName");
+	gold_request_add_selection(gold_request, "SubmitTime");
+	gold_request_add_selection(gold_request, "EligibleTime");
+	gold_request_add_selection(gold_request, "StartTime");
+	gold_request_add_selection(gold_request, "EndTime");
+	gold_request_add_selection(gold_request, "Suspended");
+	gold_request_add_selection(gold_request, "State");
+	gold_request_add_selection(gold_request, "ExitCode");
+	gold_request_add_selection(gold_request, "QoS");
+
+	gold_response = get_gold_response(gold_request);
+	destroy_gold_request(gold_request);
+
+	if(!gold_response) {
+		error("_check_for_job: no response received");
+		return NULL;
+	}
+	
+	job_list = list_create(destroy_jobacct_job_rec);
+	if(gold_response->entry_cnt > 0) {
+		itr = list_iterator_create(gold_response->entries);
+		while((resp_entry = list_next(itr))) {
+			int req_cpus = 0;
+			int alloc_cpus = 0;
+			char *nodelist = NULL;
+			char *job_name = NULL;
+			int eligible = 0;
+			int end = 0;
+			int suspended = 0;
+			int state = 0;
+			int exitcode = 0;
+			int qos = 0;
+			acct_association_rec_t account_rec;
+	
+			itr2 = list_iterator_create(resp_entry->name_val);
+			while((name_val = list_next(itr2))) {
+				if(!strcmp(name_val->name, "JobId")) {
+					header.jobnum = atoi(name_val->value);
+				} else if(!strcmp(name_val->name, 
+						  "GoldAccountId")) {
+					memset(&account_rec, 0,
+					       sizeof(acct_association_rec_t));
+					acct_storage_p_get_assoc_id(
+						&account_rec);
+					if(account_rec.user) {
+						struct passwd *passwd_ptr =
+							getpwnam(account_rec.
+								 user);
+						if(passwd_ptr) {
+							header.uid =
+								passwd_ptr->
+								pw_uid;
+							header.gid = 
+								passwd_ptr->
+								pw_gid;
+						}
+					}					
+				} else if(!strcmp(name_val->name,
+						  "Partition")) {
+					header.partition =
+						xstrdup(name_val->value);
+				} else if(!strcmp(name_val->name,
+						  "RequestedCPUCount")) {
+					req_cpus = atoi(name_val->value);
+				} else if(!strcmp(name_val->name,
+						  "AllocatedCPUCount")) {
+					alloc_cpus = atoi(name_val->value);
+				} else if(!strcmp(name_val->name, "NodeList")) {
+					nodelist = xstrdup(name_val->value);
+				} else if(!strcmp(name_val->name, "JobName")) {
+					job_name = xstrdup(name_val->value);
+				} else if(!strcmp(name_val->name,
+						  "SubmitTime")) {
+					header.job_submit = 
+						atoi(name_val->value);
+				} else if(!strcmp(name_val->name,
+						  "EligibleTime")) {
+					eligible = atoi(name_val->value);
+				} else if(!strcmp(name_val->name,
+						  "StartTime")) {
+					header.timestamp = 
+						atoi(name_val->value);
+				} else if(!strcmp(name_val->name, "EndTime")) {
+					end = atoi(name_val->value);
+				} else if(!strcmp(name_val->name,
+						  "Suspended")) {
+					suspended = atoi(name_val->value);
+				} else if(!strcmp(name_val->name, "State")) {
+					state = atoi(name_val->value);
+				} else if(!strcmp(name_val->name, "ExitCode")) {
+					exitcode = atoi(name_val->value);
+				} else if(!strcmp(name_val->name, "QoS")) {
+					qos = atoi(name_val->value);
+				}
+			}
+			list_iterator_destroy(itr2);
+			job = create_jobacct_job_rec(header);
+			job->show_full = 1;
+			job->status = state;
+			job->jobname = job_name;
+			job->track_steps = 0;
+			job->priority = 0;
+			job->ncpus = alloc_cpus;
+			job->end = end;
+
+			if (!nodelist) 
+				job->nodes = xstrdup("(unknown)");
+			  else
+				job->nodes = nodelist;
+			
+			if(account_rec.acct) 
+				job->account = xstrdup(account_rec.acct);
+			job->exitcode = exitcode;
+			list_append(job_list, job);
+		}
+		list_iterator_destroy(itr);		
+	}
+	destroy_gold_response(gold_response);
+	
+	return job_list;
+}
+
+/* 
+ * expire old info from the storage 
+ */
+extern void jobacct_storage_p_archive(List selected_parts,
+				      void *params)
+{
+	info("not implemented");
+	
+	return;
 }

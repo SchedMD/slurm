@@ -728,7 +728,6 @@ int read_slurm_conf(int recover)
 	_build_all_partitionline_info();
 
 	update_logging();
-	jobacct_storage_g_init(slurmctld_conf.job_acct_storage_loc);
 	g_slurm_jobcomp_init(slurmctld_conf.job_comp_loc);
 	slurm_sched_init();
 	if (switch_init() < 0)

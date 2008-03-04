@@ -462,6 +462,7 @@ static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer)
 	struct step_record *step_ptr;
 
 	/* Dump basic job info */
+	pack32(dump_job_ptr->assoc_id, buffer);
 	pack32(dump_job_ptr->job_id, buffer);
 	pack32(dump_job_ptr->user_id, buffer);
 	pack32(dump_job_ptr->group_id, buffer);
@@ -535,7 +536,8 @@ static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer)
 static int _load_job_state(Buf buffer)
 {
 	uint32_t job_id, user_id, group_id, time_limit, priority, alloc_sid;
-	uint32_t exit_code, num_procs, db_index, name_len, total_procs;
+	uint32_t exit_code, num_procs, assoc_id, db_index, name_len,
+		total_procs;
 	time_t start_time, end_time, suspend_time, pre_sus_time, tot_sus_time;
 	uint16_t job_state, next_step_id, details, batch_flag, step_flag;
 	uint16_t kill_on_node_fail, kill_on_step_done;
@@ -548,6 +550,7 @@ static int _load_job_state(Buf buffer)
 	int error_code;
 	select_jobinfo_t select_jobinfo = NULL;
 
+	safe_unpack32(&assoc_id, buffer);
 	safe_unpack32(&job_id, buffer);
 	safe_unpack32(&user_id, buffer);
 	safe_unpack32(&group_id, buffer);
@@ -655,6 +658,7 @@ static int _load_job_state(Buf buffer)
 		goto unpack_error;
 	}
 
+	job_ptr->assoc_id     = assoc_id;
 	job_ptr->user_id      = user_id;
 	job_ptr->group_id     = group_id;
 	job_ptr->time_limit   = time_limit;
@@ -1977,7 +1981,7 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 	}
 
 	job_ptr = *job_pptr;
-	job_ptr->db_index = assoc_rec.id;
+	job_ptr->assoc_id = assoc_rec.id;
 	if (update_job_dependency(job_ptr, job_desc->dependency)) {
 		error_code = ESLURM_DEPENDENCY;
 		goto cleanup;
@@ -3821,7 +3825,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 				/* Let update proceed. Note there is an invalid
 				 * association ID for accounting purposes */
 			} else {
-				job_ptr->db_index = assoc_rec.id;
+				job_ptr->assoc_id = assoc_rec.id;
 			}
 			xfree(job_ptr->partition);
 			job_ptr->partition = xstrdup(job_specs->partition);
@@ -3911,7 +3915,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 				info("update_job: setting account to %s for job_id %u",
 				     assoc_rec.acct, job_ptr->job_id);
 			}
-			job_ptr->db_index = assoc_rec.id;
+			job_ptr->assoc_id = assoc_rec.id;
 		}
 	}
 

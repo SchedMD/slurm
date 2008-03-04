@@ -338,6 +338,7 @@ struct job_details {
 };
 
 struct job_record {
+	uint32_t assoc_id;              /* used for accounting plugins */
 	uint32_t job_id;		/* job ID */
 	uint32_t magic;			/* magic cookie for data integrity */
 	char *name;			/* name of the job */

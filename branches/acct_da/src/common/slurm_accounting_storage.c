@@ -109,7 +109,16 @@ typedef struct slurm_acct_storage_ops {
 				    void *params);
 	int (*c_get_monthly_usage) (acct_cluster_rec_t *cluster_rec,
 				    time_t start, time_t end,
+				    void *params);
+	int  (*job_start)          (struct job_record *job_ptr);
+	int  (*job_complete)       (struct job_record *job_ptr);
+	int  (*step_start)         (struct step_record *step_ptr);
+	int  (*step_complete)      (struct step_record *step_ptr);
+	int  (*job_suspend)        (struct job_record *job_ptr);
+	List (*get_jobs)           (List selected_steps,
+				    List selected_parts,
 				    void *params);	
+	void (*job_archive)        (List selected_parts, void *params);	
 } slurm_acct_storage_ops_t;
 
 typedef struct slurm_acct_storage_context {
@@ -173,8 +182,16 @@ static slurm_acct_storage_ops_t * _acct_storage_get_ops(
 		"clusteracct_storage_p_cluster_procs",
 		"clusteracct_storage_p_get_hourly_usage",
 		"clusteracct_storage_p_get_daily_usage",
-		"clusteracct_storage_p_get_monthly_usage"
-
+		"clusteracct_storage_p_get_monthly_usage",
+		"jobacct_storage_p_init",
+		"jobacct_storage_p_fini",
+		"jobacct_storage_p_job_start",
+		"jobacct_storage_p_job_complete",
+		"jobacct_storage_p_step_start",
+		"jobacct_storage_p_step_complete",
+		"jobacct_storage_p_suspend",
+		"jobacct_storage_p_get_jobs",
+		"jobacct_storage_p_archive"
 	};
 	int n_syms = sizeof( syms ) / sizeof( char * );
 
@@ -476,7 +493,7 @@ extern acct_admin_level_t str_2_acct_admin_level(char *level)
 /*
  * Initialize context for acct_storage plugin
  */
-extern int slurm_acct_storage_init()
+extern int slurm_acct_storage_init(char *loc)
 {
 	int retval = SLURM_SUCCESS;
 	char *acct_storage_type = NULL;
@@ -485,7 +502,9 @@ extern int slurm_acct_storage_init()
 
 	if ( g_acct_storage_context )
 		goto done;
-
+	if(loc)
+		slurm_set_accounting_storage_loc(loc);
+	
 	acct_storage_type = slurm_get_accounting_storage_type();
 	
 	g_acct_storage_context = _acct_storage_context_create(
@@ -525,14 +544,14 @@ extern int slurm_acct_storage_fini(void)
 
 extern int acct_storage_g_add_users(List user_list)
 {
-	if (slurm_acct_storage_init() < 0)
+	if (slurm_acct_storage_init(NULL) < 0)
 		return SLURM_ERROR;
 	return (*(g_acct_storage_context->ops.add_users))(user_list);
 }
 
 extern int acct_storage_g_add_coord(char *acct, acct_user_cond_t *user_q)
 {
-	if (slurm_acct_storage_init() < 0)
+	if (slurm_acct_storage_init(NULL) < 0)
 		return SLURM_ERROR;
 	return (*(g_acct_storage_context->ops.add_coord))
 		(acct, user_q);
@@ -540,21 +559,21 @@ extern int acct_storage_g_add_coord(char *acct, acct_user_cond_t *user_q)
 
 extern int acct_storage_g_add_accounts(List acct_list)
 {
-	if (slurm_acct_storage_init() < 0)
+	if (slurm_acct_storage_init(NULL) < 0)
 		return SLURM_ERROR;
 	return (*(g_acct_storage_context->ops.add_accts))(acct_list);
 }
 
 extern int acct_storage_g_add_clusters(List cluster_list)
 {
-	if (slurm_acct_storage_init() < 0)
+	if (slurm_acct_storage_init(NULL) < 0)
 		return SLURM_ERROR;
 	return (*(g_acct_storage_context->ops.add_clusters))(cluster_list);
 }
 
 extern int acct_storage_g_add_associations(List association_list)
 {
-	if (slurm_acct_storage_init() < 0)
+	if (slurm_acct_storage_init(NULL) < 0)
 		return SLURM_ERROR;
 	return (*(g_acct_storage_context->ops.add_associations))
 		(association_list);
@@ -562,7 +581,7 @@ extern int acct_storage_g_add_associations(List association_list)
 
 extern int acct_storage_g_get_assoc_id(acct_association_rec_t *assoc)
 {
-	if (slurm_acct_storage_init() < 0)
+	if (slurm_acct_storage_init(NULL) < 0)
 		return SLURM_ERROR;
 
 	return (*(g_acct_storage_context->ops.get_assoc_id))(assoc);
@@ -570,7 +589,7 @@ extern int acct_storage_g_get_assoc_id(acct_association_rec_t *assoc)
 
 extern int acct_storage_g_validate_assoc_id(uint32_t assoc_id)
 {
-	if (slurm_acct_storage_init() < 0)
+	if (slurm_acct_storage_init(NULL) < 0)
 		return SLURM_ERROR;
 
 	return (*(g_acct_storage_context->ops.validate_assoc_id))(assoc_id);
@@ -579,14 +598,14 @@ extern int acct_storage_g_validate_assoc_id(uint32_t assoc_id)
 extern int acct_storage_g_modify_users(acct_user_cond_t *user_q,
 				       acct_user_rec_t *user)
 {
-	if (slurm_acct_storage_init() < 0)
+	if (slurm_acct_storage_init(NULL) < 0)
 		return SLURM_ERROR;
 	return (*(g_acct_storage_context->ops.modify_users))(user_q, user);
 }
 
 extern int acct_storage_g_modify_user_admin_level(acct_user_cond_t *user_q)
 {
-	if (slurm_acct_storage_init() < 0)
+	if (slurm_acct_storage_init(NULL) < 0)
 		return SLURM_ERROR;
 	return (*(g_acct_storage_context->ops.modify_user_admin_level))
 		(user_q);
@@ -595,7 +614,7 @@ extern int acct_storage_g_modify_user_admin_level(acct_user_cond_t *user_q)
 extern int acct_storage_g_modify_accounts(acct_account_cond_t *acct_q,
 					  acct_account_rec_t *acct)
 {
-	if (slurm_acct_storage_init() < 0)
+	if (slurm_acct_storage_init(NULL) < 0)
 		return SLURM_ERROR;
 	return (*(g_acct_storage_context->ops.modify_accts))
 		(acct_q, acct);
@@ -604,7 +623,7 @@ extern int acct_storage_g_modify_accounts(acct_account_cond_t *acct_q,
 extern int acct_storage_g_modify_clusters(acct_cluster_cond_t *cluster_q,
 					  acct_cluster_rec_t *cluster)
 {
-	if (slurm_acct_storage_init() < 0)
+	if (slurm_acct_storage_init(NULL) < 0)
 		return SLURM_ERROR;
 	return (*(g_acct_storage_context->ops.modify_clusters))
 		(cluster_q, cluster);
@@ -613,7 +632,7 @@ extern int acct_storage_g_modify_clusters(acct_cluster_cond_t *cluster_q,
 extern int acct_storage_g_modify_associations(acct_association_cond_t *assoc_q,
 					      acct_association_rec_t *assoc)
 {
-	if (slurm_acct_storage_init() < 0)
+	if (slurm_acct_storage_init(NULL) < 0)
 		return SLURM_ERROR;
 	return (*(g_acct_storage_context->ops.modify_associations))
 		(assoc_q, assoc);
@@ -621,14 +640,14 @@ extern int acct_storage_g_modify_associations(acct_association_cond_t *assoc_q,
 
 extern int acct_storage_g_remove_users(acct_user_cond_t *user_q)
 {
-	if (slurm_acct_storage_init() < 0)
+	if (slurm_acct_storage_init(NULL) < 0)
 		return SLURM_ERROR;
 	return (*(g_acct_storage_context->ops.remove_users))(user_q);
 }
 
 extern int acct_storage_g_remove_coord(char *acct, acct_user_cond_t *user_q)
 {
-	if (slurm_acct_storage_init() < 0)
+	if (slurm_acct_storage_init(NULL) < 0)
 		return SLURM_ERROR;
 	return (*(g_acct_storage_context->ops.remove_coord))
 		(acct, user_q);
@@ -636,7 +655,7 @@ extern int acct_storage_g_remove_coord(char *acct, acct_user_cond_t *user_q)
 
 extern int acct_storage_g_remove_accounts(acct_account_cond_t *acct_q)
 {
-	if (slurm_acct_storage_init() < 0)
+	if (slurm_acct_storage_init(NULL) < 0)
 		return SLURM_ERROR;
 	return (*(g_acct_storage_context->ops.remove_accts))
 		(acct_q);
@@ -644,7 +663,7 @@ extern int acct_storage_g_remove_accounts(acct_account_cond_t *acct_q)
 
 extern int acct_storage_g_remove_clusters(acct_cluster_cond_t *cluster_q)
 {
-	if (slurm_acct_storage_init() < 0)
+	if (slurm_acct_storage_init(NULL) < 0)
 		return SLURM_ERROR;
 	return (*(g_acct_storage_context->ops.remove_clusters))
 		(cluster_q);
@@ -652,7 +671,7 @@ extern int acct_storage_g_remove_clusters(acct_cluster_cond_t *cluster_q)
 
 extern int acct_storage_g_remove_associations(acct_association_cond_t *assoc_q)
 {
-	if (slurm_acct_storage_init() < 0)
+	if (slurm_acct_storage_init(NULL) < 0)
 		return SLURM_ERROR;
 	return (*(g_acct_storage_context->ops.remove_associations))
 		(assoc_q);
@@ -660,14 +679,14 @@ extern int acct_storage_g_remove_associations(acct_association_cond_t *assoc_q)
 
 extern List acct_storage_g_get_users(acct_user_cond_t *user_q)
 {
-	if (slurm_acct_storage_init() < 0)
+	if (slurm_acct_storage_init(NULL) < 0)
 		return NULL;
 	return (*(g_acct_storage_context->ops.get_users))(user_q);
 }
 
 extern List acct_storage_g_get_accounts(acct_account_cond_t *acct_q)
 {
-	if (slurm_acct_storage_init() < 0)
+	if (slurm_acct_storage_init(NULL) < 0)
 		return NULL;
 	return (*(g_acct_storage_context->ops.get_accts))
 		(acct_q);
@@ -675,7 +694,7 @@ extern List acct_storage_g_get_accounts(acct_account_cond_t *acct_q)
 
 extern List acct_storage_g_get_clusters(acct_cluster_cond_t *cluster_q)
 {
-	if (slurm_acct_storage_init() < 0)
+	if (slurm_acct_storage_init(NULL) < 0)
 		return NULL;
 	return (*(g_acct_storage_context->ops.get_clusters))
 		(cluster_q);
@@ -683,7 +702,7 @@ extern List acct_storage_g_get_clusters(acct_cluster_cond_t *cluster_q)
 
 extern List acct_storage_g_get_associations(acct_association_cond_t *assoc_q)
 {
-	if (slurm_acct_storage_init() < 0)
+	if (slurm_acct_storage_init(NULL) < 0)
 		return NULL;
 	return (*(g_acct_storage_context->ops.get_associations))
 		(assoc_q);
@@ -692,7 +711,7 @@ extern List acct_storage_g_get_associations(acct_association_cond_t *assoc_q)
 extern int acct_storage_g_get_hourly_usage(acct_association_rec_t *acct_assoc,
 					   time_t start, time_t end)
 {
-	if (slurm_acct_storage_init() < 0)
+	if (slurm_acct_storage_init(NULL) < 0)
 		return SLURM_ERROR;
 	return (*(g_acct_storage_context->ops.get_hourly_usage))
 		(acct_assoc, start, end);
@@ -701,7 +720,7 @@ extern int acct_storage_g_get_hourly_usage(acct_association_rec_t *acct_assoc,
 extern int acct_storage_g_get_daily_usage(acct_association_rec_t *acct_assoc,
 					  time_t start, time_t end)
 {
-	if (slurm_acct_storage_init() < 0)
+	if (slurm_acct_storage_init(NULL) < 0)
 		return SLURM_ERROR;
 	return (*(g_acct_storage_context->ops.get_daily_usage))
 		(acct_assoc, start, end);
@@ -710,7 +729,7 @@ extern int acct_storage_g_get_daily_usage(acct_association_rec_t *acct_assoc,
 extern int acct_storage_g_get_monthly_usage(acct_association_rec_t *acct_assoc,
 					    time_t start, time_t end)
 {
-	if (slurm_acct_storage_init() < 0)
+	if (slurm_acct_storage_init(NULL) < 0)
 		return SLURM_ERROR;
 	return (*(g_acct_storage_context->ops.get_monthly_usage))
 		(acct_assoc, start, end);
@@ -721,7 +740,7 @@ extern int clusteracct_storage_g_node_down(char *cluster,
 					   time_t event_time,
 					   char *reason)
 {
-	if (slurm_acct_storage_init() < 0)
+	if (slurm_acct_storage_init(NULL) < 0)
 		return SLURM_ERROR;
  	return (*(g_acct_storage_context->ops.node_down))
 		(cluster, node_ptr, event_time, reason);
@@ -731,7 +750,7 @@ extern int clusteracct_storage_g_node_up(char *cluster,
 					 struct node_record *node_ptr,
 					 time_t event_time)
 {
-	if (slurm_acct_storage_init() < 0)
+	if (slurm_acct_storage_init(NULL) < 0)
 		return SLURM_ERROR;
  	return (*(g_acct_storage_context->ops.node_up))
 		(cluster, node_ptr, event_time);
@@ -742,7 +761,7 @@ extern int clusteracct_storage_g_cluster_procs(char *cluster,
 					       uint32_t procs,
 					       time_t event_time)
 {
-	if (slurm_acct_storage_init() < 0)
+	if (slurm_acct_storage_init(NULL) < 0)
 		return SLURM_ERROR;
  	return (*(g_acct_storage_context->ops.cluster_procs))
 		(cluster, procs, event_time);
@@ -753,7 +772,7 @@ extern int clusteracct_storage_g_get_hourly_usage(
 	acct_cluster_rec_t *cluster_rec, 
 	time_t start, time_t end, void *params)
 {
-	if (slurm_acct_storage_init() < 0)
+	if (slurm_acct_storage_init(NULL) < 0)
 		return SLURM_ERROR;
 	return (*(g_acct_storage_context->ops.c_get_hourly_usage))
 		(cluster_rec, start, end, params);
@@ -763,7 +782,7 @@ extern int clusteracct_storage_g_get_daily_usage(
 	acct_cluster_rec_t *cluster_rec, 
 	time_t start, time_t end, void *params)
 {
-	if (slurm_acct_storage_init() < 0)
+	if (slurm_acct_storage_init(NULL) < 0)
 		return SLURM_ERROR;
 	return (*(g_acct_storage_context->ops.c_get_daily_usage))
 		(cluster_rec, start, end, params);
@@ -773,8 +792,86 @@ extern int clusteracct_storage_g_get_monthly_usage(
 	acct_cluster_rec_t *cluster_rec, 
 	time_t start, time_t end, void *params)
 {
-	if (slurm_acct_storage_init() < 0)
+	if (slurm_acct_storage_init(NULL) < 0)
 		return SLURM_ERROR;
 	return (*(g_acct_storage_context->ops.c_get_monthly_usage))
 		(cluster_rec, start, end, params);
 }
+
+/* 
+ * load into the storage the start of a job
+ */
+extern int jobacct_storage_g_job_start (struct job_record *job_ptr) 
+{
+	if (slurm_acct_storage_init(NULL) < 0)
+		return SLURM_ERROR;
+	return (*(g_acct_storage_context->ops.job_start))(job_ptr);
+}
+
+/* 
+ * load into the storage the end of a job
+ */
+extern int jobacct_storage_g_job_complete  (struct job_record *job_ptr)
+{
+	if (slurm_acct_storage_init(NULL) < 0)
+		return SLURM_ERROR;
+	return (*(g_acct_storage_context->ops.job_complete))(job_ptr);
+}
+
+/* 
+ * load into the storage the start of a job step
+ */
+extern int jobacct_storage_g_step_start (struct step_record *step_ptr)
+{
+	if (slurm_acct_storage_init(NULL) < 0)
+		return SLURM_ERROR;
+	return (*(g_acct_storage_context->ops.step_start))(step_ptr);
+}
+
+/* 
+ * load into the storage the end of a job step
+ */
+extern int jobacct_storage_g_step_complete (struct step_record *step_ptr)
+{
+	if (slurm_acct_storage_init(NULL) < 0)
+		return SLURM_ERROR;
+	return (*(g_acct_storage_context->ops.step_complete))(step_ptr);
+}
+
+/* 
+ * load into the storage a suspention of a job
+ */
+extern int jobacct_storage_g_job_suspend (struct job_record *job_ptr)
+{
+	if (slurm_acct_storage_init(NULL) < 0)
+		return SLURM_ERROR;
+ 	return (*(g_acct_storage_context->ops.job_suspend))(job_ptr);
+}
+
+
+/* 
+ * get info from the storage 
+ * returns List of job_rec_t *
+ * note List needs to be freed when called
+ */
+extern List jobacct_storage_g_get_jobs(List selected_steps,
+				       List selected_parts,
+				       void *params)
+{
+	if (slurm_acct_storage_init(NULL) < 0)
+		return NULL;
+ 	return (*(g_acct_storage_context->ops.get_jobs))
+		(selected_steps, selected_parts, params);
+}
+
+/* 
+ * expire old info from the storage 
+ */
+extern void jobacct_storage_g_archive(List selected_parts, void *params)
+{
+	if (slurm_acct_storage_init(NULL) < 0)
+		return;
+ 	(*(g_acct_storage_context->ops.job_archive))(selected_parts, params);
+	return;
+}
+
