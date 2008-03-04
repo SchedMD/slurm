@@ -105,8 +105,10 @@ extern int init ( void )
 		if (!(cluster_name = slurm_get_cluster_name()))
 			fatal("%s requires ClusterName in slurm.conf", plugin_name);
 		
-		slurmdbd_auth_info = slurm_get_slurmdbd_auth_info();
-		verbose("%s loaded SlurmdDbdAuthInfo=%s",
+		slurmdbd_auth_info = slurm_get_accounting_storage_pass();
+		if(!slurmdbd_auth_info)
+			
+		verbose("%s loaded AuthInfo=%s",
 			plugin_name, slurmdbd_auth_info);
 		slurm_open_slurmdbd_conn(slurmdbd_auth_info);
 

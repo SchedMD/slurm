@@ -2443,7 +2443,7 @@ extern int clusteracct_storage_p_node_down(char *cluster,
 #if _DEBUG
 	slurm_make_time_str(&event_time, tmp_buff, sizeof(tmp_buff));
 	info("cluster_acct_down: %s at %s with %u cpus due to %s", 
-	     node_ptr->name, tmp_buff, cpus, node_ptr->reason);
+	     node_ptr->name, tmp_buff, cpus, reason);
 #endif
 	/* If the node was already down end that record since the
 	 * reason will most likely be different
@@ -2491,7 +2491,7 @@ extern int clusteracct_storage_p_node_down(char *cluster,
 	snprintf(tmp_buff, sizeof(tmp_buff), "%d", (int)event_time);
 	gold_request_add_assignment(gold_request, "StartTime", tmp_buff);
 	gold_request_add_assignment(gold_request, "Name", node_ptr->name);
-	snprintf(tmp_buff, sizeof(tmp_buff), "%u", node_ptr->cpus);
+	snprintf(tmp_buff, sizeof(tmp_buff), "%u", cpus);
 	gold_request_add_assignment(gold_request, "CPUCount", tmp_buff);
 	if(reason)
 		gold_request_add_assignment(gold_request, "Reason", reason);

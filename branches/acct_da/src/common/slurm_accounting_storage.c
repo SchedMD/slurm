@@ -474,7 +474,7 @@ extern acct_admin_level_t str_2_acct_admin_level(char *level)
 /*
  * Initialize context for acct_storage plugin
  */
-extern int slurm_acct_storage_init(void)
+extern int slurm_acct_storage_init()
 {
 	int retval = SLURM_SUCCESS;
 	char *acct_storage_type = NULL;
@@ -485,6 +485,7 @@ extern int slurm_acct_storage_init(void)
 		goto done;
 
 	acct_storage_type = slurm_get_accounting_storage_type();
+	
 	g_acct_storage_context = _acct_storage_context_create(
 		acct_storage_type);
 	if ( g_acct_storage_context == NULL ) {

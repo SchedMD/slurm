@@ -945,6 +945,8 @@ typedef struct slurm_ctl_conf {
 	char * health_check_program;	/* pathname of health check program */
 	uint16_t inactive_limit;/* seconds of inactivity before a
 				 * inactive resource allocation is released */
+	char *accounting_storage_loc; /* accounting storage (db table)
+				       * location */
 	char *accounting_storage_type; /* accounting storage type */
 	char *accounting_storage_user; /* accounting storage user */
 	char *accounting_storage_host; /* accounting storage host */
@@ -1018,9 +1020,6 @@ typedef struct slurm_ctl_conf {
 	char *slurmd_pidfile;   /* where to put slurmd pidfile           */
 	uint16_t slurmd_timeout;/* how long slurmctld waits for slurmd before 
 				 * considering node DOWN */
-	char *slurmdbd_addr;	/* comm path for Slurm DBD */
-	char * slurmdbd_auth_info;	/* Slurm DBD authentication info */
-	uint16_t slurmdbd_port;	/* port for Slurm DBD socket */
 	char *slurm_conf;	/* pathname of slurm config file */
 	char *srun_prolog;      /* srun prolog program */
 	char *srun_epilog;      /* srun epilog program */

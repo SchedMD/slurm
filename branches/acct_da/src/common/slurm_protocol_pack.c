@@ -2197,6 +2197,12 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer)
 {
 	pack_time(build_ptr->last_update, buffer);
 
+	packstr(build_ptr->accounting_storage_loc, buffer);
+	packstr(build_ptr->accounting_storage_type, buffer);
+	packstr(build_ptr->accounting_storage_user, buffer);
+	packstr(build_ptr->accounting_storage_host, buffer);
+	packstr(build_ptr->accounting_storage_pass, buffer);
+	pack32((uint32_t)build_ptr->accounting_storage_port, buffer);
 	packstr(build_ptr->authtype, buffer);
 
 	packstr(build_ptr->backup_addr, buffer);
@@ -2298,10 +2304,6 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer)
 	packstr(build_ptr->slurmd_spooldir, buffer);
 	pack16(build_ptr->slurmd_timeout, buffer);
 
-	packstr(build_ptr->slurmdbd_addr, buffer);
-	packstr(build_ptr->slurmdbd_auth_info, buffer);
-	pack16(build_ptr->slurmdbd_port, buffer);
-
 	packstr(build_ptr->srun_epilog, buffer);
 	packstr(build_ptr->srun_prolog, buffer);
 	packstr(build_ptr->state_save_location, buffer);
@@ -2340,6 +2342,18 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **
 	/* load the data values */
 	/* unpack timestamp of snapshot */
 	safe_unpack_time(&build_ptr->last_update, buffer);
+
+	safe_unpackstr_xmalloc(&build_ptr->accounting_storage_loc,
+			       &uint32_tmp, buffer);
+	safe_unpackstr_xmalloc(&build_ptr->accounting_storage_type,
+			       &uint32_tmp, buffer);
+	safe_unpackstr_xmalloc(&build_ptr->accounting_storage_user,
+			       &uint32_tmp, buffer);
+	safe_unpackstr_xmalloc(&build_ptr->accounting_storage_host,
+			       &uint32_tmp, buffer);
+	safe_unpackstr_xmalloc(&build_ptr->accounting_storage_pass,
+			       &uint32_tmp, buffer);
+	safe_unpack32(&build_ptr->accounting_storage_port, buffer);
 
 	safe_unpackstr_xmalloc(&build_ptr->authtype, &uint32_tmp, buffer);
 
@@ -2467,12 +2481,6 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **
 			       buffer);
 	safe_unpack16(&build_ptr->slurmd_timeout, buffer);
 
-	safe_unpackstr_xmalloc(&build_ptr->slurmdbd_addr, &uint32_tmp,
-			       buffer);
-	safe_unpackstr_xmalloc(&build_ptr->slurmdbd_auth_info, &uint32_tmp,
-			       buffer);
-	safe_unpack16(&build_ptr->slurmdbd_port, buffer);
-
 	safe_unpackstr_xmalloc(&build_ptr->srun_epilog, &uint32_tmp, buffer);
 	safe_unpackstr_xmalloc(&build_ptr->srun_prolog, &uint32_tmp, buffer);
 	safe_unpackstr_xmalloc(&build_ptr->state_save_location,
@@ -2505,6 +2513,11 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **
 
 unpack_error:
 	xfree(build_ptr->authtype);
+	xfree(build_ptr->accounting_storage_type);
+	xfree(build_ptr->accounting_storage_loc);
+	xfree(build_ptr->accounting_storage_user);
+	xfree(build_ptr->accounting_storage_host);
+	xfree(build_ptr->accounting_storage_pass);
 	xfree(build_ptr->backup_addr);
 	xfree(build_ptr->backup_controller);
 	xfree(build_ptr->checkpoint_type);
@@ -2548,8 +2561,6 @@ unpack_error:
 	xfree(build_ptr->slurmd_logfile);
 	xfree(build_ptr->slurmd_pidfile);
 	xfree(build_ptr->slurmd_spooldir);
-	xfree(build_ptr->slurmdbd_addr);
-	xfree(build_ptr->slurmdbd_auth_info);
 	xfree(build_ptr->srun_epilog);
 	xfree(build_ptr->srun_prolog);
 	xfree(build_ptr->state_save_location);

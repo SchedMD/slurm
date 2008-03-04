@@ -105,8 +105,8 @@ extern int init ( void )
 	if (first) {
 		/* since this can be loaded from many different places
 		   only tell us once. */
-		slurmdbd_auth_info = slurm_get_slurmdbd_auth_info();
-		verbose("%s loaded, SlurmDbdAuthInfo=%s", 
+		slurmdbd_auth_info = slurm_get_jobacct_storage_pass();
+		verbose("%s loaded, AuthInfo=%s", 
 			plugin_name, slurmdbd_auth_info);
 		slurm_open_slurmdbd_conn(slurmdbd_auth_info);
 		first = 0;

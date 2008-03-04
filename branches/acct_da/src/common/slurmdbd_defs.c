@@ -375,26 +375,26 @@ static void _open_slurmdbd_fd(void)
 {
 	slurm_addr dbd_addr;
 	uint16_t slurmdbd_port;
-	char *   slurmdbd_addr;
+	char *   slurmdbd_host;
 
 	if (slurmdbd_fd >= 0) {
 		debug("Attempt to re-open slurmdbd socket");
 		return;
 	}
 
-	slurmdbd_addr = slurm_get_slurmdbd_addr();
-	slurmdbd_port = slurm_get_slurmdbd_port();
-	if ((slurmdbd_addr == NULL) || (slurmdbd_port == 0)) {
+	slurmdbd_host = slurm_get_accounting_storage_host();
+	slurmdbd_port = slurm_get_accounting_storage_port();
+	if ((slurmdbd_host == NULL) || (slurmdbd_port == 0)) {
 		error("Invalid SlurmDbd address %s:%u",
-			slurmdbd_addr, slurmdbd_port);
-		xfree(slurmdbd_addr);
+			slurmdbd_host, slurmdbd_port);
+		xfree(slurmdbd_host);
 		return;
 	}
 
-	slurm_set_addr(&dbd_addr, slurmdbd_port, slurmdbd_addr);
+	slurm_set_addr(&dbd_addr, slurmdbd_port, slurmdbd_host);
 	if (dbd_addr.sin_port == 0)
-		error("Unable to locate SlurmDBD host %s:%s", 
-		      slurmdbd_addr, slurmdbd_addr);
+		error("Unable to locate SlurmDBD host %s:%u", 
+		      slurmdbd_host, slurmdbd_port);
 	else {
 		slurmdbd_fd = slurm_open_msg_conn(&dbd_addr);
 		if (slurmdbd_fd < 0)
@@ -407,7 +407,7 @@ static void _open_slurmdbd_fd(void)
 				debug("slurmdbd: Sent DbdInit msg");
 		}
 	}
-	xfree(slurmdbd_addr);
+	xfree(slurmdbd_host);
 }
 
 static int _send_init_msg(void)
@@ -1075,6 +1075,7 @@ void inline slurm_dbd_free_rc_msg(dbd_rc_msg_t *msg)
 void inline slurm_dbd_free_node_state_msg(dbd_node_state_msg_t *msg)
 {
 	if (msg) {
+		xfree(msg->cluster_name);
 		xfree(msg->hostlist);
 		xfree(msg->reason);
 		xfree(msg);
@@ -1442,6 +1443,7 @@ unpack_error:
 void inline 
 slurm_dbd_pack_node_state_msg(dbd_node_state_msg_t *msg, Buf buffer)
 {
+	packstr(msg->cluster_name, buffer);
 	packstr(msg->hostlist, buffer);
 	packstr(msg->reason, buffer);
 	pack16(msg->new_state, buffer);
@@ -1456,6 +1458,7 @@ slurm_dbd_unpack_node_state_msg(dbd_node_state_msg_t **msg, Buf buffer)
 
 	msg_ptr = xmalloc(sizeof(dbd_node_state_msg_t));
 	*msg = msg_ptr;
+	safe_unpackstr_xmalloc(&msg_ptr->cluster_name, &uint32_tmp, buffer);
 	safe_unpackstr_xmalloc(&msg_ptr->hostlist, &uint32_tmp, buffer);
 	safe_unpackstr_xmalloc(&msg_ptr->reason,   &uint32_tmp, buffer);
 	safe_unpack16(&msg_ptr->new_state, buffer);
@@ -1463,6 +1466,7 @@ slurm_dbd_unpack_node_state_msg(dbd_node_state_msg_t **msg, Buf buffer)
 	return SLURM_SUCCESS;
 
 unpack_error:
+	xfree(msg_ptr->cluster_name);
 	xfree(msg_ptr->hostlist);
 	xfree(msg_ptr->reason);
 	xfree(msg_ptr);

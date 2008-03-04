@@ -54,7 +54,7 @@
 
 /* Global variables */
 pthread_mutex_t conf_mutex = PTHREAD_MUTEX_INITIALIZER;
-slurm_dbd_conf_t *slurmdbd_conf = NULL;
+//slurm_dbd_conf_t *slurmdbd_conf = NULL;
 
 /* Local functions */
 static void _clear_slurmdbd_conf(void);
@@ -83,7 +83,8 @@ static void _clear_slurmdbd_conf(void)
 		xfree(slurmdbd_conf->pid_file);
 		xfree(slurmdbd_conf->slurm_user_name);
 		xfree(slurmdbd_conf->storage_host);
-		xfree(slurmdbd_conf->storage_password);
+		xfree(slurmdbd_conf->storage_loc);
+		xfree(slurmdbd_conf->storage_pass);
 		slurmdbd_conf->storage_port = 0;
 		xfree(slurmdbd_conf->storage_type);
 		xfree(slurmdbd_conf->storage_user);
@@ -109,6 +110,7 @@ extern int read_slurmdbd_conf(void)
 		{"PidFile", S_P_STRING},
 		{"SlurmUser", S_P_STRING},
 		{"StorageHost", S_P_STRING},
+		{"StorageLoc", S_P_STRING},
 		{"StoragePass", S_P_STRING},
 		{"StoragePort", S_P_UINT16},
 		{"StorageType", S_P_STRING},
@@ -149,9 +151,12 @@ extern int read_slurmdbd_conf(void)
 		s_p_get_string(&slurmdbd_conf->slurm_user_name, "SlurmUser", tbl);
 		s_p_get_string(&slurmdbd_conf->storage_host,
 				"StorageHost", tbl);
-		s_p_get_string(&slurmdbd_conf->storage_password,
+		s_p_get_string(&slurmdbd_conf->storage_loc,
+				"StorageLoc", tbl);
+		s_p_get_string(&slurmdbd_conf->storage_pass,
 				"StoragePass", tbl);
-		s_p_get_uint16(&slurmdbd_conf->storage_port, "StoragePort", tbl);
+		s_p_get_uint16(&slurmdbd_conf->storage_port,
+			       "StoragePort", tbl);
 		s_p_get_string(&slurmdbd_conf->storage_type,
 				"StorageType", tbl);
 		s_p_get_string(&slurmdbd_conf->storage_user,
@@ -204,7 +209,8 @@ extern void log_config(void)
 	debug2("SlurmUser         = %s(%u)", 
 		slurmdbd_conf->slurm_user_name, slurmdbd_conf->slurm_user_id); 
 	debug2("StorageHost       = %s", slurmdbd_conf->storage_host);
-	debug2("StoragePass       = %s", slurmdbd_conf->storage_password);
+	debug2("StorageLoc        = %s", slurmdbd_conf->storage_loc);
+	debug2("StoragePass       = %s", slurmdbd_conf->storage_pass);
 	debug2("StoragePort       = %u", slurmdbd_conf->storage_port);
 	debug2("StorageType       = %s", slurmdbd_conf->storage_type);
 	debug2("StorageUser       = %s", slurmdbd_conf->storage_user);

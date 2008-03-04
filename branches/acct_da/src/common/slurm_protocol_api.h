@@ -81,6 +81,12 @@ enum {
 	UNIT_UNKNOWN
 };
 
+/* this flag is here to let us know which plugin set we should use.
+ * If we are calling from the slurmdbd we use one set, from elsewhere
+ * we call the regular
+ */
+extern int slurmdbd_options;
+
 /**********************************************************************\
  * protocol configuration functions                
 \**********************************************************************/

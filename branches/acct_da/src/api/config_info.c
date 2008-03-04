@@ -117,6 +117,16 @@ void slurm_print_ctl_conf ( FILE* out,
 	slurm_make_time_str ((time_t *)&slurm_ctl_conf_ptr->last_update, 
 			     time_str, sizeof(time_str));
 	fprintf(out, "Configuration data as of %s\n", time_str);
+	fprintf(out, "AccountingStorageType      = %s\n", 
+		slurm_ctl_conf_ptr->accounting_storage_type);
+	fprintf(out, "AccountingStorageLoc       = %s\n", 
+		slurm_ctl_conf_ptr->accounting_storage_loc);
+	fprintf(out, "AccountingStorageHost      = %s\n", 
+		slurm_ctl_conf_ptr->accounting_storage_host);
+	fprintf(out, "AccountingStoragePort      = %u\n", 
+		slurm_ctl_conf_ptr->accounting_storage_port);
+	fprintf(out, "AccountingStorageUser      = %s\n", 
+		slurm_ctl_conf_ptr->accounting_storage_user);
 	fprintf(out, "AuthType                = %s\n", 
 		slurm_ctl_conf_ptr->authtype);
 	fprintf(out, "BackupAddr              = %s\n", 
@@ -285,12 +295,6 @@ void slurm_print_ctl_conf ( FILE* out,
 		slurm_ctl_conf_ptr->slurmd_spooldir);
 	fprintf(out, "SlurmdTimeout           = %u\n", 
 		slurm_ctl_conf_ptr->slurmd_timeout);
-	fprintf(out, "SlurmDbdAddr            = %s\n", 
-		slurm_ctl_conf_ptr->slurmdbd_addr);
-	fprintf(out, "SlurmDbdAuthInfo        = %s\n",
-		slurm_ctl_conf_ptr->slurmdbd_auth_info);
-	fprintf(out, "SlurmDbdPort            = %u\n", 
-		slurm_ctl_conf_ptr->slurmdbd_port);
 	fprintf(out, "SLURM_CONFIG_FILE       = %s\n", 
 		slurm_ctl_conf_ptr->slurm_conf);
 	fprintf(out, "SLURM_VERSION           = %s\n", SLURM_VERSION);

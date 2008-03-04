@@ -52,6 +52,7 @@
 #include "src/common/fd.h"
 #include "src/common/log.h"
 #include "src/common/read_config.h"
+#include "src/common/slurm_accounting_storage.h"
 #include "src/common/slurm_auth.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xsignal.h"
@@ -98,6 +99,9 @@ int main(int argc, char *argv[])
 		exit(1);
 	_parse_commandline(argc, argv);
 	_update_logging();
+
+	slurmdbd_options = 1;
+
 	if (gethostname_short(node_name, sizeof(node_name)))
 		fatal("getnodename: %m");
 	if (slurmdbd_conf->dbd_host &&
@@ -106,9 +110,14 @@ int main(int argc, char *argv[])
 		fatal("This host not configured to run SlurmDBD (%s != %s)",
 		      node_name, slurmdbd_conf->dbd_host);
 	}
-	if (slurm_auth_init(slurmdbd_conf->auth_type) != SLURM_SUCCESS) {
+	if (slurm_auth_init(NULL) != SLURM_SUCCESS) {
 		fatal("Unable to initialize %s authentication plugin",
 			slurmdbd_conf->auth_type);
+	}
+	if (slurm_acct_storage_init()
+	    != SLURM_SUCCESS) {
+		fatal("Unable to initialize %s accounting storage plugin",
+			slurmdbd_conf->storage_type);
 	}
 	_kill_old_slurmdbd();
 	if (foreground == 0)

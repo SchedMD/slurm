@@ -70,6 +70,7 @@
 #include "src/common/xstring.h"
 #include "src/common/log.h"
 #include "src/common/forward.h"
+#include "src/slurmdbd/read_config.h"
 
 /* EXTERNAL VARIABLES */
 
@@ -88,6 +89,9 @@ static int message_timeout = -1;
 /* STATIC FUNCTIONS */
 static void _remap_slurmctld_errno(void);
 
+/* define the slurmdbd_options flag */
+int slurmdbd_options = 0;
+slurm_dbd_conf_t *slurmdbd_conf = NULL;
 /**********************************************************************\
  * protocol configuration functions
 \**********************************************************************/
@@ -271,24 +275,6 @@ uint16_t slurm_get_msg_timeout(void)
         return msg_timeout;
 }
 
-/* slurm_get_slurmdbd_auth_info
- * get default SlurmDbdAuthInfo from slurmctld_conf object
- * RET char *   - auth_info default value from slurm.conf,  MUST be xfreed by caller
- */
-char *slurm_get_slurmdbd_auth_info(void)
-{
-        char *slurmdbd_auth_info;
-        slurm_ctl_conf_t *conf;
-
-        conf = slurm_conf_lock();
-        if (conf->slurmdbd_auth_info && conf->slurmdbd_auth_info[0])
-                slurmdbd_auth_info = xstrdup(conf->slurmdbd_auth_info);
-        else
-                slurmdbd_auth_info = NULL;
-        slurm_conf_unlock();
-        return slurmdbd_auth_info;
-}
-
 /* slurm_get_plugin_dir
  * get plugin directory from slurmctld_conf object
  * RET char *   - plugin directory, MUST be xfreed by caller
@@ -325,12 +311,16 @@ char *slurm_get_state_save_location(void)
  */
 char *slurm_get_auth_type(void)
 {
-	char *auth_type;
-	slurm_ctl_conf_t *conf;
+	char *auth_type = NULL;
+	slurm_ctl_conf_t *conf = NULL;
 
-	conf = slurm_conf_lock();
-	auth_type = xstrdup(conf->authtype);
-	slurm_conf_unlock();
+	if(slurmdbd_options && slurmdbd_conf) {
+		auth_type = xstrdup(slurmdbd_conf->auth_type);
+	} else {
+		conf = slurm_conf_lock();
+		auth_type = xstrdup(conf->authtype);
+		slurm_conf_unlock();
+	}
 	return auth_type;
 }
 
@@ -447,10 +437,12 @@ extern int slurm_set_auth_type(char *auth_type)
 {
 	slurm_ctl_conf_t *conf;
 
-	conf = slurm_conf_lock();
-	xfree(conf->authtype);
-	conf->authtype = xstrdup(auth_type);
-	slurm_conf_unlock();
+	if(!slurmdbd_options) {
+		conf = slurm_conf_lock();
+		xfree(conf->authtype);
+		conf->authtype = xstrdup(auth_type);
+		slurm_conf_unlock();
+	}
 	return 0;
 }
 
@@ -469,36 +461,6 @@ char *slurm_get_health_check_program(void)
 	return health_check_program;
 }
 
-/* slurm_get_slurmdbd_addr
- * get slurm_dbd_addr from slurmctld_conf object from slurmctld_conf object
- * RET char *   - slurmdbd_addr, MUST be xfreed by caller
- */
-char *slurm_get_slurmdbd_addr(void)
-{
-	char *slurmdbd_addr;
-	slurm_ctl_conf_t *conf;
-
-	conf = slurm_conf_lock();
-	slurmdbd_addr = xstrdup(conf->slurmdbd_addr);
-	slurm_conf_unlock();
-	return slurmdbd_addr;
-}
-
-/* slurm_get_slurmdbd_port
- * get slurm_dbd_port from slurmctld_conf object from slurmctld_conf object
- * RET uint16_t   - dbd_port
- */
-uint16_t slurm_get_slurmdbd_port(void)
-{
-	uint16_t slurmdbd_port;
-	slurm_ctl_conf_t *conf;
-
-	conf = slurm_conf_lock();
-	slurmdbd_port = conf->slurmdbd_port;
-	slurm_conf_unlock();
-	return slurmdbd_port;
-}
-
 /* slurm_get_accounting_storage_type
  * returns the accounting storage type from slurmctld_conf object
  * RET char *    - accounting storage type,  MUST be xfreed by caller
@@ -508,9 +470,13 @@ char *slurm_get_accounting_storage_type(void)
 	char *accounting_type;
 	slurm_ctl_conf_t *conf;
 
-	conf = slurm_conf_lock();
-	accounting_type = xstrdup(conf->accounting_storage_type);
-	slurm_conf_unlock();
+	if(slurmdbd_options && slurmdbd_conf) {
+		accounting_type = xstrdup(slurmdbd_conf->storage_type);
+	} else {
+		conf = slurm_conf_lock();
+		accounting_type = xstrdup(conf->accounting_storage_type);
+		slurm_conf_unlock();
+	}
 	return accounting_type;
 	
 }
@@ -524,9 +490,13 @@ char *slurm_get_accounting_storage_user(void)
 	char *storage_user;
 	slurm_ctl_conf_t *conf;
 
-	conf = slurm_conf_lock();
-	storage_user = xstrdup(conf->accounting_storage_user);
-	slurm_conf_unlock();
+	if(slurmdbd_options && slurmdbd_conf) {
+		storage_user = xstrdup(slurmdbd_conf->storage_user);
+	} else {
+		conf = slurm_conf_lock();
+		storage_user = xstrdup(conf->accounting_storage_user);
+		slurm_conf_unlock();
+	}
 	return storage_user;	
 }
 
@@ -539,9 +509,13 @@ char *slurm_get_accounting_storage_host(void)
 	char *storage_host;
 	slurm_ctl_conf_t *conf;
 
-	conf = slurm_conf_lock();
-	storage_host = xstrdup(conf->accounting_storage_host);
-	slurm_conf_unlock();
+	if(slurmdbd_options && slurmdbd_conf) {
+		storage_host = xstrdup(slurmdbd_conf->storage_host);
+	} else {
+		conf = slurm_conf_lock();
+		storage_host = xstrdup(conf->accounting_storage_host);
+		slurm_conf_unlock();
+	}
 	return storage_host;	
 }
 
@@ -554,9 +528,14 @@ char *slurm_get_accounting_storage_pass(void)
 	char *storage_pass;
 	slurm_ctl_conf_t *conf;
 
-	conf = slurm_conf_lock();
-	storage_pass = xstrdup(conf->accounting_storage_pass);
-	slurm_conf_unlock();
+	info("slurmdbd options is %d", slurmdbd_options);
+	if(slurmdbd_options && slurmdbd_conf) {
+		storage_pass = xstrdup(slurmdbd_conf->storage_pass);
+	} else {
+		conf = slurm_conf_lock();
+		storage_pass = xstrdup(conf->accounting_storage_pass);
+		slurm_conf_unlock();
+	}
 	return storage_pass;	
 }
 
@@ -569,9 +548,13 @@ uint32_t slurm_get_accounting_storage_port(void)
 	uint32_t storage_port;
 	slurm_ctl_conf_t *conf;
 
-	conf = slurm_conf_lock();
-	storage_port = conf->accounting_storage_port;
-	slurm_conf_unlock();
+	if(slurmdbd_options && slurmdbd_conf) {
+		storage_port = slurmdbd_conf->storage_port;
+	} else {
+		conf = slurm_conf_lock();
+		storage_port = conf->accounting_storage_port;
+		slurm_conf_unlock();
+	}
 	return storage_port;
 	
 }

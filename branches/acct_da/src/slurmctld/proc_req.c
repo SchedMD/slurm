@@ -320,6 +320,8 @@ void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
 	conf_ptr->last_update         = time(NULL);
 	conf_ptr->accounting_storage_host =
 					xstrdup(conf->accounting_storage_host);
+	conf_ptr->accounting_storage_loc =
+					xstrdup(conf->accounting_storage_loc);
 	conf_ptr->accounting_storage_pass =
 					xstrdup(conf->accounting_storage_pass);
 	conf_ptr->accounting_storage_type =
@@ -406,9 +408,6 @@ void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
 	conf_ptr->slurmd_port         = conf->slurmd_port;
 	conf_ptr->slurmd_spooldir     = xstrdup(conf->slurmd_spooldir);
 	conf_ptr->slurmd_timeout      = conf->slurmd_timeout;
-	conf_ptr->slurmdbd_addr       = xstrdup(conf->slurmdbd_addr);
-	conf_ptr->slurmdbd_auth_info  = xstrdup(conf->slurmdbd_auth_info);
-	conf_ptr->slurmdbd_port       = conf->slurmdbd_port;
 	conf_ptr->slurm_conf          = xstrdup(conf->slurm_conf);
 	conf_ptr->state_save_location = xstrdup(conf->state_save_location);
 	conf_ptr->suspend_exc_nodes   = xstrdup(conf->suspend_exc_nodes);

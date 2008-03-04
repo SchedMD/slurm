@@ -38,10 +38,13 @@
 #include "src/common/macros.h"
 #include "src/common/pack.h"
 #include "src/common/slurmdbd_defs.h"
+#include "src/common/slurm_accounting_storage.h"
+#include "src/common/slurm_jobacct_storage.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_defs.h"
 #include "src/slurmdbd/read_config.h"
 #include "src/slurmdbd/rpc_mgr.h"
+#include "src/slurmctld/slurmctld.h"
 
 /* Local functions */
 static int   _cluster_procs(Buf in_buffer, Buf *out_buffer, uint32_t *uid);
@@ -293,6 +296,9 @@ static int  _job_suspend(Buf in_buffer, Buf *out_buffer, uint32_t *uid)
 static int _node_state(Buf in_buffer, Buf *out_buffer, uint32_t *uid)
 {
 	dbd_node_state_msg_t *node_state_msg;
+	struct node_record node_ptr;
+
+	memset(&node_ptr, 0, sizeof(struct node_record));
 
 	if (*uid != slurmdbd_conf->slurm_user_id) {
 		error("DBD_NODE_STATE message from invalid uid %u", *uid);
@@ -311,6 +317,21 @@ static int _node_state(Buf in_buffer, Buf *out_buffer, uint32_t *uid)
 	     _node_state_string(node_state_msg->new_state),
 	     node_state_msg->reason, 
 	     node_state_msg->event_time);
+	node_ptr.name = node_state_msg->hostlist;
+
+	slurmctld_conf.fast_schedule = 0;
+
+	if(node_state_msg->new_state == DBD_NODE_STATE_DOWN)
+		clusteracct_storage_g_node_down(node_state_msg->cluster_name,
+						&node_ptr,
+						node_state_msg->event_time,
+						node_state_msg->reason);
+	else
+		clusteracct_storage_g_node_up(node_state_msg->cluster_name,
+					      &node_ptr,
+					      node_state_msg->event_time);
+	
+
 	slurm_dbd_free_node_state_msg(node_state_msg);
 	*out_buffer = make_dbd_rc_msg(SLURM_SUCCESS);
 	return SLURM_SUCCESS;
