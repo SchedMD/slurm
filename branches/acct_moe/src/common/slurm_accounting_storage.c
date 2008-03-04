@@ -59,14 +59,14 @@ typedef struct slurm_acct_storage_ops {
 	int  (*add_users)          (List user_list);
 	int  (*add_coord)          (char *acct,
 				    acct_user_cond_t *user_q);
-	int  (*add_accts)       (List acct_list);
+	int  (*add_accts)          (List acct_list);
 	int  (*add_clusters)       (List cluster_list);
 	int  (*add_associations)   (List association_list);
-	uint32_t (*find_assoc_id)  (acct_association_rec_t *assoc);
+
 	int  (*modify_users)       (acct_user_cond_t *user_q,
 				    acct_user_rec_t *user);
 	int  (*modify_user_admin_level)(acct_user_cond_t *user_q);
-	int  (*modify_accts)    (acct_account_cond_t *acct_q,
+	int  (*modify_accts)       (acct_account_cond_t *acct_q,
 				    acct_account_rec_t *acct);
 	int  (*modify_clusters)    (acct_cluster_cond_t *cluster_q,
 				    acct_cluster_rec_t *cluster);
@@ -75,14 +75,16 @@ typedef struct slurm_acct_storage_ops {
 	int  (*remove_users)       (acct_user_cond_t *user_q);
 	int  (*remove_coord)       (char *acct,
 				    acct_user_cond_t *user_q);
-	int  (*remove_accts)    (acct_account_cond_t *acct_q);
+	int  (*remove_accts)       (acct_account_cond_t *acct_q);
 	int  (*remove_clusters)    (acct_cluster_cond_t *cluster_q);
 	int  (*remove_associations)(acct_association_cond_t *assoc_q);
 	List (*get_users)          (acct_user_cond_t *user_q);
-	List (*get_accts)       (acct_account_cond_t *acct_q);
+	List (*get_accts)          (acct_account_cond_t *acct_q);
 	List (*get_clusters)       (acct_cluster_cond_t *cluster_q);
 	List (*get_associations)   (acct_association_cond_t *assoc_q);
-	int (*get_hourly_usage)    (acct_association_rec_t *acct_assoc,
+	int  (*find_assoc_id)      (acct_association_rec_t *assoc);
+	int  (*validate_assoc_id)  (uint32_t assoc_id);
+	int  (*get_hourly_usage)   (acct_association_rec_t *acct_assoc,
 				    time_t start, 
 				    time_t end);
 	int (*get_daily_usage)     (acct_association_rec_t *acct_assoc,
@@ -97,7 +99,7 @@ typedef struct slurm_acct_storage_ops {
 	int  (*node_up)            (struct node_record *node_ptr,
 				    time_t event_time);
 	int  (*cluster_procs)      (uint32_t procs, time_t event_time);
-	int (*c_get_hourly_usage)  (acct_cluster_rec_t *cluster_rec, 
+	int  (*c_get_hourly_usage) (acct_cluster_rec_t *cluster_rec, 
 				    time_t start, time_t end,
 				    void *params);
 	int (*c_get_daily_usage)   (acct_cluster_rec_t *cluster_rec, 
@@ -160,6 +162,7 @@ static slurm_acct_storage_ops_t * _acct_storage_get_ops(
 		"acct_storage_p_get_clusters",
 		"acct_storage_p_get_associations",
 		"acct_storage_p_get_assoc_id",
+		"acct_storage_p_validate_assoc_id",
 		"acct_storage_p_get_hourly_usage",
 		"acct_storage_p_get_daily_usage",
 		"acct_storage_p_get_monthly_usage",
@@ -554,12 +557,20 @@ extern int acct_storage_g_add_associations(List association_list)
 		(association_list);
 }
 
-extern uint32_t acct_storage_g_get_assoc_id(acct_association_rec_t *assoc)
+extern int acct_storage_g_get_assoc_id(acct_association_rec_t *assoc)
 {
 	if (slurm_acct_storage_init() < 0)
 		return SLURM_ERROR;
 
 	return (*(g_acct_storage_context->ops.find_assoc_id))(assoc);
+}
+
+extern int acct_storage_g_validate_assoc_id(uint32_t assoc_id)
+{
+	if (slurm_acct_storage_init() < 0)
+		return SLURM_ERROR;
+
+	return (*(g_acct_storage_context->ops.validate_assoc_id))(assoc_id);
 }
 
 extern int acct_storage_g_modify_users(acct_user_cond_t *user_q,

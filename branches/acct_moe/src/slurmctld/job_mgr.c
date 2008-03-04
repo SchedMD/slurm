@@ -58,16 +58,17 @@
 
 #include "src/api/job_info.h"
 #include "src/common/bitstring.h"
+#include "src/common/forward.h"
 #include "src/common/hostlist.h"
 #include "src/common/node_select.h"
 #include "src/common/parse_time.h"
+#include "src/common/slurm_accounting_storage.h"
+#include "src/common/slurm_jobacct_storage.h"
 #include "src/common/slurm_jobcomp.h"
+#include "src/common/slurm_protocol_pack.h"
 #include "src/common/switch.h"
 #include "src/common/xassert.h"
 #include "src/common/xstring.h"
-#include "src/common/forward.h"
-#include "src/common/slurm_jobacct_storage.h"
-#include "src/common/slurm_protocol_pack.h"
 
 #include "src/slurmctld/agent.h"
 #include "src/slurmctld/job_scheduler.h"
@@ -1762,6 +1763,8 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 	bool super_user = false;
 	struct job_record *job_ptr;
 	uint32_t total_nodes, max_procs;
+	acct_association_rec_t assoc_rec;
+
 #if SYSTEM_DIMENSIONS
 	uint16_t geo[SYSTEM_DIMENSIONS];
 	uint16_t reboot;
@@ -1817,6 +1820,19 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 		error_code = ESLURM_JOB_MISSING_REQUIRED_PARTITION_GROUP;
 		return error_code;
 	}
+
+	bzero(&assoc_rec, sizeof(acct_association_rec_t));
+	assoc_rec.uid       = job_desc->user_id;
+	assoc_rec.partition = part_ptr->name;
+	assoc_rec.acct      = job_desc->account;
+	if (acct_storage_g_get_assoc_id(&assoc_rec)) {
+		info("_job_create: invalid account or partition for user %u",
+		     job_desc->user_id);
+		error_code = ESLURM_INVALID_ACCOUNT;
+		return error_code;
+	}
+	if (job_desc->account == NULL)
+		job_desc->account = xstrdup(assoc_rec.acct);
 
 	/* check if select partition has sufficient resources to satisfy
 	 * the request */
@@ -1961,6 +1977,7 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 	}
 
 	job_ptr = *job_pptr;
+	job_ptr->db_index = assoc_rec.id;
 	if (update_job_dependency(job_ptr, job_desc->dependency)) {
 		error_code = ESLURM_DEPENDENCY;
 		goto cleanup;
@@ -3792,6 +3809,20 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 		else if (tmp_part_ptr == NULL)
 			error_code = ESLURM_INVALID_PARTITION_NAME;
 		else if (super_user) {
+			acct_association_rec_t assoc_rec;
+			bzero(&assoc_rec, sizeof(acct_association_rec_t));
+			assoc_rec.uid       = job_ptr->user_id;
+			assoc_rec.partition = job_specs->partition;
+			assoc_rec.acct      = job_ptr->account;
+			if (acct_storage_g_get_assoc_id(&assoc_rec)) {
+				info("job_update: invalid account %s for job %u",
+				     job_specs->account, job_ptr->job_id);
+				error_code = ESLURM_INVALID_ACCOUNT;
+				/* Let update proceed. Note there is an invalid
+				 * association ID for accounting purposes */
+			} else {
+				job_ptr->db_index = assoc_rec.id;
+			}
 			xfree(job_ptr->partition);
 			job_ptr->partition = xstrdup(job_specs->partition);
 			job_ptr->part_ptr = tmp_part_ptr;
@@ -3864,12 +3895,23 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 	}
 
 	if (job_specs->account) {
-		xfree(job_ptr->account);
-		if (job_specs->account[0] != '\0') {
-			job_ptr->account = job_specs->account ;
-			info("update_job: setting account to %s for job_id %u",
-			     job_ptr->account, job_specs->job_id);
-			job_specs->account = NULL;
+		acct_association_rec_t assoc_rec;
+		bzero(&assoc_rec, sizeof(acct_association_rec_t));
+		assoc_rec.uid       = job_ptr->user_id;
+		assoc_rec.partition = job_ptr->partition;
+		assoc_rec.acct      = job_specs->account;
+		if (acct_storage_g_get_assoc_id(&assoc_rec)) {
+			info("job_update: invalid account %s for job %u",
+			     job_specs->account, job_ptr->job_id);
+			error_code = ESLURM_INVALID_ACCOUNT;
+		} else {
+			xfree(job_ptr->account);
+			if (assoc_rec.acct != '\0') {
+				job_ptr->account = xstrdup(assoc_rec.acct);
+				info("update_job: setting account to %s for job_id %u",
+				     assoc_rec.acct, job_ptr->job_id);
+			}
+			job_ptr->db_index = assoc_rec.id;
 		}
 	}
 
