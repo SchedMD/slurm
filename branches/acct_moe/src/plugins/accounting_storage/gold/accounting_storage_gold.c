@@ -2453,16 +2453,21 @@ extern int clusteracct_storage_p_node_down(struct node_record *node_ptr,
 	gold_request_t *gold_request = NULL;
 	gold_response_t *gold_response = NULL;
 	char tmp_buff[50];
+	char *my_reason;
 
 	if (slurmctld_conf.fast_schedule)
 		cpus = node_ptr->config_ptr->cpus;
 	else
 		cpus = node_ptr->cpus;
+	if (reason)
+		my_reason = reason;
+	else
+		my_reason = node_ptr->reason;
 
 #if _DEBUG
 	slurm_make_time_str(&event_time, tmp_buff, sizeof(tmp_buff));
 	info("cluster_acct_down: %s at %s with %u cpus due to %s", 
-	     node_ptr->name, tmp_buff, cpus, node_ptr->reason);
+	     node_ptr->name, tmp_buff, cpus, my_reason);
 #endif
 	/* If the node was already down end that record since the
 	 * reason will most likely be different
@@ -2510,13 +2515,9 @@ extern int clusteracct_storage_p_node_down(struct node_record *node_ptr,
 	snprintf(tmp_buff, sizeof(tmp_buff), "%d", (int)event_time);
 	gold_request_add_assignment(gold_request, "StartTime", tmp_buff);
 	gold_request_add_assignment(gold_request, "Name", node_ptr->name);
-	snprintf(tmp_buff, sizeof(tmp_buff), "%u", node_ptr->cpus);
+	snprintf(tmp_buff, sizeof(tmp_buff), "%u", cpus);
 	gold_request_add_assignment(gold_request, "CPUCount", tmp_buff);
-	if(reason)
-		gold_request_add_assignment(gold_request, "Reason", reason);
-	else	
-		gold_request_add_assignment(gold_request, "Reason", 
-					    node_ptr->reason);
+	gold_request_add_assignment(gold_request, "Reason", my_reason);
 			
 	gold_response = get_gold_response(gold_request);	
 	destroy_gold_request(gold_request);
