@@ -8,6 +8,8 @@ documents those changes that are of interest to users and admins.
  -- Added new options for sacct output
  -- mvapich: Ensure MPIRUN_ID is unique for all job steps within a job.
     (Fixes crashes when running multiple job steps within a job on one node)
+ -- Prevent "scontrol show job" from failing with buffer overflow when a job 
+    has a very long Comment field.
 
 * Changes in SLURM 1.2.24
 =========================
