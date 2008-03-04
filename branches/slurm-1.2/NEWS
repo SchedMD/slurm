@@ -10,6 +10,9 @@ documents those changes that are of interest to users and admins.
     (Fixes crashes when running multiple job steps within a job on one node)
  -- Prevent "scontrol show job" from failing with buffer overflow when a job 
     has a very long Comment field.
+ -- Make certain that a job step is purged when a job has been completed.
+    Previous versions could have the job step persist if an allocated node
+    went DOWN.
 
 * Changes in SLURM 1.2.24
 =========================
