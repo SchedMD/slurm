@@ -127,7 +127,7 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 	char time_str[32], select_buf[122];
 	struct group *group_info = NULL;
 	char tmp1[128], tmp2[128];
-	char tmp_line[128];
+	char tmp_line[512];
 	char *ionodes = NULL;
 	uint16_t exit_status = 0, term_sig = 0;
 	char *out = NULL;
@@ -230,12 +230,12 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 	xstrfmtcat(out, "%s=", nodelist);
 	xstrcat(out, job_ptr->nodes);
 	if(ionodes) {
-		sprintf(tmp_line, "[%s]", ionodes);
+		snprintf(tmp_line, sizeof(tmp_line), "[%s]", ionodes);
 		xstrcat(out, tmp_line);
 		xfree(ionodes);
 	} 
 	
-	sprintf(tmp_line, " %sIndices=", nodelist);
+	snprintf(tmp_line, sizeof(tmp_line), " %sIndices=", nodelist);
 	xstrcat(out, tmp_line);
 	for (j = 0;  (job_ptr->node_inx && (job_ptr->node_inx[j] != -1)); 
 			j+=2) {
@@ -307,10 +307,12 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 #ifdef HAVE_BG
 	convert_num_unit((float)job_ptr->num_nodes, tmp2, sizeof(tmp2),
 			 UNIT_NONE);
-	sprintf(tmp_line, "ReqProcs=%s MinBPs=%s ", tmp1, tmp2);
+	snprintf(tmp_line, sizeof(tmp_line), "ReqProcs=%s MinBPs=%s ", 
+		 tmp1, tmp2);
 #else
 	_sprint_range(tmp2, job_ptr->num_nodes, job_ptr->max_nodes);
-	sprintf(tmp_line, "ReqProcs=%s ReqNodes=%s ", tmp1, tmp2);
+	snprintf(tmp_line, sizeof(tmp_line), "ReqProcs=%s ReqNodes=%s ", 
+		 tmp1, tmp2);
 #endif
 	xstrcat(out, tmp_line);
 
@@ -422,7 +424,8 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 	/****** Line 14 ******/
 	slurm_make_time_str((time_t *)&job_ptr->submit_time, time_str, 
 		sizeof(time_str));
-	sprintf(tmp_line, "SubmitTime=%s ", time_str);
+	snprintf(tmp_line, sizeof(tmp_line), "SubmitTime=%s ", 
+		 time_str);
 	xstrcat(out, tmp_line);
 	if (job_ptr->suspend_time) {
 		slurm_make_time_str ((time_t *)&job_ptr->suspend_time, 
@@ -440,7 +443,8 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 			xstrcat(out, " ");
 		else
 			xstrcat(out, "\n   ");
-		sprintf(tmp_line, "Comment=%s ", job_ptr->comment);
+		snprintf(tmp_line, sizeof(tmp_line), "Comment=%s ", 
+			 job_ptr->comment);
 		xstrcat(out, tmp_line);
 	}
 
