@@ -49,6 +49,7 @@
 #include "src/common/list.h"
 #include "src/common/macros.h"
 #include "src/common/node_select.h"
+#include "src/common/slurm_accounting_storage.h"
 #include "src/common/xassert.h"
 #include "src/common/xstring.h"
 
@@ -282,6 +283,22 @@ extern int schedule(void)
 			continue;
 		if (_failed_partition(job_ptr->part_ptr, failed_parts, 
 				      failed_part_cnt)) {
+			continue;
+		}
+		if (acct_storage_g_validate_assoc_id(job_ptr->db_index)) {
+			/* NOTE: This only happens if a user's account is 
+			 * disabled between when the job was submitted and 
+			 * the time we consider running it. It should be 
+			 * very rare. */
+			info("schedule: JobId=%u has invalid account",
+				job_ptr->job_id);
+			last_job_update = time(NULL);
+			job_ptr->job_state = JOB_FAILED;
+			job_ptr->exit_code = 1;
+			job_ptr->state_reason = FAIL_BANK_ACCOUNT;
+			job_ptr->start_time = job_ptr->end_time = time(NULL);
+			job_completion_logger(job_ptr);
+			delete_job_details(job_ptr);
 			continue;
 		}
 

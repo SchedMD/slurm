@@ -97,27 +97,28 @@ typedef struct {
 } acct_accounting_rec_t;
 
 typedef struct {
-	uint32_t id; /* id identifing a combination of
-			user-account-cluster(-partition) */
-	char *user;  /* user associated to association */
-	char *acct; /* account/project associated to association */
-	char *cluster; /* cluster associated to association */
-	char *partition; /* optional partition in a cluster 
-			    associated to association */
-	char *parent_acct; /* name of parent account */
-	uint32_t parent; /* parent id associated to this */
-	uint32_t lft; /* left most association in this group */
-	uint32_t rgt; /* right most association in this group */
-	uint32_t fairshare; /* fairshare number */
-	uint32_t max_jobs; /* max number of jobs this association can run
-			      at a time */
+	uint32_t id;		/* id identifing a combination of
+				 * user-account-cluster(-partition) */
+	uint32_t uid;		/* user ID */
+	char *user;		/* user associated to association */
+	char *acct;		/* account/project associated to association */
+	char *cluster;		/* cluster associated to association */
+	char *partition;	/* optional partition in a cluster 
+				 * associated to association */
+	char *parent_acct;	/* name of parent account */
+	uint32_t parent;	/* parent id associated to this */
+	uint32_t lft;		/* left most association in this group */
+	uint32_t rgt;		/* right most association in this group */
+	uint32_t fairshare;	/* fairshare number */
+	uint32_t max_jobs;	/* max number of jobs this association can run
+				 * at one time */
 	uint32_t max_nodes_per_job; /* max number of nodes this
-				       association can allocate per job */
+				     * association can allocate per job */
 	uint32_t max_wall_duration_per_job; /* longest time this
-					       association can run a job */
-	uint32_t max_cpu_seconds_per_job; /* max number of cpu seconds
-					     this association can have per job */
-	List accounting_list; /* list of acct_accounting_rec_t *'s */
+					     * association can run a job */
+	uint32_t max_cpu_seconds_per_job; /* max number of cpu seconds this 
+					   * association can have per job */
+	List accounting_list; 	/* list of acct_accounting_rec_t *'s */
 } acct_association_rec_t;
 
 typedef struct {
@@ -316,12 +317,21 @@ extern List acct_storage_g_get_clusters(acct_cluster_cond_t *cluster_q);
 
 /* 
  * get info from the storage 
- * IN:  acct_assoc - acct_association_rec_t with at least cluster and
- *                   account set for account association.  To get user
- *                   association set user, and optional partition.
- * RET: uint32_t representing association id (uint32_t)NO_VAL on failure.
+ * IN/OUT:  acct_assoc - acct_association_rec_t with at least cluster and
+ *			account set for account association.  To get user
+ *			association set user, and optional partition.
+ *			Sets "id" field with the association ID.
+ * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
-extern uint32_t acct_storage_g_get_assoc_id(acct_association_rec_t *assoc);
+extern int acct_storage_g_get_assoc_id(acct_association_rec_t *assoc);
+
+/* 
+ * validate that an association ID is still avlid 
+ * IN:  assoc_id - association ID previously returned by 
+ *		acct_storage_g_get_assoc_id()
+ * RET: SLURM_SUCCESS on success SLURM_ERROR else
+ */
+extern int acct_storage_g_validate_assoc_id(uint32_t assoc_id);
 
 /* 
  * get info from the storage 

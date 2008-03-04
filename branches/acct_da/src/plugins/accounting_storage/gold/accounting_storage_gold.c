@@ -863,11 +863,10 @@ extern int acct_storage_p_add_associations(List association_list)
 	return rc;
 }
 
-extern uint32_t acct_storage_p_get_assoc_id(acct_association_rec_t *assoc)
+extern int acct_storage_p_get_assoc_id(acct_association_rec_t *assoc)
 {
 	ListIterator itr = NULL;
 	acct_association_rec_t * found_assoc = NULL;
-	uint32_t id = (uint32_t)NO_VAL;
 
 	if(!gold_association_list) 
 		gold_association_list = acct_storage_g_get_associations(NULL);
@@ -877,9 +876,10 @@ extern uint32_t acct_storage_p_get_assoc_id(acct_association_rec_t *assoc)
 		error("acct_storage_p_get_assoc_id: "
 		      "You need to supply a cluster and account name to get"
 		      "an association.");
-		return id;
+		return SLURM_ERROR;
 	}
 
+	assoc->id = NO_VAL;
 	itr = list_iterator_create(gold_association_list);
 	while((found_assoc = list_next(itr))) {
 		if((!found_assoc->acct 
@@ -896,16 +896,22 @@ extern uint32_t acct_storage_p_get_assoc_id(acct_association_rec_t *assoc)
 		   && (!assoc->partition 
 		       || strcasecmp(assoc->partition, 
 				     found_assoc->partition))) {
-			id = assoc->id;
+			assoc->id = found_assoc->id;
 			continue;
 		}
-
-		id = assoc->id;
+		assoc->id = found_assoc->id;
 		break;
 	}
 	list_iterator_destroy(itr);
 
-	return id;
+	if(assoc->id == NO_VAL)
+		return SLURM_ERROR;
+	return SLURM_SUCCESS;
+}
+
+extern int acct_storage_p_validate_assoc_id(uint32_t assoc_id)
+{
+	return SLURM_SUCCESS;
 }
 
 extern int acct_storage_p_modify_users(acct_user_cond_t *user_q,
