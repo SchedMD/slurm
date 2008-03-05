@@ -188,6 +188,12 @@ documents those changes that are of interest to users and admins.
  -- Added new options for sacct output
  -- mvapich: Ensure MPIRUN_ID is unique for all job steps within a job.
     (Fixes crashes when running multiple job steps within a job on one node)
+ -- Prevent "scontrol show job" from failing with buffer overflow when a job 
+    has a very long Comment field.
+ -- Make certain that a job step is purged when a job has been completed.
+    Previous versions could have the job step persist if an allocated node
+    went DOWN.
+ -- Fix bug in sbcast that can cause communication problems for large files.
 
 * Changes in SLURM 1.2.24
 =========================
