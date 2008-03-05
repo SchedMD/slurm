@@ -133,7 +133,6 @@ static int _pgsql_acct_check_tables(char *user)
 		{ "mod_time", "bigint default 0" },
 		{ "deleted", "tinyint default 0" },
 		{ "id", "serial" },
-		{ "userid", "mediumbigint not null" },
 		{ "user", "text not null" },
 		{ "acct", "text not null" },
 		{ "cluster", "text not null" },
@@ -153,7 +152,7 @@ static int _pgsql_acct_check_tables(char *user)
 		{ "creation_time", "bigint not null" },
 		{ "mod_time", "bigint default 0" },
 		{ "deleted", "tinyint default 0" },
-		{ "assoc_id", "text not null" },
+		{ "associd", "int not null" },
 		{ "period_start", "bigint not null" },
 		{ "cpu_count", "bigint default 0" },
 		{ "alloc_cpu_secs", "bigint default 0" },
@@ -374,7 +373,7 @@ static int _pgsql_acct_check_tables(char *user)
 		if(pgsql_db_create_table(acct_pgsql_db, 
 					 acct_coord_table, 
 					 acct_coord_table_fields,
-					 ", primary key (acct, name))")
+					 ", primary key (acct(20), name(20)))")
 		   == SLURM_ERROR)
 			return SLURM_ERROR;
 	} else {
@@ -387,7 +386,7 @@ static int _pgsql_acct_check_tables(char *user)
 	if(!acct_found) {
 		if(pgsql_db_create_table(acct_pgsql_db, 
 					 acct_table, acct_table_fields,
-					 ", primary key (name))") 
+					 ", primary key (name(20)))") 
 		   == SLURM_ERROR)
 			return SLURM_ERROR;
 	} else {
@@ -402,7 +401,7 @@ static int _pgsql_acct_check_tables(char *user)
 			   acct_pgsql_db, 
 			   assoc_day_table,
 			   assoc_usage_table_fields,
-			   ", primary key (assoc_id, period_start))")
+			   ", primary key (associd, period_start))")
 		   == SLURM_ERROR)
 			return SLURM_ERROR;
 	} else {
@@ -417,7 +416,7 @@ static int _pgsql_acct_check_tables(char *user)
 			   acct_pgsql_db, 
 			   assoc_hour_table,
 			   assoc_usage_table_fields,
-			   ", primary key (assoc_id, period_start))")
+			   ", primary key (associd, period_start))")
 		   == SLURM_ERROR)
 			return SLURM_ERROR;
 	} else {
@@ -432,7 +431,7 @@ static int _pgsql_acct_check_tables(char *user)
 			   acct_pgsql_db, 
 			   assoc_month_table,
 			   assoc_usage_table_fields,
-			   ", primary key (assoc_id, period_start))")
+			   ", primary key (associd, period_start))")
 		   == SLURM_ERROR)
 			return SLURM_ERROR;
 	} else {
@@ -446,7 +445,9 @@ static int _pgsql_acct_check_tables(char *user)
 		if(pgsql_db_create_table(
 			   acct_pgsql_db, 
 			   assoc_table, assoc_table_fields,
-			   ", primary key (user,acct,cluster,partition))") 
+			   ", primary key (id), "
+			   "unique index (user(20), acct(20), "
+			   "cluster(20), partition(20)))") 
 		   == SLURM_ERROR)
 			return SLURM_ERROR;
 	} else {
@@ -461,7 +462,7 @@ static int _pgsql_acct_check_tables(char *user)
 			   acct_pgsql_db, 
 			   cluster_day_table, 
 			   cluster_usage_table_fields,
-			   ", primary key (cluster, period_start))")
+			   ", primary key (cluster(20), period_start))")
 		   == SLURM_ERROR)
 			return SLURM_ERROR;
 	} else {
@@ -476,7 +477,7 @@ static int _pgsql_acct_check_tables(char *user)
 			   acct_pgsql_db, 
 			   cluster_hour_table, 
 			   cluster_usage_table_fields,
-			   ", primary key (cluster, period_start))")
+			   ", primary key (cluster(20), period_start))")
 		   == SLURM_ERROR)
 			return SLURM_ERROR;
 	} else {
@@ -491,7 +492,7 @@ static int _pgsql_acct_check_tables(char *user)
 			   acct_pgsql_db, 
 			   cluster_month_table, 
 			   cluster_usage_table_fields,
-			   ", primary key (cluster, period_start))")
+			   ", primary key (cluster(20), period_start))")
 		   == SLURM_ERROR)
 			return SLURM_ERROR;
 	} else {
@@ -504,7 +505,7 @@ static int _pgsql_acct_check_tables(char *user)
 	if(!cluster_found) {
 		if(pgsql_db_create_table(acct_pgsql_db, 
 					 cluster_table, cluster_table_fields,
-					 ", primary key (name))")
+					 ", primary key (name(20)))")
 		   == SLURM_ERROR)
 			return SLURM_ERROR;
 	} else {
@@ -517,7 +518,8 @@ static int _pgsql_acct_check_tables(char *user)
 	if(!index_found) {
 		if(pgsql_db_create_table(acct_pgsql_db,  
 					 index_table, index_table_fields,
-					 ", primary key (jobid, associd))")
+					 ", primary key (id), "
+					 "unique index (jobid, associd))")
 		   == SLURM_ERROR)
 			return SLURM_ERROR;
 	} else {
@@ -582,7 +584,7 @@ static int _pgsql_acct_check_tables(char *user)
 	if(!user_found) {
 		if(pgsql_db_create_table(acct_pgsql_db, 
 					 user_table, user_table_fields,
-					 ", primary key (name))")
+					 ", primary key (name(20)))")
 		   == SLURM_ERROR)
 			return SLURM_ERROR;
 	} else {

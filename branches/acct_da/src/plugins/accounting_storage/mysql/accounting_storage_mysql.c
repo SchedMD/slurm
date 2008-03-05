@@ -112,14 +112,14 @@ static int _mysql_acct_check_tables()
 {
 	storage_field_t acct_coord_table_fields[] = {
 		{ "deleted", "tinyint default 0" },
-		{ "acct", "tinytext not null" },
-		{ "name", "tinytext not null" },
+		{ "acct", "char(255) not null" },
+		{ "name", "char(255) not null" },
 		{ NULL, NULL}		
 	};
 
 	storage_field_t acct_table_fields[] = {
 		{ "creation_time", "int unsigned not null" },
-		{ "mod_time", "int unsigned default unix_timestamp()" },
+		{ "mod_time", "int unsigned default 0 not null" },
 		{ "deleted", "tinyint default 0" },
 		{ "name", "tinytext not null" },
 		{ "description", "text not null" },
@@ -130,14 +130,13 @@ static int _mysql_acct_check_tables()
 
 	storage_field_t assoc_table_fields[] = {
 		{ "creation_time", "int unsigned not null" },
-		{ "mod_time", "int unsigned default unix_timestamp()" },
+		{ "mod_time", "int unsigned default 0 not null" },
 		{ "deleted", "tinyint default 0" },
 		{ "id", "int not null auto_increment" },
-		{ "userid", "mediumint unsigned" },
-		{ "user", "tinytext" },
+		{ "user", "tinytext not null default ''" },
 		{ "acct", "tinytext not null" },
 		{ "cluster", "tinytext not null" },
-		{ "partition", "tinytext" },
+		{ "partition", "tinytext not null default ''" },
 		{ "parent", "int not null" },
 		{ "lft", "int not null" },
 		{ "rgt", "int not null" },
@@ -151,9 +150,9 @@ static int _mysql_acct_check_tables()
 
 	storage_field_t assoc_usage_table_fields[] = {
 		{ "creation_time", "int unsigned not null" },
-		{ "mod_time", "int unsigned default unix_timestamp()" },
+		{ "mod_time", "int unsigned default 0 not null" },
 		{ "deleted", "tinyint default 0" },
-		{ "assoc_id", "tinytext not null" },
+		{ "associd", "int not null" },
 		{ "period_start", "int unsigned not null" },
 		{ "cpu_count", "int unsigned default 0" },
 		{ "alloc_cpu_secs", "int unsigned default 0" },
@@ -162,17 +161,17 @@ static int _mysql_acct_check_tables()
 
 	storage_field_t cluster_table_fields[] = {
 		{ "creation_time", "int unsigned not null" },
-		{ "mod_time", "int unsigned default unix_timestamp()" },
+		{ "mod_time", "int unsigned default 0 not null" },
 		{ "deleted", "tinyint default 0" },
 		{ "name", "tinytext not null" },
-		{ "primary", "tinytext not null" },
-		{ "backup", "tinytext not null" },
+		{ "primary_node", "tinytext not null" },
+		{ "backup_node", "tinytext not null" },
 		{ NULL, NULL}		
 	};
 
 	storage_field_t cluster_usage_table_fields[] = {
 		{ "creation_time", "int unsigned not null" },
-		{ "mod_time", "int unsigned default unix_timestamp()" },
+		{ "mod_time", "int unsigned default 0 not null" },
 		{ "deleted", "tinyint default 0" },
 		{ "cluster", "tinytext not null" },
 		{ "period_start", "int unsigned not null" },
@@ -186,7 +185,7 @@ static int _mysql_acct_check_tables()
 
 	storage_field_t job_index_fields[] = {
 		{ "creation_time", "int unsigned not null" },
-		{ "mod_time", "int unsigned default unix_timestamp()" },
+		{ "mod_time", "int unsigned default 0 not null" },
 		{ "id", "int not null auto_increment" },
 		{ "jobid", "mediumint unsigned not null" },
 		{ "associd", "mediumint unsigned not null" },
@@ -200,7 +199,7 @@ static int _mysql_acct_check_tables()
 
 	storage_field_t job_table_fields[] = {
 		{ "creation_time", "int unsigned not null" },
-		{ "mod_time", "int unsigned default unix_timestamp()" },
+		{ "mod_time", "int unsigned default 0 not null" },
 		{ "id", "int not null" },
 		{ "eligible", "int unsigned default 0 not null" },
 		{ "start", "int unsigned default 0 not null" },
@@ -219,7 +218,7 @@ static int _mysql_acct_check_tables()
 
 	storage_field_t step_rusage_fields[] = {
 		{ "creation_time", "int unsigned not null" },
-		{ "mod_time", "int unsigned default unix_timestamp()" },
+		{ "mod_time", "int unsigned default 0 not null" },
 		{ "id", "int not null" },
 		{ "stepid", "smallint not null" },
 		{ "cpu_sec", "int unsigned default 0 not null" },
@@ -247,7 +246,7 @@ static int _mysql_acct_check_tables()
 
 	storage_field_t step_table_fields[] = {
 		{ "creation_time", "int unsigned not null" },
-		{ "mod_time", "int unsigned default unix_timestamp()" },
+		{ "mod_time", "int unsigned default 0 not null" },
 		{ "id", "int not null" },
 		{ "stepid", "smallint not null" },
 		{ "start", "int unsigned default 0 not null" },
@@ -280,7 +279,7 @@ static int _mysql_acct_check_tables()
 
 	storage_field_t txn_table_fields[] = {
 		{ "id", "int not null auto_increment" },
-		{ "timestamp", "int unsigned default unix_timestamp()" },
+		{ "timestamp", "int unsigned default 0 not null" },
 		{ "action", "tinytext not null" },
 		{ "object", "tinytext not null" },
 		{ "name", "tinytext not null" },
@@ -291,7 +290,7 @@ static int _mysql_acct_check_tables()
 
 	storage_field_t user_table_fields[] = {
 		{ "creation_time", "int unsigned not null" },
-		{ "mod_time", "int unsigned default unix_timestamp()" },
+		{ "mod_time", "int unsigned default 0 not null" },
 		{ "deleted", "bool default 0" },
 		{ "name", "tinytext not null" },
 		{ "default_acct", "tinytext not null" },
@@ -302,61 +301,64 @@ static int _mysql_acct_check_tables()
 
 	if(mysql_db_create_table(acct_mysql_db, acct_coord_table,
 				 acct_coord_table_fields,
-				 ", primary key (acct, name))") == SLURM_ERROR)
+				 ", primary key (acct(20), name(20)))") == SLURM_ERROR)
 		return SLURM_ERROR;
 
 	if(mysql_db_create_table(acct_mysql_db, acct_table, acct_table_fields,
-				 ", primary key (name))") == SLURM_ERROR)
+				 ", primary key (name(20)))") == SLURM_ERROR)
 		return SLURM_ERROR;
 
 	if(mysql_db_create_table(acct_mysql_db, assoc_day_table,
 				 assoc_usage_table_fields,
-				 ", primary key (assoc_id, period_start))")
+				 ", primary key (associd, period_start))")
 	   == SLURM_ERROR)
 		return SLURM_ERROR;
 
 	if(mysql_db_create_table(acct_mysql_db, assoc_hour_table,
 				 assoc_usage_table_fields,
-				 ", primary key (assoc_id, period_start))")
+				 ", primary key (associd, period_start))")
 	   == SLURM_ERROR)
 		return SLURM_ERROR;
 
 	if(mysql_db_create_table(acct_mysql_db, assoc_month_table,
 				 assoc_usage_table_fields,
-				 ", primary key (assoc_id, period_start))") 
+				 ", primary key (associd, period_start))") 
 	   == SLURM_ERROR)
 		return SLURM_ERROR;
 
 	if(mysql_db_create_table(acct_mysql_db, assoc_table, assoc_table_fields,
-				 ", primary key (user,acct,cluster,partition))")
+				 ", primary key (id), "
+				 " unique index (user(20), acct(20), "
+				 "cluster(20), partition(20)))")
 	   == SLURM_ERROR)
 		return SLURM_ERROR;
 
 	if(mysql_db_create_table(acct_mysql_db, cluster_day_table,
 				 cluster_usage_table_fields,
-				 ", primary key (cluster, period_start))")
+				 ", primary key (cluster(20), period_start))")
 	   == SLURM_ERROR)
 		return SLURM_ERROR;
 
 	if(mysql_db_create_table(acct_mysql_db, cluster_hour_table,
 				 cluster_usage_table_fields,
-				 ", primary key (cluster, period_start))")
+				 ", primary key (cluster(20), period_start))")
 	   == SLURM_ERROR)
 		return SLURM_ERROR;
 
 	if(mysql_db_create_table(acct_mysql_db, cluster_month_table,
 				 cluster_usage_table_fields,
-				 ", primary key (cluster, period_start))")
+				 ", primary key (cluster(20), period_start))")
 	   == SLURM_ERROR)
 		return SLURM_ERROR;
 
 	if(mysql_db_create_table(acct_mysql_db, cluster_table,
 				 cluster_table_fields,
-				 ", primary key (name))") == SLURM_ERROR)
+				 ", primary key (name(20)))") == SLURM_ERROR)
 		return SLURM_ERROR;
 
 	if(mysql_db_create_table(acct_mysql_db, job_index, job_index_fields,
-				 ", primary key (jobid, associd))")
+				 ", primary key (id), "
+				 "unique index (jobid, associd))")
 	   == SLURM_ERROR)
 		return SLURM_ERROR;
 	
@@ -379,7 +381,7 @@ static int _mysql_acct_check_tables()
 		return SLURM_ERROR;
 
 	if(mysql_db_create_table(acct_mysql_db, user_table, user_table_fields,
-				 ", primary key (name))") == SLURM_ERROR)
+				 ", primary key (name(20)))") == SLURM_ERROR)
 		return SLURM_ERROR;
 
 
@@ -436,12 +438,12 @@ extern int init ( void )
 	
 		mysql_get_db_connection(&acct_mysql_db, db_name, db_info);
 		
-		_mysql_acct_check_tables();
+		if((rc = _mysql_acct_check_tables()) == SLURM_SUCCESS) {
+			verbose("%s loaded", plugin_name);
+		} else 
+			verbose("%s failed", plugin_name);
 		
 		destroy_mysql_db_info(db_info);
-		
-		debug("Accounting storage init finished");
-		verbose("%s loaded", plugin_name);
 		first = 0;
 #endif		
 	} else {
