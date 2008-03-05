@@ -1117,12 +1117,9 @@ static void _slurm_free_partition_info_members(partition_info_t * part)
 
 extern void slurm_free_file_bcast_msg(file_bcast_msg_t *msg)
 {
-	int i;
-
 	if (msg) {
 		xfree(msg->fname);
-		for (i=0; i<FILE_BLOCKS; i++)
-			xfree(msg->block[i]);
+		xfree(msg->block);
 		xfree(msg);
 	}
 }

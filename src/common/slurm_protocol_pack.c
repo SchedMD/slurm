@@ -4273,12 +4273,9 @@ unpack_error:
 
 static void _pack_file_bcast(file_bcast_msg_t * msg , Buf buffer )
 {
-	int buf_size = 1024, i;
 	xassert ( msg != NULL );
 
-	for (i=0; i<FILE_BLOCKS; i++)
-		buf_size += msg->block_len[i];
-	grow_buf(buffer, buf_size);
+	grow_buf(buffer,  msg->block_len);
 	
 	pack16 ( msg->block_no, buffer );
 	pack16 ( msg->last_block, buffer );
@@ -4292,15 +4289,12 @@ static void _pack_file_bcast(file_bcast_msg_t * msg , Buf buffer )
 	pack_time ( msg->mtime, buffer );
 
 	packstr ( msg->fname, buffer );
-	for (i=0; i<FILE_BLOCKS; i++) {
-		pack32 ( msg->block_len[i], buffer );
-		packmem ( msg->block[i], msg->block_len[i], buffer );
-	}
+	pack32 ( msg->block_len, buffer );
+	packmem ( msg->block, msg->block_len, buffer );
 }
 
 static int _unpack_file_bcast(file_bcast_msg_t ** msg_ptr , Buf buffer )
 {
-	int i;
 	uint32_t uint32_tmp;
 	file_bcast_msg_t *msg ;
 
@@ -4321,18 +4315,15 @@ static int _unpack_file_bcast(file_bcast_msg_t ** msg_ptr , Buf buffer )
 	safe_unpack_time ( & msg->mtime, buffer );
 
 	safe_unpackstr_xmalloc ( & msg->fname, &uint32_tmp, buffer );
-	for (i=0; i<FILE_BLOCKS; i++) {
-		safe_unpack32 ( & msg->block_len[i], buffer );
-		safe_unpackmem_xmalloc ( & msg->block[i], &uint32_tmp , buffer ) ;
-		if ( uint32_tmp != msg->block_len[i] )
-			goto unpack_error;
-	}
+	safe_unpack32 ( & msg->block_len, buffer );
+	safe_unpackmem_xmalloc ( & msg->block, &uint32_tmp , buffer ) ;
+	if ( uint32_tmp != msg->block_len )
+		goto unpack_error;
 	return SLURM_SUCCESS;
 
 unpack_error:
 	xfree( msg -> fname );
-	for (i=0; i<FILE_BLOCKS; i++)
-		xfree( msg -> block[i] );
+	xfree( msg -> block );
 	xfree( msg );
 	*msg_ptr = NULL;
 	return SLURM_ERROR;
