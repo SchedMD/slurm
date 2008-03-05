@@ -183,8 +183,6 @@ static void _bcast_file(void)
 	file_bcast_msg_t bcast_msg;
 	char *buffer[FILE_BLOCKS];
 
-	/* NOTE: packmem() uses 32 bits to express a block size
-	 * buf_size can be enlarged if desired */
 	buf_size = MIN((64 * 1024), f_stat.st_size);
 
 	bcast_msg.fname		= params.dst_fname;
@@ -220,9 +218,13 @@ static void _bcast_file(void)
 				bcast_msg.last_block = 1;
 			size_block += bcast_msg.block_len[i];
 			if (params.block_size
-			&&  (size_block >= params.block_size))
+			&&  (size_block >= params.block_size)) {
+				for (i++ ;i<FILE_BLOCKS; i++)
+					bcast_msg.block_len[i] = 0;
 				break;
+			}
 		}
+			
 		send_rpc(&bcast_msg, alloc_resp);
 		if (bcast_msg.last_block)
 			break;	/* end of file */
