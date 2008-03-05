@@ -181,7 +181,7 @@ extern void send_rpc(file_bcast_msg_t *bcast_msg,
 	if (pthread_attr_setstacksize(&attr, 3 * 1024*1024))
 		error("pthread_attr_setstacksize: %m");
 	if (pthread_attr_setdetachstate (&attr,
-			PTHREAD_CREATE_JOINABLE))
+			PTHREAD_CREATE_DETACHED))
 		error("pthread_attr_setdetachstate error %m");
 
 	for (i=0; i<threads_used; i++) {

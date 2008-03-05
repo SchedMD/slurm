@@ -220,8 +220,11 @@ static void _bcast_file(void)
 				bcast_msg.last_block = 1;
 			size_block += bcast_msg.block_len[i];
 			if (params.block_size
-			&&  (size_block >= params.block_size))
+			&&  (size_block >= params.block_size)) {
+				for (i++; i<FILE_BLOCKS; i++)
+					bcast_msg.block_len[i] = 0;
 				break;
+			}
 		}
 		send_rpc(&bcast_msg, alloc_resp);
 		if (bcast_msg.last_block)
