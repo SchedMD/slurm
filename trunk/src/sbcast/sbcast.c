@@ -1,9 +1,8 @@
 /*****************************************************************************\
  *  sbcast.c - Broadcast a file to allocated nodes
- *
- *  $Id: sbcast.c 6965 2006-01-04 23:31:07Z jette $
  *****************************************************************************
- *  Copyright (C) 2006 The Regents of the University of California.
+ *  Copyright (C) 2006-2007 The Regents of the University of California.
+ *  Copyright (C) 2008 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
  *  UCRL-CODE-226842.
@@ -51,13 +50,13 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
+#include "src/common/forward.h"
 #include "src/common/hostlist.h"
 #include "src/common/log.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_interface.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
-#include "src/common/forward.h"
 #include "src/sbcast/sbcast.h"
 
 /* global variables */
@@ -219,7 +218,7 @@ static void _bcast_file(void)
 			size_block += bcast_msg.block_len[i];
 			if (params.block_size
 			&&  (size_block >= params.block_size)) {
-				for (i++ ;i<FILE_BLOCKS; i++)
+				for (i++; i<FILE_BLOCKS; i++)
 					bcast_msg.block_len[i] = 0;
 				break;
 			}

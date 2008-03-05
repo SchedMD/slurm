@@ -1,9 +1,8 @@
 /*****************************************************************************\
  *  agent.c - File transfer agent (handles message traffic)
- *
- *  $Id$
  *****************************************************************************
- *  Copyright (C) 2006 The Regents of the University of California.
+ *  Copyright (C) 2006-2007 The Regents of the University of California.
+ *  Copyright (C) 2008 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
  *  UCRL-CODE-226842.
@@ -87,7 +86,7 @@ static void *_agent_thread(void *args)
 
 	ret_list = slurm_send_recv_msgs(thread_ptr->nodelist,
 					&thread_ptr->msg,
-					0);
+					params.timeout);
 	if (ret_list == NULL) {
 		error("slurm_send_recv_msgs: %m");
 		exit(1);
@@ -181,7 +180,7 @@ extern void send_rpc(file_bcast_msg_t *bcast_msg,
 	if (pthread_attr_setstacksize(&attr, 3 * 1024*1024))
 		error("pthread_attr_setstacksize: %m");
 	if (pthread_attr_setdetachstate (&attr,
-			PTHREAD_CREATE_JOINABLE))
+			PTHREAD_CREATE_DETACHED))
 		error("pthread_attr_setdetachstate error %m");
 
 	for (i=0; i<threads_used; i++) {

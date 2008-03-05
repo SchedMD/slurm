@@ -194,6 +194,8 @@ documents those changes that are of interest to users and admins.
     Previous versions could have the job step persist if an allocated node
     went DOWN.
  -- Fix bug in sbcast that can cause communication problems for large files.
+ -- Add sbcast option -t/--timeout and SBCAST_TIMEOUT environment variable 
+    to control message timeout.
 
 * Changes in SLURM 1.2.24
 =========================
