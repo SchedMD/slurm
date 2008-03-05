@@ -19,11 +19,13 @@ Two areas of substantial change are accounting and job scheduling.
 Slurm is now able to save accounting information in a database, 
 either MySQL or PostGreSQL. We have written a new daemon, slurmdbd 
 (Slurm DataBase Daemon), to serve as a centralized data manager for 
-multiple Slurm clusters. A variety of tools are still under development 
-to generate assorted acccounting reports including graphics and a 
-web interface. Slurm now supports gang scheduling (time-slicing of 
-parallel jobs for improved responsiveness and system utilization). 
-Many related scheduling changes have also been made. 
+multiple Slurm clusters. A new tool sacctmgr is available to manage
+user accounting information through SlurmdDBD and a variety of 
+other tools are still under development to generate assorted 
+acccounting reports including graphics and a web interface. Slurm 
+now supports gang scheduling (time-slicing of parallel jobs for 
+improved responsiveness and system utilization). Many related 
+scheduling changes have also been made. 
 
 Many enhancements have been made for better Slurm integration with 
 Moab and Maui schedulers. Moab development work is still underway 
@@ -153,8 +155,10 @@ ACCOUNTING CHANGES
   designed to use a Slurm JobAcctStorageType plugin to use MySQL now. 
   It also uses existing Slurm authentication plugins.
 
-* New tools to generate accounting reports are currently under development
-  and will be released soon.
+* A new command, sacctmgr, is available for managing user accounts in
+  SlurmDBD has been added. This information is required for use of SlurmDBD
+  to manage job accounting data. Additional tools to generate accounting 
+  reports are currently under development and will be released soon.
 
 * Job completion records can now be written to a MySQL or PostGreSQL
   database in addition to a test file as controlled using the JobCompType
