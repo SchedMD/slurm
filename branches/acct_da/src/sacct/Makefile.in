@@ -14,7 +14,8 @@
 
 @SET_MAKE@
 
-# Makefile for sacctmgr
+# Makefile for sacct
+
 
 VPATH = @srcdir@
 pkgdatadir = $(datadir)/@PACKAGE@
@@ -35,9 +36,10 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
-bin_PROGRAMS = sacctmgr$(EXEEXT)
-subdir = src/accounting/sacctmgr
-DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
+bin_PROGRAMS = sacct$(EXEEXT)
+subdir = src/sacct
+DIST_COMMON = $(noinst_HEADERS) $(srcdir)/Makefile.am \
+	$(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/auxdir/acx_pthread.m4 \
 	$(top_srcdir)/auxdir/slurm.m4 \
@@ -69,14 +71,12 @@ CONFIG_CLEAN_FILES =
 am__installdirs = "$(DESTDIR)$(bindir)"
 binPROGRAMS_INSTALL = $(INSTALL_PROGRAM)
 PROGRAMS = $(bin_PROGRAMS)
-am_sacctmgr_OBJECTS = user_functions.$(OBJEXT) \
-	cluster_functions.$(OBJEXT) account_functions.$(OBJEXT) \
-	sacctmgr.$(OBJEXT) common.$(OBJEXT)
-sacctmgr_OBJECTS = $(am_sacctmgr_OBJECTS)
-am__DEPENDENCIES_1 =
-sacctmgr_DEPENDENCIES = $(convenience_libs) $(am__DEPENDENCIES_1)
-sacctmgr_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
-	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(sacctmgr_LDFLAGS) \
+am_sacct_OBJECTS = sacct.$(OBJEXT) process.$(OBJEXT) print.$(OBJEXT) \
+	options.$(OBJEXT) sacct_stat.$(OBJEXT)
+sacct_OBJECTS = $(am_sacct_OBJECTS)
+sacct_DEPENDENCIES = $(top_builddir)/src/api/libslurmhelper.la
+sacct_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
+	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(sacct_LDFLAGS) \
 	$(LDFLAGS) -o $@
 DEFAULT_INCLUDES = -I. -I$(top_builddir) -I$(top_builddir)/slurm@am__isrc@
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
@@ -90,8 +90,9 @@ CCLD = $(CC)
 LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
-SOURCES = $(sacctmgr_SOURCES)
-DIST_SOURCES = $(sacctmgr_SOURCES)
+SOURCES = $(sacct_SOURCES)
+DIST_SOURCES = $(sacct_SOURCES)
+HEADERS = $(noinst_HEADERS)
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -262,20 +263,10 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
 INCLUDES = -I$(top_srcdir)
-sacctmgr_SOURCES = \
-	user_functions.c	\
-	cluster_functions.c	\
-	account_functions.c	\
-	sacctmgr.c	\
-	sacctmgr.h	\
-	common.c
-
-convenience_libs = $(top_builddir)/src/api/libslurmhelper.la
-sacctmgr_LDADD = \
-	$(convenience_libs) \
-	$(READLINE_LIBS)
-
-sacctmgr_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
+sacct_LDADD = $(top_builddir)/src/api/libslurmhelper.la
+noinst_HEADERS = sacct.c 
+sacct_SOURCES = sacct.c process.c print.c options.c sacct_stat.c
+sacct_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
 all: all-am
 
 .SUFFIXES:
@@ -289,9 +280,9 @@ $(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.am  $(am__confi
 	      exit 1;; \
 	  esac; \
 	done; \
-	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign  src/accounting/sacctmgr/Makefile'; \
+	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign  src/sacct/Makefile'; \
 	cd $(top_srcdir) && \
-	  $(AUTOMAKE) --foreign  src/accounting/sacctmgr/Makefile
+	  $(AUTOMAKE) --foreign  src/sacct/Makefile
 .PRECIOUS: Makefile
 Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
 	@case '$?' in \
@@ -337,9 +328,9 @@ clean-binPROGRAMS:
 	  echo " rm -f $$p $$f"; \
 	  rm -f $$p $$f ; \
 	done
-sacctmgr$(EXEEXT): $(sacctmgr_OBJECTS) $(sacctmgr_DEPENDENCIES) 
-	@rm -f sacctmgr$(EXEEXT)
-	$(sacctmgr_LINK) $(sacctmgr_OBJECTS) $(sacctmgr_LDADD) $(LIBS)
+sacct$(EXEEXT): $(sacct_OBJECTS) $(sacct_DEPENDENCIES) 
+	@rm -f sacct$(EXEEXT)
+	$(sacct_LINK) $(sacct_OBJECTS) $(sacct_LDADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -347,11 +338,11 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/account_functions.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cluster_functions.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/common.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sacctmgr.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/user_functions.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/options.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/print.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/process.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sacct.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sacct_stat.Po@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
@@ -456,7 +447,7 @@ distdir: $(DISTFILES)
 	done
 check-am: all-am
 check: check-am
-all-am: Makefile $(PROGRAMS)
+all-am: Makefile $(PROGRAMS) $(HEADERS)
 installdirs:
 	for dir in "$(DESTDIR)$(bindir)"; do \
 	  test -z "$$dir" || $(MKDIR_P) "$$dir"; \
@@ -561,8 +552,8 @@ uninstall-am: uninstall-binPROGRAMS
 
 
 force:
-$(convenience_libs) : force
-	@cd `dirname $@` && $(MAKE) `basename $@`
+$(sacct_LDADD) : force
+	 @cd `dirname $@` && $(MAKE) `basename $@`
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.
 .NOEXPORT:

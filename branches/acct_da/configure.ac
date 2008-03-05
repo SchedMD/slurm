@@ -278,9 +278,8 @@ AC_CONFIG_FILES([Makefile
 		 src/api/Makefile 
 		 src/common/Makefile
 		 src/database/Makefile
-		 src/accounting/Makefile
-		 src/accounting/sacct/Makefile
-		 src/accounting/sacctmgr/Makefile
+		 src/sacct/Makefile
+		 src/sacctmgr/Makefile
 		 src/salloc/Makefile 
 		 src/sbatch/Makefile 
 		 src/sattach/Makefile
@@ -322,7 +321,6 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/jobacct_gather/linux/Makefile
 		 src/plugins/jobacct_gather/aix/Makefile
 		 src/plugins/jobacct_gather/none/Makefile
-		 src/plugins/jobacct_storage/Makefile
 		 src/plugins/jobcomp/Makefile
 		 src/plugins/jobcomp/filetxt/Makefile
 		 src/plugins/jobcomp/none/Makefile
