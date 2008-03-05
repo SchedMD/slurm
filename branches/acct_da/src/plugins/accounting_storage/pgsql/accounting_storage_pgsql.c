@@ -77,21 +77,22 @@ const uint32_t plugin_version = 100;
 
 PGconn *acct_pgsql_db = NULL;
 
+char *acct_coord_table = "acct_coord_table";
+char *acct_table = "acct_table";
+char *assoc_day_table = "assoc_day_usage_table";
+char *assoc_hour_table = "assoc_hour_usage_table";
+char *assoc_month_table = "assoc_month_usage_table";
+char *assoc_table = "assoc_table";
+char *cluster_day_table = "cluster_day_usage_table";
+char *cluster_hour_table = "cluster_hour_usage_table";
+char *cluster_month_table = "cluster_month_usage_table";
+char *cluster_table = "cluster_table";
 char *job_index = "job_index_table";
 char *job_table = "job_table";
-char *step_table = "step_table";
 char *rusage_table = "rusage_table";
+char *step_table = "step_table";
+char *txn_table = "txn_table";
 char *user_table = "user_table";
-char *acct_table = "acct_table";
-char *acct_coord_table = "acct_coord_table";
-char *cluster_table = "cluster_table";
-char *cluster_hour_table = "cluster_hour_usage_table";
-char *cluster_day_table = "cluster_day_usage_table";
-char *cluster_month_table = "cluster_month_usage_table";
-char *assoc_table = "assoc_table";
-char *assoc_hour_table = "assoc_hour_usage_table";
-char *assoc_day_table = "assoc_day_usage_table";
-char *assoc_month_table = "assoc_month_usage_table";
 
 static pgsql_db_info_t *_pgsql_acct_create_db_info()
 {
@@ -109,17 +110,6 @@ static pgsql_db_info_t *_pgsql_acct_create_db_info()
 
 static int _pgsql_acct_check_tables(char *user)
 {
-	storage_field_t user_table_fields[] = {
-		{ "creation_time", "bigint not null" },
-		{ "mod_time", "bigint default 0" },
-		{ "deleted", "bool default 0" },
-		{ "name", "text not null" },
-		{ "default_acct", "text not null" },
-		{ "expedite", "smallint default 1 not null" },
-		{ "admin_level", "smallint default 1 not null" },
-		{ NULL, NULL}		
-	};
-
 	storage_field_t acct_table_fields[] = {
 		{ "creation_time", "bigint not null" },
 		{ "mod_time", "bigint default 0" },
@@ -135,30 +125,6 @@ static int _pgsql_acct_check_tables(char *user)
 		{ "deleted", "tinyint default 0" },
 		{ "acct", "text not null" },
 		{ "name", "text not null" },
-		{ NULL, NULL}		
-	};
-
-	storage_field_t cluster_table_fields[] = {
-		{ "creation_time", "bigint not null" },
-		{ "mod_time", "bigint default 0" },
-		{ "deleted", "tinyint default 0" },
-		{ "name", "text not null" },
-		{ "primary", "text not null" },
-		{ "backup", "text not null" },
-		{ NULL, NULL}		
-	};
-
-	storage_field_t cluster_usage_table_fields[] = {
-		{ "creation_time", "bigint not null" },
-		{ "mod_time", "bigint default 0" },
-		{ "deleted", "tinyint default 0" },
-		{ "cluster", "text not null" },
-		{ "period_start", "bigint not null" },
-		{ "cpu_count", "bigint default 0" },
-		{ "alloc_cpu_secs", "bigint default 0" },
-		{ "down_cpu_secs", "bigint default 0" },
-		{ "idle_cpu_secs", "bigint default 0" },
-		{ "resv_cpu_secs", "bigint default 0" },
 		{ NULL, NULL}		
 	};
 
@@ -194,7 +160,33 @@ static int _pgsql_acct_check_tables(char *user)
 		{ NULL, NULL}		
 	};
 
+	storage_field_t cluster_table_fields[] = {
+		{ "creation_time", "bigint not null" },
+		{ "mod_time", "bigint default 0" },
+		{ "deleted", "tinyint default 0" },
+		{ "name", "text not null" },
+		{ "primary", "text not null" },
+		{ "backup", "text not null" },
+		{ NULL, NULL}		
+	};
+
+	storage_field_t cluster_usage_table_fields[] = {
+		{ "creation_time", "bigint not null" },
+		{ "mod_time", "bigint default 0" },
+		{ "deleted", "tinyint default 0" },
+		{ "cluster", "text not null" },
+		{ "period_start", "bigint not null" },
+		{ "cpu_count", "bigint default 0" },
+		{ "alloc_cpu_secs", "bigint default 0" },
+		{ "down_cpu_secs", "bigint default 0" },
+		{ "idle_cpu_secs", "bigint default 0" },
+		{ "resv_cpu_secs", "bigint default 0" },
+		{ NULL, NULL}		
+	};
+
 	storage_field_t index_table_fields[] = {
+		{ "creation_time", "bigint not null" },
+		{ "mod_time", "bigint default 0" },
 		{ "id", "serial" },
 		{ "jobid ", "integer not null" },
 		{ "partition", "text not null" },
@@ -206,6 +198,8 @@ static int _pgsql_acct_check_tables(char *user)
 	};
 
 	storage_field_t job_table_fields[] = {
+		{ "creation_time", "bigint not null" },
+		{ "mod_time", "bigint default 0" },
 		{ "id", "int not null" },
 		{ "start", "bigint default 0 not null" },
 		{ "endtime", "bigint default 0 not null" },
@@ -222,7 +216,37 @@ static int _pgsql_acct_check_tables(char *user)
 		{ NULL, NULL}
 	};
 
+	storage_field_t step_rusage_fields[] = {
+		{ "creation_time", "bigint not null" },
+		{ "mod_time", "bigint default 0" },
+		{ "id", "int not null" },
+		{ "stepid", "smallint not null" },
+		{ "cpu_sec", "bigint default 0 not null" },
+		{ "cpu_usec", "bigint default 0 not null" },
+		{ "user_sec", "bigint default 0 not null" },
+		{ "user_usec", "bigint default 0 not null" },
+		{ "sys_sec", "bigint default 0 not null" },
+		{ "sys_usec", "bigint default 0 not null" },
+		{ "max_rss", "bigint default 0 not null" },
+		{ "max_ixrss", "bigint default 0 not null" },
+		{ "max_idrss", "bigint default 0 not null" },
+		{ "max_isrss", "bigint default 0 not null" },
+		{ "max_minflt", "bigint default 0 not null" },
+		{ "max_majflt", "bigint default 0 not null" },
+		{ "max_nswap", "bigint default 0 not null" },
+		{ "inblock", "bigint default 0 not null" },
+		{ "outblock", "bigint default 0 not null" },
+		{ "msgsnd", "bigint default 0 not null" },
+		{ "msgrcv", "bigint default 0 not null" },
+		{ "nsignals", "bigint default 0 not null" },
+		{ "nvcsw", "bigint default 0 not null" },
+		{ "nivcsw", "bigint default 0 not null" },
+		{ NULL, NULL}
+	};
+
 	storage_field_t step_table_fields[] = {
+		{ "creation_time", "bigint not null" },
+		{ "mod_time", "bigint default 0" },
 		{ "id", "int not null" },
 		{ "stepid", "smallint not null" },
 		{ "start", "bigint default 0 not null" },
@@ -253,34 +277,30 @@ static int _pgsql_acct_check_tables(char *user)
 		{ NULL, NULL}
 	};
 
-	storage_field_t step_rusage_fields[] = {
-		{ "id", "int not null" },
-		{ "stepid", "smallint not null" },
-		{ "cpu_sec", "bigint default 0 not null" },
-		{ "cpu_usec", "bigint default 0 not null" },
-		{ "user_sec", "bigint default 0 not null" },
-		{ "user_usec", "bigint default 0 not null" },
-		{ "sys_sec", "bigint default 0 not null" },
-		{ "sys_usec", "bigint default 0 not null" },
-		{ "max_rss", "bigint default 0 not null" },
-		{ "max_ixrss", "bigint default 0 not null" },
-		{ "max_idrss", "bigint default 0 not null" },
-		{ "max_isrss", "bigint default 0 not null" },
-		{ "max_minflt", "bigint default 0 not null" },
-		{ "max_majflt", "bigint default 0 not null" },
-		{ "max_nswap", "bigint default 0 not null" },
-		{ "inblock", "bigint default 0 not null" },
-		{ "outblock", "bigint default 0 not null" },
-		{ "msgsnd", "bigint default 0 not null" },
-		{ "msgrcv", "bigint default 0 not null" },
-		{ "nsignals", "bigint default 0 not null" },
-		{ "nvcsw", "bigint default 0 not null" },
-		{ "nivcsw", "bigint default 0 not null" },
-		{ NULL, NULL}
+	storage_field_t txn_table_fields[] = {
+		{ "id", "serial" },
+		{ "timestamp", "bigint default 0" },
+		{ "action", "text not null" },
+		{ "object", "text not null" },
+		{ "name", "text not null" },
+		{ "actor", "text not null" },
+		{ "info", "text not null" },
+		{ NULL, NULL}		
+	};
+
+	storage_field_t user_table_fields[] = {
+		{ "creation_time", "bigint not null" },
+		{ "mod_time", "bigint default 0" },
+		{ "deleted", "bool default 0" },
+		{ "name", "text not null" },
+		{ "default_acct", "text not null" },
+		{ "expedite", "smallint default 1 not null" },
+		{ "admin_level", "smallint default 1 not null" },
+		{ NULL, NULL}		
 	};
 
 	int i = 0, index_found = 0, job_found = 0;
-	int step_found = 0, rusage_found = 0;
+	int step_found = 0, rusage_found = 0, txn_found = 0;
 	int user_found = 0, acct_found = 0, acct_coord_found = 0;
 	int cluster_found = 0, cluster_hour_found = 0,
 		cluster_day_found = 0, cluster_month_found = 0;
@@ -299,111 +319,68 @@ static int _pgsql_acct_check_tables(char *user)
 	xfree(query);
 
 	for (i = 0; i < PQntuples(result); i++) {
-		if(!index_found && 
-		   !strcmp(index_table, PQgetvalue(result, i, 0))) 
-			index_found = 1;
-		else if(!job_found &&
-			!strcmp(job_table, PQgetvalue(result, i, 0))) 
-			job_found = 1;
-		else if(!step_found &&
-			!strcmp(step_table, PQgetvalue(result, i, 0))) 
-			step_found = 1;
-		else if(!rusage_found &&
-			!strcmp(rusage_table, PQgetvalue(result, i, 0))) 
-			rusage_found = 1;
-		else if(!user_found &&
-			!strcmp(user_table, PQgetvalue(result, i, 0))) 
-			user_found = 1;
-		else if(!acct_coord_found &&
-			!strcmp(acct_coord_table, PQgetvalue(result, i, 0))) 
+		if(!acct_coord_found &&
+		   !strcmp(acct_coord_table, PQgetvalue(result, i, 0))) 
 			acct_coord_found = 1;
 		else if(!acct_found &&
 			!strcmp(acct_table, PQgetvalue(result, i, 0))) 
 			acct_found = 1;
-		else if(!cluster_found &&
-			!strcmp(cluster_table, PQgetvalue(result, i, 0))) 
-			cluster_found = 1;
-		else if(!cluster_hour_found &&
-			!strcmp(cluster_hour_table, PQgetvalue(result, i, 0))) 
-			cluster_hour_found = 1;
-		else if(!cluster_day_found &&
-			!strcmp(cluster_day_table, PQgetvalue(result, i, 0))) 
-			cluster_day_found = 1;
-		else if(!cluster_month_found &&
-			!strcmp(cluster_month_table, PQgetvalue(result, i, 0))) 
-			cluster_month_found = 1;
 		else if(!assoc_found &&
 			!strcmp(assoc_table, PQgetvalue(result, i, 0))) 
 			assoc_found = 1;
-		else if(!assoc_hour_found &&
-			!strcmp(assoc_hour_table, PQgetvalue(result, i, 0))) 
-			assoc_hour_found = 1;
 		else if(!assoc_day_found &&
 			!strcmp(assoc_day_table, PQgetvalue(result, i, 0))) 
 			assoc_day_found = 1;
+		else if(!assoc_hour_found &&
+			!strcmp(assoc_hour_table, PQgetvalue(result, i, 0))) 
+			assoc_hour_found = 1;
 		else if(!assoc_month_found &&
 			!strcmp(assoc_month_table, PQgetvalue(result, i, 0))) 
 			assoc_month_found = 1;
+		else if(!cluster_found &&
+			!strcmp(cluster_table, PQgetvalue(result, i, 0))) 
+			cluster_found = 1;
+		else if(!cluster_day_found &&
+			!strcmp(cluster_day_table, PQgetvalue(result, i, 0))) 
+			cluster_day_found = 1;
+		else if(!cluster_hour_found &&
+			!strcmp(cluster_hour_table, PQgetvalue(result, i, 0))) 
+			cluster_hour_found = 1;
+		else if(!cluster_month_found &&
+			!strcmp(cluster_month_table, PQgetvalue(result, i, 0))) 
+			cluster_month_found = 1;
+		else if(!index_found && 
+			!strcmp(index_table, PQgetvalue(result, i, 0))) 
+			index_found = 1;
+		else if(!job_found &&
+			!strcmp(job_table, PQgetvalue(result, i, 0))) 
+			job_found = 1;
+		else if(!rusage_found &&
+			!strcmp(rusage_table, PQgetvalue(result, i, 0))) 
+			rusage_found = 1;
+		else if(!step_found &&
+			!strcmp(step_table, PQgetvalue(result, i, 0))) 
+			step_found = 1;
+		else if(!txn_found &&
+			!strcmp(txn_table, PQgetvalue(result, i, 0))) 
+			txn_found = 1;
+		else if(!user_found &&
+			!strcmp(user_table, PQgetvalue(result, i, 0))) 
+			user_found = 1;
 	}
 	PQclear(result);
 
-	if(!index_found) {
-		if(pgsql_db_create_table(acct_pgsql_db,  
-					 index_table, index_table_fields,
-					 ", primary key (id))") == SLURM_ERROR)
-			return SLURM_ERROR;
-	} else {
-		if(pgsql_db_make_table_current(acct_pgsql_db,  
-					       index_table,
-					       index_table_fields))
-			return SLURM_ERROR;
-	}
-	if(!job_found) {
-		if(pgsql_db_create_table(acct_pgsql_db,  
-					 job_table, job_table_fields,
-					 ")") == SLURM_ERROR)
-			return SLURM_ERROR;
-	} else {
-		if(pgsql_db_make_table_current(acct_pgsql_db,  
-					       job_table,
-					       job_table_fields))
-			return SLURM_ERROR;
-	}
-	
-	if(!step_found) {
+	if(!acct_coord_found) {
 		if(pgsql_db_create_table(acct_pgsql_db, 
-					 step_table, step_table_fields,
-					 ")") == SLURM_ERROR)
-			return SLURM_ERROR;
-
-	} else {
-		if(pgsql_db_make_table_current(acct_pgsql_db,  
-					       step_table,
-					       step_table_fields))
-			return SLURM_ERROR;
-	}
-	if(!rusage_found) {
-		if(pgsql_db_create_table(acct_pgsql_db, 
-					 rusage_table, step_rusage_fields,
-					 ")") == SLURM_ERROR)
-			return SLURM_ERROR;
-	} else {
-		if(pgsql_db_make_table_current(acct_pgsql_db,  
-					       rusage_table,
-					       step_rusage_fields))
-			return SLURM_ERROR;
-	}
-
-	if(!user_found) {
-		if(pgsql_db_create_table(acct_pgsql_db, 
-					 user_table, user_table_fields,
-					 ", primary key (name))")
+					 acct_coord_table, 
+					 acct_coord_table_fields,
+					 ", primary key (acct, name))")
 		   == SLURM_ERROR)
 			return SLURM_ERROR;
 	} else {
 		if(pgsql_db_make_table_current(acct_pgsql_db,  
-					       user_table,
-					       user_table_fields))
+					       acct_coord_table,
+					       acct_coord_table_fields))
 			return SLURM_ERROR;
 	}
 
@@ -420,17 +397,107 @@ static int _pgsql_acct_check_tables(char *user)
 			return SLURM_ERROR;
 	}
 
-	if(!acct_coord_found) {
-		if(pgsql_db_create_table(acct_pgsql_db, 
-					 acct_coord_table, 
-					 acct_coord_table_fields,
-					 ", primary key (acct))")
+	if(!assoc_day_found) {
+		if(pgsql_db_create_table(
+			   acct_pgsql_db, 
+			   assoc_day_table,
+			   assoc_usage_table_fields,
+			   ", primary key (assoc_id, period_start))")
 		   == SLURM_ERROR)
 			return SLURM_ERROR;
 	} else {
 		if(pgsql_db_make_table_current(acct_pgsql_db,  
-					       acct_coord_table,
-					       acct_coord_table_fields))
+					       assoc_day_table,
+					       assoc_usage_table_fields))
+			return SLURM_ERROR;
+	}
+
+	if(!assoc_hour_found) {
+		if(pgsql_db_create_table(
+			   acct_pgsql_db, 
+			   assoc_hour_table,
+			   assoc_usage_table_fields,
+			   ", primary key (assoc_id, period_start))")
+		   == SLURM_ERROR)
+			return SLURM_ERROR;
+	} else {
+		if(pgsql_db_make_table_current(acct_pgsql_db,  
+					       assoc_hour_table,
+					       assoc_usage_table_fields))
+			return SLURM_ERROR;
+	}
+
+	if(!assoc_month_found) {
+		if(pgsql_db_create_table(
+			   acct_pgsql_db, 
+			   assoc_month_table,
+			   assoc_usage_table_fields,
+			   ", primary key (assoc_id, period_start))")
+		   == SLURM_ERROR)
+			return SLURM_ERROR;
+	} else {
+		if(pgsql_db_make_table_current(acct_pgsql_db,  
+					       assoc_month_table,
+					       assoc_usage_table_fields))
+			return SLURM_ERROR;
+	}
+
+	if(!assoc_found) {
+		if(pgsql_db_create_table(
+			   acct_pgsql_db, 
+			   assoc_table, assoc_table_fields,
+			   ", primary key (user,acct,cluster,partition))") 
+		   == SLURM_ERROR)
+			return SLURM_ERROR;
+	} else {
+		if(pgsql_db_make_table_current(acct_pgsql_db,  
+					       assoc_table,
+					       assoc_table_fields))
+			return SLURM_ERROR;
+	}
+
+	if(!cluster_day_found) {
+		if(pgsql_db_create_table(
+			   acct_pgsql_db, 
+			   cluster_day_table, 
+			   cluster_usage_table_fields,
+			   ", primary key (cluster, period_start))")
+		   == SLURM_ERROR)
+			return SLURM_ERROR;
+	} else {
+		if(pgsql_db_make_table_current(acct_pgsql_db,  
+					       cluster_day_table,
+					       cluster_usage_table_fields))
+			return SLURM_ERROR;
+	}
+
+	if(!cluster_hour_found) {
+		if(pgsql_db_create_table(
+			   acct_pgsql_db, 
+			   cluster_hour_table, 
+			   cluster_usage_table_fields,
+			   ", primary key (cluster, period_start))")
+		   == SLURM_ERROR)
+			return SLURM_ERROR;
+	} else {
+		if(pgsql_db_make_table_current(acct_pgsql_db,  
+					       cluster_hour_table,
+					       cluster_usage_table_fields))
+			return SLURM_ERROR;
+	}
+
+	if(!cluster_month_found) {
+		if(pgsql_db_create_table(
+			   acct_pgsql_db, 
+			   cluster_month_table, 
+			   cluster_usage_table_fields,
+			   ", primary key (cluster, period_start))")
+		   == SLURM_ERROR)
+			return SLURM_ERROR;
+	} else {
+		if(pgsql_db_make_table_current(acct_pgsql_db,  
+					       cluster_month_table,
+					       cluster_usage_table_fields))
 			return SLURM_ERROR;
 	}
 
@@ -447,98 +514,81 @@ static int _pgsql_acct_check_tables(char *user)
 			return SLURM_ERROR;
 	}
 
-	if(!cluster_hour_found) {
-		if(pgsql_db_create_table(acct_pgsql_db, 
-					 cluster_hour_table, 
-					 cluster_usage_table_fields,
-					 ", primary key (cluster))")
+	if(!index_found) {
+		if(pgsql_db_create_table(acct_pgsql_db,  
+					 index_table, index_table_fields,
+					 ", primary key (jobid, associd))")
 		   == SLURM_ERROR)
 			return SLURM_ERROR;
 	} else {
 		if(pgsql_db_make_table_current(acct_pgsql_db,  
-					       cluster_hour_table,
-					       cluster_usage_table_fields))
+					       index_table,
+					       index_table_fields))
 			return SLURM_ERROR;
 	}
 
-	if(!cluster_day_found) {
-		if(pgsql_db_create_table(acct_pgsql_db, 
-					 cluster_day_table, 
-					 cluster_usage_table_fields,
-					 ", primary key (cluster))")
-		   == SLURM_ERROR)
-			return SLURM_ERROR;
-	} else {
-		if(pgsql_db_make_table_current(acct_pgsql_db,  
-					       cluster_day_table,
-					       cluster_usage_table_fields))
-			return SLURM_ERROR;
-	}
-
-	if(!cluster_month_found) {
-		if(pgsql_db_create_table(acct_pgsql_db, 
-					 cluster_month_table, 
-					 cluster_usage_table_fields,
-					 ", primary key (cluster))")
-		   == SLURM_ERROR)
-			return SLURM_ERROR;
-	} else {
-		if(pgsql_db_make_table_current(acct_pgsql_db,  
-					       cluster_month_table,
-					       cluster_usage_table_fields))
-			return SLURM_ERROR;
-	}
-
-	if(!assoc_found) {
-		if(pgsql_db_create_table(acct_pgsql_db, 
-					 assoc_table, assoc_table_fields,
+	if(!job_found) {
+		if(pgsql_db_create_table(acct_pgsql_db,  
+					 job_table, job_table_fields,
 					 ", primary key (id))") == SLURM_ERROR)
 			return SLURM_ERROR;
 	} else {
 		if(pgsql_db_make_table_current(acct_pgsql_db,  
-					       assoc_table,
-					       assoc_table_fields))
+					       job_table,
+					       job_table_fields))
+			return SLURM_ERROR;
+	}
+	
+	if(!rusage_found) {
+		if(pgsql_db_create_table(acct_pgsql_db, 
+					 rusage_table, step_rusage_fields,
+					 ", primary key (id, stepid))")
+		   == SLURM_ERROR)
+			return SLURM_ERROR;
+	} else {
+		if(pgsql_db_make_table_current(acct_pgsql_db,  
+					       rusage_table,
+					       step_rusage_fields))
 			return SLURM_ERROR;
 	}
 
-	if(!assoc_hour_found) {
+	if(!step_found) {
 		if(pgsql_db_create_table(acct_pgsql_db, 
-					 assoc_hour_table,
-					 assoc_usage_table_fields,
-					 ", primary key (assoc_id))")
+					 step_table, step_table_fields,
+					 ", primary key (id, stepid))")
 		   == SLURM_ERROR)
 			return SLURM_ERROR;
+
 	} else {
 		if(pgsql_db_make_table_current(acct_pgsql_db,  
-					       assoc_hour_table,
-					       assoc_usage_table_fields))
+					       step_table,
+					       step_table_fields))
 			return SLURM_ERROR;
 	}
 
-	if(!assoc_day_found) {
+	if(!txn_found) {
 		if(pgsql_db_create_table(acct_pgsql_db, 
-					 assoc_day_table,
-					 assoc_usage_table_fields,
-					 ", primary key (assoc_id))")
+					 txn_table, txn_table_fields,
+					 ", primary key (id))")
 		   == SLURM_ERROR)
 			return SLURM_ERROR;
 	} else {
 		if(pgsql_db_make_table_current(acct_pgsql_db,  
-					       assoc_day_table,
-					       assoc_usage_table_fields))
+					       txn_table,
+					       txn_table_fields))
 			return SLURM_ERROR;
 	}
-	if(!assoc_month_found) {
+
+	if(!user_found) {
 		if(pgsql_db_create_table(acct_pgsql_db, 
-					 assoc_month_table,
-					 assoc_usage_table_fields,
-					 ", primary key (assoc_id))")
+					 user_table, user_table_fields,
+					 ", primary key (name))")
 		   == SLURM_ERROR)
 			return SLURM_ERROR;
 	} else {
 		if(pgsql_db_make_table_current(acct_pgsql_db,  
-					       assoc_month_table,
-					       assoc_usage_table_fields))
+					       user_table,
+					       user_table_fields))
 			return SLURM_ERROR;
 	}
 

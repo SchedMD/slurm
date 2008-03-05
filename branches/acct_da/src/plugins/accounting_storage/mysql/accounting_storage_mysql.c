@@ -79,21 +79,22 @@ const uint32_t plugin_version = 100;
 
 MYSQL *acct_mysql_db = NULL;
 
+char *acct_coord_table = "acct_coord_table";
+char *acct_table = "acct_table";
+char *assoc_day_table = "assoc_day_usage_table";
+char *assoc_hour_table = "assoc_hour_usage_table";
+char *assoc_month_table = "assoc_month_usage_table";
+char *assoc_table = "assoc_table";
+char *cluster_day_table = "cluster_day_usage_table";
+char *cluster_hour_table = "cluster_hour_usage_table";
+char *cluster_month_table = "cluster_month_usage_table";
+char *cluster_table = "cluster_table";
 char *job_index = "job_index_table";
 char *job_table = "job_table";
-char *step_table = "step_table";
 char *rusage_table = "rusage_table";
+char *step_table = "step_table";
+char *txn_table = "txn_table";
 char *user_table = "user_table";
-char *acct_table = "acct_table";
-char *acct_coord_table = "acct_coord_table";
-char *cluster_table = "cluster_table";
-char *cluster_hour_table = "cluster_hour_usage_table";
-char *cluster_day_table = "cluster_day_usage_table";
-char *cluster_month_table = "cluster_month_usage_table";
-char *assoc_table = "assoc_table";
-char *assoc_hour_table = "assoc_hour_usage_table";
-char *assoc_day_table = "assoc_day_usage_table";
-char *assoc_month_table = "assoc_month_usage_table";
 
 static mysql_db_info_t *_mysql_acct_create_db_info()
 {
@@ -109,14 +110,10 @@ static mysql_db_info_t *_mysql_acct_create_db_info()
 
 static int _mysql_acct_check_tables()
 {
-	storage_field_t user_table_fields[] = {
-		{ "creation_time", "int unsigned not null" },
-		{ "mod_time", "int unsigned default unix_timestamp()" },
-		{ "deleted", "bool default 0" },
+	storage_field_t acct_coord_table_fields[] = {
+		{ "deleted", "tinyint default 0" },
+		{ "acct", "tinytext not null" },
 		{ "name", "tinytext not null" },
-		{ "default_acct", "tinytext not null" },
-		{ "expedite", "smallint default 1 not null" },
-		{ "admin_level", "smallint default 1 not null" },
 		{ NULL, NULL}		
 	};
 
@@ -131,10 +128,35 @@ static int _mysql_acct_check_tables()
 		{ NULL, NULL}		
 	};
 
-	storage_field_t acct_coord_table_fields[] = {
+	storage_field_t assoc_table_fields[] = {
+		{ "creation_time", "int unsigned not null" },
+		{ "mod_time", "int unsigned default unix_timestamp()" },
 		{ "deleted", "tinyint default 0" },
+		{ "id", "int not null auto_increment" },
+		{ "userid", "mediumint unsigned" },
+		{ "user", "tinytext" },
 		{ "acct", "tinytext not null" },
-		{ "name", "tinytext not null" },
+		{ "cluster", "tinytext not null" },
+		{ "partition", "tinytext" },
+		{ "parent", "int not null" },
+		{ "lft", "int not null" },
+		{ "rgt", "int not null" },
+		{ "fairshare", "int default 1 not null" },
+		{ "max_jobs", "int default NULL" },
+		{ "max_nodes_per_job", "int default NULL" },
+		{ "max_wall_duration_per_job", "int default NULL" },
+		{ "max_cpu_seconds_per_job", "int default NULL" },
+		{ NULL, NULL}		
+	};
+
+	storage_field_t assoc_usage_table_fields[] = {
+		{ "creation_time", "int unsigned not null" },
+		{ "mod_time", "int unsigned default unix_timestamp()" },
+		{ "deleted", "tinyint default 0" },
+		{ "assoc_id", "tinytext not null" },
+		{ "period_start", "int unsigned not null" },
+		{ "cpu_count", "int unsigned default 0" },
+		{ "alloc_cpu_secs", "int unsigned default 0" },
 		{ NULL, NULL}		
 	};
 
@@ -162,38 +184,6 @@ static int _mysql_acct_check_tables()
 		{ NULL, NULL}		
 	};
 
-	storage_field_t assoc_table_fields[] = {
-		{ "creation_time", "int unsigned not null" },
-		{ "mod_time", "int unsigned default unix_timestamp()" },
-		{ "deleted", "tinyint default 0" },
-		{ "id", "int not null auto_increment" },
-		{ "userid", "mediumint unsigned not null" },
-		{ "user", "tinytext not null" },
-		{ "acct", "tinytext not null" },
-		{ "cluster", "tinytext not null" },
-		{ "partition", "tinytext not null" },
-		{ "parent", "int not null" },
-		{ "lft", "int not null" },
-		{ "rgt", "int not null" },
-		{ "fairshare", "int default 1 not null" },
-		{ "max_jobs", "int default NULL" },
-		{ "max_nodes_per_job", "int default NULL" },
-		{ "max_wall_duration_per_job", "int default NULL" },
-		{ "max_cpu_seconds_per_job", "int default NULL" },
-		{ NULL, NULL}		
-	};
-
-	storage_field_t assoc_usage_table_fields[] = {
-		{ "creation_time", "int unsigned not null" },
-		{ "mod_time", "int unsigned default unix_timestamp()" },
-		{ "deleted", "tinyint default 0" },
-		{ "assoc_id", "tinytext not null" },
-		{ "period_start", "int unsigned not null" },
-		{ "cpu_count", "int unsigned default 0" },
-		{ "alloc_cpu_secs", "int unsigned default 0" },
-		{ NULL, NULL}		
-	};
-
 	storage_field_t job_index_fields[] = {
 		{ "creation_time", "int unsigned not null" },
 		{ "mod_time", "int unsigned default unix_timestamp()" },
@@ -211,7 +201,6 @@ static int _mysql_acct_check_tables()
 	storage_field_t job_table_fields[] = {
 		{ "creation_time", "int unsigned not null" },
 		{ "mod_time", "int unsigned default unix_timestamp()" },
-		{ "mod_time", "int unsigned not null" },
 		{ "id", "int not null" },
 		{ "eligible", "int unsigned default 0 not null" },
 		{ "start", "int unsigned default 0 not null" },
@@ -225,6 +214,34 @@ static int _mysql_acct_check_tables()
 		{ "cpus", "mediumint unsigned not null" }, 
 		{ "nodelist", "text" },
 		{ "kill_requid", "smallint default -1 not null" },
+		{ NULL, NULL}
+	};
+
+	storage_field_t step_rusage_fields[] = {
+		{ "creation_time", "int unsigned not null" },
+		{ "mod_time", "int unsigned default unix_timestamp()" },
+		{ "id", "int not null" },
+		{ "stepid", "smallint not null" },
+		{ "cpu_sec", "int unsigned default 0 not null" },
+		{ "cpu_usec", "int unsigned default 0 not null" },
+		{ "user_sec", "int unsigned default 0 not null" },
+		{ "user_usec", "int unsigned default 0 not null" },
+		{ "sys_sec", "int unsigned default 0 not null" },
+		{ "sys_usec", "int unsigned default 0 not null" },
+		{ "max_rss", "int unsigned default 0 not null" },
+		{ "max_ixrss", "int unsigned default 0 not null" },
+		{ "max_idrss", "int unsigned default 0 not null" },
+		{ "max_isrss", "int unsigned default 0 not null" },
+		{ "max_minflt", "int unsigned default 0 not null" },
+		{ "max_majflt", "int unsigned default 0 not null" },
+		{ "max_nswap", "int unsigned default 0 not null" },
+		{ "inblock", "int unsigned default 0 not null" },
+		{ "outblock", "int unsigned default 0 not null" },
+		{ "msgsnd", "int unsigned default 0 not null" },
+		{ "msgrcv", "int unsigned default 0 not null" },
+		{ "nsignals", "int unsigned default 0 not null" },
+		{ "nvcsw", "int unsigned default 0 not null" },
+		{ "nivcsw", "int unsigned default 0 not null" },
 		{ NULL, NULL}
 	};
 
@@ -261,45 +278,76 @@ static int _mysql_acct_check_tables()
 		{ NULL, NULL}
 	};
 
-	storage_field_t step_rusage_fields[] = {
-		{ "creation_time", "int unsigned not null" },
-		{ "mod_time", "int unsigned default unix_timestamp()" },
-		{ "id", "int not null" },
-		{ "stepid", "smallint not null" },
-		{ "cpu_sec", "int unsigned default 0 not null" },
-		{ "cpu_usec", "int unsigned default 0 not null" },
-		{ "user_sec", "int unsigned default 0 not null" },
-		{ "user_usec", "int unsigned default 0 not null" },
-		{ "sys_sec", "int unsigned default 0 not null" },
-		{ "sys_usec", "int unsigned default 0 not null" },
-		{ "max_rss", "int unsigned default 0 not null" },
-		{ "max_ixrss", "int unsigned default 0 not null" },
-		{ "max_idrss", "int unsigned default 0 not null" },
-		{ "max_isrss", "int unsigned default 0 not null" },
-		{ "max_minflt", "int unsigned default 0 not null" },
-		{ "max_majflt", "int unsigned default 0 not null" },
-		{ "max_nswap", "int unsigned default 0 not null" },
-		{ "inblock", "int unsigned default 0 not null" },
-		{ "outblock", "int unsigned default 0 not null" },
-		{ "msgsnd", "int unsigned default 0 not null" },
-		{ "msgrcv", "int unsigned default 0 not null" },
-		{ "nsignals", "int unsigned default 0 not null" },
-		{ "nvcsw", "int unsigned default 0 not null" },
-		{ "nivcsw", "int unsigned default 0 not null" },
-		{ NULL, NULL}
+	storage_field_t txn_table_fields[] = {
+		{ "id", "int not null auto_increment" },
+		{ "timestamp", "int unsigned default unix_timestamp()" },
+		{ "action", "tinytext not null" },
+		{ "object", "tinytext not null" },
+		{ "name", "tinytext not null" },
+		{ "actor", "tinytext not null" },
+		{ "info", "text not null" },
+		{ NULL, NULL}		
 	};
 
-	if(mysql_db_create_table(acct_mysql_db, user_table, user_table_fields,
-				 ", primary key (name))") == SLURM_ERROR)
+	storage_field_t user_table_fields[] = {
+		{ "creation_time", "int unsigned not null" },
+		{ "mod_time", "int unsigned default unix_timestamp()" },
+		{ "deleted", "bool default 0" },
+		{ "name", "tinytext not null" },
+		{ "default_acct", "tinytext not null" },
+		{ "expedite", "smallint default 1 not null" },
+		{ "admin_level", "smallint default 1 not null" },
+		{ NULL, NULL}		
+	};
+
+	if(mysql_db_create_table(acct_mysql_db, acct_coord_table,
+				 acct_coord_table_fields,
+				 ", primary key (acct, name))") == SLURM_ERROR)
 		return SLURM_ERROR;
 
 	if(mysql_db_create_table(acct_mysql_db, acct_table, acct_table_fields,
 				 ", primary key (name))") == SLURM_ERROR)
 		return SLURM_ERROR;
 
-	if(mysql_db_create_table(acct_mysql_db, acct_coord_table,
-				 acct_coord_table_fields,
-				 ", primary key (acct))") == SLURM_ERROR)
+	if(mysql_db_create_table(acct_mysql_db, assoc_day_table,
+				 assoc_usage_table_fields,
+				 ", primary key (assoc_id, period_start))")
+	   == SLURM_ERROR)
+		return SLURM_ERROR;
+
+	if(mysql_db_create_table(acct_mysql_db, assoc_hour_table,
+				 assoc_usage_table_fields,
+				 ", primary key (assoc_id, period_start))")
+	   == SLURM_ERROR)
+		return SLURM_ERROR;
+
+	if(mysql_db_create_table(acct_mysql_db, assoc_month_table,
+				 assoc_usage_table_fields,
+				 ", primary key (assoc_id, period_start))") 
+	   == SLURM_ERROR)
+		return SLURM_ERROR;
+
+	if(mysql_db_create_table(acct_mysql_db, assoc_table, assoc_table_fields,
+				 ", primary key (user,acct,cluster,partition))")
+	   == SLURM_ERROR)
+		return SLURM_ERROR;
+
+	if(mysql_db_create_table(acct_mysql_db, cluster_day_table,
+				 cluster_usage_table_fields,
+				 ", primary key (cluster, period_start))")
+	   == SLURM_ERROR)
+		return SLURM_ERROR;
+
+	if(mysql_db_create_table(acct_mysql_db, cluster_hour_table,
+				 cluster_usage_table_fields,
+				 ", primary key (cluster, period_start))")
+	   == SLURM_ERROR)
+		return SLURM_ERROR;
+
+	if(mysql_db_create_table(acct_mysql_db, cluster_month_table,
+				 cluster_usage_table_fields,
+				 ", primary key (cluster, period_start))")
+	   == SLURM_ERROR)
 		return SLURM_ERROR;
 
 	if(mysql_db_create_table(acct_mysql_db, cluster_table,
@@ -307,54 +355,31 @@ static int _mysql_acct_check_tables()
 				 ", primary key (name))") == SLURM_ERROR)
 		return SLURM_ERROR;
 
-	if(mysql_db_create_table(acct_mysql_db, cluster_hour_table,
-				 cluster_usage_table_fields,
-				 ", primary key (cluster))") == SLURM_ERROR)
-		return SLURM_ERROR;
-
-	if(mysql_db_create_table(acct_mysql_db, cluster_day_table,
-				 cluster_usage_table_fields,
-				 ", primary key (cluster))") == SLURM_ERROR)
-		return SLURM_ERROR;
-
-	if(mysql_db_create_table(acct_mysql_db, cluster_month_table,
-				 cluster_usage_table_fields,
-				 ", primary key (cluster))") == SLURM_ERROR)
-		return SLURM_ERROR;
-
-	if(mysql_db_create_table(acct_mysql_db, assoc_table, assoc_table_fields,
-				 ", primary key (id))") == SLURM_ERROR)
-		return SLURM_ERROR;
-
-	if(mysql_db_create_table(acct_mysql_db, assoc_hour_table,
-				 assoc_usage_table_fields,
-				 ", primary key (assoc_id))") == SLURM_ERROR)
-		return SLURM_ERROR;
-
-	if(mysql_db_create_table(acct_mysql_db, assoc_day_table,
-				 assoc_usage_table_fields,
-				 ", primary key (assoc_id))") == SLURM_ERROR)
-		return SLURM_ERROR;
-
-	if(mysql_db_create_table(acct_mysql_db, assoc_month_table,
-				 assoc_usage_table_fields,
-				 ", primary key (assoc_id))") == SLURM_ERROR)
-		return SLURM_ERROR;
-
 	if(mysql_db_create_table(acct_mysql_db, job_index, job_index_fields,
-				 ", primary key (id))") == SLURM_ERROR)
+				 ", primary key (jobid, associd))")
+	   == SLURM_ERROR)
 		return SLURM_ERROR;
 	
 	if(mysql_db_create_table(acct_mysql_db, job_table, job_table_fields,
-				 ")") == SLURM_ERROR)
-		return SLURM_ERROR;
-
-	if(mysql_db_create_table(acct_mysql_db, step_table,
-				 step_table_fields, ")") == SLURM_ERROR)
+				 ", primary key (id))") == SLURM_ERROR)
 		return SLURM_ERROR;
 
 	if(mysql_db_create_table(acct_mysql_db, rusage_table,
-				 step_rusage_fields, ")") == SLURM_ERROR)
+				 step_rusage_fields,
+				 ", primary key (id, stepid))") == SLURM_ERROR)
+		return SLURM_ERROR;
+
+	if(mysql_db_create_table(acct_mysql_db, step_table,
+				 step_table_fields, 
+				 ", primary key (id, stepid))") == SLURM_ERROR)
+		return SLURM_ERROR;
+
+	if(mysql_db_create_table(acct_mysql_db, txn_table, txn_table_fields,
+				 ", primary key (id))") == SLURM_ERROR)
+		return SLURM_ERROR;
+
+	if(mysql_db_create_table(acct_mysql_db, user_table, user_table_fields,
+				 ", primary key (name))") == SLURM_ERROR)
 		return SLURM_ERROR;
 
 
