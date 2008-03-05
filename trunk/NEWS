@@ -1,6 +1,11 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins.
 
+* Changes in SLURM 1.3.0-pre11
+==============================
+ -- Restructure the sbcast RPC to take advantage of larger buffers available
+    in Slurm v1.3 RPCs.
+
 * Changes in SLURM 1.3.0-pre10
 ==============================
  -- Add support for node-specific "arch" (architecture) and "os" (operating 

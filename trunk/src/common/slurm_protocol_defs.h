@@ -636,7 +636,6 @@ typedef struct kvs_get_msg {
 	char * hostname;	/* hostname to be sent the kvs data */
 } kvs_get_msg_t;
 
-#define FILE_BLOCKS 8
 typedef struct file_bcast_msg {
 	char *fname;		/* name of the destination file */
 	uint16_t block_no;	/* block number of this data */
@@ -647,8 +646,8 @@ typedef struct file_bcast_msg {
 	uint32_t gid;		/* group for destination file */
 	time_t atime;		/* last access time for destination file */
 	time_t mtime;		/* last modification time for dest file */
-	uint32_t block_len[FILE_BLOCKS];/* length of this data block */
-	char *block[FILE_BLOCKS];	/* data for this block, 64k max */
+	uint32_t block_len;	/* length of this data block */
+	char *block;		/* data for this block */
 } file_bcast_msg_t; 
 
 typedef struct multi_core_data {

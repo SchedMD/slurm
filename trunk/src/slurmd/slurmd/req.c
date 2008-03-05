@@ -1683,7 +1683,7 @@ static int
 _rpc_file_bcast(slurm_msg_t *msg)
 {
 	file_bcast_msg_t *req = msg->data;
-	int i, fd, flags, offset, inx, rc;
+	int fd, flags, offset, inx, rc;
 	uid_t req_uid = g_slurm_auth_get_uid(msg->auth_cred, NULL);
 	uid_t req_gid = g_slurm_auth_get_gid(msg->auth_cred, NULL);
 	pid_t child;
@@ -1738,21 +1738,18 @@ _rpc_file_bcast(slurm_msg_t *msg)
 		exit(errno);
 	}
 
-	for (i=0; i<FILE_BLOCKS; i++) {
-		offset = 0;
-		while (req->block_len[i] - offset) {
-			inx = write(fd, &req->block[i][offset], 
-				(req->block_len[i] - offset));
-			if (inx == -1) {
-				if ((errno == EINTR) || (errno == EAGAIN))
-					continue;
-				error("sbcast: uid:%u can't write `%s`: %s",
-					req_uid, req->fname, strerror(errno));
-				close(fd);
-				exit(errno);
-			}
-			offset += inx;
+	offset = 0;
+	while (req->block_len - offset) {
+		inx = write(fd, &req->block[offset], (req->block_len - offset));
+		if (inx == -1) {
+			if ((errno == EINTR) || (errno == EAGAIN))
+				continue;
+			error("sbcast: uid:%u can't write `%s`: %s",
+				req_uid, req->fname, strerror(errno));
+			close(fd);
+			exit(errno);
 		}
+		offset += inx;
 	}
 	if (req->last_block && fchmod(fd, (req->modes & 0777))) {
 		error("sbcast: uid:%u can't chmod `%s`: %s",
