@@ -123,10 +123,10 @@ extern void send_rpc(file_bcast_msg_t *bcast_msg,
 {
 	/* Preserve some data structures across calls for better performance */
 	static int threads_used = 0;
+	static thd_t thread_info[MAX_THREADS];
 
 	int i, fanout, rc = SLURM_SUCCESS;
 	int retries = 0;
-	thd_t thread_info[MAX_THREADS];
 	pthread_attr_t attr;
 
 	if (threads_used == 0) {

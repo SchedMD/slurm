@@ -1046,7 +1046,7 @@ extern int kill_running_job_by_node_name(char *node_name, bool step_test)
 			   	      job_ptr->job_id);
 			if (job_ptr->node_cnt == 0) {
 				job_ptr->job_state &= (~JOB_COMPLETING);
-				delete_step_records(job_ptr, 1);
+				delete_step_records(job_ptr, 0);
 				slurm_sched_schedule();
 			}
 			if (node_ptr->comp_job_cnt)
