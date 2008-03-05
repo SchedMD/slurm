@@ -1,7 +1,8 @@
 /****************************************************************************\
  *  opts.c - sbcast command line option processing functions
  *****************************************************************************
- *  Copyright (C) 2006 The Regents of the University of California.
+ *  Copyright (C) 2006-2007 The Regents of the University of California.
+ *  Copyright (C) 2008 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
  *  UCRL-CODE-226842.
@@ -82,6 +83,7 @@ extern void parse_command_line(int argc, char *argv[])
 		{"force",     no_argument,       0, 'f'},
 		{"preserve",  no_argument,       0, 'p'},
 		{"size",      required_argument, 0, 's'},
+		{"timeout",   required_argument, 0, 't'},
 		{"verbose",   no_argument,       0, 'v'},
 		{"version",   no_argument,       0, 'V'},
 		{"help",      no_argument,       0, OPT_LONG_HELP},
@@ -99,7 +101,8 @@ extern void parse_command_line(int argc, char *argv[])
 		params.preserve = true;
 	if ( ( env_val = getenv("SBCAST_SIZE") ) )
 		params.block_size = _map_size(env_val);
-		
+	if ( ( env_val = getenv("SBCAST_TIMEOUT") ) )
+		params.timeout = (atoi(env_val) * 1000);
 
 	optind = 0;
 	while((opt_char = getopt_long(argc, argv, "CfF:ps:vV",
@@ -124,6 +127,9 @@ extern void parse_command_line(int argc, char *argv[])
 			break;
 		case (int) 's':
 			params.block_size = _map_size(optarg);
+			break;
+		case (int)'t':
+			params.timeout = (atoi(optarg) * 1000);
 			break;
 		case (int) 'v':
 			params.verbose++;
@@ -192,6 +198,7 @@ static void _print_options( void )
 	info("force      = %s", params.force ? "true" : "false");
 	info("fanout     = %d", params.fanout);
 	info("preserve   = %s", params.preserve ? "true" : "false");
+	info("timeout    = %d", params.timeout);
 	info("verbose    = %d", params.verbose);
 	info("source     = %s", params.src_fname);
 	info("dest       = %s", params.dst_fname);
@@ -218,6 +225,7 @@ Usage: sbcast [OPTIONS] SOURCE DEST\n\
   -F, --fanout=num    specify message fanout\n\
   -p, --preserve      preserve modes and times of source file\n\
   -s, --size=num      block size in bytes (rounded off)\n\
+  -t, --timeout=secs  specify message timeout (seconds)\n\
   -v, --verbose       provide detailed event logging\n\
   -V, --version       print version information and exit\n\
 \nHelp options:\n\
