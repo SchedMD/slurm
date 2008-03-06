@@ -163,7 +163,7 @@ static int controller_sigarray[] = {
 static void         _default_sigaction(int sig);
 inline static void  _free_server_thread(void);
 static int          _gold_cluster_ready();
-static int          _gold_mark_all_nodes_down(char *reason, time_t event_time);
+static int          _gold_mark_all_nodes_down(char *reason);
 static void         _init_config(void);
 static void         _init_pidfile(void);
 static void         _kill_old_slurmctld(void);
@@ -331,38 +331,14 @@ int main(int argc, char *argv[])
 					slurm_strerror(error_code));
 			}
 			
-			if (recover == 0)
-				_gold_mark_all_nodes_down("cold-start",
-							  time(NULL));
-			else if (!stat("/tmp/slurm_gold_first", &stat_buf)) {
-				/* this is here for when slurm is
-				 * started with gold for the first
-				 * time to log any downed nodes.
-				 */
-				struct node_record *node_ptr =
-					node_record_table_ptr;
-				int i=0;
-				time_t event_time = time(NULL);
-				debug("found /tmp/slurm_gold_first, "
-				      "setting nodes down");
-				for (i = 0;
-				     i < node_record_count;
-				     i++, node_ptr++) {
-					if (node_ptr->name == '\0'
-					    || !node_ptr->reason)
-						continue;
-					
-					if(clusteracct_storage_g_node_down(
-						   slurmctld_cluster_name,
-						   node_ptr,
-						   event_time,
-						   node_ptr->reason)
-					   == SLURM_ERROR) 
-						break;
-				}
-				 if(unlink("/tmp/slurm_gold_first") < 0)
-					 error("Error deleting "
-					       "/tmp/slurm_gold_first");
+			if ((recover == 0) || 
+			    (!stat("/tmp/slurm_gold_first", &stat_buf))) {
+				/* When first starting to write node state
+				 * information to Gold or SlurmDBD, create 
+				 * a file called "/tmp/slurm_gold_first" to 
+				 * capture node initialization information */
+				_gold_mark_all_nodes_down("cold-start");
+				 unlink("/tmp/slurm_gold_first");
 			}
 		} else {
 			error("this host (%s) not valid controller (%s or %s)",
@@ -864,12 +840,13 @@ static int _gold_cluster_ready()
 	return rc;
 }
 
-static int _gold_mark_all_nodes_down(char *reason, time_t event_time)
+static int _gold_mark_all_nodes_down(char *reason)
 {
 	char *state_file;
 	struct stat stat_buf;
 	struct node_record *node_ptr;
 	int i;
+	time_t event_time;
 	int rc = SLURM_ERROR;
 
 	state_file = xstrdup (slurmctld_conf.state_save_location);
@@ -877,8 +854,9 @@ static int _gold_mark_all_nodes_down(char *reason, time_t event_time)
 	if (stat(state_file, &stat_buf)) {
 		debug("_gold_mark_all_nodes_down: could not stat(%s) "
 		      "to record node down time", state_file);
-		xfree(state_file);
-		return rc;
+		event_time = time(NULL);
+	} else {
+		event_time = stat_buf.st_mtime;
 	}
 	xfree(state_file);
 
