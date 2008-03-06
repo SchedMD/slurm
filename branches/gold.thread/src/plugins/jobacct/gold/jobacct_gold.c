@@ -59,6 +59,8 @@ typedef struct {
 	char *gold_id;
 } gold_account_t;
 
+static int _add_edit_job(dbd_job_info_msg_t *job_ptr, gold_object_t action);
+
 /*
  * These variables are required by the generic plugin interface.  If they
  * are not found in the plugin, the plugin loader will ignore it.
@@ -134,7 +136,7 @@ static int _check_for_job(uint32_t jobid, time_t submit)
 	gold_request_add_condition(gold_request, "JobId", tmp_buff,
 				   GOLD_OPERATOR_NONE);
 
-	snprintf(tmp_buff, sizeof(tmp_buff), "%u", (int)submit);
+	snprintf(tmp_buff, sizeof(tmp_buff), "%u", (uint32_t)submit);
 	gold_request_add_condition(gold_request, "SubmitTime", tmp_buff,
 				   GOLD_OPERATOR_NONE);
 
@@ -388,16 +390,17 @@ int jobacct_p_job_start_slurmctld(struct job_record *job_ptr)
 	dbd_job_info_msg_t req;
 
 	req.account       = job_ptr->account;
-	req.begin_time    = job_ptr->begin_time;
+	req.begin_time    = job_ptr->details->begin_time;
 	req.end_time      = job_ptr->end_time;
 	req.exit_code     = job_ptr->exit_code;
+	req.job_id        = job_ptr->job_id;
 	req.job_state     = job_ptr->job_state;
 	req.name          = job_ptr->name;
 	req.nodes         = job_ptr->nodes;
 	req.partition     = job_ptr->partition;
 	req.start_time    = job_ptr->start_time;
 	req.submit_time   = job_ptr->details->submit_time;
-	req.total_procs   = job_ptr->total_procs;
+	req.total_procs   = job_ptr->details->total_procs;
 	req.user_id       = job_ptr->user_id;
 	msg.msg_type      = DBD_JOB_START;
 	msg.data          = &req;
@@ -414,16 +417,17 @@ int jobacct_p_job_complete_slurmctld(struct job_record *job_ptr)
 	dbd_job_info_msg_t req;
 
 	req.account       = job_ptr->account;
-	req.begin_time    = job_ptr->begin_time;
+	req.begin_time    = job_ptr->details->begin_time;
 	req.end_time      = job_ptr->end_time;
 	req.exit_code     = job_ptr->exit_code;
+	req.job_id        = job_ptr->job_id;
 	req.job_state     = job_ptr->job_state;
 	req.name          = job_ptr->name;
 	req.nodes         = job_ptr->nodes;
 	req.partition     = job_ptr->partition;
 	req.start_time    = job_ptr->start_time;
 	req.submit_time   = job_ptr->details->submit_time;
-	req.total_procs   = job_ptr->total_procs;
+	req.total_procs   = job_ptr->details->total_procs;
 	req.user_id       = job_ptr->user_id;
 	msg.msg_type      = DBD_JOB_COMPLETE;
 	msg.data          = &req;
@@ -441,16 +445,17 @@ int jobacct_p_step_start_slurmctld(struct step_record *step)
 	struct job_record *job_ptr = step->job_ptr;
 
 	req.account       = job_ptr->account;
-	req.begin_time    = job_ptr->begin_time;
+	req.begin_time    = job_ptr->details->begin_time;
 	req.end_time      = job_ptr->end_time;
 	req.exit_code     = job_ptr->exit_code;
+	req.job_id        = job_ptr->job_id;
 	req.job_state     = job_ptr->job_state;
 	req.name          = job_ptr->name;
 	req.nodes         = job_ptr->nodes;
 	req.partition     = job_ptr->partition;
 	req.start_time    = job_ptr->start_time;
 	req.submit_time   = job_ptr->details->submit_time;
-	req.total_procs   = job_ptr->total_procs;
+	req.total_procs   = job_ptr->details->total_procs;
 	req.user_id       = job_ptr->user_id;
 	msg.msg_type      = DBD_STEP_START;
 	msg.data          = &req;
@@ -578,7 +583,7 @@ extern int jobacct_p_cluster_procs(uint32_t procs, time_t event_time)
 {
 	static uint32_t last_procs = 0;
 	slurmdbd_msg_t msg;
-	dbd_node_state_msg_t req;
+	dbd_cluster_procs_msg_t req;
 
 #if _DEBUG
 {
@@ -612,6 +617,7 @@ extern int dbd_job_start(Buf buffer)
 {
 	int rc;
 	dbd_job_info_msg_t *job_info_msg;
+	gold_object_t action;
 
 	if (slurm_dbd_unpack_job_info_msg(&job_info_msg, buffer) !=
 	    SLURM_SUCCESS) {
@@ -638,6 +644,7 @@ extern int dbd_job_complete(Buf buffer)
 {
 	int rc;
 	dbd_job_info_msg_t *job_info_msg;
+	gold_object_t action;
 
 	if (slurm_dbd_unpack_job_info_msg(&job_info_msg, buffer) !=
 	    SLURM_SUCCESS) {
@@ -664,6 +671,7 @@ extern int dbd_step_start(Buf buffer)
 {
 	int rc;
 	dbd_job_info_msg_t *job_info_msg;
+	gold_object_t action;
 
 	if (slurm_dbd_unpack_job_info_msg(&job_info_msg, buffer) !=
 	    SLURM_SUCCESS) {
@@ -708,7 +716,7 @@ static int _add_edit_job(dbd_job_info_msg_t *job_ptr, gold_object_t action)
 		gold_request_add_assignment(gold_request, "JobId", tmp_buff);
 		
 		snprintf(tmp_buff, sizeof(tmp_buff), "%u",
-			 job_ptr->submit_time);
+			 (uint32_t)job_ptr->submit_time);
 		gold_request_add_assignment(gold_request, "SubmitTime",
 					    tmp_buff);
 		
@@ -725,7 +733,7 @@ static int _add_edit_job(dbd_job_info_msg_t *job_ptr, gold_object_t action)
 					   GOLD_OPERATOR_NONE);
 		
 		snprintf(tmp_buff, sizeof(tmp_buff), "%u",
-			 (int)job_ptr->details->submit_time);
+			 (uint32_t)job_ptr->submit_time);
 		gold_request_add_condition(gold_request, "SubmitTime",
 					   tmp_buff,
 					   GOLD_OPERATOR_NONE);
@@ -766,7 +774,8 @@ static int _add_edit_job(dbd_job_info_msg_t *job_ptr, gold_object_t action)
 
 	
 	if (job_ptr->job_state != JOB_RUNNING) {
-		snprintf(tmp_buff, sizeof(tmp_buff), "%u", job_ptr->end_time);
+		snprintf(tmp_buff, sizeof(tmp_buff), "%u", 
+			 (uint32_t)job_ptr->end_time);
 		gold_request_add_assignment(gold_request, "EndTime", tmp_buff);
 		
 		snprintf(tmp_buff, sizeof(tmp_buff), "%u", job_ptr->exit_code);
@@ -774,10 +783,12 @@ static int _add_edit_job(dbd_job_info_msg_t *job_ptr, gold_object_t action)
 	}
 
 
-	snprintf(tmp_buff, sizeof(tmp_buff), "%u", job_ptr->begin_time);
+	snprintf(tmp_buff, sizeof(tmp_buff), "%u", 
+		 (uint32_t)job_ptr->begin_time);
 	gold_request_add_assignment(gold_request, "EligibleTime", tmp_buff);
 
-	snprintf(tmp_buff, sizeof(tmp_buff), "%u", job_ptr->start_time);
+	snprintf(tmp_buff, sizeof(tmp_buff), "%u", 
+		 (uint32_t)job_ptr->start_time);
 	gold_request_add_assignment(gold_request, "StartTime", tmp_buff);
 		
 	snprintf(tmp_buff, sizeof(tmp_buff), "%u",
@@ -813,7 +824,7 @@ extern int dbd_node_up(Buf buffer)
 	dbd_node_up_msg_t *node_up_msg;
 	time_t event_time;
 
-	if (slurm_dbd_unpack_node_up_msg(&node_up_msg, in_buffer) !=
+	if (slurm_dbd_unpack_node_up_msg(&node_up_msg, buffer) !=
 	    SLURM_SUCCESS) {
 		error("Failed to unpack DBD_NODE_UP message");
 		/* There is no sense in retrying this bad RPC */
@@ -826,8 +837,7 @@ extern int dbd_node_up(Buf buffer)
 		goto fini;
 	
 	gold_request_add_condition(gold_request, "Machine", 
-				   node_up_msg->cluster_name,
-				   GOLD_OPERATOR_NONE);
+				   cluster_name, GOLD_OPERATOR_NONE);
 	gold_request_add_condition(gold_request, "EndTime", "0",
 				   GOLD_OPERATOR_NONE);
 	gold_request_add_condition(gold_request, "Name", 
@@ -836,7 +846,7 @@ extern int dbd_node_up(Buf buffer)
 	event_time = node_up_msg->event_time;
 	if (event_time)
 		event_time--;
-	snprintf(tmp_buff, sizeof(tmp_buff), "%u", event_time);
+	snprintf(tmp_buff, sizeof(tmp_buff), "%u", (uint32_t)event_time);
 	gold_request_add_assignment(gold_request, "EndTime", tmp_buff);		
 			
 	gold_response = get_gold_response(gold_request);	
@@ -857,7 +867,7 @@ extern int dbd_node_up(Buf buffer)
 	destroy_gold_response(gold_response);
 	rc = SLURM_SUCCESS;
 
- fini:	slurm_dbd_free_node_up_msg(node_state_msg);
+ fini:	slurm_dbd_free_node_up_msg(node_up_msg);
 	return rc;
 }
 
@@ -870,7 +880,7 @@ extern int dbd_node_down(Buf buffer)
 	dbd_node_down_msg_t *node_down_msg;
 	time_t event_time;
 
-	if (slurm_dbd_unpack_node_down_msg(&node_down_msg, in_buffer) !=
+	if (slurm_dbd_unpack_node_down_msg(&node_down_msg, buffer) !=
 	    SLURM_SUCCESS) {
 		error("Failed to unpack DBD_NODE_DOWN message");
 		/* There is no sense in retrying this bad RPC */
@@ -886,8 +896,8 @@ extern int dbd_node_down(Buf buffer)
 	if (!gold_request) 
 		goto fini;
 	
-	gold_request_add_condition(gold_request, "Machine", cluster_name,
-				   GOLD_OPERATOR_NONE);
+	gold_request_add_condition(gold_request, "Machine", 
+				   cluster_name, GOLD_OPERATOR_NONE);
 	gold_request_add_condition(gold_request, "EndTime", "0",
 				   GOLD_OPERATOR_NONE);
 	gold_request_add_condition(gold_request, "Name", 
@@ -896,7 +906,7 @@ extern int dbd_node_down(Buf buffer)
 	event_time = node_down_msg->event_time;
 	if (event_time)
 		event_time--;
-	snprintf(tmp_buff, sizeof(tmp_buff), "%u", event_time);
+	snprintf(tmp_buff, sizeof(tmp_buff), "%u", (uint32_t)event_time);
 	gold_request_add_assignment(gold_request, "EndTime", tmp_buff);		
 			
 	gold_response = get_gold_response(gold_request);	
@@ -923,7 +933,8 @@ extern int dbd_node_down(Buf buffer)
 		goto fini;
 	
 	gold_request_add_assignment(gold_request, "Machine", cluster_name);
-	snprintf(tmp_buff, sizeof(tmp_buff), "%u", node_down_msg->event_time);
+	snprintf(tmp_buff, sizeof(tmp_buff), "%u", 
+		 (uint32_t)node_down_msg->event_time);
 	gold_request_add_assignment(gold_request, "StartTime", tmp_buff);
 	gold_request_add_assignment(gold_request, "Name", 
 				    node_down_msg->hostlist);
@@ -948,7 +959,7 @@ extern int dbd_node_down(Buf buffer)
 	}
 	destroy_gold_response(gold_response);
 
- fini:	slurm_dbd_free_node_down_msg(node_state_msg);
+ fini:	slurm_dbd_free_node_down_msg(node_down_msg);
 	return rc;
 }
 
@@ -975,8 +986,7 @@ extern int dbd_cluster_procs(Buf buffer)
 	if (!gold_request) 
 		goto fini;
 	gold_request_add_condition(gold_request, "Machine", 
-				   cluster_procs_msg->cluster_name,
-				   GOLD_OPERATOR_NONE);
+				   cluster_name, GOLD_OPERATOR_NONE);
 	gold_request_add_condition(gold_request, "EndTime", "0",
 				   GOLD_OPERATOR_NONE);
 	gold_request_add_condition(gold_request, "Name", "NULL",
@@ -997,7 +1007,7 @@ extern int dbd_cluster_procs(Buf buffer)
 			list_pop(gold_response->entries);
 		gold_name_value_t *name_val = list_pop(resp_entry->name_val);
 
-		if (procs == atoi(name_val->value)) {
+		if (cluster_procs_msg->proc_count == atoi(name_val->value)) {
 			debug("System hasn't changed since last entry");
 			destroy_gold_name_value(name_val);
 			destroy_gold_response_entry(resp_entry);
@@ -1005,8 +1015,8 @@ extern int dbd_cluster_procs(Buf buffer)
 			rc = SLURM_SUCCESS;
 			goto fini;
 		} else {
-			debug("System has changed from %s cpus to %d",
-			      name_val->value, procs);   
+			debug("System has changed from %s cpus to %u",
+			      name_val->value, cluster_procs_msg->proc_count);
 		}
 
 		destroy_gold_name_value(name_val);
@@ -1026,8 +1036,7 @@ extern int dbd_cluster_procs(Buf buffer)
 			goto fini;
 		
 		gold_request_add_condition(gold_request, "Machine",
-					   cluster_procs_msg->cluster_name,
-					   GOLD_OPERATOR_NONE);
+					   cluster_name, GOLD_OPERATOR_NONE);
 		gold_request_add_condition(gold_request, "EndTime", "0",
 					   GOLD_OPERATOR_NONE);
 		gold_request_add_condition(gold_request, "Name", "NULL",
@@ -1036,7 +1045,7 @@ extern int dbd_cluster_procs(Buf buffer)
 		event_time = cluster_procs_msg->event_time;
 		if (event_time)
 			event_time--;
-		snprintf(tmp_buff, sizeof(tmp_buff), "%u", event_time);
+		snprintf(tmp_buff, sizeof(tmp_buff), "%u", (uint32_t)event_time);
 		gold_request_add_assignment(gold_request, "EndTime", tmp_buff);
 		
 		gold_response = get_gold_response(gold_request);	
@@ -1063,10 +1072,9 @@ extern int dbd_cluster_procs(Buf buffer)
 	if (!gold_request) 
 		goto fini;
 	
-	gold_request_add_assignment(gold_request, "Machine", 
-				    cluster_procs_msg->cluster_name);
+	gold_request_add_assignment(gold_request, "Machine", cluster_name);
 	snprintf(tmp_buff, sizeof(tmp_buff), "%u", 
-		 cluster_procs_msg->event_time);
+		 (uint32_t)cluster_procs_msg->event_time);
 	gold_request_add_assignment(gold_request, "StartTime", tmp_buff);
 	snprintf(tmp_buff, sizeof(tmp_buff), "%u", 
 		 cluster_procs_msg->proc_count);
