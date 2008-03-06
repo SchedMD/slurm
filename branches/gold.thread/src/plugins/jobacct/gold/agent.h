@@ -127,6 +127,16 @@ extern int gold_agent_fini(void);
 extern int gold_agent_xmit(gold_agent_msg_t *req);
 
 /*****************************************************************************\
+ * Functions for processing the Gold requests, located in jobacct_gold.c
+\*****************************************************************************/
+extern int agent_cluster_procs(Buf buffer);
+extern int agent_job_start(Buf buffer);
+extern int agent_job_complete(Buf buffer);
+extern int agent_step_start(Buf buffer);
+extern int agent_node_down(Buf buffer);
+extern int agent_node_up(Buf buffer);
+
+/*****************************************************************************\
  * Free various Gold message structures
 \*****************************************************************************/
 void inline gold_agent_free_cluster_procs_msg(gold_cluster_procs_msg_t *msg);

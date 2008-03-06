@@ -16,6 +16,8 @@ documents those changes that are of interest to users and admins.
  -- Fix bug in sbcast that can cause communication problems for large files.
  -- Add sbcast option -t/--timeout and SBCAST_TIMEOUT environment variable 
     to control message timeout.
+ -- Add threaded agent to manage a queue of Gold update requests for 
+    performance reasons.
 
 * Changes in SLURM 1.2.24
 =========================

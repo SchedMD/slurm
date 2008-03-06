@@ -85,6 +85,7 @@ static void   _agent_queue_del(void *x);
 static void   _create_agent(void);
 static Buf    _load_gold_rec(int fd);
 static void   _load_gold_state(void);
+static int    _process_msg(Buf buffer);
 static int    _save_gold_rec(int fd, Buf buffer);
 static void   _save_gold_state(void);
 static void   _sig_handler(int signal);
@@ -275,8 +276,7 @@ static void *_agent(void *x)
 		/* NOTE: agent_lock is clear here, so we can add more
 		 * requests to the queue while waiting for this RPC to 
 		 * complete. */
-/* FIXME */
-		rc = _send_msg(buffer);
+		rc = _process_msg(buffer);
 		if (rc != SLURM_SUCCESS) {
 			if (agent_shutdown)
 				break;
@@ -302,6 +302,43 @@ static void *_agent(void *x)
 	}
 	slurm_mutex_unlock(&agent_lock);
 	return NULL;
+}
+
+static int _process_msg(Buf buffer)
+{
+	int rc;
+	uint16_t msg_type;
+
+	safe_unpack16(&msg_type, buffer);
+	switch (msg_type) {
+		case GOLD_MSG_CLUSTER_PROCS:
+			rc = agent_cluster_procs(buffer);
+			break;
+		case GOLD_MSG_JOB_COMPLETE:
+			rc = agent_job_complete(buffer);
+			break;
+		case GOLD_MSG_JOB_START:
+			rc = agent_job_start(buffer);
+			break;
+		case GOLD_MSG_NODE_DOWN:
+			rc = agent_node_down(buffer);
+			break;
+		case GOLD_MSG_NODE_UP:
+			rc = agent_node_up(buffer);
+			break;
+		case GOLD_MSG_STEP_START:
+			rc = agent_step_start(buffer);
+			break;
+		default:
+			error("gold: Invalid send message type %u", msg_type);
+			return SLURM_ERROR;
+	}
+	return rc;
+
+unpack_error:
+	/* If the message format is bad return SLURM_SUCCESS to get
+	 * it off of the queue since we can't work with it anyway */
+	return SLURM_SUCCESS;
 }
 
 static void _save_gold_state(void)

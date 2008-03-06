@@ -613,7 +613,7 @@ extern int jobacct_p_cluster_procs(uint32_t procs, time_t event_time)
 /*
  * Functions that process queued Gold requests
  */
-extern int dbd_job_start(Buf buffer)
+extern int agent_job_start(Buf buffer)
 {
 	int rc;
 	gold_job_info_msg_t *job_info_msg;
@@ -640,7 +640,7 @@ extern int dbd_job_start(Buf buffer)
 	return rc;
 }
 
-extern int dbd_job_complete(Buf buffer)
+extern int agent_job_complete(Buf buffer)
 {
 	int rc;
 	gold_job_info_msg_t *job_info_msg;
@@ -667,7 +667,7 @@ extern int dbd_job_complete(Buf buffer)
 	return rc;
 }
 
-extern int dbd_step_start(Buf buffer)
+extern int agent_step_start(Buf buffer)
 {
 	int rc;
 	gold_job_info_msg_t *job_info_msg;
@@ -819,7 +819,7 @@ static int _add_edit_job(gold_job_info_msg_t *job_ptr, gold_object_t action)
 	return rc;
 }
 
-extern int dbd_node_up(Buf buffer)
+extern int agent_node_up(Buf buffer)
 {
 	int rc = SLURM_ERROR;
 	gold_request_t *gold_request = NULL;
@@ -858,7 +858,7 @@ extern int dbd_node_up(Buf buffer)
 	destroy_gold_request(gold_request);
 
 	if (!gold_response) {
-		error("jobacct_p_node_up: no response received");
+		error("agent_node_up: no response received");
 		goto fini;
 	}
 
@@ -876,7 +876,7 @@ extern int dbd_node_up(Buf buffer)
 	return rc;
 }
 
-extern int dbd_node_down(Buf buffer)
+extern int agent_node_down(Buf buffer)
 {
 	int rc = SLURM_ERROR;
 	gold_request_t *gold_request = NULL;
@@ -970,7 +970,7 @@ extern int dbd_node_down(Buf buffer)
 	return rc;
 }
 
-extern int dbd_cluster_procs(Buf buffer)
+extern int agent_cluster_procs(Buf buffer)
 {
 	gold_cluster_procs_msg_t *cluster_procs_msg;
 	gold_request_t *gold_request = NULL;
