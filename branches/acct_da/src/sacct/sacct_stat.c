@@ -64,7 +64,7 @@ int _sacct_query(slurm_step_layout_t *step_layout, uint32_t job_id,
 	ret_data_info_t *ret_data_info = NULL;
 	int rc = SLURM_SUCCESS;
 	int ntasks = 0;
-
+	int tot_tasks = 0;
 	debug("getting the stat of job %d on %d nodes", 
 	      job_id, step_layout->node_cnt);
 
@@ -73,16 +73,10 @@ int _sacct_query(slurm_step_layout_t *step_layout, uint32_t job_id,
 	memset(&step.sacct, 0, sizeof(sacct_t));
 	step.sacct.min_cpu = (float)NO_VAL;
 
-	step.header.jobnum = job_id;
-	step.header.partition = NULL;
-#ifdef HAVE_BG
-	step.header.blockid = NULL;
-#endif
-	step.stepnum = step_id;
+	step.stepid = step_id;
 	step.nodes = step_layout->node_list;
 	step.stepname = NULL;
-	step.status = JOB_RUNNING;
-	step.ntasks = 0;
+	step.state = JOB_RUNNING;
 	slurm_msg_t_init(&msg);
 	/* Common message contents */
 	r.job_id      = job_id;
@@ -131,21 +125,21 @@ int _sacct_query(slurm_step_layout_t *step_layout, uint32_t job_id,
 	list_iterator_destroy(itr);
 	list_destroy(ret_list);
 
-	step.ntasks += ntasks;		
+	tot_tasks += ntasks;		
 cleanup:
 	
-	if(step.ntasks) {
+	if(tot_tasks) {
 		step.sacct.ave_rss *= 1024;
 		step.sacct.max_rss *= 1024;
 		step.sacct.ave_vsize *= 1024;
 		step.sacct.max_vsize *= 1024;
 
-		step.sacct.ave_cpu /= step.ntasks;
+		step.sacct.ave_cpu /= tot_tasks;
 		step.sacct.ave_cpu /= 100;
 		step.sacct.min_cpu /= 100;
-		step.sacct.ave_rss /= step.ntasks;
-		step.sacct.ave_vsize /= step.ntasks;
-		step.sacct.ave_pages /= step.ntasks;
+		step.sacct.ave_rss /= tot_tasks;
+		step.sacct.ave_vsize /= tot_tasks;
+		step.sacct.ave_pages /= tot_tasks;
 	}
 	jobacct_gather_g_destroy(r.jobacct);	
 	return SLURM_SUCCESS;

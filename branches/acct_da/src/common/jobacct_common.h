@@ -150,6 +150,7 @@ typedef struct {
 	uint32_t elapsed;
 	time_t end;
 	int32_t exitcode;
+	uint32_t jobid;
 	uint32_t ncpus;
 	char *nodes;
 	uint32_t requid;

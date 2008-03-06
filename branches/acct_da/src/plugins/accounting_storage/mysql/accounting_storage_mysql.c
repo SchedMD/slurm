@@ -953,7 +953,7 @@ extern int jobacct_storage_p_step_complete(struct step_record *step_ptr)
 extern int jobacct_storage_p_suspend(struct job_record *job_ptr)
 {
 #ifdef HAVE_MYSQL
-		char query[1024];
+	char query[1024];
 	int rc = SLURM_SUCCESS;
 	
 	if(!acct_mysql_db || mysql_ping(acct_mysql_db) != 0) {

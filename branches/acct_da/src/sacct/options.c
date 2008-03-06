@@ -43,13 +43,12 @@
 
 void _destroy_parts(void *object);
 void _destroy_steps(void *object);
-void _dump_header(jobacct_header_t header);
 void _help_fields_msg(void);
 void _help_msg(void);
 void _usage(void);
 void _init_params();
 
-int selected_status[STATUS_COUNT];
+int selected_state[STATE_COUNT];
 List selected_parts = NULL;
 List selected_steps = NULL;
 
@@ -77,35 +76,6 @@ void _show_rec(char *f[])
 		fprintf(stderr, " %s", f[i]);
 	fprintf(stderr, "\n");
 	return;
-}
-
-/* _dump_header() -- dump the common fields of a record
- *
- * In:	Index into the jobs table
- * Out: Nothing.
- */
-void _dump_header(jobacct_header_t header)
-{
-	struct tm ts;
-	gmtime_r(&header.timestamp, &ts);
-	printf("%u %s %04d%02d%02d%02d%02d%02d %d"
-#ifdef HAVE_BG
-	       " %s"
-#endif
-	       " %s ",
-	       header.jobnum,
-	       header.partition,
-	       1900+(ts.tm_year),
-	          1+(ts.tm_mon),
-		  ts.tm_mday,
-	          ts.tm_hour,
-		  ts.tm_min,
-		  ts.tm_sec,
-	       (int)header.job_submit,
-#ifdef HAVE_BG
-	       header.blockid,	/* block id */
-#endif
-	       "-");	/* reserved 1 */
 }
 
 void _help_fields_msg(void)
@@ -149,7 +119,7 @@ void _help_msg(void)
 	       "    data for the current user is displayed for users other than\n"
 	       "    root.\n"
 	       "-b, --brief\n"
-	       "    Equivalent to \"--fields=jobstep,status,error\". This option\n"
+	       "    Equivalent to \"--fields=jobstep,state,error\". This option\n"
 	       "    has no effect if --dump is specified.\n"
 	       "-c, --completion\n"
 	       "    Use job completion instead of accounting data.\n"
@@ -160,7 +130,7 @@ void _help_msg(void)
 	       "    isn't reset at the same time (with -e, for example), some\n"
 	       "    job numbers will probably appear more than once in the\n"
 	       "    accounting log file to refer to different jobs; such jobs\n"
-	       "    can be distinguished by the \"job_submit\" time stamp in the\n"
+	       "    can be distinguished by the \"submit\" time stamp in the\n"
 	       "    data records.\n"
 	       "      When data for specific jobs are requested with\n"
 	       "    the --jobs option, we assume that the user\n"
@@ -185,14 +155,14 @@ void _help_msg(void)
 	       "-F <field-list>, --fields=<field-list>\n"
 	       "    Display the specified data (use \"--help-fields\" for a\n"
 	       "    list of available fields). If no field option is specified,\n"
-	       "    we use \"--fields=jobstep,jobname,partition,ncpus,status,error\".\n"
+	       "    we use \"--fields=jobstep,jobname,partition,alloc_cpus,state,error\".\n"
 	       "-f<file>, --file=<file>\n"
 	       "    Read data from the specified file, rather than SLURM's current\n"
 	       "    accounting log file.\n"
 	       "-l, --long\n"
 	       "    Equivalent to specifying\n"
 	       "    \"--fields=jobstep,usercpu,systemcpu,minflt,majflt,nprocs,\n"
-	       "    ncpus,elapsed,status,exitcode\"\n"
+	       "    alloc_cpus,elapsed,state,exitcode\"\n"
 	       "-O, --formatted_dump\n"
 	       "    Dump accounting records in an easy-to-read format, primarily\n"
 	       "    for debugging.\n"
@@ -219,10 +189,10 @@ void _help_msg(void)
 	       "    Used in conjunction with --expire to remove invalid data\n"
 	       "    from the job accounting log.\n"
 	       "-s <state-list>, --state=<state-list>\n"
-	       "    Select jobs based on their current status: running (r),\n"
+	       "    Select jobs based on their current state: running (r),\n"
 	       "    completed (cd), failed (f), timeout (to), and node_fail (nf).\n"
 	       "-S, --stat\n"
-	       "    Get real time status of a jobstep supplied by the -j\n"
+	       "    Get real time state of a jobstep supplied by the -j\n"
 	       "    option\n" 
 	       "-t, --total\n"
 	       "    Only show cumulative statistics for each job, not the\n"
@@ -270,23 +240,23 @@ void _init_params()
 	params.opt_state_list = NULL;	/* --states */
 }
 
-int decode_status_char(char *status)
+int decode_state_char(char *state)
 {
-	if (!strcasecmp(status, "p"))
+	if (!strcasecmp(state, "p"))
 		return JOB_PENDING; 	/* we should never see this */
-	else if (!strcasecmp(status, "r"))
+	else if (!strcasecmp(state, "r"))
 		return JOB_RUNNING;
-	else if (!strcasecmp(status, "su"))
+	else if (!strcasecmp(state, "su"))
 		return JOB_SUSPENDED;
-	else if (!strcasecmp(status, "cd"))
+	else if (!strcasecmp(state, "cd"))
 		return JOB_COMPLETE;
-	else if (!strcasecmp(status, "ca"))
+	else if (!strcasecmp(state, "ca"))
 		return JOB_CANCELLED;
-	else if (!strcasecmp(status, "f"))
+	else if (!strcasecmp(state, "f"))
 		return JOB_FAILED;
-	else if (!strcasecmp(status, "to"))
+	else if (!strcasecmp(state, "to"))
 		return JOB_TIMEOUT;
-	else if (!strcasecmp(status, "nf"))
+	else if (!strcasecmp(state, "nf"))
 		return JOB_NODE_FAIL;
 	else
 		return -1; // unknown
@@ -321,48 +291,20 @@ int get_data(void)
 		itr_step = list_iterator_create(job->steps);
 		while((step = list_next(itr_step)) != NULL) {
 			/* now aggregate the aggregatable */
-			job->ncpus = MAX(job->ncpus, step->ncpus);
-			if (step->status == JOB_RUNNING &&
-			    job->job_terminated_seen) {
-				step->status = JOB_FAILED;
-				step->exitcode=1;
-			}
+			job->alloc_cpus = MAX(job->alloc_cpus, step->ncpus);
 
-			if(step->status < JOB_COMPLETE)
+			if(step->state < JOB_COMPLETE)
 				continue;
 			job->tot_cpu_sec += step->tot_cpu_sec;
 			job->tot_cpu_usec += step->tot_cpu_usec;
-			job->rusage.ru_utime.tv_sec +=
-				step->rusage.ru_utime.tv_sec;
-			job->rusage.ru_utime.tv_usec +=
-				step->rusage.ru_utime.tv_usec;
-			job->rusage.ru_stime.tv_sec +=
-				step->rusage.ru_stime.tv_sec;
-			job->rusage.ru_stime.tv_usec +=
-				step->rusage.ru_stime.tv_usec;
-			job->rusage.ru_inblock += step->rusage.ru_inblock;
-			job->rusage.ru_oublock += step->rusage.ru_oublock;
-			job->rusage.ru_msgsnd += step->rusage.ru_msgsnd;
-			job->rusage.ru_msgrcv += step->rusage.ru_msgrcv;
-			job->rusage.ru_nsignals += step->rusage.ru_nsignals;
-			job->rusage.ru_nvcsw += step->rusage.ru_nvcsw;
-			job->rusage.ru_nivcsw += step->rusage.ru_nivcsw;
-			
-			/* and finally the maximums for any process */
-			job->rusage.ru_maxrss = MAX(job->rusage.ru_maxrss,
-						    step->rusage.ru_maxrss);
-			job->rusage.ru_ixrss = MAX(job->rusage.ru_ixrss,
-						   step->rusage.ru_ixrss);
-			job->rusage.ru_idrss = MAX(job->rusage.ru_idrss,
-						   step->rusage.ru_idrss);
-			job->rusage.ru_isrss = MAX(job->rusage.ru_isrss,
-						   step->rusage.ru_isrss);
-			job->rusage.ru_minflt = MAX(job->rusage.ru_minflt,
-						    step->rusage.ru_minflt);
-			job->rusage.ru_majflt = MAX(job->rusage.ru_majflt,
-						    step->rusage.ru_majflt);
-			job->rusage.ru_nswap = MAX(job->rusage.ru_nswap,
-						   step->rusage.ru_nswap);
+			job->user_cpu_sec +=
+				step->user_cpu_sec;
+			job->user_cpu_usec +=
+				step->user_cpu_usec;
+			job->sys_cpu_sec +=
+				step->sys_cpu_sec;
+			job->sys_cpu_usec +=
+				step->sys_cpu_usec;
 			/* get the max for all the sacct_t struct */
 			aggregate_sacct(&job->sacct, &step->sacct);
 		}
@@ -785,7 +727,7 @@ void parse_command_line(int argc, char **argv)
 		}
 	}
 
-	/* specific states (completion status) requested? */
+	/* specific states (completion state) requested? */
 	if (params.opt_state_list) {
 		start = params.opt_state_list;
 		while ((end = strstr(start, ",")) && start) {
@@ -795,16 +737,16 @@ void parse_command_line(int argc, char **argv)
 				start++;	/* discard whitespace */
 			if(!(int)*start)
 				continue;
-			c = decode_status_char(start);
+			c = decode_state_char(start);
 			if (c == -1)
 				fatal("unrecognized job state value");
-			selected_status[c] = 1;
+			selected_state[c] = 1;
 			start = end + 1;
 		}
 		if (params.opt_verbose) {
 			fprintf(stderr, "States requested:\n");
-			for(i=0; i< STATUS_COUNT; i++) {
-				if(selected_status[i]) {
+			for(i=0; i< STATE_COUNT; i++) {
+				if(selected_state[i]) {
 					fprintf(stderr, "\t: %s\n", 
 						job_state_string(i));
 					break;
@@ -919,18 +861,8 @@ void do_dump(void)
 	
 	itr = list_iterator_create(jobs);
 	while((job = list_next(itr))) {
-		if (!params.opt_dup)
-			if (job->jobnum_superseded) {
-				if (params.opt_verbose > 1)
-					fprintf(stderr,
-						"Note: Skipping older"
-						" job %u dated %d\n",
-						job->header.jobnum,
-						(int)job->header.job_submit);
-				continue;
-			}
 		if (params.opt_uid>=0)
-			if (job->header.uid != params.opt_uid)
+			if (job->uid != params.opt_uid)
 				continue;
 		if(job->sacct.min_cpu == (float)NO_VAL)
 			job->sacct.min_cpu = 0;
@@ -944,66 +876,67 @@ void do_dump(void)
 
 		/* JOB_START */
 		if (job->show_full) {
-			if (!job->job_start_seen && job->job_step_seen) {
-				/* If we only saw JOB_TERMINATED, the
-				 * job was probably canceled. */ 
-				fprintf(stderr,
-					"Error: No JOB_START record for "
-					"job %u\n",
-					job->header.jobnum);
-			}
-			_dump_header(job->header);
+			gmtime_r(&job->start, &ts);
+			printf("%u %s %04d%02d%02d%02d%02d%02d %d %s %s ",
+			       job->jobid,
+			       job->partition,
+			       1900+(ts.tm_year),
+			       1+(ts.tm_mon),
+			       ts.tm_mday,
+			       ts.tm_hour,
+			       ts.tm_min,
+			       ts.tm_sec,
+			       (int)job->submit,
+			       job->blockid,	/* block id */
+			       "-");	/* reserved 1 */
+
 			printf("JOB_START 1 16 %d %d %s %d %d %d %s %s\n", 
-			       job->header.uid,
-			       job->header.gid,
+			       job->uid,
+			       job->gid,
 			       job->jobname,
 			       job->track_steps,
 			       job->priority,
-			       job->ncpus,
+			       job->alloc_cpus,
 			       job->nodes,
 			       job->account);
 		}
 		/* JOB_STEP */
 		itr_step = list_iterator_create(job->steps);
 		while((step = list_next(itr_step))) {
-			_dump_header(step->header);
+			gmtime_r(&step->start, &ts);
+			printf("%u %s %04d%02d%02d%02d%02d%02d %d %s %s ",
+			       job->jobid,
+			       job->partition,
+			       1900+(ts.tm_year),
+			       1+(ts.tm_mon),
+			       ts.tm_mday,
+			       ts.tm_hour,
+			       ts.tm_min,
+			       ts.tm_sec,
+			       (int)job->submit,
+			       job->blockid,	/* block id */
+			       "-");	/* reserved 1 */
 			if(step->end == 0)
 				step->end = job->end;
 				
 			gmtime_r(&step->end, &ts);
 			printf("JOB_STEP 1 50 %u %04d%02d%02d%02d%02d%02d ",
-			       step->stepnum,
+			       step->stepid,
 			       1900+(ts.tm_year), 1+(ts.tm_mon), ts.tm_mday,
 			            ts.tm_hour, ts.tm_min, ts.tm_sec);
 			printf("%s %d %d %d %d ",
-			       job_state_string_compact(step->status),
+			       job_state_string_compact(step->state),
 			       step->exitcode,
-			       step->ntasks,
+			       step->ncpus,
 			       step->ncpus,
 			       step->elapsed);
-			printf("%d %d %d %d %d %d ",
+			printf("%d %d %d %d %d %d %d %d",
 			       step->tot_cpu_sec,
 			       step->tot_cpu_usec,
-			       (int)step->rusage.ru_utime.tv_sec,
-			       (int)step->rusage.ru_utime.tv_usec,
-			       (int)step->rusage.ru_stime.tv_sec,
-			       (int)step->rusage.ru_stime.tv_usec);
-			printf("%d %d %d %d %d %d %d %d %d "
-			       "%d %d %d %d %d %d %d ",
-			       (int)step->rusage.ru_maxrss,
-			       (int)step->rusage.ru_ixrss,
-			       (int)step->rusage.ru_idrss,
-			       (int)step->rusage.ru_isrss,
-			       (int)step->rusage.ru_minflt,
-			       (int)step->rusage.ru_majflt,
-			       (int)step->rusage.ru_nswap,
-			       (int)step->rusage.ru_inblock,
-			       (int)step->rusage.ru_oublock,
-			       (int)step->rusage.ru_msgsnd,
-			       (int)step->rusage.ru_msgrcv,
-			       (int)step->rusage.ru_nsignals,
-			       (int)step->rusage.ru_nvcsw,
-			       (int)step->rusage.ru_nivcsw,
+			       (int)step->user_cpu_sec,
+			       (int)step->user_cpu_usec,
+			       (int)step->sys_cpu_sec,
+			       (int)step->sys_cpu_usec,
 			       step->sacct.max_vsize/1024, 
 			       step->sacct.max_rss/1024);
 			/* Data added in Slurm v1.1 */
@@ -1030,7 +963,19 @@ void do_dump(void)
 		list_iterator_destroy(itr_step);
 		/* JOB_TERMINATED */
 		if (job->show_full) {
-			_dump_header(job->header);
+			gmtime_r(&job->start, &ts);
+			printf("%u %s %04d%02d%02d%02d%02d%02d %d %s %s ",
+			       job->jobid,
+			       job->partition,
+			       1900+(ts.tm_year),
+			       1+(ts.tm_mon),
+			       ts.tm_mday,
+			       ts.tm_hour,
+			       ts.tm_min,
+			       ts.tm_sec,
+			       (int)job->submit,
+			       job->blockid,	/* block id */
+			       "-");	/* reserved 1 */
 			gmtime_r(&job->end, &ts);
 			printf("JOB_TERMINATED 1 50 %d ",
 			       job->elapsed);
@@ -1038,34 +983,18 @@ void do_dump(void)
 			1900+(ts.tm_year), 1+(ts.tm_mon), ts.tm_mday,
 			      ts.tm_hour, ts.tm_min, ts.tm_sec); 
 			printf("%s %d %d %d %d ",
-			       job_state_string_compact(job->status),
+			       job_state_string_compact(job->state),
 			       job->exitcode,
-			       job->ntasks,
-			       job->ncpus,
+			       job->alloc_cpus,
+			       job->alloc_cpus,
 			       job->elapsed);
-			printf("%d %d %d %d %d %d ",
+			printf("%d %d %d %d %d %d %d %d",
 			       job->tot_cpu_sec,
 			       job->tot_cpu_usec,
-			       (int)job->rusage.ru_utime.tv_sec,
-			       (int)job->rusage.ru_utime.tv_usec,
-			       (int)job->rusage.ru_stime.tv_sec,
-			       (int)job->rusage.ru_stime.tv_usec);
-			printf("%d %d %d %d %d %d %d %d %d "
-			       "%d %d %d %d %d %d %d ",
-			       (int)job->rusage.ru_maxrss,
-			       (int)job->rusage.ru_ixrss,
-			       (int)job->rusage.ru_idrss,
-			       (int)job->rusage.ru_isrss,
-			       (int)job->rusage.ru_minflt,
-			       (int)job->rusage.ru_majflt,
-			       (int)job->rusage.ru_nswap,
-			       (int)job->rusage.ru_inblock,
-			       (int)job->rusage.ru_oublock,
-			       (int)job->rusage.ru_msgsnd,
-			       (int)job->rusage.ru_msgrcv,
-			       (int)job->rusage.ru_nsignals,
-			       (int)job->rusage.ru_nvcsw,
-			       (int)job->rusage.ru_nivcsw,
+			       (int)job->user_cpu_sec,
+			       (int)job->user_cpu_usec,
+			       (int)job->sys_cpu_sec,
+			       (int)job->sys_cpu_usec,
 			       job->sacct.max_vsize/1024, 
 			       job->sacct.max_rss/1024);
 			/* Data added in Slurm v1.1 */
@@ -1159,7 +1088,6 @@ void do_help(void)
 void do_list(void)
 {
 	int do_jobsteps = 1;
-	int rc = 0;
 	
 	ListIterator itr = NULL;
 	ListIterator itr_step = NULL;
@@ -1171,45 +1099,9 @@ void do_list(void)
 
 	itr = list_iterator_create(jobs);
 	while((job = list_next(itr))) {
-		if (!params.opt_dup)
-			if (job->jobnum_superseded) {
-				if (params.opt_verbose > 1)
-					fprintf(stderr,
-						"Note: Skipping older"
-						" job %u dated %d\n",
-						job->header.jobnum,
-						(int)job->header.job_submit);
-				continue;
-			}
-		if (!job->job_start_seen && job->job_step_seen) {
-			/* If we only saw JOB_TERMINATED, the job was
-			 * probably canceled. */
-			fprintf(stderr,
-				"Error: No JOB_START record for job %u\n",
-				job->header.jobnum);
-			if (rc<ERROR)
-				rc = ERROR;
-		}
-		if (params.opt_verbose > 1) {
-			if (!job->job_start_seen)
-				fprintf(stderr,
-					"Note: No JOB_START record for "
-					"job %u\n",
-					job->header.jobnum);
-			if (!job->job_step_seen)
-				fprintf(stderr,
-					"Note: No JOB_STEP record for "
-					"job %u\n",
-					job->header.jobnum);
-			if (!job->job_terminated_seen)
-				fprintf(stderr,
-					"Note: No JOB_TERMINATED record for "
-					"job %u\n",
-					job->header.jobnum);
-		}
-		if (params.opt_uid >= 0 && (job->header.uid != params.opt_uid))
+		if (params.opt_uid >= 0 && (job->uid != params.opt_uid))
 			continue;
-		if (params.opt_gid >= 0 && (job->header.gid != params.opt_gid))
+		if (params.opt_gid >= 0 && (job->gid != params.opt_gid))
 			continue;
 		if(job->sacct.min_cpu == NO_VAL)
 			job->sacct.min_cpu = 0;
@@ -1223,7 +1115,7 @@ void do_list(void)
 
 		if (job->show_full) {
 			if (params.opt_state_list) {
-				if(!selected_status[job->status])
+				if(!selected_state[job->state])
 					continue;
 			}
 			print_fields(JOB, job);
@@ -1233,7 +1125,7 @@ void do_list(void)
 			itr_step = list_iterator_create(job->steps);
 			while((step = list_next(itr_step))) {
 				if (params.opt_state_list) {
-					if(!selected_status[step->status])
+					if(!selected_state[step->state])
 						continue;
 				}
 				if(step->end == 0)
@@ -1293,8 +1185,8 @@ void sacct_init()
 	int i=0;
 	selected_parts = list_create(_destroy_parts);
 	selected_steps = list_create(_destroy_steps);
-	for(i=0; i<STATUS_COUNT; i++)
-		selected_status[i] = 0;
+	for(i=0; i<STATE_COUNT; i++)
+		selected_state[i] = 0;
 }
 
 void sacct_fini()

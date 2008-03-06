@@ -2882,7 +2882,7 @@ extern int clusteracct_storage_p_cluster_procs(char *cluster,
 
 extern int clusteracct_storage_p_get_hourly_usage(
 	acct_cluster_rec_t *cluster_rec, time_t start, 
-	time_t end, void *params)
+	time_t end)
 {
 	gold_request_t *gold_request = NULL;
 	gold_response_t *gold_response = NULL;
@@ -2943,7 +2943,7 @@ extern int clusteracct_storage_p_get_hourly_usage(
 
 extern int clusteracct_storage_p_get_daily_usage(
 	acct_cluster_rec_t *cluster_rec, time_t start, 
-	time_t end, void *params)
+	time_t end)
 {
 	gold_request_t *gold_request = NULL;
 	gold_response_t *gold_response = NULL;
@@ -3004,7 +3004,7 @@ extern int clusteracct_storage_p_get_daily_usage(
 
 extern int clusteracct_storage_p_get_monthly_usage(
 	acct_cluster_rec_t *cluster_rec, time_t start, 
-	time_t end, void *params)
+	time_t end)
 {
 	gold_request_t *gold_request = NULL;
 	gold_response_t *gold_response = NULL;

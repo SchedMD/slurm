@@ -63,21 +63,21 @@
 
 #define ERROR 2
 
-#define BRIEF_FIELDS "jobid,status,exitcode"
-#define BRIEF_COMP_FIELDS "jobid,uid,status"
-#define DEFAULT_FIELDS "jobid,jobname,partition,ncpus,status,exitcode"
-#define DEFAULT_COMP_FIELDS "jobid,uid,jobname,partition,nnodes,nodes,status,end"
-#define STAT_FIELDS "jobid,vsize,rss,pages,cputime,ntasks,status"
-#define LONG_FIELDS "jobid,jobname,partition,vsize,rss,pages,cputime,ntasks,ncpus,elapsed,status,exitcode"
+#define BRIEF_FIELDS "jobid,state,exitcode"
+#define BRIEF_COMP_FIELDS "jobid,uid,state"
+#define DEFAULT_FIELDS "jobid,jobname,partition,ncpus,state,exitcode"
+#define DEFAULT_COMP_FIELDS "jobid,uid,jobname,partition,nnodes,nodes,state,end"
+#define STAT_FIELDS "jobid,vsize,rss,pages,cputime,ntasks,state"
+#define LONG_FIELDS "jobid,jobname,partition,vsize,rss,pages,cputime,ntasks,ncpus,elapsed,state,exitcode"
 
 #ifdef HAVE_BG
-#define LONG_COMP_FIELDS "jobid,uid,jobname,partition,blockid,nnodes,nodes,status,start,end,timelimit,connection,reboot,rotate,max_procs,geo,bg_start_point"
+#define LONG_COMP_FIELDS "jobid,uid,jobname,partition,blockid,nnodes,nodes,state,start,end,timelimit,connection,reboot,rotate,max_procs,geo,bg_start_point"
 #else
-#define LONG_COMP_FIELDS "jobid,uid,jobname,partition,nnodes,nodes,status,start,end,timelimit"
+#define LONG_COMP_FIELDS "jobid,uid,jobname,partition,nnodes,nodes,state,start,end,timelimit"
 #endif
 
 #define BUFFER_SIZE 4096
-#define STATUS_COUNT 10
+#define STATE_COUNT 10
 
 #define MAX_PRINTFIELDS 100
 
@@ -119,33 +119,18 @@ void print_elapsed(type_t type, void *object);
 void print_exitcode(type_t type, void *object);
 void print_gid(type_t type, void *object);
 void print_group(type_t type, void *object);
-void print_idrss(type_t type, void *object);
-void print_inblocks(type_t type, void *object);
-void print_isrss(type_t type, void *object);
-void print_ixrss(type_t type, void *object);
 void print_job(type_t type, void *object);
 void print_name(type_t type, void *object);
 void print_jobid(type_t type, void *object);
-void print_majflt(type_t type, void *object);
-void print_minflt(type_t type, void *object);
-void print_msgrcv(type_t type, void *object);
-void print_msgsnd(type_t type, void *object);
 void print_ncpus(type_t type, void *object);
-void print_nivcsw(type_t type, void *object);
 void print_nodes(type_t type, void *object);
 void print_nnodes(type_t type, void *object);
-void print_nsignals(type_t type, void *object);
-void print_nswap(type_t type, void *object);
 void print_ntasks(type_t type, void *object);
-void print_nvcsw(type_t type, void *object);
-void print_outblocks(type_t type, void *object);
 void print_partition(type_t type, void *object);
-#ifdef HAVE_BG
 void print_blockid(type_t type, void *object);
-#endif
 void print_pages(type_t type, void *object);
 void print_rss(type_t type, void *object);
-void print_status(type_t type, void *object);
+void print_state(type_t type, void *object);
 void print_submit(type_t type, void *object);
 void print_start(type_t type, void *object);
 void print_end(type_t type, void *object);
@@ -168,8 +153,8 @@ void print_bg_start_point(type_t type, void *object);
 #endif
 
 /* options.c */
-int decode_status_char(char *status);
-char *decode_status_int(int status);
+int decode_state_char(char *state);
+char *decode_state_int(int state);
 int get_data(void);
 void parse_command_line(int argc, char **argv);
 void do_dump(void);

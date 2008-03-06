@@ -248,6 +248,7 @@ static jobacct_step_rec_t *_create_jobacct_step_rec(
 {
 	jobacct_step_rec_t *jobacct_step = create_jobacct_step_rec();
 	
+	jobacct_step->jobid = filetxt_step->header.jobnum;
 	jobacct_step->elapsed = filetxt_step->elapsed;
 	jobacct_step->end = filetxt_step->header.timestamp;
 	jobacct_step->exitcode = filetxt_step->exitcode;

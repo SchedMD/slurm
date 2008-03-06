@@ -352,6 +352,7 @@ extern List pgsql_jobacct_process_get_jobs(List selected_steps,
 		xfree(query);
 		for(j = 0; j < PQntuples(step_result); j++) {
 			step = create_jobacct_step_rec();
+			step->jobid = job->jobid;
 			list_append(job->steps, step);
 			step->stepid = atoi(
 				PQgetvalue(step_result, j, STEP_REQ_STEPID));
@@ -458,7 +459,7 @@ extern List pgsql_jobacct_process_get_jobs(List selected_steps,
 	}
 	PQclear(result);
 	
-	if (params->opt_fdump) 
+	if (params && params->opt_fdump) 
 		_do_fdump(job_list);
 	
 	return job_list;

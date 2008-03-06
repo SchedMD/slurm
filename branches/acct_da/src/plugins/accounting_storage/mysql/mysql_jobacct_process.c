@@ -110,6 +110,7 @@ extern List mysql_jobacct_process_get_jobs(List selected_steps,
 		"t1.kill_requid",
 		"t1.comp_code",
 		"t1.cpus",
+		"t1.tasks",
 		"t1.user_sec",
 		"t1.user_usec",
 		"t1.sys_sec",
@@ -168,6 +169,7 @@ extern List mysql_jobacct_process_get_jobs(List selected_steps,
 		STEP_REQ_KILL_REQUID,
 		STEP_REQ_COMP_CODE,
 		STEP_REQ_CPUS,
+		STEP_REQ_TASKS,
 		STEP_REQ_USER_SEC,
 		STEP_REQ_USER_USEC,
 		STEP_REQ_SYS_SEC,
@@ -351,6 +353,7 @@ extern List mysql_jobacct_process_get_jobs(List selected_steps,
 		xfree(query);
 		while ((step_row = mysql_fetch_row(step_result))) {
 			step = create_jobacct_step_rec();
+			step->jobid = job->jobid;
 			list_append(job->steps, step);
 			step->stepid = atoi(step_row[STEP_REQ_STEPID]);
 			/* info("got step %u.%u", */
@@ -423,7 +426,7 @@ extern List mysql_jobacct_process_get_jobs(List selected_steps,
 	}
 	mysql_free_result(result);
 
-	if (params->opt_fdump) 
+	if (params && params->opt_fdump) 
 		_do_fdump(job_list);
 
 	return job_list;

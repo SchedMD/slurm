@@ -189,9 +189,7 @@ void print_gid(type_t type, void *object)
 { 
 	jobacct_job_rec_t *job = (jobacct_job_rec_t *)object;
 	jobcomp_job_rec_t *jobcomp = (jobcomp_job_rec_t *)object;
-	jobacct_step_rec_t *step = (jobacct_step_rec_t *)object;
 	int32_t gid = -1;
-	struct passwd *passwd_ptr = NULL;
 
 	switch(type) {
 	case HEADLINE:
@@ -207,6 +205,7 @@ void print_gid(type_t type, void *object)
 		printf("%-5u", jobcomp->gid);
 		break;
 	case JOBSTEP:
+		printf("%-5s", " ");
 		break;
 	default:
 		printf("%-5s", "n/a");
@@ -221,7 +220,6 @@ void print_group(type_t type, void *object)
 { 
 	jobacct_job_rec_t *job = (jobacct_job_rec_t *)object;
 	jobcomp_job_rec_t *jobcomp = (jobcomp_job_rec_t *)object;
-	jobacct_step_rec_t *step = (jobacct_step_rec_t *)object;
 	int gid = -1;
 	char	*tmp="(unknown)";
 	struct	group *gr = NULL;
@@ -240,6 +238,7 @@ void print_group(type_t type, void *object)
 		printf("%-9s", jobcomp->gid_name);
 		break;
 	case JOBSTEP:
+		printf("%-9s", " ");
 		break;
 	default:
 		printf("%-9s", "n/a");
@@ -252,118 +251,9 @@ void print_group(type_t type, void *object)
 	} 
 }
 
-void print_idrss(type_t type, void *object)
-{
-	jobacct_job_rec_t *job = (jobacct_job_rec_t *)object;
-	jobacct_step_rec_t *step = (jobacct_step_rec_t *)object;
-	struct rusage rusage;
-	char outbuf[FORMAT_STRING_SIZE];
-	rusage.ru_idrss = -1;
-	
-	switch(type) {
-	case HEADLINE:
-		printf("%-8s", "Idrss");
-		return;
-		break;
-	case UNDERSCORE:
-		printf("%-8s", "------");
-		return;
-		break;
-	case JOB:
-		rusage = job->rusage;
-		break;
-	case JOBSTEP:
-		rusage = step->rusage;
-		break;
-	default:
-		printf("%-8s", "n/a");
-		break;
-	} 
-	if(rusage.ru_idrss != -1) {
-		convert_num_unit((float)rusage.ru_idrss, outbuf, 
-				 sizeof(outbuf), UNIT_NONE);
-		printf("%8s", outbuf);
-	}
-}
-
-void print_inblocks(type_t type, void *object)
-{
-	jobacct_job_rec_t *job = (jobacct_job_rec_t *)object;
-	jobacct_step_rec_t *step = (jobacct_step_rec_t *)object;
-
-	switch(type) {
-	case HEADLINE:
-		printf("%-9s", "Inblocks");
-		break;
-	case UNDERSCORE:
-		printf("%-9s", "---------");
-		break;
-	case JOB:
-		printf("%-9ld", job->rusage.ru_inblock);
-		break;
-	case JOBSTEP:
-		printf("%-9ld", step->rusage.ru_inblock);
-		break;
-	default:
-		printf("%-9s", "n/a");
-		break;
-	} 
-}
-
-void print_isrss(type_t type, void *object)
-{
-	jobacct_job_rec_t *job = (jobacct_job_rec_t *)object;
-	jobacct_step_rec_t *step = (jobacct_step_rec_t *)object;
-
-	switch(type) {
-	case HEADLINE:
-		printf("%-8s", "Isrss");
-		break;
-	case UNDERSCORE:
-		printf("%-8s", "------");
-		break;
-	case JOB:
-		printf("%-8ld", job->rusage.ru_isrss);
-		break;
-	case JOBSTEP:
-		printf("%-8ld", step->rusage.ru_isrss);
-		break;
-	default:
-		printf("%-8s", "n/a");
-		break;
-	} 
-
-}
-
-void print_ixrss(type_t type, void *object)
-{
-	jobacct_job_rec_t *job = (jobacct_job_rec_t *)object;
-	jobacct_step_rec_t *step = (jobacct_step_rec_t *)object;
-
-	switch(type) {
-	case HEADLINE:
-		printf("%-8s", "Ixrss");
-		break;
-	case UNDERSCORE:
-		printf("%-8s", "------");
-		break;
-	case JOB:
-		printf("%-8ld", job->rusage.ru_ixrss);
-		break;
-	case JOBSTEP:
-		printf("%-8ld", step->rusage.ru_ixrss);
-		break;
-	default:
-		printf("%-8s", "n/a");
-		break;
-	} 
-
-}
-
 void print_job(type_t type, void *object)
 {
 	jobacct_job_rec_t *job = (jobacct_job_rec_t *)object;
-	jobacct_step_rec_t *step = (jobacct_step_rec_t *)object;
 
 	switch(type) {
 	case HEADLINE:
@@ -373,10 +263,10 @@ void print_job(type_t type, void *object)
 		printf("%-8s", "--------");
 		break;
 	case JOB:
-		printf("%-8u", job->header.jobnum);
+		printf("%-8u", job->jobid);
 		break;
 	case JOBSTEP:
-		printf("%-8u", step->header.jobnum);
+		printf("%-8s", " ");
 		break;
 	default:
 		printf("%-8s", "n/a");
@@ -444,15 +334,15 @@ void print_jobid(type_t type, void *object)
 		printf("%-10s", "----------");
 		break;
 	case JOB:
-		printf("%-10u", job->header.jobnum);
+		printf("%-10u", job->jobid);
 		break;
 	case JOBCOMP:
 		printf("%-10u", jobcomp->jobid);
 		break;
 	case JOBSTEP:
 		snprintf(outbuf, sizeof(outbuf), "%u.%u",
-			 step->header.jobnum,
-			 step->stepnum);
+			 step->jobid,
+			 step->stepid);
 		printf("%-10s", outbuf);
 		break;
 	default:
@@ -460,102 +350,6 @@ void print_jobid(type_t type, void *object)
 		break;
 	} 
 
-}
-
-void print_majflt(type_t type, void *object)
-{
-	jobacct_job_rec_t *job = (jobacct_job_rec_t *)object;
-	jobacct_step_rec_t *step = (jobacct_step_rec_t *)object;
-
-	switch(type) {
-	case HEADLINE:
-		printf("%8s", "Majflt");
-		break;
-	case UNDERSCORE:
-		printf("%8s", "------");
-		break;
-	case JOB:
-		printf("%-8ld", job->rusage.ru_majflt);
-		break;
-	case JOBSTEP:
-		printf("%-8ld", step->rusage.ru_majflt);
-		break;
-	default:
-		printf("%-8s", "n/a");
-		break;
-	} 
-}
-
-void print_minflt(type_t type, void *object)
-{
-	jobacct_job_rec_t *job = (jobacct_job_rec_t *)object;
-	jobacct_step_rec_t *step = (jobacct_step_rec_t *)object;
-
-	switch(type) {
-	case HEADLINE:
-		printf("%-8s", "Minflt");
-		break;
-	case UNDERSCORE:
-		printf("%-8s", "------");
-		break;
-	case JOB:
-		printf("%-8ld", job->rusage.ru_minflt);
-		break;
-	case JOBSTEP:
-		printf("%-8ld", step->rusage.ru_minflt);
-		break;
-	default:
-		printf("%-8s", "n/a");
-		break;
-	} 
-}
-
-void print_msgrcv(type_t type, void *object)
-{
-	jobacct_job_rec_t *job = (jobacct_job_rec_t *)object;
-	jobacct_step_rec_t *step = (jobacct_step_rec_t *)object;
-
-	switch(type) {
-	case HEADLINE:
-		printf("%-9s", "Msgrcv");
-		break;
-	case UNDERSCORE:
-		printf("%-9s", "---------");
-		break;
-	case JOB:
-		printf("%-9ld", job->rusage.ru_msgrcv);
-		break;
-	case JOBSTEP:
-		printf("%-9ld", step->rusage.ru_msgrcv);
-		break;
-	default:
-		printf("%-9s", "n/a");
-		break;
-	} 
-}
-
-void print_msgsnd(type_t type, void *object)
-{
-	jobacct_job_rec_t *job = (jobacct_job_rec_t *)object;
-	jobacct_step_rec_t *step = (jobacct_step_rec_t *)object;
-
-	switch(type) {
-	case HEADLINE:
-		printf("%-9s", "Msgsnd");
-		break;
-	case UNDERSCORE:
-		printf("%-9s", "---------");
-		break;
-	case JOB:
-		printf("%-9ld", job->rusage.ru_msgsnd);
-		break;
-	case JOBSTEP:
-		printf("%-9ld", step->rusage.ru_msgsnd);
-		break;
-	default:
-		printf("%-9s", "n/a");
-		break;
-	} 
 }
 
 void print_ncpus(type_t type, void *object)
@@ -571,37 +365,13 @@ void print_ncpus(type_t type, void *object)
 		printf("%-7s", "-------");
 		break;
 	case JOB:
-		printf("%-7u", job->ncpus);
+		printf("%-7u", job->alloc_cpus);
 		break;
 	case JOBSTEP:
 		printf("%-7u", step->ncpus);
 		break;
 	default:
 		printf("%-7s", "n/a");
-		break;
-	} 
-}
-
-void print_nivcsw(type_t type, void *object)
-{ 
-	jobacct_job_rec_t *job = (jobacct_job_rec_t *)object;
-	jobacct_step_rec_t *step = (jobacct_step_rec_t *)object;
-
-	switch(type) {
-	case HEADLINE:
-		printf("%-9s", "Nivcsw");
-		break;
-	case UNDERSCORE:
-		printf("%-9s", "---------");
-		break;
-	case JOB:
-		printf("%9ld", job->rusage.ru_nivcsw);
-		break;
-	case JOBSTEP:
-		printf("%9ld", step->rusage.ru_nivcsw);
-		break;
-	default:
-		printf("%-9s", "n/a");
 		break;
 	} 
 }
@@ -657,54 +427,6 @@ void print_nnodes(type_t type, void *object)
 	} 
 }
 
-void print_nsignals(type_t type, void *object)
-{ 
-	jobacct_job_rec_t *job = (jobacct_job_rec_t *)object;
-	jobacct_step_rec_t *step = (jobacct_step_rec_t *)object;
-
-	switch(type) {
-	case HEADLINE:
-		printf("%-9s", "Nsignals");
-		break;
-	case UNDERSCORE:
-		printf("%-9s", "---------");
-		break;
-	case JOB:
-		printf("%-9ld", job->rusage.ru_nsignals);
-		break;
-	case JOBSTEP:
-		printf("%-9ld", step->rusage.ru_nsignals);
-		break;
-	default:
-		printf("%-9s", "n/a");
-		break;
-	} 
-}
-
-void print_nswap(type_t type, void *object)
-{ 
-	jobacct_job_rec_t *job = (jobacct_job_rec_t *)object;
-	jobacct_step_rec_t *step = (jobacct_step_rec_t *)object;
-
-	switch(type) {
-	case HEADLINE:
-		printf("%-8s", "Nswap");
-		break;
-	case UNDERSCORE:
-		printf("%-8s", "------");
-		break;
-	case JOB:
-		printf("%-8ld", job->rusage.ru_nswap);
-		break;
-	case JOBSTEP:
-		printf("%-8ld", step->rusage.ru_nswap);
-		break;
-	default:
-		printf("%-8s", "n/a");
-		break;
-	} 
-}
-
 void print_ntasks(type_t type, void *object)
 { 
 	jobacct_job_rec_t *job = (jobacct_job_rec_t *)object;
@@ -718,61 +440,13 @@ void print_ntasks(type_t type, void *object)
 		printf("%-7s", "-------");
 		break;
 	case JOB:
-		printf("%-7u", job->ntasks);
+		printf("%-7u", job->alloc_cpus);
 		break;
 	case JOBSTEP:
-		printf("%-7u", step->ntasks);
+		printf("%-7u", step->ncpus);
 		break;
 	default:
 		printf("%-7s", "n/a");
-		break;
-	} 
-}
-
-void print_nvcsw(type_t type, void *object)
-{ 
-	jobacct_job_rec_t *job = (jobacct_job_rec_t *)object;
-	jobacct_step_rec_t *step = (jobacct_step_rec_t *)object;
-
-	switch(type) {
-	case HEADLINE:
-		printf("%-9s", "Nvcsw");
-		break;
-	case UNDERSCORE:
-		printf("%-9s", "---------");
-		break;
-	case JOB:
-		printf("%-9ld", job->rusage.ru_nvcsw);
-		break;
-	case JOBSTEP:
-		printf("%-9ld", step->rusage.ru_nvcsw);
-		break;
-	default:
-		printf("%-9s", "n/a");
-		break;
-	} 
-}
-
-void print_outblocks(type_t type, void *object)
-{ 
-	jobacct_job_rec_t *job = (jobacct_job_rec_t *)object;
-	jobacct_step_rec_t *step = (jobacct_step_rec_t *)object;
-
-	switch(type) {
-	case HEADLINE:
-		printf("%-9s", "Outblocks");
-		break;
-	case UNDERSCORE:
-		printf("%-9s", "---------");
-		break;
-	case JOB:
-		printf("%-9ld", job->rusage.ru_oublock);
-		break;
-	case JOBSTEP:
-		printf("%-9ld", step->rusage.ru_oublock);
-		break;
-	default:
-		printf("%-9s", "n/a");
 		break;
 	} 
 }
@@ -781,7 +455,6 @@ void print_partition(type_t type, void *object)
 { 
 	jobacct_job_rec_t *job = (jobacct_job_rec_t *)object;
 	jobcomp_job_rec_t *jobcomp = (jobcomp_job_rec_t *)object;
-	jobacct_step_rec_t *step = (jobacct_step_rec_t *)object;
 
 	switch(type) {
 	case HEADLINE:
@@ -791,12 +464,12 @@ void print_partition(type_t type, void *object)
 		printf("%-10s", "----------");
 		break;
 	case JOB:
-		if(!job->header.partition)
+		if(!job->partition)
 			printf("%-10s", "unknown");			     
-		else if(strlen(job->header.partition)<11)
-			printf("%-10s", job->header.partition);
+		else if(strlen(job->partition)<11)
+			printf("%-10s", job->partition);
 		else
-			printf("%-7.7s...", job->header.partition);
+			printf("%-7.7s...", job->partition);
 		
 		break;
 	case JOBCOMP:
@@ -809,13 +482,7 @@ void print_partition(type_t type, void *object)
 		
 		break;
 	case JOBSTEP:
-		if(!step->header.partition)
-			printf("%-10s", "unknown");			     
-		else if(strlen(step->header.partition)<11)
-			printf("%-10s", step->header.partition);
-		else
-			printf("%-7.7s...", step->header.partition);
-	
+		printf("%-10s", " ");
 		break;
 	default:
 		printf("%-10s", "n/a");
@@ -838,12 +505,12 @@ void print_blockid(type_t type, void *object)
 		printf("%-16s", "----------------");
 		break;
 	case JOB:
-		if(!job->header.blockid)
+		if(!job->blockid)
 			printf("%-16s", "unknown");			     
-		else if(strlen(job->header.blockid)<17)
-			printf("%-16s", job->header.blockid);
+		else if(strlen(job->blockid)<17)
+			printf("%-16s", job->blockid);
 		else
-			printf("%-13.13s...", job->header.blockid);
+			printf("%-13.13s...", job->blockid);
 		
 		break;
 	case JOBCOMP:
@@ -856,13 +523,7 @@ void print_blockid(type_t type, void *object)
 		
 		break;
 	case JOBSTEP:
-		if(!step->header.blockid)
-			printf("%-16s", "unknown");			     
-		else if(strlen(step->header.blockid)<17)
-			printf("%-16s", step->header.blockid);
-		else
-			printf("%-13.13s...", step->header.blockid);
-	
+		printf("%-16s", " ");
 		break;
 	default:
 		printf("%-16s", "n/a");
@@ -995,7 +656,7 @@ void print_rss(type_t type, void *object)
 	} 
 }
 
-void print_status(type_t type, void *object)
+void print_state(type_t type, void *object)
 { 
 	jobacct_job_rec_t *job = (jobacct_job_rec_t *)object;
 	jobcomp_job_rec_t *jobcomp = (jobcomp_job_rec_t *)object;
@@ -1003,30 +664,30 @@ void print_status(type_t type, void *object)
 
 	switch(type) {
 	case HEADLINE:
-		printf("%-20s", "Status");
+		printf("%-20s", "State");
 		break;
 	case UNDERSCORE:
 		printf("%-20s", "--------------------");
 		break;
 	case JOB:
-		if ( job->status == JOB_CANCELLED) {
+		if ( job->state == JOB_CANCELLED) {
 			printf ("%-10s by %6d",
-				job_state_string(job->status), job->requid);
+				job_state_string(job->state), job->requid);
 		}
 		else {
-			printf("%-20s", job_state_string(job->status));
+			printf("%-20s", job_state_string(job->state));
 		}
 		break;
 	case JOBCOMP:
 		printf("%-20s", jobcomp->state);
 		break;
 	case JOBSTEP:
-		if ( step->status == JOB_CANCELLED) {
+		if ( step->state == JOB_CANCELLED) {
 			printf ("%-10s by %6d",
-				job_state_string(step->status), step->requid);
+				job_state_string(step->state), step->requid);
 		}
 		else {
-			printf("%-20s", job_state_string(step->status));
+			printf("%-20s", job_state_string(step->state));
 		}
 		break;
 	default:
@@ -1049,13 +710,13 @@ void print_submit(type_t type, void *object)
 		printf("%-14s", "--------------");
 		break;
 	case JOB:
-		slurm_make_time_str(&job->header.job_submit, 
+		slurm_make_time_str(&job->submit, 
 				    time_str, 
 				    sizeof(time_str));
 		printf("%-14s", time_str);
 		break;
 	case JOBSTEP:
-		slurm_make_time_str(&step->header.timestamp, 
+		slurm_make_time_str(&step->start, 
 				    time_str, 
 				    sizeof(time_str));
 		printf("%-14s", time_str);
@@ -1081,7 +742,7 @@ void print_start(type_t type, void *object)
 		printf("%-19s", "--------------------");
 		break;
 	case JOB:
-		slurm_make_time_str(&job->header.timestamp, 
+		slurm_make_time_str(&job->start, 
 				    time_str, 
 				    sizeof(time_str));
 		printf("%-19s", time_str);
@@ -1090,7 +751,7 @@ void print_start(type_t type, void *object)
 		printf("%-19s", jobcomp->start_time);
 		break;
 	case JOBSTEP:
-		slurm_make_time_str(&step->header.timestamp, 
+		slurm_make_time_str(&step->start, 
 				    time_str, 
 				    sizeof(time_str));
 		printf("%-19s", time_str);
@@ -1170,13 +831,13 @@ void print_systemcpu(type_t type, void *object)
 		printf("%-15s", "---------------");
 		break;
 	case JOB:
-		_elapsed_time(job->rusage.ru_stime.tv_sec,
-			      job->rusage.ru_stime.tv_usec, str);
+		_elapsed_time(job->sys_cpu_sec,
+			      job->sys_cpu_usec, str);
 		printf("%-15s", str);
 		break;
 	case JOBSTEP:
-		_elapsed_time(step->rusage.ru_stime.tv_sec,
-			      step->rusage.ru_stime.tv_usec, str);
+		_elapsed_time(step->sys_cpu_sec,
+			      step->sys_cpu_usec, str);
 		printf("%-15s", str);
 		break;
 	default:
@@ -1189,7 +850,6 @@ void print_uid(type_t type, void *object)
 { 
 	jobacct_job_rec_t *job = (jobacct_job_rec_t *)object;
 	jobcomp_job_rec_t *jobcomp = (jobcomp_job_rec_t *)object;
-	jobacct_step_rec_t *step = (jobacct_step_rec_t *)object;
 	int32_t uid = -1;
 	struct passwd *passwd_ptr = NULL;
 	
@@ -1212,6 +872,7 @@ void print_uid(type_t type, void *object)
 		printf("%-5u", jobcomp->uid);
 		break;
 	case JOBSTEP:
+		printf("%-5s", " ");
 		break;
 	} 
 
@@ -1223,7 +884,6 @@ void print_user(type_t type, void *object)
 { 
 	jobacct_job_rec_t *job = (jobacct_job_rec_t *)object;
 	jobcomp_job_rec_t *jobcomp = (jobcomp_job_rec_t *)object;
-	jobacct_step_rec_t *step = (jobacct_step_rec_t *)object;
 	int uid = -1;
 	char	*tmp="(unknown)";
 	struct	passwd *pw = NULL;		 
@@ -1245,6 +905,7 @@ void print_user(type_t type, void *object)
 		printf("%-9s", jobcomp->uid_name);
 		break;
 	case JOBSTEP:
+		printf("%-9s", " ");
 		break;
 	default:
 		printf("%-9s", "n/a");
@@ -1271,13 +932,13 @@ void print_usercpu(type_t type, void *object)
 		printf("%-15s", "---------------");
 		break;
 	case JOB:
-		_elapsed_time(job->rusage.ru_utime.tv_sec,
-			      job->rusage.ru_utime.tv_usec, str);
+		_elapsed_time(job->user_cpu_sec,
+			      job->user_cpu_usec, str);
 		printf("%-15s", str);
 		break;
 	case JOBSTEP:
-		_elapsed_time(step->rusage.ru_utime.tv_sec,
-			      step->rusage.ru_utime.tv_usec, str);
+		_elapsed_time(step->user_cpu_sec,
+			      step->user_cpu_usec, str);
 		printf("%-15s", str);
 		break;
 	default:
@@ -1411,7 +1072,6 @@ void print_cputime(type_t type, void *object)
 void print_account(type_t type, void *object)
 {
 	jobacct_job_rec_t *job = (jobacct_job_rec_t *)object;
-	jobacct_step_rec_t *step = (jobacct_step_rec_t *)object;
 
 	switch(type) {
 	case HEADLINE:
@@ -1429,12 +1089,7 @@ void print_account(type_t type, void *object)
 			printf("%-13.13s...", job->account);
 		break;
 	case JOBSTEP:
-		if(!step->account)
-			printf("%-16s", "unknown");
-		else if(strlen(step->account)<17)
-			printf("%-16s", step->account);
-		else
-			printf("%-13.13s...", step->account);
+		printf("%-16s", " ");
 	default:
 		printf("%-16s", "n/a");
 		break;
