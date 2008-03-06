@@ -824,7 +824,7 @@ static void _save_dbd_state(void)
 
 	dbd_fname = slurm_get_state_save_location();
 	xstrcat(dbd_fname, "/dbd.messages");
-	fd = open(dbd_fname, O_WRONLY | O_CREAT | O_TRUNC);
+	fd = open(dbd_fname, O_WRONLY | O_CREAT | O_TRUNC, 0600);
 	if (fd < 0) {
 		error("slurmdbd: Creating state save file %s", dbd_fname);
 	} else if (agent_list) {
@@ -837,8 +837,7 @@ static void _save_dbd_state(void)
 		}
 	}
 	if (fd >= 0) {
-		if (wrote)
-			info("slurmdbd: saved %d pending RPCs", wrote);
+		verbose("slurmdbd: saved %d pending RPCs", wrote);
 		(void) close(fd);
 	}
 	xfree(dbd_fname);
@@ -866,8 +865,7 @@ static void _load_dbd_state(void)
 		}
 	}
 	if (fd >= 0) {
-		if (recovered)
-			info("slurmdbd: recovered %d pending RPCs", recovered);
+		verbose("slurmdbd: recovered %d pending RPCs", recovered);
 		(void) close(fd);
 		(void) unlink(dbd_fname);	/* clear save state */
 	}
