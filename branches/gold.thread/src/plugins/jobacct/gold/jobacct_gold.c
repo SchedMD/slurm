@@ -1,9 +1,8 @@
 /*****************************************************************************\
  *  jobacct_gold.c - jobacct interface to gold.
- *
- *  $Id$
  *****************************************************************************
  *  Copyright (C) 2004-2007 The Regents of the University of California.
+ *  Copyright (C) 2008 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Danny Auble <da@llnl.gov>
  *  
@@ -59,7 +58,7 @@ typedef struct {
 	char *gold_id;
 } gold_account_t;
 
-static int _add_edit_job(dbd_job_info_msg_t *job_ptr, gold_object_t action);
+static int _add_edit_job(gold_job_info_msg_t *job_ptr, gold_object_t action);
 
 /*
  * These variables are required by the generic plugin interface.  If they
@@ -387,7 +386,7 @@ int jobacct_p_fini_slurmctld()
 int jobacct_p_job_start_slurmctld(struct job_record *job_ptr)
 {
 	slurmdbd_msg_t msg;
-	dbd_job_info_msg_t req;
+	gold_job_info_msg_t req;
 
 	req.account       = job_ptr->account;
 	req.begin_time    = job_ptr->details->begin_time;
@@ -402,10 +401,10 @@ int jobacct_p_job_start_slurmctld(struct job_record *job_ptr)
 	req.submit_time   = job_ptr->details->submit_time;
 	req.total_procs   = job_ptr->details->total_procs;
 	req.user_id       = job_ptr->user_id;
-	msg.msg_type      = DBD_JOB_START;
+	msg.msg_type      = GOLD_MSG_JOB_START;
 	msg.data          = &req;
 
-	if (slurm_send_slurmdbd_msg(&msg) < 0)
+	if (gold_agent_xmit(&msg) < 0)
 		return SLURM_ERROR;
 
 	return SLURM_SUCCESS;
@@ -414,7 +413,7 @@ int jobacct_p_job_start_slurmctld(struct job_record *job_ptr)
 int jobacct_p_job_complete_slurmctld(struct job_record *job_ptr) 
 {
 	slurmdbd_msg_t msg;
-	dbd_job_info_msg_t req;
+	gold_job_info_msg_t req;
 
 	req.account       = job_ptr->account;
 	req.begin_time    = job_ptr->details->begin_time;
@@ -429,10 +428,10 @@ int jobacct_p_job_complete_slurmctld(struct job_record *job_ptr)
 	req.submit_time   = job_ptr->details->submit_time;
 	req.total_procs   = job_ptr->details->total_procs;
 	req.user_id       = job_ptr->user_id;
-	msg.msg_type      = DBD_JOB_COMPLETE;
+	msg.msg_type      = GOLD_MSG_JOB_COMPLETE;
 	msg.data          = &req;
 
-	if (slurm_send_slurmdbd_msg(&msg) < 0)
+	if (gold_agent_xmit(&msg) < 0)
 		return SLURM_ERROR;
 
 	return SLURM_SUCCESS;
@@ -441,7 +440,7 @@ int jobacct_p_job_complete_slurmctld(struct job_record *job_ptr)
 int jobacct_p_step_start_slurmctld(struct step_record *step)
 {
 	slurmdbd_msg_t msg;
-	dbd_job_info_msg_t req;
+	gold_job_info_msg_t req;
 	struct job_record *job_ptr = step->job_ptr;
 
 	req.account       = job_ptr->account;
@@ -457,10 +456,10 @@ int jobacct_p_step_start_slurmctld(struct step_record *step)
 	req.submit_time   = job_ptr->details->submit_time;
 	req.total_procs   = job_ptr->details->total_procs;
 	req.user_id       = job_ptr->user_id;
-	msg.msg_type      = DBD_STEP_START;
+	msg.msg_type      = GOLD_MSG_STEP_START;
 	msg.data          = &req;
 
-	if (slurm_send_slurmdbd_msg(&msg) < 0)
+	if (gold_agent_xmit(&msg) < 0)
 		return SLURM_ERROR;
 
 	return SLURM_SUCCESS;
@@ -525,7 +524,7 @@ extern int jobacct_p_node_down(struct node_record *node_ptr, time_t event_time,
 			       char *reason)
 {
 	slurmdbd_msg_t msg;
-	dbd_node_down_msg_t req;
+	gold_node_down_msg_t req;
 	uint16_t cpus;
 
 	if (slurmctld_conf.fast_schedule)
@@ -546,10 +545,10 @@ extern int jobacct_p_node_down(struct node_record *node_ptr, time_t event_time,
 	req.event_time   = event_time;
 	req.hostlist     = node_ptr->name;
 	req.reason       = reason;
-	msg.msg_type     = DBD_NODE_DOWN;
+	msg.msg_type     = GOLD_MSG_NODE_DOWN;
 	msg.data         = &req;
 
-	if (slurm_send_slurmdbd_msg(&msg) < 0)
+	if (gold_agent_xmit(&msg) < 0)
 		return SLURM_ERROR;
 
 	return SLURM_SUCCESS;
@@ -558,7 +557,7 @@ extern int jobacct_p_node_down(struct node_record *node_ptr, time_t event_time,
 extern int jobacct_p_node_up(struct node_record *node_ptr, time_t event_time)
 {
 	slurmdbd_msg_t msg;
-	dbd_node_up_msg_t req;
+	gold_node_up_msg_t req;
 
 #if _DEBUG
 {
@@ -570,10 +569,10 @@ extern int jobacct_p_node_up(struct node_record *node_ptr, time_t event_time)
 
 	req.hostlist     = node_ptr->name;
 	req.event_time   = event_time;
-	msg.msg_type     = DBD_NODE_UP;
+	msg.msg_type     = GOLD_MSG_NODE_UP;
 	msg.data         = &req;
 
-	if (slurm_send_slurmdbd_msg(&msg) < 0)
+	if (gold_agent_xmit(&msg) < 0)
 		return SLURM_ERROR;
 
 	return SLURM_SUCCESS;
@@ -583,7 +582,7 @@ extern int jobacct_p_cluster_procs(uint32_t procs, time_t event_time)
 {
 	static uint32_t last_procs = 0;
 	slurmdbd_msg_t msg;
-	dbd_cluster_procs_msg_t req;
+	gold_cluster_procs_msg_t req;
 
 #if _DEBUG
 {
@@ -601,10 +600,10 @@ extern int jobacct_p_cluster_procs(uint32_t procs, time_t event_time)
 
 	req.proc_count		= procs;
 	req.event_time		= event_time;
-	msg.msg_type		= DBD_CLUSTER_PROCS;
+	msg.msg_type		= GOLD_MSG_CLUSTER_PROCS;
 	msg.data		= &req;
 
-	if (slurm_send_slurmdbd_msg(&msg) < 0)
+	if (gold_agent_xmit(&msg) < 0)
 		return SLURM_ERROR;
 
 	return SLURM_SUCCESS;
@@ -616,12 +615,12 @@ extern int jobacct_p_cluster_procs(uint32_t procs, time_t event_time)
 extern int dbd_job_start(Buf buffer)
 {
 	int rc;
-	dbd_job_info_msg_t *job_info_msg;
+	gold_job_info_msg_t *job_info_msg;
 	gold_object_t action;
 
-	if (slurm_dbd_unpack_job_info_msg(&job_info_msg, buffer) !=
+	if (gold_agent_unpack_job_info_msg(&job_info_msg, buffer) !=
 	    SLURM_SUCCESS) {
-		error("Failed to unpack DBD_JOB_START message");
+		error("Failed to unpack GOLD_MSG_JOB_START message");
 		/* There is no sense in retrying this bad RPC */
 		return SLURM_SUCCESS;
 	}
@@ -636,19 +635,19 @@ extern int dbd_job_start(Buf buffer)
 	}
 
 	rc = _add_edit_job(job_info_msg, action);
-	slurm_dbd_free_job_info_msg(job_info_msg);
+	gold_agent_free_job_info_msg(job_info_msg);
 	return rc;
 }
 
 extern int dbd_job_complete(Buf buffer)
 {
 	int rc;
-	dbd_job_info_msg_t *job_info_msg;
+	gold_job_info_msg_t *job_info_msg;
 	gold_object_t action;
 
-	if (slurm_dbd_unpack_job_info_msg(&job_info_msg, buffer) !=
+	if (gold_agent_unpack_job_info_msg(&job_info_msg, buffer) !=
 	    SLURM_SUCCESS) {
-		error("Failed to unpack DBD_JOB_COMPLETE message");
+		error("Failed to unpack GOLD_MSG_JOB_COMPLETE message");
 		/* There is no sense in retrying this bad RPC */
 		return SLURM_SUCCESS;
 	}
@@ -663,19 +662,19 @@ extern int dbd_job_complete(Buf buffer)
 	}
 
 	rc = _add_edit_job(job_info_msg, action);
-	slurm_dbd_free_job_info_msg(job_info_msg);
+	gold_agent_free_job_info_msg(job_info_msg);
 	return rc;
 }
 
 extern int dbd_step_start(Buf buffer)
 {
 	int rc;
-	dbd_job_info_msg_t *job_info_msg;
+	gold_job_info_msg_t *job_info_msg;
 	gold_object_t action;
 
-	if (slurm_dbd_unpack_job_info_msg(&job_info_msg, buffer) !=
+	if (gold_agent_unpack_job_info_msg(&job_info_msg, buffer) !=
 	    SLURM_SUCCESS) {
-		error("Failed to unpack DBD_STEP_START message");
+		error("Failed to unpack GOLD_MSG_STEP_START message");
 		/* There is no sense in retrying this bad RPC */
 		return SLURM_SUCCESS;
 	}
@@ -690,11 +689,11 @@ extern int dbd_step_start(Buf buffer)
 	}
 
 	rc = _add_edit_job(job_info_msg, action);
-	slurm_dbd_free_job_info_msg(job_info_msg);
+	gold_agent_free_job_info_msg(job_info_msg);
 	return rc;
 }
 
-static int _add_edit_job(dbd_job_info_msg_t *job_ptr, gold_object_t action)
+static int _add_edit_job(gold_job_info_msg_t *job_ptr, gold_object_t action)
 {
 	gold_request_t *gold_request = create_gold_request(GOLD_OBJECT_JOB,
 							   action);
@@ -739,7 +738,8 @@ static int _add_edit_job(dbd_job_info_msg_t *job_ptr, gold_object_t action)
 					   GOLD_OPERATOR_NONE);
 	} else {
 		destroy_gold_request(gold_request);
-		error("_add_edit_job: bad action given %d", action);		
+		error("_add_edit_job: bad action given %d", 
+		      action);		
 		return rc;
 	}
 
@@ -776,10 +776,13 @@ static int _add_edit_job(dbd_job_info_msg_t *job_ptr, gold_object_t action)
 	if (job_ptr->job_state != JOB_RUNNING) {
 		snprintf(tmp_buff, sizeof(tmp_buff), "%u", 
 			 (uint32_t)job_ptr->end_time);
-		gold_request_add_assignment(gold_request, "EndTime", tmp_buff);
+		gold_request_add_assignment(gold_request, "EndTime", 
+					    tmp_buff);
 		
-		snprintf(tmp_buff, sizeof(tmp_buff), "%u", job_ptr->exit_code);
-		gold_request_add_assignment(gold_request, "ExitCode", tmp_buff);
+		snprintf(tmp_buff, sizeof(tmp_buff), "%u", 
+			 job_ptr->exit_code);
+		gold_request_add_assignment(gold_request, "ExitCode", 
+					    tmp_buff);
 	}
 
 
@@ -821,12 +824,12 @@ extern int dbd_node_up(Buf buffer)
 	gold_request_t *gold_request = NULL;
 	gold_response_t *gold_response = NULL;
 	char tmp_buff[50];
-	dbd_node_up_msg_t *node_up_msg;
+	gold_node_up_msg_t *node_up_msg;
 	time_t event_time;
 
-	if (slurm_dbd_unpack_node_up_msg(&node_up_msg, buffer) !=
+	if (gold_agent_unpack_node_up_msg(&node_up_msg, buffer) !=
 	    SLURM_SUCCESS) {
-		error("Failed to unpack DBD_NODE_UP message");
+		error("Failed to unpack GOLD_MSG_NODE_UP message");
 		/* There is no sense in retrying this bad RPC */
 		return SLURM_SUCCESS;
 	}
@@ -847,7 +850,8 @@ extern int dbd_node_up(Buf buffer)
 	if (event_time)
 		event_time--;
 	snprintf(tmp_buff, sizeof(tmp_buff), "%u", (uint32_t)event_time);
-	gold_request_add_assignment(gold_request, "EndTime", tmp_buff);		
+	gold_request_add_assignment(gold_request, "EndTime", 
+				    tmp_buff);		
 			
 	gold_response = get_gold_response(gold_request);	
 	destroy_gold_request(gold_request);
@@ -867,7 +871,7 @@ extern int dbd_node_up(Buf buffer)
 	destroy_gold_response(gold_response);
 	rc = SLURM_SUCCESS;
 
- fini:	slurm_dbd_free_node_up_msg(node_up_msg);
+ fini:	gold_agent_free_node_up_msg(node_up_msg);
 	return rc;
 }
 
@@ -877,12 +881,12 @@ extern int dbd_node_down(Buf buffer)
 	gold_request_t *gold_request = NULL;
 	gold_response_t *gold_response = NULL;
 	char tmp_buff[50];
-	dbd_node_down_msg_t *node_down_msg;
+	gold_node_down_msg_t *node_down_msg;
 	time_t event_time;
 
-	if (slurm_dbd_unpack_node_down_msg(&node_down_msg, buffer) !=
+	if (gold_agent_unpack_node_down_msg(&node_down_msg, buffer) !=
 	    SLURM_SUCCESS) {
-		error("Failed to unpack DBD_NODE_DOWN message");
+		error("Failed to unpack GOLD_MSG_NODE_DOWN message");
 		/* There is no sense in retrying this bad RPC */
 		return SLURM_SUCCESS;
 	}
@@ -907,7 +911,8 @@ extern int dbd_node_down(Buf buffer)
 	if (event_time)
 		event_time--;
 	snprintf(tmp_buff, sizeof(tmp_buff), "%u", (uint32_t)event_time);
-	gold_request_add_assignment(gold_request, "EndTime", tmp_buff);		
+	gold_request_add_assignment(gold_request, "EndTime", 
+				    tmp_buff);		
 			
 	gold_response = get_gold_response(gold_request);	
 	destroy_gold_request(gold_request);
@@ -940,7 +945,8 @@ extern int dbd_node_down(Buf buffer)
 				    node_down_msg->hostlist);
 	snprintf(tmp_buff, sizeof(tmp_buff), "%u", node_down_msg->cpus);
 	gold_request_add_assignment(gold_request, "CPUCount", tmp_buff);
-	gold_request_add_assignment(gold_request, "Reason", node_down_msg->reason);
+	gold_request_add_assignment(gold_request, "Reason", 
+				    node_down_msg->reason);
 			
 	gold_response = get_gold_response(gold_request);	
 	destroy_gold_request(gold_request);
@@ -959,13 +965,13 @@ extern int dbd_node_down(Buf buffer)
 	}
 	destroy_gold_response(gold_response);
 
- fini:	slurm_dbd_free_node_down_msg(node_down_msg);
+ fini:	gold_agent_free_node_down_msg(node_down_msg);
 	return rc;
 }
 
 extern int dbd_cluster_procs(Buf buffer)
 {
-	dbd_cluster_procs_msg_t *cluster_procs_msg;
+	gold_cluster_procs_msg_t *cluster_procs_msg;
 	gold_request_t *gold_request = NULL;
 	gold_response_t *gold_response = NULL;
 	char tmp_buff[50];
@@ -973,9 +979,9 @@ extern int dbd_cluster_procs(Buf buffer)
 	bool no_modify = 0;
 	time_t event_time;
 
-	if (slurm_dbd_unpack_cluster_procs_msg(&cluster_procs_msg, buffer) !=
+	if (gold_agent_unpack_cluster_procs_msg(&cluster_procs_msg, buffer) !=
 	    SLURM_SUCCESS) {
-		error("Failed to unpack DBD_CLUSTER_PROCS message");
+		error("Failed to unpack GOLD_MSG_CLUSTER_PROCS message");
 		/* There is no sense in retrying this bad RPC */
 		return SLURM_SUCCESS;
 	}
@@ -1045,14 +1051,17 @@ extern int dbd_cluster_procs(Buf buffer)
 		event_time = cluster_procs_msg->event_time;
 		if (event_time)
 			event_time--;
-		snprintf(tmp_buff, sizeof(tmp_buff), "%u", (uint32_t)event_time);
-		gold_request_add_assignment(gold_request, "EndTime", tmp_buff);
+		snprintf(tmp_buff, sizeof(tmp_buff), "%u", 
+			 (uint32_t)event_time);
+		gold_request_add_assignment(gold_request, "EndTime", 
+					    tmp_buff);
 		
 		gold_response = get_gold_response(gold_request);	
 		destroy_gold_request(gold_request);
 		
 		if (!gold_response) {
-			error("jobacct_p_cluster_procs: no response received");
+			error("jobacct_p_cluster_procs: no response "
+			      "received");
 			goto fini;
 		}
 		
@@ -1097,6 +1106,6 @@ extern int dbd_cluster_procs(Buf buffer)
 	}
 	destroy_gold_response(gold_response);
 
- fini:	slurm_dbd_free_cluster_procs_msg(cluster_procs_msg);
+ fini:	gold_agent_free_cluster_procs_msg(cluster_procs_msg);
 	return rc;
 }

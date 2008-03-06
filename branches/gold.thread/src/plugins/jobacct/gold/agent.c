@@ -60,19 +60,19 @@
 #include <time.h>
 #include <unistd.h>
 
+#include "agent.h"
 #include "slurm/slurm_errno.h"
 #include "src/common/fd.h"
 #include "src/common/pack.h"
-#include "src/common/slurmdbd_defs.h"
 #include "src/common/slurm_auth.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xsignal.h"
 #include "src/common/xstring.h"
 
-#define DBD_MAGIC	0xDEAD3219
+#define GOLD_MAGIC	0xDEAD3219
 #define MAX_AGENT_QUEUE	10000
-#define MAX_DBD_MSG_LEN 16384
+#define MAX_GOLD_MSG_LEN 16384
 
 static pthread_mutex_t agent_lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t  agent_cond = PTHREAD_COND_INITIALIZER;
@@ -86,34 +86,20 @@ static char *    slurmdbd_auth_info  = NULL;
 
 static void * _agent(void *x);
 static void   _agent_queue_del(void *x);
-static void   _close_slurmdbd_fd(void);
-static int    _cluster_procs(Buf buffer);
 static void   _create_agent(void);
-static bool   _fd_readable(slurm_fd fd);
-static int    _fd_writeable(slurm_fd fd);
-static void   _free_job_info(dbd_job_info_t *job_info);
-static int    _get_return_code(void);
 static Buf    _load_dbd_rec(int fd);
-static void   _load_dbd_state(void);
-static void   _open_slurmdbd_fd(void);
-static void   _pack_job_info(dbd_job_info_t *job_info, Buf buffer);
-static int    _purge_job_start_req(void);
-static Buf    _recv_msg(void);
-static void   _reopen_slurmdbd_fd(void);
+static void   _load_gold_state(void);
 static int    _save_dbd_rec(int fd, Buf buffer);
 static void   _save_dbd_state(void);
-static int    _send_msg(Buf buffer);
 static void   _sig_handler(int signal);
 static void   _shutdown_agent(void);
-static int    _tot_wait (struct timeval *start_time);
-static int    _unpack_job_info(dbd_job_info_t *job_info, Buf buffer);
 
 /****************************************************************************
- * Socket open/close/read/write functions
+ * External APIs for use by jobacct_gold.c
  ****************************************************************************/
 
-/* Open a socket connection to SlurmDbd */
-extern int slurm_open_slurmdbd_conn(char *auth_info)
+/* Initiated a Gold message agent. Recover any saved RPCs. */
+extern int gold_agent_init(char *auth_info)
 {
 	slurm_mutex_lock(&agent_lock);
 	if ((agent_tid == 0) || (agent_list == NULL))
@@ -131,8 +117,8 @@ extern int slurm_open_slurmdbd_conn(char *auth_info)
 	return SLURM_SUCCESS;
 }
 
-/* Close the SlurmDBD socket connection */
-extern int slurm_close_slurmdbd_conn(void)
+/* Terminate a Gold message agent. Save any pending RPCs. */
+extern int gold_agent_fini(void)
 {
 	/* NOTE: agent_lock not needed for _shutdown_agent() */
 	_shutdown_agent();
@@ -145,48 +131,44 @@ extern int slurm_close_slurmdbd_conn(void)
 	return SLURM_SUCCESS;
 }
 
-/* Send an RPC to the SlurmDBD. Do not wait for the reply. The RPC
- * will be queued and processed later if the SlurmDBD is not responding.
+/* Send an RPC to the Gold. Do not wait for the reply. The RPC
+ * will be queued and processed later if Gold is not responding.
  * Returns SLURM_SUCCESS or an error code */
-extern int slurm_send_slurmdbd_msg(slurmdbd_msg_t *req)
+extern int gold_agent_xmit(slurmdbd_msg_t *req)
 {
 	Buf buffer;
 	int cnt, rc = SLURM_SUCCESS;
 	static time_t syslog_time = 0;
 
-	buffer = init_buf(MAX_DBD_MSG_LEN);
+	buffer = init_buf(MAX_GOLD_MSG_LEN);
 	pack16(req->msg_type, buffer);
 	switch (req->msg_type) {
-		case DBD_CLUSTER_PROCS:
-			slurm_dbd_pack_cluster_procs_msg(
-				(dbd_cluster_procs_msg_t *) req->data, buffer);
+		case GOLD_MSG_CLUSTER_PROCS:
+			gold_agent_pack_cluster_procs_msg(
+				(gold_cluster_procs_msg_t *) req->data, buffer);
 			break;
-		case DBD_JOB_COMPLETE:
-			slurm_dbd_pack_job_complete_msg(
-				(dbd_job_comp_msg_t *) req->data, buffer);
+		case GOLD_MSG_JOB_COMPLETE:
+			gold_agent_pack_job_info_msg(
+				(dbd_job_info_msg_t *) req->data, buffer);
 			break;
-		case DBD_JOB_START:
-			slurm_dbd_pack_job_start_msg(
-				(dbd_job_start_msg_t *) req->data, buffer);
+		case GOLD_MSG_JOB_START:
+			gold_agent_pack_job_info_msg(
+				(dbd_job_info_msg_t *) req->data, buffer);
 			break;
-		case DBD_JOB_SUSPEND:
-			slurm_dbd_pack_job_suspend_msg(
-				(dbd_job_suspend_msg_t *) req->data, buffer);
+		case GOLD_MSG_NODE_DOWN:
+			gold_agent_pack_node_down_msg(
+				(dbd_node_down_msg_t *) req->data, buffer);
 			break;
-		case DBD_NODE_STATE:
-			slurm_dbd_pack_node_state_msg(
-				(dbd_node_state_msg_t *) req->data, buffer);
+		case GOLD_MSG_NODE_UP:
+			gold_agent_pack_node_up_msg(
+				(dbd_node_up_msg_t *) req->data, buffer);
 			break;
-		case DBD_STEP_COMPLETE:
-			slurm_dbd_pack_step_complete_msg(
-				(dbd_step_comp_msg_t *) req->data, buffer);
-			break;
-		case DBD_STEP_START:
-			slurm_dbd_pack_step_start_msg(
-				(dbd_step_start_msg_t *) req->data, buffer);
+		case GOLD_MSG_STEP_START:
+			gold_agent_pack_job_info_msg(
+				(dbd_job_info_msg_t *) req->data, buffer);
 			break;
 		default:
-			error("slurmdbd: Invalid send message type %u",
+			error("gold: Invalid send message type %u",
 			      req->msg_type);
 			free_buf(buffer);
 			return SLURM_ERROR;
@@ -209,12 +191,10 @@ extern int slurm_send_slurmdbd_msg(slurmdbd_msg_t *req)
 		error("gold: agent queue filling, RESTART GOLD NOW");
 		syslog(LOG_CRIT, "*** RESTART GOLD NOW ***");
 	}
-	if (cnt == (MAX_AGENT_QUEUE - 1))
-		cnt -= _purge_job_start_req();
 	if (cnt < MAX_AGENT_QUEUE)
 		list_enqueue(agent_list, buffer);
 	else {
-		error("slurmdbd: agent queue is full, discarding request");
+		error("gold: agent queue is full, discarding request");
 		rc = SLURM_ERROR;
 	}
 	slurm_mutex_unlock(&agent_lock);
@@ -222,270 +202,8 @@ extern int slurm_send_slurmdbd_msg(slurmdbd_msg_t *req)
 	return rc;
 }
 
-/* Open a connection to the Slurm DBD and set slurmdbd_fd */
-static void _open_slurmdbd_fd(void)
-{
-	slurm_addr dbd_addr;
-	uint16_t slurmdbd_port;
-	char *   slurmdbd_addr;
-
-	if (slurmdbd_fd >= 0) {
-		debug("Attempt to re-open slurmdbd socket");
-		return;
-	}
-
-	slurmdbd_addr = slurm_get_slurmdbd_addr();
-	slurmdbd_port = slurm_get_slurmdbd_port();
-	if ((slurmdbd_addr == NULL) || (slurmdbd_port == 0)) {
-		error("Invalid SlurmDbd address %s:%u",
-			slurmdbd_addr, slurmdbd_port);
-		xfree(slurmdbd_addr);
-		return;
-	}
-
-	slurm_set_addr(&dbd_addr, slurmdbd_port, slurmdbd_addr);
-	if (dbd_addr.sin_port == 0)
-		error("Unable to locate SlurmDBD host %s:%s", 
-		      slurmdbd_addr, slurmdbd_addr);
-	else {
-		slurmdbd_fd = slurm_open_msg_conn(&dbd_addr);
-		if (slurmdbd_fd < 0)
-			error("slurmdbd: slurm_open_msg_conn: %m");
-		else {
-			fd_set_nonblocking(slurmdbd_fd);
-			if (_send_init_msg() != SLURM_SUCCESS)
-				error("slurmdbd: Sending DdbInit msg: %m");
-			else
-				debug("slurmdbd: Sent DbdInit msg");
-		}
-	}
-	xfree(slurmdbd_addr);
-}
-
-/* Close the SlurmDbd connection */
-static void _close_slurmdbd_fd(void)
-{
-	if (slurmdbd_fd >= 0) {
-		close(slurmdbd_fd);
-		slurmdbd_fd = -1;
-	}
-}
-
-/* Reopen the Slurm DBD connection due to some error */
-static void _reopen_slurmdbd_fd(void)
-{
-	info("slurmdbd: reopening connection");
-	_close_slurmdbd_fd();
-	_open_slurmdbd_fd();
-}
-
-static int _send_msg(Buf buffer)
-{
-	uint16_t msg_type;
-	int rc = SLURM_ERROR;
-
-	safe_unpack16(&msg_type, buffer);
-	switch (msg_type) {
-	case DBD_CLUSTER_PROCS:
-		rc = dbd_cluster_procs(buffer);
-		break;
-	default:
-		error("Invalid RPC msg_type=%d", msg_type);
-	}
-	return rc;
-
-unpack_error:
-	return SLURM_ERROR;
-}
-
-static int _get_return_code(void)
-{
-	Buf buffer;
-	uint16_t msg_type;
-	dbd_rc_msg_t *msg;
-	int rc = SLURM_ERROR;
-
-	buffer = _recv_msg();
-	if (buffer == NULL)
-		return rc;
-
-	safe_unpack16(&msg_type, buffer);
-	if (msg_type != DBD_RC)
-		error("slurmdbd: bad message type %d != DBD_RC", msg_type);
-	else if (slurm_dbd_unpack_rc_msg(&msg, buffer) == SLURM_SUCCESS) {
-		rc = msg->return_code;
-		slurm_dbd_free_rc_msg(msg);
-		if (rc != SLURM_SUCCESS)
-			error("slurmdbd: DBD_RC is %d", rc);
-	} else
-		error("slurmdbd: unpack message error");
-
- unpack_error:
-	free_buf(buffer);
-	return rc;
-}
-
-static Buf _recv_msg(void)
-{
-	uint32_t msg_size, nw_size;
-	char *msg;
-	ssize_t msg_read, offset;
-	Buf buffer;
-
-	if (slurmdbd_fd < 0)
-		return NULL;
-
-	if (!_fd_readable(slurmdbd_fd))
-		return NULL;
-	msg_read = read(slurmdbd_fd, &nw_size, sizeof(nw_size));
-	if (msg_read != sizeof(nw_size))
-		return NULL;
-	msg_size = ntohl(nw_size);
-	if ((msg_size < 2) || (msg_size > 1000000)) {
-		error("slurmdbd: Invalid msg_size (%u)");
-		return NULL;
-	}
-
-	msg = xmalloc(msg_size);
-	offset = 0;
-	while (msg_size > offset) {
-		if (!_fd_readable(slurmdbd_fd))
-			break;		/* problem with this socket */
-		msg_read = read(slurmdbd_fd, (msg + offset), 
-				(msg_size - offset));
-		if (msg_read <= 0) {
-			error("slurmdbd: read: %m");
-			break;
-		}
-		offset += msg_read;
-	}
-	if (msg_size != offset) {
-		if (agent_shutdown == 0) {
-			error("slurmdbd: only read %d of %d bytes", 
-			      offset, msg_size);
-		}	/* else in shutdown mode */
-		xfree(msg);
-		return NULL;
-	}
-
-	buffer = create_buf(msg, msg_size);
-	if (buffer == NULL)
-		fatal("create_buf: malloc failure");
-	return buffer;
-}
-
-/* Return time in msec since "start time" */
-static int _tot_wait (struct timeval *start_time)
-{
-	struct timeval end_time;
-	int msec_delay;
-
-	gettimeofday(&end_time, NULL);
-	msec_delay =   (end_time.tv_sec  - start_time->tv_sec ) * 1000;
-	msec_delay += ((end_time.tv_usec - start_time->tv_usec + 500) / 1000);
-	return msec_delay;
-}
-
-/* Wait until a file is readable, 
- * RET false if can not be read */
-static bool _fd_readable(slurm_fd fd)
-{
-	struct pollfd ufds;
-	static int msg_timeout = -1;
-	int rc, time_left;
-	struct timeval tstart;
-
-	if (msg_timeout == -1)
-		msg_timeout = slurm_get_msg_timeout() * 1000;
-
-	ufds.fd     = fd;
-	ufds.events = POLLIN;
-	gettimeofday(&tstart, NULL);
-	while (agent_shutdown == 0) {
-		time_left = msg_timeout - _tot_wait(&tstart);
-		rc = poll(&ufds, 1, time_left);
-		if (rc == -1) {
-			if ((errno == EINTR) || (errno == EAGAIN))
-				continue;
-			error("poll: %m");
-			return false;
-		}
-		if (rc == 0)
-			return false;
-		if (ufds.revents & POLLHUP) {
-			debug2("SlurmDBD connection closed");
-			return false;
-		}
-		if (ufds.revents & POLLNVAL) {
-			error("SlurmDBD connection is invalid");
-			return false;
-		}
-		if (ufds.revents & POLLERR) {
-			error("SlurmDBD connection experienced an error");
-			return false;
-		}
-		if ((ufds.revents & POLLIN) == 0) {
-			error("SlurmDBD connection %d events %d", 
-				fd, ufds.revents);
-			return false;
-		}
-		/* revents == POLLIN */
-		return true;
-	}
-	return false;
-}
-
-/* Wait until a file is writable, 
- * RET 1 if file can be written now,
- *     0 if can not be written to within 5 seconds
- *     -1 if file has been closed POLLHUP
- */
-static int _fd_writeable(slurm_fd fd)
-{
-	struct pollfd ufds;
-	int msg_timeout = 5000;
-	int rc, time_left;
-	struct timeval tstart;
-
-	ufds.fd     = fd;
-	ufds.events = POLLOUT;
-	gettimeofday(&tstart, NULL);
-	while (agent_shutdown == 0) {
-		time_left = msg_timeout - _tot_wait(&tstart);
-		rc = poll(&ufds, 1, time_left);
-		if (rc == -1) {
-			if ((errno == EINTR) || (errno == EAGAIN))
-				continue;
-			error("poll: %m");
-			return -1;
-		}
-		if (rc == 0)
-			return 0;
-		if (ufds.revents & POLLHUP) {
-			debug2("SlurmDBD connection is closed");
-			return -1;
-		}
-		if (ufds.revents & POLLNVAL) {
-			error("SlurmDBD connection is invalid");
-			return 0;
-		}
-		if (ufds.revents & POLLERR) {
-			error("SlurmDBD connection experienced an error: %m");
-			return 0;
-		}
-		if ((ufds.revents & POLLOUT) == 0) {
-			error("SlurmDBD connection %d events %d", 
-				fd, ufds.revents);
-			return 0;
-		}
-		/* revents == POLLOUT */
-		return 1;
-	}
-	return 0;
-}
-
 /****************************************************************************
- * Functions for agent to manage queue of pending message for the Slurm DBD
+ * Functions for agent to manage queue of pending message for Gold
  ****************************************************************************/
 static void _create_agent(void)
 {
@@ -493,7 +211,7 @@ static void _create_agent(void)
 		agent_list = list_create(_agent_queue_del);
 		if (agent_list == NULL)
 			fatal("list_create: malloc failure");
-		_load_dbd_state();
+		_load_gold_state();
 	}
 
 	if (agent_tid == 0) {
@@ -527,7 +245,7 @@ static void _shutdown_agent(void)
 				agent_tid = 0;
 		}
 		if (agent_tid) {
-			error("slurmdbd: agent failed to shutdown gracefully");
+			error("gold: agent failed to shutdown gracefully");
 		} else
 			agent_shutdown = 0;
 	}
@@ -630,7 +348,7 @@ static void _save_dbd_state(void)
 	int fd, rc, wrote = 0;
 
 	dbd_fname = slurm_get_state_save_location();
-	xstrcat(dbd_fname, "/dbd.messages");
+	xstrcat(dbd_fname, "/gold.messages");
 	fd = open(dbd_fname, O_WRONLY | O_CREAT | O_TRUNC);
 	if (fd < 0) {
 		error("slurmdbd: Creating state save file %s", dbd_fname);
@@ -651,14 +369,14 @@ static void _save_dbd_state(void)
 	xfree(dbd_fname);
 }
 
-static void _load_dbd_state(void)
+static void _load_gold_state(void)
 {
 	char *dbd_fname;
 	Buf buffer;
 	int fd, recovered = 0;
 
 	dbd_fname = slurm_get_state_save_location();
-	xstrcat(dbd_fname, "/dbd.messages");
+	xstrcat(dbd_fname, "/gold.messages");
 	fd = open(dbd_fname, O_RDONLY);
 	if (fd < 0) {
 		error("slurmdbd: Opening state save file %s", dbd_fname);
@@ -685,7 +403,7 @@ static int _save_dbd_rec(int fd, Buf buffer)
 {
 	ssize_t size, wrote;
 	uint32_t msg_size = get_buf_offset(buffer);
-	uint32_t magic = DBD_MAGIC;
+	uint32_t magic = GOLD_MAGIC;
 	char *msg = get_buf_data(buffer);
 
 	size = sizeof(msg_size);
@@ -734,7 +452,7 @@ static Buf _load_dbd_rec(int fd)
 		error("slurmdbd: state recover error: %m");
 		return (Buf) NULL;
 	}
-	if (msg_size > MAX_DBD_MSG_LEN) {
+	if (msg_size > MAX_GOLD_MSG_LEN) {
 		error("slurmdbd: state recover error, msg_size=%u", msg_size);
 		return (Buf) NULL;
 	}
@@ -761,7 +479,7 @@ static Buf _load_dbd_rec(int fd)
 
 	size = sizeof(magic);
 	rd_size = read(fd, &magic, size);
-	if ((rd_size != size) || (magic != DBD_MAGIC)) {
+	if ((rd_size != size) || (magic != GOLD_MAGIC)) {
 		error("slurmdbd: state recover error");
 		free_buf(buffer);
 		return (Buf) NULL;
@@ -774,44 +492,15 @@ static void _sig_handler(int signal)
 {
 }
 
-/* Purge queued job/step start records from the agent queue
- * RET number of records purged */
-static int _purge_job_start_req(void)
-{
-	int purged = 0;
-	ListIterator iter;
-	uint16_t msg_type;
-	uint32_t offset;
-	Buf buffer;
-
-	iter = list_iterator_create(agent_list);
-	while ((buffer = list_next(iter))) {
-		offset = get_buf_offset(buffer);
-		if (offset < 2)
-			continue;
-		set_buf_offset(buffer, 0);
-		unpack16(&msg_type, buffer);
-		set_buf_offset(buffer, offset);
-		if ((msg_type == DBD_JOB_START) ||
-		    (msg_type == DBD_STEP_START)) {
-			list_remove(iter);
-			purged++;
-		}
-	}
-	list_iterator_destroy(iter);
-	info("slurmdbd: purge %d job/step start records", purged);
-	return purged;
-}
-
 /****************************************************************************\
  * Free data structures
 \****************************************************************************/
-void inline slurm_dbd_free_cluster_procs_msg(dbd_cluster_procs_msg_t *msg)
+void inline gold_agent_free_cluster_procs_msg(gold_cluster_procs_msg_t *msg)
 {
 	xfree(msg);
 }
 
-void inline slurm_dbd_free_job_info_msg(dbd_job_info_msg_t *msg)
+void inline gold_agent_free_job_info_msg(gold_job_info_msg_t *msg)
 {
 	if (msg) {
 		xfree(msg->account);
@@ -822,7 +511,7 @@ void inline slurm_dbd_free_job_info_msg(dbd_job_info_msg_t *msg)
 	}
 }
 
-void inline slurm_dbd_free_node_down_msg(dbd_node_down_msg_t *msg)
+void inline gold_agent_free_node_down_msg(gold_node_down_msg_t *msg)
 {
 	if (msg) {
 		xfree(msg->hostlist);
@@ -831,7 +520,7 @@ void inline slurm_dbd_free_node_down_msg(dbd_node_down_msg_t *msg)
 	}
 }
 
-void inline slurm_dbd_free_node_up_msg(dbd_node_up_msg_t *msg)
+void inline gold_agent_free_node_up_msg(gold_node_up_msg_t *msg)
 {
 	if (msg) {
 		xfree(msg->hostlist);
@@ -843,17 +532,17 @@ void inline slurm_dbd_free_node_up_msg(dbd_node_up_msg_t *msg)
  * Pack and unpack data structures
 \****************************************************************************/
 void inline
-slurm_dbd_pack_cluster_procs_msg(dbd_cluster_procs_msg_t *msg, Buf buffer)
+gold_agent_pack_cluster_procs_msg(gold_cluster_procs_msg_t *msg, Buf buffer)
 {
 	pack32(msg->proc_count,    buffer);
 	pack_time(msg->event_time, buffer);
 }
 int inline
-slurm_dbd_unpack_cluster_procs_msg(dbd_cluster_procs_msg_t **msg, Buf buffer)
+gold_agent_unpack_cluster_procs_msg(gold_cluster_procs_msg_t **msg, Buf buffer)
 {
-	dbd_cluster_procs_msg_t *msg_ptr;
+	gold_cluster_procs_msg_t *msg_ptr;
 
-	msg_ptr = xmalloc(sizeof(dbd_cluster_procs_msg_t));
+	msg_ptr = xmalloc(sizeof(gold_cluster_procs_msg_t));
 	*msg = msg_ptr;
 	safe_unpack32(&msg_ptr->proc_count, buffer);
 	safe_unpack_time(&msg_ptr->event_time, buffer);
@@ -866,7 +555,7 @@ unpack_error:
 }
 
 void inline 
-slurm_dbd_pack_job_info_msg(dbd_job_info_msg_t *msg, Buf buffer)
+gold_agent_pack_job_info_msg(gold_job_info_msg_t *msg, Buf buffer)
 {
 	packstr(msg->account, buffer);
 	pack_time(msg->begin_time, buffer);
@@ -884,7 +573,7 @@ slurm_dbd_pack_job_info_msg(dbd_job_info_msg_t *msg, Buf buffer)
 }
 
 int inline 
-slurm_dbd_unpack_job_info_msg(dbd_job_info_msg_t **msg, Buf buffer)
+gold_agent_unpack_job_info_msg(gold_job_info_msg_t **msg, Buf buffer)
 {
 	uint32_t uint32_tmp;
 	dbd_job_start_msg_t *msg_ptr = xmalloc(sizeof(dbd_job_start_msg_t));
@@ -915,7 +604,7 @@ unpack_error:
 }
 
 void inline 
-slurm_dbd_pack_node_down_msg(dbd_node_down_msg_t *msg, Buf buffer)
+gold_agent_pack_node_down_msg(gold_node_down_msg_t *msg, Buf buffer)
 {
 	pack_time(msg->cpus, buffer);
 	pack_time(msg->event_time, buffer);
@@ -924,7 +613,7 @@ slurm_dbd_pack_node_down_msg(dbd_node_down_msg_t *msg, Buf buffer)
 }
 
 int inline
-slurm_dbd_unpack_node_down_msg(dbd_node_down_msg_t **msg, Buf buffer)
+gold_agent_unpack_node_down_msg(gold_node_down_msg_t **msg, Buf buffer)
 {
 	dbd_node_state_msg_t *msg_ptr;
 	uint32_t uint32_tmp;
@@ -946,14 +635,14 @@ unpack_error:
 }
 
 void inline 
-slurm_dbd_pack_node_up_msg(dbd_node_up_msg_t *msg, Buf buffer)
+gold_agent_pack_node_up_msg(gold_node_up_msg_t *msg, Buf buffer)
 {
 	pack_time(msg->event_time, buffer);
 	packstr(msg->hostlist, buffer);
 }
 
 int inline
-slurm_dbd_unpack_node_up_msg(dbd_node_up_msg_t **msg, Buf buffer)
+gold_agent_unpack_node_up_msg(gold_node_up_msg_t **msg, Buf buffer)
 {
 	dbd_node_state_msg_t *msg_ptr;
 	uint32_t uint32_tmp;
