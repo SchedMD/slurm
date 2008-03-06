@@ -70,6 +70,7 @@
 #include "src/common/xsignal.h"
 #include "src/common/xstring.h"
 
+#define _DEBUG		0
 #define GOLD_MAGIC	0xDEAD3219
 #define MAX_AGENT_QUEUE	10000
 #define MAX_GOLD_MSG_LEN 16384
@@ -152,7 +153,7 @@ extern int gold_agent_xmit(gold_agent_msg_t *req)
 				(gold_job_info_msg_t *) req->data, buffer);
 			break;
 		default:
-			error("gold: Invalid send message type %u",
+			error("gold: Invalid message send type %u",
 			      req->msg_type);
 			free_buf(buffer);
 			return SLURM_ERROR;
@@ -168,6 +169,10 @@ extern int gold_agent_xmit(gold_agent_msg_t *req)
 		}
 	}
 	cnt = list_count(agent_list);
+#if _DEBUG
+        info("gold agent: queuing msg_type %u queue_len %d", 
+	     req->msg_type, cnt);
+#endif
 	if ((cnt >= (MAX_AGENT_QUEUE / 2)) &&
 	    (difftime(time(NULL), syslog_time) > 120)) {
 		/* Log critical error every 120 seconds */
@@ -175,9 +180,10 @@ extern int gold_agent_xmit(gold_agent_msg_t *req)
 		error("gold: agent queue filling, RESTART GOLD NOW");
 		syslog(LOG_CRIT, "*** RESTART GOLD NOW ***");
 	}
-	if (cnt < MAX_AGENT_QUEUE)
-		list_enqueue(agent_list, buffer);
-	else {
+	if (cnt < MAX_AGENT_QUEUE) {
+		if (list_enqueue(agent_list, buffer) == NULL)
+			fatal("list_enqueue: memory allocation failure");
+	} else {
 		error("gold: agent queue is full, discarding request");
 		rc = SLURM_ERROR;
 	}
@@ -308,8 +314,16 @@ static int _process_msg(Buf buffer)
 {
 	int rc;
 	uint16_t msg_type;
+	uint32_t msg_size;
 
+	/* We save the full buffer size in case the RPC fails 
+	 * and we need to save state for later recovery. */ 
+	msg_size = get_buf_offset(buffer);
+	set_buf_offset(buffer, 0);
 	safe_unpack16(&msg_type, buffer);
+#if _DEBUG
+	info("gold agent: processing msg_type %u", msg_type);
+#endif
 	switch (msg_type) {
 		case GOLD_MSG_CLUSTER_PROCS:
 			rc = agent_cluster_procs(buffer);
@@ -331,13 +345,15 @@ static int _process_msg(Buf buffer)
 			break;
 		default:
 			error("gold: Invalid send message type %u", msg_type);
-			return SLURM_ERROR;
+			rc = SLURM_SUCCESS;	/* discard entry and continue */
 	}
+	set_buf_offset(buffer, msg_size);	/* restore buffer size */
 	return rc;
 
 unpack_error:
 	/* If the message format is bad return SLURM_SUCCESS to get
 	 * it off of the queue since we can't work with it anyway */
+	error("gold agent: message unpack error");
 	return SLURM_SUCCESS;
 }
 
@@ -349,7 +365,7 @@ static void _save_gold_state(void)
 
 	gold_fname = slurm_get_state_save_location();
 	xstrcat(gold_fname, "/gold.messages");
-	fd = open(gold_fname, O_WRONLY | O_CREAT | O_TRUNC);
+	fd = open(gold_fname, O_WRONLY | O_CREAT | O_TRUNC, 0600);
 	if (fd < 0) {
 		error("gold: Creating state save file %s", gold_fname);
 	} else if (agent_list) {
@@ -362,8 +378,7 @@ static void _save_gold_state(void)
 		}
 	}
 	if (fd >= 0) {
-		if (wrote)
-			info("gold: saved %d pending RPCs", wrote);
+		verbose("gold: saved %d pending RPCs", wrote);
 		(void) close(fd);
 	}
 	xfree(gold_fname);
@@ -391,8 +406,7 @@ static void _load_gold_state(void)
 		}
 	}
 	if (fd >= 0) {
-		if (recovered)
-			info("gold: recovered %d pending RPCs", recovered);
+		verbose("gold: recovered %d pending RPCs", recovered);
 		(void) close(fd);
 		(void) unlink(gold_fname);	/* clear save state */
 	}
@@ -460,7 +474,6 @@ static Buf _load_gold_rec(int fd)
 	buffer = init_buf((int) msg_size);
 	if (buffer == NULL)
 		fatal("gold: create_buf malloc failure");
-	set_buf_offset(buffer, msg_size);
 	msg = get_buf_data(buffer);
 	rd_size = 0;
 	while (rd_size < msg_size) {
