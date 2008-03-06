@@ -281,11 +281,12 @@ extern int slurm_send_recv_slurmdbd_msg(slurmdbd_msg_t *req,
 			break;
 		default:
 			error("slurmdbd: bad message type %d", resp->msg_type);
+			rc = SLURM_ERROR;
 	}
 
 	free_buf(buffer);
 	slurm_mutex_unlock(&slurmdbd_lock);
-	return SLURM_SUCCESS;
+	return rc;
 
  unpack_error:
 	free_buf(buffer);
@@ -359,9 +360,10 @@ extern int slurm_send_slurmdbd_msg(slurmdbd_msg_t *req)
 	}
 	if (cnt == (MAX_AGENT_QUEUE - 1))
 		cnt -= _purge_job_start_req();
-	if (cnt < MAX_AGENT_QUEUE)
-		list_enqueue(agent_list, buffer);
-	else {
+	if (cnt < MAX_AGENT_QUEUE) {
+		if (list_enqueue(agent_list, buffer) == NULL)
+			fatal("list_enqueue: memory allocation failure");
+	} else {
 		error("slurmdbd: agent queue is full, discarding request");
 		rc = SLURM_ERROR;
 	}
