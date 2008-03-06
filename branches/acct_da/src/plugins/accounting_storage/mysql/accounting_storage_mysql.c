@@ -191,8 +191,6 @@ static int _mysql_acct_check_tables()
 		{ "associd", "mediumint unsigned not null" },
 		{ "partition", "tinytext not null" },
 		{ "submit", "int unsigned not null" },
-		{ "uid", "smallint unsigned not null" },
-		{ "gid", "smallint unsigned not null" },
 		{ "blockid", "tinytext" },
 		{ NULL, NULL}		
 	};
@@ -258,6 +256,12 @@ static int _mysql_acct_check_tables()
 		{ "kill_requid", "smallint default -1 not null" },
 		{ "comp_code", "int default 0 not null" },
 		{ "cpus", "mediumint unsigned not null" },
+		{ "cpu_sec", "int unsigned default 0 not null" },
+		{ "cpu_usec", "int unsigned default 0 not null" },
+		{ "user_sec", "int unsigned default 0 not null" },
+		{ "user_usec", "int unsigned default 0 not null" },
+		{ "sys_sec", "int unsigned default 0 not null" },
+		{ "sys_usec", "int unsigned default 0 not null" },
 		{ "max_vsize", "mediumint unsigned default 0 not null" },
 		{ "max_vsize_task", "smallint unsigned default 0 not null" },
 		{ "max_vsize_node", "mediumint unsigned default 0 not null" },

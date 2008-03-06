@@ -50,6 +50,7 @@
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/xstring.h"
 #include "src/slurmctld/slurmctld.h"
+#include "src/sacctmgr/sacctmgr.h"
 
 /*
  * Local data
@@ -293,8 +294,8 @@ extern void destroy_acct_account_rec(void *object)
 		xfree(acct_account->name);
 		xfree(acct_account->description);
 		xfree(acct_account->organization);
-		if(acct_account->coodinators)
-			list_destroy(acct_account->coodinators);
+		if(acct_account->coordinators)
+			list_destroy(acct_account->coordinators);
 		xfree(acct_account);
 	}
 }
@@ -407,6 +408,497 @@ extern void destroy_acct_association_cond(void *object)
 			list_destroy(acct_association->cluster_list);
 		xfree(acct_association);
 	}
+}
+
+
+/* pack functions */
+extern void pack_acct_user_rec(acct_user_rec_t *object, Buf buffer)
+{
+	pack16((uint16_t)object->admin_level, buffer);
+	packstr(object->default_acct, buffer);
+	pack16((uint16_t)object->expedite, buffer);
+	packstr(object->name, buffer);
+}
+
+extern int unpack_acct_user_rec(acct_user_rec_t **object, Buf buffer)
+{
+	uint32_t uint32_tmp;
+	acct_user_rec_t *object_ptr = xmalloc(sizeof(acct_user_rec_t));
+
+	*object = object_ptr;
+	safe_unpack16((uint16_t *)&object_ptr->admin_level, buffer);
+	safe_unpackstr_xmalloc(&object_ptr->default_acct, &uint32_tmp, buffer);
+	safe_unpack16((uint16_t *)&object_ptr->expedite, buffer);
+	safe_unpackstr_xmalloc(&object_ptr->name, &uint32_tmp, buffer);
+
+	return SLURM_SUCCESS;
+
+unpack_error:
+	return SLURM_ERROR;
+}
+
+extern void pack_acct_account_rec(acct_account_rec_t *object, Buf buffer)
+{
+	char *coord = NULL;
+	ListIterator itr = NULL;
+
+	pack32(list_count(object->coordinators), buffer);
+	itr = list_iterator_create(object->coordinators);
+	while((coord = list_next(itr))) {
+		packstr(coord, buffer);
+	}
+	list_iterator_destroy(itr);
+	packstr(object->description, buffer);
+	pack16((uint16_t)object->expedite, buffer);
+	packstr(object->name, buffer);
+	packstr(object->organization, buffer);
+}
+
+extern int unpack_acct_account_rec(acct_account_rec_t **object, Buf buffer)
+{
+	uint32_t uint32_tmp;
+	int i;
+	uint32_t count;
+	char *coord = NULL;
+	acct_account_rec_t *object_ptr = xmalloc(sizeof(acct_account_rec_t));
+
+	*object = object_ptr;
+
+	safe_unpack32(&count, buffer);
+	object_ptr->coordinators = list_create(slurm_destroy_char);
+	for(i=0; i<count; i++) {
+		safe_unpackstr_xmalloc(&coord, &uint32_tmp, buffer);
+		list_append(object_ptr->coordinators, coord);
+	}
+	safe_unpackstr_xmalloc(&object_ptr->description, &uint32_tmp, buffer);
+	safe_unpack16((uint16_t *)&object_ptr->expedite, buffer);
+	safe_unpackstr_xmalloc(&object_ptr->name, &uint32_tmp, buffer);
+	safe_unpackstr_xmalloc(&object_ptr->organization, &uint32_tmp, buffer);
+
+	return SLURM_SUCCESS;
+
+unpack_error:
+	return SLURM_ERROR;
+}
+
+extern void pack_cluster_accounting_rec(cluster_accounting_rec_t *object,
+					Buf buffer)
+{
+	pack32(object->alloc_secs, buffer);
+	pack32(object->cpu_count, buffer);
+	pack32(object->down_secs, buffer);
+	pack32(object->idle_secs, buffer);
+	pack_time(object->period_start, buffer);
+	pack32(object->resv_secs, buffer);
+}
+
+extern int unpack_cluster_accounting_rec(cluster_accounting_rec_t **object,
+					  Buf buffer)
+{
+	cluster_accounting_rec_t *object_ptr =
+		xmalloc(sizeof(cluster_accounting_rec_t));
+	
+	*object = object_ptr;
+	safe_unpack32(&object_ptr->alloc_secs, buffer);
+	safe_unpack32(&object_ptr->cpu_count, buffer);
+	safe_unpack32(&object_ptr->down_secs, buffer);
+	safe_unpack32(&object_ptr->idle_secs, buffer);
+	safe_unpack_time(&object_ptr->period_start, buffer);
+	safe_unpack32(&object_ptr->resv_secs, buffer);
+	
+	return SLURM_SUCCESS;
+
+unpack_error:
+	return SLURM_ERROR;
+}
+
+extern void pack_acct_cluster_rec(acct_cluster_rec_t *object, Buf buffer)
+{
+	cluster_accounting_rec_t *acct_info = NULL;
+	ListIterator itr = NULL;
+
+	pack32(list_count(object->accounting_list), buffer);
+	itr = list_iterator_create(object->accounting_list);
+	while((acct_info = list_next(itr))) {
+		pack_cluster_accounting_rec(acct_info, buffer);
+	}
+	list_iterator_destroy(itr);
+	packstr(object->backup, buffer);
+	packstr(object->name, buffer);
+	packstr(object->primary, buffer);
+}
+
+extern int unpack_acct_cluster_rec(acct_cluster_rec_t **object, Buf buffer)
+{
+	uint32_t uint32_tmp;
+	int i;
+	uint32_t count;
+	acct_cluster_rec_t *object_ptr = xmalloc(sizeof(acct_cluster_rec_t));
+	cluster_accounting_rec_t *acct_info = NULL;
+
+	*object = object_ptr;
+
+	safe_unpack32(&count, buffer);
+	object_ptr->accounting_list =
+		list_create(destroy_cluster_accounting_rec);
+	for(i=0; i<count; i++) {
+		unpack_cluster_accounting_rec(&acct_info, buffer);
+		list_append(object_ptr->accounting_list, acct_info);
+	}
+	safe_unpackstr_xmalloc(&object_ptr->backup, &uint32_tmp, buffer);
+	safe_unpackstr_xmalloc(&object_ptr->name, &uint32_tmp, buffer);
+	safe_unpackstr_xmalloc(&object_ptr->primary, &uint32_tmp, buffer);
+
+	return SLURM_SUCCESS;
+
+unpack_error:
+	return SLURM_ERROR;
+}
+
+extern void pack_acct_accounting_rec(acct_accounting_rec_t *object, Buf buffer)
+{
+	pack_time(object->period_start, buffer);
+	pack32(object->alloc_secs, buffer);
+}
+
+extern int unpack_acct_accounting_rec(acct_accounting_rec_t **object,
+				       Buf buffer)
+{
+	acct_accounting_rec_t *object_ptr =
+		xmalloc(sizeof(acct_accounting_rec_t));
+	
+	*object = object_ptr;
+	safe_unpack_time(&object_ptr->period_start, buffer);
+	safe_unpack32(&object_ptr->alloc_secs, buffer);
+
+	return SLURM_SUCCESS;
+
+unpack_error:
+	return SLURM_ERROR;
+}
+
+extern void pack_acct_association_rec(acct_association_rec_t *object,
+				      Buf buffer)
+{
+	acct_accounting_rec_t *acct_info = NULL;
+	ListIterator itr = NULL;
+
+	pack32(list_count(object->accounting_list), buffer);
+	itr = list_iterator_create(object->accounting_list);
+	while((acct_info = list_next(itr))) {
+		pack_acct_accounting_rec(acct_info, buffer);
+	}
+	list_iterator_destroy(itr);
+	packstr(object->acct, buffer);
+	packstr(object->cluster, buffer);
+	pack32(object->fairshare, buffer);
+	pack32(object->id, buffer);
+	pack32(object->lft, buffer);
+	pack32(object->max_cpu_secs_per_job, buffer);
+	pack32(object->max_jobs, buffer);
+	pack32(object->max_nodes_per_job, buffer);
+	pack32(object->max_wall_duration_per_job, buffer);
+	pack32(object->parent, buffer);
+	packstr(object->parent_acct, buffer);
+	pack32(object->parent, buffer);
+	pack32(object->rgt, buffer);
+	pack32(object->uid, buffer);
+	packstr(object->user, buffer);	
+}
+
+extern int unpack_acct_association_rec(acct_association_rec_t **object,
+					Buf buffer)
+{
+	uint32_t uint32_tmp;
+	int i;
+	uint32_t count;
+	acct_association_rec_t *object_ptr = 
+		xmalloc(sizeof(acct_association_rec_t));
+	acct_accounting_rec_t *acct_info = NULL;
+
+	*object = object_ptr;
+
+	safe_unpack32(&count, buffer);
+	object_ptr->accounting_list =
+		list_create(destroy_acct_accounting_rec);
+	for(i=0; i<count; i++) {
+		unpack_acct_accounting_rec(&acct_info, buffer);
+		list_append(object_ptr->accounting_list, acct_info);
+	}
+	safe_unpackstr_xmalloc(&object_ptr->acct, &uint32_tmp, buffer);
+	safe_unpackstr_xmalloc(&object_ptr->cluster, &uint32_tmp, buffer);
+	safe_unpack32(&object_ptr->fairshare, buffer);
+	safe_unpack32(&object_ptr->id, buffer);
+	safe_unpack32(&object_ptr->lft, buffer);
+	safe_unpack32(&object_ptr->max_cpu_secs_per_job, buffer);
+	safe_unpack32(&object_ptr->max_jobs, buffer);
+	safe_unpack32(&object_ptr->max_nodes_per_job, buffer);
+	safe_unpack32(&object_ptr->max_wall_duration_per_job, buffer);
+	safe_unpack32(&object_ptr->parent, buffer);
+	safe_unpackstr_xmalloc(&object_ptr->parent_acct, &uint32_tmp, buffer);
+	safe_unpack32(&object_ptr->parent, buffer);
+	safe_unpack32(&object_ptr->rgt, buffer);
+	safe_unpack32(&object_ptr->uid, buffer);
+	safe_unpackstr_xmalloc(&object_ptr->user, &uint32_tmp, buffer);	
+
+	return SLURM_SUCCESS;
+
+unpack_error:
+	return SLURM_ERROR;
+}
+
+extern void pack_acct_user_cond(acct_user_cond_t *object, Buf buffer)
+{
+	char *info = NULL;
+	ListIterator itr = NULL;
+
+	pack16((uint16_t)object->admin_level, buffer);
+	pack32(list_count(object->def_acct_list), buffer);
+	itr = list_iterator_create(object->def_acct_list);
+	while((info = list_next(itr))) {
+		packstr(info, buffer);
+	}
+	list_iterator_destroy(itr);
+	pack16((uint16_t)object->expedite, buffer);
+	pack32(list_count(object->user_list), buffer);
+	itr = list_iterator_create(object->user_list);
+	while((info = list_next(itr))) {
+		packstr(info, buffer);
+	}
+	list_iterator_destroy(itr);
+
+}
+
+extern int unpack_acct_user_cond(acct_user_cond_t **object, Buf buffer)
+{
+	uint32_t uint32_tmp;
+	int i;
+	uint32_t count;
+	acct_user_cond_t *object_ptr = xmalloc(sizeof(acct_user_cond_t));
+	char *info = NULL;
+
+	*object = object_ptr;
+
+	safe_unpack16((uint16_t *)&object_ptr->admin_level, buffer);
+	safe_unpack32(&count, buffer);
+	object_ptr->def_acct_list = list_create(slurm_destroy_char);
+	for(i=0; i<count; i++) {
+		safe_unpackstr_xmalloc(&info, &uint32_tmp, buffer);
+		list_append(object_ptr->def_acct_list, info);
+	}
+	safe_unpack16((uint16_t *)&object_ptr->expedite, buffer);
+	safe_unpack32(&count, buffer);
+	object_ptr->user_list = list_create(slurm_destroy_char);
+	for(i=0; i<count; i++) {
+		safe_unpackstr_xmalloc(&info, &uint32_tmp, buffer);
+		list_append(object_ptr->user_list, info);
+	}
+
+	return SLURM_SUCCESS;
+
+unpack_error:
+	return SLURM_ERROR;
+}
+
+extern void pack_acct_account_cond(acct_account_cond_t *object, Buf buffer)
+{
+	char *info = NULL;
+	ListIterator itr = NULL;
+
+	pack32(list_count(object->acct_list), buffer);
+	itr = list_iterator_create(object->acct_list);
+	while((info = list_next(itr))) {
+		packstr(info, buffer);
+	}
+	list_iterator_destroy(itr);
+	pack32(list_count(object->description_list), buffer);
+	itr = list_iterator_create(object->description_list);
+	while((info = list_next(itr))) {
+		packstr(info, buffer);
+	}
+	list_iterator_destroy(itr);
+	pack16((uint16_t)object->expedite, buffer);
+	pack32(list_count(object->organization_list), buffer);
+	itr = list_iterator_create(object->organization_list);
+	while((info = list_next(itr))) {
+		packstr(info, buffer);
+	}
+	list_iterator_destroy(itr);
+}
+
+extern int unpack_acct_account_cond(acct_account_cond_t **object, Buf buffer)
+{
+	uint32_t uint32_tmp;
+	int i;
+	uint32_t count;
+	acct_account_cond_t *object_ptr = xmalloc(sizeof(acct_account_cond_t));
+	char *info = NULL;
+
+	*object = object_ptr;
+	safe_unpack32(&count, buffer);
+	object_ptr->acct_list = list_create(slurm_destroy_char);
+	for(i=0; i<count; i++) {
+		safe_unpackstr_xmalloc(&info, &uint32_tmp, buffer);
+		list_append(object_ptr->acct_list, info);
+	}
+	safe_unpack32(&count, buffer);
+	object_ptr->description_list = list_create(slurm_destroy_char);
+	for(i=0; i<count; i++) {
+		safe_unpackstr_xmalloc(&info, &uint32_tmp, buffer);
+		list_append(object_ptr->description_list, info);
+	}
+	safe_unpack16((uint16_t *)&object_ptr->expedite, buffer);
+	safe_unpack32(&count, buffer);
+	object_ptr->organization_list = list_create(slurm_destroy_char);
+	for(i=0; i<count; i++) {
+		safe_unpackstr_xmalloc(&info, &uint32_tmp, buffer);
+		list_append(object_ptr->organization_list, info);
+	}
+
+	return SLURM_SUCCESS;
+
+unpack_error:
+	return SLURM_ERROR;
+}
+
+extern void pack_acct_cluster_cond(acct_cluster_cond_t *object, Buf buffer)
+{
+	char *info = NULL;
+	ListIterator itr = NULL;
+
+	pack32(list_count(object->cluster_list), buffer);
+	itr = list_iterator_create(object->cluster_list);
+	while((info = list_next(itr))) {
+		packstr(info, buffer);
+	}
+	list_iterator_destroy(itr);
+}
+
+extern int unpack_acct_cluster_cond(acct_cluster_cond_t **object, Buf buffer)
+{
+	uint32_t uint32_tmp;
+	int i;
+	uint32_t count;
+	acct_cluster_cond_t *object_ptr = xmalloc(sizeof(acct_cluster_cond_t));
+	char *info = NULL;
+
+	*object = object_ptr;
+	safe_unpack32(&count, buffer);
+	object_ptr->cluster_list = list_create(slurm_destroy_char);
+	for(i=0; i<count; i++) {
+		safe_unpackstr_xmalloc(&info, &uint32_tmp, buffer);
+		list_append(object_ptr->cluster_list, info);
+	}
+
+	return SLURM_SUCCESS;
+
+unpack_error:
+	return SLURM_ERROR;
+}
+
+extern void pack_acct_association_cond(acct_association_cond_t *object,
+				       Buf buffer)
+{
+	char *info = NULL;
+	ListIterator itr = NULL;
+
+	pack32(list_count(object->acct_list), buffer);
+	itr = list_iterator_create(object->acct_list);
+	while((info = list_next(itr))) {
+		packstr(info, buffer);
+	}
+	list_iterator_destroy(itr);
+	pack32(list_count(object->cluster_list), buffer);
+	itr = list_iterator_create(object->cluster_list);
+	while((info = list_next(itr))) {
+		packstr(info, buffer);
+	}
+	list_iterator_destroy(itr);
+	pack32(list_count(object->id_list), buffer);
+	itr = list_iterator_create(object->id_list);
+	while((info = list_next(itr))) {
+		packstr(info, buffer);
+	}
+
+	pack32(object->lft, buffer);
+	
+	pack32(list_count(object->partition_list), buffer);
+	itr = list_iterator_create(object->partition_list);
+	while((info = list_next(itr))) {
+		packstr(info, buffer);
+	}
+	list_iterator_destroy(itr);
+
+	packstr(object->parent_acct, buffer);
+
+	pack32(object->parent, buffer);
+	pack32(object->rgt, buffer);
+
+	pack32(list_count(object->user_list), buffer);
+	itr = list_iterator_create(object->user_list);
+	while((info = list_next(itr))) {
+		packstr(info, buffer);
+	}
+	list_iterator_destroy(itr);
+}
+
+extern int unpack_acct_association_cond(acct_association_cond_t **object,
+					 Buf buffer)
+{
+	uint32_t uint32_tmp;
+	int i;
+	uint32_t count;
+	acct_association_cond_t *object_ptr =
+		xmalloc(sizeof(acct_association_cond_t));
+	char *info = NULL;
+
+	*object = object_ptr;
+	safe_unpack32(&count, buffer);
+	object_ptr->acct_list = list_create(slurm_destroy_char);
+	for(i=0; i<count; i++) {
+		safe_unpackstr_xmalloc(&info, &uint32_tmp, buffer);
+		list_append(object_ptr->acct_list, info);
+	}
+
+	safe_unpack32(&count, buffer);
+	object_ptr->cluster_list = list_create(slurm_destroy_char);
+	for(i=0; i<count; i++) {
+		safe_unpackstr_xmalloc(&info, &uint32_tmp, buffer);
+		list_append(object_ptr->cluster_list, info);
+	}
+
+	safe_unpack32(&count, buffer);
+	object_ptr->id_list = list_create(slurm_destroy_char);
+	for(i=0; i<count; i++) {
+		safe_unpackstr_xmalloc(&info, &uint32_tmp, buffer);
+		list_append(object_ptr->id_list, info);
+	}
+	
+	safe_unpack32(&object_ptr->lft, buffer);
+
+	safe_unpack32(&count, buffer);
+	object_ptr->partition_list = list_create(slurm_destroy_char);
+	for(i=0; i<count; i++) {
+		safe_unpackstr_xmalloc(&info, &uint32_tmp, buffer);
+		list_append(object_ptr->partition_list, info);
+	}
+
+	safe_unpackstr_xmalloc(&object_ptr->parent_acct, &uint32_tmp, buffer);
+
+	safe_unpack32(&object_ptr->parent, buffer);
+	safe_unpack32(&object_ptr->rgt, buffer);
+
+	safe_unpack32(&count, buffer);
+	object_ptr->user_list = list_create(slurm_destroy_char);
+	for(i=0; i<count; i++) {
+		safe_unpackstr_xmalloc(&info, &uint32_tmp, buffer);
+		list_append(object_ptr->user_list, info);
+	}
+
+	return SLURM_SUCCESS;
+
+unpack_error:
+	return SLURM_ERROR;
 }
 
 extern char *acct_expedite_str(acct_expedite_level_t level)

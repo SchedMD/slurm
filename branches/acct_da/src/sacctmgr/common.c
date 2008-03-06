@@ -124,12 +124,6 @@ extern int print_secs(long time, int width, bool right, bool cut_output)
 	return SLURM_SUCCESS;
 }
 
-extern void destroy_char(void *object)
-{
-	char *tmp = (char *)object;
-	xfree(tmp);
-}
-
 extern void addto_char_list(List char_list, char *names)
 {
 	int i=0, start=0;

@@ -103,6 +103,12 @@ extern void slurm_msg_t_copy(slurm_msg_t *dest, slurm_msg_t *src)
 	return;	
 }
 
+extern void slurm_destroy_char(void *object)
+{
+	char *tmp = (char *)object;
+	xfree(tmp);
+}
+
 
 void slurm_free_last_update_msg(last_update_msg_t * msg)
 {

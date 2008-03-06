@@ -113,7 +113,7 @@ static int _pgsql_acct_check_tables(char *user)
 	storage_field_t acct_table_fields[] = {
 		{ "creation_time", "bigint not null" },
 		{ "mod_time", "bigint default 0" },
-		{ "deleted", "tinyint default 0" },
+		{ "deleted", "smallint default 0" },
 		{ "name", "text not null" },
 		{ "description", "text not null" },
 		{ "organization", "text not null" },
@@ -122,7 +122,7 @@ static int _pgsql_acct_check_tables(char *user)
 	};
 
 	storage_field_t acct_coord_table_fields[] = {
-		{ "deleted", "tinyint default 0" },
+		{ "deleted", "smallint default 0" },
 		{ "acct", "text not null" },
 		{ "name", "text not null" },
 		{ NULL, NULL}		
@@ -131,7 +131,7 @@ static int _pgsql_acct_check_tables(char *user)
 	storage_field_t assoc_table_fields[] = {
 		{ "creation_time", "bigint not null" },
 		{ "mod_time", "bigint default 0" },
-		{ "deleted", "tinyint default 0" },
+		{ "deleted", "smallint default 0" },
 		{ "id", "serial" },
 		{ "user", "text not null" },
 		{ "acct", "text not null" },
@@ -151,7 +151,7 @@ static int _pgsql_acct_check_tables(char *user)
 	storage_field_t assoc_usage_table_fields[] = {
 		{ "creation_time", "bigint not null" },
 		{ "mod_time", "bigint default 0" },
-		{ "deleted", "tinyint default 0" },
+		{ "deleted", "smallint default 0" },
 		{ "associd", "int not null" },
 		{ "period_start", "bigint not null" },
 		{ "cpu_count", "bigint default 0" },
@@ -162,7 +162,7 @@ static int _pgsql_acct_check_tables(char *user)
 	storage_field_t cluster_table_fields[] = {
 		{ "creation_time", "bigint not null" },
 		{ "mod_time", "bigint default 0" },
-		{ "deleted", "tinyint default 0" },
+		{ "deleted", "smallint default 0" },
 		{ "name", "text not null" },
 		{ "primary", "text not null" },
 		{ "backup", "text not null" },
@@ -172,7 +172,7 @@ static int _pgsql_acct_check_tables(char *user)
 	storage_field_t cluster_usage_table_fields[] = {
 		{ "creation_time", "bigint not null" },
 		{ "mod_time", "bigint default 0" },
-		{ "deleted", "tinyint default 0" },
+		{ "deleted", "smallint default 0" },
 		{ "cluster", "text not null" },
 		{ "period_start", "bigint not null" },
 		{ "cpu_count", "bigint default 0" },
@@ -188,10 +188,9 @@ static int _pgsql_acct_check_tables(char *user)
 		{ "mod_time", "bigint default 0" },
 		{ "id", "serial" },
 		{ "jobid ", "integer not null" },
+		{ "associd", "bigint not null" },
 		{ "partition", "text not null" },
 		{ "submit", "bigint not null" },
-		{ "uid", "smallint not null" },
-		{ "gid", "smallint not null" },
 		{ "blockid", "text" },
 		{ NULL, NULL}		
 	};
@@ -257,6 +256,12 @@ static int _pgsql_acct_check_tables(char *user)
 		{ "kill_requid", "smallint default -1 not null" },
 		{ "comp_code", "int default 0 not null" },
 		{ "cpus", "int not null" },
+		{ "cpu_sec", "bigint default 0 not null" },
+		{ "cpu_usec", "bigint default 0 not null" },
+		{ "user_sec", "bigint default 0 not null" },
+		{ "user_usec", "bigint default 0 not null" },
+		{ "sys_sec", "bigint default 0 not null" },
+		{ "sys_usec", "bigint default 0 not null" },
 		{ "max_vsize", "integer default 0 not null" },
 		{ "max_vsize_task", "smallint default 0 not null" },
 		{ "max_vsize_node", "integer default 0 not null" },

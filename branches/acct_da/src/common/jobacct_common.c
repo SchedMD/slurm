@@ -64,11 +64,9 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-extern jobacct_job_rec_t *create_jobacct_job_rec(jobacct_header_t header)
+extern jobacct_job_rec_t *create_jobacct_job_rec()
 {
 	jobacct_job_rec_t *job = xmalloc(sizeof(jobacct_job_rec_t));
-	memcpy(&job->header, &header, sizeof(jobacct_header_t));
-	memset(&job->rusage, 0, sizeof(struct rusage));
 	memset(&job->sacct, 0, sizeof(sacct_t));
 	job->sacct.min_cpu = (float)NO_VAL;
 	job->job_start_seen = 0;
@@ -76,7 +74,7 @@ extern jobacct_job_rec_t *create_jobacct_job_rec(jobacct_header_t header)
 	job->job_terminated_seen = 0;
 	job->jobnum_superseded = 0;
 	job->jobname = NULL;
-	job->status = JOB_PENDING;
+	job->state = JOB_PENDING;
 	job->nodes = NULL;
 	job->jobname = NULL;
 	job->exitcode = 0;
@@ -95,11 +93,9 @@ extern jobacct_job_rec_t *create_jobacct_job_rec(jobacct_header_t header)
       	return job;
 }
 
-extern jobacct_step_rec_t *create_jobacct_step_rec(jobacct_header_t header)
+extern jobacct_step_rec_t *create_jobacct_step_rec()
 {
 	jobacct_step_rec_t *step = xmalloc(sizeof(jobacct_job_rec_t));
-	memcpy(&step->header, &header, sizeof(jobacct_header_t));
-	memset(&step->rusage, 0, sizeof(struct rusage));
 	memset(&step->sacct, 0, sizeof(sacct_t));
 	step->stepnum = (uint32_t)NO_VAL;
 	step->nodes = NULL;
@@ -154,8 +150,45 @@ extern void destroy_jobacct_step_rec(void *object)
 	}
 }
 
+extern void pack_jobacct_header(jobacct_header_t *header, Buf buffer)
+{
+	pack32(header->jobnum, buffer);
+	packstr(header->partition, buffer);
+	packstr(header->blockid, buffer);
+	pack_time(header->blockid, buffer);
+	pack32(header->uid, buffer);
+	pack32(header->gid, buffer);
+	pack32(header->jobnum, buffer);
+
+}
+
+extern int unpack_jobacct_header(jobacct_header_t *header, Buf buffer)
+{
+
+}
+ 
+extern void pack_jobacct_job_rec(jobacct_job_rec_t *job, Buf buffer)
+{
+
+}
+
+extern int unpack_jobacct_job_rec(jobacct_job_rec_t **job, Buf buffer)
+{
+
+}
+ 
+extern void pack_jobacct_step_rec(jobacct_step_rec_t *step, Buf buffer)
+{
+
+}
+
+extern int unpack_jobacct_step_rec(jobacct_step_rec_t **step, Buf buffer)
+{
+
+} 
+
 extern int jobacct_common_init_struct(struct jobacctinfo *jobacct, 
-			      jobacct_id_t *jobacct_id)
+				      jobacct_id_t *jobacct_id)
 {
 	if(!jobacct_id) {
 		jobacct_id_t temp_id;

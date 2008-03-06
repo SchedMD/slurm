@@ -279,6 +279,14 @@ extern int slurm_send_recv_slurmdbd_msg(slurmdbd_msg_t *req,
 			else
 				rc = SLURM_SUCCESS;
 			break;
+		case DBD_JOB_START_RC:
+			if (slurm_dbd_unpack_job_start_rc_msg(
+						(dbd_job_start_rc_msg_t **)
+						&resp->data, buffer))
+				rc = SLURM_ERROR;
+			else
+				rc = SLURM_SUCCESS;
+			break;
 		default:
 			error("slurmdbd: bad message type %d", resp->msg_type);
 	}

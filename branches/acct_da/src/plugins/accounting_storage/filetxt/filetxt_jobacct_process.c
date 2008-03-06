@@ -60,6 +60,62 @@ typedef struct expired_rec {  /* table of expired jobs */
 	char *line;
 } expired_rec_t;
 
+typedef struct header {
+	uint32_t jobnum;
+	char	*partition;
+	char	*blockid;
+	time_t 	job_submit;
+	time_t 	timestamp;
+	uint32_t uid;
+	uint32_t gid;
+	uint16_t rec_type;
+} filetxt_header_t;
+
+typedef struct {
+	uint32_t job_start_seen,		/* useful flags */
+		job_step_seen,
+		job_terminated_seen,
+		jobnum_superseded;	/* older jobnum was reused */
+	filetxt_header_t header;
+	uint16_t show_full;
+	char	*nodes;
+	char	*jobname;
+	uint16_t track_steps;
+	int32_t priority;
+	uint32_t ncpus;
+	uint32_t ntasks;
+	enum job_states	status;
+	int32_t	exitcode;
+	uint32_t elapsed;
+	time_t end;
+	uint32_t tot_cpu_sec;
+	uint32_t tot_cpu_usec;
+	struct rusage rusage;
+	sacct_t sacct;
+	List    steps;
+	char    *account;
+	uint32_t requid;
+} filetxt_job_rec_t;
+
+typedef struct {
+	filetxt_header_t   header;
+	uint32_t	stepnum;	/* job's step number */
+	char	        *nodes;
+	char	        *stepname;
+	enum job_states	status;
+	int32_t	        exitcode;
+	uint32_t	ntasks; 
+	uint32_t        ncpus;
+	uint32_t	elapsed;
+	time_t          end;
+	uint32_t	tot_cpu_sec;
+	uint32_t        tot_cpu_usec;
+	struct rusage   rusage;
+	sacct_t         sacct;
+	char            *account;
+	uint32_t requid;
+} filetxt_step_rec_t;
+
 /* Fields common to all records */
 enum {	F_JOB =	0,
 	F_PARTITION,	
@@ -148,6 +204,175 @@ static void _destroy_exp(void *object)
 		xfree(exp_rec->line);
 		xfree(exp_rec);
 	}
+}
+
+static void _free_filetxt_header(void *object)
+{
+	filetxt_header_t *header = (filetxt_header_t *)object;
+	if(header) {
+		xfree(header->partition);
+#ifdef HAVE_BG
+		xfree(header->blockid);
+#endif
+	}
+}
+
+static void _destroy_filetxt_job_rec(void *object)
+{
+	filetxt_job_rec_t *job = (filetxt_job_rec_t *)object;
+	if (job) {
+		if(job->steps)
+			list_destroy(job->steps);
+		_free_filetxt_header(&job->header);
+		xfree(job->jobname);
+		xfree(job->account);
+		xfree(job->nodes);
+		xfree(job);
+	}
+}
+
+static void _destroy_filetxt_step_rec(void *object)
+{
+	filetxt_step_rec_t *step = (filetxt_step_rec_t *)object;
+	if (step) {
+		_free_filetxt_header(&step->header);
+		xfree(step->stepname);
+		xfree(step->nodes);
+		xfree(step->account);
+		xfree(step);
+	}
+}
+
+static jobacct_step_rec_t *_create_jobacct_step_rec(
+	filetxt_step_rec_t *filetxt_step)
+{
+	jobacct_step_rec_t *jobacct_step = create_jobacct_step_rec();
+	
+	jobacct_step->elapsed = filetxt_step->elapsed;
+	jobacct_step->end = filetxt_step->header.timestamp;
+	jobacct_step->exitcode = filetxt_step->exitcode;
+	jobacct_step->ncpus = filetxt_step->ncpus;
+	jobacct_step->nodes = xstrdup(filetxt_step->nodes);
+	jobacct_step->requid = filetxt_step->requid;
+	memcpy(&jobacct_step->sacct, &filetxt_step->sacct, sizeof(sacct_t));
+	jobacct_step->start = filetxt_step->header.timestamp -
+		jobacct_step->elapsed;
+	jobacct_step->state = filetxt_step->status;
+	jobacct_step->stepid = filetxt_step->stepnum;
+	jobacct_step->stepname = xstrdup(filetxt_step->stepname);
+	jobacct_step->sys_cpu_sec = filetxt_step->rusage.ru_stime.tv_sec;
+	jobacct_step->sys_cpu_usec = filetxt_step->rusage.ru_stime.tv_usec;
+	jobacct_step->tot_cpu_sec = filetxt_step->tot_cpu_sec;
+	jobacct_step->tot_cpu_usec = filetxt_step->tot_cpu_usec;
+	jobacct_step->user_cpu_sec = filetxt_step->rusage.ru_utime.tv_sec;
+	jobacct_step->user_cpu_usec = filetxt_step->rusage.ru_utime.tv_usec;
+
+	return jobacct_step;
+}
+
+static jobacct_job_rec_t *_create_jobacct_job_rec(
+	filetxt_job_rec_t *filetxt_job)
+{
+	jobacct_job_rec_t *jobacct_job = create_jobacct_job_rec();
+	ListIterator itr = NULL;
+	filetxt_step_rec_t *filetxt_step = NULL;
+
+	jobacct_job->associd = 0;
+	jobacct_job->account = xstrdup(filetxt_job->account);
+	jobacct_job->blockid = xstrdup(filetxt_job->header.blockid);
+	jobacct_job->cluster = NULL;
+	jobacct_job->elapsed = filetxt_job->elapsed;
+	jobacct_job->eligible = filetxt_job->header.job_submit;
+	jobacct_job->end = filetxt_job->header.timestamp;
+	jobacct_job->exitcode = filetxt_job->exitcode;
+	jobacct_job->gid = filetxt_job->header.gid;
+	jobacct_job->jobid = filetxt_job->header.jobnum;
+	jobacct_job->jobname = xstrdup(filetxt_job->jobname);
+	jobacct_job->partition = xstrdup(filetxt_job->header.partition);
+	jobacct_job->ncpus = filetxt_job->ncpus;
+	jobacct_job->nodes = xstrdup(filetxt_job->nodes);
+	jobacct_job->priority = filetxt_job->priority;
+	jobacct_job->requid = filetxt_job->requid;
+	memcpy(&jobacct_job->sacct, &filetxt_job->sacct, sizeof(sacct_t));
+	jobacct_job->start = filetxt_job->header.timestamp -
+		jobacct_job->elapsed;
+	jobacct_job->state = filetxt_job->status;
+
+	jobacct_job->steps = list_create(destroy_jobacct_step_rec);
+	if(filetxt_job->steps) {
+		itr = list_iterator_create(filetxt_job->steps);
+		while((filetxt_step = list_next(itr))) {
+			list_append(jobacct_job->steps,
+				    _create_jobacct_step_rec(filetxt_step));
+		}
+		list_iterator_destroy(itr);
+	}
+	jobacct_job->submit = filetxt_job->header.job_submit;
+	
+	jobacct_job->sys_cpu_sec = filetxt_job->rusage.ru_stime.tv_sec;
+	jobacct_job->sys_cpu_usec = filetxt_job->rusage.ru_stime.tv_usec;
+	jobacct_job->tot_cpu_sec = filetxt_job->tot_cpu_sec;
+	jobacct_job->tot_cpu_usec = filetxt_job->tot_cpu_usec;
+	jobacct_job->track_steps = filetxt_job->track_steps;
+	jobacct_job->uid = filetxt_job->header.uid;
+	jobacct_job->user = NULL;
+	jobacct_job->user_cpu_sec = filetxt_job->rusage.ru_utime.tv_sec;
+	jobacct_job->user_cpu_usec = filetxt_job->rusage.ru_utime.tv_usec;
+	
+	return jobacct_job;
+}
+
+static filetxt_job_rec_t *_create_filetxt_job_rec(filetxt_header_t header)
+{
+	filetxt_job_rec_t *job = xmalloc(sizeof(filetxt_job_rec_t));
+	memcpy(&job->header, &header, sizeof(filetxt_header_t));
+	memset(&job->rusage, 0, sizeof(struct rusage));
+	memset(&job->sacct, 0, sizeof(sacct_t));
+	job->sacct.min_cpu = (float)NO_VAL;
+	job->job_start_seen = 0;
+	job->job_step_seen = 0;
+	job->job_terminated_seen = 0;
+	job->jobnum_superseded = 0;
+	job->jobname = NULL;
+	job->status = JOB_PENDING;
+	job->nodes = NULL;
+	job->jobname = NULL;
+	job->exitcode = 0;
+	job->priority = 0;
+	job->ntasks = 0;
+	job->ncpus = 0;
+	job->elapsed = 0;
+	job->tot_cpu_sec = 0;
+	job->tot_cpu_usec = 0;
+	job->steps = list_create(_destroy_filetxt_step_rec);
+	job->nodes = NULL;
+	job->track_steps = 0;
+	job->account = NULL;
+	job->requid = -1;
+
+      	return job;
+}
+
+static filetxt_step_rec_t *_create_filetxt_step_rec(filetxt_header_t header)
+{
+	filetxt_step_rec_t *step = xmalloc(sizeof(filetxt_job_rec_t));
+	memcpy(&step->header, &header, sizeof(filetxt_header_t));
+	memset(&step->rusage, 0, sizeof(struct rusage));
+	memset(&step->sacct, 0, sizeof(sacct_t));
+	step->stepnum = (uint32_t)NO_VAL;
+	step->nodes = NULL;
+	step->stepname = NULL;
+	step->status = NO_VAL;
+	step->exitcode = NO_VAL;
+	step->ntasks = (uint32_t)NO_VAL;
+	step->ncpus = (uint32_t)NO_VAL;
+	step->elapsed = (uint32_t)NO_VAL;
+	step->tot_cpu_sec = (uint32_t)NO_VAL;
+	step->tot_cpu_usec = (uint32_t)NO_VAL;
+	step->account = NULL;
+	step->requid = -1;
+
+	return step;
 }
 
 /* prefix_filename() -- insert a filename prefix into a path
@@ -350,17 +575,18 @@ static void _do_fdump(char* f[], int lc)
        		printf("%12s: %s\n", type[i-HEADER_LENGTH], f[i]);	
 }
 
-static jobacct_job_rec_t *_find_job_record(List job_list, jobacct_header_t header,
-				   int type)
+static filetxt_job_rec_t *_find_job_record(List job_list, 
+					   filetxt_header_t header,
+					   int type)
 {
-	jobacct_job_rec_t *job = NULL;
+	filetxt_job_rec_t *job = NULL;
 	ListIterator itr = list_iterator_create(job_list);
 
-	while((job = (jobacct_job_rec_t *)list_next(itr)) != NULL) {
+	while((job = (filetxt_job_rec_t *)list_next(itr)) != NULL) {
 		if (job->header.jobnum == header.jobnum) {
 			if(job->header.job_submit == 0 && type == JOB_START) {
 				list_remove(itr);
-				destroy_jobacct_job_rec(job);
+				_destroy_filetxt_job_rec(job);
 				job = NULL;
 				break;
 			}
@@ -390,14 +616,14 @@ static jobacct_job_rec_t *_find_job_record(List job_list, jobacct_header_t heade
 
 static int _remove_job_record(List job_list, uint32_t jobnum)
 {
-	jobacct_job_rec_t *job = NULL;
+	filetxt_job_rec_t *job = NULL;
 	int rc = SLURM_ERROR;
 	ListIterator itr = list_iterator_create(job_list);
 
-	while((job = (jobacct_job_rec_t *)list_next(itr)) != NULL) {
+	while((job = (filetxt_job_rec_t *)list_next(itr)) != NULL) {
 		if (job->header.jobnum == jobnum) {
 			list_remove(itr);
-			destroy_jobacct_job_rec(job);
+			_destroy_filetxt_job_rec(job);
 			rc = SLURM_SUCCESS;
 		}
 	}
@@ -405,17 +631,17 @@ static int _remove_job_record(List job_list, uint32_t jobnum)
 	return rc;
 }
 
-static jobacct_step_rec_t *_find_step_record(jobacct_job_rec_t *job,
+static filetxt_step_rec_t *_find_step_record(filetxt_job_rec_t *job,
 					     long stepnum)
 {
-	jobacct_step_rec_t *step = NULL;
+	filetxt_step_rec_t *step = NULL;
 	ListIterator itr = NULL;
 
 	if(!list_count(job->steps))
 		return step;
 	
 	itr = list_iterator_create(job->steps);
-	while((step = (jobacct_step_rec_t *)list_next(itr)) != NULL) {
+	while((step = (filetxt_step_rec_t *)list_next(itr)) != NULL) {
 		if (step->stepnum == stepnum)
 			break;
 	}
@@ -423,7 +649,7 @@ static jobacct_step_rec_t *_find_step_record(jobacct_job_rec_t *job,
 	return step;
 }
 
-static int _parse_header(char *f[], jobacct_header_t *header)
+static int _parse_header(char *f[], filetxt_header_t *header)
 {
 	header->jobnum = atoi(f[F_JOB]);
 	header->partition = xstrdup(f[F_PARTITION]);
@@ -431,23 +657,22 @@ static int _parse_header(char *f[], jobacct_header_t *header)
 	header->timestamp = atoi(f[F_TIMESTAMP]);
 	header->uid = atoi(f[F_UID]);
 	header->gid = atoi(f[F_GID]);
-#ifdef HAVE_BG
 	header->blockid = xstrdup(f[F_BLOCKID]);
-#endif
+
 	return SLURM_SUCCESS;
 }
 
 static int _parse_line(char *f[], void **data, int len)
 {
 	int i = atoi(f[F_RECTYPE]);
-	jobacct_job_rec_t **job = (jobacct_job_rec_t **)data;
-	jobacct_step_rec_t **step = (jobacct_step_rec_t **)data;
-	jobacct_header_t header;
+	filetxt_job_rec_t **job = (filetxt_job_rec_t **)data;
+	filetxt_step_rec_t **step = (filetxt_step_rec_t **)data;
+	filetxt_header_t header;
 	_parse_header(f, &header);
 		
 	switch(i) {
 	case JOB_START:
-		*job = create_jobacct_job_rec(header);
+		*job = _create_filetxt_job_rec(header);
 		(*job)->jobname = xstrdup(f[F_JOBNAME]);
 		(*job)->track_steps = atoi(f[F_TRACK_STEPS]);
 		(*job)->priority = atoi(f[F_PRIORITY]);
@@ -471,7 +696,7 @@ static int _parse_line(char *f[], void **data, int len)
 		}
 		break;
 	case JOB_STEP:
-		*step = create_jobacct_step_rec(header);
+		*step = _create_filetxt_step_rec(header);
 		(*step)->stepnum = atoi(f[F_JOBSTEP]);
 		(*step)->status = atoi(f[F_STATUS]);
 		(*step)->exitcode = atoi(f[F_EXITCODE]);
@@ -558,7 +783,7 @@ static int _parse_line(char *f[], void **data, int len)
 		break;
 	case JOB_SUSPEND:
 	case JOB_TERMINATED:
-		*job = create_jobacct_job_rec(header);
+		*job = _create_filetxt_job_rec(header);
 		(*job)->elapsed = atoi(f[F_TOT_ELAPSED]);
 		(*job)->status = atoi(f[F_STATUS]);		
 		if(len > F_JOB_REQUID) 
@@ -576,8 +801,8 @@ static int _parse_line(char *f[], void **data, int len)
 static void _process_start(List job_list, char *f[], int lc,
 			   int show_full, int len)
 {
-	jobacct_job_rec_t *job = NULL;
-	jobacct_job_rec_t *temp = NULL;
+	filetxt_job_rec_t *job = NULL;
+	filetxt_job_rec_t *temp = NULL;
 
 	_parse_line(f, (void **)&temp, len);
 	job = _find_job_record(job_list, temp->header, JOB_START);
@@ -591,7 +816,7 @@ static void _process_start(List job_list, char *f[], int lc,
 				"Conflicting JOB_START for job %u at"
 				" line %d -- ignoring it\n",
 				job->header.jobnum, lc);
-			destroy_jobacct_job_rec(temp);
+			_destroy_filetxt_job_rec(temp);
 			return;
 		}
 	}
@@ -607,21 +832,21 @@ static void _process_step(List job_list, char *f[], int lc,
 			  int show_full, int len,
 			  sacct_parameters_t *params)
 {
-	jobacct_job_rec_t *job = NULL;
+	filetxt_job_rec_t *job = NULL;
 	
-	jobacct_step_rec_t *step = NULL;
-	jobacct_step_rec_t *temp = NULL;
+	filetxt_step_rec_t *step = NULL;
+	filetxt_step_rec_t *temp = NULL;
 
 	_parse_line(f, (void **)&temp, len);
 
 	job = _find_job_record(job_list, temp->header, JOB_STEP);
 	
 	if (temp->stepnum == -2) {
-		destroy_jobacct_step_rec(temp);
+		_destroy_filetxt_step_rec(temp);
 		return;
 	}
 	if (!job) {	/* fake it for now */
-		job = create_jobacct_job_rec(temp->header);
+		job = _create_filetxt_job_rec(temp->header);
 		job->jobname = xstrdup("(unknown)");
 		if (params->opt_verbose > 1) 
 			fprintf(stderr, 
@@ -634,7 +859,7 @@ static void _process_step(List job_list, char *f[], int lc,
 	if ((step = _find_step_record(job, temp->stepnum))) {
 		
 		if (temp->status == JOB_RUNNING) {
-			destroy_jobacct_step_rec(temp);
+			_destroy_filetxt_step_rec(temp);
 			return;/* if "R" record preceded by F or CD; unusual */
 		}
 		if (step->status != JOB_RUNNING) { /* if not JOB_RUNNING */
@@ -644,7 +869,7 @@ static void _process_step(List job_list, char *f[], int lc,
 				"-- ignoring it\n",
 				step->header.jobnum, 
 				step->stepnum, lc);
-			destroy_jobacct_step_rec(temp);
+			_destroy_filetxt_step_rec(temp);
 			return;
 		}
 		step->status = temp->status;
@@ -661,7 +886,7 @@ static void _process_step(List job_list, char *f[], int lc,
 		xfree(step->stepname);
 		step->stepname = xstrdup(temp->stepname);
 		step->end = temp->header.timestamp;
-		destroy_jobacct_step_rec(temp);
+		_destroy_filetxt_step_rec(temp);
 		goto got_step;
 	}
 	step = temp;
@@ -694,13 +919,13 @@ got_step:
 static void _process_suspend(List job_list, char *f[], int lc,
 			     int show_full, int len)
 {
-	jobacct_job_rec_t *job = NULL;
-	jobacct_job_rec_t *temp = NULL;
+	filetxt_job_rec_t *job = NULL;
+	filetxt_job_rec_t *temp = NULL;
 
 	_parse_line(f, (void **)&temp, len);
 	job = _find_job_record(job_list, temp->header, JOB_SUSPEND);
 	if (!job)  {	/* fake it for now */
-		job = create_jobacct_job_rec(temp->header);
+		job = _create_filetxt_job_rec(temp->header);
 		job->jobname = xstrdup("(unknown)");
 	} 
 			
@@ -710,20 +935,20 @@ static void _process_suspend(List job_list, char *f[], int lc,
 
 	//job->header.timestamp = temp->header.timestamp;
 	job->status = temp->status;
-	destroy_jobacct_job_rec(temp);
+	_destroy_filetxt_job_rec(temp);
 }
 	
 static void _process_terminated(List job_list, char *f[], int lc,
 				int show_full, int len,
 				sacct_parameters_t *params)
 {
-	jobacct_job_rec_t *job = NULL;
-	jobacct_job_rec_t *temp = NULL;
+	filetxt_job_rec_t *job = NULL;
+	filetxt_job_rec_t *temp = NULL;
 
 	_parse_line(f, (void **)&temp, len);
 	job = _find_job_record(job_list, temp->header, JOB_TERMINATED);
 	if (!job) {	/* fake it for now */
-		job = create_jobacct_job_rec(temp->header);
+		job = _create_filetxt_job_rec(temp->header);
 		job->jobname = xstrdup("(unknown)");
 		if (params->opt_verbose > 1) 
 			fprintf(stderr, "Note: JOB_TERMINATED record for job "
@@ -765,13 +990,12 @@ static void _process_terminated(List job_list, char *f[], int lc,
 	job->show_full = show_full;
 	
 finished:
-	destroy_jobacct_job_rec(temp);
+	_destroy_filetxt_job_rec(temp);
 }
 
-extern void filetxt_jobacct_process_get_jobs(List job_list, 
-					      List selected_steps,
-					      List selected_parts,
-					      sacct_parameters_t *params)
+extern List filetxt_jobacct_process_get_jobs(List selected_steps,
+					     List selected_parts,
+					     sacct_parameters_t *params)
 {
 	char line[BUFFER_SIZE];
 	char *f[MAX_RECORD_FIELDS+1];    /* End list with null entry and,
@@ -782,11 +1006,13 @@ extern void filetxt_jobacct_process_get_jobs(List job_list,
 	FILE *fd = NULL;
 	int lc = 0;
 	int rec_type = -1;
+	filetxt_job_rec_t *filetxt_job = NULL;
 	jobacct_selected_step_t *selected_step = NULL;
 	char *selected_part = NULL;
 	ListIterator itr = NULL;
 	int show_full = 0;
-
+	List ret_job_list = list_create(destroy_jobacct_job_rec);
+	List job_list = list_create(_destroy_filetxt_job_rec);
 	fd = _open_log_file(params->opt_filein);
 	
 	while (fgets(line, BUFFER_SIZE, fd)) {
@@ -906,7 +1132,14 @@ extern void filetxt_jobacct_process_get_jobs(List job_list,
 	} 
 	fclose(fd);
 
-	return;
+	itr = list_iterator_create(job_list);
+	while((filetxt_job = list_next(itr))) {
+		list_append(ret_job_list, _create_jobacct_job_rec(filetxt_job));
+	}
+	list_iterator_destroy(itr);
+	list_destroy(job_list);
+
+	return ret_job_list;
 }
 
 extern void filetxt_jobacct_process_archive(List selected_parts,

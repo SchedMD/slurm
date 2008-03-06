@@ -225,9 +225,9 @@ static void _print_cond(acct_account_cond_t *acct_cond)
 /* 			if(new_assoc->max_wall_duration_per_job) */
 /* 				assoc->max_wall_duration_per_job =  */
 /* 					new_assoc->max_wall_duration_per_job; */
-/* 			if(new_assoc->max_cpu_seconds_per_job) */
-/* 				assoc->max_cpu_seconds_per_job =  */
-/* 					new_assoc->max_cpu_seconds_per_job;	 */
+/* 			if(new_assoc->max_cpu_secs_per_job) */
+/* 				assoc->max_cpu_secs_per_job =  */
+/* 					new_assoc->max_cpu_secs_per_job;	 */
 /* 		} */
 /* 		list_iterator_destroy(itr); */
 /* 	} */
@@ -264,8 +264,8 @@ extern int sacctmgr_add_account(int argc, char *argv[])
 	acct_account_rec_t *acct = NULL;
 	acct_association_rec_t *assoc = NULL;
 	acct_association_rec_t *temp_assoc = NULL;
-	List name_list = list_create(destroy_char);
-	List cluster_list = list_create(destroy_char);
+	List name_list = list_create(slurm_destroy_char);
+	List cluster_list = list_create(slurm_destroy_char);
 	char *description = NULL;
 	char *organization = NULL;
 	char *parent = NULL;
@@ -278,7 +278,7 @@ extern int sacctmgr_add_account(int argc, char *argv[])
 	uint32_t max_jobs = 0; 
 	uint32_t max_nodes_per_job = 0;
 	uint32_t max_wall_duration_per_job = 0;
-	uint32_t max_cpu_seconds_per_job = 0;
+	uint32_t max_cpu_secs_per_job = 0;
 	char *acct_str = NULL;
 	int limit_set = 0;
 	
@@ -310,7 +310,7 @@ extern int sacctmgr_add_account(int argc, char *argv[])
 			max_wall_duration_per_job = atoi(argv[i]+8);
 			limit_set = 1;
 		} else if (strncasecmp (argv[i], "MaxCPUSecs=", 11) == 0) {
-			max_cpu_seconds_per_job = atoi(argv[i]+11);
+			max_cpu_secs_per_job = atoi(argv[i]+11);
 			limit_set = 1;
 		} else if (strncasecmp (argv[i], "Cluster=", 8) == 0) {
 			addto_char_list(cluster_list,
@@ -402,8 +402,8 @@ extern int sacctmgr_add_account(int argc, char *argv[])
 			assoc->max_nodes_per_job = max_nodes_per_job;
 			assoc->max_wall_duration_per_job =
 				max_wall_duration_per_job;
-			assoc->max_cpu_seconds_per_job = 
-				max_cpu_seconds_per_job;
+			assoc->max_cpu_secs_per_job = 
+				max_cpu_secs_per_job;
 			list_append(assoc_list, assoc);
 			list_append(sacctmgr_association_list, assoc);
 		}
@@ -445,9 +445,9 @@ extern int sacctmgr_add_account(int argc, char *argv[])
 		if(max_wall_duration_per_job)
 			printf("  MaxWall         = %u\n",
 			       max_wall_duration_per_job);
-		if(max_cpu_seconds_per_job)
+		if(max_cpu_secs_per_job)
 			printf("  MaxCPUSecs      = %u\n",
-			       max_cpu_seconds_per_job);
+			       max_cpu_secs_per_job);
 	}
 
 	if(!list_count(acct_list) && !list_count(assoc_list))
@@ -493,9 +493,9 @@ extern int sacctmgr_list_account(int argc, char *argv[])
 	ListIterator itr = NULL;
 	acct_account_rec_t *acct = NULL;
 	
-	acct_cond->acct_list = list_create(destroy_char);
-	acct_cond->description_list = list_create(destroy_char);
-	acct_cond->organization_list = list_create(destroy_char);
+	acct_cond->acct_list = list_create(slurm_destroy_char);
+	acct_cond->description_list = list_create(slurm_destroy_char);
+	acct_cond->organization_list = list_create(slurm_destroy_char);
 
 	for (i=0; i<argc; i++) {
 		if (strncasecmp (argv[i], "Names=", 6) == 0) {
@@ -559,11 +559,11 @@ extern int sacctmgr_modify_account(int argc, char *argv[])
 	int i=0;
 	int cond_set = 0, rec_set = 0;
 
-	acct_cond->acct_list = list_create(destroy_char);
-	acct_cond->description_list = list_create(destroy_char);
-	acct_cond->organization_list = list_create(destroy_char);
-	assoc_cond->cluster_list = list_create(destroy_char);
-	assoc_cond->acct_list = list_create(destroy_char);
+	acct_cond->acct_list = list_create(slurm_destroy_char);
+	acct_cond->description_list = list_create(slurm_destroy_char);
+	acct_cond->organization_list = list_create(slurm_destroy_char);
+	assoc_cond->cluster_list = list_create(slurm_destroy_char);
+	assoc_cond->acct_list = list_create(slurm_destroy_char);
 	
 	for (i=0; i<argc; i++) {
 		if (strncasecmp (argv[i], "Where", 5) == 0) {
@@ -622,10 +622,10 @@ extern int sacctmgr_delete_account(int argc, char *argv[])
 		xmalloc(sizeof(acct_association_cond_t));
 	int i=0;
 
-	acct_cond->acct_list = list_create(destroy_char);
-	acct_cond->description_list = list_create(destroy_char);
-	acct_cond->organization_list = list_create(destroy_char);
-	assoc_cond->acct_list = list_create(destroy_char);
+	acct_cond->acct_list = list_create(slurm_destroy_char);
+	acct_cond->description_list = list_create(slurm_destroy_char);
+	acct_cond->organization_list = list_create(slurm_destroy_char);
+	assoc_cond->acct_list = list_create(slurm_destroy_char);
 	
 	if(!_set_cond(&i, argc, argv, acct_cond, assoc_cond)) {
 		printf(" No conditions given to remove, not executing.\n");

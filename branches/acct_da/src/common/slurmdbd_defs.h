@@ -113,7 +113,7 @@ typedef struct dbd_job_info {
 	
 typedef struct dbd_got_jobs_msg {
 	uint32_t job_count;	/* count of job IDs */
-	dbd_job_info_t *job_info; /* array of job info */
+	List jobs; /* list of jobacct_job_rec_t *'s */
 } dbd_got_jobs_msg_t;
 
 typedef struct dbd_init_msg {

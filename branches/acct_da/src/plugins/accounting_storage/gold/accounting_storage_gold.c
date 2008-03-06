@@ -93,7 +93,6 @@ static List gold_association_list = NULL;
 
 static int _add_edit_job(struct job_record *job_ptr, gold_object_t action);
 static int _check_for_job(uint32_t jobid, time_t submit);
-static void _destroy_char(void *object);
 static List _get_association_list_from_response(gold_response_t *gold_response);
 static int _get_cluster_accounting_list_from_response(
 	gold_response_t *gold_response, 
@@ -269,12 +268,6 @@ static int _check_for_job(uint32_t jobid, time_t submit)
 	return rc;
 }
 
-static void _destroy_char(void *object)
-{
-	char *tmp = (char *)object;
-	xfree(tmp);
-}
-
 static List _get_association_list_from_response(gold_response_t *gold_response)
 {
 	ListIterator itr = NULL;
@@ -317,7 +310,7 @@ static List _get_association_list_from_response(gold_response_t *gold_response)
 					atoi(name_val->value);
 			} else if(!strcmp(name_val->name, 
 					  "MaxProcSecondsPerJob")) {
-				acct_rec->max_cpu_seconds_per_job = 
+				acct_rec->max_cpu_secs_per_job = 
 					atoi(name_val->value);
 			} else if(!strcmp(name_val->name, 
 					  "User")) {
@@ -461,15 +454,8 @@ static List _get_user_list_from_response(gold_response_t *gold_response)
 		itr2 = list_iterator_create(resp_entry->name_val);
 		while((name_val = list_next(itr2))) {
 			if(!strcmp(name_val->name, "Name")) {
-				struct passwd *passwd_ptr = NULL;
 				user_rec->name = 
 					xstrdup(name_val->value);
-				passwd_ptr = getpwnam(user_rec->name);
-				if(passwd_ptr) {
-					user_rec->uid = passwd_ptr->pw_uid;
-					user_rec->gid = passwd_ptr->pw_gid;
-				}
-				
 			} else if(!strcmp(name_val->name, "Expedite")) {
 				user_rec->expedite = 
 					atoi(name_val->value)+1;
@@ -995,9 +981,9 @@ extern int acct_storage_p_add_associations(List association_list)
 						    tmp_buff);		
 		}
 
-		if(object->max_cpu_seconds_per_job) {
+		if(object->max_cpu_secs_per_job) {
 			snprintf(tmp_buff, sizeof(tmp_buff), "%u",
-				 object->max_cpu_seconds_per_job);
+				 object->max_cpu_secs_per_job);
 			gold_request_add_assignment(gold_request,
 						    "MaxProcSecondsPerJob",
 						    tmp_buff);		
@@ -1551,9 +1537,9 @@ extern int acct_storage_p_modify_associations(
 					    tmp_buff);		
 	}
 
-	if(assoc->max_cpu_seconds_per_job) {
+	if(assoc->max_cpu_secs_per_job) {
 		snprintf(tmp_buff, sizeof(tmp_buff), "%u",
-			 assoc->max_cpu_seconds_per_job);
+			 assoc->max_cpu_secs_per_job);
 		gold_request_add_assignment(gold_request,
 					    "MaxProcSecondsPerJob",
 					    tmp_buff);		
@@ -2024,7 +2010,7 @@ extern int acct_storage_p_remove_associations(
 		ListIterator itr2 = NULL;
 		gold_response_entry_t *resp_entry = NULL;
 		gold_name_value_t *name_val = NULL;
-		List id_list = list_create(_destroy_char);
+		List id_list = list_create(slurm_destroy_char);
 
 		itr = list_iterator_create(gold_response->entries);
 		while((resp_entry = list_next(itr))) {
@@ -3131,7 +3117,7 @@ extern int jobacct_storage_p_suspend(struct job_record *job_ptr)
 
 /* 
  * get info from the storage 
- * returns List of job_rec_t *
+ * returns List of jobacct_job_rec_t *
  * note List needs to be freed when called
  */
 extern List jobacct_storage_p_get_jobs(List selected_steps,

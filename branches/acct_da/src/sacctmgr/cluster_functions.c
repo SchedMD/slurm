@@ -95,7 +95,7 @@ static int _set_rec(int *start, int argc, char *argv[],
 			assoc->max_wall_duration_per_job = atoi(argv[i]+8);
 			set = 1;
 		} else if (strncasecmp (argv[i], "MaxCPUSecs=", 11) == 0) {
-			assoc->max_cpu_seconds_per_job = atoi(argv[i]+11);
+			assoc->max_cpu_secs_per_job = atoi(argv[i]+11);
 			set = 1;
 		} else if (strncasecmp (argv[i], "Where", 5) == 0) {
 			i--;
@@ -195,9 +195,9 @@ static void _update_existing(acct_cluster_cond_t *cluster_cond,
 			if(new_assoc->max_wall_duration_per_job)
 				assoc->max_wall_duration_per_job = 
 					new_assoc->max_wall_duration_per_job;
-			if(new_assoc->max_cpu_seconds_per_job)
-				assoc->max_cpu_seconds_per_job = 
-					new_assoc->max_cpu_seconds_per_job;	
+			if(new_assoc->max_cpu_secs_per_job)
+				assoc->max_cpu_secs_per_job = 
+					new_assoc->max_cpu_secs_per_job;	
 		}
 		list_iterator_destroy(itr);
 	}
@@ -241,7 +241,7 @@ extern int sacctmgr_add_cluster(int argc, char *argv[])
 			assoc->max_wall_duration_per_job = atoi(argv[i]+8);
 			limit_set = 1;
 		} else if (strncasecmp (argv[i], "MaxCPUSecs=", 11) == 0) {
-			assoc->max_cpu_seconds_per_job = atoi(argv[i]+11);
+			assoc->max_cpu_secs_per_job = atoi(argv[i]+11);
 			limit_set = 1;
 		} else {
 			if(cluster->name)
@@ -285,9 +285,9 @@ extern int sacctmgr_add_cluster(int argc, char *argv[])
 	if(assoc->max_wall_duration_per_job)
 		printf("  MaxWall       = %u\n",
 		       assoc->max_wall_duration_per_job);
-	if(assoc->max_cpu_seconds_per_job)
+	if(assoc->max_cpu_secs_per_job)
 		printf("  MaxCPUSecs    = %u\n",
-		       assoc->max_cpu_seconds_per_job);
+		       assoc->max_cpu_secs_per_job);
 	
 	cluster_list = list_create(NULL);
 	assoc_list = list_create(NULL);
@@ -336,7 +336,7 @@ extern int sacctmgr_list_cluster(int argc, char *argv[])
 	ListIterator itr = NULL;
 	acct_cluster_rec_t *cluster = NULL;
 
-	cluster_cond->cluster_list = list_create(destroy_char);
+	cluster_cond->cluster_list = list_create(slurm_destroy_char);
 	for (i=0; i<argc; i++) {
 		if (strncasecmp (argv[i], "Name=", 5) == 0) {
 			addto_char_list(cluster_cond->cluster_list, argv[i]+5);
@@ -387,8 +387,8 @@ extern int sacctmgr_modify_cluster(int argc, char *argv[])
 	List cluster_list = NULL;
 	int cond_set = 0, rec_set = 0;
 
-	cluster_cond->cluster_list = list_create(destroy_char);
-	assoc_cond->cluster_list = list_create(destroy_char);
+	cluster_cond->cluster_list = list_create(slurm_destroy_char);
+	assoc_cond->cluster_list = list_create(slurm_destroy_char);
 
 	for (i=0; i<argc; i++) {
 		if (strncasecmp (argv[i], "Where", 5) == 0) {
@@ -426,7 +426,7 @@ extern int sacctmgr_modify_cluster(int argc, char *argv[])
 
 	_update_existing(cluster_cond, cluster, assoc);
 
-	assoc_cond->acct_list = list_create(destroy_char);
+	assoc_cond->acct_list = list_create(slurm_destroy_char);
 	list_push(assoc_cond->acct_list, "template_account");
 
 	printf(" Setting\n");
@@ -445,9 +445,9 @@ extern int sacctmgr_modify_cluster(int argc, char *argv[])
 	if(assoc->max_wall_duration_per_job)
 		printf("  MaxWall       = %u\n",
 		       assoc->max_wall_duration_per_job);
-	if(assoc->max_cpu_seconds_per_job)
+	if(assoc->max_cpu_secs_per_job)
 		printf("  MaxCPUSecs    = %u\n",
-		       assoc->max_cpu_seconds_per_job);
+		       assoc->max_cpu_secs_per_job);
 	printf("\n Where\n");
 	_print_cond(cluster_cond);
 
@@ -501,8 +501,8 @@ extern int sacctmgr_delete_cluster(int argc, char *argv[])
 		xmalloc(sizeof(acct_association_cond_t));
 	int i=0;
 
-	cluster_cond->cluster_list = list_create(destroy_char);
-	assoc_cond->cluster_list = list_create(destroy_char);
+	cluster_cond->cluster_list = list_create(slurm_destroy_char);
+	assoc_cond->cluster_list = list_create(slurm_destroy_char);
 	
 	if(!_set_cond(&i, argc, argv, cluster_cond, assoc_cond)) {
 		printf(" No conditions given to remove, not executing.\n");

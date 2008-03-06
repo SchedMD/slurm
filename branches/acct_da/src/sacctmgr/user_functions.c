@@ -208,7 +208,7 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 	uint32_t max_jobs = 0; 
 	uint32_t max_nodes_per_job = 0;
 	uint32_t max_wall_duration_per_job = 0;
-	uint32_t max_cpu_seconds_per_job = 0;
+	uint32_t max_cpu_secs_per_job = 0;
 	char *user_str = NULL;
 	int limit_set = 0;
 
@@ -219,10 +219,10 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 	}
 
 	assoc_cond = xmalloc(sizeof(acct_association_cond_t));
-	assoc_cond->user_list = list_create(destroy_char);
-	assoc_cond->acct_list = list_create(destroy_char);
-	assoc_cond->cluster_list = list_create(destroy_char);
-	assoc_cond->partition_list = list_create(destroy_char);
+	assoc_cond->user_list = list_create(slurm_destroy_char);
+	assoc_cond->acct_list = list_create(slurm_destroy_char);
+	assoc_cond->cluster_list = list_create(slurm_destroy_char);
+	assoc_cond->partition_list = list_create(slurm_destroy_char);
 
 	for (i=0; i<argc; i++) {
 		if (strncasecmp (argv[i], "Names=", 6) == 0) {
@@ -254,7 +254,7 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 			max_wall_duration_per_job = atoi(argv[i]+8);
 			limit_set = 1;
 		} else if (strncasecmp (argv[i], "MaxCPUSecs=", 11) == 0) {
-			max_cpu_seconds_per_job = atoi(argv[i]+11);
+			max_cpu_secs_per_job = atoi(argv[i]+11);
 			limit_set = 1;
 		} else if (strncasecmp (argv[i], "Account=", 8) == 0) {
 			addto_char_list(assoc_cond->acct_list,
@@ -361,8 +361,8 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 						max_nodes_per_job;
 					assoc->max_wall_duration_per_job =
 						max_wall_duration_per_job;
-					assoc->max_cpu_seconds_per_job =
-						max_cpu_seconds_per_job;
+					assoc->max_cpu_secs_per_job =
+						max_cpu_secs_per_job;
 					list_append(assoc_list, assoc);
 					list_append(sacctmgr_association_list,
 						    assoc);
@@ -386,8 +386,8 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 				assoc->max_nodes_per_job = max_nodes_per_job;
 				assoc->max_wall_duration_per_job =
 					max_wall_duration_per_job;
-				assoc->max_cpu_seconds_per_job =
-					max_cpu_seconds_per_job;
+				assoc->max_cpu_secs_per_job =
+					max_cpu_secs_per_job;
 				list_append(assoc_list, assoc);
 				list_append(sacctmgr_association_list,
 					    assoc);
@@ -441,9 +441,9 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 		if(max_wall_duration_per_job)
 			printf("  MaxWall         = %u\n",
 			       max_wall_duration_per_job);
-		if(max_cpu_seconds_per_job)
+		if(max_cpu_secs_per_job)
 			printf("  MaxCPUSecs      = %u\n",
-			       max_cpu_seconds_per_job);
+			       max_cpu_secs_per_job);
 	}
 
 
@@ -488,8 +488,8 @@ extern int sacctmgr_list_user(int argc, char *argv[])
 	ListIterator itr = NULL;
 	acct_user_rec_t *user = NULL;
 
-	user_cond->user_list = list_create(destroy_char);
-	user_cond->def_acct_list = list_create(destroy_char);
+	user_cond->user_list = list_create(slurm_destroy_char);
+	user_cond->def_acct_list = list_create(slurm_destroy_char);
 	
 	_set_cond(&i, argc, argv, user_cond);
 
@@ -527,8 +527,8 @@ extern int sacctmgr_modify_user(int argc, char *argv[])
 	int i=0;
 	int cond_set = 0, rec_set = 0;
 
-	user_cond->user_list = list_create(destroy_char);
-	user_cond->def_acct_list = list_create(destroy_char);
+	user_cond->user_list = list_create(slurm_destroy_char);
+	user_cond->def_acct_list = list_create(slurm_destroy_char);
 	
 	for (i=0; i<argc; i++) {
 		if (strncasecmp (argv[i], "Where", 5) == 0) {
@@ -584,8 +584,8 @@ extern int sacctmgr_delete_user(int argc, char *argv[])
 	acct_user_cond_t *user_cond = xmalloc(sizeof(acct_user_cond_t));
 	int i=0;
 
-	user_cond->user_list = list_create(destroy_char);
-	user_cond->def_acct_list = list_create(destroy_char);
+	user_cond->user_list = list_create(slurm_destroy_char);
+	user_cond->def_acct_list = list_create(slurm_destroy_char);
 	
 	if(!_set_cond(&i, argc, argv, user_cond)) {
 		printf(" No conditions given to remove, not executing.\n");

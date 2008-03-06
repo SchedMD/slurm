@@ -109,62 +109,58 @@ typedef struct {
 	char *opt_state_list;	/* --states */
 } sacct_parameters_t;
 
-typedef struct header {
-	uint32_t jobnum;
-	char	*partition;
-#ifdef HAVE_BG
-	char	*blockid;
-#endif
-	time_t 	job_submit;
-	time_t	timestamp;
-	uint32_t uid;
-	uint32_t gid;
-	uint16_t rec_type;
-} jobacct_header_t;
-
 typedef struct {
-	uint32_t job_start_seen,		/* useful flags */
-		job_step_seen,
-		job_terminated_seen,
-		jobnum_superseded;	/* older jobnum was reused */
-	jobacct_header_t header;
-	uint16_t show_full;
-	char	*nodes;
-	char	*jobname;
-	uint16_t track_steps;
-	int32_t priority;
-	uint32_t ncpus;
-	uint32_t ntasks;
-	enum job_states	status;
-	int32_t	exitcode;
+	uint32_t associd;
+	char    *account;
+	char	*blockid;
+	char    *cluster;
 	uint32_t elapsed;
+	time_t eligible;
 	time_t end;
+	int32_t	exitcode;
+	uint32_t gid;
+	uint32_t jobid;
+	char	*jobname;
+	char	*partition;
+	uint32_t ncpus;
+	char	*nodes;
+	int32_t priority;
+	uint32_t requid;
+	sacct_t sacct;
+	time_t start;
+	enum job_states	state;
+	List    steps; /* list of jobacct_step_rec_t *'s */
+	time_t submit;
+	uint32_t suspended;
+	uint32_t sys_cpu_sec;
+	uint32_t sys_cpu_usec;
 	uint32_t tot_cpu_sec;
 	uint32_t tot_cpu_usec;
-	struct rusage rusage;
-	sacct_t sacct;
-	List    steps;
-	char    *account;
-	uint32_t requid;
+	uint16_t track_steps;
+	uint32_t uid;
+	char    *user;
+	uint32_t user_cpu_sec;
+	uint32_t user_cpu_usec;
 } jobacct_job_rec_t;
 
 typedef struct {
-	jobacct_header_t   header;
-	uint32_t	stepnum;	/* job's step number */
-	char	        *nodes;
-	char	        *stepname;
-	enum job_states	status;
-	int32_t	        exitcode;
-	uint32_t	ntasks; 
-	uint32_t        ncpus;
-	uint32_t	elapsed;
-	time_t          end;
-	uint32_t	tot_cpu_sec;
-	uint32_t        tot_cpu_usec;
-	struct rusage   rusage;
-	sacct_t         sacct;
-	char            *account;
+	uint32_t elapsed;
+	time_t end;
+	int32_t exitcode;
+	uint32_t ncpus;
+	char *nodes;
 	uint32_t requid;
+	sacct_t sacct;
+	time_t start;
+	enum job_states	state;
+	uint32_t stepid;	/* job's step number */
+	char *stepname;
+	uint32_t sys_cpu_sec;
+	uint32_t sys_cpu_usec;
+	uint32_t tot_cpu_sec;
+	uint32_t tot_cpu_usec;
+	uint32_t user_cpu_sec;
+	uint32_t user_cpu_usec;
 } jobacct_step_rec_t;
 
 typedef struct selected_step_t {
@@ -201,12 +197,17 @@ struct jobacctinfo {
    typedef struct jobacctinfo *jobacctinfo_t;     /* opaque data type */
 #endif
 
-extern jobacct_step_rec_t *create_jobacct_step_rec(jobacct_header_t header);
-extern jobacct_job_rec_t *create_jobacct_job_rec(jobacct_header_t header);
+extern jobacct_step_rec_t *create_jobacct_step_rec();
+extern jobacct_job_rec_t *create_jobacct_job_rec();
 extern void free_jobacct_header(void *object);
 extern void destroy_jobacct_job_rec(void *object);
 extern void destroy_jobacct_step_rec(void *object);
 
+extern void pack_jobacct_job_rec(jobacct_job_rec_t *job, Buf buffer);
+extern int unpack_jobacct_job_rec(jobacct_job_rec_t **job, Buf buffer);
+ 
+extern void pack_jobacct_step_rec(jobacct_step_rec_t *step, Buf buffer);
+extern int unpack_jobacct_step_rec(jobacct_step_rec_t **step, Buf buffer);
 
 /* These should only be called from the jobacct-gather plugin */
 extern int jobacct_common_init_struct(struct jobacctinfo *jobacct, 
