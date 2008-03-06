@@ -129,6 +129,10 @@ extern int gold_agent_xmit(gold_agent_msg_t *req);
 /*****************************************************************************\
  * Functions for processing the Gold requests, located in jobacct_gold.c
 \*****************************************************************************/
+/* For all functions below
+ * RET SLURM_SUCCESS on success 
+ *     SLURM_ERROR on non-recoverable error (e.g. invalid account ID)
+ *     EAGAIN on recoverable error (e.g. Gold not responding) */
 extern int agent_cluster_procs(Buf buffer);
 extern int agent_job_start(Buf buffer);
 extern int agent_job_complete(Buf buffer);

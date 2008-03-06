@@ -154,6 +154,12 @@ static int _check_for_job(uint32_t jobid, time_t submit)
 	return rc;
 }
 
+/*
+ * Get an account ID for some user/project/machine
+ * RET the account ID   OR
+ *     NULL on Gold communcation failure   OR
+ *     "0" if there is no valid account
+ */
 static char *_get_account_id(char *user, char *project, char *machine)
 {
 	gold_request_t *gold_request = NULL;
@@ -622,8 +628,7 @@ extern int agent_job_start(Buf buffer)
 	if (gold_agent_unpack_job_info_msg(&job_info_msg, buffer) !=
 	    SLURM_SUCCESS) {
 		error("Failed to unpack GOLD_MSG_JOB_START message");
-		/* There is no sense in retrying this bad RPC */
-		return SLURM_SUCCESS;
+		return SLURM_ERROR;
 	}
 
 	if (_check_for_job(job_info_msg->job_id, 
@@ -649,8 +654,7 @@ extern int agent_job_complete(Buf buffer)
 	if (gold_agent_unpack_job_info_msg(&job_info_msg, buffer) !=
 	    SLURM_SUCCESS) {
 		error("Failed to unpack GOLD_MSG_JOB_COMPLETE message");
-		/* There is no sense in retrying this bad RPC */
-		return SLURM_SUCCESS;
+		return SLURM_ERROR;
 	}
 
 	if (_check_for_job(job_info_msg->job_id, 
@@ -676,8 +680,7 @@ extern int agent_step_start(Buf buffer)
 	if (gold_agent_unpack_job_info_msg(&job_info_msg, buffer) !=
 	    SLURM_SUCCESS) {
 		error("Failed to unpack GOLD_MSG_STEP_START message");
-		/* There is no sense in retrying this bad RPC */
-		return SLURM_SUCCESS;
+		return SLURM_ERROR;
 	}
 
 	if (_check_for_job(job_info_msg->job_id, 
@@ -694,6 +697,12 @@ extern int agent_step_start(Buf buffer)
 	return rc;
 }
 
+/*
+ * Update a job entry
+ * RET SLURM_SUCCESS on success 
+ *     SLURM_ERROR on non-recoverable error (e.g. invalid account ID)
+ *     EAGAIN on recoverable error (e.g. Gold not responding)
+ */
 static int _add_edit_job(gold_job_info_msg_t *job_ptr, gold_object_t action)
 {
 	gold_request_t *gold_request = create_gold_request(GOLD_OBJECT_JOB,
@@ -709,7 +718,7 @@ static int _add_edit_job(gold_job_info_msg_t *job_ptr, gold_object_t action)
 	char *nodes = "(null)";
 
 	if (!gold_request) 
-		return rc;
+		return SLURM_ERROR;
 
 	if (action == GOLD_ACTION_CREATE) {
 		snprintf(tmp_buff, sizeof(tmp_buff), "%u", job_ptr->job_id);
@@ -722,7 +731,15 @@ static int _add_edit_job(gold_job_info_msg_t *job_ptr, gold_object_t action)
 		
 		gold_account_id = _get_account_id(user, account, 
 						  cluster_name);
-		
+		if ((gold_account_id == NULL) ||
+		    ((gold_account_id[0] == '0') && (gold_account_id[1] == '\0'))) {
+			destroy_gold_request(gold_request);
+			if (gold_account_id) {
+				xfree(gold_account_id);
+				return SLURM_ERROR;	/* Invalid account */
+			}
+			return EAGAIN;			/* Gold not responding */
+		}
 		gold_request_add_assignment(gold_request, "GoldAccountId",
 					    gold_account_id);
 		xfree(gold_account_id);
@@ -741,7 +758,7 @@ static int _add_edit_job(gold_job_info_msg_t *job_ptr, gold_object_t action)
 		destroy_gold_request(gold_request);
 		error("_add_edit_job: bad action given %d", 
 		      action);		
-		return rc;
+		return SLURM_ERROR;
 	}
 
 	if ((tmp = strlen(job_ptr->name))) {
@@ -804,7 +821,7 @@ static int _add_edit_job(gold_job_info_msg_t *job_ptr, gold_object_t action)
 
 	if (!gold_response) {
 		error("_add_edit_job: no response received");
-		return rc;
+		return EAGAIN;
 	}
 
 	if (!gold_response->rc) 
@@ -813,6 +830,7 @@ static int _add_edit_job(gold_job_info_msg_t *job_ptr, gold_object_t action)
 		error("gold_response has non-zero rc(%d): %s",
 		      gold_response->rc,
 		      gold_response->message);
+		rc = SLURM_ERROR;
 	}
 	destroy_gold_response(gold_response);
 
@@ -831,8 +849,7 @@ extern int agent_node_up(Buf buffer)
 	if (gold_agent_unpack_node_up_msg(&node_up_msg, buffer) !=
 	    SLURM_SUCCESS) {
 		error("Failed to unpack GOLD_MSG_NODE_UP message");
-		/* There is no sense in retrying this bad RPC */
-		return SLURM_SUCCESS;
+		return SLURM_ERROR;
 	}
 
 	gold_request = create_gold_request(GOLD_OBJECT_EVENT,
@@ -859,6 +876,7 @@ extern int agent_node_up(Buf buffer)
 
 	if (!gold_response) {
 		error("agent_node_up: no response received");
+		rc = EAGAIN;
 		goto fini;
 	}
 
@@ -888,8 +906,7 @@ extern int agent_node_down(Buf buffer)
 	if (gold_agent_unpack_node_down_msg(&node_down_msg, buffer) !=
 	    SLURM_SUCCESS) {
 		error("Failed to unpack GOLD_MSG_NODE_DOWN message");
-		/* There is no sense in retrying this bad RPC */
-		return SLURM_SUCCESS;
+		return SLURM_ERROR;
 	}
 
 	/*
@@ -920,6 +937,7 @@ extern int agent_node_down(Buf buffer)
 
 	if (!gold_response) {
 		error("jobacct_p_node_down: no response received");
+		rc = EAGAIN;
 		goto fini;
 	}
 
@@ -954,6 +972,7 @@ extern int agent_node_down(Buf buffer)
 
 	if (!gold_response) {
 		error("jobacct_p_node_down: no response received");
+		rc = EAGAIN;
 		goto fini;
 	}
 
@@ -983,8 +1002,7 @@ extern int agent_cluster_procs(Buf buffer)
 	if (gold_agent_unpack_cluster_procs_msg(&cluster_procs_msg, buffer) !=
 	    SLURM_SUCCESS) {
 		error("Failed to unpack GOLD_MSG_CLUSTER_PROCS message");
-		/* There is no sense in retrying this bad RPC */
-		return SLURM_SUCCESS;
+		return SLURM_ERROR;
 	}
 	
 	/* get the last known processor count */
@@ -1006,6 +1024,7 @@ extern int agent_cluster_procs(Buf buffer)
 
 	if (!gold_response) {
 		error("jobacct_p_cluster_procs: no response received");
+		rc = EAGAIN;
 		goto fini;
 	}
 
@@ -1063,6 +1082,7 @@ extern int agent_cluster_procs(Buf buffer)
 		if (!gold_response) {
 			error("jobacct_p_cluster_procs: no response "
 			      "received");
+			rc = EAGAIN;
 			goto fini;
 		}
 		
@@ -1095,6 +1115,7 @@ extern int agent_cluster_procs(Buf buffer)
 
 	if (!gold_response) {
 		error("jobacct_p_cluster_procs: no response received");
+		rc = EAGAIN;
 		goto fini;
 	}
 

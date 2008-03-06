@@ -70,7 +70,7 @@
 #include "src/common/xsignal.h"
 #include "src/common/xstring.h"
 
-#define _DEBUG		0
+#define _DEBUG		1
 #define GOLD_MAGIC	0xDEAD3219
 #define MAX_AGENT_QUEUE	10000
 #define MAX_GOLD_MSG_LEN 16384
@@ -290,7 +290,7 @@ static void *_agent(void *x)
 		}
 
 		slurm_mutex_lock(&agent_lock);
-		if (agent_list && (rc == SLURM_SUCCESS)) {
+		if (agent_list && (rc != EAGAIN)) {
 			buffer = (Buf) list_dequeue(agent_list);
 			free_buf(buffer);
 			fail_time = 0;
