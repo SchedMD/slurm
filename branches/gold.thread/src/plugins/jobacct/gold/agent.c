@@ -70,7 +70,7 @@
 #include "src/common/xsignal.h"
 #include "src/common/xstring.h"
 
-#define _DEBUG		1
+#define _DEBUG		0
 #define GOLD_MAGIC	0xDEAD3219
 #define MAX_AGENT_QUEUE	10000
 #define MAX_GOLD_MSG_LEN 16384
