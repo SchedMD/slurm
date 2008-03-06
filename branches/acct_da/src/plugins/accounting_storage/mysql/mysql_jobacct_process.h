@@ -43,19 +43,19 @@
 #ifndef _HAVE_MYSQL_JOBACCT_PROCESS_H
 #define _HAVE_MYSQL_JOBACCT_PROCESS_H
 
+#include <stdlib.h>
 #include "src/common/jobacct_common.h"
 #include "src/slurmctld/slurmctld.h"
 #include "src/database/mysql_common.h"
+#include "src/common/slurm_accounting_storage.h"
 
 #ifdef HAVE_MYSQL
 
 extern MYSQL *acct_mysql_db;
 //extern int acct_db_init;
 
-extern char *job_index;
 extern char *job_table;
 extern char *step_table;
-extern char *rusage_table;
 
 extern List mysql_jobacct_process_get_jobs(List selected_steps,
 					   List selected_parts,

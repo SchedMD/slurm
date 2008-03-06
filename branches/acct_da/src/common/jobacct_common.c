@@ -69,25 +69,8 @@ extern jobacct_job_rec_t *create_jobacct_job_rec()
 	jobacct_job_rec_t *job = xmalloc(sizeof(jobacct_job_rec_t));
 	memset(&job->sacct, 0, sizeof(sacct_t));
 	job->sacct.min_cpu = (float)NO_VAL;
-	job->job_start_seen = 0;
-	job->job_step_seen = 0;
-	job->job_terminated_seen = 0;
-	job->jobnum_superseded = 0;
-	job->jobname = NULL;
 	job->state = JOB_PENDING;
-	job->nodes = NULL;
-	job->jobname = NULL;
-	job->exitcode = 0;
-	job->priority = 0;
-	job->ntasks = 0;
-	job->ncpus = 0;
-	job->elapsed = 0;
-	job->tot_cpu_sec = 0;
-	job->tot_cpu_usec = 0;
 	job->steps = list_create(destroy_jobacct_step_rec);
-	job->nodes = NULL;
-	job->track_steps = 0;
-	job->account = NULL;
 	job->requid = -1;
 
       	return job;
@@ -97,43 +80,31 @@ extern jobacct_step_rec_t *create_jobacct_step_rec()
 {
 	jobacct_step_rec_t *step = xmalloc(sizeof(jobacct_job_rec_t));
 	memset(&step->sacct, 0, sizeof(sacct_t));
-	step->stepnum = (uint32_t)NO_VAL;
-	step->nodes = NULL;
-	step->stepname = NULL;
-	step->status = NO_VAL;
+	step->stepid = (uint32_t)NO_VAL;
+	step->state = NO_VAL;
 	step->exitcode = NO_VAL;
-	step->ntasks = (uint32_t)NO_VAL;
 	step->ncpus = (uint32_t)NO_VAL;
 	step->elapsed = (uint32_t)NO_VAL;
 	step->tot_cpu_sec = (uint32_t)NO_VAL;
 	step->tot_cpu_usec = (uint32_t)NO_VAL;
-	step->account = NULL;
 	step->requid = -1;
 
 	return step;
-}
-
-extern void free_jobacct_header(void *object)
-{
-	jobacct_header_t *header = (jobacct_header_t *)object;
-	if(header) {
-		xfree(header->partition);
-#ifdef HAVE_BG
-		xfree(header->blockid);
-#endif
-	}
 }
 
 extern void destroy_jobacct_job_rec(void *object)
 {
 	jobacct_job_rec_t *job = (jobacct_job_rec_t *)object;
 	if (job) {
+		xfree(job->account);
+		xfree(job->blockid);
+		xfree(job->cluster);
+		xfree(job->jobname);
+		xfree(job->partition);
+		xfree(job->nodes);
+		xfree(job->user);
 		if(job->steps)
 			list_destroy(job->steps);
-		free_jobacct_header(&job->header);
-		xfree(job->jobname);
-		xfree(job->account);
-		xfree(job->nodes);
 		xfree(job);
 	}
 }
@@ -142,30 +113,22 @@ extern void destroy_jobacct_step_rec(void *object)
 {
 	jobacct_step_rec_t *step = (jobacct_step_rec_t *)object;
 	if (step) {
-		free_jobacct_header(&step->header);
-		xfree(step->stepname);
 		xfree(step->nodes);
-		xfree(step->account);
+		xfree(step->stepname);
 		xfree(step);
 	}
 }
 
-extern void pack_jobacct_header(jobacct_header_t *header, Buf buffer)
+extern void destroy_jobacct_selected_step(void *object)
 {
-	pack32(header->jobnum, buffer);
-	packstr(header->partition, buffer);
-	packstr(header->blockid, buffer);
-	pack_time(header->blockid, buffer);
-	pack32(header->uid, buffer);
-	pack32(header->gid, buffer);
-	pack32(header->jobnum, buffer);
-
+	jobacct_selected_step_t *step = (jobacct_selected_step_t *)object;
+	if (step) {
+		xfree(step->job);
+		xfree(step->step);
+		xfree(step);
+	}
 }
 
-extern int unpack_jobacct_header(jobacct_header_t *header, Buf buffer)
-{
-
-}
  
 extern void pack_jobacct_job_rec(jobacct_job_rec_t *job, Buf buffer)
 {
@@ -187,6 +150,18 @@ extern int unpack_jobacct_step_rec(jobacct_step_rec_t **step, Buf buffer)
 
 } 
 
+extern void pack_jobacct_selected_step(jobacct_selected_step_t *step,
+				       Buf buffer)
+{
+
+}
+
+extern int unpack_jobacct_selected_step(jobacct_selected_step_t **step,
+					Buf buffer)
+{
+
+}
+
 extern int jobacct_common_init_struct(struct jobacctinfo *jobacct, 
 				      jobacct_id_t *jobacct_id)
 {
@@ -196,24 +171,10 @@ extern int jobacct_common_init_struct(struct jobacctinfo *jobacct,
 		temp_id.nodeid = (uint32_t)NO_VAL;
 		jobacct_id = &temp_id;
 	}
-	jobacct->rusage.ru_utime.tv_sec = 0;
-	jobacct->rusage.ru_utime.tv_usec = 0;
-	jobacct->rusage.ru_stime.tv_sec = 0;
-	jobacct->rusage.ru_stime.tv_usec = 0;
-	jobacct->rusage.ru_maxrss = 0;
-	jobacct->rusage.ru_ixrss = 0;
-	jobacct->rusage.ru_idrss = 0;
-	jobacct->rusage.ru_isrss = 0;
-	jobacct->rusage.ru_minflt = 0;
-	jobacct->rusage.ru_majflt = 0;
-	jobacct->rusage.ru_nswap = 0;
-	jobacct->rusage.ru_inblock = 0;
-	jobacct->rusage.ru_oublock = 0;
-	jobacct->rusage.ru_msgsnd = 0;
-	jobacct->rusage.ru_msgrcv = 0;
-	jobacct->rusage.ru_nsignals = 0;
-	jobacct->rusage.ru_nvcsw = 0;
-	jobacct->rusage.ru_nivcsw = 0;
+	jobacct->sys_cpu_sec = 0;
+	jobacct->sys_cpu_usec = 0;
+	jobacct->user_cpu_sec = 0;
+	jobacct->user_cpu_usec = 0;
 
 	jobacct->max_vsize = 0;
 	memcpy(&jobacct->max_vsize_id, jobacct_id, sizeof(jobacct_id_t));
@@ -251,9 +212,9 @@ extern int jobacct_common_setinfo(struct jobacctinfo *jobacct,
 {
 	int rc = SLURM_SUCCESS;
 	int *fd = (int *)data;
+	struct rusage *rusage = (struct rusage *)data;
 	uint32_t *uint32 = (uint32_t *) data;
 	jobacct_id_t *jobacct_id = (jobacct_id_t *) data;
-	struct rusage *rusage = (struct rusage *) data;
 	struct jobacctinfo *send = (struct jobacctinfo *) data;
 
 	slurm_mutex_lock(&jobacct_lock);
@@ -265,7 +226,10 @@ extern int jobacct_common_setinfo(struct jobacctinfo *jobacct,
 		safe_write(*fd, jobacct, sizeof(struct jobacctinfo));
 		break;
 	case JOBACCT_DATA_RUSAGE:
-		memcpy(&jobacct->rusage, rusage, sizeof(struct rusage));
+		jobacct->user_cpu_sec = rusage->ru_utime.tv_sec;
+		jobacct->user_cpu_usec = rusage->ru_utime.tv_usec;
+		jobacct->sys_cpu_sec = rusage->ru_stime.tv_sec;
+		jobacct->sys_cpu_usec = rusage->ru_stime.tv_usec;
 		break;
 	case JOBACCT_DATA_MAX_RSS:
 		jobacct->max_rss = *uint32;
@@ -322,7 +286,7 @@ extern int jobacct_common_getinfo(struct jobacctinfo *jobacct,
 	int *fd = (int *)data;
 	uint32_t *uint32 = (uint32_t *) data;
 	jobacct_id_t *jobacct_id = (jobacct_id_t *) data;
-	struct rusage *rusage = (struct rusage *) data;
+	struct rusage *rusage = (struct rusage *)data;
 	struct jobacctinfo *send = (struct jobacctinfo *) data;
 
 	slurm_mutex_lock(&jobacct_lock);
@@ -334,7 +298,11 @@ extern int jobacct_common_getinfo(struct jobacctinfo *jobacct,
 		safe_read(*fd, jobacct, sizeof(struct jobacctinfo));
 		break;
 	case JOBACCT_DATA_RUSAGE:
-		memcpy(rusage, &jobacct->rusage, sizeof(struct rusage));
+		memset(rusage, 0, sizeof(struct rusage));
+		rusage->ru_utime.tv_sec = jobacct->user_cpu_sec;
+		rusage->ru_utime.tv_usec = jobacct->user_cpu_usec;
+		rusage->ru_stime.tv_sec = jobacct->sys_cpu_sec;
+		rusage->ru_stime.tv_usec = jobacct->sys_cpu_usec;
 		break;
 	case JOBACCT_DATA_MAX_RSS:
 		*uint32 = jobacct->max_rss;
@@ -429,34 +397,19 @@ extern void jobacct_common_aggregate(struct jobacctinfo *dest,
 	if(dest->min_cpu_id.taskid == (uint16_t)NO_VAL)
 		dest->min_cpu_id = from->min_cpu_id;
 
-	/* sum up all rusage stuff */
-	dest->rusage.ru_utime.tv_sec	+= from->rusage.ru_utime.tv_sec;
-	dest->rusage.ru_utime.tv_usec	+= from->rusage.ru_utime.tv_usec;
-	while (dest->rusage.ru_utime.tv_usec >= 1E6) {
-		dest->rusage.ru_utime.tv_sec++;
-		dest->rusage.ru_utime.tv_usec -= 1E6;
+	dest->user_cpu_sec	+= from->user_cpu_sec;
+	dest->user_cpu_usec	+= from->user_cpu_usec;
+	while (dest->user_cpu_usec >= 1E6) {
+		dest->user_cpu_sec++;
+		dest->user_cpu_usec -= 1E6;
 	}
-	dest->rusage.ru_stime.tv_sec	+= from->rusage.ru_stime.tv_sec;
-	dest->rusage.ru_stime.tv_usec	+= from->rusage.ru_stime.tv_usec;
-	while (dest->rusage.ru_stime.tv_usec >= 1E6) {
-		dest->rusage.ru_stime.tv_sec++;
-		dest->rusage.ru_stime.tv_usec -= 1E6;
+	dest->sys_cpu_sec	+= from->sys_cpu_sec;
+	dest->sys_cpu_usec	+= from->sys_cpu_usec;
+	while (dest->sys_cpu_usec >= 1E6) {
+		dest->sys_cpu_sec++;
+		dest->sys_cpu_usec -= 1E6;
 	}
 
-	dest->rusage.ru_maxrss		+= from->rusage.ru_maxrss;
-	dest->rusage.ru_ixrss		+= from->rusage.ru_ixrss;
-	dest->rusage.ru_idrss		+= from->rusage.ru_idrss;
-	dest->rusage.ru_isrss		+= from->rusage.ru_isrss;
-	dest->rusage.ru_minflt		+= from->rusage.ru_minflt;
-	dest->rusage.ru_majflt		+= from->rusage.ru_majflt;
-	dest->rusage.ru_nswap		+= from->rusage.ru_nswap;
-	dest->rusage.ru_inblock		+= from->rusage.ru_inblock;
-	dest->rusage.ru_oublock		+= from->rusage.ru_oublock;
-	dest->rusage.ru_msgsnd		+= from->rusage.ru_msgsnd;
-	dest->rusage.ru_msgrcv		+= from->rusage.ru_msgrcv;
-	dest->rusage.ru_nsignals	+= from->rusage.ru_nsignals;
-	dest->rusage.ru_nvcsw		+= from->rusage.ru_nvcsw;
-	dest->rusage.ru_nivcsw		+= from->rusage.ru_nivcsw;
 	slurm_mutex_unlock(&jobacct_lock);	
 }
 
@@ -492,24 +445,10 @@ extern void jobacct_common_pack(struct jobacctinfo *jobacct, Buf buffer)
 		return;
 	} 
 	slurm_mutex_lock(&jobacct_lock);
-	pack32((uint32_t)jobacct->rusage.ru_utime.tv_sec, buffer);
-	pack32((uint32_t)jobacct->rusage.ru_utime.tv_usec, buffer);
-	pack32((uint32_t)jobacct->rusage.ru_stime.tv_sec, buffer);
-	pack32((uint32_t)jobacct->rusage.ru_stime.tv_usec, buffer);
-	pack32((uint32_t)jobacct->rusage.ru_maxrss, buffer);
-	pack32((uint32_t)jobacct->rusage.ru_ixrss, buffer);
-	pack32((uint32_t)jobacct->rusage.ru_idrss, buffer);
-	pack32((uint32_t)jobacct->rusage.ru_isrss, buffer);
-	pack32((uint32_t)jobacct->rusage.ru_minflt, buffer);
-	pack32((uint32_t)jobacct->rusage.ru_majflt, buffer);
-	pack32((uint32_t)jobacct->rusage.ru_nswap, buffer);
-	pack32((uint32_t)jobacct->rusage.ru_inblock, buffer);
-	pack32((uint32_t)jobacct->rusage.ru_oublock, buffer);
-	pack32((uint32_t)jobacct->rusage.ru_msgsnd, buffer);
-	pack32((uint32_t)jobacct->rusage.ru_msgrcv, buffer);
-	pack32((uint32_t)jobacct->rusage.ru_nsignals, buffer);
-	pack32((uint32_t)jobacct->rusage.ru_nvcsw, buffer);
-	pack32((uint32_t)jobacct->rusage.ru_nivcsw, buffer);
+	pack32((uint32_t)jobacct->user_cpu_sec, buffer);
+	pack32((uint32_t)jobacct->user_cpu_usec, buffer);
+	pack32((uint32_t)jobacct->sys_cpu_sec, buffer);
+	pack32((uint32_t)jobacct->sys_cpu_usec, buffer);
 	pack32((uint32_t)jobacct->max_vsize, buffer);
 	pack32((uint32_t)jobacct->tot_vsize, buffer);
 	pack32((uint32_t)jobacct->max_rss, buffer);
@@ -531,41 +470,13 @@ extern int jobacct_common_unpack(struct jobacctinfo **jobacct, Buf buffer)
 	uint32_t uint32_tmp;
 	*jobacct = xmalloc(sizeof(struct jobacctinfo));
 	safe_unpack32(&uint32_tmp, buffer);
-	(*jobacct)->rusage.ru_utime.tv_sec = uint32_tmp;
+	(*jobacct)->user_cpu_sec = uint32_tmp;
 	safe_unpack32(&uint32_tmp, buffer);
-	(*jobacct)->rusage.ru_utime.tv_usec = uint32_tmp;
+	(*jobacct)->user_cpu_usec = uint32_tmp;
 	safe_unpack32(&uint32_tmp, buffer);
-	(*jobacct)->rusage.ru_stime.tv_sec = uint32_tmp;
+	(*jobacct)->sys_cpu_sec = uint32_tmp;
 	safe_unpack32(&uint32_tmp, buffer);
-	(*jobacct)->rusage.ru_stime.tv_usec = uint32_tmp;
-	safe_unpack32(&uint32_tmp, buffer);
-	(*jobacct)->rusage.ru_maxrss = uint32_tmp;
-	safe_unpack32(&uint32_tmp, buffer);
-	(*jobacct)->rusage.ru_ixrss = uint32_tmp;
-	safe_unpack32(&uint32_tmp, buffer);
-	(*jobacct)->rusage.ru_idrss = uint32_tmp;
-	safe_unpack32(&uint32_tmp, buffer);
-	(*jobacct)->rusage.ru_isrss = uint32_tmp;
-	safe_unpack32(&uint32_tmp, buffer);
-	(*jobacct)->rusage.ru_minflt = uint32_tmp;
-	safe_unpack32(&uint32_tmp, buffer);
-	(*jobacct)->rusage.ru_majflt = uint32_tmp;
-	safe_unpack32(&uint32_tmp, buffer);
-	(*jobacct)->rusage.ru_nswap = uint32_tmp;
-	safe_unpack32(&uint32_tmp, buffer);
-	(*jobacct)->rusage.ru_inblock = uint32_tmp;
-	safe_unpack32(&uint32_tmp, buffer);
-	(*jobacct)->rusage.ru_oublock = uint32_tmp;
-	safe_unpack32(&uint32_tmp, buffer);
-	(*jobacct)->rusage.ru_msgsnd = uint32_tmp;
-	safe_unpack32(&uint32_tmp, buffer);
-	(*jobacct)->rusage.ru_msgrcv = uint32_tmp;
-	safe_unpack32(&uint32_tmp, buffer);
-	(*jobacct)->rusage.ru_nsignals = uint32_tmp;
-	safe_unpack32(&uint32_tmp, buffer);
-	(*jobacct)->rusage.ru_nvcsw = uint32_tmp;
-	safe_unpack32(&uint32_tmp, buffer);
-	(*jobacct)->rusage.ru_nivcsw = uint32_tmp;
+	(*jobacct)->sys_cpu_usec = uint32_tmp;
 	safe_unpack32(&(*jobacct)->max_vsize, buffer);
 	safe_unpack32(&(*jobacct)->tot_vsize, buffer);
 	safe_unpack32(&(*jobacct)->max_rss, buffer);

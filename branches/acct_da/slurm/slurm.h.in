@@ -304,7 +304,8 @@ enum select_node_cnt {
 enum jobacct_data_type {
 	JOBACCT_DATA_TOTAL,	/* data-> jobacctinfo_t */
 	JOBACCT_DATA_PIPE,      /* data-> file descriptor */
-	JOBACCT_DATA_RUSAGE,	/* data-> struct rusage */
+	JOBACCT_DATA_RUSAGE,	/* data-> rusage set user_cpu_sec,
+				 * user_cpu_usec, sys_cpu_sec, sys_cpu_usec */
 	JOBACCT_DATA_MAX_VSIZE,	/* data-> uint32_t vsize */
 	JOBACCT_DATA_MAX_VSIZE_ID,	/* data-> jobacct_id_t vsize */
 	JOBACCT_DATA_TOT_VSIZE,	/* data-> uint32_t vsize */

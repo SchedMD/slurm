@@ -43,18 +43,18 @@
 #ifndef _HAVE_PGSQL_JOBACCT_PROCESS_H
 #define _HAVE_PGSQL_JOBACCT_PROCESS_H
 
+#include <stdlib.h>
 #include "src/common/jobacct_common.h"
 #include "src/slurmctld/slurmctld.h"
 #include "src/database/pgsql_common.h"
+#include "src/common/slurm_accounting_storage.h"
 
 #ifdef HAVE_PGSQL
 
 extern PGconn *acct_pgsql_db;
 
-extern char *index_table;
 extern char *job_table;
 extern char *step_table;
-extern char *rusage_table;
 
 extern List pgsql_jobacct_process_get_jobs(List selected_steps,
 					   List selected_parts,

@@ -52,6 +52,7 @@
 #endif				/*  HAVE_CONFIG_H */
 
 #include "src/common/pack.h"
+#include "src/common/list.h"
 
 /* Increment SLURM_DBD_VERSION if any of the RPCs change */
 #define SLURM_DBD_VERSION 01
@@ -88,11 +89,8 @@ typedef struct dbd_cluster_procs_msg {
 } dbd_cluster_procs_msg_t;
 
 typedef struct dbd_get_jobs_msg {
-	uint32_t job_count;	/* count of job ID filters */
-	uint32_t *job_ids;	/* array of job ID filters */
-	uint32_t *step_ids;	/* array of step ID filters */
-	uint32_t part_count;	/* count of partition name filters */
-	char **part_name;	/* partition name */
+	List selected_steps; /* List of jobacct_selected_step_t *'s */
+	List selected_parts; /* List of char *'s */
 } dbd_get_jobs_msg_t;
 
 typedef struct dbd_job_info {
@@ -112,7 +110,6 @@ typedef struct dbd_job_info {
 } dbd_job_info_t;
 	
 typedef struct dbd_got_jobs_msg {
-	uint32_t job_count;	/* count of job IDs */
 	List jobs; /* list of jobacct_job_rec_t *'s */
 } dbd_got_jobs_msg_t;
 

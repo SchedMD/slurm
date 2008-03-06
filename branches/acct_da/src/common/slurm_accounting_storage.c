@@ -411,7 +411,9 @@ extern void destroy_acct_association_cond(void *object)
 }
 
 
-/* pack functions */
+/****************************************************************************\
+ * Pack and unpack data structures
+\****************************************************************************/
 extern void pack_acct_user_rec(acct_user_rec_t *object, Buf buffer)
 {
 	pack16((uint16_t)object->admin_level, buffer);
@@ -434,6 +436,11 @@ extern int unpack_acct_user_rec(acct_user_rec_t **object, Buf buffer)
 	return SLURM_SUCCESS;
 
 unpack_error:
+	xfree(object_ptr->default_acct);
+	xfree(object_ptr->name);
+
+	xfree(object_ptr);
+	*object = NULL;
 	return SLURM_ERROR;
 }
 
@@ -478,6 +485,13 @@ extern int unpack_acct_account_rec(acct_account_rec_t **object, Buf buffer)
 	return SLURM_SUCCESS;
 
 unpack_error:
+	if(object_ptr->coordinators)
+		list_destroy(object_ptr->coordinators);
+	xfree(object_ptr->description);
+	xfree(object_ptr->name);
+	xfree(object_ptr->organization);
+	xfree(object_ptr);
+	*object = NULL;
 	return SLURM_ERROR;
 }
 
@@ -509,6 +523,8 @@ extern int unpack_cluster_accounting_rec(cluster_accounting_rec_t **object,
 	return SLURM_SUCCESS;
 
 unpack_error:
+	xfree(object_ptr);
+	*object = NULL;
 	return SLURM_ERROR;
 }
 
@@ -552,6 +568,13 @@ extern int unpack_acct_cluster_rec(acct_cluster_rec_t **object, Buf buffer)
 	return SLURM_SUCCESS;
 
 unpack_error:
+	if(object_ptr->accounting_list)
+		list_destroy(object_ptr->accounting_list);
+	xfree(object_ptr->backup);
+	xfree(object_ptr->name);
+	xfree(object_ptr->primary);
+	xfree(object_ptr);
+	*object = NULL;
 	return SLURM_ERROR;
 }
 
@@ -574,6 +597,8 @@ extern int unpack_acct_accounting_rec(acct_accounting_rec_t **object,
 	return SLURM_SUCCESS;
 
 unpack_error:
+	xfree(object_ptr);
+	*object = NULL;
 	return SLURM_ERROR;
 }
 
@@ -644,6 +669,14 @@ extern int unpack_acct_association_rec(acct_association_rec_t **object,
 	return SLURM_SUCCESS;
 
 unpack_error:
+	if(object_ptr->accounting_list)
+		list_destroy(object_ptr->accounting_list);
+	xfree(object_ptr->acct);
+	xfree(object_ptr->cluster);
+	xfree(object_ptr->parent_acct);
+	xfree(object_ptr->user);
+	xfree(object_ptr);
+	*object = NULL;
 	return SLURM_ERROR;
 }
 
@@ -697,6 +730,12 @@ extern int unpack_acct_user_cond(acct_user_cond_t **object, Buf buffer)
 	return SLURM_SUCCESS;
 
 unpack_error:
+	if(object_ptr->def_acct_list)
+		list_destroy(object_ptr->def_acct_list);
+	if(object_ptr->user_list)
+		list_destroy(object_ptr->user_list);
+	xfree(object_ptr);
+	*object = NULL;
 	return SLURM_ERROR;
 }
 
@@ -758,6 +797,14 @@ extern int unpack_acct_account_cond(acct_account_cond_t **object, Buf buffer)
 	return SLURM_SUCCESS;
 
 unpack_error:
+	if(object_ptr->acct_list)
+		list_destroy(object_ptr->acct_list);
+	if(object_ptr->description_list)
+		list_destroy(object_ptr->description_list);
+	if(object_ptr->organization_list)
+		list_destroy(object_ptr->organization_list);
+	xfree(object_ptr);
+	*object = NULL;
 	return SLURM_ERROR;
 }
 
@@ -793,6 +840,10 @@ extern int unpack_acct_cluster_cond(acct_cluster_cond_t **object, Buf buffer)
 	return SLURM_SUCCESS;
 
 unpack_error:
+	if(object_ptr->cluster_list)
+		list_destroy(object_ptr->cluster_list);
+	xfree(object_ptr);
+	*object = NULL;
 	return SLURM_ERROR;
 }
 
@@ -898,6 +949,19 @@ extern int unpack_acct_association_cond(acct_association_cond_t **object,
 	return SLURM_SUCCESS;
 
 unpack_error:
+	if(object_ptr->acct_list)
+		list_destroy(object_ptr->acct_list);
+	if(object_ptr->cluster_list)
+		list_destroy(object_ptr->cluster_list);
+	if(object_ptr->id_list)
+		list_destroy(object_ptr->id_list);
+	if(object_ptr->partition_list)
+		list_destroy(object_ptr->partition_list);
+	xfree(object_ptr->parent_acct);
+	if(object_ptr->user_list)
+		list_destroy(object_ptr->user_list);
+	xfree(object_ptr);
+	*object = NULL;
 	return SLURM_ERROR;
 }
 

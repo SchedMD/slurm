@@ -3134,7 +3134,6 @@ extern List jobacct_storage_p_get_jobs(List selected_steps,
 	char *selected_part = NULL;
 	jobacct_selected_step_t *selected_step = NULL;
 	jobacct_job_rec_t *job = NULL;
-	jobacct_header_t header;
 	ListIterator itr = NULL;
 	ListIterator itr2 = NULL;
 	List job_list = NULL;
@@ -3204,97 +3203,86 @@ extern List jobacct_storage_p_get_jobs(List selected_steps,
 	if(gold_response->entry_cnt > 0) {
 		itr = list_iterator_create(gold_response->entries);
 		while((resp_entry = list_next(itr))) {
-			int req_cpus = 0;
-			int alloc_cpus = 0;
-			char *nodelist = NULL;
-			char *job_name = NULL;
-			int eligible = 0;
-			int end = 0;
-			int suspended = 0;
-			int state = 0;
-			int exitcode = 0;
-			int qos = 0;
-			acct_association_rec_t account_rec;
-	
+			job = create_jobacct_job_rec();
+			
 			itr2 = list_iterator_create(resp_entry->name_val);
 			while((name_val = list_next(itr2))) {
 				if(!strcmp(name_val->name, "JobId")) {
-					header.jobnum = atoi(name_val->value);
+					job->jobid = atoi(name_val->value);
 				} else if(!strcmp(name_val->name, 
 						  "GoldAccountId")) {
+					acct_association_rec_t account_rec;
 					memset(&account_rec, 0,
 					       sizeof(acct_association_rec_t));
+					account_rec.id = atoi(name_val->value);
 					acct_storage_p_get_assoc_id(
 						&account_rec);
 					if(account_rec.user) {
 						struct passwd *passwd_ptr =
 							getpwnam(account_rec.
 								 user);
+						job->user = xstrdup(account_rec.
+								    user);
 						if(passwd_ptr) {
-							header.uid =
+							job->uid =
 								passwd_ptr->
 								pw_uid;
-							header.gid = 
+							job->gid = 
 								passwd_ptr->
 								pw_gid;
 						}
-					}					
+					}
+					if(account_rec.acct) 
+						job->account =
+							xstrdup(account_rec.
+								acct);
+					if(account_rec.cluster) 
+						job->cluster =
+							xstrdup(account_rec.
+								cluster);
+
 				} else if(!strcmp(name_val->name,
 						  "Partition")) {
-					header.partition =
+					job->partition =
 						xstrdup(name_val->value);
 				} else if(!strcmp(name_val->name,
 						  "RequestedCPUCount")) {
-					req_cpus = atoi(name_val->value);
+					job->req_cpus = atoi(name_val->value);
 				} else if(!strcmp(name_val->name,
 						  "AllocatedCPUCount")) {
-					alloc_cpus = atoi(name_val->value);
+					job->alloc_cpus = atoi(name_val->value);
 				} else if(!strcmp(name_val->name, "NodeList")) {
-					nodelist = xstrdup(name_val->value);
+					job->nodes = xstrdup(name_val->value);
 				} else if(!strcmp(name_val->name, "JobName")) {
-					job_name = xstrdup(name_val->value);
+					job->jobname = xstrdup(name_val->value);
 				} else if(!strcmp(name_val->name,
 						  "SubmitTime")) {
-					header.job_submit = 
-						atoi(name_val->value);
+					job->submit = atoi(name_val->value);
 				} else if(!strcmp(name_val->name,
 						  "EligibleTime")) {
-					eligible = atoi(name_val->value);
+					job->eligible = atoi(name_val->value);
 				} else if(!strcmp(name_val->name,
 						  "StartTime")) {
-					header.timestamp = 
-						atoi(name_val->value);
+					job->start = atoi(name_val->value);
 				} else if(!strcmp(name_val->name, "EndTime")) {
-					end = atoi(name_val->value);
+					job->end = atoi(name_val->value);
 				} else if(!strcmp(name_val->name,
 						  "Suspended")) {
-					suspended = atoi(name_val->value);
+					job->suspended = atoi(name_val->value);
 				} else if(!strcmp(name_val->name, "State")) {
-					state = atoi(name_val->value);
+					job->state = atoi(name_val->value);
 				} else if(!strcmp(name_val->name, "ExitCode")) {
-					exitcode = atoi(name_val->value);
+					job->exitcode = atoi(name_val->value);
 				} else if(!strcmp(name_val->name, "QoS")) {
-					qos = atoi(name_val->value);
+					job->qos = atoi(name_val->value);
 				}
 			}
 			list_iterator_destroy(itr2);
-			job = create_jobacct_job_rec(header);
-			job->show_full = 1;
-			job->status = state;
-			job->jobname = job_name;
 			job->track_steps = 0;
 			job->priority = 0;
-			job->ncpus = alloc_cpus;
-			job->end = end;
-
-			if (!nodelist) 
+			if (!job->nodes) 
 				job->nodes = xstrdup("(unknown)");
-			  else
-				job->nodes = nodelist;
 			
-			if(account_rec.acct) 
-				job->account = xstrdup(account_rec.acct);
-			job->exitcode = exitcode;
 			list_append(job_list, job);
 		}
 		list_iterator_destroy(itr);		

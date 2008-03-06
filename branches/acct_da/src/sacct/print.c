@@ -190,6 +190,8 @@ void print_gid(type_t type, void *object)
 	jobacct_job_rec_t *job = (jobacct_job_rec_t *)object;
 	jobcomp_job_rec_t *jobcomp = (jobcomp_job_rec_t *)object;
 	jobacct_step_rec_t *step = (jobacct_step_rec_t *)object;
+	int32_t gid = -1;
+	struct passwd *passwd_ptr = NULL;
 
 	switch(type) {
 	case HEADLINE:
@@ -199,18 +201,20 @@ void print_gid(type_t type, void *object)
 		printf("%-5s", "-----");
 		break;
 	case JOB:
-		printf("%-5u", job->header.gid);
+		gid = job->gid;
 		break;
 	case JOBCOMP:
 		printf("%-5u", jobcomp->gid);
 		break;
 	case JOBSTEP:
-		printf("%-5u", step->header.gid);
 		break;
 	default:
 		printf("%-5s", "n/a");
 		break;
 	} 
+
+	if(gid != -1) 
+		printf("%-5d", gid);
 }
 
 void print_group(type_t type, void *object)
@@ -230,13 +234,12 @@ void print_group(type_t type, void *object)
 		printf("%-9s", "---------");
 		break;
 	case JOB:
-		gid = job->header.gid;
+		gid = job->gid;
 		break;
 	case JOBCOMP:
 		printf("%-9s", jobcomp->gid_name);
 		break;
 	case JOBSTEP:
-		gid = step->header.gid;
 		break;
 	default:
 		printf("%-9s", "n/a");
@@ -1187,6 +1190,8 @@ void print_uid(type_t type, void *object)
 	jobacct_job_rec_t *job = (jobacct_job_rec_t *)object;
 	jobcomp_job_rec_t *jobcomp = (jobcomp_job_rec_t *)object;
 	jobacct_step_rec_t *step = (jobacct_step_rec_t *)object;
+	int32_t uid = -1;
+	struct passwd *passwd_ptr = NULL;
 	
 	switch(type) {
 	case HEADLINE:
@@ -1196,15 +1201,22 @@ void print_uid(type_t type, void *object)
 		printf("%-5s", "-----");
 		break;
 	case JOB:
-		printf("%-5u", job->header.uid);
+		if(job->user) {
+			getpwnam(job->user);
+			if(passwd_ptr)
+				uid = passwd_ptr->pw_uid;
+		} else 
+			uid = job->uid;
 		break;
 	case JOBCOMP:
 		printf("%-5u", jobcomp->uid);
 		break;
 	case JOBSTEP:
-		printf("%-5u", step->header.uid);
 		break;
 	} 
+
+	if(uid != -1) 
+		printf("%-5d", uid);
 }
 
 void print_user(type_t type, void *object)
@@ -1214,8 +1226,8 @@ void print_user(type_t type, void *object)
 	jobacct_step_rec_t *step = (jobacct_step_rec_t *)object;
 	int uid = -1;
 	char	*tmp="(unknown)";
-	struct	passwd *pw = NULL;
-	
+	struct	passwd *pw = NULL;		 
+
 	switch(type) {
 	case HEADLINE:
 		printf("%-9s", "User");
@@ -1224,13 +1236,15 @@ void print_user(type_t type, void *object)
 		printf("%-9s", "---------");
 		break;
 	case JOB:
-		uid = job->header.uid;
+		if(job->user) 
+			printf("%-9s", job->user);
+		else
+			uid = job->uid;
 		break;
 	case JOBCOMP:
 		printf("%-9s", jobcomp->uid_name);
 		break;
 	case JOBSTEP:
-		uid = step->header.uid;
 		break;
 	default:
 		printf("%-9s", "n/a");

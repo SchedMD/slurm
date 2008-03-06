@@ -570,42 +570,21 @@ extern int jobacct_storage_p_suspend(struct job_record *job_ptr)
  */
 extern List jobacct_storage_p_get_jobs(List selected_steps,
 				       List selected_parts,
-				       void *params)
+				       sacct_parameters_t *params)
 {
 	slurmdbd_msg_t req, resp;
 	dbd_get_jobs_msg_t get_msg;
 	dbd_got_jobs_msg_t *got_msg;
-	ListIterator iter;
-	jobacct_selected_step_t *selected_step;
-	char *selected_part = NULL;
-	int i = 0, rc;
+	int rc;
+	List job_list = NULL;
 
-	get_msg.job_count = list_count(selected_steps);
-	get_msg.job_ids   = xmalloc(sizeof(uint32_t) * get_msg.job_count);
-	get_msg.step_ids  = xmalloc(sizeof(uint32_t) * get_msg.job_count);
-	iter = list_iterator_create(selected_steps);
-	for (i=0; i<get_msg.job_count; i++) {
-		selected_step = (jobacct_selected_step_t *) list_next(iter);
-		xassert(selected_step);
-		get_msg.job_ids[i] = selected_step->jobid;
-		get_msg.step_ids[i] = selected_step->stepid;
-	}
-	list_iterator_destroy(iter);
-
-	i = 0;
-	get_msg.part_count = list_count(selected_parts);
-	get_msg.part_name  = xmalloc(sizeof(char *) * get_msg.part_count);
-	iter = list_iterator_create(selected_parts);
-	while ((selected_part = (char *) list_next(iter)))
-		get_msg.part_name[i++] = selected_part;
-	list_iterator_destroy(iter);
+	get_msg.selected_steps = selected_steps;
+	get_msg.selected_parts = selected_parts;
 
 	req.msg_type = DBD_GET_JOBS;
 	req.data = &get_msg;
 	rc = slurm_send_recv_slurmdbd_msg(&req, &resp);
-	xfree(get_msg.job_ids);
-	xfree(get_msg.step_ids);
-	xfree(get_msg.part_name);
+
 	if (rc != SLURM_SUCCESS)
 		error("slurmdbd: DBD_GET_JOBS failure: %m");
 	else if (resp.msg_type != DBD_GOT_JOBS) {
@@ -613,15 +592,11 @@ extern List jobacct_storage_p_get_jobs(List selected_steps,
 		      resp.msg_type);
 	} else {
 		got_msg = (dbd_got_jobs_msg_t *) resp.data;
-		info("got_jobs: cnt=%u", got_msg->job_count);
-		for (i=0; i<got_msg->job_count; i++) {
-			info("  job_id[%d]=%u name=%s", i, 
-			     got_msg->job_info[i].job_id,
-			     got_msg->job_info[i].name);
-		}
+		job_list = got_msg->jobs;
+		got_msg->jobs = NULL;
 		slurm_dbd_free_got_jobs_msg(got_msg);
 	}
-	return NULL;
+	return job_list;
 }
 
 /* 

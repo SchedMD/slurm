@@ -289,7 +289,8 @@ static jobacct_job_rec_t *_create_jobacct_job_rec(
 	jobacct_job->jobid = filetxt_job->header.jobnum;
 	jobacct_job->jobname = xstrdup(filetxt_job->jobname);
 	jobacct_job->partition = xstrdup(filetxt_job->header.partition);
-	jobacct_job->ncpus = filetxt_job->ncpus;
+	jobacct_job->req_cpus = filetxt_job->ncpus;
+	jobacct_job->alloc_cpus = filetxt_job->ncpus;
 	jobacct_job->nodes = xstrdup(filetxt_job->nodes);
 	jobacct_job->priority = filetxt_job->priority;
 	jobacct_job->requid = filetxt_job->requid;

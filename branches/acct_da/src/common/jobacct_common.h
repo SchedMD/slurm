@@ -110,6 +110,7 @@ typedef struct {
 } sacct_parameters_t;
 
 typedef struct {
+	uint32_t alloc_cpus;
 	uint32_t associd;
 	char    *account;
 	char	*blockid;
@@ -122,11 +123,13 @@ typedef struct {
 	uint32_t jobid;
 	char	*jobname;
 	char	*partition;
-	uint32_t ncpus;
 	char	*nodes;
 	int32_t priority;
+	uint16_t qos;
+	uint32_t req_cpus;
 	uint32_t requid;
 	sacct_t sacct;
+	uint32_t show_full;
 	time_t start;
 	enum job_states	state;
 	List    steps; /* list of jobacct_step_rec_t *'s */
@@ -155,6 +158,7 @@ typedef struct {
 	enum job_states	state;
 	uint32_t stepid;	/* job's step number */
 	char *stepname;
+	uint32_t suspended;
 	uint32_t sys_cpu_sec;
 	uint32_t sys_cpu_usec;
 	uint32_t tot_cpu_sec;
@@ -172,7 +176,10 @@ typedef struct selected_step_t {
 
 struct jobacctinfo {
 	pid_t pid;
-	struct rusage rusage; /* returned by wait3 */
+	uint32_t sys_cpu_sec;
+	uint32_t sys_cpu_usec;
+	uint32_t user_cpu_sec;
+	uint32_t user_cpu_usec;
 	uint32_t max_vsize; /* max size of virtual memory */
 	jobacct_id_t max_vsize_id; /* contains which task number it was on */
 	uint32_t tot_vsize; /* total virtual memory 
@@ -202,12 +209,18 @@ extern jobacct_job_rec_t *create_jobacct_job_rec();
 extern void free_jobacct_header(void *object);
 extern void destroy_jobacct_job_rec(void *object);
 extern void destroy_jobacct_step_rec(void *object);
+extern void destroy_jobacct_selected_step(void *object);
 
 extern void pack_jobacct_job_rec(jobacct_job_rec_t *job, Buf buffer);
 extern int unpack_jobacct_job_rec(jobacct_job_rec_t **job, Buf buffer);
  
 extern void pack_jobacct_step_rec(jobacct_step_rec_t *step, Buf buffer);
 extern int unpack_jobacct_step_rec(jobacct_step_rec_t **step, Buf buffer);
+
+extern void pack_jobacct_selected_step(jobacct_selected_step_t *step,
+				       Buf buffer);
+extern int unpack_jobacct_selected_step(jobacct_selected_step_t **step,
+					Buf buffer);
 
 /* These should only be called from the jobacct-gather plugin */
 extern int jobacct_common_init_struct(struct jobacctinfo *jobacct, 

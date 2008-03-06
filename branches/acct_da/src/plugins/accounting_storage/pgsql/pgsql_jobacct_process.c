@@ -66,42 +66,41 @@ extern List pgsql_jobacct_process_get_jobs(List selected_steps,
 	int i, j;
 	jobacct_job_rec_t *job = NULL;
 	jobacct_step_rec_t *step = NULL;
-	jobacct_header_t header;
 	time_t now = time(NULL);
 	List job_list = list_create(destroy_jobacct_job_rec);
 		
 	/* if this changes you will need to edit the corresponding 
-	 * enum below also t1 is index_table and t2 is job_table */
+	 * enum below also t1 is job_table */
 	char *job_req_inx[] = {
 		"t1.id",
 		"t1.jobid",
-		"t1.partition",
-		"t1.submit",
-		"t2.start",
-		"t2.endtime",
-		"t2.suspended",
-		"t1.uid",
+		"t1.associd",
 		"t1.gid",
-#ifdef HAVE_BG
+		"t1.partition",
 		"t1.blockid",
-#endif
-		"t2.name",
-		"t2.track_steps",
-		"t2.state",
-		"t2.priority",
-		"t2.cpus",
-		"t2.nodelist",
-		"t2.account",
-		"t2.kill_requid",
-		"t2.comp_code"
+		"t1.eligible",
+		"t1.submit",
+		"t1.start",
+		"t1.end",
+		"t1.suspended",
+		"t1.name",
+		"t1.track_steps",
+		"t1.state",
+		"t1.comp_code",
+		"t1.priority",
+		"t1.req_cpus",
+		"t1.alloc_cpus",
+		"t1.nodelist",
+		"t1.kill_requid",
+		"t1.qos",
 	};
 
 	/* if this changes you will need to edit the corresponding 
-	 * enum below also t1 is step_table and t2 is step_rusage */
+	 * enum below also t1 is step_table */
 	char *step_req_inx[] = {
 		"t1.stepid",
 		"t1.start",
-		"t1.endtime",
+		"t1.end",
 		"t1.suspended",
 		"t1.name",
 		"t1.nodelist",
@@ -109,6 +108,10 @@ extern List pgsql_jobacct_process_get_jobs(List selected_steps,
 		"t1.kill_requid",
 		"t1.comp_code",
 		"t1.cpus",
+		"t1.user_sec",
+		"t1.user_usec",
+		"t1.sys_sec",
+		"t1.sys_usec",
 		"t1.max_vsize",
 		"t1.max_vsize_task",
 		"t1.max_vsize_node",
@@ -125,49 +128,31 @@ extern List pgsql_jobacct_process_get_jobs(List selected_steps,
 		"t1.min_cpu_task",
 		"t1.min_cpu_node",
 		"t1.ave_cpu",
-		"t2.cpu_sec",
-		"t2.cpu_usec",
-		"t2.user_sec",
-		"t2.user_usec",
-		"t2.sys_sec",
-		"t2.sys_usec",
-		"t2.max_rss",
-		"t2.max_ixrss",
-		"t2.max_idrss",
-		"t2.max_isrss",
-		"t2.max_minflt",
-		"t2.max_majflt",
-		"t2.max_nswap",
-		"t2.inblock",
-		"t2.outblock",
-		"t2.msgsnd",
-		"t2.msgrcv",
-		"t2.nsignals",
-		"t2.nvcsw",
-		"t2.nivcsw"
 	};
+
 	enum {
 		JOB_REQ_ID,
 		JOB_REQ_JOBID,
+		JOB_REQ_ASSOCID,
+		JOB_REQ_GID,
 		JOB_REQ_PARTITION,
+		JOB_REQ_BLOCKID,
+		JOB_REQ_ELIGIBLE,
 		JOB_REQ_SUBMIT,
 		JOB_REQ_START,
 		JOB_REQ_END,
 		JOB_REQ_SUSPENDED,
-		JOB_REQ_UID,
-		JOB_REQ_GID,
-#ifdef HAVE_BG
-		JOB_REQ_BLOCKID,
-#endif
 		JOB_REQ_NAME,
 		JOB_REQ_TRACKSTEPS,
 		JOB_REQ_STATE,
+		JOB_REQ_COMP_CODE,
 		JOB_REQ_PRIORITY,
-		JOB_REQ_CPUS,
+		JOB_REQ_REQ_CPUS,
+		JOB_REQ_ALLOC_CPUS,
 		JOB_REQ_NODELIST,
 		JOB_REQ_ACCOUNT,
 		JOB_REQ_KILL_REQUID,
-		JOB_REQ_COMP_CODE,
+		JOB_REQ_QOS,
 		JOB_REQ_COUNT		
 	};
 	enum {
@@ -181,6 +166,10 @@ extern List pgsql_jobacct_process_get_jobs(List selected_steps,
 		STEP_REQ_KILL_REQUID,
 		STEP_REQ_COMP_CODE,
 		STEP_REQ_CPUS,
+		STEP_REQ_USER_SEC,
+		STEP_REQ_USER_USEC,
+		STEP_REQ_SYS_SEC,
+		STEP_REQ_SYS_USEC,
 		STEP_REQ_MAX_VSIZE,
 		STEP_REQ_MAX_VSIZE_TASK,
 		STEP_REQ_MAX_VSIZE_NODE,
@@ -197,26 +186,6 @@ extern List pgsql_jobacct_process_get_jobs(List selected_steps,
 		STEP_REQ_MIN_CPU_TASK,
 		STEP_REQ_MIN_CPU_NODE,
 		STEP_REQ_AVE_CPU,
-		STEP_REQ_CPU_SEC,
-		STEP_REQ_CPU_USEC,
-		STEP_REQ_USER_SEC,
-		STEP_REQ_USER_USEC,
-		STEP_REQ_SYS_SEC,
-		STEP_REQ_SYS_USEC,
-		STEP_REQ_RSS,
-		STEP_REQ_IXRSS,
-		STEP_REQ_IDRSS,
-		STEP_REQ_ISRSS,
-		STEP_REQ_MINFLT,
-		STEP_REQ_MAJFLT,
-		STEP_REQ_NSWAP,
-		STEP_REQ_INBLOCKS,
-		STEP_REQ_OUTBLOCKS,
-		STEP_REQ_MSGSND,
-		STEP_REQ_MSGRCV,
-		STEP_REQ_NSIGNALS,
-		STEP_REQ_NVCSW,
-		STEP_REQ_NIVCSW,
 		STEP_REQ_COUNT
 	};
 
@@ -260,8 +229,8 @@ extern List pgsql_jobacct_process_get_jobs(List selected_steps,
 		xstrcat(tmp, job_req_inx[i]);
 	}
 	
-	query = xstrdup_printf("select %s from %s t1, %s t2 where t1.id=t2.id",
-			       tmp, index_table, job_table);
+	query = xstrdup_printf("select %s from %s t1",
+			       tmp, job_table);
 	xfree(tmp);
 
 	if(extra) {
@@ -270,8 +239,7 @@ extern List pgsql_jobacct_process_get_jobs(List selected_steps,
 	}
 
 	//info("query = %s", query);
-	if(!(result =
-	     pgsql_db_query_ret(acct_pgsql_db, query))) {
+	if(!(result = pgsql_db_query_ret(acct_pgsql_db, query))) {
 		xfree(query);
 		list_destroy(job_list);
 		return NULL;
@@ -279,45 +247,64 @@ extern List pgsql_jobacct_process_get_jobs(List selected_steps,
 	xfree(query);
 
 	for (i = 0; i < PQntuples(result); i++) {
-		time_t job_suspended = atoi(PQgetvalue(result, i,
-						       JOB_REQ_SUSPENDED));
 		char *id = PQgetvalue(result, i, JOB_REQ_ID);
-		header.jobnum = atoi(PQgetvalue(result, i, JOB_REQ_JOBID));
-		header.partition = xstrdup(PQgetvalue(result, i,
-						      JOB_REQ_PARTITION));
-		header.job_submit = atoi(PQgetvalue(result, i,
-						    JOB_REQ_SUBMIT));
-		header.timestamp = atoi(PQgetvalue(result, i, JOB_REQ_START));
-		header.uid = atoi(PQgetvalue(result, i, JOB_REQ_UID));
-		header.gid = atoi(PQgetvalue(result, i, JOB_REQ_GID));
-#ifdef HAVE_BG
-		header.blockid = xstrdup(PQgetvalue(result, i,
+		acct_association_rec_t account_rec;
+		memset(&account_rec, 0, sizeof(acct_association_rec_t));
+		job = create_jobacct_job_rec();
+
+		job->alloc_cpus = atoi(PQgetvalue(result, i, 
+						  JOB_REQ_ALLOC_CPUS));
+		job->associd = atoi(PQgetvalue(result, i, JOB_REQ_ASSOCID));
+		account_rec.id = job->associd;
+		acct_storage_g_get_assoc_id(&account_rec);
+		if(account_rec.user) 
+			job->user = xstrdup(account_rec.user);
+		if(account_rec.acct) 
+			job->account = xstrdup(account_rec.acct);
+		if(account_rec.cluster) 
+			job->cluster = xstrdup(account_rec.cluster);
+		job->blockid = xstrdup(PQgetvalue(result, i,
 						    JOB_REQ_BLOCKID));
-#endif
-		job = create_jobacct_job_rec(header);
-		job->show_full = 1;
-		job->status = atoi(PQgetvalue(result, i, JOB_REQ_STATE));
-		job->jobname = xstrdup(PQgetvalue(result, i, JOB_REQ_NAME));
-		job->track_steps = atoi(PQgetvalue(result, i,
-						   JOB_REQ_TRACKSTEPS));
-		job->priority = atoi(PQgetvalue(result, i, JOB_REQ_PRIORITY));
-		job->ncpus = atoi(PQgetvalue(result, i, JOB_REQ_CPUS));
+		job->eligible = atoi(PQgetvalue(result, i, JOB_REQ_SUBMIT));
+		job->submit = atoi(PQgetvalue(result, i, JOB_REQ_SUBMIT));
+		job->start = atoi(PQgetvalue(result, i, JOB_REQ_START));
 		job->end = atoi(PQgetvalue(result, i, JOB_REQ_END));
+		job->suspended = atoi(PQgetvalue(result, i, JOB_REQ_SUSPENDED));
+		if(!job->end) {
+			job->elapsed = now - job->start;
+		} else {
+			job->elapsed = job->end - job->start;
+		}
+		job->elapsed -= job->suspended;
+
+		job->jobid = atoi(PQgetvalue(result, i, JOB_REQ_JOBID));
+		job->jobname = xstrdup(PQgetvalue(result, i, JOB_REQ_NAME));
+		job->gid = atoi(PQgetvalue(result, i, JOB_REQ_GID));
+		job->exitcode = atoi(PQgetvalue(result, i, JOB_REQ_COMP_CODE));
+		job->partition = xstrdup(PQgetvalue(result, i,
+						      JOB_REQ_PARTITION));
 		job->nodes = xstrdup(PQgetvalue(result, i, JOB_REQ_NODELIST));
 		if (!strcmp(job->nodes, "(null)")) {
 			xfree(job->nodes);
 			job->nodes = xstrdup("(unknown)");
 		}
-		job->account = xstrdup(PQgetvalue(result, i, JOB_REQ_ACCOUNT));
+
+		job->track_steps = atoi(PQgetvalue(result, i,
+						   JOB_REQ_TRACKSTEPS));
+		job->state = atoi(PQgetvalue(result, i, JOB_REQ_STATE));
+		job->priority = atoi(PQgetvalue(result, i, JOB_REQ_PRIORITY));
+		job->req_cpus = atoi(PQgetvalue(result, i, JOB_REQ_REQ_CPUS));
 		job->requid = atoi(PQgetvalue(result, i, JOB_REQ_KILL_REQUID));
-		job->exitcode = atoi(PQgetvalue(result, i, JOB_REQ_COMP_CODE));
+		job->qos = atoi(PQgetvalue(result, i, JOB_REQ_QOS));
+		job->show_full = 1;
+
 		list_append(job_list, job);
 
 		if(selected_steps && list_count(selected_steps)) {
 			set = 0;
 			itr = list_iterator_create(selected_steps);
 			while((selected_step = list_next(itr))) {
-				if(selected_step->jobid != header.jobnum) {
+				if(selected_step->jobid != job->jobid) {
 					continue;
 				} else if (selected_step->stepid
 					   == (uint32_t)NO_VAL) {
@@ -347,11 +334,8 @@ extern List pgsql_jobacct_process_get_jobs(List selected_steps,
 			xstrcat(tmp, step_req_inx[j]);
 		}
 		
-		query =	xstrdup_printf("select %s from %s t1, "
-				       "%s t2 where t1.id=t2.id "
-				       "and t1.stepid=t2.stepid "
-				       "and t1.id=%s",
-				       tmp, step_table, rusage_table, id);
+		query =	xstrdup_printf("select %s from %s t1 where t1.id=%s",
+				       tmp, step_table, id);
 		xfree(tmp);
 		
 		if(extra) {
@@ -360,110 +344,68 @@ extern List pgsql_jobacct_process_get_jobs(List selected_steps,
 		}
 		
 		//info("query = %s", query);
-		if(!(step_result = pgsql_db_query_ret(
-			     acct_pgsql_db, query))) {
+		if(!(step_result = pgsql_db_query_ret(acct_pgsql_db, query))) {
 			xfree(query);
 			list_destroy(job_list);
 			return NULL;
 		}
 		xfree(query);
 		for(j = 0; j < PQntuples(step_result); j++) {
-			time_t suspended = 0;
-			/* we need to do this here for all the memory
-			   locations so we get new memory that will be
-			   freed later.
-			*/
-			header.partition = xstrdup(
-				PQgetvalue(result, j, JOB_REQ_PARTITION));
-#ifdef HAVE_BG
-			header.blockid = xstrdup(
-				PQgetvalue(result, j, JOB_REQ_BLOCKID));
-#endif
-			header.timestamp = atoi(
-				PQgetvalue(step_result, j, STEP_REQ_START));
-			/* set start of job if not set */
-			if(job->header.timestamp < header.timestamp) {
-				job->header.timestamp = header.timestamp;
-			}
-			step = create_jobacct_step_rec(header);
+			step = create_jobacct_step_rec();
 			list_append(job->steps, step);
-			step->stepnum = atoi(
+			step->stepid = atoi(
 				PQgetvalue(step_result, j, STEP_REQ_STEPID));
 			/* info("got step %u.%u", */
 /* 			     job->header.jobnum, step->stepnum); */
-			step->status = atoi(
+			step->state = atoi(
 				PQgetvalue(step_result, j, STEP_REQ_STATE));
 			step->exitcode = atoi(
 				PQgetvalue(step_result, j,
 					   STEP_REQ_COMP_CODE));
-			step->ntasks = atoi(
-				PQgetvalue(step_result, j, STEP_REQ_CPUS));
 			step->ncpus = atoi(
 				PQgetvalue(step_result, j, STEP_REQ_CPUS));
+			step->start = atoi(
+				PQgetvalue(step_result, j, JOB_REQ_START));
 			step->end = atoi(
 				PQgetvalue(step_result, j, STEP_REQ_END));
 			/* figure this out by start stop */
-			suspended = atoi(
-				PQgetvalue(step_result, j,
-					   STEP_REQ_SUSPENDED));
+			step->suspended = atoi(
+				PQgetvalue(step_result, j, STEP_REQ_SUSPENDED));
 			if(!step->end) {
-				step->elapsed = now - step->header.timestamp;
+				step->elapsed = now - step->start;
 			} else {
-				step->elapsed =
-					step->end - step->header.timestamp;
+				step->elapsed = step->end - step->start;
 			}
-			step->elapsed -= suspended;
-			step->tot_cpu_sec = atoi(
-				PQgetvalue(step_result, j, STEP_REQ_CPU_SEC));
-			step->tot_cpu_usec = atoi(
-				PQgetvalue(step_result, j, STEP_REQ_CPU_USEC));
-			step->rusage.ru_utime.tv_sec = atoi(
+			step->elapsed -= step->suspended;
+			step->user_cpu_sec = atoi(
 				PQgetvalue(step_result, j, STEP_REQ_USER_SEC));
-			step->rusage.ru_utime.tv_usec = atoi(
-				PQgetvalue(step_result, j,
-					   STEP_REQ_USER_USEC));
-			step->rusage.ru_stime.tv_sec = atoi(
+			step->user_cpu_usec = atoi(
+				PQgetvalue(step_result, j, STEP_REQ_USER_USEC));
+			step->sys_cpu_sec = atoi(
 				PQgetvalue(step_result, j, STEP_REQ_SYS_SEC));
-			step->rusage.ru_stime.tv_usec = atoi(
+			step->sys_cpu_usec = atoi(
 				PQgetvalue(step_result, j, STEP_REQ_SYS_USEC));
-			step->rusage.ru_maxrss = atoi(
-				PQgetvalue(step_result, j, STEP_REQ_RSS));
-			step->rusage.ru_ixrss = atoi(
-				PQgetvalue(step_result, j, STEP_REQ_IXRSS));
-			step->rusage.ru_idrss = atoi(
-				PQgetvalue(step_result, j, STEP_REQ_IDRSS));
-			step->rusage.ru_isrss = atoi(
-				PQgetvalue(step_result, j, STEP_REQ_ISRSS));
-			step->rusage.ru_minflt = atoi(
-				PQgetvalue(step_result, j, STEP_REQ_MINFLT));
-			step->rusage.ru_majflt = atoi(
-				PQgetvalue(step_result, j, STEP_REQ_MAJFLT));
-			step->rusage.ru_nswap = atoi(
-				PQgetvalue(step_result, j, STEP_REQ_NSWAP));
-			step->rusage.ru_inblock = atoi(
-				PQgetvalue(step_result, j, STEP_REQ_INBLOCKS));
-			step->rusage.ru_oublock = atoi(
-				PQgetvalue(step_result, j,
-					   STEP_REQ_OUTBLOCKS));
-			step->rusage.ru_msgsnd = atoi(
-				PQgetvalue(step_result, j, STEP_REQ_MSGSND));
-			step->rusage.ru_msgrcv = atoi(
-				PQgetvalue(step_result, j, STEP_REQ_MSGRCV));
-			step->rusage.ru_nsignals = atoi(
-				PQgetvalue(step_result, j, STEP_REQ_NSIGNALS));
-			step->rusage.ru_nvcsw =	atoi(
-				PQgetvalue(step_result, j, STEP_REQ_NVCSW));
-			step->rusage.ru_nivcsw = atoi(
-				PQgetvalue(step_result, j, STEP_REQ_NIVCSW));
-			step->sacct.max_vsize =	atoi(
+			job->tot_cpu_sec += 
+				step->tot_cpu_sec += 
+				step->user_cpu_sec + step->sys_cpu_sec;
+			job->tot_cpu_usec += 
+				step->tot_cpu_usec += 
+				step->user_cpu_usec + step->sys_cpu_usec;
+			step->sacct.max_vsize = atoi(
 				PQgetvalue(step_result, j,
 					   STEP_REQ_MAX_VSIZE)) * 1024;
 			step->sacct.max_vsize_id.taskid = atoi(
 				PQgetvalue(step_result, j,
 					   STEP_REQ_MAX_VSIZE_TASK));
-			step->sacct.ave_vsize =	atof(
+			step->sacct.ave_vsize = atof(
 				PQgetvalue(step_result, j,
 					   STEP_REQ_AVE_VSIZE)) * 1024;
+			step->sacct.max_rss = atoi(
+				PQgetvalue(step_result, j,
+					   STEP_REQ_MAX_RSS)) * 1024;
+			step->sacct.max_rss_id.taskid = atoi(
+				PQgetvalue(step_result, j,
+					   STEP_REQ_MAX_RSS_TASK));
 			step->sacct.max_rss = atoi(
 				PQgetvalue(step_result, j,
 					   STEP_REQ_MAX_RSS)) * 1024;
@@ -513,18 +455,12 @@ extern List pgsql_jobacct_process_get_jobs(List selected_steps,
 
 		if(list_count(job->steps) > 1)
 			job->track_steps = 1;
-		
-		if(!job->end) {
-			job->elapsed = now - job->header.timestamp;
-		} else {
-			job->elapsed = job->end - job->header.timestamp;
-		}
-		job->elapsed -= job_suspended;
 	}
 	PQclear(result);
-	if (params->opt_fdump) {
+	
+	if (params->opt_fdump) 
 		_do_fdump(job_list);
-	}
+	
 	return job_list;
 }
 

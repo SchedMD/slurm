@@ -693,29 +693,29 @@ extern int jobacct_storage_p_step_complete(struct step_record *step_ptr)
 		 cpus,                  /* number of cpus */
 		 elapsed,	        /* elapsed seconds */
 		 /* total cputime seconds */
-		 jobacct->rusage.ru_utime.tv_sec	
-		 + jobacct->rusage.ru_stime.tv_sec,
+		 jobacct->user_cpu_sec	
+		 + jobacct->sys_cpu_sec,
 		 /* total cputime seconds */
-		 jobacct->rusage.ru_utime.tv_usec	
-		 + jobacct->rusage.ru_stime.tv_usec,
-		 jobacct->rusage.ru_utime.tv_sec,	/* user seconds */
-		 jobacct->rusage.ru_utime.tv_usec,/* user microseconds */
-		 jobacct->rusage.ru_stime.tv_sec,	/* system seconds */
-		 jobacct->rusage.ru_stime.tv_usec,/* system microsecs */
-		 jobacct->rusage.ru_maxrss,	/* max rss */
-		 jobacct->rusage.ru_ixrss,	/* max ixrss */
-		 jobacct->rusage.ru_idrss,	/* max idrss */
-		 jobacct->rusage.ru_isrss,	/* max isrss */
-		 jobacct->rusage.ru_minflt,	/* max minflt */
-		 jobacct->rusage.ru_majflt,	/* max majflt */
-		 jobacct->rusage.ru_nswap,	/* max nswap */
-		 jobacct->rusage.ru_inblock,	/* total inblock */
-		 jobacct->rusage.ru_oublock,	/* total outblock */
-		 jobacct->rusage.ru_msgsnd,	/* total msgsnd */
-		 jobacct->rusage.ru_msgrcv,	/* total msgrcv */
-		 jobacct->rusage.ru_nsignals,	/* total nsignals */
-		 jobacct->rusage.ru_nvcsw,	/* total nvcsw */
-		 jobacct->rusage.ru_nivcsw,	/* total nivcsw */
+		 jobacct->user_cpu_usec	
+		 + jobacct->sys_cpu_usec,
+		 jobacct->user_cpu_sec,	/* user seconds */
+		 jobacct->user_cpu_usec,/* user microseconds */
+		 jobacct->sys_cpu_sec,	/* system seconds */
+		 jobacct->sys_cpu_usec,/* system microsecs */
+		 0,	/* max rss */
+		 0,	/* max ixrss */
+		 0,	/* max idrss */
+		 0,	/* max isrss */
+		 0,	/* max minflt */
+		 0,	/* max majflt */
+		 0,	/* max nswap */
+		 0,	/* total inblock */
+		 0,	/* total outblock */
+		 0,	/* total msgsnd */
+		 0,	/* total msgrcv */
+		 0,	/* total nsignals */
+		 0,	/* total nvcsw */
+		 0,	/* total nivcsw */
 		 jobacct->max_vsize,	/* max vsize */
 		 jobacct->max_vsize_id.taskid,	/* max vsize node */
 		 ave_vsize,	/* ave vsize */
