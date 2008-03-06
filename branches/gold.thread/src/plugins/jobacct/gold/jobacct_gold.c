@@ -367,7 +367,7 @@ int jobacct_p_init_slurmctld(char *gold_info)
 	       cluster_name, keyfile, host, port);
 
 	init_gold(cluster_name, keyfile, host, port);
-		
+	gold_agent_init();
 	xfree(keyfile);
 	xfree(host);
 
@@ -376,6 +376,7 @@ int jobacct_p_init_slurmctld(char *gold_info)
 
 int jobacct_p_fini_slurmctld()
 {
+	gold_agent_fini();
 	xfree(cluster_name);
 	if(gold_account_list) 
 		list_destroy(gold_account_list);
@@ -385,7 +386,7 @@ int jobacct_p_fini_slurmctld()
 
 int jobacct_p_job_start_slurmctld(struct job_record *job_ptr)
 {
-	slurmdbd_msg_t msg;
+	gold_agent_msg_t msg;
 	gold_job_info_msg_t req;
 
 	req.account       = job_ptr->account;
@@ -412,7 +413,7 @@ int jobacct_p_job_start_slurmctld(struct job_record *job_ptr)
 
 int jobacct_p_job_complete_slurmctld(struct job_record *job_ptr) 
 {
-	slurmdbd_msg_t msg;
+	gold_agent_msg_t msg;
 	gold_job_info_msg_t req;
 
 	req.account       = job_ptr->account;
@@ -439,7 +440,7 @@ int jobacct_p_job_complete_slurmctld(struct job_record *job_ptr)
 
 int jobacct_p_step_start_slurmctld(struct step_record *step)
 {
-	slurmdbd_msg_t msg;
+	gold_agent_msg_t msg;
 	gold_job_info_msg_t req;
 	struct job_record *job_ptr = step->job_ptr;
 
@@ -523,7 +524,7 @@ void jobacct_p_resume_poll()
 extern int jobacct_p_node_down(struct node_record *node_ptr, time_t event_time,
 			       char *reason)
 {
-	slurmdbd_msg_t msg;
+	gold_agent_msg_t msg;
 	gold_node_down_msg_t req;
 	uint16_t cpus;
 
@@ -556,7 +557,7 @@ extern int jobacct_p_node_down(struct node_record *node_ptr, time_t event_time,
 
 extern int jobacct_p_node_up(struct node_record *node_ptr, time_t event_time)
 {
-	slurmdbd_msg_t msg;
+	gold_agent_msg_t msg;
 	gold_node_up_msg_t req;
 
 #if _DEBUG
@@ -581,7 +582,7 @@ extern int jobacct_p_node_up(struct node_record *node_ptr, time_t event_time)
 extern int jobacct_p_cluster_procs(uint32_t procs, time_t event_time)
 {
 	static uint32_t last_procs = 0;
-	slurmdbd_msg_t msg;
+	gold_agent_msg_t msg;
 	gold_cluster_procs_msg_t req;
 
 #if _DEBUG

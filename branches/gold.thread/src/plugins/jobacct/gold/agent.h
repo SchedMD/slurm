@@ -72,10 +72,10 @@ typedef enum {
  * Slurm DBD protocol data structures
 \*****************************************************************************/
 
-typedef struct slurmdbd_msg {
-	uint16_t msg_type;	/* see slurmdbd_msg_type_t above */
+typedef struct gold_agent_msg {
+	uint16_t msg_type;	/* see gold_agent_msg_type_t above */
 	void * data;		/* pointer to a message type below */
-} slurmdbd_msg_t;
+} gold_agent_msg_t;
 
 typedef struct gold_cluster_procs_msg {
 	uint32_t proc_count;	/* total processor count */
@@ -116,7 +116,7 @@ typedef struct gold_node_up_msg {
 \*****************************************************************************/
 
 /* Initiated a Gold message agent. Recover any saved RPCs. */
-extern int gold_agent_init(char *auth_info);
+extern int gold_agent_init(void);
 
 /* Terminate a Gold message agent. Save any pending RPCs. */
 extern int gold_agent_fini(void);
@@ -124,7 +124,7 @@ extern int gold_agent_fini(void);
 /* Send an RPC to the Gold. Do not wait for the reply. The RPC
  * will be queued and processed later if Gold is not responding.
  * Returns SLURM_SUCCESS or an error code */
-extern int gold_agent_xmit(slurmdbd_msg_t *req);
+extern int gold_agent_xmit(gold_agent_msg_t *req);
 
 /*****************************************************************************\
  * Free various Gold message structures
