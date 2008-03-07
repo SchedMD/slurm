@@ -183,7 +183,7 @@ Before new major release:
  - Test on ia64, i386, x86_64, BGL, AIX, OSX, XCPU
  - Test on Elan and IB switches
  - Test fail-over of slurmctld
- - Test for memory leaks in slurmctld and slurmd
+ - Test for memory leaks in slurmctld and slurmd with various plugins
  - Change API version number
  - Review and release web pages
  - Review and release code
