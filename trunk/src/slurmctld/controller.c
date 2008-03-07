@@ -124,6 +124,8 @@
  *    (640 bytes), it is really not lost.
  * The _keyvalue_regex_init() function will generate two blocks "definitely
  *    lost", both of size zero. We haven't bothered to address this.
+ * On some systems dlopen() will generate a small number of "definitely
+ *    lost" blocks that are not cleared by dlclose().
  * On some systems, pthread_create() will generated a small number of 
  *    "possibly lost" blocks.
  * Otherwise the report should be free of errors. Remember to reset 
@@ -442,8 +444,6 @@ int main(int argc, char *argv[])
 		verbose("Unable to remove pidfile '%s': %m",
 			slurmctld_conf.slurmctld_pidfile);
 
-	slurm_jobacct_storage_fini();	/* Save pending message traffic */
-
 #ifdef MEMORY_LEAK_DEBUG
 	/* This should purge all allocated memory,   *\
 	\*   Anything left over represents a leak.   */
@@ -469,10 +469,10 @@ int main(int argc, char *argv[])
 	/* Plugins are needed to purge job/node data structures,
 	 * unplug after other data structures are purged */
 	g_slurm_jobcomp_fini();
-	jobacct_storage_g_fini();
 	slurm_acct_storage_fini();
 	slurm_jobacct_gather_fini();
-	slurm_jobacct_storage_fini();
+	jobacct_storage_g_fini(); 	/* Save pending message traffic */
+	slurm_jobacct_storage_fini();	/* Release jobacct plugin memory */
 	slurm_sched_fini();
 	slurm_select_fini();
 	checkpoint_fini();
@@ -486,6 +486,7 @@ int main(int argc, char *argv[])
 	slurm_api_clear_config();
 	sleep(2);
 #else
+	jobacct_storage_g_fini();	/* Save pending message traffic */
 	/* Give REQUEST_SHUTDOWN a chance to get propagated, 
 	 * up to 3 seconds. */
 	for (i=0; i<3; i++) {
