@@ -229,7 +229,7 @@ static void _shutdown_agent(void)
 		agent_shutdown = time(NULL);
 		pthread_cond_broadcast(&agent_cond);
 		for (i=0; ((i<10) && agent_tid); i++) {
-			usleep(10000);
+			sleep(1);
 			pthread_cond_broadcast(&agent_cond);
 			if (pthread_kill(agent_tid, SIGUSR1))
 				agent_tid = 0;
@@ -345,7 +345,7 @@ static int _process_msg(Buf buffer)
 			break;
 		default:
 			error("gold: Invalid send message type %u", msg_type);
-			rc = SLURM_SUCCESS;	/* discard entry and continue */
+			rc = SLURM_ERROR;	/* discard entry and continue */
 	}
 	set_buf_offset(buffer, msg_size);	/* restore buffer size */
 	return rc;
@@ -354,7 +354,7 @@ unpack_error:
 	/* If the message format is bad return SLURM_SUCCESS to get
 	 * it off of the queue since we can't work with it anyway */
 	error("gold agent: message unpack error");
-	return SLURM_SUCCESS;
+	return SLURM_ERROR;
 }
 
 static void _save_gold_state(void)
@@ -476,11 +476,12 @@ static Buf _load_gold_rec(int fd)
 		fatal("gold: create_buf malloc failure");
 	msg = get_buf_data(buffer);
 	rd_size = 0;
-	while (rd_size < msg_size) {
-		rd_size = read(fd, msg + rd_size, msg_size);
+	size = msg_size;
+	while (rd_size < size) {
+		rd_size = read(fd, msg + rd_size, size);
 		if (rd_size > 0) {
 			msg += rd_size;
-			msg_size -= rd_size;
+			size -= rd_size;
 		} else if ((rd_size == -1) && (errno == EINTR))
 			continue;
 		else {
@@ -498,6 +499,7 @@ static Buf _load_gold_rec(int fd)
 		return (Buf) NULL;
 	}
 
+	set_buf_offset(buffer, msg_size);
 	return buffer;
 }
 
