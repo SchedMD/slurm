@@ -123,6 +123,8 @@ void _help_msg(void)
 	       "    has no effect if --dump is specified.\n"
 	       "-c, --completion\n"
 	       "    Use job completion instead of accounting data.\n"
+	       "-C, --cluster\n"
+	       "    Only send data about this cluster.\n"
 	       "-d, --dump\n"
 	       "    Dump the raw data records\n"
 	       "--duplicates\n"
@@ -218,6 +220,7 @@ void _usage(void)
 
 void _init_params()
 {
+	params.opt_cluster = NULL;	/* --cluster */
 	params.opt_completion = 0;	/* --completion */
 	params.opt_dump = 0;		/* --dump */
 	params.opt_dup = -1;		/* --duplicates; +1 = explicitly set */
@@ -329,6 +332,7 @@ void parse_command_line(int argc, char **argv)
 	static struct option long_options[] = {
 		{"all", 0,0, 'a'},
 		{"brief", 0, 0, 'b'},
+		{"cluster", 1, &params.opt_cluster, 'C'},
 		{"completion", 0, &params.opt_completion, 'c'},
 		{"duplicates", 0, &params.opt_dup, 1},
 		{"dump", 0, 0, 'd'},
@@ -365,7 +369,7 @@ void parse_command_line(int argc, char **argv)
 	opterr = 1;		/* Let getopt report problems to the user */
 
 	while (1) {		/* now cycle through the command line */
-		c = getopt_long(argc, argv, "abcde:F:f:g:hj:J:lOPp:s:StUu:Vv",
+		c = getopt_long(argc, argv, "abcC:de:F:f:g:hj:J:lOPp:s:StUu:Vv",
 				long_options, &optionIndex);
 		if (c == -1)
 			break;
@@ -375,6 +379,9 @@ void parse_command_line(int argc, char **argv)
 			break;
 		case 'b':
 			brief_output = true;
+			break;
+		case 'c':
+			params.opt_cluster = xstrdup(optarg);
 			break;
 		case 'c':
 			params.opt_completion = 1;
@@ -387,7 +394,7 @@ void parse_command_line(int argc, char **argv)
 		case 'e':
 		{	/* decode the time spec */
 			long	acc=0;
-			params.opt_expire_timespec = strdup(optarg);
+			params.opt_expire_timespec = xstrdup(optarg);
 			for (i=0; params.opt_expire_timespec[i]; i++) {
 				char	c = params.opt_expire_timespec[i];
 				if (isdigit(c)) {
@@ -590,6 +597,7 @@ void parse_command_line(int argc, char **argv)
 
 	if (params.opt_verbose) {
 		fprintf(stderr, "Options selected:\n"
+			"\topt_cluster=%s\n"
 			"\topt_completion=%d\n"
 			"\topt_dump=%d\n"
 			"\topt_dup=%d\n"
@@ -609,6 +617,7 @@ void parse_command_line(int argc, char **argv)
 			"\topt_total=%d\n"
 			"\topt_uid=%d\n"
 			"\topt_verbose=%d\n",
+			params.opt_cluster,
 			params.opt_completion,
 			params.opt_dump,
 			params.opt_dup,
@@ -635,8 +644,7 @@ void parse_command_line(int argc, char **argv)
 		if(params.opt_completion) 
 			params.opt_filein = slurm_get_jobcomp_loc();
 		else
-			params.opt_filein =
-				slurm_get_accounting_storage_loc();
+			params.opt_filein = slurm_get_accounting_storage_loc();
 	}
 
 	if(params.opt_completion) {
@@ -694,7 +702,8 @@ void parse_command_line(int argc, char **argv)
 				start++;	/* discard whitespace */
 			if(!(int)*start)
 				continue;
-			selected_step = xmalloc(sizeof(jobacct_selected_step_t));
+			selected_step = 
+				xmalloc(sizeof(jobacct_selected_step_t));
 			list_append(selected_steps, selected_step);
 			
 			dot = strstr(start, ".");

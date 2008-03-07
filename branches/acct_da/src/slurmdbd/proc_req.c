@@ -39,7 +39,7 @@
 #include "src/common/pack.h"
 #include "src/common/slurmdbd_defs.h"
 #include "src/common/slurm_accounting_storage.h"
-#include "src/common/slurm_jobacct_storage.h"
+#include "src/common/jobacct_common.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_defs.h"
 #include "src/slurmdbd/read_config.h"
@@ -165,17 +165,20 @@ static int _get_jobs(Buf in_buffer, Buf *out_buffer)
 {
 	dbd_get_jobs_msg_t *get_jobs_msg;
 	dbd_got_jobs_msg_t got_jobs_msg;
-	
+	sacct_parameters_t sacct_params;
+
 	if (slurm_dbd_unpack_get_jobs_msg(&get_jobs_msg, in_buffer) !=
 	    SLURM_SUCCESS) {
 		error("Failed to unpack DBD_GET_JOBS message");
 		*out_buffer = make_dbd_rc_msg(SLURM_ERROR);
 		return SLURM_ERROR;
 	}
-
+	
+	memset(&sacct_params, 0, sizeof(sacct_params));
+	sacct_params.opt_cluster = get_jobs_msg->cluster_name;
 	got_jobs_msg.jobs = jobacct_storage_g_get_jobs(
 		get_jobs_msg->selected_steps, get_jobs_msg->selected_parts,
-		NULL);
+		&sacct_params);
 	slurm_dbd_free_get_jobs_msg(get_jobs_msg);
 
 	slurm_dbd_pack_got_jobs_msg(&got_jobs_msg, *out_buffer);

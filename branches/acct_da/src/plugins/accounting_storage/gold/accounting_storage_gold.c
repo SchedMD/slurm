@@ -1023,7 +1023,7 @@ extern int acct_storage_p_get_assoc_id(acct_association_rec_t *assoc)
 	if(!gold_association_list) 
 		gold_association_list = acct_storage_g_get_associations(NULL);
 
-	if(!assoc->cluster || !assoc->acct) {
+	if((!assoc->cluster || !assoc->acct) || !assoc->id) {
 		error("acct_storage_p_get_assoc_id: "
 		      "You need to supply a cluster and account name to get"
 		      "an association.");
@@ -3123,7 +3123,7 @@ extern int jobacct_storage_p_suspend(struct job_record *job_ptr)
  */
 extern List jobacct_storage_p_get_jobs(List selected_steps,
 				       List selected_parts,
-				       void *params)
+				       sacct_parameters_t *params)
 {
 	gold_request_t *gold_request = create_gold_request(GOLD_OBJECT_JOB,
 							   GOLD_ACTION_QUERY);
@@ -3141,6 +3141,7 @@ extern List jobacct_storage_p_get_jobs(List selected_steps,
 
 	if(!gold_request) 
 		return NULL;
+
 
 	if(selected_steps && list_count(selected_steps)) {
 		itr = list_iterator_create(selected_steps);
@@ -3218,6 +3219,20 @@ extern List jobacct_storage_p_get_jobs(List selected_steps,
 					account_rec.id = atoi(name_val->value);
 					acct_storage_p_get_assoc_id(
 						&account_rec);
+					if(account_rec.cluster) {
+						if(params->opt_cluster&&
+						   strcmp(params->opt_cluster,
+							  account_rec.
+							  cluster)) {
+							destroy_jobacct_job_rec(
+								job);
+							continue;
+						}
+						job->cluster =
+							xstrdup(account_rec.
+								cluster);
+					}
+
 					if(account_rec.user) {
 						struct passwd *passwd_ptr =
 							getpwnam(account_rec.
@@ -3237,11 +3252,6 @@ extern List jobacct_storage_p_get_jobs(List selected_steps,
 						job->account =
 							xstrdup(account_rec.
 								acct);
-					if(account_rec.cluster) 
-						job->cluster =
-							xstrdup(account_rec.
-								cluster);
-
 				} else if(!strcmp(name_val->name,
 						  "Partition")) {
 					job->partition =

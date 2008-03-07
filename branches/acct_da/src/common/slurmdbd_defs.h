@@ -89,6 +89,7 @@ typedef struct dbd_cluster_procs_msg {
 } dbd_cluster_procs_msg_t;
 
 typedef struct dbd_get_jobs_msg {
+	char *cluster_name; /* name of cluster to query */
 	List selected_steps; /* List of jobacct_selected_step_t *'s */
 	List selected_parts; /* List of char *'s */
 } dbd_get_jobs_msg_t;

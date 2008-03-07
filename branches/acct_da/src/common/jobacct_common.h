@@ -86,6 +86,7 @@ typedef struct {
 } sacct_t;
 
 typedef struct {
+	char *opt_cluster;	/* --cluster */
 	int opt_completion;	/* --completion */
 	int opt_dump;		/* --dump */
 	int opt_dup;		/* --duplicates; +1 = explicitly set */

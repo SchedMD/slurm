@@ -1032,6 +1032,7 @@ void inline slurm_dbd_free_cluster_procs_msg(dbd_cluster_procs_msg_t *msg)
 void inline slurm_dbd_free_get_jobs_msg(dbd_get_jobs_msg_t *msg)
 {
 	if (msg) {
+		xfree(msg->cluster_name);
 		if(msg->selected_steps)
 			list_destroy(msg->selected_steps);
 		if(msg->selected_parts)
@@ -1152,6 +1153,9 @@ void inline slurm_dbd_pack_get_jobs_msg(dbd_get_jobs_msg_t *msg, Buf buffer)
 	ListIterator itr = NULL;
 	jobacct_selected_step_t *job = NULL;
 	char *part = NULL;
+
+	packstr(msg->cluster_name, buffer);
+
 	if(msg->selected_steps) 
 		i = list_count(msg->selected_steps);
 			
@@ -1190,6 +1194,8 @@ int inline slurm_dbd_unpack_get_jobs_msg(dbd_get_jobs_msg_t **msg, Buf buffer)
 	msg_ptr = xmalloc(sizeof(dbd_get_jobs_msg_t));
 	*msg = msg_ptr;
 
+	safe_unpackstr_xmalloc(&msg_ptr->cluster_name, &uint32_tmp, buffer);
+
 	safe_unpack32(&count, buffer);
 	if(count) {
 		msg_ptr->selected_steps =
@@ -1213,13 +1219,7 @@ int inline slurm_dbd_unpack_get_jobs_msg(dbd_get_jobs_msg_t **msg, Buf buffer)
 	return SLURM_SUCCESS;
 
 unpack_error:
-	if(msg_ptr->selected_steps)
-		list_destroy(msg_ptr->selected_steps);
-	
-	if(msg_ptr->selected_parts)
-		list_destroy(msg_ptr->selected_parts);
-	
-	xfree(msg_ptr);
+	slurm_dbd_free_get_jobs_msg(msg_ptr);
 	*msg = NULL;
 	return SLURM_ERROR;
 }

@@ -580,6 +580,7 @@ extern List jobacct_storage_p_get_jobs(List selected_steps,
 
 	get_msg.selected_steps = selected_steps;
 	get_msg.selected_parts = selected_parts;
+	get_msg.cluster_name = params->opt_cluster;
 
 	req.msg_type = DBD_GET_JOBS;
 	req.data = &get_msg;
