@@ -961,7 +961,6 @@ static Buf _load_dbd_rec(int fd)
 		return (Buf) NULL;
 	}
 
-	set_buf_offset(buffer, msg_size);
 	return buffer;
 }
 
