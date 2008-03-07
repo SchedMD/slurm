@@ -429,6 +429,8 @@ int main(int argc, char *argv[])
 		verbose("Unable to remove pidfile '%s': %m",
 			slurmctld_conf.slurmctld_pidfile);
 
+	jobacct_g_fini_slurmctld();  /* Save pending message traffic */
+
 #ifdef MEMORY_LEAK_DEBUG
 {
 	/* This should purge all allocated memory,   *\
@@ -456,7 +458,6 @@ int main(int argc, char *argv[])
 	/* Plugins are needed to purge job/node data structures,
 	 * unplug after other data structures are purged */
 	g_slurm_jobcomp_fini();
-	jobacct_g_fini_slurmctld();
 	slurm_sched_fini();
 	slurm_select_fini();
 	checkpoint_fini();
