@@ -279,10 +279,10 @@ void slurm_free_node_registration_status_msg(
 	slurm_node_registration_status_msg_t * msg)
 {
 	if (msg) {
-		xfree(msg->node_name);
 		xfree(msg->arch);
-		xfree(msg->os);
 		xfree(msg->job_id);
+		xfree(msg->node_name);
+		xfree(msg->os);
 		xfree(msg->step_id);
 		if (msg->startup)
 			switch_g_free_node_info(&msg->switch_nodeinfo);
