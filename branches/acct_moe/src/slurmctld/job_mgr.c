@@ -472,6 +472,7 @@ static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer)
 	pack32(dump_job_ptr->total_procs, buffer);
 	pack32(dump_job_ptr->exit_code, buffer);
 	pack32(dump_job_ptr->db_index, buffer);
+	pack32(dump_job_ptr->assoc_id, buffer);
 
 	pack_time(dump_job_ptr->start_time, buffer);
 	pack_time(dump_job_ptr->end_time, buffer);
@@ -535,7 +536,7 @@ static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer)
 static int _load_job_state(Buf buffer)
 {
 	uint32_t job_id, user_id, group_id, time_limit, priority, alloc_sid;
-	uint32_t exit_code, num_procs, db_index, name_len, total_procs;
+	uint32_t exit_code, num_procs, assoc_id, db_index, name_len, total_procs;
 	time_t start_time, end_time, suspend_time, pre_sus_time, tot_sus_time;
 	uint16_t job_state, next_step_id, details, batch_flag, step_flag;
 	uint16_t kill_on_node_fail, kill_on_step_done;
@@ -558,7 +559,7 @@ static int _load_job_state(Buf buffer)
 	safe_unpack32(&total_procs, buffer);
 	safe_unpack32(&exit_code, buffer);
 	safe_unpack32(&db_index, buffer);
-
+	safe_unpack32(&assoc_id, buffer);
 	safe_unpack_time(&start_time, buffer);
 	safe_unpack_time(&end_time, buffer);
 	safe_unpack_time(&suspend_time, buffer);
@@ -672,6 +673,7 @@ static int _load_job_state(Buf buffer)
 	job_ptr->num_procs    = num_procs;
 	job_ptr->total_procs  = total_procs;
 	job_ptr->db_index     = db_index;
+	job_ptr->assoc_id     = assoc_id;
 	job_ptr->time_last_active = time(NULL);
 	job_ptr->name = name;
 	name          = NULL;	/* reused, nothing left to free */
