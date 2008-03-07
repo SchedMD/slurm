@@ -18,7 +18,7 @@ documents those changes that are of interest to users and admins.
     to control message timeout.
  -- Add threaded agent to manage a queue of Gold update requests for 
     performance reasons.
- -- Add slloc options --chdir and --get-user-env.
+ -- Add salloc options --chdir and --get-user-env (for Moab).
 
 * Changes in SLURM 1.2.24
 =========================
