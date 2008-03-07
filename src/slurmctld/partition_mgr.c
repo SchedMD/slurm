@@ -548,6 +548,7 @@ int init_part_conf(void)
 {
 	last_part_update = time(NULL);
 
+	xfree(default_part.name);	/* needed for reconfig */
 	default_part.name        = xstrdup("DEFAULT");
 	default_part.hidden      = 0;
 	default_part.max_time    = INFINITE;
@@ -801,6 +802,7 @@ int update_part(update_part_msg_t * part_desc)
 		info("update_part: partition %s does not exist, "
 			"being created", part_desc->name);
 		part_ptr = create_part_record();
+		xfree(part_ptr->name);
 		part_ptr->name = xstrdup(part_desc->name);
 	}
 
@@ -1136,6 +1138,7 @@ void part_fini (void)
 		part_list = NULL;
 	}
 	xfree(default_part_name);
+	xfree(default_part.name);
 	default_part_loc = (struct part_record *) NULL;
 }
 

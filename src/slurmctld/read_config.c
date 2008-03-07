@@ -587,6 +587,7 @@ static int _build_single_partitionline_info(slurm_conf_partition_t *part)
 	part_ptr = list_find_first(part_list, &list_find_part, part->name);
 	if (part_ptr == NULL) {
 		part_ptr = create_part_record();
+		xfree(part_ptr->name);
 		part_ptr->name = xstrdup(part->name);
 	} else {
 		verbose("_parse_part_spec: duplicate entry for partition %s",
