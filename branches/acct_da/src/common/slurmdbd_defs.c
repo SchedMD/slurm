@@ -959,12 +959,12 @@ static Buf _load_dbd_rec(int fd)
 		fatal("slurmdbd: create_buf malloc failure");
 	set_buf_offset(buffer, msg_size);
 	msg = get_buf_data(buffer);
-	rd_size = 0;
-	while (rd_size < msg_size) {
-		rd_size = read(fd, msg + rd_size, msg_size);
+	size = msg_size;
+	while (size) {
+		rd_size = read(fd, msg, size);
 		if (rd_size > 0) {
 			msg += rd_size;
-			msg_size -= rd_size;
+			size -= rd_size;
 		} else if ((rd_size == -1) && (errno == EINTR))
 			continue;
 		else {
