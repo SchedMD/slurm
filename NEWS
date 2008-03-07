@@ -197,10 +197,13 @@ documents those changes that are of interest to users and admins.
     has a very long Comment field.
  -- Make certain that a job step is purged when a job has been completed.
     Previous versions could have the job step persist if an allocated node
-    went DOWN.
+    went DOWN and the slurmctld restarted.
  -- Fix bug in sbcast that can cause communication problems for large files.
  -- Add sbcast option -t/--timeout and SBCAST_TIMEOUT environment variable 
     to control message timeout.
+ -- Add threaded agent to manage a queue of Gold update requests for 
+    performance reasons.
+ -- Add slloc options --chdir and --get-user-env.
 
 * Changes in SLURM 1.2.24
 =========================

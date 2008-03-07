@@ -117,6 +117,7 @@
 #define LONG_OPT_MLOADER_IMAGE   0x122
 #define LONG_OPT_RAMDISK_IMAGE   0x123
 #define LONG_OPT_NOSHELL         0x124
+#define LONG_OPT_GET_USER_ENV    0x125
 #define LONG_OPT_SOCKETSPERNODE  0x130
 #define LONG_OPT_CORESPERSOCKET  0x131
 #define LONG_OPT_THREADSPERCORE  0x132
@@ -153,6 +154,7 @@ static void  _opt_list(void);
 /* verify options sanity  */
 static bool _opt_verify(void);
 
+static void  _proc_get_user_env(char *optarg);
 static void _process_env_var(env_vars_t *e, const char *val);
 static int _parse_signal(const char *signal_name);
 static void  _usage(void);
@@ -214,6 +216,7 @@ static void _opt_default()
 
 	opt.gid = getgid();
 
+	opt.cwd = NULL;
 	opt.progname = NULL;
 
 	opt.nprocs = 1;
@@ -285,6 +288,8 @@ static void _opt_default()
 	opt.bell            = BELL_AFTER_DELAY;
 	opt.acctg_freq      = -1;
 	opt.no_shell	    = false;
+	opt.get_user_env_time = -1;
+	opt.get_user_env_mode = -1;
 }
 
 /*---[ env var processing ]-----------------------------------------------*/
@@ -471,6 +476,7 @@ void set_options(const int argc, char **argv)
 		{"cpus-per-task", required_argument, 0, 'c'},
 		{"constraint",    required_argument, 0, 'C'},
 		{"dependency",    required_argument, 0, 'd'},
+		{"chdir",         required_argument, 0, 'D'},
 		{"nodefile",      required_argument, 0, 'F'},
 		{"geometry",      required_argument, 0, 'g'},
 		{"help",          no_argument,       0, 'h'},
@@ -532,9 +538,10 @@ void set_options(const int argc, char **argv)
 		{"ramdisk-image", required_argument, 0, LONG_OPT_RAMDISK_IMAGE},
 		{"acctg-freq",    required_argument, 0, LONG_OPT_ACCTG_FREQ},
 		{"no-shell",      no_argument,       0, LONG_OPT_NOSHELL},
+		{"get-user-env",  optional_argument, 0, LONG_OPT_GET_USER_ENV},
 		{NULL,            0,                 0, 0}
 	};
-	char *opt_string = "+a:B:c:C:d:F:g:hHIJ:kK:m:n:N:Op:qR:st:uU:vVw:W:x:";
+	char *opt_string = "+a:B:c:C:d:D:F:g:hHIJ:kK:m:n:N:Op:qR:st:uU:vVw:W:x:";
 
 	opt.progname = xbasename(argv[0]);
 	optind = 0;		
@@ -577,6 +584,10 @@ void set_options(const int argc, char **argv)
 		case 'd':
 			xfree(opt.dependency);
 			opt.dependency = xstrdup(optarg);
+			break;
+		case 'D':
+			xfree(opt.cwd);
+			opt.cwd = xstrdup(optarg);
 			break;
 		case 'F':
 			xfree(opt.nodelist);
@@ -884,6 +895,12 @@ void set_options(const int argc, char **argv)
 		case LONG_OPT_NOSHELL:
 			opt.no_shell = true;
 			break;
+		case LONG_OPT_GET_USER_ENV:
+			if (optarg)
+				_proc_get_user_env(optarg);
+			else
+				opt.get_user_env_time = 0;
+			break;
 		default:
 			fatal("Unrecognized command line parameter %c",
 			      opt_char);
@@ -891,6 +908,24 @@ void set_options(const int argc, char **argv)
 	}
 }
 
+static void _proc_get_user_env(char *optarg)
+{
+	char *end_ptr;
+
+	if ((optarg[0] >= '0') && (optarg[0] <= '9'))
+		opt.get_user_env_time = strtol(optarg, &end_ptr, 10);
+	else {
+		opt.get_user_env_time = 0;
+		end_ptr = optarg;
+	}
+ 
+	if ((end_ptr == NULL) || (end_ptr[0] == '\0'))
+		return;
+	if      ((end_ptr[0] == 's') || (end_ptr[0] == 'S'))
+		opt.get_user_env_mode = 1;
+	else if ((end_ptr[0] == 'l') || (end_ptr[0] == 'L'))
+		opt.get_user_env_mode = 2;
+}
 
 /*
  * _opt_args() : set options via commandline args and popt
@@ -1283,7 +1318,7 @@ static void _usage(void)
  	printf(
 "Usage: salloc [-N numnodes|[min nodes]-[max nodes]] [-n num-processors]\n"
 "              [[-c cpus-per-node] [-r n] [-p partition] [--hold] [-t minutes]\n"
-"              [--immediate] [--no-kill] [--overcommit]\n"
+"              [--immediate] [--no-kill] [--overcommit] [-D path]\n"
 "              [--share] [-J jobname] [--jobid=id]\n"
 "              [--verbose] [--gid=group] [--uid=user]\n"
 "              [-W sec] [--minsockets=n] [--mincores=n] [--minthreads=n]\n"
@@ -1315,6 +1350,7 @@ static void _help(void)
 "  -p, --partition=partition   partition requested\n"
 "  -H, --hold                  submit job in held state\n"
 "  -t, --time=minutes          time limit\n"
+"  -D, --chdir=path            change working directory\n"
 "  -I, --immediate             exit if resources are not immediately available\n"
 "  -k, --no-kill               do not kill job on node failure\n"
 "  -K, --kill-command[=signal] signal to send terminating job\n"
@@ -1339,6 +1375,7 @@ static void _help(void)
 "      --no-bell               do NOT ring the terminal bell\n"
 "      --gid=group_id          group ID to run job as (user root only)\n"
 "      --uid=user_id           user ID to run job as (user root only)\n"
+"      --get-user-env          used by Moab.  See srun man page.\n"
 "\n"
 "Constraint options:\n"
 "      --mincpus=n             minimum number of cpus per node\n"
