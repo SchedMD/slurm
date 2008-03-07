@@ -2510,6 +2510,10 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **
 	return SLURM_SUCCESS;
 
 unpack_error:
+	xfree(build_ptr->accounting_storage_host);
+	xfree(build_ptr->accounting_storage_pass);
+	xfree(build_ptr->accounting_storage_type);
+	xfree(build_ptr->accounting_storage_user);
 	xfree(build_ptr->authtype);
 	xfree(build_ptr->backup_addr);
 	xfree(build_ptr->backup_controller);
@@ -2521,16 +2525,16 @@ unpack_error:
 	xfree(build_ptr->epilog);
 	xfree(build_ptr->health_check_program);
 	xfree(build_ptr->job_acct_gather_type);
+	xfree(build_ptr->job_acct_storage_host);
 	xfree(build_ptr->job_acct_storage_loc);
+	xfree(build_ptr->job_acct_storage_pass);
 	xfree(build_ptr->job_acct_storage_type);
 	xfree(build_ptr->job_acct_storage_user);
-	xfree(build_ptr->job_acct_storage_host);
-	xfree(build_ptr->job_acct_storage_pass);
+	xfree(build_ptr->job_comp_host);
 	xfree(build_ptr->job_comp_loc);
+	xfree(build_ptr->job_comp_pass);
 	xfree(build_ptr->job_comp_type);
 	xfree(build_ptr->job_comp_user);
-	xfree(build_ptr->job_comp_host);
-	xfree(build_ptr->job_comp_pass);
 	xfree(build_ptr->job_credential_private_key);
 	xfree(build_ptr->job_credential_public_certificate);
 	xfree(build_ptr->health_check_program);
