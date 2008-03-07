@@ -956,18 +956,18 @@ typedef struct slurm_ctl_conf {
 	char *job_acct_gather_type; /* job accounting gather type */
 	uint16_t job_acct_gather_freq; /* poll frequency for job accounting 
 					* gather plugins */
-	char *job_acct_storage_loc; /* job accounting storage log location */
-	char *job_acct_storage_type;	/* job accounting storage type */
-	char *job_acct_storage_user;	/* job accounting storage user */
 	char *job_acct_storage_host;	/* job accounting storage host */
+	char *job_acct_storage_loc; /* job accounting storage log location */
 	char *job_acct_storage_pass;	/* job accounting storage password */
 	uint32_t job_acct_storage_port;	/* job accounting storage port */
-	char *job_comp_loc;	/* job completion logging location */
-	char *job_comp_type;	/* job completion storage type */
-	char *job_comp_user;	/* job completion storage user */
+	char *job_acct_storage_type;	/* job accounting storage type */
+	char *job_acct_storage_user;	/* job accounting storage user */
 	char *job_comp_host;	/* job completion storage host */
+	char *job_comp_loc;	/* job completion logging location */
 	char *job_comp_pass;	/* job completion storage password */
 	uint32_t job_comp_port;	/* job completion storage port */
+	char *job_comp_type;	/* job completion storage type */
+	char *job_comp_user;	/* job completion storage user */
 	char *job_credential_private_key;	/* path to private key */
 	char *job_credential_public_certificate;/* path to public certificate*/
 	uint16_t job_file_append; /* if set, append to stdout/err file */
@@ -982,7 +982,7 @@ typedef struct slurm_ctl_conf {
 	                         * purged from in memory records */
 	char *mpi_default;	/* Default version of MPI in use */
 	uint16_t msg_timeout;	/* message timeout */
-	char *node_prefix;      /* prefix of nodes in partition only set in 
+	char *node_prefix;      /* prefix of nodes in partition, only set in 
 				   bluegene clusters NULL otherwise */
 	char *plugindir;	/* pathname to plugins */
 	char *plugstack;        /* pathname to plugin stack config file */
@@ -993,10 +993,10 @@ typedef struct slurm_ctl_conf {
 				          * be propagated */
         char *propagate_rlimits;/* Propagate (all/specific) resource limits */
         char *propagate_rlimits_except;/* Propagate all rlimits except these */
-	uint16_t ret2service;	/* 1 return DOWN node to service at 
-				 * registration */
 	uint16_t resume_rate;	/* nodes to make full power, per minute */
 	char *resume_program;	/* program to make nodes full power */
+	uint16_t ret2service;	/* 1 return DOWN node to service at 
+				 * registration */
 	char *sched_conf;	/* contents of scheduler plugin config file */
 	uint16_t sched_time_slice;	/* gang scheduler slice time, secs */
 	char *schedtype;	/* type of scheduler to use */
@@ -1016,17 +1016,17 @@ typedef struct slurm_ctl_conf {
 				 * on non-responding primarly controller */
 	uint16_t slurmd_debug;	/* slurmd logging level */
 	char *slurmd_logfile;	/* where slurmd error log gets written */
+	char *slurmd_pidfile;   /* where to put slurmd pidfile           */
 	uint32_t slurmd_port;	/* default communications port to slurmd */
 	char *slurmd_spooldir;	/* where slurmd put temporary state info */
-	char *slurmd_pidfile;   /* where to put slurmd pidfile           */
 	uint16_t slurmd_timeout;/* how long slurmctld waits for slurmd before 
 				 * considering node DOWN */
 	char *slurmdbd_addr;	/* comm path for Slurm DBD */
 	char * slurmdbd_auth_info;	/* Slurm DBD authentication info */
 	uint16_t slurmdbd_port;	/* port for Slurm DBD socket */
 	char *slurm_conf;	/* pathname of slurm config file */
-	char *srun_prolog;      /* srun prolog program */
 	char *srun_epilog;      /* srun epilog program */
+	char *srun_prolog;      /* srun prolog program */
 	char *state_save_location;/* pathname of slurmctld state save
 				 * directory */
 	char *suspend_exc_nodes;/* nodes to not make power saving */
