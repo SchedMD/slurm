@@ -341,9 +341,10 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 	saved_min_nodes = min_nodes;
 	saved_req_nodes = req_nodes;
 	saved_job_min_nodes = job_ptr->details->min_nodes;
-	if (job_ptr->details->req_node_bitmap)
-		saved_req_node_bitmap = bit_copy(job_ptr->details->req_node_bitmap);
-	job_ptr->details->req_node_bitmap = NULL;
+	if (job_ptr->details->req_node_bitmap) {
+		saved_req_node_bitmap = job_ptr->details->req_node_bitmap;
+		job_ptr->details->req_node_bitmap = NULL;
+	}
 	saved_num_procs = job_ptr->num_procs;
 	job_ptr->num_procs = 1;
 	tmp_node_set_ptr = xmalloc(sizeof(struct node_set) * node_set_size);
@@ -426,6 +427,7 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 	job_ptr->details->min_nodes = saved_job_min_nodes;
 	job_ptr->num_procs = saved_num_procs;
 	if (saved_req_node_bitmap) {
+		FREE_NULL_BITMAP(job_ptr->details->req_node_bitmap);
 		job_ptr->details->req_node_bitmap = 
 				bit_copy(saved_req_node_bitmap);
 	}
