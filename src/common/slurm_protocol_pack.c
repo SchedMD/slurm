@@ -1200,10 +1200,10 @@ _unpack_node_registration_status_msg(slurm_node_registration_status_msg_t
 	return SLURM_SUCCESS;
 
 unpack_error:
-	xfree(node_reg_ptr->node_name);
 	xfree(node_reg_ptr->arch);
-	xfree(node_reg_ptr->os);
 	xfree(node_reg_ptr->job_id);
+	xfree(node_reg_ptr->node_name);
+	xfree(node_reg_ptr->os);
 	xfree(node_reg_ptr->step_id);
 	switch_g_free_node_info(&node_reg_ptr->switch_nodeinfo);
 	xfree(node_reg_ptr);
