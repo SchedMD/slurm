@@ -30,13 +30,14 @@
 #  include "config.h"
 #endif
 
+#include <pwd.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdbool.h>
-#include <unistd.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <time.h>
+#include <unistd.h>
 
 #include <slurm/slurm.h>
 
@@ -96,6 +97,25 @@ int main(int argc, char *argv[])
 		logopt.stderr_level -= opt.quiet;
 		logopt.prefix_level = 1;
 		log_alter(logopt, 0, NULL);
+	}
+
+	if (opt.cwd && chdir(opt.cwd)) {
+		error("chdir(%s): %m", opt.cwd);
+		exit(1);
+	}
+
+	if (opt.get_user_env_time >= 0) {
+		struct passwd *pw;
+		pw = getpwuid(opt.uid);
+		if (pw == NULL) {
+			error("getpwuid(%u): %m", (uint32_t)opt.uid);
+			exit(1);
+		}
+		env = env_array_user_default(pw->pw_name,
+					     opt.get_user_env_time,
+					     opt.get_user_env_mode);
+		if (env == NULL)
+			exit(1);    /* error already logged */
 	}
 
 	/*
