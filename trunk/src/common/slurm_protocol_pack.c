@@ -2199,6 +2199,11 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer)
 {
 	pack_time(build_ptr->last_update, buffer);
 
+	packstr(build_ptr->accounting_storage_host, buffer);
+	packstr(build_ptr->accounting_storage_pass, buffer);
+	pack32(build_ptr->accounting_storage_port, buffer);
+	packstr(build_ptr->accounting_storage_type, buffer);
+	packstr(build_ptr->accounting_storage_user, buffer);
 	packstr(build_ptr->authtype, buffer);
 
 	packstr(build_ptr->backup_addr, buffer);
@@ -2229,19 +2234,19 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer)
 
 	pack16(build_ptr->job_acct_gather_freq, buffer);
 	packstr(build_ptr->job_acct_gather_type, buffer);
-	packstr(build_ptr->job_acct_storage_loc, buffer);
-	packstr(build_ptr->job_acct_storage_type, buffer);
-	packstr(build_ptr->job_acct_storage_user, buffer);
 	packstr(build_ptr->job_acct_storage_host, buffer);
+	packstr(build_ptr->job_acct_storage_loc, buffer);
 	packstr(build_ptr->job_acct_storage_pass, buffer);
 	pack32((uint32_t)build_ptr->job_acct_storage_port, buffer);
+	packstr(build_ptr->job_acct_storage_type, buffer);
+	packstr(build_ptr->job_acct_storage_user, buffer);
 
-	packstr(build_ptr->job_comp_loc, buffer);
-	packstr(build_ptr->job_comp_type, buffer);
-	packstr(build_ptr->job_comp_user, buffer);
 	packstr(build_ptr->job_comp_host, buffer);
+	packstr(build_ptr->job_comp_loc, buffer);
 	packstr(build_ptr->job_comp_pass, buffer);
 	pack32((uint32_t)build_ptr->job_comp_port, buffer);
+	packstr(build_ptr->job_comp_type, buffer);
+	packstr(build_ptr->job_comp_user, buffer);
 
 	packstr(build_ptr->job_credential_private_key, buffer);
 	packstr(build_ptr->job_credential_public_certificate, buffer);
@@ -2345,6 +2350,15 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **
 	/* unpack timestamp of snapshot */
 	safe_unpack_time(&build_ptr->last_update, buffer);
 
+	safe_unpackstr_xmalloc(&build_ptr->accounting_storage_host, 
+			       &uint32_tmp, buffer);
+	safe_unpackstr_xmalloc(&build_ptr->accounting_storage_pass, 
+			       &uint32_tmp, buffer);
+	safe_unpack32(&build_ptr->accounting_storage_port, buffer);
+	safe_unpackstr_xmalloc(&build_ptr->accounting_storage_type, 
+			       &uint32_tmp, buffer);
+	safe_unpackstr_xmalloc(&build_ptr->accounting_storage_user, 
+			       &uint32_tmp, buffer);
 	safe_unpackstr_xmalloc(&build_ptr->authtype, &uint32_tmp, buffer);
 
 	safe_unpackstr_xmalloc(&build_ptr->backup_addr, &uint32_tmp, buffer);
@@ -2381,24 +2395,24 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **
 	safe_unpack16(&build_ptr->job_acct_gather_freq, buffer);
 	safe_unpackstr_xmalloc(&build_ptr->job_acct_gather_type,
 			       &uint32_tmp, buffer);
-	safe_unpackstr_xmalloc(&build_ptr->job_acct_storage_loc,
-			       &uint32_tmp, buffer);
-	safe_unpackstr_xmalloc(&build_ptr->job_acct_storage_type,
-			       &uint32_tmp, buffer);
-	safe_unpackstr_xmalloc(&build_ptr->job_acct_storage_user,
-			       &uint32_tmp, buffer);
 	safe_unpackstr_xmalloc(&build_ptr->job_acct_storage_host,
+			       &uint32_tmp, buffer);
+	safe_unpackstr_xmalloc(&build_ptr->job_acct_storage_loc,
 			       &uint32_tmp, buffer);
 	safe_unpackstr_xmalloc(&build_ptr->job_acct_storage_pass,
 			       &uint32_tmp, buffer);
 	safe_unpack32(&build_ptr->job_acct_storage_port, buffer);
+	safe_unpackstr_xmalloc(&build_ptr->job_acct_storage_type,
+			       &uint32_tmp, buffer);
+	safe_unpackstr_xmalloc(&build_ptr->job_acct_storage_user,
+			       &uint32_tmp, buffer);
 
-	safe_unpackstr_xmalloc(&build_ptr->job_comp_loc,  &uint32_tmp, buffer);
-	safe_unpackstr_xmalloc(&build_ptr->job_comp_type, &uint32_tmp, buffer);
-	safe_unpackstr_xmalloc(&build_ptr->job_comp_user, &uint32_tmp, buffer);
 	safe_unpackstr_xmalloc(&build_ptr->job_comp_host, &uint32_tmp, buffer);
+	safe_unpackstr_xmalloc(&build_ptr->job_comp_loc,  &uint32_tmp, buffer);
 	safe_unpackstr_xmalloc(&build_ptr->job_comp_pass, &uint32_tmp, buffer);
 	safe_unpack32(&build_ptr->job_comp_port, buffer);
+	safe_unpackstr_xmalloc(&build_ptr->job_comp_type, &uint32_tmp, buffer);
+	safe_unpackstr_xmalloc(&build_ptr->job_comp_user, &uint32_tmp, buffer);
 
 	safe_unpackstr_xmalloc(&build_ptr->job_credential_private_key,
 			       &uint32_tmp, buffer);
