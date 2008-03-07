@@ -117,6 +117,16 @@ void slurm_print_ctl_conf ( FILE* out,
 	slurm_make_time_str ((time_t *)&slurm_ctl_conf_ptr->last_update, 
 			     time_str, sizeof(time_str));
 	fprintf(out, "Configuration data as of %s\n", time_str);
+	fprintf(out, "AccountingStorageHost   = %s\n", 
+		slurm_ctl_conf_ptr->accounting_storage_host);
+	fprintf(out, "AccountingStoragePass   = %s\n", 
+		slurm_ctl_conf_ptr->accounting_storage_pass);
+	fprintf(out, "AccountingStoragePort   = %u\n", 
+		slurm_ctl_conf_ptr->accounting_storage_port);
+	fprintf(out, "AccountingStorageType   = %s\n", 
+		slurm_ctl_conf_ptr->accounting_storage_type);
+	fprintf(out, "AccountingStorageUser   = %s\n", 
+		slurm_ctl_conf_ptr->accounting_storage_user);
 	fprintf(out, "AuthType                = %s\n", 
 		slurm_ctl_conf_ptr->authtype);
 	fprintf(out, "BackupAddr              = %s\n", 
@@ -167,12 +177,14 @@ void slurm_print_ctl_conf ( FILE* out,
 		slurm_ctl_conf_ptr->job_acct_gather_freq);
 	fprintf(out, "JobAcctGatherType       = %s\n",
 		slurm_ctl_conf_ptr->job_acct_gather_type);
+	fprintf(out, "JobAcctStorageHost      = %s\n", 
+		slurm_ctl_conf_ptr->job_acct_storage_host);
 	fprintf(out, "JobAcctStorageType      = %s\n", 
 		slurm_ctl_conf_ptr->job_acct_storage_type);
 	fprintf(out, "JobAcctStorageLoc       = %s\n", 
 		slurm_ctl_conf_ptr->job_acct_storage_loc);
-	fprintf(out, "JobAcctStorageHost      = %s\n", 
-		slurm_ctl_conf_ptr->job_acct_storage_host);
+	fprintf(out, "JobAcctStoragePass      = %s\n", 
+		slurm_ctl_conf_ptr->job_acct_storage_pass);
 	fprintf(out, "JobAcctStoragePort      = %u\n", 
 		slurm_ctl_conf_ptr->job_acct_storage_port);
 	fprintf(out, "JobAcctStorageUser      = %s\n", 
@@ -181,6 +193,8 @@ void slurm_print_ctl_conf ( FILE* out,
 		slurm_ctl_conf_ptr->job_comp_host);
 	fprintf(out, "JobCompLoc              = %s\n",
 		 slurm_ctl_conf_ptr->job_comp_loc);
+	fprintf(out, "JobCompPass             = %s\n",
+		 slurm_ctl_conf_ptr->job_comp_pass);
 	fprintf(out, "JobCompPort             = %u\n",
 		slurm_ctl_conf_ptr->job_comp_port);
 	fprintf(out, "JobCompType             = %s\n", 

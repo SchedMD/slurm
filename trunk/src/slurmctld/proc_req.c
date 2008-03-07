@@ -4,8 +4,7 @@
  *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Copyright (C) 2008 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Morris Jette <jette@llnl.gov>, Kevin Tew
- *  <tew1@llnl.gov>, et. al. 
+ *  Written by Morris Jette <jette@llnl.gov>, et. al. 
  *  UCRL-CODE-226842.
  *  
  *  This file is part of SLURM, a resource management program.
@@ -322,58 +321,76 @@ void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
 					xstrdup(conf->accounting_storage_host);
 	conf_ptr->accounting_storage_pass =
 					xstrdup(conf->accounting_storage_pass);
+	conf_ptr->accounting_storage_port = conf->accounting_storage_port;
 	conf_ptr->accounting_storage_type =
 				        xstrdup(conf->accounting_storage_type);
 	conf_ptr->accounting_storage_user =
 					xstrdup(conf->accounting_storage_user);
 	conf_ptr->authtype            = xstrdup(conf->authtype);
+
 	conf_ptr->backup_addr         = xstrdup(conf->backup_addr);
 	conf_ptr->backup_controller   = xstrdup(conf->backup_controller);
 	conf_ptr->boot_time           = slurmctld_config.boot_time;
+
 	conf_ptr->cache_groups        = conf->cache_groups;
 	conf_ptr->checkpoint_type     = xstrdup(conf->checkpoint_type);
 	conf_ptr->cluster_name        = xstrdup(conf->cluster_name);
 	conf_ptr->control_addr        = xstrdup(conf->control_addr);
 	conf_ptr->control_machine     = xstrdup(conf->control_machine);
 	conf_ptr->crypto_type         = xstrdup(conf->crypto_type);
+
 	conf_ptr->def_mem_per_task    = conf->def_mem_per_task;
+
 	conf_ptr->epilog              = xstrdup(conf->epilog);
 	conf_ptr->epilog_msg_time     = conf->epilog_msg_time;
+
 	conf_ptr->fast_schedule       = conf->fast_schedule;
 	conf_ptr->first_job_id        = conf->first_job_id;
+
 	conf_ptr->inactive_limit      = conf->inactive_limit;
+
 	conf_ptr->health_check_interval = conf->health_check_interval;
 	conf_ptr->health_check_program = xstrdup(conf->health_check_program);
+
 	conf_ptr->job_acct_gather_freq  = conf->job_acct_gather_freq;
 	conf_ptr->job_acct_gather_type  = xstrdup(conf->job_acct_gather_type);
-	conf_ptr->job_acct_storage_loc = xstrdup(conf->job_acct_storage_loc);
-	conf_ptr->job_acct_storage_type = xstrdup(conf->job_acct_storage_type);
-	conf_ptr->job_acct_storage_user = xstrdup(conf->job_acct_storage_user);
 	conf_ptr->job_acct_storage_host = xstrdup(conf->job_acct_storage_host);
+	conf_ptr->job_acct_storage_loc = xstrdup(conf->job_acct_storage_loc);
 	conf_ptr->job_acct_storage_pass = xstrdup(conf->job_acct_storage_pass);
 	conf_ptr->job_acct_storage_port = conf->job_acct_storage_port;
-	conf_ptr->job_comp_loc        = xstrdup(conf->job_comp_loc);
-	conf_ptr->job_comp_type       = xstrdup(conf->job_comp_type);
-	conf_ptr->job_comp_user       = xstrdup(conf->job_comp_user);
+	conf_ptr->job_acct_storage_type = xstrdup(conf->job_acct_storage_type);
+	conf_ptr->job_acct_storage_user = xstrdup(conf->job_acct_storage_user);
+
 	conf_ptr->job_comp_host       = xstrdup(conf->job_comp_host);
+	conf_ptr->job_comp_loc        = xstrdup(conf->job_comp_loc);
 	conf_ptr->job_comp_pass       = xstrdup(conf->job_comp_pass);
 	conf_ptr->job_comp_port       = conf->job_comp_port;
+	conf_ptr->job_comp_type       = xstrdup(conf->job_comp_type);
+	conf_ptr->job_comp_user       = xstrdup(conf->job_comp_user);
+
 	conf_ptr->job_credential_private_key = xstrdup(conf->
 					job_credential_private_key);
 	conf_ptr->job_credential_public_certificate = xstrdup(conf->
 					job_credential_public_certificate);
 	conf_ptr->job_file_append     = conf->job_file_append;
 	conf_ptr->job_requeue         = conf->job_requeue;
+
 	conf_ptr->get_env_timeout     = conf->get_env_timeout;
+
 	conf_ptr->kill_wait           = conf->kill_wait;
+
 	conf_ptr->licenses            = xstrdup(conf->licenses);
+
 	conf_ptr->mail_prog           = xstrdup(conf->mail_prog);
 	conf_ptr->max_job_cnt         = conf->max_job_cnt;
 	conf_ptr->max_mem_per_task    = conf->max_mem_per_task;
 	conf_ptr->min_job_age         = conf->min_job_age;
 	conf_ptr->mpi_default         = xstrdup(conf->mpi_default);
 	conf_ptr->msg_timeout         = conf->msg_timeout;
+
 	conf_ptr->next_job_id         = get_next_job_id();
+	conf_ptr->node_prefix         = xstrdup(conf->node_prefix);
+
 	conf_ptr->plugindir           = xstrdup(conf->plugindir);
 	conf_ptr->plugstack           = xstrdup(conf->plugstack);
 	conf_ptr->private_data        = conf->private_data;
@@ -384,9 +401,11 @@ void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
         conf_ptr->propagate_rlimits   = xstrdup(conf->propagate_rlimits);
         conf_ptr->propagate_rlimits_except = xstrdup(conf->
 						     propagate_rlimits_except);
+
 	conf_ptr->resume_program      = xstrdup(conf->resume_program);
 	conf_ptr->resume_rate         = conf->resume_rate;
 	conf_ptr->ret2service         = conf->ret2service;
+
 	conf_ptr->sched_conf          = slurm_sched_p_get_conf();
 	conf_ptr->schedport           = conf->schedport;
 	conf_ptr->schedrootfltr       = conf->schedrootfltr;
@@ -411,6 +430,8 @@ void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
 	conf_ptr->slurmdbd_auth_info  = xstrdup(conf->slurmdbd_auth_info);
 	conf_ptr->slurmdbd_port       = conf->slurmdbd_port;
 	conf_ptr->slurm_conf          = xstrdup(conf->slurm_conf);
+	conf_ptr->srun_prolog         = xstrdup(conf->srun_prolog);
+	conf_ptr->srun_epilog         = xstrdup(conf->srun_epilog);
 	conf_ptr->state_save_location = xstrdup(conf->state_save_location);
 	conf_ptr->suspend_exc_nodes   = xstrdup(conf->suspend_exc_nodes);
 	conf_ptr->suspend_exc_parts   = xstrdup(conf->suspend_exc_parts);
@@ -418,16 +439,16 @@ void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
 	conf_ptr->suspend_rate        = conf->suspend_rate;
 	conf_ptr->suspend_time        = conf->suspend_time;
 	conf_ptr->switch_type         = xstrdup(conf->switch_type);
+
 	conf_ptr->task_epilog         = xstrdup(conf->task_epilog);
 	conf_ptr->task_prolog         = xstrdup(conf->task_prolog);
 	conf_ptr->task_plugin         = xstrdup(conf->task_plugin);
 	conf_ptr->task_plugin_param   = conf->task_plugin_param;
 	conf_ptr->tmp_fs              = xstrdup(conf->tmp_fs);
-	conf_ptr->wait_time           = conf->wait_time;
-	conf_ptr->srun_prolog         = xstrdup(conf->srun_prolog);
-	conf_ptr->srun_epilog         = xstrdup(conf->srun_epilog);
-	conf_ptr->node_prefix         = xstrdup(conf->node_prefix);
 	conf_ptr->tree_width          = conf->tree_width;
+
+	conf_ptr->wait_time           = conf->wait_time;
+
 	conf_ptr->use_pam             = conf->use_pam;
 	conf_ptr->unkillable_program  = xstrdup(conf->unkillable_program);
 	conf_ptr->unkillable_timeout  = conf->unkillable_timeout;
