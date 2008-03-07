@@ -65,7 +65,6 @@
 #include "src/common/switch.h"
 #include "src/common/xstring.h"
 #include "src/common/node_select.h"
-#include "src/common/slurm_jobacct_storage.h"
 #include "src/common/slurm_rlimits_info.h"
 
 #include "src/slurmctld/job_scheduler.h"

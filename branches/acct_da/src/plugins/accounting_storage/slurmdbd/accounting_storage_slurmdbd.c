@@ -597,6 +597,7 @@ extern List jobacct_storage_p_get_jobs(List selected_steps,
 		got_msg->jobs = NULL;
 		slurm_dbd_free_got_jobs_msg(got_msg);
 	}
+
 	return job_list;
 }
 

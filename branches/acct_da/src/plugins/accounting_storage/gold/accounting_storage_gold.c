@@ -1023,33 +1023,43 @@ extern int acct_storage_p_get_assoc_id(acct_association_rec_t *assoc)
 	if(!gold_association_list) 
 		gold_association_list = acct_storage_g_get_associations(NULL);
 
-	if((!assoc->cluster || !assoc->acct) || !assoc->id) {
+	if((!assoc->cluster || !assoc->acct) && !assoc->id) {
 		error("acct_storage_p_get_assoc_id: "
-		      "You need to supply a cluster and account name to get"
+		      "You need to supply a cluster and account name to get "
 		      "an association.");
 		return SLURM_ERROR;
 	}
 
-	assoc->id = NO_VAL;
 	itr = list_iterator_create(gold_association_list);
 	while((found_assoc = list_next(itr))) {
-		if((assoc->id && assoc->id != found_assoc->id)
-		   || (!found_assoc->acct 
-		       || strcasecmp(assoc->acct, found_assoc->acct))
-		   || (!assoc->cluster 
-		       || strcasecmp(assoc->cluster, found_assoc->cluster))
-		   || (assoc->user 
-		       && (!found_assoc->user 
-			   || strcasecmp(assoc->user, found_assoc->user)))
-		   || (!assoc->user && found_assoc->user 
-		       && strcasecmp("none", found_assoc->user)))
+		if(assoc->id) {
+			if(assoc->id == found_assoc->id) {
+				ret_assoc = found_assoc;
+				break;
+			}
 			continue;
-		if(assoc->partition
-		   && (!assoc->partition 
-		       || strcasecmp(assoc->partition, 
-				     found_assoc->partition))) {
-			ret_assoc = found_assoc;
-			continue;
+		} else {
+			if((!found_assoc->acct 
+			    || strcasecmp(assoc->acct,
+					  found_assoc->acct))
+			   || (!assoc->cluster 
+			       || strcasecmp(assoc->cluster,
+					     found_assoc->cluster))
+			   || (assoc->user 
+			       && (!found_assoc->user 
+				   || strcasecmp(assoc->user,
+						 found_assoc->user)))
+			   || (!assoc->user && found_assoc->user 
+			       && strcasecmp("none",
+					     found_assoc->user)))
+				continue;
+			if(assoc->partition
+			   && (!assoc->partition 
+			       || strcasecmp(assoc->partition, 
+					     found_assoc->partition))) {
+				ret_assoc = found_assoc;
+				continue;
+			}
 		}
 		ret_assoc = found_assoc;
 		break;
@@ -3206,7 +3216,6 @@ extern List jobacct_storage_p_get_jobs(List selected_steps,
 		itr = list_iterator_create(gold_response->entries);
 		while((resp_entry = list_next(itr))) {
 			job = create_jobacct_job_rec();
-			
 			itr2 = list_iterator_create(resp_entry->name_val);
 			while((name_val = list_next(itr2))) {
 				if(!strcmp(name_val->name, "JobId")) {
@@ -3217,16 +3226,21 @@ extern List jobacct_storage_p_get_jobs(List selected_steps,
 					memset(&account_rec, 0,
 					       sizeof(acct_association_rec_t));
 					account_rec.id = atoi(name_val->value);
-					acct_storage_p_get_assoc_id(
-						&account_rec);
+					if(acct_storage_p_get_assoc_id(
+						   &account_rec) == SLURM_ERROR)
+						error("no assoc found for "
+						      "id %u",
+						      account_rec.id);
+					
 					if(account_rec.cluster) {
-						if(params->opt_cluster&&
+						if(params->opt_cluster &&
 						   strcmp(params->opt_cluster,
 							  account_rec.
 							  cluster)) {
 							destroy_jobacct_job_rec(
 								job);
-							continue;
+							job = NULL;
+							break;
 						}
 						job->cluster =
 							xstrdup(account_rec.
@@ -3289,8 +3303,14 @@ extern List jobacct_storage_p_get_jobs(List selected_steps,
 				}
 			}
 			list_iterator_destroy(itr2);
+
+			if(!job) 
+				continue;
+
+			job->show_full = 1;
 			job->track_steps = 0;
 			job->priority = 0;
+
 			if (!job->nodes) 
 				job->nodes = xstrdup("(unknown)");
 			

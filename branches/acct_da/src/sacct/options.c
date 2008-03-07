@@ -282,10 +282,12 @@ int get_data(void)
 						  selected_parts, &params);
 	}
 
-	if (params.opt_fdump) {
+	if (params.opt_fdump) 
 		return SLURM_SUCCESS;
-	}
-	
+
+	if(!jobs)
+		return SLURM_ERROR;
+
 	itr = list_iterator_create(jobs);
 	while((job = list_next(itr))) {
 		if(!list_count(job->steps)) 
@@ -332,7 +334,7 @@ void parse_command_line(int argc, char **argv)
 	static struct option long_options[] = {
 		{"all", 0,0, 'a'},
 		{"brief", 0, 0, 'b'},
-		{"cluster", 1, &params.opt_cluster, 'C'},
+		{"cluster", 1, 0, 'C'},
 		{"completion", 0, &params.opt_completion, 'c'},
 		{"duplicates", 0, &params.opt_dup, 1},
 		{"dump", 0, 0, 'd'},
@@ -381,12 +383,11 @@ void parse_command_line(int argc, char **argv)
 			brief_output = true;
 			break;
 		case 'c':
-			params.opt_cluster = xstrdup(optarg);
-			break;
-		case 'c':
 			params.opt_completion = 1;
 			break;
-
+		case 'C':
+			params.opt_cluster = xstrdup(optarg);
+			break;
 		case 'd':
 			params.opt_dump = 1;
 			break;
@@ -1114,7 +1115,7 @@ void do_list(void)
 			continue;
 		if(job->sacct.min_cpu == NO_VAL)
 			job->sacct.min_cpu = 0;
-		
+
 		if(list_count(job->steps)) {
 			job->sacct.ave_cpu /= list_count(job->steps);
 			job->sacct.ave_rss /= list_count(job->steps);

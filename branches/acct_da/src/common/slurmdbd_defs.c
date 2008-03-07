@@ -1149,7 +1149,7 @@ unpack_error:
 
 void inline slurm_dbd_pack_get_jobs_msg(dbd_get_jobs_msg_t *msg, Buf buffer)
 {
-	int i = 0;
+	uint32_t i = 0;
 	ListIterator itr = NULL;
 	jobacct_selected_step_t *job = NULL;
 	char *part = NULL;
@@ -1197,23 +1197,17 @@ int inline slurm_dbd_unpack_get_jobs_msg(dbd_get_jobs_msg_t **msg, Buf buffer)
 	safe_unpackstr_xmalloc(&msg_ptr->cluster_name, &uint32_tmp, buffer);
 
 	safe_unpack32(&count, buffer);
-	if(count) {
-		msg_ptr->selected_steps =
-			list_create(destroy_jobacct_selected_step);
-		for(i=0; i<count; i++) {
-			unpack_jobacct_selected_step(&job, buffer);
-			list_append(msg_ptr->selected_steps, job);
-		}
+	msg_ptr->selected_steps = list_create(destroy_jobacct_selected_step);
+	for(i=0; i<count; i++) {
+		unpack_jobacct_selected_step(&job, buffer);
+		list_append(msg_ptr->selected_steps, job);
 	}
 
-	count = 0;
 	safe_unpack32(&count, buffer);
-	if(count) {
-		msg_ptr->selected_parts = list_create(slurm_destroy_char);
-		for(i=0; i<count; i++) {
-			safe_unpackstr_xmalloc(&part, &uint32_tmp, buffer);
-			list_append(msg_ptr->selected_parts, part);
-		}
+	msg_ptr->selected_parts = list_create(slurm_destroy_char);
+	for(i=0; i<count; i++) {
+		safe_unpackstr_xmalloc(&part, &uint32_tmp, buffer);
+		list_append(msg_ptr->selected_parts, part);
 	}
 
 	return SLURM_SUCCESS;
@@ -1226,15 +1220,15 @@ unpack_error:
 
 void inline slurm_dbd_pack_got_jobs_msg(dbd_got_jobs_msg_t *msg, Buf buffer)
 {
-	int i = 0;
+	uint32_t count = 0;
 	ListIterator itr = NULL;
 	jobacct_job_rec_t *job = NULL;
 
 	if(msg->jobs) 
-		i = list_count(msg->jobs);
+		count = list_count(msg->jobs);
 			
-	pack32(i, buffer);
-	if(i) {
+	pack32(count, buffer);
+	if(count) {
 		itr = list_iterator_create(msg->jobs);
 		while((job = list_next(itr))) {
 			pack_jobacct_job_rec(job, buffer);
@@ -1253,13 +1247,12 @@ int inline slurm_dbd_unpack_got_jobs_msg(dbd_got_jobs_msg_t **msg, Buf buffer)
 	msg_ptr = xmalloc(sizeof(dbd_got_jobs_msg_t));
 	*msg = msg_ptr;
 	safe_unpack32(&count, buffer);
-	if(count) {
-		msg_ptr->jobs = list_create(destroy_jobacct_job_rec);
-		for(i=0; i<count; i++) {
-			unpack_jobacct_job_rec(&job, buffer);
-			list_append(msg_ptr->jobs, job);
-		}
+	msg_ptr->jobs = list_create(destroy_jobacct_job_rec);
+	for(i=0; i<count; i++) {
+		unpack_jobacct_job_rec(&job, buffer);
+		list_append(msg_ptr->jobs, job);
 	}
+	
 	return SLURM_SUCCESS;
 
 unpack_error:

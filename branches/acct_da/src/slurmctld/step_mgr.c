@@ -59,7 +59,7 @@
 #include "src/common/switch.h"
 #include "src/common/xstring.h"
 #include "src/common/forward.h"
-#include "src/common/slurm_jobacct_storage.h"
+#include "src/common/slurm_accounting_storage.h"
 #include "src/common/slurm_jobacct_gather.h"
 
 #include "src/slurmctld/agent.h"

@@ -283,7 +283,8 @@ int main(int argc, char **argv)
 	
 	switch (op) {
 	case SACCT_DUMP:
-		get_data();
+		if(get_data() == SLURM_ERROR)
+			exit(errno);
 		if(params.opt_completion) 
 			do_dump_completion();
 		else 
@@ -293,12 +294,14 @@ int main(int argc, char **argv)
 		do_expire();
 		break;
 	case SACCT_FDUMP:
-		get_data();
+		if(get_data() == SLURM_ERROR)
+			exit(errno);
 		break;
 	case SACCT_LIST:
 		if (params.opt_header) 	/* give them something to look */
 			_print_header();/* at while we think...        */
-		get_data();
+		if(get_data() == SLURM_ERROR)
+			exit(errno);
 		if(params.opt_completion) 
 			do_list_completion();
 		else 

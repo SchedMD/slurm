@@ -193,7 +193,8 @@ extern void pack_jobacct_job_rec(jobacct_job_rec_t *job, Buf buffer)
 {
 	ListIterator itr = NULL;
 	jobacct_step_rec_t *step = NULL;
-	
+	uint32_t count = 0;
+
 	pack32(job->alloc_cpus, buffer);
 	pack32(job->associd, buffer);
 	packstr(job->account, buffer);
@@ -216,14 +217,16 @@ extern void pack_jobacct_job_rec(jobacct_job_rec_t *job, Buf buffer)
 	pack32(job->show_full, buffer);
 	pack_time(job->start, buffer);
 	pack16(job->state, buffer);
-	pack32(list_count(job->steps), buffer);
-
-	itr = list_iterator_create(job->steps);
-	while((step = list_next(itr))) {
-		pack_jobacct_step_rec(step, buffer);
+	if(job->steps)
+		count = list_count(job->steps);
+	pack32(count, buffer);
+	if(count) {
+		itr = list_iterator_create(job->steps);
+		while((step = list_next(itr))) {
+			pack_jobacct_step_rec(step, buffer);
+		}
+		list_iterator_destroy(itr);
 	}
-	list_iterator_destroy(itr);
-
 	pack_time(job->submit, buffer);
 	pack32(job->suspended, buffer);
 	pack32(job->sys_cpu_sec, buffer);
@@ -232,7 +235,7 @@ extern void pack_jobacct_job_rec(jobacct_job_rec_t *job, Buf buffer)
 	pack32(job->tot_cpu_usec, buffer);
 	pack16(job->track_steps, buffer);
 	pack32(job->uid, buffer);
-	packstr(job->user, buffer);
+	//packstr(job->user, buffer);
 	pack32(job->user_cpu_sec, buffer);
 	pack32(job->user_cpu_usec, buffer);
 }
@@ -285,7 +288,7 @@ extern int unpack_jobacct_job_rec(jobacct_job_rec_t **job, Buf buffer)
 	safe_unpack32(&job_ptr->tot_cpu_usec, buffer);
 	safe_unpack16(&job_ptr->track_steps, buffer);
 	safe_unpack32(&job_ptr->uid, buffer);
-	safe_unpackstr_xmalloc(&job_ptr->user, &uint32_tmp, buffer);
+	//safe_unpackstr_xmalloc(&job_ptr->user, &uint32_tmp, buffer);
 	safe_unpack32(&job_ptr->user_cpu_sec, buffer);
 	safe_unpack32(&job_ptr->user_cpu_usec, buffer);
 	
@@ -407,6 +410,7 @@ extern int jobacct_common_init_struct(struct jobacctinfo *jobacct,
 		temp_id.nodeid = (uint32_t)NO_VAL;
 		jobacct_id = &temp_id;
 	}
+	memset(jobacct, 0, sizeof(struct jobacctinfo));
 	jobacct->sys_cpu_sec = 0;
 	jobacct->sys_cpu_usec = 0;
 	jobacct->user_cpu_sec = 0;
@@ -444,7 +448,7 @@ extern void jobacct_common_free_jobacct(void *object)
 }
 
 extern int jobacct_common_setinfo(struct jobacctinfo *jobacct, 
-			  enum jobacct_data_type type, void *data)
+				  enum jobacct_data_type type, void *data)
 {
 	int rc = SLURM_SUCCESS;
 	int *fd = (int *)data;

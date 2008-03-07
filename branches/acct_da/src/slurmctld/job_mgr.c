@@ -63,7 +63,6 @@
 #include "src/common/node_select.h"
 #include "src/common/parse_time.h"
 #include "src/common/slurm_accounting_storage.h"
-#include "src/common/slurm_jobacct_storage.h"
 #include "src/common/slurm_jobcomp.h"
 #include "src/common/slurm_protocol_pack.h"
 #include "src/common/switch.h"

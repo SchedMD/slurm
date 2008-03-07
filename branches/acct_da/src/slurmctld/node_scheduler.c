@@ -62,7 +62,7 @@
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
-#include "src/common/slurm_jobacct_storage.h"
+#include "src/common/slurm_accounting_storage.h"
 
 #include "src/slurmctld/agent.h"
 #include "src/slurmctld/node_scheduler.h"

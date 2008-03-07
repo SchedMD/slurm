@@ -78,7 +78,7 @@
 
 #include "src/common/xstring.h"
 #include "src/common/slurm_accounting_storage.h"
-#include "src/common/slurm_jobacct_storage.h"
+#include "src/common/jobacct_common.h"
 
 #define CKPT_WAIT	10
 #define	MAX_INPUT_FIELDS 128

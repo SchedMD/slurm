@@ -181,6 +181,9 @@ static int _get_jobs(Buf in_buffer, Buf *out_buffer)
 		&sacct_params);
 	slurm_dbd_free_get_jobs_msg(get_jobs_msg);
 
+
+	*out_buffer = init_buf(1024);
+	pack16((uint16_t) DBD_GOT_JOBS, *out_buffer);
 	slurm_dbd_pack_got_jobs_msg(&got_jobs_msg, *out_buffer);
 	if(got_jobs_msg.jobs)
 		list_destroy(got_jobs_msg.jobs);
