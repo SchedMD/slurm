@@ -84,6 +84,10 @@ the \-\-cpus\-per\-task=3 options, the controller knows that each task requires
 3 processors on the same node, and the controller will grant an allocation
 of 4 nodes, one for each of the 4 tasks.
 
+.TP
+\fB\-D\fR, \fB\-\-chdir\fR=\fIpath\fR
+change directory to \fIpath\fR before beginning execution. 
+
 .TP 
 \fB\-d\fR, \fB\-\-dependency\fR[=]<\fIjobid\fR>
 Defer the start of this job until the specified \fIjobid\fR has completed.
@@ -105,6 +109,28 @@ Much like \-\-nodelist, but the list is contained in a file of name
 in the file.    Duplicate node names in the file will be ignored.
 The order of the node names in the list is not important; the node names
 will be sorted my SLURM.
+
+.TP
+\fB\-\-get\-user\-env\fR[=\fItimeout\fR][\fImode\fR]
+This option will load login environment variables for the user specified 
+in the \fB\-\-uid\fR option.
+The environment variables are retrieved by running something of this sort
+"su - <username> -c /usr/bin/env" and parsing the output.  
+Be aware that any environment variables already set in salloc's environment 
+will take precedence over any environment variables in the user's 
+login environment.
+The optional \fItimeout\fR value is in seconds. Default value is 3 seconds.
+The optional \fImode\fR value control the "su" options.
+With a \fImode\fR value of "S", "su" is executed without the "\-" option.
+With a \fImode\fR value of "L", "su" is executed with the "\-" option,
+replicating the login environment.
+If \fImode\fR not specified, the mode established at SLURM build time 
+is used.
+Example of use include "\-\-get\-user\-env", "\-\-get\-user\-env=10"
+"\-\-get\-user\-env=10L", and "\-\-get\-user\-env=S".
+NOTE: This option only works if the caller has an
+effective uid of "root".  
+This option was originally created for use by Moab.
 
 .TP
 \fB\-\-gid\fR[=]<\fIgroup\fR>

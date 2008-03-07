@@ -114,6 +114,9 @@ typedef struct salloc_options {
 	char *mail_user;	/* --mail-user			*/
 	bell_flag_t bell;       /* --bell, --no-bell            */
 	bool no_shell;		/* --no-shell                   */
+	int get_user_env_time;	/* --get-user-env[=secs]	*/
+	int get_user_env_mode; 	/* --get-user-env=[S|L]		*/
+	char *cwd;		/* current working directory	*/
 } opt_t;
 
 extern opt_t opt;
