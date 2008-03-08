@@ -137,6 +137,7 @@ log_options_t log_opts = LOG_OPTS_INITIALIZER;
 slurmctld_config_t slurmctld_config;
 int bg_recover = DEFAULT_RECOVER;
 char *slurmctld_cluster_name = NULL; /* name of cluster */
+void *acct_db_conn = NULL;
 
 /* Local variables */
 static int	daemonize = DEFAULT_DAEMONIZE;
@@ -302,6 +303,9 @@ int main(int argc, char *argv[])
 		fatal( "failed to initialize node selection plugin");
 	if (slurm_acct_storage_init(NULL) != SLURM_SUCCESS )
 		fatal( "failed to initialize accounting_storage plugin");
+	
+	acct_db_conn = acct_storage_g_get_connection();
+	
 	if (slurm_jobacct_gather_init() != SLURM_SUCCESS )
 		fatal( "failed to initialize jobacct_gather plugin");
 
@@ -419,6 +423,7 @@ int main(int argc, char *argv[])
 		verbose("Unable to remove pidfile '%s': %m",
 			slurmctld_conf.slurmctld_pidfile);
 
+	acct_storage_g_close_connection(acct_db_conn);
 	slurm_acct_storage_fini();	/* Save pending message traffic */
 
 #ifdef MEMORY_LEAK_DEBUG
@@ -447,9 +452,7 @@ int main(int argc, char *argv[])
 	 * unplug after other data structures are purged */
 	g_slurm_jobcomp_fini();
 	jobacct_storage_g_fini();
-	slurm_clusteracct_storage_fini();
 	slurm_jobacct_gather_fini();
-	slurm_accounting_storage_fini();
 	slurm_sched_fini();
 	slurm_select_fini();
 	checkpoint_fini();
@@ -833,7 +836,8 @@ static int _gold_cluster_ready()
 #endif
 	}
 
-	rc = clusteracct_storage_g_cluster_procs(slurmctld_cluster_name,
+	rc = clusteracct_storage_g_cluster_procs(acct_db_conn,
+						 slurmctld_cluster_name,
 						 procs, event_time);
 
 	return rc;
@@ -863,7 +867,8 @@ static int _gold_mark_all_nodes_down(char *reason)
 	for (i = 0; i < node_record_count; i++, node_ptr++) {
 		if (node_ptr->name == '\0')
 			continue;
-		if((rc = clusteracct_storage_g_node_down(slurmctld_cluster_name,
+		if((rc = clusteracct_storage_g_node_down(acct_db_conn,
+							 slurmctld_cluster_name,
 							 node_ptr, event_time,
 							 reason))
 		   == SLURM_ERROR) 

@@ -49,6 +49,7 @@
 #include "src/common/log.h"
 #include "src/common/macros.h"
 #include "src/common/slurm_protocol_api.h"
+#include "src/common/slurm_accounting_storage.h"
 #include "src/common/slurmdbd_defs.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xsignal.h"
@@ -184,8 +185,10 @@ static void * _service_connection(void *arg)
 	bool fini = false, first = true;
 	Buf buffer = NULL;
 	int rc;
-
+	void *db_conn = NULL;
+			 
 	debug2("Opened connection %d", conn->newsockfd);
+	db_conn = acct_storage_g_get_connection();
 	while (!fini) {
 		if (!_fd_readable(conn->newsockfd))
 			break;		/* problem with this socket */
@@ -218,7 +221,8 @@ static void * _service_connection(void *arg)
 			offset += msg_read;
 		}
 		if (msg_size == offset) {
-			rc = proc_req(msg, msg_size, first, &buffer, &uid);
+			rc = proc_req(db_conn,
+				      msg, msg_size, first, &buffer, &uid);
 			first = false;
 			if (rc != SLURM_SUCCESS) {
 				error("Processing message from connection %d",
@@ -233,6 +237,7 @@ static void * _service_connection(void *arg)
 		rc = _send_resp(conn->newsockfd, buffer);
 		xfree(msg);
 	}
+	acct_storage_g_close_connection(db_conn);
 	if (slurm_close_accepted_conn(conn->newsockfd) < 0)
 		error("close(%d): %m",  conn->newsockfd);
 	else

@@ -285,7 +285,8 @@ extern int schedule(void)
 				      failed_part_cnt)) {
 			continue;
 		}
-		if (acct_storage_g_validate_assoc_id(job_ptr->db_index)) {
+		if (acct_storage_g_validate_assoc_id(acct_db_conn, 
+						     job_ptr->db_index)) {
 			/* NOTE: This only happens if a user's account is 
 			 * disabled between when the job was submitted and 
 			 * the time we consider running it. It should be 

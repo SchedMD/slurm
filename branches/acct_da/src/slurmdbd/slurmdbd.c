@@ -112,8 +112,7 @@ int main(int argc, char *argv[])
 		fatal("Unable to initialize %s authentication plugin",
 			slurmdbd_conf->auth_type);
 	}
-	if (slurm_acct_storage_init(NULL)
-	    != SLURM_SUCCESS) {
+	if (slurm_acct_storage_init(NULL) != SLURM_SUCCESS) {
 		fatal("Unable to initialize %s accounting storage plugin",
 			slurmdbd_conf->storage_type);
 	}
@@ -149,6 +148,7 @@ int main(int argc, char *argv[])
 		verbose("Unable to remove pidfile '%s': %m",
 			slurmdbd_conf->pid_file);
 	}
+	slurm_acct_storage_fini();
 	free_slurmdbd_conf();
 	exit(0);
 }

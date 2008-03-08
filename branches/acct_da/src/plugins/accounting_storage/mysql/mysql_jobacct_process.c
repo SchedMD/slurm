@@ -51,7 +51,8 @@ static void _do_fdump(List job_list)
 	return;
 }
 
-extern List mysql_jobacct_process_get_jobs(List selected_steps,
+extern List mysql_jobacct_process_get_jobs(MYSQL *acct_mysql_db,
+					   List selected_steps,
 					   List selected_parts,
 					   sacct_parameters_t *params)
 {
@@ -79,9 +80,9 @@ extern List mysql_jobacct_process_get_jobs(List selected_steps,
 		"t1.associd",
 		"t1.gid",
 		"t1.partition",
-		"t1.submit",
 		"t1.blockid",
 		"t1.eligible",
+		"t1.submit",
 		"t1.start",
 		"t1.end",
 		"t1.suspended",
@@ -110,7 +111,6 @@ extern List mysql_jobacct_process_get_jobs(List selected_steps,
 		"t1.kill_requid",
 		"t1.comp_code",
 		"t1.cpus",
-		"t1.tasks",
 		"t1.user_sec",
 		"t1.user_usec",
 		"t1.sys_sec",
@@ -153,7 +153,6 @@ extern List mysql_jobacct_process_get_jobs(List selected_steps,
 		JOB_REQ_REQ_CPUS,
 		JOB_REQ_ALLOC_CPUS,
 		JOB_REQ_NODELIST,
-		JOB_REQ_ACCOUNT,
 		JOB_REQ_KILL_REQUID,
 		JOB_REQ_QOS,
 		JOB_REQ_COUNT		
@@ -169,7 +168,6 @@ extern List mysql_jobacct_process_get_jobs(List selected_steps,
 		STEP_REQ_KILL_REQUID,
 		STEP_REQ_COMP_CODE,
 		STEP_REQ_CPUS,
-		STEP_REQ_TASKS,
 		STEP_REQ_USER_SEC,
 		STEP_REQ_USER_USEC,
 		STEP_REQ_SYS_SEC,
@@ -258,15 +256,23 @@ extern List mysql_jobacct_process_get_jobs(List selected_steps,
 		job = create_jobacct_job_rec();
 
 		job->alloc_cpus = atoi(row[JOB_REQ_ALLOC_CPUS]);
-		job->associd = atoi(row[JOB_REQ_ASSOCID]);
-		account_rec.id = job->associd;
-		acct_storage_g_get_assoc_id(&account_rec);
+		account_rec.id = job->associd = atoi(row[JOB_REQ_ASSOCID]);
+		
+		acct_storage_g_get_assoc_id(acct_mysql_db, &account_rec);
+		if(account_rec.cluster) {
+			if(params->opt_cluster &&
+			   strcmp(params->opt_cluster, account_rec.cluster)) {
+				destroy_jobacct_job_rec(job);
+				job = NULL;
+				continue;
+			}
+			job->cluster = xstrdup(account_rec.cluster);
+		}
+
 		if(account_rec.user) 
 			job->user = xstrdup(account_rec.user);
 		if(account_rec.acct) 
 			job->account = xstrdup(account_rec.acct);
-		if(account_rec.cluster) 
-			job->cluster = xstrdup(account_rec.cluster);
 		job->blockid = xstrdup(row[JOB_REQ_BLOCKID]);
 
 		job->eligible = atoi(row[JOB_REQ_ELIGIBLE]);
@@ -432,7 +438,8 @@ extern List mysql_jobacct_process_get_jobs(List selected_steps,
 	return job_list;
 }
 
-extern void mysql_jobacct_process_archive(List selected_parts,
+extern void mysql_jobacct_process_archive(MYSQL *acct_mysql_db,
+					  List selected_parts,
 					  sacct_parameters_t *params)
 {
 	return;

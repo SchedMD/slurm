@@ -77,17 +77,17 @@ static void _pack_sacct(sacct_t *sacct, Buf buffer)
 		return;
 	} 
 	pack32((uint32_t)sacct->max_vsize, buffer);
-	_pack_jobacct_id(&sacct->max_vsize_id, buffer);
 	pack32((uint32_t)(sacct->ave_vsize*mult), buffer);
 	pack32((uint32_t)sacct->max_rss, buffer);
-	_pack_jobacct_id(&sacct->max_rss_id, buffer);
 	pack32((uint32_t)(sacct->ave_rss*mult), buffer);
 	pack32((uint32_t)sacct->max_pages, buffer);
-	_pack_jobacct_id(&sacct->max_pages_id, buffer);
 	pack32((uint32_t)(sacct->ave_pages*mult), buffer);
 	pack32((uint32_t)(sacct->min_cpu*mult), buffer);
-	_pack_jobacct_id(&sacct->min_cpu_id, buffer);
 	pack32((uint32_t)(sacct->ave_cpu*mult), buffer);
+	_pack_jobacct_id(&sacct->max_vsize_id, buffer);
+	_pack_jobacct_id(&sacct->max_rss_id, buffer);
+	_pack_jobacct_id(&sacct->max_pages_id, buffer);
+	_pack_jobacct_id(&sacct->min_cpu_id, buffer);
 }
 
 /* you need to xfree this */
@@ -96,27 +96,27 @@ static int _unpack_sacct(sacct_t *sacct, Buf buffer)
 	int mult = 1000000;
 
 	safe_unpack32(&sacct->max_vsize, buffer);
-	if(_unpack_jobacct_id(&sacct->max_vsize_id, buffer) != SLURM_SUCCESS)
-		goto unpack_error;
-	safe_unpack32(&sacct->max_vsize, buffer);
 	safe_unpack32((uint32_t *)&sacct->ave_vsize, buffer);
 	sacct->ave_vsize /= mult;
 	safe_unpack32(&sacct->max_rss, buffer);
-	if(_unpack_jobacct_id(&sacct->max_rss_id, buffer) != SLURM_SUCCESS)
-		goto unpack_error;
 	safe_unpack32((uint32_t *)&sacct->ave_rss, buffer);
 	sacct->ave_rss /= mult;
 	safe_unpack32(&sacct->max_pages, buffer);
-	if(_unpack_jobacct_id(&sacct->max_pages_id, buffer) != SLURM_SUCCESS)
-		goto unpack_error;
 	safe_unpack32((uint32_t *)&sacct->ave_pages, buffer);
 	sacct->ave_pages /= mult;
 	safe_unpack32((uint32_t *)&sacct->min_cpu, buffer);
 	sacct->min_cpu /= mult;
-	if(_unpack_jobacct_id(&sacct->min_cpu_id, buffer) != SLURM_SUCCESS)
-		goto unpack_error;
 	safe_unpack32((uint32_t *)&sacct->ave_cpu, buffer);
 	sacct->ave_cpu /= mult;
+	if(_unpack_jobacct_id(&sacct->max_vsize_id, buffer) != SLURM_SUCCESS)
+		goto unpack_error;
+	if(_unpack_jobacct_id(&sacct->max_rss_id, buffer) != SLURM_SUCCESS)
+		goto unpack_error;
+	if(_unpack_jobacct_id(&sacct->max_pages_id, buffer) != SLURM_SUCCESS)
+		goto unpack_error;
+	if(_unpack_jobacct_id(&sacct->min_cpu_id, buffer) != SLURM_SUCCESS)
+		goto unpack_error;
+
 	return SLURM_SUCCESS;
 
 unpack_error:
@@ -277,7 +277,8 @@ extern int unpack_jobacct_job_rec(jobacct_job_rec_t **job, Buf buffer)
 	job_ptr->steps = list_create(destroy_jobacct_step_rec);
 	for(i=0; i<count; i++) {
 		unpack_jobacct_step_rec(&step, buffer);
-		list_append(job_ptr->steps, step);
+		if(step)
+			list_append(job_ptr->steps, step);
 	}
 
 	safe_unpack_time(&job_ptr->submit, buffer);
@@ -358,6 +359,7 @@ extern int unpack_jobacct_step_rec(jobacct_step_rec_t **step, Buf buffer)
 	safe_unpack32(&step_ptr->tot_cpu_usec, buffer);
 	safe_unpack32(&step_ptr->user_cpu_sec, buffer);
 	safe_unpack32(&step_ptr->user_cpu_usec, buffer);
+
 	return SLURM_SUCCESS;
 
 unpack_error:

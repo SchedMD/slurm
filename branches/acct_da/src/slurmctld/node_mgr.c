@@ -1058,6 +1058,7 @@ int update_node ( update_node_msg_t * update_node_msg )
 				     || (node_ptr->node_state &
 					 NODE_STATE_FAIL))) {
 					clusteracct_storage_g_node_up(
+						acct_db_conn, 
 						slurmctld_cluster_name,
 						node_ptr,
 						now);
@@ -1084,6 +1085,7 @@ int update_node ( update_node_msg_t * update_node_msg )
 				if (base_state == NODE_STATE_DOWN) {
 					trigger_node_up(node_ptr);
 					clusteracct_storage_g_node_up(
+						acct_db_conn, 
 						slurmctld_cluster_name,
 						node_ptr,
 						now);
@@ -1093,6 +1095,7 @@ int update_node ( update_node_msg_t * update_node_msg )
 					    (node_ptr->node_state &
 					     NODE_STATE_FAIL))) {
 					clusteracct_storage_g_node_up(
+						acct_db_conn, 
 						slurmctld_cluster_name,
 						node_ptr,
 						now);
@@ -1119,6 +1122,7 @@ int update_node ( update_node_msg_t * update_node_msg )
 				if ((node_ptr->run_job_cnt  == 0) &&
 				    (node_ptr->comp_job_cnt == 0))
 					clusteracct_storage_g_node_down(
+						acct_db_conn, 
 						slurmctld_cluster_name,
 						node_ptr, now, NULL);
 			}
@@ -1130,6 +1134,7 @@ int update_node ( update_node_msg_t * update_node_msg )
 				if ((node_ptr->run_job_cnt  == 0) &&
 				    (node_ptr->comp_job_cnt == 0))
 					clusteracct_storage_g_node_down(
+						acct_db_conn, 
 						slurmctld_cluster_name,
 						node_ptr, now, NULL);
 			}
@@ -1364,7 +1369,8 @@ extern int drain_nodes ( char *nodes, char *reason )
 		if ((node_ptr->run_job_cnt  == 0) &&
 		    (node_ptr->comp_job_cnt == 0)) {
 			/* no jobs, node is drained */
-			clusteracct_storage_g_node_down(slurmctld_cluster_name,
+			clusteracct_storage_g_node_down(acct_db_conn, 
+							slurmctld_cluster_name,
 							node_ptr, now, NULL);
 		}
 
@@ -1570,7 +1576,8 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg)
 				node_ptr->last_idle = now;
 			}
 			xfree(node_ptr->reason);
-			clusteracct_storage_g_node_up(slurmctld_cluster_name,
+			clusteracct_storage_g_node_up(acct_db_conn, 
+						      slurmctld_cluster_name,
 						      node_ptr, now);
 		} else if ((base_state == NODE_STATE_DOWN) &&
 		           (slurmctld_conf.ret2service == 1) &&
@@ -1590,7 +1597,8 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg)
 			xfree(node_ptr->reason);
 			reset_job_priority();
 			trigger_node_up(node_ptr);
-			clusteracct_storage_g_node_up(slurmctld_cluster_name,
+			clusteracct_storage_g_node_up(acct_db_conn, 
+						      slurmctld_cluster_name,
 						      node_ptr, now);
 		} else if ((base_state == NODE_STATE_ALLOCATED) &&
 			   (reg_msg->job_count == 0)) {	/* job vanished */
@@ -1764,6 +1772,7 @@ extern int validate_nodes_via_front_end(
 				if ((node_flags & 
 				     (NODE_STATE_DRAIN | NODE_STATE_FAIL)) == 0)
 					clusteracct_storage_g_node_up(
+						acct_db_conn, 
 						slurmctld_cluster_name,
 						node_ptr,
 						now);
@@ -1790,6 +1799,7 @@ extern int validate_nodes_via_front_end(
 				xfree(node_ptr->reason);
 				trigger_node_up(node_ptr);
 				clusteracct_storage_g_node_up(
+					acct_db_conn, 
 					slurmctld_cluster_name,
 					node_ptr, now);
 			} else if ((base_state == NODE_STATE_ALLOCATED) &&
@@ -1913,7 +1923,8 @@ static void _node_did_resp(struct node_record *node_ptr)
 		node_ptr->last_idle = now;
 		node_ptr->node_state = NODE_STATE_IDLE | node_flags;
 		if ((node_flags & (NODE_STATE_DRAIN | NODE_STATE_FAIL)) == 0)
-			clusteracct_storage_g_node_up(slurmctld_cluster_name,
+			clusteracct_storage_g_node_up(acct_db_conn, 
+						      slurmctld_cluster_name,
 						      node_ptr, now);
 	}
 	if ((base_state == NODE_STATE_DOWN) &&
@@ -1928,7 +1939,8 @@ static void _node_did_resp(struct node_record *node_ptr)
 		xfree(node_ptr->reason);
 		trigger_node_up(node_ptr);
 		if ((node_flags & (NODE_STATE_DRAIN | NODE_STATE_FAIL)) == 0)
-			clusteracct_storage_g_node_up(slurmctld_cluster_name,
+			clusteracct_storage_g_node_up(acct_db_conn, 
+						      slurmctld_cluster_name,
 						      node_ptr, now);
 	}
 	base_state = node_ptr->node_state & NODE_STATE_BASE;
@@ -2232,7 +2244,8 @@ extern void make_node_comp(struct node_record *node_ptr,
 		bit_set(idle_node_bitmap, inx);
 		if ((node_ptr->node_state & NODE_STATE_DRAIN) ||
 		    (node_ptr->node_state & NODE_STATE_FAIL))
-			clusteracct_storage_g_node_down(slurmctld_cluster_name,
+			clusteracct_storage_g_node_down(acct_db_conn, 
+							slurmctld_cluster_name,
 							node_ptr, now, NULL);
 	}
 
@@ -2264,7 +2277,8 @@ static void _make_node_down(struct node_record *node_ptr, time_t event_time)
 	bit_clear (up_node_bitmap,    inx);
 	select_g_update_node_state(inx, node_ptr->node_state);	
 	trigger_node_down(node_ptr);
-	clusteracct_storage_g_node_down(slurmctld_cluster_name,
+	clusteracct_storage_g_node_down(acct_db_conn, 
+					slurmctld_cluster_name,
 					node_ptr, event_time, NULL);
 }
 
@@ -2338,7 +2352,8 @@ void make_node_idle(struct node_record *node_ptr,
 		debug3("make_node_idle: Node %s is DRAINED", 
 		       node_ptr->name);
 		node_ptr->last_idle = now;
-		clusteracct_storage_g_node_down(slurmctld_cluster_name,
+		clusteracct_storage_g_node_down(acct_db_conn, 
+						slurmctld_cluster_name,
 						node_ptr, now, NULL);
 	} else if (node_ptr->run_job_cnt) {
 		node_ptr->node_state = NODE_STATE_ALLOCATED | node_flags;

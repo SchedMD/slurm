@@ -70,12 +70,14 @@
 const char plugin_name[] = "Accounting storage PGSQL plugin";
 const char plugin_type[] = "accounting_storage/pgsql";
 const uint32_t plugin_version = 100;
-
-#ifdef HAVE_PGSQL
+#ifndef HAVE_PGSQL
+typedef PQconn void;
+#else
 #define DEFAULT_ACCT_DB "slurm_acct_db"
 
-PGconn *acct_pgsql_db = NULL;
-
+static pgsql_db_info_t *pgsql_db_info = NULL;
+static char *pgsql_db_name = NULL;
+		
 char *acct_coord_table = "acct_coord_table";
 char *acct_table = "acct_table";
 char *assoc_day_table = "assoc_day_usage_table";
@@ -91,7 +93,8 @@ char *step_table = "step_table";
 char *txn_table = "txn_table";
 char *user_table = "user_table";
 
-static int _get_db_index(time_t submit, uint32_t jobid, uint32_t associd)
+static int _get_db_index(PGconn *acct_pgsql_db,
+			 time_t submit, uint32_t jobid, uint32_t associd)
 {
 	PGresult *result = NULL;
 	int db_index = -1;
@@ -108,7 +111,7 @@ static int _get_db_index(time_t submit, uint32_t jobid, uint32_t associd)
 	
 	if(!PQntuples(result)) {
 		PQclear(result);
-		error("We can't get an association for this combo, "
+		error("We can't get a db_index for this combo, "
 		      "submit=%u and jobid=%u and associd=%u.",
 		      (int)submit, jobid, associd);
 		return -1;
@@ -134,7 +137,8 @@ static pgsql_db_info_t *_pgsql_acct_create_db_info()
 	return db_info;
 }
 
-static int _pgsql_acct_check_tables(char *user)
+static int _pgsql_acct_check_tables(PGconn *acct_pgsql_db,
+				    char *user)
 {
 	storage_field_t acct_coord_table_fields[] = {
 		{ "deleted", "smallint default 0" },
@@ -568,188 +572,235 @@ extern int init ( void )
 {
 	static int first = 1;
 #ifdef HAVE_PGSQL
-	pgsql_db_info_t *db_info = NULL;
+	PGconn *acct_pgsql_db = NULL;
 	int rc = SLURM_SUCCESS;
-	char *db_name = NULL;
 	char *location = NULL;
 #else
 	fatal("No Postgres database was found on the machine. "
 	      "Please check the configure log and run again.");	
 #endif
-	if(first) {
-		/* since this can be loaded from many different places
-		   only tell us once. */
+	/* since this can be loaded from many different places
+	   only tell us once. */
+	if(!first)
+		return SLURM_SUCCESS;
+
+	first = 0;
+
 #ifdef HAVE_PGSQL
-		db_info = _pgsql_acct_create_db_info();		
-		if(acct_pgsql_db && PQstatus(acct_pgsql_db) == CONNECTION_OK) 
-			return SLURM_SUCCESS;
-		
-		location = slurm_get_accounting_storage_loc();
-		if(!location)
-			db_name = DEFAULT_ACCT_DB;
-		else {
-			int i = 0;
-			while(location[i]) {
-				if(location[i] == '.' || location[i] == '/') {
-					debug("%s doesn't look like a database "
-					      "name using %s",
-					      location, DEFAULT_ACCT_DB);
-					break;
-				}
-				i++;
+	pgsql_db_info = _pgsql_acct_create_db_info();		
+
+	location = slurm_get_accounting_storage_loc();
+	if(!location)
+		pgsql_db_name = DEFAULT_ACCT_DB;
+	else {
+		int i = 0;
+		while(location[i]) {
+			if(location[i] == '.' || location[i] == '/') {
+				debug("%s doesn't look like a database "
+				      "name using %s",
+				      location, DEFAULT_ACCT_DB);
+				break;
 			}
-			if(location[i]) 
-				db_name = DEFAULT_ACCT_DB;
-			else
-				db_name = location;
+			i++;
 		}
-		xfree(location);
-
-		debug2("pgsql_connect() called for db %s", db_name);
-		
-		pgsql_get_db_connection(&acct_pgsql_db, db_name, db_info);
-		
-		rc = _pgsql_acct_check_tables(db_info->user);
-		
-		destroy_pgsql_db_info(db_info);
-		
-		if(rc == SLURM_SUCCESS)
-			debug("Accounting Storage init finished");
+		if(location[i]) 
+			pgsql_db_name = DEFAULT_ACCT_DB;
 		else
-			error("Accounting Storage init failed");
-		verbose("%s loaded", plugin_name);
-		first = 0;
-#endif
-	} else {
-		debug4("%s loaded", plugin_name);
+			pgsql_db_name = location;
 	}
+	xfree(location);
 
+	debug2("pgsql_connect() called for db %s", pgsql_db_name);
+		
+	pgsql_get_db_connection(&acct_pgsql_db, pgsql_db_name, pgsql_db_info);
+		
+	rc = _pgsql_acct_check_tables(acct_pgsql_db, pgsql_db_info->user);
+
+#endif
+	/* since this can be loaded from many different places
+	   only tell us once. */
+	if(rc == SLURM_SUCCESS)
+		verbose("%s loaded", plugin_name);
+	else 
+		verbose("%s failed", plugin_name);
+	
 	return rc;
 }
 
 extern int fini ( void )
 {
 #ifdef HAVE_PGSQL
-	if (acct_pgsql_db) {
-		PQfinish(acct_pgsql_db);
-		acct_pgsql_db = NULL;
-	}
+	destroy_pgsql_db_info(pgsql_db_info);		
+	xfree(pgsql_db_name);
 	return SLURM_SUCCESS;
 #else
 	return SLURM_ERROR;
 #endif
 }
 
-extern int acct_storage_p_add_users(List user_list)
+extern void *acct_storage_p_get_connection()
+{
+#ifdef HAVE_PGSQL
+	PGconn *acct_pgsql_db = NULL;
+	
+	if(!pgsql_db_info)
+		init();
+	
+	debug2("acct_storage_p_get_connection: request new connection");
+	
+	pgsql_get_db_connection(&acct_pgsql_db, pgsql_db_name, pgsql_db_info);
+	
+	return (void *)acct_pgsql_db;
+#else
+	return NULL;
+#endif
+}
+
+extern int acct_storage_p_close_connection(void *acct_pgsql_db)
+{
+#ifdef HAVE_PGSQL
+	if (acct_pgsql_db) {
+		PQfinish((PGconn *)acct_pgsql_db);
+		acct_pgsql_db = NULL;
+	}	
+	return SLURM_SUCCESS;
+#else
+	return SLURM_ERROR;
+#endif
+}
+
+extern int acct_storage_p_add_users(PGconn *acct_pgsql_db,
+				    List user_list)
 {
 	return SLURM_SUCCESS;
 }
 
-extern int acct_storage_p_add_coord(char *acct, acct_user_cond_t *user_q)
+extern int acct_storage_p_add_coord(PGconn *acct_pgsql_db,
+				    char *acct, acct_user_cond_t *user_q)
 {
 	return SLURM_SUCCESS;
 }
 
-extern int acct_storage_p_add_accts(List acct_list)
+extern int acct_storage_p_add_accts(PGconn *acct_pgsql_db,
+					   List acct_list)
 {
 	return SLURM_SUCCESS;
 }
 
-extern int acct_storage_p_add_clusters(List cluster_list)
+extern int acct_storage_p_add_clusters(PGconn *acct_pgsql_db,
+					   List cluster_list)
 {
 	return SLURM_SUCCESS;
 }
 
-extern int acct_storage_p_add_associations(List association_list)
+extern int acct_storage_p_add_associations(PGconn *acct_pgsql_db,
+					   List association_list)
 {
 	return SLURM_SUCCESS;
 }
 
-extern int acct_storage_p_get_assoc_id(acct_association_rec_t *assoc)
+extern int acct_storage_p_get_assoc_id(PGconn *acct_pgsql_db,
+					   acct_association_rec_t *assoc)
 {
 	return SLURM_SUCCESS;
 }
 
-extern int acct_storage_p_validate_assoc_id(uint32_t assoc_id)
+extern int acct_storage_p_validate_assoc_id(PGconn *acct_pgsql_db,
+					   uint32_t assoc_id)
 {
 	return SLURM_SUCCESS;
 }
 
-extern int acct_storage_p_modify_users(acct_user_cond_t *user_q,
+extern int acct_storage_p_modify_users(PGconn *acct_pgsql_db,
+					   acct_user_cond_t *user_q,
 				       acct_user_rec_t *user)
 {
 	return SLURM_SUCCESS;
 }
 
-extern int acct_storage_p_modify_user_admin_level(acct_user_cond_t *user_q)
+extern int acct_storage_p_modify_user_admin_level(PGconn *acct_pgsql_db,
+					   acct_user_cond_t *user_q)
 {
 	return SLURM_SUCCESS;
 }
 
-extern int acct_storage_p_modify_accts(acct_account_cond_t *acct_q,
+extern int acct_storage_p_modify_accts(PGconn *acct_pgsql_db,
+					   acct_account_cond_t *acct_q,
 				       acct_account_rec_t *acct)
 {
 	return SLURM_SUCCESS;
 }
 
-extern int acct_storage_p_modify_clusters(acct_cluster_cond_t *cluster_q,
+extern int acct_storage_p_modify_clusters(PGconn *acct_pgsql_db,
+					   acct_cluster_cond_t *cluster_q,
 					  acct_cluster_rec_t *cluster)
 {
 	return SLURM_SUCCESS;
 }
 
-extern int acct_storage_p_modify_associations(acct_association_cond_t *assoc_q,
+extern int acct_storage_p_modify_associations(PGconn *acct_pgsql_db,
+					   acct_association_cond_t *assoc_q,
 					      acct_association_rec_t *assoc)
 {
 	return SLURM_SUCCESS;
 }
 
-extern int acct_storage_p_remove_users(acct_user_cond_t *user_q)
+extern int acct_storage_p_remove_users(PGconn *acct_pgsql_db,
+					   acct_user_cond_t *user_q)
 {
 	return SLURM_SUCCESS;
 }
 
-extern int acct_storage_p_remove_coord(char *acct, acct_user_cond_t *user_q)
+extern int acct_storage_p_remove_coord(PGconn *acct_pgsql_db,
+					   char *acct, acct_user_cond_t *user_q)
 {
 	return SLURM_SUCCESS;
 }
 
-extern int acct_storage_p_remove_accts(acct_account_cond_t *acct_q)
+extern int acct_storage_p_remove_accts(PGconn *acct_pgsql_db,
+					   acct_account_cond_t *acct_q)
 {
 	return SLURM_SUCCESS;
 }
 
-extern int acct_storage_p_remove_clusters(acct_account_cond_t *cluster_q)
+extern int acct_storage_p_remove_clusters(PGconn *acct_pgsql_db,
+					   acct_account_cond_t *cluster_q)
 {
 	return SLURM_SUCCESS;
 }
 
-extern int acct_storage_p_remove_associations(acct_association_cond_t *assoc_q)
+extern int acct_storage_p_remove_associations(PGconn *acct_pgsql_db,
+					   acct_association_cond_t *assoc_q)
 {
 	return SLURM_SUCCESS;
 }
 
-extern List acct_storage_p_get_users(acct_user_cond_t *user_q)
+extern List acct_storage_p_get_users(PGconn *acct_pgsql_db,
+					   acct_user_cond_t *user_q)
 {
 	return NULL;
 }
 
-extern List acct_storage_p_get_accts(acct_account_cond_t *acct_q)
+extern List acct_storage_p_get_accts(PGconn *acct_pgsql_db,
+					   acct_account_cond_t *acct_q)
 {
 	return NULL;
 }
 
-extern List acct_storage_p_get_clusters(acct_account_cond_t *cluster_q)
+extern List acct_storage_p_get_clusters(PGconn *acct_pgsql_db,
+					   acct_account_cond_t *cluster_q)
 {
 	return NULL;
 }
 
-extern List acct_storage_p_get_associations(acct_association_cond_t *assoc_q)
+extern List acct_storage_p_get_associations(PGconn *acct_pgsql_db,
+					   acct_association_cond_t *assoc_q)
 {
 	return NULL;
 }
 
-extern int acct_storage_p_get_hourly_usage(acct_association_rec_t *acct_assoc,
+extern int acct_storage_p_get_hourly_usage(PGconn *acct_pgsql_db,
+					   acct_association_rec_t *acct_assoc,
 					   time_t start, time_t end)
 {
 	int rc = SLURM_SUCCESS;
@@ -757,7 +808,8 @@ extern int acct_storage_p_get_hourly_usage(acct_association_rec_t *acct_assoc,
 	return rc;
 }
 
-extern int acct_storage_p_get_daily_usage(acct_association_rec_t *acct_assoc,
+extern int acct_storage_p_get_daily_usage(PGconn *acct_pgsql_db,
+					   acct_association_rec_t *acct_assoc,
 					  time_t start, time_t end)
 {
 	int rc = SLURM_SUCCESS;
@@ -765,26 +817,30 @@ extern int acct_storage_p_get_daily_usage(acct_association_rec_t *acct_assoc,
 	return rc;
 }
 
-extern int acct_storage_p_get_monthly_usage(acct_association_rec_t *acct_assoc,
+extern int acct_storage_p_get_monthly_usage(PGconn *acct_pgsql_db,
+					   acct_association_rec_t *acct_assoc,
 					    time_t start, time_t end)
 {
 	int rc = SLURM_SUCCESS;
 	return rc;
 }
 
-extern int clusteracct_storage_p_node_down(char *cluster,
+extern int clusteracct_storage_p_node_down(PGconn *acct_pgsql_db,
+					   char *cluster,
 					   struct node_record *node_ptr,
 					   time_t event_time, char *reason)
 {
 	return SLURM_SUCCESS;
 }
-extern int clusteracct_storage_p_node_up(char *cluster,
+extern int clusteracct_storage_p_node_up(PGconn *acct_pgsql_db,
+					   char *cluster,
 					 struct node_record *node_ptr,
 					 time_t event_time)
 {
 	return SLURM_SUCCESS;
 }
-extern int clusteracct_storage_p_cluster_procs(char *cluster,
+extern int clusteracct_storage_p_cluster_procs(PGconn *acct_pgsql_db,
+					   char *cluster,
 					       uint32_t procs,
 					       time_t event_time)
 {
@@ -792,7 +848,7 @@ extern int clusteracct_storage_p_cluster_procs(char *cluster,
 }
 
 extern int clusteracct_storage_p_get_hourly_usage(
-	acct_cluster_rec_t *cluster_rec, time_t start, 
+	PGconn *acct_pgsql_db, acct_cluster_rec_t *cluster_rec, time_t start, 
 	time_t end, void *params)
 {
 
@@ -800,7 +856,7 @@ extern int clusteracct_storage_p_get_hourly_usage(
 }
 
 extern int clusteracct_storage_p_get_daily_usage(
-	acct_cluster_rec_t *cluster_rec, time_t start, 
+	PGconn *acct_pgsql_db, acct_cluster_rec_t *cluster_rec, time_t start, 
 	time_t end, void *params)
 {
 	
@@ -808,7 +864,7 @@ extern int clusteracct_storage_p_get_daily_usage(
 }
 
 extern int clusteracct_storage_p_get_monthly_usage(
-	acct_cluster_rec_t *cluster_rec, time_t start, 
+	PGconn *acct_pgsql_db, acct_cluster_rec_t *cluster_rec, time_t start, 
 	time_t end, void *params)
 {
 	
@@ -818,7 +874,8 @@ extern int clusteracct_storage_p_get_monthly_usage(
 /* 
  * load into the storage the start of a job
  */
-extern int jobacct_storage_p_job_start(struct job_record *job_ptr)
+extern int jobacct_storage_p_job_start(PGconn *acct_pgsql_db, 
+				       struct job_record *job_ptr)
 {
 #ifdef HAVE_PGSQL
 	int	rc=SLURM_SUCCESS;
@@ -828,6 +885,12 @@ extern int jobacct_storage_p_job_start(struct job_record *job_ptr)
 	char *block_id = NULL;
 	char *query = NULL;
 	int reinit = 0;
+
+	if (!job_ptr->details || !job_ptr->details->submit_time) {
+		error("jobacct_storage_p_job_start: "
+		      "Not inputing this job, it has no submit time.");
+		return SLURM_ERROR;
+	}
 
 	if(!acct_pgsql_db || PQstatus(acct_pgsql_db) != CONNECTION_OK) {
 		if(init() == SLURM_ERROR) {
@@ -855,10 +918,13 @@ extern int jobacct_storage_p_job_start(struct job_record *job_ptr)
 	if(job_ptr->batch_flag)
 		track_steps = 1;
 
-	select_g_get_jobinfo(job_ptr->select_jobinfo, 
-			     SELECT_DATA_BLOCK_ID, 
-			     &block_id);
-		
+	if(slurmdbd_conf) {
+		block_id = xstrdup(job_ptr->comment);
+	} else {
+		select_g_get_jobinfo(job_ptr->select_jobinfo, 
+				     SELECT_DATA_BLOCK_ID, 
+				     &block_id);
+	}
 	job_ptr->requid = -1; /* force to -1 for sacct to know this
 			       * hasn't been set yet */
 	query = xstrdup_printf(
@@ -866,8 +932,10 @@ extern int jobacct_storage_p_job_start(struct job_record *job_ptr)
 		"(jobid, associd, gid, partition, blockid, "
 		"eligible, submit, start, name, track_steps, "
 		"state, priority, req_cpus, alloc_cpus, nodelist) "
-		"values (%u, '%s', %d, %u, %u, '%s')",
-		job_table, job_ptr->job_id, job_ptr->assoc_id, 
+		"values (%u, %u, %u, '%s', '%s', "
+		"%d, %d, %d, '%s', %u, "
+		"%u, %u, %u, %u, '%s')",
+		job_table, job_ptr->job_id, job_ptr->assoc_id,
 		job_ptr->group_id, job_ptr->partition, block_id,
 		(int)job_ptr->details->begin_time,
 		(int)job_ptr->details->submit_time, (int)job_ptr->start_time,
@@ -901,12 +969,20 @@ try_again:
 /* 
  * load into the storage the end of a job
  */
-extern int jobacct_storage_p_job_complete(struct job_record *job_ptr)
+extern int jobacct_storage_p_job_complete(PGconn *acct_pgsql_db,
+					  struct job_record *job_ptr)
 {
 #ifdef HAVE_PGSQL
 	char *query = NULL, *nodes = NULL;
 	int rc=SLURM_SUCCESS;
 	
+	if (!job_ptr->db_index 
+	    && (!job_ptr->details || !job_ptr->details->submit_time)) {
+		error("jobacct_storage_p_job_complete: "
+		      "Not inputing this job, it has no submit time.");
+		return SLURM_ERROR;
+	}
+
 	if(!acct_pgsql_db || PQstatus(acct_pgsql_db) != CONNECTION_OK) {
 		if(init() == SLURM_ERROR) {
 			return SLURM_ERROR;
@@ -925,7 +1001,8 @@ extern int jobacct_storage_p_job_complete(struct job_record *job_ptr)
 		nodes = "(null)";
 
 	if(!job_ptr->db_index) {
-		job_ptr->db_index = _get_db_index(job_ptr->details->submit_time,
+		job_ptr->db_index = _get_db_index(acct_pgsql_db,
+						  job_ptr->details->submit_time,
 						  job_ptr->job_id,
 						  job_ptr->assoc_id);
 		if(job_ptr->db_index == -1) 
@@ -951,7 +1028,8 @@ extern int jobacct_storage_p_job_complete(struct job_record *job_ptr)
 /* 
  * load into the storage the start of a job step
  */
-extern int jobacct_storage_p_step_start(struct step_record *step_ptr)
+extern int jobacct_storage_p_step_start(PGconn *acct_pgsql_db,
+					struct step_record *step_ptr)
 {
 #ifdef HAVE_PGSQL
 	int cpus = 0;
@@ -962,42 +1040,58 @@ extern int jobacct_storage_p_step_start(struct step_record *step_ptr)
 #endif
 	char *query = NULL;
 	
+	if (!step_ptr->job_ptr->db_index 
+	    && (!step_ptr->job_ptr->details
+		|| !step_ptr->job_ptr->details->submit_time)) {
+		error("jobacct_storage_p_step_start: "
+		      "Not inputing this job, it has no submit time.");
+		return SLURM_ERROR;
+	}
+
 	if(!acct_pgsql_db || PQstatus(acct_pgsql_db) != CONNECTION_OK) {
 		if(init() == SLURM_ERROR) {
 			return SLURM_ERROR;
 		}
 	}
 
-#ifdef HAVE_BG
-	cpus = step_ptr->job_ptr->num_procs;
-	select_g_get_jobinfo(step_ptr->job_ptr->select_jobinfo, 
-			     SELECT_DATA_IONODES, 
-			     &ionodes);
-	if(ionodes) {
-		snprintf(node_list, BUFFER_SIZE, 
-			 "%s[%s]", step_ptr->job_ptr->nodes, ionodes);
-		xfree(ionodes);
-	} else
-		snprintf(node_list, BUFFER_SIZE, "%s",
-			 step_ptr->job_ptr->nodes);
-	
-#else
-	if(!step_ptr->step_layout || !step_ptr->step_layout->task_cnt) {
+	if(slurmdbd_conf) {
 		cpus = step_ptr->job_ptr->total_procs;
 		snprintf(node_list, BUFFER_SIZE, "%s",
 			 step_ptr->job_ptr->nodes);
 	} else {
-		cpus = step_ptr->step_layout->task_cnt;
-		snprintf(node_list, BUFFER_SIZE, "%s", 
-			 step_ptr->step_layout->node_list);
-	}
+#ifdef HAVE_BG
+		cpus = step_ptr->job_ptr->num_procs;
+		select_g_get_jobinfo(step_ptr->job_ptr->select_jobinfo, 
+				     SELECT_DATA_IONODES, 
+				     &ionodes);
+		if(ionodes) {
+			snprintf(node_list, BUFFER_SIZE, 
+				 "%s[%s]", step_ptr->job_ptr->nodes, ionodes);
+			xfree(ionodes);
+		} else
+			snprintf(node_list, BUFFER_SIZE, "%s",
+				 step_ptr->job_ptr->nodes);
+		
+#else
+		if(!step_ptr->step_layout || !step_ptr->step_layout->task_cnt) {
+			cpus = step_ptr->job_ptr->total_procs;
+			snprintf(node_list, BUFFER_SIZE, "%s",
+				 step_ptr->job_ptr->nodes);
+		} else {
+			cpus = step_ptr->step_layout->task_cnt;
+			snprintf(node_list, BUFFER_SIZE, "%s", 
+				 step_ptr->step_layout->node_list);
+		}
 #endif
+	}
+
 	step_ptr->job_ptr->requid = -1; /* force to -1 for sacct to know this
 					 * hasn't been set yet  */
 
 	if(!step_ptr->job_ptr->db_index) {
 		step_ptr->job_ptr->db_index = 
-			_get_db_index(step_ptr->job_ptr->details->submit_time,
+			_get_db_index(acct_pgsql_db,
+				      step_ptr->job_ptr->details->submit_time,
 				      step_ptr->job_ptr->job_id,
 				      step_ptr->job_ptr->assoc_id);
 		if(step_ptr->job_ptr->db_index == -1) 
@@ -1007,13 +1101,12 @@ extern int jobacct_storage_p_step_start(struct step_record *step_ptr)
 	   %d */
 	query = xstrdup_printf(
 		"insert into %s (id, stepid, start, name, state, "
-		"cpus, nodelist, kill_requid) "
-		"values (%d, %u, %u, '%s', %d, %u, '%s', %d)",
+		"cpus, nodelist) "
+		"values (%d, %u, %u, '%s', %d, %u, '%s')",
 		step_table, step_ptr->job_ptr->db_index,
 		step_ptr->step_id, 
 		(int)step_ptr->start_time, step_ptr->name,
-		JOB_RUNNING, cpus, node_list, 
-		step_ptr->job_ptr->requid);
+		JOB_RUNNING, cpus, node_list);
 	rc = pgsql_db_query(acct_pgsql_db, query);
 			 
 	return rc;
@@ -1025,7 +1118,8 @@ extern int jobacct_storage_p_step_start(struct step_record *step_ptr)
 /* 
  * load into the storage the end of a job step
  */
-extern int jobacct_storage_p_step_complete(struct step_record *step_ptr)
+extern int jobacct_storage_p_step_complete(PGconn *acct_pgsql_db,
+					   struct step_record *step_ptr)
 {
 #ifdef HAVE_PGSQL
 	time_t now;
@@ -1038,14 +1132,37 @@ extern int jobacct_storage_p_step_complete(struct step_record *step_ptr)
 	char *query = NULL;
 	int rc =SLURM_SUCCESS;
 	
+	if (!step_ptr->job_ptr->db_index 
+	    && (!step_ptr->job_ptr->details
+		|| !step_ptr->job_ptr->details->submit_time)) {
+		error("jobacct_storage_p_step_complete: "
+		      "Not inputing this job, it has no submit time.");
+		return SLURM_ERROR;
+	}
+
 	if(!acct_pgsql_db || PQstatus(acct_pgsql_db) != CONNECTION_OK) {
 		if(init() == SLURM_ERROR) {
 			return SLURM_ERROR;
 		}
 	}
 	
-	now = time(NULL);
-	
+	if(slurmdbd_conf) {
+		now = step_ptr->job_ptr->end_time;
+		cpus = step_ptr->job_ptr->total_procs;
+
+	} else {
+		now = time(NULL);
+#ifdef HAVE_BG
+		cpus = step_ptr->job_ptr->num_procs;
+		
+#else
+		if(!step_ptr->step_layout || !step_ptr->step_layout->task_cnt)
+			cpus = step_ptr->job_ptr->total_procs;
+		else 
+			cpus = step_ptr->step_layout->task_cnt;
+#endif
+	}
+
 	if ((elapsed=now-step_ptr->start_time)<0)
 		elapsed=0;	/* For *very* short jobs, if clock is wrong */
 	if (step_ptr->exit_code)
@@ -1053,15 +1170,6 @@ extern int jobacct_storage_p_step_complete(struct step_record *step_ptr)
 	else
 		comp_status = JOB_COMPLETE;
 
-#ifdef HAVE_BG
-	cpus = step_ptr->job_ptr->num_procs;
-	
-#else
-	if(!step_ptr->step_layout || !step_ptr->step_layout->task_cnt)
-		cpus = step_ptr->job_ptr->total_procs;
-	else 
-		cpus = step_ptr->step_layout->task_cnt;
-#endif
 	/* figure out the ave of the totals sent */
 	if(cpus > 0) {
 		ave_vsize = jobacct->tot_vsize;
@@ -1082,7 +1190,8 @@ extern int jobacct_storage_p_step_complete(struct step_record *step_ptr)
 
 	if(!step_ptr->job_ptr->db_index) {
 		step_ptr->job_ptr->db_index = 
-			_get_db_index(step_ptr->job_ptr->details->submit_time,
+			_get_db_index(acct_pgsql_db,
+				      step_ptr->job_ptr->details->submit_time,
 				      step_ptr->job_ptr->job_id,
 				      step_ptr->job_ptr->assoc_id);
 		if(step_ptr->job_ptr->db_index == -1) 
@@ -1143,7 +1252,8 @@ extern int jobacct_storage_p_step_complete(struct step_record *step_ptr)
 /* 
  * load into the storage a suspention of a job
  */
-extern int jobacct_storage_p_suspend(struct job_record *job_ptr)
+extern int jobacct_storage_p_suspend(PGconn *acct_pgsql_db,
+				     struct job_record *job_ptr)
 {
 #ifdef HAVE_PGSQL
 	char query[1024];
@@ -1156,7 +1266,8 @@ extern int jobacct_storage_p_suspend(struct job_record *job_ptr)
 	}
 	
 	if(!job_ptr->db_index) {
-		job_ptr->db_index = _get_db_index(job_ptr->details->submit_time,
+		job_ptr->db_index = _get_db_index(acct_pgsql_db,
+						  job_ptr->details->submit_time,
 						  job_ptr->job_id,
 						  job_ptr->assoc_id);
 		if(job_ptr->db_index == -1) 
@@ -1190,7 +1301,8 @@ extern int jobacct_storage_p_suspend(struct job_record *job_ptr)
  * returns List of job_rec_t *
  * note List needs to be freed when called
  */
-extern List jobacct_storage_p_get_jobs(List selected_steps,
+extern List jobacct_storage_p_get_jobs(PGconn *acct_pgsql_db,
+				       List selected_steps,
 				       List selected_parts,
 				       void *params)
 {
@@ -1202,7 +1314,8 @@ extern List jobacct_storage_p_get_jobs(List selected_steps,
 		}
 	}
 
-	job_list = pgsql_jobacct_process_get_jobs(selected_steps, 
+	job_list = pgsql_jobacct_process_get_jobs(acct_pgsql_db,
+						  selected_steps, 
 						  selected_parts,
 						  params);	
 #endif
@@ -1212,8 +1325,9 @@ extern List jobacct_storage_p_get_jobs(List selected_steps,
 /* 
  * expire old info from the storage 
  */
-extern void jobacct_storage_p_archive(List selected_parts,
-				       void *params)
+extern void jobacct_storage_p_archive(PGconn *acct_pgsql_db,
+				      List selected_parts,
+				      void *params)
 {
 #ifdef HAVE_PGSQL
 	if(!acct_pgsql_db || PQstatus(acct_pgsql_db) != CONNECTION_OK) {
@@ -1222,7 +1336,7 @@ extern void jobacct_storage_p_archive(List selected_parts,
 		}
 	}
 
-	pgsql_jobacct_process_archive(selected_parts, params);
+	pgsql_jobacct_process_archive(acct_pgsql_db, selected_parts, params);
 #endif
 	return;
 }

@@ -47,6 +47,9 @@
 #endif
 
 #include <stdio.h>
+#include <sys/types.h>
+#include <pwd.h>
+
 #include <slurm/slurm_errno.h>
 
 #include "src/common/jobacct_common.h"
@@ -91,6 +94,7 @@ const uint32_t plugin_version = 100;
 
 static char *cluster_name       = NULL;
 static char *slurmdbd_auth_info = NULL;
+static List local_association_list = NULL;
 
 /*
  * init() is called when the plugin is loaded, before any other functions
@@ -110,8 +114,8 @@ extern int init ( void )
 		slurmdbd_auth_info = slurm_get_accounting_storage_pass();
 		if(!slurmdbd_auth_info)
 			
-		verbose("%s loaded AuthInfo=%s",
-			plugin_name, slurmdbd_auth_info);
+			verbose("%s loaded AuthInfo=%s",
+				plugin_name, slurmdbd_auth_info);
 		slurm_open_slurmdbd_conn(slurmdbd_auth_info);
 
 		first = 0;
@@ -126,120 +130,238 @@ extern int fini ( void )
 {
 	xfree(cluster_name);
 	xfree(slurmdbd_auth_info);
+
+	if(local_association_list)
+		list_destroy(local_association_list);
+
 	slurm_close_slurmdbd_conn();
 	return SLURM_SUCCESS;
 }
 
-extern int acct_storage_p_add_users(List user_list)
+extern void *acct_storage_p_get_connection()
+{
+	return NULL;
+}
+
+extern int acct_storage_p_close_connection(void *db_conn)
 {
 	return SLURM_SUCCESS;
 }
 
-extern int acct_storage_p_add_coord(char *acct, acct_user_cond_t *user_q)
+extern int acct_storage_p_add_users(void *db_conn,
+				    List user_list)
 {
 	return SLURM_SUCCESS;
 }
 
-extern int acct_storage_p_add_accts(List acct_list)
+extern int acct_storage_p_add_coord(void *db_conn,
+				    char *acct, acct_user_cond_t *user_q)
 {
 	return SLURM_SUCCESS;
 }
 
-extern int acct_storage_p_add_clusters(List cluster_list)
+extern int acct_storage_p_add_accts(void *db_conn,
+				    List acct_list)
 {
 	return SLURM_SUCCESS;
 }
 
-extern int acct_storage_p_add_associations(List association_list)
+extern int acct_storage_p_add_clusters(void *db_conn,
+				       List cluster_list)
 {
 	return SLURM_SUCCESS;
 }
 
-extern int acct_storage_p_get_assoc_id(acct_association_rec_t *assoc)
+extern int acct_storage_p_add_associations(void *db_conn,
+					   List association_list)
 {
 	return SLURM_SUCCESS;
 }
 
-extern int acct_storage_p_validate_assoc_id(uint32_t assoc_id)
+extern int acct_storage_p_get_assoc_id(void *db_conn,
+				       acct_association_rec_t *assoc)
+{
+	ListIterator itr = NULL;
+	acct_association_rec_t * found_assoc = NULL;
+	acct_association_rec_t * ret_assoc = NULL;
+
+	if(!local_association_list) {
+		acct_association_cond_t assoc_q;
+		char *cluster_name = NULL;
+		memset(&assoc_q, 0, sizeof(acct_association_cond_t));
+		assoc_q.cluster_list = list_create(slurm_destroy_char);
+		cluster_name = slurm_get_cluster_name();
+		if(!cluster_name) {
+			error("acct_storage_p_get_assoc_id: "
+			      "no cluster name here going to get "
+			      "all associations.");
+		} else 
+			list_append(assoc_q.cluster_list, cluster_name);
+		local_association_list =
+			acct_storage_g_get_associations(db_conn, &assoc_q);
+		list_destroy(assoc_q.cluster_list);
+		if(!local_association_list) {
+			error("acct_storage_p_get_assoc_id: "
+			      "no list was made.");
+			return SLURM_SUCCESS;
+		}
+	}
+	if((!assoc->cluster && !assoc->acct) && !assoc->id) {
+		error("acct_storage_p_get_assoc_id: "
+		      "You need to supply a cluster and account name to get "
+		      "an association.");
+		return SLURM_ERROR;
+	}
+
+	itr = list_iterator_create(local_association_list);
+	while((found_assoc = list_next(itr))) {
+		if(assoc->id) {
+			if(assoc->id == found_assoc->id) {
+				ret_assoc = found_assoc;
+				break;
+			}
+			continue;
+		} else {
+			if((!found_assoc->acct 
+			    || strcasecmp(assoc->acct,
+					  found_assoc->acct))
+			   || (!assoc->cluster 
+			       || strcasecmp(assoc->cluster,
+					     found_assoc->cluster))
+			   || (assoc->user 
+			       && (!found_assoc->user 
+				   || strcasecmp(assoc->user,
+						 found_assoc->user)))
+			   || (!assoc->user && found_assoc->user 
+			       && strcasecmp("none",
+					     found_assoc->user)))
+				continue;
+			if(assoc->partition
+			   && (!assoc->partition 
+			       || strcasecmp(assoc->partition, 
+					     found_assoc->partition))) {
+				ret_assoc = found_assoc;
+				continue;
+			}
+		}
+		ret_assoc = found_assoc;
+		break;
+	}
+	list_iterator_destroy(itr);
+
+	if(!ret_assoc)
+		return SLURM_ERROR;
+
+	assoc->id = ret_assoc->id;
+	if(!assoc->user)
+		assoc->user = ret_assoc->user;
+	if(!assoc->acct)
+		assoc->acct = ret_assoc->acct;
+	if(!assoc->cluster)
+		assoc->cluster = ret_assoc->cluster;
+	if(!assoc->partition)
+		assoc->partition = ret_assoc->partition;
+
+	return SLURM_SUCCESS;
+}
+
+extern int acct_storage_p_validate_assoc_id(void *db_conn,
+					    uint32_t assoc_id)
 {
 	return SLURM_SUCCESS;
 }
 
-extern int acct_storage_p_modify_users(acct_user_cond_t *user_q,
+extern int acct_storage_p_modify_users(void *db_conn,
+				       acct_user_cond_t *user_q,
 				       acct_user_rec_t *user)
 {
 	return SLURM_SUCCESS;
 }
 
-extern int acct_storage_p_modify_user_admin_level(acct_user_cond_t *user_q)
+extern int acct_storage_p_modify_user_admin_level(void *db_conn,
+						  acct_user_cond_t *user_q)
 {
 	return SLURM_SUCCESS;
 }
 
-extern int acct_storage_p_modify_accts(acct_account_cond_t *acct_q,
+extern int acct_storage_p_modify_accts(void *db_conn,
+				       acct_account_cond_t *acct_q,
 				       acct_account_rec_t *acct)
 {
 	return SLURM_SUCCESS;
 }
 
-extern int acct_storage_p_modify_clusters(acct_cluster_cond_t *cluster_q,
+extern int acct_storage_p_modify_clusters(void *db_conn,
+					  acct_cluster_cond_t *cluster_q,
 					  acct_cluster_rec_t *cluster)
 {
 	return SLURM_SUCCESS;
 }
 
-extern int acct_storage_p_modify_associations(acct_association_cond_t *assoc_q,
+extern int acct_storage_p_modify_associations(void *db_conn,
+					      acct_association_cond_t *assoc_q,
 					      acct_association_rec_t *assoc)
 {
 	return SLURM_SUCCESS;
 }
 
-extern int acct_storage_p_remove_users(acct_user_cond_t *user_q)
+extern int acct_storage_p_remove_users(void *db_conn,
+				       acct_user_cond_t *user_q)
 {
 	return SLURM_SUCCESS;
 }
 
-extern int acct_storage_p_remove_coord(char *acct, acct_user_cond_t *user_q)
+extern int acct_storage_p_remove_coord(void *db_conn,
+				       char *acct, acct_user_cond_t *user_q)
 {
 	return SLURM_SUCCESS;
 }
 
-extern int acct_storage_p_remove_accts(acct_account_cond_t *acct_q)
+extern int acct_storage_p_remove_accts(void *db_conn,
+				       acct_account_cond_t *acct_q)
 {
 	return SLURM_SUCCESS;
 }
 
-extern int acct_storage_p_remove_clusters(acct_account_cond_t *cluster_q)
+extern int acct_storage_p_remove_clusters(void *db_conn,
+					  acct_account_cond_t *cluster_q)
 {
 	return SLURM_SUCCESS;
 }
 
-extern int acct_storage_p_remove_associations(acct_association_cond_t *assoc_q)
+extern int acct_storage_p_remove_associations(void *db_conn,
+					      acct_association_cond_t *assoc_q)
 {
 	return SLURM_SUCCESS;
 }
 
-extern List acct_storage_p_get_users(acct_user_cond_t *user_q)
+extern List acct_storage_p_get_users(void *db_conn,
+				     acct_user_cond_t *user_q)
 {
 	return NULL;
 }
 
-extern List acct_storage_p_get_accts(acct_account_cond_t *acct_q)
+extern List acct_storage_p_get_accts(void *db_conn,
+				     acct_account_cond_t *acct_q)
 {
 	return NULL;
 }
 
-extern List acct_storage_p_get_clusters(acct_account_cond_t *cluster_q)
+extern List acct_storage_p_get_clusters(void *db_conn,
+					acct_account_cond_t *cluster_q)
 {
 	return NULL;
 }
 
-extern List acct_storage_p_get_associations(acct_association_cond_t *assoc_q)
+extern List acct_storage_p_get_associations(void *db_conn,
+					    acct_association_cond_t *assoc_q)
 {
+	
 	return NULL;
 }
 
-extern int acct_storage_p_get_hourly_usage(acct_association_rec_t *acct_assoc,
+extern int acct_storage_p_get_hourly_usage(void *db_conn,
+					   acct_association_rec_t *acct_assoc,
 					   time_t start, time_t end)
 {
 	int rc = SLURM_SUCCESS;
@@ -247,7 +369,8 @@ extern int acct_storage_p_get_hourly_usage(acct_association_rec_t *acct_assoc,
 	return rc;
 }
 
-extern int acct_storage_p_get_daily_usage(acct_association_rec_t *acct_assoc,
+extern int acct_storage_p_get_daily_usage(void *db_conn,
+					  acct_association_rec_t *acct_assoc,
 					  time_t start, time_t end)
 {
 	int rc = SLURM_SUCCESS;
@@ -255,14 +378,16 @@ extern int acct_storage_p_get_daily_usage(acct_association_rec_t *acct_assoc,
 	return rc;
 }
 
-extern int acct_storage_p_get_monthly_usage(acct_association_rec_t *acct_assoc,
+extern int acct_storage_p_get_monthly_usage(void *db_conn,
+					    acct_association_rec_t *acct_assoc,
 					    time_t start, time_t end)
 {
 	int rc = SLURM_SUCCESS;
 	return rc;
 }
 
-extern int clusteracct_storage_p_node_down(char *cluster,
+extern int clusteracct_storage_p_node_down(void *db_conn,
+					   char *cluster,
 					   struct node_record *node_ptr,
 					   time_t event_time, char *reason)
 {
@@ -282,7 +407,8 @@ extern int clusteracct_storage_p_node_down(char *cluster,
 
 	return SLURM_SUCCESS;
 }
-extern int clusteracct_storage_p_node_up(char *cluster,
+extern int clusteracct_storage_p_node_up(void *db_conn,
+					 char *cluster,
 					 struct node_record *node_ptr,
 					 time_t event_time)
 {
@@ -302,7 +428,8 @@ extern int clusteracct_storage_p_node_up(char *cluster,
 
 	return SLURM_SUCCESS;
 }
-extern int clusteracct_storage_p_cluster_procs(char *cluster,
+extern int clusteracct_storage_p_cluster_procs(void *db_conn,
+					       char *cluster,
 					       uint32_t procs,
 					       time_t event_time)
 {
@@ -321,25 +448,28 @@ extern int clusteracct_storage_p_cluster_procs(char *cluster,
 	return SLURM_SUCCESS;
 }
 
-extern int clusteracct_storage_p_get_hourly_usage(
-	acct_cluster_rec_t *cluster_rec, time_t start, 
-	time_t end, void *params)
+extern int clusteracct_storage_p_get_hourly_usage(void *db_conn,
+				    
+						  acct_cluster_rec_t *cluster_rec, time_t start, 
+						  time_t end, void *params)
 {
 
 	return SLURM_SUCCESS;
 }
 
-extern int clusteracct_storage_p_get_daily_usage(
-	acct_cluster_rec_t *cluster_rec, time_t start, 
-	time_t end, void *params)
+extern int clusteracct_storage_p_get_daily_usage(void *db_conn,
+				    
+						 acct_cluster_rec_t *cluster_rec, time_t start, 
+						 time_t end, void *params)
 {
 	
 	return SLURM_SUCCESS;
 }
 
-extern int clusteracct_storage_p_get_monthly_usage(
-	acct_cluster_rec_t *cluster_rec, time_t start, 
-	time_t end, void *params)
+extern int clusteracct_storage_p_get_monthly_usage(void *db_conn,
+				    
+						   acct_cluster_rec_t *cluster_rec, time_t start, 
+						   time_t end, void *params)
 {
 	
 	return SLURM_SUCCESS;
@@ -348,7 +478,8 @@ extern int clusteracct_storage_p_get_monthly_usage(
 /* 
  * load into the storage the start of a job
  */
-extern int jobacct_storage_p_job_start(struct job_record *job_ptr)
+extern int jobacct_storage_p_job_start(void *db_conn,
+				       struct job_record *job_ptr)
 {
 	slurmdbd_msg_t msg, msg_rc;
 	dbd_job_start_msg_t req;
@@ -356,6 +487,13 @@ extern int jobacct_storage_p_job_start(struct job_record *job_ptr)
 	char *block_id = NULL;
 	int rc = SLURM_SUCCESS;
 
+	if (!job_ptr->details || !job_ptr->details->submit_time) {
+		error("jobacct_storage_p_job_start: "
+		      "Not inputing this job, it has no submit time.");
+		return SLURM_ERROR;
+	}
+
+	req.alloc_cpus    = job_ptr->total_procs;
 	req.assoc_id      = job_ptr->assoc_id;
 #ifdef HAVE_BG
 	select_g_get_jobinfo(job_ptr->select_jobinfo, 
@@ -364,17 +502,19 @@ extern int jobacct_storage_p_job_start(struct job_record *job_ptr)
 #endif
 	req.block_id      = block_id;
 	xfree(block_id);
-	if (job_ptr->details)
+	if (job_ptr->details) 
 		req.eligible_time = job_ptr->details->begin_time;
+	req.gid           = job_ptr->group_id;
 	req.job_id        = job_ptr->job_id;
 	req.job_state     = job_ptr->job_state & (~JOB_COMPLETING);
 	req.name          = job_ptr->name;
 	req.nodes         = job_ptr->nodes;
+	req.partition     = job_ptr->partition;
+	req.req_cpus      = job_ptr->num_procs;
 	req.priority      = job_ptr->priority;
 	req.start_time    = job_ptr->start_time;
 	if (job_ptr->details)
 		req.submit_time   = job_ptr->details->submit_time;
-	req.total_procs   = job_ptr->total_procs;
 
 	msg.msg_type      = DBD_JOB_START;
 	msg.data          = &req;
@@ -397,23 +537,29 @@ extern int jobacct_storage_p_job_start(struct job_record *job_ptr)
 /* 
  * load into the storage the end of a job
  */
-extern int jobacct_storage_p_job_complete(struct job_record *job_ptr)
+extern int jobacct_storage_p_job_complete(void *db_conn,
+					  struct job_record *job_ptr)
 {
 	slurmdbd_msg_t msg;
 	dbd_job_comp_msg_t req;
 
+	if (!job_ptr->db_index 
+	    && (!job_ptr->details || !job_ptr->details->submit_time)) {
+		error("jobacct_storage_p_job_complete: "
+		      "Not inputing this job, it has no submit time.");
+		return SLURM_ERROR;
+	}
+
 	req.assoc_id    = job_ptr->assoc_id;
+	req.db_index    = job_ptr->db_index;
 	req.end_time    = job_ptr->end_time;
 	req.exit_code   = job_ptr->exit_code;
 	req.job_id      = job_ptr->job_id;
 	req.job_state   = job_ptr->job_state & (~JOB_COMPLETING);
-	req.name        = job_ptr->name;
 	req.nodes       = job_ptr->nodes;
-	req.priority    = job_ptr->priority;
 	req.start_time  = job_ptr->start_time;
 	if (job_ptr->details)
 		req.submit_time   = job_ptr->details->submit_time;
-	req.total_procs = job_ptr->total_procs;
 
 	msg.msg_type    = DBD_JOB_COMPLETE;
 	msg.data        = &req;
@@ -427,7 +573,8 @@ extern int jobacct_storage_p_job_complete(struct job_record *job_ptr)
 /* 
  * load into the storage the start of a job step
  */
-extern int jobacct_storage_p_step_start(struct step_record *step_ptr)
+extern int jobacct_storage_p_step_start(void *db_conn,
+					struct step_record *step_ptr)
 {
 	uint32_t cpus = 0;
 	char node_list[BUFFER_SIZE];
@@ -462,11 +609,19 @@ extern int jobacct_storage_p_step_start(struct step_record *step_ptr)
 	}
 #endif
 
+	if (!step_ptr->job_ptr->db_index 
+	    && (!step_ptr->job_ptr->details
+		|| !step_ptr->job_ptr->details->submit_time)) {
+		error("jobacct_storage_p_step_start: "
+		      "Not inputing this job, it has no submit time.");
+		return SLURM_ERROR;
+	}
+
 	req.assoc_id    = step_ptr->job_ptr->assoc_id;
+	req.db_index    = step_ptr->job_ptr->db_index;
 	req.job_id      = step_ptr->job_ptr->job_id;
 	req.name        = step_ptr->name;
 	req.nodes       = node_list;
-	req.req_uid     = step_ptr->job_ptr->requid;
 	req.start_time  = step_ptr->start_time;
 	if (step_ptr->job_ptr->details)
 		req.job_submit_time   = step_ptr->job_ptr->details->submit_time;
@@ -485,7 +640,8 @@ extern int jobacct_storage_p_step_start(struct step_record *step_ptr)
 /* 
  * load into the storage the end of a job step
  */
-extern int jobacct_storage_p_step_complete(struct step_record *step_ptr)
+extern int jobacct_storage_p_step_complete(void *db_conn,
+					   struct step_record *step_ptr)
 {
 	uint32_t cpus = 0;
 	char node_list[BUFFER_SIZE];
@@ -519,11 +675,19 @@ extern int jobacct_storage_p_step_complete(struct step_record *step_ptr)
 	}
 #endif
 
+	if (!step_ptr->job_ptr->db_index 
+	    && (!step_ptr->job_ptr->details
+		|| !step_ptr->job_ptr->details->submit_time)) {
+		error("jobacct_storage_p_step_complete: "
+		      "Not inputing this job, it has no submit time.");
+		return SLURM_ERROR;
+	}
+
 	req.assoc_id    = step_ptr->job_ptr->assoc_id;
+	req.db_index    = step_ptr->job_ptr->db_index;
 	req.end_time    = time(NULL);	/* called at step completion */
+	req.jobacct     = step_ptr->jobacct;
 	req.job_id      = step_ptr->job_ptr->job_id;
-	req.name        = step_ptr->name;
-	req.nodes       = node_list;
 	req.req_uid     = step_ptr->job_ptr->requid;
 	req.start_time  = step_ptr->start_time;
 	if (step_ptr->job_ptr->details)
@@ -543,7 +707,8 @@ extern int jobacct_storage_p_step_complete(struct step_record *step_ptr)
 /* 
  * load into the storage a suspention of a job
  */
-extern int jobacct_storage_p_suspend(struct job_record *job_ptr)
+extern int jobacct_storage_p_suspend(void *db_conn,
+				     struct job_record *job_ptr)
 {
 	slurmdbd_msg_t msg;
 	dbd_job_suspend_msg_t req;
@@ -568,7 +733,8 @@ extern int jobacct_storage_p_suspend(struct job_record *job_ptr)
  * returns List of job_rec_t *
  * note List needs to be freed when called
  */
-extern List jobacct_storage_p_get_jobs(List selected_steps,
+extern List jobacct_storage_p_get_jobs(void *db_conn,
+				       List selected_steps,
 				       List selected_parts,
 				       sacct_parameters_t *params)
 {
@@ -577,10 +743,17 @@ extern List jobacct_storage_p_get_jobs(List selected_steps,
 	dbd_got_jobs_msg_t *got_msg;
 	int rc;
 	List job_list = NULL;
+	struct passwd *pw = NULL;
 
 	get_msg.selected_steps = selected_steps;
 	get_msg.selected_parts = selected_parts;
 	get_msg.cluster_name = params->opt_cluster;
+	get_msg.gid = params->opt_gid;
+	
+	if (params->opt_uid >=0 && (pw=getpwuid(params->opt_uid)))
+		get_msg.user = pw->pw_name;
+	else
+		get_msg.user = NULL;
 
 	req.msg_type = DBD_GET_JOBS;
 	req.data = &get_msg;
@@ -605,8 +778,9 @@ extern List jobacct_storage_p_get_jobs(List selected_steps,
  * Expire old info from the storage
  * Not applicable for any database
  */
-extern void jobacct_storage_p_archive(List selected_parts,
-				       void *params)
+extern void jobacct_storage_p_archive(void *db_conn,
+				      List selected_parts,
+				      void *params)
 {
 	return;
 }

@@ -455,10 +455,12 @@ extern int sacctmgr_add_account(int argc, char *argv[])
 
 	if(execute_flag) {
 		if(list_count(acct_list))
-			rc = acct_storage_g_add_accounts(acct_list);
+			rc = acct_storage_g_add_accounts(db_conn, 
+							 acct_list);
 		list_destroy(acct_list);
 		if(list_count(assoc_list))
-			rc = acct_storage_g_add_associations(assoc_list);
+			rc = acct_storage_g_add_associations(db_conn, 
+							     assoc_list);
 		list_destroy(assoc_list);
 	} else {
 		sacctmgr_action_t *action = NULL;
@@ -517,7 +519,7 @@ extern int sacctmgr_list_account(int argc, char *argv[])
 	}
 
 
-	acct_list = acct_storage_g_get_accounts(acct_cond);
+	acct_list = acct_storage_g_get_accounts(db_conn, acct_cond);
 	destroy_acct_account_cond(acct_cond);
 	
 	if(!acct_list) 
@@ -599,7 +601,8 @@ extern int sacctmgr_modify_account(int argc, char *argv[])
 	_print_cond(acct_cond);
 
 	if(execute_flag) {
-		rc = acct_storage_g_modify_accounts(acct_cond, acct);
+		rc = acct_storage_g_modify_accounts(db_conn, 
+						    acct_cond, acct);
 		destroy_acct_account_cond(acct_cond);
 		destroy_acct_account_rec(acct);
 	} else {
@@ -636,7 +639,8 @@ extern int sacctmgr_delete_account(int argc, char *argv[])
 	_print_cond(acct_cond);
 
 	if(execute_flag) {
-		rc = acct_storage_g_remove_accounts(acct_cond);
+		rc = acct_storage_g_remove_accounts(db_conn, 
+						    acct_cond);
 		destroy_acct_account_cond(acct_cond);
 	} else {
 		sacctmgr_action_t *action = xmalloc(sizeof(sacctmgr_action_t));

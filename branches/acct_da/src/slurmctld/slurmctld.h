@@ -163,7 +163,7 @@ typedef struct slurmctld_config {
 extern slurmctld_config_t slurmctld_config;
 extern int bg_recover;		/* state recovery mode */
 extern char *slurmctld_cluster_name; /* name of cluster */
-
+extern void *acct_db_conn;
 /*****************************************************************************\
  *  NODE parameters and data structures
 \*****************************************************************************/

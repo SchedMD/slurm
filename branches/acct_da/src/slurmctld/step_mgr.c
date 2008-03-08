@@ -399,7 +399,7 @@ int job_step_complete(uint32_t job_id, uint32_t step_id, uid_t uid,
 	if (step_ptr == NULL) 
 		return ESLURM_INVALID_JOB_ID;
 
-	jobacct_storage_g_step_complete(step_ptr);
+	jobacct_storage_g_step_complete(acct_db_conn, step_ptr);
 	_step_dealloc_lps(step_ptr);
 
 	if ((job_ptr->kill_on_step_done)
@@ -988,7 +988,7 @@ step_create(job_step_create_request_msg_t *step_specs,
 		return ESLURM_INVALID_TASK_MEMORY;
 	}
 	*new_step_record = step_ptr;
-	jobacct_storage_g_step_start(step_ptr);
+	jobacct_storage_g_step_start(acct_db_conn, step_ptr);
 	return SLURM_SUCCESS;
 }
 

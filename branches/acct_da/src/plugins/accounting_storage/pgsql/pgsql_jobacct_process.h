@@ -45,22 +45,23 @@
 
 #include <stdlib.h>
 #include "src/common/jobacct_common.h"
+#include "src/slurmdbd/read_config.h"
 #include "src/slurmctld/slurmctld.h"
 #include "src/database/pgsql_common.h"
 #include "src/common/slurm_accounting_storage.h"
 
 #ifdef HAVE_PGSQL
 
-extern PGconn *acct_pgsql_db;
-
 extern char *job_table;
 extern char *step_table;
 
-extern List pgsql_jobacct_process_get_jobs(List selected_steps,
+extern List pgsql_jobacct_process_get_jobs(PGconn *acct_pgsql_db,
+					   List selected_steps,
 					   List selected_parts,
 					   sacct_parameters_t *params);
 
-extern void pgsql_jobacct_process_archive(List selected_parts,
+extern void pgsql_jobacct_process_archive(PGconn *acct_pgsql_db,
+					  List selected_parts,
 					  sacct_parameters_t *params);
 #endif
 

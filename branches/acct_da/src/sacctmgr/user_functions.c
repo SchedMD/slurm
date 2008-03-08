@@ -452,10 +452,12 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 
 	if(execute_flag) {
 		if(list_count(user_list))
-			rc = acct_storage_g_add_users(user_list);
+			rc = acct_storage_g_add_users(db_conn, 
+						      user_list);
 		list_destroy(user_list);
 		if(list_count(assoc_list))
-			rc = acct_storage_g_add_associations(assoc_list);
+			rc = acct_storage_g_add_associations(db_conn, 
+							     assoc_list);
 		list_destroy(assoc_list);
 	} else {
 		sacctmgr_action_t *action = NULL;
@@ -493,7 +495,8 @@ extern int sacctmgr_list_user(int argc, char *argv[])
 	
 	_set_cond(&i, argc, argv, user_cond);
 
-	user_list = acct_storage_g_get_users(user_cond);
+	user_list = acct_storage_g_get_users(db_conn, 
+					     user_cond);
 	destroy_acct_user_cond(user_cond);
 
 	if(!user_list) 
@@ -564,7 +567,8 @@ extern int sacctmgr_modify_user(int argc, char *argv[])
 	_print_cond(user_cond);
 
 	if(execute_flag) {
-		rc = acct_storage_g_modify_users(user_cond, user);
+		rc = acct_storage_g_modify_users(db_conn, 
+						 user_cond, user);
 		destroy_acct_user_cond(user_cond);
 		destroy_acct_user_rec(user);
 	} else {
@@ -596,7 +600,8 @@ extern int sacctmgr_delete_user(int argc, char *argv[])
 	_print_cond(user_cond);
 
 	if(execute_flag) {
-		rc = acct_storage_g_remove_users(user_cond);
+		rc = acct_storage_g_remove_users(db_conn, 
+						 user_cond);
 		destroy_acct_user_cond(user_cond);
 	} else {
 		sacctmgr_action_t *action = xmalloc(sizeof(sacctmgr_action_t));

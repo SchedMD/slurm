@@ -51,6 +51,8 @@
 #  include <inttypes.h>
 #endif				/*  HAVE_CONFIG_H */
 
+#include <slurm/slurm.h>
+
 #include "src/common/pack.h"
 #include "src/common/list.h"
 
@@ -90,8 +92,10 @@ typedef struct dbd_cluster_procs_msg {
 
 typedef struct dbd_get_jobs_msg {
 	char *cluster_name; /* name of cluster to query */
+	uint32_t gid;      /* group id */
 	List selected_steps; /* List of jobacct_selected_step_t *'s */
 	List selected_parts; /* List of char *'s */
+	char *user;        /* user name */
 } dbd_get_jobs_msg_t;
 
 typedef struct dbd_job_info {
@@ -126,30 +130,29 @@ typedef struct dbd_job_comp_msg {
 	uint32_t db_index;	/* index into the db for this job */
 	time_t   end_time;	/* job termintation time */
 	uint32_t exit_code;	/* job exit code or signal */
-	uint32_t job_id;	/* job ID needed to find job record
-				 * in db */
+	uint32_t job_id;	/* job ID */
 	uint16_t job_state;	/* job state */
-	char *   name;		/* job name */
 	char *   nodes;		/* hosts allocated to the job */
-	uint32_t priority;	/* job priority */
 	time_t   start_time;	/* job start time */
 	time_t   submit_time;	/* job submit time needed to find job
 				 * record in db */
-	uint32_t total_procs;	/* count of allocated processors */
 } dbd_job_comp_msg_t;
 
 typedef struct dbd_job_start_msg {
+	uint32_t alloc_cpus;	/* count of allocated processors */
 	uint32_t assoc_id;	/* accounting association id */
 	char *   block_id;      /* Bluegene block id */
 	time_t   eligible_time;	/* time job becomes eligible to run */
+	uint32_t gid;	        /* group ID */
 	uint32_t job_id;	/* job ID */
 	uint16_t job_state;	/* job state */
 	char *   name;		/* job name */
 	char *   nodes;		/* hosts allocated to the job */
+	char *   partition;	/* partition job is running on */
 	uint32_t priority;	/* job priority */
+	uint32_t req_cpus;	/* count of req processors */
 	time_t   start_time;	/* job start time */
 	time_t   submit_time;	/* job submit time */
-	uint32_t total_procs;	/* count of allocated processors */
 } dbd_job_start_msg_t;
 
 typedef struct dbd_job_start_rc_msg {
@@ -187,9 +190,8 @@ typedef struct dbd_step_comp_msg {
 	uint32_t assoc_id;	/* accounting association id */
 	uint32_t db_index;	/* index into the db for this job */
 	time_t   end_time;	/* job termintation time */
+	jobacctinfo_t *jobacct; /* status info */
 	uint32_t job_id;	/* job ID */
-	char *   name;		/* step name */
-	char *   nodes;		/* hosts allocated to the step */
 	uint32_t req_uid;	/* requester user ID */
 	time_t   start_time;	/* step start time */
 	time_t   job_submit_time;/* job submit time needed to find job record
@@ -204,7 +206,6 @@ typedef struct dbd_step_start_msg {
 	uint32_t job_id;	/* job ID */
 	char *   name;		/* step name */
 	char *   nodes;		/* hosts allocated to the step */
-	uint32_t req_uid;	/* requester user ID */
 	time_t   start_time;	/* step start time */
 	time_t   job_submit_time;/* job submit time needed to find job record
 				  * in db */

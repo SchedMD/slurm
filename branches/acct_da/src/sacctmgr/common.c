@@ -273,14 +273,17 @@ extern int sacctmgr_init()
 	sacctmgr_action_list = list_create(destroy_sacctmgr_action);
 
 	if(!sacctmgr_user_list)
-		sacctmgr_user_list = acct_storage_g_get_users(NULL);
+		sacctmgr_user_list = acct_storage_g_get_users(db_conn, 
+							      NULL);
 	if(!sacctmgr_account_list)
-		sacctmgr_account_list = acct_storage_g_get_accounts(NULL);
+		sacctmgr_account_list = acct_storage_g_get_accounts(db_conn, 
+								    NULL);
 	if(!sacctmgr_cluster_list)
-		sacctmgr_cluster_list = acct_storage_g_get_clusters(NULL);
+		sacctmgr_cluster_list = acct_storage_g_get_clusters(db_conn, 
+								    NULL);
 	if(!sacctmgr_association_list)
 		sacctmgr_association_list = acct_storage_g_get_associations(
-			NULL);
+			db_conn, NULL);
 
 	inited = 1;
 
@@ -321,7 +324,7 @@ extern acct_association_rec_t *sacctmgr_find_association(char *user,
 	
 	if(!sacctmgr_association_list)
 		sacctmgr_association_list =
-			acct_storage_g_get_associations(NULL);
+			acct_storage_g_get_associations(db_conn, NULL);
 	
 	itr = list_iterator_create(sacctmgr_association_list);
 	while((assoc = list_next(itr))) {
@@ -357,7 +360,7 @@ extern acct_association_rec_t *sacctmgr_find_parent_assoc(char *account,
 
 	if(!sacctmgr_association_list)
 		sacctmgr_association_list =
-			acct_storage_g_get_associations(NULL);
+			acct_storage_g_get_associations(db_conn, NULL);
 
 	itr = list_iterator_create(sacctmgr_association_list);
 	while((assoc = list_next(itr))) {
@@ -391,7 +394,7 @@ extern acct_association_rec_t *sacctmgr_find_account_base_assoc(char *account,
 
 	if(!sacctmgr_association_list)
 		sacctmgr_association_list =
-			acct_storage_g_get_associations(NULL);
+			acct_storage_g_get_associations(db_conn, NULL);
 
 	if(account)
 		temp = account;
@@ -419,7 +422,7 @@ extern acct_user_rec_t *sacctmgr_find_user(char *name)
 		return NULL;
 	
 	if(!sacctmgr_user_list)
-		sacctmgr_user_list = acct_storage_g_get_users(NULL);
+		sacctmgr_user_list = acct_storage_g_get_users(db_conn, NULL);
 
 	itr = list_iterator_create(sacctmgr_user_list);
 	while((user = list_next(itr))) {
@@ -440,7 +443,8 @@ extern acct_account_rec_t *sacctmgr_find_account(char *name)
 		return NULL;
 
 	if(!sacctmgr_account_list)
-		sacctmgr_account_list = acct_storage_g_get_accounts(NULL);
+		sacctmgr_account_list = acct_storage_g_get_accounts(db_conn, 
+								    NULL);
 	
 	itr = list_iterator_create(sacctmgr_account_list);
 	while((account = list_next(itr))) {
@@ -460,7 +464,8 @@ extern acct_cluster_rec_t *sacctmgr_find_cluster(char *name)
 		return NULL;
 
 	if(!sacctmgr_cluster_list)
-		sacctmgr_cluster_list = acct_storage_g_get_clusters(NULL);
+		sacctmgr_cluster_list = acct_storage_g_get_clusters(db_conn, 
+								    NULL);
 
 	itr = list_iterator_create(sacctmgr_cluster_list);
 	while((cluster = list_next(itr))) {

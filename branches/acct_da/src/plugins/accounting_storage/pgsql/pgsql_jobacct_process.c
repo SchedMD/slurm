@@ -50,7 +50,8 @@ static void _do_fdump(List job_list)
 	return;
 }
 
-extern List pgsql_jobacct_process_get_jobs(List selected_steps,
+extern List pgsql_jobacct_process_get_jobs(PGconn *acct_pgsql_db,
+					   List selected_steps,
 					   List selected_parts,
 					   sacct_parameters_t *params)
 {
@@ -150,7 +151,6 @@ extern List pgsql_jobacct_process_get_jobs(List selected_steps,
 		JOB_REQ_REQ_CPUS,
 		JOB_REQ_ALLOC_CPUS,
 		JOB_REQ_NODELIST,
-		JOB_REQ_ACCOUNT,
 		JOB_REQ_KILL_REQUID,
 		JOB_REQ_QOS,
 		JOB_REQ_COUNT		
@@ -256,7 +256,7 @@ extern List pgsql_jobacct_process_get_jobs(List selected_steps,
 						  JOB_REQ_ALLOC_CPUS));
 		job->associd = atoi(PQgetvalue(result, i, JOB_REQ_ASSOCID));
 		account_rec.id = job->associd;
-		acct_storage_g_get_assoc_id(&account_rec);
+		acct_storage_g_get_assoc_id(acct_pgsql_db, &account_rec);
 		if(account_rec.user) 
 			job->user = xstrdup(account_rec.user);
 		if(account_rec.acct) 
@@ -465,7 +465,8 @@ extern List pgsql_jobacct_process_get_jobs(List selected_steps,
 	return job_list;
 }
 
-extern void pgsql_jobacct_process_archive(List selected_parts,
+extern void pgsql_jobacct_process_archive(PGconn *acct_pgsql_db,
+					  List selected_parts,
 					  sacct_parameters_t *params)
 {
 	return;

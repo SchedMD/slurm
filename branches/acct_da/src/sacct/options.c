@@ -51,6 +51,7 @@ void _init_params();
 int selected_state[STATE_COUNT];
 List selected_parts = NULL;
 List selected_steps = NULL;
+void *acct_db_conn = NULL;
 
 void _destroy_parts(void *object)
 {
@@ -278,7 +279,8 @@ int get_data(void)
 						selected_parts, &params);
 		return SLURM_SUCCESS;
 	} else {
-		jobs = jobacct_storage_g_get_jobs(selected_steps,
+		jobs = jobacct_storage_g_get_jobs(acct_db_conn,
+						  selected_steps,
 						  selected_parts, &params);
 	}
 
@@ -660,6 +662,7 @@ void parse_command_line(int argc, char **argv)
 		xfree(acct_type);
 	} else {
 		slurm_acct_storage_init(params.opt_filein);
+		acct_db_conn = acct_storage_g_get_connection();
 		
 		acct_type = slurm_get_accounting_storage_type();
 		if ((strcmp(acct_type, "accounting_storage/none") == 0)
@@ -1066,7 +1069,8 @@ void do_expire(void)
 	if(params.opt_completion) 
 		g_slurm_jobcomp_archive(selected_parts, &params);
 	else
-		jobacct_storage_g_archive(selected_parts, &params);
+		jobacct_storage_g_archive(acct_db_conn,
+					  selected_parts, &params);
 }
 
 void do_help(void)
@@ -1106,11 +1110,13 @@ void do_list(void)
 	
 	if (params.opt_total)
 		do_jobsteps = 0;
-
+	info("got %u jobs", list_count(jobs));
 	itr = list_iterator_create(jobs);
 	while((job = list_next(itr))) {
+		info("got here %d %u", params.opt_uid, job->uid);
 		if (params.opt_uid >= 0 && (job->uid != params.opt_uid))
 			continue;
+		info("got here");
 		if (params.opt_gid >= 0 && (job->gid != params.opt_gid))
 			continue;
 		if(job->sacct.min_cpu == NO_VAL)
@@ -1123,6 +1129,7 @@ void do_list(void)
 			job->sacct.ave_pages /= list_count(job->steps);
 		}
 
+		info("got job %u %u ", job->jobid, job->show_full);
 		if (job->show_full) {
 			if (params.opt_state_list) {
 				if(!selected_state[job->state])
@@ -1207,6 +1214,8 @@ void sacct_fini()
 	list_destroy(selected_steps);
 	if(params.opt_completion)
 		g_slurm_jobcomp_fini();
-	else
+	else {
+		acct_storage_g_close_connection(acct_db_conn);
 		slurm_acct_storage_fini();
+	}
 }

@@ -307,9 +307,11 @@ extern int sacctmgr_add_cluster(int argc, char *argv[])
 	list_append(sacctmgr_association_list, assoc);
 
 	if(execute_flag) {
-		rc = acct_storage_g_add_clusters(cluster_list);
+		rc = acct_storage_g_add_clusters(db_conn, 
+						 cluster_list);
 		list_destroy(cluster_list);
-		rc = acct_storage_g_add_associations(assoc_list);
+		rc = acct_storage_g_add_associations(db_conn, 
+						     assoc_list);
 		list_destroy(assoc_list);
 	} else {
 		sacctmgr_action_t *action = xmalloc(sizeof(sacctmgr_action_t));
@@ -347,7 +349,8 @@ extern int sacctmgr_list_cluster(int argc, char *argv[])
 		}		
 	}
 	
-	cluster_list = acct_storage_g_get_clusters(cluster_cond);
+	cluster_list = acct_storage_g_get_clusters(db_conn, 
+						   cluster_cond);
 	destroy_acct_cluster_cond(cluster_cond);
 	
 	if(!cluster_list) 
@@ -456,10 +459,12 @@ extern int sacctmgr_modify_cluster(int argc, char *argv[])
 
 	if(execute_flag) {
 		if(list_count(cluster_cond->cluster_list)) {
-			rc = acct_storage_g_modify_clusters(
-				cluster_cond, cluster);
-			rc = acct_storage_g_modify_associations(
-				assoc_cond, assoc);
+			rc = acct_storage_g_modify_clusters(db_conn, 
+							    cluster_cond,
+							    cluster);
+			rc = acct_storage_g_modify_associations(db_conn, 
+								assoc_cond,
+								assoc);
 		}
 		destroy_acct_cluster_cond(cluster_cond);
 		destroy_acct_cluster_rec(cluster);
@@ -523,8 +528,10 @@ extern int sacctmgr_delete_cluster(int argc, char *argv[])
 
 	if(execute_flag) {
 		if(list_count(cluster_cond->cluster_list)) {
-			rc = acct_storage_g_remove_clusters(cluster_cond);
-			rc = acct_storage_g_remove_associations(assoc_cond);
+			rc = acct_storage_g_remove_clusters(db_conn, 
+							    cluster_cond);
+			rc = acct_storage_g_remove_associations(db_conn, 
+								assoc_cond);
 		}
 		destroy_acct_cluster_cond(cluster_cond);
 		destroy_acct_association_cond(assoc_cond);
