@@ -1110,13 +1110,13 @@ void do_list(void)
 	
 	if (params.opt_total)
 		do_jobsteps = 0;
-	info("got %u jobs", list_count(jobs));
 	itr = list_iterator_create(jobs);
 	while((job = list_next(itr))) {
-		info("got here %d %u", params.opt_uid, job->uid);
+		/* FIX ME: this should be handled while getting the
+		   data, not afterwards.
+		*/
 		if (params.opt_uid >= 0 && (job->uid != params.opt_uid))
 			continue;
-		info("got here");
 		if (params.opt_gid >= 0 && (job->gid != params.opt_gid))
 			continue;
 		if(job->sacct.min_cpu == NO_VAL)
@@ -1129,7 +1129,6 @@ void do_list(void)
 			job->sacct.ave_pages /= list_count(job->steps);
 		}
 
-		info("got job %u %u ", job->jobid, job->show_full);
 		if (job->show_full) {
 			if (params.opt_state_list) {
 				if(!selected_state[job->state])
