@@ -87,116 +87,148 @@ extern int fini ( void )
 	return SLURM_SUCCESS;
 }
 
-extern int acct_storage_p_add_users(List user_list)
+extern void * acct_storage_p_get_connection()
+{
+	return NULL;
+}
+
+extern int acct_storage_p_close_connection(void *db_conn)
 {
 	return SLURM_SUCCESS;
 }
 
-extern int acct_storage_p_add_coord(char *acct, acct_user_cond_t *user_q)
+extern int acct_storage_p_add_users(void *db_conn,
+				    List user_list)
 {
 	return SLURM_SUCCESS;
 }
 
-extern int acct_storage_p_add_accts(List acct_list)
+extern int acct_storage_p_add_coord(void *db_conn,
+				    char *acct, acct_user_cond_t *user_q)
 {
 	return SLURM_SUCCESS;
 }
 
-extern int acct_storage_p_add_clusters(List cluster_list)
+extern int acct_storage_p_add_accts(void *db_conn,
+				    List acct_list)
 {
 	return SLURM_SUCCESS;
 }
 
-extern int acct_storage_p_add_associations(List association_list)
+extern int acct_storage_p_add_clusters(void *db_conn,
+				       List cluster_list)
 {
 	return SLURM_SUCCESS;
 }
 
-extern int acct_storage_p_get_assoc_id(acct_association_rec_t *assoc)
+extern int acct_storage_p_add_associations(void *db_conn,
+					   List association_list)
 {
 	return SLURM_SUCCESS;
 }
 
-extern int acct_storage_p_validate_assoc_id(uint32_t assoc_id)
+extern int acct_storage_p_get_assoc_id(void *db_conn,
+				       acct_association_rec_t *assoc)
 {
 	return SLURM_SUCCESS;
 }
 
-extern int acct_storage_p_modify_users(acct_user_cond_t *user_q,
+extern int acct_storage_p_validate_assoc_id(void *db_conn,
+					    uint32_t assoc_id)
+{
+	return SLURM_SUCCESS;
+}
+
+extern int acct_storage_p_modify_users(void *db_conn,
+				       acct_user_cond_t *user_q,
 				       acct_user_rec_t *user)
 {
 	return SLURM_SUCCESS;
 }
 
-extern int acct_storage_p_modify_user_admin_level(acct_user_cond_t *user_q)
+extern int acct_storage_p_modify_user_admin_level(void *db_conn,
+						  acct_user_cond_t *user_q)
 {
 	return SLURM_SUCCESS;
 }
 
-extern int acct_storage_p_modify_accts(acct_account_cond_t *acct_q,
+extern int acct_storage_p_modify_accts(void *db_conn,
+				       acct_account_cond_t *acct_q,
 				       acct_account_rec_t *acct)
 {
 	return SLURM_SUCCESS;
 }
 
-extern int acct_storage_p_modify_clusters(acct_cluster_cond_t *cluster_q,
+extern int acct_storage_p_modify_clusters(void *db_conn,
+					  acct_cluster_cond_t *cluster_q,
 					  acct_cluster_rec_t *cluster)
 {
 	return SLURM_SUCCESS;
 }
 
-extern int acct_storage_p_modify_associations(acct_association_cond_t *assoc_q,
+extern int acct_storage_p_modify_associations(void *db_conn,
+					      acct_association_cond_t *assoc_q,
 					      acct_association_rec_t *assoc)
 {
 	return SLURM_SUCCESS;
 }
 
-extern int acct_storage_p_remove_users(acct_user_cond_t *user_q)
+extern int acct_storage_p_remove_users(void *db_conn,
+				       acct_user_cond_t *user_q)
 {
 	return SLURM_SUCCESS;
 }
 
-extern int acct_storage_p_remove_coord(char *acct, acct_user_cond_t *user_q)
+extern int acct_storage_p_remove_coord(void *db_conn,
+				       char *acct, acct_user_cond_t *user_q)
 {
 	return SLURM_SUCCESS;
 }
 
-extern int acct_storage_p_remove_accts(acct_account_cond_t *acct_q)
+extern int acct_storage_p_remove_accts(void *db_conn,
+				       acct_account_cond_t *acct_q)
 {
 	return SLURM_SUCCESS;
 }
 
-extern int acct_storage_p_remove_clusters(acct_account_cond_t *cluster_q)
+extern int acct_storage_p_remove_clusters(void *db_conn,
+					  acct_account_cond_t *cluster_q)
 {
 	return SLURM_SUCCESS;
 }
 
-extern int acct_storage_p_remove_associations(acct_association_cond_t *assoc_q)
+extern int acct_storage_p_remove_associations(void *db_conn,
+					      acct_association_cond_t *assoc_q)
 {
 	return SLURM_SUCCESS;
 }
 
-extern List acct_storage_p_get_users(acct_user_cond_t *user_q)
+extern List acct_storage_p_get_users(void *db_conn,
+				     acct_user_cond_t *user_q)
 {
 	return NULL;
 }
 
-extern List acct_storage_p_get_accts(acct_account_cond_t *acct_q)
+extern List acct_storage_p_get_accts(void *db_conn,
+				     acct_account_cond_t *acct_q)
 {
 	return NULL;
 }
 
-extern List acct_storage_p_get_clusters(acct_account_cond_t *cluster_q)
+extern List acct_storage_p_get_clusters(void *db_conn,
+					acct_account_cond_t *cluster_q)
 {
 	return NULL;
 }
 
-extern List acct_storage_p_get_associations(acct_association_cond_t *assoc_q)
+extern List acct_storage_p_get_associations(void *db_conn,
+					    acct_association_cond_t *assoc_q)
 {
 	return NULL;
 }
 
-extern int acct_storage_p_get_hourly_usage(acct_association_rec_t *acct_assoc,
+extern int acct_storage_p_get_hourly_usage(void *db_conn,
+					   acct_association_rec_t *acct_assoc,
 					   time_t start, time_t end)
 {
 	int rc = SLURM_SUCCESS;
@@ -204,7 +236,8 @@ extern int acct_storage_p_get_hourly_usage(acct_association_rec_t *acct_assoc,
 	return rc;
 }
 
-extern int acct_storage_p_get_daily_usage(acct_association_rec_t *acct_assoc,
+extern int acct_storage_p_get_daily_usage(void *db_conn,
+					  acct_association_rec_t *acct_assoc,
 					  time_t start, time_t end)
 {
 	int rc = SLURM_SUCCESS;
@@ -212,26 +245,30 @@ extern int acct_storage_p_get_daily_usage(acct_association_rec_t *acct_assoc,
 	return rc;
 }
 
-extern int acct_storage_p_get_monthly_usage(acct_association_rec_t *acct_assoc,
+extern int acct_storage_p_get_monthly_usage(void *db_conn,
+					    acct_association_rec_t *acct_assoc,
 					    time_t start, time_t end)
 {
 	int rc = SLURM_SUCCESS;
 	return rc;
 }
 
-extern int clusteracct_storage_p_node_down(char *cluster,
+extern int clusteracct_storage_p_node_down(void *db_conn,
+					   char *cluster,
 					   struct node_record *node_ptr,
 					   time_t event_time, char *reason)
 {
 	return SLURM_SUCCESS;
 }
-extern int clusteracct_storage_p_node_up(char *cluster,
+extern int clusteracct_storage_p_node_up(void *db_conn,
+					 char *cluster,
 					 struct node_record *node_ptr,
 					 time_t event_time)
 {
 	return SLURM_SUCCESS;
 }
-extern int clusteracct_storage_p_cluster_procs(char *cluster,
+extern int clusteracct_storage_p_cluster_procs(void *db_conn,
+					       char *cluster,
 					       uint32_t procs,
 					       time_t event_time)
 {
@@ -239,6 +276,7 @@ extern int clusteracct_storage_p_cluster_procs(char *cluster,
 }
 
 extern int clusteracct_storage_p_get_hourly_usage(
+	void *db_conn,	
 	acct_cluster_rec_t *cluster_rec, time_t start, 
 	time_t end, void *params)
 {
@@ -247,6 +285,7 @@ extern int clusteracct_storage_p_get_hourly_usage(
 }
 
 extern int clusteracct_storage_p_get_daily_usage(
+	void *db_conn,
 	acct_cluster_rec_t *cluster_rec, time_t start, 
 	time_t end, void *params)
 {
@@ -255,6 +294,7 @@ extern int clusteracct_storage_p_get_daily_usage(
 }
 
 extern int clusteracct_storage_p_get_monthly_usage(
+	void *db_conn,
 	acct_cluster_rec_t *cluster_rec, time_t start, 
 	time_t end, void *params)
 {
@@ -265,7 +305,8 @@ extern int clusteracct_storage_p_get_monthly_usage(
 /* 
  * load into the storage the start of a job
  */
-extern int jobacct_storage_p_job_start(struct job_record *job_ptr)
+extern int jobacct_storage_p_job_start(void *db_conn,
+				       struct job_record *job_ptr)
 {
 	return SLURM_SUCCESS;
 }
@@ -273,7 +314,8 @@ extern int jobacct_storage_p_job_start(struct job_record *job_ptr)
 /* 
  * load into the storage the end of a job
  */
-extern int jobacct_storage_p_job_complete(struct job_record *job_ptr)
+extern int jobacct_storage_p_job_complete(void *db_conn,
+					  struct job_record *job_ptr)
 {
 	return SLURM_SUCCESS;
 }
@@ -281,7 +323,8 @@ extern int jobacct_storage_p_job_complete(struct job_record *job_ptr)
 /* 
  * load into the storage the start of a job step
  */
-extern int jobacct_storage_p_step_start(struct step_record *step_ptr)
+extern int jobacct_storage_p_step_start(void *db_conn,
+					struct step_record *step_ptr)
 {
 	return SLURM_SUCCESS;
 }
@@ -289,7 +332,8 @@ extern int jobacct_storage_p_step_start(struct step_record *step_ptr)
 /* 
  * load into the storage the end of a job step
  */
-extern int jobacct_storage_p_step_complete(struct step_record *step_ptr)
+extern int jobacct_storage_p_step_complete(void *db_conn,
+					   struct step_record *step_ptr)
 {
 	return SLURM_SUCCESS;
 }
@@ -297,7 +341,8 @@ extern int jobacct_storage_p_step_complete(struct step_record *step_ptr)
 /* 
  * load into the storage a suspention of a job
  */
-extern int jobacct_storage_p_suspend(struct job_record *job_ptr)
+extern int jobacct_storage_p_suspend(void *db_conn,
+				     struct job_record *job_ptr)
 {
 	return SLURM_SUCCESS;
 }
@@ -307,7 +352,8 @@ extern int jobacct_storage_p_suspend(struct job_record *job_ptr)
  * returns List of job_rec_t *
  * note List needs to be freed when called
  */
-extern List jobacct_storage_p_get_jobs(List selected_steps,
+extern List jobacct_storage_p_get_jobs(void *db_conn,
+				       List selected_steps,
 				       List selected_parts,
 				       void *params)
 {
@@ -317,8 +363,9 @@ extern List jobacct_storage_p_get_jobs(List selected_steps,
 /* 
  * expire old info from the storage 
  */
-extern void jobacct_storage_p_archive(List selected_parts,
-				       void *params)
+extern void jobacct_storage_p_archive(void *db_conn,
+				      List selected_parts,
+				      void *params)
 {
 	return;
 }

@@ -713,6 +713,16 @@ extern int fini ( void )
 	return SLURM_SUCCESS;
 }
 
+extern void * acct_storage_p_get_connection()
+{
+	return NULL;
+}
+
+extern int acct_storage_p_close_connection(void *db_conn)
+{
+	return SLURM_SUCCESS;
+}
+
 extern int acct_storage_p_add_users(void *db_conn,
 				    List user_list)
 {
