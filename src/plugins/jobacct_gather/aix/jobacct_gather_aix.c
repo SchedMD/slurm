@@ -371,12 +371,12 @@ extern int init ( void )
 		pgid_plugin = true;
 	}
 	xfree(temp);
-	temp = slurm_get_jobacct_storage_type();
-	if(!strcasecmp(temp, JOB_ACCT_STORAGE_TYPE_NONE)) {
+	temp = slurm_get_accounting_storage_type();
+	if(!strcasecmp(temp, ACCOUNTING_STORAGE_TYPE_NONE)) {
 		error("WARNING: Even though we are collecting accounting "
 		      "information you have asked for it not to be stored "
 		      "(%s) if this is not what you have in mind you will "
-		      "need to change it.", JOB_ACCT_STORAGE_TYPE_NONE);
+		      "need to change it.", ACCOUNTING_STORAGE_TYPE_NONE);
 	}
 	xfree(temp);
 

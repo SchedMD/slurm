@@ -103,6 +103,12 @@ extern void slurm_msg_t_copy(slurm_msg_t *dest, slurm_msg_t *src)
 	return;	
 }
 
+extern void slurm_destroy_char(void *object)
+{
+	char *tmp = (char *)object;
+	xfree(tmp);
+}
+
 
 void slurm_free_last_update_msg(last_update_msg_t * msg)
 {
@@ -603,6 +609,8 @@ extern char *job_reason_string(enum job_state_reason inx)
 			return "TimeLimit";
 		case FAIL_INACTIVE_LIMIT:
 			return "InactiveLimit";
+		case FAIL_BANK_ACCOUNT:
+			return "InvalidBankAccount";
 		default:
 			return "?";
 	}
@@ -888,6 +896,7 @@ void slurm_free_ctl_conf(slurm_ctl_conf_info_msg_t * config_ptr)
 		xfree(config_ptr->accounting_storage_host);
 		xfree(config_ptr->accounting_storage_pass);
 		xfree(config_ptr->accounting_storage_type);
+		xfree(config_ptr->accounting_storage_loc);
 		xfree(config_ptr->accounting_storage_user);
 		xfree(config_ptr->authtype);
 		xfree(config_ptr->backup_addr);
@@ -900,11 +909,6 @@ void slurm_free_ctl_conf(slurm_ctl_conf_info_msg_t * config_ptr)
 		xfree(config_ptr->epilog);
 		xfree(config_ptr->health_check_program);
 		xfree(config_ptr->job_acct_gather_type);
-		xfree(config_ptr->job_acct_storage_host);
-		xfree(config_ptr->job_acct_storage_loc);
-		xfree(config_ptr->job_acct_storage_pass);
-		xfree(config_ptr->job_acct_storage_type);
-		xfree(config_ptr->job_acct_storage_user);
 		xfree(config_ptr->job_comp_host);
 		xfree(config_ptr->job_comp_loc);
 		xfree(config_ptr->job_comp_pass);
@@ -933,8 +937,6 @@ void slurm_free_ctl_conf(slurm_ctl_conf_info_msg_t * config_ptr)
 		xfree(config_ptr->slurmd_logfile);
 		xfree(config_ptr->slurmd_pidfile);
 		xfree(config_ptr->slurmd_spooldir);
-		xfree(config_ptr->slurmdbd_addr);
-		xfree(config_ptr->slurmdbd_auth_info);
 		xfree(config_ptr->srun_epilog);
 		xfree(config_ptr->srun_prolog);
 		xfree(config_ptr->state_save_location);

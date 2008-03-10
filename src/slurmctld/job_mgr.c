@@ -58,16 +58,16 @@
 
 #include "src/api/job_info.h"
 #include "src/common/bitstring.h"
+#include "src/common/forward.h"
 #include "src/common/hostlist.h"
 #include "src/common/node_select.h"
 #include "src/common/parse_time.h"
+#include "src/common/slurm_accounting_storage.h"
 #include "src/common/slurm_jobcomp.h"
+#include "src/common/slurm_protocol_pack.h"
 #include "src/common/switch.h"
 #include "src/common/xassert.h"
 #include "src/common/xstring.h"
-#include "src/common/forward.h"
-#include "src/common/slurm_jobacct_storage.h"
-#include "src/common/slurm_protocol_pack.h"
 
 #include "src/slurmctld/agent.h"
 #include "src/slurmctld/job_scheduler.h"
@@ -461,6 +461,7 @@ static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer)
 	struct step_record *step_ptr;
 
 	/* Dump basic job info */
+	pack32(dump_job_ptr->assoc_id, buffer);
 	pack32(dump_job_ptr->job_id, buffer);
 	pack32(dump_job_ptr->user_id, buffer);
 	pack32(dump_job_ptr->group_id, buffer);
@@ -471,6 +472,7 @@ static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer)
 	pack32(dump_job_ptr->total_procs, buffer);
 	pack32(dump_job_ptr->exit_code, buffer);
 	pack32(dump_job_ptr->db_index, buffer);
+	pack32(dump_job_ptr->assoc_id, buffer);
 
 	pack_time(dump_job_ptr->start_time, buffer);
 	pack_time(dump_job_ptr->end_time, buffer);
@@ -535,7 +537,8 @@ static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer)
 static int _load_job_state(Buf buffer)
 {
 	uint32_t job_id, user_id, group_id, time_limit, priority, alloc_sid;
-	uint32_t exit_code, num_procs, db_index, name_len, total_procs;
+	uint32_t exit_code, num_procs, assoc_id, db_index, name_len,
+		total_procs;
 	time_t start_time, end_time, suspend_time, pre_sus_time, tot_sus_time;
 	uint16_t job_state, next_step_id, details, batch_flag, step_flag;
 	uint16_t kill_on_node_fail, kill_on_step_done;
@@ -549,6 +552,7 @@ static int _load_job_state(Buf buffer)
 	int error_code;
 	select_jobinfo_t select_jobinfo = NULL;
 
+	safe_unpack32(&assoc_id, buffer);
 	safe_unpack32(&job_id, buffer);
 	safe_unpack32(&user_id, buffer);
 	safe_unpack32(&group_id, buffer);
@@ -559,7 +563,7 @@ static int _load_job_state(Buf buffer)
 	safe_unpack32(&total_procs, buffer);
 	safe_unpack32(&exit_code, buffer);
 	safe_unpack32(&db_index, buffer);
-
+	safe_unpack32(&assoc_id, buffer);
 	safe_unpack_time(&start_time, buffer);
 	safe_unpack_time(&end_time, buffer);
 	safe_unpack_time(&suspend_time, buffer);
@@ -657,6 +661,7 @@ static int _load_job_state(Buf buffer)
 		goto unpack_error;
 	}
 
+	job_ptr->assoc_id     = assoc_id;
 	job_ptr->user_id      = user_id;
 	job_ptr->group_id     = group_id;
 	job_ptr->time_limit   = time_limit;
@@ -674,6 +679,7 @@ static int _load_job_state(Buf buffer)
 	job_ptr->num_procs    = num_procs;
 	job_ptr->total_procs  = total_procs;
 	job_ptr->db_index     = db_index;
+	job_ptr->assoc_id     = assoc_id;
 	job_ptr->time_last_active = time(NULL);
 	job_ptr->name = name;
 	name          = NULL;	/* reused, nothing left to free */
@@ -1770,6 +1776,8 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 	bool super_user = false;
 	struct job_record *job_ptr;
 	uint32_t total_nodes, max_procs;
+	acct_association_rec_t assoc_rec;
+
 #if SYSTEM_DIMENSIONS
 	uint16_t geo[SYSTEM_DIMENSIONS];
 	uint16_t reboot;
@@ -1825,6 +1833,19 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 		error_code = ESLURM_JOB_MISSING_REQUIRED_PARTITION_GROUP;
 		return error_code;
 	}
+
+	bzero(&assoc_rec, sizeof(acct_association_rec_t));
+	assoc_rec.uid       = job_desc->user_id;
+	assoc_rec.partition = part_ptr->name;
+	assoc_rec.acct      = job_desc->account;
+	if (acct_storage_g_get_assoc_id(acct_db_conn, &assoc_rec)) {
+		info("_job_create: invalid account or partition for user %u",
+		     job_desc->user_id);
+		error_code = ESLURM_INVALID_ACCOUNT;
+		return error_code;
+	}
+	if (job_desc->account == NULL)
+		job_desc->account = xstrdup(assoc_rec.acct);
 
 	/* check if select partition has sufficient resources to satisfy
 	 * the request */
@@ -1968,6 +1989,7 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 	}
 
 	job_ptr = *job_pptr;
+	job_ptr->assoc_id = assoc_rec.id;
 	if (update_job_dependency(job_ptr, job_desc->dependency)) {
 		error_code = ESLURM_DEPENDENCY;
 		goto cleanup;
@@ -3827,6 +3849,21 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 		else if (tmp_part_ptr == NULL)
 			error_code = ESLURM_INVALID_PARTITION_NAME;
 		else if (super_user) {
+			acct_association_rec_t assoc_rec;
+			bzero(&assoc_rec, sizeof(acct_association_rec_t));
+			assoc_rec.uid       = job_ptr->user_id;
+			assoc_rec.partition = job_specs->partition;
+			assoc_rec.acct      = job_ptr->account;
+			if (acct_storage_g_get_assoc_id(acct_db_conn, 
+							&assoc_rec)) {
+				info("job_update: invalid account %s for job %u",
+				     job_specs->account, job_ptr->job_id);
+				error_code = ESLURM_INVALID_ACCOUNT;
+				/* Let update proceed. Note there is an invalid
+				 * association ID for accounting purposes */
+			} else {
+				job_ptr->assoc_id = assoc_rec.id;
+			}
 			xfree(job_ptr->partition);
 			job_ptr->partition = xstrdup(job_specs->partition);
 			job_ptr->part_ptr = tmp_part_ptr;
@@ -3899,6 +3936,9 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 	}
 
 	if (job_specs->account) {
+		acct_association_rec_t assoc_rec;
+		bzero(&assoc_rec, sizeof(acct_association_rec_t));
+
 		xfree(job_ptr->account);
 		if (job_specs->account[0] != '\0') {
 			job_ptr->account = job_specs->account;
@@ -3908,6 +3948,24 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 		} else {
 			info("update_job: cleared account for job_id %u",
 			     job_specs->job_id);
+		}
+
+		assoc_rec.uid       = job_ptr->user_id;
+		assoc_rec.partition = job_ptr->partition;
+		assoc_rec.acct      = job_ptr->account;
+		if (acct_storage_g_get_assoc_id(acct_db_conn, 
+						&assoc_rec)) {
+			info("job_update: invalid account %s for job %u",
+			     job_specs->account, job_ptr->job_id);
+			error_code = ESLURM_INVALID_ACCOUNT;
+		} else {
+			xfree(job_ptr->account);
+			if (assoc_rec.acct != '\0') {
+				job_ptr->account = xstrdup(assoc_rec.acct);
+				info("update_job: setting account to %s for job_id %u",
+				     assoc_rec.acct, job_ptr->job_id);
+			}
+			job_ptr->assoc_id = assoc_rec.id;
 		}
 	}
 
@@ -4906,7 +4964,7 @@ extern int job_suspend(suspend_msg_t *sus_ptr, uid_t uid,
 
 	job_ptr->time_last_active = now;
 	job_ptr->suspend_time = now;
-	jobacct_storage_g_job_suspend(job_ptr);
+	jobacct_storage_g_job_suspend(acct_db_conn, job_ptr);
 
     reply:
 	if (conn_fd >= 0) {

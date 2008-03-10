@@ -9,7 +9,8 @@ INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common
 pkglib_LTLIBRARIES = accounting_storage_pgsql.la
 
 # Pgsql storage plugin.
-accounting_storage_pgsql_la_SOURCES = accounting_storage_pgsql.c
+accounting_storage_pgsql_la_SOURCES = accounting_storage_pgsql.c \
+		pgsql_jobacct_process.c pgsql_jobacct_process.h
 accounting_storage_pgsql_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
 accounting_storage_pgsql_la_CFLAGS = $(PGSQL_CFLAGS)
 accounting_storage_pgsql_la_LIBADD = \

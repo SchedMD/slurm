@@ -145,7 +145,7 @@ typedef struct {
 
 extern char *GOLD_OBJECT_STR[];
 
-extern int init_gold(char *machine, char *keyfile, char *host, uint16_t port);
+extern int init_gold(char *keyfile, char *host, uint16_t port);
 extern int fini_gold();
 
 extern gold_request_t *create_gold_request(gold_object_t object,

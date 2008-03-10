@@ -64,80 +64,106 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-extern jobacct_job_rec_t *create_jobacct_job_rec(jobacct_header_t header)
+static void _pack_sacct(sacct_t *sacct, Buf buffer)
+{
+	int i=0;
+	int mult = 1000000;
+
+	if(!sacct) {
+		for(i=0; i<12; i++)
+			pack32((uint32_t) 0, buffer);
+		for(i=0; i<4; i++)
+			pack16((uint16_t) 0, buffer);
+		return;
+	} 
+	pack32((uint32_t)sacct->max_vsize, buffer);
+	pack32((uint32_t)(sacct->ave_vsize*mult), buffer);
+	pack32((uint32_t)sacct->max_rss, buffer);
+	pack32((uint32_t)(sacct->ave_rss*mult), buffer);
+	pack32((uint32_t)sacct->max_pages, buffer);
+	pack32((uint32_t)(sacct->ave_pages*mult), buffer);
+	pack32((uint32_t)(sacct->min_cpu*mult), buffer);
+	pack32((uint32_t)(sacct->ave_cpu*mult), buffer);
+	_pack_jobacct_id(&sacct->max_vsize_id, buffer);
+	_pack_jobacct_id(&sacct->max_rss_id, buffer);
+	_pack_jobacct_id(&sacct->max_pages_id, buffer);
+	_pack_jobacct_id(&sacct->min_cpu_id, buffer);
+}
+
+/* you need to xfree this */
+static int _unpack_sacct(sacct_t *sacct, Buf buffer)
+{
+	int mult = 1000000;
+
+	safe_unpack32(&sacct->max_vsize, buffer);
+	safe_unpack32((uint32_t *)&sacct->ave_vsize, buffer);
+	sacct->ave_vsize /= mult;
+	safe_unpack32(&sacct->max_rss, buffer);
+	safe_unpack32((uint32_t *)&sacct->ave_rss, buffer);
+	sacct->ave_rss /= mult;
+	safe_unpack32(&sacct->max_pages, buffer);
+	safe_unpack32((uint32_t *)&sacct->ave_pages, buffer);
+	sacct->ave_pages /= mult;
+	safe_unpack32((uint32_t *)&sacct->min_cpu, buffer);
+	sacct->min_cpu /= mult;
+	safe_unpack32((uint32_t *)&sacct->ave_cpu, buffer);
+	sacct->ave_cpu /= mult;
+	if(_unpack_jobacct_id(&sacct->max_vsize_id, buffer) != SLURM_SUCCESS)
+		goto unpack_error;
+	if(_unpack_jobacct_id(&sacct->max_rss_id, buffer) != SLURM_SUCCESS)
+		goto unpack_error;
+	if(_unpack_jobacct_id(&sacct->max_pages_id, buffer) != SLURM_SUCCESS)
+		goto unpack_error;
+	if(_unpack_jobacct_id(&sacct->min_cpu_id, buffer) != SLURM_SUCCESS)
+		goto unpack_error;
+
+	return SLURM_SUCCESS;
+
+unpack_error:
+	sacct = NULL;
+       	return SLURM_ERROR;
+}
+extern jobacct_job_rec_t *create_jobacct_job_rec()
 {
 	jobacct_job_rec_t *job = xmalloc(sizeof(jobacct_job_rec_t));
-	memcpy(&job->header, &header, sizeof(jobacct_header_t));
-	memset(&job->rusage, 0, sizeof(struct rusage));
 	memset(&job->sacct, 0, sizeof(sacct_t));
 	job->sacct.min_cpu = (float)NO_VAL;
-	job->job_start_seen = 0;
-	job->job_step_seen = 0;
-	job->job_terminated_seen = 0;
-	job->jobnum_superseded = 0;
-	job->jobname = NULL;
-	job->status = JOB_PENDING;
-	job->nodes = NULL;
-	job->jobname = NULL;
-	job->exitcode = 0;
-	job->priority = 0;
-	job->ntasks = 0;
-	job->ncpus = 0;
-	job->elapsed = 0;
-	job->tot_cpu_sec = 0;
-	job->tot_cpu_usec = 0;
+	job->state = JOB_PENDING;
 	job->steps = list_create(destroy_jobacct_step_rec);
-	job->nodes = NULL;
-	job->track_steps = 0;
-	job->account = NULL;
 	job->requid = -1;
 
       	return job;
 }
 
-extern jobacct_step_rec_t *create_jobacct_step_rec(jobacct_header_t header)
+extern jobacct_step_rec_t *create_jobacct_step_rec()
 {
 	jobacct_step_rec_t *step = xmalloc(sizeof(jobacct_job_rec_t));
-	memcpy(&step->header, &header, sizeof(jobacct_header_t));
-	memset(&step->rusage, 0, sizeof(struct rusage));
 	memset(&step->sacct, 0, sizeof(sacct_t));
-	step->stepnum = (uint32_t)NO_VAL;
-	step->nodes = NULL;
-	step->stepname = NULL;
-	step->status = NO_VAL;
+	step->stepid = (uint32_t)NO_VAL;
+	step->state = NO_VAL;
 	step->exitcode = NO_VAL;
-	step->ntasks = (uint32_t)NO_VAL;
 	step->ncpus = (uint32_t)NO_VAL;
 	step->elapsed = (uint32_t)NO_VAL;
 	step->tot_cpu_sec = (uint32_t)NO_VAL;
 	step->tot_cpu_usec = (uint32_t)NO_VAL;
-	step->account = NULL;
 	step->requid = -1;
 
 	return step;
-}
-
-extern void free_jobacct_header(void *object)
-{
-	jobacct_header_t *header = (jobacct_header_t *)object;
-	if(header) {
-		xfree(header->partition);
-#ifdef HAVE_BG
-		xfree(header->blockid);
-#endif
-	}
 }
 
 extern void destroy_jobacct_job_rec(void *object)
 {
 	jobacct_job_rec_t *job = (jobacct_job_rec_t *)object;
 	if (job) {
+		xfree(job->account);
+		xfree(job->blockid);
+		xfree(job->cluster);
+		xfree(job->jobname);
+		xfree(job->partition);
+		xfree(job->nodes);
+		xfree(job->user);
 		if(job->steps)
 			list_destroy(job->steps);
-		free_jobacct_header(&job->header);
-		xfree(job->jobname);
-		xfree(job->account);
-		xfree(job->nodes);
 		xfree(job);
 	}
 }
@@ -146,16 +172,239 @@ extern void destroy_jobacct_step_rec(void *object)
 {
 	jobacct_step_rec_t *step = (jobacct_step_rec_t *)object;
 	if (step) {
-		free_jobacct_header(&step->header);
-		xfree(step->stepname);
 		xfree(step->nodes);
-		xfree(step->account);
+		xfree(step->stepname);
 		xfree(step);
 	}
 }
 
+extern void destroy_jobacct_selected_step(void *object)
+{
+	jobacct_selected_step_t *step = (jobacct_selected_step_t *)object;
+	if (step) {
+		xfree(step->job);
+		xfree(step->step);
+		xfree(step);
+	}
+}
+
+ 
+extern void pack_jobacct_job_rec(jobacct_job_rec_t *job, Buf buffer)
+{
+	ListIterator itr = NULL;
+	jobacct_step_rec_t *step = NULL;
+	uint32_t count = 0;
+
+	pack32(job->alloc_cpus, buffer);
+	pack32(job->associd, buffer);
+	packstr(job->account, buffer);
+	packstr(job->blockid, buffer);
+	packstr(job->cluster, buffer);
+	pack32(job->elapsed, buffer);
+	pack_time(job->eligible, buffer);
+	pack_time(job->end, buffer);
+	pack32(job->exitcode, buffer);
+	pack32(job->gid, buffer);
+	pack32(job->jobid, buffer);
+	packstr(job->jobname, buffer);
+	packstr(job->partition, buffer);
+	packstr(job->nodes, buffer);
+	pack32(job->priority, buffer);
+	pack16(job->qos, buffer);
+	pack32(job->req_cpus, buffer);
+	pack32(job->requid, buffer);
+	_pack_sacct(&job->sacct, buffer);
+	pack32(job->show_full, buffer);
+	pack_time(job->start, buffer);
+	pack16(job->state, buffer);
+	if(job->steps)
+		count = list_count(job->steps);
+	pack32(count, buffer);
+	if(count) {
+		itr = list_iterator_create(job->steps);
+		while((step = list_next(itr))) {
+			pack_jobacct_step_rec(step, buffer);
+		}
+		list_iterator_destroy(itr);
+	}
+	pack_time(job->submit, buffer);
+	pack32(job->suspended, buffer);
+	pack32(job->sys_cpu_sec, buffer);
+	pack32(job->sys_cpu_usec, buffer);
+	pack32(job->tot_cpu_sec, buffer);
+	pack32(job->tot_cpu_usec, buffer);
+	pack16(job->track_steps, buffer);
+	pack32(job->uid, buffer);
+	//packstr(job->user, buffer);
+	pack32(job->user_cpu_sec, buffer);
+	pack32(job->user_cpu_usec, buffer);
+}
+
+extern int unpack_jobacct_job_rec(jobacct_job_rec_t **job, Buf buffer)
+{
+	jobacct_job_rec_t *job_ptr = xmalloc(sizeof(jobacct_job_rec_t));
+	int i = 0;
+	jobacct_step_rec_t *step = NULL;
+	uint32_t count = 0;
+	uint32_t uint32_tmp;
+
+	*job = job_ptr;
+
+	safe_unpack32(&job_ptr->alloc_cpus, buffer);
+	safe_unpack32(&job_ptr->associd, buffer);
+	safe_unpackstr_xmalloc(&job_ptr->account, &uint32_tmp, buffer);
+	safe_unpackstr_xmalloc(&job_ptr->blockid, &uint32_tmp, buffer);
+	safe_unpackstr_xmalloc(&job_ptr->cluster, &uint32_tmp, buffer);
+	safe_unpack32(&job_ptr->elapsed, buffer);
+	safe_unpack_time(&job_ptr->eligible, buffer);
+	safe_unpack_time(&job_ptr->end, buffer);
+	safe_unpack32((uint32_t *)&job_ptr->exitcode, buffer);
+	safe_unpack32(&job_ptr->gid, buffer);
+	safe_unpack32(&job_ptr->jobid, buffer);
+	safe_unpackstr_xmalloc(&job_ptr->jobname, &uint32_tmp, buffer);
+	safe_unpackstr_xmalloc(&job_ptr->partition, &uint32_tmp, buffer);
+	safe_unpackstr_xmalloc(&job_ptr->nodes, &uint32_tmp, buffer);
+	safe_unpack32((uint32_t *)&job_ptr->priority, buffer);
+	safe_unpack16(&job_ptr->qos, buffer);
+	safe_unpack32(&job_ptr->req_cpus, buffer);
+	safe_unpack32(&job_ptr->requid, buffer);
+	_pack_sacct(&job_ptr->sacct, buffer);
+	safe_unpack32(&job_ptr->show_full, buffer);
+	safe_unpack_time(&job_ptr->start, buffer);
+	safe_unpack16((uint16_t *)&job_ptr->state, buffer);
+	safe_unpack32(&count, buffer);
+
+	job_ptr->steps = list_create(destroy_jobacct_step_rec);
+	for(i=0; i<count; i++) {
+		unpack_jobacct_step_rec(&step, buffer);
+		if(step)
+			list_append(job_ptr->steps, step);
+	}
+
+	safe_unpack_time(&job_ptr->submit, buffer);
+	safe_unpack32(&job_ptr->suspended, buffer);
+	safe_unpack32(&job_ptr->sys_cpu_sec, buffer);
+	safe_unpack32(&job_ptr->sys_cpu_usec, buffer);
+	safe_unpack32(&job_ptr->tot_cpu_sec, buffer);
+	safe_unpack32(&job_ptr->tot_cpu_usec, buffer);
+	safe_unpack16(&job_ptr->track_steps, buffer);
+	safe_unpack32(&job_ptr->uid, buffer);
+	//safe_unpackstr_xmalloc(&job_ptr->user, &uint32_tmp, buffer);
+	safe_unpack32(&job_ptr->user_cpu_sec, buffer);
+	safe_unpack32(&job_ptr->user_cpu_usec, buffer);
+	
+	return SLURM_SUCCESS;
+
+unpack_error:
+	xfree(job_ptr->account);
+	xfree(job_ptr->blockid);
+	xfree(job_ptr->cluster);
+	xfree(job_ptr->jobname);
+	xfree(job_ptr->partition);
+	xfree(job_ptr->nodes);
+	if(job_ptr->steps)
+		list_destroy(job_ptr->steps);
+	xfree(job_ptr->user);
+	xfree(job_ptr);
+	*job = NULL;
+	return SLURM_ERROR;
+}
+ 
+extern void pack_jobacct_step_rec(jobacct_step_rec_t *step, Buf buffer)
+{
+	pack32(step->elapsed, buffer);
+	pack_time(step->end, buffer);
+	pack32((uint32_t)step->exitcode, buffer);
+	pack32(step->jobid, buffer);
+	pack32(step->ncpus, buffer);
+        packstr(step->nodes, buffer);
+	pack32(step->requid, buffer);
+	_pack_sacct(&step->sacct, buffer);
+	pack_time(step->start, buffer);
+	pack16(step->state, buffer);
+	pack32(step->stepid, buffer);	/* job's step number */
+	packstr(step->stepname, buffer);
+	pack32(step->suspended, buffer);
+	pack32(step->sys_cpu_sec, buffer);
+	pack32(step->sys_cpu_usec, buffer);
+	pack32(step->tot_cpu_sec, buffer);
+	pack32(step->tot_cpu_usec, buffer);
+	pack32(step->user_cpu_sec, buffer);
+	pack32(step->user_cpu_usec, buffer);
+}
+
+extern int unpack_jobacct_step_rec(jobacct_step_rec_t **step, Buf buffer)
+{
+	uint32_t uint32_tmp;
+	jobacct_step_rec_t *step_ptr = xmalloc(sizeof(jobacct_step_rec_t));
+
+	*step = step_ptr;
+
+	safe_unpack32(&step_ptr->elapsed, buffer);
+	safe_unpack_time(&step_ptr->end, buffer);
+	safe_unpack32((uint32_t *)&step_ptr->exitcode, buffer);
+	safe_unpack32(&step_ptr->jobid, buffer);
+	safe_unpack32(&step_ptr->ncpus, buffer);
+        safe_unpackstr_xmalloc(&step_ptr->nodes, &uint32_tmp, buffer);
+	safe_unpack32(&step_ptr->requid, buffer);
+	_unpack_sacct(&step_ptr->sacct, buffer);
+	safe_unpack_time(&step_ptr->start, buffer);
+	safe_unpack16((uint16_t *)&step_ptr->state, buffer);
+	safe_unpack32(&step_ptr->stepid, buffer);	/* job's step number */
+	safe_unpackstr_xmalloc(&step_ptr->stepname, &uint32_tmp, buffer);
+	safe_unpack32(&step_ptr->suspended, buffer);
+	safe_unpack32(&step_ptr->sys_cpu_sec, buffer);
+	safe_unpack32(&step_ptr->sys_cpu_usec, buffer);
+	safe_unpack32(&step_ptr->tot_cpu_sec, buffer);
+	safe_unpack32(&step_ptr->tot_cpu_usec, buffer);
+	safe_unpack32(&step_ptr->user_cpu_sec, buffer);
+	safe_unpack32(&step_ptr->user_cpu_usec, buffer);
+
+	return SLURM_SUCCESS;
+
+unpack_error:
+	xfree(step_ptr->nodes);
+	xfree(step_ptr->stepname);
+	xfree(step_ptr);
+	*step = NULL;
+	return SLURM_ERROR;
+} 
+
+extern void pack_jobacct_selected_step(jobacct_selected_step_t *step,
+				       Buf buffer)
+{
+	packstr(step->job, buffer);
+	packstr(step->step, buffer);
+	pack32(step->jobid, buffer);
+	pack32(step->stepid, buffer);
+}
+
+extern int unpack_jobacct_selected_step(jobacct_selected_step_t **step,
+					Buf buffer)
+{
+	uint32_t uint32_tmp;
+	jobacct_selected_step_t *step_ptr =
+		xmalloc(sizeof(jobacct_selected_step_t));
+	
+	*step = step_ptr;
+
+	safe_unpackstr_xmalloc(&step_ptr->job, &uint32_tmp, buffer);
+	safe_unpackstr_xmalloc(&step_ptr->step, &uint32_tmp, buffer);
+	safe_unpack32(&step_ptr->jobid, buffer);
+	safe_unpack32(&step_ptr->stepid, buffer);
+
+	return SLURM_SUCCESS;
+
+unpack_error:
+	xfree(step_ptr->job);
+	xfree(step_ptr->step);
+	xfree(step_ptr);
+	*step = NULL;
+	return SLURM_ERROR;
+}
+
 extern int jobacct_common_init_struct(struct jobacctinfo *jobacct, 
-			      jobacct_id_t *jobacct_id)
+				      jobacct_id_t *jobacct_id)
 {
 	if(!jobacct_id) {
 		jobacct_id_t temp_id;
@@ -163,24 +412,11 @@ extern int jobacct_common_init_struct(struct jobacctinfo *jobacct,
 		temp_id.nodeid = (uint32_t)NO_VAL;
 		jobacct_id = &temp_id;
 	}
-	jobacct->rusage.ru_utime.tv_sec = 0;
-	jobacct->rusage.ru_utime.tv_usec = 0;
-	jobacct->rusage.ru_stime.tv_sec = 0;
-	jobacct->rusage.ru_stime.tv_usec = 0;
-	jobacct->rusage.ru_maxrss = 0;
-	jobacct->rusage.ru_ixrss = 0;
-	jobacct->rusage.ru_idrss = 0;
-	jobacct->rusage.ru_isrss = 0;
-	jobacct->rusage.ru_minflt = 0;
-	jobacct->rusage.ru_majflt = 0;
-	jobacct->rusage.ru_nswap = 0;
-	jobacct->rusage.ru_inblock = 0;
-	jobacct->rusage.ru_oublock = 0;
-	jobacct->rusage.ru_msgsnd = 0;
-	jobacct->rusage.ru_msgrcv = 0;
-	jobacct->rusage.ru_nsignals = 0;
-	jobacct->rusage.ru_nvcsw = 0;
-	jobacct->rusage.ru_nivcsw = 0;
+	memset(jobacct, 0, sizeof(struct jobacctinfo));
+	jobacct->sys_cpu_sec = 0;
+	jobacct->sys_cpu_usec = 0;
+	jobacct->user_cpu_sec = 0;
+	jobacct->user_cpu_usec = 0;
 
 	jobacct->max_vsize = 0;
 	memcpy(&jobacct->max_vsize_id, jobacct_id, sizeof(jobacct_id_t));
@@ -214,13 +450,13 @@ extern void jobacct_common_free_jobacct(void *object)
 }
 
 extern int jobacct_common_setinfo(struct jobacctinfo *jobacct, 
-			  enum jobacct_data_type type, void *data)
+				  enum jobacct_data_type type, void *data)
 {
 	int rc = SLURM_SUCCESS;
 	int *fd = (int *)data;
+	struct rusage *rusage = (struct rusage *)data;
 	uint32_t *uint32 = (uint32_t *) data;
 	jobacct_id_t *jobacct_id = (jobacct_id_t *) data;
-	struct rusage *rusage = (struct rusage *) data;
 	struct jobacctinfo *send = (struct jobacctinfo *) data;
 
 	slurm_mutex_lock(&jobacct_lock);
@@ -232,7 +468,10 @@ extern int jobacct_common_setinfo(struct jobacctinfo *jobacct,
 		safe_write(*fd, jobacct, sizeof(struct jobacctinfo));
 		break;
 	case JOBACCT_DATA_RUSAGE:
-		memcpy(&jobacct->rusage, rusage, sizeof(struct rusage));
+		jobacct->user_cpu_sec = rusage->ru_utime.tv_sec;
+		jobacct->user_cpu_usec = rusage->ru_utime.tv_usec;
+		jobacct->sys_cpu_sec = rusage->ru_stime.tv_sec;
+		jobacct->sys_cpu_usec = rusage->ru_stime.tv_usec;
 		break;
 	case JOBACCT_DATA_MAX_RSS:
 		jobacct->max_rss = *uint32;
@@ -289,7 +528,7 @@ extern int jobacct_common_getinfo(struct jobacctinfo *jobacct,
 	int *fd = (int *)data;
 	uint32_t *uint32 = (uint32_t *) data;
 	jobacct_id_t *jobacct_id = (jobacct_id_t *) data;
-	struct rusage *rusage = (struct rusage *) data;
+	struct rusage *rusage = (struct rusage *)data;
 	struct jobacctinfo *send = (struct jobacctinfo *) data;
 
 	slurm_mutex_lock(&jobacct_lock);
@@ -301,7 +540,11 @@ extern int jobacct_common_getinfo(struct jobacctinfo *jobacct,
 		safe_read(*fd, jobacct, sizeof(struct jobacctinfo));
 		break;
 	case JOBACCT_DATA_RUSAGE:
-		memcpy(rusage, &jobacct->rusage, sizeof(struct rusage));
+		memset(rusage, 0, sizeof(struct rusage));
+		rusage->ru_utime.tv_sec = jobacct->user_cpu_sec;
+		rusage->ru_utime.tv_usec = jobacct->user_cpu_usec;
+		rusage->ru_stime.tv_sec = jobacct->sys_cpu_sec;
+		rusage->ru_stime.tv_usec = jobacct->sys_cpu_usec;
 		break;
 	case JOBACCT_DATA_MAX_RSS:
 		*uint32 = jobacct->max_rss;
@@ -396,34 +639,19 @@ extern void jobacct_common_aggregate(struct jobacctinfo *dest,
 	if(dest->min_cpu_id.taskid == (uint16_t)NO_VAL)
 		dest->min_cpu_id = from->min_cpu_id;
 
-	/* sum up all rusage stuff */
-	dest->rusage.ru_utime.tv_sec	+= from->rusage.ru_utime.tv_sec;
-	dest->rusage.ru_utime.tv_usec	+= from->rusage.ru_utime.tv_usec;
-	while (dest->rusage.ru_utime.tv_usec >= 1E6) {
-		dest->rusage.ru_utime.tv_sec++;
-		dest->rusage.ru_utime.tv_usec -= 1E6;
+	dest->user_cpu_sec	+= from->user_cpu_sec;
+	dest->user_cpu_usec	+= from->user_cpu_usec;
+	while (dest->user_cpu_usec >= 1E6) {
+		dest->user_cpu_sec++;
+		dest->user_cpu_usec -= 1E6;
 	}
-	dest->rusage.ru_stime.tv_sec	+= from->rusage.ru_stime.tv_sec;
-	dest->rusage.ru_stime.tv_usec	+= from->rusage.ru_stime.tv_usec;
-	while (dest->rusage.ru_stime.tv_usec >= 1E6) {
-		dest->rusage.ru_stime.tv_sec++;
-		dest->rusage.ru_stime.tv_usec -= 1E6;
+	dest->sys_cpu_sec	+= from->sys_cpu_sec;
+	dest->sys_cpu_usec	+= from->sys_cpu_usec;
+	while (dest->sys_cpu_usec >= 1E6) {
+		dest->sys_cpu_sec++;
+		dest->sys_cpu_usec -= 1E6;
 	}
 
-	dest->rusage.ru_maxrss		+= from->rusage.ru_maxrss;
-	dest->rusage.ru_ixrss		+= from->rusage.ru_ixrss;
-	dest->rusage.ru_idrss		+= from->rusage.ru_idrss;
-	dest->rusage.ru_isrss		+= from->rusage.ru_isrss;
-	dest->rusage.ru_minflt		+= from->rusage.ru_minflt;
-	dest->rusage.ru_majflt		+= from->rusage.ru_majflt;
-	dest->rusage.ru_nswap		+= from->rusage.ru_nswap;
-	dest->rusage.ru_inblock		+= from->rusage.ru_inblock;
-	dest->rusage.ru_oublock		+= from->rusage.ru_oublock;
-	dest->rusage.ru_msgsnd		+= from->rusage.ru_msgsnd;
-	dest->rusage.ru_msgrcv		+= from->rusage.ru_msgrcv;
-	dest->rusage.ru_nsignals	+= from->rusage.ru_nsignals;
-	dest->rusage.ru_nvcsw		+= from->rusage.ru_nvcsw;
-	dest->rusage.ru_nivcsw		+= from->rusage.ru_nivcsw;
 	slurm_mutex_unlock(&jobacct_lock);	
 }
 
@@ -452,31 +680,17 @@ extern void jobacct_common_pack(struct jobacctinfo *jobacct, Buf buffer)
 	int i=0;
 
 	if(!jobacct) {
-		for(i=0; i<26; i++)
+		for(i=0; i<16; i++)
 			pack32((uint32_t) 0, buffer);
 		for(i=0; i<4; i++)
 			pack16((uint16_t) 0, buffer);
 		return;
 	} 
 	slurm_mutex_lock(&jobacct_lock);
-	pack32((uint32_t)jobacct->rusage.ru_utime.tv_sec, buffer);
-	pack32((uint32_t)jobacct->rusage.ru_utime.tv_usec, buffer);
-	pack32((uint32_t)jobacct->rusage.ru_stime.tv_sec, buffer);
-	pack32((uint32_t)jobacct->rusage.ru_stime.tv_usec, buffer);
-	pack32((uint32_t)jobacct->rusage.ru_maxrss, buffer);
-	pack32((uint32_t)jobacct->rusage.ru_ixrss, buffer);
-	pack32((uint32_t)jobacct->rusage.ru_idrss, buffer);
-	pack32((uint32_t)jobacct->rusage.ru_isrss, buffer);
-	pack32((uint32_t)jobacct->rusage.ru_minflt, buffer);
-	pack32((uint32_t)jobacct->rusage.ru_majflt, buffer);
-	pack32((uint32_t)jobacct->rusage.ru_nswap, buffer);
-	pack32((uint32_t)jobacct->rusage.ru_inblock, buffer);
-	pack32((uint32_t)jobacct->rusage.ru_oublock, buffer);
-	pack32((uint32_t)jobacct->rusage.ru_msgsnd, buffer);
-	pack32((uint32_t)jobacct->rusage.ru_msgrcv, buffer);
-	pack32((uint32_t)jobacct->rusage.ru_nsignals, buffer);
-	pack32((uint32_t)jobacct->rusage.ru_nvcsw, buffer);
-	pack32((uint32_t)jobacct->rusage.ru_nivcsw, buffer);
+	pack32((uint32_t)jobacct->user_cpu_sec, buffer);
+	pack32((uint32_t)jobacct->user_cpu_usec, buffer);
+	pack32((uint32_t)jobacct->sys_cpu_sec, buffer);
+	pack32((uint32_t)jobacct->sys_cpu_usec, buffer);
 	pack32((uint32_t)jobacct->max_vsize, buffer);
 	pack32((uint32_t)jobacct->tot_vsize, buffer);
 	pack32((uint32_t)jobacct->max_rss, buffer);
@@ -498,41 +712,13 @@ extern int jobacct_common_unpack(struct jobacctinfo **jobacct, Buf buffer)
 	uint32_t uint32_tmp;
 	*jobacct = xmalloc(sizeof(struct jobacctinfo));
 	safe_unpack32(&uint32_tmp, buffer);
-	(*jobacct)->rusage.ru_utime.tv_sec = uint32_tmp;
+	(*jobacct)->user_cpu_sec = uint32_tmp;
 	safe_unpack32(&uint32_tmp, buffer);
-	(*jobacct)->rusage.ru_utime.tv_usec = uint32_tmp;
+	(*jobacct)->user_cpu_usec = uint32_tmp;
 	safe_unpack32(&uint32_tmp, buffer);
-	(*jobacct)->rusage.ru_stime.tv_sec = uint32_tmp;
+	(*jobacct)->sys_cpu_sec = uint32_tmp;
 	safe_unpack32(&uint32_tmp, buffer);
-	(*jobacct)->rusage.ru_stime.tv_usec = uint32_tmp;
-	safe_unpack32(&uint32_tmp, buffer);
-	(*jobacct)->rusage.ru_maxrss = uint32_tmp;
-	safe_unpack32(&uint32_tmp, buffer);
-	(*jobacct)->rusage.ru_ixrss = uint32_tmp;
-	safe_unpack32(&uint32_tmp, buffer);
-	(*jobacct)->rusage.ru_idrss = uint32_tmp;
-	safe_unpack32(&uint32_tmp, buffer);
-	(*jobacct)->rusage.ru_isrss = uint32_tmp;
-	safe_unpack32(&uint32_tmp, buffer);
-	(*jobacct)->rusage.ru_minflt = uint32_tmp;
-	safe_unpack32(&uint32_tmp, buffer);
-	(*jobacct)->rusage.ru_majflt = uint32_tmp;
-	safe_unpack32(&uint32_tmp, buffer);
-	(*jobacct)->rusage.ru_nswap = uint32_tmp;
-	safe_unpack32(&uint32_tmp, buffer);
-	(*jobacct)->rusage.ru_inblock = uint32_tmp;
-	safe_unpack32(&uint32_tmp, buffer);
-	(*jobacct)->rusage.ru_oublock = uint32_tmp;
-	safe_unpack32(&uint32_tmp, buffer);
-	(*jobacct)->rusage.ru_msgsnd = uint32_tmp;
-	safe_unpack32(&uint32_tmp, buffer);
-	(*jobacct)->rusage.ru_msgrcv = uint32_tmp;
-	safe_unpack32(&uint32_tmp, buffer);
-	(*jobacct)->rusage.ru_nsignals = uint32_tmp;
-	safe_unpack32(&uint32_tmp, buffer);
-	(*jobacct)->rusage.ru_nvcsw = uint32_tmp;
-	safe_unpack32(&uint32_tmp, buffer);
-	(*jobacct)->rusage.ru_nivcsw = uint32_tmp;
+	(*jobacct)->sys_cpu_usec = uint32_tmp;
 	safe_unpack32(&(*jobacct)->max_vsize, buffer);
 	safe_unpack32(&(*jobacct)->tot_vsize, buffer);
 	safe_unpack32(&(*jobacct)->max_rss, buffer);

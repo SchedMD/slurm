@@ -62,7 +62,7 @@
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
-#include "src/common/slurm_jobacct_storage.h"
+#include "src/common/slurm_accounting_storage.h"
 
 #include "src/slurmctld/agent.h"
 #include "src/slurmctld/node_scheduler.h"
@@ -211,7 +211,7 @@ extern void deallocate_nodes(struct job_record *job_ptr, bool timeout,
 	
 	/* log this in the accounting plugin since it was allocated
 	 * something */
-	jobacct_storage_g_job_complete(job_ptr);
+	jobacct_storage_g_job_complete(acct_db_conn, job_ptr);
 	
 	agent_args->msg_args = kill_job;
 	agent_queue_request(agent_args);
@@ -977,7 +977,7 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 	if (job_ptr->mail_type & MAIL_JOB_BEGIN)
 		mail_job_info(job_ptr, MAIL_JOB_BEGIN);
 
-	jobacct_storage_g_job_start(job_ptr);
+	jobacct_storage_g_job_start(acct_db_conn, job_ptr);
 
 	slurm_sched_newalloc(job_ptr);
 

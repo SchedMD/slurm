@@ -9,7 +9,8 @@ INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common
 pkglib_LTLIBRARIES = accounting_storage_mysql.la
 
 # Mysql storage plugin.
-accounting_storage_mysql_la_SOURCES = accounting_storage_mysql.c
+accounting_storage_mysql_la_SOURCES = accounting_storage_mysql.c \
+		mysql_jobacct_process.c mysql_jobacct_process.h 
 accounting_storage_mysql_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
 accounting_storage_mysql_la_CFLAGS = $(MYSQL_CFLAGS)
 accounting_storage_mysql_la_LIBADD = \

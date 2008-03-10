@@ -122,11 +122,12 @@ static void validate_and_set_defaults(slurm_ctl_conf_t *conf,
 
 s_p_options_t slurm_conf_options[] = {
 	{"AuthType", S_P_STRING},
-	{"AccountingStorageType", S_P_STRING},
 	{"AccountingStorageHost", S_P_STRING},
-	{"AccountingStorageUser", S_P_STRING},
+	{"AccountingStorageLoc", S_P_STRING},
 	{"AccountingStoragePass", S_P_STRING},
-	{"AccountingStoragePort", S_P_UINT32},	
+	{"AccountingStoragePort", S_P_UINT32},
+	{"AccountingStorageType", S_P_STRING},
+	{"AccountingStorageUser", S_P_STRING},
 	{"CheckpointType", S_P_STRING},
 	{"CacheGroups", S_P_UINT16},
 	{"BackupAddr", S_P_STRING},
@@ -137,6 +138,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"CryptoType", S_P_STRING},
 	{"DefaultStorageType", S_P_STRING},
 	{"DefaultStorageHost", S_P_STRING},
+	{"DefaultStorageLoc", S_P_STRING},
 	{"DefaultStorageUser", S_P_STRING},
 	{"DefaultStoragePass", S_P_STRING},
 	{"DefaultStoragePort", S_P_UINT32},	
@@ -212,9 +214,6 @@ s_p_options_t slurm_conf_options[] = {
 	{"SlurmdPort", S_P_UINT32},
 	{"SlurmdSpoolDir", S_P_STRING},
 	{"SlurmdTimeout", S_P_UINT16},
-	{"SlurmDbdAddr", S_P_STRING},
-	{"SlurmDbdAuthInfo", S_P_STRING},
-	{"SlurmDbdPort", S_P_UINT16},
 	{"SrunEpilog", S_P_STRING},
 	{"SrunProlog", S_P_STRING},
 	{"StateSaveLocation", S_P_STRING},
@@ -1065,6 +1064,7 @@ extern void
 free_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr, bool purge_node_hash)
 {
 	xfree (ctl_conf_ptr->accounting_storage_host);
+	xfree (ctl_conf_ptr->accounting_storage_loc);
 	xfree (ctl_conf_ptr->accounting_storage_pass);
 	xfree (ctl_conf_ptr->accounting_storage_type);
 	xfree (ctl_conf_ptr->accounting_storage_user);
@@ -1079,11 +1079,6 @@ free_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr, bool purge_node_hash)
 	xfree (ctl_conf_ptr->epilog);
 	xfree (ctl_conf_ptr->health_check_program);
 	xfree (ctl_conf_ptr->job_acct_gather_type);
-	xfree (ctl_conf_ptr->job_acct_storage_host);
-	xfree (ctl_conf_ptr->job_acct_storage_loc);
-	xfree (ctl_conf_ptr->job_acct_storage_pass);
-	xfree (ctl_conf_ptr->job_acct_storage_type);
-	xfree (ctl_conf_ptr->job_acct_storage_user);
 	xfree (ctl_conf_ptr->job_comp_host);
 	xfree (ctl_conf_ptr->job_comp_loc);
 	xfree (ctl_conf_ptr->job_comp_pass);
@@ -1111,8 +1106,6 @@ free_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr, bool purge_node_hash)
 	xfree (ctl_conf_ptr->slurmd_logfile);
 	xfree (ctl_conf_ptr->slurmd_pidfile);
 	xfree (ctl_conf_ptr->slurmd_spooldir);
-	xfree (ctl_conf_ptr->slurmdbd_addr);
-	xfree (ctl_conf_ptr->slurmdbd_auth_info);
 	xfree (ctl_conf_ptr->srun_epilog);
 	xfree (ctl_conf_ptr->srun_prolog);
 	xfree (ctl_conf_ptr->state_save_location);
@@ -1142,6 +1135,7 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	ctl_conf_ptr->last_update		= time(NULL);
 	ctl_conf_ptr->cache_groups		= (uint16_t) NO_VAL;
 	xfree (ctl_conf_ptr->accounting_storage_host);
+	xfree (ctl_conf_ptr->accounting_storage_loc);
 	xfree (ctl_conf_ptr->accounting_storage_pass);
 	ctl_conf_ptr->accounting_storage_port             = 0;
 	xfree (ctl_conf_ptr->accounting_storage_type);
@@ -1166,13 +1160,6 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	ctl_conf_ptr->inactive_limit		= (uint16_t) NO_VAL;
 	xfree (ctl_conf_ptr->job_acct_gather_type);
 	ctl_conf_ptr->job_acct_gather_freq             = 0;
-	xfree (ctl_conf_ptr->job_acct_storage_host);
-	xfree (ctl_conf_ptr->job_acct_storage_loc);
-	xfree (ctl_conf_ptr->job_acct_storage_pass);
-	ctl_conf_ptr->job_acct_storage_port             = 0;
-	xfree (ctl_conf_ptr->job_acct_storage_type);
-	xfree (ctl_conf_ptr->job_acct_storage_user);
-	xfree (ctl_conf_ptr->job_comp_host);
 	xfree (ctl_conf_ptr->job_comp_loc);
 	xfree (ctl_conf_ptr->job_comp_pass);
 	ctl_conf_ptr->job_comp_port             = 0;
@@ -1223,9 +1210,6 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
  	ctl_conf_ptr->slurmd_port		= (uint32_t) NO_VAL;
 	xfree (ctl_conf_ptr->slurmd_spooldir);
 	ctl_conf_ptr->slurmd_timeout		= (uint16_t) NO_VAL;
-	xfree (ctl_conf_ptr->slurmdbd_addr);
-	xfree (ctl_conf_ptr->slurmdbd_auth_info);
-	ctl_conf_ptr->slurmdbd_port		= (uint16_t) NO_VAL;
 	xfree (ctl_conf_ptr->srun_prolog);
 	xfree (ctl_conf_ptr->srun_epilog);
 	xfree (ctl_conf_ptr->state_save_location);
@@ -1467,6 +1451,7 @@ validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	bool truth;
 	char *default_storage_type = NULL, *default_storage_host = NULL;
 	char *default_storage_user = NULL, *default_storage_pass = NULL;
+	char *default_storage_loc = NULL;
 	uint32_t default_storage_port = 0;
 		
 	if (s_p_get_string(&conf->backup_controller, "BackupController",
@@ -1514,6 +1499,7 @@ validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	s_p_get_string(&default_storage_host, "DefaultStorageHost", hashtbl);
 	s_p_get_string(&default_storage_user, "DefaultStorageUser", hashtbl);
 	s_p_get_string(&default_storage_pass, "DefaultStoragePass", hashtbl);
+	s_p_get_string(&default_storage_loc, "DefaultStorageLoc", hashtbl);
 	s_p_get_uint32(&default_storage_port, "DefaultStoragePort", hashtbl);
 
 	if (!s_p_get_string(&conf->job_credential_private_key,
@@ -1595,71 +1581,6 @@ validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 		conf->job_acct_gather_type =
 			xstrdup(DEFAULT_JOB_ACCT_GATHER_TYPE);
 
-	/* JobAcctStorageLoc replaces JobAcctLogFile since it now represents
-	 * the database name also depending on the storage type you
-	 * use so we still check JobAcctLogFile for the same thing
-	 */
-	if (!s_p_get_string(&conf->job_acct_storage_loc,
-			    "JobAcctStorageLoc", hashtbl)
-	    && !s_p_get_string(&conf->job_acct_storage_loc,
-			       "JobAcctLogFile", hashtbl))
-		conf->job_acct_storage_loc = 
-			xstrdup(DEFAULT_JOB_ACCT_STORAGE_LOC);
-	
-	if (!s_p_get_string(&conf->job_acct_storage_type, "JobAcctStorageType",
-			    hashtbl)) {
-		/* if we aren't gathering then set the storage type to
-		 * none else use filetxt if they didn't say anything
-		 */
-		if(!strcmp(conf->job_acct_gather_type,
-			   DEFAULT_JOB_ACCT_GATHER_TYPE)) {
-			conf->job_acct_storage_type =
-				xstrdup(JOB_ACCT_STORAGE_TYPE_NONE);
-		} else {
-			if(default_storage_type)
-				conf->job_acct_storage_type =
-					xstrdup_printf("jobacct_storage/%s",
-						       default_storage_type);
-			else
-				conf->job_acct_storage_type =
-					xstrdup(DEFAULT_JOB_ACCT_STORAGE_TYPE);
-		}
-	}
-	if (!s_p_get_string(&conf->job_acct_storage_host, "JobAcctStorageHost",
-			    hashtbl)) {
-		if(default_storage_host)
-			conf->job_acct_storage_host =
-				xstrdup(default_storage_host);
-		else
-			conf->job_acct_storage_host =
-				xstrdup(DEFAULT_STORAGE_HOST);
-	}
-	if (!s_p_get_string(&conf->job_acct_storage_user, "JobAcctStorageUser",
-			    hashtbl)) {
-		if(default_storage_user)
-			conf->job_acct_storage_user =
-				xstrdup(default_storage_user);
-		else
-			conf->job_acct_storage_user =
-				xstrdup(DEFAULT_STORAGE_USER);
-	}
-	if (!s_p_get_string(&conf->job_acct_storage_pass, "JobAcctStoragePass",
-			    hashtbl)) {
-		if(default_storage_pass)
-			conf->job_acct_storage_pass =
-				xstrdup(default_storage_pass);
-		else
-			conf->job_acct_storage_pass =
-				xstrdup(DEFAULT_STORAGE_PASS);
-	}
-	if (!s_p_get_uint32(&conf->job_acct_storage_port, "JobAcctStoragePort",
-			    hashtbl)) {
-		if(default_storage_port)
-			conf->job_acct_storage_port = default_storage_port;
-		else
-			conf->job_acct_storage_port =
-				DEFAULT_STORAGE_PORT;
-	}
 	if (!s_p_get_string(&conf->job_comp_type, "JobCompType", hashtbl)) {
 		if(default_storage_type)
 			conf->job_comp_type =
@@ -1668,8 +1589,12 @@ validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 		else
 			conf->job_comp_type = xstrdup(DEFAULT_JOB_COMP_TYPE);
 	}
-	if (!s_p_get_string(&conf->job_comp_loc, "JobCompLoc", hashtbl)) 
-		conf->job_comp_loc = xstrdup(DEFAULT_JOB_COMP_LOC);
+	if (!s_p_get_string(&conf->job_comp_loc, "JobCompLoc", hashtbl)) {
+		if(default_storage_loc)
+			conf->job_comp_loc = xstrdup(default_storage_loc);
+		else
+			conf->job_comp_loc = xstrdup(DEFAULT_JOB_COMP_LOC);
+	}
 
 	if (!s_p_get_string(&conf->job_comp_host, "JobCompHost",
 			    hashtbl)) {
@@ -1762,6 +1687,23 @@ validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 			conf->accounting_storage_host =
 				xstrdup(DEFAULT_STORAGE_HOST);
 	}
+
+	/* AccountingStorageLoc replaces JobAcctLogFile since it now represents
+	 * the database name also depending on the storage type you
+	 * use so we still check JobAcctLogFile for the same thing
+	 */
+	if (!s_p_get_string(&conf->accounting_storage_loc,
+			    "AccountingStorageLoc", hashtbl)
+		&& !s_p_get_string(&conf->accounting_storage_loc,
+			       "JobAcctLogFile", hashtbl)) {
+		if(default_storage_loc)
+			conf->accounting_storage_loc =
+				xstrdup(default_storage_loc);
+		else
+			conf->accounting_storage_loc =
+				xstrdup(DEFAULT_STORAGE_LOC);
+	}
+
 	if (!s_p_get_string(&conf->accounting_storage_user,
 			    "AccountingStorageUser", hashtbl)) {
 		if(default_storage_user)
@@ -1934,11 +1876,6 @@ validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	if (!s_p_get_uint16(&conf->slurmd_timeout, "SlurmdTimeout", hashtbl))
 		conf->slurmd_timeout = DEFAULT_SLURMD_TIMEOUT;
 
-	s_p_get_string(&conf->slurmdbd_addr, "SlurmDbdAddr", hashtbl);
-	s_p_get_string(&conf->slurmdbd_auth_info, "SlurmDbdAuthInfo", hashtbl);
-	if (!s_p_get_uint16(&conf->slurmdbd_port, "SlurmDbdPort", hashtbl))
-		conf->slurmdbd_port = SLURMDBD_PORT;
-
 	s_p_get_string(&conf->srun_prolog, "SrunProlog", hashtbl);
 	s_p_get_string(&conf->srun_epilog, "SrunEpilog", hashtbl);
 
@@ -2003,6 +1940,7 @@ validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 			    "UnkillableStepTimeout", hashtbl))
 		conf->unkillable_timeout = DEFAULT_UNKILLABLE_TIMEOUT;
 	xfree(default_storage_type);
+	xfree(default_storage_loc);
 	xfree(default_storage_host);
 	xfree(default_storage_user);
 	xfree(default_storage_pass);

@@ -377,6 +377,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man8/*
 %dir %{_sysconfdir}
 %dir %{_libdir}/slurm
+%{_libdir}/slurm/accounting_storage_filetxt.so
 %{_libdir}/slurm/accounting_storage_gold.so
 %{_libdir}/slurm/accounting_storage_mysql.so
 %{_libdir}/slurm/accounting_storage_none.so
@@ -388,12 +389,6 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/slurm/jobacct_gather_aix.so
 %{_libdir}/slurm/jobacct_gather_linux.so
 %{_libdir}/slurm/jobacct_gather_none.so
-%{_libdir}/slurm/jobacct_storage_filetxt.so
-%{_libdir}/slurm/jobacct_storage_gold.so
-%{_libdir}/slurm/jobacct_storage_mysql.so
-%{_libdir}/slurm/jobacct_storage_none.so
-%{_libdir}/slurm/jobacct_storage_pgsql.so
-%{_libdir}/slurm/jobacct_storage_slurmdbd.so
 %{_libdir}/slurm/jobcomp_none.so
 %{_libdir}/slurm/jobcomp_filetxt.so
 %{_libdir}/slurm/jobcomp_mysql.so

@@ -202,6 +202,8 @@ static slurm_errtab_t slurm_errtab[] = {
 	  "Invalid bank account specified"			},
 	{ ESLURM_INVALID_TASK_MEMORY,
 	  "Memory required by task is not available"		},
+	{ ESLURM_INVALID_ACCOUNT,
+	  "Job has invalid account"				},
 
 	/* slurmd error codes */
 

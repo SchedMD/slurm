@@ -65,6 +65,8 @@
 #include "src/common/slurmdbd_defs.h"
 #include "src/common/slurm_auth.h"
 #include "src/common/slurm_protocol_api.h"
+#include "src/common/slurm_accounting_storage.h"
+#include "src/common/slurm_jobacct_gather.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xsignal.h"
 #include "src/common/xstring.h"
@@ -276,13 +278,22 @@ extern int slurm_send_recv_slurmdbd_msg(slurmdbd_msg_t *req,
 			else
 				rc = SLURM_SUCCESS;
 			break;
+		case DBD_JOB_START_RC:
+			if (slurm_dbd_unpack_job_start_rc_msg(
+						(dbd_job_start_rc_msg_t **)
+						&resp->data, buffer))
+				rc = SLURM_ERROR;
+			else
+				rc = SLURM_SUCCESS;
+			break;
 		default:
 			error("slurmdbd: bad message type %d", resp->msg_type);
+			rc = SLURM_ERROR;
 	}
 
 	free_buf(buffer);
 	slurm_mutex_unlock(&slurmdbd_lock);
-	return SLURM_SUCCESS;
+	return rc;
 
  unpack_error:
 	free_buf(buffer);
@@ -356,9 +367,10 @@ extern int slurm_send_slurmdbd_msg(slurmdbd_msg_t *req)
 	}
 	if (cnt == (MAX_AGENT_QUEUE - 1))
 		cnt -= _purge_job_start_req();
-	if (cnt < MAX_AGENT_QUEUE)
-		list_enqueue(agent_list, buffer);
-	else {
+	if (cnt < MAX_AGENT_QUEUE) {
+		if (list_enqueue(agent_list, buffer) == NULL)
+			fatal("list_enqueue: memory allocation failure");
+	} else {
 		error("slurmdbd: agent queue is full, discarding request");
 		rc = SLURM_ERROR;
 	}
@@ -372,26 +384,26 @@ static void _open_slurmdbd_fd(void)
 {
 	slurm_addr dbd_addr;
 	uint16_t slurmdbd_port;
-	char *   slurmdbd_addr;
+	char *   slurmdbd_host;
 
 	if (slurmdbd_fd >= 0) {
 		debug("Attempt to re-open slurmdbd socket");
 		return;
 	}
 
-	slurmdbd_addr = slurm_get_slurmdbd_addr();
-	slurmdbd_port = slurm_get_slurmdbd_port();
-	if ((slurmdbd_addr == NULL) || (slurmdbd_port == 0)) {
+	slurmdbd_host = slurm_get_accounting_storage_host();
+	slurmdbd_port = slurm_get_accounting_storage_port();
+	if ((slurmdbd_host == NULL) || (slurmdbd_port == 0)) {
 		error("Invalid SlurmDbd address %s:%u",
-			slurmdbd_addr, slurmdbd_port);
-		xfree(slurmdbd_addr);
+			slurmdbd_host, slurmdbd_port);
+		xfree(slurmdbd_host);
 		return;
 	}
 
-	slurm_set_addr(&dbd_addr, slurmdbd_port, slurmdbd_addr);
+	slurm_set_addr(&dbd_addr, slurmdbd_port, slurmdbd_host);
 	if (dbd_addr.sin_port == 0)
-		error("Unable to locate SlurmDBD host %s:%s", 
-		      slurmdbd_addr, slurmdbd_addr);
+		error("Unable to locate SlurmDBD host %s:%u", 
+		      slurmdbd_host, slurmdbd_port);
 	else {
 		slurmdbd_fd = slurm_open_msg_conn(&dbd_addr);
 		if (slurmdbd_fd < 0)
@@ -404,7 +416,7 @@ static void _open_slurmdbd_fd(void)
 				debug("slurmdbd: Sent DbdInit msg");
 		}
 	}
-	xfree(slurmdbd_addr);
+	xfree(slurmdbd_host);
 }
 
 static int _send_init_msg(void)
@@ -493,6 +505,7 @@ static int _get_return_code(void)
 	Buf buffer;
 	uint16_t msg_type;
 	dbd_rc_msg_t *msg;
+	dbd_job_start_rc_msg_t *js_msg;
 	int rc = SLURM_ERROR;
 
 	buffer = _recv_msg();
@@ -500,15 +513,29 @@ static int _get_return_code(void)
 		return rc;
 
 	safe_unpack16(&msg_type, buffer);
-	if (msg_type != DBD_RC)
+	switch(msg_type) {
+	case DBD_JOB_START_RC:
+		if (slurm_dbd_unpack_job_start_rc_msg(&js_msg, buffer)
+		    == SLURM_SUCCESS) {
+			rc = js_msg->return_code;
+			slurm_dbd_free_job_start_rc_msg(js_msg);
+			if (rc != SLURM_SUCCESS)
+				error("slurmdbd: DBD_JOB_START_RC is %d", rc);
+		} else
+			error("slurmdbd: unpack message error");
+		break;
+	case DBD_RC:
+		if (slurm_dbd_unpack_rc_msg(&msg, buffer) == SLURM_SUCCESS) {
+			rc = msg->return_code;
+			slurm_dbd_free_rc_msg(msg);
+			if (rc != SLURM_SUCCESS)
+				error("slurmdbd: DBD_RC is %d", rc);
+		} else
+			error("slurmdbd: unpack message error");
+		break;
+	default:
 		error("slurmdbd: bad message type %d != DBD_RC", msg_type);
-	else if (slurm_dbd_unpack_rc_msg(&msg, buffer) == SLURM_SUCCESS) {
-		rc = msg->return_code;
-		slurm_dbd_free_rc_msg(msg);
-		if (rc != SLURM_SUCCESS)
-			error("slurmdbd: DBD_RC is %d", rc);
-	} else
-		error("slurmdbd: unpack message error");
+	}
 
  unpack_error:
 	free_buf(buffer);
@@ -821,7 +848,7 @@ static void _save_dbd_state(void)
 
 	dbd_fname = slurm_get_state_save_location();
 	xstrcat(dbd_fname, "/dbd.messages");
-	fd = open(dbd_fname, O_WRONLY | O_CREAT | O_TRUNC);
+	fd = open(dbd_fname, O_WRONLY | O_CREAT | O_TRUNC, 0600);
 	if (fd < 0) {
 		error("slurmdbd: Creating state save file %s", dbd_fname);
 	} else if (agent_list) {
@@ -834,8 +861,7 @@ static void _save_dbd_state(void)
 		}
 	}
 	if (fd >= 0) {
-		if (wrote)
-			info("slurmdbd: saved %d pending RPCs", wrote);
+		verbose("slurmdbd: saved %d pending RPCs", wrote);
 		(void) close(fd);
 	}
 	xfree(dbd_fname);
@@ -863,8 +889,7 @@ static void _load_dbd_state(void)
 		}
 	}
 	if (fd >= 0) {
-		if (recovered)
-			info("slurmdbd: recovered %d pending RPCs", recovered);
+		verbose("slurmdbd: recovered %d pending RPCs", recovered);
 		(void) close(fd);
 		(void) unlink(dbd_fname);	/* clear save state */
 	}
@@ -934,12 +959,12 @@ static Buf _load_dbd_rec(int fd)
 		fatal("slurmdbd: create_buf malloc failure");
 	set_buf_offset(buffer, msg_size);
 	msg = get_buf_data(buffer);
-	rd_size = 0;
-	while (rd_size < msg_size) {
-		rd_size = read(fd, msg + rd_size, msg_size);
+	size = msg_size;
+	while (size) {
+		rd_size = read(fd, msg, size);
 		if (rd_size > 0) {
 			msg += rd_size;
-			msg_size -= rd_size;
+			size -= rd_size;
 		} else if ((rd_size == -1) && (errno == EINTR))
 			continue;
 		else {
@@ -1007,7 +1032,12 @@ void inline slurm_dbd_free_cluster_procs_msg(dbd_cluster_procs_msg_t *msg)
 void inline slurm_dbd_free_get_jobs_msg(dbd_get_jobs_msg_t *msg)
 {
 	if (msg) {
-		xfree(msg->job_ids);
+		xfree(msg->cluster_name);
+		if(msg->selected_steps)
+			list_destroy(msg->selected_steps);
+		if(msg->selected_parts)
+			list_destroy(msg->selected_parts);
+		xfree(msg->user);
 		xfree(msg);
 	}
 }
@@ -1015,7 +1045,8 @@ void inline slurm_dbd_free_get_jobs_msg(dbd_get_jobs_msg_t *msg)
 void inline slurm_dbd_free_got_jobs_msg(dbd_got_jobs_msg_t *msg)
 {
 	if (msg) {
-		xfree(msg->job_ids);
+		if(msg->jobs)
+			list_destroy(msg->jobs);
 		xfree(msg);
 	}
 }
@@ -1028,8 +1059,6 @@ void inline slurm_dbd_free_init_msg(dbd_init_msg_t *msg)
 void inline slurm_dbd_free_job_complete_msg(dbd_job_comp_msg_t *msg)
 {
 	if (msg) {
-		xfree(msg->account);
-		xfree(msg->name);
 		xfree(msg->nodes);
 		xfree(msg);
 	}
@@ -1038,11 +1067,16 @@ void inline slurm_dbd_free_job_complete_msg(dbd_job_comp_msg_t *msg)
 void inline slurm_dbd_free_job_start_msg(dbd_job_start_msg_t *msg)
 {
 	if (msg) {
-		xfree(msg->account);
+		xfree(msg->block_id);
 		xfree(msg->name);
 		xfree(msg->nodes);
 		xfree(msg);
 	}
+}
+
+void inline slurm_dbd_free_job_start_rc_msg(dbd_job_start_rc_msg_t *msg)
+{
+	xfree(msg);
 }
 
 void inline slurm_dbd_free_job_suspend_msg(dbd_job_suspend_msg_t *msg)
@@ -1058,6 +1092,7 @@ void inline slurm_dbd_free_rc_msg(dbd_rc_msg_t *msg)
 void inline slurm_dbd_free_node_state_msg(dbd_node_state_msg_t *msg)
 {
 	if (msg) {
+		xfree(msg->cluster_name);
 		xfree(msg->hostlist);
 		xfree(msg->reason);
 		xfree(msg);
@@ -1067,8 +1102,7 @@ void inline slurm_dbd_free_node_state_msg(dbd_node_state_msg_t *msg)
 void inline slurm_dbd_free_step_complete_msg(dbd_step_comp_msg_t *msg)
 {
 	if (msg) {
-		xfree(msg->name);
-		xfree(msg->nodes);
+		xfree(msg->jobacct);
 		xfree(msg);
 	}
 }
@@ -1112,68 +1146,124 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-void inline 
-slurm_dbd_pack_get_jobs_msg(dbd_get_jobs_msg_t *msg, Buf buffer)
+void inline slurm_dbd_pack_get_jobs_msg(dbd_get_jobs_msg_t *msg, Buf buffer)
 {
-	int i;
+	uint32_t i = 0;
+	ListIterator itr = NULL;
+	jobacct_selected_step_t *job = NULL;
+	char *part = NULL;
 
-	pack32(msg->job_count, buffer);
-	for (i=0; i<msg->job_count; i++)
-		pack32(msg->job_ids[i], buffer);
+	packstr(msg->cluster_name, buffer);
+
+	pack32(msg->gid, buffer);
+
+	if(msg->selected_steps) 
+		i = list_count(msg->selected_steps);
+			
+	pack32(i, buffer);
+	if(i) {
+		itr = list_iterator_create(msg->selected_steps);
+		while((job = list_next(itr))) {
+			pack_jobacct_selected_step(job, buffer);
+		}
+		list_iterator_destroy(itr);
+	}
+
+	i = 0;
+	if(msg->selected_parts) 
+		i = list_count(msg->selected_parts);
+			
+	pack32(i, buffer);
+	if(i) {
+		itr = list_iterator_create(msg->selected_parts);
+		while((part = list_next(itr))) {
+			packstr(part, buffer);
+		}
+		list_iterator_destroy(itr);
+	}
+	packstr(msg->user, buffer);
 }
 
-int inline 
-slurm_dbd_unpack_get_jobs_msg(dbd_get_jobs_msg_t **msg, Buf buffer)
+int inline slurm_dbd_unpack_get_jobs_msg(dbd_get_jobs_msg_t **msg, Buf buffer)
 {
 	int i;
+	uint32_t count = 0;
+	uint32_t uint32_tmp;
 	dbd_get_jobs_msg_t *msg_ptr;
+	jobacct_selected_step_t *job = NULL;
+	char *part = NULL;
 
 	msg_ptr = xmalloc(sizeof(dbd_get_jobs_msg_t));
 	*msg = msg_ptr;
-	safe_unpack32(&msg_ptr->job_count, buffer);
-	if (msg_ptr->job_count > 16384)
-		goto unpack_error;
-	msg_ptr->job_ids = xmalloc(sizeof(uint32_t) * msg_ptr->job_count);
-	for (i=0; i<msg_ptr->job_count; i++)
-		safe_unpack32(&msg_ptr->job_ids[i], buffer);
+
+	safe_unpackstr_xmalloc(&msg_ptr->cluster_name, &uint32_tmp, buffer);
+
+	safe_unpack32(&msg_ptr->gid, buffer);
+
+	safe_unpack32(&count, buffer);
+	msg_ptr->selected_steps = list_create(destroy_jobacct_selected_step);
+	for(i=0; i<count; i++) {
+		unpack_jobacct_selected_step(&job, buffer);
+		list_append(msg_ptr->selected_steps, job);
+	}
+
+	safe_unpack32(&count, buffer);
+	msg_ptr->selected_parts = list_create(slurm_destroy_char);
+	for(i=0; i<count; i++) {
+		safe_unpackstr_xmalloc(&part, &uint32_tmp, buffer);
+		list_append(msg_ptr->selected_parts, part);
+	}
+
+	safe_unpackstr_xmalloc(&msg_ptr->user, &uint32_tmp, buffer);
+
 	return SLURM_SUCCESS;
 
 unpack_error:
-	xfree(msg_ptr->job_ids);
-	xfree(msg_ptr);
+	slurm_dbd_free_get_jobs_msg(msg_ptr);
 	*msg = NULL;
 	return SLURM_ERROR;
 }
 
-void inline 
-slurm_dbd_pack_got_jobs_msg(dbd_got_jobs_msg_t *msg, Buf buffer)
+void inline slurm_dbd_pack_got_jobs_msg(dbd_got_jobs_msg_t *msg, Buf buffer)
 {
-	int i;
+	uint32_t count = 0;
+	ListIterator itr = NULL;
+	jobacct_job_rec_t *job = NULL;
 
-	pack32(msg->job_count, buffer);
-	for (i=0; i<msg->job_count; i++)
-		pack32(msg->job_ids[i], buffer);
+	if(msg->jobs) 
+		count = list_count(msg->jobs);
+			
+	pack32(count, buffer);
+	if(count) {
+		itr = list_iterator_create(msg->jobs);
+		while((job = list_next(itr))) {
+			pack_jobacct_job_rec(job, buffer);
+		}
+		list_iterator_destroy(itr);
+	}
 }
 
-int inline 
-slurm_dbd_unpack_got_jobs_msg(dbd_got_jobs_msg_t **msg, Buf buffer)
+int inline slurm_dbd_unpack_got_jobs_msg(dbd_got_jobs_msg_t **msg, Buf buffer)
 {
 	int i;
-	dbd_got_jobs_msg_t *msg_ptr;
+	uint32_t count;
+	dbd_got_jobs_msg_t *msg_ptr = NULL;
+	jobacct_job_rec_t *job = NULL;
 
 	msg_ptr = xmalloc(sizeof(dbd_got_jobs_msg_t));
 	*msg = msg_ptr;
-	safe_unpack32(&msg_ptr->job_count, buffer);
-	if (msg_ptr->job_count > 16384)
-		goto unpack_error;
-	msg_ptr->job_ids = xmalloc(sizeof(uint32_t) * msg_ptr->job_count);
-	for (i=0; i<msg_ptr->job_count; i++)
-		safe_unpack32(&msg_ptr->job_ids[i], buffer);
+	safe_unpack32(&count, buffer);
+	msg_ptr->jobs = list_create(destroy_jobacct_job_rec);
+	for(i=0; i<count; i++) {
+		unpack_jobacct_job_rec(&job, buffer);
+		list_append(msg_ptr->jobs, job);
+	}
+	
 	return SLURM_SUCCESS;
 
 unpack_error:
-	xfree(msg_ptr->job_ids);
-	xfree(msg_ptr);
+	if(msg_ptr->jobs)
+		list_destroy(msg_ptr->jobs);
 	*msg = NULL;
 	return SLURM_ERROR;
 }
@@ -1194,7 +1284,7 @@ slurm_dbd_pack_init_msg(dbd_init_msg_t *msg, Buf buffer, char *auth_info)
 		(void) g_slurm_auth_destroy(auth_cred);
 		if (rc) {
 			error("Packing authentication credential: %s",
-				g_slurm_auth_errstr(g_slurm_auth_errno(auth_cred)));
+			      g_slurm_auth_errstr(g_slurm_auth_errno(auth_cred)));
 		}
 	}
 
@@ -1227,16 +1317,15 @@ unpack_error:
 void inline 
 slurm_dbd_pack_job_complete_msg(dbd_job_comp_msg_t *msg, Buf buffer)
 {
-	packstr(msg->account, buffer);
+	pack32(msg->assoc_id, buffer);
+	pack32(msg->db_index, buffer);
 	pack_time(msg->end_time, buffer);
 	pack32(msg->exit_code, buffer);
 	pack32(msg->job_id, buffer);
 	pack16(msg->job_state, buffer);
-	packstr(msg->name, buffer);
 	packstr(msg->nodes, buffer);
-	pack32(msg->priority, buffer);
 	pack_time(msg->start_time, buffer);
-	pack32(msg->total_procs, buffer);
+	pack_time(msg->submit_time, buffer);
 }
 
 int inline 
@@ -1245,21 +1334,18 @@ slurm_dbd_unpack_job_complete_msg(dbd_job_comp_msg_t **msg, Buf buffer)
 	uint32_t uint32_tmp;
 	dbd_job_comp_msg_t *msg_ptr = xmalloc(sizeof(dbd_job_comp_msg_t));
 	*msg = msg_ptr;
-	safe_unpackstr_xmalloc(&msg_ptr->account, &uint32_tmp, buffer);
+	safe_unpack32(&msg_ptr->assoc_id, buffer);
+	safe_unpack32(&msg_ptr->db_index, buffer);
 	safe_unpack_time(&msg_ptr->end_time, buffer);
 	safe_unpack32(&msg_ptr->exit_code, buffer);
 	safe_unpack32(&msg_ptr->job_id, buffer);
 	safe_unpack16(&msg_ptr->job_state, buffer);
-	safe_unpackstr_xmalloc(&msg_ptr->name, &uint32_tmp, buffer);
 	safe_unpackstr_xmalloc(&msg_ptr->nodes, &uint32_tmp, buffer);
-	safe_unpack32(&msg_ptr->priority, buffer);
 	safe_unpack_time(&msg_ptr->start_time, buffer);
-	safe_unpack32(&msg_ptr->total_procs, buffer);
+	safe_unpack_time(&msg_ptr->submit_time, buffer);
 	return SLURM_SUCCESS;
 
 unpack_error:
-	xfree(msg_ptr->account);
-	xfree(msg_ptr->name);
 	xfree(msg_ptr->nodes);
 	xfree(msg_ptr);
 	*msg = NULL;
@@ -1269,14 +1355,20 @@ unpack_error:
 void inline 
 slurm_dbd_pack_job_start_msg(dbd_job_start_msg_t *msg, Buf buffer)
 {
-	packstr(msg->account, buffer);
+	pack32(msg->alloc_cpus, buffer);
+	pack32(msg->assoc_id, buffer);
+	packstr(msg->block_id, buffer);
+	pack_time(msg->eligible_time, buffer);
+	pack32(msg->gid, buffer);
 	pack32(msg->job_id, buffer);
 	pack16(msg->job_state, buffer);
 	packstr(msg->name, buffer);
 	packstr(msg->nodes, buffer);
+	packstr(msg->partition, buffer);
 	pack32(msg->priority, buffer);
+	pack32(msg->req_cpus, buffer);
 	pack_time(msg->start_time, buffer);
-	pack32(msg->total_procs, buffer);
+	pack_time(msg->submit_time, buffer);
 }
 
 int inline 
@@ -1285,20 +1377,50 @@ slurm_dbd_unpack_job_start_msg(dbd_job_start_msg_t **msg, Buf buffer)
 	uint32_t uint32_tmp;
 	dbd_job_start_msg_t *msg_ptr = xmalloc(sizeof(dbd_job_start_msg_t));
 	*msg = msg_ptr;
-	safe_unpackstr_xmalloc(&msg_ptr->account, &uint32_tmp, buffer);
+	safe_unpack32(&msg_ptr->alloc_cpus, buffer);
+	safe_unpack32(&msg_ptr->assoc_id, buffer);
+	safe_unpackstr_xmalloc(&msg_ptr->block_id, &uint32_tmp, buffer);
+	safe_unpack_time(&msg_ptr->eligible_time, buffer);
+	safe_unpack32(&msg_ptr->gid, buffer);
 	safe_unpack32(&msg_ptr->job_id, buffer);
 	safe_unpack16(&msg_ptr->job_state, buffer);
 	safe_unpackstr_xmalloc(&msg_ptr->name, &uint32_tmp, buffer);
 	safe_unpackstr_xmalloc(&msg_ptr->nodes, &uint32_tmp, buffer);
+	safe_unpackstr_xmalloc(&msg_ptr->partition, &uint32_tmp, buffer);
 	safe_unpack32(&msg_ptr->priority, buffer);
+	safe_unpack32(&msg_ptr->req_cpus, buffer);
 	safe_unpack_time(&msg_ptr->start_time, buffer);
-	safe_unpack32(&msg_ptr->total_procs, buffer);
+	safe_unpack_time(&msg_ptr->submit_time, buffer);
 	return SLURM_SUCCESS;
 
 unpack_error:
-	xfree(msg_ptr->account);
+	xfree(msg_ptr->block_id);
 	xfree(msg_ptr->name);
 	xfree(msg_ptr->nodes);
+	xfree(msg_ptr->partition);
+	xfree(msg_ptr);
+	*msg = NULL;
+	return SLURM_ERROR;
+}
+
+void inline 
+slurm_dbd_pack_job_start_rc_msg(dbd_job_start_rc_msg_t *msg, Buf buffer)
+{
+	pack32(msg->db_index, buffer);
+	pack32(msg->return_code, buffer);
+}
+
+int inline 
+slurm_dbd_unpack_job_start_rc_msg(dbd_job_start_rc_msg_t **msg, Buf buffer)
+{
+	dbd_job_start_rc_msg_t *msg_ptr = 
+		xmalloc(sizeof(dbd_job_start_rc_msg_t));
+	*msg = msg_ptr;
+	safe_unpack32(&msg_ptr->db_index, buffer);
+	safe_unpack32(&msg_ptr->return_code, buffer);
+	return SLURM_SUCCESS;
+
+unpack_error:
 	xfree(msg_ptr);
 	*msg = NULL;
 	return SLURM_ERROR;
@@ -1307,8 +1429,11 @@ unpack_error:
 void inline 
 slurm_dbd_pack_job_suspend_msg(dbd_job_suspend_msg_t *msg, Buf buffer)
 {
+	pack32(msg->assoc_id, buffer);
+	pack32(msg->db_index, buffer);
 	pack32(msg->job_id, buffer);
 	pack16(msg->job_state, buffer);
+	pack_time(msg->submit_time, buffer);
 	pack_time(msg->suspend_time, buffer);
 }
 
@@ -1317,8 +1442,11 @@ slurm_dbd_unpack_job_suspend_msg(dbd_job_suspend_msg_t **msg, Buf buffer)
 {
 	dbd_job_suspend_msg_t *msg_ptr = xmalloc(sizeof(dbd_job_suspend_msg_t));
 	*msg = msg_ptr;
+	safe_unpack32(&msg_ptr->assoc_id, buffer);
+	safe_unpack32(&msg_ptr->db_index, buffer);
 	safe_unpack32(&msg_ptr->job_id, buffer);
 	safe_unpack16(&msg_ptr->job_state, buffer);
+	safe_unpack_time(&msg_ptr->submit_time, buffer);
 	safe_unpack_time(&msg_ptr->suspend_time, buffer);
 	return SLURM_SUCCESS;
 
@@ -1351,6 +1479,7 @@ unpack_error:
 void inline 
 slurm_dbd_pack_node_state_msg(dbd_node_state_msg_t *msg, Buf buffer)
 {
+	packstr(msg->cluster_name, buffer);
 	packstr(msg->hostlist, buffer);
 	packstr(msg->reason, buffer);
 	pack16(msg->new_state, buffer);
@@ -1365,6 +1494,7 @@ slurm_dbd_unpack_node_state_msg(dbd_node_state_msg_t **msg, Buf buffer)
 
 	msg_ptr = xmalloc(sizeof(dbd_node_state_msg_t));
 	*msg = msg_ptr;
+	safe_unpackstr_xmalloc(&msg_ptr->cluster_name, &uint32_tmp, buffer);
 	safe_unpackstr_xmalloc(&msg_ptr->hostlist, &uint32_tmp, buffer);
 	safe_unpackstr_xmalloc(&msg_ptr->reason,   &uint32_tmp, buffer);
 	safe_unpack16(&msg_ptr->new_state, buffer);
@@ -1372,6 +1502,7 @@ slurm_dbd_unpack_node_state_msg(dbd_node_state_msg_t **msg, Buf buffer)
 	return SLURM_SUCCESS;
 
 unpack_error:
+	xfree(msg_ptr->cluster_name);
 	xfree(msg_ptr->hostlist);
 	xfree(msg_ptr->reason);
 	xfree(msg_ptr);
@@ -1382,11 +1513,14 @@ unpack_error:
 void inline 
 slurm_dbd_pack_step_complete_msg(dbd_step_comp_msg_t *msg, Buf buffer)
 {
+	pack32(msg->assoc_id, buffer);
+	pack32(msg->db_index, buffer);
+	pack_time(msg->end_time, buffer);
+	jobacct_common_pack((struct jobacctinfo *)msg->jobacct, buffer);
 	pack32(msg->job_id, buffer);
-	packstr(msg->name, buffer);
-	packstr(msg->nodes, buffer);
 	pack32(msg->req_uid, buffer);
 	pack_time(msg->start_time, buffer);
+	pack_time(msg->job_submit_time, buffer);
 	pack32(msg->step_id, buffer);
 	pack32(msg->total_procs, buffer);
 }
@@ -1394,21 +1528,22 @@ slurm_dbd_pack_step_complete_msg(dbd_step_comp_msg_t *msg, Buf buffer)
 int inline 
 slurm_dbd_unpack_step_complete_msg(dbd_step_comp_msg_t **msg, Buf buffer)
 {
-	uint32_t uint32_tmp;
 	dbd_step_comp_msg_t *msg_ptr = xmalloc(sizeof(dbd_step_comp_msg_t));
 	*msg = msg_ptr;
+	safe_unpack32(&msg_ptr->assoc_id, buffer);
+	safe_unpack32(&msg_ptr->db_index, buffer);
+	safe_unpack_time(&msg_ptr->end_time, buffer);
+	jobacct_common_unpack((struct jobacctinfo **)&msg_ptr->jobacct, buffer);
 	safe_unpack32(&msg_ptr->job_id, buffer);
-	safe_unpackstr_xmalloc(&msg_ptr->name, &uint32_tmp, buffer);
-	safe_unpackstr_xmalloc(&msg_ptr->nodes, &uint32_tmp, buffer);
 	safe_unpack32(&msg_ptr->req_uid, buffer);
 	safe_unpack_time(&msg_ptr->start_time, buffer);
+	safe_unpack_time(&msg_ptr->job_submit_time, buffer);
 	safe_unpack32(&msg_ptr->step_id, buffer);
 	safe_unpack32(&msg_ptr->total_procs, buffer);
 	return SLURM_SUCCESS;
 
 unpack_error:
-	xfree(msg_ptr->name);
-	xfree(msg_ptr->nodes);
+	xfree(msg_ptr->jobacct);
 	xfree(msg_ptr);
 	*msg = NULL;
 	return SLURM_ERROR;
@@ -1417,10 +1552,11 @@ unpack_error:
 void inline 
 slurm_dbd_pack_step_start_msg(dbd_step_start_msg_t *msg, Buf buffer)
 {
+	pack32(msg->assoc_id, buffer);
+	pack32(msg->db_index, buffer);
 	pack32(msg->job_id, buffer);
 	packstr(msg->name, buffer);
 	packstr(msg->nodes, buffer);
-	pack32(msg->req_uid, buffer);
 	pack_time(msg->start_time, buffer);
 	pack32(msg->step_id, buffer);
 	pack32(msg->total_procs, buffer);
@@ -1432,10 +1568,11 @@ slurm_dbd_unpack_step_start_msg(dbd_step_start_msg_t **msg, Buf buffer)
 	uint32_t uint32_tmp;
 	dbd_step_start_msg_t *msg_ptr = xmalloc(sizeof(dbd_step_start_msg_t));
 	*msg = msg_ptr;
+	safe_unpack32(&msg_ptr->assoc_id, buffer);
+	safe_unpack32(&msg_ptr->db_index, buffer);
 	safe_unpack32(&msg_ptr->job_id, buffer);
 	safe_unpackstr_xmalloc(&msg_ptr->name, &uint32_tmp, buffer);
 	safe_unpackstr_xmalloc(&msg_ptr->nodes, &uint32_tmp, buffer);
-	safe_unpack32(&msg_ptr->req_uid, buffer);
 	safe_unpack_time(&msg_ptr->start_time, buffer);
 	safe_unpack32(&msg_ptr->step_id, buffer);
 	safe_unpack32(&msg_ptr->total_procs, buffer);

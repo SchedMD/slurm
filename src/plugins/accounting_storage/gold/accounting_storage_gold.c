@@ -51,8 +51,10 @@
 
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmd/slurmd/slurmd.h"
+#include "src/slurmdbd/read_config.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_accounting_storage.h"
+#include "src/common/jobacct_common.h"
 
 #include "src/database/gold_interface.h"
 
@@ -89,10 +91,10 @@ const char plugin_name[] = "Accounting storage GOLD plugin";
 const char plugin_type[] = "accounting_storage/gold";
 const uint32_t plugin_version = 100;
 
-static char *cluster_name = NULL;
-static List gold_association_list = NULL;
+static List local_association_list = NULL;
 
-static void _destroy_char(void *object);
+static int _add_edit_job(struct job_record *job_ptr, gold_object_t action);
+static int _check_for_job(uint32_t jobid, time_t submit);
 static List _get_association_list_from_response(gold_response_t *gold_response);
 static int _get_cluster_accounting_list_from_response(
 	gold_response_t *gold_response, 
@@ -106,10 +108,159 @@ static List _get_cluster_list_from_response(gold_response_t *gold_response);
 static int _remove_association_accounting(List id_list);
 
 
-static void _destroy_char(void *object)
+static int _add_edit_job(struct job_record *job_ptr, gold_object_t action)
 {
-	char *tmp = (char *)object;
-	xfree(tmp);
+	gold_request_t *gold_request = create_gold_request(GOLD_OBJECT_JOB,
+							   action);
+	gold_response_t *gold_response = NULL;
+	char tmp_buff[50];
+	int rc = SLURM_ERROR;
+	char *jname = NULL;
+	int tmp = 0, i = 0;
+	char *nodes = "(null)";
+
+	if(!gold_request) 
+		return rc;
+
+	if (job_ptr->nodes && job_ptr->nodes[0])
+		nodes = job_ptr->nodes;
+	
+	
+//info("total procs is  %d", job_ptr->total_procs);
+	if(action == GOLD_ACTION_CREATE) {
+		if (job_ptr->name && (tmp = strlen(job_ptr->name))) {
+			jname = xmalloc(++tmp);
+			for (i=0; i<tmp; i++) {
+				if (isspace(job_ptr->name[i]))
+					jname[i]='_';
+				else
+					jname[i]=job_ptr->name[i];
+			}
+		} else
+			jname = xstrdup("allocation");
+		gold_request_add_assignment(gold_request, "JobName", jname);
+		xfree(jname);
+
+		gold_request_add_assignment(gold_request, "Partition",
+					    job_ptr->partition);
+		
+		snprintf(tmp_buff, sizeof(tmp_buff), "%u",
+			 job_ptr->total_procs);
+		gold_request_add_assignment(gold_request, "RequestedCPUCount",
+					    tmp_buff);
+		snprintf(tmp_buff, sizeof(tmp_buff), "%u",
+			 job_ptr->total_procs);
+		gold_request_add_assignment(gold_request, "AllocatedCPUCount",
+					    tmp_buff);
+		
+		snprintf(tmp_buff, sizeof(tmp_buff), "%u",
+			 (int)job_ptr->details->begin_time);
+		gold_request_add_assignment(gold_request, "EligibleTime",
+					    tmp_buff);
+		
+		snprintf(tmp_buff, sizeof(tmp_buff), "%u", job_ptr->job_id);
+		gold_request_add_assignment(gold_request, "JobId", tmp_buff);
+		
+		snprintf(tmp_buff, sizeof(tmp_buff), "%u",
+			 (int)job_ptr->details->submit_time);
+		gold_request_add_assignment(gold_request, "SubmitTime",
+					    tmp_buff);
+	} else if (action == GOLD_ACTION_MODIFY) {
+		snprintf(tmp_buff, sizeof(tmp_buff), "%u", job_ptr->job_id);
+		gold_request_add_condition(gold_request, "JobId", tmp_buff,
+					   GOLD_OPERATOR_NONE, 0);
+		
+		snprintf(tmp_buff, sizeof(tmp_buff), "%u",
+			 (int)job_ptr->details->submit_time);
+		gold_request_add_condition(gold_request, "SubmitTime",
+					   tmp_buff,
+					   GOLD_OPERATOR_NONE, 0);
+	} else {
+		destroy_gold_request(gold_request);
+		error("_add_edit_job: bad action given %d", action);		
+		return rc;
+	}
+
+	snprintf(tmp_buff, sizeof(tmp_buff), "%u", job_ptr->assoc_id);
+	gold_request_add_assignment(gold_request, "GoldAccountId", tmp_buff);
+
+	gold_request_add_assignment(gold_request, "NodeList", nodes);
+
+	if(job_ptr->job_state != JOB_RUNNING) {
+		snprintf(tmp_buff, sizeof(tmp_buff), "%u",
+			 (int)job_ptr->end_time);
+		gold_request_add_assignment(gold_request, "EndTime",
+					    tmp_buff);		
+		
+		snprintf(tmp_buff, sizeof(tmp_buff), "%u",
+			 (int)job_ptr->exit_code);
+		gold_request_add_assignment(gold_request, "ExitCode",
+					    tmp_buff);
+	}
+
+	snprintf(tmp_buff, sizeof(tmp_buff), "%u",
+		 (int)job_ptr->start_time);
+	gold_request_add_assignment(gold_request, "StartTime", tmp_buff);
+		
+	snprintf(tmp_buff, sizeof(tmp_buff), "%u",
+		 job_ptr->job_state & (~JOB_COMPLETING));
+	gold_request_add_assignment(gold_request, "State", tmp_buff);	
+
+	gold_response = get_gold_response(gold_request);	
+	destroy_gold_request(gold_request);
+
+	if(!gold_response) {
+		error("_add_edit_job: no response received");
+		return rc;
+	}
+
+	if(!gold_response->rc) 
+		rc = SLURM_SUCCESS;
+	else {
+		error("gold_response has non-zero rc(%d): %s",
+		      gold_response->rc,
+		      gold_response->message);
+		errno = gold_response->rc;
+	}
+	destroy_gold_response(gold_response);
+
+	return rc;
+}
+
+static int _check_for_job(uint32_t jobid, time_t submit) 
+{
+	gold_request_t *gold_request = create_gold_request(GOLD_OBJECT_JOB,
+							   GOLD_ACTION_QUERY);
+	gold_response_t *gold_response = NULL;
+	char tmp_buff[50];
+	int rc = 0;
+
+	if(!gold_request) 
+		return rc;
+
+	gold_request_add_selection(gold_request, "JobId");
+
+	snprintf(tmp_buff, sizeof(tmp_buff), "%u", jobid);
+	gold_request_add_condition(gold_request, "JobId", tmp_buff,
+				   GOLD_OPERATOR_NONE, 0);
+
+	snprintf(tmp_buff, sizeof(tmp_buff), "%u", (int)submit);
+	gold_request_add_condition(gold_request, "SubmitTime", tmp_buff,
+				   GOLD_OPERATOR_NONE, 0);
+
+	gold_response = get_gold_response(gold_request);
+	destroy_gold_request(gold_request);
+
+	if(!gold_response) {
+		error("_check_for_job: no response received");
+		return 0;
+	}
+
+	if(gold_response->entry_cnt > 0) 
+		rc = 1;
+	destroy_gold_response(gold_response);
+	
+	return rc;
 }
 
 static List _get_association_list_from_response(gold_response_t *gold_response)
@@ -154,7 +305,7 @@ static List _get_association_list_from_response(gold_response_t *gold_response)
 					atoi(name_val->value);
 			} else if(!strcmp(name_val->name, 
 					  "MaxProcSecondsPerJob")) {
-				acct_rec->max_cpu_seconds_per_job = 
+				acct_rec->max_cpu_secs_per_job = 
 					atoi(name_val->value);
 			} else if(!strcmp(name_val->name, 
 					  "User")) {
@@ -298,15 +449,8 @@ static List _get_user_list_from_response(gold_response_t *gold_response)
 		itr2 = list_iterator_create(resp_entry->name_val);
 		while((name_val = list_next(itr2))) {
 			if(!strcmp(name_val->name, "Name")) {
-				struct passwd *passwd_ptr = NULL;
 				user_rec->name = 
 					xstrdup(name_val->value);
-				passwd_ptr = getpwnam(user_rec->name);
-				if(passwd_ptr) {
-					user_rec->uid = passwd_ptr->pw_uid;
-					user_rec->gid = passwd_ptr->pw_gid;
-				}
-				
 			} else if(!strcmp(name_val->name, "Expedite")) {
 				user_rec->expedite = 
 					atoi(name_val->value)+1;
@@ -452,6 +596,7 @@ static int _remove_association_accounting(List id_list)
 		error("gold_response has non-zero rc(%d): %s",
 		      gold_response->rc,
 		      gold_response->message);
+		errno = gold_response->rc;
 		destroy_gold_request(gold_request);
 		destroy_gold_response(gold_response);
 		rc = SLURM_ERROR;
@@ -475,6 +620,7 @@ static int _remove_association_accounting(List id_list)
 		error("gold_response has non-zero rc(%d): %s",
 		      gold_response->rc,
 		      gold_response->message);
+		errno = gold_response->rc;
 		destroy_gold_request(gold_request);
 		destroy_gold_response(gold_response);
 		rc = SLURM_ERROR;
@@ -498,6 +644,7 @@ static int _remove_association_accounting(List id_list)
 		error("gold_response has non-zero rc(%d): %s",
 		      gold_response->rc,
 		      gold_response->message);
+		errno = gold_response->rc;
 		rc = SLURM_ERROR;
 	}
 
@@ -517,10 +664,6 @@ extern int init ( void )
 	char *host = NULL;
 	uint32_t port = 0;
 	struct	stat statbuf;
-
-	if(!(cluster_name = slurm_get_cluster_name())) 
-		fatal("To run acct_storage/gold you have to specify "
-		      "ClusterName in your slurm.conf");
 
 	if(!(keyfile = slurm_get_accounting_storage_pass()) 
 	   || strlen(keyfile) < 1) {
@@ -550,12 +693,11 @@ extern int init ( void )
 		       "gold using default %u", port);
 	}
 
-	debug2("connecting from %s to gold with keyfile='%s' for %s(%d)",
-	       cluster_name, keyfile, host, port);
+	debug2("connecting to gold with keyfile='%s' for %s(%d)",
+	       keyfile, host, port);
 
-	init_gold(cluster_name, keyfile, host, port);
+	init_gold(keyfile, host, port);
 
-	xfree(cluster_name);
 	xfree(keyfile);
 	xfree(host);
 
@@ -565,14 +707,14 @@ extern int init ( void )
 
 extern int fini ( void )
 {
-	xfree(cluster_name);
-	if(gold_association_list)
-		list_destroy(gold_association_list);
+	if(local_association_list)
+		list_destroy(local_association_list);
 	fini_gold();
 	return SLURM_SUCCESS;
 }
 
-extern int acct_storage_p_add_users(List user_list)
+extern int acct_storage_p_add_users(void *db_conn,
+				    List user_list)
 {
 	ListIterator itr = NULL;
 	int rc = SLURM_SUCCESS;
@@ -621,6 +763,7 @@ extern int acct_storage_p_add_users(List user_list)
 			error("gold_response has non-zero rc(%d): %s",
 			      gold_response->rc,
 			      gold_response->message);
+			errno = gold_response->rc;
 			destroy_gold_response(gold_response);
 			rc = SLURM_ERROR;
 			break;
@@ -632,13 +775,15 @@ extern int acct_storage_p_add_users(List user_list)
 	return rc;
 }
 
-extern int acct_storage_p_add_coord(char *acct,
-				       acct_user_cond_t *user_q)
+extern int acct_storage_p_add_coord(void *db_conn,
+				    char *acct,
+				    acct_user_cond_t *user_q)
 {
 	return SLURM_SUCCESS;
 }
 
-extern int acct_storage_p_add_accts(List acct_list)
+extern int acct_storage_p_add_accts(void *db_conn,
+				    List acct_list)
 {
 	ListIterator itr = NULL;
 	int rc = SLURM_SUCCESS;
@@ -689,6 +834,7 @@ extern int acct_storage_p_add_accts(List acct_list)
 			error("gold_response has non-zero rc(%d): %s",
 			      gold_response->rc,
 			      gold_response->message);
+			errno = gold_response->rc;
 			destroy_gold_response(gold_response);
 			rc = SLURM_ERROR;
 			break;
@@ -700,7 +846,8 @@ extern int acct_storage_p_add_accts(List acct_list)
 	return rc;
 }
 
-extern int acct_storage_p_add_clusters(List cluster_list)
+extern int acct_storage_p_add_clusters(void *db_conn,
+				       List cluster_list)
 {
 	ListIterator itr = NULL;
 	int rc = SLURM_SUCCESS;
@@ -739,6 +886,7 @@ extern int acct_storage_p_add_clusters(List cluster_list)
 			error("gold_response has non-zero rc(%d): %s",
 			      gold_response->rc,
 			      gold_response->message);
+			errno = gold_response->rc;
 			destroy_gold_response(gold_response);
 			rc = SLURM_ERROR;
 			break;
@@ -750,7 +898,8 @@ extern int acct_storage_p_add_clusters(List cluster_list)
 	return rc;
 }
 
-extern int acct_storage_p_add_associations(List association_list)
+extern int acct_storage_p_add_associations(void *db_conn,
+					   List association_list)
 {
 	ListIterator itr = NULL;
 	int rc = SLURM_SUCCESS;
@@ -838,9 +987,9 @@ extern int acct_storage_p_add_associations(List association_list)
 						    tmp_buff);		
 		}
 
-		if(object->max_cpu_seconds_per_job) {
+		if(object->max_cpu_secs_per_job) {
 			snprintf(tmp_buff, sizeof(tmp_buff), "%u",
-				 object->max_cpu_seconds_per_job);
+				 object->max_cpu_secs_per_job);
 			gold_request_add_assignment(gold_request,
 						    "MaxProcSecondsPerJob",
 						    tmp_buff);		
@@ -860,6 +1009,7 @@ extern int acct_storage_p_add_associations(List association_list)
 			error("gold_response has non-zero rc(%d): %s",
 			      gold_response->rc,
 			      gold_response->message);
+			errno = gold_response->rc;
 			destroy_gold_response(gold_response);
 			rc = SLURM_ERROR;
 			break;
@@ -871,62 +1021,85 @@ extern int acct_storage_p_add_associations(List association_list)
 	return rc;
 }
 
-extern uint32_t acct_storage_p_get_assoc_id(acct_association_rec_t *assoc)
+extern int acct_storage_p_get_assoc_id(void *db_conn,
+				       acct_association_rec_t *assoc)
 {
-	uint32_t id = (uint32_t)NO_VAL;
-	uint32_t non_part = (uint32_t)NO_VAL;
 	ListIterator itr = NULL;
 	acct_association_rec_t * found_assoc = NULL;
+	acct_association_rec_t * ret_assoc = NULL;
 
-	if(!gold_association_list) {
-		acct_association_cond_t assoc_q;
-		memset(&assoc_q, 0, sizeof(acct_association_cond_t));
-		assoc_q.cluster_list = list_create(_destroy_char);
-		list_push(assoc_q.cluster_list, cluster_name);
-		gold_association_list =
-			acct_storage_g_get_associations(&assoc_q);
-		list_destroy(assoc_q.cluster_list);
-	}
+	if(!local_association_list) 
+		local_association_list = acct_storage_g_get_associations(NULL,
+									 NULL);
 
-	if(!assoc->cluster || !assoc->acct) {
+	if((!assoc->cluster && !assoc->acct) && !assoc->id) {
 		error("acct_storage_p_get_assoc_id: "
-		      "You need to supply a cluster and account name to get"
+		      "You need to supply a cluster and account name to get "
 		      "an association.");
-		return id;
+		return SLURM_ERROR;
 	}
 
-	itr = list_iterator_create(gold_association_list);
+	itr = list_iterator_create(local_association_list);
 	while((found_assoc = list_next(itr))) {
-		if((!found_assoc->acct 
-		    || strcasecmp(assoc->acct, found_assoc->acct))
-		   || (!assoc->cluster 
-		       || strcasecmp(assoc->cluster, found_assoc->cluster))
-		   || (assoc->user 
-		       && (!found_assoc->user 
-			   || strcasecmp(assoc->user, found_assoc->user)))
-		   || (!assoc->user && found_assoc->user 
-		       && strcasecmp("none", found_assoc->user)))
+		if(assoc->id) {
+			if(assoc->id == found_assoc->id) {
+				ret_assoc = found_assoc;
+				break;
+			}
 			continue;
-		if(assoc->partition
-		   && (!assoc->partition 
-		       || strcasecmp(assoc->partition, 
-				     found_assoc->partition))) {
-			non_part = assoc->id;
-			continue;
+		} else {
+			if((!found_assoc->acct 
+			    || strcasecmp(assoc->acct,
+					  found_assoc->acct))
+			   || (!assoc->cluster 
+			       || strcasecmp(assoc->cluster,
+					     found_assoc->cluster))
+			   || (assoc->user 
+			       && (!found_assoc->user 
+				   || strcasecmp(assoc->user,
+						 found_assoc->user)))
+			   || (!assoc->user && found_assoc->user 
+			       && strcasecmp("none",
+					     found_assoc->user)))
+				continue;
+			if(assoc->partition
+			   && (!assoc->partition 
+			       || strcasecmp(assoc->partition, 
+					     found_assoc->partition))) {
+				ret_assoc = found_assoc;
+				continue;
+			}
 		}
-		id = assoc->id;
+		ret_assoc = found_assoc;
 		break;
 	}
 	list_iterator_destroy(itr);
 
-	if(id == (uint32_t)NO_VAL)
-		id = non_part;
+	if(!ret_assoc)
+		return SLURM_ERROR;
 
-	return id;
+	assoc->id = ret_assoc->id;
+	if(!assoc->user)
+		assoc->user = ret_assoc->user;
+	if(!assoc->acct)
+		assoc->acct = ret_assoc->acct;
+	if(!assoc->cluster)
+		assoc->cluster = ret_assoc->cluster;
+	if(!assoc->partition)
+		assoc->partition = ret_assoc->partition;
+
+	return SLURM_SUCCESS;
 }
 
-extern int acct_storage_p_modify_users(acct_user_cond_t *user_q,
-					  acct_user_rec_t *user)
+extern int acct_storage_p_validate_assoc_id(void *db_conn,
+					    uint32_t assoc_id)
+{
+	return SLURM_SUCCESS;
+}
+
+extern int acct_storage_p_modify_users(void *db_conn,
+				       acct_user_cond_t *user_q,
+				       acct_user_rec_t *user)
 {
 	ListIterator itr = NULL;
 	int rc = SLURM_SUCCESS;
@@ -1014,6 +1187,7 @@ extern int acct_storage_p_modify_users(acct_user_cond_t *user_q,
 		error("gold_response has non-zero rc(%d): %s",
 		      gold_response->rc,
 		      gold_response->message);
+		errno = gold_response->rc;
 		rc = SLURM_ERROR;
 	}
 
@@ -1022,8 +1196,8 @@ extern int acct_storage_p_modify_users(acct_user_cond_t *user_q,
 	return rc;
 }
 
-extern int acct_storage_p_modify_user_admin_level(
-	acct_user_cond_t *user_q)
+extern int acct_storage_p_modify_user_admin_level(void *db_conn,
+						  acct_user_cond_t *user_q)
 {
 	ListIterator itr = NULL;
 	int rc = SLURM_SUCCESS;
@@ -1120,6 +1294,7 @@ extern int acct_storage_p_modify_user_admin_level(
 		error("gold_response has non-zero rc(%d): %s",
 		      gold_response->rc,
 		      gold_response->message);
+		errno = gold_response->rc;
 		rc = SLURM_ERROR;
 	}
 	destroy_gold_response(gold_response);	
@@ -1127,8 +1302,9 @@ extern int acct_storage_p_modify_user_admin_level(
 	return rc;
 }
 
-extern int acct_storage_p_modify_accts(acct_account_cond_t *acct_q,
-					     acct_account_rec_t *acct)
+extern int acct_storage_p_modify_accts(void *db_conn,
+				       acct_account_cond_t *acct_q,
+				       acct_account_rec_t *acct)
 {
 	ListIterator itr = NULL;
 	int rc = SLURM_SUCCESS;
@@ -1235,6 +1411,7 @@ extern int acct_storage_p_modify_accts(acct_account_cond_t *acct_q,
 		error("gold_response has non-zero rc(%d): %s",
 		      gold_response->rc,
 		      gold_response->message);
+		errno = gold_response->rc;
 		rc = SLURM_ERROR;
 	}
 
@@ -1243,14 +1420,16 @@ extern int acct_storage_p_modify_accts(acct_account_cond_t *acct_q,
 	return rc;
 }
 
-extern int acct_storage_p_modify_clusters(acct_cluster_cond_t *cluster_q,
-					     acct_cluster_rec_t *cluster)
+extern int acct_storage_p_modify_clusters(void *db_conn,
+					  acct_cluster_cond_t *cluster_q,
+					  acct_cluster_rec_t *cluster)
 {
 	return SLURM_SUCCESS;
 }
 
-extern int acct_storage_p_modify_associations(
-	acct_association_cond_t *assoc_q, acct_association_rec_t *assoc)
+extern int acct_storage_p_modify_associations(void *db_conn,
+					      acct_association_cond_t *assoc_q,
+					      acct_association_rec_t *assoc)
 {
 	ListIterator itr = NULL;
 	int rc = SLURM_SUCCESS;
@@ -1385,9 +1564,9 @@ extern int acct_storage_p_modify_associations(
 					    tmp_buff);		
 	}
 
-	if(assoc->max_cpu_seconds_per_job) {
+	if(assoc->max_cpu_secs_per_job) {
 		snprintf(tmp_buff, sizeof(tmp_buff), "%u",
-			 assoc->max_cpu_seconds_per_job);
+			 assoc->max_cpu_secs_per_job);
 		gold_request_add_assignment(gold_request,
 					    "MaxProcSecondsPerJob",
 					    tmp_buff);		
@@ -1406,6 +1585,7 @@ extern int acct_storage_p_modify_associations(
 		error("gold_response has non-zero rc(%d): %s",
 		      gold_response->rc,
 		      gold_response->message);
+		errno = gold_response->rc;
 		rc = SLURM_ERROR;
 	}
 	destroy_gold_response(gold_response);		
@@ -1413,7 +1593,8 @@ extern int acct_storage_p_modify_associations(
 	return rc;
 }
 
-extern int acct_storage_p_remove_users(acct_user_cond_t *user_q)
+extern int acct_storage_p_remove_users(void *db_conn,
+				       acct_user_cond_t *user_q)
 {
 	ListIterator itr = NULL;
 	int rc = SLURM_SUCCESS;
@@ -1483,6 +1664,7 @@ extern int acct_storage_p_remove_users(acct_user_cond_t *user_q)
 		      "gold_response has non-zero rc(%d): %s",
 		      gold_response->rc,
 		      gold_response->message);
+		errno = gold_response->rc;
 		rc = SLURM_ERROR;
 	}
 	destroy_gold_response(gold_response);		
@@ -1490,13 +1672,15 @@ extern int acct_storage_p_remove_users(acct_user_cond_t *user_q)
 	return rc;
 }
 
-extern int acct_storage_p_remove_coord(char *acct,
-					  acct_user_cond_t *user_q)
+extern int acct_storage_p_remove_coord(void *db_conn,
+				       char *acct,
+				       acct_user_cond_t *user_q)
 {
 	return SLURM_SUCCESS;
 }
 
-extern int acct_storage_p_remove_accts(acct_account_cond_t *acct_q)
+extern int acct_storage_p_remove_accts(void *db_conn,
+				       acct_account_cond_t *acct_q)
 {
 	ListIterator itr = NULL;
 	int rc = SLURM_SUCCESS;
@@ -1581,8 +1765,9 @@ extern int acct_storage_p_remove_accts(acct_account_cond_t *acct_q)
 	if(gold_response->rc) {
 		error("acct_storage_p_remove_accts: "
 		      "gold_response has non-zero rc(%d): %s",
-			      gold_response->rc,
+		      gold_response->rc,
 		      gold_response->message);
+		errno = gold_response->rc;
 		rc = SLURM_ERROR;
 	}
 	destroy_gold_response(gold_response);		
@@ -1590,7 +1775,8 @@ extern int acct_storage_p_remove_accts(acct_account_cond_t *acct_q)
 	return rc;
 }
 
-extern int acct_storage_p_remove_clusters(acct_cluster_cond_t *cluster_q)
+extern int acct_storage_p_remove_clusters(void *db_conn,
+					  acct_cluster_cond_t *cluster_q)
 {
 	ListIterator itr = NULL;
 	int rc = SLURM_SUCCESS;
@@ -1644,6 +1830,7 @@ extern int acct_storage_p_remove_clusters(acct_cluster_cond_t *cluster_q)
 		      "gold_response has non-zero rc(%d): %s",
 		      gold_response->rc,
 		      gold_response->message);
+		errno = gold_response->rc;
 		destroy_gold_response(gold_response);
 		return SLURM_ERROR;
 	}
@@ -1687,6 +1874,7 @@ extern int acct_storage_p_remove_clusters(acct_cluster_cond_t *cluster_q)
 		      "gold_response has non-zero rc(%d): %s",
 		      gold_response->rc,
 		      gold_response->message);
+		errno = gold_response->rc;
 		destroy_gold_request(gold_request);
 		destroy_gold_response(gold_response);
 		return SLURM_ERROR;
@@ -1707,6 +1895,7 @@ extern int acct_storage_p_remove_clusters(acct_cluster_cond_t *cluster_q)
 		      "gold_response has non-zero rc(%d): %s",
 		      gold_response->rc,
 		      gold_response->message);
+		errno = gold_response->rc;
 		destroy_gold_request(gold_request);
 		destroy_gold_response(gold_response);
 		return SLURM_ERROR;
@@ -1728,6 +1917,7 @@ extern int acct_storage_p_remove_clusters(acct_cluster_cond_t *cluster_q)
 		      "gold_response has non-zero rc(%d): %s",
 		      gold_response->rc,
 		      gold_response->message);
+		errno = gold_response->rc;
 		rc = SLURM_ERROR;
 	}
 	
@@ -1737,8 +1927,8 @@ extern int acct_storage_p_remove_clusters(acct_cluster_cond_t *cluster_q)
 	return rc;
 }
 
-extern int acct_storage_p_remove_associations(
-	acct_association_cond_t *assoc_q)
+extern int acct_storage_p_remove_associations(void *db_conn,
+					      acct_association_cond_t *assoc_q)
 {
 	ListIterator itr = NULL;
 	int rc = SLURM_SUCCESS;
@@ -1850,6 +2040,7 @@ extern int acct_storage_p_remove_associations(
 		error("gold_response has non-zero rc(%d): %s",
 		      gold_response->rc,
 		      gold_response->message);
+		errno = gold_response->rc;
 		rc = SLURM_ERROR;
 	}
 
@@ -1858,7 +2049,7 @@ extern int acct_storage_p_remove_associations(
 		ListIterator itr2 = NULL;
 		gold_response_entry_t *resp_entry = NULL;
 		gold_name_value_t *name_val = NULL;
-		List id_list = list_create(_destroy_char);
+		List id_list = list_create(slurm_destroy_char);
 
 		itr = list_iterator_create(gold_response->entries);
 		while((resp_entry = list_next(itr))) {
@@ -1883,7 +2074,8 @@ extern int acct_storage_p_remove_associations(
 	return rc;
 }
 
-extern List acct_storage_p_get_users(acct_user_cond_t *user_q)
+extern List acct_storage_p_get_users(void *db_conn,
+				     acct_user_cond_t *user_q)
 {
 	gold_request_t *gold_request = NULL;
 	gold_response_t *gold_response = NULL;
@@ -1973,7 +2165,8 @@ empty:
 	return user_list;
 }
 
-extern List acct_storage_p_get_accts(acct_account_cond_t *acct_q)
+extern List acct_storage_p_get_accts(void *db_conn,
+				     acct_account_cond_t *acct_q)
 {
 	gold_request_t *gold_request = NULL;
 	gold_response_t *gold_response = NULL;
@@ -2080,7 +2273,8 @@ empty:
 	return acct_list;
 }
 
-extern List acct_storage_p_get_clusters(acct_cluster_cond_t *cluster_q)
+extern List acct_storage_p_get_clusters(void *db_conn,
+					acct_cluster_cond_t *cluster_q)
 {
 	gold_request_t *gold_request = NULL;
 	gold_response_t *gold_response = NULL;
@@ -2142,8 +2336,8 @@ empty:
 	return cluster_list;
 }
 
-extern List acct_storage_p_get_associations(
-	acct_association_cond_t *assoc_q)
+extern List acct_storage_p_get_associations(void *db_conn,
+					    acct_association_cond_t *assoc_q)
 {
 
 	gold_request_t *gold_request = NULL;
@@ -2326,6 +2520,7 @@ extern int acct_storage_p_get_hourly_usage(
 }
 
 extern int acct_storage_p_get_daily_usage(
+	void *db_conn,
 	acct_association_rec_t *acct_assoc,
 	time_t start, time_t end)
 {
@@ -2384,6 +2579,7 @@ extern int acct_storage_p_get_daily_usage(
 }
 
 extern int acct_storage_p_get_monthly_usage(
+	void *db_conn,
 	acct_association_rec_t *acct_assoc,
 	time_t start, time_t end)
 {
@@ -2441,7 +2637,9 @@ extern int acct_storage_p_get_monthly_usage(
 	return rc;
 }
 
-extern int clusteracct_storage_p_node_down(struct node_record *node_ptr,
+extern int clusteracct_storage_p_node_down(void *db_conn,
+					   char *cluster,
+					   struct node_record *node_ptr,
 					   time_t event_time,
 					   char *reason)
 {
@@ -2450,16 +2648,22 @@ extern int clusteracct_storage_p_node_down(struct node_record *node_ptr,
 	gold_request_t *gold_request = NULL;
 	gold_response_t *gold_response = NULL;
 	char tmp_buff[50];
+	char *my_reason;
 
-	if (slurmctld_conf.fast_schedule)
+	if (slurmctld_conf.fast_schedule && !slurmdbd_conf)
 		cpus = node_ptr->config_ptr->cpus;
 	else
 		cpus = node_ptr->cpus;
 
+	if (reason)
+		my_reason = reason;
+	else
+		my_reason = node_ptr->reason;
+
 #if _DEBUG
 	slurm_make_time_str(&event_time, tmp_buff, sizeof(tmp_buff));
 	info("cluster_acct_down: %s at %s with %u cpus due to %s", 
-	     node_ptr->name, tmp_buff, cpus, node_ptr->reason);
+	     node_ptr->name, tmp_buff, cpus, reason);
 #endif
 	/* If the node was already down end that record since the
 	 * reason will most likely be different
@@ -2470,7 +2674,7 @@ extern int clusteracct_storage_p_node_down(struct node_record *node_ptr,
 	if(!gold_request) 
 		return rc;
 	
-	gold_request_add_condition(gold_request, "Machine", cluster_name,
+	gold_request_add_condition(gold_request, "Machine", cluster,
 				   GOLD_OPERATOR_NONE, 0);
 	gold_request_add_condition(gold_request, "EndTime", "0",
 				   GOLD_OPERATOR_NONE, 0);
@@ -2492,6 +2696,7 @@ extern int clusteracct_storage_p_node_down(struct node_record *node_ptr,
 		error("gold_response has non-zero rc(%d): %s",
 		      gold_response->rc,
 		      gold_response->message);
+		errno = gold_response->rc;
 		destroy_gold_response(gold_response);
 		return rc;
 	}
@@ -2503,17 +2708,13 @@ extern int clusteracct_storage_p_node_down(struct node_record *node_ptr,
 	if(!gold_request) 
 		return rc;
 	
-	gold_request_add_assignment(gold_request, "Machine", cluster_name);
+	gold_request_add_assignment(gold_request, "Machine", cluster);
 	snprintf(tmp_buff, sizeof(tmp_buff), "%d", (int)event_time);
 	gold_request_add_assignment(gold_request, "StartTime", tmp_buff);
 	gold_request_add_assignment(gold_request, "Name", node_ptr->name);
-	snprintf(tmp_buff, sizeof(tmp_buff), "%u", node_ptr->cpus);
+	snprintf(tmp_buff, sizeof(tmp_buff), "%u", cpus);
 	gold_request_add_assignment(gold_request, "CPUCount", tmp_buff);
-	if(reason)
-		gold_request_add_assignment(gold_request, "Reason", reason);
-	else	
-		gold_request_add_assignment(gold_request, "Reason", 
-					    node_ptr->reason);
+	gold_request_add_assignment(gold_request, "Reason", my_reason);
 			
 	gold_response = get_gold_response(gold_request);	
 	destroy_gold_request(gold_request);
@@ -2529,13 +2730,16 @@ extern int clusteracct_storage_p_node_down(struct node_record *node_ptr,
 		error("gold_response has non-zero rc(%d): %s",
 		      gold_response->rc,
 		      gold_response->message);
+		errno = gold_response->rc;
 	}
 	destroy_gold_response(gold_response);
 
 	return rc;
 }
 
-extern int clusteracct_storage_p_node_up(struct node_record *node_ptr,
+extern int clusteracct_storage_p_node_up(void *db_conn,
+					 char *cluster,
+					 struct node_record *node_ptr,
 					 time_t event_time)
 {
 	int rc = SLURM_ERROR;
@@ -2553,7 +2757,7 @@ extern int clusteracct_storage_p_node_up(struct node_record *node_ptr,
 	if(!gold_request) 
 		return rc;
 	
-	gold_request_add_condition(gold_request, "Machine", cluster_name,
+	gold_request_add_condition(gold_request, "Machine", cluster,
 				   GOLD_OPERATOR_NONE, 0);
 	gold_request_add_condition(gold_request, "EndTime", "0",
 				   GOLD_OPERATOR_NONE, 0);
@@ -2575,16 +2779,20 @@ extern int clusteracct_storage_p_node_up(struct node_record *node_ptr,
 		error("gold_response has non-zero rc(%d): %s",
 		      gold_response->rc,
 		      gold_response->message);
+		errno = gold_response->rc;
 		destroy_gold_response(gold_response);
 		return rc;
 	}
+	rc = SLURM_SUCCESS;
 	destroy_gold_response(gold_response);
 
 
 	return rc;
 }
 
-extern int clusteracct_storage_p_cluster_procs(uint32_t procs,
+extern int clusteracct_storage_p_cluster_procs(void *db_conn,
+					       char *cluster,
+					       uint32_t procs,
 					       time_t event_time)
 {
 	static uint32_t last_procs = -1;
@@ -2605,7 +2813,7 @@ extern int clusteracct_storage_p_cluster_procs(uint32_t procs,
 #if _DEBUG
 	slurm_make_time_str(&event_time, tmp_buff, sizeof(tmp_buff));
 	info("cluster_acct_procs: %s has %u total CPUs at %s", 
-	     cluster_name, procs, tmp_buff);
+	     cluster, procs, tmp_buff);
 #endif
 	
 	/* get the last known one */
@@ -2613,7 +2821,7 @@ extern int clusteracct_storage_p_cluster_procs(uint32_t procs,
 					   GOLD_ACTION_QUERY);
 	if(!gold_request) 
 		return rc;
-	gold_request_add_condition(gold_request, "Machine", cluster_name,
+	gold_request_add_condition(gold_request, "Machine", cluster,
 				   GOLD_OPERATOR_NONE, 0);
 	gold_request_add_condition(gold_request, "EndTime", "0",
 				   GOLD_OPERATOR_NONE, 0);
@@ -2663,7 +2871,7 @@ extern int clusteracct_storage_p_cluster_procs(uint32_t procs,
 			return rc;
 		
 		gold_request_add_condition(gold_request, "Machine",
-					   cluster_name,
+					   cluster,
 					   GOLD_OPERATOR_NONE, 0);
 		gold_request_add_condition(gold_request, "EndTime", "0",
 					   GOLD_OPERATOR_NONE, 0);
@@ -2686,6 +2894,7 @@ extern int clusteracct_storage_p_cluster_procs(uint32_t procs,
 			error("gold_response has non-zero rc(%d): %s",
 			      gold_response->rc,
 			      gold_response->message);
+			errno = gold_response->rc;
 			destroy_gold_response(gold_response);
 			return rc;
 		}
@@ -2698,7 +2907,7 @@ extern int clusteracct_storage_p_cluster_procs(uint32_t procs,
 	if(!gold_request) 
 		return rc;
 	
-	gold_request_add_assignment(gold_request, "Machine", cluster_name);
+	gold_request_add_assignment(gold_request, "Machine", cluster);
 	snprintf(tmp_buff, sizeof(tmp_buff), "%d", (int)event_time);
 	gold_request_add_assignment(gold_request, "StartTime", tmp_buff);
 	snprintf(tmp_buff, sizeof(tmp_buff), "%u", procs);
@@ -2718,6 +2927,7 @@ extern int clusteracct_storage_p_cluster_procs(uint32_t procs,
 		error("gold_response has non-zero rc(%d): %s",
 		      gold_response->rc,
 		      gold_response->message);
+		errno = gold_response->rc;
 	}
 	destroy_gold_response(gold_response);
 
@@ -2725,8 +2935,9 @@ extern int clusteracct_storage_p_cluster_procs(uint32_t procs,
 }
 
 extern int clusteracct_storage_p_get_hourly_usage(
+	void *db_conn,
 	acct_cluster_rec_t *cluster_rec, time_t start, 
-	time_t end, void *params)
+	time_t end)
 {
 	gold_request_t *gold_request = NULL;
 	gold_response_t *gold_response = NULL;
@@ -2786,8 +2997,9 @@ extern int clusteracct_storage_p_get_hourly_usage(
 }
 
 extern int clusteracct_storage_p_get_daily_usage(
+	void *db_conn,
 	acct_cluster_rec_t *cluster_rec, time_t start, 
-	time_t end, void *params)
+	time_t end)
 {
 	gold_request_t *gold_request = NULL;
 	gold_response_t *gold_response = NULL;
@@ -2847,8 +3059,9 @@ extern int clusteracct_storage_p_get_daily_usage(
 }
 
 extern int clusteracct_storage_p_get_monthly_usage(
+	void *db_conn,
 	acct_cluster_rec_t *cluster_rec, time_t start, 
-	time_t end, void *params)
+	time_t end)
 {
 	gold_request_t *gold_request = NULL;
 	gold_response_t *gold_response = NULL;
@@ -2906,4 +3119,272 @@ extern int clusteracct_storage_p_get_monthly_usage(
 	destroy_gold_response(gold_response);
 
 	return rc;
+}
+
+extern int jobacct_storage_p_job_start(void *db_conn,
+				       struct job_record *job_ptr)
+{
+	gold_object_t action = GOLD_ACTION_CREATE;
+	
+	if(_check_for_job(job_ptr->job_id, job_ptr->details->submit_time)) {
+		error("It looks like this job is already in GOLD.  "
+		      "This shouldn't happen, we are going to overwrite "
+		      "old info.");
+		action = GOLD_ACTION_MODIFY;
+	}
+
+	return _add_edit_job(job_ptr, action);
+}
+
+extern int jobacct_storage_p_job_complete(void *db_conn,
+					  struct job_record *job_ptr) 
+{
+	gold_object_t action = GOLD_ACTION_MODIFY;
+	
+	if(!_check_for_job(job_ptr->job_id, job_ptr->details->submit_time)) {
+		error("Couldn't find this job entry.  "
+		      "This shouldn't happen, we are going to create one.");
+		action = GOLD_ACTION_CREATE;
+	}
+
+	return _add_edit_job(job_ptr, action);
+}
+
+extern int jobacct_storage_p_step_start(void *db_conn,
+					struct step_record *step)
+{
+	gold_object_t action = GOLD_ACTION_MODIFY;
+	
+	if(!_check_for_job(step->job_ptr->job_id,
+			   step->job_ptr->details->submit_time)) {
+		error("Couldn't find this job entry.  "
+		      "This shouldn't happen, we are going to create one.");
+		action = GOLD_ACTION_CREATE;
+	}
+
+	return _add_edit_job(step->job_ptr, action);
+
+}
+
+extern int jobacct_storage_p_step_complete(void *db_conn,
+					   struct step_record *step)
+{
+	return SLURM_SUCCESS;	
+}
+
+extern int jobacct_storage_p_suspend(void *db_conn,
+				     struct job_record *job_ptr)
+{
+	return SLURM_SUCCESS;
+}
+
+/* 
+ * get info from the storage 
+ * returns List of jobacct_job_rec_t *
+ * note List needs to be freed when called
+ */
+extern List jobacct_storage_p_get_jobs(void *db_conn,
+				       List selected_steps,
+				       List selected_parts,
+				       sacct_parameters_t *params)
+{
+	gold_request_t *gold_request = create_gold_request(GOLD_OBJECT_JOB,
+							   GOLD_ACTION_QUERY);
+	gold_response_t *gold_response = NULL;
+	gold_response_entry_t *resp_entry = NULL;
+	gold_name_value_t *name_val = NULL;
+	char tmp_buff[50];
+	int set = 0;
+	char *selected_part = NULL;
+	jobacct_selected_step_t *selected_step = NULL;
+	jobacct_job_rec_t *job = NULL;
+	ListIterator itr = NULL;
+	ListIterator itr2 = NULL;
+	List job_list = NULL;
+
+	if(!gold_request) 
+		return NULL;
+
+
+	if(selected_steps && list_count(selected_steps)) {
+		itr = list_iterator_create(selected_steps);
+		if(list_count(selected_steps) > 1)
+			set = 2;
+		else
+			set = 0;
+		while((selected_step = list_next(itr))) {
+			snprintf(tmp_buff, sizeof(tmp_buff), "%u", 
+				 selected_step->jobid);
+			gold_request_add_condition(gold_request, "JobId",
+						   tmp_buff,
+						   GOLD_OPERATOR_NONE,
+						   set);
+			set = 1;
+		}
+		list_iterator_destroy(itr);
+	}
+
+	if(selected_parts && list_count(selected_parts)) {
+		if(list_count(selected_parts) > 1)
+			set = 2;
+		else
+			set = 0;
+		itr = list_iterator_create(selected_parts);
+		while((selected_part = list_next(itr))) {
+			gold_request_add_condition(gold_request, "Partition",
+						   selected_part,
+						   GOLD_OPERATOR_NONE,
+						   set);
+			set = 1;
+		}
+		list_iterator_destroy(itr);
+	}
+
+	gold_request_add_selection(gold_request, "JobId");
+	gold_request_add_selection(gold_request, "GoldAccountId");
+	gold_request_add_selection(gold_request, "Partition");
+	gold_request_add_selection(gold_request, "RequestedCPUCount");
+	gold_request_add_selection(gold_request, "AllocatedCPUCount");
+	gold_request_add_selection(gold_request, "NodeList");
+	gold_request_add_selection(gold_request, "JobName");
+	gold_request_add_selection(gold_request, "SubmitTime");
+	gold_request_add_selection(gold_request, "EligibleTime");
+	gold_request_add_selection(gold_request, "StartTime");
+	gold_request_add_selection(gold_request, "EndTime");
+	gold_request_add_selection(gold_request, "Suspended");
+	gold_request_add_selection(gold_request, "State");
+	gold_request_add_selection(gold_request, "ExitCode");
+	gold_request_add_selection(gold_request, "QoS");
+
+	gold_response = get_gold_response(gold_request);
+	destroy_gold_request(gold_request);
+
+	if(!gold_response) {
+		error("_check_for_job: no response received");
+		return NULL;
+	}
+	
+	job_list = list_create(destroy_jobacct_job_rec);
+	if(gold_response->entry_cnt > 0) {
+		itr = list_iterator_create(gold_response->entries);
+		while((resp_entry = list_next(itr))) {
+			job = create_jobacct_job_rec();
+			itr2 = list_iterator_create(resp_entry->name_val);
+			while((name_val = list_next(itr2))) {
+				if(!strcmp(name_val->name, "JobId")) {
+					job->jobid = atoi(name_val->value);
+				} else if(!strcmp(name_val->name, 
+						  "GoldAccountId")) {
+					acct_association_rec_t account_rec;
+					memset(&account_rec, 0,
+					       sizeof(acct_association_rec_t));
+					account_rec.id = atoi(name_val->value);
+					if(acct_storage_p_get_assoc_id(
+						   db_conn,
+						   &account_rec) == SLURM_ERROR)
+						error("no assoc found for "
+						      "id %u",
+						      account_rec.id);
+					
+					if(account_rec.cluster) {
+						if(params->opt_cluster &&
+						   strcmp(params->opt_cluster,
+							  account_rec.
+							  cluster)) {
+							destroy_jobacct_job_rec(
+								job);
+							job = NULL;
+							break;
+						}
+						job->cluster =
+							xstrdup(account_rec.
+								cluster);
+					}
+
+					if(account_rec.user) {
+						struct passwd *passwd_ptr =
+							getpwnam(account_rec.
+								 user);
+						job->user = xstrdup(account_rec.
+								    user);
+						if(passwd_ptr) {
+							job->uid =
+								passwd_ptr->
+								pw_uid;
+							job->gid = 
+								passwd_ptr->
+								pw_gid;
+						}
+					}
+					if(account_rec.acct) 
+						job->account =
+							xstrdup(account_rec.
+								acct);
+				} else if(!strcmp(name_val->name,
+						  "Partition")) {
+					job->partition =
+						xstrdup(name_val->value);
+				} else if(!strcmp(name_val->name,
+						  "RequestedCPUCount")) {
+					job->req_cpus = atoi(name_val->value);
+				} else if(!strcmp(name_val->name,
+						  "AllocatedCPUCount")) {
+					job->alloc_cpus = atoi(name_val->value);
+				} else if(!strcmp(name_val->name, "NodeList")) {
+					job->nodes = xstrdup(name_val->value);
+				} else if(!strcmp(name_val->name, "JobName")) {
+					job->jobname = xstrdup(name_val->value);
+				} else if(!strcmp(name_val->name,
+						  "SubmitTime")) {
+					job->submit = atoi(name_val->value);
+				} else if(!strcmp(name_val->name,
+						  "EligibleTime")) {
+					job->eligible = atoi(name_val->value);
+				} else if(!strcmp(name_val->name,
+						  "StartTime")) {
+					job->start = atoi(name_val->value);
+				} else if(!strcmp(name_val->name, "EndTime")) {
+					job->end = atoi(name_val->value);
+				} else if(!strcmp(name_val->name,
+						  "Suspended")) {
+					job->suspended = atoi(name_val->value);
+				} else if(!strcmp(name_val->name, "State")) {
+					job->state = atoi(name_val->value);
+				} else if(!strcmp(name_val->name, "ExitCode")) {
+					job->exitcode = atoi(name_val->value);
+				} else if(!strcmp(name_val->name, "QoS")) {
+					job->qos = atoi(name_val->value);
+				}
+			}
+			list_iterator_destroy(itr2);
+
+			if(!job) 
+				continue;
+
+			job->show_full = 1;
+			job->track_steps = 0;
+			job->priority = 0;
+
+			if (!job->nodes) 
+				job->nodes = xstrdup("(unknown)");
+			
+			list_append(job_list, job);
+		}
+		list_iterator_destroy(itr);		
+	}
+	destroy_gold_response(gold_response);
+	
+	return job_list;
+}
+
+/* 
+ * expire old info from the storage 
+ */
+extern void jobacct_storage_p_archive(void *db_conn,
+				      List selected_parts,
+				      void *params)
+{
+	info("not implemented");
+	
+	return;
 }

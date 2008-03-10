@@ -727,6 +727,8 @@ extern void slurm_msg_t_init (slurm_msg_t *msg);
  */
 extern void slurm_msg_t_copy(slurm_msg_t *dest, slurm_msg_t *src);
 
+extern void slurm_destroy_char(void *object);
+
 /* free message functions */
 void inline slurm_free_checkpoint_tasks_msg(checkpoint_tasks_msg_t * msg);
 void inline slurm_free_last_update_msg(last_update_msg_t * msg);

@@ -38,22 +38,34 @@
 #include "src/common/macros.h"
 #include "src/common/pack.h"
 #include "src/common/slurmdbd_defs.h"
+#include "src/common/slurm_accounting_storage.h"
+#include "src/common/jobacct_common.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_defs.h"
 #include "src/slurmdbd/read_config.h"
 #include "src/slurmdbd/rpc_mgr.h"
+#include "src/slurmctld/slurmctld.h"
 
 /* Local functions */
-static int   _cluster_procs(Buf in_buffer, Buf *out_buffer, uint32_t *uid);
-static int   _get_jobs(Buf in_buffer, Buf *out_buffer);
-static int   _init_conn(Buf in_buffer, Buf *out_buffer, uint32_t *uid);
-static int   _job_complete(Buf in_buffer, Buf *out_buffer, uint32_t *uid);
-static int   _job_start(Buf in_buffer, Buf *out_buffer, uint32_t *uid);
-static int   _job_suspend(Buf in_buffer, Buf *out_buffer, uint32_t *uid);
-static int   _node_state(Buf in_buffer, Buf *out_buffer, uint32_t *uid);
+static int   _cluster_procs(void *db_conn,
+			    Buf in_buffer, Buf *out_buffer, uint32_t *uid);
+static int   _get_jobs(void *db_conn,
+		       Buf in_buffer, Buf *out_buffer);
+static int   _init_conn(void *db_conn,
+			Buf in_buffer, Buf *out_buffer, uint32_t *uid);
+static int   _job_complete(void *db_conn,
+			   Buf in_buffer, Buf *out_buffer, uint32_t *uid);
+static int   _job_start(void *db_conn,
+			Buf in_buffer, Buf *out_buffer, uint32_t *uid);
+static int   _job_suspend(void *db_conn,
+			  Buf in_buffer, Buf *out_buffer, uint32_t *uid);
+static int   _node_state(void *db_conn,
+			 Buf in_buffer, Buf *out_buffer, uint32_t *uid);
 static char *_node_state_string(uint16_t node_state);
-static int   _step_complete(Buf in_buffer, Buf *out_buffer, uint32_t *uid);
-static int   _step_start(Buf in_buffer, Buf *out_buffer, uint32_t *uid);
+static int   _step_complete(void *db_conn,
+			    Buf in_buffer, Buf *out_buffer, uint32_t *uid);
+static int   _step_start(void *db_conn,
+			 Buf in_buffer, Buf *out_buffer, uint32_t *uid);
 
 /* Process an incoming RPC
  * msg IN - incoming message
@@ -63,7 +75,8 @@ static int   _step_start(Buf in_buffer, Buf *out_buffer, uint32_t *uid);
  * uid IN/OUT - user ID who initiated the RPC
  * RET SLURM_SUCCESS or error code */
 extern int 
-proc_req(char *msg, uint32_t msg_size, bool first, Buf *out_buffer, uint32_t *uid)
+proc_req(void *db_conn, char *msg, uint32_t msg_size,
+	 bool first, Buf *out_buffer, uint32_t *uid)
 {
 	int rc = SLURM_SUCCESS;
 	uint16_t msg_type;
@@ -79,14 +92,17 @@ proc_req(char *msg, uint32_t msg_size, bool first, Buf *out_buffer, uint32_t *ui
 	} else {
 		switch (msg_type) {
 		case DBD_CLUSTER_PROCS:
-			rc = _cluster_procs(in_buffer, out_buffer, uid);
+			rc = _cluster_procs(db_conn,
+					    in_buffer, out_buffer, uid);
 			break;
 		case DBD_GET_JOBS:
-			rc = _get_jobs(in_buffer, out_buffer);
+			rc = _get_jobs(db_conn,
+				       in_buffer, out_buffer);
 			break;
 		case DBD_INIT:
 			if (first)
-				rc = _init_conn(in_buffer, out_buffer, uid);
+				rc = _init_conn(db_conn,
+						in_buffer, out_buffer, uid);
 			else {
 				error("DBD_INIT sent after connection "
 					"established");
@@ -95,22 +111,28 @@ proc_req(char *msg, uint32_t msg_size, bool first, Buf *out_buffer, uint32_t *ui
 			}
 			break;
 		case DBD_JOB_COMPLETE:
-			rc = _job_complete(in_buffer, out_buffer, uid);
+			rc = _job_complete(db_conn,
+					   in_buffer, out_buffer, uid);
 			break;
 		case DBD_JOB_START:
-			rc = _job_start(in_buffer, out_buffer, uid);
+			rc = _job_start(db_conn,
+					in_buffer, out_buffer, uid);
 			break;
 		case DBD_JOB_SUSPEND:
-			rc = _job_suspend(in_buffer, out_buffer, uid);
+			rc = _job_suspend(db_conn,
+					  in_buffer, out_buffer, uid);
 			break;
 		case DBD_NODE_STATE:
-			rc = _node_state(in_buffer, out_buffer, uid);
+			rc = _node_state(db_conn,
+					 in_buffer, out_buffer, uid);
 			break;
 		case DBD_STEP_COMPLETE:
-			rc = _step_complete(in_buffer, out_buffer, uid);
+			rc = _step_complete(db_conn,
+					    in_buffer, out_buffer, uid);
 			break;
 		case DBD_STEP_START:
-			rc = _step_start(in_buffer, out_buffer, uid);
+			rc = _step_start(db_conn,
+					 in_buffer, out_buffer, uid);
 			break;
 		default:
 			error("Invalid RPC msg_type=%d", msg_type);
@@ -129,9 +151,11 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-static int _cluster_procs(Buf in_buffer, Buf *out_buffer, uint32_t *uid)
+static int _cluster_procs(void *db_conn,
+			  Buf in_buffer, Buf *out_buffer, uint32_t *uid)
 {
 	dbd_cluster_procs_msg_t *cluster_procs_msg;
+	int rc = SLURM_ERROR;
 
 	if (*uid != slurmdbd_conf->slurm_user_id) {
 		error("DBD_CLUSTER_PROCS message from invalid uid %u", *uid);
@@ -148,17 +172,22 @@ static int _cluster_procs(Buf in_buffer, Buf *out_buffer, uint32_t *uid)
 	info("DBD_CLUSTER_PROCS: CLUSTER_NAME:%s PROC_COUNT:%u TIME:%u", 
 	     cluster_procs_msg->cluster_name, cluster_procs_msg->proc_count,
 	     cluster_procs_msg->event_time);
+	rc = clusteracct_storage_g_cluster_procs(
+		db_conn,
+		cluster_procs_msg->cluster_name,
+		cluster_procs_msg->proc_count,
+		cluster_procs_msg->event_time);
 	slurm_dbd_free_cluster_procs_msg(cluster_procs_msg);
-	*out_buffer = make_dbd_rc_msg(SLURM_SUCCESS);
-	return SLURM_SUCCESS;
+	*out_buffer = make_dbd_rc_msg(rc);
+	return rc;
 }
 
-static int _get_jobs(Buf in_buffer, Buf *out_buffer)
+static int _get_jobs(void *db_conn,
+		     Buf in_buffer, Buf *out_buffer)
 {
-	int i;
 	dbd_get_jobs_msg_t *get_jobs_msg;
 	dbd_got_jobs_msg_t got_jobs_msg;
-	uint32_t jobs[2];
+	sacct_parameters_t sacct_params;
 
 	if (slurm_dbd_unpack_get_jobs_msg(&get_jobs_msg, in_buffer) !=
 	    SLURM_SUCCESS) {
@@ -166,23 +195,30 @@ static int _get_jobs(Buf in_buffer, Buf *out_buffer)
 		*out_buffer = make_dbd_rc_msg(SLURM_ERROR);
 		return SLURM_ERROR;
 	}
-
-	info("DBD_GET_JOBS: JOB_COUNT:%u", get_jobs_msg->job_count);
-	for (i=0; i<get_jobs_msg->job_count; i++)
-		info("DBD_GET_JOBS: JOB_ID[%d]:%u", i, get_jobs_msg->job_ids[i]);
+	
+	info("DBD_GET_JOBS: called");
+	memset(&sacct_params, 0, sizeof(sacct_params));
+	sacct_params.opt_cluster = get_jobs_msg->cluster_name;
+	got_jobs_msg.jobs = jobacct_storage_g_get_jobs(
+		db_conn,
+		get_jobs_msg->selected_steps, get_jobs_msg->selected_parts,
+		&sacct_params);
 	slurm_dbd_free_get_jobs_msg(get_jobs_msg);
 
-	got_jobs_msg.job_count = 2;
-	jobs[0] = 1234;
-	jobs[1] = 5678;
-	got_jobs_msg.job_ids = jobs;
+
 	*out_buffer = init_buf(1024);
 	pack16((uint16_t) DBD_GOT_JOBS, *out_buffer);
 	slurm_dbd_pack_got_jobs_msg(&got_jobs_msg, *out_buffer);
+	if(got_jobs_msg.jobs)
+		list_destroy(got_jobs_msg.jobs);
+	info("DBD_GET_JOBS: done");
+	
 	return SLURM_SUCCESS;
 }
 
-static int _init_conn(Buf in_buffer, Buf *out_buffer, uint32_t *uid)
+
+static int _init_conn(void *db_conn,
+		      Buf in_buffer, Buf *out_buffer, uint32_t *uid)
 {
 	dbd_init_msg_t *init_msg;
 
@@ -205,9 +241,13 @@ static int _init_conn(Buf in_buffer, Buf *out_buffer, uint32_t *uid)
 	return SLURM_SUCCESS;
 }
 
-static int  _job_complete(Buf in_buffer, Buf *out_buffer, uint32_t *uid)
+static int  _job_complete(void *db_conn,
+			  Buf in_buffer, Buf *out_buffer, uint32_t *uid)
 {
 	dbd_job_comp_msg_t *job_comp_msg;
+	struct job_record job;
+	struct job_details details;
+	int rc = SLURM_SUCCESS;
 
 	if (*uid != slurmdbd_conf->slurm_user_id) {
 		error("DBD_JOB_COMPLETE message from invalid uid %u", *uid);
@@ -221,16 +261,39 @@ static int  _job_complete(Buf in_buffer, Buf *out_buffer, uint32_t *uid)
 		return SLURM_ERROR;
 	}
 
-	info("DBD_JOB_COMPLETE: ID:%u NAME:%s", 
-	     job_comp_msg->job_id, job_comp_msg->name);
+	debug2("DBD_JOB_COMPLETE: ID:%u ", job_comp_msg->job_id);
+
+	memset(&job, 0, sizeof(struct job_record));
+	memset(&details, 0, sizeof(struct job_details));
+
+	job.assoc_id = job_comp_msg->assoc_id;
+	job.db_index = job_comp_msg->db_index;
+	job.end_time = job_comp_msg->end_time;
+	job.exit_code = job_comp_msg->exit_code;
+	job.job_id = job_comp_msg->job_id;
+	job.job_state = job_comp_msg->job_state;
+	job.nodes = job_comp_msg->nodes;
+	job.start_time = job_comp_msg->start_time;
+	details.submit_time = job_comp_msg->submit_time;
+
+	job.details = &details;
+	rc = jobacct_storage_g_job_complete(db_conn, &job);
+
+	if(rc && errno == 740) /* meaning data is already there */
+		rc = SLURM_SUCCESS;
+
 	slurm_dbd_free_job_complete_msg(job_comp_msg);
-	*out_buffer = make_dbd_rc_msg(SLURM_SUCCESS);
+	*out_buffer = make_dbd_rc_msg(rc);
 	return SLURM_SUCCESS;
 }
 
-static int  _job_start(Buf in_buffer, Buf *out_buffer, uint32_t *uid)
+static int  _job_start(void *db_conn,
+		       Buf in_buffer, Buf *out_buffer, uint32_t *uid)
 {
 	dbd_job_start_msg_t *job_start_msg;
+	dbd_job_start_rc_msg_t job_start_rc_msg;
+	struct job_record job;
+	struct job_details details;
 
 	if (*uid != slurmdbd_conf->slurm_user_id) {
 		error("DBD_JOB_START message from invalid uid %u", *uid);
@@ -243,17 +306,48 @@ static int  _job_start(Buf in_buffer, Buf *out_buffer, uint32_t *uid)
 		*out_buffer = make_dbd_rc_msg(SLURM_ERROR);
 		return SLURM_ERROR;
 	}
+	memset(&job, 0, sizeof(struct job_record));
+	memset(&details, 0, sizeof(struct job_details));
+	memset(&job_start_rc_msg, 0, sizeof(dbd_job_start_rc_msg_t));
 
-	info("DBD_JOB_START: ID:%u NAME:%s", 
-	     job_start_msg->job_id, job_start_msg->name);
+	job.total_procs = job_start_msg->alloc_cpus;
+	job.assoc_id = job_start_msg->assoc_id;
+	job.comment = job_start_msg->block_id;
+	details.begin_time = job_start_msg->eligible_time;
+	job.group_id = job_start_msg->gid;
+	job.job_id = job_start_msg->job_id;
+	job.job_state = job_start_msg->job_state;
+	job.name = job_start_msg->name;
+	job.nodes = job_start_msg->nodes;
+	job.partition = job_start_msg->partition;
+	job.num_procs = job_start_msg->req_cpus;
+	job.priority = job_start_msg->priority;
+	job.start_time = job_start_msg->start_time;
+	details.submit_time = job_start_msg->submit_time;
+
+	job.details = &details;
+
+	debug2("DBD_JOB_START: ID:%u NAME:%s", 
+	       job_start_msg->job_id, job_start_msg->name);
+
+	job_start_rc_msg.return_code = jobacct_storage_g_job_start(db_conn,
+								   &job);
+	job_start_rc_msg.db_index = job.db_index;
+
 	slurm_dbd_free_job_start_msg(job_start_msg);
-	*out_buffer = make_dbd_rc_msg(SLURM_SUCCESS);
+	*out_buffer = init_buf(1024);
+	pack16((uint16_t) DBD_JOB_START_RC, *out_buffer);
+	slurm_dbd_pack_job_start_rc_msg(&job_start_rc_msg, *out_buffer);
 	return SLURM_SUCCESS;
 }
 
-static int  _job_suspend(Buf in_buffer, Buf *out_buffer, uint32_t *uid)
+static int  _job_suspend(void *db_conn,
+			 Buf in_buffer, Buf *out_buffer, uint32_t *uid)
 {
 	dbd_job_suspend_msg_t *job_suspend_msg;
+	struct job_record job;
+	struct job_details details;
+	int rc = SLURM_SUCCESS;
 
 	if (*uid != slurmdbd_conf->slurm_user_id) {
 		error("DBD_JOB_SUSPEND message from invalid uid %u", *uid);
@@ -267,17 +361,39 @@ static int  _job_suspend(Buf in_buffer, Buf *out_buffer, uint32_t *uid)
 		return SLURM_ERROR;
 	}
 
-	info("DBD_JOB_SUSPEND: ID:%u STATE:%s", 
-	     job_suspend_msg->job_id, 
-	     job_state_string((enum job_states) job_suspend_msg->job_state));
+	debug2("DBD_JOB_SUSPEND: ID:%u STATE:%s", 
+	       job_suspend_msg->job_id, 
+	       job_state_string((enum job_states) job_suspend_msg->job_state));
+
+	memset(&job, 0, sizeof(struct job_record));
+	memset(&details, 0, sizeof(struct job_details));
+
+	job.assoc_id = job_suspend_msg->assoc_id;
+	job.db_index = job_suspend_msg->db_index;
+	job.job_id = job_suspend_msg->job_id;
+	job.job_state = job_suspend_msg->job_state;
+	details.submit_time = job_suspend_msg->submit_time;
+	job.suspend_time = job_suspend_msg->suspend_time;
+
+	job.details = &details;
+	rc = jobacct_storage_g_job_suspend(db_conn, &job);
+
+	if(rc && errno == 740) /* meaning data is already there */
+		rc = SLURM_SUCCESS;
+
 	slurm_dbd_free_job_suspend_msg(job_suspend_msg);
-	*out_buffer = make_dbd_rc_msg(SLURM_SUCCESS);
+	*out_buffer = make_dbd_rc_msg(rc);
 	return SLURM_SUCCESS;
 }
 
-static int _node_state(Buf in_buffer, Buf *out_buffer, uint32_t *uid)
+static int _node_state(void *db_conn,
+		       Buf in_buffer, Buf *out_buffer, uint32_t *uid)
 {
 	dbd_node_state_msg_t *node_state_msg;
+	struct node_record node_ptr;
+	int rc = SLURM_SUCCESS;
+
+	memset(&node_ptr, 0, sizeof(struct node_record));
 
 	if (*uid != slurmdbd_conf->slurm_user_id) {
 		error("DBD_NODE_STATE message from invalid uid %u", *uid);
@@ -291,13 +407,33 @@ static int _node_state(Buf in_buffer, Buf *out_buffer, uint32_t *uid)
 		return SLURM_ERROR;
 	}
 
-	info("DBD_NODE_STATE: NODE:%s STATE:%s REASON:%s TIME:%u", 
-	     node_state_msg->hostlist,
-	     _node_state_string(node_state_msg->new_state),
-	     node_state_msg->reason, 
-	     node_state_msg->event_time);
+	debug2("DBD_NODE_STATE: NODE:%s STATE:%s REASON:%s TIME:%u", 
+	       node_state_msg->hostlist,
+	       _node_state_string(node_state_msg->new_state),
+	       node_state_msg->reason, 
+	       node_state_msg->event_time);
+	node_ptr.name = node_state_msg->hostlist;
+
+	slurmctld_conf.fast_schedule = 0;
+
+	if(node_state_msg->new_state == DBD_NODE_STATE_DOWN)
+		rc = clusteracct_storage_g_node_down(
+			db_conn,
+			node_state_msg->cluster_name,
+			&node_ptr,
+			node_state_msg->event_time,
+			node_state_msg->reason);
+	else
+		rc = clusteracct_storage_g_node_up(db_conn,
+						   node_state_msg->cluster_name,
+						   &node_ptr,
+						   node_state_msg->event_time);
+	
+	if(rc && errno == 740) /* meaning data is already there */
+		rc = SLURM_SUCCESS;
+
 	slurm_dbd_free_node_state_msg(node_state_msg);
-	*out_buffer = make_dbd_rc_msg(SLURM_SUCCESS);
+	*out_buffer = make_dbd_rc_msg(rc);
 	return SLURM_SUCCESS;
 }
 
@@ -312,9 +448,14 @@ static char *_node_state_string(uint16_t node_state)
 	return "UNKNOWN";
 }
 
-static int  _step_complete(Buf in_buffer, Buf *out_buffer, uint32_t *uid)
+static int  _step_complete(void *db_conn,
+			   Buf in_buffer, Buf *out_buffer, uint32_t *uid)
 {
 	dbd_step_comp_msg_t *step_comp_msg;
+	struct step_record step;
+	struct job_record job;
+	struct job_details details;
+	int rc = SLURM_SUCCESS;
 
 	if (*uid != slurmdbd_conf->slurm_user_id) {
 		error("DBD_STEP_COMPLETE message from invalid uid %u", *uid);
@@ -328,17 +469,45 @@ static int  _step_complete(Buf in_buffer, Buf *out_buffer, uint32_t *uid)
 		return SLURM_ERROR;
 	}
 
-	info("DBD_STEP_COMPLETE: ID:%u.%u NAME:%s", 
-	     step_comp_msg->job_id, step_comp_msg->step_id,
-	     step_comp_msg->name);
+	debug2("DBD_STEP_COMPLETE: ID:%u.%u ", 
+	       step_comp_msg->job_id, step_comp_msg->step_id);
+
+	memset(&step, 0, sizeof(struct step_record));
+	memset(&job, 0, sizeof(struct job_record));
+	memset(&details, 0, sizeof(struct job_details));
+
+	job.assoc_id = step_comp_msg->assoc_id;
+	job.db_index = step_comp_msg->db_index;
+	job.end_time = step_comp_msg->end_time;
+	step.jobacct = step_comp_msg->jobacct;
+	job.job_id = step_comp_msg->job_id;
+	job.requid = step_comp_msg->req_uid;
+	job.start_time = step_comp_msg->start_time;
+	details.submit_time = step_comp_msg->job_submit_time;
+	step.step_id = step_comp_msg->step_id;
+	job.total_procs = step_comp_msg->total_procs;
+
+	job.details = &details;
+	step.job_ptr = &job;
+
+	rc = jobacct_storage_g_step_complete(db_conn, &step);
+
+	if(rc && errno == 740) /* meaning data is already there */
+		rc = SLURM_SUCCESS;
+
 	slurm_dbd_free_step_complete_msg(step_comp_msg);
-	*out_buffer = make_dbd_rc_msg(SLURM_SUCCESS);
+	*out_buffer = make_dbd_rc_msg(rc);
 	return SLURM_SUCCESS;
 }
 
-static int  _step_start(Buf in_buffer, Buf *out_buffer, uint32_t *uid)
+static int  _step_start(void *db_conn,
+			Buf in_buffer, Buf *out_buffer, uint32_t *uid)
 {
 	dbd_step_start_msg_t *step_start_msg;
+	struct step_record step;
+	struct job_record job;
+	struct job_details details;
+	int rc = SLURM_SUCCESS;
 
 	if (*uid != slurmdbd_conf->slurm_user_id) {
 		error("DBD_STEP_START message from invalid uid %u", *uid);
@@ -352,10 +521,33 @@ static int  _step_start(Buf in_buffer, Buf *out_buffer, uint32_t *uid)
 		return SLURM_ERROR;
 	}
 
-	info("DBD_STEP_START: ID:%u.%u NAME:%s", 
+	debug2("DBD_STEP_START: ID:%u.%u NAME:%s", 
 	     step_start_msg->job_id, step_start_msg->step_id,
 	     step_start_msg->name);
+
+	memset(&step, 0, sizeof(struct step_record));
+	memset(&job, 0, sizeof(struct job_record));
+	memset(&details, 0, sizeof(struct job_details));
+
+	job.assoc_id = step_start_msg->assoc_id;
+	job.db_index = step_start_msg->db_index;
+	job.job_id = step_start_msg->job_id;
+	step.name = step_start_msg->name;
+	job.nodes = step_start_msg->nodes;
+	job.start_time = step_start_msg->start_time;
+	details.submit_time = step_start_msg->job_submit_time;
+	step.step_id = step_start_msg->step_id;
+	job.total_procs = step_start_msg->total_procs;
+
+	job.details = &details;
+	step.job_ptr = &job;
+
+	rc = jobacct_storage_g_step_start(db_conn, &step);
+
+	if(rc && errno == 740) /* meaning data is already there */
+		rc = SLURM_SUCCESS;
+
 	slurm_dbd_free_step_start_msg(step_start_msg);
-	*out_buffer = make_dbd_rc_msg(SLURM_SUCCESS);
+	*out_buffer = make_dbd_rc_msg(rc);
 	return SLURM_SUCCESS;
 }

@@ -224,6 +224,20 @@ static void _layout_ctl_conf(GtkTreeStore *treestore,
 	add_display_treestore_line(update, treestore, &iter, 
 				   "Configuration data as of", temp_str);
 	add_display_treestore_line(update, treestore, &iter, 
+				   "AccountingStorageHost", 
+				   slurm_ctl_conf_ptr->accounting_storage_host);
+	add_display_treestore_line(update, treestore, &iter, 
+				   "AccountingStorageType", 
+				   slurm_ctl_conf_ptr->accounting_storage_type);
+	snprintf(temp_str, sizeof(temp_str), "%u", 
+		 slurm_ctl_conf_ptr->accounting_storage_port);
+	add_display_treestore_line(update, treestore, &iter, 
+				   "AccountingStoragePort", 
+				   temp_str);
+	add_display_treestore_line(update, treestore, &iter, 
+				   "AccountingStorageUser", 
+				   slurm_ctl_conf_ptr->accounting_storage_user);
+	add_display_treestore_line(update, treestore, &iter, 
 				   "AuthType", slurm_ctl_conf_ptr->authtype);
 	add_display_treestore_line(update, treestore, &iter, 
 				   "BackupAddr",
@@ -279,28 +293,14 @@ static void _layout_ctl_conf(GtkTreeStore *treestore,
 				   "InactiveLimit", 
 				   temp_str);
 
+	add_display_treestore_line(update, treestore, &iter, 
+				   "JobAcctGatherType", 
+				   slurm_ctl_conf_ptr->job_acct_gather_type);
 	snprintf(temp_str, sizeof(temp_str), "%u", 
 		 slurm_ctl_conf_ptr->job_acct_gather_freq);
 	add_display_treestore_line(update, treestore, &iter, 
 				   "JobAcctGatherFrequency",
 				   temp_str);
-	add_display_treestore_line(update, treestore, &iter, 
-				   "JobAcctGatherType", 
-				   slurm_ctl_conf_ptr->job_acct_gather_type);
-	add_display_treestore_line(update, treestore, &iter, 
-				   "JobAcctStorageHost", 
-				   slurm_ctl_conf_ptr->job_acct_storage_host);
-	add_display_treestore_line(update, treestore, &iter, 
-				   "JobAcctStorageType", 
-				   slurm_ctl_conf_ptr->job_acct_storage_type);
-	snprintf(temp_str, sizeof(temp_str), "%u", 
-		 slurm_ctl_conf_ptr->job_acct_storage_port);
-	add_display_treestore_line(update, treestore, &iter, 
-				   "JobAcctStoragePort", 
-				   temp_str);
-	add_display_treestore_line(update, treestore, &iter, 
-				   "JobAcctStorageUser", 
-				   slurm_ctl_conf_ptr->job_acct_storage_user);
 
 	add_display_treestore_line(update, treestore, &iter, 
 				   "JobCompHost", 

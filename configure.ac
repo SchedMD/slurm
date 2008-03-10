@@ -278,9 +278,8 @@ AC_CONFIG_FILES([Makefile
 		 src/api/Makefile 
 		 src/common/Makefile
 		 src/database/Makefile
-		 src/accounting/Makefile
-		 src/accounting/sacct/Makefile
-		 src/accounting/sacctmgr/Makefile
+		 src/sacct/Makefile
+		 src/sacctmgr/Makefile
 		 src/salloc/Makefile 
 		 src/sbatch/Makefile 
 		 src/sattach/Makefile
@@ -300,6 +299,7 @@ AC_CONFIG_FILES([Makefile
 		 src/sview/Makefile
 		 src/plugins/Makefile
 		 src/plugins/accounting_storage/Makefile
+		 src/plugins/accounting_storage/filetxt/Makefile
 		 src/plugins/accounting_storage/gold/Makefile
 		 src/plugins/accounting_storage/mysql/Makefile
 		 src/plugins/accounting_storage/pgsql/Makefile
@@ -321,13 +321,6 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/jobacct_gather/linux/Makefile
 		 src/plugins/jobacct_gather/aix/Makefile
 		 src/plugins/jobacct_gather/none/Makefile
-		 src/plugins/jobacct_storage/Makefile
-		 src/plugins/jobacct_storage/filetxt/Makefile
-		 src/plugins/jobacct_storage/gold/Makefile
-		 src/plugins/jobacct_storage/mysql/Makefile
-		 src/plugins/jobacct_storage/pgsql/Makefile
-		 src/plugins/jobacct_storage/none/Makefile
-		 src/plugins/jobacct_storage/slurmdbd/Makefile
 		 src/plugins/jobcomp/Makefile
 		 src/plugins/jobcomp/filetxt/Makefile
 		 src/plugins/jobcomp/none/Makefile

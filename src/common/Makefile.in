@@ -87,8 +87,7 @@ am__libcommon_la_SOURCES_DIST = xmalloc.c xmalloc.h xassert.c \
 	uid.h util-net.c util-net.h slurm_auth.c slurm_auth.h \
 	jobacct_common.c jobacct_common.h slurm_accounting_storage.c \
 	slurm_accounting_storage.h slurm_jobacct_gather.c \
-	slurm_jobacct_gather.h slurm_jobacct_storage.c \
-	slurm_jobacct_storage.h slurm_jobcomp.c slurm_jobcomp.h \
+	slurm_jobacct_gather.h slurm_jobcomp.c slurm_jobcomp.h \
 	switch.c switch.h arg_desc.c arg_desc.h macros.h malloc.c \
 	malloc.h getopt.h getopt.c getopt1.c unsetenv.c unsetenv.h \
 	slurm_selecttype_info.c slurm_resource_info.c \
@@ -108,12 +107,11 @@ am_libcommon_la_OBJECTS = xmalloc.lo xassert.lo xstring.lo xsignal.lo \
 	slurm_protocol_defs.lo slurm_rlimits_info.lo slurmdbd_defs.lo \
 	uid.lo util-net.lo slurm_auth.lo jobacct_common.lo \
 	slurm_accounting_storage.lo slurm_jobacct_gather.lo \
-	slurm_jobacct_storage.lo slurm_jobcomp.lo switch.lo \
-	arg_desc.lo malloc.lo getopt.lo getopt1.lo $(am__objects_1) \
-	slurm_selecttype_info.lo slurm_resource_info.lo hostlist.lo \
-	slurm_step_layout.lo checkpoint.lo parse_time.lo \
-	job_options.lo global_defaults.lo timers.lo stepd_api.lo \
-	proc_args.lo
+	slurm_jobcomp.lo switch.lo arg_desc.lo malloc.lo getopt.lo \
+	getopt1.lo $(am__objects_1) slurm_selecttype_info.lo \
+	slurm_resource_info.lo hostlist.lo slurm_step_layout.lo \
+	checkpoint.lo parse_time.lo job_options.lo global_defaults.lo \
+	timers.lo stepd_api.lo proc_args.lo
 am__EXTRA_libcommon_la_SOURCES_DIST = unsetenv.c unsetenv.h
 libcommon_la_OBJECTS = $(am_libcommon_la_OBJECTS)
 libcommon_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
@@ -374,7 +372,6 @@ libcommon_la_SOURCES = \
 	jobacct_common.c jobacct_common.h \
 	slurm_accounting_storage.c slurm_accounting_storage.h \
 	slurm_jobacct_gather.c slurm_jobacct_gather.h \
-	slurm_jobacct_storage.c slurm_jobacct_storage.h \
 	slurm_jobcomp.c slurm_jobcomp.h	\
 	switch.c switch.h		\
 	arg_desc.c arg_desc.h		\
@@ -509,7 +506,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurm_cred.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurm_errno.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurm_jobacct_gather.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurm_jobacct_storage.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurm_jobcomp.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurm_protocol_api.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/slurm_protocol_defs.Plo@am__quote@

@@ -1118,7 +1118,7 @@ _wait_for_any_task(slurmd_job_t *job, bool waitflag)
 		jobacct = jobacct_gather_g_remove_task(pid);
 		if(jobacct) {
 			jobacct_gather_g_setinfo(jobacct, 
-					  JOBACCT_DATA_RUSAGE, &rusage);
+						 JOBACCT_DATA_RUSAGE, &rusage);
 			jobacct_gather_g_aggregate(job->jobacct, jobacct);
 			jobacct_gather_g_destroy(jobacct);
 		} 		

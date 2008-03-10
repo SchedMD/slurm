@@ -69,7 +69,6 @@
 #include "src/common/pack.h"
 #include "src/common/read_config.h"
 #include "src/common/slurm_jobacct_gather.h"
-#include "src/common/slurm_jobacct_storage.h"
 #include "src/common/slurm_accounting_storage.h"
 #include "src/common/slurm_auth.h"
 #include "src/common/slurm_jobcomp.h"
@@ -139,6 +138,8 @@ log_options_t log_opts = LOG_OPTS_INITIALIZER;
 /* Global variables */
 slurmctld_config_t slurmctld_config;
 int bg_recover = DEFAULT_RECOVER;
+char *slurmctld_cluster_name = NULL; /* name of cluster */
+void *acct_db_conn = NULL;
 
 /* Local variables */
 static int	daemonize = DEFAULT_DAEMONIZE;
@@ -164,7 +165,7 @@ static int controller_sigarray[] = {
 static void         _default_sigaction(int sig);
 inline static void  _free_server_thread(void);
 static int          _gold_cluster_ready();
-static int          _gold_mark_all_nodes_down(char *reason, time_t event_time);
+static int          _gold_mark_all_nodes_down(char *reason);
 static void         _init_config(void);
 static void         _init_pidfile(void);
 static void         _kill_old_slurmctld(void);
@@ -269,6 +270,8 @@ int main(int argc, char *argv[])
 	}
 	info("slurmctld version %s started", SLURM_VERSION);
 
+	slurmctld_cluster_name = slurmctld_conf.cluster_name;
+
 	if ((error_code = gethostname_short(node_name, MAX_SLURM_NAME)))
 		fatal("getnodename error %s", slurm_strerror(error_code));
 
@@ -300,12 +303,13 @@ int main(int argc, char *argv[])
 		fatal( "failed to initialize checkpoint plugin" );
 	if (slurm_select_init() != SLURM_SUCCESS )
 		fatal( "failed to initialize node selection plugin");
-	if (slurm_acct_storage_init() != SLURM_SUCCESS )
-		fatal( "failed to initialize clusteracct_storage plugin");
+	if (slurm_acct_storage_init(NULL) != SLURM_SUCCESS )
+		fatal( "failed to initialize accounting_storage plugin");
+	
+	acct_db_conn = acct_storage_g_get_connection();
+	
 	if (slurm_jobacct_gather_init() != SLURM_SUCCESS )
 		fatal( "failed to initialize jobacct_gather plugin");
-	if (slurm_jobacct_storage_init() != SLURM_SUCCESS )
-		fatal( "failed to initialize jobacct_storage plugin");
 
 	while (1) {
 		/* initialization for each primary<->backup switch */
@@ -332,37 +336,14 @@ int main(int argc, char *argv[])
 					slurm_strerror(error_code));
 			}
 			
-			if (recover == 0)
-				_gold_mark_all_nodes_down("cold-start",
-							  time(NULL));
-			else if (!stat("/tmp/slurm_gold_first", &stat_buf)) {
-				/* this is here for when slurm is
-				 * started with gold for the first
-				 * time to log any downed nodes.
-				 */
-				struct node_record *node_ptr =
-					node_record_table_ptr;
-				int i=0;
-				time_t event_time = time(NULL);
-				debug("found /tmp/slurm_gold_first, "
-				      "setting nodes down");
-				for (i = 0;
-				     i < node_record_count;
-				     i++, node_ptr++) {
-					if (node_ptr->name == '\0'
-					    || !node_ptr->reason)
-						continue;
-					
-					if(clusteracct_storage_g_node_down(
-						   node_ptr,
-						   event_time,
-						   node_ptr->reason)
-					   == SLURM_ERROR) 
-						break;
-				}
-				 if(unlink("/tmp/slurm_gold_first") < 0)
-					 error("Error deleting "
-					       "/tmp/slurm_gold_first");
+			if ((recover == 0) || 
+			    (!stat("/tmp/slurm_gold_first", &stat_buf))) {
+				/* When first starting to write node state
+				 * information to Gold or SlurmDBD, create 
+				 * a file called "/tmp/slurm_gold_first" to 
+				 * capture node initialization information */
+				_gold_mark_all_nodes_down("cold-start");
+				 unlink("/tmp/slurm_gold_first");
 			}
 		} else {
 			error("this host (%s) not valid controller (%s or %s)",
@@ -444,6 +425,9 @@ int main(int argc, char *argv[])
 		verbose("Unable to remove pidfile '%s': %m",
 			slurmctld_conf.slurmctld_pidfile);
 
+	acct_storage_g_close_connection(acct_db_conn);
+	slurm_acct_storage_fini();	/* Save pending message traffic */
+
 #ifdef MEMORY_LEAK_DEBUG
 	/* This should purge all allocated memory,   *\
 	\*   Anything left over represents a leak.   */
@@ -471,8 +455,6 @@ int main(int argc, char *argv[])
 	g_slurm_jobcomp_fini();
 	slurm_acct_storage_fini();
 	slurm_jobacct_gather_fini();
-	jobacct_storage_g_fini(); 	/* Save pending message traffic */
-	slurm_jobacct_storage_fini();	/* Release jobacct plugin memory */
 	slurm_sched_fini();
 	slurm_select_fini();
 	checkpoint_fini();
@@ -486,7 +468,7 @@ int main(int argc, char *argv[])
 	slurm_api_clear_config();
 	sleep(2);
 #else
-	jobacct_storage_g_fini();	/* Save pending message traffic */
+	slurm_acct_storage_fini();
 	/* Give REQUEST_SHUTDOWN a chance to get propagated, 
 	 * up to 3 seconds. */
 	for (i=0; i<3; i++) {
@@ -502,7 +484,7 @@ int main(int argc, char *argv[])
 			"threads\n\n", cnt);
 	}
 	log_fini();
-	
+
 	if (dump_core)
 		abort();
 	else
@@ -857,17 +839,20 @@ static int _gold_cluster_ready()
 #endif
 	}
 
-	rc = clusteracct_storage_g_cluster_procs(procs, event_time);
+	rc = clusteracct_storage_g_cluster_procs(acct_db_conn,
+						 slurmctld_cluster_name,
+						 procs, event_time);
 
 	return rc;
 }
 
-static int _gold_mark_all_nodes_down(char *reason, time_t event_time)
+static int _gold_mark_all_nodes_down(char *reason)
 {
 	char *state_file;
 	struct stat stat_buf;
 	struct node_record *node_ptr;
 	int i;
+	time_t event_time;
 	int rc = SLURM_ERROR;
 
 	state_file = xstrdup (slurmctld_conf.state_save_location);
@@ -875,8 +860,9 @@ static int _gold_mark_all_nodes_down(char *reason, time_t event_time)
 	if (stat(state_file, &stat_buf)) {
 		debug("_gold_mark_all_nodes_down: could not stat(%s) "
 		      "to record node down time", state_file);
-		xfree(state_file);
-		return rc;
+		event_time = time(NULL);
+	} else {
+		event_time = stat_buf.st_mtime;
 	}
 	xfree(state_file);
 
@@ -884,7 +870,9 @@ static int _gold_mark_all_nodes_down(char *reason, time_t event_time)
 	for (i = 0; i < node_record_count; i++, node_ptr++) {
 		if (node_ptr->name == '\0')
 			continue;
-		if((rc = clusteracct_storage_g_node_down(node_ptr, event_time,
+		if((rc = clusteracct_storage_g_node_down(acct_db_conn,
+							 slurmctld_cluster_name,
+							 node_ptr, event_time,
 							 reason))
 		   == SLURM_ERROR) 
 			break;
