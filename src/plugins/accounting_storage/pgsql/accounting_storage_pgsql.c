@@ -523,7 +523,7 @@ static int _pgsql_acct_check_tables(PGconn *acct_pgsql_db,
 	if(!event_found) {
 		if(pgsql_db_create_table(acct_pgsql_db, 
 					 event_table, event_table_fields,
-					 ", primary key (name(20), "
+					 ", primary key (node_name(20), "
 					 "cluster(20), period_start))")
 		   == SLURM_ERROR)
 			return SLURM_ERROR;
