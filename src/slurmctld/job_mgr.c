@@ -3672,12 +3672,23 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 				info("update_job: setting features to %s for "
 				     "job_id %u", job_specs->features, 
 				     job_specs->job_id);
+			} else {
+				info("update_job: cleared features for job %u",
+				     job_specs->job_id);
 			}
 		} else {
 			error("Attempt to change features for job %u",
 			      job_specs->job_id);
 			error_code = ESLURM_ACCESS_DENIED;
 		}
+	}
+
+	if (job_specs->comment) {
+		xfree(job_ptr->comment);
+		job_ptr->comment = job_specs->comment;
+		job_specs->comment = NULL;	/* Nothing left to free */
+		info("update_job: setting comment to %s for job_id %u",
+		     job_ptr->comment, job_specs->job_id);
 	}
 
 	if (job_specs->name) {
@@ -3767,10 +3778,13 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 	if (job_specs->account) {
 		xfree(job_ptr->account);
 		if (job_specs->account[0] != '\0') {
-			job_ptr->account = job_specs->account ;
+			job_ptr->account = job_specs->account;
+			job_specs->account = NULL;  /* Nothing left to free */
 			info("update_job: setting account to %s for job_id %u",
 			     job_ptr->account, job_specs->job_id);
-			job_specs->account = NULL;
+		} else {
+			info("update_job: cleared account for job_id %u",
+			     job_specs->job_id);
 		}
 	}
 

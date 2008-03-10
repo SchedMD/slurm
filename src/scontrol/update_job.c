@@ -209,6 +209,10 @@ scontrol_update_job (int argc, char *argv[])
 			job_msg.job_id = 
 				(uint32_t) strtol(&argv[i][6], 
 						 (char **) NULL, 10);
+		else if (strncasecmp(argv[i], "Comment=", 8) == 0) {
+			job_msg.comment = &argv[i][8];
+			update_cnt++;
+		}
 		else if (strncasecmp(argv[i], "TimeLimit=", 10) == 0) {
 			if ((strcasecmp(&argv[i][10], "UNLIMITED") == 0) ||
 			    (strcasecmp(&argv[i][10], "INFINITE") == 0))
