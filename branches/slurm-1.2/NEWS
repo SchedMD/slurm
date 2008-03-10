@@ -19,7 +19,8 @@ documents those changes that are of interest to users and admins.
  -- Add threaded agent to manage a queue of Gold update requests for 
     performance reasons.
  -- Add salloc options --chdir and --get-user-env (for Moab).
-
+ -- Modify scontrol update to support job comment changes.
+ 
 * Changes in SLURM 1.2.24
 =========================
  -- In sched/wiki and sched/wiki2, support non-zero UPDATE_TIME specification
