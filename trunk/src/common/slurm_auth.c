@@ -193,7 +193,7 @@ slurm_auth_marshal_args( void *hosts, int timeout )
         if ( ( hostlist_idx == -1 ) &&
              ( timeout_idx == -1 ) ) {
                 hostlist_idx = arg_idx_by_name( auth_args, ARG_HOST_LIST );
-                timeout_idx = arg_idx_by_name( auth_args, ARG_TIMEOUT );                
+                timeout_idx = arg_idx_by_name( auth_args, ARG_TIMEOUT );        
         }
 
         argv = xmalloc( count * sizeof( void * ) );

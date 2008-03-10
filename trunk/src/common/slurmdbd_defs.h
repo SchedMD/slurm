@@ -51,7 +51,10 @@
 #  include <inttypes.h>
 #endif				/*  HAVE_CONFIG_H */
 
+#include <slurm/slurm.h>
+
 #include "src/common/pack.h"
+#include "src/common/list.h"
 
 /* Increment SLURM_DBD_VERSION if any of the RPCs change */
 #define SLURM_DBD_VERSION 01
@@ -64,9 +67,10 @@ typedef enum {
 	DBD_GOT_JOBS,		/* Response to DBD_GET_JOBS		*/
 	DBD_JOB_COMPLETE,	/* Record job completion 		*/
 	DBD_JOB_START,		/* Record job starting			*/
+	DBD_JOB_START_RC,	/* return db_index from job insertion 	*/
 	DBD_JOB_SUSPEND,	/* Record job suspension		*/
-	DBD_RC,			/* Return code from operation		*/
 	DBD_NODE_STATE,		/* Record node state transition		*/
+	DBD_RC,			/* Return code from operation		*/
 	DBD_STEP_COMPLETE,	/* Record step completion		*/
 	DBD_STEP_START		/* Record step starting			*/
 } slurmdbd_msg_type_t;
@@ -87,13 +91,31 @@ typedef struct dbd_cluster_procs_msg {
 } dbd_cluster_procs_msg_t;
 
 typedef struct dbd_get_jobs_msg {
-	uint32_t job_count;	/* count of job ID filters */
-	uint32_t *job_ids;	/* array of job ID filters */
+	char *cluster_name; /* name of cluster to query */
+	uint32_t gid;      /* group id */
+	List selected_steps; /* List of jobacct_selected_step_t *'s */
+	List selected_parts; /* List of char *'s */
+	char *user;        /* user name */
 } dbd_get_jobs_msg_t;
 
+typedef struct dbd_job_info {
+	char *   block_id;      /* Bluegene block id */
+	time_t   eligible_time;	/* time job becomes eligible to run */
+	time_t   end_time;	/* job termintation time */
+	uint32_t exit_code;	/* job exit code or signal */
+	uint32_t job_id;	/* job ID */
+	uint16_t job_state;	/* job state */
+	char *   name;		/* job name */
+	char *   nodes;		/* hosts allocated to the job */
+	char *   part_name;	/* job's partition */
+	uint32_t priority;	/* job priority */
+	time_t   start_time;	/* job start time */
+	time_t   submit_time;	/* job submit time */
+	uint32_t total_procs;	/* count of allocated processors */
+} dbd_job_info_t;
+	
 typedef struct dbd_got_jobs_msg {
-	uint32_t job_count;	/* count of job IDs */
-	uint32_t *job_ids;	/* array of job IDs */
+	List jobs; /* list of jobacct_job_rec_t *'s */
 } dbd_got_jobs_msg_t;
 
 typedef struct dbd_init_msg {
@@ -103,40 +125,50 @@ typedef struct dbd_init_msg {
 } dbd_init_msg_t;
 
 typedef struct dbd_job_comp_msg {
-	uint32_t assoc_id;	/* accounting association id */
-	char *   account;	/* bank account */
+	uint32_t assoc_id;	/* accounting association id needed to
+				 * find job record in db */
+	uint32_t db_index;	/* index into the db for this job */
 	time_t   end_time;	/* job termintation time */
 	uint32_t exit_code;	/* job exit code or signal */
 	uint32_t job_id;	/* job ID */
 	uint16_t job_state;	/* job state */
-	char *   name;		/* job name */
 	char *   nodes;		/* hosts allocated to the job */
-	uint32_t priority;	/* job priority */
 	time_t   start_time;	/* job start time */
-	uint32_t total_procs;	/* count of allocated processors */
+	time_t   submit_time;	/* job submit time needed to find job
+				 * record in db */
 } dbd_job_comp_msg_t;
 
 typedef struct dbd_job_start_msg {
-	char *   account;	/* bank account */
+	uint32_t alloc_cpus;	/* count of allocated processors */
 	uint32_t assoc_id;	/* accounting association id */
-#ifdef HAVE_BG
 	char *   block_id;      /* Bluegene block id */
-#endif
 	time_t   eligible_time;	/* time job becomes eligible to run */
+	uint32_t gid;	        /* group ID */
 	uint32_t job_id;	/* job ID */
 	uint16_t job_state;	/* job state */
 	char *   name;		/* job name */
 	char *   nodes;		/* hosts allocated to the job */
+	char *   partition;	/* partition job is running on */
 	uint32_t priority;	/* job priority */
+	uint32_t req_cpus;	/* count of req processors */
 	time_t   start_time;	/* job start time */
 	time_t   submit_time;	/* job submit time */
-	uint32_t total_procs;	/* count of allocated processors */
 } dbd_job_start_msg_t;
 
+typedef struct dbd_job_start_rc_msg {
+	uint32_t db_index;	/* db_index */
+	uint32_t return_code;
+} dbd_job_start_rc_msg_t;
+
 typedef struct dbd_job_suspend_msg {
-	uint32_t assoc_id;	/* accounting association id */
-	uint32_t job_id;	/* job ID */
+	uint32_t assoc_id;	/* accounting association id needed
+				 * to find job record in db */
+	uint32_t db_index;	/* index into the db for this job */
+	uint32_t job_id;	/* job ID needed to find job record
+				 * in db */
 	uint16_t job_state;	/* job state */
+	time_t   submit_time;	/* job submit time needed to find job record
+				 * in db */
 	time_t   suspend_time;	/* job suspend or resume time */
 } dbd_job_suspend_msg_t;
 
@@ -147,6 +179,7 @@ typedef struct dbd_rc_msg {
 #define DBD_NODE_STATE_DOWN  1
 #define DBD_NODE_STATE_UP    2
 typedef struct dbd_node_state_msg {
+	char *cluster_name;	/* name of cluster */
 	time_t event_time;	/* time of transition */
 	char *hostlist;		/* name of hosts */
 	uint16_t new_state;	/* new state of host, see DBD_NODE_STATE_* */
@@ -155,23 +188,27 @@ typedef struct dbd_node_state_msg {
 
 typedef struct dbd_step_comp_msg {
 	uint32_t assoc_id;	/* accounting association id */
+	uint32_t db_index;	/* index into the db for this job */
 	time_t   end_time;	/* job termintation time */
+	jobacctinfo_t *jobacct; /* status info */
 	uint32_t job_id;	/* job ID */
-	char *   name;		/* step name */
-	char *   nodes;		/* hosts allocated to the step */
 	uint32_t req_uid;	/* requester user ID */
 	time_t   start_time;	/* step start time */
+	time_t   job_submit_time;/* job submit time needed to find job record
+				  * in db */
 	uint32_t step_id;	/* step ID */
 	uint32_t total_procs;	/* count of allocated processors */
 } dbd_step_comp_msg_t;
 
 typedef struct dbd_step_start_msg {
 	uint32_t assoc_id;	/* accounting association id */
+	uint32_t db_index;	/* index into the db for this job */
 	uint32_t job_id;	/* job ID */
 	char *   name;		/* step name */
 	char *   nodes;		/* hosts allocated to the step */
-	uint32_t req_uid;	/* requester user ID */
 	time_t   start_time;	/* step start time */
+	time_t   job_submit_time;/* job submit time needed to find job record
+				  * in db */
 	uint32_t step_id;	/* step ID */
 	uint32_t total_procs;	/* count of allocated processors */
 } dbd_step_start_msg_t;
@@ -212,6 +249,7 @@ void inline slurm_dbd_free_got_jobs_msg(dbd_got_jobs_msg_t *msg);
 void inline slurm_dbd_free_init_msg(dbd_init_msg_t *msg);
 void inline slurm_dbd_free_job_complete_msg(dbd_job_comp_msg_t *msg);
 void inline slurm_dbd_free_job_start_msg(dbd_job_start_msg_t *msg);
+void inline slurm_dbd_free_job_start_rc_msg(dbd_job_start_rc_msg_t *msg);
 void inline slurm_dbd_free_job_suspend_msg(dbd_job_suspend_msg_t *msg);
 void inline slurm_dbd_free_rc_msg(dbd_rc_msg_t *msg);
 void inline slurm_dbd_free_node_state_msg(dbd_node_state_msg_t *msg);
@@ -222,34 +260,50 @@ void inline slurm_dbd_free_step_start_msg(dbd_step_start_msg_t *msg);
  * Pack various SlurmDBD message structures into a buffer
 \*****************************************************************************/
 void inline slurm_dbd_pack_cluster_procs_msg(dbd_cluster_procs_msg_t *msg,
-								       Buf buffer);
-void inline slurm_dbd_pack_get_jobs_msg(dbd_get_jobs_msg_t *msg,       Buf buffer);
-void inline slurm_dbd_pack_got_jobs_msg(dbd_got_jobs_msg_t *msg,       Buf buffer);
-void inline slurm_dbd_pack_init_msg(dbd_init_msg_t *msg,               Buf buffer,
+					     Buf buffer);
+void inline slurm_dbd_pack_get_jobs_msg(dbd_get_jobs_msg_t *msg, Buf buffer);
+void inline slurm_dbd_pack_got_jobs_msg(dbd_got_jobs_msg_t *msg, Buf buffer);
+void inline slurm_dbd_pack_init_msg(dbd_init_msg_t *msg, Buf buffer,
 				    char *auth_info);
-void inline slurm_dbd_pack_job_complete_msg(dbd_job_comp_msg_t *msg,   Buf buffer);
-void inline slurm_dbd_pack_job_start_msg(dbd_job_start_msg_t *msg,     Buf buffer);
-void inline slurm_dbd_pack_job_suspend_msg(dbd_job_suspend_msg_t *msg, Buf buffer);
-void inline slurm_dbd_pack_rc_msg(dbd_rc_msg_t *msg,                   Buf buffer);
-void inline slurm_dbd_pack_node_state_msg(dbd_node_state_msg_t *msg,   Buf buffer);
-void inline slurm_dbd_pack_step_complete_msg(dbd_step_comp_msg_t *msg, Buf buffer);
-void inline slurm_dbd_pack_step_start_msg(dbd_step_start_msg_t *msg,   Buf buffer);
+void inline slurm_dbd_pack_job_complete_msg(dbd_job_comp_msg_t *msg,
+					    Buf buffer);
+void inline slurm_dbd_pack_job_start_msg(dbd_job_start_msg_t *msg,
+					 Buf buffer);
+void inline slurm_dbd_pack_job_start_rc_msg(dbd_job_start_rc_msg_t *msg,
+					    Buf buffer);
+void inline slurm_dbd_pack_job_suspend_msg(dbd_job_suspend_msg_t *msg,
+					   Buf buffer);
+void inline slurm_dbd_pack_rc_msg(dbd_rc_msg_t *msg, Buf buffer);
+void inline slurm_dbd_pack_node_state_msg(dbd_node_state_msg_t *msg,
+					  Buf buffer);
+void inline slurm_dbd_pack_step_complete_msg(dbd_step_comp_msg_t *msg,
+					     Buf buffer);
+void inline slurm_dbd_pack_step_start_msg(dbd_step_start_msg_t *msg,
+					  Buf buffer);
 
 /*****************************************************************************\
  * Unpack various SlurmDBD message structures from a buffer
 \*****************************************************************************/
 int inline slurm_dbd_unpack_cluster_procs_msg(dbd_cluster_procs_msg_t **msg,
-									 Buf buffer);
-int inline slurm_dbd_unpack_get_jobs_msg(dbd_get_jobs_msg_t **msg,       Buf buffer);
-int inline slurm_dbd_unpack_got_jobs_msg(dbd_got_jobs_msg_t **msg,       Buf buffer);
-int inline slurm_dbd_unpack_init_msg(dbd_init_msg_t **msg,               Buf buffer,
+					      Buf buffer);
+int inline slurm_dbd_unpack_get_jobs_msg(dbd_get_jobs_msg_t **msg, Buf buffer);
+int inline slurm_dbd_unpack_got_jobs_msg(dbd_got_jobs_msg_t **msg, Buf buffer);
+int inline slurm_dbd_unpack_init_msg(dbd_init_msg_t **msg, Buf buffer,
 				     char *auth_info);
-int inline slurm_dbd_unpack_job_complete_msg(dbd_job_comp_msg_t **msg,   Buf buffer);
-int inline slurm_dbd_unpack_job_start_msg(dbd_job_start_msg_t **msg,     Buf buffer);
-int inline slurm_dbd_unpack_job_suspend_msg(dbd_job_suspend_msg_t **msg, Buf buffer);
-int inline slurm_dbd_unpack_rc_msg(dbd_rc_msg_t **msg,                   Buf buffer);
-int inline slurm_dbd_unpack_node_state_msg(dbd_node_state_msg_t **msg,   Buf buffer);
-int inline slurm_dbd_unpack_step_complete_msg(dbd_step_comp_msg_t **msg, Buf buffer);
-int inline slurm_dbd_unpack_step_start_msg(dbd_step_start_msg_t **msg,   Buf buffer);
+int inline slurm_dbd_unpack_job_complete_msg(dbd_job_comp_msg_t **msg,
+					     Buf buffer);
+int inline slurm_dbd_unpack_job_start_msg(dbd_job_start_msg_t **msg,
+					  Buf buffer);
+int inline slurm_dbd_unpack_job_start_rc_msg(dbd_job_start_rc_msg_t **msg,
+					     Buf buffer);
+int inline slurm_dbd_unpack_job_suspend_msg(dbd_job_suspend_msg_t **msg,
+					    Buf buffer);
+int inline slurm_dbd_unpack_rc_msg(dbd_rc_msg_t **msg, Buf buffer);
+int inline slurm_dbd_unpack_node_state_msg(dbd_node_state_msg_t **msg,
+					   Buf buffer);
+int inline slurm_dbd_unpack_step_complete_msg(dbd_step_comp_msg_t **msg,
+					      Buf buffer);
+int inline slurm_dbd_unpack_step_start_msg(dbd_step_start_msg_t **msg,
+					   Buf buffer);
 
 #endif	/* !_SLURMDBD_DEFS_H */

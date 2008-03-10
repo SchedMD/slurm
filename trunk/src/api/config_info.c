@@ -119,6 +119,8 @@ void slurm_print_ctl_conf ( FILE* out,
 	fprintf(out, "Configuration data as of %s\n", time_str);
 	fprintf(out, "AccountingStorageHost   = %s\n", 
 		slurm_ctl_conf_ptr->accounting_storage_host);
+	fprintf(out, "AccountingStorageLoc       = %s\n", 
+		slurm_ctl_conf_ptr->accounting_storage_loc);
 	fprintf(out, "AccountingStoragePass   = %s\n", 
 		slurm_ctl_conf_ptr->accounting_storage_pass);
 	fprintf(out, "AccountingStoragePort   = %u\n", 
@@ -177,18 +179,6 @@ void slurm_print_ctl_conf ( FILE* out,
 		slurm_ctl_conf_ptr->job_acct_gather_freq);
 	fprintf(out, "JobAcctGatherType       = %s\n",
 		slurm_ctl_conf_ptr->job_acct_gather_type);
-	fprintf(out, "JobAcctStorageHost      = %s\n", 
-		slurm_ctl_conf_ptr->job_acct_storage_host);
-	fprintf(out, "JobAcctStorageType      = %s\n", 
-		slurm_ctl_conf_ptr->job_acct_storage_type);
-	fprintf(out, "JobAcctStorageLoc       = %s\n", 
-		slurm_ctl_conf_ptr->job_acct_storage_loc);
-	fprintf(out, "JobAcctStoragePass      = %s\n", 
-		slurm_ctl_conf_ptr->job_acct_storage_pass);
-	fprintf(out, "JobAcctStoragePort      = %u\n", 
-		slurm_ctl_conf_ptr->job_acct_storage_port);
-	fprintf(out, "JobAcctStorageUser      = %s\n", 
-		slurm_ctl_conf_ptr->job_acct_storage_user);
 	fprintf(out, "JobCompHost             = %s\n",
 		slurm_ctl_conf_ptr->job_comp_host);
 	fprintf(out, "JobCompLoc              = %s\n",
@@ -301,12 +291,6 @@ void slurm_print_ctl_conf ( FILE* out,
 		slurm_ctl_conf_ptr->slurmd_spooldir);
 	fprintf(out, "SlurmdTimeout           = %u\n", 
 		slurm_ctl_conf_ptr->slurmd_timeout);
-	fprintf(out, "SlurmDbdAddr            = %s\n", 
-		slurm_ctl_conf_ptr->slurmdbd_addr);
-	fprintf(out, "SlurmDbdAuthInfo        = %s\n",
-		slurm_ctl_conf_ptr->slurmdbd_auth_info);
-	fprintf(out, "SlurmDbdPort            = %u\n", 
-		slurm_ctl_conf_ptr->slurmdbd_port);
 	fprintf(out, "SLURM_CONFIG_FILE       = %s\n", 
 		slurm_ctl_conf_ptr->slurm_conf);
 	fprintf(out, "SLURM_VERSION           = %s\n", SLURM_VERSION);

@@ -94,6 +94,7 @@ extern int mysql_create_db(MYSQL *mysql_db, char *db_name,
 {
 	char create_line[50];
 
+	slurm_mutex_lock(&mysql_lock);
 	if(mysql_real_connect(mysql_db, db_info->host, db_info->user,
 			      db_info->pass, NULL, db_info->port, NULL, 0)) {
 		snprintf(create_line, sizeof(create_line),
@@ -108,10 +109,12 @@ extern int mysql_create_db(MYSQL *mysql_db, char *db_name,
 		     "user = %s pass = %s port = %u",
 		     db_info->host, db_info->user,
 		     db_info->pass, db_info->port);
+		slurm_mutex_unlock(&mysql_lock);
 		fatal("mysql_real_connect failed: %d %s",
 		      mysql_errno(mysql_db),
 		      mysql_error(mysql_db));
 	}
+	slurm_mutex_unlock(&mysql_lock);
 	return SLURM_SUCCESS;
 }
 
@@ -159,13 +162,16 @@ extern int mysql_db_query(MYSQL *mysql_db, char *query)
 {
 	if(!mysql_db)
 		fatal("You haven't inited this storage yet.");
-
+	slurm_mutex_lock(&mysql_lock);
 	if(mysql_query(mysql_db, query)) {
 		error("mysql_query failed: %d %s\n%s",
 		      mysql_errno(mysql_db),
 		      mysql_error(mysql_db), query);
+		errno = mysql_errno(mysql_db);
+		slurm_mutex_unlock(&mysql_lock);
 		return SLURM_ERROR;
 	}
+	slurm_mutex_unlock(&mysql_lock);
 
 	return SLURM_SUCCESS;
 }

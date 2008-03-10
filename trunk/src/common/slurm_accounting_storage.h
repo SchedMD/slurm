@@ -61,77 +61,77 @@ typedef enum {
 
 typedef struct {
 	char *name;
-	uint32_t uid;
-	uint32_t gid;
 	char *default_acct;
 	acct_expedite_level_t expedite;
 	acct_admin_level_t admin_level;
 } acct_user_rec_t;
 
 typedef struct {
-	char *name;
+	List coordinators; /* list of char *'s */
 	char *description;
-	char *organization;
 	acct_expedite_level_t expedite;
-	List coodinators;
+	char *name;
+	char *organization;
 } acct_account_rec_t;
 
 typedef struct {
-	uint32_t cpu_count; /* number of cpus during time period */
-	time_t period_start; /* when this record was started */
-	uint32_t idle_secs; /* number of cpu seconds idle */
-	uint32_t down_secs; /* number of cpu seconds down */
 	uint32_t alloc_secs; /* number of cpu seconds allocated */
+	uint32_t cpu_count; /* number of cpus during time period */
+	uint32_t down_secs; /* number of cpu seconds down */
+	uint32_t idle_secs; /* number of cpu seconds idle */
+	time_t period_start; /* when this record was started */
 	uint32_t resv_secs; /* number of cpu seconds reserved */	
 } cluster_accounting_rec_t;
 
 typedef struct {
-	char *name;
-	char *interface_node;
 	List accounting_list; /* list of cluster_accounting_rec_t *'s */
+	char *backup;
+	char *name;
+	char *primary;
 } acct_cluster_rec_t;
 
 typedef struct {
-	time_t period_start; 
 	uint32_t alloc_secs; /* number of cpu seconds allocated */
+	time_t period_start; 
 } acct_accounting_rec_t;
 
 typedef struct {
-	uint32_t id; /* id identifing a combination of
-			user-account-cluster(-partition) */
-	char *user;  /* user associated to association */
-	char *acct; /* account/project associated to association */
-	char *cluster; /* cluster associated to association */
-	char *partition; /* optional partition in a cluster 
-			    associated to association */
-	char *parent_acct; /* name of parent account */
-	uint32_t parent; /* parent id associated to this */
-	uint32_t lft; /* left most association in this group */
-	uint32_t rgt; /* right most association in this group */
-	uint32_t fairshare; /* fairshare number */
-	uint32_t max_jobs; /* max number of jobs this association can run
-			      at a time */
+	List accounting_list; 	/* list of acct_accounting_rec_t *'s */
+	char *acct;		/* account/project associated to association */
+	char *cluster;		/* cluster associated to association */
+	uint32_t fairshare;	/* fairshare number */
+	uint32_t id;		/* id identifing a combination of
+				 * user-account-cluster(-partition) */
+	uint32_t lft;		/* left most association in this group */
+	uint32_t max_cpu_secs_per_job; /* max number of cpu seconds this 
+					   * association can have per job */
+	uint32_t max_jobs;	/* max number of jobs this association can run
+				 * at one time */
 	uint32_t max_nodes_per_job; /* max number of nodes this
-				       association can allocate per job */
+				     * association can allocate per job */
 	uint32_t max_wall_duration_per_job; /* longest time this
-					       association can run a job */
-	uint32_t max_cpu_seconds_per_job; /* max number of cpu seconds
-					     this association can have per job */
-	List accounting_list; /* list of acct_accounting_rec_t *'s */
+					     * association can run a job */
+	uint32_t parent;	/* parent id associated to this */
+	char *parent_acct;	/* name of parent account */
+	char *partition;	/* optional partition in a cluster 
+				 * associated to association */
+	uint32_t rgt;		/* right most association in this group */
+	uint32_t uid;		/* user ID */
+	char *user;		/* user associated to association */
 } acct_association_rec_t;
 
 typedef struct {
-	List user_list; /* list of char * */
-	List def_acct_list; /* list of char * */
 	acct_admin_level_t admin_level;
+	List def_acct_list; /* list of char * */
 	acct_expedite_level_t expedite;	
+	List user_list; /* list of char * */
 } acct_user_cond_t;
 
 typedef struct {
 	List acct_list; /* list of char * */
 	List description_list; /* list of char * */
-	List organization_list; /* list of char * */
 	acct_expedite_level_t expedite;	
+	List organization_list; /* list of char * */
 } acct_account_cond_t;
 
 typedef struct {
@@ -139,15 +139,15 @@ typedef struct {
 } acct_cluster_cond_t;
 
 typedef struct {
-	List id_list; /* list of char */
-	List user_list; /* list of char * */
 	List acct_list; /* list of char * */
 	List cluster_list; /* list of char * */
+	List id_list; /* list of char */
+	uint32_t lft; /* left most association */
 	List partition_list; /* list of char * */
 	char *parent_acct; /* name of parent account */
 	uint32_t parent; /* parent account id */
-	uint32_t lft; /* left most association */
 	uint32_t rgt; /* right most association */
+	List user_list; /* list of char * */
 } acct_association_cond_t;
 
 extern void destroy_acct_user_rec(void *object);
@@ -162,20 +162,65 @@ extern void destroy_acct_account_cond(void *object);
 extern void destroy_acct_cluster_cond(void *object);
 extern void destroy_acct_association_cond(void *object);
 
+/* pack functions */
+extern void pack_acct_user_rec(acct_user_rec_t *object, Buf buffer);
+extern int unpack_acct_user_rec(acct_user_rec_t **object, Buf buffer);
+extern void pack_acct_account_rec(acct_account_rec_t *object, Buf buffer);
+extern int unpack_acct_account_rec(acct_account_rec_t **object, Buf buffer);
+extern void pack_cluster_accounting_rec(cluster_accounting_rec_t *object,
+					Buf buffer);
+extern int unpack_cluster_accounting_rec(cluster_accounting_rec_t **object,
+					 Buf buffer);
+extern void pack_acct_cluster_rec(acct_cluster_rec_t *object, Buf buffer);
+extern int unpack_acct_cluster_rec(acct_cluster_rec_t **object, Buf buffer);
+extern void pack_acct_accounting_rec(acct_accounting_rec_t *object, Buf buffer);
+extern int unpack_acct_accounting_rec(acct_accounting_rec_t **object,
+				      Buf buffer);
+extern void pack_acct_association_rec(acct_association_rec_t *object,
+				      Buf buffer);
+extern int unpack_acct_association_rec(acct_association_rec_t **object,
+				       Buf buffer);
+
+extern void pack_acct_user_cond(acct_user_cond_t *object, Buf buffer);
+extern int unpack_acct_user_cond(acct_user_cond_t **object, Buf buffer);
+extern void pack_acct_account_cond(acct_account_cond_t *object, Buf buffer);
+extern int unpack_acct_account_cond(acct_account_cond_t **object, Buf buffer);
+extern void pack_acct_cluster_cond(acct_cluster_cond_t *object, Buf buffer);
+extern int unpack_acct_cluster_cond(acct_cluster_cond_t **object, Buf buffer);
+extern void pack_acct_association_cond(acct_association_cond_t *object,
+				       Buf buffer);
+extern int unpack_acct_association_cond(acct_association_cond_t **object,
+					Buf buffer);
+
 extern char *acct_expedite_str(acct_expedite_level_t level);
 extern acct_expedite_level_t str_2_acct_expedite(char *level);
 extern char *acct_admin_level_str(acct_admin_level_t level);
 extern acct_admin_level_t str_2_acct_admin_level(char *level);
 
-extern int slurm_acct_storage_init(void); /* load the plugin */
+extern int slurm_acct_storage_init(char *loc); /* load the plugin */
 extern int slurm_acct_storage_fini(void); /* unload the plugin */
+
+/*
+ * get a new connection to the storage unit
+ * RET: pointer used to access db 
+ */
+extern void *acct_storage_g_get_connection();
+
+/*
+ * release connection to the storage unit
+ * IN: void * pointer returned from acct_storage_g_get_connection()
+ * RET: SLURM_SUCCESS on success SLURM_ERROR else 
+ */
+extern int acct_storage_g_close_connection(void *db_conn);
+
 
 /* 
  * add users to accounting system 
  * IN:  user_list List of acct_user_rec_t *
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
-extern int acct_storage_g_add_users(List user_list);
+extern int acct_storage_g_add_users(void *db_conn, 
+				    List user_list);
 
 /* 
  * add users as account coordinators 
@@ -183,7 +228,8 @@ extern int acct_storage_g_add_users(List user_list);
  * IN:  acct_user_cond_t *user_q
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
-extern int acct_storage_g_add_coord(char *acct, acct_user_cond_t *user_q);
+extern int acct_storage_g_add_coord(void *db_conn, 
+				    char *acct, acct_user_cond_t *user_q);
 
 
 /* 
@@ -191,21 +237,24 @@ extern int acct_storage_g_add_coord(char *acct, acct_user_cond_t *user_q);
  * IN:  account_list List of acct_account_rec_t *
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
-extern int acct_storage_g_add_accounts(List acct_list);
+extern int acct_storage_g_add_accounts(void *db_conn, 
+				       List acct_list);
 
 /* 
  * add clusters to accounting system 
  * IN:  cluster_list List of acct_cluster_rec_t *
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
-extern int acct_storage_g_add_clusters(List cluster_list);
+extern int acct_storage_g_add_clusters(void *db_conn, 
+				       List cluster_list);
 
 /* 
  * add accts to accounting system 
  * IN:  association_list List of acct_association_rec_t *
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
-extern int acct_storage_g_add_associations(List association_list);
+extern int acct_storage_g_add_associations(void *db_conn, 
+					   List association_list);
 
 /* 
  * modify existing users in the accounting system 
@@ -213,7 +262,8 @@ extern int acct_storage_g_add_associations(List association_list);
  * IN:  acct_user_rec_t *user
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
-extern int acct_storage_g_modify_users(acct_user_cond_t *user_q,
+extern int acct_storage_g_modify_users(void *db_conn, 
+				       acct_user_cond_t *user_q,
 				       acct_user_rec_t *user);
 
 /* 
@@ -221,8 +271,9 @@ extern int acct_storage_g_modify_users(acct_user_cond_t *user_q,
  * IN:  acct_user_cond_t *user_q,
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
-extern int acct_storage_g_modify_user_admin_level(
-	acct_user_cond_t *user_q);
+extern int acct_storage_g_modify_user_admin_level(void *db_conn, 
+				       
+						  acct_user_cond_t *user_q);
 
 /* 
  * modify existing accounts in the accounting system 
@@ -230,7 +281,8 @@ extern int acct_storage_g_modify_user_admin_level(
  * IN:  acct_account_rec_t *acct
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
-extern int acct_storage_g_modify_accounts(acct_account_cond_t *acct_q,
+extern int acct_storage_g_modify_accounts(void *db_conn, 
+					  acct_account_cond_t *acct_q,
 					  acct_account_rec_t *acct);
 
 /* 
@@ -239,7 +291,8 @@ extern int acct_storage_g_modify_accounts(acct_account_cond_t *acct_q,
  * IN:  acct_cluster_rec_t *cluster
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
-extern int acct_storage_g_modify_clusters(acct_cluster_cond_t *cluster_q,
+extern int acct_storage_g_modify_clusters(void *db_conn, 
+					  acct_cluster_cond_t *cluster_q,
 					  acct_cluster_rec_t *cluster);
 
 /* 
@@ -248,7 +301,8 @@ extern int acct_storage_g_modify_clusters(acct_cluster_cond_t *cluster_q,
  * IN:  acct_association_rec_t *assoc
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
-extern int acct_storage_g_modify_associations(acct_association_cond_t *assoc_q,
+extern int acct_storage_g_modify_associations(void *db_conn, 
+					      acct_association_cond_t *assoc_q,
 					      acct_association_rec_t *assoc);
 
 /* 
@@ -256,7 +310,8 @@ extern int acct_storage_g_modify_associations(acct_association_cond_t *assoc_q,
  * IN:  acct_user_cond_t *user_q
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
-extern int acct_storage_g_remove_users(acct_user_cond_t *user_q);
+extern int acct_storage_g_remove_users(void *db_conn, 
+				       acct_user_cond_t *user_q);
 
 /* 
  * remove users from being a coordinator of an account
@@ -264,28 +319,32 @@ extern int acct_storage_g_remove_users(acct_user_cond_t *user_q);
  * IN: acct_user_cond_t *user_q
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
-extern int acct_storage_g_remove_coord(char *acct, acct_user_cond_t *user_q);
+extern int acct_storage_g_remove_coord(void *db_conn, 
+				       char *acct, acct_user_cond_t *user_q);
 
 /* 
  * remove accounts from accounting system 
  * IN:  acct_account_cond_t *acct_q
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
-extern int acct_storage_g_remove_accounts(acct_account_cond_t *acct_q);
+extern int acct_storage_g_remove_accounts(void *db_conn, 
+					  acct_account_cond_t *acct_q);
 
 /* 
  * remove clusters from accounting system 
  * IN:  acct_cluster_cond_t *cluster_q
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
-extern int acct_storage_g_remove_clusters(acct_cluster_cond_t *cluster_q);
+extern int acct_storage_g_remove_clusters(void *db_conn, 
+					  acct_cluster_cond_t *cluster_q);
 
 /* 
  * remove associations from accounting system 
  * IN:  acct_association_cond_t *assoc_q
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
-extern int acct_storage_g_remove_associations(acct_association_cond_t *assoc_q);
+extern int acct_storage_g_remove_associations(void *db_conn, 
+					      acct_association_cond_t *assoc_q);
 
 /* 
  * get info from the storage 
@@ -294,7 +353,8 @@ extern int acct_storage_g_remove_associations(acct_association_cond_t *assoc_q);
  * returns List of acct_user_rec_t *
  * note List needs to be freed when called
  */
-extern List acct_storage_g_get_users(acct_user_cond_t *user_q);
+extern List acct_storage_g_get_users(void *db_conn, 
+				     acct_user_cond_t *user_q);
 
 /* 
  * get info from the storage 
@@ -303,7 +363,8 @@ extern List acct_storage_g_get_users(acct_user_cond_t *user_q);
  * returns List of acct_account_rec_t *
  * note List needs to be freed when called
  */
-extern List acct_storage_g_get_accounts(acct_account_cond_t *acct_q);
+extern List acct_storage_g_get_accounts(void *db_conn, 
+					acct_account_cond_t *acct_q);
 
 /* 
  * get info from the storage 
@@ -312,16 +373,29 @@ extern List acct_storage_g_get_accounts(acct_account_cond_t *acct_q);
  * returns List of acct_cluster_rec_t *
  * note List needs to be freed when called
  */
-extern List acct_storage_g_get_clusters(acct_cluster_cond_t *cluster_q);
+extern List acct_storage_g_get_clusters(void *db_conn, 
+					acct_cluster_cond_t *cluster_q);
 
 /* 
  * get info from the storage 
- * IN:  acct_assoc - acct_association_rec_t with at least cluster and
- *                   account set for account association.  To get user
- *                   association set user, and optional partition.
- * RET: uint32_t representing association id (uint32_t)NO_VAL on failure.
+ * IN/OUT:  acct_assoc - acct_association_rec_t with at least cluster and
+ *			account set for account association.  To get user
+ *			association set user, and optional partition.
+ *			Sets "id" field with the association ID.
+ * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
-extern uint32_t acct_storage_g_get_assoc_id(acct_association_rec_t *assoc);
+extern int acct_storage_g_get_assoc_id(void *db_conn, 
+				       acct_association_rec_t *assoc);
+
+/* 
+ * validate that an association ID is still avlid 
+ * IN:  assoc_id - association ID previously returned by 
+ *		acct_storage_g_get_assoc_id(void *db_conn, 
+ )
+ * RET: SLURM_SUCCESS on success SLURM_ERROR else
+ */
+extern int acct_storage_g_validate_assoc_id(void *db_conn, 
+					    uint32_t assoc_id);
 
 /* 
  * get info from the storage 
@@ -329,7 +403,8 @@ extern uint32_t acct_storage_g_get_assoc_id(acct_association_rec_t *assoc);
  * RET: List of acct_association_rec_t *
  * note List needs to be freed when called
  */
-extern List acct_storage_g_get_associations(acct_association_cond_t *assoc_q);
+extern List acct_storage_g_get_associations(void *db_conn, 
+					    acct_association_cond_t *assoc_q);
 
 /* 
  * get info from the storage 
@@ -338,7 +413,8 @@ extern List acct_storage_g_get_associations(acct_association_cond_t *assoc_q);
  * IN:  end time stamp for records <
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
-extern int acct_storage_g_get_hourly_usage(acct_association_rec_t *assoc,
+extern int acct_storage_g_get_hourly_usage(void *db_conn, 
+					   acct_association_rec_t *assoc,
 					   time_t start, time_t end);
 
 /* 
@@ -348,7 +424,8 @@ extern int acct_storage_g_get_hourly_usage(acct_association_rec_t *assoc,
  * IN:  end time stamp for records <
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
-extern int acct_storage_g_get_daily_usage(acct_association_rec_t *assoc,
+extern int acct_storage_g_get_daily_usage(void *db_conn, 
+					  acct_association_rec_t *assoc,
 					  time_t start, time_t end);
 
 /* 
@@ -359,20 +436,27 @@ extern int acct_storage_g_get_daily_usage(acct_association_rec_t *assoc,
  * IN:  params void *
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
-extern int acct_storage_g_get_monthly_usage(acct_association_rec_t *assoc,
+extern int acct_storage_g_get_monthly_usage(void *db_conn, 
+					    acct_association_rec_t *assoc,
 					    time_t start, time_t end);
 
 
 /*********************** CLUSTER ACCOUNTING STORAGE **************************/
 
-extern int clusteracct_storage_g_node_down(struct node_record *node_ptr,
+extern int clusteracct_storage_g_node_down(void *db_conn, 
+					   char *cluster,
+					   struct node_record *node_ptr,
 					   time_t event_time,
 					   char *reason);
 
-extern int clusteracct_storage_g_node_up(struct node_record *node_ptr,
+extern int clusteracct_storage_g_node_up(void *db_conn, 
+					 char *cluster,
+					 struct node_record *node_ptr,
 					 time_t event_time);
 
-extern int clusteracct_storage_g_cluster_procs(uint32_t procs,
+extern int clusteracct_storage_g_cluster_procs(void *db_conn, 
+					       char *cluster,
+					       uint32_t procs,
 					       time_t event_time);
 
 /* 
@@ -383,9 +467,10 @@ extern int clusteracct_storage_g_cluster_procs(uint32_t procs,
  * IN:  params void *
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
-extern int clusteracct_storage_g_get_hourly_usage(
-	acct_cluster_rec_t *cluster_rec, time_t start, 
-	time_t end, void *params);
+extern int clusteracct_storage_g_get_hourly_usage(void *db_conn, 
+				       
+						  acct_cluster_rec_t *cluster_rec, time_t start, 
+						  time_t end, void *params);
 
 /* 
  * get info from the storage 
@@ -395,9 +480,10 @@ extern int clusteracct_storage_g_get_hourly_usage(
  * IN:  params void *
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
-extern int clusteracct_storage_g_get_daily_usage(
-	acct_cluster_rec_t *cluster_rec, time_t start, 
-	time_t end, void *params);
+extern int clusteracct_storage_g_get_daily_usage(void *db_conn, 
+				       
+						 acct_cluster_rec_t *cluster_rec, time_t start, 
+						 time_t end, void *params);
 
 /* 
  * get info from the storage 
@@ -407,9 +493,55 @@ extern int clusteracct_storage_g_get_daily_usage(
  * IN:  params void *
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
-extern int clusteracct_storage_g_get_monthly_usage(
-	acct_cluster_rec_t *cluster_rec, 
-	time_t start, time_t end, void *params);
+extern int clusteracct_storage_g_get_monthly_usage(void *db_conn, 
+				       
+						   acct_cluster_rec_t *cluster_rec, 
+						   time_t start, time_t end, void *params);
 
+/* 
+ * load into the storage the start of a job
+ */
+extern int jobacct_storage_g_job_start (void *db_conn, 
+					struct job_record *job_ptr);
+
+/* 
+ * load into the storage the end of a job
+ */
+extern int jobacct_storage_g_job_complete (void *db_conn, 
+					   struct job_record *job_ptr);
+
+/* 
+ * load into the storage the start of a job step
+ */
+extern int jobacct_storage_g_step_start (void *db_conn, 
+					 struct step_record *step_ptr);
+
+/* 
+ * load into the storage the end of a job step
+ */
+extern int jobacct_storage_g_step_complete (void *db_conn, 
+					    struct step_record *step_ptr);
+
+/* 
+ * load into the storage a suspention of a job
+ */
+extern int jobacct_storage_g_job_suspend (void *db_conn, 
+					  struct job_record *job_ptr);
+
+/* 
+ * get info from the storage 
+ * returns List of jobacct_job_rec_t *
+ * note List needs to be freed when called
+ */
+extern List jobacct_storage_g_get_jobs(void *db_conn, 
+				       List selected_steps,
+				       List selected_parts,
+				       void *params);
+
+/* 
+ * expire old info from the storage 
+ */
+extern void jobacct_storage_g_archive(void *db_conn, 
+				      List selected_parts, void *params);
 
 #endif /*_SLURM_ACCOUNTING_STORAGE_H*/

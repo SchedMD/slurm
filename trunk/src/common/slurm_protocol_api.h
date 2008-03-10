@@ -128,12 +128,6 @@ char *slurm_get_mpi_default(void);
  */
 uint16_t inline slurm_get_msg_timeout(void);
 
-/* slurm_get_slurmdbd_auth_info
- * get default SlurmDbdAuthInfo from slurmctld_conf object
- * RET char *   - auth_info default value from slurm.conf,  MUST be xfreed by caller
- */
-char *slurm_get_slurmdbd_auth_info(void);
-
 /* slurm_api_set_conf_file
  *      set slurm configuration file to a non-default value
  * pathname IN - pathname of slurm configuration file to be used
@@ -247,6 +241,18 @@ char *slurm_get_accounting_storage_host(void);
 
 /* slurm_get_accounting_storage_pass
  * returns the storage password from slurmctld_conf object
+ * RET char *    - storage location,  MUST be xfreed by caller
+ */
+char *slurm_get_accounting_storage_loc(void);
+
+/* slurm_set_accounting_storage_loc
+ * IN: char *loc (name of file or database)
+ * RET 0 or error code
+ */
+int slurm_set_accounting_storage_loc(char *loc);
+
+/* slurm_get_accounting_storage_pass
+ * returns the storage password from slurmctld_conf object
  * RET char *    - storage password,  MUST be xfreed by caller
  */
 char *slurm_get_accounting_storage_pass(void);
@@ -268,42 +274,6 @@ char *slurm_get_jobacct_gather_type(void);
  * RET int    - job accounting frequency
  */
 uint16_t slurm_get_jobacct_gather_freq(void);
-
-/* slurm_get_jobacct_storage_type
- * returns the job accounting type from slurmctld_conf object
- * RET char *    - job accounting type,  MUST be xfreed by caller
- */
-char *slurm_get_jobacct_storage_type(void);
-
-/* slurm_get_jobacct_storage_loc
- * returns the job accounting loc from slurmctld_conf object
- * RET char *    - job accounting location,  MUST be xfreed by caller
- */
-char *slurm_get_jobacct_storage_loc(void);
-
-/* slurm_get_jobacct_storage_user
- * returns the storage user from slurmctld_conf object
- * RET char *    - storage user,  MUST be xfreed by caller
- */
-char *slurm_get_jobacct_storage_user(void);
-
-/* slurm_get_jobacct_storage_host
- * returns the storage host from slurmctld_conf object
- * RET char *    - storage host,  MUST be xfreed by caller
- */
-char *slurm_get_jobacct_storage_host(void);
-
-/* slurm_get_jobacct_storage_pass
- * returns the storage password from slurmctld_conf object
- * RET char *    - storage password,  MUST be xfreed by caller
- */
-char *slurm_get_jobacct_storage_pass(void);
-
-/* slurm_get_jobacct_storage_port
- * returns the storage port from slurmctld_conf object
- * RET uint32_t   - storage port
- */
-uint32_t slurm_get_jobacct_storage_port(void);
 
 /* slurm_get_jobcomp_type
  * returns the job completion logger type from slurmctld_conf object

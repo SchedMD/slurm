@@ -227,7 +227,8 @@ enum job_state_reason {
 	FAIL_LAUNCH,		/* unable to launch job */
 	FAIL_EXIT_CODE,		/* exit code was non-zero */
 	FAIL_TIMEOUT,		/* reached end of time limit */
-	FAIL_INACTIVE_LIMIT	/* reached slurm InactiveLimit */
+	FAIL_INACTIVE_LIMIT,	/* reached slurm InactiveLimit */
+	FAIL_BANK_ACCOUNT	/* invalid bank account */
 };
 
 enum job_acct_types {
@@ -303,7 +304,8 @@ enum select_node_cnt {
 enum jobacct_data_type {
 	JOBACCT_DATA_TOTAL,	/* data-> jobacctinfo_t */
 	JOBACCT_DATA_PIPE,      /* data-> file descriptor */
-	JOBACCT_DATA_RUSAGE,	/* data-> struct rusage */
+	JOBACCT_DATA_RUSAGE,	/* data-> rusage set user_cpu_sec,
+				 * user_cpu_usec, sys_cpu_sec, sys_cpu_usec */
 	JOBACCT_DATA_MAX_VSIZE,	/* data-> uint32_t vsize */
 	JOBACCT_DATA_MAX_VSIZE_ID,	/* data-> jobacct_id_t vsize */
 	JOBACCT_DATA_TOT_VSIZE,	/* data-> uint32_t vsize */
@@ -926,6 +928,8 @@ typedef struct partition_info_msg {
 typedef struct slurm_ctl_conf {
 	time_t last_update;	/* last update time of the build parameters */
 	char *accounting_storage_host; /* accounting storage host */
+	char *accounting_storage_loc; /* accounting storage (db table)
+				       * location */
 	char *accounting_storage_pass; /* accounting storage
 					    password */
 	uint32_t accounting_storage_port;/* node accountinging storage port */
@@ -957,13 +961,7 @@ typedef struct slurm_ctl_conf {
 	char *job_acct_gather_type; /* job accounting gather type */
 	uint16_t job_acct_gather_freq; /* poll frequency for job accounting 
 					* gather plugins */
-	char *job_acct_storage_host;	/* job accounting storage host */
-	char *job_acct_storage_loc; /* job accounting storage log location */
-	char *job_acct_storage_pass;	/* job accounting storage password */
-	uint32_t job_acct_storage_port;	/* job accounting storage port */
-	char *job_acct_storage_type;	/* job accounting storage type */
-	char *job_acct_storage_user;	/* job accounting storage user */
-	char *job_comp_host;	/* job completion storage host */
+	char *job_comp_host;	/* job completion logging host */
 	char *job_comp_loc;	/* job completion logging location */
 	char *job_comp_pass;	/* job completion storage password */
 	uint32_t job_comp_port;	/* job completion storage port */
@@ -1022,9 +1020,6 @@ typedef struct slurm_ctl_conf {
 	char *slurmd_spooldir;	/* where slurmd put temporary state info */
 	uint16_t slurmd_timeout;/* how long slurmctld waits for slurmd before 
 				 * considering node DOWN */
-	char *slurmdbd_addr;	/* comm path for Slurm DBD */
-	char * slurmdbd_auth_info;	/* Slurm DBD authentication info */
-	uint16_t slurmdbd_port;	/* port for Slurm DBD socket */
 	char *slurm_conf;	/* pathname of slurm config file */
 	char *srun_epilog;      /* srun epilog program */
 	char *srun_prolog;      /* srun prolog program */

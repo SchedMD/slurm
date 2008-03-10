@@ -162,7 +162,8 @@ typedef struct slurmctld_config {
 
 extern slurmctld_config_t slurmctld_config;
 extern int bg_recover;		/* state recovery mode */
-
+extern char *slurmctld_cluster_name; /* name of cluster */
+extern void *acct_db_conn;
 /*****************************************************************************\
  *  NODE parameters and data structures
 \*****************************************************************************/
@@ -341,6 +342,8 @@ struct job_record {
 	char    *alloc_node;		/* local node making resource alloc */
 	uint16_t alloc_resp_port;	/* RESPONSE_RESOURCE_ALLOCATION port */
 	uint32_t alloc_sid;		/* local sid making resource alloc */
+	uint32_t assoc_id;              /* used for accounting plugins */
+
 	uint16_t batch_flag;		/* 1 or 2 if batch job (with script),
 					 * 2 indicates retry mode (one retry) */
 	char *comment;			/* arbitrary comment */
@@ -386,6 +389,7 @@ struct job_record {
 	uint32_t num_procs;		/* count of required processors */
 	uint16_t other_port;		/* port for client communications */
 	char *partition;		/* name of the partition */
+	struct part_record *part_ptr;	/* pointer to the partition record */
 	time_t pre_sus_time;		/* time job ran prior to last suspend */
 	uint32_t priority;		/* relative priority of the job,
 					 * zero == held (don't initiate) */
@@ -404,7 +408,6 @@ struct job_record {
 	time_t tot_sus_time;		/* total time in suspend state */
 	uint32_t total_procs;		/* number of allocated processors, 
 					   for accounting */
-	struct part_record *part_ptr;	/* pointer to the partition record */
 	uint32_t user_id;		/* user the job runs as */
 
 	/* Per node allocation details */
@@ -421,7 +424,6 @@ struct job_record {
 					 * allocated for this job */
 	uint32_t *used_lps;		/* number of logical processors
 					 * already allocated to job steps */
-
 };
 
 /* Job dependency specification, used in "depend_list" within job_record */

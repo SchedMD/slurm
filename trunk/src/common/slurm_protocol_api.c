@@ -70,6 +70,7 @@
 #include "src/common/xstring.h"
 #include "src/common/log.h"
 #include "src/common/forward.h"
+#include "src/slurmdbd/read_config.h"
 
 /* EXTERNAL VARIABLES */
 
@@ -88,6 +89,8 @@ static int message_timeout = -1;
 /* STATIC FUNCTIONS */
 static void _remap_slurmctld_errno(void);
 
+/* define the slurmdbd_options flag */
+slurm_dbd_conf_t *slurmdbd_conf = NULL;
 /**********************************************************************\
  * protocol configuration functions
 \**********************************************************************/
@@ -188,12 +191,15 @@ void slurm_api_clear_config(void)
  */
 uint32_t slurm_get_def_mem_per_task(void)
 {
-	uint32_t mem_per_task;
+	uint32_t mem_per_task = 0;
 	slurm_ctl_conf_t *conf;
 
-	conf = slurm_conf_lock();
-	mem_per_task = conf->def_mem_per_task;
-	slurm_conf_unlock();
+	if(slurmdbd_conf) {
+	} else {
+		conf = slurm_conf_lock();
+		mem_per_task = conf->def_mem_per_task;
+		slurm_conf_unlock();
+	}
 	return mem_per_task;
 }
 
@@ -202,12 +208,15 @@ uint32_t slurm_get_def_mem_per_task(void)
  */
 uint32_t slurm_get_max_mem_per_task(void)
 {
-	uint32_t mem_per_task;
+	uint32_t mem_per_task = 0;
 	slurm_ctl_conf_t *conf;
 
-	conf = slurm_conf_lock();
-	mem_per_task = conf->max_mem_per_task;
-	slurm_conf_unlock();
+	if(slurmdbd_conf) {
+	} else {
+		conf = slurm_conf_lock();
+		mem_per_task = conf->max_mem_per_task;
+		slurm_conf_unlock();
+	}
 	return mem_per_task;
 }
 
@@ -216,12 +225,15 @@ uint32_t slurm_get_max_mem_per_task(void)
  */
 uint32_t slurm_get_epilog_msg_time(void)
 {
-        uint32_t epilog_msg_time;
+        uint32_t epilog_msg_time = 0;
         slurm_ctl_conf_t *conf;
 
-        conf = slurm_conf_lock();
-        epilog_msg_time = conf->epilog_msg_time;
-        slurm_conf_unlock();
+ 	if(slurmdbd_conf) {
+	} else {
+		conf = slurm_conf_lock();
+		epilog_msg_time = conf->epilog_msg_time;
+		slurm_conf_unlock();
+	}
         return epilog_msg_time;
 }
 
@@ -230,12 +242,15 @@ uint32_t slurm_get_epilog_msg_time(void)
  */
 int inline slurm_get_env_timeout(void)
 {
-        int timeout;
+        int timeout = 0;
         slurm_ctl_conf_t *conf;
 
-        conf = slurm_conf_lock();
-        timeout = conf->get_env_timeout;
-        slurm_conf_unlock();
+	if(slurmdbd_conf) {
+	} else {
+		conf = slurm_conf_lock();
+		timeout = conf->get_env_timeout;
+		slurm_conf_unlock();
+	}
         return timeout;
 }
 
@@ -245,12 +260,15 @@ int inline slurm_get_env_timeout(void)
  */
 char *slurm_get_mpi_default(void)
 {
-	char *mpi_default;
+	char *mpi_default = NULL;
 	slurm_ctl_conf_t *conf;
 
-	conf = slurm_conf_lock();
-	mpi_default = xstrdup(conf->mpi_default);
-	slurm_conf_unlock();
+	if(slurmdbd_conf) {
+	} else {
+		conf = slurm_conf_lock();
+		mpi_default = xstrdup(conf->mpi_default);
+		slurm_conf_unlock();
+	}
 	return mpi_default;
 }
 
@@ -259,34 +277,20 @@ char *slurm_get_mpi_default(void)
  */
 uint16_t slurm_get_msg_timeout(void)
 {
-        uint16_t msg_timeout;
+        uint16_t msg_timeout = 0;
         slurm_ctl_conf_t *conf;
 
-        conf = slurm_conf_lock();
-        msg_timeout = conf->msg_timeout;
-        slurm_conf_unlock();
+ 	if(slurmdbd_conf) {
+		msg_timeout = slurmdbd_conf->msg_timeout;
+	} else {
+		conf = slurm_conf_lock();
+		msg_timeout = conf->msg_timeout;
+		slurm_conf_unlock();
 #ifdef MEMORY_LEAK_DEBUG
-        msg_timeout *= 4;
+		msg_timeout *= 4;
 #endif
+	}
         return msg_timeout;
-}
-
-/* slurm_get_slurmdbd_auth_info
- * get default SlurmDbdAuthInfo from slurmctld_conf object
- * RET char *   - auth_info default value from slurm.conf,  MUST be xfreed by caller
- */
-char *slurm_get_slurmdbd_auth_info(void)
-{
-        char *slurmdbd_auth_info;
-        slurm_ctl_conf_t *conf;
-
-        conf = slurm_conf_lock();
-        if (conf->slurmdbd_auth_info && conf->slurmdbd_auth_info[0])
-                slurmdbd_auth_info = xstrdup(conf->slurmdbd_auth_info);
-        else
-                slurmdbd_auth_info = NULL;
-        slurm_conf_unlock();
-        return slurmdbd_auth_info;
 }
 
 /* slurm_get_plugin_dir
@@ -295,12 +299,16 @@ char *slurm_get_slurmdbd_auth_info(void)
  */
 char *slurm_get_plugin_dir(void)
 {
-	char *plugin_dir;
+	char *plugin_dir = NULL;
 	slurm_ctl_conf_t *conf;
 
-	conf = slurm_conf_lock();
-	plugin_dir = xstrdup(conf->plugindir);
-	slurm_conf_unlock();
+	if(slurmdbd_conf) {
+		plugin_dir = xstrdup(slurmdbd_conf->plugindir);
+	} else {
+		conf = slurm_conf_lock();
+		plugin_dir = xstrdup(conf->plugindir);
+		slurm_conf_unlock();
+	}
 	return plugin_dir;
 }
 
@@ -310,12 +318,15 @@ char *slurm_get_plugin_dir(void)
  */
 char *slurm_get_state_save_location(void)
 {
-	char *state_save_loc;
+	char *state_save_loc = NULL;
 	slurm_ctl_conf_t *conf;
 
-	conf = slurm_conf_lock();
-	state_save_loc = xstrdup(conf->state_save_location);
-	slurm_conf_unlock();
+	if(slurmdbd_conf) {
+	} else {
+		conf = slurm_conf_lock();
+		state_save_loc = xstrdup(conf->state_save_location);
+		slurm_conf_unlock();
+	}
 	return state_save_loc;
 }
 
@@ -325,12 +336,16 @@ char *slurm_get_state_save_location(void)
  */
 char *slurm_get_auth_type(void)
 {
-	char *auth_type;
-	slurm_ctl_conf_t *conf;
+	char *auth_type = NULL;
+	slurm_ctl_conf_t *conf = NULL;
 
-	conf = slurm_conf_lock();
-	auth_type = xstrdup(conf->authtype);
-	slurm_conf_unlock();
+	if(slurmdbd_conf) {
+		auth_type = xstrdup(slurmdbd_conf->auth_type);
+	} else {
+		conf = slurm_conf_lock();
+		auth_type = xstrdup(conf->authtype);
+		slurm_conf_unlock();
+	}
 	return auth_type;
 }
 
@@ -340,12 +355,15 @@ char *slurm_get_auth_type(void)
  */
 extern char *slurm_get_checkpoint_type(void)
 {
-	char *checkpoint_type;
+	char *checkpoint_type = NULL;
 	slurm_ctl_conf_t *conf;
 
-	conf = slurm_conf_lock();
-	checkpoint_type = xstrdup(conf->checkpoint_type);
-	slurm_conf_unlock();
+	if(slurmdbd_conf) {
+	} else {
+		conf = slurm_conf_lock();
+		checkpoint_type = xstrdup(conf->checkpoint_type);
+		slurm_conf_unlock();
+	}
 	return checkpoint_type;
 }
 
@@ -355,12 +373,15 @@ extern char *slurm_get_checkpoint_type(void)
  */
 char *slurm_get_cluster_name(void)
 {
-	char *name;
+	char *name = NULL;
 	slurm_ctl_conf_t *conf;
 
-	conf = slurm_conf_lock();
-	name = xstrdup(conf->cluster_name);
-	slurm_conf_unlock();
+	if(slurmdbd_conf) {
+	} else {
+		conf = slurm_conf_lock();
+		name = xstrdup(conf->cluster_name);
+		slurm_conf_unlock();
+	}
 	return name;	
 }
 
@@ -370,12 +391,15 @@ char *slurm_get_cluster_name(void)
  */
 extern char *slurm_get_crypto_type(void)
 {
-	char *crypto_type;
+	char *crypto_type = NULL;
 	slurm_ctl_conf_t *conf;
 
-	conf = slurm_conf_lock();
-	crypto_type = xstrdup(conf->crypto_type);
-	slurm_conf_unlock();
+	if(slurmdbd_conf) {
+	} else {
+		conf = slurm_conf_lock();
+		crypto_type = xstrdup(conf->crypto_type);
+		slurm_conf_unlock();
+	}
 	return crypto_type;
 }
 
@@ -384,12 +408,15 @@ extern char *slurm_get_crypto_type(void)
  */
 extern uint16_t slurm_get_propagate_prio_process(void)
 {
-        uint16_t propagate_prio;
+        uint16_t propagate_prio = 0;
         slurm_ctl_conf_t *conf;
 
-        conf = slurm_conf_lock();
-        propagate_prio = conf->propagate_prio_process;
-        slurm_conf_unlock();
+ 	if(slurmdbd_conf) {
+	} else {
+		conf = slurm_conf_lock();
+		propagate_prio = conf->propagate_prio_process;
+		slurm_conf_unlock();
+	}
         return propagate_prio;
 }
 
@@ -398,12 +425,15 @@ extern uint16_t slurm_get_propagate_prio_process(void)
  */
 extern uint16_t slurm_get_fast_schedule(void)
 {
-	uint16_t fast_val;
+	uint16_t fast_val = 0;
 	slurm_ctl_conf_t *conf;
 
-	conf = slurm_conf_lock();
-	fast_val = conf->fast_schedule;
-	slurm_conf_unlock();
+	if(slurmdbd_conf) {
+	} else {
+		conf = slurm_conf_lock();
+		fast_val = conf->fast_schedule;
+		slurm_conf_unlock();
+	}
 	return fast_val;
 }
 
@@ -415,26 +445,32 @@ extern int slurm_set_tree_width(uint16_t tree_width)
 {
 	slurm_ctl_conf_t *conf;
 
-	conf = slurm_conf_lock();
-	if (tree_width == 0) {
-		error("can't have span count of 0");
-		return SLURM_ERROR;
+	if(slurmdbd_conf) {
+	} else {
+		conf = slurm_conf_lock();
+		if (tree_width == 0) {
+			error("can't have span count of 0");
+			return SLURM_ERROR;
+		}
+		conf->tree_width = tree_width;
+		slurm_conf_unlock();
 	}
-	conf->tree_width = tree_width;
-	slurm_conf_unlock();
-	return SLURM_SUCCESS;
+	return 0;
 }
 /* slurm_get_tree_width
  * returns the value of tree_width in slurmctld_conf object
  */
 extern uint16_t slurm_get_tree_width(void)
 {
-	uint16_t tree_width;
+	uint16_t tree_width = 0;
 	slurm_ctl_conf_t *conf;
 
-	conf = slurm_conf_lock();
-	tree_width = conf->tree_width;
-	slurm_conf_unlock();
+	if(slurmdbd_conf) {
+	} else {
+		conf = slurm_conf_lock();
+		tree_width = conf->tree_width;
+		slurm_conf_unlock();
+	}
 	return tree_width;
 }
 
@@ -447,10 +483,15 @@ extern int slurm_set_auth_type(char *auth_type)
 {
 	slurm_ctl_conf_t *conf;
 
-	conf = slurm_conf_lock();
-	xfree(conf->authtype);
-	conf->authtype = xstrdup(auth_type);
-	slurm_conf_unlock();
+	if(slurmdbd_conf) {
+		xfree(slurmdbd_conf->auth_type);
+		slurmdbd_conf->auth_type = xstrdup(auth_type);		
+	} else {
+		conf = slurm_conf_lock();
+		xfree(conf->authtype);
+		conf->authtype = xstrdup(auth_type);
+		slurm_conf_unlock();
+	}
 	return 0;
 }
 
@@ -460,43 +501,16 @@ extern int slurm_set_auth_type(char *auth_type)
  */
 char *slurm_get_health_check_program(void)
 {
-	char *health_check_program;
+	char *health_check_program = NULL;
 	slurm_ctl_conf_t *conf;
 
-	conf = slurm_conf_lock();
-	health_check_program = xstrdup(conf->health_check_program);
-	slurm_conf_unlock();
+	if(slurmdbd_conf) {
+	} else {
+		conf = slurm_conf_lock();
+		health_check_program = xstrdup(conf->health_check_program);
+		slurm_conf_unlock();
+	}
 	return health_check_program;
-}
-
-/* slurm_get_slurmdbd_addr
- * get slurm_dbd_addr from slurmctld_conf object from slurmctld_conf object
- * RET char *   - slurmdbd_addr, MUST be xfreed by caller
- */
-char *slurm_get_slurmdbd_addr(void)
-{
-	char *slurmdbd_addr;
-	slurm_ctl_conf_t *conf;
-
-	conf = slurm_conf_lock();
-	slurmdbd_addr = xstrdup(conf->slurmdbd_addr);
-	slurm_conf_unlock();
-	return slurmdbd_addr;
-}
-
-/* slurm_get_slurmdbd_port
- * get slurm_dbd_port from slurmctld_conf object from slurmctld_conf object
- * RET uint16_t   - dbd_port
- */
-uint16_t slurm_get_slurmdbd_port(void)
-{
-	uint16_t slurmdbd_port;
-	slurm_ctl_conf_t *conf;
-
-	conf = slurm_conf_lock();
-	slurmdbd_port = conf->slurmdbd_port;
-	slurm_conf_unlock();
-	return slurmdbd_port;
 }
 
 /* slurm_get_accounting_storage_type
@@ -508,9 +522,13 @@ char *slurm_get_accounting_storage_type(void)
 	char *accounting_type;
 	slurm_ctl_conf_t *conf;
 
-	conf = slurm_conf_lock();
-	accounting_type = xstrdup(conf->accounting_storage_type);
-	slurm_conf_unlock();
+	if(slurmdbd_conf) {
+		accounting_type = xstrdup(slurmdbd_conf->storage_type);
+	} else {
+		conf = slurm_conf_lock();
+		accounting_type = xstrdup(conf->accounting_storage_type);
+		slurm_conf_unlock();
+	}
 	return accounting_type;
 	
 }
@@ -524,9 +542,13 @@ char *slurm_get_accounting_storage_user(void)
 	char *storage_user;
 	slurm_ctl_conf_t *conf;
 
-	conf = slurm_conf_lock();
-	storage_user = xstrdup(conf->accounting_storage_user);
-	slurm_conf_unlock();
+	if(slurmdbd_conf) {
+		storage_user = xstrdup(slurmdbd_conf->storage_user);
+	} else {
+		conf = slurm_conf_lock();
+		storage_user = xstrdup(conf->accounting_storage_user);
+		slurm_conf_unlock();
+	}
 	return storage_user;	
 }
 
@@ -539,10 +561,53 @@ char *slurm_get_accounting_storage_host(void)
 	char *storage_host;
 	slurm_ctl_conf_t *conf;
 
-	conf = slurm_conf_lock();
-	storage_host = xstrdup(conf->accounting_storage_host);
-	slurm_conf_unlock();
+	if(slurmdbd_conf) {
+		storage_host = xstrdup(slurmdbd_conf->storage_host);
+	} else {
+		conf = slurm_conf_lock();
+		storage_host = xstrdup(conf->accounting_storage_host);
+		slurm_conf_unlock();
+	}
 	return storage_host;	
+}
+
+/* slurm_get_accounting_storage_pass
+ * returns the storage password from slurmctld_conf object
+ * RET char *    - storage location,  MUST be xfreed by caller
+ */
+char *slurm_get_accounting_storage_loc(void)
+{
+	char *storage_loc;
+	slurm_ctl_conf_t *conf;
+
+	if(slurmdbd_conf) {
+		storage_loc = xstrdup(slurmdbd_conf->storage_loc);
+	} else {
+		conf = slurm_conf_lock();
+		storage_loc = xstrdup(conf->accounting_storage_loc);
+		slurm_conf_unlock();
+	}
+	return storage_loc;	
+}
+
+/* slurm_set_accounting_storage_loc
+ * IN: char *loc (name of file or database)
+ * RET 0 or error code
+ */
+int slurm_set_accounting_storage_loc(char *loc)
+{
+	slurm_ctl_conf_t *conf;
+
+	if(slurmdbd_conf) {
+		xfree(slurmdbd_conf->storage_loc);
+		slurmdbd_conf->storage_loc = xstrdup(loc);
+	} else {
+		conf = slurm_conf_lock();
+		xfree(conf->accounting_storage_loc);
+		conf->accounting_storage_loc = xstrdup(loc);
+		slurm_conf_unlock();
+	}
+	return 0;	
 }
 
 /* slurm_get_accounting_storage_pass
@@ -554,9 +619,13 @@ char *slurm_get_accounting_storage_pass(void)
 	char *storage_pass;
 	slurm_ctl_conf_t *conf;
 
-	conf = slurm_conf_lock();
-	storage_pass = xstrdup(conf->accounting_storage_pass);
-	slurm_conf_unlock();
+	if(slurmdbd_conf) {
+		storage_pass = xstrdup(slurmdbd_conf->storage_pass);
+	} else {
+		conf = slurm_conf_lock();
+		storage_pass = xstrdup(conf->accounting_storage_pass);
+		slurm_conf_unlock();
+	}
 	return storage_pass;	
 }
 
@@ -569,9 +638,13 @@ uint32_t slurm_get_accounting_storage_port(void)
 	uint32_t storage_port;
 	slurm_ctl_conf_t *conf;
 
-	conf = slurm_conf_lock();
-	storage_port = conf->accounting_storage_port;
-	slurm_conf_unlock();
+	if(slurmdbd_conf) {
+		storage_port = slurmdbd_conf->storage_port;
+	} else {
+		conf = slurm_conf_lock();
+		storage_port = conf->accounting_storage_port;
+		slurm_conf_unlock();
+	}
 	return storage_port;
 	
 }
@@ -582,12 +655,15 @@ uint32_t slurm_get_accounting_storage_port(void)
  */
 char *slurm_get_jobacct_gather_type(void)
 {
-	char *jobacct_type;
+	char *jobacct_type = NULL;
 	slurm_ctl_conf_t *conf;
 
-	conf = slurm_conf_lock();
-	jobacct_type = xstrdup(conf->job_acct_gather_type);
-	slurm_conf_unlock();
+	if(slurmdbd_conf) {
+	} else {
+		conf = slurm_conf_lock();
+		jobacct_type = xstrdup(conf->job_acct_gather_type);
+		slurm_conf_unlock();
+	}
 	return jobacct_type;
 }
 
@@ -597,104 +673,16 @@ char *slurm_get_jobacct_gather_type(void)
  */
 uint16_t slurm_get_jobacct_gather_freq(void)
 {
-	uint16_t freq;
+	uint16_t freq = 0;
 	slurm_ctl_conf_t *conf;
 
-	conf = slurm_conf_lock();
-	freq = conf->job_acct_gather_freq;
-	slurm_conf_unlock();
+	if(slurmdbd_conf) {
+	} else {
+		conf = slurm_conf_lock();
+		freq = conf->job_acct_gather_freq;
+		slurm_conf_unlock();
+	}
 	return freq;
-}
-
-/* slurm_get_jobacct_storage_type
- * returns the storage type from slurmctld_conf object
- * RET char *    - storage type,  MUST be xfreed by caller
- */
-char *slurm_get_jobacct_storage_type(void)
-{
-	char *storage_type;
-	slurm_ctl_conf_t *conf;
-
-	conf = slurm_conf_lock();
-	storage_type = xstrdup(conf->job_acct_storage_type);
-	slurm_conf_unlock();
-	return storage_type;	
-}
-
-/* slurm_get_jobacct_storage_loc
- * returns the job accounting loc from the slurmctld_conf object
- * RET char *    - job accounting loc,  MUST be xfreed by caller
- */
-char *slurm_get_jobacct_storage_loc(void)
-{
-	char *jobacct_loc;
-	slurm_ctl_conf_t *conf;
-
-	conf = slurm_conf_lock();
-	jobacct_loc = xstrdup(conf->job_acct_storage_loc);
-	slurm_conf_unlock();
-	return jobacct_loc;
-}
-
-/* slurm_get_jobacct_storage_user
- * returns the storage user from slurmctld_conf object
- * RET char *    - storage user,  MUST be xfreed by caller
- */
-char *slurm_get_jobacct_storage_user(void)
-{
-	char *storage_user;
-	slurm_ctl_conf_t *conf;
-
-	conf = slurm_conf_lock();
-	storage_user = xstrdup(conf->job_acct_storage_user);
-	slurm_conf_unlock();
-	return storage_user;	
-}
-
-/* slurm_get_jobacct_storage_host
- * returns the storage host from slurmctld_conf object
- * RET char *    - storage host,  MUST be xfreed by caller
- */
-char *slurm_get_jobacct_storage_host(void)
-{
-	char *storage_host;
-	slurm_ctl_conf_t *conf;
-
-	conf = slurm_conf_lock();
-	storage_host = xstrdup(conf->job_acct_storage_host);
-	slurm_conf_unlock();
-	return storage_host;	
-}
-
-/* slurm_get_jobacct_storage_pass
- * returns the storage password from slurmctld_conf object
- * RET char *    - storage password,  MUST be xfreed by caller
- */
-char *slurm_get_jobacct_storage_pass(void)
-{
-	char *storage_pass;
-	slurm_ctl_conf_t *conf;
-
-	conf = slurm_conf_lock();
-	storage_pass = xstrdup(conf->job_acct_storage_pass);
-	slurm_conf_unlock();
-	return storage_pass;	
-}
-
-/* slurm_get_jobacct_storage_port
- * returns the storage port from slurmctld_conf object
- * RET uint32_t   - storage port
- */
-uint32_t slurm_get_jobacct_storage_port(void)
-{
-	uint32_t storage_port;
-	slurm_ctl_conf_t *conf;
-
-	conf = slurm_conf_lock();
-	storage_port = conf->job_acct_storage_port;
-	slurm_conf_unlock();
-	return storage_port;
-	
 }
 
 /* slurm_get_jobcomp_type
@@ -703,12 +691,15 @@ uint32_t slurm_get_jobacct_storage_port(void)
  */
 char *slurm_get_jobcomp_type(void)
 {
-	char *jobcomp_type;
+	char *jobcomp_type = NULL;
 	slurm_ctl_conf_t *conf;
 
-	conf = slurm_conf_lock();
-	jobcomp_type = xstrdup(conf->job_comp_type);
-	slurm_conf_unlock();
+	if(slurmdbd_conf) {
+	} else {
+		conf = slurm_conf_lock();
+		jobcomp_type = xstrdup(conf->job_comp_type);
+		slurm_conf_unlock();
+	}
 	return jobcomp_type;
 }
 
@@ -718,12 +709,15 @@ char *slurm_get_jobcomp_type(void)
  */
 char *slurm_get_jobcomp_loc(void)
 {
-	char *jobcomp_loc;
+	char *jobcomp_loc = 0;
 	slurm_ctl_conf_t *conf;
 
-	conf = slurm_conf_lock();
-	jobcomp_loc = xstrdup(conf->job_comp_loc);
-	slurm_conf_unlock();
+	if(slurmdbd_conf) {
+	} else {
+		conf = slurm_conf_lock();
+		jobcomp_loc = xstrdup(conf->job_comp_loc);
+		slurm_conf_unlock();
+	}
 	return jobcomp_loc;	
 }
 
@@ -733,12 +727,15 @@ char *slurm_get_jobcomp_loc(void)
  */
 char *slurm_get_jobcomp_user(void)
 {
-	char *storage_user;
+	char *storage_user = NULL;
 	slurm_ctl_conf_t *conf;
 
-	conf = slurm_conf_lock();
-	storage_user = xstrdup(conf->job_comp_user);
-	slurm_conf_unlock();
+	if(slurmdbd_conf) {
+	} else {
+		conf = slurm_conf_lock();
+		storage_user = xstrdup(conf->job_comp_user);
+		slurm_conf_unlock();
+	}
 	return storage_user;	
 }
 
@@ -748,12 +745,15 @@ char *slurm_get_jobcomp_user(void)
  */
 char *slurm_get_jobcomp_host(void)
 {
-	char *storage_host;
+	char *storage_host = NULL;
 	slurm_ctl_conf_t *conf;
 
-	conf = slurm_conf_lock();
-	storage_host = xstrdup(conf->job_comp_host);
-	slurm_conf_unlock();
+	if(slurmdbd_conf) {
+	} else {
+		conf = slurm_conf_lock();
+		storage_host = xstrdup(conf->job_comp_host);
+		slurm_conf_unlock();
+	}
 	return storage_host;	
 }
 
@@ -763,12 +763,15 @@ char *slurm_get_jobcomp_host(void)
  */
 char *slurm_get_jobcomp_pass(void)
 {
-	char *storage_pass;
+	char *storage_pass = NULL;
 	slurm_ctl_conf_t *conf;
 
-	conf = slurm_conf_lock();
-	storage_pass = xstrdup(conf->job_comp_pass);
-	slurm_conf_unlock();
+	if(slurmdbd_conf) {
+	} else {
+		conf = slurm_conf_lock();
+		storage_pass = xstrdup(conf->job_comp_pass);
+		slurm_conf_unlock();
+	}
 	return storage_pass;	
 }
 
@@ -778,12 +781,15 @@ char *slurm_get_jobcomp_pass(void)
  */
 uint32_t slurm_get_jobcomp_port(void)
 {
-	uint32_t storage_port;
+	uint32_t storage_port = 0;
 	slurm_ctl_conf_t *conf;
 
-	conf = slurm_conf_lock();
-	storage_port = conf->job_comp_port;
-	slurm_conf_unlock();
+	if(slurmdbd_conf) {
+	} else {
+		conf = slurm_conf_lock();
+		storage_port = conf->job_comp_port;
+		slurm_conf_unlock();
+	}
 	return storage_port;
 	
 }
@@ -794,12 +800,15 @@ uint32_t slurm_get_jobcomp_port(void)
  */
 char *slurm_get_proctrack_type(void)
 {
-	char *proctrack_type;
+	char *proctrack_type = NULL;
 	slurm_ctl_conf_t *conf;
 
-	conf = slurm_conf_lock();
-	proctrack_type = xstrdup(conf->proctrack_type);
-	slurm_conf_unlock();
+	if(slurmdbd_conf) {
+	} else {
+		conf = slurm_conf_lock();
+		proctrack_type = xstrdup(conf->proctrack_type);
+		slurm_conf_unlock();
+	}
 	return proctrack_type;
 }
 
@@ -809,12 +818,15 @@ char *slurm_get_proctrack_type(void)
  */
 uint16_t slurm_get_slurmd_port(void)
 {
-	uint16_t slurmd_port;
+	uint16_t slurmd_port = 0;
 	slurm_ctl_conf_t *conf;
 
-	conf = slurm_conf_lock();
-	slurmd_port = conf->slurmd_port;
-	slurm_conf_unlock();
+	if(slurmdbd_conf) {
+	} else {
+		conf = slurm_conf_lock();
+		slurmd_port = conf->slurmd_port;
+		slurm_conf_unlock();
+	}
 	return slurmd_port;
 }
 
@@ -824,12 +836,16 @@ uint16_t slurm_get_slurmd_port(void)
  */
 uint32_t slurm_get_slurm_user_id(void)
 {
-	uint32_t slurm_uid;
+	uint32_t slurm_uid = 0;
 	slurm_ctl_conf_t *conf;
 
-	conf = slurm_conf_lock();
-	slurm_uid = conf->slurm_user_id;
-	slurm_conf_unlock();
+	if(slurmdbd_conf) {
+		slurm_uid = slurmdbd_conf->slurm_user_id;
+	} else {
+		conf = slurm_conf_lock();
+		slurm_uid = conf->slurm_user_id;
+		slurm_conf_unlock();
+	}
 	return slurm_uid;
 }
 
@@ -837,24 +853,30 @@ uint32_t slurm_get_slurm_user_id(void)
  * RET uint16_t  - Value of SchedulerRootFilter */
 extern uint16_t slurm_get_root_filter(void)
 {
-        uint16_t root_filter;
+        uint16_t root_filter = 0;
         slurm_ctl_conf_t *conf;
  
-        conf = slurm_conf_lock();
-        root_filter = conf->schedrootfltr;
-        slurm_conf_unlock();
+ 	if(slurmdbd_conf) {
+	} else {
+		conf = slurm_conf_lock();
+		root_filter = conf->schedrootfltr;
+		slurm_conf_unlock();
+	}
         return root_filter;
 }
 /* slurm_get_sched_port
  * RET uint16_t  - Value of SchedulerPort */
 extern uint16_t slurm_get_sched_port(void)
 {
-        uint16_t port;
+        uint16_t port = 0;
         slurm_ctl_conf_t *conf;
 
-        conf = slurm_conf_lock();
-        port = conf->schedport;
-        slurm_conf_unlock();
+ 	if(slurmdbd_conf) {
+	} else {
+		conf = slurm_conf_lock();
+		port = conf->schedport;
+		slurm_conf_unlock();
+	}
         return port;
 }
 
@@ -864,12 +886,15 @@ extern uint16_t slurm_get_sched_port(void)
  */
 char *slurm_get_sched_type(void)
 {
-	char *sched_type;
+	char *sched_type = NULL;
 	slurm_ctl_conf_t *conf;
 
-	conf = slurm_conf_lock();
-	sched_type = xstrdup(conf->schedtype);
-	slurm_conf_unlock();
+	if(slurmdbd_conf) {
+	} else {
+		conf = slurm_conf_lock();
+		sched_type = xstrdup(conf->schedtype);
+		slurm_conf_unlock();
+	}
 	return sched_type;
 }
 
@@ -879,12 +904,15 @@ char *slurm_get_sched_type(void)
  */
 char *slurm_get_select_type(void)
 {
-	char *select_type;
+	char *select_type = NULL;
 	slurm_ctl_conf_t *conf;
 
-	conf = slurm_conf_lock();
-	select_type = xstrdup(conf->select_type);
-	slurm_conf_unlock();
+	if(slurmdbd_conf) {
+	} else {
+		conf = slurm_conf_lock();
+		select_type = xstrdup(conf->select_type);
+		slurm_conf_unlock();
+	}
 	return select_type;
 }
 
@@ -894,7 +922,7 @@ char *slurm_get_select_type(void)
  */
 char *slurm_get_switch_type(void)
 {
-	char *switch_type;
+	char *switch_type = NULL;
 	slurm_ctl_conf_t *conf;
 
 	conf = slurm_conf_lock();
@@ -909,12 +937,15 @@ char *slurm_get_switch_type(void)
  */
 uint16_t slurm_get_wait_time(void)
 {
-	uint16_t wait_time;
+	uint16_t wait_time = 0;
 	slurm_ctl_conf_t *conf;
 
-	conf = slurm_conf_lock();
-	wait_time = conf->wait_time;
-	slurm_conf_unlock();
+	if(slurmdbd_conf) {
+	} else {
+		conf = slurm_conf_lock();
+		wait_time = conf->wait_time;
+		slurm_conf_unlock();
+	}
 	return wait_time;
 }
 
@@ -924,12 +955,15 @@ uint16_t slurm_get_wait_time(void)
  */
 char *slurm_get_srun_prolog(void)
 {
-	char *prolog;
+	char *prolog = NULL;
 	slurm_ctl_conf_t *conf;
 
-	conf = slurm_conf_lock();
-	prolog = xstrdup(conf->srun_prolog);
-	slurm_conf_unlock();
+	if(slurmdbd_conf) {
+	} else {
+		conf = slurm_conf_lock();
+		prolog = xstrdup(conf->srun_prolog);
+		slurm_conf_unlock();
+	}
 	return prolog;
 }
 
@@ -939,12 +973,15 @@ char *slurm_get_srun_prolog(void)
  */
 char *slurm_get_srun_epilog(void)
 {
-	char *epilog;
+	char *epilog = NULL;
 	slurm_ctl_conf_t *conf;
 
-	conf = slurm_conf_lock();
-	epilog = xstrdup(conf->srun_epilog);
-	slurm_conf_unlock();
+	if(slurmdbd_conf) {
+	} else {
+		conf = slurm_conf_lock();
+		epilog = xstrdup(conf->srun_epilog);
+		slurm_conf_unlock();
+	}
 	return epilog;
 }
 
@@ -952,12 +989,15 @@ char *slurm_get_srun_epilog(void)
  * RET task_epilog name, must be xfreed by caller */
 char *slurm_get_task_epilog(void)
 {
-        char *task_epilog;
+        char *task_epilog = NULL;
 	slurm_ctl_conf_t *conf;
 
-	conf = slurm_conf_lock();
-        task_epilog = xstrdup(conf->task_epilog);
-	slurm_conf_unlock();
+	if(slurmdbd_conf) {
+	} else {
+		conf = slurm_conf_lock();
+		task_epilog = xstrdup(conf->task_epilog);
+		slurm_conf_unlock();
+	}
         return task_epilog;
 }
 
@@ -965,12 +1005,15 @@ char *slurm_get_task_epilog(void)
  * RET task_prolog name, must be xfreed by caller */
 char *slurm_get_task_prolog(void)
 {
-        char *task_prolog;
+        char *task_prolog = NULL;
 	slurm_ctl_conf_t *conf;
 
-	conf = slurm_conf_lock();
-        task_prolog = xstrdup(conf->task_prolog);
-	slurm_conf_unlock();
+	if(slurmdbd_conf) {
+	} else {
+		conf = slurm_conf_lock();
+		task_prolog = xstrdup(conf->task_prolog);
+		slurm_conf_unlock();
+	}
         return task_prolog;
 }
 
@@ -978,7 +1021,7 @@ char *slurm_get_task_prolog(void)
  * RET task_plugin name, must be xfreed by caller */
 char *slurm_get_task_plugin(void)
 {
-        char *task_plugin;
+        char *task_plugin = NULL;
 	slurm_ctl_conf_t *conf;
 
 	conf = slurm_conf_lock();
@@ -990,12 +1033,15 @@ char *slurm_get_task_plugin(void)
 /* slurm_get_task_plugin_param */
 uint16_t slurm_get_task_plugin_param(void)
 {
-        uint16_t task_plugin_param;
+        uint16_t task_plugin_param = 0;
         slurm_ctl_conf_t *conf;
 
-        conf = slurm_conf_lock();
-        task_plugin_param = conf->task_plugin_param;
-        slurm_conf_unlock();
+	if(slurmdbd_conf) {
+	} else {
+		conf = slurm_conf_lock();
+		task_plugin_param = conf->task_plugin_param;
+		slurm_conf_unlock();
+	}
         return task_plugin_param;
 }
 

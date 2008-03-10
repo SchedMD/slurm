@@ -101,10 +101,25 @@ For security purposes, a user other than "root" is recommended.
 The default value is "root". 
 
 .TP
+\fBStorageHost\fR
+Define the name of the host the database is running where we are going
+to store the data.
+Ideally this should be the host on which slurmdbd executes.
+
+.TP
 \fBStoragePassword\fR
 Define the password used to gain access to the database to store 
 the job accounting data.
 
+.TP
+\fBStoragePort\fR
+Define the password used to gain access to the database to store 
+the job accounting data.
+
+.TP
+\fBStorageType\fR
+Define the port the database server is listening on where we are going
+to store the data.
 .TP
 \fBStorageUser\fR
 Define the name of the user we are going to connect to the database

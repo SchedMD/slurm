@@ -66,7 +66,6 @@ char *GOLD_OBJECT_STR[] = {
 	NULL
 };
 
-static char *gold_machine = NULL;
 static char *gold_key = NULL;
 static char *gold_host = NULL;
 static uint16_t gold_port = 0;
@@ -200,14 +199,14 @@ static int _end_communication(slurm_fd gold_fd)
 	return rc;
 }
 
-extern int init_gold(char *machine, char *keyfile, char *host, uint16_t port)
+extern int init_gold(char *keyfile, char *host, uint16_t port)
 {
 	int fp;
 	char key[256];
 	int i, bytes_read;
 	
-	if(!keyfile || !host || !machine) {
-		error("init_gold: Either no keyfile or host or machine given");
+	if(!keyfile || !host) {
+		error("init_gold: Either no keyfile or host given");
 		return SLURM_ERROR;
 	}
 
@@ -229,7 +228,6 @@ extern int init_gold(char *machine, char *keyfile, char *host, uint16_t port)
 	/* Close the file */
 	close(fp);
 	//debug4("got the tolken as %s\n", key);
-	gold_machine = xstrdup(machine);
 	gold_key = xstrdup(key);
 	gold_host = xstrdup(host);
 	gold_port = port;
@@ -241,7 +239,6 @@ extern int init_gold(char *machine, char *keyfile, char *host, uint16_t port)
 extern int fini_gold()
 {
 	gold_init = 0;
-	xfree(gold_machine);
 	xfree(gold_key);
 	xfree(gold_host);
 	

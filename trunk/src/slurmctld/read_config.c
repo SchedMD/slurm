@@ -65,7 +65,6 @@
 #include "src/common/switch.h"
 #include "src/common/xstring.h"
 #include "src/common/node_select.h"
-#include "src/common/slurm_jobacct_storage.h"
 #include "src/common/slurm_rlimits_info.h"
 
 #include "src/slurmctld/job_scheduler.h"
@@ -731,7 +730,6 @@ int read_slurm_conf(int recover)
 	_build_all_partitionline_info();
 
 	update_logging();
-	jobacct_storage_g_init(slurmctld_conf.job_acct_storage_loc);
 	g_slurm_jobcomp_init(slurmctld_conf.job_comp_loc);
 	slurm_sched_init();
 	if (switch_init() < 0)

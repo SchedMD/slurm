@@ -319,6 +319,8 @@ void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
 	conf_ptr->last_update         = time(NULL);
 	conf_ptr->accounting_storage_host =
 					xstrdup(conf->accounting_storage_host);
+	conf_ptr->accounting_storage_loc =
+					xstrdup(conf->accounting_storage_loc);
 	conf_ptr->accounting_storage_pass =
 					xstrdup(conf->accounting_storage_pass);
 	conf_ptr->accounting_storage_port = conf->accounting_storage_port;
@@ -326,6 +328,7 @@ void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
 				        xstrdup(conf->accounting_storage_type);
 	conf_ptr->accounting_storage_user =
 					xstrdup(conf->accounting_storage_user);
+	conf_ptr->accounting_storage_port = conf->accounting_storage_port;
 	conf_ptr->authtype            = xstrdup(conf->authtype);
 
 	conf_ptr->backup_addr         = xstrdup(conf->backup_addr);
@@ -354,12 +357,6 @@ void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
 
 	conf_ptr->job_acct_gather_freq  = conf->job_acct_gather_freq;
 	conf_ptr->job_acct_gather_type  = xstrdup(conf->job_acct_gather_type);
-	conf_ptr->job_acct_storage_host = xstrdup(conf->job_acct_storage_host);
-	conf_ptr->job_acct_storage_loc = xstrdup(conf->job_acct_storage_loc);
-	conf_ptr->job_acct_storage_pass = xstrdup(conf->job_acct_storage_pass);
-	conf_ptr->job_acct_storage_port = conf->job_acct_storage_port;
-	conf_ptr->job_acct_storage_type = xstrdup(conf->job_acct_storage_type);
-	conf_ptr->job_acct_storage_user = xstrdup(conf->job_acct_storage_user);
 
 	conf_ptr->job_comp_host       = xstrdup(conf->job_comp_host);
 	conf_ptr->job_comp_loc        = xstrdup(conf->job_comp_loc);
@@ -426,9 +423,6 @@ void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
 	conf_ptr->slurmd_port         = conf->slurmd_port;
 	conf_ptr->slurmd_spooldir     = xstrdup(conf->slurmd_spooldir);
 	conf_ptr->slurmd_timeout      = conf->slurmd_timeout;
-	conf_ptr->slurmdbd_addr       = xstrdup(conf->slurmdbd_addr);
-	conf_ptr->slurmdbd_auth_info  = xstrdup(conf->slurmdbd_auth_info);
-	conf_ptr->slurmdbd_port       = conf->slurmdbd_port;
 	conf_ptr->slurm_conf          = xstrdup(conf->slurm_conf);
 	conf_ptr->srun_prolog         = xstrdup(conf->srun_prolog);
 	conf_ptr->srun_epilog         = xstrdup(conf->srun_epilog);

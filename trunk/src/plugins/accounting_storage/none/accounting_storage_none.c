@@ -112,9 +112,14 @@ extern int acct_storage_p_add_associations(List association_list)
 	return SLURM_SUCCESS;
 }
 
-extern uint32_t acct_storage_p_get_assoc_id(acct_association_rec_t *assoc)
+extern int acct_storage_p_get_assoc_id(acct_association_rec_t *assoc)
 {
-	return 0;
+	return SLURM_SUCCESS;
+}
+
+extern int acct_storage_p_validate_assoc_id(uint32_t assoc_id)
+{
+	return SLURM_SUCCESS;
 }
 
 extern int acct_storage_p_modify_users(acct_user_cond_t *user_q,
@@ -214,17 +219,20 @@ extern int acct_storage_p_get_monthly_usage(acct_association_rec_t *acct_assoc,
 	return rc;
 }
 
-extern int clusteracct_storage_p_node_down(struct node_record *node_ptr,
+extern int clusteracct_storage_p_node_down(char *cluster,
+					   struct node_record *node_ptr,
 					   time_t event_time, char *reason)
 {
 	return SLURM_SUCCESS;
 }
-extern int clusteracct_storage_p_node_up(struct node_record *node_ptr,
+extern int clusteracct_storage_p_node_up(char *cluster,
+					 struct node_record *node_ptr,
 					 time_t event_time)
 {
 	return SLURM_SUCCESS;
 }
-extern int clusteracct_storage_p_cluster_procs(uint32_t procs,
+extern int clusteracct_storage_p_cluster_procs(char *cluster,
+					       uint32_t procs,
 					       time_t event_time)
 {
 	return SLURM_SUCCESS;
@@ -254,3 +262,63 @@ extern int clusteracct_storage_p_get_monthly_usage(
 	return SLURM_SUCCESS;
 }
 
+/* 
+ * load into the storage the start of a job
+ */
+extern int jobacct_storage_p_job_start(struct job_record *job_ptr)
+{
+	return SLURM_SUCCESS;
+}
+
+/* 
+ * load into the storage the end of a job
+ */
+extern int jobacct_storage_p_job_complete(struct job_record *job_ptr)
+{
+	return SLURM_SUCCESS;
+}
+
+/* 
+ * load into the storage the start of a job step
+ */
+extern int jobacct_storage_p_step_start(struct step_record *step_ptr)
+{
+	return SLURM_SUCCESS;
+}
+
+/* 
+ * load into the storage the end of a job step
+ */
+extern int jobacct_storage_p_step_complete(struct step_record *step_ptr)
+{
+	return SLURM_SUCCESS;
+}
+
+/* 
+ * load into the storage a suspention of a job
+ */
+extern int jobacct_storage_p_suspend(struct job_record *job_ptr)
+{
+	return SLURM_SUCCESS;
+}
+
+/* 
+ * get info from the storage 
+ * returns List of job_rec_t *
+ * note List needs to be freed when called
+ */
+extern List jobacct_storage_p_get_jobs(List selected_steps,
+				       List selected_parts,
+				       void *params)
+{
+	return NULL;
+}
+
+/* 
+ * expire old info from the storage 
+ */
+extern void jobacct_storage_p_archive(List selected_parts,
+				       void *params)
+{
+	return;
+}
