@@ -337,73 +337,83 @@ struct job_details {
 };
 
 struct job_record {
-	uint32_t job_id;		/* job ID */
-	uint32_t magic;			/* magic cookie for data integrity */
-	char *name;			/* name of the job */
-	char *partition;		/* name of the partition */
-	struct part_record *part_ptr;	/* pointer to the partition record */
+	char *account;			/* account number to charge */
+	char    *alloc_node;		/* local node making resource alloc */
+	uint16_t alloc_resp_port;	/* RESPONSE_RESOURCE_ALLOCATION port */
+	uint32_t alloc_sid;		/* local sid making resource alloc */
 	uint16_t batch_flag;		/* 1 or 2 if batch job (with script),
 					 * 2 indicates retry mode (one retry) */
-	uint32_t user_id;		/* user the job runs as */
+	char *comment;			/* arbitrary comment */
+        uint16_t cr_enabled;            /* specify if if Consumable Resources
+                                         * is enabled. Needed since CR deals
+                                         * with a finer granularity in its
+                                         * node/cpu scheduling (available cpus
+                                         * instead of available nodes) than the
+                                         * bluegene and the linear plugins 
+                                         * 0 if cr is NOT enabled, 
+                                         * 1 if cr is enabled */
+	uint32_t db_index;              /* used only for database
+					   plugins */
+	struct job_details *details;	/* job details */
+	time_t end_time;		/* time of termination, 
+					 * actual or expected */
+	uint32_t exit_code;		/* exit code for job (status from 
+					 * wait call) */
 	uint32_t group_id;		/* group submitted under */
+	uint32_t job_id;		/* job ID */
+	struct job_record *job_next;	/* next entry with same hash index */
 	enum job_states job_state;	/* state of the job */
 	uint16_t kill_on_node_fail;	/* 1 if job should be killed on 
 					 * node failure */
 	uint16_t kill_on_step_done;	/* 1 if job should be killed when 
 					 * the job step completes, 2 if kill
 					 * in progress */
-	select_jobinfo_t select_jobinfo;/* opaque data */
+	char *licenses;			/* licenses required by the job */
+	uint16_t mail_type;		/* see MAIL_JOB_* in slurm.h */
+	char *mail_user;		/* user to get e-mail notification */
+	uint32_t magic;			/* magic cookie for data integrity */
+	char *name;			/* name of the job */
+	char *network;			/* network/switch requirement spec */
+	uint16_t next_step_id;		/* next step id to be used */
 	char *nodes;			/* list of nodes allocated to job */
+	slurm_addr *node_addr;		/* addresses of the nodes allocated to 
+					 * job */
 	bitstr_t *node_bitmap;		/* bitmap of nodes allocated to job */
+	uint32_t node_cnt;		/* count of nodes allocated to job */
 	char *nodes_completing;		/* nodes still in completing state
 					 * for this job, used to insure
 					 * epilog is not re-run for job */
 	uint32_t num_procs;		/* count of required processors */
-	uint32_t total_procs;		/* number of allocated processors, 
-					   for accounting */
-	uint32_t time_limit;		/* time_limit minutes or INFINITE,
-					 * NO_VAL implies partition max_time */
-	time_t start_time;		/* time execution begins, 
-					 * actual or expected */
-	time_t end_time;		/* time of termination, 
-					 * actual or expected */
-	time_t suspend_time;		/* time job last suspended or resumed */
+	uint16_t other_port;		/* port for client communications */
+	char *partition;		/* name of the partition */
 	time_t pre_sus_time;		/* time job ran prior to last suspend */
-	time_t tot_sus_time;		/* total time in suspend state */
-	time_t time_last_active;	/* time of last job activity */
 	uint32_t priority;		/* relative priority of the job,
 					 * zero == held (don't initiate) */
-	struct job_details *details;	/* job details */
+	uint32_t requid;            	/* requester user ID */
+	char *resp_host;		/* host for srun communications */
+	select_jobinfo_t select_jobinfo;/* opaque data */
+	time_t start_time;		/* time execution begins, 
+					 * actual or expected */
+	uint16_t state_reason;		/* reason job still pending or failed
+					 * see slurm.h:enum job_wait_reason */
+	List step_list;			/* list of job's steps */
+	time_t suspend_time;		/* time job last suspended or resumed */
+	time_t time_last_active;	/* time of last job activity */
+	uint32_t time_limit;		/* time_limit minutes or INFINITE,
+					 * NO_VAL implies partition max_time */
+	time_t tot_sus_time;		/* total time in suspend state */
+	uint32_t total_procs;		/* number of allocated processors, 
+					   for accounting */
+	struct part_record *part_ptr;	/* pointer to the partition record */
+	uint32_t user_id;		/* user the job runs as */
+
+	/* Per node allocation details */
 	uint16_t num_cpu_groups;	/* record count in cpus_per_node and 
 					 * cpu_count_reps */
 	uint32_t *cpus_per_node;	/* array of cpus per node allocated */
 	uint32_t *cpu_count_reps;	/* array of consecutive nodes with 
 					 * same cpu count */
-	uint32_t alloc_sid;		/* local sid making resource alloc */
-	char    *alloc_node;		/* local node making resource alloc */
-	uint16_t next_step_id;		/* next step id to be used */
-	uint32_t node_cnt;		/* count of nodes allocated to job */
-	slurm_addr *node_addr;		/* addresses of the nodes allocated to 
-					 * job */
-	List step_list;			/* list of job's steps */
-	char *resp_host;		/* host for srun communications */
-	uint16_t alloc_resp_port;	/* RESPONSE_RESOURCE_ALLOCATION port */
-	uint16_t other_port;		/* port for client communications */
-	char *account;			/* account number to charge */
-	char *comment;			/* arbitrary comment */
-	char *network;			/* network/switch requirement spec */
-	struct job_record *job_next;	/* next entry with same hash index */
-        uint16_t cr_enabled;            /* specify if if Consumable
-                                         * Resources is
-                                         * enabled. Needed since CR
-                                         * deals with a finer
-                                         * granularity in its node/cpu
-                                         * scheduling (available cpus
-                                         * instead of available nodes)
-                                         * than the bluegene and the
-                                         * linear plugins 
-                                         * 0 if cr is NOT enabled, 
-                                         * 1 if cr is enabled */
+
         uint32_t alloc_lps_cnt;		/* number of hosts in alloc_lps
 					 * or 0 if alloc_lps is not needed
 					 * for the credentials */
@@ -411,16 +421,7 @@ struct job_record {
 					 * allocated for this job */
 	uint32_t *used_lps;		/* number of logical processors
 					 * already allocated to job steps */
-	char *licenses;			/* licenses required by the job */
-	uint16_t mail_type;		/* see MAIL_JOB_* in slurm.h */
-	char *mail_user;		/* user to get e-mail notification */
-	uint32_t requid;            	/* requester user ID */
-	uint32_t exit_code;		/* exit code for job (status from 
-					 * wait call) */
-	uint16_t state_reason;		/* reason job still pending or failed
-					 * see slurm.h:enum job_wait_reason */
-	uint32_t db_index;              /* used only for database
-					   plugins */
+
 };
 
 /* Job dependency specification, used in "depend_list" within job_record */

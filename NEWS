@@ -6,6 +6,8 @@ documents those changes that are of interest to users and admins.
  -- Restructure the sbcast RPC to take advantage of larger buffers available
     in Slurm v1.3 RPCs.
  -- Fix several memory leaks.
+ -- In scontrol, show job's Requeue value, permit change of Requeue and COmment
+    values.
 
 * Changes in SLURM 1.3.0-pre10
 ==============================
@@ -204,7 +206,8 @@ documents those changes that are of interest to users and admins.
     to control message timeout.
  -- Add threaded agent to manage a queue of Gold update requests for 
     performance reasons.
- -- Add slloc options --chdir and --get-user-env.
+ -- Add salloc options --chdir and --get-user-env (for Moab).
+ -- Modify scontrol update to support job comment changes.
 
 * Changes in SLURM 1.2.24
 =========================

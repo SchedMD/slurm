@@ -381,8 +381,8 @@ slurm_sprint_job_info ( job_info_t * job_ptr, int one_liner )
 
 	/****** Line 11 ******/
 	snprintf(tmp_line, sizeof(tmp_line), 
-		"Dependency=%s Account=%s",
-		job_ptr->dependency, job_ptr->account);
+		"Dependency=%s Account=%s Requeue=%u",
+		job_ptr->dependency, job_ptr->account, job_ptr->requeue);
 	xstrcat(out, tmp_line);
 	if (one_liner)
 		xstrcat(out, " ");
