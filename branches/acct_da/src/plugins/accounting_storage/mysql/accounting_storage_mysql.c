@@ -421,7 +421,7 @@ extern int init ( void )
 
 	location = slurm_get_accounting_storage_loc();
 	if(!location)
-		mysql_db_name = DEFAULT_ACCT_DB;
+		mysql_db_name = xstrdup(DEFAULT_ACCT_DB);
 	else {
 		int i = 0;
 		while(location[i]) {
@@ -434,11 +434,10 @@ extern int init ( void )
 			i++;
 		}
 		if(location[i]) 
-			mysql_db_name = DEFAULT_ACCT_DB;
+			mysql_db_name = xstrdup(DEFAULT_ACCT_DB);
 		else
 			mysql_db_name = location;
 	}
-	xfree(location);
 
 	debug2("mysql_connect() called for db %s", mysql_db_name);
 	

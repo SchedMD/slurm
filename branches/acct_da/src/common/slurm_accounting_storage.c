@@ -75,7 +75,7 @@ typedef struct slurm_acct_storage_ops {
 				    acct_user_cond_t *user_q,
 				    acct_user_rec_t *user);
 	int  (*modify_user_admin_level)(void *db_conn,
-				    acct_user_cond_t *user_q);
+					acct_user_cond_t *user_q);
 	int  (*modify_accts)       (void *db_conn,
 				    acct_account_cond_t *acct_q,
 				    acct_account_rec_t *acct);
@@ -456,15 +456,17 @@ extern void destroy_acct_association_cond(void *object)
 /****************************************************************************\
  * Pack and unpack data structures
 \****************************************************************************/
-extern void pack_acct_user_rec(acct_user_rec_t *object, Buf buffer)
+extern void pack_acct_user_rec(void *in, Buf buffer)
 {
+	acct_user_rec_t *object = (acct_user_rec_t *)in;
+
 	pack16((uint16_t)object->admin_level, buffer);
 	packstr(object->default_acct, buffer);
 	pack16((uint16_t)object->expedite, buffer);
 	packstr(object->name, buffer);
 }
 
-extern int unpack_acct_user_rec(acct_user_rec_t **object, Buf buffer)
+extern int unpack_acct_user_rec(void **object, Buf buffer)
 {
 	uint32_t uint32_tmp;
 	acct_user_rec_t *object_ptr = xmalloc(sizeof(acct_user_rec_t));
@@ -486,10 +488,11 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-extern void pack_acct_account_rec(acct_account_rec_t *object, Buf buffer)
+extern void pack_acct_account_rec(void *in, Buf buffer)
 {
 	char *coord = NULL;
 	ListIterator itr = NULL;
+	acct_account_rec_t *object = (acct_account_rec_t *)in;
 
 	pack32(list_count(object->coordinators), buffer);
 	itr = list_iterator_create(object->coordinators);
@@ -503,7 +506,7 @@ extern void pack_acct_account_rec(acct_account_rec_t *object, Buf buffer)
 	packstr(object->organization, buffer);
 }
 
-extern int unpack_acct_account_rec(acct_account_rec_t **object, Buf buffer)
+extern int unpack_acct_account_rec(void **object, Buf buffer)
 {
 	uint32_t uint32_tmp;
 	int i;
@@ -537,9 +540,10 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-extern void pack_cluster_accounting_rec(cluster_accounting_rec_t *object,
-					Buf buffer)
+extern void pack_cluster_accounting_rec(void *in, Buf buffer)
 {
+	cluster_accounting_rec_t *object = (cluster_accounting_rec_t *)in;
+	
 	pack32(object->alloc_secs, buffer);
 	pack32(object->cpu_count, buffer);
 	pack32(object->down_secs, buffer);
@@ -548,8 +552,7 @@ extern void pack_cluster_accounting_rec(cluster_accounting_rec_t *object,
 	pack32(object->resv_secs, buffer);
 }
 
-extern int unpack_cluster_accounting_rec(cluster_accounting_rec_t **object,
-					 Buf buffer)
+extern int unpack_cluster_accounting_rec(void **object, Buf buffer)
 {
 	cluster_accounting_rec_t *object_ptr =
 		xmalloc(sizeof(cluster_accounting_rec_t));
@@ -570,10 +573,11 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-extern void pack_acct_cluster_rec(acct_cluster_rec_t *object, Buf buffer)
+extern void pack_acct_cluster_rec(void *in, Buf buffer)
 {
 	cluster_accounting_rec_t *acct_info = NULL;
 	ListIterator itr = NULL;
+	acct_cluster_rec_t *object = (acct_cluster_rec_t *)in;
 
 	pack32(list_count(object->accounting_list), buffer);
 	itr = list_iterator_create(object->accounting_list);
@@ -586,7 +590,7 @@ extern void pack_acct_cluster_rec(acct_cluster_rec_t *object, Buf buffer)
 	packstr(object->primary, buffer);
 }
 
-extern int unpack_acct_cluster_rec(acct_cluster_rec_t **object, Buf buffer)
+extern int unpack_acct_cluster_rec(void **object, Buf buffer)
 {
 	uint32_t uint32_tmp;
 	int i;
@@ -600,7 +604,7 @@ extern int unpack_acct_cluster_rec(acct_cluster_rec_t **object, Buf buffer)
 	object_ptr->accounting_list =
 		list_create(destroy_cluster_accounting_rec);
 	for(i=0; i<count; i++) {
-		unpack_cluster_accounting_rec(&acct_info, buffer);
+		unpack_cluster_accounting_rec((void *)&acct_info, buffer);
 		list_append(object_ptr->accounting_list, acct_info);
 	}
 	safe_unpackstr_xmalloc(&object_ptr->backup, &uint32_tmp, buffer);
@@ -620,14 +624,15 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-extern void pack_acct_accounting_rec(acct_accounting_rec_t *object, Buf buffer)
+extern void pack_acct_accounting_rec(void *in, Buf buffer)
 {
+	acct_accounting_rec_t *object = (acct_accounting_rec_t *)in;
+	
 	pack_time(object->period_start, buffer);
 	pack32(object->alloc_secs, buffer);
 }
 
-extern int unpack_acct_accounting_rec(acct_accounting_rec_t **object,
-				      Buf buffer)
+extern int unpack_acct_accounting_rec(void **object, Buf buffer)
 {
 	acct_accounting_rec_t *object_ptr =
 		xmalloc(sizeof(acct_accounting_rec_t));
@@ -644,12 +649,12 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-extern void pack_acct_association_rec(acct_association_rec_t *object,
-				      Buf buffer)
+extern void pack_acct_association_rec(void *in, Buf buffer)
 {
 	acct_accounting_rec_t *acct_info = NULL;
 	ListIterator itr = NULL;
-
+	acct_association_rec_t *object = (acct_association_rec_t *)in;	
+	
 	pack32(list_count(object->accounting_list), buffer);
 	itr = list_iterator_create(object->accounting_list);
 	while((acct_info = list_next(itr))) {
@@ -673,8 +678,7 @@ extern void pack_acct_association_rec(acct_association_rec_t *object,
 	packstr(object->user, buffer);	
 }
 
-extern int unpack_acct_association_rec(acct_association_rec_t **object,
-				       Buf buffer)
+extern int unpack_acct_association_rec(void **object, Buf buffer)
 {
 	uint32_t uint32_tmp;
 	int i;
@@ -689,7 +693,7 @@ extern int unpack_acct_association_rec(acct_association_rec_t **object,
 	object_ptr->accounting_list =
 		list_create(destroy_acct_accounting_rec);
 	for(i=0; i<count; i++) {
-		unpack_acct_accounting_rec(&acct_info, buffer);
+		unpack_acct_accounting_rec((void **)&acct_info, buffer);
 		list_append(object_ptr->accounting_list, acct_info);
 	}
 	safe_unpackstr_xmalloc(&object_ptr->acct, &uint32_tmp, buffer);

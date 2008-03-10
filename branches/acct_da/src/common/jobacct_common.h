@@ -214,8 +214,8 @@ extern void destroy_jobacct_job_rec(void *object);
 extern void destroy_jobacct_step_rec(void *object);
 extern void destroy_jobacct_selected_step(void *object);
 
-extern void pack_jobacct_job_rec(jobacct_job_rec_t *job, Buf buffer);
-extern int unpack_jobacct_job_rec(jobacct_job_rec_t **job, Buf buffer);
+extern void pack_jobacct_job_rec(void *object, Buf buffer);
+extern int unpack_jobacct_job_rec(void **object, Buf buffer);
  
 extern void pack_jobacct_step_rec(jobacct_step_rec_t *step, Buf buffer);
 extern int unpack_jobacct_step_rec(jobacct_step_rec_t **step, Buf buffer);

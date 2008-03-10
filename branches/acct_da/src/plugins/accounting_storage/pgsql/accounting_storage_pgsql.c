@@ -619,7 +619,7 @@ extern int init ( void )
 
 	location = slurm_get_accounting_storage_loc();
 	if(!location)
-		pgsql_db_name = DEFAULT_ACCT_DB;
+		pgsql_db_name = xstrdup(DEFAULT_ACCT_DB);
 	else {
 		int i = 0;
 		while(location[i]) {
@@ -632,11 +632,10 @@ extern int init ( void )
 			i++;
 		}
 		if(location[i]) 
-			pgsql_db_name = DEFAULT_ACCT_DB;
+			pgsql_db_name = xstrdup(DEFAULT_ACCT_DB);
 		else
 			pgsql_db_name = location;
 	}
-	xfree(location);
 
 	debug2("pgsql_connect() called for db %s", pgsql_db_name);
 		
@@ -921,7 +920,7 @@ extern int jobacct_storage_p_job_start(PGconn *acct_pgsql_db,
 	}
 
 	if(!acct_pgsql_db || PQstatus(acct_pgsql_db) != CONNECTION_OK) {
-		if(init() == SLURM_ERROR) {
+		if(!(acct_pgsql_db = acct_storage_p_get_connection())) {
 			return SLURM_ERROR;
 		}
 	}
@@ -1012,7 +1011,7 @@ extern int jobacct_storage_p_job_complete(PGconn *acct_pgsql_db,
 	}
 
 	if(!acct_pgsql_db || PQstatus(acct_pgsql_db) != CONNECTION_OK) {
-		if(init() == SLURM_ERROR) {
+		if(!(acct_pgsql_db = acct_storage_p_get_connection())) {
 			return SLURM_ERROR;
 		}
 	}
@@ -1077,7 +1076,7 @@ extern int jobacct_storage_p_step_start(PGconn *acct_pgsql_db,
 	}
 
 	if(!acct_pgsql_db || PQstatus(acct_pgsql_db) != CONNECTION_OK) {
-		if(init() == SLURM_ERROR) {
+		if(!(acct_pgsql_db = acct_storage_p_get_connection())) {
 			return SLURM_ERROR;
 		}
 	}
@@ -1169,7 +1168,7 @@ extern int jobacct_storage_p_step_complete(PGconn *acct_pgsql_db,
 	}
 
 	if(!acct_pgsql_db || PQstatus(acct_pgsql_db) != CONNECTION_OK) {
-		if(init() == SLURM_ERROR) {
+		if(!(acct_pgsql_db = acct_storage_p_get_connection())) {
 			return SLURM_ERROR;
 		}
 	}
@@ -1288,7 +1287,7 @@ extern int jobacct_storage_p_suspend(PGconn *acct_pgsql_db,
 	int rc = SLURM_SUCCESS;
 	
 	if(!acct_pgsql_db || PQstatus(acct_pgsql_db) != CONNECTION_OK) {
-		if(init() == SLURM_ERROR) {
+		if(!(acct_pgsql_db = acct_storage_p_get_connection())) {
 			return SLURM_ERROR;
 		}
 	}
@@ -1337,7 +1336,7 @@ extern List jobacct_storage_p_get_jobs(PGconn *acct_pgsql_db,
 	List job_list = NULL;
 #ifdef HAVE_PGSQL
 	if(!acct_pgsql_db || PQstatus(acct_pgsql_db) != CONNECTION_OK) {
-		if(init() == SLURM_ERROR) {
+		if(!(acct_pgsql_db = acct_storage_p_get_connection())) {
 			return job_list;
 		}
 	}
@@ -1359,7 +1358,7 @@ extern void jobacct_storage_p_archive(PGconn *acct_pgsql_db,
 {
 #ifdef HAVE_PGSQL
 	if(!acct_pgsql_db || PQstatus(acct_pgsql_db) != CONNECTION_OK) {
-		if(init() == SLURM_ERROR) {
+		if(!(acct_pgsql_db = acct_storage_p_get_connection())) {
 			return;
 		}
 	}

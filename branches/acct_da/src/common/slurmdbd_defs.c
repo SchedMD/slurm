@@ -271,9 +271,10 @@ extern int slurm_send_recv_slurmdbd_msg(slurmdbd_msg_t *req,
 				rc = SLURM_SUCCESS;
 			break;
 		case DBD_GOT_JOBS:
-			if (slurm_dbd_unpack_got_jobs_msg(
-						(dbd_got_jobs_msg_t **)
-						&resp->data, buffer))
+			if (slurm_dbd_unpack_got_list_msg(
+				    resp->msg_type,
+				    (dbd_got_list_msg_t **)&resp->data,
+				    buffer))
 				rc = SLURM_ERROR;
 			else
 				rc = SLURM_SUCCESS;
@@ -1042,11 +1043,11 @@ void inline slurm_dbd_free_get_jobs_msg(dbd_get_jobs_msg_t *msg)
 	}
 }
 
-void inline slurm_dbd_free_got_jobs_msg(dbd_got_jobs_msg_t *msg)
+void inline slurm_dbd_free_got_list_msg(dbd_got_list_msg_t *msg)
 {
 	if (msg) {
-		if(msg->jobs)
-			list_destroy(msg->jobs);
+		if(msg->ret_list)
+			list_destroy(msg->ret_list);
 		xfree(msg);
 	}
 }
@@ -1224,46 +1225,112 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-void inline slurm_dbd_pack_got_jobs_msg(dbd_got_jobs_msg_t *msg, Buf buffer)
+void inline slurm_dbd_pack_got_list_msg(slurmdbd_msg_type_t type,
+					dbd_got_list_msg_t *msg, Buf buffer)
 {
 	uint32_t count = 0;
 	ListIterator itr = NULL;
-	jobacct_job_rec_t *job = NULL;
+	void *object = NULL;
+	void (*my_function) (void *object, Buf buffer);
 
-	if(msg->jobs) 
-		count = list_count(msg->jobs);
+	switch(type) {
+	case DBD_GOT_ACCOUNTS:
+		my_function = pack_acct_account_rec;
+		break;
+	case DBD_GOT_ASSOCS:
+		my_function = pack_acct_association_rec;
+		break;
+	case DBD_GOT_ASSOC_HOUR:
+	case DBD_GOT_ASSOC_DAY:
+	case DBD_GOT_ASSOC_MONTH:
+		my_function = pack_acct_accounting_rec;
+		break;
+	case DBD_GOT_CLUSTERS:
+		my_function = pack_acct_cluster_rec;
+		break;
+	case DBD_GOT_CLUSTER_HOUR:
+	case DBD_GOT_CLUSTER_DAY:
+	case DBD_GOT_CLUSTER_MONTH:
+		my_function = pack_cluster_accounting_rec;
+		break;
+	case DBD_GOT_JOBS:
+		my_function = pack_jobacct_job_rec;
+		break;
+	case DBD_GOT_USERS:
+		my_function = pack_acct_user_rec;
+		break;
+	default:
+		fatal("Unknown pack type");
+		return;
+	}
+	if(msg->ret_list) 
+		count = list_count(msg->ret_list);
 			
 	pack32(count, buffer);
 	if(count) {
-		itr = list_iterator_create(msg->jobs);
-		while((job = list_next(itr))) {
-			pack_jobacct_job_rec(job, buffer);
+		itr = list_iterator_create(msg->ret_list);
+		while((object = list_next(itr))) {
+			(*(my_function))(object, buffer);
 		}
 		list_iterator_destroy(itr);
 	}
 }
 
-int inline slurm_dbd_unpack_got_jobs_msg(dbd_got_jobs_msg_t **msg, Buf buffer)
+int inline slurm_dbd_unpack_got_list_msg(slurmdbd_msg_type_t type,
+					 dbd_got_list_msg_t **msg, Buf buffer)
 {
 	int i;
 	uint32_t count;
-	dbd_got_jobs_msg_t *msg_ptr = NULL;
-	jobacct_job_rec_t *job = NULL;
+	dbd_got_list_msg_t *msg_ptr = NULL;
+	void *object = NULL;
+	int (*my_function) (void **object, Buf buffer);
 
-	msg_ptr = xmalloc(sizeof(dbd_got_jobs_msg_t));
+	switch(type) {
+	case DBD_GOT_ACCOUNTS:
+		my_function = unpack_acct_account_rec;
+		break;
+	case DBD_GOT_ASSOCS:
+		my_function = unpack_acct_association_rec;
+		break;
+	case DBD_GOT_ASSOC_HOUR:
+	case DBD_GOT_ASSOC_DAY:
+	case DBD_GOT_ASSOC_MONTH:
+		my_function = unpack_acct_accounting_rec;
+		break;
+	case DBD_GOT_CLUSTERS:
+		my_function = unpack_acct_cluster_rec;
+		break;
+	case DBD_GOT_CLUSTER_HOUR:
+	case DBD_GOT_CLUSTER_DAY:
+	case DBD_GOT_CLUSTER_MONTH:
+		my_function = unpack_cluster_accounting_rec;
+		break;
+	case DBD_GOT_JOBS:
+		my_function = unpack_jobacct_job_rec;
+		break;
+	case DBD_GOT_USERS:
+		my_function = unpack_acct_user_rec;
+		break;
+	default:
+		fatal("Unknown unpack type");
+		return SLURM_ERROR;
+	}
+
+	msg_ptr = xmalloc(sizeof(dbd_got_list_msg_t));
 	*msg = msg_ptr;
 	safe_unpack32(&count, buffer);
-	msg_ptr->jobs = list_create(destroy_jobacct_job_rec);
+	msg_ptr->ret_list = list_create(destroy_jobacct_job_rec);
 	for(i=0; i<count; i++) {
-		unpack_jobacct_job_rec(&job, buffer);
-		list_append(msg_ptr->jobs, job);
+		if(((*(my_function))(&object, buffer)) == SLURM_ERROR)
+			goto unpack_error;
+		list_append(msg_ptr->ret_list, object);
 	}
 	
 	return SLURM_SUCCESS;
 
 unpack_error:
-	if(msg_ptr->jobs)
-		list_destroy(msg_ptr->jobs);
+	if(msg_ptr->ret_list)
+		list_destroy(msg_ptr->ret_list);
 	*msg = NULL;
 	return SLURM_ERROR;
 }

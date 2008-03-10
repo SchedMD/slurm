@@ -163,23 +163,18 @@ extern void destroy_acct_cluster_cond(void *object);
 extern void destroy_acct_association_cond(void *object);
 
 /* pack functions */
-extern void pack_acct_user_rec(acct_user_rec_t *object, Buf buffer);
-extern int unpack_acct_user_rec(acct_user_rec_t **object, Buf buffer);
-extern void pack_acct_account_rec(acct_account_rec_t *object, Buf buffer);
-extern int unpack_acct_account_rec(acct_account_rec_t **object, Buf buffer);
-extern void pack_cluster_accounting_rec(cluster_accounting_rec_t *object,
-					Buf buffer);
-extern int unpack_cluster_accounting_rec(cluster_accounting_rec_t **object,
-					 Buf buffer);
-extern void pack_acct_cluster_rec(acct_cluster_rec_t *object, Buf buffer);
-extern int unpack_acct_cluster_rec(acct_cluster_rec_t **object, Buf buffer);
-extern void pack_acct_accounting_rec(acct_accounting_rec_t *object, Buf buffer);
-extern int unpack_acct_accounting_rec(acct_accounting_rec_t **object,
-				      Buf buffer);
-extern void pack_acct_association_rec(acct_association_rec_t *object,
-				      Buf buffer);
-extern int unpack_acct_association_rec(acct_association_rec_t **object,
-				       Buf buffer);
+extern void pack_acct_user_rec(void *object, Buf buffer);
+extern int unpack_acct_user_rec(void **object, Buf buffer);
+extern void pack_acct_account_rec(void *object, Buf buffer);
+extern int unpack_acct_account_rec(void **object, Buf buffer);
+extern void pack_cluster_accounting_rec(void *object, Buf buffer);
+extern int unpack_cluster_accounting_rec(void **object, Buf buffer);
+extern void pack_acct_cluster_rec(void *object, Buf buffer);
+extern int unpack_acct_cluster_rec(void **object, Buf buffer);
+extern void pack_acct_accounting_rec(void *object, Buf buffer);
+extern int unpack_acct_accounting_rec(void **object, Buf buffer);
+extern void pack_acct_association_rec(void *object, Buf buffer);
+extern int unpack_acct_association_rec(void **object, Buf buffer);
 
 extern void pack_acct_user_cond(acct_user_cond_t *object, Buf buffer);
 extern int unpack_acct_user_cond(acct_user_cond_t **object, Buf buffer);
