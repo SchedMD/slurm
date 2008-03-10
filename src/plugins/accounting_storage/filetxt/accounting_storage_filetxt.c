@@ -180,21 +180,10 @@ extern int init ( void )
 	struct stat	statbuf;
 	
 	if(first) {
-		char *temp = slurm_get_jobacct_gather_type();
-		char *temp2 = slurm_get_accounting_storage_type();
-		if(!strcasecmp(temp, JOB_ACCT_GATHER_TYPE_NONE)) {
-			fatal("WARNING: You are trying to store job "
-			      "accounting info (%s) without collecting it. "
-			      "This will not work.  If you want to collect "
-			      "accounting data set the jobacct-gather option "
-			      "to something other than '%s'", temp2, temp);
-		}
-		xfree(temp);
-		xfree(temp2);
-
 		debug2("jobacct_init() called");
 		log_file = slurm_get_accounting_storage_loc();
-		
+		if(!log_file)
+			log_file = xstrdup(DEFAULT_STORAGE_LOC);
 		slurm_mutex_lock( &logfile_lock );
 		if (LOGFILE)
 			fclose(LOGFILE);
