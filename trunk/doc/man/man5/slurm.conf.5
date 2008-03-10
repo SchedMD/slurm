@@ -29,6 +29,74 @@ configuration file.
 The overall configuration parameters available include:
 
 .TP
+\fBAccountingStorageEnforce\fR
+If to a non-zero value and the user, partition, account association is not 
+defined for a job in the accounting database then prevent the job from being 
+executed.
+The default value is zero.
+
+.TP
+\fBAccountingStorageHost\fR
+Define the name of the host where the database is running we are going
+to store the accounting data.
+Only used for database type storage plugins, ignored otherwise.
+Also see \fBDefaultStorageHost\fR.
+
+.TP
+\fBAccountingStorageLoc\fR
+Specifies the location of the file or database where accounting 
+records are written.
+Also see \fBDefaultStorageLoc\fR.
+
+.TP
+\fBAccountingStoragePass\fR
+Define the password used to gain access to the database to store the
+accounting data.
+Only used for database type storage plugins, ignored otherwise.
+Also see \fBDefaultStoragePassr\fR.
+
+.TP
+\fBAccountingStoragePort\fR
+Define the port the database server is listening on where we are going
+to store the accounting data.
+Only used for database type storage plugins, ignored otherwise.
+Also see \fBDefaultStoragePort\fR.
+
+.TP
+\fBAccountingStorageType\fR
+Define the accounting storage mechanism type.
+Acceptable values at present include 
+"accounting_storage/filetxt", "accounting_storage/gold",
+"accounting_storage/mysql", "accounting_storage/none", 
+"accounting_storage/pgsql", and "accounting_storage/slurmdbd".
+The value "accounting_storage/filetxt" indicates that accounting records
+will be written to a the file specified by the 
+\fBAccountingStorageLoc\fR parameter.
+The value "accounting_storage/gold" indicates that account records
+will be written to Gold
+(http://www.clusterresources.com/pages/products/gold-allocation-manager.ph),
+which maintains its own database.
+The value "accounting_storage/mysql" indicates that accounting records
+should be written to a mysql database specified by the 
+\fBAccountingStorageLoc\fR parameter.
+The default value is "accounting_storage/none", which means that
+account records are not maintained. 
+The value "accounting_storage/pgsql" indicates that accounting records
+should be written to a postresql database specified by the 
+\fBAccountingStorageLoc\fR parameter.
+The value "accounting_storage/slurmdbd" indicates that accounting records
+will be written to SlurmDbd, which maintains its own database. See 
+"man slurmdbd" for more information.
+Also see \fBDefaultStorageType\fR.
+
+.TP
+\fBAccountingStorageUser\fR
+Define the name of the user we are going to connect to the database
+with to store the accounting data.
+Only used for database type storage plugins, ignored otherwise.
+Also see \fBDefaultStorageUser\fR.
+
+.TP
 \fBAuthType\fR
 Define the authentication method for communications between SLURM 
 components. 
@@ -39,8 +107,9 @@ communication messages is not verified.
 This may be fine for testing purposes, but 
 \fBdo not use "auth/none" if you desire any security\fR.
 "auth/authd" indicates that Brett Chun's authd is to be used (see
-"http://www.theether.org/authd/" for more information).
-"auth/munge" indicates that Chris Dunlap's munge is to be used
+"http://www.theether.org/authd/" for more information, Note that
+authd is no longer actively supported).
+"auth/munge" indicates that LLNL's MUNGE is to be used
 (this is the best supported authentication mechanism for SLURM, 
 see "http://home.gna.org/munge/" for more information).
 All SLURM daemons and commands must be terminated prior to changing 
@@ -88,6 +157,12 @@ Acceptable values at present include
 The default value is "checkpoint/none".
 
 .TP
+\fBClusterName\fR
+The name by which this SLURM managed cluster is known for accounting 
+purposes. This is needed distinguish between accounting data from 
+multiple clusters being recorded in a single database.
+
+.TP
 \fBControlAddr\fR
 Name that \fBControlMachine\fR should be referred to in 
 establishing a communications path. This name will 
@@ -113,16 +188,68 @@ to take effect.
 Acceptable values at present include "crypto/munge" and "crypto/openssl".
 OpenSSL offers the best performance and is available with an 
 Apache style open source license.
-Munge is a little slower, but is availble under the Gnu General Public 
+Munge is a little slower, but is available under the Gnu General Public 
 License (GPL).
 The default value is "crypto/openssl".
 
 .TP
 \fBDefMemPerTask\fR
-Default real memory size availble per task in MegaBytes. 
+Default real memory size available per task in MegaBytes. 
 Used to avoid over\-subscribing memory and causing paging.
 Also see \fBMaxMemPerTask\fR.
 The default value is 0 (unlimited).
+
+.TP
+\fBDefaultStorageHost\fR
+Define the name of the host where the database is running and used to
+to store the accounting and job completion data.
+Only used for database type storage plugins, ignored otherwise.
+Also see \fBAccountingStorageHost\fR and \fBJobCompHost\fR.
+
+.TP
+\fBDefaultStorageLoc\fR
+Specifies the location of the file or database where accounting 
+and job completion records are written.
+Also see \fBAccountingStorageLoc\fR and \fBJobCompLoc\fR.
+
+.TP
+\fBDefaultStoragePass\fR
+Define the password used to gain access to the database to store the
+accounting and job completion data.
+Only used for database type storage plugins, ignored otherwise.
+Also see \fBAccountingStoragePass\fR and \fBJobCompPass\fR.
+
+.TP
+\fBDefaultStoragePort\fR
+Define the port the database server is listening on where we are going
+to store the accounting and job completion data.
+Only used for database type storage plugins, ignored otherwise.
+Also see \fBAccountingStoragePort\fR and \fBJobCompPort\fR.
+
+.TP
+\fBDefaultStorageType\fR
+Define the accounting and job completion storage mechanism type.
+Acceptable values at present include 
+"filetxt", "gold", "mysql", "none", "pgsql", and "slurmdbd".
+The value "filetxt" indicates that records will be written to a the file.
+The value "gold" indicates that records will be written to Gold
+(http://www.clusterresources.com/pages/products/gold-allocation-manager.ph),
+which maintains its own database.
+The value "mysql" indicates that accounting records will be written to 
+a mysql database.
+The default value is "none", which means that records are not maintained. 
+The value "pgsql" indicates that records will be written to a postresql 
+database.
+The value "slurmdbd" indicates that records will be written to SlurmDbd,
+which maintains its own database. See "man slurmdbd for more information".
+Also see \fBAccountingStorageType\fR  and \fBJobCompType\fR.
+
+.TP
+\fBDefaultStorageUser\fR
+Define the name of the user we are going to connect to the database
+with to store the accounting and job completion data.
+Only used for database type storage plugins, ignored otherwise.
+Also see \fBAccountingStorageUser\fR and \fBJobCompUser\fR.
 
 .TP
 \fBEpilog\fR
@@ -158,7 +285,7 @@ Consider which value you want to be used for scheduling purposes.
 \fB1\fR (default)
 Consider the configuration of each node to be that specified in the
 configuration file and any node with less
-than the configured resouces will be set DOWN.
+than the configured resources will be set DOWN.
 .TP
 \fB0\fR
 Base scheduling decisions upon the actual configuration of 
@@ -243,52 +370,37 @@ A value of zero disables real the periodic job sampling and provides accounting
 information only on job termination (reducing SLURM interference with the job).
 
 .TP
-\fBJobAcctStorageType\fR
-Define the job accounting storage mechanism type.
-Acceptable values at present include "jobacct_storage/none", "jobacct_storage/filetxt", 
-"jobacct_storage/mysql", "jobacct_storage/pgsql", and "jobacct_storage/script".
-The default value is "jobacct_storage/none", which means that job
-accounting isn't recorded for the system. 
-The value "jobacct_storage/filetxt" indicates that a record of the job should be 
-written to a text file specified by the \fBJobAcctStorageLoc\fR parameter.
-The value "jobacct_storage/mysql" indicates that a record of the job should be 
-written to a mysql database specified by the \fBJobAcctStorageLoc\fR parameter.
-The value "jobacct_storage/pgsql" indicates that a record of the job should be 
-written to a postresql database specified by the \fBJobAcctStorageLoc\fR parameter.
-
-.TP
-\fBJobAcctStorageLoc\fR
-Define the location where job accounting logs are to be written either
-a filename or a database name.
-
-.TP
-\fBJobAcctStorageHost\fR
-Define the name of the host the database is running where we are going
-to store the job accounting data.
+\fBJobCompHost\fR
+Define the name of the host where the database is running and used
+to store the job completion data.
 Only used for database type storage plugins, ignored otherwise.
+Also see \fBDefaultStorageHost\fR.
 
 .TP
-\fBJobAcctStoragePort\fR
+\fBJobCompLoc\fR
+The interpretation of this value depends upon the logging mechanism 
+specified by the \fBJobCompType\fR parameter either a filename or a 
+database name. 
+Also see \fBDefaultStorageLoc\fR.
+
+.TP
+\fBJobCompPass\fR
+Define the password used to gain access to the database to store the job completion data.
+Only used for database type storage plugins, ignored otherwise.
+Also see \fBDefaultStoragePass\fR.
+
+.TP
+\fBJobCompPort\fR
 Define the port the database server is listening on where we are going
-to store the job accounting data.
+to store the job completion data.
 Only used for database type storage plugins, ignored otherwise.
-
-.TP
-\fBJobAcctStorageUser\fR
-Define the name of the user we are going to connect to the database
-with to store the job accounting data.
-Only used for database type storage plugins, ignored otherwise.
-
-.TP
-\fBJobAcctStoragePass\fR
-Define the password used to gain access to the database to store the job accounting data.
-Only used for database type storage plugins, ignored otherwise.
+Also see \fBDefaultStoragePort\fR.
 
 .TP
 \fBJobCompType\fR
 Define the job completion logging mechanism type.
 Acceptable values at present include "jobcomp/none", "jobcomp/filetxt", 
-"jobcomp/mysql", "jobcomp/pgsql", and "jobcomp/script".
+"jobcomp/mysql", "jobcomp/pgsql", "jobcomp/script"and "jobcomp/slurmdbd".
 The default value is "jobcomp/none", which means that upon job completion 
 the record of the job is purged from the system. 
 The value "jobcomp/filetxt" indicates that a record of the job should be 
@@ -300,35 +412,17 @@ written to a postgresql database specified by the \fBJobCompLoc\fR parameter.
 The value "jobcomp/script" indicates that a script specified by the 
 \fBJobCompLoc\fR parameter is to be executed with environment variables 
 indicating the job information.
-
-.TP
-\fBJobCompLoc\fR
-The interpretation of this value depends upon the logging mechanism 
-specified by the \fBJobCompType\fR parameter either a filename or a 
-database name. 
-
-.TP
-\fBJobCompHost\fR
-Define the name of the host the database is running where we are going
-to store the job completion data.
-Only used for database type storage plugins, ignored otherwise.
-
-.TP
-\fBJobCompPort\fR
-Define the port the database server is listening on where we are going
-to store the job completion data.
-Only used for database type storage plugins, ignored otherwise.
+The value "jobcomp/slurmdbd" indicates that job completion records
+will be written to SlurmDbd, which maintains its own database. See 
+"man slurmdbd" for more information.
+Also see \fBDefaultStorageType\fR.
 
 .TP
 \fBJobCompUser\fR
 Define the name of the user we are going to connect to the database
 with to store the job completion data.
 Only used for database type storage plugins, ignored otherwise.
-
-.TP
-\fBJobCompPass\fR
-Define the password used to gain access to the database to store the job completion data.
-Only used for database type storage plugins, ignored otherwise.
+Also see \fBDefaultStorageUser\fR.
 
 .TP
 \fBJobCredentialPrivateKey\fR
@@ -362,16 +456,11 @@ option to change the default behavior for individual jobs.
 The default value is 1.
 
 .TP
-\fBKillTree\fR
-This option is mapped to "ProctrackType=proctrack/linuxproc". 
-It will be removed from a future release.
-
-.TP
 \fBKillWait\fR
 The interval, in seconds, given to a job's processes between the 
 SIGTERM and SIGKILL signals upon reaching its time limit. 
 If the job fails to terminate gracefully 
-in the interval specified, it will be forcably terminated. 
+in the interval specified, it will be forcibly terminated. 
 The default value is 30 seconds.
 May not exceed 65533.
 
@@ -465,7 +554,7 @@ NOTE: "proctrack/linuxproc" is not compatible with "switch/elan."
 Acceptable values at present include:
 .RS
 .TP 
-\fBproctrack/aix\fR which uses an AIX kernel extenstion and is 
+\fBproctrack/aix\fR which uses an AIX kernel extension and is 
 the default for AIX systems
 .TP
 \fBproctrack/linuxproc\fR which uses linux process tree using 
@@ -665,7 +754,7 @@ Acceptable values include
 .TP
 \fBselect/linear\fR
 for allocation of entire nodes assuming a
-one\-dimentional array of nodes in which sequentially ordered 
+one\-dimensional array of nodes in which sequentially ordered 
 nodes are preferable. 
 This is the default value for non\-BlueGene systems. 
 .TP
@@ -677,7 +766,7 @@ partitions by using the \fIShared=Exclusive\fR option.
 See the partition \fBShared\fR parameter for more information.
 .TP
 \fBselect/bluegene\fR
-for a three\-dimentional BlueGene system. 
+for a three\-dimensional BlueGene system. 
 The default value is "select/bluegene" for BlueGene systems.
 .RE
 
@@ -695,7 +784,7 @@ The following values are supported for \fBSelectType=select/cons_res\fR:
 \fBCR_CPU\fR
 CPUs are consumable resources.
 There is no notion of sockets, cores or threads.
-On a multi\-core system, each core will be consided a CPU.
+On a multi\-core system, each core will be considered a CPU.
 On a multi\-core and hyperthreaded system, each thread will be
 considered a CPU.
 On single\-core systems, each CPUs will be considered a CPU.
@@ -817,18 +906,6 @@ and its \fBslurmd\fR daemon.
 The value may not exceed 65533.
 
 .TP
-\fBStateSaveLocation\fR
-Fully qualified pathname of a directory into which the SLURM controller, 
-\fBslurmctld\fR, saves its state (e.g. "/usr/local/slurm/checkpoint"). 
-SLURM state will saved here to recover from system failures.
-\fBSlurmUser\fR must be able to create files in this directory.
-If you have a \fBBackupController\fR configured, this location should be 
-readable and writable by both systems. 
-The default value is "/tmp".
-If any slurm daemons terminate abnormally, their core files will also be written 
-into this directory.
-
-.TP
 \fBSlurmDbdAddr\fR
 Name that the Slurm DBD (Data Base Daemon) should be referred to 
 in establishing a communications path. This should be specified 
@@ -845,6 +922,9 @@ The interpretation of this option is specific to the configured \fBAuthType\fR.
 In the case of \fIauth/munge\fR, this can be configured to use a Munge daemon 
 specifically configured to provide authentication between clusters while the 
 default Munge daemon provides authentication within a cluster. 
+In that case, \fBSlurmDbdAuthInfo\fR should specify the named port to be used
+for communications with the alternate Munge daemon (e.g. 
+"/var/run/munge/global.socket.2")
 The default value is NULL, which results in the default authentication 
 mechanism being used.
 
@@ -869,11 +949,23 @@ be the command and arguments of the job step.  This configuration parameter
 may be overridden by srun's \fB\-\-prolog\fR parameter.
 
 .TP
+\fBStateSaveLocation\fR
+Fully qualified pathname of a directory into which the SLURM controller, 
+\fBslurmctld\fR, saves its state (e.g. "/usr/local/slurm/checkpoint"). 
+SLURM state will saved here to recover from system failures.
+\fBSlurmUser\fR must be able to create files in this directory.
+If you have a \fBBackupController\fR configured, this location should be 
+readable and writable by both systems. 
+The default value is "/tmp".
+If any slurm daemons terminate abnormally, their core files will also be written 
+into this directory.
+
+.TP
 \fBSuspendExcNodes\fR
 Specifies the nodes which are to not be placed in power save mode, even 
 if the node remains idle for an extended period of time.
 Use SLURM's hostlist expression to identify nodes.
-By default no nodes are exclueded.
+By default no nodes are excluded.
 Related configuration options include \fBResumeProgram\fR, \fBResumeRate\fR,
 \fBSuspendProgram\fR, \fBSuspendRate\fR, \fBSuspendTime\fR and
 \fBSuspendExcParts\fR.
@@ -883,7 +975,7 @@ Related configuration options include \fBResumeProgram\fR, \fBResumeRate\fR,
 Specifies the partitions whose nodes are to not be placed in power save 
 mode, even if the node remains idle for an extended period of time.
 Multiple partitions can be identified and separated by commas.
-By default no nodes are exclueded.
+By default no nodes are excluded.
 Related configuration options include \fBResumeProgram\fR, \fBResumeRate\fR,
 \fBSuspendProgram\fR, \fBSuspendRate\fR, \fBSuspendTime\fR and
 \fBSuspendExcNodes\fR.
@@ -1020,7 +1112,7 @@ The default value is 50, meaning each slurmd daemon can communicate
 with up to 50 other slurmd daemons and over 2500 nodes can be contacted
 with two message hops.
 The default value will work well for most clusters.
-Optimaly system performance can typically be achieved if \fBTreeWidth\fR
+Optimal system performance can typically be achieved if \fBTreeWidth\fR
 is set to the square root of the number of nodes in the cluster for
 systems having no more than 2500 nodes or the cube root for larger
 systems.
@@ -1037,7 +1129,7 @@ processes.  The program will be run as the same user as the slurmd (usually
 .TP
 \fBUnkillableStepTimeout\fR
 The length of time, in seconds, that SLURM will wait before deciding that
-processes in a job step are unkillable (after they have been signalled with
+processes in a job step are unkillable (after they have been signaled with
 SIGKILL).  The default timeout value is 60 seconds.
 
 .TP
@@ -1118,7 +1210,7 @@ in a DOWN, DRAIN or FAILING state without altering permanent
 configuration information.
 A job step's tasks are allocated to nodes in order the nodes appear 
 in the configuration file. There is presently no capability within 
-SLURM to arbitarily order a job step's tasks.
+SLURM to arbitrarily order a job step's tasks.
 .LP
 Multiple node names may be comma separated (e.g. "alpha,beta,gamma")
 and/or a simple node range expression may optionally be used to 
@@ -1145,7 +1237,7 @@ The node configuration specified the following information:
 Name that SLURM uses to refer to a node (or base partition for 
 BlueGene systems). 
 Typically this would be the string that "/bin/hostname \-s" 
-returns, however it may be an arbitary string if 
+returns, however it may be an arbitrary string if 
 \fBNodeHostname\fR is specified.
 If the \fBNodeName\fR is "DEFAULT", the values specified 
 with that record will apply to subsequent node specifications   
@@ -1181,6 +1273,15 @@ By default, the \fBNodeAddr\fR will be identical in value to
 \fBNodeName\fR.
 
 .TP
+\fBCoresPerSocket\fR
+Number of cores in a single physical processor socket (e.g. "2").
+The CoresPerSocket value describes physical cores, not the
+logical number of processors per socket.
+\fBNOTE\fR: If you have multi\-core processors, you will likely
+need to specify this parameter in order to optimize scheduling.
+The default value is 1.
+
+.TP
 \fBFeature\fR
 A comma delimited list of arbitrary strings indicative of some 
 characteristic associated with the node. 
@@ -1191,16 +1292,22 @@ for example, processor speed.
 By default a node has no features.
 
 .TP
-\fBRealMemory\fR
-Size of real memory on the node in MegaBytes (e.g. "2048").
-The default value is 1.
-
-.TP
 \fBProcs\fR
 Number of logical processors on the node (e.g. "2").
 If Procs is omitted, it will be inferred from
 \fBSockets\fR, \fBCoresPerSocket\fR, and \fBThreadsPerCore\fR.
 The default value is 1. 
+
+.TP
+\fBRealMemory\fR
+Size of real memory on the node in MegaBytes (e.g. "2048").
+The default value is 1.
+
+.TP
+\fBReason\fR
+Identifies the reason for a node being in state "DOWN", "DRAINED" 
+"DRAINING", "FAIL" or "FAILING". 
+Use quotes to enclose a reason having more than one word.
 
 .TP
 \fBSockets\fR
@@ -1210,26 +1317,6 @@ If Sockets is omitted, it will be inferred from
 \fBNOTE\fR: If you have multi\-core processors, you will likely 
 need to specify these parameters.
 The default value is 1.
-
-.TP
-\fBCoresPerSocket\fR
-Number of cores in a single physical processor socket (e.g. "2").
-The CoresPerSocket value describes physical cores, not the
-logical number of processors per socket.
-\fBNOTE\fR: If you have multi\-core processors, you will likely
-need to specify this parameter.
-The default value is 1.
-
-.TP
-\fBThreadsPerCore\fR
-Number of logical threads in a single physical core (e.g. "2").
-The default value is 1.
-
-.TP
-\fBReason\fR
-Identifies the reason for a node being in state "DOWN", "DRAINED" 
-"DRAINING", "FAIL" or "FAILING". 
-Use quotes to enclose a reason having more than one word.
 
 .TP
 \fBState\fR
@@ -1247,7 +1334,12 @@ to any new jobs.
 but will be established when the \fBslurmd\fR daemon on that node 
 registers.
 The default value is "UNKNOWN".
-Also see the \fBDownNodes\fR paramter below. 
+Also see the \fBDownNodes\fR parameter below. 
+
+.TP
+\fBThreadsPerCore\fR
+Number of logical threads in a single physical core (e.g. "2").
+The default value is 1.
 
 .TP
 \fBTmpDisk\fR
@@ -1339,7 +1431,7 @@ Jobs executed as user root can use any partition without regard to
 the value of AllowGroups.
 If user root attempts to execute a job as another user (e.g. using 
 srun's \-\-uid option), this other user must be in one of groups 
-identified by AllowGroups for the job to succesfully execute.
+identified by AllowGroups for the job to successfully execute.
 The default value is "ALL". 
 
 .TP
@@ -1354,17 +1446,6 @@ The default value is "NO".
 Specifies if the partition and its jobs are to be hidden by default. 
 Hidden partitions will by default not be reported by the SLURM 
 APIs or commands.
-Possible values are "YES" and "NO". 
-The default value is "NO".
-
-.TP
-\fBRootOnly\fR
-Specifies if only user ID zero (i.e. user \fIroot\fR) may allocate resources 
-in this partition. User root may allocate resources for any other user, 
-but the request must be initiated by user root. 
-This option can be useful for a partition to be managed by some 
-external entity (e.g. a higher\-level job manager) and prevents 
-users from directly using those resources.
 Possible values are "YES" and "NO". 
 The default value is "NO".
 
@@ -1418,6 +1499,18 @@ they will preempt running jobs from lower priority partitions.
 Note that a partition's priority takes precedence over a job's 
 priority.
 The value may not exceed 65533.
+
+
+.TP
+\fBRootOnly\fR
+Specifies if only user ID zero (i.e. user \fIroot\fR) may allocate resources 
+in this partition. User root may allocate resources for any other user, 
+but the request must be initiated by user root. 
+This option can be useful for a partition to be managed by some 
+external entity (e.g. a higher\-level job manager) and prevents 
+users from directly using those resources.
+Possible values are "YES" and "NO". 
+The default value is "NO".
 
 .TP
 \fBShared\fR
@@ -1502,7 +1595,7 @@ BackupAddr=edev1
 .br
 #
 .br
-AuthType=auth/authd
+AuthType=auth/munge
 .br
 Epilog=/usr/local/slurm/epilog 
 .br
@@ -1512,21 +1605,11 @@ FastSchedule=1
 .br
 FirstJobId=65536
 .br
-HeartbeatInterval=60
-.br
 InactiveLimit=120
 .br
-JobCompType=jobcomp/mysql
+JobCompType=jobcomp/filetxt
 .br
-JobCompLoc=slurm_jobcomp_db
-.br
-JobCompHost=localhost
-.br
-JobCompPort=1234
-.br
-JobCompUser=mysql
-.br
-JobCompPass=secret?
+JobCompLoc=/var/log/slurm/jobcomp
 .br
 KillWait=30
 .br
@@ -1538,13 +1621,11 @@ PluginDir=/usr/local/lib:/usr/local/slurm/lib
 .br
 ReturnToService=0
 .br
-SchedulerType=sched/wiki
+SchedulerType=sched/backfill
 .br
-SchedulerPort=7004
+SlurmctldLogFile=/var/log/slurm/slurmctld.log
 .br
-SlurmctldLogFile=/var/log/slurmctld.log
-.br
-SlurmdLogFile=/var/log/slurmd.log
+SlurmdLogFile=/var/log/slurm/slurmd.log
 .br
 SlurmctldPort=7002
 .br
@@ -1563,14 +1644,6 @@ WaitTime=30
 JobCredentialPrivateKey=/usr/local/slurm/private.key
 .br
 JobCredentialPublicCertificate=/usr/local/slurm/public.cert
-.br
-JobAcctGatherType=jobacct/linux
-.br
-JobAccGatherFrequency=30
-.br
-JobAcctStorageType=jobacct_storage/filetxt
-.br
-JobAcctStorageLoc=/var/log/slurm_accounting.log
 .br
 #
 .br
@@ -1604,6 +1677,7 @@ PartitionName=long Nodes=dev[9\-17] MaxTime=120 AllowGroups=admin
 
 .SH "COPYING"
 Copyright (C) 2002\-2007 The Regents of the University of California.
+Copyright (C) 2008 Lawrence Livermore National Security.
 Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 UCRL\-CODE\-226842.
 .LP
@@ -1623,8 +1697,8 @@ details.
 /etc/slurm.conf
 .SH "SEE ALSO"
 .LP
-\fBbluegene.conf\fR(5),
-\fBgetrlimit\fR(2),
-\fBgethostbyname\fR(3), \fBgroup\fR(5), \fBhostname\fR(1), 
-\fBscontrol\fR(1), \fBslurmctld\fR(8), \fBslurmd\fR(8), \fBspank(8)\fR,
+\fBbluegene.conf\fR(5), \fBgethostbyname\fR(3), 
+\fBgetrlimit\fR(2), \fBgroup\fR(5), \fBhostname\fR(1), 
+\fBscontrol\fR(1), \fBslurmctld\fR(8), \fBslurmd\fR(8), 
+\fBslurmdbd\fR(8), \fBslurmdbd.conf\fR(5), \fBspank(8)\fR,
 \fBsyslog\fR(2), \fBwiki.conf\fR(5)
