@@ -117,9 +117,11 @@ void slurm_print_ctl_conf ( FILE* out,
 	slurm_make_time_str ((time_t *)&slurm_ctl_conf_ptr->last_update, 
 			     time_str, sizeof(time_str));
 	fprintf(out, "Configuration data as of %s\n", time_str);
+	fprintf(out, "AccountingStorageEnforce = %u\n",
+		slurm_ctl_conf_ptr->accounting_storage_enforce);
 	fprintf(out, "AccountingStorageHost   = %s\n", 
 		slurm_ctl_conf_ptr->accounting_storage_host);
-	fprintf(out, "AccountingStorageLoc       = %s\n", 
+	fprintf(out, "AccountingStorageLoc    = %s\n", 
 		slurm_ctl_conf_ptr->accounting_storage_loc);
 	fprintf(out, "AccountingStoragePass   = %s\n", 
 		slurm_ctl_conf_ptr->accounting_storage_pass);

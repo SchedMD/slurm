@@ -121,6 +121,7 @@ static void validate_and_set_defaults(slurm_ctl_conf_t *conf,
 				      s_p_hashtbl_t *hashtbl);
 
 s_p_options_t slurm_conf_options[] = {
+	{"AccountingStorageEnforce", S_P_UINT16},
 	{"AccountingStorageHost", S_P_STRING},
 	{"AccountingStorageLoc", S_P_STRING},
 	{"AccountingStoragePass", S_P_STRING},
@@ -147,13 +148,14 @@ s_p_options_t slurm_conf_options[] = {
 	{"EpilogMsgTime", S_P_UINT32},
 	{"FastSchedule", S_P_UINT16},
 	{"FirstJobId", S_P_UINT32},
+	{"GetEnvTimeout", S_P_UINT16},
 	{"HashBase", S_P_LONG, defunct_option},
 	{"HeartbeatInterval", S_P_LONG, defunct_option},
 	{"HealthCheckInterval", S_P_UINT16},
 	{"HealthCheckProgram", S_P_STRING},
 	{"InactiveLimit", S_P_UINT16},
 	{"JobAcctGatherType", S_P_STRING},
-	{"JobAcctFrequency", S_P_UINT16},
+	{"JobAcctFrequency", S_P_UINT16, defunct_option},
 	{"JobAcctGatherFrequency", S_P_UINT16},
 	{"JobAcctLogFile", S_P_STRING},
 	{"JobAcctType", S_P_STRING},
@@ -167,7 +169,6 @@ s_p_options_t slurm_conf_options[] = {
 	{"JobCredentialPublicCertificate", S_P_STRING},
 	{"JobFileAppend", S_P_UINT16},
 	{"JobRequeue", S_P_UINT16},
-	{"GetEnvTimeout", S_P_UINT16},
 	{"KillTree", S_P_UINT16, defunct_option},
 	{"KillWait", S_P_UINT16},
 	{"Licenses", S_P_STRING},
@@ -1550,9 +1551,7 @@ validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	}
 
 	if (!s_p_get_uint16(&conf->job_acct_gather_freq,
-			    "JobAcctFrequency", hashtbl)
-	    && !s_p_get_uint16(&conf->job_acct_gather_freq,
-			       "JobAcctGatherFrequency", hashtbl))
+			    "JobAcctGatherFrequency", hashtbl))
 		conf->job_acct_gather_freq = DEFAULT_JOB_ACCT_GATHER_FREQ;
 
 	if (s_p_get_string(&conf->job_acct_gather_type,
@@ -1672,6 +1671,11 @@ validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 			conf->accounting_storage_type =
 				xstrdup(DEFAULT_ACCOUNTING_STORAGE_TYPE);
 	}
+
+	if (!s_p_get_uint16(&conf->accounting_storage_enforce, 
+			    "AccountingStorageEnforce", hashtbl))
+		conf->accounting_storage_enforce = DEFAULT_ACCOUNTING_ENFORCE;
+
 	if (!s_p_get_string(&conf->accounting_storage_host,
 			    "AccountingStorageHost", hashtbl)) {
 		if(default_storage_host)

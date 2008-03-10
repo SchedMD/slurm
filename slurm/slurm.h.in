@@ -449,19 +449,74 @@ typedef enum select_type_plugin_info {
 \*****************************************************************************/
 
 typedef struct job_descriptor {	/* For submit, allocate, and update requests */
+	char *account;		/* charge to specified account */
+	uint16_t acctg_freq;	/* accounting polling interval (seconds) */
+	char *alloc_node;	/* node making resource allocation request
+				 * NOTE: Normally set by slurm_submit* or 
+				 * slurm_allocate* function */
+	uint16_t alloc_resp_port; /* port to send allocation confirmation to */
+	uint32_t alloc_sid;	/* local sid making resource allocation request
+				 * NOTE: Normally set by slurm_submit* or 
+				 * slurm_allocate* function */
+	uint32_t argc;		/* number of arguments to the script */
+	char **argv;		/* arguments to the script */
+	time_t begin_time;	/* delay initiation until this time */
+	char *comment;		/* arbitrary comment (used by Moab scheduler) */
 	uint16_t contiguous;	/* 1 if job requires contiguous nodes,
 				 * 0 otherwise,default=0 */
-	uint16_t kill_on_node_fail; /* 1 if node failure to kill job, 
-				 * 0 otherwise,default=1 */
+	char *dependency;	/* syncrhonize job execution with other jobs */
 	char **environment;	/* environment variables to set for job, 
 				 *  name=value pairs, one per line */
 	uint32_t env_size;	/* element count in environment */
+	char *err;		/* pathname of stderr */
+	char *exc_nodes;	/* comma separated list of nodes excluded
+				 * from job's allocation, default NONE */
 	char *features;		/* comma separated list of required features, 
 				 * default NONE */
+	uint32_t group_id;	/* group to assume, if run as root. */ 
 	uint16_t immediate;	/* 1 if allocate to run or fail immediately, 
 				 * 0 if to be queued awaiting resources */
+	char *in;		/* pathname of stdin */
 	uint32_t job_id;	/* job ID, default set by SLURM */
+	uint16_t kill_on_node_fail; /* 1 if node failure to kill job, 
+				 * 0 otherwise,default=1 */
+	char *licenses;		/* licenses required by the job */
+	uint16_t mail_type;	/* see MAIL_JOB_ definitions above */
+	char *mail_user;	/* user to receive notification */
 	char *name;		/* name of the job, default "" */
+	char *network;		/* network use spec */
+	uint16_t nice;		/* requested priority change, 
+				 * NICE_OFFSET == no change */
+	uint32_t num_tasks;	/* number of tasks to be started, for batch only */
+	uint8_t open_mode;	/* out/err open mode truncate or append,
+				 * see OPEN_MODE_* */
+	uint16_t other_port;	/* port to send various notification msg to */
+	char *out;		/* pathname of stdout */
+	uint8_t overcommit;	/* over subscribe resources, for batch only */
+	char *partition;	/* name of requested partition, 
+				 * default in SLURM config */
+	uint16_t plane_size;	/* plane size when task_dist =
+				   SLURM_DIST_PLANE */
+	uint32_t priority;	/* relative priority of the job,  
+				 * explicitly set only for user root, 
+				 * 0 == held (don't initiate) */
+	char *resp_host;	/* NOTE: Set by slurmctld */
+	char *req_nodes;	/* comma separated list of required nodes
+				 * default NONE */
+	uint16_t requeue;	/* enable or disable job requeue option */
+
+	char *script;		/* the actual job script, default NONE */
+	uint16_t shared;	/* 1 if job can share nodes with other jobs,
+				 * 0 if job needs exclusive access to the node,
+				 * or NO_VAL to accept the system default.
+				 * SHARED_FORCE to eliminate user control. */
+	uint16_t task_dist;	/* see enum task_dist_state */
+	uint32_t time_limit;	/* maximum run time in minutes, default is
+				 * partition limit */
+	uint32_t user_id;	/* set only if different from current UID, 
+				 * can only be explicitly set by user root */
+	char *work_dir;		/* pathname of working directory */
+
 	/* job constraints: */
 	uint16_t job_min_procs;    /* minimum processors per node, default=0 */
 	uint16_t job_min_sockets;  /* minimum sockets per node, default=0 */
@@ -469,21 +524,6 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 	uint16_t job_min_threads;  /* minimum threads per core, default=0 */
 	uint32_t job_min_memory;   /* minimum real memory per node, default=0 */
 	uint32_t job_min_tmp_disk; /* minimum tmp disk per node, default=0 */
-	char *partition;	/* name of requested partition, 
-				 * default in SLURM config */
-	uint32_t priority;	/* relative priority of the job,  
-				 * explicitly set only for user root, 
-				 * 0 == held (don't initiate) */
-	char *req_nodes;	/* comma separated list of required nodes
-				 * default NONE */
-	char *exc_nodes;	/* comma separated list of nodes excluded
-				 * from job's allocation, default NONE */
-	uint16_t shared;	/* 1 if job can share nodes with other jobs,
-				 * 0 if job needs exclusive access to the node,
-				 * or NO_VAL to accept the system default.
-				 * SHARED_FORCE to eliminate user control. */
-	uint32_t time_limit;	/* maximum run time in minutes, default is
-				 * partition limit */
 	uint32_t num_procs;	/* total count of processors required, 
 				 * default=0 */
 	uint32_t min_nodes;	/* minimum number of nodes required by job, 
@@ -506,54 +546,7 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 	uint16_t ntasks_per_node;/* number of tasks to invoke on each node */
 	uint16_t ntasks_per_socket;/* number of tasks to invoke on each socket */
 	uint16_t ntasks_per_core;/* number of tasks to invoke on each core */
-	char *script;		/* the actual job script, default NONE */
-	char **argv;		/* arguments to the script */
-	uint32_t argc;		/* number of arguments to the script */
-	char *err;		/* pathname of stderr */
-	char *in;		/* pathname of stdin */
-	char *out;		/* pathname of stdout */
-	uint8_t open_mode;	/* out/err open mode truncate or append,
-				 * see OPEN_MODE_* */
-	uint16_t acctg_freq;	/* accounting polling interval (seconds) */
-	uint32_t user_id;	/* set only if different from current UID, 
-				 * can only be explicitly set by user root */
-	uint32_t group_id;	/* group to assume, if run as root. */ 
-	char *work_dir;		/* pathname of working directory */
-	char *alloc_node;	/* node making resource allocation request
-				 * NOTE: Normally set by slurm_submit* or 
-				 * slurm_allocate* function */
-	uint32_t alloc_sid;	/* local sid making resource allocation request
-				 * NOTE: Normally set by slurm_submit* or 
-				 * slurm_allocate* function */
 
-	/* If the requested allocation is not immediately available,
-	 * The controller sends the RESPONSE_RESOURCE_ALLOCATION message
-	 * to resp_addr/alloc_port.
-	 * All other messages (SRUN_PING, SRUN_TIMEOUT, etc.) are sent 
-	 * to resp_addr/other_port.
-	 * The value of resp_host is the host address to which message 
-	 * are sent. Its value is set internally by SLURM.
-	 */
-	char *resp_host;	/* NOTE: Set by slurmctld */
-	uint16_t alloc_resp_port;
-	uint16_t other_port;
-
-	char *dependency;	/* syncrhonize job execution with other jobs */
-	uint8_t overcommit;	/* over subscribe resources, for batch only */
-	uint32_t num_tasks;	/* number of tasks to be started, for batch only */
-	uint16_t nice;		/* requested priority change, 
-				 * NICE_OFFSET == no change */
-	char *account;		/* charge to specified account */
-	char *network;		/* network use spec */
-	char *comment;		/* arbitrary comment (used by Moab scheduler) */
-	uint16_t task_dist;	/* see enum task_dist_state */
-	uint16_t plane_size;	/* plane size when task_dist =
-				   SLURM_DIST_PLANE */
-	time_t begin_time;	/* delay initiation until this time */
-	uint16_t mail_type;	/* see MAIL_JOB_ definitions above */
-	char *mail_user;	/* user to receive notification */
-	uint16_t requeue;	/* enable or disable job requeue option */
-	char *licenses;		/* licenses required by the job */
 /*
  * The following parameters are only meaningful on a Blue Gene
  * system at present. Some will be of value on other system. Don't remove these
@@ -927,6 +920,8 @@ typedef struct partition_info_msg {
 
 typedef struct slurm_ctl_conf {
 	time_t last_update;	/* last update time of the build parameters */
+	uint16_t accounting_storage_enforce; /* job requires valid association:
+					* user/account/partition/cluster */
 	char *accounting_storage_host; /* accounting storage host */
 	char *accounting_storage_loc; /* accounting storage (db table)
 				       * location */
