@@ -2122,7 +2122,7 @@ _unpack_job_info_members(job_info_t * job, Buf buffer)
 
 	safe_unpack32(&job->num_nodes, buffer);
 	safe_unpack32(&job->max_nodes, buffer);
-
+	safe_unpack16(&job->requeue,   buffer);
 
 	/*** unpack pending job details ***/
 	safe_unpack16(&job->shared, buffer);

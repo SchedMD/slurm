@@ -209,6 +209,10 @@ scontrol_update_job (int argc, char *argv[])
 			job_msg.job_id = 
 				(uint32_t) strtol(&argv[i][6], 
 						 (char **) NULL, 10);
+		else if (strncasecmp(argv[i], "Comment=", 8) == 0) {
+			job_msg.comment = &argv[i][8];
+			update_cnt++;
+		}
 		else if (strncasecmp(argv[i], "TimeLimit=", 10) == 0) {
 			int time_limit = time_str2mins(&argv[i][10]);
 			if ((time_limit < 0) && (time_limit != INFINITE)) {
@@ -244,6 +248,12 @@ scontrol_update_job (int argc, char *argv[])
 		else if (strncasecmp(argv[i], "ReqProcs=", 9) == 0) {
 			job_msg.num_procs = 
 				(uint32_t) strtol(&argv[i][9], 
+						(char **) NULL, 10);
+			update_cnt++;
+		}
+		else if (strncasecmp(argv[i], "Requeue=", 8) == 0) {
+			job_msg.requeue = 
+				(uint16_t) strtol(&argv[i][8], 
 						(char **) NULL, 10);
 			update_cnt++;
 		}
