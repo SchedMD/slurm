@@ -50,6 +50,7 @@
 
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmd/slurmd/slurmd.h"
+#include "src/slurmdbd/read_config.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_accounting_storage.h"
 #include "src/common/jobacct_common.h"
@@ -2648,10 +2649,11 @@ extern int clusteracct_storage_p_node_down(void *db_conn,
 	char tmp_buff[50];
 	char *my_reason;
 
-	if (slurmctld_conf.fast_schedule)
+	if (slurmctld_conf.fast_schedule && !slurmdbd_conf)
 		cpus = node_ptr->config_ptr->cpus;
 	else
 		cpus = node_ptr->cpus;
+
 	if (reason)
 		my_reason = reason;
 	else

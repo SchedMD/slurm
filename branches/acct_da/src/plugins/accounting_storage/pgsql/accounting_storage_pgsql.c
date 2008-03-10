@@ -88,6 +88,7 @@ char *cluster_day_table = "cluster_day_usage_table";
 char *cluster_hour_table = "cluster_hour_usage_table";
 char *cluster_month_table = "cluster_month_usage_table";
 char *cluster_table = "cluster_table";
+char *event_table = "event_table";
 char *job_table = "job_table";
 char *step_table = "step_table";
 char *txn_table = "txn_table";
@@ -213,6 +214,15 @@ static int _pgsql_acct_check_tables(PGconn *acct_pgsql_db,
 		{ NULL, NULL}		
 	};
 
+	storage_field_t event_table_fields[] = {
+		{ "node_name", "text default '' not null" },
+		{ "cluster", "text not null" },
+		{ "period_start", "bigint unsigned not null" },
+		{ "period_end", "bigint default 0 not null" },
+		{ "reason", "text not null" },
+		{ NULL, NULL}		
+	};
+
 	storage_field_t job_table_fields[] = {
 		{ "id", "serial" },
 		{ "jobid ", "integer not null" },
@@ -296,7 +306,7 @@ static int _pgsql_acct_check_tables(PGconn *acct_pgsql_db,
 	};
 
 	int i = 0, job_found = 0;
-	int step_found = 0, txn_found = 0;
+	int step_found = 0, txn_found = 0, event_found = 0;
 	int user_found = 0, acct_found = 0, acct_coord_found = 0;
 	int cluster_found = 0, cluster_hour_found = 0,
 		cluster_day_found = 0, cluster_month_found = 0;
@@ -345,6 +355,9 @@ static int _pgsql_acct_check_tables(PGconn *acct_pgsql_db,
 		else if(!cluster_month_found &&
 			!strcmp(cluster_month_table, PQgetvalue(result, i, 0))) 
 			cluster_month_found = 1;
+		else if(!event_found &&
+			!strcmp(event_table, PQgetvalue(result, i, 0))) 
+			event_found = 1;
 		else if(!job_found &&
 			!strcmp(job_table, PQgetvalue(result, i, 0))) 
 			job_found = 1;
@@ -503,6 +516,20 @@ static int _pgsql_acct_check_tables(PGconn *acct_pgsql_db,
 		if(pgsql_db_make_table_current(acct_pgsql_db,  
 					       cluster_table,
 					       cluster_table_fields))
+			return SLURM_ERROR;
+	}
+
+	if(!event_found) {
+		if(pgsql_db_create_table(acct_pgsql_db, 
+					 event_table, event_table_fields,
+					 ", primary key (name(20), "
+					 "cluster(20), period_start))")
+		   == SLURM_ERROR)
+			return SLURM_ERROR;
+	} else {
+		if(pgsql_db_make_table_current(acct_pgsql_db,  
+					       event_table,
+					       event_table_fields))
 			return SLURM_ERROR;
 	}
 

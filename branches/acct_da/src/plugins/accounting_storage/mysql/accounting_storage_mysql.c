@@ -91,6 +91,7 @@ char *cluster_day_table = "cluster_day_usage_table";
 char *cluster_hour_table = "cluster_hour_usage_table";
 char *cluster_month_table = "cluster_month_usage_table";
 char *cluster_table = "cluster_table";
+char *event_table = "event_table";
 char *job_table = "job_table";
 char *step_table = "step_table";
 char *txn_table = "txn_table";
@@ -210,6 +211,15 @@ static int _mysql_acct_check_tables(MYSQL *acct_mysql_db)
 		{ "down_cpu_secs", "int unsigned default 0" },
 		{ "idle_cpu_secs", "int unsigned default 0" },
 		{ "resv_cpu_secs", "int unsigned default 0" },
+		{ NULL, NULL}		
+	};
+
+	storage_field_t event_table_fields[] = {
+		{ "node_name", "tinytext default '' not null" },
+		{ "cluster", "tinytext not null" },
+		{ "period_start", "int unsigned not null" },
+		{ "period_end", "int unsigned default 0 not null" },
+		{ "reason", "tinytext not null" },
 		{ NULL, NULL}		
 	};
 
@@ -351,6 +361,12 @@ static int _mysql_acct_check_tables(MYSQL *acct_mysql_db)
 	if(mysql_db_create_table(acct_mysql_db, cluster_table,
 				 cluster_table_fields,
 				 ", primary key (name(20)))") == SLURM_ERROR)
+		return SLURM_ERROR;
+
+	if(mysql_db_create_table(acct_mysql_db, event_table,
+				 event_table_fields,
+				 ", primary key (name(20), cluster(20), "
+				 "period_start))") == SLURM_ERROR)
 		return SLURM_ERROR;
 
 	if(mysql_db_create_table(acct_mysql_db, job_table, job_table_fields,
@@ -642,6 +658,25 @@ extern int clusteracct_storage_p_node_down(MYSQL *acct_mysql_db,
 					   struct node_record *node_ptr,
 					   time_t event_time, char *reason)
 {
+/* 	uint16_t cpus; */
+/* 	int rc = SLURM_ERROR; */
+/* 	char *query = NULL; */
+/* 	char tmp_buff[50]; */
+/* 	char *my_reason; */
+
+/* 	if (slurmctld_conf.fast_schedule && !slurmdbd_conf) */
+/* 		cpus = node_ptr->config_ptr->cpus; */
+/* 	else */
+/* 		cpus = node_ptr->cpus; */
+
+/* 	if (reason) */
+/* 		my_reason = reason; */
+/* 	else */
+/* 		my_reason = node_ptr->reason; */
+	
+/* 	query = xstrdup_printf(""); */
+
+
 	return SLURM_SUCCESS;
 }
 extern int clusteracct_storage_p_node_up(MYSQL *acct_mysql_db, 
@@ -649,6 +684,7 @@ extern int clusteracct_storage_p_node_up(MYSQL *acct_mysql_db,
 					 struct node_record *node_ptr,
 					 time_t event_time)
 {
+	
 	return SLURM_SUCCESS;
 }
 extern int clusteracct_storage_p_cluster_procs(MYSQL *acct_mysql_db, 
