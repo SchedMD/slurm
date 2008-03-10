@@ -199,6 +199,7 @@ static int _get_jobs(void *db_conn,
 	info("DBD_GET_JOBS: called");
 	memset(&sacct_params, 0, sizeof(sacct_params));
 	sacct_params.opt_cluster = get_jobs_msg->cluster_name;
+
 	got_jobs_msg.jobs = jobacct_storage_g_get_jobs(
 		db_conn,
 		get_jobs_msg->selected_steps, get_jobs_msg->selected_parts,

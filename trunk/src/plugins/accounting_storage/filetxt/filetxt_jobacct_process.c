@@ -45,7 +45,9 @@
 
 #include "src/common/xstring.h"
 #include "src/common/xmalloc.h"
+#include "src/common/slurm_protocol_api.h"
 #include "src/common/jobacct_common.h"
+#include "src/slurmdbd/read_config.h"
 /* Map field names to positions */
 
 /* slurmd uses "(uint32_t) -2" to track data for batch allocations
@@ -1015,13 +1017,17 @@ extern List filetxt_jobacct_process_get_jobs(List selected_steps,
 	int show_full = 0;
 	List ret_job_list = list_create(destroy_jobacct_job_rec);
 	List job_list = list_create(_destroy_filetxt_job_rec);
+
+	if(slurmdbd_conf) {
+		params->opt_filein = slurm_get_accounting_storage_loc();
+	}
+
 	fd = _open_log_file(params->opt_filein);
 	
 	while (fgets(line, BUFFER_SIZE, fd)) {
 		lc++;
 		fptr = line;	/* break the record into NULL-
 				   terminated strings */
-				
 		for (i = 0; i < MAX_RECORD_FIELDS; i++) {
 			f[i] = fptr;
 			fptr = strstr(fptr, " ");
@@ -1141,6 +1147,9 @@ extern List filetxt_jobacct_process_get_jobs(List selected_steps,
 	list_iterator_destroy(itr);
 	list_destroy(job_list);
 
+	if(slurmdbd_conf) {
+		xfree(params->opt_filein);
+	}
 	return ret_job_list;
 }
 
@@ -1175,6 +1184,11 @@ extern void filetxt_jobacct_process_archive(List selected_parts,
 
 	/* Figure out our expiration date */
 	time_t		expiry;
+
+	if(slurmdbd_conf) {
+		params->opt_filein = slurm_get_accounting_storage_loc();
+	}
+
 	expiry = time(NULL)-params->opt_expire;
 	if (params->opt_verbose)
 		fprintf(stderr, "Purging jobs completed prior to %d\n",
@@ -1424,6 +1438,9 @@ finished2:
 			      old_logfile_name);
 	}
 finished:
+	if(slurmdbd_conf) {
+		xfree(params->opt_filein);
+	}
 	fclose(fd);
 	list_destroy(exp_list);
 	list_destroy(keep_list);
