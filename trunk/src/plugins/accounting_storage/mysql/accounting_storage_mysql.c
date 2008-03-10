@@ -366,7 +366,7 @@ static int _mysql_acct_check_tables(MYSQL *acct_mysql_db)
 
 	if(mysql_db_create_table(acct_mysql_db, event_table,
 				 event_table_fields,
-				 ", primary key (name(20), cluster(20), "
+				 ", primary key (node_name(20), cluster(20), "
 				 "period_start))") == SLURM_ERROR)
 		return SLURM_ERROR;
 
