@@ -53,7 +53,13 @@ Also see \fBDefaultStorageLoc\fR.
 Define the password used to gain access to the database to store the
 accounting data.
 Only used for database type storage plugins, ignored otherwise.
-Also see \fBDefaultStoragePassr\fR.
+In the case of Slurm DBD (Data Base Daemon) with Munge authentication this can be 
+configured to use a Munge daemon specifically configured to provide authentication 
+between clusters while the default Munge daemon provides authentication within a cluster. 
+In that case, \fBAccountingStoragePass\fR should specify the named port to be used
+for communications with the alternate Munge daemon (e.g. 
+"/var/run/munge/global.socket.2"). The default value is NULL.
+Also see \fBDefaultStoragePass\fR.
 
 .TP
 \fBAccountingStoragePort\fR
@@ -904,35 +910,6 @@ a DOWN state indicating a non\-responsive \fBslurmd\fR, and some other tool
 will take responsibility for monitoring the state of each compute node 
 and its \fBslurmd\fR daemon.
 The value may not exceed 65533.
-
-.TP
-\fBSlurmDbdAddr\fR
-Name that the Slurm DBD (Data Base Daemon) should be referred to 
-in establishing a communications path. This should be specified 
-if the Slurm DBD is used for recording accounting information. 
-The format can either be a hostname or an IP address.
-The default value is "localhost".
-
-.TP
-\fBSlurmDbdAuthInfo\fR
-Additional information to be used for authentication of communications 
-with the Slurm DBD (Data Base Daemon) if configured for recording accounting 
-information.
-The interpretation of this option is specific to the configured \fBAuthType\fR.
-In the case of \fIauth/munge\fR, this can be configured to use a Munge daemon 
-specifically configured to provide authentication between clusters while the 
-default Munge daemon provides authentication within a cluster. 
-In that case, \fBSlurmDbdAuthInfo\fR should specify the named port to be used
-for communications with the alternate Munge daemon (e.g. 
-"/var/run/munge/global.socket.2")
-The default value is NULL, which results in the default authentication 
-mechanism being used.
-
-.TP
-\fBSlurmDbdPort\fR
-The port to be used for communications with the Slurm DBD (Data Base Daemon)
-if configured for recording accounting information.
-The default value is 6819.
 
 .TP
 \fBSrunEpilog\fR

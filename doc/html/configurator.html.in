@@ -41,7 +41,7 @@ function get_field2(name,form)
   return ""
 }
 
-function get_jobacct_storage_type_field(gather, form_storage)
+function get_accounting_storage_type_field(gather, form_storage)
 {
   for (var i=0; i < form_storage.length; i++)
   {
@@ -138,102 +138,109 @@ function displayfile()
    get_field("BackupController",document.config.backup_controller) + "<br>" +
    get_field("BackupAddr",document.config.backup_addr) + "<br>" +
    "# <br>" +
-   "#JobFileAppend=0 <br>" +
-   "SlurmUser=" + document.config.slurm_user.value + "<br>" +
-   "SlurmctldPort=" + document.config.slurmctld_port.value + "<br>" +
-   "SlurmdPort=" + document.config.slurmd_port.value + "<br>" +
    "AuthType=auth/" + get_radio_value(document.config.auth_type) + "<br>" +
-   get_field("JobCredentialPrivateKey", document.config.private_key) + "<br>" +
-   get_field("JobCredentialPublicCertificate", document.config.public_key) + "<br>" +
-   "CryptoType=crypto/" + get_radio_value(document.config.crypto_type) + "<br>" +
-   "StateSaveLocation=" + document.config.state_save_location.value + "<br>" +
-   "SlurmdSpoolDir=" + document.config.slurmd_spool_dir.value + "<br>" +
-   "SwitchType=switch/" + get_radio_value(document.config.switch_type) + "<br>" +
-   "#MailProg=/bin/mail <br>" +
-   "MpiDefault=" + get_radio_value(document.config.mpi_default) + "<br>" +
-   "#MessageTimeout=10 <br>" +
-   "SlurmctldPidFile=" + document.config.slurmctld_pid_file.value + "<br>" +
-   "SlurmdPidFile=" + document.config.slurmd_pid_file.value + "<br>" +
-   "ProctrackType=proctrack/" + get_radio_value(document.config.proctrack_type) + "<br>" +
-   "#PluginDir= <br>" +
    "CacheGroups=" + get_radio_value(document.config.cache_groups) + "<br>" +
    "#CheckpointType=checkpoint/none <br>" +
+   "CryptoType=crypto/" + get_radio_value(document.config.crypto_type) + "<br>" +
+   get_field("Epilog",document.config.epilog) + "<br>" +
    "#FirstJobId=1 <br>" +
+   get_field("JobCredentialPrivateKey", document.config.private_key) + "<br>" +
+   get_field("JobCredentialPublicCertificate", document.config.public_key) + "<br>" +
+   "#JobFileAppend=0 <br>" +
    "#JobRequeue=1 <br>" +
-   "ReturnToService=" + get_radio_value(document.config.return_to_service) + "<br>" +
+   "#MailProg=/bin/mail <br>" +
    "#MaxJobCount=5000 <br>" +
+   "MpiDefault=" + get_radio_value(document.config.mpi_default) + "<br>" +
+   "#PluginDir= <br>" +
    "#PlugStackConfig= <br>" +
    "#PrivateData=0 <br>" +
+   "ProctrackType=proctrack/" + get_radio_value(document.config.proctrack_type) + "<br>" +
+   get_field("Prolog",document.config.prolog) + "<br>" +
    "#PropagatePrioProcess=0 <br>" +
    "#PropagateResourceLimits= <br>" +
    "#PropagateResourceLimitsExcept= <br>" +
-   get_field("Prolog",document.config.prolog) + "<br>" +
-   get_field("Epilog",document.config.epilog) + "<br>" +
-   get_field("SrunProlog",document.config.srun_prolog) + "<br>" +
+   "ReturnToService=" + get_radio_value(document.config.return_to_service) + "<br>" +
+   "SlurmctldPidFile=" + document.config.slurmctld_pid_file.value + "<br>" +
+   "SlurmctldPort=" + document.config.slurmctld_port.value + "<br>" +
+   "SlurmdPidFile=" + document.config.slurmd_pid_file.value + "<br>" +
+   "SlurmdPort=" + document.config.slurmd_port.value + "<br>" +
+   "SlurmdSpoolDir=" + document.config.slurmd_spool_dir.value + "<br>" +
+   "SlurmUser=" + document.config.slurm_user.value + "<br>" +
    get_field("SrunEpilog",document.config.srun_epilog) + "<br>" +
-   get_field("TaskProlog",document.config.task_prolog) + "<br>" +
+   get_field("SrunProlog",document.config.srun_prolog) + "<br>" +
+   "StateSaveLocation=" + document.config.state_save_location.value + "<br>" +
+   "SwitchType=switch/" + get_radio_value(document.config.switch_type) + "<br>" +
    get_field("TaskEpilog",document.config.task_epilog) + "<br>" +
    "TaskPlugin=task/" + get_radio_value(document.config.task_plugin) + "<br>" +
    get_task_plugin_param() + "<br>" +
+   get_field("TaskProlog",document.config.task_prolog) + "<br>" +
    "#TmpFs=/tmp <br>" +
+   "#TreeWidth= <br>" +
+   "#UnkillableStepProgram= <br>" +
+   "#UnkillableStepTimeout= <br>" +
    "#UsePAM=0 <br>" +
    "# <br>" +
+   "# <br>" +
    "# TIMERS <br>" +
-   "SlurmctldTimeout=" + document.config.slurmctld_timeout.value + "<br>" +
-   "SlurmdTimeout=" + document.config.slurmd_timeout.value + "<br>" +
-   "InactiveLimit=" + document.config.inactive_limit.value + "<br>" +
-   "MinJobAge=" + document.config.min_job_age.value + "<br>" +
-   "KillWait=" + document.config.kill_wait.value + "<br>" +
    "#EpilogMsgTime=2000 <br>" +
    "#GetEnvTimeout=2 <br>" +
    "#HealthCheckInterval=0 <br>" +
    "#HealthCheckProgram= <br>" +
+   "InactiveLimit=" + document.config.inactive_limit.value + "<br>" +
+   "MinJobAge=" + document.config.min_job_age.value + "<br>" +
+   "KillWait=" + document.config.kill_wait.value + "<br>" +
+   "#MessageTimeout=10 <br>" +
+   "SlurmctldTimeout=" + document.config.slurmctld_timeout.value + "<br>" +
+   "SlurmdTimeout=" + document.config.slurmd_timeout.value + "<br>" +
    "#UnkillableStepProgram= <br>" +
    "#UnkillableStepTimeout=60 <br>" +
    "Waittime=" + document.config.wait_time.value + "<br>" +
    "# <br>" +
-   "# SCHEDULING<br>" +
+   "# <br>" +
+   "# SCHEDULING <br>" +
+   "#DefMemPerTask=0 <br>" +
+   "FastSchedule=" + get_radio_value(document.config.fast_schedule) + "<br>" +
+   "#MaxMemPerTask=0 <br>" +
+   "#SchedulerRootFilter=1 <br>" +
+   "#SchedulerTimeSlice=30 <br>" +
    "SchedulerType=sched/" + get_radio_value(document.config.sched_type) + "<br>" +
    get_field("SchedulerPort",document.config.scheduler_port) + "<br>" +
-   "#SchedulerTimeSlice=30 <br>" +
-   "#SchedulerRootFilter=1 <br>" +
    "SelectType=select/" + get_radio_value(document.config.select_type) + "<br>" +
    get_select_type_params() + "<br>" +
-   "FastSchedule=" + get_radio_value(document.config.fast_schedule) + "<br>" +
-   "#DefMemPerTask=0 <br>" +
-   "#MaxMemPerTask=0 <br>" +
    "# <br>" +
-   "# LOGGING <br>" +
+   "# <br>" +
+   "# LOGGING AND ACCOUNTING <br>" +
+   "#AccountingStorageEnforce=0 <br>" +
+   get_field("AccountingStorageHost",document.config.accounting_storage_host) + "<br>" +
+   get_field("AccountingStorageLoc",document.config.accounting_storage_loc) + "<br>" +
+   get_field("AccountingStoragePass",document.config.accounting_storage_pass) + "<br>" +
+   get_field("AccountingStoragePort",document.config.accounting_storage_port) + "<br>" +
+   "AccountingStorageType=jobacct_storage/" + get_accounting_storage_type_field(get_radio_value(document.config.job_acct_gather_type), document.config.accounting_storage_type) + "<br>" +
+   get_field("AccountingStorageUser",document.config.accounting_storage_user) + "<br>" +
+   get_field("ClusterName",document.config.cluster_name) + "<br>" +
+   get_field("JobCompHost",document.config.job_comp_host) + "<br>" +
+   get_field("JobCompLoc",document.config.job_comp_loc) + "<br>" +
+   get_field("JobCompPass",document.config.job_comp_pass) + "<br>" +
+   get_field("JobCompPort",document.config.job_comp_port) + "<br>" +
+   "JobCompType=jobcomp/" + get_radio_value(document.config.job_comp_type) + "<br>" +
+   get_field("JobCompUser",document.config.job_comp_user) + "<br>" +
+   get_field("JobAcctGatherFrequency",document.config.job_acct_gather_frequency) + "<br>" +
+   "JobAcctGatherType=jobacct_gather/" + get_radio_value(document.config.job_acct_gather_type) + "<br>" +
    "SlurmctldDebug=" + document.config.slurmctld_debug.value + "<br>" +
    get_field("SlurmctldLogFile",document.config.slurmctld_logfile) + "<br>" +
    "SlurmdDebug=" + document.config.slurmd_debug.value + "<br>" +
    get_field("SlurmdLogFile",document.config.slurmd_logfile) + "<br>" +
-   "JobCompType=jobcomp/" + get_radio_value(document.config.job_comp_type) + "<br>" +
-   get_field("JobCompLoc",document.config.job_comp_loc) + "<br>" +
-   get_field("JobCompHost",document.config.job_comp_host) + "<br>" +
-   get_field("JobCompPort",document.config.job_comp_port) + "<br>" +
-   get_field("JobCompUser",document.config.job_comp_user) + "<br>" +
-   get_field("JobCompPass",document.config.job_comp_pass) + "<br>" +
-   "JobAcctGatherType=jobacct_gather/" + get_radio_value(document.config.job_acct_gather_type) + "<br>" +
-   get_field("JobAcctGatherFrequency",document.config.job_acct_gather_frequency) + "<br>" +
-   "JobAcctStorageType=jobacct_storage/" + get_jobacct_storage_type_field(get_radio_value(document.config.job_acct_gather_type), document.config.job_acct_storage_type) + "<br>" +
-   get_field("JobAcctStorageLoc",document.config.job_acct_storage_loc) + "<br>" +
-   get_field("JobAcctStorageHost",document.config.job_acct_storage_host) + "<br>" +
-   get_field("JobAcctStoragePort",document.config.job_acct_storage_port) + "<br>" +
-   get_field("JobAcctStorageUser",document.config.job_acct_storage_user) + "<br>" +
-   get_field("JobAcctStoragePass",document.config.job_acct_storage_pass) + "<br>" +
-   "#SlurmDbdAddr= <br>" +
-   "#SlurmDbdAuthInfo=/var/run/munge/munge.socket.2 <br>" +
-   "#SlurmDbdPort=6819 <br>" +
    "# <br>" +
-   "# POWER SAVE MODE FOR IDLE NODES (optional) <br>" +
-   "#SuspendTime= <br>" +
-   "#SuspendRate= <br>" +
+   "# <br>" +
+   "# POWER SAVE SUPPORT FOR IDLE NODES (optional) <br>" +
    "#SuspendProgram= <br>" +
-   "#ResumeRate= <br>" +
    "#ResumeProgram= <br>" +
+   "#ResumeRate= <br>" +
    "#SuspendExcNodes= <br>" +
    "#SuspendExcParts= <br>" +
+   "#SuspendRate= <br>" +
+   "#SuspendTime= <br>" +
+   "# <br>" +
    "# <br>" +
    "# COMPUTE NODES <br>" +
    "NodeName=" + document.config.node_name.value +
@@ -408,9 +415,9 @@ not recommended production use<br>
 Library used for job step cryptographic signature generation.<BR>
 Select one value for <B>CryptoType</B>:<BR>
 <input type="radio" name="crypto_type" value="munge"><B>Munge</B>: LLNL's 
-<A href="http://home.gna.org/munge/">Munge</A><BR>
+<A href="http://home.gna.org/munge/">Munge</A> (has Gnu Public License)<BR>
 <input type="radio" name="crypto_type" value="openssl" checked> <B>OpenSSL</B>:
-<A href="http://www.openssl.org/">OpenSSL</A>
+<A href="http://www.openssl.org/">OpenSSL</A> (has better performance for signature generation)
 <P>
 Define the location of public and private keys used by SLURM's 
 cryptographic signature generation plugin (CryptoType).
@@ -451,9 +458,10 @@ Select one value for <B>SchedulerType</B>:<BR>
 First-Out (FIFO)<BR>
 <input type="radio" name="sched_type" value="backfill" checked> <B>Backfill</B>: 
 FIFO with backfill<BR>
+<input type="radio" name="sched_type" value="gang">  <B>Gang</B>: Gang scheduling 
+(time-slicing for parallel jobs)<BR>
 <input type="radio" name="sched_type" value="wiki"> <B>Wiki</B>: Wiki interface 
-to Maui (configuration parameters <B>SchedulerAuth</B> and <B>SchedulerPort</B>
-must specified)<BR>
+to Maui (configuration parameter <B>SchedulerPort</B> must specified)<BR>
 <input type="radio" name="sched_type" value="wiki2"> <B>Wiki2</B>: Wiki interface 
 to Moab (configuration parameter <B>SchedulerPort</B> must specified)<BR>
 <P>
@@ -490,7 +498,7 @@ Select one value for <B>MpiDefault</B>:<BR>
 This also works for MVAPICH-SHMEM.<BR>
 <input type="radio" name="mpi_default" value="mvapich"> <B>MVAPICH</B><BR>
 <input type="radio" name="mpi_default" value="none" checked> <B>None</B>: 
-This works for most other MPI types including LAM MPI and Open MPI.<BR>
++This works for most other MPI types including MPICH2, LAM MPI and Open MPI.<BR>
 <P>
 
 <H2>Process Tracking</H2>
@@ -517,8 +525,7 @@ Aggregates (PAGG) kernel module</A>, recommended where available<BR>
 Define resource (node) selection algorithm to be used.<BR>
 Select one value for <B>SelectType</B>:<BR>
 <input type="radio" name="select_type" value="cons_res">
-<B>Cons_res</B>: Allocate 
-individual processors and memory<BR>
+<B>Cons_res</B>: Allocate individual processors and memory<BR>
 <DL>
 <DL>
 <DT><B>SelectTypeParameters</B> (As used by <I>SelectType=Cons_res</I> only):
@@ -636,23 +643,33 @@ log goes to syslog, string "%h" in name gets replaced with hostname)
 <H2>Job Completion Logging</H2>
 Define the job completion logging mechanism to be used.<BR> 
 Select one value for <B>JobCompType</B>:<BR>
-<input type="radio" name="job_comp_type" value="none" checked> <B>None</B>: No job 
-completion logging<BR>
-<input type="radio" name="job_comp_type" value="filetxt"> <B>FileTxt</B>: Write job 
-completion status to a text file<BR>
-<input type="radio" name="job_comp_type" value="script"> <B>Script</B>: Use an 
-arbitrary script to log job completion<BR>
-<input type="radio" name="job_comp_type" value="mysql"> <B>MySQL</B>: Write completion status to a MySQL database<BR>
-<input type="radio" name="job_comp_type" value="pgsql"> <B>PGSQL</B>: Write completion status to a PostreSQL database<BR>
+<input type="radio" name="job_comp_type" value="none" checked> <B>None</B>: 
+No job completion logging<BR>
+<input type="radio" name="job_comp_type" value="filetxt"> <B>FileTxt</B>: 
+Write job completion status to a text file<BR>
+<input type="radio" name="job_comp_type" value="script"> <B>Script</B>: 
+Use an arbitrary script to log job completion<BR>
+<input type="radio" name="job_comp_type" value="mysql"> <B>MySQL</B>: 
+Write completion status to a MySQL database<BR>
+<input type="radio" name="job_comp_type" value="pgsql"> <B>PGSQL</B>: 
+Write completion status to a PostreSQL database<BR>
+<input type="radio" name="job_comp_type" value="slurmdbd"> <B>SlurmDBD</B>: 
+Write completion status to Slurm adatabase daemon (serving multiple Slurm clusters) 
+which will write to some database<BR>
 <P>
-<input type="text" name="job_comp_loc" value=""> <B>JobCompLoc</B>: Location specification. 
-This is the location of the text file to be written to or the script to be run (depends
-upon logging mode). Use a fully qualified pathname.
+<input type="text" name="job_comp_loc" value=""> <B>JobCompLoc</B>: 
+This is the location of the text file to be written to (if JobCompType=filetst)
+or the script to be run (if JobCompType=script) or database name (for other values
+of JobCompType).
 <p><b>Options below are for use with a database to specify where the database is running and how to connect to it</b><br>
-<input type="text" name="job_comp_host" value=""> <B>JobCompHost</B>: Host the database is running on for Job completion<br>
-<input type="text" name="job_comp_port" value=""> <B>JobCompPort</B>: Port the database server is listening on for Job completion<br>
-<input type="text" name="job_comp_user" value=""> <B>JobCompUser</B>: User we are to use to talk to the database for Job completion<br>
-<input type="text" name="job_comp_pass" value=""> <B>JobCompPass</B>: Password we are to use to talk to the database for Job completion<br>
+<input type="text" name="job_comp_host" value=""> <B>JobCompHost</B>: 
+Host the database is running on for Job completion<br>
+<input type="text" name="job_comp_port" value=""> <B>JobCompPort</B>: 
+Port the database server is listening on for Job completion<br>
+<input type="text" name="job_comp_user" value=""> <B>JobCompUser</B>: 
+User we are to use to talk to the database for Job completion<br>
+<input type="text" name="job_comp_pass" value=""> <B>JobCompPass</B>: 
+Password we are to use to talk to the database for Job completion<br>
 <P>
 
 <H2>Job Accounting Gather</H2>
@@ -671,22 +688,41 @@ polling interval in seconds.<BR>
 
 <H2>Job Accounting Storage</H2>
 Used with the Job Accounting Gather SLURM can store the accounting information in many different fashions.  Fill in your systems choice here<BR>
-Select one value for <B>JobAcctStorageType</B>:<BR>
-<input type="radio" name="job_acct_storage_type" value="none" checked> <B>None</B>: No 
-job accounting storage<BR>
-<input type="radio" name="job_acct_storage_type" value="mysql"> <B>MySQL</B>: Write job accounting to a MySQL database<BR>
-<input type="radio" name="job_acct_storage_type" value="pgsql"> <B>PGSQL</B>: Write job accounting to a PostreSQL database<BR>
-<input type="radio" name="job_acct_storage_type" value="filetxt"> <B>FileTxt</B>: Write job accounting to a text file<BR>
-<input type="text" name="job_acct_storage_loc" value=""> <B>JobAcctStorageLoc</B>:
+Select one value for <B>AccountingStorageType</B>:<BR>
+<input type="radio" name="accounting_storage_type" value="none" checked> <B>None</B>: 
+No job accounting storage<BR>
+<input type="radio" name="accounting_storage_type" value="filetxt"> <B>FileTxt</B>: 
+Write job accounting to a text file<BR>
+<input type="radio" name="accounting_storage_type" value="Gold"> <B>Gold</B>: 
+Write completion status to Gold database daemon which can securely 
+save the data from many Slurm managed clusters into a common database<BR>
+<input type="radio" name="accounting_storage_type" value="mysql"> <B>MySQL</B>: 
+Write job accounting to a MySQL database<BR>
+<input type="radio" name="accounting_storage_type" value="pgsql"> <B>PGSQL</B>: 
+Write job accounting to a PostreSQL database<BR>
+<input type="radio" name="accounting_storage_type" value="slurmdbd"> <B>SlurmDBD</B>: 
+Write job accounting to Slurm DBD (database daemon) which can securely 
+save the data from many Slurm managed clusters into a common database<BR>
+<input type="text" name="accounting_storage_loc" value=""> <B>AccountingStorageLoc</B>:
 Location specification or database name.
 This is the location of the text file to be written to (used by Log only).
 Use a fully qualified pathname. If using a database it is the name of the database you will use or create for the stored data.<br>
 <p><b>Options below are for use with a database to specify where the database is running and how to connect to it</b><br>
-<input type="text" name="job_acct_storage_host" value=""> <B>JobAcctStorageHost</B>: Host the database is running on for Job Accounting<br>
-<input type="text" name="job_acct_storage_port" value=""> <B>JobAcctStoragePort</B>: Port the database server is listening on for Job Accounting<br>
-<input type="text" name="job_acct_storage_user" value=""> <B>JobAcctStorageUser</B>: User we are to use to talk to the database for Job Accounting<br>
-<input type="text" name="job_acct_storage_pass" value=""> <B>JobAcctStoragePass</B>: Password we are to use to talk to the database for Job Accounting<br>
-
+<input type="text" name="accounting_storage_host" value=""> <B>AccountingStorageHost</B>: 
+Host the database is running on for Job Accounting<br>
+<input type="text" name="accounting_storage_port" value=""> <B>AccountingStoragePort</B>: 
+Port the database server is listening on for Job Accounting<br>
+<input type="text" name="accounting_storage_user" value=""> <B>AccountingStorageUser</B>: 
+User we are to use to talk to the database for Job Accounting<br>
+<input type="text" name="accounting_storage_pass" value=""> <B>AccountingStoragePass</B>: 
+Password we are to use to talk to the database for Job Accounting. 
+In the case of SlurmDBD, this will be an alternate socket name for use with a Munge
+daemon providing enterprise-wide authentication (while the default Munge socket
+would provide cluster-wide authentication only).<br>
+<input type="text" name="cluster_name" value="cluster"> <B>ClusterName</B>: 
+Name to be recorded in database for jobs from this cluster. 
+This is important if a single database is used to record information 
+from multiple Slurm-managed clusters.<br>
 
 <P>
 
@@ -742,7 +778,7 @@ before terminating all remaining tasks. A value of zero indicates unlimited wait
 <P>
 </FORM>
 <HR>
-<p class="footer">UCRL-WEB-225274<br>
-Last modified 13 December 2007</p>
+<P class="footer">UCRL-WEB-225274<BR>
+Last modified 10 March 2008</P>
 </BODY>
 
