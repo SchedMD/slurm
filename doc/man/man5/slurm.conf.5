@@ -80,19 +80,19 @@ will be written to a the file specified by the
 \fBAccountingStorageLoc\fR parameter.
 The value "accounting_storage/gold" indicates that account records
 will be written to Gold
-(http://www.clusterresources.com/pages/products/gold-allocation-manager.ph),
+(http://www.clusterresources.com/pages/products/gold-allocation-manager.php),
 which maintains its own database.
 The value "accounting_storage/mysql" indicates that accounting records
-should be written to a mysql database specified by the 
+should be written to a MySQL database specified by the 
 \fBAccountingStorageLoc\fR parameter.
 The default value is "accounting_storage/none", which means that
 account records are not maintained. 
 The value "accounting_storage/pgsql" indicates that accounting records
-should be written to a postresql database specified by the 
+should be written to a PostgreSQL database specified by the 
 \fBAccountingStorageLoc\fR parameter.
 The value "accounting_storage/slurmdbd" indicates that accounting records
-will be written to SlurmDbd, which maintains its own database. See 
-"man slurmdbd" for more information.
+will be written to SlurmDDB, which manages an underlying MySQL or 
+PostgreSQL database. See "man slurmdbd" for more information.
 Also see \fBDefaultStorageType\fR.
 
 .TP

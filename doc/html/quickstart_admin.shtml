@@ -134,7 +134,7 @@ Some macro definitions that may be used in building SLURM include:
 # .rpmmacros
 # For AIX at LLNL
 # Override some RPM macros from /usr/lib/rpm/macros
-# Set other SLURM-specific macros for unconventional file locations
+# Set SLURM-specific macros for unconventional file locations
 #
 %_enable_debug     "--with-debug"
 %_prefix           /admin/llnl
@@ -208,17 +208,24 @@ For more information, see <a href="quickstart.html#mpi">MPI</a>.
 
 <h3>Scheduler support</h3>
 <p>The scheduler used by SLURM is controlled by the <b>SchedType</b> configuration 
-parameter. This is meant to control the relative importance of pending jobs.
-SLURM's default scheduler is FIFO (First-In First-Out). A backfill scheduler 
-plugin is also available. Backfill scheduling will initiate a lower-priority job 
+parameter. This is meant to control the relative importance of pending jobs and 
+several options are available
+SLURM's default scheduler is FIFO (First-In First-Out). 
+SLURM offers a backfill scheduling plugin.
+Backfill scheduling will initiate a lower-priority jobs
 if doing so does not delay the expected initiation time of higher priority jobs; 
 essentially using smaller jobs to fill holes in the resource allocation plan. 
+Effective backfill scheduling does require users to specify job time limits.
+SLURM offers a gang scheduler plugin, which provides time slicing of parallel 
+jobs sharing the same nodes.
 SLURM also supports a plugin for use of 
 <a href="http://www.clusterresources.com/pages/products/maui-cluster-scheduler.php">
 The Maui Scheduler</a> or 
 <a href="http://www.clusterresources.com/pages/products/moab-cluster-suite.php">
-Moab Cluster Suite</a> which offer sophisticated scheduling algorithms. 
-Motivated users can even develop their own scheduler plugin if so desired. </p>
+Moab Cluster Suite</a> which offer sophisticated scheduling algorithms.
+For more information about these options see
+<a href="gang_scheduling">Gang Scheduling</a> and
+<a href="cons_res_share.html">Sharing Consumable Resources</a>.</p> 
 
 <h3>Node selection</h3>
 <p>The node selection mechanism used by SLURM is controlled by the 
@@ -237,6 +244,12 @@ aware and interacts with the BlueGene bridge API).</p>
 <p>SLURM uses the syslog function to record events. It uses a range of importance
 levels for these messages. Be certain that your system's syslog functionality
 is operational. </p>
+
+<h3>Accounting</h3>
+<p>SLURM supports accounting records being written to a simple text file,
+directly to a database (MySQL or PostgreSQL), or to a daemon securely 
+managing accounting data for multiple clusters. For more information 
+see <a href="accounting">Accounting</a></p>
 
 <h3>Corefile format</h3>
 <p>SLURM is designed to support generating a variety of core file formats for 
@@ -341,7 +354,8 @@ minimum configuration values will be considered DOWN and not scheduled.
 Note that a more extensive sample configuration file is provided in
 <b>etc/slurm.conf.example</b>. We also have a web-based 
 <a href="configurator.html">configuration tool</a> which can 
-be used to build a simple configuration file.</p>
+be used to build a simple configuration file, which can then be
+manually edited for more complex configurations.</p>
 <pre>
 # 
 # Sample /etc/slurm.conf for mcr.llnl.gov
@@ -545,50 +559,12 @@ Configuration data as of 03/19-13:04:12
 AuthType          = auth/munge
 BackupAddr        = eadevj
 BackupController  = adevj
+BOOT_TIME         = 01/10-09:19:21
+CacheGroups       = 0
+CheckpointType    = checkpoint/none
 ControlAddr       = eadevi
 ControlMachine    = adevi
-DatabaseType      = database/flatfile
-DatabaseHost      = (null)
-DatabasePort      = (null)
-DatabaseUser      = (null)
-Epilog            = (null)
-FastSchedule      = 1
-FirstJobId        = 1
-InactiveLimit     = 0
-JobCompLoc        = /var/tmp/jette/slurm.job.log
-JobCompType       = jobcomp/filetxt
-JobCredPrivateKey = /etc/slurm/slurm.key
-JobCredPublicKey  = /etc/slurm/slurm.cert
-KillWait          = 30
-MaxJobCnt         = 2000
-MinJobAge         = 300
-PluginDir         = /usr/lib/slurm
-Prolog            = (null)
-ReturnToService   = 1
-SchedulerAuth     = (null)
-SchedulerPort     = 65534
-SchedulerType     = sched/backfill
-SlurmUser         = slurm(97)
-SlurmctldDebug    = 4
-SlurmctldLogFile  = /tmp/slurmctld.log
-SlurmctldPidFile  = /tmp/slurmctld.pid
-SlurmctldPort     = 7002 
-SlurmctldTimeout  = 300
-SlurmdDebug       = 65534
-SlurmdLogFile     = /tmp/slurmd.log
-SlurmdPidFile     = /tmp/slurmd.pid
-SlurmdPort        = 7003
-SlurmdSpoolDir    = /tmp/slurmd
-SlurmdTimeout     = 300
-TreeWidth         = 50
-JobAcctStorageType      = jobacct_storage/filetxt
-JobAcctStorageLoc       = /tmp/jobacct.log
-JobAcctGatherFrequncy   = 5
-JobAcctGatherType       = jobacct_gather/linux
-SLURM_CONFIG_FILE = /etc/slurm/slurm.conf
-StateSaveLocation = /usr/local/tmp/slurm/adev
-SwitchType        = switch/elan
-TmpFS             = /tmp
+...
 WaitTime          = 0
 
 Slurmctld(primary/backup) at adevi/adevj are UP/UP
@@ -601,9 +577,9 @@ adev0: scontrol shutdown
 <p>An extensive test suite is available within the SLURM distribution 
 in <i>testsuite/expect</i>. 
 There are about 250 tests which will execute on the order of 2000 jobs 
-and 4000 job steps. 
+and 5000 job steps. 
 Depending upon your system configuration and performance, this test 
-suite will take roughly 40 minutes to complete.
+suite will take roughly 80 minutes to complete.
 The file <i>testsuite/expect/globals</i> contains default paths and
 procedures for all of the individual tests.  You will need to edit this
 file to specify where SLURM and other tools are installed.
@@ -628,6 +604,6 @@ in the NEWS file.
 
 </pre> <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 1 October 2007</p>
+<p style="text-align:center;">Last modified 11 March 2008</p>
 
 <!--#include virtual="footer.txt"-->
