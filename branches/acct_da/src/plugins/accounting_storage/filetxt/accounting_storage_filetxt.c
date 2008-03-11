@@ -419,7 +419,7 @@ extern int clusteracct_storage_p_cluster_procs(void *db_conn,
 extern int clusteracct_storage_p_get_hourly_usage(
 	void *db_conn,	
 	acct_cluster_rec_t *cluster_rec, time_t start, 
-	time_t end, void *params)
+	time_t end)
 {
 
 	return SLURM_SUCCESS;
@@ -428,7 +428,7 @@ extern int clusteracct_storage_p_get_hourly_usage(
 extern int clusteracct_storage_p_get_daily_usage(
 	void *db_conn,
 	acct_cluster_rec_t *cluster_rec, time_t start, 
-	time_t end, void *params)
+	time_t end)
 {
 	
 	return SLURM_SUCCESS;
@@ -437,7 +437,7 @@ extern int clusteracct_storage_p_get_daily_usage(
 extern int clusteracct_storage_p_get_monthly_usage(
 	void *db_conn,
 	acct_cluster_rec_t *cluster_rec, time_t start, 
-	time_t end, void *params)
+	time_t end)
 {
 	
 	return SLURM_SUCCESS;

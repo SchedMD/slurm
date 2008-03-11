@@ -162,7 +162,7 @@ static int _cluster_procs(void *db_conn,
 		*out_buffer = make_dbd_rc_msg(ESLURM_ACCESS_DENIED);
 		return SLURM_ERROR;
 	}
-	if (slurm_dbd_unpack_cluster_procs_msg(&cluster_procs_msg, in_buffer) !=
+	if (slurmdbd_unpack_cluster_procs_msg(&cluster_procs_msg, in_buffer) !=
 	    SLURM_SUCCESS) {
 		error("Failed to unpack DBD_CLUSTER_PROCS message");
 		*out_buffer = make_dbd_rc_msg(SLURM_ERROR);
@@ -177,7 +177,7 @@ static int _cluster_procs(void *db_conn,
 		cluster_procs_msg->cluster_name,
 		cluster_procs_msg->proc_count,
 		cluster_procs_msg->event_time);
-	slurm_dbd_free_cluster_procs_msg(cluster_procs_msg);
+	slurmdbd_free_cluster_procs_msg(cluster_procs_msg);
 	*out_buffer = make_dbd_rc_msg(rc);
 	return rc;
 }
@@ -189,7 +189,7 @@ static int _get_jobs(void *db_conn,
 	dbd_list_msg_t list_msg;
 	sacct_parameters_t sacct_params;
 
-	if (slurm_dbd_unpack_get_jobs_msg(&get_jobs_msg, in_buffer) !=
+	if (slurmdbd_unpack_get_jobs_msg(&get_jobs_msg, in_buffer) !=
 	    SLURM_SUCCESS) {
 		error("Failed to unpack DBD_GET_JOBS message");
 		*out_buffer = make_dbd_rc_msg(SLURM_ERROR);
@@ -200,18 +200,18 @@ static int _get_jobs(void *db_conn,
 	memset(&sacct_params, 0, sizeof(sacct_params));
 	sacct_params.opt_cluster = get_jobs_msg->cluster_name;
 
-	list_msg.ret_list = jobacct_storage_g_get_jobs(
+	list_msg.my_list = jobacct_storage_g_get_jobs(
 		db_conn,
 		get_jobs_msg->selected_steps, get_jobs_msg->selected_parts,
 		&sacct_params);
-	slurm_dbd_free_get_jobs_msg(get_jobs_msg);
+	slurmdbd_free_get_jobs_msg(get_jobs_msg);
 
 
 	*out_buffer = init_buf(1024);
 	pack16((uint16_t) DBD_GOT_JOBS, *out_buffer);
-	slurm_dbd_pack_list_msg(DBD_GOT_JOBS, &list_msg, *out_buffer);
-	if(list_msg.ret_list)
-		list_destroy(list_msg.ret_list);
+	slurmdbd_pack_list_msg(DBD_GOT_JOBS, &list_msg, *out_buffer);
+	if(list_msg.my_list)
+		list_destroy(list_msg.my_list);
 	info("DBD_GET_JOBS: done");
 	
 	return SLURM_SUCCESS;
@@ -223,21 +223,21 @@ static int _init_conn(void *db_conn,
 {
 	dbd_init_msg_t *init_msg;
 
-	if (slurm_dbd_unpack_init_msg(&init_msg, in_buffer, 
+	if (slurmdbd_unpack_init_msg(&init_msg, in_buffer, 
 				      slurmdbd_conf->auth_info) != SLURM_SUCCESS) {
 		error("Failed to unpack DBD_INIT message");
 		*out_buffer = make_dbd_rc_msg(SLURM_ERROR);
 		return SLURM_ERROR;
 	}
-	if (init_msg->version != SLURM_DBD_VERSION) {
+	if (init_msg->version != SLURMDBD_VERSION) {
 		error("Incompatable RPC version (%d != %d)",
-			init_msg->version, SLURM_DBD_VERSION);
+			init_msg->version, SLURMDBD_VERSION);
 		return SLURM_ERROR;
 	}
 	*uid = init_msg->uid;
 
 	info("DBD_INIT: VERSION:%u UID:%u", init_msg->version, init_msg->uid);
-	slurm_dbd_free_init_msg(init_msg);
+	slurmdbd_free_init_msg(init_msg);
 	*out_buffer = make_dbd_rc_msg(SLURM_SUCCESS);
 	return SLURM_SUCCESS;
 }
@@ -255,7 +255,7 @@ static int  _job_complete(void *db_conn,
 		*out_buffer = make_dbd_rc_msg(ESLURM_ACCESS_DENIED);
 		return SLURM_ERROR;
 	}
-	if (slurm_dbd_unpack_job_complete_msg(&job_comp_msg, in_buffer) !=
+	if (slurmdbd_unpack_job_complete_msg(&job_comp_msg, in_buffer) !=
 	    SLURM_SUCCESS) {
 		error("Failed to unpack DBD_JOB_COMPLETE message");
 		*out_buffer = make_dbd_rc_msg(SLURM_ERROR);
@@ -283,7 +283,7 @@ static int  _job_complete(void *db_conn,
 	if(rc && errno == 740) /* meaning data is already there */
 		rc = SLURM_SUCCESS;
 
-	slurm_dbd_free_job_complete_msg(job_comp_msg);
+	slurmdbd_free_job_complete_msg(job_comp_msg);
 	*out_buffer = make_dbd_rc_msg(rc);
 	return SLURM_SUCCESS;
 }
@@ -301,7 +301,7 @@ static int  _job_start(void *db_conn,
 		*out_buffer = make_dbd_rc_msg(ESLURM_ACCESS_DENIED);
 		return SLURM_ERROR;
 	}
-	if (slurm_dbd_unpack_job_start_msg(&job_start_msg, in_buffer) !=
+	if (slurmdbd_unpack_job_start_msg(&job_start_msg, in_buffer) !=
 	    SLURM_SUCCESS) {
 		error("Failed to unpack DBD_JOB_START message");
 		*out_buffer = make_dbd_rc_msg(SLURM_ERROR);
@@ -335,10 +335,10 @@ static int  _job_start(void *db_conn,
 								   &job);
 	job_start_rc_msg.db_index = job.db_index;
 
-	slurm_dbd_free_job_start_msg(job_start_msg);
+	slurmdbd_free_job_start_msg(job_start_msg);
 	*out_buffer = init_buf(1024);
 	pack16((uint16_t) DBD_JOB_START_RC, *out_buffer);
-	slurm_dbd_pack_job_start_rc_msg(&job_start_rc_msg, *out_buffer);
+	slurmdbd_pack_job_start_rc_msg(&job_start_rc_msg, *out_buffer);
 	return SLURM_SUCCESS;
 }
 
@@ -355,7 +355,7 @@ static int  _job_suspend(void *db_conn,
 		*out_buffer = make_dbd_rc_msg(ESLURM_ACCESS_DENIED);
 		return SLURM_ERROR;
 	}
-	if (slurm_dbd_unpack_job_suspend_msg(&job_suspend_msg, in_buffer) !=
+	if (slurmdbd_unpack_job_suspend_msg(&job_suspend_msg, in_buffer) !=
 	    SLURM_SUCCESS) {
 		error("Failed to unpack DBD_JOB_SUSPEND message");
 		*out_buffer = make_dbd_rc_msg(SLURM_ERROR);
@@ -382,7 +382,7 @@ static int  _job_suspend(void *db_conn,
 	if(rc && errno == 740) /* meaning data is already there */
 		rc = SLURM_SUCCESS;
 
-	slurm_dbd_free_job_suspend_msg(job_suspend_msg);
+	slurmdbd_free_job_suspend_msg(job_suspend_msg);
 	*out_buffer = make_dbd_rc_msg(rc);
 	return SLURM_SUCCESS;
 }
@@ -401,7 +401,7 @@ static int _node_state(void *db_conn,
 		*out_buffer = make_dbd_rc_msg(ESLURM_ACCESS_DENIED);
 		return SLURM_ERROR;
 	}
-	if (slurm_dbd_unpack_node_state_msg(&node_state_msg, in_buffer) !=
+	if (slurmdbd_unpack_node_state_msg(&node_state_msg, in_buffer) !=
 	    SLURM_SUCCESS) {
 		error("Failed to unpack DBD_NODE_STATE message");
 		*out_buffer = make_dbd_rc_msg(SLURM_ERROR);
@@ -433,7 +433,7 @@ static int _node_state(void *db_conn,
 	if(rc && errno == 740) /* meaning data is already there */
 		rc = SLURM_SUCCESS;
 
-	slurm_dbd_free_node_state_msg(node_state_msg);
+	slurmdbd_free_node_state_msg(node_state_msg);
 	*out_buffer = make_dbd_rc_msg(rc);
 	return SLURM_SUCCESS;
 }
@@ -463,7 +463,7 @@ static int  _step_complete(void *db_conn,
 		*out_buffer = make_dbd_rc_msg(ESLURM_ACCESS_DENIED);
 		return SLURM_ERROR;
 	}
-	if (slurm_dbd_unpack_step_complete_msg(&step_comp_msg, in_buffer) !=
+	if (slurmdbd_unpack_step_complete_msg(&step_comp_msg, in_buffer) !=
 	    SLURM_SUCCESS) {
 		error("Failed to unpack DBD_STEP_COMPLETE message");
 		*out_buffer = make_dbd_rc_msg(SLURM_ERROR);
@@ -496,7 +496,7 @@ static int  _step_complete(void *db_conn,
 	if(rc && errno == 740) /* meaning data is already there */
 		rc = SLURM_SUCCESS;
 
-	slurm_dbd_free_step_complete_msg(step_comp_msg);
+	slurmdbd_free_step_complete_msg(step_comp_msg);
 	*out_buffer = make_dbd_rc_msg(rc);
 	return SLURM_SUCCESS;
 }
@@ -515,7 +515,7 @@ static int  _step_start(void *db_conn,
 		*out_buffer = make_dbd_rc_msg(ESLURM_ACCESS_DENIED);
 		return SLURM_ERROR;
 	}
-	if (slurm_dbd_unpack_step_start_msg(&step_start_msg, in_buffer) !=
+	if (slurmdbd_unpack_step_start_msg(&step_start_msg, in_buffer) !=
 	    SLURM_SUCCESS) {
 		error("Failed to unpack DBD_STEP_START message");
 		*out_buffer = make_dbd_rc_msg(SLURM_ERROR);
@@ -548,7 +548,7 @@ static int  _step_start(void *db_conn,
 	if(rc && errno == 740) /* meaning data is already there */
 		rc = SLURM_SUCCESS;
 
-	slurm_dbd_free_step_start_msg(step_start_msg);
+	slurmdbd_free_step_start_msg(step_start_msg);
 	*out_buffer = make_dbd_rc_msg(rc);
 	return SLURM_SUCCESS;
 }

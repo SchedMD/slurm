@@ -725,7 +725,7 @@ extern int acct_storage_p_add_associations(PGconn *acct_pgsql_db,
 }
 
 extern int acct_storage_p_get_assoc_id(PGconn *acct_pgsql_db,
-					   acct_association_rec_t *assoc)
+				       acct_association_rec_t *assoc)
 {
 	return SLURM_SUCCESS;
 }
@@ -976,8 +976,8 @@ try_again:
 		if(!reinit) {
 			error("It looks like the storage has gone "
 			      "away trying to reconnect");
-			fini();
-			init();
+			acct_storage_p_close_connection(acct_pgsql_db);
+			acct_pgsql_db = acct_storage_p_get_connection();
 			reinit = 1;
 			goto try_again;
 		} else
