@@ -14,8 +14,8 @@ it arbitrates contention for resources by managing a queue of pending work.</p>
 <p>SLURM has been developed through the collaborative efforts of 
 <a href="https://www.llnl.gov/">Lawrence Livermore National Laboratory (LLNL)</a>,
 <a href="http://www.hp.com/">Hewlett-Packard</a>, 
-<a href="http://www.bull.com/">Bull</a>, and
-<a href="http://www.lnxi.com/">Linux NetworX</a>.
+<a href="http://www.bull.com/">Bull</a>,
+<a href="http://www.lnxi.com/">Linux NetworX</a> and many other contributors.
 HP distributes and supports SLURM as a component in their XC System Software.</p>
 
 <h2>Architecture</h2>
@@ -25,16 +25,20 @@ event of failure. Each compute server (node) has a <b>slurmd</b> daemon, which
 can be compared to a remote shell: it waits for work, executes that work, returns 
 status, and waits for more work. 
 The <b>slurmd</b> daemons provide fault-tolerant hierarchical communciations.
+There is an optional <b>slurmdbd</b> (Slurm DataBase Daemon) which can be used
+to record accounting information for multiple Slurm-managed clusters in a 
+single database.
 User tools include <b>srun</b> to initiate jobs, 
 <b>scancel</b> to terminate queued or running jobs, <b>sinfo</b> to report system 
-status, and <b>squeue</b> to report the status of jobs. 
+status, <b>squeue</b> to report the status of jobs, <b>sacct</b> to get information 
+about jobs and job steps that are running or have completed. 
 The <b>smap</b> and <b>sview</b> commands graphically reports system and 
 job status including network topology. There is also an administrative 
 tool <b>scontrol</b> available to monitor and/or modify configuration and state 
 information. APIs are available for all functions.</p>
 
 <div class="figure">
-  <img src="arch.gif" width="600"><br />
+  <img src="arch.gif" width="550"><br>
   Figure 1. SLURM components
 </div>
 
@@ -46,14 +50,17 @@ building block approach. These plugins presently include:
 <a href="http://www.theether.org/authd/">authd</a>, 
 <a href="http://home.gna.org/munge/">munge</a>, or none (default).</li>
 
-<li><a href="checkpoint_plugins.html">Checkpoint</a>: AIX, OpenMPI, or none.</li>
+<li><a href="checkpoint_plugins.html">Checkpoint</a>: AIX, OpenMPI, XLCH, or none.</li>
 <li><a href="crypto_plugins.html">Cryptography</a>: Munge or OpenSSL</li>
 <li><a href="jobacct_gatherplugins.html">Job Accounting Gather</a>: AIX, Linux, or none(default)</li>
-<li><a href="jobacct_storageplugins.html">Job Accounting Storage</a>: text
-file (default if jobacct_gather != none), MySQL, PGSQL, or none</li>
 
-<li><a href="jobcompplugins.html">Job completion logging</a>: text file, 
-arbitrary script, MySQL, PGSQL, or none (default).</li>
+<li><a href="jobacct_storageplugins.html">Job Accounting Storage</a>: 
+text file (default if jobacct_gather != none), 
+<a href="http://www.clusterresources.com/pages/products/gold-allocation-manager.ph">Gold</a>
+MySQL, PGSQL, SlurmDBD (Slurm Database Daemon) or none</li>
+
+<li><a href="jobcompplugins.html">Job completion logging</a>: 
+text file, arbitrary script, MySQL, PGSQL, SlurmDBD, or none (default).</li>
 
 <li><a href="mpiplugins.html">MPI</a>: LAM, MPICH1-P4, MPICH1-shmem,
 MPICH-GM, MPICH-MX, MVAPICH, OpenMPI and none (default, for most 
@@ -70,10 +77,11 @@ RMS (Quadrics Linux kernel patch),
 and <a href="http://oss.sgi.com/projects/pagg/">SGI's Process Aggregates (PAGG)</a>.</li>
 
 <li><a href="schedplugins.html">Scheduler</a>: 
+FIFO (First In First Out, default), backfill, gang (time-slicing for parallel jobs),
 <a href="http://www.clusterresources.com/pages/products/maui-cluster-scheduler.php">
-The Maui Scheduler</a>, 
+The Maui Scheduler</a>, and  
 <a href="http://www.clusterresources.com/pages/products/moab-cluster-suite.php">
-Moab Cluster Suite</a>, backfill, or FIFO (default).</li>
+Moab Cluster Suite</a>.
 
 <li><a href="switchplugins.html">Switch or interconnect</a>: 
 <a href="http://www.quadrics.com/">Quadrics</a> 
@@ -102,7 +110,7 @@ so that multiple job steps can be simultaneously submitted and queued until
 there are available resources within the job's allocation.</p>
 
 <div class="figure">
-  <img src="entities.gif" width="291" height="218"><br />
+  <img src="entities.gif" width="550"><br>
   Figure 2. SLURM entities
 </div>
 
@@ -113,10 +121,12 @@ there are available resources within the job's allocation.</p>
 of temporary disk space, and state (UP, DOWN, etc.). Additional node information 
 includes weight (preference in being allocated work) and features (arbitrary information 
 such as processor speed or type). 
-Nodes are grouped into partitions, which may contain overlapping nodes. 
+Nodes are grouped into partitions, which may contain overlapping nodes so they are
+best thought of as job queues.
 Partition information includes: name, list of associated nodes, state (UP or DOWN), 
-maximum job time limit, maximum node count per job, group access list, and shared 
-node access (YES, NO or FORCE).  Partitions can be considered job queues.
+maximum job time limit, maximum node count per job, group access list, 
+priority (important if nodes are in multiple partitions) and shared node access policy
+with optional over-subscription level for gang scheduling (e.g. YES, NO or FORCE:2).  
 Bit maps are used to represent nodes and scheduling 
 decisions can be made by performing a small number of comparisons and a series 
 of fast bit map manipulations. A sample (partial) SLURM configuration file follows.</p>
@@ -142,20 +152,21 @@ TmpFS=/tmp
 #
 # Node Configurations
 #
-NodeName=DEFAULT TmpDisk=16384 State=IDLE
+NodeName=DEFAULT Procs=4 TmpDisk=16384 State=IDLE
 NodeName=lx[0001-0002] State=DRAINED
-NodeName=lx[0003-8000] Procs=16 RealMemory=2048 Weight=16
-NodeName=lx[8001-9999] Procs=32 RealMemory=4096 Weight=40 Feature=1200MHz
+NodeName=lx[0003-8000] RealMemory=2048 Weight=2
+NodeName=lx[8001-9999] RealMemory=4096 Weight=6 Feature=video
 #
 # Partition Configurations
 #
 PartitionName=DEFAULT MaxTime=30 MaxNodes=2
 PartitionName=login Nodes=lx[0001-0002] State=DOWN
-PartitionName=debug Nodes=lx[0003-0030] State=UP    Default=YES
+PartitionName=debug Nodes=lx[0003-0030] State=UP Default=YES
 PartitionName=class Nodes=lx[0031-0040] AllowGroups=students
-PartitionName=batch Nodes=lx[0041-9999] MaxTime=UNLIMITED MaxNodes=4096
+PartitionName=DEFAULT MaxTime=UNLIMITED MaxNodes=4096
+PartitionName=batch Nodes=lx[0041-9999]
 </pre>
 
-<p style="text-align:center;">Last modified 19 September 2007</p>
+<p style="text-align:center;">Last modified 11 March 2008</p>
 
 <!--#include virtual="footer.txt"-->
