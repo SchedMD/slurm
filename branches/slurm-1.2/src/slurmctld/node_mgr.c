@@ -1524,7 +1524,8 @@ validate_node_specs (char *node_name, uint16_t cpus,
 					node_flags;
 				node_ptr->last_idle = now;
 			}
-			xfree(node_ptr->reason);
+			if ((node_flags & NODE_STATE_DRAIN) == 0)
+				xfree(node_ptr->reason);
 			jobacct_g_node_up(node_ptr, now);
 		} else if ((base_state == NODE_STATE_DOWN) &&
 		           (slurmctld_conf.ret2service == 1) &&
