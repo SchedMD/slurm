@@ -224,7 +224,7 @@ The Maui Scheduler</a> or
 <a href="http://www.clusterresources.com/pages/products/moab-cluster-suite.php">
 Moab Cluster Suite</a> which offer sophisticated scheduling algorithms.
 For more information about these options see
-<a href="gang_scheduling">Gang Scheduling</a> and
+<a href="gang_scheduling.html">Gang Scheduling</a> and
 <a href="cons_res_share.html">Sharing Consumable Resources</a>.</p> 
 
 <h3>Node selection</h3>
@@ -249,7 +249,7 @@ is operational. </p>
 <p>SLURM supports accounting records being written to a simple text file,
 directly to a database (MySQL or PostgreSQL), or to a daemon securely 
 managing accounting data for multiple clusters. For more information 
-see <a href="accounting">Accounting</a>. </p>
+see <a href="accounting.html">Accounting</a>. </p>
 
 <h3>Corefile format</h3>
 <p>SLURM is designed to support generating a variety of core file formats for 

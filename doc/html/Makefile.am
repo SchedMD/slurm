@@ -2,6 +2,7 @@
 htmldir = ${prefix}/share/doc/@PACKAGE@-@VERSION@/html
 
 generated_html = \
+	accounting.html \
 	api.html \
 	authplugins.html \
 	big_sys.html \
@@ -14,6 +15,7 @@ generated_html = \
 	documentation.html \
 	download.html \
 	faq.html \
+	gang_scheduling.html \
 	help.html \
 	ibm.html \
 	jobacct_gatherplugins.html \
