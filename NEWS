@@ -20,6 +20,7 @@ documents those changes that are of interest to users and admins.
     performance reasons.
  -- Add salloc options --chdir and --get-user-env (for Moab).
  -- Modify scontrol update to support job comment changes.
+ -- Do not clear a DRAINED node's reason field when slurmctld restarts.
  
 * Changes in SLURM 1.2.24
 =========================
