@@ -49,8 +49,9 @@
 /* Local functions */
 static int   _cluster_procs(void *db_conn,
 			    Buf in_buffer, Buf *out_buffer, uint32_t *uid);
-static int   _get_jobs(void *db_conn,
-		       Buf in_buffer, Buf *out_buffer);
+static int   _get_assocs(void *db_conn, Buf in_buffer, Buf *out_buffer);
+static int   _get_jobs(void *db_conn, Buf in_buffer, Buf *out_buffer);
+static int   _get_users(void *db_conn, Buf in_buffer, Buf *out_buffer);
 static int   _init_conn(void *db_conn,
 			Buf in_buffer, Buf *out_buffer, uint32_t *uid);
 static int   _job_complete(void *db_conn,
@@ -91,13 +92,44 @@ proc_req(void *db_conn, char *msg, uint32_t msg_size,
 		*out_buffer = make_dbd_rc_msg(rc);
 	} else {
 		switch (msg_type) {
+		case DBD_ADD_ACCOUNTS:
+			break;
+		case DBD_ADD_ACCOUNT_COORDS:
+			break;
+		case DBD_ADD_ASSOCS:
+			break;
+		case DBD_ADD_CLUSTERS:
+			break;
+		case DBD_ADD_USERS:
+			break;
 		case DBD_CLUSTER_PROCS:
 			rc = _cluster_procs(db_conn,
 					    in_buffer, out_buffer, uid);
 			break;
+		case DBD_GET_ACCOUNTS:
+			break;
+		case DBD_GET_ASSOCS:
+			rc = _get_assocs(db_conn, in_buffer, out_buffer);
+			break;
+		case DBD_GET_ASSOC_DAY:
+			break;
+		case DBD_GET_ASSOC_HOUR:
+			break;
+		case DBD_GET_ASSOC_MONTH:
+			break;
+		case DBD_GET_CLUSTERS:
+			break;
+		case DBD_GET_CLUSTER_HOUR:
+			break;
+		case DBD_GET_CLUSTER_DAY:
+			break;
+		case DBD_GET_CLUSTER_MONTH:
+			break;
 		case DBD_GET_JOBS:
-			rc = _get_jobs(db_conn,
-				       in_buffer, out_buffer);
+			rc = _get_jobs(db_conn, in_buffer, out_buffer);
+			break;
+		case DBD_GET_USERS:
+			rc = _get_users(db_conn, in_buffer, out_buffer);
 			break;
 		case DBD_INIT:
 			if (first)
@@ -105,7 +137,7 @@ proc_req(void *db_conn, char *msg, uint32_t msg_size,
 						in_buffer, out_buffer, uid);
 			else {
 				error("DBD_INIT sent after connection "
-					"established");
+				      "established");
 				rc = EINVAL;
 				*out_buffer = make_dbd_rc_msg(rc);
 			}
@@ -122,9 +154,29 @@ proc_req(void *db_conn, char *msg, uint32_t msg_size,
 			rc = _job_suspend(db_conn,
 					  in_buffer, out_buffer, uid);
 			break;
+		case DBD_MODIFY_ACCOUNTS:
+			break;
+		case DBD_MODIFY_ASSOCS:
+			break;
+		case DBD_MODIFY_CLUSTERS:
+			break;
+		case DBD_MODIFY_USERS:
+			break;
+		case DBD_MODIFY_USER_ADMIN_LEVEL:
+			break;
 		case DBD_NODE_STATE:
 			rc = _node_state(db_conn,
 					 in_buffer, out_buffer, uid);
+			break;
+		case DBD_REMOVE_ACCOUNTS:
+			break;
+		case DBD_REMOVE_ACCOUNT_COORDS:
+			break;
+		case DBD_REMOVE_ASSOCS:
+			break;
+		case DBD_REMOVE_CLUSTERS:
+			break;
+		case DBD_REMOVE_USERS:
 			break;
 		case DBD_STEP_COMPLETE:
 			rc = _step_complete(db_conn,
@@ -182,8 +234,36 @@ static int _cluster_procs(void *db_conn,
 	return rc;
 }
 
-static int _get_jobs(void *db_conn,
-		     Buf in_buffer, Buf *out_buffer)
+static int _get_assocs(void *db_conn, Buf in_buffer, Buf *out_buffer)
+{
+	dbd_cond_msg_t *get_msg;
+	dbd_list_msg_t list_msg;
+
+	if (slurmdbd_unpack_cond_msg(DBD_GET_ASSOCS, &get_msg, in_buffer) !=
+	    SLURM_SUCCESS) {
+		error("Failed to unpack DBD_GET_ASSOCS message");
+		*out_buffer = make_dbd_rc_msg(SLURM_ERROR);
+		return SLURM_ERROR;
+	}
+	
+	info("DBD_GET_ASSOCS: called");
+
+	list_msg.my_list = acct_storage_g_get_associations(
+		db_conn, get_msg->cond);
+	slurmdbd_free_cond_msg(DBD_GET_ASSOCS, get_msg);
+
+
+	*out_buffer = init_buf(1024);
+	pack16((uint16_t) DBD_GOT_ASSOCS, *out_buffer);
+	slurmdbd_pack_list_msg(DBD_GOT_ASSOCS, &list_msg, *out_buffer);
+	if(list_msg.my_list)
+		list_destroy(list_msg.my_list);
+	info("DBD_GET_ASSOCS: done");
+	
+	return SLURM_SUCCESS;
+}
+
+static int _get_jobs(void *db_conn, Buf in_buffer, Buf *out_buffer)
 {
 	dbd_get_jobs_msg_t *get_jobs_msg;
 	dbd_list_msg_t list_msg;
@@ -217,6 +297,34 @@ static int _get_jobs(void *db_conn,
 	return SLURM_SUCCESS;
 }
 
+static int _get_users(void *db_conn, Buf in_buffer, Buf *out_buffer)
+{
+	dbd_cond_msg_t *get_msg;
+	dbd_list_msg_t list_msg;
+
+	if (slurmdbd_unpack_cond_msg(DBD_GET_USERS, &get_msg, in_buffer) !=
+	    SLURM_SUCCESS) {
+		error("Failed to unpack DBD_GET_USERS message");
+		*out_buffer = make_dbd_rc_msg(SLURM_ERROR);
+		return SLURM_ERROR;
+	}
+	
+	info("DBD_GET_USERS: called");
+
+	list_msg.my_list = acct_storage_g_get_users(
+		db_conn, get_msg->cond);
+	slurmdbd_free_cond_msg(DBD_GET_USERS, get_msg);
+
+
+	*out_buffer = init_buf(1024);
+	pack16((uint16_t) DBD_GOT_USERS, *out_buffer);
+	slurmdbd_pack_list_msg(DBD_GOT_USERS, &list_msg, *out_buffer);
+	if(list_msg.my_list)
+		list_destroy(list_msg.my_list);
+	info("DBD_GET_USERS: done");
+	
+	return SLURM_SUCCESS;
+}
 
 static int _init_conn(void *db_conn,
 		      Buf in_buffer, Buf *out_buffer, uint32_t *uid)

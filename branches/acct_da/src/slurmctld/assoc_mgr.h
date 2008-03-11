@@ -50,35 +50,6 @@
 #include <slurm/slurm_errno.h>
 
 /* 
- * update associations in local cache 
- * IN:  List of acct_association_rec_t's
- * RET: SLURM_SUCCESS on success (or not found) SLURM_ERROR else
- */
-extern int update_local_associations(List update_list);
-
-/* 
- * update users in local cache 
- * IN:  List of acct_user_rec_t's
- * RET: SLURM_SUCCESS on success (or not found) SLURM_ERROR else
- */
-extern int update_local_users(List update_list);
-
-/* 
- * remove association from local cache 
- * IN:  uint32_t id (id of association to remove)
- * RET: SLURM_SUCCESS on success (or not found) SLURM_ERROR else
- */
-extern int remove_local_association(uint32_t id);
-
-/* 
- * remove user from local cache 
- * IN:  char * name (name of user to remove this will also remove all
- *      associations for this user)
- * RET: SLURM_SUCCESS on success (or not found) SLURM_ERROR else
- */
-extern int remove_local_user(char *name);
-
-/* 
  * get info from the storage 
  * IN/OUT:  acct_user - acct_user_rec_t with the name set of the user.
  *                      "default_account" will be filled in on
@@ -96,6 +67,38 @@ extern int get_default_account(void *db_conn, acct_user_rec_t *user);
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
 extern int get_assoc_id(void *db_conn, acct_association_rec_t *assoc);
+
+extern int assoc_mgr_init(void *db_conn);
+extern int assoc_mgr_fini();
+
+/* 
+ * remove association from local cache 
+ * IN:  uint32_t id (id of association to remove)
+ * RET: SLURM_SUCCESS on success (or not found) SLURM_ERROR else
+ */
+extern int remove_local_association(uint32_t id);
+
+/* 
+ * remove user from local cache 
+ * IN:  char * name (name of user to remove this will also remove all
+ *      associations for this user)
+ * RET: SLURM_SUCCESS on success (or not found) SLURM_ERROR else
+ */
+extern int remove_local_user(char *name);
+
+/* 
+ * update associations in local cache 
+ * IN:  List of acct_association_rec_t's
+ * RET: SLURM_SUCCESS on success (or not found) SLURM_ERROR else
+ */
+extern int update_local_associations(List update_list);
+
+/* 
+ * update users in local cache 
+ * IN:  List of acct_user_rec_t's
+ * RET: SLURM_SUCCESS on success (or not found) SLURM_ERROR else
+ */
+extern int update_local_users(List update_list);
 
 /* 
  * validate that an association ID is still avlid 

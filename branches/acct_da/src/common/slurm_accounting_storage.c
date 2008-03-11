@@ -483,14 +483,21 @@ extern void pack_acct_account_rec(void *in, Buf buffer)
 {
 	char *coord = NULL;
 	ListIterator itr = NULL;
+	uint32_t count = 0;
 	acct_account_rec_t *object = (acct_account_rec_t *)in;
 
-	pack32(list_count(object->coordinators), buffer);
-	itr = list_iterator_create(object->coordinators);
-	while((coord = list_next(itr))) {
-		packstr(coord, buffer);
+	if(object->coordinators)
+		count = list_count(object->coordinators);
+	
+	pack32(count, buffer);
+	if(count) {
+		itr = list_iterator_create(object->coordinators);
+		while((coord = list_next(itr))) {
+			packstr(coord, buffer);
+		}
+		list_iterator_destroy(itr);
 	}
-	list_iterator_destroy(itr);
+
 	packstr(object->description, buffer);
 	pack16((uint16_t)object->expedite, buffer);
 	packstr(object->name, buffer);
@@ -568,14 +575,21 @@ extern void pack_acct_cluster_rec(void *in, Buf buffer)
 {
 	cluster_accounting_rec_t *acct_info = NULL;
 	ListIterator itr = NULL;
+	uint32_t count = 0;
 	acct_cluster_rec_t *object = (acct_cluster_rec_t *)in;
 
-	pack32(list_count(object->accounting_list), buffer);
-	itr = list_iterator_create(object->accounting_list);
-	while((acct_info = list_next(itr))) {
-		pack_cluster_accounting_rec(acct_info, buffer);
+	if(object->accounting_list)
+		count = list_count(object->accounting_list);
+
+	pack32(count, buffer);
+
+	if(count) {
+		itr = list_iterator_create(object->accounting_list);
+		while((acct_info = list_next(itr))) {
+			pack_cluster_accounting_rec(acct_info, buffer);
+		}
+		list_iterator_destroy(itr);
 	}
-	list_iterator_destroy(itr);
 	packstr(object->backup, buffer);
 	packstr(object->name, buffer);
 	packstr(object->primary, buffer);
@@ -644,14 +658,22 @@ extern void pack_acct_association_rec(void *in, Buf buffer)
 {
 	acct_accounting_rec_t *acct_info = NULL;
 	ListIterator itr = NULL;
+	uint32_t count = 0;
 	acct_association_rec_t *object = (acct_association_rec_t *)in;	
 	
-	pack32(list_count(object->accounting_list), buffer);
-	itr = list_iterator_create(object->accounting_list);
-	while((acct_info = list_next(itr))) {
-		pack_acct_accounting_rec(acct_info, buffer);
+	if(object->accounting_list)
+		count = list_count(object->accounting_list);
+
+	pack32(count, buffer);
+
+	if(count) {
+		itr = list_iterator_create(object->accounting_list);
+		while((acct_info = list_next(itr))) {
+			pack_acct_accounting_rec(acct_info, buffer);
+		}
+		list_iterator_destroy(itr);
 	}
-	list_iterator_destroy(itr);
+
 	packstr(object->acct, buffer);
 	packstr(object->cluster, buffer);
 	pack32(object->fairshare, buffer);
@@ -722,21 +744,37 @@ extern void pack_acct_user_cond(void *in, Buf buffer)
 	char *info = NULL;
 	ListIterator itr = NULL;
 	acct_user_cond_t *object = (acct_user_cond_t *)in;
+	uint32_t count = 0;
 
 	pack16((uint16_t)object->admin_level, buffer);
-	pack32(list_count(object->def_acct_list), buffer);
-	itr = list_iterator_create(object->def_acct_list);
-	while((info = list_next(itr))) {
-		packstr(info, buffer);
+
+	if(object->def_acct_list)
+		count = list_count(object->def_acct_list);
+
+	pack32(count, buffer);
+
+	if(count) {
+		itr = list_iterator_create(object->def_acct_list);
+		while((info = list_next(itr))) {
+			packstr(info, buffer);
+		}
+		list_iterator_destroy(itr);
 	}
-	list_iterator_destroy(itr);
 	pack16((uint16_t)object->expedite, buffer);
-	pack32(list_count(object->user_list), buffer);
-	itr = list_iterator_create(object->user_list);
-	while((info = list_next(itr))) {
-		packstr(info, buffer);
+
+	count = 0;
+	if(object->user_list)
+		count = list_count(object->user_list);
+
+	pack32(count, buffer);
+
+	if(count) {
+		itr = list_iterator_create(object->user_list);
+		while((info = list_next(itr))) {
+			packstr(info, buffer);
+		}
+		list_iterator_destroy(itr);
 	}
-	list_iterator_destroy(itr);
 
 }
 
@@ -782,26 +820,50 @@ extern void pack_acct_account_cond(void *in, Buf buffer)
 	char *info = NULL;
 	ListIterator itr = NULL;
 	acct_account_cond_t *object = (acct_account_cond_t *)in;
+	uint32_t count = 0;
 
-	pack32(list_count(object->acct_list), buffer);
-	itr = list_iterator_create(object->acct_list);
-	while((info = list_next(itr))) {
-		packstr(info, buffer);
+	if(object->acct_list)
+		count = list_count(object->acct_list);
+
+	pack32(count, buffer);
+
+	if(count) {
+		itr = list_iterator_create(object->acct_list);
+		while((info = list_next(itr))) {
+			packstr(info, buffer);
+		}
+		list_iterator_destroy(itr);
 	}
-	list_iterator_destroy(itr);
-	pack32(list_count(object->description_list), buffer);
-	itr = list_iterator_create(object->description_list);
-	while((info = list_next(itr))) {
-		packstr(info, buffer);
+
+	count = 0;
+	if(object->description_list)
+		count = list_count(object->description_list);
+
+	pack32(count, buffer);
+
+	if(count) {
+		itr = list_iterator_create(object->description_list);
+		while((info = list_next(itr))) {
+			packstr(info, buffer);
+		}
+		list_iterator_destroy(itr);
 	}
-	list_iterator_destroy(itr);
+
 	pack16((uint16_t)object->expedite, buffer);
-	pack32(list_count(object->organization_list), buffer);
-	itr = list_iterator_create(object->organization_list);
-	while((info = list_next(itr))) {
-		packstr(info, buffer);
+
+	count = 0;
+	if(object->organization_list)
+		count = list_count(object->organization_list);
+
+	pack32(count, buffer);
+
+	if(count) {
+		itr = list_iterator_create(object->organization_list);
+		while((info = list_next(itr))) {
+			packstr(info, buffer);
+		}
+		list_iterator_destroy(itr);
 	}
-	list_iterator_destroy(itr);
 }
 
 extern int unpack_acct_account_cond(void **object, Buf buffer)
@@ -852,13 +914,19 @@ extern void pack_acct_cluster_cond(void *in, Buf buffer)
 	char *info = NULL;
 	ListIterator itr = NULL;
 	acct_cluster_cond_t *object = (acct_cluster_cond_t *)in;
+	uint32_t count = 0;
 
-	pack32(list_count(object->cluster_list), buffer);
-	itr = list_iterator_create(object->cluster_list);
-	while((info = list_next(itr))) {
-		packstr(info, buffer);
+	if(object->cluster_list)
+		count = list_count(object->cluster_list);
+	
+	pack32(count, buffer);
+	if(count) {
+		itr = list_iterator_create(object->cluster_list);
+		while((info = list_next(itr))) {
+			packstr(info, buffer);
+		}
+		list_iterator_destroy(itr);
 	}
-	list_iterator_destroy(itr);
 }
 
 extern int unpack_acct_cluster_cond(void **object, Buf buffer)
@@ -890,47 +958,82 @@ unpack_error:
 extern void pack_acct_association_cond(void *in, Buf buffer)
 {
 	char *info = NULL;
+	uint32_t count = 0;
+
 	ListIterator itr = NULL;
 	acct_association_cond_t *object = (acct_association_cond_t *)in;
 
-	pack32(list_count(object->acct_list), buffer);
-	itr = list_iterator_create(object->acct_list);
-	while((info = list_next(itr))) {
-		packstr(info, buffer);
+	if(object->acct_list)
+		count = list_count(object->acct_list);
+	
+	pack32(count, buffer);
+	if(count) {
+		itr = list_iterator_create(object->acct_list);
+		while((info = list_next(itr))) {
+			packstr(info, buffer);
+		}
+		list_iterator_destroy(itr);
 	}
-	list_iterator_destroy(itr);
-	pack32(list_count(object->cluster_list), buffer);
-	itr = list_iterator_create(object->cluster_list);
-	while((info = list_next(itr))) {
-		packstr(info, buffer);
+	count = 0;
+
+	if(object->cluster_list)
+		count = list_count(object->cluster_list);
+	
+	pack32(count, buffer);
+	if(count) {
+		itr = list_iterator_create(object->cluster_list);
+		while((info = list_next(itr))) {
+			packstr(info, buffer);
+		}
+		list_iterator_destroy(itr);
 	}
-	list_iterator_destroy(itr);
-	pack32(list_count(object->id_list), buffer);
-	itr = list_iterator_create(object->id_list);
-	while((info = list_next(itr))) {
-		packstr(info, buffer);
+	count = 0;
+
+	if(object->id_list)
+		count = list_count(object->id_list);
+	
+	pack32(count, buffer);
+	if(count) {
+		itr = list_iterator_create(object->id_list);
+		while((info = list_next(itr))) {
+			packstr(info, buffer);
+		}
 	}
+	count = 0;
 
 	pack32(object->lft, buffer);
 	
-	pack32(list_count(object->partition_list), buffer);
-	itr = list_iterator_create(object->partition_list);
-	while((info = list_next(itr))) {
-		packstr(info, buffer);
+	if(object->partition_list)
+		count = list_count(object->partition_list);
+	
+	pack32(count, buffer);
+	if(count) {
+		itr = list_iterator_create(object->partition_list);
+		while((info = list_next(itr))) {
+			packstr(info, buffer);
+		}
+		list_iterator_destroy(itr);
 	}
-	list_iterator_destroy(itr);
+	count = 0;
 
 	packstr(object->parent_acct, buffer);
 
 	pack32(object->parent, buffer);
 	pack32(object->rgt, buffer);
 
-	pack32(list_count(object->user_list), buffer);
-	itr = list_iterator_create(object->user_list);
-	while((info = list_next(itr))) {
-		packstr(info, buffer);
+	pack32(object->lft, buffer);
+	
+	if(object->user_list)
+		count = list_count(object->user_list);
+	
+	pack32(count, buffer);
+	if(count) {
+		itr = list_iterator_create(object->user_list);
+		while((info = list_next(itr))) {
+			packstr(info, buffer);
+		}
+		list_iterator_destroy(itr);
 	}
-	list_iterator_destroy(itr);
 }
 
 extern int unpack_acct_association_cond(void **object, Buf buffer)
