@@ -94,7 +94,6 @@ const uint32_t plugin_version = 100;
 
 static char *cluster_name       = NULL;
 static char *slurmdbd_auth_info = NULL;
-static List local_association_list = NULL;
 
 /*
  * init() is called when the plugin is loaded, before any other functions
@@ -130,9 +129,6 @@ extern int fini ( void )
 {
 	xfree(cluster_name);
 	xfree(slurmdbd_auth_info);
-
-	if(local_association_list)
-		list_destroy(local_association_list);
 
 	slurm_close_slurmdbd_conn();
 	return SLURM_SUCCESS;
@@ -239,133 +235,6 @@ extern int acct_storage_p_add_associations(void *db_conn,
 		rc = resp_code;
 
 	return rc;
-}
-
-extern int acct_storage_p_get_assoc_id(void *db_conn,
-				       acct_association_rec_t *assoc)
-{
-	ListIterator itr = NULL;
-	acct_association_rec_t * found_assoc = NULL;
-	acct_association_rec_t * ret_assoc = NULL;
-
-	if(!local_association_list) {
-		acct_association_cond_t assoc_q;
-		char *cluster_name = NULL;
-		memset(&assoc_q, 0, sizeof(acct_association_cond_t));
-		assoc_q.cluster_list = list_create(slurm_destroy_char);
-		cluster_name = slurm_get_cluster_name();
-		if(!cluster_name) {
-			error("acct_storage_p_get_assoc_id: "
-			      "no cluster name here going to get "
-			      "all associations.");
-		} else 
-			list_append(assoc_q.cluster_list, cluster_name);
-		local_association_list =
-			acct_storage_p_get_associations(db_conn, &assoc_q);
-		list_destroy(assoc_q.cluster_list);
-		if(!local_association_list) {
-			error("acct_storage_p_get_assoc_id: "
-			      "no list was made.");
-			return SLURM_SUCCESS;
-		}
-	}
-	if((!assoc->cluster && !assoc->acct) && !assoc->id) {
-		error("acct_storage_p_get_assoc_id: "
-		      "You need to supply a cluster and account name to get "
-		      "an association.");
-		return SLURM_ERROR;
-	}
-
-	itr = list_iterator_create(local_association_list);
-	while((found_assoc = list_next(itr))) {
-		if(assoc->id) {
-			if(assoc->id == found_assoc->id) {
-				ret_assoc = found_assoc;
-				break;
-			}
-			continue;
-		} else {
-			if((!found_assoc->acct 
-			    || strcasecmp(assoc->acct,
-					  found_assoc->acct))
-			   || (!assoc->cluster 
-			       || strcasecmp(assoc->cluster,
-					     found_assoc->cluster))
-			   || (assoc->user 
-			       && (!found_assoc->user 
-				   || strcasecmp(assoc->user,
-						 found_assoc->user)))
-			   || (!assoc->user && found_assoc->user 
-			       && strcasecmp("none",
-					     found_assoc->user)))
-				continue;
-			if(assoc->partition
-			   && (!assoc->partition 
-			       || strcasecmp(assoc->partition, 
-					     found_assoc->partition))) {
-				ret_assoc = found_assoc;
-				continue;
-			}
-		}
-		ret_assoc = found_assoc;
-		break;
-	}
-	list_iterator_destroy(itr);
-
-	if(!ret_assoc)
-		return SLURM_ERROR;
-
-	assoc->id = ret_assoc->id;
-	if(!assoc->user)
-		assoc->user = ret_assoc->user;
-	if(!assoc->acct)
-		assoc->acct = ret_assoc->acct;
-	if(!assoc->cluster)
-		assoc->cluster = ret_assoc->cluster;
-	if(!assoc->partition)
-		assoc->partition = ret_assoc->partition;
-
-	return SLURM_SUCCESS;
-}
-
-extern int acct_storage_p_validate_assoc_id(void *db_conn,
-					    uint32_t assoc_id)
-{
-	ListIterator itr = NULL;
-	acct_association_rec_t * found_assoc = NULL;
-
-	if(!local_association_list) {
-		acct_association_cond_t assoc_q;
-		char *cluster_name = NULL;
-		memset(&assoc_q, 0, sizeof(acct_association_cond_t));
-		assoc_q.cluster_list = list_create(slurm_destroy_char);
-		cluster_name = slurm_get_cluster_name();
-		if(!cluster_name) {
-			error("acct_storage_p_get_assoc_id: "
-			      "no cluster name here going to get "
-			      "all associations.");
-		} else 
-			list_append(assoc_q.cluster_list, cluster_name);
-		local_association_list =
-			acct_storage_p_get_associations(db_conn, &assoc_q);
-		list_destroy(assoc_q.cluster_list);
-		if(!local_association_list) {
-			error("acct_storage_p_get_assoc_id: "
-			      "no list was made.");
-			return SLURM_ERROR;
-		}
-	}
-	
-	itr = list_iterator_create(local_association_list);
-	while((found_assoc = list_next(itr))) {
-		if(assoc_id == found_assoc->id) 
-			break;
-	}
-	list_iterator_destroy(itr);
-
-	if(found_assoc)
-		return SLURM_SUCCESS;
-	return SLURM_ERROR;
 }
 
 extern int acct_storage_p_modify_users(void *db_conn,

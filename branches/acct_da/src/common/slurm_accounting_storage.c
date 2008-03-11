@@ -104,10 +104,6 @@ typedef struct slurm_acct_storage_ops {
 				    acct_cluster_cond_t *cluster_q);
 	List (*get_associations)   (void *db_conn,
 				    acct_association_cond_t *assoc_q);
-	int  (*get_assoc_id)       (void *db_conn,
-				    acct_association_rec_t *assoc);
-	int  (*validate_assoc_id)  (void *db_conn,
-				    uint32_t assoc_id);
 	int  (*get_hourly_usage)   (void *db_conn,
 				    acct_association_rec_t *acct_assoc,
 				    time_t start, 
@@ -212,8 +208,6 @@ static slurm_acct_storage_ops_t * _acct_storage_get_ops(
 		"acct_storage_p_get_accts",
 		"acct_storage_p_get_clusters",
 		"acct_storage_p_get_associations",
-		"acct_storage_p_get_assoc_id",
-		"acct_storage_p_validate_assoc_id",
 		"acct_storage_p_get_hourly_usage",
 		"acct_storage_p_get_daily_usage",
 		"acct_storage_p_get_monthly_usage",
@@ -1197,25 +1191,6 @@ extern int acct_storage_g_add_associations(void *db_conn,
 		return SLURM_ERROR;
 	return (*(g_acct_storage_context->ops.add_associations))
 		(db_conn, association_list);
-}
-
-extern int acct_storage_g_get_assoc_id(void *db_conn,
-				       acct_association_rec_t *assoc)
-{
-	if (slurm_acct_storage_init(NULL) < 0)
-		return SLURM_ERROR;
-
-	return (*(g_acct_storage_context->ops.get_assoc_id))(db_conn, assoc);
-}
-
-extern int acct_storage_g_validate_assoc_id(void *db_conn,
-					    uint32_t assoc_id)
-{
-	if (slurm_acct_storage_init(NULL) < 0)
-		return SLURM_ERROR;
-
-	return (*(g_acct_storage_context->ops.validate_assoc_id))
-		(db_conn, assoc_id);
 }
 
 extern int acct_storage_g_modify_users(void *db_conn,

@@ -367,27 +367,6 @@ extern List acct_storage_g_get_clusters(void *db_conn,
 
 /* 
  * get info from the storage 
- * IN/OUT:  acct_assoc - acct_association_rec_t with at least cluster and
- *			account set for account association.  To get user
- *			association set user, and optional partition.
- *			Sets "id" field with the association ID.
- * RET: SLURM_SUCCESS on success SLURM_ERROR else
- */
-extern int acct_storage_g_get_assoc_id(void *db_conn, 
-				       acct_association_rec_t *assoc);
-
-/* 
- * validate that an association ID is still avlid 
- * IN:  assoc_id - association ID previously returned by 
- *		acct_storage_g_get_assoc_id(void *db_conn, 
- )
- * RET: SLURM_SUCCESS on success SLURM_ERROR else
- */
-extern int acct_storage_g_validate_assoc_id(void *db_conn, 
-					    uint32_t assoc_id);
-
-/* 
- * get info from the storage 
  * IN:  acct_association_cond_t *
  * RET: List of acct_association_rec_t *
  * note List needs to be freed when called

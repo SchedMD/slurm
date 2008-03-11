@@ -527,18 +527,6 @@ extern int acct_storage_p_add_associations(MYSQL *acct_mysql_db,
 	return SLURM_SUCCESS;
 }
 
-extern int acct_storage_p_get_assoc_id(MYSQL *acct_mysql_db, 
-				       acct_association_rec_t *assoc)
-{
-	return SLURM_SUCCESS;
-}
-
-extern int acct_storage_p_validate_assoc_id(MYSQL *acct_mysql_db, 
-					    uint32_t assoc_id)
-{
-	return SLURM_SUCCESS;
-}
-
 extern int acct_storage_p_modify_users(MYSQL *acct_mysql_db, 
 				       acct_user_cond_t *user_q,
 				       acct_user_rec_t *user)

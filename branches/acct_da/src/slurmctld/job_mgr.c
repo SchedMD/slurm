@@ -78,6 +78,7 @@
 #include "src/slurmctld/sched_plugin.h"
 #include "src/slurmctld/srun_comm.h"
 #include "src/slurmctld/trigger_mgr.h"
+#include "src/slurmctld/assoc_mgr.h"
 
 #define DETAILS_FLAG 0xdddd
 #define MAX_RETRIES  10
@@ -1838,7 +1839,7 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 	assoc_rec.uid       = job_desc->user_id;
 	assoc_rec.partition = part_ptr->name;
 	assoc_rec.acct      = job_desc->account;
-	if (acct_storage_g_get_assoc_id(acct_db_conn, &assoc_rec)) {
+	if (get_assoc_id(acct_db_conn, &assoc_rec)) {
 		info("_job_create: invalid account or partition for user %u",
 		     job_desc->user_id);
 		error_code = ESLURM_INVALID_ACCOUNT;
@@ -3854,8 +3855,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			assoc_rec.uid       = job_ptr->user_id;
 			assoc_rec.partition = job_specs->partition;
 			assoc_rec.acct      = job_ptr->account;
-			if (acct_storage_g_get_assoc_id(acct_db_conn, 
-							&assoc_rec)) {
+			if (get_assoc_id(acct_db_conn, &assoc_rec)) {
 				info("job_update: invalid account %s for job %u",
 				     job_specs->account, job_ptr->job_id);
 				error_code = ESLURM_INVALID_ACCOUNT;
@@ -3953,8 +3953,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 		assoc_rec.uid       = job_ptr->user_id;
 		assoc_rec.partition = job_ptr->partition;
 		assoc_rec.acct      = job_ptr->account;
-		if (acct_storage_g_get_assoc_id(acct_db_conn, 
-						&assoc_rec)) {
+		if (get_assoc_id(acct_db_conn, &assoc_rec)) {
 			info("job_update: invalid account %s for job %u",
 			     job_specs->account, job_ptr->job_id);
 			error_code = ESLURM_INVALID_ACCOUNT;

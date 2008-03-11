@@ -268,18 +268,6 @@ extern int acct_storage_p_add_associations(void *db_conn,
 	return SLURM_SUCCESS;
 }
 
-extern int acct_storage_p_get_assoc_id(void *db_conn,
-				       acct_association_rec_t *assoc)
-{
-	return SLURM_SUCCESS;
-}
-
-extern int acct_storage_p_validate_assoc_id(void *db_conn,
-					    uint32_t assoc_id)
-{
-	return SLURM_SUCCESS;
-}
-
 extern int acct_storage_p_modify_users(void *db_conn,
 				       acct_user_cond_t *user_q,
 				       acct_user_rec_t *user)
