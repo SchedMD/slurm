@@ -134,16 +134,13 @@ typedef struct slurm_acct_storage_ops {
 				    uint32_t procs, time_t event_time);
 	int  (*c_get_hourly_usage) (void *db_conn,
 				    acct_cluster_rec_t *cluster_rec, 
-				    time_t start, time_t end,
-				    void *params);
+				    time_t start, time_t end);
 	int (*c_get_daily_usage)   (void *db_conn,
 				    acct_cluster_rec_t *cluster_rec, 
-				    time_t start, time_t end,
-				    void *params);
+				    time_t start, time_t end);
 	int (*c_get_monthly_usage) (void *db_conn,
 				    acct_cluster_rec_t *cluster_rec,
-				    time_t start, time_t end,
-				    void *params);
+				    time_t start, time_t end);
 	int  (*job_start)          (void *db_conn,
 				    struct job_record *job_ptr);
 	int  (*job_complete)       (void *db_conn,
@@ -1417,32 +1414,32 @@ extern int clusteracct_storage_g_cluster_procs(void *db_conn,
 
 extern int clusteracct_storage_g_get_hourly_usage(
 	void *db_conn, acct_cluster_rec_t *cluster_rec, 
-	time_t start, time_t end, void *params)
+	time_t start, time_t end)
 {
 	if (slurm_acct_storage_init(NULL) < 0)
 		return SLURM_ERROR;
 	return (*(g_acct_storage_context->ops.c_get_hourly_usage))
-		(db_conn, cluster_rec, start, end, params);
+		(db_conn, cluster_rec, start, end);
 }
 
 extern int clusteracct_storage_g_get_daily_usage(
 	void *db_conn, acct_cluster_rec_t *cluster_rec, 
-	time_t start, time_t end, void *params)
+	time_t start, time_t end)
 {
 	if (slurm_acct_storage_init(NULL) < 0)
 		return SLURM_ERROR;
 	return (*(g_acct_storage_context->ops.c_get_daily_usage))
-		(db_conn, cluster_rec, start, end, params);
+		(db_conn, cluster_rec, start, end);
 }
 
 extern int clusteracct_storage_g_get_monthly_usage(
 	void *db_conn, acct_cluster_rec_t *cluster_rec, 
-	time_t start, time_t end, void *params)
+	time_t start, time_t end)
 {
 	if (slurm_acct_storage_init(NULL) < 0)
 		return SLURM_ERROR;
 	return (*(g_acct_storage_context->ops.c_get_monthly_usage))
-		(db_conn, cluster_rec, start, end, params);
+		(db_conn, cluster_rec, start, end);
 }
 
 /* 

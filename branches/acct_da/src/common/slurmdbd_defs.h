@@ -123,8 +123,8 @@ typedef struct slurmdbd_msg {
 
 typedef struct {
 	char *acct;
-	acct_user_cond_t *user_q;
-} dbd_add_account_coord_msg_t;
+	acct_user_cond_t *cond;
+} dbd_acct_coord_msg_t;
 
 typedef struct dbd_cluster_procs_msg {
 	char *cluster_name;	/* name of cluster */
@@ -139,31 +139,10 @@ typedef struct {
 } dbd_cond_msg_t;
 
 typedef struct {
-} dbd_get_accounts_msg_t;
-
-typedef struct {
-} dbd_get_assocs_msg_t;
-
-typedef struct {
-} dbd_get_assoc_day_msg_t;
-
-typedef struct {
-} dbd_get_assoc_hour_msg_t;
-
-typedef struct {
-} dbd_get_assoc_month_msg_t;
-
-typedef struct {
-} dbd_get_clusters_msg_t;
-
-typedef struct {
-} dbd_get_cluster_day_msg_t;
-
-typedef struct {
-} dbd_get_cluster_hour_msg_t;
-
-typedef struct {
-} dbd_get_cluster_month_msg_t;
+	void *rec;
+	time_t start;
+	time_t end;
+} dbd_get_usage_msg_t;
 
 typedef struct dbd_get_jobs_msg {
 	char *cluster_name; /* name of cluster to query */
@@ -251,11 +230,6 @@ typedef struct dbd_rc_msg {
 	uint32_t return_code;
 } dbd_rc_msg_t;
 
-typedef struct {
-	char *acct;
-	acct_user_cond_t *user_q;
-} dbd_remove_account_coord_msg_t;
-
 typedef struct dbd_step_comp_msg {
 	uint32_t assoc_id;	/* accounting association id */
 	uint32_t db_index;	/* index into the db for this job */
@@ -313,6 +287,7 @@ extern int slurm_send_slurmdbd_recv_rc_msg(slurmdbd_msg_t *req, int *rc);
 /*****************************************************************************\
  * Free various SlurmDBD message structures
 \*****************************************************************************/
+void inline slurm_dbd_free_acct_coord_msg(dbd_acct_coord_msg_t *msg);
 void inline slurm_dbd_free_cluster_procs_msg(dbd_cluster_procs_msg_t *msg);
 void inline slurm_dbd_free_cond_msg(slurmdbd_msg_type_t type,
 				    dbd_cond_msg_t *msg);
@@ -329,10 +304,14 @@ void inline slurm_dbd_free_node_state_msg(dbd_node_state_msg_t *msg);
 void inline slurm_dbd_free_rc_msg(dbd_rc_msg_t *msg);
 void inline slurm_dbd_free_step_complete_msg(dbd_step_comp_msg_t *msg);
 void inline slurm_dbd_free_step_start_msg(dbd_step_start_msg_t *msg);
+void inline slurm_dbd_free_get_usage_msg(slurmdbd_msg_type_t type,
+					 dbd_get_usage_msg_t *msg);
 
 /*****************************************************************************\
  * Pack various SlurmDBD message structures into a buffer
 \*****************************************************************************/
+void inline slurm_dbd_pack_acct_coord_msg(dbd_acct_coord_msg_t *msg,
+					  Buf buffer);
 void inline slurm_dbd_pack_cluster_procs_msg(dbd_cluster_procs_msg_t *msg,
 					     Buf buffer);
 void inline slurm_dbd_pack_cond_msg(slurmdbd_msg_type_t type,
@@ -359,10 +338,14 @@ void inline slurm_dbd_pack_step_complete_msg(dbd_step_comp_msg_t *msg,
 					     Buf buffer);
 void inline slurm_dbd_pack_step_start_msg(dbd_step_start_msg_t *msg,
 					  Buf buffer);
+void inline slurm_dbd_pack_get_usage_msg(slurmdbd_msg_type_t type,
+					 dbd_get_usage_msg_t *msg, Buf buffer);
 
 /*****************************************************************************\
  * Unpack various SlurmDBD message structures from a buffer
 \*****************************************************************************/
+int inline slurm_dbd_unpack_acct_coord_msg(dbd_acct_coord_msg_t **msg,
+					   Buf buffer);
 int inline slurm_dbd_unpack_cluster_procs_msg(dbd_cluster_procs_msg_t **msg,
 					      Buf buffer);
 int inline slurm_dbd_unpack_cond_msg(slurmdbd_msg_type_t type,
@@ -389,5 +372,8 @@ int inline slurm_dbd_unpack_step_complete_msg(dbd_step_comp_msg_t **msg,
 					      Buf buffer);
 int inline slurm_dbd_unpack_step_start_msg(dbd_step_start_msg_t **msg,
 					   Buf buffer);
+int inline slurm_dbd_unpack_get_usage_msg(slurmdbd_msg_type_t type,
+					  dbd_get_usage_msg_t **msg,
+					  Buf buffer);
 
 #endif	/* !_SLURMDBD_DEFS_H */

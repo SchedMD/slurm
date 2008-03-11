@@ -456,10 +456,10 @@ extern int clusteracct_storage_g_cluster_procs(void *db_conn,
  * IN:  params void *
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
-extern int clusteracct_storage_g_get_hourly_usage(void *db_conn, 
-				       
-						  acct_cluster_rec_t *cluster_rec, time_t start, 
-						  time_t end, void *params);
+extern int clusteracct_storage_g_get_hourly_usage(
+	void *db_conn, 
+	acct_cluster_rec_t *cluster_rec, time_t start, 
+	time_t end);
 
 /* 
  * get info from the storage 
@@ -469,10 +469,10 @@ extern int clusteracct_storage_g_get_hourly_usage(void *db_conn,
  * IN:  params void *
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
-extern int clusteracct_storage_g_get_daily_usage(void *db_conn, 
-				       
-						 acct_cluster_rec_t *cluster_rec, time_t start, 
-						 time_t end, void *params);
+extern int clusteracct_storage_g_get_daily_usage(
+	void *db_conn, 
+	acct_cluster_rec_t *cluster_rec, time_t start, 
+	time_t end);
 
 /* 
  * get info from the storage 
@@ -482,10 +482,10 @@ extern int clusteracct_storage_g_get_daily_usage(void *db_conn,
  * IN:  params void *
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
-extern int clusteracct_storage_g_get_monthly_usage(void *db_conn, 
-				       
-						   acct_cluster_rec_t *cluster_rec, 
-						   time_t start, time_t end, void *params);
+extern int clusteracct_storage_g_get_monthly_usage(
+	void *db_conn, 
+	acct_cluster_rec_t *cluster_rec, 
+	time_t start, time_t end);
 
 /* 
  * load into the storage the start of a job
@@ -531,6 +531,7 @@ extern List jobacct_storage_g_get_jobs(void *db_conn,
  * expire old info from the storage 
  */
 extern void jobacct_storage_g_archive(void *db_conn, 
-				      List selected_parts, void *params);
+				      List selected_parts,
+				      void *params);
 
 #endif /*_SLURM_ACCOUNTING_STORAGE_H*/

@@ -95,6 +95,7 @@ static int    _get_return_code(void);
 static Buf    _load_dbd_rec(int fd);
 static void   _load_dbd_state(void);
 static void   _open_slurmdbd_fd(void);
+static Buf    _pack_slurmdbd_msg(slurmdbd_msg_t *req);
 static int    _purge_job_start_req(void);
 static Buf    _recv_msg(void);
 static void   _reopen_slurmdbd_fd(void);
@@ -105,6 +106,7 @@ static int    _send_msg(Buf buffer);
 static void   _sig_handler(int signal);
 static void   _shutdown_agent(void);
 static int    _tot_wait (struct timeval *start_time);
+static int    _unpack_slurmdbd_msg(slurmdbd_msg_t *resp, Buf buffer);
 
 /****************************************************************************
  * Socket open/close/read/write functions
@@ -195,53 +197,7 @@ extern int slurm_send_recv_slurmdbd_msg(slurmdbd_msg_t *req,
 		}
 	}
 
-	buffer = init_buf(MAX_DBD_MSG_LEN);
-	pack16(req->msg_type, buffer);
-	switch (req->msg_type) {
-		case DBD_CLUSTER_PROCS:
-			slurm_dbd_pack_cluster_procs_msg(
-				(dbd_cluster_procs_msg_t *) req->data, buffer);
-			break;
-		case DBD_GET_JOBS:
-			slurm_dbd_pack_get_jobs_msg(
-				(dbd_get_jobs_msg_t *) req->data, buffer);
-			break;
-		case DBD_INIT:
-			slurm_dbd_pack_init_msg(
-				(dbd_init_msg_t *) req->data, buffer, 
-				slurmdbd_auth_info);
-			break;
-		case DBD_JOB_COMPLETE:
-			slurm_dbd_pack_job_complete_msg(
-				(dbd_job_comp_msg_t *) req->data, buffer);
-			break;
-		case DBD_JOB_START:
-			slurm_dbd_pack_job_start_msg(
-				(dbd_job_start_msg_t *) req->data, buffer);
-			break;
-		case DBD_JOB_SUSPEND:
-			slurm_dbd_pack_job_suspend_msg(
-				(dbd_job_suspend_msg_t *) req->data, buffer);
-			break;
-		case DBD_NODE_STATE:
-			slurm_dbd_pack_node_state_msg(
-				(dbd_node_state_msg_t *) req->data, buffer);
-			break;
-		case DBD_STEP_COMPLETE:
-			slurm_dbd_pack_step_complete_msg(
-				(dbd_step_comp_msg_t *) req->data, buffer);
-			break;
-		case DBD_STEP_START:
-			slurm_dbd_pack_step_start_msg(
-				(dbd_step_start_msg_t *) req->data, buffer);
-			break;
-		default:
-			error("slurmdbd: Invalid message type %u",
-			      req->msg_type);
-			free_buf(buffer);
-			slurm_mutex_unlock(&slurmdbd_lock);
-			return SLURM_ERROR;
-	}
+	buffer = _pack_slurmdbd_msg(req);
 
 	rc = _send_msg(buffer);
 	free_buf(buffer);
@@ -259,47 +215,11 @@ extern int slurm_send_recv_slurmdbd_msg(slurmdbd_msg_t *req,
 		return SLURM_ERROR;
 	}
 
-
-	safe_unpack16(&resp->msg_type, buffer);
-	switch (resp->msg_type) {
-		case DBD_RC:
-			if (slurm_dbd_unpack_rc_msg(
-						(dbd_rc_msg_t **)
-						&resp->data, buffer))
-				rc = SLURM_ERROR;
-			else
-				rc = SLURM_SUCCESS;
-			break;
-		case DBD_GOT_JOBS:
-			if (slurm_dbd_unpack_list_msg(
-				    resp->msg_type,
-				    (dbd_list_msg_t **)&resp->data,
-				    buffer))
-				rc = SLURM_ERROR;
-			else
-				rc = SLURM_SUCCESS;
-			break;
-		case DBD_JOB_START_RC:
-			if (slurm_dbd_unpack_job_start_rc_msg(
-						(dbd_job_start_rc_msg_t **)
-						&resp->data, buffer))
-				rc = SLURM_ERROR;
-			else
-				rc = SLURM_SUCCESS;
-			break;
-		default:
-			error("slurmdbd: bad message type %d", resp->msg_type);
-			rc = SLURM_ERROR;
-	}
+	rc = _unpack_slurmdbd_msg(resp, buffer);
 
 	free_buf(buffer);
 	slurm_mutex_unlock(&slurmdbd_lock);
 	return rc;
-
- unpack_error:
-	free_buf(buffer);
-	slurm_mutex_unlock(&slurmdbd_lock);
-	return SLURM_ERROR;
 }
 
 /* Send an RPC to the SlurmDBD. Do not wait for the reply. The RPC
@@ -311,43 +231,8 @@ extern int slurm_send_slurmdbd_msg(slurmdbd_msg_t *req)
 	int cnt, rc = SLURM_SUCCESS;
 	static time_t syslog_time = 0;
 
-	buffer = init_buf(MAX_DBD_MSG_LEN);
-	pack16(req->msg_type, buffer);
-	switch (req->msg_type) {
-		case DBD_CLUSTER_PROCS:
-			slurm_dbd_pack_cluster_procs_msg(
-				(dbd_cluster_procs_msg_t *) req->data, buffer);
-			break;
-		case DBD_JOB_COMPLETE:
-			slurm_dbd_pack_job_complete_msg(
-				(dbd_job_comp_msg_t *) req->data, buffer);
-			break;
-		case DBD_JOB_START:
-			slurm_dbd_pack_job_start_msg(
-				(dbd_job_start_msg_t *) req->data, buffer);
-			break;
-		case DBD_JOB_SUSPEND:
-			slurm_dbd_pack_job_suspend_msg(
-				(dbd_job_suspend_msg_t *) req->data, buffer);
-			break;
-		case DBD_NODE_STATE:
-			slurm_dbd_pack_node_state_msg(
-				(dbd_node_state_msg_t *) req->data, buffer);
-			break;
-		case DBD_STEP_COMPLETE:
-			slurm_dbd_pack_step_complete_msg(
-				(dbd_step_comp_msg_t *) req->data, buffer);
-			break;
-		case DBD_STEP_START:
-			slurm_dbd_pack_step_start_msg(
-				(dbd_step_start_msg_t *) req->data, buffer);
-			break;
-		default:
-			error("slurmdbd: Invalid send message type %u",
-			      req->msg_type);
-			free_buf(buffer);
-			return SLURM_ERROR;
-	}
+	
+	buffer = _pack_slurmdbd_msg(req);
 
 	slurm_mutex_lock(&agent_lock);
 	if ((agent_tid == 0) || (agent_list == NULL)) {
@@ -418,6 +303,228 @@ static void _open_slurmdbd_fd(void)
 		}
 	}
 	xfree(slurmdbd_host);
+}
+
+static Buf _pack_slurmdbd_msg(slurmdbd_msg_t *req)
+{
+	Buf buffer = init_buf(MAX_DBD_MSG_LEN);
+	pack16(req->msg_type, buffer);
+
+	switch (req->msg_type) {
+	case DBD_ADD_ACCOUNTS:
+	case DBD_ADD_ASSOCS:
+	case DBD_ADD_CLUSTERS:
+	case DBD_ADD_USERS:
+	case DBD_GOT_ACCOUNTS:
+	case DBD_GOT_ASSOCS:
+	case DBD_GOT_ASSOC_DAY:
+	case DBD_GOT_ASSOC_HOUR:
+	case DBD_GOT_ASSOC_MONTH:
+	case DBD_GOT_CLUSTERS:
+	case DBD_GOT_CLUSTER_DAY:
+	case DBD_GOT_CLUSTER_HOUR:
+	case DBD_GOT_CLUSTER_MONTH:
+	case DBD_GOT_JOBS:
+	case DBD_GOT_USERS:
+		slurm_dbd_pack_list_msg(
+			req->msg_type, (dbd_list_msg_t *)req->data, buffer);
+		break;
+	case DBD_ADD_ACCOUNT_COORDS:
+	case DBD_REMOVE_ACCOUNT_COORDS:
+		slurm_dbd_pack_acct_coord_msg((dbd_acct_coord_msg_t *)req->data,
+					      buffer);
+		break;
+	case DBD_CLUSTER_PROCS:
+		slurm_dbd_pack_cluster_procs_msg(
+			(dbd_cluster_procs_msg_t *)req->data, buffer);
+		break;
+	case DBD_GET_ACCOUNTS:
+	case DBD_GET_ASSOCS:
+	case DBD_GET_CLUSTERS:
+	case DBD_GET_USERS:
+	case DBD_REMOVE_ACCOUNTS:
+	case DBD_REMOVE_ASSOCS:
+	case DBD_REMOVE_CLUSTERS:
+	case DBD_REMOVE_USERS:
+		slurm_dbd_pack_cond_msg(
+			req->msg_type, (dbd_cond_msg_t *)req->data, buffer);
+		break;
+	case DBD_GET_ASSOC_DAY:
+	case DBD_GET_ASSOC_HOUR:
+	case DBD_GET_ASSOC_MONTH:
+	case DBD_GET_CLUSTER_HOUR:
+	case DBD_GET_CLUSTER_DAY:
+	case DBD_GET_CLUSTER_MONTH:
+		slurm_dbd_pack_get_usage_msg(
+			req->msg_type, (dbd_get_usage_msg_t *)req->data,
+			buffer);
+		break;
+	case DBD_GET_JOBS:
+		slurm_dbd_pack_get_jobs_msg(
+			(dbd_get_jobs_msg_t *)req->data, buffer);
+		break;
+	case DBD_INIT:
+		slurm_dbd_pack_init_msg((dbd_init_msg_t *)req->data, buffer, 
+					slurmdbd_auth_info);
+		break;
+	case DBD_JOB_COMPLETE:
+		slurm_dbd_pack_job_complete_msg((dbd_job_comp_msg_t *)req->data,
+						buffer);
+		break;
+	case DBD_JOB_START:
+		slurm_dbd_pack_job_start_msg((dbd_job_start_msg_t *)req->data, 
+					     buffer);
+		break;
+	case DBD_JOB_START_RC:
+		slurm_dbd_pack_job_start_rc_msg(
+			(dbd_job_start_rc_msg_t *)req->data, buffer);
+		break;		
+	case DBD_JOB_SUSPEND:
+		slurm_dbd_pack_job_suspend_msg(
+			(dbd_job_suspend_msg_t *)req->data, buffer);
+		break;
+	case DBD_MODIFY_ACCOUNTS:
+	case DBD_MODIFY_ASSOCS:
+	case DBD_MODIFY_CLUSTERS:
+	case DBD_MODIFY_USERS:
+	case DBD_MODIFY_USER_ADMIN_LEVEL:
+		slurm_dbd_pack_modify_msg(
+			req->msg_type, (dbd_modify_msg_t *)req->data, buffer);
+		break;
+	case DBD_NODE_STATE:
+		slurm_dbd_pack_node_state_msg(
+			(dbd_node_state_msg_t *)req->data, buffer);
+		break;
+	case DBD_RC:
+		slurm_dbd_pack_rc_msg((dbd_rc_msg_t *)req->data, buffer);
+	case DBD_STEP_COMPLETE:
+		slurm_dbd_pack_step_complete_msg(
+			(dbd_step_comp_msg_t *)req->data, buffer);
+		break;
+	case DBD_STEP_START:
+		slurm_dbd_pack_step_start_msg((dbd_step_start_msg_t *)req->data,
+					      buffer);
+		break;
+	default:
+		error("slurmdbd: Invalid message type %u", req->msg_type);
+		free_buf(buffer);
+		return NULL;
+	}
+	return buffer;
+}
+
+static int _unpack_slurmdbd_msg(slurmdbd_msg_t *resp, Buf buffer)
+{
+	int rc = SLURM_SUCCESS;
+       
+	safe_unpack16(&resp->msg_type, buffer);
+	
+	switch (resp->msg_type) {
+	case DBD_ADD_ACCOUNTS:
+	case DBD_ADD_ASSOCS:
+	case DBD_ADD_CLUSTERS:
+	case DBD_ADD_USERS:
+	case DBD_GOT_ACCOUNTS:
+	case DBD_GOT_ASSOCS:
+	case DBD_GOT_ASSOC_DAY:
+	case DBD_GOT_ASSOC_HOUR:
+	case DBD_GOT_ASSOC_MONTH:
+	case DBD_GOT_CLUSTERS:
+	case DBD_GOT_CLUSTER_DAY:
+	case DBD_GOT_CLUSTER_HOUR:
+	case DBD_GOT_CLUSTER_MONTH:
+	case DBD_GOT_JOBS:
+	case DBD_GOT_USERS:
+		rc = slurm_dbd_unpack_list_msg(
+			resp->msg_type, (dbd_list_msg_t **)&resp->data, buffer);
+		break;
+	case DBD_ADD_ACCOUNT_COORDS:
+	case DBD_REMOVE_ACCOUNT_COORDS:
+		rc = slurm_dbd_unpack_acct_coord_msg(
+			(dbd_acct_coord_msg_t **)&resp->data, buffer);
+		break;
+	case DBD_CLUSTER_PROCS:
+		rc = slurm_dbd_unpack_cluster_procs_msg(
+			(dbd_cluster_procs_msg_t **)&resp->data, buffer);
+		break;
+	case DBD_GET_ACCOUNTS:
+	case DBD_GET_ASSOCS:
+	case DBD_GET_CLUSTERS:
+	case DBD_GET_USERS:
+	case DBD_REMOVE_ACCOUNTS:
+	case DBD_REMOVE_ASSOCS:
+	case DBD_REMOVE_CLUSTERS:
+	case DBD_REMOVE_USERS:
+		rc = slurm_dbd_unpack_cond_msg(
+			resp->msg_type, (dbd_cond_msg_t **)&resp->data, buffer);
+		break;
+	case DBD_GET_ASSOC_DAY:
+	case DBD_GET_ASSOC_HOUR:
+	case DBD_GET_ASSOC_MONTH:
+	case DBD_GET_CLUSTER_HOUR:
+	case DBD_GET_CLUSTER_DAY:
+	case DBD_GET_CLUSTER_MONTH:
+		rc = slurm_dbd_unpack_get_usage_msg(
+			resp->msg_type, (dbd_get_usage_msg_t **)&resp->data, 
+			buffer);
+		break;
+	case DBD_GET_JOBS:
+		rc = slurm_dbd_unpack_get_jobs_msg(
+			(dbd_get_jobs_msg_t **)&resp->data, buffer);
+		break;
+	case DBD_INIT:
+		rc = slurm_dbd_unpack_init_msg((dbd_init_msg_t **)&resp->data,
+					       buffer, 
+					       slurmdbd_auth_info);
+		break;
+	case DBD_JOB_COMPLETE:
+		rc = slurm_dbd_unpack_job_complete_msg(
+			(dbd_job_comp_msg_t **)&resp->data, buffer);
+		break;
+	case DBD_JOB_START:
+		rc = slurm_dbd_unpack_job_start_msg(
+			(dbd_job_start_msg_t **)&resp->data, buffer);
+		break;
+	case DBD_JOB_START_RC:
+		rc = slurm_dbd_unpack_job_start_rc_msg(
+			(dbd_job_start_rc_msg_t **)&resp->data, buffer);
+		break;		
+	case DBD_JOB_SUSPEND:
+		rc = slurm_dbd_unpack_job_suspend_msg(
+			(dbd_job_suspend_msg_t **)&resp->data, buffer);
+		break;
+	case DBD_MODIFY_ACCOUNTS:
+	case DBD_MODIFY_ASSOCS:
+	case DBD_MODIFY_CLUSTERS:
+	case DBD_MODIFY_USERS:
+	case DBD_MODIFY_USER_ADMIN_LEVEL:
+		rc = slurm_dbd_unpack_modify_msg(
+			resp->msg_type, (dbd_modify_msg_t **)&resp->data,
+			buffer);
+		break;
+	case DBD_NODE_STATE:
+		rc = slurm_dbd_unpack_node_state_msg(
+			(dbd_node_state_msg_t **)&resp->data, buffer);
+		break;
+	case DBD_RC:
+		rc = slurm_dbd_unpack_rc_msg((dbd_rc_msg_t **)&resp->data,
+					     buffer);
+	case DBD_STEP_COMPLETE:
+		rc = slurm_dbd_unpack_step_complete_msg(
+			(dbd_step_comp_msg_t **)&resp->data, buffer);
+		break;
+	case DBD_STEP_START:
+		rc = slurm_dbd_unpack_step_start_msg(
+			(dbd_step_start_msg_t **)&resp->data, buffer);
+		break;
+	default:
+		error("slurmdbd: Invalid message type %u", resp->msg_type);
+		return SLURM_ERROR;
+	}
+	return rc;
+
+unpack_error:
+	return SLURM_ERROR;
 }
 
 static int _send_init_msg(void)
@@ -1022,10 +1129,51 @@ static int _purge_job_start_req(void)
 /****************************************************************************\
  * Free data structures
 \****************************************************************************/
+void inline slurm_dbd_free_acct_coord_msg(dbd_acct_coord_msg_t *msg)
+{
+	if(msg) {
+		xfree(msg->acct);
+		destroy_acct_user_cond(msg->cond);
+		xfree(msg);
+	}
+}
 void inline slurm_dbd_free_cluster_procs_msg(dbd_cluster_procs_msg_t *msg)
 {
 	if (msg) {
 		xfree(msg->cluster_name);
+		xfree(msg);
+	}
+}
+
+void inline slurm_dbd_free_cond_msg(slurmdbd_msg_type_t type,
+				    dbd_cond_msg_t *msg)
+{
+	void (*my_destroy) (void *object);
+
+	if (msg) {
+		switch(type) {
+		case DBD_GET_ACCOUNTS:
+		case DBD_REMOVE_ACCOUNTS:
+			my_destroy = destroy_acct_account_cond;
+			break;
+		case DBD_GET_ASSOCS:
+		case DBD_REMOVE_ASSOCS:
+			my_destroy = destroy_acct_association_cond;
+			break;
+		case DBD_GET_CLUSTERS:
+		case DBD_REMOVE_CLUSTERS:
+			my_destroy = destroy_acct_cluster_cond;
+			break;
+		case DBD_GET_USERS:
+		case DBD_REMOVE_USERS:
+			my_destroy = destroy_acct_user_cond;
+			break;
+		default:
+			fatal("Unknown cond type");
+			return;
+		}
+		if(msg->cond)
+			(*(my_destroy))(msg->cond);
 		xfree(msg);
 	}
 }
@@ -1039,15 +1187,6 @@ void inline slurm_dbd_free_get_jobs_msg(dbd_get_jobs_msg_t *msg)
 		if(msg->selected_parts)
 			list_destroy(msg->selected_parts);
 		xfree(msg->user);
-		xfree(msg);
-	}
-}
-
-void inline slurm_dbd_free_list_msg(dbd_list_msg_t *msg)
-{
-	if (msg) {
-		if(msg->ret_list)
-			list_destroy(msg->ret_list);
 		xfree(msg);
 	}
 }
@@ -1085,9 +1224,55 @@ void inline slurm_dbd_free_job_suspend_msg(dbd_job_suspend_msg_t *msg)
 	xfree(msg);
 }
 
-void inline slurm_dbd_free_rc_msg(dbd_rc_msg_t *msg)
+void inline slurm_dbd_free_list_msg(dbd_list_msg_t *msg)
 {
-	xfree(msg);
+	if (msg) {
+		if(msg->ret_list)
+			list_destroy(msg->ret_list);
+		xfree(msg);
+	}
+}
+
+void inline slurm_dbd_free_modify_msg(slurmdbd_msg_type_t type,
+				      dbd_modify_msg_t *msg)
+{
+	void (*destroy_cond) (void *object);
+	void (*destroy_rec) (void *object);
+	
+	if (msg) {
+		switch(type) {
+		case DBD_MODIFY_ACCOUNTS:
+			destroy_cond = destroy_acct_account_cond;
+			destroy_rec = destroy_acct_account_rec;
+			break;
+		case DBD_MODIFY_ASSOCS:
+			destroy_cond = destroy_acct_association_cond;
+			destroy_rec = destroy_acct_association_rec;
+			break;
+		case DBD_MODIFY_CLUSTERS:
+			destroy_cond = destroy_acct_cluster_cond;
+			destroy_rec = destroy_acct_cluster_rec;
+			break;
+		case DBD_MODIFY_USERS:
+			destroy_cond = destroy_acct_user_cond;
+			destroy_rec = destroy_acct_user_rec;
+			break;
+		case DBD_MODIFY_USER_ADMIN_LEVEL:
+			if(msg->cond)
+				destroy_acct_user_cond(msg->cond);
+			return;
+			break;
+		default:
+			fatal("Unknown modify type");
+			return;
+		}
+		
+		if(msg->cond)
+			(*(destroy_cond))(msg->cond);
+		if(msg->rec)
+			(*(destroy_rec))(msg->rec);
+		xfree(msg);
+	}
 }
 
 void inline slurm_dbd_free_node_state_msg(dbd_node_state_msg_t *msg)
@@ -1098,6 +1283,11 @@ void inline slurm_dbd_free_node_state_msg(dbd_node_state_msg_t *msg)
 		xfree(msg->reason);
 		xfree(msg);
 	}
+}
+
+void inline slurm_dbd_free_rc_msg(dbd_rc_msg_t *msg)
+{
+	xfree(msg);
 }
 
 void inline slurm_dbd_free_step_complete_msg(dbd_step_comp_msg_t *msg)
@@ -1117,9 +1307,61 @@ void inline slurm_dbd_free_step_start_msg(dbd_step_start_msg_t *msg)
 	}
 }
 
+void inline slurm_dbd_free_get_usage_msg(slurmdbd_msg_type_t type,
+					 dbd_get_usage_msg_t *msg)
+{
+	void (*destroy_rec) (void *object);
+	if (msg) {
+		switch(type) {
+		case DBD_GET_ASSOC_DAY:
+		case DBD_GET_ASSOC_HOUR:
+		case DBD_GET_ASSOC_MONTH:
+			destroy_rec = destroy_acct_association_rec;
+			break;
+		case DBD_GET_CLUSTER_DAY:
+		case DBD_GET_CLUSTER_HOUR:
+		case DBD_GET_CLUSTER_MONTH:
+			destroy_rec = destroy_acct_cluster_rec;
+			break;
+		default:
+			fatal("Unknown usuage type");
+			return;
+		}
+
+		if(msg->rec)
+			(*(destroy_rec))(msg->rec);
+		xfree(msg);
+	}
+}
+
 /****************************************************************************\
  * Pack and unpack data structures
 \****************************************************************************/
+void inline
+slurm_dbd_pack_acct_coord_msg(dbd_acct_coord_msg_t *msg, Buf buffer)
+{
+	packstr(msg->acct, buffer);
+	pack_acct_user_cond(msg->cond, buffer);
+}
+
+int inline
+slurm_dbd_unpack_acct_coord_msg(dbd_acct_coord_msg_t **msg, Buf buffer)
+{
+	uint32_t uint32_tmp;
+	dbd_acct_coord_msg_t *msg_ptr = xmalloc(sizeof(dbd_acct_coord_msg_t));
+	*msg = msg_ptr;
+
+	safe_unpackstr_xmalloc(&msg_ptr->acct, &uint32_tmp, buffer);
+	if(unpack_acct_user_cond((void *)&msg_ptr->cond, buffer) == SLURM_ERROR)
+		goto unpack_error;
+unpack_error:
+	xfree(msg_ptr->acct);
+	destroy_acct_user_cond(msg_ptr->cond);
+	xfree(msg_ptr);
+	*msg = NULL;
+	return SLURM_ERROR;
+}
+
 void inline
 slurm_dbd_pack_cluster_procs_msg(dbd_cluster_procs_msg_t *msg, Buf buffer)
 {
@@ -1127,6 +1369,7 @@ slurm_dbd_pack_cluster_procs_msg(dbd_cluster_procs_msg_t *msg, Buf buffer)
 	pack32(msg->proc_count,    buffer);
 	pack_time(msg->event_time, buffer);
 }
+
 int inline
 slurm_dbd_unpack_cluster_procs_msg(dbd_cluster_procs_msg_t **msg, Buf buffer)
 {
@@ -1143,84 +1386,6 @@ slurm_dbd_unpack_cluster_procs_msg(dbd_cluster_procs_msg_t **msg, Buf buffer)
 unpack_error:
 	xfree(msg_ptr->cluster_name);
 	xfree(msg_ptr);
-	*msg = NULL;
-	return SLURM_ERROR;
-}
-
-void inline slurm_dbd_pack_get_jobs_msg(dbd_get_jobs_msg_t *msg, Buf buffer)
-{
-	uint32_t i = 0;
-	ListIterator itr = NULL;
-	jobacct_selected_step_t *job = NULL;
-	char *part = NULL;
-
-	packstr(msg->cluster_name, buffer);
-
-	pack32(msg->gid, buffer);
-
-	if(msg->selected_steps) 
-		i = list_count(msg->selected_steps);
-			
-	pack32(i, buffer);
-	if(i) {
-		itr = list_iterator_create(msg->selected_steps);
-		while((job = list_next(itr))) {
-			pack_jobacct_selected_step(job, buffer);
-		}
-		list_iterator_destroy(itr);
-	}
-
-	i = 0;
-	if(msg->selected_parts) 
-		i = list_count(msg->selected_parts);
-			
-	pack32(i, buffer);
-	if(i) {
-		itr = list_iterator_create(msg->selected_parts);
-		while((part = list_next(itr))) {
-			packstr(part, buffer);
-		}
-		list_iterator_destroy(itr);
-	}
-	packstr(msg->user, buffer);
-}
-
-int inline slurm_dbd_unpack_get_jobs_msg(dbd_get_jobs_msg_t **msg, Buf buffer)
-{
-	int i;
-	uint32_t count = 0;
-	uint32_t uint32_tmp;
-	dbd_get_jobs_msg_t *msg_ptr;
-	jobacct_selected_step_t *job = NULL;
-	char *part = NULL;
-
-	msg_ptr = xmalloc(sizeof(dbd_get_jobs_msg_t));
-	*msg = msg_ptr;
-
-	safe_unpackstr_xmalloc(&msg_ptr->cluster_name, &uint32_tmp, buffer);
-
-	safe_unpack32(&msg_ptr->gid, buffer);
-
-	safe_unpack32(&count, buffer);
-	msg_ptr->selected_steps = list_create(destroy_jobacct_selected_step);
-	for(i=0; i<count; i++) {
-		unpack_jobacct_selected_step(&job, buffer);
-		list_append(msg_ptr->selected_steps, job);
-	}
-
-	safe_unpack32(&count, buffer);
-	msg_ptr->selected_parts = list_create(slurm_destroy_char);
-	for(i=0; i<count; i++) {
-		safe_unpackstr_xmalloc(&part, &uint32_tmp, buffer);
-		list_append(msg_ptr->selected_parts, part);
-	}
-
-	safe_unpackstr_xmalloc(&msg_ptr->user, &uint32_tmp, buffer);
-
-	return SLURM_SUCCESS;
-
-unpack_error:
-	slurm_dbd_free_get_jobs_msg(msg_ptr);
 	*msg = NULL;
 	return SLURM_ERROR;
 }
@@ -1302,128 +1467,80 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-void inline slurm_dbd_pack_list_msg(slurmdbd_msg_type_t type,
-				    dbd_list_msg_t *msg, Buf buffer)
+void inline slurm_dbd_pack_get_jobs_msg(dbd_get_jobs_msg_t *msg, Buf buffer)
 {
-	uint32_t count = 0;
+	uint32_t i = 0;
 	ListIterator itr = NULL;
-	void *object = NULL;
-	void (*my_function) (void *object, Buf buffer);
+	jobacct_selected_step_t *job = NULL;
+	char *part = NULL;
 
-	switch(type) {
-	case DBD_ADD_ACCOUNTS:
-	case DBD_GOT_ACCOUNTS:
-		my_function = pack_acct_account_rec;
-		break;
-	case DBD_ADD_ASSOCS:
-	case DBD_GOT_ASSOCS:
-		my_function = pack_acct_association_rec;
-		break;
-	case DBD_GOT_ASSOC_HOUR:
-	case DBD_GOT_ASSOC_DAY:
-	case DBD_GOT_ASSOC_MONTH:
-		my_function = pack_acct_accounting_rec;
-		break;
-	case DBD_ADD_CLUSTERS:
-	case DBD_GOT_CLUSTERS:
-		my_function = pack_acct_cluster_rec;
-		break;
-	case DBD_GOT_CLUSTER_HOUR:
-	case DBD_GOT_CLUSTER_DAY:
-	case DBD_GOT_CLUSTER_MONTH:
-		my_function = pack_cluster_accounting_rec;
-		break;
-	case DBD_GOT_JOBS:
-		my_function = pack_jobacct_job_rec;
-		break;
-	case DBD_ADD_USERS:
-	case DBD_GOT_USERS:
-		my_function = pack_acct_user_rec;
-		break;
-	default:
-		fatal("Unknown pack type");
-		return;
-	}
-	if(msg->ret_list) 
-		count = list_count(msg->ret_list);
+	packstr(msg->cluster_name, buffer);
+
+	pack32(msg->gid, buffer);
+
+	if(msg->selected_steps) 
+		i = list_count(msg->selected_steps);
 			
-	pack32(count, buffer);
-	if(count) {
-		itr = list_iterator_create(msg->ret_list);
-		while((object = list_next(itr))) {
-			(*(my_function))(object, buffer);
+	pack32(i, buffer);
+	if(i) {
+		itr = list_iterator_create(msg->selected_steps);
+		while((job = list_next(itr))) {
+			pack_jobacct_selected_step(job, buffer);
 		}
 		list_iterator_destroy(itr);
 	}
+
+	i = 0;
+	if(msg->selected_parts) 
+		i = list_count(msg->selected_parts);
+			
+	pack32(i, buffer);
+	if(i) {
+		itr = list_iterator_create(msg->selected_parts);
+		while((part = list_next(itr))) {
+			packstr(part, buffer);
+		}
+		list_iterator_destroy(itr);
+	}
+	packstr(msg->user, buffer);
 }
 
-int inline slurm_dbd_unpack_list_msg(slurmdbd_msg_type_t type,
-				     dbd_list_msg_t **msg, Buf buffer)
+int inline slurm_dbd_unpack_get_jobs_msg(dbd_get_jobs_msg_t **msg, Buf buffer)
 {
 	int i;
-	uint32_t count;
-	dbd_list_msg_t *msg_ptr = NULL;
-	void *object = NULL;
-	int (*my_function) (void **object, Buf buffer);
-	void (*my_destroy) (void *object);
+	uint32_t count = 0;
+	uint32_t uint32_tmp;
+	dbd_get_jobs_msg_t *msg_ptr;
+	jobacct_selected_step_t *job = NULL;
+	char *part = NULL;
 
-	switch(type) {
-	case DBD_ADD_ACCOUNTS:
-	case DBD_GOT_ACCOUNTS:
-		my_function = unpack_acct_account_rec;
-		my_destroy = destroy_acct_account_rec;
-		break;
-	case DBD_ADD_ASSOCS:
-	case DBD_GOT_ASSOCS:
-		my_function = unpack_acct_association_rec;
-		my_destroy = destroy_acct_association_rec;
-		break;
-	case DBD_GOT_ASSOC_HOUR:
-	case DBD_GOT_ASSOC_DAY:
-	case DBD_GOT_ASSOC_MONTH:
-		my_function = unpack_acct_accounting_rec;
-		my_destroy = destroy_acct_accounting_rec;
-		break;
-	case DBD_ADD_CLUSTERS:
-	case DBD_GOT_CLUSTERS:
-		my_function = unpack_acct_cluster_rec;
-		my_destroy = destroy_acct_cluster_rec;
-		break;
-	case DBD_GOT_CLUSTER_HOUR:
-	case DBD_GOT_CLUSTER_DAY:
-	case DBD_GOT_CLUSTER_MONTH:
-		my_function = unpack_cluster_accounting_rec;
-		my_destroy = destroy_cluster_accounting_rec;
-		break;
-	case DBD_GOT_JOBS:
-		my_function = unpack_jobacct_job_rec;
-		my_destroy = destroy_jobacct_job_rec;
-		break;
-	case DBD_ADD_USERS:
-	case DBD_GOT_USERS:
-		my_function = unpack_acct_user_rec;
-		my_destroy = destroy_acct_user_rec;
-		break;
-	default:
-		fatal("Unknown unpack type");
-		return SLURM_ERROR;
-	}
-
-	msg_ptr = xmalloc(sizeof(dbd_list_msg_t));
+	msg_ptr = xmalloc(sizeof(dbd_get_jobs_msg_t));
 	*msg = msg_ptr;
+
+	safe_unpackstr_xmalloc(&msg_ptr->cluster_name, &uint32_tmp, buffer);
+
+	safe_unpack32(&msg_ptr->gid, buffer);
+
 	safe_unpack32(&count, buffer);
-	msg_ptr->ret_list = list_create((*(my_destroy)));
+	msg_ptr->selected_steps = list_create(destroy_jobacct_selected_step);
 	for(i=0; i<count; i++) {
-		if(((*(my_function))(&object, buffer)) == SLURM_ERROR)
-			goto unpack_error;
-		list_append(msg_ptr->ret_list, object);
+		unpack_jobacct_selected_step(&job, buffer);
+		list_append(msg_ptr->selected_steps, job);
 	}
-	
+
+	safe_unpack32(&count, buffer);
+	msg_ptr->selected_parts = list_create(slurm_destroy_char);
+	for(i=0; i<count; i++) {
+		safe_unpackstr_xmalloc(&part, &uint32_tmp, buffer);
+		list_append(msg_ptr->selected_parts, part);
+	}
+
+	safe_unpackstr_xmalloc(&msg_ptr->user, &uint32_tmp, buffer);
+
 	return SLURM_SUCCESS;
 
 unpack_error:
-	if(msg_ptr->ret_list)
-		list_destroy(msg_ptr->ret_list);
+	slurm_dbd_free_get_jobs_msg(msg_ptr);
 	*msg = NULL;
 	return SLURM_ERROR;
 }
@@ -1616,104 +1733,128 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-void inline slurm_dbd_pack_modify_msg(slurmdbd_msg_type_t type,
-				      dbd_modify_msg_t *msg, Buf buffer)
+void inline slurm_dbd_pack_list_msg(slurmdbd_msg_type_t type,
+				    dbd_list_msg_t *msg, Buf buffer)
 {
-	void (*my_cond) (void *object, Buf buffer);
-	void (*my_rec) (void *object, Buf buffer);
+	uint32_t count = 0;
+	ListIterator itr = NULL;
+	void *object = NULL;
+	void (*my_function) (void *object, Buf buffer);
 
 	switch(type) {
-	case DBD_MODIFY_ACCOUNTS:
-		my_cond = pack_acct_account_cond;
-		my_rec = pack_acct_account_rec;
+	case DBD_ADD_ACCOUNTS:
+	case DBD_GOT_ACCOUNTS:
+		my_function = pack_acct_account_rec;
 		break;
-	case DBD_MODIFY_ASSOCS:
-		my_cond = pack_acct_association_cond;
-		my_rec = pack_acct_association_rec;
+	case DBD_ADD_ASSOCS:
+	case DBD_GOT_ASSOCS:
+		my_function = pack_acct_association_rec;
 		break;
-	case DBD_MODIFY_CLUSTERS:
-		my_cond = pack_acct_cluster_cond;
-		my_rec = pack_acct_cluster_rec;
+	case DBD_GOT_ASSOC_HOUR:
+	case DBD_GOT_ASSOC_DAY:
+	case DBD_GOT_ASSOC_MONTH:
+		my_function = pack_acct_accounting_rec;
 		break;
-	case DBD_MODIFY_USERS:
-		my_cond = pack_acct_user_cond;
-		my_rec = pack_acct_user_rec;
+	case DBD_ADD_CLUSTERS:
+	case DBD_GOT_CLUSTERS:
+		my_function = pack_acct_cluster_rec;
 		break;
-	case DBD_MODIFY_USER_ADMIN_LEVEL:
-		pack_acct_user_cond(msg->cond, buffer);
-		return;
+	case DBD_GOT_CLUSTER_HOUR:
+	case DBD_GOT_CLUSTER_DAY:
+	case DBD_GOT_CLUSTER_MONTH:
+		my_function = pack_cluster_accounting_rec;
+		break;
+	case DBD_GOT_JOBS:
+		my_function = pack_jobacct_job_rec;
+		break;
+	case DBD_ADD_USERS:
+	case DBD_GOT_USERS:
+		my_function = pack_acct_user_rec;
 		break;
 	default:
 		fatal("Unknown pack type");
 		return;
 	}
-	(*(my_cond))(msg->cond, buffer);
-	(*(my_rec))(msg->rec, buffer);
+	if(msg->ret_list) 
+		count = list_count(msg->ret_list);
+			
+	pack32(count, buffer);
+	if(count) {
+		itr = list_iterator_create(msg->ret_list);
+		while((object = list_next(itr))) {
+			(*(my_function))(object, buffer);
+		}
+		list_iterator_destroy(itr);
+	}
 }
 
-int inline slurm_dbd_unpack_modify_msg(slurmdbd_msg_type_t type,
-				       dbd_modify_msg_t **msg, Buf buffer)
+int inline slurm_dbd_unpack_list_msg(slurmdbd_msg_type_t type,
+				     dbd_list_msg_t **msg, Buf buffer)
 {
-	dbd_modify_msg_t *msg_ptr = NULL;
-	int (*my_cond) (void **object, Buf buffer);
-	int (*my_rec) (void **object, Buf buffer);
-	void (*destroy_cond) (void *object);
-	void (*destroy_rec) (void *object);
-
-	msg_ptr = xmalloc(sizeof(dbd_modify_msg_t));
-	*msg = msg_ptr;
+	int i;
+	uint32_t count;
+	dbd_list_msg_t *msg_ptr = NULL;
+	void *object = NULL;
+	int (*my_function) (void **object, Buf buffer);
+	void (*my_destroy) (void *object);
 
 	switch(type) {
-	case DBD_MODIFY_ACCOUNTS:
-		my_cond = unpack_acct_account_cond;
-		my_rec = unpack_acct_account_rec;
-		destroy_cond = destroy_acct_account_cond;
-		destroy_rec = destroy_acct_account_rec;
+	case DBD_ADD_ACCOUNTS:
+	case DBD_GOT_ACCOUNTS:
+		my_function = unpack_acct_account_rec;
+		my_destroy = destroy_acct_account_rec;
 		break;
-	case DBD_MODIFY_ASSOCS:
-		my_cond = unpack_acct_association_cond;
-		my_rec = unpack_acct_association_rec;
-		destroy_cond = destroy_acct_association_cond;
-		destroy_rec = destroy_acct_association_rec;
+	case DBD_ADD_ASSOCS:
+	case DBD_GOT_ASSOCS:
+		my_function = unpack_acct_association_rec;
+		my_destroy = destroy_acct_association_rec;
 		break;
-	case DBD_MODIFY_CLUSTERS:
-		my_cond = unpack_acct_cluster_cond;
-		my_rec = unpack_acct_cluster_rec;
-		destroy_cond = destroy_acct_cluster_cond;
-		destroy_rec = destroy_acct_cluster_rec;
+	case DBD_GOT_ASSOC_HOUR:
+	case DBD_GOT_ASSOC_DAY:
+	case DBD_GOT_ASSOC_MONTH:
+		my_function = unpack_acct_accounting_rec;
+		my_destroy = destroy_acct_accounting_rec;
 		break;
-	case DBD_MODIFY_USERS:
-		my_cond = unpack_acct_user_cond;
-		my_rec = unpack_acct_user_rec;
-		destroy_cond = destroy_acct_user_cond;
-		destroy_rec = destroy_acct_user_rec;
+	case DBD_ADD_CLUSTERS:
+	case DBD_GOT_CLUSTERS:
+		my_function = unpack_acct_cluster_rec;
+		my_destroy = destroy_acct_cluster_rec;
 		break;
-	case DBD_MODIFY_USER_ADMIN_LEVEL:
-		if(unpack_acct_user_cond(&msg_ptr->cond, buffer)
-		   == SLURM_ERROR) {
-			destroy_acct_user_cond(msg_ptr->cond);
-			xfree(msg_ptr);
-			*msg = NULL;
-			return SLURM_ERROR;
-		}			
-		return SLURM_SUCCESS;
+	case DBD_GOT_CLUSTER_HOUR:
+	case DBD_GOT_CLUSTER_DAY:
+	case DBD_GOT_CLUSTER_MONTH:
+		my_function = unpack_cluster_accounting_rec;
+		my_destroy = destroy_cluster_accounting_rec;
+		break;
+	case DBD_GOT_JOBS:
+		my_function = unpack_jobacct_job_rec;
+		my_destroy = destroy_jobacct_job_rec;
+		break;
+	case DBD_ADD_USERS:
+	case DBD_GOT_USERS:
+		my_function = unpack_acct_user_rec;
+		my_destroy = destroy_acct_user_rec;
 		break;
 	default:
 		fatal("Unknown unpack type");
 		return SLURM_ERROR;
 	}
 
-	if((*(my_cond))(&msg_ptr->cond, buffer) == SLURM_ERROR)
-		goto unpack_error;
-	if((*(my_rec))(&msg_ptr->rec, buffer) == SLURM_ERROR)
-		goto unpack_error;
+	msg_ptr = xmalloc(sizeof(dbd_list_msg_t));
+	*msg = msg_ptr;
+	safe_unpack32(&count, buffer);
+	msg_ptr->ret_list = list_create((*(my_destroy)));
+	for(i=0; i<count; i++) {
+		if(((*(my_function))(&object, buffer)) == SLURM_ERROR)
+			goto unpack_error;
+		list_append(msg_ptr->ret_list, object);
+	}
 	
 	return SLURM_SUCCESS;
 
 unpack_error:
-	(*(destroy_cond))(msg_ptr->cond);
-	(*(destroy_rec))(msg_ptr->rec);
-	xfree(msg_ptr);
+	if(msg_ptr->ret_list)
+		list_destroy(msg_ptr->ret_list);
 	*msg = NULL;
 	return SLURM_ERROR;
 }
@@ -1847,3 +1988,173 @@ unpack_error:
 	*msg = NULL;
 	return SLURM_ERROR;
 }
+void inline slurm_dbd_pack_modify_msg(slurmdbd_msg_type_t type,
+				      dbd_modify_msg_t *msg, Buf buffer)
+{
+	void (*my_cond) (void *object, Buf buffer);
+	void (*my_rec) (void *object, Buf buffer);
+
+	switch(type) {
+	case DBD_MODIFY_ACCOUNTS:
+		my_cond = pack_acct_account_cond;
+		my_rec = pack_acct_account_rec;
+		break;
+	case DBD_MODIFY_ASSOCS:
+		my_cond = pack_acct_association_cond;
+		my_rec = pack_acct_association_rec;
+		break;
+	case DBD_MODIFY_CLUSTERS:
+		my_cond = pack_acct_cluster_cond;
+		my_rec = pack_acct_cluster_rec;
+		break;
+	case DBD_MODIFY_USERS:
+		my_cond = pack_acct_user_cond;
+		my_rec = pack_acct_user_rec;
+		break;
+	case DBD_MODIFY_USER_ADMIN_LEVEL:
+		pack_acct_user_cond(msg->cond, buffer);
+		return;
+		break;
+	default:
+		fatal("Unknown pack type");
+		return;
+	}
+	(*(my_cond))(msg->cond, buffer);
+	(*(my_rec))(msg->rec, buffer);
+}
+
+int inline slurm_dbd_unpack_modify_msg(slurmdbd_msg_type_t type,
+				       dbd_modify_msg_t **msg, Buf buffer)
+{
+	dbd_modify_msg_t *msg_ptr = NULL;
+	int (*my_cond) (void **object, Buf buffer);
+	int (*my_rec) (void **object, Buf buffer);
+	void (*destroy_cond) (void *object);
+	void (*destroy_rec) (void *object);
+
+	msg_ptr = xmalloc(sizeof(dbd_modify_msg_t));
+	*msg = msg_ptr;
+
+	switch(type) {
+	case DBD_MODIFY_ACCOUNTS:
+		my_cond = unpack_acct_account_cond;
+		my_rec = unpack_acct_account_rec;
+		destroy_cond = destroy_acct_account_cond;
+		destroy_rec = destroy_acct_account_rec;
+		break;
+	case DBD_MODIFY_ASSOCS:
+		my_cond = unpack_acct_association_cond;
+		my_rec = unpack_acct_association_rec;
+		destroy_cond = destroy_acct_association_cond;
+		destroy_rec = destroy_acct_association_rec;
+		break;
+	case DBD_MODIFY_CLUSTERS:
+		my_cond = unpack_acct_cluster_cond;
+		my_rec = unpack_acct_cluster_rec;
+		destroy_cond = destroy_acct_cluster_cond;
+		destroy_rec = destroy_acct_cluster_rec;
+		break;
+	case DBD_MODIFY_USERS:
+		my_cond = unpack_acct_user_cond;
+		my_rec = unpack_acct_user_rec;
+		destroy_cond = destroy_acct_user_cond;
+		destroy_rec = destroy_acct_user_rec;
+		break;
+	case DBD_MODIFY_USER_ADMIN_LEVEL:
+		if(unpack_acct_user_cond(&msg_ptr->cond, buffer)
+		   == SLURM_ERROR) {
+			destroy_acct_user_cond(msg_ptr->cond);
+			xfree(msg_ptr);
+			*msg = NULL;
+			return SLURM_ERROR;
+		}			
+		return SLURM_SUCCESS;
+		break;
+	default:
+		fatal("Unknown unpack type");
+		return SLURM_ERROR;
+	}
+
+	if((*(my_cond))(&msg_ptr->cond, buffer) == SLURM_ERROR)
+		goto unpack_error;
+	if((*(my_rec))(&msg_ptr->rec, buffer) == SLURM_ERROR)
+		goto unpack_error;
+	
+	return SLURM_SUCCESS;
+
+unpack_error:
+	(*(destroy_cond))(msg_ptr->cond);
+	(*(destroy_rec))(msg_ptr->rec);
+	xfree(msg_ptr);
+	*msg = NULL;
+	return SLURM_ERROR;
+}
+
+void inline slurm_dbd_pack_get_usage_msg(slurmdbd_msg_type_t type,
+					 dbd_get_usage_msg_t *msg, Buf buffer)
+{
+	void (*my_rec) (void *object, Buf buffer);
+
+	switch(type) {
+	case DBD_GET_ASSOC_DAY:
+	case DBD_GET_ASSOC_HOUR:
+	case DBD_GET_ASSOC_MONTH:
+		my_rec = pack_acct_association_rec;
+		break;
+	case DBD_GET_CLUSTER_DAY:
+	case DBD_GET_CLUSTER_HOUR:
+	case DBD_GET_CLUSTER_MONTH:
+		my_rec = pack_acct_cluster_rec;
+		break;
+	default:
+		fatal("Unknown pack type");
+		return;
+	}
+	(*(my_rec))(msg->rec, buffer);
+	pack_time(msg->start, buffer);
+	pack_time(msg->end, buffer);
+}
+
+int inline slurm_dbd_unpack_get_usage_msg(slurmdbd_msg_type_t type,
+					  dbd_get_usage_msg_t **msg, Buf buffer)
+{
+	dbd_get_usage_msg_t *msg_ptr = NULL;
+	int (*my_rec) (void **object, Buf buffer);
+	void (*destroy_rec) (void *object);
+
+	msg_ptr = xmalloc(sizeof(dbd_get_usage_msg_t));
+	*msg = msg_ptr;
+
+	switch(type) {
+	case DBD_GET_ASSOC_DAY:
+	case DBD_GET_ASSOC_HOUR:
+	case DBD_GET_ASSOC_MONTH:
+		my_rec = unpack_acct_association_rec;
+		destroy_rec = destroy_acct_association_rec;
+		break;
+	case DBD_GET_CLUSTER_DAY:
+	case DBD_GET_CLUSTER_HOUR:
+	case DBD_GET_CLUSTER_MONTH:
+		my_rec = unpack_acct_cluster_rec;
+		destroy_rec = destroy_acct_cluster_rec;
+		break;
+	default:
+		fatal("Unknown pack type");
+		return SLURM_ERROR;
+	}
+	if((*(my_rec))(&msg_ptr->rec, buffer) == SLURM_ERROR)
+		goto unpack_error;
+
+	unpack_time(&msg_ptr->start, buffer);
+	unpack_time(&msg_ptr->end, buffer);
+
+	
+	return SLURM_SUCCESS;
+
+unpack_error:
+	(*(destroy_rec))(msg_ptr->rec);
+	xfree(msg_ptr);
+	*msg = NULL;
+	return SLURM_ERROR;
+}
+
