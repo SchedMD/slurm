@@ -249,7 +249,7 @@ is operational. </p>
 <p>SLURM supports accounting records being written to a simple text file,
 directly to a database (MySQL or PostgreSQL), or to a daemon securely 
 managing accounting data for multiple clusters. For more information 
-see <a href="accounting">Accounting</a></p>
+see <a href="accounting">Accounting</a>. </p>
 
 <h3>Corefile format</h3>
 <p>SLURM is designed to support generating a variety of core file formats for 
