@@ -186,7 +186,7 @@ static int _get_jobs(void *db_conn,
 		     Buf in_buffer, Buf *out_buffer)
 {
 	dbd_get_jobs_msg_t *get_jobs_msg;
-	dbd_got_list_msg_t got_list_msg;
+	dbd_list_msg_t list_msg;
 	sacct_parameters_t sacct_params;
 
 	if (slurm_dbd_unpack_get_jobs_msg(&get_jobs_msg, in_buffer) !=
@@ -200,7 +200,7 @@ static int _get_jobs(void *db_conn,
 	memset(&sacct_params, 0, sizeof(sacct_params));
 	sacct_params.opt_cluster = get_jobs_msg->cluster_name;
 
-	got_list_msg.ret_list = jobacct_storage_g_get_jobs(
+	list_msg.ret_list = jobacct_storage_g_get_jobs(
 		db_conn,
 		get_jobs_msg->selected_steps, get_jobs_msg->selected_parts,
 		&sacct_params);
@@ -209,9 +209,9 @@ static int _get_jobs(void *db_conn,
 
 	*out_buffer = init_buf(1024);
 	pack16((uint16_t) DBD_GOT_JOBS, *out_buffer);
-	slurm_dbd_pack_got_list_msg(DBD_GOT_JOBS, &got_list_msg, *out_buffer);
-	if(got_list_msg.ret_list)
-		list_destroy(got_list_msg.ret_list);
+	slurm_dbd_pack_list_msg(DBD_GOT_JOBS, &list_msg, *out_buffer);
+	if(list_msg.ret_list)
+		list_destroy(list_msg.ret_list);
 	info("DBD_GET_JOBS: done");
 	
 	return SLURM_SUCCESS;

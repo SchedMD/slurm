@@ -726,10 +726,11 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-extern void pack_acct_user_cond(acct_user_cond_t *object, Buf buffer)
+extern void pack_acct_user_cond(void *in, Buf buffer)
 {
 	char *info = NULL;
 	ListIterator itr = NULL;
+	acct_user_cond_t *object = (acct_user_cond_t *)in;
 
 	pack16((uint16_t)object->admin_level, buffer);
 	pack32(list_count(object->def_acct_list), buffer);
@@ -748,7 +749,7 @@ extern void pack_acct_user_cond(acct_user_cond_t *object, Buf buffer)
 
 }
 
-extern int unpack_acct_user_cond(acct_user_cond_t **object, Buf buffer)
+extern int unpack_acct_user_cond(void **object, Buf buffer)
 {
 	uint32_t uint32_tmp;
 	int i;
@@ -785,10 +786,11 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-extern void pack_acct_account_cond(acct_account_cond_t *object, Buf buffer)
+extern void pack_acct_account_cond(void *in, Buf buffer)
 {
 	char *info = NULL;
 	ListIterator itr = NULL;
+	acct_account_cond_t *object = (acct_account_cond_t *)in;
 
 	pack32(list_count(object->acct_list), buffer);
 	itr = list_iterator_create(object->acct_list);
@@ -811,7 +813,7 @@ extern void pack_acct_account_cond(acct_account_cond_t *object, Buf buffer)
 	list_iterator_destroy(itr);
 }
 
-extern int unpack_acct_account_cond(acct_account_cond_t **object, Buf buffer)
+extern int unpack_acct_account_cond(void **object, Buf buffer)
 {
 	uint32_t uint32_tmp;
 	int i;
@@ -854,10 +856,11 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-extern void pack_acct_cluster_cond(acct_cluster_cond_t *object, Buf buffer)
+extern void pack_acct_cluster_cond(void *in, Buf buffer)
 {
 	char *info = NULL;
 	ListIterator itr = NULL;
+	acct_cluster_cond_t *object = (acct_cluster_cond_t *)in;
 
 	pack32(list_count(object->cluster_list), buffer);
 	itr = list_iterator_create(object->cluster_list);
@@ -867,7 +870,7 @@ extern void pack_acct_cluster_cond(acct_cluster_cond_t *object, Buf buffer)
 	list_iterator_destroy(itr);
 }
 
-extern int unpack_acct_cluster_cond(acct_cluster_cond_t **object, Buf buffer)
+extern int unpack_acct_cluster_cond(void **object, Buf buffer)
 {
 	uint32_t uint32_tmp;
 	int i;
@@ -893,11 +896,11 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-extern void pack_acct_association_cond(acct_association_cond_t *object,
-				       Buf buffer)
+extern void pack_acct_association_cond(void *in, Buf buffer)
 {
 	char *info = NULL;
 	ListIterator itr = NULL;
+	acct_association_cond_t *object = (acct_association_cond_t *)in;
 
 	pack32(list_count(object->acct_list), buffer);
 	itr = list_iterator_create(object->acct_list);
@@ -939,8 +942,7 @@ extern void pack_acct_association_cond(acct_association_cond_t *object,
 	list_iterator_destroy(itr);
 }
 
-extern int unpack_acct_association_cond(acct_association_cond_t **object,
-					Buf buffer)
+extern int unpack_acct_association_cond(void **object, Buf buffer)
 {
 	uint32_t uint32_tmp;
 	int i;
@@ -1215,7 +1217,8 @@ extern int acct_storage_g_validate_assoc_id(void *db_conn,
 	if (slurm_acct_storage_init(NULL) < 0)
 		return SLURM_ERROR;
 
-	return (*(g_acct_storage_context->ops.validate_assoc_id))(db_conn, assoc_id);
+	return (*(g_acct_storage_context->ops.validate_assoc_id))
+		(db_conn, assoc_id);
 }
 
 extern int acct_storage_g_modify_users(void *db_conn,
@@ -1224,7 +1227,8 @@ extern int acct_storage_g_modify_users(void *db_conn,
 {
 	if (slurm_acct_storage_init(NULL) < 0)
 		return SLURM_ERROR;
-	return (*(g_acct_storage_context->ops.modify_users))(db_conn, user_q, user);
+	return (*(g_acct_storage_context->ops.modify_users))
+		(db_conn, user_q, user);
 }
 
 extern int acct_storage_g_modify_user_admin_level(void *db_conn,

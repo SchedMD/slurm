@@ -740,7 +740,7 @@ extern List jobacct_storage_p_get_jobs(void *db_conn,
 {
 	slurmdbd_msg_t req, resp;
 	dbd_get_jobs_msg_t get_msg;
-	dbd_got_list_msg_t *got_msg;
+	dbd_list_msg_t *got_msg;
 	int rc;
 	List job_list = NULL;
 	struct passwd *pw = NULL;
@@ -765,10 +765,10 @@ extern List jobacct_storage_p_get_jobs(void *db_conn,
 		error("slurmdbd: response type not DBD_GOT_JOBS: %u", 
 		      resp.msg_type);
 	} else {
-		got_msg = (dbd_got_list_msg_t *) resp.data;
+		got_msg = (dbd_list_msg_t *) resp.data;
 		job_list = got_msg->ret_list;
 		got_msg->ret_list = NULL;
-		slurm_dbd_free_got_list_msg(got_msg);
+		slurm_dbd_free_list_msg(got_msg);
 	}
 
 	return job_list;

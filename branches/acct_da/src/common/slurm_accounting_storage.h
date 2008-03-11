@@ -176,16 +176,14 @@ extern int unpack_acct_accounting_rec(void **object, Buf buffer);
 extern void pack_acct_association_rec(void *object, Buf buffer);
 extern int unpack_acct_association_rec(void **object, Buf buffer);
 
-extern void pack_acct_user_cond(acct_user_cond_t *object, Buf buffer);
-extern int unpack_acct_user_cond(acct_user_cond_t **object, Buf buffer);
-extern void pack_acct_account_cond(acct_account_cond_t *object, Buf buffer);
-extern int unpack_acct_account_cond(acct_account_cond_t **object, Buf buffer);
-extern void pack_acct_cluster_cond(acct_cluster_cond_t *object, Buf buffer);
-extern int unpack_acct_cluster_cond(acct_cluster_cond_t **object, Buf buffer);
-extern void pack_acct_association_cond(acct_association_cond_t *object,
-				       Buf buffer);
-extern int unpack_acct_association_cond(acct_association_cond_t **object,
-					Buf buffer);
+extern void pack_acct_user_cond(void *object, Buf buffer);
+extern int unpack_acct_user_cond(void **object, Buf buffer);
+extern void pack_acct_account_cond(void *object, Buf buffer);
+extern int unpack_acct_account_cond(void **object, Buf buffer);
+extern void pack_acct_cluster_cond(void *object, Buf buffer);
+extern int unpack_acct_cluster_cond(void **object, Buf buffer);
+extern void pack_acct_association_cond(void *object, Buf buffer);
+extern int unpack_acct_association_cond(void **object, Buf buffer);
 
 extern char *acct_expedite_str(acct_expedite_level_t level);
 extern acct_expedite_level_t str_2_acct_expedite(char *level);
@@ -214,8 +212,7 @@ extern int acct_storage_g_close_connection(void *db_conn);
  * IN:  user_list List of acct_user_rec_t *
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
-extern int acct_storage_g_add_users(void *db_conn, 
-				    List user_list);
+extern int acct_storage_g_add_users(void *db_conn, List user_list);
 
 /* 
  * add users as account coordinators 
@@ -232,16 +229,14 @@ extern int acct_storage_g_add_coord(void *db_conn,
  * IN:  account_list List of acct_account_rec_t *
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
-extern int acct_storage_g_add_accounts(void *db_conn, 
-				       List acct_list);
+extern int acct_storage_g_add_accounts(void *db_conn, List acct_list);
 
 /* 
  * add clusters to accounting system 
  * IN:  cluster_list List of acct_cluster_rec_t *
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
-extern int acct_storage_g_add_clusters(void *db_conn, 
-				       List cluster_list);
+extern int acct_storage_g_add_clusters(void *db_conn, List cluster_list);
 
 /* 
  * add accts to accounting system 
@@ -267,7 +262,6 @@ extern int acct_storage_g_modify_users(void *db_conn,
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
 extern int acct_storage_g_modify_user_admin_level(void *db_conn, 
-				       
 						  acct_user_cond_t *user_q);
 
 /* 

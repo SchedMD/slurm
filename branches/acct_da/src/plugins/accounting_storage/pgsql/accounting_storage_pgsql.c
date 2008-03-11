@@ -708,14 +708,12 @@ extern int acct_storage_p_add_coord(PGconn *acct_pgsql_db,
 	return SLURM_SUCCESS;
 }
 
-extern int acct_storage_p_add_accts(PGconn *acct_pgsql_db,
-					   List acct_list)
+extern int acct_storage_p_add_accts(PGconn *acct_pgsql_db, List acct_list)
 {
 	return SLURM_SUCCESS;
 }
 
-extern int acct_storage_p_add_clusters(PGconn *acct_pgsql_db,
-					   List cluster_list)
+extern int acct_storage_p_add_clusters(PGconn *acct_pgsql_db, List cluster_list)
 {
 	return SLURM_SUCCESS;
 }
@@ -867,7 +865,7 @@ extern int clusteracct_storage_p_node_up(PGconn *acct_pgsql_db,
 	return SLURM_SUCCESS;
 }
 extern int clusteracct_storage_p_cluster_procs(PGconn *acct_pgsql_db,
-					   char *cluster,
+					       char *cluster,
 					       uint32_t procs,
 					       time_t event_time)
 {
@@ -876,7 +874,7 @@ extern int clusteracct_storage_p_cluster_procs(PGconn *acct_pgsql_db,
 
 extern int clusteracct_storage_p_get_hourly_usage(
 	PGconn *acct_pgsql_db, acct_cluster_rec_t *cluster_rec, time_t start, 
-	time_t end, void *params)
+	time_t end)
 {
 
 	return SLURM_SUCCESS;
@@ -884,7 +882,7 @@ extern int clusteracct_storage_p_get_hourly_usage(
 
 extern int clusteracct_storage_p_get_daily_usage(
 	PGconn *acct_pgsql_db, acct_cluster_rec_t *cluster_rec, time_t start, 
-	time_t end, void *params)
+	time_t end)
 {
 	
 	return SLURM_SUCCESS;
@@ -892,7 +890,7 @@ extern int clusteracct_storage_p_get_daily_usage(
 
 extern int clusteracct_storage_p_get_monthly_usage(
 	PGconn *acct_pgsql_db, acct_cluster_rec_t *cluster_rec, time_t start, 
-	time_t end, void *params)
+	time_t end)
 {
 	
 	return SLURM_SUCCESS;
