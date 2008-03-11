@@ -123,7 +123,7 @@ will be sorted my SLURM.
 This option will tell sbatch to retrieve the
 login environment variables for the user specified in the \fB\-\-uid\fR option.
 The environment variables are retrieved by running something of this sort
-"su - <username> -c /usr/bin/env" and parsing the output.
+"su \- <username> \-c /usr/bin/env" and parsing the output.
 Be aware that any environment variables already set in sbatch's environment
 will take precedence over any environment variables in the user's
 login environment.
@@ -482,7 +482,7 @@ Force the allocated nodes to reboot before starting the job.
 .TP
 \fB\-\-wrap\fR[=]<\fIcommand string\fR>
 Sbatch will wrap the specified command string in a simple "sh" shell script,
-and submit that script to the slurm controller.  When --wrap is used,
+and submit that script to the slurm controller.  When \-\-wrap is used,
 a script name and arguments may not be specified on the command line; instead
 the sbatch-generated wrapper script is used.
 
@@ -583,7 +583,7 @@ $ cat myscript
 .br
 #!/bin/sh
 .br
-#SBATCH --time=1
+#SBATCH \-\-time=1
 .br
 srun hostname |sort
 .br

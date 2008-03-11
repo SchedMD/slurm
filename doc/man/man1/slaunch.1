@@ -270,7 +270,11 @@ The options include a number representing the size of the task block.
 This is followed by an optional specification of the task distribution
 scheme within a block of tasks and between the blocks of tasks.
 For more details (including examples and diagrams), please see
-https://computing.llnl.gov/linux/slurm/mc_support.html and
+.br
+https://computing.llnl.gov/linux/slurm/mc_support.html
+.br
+and
+.br
 https://computing.llnl.gov/linux/slurm/dist_plane.html.
 .TP
 .B hostfile
@@ -598,8 +602,8 @@ Same as \fB\-d\fR or \fB\-\-slurmd\-debug\fR
 .PP
 slaunch will set the following environment variables which will
 appear in the environments of all tasks in the job step.  Since slaunch
-sets these variables itself, they will also be available to --prolog
-and --epilog scripts.  (Notice that the "backwards compatibility" environment
+sets these variables itself, they will also be available to \-\-prolog
+and \-\-epilog scripts.  (Notice that the "backwards compatibility" environment
 variables clobber some of the variables that were set by salloc or sbatch
 at job allocation time.  The newer SLURM_JOB_* and SLURM_STEP_* names do not
 conflict, so any task in any job step can easily determine the parameters
@@ -628,7 +632,7 @@ The number of tasks on each node in the job step.
 Additionally, SLURM daemons will ensure that the the following variables are
 set in the environments of all tasks in the job step.  Many of the following
 variables will have different values in each task's environment.  (These
-variables are not available to the slaunch --prolog and --epilog scripts.)
+variables are not available to the slaunch \-\-prolog and \-\-epilog scripts.)
 
 .TP
 \fBSLURM_NODEID\fR

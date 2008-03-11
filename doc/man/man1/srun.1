@@ -1,4 +1,4 @@
-\." $Id$
+.\" $Id$
 .\"
 .TH SRUN "1" "July 2007" "srun 1.2" "slurm components"
 
@@ -285,7 +285,7 @@ even if consumable resources are enabled
 For a batch script submission, this option will tell srun to retrieve the
 login environment variables for the user specified in the \fB\-\-uid\fR option.
 The environment variables are retrieved by running something of this sort
-"su - <username> -c /usr/bin/env" and parsing the output.  
+"su \- <username> \-c /usr/bin/env" and parsing the output.  
 Be aware that any environment variables already set in srun's environment 
 will take precedence over any environment variables in the user's 
 login environment.
@@ -425,7 +425,11 @@ The options include a number representing the size of the task block.
 This is followed by an optional specification of the task distribution 
 scheme within a block of tasks and between the blocks of tasks.
 For more details (including examples and diagrams), please see
-https://computing.llnl.gov/linux/slurm/mc_support.html and
+.br
+https://computing.llnl.gov/linux/slurm/mc_support.html
+.br
+and
+.br
 https://computing.llnl.gov/linux/slurm/dist_plane.html.
 .TP
 .B arbitrary
@@ -434,7 +438,7 @@ listed in file designated by the environment variable SLURM_HOSTFILE.  If
 this variable is listed it will over ride any other method specified. 
 If not set the method will default to block.  Inside the hostfile must
 contain at minimum the number of hosts requested.  If requesting tasks
-(-n) your tasks will be laid out on the nodes in the order of the file.
+(\-n) your tasks will be laid out on the nodes in the order of the file.
 .RE
 
 .TP
@@ -901,7 +905,7 @@ Request a specific list of hosts. The job will contain \fIat least\fR
 these hosts. The list may be specified as a comma\-separated list of
 hosts, a range of hosts (host[1\-5,7,...] for example), or a filename.
 The host list will be assumed to be a filename if it contains a "/"
-character. If you specify a max node count (-N1-2) if there are more
+character. If you specify a max node count (\-N1\-2) if there are more
 than 2 hosts in the file only the first 2 nodes will be used in the
 request list.
 
@@ -1459,7 +1463,7 @@ by these various MPI implementation.
 
 1. SLURM directly launches the tasks and performs initialization
 of communications (Quadrics MPI, MPICH2, MPICH-GM, MVAPICH, MVAPICH2
-and some MPICH1 modes). For example: "srun -n16 a.out".
+and some MPICH1 modes). For example: "srun \-n16 a.out".
 
 2. SLURM creates a resource allocation for the job and then
 mpirun launches tasks using SLURM's infrastructure (OpenMPI,
