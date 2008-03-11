@@ -131,7 +131,7 @@ static int _print_record(struct job_record *job_ptr,
 		    job_ptr->user_id, job_ptr->group_id, block_id, data)
 	    < 0)
 		rc=SLURM_ERROR;
-#ifdef HAVE_FDATSYNC
+#ifdef HAVE_FDATASYNC
 	fdatasync(LOGFILE_FD);
 #endif
 	slurm_mutex_unlock( &logfile_lock );
