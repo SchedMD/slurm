@@ -19,20 +19,21 @@
 <h2>SLURM Administrators</h2>
 <ul>
 <li><a href="quickstart_admin.shtml">Quick Start Administrator Guide</a></li>
+<li><a href="configurator.html">Configuration Tool</a></li>
 <li><a href="troubleshoot.shtml">Troubleshooting Guide</a></li>
 <li><a href="lci.7.tutorial.pdf">Resource Management Using SLURM, 
 (Tutorial, The 7th International Conference on Linux Clusters, May 2006)</li>
 <li><a href="big_sys.shtml">Large Cluster Administration Guide</a></li>
-<li><a href="power_save.shtml">Power Saving Guide</a></li>
 <li><a href="cons_res.shtml">Consumable Resources Guide</a></li>
 <li><a href="cons_res_share.shtml">Sharing Consumable Resources</a></li>
-<li><a href="bluegene.shtml">Blue Gene User and Administrator Guide</a></li>
-<li><a href="ibm.shtml">IBM AIX User and Administrator Guide</a></li>
-<li><a href="configurator.html">Configuration Tool</a></li>
+<li><a href="accounting.shtml">Accounting</a></li>
+<li><a href="gang_scheduling.shtml">Gang Scheduling</a></li>
 <li><a href="maui.shtml">Maui Scheduler Integration Guide</a></li>
 <li><a href="moab.shtml">Moab Cluster Suite Integration Guide</a></li>
-<li><a href="http://docs.hp.com/en/5991-4847/ch09s02.html">Submitting 
-Jobs throuh LSF</a></li>
+<li><a href="http://docs.hp.com/en/5991-4847/ch09s02.html">Submitting Jobs throuh LSF</a></li>
+<li><a href="bluegene.shtml">Blue Gene User and Administrator Guide</a></li>
+<li><a href="ibm.shtml">IBM AIX User and Administrator Guide</a></li>
+<li><a href="power_save.shtml">Power Saving Guide</a></li>
 </ul>
 
 <h2>SLURM Developers</h2>
@@ -54,6 +55,6 @@ Jobs throuh LSF</a></li>
 <li><a href="taskplugins.shtml">Task Plugin Programmer Guide</a></li>
 </ul>
 
-<p style="text-align:center;">Last modified 28 November 2007</p>
+<p style="text-align:center;">Last modified 11 March 2008</p>
 
 <!--#include virtual="footer.txt"-->
