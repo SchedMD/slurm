@@ -1575,7 +1575,8 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg)
 					node_flags;
 				node_ptr->last_idle = now;
 			}
-			xfree(node_ptr->reason);
+			if ((node_flags & NODE_STATE_DRAIN) == 0)
+				xfree(node_ptr->reason);
 			clusteracct_storage_g_node_up(acct_db_conn, 
 						      slurmctld_cluster_name,
 						      node_ptr, now);
