@@ -56,7 +56,7 @@ building block approach. These plugins presently include:
 
 <li><a href="jobacct_storageplugins.html">Job Accounting Storage</a>: 
 text file (default if jobacct_gather != none), 
-<a href="http://www.clusterresources.com/pages/products/gold-allocation-manager.ph">Gold</a>
+<a href="http://www.clusterresources.com/pages/products/gold-allocation-manager.php">Gold</a>
 MySQL, PGSQL, SlurmDBD (Slurm Database Daemon) or none</li>
 
 <li><a href="jobcompplugins.html">Job completion logging</a>: 
