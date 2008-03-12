@@ -78,6 +78,7 @@
 #include "src/slurmctld/srun_comm.h"
 #include "src/slurmctld/state_save.h"
 #include "src/slurmctld/trigger_mgr.h"
+#include "src/slurmctld/assoc_mgr.h"
 
 static void         _fill_ctld_conf(slurm_ctl_conf_t * build_ptr);
 static void         _kill_job_on_msg_fail(uint32_t job_id);
@@ -126,6 +127,10 @@ inline static void  _slurm_rpc_update_partition(slurm_msg_t * msg);
 inline static void  _slurm_rpc_end_time(slurm_msg_t * msg);
 inline static void  _update_cred_key(void);
 inline static void  _slurm_rpc_set_debug_level(slurm_msg_t *msg);
+inline static void  _slurm_rpc_accounting_remove_assocs(slurm_msg_t *msg);
+inline static void  _slurm_rpc_accounting_remove_users(slurm_msg_t *msg);
+inline static void  _slurm_rpc_accounting_update_assocs(slurm_msg_t *msg);
+inline static void  _slurm_rpc_accounting_update_users(slurm_msg_t *msg);
 
 
 /*
@@ -299,6 +304,22 @@ void slurmctld_req (slurm_msg_t * msg)
 	case REQUEST_SET_DEBUG_LEVEL:
 		_slurm_rpc_set_debug_level(msg);
 		slurm_free_set_debug_level_msg(msg->data);
+		break;
+	case ACCOUNTING_REMOVE_ASSOCS:
+		_slurm_rpc_accounting_remove_assocs(msg);
+		slurm_free_accounting_remove_assocs_msg(msg->data);
+		break;
+	case ACCOUNTING_REMOVE_USERS:
+		_slurm_rpc_accounting_remove_users(msg);
+		slurm_free_accounting_remove_users_msg(msg->data);
+		break;
+	case ACCOUNTING_UPDATE_ASSOCS:
+		_slurm_rpc_accounting_update_assocs(msg);
+		slurm_free_accounting_update_msg(msg->data);
+		break;
+	case ACCOUNTING_UPDATE_USERS:
+		_slurm_rpc_accounting_update_users(msg);
+		slurm_free_accounting_update_msg(msg->data);
 		break;
 	default:
 		error("invalid RPC msg_type=%d", msg->msg_type);
@@ -2805,4 +2826,117 @@ inline static void  _slurm_rpc_set_debug_level(slurm_msg_t *msg)
 	slurmctld_conf.last_update = time(NULL);
 
 	slurm_send_rc_msg(msg, SLURM_SUCCESS);
+}
+
+inline static void  _slurm_rpc_accounting_remove_assocs(slurm_msg_t *msg)
+{
+	int rc = SLURM_SUCCESS, i;
+	uid_t uid;
+	accounting_remove_assocs_msg_t *remove_ptr =
+		(accounting_remove_assocs_msg_t *) msg->data;
+	
+	DEF_TIMERS;
+
+	START_TIMER;
+	debug2("Processing RPC: ACCOUNTING_REMOVE_ASSOCS");
+
+	uid = g_slurm_auth_get_uid(msg->auth_cred, NULL);
+	if (!validate_super_user(uid)) {
+		error("Update Association request from non-super user uid=%d", 
+		      uid);
+		slurm_send_rc_msg(msg, EACCES);
+		return;
+	}
+
+	if(remove_ptr->id_count) {
+		for(i=0; i<remove_ptr->id_count; i++) {
+			rc = remove_local_association(remove_ptr->ids[i]);
+		}
+	}
+	END_TIMER2("_slurm_rpc_accounting_remove_assocs");
+
+	slurm_send_rc_msg(msg, rc);
+}
+
+inline static void  _slurm_rpc_accounting_remove_users(slurm_msg_t *msg)
+{
+	int rc = SLURM_SUCCESS, i;
+	uid_t uid;
+	accounting_remove_users_msg_t *remove_ptr =
+		(accounting_remove_users_msg_t *) msg->data;
+	
+	DEF_TIMERS;
+
+	START_TIMER;
+	debug2("Processing RPC: ACCOUNTING_REMOVE_USERS");
+
+	uid = g_slurm_auth_get_uid(msg->auth_cred, NULL);
+	if (!validate_super_user(uid)) {
+		error("Update User request from non-super user uid=%d", 
+		      uid);
+		slurm_send_rc_msg(msg, EACCES);
+		return;
+	}
+	if(remove_ptr->name_count) {
+		for(i=0; i<remove_ptr->name_count; i++) {
+			rc = remove_local_user(remove_ptr->names[i]);
+		}
+	}
+	END_TIMER2("_slurm_rpc_accounting_remove_users");
+
+	slurm_send_rc_msg(msg, rc);
+}
+
+inline static void  _slurm_rpc_accounting_update_assocs(slurm_msg_t *msg)
+{
+	int rc = SLURM_SUCCESS;
+	uid_t uid;
+	accounting_update_msg_t *update_ptr =
+		(accounting_update_msg_t *) msg->data;
+	
+	DEF_TIMERS;
+
+	START_TIMER;
+	debug2("Processing RPC: ACCOUNTING_UPDATE_ASSOCS");
+
+	uid = g_slurm_auth_get_uid(msg->auth_cred, NULL);
+	if (!validate_super_user(uid)) {
+		error("Update Association request from non-super user uid=%d", 
+		      uid);
+		slurm_send_rc_msg(msg, EACCES);
+		return;
+	}
+	if(update_ptr->update_list && list_count(update_ptr->update_list))
+		rc = update_local_associations(update_ptr->update_list);
+	
+	END_TIMER2("_slurm_rpc_accounting_update_assocs");
+
+	slurm_send_rc_msg(msg, rc);
+}
+
+inline static void  _slurm_rpc_accounting_update_users(slurm_msg_t *msg)
+{
+	int rc = SLURM_SUCCESS;
+	uid_t uid;
+	accounting_update_msg_t *update_ptr =
+		(accounting_update_msg_t *) msg->data;
+	
+	DEF_TIMERS;
+
+	START_TIMER;
+	debug2("Processing RPC: ACCOUNTING_UPDATE_USERS");
+
+	uid = g_slurm_auth_get_uid(msg->auth_cred, NULL);
+	if (!validate_super_user(uid)) {
+		error("Update User request from non-super user uid=%d", 
+		      uid);
+		slurm_send_rc_msg(msg, EACCES);
+		return;
+	}
+	if(update_ptr->update_list && list_count(update_ptr->update_list))
+		rc = update_local_users(update_ptr->update_list);
+	
+	END_TIMER2("_slurm_rpc_accounting_update_users");
+
+	slurm_send_rc_msg(msg, rc);
 }

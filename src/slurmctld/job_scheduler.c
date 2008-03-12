@@ -59,6 +59,7 @@
 #include "src/slurmctld/node_scheduler.h"
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/srun_comm.h"
+#include "src/slurmctld/assoc_mgr.h"
 
 #define _DEBUG 0
 #define MAX_RETRIES 10
@@ -285,8 +286,7 @@ extern int schedule(void)
 				      failed_part_cnt)) {
 			continue;
 		}
-		if (acct_storage_g_validate_assoc_id(acct_db_conn, 
-						     job_ptr->db_index)) {
+		if (validate_assoc_id(acct_db_conn, job_ptr->assoc_id)) {
 			/* NOTE: This only happens if a user's account is 
 			 * disabled between when the job was submitted and 
 			 * the time we consider running it. It should be 

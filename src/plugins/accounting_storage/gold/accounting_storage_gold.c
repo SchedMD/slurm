@@ -3289,12 +3289,16 @@ extern List jobacct_storage_p_get_jobs(void *db_conn,
 					memset(&account_rec, 0,
 					       sizeof(acct_association_rec_t));
 					account_rec.id = atoi(name_val->value);
-					if(acct_storage_p_get_assoc_id(
-						   db_conn,
-						   &account_rec) == SLURM_ERROR)
-						error("no assoc found for "
-						      "id %u",
-						      account_rec.id);
+					/* FIX ME: We need to get the
+					 * parts of the association from
+					 * gold here
+					 */
+	/* 				if(acct_storage_p_get_assoc_id( */
+/* 						   db_conn, */
+/* 						   &account_rec) == SLURM_ERROR) */
+/* 						error("no assoc found for " */
+/* 						      "id %u", */
+/* 						      account_rec.id); */
 					
 					if(account_rec.cluster) {
 						if(params->opt_cluster &&

@@ -619,7 +619,7 @@ extern int init ( void )
 
 	location = slurm_get_accounting_storage_loc();
 	if(!location)
-		pgsql_db_name = DEFAULT_ACCT_DB;
+		pgsql_db_name = xstrdup(DEFAULT_ACCT_DB);
 	else {
 		int i = 0;
 		while(location[i]) {
@@ -632,11 +632,10 @@ extern int init ( void )
 			i++;
 		}
 		if(location[i]) 
-			pgsql_db_name = DEFAULT_ACCT_DB;
+			pgsql_db_name = xstrdup(DEFAULT_ACCT_DB);
 		else
 			pgsql_db_name = location;
 	}
-	xfree(location);
 
 	debug2("pgsql_connect() called for db %s", pgsql_db_name);
 		
@@ -709,32 +708,18 @@ extern int acct_storage_p_add_coord(PGconn *acct_pgsql_db,
 	return SLURM_SUCCESS;
 }
 
-extern int acct_storage_p_add_accts(PGconn *acct_pgsql_db,
-					   List acct_list)
+extern int acct_storage_p_add_accts(PGconn *acct_pgsql_db, List acct_list)
 {
 	return SLURM_SUCCESS;
 }
 
-extern int acct_storage_p_add_clusters(PGconn *acct_pgsql_db,
-					   List cluster_list)
+extern int acct_storage_p_add_clusters(PGconn *acct_pgsql_db, List cluster_list)
 {
 	return SLURM_SUCCESS;
 }
 
 extern int acct_storage_p_add_associations(PGconn *acct_pgsql_db,
 					   List association_list)
-{
-	return SLURM_SUCCESS;
-}
-
-extern int acct_storage_p_get_assoc_id(PGconn *acct_pgsql_db,
-					   acct_association_rec_t *assoc)
-{
-	return SLURM_SUCCESS;
-}
-
-extern int acct_storage_p_validate_assoc_id(PGconn *acct_pgsql_db,
-					   uint32_t assoc_id)
 {
 	return SLURM_SUCCESS;
 }
@@ -868,7 +853,7 @@ extern int clusteracct_storage_p_node_up(PGconn *acct_pgsql_db,
 	return SLURM_SUCCESS;
 }
 extern int clusteracct_storage_p_cluster_procs(PGconn *acct_pgsql_db,
-					   char *cluster,
+					       char *cluster,
 					       uint32_t procs,
 					       time_t event_time)
 {
@@ -877,7 +862,7 @@ extern int clusteracct_storage_p_cluster_procs(PGconn *acct_pgsql_db,
 
 extern int clusteracct_storage_p_get_hourly_usage(
 	PGconn *acct_pgsql_db, acct_cluster_rec_t *cluster_rec, time_t start, 
-	time_t end, void *params)
+	time_t end)
 {
 
 	return SLURM_SUCCESS;
@@ -885,7 +870,7 @@ extern int clusteracct_storage_p_get_hourly_usage(
 
 extern int clusteracct_storage_p_get_daily_usage(
 	PGconn *acct_pgsql_db, acct_cluster_rec_t *cluster_rec, time_t start, 
-	time_t end, void *params)
+	time_t end)
 {
 	
 	return SLURM_SUCCESS;
@@ -893,7 +878,7 @@ extern int clusteracct_storage_p_get_daily_usage(
 
 extern int clusteracct_storage_p_get_monthly_usage(
 	PGconn *acct_pgsql_db, acct_cluster_rec_t *cluster_rec, time_t start, 
-	time_t end, void *params)
+	time_t end)
 {
 	
 	return SLURM_SUCCESS;
@@ -921,7 +906,7 @@ extern int jobacct_storage_p_job_start(PGconn *acct_pgsql_db,
 	}
 
 	if(!acct_pgsql_db || PQstatus(acct_pgsql_db) != CONNECTION_OK) {
-		if(init() == SLURM_ERROR) {
+		if(!(acct_pgsql_db = acct_storage_p_get_connection())) {
 			return SLURM_ERROR;
 		}
 	}
@@ -979,8 +964,8 @@ try_again:
 		if(!reinit) {
 			error("It looks like the storage has gone "
 			      "away trying to reconnect");
-			fini();
-			init();
+			acct_storage_p_close_connection(acct_pgsql_db);
+			acct_pgsql_db = acct_storage_p_get_connection();
 			reinit = 1;
 			goto try_again;
 		} else
@@ -1012,7 +997,7 @@ extern int jobacct_storage_p_job_complete(PGconn *acct_pgsql_db,
 	}
 
 	if(!acct_pgsql_db || PQstatus(acct_pgsql_db) != CONNECTION_OK) {
-		if(init() == SLURM_ERROR) {
+		if(!(acct_pgsql_db = acct_storage_p_get_connection())) {
 			return SLURM_ERROR;
 		}
 	}
@@ -1077,7 +1062,7 @@ extern int jobacct_storage_p_step_start(PGconn *acct_pgsql_db,
 	}
 
 	if(!acct_pgsql_db || PQstatus(acct_pgsql_db) != CONNECTION_OK) {
-		if(init() == SLURM_ERROR) {
+		if(!(acct_pgsql_db = acct_storage_p_get_connection())) {
 			return SLURM_ERROR;
 		}
 	}
@@ -1169,7 +1154,7 @@ extern int jobacct_storage_p_step_complete(PGconn *acct_pgsql_db,
 	}
 
 	if(!acct_pgsql_db || PQstatus(acct_pgsql_db) != CONNECTION_OK) {
-		if(init() == SLURM_ERROR) {
+		if(!(acct_pgsql_db = acct_storage_p_get_connection())) {
 			return SLURM_ERROR;
 		}
 	}
@@ -1288,7 +1273,7 @@ extern int jobacct_storage_p_suspend(PGconn *acct_pgsql_db,
 	int rc = SLURM_SUCCESS;
 	
 	if(!acct_pgsql_db || PQstatus(acct_pgsql_db) != CONNECTION_OK) {
-		if(init() == SLURM_ERROR) {
+		if(!(acct_pgsql_db = acct_storage_p_get_connection())) {
 			return SLURM_ERROR;
 		}
 	}
@@ -1337,7 +1322,7 @@ extern List jobacct_storage_p_get_jobs(PGconn *acct_pgsql_db,
 	List job_list = NULL;
 #ifdef HAVE_PGSQL
 	if(!acct_pgsql_db || PQstatus(acct_pgsql_db) != CONNECTION_OK) {
-		if(init() == SLURM_ERROR) {
+		if(!(acct_pgsql_db = acct_storage_p_get_connection())) {
 			return job_list;
 		}
 	}
@@ -1359,7 +1344,7 @@ extern void jobacct_storage_p_archive(PGconn *acct_pgsql_db,
 {
 #ifdef HAVE_PGSQL
 	if(!acct_pgsql_db || PQstatus(acct_pgsql_db) != CONNECTION_OK) {
-		if(init() == SLURM_ERROR) {
+		if(!(acct_pgsql_db = acct_storage_p_get_connection())) {
 			return;
 		}
 	}

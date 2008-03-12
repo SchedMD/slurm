@@ -256,7 +256,7 @@ extern List pgsql_jobacct_process_get_jobs(PGconn *acct_pgsql_db,
 						  JOB_REQ_ALLOC_CPUS));
 		job->associd = atoi(PQgetvalue(result, i, JOB_REQ_ASSOCID));
 		account_rec.id = job->associd;
-		acct_storage_g_get_assoc_id(acct_pgsql_db, &account_rec);
+		acct_storage_p_get_assoc_id(acct_pgsql_db, &account_rec);
 		if(account_rec.user) 
 			job->user = xstrdup(account_rec.user);
 		if(account_rec.acct) 

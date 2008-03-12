@@ -189,8 +189,9 @@ extern void destroy_jobacct_selected_step(void *object)
 }
 
  
-extern void pack_jobacct_job_rec(jobacct_job_rec_t *job, Buf buffer)
+extern void pack_jobacct_job_rec(void *object, Buf buffer)
 {
+	jobacct_job_rec_t *job = (jobacct_job_rec_t *)object;
 	ListIterator itr = NULL;
 	jobacct_step_rec_t *step = NULL;
 	uint32_t count = 0;
@@ -240,7 +241,7 @@ extern void pack_jobacct_job_rec(jobacct_job_rec_t *job, Buf buffer)
 	pack32(job->user_cpu_usec, buffer);
 }
 
-extern int unpack_jobacct_job_rec(jobacct_job_rec_t **job, Buf buffer)
+extern int unpack_jobacct_job_rec(void **job, Buf buffer)
 {
 	jobacct_job_rec_t *job_ptr = xmalloc(sizeof(jobacct_job_rec_t));
 	int i = 0;

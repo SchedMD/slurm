@@ -89,6 +89,7 @@
 #include "src/slurmctld/srun_comm.h"
 #include "src/slurmctld/state_save.h"
 #include "src/slurmctld/trigger_mgr.h"
+#include "src/slurmctld/assoc_mgr.h"
 
 
 #define CRED_LIFE         60	/* Job credential lifetime in seconds */
@@ -270,7 +271,7 @@ int main(int argc, char *argv[])
 	}
 	info("slurmctld version %s started", SLURM_VERSION);
 
-	slurmctld_cluster_name = slurmctld_conf.cluster_name;
+	slurmctld_cluster_name = xstrdup(slurmctld_conf.cluster_name);
 
 	if ((error_code = gethostname_short(node_name, MAX_SLURM_NAME)))
 		fatal("getnodename error %s", slurm_strerror(error_code));
@@ -307,7 +308,8 @@ int main(int argc, char *argv[])
 		fatal( "failed to initialize accounting_storage plugin");
 	
 	acct_db_conn = acct_storage_g_get_connection();
-	
+	assoc_mgr_init(acct_db_conn);
+
 	if (slurm_jobacct_gather_init() != SLURM_SUCCESS )
 		fatal( "failed to initialize jobacct_gather plugin");
 
@@ -427,7 +429,8 @@ int main(int argc, char *argv[])
 
 	acct_storage_g_close_connection(acct_db_conn);
 	slurm_acct_storage_fini();	/* Save pending message traffic */
-
+	assoc_mgr_fini();
+	xfree(slurmctld_cluster_name);
 #ifdef MEMORY_LEAK_DEBUG
 	/* This should purge all allocated memory,   *\
 	\*   Anything left over represents a leak.   */

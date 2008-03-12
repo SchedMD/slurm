@@ -268,18 +268,6 @@ extern int acct_storage_p_add_associations(void *db_conn,
 	return SLURM_SUCCESS;
 }
 
-extern int acct_storage_p_get_assoc_id(void *db_conn,
-				       acct_association_rec_t *assoc)
-{
-	return SLURM_SUCCESS;
-}
-
-extern int acct_storage_p_validate_assoc_id(void *db_conn,
-					    uint32_t assoc_id)
-{
-	return SLURM_SUCCESS;
-}
-
 extern int acct_storage_p_modify_users(void *db_conn,
 				       acct_user_cond_t *user_q,
 				       acct_user_rec_t *user)
@@ -419,7 +407,7 @@ extern int clusteracct_storage_p_cluster_procs(void *db_conn,
 extern int clusteracct_storage_p_get_hourly_usage(
 	void *db_conn,	
 	acct_cluster_rec_t *cluster_rec, time_t start, 
-	time_t end, void *params)
+	time_t end)
 {
 
 	return SLURM_SUCCESS;
@@ -428,7 +416,7 @@ extern int clusteracct_storage_p_get_hourly_usage(
 extern int clusteracct_storage_p_get_daily_usage(
 	void *db_conn,
 	acct_cluster_rec_t *cluster_rec, time_t start, 
-	time_t end, void *params)
+	time_t end)
 {
 	
 	return SLURM_SUCCESS;
@@ -437,7 +425,7 @@ extern int clusteracct_storage_p_get_daily_usage(
 extern int clusteracct_storage_p_get_monthly_usage(
 	void *db_conn,
 	acct_cluster_rec_t *cluster_rec, time_t start, 
-	time_t end, void *params)
+	time_t end)
 {
 	
 	return SLURM_SUCCESS;

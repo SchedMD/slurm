@@ -55,6 +55,10 @@
 extern char *job_table;
 extern char *step_table;
 
+extern void *acct_storage_p_get_connection();
+extern int acct_storage_p_get_assoc_id(PGconn *acct_pgsql_db,
+				       acct_association_rec_t *assoc);
+
 extern List pgsql_jobacct_process_get_jobs(PGconn *acct_pgsql_db,
 					   List selected_steps,
 					   List selected_parts,
