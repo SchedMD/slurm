@@ -175,8 +175,62 @@ CLIENTCFG[RM:slurm] KEY=123456789
 </pre>
 <p>Insure that this file is protected from viewing by users. </p>
 
+<h3>User Environment</h3>
+
+<p>When a user submits a job to Moab, that job could potentially 
+execute on a variety of computers, so it is typically necessary 
+that the user's environment on the execution host be loaded. 
+Moab relies upon SLURM to perform this action, using the 
+<i>--get-user-env</i> option for the salloc, sbatch and srun commands.
+The SLURM command then executes as user root a command of this sort
+as user root:
+<pre>
+/bin/su - &lt;user&gt; -c "/bin/echo BEGIN; /bin/env; /bin/echo FINI"
+</pre>
+While this command is executing within salloc, sbatch or srun, 
+the Moab daemon is completely non-responsive. 
+To insure that Moab remains operational, SLURM will abort the above
+command within a few seconds and look for a cache file with the 
+user's environment and use that if found. 
+Otherwise an error is reported to Moab.
+We have provided a simple program that can be used to build 
+cache files for users. The program can be found in the SLURM
+distribution at <i>contribs/env_cache_builder.c</i>. 
+This program can support a longer timeout than Moab, but 
+will report errors for users for whom the environment file 
+can not be automatically build (typically due to the user's
+"dot" files spawning another shell so the desired command 
+never execution).
+For such user, you can manually build a cache file.
+You may want to execute this program periodically to capture 
+information for new users or changes in existing users'
+environment.
+A sample execution is shown below. 
+Run this on the same host as the Moab daemon and execute it as user root.</p>
+
+<pre>
+bash-3.00# make -f /dev/null env_cache_builder
+cc     env_cache_builder.c   -o env_cache_builder
+bash-3.00# ./env_cache_builder
+Building user environment cache files for Moab/Slurm.
+This will take a while.
+
+Processed 100 users...
+***ERROR: Failed to get current user environment variables for alice
+***ERROR: Failed to get current user environment variables for brian
+Processed 200 users...
+Processed 300 users...
+***ERROR: Failed to get current user environment variables for christine
+***ERROR: Failed to get current user environment variables for david
+
+Some user environments could not be loaded.
+Manually run 'env' for those 4 users.
+Write the output to a file with the same name as the user in the
+  /usr/local/tmp/slurm/atlas/env_cache directory
+</pre>
+
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 17 August 2007</p>
+<p style="text-align:center;">Last modified 12 March 2008</p>
 
 <!--#include virtual="footer.txt"-->
