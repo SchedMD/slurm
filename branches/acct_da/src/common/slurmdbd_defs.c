@@ -572,7 +572,7 @@ static int _send_msg(Buf buffer)
 	int rc;
 
 	if (slurmdbd_fd < 0)
-		return SLURM_ERROR;
+		return EAGAIN;
 
 	rc =_fd_writeable(slurmdbd_fd);
 	if (rc == -1) {
@@ -581,13 +581,13 @@ re_open:	/* SlurmDBD shutdown, try to reopen a connection now */
 		rc = _fd_writeable(slurmdbd_fd);
 	}
 	if (rc < 1)
-		return SLURM_ERROR;
+		return EAGAIN;
 
 	msg_size = get_buf_offset(buffer);
 	nw_size = htonl(msg_size);
 	msg_wrote = write(slurmdbd_fd, &nw_size, sizeof(nw_size));
 	if (msg_wrote != sizeof(nw_size))
-		return SLURM_ERROR;
+		return EAGAIN;
 
 	msg = get_buf_data(buffer);
 	while (msg_size > 0) {
@@ -595,10 +595,10 @@ re_open:	/* SlurmDBD shutdown, try to reopen a connection now */
 		if (rc == -1)
 			goto re_open;
 		if (rc < 1)
-			return SLURM_ERROR;
+			return EAGAIN;
 		msg_wrote = write(slurmdbd_fd, msg, msg_size);
 		if (msg_wrote <= 0)
-			return SLURM_ERROR;
+			return EAGAIN;
 		msg += msg_wrote;
 		msg_size -= msg_wrote;
 	}
@@ -917,16 +917,17 @@ static void *_agent(void *x)
 			error("slurmdbd: Failure sending message");
 		} else {
 			rc = _get_return_code();
-			if (rc != SLURM_SUCCESS) {
+			if (rc == EAGAIN) {
 				if (agent_shutdown)
 					break;
-				error("slurmdbd: Failure getting response");
+				error("slurmdbd: Failure with "
+				      "message need to resend");
 			}
 		}
 		slurm_mutex_unlock(&slurmdbd_lock);
 
 		slurm_mutex_lock(&agent_lock);
-		if (agent_list && (rc == SLURM_SUCCESS)) {
+		if (agent_list && (rc != EAGAIN)) {
 			buffer = (Buf) list_dequeue(agent_list);
 			free_buf(buffer);
 			fail_time = 0;

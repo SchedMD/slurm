@@ -77,6 +77,7 @@ static int _get_local_association_list(void *db_conn)
 			slurm_mutex_unlock(&local_association_lock);
 			return SLURM_ERROR;
 		} else {
+			info(" no assoc list 1");
 			return SLURM_SUCCESS;
 		}
 	} else {
@@ -113,6 +114,7 @@ static int _get_local_user_list(void *db_conn)
 			slurm_mutex_unlock(&local_user_lock);
 			return SLURM_ERROR;
 		} else {
+			info("no user list 1");
 			return SLURM_SUCCESS;
 		}		
 	} else {
@@ -168,9 +170,10 @@ extern int get_default_account(void *db_conn, acct_user_rec_t *user)
 			return SLURM_ERROR;
 
 	if(!local_user_list 
-	   && !slurmctld_conf.accounting_storage_enforce) 
+	   && !slurmctld_conf.accounting_storage_enforce) {
+		info("no user list");
 		return SLURM_SUCCESS;
-	
+	}
 	slurm_mutex_lock(&local_user_lock);
 	itr = list_iterator_create(local_user_list);
 	while((found_user = list_next(itr))) {
@@ -213,17 +216,21 @@ extern int get_assoc_id(void *db_conn, acct_association_rec_t *assoc)
 					      "Not enough info to "
 					      "get an association");
 					return SLURM_ERROR;
-				} else
+				} else {
+					info("no assoc uid");
 					return SLURM_SUCCESS;
-
+				}
 			}
 			memset(&user, 0, sizeof(acct_user_rec_t));
 			user.uid = assoc->uid;
 			if(get_default_account(db_conn, &user) == SLURM_ERROR) {
 				if(slurmctld_conf.accounting_storage_enforce) 
 					return SLURM_ERROR;
-				else
+				else {
+					info("no default account");
+
 					return SLURM_SUCCESS;
+				}
 			}					
 			assoc->user = user.name;
 			assoc->acct = user.default_acct;
