@@ -64,7 +64,7 @@ daemon can provide better security.
 Gold and SlurmDBD are two such services. 
 Our initial implementation relied upon Gold, but we found its
 performance to be inadequate for our needs and developed SlurmDBD.
-SlurmDBD (SLURM DataBase Deaemon) is written in C, multi-threaded, 
+SlurmDBD (SLURM DataBase Daemon) is written in C, multi-threaded, 
 secure, and much faster than Gold.
 The configuration required to use SlurmDBD will be described below.
 Direct database or Gold use would be similar.</p>
@@ -122,7 +122,7 @@ with "JobComp" then job completion records will not be recorded.</p>
 <ul>
 <li><b>AccountingStorageEnforce</b>:
 If you want to prevent users from running jobs if their <i>association</i>
-(a combintation of cluster name, partition name, user name, and account name)
+(a combination of cluster name, partition name, user name, and account name)
 is not in the database, then set this to "1".
 Otherwise jobs will be executed based upon policies configured in 
 SLURM on each cluster.</li>
