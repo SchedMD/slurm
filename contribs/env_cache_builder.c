@@ -1,18 +1,27 @@
 /*****************************************************************************\
+ *  On the cluster's control host as user root, execute:
+ *    make -f /dev/null env_cache_builder
+ *    ./env_cache_builder
+ *****************************************************************************
  *  This program is used to build an environment variable cache file for use
  *  with the srun/sbatch --get-user-env option, which is used by Moab to launch
  *  user jobs. srun/sbatch will first attempt to load the user's current 
  *  environment by executing "su - <user> -c env". If that fails to complete
- *  in a relatively short period of time (currently 8 seconds), srun/sbatch
+ *  in a relatively short period of time (currently 3 seconds), srun/sbatch
  *  will attempt to load the user's environment from a cache file located 
  *  in the directory StateSaveLocation with a name of the sort "env_<user>".
  *  If that fails, then abort the job request.
  *
  *  This program can accept a space delimited list of individual users to have
  *  cache files created (e.g. "cache_build alice bob chuck"). If no argument
- *  is given, cache files will be created for all users.
- *
- *  This program must execute as user root. 
+ *  is given, cache files will be created for all users in the "/etc/passwd"
+ *  file. If you see "ERROR" in the output, it means that the user's 
+ *  environment could not be loaded automatically, typically because their
+ *  dot files spawn some other shell. You must explicitly login as the user,
+ *  execute "env" and write the output to a file having the same name as the
+ *  user in a subdirectory of the configured StateSaveLocation named "env_cache"
+ *  (e.g. "/tmp/slurm/env_cache/alice"). The file is only needed on the node
+ *  where the Moab daemon executes, typically the control host.
  *****************************************************************************
  *  Copyright (C) 2007 The Regents of the University of California.
  *  Copyright (C) 2008 Lawrence Livermore National Security.
@@ -65,13 +74,14 @@
 
 static long int	_build_cache(char *user_name, char *cache_dir);
 static int	_get_cache_dir(char *buffer, int buf_size);
+static void	_log_failures(int failures, char *cache_dir);
 static int	_parse_line(char *in_line, char **user_name, int *user_id);
 
 main (int argc, char **argv)
 {
 	FILE *passwd_fd;
 	char cache_dir[256], in_line[256], *user_name;
-	int i, user_id;
+	int i, failures = 0, user_cnt = 0, user_id;
 	long int delta_t;
 
 	if (geteuid() != (uid_t)0) {
@@ -87,16 +97,21 @@ main (int argc, char **argv)
 			strerror(errno));
 		exit(1);
 	}
-	printf("cache_dir=%s\n", cache_dir);
+	printf("Building user environment cache files for Moab/Slurm.\n");
+	printf("This will take a while.\n\n");
 
 	for (i=1; i<argc; i++) {
 		delta_t = _build_cache(argv[i], cache_dir);
+		if (delta_t == -1)
+			failures++;
 		if (delta_t < ((SU_WAIT_MSEC * 0.8) * 1000))
 			continue;
 		printf("WARNING: user %-8s time %ld usec\n", argv[i], delta_t);
 	}
-	if (i > 1)
+	if (i > 1) {
+		_log_failures(failures, cache_dir);
 		exit(0);
+	}
 
 	passwd_fd = fopen("/etc/passwd", "r");
 	if (!passwd_fd) {
@@ -110,11 +125,33 @@ main (int argc, char **argv)
 		if (user_id <= 100)
 			continue;
 		delta_t = _build_cache(user_name, cache_dir);
+		if (delta_t == -1)
+			failures++;
+		user_cnt++;
+		if ((user_cnt % 100) == 0)
+			printf("Processed %d users...\n", user_cnt);
 		if (delta_t < ((SU_WAIT_MSEC * 0.8) * 1000))
 			continue;
 		printf("WARNING: user %-8s time %ld usec\n", user_name, delta_t);
 	}
 	fclose(passwd_fd);
+	_log_failures(failures, cache_dir);
+}
+
+static void _log_failures(int failures, char *cache_dir)
+{
+	if (failures) {
+		printf("\n");
+		printf("Some user environments could not be loaded.\n");
+		printf("Manually run 'env' for those %d users.\n",
+			failures);
+		printf("Write the output to a file with the same name as "
+			"the user in the\n %s directory\n", cache_dir);
+	} else {
+		printf("\n");
+		printf("All user environments successfully loaded.\n");
+		printf("Files written to the %s directory\n", cache_dir);
+	}
 }
 
 /* Given a line from /etc/passwd, sets the user_name and user_id
@@ -273,7 +310,7 @@ static long int _build_cache(char *user_name, char *cache_dir)
 	}
 	close(fildes[0]);
 	if (!found) {
-		printf("ERROR: Failed to load current user environment "
+		printf("***ERROR: Failed to load current user environment "
 			"variables for %s\n", user_name);
 		return -1;
 	}
@@ -290,7 +327,7 @@ static long int _build_cache(char *user_name, char *cache_dir)
 		line = strtok_r(NULL, "\n", &last);
 	}
 	if (!found) {
-		printf("ERROR: Failed to get current user environment "
+		printf("***ERROR: Failed to get current user environment "
 			"variables for %s\n", user_name);
 		return -1;
 	}
@@ -328,7 +365,7 @@ static long int _build_cache(char *user_name, char *cache_dir)
 	delta_t  = (now.tv_sec  - begin.tv_sec)  * 1000000;
 	delta_t +=  now.tv_usec - begin.tv_usec;
 	if (!found) {
-		printf("ERROR: Failed to write all user environment "
+		printf("***ERROR: Failed to write all user environment "
 			"variables for %s\n", user_name);
 		if (delta_t < (SU_WAIT_MSEC * 1000))
 			return (SU_WAIT_MSEC * 1000);
