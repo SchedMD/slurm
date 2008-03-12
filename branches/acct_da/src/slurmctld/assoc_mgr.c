@@ -80,14 +80,12 @@ static int _get_local_user_list(void *db_conn)
 {
 	acct_user_cond_t user_q;
 
-	memset(&user_q, 0, sizeof(acct_association_cond_t));
+	memset(&user_q, 0, sizeof(acct_user_cond_t));
 
 	slurm_mutex_lock(&local_user_lock);
 	if(local_user_list)
 		list_destroy(local_user_list);
-	info("getting the list");
 	local_user_list = acct_storage_g_get_users(db_conn, &user_q);
-	info("done getting the list");
 
 	slurm_mutex_unlock(&local_user_lock);
 
@@ -103,16 +101,13 @@ extern int assoc_mgr_init(void *db_conn)
 {
 	if(!slurmctld_cluster_name)
 		slurmctld_cluster_name = slurm_get_cluster_name();
-	info("we getting info for cluster %s", slurmctld_cluster_name);
 	
 	if(!local_association_list) 
 		if(_get_local_association_list(db_conn) == SLURM_ERROR)
 			return SLURM_ERROR;
-	info("got %d associations", list_count(local_association_list));
 	if(!local_user_list) 
 		if(_get_local_user_list(db_conn) == SLURM_ERROR)
 			return SLURM_ERROR;
-	info("got %d users", list_count(local_user_list));
 
 	return SLURM_SUCCESS;
 }
@@ -123,7 +118,9 @@ extern int assoc_mgr_fini()
 		list_destroy(local_association_list);
 	if(local_user_list)
 		list_destroy(local_user_list);
-	
+	local_association_list = NULL;
+	local_user_list = NULL;
+
 	return SLURM_SUCCESS;
 }
 

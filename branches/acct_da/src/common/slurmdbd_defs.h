@@ -284,6 +284,8 @@ extern int slurm_send_recv_slurmdbd_msg(slurmdbd_msg_t *req,
  * Returns SLURM_SUCCESS or an error code */
 extern int slurm_send_slurmdbd_recv_rc_msg(slurmdbd_msg_t *req, int *rc);
 
+extern Buf pack_slurmdbd_msg(slurmdbd_msg_t *req);
+extern int unpack_slurmdbd_msg(slurmdbd_msg_t *resp, Buf buffer);
 /*****************************************************************************\
  * Free various SlurmDBD message structures
 \*****************************************************************************/

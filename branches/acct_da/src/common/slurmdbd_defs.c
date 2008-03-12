@@ -95,7 +95,6 @@ static int    _get_return_code(void);
 static Buf    _load_dbd_rec(int fd);
 static void   _load_dbd_state(void);
 static void   _open_slurmdbd_fd(void);
-static Buf    _pack_slurmdbd_msg(slurmdbd_msg_t *req);
 static int    _purge_job_start_req(void);
 static Buf    _recv_msg(void);
 static void   _reopen_slurmdbd_fd(void);
@@ -106,7 +105,6 @@ static int    _send_msg(Buf buffer);
 static void   _sig_handler(int signal);
 static void   _shutdown_agent(void);
 static int    _tot_wait (struct timeval *start_time);
-static int    _unpack_slurmdbd_msg(slurmdbd_msg_t *resp, Buf buffer);
 
 /****************************************************************************
  * Socket open/close/read/write functions
@@ -197,7 +195,7 @@ extern int slurm_send_recv_slurmdbd_msg(slurmdbd_msg_t *req,
 		}
 	}
 
-	buffer = _pack_slurmdbd_msg(req);
+	buffer = pack_slurmdbd_msg(req);
 
 	rc = _send_msg(buffer);
 	free_buf(buffer);
@@ -215,7 +213,7 @@ extern int slurm_send_recv_slurmdbd_msg(slurmdbd_msg_t *req,
 		return SLURM_ERROR;
 	}
 
-	rc = _unpack_slurmdbd_msg(resp, buffer);
+	rc = unpack_slurmdbd_msg(resp, buffer);
 
 	free_buf(buffer);
 	slurm_mutex_unlock(&slurmdbd_lock);
@@ -232,7 +230,7 @@ extern int slurm_send_slurmdbd_msg(slurmdbd_msg_t *req)
 	static time_t syslog_time = 0;
 
 	
-	buffer = _pack_slurmdbd_msg(req);
+	buffer = pack_slurmdbd_msg(req);
 
 	slurm_mutex_lock(&agent_lock);
 	if ((agent_tid == 0) || (agent_list == NULL)) {
@@ -305,7 +303,7 @@ static void _open_slurmdbd_fd(void)
 	xfree(slurmdbd_host);
 }
 
-static Buf _pack_slurmdbd_msg(slurmdbd_msg_t *req)
+extern Buf pack_slurmdbd_msg(slurmdbd_msg_t *req)
 {
 	Buf buffer = init_buf(MAX_DBD_MSG_LEN);
 	pack16(req->msg_type, buffer);
@@ -413,7 +411,7 @@ static Buf _pack_slurmdbd_msg(slurmdbd_msg_t *req)
 	return buffer;
 }
 
-static int _unpack_slurmdbd_msg(slurmdbd_msg_t *resp, Buf buffer)
+extern int unpack_slurmdbd_msg(slurmdbd_msg_t *resp, Buf buffer)
 {
 	int rc = SLURM_SUCCESS;
        
@@ -1849,7 +1847,6 @@ int inline slurmdbd_unpack_list_msg(slurmdbd_msg_type_t type,
 			goto unpack_error;
 		list_append(msg_ptr->my_list, object);
 	}
-	
 	return SLURM_SUCCESS;
 
 unpack_error:

@@ -311,10 +311,8 @@ static int _get_users(void *db_conn, Buf in_buffer, Buf *out_buffer)
 	
 	info("DBD_GET_USERS: called");
 
-	list_msg.my_list = acct_storage_g_get_users(
-		db_conn, get_msg->cond);
+	list_msg.my_list = acct_storage_g_get_users(db_conn, get_msg->cond);
 	slurmdbd_free_cond_msg(DBD_GET_USERS, get_msg);
-
 
 	*out_buffer = init_buf(1024);
 	pack16((uint16_t) DBD_GOT_USERS, *out_buffer);
