@@ -6,10 +6,40 @@
 for clusters containing 1,024 nodes or more. 
 Virtually all SLURM components have been validated (through emulation) 
 for clusters containing up to 65,536 compute nodes. 
-Getting good performance at that scale does require some tuning and 
+Getting optimal performance at that scale does require some tuning and 
 this document should help you off to a good start.
 A working knowledge of SLURM should be considered a prerequisite 
 for this material.</p>
+
+<h2>Performance Results</h2>
+
+<p>SLURM has acutally been used on clusters containing up to 4,184 nodes. 
+At that scale, the total time to execute a simple program (resource 
+allocation, task launch, I/O processing, and cleanup, e.g. 
+"time srun -N4184 -n8368 uname") at 8,368 tasks 
+across the 4,184 nodes was under 57 seconds. The table below shows
+total execution times for several large clusters with different architectures.</p>
+<table border>
+<caption>SLURM Total Job Execution Time</caption>
+<tr>
+<th>Nodes</th><th>Tasks</th><th>Seconds</th>
+</tr>
+<tr>
+<th>256</th><th>512</th><th>1.0</th>
+</tr>
+<tr>
+<th>512</th><th>1024</th><th>2.2</th>
+</tr>
+<tr>
+<th>1024</th><th>2048</th><th>3.7</th>
+</tr>
+<tr>
+<th>2123</th><th>4246</th><th>19.5</th>
+</tr>
+<tr>
+<th>4184</th><th>8368</th><th>56.6</th>
+</tr>
+</table>
 
 <h2>Node Selection Plugin (SelectType)</h2>
 
