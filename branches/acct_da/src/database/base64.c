@@ -74,7 +74,7 @@ extern unsigned char *encode_base64(const unsigned char* in_str,
 	rlen++; /* for the eol */
 	ret_str = xmalloc(sizeof(unsigned char) * rlen);
 	
-	debug2("encoding %s", in_str);
+	debug4("encoding %s", in_str);
 
 	while (in_len--) {
 		char_array_3[i++] = *(in_str++);
@@ -111,7 +111,7 @@ extern unsigned char *encode_base64(const unsigned char* in_str,
 		
 	}
 
-	debug2("encoded %s", ret_str);
+	debug4("encoded %s", ret_str);
 	
 	return ret_str;
 }
@@ -136,7 +136,7 @@ extern unsigned char *decode_base64(const unsigned char *in_str)
 	int rlen = in_len * 3 / 4; /* always enough, but sometimes too
 				    * much */
        	
-	debug2("decoding %s", in_str);
+	debug4("decoding %s", in_str);
 
 	ret_str = xmalloc(sizeof(unsigned char) * rlen);
 	memset(ret_str, 0, rlen);
@@ -193,7 +193,7 @@ extern unsigned char *decode_base64(const unsigned char *in_str)
 			ret_str[pos++] = char_array_3[j];
 	}
 
-	debug2("decoded %s", ret_str);
+	debug4("decoded %s", ret_str);
 
 	return ret_str;
 }

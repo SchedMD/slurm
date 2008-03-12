@@ -37,6 +37,8 @@
 
 #include "assoc_mgr.h"
 #include "src/common/xstring.h"
+#include <sys/types.h>
+#include <pwd.h>
 
 static List local_association_list = NULL;
 static List local_user_list = NULL;
@@ -64,15 +66,26 @@ static int _get_local_association_list(void *db_conn)
 	
 	local_association_list =
 		acct_storage_g_get_associations(db_conn, &assoc_q);
-
-	slurm_mutex_unlock(&local_association_lock);
-
 	list_destroy(assoc_q.cluster_list);
+	
 	if(!local_association_list) {
 		error("_get_local_association_list: "
 		      "no list was made.");
+		slurm_mutex_unlock(&local_association_lock);
 		return SLURM_ERROR;
+	} else {
+		acct_association_rec_t *assoc = NULL;
+		struct passwd *passwd_ptr = NULL;
+		ListIterator itr = list_iterator_create(local_association_list);
+		while((assoc = list_next(itr))) {
+			passwd_ptr = getpwnam(assoc->user);
+			if(passwd_ptr) 
+				assoc->uid = passwd_ptr->pw_uid;
+		}
+		list_iterator_destroy(itr);
 	}
+	slurm_mutex_unlock(&local_association_lock);
+
 	return SLURM_SUCCESS;
 }
 
@@ -87,13 +100,24 @@ static int _get_local_user_list(void *db_conn)
 		list_destroy(local_user_list);
 	local_user_list = acct_storage_g_get_users(db_conn, &user_q);
 
-	slurm_mutex_unlock(&local_user_lock);
-
 	if(!local_user_list) {
 		error("_get_local_user_list: "
 		      "no list was made.");
+		slurm_mutex_unlock(&local_user_lock);
 		return SLURM_ERROR;
+	} else {
+		acct_user_rec_t *user = NULL;
+		struct passwd *passwd_ptr = NULL;
+		ListIterator itr = list_iterator_create(local_user_list);
+		while((user = list_next(itr))) {
+			passwd_ptr = getpwnam(user->name);
+			if(passwd_ptr) 
+				user->uid = passwd_ptr->pw_uid;
+		}
+		list_iterator_destroy(itr);
 	}
+
+	slurm_mutex_unlock(&local_user_lock);
 	return SLURM_SUCCESS;
 }
 
@@ -136,17 +160,18 @@ extern int get_default_account(void *db_conn, acct_user_rec_t *user)
 	slurm_mutex_lock(&local_user_lock);
 	itr = list_iterator_create(local_user_list);
 	while((found_user = list_next(itr))) {
-		if(!strcasecmp(user->name, found_user->name)) 
+		if(user->uid == found_user->uid) 
 			break;
 	}
 	list_iterator_destroy(itr);
-	slurm_mutex_unlock(&local_user_lock);
 
 	if(found_user) {
-		xfree(user->default_acct);
+		user->name = found_user->name;
 		user->default_acct = found_user->default_acct;
+		slurm_mutex_unlock(&local_user_lock);
 		return SLURM_SUCCESS;
 	}
+	slurm_mutex_unlock(&local_user_lock);
 	return SLURM_ERROR;
 }
 
@@ -163,22 +188,24 @@ extern int get_assoc_id(void *db_conn, acct_association_rec_t *assoc)
 		if(!assoc->acct) {
 			acct_user_rec_t user;
 
-			if(!assoc->user) {
+			if(!assoc->uid) {
 				error("get_assoc_id: "
 				      "Not enough info to get an association");
 				return SLURM_ERROR;
 			}
 			memset(&user, 0, sizeof(acct_user_rec_t));
-			user.name = assoc->user;
+			user.uid = assoc->uid;
 			if(get_default_account(db_conn, &user) == SLURM_ERROR)
 				return SLURM_ERROR;
+			assoc->user = user.name;
 			assoc->acct = user.default_acct;
 		} 
 		
 		if(!assoc->cluster)
 			assoc->cluster = slurmctld_cluster_name;
 	}
-
+/* 	info("looking for assoc of user=%u, acct=%s, cluster=%s, partition=%s", */
+/* 	     assoc->uid, assoc->acct, assoc->cluster, assoc->partition); */
 	slurm_mutex_lock(&local_association_lock);
 	itr = list_iterator_create(local_association_list);
 	while((found_assoc = list_next(itr))) {
@@ -189,28 +216,40 @@ extern int get_assoc_id(void *db_conn, acct_association_rec_t *assoc)
 			}
 			continue;
 		} else {
-			if((!found_assoc->acct 
-			    || strcasecmp(assoc->acct,
-					  found_assoc->acct))
-			   || (!assoc->cluster 
-			       || strcasecmp(assoc->cluster,
-					     found_assoc->cluster))
-			   || (assoc->user 
-			       && (!found_assoc->user 
-				   || strcasecmp(assoc->user,
-						 found_assoc->user)))
-			   || (!assoc->user && found_assoc->user 
-			       && strcasecmp("none",
-					     found_assoc->user)))
+			if(!assoc->user && found_assoc->user 
+			   && strcasecmp("none", found_assoc->user)) {
+				debug3("we are looking for a "
+				       "nonuser association");
 				continue;
+			} else if(assoc->uid != found_assoc->uid) {
+				debug3("not the right user");
+				continue;
+			}
+			
+			if(found_assoc->acct 
+			   && strcasecmp(assoc->acct, found_assoc->acct)) {
+				   debug3("not the right account");
+				   continue;
+			}
+/* We shouldn't have to do this since we only have this clusters
+ * assocs here */
+/* 			if(found_assoc->cluster  */
+/* 			   && strcasecmp(assoc->cluster, */
+/* 					 found_assoc->cluster)) { */
+/* 				debug3("not the right cluster"); */
+/* 				continue; */
+/* 			} */
+	
 			if(assoc->partition
-			   && (!assoc->partition 
+			   && (!found_assoc->partition 
 			       || strcasecmp(assoc->partition, 
 					     found_assoc->partition))) {
 				ret_assoc = found_assoc;
+				debug3("found association for no partition");
 				continue;
 			}
 		}
+		debug3("found correct association");
 		ret_assoc = found_assoc;
 		break;
 	}

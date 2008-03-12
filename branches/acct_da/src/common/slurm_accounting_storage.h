@@ -60,10 +60,11 @@ typedef enum {
 } acct_expedite_level_t;
 
 typedef struct {
-	char *name;
+	acct_admin_level_t admin_level;
 	char *default_acct;
 	acct_expedite_level_t expedite;
-	acct_admin_level_t admin_level;
+	char *name;
+	uint32_t uid;
 } acct_user_rec_t;
 
 typedef struct {

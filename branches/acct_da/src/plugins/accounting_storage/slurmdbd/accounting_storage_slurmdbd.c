@@ -461,7 +461,7 @@ extern List acct_storage_p_get_users(void *db_conn,
 		got_msg = (dbd_list_msg_t *) resp.data;
 		ret_list = got_msg->my_list;
 		got_msg->my_list = NULL;
-		//slurmdbd_free_list_msg(got_msg);
+		slurmdbd_free_list_msg(got_msg);
 	}
 
 

@@ -455,6 +455,7 @@ extern void pack_acct_user_rec(void *in, Buf buffer)
 	packstr(object->default_acct, buffer);
 	pack16((uint16_t)object->expedite, buffer);
 	packstr(object->name, buffer);
+	pack32(object->uid, buffer);
 }
 
 extern int unpack_acct_user_rec(void **object, Buf buffer)
@@ -467,6 +468,7 @@ extern int unpack_acct_user_rec(void **object, Buf buffer)
 	safe_unpackstr_xmalloc(&object_ptr->default_acct, &uint32_tmp, buffer);
 	safe_unpack16((uint16_t *)&object_ptr->expedite, buffer);
 	safe_unpackstr_xmalloc(&object_ptr->name, &uint32_tmp, buffer);
+	safe_unpack32(&object_ptr->uid, buffer);
 	return SLURM_SUCCESS;
 
 unpack_error:

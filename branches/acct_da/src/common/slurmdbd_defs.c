@@ -1958,6 +1958,7 @@ slurmdbd_pack_step_start_msg(dbd_step_start_msg_t *msg, Buf buffer)
 	packstr(msg->name, buffer);
 	packstr(msg->nodes, buffer);
 	pack_time(msg->start_time, buffer);
+	pack_time(msg->job_submit_time, buffer);
 	pack32(msg->step_id, buffer);
 	pack32(msg->total_procs, buffer);
 }
@@ -1974,6 +1975,7 @@ slurmdbd_unpack_step_start_msg(dbd_step_start_msg_t **msg, Buf buffer)
 	safe_unpackstr_xmalloc(&msg_ptr->name, &uint32_tmp, buffer);
 	safe_unpackstr_xmalloc(&msg_ptr->nodes, &uint32_tmp, buffer);
 	safe_unpack_time(&msg_ptr->start_time, buffer);
+	safe_unpack_time(&msg_ptr->job_submit_time, buffer);
 	safe_unpack32(&msg_ptr->step_id, buffer);
 	safe_unpack32(&msg_ptr->total_procs, buffer);
 	return SLURM_SUCCESS;

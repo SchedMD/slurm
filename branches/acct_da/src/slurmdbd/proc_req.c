@@ -576,8 +576,9 @@ static int  _step_complete(void *db_conn,
 		return SLURM_ERROR;
 	}
 
-	debug2("DBD_STEP_COMPLETE: ID:%u.%u ", 
-	       step_comp_msg->job_id, step_comp_msg->step_id);
+	debug2("DBD_STEP_COMPLETE: ID:%u.%u SUBMIT:%u", 
+	       step_comp_msg->job_id, step_comp_msg->step_id,
+	       step_comp_msg->job_submit_time);
 
 	memset(&step, 0, sizeof(struct step_record));
 	memset(&job, 0, sizeof(struct job_record));
@@ -628,9 +629,9 @@ static int  _step_start(void *db_conn,
 		return SLURM_ERROR;
 	}
 
-	debug2("DBD_STEP_START: ID:%u.%u NAME:%s", 
+	debug2("DBD_STEP_START: ID:%u.%u NAME:%s SUBMIT:%d", 
 	     step_start_msg->job_id, step_start_msg->step_id,
-	     step_start_msg->name);
+	       step_start_msg->name, step_start_msg->job_submit_time);
 
 	memset(&step, 0, sizeof(struct step_record));
 	memset(&job, 0, sizeof(struct job_record));
