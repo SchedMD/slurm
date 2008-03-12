@@ -1315,11 +1315,17 @@ void inline slurmdbd_free_usage_msg(slurmdbd_msg_type_t type,
 		case DBD_GET_ASSOC_DAY:
 		case DBD_GET_ASSOC_HOUR:
 		case DBD_GET_ASSOC_MONTH:
+		case DBD_GOT_ASSOC_DAY:
+		case DBD_GOT_ASSOC_HOUR:
+		case DBD_GOT_ASSOC_MONTH:
 			destroy_rec = destroy_acct_association_rec;
 			break;
 		case DBD_GET_CLUSTER_DAY:
 		case DBD_GET_CLUSTER_HOUR:
 		case DBD_GET_CLUSTER_MONTH:
+		case DBD_GOT_CLUSTER_DAY:
+		case DBD_GOT_CLUSTER_HOUR:
+		case DBD_GOT_CLUSTER_MONTH:
 			destroy_rec = destroy_acct_cluster_rec;
 			break;
 		default:
@@ -1749,19 +1755,9 @@ void inline slurmdbd_pack_list_msg(slurmdbd_msg_type_t type,
 	case DBD_GOT_ASSOCS:
 		my_function = pack_acct_association_rec;
 		break;
-	case DBD_GOT_ASSOC_HOUR:
-	case DBD_GOT_ASSOC_DAY:
-	case DBD_GOT_ASSOC_MONTH:
-		my_function = pack_acct_accounting_rec;
-		break;
 	case DBD_ADD_CLUSTERS:
 	case DBD_GOT_CLUSTERS:
 		my_function = pack_acct_cluster_rec;
-		break;
-	case DBD_GOT_CLUSTER_HOUR:
-	case DBD_GOT_CLUSTER_DAY:
-	case DBD_GOT_CLUSTER_MONTH:
-		my_function = pack_cluster_accounting_rec;
 		break;
 	case DBD_GOT_JOBS:
 		my_function = pack_jobacct_job_rec;
@@ -1808,22 +1804,10 @@ int inline slurmdbd_unpack_list_msg(slurmdbd_msg_type_t type,
 		my_function = unpack_acct_association_rec;
 		my_destroy = destroy_acct_association_rec;
 		break;
-	case DBD_GOT_ASSOC_HOUR:
-	case DBD_GOT_ASSOC_DAY:
-	case DBD_GOT_ASSOC_MONTH:
-		my_function = unpack_acct_accounting_rec;
-		my_destroy = destroy_acct_accounting_rec;
-		break;
 	case DBD_ADD_CLUSTERS:
 	case DBD_GOT_CLUSTERS:
 		my_function = unpack_acct_cluster_rec;
 		my_destroy = destroy_acct_cluster_rec;
-		break;
-	case DBD_GOT_CLUSTER_HOUR:
-	case DBD_GOT_CLUSTER_DAY:
-	case DBD_GOT_CLUSTER_MONTH:
-		my_function = unpack_cluster_accounting_rec;
-		my_destroy = destroy_cluster_accounting_rec;
 		break;
 	case DBD_GOT_JOBS:
 		my_function = unpack_jobacct_job_rec;

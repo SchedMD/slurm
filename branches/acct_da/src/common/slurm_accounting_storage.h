@@ -61,6 +61,7 @@ typedef enum {
 
 typedef struct {
 	acct_admin_level_t admin_level;
+	List coord_accts; /* list of acct_coord_rec_t *'s */
 	char *default_acct;
 	acct_expedite_level_t expedite;
 	char *name;
@@ -74,6 +75,11 @@ typedef struct {
 	char *name;
 	char *organization;
 } acct_account_rec_t;
+
+typedef struct {
+	char *acct_name;
+	uint16_t sub_acct;
+} acct_coord_rec_t;
 
 typedef struct {
 	uint32_t alloc_secs; /* number of cpu seconds allocated */
@@ -153,6 +159,7 @@ typedef struct {
 
 extern void destroy_acct_user_rec(void *object);
 extern void destroy_acct_account_rec(void *object);
+extern void destroy_acct_coord_rec(void *object);
 extern void destroy_cluster_accounting_rec(void *object);
 extern void destroy_acct_cluster_rec(void *object);
 extern void destroy_acct_accounting_rec(void *object);
@@ -168,6 +175,8 @@ extern void pack_acct_user_rec(void *object, Buf buffer);
 extern int unpack_acct_user_rec(void **object, Buf buffer);
 extern void pack_acct_account_rec(void *object, Buf buffer);
 extern int unpack_acct_account_rec(void **object, Buf buffer);
+extern void pack_acct_coord_rec(void *object, Buf buffer);
+extern int unpack_acct_coord_rec(void **object, Buf buffer);
 extern void pack_cluster_accounting_rec(void *object, Buf buffer);
 extern int unpack_cluster_accounting_rec(void **object, Buf buffer);
 extern void pack_acct_cluster_rec(void *object, Buf buffer);
@@ -377,36 +386,36 @@ extern List acct_storage_g_get_associations(void *db_conn,
 
 /* 
  * get info from the storage 
- * IN/OUT:  acct_assoc acct_association_rec_t with the id set
+ * IN/OUT:  assoc void * (acct_association_rec_t *) with the id set
  * IN:  start time stamp for records >=
  * IN:  end time stamp for records <
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
 extern int acct_storage_g_get_hourly_usage(void *db_conn, 
-					   acct_association_rec_t *assoc,
+					   void *assoc,
 					   time_t start, time_t end);
 
 /* 
  * get info from the storage 
- * IN/OUT:  acct_assoc acct_association_rec_t with the id set
+ * IN/OUT:  assoc void * (acct_association_rec_t *) with the id set
  * IN:  start time stamp for records >=
  * IN:  end time stamp for records <
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
 extern int acct_storage_g_get_daily_usage(void *db_conn, 
-					  acct_association_rec_t *assoc,
+					  void *assoc,
 					  time_t start, time_t end);
 
 /* 
  * get info from the storage 
- * IN/OUT:  acct_assoc acct_association_rec_t with the id set
+ * IN/OUT:  assoc void * (acct_association_rec_t *) with the id set
  * IN:  start time stamp for records >=
  * IN:  end time stamp for records <
  * IN:  params void *
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
 extern int acct_storage_g_get_monthly_usage(void *db_conn, 
-					    acct_association_rec_t *assoc,
+					    void *assoc,
 					    time_t start, time_t end);
 
 
@@ -430,42 +439,36 @@ extern int clusteracct_storage_g_cluster_procs(void *db_conn,
 
 /* 
  * get info from the storage 
- * IN/OUT:  cluster_rec account_cluster_rec_t with the name set
+ * IN/OUT:  cluster_rec void * (account_cluster_rec_t *) with the name set
  * IN:  start time stamp for records >=
  * IN:  end time stamp for records <
  * IN:  params void *
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
 extern int clusteracct_storage_g_get_hourly_usage(
-	void *db_conn, 
-	acct_cluster_rec_t *cluster_rec, time_t start, 
-	time_t end);
+	void *db_conn, void *cluster_rec, time_t start, time_t end);
 
 /* 
  * get info from the storage 
- * IN/OUT:  cluster_rec acct_cluster_rec_t with the name set
+ * IN/OUT:  cluster_rec void * (acct_cluster_rec_t *) with the name set
  * IN:  start time stamp for records >=
  * IN:  end time stamp for records <
  * IN:  params void *
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
 extern int clusteracct_storage_g_get_daily_usage(
-	void *db_conn, 
-	acct_cluster_rec_t *cluster_rec, time_t start, 
-	time_t end);
+	void *db_conn, void *cluster_rec, time_t start, time_t end);
 
 /* 
  * get info from the storage 
- * IN/OUT:  cluster_rec acct_cluster_rec_t with the name set
+ * IN/OUT:  cluster_rec void * (acct_cluster_rec_t *) with the name set
  * IN:  start time stamp for records >=
  * IN:  end time stamp for records <
  * IN:  params void *
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
 extern int clusteracct_storage_g_get_monthly_usage(
-	void *db_conn, 
-	acct_cluster_rec_t *cluster_rec, 
-	time_t start, time_t end);
+	void *db_conn, void *cluster_rec, time_t start, time_t end);
 
 /* 
  * load into the storage the start of a job

@@ -36,16 +36,21 @@
 \*****************************************************************************/
 
 #include "assoc_mgr.h"
-#include "src/common/xstring.h"
+
 #include <sys/types.h>
 #include <pwd.h>
 
+#include "src/common/xstring.h"
+#include "src/slurmdbd/read_config.h"
+
 static List local_association_list = NULL;
 static List local_user_list = NULL;
+static char *local_cluster_name = NULL;
+
 static pthread_mutex_t local_association_lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t local_user_lock = PTHREAD_MUTEX_INITIALIZER;
 
-static int _get_local_association_list(void *db_conn)
+static int _get_local_association_list(void *db_conn, int enforce)
 {
 	acct_association_cond_t assoc_q;
 	char *cluster_name = NULL;
@@ -56,9 +61,9 @@ static int _get_local_association_list(void *db_conn)
 
 	memset(&assoc_q, 0, sizeof(acct_association_cond_t));
 	assoc_q.cluster_list = list_create(slurm_destroy_char);
-	cluster_name = xstrdup(slurmctld_cluster_name);
+	cluster_name = xstrdup(local_cluster_name);
 	if(!cluster_name) {
-		if(slurmctld_conf.accounting_storage_enforce) {
+		if(enforce && !slurmdbd_conf) {
 			error("_get_local_association_list: "
 			      "no cluster name here going to get "
 			      "all associations.");
@@ -71,13 +76,12 @@ static int _get_local_association_list(void *db_conn)
 	list_destroy(assoc_q.cluster_list);
 	
 	if(!local_association_list) {
-		if(slurmctld_conf.accounting_storage_enforce) {
+		if(enforce) {
 			error("_get_local_association_list: "
 			      "no list was made.");
 			slurm_mutex_unlock(&local_association_lock);
 			return SLURM_ERROR;
 		} else {
-			info(" no assoc list 1");
 			return SLURM_SUCCESS;
 		}
 	} else {
@@ -96,7 +100,7 @@ static int _get_local_association_list(void *db_conn)
 	return SLURM_SUCCESS;
 }
 
-static int _get_local_user_list(void *db_conn)
+static int _get_local_user_list(void *db_conn, int enforce)
 {
 	acct_user_cond_t user_q;
 
@@ -108,13 +112,12 @@ static int _get_local_user_list(void *db_conn)
 	local_user_list = acct_storage_g_get_users(db_conn, &user_q);
 
 	if(!local_user_list) {
-		if(slurmctld_conf.accounting_storage_enforce) {
+		if(enforce) {
 			error("_get_local_user_list: "
 			      "no list was made.");
 			slurm_mutex_unlock(&local_user_lock);
 			return SLURM_ERROR;
 		} else {
-			info("no user list 1");
 			return SLURM_SUCCESS;
 		}		
 	} else {
@@ -133,16 +136,16 @@ static int _get_local_user_list(void *db_conn)
 	return SLURM_SUCCESS;
 }
 
-extern int assoc_mgr_init(void *db_conn)
+extern int assoc_mgr_init(void *db_conn, int enforce)
 {
-	if(!slurmctld_cluster_name)
-		slurmctld_cluster_name = slurm_get_cluster_name();
+	if(!local_cluster_name && !slurmdbd_conf)
+		local_cluster_name = slurm_get_cluster_name();
 	
 	if(!local_association_list) 
-		if(_get_local_association_list(db_conn) == SLURM_ERROR)
+		if(_get_local_association_list(db_conn, enforce) == SLURM_ERROR)
 			return SLURM_ERROR;
 	if(!local_user_list) 
-		if(_get_local_user_list(db_conn) == SLURM_ERROR)
+		if(_get_local_user_list(db_conn, enforce) == SLURM_ERROR)
 			return SLURM_ERROR;
 
 	return SLURM_SUCCESS;
@@ -154,56 +157,25 @@ extern int assoc_mgr_fini()
 		list_destroy(local_association_list);
 	if(local_user_list)
 		list_destroy(local_user_list);
+	xfree(local_cluster_name);
 	local_association_list = NULL;
 	local_user_list = NULL;
 
 	return SLURM_SUCCESS;
 }
 
-extern int get_default_account(void *db_conn, acct_user_rec_t *user)
-{
-	ListIterator itr = NULL;
-	acct_user_rec_t * found_user = NULL;
-
-	if(!local_user_list) 
-		if(_get_local_user_list(db_conn) == SLURM_ERROR)
-			return SLURM_ERROR;
-
-	if(!local_user_list 
-	   && !slurmctld_conf.accounting_storage_enforce) {
-		info("no user list");
-		return SLURM_SUCCESS;
-	}
-	slurm_mutex_lock(&local_user_lock);
-	itr = list_iterator_create(local_user_list);
-	while((found_user = list_next(itr))) {
-		if(user->uid == found_user->uid) 
-			break;
-	}
-	list_iterator_destroy(itr);
-
-	if(found_user) {
-		user->name = found_user->name;
-		user->default_acct = found_user->default_acct;
-		slurm_mutex_unlock(&local_user_lock);
-		return SLURM_SUCCESS;
-	}
-	slurm_mutex_unlock(&local_user_lock);
-	return SLURM_ERROR;
-}
-
-extern int get_assoc_id(void *db_conn, acct_association_rec_t *assoc)
+extern int assoc_mgr_fill_in_assoc(void *db_conn, acct_association_rec_t *assoc,
+				   int enforce)
 {
 	ListIterator itr = NULL;
 	acct_association_rec_t * found_assoc = NULL;
 	acct_association_rec_t * ret_assoc = NULL;
 	
 	if(!local_association_list) 
-		if(_get_local_association_list(db_conn) == SLURM_ERROR)
+		if(_get_local_association_list(db_conn, enforce) == SLURM_ERROR)
 			return SLURM_ERROR;
 
-	if(!local_association_list 
-	   && !slurmctld_conf.accounting_storage_enforce) 
+	if(!local_association_list && !enforce) 
 		return SLURM_SUCCESS;
 
 	if(!assoc->id) {
@@ -211,24 +183,22 @@ extern int get_assoc_id(void *db_conn, acct_association_rec_t *assoc)
 			acct_user_rec_t user;
 
 			if(!assoc->uid) {
-				if(slurmctld_conf.accounting_storage_enforce) {
+				if(enforce) {
 					error("get_assoc_id: "
 					      "Not enough info to "
 					      "get an association");
 					return SLURM_ERROR;
 				} else {
-					info("no assoc uid");
 					return SLURM_SUCCESS;
 				}
 			}
 			memset(&user, 0, sizeof(acct_user_rec_t));
 			user.uid = assoc->uid;
-			if(get_default_account(db_conn, &user) == SLURM_ERROR) {
-				if(slurmctld_conf.accounting_storage_enforce) 
+			if(assoc_mgr_fill_in_user(db_conn, &user, enforce) 
+			   == SLURM_ERROR) {
+				if(enforce) 
 					return SLURM_ERROR;
 				else {
-					info("no default account");
-
 					return SLURM_SUCCESS;
 				}
 			}					
@@ -237,7 +207,7 @@ extern int get_assoc_id(void *db_conn, acct_association_rec_t *assoc)
 		} 
 		
 		if(!assoc->cluster)
-			assoc->cluster = slurmctld_cluster_name;
+			assoc->cluster = local_cluster_name;
 	}
 /* 	info("looking for assoc of user=%u, acct=%s, cluster=%s, partition=%s", */
 /* 	     assoc->uid, assoc->acct, assoc->cluster, assoc->partition); */
@@ -292,7 +262,7 @@ extern int get_assoc_id(void *db_conn, acct_association_rec_t *assoc)
 	
 	if(!ret_assoc) {
 		slurm_mutex_unlock(&local_association_lock);
-		if(slurmctld_conf.accounting_storage_enforce) 
+		if(enforce) 
 			return SLURM_ERROR;
 		else
 			return SLURM_SUCCESS;
@@ -312,7 +282,108 @@ extern int get_assoc_id(void *db_conn, acct_association_rec_t *assoc)
 	return SLURM_SUCCESS;
 }
 
-extern int remove_local_association(uint32_t id)
+extern int assoc_mgr_fill_in_user(void *db_conn, acct_user_rec_t *user,
+				  int enforce)
+{
+	ListIterator itr = NULL;
+	acct_user_rec_t * found_user = NULL;
+
+	if(!local_user_list) 
+		if(_get_local_user_list(db_conn, enforce) == SLURM_ERROR)
+			return SLURM_ERROR;
+
+	if(!local_user_list && !enforce) 
+		return SLURM_SUCCESS;
+
+	slurm_mutex_lock(&local_user_lock);
+	itr = list_iterator_create(local_user_list);
+	while((found_user = list_next(itr))) {
+		if(user->uid == found_user->uid) 
+			break;
+	}
+	list_iterator_destroy(itr);
+
+	if(found_user) {
+		memcpy(user, found_user, sizeof(acct_user_rec_t));		
+		slurm_mutex_unlock(&local_user_lock);
+		return SLURM_SUCCESS;
+	}
+	slurm_mutex_unlock(&local_user_lock);
+	return SLURM_ERROR;
+}
+
+extern acct_admin_level_t assoc_mgr_get_admin_level(void *db_conn,
+						    uint32_t uid)
+{
+	ListIterator itr = NULL;
+	acct_user_rec_t * found_user = NULL;
+
+	if(!local_user_list) 
+		if(_get_local_user_list(db_conn, 0) == SLURM_ERROR)
+			return ACCT_ADMIN_NOTSET;
+
+	if(!local_user_list) 
+		return ACCT_ADMIN_NOTSET;
+
+	slurm_mutex_lock(&local_user_lock);
+	itr = list_iterator_create(local_user_list);
+	while((found_user = list_next(itr))) {
+		if(uid == found_user->uid) 
+			break;
+	}
+	list_iterator_destroy(itr);
+	slurm_mutex_unlock(&local_user_lock);
+		
+	if(found_user) 
+		return found_user->admin_level;
+		
+	return ACCT_ADMIN_NOTSET;	
+}
+
+extern int assoc_mgr_is_user_acct_coord(void *db_conn,
+					uint32_t uid,
+					char *acct_name)
+{
+	ListIterator itr = NULL;
+	acct_coord_rec_t *acct = NULL;
+	acct_user_rec_t * found_user = NULL;
+
+	if(!local_user_list) 
+		if(_get_local_user_list(db_conn, 0) == SLURM_ERROR)
+			return ACCT_ADMIN_NOTSET;
+
+	if(!local_user_list) 
+		return ACCT_ADMIN_NOTSET;
+
+	slurm_mutex_lock(&local_user_lock);
+	itr = list_iterator_create(local_user_list);
+	while((found_user = list_next(itr))) {
+		if(uid == found_user->uid) 
+			break;
+	}
+	list_iterator_destroy(itr);
+		
+	if(!found_user) {
+		slurm_mutex_unlock(&local_user_lock);
+		return 0;
+	}
+	itr = list_iterator_create(found_user->coord_accts);
+	while((acct = list_next(itr))) {
+		if(!strcmp(acct_name, acct->acct_name))
+			break;
+	}
+	list_iterator_destroy(itr);
+	
+	if(acct) {
+		slurm_mutex_unlock(&local_user_lock);
+		return 1;
+	}
+	slurm_mutex_unlock(&local_user_lock);
+
+	return 0;	
+}
+
+extern int assoc_mgr_remove_local_association(uint32_t id)
 {
 	ListIterator itr = NULL;
 	acct_association_rec_t * found_assoc = NULL;
@@ -334,7 +405,7 @@ extern int remove_local_association(uint32_t id)
 	return SLURM_SUCCESS;
 }
 
-extern int remove_local_user(char *name)
+extern int assoc_mgr_remove_local_user(char *name)
 {
 	ListIterator itr = NULL;
 	acct_user_rec_t * found_user = NULL;
@@ -369,7 +440,7 @@ extern int remove_local_user(char *name)
 	return SLURM_SUCCESS;
 }
 
-extern int update_local_associations(List update_list)
+extern int assoc_mgr_update_local_associations(List update_list)
 {
 	acct_association_rec_t * rec = NULL;
 	acct_association_rec_t * update_rec = NULL;
@@ -403,7 +474,7 @@ extern int update_local_associations(List update_list)
 	return rc;	
 }
 
-extern int update_local_users(List update_list)
+extern int assoc_mgr_update_local_users(List update_list)
 {
 	acct_user_rec_t * rec = NULL;
 	acct_user_rec_t * update_rec = NULL;
@@ -437,17 +508,18 @@ extern int update_local_users(List update_list)
 	return rc;	
 }
 
-extern int validate_assoc_id(void *db_conn, uint32_t assoc_id)
+extern int assoc_mgr_validate_assoc_id(void *db_conn,
+				       uint32_t assoc_id,
+				       int enforce)
 {
 	ListIterator itr = NULL;
 	acct_association_rec_t * found_assoc = NULL;
 
 	if(!local_association_list) 
-		if(_get_local_association_list(db_conn) == SLURM_ERROR)
+		if(_get_local_association_list(db_conn, enforce) == SLURM_ERROR)
 			return SLURM_ERROR;
 
-	if(!local_association_list 
-	   && !slurmctld_conf.accounting_storage_enforce) 
+	if(!local_association_list && !enforce) 
 		return SLURM_SUCCESS;
 	
 	slurm_mutex_lock(&local_association_lock);

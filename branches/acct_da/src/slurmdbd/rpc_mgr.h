@@ -39,6 +39,7 @@
 #define _RPC_MGR_H
 
 #include "src/common/pack.h"
+#include "src/common/assoc_mgr.h"
 
 /* Return a buffer containing a DBD_RC (return code) message
  * caller must free returned buffer */
