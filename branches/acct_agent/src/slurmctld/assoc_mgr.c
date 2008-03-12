@@ -131,6 +131,11 @@ static int _get_local_user_list(void *db_conn)
 	return SLURM_SUCCESS;
 }
 
+extern uint16_t assoc_mgr_server(void)
+{
+	return (uint16_t) 0;
+}
+
 extern int assoc_mgr_init(void *db_conn)
 {
 	if(!slurmctld_cluster_name)
@@ -142,11 +147,12 @@ extern int assoc_mgr_init(void *db_conn)
 	if(!local_user_list) 
 		if(_get_local_user_list(db_conn) == SLURM_ERROR)
 			return SLURM_ERROR;
+	/* spawn the agent thread */
 
 	return SLURM_SUCCESS;
 }
 
-extern int assoc_mgr_fini()
+extern int assoc_mgr_fini(void)
 {
 	if(local_association_list) 
 		list_destroy(local_association_list);
@@ -154,6 +160,7 @@ extern int assoc_mgr_fini()
 		list_destroy(local_user_list);
 	local_association_list = NULL;
 	local_user_list = NULL;
+	/* kill the agent thread */
 
 	return SLURM_SUCCESS;
 }

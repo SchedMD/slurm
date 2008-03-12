@@ -83,6 +83,7 @@ static time_t    agent_shutdown = 0;
 
 static pthread_mutex_t slurmdbd_lock = PTHREAD_MUTEX_INITIALIZER;
 static slurm_fd  slurmdbd_fd         = -1;
+static uint16_t  slurmctld_port      = 0;
 static char *    slurmdbd_auth_info  = NULL;
 
 static void * _agent(void *x);
@@ -111,7 +112,7 @@ static int    _tot_wait (struct timeval *start_time);
  ****************************************************************************/
 
 /* Open a socket connection to SlurmDbd */
-extern int slurm_open_slurmdbd_conn(char *auth_info)
+extern int slurm_open_slurmdbd_conn(char *auth_info, uint16_t port)
 {
 	slurm_mutex_lock(&agent_lock);
 	if ((agent_tid == 0) || (agent_list == NULL))
@@ -122,6 +123,7 @@ extern int slurm_open_slurmdbd_conn(char *auth_info)
 	xfree(slurmdbd_auth_info);
 	if (auth_info)
 		slurmdbd_auth_info = xstrdup(auth_info);
+	slurmctld_port = port;
 	if (slurmdbd_fd < 0)
 		_open_slurmdbd_fd();
 	slurm_mutex_unlock(&slurmdbd_lock);
@@ -138,6 +140,7 @@ extern int slurm_close_slurmdbd_conn(void)
 	slurm_mutex_lock(&slurmdbd_lock);
 	_close_slurmdbd_fd();
 	xfree(slurmdbd_auth_info);
+	slurmctld_port = 0;
 	slurm_mutex_unlock(&slurmdbd_lock);
 
 	return SLURM_SUCCESS;
@@ -533,7 +536,8 @@ static int _send_init_msg(void)
 
 	buffer = init_buf(1024);
 	pack16((uint16_t) DBD_INIT, buffer);
-	req.version  = SLURMDBD_VERSION;
+	req.version        = SLURMDBD_VERSION;
+	req.slurmctld_port = slurmctld_port;
 	slurmdbd_pack_init_msg(&req, buffer, slurmdbd_auth_info);
 
 	rc = _send_msg(buffer);
@@ -1550,6 +1554,7 @@ slurmdbd_pack_init_msg(dbd_init_msg_t *msg, Buf buffer, char *auth_info)
 	void *auth_cred;
 
 	pack16(msg->version, buffer);
+	pack16(msg->slurmctld_port, buffer);
 	auth_cred = g_slurm_auth_create(NULL, 2, auth_info);
 	if (auth_cred == NULL) {
 		error("Creating authentication credential: %s",
@@ -1573,6 +1578,7 @@ slurmdbd_unpack_init_msg(dbd_init_msg_t **msg, Buf buffer, char *auth_info)
 	dbd_init_msg_t *msg_ptr = xmalloc(sizeof(dbd_init_msg_t));
 	*msg = msg_ptr;
 	safe_unpack16(&msg_ptr->version, buffer);
+	safe_unpack16(&msg_ptr->slurmctld_port, buffer);
 	auth_cred = g_slurm_auth_unpack(buffer);
 	if (auth_cred == NULL) {
 		error("Unpacking authentication credential: %s",

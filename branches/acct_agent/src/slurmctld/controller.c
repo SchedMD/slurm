@@ -306,7 +306,8 @@ int main(int argc, char *argv[])
 		fatal( "failed to initialize node selection plugin");
 	if (slurm_acct_storage_init(NULL) != SLURM_SUCCESS )
 		fatal( "failed to initialize accounting_storage plugin");
-	
+
+	acct_storage_g_set_msg_port(assoc_mgr_server());
 	acct_db_conn = acct_storage_g_get_connection();
 	assoc_mgr_init(acct_db_conn);
 

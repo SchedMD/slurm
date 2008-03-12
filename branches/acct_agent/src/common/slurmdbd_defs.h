@@ -154,6 +154,8 @@ typedef struct dbd_get_jobs_msg {
 
 typedef struct dbd_init_msg {
 	uint16_t version;	/* protocol version */
+	uint16_t slurmctld_port;/* port on slurmctld to process messages 
+				 * originating on slurmdbd */
 	uint32_t uid;		/* UID originating connection,
 				 * filled by authtentication plugin*/
 } dbd_init_msg_t;
@@ -261,8 +263,16 @@ typedef struct dbd_step_start_msg {
  * Slurm DBD message processing functions
 \*****************************************************************************/
 
-/* Open a socket connection to SlurmDbd using SlurmdbdAuthInfo specified */
-extern int slurm_open_slurmdbd_conn(char *auth_info);
+/* Open a socket connection to SlurmDbd using SlurmdbdAuthInfo specified
+ * IN: auth_info - If Munge is used for authentication, this will be the 
+ *		pathname to the named socket used if not the default
+ *		socket. Typically used if one Munge key and credential 
+ *		is used within a cluster and a different for site-wide
+ *		authentication.
+ * IN: port - socket port used for message originating in SlurmDdb and 
+ *		and sent to slurmctld.
+ */
+extern int slurm_open_slurmdbd_conn(char *auth_info, uint16_t port);
 
 /* Close the SlurmDBD socket connection */
 extern int slurm_close_slurmdbd_conn(void);

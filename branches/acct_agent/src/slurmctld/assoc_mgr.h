@@ -69,7 +69,15 @@ extern int get_default_account(void *db_conn, acct_user_rec_t *user);
 extern int get_assoc_id(void *db_conn, acct_association_rec_t *assoc);
 
 extern int assoc_mgr_init(void *db_conn);
-extern int assoc_mgr_fini();
+extern int assoc_mgr_fini(void);
+
+/*
+ * Open a socket to process request originating in the SlurmDBD
+ *	the agent will be spawned by assoc_mgr_init() and killed
+ *	by assoc_mgr_fini().
+ * RET: The port that will be used or 0 on error
+ */
+extern uint16_t assoc_mgr_server(void);
 
 /* 
  * remove association from local cache 
