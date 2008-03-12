@@ -202,7 +202,13 @@ typedef enum {
 
 	RESPONSE_SLURM_RC = 8001,
 
-	RESPONSE_FORWARD_FAILED = 9001
+	RESPONSE_FORWARD_FAILED = 9001,
+
+	ACCOUNTING_UPDATE_ASSOCS = 10001,
+	ACCOUNTING_UPDATE_USERS,
+	ACCOUNTING_REMOVE_ASSOCS,
+	ACCOUNTING_REMOVE_USERS
+
 } slurm_msg_type_t;
 
 typedef enum {
@@ -706,6 +712,25 @@ typedef struct slurm_node_registration_status_msg {
 	switch_node_info_t switch_nodeinfo;	/* set only if startup != 0 */
 } slurm_node_registration_status_msg_t;
 
+
+/*****************************************************************************\
+ *      ACCOUNTING PUSHS
+\*****************************************************************************/
+
+typedef struct {
+	uint32_t id_count;
+	uint32_t *ids;
+} accounting_remove_assocs_msg_t;
+
+typedef struct {
+	uint32_t name_count;
+	char **names;
+} accounting_remove_users_msg_t;
+
+typedef struct {
+	List update_list;
+} accounting_update_msg_t;
+
 typedef struct slurm_ctl_conf slurm_ctl_conf_info_msg_t;
 /*****************************************************************************\
  *	SLURM MESSAGE INITIALIZATION
@@ -823,6 +848,13 @@ void inline slurm_free_stat_jobacct_msg(stat_jobacct_msg_t *msg);
 void inline slurm_free_node_select_msg(
 		node_info_select_request_msg_t *msg);
 void inline slurm_free_job_notify_msg(job_notify_msg_t * msg);
+
+void inline slurm_free_accounting_remove_assocs_msg(
+	accounting_remove_assocs_msg_t *msg);
+void inline slurm_free_accounting_remove_users_msg(
+	accounting_remove_users_msg_t *msg);
+void inline slurm_free_accounting_update_msg(accounting_update_msg_t *msg);
+
 extern int slurm_free_msg_data(slurm_msg_type_t type, void *data);
 extern uint32_t slurm_get_return_code(slurm_msg_type_t type, void *data);
 

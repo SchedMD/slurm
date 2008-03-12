@@ -94,7 +94,6 @@ const uint32_t plugin_version = 100;
 
 static char *cluster_name       = NULL;
 static char *slurmdbd_auth_info = NULL;
-static List local_association_list = NULL;
 
 /*
  * init() is called when the plugin is loaded, before any other functions
@@ -131,9 +130,6 @@ extern int fini ( void )
 	xfree(cluster_name);
 	xfree(slurmdbd_auth_info);
 
-	if(local_association_list)
-		list_destroy(local_association_list);
-
 	slurm_close_slurmdbd_conn();
 	return SLURM_SUCCESS;
 }
@@ -148,223 +144,455 @@ extern int acct_storage_p_close_connection(void *db_conn)
 	return SLURM_SUCCESS;
 }
 
-extern int acct_storage_p_add_users(void *db_conn,
-				    List user_list)
+extern int acct_storage_p_add_users(void *db_conn, List user_list)
 {
-	return SLURM_SUCCESS;
+	slurmdbd_msg_t req;
+	dbd_list_msg_t get_msg;
+	int rc, resp_code;
+
+	get_msg.my_list = user_list;
+
+	req.msg_type = DBD_ADD_USERS;
+	req.data = &get_msg;
+	rc = slurm_send_slurmdbd_recv_rc_msg(&req, &resp_code);
+
+	if(resp_code != SLURM_SUCCESS)
+		rc = resp_code;
+
+	return rc;
 }
 
 extern int acct_storage_p_add_coord(void *db_conn,
 				    char *acct, acct_user_cond_t *user_q)
 {
-	return SLURM_SUCCESS;
+	slurmdbd_msg_t req;
+	dbd_acct_coord_msg_t get_msg;
+	int rc, resp_code;
+
+	get_msg.acct = acct;
+	get_msg.cond = user_q;
+
+	req.msg_type = DBD_ADD_ACCOUNT_COORDS;
+	req.data = &get_msg;
+	rc = slurm_send_slurmdbd_recv_rc_msg(&req, &resp_code);
+
+	if(resp_code != SLURM_SUCCESS)
+		rc = resp_code;
+
+	return rc;
 }
 
-extern int acct_storage_p_add_accts(void *db_conn,
-				    List acct_list)
+extern int acct_storage_p_add_accts(void *db_conn, List acct_list)
 {
-	return SLURM_SUCCESS;
+	slurmdbd_msg_t req;
+	dbd_list_msg_t get_msg;
+	int rc, resp_code;
+
+	get_msg.my_list = acct_list;
+
+	req.msg_type = DBD_ADD_ACCOUNTS;
+	req.data = &get_msg;
+	rc = slurm_send_slurmdbd_recv_rc_msg(&req, &resp_code);
+
+	if(resp_code != SLURM_SUCCESS)
+		rc = resp_code;
+
+	return rc;
 }
 
-extern int acct_storage_p_add_clusters(void *db_conn,
-				       List cluster_list)
+extern int acct_storage_p_add_clusters(void *db_conn, List cluster_list)
 {
-	return SLURM_SUCCESS;
+	slurmdbd_msg_t req;
+	dbd_list_msg_t get_msg;
+	int rc, resp_code;
+
+	get_msg.my_list = cluster_list;
+
+	req.msg_type = DBD_ADD_CLUSTERS;
+	req.data = &get_msg;
+	rc = slurm_send_slurmdbd_recv_rc_msg(&req, &resp_code);
+
+	if(resp_code != SLURM_SUCCESS)
+		rc = resp_code;
+
+	return rc;
 }
 
 extern int acct_storage_p_add_associations(void *db_conn,
 					   List association_list)
 {
-	return SLURM_SUCCESS;
-}
+	slurmdbd_msg_t req;
+	dbd_list_msg_t get_msg;
+	int rc, resp_code;
 
-extern int acct_storage_p_get_assoc_id(void *db_conn,
-				       acct_association_rec_t *assoc)
-{
-	ListIterator itr = NULL;
-	acct_association_rec_t * found_assoc = NULL;
-	acct_association_rec_t * ret_assoc = NULL;
+	get_msg.my_list = association_list;
 
-	if(!local_association_list) {
-		acct_association_cond_t assoc_q;
-		char *cluster_name = NULL;
-		memset(&assoc_q, 0, sizeof(acct_association_cond_t));
-		assoc_q.cluster_list = list_create(slurm_destroy_char);
-		cluster_name = slurm_get_cluster_name();
-		if(!cluster_name) {
-			error("acct_storage_p_get_assoc_id: "
-			      "no cluster name here going to get "
-			      "all associations.");
-		} else 
-			list_append(assoc_q.cluster_list, cluster_name);
-		local_association_list =
-			acct_storage_g_get_associations(db_conn, &assoc_q);
-		list_destroy(assoc_q.cluster_list);
-		if(!local_association_list) {
-			error("acct_storage_p_get_assoc_id: "
-			      "no list was made.");
-			return SLURM_SUCCESS;
-		}
-	}
-	if((!assoc->cluster && !assoc->acct) && !assoc->id) {
-		error("acct_storage_p_get_assoc_id: "
-		      "You need to supply a cluster and account name to get "
-		      "an association.");
-		return SLURM_ERROR;
-	}
+	req.msg_type = DBD_ADD_ASSOCS;
+	req.data = &get_msg;
+	rc = slurm_send_slurmdbd_recv_rc_msg(&req, &resp_code);
 
-	itr = list_iterator_create(local_association_list);
-	while((found_assoc = list_next(itr))) {
-		if(assoc->id) {
-			if(assoc->id == found_assoc->id) {
-				ret_assoc = found_assoc;
-				break;
-			}
-			continue;
-		} else {
-			if((!found_assoc->acct 
-			    || strcasecmp(assoc->acct,
-					  found_assoc->acct))
-			   || (!assoc->cluster 
-			       || strcasecmp(assoc->cluster,
-					     found_assoc->cluster))
-			   || (assoc->user 
-			       && (!found_assoc->user 
-				   || strcasecmp(assoc->user,
-						 found_assoc->user)))
-			   || (!assoc->user && found_assoc->user 
-			       && strcasecmp("none",
-					     found_assoc->user)))
-				continue;
-			if(assoc->partition
-			   && (!assoc->partition 
-			       || strcasecmp(assoc->partition, 
-					     found_assoc->partition))) {
-				ret_assoc = found_assoc;
-				continue;
-			}
-		}
-		ret_assoc = found_assoc;
-		break;
-	}
-	list_iterator_destroy(itr);
+	if(resp_code != SLURM_SUCCESS)
+		rc = resp_code;
 
-	if(!ret_assoc)
-		return SLURM_ERROR;
-
-	assoc->id = ret_assoc->id;
-	if(!assoc->user)
-		assoc->user = ret_assoc->user;
-	if(!assoc->acct)
-		assoc->acct = ret_assoc->acct;
-	if(!assoc->cluster)
-		assoc->cluster = ret_assoc->cluster;
-	if(!assoc->partition)
-		assoc->partition = ret_assoc->partition;
-
-	return SLURM_SUCCESS;
-}
-
-extern int acct_storage_p_validate_assoc_id(void *db_conn,
-					    uint32_t assoc_id)
-{
-	return SLURM_SUCCESS;
+	return rc;
 }
 
 extern int acct_storage_p_modify_users(void *db_conn,
 				       acct_user_cond_t *user_q,
 				       acct_user_rec_t *user)
 {
-	return SLURM_SUCCESS;
+	slurmdbd_msg_t req;
+	dbd_modify_msg_t get_msg;
+	int rc, resp_code;
+
+	get_msg.cond = user_q;
+	get_msg.rec = user;
+
+	req.msg_type = DBD_MODIFY_USERS;
+	req.data = &get_msg;
+	rc = slurm_send_slurmdbd_recv_rc_msg(&req, &resp_code);
+
+	if(resp_code != SLURM_SUCCESS)
+		rc = resp_code;
+
+	return rc;
 }
 
 extern int acct_storage_p_modify_user_admin_level(void *db_conn,
 						  acct_user_cond_t *user_q)
 {
-	return SLURM_SUCCESS;
+	slurmdbd_msg_t req;
+	dbd_modify_msg_t get_msg;
+	int rc, resp_code;
+
+	get_msg.cond = user_q;
+	get_msg.rec = NULL;
+
+	req.msg_type = DBD_MODIFY_USER_ADMIN_LEVEL;
+	req.data = &get_msg;
+	rc = slurm_send_slurmdbd_recv_rc_msg(&req, &resp_code);
+
+	if(resp_code != SLURM_SUCCESS)
+		rc = resp_code;
+
+	return rc;
 }
 
 extern int acct_storage_p_modify_accts(void *db_conn,
 				       acct_account_cond_t *acct_q,
 				       acct_account_rec_t *acct)
 {
-	return SLURM_SUCCESS;
+	slurmdbd_msg_t req;
+	dbd_modify_msg_t get_msg;
+	int rc, resp_code;
+
+	get_msg.cond = acct_q;
+	get_msg.rec = acct;
+
+	req.msg_type = DBD_MODIFY_ACCOUNTS;
+	req.data = &get_msg;
+	rc = slurm_send_slurmdbd_recv_rc_msg(&req, &resp_code);
+
+	if(resp_code != SLURM_SUCCESS)
+		rc = resp_code;
+
+	return rc;
 }
 
 extern int acct_storage_p_modify_clusters(void *db_conn,
 					  acct_cluster_cond_t *cluster_q,
 					  acct_cluster_rec_t *cluster)
 {
-	return SLURM_SUCCESS;
+	slurmdbd_msg_t req;
+	dbd_modify_msg_t get_msg;
+	int rc, resp_code;
+
+	get_msg.cond = cluster_q;
+	get_msg.rec = cluster;
+
+	req.msg_type = DBD_MODIFY_CLUSTERS;
+	req.data = &get_msg;
+	rc = slurm_send_slurmdbd_recv_rc_msg(&req, &resp_code);
+
+	if(resp_code != SLURM_SUCCESS)
+		rc = resp_code;
+
+	return rc;
 }
 
 extern int acct_storage_p_modify_associations(void *db_conn,
 					      acct_association_cond_t *assoc_q,
 					      acct_association_rec_t *assoc)
 {
-	return SLURM_SUCCESS;
+	slurmdbd_msg_t req;
+	dbd_modify_msg_t get_msg;
+	int rc, resp_code;
+
+	get_msg.cond = assoc_q;
+	get_msg.rec = assoc;
+
+	req.msg_type = DBD_MODIFY_ASSOCS;
+	req.data = &get_msg;
+	rc = slurm_send_slurmdbd_recv_rc_msg(&req, &resp_code);
+
+	if(resp_code != SLURM_SUCCESS)
+		rc = resp_code;
+
+	return rc;
 }
 
 extern int acct_storage_p_remove_users(void *db_conn,
 				       acct_user_cond_t *user_q)
 {
-	return SLURM_SUCCESS;
+	slurmdbd_msg_t req;
+	dbd_cond_msg_t get_msg;
+	int rc, resp_code;
+
+	get_msg.cond = user_q;
+
+	req.msg_type = DBD_REMOVE_USERS;
+	req.data = &get_msg;
+	rc = slurm_send_slurmdbd_recv_rc_msg(&req, &resp_code);
+
+	if(resp_code != SLURM_SUCCESS)
+		rc = resp_code;
+
+	return rc;
 }
 
 extern int acct_storage_p_remove_coord(void *db_conn,
 				       char *acct, acct_user_cond_t *user_q)
 {
-	return SLURM_SUCCESS;
+	slurmdbd_msg_t req;
+	dbd_acct_coord_msg_t get_msg;
+	int rc, resp_code;
+
+	get_msg.acct = acct;
+	get_msg.cond = user_q;
+
+	req.msg_type = DBD_REMOVE_ACCOUNT_COORDS;
+	req.data = &get_msg;
+	rc = slurm_send_slurmdbd_recv_rc_msg(&req, &resp_code);
+
+	if(resp_code != SLURM_SUCCESS)
+		rc = resp_code;
+
+	return rc;
 }
 
 extern int acct_storage_p_remove_accts(void *db_conn,
 				       acct_account_cond_t *acct_q)
 {
-	return SLURM_SUCCESS;
+	slurmdbd_msg_t req;
+	dbd_cond_msg_t get_msg;
+	int rc, resp_code;
+
+	get_msg.cond = acct_q;
+
+	req.msg_type = DBD_REMOVE_ACCOUNTS;
+	req.data = &get_msg;
+	rc = slurm_send_slurmdbd_recv_rc_msg(&req, &resp_code);
+
+	if(resp_code != SLURM_SUCCESS)
+		rc = resp_code;
+
+	return rc;
 }
 
 extern int acct_storage_p_remove_clusters(void *db_conn,
 					  acct_account_cond_t *cluster_q)
 {
-	return SLURM_SUCCESS;
+	slurmdbd_msg_t req;
+	dbd_cond_msg_t get_msg;
+	int rc, resp_code;
+
+	get_msg.cond = cluster_q;
+
+	req.msg_type = DBD_REMOVE_CLUSTERS;
+	req.data = &get_msg;
+	rc = slurm_send_slurmdbd_recv_rc_msg(&req, &resp_code);
+
+	if(resp_code != SLURM_SUCCESS)
+		rc = resp_code;
+
+	return rc;
 }
 
 extern int acct_storage_p_remove_associations(void *db_conn,
 					      acct_association_cond_t *assoc_q)
 {
-	return SLURM_SUCCESS;
+	slurmdbd_msg_t req;
+	dbd_cond_msg_t get_msg;
+	int rc, resp_code;
+
+	get_msg.cond = assoc_q;
+
+	req.msg_type = DBD_REMOVE_ASSOCS;
+	req.data = &get_msg;
+	rc = slurm_send_slurmdbd_recv_rc_msg(&req, &resp_code);
+
+	if(resp_code != SLURM_SUCCESS)
+		rc = resp_code;
+
+	return rc;
 }
 
 extern List acct_storage_p_get_users(void *db_conn,
 				     acct_user_cond_t *user_q)
 {
-	return NULL;
+	slurmdbd_msg_t req, resp;
+	dbd_cond_msg_t get_msg;
+	dbd_list_msg_t *got_msg;
+	int rc;
+	List ret_list = NULL;
+
+	get_msg.cond = user_q;
+	
+	req.msg_type = DBD_GET_USERS;
+	req.data = &get_msg;
+	rc = slurm_send_recv_slurmdbd_msg(&req, &resp);
+
+	if (rc != SLURM_SUCCESS)
+		error("slurmdbd: DBD_GET_USERS failure: %m");
+	else if (resp.msg_type != DBD_GOT_USERS) {
+		error("slurmdbd: response type not DBD_GOT_USERS: %u", 
+		      resp.msg_type);
+	} else {
+		got_msg = (dbd_list_msg_t *) resp.data;
+		ret_list = got_msg->my_list;
+		got_msg->my_list = NULL;
+		slurmdbd_free_list_msg(got_msg);
+	}
+
+
+	return ret_list;
 }
 
 extern List acct_storage_p_get_accts(void *db_conn,
 				     acct_account_cond_t *acct_q)
 {
-	return NULL;
+	slurmdbd_msg_t req, resp;
+	dbd_cond_msg_t get_msg;
+	dbd_list_msg_t *got_msg;
+	int rc;
+	List ret_list = NULL;
+
+	get_msg.cond = acct_q;
+	
+	req.msg_type = DBD_GET_ACCOUNTS;
+	req.data = &get_msg;
+	rc = slurm_send_recv_slurmdbd_msg(&req, &resp);
+
+	if (rc != SLURM_SUCCESS)
+		error("slurmdbd: DBD_GET_ACCOUNTS failure: %m");
+	else if (resp.msg_type != DBD_GOT_ACCOUNTS) {
+		error("slurmdbd: response type not DBD_GOT_ACCOUNTS: %u", 
+		      resp.msg_type);
+	} else {
+		got_msg = (dbd_list_msg_t *) resp.data;
+		ret_list = got_msg->my_list;
+		got_msg->my_list = NULL;
+		slurmdbd_free_list_msg(got_msg);
+	}
+
+
+	return ret_list;
 }
 
 extern List acct_storage_p_get_clusters(void *db_conn,
 					acct_account_cond_t *cluster_q)
 {
-	return NULL;
+	slurmdbd_msg_t req, resp;
+	dbd_cond_msg_t get_msg;
+	dbd_list_msg_t *got_msg;
+	int rc;
+	List ret_list = NULL;
+
+	get_msg.cond = cluster_q;
+	
+	req.msg_type = DBD_GET_CLUSTERS;
+	req.data = &get_msg;
+	rc = slurm_send_recv_slurmdbd_msg(&req, &resp);
+
+	if (rc != SLURM_SUCCESS)
+		error("slurmdbd: DBD_GET_CLUSTERS failure: %m");
+	else if (resp.msg_type != DBD_GOT_CLUSTERS) {
+		error("slurmdbd: response type not DBD_GOT_CLUSTERS: %u", 
+		      resp.msg_type);
+	} else {
+		got_msg = (dbd_list_msg_t *) resp.data;
+		ret_list = got_msg->my_list;
+		got_msg->my_list = NULL;
+		slurmdbd_free_list_msg(got_msg);
+	}
+
+
+	return ret_list;
 }
 
 extern List acct_storage_p_get_associations(void *db_conn,
 					    acct_association_cond_t *assoc_q)
 {
 	
-	return NULL;
+	slurmdbd_msg_t req, resp;
+	dbd_cond_msg_t get_msg;
+	dbd_list_msg_t *got_msg;
+	int rc;
+	List ret_list = NULL;
+
+	get_msg.cond = assoc_q;
+	
+	req.msg_type = DBD_GET_ASSOCS;
+	req.data = &get_msg;
+	rc = slurm_send_recv_slurmdbd_msg(&req, &resp);
+
+	if (rc != SLURM_SUCCESS)
+		error("slurmdbd: DBD_GET_ASSOCS failure: %m");
+	else if (resp.msg_type != DBD_GOT_ASSOCS) {
+		error("slurmdbd: response type not DBD_GOT_ASSOCS: %u", 
+		      resp.msg_type);
+	} else {
+		got_msg = (dbd_list_msg_t *) resp.data;
+		ret_list = got_msg->my_list;
+		got_msg->my_list = NULL;
+		slurmdbd_free_list_msg(got_msg);
+	}
+
+
+	return ret_list;
 }
 
 extern int acct_storage_p_get_hourly_usage(void *db_conn,
 					   acct_association_rec_t *acct_assoc,
 					   time_t start, time_t end)
 {
-	int rc = SLURM_SUCCESS;
+	slurmdbd_msg_t req, resp;
+	dbd_usage_msg_t get_msg;
+	dbd_usage_msg_t *got_msg;
+	acct_association_rec_t *got_rec;
+	int rc;
+
+	get_msg.rec = acct_assoc;
+	get_msg.start = start;
+	get_msg.end = end;
+	
+	req.msg_type = DBD_GET_ASSOC_HOUR;
+	req.data = &get_msg;
+	rc = slurm_send_recv_slurmdbd_msg(&req, &resp);
+
+	if (rc != SLURM_SUCCESS)
+		error("slurmdbd: DBD_GET_ASSOC_HOUR failure: %m");
+	else if (resp.msg_type != DBD_GOT_ASSOC_HOUR) {
+		error("slurmdbd: response type not DBD_GOT_ASSOC_HOUR: %u", 
+		      resp.msg_type);
+	} else {
+		got_msg = (dbd_usage_msg_t *) resp.data;
+		got_rec = (acct_association_rec_t *)got_msg->rec;
+		acct_assoc->accounting_list = got_rec->accounting_list;
+		got_rec->accounting_list = NULL;
+		slurmdbd_free_usage_msg(resp.msg_type, got_msg);
+	}
+
 
 	return rc;
 }
@@ -373,7 +601,33 @@ extern int acct_storage_p_get_daily_usage(void *db_conn,
 					  acct_association_rec_t *acct_assoc,
 					  time_t start, time_t end)
 {
-	int rc = SLURM_SUCCESS;
+	slurmdbd_msg_t req, resp;
+	dbd_usage_msg_t get_msg;
+	dbd_usage_msg_t *got_msg;
+	acct_association_rec_t *got_rec;
+	int rc;
+
+	get_msg.rec = acct_assoc;
+	get_msg.start = start;
+	get_msg.end = end;
+	
+	req.msg_type = DBD_GET_ASSOC_DAY;
+	req.data = &get_msg;
+	rc = slurm_send_recv_slurmdbd_msg(&req, &resp);
+
+	if (rc != SLURM_SUCCESS)
+		error("slurmdbd: DBD_GET_ASSOC_DAY failure: %m");
+	else if (resp.msg_type != DBD_GOT_ASSOC_DAY) {
+		error("slurmdbd: response type not DBD_GOT_ASSOC_DAY: %u", 
+		      resp.msg_type);
+	} else {
+		got_msg = (dbd_usage_msg_t *) resp.data;
+		got_rec = (acct_association_rec_t *)got_msg->rec;
+		acct_assoc->accounting_list = got_rec->accounting_list;
+		got_rec->accounting_list = NULL;
+		slurmdbd_free_usage_msg(resp.msg_type, got_msg);
+	}
+
 
 	return rc;
 }
@@ -382,7 +636,34 @@ extern int acct_storage_p_get_monthly_usage(void *db_conn,
 					    acct_association_rec_t *acct_assoc,
 					    time_t start, time_t end)
 {
-	int rc = SLURM_SUCCESS;
+	slurmdbd_msg_t req, resp;
+	dbd_usage_msg_t get_msg;
+	dbd_usage_msg_t *got_msg;
+	acct_association_rec_t *got_rec;
+	int rc;
+
+	get_msg.rec = acct_assoc;
+	get_msg.start = start;
+	get_msg.end = end;
+	
+	req.msg_type = DBD_GET_ASSOC_MONTH;
+	req.data = &get_msg;
+	rc = slurm_send_recv_slurmdbd_msg(&req, &resp);
+
+	if (rc != SLURM_SUCCESS)
+		error("slurmdbd: DBD_GET_ASSOC_MONTH failure: %m");
+	else if (resp.msg_type != DBD_GOT_ASSOC_MONTH) {
+		error("slurmdbd: response type not DBD_GOT_ASSOC_MONTH: %u", 
+		      resp.msg_type);
+	} else {
+		got_msg = (dbd_usage_msg_t *) resp.data;
+		got_rec = (acct_association_rec_t *)got_msg->rec;
+		acct_assoc->accounting_list = got_rec->accounting_list;
+		got_rec->accounting_list = NULL;
+		slurmdbd_free_usage_msg(resp.msg_type, got_msg);
+	}
+
+
 	return rc;
 }
 
@@ -448,31 +729,107 @@ extern int clusteracct_storage_p_cluster_procs(void *db_conn,
 	return SLURM_SUCCESS;
 }
 
-extern int clusteracct_storage_p_get_hourly_usage(void *db_conn,
-				    
-						  acct_cluster_rec_t *cluster_rec, time_t start, 
-						  time_t end, void *params)
+extern int clusteracct_storage_p_get_hourly_usage(
+	void *db_conn, acct_cluster_rec_t *cluster_rec,
+	time_t start, time_t end)
 {
+	slurmdbd_msg_t req, resp;
+	dbd_usage_msg_t get_msg;
+	dbd_usage_msg_t *got_msg;
+	acct_cluster_rec_t *got_rec;
+	int rc;
 
-	return SLURM_SUCCESS;
+	get_msg.rec = cluster_rec;
+	get_msg.start = start;
+	get_msg.end = end;
+	
+	req.msg_type = DBD_GET_CLUSTER_HOUR;
+	req.data = &get_msg;
+	rc = slurm_send_recv_slurmdbd_msg(&req, &resp);
+
+	if (rc != SLURM_SUCCESS)
+		error("slurmdbd: DBD_GET_CLUSTER_HOUR failure: %m");
+	else if (resp.msg_type != DBD_GOT_CLUSTER_HOUR) {
+		error("slurmdbd: response type not DBD_GOT_CLUSTER_HOUR: %u", 
+		      resp.msg_type);
+	} else {
+		got_msg = (dbd_usage_msg_t *) resp.data;
+		got_rec = (acct_cluster_rec_t *)got_msg->rec;
+		cluster_rec->accounting_list = got_rec->accounting_list;
+		got_rec->accounting_list = NULL;
+		slurmdbd_free_usage_msg(resp.msg_type, got_msg);
+	}
+
+
+	return rc;
 }
 
-extern int clusteracct_storage_p_get_daily_usage(void *db_conn,
-				    
-						 acct_cluster_rec_t *cluster_rec, time_t start, 
-						 time_t end, void *params)
+extern int clusteracct_storage_p_get_daily_usage(
+	void *db_conn, acct_cluster_rec_t *cluster_rec,
+	time_t start, time_t end)
 {
+	slurmdbd_msg_t req, resp;
+	dbd_usage_msg_t get_msg;
+	dbd_usage_msg_t *got_msg;
+	acct_cluster_rec_t *got_rec;
+	int rc;
+
+	get_msg.rec = cluster_rec;
+	get_msg.start = start;
+	get_msg.end = end;
 	
-	return SLURM_SUCCESS;
+	req.msg_type = DBD_GET_CLUSTER_DAY;
+	req.data = &get_msg;
+	rc = slurm_send_recv_slurmdbd_msg(&req, &resp);
+
+	if (rc != SLURM_SUCCESS)
+		error("slurmdbd: DBD_GET_CLUSTER_DAY failure: %m");
+	else if (resp.msg_type != DBD_GOT_CLUSTER_DAY) {
+		error("slurmdbd: response type not DBD_GOT_CLUSTER_DAY: %u", 
+		      resp.msg_type);
+	} else {
+		got_msg = (dbd_usage_msg_t *) resp.data;
+		got_rec = (acct_cluster_rec_t *)got_msg->rec;
+		cluster_rec->accounting_list = got_rec->accounting_list;
+		got_rec->accounting_list = NULL;
+		slurmdbd_free_usage_msg(resp.msg_type, got_msg);
+	}
+
+	return rc;
 }
 
-extern int clusteracct_storage_p_get_monthly_usage(void *db_conn,
-				    
-						   acct_cluster_rec_t *cluster_rec, time_t start, 
-						   time_t end, void *params)
+extern int clusteracct_storage_p_get_monthly_usage(
+	void *db_conn,  acct_cluster_rec_t *cluster_rec,
+	time_t start, time_t end)
 {
+	slurmdbd_msg_t req, resp;
+	dbd_usage_msg_t get_msg;
+	dbd_usage_msg_t *got_msg;
+	acct_cluster_rec_t *got_rec;
+	int rc;
+
+	get_msg.rec = cluster_rec;
+	get_msg.start = start;
+	get_msg.end = end;
 	
-	return SLURM_SUCCESS;
+	req.msg_type = DBD_GET_CLUSTER_MONTH;
+	req.data = &get_msg;
+	rc = slurm_send_recv_slurmdbd_msg(&req, &resp);
+
+	if (rc != SLURM_SUCCESS)
+		error("slurmdbd: DBD_GET_CLUSTER_MONTH failure: %m");
+	else if (resp.msg_type != DBD_GOT_CLUSTER_MONTH) {
+		error("slurmdbd: response type not DBD_GOT_CLUSTER_MONTH: %u", 
+		      resp.msg_type);
+	} else {
+		got_msg = (dbd_usage_msg_t *) resp.data;
+		got_rec = (acct_cluster_rec_t *)got_msg->rec;
+		cluster_rec->accounting_list = got_rec->accounting_list;
+		got_rec->accounting_list = NULL;
+		slurmdbd_free_usage_msg(resp.msg_type, got_msg);
+	}
+
+	return rc;
 }
 
 /* 
@@ -528,7 +885,7 @@ extern int jobacct_storage_p_job_start(void *db_conn,
 	} else {
 		resp = (dbd_job_start_rc_msg_t *) msg_rc.data;
 		job_ptr->db_index = resp->db_index;
-		slurm_dbd_free_job_start_rc_msg(resp);
+		slurmdbd_free_job_start_rc_msg(resp);
 	}
 	
 	return rc;
@@ -740,7 +1097,7 @@ extern List jobacct_storage_p_get_jobs(void *db_conn,
 {
 	slurmdbd_msg_t req, resp;
 	dbd_get_jobs_msg_t get_msg;
-	dbd_got_jobs_msg_t *got_msg;
+	dbd_list_msg_t *got_msg;
 	int rc;
 	List job_list = NULL;
 	struct passwd *pw = NULL;
@@ -765,10 +1122,10 @@ extern List jobacct_storage_p_get_jobs(void *db_conn,
 		error("slurmdbd: response type not DBD_GOT_JOBS: %u", 
 		      resp.msg_type);
 	} else {
-		got_msg = (dbd_got_jobs_msg_t *) resp.data;
-		job_list = got_msg->jobs;
-		got_msg->jobs = NULL;
-		slurm_dbd_free_got_jobs_msg(got_msg);
+		got_msg = (dbd_list_msg_t *) resp.data;
+		job_list = got_msg->my_list;
+		got_msg->my_list = NULL;
+		slurmdbd_free_list_msg(got_msg);
 	}
 
 	return job_list;

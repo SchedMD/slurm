@@ -257,7 +257,7 @@ extern Buf make_dbd_rc_msg(int rc)
 	buffer = init_buf(1024);
 	pack16((uint16_t) DBD_RC, buffer);
 	msg.return_code  = rc;
-	slurm_dbd_pack_rc_msg(&msg, buffer);
+	slurmdbd_pack_rc_msg(&msg, buffer);
 	return buffer;
 }
 
