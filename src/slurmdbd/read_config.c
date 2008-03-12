@@ -171,7 +171,7 @@ extern int read_slurmdbd_conf(void)
 		s_p_get_uint16(&slurmdbd_conf->storage_port,
 			       "StoragePort", tbl);
 		s_p_get_string(&slurmdbd_conf->storage_type,
-				"StorageType", tbl);
+			       "StorageType", tbl);
 		s_p_get_string(&slurmdbd_conf->storage_user,
 				"StorageUser", tbl);
 
@@ -205,6 +205,8 @@ extern int read_slurmdbd_conf(void)
 		slurmdbd_conf->slurm_user_name = xstrdup("root");
 		slurmdbd_conf->slurm_user_id = 0;
 	}
+	if (slurmdbd_conf->storage_type == NULL)
+		fatal("StorageType must be specified");
 				
 	slurm_mutex_unlock(&conf_mutex);
 	return SLURM_SUCCESS;
