@@ -15,6 +15,10 @@ The size of each line in the file is limited to 1024 characters.
 Changes to the configuration file take effect upon restart of 
 SlurmDbd or daemon receipt of the SIGHUP signal unless otherwise noted.
 .LP
+This file should be only on the computer where SlurmDBD executes and 
+should only be readable by the user which executes SlurmDBD (e.g. "slurm").
+This file should be protected from unauthorized access since it
+contains a database password.
 The overall configuration parameters available include:
 
 .TP
@@ -87,10 +91,22 @@ logs are written.
 The default value is none (performs logging via syslog).
 
 .TP
+\fBMessageTimeout\fR
+Time permitted for a round\-trip communication to complete
+in seconds. Default value is 10 seconds. 
+
+.TP
 \fBPidFile\fR
 Fully qualified pathname of a file into which the Slurm Database Daemon 
 may write its process ID. This may be used for automated signal processing.
 The default value is "/var/run/slurmdbd.pid".
+
+.TP
+\fBPluginDir\fR
+Identifies the places in which to look for SLURM plugins. 
+This is a colon\-separated list of directories, like the PATH 
+environment variable. 
+The default value is "/usr/local/lib/slurm".
 
 .TP
 \fBSlurmUser\fR
@@ -107,7 +123,12 @@ to store the data.
 Ideally this should be the host on which slurmdbd executes.
 
 .TP
-\fBStoragePassword\fR
+\fBStorageLoc\fR
+Specifies the location of the database where accounting 
+records are written.
+
+.TP
+\fBStoragePass\fR
 Define the password used to gain access to the database to store 
 the job accounting data.
 
@@ -118,8 +139,22 @@ the job accounting data.
 
 .TP
 \fBStorageType\fR
-Define the port the database server is listening on where we are going
-to store the data.
+Define the accounting storage mechanism type.
+Acceptable values at present include 
+"accounting_storage/gold", "accounting_storage/mysql", and
+"accounting_storage/pgsql".
+The value "accounting_storage/gold" indicates that account records
+will be written to Gold
+(http://www.clusterresources.com/pages/products/gold-allocation-manager.php),
+which maintains its own database.
+The value "accounting_storage/mysql" indicates that accounting records
+should be written to a MySQL database specified by the 
+\fStorageLoc\fR parameter.
+The value "accounting_storage/pgsql" indicates that accounting records
+should be written to a PostgreSQL database specified by the 
+\fBStorageLoc\fR parameter.
+This value must be specified.
+
 .TP
 \fBStorageUser\fR
 Define the name of the user we are going to connect to the database
@@ -137,6 +172,8 @@ AuthInfo=/var/run/munge/munge.socket.2
 .br
 AuthType=auth/munge
 .br
+DbdHost=db_host
+.br
 DebugLevel=4
 .br
 LogFile=/var/log/slurmdbd.log
@@ -145,7 +182,9 @@ PidFile=/var/tmp/jette/slurmdbd.pid
 .br
 SlurmUser=slurm_mgr
 .br
-StoragePassword=shazaam
+StoragePass=shazaam
+.br
+StorageType=accounting_storage/mysql
 .br
 StorageUser=database_mgr
 
