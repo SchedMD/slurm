@@ -74,9 +74,31 @@ static int   _job_start(void *db_conn,
 			Buf in_buffer, Buf *out_buffer, uint32_t *uid);
 static int   _job_suspend(void *db_conn,
 			  Buf in_buffer, Buf *out_buffer, uint32_t *uid);
+static int   _modify_accounts(void *db_conn,
+			      Buf in_buffer, Buf *out_buffer, uint32_t *uid);
+static int   _modify_assocs(void *db_conn,
+			    Buf in_buffer, Buf *out_buffer, uint32_t *uid);
+static int   _modify_clusters(void *db_conn,
+			      Buf in_buffer, Buf *out_buffer, uint32_t *uid);
+static int   _modify_users(void *db_conn,
+			   Buf in_buffer, Buf *out_buffer, uint32_t *uid);
+static int   _modify_user_admin_level(void *db_conn,
+				      Buf in_buffer, Buf *out_buffer,
+				      uint32_t *uid);
 static int   _node_state(void *db_conn,
 			 Buf in_buffer, Buf *out_buffer, uint32_t *uid);
 static char *_node_state_string(uint16_t node_state);
+static int   _remove_accounts(void *db_conn,
+			      Buf in_buffer, Buf *out_buffer, uint32_t *uid);
+static int   _remove_account_coords(void *db_conn,
+				    Buf in_buffer, Buf *out_buffer,
+				    uint32_t *uid);
+static int   _remove_assocs(void *db_conn,
+			    Buf in_buffer, Buf *out_buffer, uint32_t *uid);
+static int   _remove_clusters(void *db_conn,
+			      Buf in_buffer, Buf *out_buffer, uint32_t *uid);
+static int   _remove_users(void *db_conn,
+			   Buf in_buffer, Buf *out_buffer, uint32_t *uid);
 static int   _step_complete(void *db_conn,
 			    Buf in_buffer, Buf *out_buffer, uint32_t *uid);
 static int   _step_start(void *db_conn,
@@ -174,28 +196,48 @@ proc_req(void *db_conn, char *msg, uint32_t msg_size,
 					  in_buffer, out_buffer, uid);
 			break;
 		case DBD_MODIFY_ACCOUNTS:
+			rc = _modify_accounts(db_conn,
+					      in_buffer, out_buffer, uid);
 			break;
 		case DBD_MODIFY_ASSOCS:
+			rc = _modify_assocs(db_conn,
+					    in_buffer, out_buffer, uid);
 			break;
 		case DBD_MODIFY_CLUSTERS:
+			rc = _modify_clusters(db_conn,
+					      in_buffer, out_buffer, uid);
 			break;
 		case DBD_MODIFY_USERS:
+			rc = _modify_users(db_conn,
+					   in_buffer, out_buffer, uid);
 			break;
 		case DBD_MODIFY_USER_ADMIN_LEVEL:
+			rc = _modify_user_admin_level(db_conn,
+						      in_buffer, out_buffer,
+						      uid);
 			break;
 		case DBD_NODE_STATE:
 			rc = _node_state(db_conn,
 					 in_buffer, out_buffer, uid);
 			break;
 		case DBD_REMOVE_ACCOUNTS:
+			rc = _remove_accounts(db_conn,
+					      in_buffer, out_buffer, uid);
 			break;
 		case DBD_REMOVE_ACCOUNT_COORDS:
+			rc = _remove_account_coords(db_conn,
+						 in_buffer, out_buffer, uid);
 			break;
 		case DBD_REMOVE_ASSOCS:
+			rc = _remove_assocs(db_conn,
+					    in_buffer, out_buffer, uid);
 			break;
 		case DBD_REMOVE_CLUSTERS:
+			rc = _remove_clusters(db_conn,
+					      in_buffer, out_buffer, uid);
 			break;
 		case DBD_REMOVE_USERS:
+			rc = _remove_users(db_conn, in_buffer, out_buffer, uid);
 			break;
 		case DBD_STEP_COMPLETE:
 			rc = _step_complete(db_conn,
@@ -251,7 +293,7 @@ static int _add_account_coords(void *db_conn,
 
 	if (slurmdbd_unpack_acct_coord_msg(&get_msg, in_buffer) !=
 	    SLURM_SUCCESS) {
-		error("Failed to unpack DBD_ADD_ACCOUNTS message");
+		error("Failed to unpack DBD_ADD_ACCOUNT_COORDS message");
 		*out_buffer = make_dbd_rc_msg(SLURM_ERROR);
 		return SLURM_ERROR;
 	}
@@ -748,6 +790,120 @@ static int  _job_suspend(void *db_conn,
 	return SLURM_SUCCESS;
 }
 
+static int   _modify_accounts(void *db_conn,
+			      Buf in_buffer, Buf *out_buffer, uint32_t *uid)
+{
+	int rc = SLURM_ERROR;
+	dbd_modify_msg_t *get_msg;
+
+	if (slurmdbd_unpack_modify_msg(DBD_MODIFY_ACCOUNTS, &get_msg,
+				       in_buffer) != SLURM_SUCCESS) {
+		error("Failed to unpack DBD_MODIFY_ACCOUNTS message");
+		*out_buffer = make_dbd_rc_msg(SLURM_ERROR);
+		return SLURM_ERROR;
+	}
+	
+	debug2("DBD_MODIFY_ACCOUNTS: called");
+
+	rc = acct_storage_g_modify_accounts(db_conn,
+					    get_msg->cond, get_msg->rec);
+	slurmdbd_free_modify_msg(DBD_MODIFY_ACCOUNTS, get_msg);
+
+	*out_buffer = make_dbd_rc_msg(rc);
+	return rc;
+}
+
+static int   _modify_assocs(void *db_conn,
+			    Buf in_buffer, Buf *out_buffer, uint32_t *uid)
+{
+	int rc = SLURM_ERROR;
+	dbd_modify_msg_t *get_msg;
+
+	if (slurmdbd_unpack_modify_msg(DBD_MODIFY_ASSOCS, &get_msg, 
+				       in_buffer) != SLURM_SUCCESS) {
+		error("Failed to unpack DBD_MODIFY_ASSOCS message");
+		*out_buffer = make_dbd_rc_msg(SLURM_ERROR);
+		return SLURM_ERROR;
+	}
+	
+	debug2("DBD_MODIFY_ASSOCS: called");
+
+	rc = acct_storage_g_modify_associations(db_conn,
+						get_msg->cond, get_msg->rec);
+	slurmdbd_free_modify_msg(DBD_MODIFY_ASSOCS, get_msg);
+
+	*out_buffer = make_dbd_rc_msg(rc);
+	return rc;
+}
+
+static int   _modify_clusters(void *db_conn,
+			      Buf in_buffer, Buf *out_buffer, uint32_t *uid)
+{
+	int rc = SLURM_ERROR;
+	dbd_modify_msg_t *get_msg;
+
+	if (slurmdbd_unpack_modify_msg(DBD_MODIFY_CLUSTERS, &get_msg,
+				       in_buffer) != SLURM_SUCCESS) {
+		error("Failed to unpack DBD_MODIFY_CLUSTERS message");
+		*out_buffer = make_dbd_rc_msg(SLURM_ERROR);
+		return SLURM_ERROR;
+	}
+	
+	debug2("DBD_MODIFY_CLUSTERS: called");
+
+	rc = acct_storage_g_modify_clusters(db_conn,
+					    get_msg->cond, get_msg->rec);
+	slurmdbd_free_modify_msg(DBD_MODIFY_CLUSTERS, get_msg);
+
+	*out_buffer = make_dbd_rc_msg(rc);
+	return rc;
+}
+
+static int   _modify_users(void *db_conn,
+			   Buf in_buffer, Buf *out_buffer, uint32_t *uid)
+{
+	int rc = SLURM_ERROR;
+	dbd_modify_msg_t *get_msg;
+
+	if (slurmdbd_unpack_modify_msg(DBD_MODIFY_USERS, &get_msg, in_buffer) !=
+	    SLURM_SUCCESS) {
+		error("Failed to unpack DBD_MODIFY_USERS message");
+		*out_buffer = make_dbd_rc_msg(SLURM_ERROR);
+		return SLURM_ERROR;
+	}
+	
+	debug2("DBD_MODIFY_USERS: called");
+
+	rc = acct_storage_g_modify_users(db_conn, get_msg->cond, get_msg->rec);
+	slurmdbd_free_modify_msg(DBD_MODIFY_USERS, get_msg);
+
+	*out_buffer = make_dbd_rc_msg(rc);
+	return rc;
+}
+
+static int   _modify_user_admin_level(void *db_conn,
+				      Buf in_buffer, Buf *out_buffer,
+				      uint32_t *uid)
+{
+	int rc = SLURM_ERROR;
+	dbd_modify_msg_t *get_msg;
+
+	if (slurmdbd_unpack_modify_msg(DBD_MODIFY_USER_ADMIN_LEVEL, &get_msg,
+				       in_buffer) != SLURM_SUCCESS) {
+		error("Failed to unpack DBD_MODIFY_USER_ADMIN_LEVEL message");
+		*out_buffer = make_dbd_rc_msg(SLURM_ERROR);
+		return SLURM_ERROR;
+	}
+	
+	debug2("DBD_MODIFY_USER_ADMIN_LEVEL: called");
+
+	rc = acct_storage_g_modify_user_admin_level(db_conn, get_msg->cond);
+	slurmdbd_free_modify_msg(DBD_MODIFY_USER_ADMIN_LEVEL, get_msg);
+
+	*out_buffer = make_dbd_rc_msg(rc);
+	return rc;
+}
+
 static int _node_state(void *db_conn,
 		       Buf in_buffer, Buf *out_buffer, uint32_t *uid)
 {
@@ -808,6 +964,139 @@ static char *_node_state_string(uint16_t node_state)
 			return "UP";
 	}
 	return "UNKNOWN";
+}
+
+static int   _remove_accounts(void *db_conn,
+			      Buf in_buffer, Buf *out_buffer, uint32_t *uid)
+{
+	int rc = SLURM_ERROR;
+	dbd_cond_msg_t *get_msg;
+	acct_association_cond_t assoc_q;
+
+	if (slurmdbd_unpack_cond_msg(DBD_REMOVE_ACCOUNTS, &get_msg, 
+				     in_buffer) != SLURM_SUCCESS) {
+		error("Failed to unpack DBD_REMOVE_ACCOUNTS message");
+		*out_buffer = make_dbd_rc_msg(SLURM_ERROR);
+		return SLURM_ERROR;
+	}
+	
+	debug2("DBD_REMOVE_ACCOUNTS: called");
+
+	rc = acct_storage_g_remove_accounts(db_conn, get_msg->cond);
+	if(rc == SLURM_SUCCESS) {
+		memset(&assoc_q, 0, sizeof(acct_association_cond_t));
+		assoc_q.acct_list =
+			((acct_account_cond_t *)get_msg->cond)->acct_list;
+		rc = acct_storage_g_remove_associations(db_conn, &assoc_q);
+	}
+	slurmdbd_free_cond_msg(DBD_REMOVE_ACCOUNTS, get_msg);
+
+	*out_buffer = make_dbd_rc_msg(rc);
+	return rc;
+}
+
+static int   _remove_account_coords(void *db_conn,
+				    Buf in_buffer, Buf *out_buffer,
+				    uint32_t *uid)
+{
+	int rc = SLURM_ERROR;
+	dbd_acct_coord_msg_t *get_msg;
+
+	if (slurmdbd_unpack_acct_coord_msg(&get_msg, in_buffer) !=
+	    SLURM_SUCCESS) {
+		error("Failed to unpack DBD_REMOVE_ACCOUNT_COORDS message");
+		*out_buffer = make_dbd_rc_msg(SLURM_ERROR);
+		return SLURM_ERROR;
+	}
+	
+	debug2("DBD_REMOVE_ACCOUNT_COORDS: called");
+
+	rc = acct_storage_g_remove_coord(db_conn, get_msg->acct, get_msg->cond);
+	slurmdbd_free_acct_coord_msg(get_msg);
+
+	*out_buffer = make_dbd_rc_msg(rc);
+	return rc;
+}
+
+static int   _remove_assocs(void *db_conn,
+			    Buf in_buffer, Buf *out_buffer, uint32_t *uid)
+{
+	int rc = SLURM_ERROR;
+	dbd_cond_msg_t *get_msg;
+
+	if (slurmdbd_unpack_cond_msg(DBD_REMOVE_ASSOCS, &get_msg, in_buffer) !=
+	    SLURM_SUCCESS) {
+		error("Failed to unpack DBD_REMOVE_ASSOCS message");
+		*out_buffer = make_dbd_rc_msg(SLURM_ERROR);
+		return SLURM_ERROR;
+	}
+	
+	debug2("DBD_REMOVE_ASSOCS: called");
+
+	rc = acct_storage_g_remove_associations(db_conn, get_msg->cond);
+	slurmdbd_free_cond_msg(DBD_REMOVE_ASSOCS, get_msg);
+
+	*out_buffer = make_dbd_rc_msg(rc);
+	return rc;
+
+}
+
+static int   _remove_clusters(void *db_conn,
+			      Buf in_buffer, Buf *out_buffer, uint32_t *uid)
+{
+	int rc = SLURM_ERROR;
+	dbd_cond_msg_t *get_msg;
+	acct_association_cond_t assoc_q;
+
+	if (slurmdbd_unpack_cond_msg(DBD_REMOVE_CLUSTERS, &get_msg, 
+				     in_buffer) != SLURM_SUCCESS) {
+		error("Failed to unpack DBD_REMOVE_CLUSTERS message");
+		*out_buffer = make_dbd_rc_msg(SLURM_ERROR);
+		return SLURM_ERROR;
+	}
+	
+	debug2("DBD_REMOVE_CLUSTERS: called");
+
+	rc = acct_storage_g_remove_clusters(db_conn, get_msg->cond);
+	if(rc == SLURM_SUCCESS) {
+		memset(&assoc_q, 0, sizeof(acct_association_cond_t));
+		assoc_q.cluster_list =
+			((acct_cluster_cond_t *)get_msg->cond)->cluster_list;
+		rc = acct_storage_g_remove_associations(db_conn, &assoc_q);
+	}
+	slurmdbd_free_cond_msg(DBD_REMOVE_CLUSTERS, get_msg);
+
+	*out_buffer = make_dbd_rc_msg(rc);
+	return rc;
+}
+
+static int   _remove_users(void *db_conn,
+			   Buf in_buffer, Buf *out_buffer, uint32_t *uid)
+{
+	int rc = SLURM_ERROR;
+	dbd_cond_msg_t *get_msg;
+	acct_association_cond_t assoc_q;
+
+	if (slurmdbd_unpack_cond_msg(DBD_REMOVE_USERS, &get_msg, in_buffer) !=
+	    SLURM_SUCCESS) {
+		error("Failed to unpack DBD_REMOVE_USERS message");
+		*out_buffer = make_dbd_rc_msg(SLURM_ERROR);
+		return SLURM_ERROR;
+	}
+	
+	debug2("DBD_REMOVE_USERS: called");
+
+	rc = acct_storage_g_remove_users(db_conn, get_msg->cond);
+	if(rc == SLURM_SUCCESS) {
+		memset(&assoc_q, 0, sizeof(acct_association_cond_t));
+		assoc_q.user_list =
+			((acct_user_cond_t *)get_msg->cond)->user_list;
+		rc = acct_storage_g_remove_associations(db_conn, &assoc_q);
+	}
+	slurmdbd_free_cond_msg(DBD_REMOVE_USERS, get_msg);
+
+	*out_buffer = make_dbd_rc_msg(rc);
+	return rc;
 }
 
 static int  _step_complete(void *db_conn,
