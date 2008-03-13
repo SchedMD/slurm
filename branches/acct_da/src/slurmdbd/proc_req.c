@@ -275,7 +275,7 @@ static int _add_accounts(void *db_conn,
 	char *comment = NULL;
 
 	debug2("DBD_ADD_ACCOUNTS: called");
-	if(assoc_mgr_get_admin_level(db_conn, *uid) < ACCT_ADMIN_SUPER_USER) {
+	if(assoc_mgr_get_admin_level(db_conn, *uid) < ACCT_ADMIN_OPERATOR) {
 		acct_user_rec_t user;
 
 		memset(&user, 0, sizeof(acct_user_rec_t));
@@ -387,7 +387,7 @@ static int _add_assocs(void *db_conn,
 		goto end_it;
 	}
 	
-	if(assoc_mgr_get_admin_level(db_conn, *uid) < ACCT_ADMIN_SUPER_USER) {
+	if(assoc_mgr_get_admin_level(db_conn, *uid) < ACCT_ADMIN_OPERATOR) {
 		ListIterator itr = NULL;
 		ListIterator itr2 = NULL;
 		acct_user_rec_t user;
@@ -964,6 +964,12 @@ static int   _modify_accounts(void *db_conn,
 	char *comment = NULL;
 
 	debug2("DBD_MODIFY_ACCOUNTS: called");
+	if(assoc_mgr_get_admin_level(db_conn, *uid) < ACCT_ADMIN_OPERATOR) {
+		comment = "User doesn't have privilege to preform this action";
+		error("%s", comment);
+		rc = ESLURM_ACCESS_DENIED;
+		goto end_it;
+	}
 
 	if (slurmdbd_unpack_modify_msg(DBD_MODIFY_ACCOUNTS, &get_msg,
 				       in_buffer) != SLURM_SUCCESS) {
@@ -991,6 +997,14 @@ static int   _modify_assocs(void *db_conn,
 	char *comment = NULL;
 
 	debug2("DBD_MODIFY_ASSOCS: called");
+
+	if(assoc_mgr_get_admin_level(db_conn, *uid) < ACCT_ADMIN_OPERATOR) {
+		comment = "User doesn't have privilege to preform this action";
+		error("%s", comment);
+		rc = ESLURM_ACCESS_DENIED;
+		goto end_it;
+	}
+
 	if (slurmdbd_unpack_modify_msg(DBD_MODIFY_ASSOCS, &get_msg, 
 				       in_buffer) != SLURM_SUCCESS) {
 		comment = "Failed to unpack DBD_MODIFY_ASSOCS message";
@@ -1014,6 +1028,13 @@ static int   _modify_clusters(void *db_conn,
 	int rc = SLURM_ERROR;
 	dbd_modify_msg_t *get_msg = NULL;
 	char *comment = NULL;
+
+	if(assoc_mgr_get_admin_level(db_conn, *uid) < ACCT_ADMIN_SUPER_USER) {
+		comment = "User doesn't have privilege to preform this action";
+		error("%s", comment);
+		rc = ESLURM_ACCESS_DENIED;
+		goto end_it;
+	}
 
 	if (slurmdbd_unpack_modify_msg(DBD_MODIFY_CLUSTERS, &get_msg,
 				       in_buffer) != SLURM_SUCCESS) {
@@ -1042,6 +1063,13 @@ static int   _modify_users(void *db_conn,
 
 	debug2("DBD_MODIFY_USERS: called");
 
+	if(assoc_mgr_get_admin_level(db_conn, *uid) < ACCT_ADMIN_OPERATOR) {
+		comment = "User doesn't have privilege to preform this action";
+		error("%s", comment);
+		rc = ESLURM_ACCESS_DENIED;
+		goto end_it;
+	}
+
 	if (slurmdbd_unpack_modify_msg(DBD_MODIFY_USERS, &get_msg, in_buffer) !=
 	    SLURM_SUCCESS) {
 		comment = "Failed to unpack DBD_MODIFY_USERS message";
@@ -1064,6 +1092,13 @@ static int   _modify_user_admin_level(void *db_conn,
 	int rc = SLURM_ERROR;
 	dbd_modify_msg_t *get_msg = NULL;
 	char *comment = NULL;
+
+	if(assoc_mgr_get_admin_level(db_conn, *uid) < ACCT_ADMIN_OPERATOR) {
+		comment = "User doesn't have privilege to preform this action";
+		error("%s", comment);
+		rc = ESLURM_ACCESS_DENIED;
+		goto end_it;
+	}
 
 	if (slurmdbd_unpack_modify_msg(DBD_MODIFY_USER_ADMIN_LEVEL, &get_msg,
 				       in_buffer) != SLURM_SUCCESS) {
@@ -1158,6 +1193,13 @@ static int   _remove_accounts(void *db_conn,
 
 	debug2("DBD_REMOVE_ACCOUNTS: called");
 
+	if(assoc_mgr_get_admin_level(db_conn, *uid) < ACCT_ADMIN_OPERATOR) {
+		comment = "User doesn't have privilege to preform this action";
+		error("%s", comment);
+		rc = ESLURM_ACCESS_DENIED;
+		goto end_it;
+	}
+
 	if (slurmdbd_unpack_cond_msg(DBD_REMOVE_ACCOUNTS, &get_msg, 
 				     in_buffer) != SLURM_SUCCESS) {
 		comment = "Failed to unpack DBD_REMOVE_ACCOUNTS message";
@@ -1190,6 +1232,13 @@ static int   _remove_account_coords(void *db_conn,
 
 	debug2("DBD_REMOVE_ACCOUNT_COORDS: called");
 
+	if(assoc_mgr_get_admin_level(db_conn, *uid) < ACCT_ADMIN_OPERATOR) {
+		comment = "User doesn't have privilege to preform this action";
+		error("%s", comment);
+		rc = ESLURM_ACCESS_DENIED;
+		goto end_it;
+	}
+
 	if (slurmdbd_unpack_acct_coord_msg(&get_msg, in_buffer) !=
 	    SLURM_SUCCESS) {
 		comment = "Failed to unpack DBD_REMOVE_ACCOUNT_COORDS message";
@@ -1213,6 +1262,13 @@ static int   _remove_assocs(void *db_conn,
 	char *comment = NULL;
 
 	debug2("DBD_REMOVE_ASSOCS: called");
+
+	if(assoc_mgr_get_admin_level(db_conn, *uid) < ACCT_ADMIN_OPERATOR) {
+		comment = "User doesn't have privilege to preform this action";
+		error("%s", comment);
+		rc = ESLURM_ACCESS_DENIED;
+		goto end_it;
+	}
 
 	if (slurmdbd_unpack_cond_msg(DBD_REMOVE_ASSOCS, &get_msg, in_buffer) !=
 	    SLURM_SUCCESS) {
@@ -1240,6 +1296,13 @@ static int   _remove_clusters(void *db_conn,
 	char *comment = NULL;
 
 	debug2("DBD_REMOVE_CLUSTERS: called");
+
+	if(assoc_mgr_get_admin_level(db_conn, *uid) < ACCT_ADMIN_SUPER_USER) {
+		comment = "User doesn't have privilege to preform this action";
+		error("%s", comment);
+		rc = ESLURM_ACCESS_DENIED;
+		goto end_it;
+	}
 
 	if (slurmdbd_unpack_cond_msg(DBD_REMOVE_CLUSTERS, &get_msg, 
 				     in_buffer) != SLURM_SUCCESS) {
