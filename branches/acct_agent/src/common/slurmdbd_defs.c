@@ -1195,7 +1195,10 @@ void inline slurmdbd_free_get_jobs_msg(dbd_get_jobs_msg_t *msg)
 
 void inline slurmdbd_free_init_msg(dbd_init_msg_t *msg)
 {
-	xfree(msg);
+	if (msg) {
+		xfree(msg->cluster_name);
+		xfree(msg);
+	}
 }
 
 void inline slurmdbd_free_job_complete_msg(dbd_job_comp_msg_t *msg)
@@ -1553,8 +1556,9 @@ slurmdbd_pack_init_msg(dbd_init_msg_t *msg, Buf buffer, char *auth_info)
 	int rc;
 	void *auth_cred;
 
-	pack16(msg->version, buffer);
+	packstr(msg->cluster_name, buffer);
 	pack16(msg->slurmctld_port, buffer);
+	pack16(msg->version, buffer);
 	auth_cred = g_slurm_auth_create(NULL, 2, auth_info);
 	if (auth_cred == NULL) {
 		error("Creating authentication credential: %s",
@@ -1574,11 +1578,13 @@ int inline
 slurmdbd_unpack_init_msg(dbd_init_msg_t **msg, Buf buffer, char *auth_info)
 {
 	void *auth_cred;
+	uint32_t uint32_tmp;
 
 	dbd_init_msg_t *msg_ptr = xmalloc(sizeof(dbd_init_msg_t));
 	*msg = msg_ptr;
-	safe_unpack16(&msg_ptr->version, buffer);
+	safe_unpackstr_xmalloc(&msg_ptr->cluster_name, &uint32_tmp, buffer);
 	safe_unpack16(&msg_ptr->slurmctld_port, buffer);
+	safe_unpack16(&msg_ptr->version, buffer);
 	auth_cred = g_slurm_auth_unpack(buffer);
 	if (auth_cred == NULL) {
 		error("Unpacking authentication credential: %s",
@@ -1590,6 +1596,7 @@ slurmdbd_unpack_init_msg(dbd_init_msg_t **msg, Buf buffer, char *auth_info)
 	return SLURM_SUCCESS;
 
 unpack_error:
+	xfree(msg_ptr->cluster_name);
 	xfree(msg_ptr);
 	*msg = NULL;
 	return SLURM_ERROR;

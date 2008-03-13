@@ -48,8 +48,9 @@
 #include "src/common/fd.h"
 #include "src/common/log.h"
 #include "src/common/macros.h"
-#include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_accounting_storage.h"
+#include "src/common/slurm_protocol_api.h"
+#include "src/common/slurm_protocol_interface.h"
 #include "src/common/slurmdbd_defs.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xsignal.h"
@@ -79,6 +80,7 @@ static pthread_cond_t  thread_count_cond = PTHREAD_COND_INITIALIZER;
 
 typedef struct connection_arg {
 	slurm_fd newsockfd;
+	char hostname[512];
 } connection_arg_t;
 
 
@@ -221,8 +223,21 @@ static void * _service_connection(void *arg)
 			offset += msg_read;
 		}
 		if (msg_size == offset) {
+			uint16_t port = 0;
+			char *cluster_name = NULL;
 			rc = proc_req(db_conn,
-				      msg, msg_size, first, &buffer, &uid);
+				      msg, msg_size, first, &buffer, 
+				      &uid, &port, &cluster_name);
+			if (first && cluster_name && port) {
+				uint16_t src_port;
+				char host[1024];
+				slurm_addr address;
+				_slurm_get_stream_addr(conn->newsockfd, 
+						       &address);
+				_slurm_get_addr(&address, &src_port, host, 
+						sizeof(host));
+				/* Add to list: cluster_name, host, port */
+			}
 			first = false;
 			if (rc != SLURM_SUCCESS) {
 				error("Processing message from connection %d",

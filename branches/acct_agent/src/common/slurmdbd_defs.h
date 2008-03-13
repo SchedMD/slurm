@@ -153,11 +153,12 @@ typedef struct dbd_get_jobs_msg {
 } dbd_get_jobs_msg_t;
 
 typedef struct dbd_init_msg {
-	uint16_t version;	/* protocol version */
+	char *cluster_name;	/* name of cluster to query */
 	uint16_t slurmctld_port;/* port on slurmctld to process messages 
 				 * originating on slurmdbd */
 	uint32_t uid;		/* UID originating connection,
 				 * filled by authtentication plugin*/
+	uint16_t version;	/* protocol version */
 } dbd_init_msg_t;
 
 typedef struct dbd_job_comp_msg {
