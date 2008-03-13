@@ -234,6 +234,32 @@ static void * _service_connection(void *arg)
 				((struct sockaddr_in) ctld_address).sin_port =
 						htons(port);
 				/* FIXME: Add to recipient list: cluster_name, address */
+#if 0
+{
+/* test code only */
+slurm_fd fd;
+fd =  slurm_open_stream(&ctld_address);
+if (fd < 0)
+	error("can not open socket back to slurmctld");
+else {
+	uint32_t msg_size, nw_size;
+	Buf buffer;
+	slurmdbd_msg_t req;
+	dbd_rc_msg_t msg;
+	int size;
+	msg.return_code = 5;
+	req.msg_type = DBD_RC;
+	req.data = &msg;
+	buffer = pack_slurmdbd_msg(&req);
+	msg_size = get_buf_offset(buffer);
+	nw_size = htonl(msg_size);
+	slurm_write_stream(fd, &nw_size, sizeof(nw_size));
+	slurm_write_stream(fd, get_buf_data(buffer), msg_size);
+	free_buf(buffer);
+	slurm_close_stream(fd);
+}
+}
+#endif
 			}
 			first = false;
 			if (rc != SLURM_SUCCESS) {

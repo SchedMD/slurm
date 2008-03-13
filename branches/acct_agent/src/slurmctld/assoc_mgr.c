@@ -137,6 +137,21 @@ static int _get_local_user_list(void *db_conn)
 	return SLURM_SUCCESS;
 }
 
+static void _process_free_slurmdbd_msg(slurmdbd_msg_t msg)
+{
+	switch (msg.msg_type) {
+		case DBD_RC:
+			/* Sample code only, process the RPC and free msg */
+			info("got from SlurmDBD DBD_RC: %u",
+			     ((dbd_rc_msg_t *)msg.data)->return_code);
+			slurmdbd_free_rc_msg((dbd_rc_msg_t *)msg.data);
+			break;
+		default:
+			error("Invalid msg_type from slurmdbd: %u", 
+			      msg.msg_type);
+	}
+}
+
 static void *_assoc_agent(void *args)
 {
 	slurm_fd newsockfd;
@@ -159,8 +174,8 @@ static void *_assoc_agent(void *args)
 		} else {
 			info("Received some message from SlurmDBD");
 			/* NOTE: authentication should be handle within the
-			 *	message un/pack for relevant messages */
-			/* FIXME: process the RPC and free the message */
+			 *	 message un/pack for relevant messages */
+			_process_free_slurmdbd_msg(msg);
 		}
 		slurm_shutdown_msg_conn(newsockfd);
 	}

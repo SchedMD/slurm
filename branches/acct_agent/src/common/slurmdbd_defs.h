@@ -107,7 +107,7 @@ typedef enum {
 				   * an account */
 	DBD_REMOVE_ASSOCS,      /* Remove existing association          */
 	DBD_REMOVE_CLUSTERS,    /* Remove existing cluster              */
-	DBD_REMOVE_USERS,        /* Remove existing user                 */
+	DBD_REMOVE_USERS,       /* Remove existing user                 */
 	DBD_STEP_COMPLETE,	/* Record step completion		*/
 	DBD_STEP_START		/* Record step starting			*/
 } slurmdbd_msg_type_t;
@@ -145,11 +145,11 @@ typedef struct {
 } dbd_usage_msg_t;
 
 typedef struct dbd_get_jobs_msg {
-	char *cluster_name; /* name of cluster to query */
-	uint32_t gid;      /* group id */
-	List selected_steps; /* List of jobacct_selected_step_t *'s */
-	List selected_parts; /* List of char *'s */
-	char *user;        /* user name */
+	char *cluster_name;	/* name of cluster to query */
+	uint32_t gid;		/* group id */
+	List selected_steps;	/* List of jobacct_selected_step_t *'s */
+	List selected_parts;	/* List of char *'s */
+	char *user;		/* user name */
 } dbd_get_jobs_msg_t;
 
 typedef struct dbd_init_msg {
@@ -210,8 +210,8 @@ typedef struct dbd_job_suspend_msg {
 } dbd_job_suspend_msg_t;
 
 typedef struct {
-	List my_list; /* this list could be of any type as long as it
-			* is handled correctly on both ends */
+	List my_list; 		/* this list could be of any type as long as it
+				 * is handled correctly on both ends */
 } dbd_list_msg_t;
 
 typedef struct {
