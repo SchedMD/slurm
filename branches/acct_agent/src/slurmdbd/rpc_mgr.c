@@ -50,7 +50,6 @@
 #include "src/common/macros.h"
 #include "src/common/slurm_accounting_storage.h"
 #include "src/common/slurm_protocol_api.h"
-#include "src/common/slurm_protocol_interface.h"
 #include "src/common/slurmdbd_defs.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xsignal.h"
@@ -229,14 +228,12 @@ static void * _service_connection(void *arg)
 				      msg, msg_size, first, &buffer, 
 				      &uid, &port, &cluster_name);
 			if (first && cluster_name && port) {
-				uint16_t src_port;
-				char host[1024];
-				slurm_addr address;
-				_slurm_get_stream_addr(conn->newsockfd, 
-						       &address);
-				_slurm_get_addr(&address, &src_port, host, 
-						sizeof(host));
-				/* Add to list: cluster_name, host, port */
+				slurm_addr ctld_address;
+				slurm_get_stream_addr(conn->newsockfd, 
+						       &ctld_address);
+				((struct sockaddr_in) ctld_address).sin_port =
+						htons(port);
+				/* FIXME: Add to recipient list: cluster_name, address */
 			}
 			first = false;
 			if (rc != SLURM_SUCCESS) {

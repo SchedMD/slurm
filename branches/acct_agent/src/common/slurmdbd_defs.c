@@ -151,6 +151,63 @@ extern int slurm_close_slurmdbd_conn(void)
 	return SLURM_SUCCESS;
 }
 
+/*
+ * Receive a message from the SlurmDBD and authenticate it
+ * IN: fd - the open file to be read from
+ * OUT: msg the message from SlurmDBD, must be freed by the caller
+ * Returns SLURM_SUCCESS or an error code
+ */
+extern int slurm_recv_slurmdbd_msg(slurm_fd fd, slurmdbd_msg_t *msg)
+{
+	char *in_msg = NULL;
+	Buf buffer;
+	uint32_t nw_size, msg_size;
+	ssize_t msg_read, offset;
+	int rc = SLURM_ERROR;
+
+	if (!_fd_readable(fd)) {
+		error("Premature close from slurmdbd");
+		return rc;
+	}
+	msg_read = read(fd, &nw_size, sizeof(nw_size));
+	if (msg_read == 0) {
+		error("Premature EOF from slurmdbd");
+		return rc;
+	}
+	if (msg_read != sizeof(nw_size)) {
+		error("Could not read msg_size from slurmdbd");
+		return rc;
+	}
+	msg_size = ntohl(nw_size);
+	if ((msg_size < 2) || (msg_size > 1000000)) {
+		error("Invalid msg_size (%u) from slurmdbd", 
+		      msg_size);
+		return SLURM_ERROR;
+	}
+
+	buffer = init_buf(msg_size);
+	in_msg = get_buf_data(buffer);;
+	offset = 0;
+	while (msg_size > offset) {
+		if (!_fd_readable(fd))
+			break;		/* problem with this socket */
+		msg_read = read(fd, (in_msg + offset), 
+				(msg_size - offset));
+		if (msg_read <= 0) {
+			error("read(%d): %m", fd);
+			break;
+		}
+		offset += msg_read;
+	}
+	if (msg_size != offset) {
+		error("Could not read full message from slurmdbd");
+	} else {
+		rc = unpack_slurmdbd_msg(msg, buffer);
+	}
+	free_buf(buffer);
+	return rc;
+}
+
 /* Send an RPC to the SlurmDBD and wait for the return code reply.
  * The RPC will not be queued if an error occurs.
  * Returns SLURM_SUCCESS or an error code */

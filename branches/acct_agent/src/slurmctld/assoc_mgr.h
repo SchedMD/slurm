@@ -72,9 +72,8 @@ extern int assoc_mgr_init(void *db_conn);
 extern int assoc_mgr_fini(void);
 
 /*
- * Open a socket to process request originating in the SlurmDBD
- *	the agent will be spawned by assoc_mgr_init() and killed
- *	by assoc_mgr_fini().
+ * Open a socket and spawn a pthread to process request originating in
+ *	the SlurmDBD. The agent will be killed by assoc_mgr_fini().
  * RET: The port that will be used or 0 on error
  */
 extern uint16_t assoc_mgr_server(void);

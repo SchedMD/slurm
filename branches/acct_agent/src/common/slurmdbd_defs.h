@@ -282,6 +282,14 @@ extern int slurm_open_slurmdbd_conn(char *auth_info,
 /* Close the SlurmDBD socket connection */
 extern int slurm_close_slurmdbd_conn(void);
 
+/*
+ * Receive a message from the SlurmDBD and authenticate it
+ * IN: fd - the open file to be read from
+ * OUT: msg the message from SlurmDBD, must be freed by the caller
+ * Returns SLURM_SUCCESS or an error code
+ */
+extern int slurm_recv_slurmdbd_msg(slurm_fd fd, slurmdbd_msg_t *msg);
+
 /* Send an RPC to the SlurmDBD. Do not wait for the reply. The RPC
  * will be queued and processed later if the SlurmDBD is not responding.
  * Returns SLURM_SUCCESS or an error code */
