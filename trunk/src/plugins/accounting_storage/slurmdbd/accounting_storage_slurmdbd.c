@@ -93,6 +93,7 @@ const char plugin_type[] = "accounting_storage/slurmdbd";
 const uint32_t plugin_version = 100;
 
 static char *cluster_name       = NULL;
+static uint16_t slurmctld_port  = 0;
 static char *slurmdbd_auth_info = NULL;
 
 /*
@@ -105,17 +106,11 @@ extern int init ( void )
 
 	if (first) {
 		/* since this can be loaded from many different places
-		   only tell us once. */
-		if (!(cluster_name = slurm_get_cluster_name()))
-			fatal("%s requires ClusterName in slurm.conf",
-			      plugin_name);
-		
+		 * only tell us once. */		
 		slurmdbd_auth_info = slurm_get_accounting_storage_pass();
 		if(!slurmdbd_auth_info)
-			
 			verbose("%s loaded AuthInfo=%s",
 				plugin_name, slurmdbd_auth_info);
-		slurm_open_slurmdbd_conn(slurmdbd_auth_info);
 
 		first = 0;
 	} else {
@@ -134,8 +129,27 @@ extern int fini ( void )
 	return SLURM_SUCCESS;
 }
 
-extern void *acct_storage_p_get_connection()
+extern int acct_storage_p_set_msg_port(uint16_t port)
 {
+	if (!(cluster_name = slurm_get_cluster_name())) {
+		error("%s requires ClusterName in slurm.conf",
+		      plugin_name);
+		return SLURM_ERROR;
+	}
+
+	slurmctld_port = port;
+	return SLURM_SUCCESS;
+}
+
+extern void *acct_storage_p_get_connection(void)
+{
+	static int first = 1;
+
+	if (first) {
+		slurm_open_slurmdbd_conn(slurmdbd_auth_info, slurmctld_port, 
+					 cluster_name);
+		first = 0;
+	}
 	return NULL;
 }
 

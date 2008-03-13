@@ -44,11 +44,16 @@
 
 /* Process an incoming RPC
  * msg IN - incoming message
- * msg_size IN - size of msg (bytes)
+ * msg_size IN - size of msg in bytes
  * first IN - set if first message received on the socket
  * buffer OUT - outgoing response, must be freed by caller
- * RET SLURM_SUCCESS or error code */
+ * uid IN/OUT - user ID who initiated the RPC
+ * port OUT - slurmctld port to get update notifications, set for DBD_INIT only
+ * cluster_name OUT - cluster associated with message, set for DBD_INIT only
+ * RET SLURM_SUCCESS or error code
+ */
 extern int proc_req(void *db_conn, char *msg, uint32_t msg_size,
-		    bool first, Buf *buffer, uint32_t *uid);
+		    bool first, Buf *buffer, uint32_t *uid,
+		    uint16_t *port, char **cluster_name);
 
 #endif /* !_PROC_REQ */
