@@ -85,6 +85,7 @@ static pthread_mutex_t slurmdbd_lock = PTHREAD_MUTEX_INITIALIZER;
 static slurm_fd  slurmdbd_fd         = -1;
 static uint16_t  slurmctld_port      = 0;
 static char *    slurmdbd_auth_info  = NULL;
+static char *    slurmctld_cluster_name = NULL;
 
 static void * _agent(void *x);
 static void   _agent_queue_del(void *x);
@@ -112,7 +113,8 @@ static int    _tot_wait (struct timeval *start_time);
  ****************************************************************************/
 
 /* Open a socket connection to SlurmDbd */
-extern int slurm_open_slurmdbd_conn(char *auth_info, uint16_t port)
+extern int slurm_open_slurmdbd_conn(char *auth_info, 
+				    uint16_t port, char *cluster_name)
 {
 	slurm_mutex_lock(&agent_lock);
 	if ((agent_tid == 0) || (agent_list == NULL))
@@ -124,6 +126,8 @@ extern int slurm_open_slurmdbd_conn(char *auth_info, uint16_t port)
 	if (auth_info)
 		slurmdbd_auth_info = xstrdup(auth_info);
 	slurmctld_port = port;
+	if (cluster_name)
+		slurmctld_cluster_name = xstrdup(cluster_name);
 	if (slurmdbd_fd < 0)
 		_open_slurmdbd_fd();
 	slurm_mutex_unlock(&slurmdbd_lock);
@@ -140,6 +144,7 @@ extern int slurm_close_slurmdbd_conn(void)
 	slurm_mutex_lock(&slurmdbd_lock);
 	_close_slurmdbd_fd();
 	xfree(slurmdbd_auth_info);
+	xfree(slurmctld_cluster_name);
 	slurmctld_port = 0;
 	slurm_mutex_unlock(&slurmdbd_lock);
 
@@ -538,6 +543,7 @@ static int _send_init_msg(void)
 	pack16((uint16_t) DBD_INIT, buffer);
 	req.version        = SLURMDBD_VERSION;
 	req.slurmctld_port = slurmctld_port;
+	req.cluster_name   = slurmctld_cluster_name;
 	slurmdbd_pack_init_msg(&req, buffer, slurmdbd_auth_info);
 
 	rc = _send_msg(buffer);

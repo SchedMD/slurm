@@ -351,7 +351,7 @@ static int _init_conn(void *db_conn, Buf in_buffer, Buf *out_buffer,
 	else
 		*cluster_name = NULL;
 
-	info("DBD_INIT: VERSION:%u UID:%u CLUSTER: %s PORT:%u", 
+	info("DBD_INIT: VERSION:%u UID:%u CLUSTER:%s PORT:%u", 
 	     init_msg->version, init_msg->uid, 
 	     init_msg->cluster_name, init_msg->slurmctld_port);
 	slurmdbd_free_init_msg(init_msg);

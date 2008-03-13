@@ -264,16 +264,20 @@ typedef struct dbd_step_start_msg {
  * Slurm DBD message processing functions
 \*****************************************************************************/
 
-/* Open a socket connection to SlurmDbd using SlurmdbdAuthInfo specified
+/*
+ * Open a socket connection to SlurmDbd using SlurmdbdAuthInfo specified
  * IN: auth_info - If Munge is used for authentication, this will be the 
  *		pathname to the named socket used if not the default
  *		socket. Typically used if one Munge key and credential 
  *		is used within a cluster and a different for site-wide
  *		authentication.
  * IN: port - socket port used for message originating in SlurmDdb and 
- *		and sent to slurmctld.
+ *		sent to slurmctld or zero if connect is not from slurmctld
+ * IN: cluster_name - cluster name or NULL if connect is not from slurmctld
+ * Returns SLURM_SUCCESS or an error code
  */
-extern int slurm_open_slurmdbd_conn(char *auth_info, uint16_t port);
+extern int slurm_open_slurmdbd_conn(char *auth_info, 
+				    uint16_t port, char *cluster_name);
 
 /* Close the SlurmDBD socket connection */
 extern int slurm_close_slurmdbd_conn(void);
