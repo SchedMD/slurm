@@ -195,18 +195,10 @@ extern int slurm_acct_storage_init(char *loc); /* load the plugin */
 extern int slurm_acct_storage_fini(void); /* unload the plugin */
 
 /*
- * If running on slurmctld, specify a port for messages from SlurmDBD
- *	to slurmctld for notification of database changes
- * IN: port - socket port open for incoming message
- * RET: SLURM_SUCCESS on success SLURM_ERROR else 
- */
-extern int acct_storage_g_set_msg_port(uint16_t port);
-
-/*
  * get a new connection to the storage unit
  * RET: pointer used to access db 
  */
-extern void *acct_storage_g_get_connection(void);
+extern void *acct_storage_g_get_connection();
 
 /*
  * release connection to the storage unit

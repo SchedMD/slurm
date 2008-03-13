@@ -52,8 +52,8 @@ static int   _cluster_procs(void *db_conn,
 static int   _get_assocs(void *db_conn, Buf in_buffer, Buf *out_buffer);
 static int   _get_jobs(void *db_conn, Buf in_buffer, Buf *out_buffer);
 static int   _get_users(void *db_conn, Buf in_buffer, Buf *out_buffer);
-static int   _init_conn(void *db_conn, Buf in_buffer, Buf *out_buffer, 
-			uint32_t *uid, uint16_t *port, char **cluster_name);
+static int   _init_conn(void *db_conn,
+			Buf in_buffer, Buf *out_buffer, uint32_t *uid);
 static int   _job_complete(void *db_conn,
 			   Buf in_buffer, Buf *out_buffer, uint32_t *uid);
 static int   _job_start(void *db_conn,
@@ -74,13 +74,10 @@ static int   _step_start(void *db_conn,
  * first IN - set if first message received on the socket
  * buffer OUT - outgoing response, must be freed by caller
  * uid IN/OUT - user ID who initiated the RPC
- * port OUT - slurmctld port to get update notifications, set for DBD_INIT only
- * cluster_name OUT - cluster associated with message, set for DBD_INIT only
- * RET SLURM_SUCCESS or error code
- */
+ * RET SLURM_SUCCESS or error code */
 extern int 
-proc_req(void *db_conn, char *msg, uint32_t msg_size, bool first, 
-	 Buf *out_buffer, uint32_t *uid, uint16_t *port, char **cluster_name)
+proc_req(void *db_conn, char *msg, uint32_t msg_size,
+	 bool first, Buf *out_buffer, uint32_t *uid)
 {
 	int rc = SLURM_SUCCESS;
 	uint16_t msg_type;
@@ -137,8 +134,7 @@ proc_req(void *db_conn, char *msg, uint32_t msg_size, bool first,
 		case DBD_INIT:
 			if (first)
 				rc = _init_conn(db_conn,
-						in_buffer, out_buffer, uid,
-						port, cluster_name);
+						in_buffer, out_buffer, uid);
 			else {
 				error("DBD_INIT sent after connection "
 				      "established");
@@ -328,8 +324,8 @@ static int _get_users(void *db_conn, Buf in_buffer, Buf *out_buffer)
 	return SLURM_SUCCESS;
 }
 
-static int _init_conn(void *db_conn, Buf in_buffer, Buf *out_buffer, 
-		      uint32_t *uid, uint16_t *port, char **cluster_name)
+static int _init_conn(void *db_conn,
+		      Buf in_buffer, Buf *out_buffer, uint32_t *uid)
 {
 	dbd_init_msg_t *init_msg;
 
@@ -345,15 +341,8 @@ static int _init_conn(void *db_conn, Buf in_buffer, Buf *out_buffer,
 		return SLURM_ERROR;
 	}
 	*uid = init_msg->uid;
-	*port = init_msg->slurmctld_port;
-	if (init_msg->cluster_name && init_msg->cluster_name[0])
-		*cluster_name = xstrdup(init_msg->cluster_name);
-	else
-		*cluster_name = NULL;
 
-	info("DBD_INIT: VERSION:%u UID:%u CLUSTER:%s PORT:%u", 
-	     init_msg->version, init_msg->uid, 
-	     init_msg->cluster_name, init_msg->slurmctld_port);
+	info("DBD_INIT: VERSION:%u UID:%u", init_msg->version, init_msg->uid);
 	slurmdbd_free_init_msg(init_msg);
 	*out_buffer = make_dbd_rc_msg(SLURM_SUCCESS);
 	return SLURM_SUCCESS;

@@ -306,6 +306,9 @@ int main(int argc, char *argv[])
 		fatal( "failed to initialize node selection plugin");
 	if (slurm_acct_storage_init(NULL) != SLURM_SUCCESS )
 		fatal( "failed to initialize accounting_storage plugin");
+	
+	acct_db_conn = acct_storage_g_get_connection();
+	assoc_mgr_init(acct_db_conn);
 
 	if (slurm_jobacct_gather_init() != SLURM_SUCCESS )
 		fatal( "failed to initialize jobacct_gather plugin");
@@ -350,11 +353,6 @@ int main(int argc, char *argv[])
 				slurmctld_conf.backup_controller);
 			exit(0);
 		}
-
-		acct_storage_g_set_msg_port(assoc_mgr_server());
-		acct_db_conn = acct_storage_g_get_connection();
-		assoc_mgr_init(acct_db_conn);
-
 		info("Running as primary controller");
 		_gold_cluster_ready();
 		if (slurm_sched_init() != SLURM_SUCCESS)
@@ -368,7 +366,7 @@ int main(int argc, char *argv[])
 		slurm_mutex_unlock(&slurmctld_config.thread_count_lock);
 		slurm_attr_init(&thread_attr);
 		if (pthread_create(&slurmctld_config.thread_id_rpc, 
-				&thread_attr, _slurmctld_rpc_mgr, NULL))
+				&thread_attr,_slurmctld_rpc_mgr, NULL))
 			fatal("pthread_create error %m");
 		slurm_attr_destroy(&thread_attr);
 
@@ -417,7 +415,6 @@ int main(int argc, char *argv[])
 				!= SLURM_SUCCESS )
 			error("failed to save node selection state");
 		switch_save(slurmctld_conf.state_save_location);
-		assoc_mgr_fini();
 		if (slurmctld_config.resume_backup == false)
 			break;
 		recover = 2;
@@ -432,6 +429,7 @@ int main(int argc, char *argv[])
 
 	acct_storage_g_close_connection(acct_db_conn);
 	slurm_acct_storage_fini();	/* Save pending message traffic */
+	assoc_mgr_fini();
 	xfree(slurmctld_cluster_name);
 #ifdef MEMORY_LEAK_DEBUG
 	/* This should purge all allocated memory,   *\
