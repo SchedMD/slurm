@@ -83,7 +83,9 @@ static time_t    agent_shutdown = 0;
 
 static pthread_mutex_t slurmdbd_lock = PTHREAD_MUTEX_INITIALIZER;
 static slurm_fd  slurmdbd_fd         = -1;
+static uint16_t  slurmctld_port      = 0;
 static char *    slurmdbd_auth_info  = NULL;
+static char *    slurmctld_cluster_name = NULL;
 
 static void * _agent(void *x);
 static void   _agent_queue_del(void *x);
@@ -111,7 +113,8 @@ static int    _tot_wait (struct timeval *start_time);
  ****************************************************************************/
 
 /* Open a socket connection to SlurmDbd */
-extern int slurm_open_slurmdbd_conn(char *auth_info)
+extern int slurm_open_slurmdbd_conn(char *auth_info, 
+				    uint16_t port, char *cluster_name)
 {
 	slurm_mutex_lock(&agent_lock);
 	if ((agent_tid == 0) || (agent_list == NULL))
@@ -122,6 +125,9 @@ extern int slurm_open_slurmdbd_conn(char *auth_info)
 	xfree(slurmdbd_auth_info);
 	if (auth_info)
 		slurmdbd_auth_info = xstrdup(auth_info);
+	slurmctld_port = port;
+	if (cluster_name)
+		slurmctld_cluster_name = xstrdup(cluster_name);
 	if (slurmdbd_fd < 0)
 		_open_slurmdbd_fd();
 	slurm_mutex_unlock(&slurmdbd_lock);
@@ -138,9 +144,68 @@ extern int slurm_close_slurmdbd_conn(void)
 	slurm_mutex_lock(&slurmdbd_lock);
 	_close_slurmdbd_fd();
 	xfree(slurmdbd_auth_info);
+	xfree(slurmctld_cluster_name);
+	slurmctld_port = 0;
 	slurm_mutex_unlock(&slurmdbd_lock);
 
 	return SLURM_SUCCESS;
+}
+
+/*
+ * Receive a message from the SlurmDBD and authenticate it
+ * IN: fd - the open file to be read from
+ * OUT: msg the message from SlurmDBD, must be freed by the caller
+ * Returns SLURM_SUCCESS or an error code
+ */
+extern int slurm_recv_slurmdbd_msg(slurm_fd fd, slurmdbd_msg_t *msg)
+{
+	char *in_msg = NULL;
+	Buf buffer;
+	uint32_t nw_size, msg_size;
+	ssize_t msg_read, offset;
+	int rc = SLURM_ERROR;
+
+	if (!_fd_readable(fd)) {
+		error("Premature close from slurmdbd");
+		return rc;
+	}
+	msg_read = read(fd, &nw_size, sizeof(nw_size));
+	if (msg_read == 0) {
+		error("Premature EOF from slurmdbd");
+		return rc;
+	}
+	if (msg_read != sizeof(nw_size)) {
+		error("Could not read msg_size from slurmdbd");
+		return rc;
+	}
+	msg_size = ntohl(nw_size);
+	if ((msg_size < 2) || (msg_size > 1000000)) {
+		error("Invalid msg_size (%u) from slurmdbd", 
+		      msg_size);
+		return SLURM_ERROR;
+	}
+
+	buffer = init_buf(msg_size);
+	in_msg = get_buf_data(buffer);;
+	offset = 0;
+	while (msg_size > offset) {
+		if (!_fd_readable(fd))
+			break;		/* problem with this socket */
+		msg_read = read(fd, (in_msg + offset), 
+				(msg_size - offset));
+		if (msg_read <= 0) {
+			error("read(%d): %m", fd);
+			break;
+		}
+		offset += msg_read;
+	}
+	if (msg_size != offset) {
+		error("Could not read full message from slurmdbd");
+	} else {
+		rc = unpack_slurmdbd_msg(msg, buffer);
+	}
+	free_buf(buffer);
+	return rc;
 }
 
 /* Send an RPC to the SlurmDBD and wait for the return code reply.
@@ -533,7 +598,9 @@ static int _send_init_msg(void)
 
 	buffer = init_buf(1024);
 	pack16((uint16_t) DBD_INIT, buffer);
-	req.version  = SLURMDBD_VERSION;
+	req.version        = SLURMDBD_VERSION;
+	req.slurmctld_port = slurmctld_port;
+	req.cluster_name   = slurmctld_cluster_name;
 	slurmdbd_pack_init_msg(&req, buffer, slurmdbd_auth_info);
 
 	rc = _send_msg(buffer);
@@ -1191,7 +1258,10 @@ void inline slurmdbd_free_get_jobs_msg(dbd_get_jobs_msg_t *msg)
 
 void inline slurmdbd_free_init_msg(dbd_init_msg_t *msg)
 {
-	xfree(msg);
+	if (msg) {
+		xfree(msg->cluster_name);
+		xfree(msg);
+	}
 }
 
 void inline slurmdbd_free_job_complete_msg(dbd_job_comp_msg_t *msg)
@@ -1549,6 +1619,8 @@ slurmdbd_pack_init_msg(dbd_init_msg_t *msg, Buf buffer, char *auth_info)
 	int rc;
 	void *auth_cred;
 
+	packstr(msg->cluster_name, buffer);
+	pack16(msg->slurmctld_port, buffer);
 	pack16(msg->version, buffer);
 	auth_cred = g_slurm_auth_create(NULL, 2, auth_info);
 	if (auth_cred == NULL) {
@@ -1569,9 +1641,12 @@ int inline
 slurmdbd_unpack_init_msg(dbd_init_msg_t **msg, Buf buffer, char *auth_info)
 {
 	void *auth_cred;
+	uint32_t uint32_tmp;
 
 	dbd_init_msg_t *msg_ptr = xmalloc(sizeof(dbd_init_msg_t));
 	*msg = msg_ptr;
+	safe_unpackstr_xmalloc(&msg_ptr->cluster_name, &uint32_tmp, buffer);
+	safe_unpack16(&msg_ptr->slurmctld_port, buffer);
 	safe_unpack16(&msg_ptr->version, buffer);
 	auth_cred = g_slurm_auth_unpack(buffer);
 	if (auth_cred == NULL) {
@@ -1584,6 +1659,7 @@ slurmdbd_unpack_init_msg(dbd_init_msg_t **msg, Buf buffer, char *auth_info)
 	return SLURM_SUCCESS;
 
 unpack_error:
+	xfree(msg_ptr->cluster_name);
 	xfree(msg_ptr);
 	*msg = NULL;
 	return SLURM_ERROR;

@@ -48,8 +48,8 @@
 #include "src/common/fd.h"
 #include "src/common/log.h"
 #include "src/common/macros.h"
-#include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_accounting_storage.h"
+#include "src/common/slurm_protocol_api.h"
 #include "src/common/slurmdbd_defs.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xsignal.h"
@@ -79,6 +79,7 @@ static pthread_cond_t  thread_count_cond = PTHREAD_COND_INITIALIZER;
 
 typedef struct connection_arg {
 	slurm_fd newsockfd;
+	char hostname[512];
 } connection_arg_t;
 
 
@@ -221,8 +222,44 @@ static void * _service_connection(void *arg)
 			offset += msg_read;
 		}
 		if (msg_size == offset) {
+			uint16_t port = 0;
+			char *cluster_name = NULL;
 			rc = proc_req(db_conn,
-				      msg, msg_size, first, &buffer, &uid);
+				      msg, msg_size, first, &buffer, 
+				      &uid, &port, &cluster_name);
+			if (first && cluster_name && port) {
+				slurm_addr ctld_address;
+				slurm_get_stream_addr(conn->newsockfd, 
+						       &ctld_address);
+				((struct sockaddr_in) ctld_address).sin_port =
+						htons(port);
+				/* FIXME: Add to recipient list: cluster_name, address */
+#if 0
+{
+/* test code only */
+slurm_fd fd;
+fd =  slurm_open_stream(&ctld_address);
+if (fd < 0)
+	error("can not open socket back to slurmctld");
+else {
+	uint32_t msg_size, nw_size;
+	Buf buffer;
+	slurmdbd_msg_t req;
+	dbd_rc_msg_t msg;
+	msg.return_code = 5;
+	req.msg_type = DBD_RC;
+	req.data = &msg;
+	buffer = pack_slurmdbd_msg(&req);
+	msg_size = get_buf_offset(buffer);
+	nw_size = htonl(msg_size);
+	slurm_write_stream(fd, (char *)&nw_size, sizeof(nw_size));
+	slurm_write_stream(fd, get_buf_data(buffer), msg_size);
+	free_buf(buffer);
+	slurm_close_stream(fd);
+}
+}
+#endif
+			}
 			first = false;
 			if (rc != SLURM_SUCCESS) {
 				error("Processing message from connection %d",

@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  slurm_accounting_storage.c - account torage plugin wrapper.
+ *  slurm_accounting_storage.c - account storage plugin wrapper.
  *
  *  $Id: slurm_accounting_storage.c 10744 2007-01-11 20:09:18Z da $
  *****************************************************************************
@@ -58,7 +58,8 @@
  */
 
 typedef struct slurm_acct_storage_ops {
-	void *(*get_conn)          ();
+	int  (*set_msg_port)       (uint16_t port);
+	void *(*get_conn)          (void);
 	int  (*close_conn)         (void *db_conn);
 	int  (*add_users)          (void *db_conn,
 				    List user_list);
@@ -187,6 +188,7 @@ static slurm_acct_storage_ops_t * _acct_storage_get_ops(
 	 * Must be synchronized with slurm_acct_storage_ops_t above.
 	 */
 	static const char *syms[] = {
+		"acct_storage_p_set_msg_port",
 		"acct_storage_p_get_connection",
 		"acct_storage_p_close_connection",
 		"acct_storage_p_add_users",
@@ -1238,6 +1240,13 @@ extern int slurm_acct_storage_fini(void)
 	rc = _acct_storage_context_destroy( g_acct_storage_context );
 	g_acct_storage_context = NULL;
 	return rc;
+}
+
+extern int acct_storage_g_set_msg_port(uint16_t port)
+{
+	if (slurm_acct_storage_init(NULL) < 0)
+		return SLURM_ERROR;
+	return (*(g_acct_storage_context->ops.set_msg_port))(port);
 }
 
 extern void *acct_storage_g_get_connection()
