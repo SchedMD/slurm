@@ -34,22 +34,16 @@
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
-#include <pwd.h>
-#include <sys/types.h>
 
 #include "assoc_mgr.h"
-#include "src/common/slurmdbd_defs.h"
 #include "src/common/xstring.h"
-
+#include <sys/types.h>
+#include <pwd.h>
 
 static List local_association_list = NULL;
 static List local_user_list = NULL;
 static pthread_mutex_t local_association_lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t local_user_lock = PTHREAD_MUTEX_INITIALIZER;
-
-static slurm_fd assoc_server_fd = -1;
-static pthread_t assoc_thread = 0;
-static time_t assoc_shutdown = 0;
 
 static int _get_local_association_list(void *db_conn)
 {
@@ -137,84 +131,6 @@ static int _get_local_user_list(void *db_conn)
 	return SLURM_SUCCESS;
 }
 
-static void _process_free_slurmdbd_msg(slurmdbd_msg_t msg)
-{
-	switch (msg.msg_type) {
-		case DBD_RC:
-			/* Sample code only, process the RPC and free msg */
-			info("got from SlurmDBD DBD_RC: %u",
-			     ((dbd_rc_msg_t *)msg.data)->return_code);
-			slurmdbd_free_rc_msg((dbd_rc_msg_t *)msg.data);
-			break;
-		default:
-			error("Invalid msg_type from slurmdbd: %u", 
-			      msg.msg_type);
-	}
-}
-
-static void *_assoc_agent(void *args)
-{
-	slurm_fd newsockfd;
-	slurm_addr cli_addr;
-	slurmdbd_msg_t msg;
-
-	while (assoc_shutdown == 0) {
-		if((newsockfd = slurm_accept_msg_conn(assoc_server_fd,
-						      &cli_addr)) ==
-		    SLURM_SOCKET_ERROR) {
-			if(errno != EINTR)
-				error("slurm_accept_msg_conn: %m");
-			continue;
-		}
-		if(assoc_shutdown)
-			break;
-		if(slurm_recv_slurmdbd_msg(newsockfd, &msg)
-		   != SLURM_SUCCESS) {
-			error("slurm_recv_slurmdbd_msg: %m");
-		} else {
-			info("Received some message from SlurmDBD");
-			/* NOTE: authentication should be handle within the
-			 *	 message un/pack for relevant messages */
-			_process_free_slurmdbd_msg(msg);
-		}
-		slurm_shutdown_msg_conn(newsockfd);
-	}
-
-	return NULL;
-}
-
-extern uint16_t assoc_mgr_server(void)
-{
-	slurm_addr assoc_addr;
-	uint16_t assoc_port = 0;
-	pthread_attr_t attr;
-
-	if (assoc_server_fd >= 0) {
-		error("Association server already spawned");
-		return assoc_port;
-	}
-
-	assoc_server_fd = slurm_init_msg_engine_port(0);
-	if (assoc_server_fd < 0)
-		fatal("slurm_init_msg_engine_port: %m");
-	if (slurm_get_stream_addr(assoc_server_fd, &assoc_addr) < 0)
-                fatal("slurm_get_stream_addr: %m");
-        assoc_port = ntohs(((struct sockaddr_in) assoc_addr).sin_port);
-
-	slurm_attr_init(&attr);
-	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
-	if (pthread_create(&assoc_thread, &attr, _assoc_agent, NULL)) {
-		error("Unable to start association agent: %m");
-		if(slurm_shutdown_msg_engine(assoc_server_fd))
-			error("slurm_shutdown_msg_engine %m");
-		assoc_server_fd = -1;
-		assoc_port = 0;
-	}
-	slurm_attr_destroy( &attr );
-
-	return assoc_port;
-}
-
 extern int assoc_mgr_init(void *db_conn)
 {
 	if(!slurmctld_cluster_name)
@@ -223,14 +139,14 @@ extern int assoc_mgr_init(void *db_conn)
 	if(!local_association_list) 
 		if(_get_local_association_list(db_conn) == SLURM_ERROR)
 			return SLURM_ERROR;
-	if(!local_user_list)
+	if(!local_user_list) 
 		if(_get_local_user_list(db_conn) == SLURM_ERROR)
 			return SLURM_ERROR;
 
 	return SLURM_SUCCESS;
 }
 
-extern int assoc_mgr_fini(void)
+extern int assoc_mgr_fini()
 {
 	if(local_association_list) 
 		list_destroy(local_association_list);
@@ -238,21 +154,6 @@ extern int assoc_mgr_fini(void)
 		list_destroy(local_user_list);
 	local_association_list = NULL;
 	local_user_list = NULL;
-
-	if(assoc_server_fd >= 0) {
-		int i;
-		assoc_shutdown = time(NULL);
-		for(i=0; i<4; i++) {
-			if(pthread_cancel(assoc_thread))
-				break;;
-			usleep(1000);
-		}
-		if(i >= 4)
-			error("Could not kill assoc_thread");
-		if(slurm_shutdown_msg_engine(assoc_server_fd))
-			error("slurm_shutdown_msg_engine %m");
-		assoc_server_fd = -1;
-	}
 
 	return SLURM_SUCCESS;
 }

@@ -107,7 +107,7 @@ typedef enum {
 				   * an account */
 	DBD_REMOVE_ASSOCS,      /* Remove existing association          */
 	DBD_REMOVE_CLUSTERS,    /* Remove existing cluster              */
-	DBD_REMOVE_USERS,       /* Remove existing user                 */
+	DBD_REMOVE_USERS,        /* Remove existing user                 */
 	DBD_STEP_COMPLETE,	/* Record step completion		*/
 	DBD_STEP_START		/* Record step starting			*/
 } slurmdbd_msg_type_t;
@@ -145,20 +145,17 @@ typedef struct {
 } dbd_usage_msg_t;
 
 typedef struct dbd_get_jobs_msg {
-	char *cluster_name;	/* name of cluster to query */
-	uint32_t gid;		/* group id */
-	List selected_steps;	/* List of jobacct_selected_step_t *'s */
-	List selected_parts;	/* List of char *'s */
-	char *user;		/* user name */
+	char *cluster_name; /* name of cluster to query */
+	uint32_t gid;      /* group id */
+	List selected_steps; /* List of jobacct_selected_step_t *'s */
+	List selected_parts; /* List of char *'s */
+	char *user;        /* user name */
 } dbd_get_jobs_msg_t;
 
 typedef struct dbd_init_msg {
-	char *cluster_name;	/* name of cluster to query */
-	uint16_t slurmctld_port;/* port on slurmctld to process messages 
-				 * originating on slurmdbd */
+	uint16_t version;	/* protocol version */
 	uint32_t uid;		/* UID originating connection,
 				 * filled by authtentication plugin*/
-	uint16_t version;	/* protocol version */
 } dbd_init_msg_t;
 
 typedef struct dbd_job_comp_msg {
@@ -210,8 +207,8 @@ typedef struct dbd_job_suspend_msg {
 } dbd_job_suspend_msg_t;
 
 typedef struct {
-	List my_list; 		/* this list could be of any type as long as it
-				 * is handled correctly on both ends */
+	List my_list; /* this list could be of any type as long as it
+			* is handled correctly on both ends */
 } dbd_list_msg_t;
 
 typedef struct {
@@ -264,31 +261,11 @@ typedef struct dbd_step_start_msg {
  * Slurm DBD message processing functions
 \*****************************************************************************/
 
-/*
- * Open a socket connection to SlurmDbd using SlurmdbdAuthInfo specified
- * IN: auth_info - If Munge is used for authentication, this will be the 
- *		pathname to the named socket used if not the default
- *		socket. Typically used if one Munge key and credential 
- *		is used within a cluster and a different for site-wide
- *		authentication.
- * IN: port - socket port used for message originating in SlurmDdb and 
- *		sent to slurmctld or zero if connect is not from slurmctld
- * IN: cluster_name - cluster name or NULL if connect is not from slurmctld
- * Returns SLURM_SUCCESS or an error code
- */
-extern int slurm_open_slurmdbd_conn(char *auth_info, 
-				    uint16_t port, char *cluster_name);
+/* Open a socket connection to SlurmDbd using SlurmdbdAuthInfo specified */
+extern int slurm_open_slurmdbd_conn(char *auth_info);
 
 /* Close the SlurmDBD socket connection */
 extern int slurm_close_slurmdbd_conn(void);
-
-/*
- * Receive a message from the SlurmDBD and authenticate it
- * IN: fd - the open file to be read from
- * OUT: msg the message from SlurmDBD, must be freed by the caller
- * Returns SLURM_SUCCESS or an error code
- */
-extern int slurm_recv_slurmdbd_msg(slurm_fd fd, slurmdbd_msg_t *msg);
 
 /* Send an RPC to the SlurmDBD. Do not wait for the reply. The RPC
  * will be queued and processed later if the SlurmDBD is not responding.

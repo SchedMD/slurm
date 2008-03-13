@@ -665,11 +665,6 @@ extern int fini ( void )
 #endif
 }
 
-extern int acct_storage_p_set_msg_port(uint16_t port)
-{
-	return SLURM_SUCCESS;
-}
-
 extern void *acct_storage_p_get_connection()
 {
 #ifdef HAVE_PGSQL
