@@ -922,7 +922,8 @@ extern int jobacct_storage_p_step_start(MYSQL *acct_mysql_db,
 		(int)step_ptr->start_time, step_ptr->name,
 		JOB_RUNNING, cpus, node_list, cpus);
 	rc = mysql_db_query(acct_mysql_db, query);
-		 
+	xfree(query);
+
 	return rc;
 #else
 	return SLURM_ERROR;
@@ -1056,7 +1057,8 @@ extern int jobacct_storage_p_step_complete(MYSQL *acct_mysql_db,
 		ave_cpu,	/* ave cpu */
 		step_ptr->job_ptr->db_index, step_ptr->step_id);
 	rc = mysql_db_query(acct_mysql_db, query);
-		 
+	xfree(query);
+	 
 	return rc;
 #else
 	return SLURM_ERROR;
