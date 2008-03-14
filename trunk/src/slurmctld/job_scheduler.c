@@ -286,6 +286,7 @@ extern int schedule(void)
 				      failed_part_cnt)) {
 			continue;
 		}
+		
 		if (assoc_mgr_validate_assoc_id(acct_db_conn, job_ptr->assoc_id,
 						accounting_enforce)) {
 			/* NOTE: This only happens if a user's account is 
