@@ -230,7 +230,7 @@ static void * _service_connection(void *arg)
 				fini = true;
 			}
 		} else {
-			buffer = make_dbd_rc_msg(SLURM_ERROR, "Bad offset");
+			buffer = make_dbd_rc_msg(SLURM_ERROR, "Bad offset", 0);
 			fini = true;
 		}
 
@@ -249,7 +249,7 @@ static void * _service_connection(void *arg)
 
 /* Return a buffer containing a DBD_RC (return code) message
  * caller must free returned buffer */
-extern Buf make_dbd_rc_msg(int rc, char *comment)
+extern Buf make_dbd_rc_msg(int rc, char *comment, uint16_t sent_type)
 {
 	Buf buffer;
 
@@ -258,6 +258,7 @@ extern Buf make_dbd_rc_msg(int rc, char *comment)
 	pack16((uint16_t) DBD_RC, buffer);
 	msg.return_code  = rc;
 	msg.comment  = comment;
+	msg.sent_type  = sent_type;
 	slurmdbd_pack_rc_msg(&msg, buffer);
 	return buffer;
 }

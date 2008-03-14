@@ -165,7 +165,8 @@ extern int slurm_send_slurmdbd_recv_rc_msg(slurmdbd_msg_t *req, int *resp_code)
 		dbd_rc_msg_t *msg = resp->data;
 		*resp_code = msg->return_code;
 		if(msg->return_code != SLURM_SUCCESS)
-			error("slurmdbd: %s", msg->comment);
+			error("slurmdbd(%u): from %u: %s", msg->return_code, 
+			      msg->sent_type, msg->comment);
 		slurmdbd_free_rc_msg(msg);
 	}
 	xfree(resp);
@@ -620,8 +621,8 @@ static int _get_return_code(void)
 		if (slurmdbd_unpack_rc_msg(&msg, buffer) == SLURM_SUCCESS) {
 			rc = msg->return_code;
 			if (rc != SLURM_SUCCESS)
-				error("slurmdbd: DBD_RC is %d: %s",
-				      rc, msg->comment);
+				error("slurmdbd: DBD_RC is %d from %u: %s",
+				      rc, msg->sent_type, msg->comment);
 			slurmdbd_free_rc_msg(msg);
 		} else
 			error("slurmdbd: unpack message error");
@@ -1936,6 +1937,7 @@ slurmdbd_pack_rc_msg(dbd_rc_msg_t *msg, Buf buffer)
 {
 	packstr(msg->comment, buffer);
 	pack32(msg->return_code, buffer);
+	pack16(msg->sent_type, buffer);
 }
 
 int inline 
@@ -1946,6 +1948,7 @@ slurmdbd_unpack_rc_msg(dbd_rc_msg_t **msg, Buf buffer)
 	*msg = msg_ptr;
 	safe_unpackstr_xmalloc(&msg_ptr->comment, &uint32_tmp, buffer);
 	safe_unpack32(&msg_ptr->return_code, buffer);
+	safe_unpack16(&msg_ptr->sent_type, buffer);
 	return SLURM_SUCCESS;
 
 unpack_error:

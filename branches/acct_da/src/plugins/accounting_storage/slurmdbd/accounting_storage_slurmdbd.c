@@ -667,7 +667,7 @@ extern int clusteracct_storage_p_cluster_procs(void *db_conn,
 {
 	slurmdbd_msg_t msg;
 	dbd_cluster_procs_msg_t req;
-
+	info("sending info for cluster %s", cluster);
 	req.cluster_name = cluster;
 	req.proc_count   = procs;
 	req.event_time   = event_time;

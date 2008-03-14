@@ -270,10 +270,15 @@ int main(int argc, char *argv[])
 	} else {
 		slurmctld_config.daemonize = 0;
 	}
-	info("slurmctld version %s started", SLURM_VERSION);
 
-	slurmctld_cluster_name = slurmctld_conf.cluster_name;
+	/* This needs to be copied for other modules to access the
+	 * memory, it will report 'HashBase' if it is not duped
+	 */
+	slurmctld_cluster_name = xstrdup(slurmctld_conf.cluster_name);
 	accounting_enforce = slurmctld_conf.accounting_storage_enforce;
+
+	info("slurmctld version %s started on cluster %s",
+	     SLURM_VERSION, slurmctld_cluster_name);
 
 	if ((error_code = gethostname_short(node_name, MAX_SLURM_NAME)))
 		fatal("getnodename error %s", slurm_strerror(error_code));
@@ -484,6 +489,7 @@ int main(int argc, char *argv[])
 		sleep(1);
 	}
 #endif
+	xfree(slurmctld_cluster_name);
 	if (cnt) {
 		info("Slurmctld shutdown completing with %d active agent "
 			"threads\n\n", cnt);
@@ -843,6 +849,7 @@ static int _gold_cluster_ready()
 		procs += node_ptr->config_ptr->cpus;
 #endif
 	}
+	info("sending info for cluster %s", slurmctld_cluster_name);
 
 	rc = clusteracct_storage_g_cluster_procs(acct_db_conn,
 						 slurmctld_cluster_name,

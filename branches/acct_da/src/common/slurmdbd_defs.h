@@ -228,6 +228,7 @@ typedef struct dbd_node_state_msg {
 typedef struct dbd_rc_msg {
 	char *   comment;	/* reason for failure */
 	uint32_t return_code;
+	uint16_t sent_type;	/* type of message this is in response to */
 } dbd_rc_msg_t;
 
 typedef struct dbd_step_comp_msg {

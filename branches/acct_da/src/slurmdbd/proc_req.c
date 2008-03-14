@@ -129,7 +129,7 @@ proc_req(void *db_conn, char *msg, uint32_t msg_size,
 		comment = "Initial RPC not DBD_INIT";
 		error("%s type (%d)", comment, msg_type);
 		rc = EINVAL;
-		*out_buffer = make_dbd_rc_msg(rc, comment);
+		*out_buffer = make_dbd_rc_msg(rc, comment, DBD_INIT);
 	} else {
 		switch (msg_type) {
 		case DBD_ADD_ACCOUNTS:
@@ -180,7 +180,8 @@ proc_req(void *db_conn, char *msg, uint32_t msg_size,
 				comment = "DBD_INIT sent after connection established";
 				error("%s", comment);
 				rc = EINVAL;
-				*out_buffer = make_dbd_rc_msg(rc, comment);
+				*out_buffer = make_dbd_rc_msg(rc, comment,
+							      DBD_INIT);
 			}
 			break;
 		case DBD_JOB_COMPLETE:
@@ -254,7 +255,7 @@ proc_req(void *db_conn, char *msg, uint32_t msg_size,
 			comment = "Invalid RPC";
 			error("%s msg_type=%d", comment, msg_type);
 			rc = EINVAL;
-			*out_buffer = make_dbd_rc_msg(rc, comment);
+			*out_buffer = make_dbd_rc_msg(rc, comment, 0);
 			break;
 		}
 	}
@@ -311,7 +312,7 @@ static int _add_accounts(void *db_conn,
 	rc = acct_storage_g_add_accounts(db_conn, get_msg->my_list);
 end_it:
 	slurmdbd_free_list_msg(get_msg);
-	*out_buffer = make_dbd_rc_msg(rc, comment);
+	*out_buffer = make_dbd_rc_msg(rc, comment, DBD_ADD_ACCOUNTS);
 	return rc;
 }
 static int _add_account_coords(void *db_conn,
@@ -367,7 +368,7 @@ static int _add_account_coords(void *db_conn,
 	rc = acct_storage_g_add_coord(db_conn, get_msg->acct, get_msg->cond);
 end_it:
 	slurmdbd_free_acct_coord_msg(get_msg);
-	*out_buffer = make_dbd_rc_msg(rc, comment);
+	*out_buffer = make_dbd_rc_msg(rc, comment, DBD_ADD_ACCOUNT_COORDS);
 	return rc;
 }
 
@@ -438,7 +439,7 @@ static int _add_assocs(void *db_conn,
 	rc = acct_storage_g_add_associations(db_conn, get_msg->my_list);
 end_it:
 	slurmdbd_free_list_msg(get_msg);
-	*out_buffer = make_dbd_rc_msg(rc, comment);
+	*out_buffer = make_dbd_rc_msg(rc, comment, DBD_ADD_ASSOCS);
 	return rc;
 }
 
@@ -469,7 +470,7 @@ static int _add_clusters(void *db_conn,
 
 end_it:
 	slurmdbd_free_list_msg(get_msg);
-	*out_buffer = make_dbd_rc_msg(rc, comment);
+	*out_buffer = make_dbd_rc_msg(rc, comment, DBD_ADD_CLUSTERS);
 	return rc;
 }
 static int _add_users(void *db_conn,
@@ -515,7 +516,7 @@ static int _add_users(void *db_conn,
 
 end_it:
 	slurmdbd_free_list_msg(get_msg);
-	*out_buffer = make_dbd_rc_msg(rc, comment);
+	*out_buffer = make_dbd_rc_msg(rc, comment, DBD_ADD_USERS);
 	return rc;
 }
 
@@ -525,8 +526,6 @@ static int _cluster_procs(void *db_conn,
 	dbd_cluster_procs_msg_t *cluster_procs_msg = NULL;
 	int rc = SLURM_ERROR;
 	char *comment = NULL;
-
-	debug2("DBD_CLUSTER_PROCS: called");
 
 	if (*uid != slurmdbd_conf->slurm_user_id) {
 		comment = "DBD_CLUSTER_PROCS message from invalid uid";
@@ -541,6 +540,9 @@ static int _cluster_procs(void *db_conn,
 		rc = SLURM_ERROR;
 		goto end_it;
 	}
+	debug2("DBD_CLUSTER_PROCS: called for %s(%u)",
+	       cluster_procs_msg->cluster_name,
+	       cluster_procs_msg->proc_count);
 
 	rc = clusteracct_storage_g_cluster_procs(
 		db_conn,
@@ -549,7 +551,7 @@ static int _cluster_procs(void *db_conn,
 		cluster_procs_msg->event_time);
 end_it:
 	slurmdbd_free_cluster_procs_msg(cluster_procs_msg);
-	*out_buffer = make_dbd_rc_msg(rc, comment);
+	*out_buffer = make_dbd_rc_msg(rc, comment, DBD_CLUSTER_PROCS);
 	return rc;
 }
 
@@ -564,7 +566,8 @@ static int _get_accounts(void *db_conn, Buf in_buffer, Buf *out_buffer)
 	    SLURM_SUCCESS) {
 		comment = "Failed to unpack DBD_GET_ACCOUNTS message";
 		error("%s", comment);
-		*out_buffer = make_dbd_rc_msg(SLURM_ERROR, comment);
+		*out_buffer = make_dbd_rc_msg(SLURM_ERROR, comment,
+					      DBD_GET_ACCOUNTS);
 		return SLURM_ERROR;
 	}
 	
@@ -592,7 +595,8 @@ static int _get_assocs(void *db_conn, Buf in_buffer, Buf *out_buffer)
 	    SLURM_SUCCESS) {
 		comment = "Failed to unpack DBD_GET_ASSOCS message";
 		error("%s", comment);
-		*out_buffer = make_dbd_rc_msg(SLURM_ERROR, comment);
+		*out_buffer = make_dbd_rc_msg(SLURM_ERROR, comment,
+					      DBD_GET_ASSOCS);
 		return SLURM_ERROR;
 	}
 	
@@ -621,7 +625,8 @@ static int _get_clusters(void *db_conn, Buf in_buffer, Buf *out_buffer)
 	    SLURM_SUCCESS) {
 		comment = "Failed to unpack DBD_GET_CLUSTERS message";
 		error("%s", comment);
-		*out_buffer = make_dbd_rc_msg(SLURM_ERROR, comment);
+		*out_buffer = make_dbd_rc_msg(SLURM_ERROR, comment,
+					      DBD_GET_CLUSTERS);
 		return SLURM_ERROR;
 	}
 	
@@ -651,7 +656,8 @@ static int _get_jobs(void *db_conn, Buf in_buffer, Buf *out_buffer)
 	    SLURM_SUCCESS) {
 		comment = "Failed to unpack DBD_GET_JOBS message";
 		error("%s", comment);
-		*out_buffer = make_dbd_rc_msg(SLURM_ERROR, comment);
+		*out_buffer = make_dbd_rc_msg(SLURM_ERROR, comment, 
+					      DBD_GET_JOBS);
 		return SLURM_ERROR;
 	}
 	
@@ -691,7 +697,7 @@ static int _get_usage(uint16_t type, void *db_conn,
 	    SLURM_SUCCESS) {
 		comment = "Failed to unpack DBD_GET_USAGE message"; 
 		error("%s", comment);
-		*out_buffer = make_dbd_rc_msg(SLURM_ERROR, comment);
+		*out_buffer = make_dbd_rc_msg(SLURM_ERROR, comment, type);
 		return SLURM_ERROR;
 	}
 	switch(type) {
@@ -706,7 +712,7 @@ static int _get_usage(uint16_t type, void *db_conn,
 	default:
 		comment = "Unknown type of usage to get";
 		error("%s %u", comment, type);
-		*out_buffer = make_dbd_rc_msg(SLURM_ERROR, comment);
+		*out_buffer = make_dbd_rc_msg(SLURM_ERROR, comment, type);
 		return SLURM_ERROR;
 	}		
 
@@ -717,7 +723,7 @@ static int _get_usage(uint16_t type, void *db_conn,
 	if(rc != SLURM_SUCCESS) {
 		comment = "Problem getting usage info";
 		error("%s", comment);
-		*out_buffer = make_dbd_rc_msg(SLURM_ERROR, comment);
+		*out_buffer = make_dbd_rc_msg(SLURM_ERROR, comment, type);
 		return SLURM_ERROR;
 		
 	}
@@ -743,7 +749,8 @@ static int _get_users(void *db_conn, Buf in_buffer, Buf *out_buffer)
 	    SLURM_SUCCESS) {
 		comment = "Failed to unpack DBD_GET_USERS message";
 		error("%s", comment);
-		*out_buffer = make_dbd_rc_msg(SLURM_ERROR, comment);
+		*out_buffer = make_dbd_rc_msg(SLURM_ERROR, comment,
+					      DBD_GET_USERS);
 		return SLURM_ERROR;
 	}
 	
@@ -783,7 +790,7 @@ static int _init_conn(void *db_conn,
 	debug("DBD_INIT: VERSION:%u UID:%u", init_msg->version, init_msg->uid);
 end_it:
 	slurmdbd_free_init_msg(init_msg);
-	*out_buffer = make_dbd_rc_msg(SLURM_SUCCESS, comment);
+	*out_buffer = make_dbd_rc_msg(SLURM_SUCCESS, comment, DBD_INIT);
 	return SLURM_SUCCESS;
 }
 
@@ -832,7 +839,7 @@ static int  _job_complete(void *db_conn,
 		rc = SLURM_SUCCESS;
 end_it:
 	slurmdbd_free_job_complete_msg(job_comp_msg);
-	*out_buffer = make_dbd_rc_msg(rc, comment);
+	*out_buffer = make_dbd_rc_msg(rc, comment, DBD_JOB_COMPLETE);
 	return SLURM_SUCCESS;
 }
 
@@ -848,14 +855,16 @@ static int  _job_start(void *db_conn,
 	if (*uid != slurmdbd_conf->slurm_user_id) {
 		comment = "DBD_JOB_START message from invalid uid";
 		error("%s %u", comment, *uid);
-		*out_buffer = make_dbd_rc_msg(ESLURM_ACCESS_DENIED, comment);
+		*out_buffer = make_dbd_rc_msg(ESLURM_ACCESS_DENIED, comment,
+					      DBD_JOB_START);
 		return SLURM_ERROR;
 	}
 	if (slurmdbd_unpack_job_start_msg(&job_start_msg, in_buffer) !=
 	    SLURM_SUCCESS) {
 		comment = "Failed to unpack DBD_JOB_START message";
 		error("%s", comment);
-		*out_buffer = make_dbd_rc_msg(SLURM_ERROR, comment);
+		*out_buffer = make_dbd_rc_msg(SLURM_ERROR, comment,
+					      DBD_JOB_START);
 		return SLURM_ERROR;
 	}
 	memset(&job, 0, sizeof(struct job_record));
@@ -937,7 +946,7 @@ static int  _job_suspend(void *db_conn,
 		rc = SLURM_SUCCESS;
 end_it:
 	slurmdbd_free_job_suspend_msg(job_suspend_msg);
-	*out_buffer = make_dbd_rc_msg(rc, comment);
+	*out_buffer = make_dbd_rc_msg(rc, comment, DBD_JOB_START);
 	return SLURM_SUCCESS;
 }
 
@@ -970,7 +979,7 @@ static int   _modify_accounts(void *db_conn,
 
 end_it:
 	slurmdbd_free_modify_msg(DBD_MODIFY_ACCOUNTS, get_msg);
-	*out_buffer = make_dbd_rc_msg(rc, comment);
+	*out_buffer = make_dbd_rc_msg(rc, comment, DBD_MODIFY_ACCOUNTS);
 	return rc;
 }
 
@@ -1003,7 +1012,7 @@ static int   _modify_assocs(void *db_conn,
 						get_msg->cond, get_msg->rec);
 end_it:
 	slurmdbd_free_modify_msg(DBD_MODIFY_ASSOCS, get_msg);
-	*out_buffer = make_dbd_rc_msg(rc, comment);
+	*out_buffer = make_dbd_rc_msg(rc, comment, DBD_MODIFY_ASSOCS);
 	return rc;
 }
 
@@ -1035,7 +1044,7 @@ static int   _modify_clusters(void *db_conn,
 					    get_msg->cond, get_msg->rec);
 end_it:
 	slurmdbd_free_modify_msg(DBD_MODIFY_CLUSTERS, get_msg);
-	*out_buffer = make_dbd_rc_msg(rc, comment);
+	*out_buffer = make_dbd_rc_msg(rc, comment, DBD_MODIFY_CLUSTERS);
 	return rc;
 }
 
@@ -1066,7 +1075,7 @@ static int   _modify_users(void *db_conn,
 	rc = acct_storage_g_modify_users(db_conn, get_msg->cond, get_msg->rec);
 end_it:
 	slurmdbd_free_modify_msg(DBD_MODIFY_USERS, get_msg);
-	*out_buffer = make_dbd_rc_msg(rc, comment);
+	*out_buffer = make_dbd_rc_msg(rc, comment, DBD_MODIFY_USERS);
 	return rc;
 }
 
@@ -1098,7 +1107,7 @@ static int   _modify_user_admin_level(void *db_conn,
 	rc = acct_storage_g_modify_user_admin_level(db_conn, get_msg->cond);
 end_it:
 	slurmdbd_free_modify_msg(DBD_MODIFY_USER_ADMIN_LEVEL, get_msg);
-	*out_buffer = make_dbd_rc_msg(rc, comment);
+	*out_buffer = make_dbd_rc_msg(rc, comment, DBD_MODIFY_USER_ADMIN_LEVEL);
 	return rc;
 }
 
@@ -1153,7 +1162,7 @@ static int _node_state(void *db_conn,
 
 end_it:
 	slurmdbd_free_node_state_msg(node_state_msg);
-	*out_buffer = make_dbd_rc_msg(rc, comment);
+	*out_buffer = make_dbd_rc_msg(rc, comment, DBD_NODE_STATE);
 	return SLURM_SUCCESS;
 }
 
@@ -1203,7 +1212,7 @@ static int   _remove_accounts(void *db_conn,
 
 end_it:
 	slurmdbd_free_cond_msg(DBD_REMOVE_ACCOUNTS, get_msg);
-	*out_buffer = make_dbd_rc_msg(rc, comment);
+	*out_buffer = make_dbd_rc_msg(rc, comment, DBD_REMOVE_ACCOUNTS);
 	return rc;
 }
 
@@ -1235,7 +1244,7 @@ static int   _remove_account_coords(void *db_conn,
 	rc = acct_storage_g_remove_coord(db_conn, get_msg->acct, get_msg->cond);
 end_it:
 	slurmdbd_free_acct_coord_msg(get_msg);
-	*out_buffer = make_dbd_rc_msg(rc, comment);
+	*out_buffer = make_dbd_rc_msg(rc, comment, DBD_REMOVE_ACCOUNT_COORDS);
 	return rc;
 }
 
@@ -1267,7 +1276,7 @@ static int   _remove_assocs(void *db_conn,
 
 end_it:
 	slurmdbd_free_cond_msg(DBD_REMOVE_ASSOCS, get_msg);
-	*out_buffer = make_dbd_rc_msg(rc, comment);
+	*out_buffer = make_dbd_rc_msg(rc, comment, DBD_REMOVE_ASSOCS);
 	return rc;
 
 }
@@ -1307,7 +1316,7 @@ static int   _remove_clusters(void *db_conn,
 
 end_it:
 	slurmdbd_free_cond_msg(DBD_REMOVE_CLUSTERS, get_msg);
-	*out_buffer = make_dbd_rc_msg(rc, comment);
+	*out_buffer = make_dbd_rc_msg(rc, comment, DBD_REMOVE_CLUSTERS);
 	return rc;
 }
 
@@ -1346,7 +1355,7 @@ static int   _remove_users(void *db_conn,
 
 end_it:
 	slurmdbd_free_cond_msg(DBD_REMOVE_USERS, get_msg);
-	*out_buffer = make_dbd_rc_msg(rc, comment);
+	*out_buffer = make_dbd_rc_msg(rc, comment, DBD_REMOVE_USERS);
 	return rc;
 }
 
@@ -1379,11 +1388,8 @@ static int   _roll_usage(void *db_conn,
 
 end_it:
 	slurmdbd_free_roll_usage_msg(get_msg);
-	*out_buffer = make_dbd_rc_msg(rc, comment);
-	return SLURM_SUCCESS;
-	
-	return SLURM_SUCCESS;
-
+	*out_buffer = make_dbd_rc_msg(rc, comment, DBD_ROLL_USAGE);
+	return rc;
 }
 
 static int  _step_complete(void *db_conn,
@@ -1439,8 +1445,8 @@ static int  _step_complete(void *db_conn,
 
 end_it:
 	slurmdbd_free_step_complete_msg(step_comp_msg);
-	*out_buffer = make_dbd_rc_msg(rc, comment);
-	return SLURM_SUCCESS;
+	*out_buffer = make_dbd_rc_msg(rc, comment, DBD_STEP_COMPLETE);
+	return rc;
 }
 
 static int  _step_start(void *db_conn,
@@ -1494,6 +1500,6 @@ static int  _step_start(void *db_conn,
 		rc = SLURM_SUCCESS;
 end_it:
 	slurmdbd_free_step_start_msg(step_start_msg);
-	*out_buffer = make_dbd_rc_msg(rc, comment);
-	return SLURM_SUCCESS;
+	*out_buffer = make_dbd_rc_msg(rc, comment, DBD_STEP_START);
+	return rc;
 }

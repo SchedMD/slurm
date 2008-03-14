@@ -134,7 +134,7 @@ int main(int argc, char *argv[])
 	slurm_attr_destroy(&thread_attr);
 
 	db_conn = acct_storage_g_get_connection();
-	if(assoc_mgr_init(db_conn, 1) == SLURM_ERROR) {
+	if(assoc_mgr_init(db_conn, 0) == SLURM_ERROR) {
 		error("Problem getting cache of data");
 		acct_storage_g_close_connection(db_conn);
 		goto end_it;
@@ -152,8 +152,8 @@ int main(int argc, char *argv[])
 	/* Daemon termination handled here */
 	pthread_join(rpc_handler_thread, NULL);
 
-end_it:
 	pthread_join(signal_handler_thread, NULL);
+end_it:
 	if (slurmdbd_conf->pid_file &&
 	    (unlink(slurmdbd_conf->pid_file) < 0)) {
 		verbose("Unable to remove pidfile '%s': %m",
