@@ -221,7 +221,7 @@ static void * _service_connection(void *arg)
 			offset += msg_read;
 		}
 		if (msg_size == offset) {
-			rc = proc_req(db_conn,
+			rc = proc_req(db_conn, conn->newsockfd,
 				      msg, msg_size, first, &buffer, &uid);
 			first = false;
 			if (rc != SLURM_SUCCESS) {

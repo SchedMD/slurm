@@ -43,12 +43,15 @@
 #include "src/common/slurm_protocol_defs.h"
 
 /* Process an incoming RPC
+ * orig_fd IN - originating file descriptor of the RPC
  * msg IN - incoming message
- * msg_size IN - size of msg (bytes)
+ * msg_size IN - size of msg in bytes
  * first IN - set if first message received on the socket
  * buffer OUT - outgoing response, must be freed by caller
+ * uid IN/OUT - user ID who initiated the RPC
  * RET SLURM_SUCCESS or error code */
-extern int proc_req(void *db_conn, char *msg, uint32_t msg_size,
-		    bool first, Buf *buffer, uint32_t *uid);
+extern int proc_req(void *db_conn, slurm_fd orig_fd, char *msg, 
+		    uint32_t msg_size, bool first, Buf *out_buffer, 
+		    uint32_t *uid);
 
 #endif /* !_PROC_REQ */
