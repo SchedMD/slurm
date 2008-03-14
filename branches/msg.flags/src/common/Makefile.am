@@ -19,6 +19,7 @@ noinst_LTLIBRARIES = 			\
 	libspank.la
 
 libcommon_la_SOURCES = 			\
+	assoc_mgr.c assoc_mgr.h 	\
 	xmalloc.c xmalloc.h 		\
 	xassert.c xassert.h		\
 	xstring.c xstring.h		\

@@ -52,6 +52,7 @@
 #include "src/common/slurm_accounting_storage.h"
 #include "src/common/xassert.h"
 #include "src/common/xstring.h"
+#include "src/common/assoc_mgr.h"
 
 #include "src/slurmctld/agent.h"
 #include "src/slurmctld/job_scheduler.h"
@@ -59,7 +60,6 @@
 #include "src/slurmctld/node_scheduler.h"
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/srun_comm.h"
-#include "src/slurmctld/assoc_mgr.h"
 
 #define _DEBUG 0
 #define MAX_RETRIES 10
@@ -286,7 +286,9 @@ extern int schedule(void)
 				      failed_part_cnt)) {
 			continue;
 		}
-		if (validate_assoc_id(acct_db_conn, job_ptr->assoc_id)) {
+		
+		if (assoc_mgr_validate_assoc_id(acct_db_conn, job_ptr->assoc_id,
+						accounting_enforce)) {
 			/* NOTE: This only happens if a user's account is 
 			 * disabled between when the job was submitted and 
 			 * the time we consider running it. It should be 

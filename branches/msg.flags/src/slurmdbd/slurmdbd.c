@@ -92,6 +92,7 @@ int main(int argc, char *argv[])
 {
 	pthread_attr_t thread_attr;
 	char node_name[128];
+	void *db_conn = NULL;
 
 	_init_config();
 	log_init(argv[0], log_opts, LOG_DAEMON, NULL);
@@ -132,6 +133,14 @@ int main(int argc, char *argv[])
 		fatal("pthread_create %m");
 	slurm_attr_destroy(&thread_attr);
 
+	db_conn = acct_storage_g_get_connection();
+	if(assoc_mgr_init(db_conn, 0) == SLURM_ERROR) {
+		error("Problem getting cache of data");
+		acct_storage_g_close_connection(db_conn);
+		goto end_it;
+	}
+	acct_storage_g_close_connection(db_conn);
+
 	/* Create attached thread to process incoming RPCs */
 	slurm_attr_init(&thread_attr);
 	if (pthread_create(&rpc_handler_thread, &thread_attr, rpc_mgr, NULL))
@@ -141,8 +150,10 @@ int main(int argc, char *argv[])
 	/* Daemon is fully operational here */
 
 	/* Daemon termination handled here */
-	pthread_join(signal_handler_thread, NULL);
 	pthread_join(rpc_handler_thread, NULL);
+
+	pthread_join(signal_handler_thread, NULL);
+end_it:
 	if (slurmdbd_conf->pid_file &&
 	    (unlink(slurmdbd_conf->pid_file) < 0)) {
 		verbose("Unable to remove pidfile '%s': %m",

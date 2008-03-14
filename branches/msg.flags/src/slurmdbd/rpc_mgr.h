@@ -39,10 +39,11 @@
 #define _RPC_MGR_H
 
 #include "src/common/pack.h"
+#include "src/common/assoc_mgr.h"
 
 /* Return a buffer containing a DBD_RC (return code) message
  * caller must free returned buffer */
-extern Buf make_dbd_rc_msg(int rc);
+extern Buf make_dbd_rc_msg(int rc, char *comment, uint16_t sent_type);
 
 /* Process incoming RPCs. Meant to execute as a pthread */
 extern void *rpc_mgr(void *no_data);

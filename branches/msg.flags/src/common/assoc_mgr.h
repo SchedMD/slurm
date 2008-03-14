@@ -36,8 +36,8 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#ifndef _SLURMCTLD_ASSOC_MGR_H 
-#define _SLURMCTLD_ASSOC_MGR_H
+#ifndef _SLURM_ASSOC_MGR_H 
+#define _SLURM_ASSOC_MGR_H
 
 #ifdef HAVE_CONFIG_H
 #  include "config.h"
@@ -51,24 +51,44 @@
 
 /* 
  * get info from the storage 
- * IN/OUT:  acct_user - acct_user_rec_t with the name set of the user.
- *                      "default_account" will be filled in on
- *                      successful return DO NOT FREE.
+ * IN/OUT:  user - acct_user_rec_t with the name set of the user.
+ *                 "default_account" will be filled in on
+ *                 successful return DO NOT FREE.
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
-extern int get_default_account(void *db_conn, acct_user_rec_t *user);
+extern int assoc_mgr_fill_in_user(void *db_conn, acct_user_rec_t *user,
+				  int enforce);
 
 /* 
  * get info from the storage 
- * IN/OUT:  acct_assoc - acct_association_rec_t with at least cluster and
- *			account set for account association.  To get user
- *			association set user, and optional partition.
- *			Sets "id" field with the association ID.
+ * IN/OUT:  assoc - acct_association_rec_t with at least cluster and
+ *		    account set for account association.  To get user
+ *		    association set user, and optional partition.
+ *		    Sets "id" field with the association ID.
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
-extern int get_assoc_id(void *db_conn, acct_association_rec_t *assoc);
+extern int assoc_mgr_fill_in_assoc(void *db_conn,
+				   acct_association_rec_t *assoc,
+				   int enforce);
 
-extern int assoc_mgr_init(void *db_conn);
+/* 
+ * get admin_level of uid 
+ * IN: uid - uid of user to check admin_level of.
+ * RET: admin level ACCT_ADMIN_NOTSET on error 
+ */
+extern acct_admin_level_t assoc_mgr_get_admin_level(void *db_conn, 
+						    uint32_t uid);
+
+/* 
+ * see if user is coordinator of given acct 
+ * IN: uid - uid of user to check.
+ * IN: acct - name of account
+ * RET: 0 for no, 1 for yes
+ */
+extern int assoc_mgr_is_user_acct_coord(void *db_conn, uint32_t uid,
+					char *acct);
+
+extern int assoc_mgr_init(void *db_conn, int enforce);
 extern int assoc_mgr_fini();
 
 /* 
@@ -76,7 +96,7 @@ extern int assoc_mgr_fini();
  * IN:  uint32_t id (id of association to remove)
  * RET: SLURM_SUCCESS on success (or not found) SLURM_ERROR else
  */
-extern int remove_local_association(uint32_t id);
+extern int assoc_mgr_remove_local_association(uint32_t id);
 
 /* 
  * remove user from local cache 
@@ -84,21 +104,21 @@ extern int remove_local_association(uint32_t id);
  *      associations for this user)
  * RET: SLURM_SUCCESS on success (or not found) SLURM_ERROR else
  */
-extern int remove_local_user(char *name);
+extern int assoc_mgr_remove_local_user(char *name);
 
 /* 
  * update associations in local cache 
  * IN:  List of acct_association_rec_t's
  * RET: SLURM_SUCCESS on success (or not found) SLURM_ERROR else
  */
-extern int update_local_associations(List update_list);
+extern int assoc_mgr_update_local_associations(List update_list);
 
 /* 
  * update users in local cache 
  * IN:  List of acct_user_rec_t's
  * RET: SLURM_SUCCESS on success (or not found) SLURM_ERROR else
  */
-extern int update_local_users(List update_list);
+extern int assoc_mgr_update_local_users(List update_list);
 
 /* 
  * validate that an association ID is still avlid 
@@ -107,6 +127,8 @@ extern int update_local_users(List update_list);
  )
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
-extern int validate_assoc_id(void *db_conn, uint32_t assoc_id);
+extern int assoc_mgr_validate_assoc_id(void *db_conn, 
+				       uint32_t assoc_id,
+				       int enforce);
 
-#endif /* _SLURMCTLD_ASSOC_MGR_H */
+#endif /* _SLURM_ASSOC_MGR_H */

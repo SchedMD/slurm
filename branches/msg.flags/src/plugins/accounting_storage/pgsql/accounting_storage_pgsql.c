@@ -812,29 +812,22 @@ extern List acct_storage_p_get_associations(PGconn *acct_pgsql_db,
 	return NULL;
 }
 
-extern int acct_storage_p_get_hourly_usage(PGconn *acct_pgsql_db,
-					   acct_association_rec_t *acct_assoc,
-					   time_t start, time_t end)
+extern int acct_storage_p_get_usage(PGconn *acct_pgsql_db,
+				    acct_usage_type_t type,
+				    acct_association_rec_t *acct_assoc,
+				    time_t start, time_t end)
 {
 	int rc = SLURM_SUCCESS;
 
 	return rc;
 }
 
-extern int acct_storage_p_get_daily_usage(PGconn *acct_pgsql_db,
-					   acct_association_rec_t *acct_assoc,
-					  time_t start, time_t end)
+extern int acct_storage_p_roll_usage(PGconn *acct_pgsql_db, 
+				     acct_usage_type_t type,
+				     time_t start)
 {
 	int rc = SLURM_SUCCESS;
 
-	return rc;
-}
-
-extern int acct_storage_p_get_monthly_usage(PGconn *acct_pgsql_db,
-					   acct_association_rec_t *acct_assoc,
-					    time_t start, time_t end)
-{
-	int rc = SLURM_SUCCESS;
 	return rc;
 }
 
@@ -846,7 +839,7 @@ extern int clusteracct_storage_p_node_down(PGconn *acct_pgsql_db,
 	return SLURM_SUCCESS;
 }
 extern int clusteracct_storage_p_node_up(PGconn *acct_pgsql_db,
-					   char *cluster,
+					 char *cluster,
 					 struct node_record *node_ptr,
 					 time_t event_time)
 {
@@ -860,27 +853,11 @@ extern int clusteracct_storage_p_cluster_procs(PGconn *acct_pgsql_db,
 	return SLURM_SUCCESS;
 }
 
-extern int clusteracct_storage_p_get_hourly_usage(
-	PGconn *acct_pgsql_db, acct_cluster_rec_t *cluster_rec, time_t start, 
-	time_t end)
+extern int clusteracct_storage_p_get_usage(
+	void *db_conn, acct_usage_type_t type, 
+	acct_cluster_rec_t *cluster_rec, time_t start, time_t end)
 {
 
-	return SLURM_SUCCESS;
-}
-
-extern int clusteracct_storage_p_get_daily_usage(
-	PGconn *acct_pgsql_db, acct_cluster_rec_t *cluster_rec, time_t start, 
-	time_t end)
-{
-	
-	return SLURM_SUCCESS;
-}
-
-extern int clusteracct_storage_p_get_monthly_usage(
-	PGconn *acct_pgsql_db, acct_cluster_rec_t *cluster_rec, time_t start, 
-	time_t end)
-{
-	
 	return SLURM_SUCCESS;
 }
 
@@ -1121,7 +1098,8 @@ extern int jobacct_storage_p_step_start(PGconn *acct_pgsql_db,
 		(int)step_ptr->start_time, step_ptr->name,
 		JOB_RUNNING, cpus, node_list);
 	rc = pgsql_db_query(acct_pgsql_db, query);
-			 
+	xfree(query);
+
 	return rc;
 #else
 	return SLURM_ERROR;
@@ -1255,6 +1233,7 @@ extern int jobacct_storage_p_step_complete(PGconn *acct_pgsql_db,
 		ave_cpu,	/* ave cpu */
 		step_ptr->job_ptr->db_index, step_ptr->step_id);
 	rc = pgsql_db_query(acct_pgsql_db, query);
+	xfree(query);
 		 
 	return rc;
 #else
