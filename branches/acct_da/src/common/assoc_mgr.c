@@ -76,10 +76,10 @@ static int _get_local_association_list(void *db_conn, int enforce)
 	list_destroy(assoc_q.cluster_list);
 	
 	if(!local_association_list) {
+		slurm_mutex_unlock(&local_association_lock);
 		if(enforce) {
 			error("_get_local_association_list: "
 			      "no list was made.");
-			slurm_mutex_unlock(&local_association_lock);
 			return SLURM_ERROR;
 		} else {
 			return SLURM_SUCCESS;
@@ -112,10 +112,10 @@ static int _get_local_user_list(void *db_conn, int enforce)
 	local_user_list = acct_storage_g_get_users(db_conn, &user_q);
 
 	if(!local_user_list) {
+		slurm_mutex_unlock(&local_user_lock);
 		if(enforce) {
 			error("_get_local_user_list: "
 			      "no list was made.");
-			slurm_mutex_unlock(&local_user_lock);
 			return SLURM_ERROR;
 		} else {
 			return SLURM_SUCCESS;
