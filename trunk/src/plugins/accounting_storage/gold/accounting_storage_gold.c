@@ -2779,6 +2779,12 @@ extern int clusteracct_storage_p_node_up(void *db_conn,
 	return rc;
 }
 
+extern int clusteracct_storage_p_register_ctld(char *cluster,
+					       uint16_t port)
+{
+	return SLURM_SUCCESS;
+}
+
 extern int clusteracct_storage_p_cluster_procs(void *db_conn,
 					       char *cluster,
 					       uint32_t procs,

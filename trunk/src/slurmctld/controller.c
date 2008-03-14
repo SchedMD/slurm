@@ -313,9 +313,6 @@ int main(int argc, char *argv[])
 		fatal( "failed to initialize node selection plugin");
 	if (slurm_acct_storage_init(NULL) != SLURM_SUCCESS )
 		fatal( "failed to initialize accounting_storage plugin");
-	
-	acct_db_conn = acct_storage_g_get_connection();
-	assoc_mgr_init(acct_db_conn, accounting_enforce);
 
 	if (slurm_jobacct_gather_init() != SLURM_SUCCESS )
 		fatal( "failed to initialize jobacct_gather plugin");
@@ -360,6 +357,9 @@ int main(int argc, char *argv[])
 				slurmctld_conf.backup_controller);
 			exit(0);
 		}
+		acct_db_conn = acct_storage_g_get_connection();
+		assoc_mgr_init(acct_db_conn, accounting_enforce);
+
 		info("Running as primary controller");
 		_gold_cluster_ready();
 		if (slurm_sched_init() != SLURM_SUCCESS)
@@ -373,9 +373,12 @@ int main(int argc, char *argv[])
 		slurm_mutex_unlock(&slurmctld_config.thread_count_lock);
 		slurm_attr_init(&thread_attr);
 		if (pthread_create(&slurmctld_config.thread_id_rpc, 
-				&thread_attr,_slurmctld_rpc_mgr, NULL))
+				&thread_attr, _slurmctld_rpc_mgr, NULL))
 			fatal("pthread_create error %m");
 		slurm_attr_destroy(&thread_attr);
+		clusteracct_storage_g_register_ctld(
+					slurmctld_conf.cluster_name, 
+					slurmctld_conf.slurmctld_port);
 
 		/*
 		 * create attached thread for signal handling
@@ -425,6 +428,8 @@ int main(int argc, char *argv[])
 		if (slurmctld_config.resume_backup == false)
 			break;
 		recover = 2;
+		acct_storage_g_close_connection(acct_db_conn);
+		assoc_mgr_fini();
 	}
 
 	/* Since pidfile is created as user root (its owner is
@@ -434,9 +439,7 @@ int main(int argc, char *argv[])
 		verbose("Unable to remove pidfile '%s': %m",
 			slurmctld_conf.slurmctld_pidfile);
 
-	acct_storage_g_close_connection(acct_db_conn);
 	slurm_acct_storage_fini();	/* Save pending message traffic */
-	assoc_mgr_fini();
 
 #ifdef MEMORY_LEAK_DEBUG
 	/* This should purge all allocated memory,   *\

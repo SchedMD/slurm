@@ -660,6 +660,24 @@ extern int clusteracct_storage_p_node_up(void *db_conn,
 
 	return SLURM_SUCCESS;
 }
+
+extern int clusteracct_storage_p_register_ctld(char *cluster,
+					       uint16_t port)
+{
+	slurmdbd_msg_t msg;
+	dbd_register_ctld_msg_t req;
+	info("registering slurmctld for cluster %s at port %u", cluster, port);
+	req.cluster_name = cluster;
+	req.port         = port;
+	msg.msg_type     = DBD_REGISTER_CTLD;
+	msg.data         = &req;
+
+	if (slurm_send_slurmdbd_msg(&msg) < 0)
+		return SLURM_ERROR;
+
+	return SLURM_SUCCESS;
+}
+
 extern int clusteracct_storage_p_cluster_procs(void *db_conn,
 					       char *cluster,
 					       uint32_t procs,

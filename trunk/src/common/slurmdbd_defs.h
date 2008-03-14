@@ -94,12 +94,13 @@ typedef enum {
 	DBD_MODIFY_USER_ADMIN_LEVEL,/* Modify existing user             */
 	DBD_NODE_STATE,		/* Record node state transition		*/
 	DBD_RC,			/* Return code from operation		*/
+	DBD_REGISTER_CTLD,	/* Register a slurmctld's comm port	*/
 	DBD_REMOVE_ACCOUNTS,    /* Remove existing account              */
 	DBD_REMOVE_ACCOUNT_COORDS,/* Remove existing coordinatior from
 				   * an account */
 	DBD_REMOVE_ASSOCS,      /* Remove existing association          */
 	DBD_REMOVE_CLUSTERS,    /* Remove existing cluster              */
-	DBD_REMOVE_USERS,        /* Remove existing user                 */
+	DBD_REMOVE_USERS,       /* Remove existing user                 */
 	DBD_ROLL_USAGE,         /* Roll up usage                        */
 	DBD_STEP_COMPLETE,	/* Record step completion		*/
 	DBD_STEP_START		/* Record step starting			*/
@@ -144,11 +145,11 @@ typedef struct {
 } dbd_usage_msg_t;
 
 typedef struct dbd_get_jobs_msg {
-	char *cluster_name; /* name of cluster to query */
-	uint32_t gid;      /* group id */
-	List selected_steps; /* List of jobacct_selected_step_t *'s */
-	List selected_parts; /* List of char *'s */
-	char *user;        /* user name */
+	char *cluster_name;	/* name of cluster to query */
+	uint32_t gid;		/* group id */
+	List selected_steps;	/* List of jobacct_selected_step_t *'s */
+	List selected_parts;	/* List of char *'s */
+	char *user;		/* user name */
 } dbd_get_jobs_msg_t;
 
 typedef struct dbd_init_msg {
@@ -206,8 +207,8 @@ typedef struct dbd_job_suspend_msg {
 } dbd_job_suspend_msg_t;
 
 typedef struct {
-	List my_list; /* this list could be of any type as long as it
-			* is handled correctly on both ends */
+	List my_list;		/* this list could be of any type as long as it
+				 * is handled correctly on both ends */
 } dbd_list_msg_t;
 
 typedef struct {
@@ -230,6 +231,11 @@ typedef struct dbd_rc_msg {
 	uint32_t return_code;
 	uint16_t sent_type;	/* type of message this is in response to */
 } dbd_rc_msg_t;
+
+typedef struct dbd_register_ctld_msg {
+	char *cluster_name;	/* name of cluster */
+	uint16_t port;		/* slurmctld's comm port */
+} dbd_register_ctld_msg_t;
 
 typedef struct dbd_step_comp_msg {
 	uint32_t assoc_id;	/* accounting association id */
@@ -305,6 +311,7 @@ void inline slurmdbd_free_modify_msg(slurmdbd_msg_type_t type,
 				      dbd_modify_msg_t *msg);
 void inline slurmdbd_free_node_state_msg(dbd_node_state_msg_t *msg);
 void inline slurmdbd_free_rc_msg(dbd_rc_msg_t *msg);
+void inline slurmdbd_free_register_ctld_msg(dbd_register_ctld_msg_t *msg);
 void inline slurmdbd_free_roll_usage_msg(dbd_roll_usage_msg_t *msg);
 void inline slurmdbd_free_step_complete_msg(dbd_step_comp_msg_t *msg);
 void inline slurmdbd_free_step_start_msg(dbd_step_start_msg_t *msg);
@@ -338,6 +345,8 @@ void inline slurmdbd_pack_modify_msg(slurmdbd_msg_type_t type,
 void inline slurmdbd_pack_node_state_msg(dbd_node_state_msg_t *msg,
 					  Buf buffer);
 void inline slurmdbd_pack_rc_msg(dbd_rc_msg_t *msg, Buf buffer);
+void inline slurmdbd_pack_register_ctld_msg(dbd_register_ctld_msg_t *msg,
+					    Buf buffer);
 void inline slurmdbd_pack_roll_usage_msg(dbd_roll_usage_msg_t *msg, Buf buffer);
 void inline slurmdbd_pack_step_complete_msg(dbd_step_comp_msg_t *msg,
 					     Buf buffer);
@@ -373,6 +382,8 @@ int inline slurmdbd_unpack_modify_msg(slurmdbd_msg_type_t type,
 int inline slurmdbd_unpack_node_state_msg(dbd_node_state_msg_t **msg,
 					   Buf buffer);
 int inline slurmdbd_unpack_rc_msg(dbd_rc_msg_t **msg, Buf buffer);
+int inline slurmdbd_unpack_register_ctld_msg(dbd_register_ctld_msg_t **msg, 
+					     Buf buffer);
 int inline slurmdbd_unpack_roll_usage_msg(dbd_roll_usage_msg_t **msg,
 					  Buf buffer);
 int inline slurmdbd_unpack_step_complete_msg(dbd_step_comp_msg_t **msg,
