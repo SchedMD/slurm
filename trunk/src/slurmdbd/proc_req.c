@@ -594,7 +594,7 @@ static int   _register_ctld(void *db_conn, slurm_fd orig_fd,
 	 * FIXME: save ip/port/cluster_name pair
 	 * when new ctld_address for a given cluster_name arrives
 	 * replace the old one.
-	 * Outgoing must have:
+	 * Outgoing message header must have flag set:
 	 * out_msg.flags = SLURM_GLOBAL_AUTH_KEY;
 	 */
 #if 0
@@ -611,8 +611,8 @@ static int   _register_ctld(void *db_conn, slurm_fd orig_fd,
 		out_msg.msg_type = REQUEST_PING;
 		out_msg.flags = SLURM_GLOBAL_AUTH_KEY;
 		slurm_send_node_msg(fd, &out_msg);
-		/* We need to add matching recv_msg function
-		 * for an arbitray fd */
+		/* We probably need to add matching recv_msg function
+		 * for an arbitray fd or should these be fire and forget? */
 		slurm_close_stream(fd);
 	}
 }
