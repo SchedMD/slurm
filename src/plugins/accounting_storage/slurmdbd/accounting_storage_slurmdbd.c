@@ -562,9 +562,9 @@ extern List acct_storage_p_get_associations(void *db_conn,
 	return ret_list;
 }
 
-extern int acct_storage_p_get_hourly_usage(void *db_conn,
-					   acct_association_rec_t *acct_assoc,
-					   time_t start, time_t end)
+extern int acct_storage_p_get_usage(void *db_conn, acct_usage_type_t type, 
+				    acct_association_rec_t *acct_assoc,
+				    time_t start, time_t end)
 {
 	slurmdbd_msg_t req, resp;
 	dbd_usage_msg_t get_msg;
@@ -574,16 +574,17 @@ extern int acct_storage_p_get_hourly_usage(void *db_conn,
 
 	get_msg.rec = acct_assoc;
 	get_msg.start = start;
+	get_msg.type = type;
 	get_msg.end = end;
+	req.msg_type = DBD_GET_ASSOC_USAGE;
 	
-	req.msg_type = DBD_GET_ASSOC_HOUR;
 	req.data = &get_msg;
 	rc = slurm_send_recv_slurmdbd_msg(&req, &resp);
 
 	if (rc != SLURM_SUCCESS)
-		error("slurmdbd: DBD_GET_ASSOC_HOUR failure: %m");
-	else if (resp.msg_type != DBD_GOT_ASSOC_HOUR) {
-		error("slurmdbd: response type not DBD_GOT_ASSOC_HOUR: %u", 
+		error("slurmdbd: DBD_GET_ASSOC_USAGE failure: %m");
+	else if (resp.msg_type != DBD_GOT_ASSOC_USAGE) {
+		error("slurmdbd: response type not DBD_GOT_ASSOC_USAGE: %u", 
 		      resp.msg_type);
 	} else {
 		got_msg = (dbd_usage_msg_t *) resp.data;
@@ -597,74 +598,24 @@ extern int acct_storage_p_get_hourly_usage(void *db_conn,
 	return rc;
 }
 
-extern int acct_storage_p_get_daily_usage(void *db_conn,
-					  acct_association_rec_t *acct_assoc,
-					  time_t start, time_t end)
+extern int acct_storage_p_roll_usage(void *db_conn,
+				     acct_usage_type_t type,
+				     time_t start)
 {
-	slurmdbd_msg_t req, resp;
-	dbd_usage_msg_t get_msg;
-	dbd_usage_msg_t *got_msg;
-	acct_association_rec_t *got_rec;
-	int rc;
-
-	get_msg.rec = acct_assoc;
-	get_msg.start = start;
-	get_msg.end = end;
+	slurmdbd_msg_t req;
+	dbd_roll_usage_msg_t get_msg;
 	
-	req.msg_type = DBD_GET_ASSOC_DAY;
-	req.data = &get_msg;
-	rc = slurm_send_recv_slurmdbd_msg(&req, &resp);
-
-	if (rc != SLURM_SUCCESS)
-		error("slurmdbd: DBD_GET_ASSOC_DAY failure: %m");
-	else if (resp.msg_type != DBD_GOT_ASSOC_DAY) {
-		error("slurmdbd: response type not DBD_GOT_ASSOC_DAY: %u", 
-		      resp.msg_type);
-	} else {
-		got_msg = (dbd_usage_msg_t *) resp.data;
-		got_rec = (acct_association_rec_t *)got_msg->rec;
-		acct_assoc->accounting_list = got_rec->accounting_list;
-		got_rec->accounting_list = NULL;
-		slurmdbd_free_usage_msg(resp.msg_type, got_msg);
-	}
-
-
-	return rc;
-}
-
-extern int acct_storage_p_get_monthly_usage(void *db_conn,
-					    acct_association_rec_t *acct_assoc,
-					    time_t start, time_t end)
-{
-	slurmdbd_msg_t req, resp;
-	dbd_usage_msg_t get_msg;
-	dbd_usage_msg_t *got_msg;
-	acct_association_rec_t *got_rec;
-	int rc;
-
-	get_msg.rec = acct_assoc;
 	get_msg.start = start;
-	get_msg.end = end;
+	get_msg.type = type;
 	
-	req.msg_type = DBD_GET_ASSOC_MONTH;
+	req.msg_type = DBD_ROLL_USAGE;
+
 	req.data = &get_msg;
-	rc = slurm_send_recv_slurmdbd_msg(&req, &resp);
 
-	if (rc != SLURM_SUCCESS)
-		error("slurmdbd: DBD_GET_ASSOC_MONTH failure: %m");
-	else if (resp.msg_type != DBD_GOT_ASSOC_MONTH) {
-		error("slurmdbd: response type not DBD_GOT_ASSOC_MONTH: %u", 
-		      resp.msg_type);
-	} else {
-		got_msg = (dbd_usage_msg_t *) resp.data;
-		got_rec = (acct_association_rec_t *)got_msg->rec;
-		acct_assoc->accounting_list = got_rec->accounting_list;
-		got_rec->accounting_list = NULL;
-		slurmdbd_free_usage_msg(resp.msg_type, got_msg);
-	}
-
-
-	return rc;
+	if (slurm_send_slurmdbd_msg(&req) < 0)
+		return SLURM_ERROR;
+	
+	return SLURM_SUCCESS;
 }
 
 extern int clusteracct_storage_p_node_down(void *db_conn,
@@ -716,7 +667,7 @@ extern int clusteracct_storage_p_cluster_procs(void *db_conn,
 {
 	slurmdbd_msg_t msg;
 	dbd_cluster_procs_msg_t req;
-
+	info("sending info for cluster %s", cluster);
 	req.cluster_name = cluster;
 	req.proc_count   = procs;
 	req.event_time   = event_time;
@@ -729,8 +680,9 @@ extern int clusteracct_storage_p_cluster_procs(void *db_conn,
 	return SLURM_SUCCESS;
 }
 
-extern int clusteracct_storage_p_get_hourly_usage(
-	void *db_conn, acct_cluster_rec_t *cluster_rec,
+extern int clusteracct_storage_p_get_usage(
+	void *db_conn, acct_usage_type_t type,
+	acct_cluster_rec_t *cluster_rec,
 	time_t start, time_t end)
 {
 	slurmdbd_msg_t req, resp;
@@ -742,15 +694,17 @@ extern int clusteracct_storage_p_get_hourly_usage(
 	get_msg.rec = cluster_rec;
 	get_msg.start = start;
 	get_msg.end = end;
+	get_msg.type = type;
+
+	req.msg_type = DBD_GET_CLUSTER_USAGE;
 	
-	req.msg_type = DBD_GET_CLUSTER_HOUR;
 	req.data = &get_msg;
 	rc = slurm_send_recv_slurmdbd_msg(&req, &resp);
 
 	if (rc != SLURM_SUCCESS)
-		error("slurmdbd: DBD_GET_CLUSTER_HOUR failure: %m");
-	else if (resp.msg_type != DBD_GOT_CLUSTER_HOUR) {
-		error("slurmdbd: response type not DBD_GOT_CLUSTER_HOUR: %u", 
+		error("slurmdbd: DBD_GET_CLUSTER_USAGE failure: %m");
+	else if (resp.msg_type != DBD_GOT_CLUSTER_USAGE) {
+		error("slurmdbd: response type not DBD_GOT_CLUSTER_USAGE: %u", 
 		      resp.msg_type);
 	} else {
 		got_msg = (dbd_usage_msg_t *) resp.data;
@@ -760,74 +714,6 @@ extern int clusteracct_storage_p_get_hourly_usage(
 		slurmdbd_free_usage_msg(resp.msg_type, got_msg);
 	}
 
-
-	return rc;
-}
-
-extern int clusteracct_storage_p_get_daily_usage(
-	void *db_conn, acct_cluster_rec_t *cluster_rec,
-	time_t start, time_t end)
-{
-	slurmdbd_msg_t req, resp;
-	dbd_usage_msg_t get_msg;
-	dbd_usage_msg_t *got_msg;
-	acct_cluster_rec_t *got_rec;
-	int rc;
-
-	get_msg.rec = cluster_rec;
-	get_msg.start = start;
-	get_msg.end = end;
-	
-	req.msg_type = DBD_GET_CLUSTER_DAY;
-	req.data = &get_msg;
-	rc = slurm_send_recv_slurmdbd_msg(&req, &resp);
-
-	if (rc != SLURM_SUCCESS)
-		error("slurmdbd: DBD_GET_CLUSTER_DAY failure: %m");
-	else if (resp.msg_type != DBD_GOT_CLUSTER_DAY) {
-		error("slurmdbd: response type not DBD_GOT_CLUSTER_DAY: %u", 
-		      resp.msg_type);
-	} else {
-		got_msg = (dbd_usage_msg_t *) resp.data;
-		got_rec = (acct_cluster_rec_t *)got_msg->rec;
-		cluster_rec->accounting_list = got_rec->accounting_list;
-		got_rec->accounting_list = NULL;
-		slurmdbd_free_usage_msg(resp.msg_type, got_msg);
-	}
-
-	return rc;
-}
-
-extern int clusteracct_storage_p_get_monthly_usage(
-	void *db_conn,  acct_cluster_rec_t *cluster_rec,
-	time_t start, time_t end)
-{
-	slurmdbd_msg_t req, resp;
-	dbd_usage_msg_t get_msg;
-	dbd_usage_msg_t *got_msg;
-	acct_cluster_rec_t *got_rec;
-	int rc;
-
-	get_msg.rec = cluster_rec;
-	get_msg.start = start;
-	get_msg.end = end;
-	
-	req.msg_type = DBD_GET_CLUSTER_MONTH;
-	req.data = &get_msg;
-	rc = slurm_send_recv_slurmdbd_msg(&req, &resp);
-
-	if (rc != SLURM_SUCCESS)
-		error("slurmdbd: DBD_GET_CLUSTER_MONTH failure: %m");
-	else if (resp.msg_type != DBD_GOT_CLUSTER_MONTH) {
-		error("slurmdbd: response type not DBD_GOT_CLUSTER_MONTH: %u", 
-		      resp.msg_type);
-	} else {
-		got_msg = (dbd_usage_msg_t *) resp.data;
-		got_rec = (acct_cluster_rec_t *)got_msg->rec;
-		cluster_rec->accounting_list = got_rec->accounting_list;
-		got_rec->accounting_list = NULL;
-		slurmdbd_free_usage_msg(resp.msg_type, got_msg);
-	}
 
 	return rc;
 }

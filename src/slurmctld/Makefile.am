@@ -16,8 +16,6 @@ slurmctld_LDADD = 					\
 slurmctld_SOURCES = 	\
 	agent.c  	\
 	agent.h		\
-	assoc_mgr.c  	\
-	assoc_mgr.h	\
 	backup.c	\
 	controller.c 	\
 	job_mgr.c 	\

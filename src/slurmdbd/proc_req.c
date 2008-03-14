@@ -47,10 +47,24 @@
 #include "src/slurmctld/slurmctld.h"
 
 /* Local functions */
+static int   _add_accounts(void *db_conn,
+			   Buf in_buffer, Buf *out_buffer, uint32_t *uid);
+static int   _add_account_coords(void *db_conn,
+			   Buf in_buffer, Buf *out_buffer, uint32_t *uid);
+static int   _add_assocs(void *db_conn,
+			 Buf in_buffer, Buf *out_buffer, uint32_t *uid);
+static int   _add_clusters(void *db_conn,
+			   Buf in_buffer, Buf *out_buffer, uint32_t *uid);
+static int   _add_users(void *db_conn,
+			Buf in_buffer, Buf *out_buffer, uint32_t *uid);
 static int   _cluster_procs(void *db_conn,
 			    Buf in_buffer, Buf *out_buffer, uint32_t *uid);
+static int   _get_accounts(void *db_conn, Buf in_buffer, Buf *out_buffer);
 static int   _get_assocs(void *db_conn, Buf in_buffer, Buf *out_buffer);
+static int   _get_clusters(void *db_conn, Buf in_buffer, Buf *out_buffer);
 static int   _get_jobs(void *db_conn, Buf in_buffer, Buf *out_buffer);
+static int   _get_usage(uint16_t type, void *db_conn,
+			Buf in_buffer, Buf *out_buffer);
 static int   _get_users(void *db_conn, Buf in_buffer, Buf *out_buffer);
 static int   _init_conn(void *db_conn,
 			Buf in_buffer, Buf *out_buffer, uint32_t *uid);
@@ -60,9 +74,33 @@ static int   _job_start(void *db_conn,
 			Buf in_buffer, Buf *out_buffer, uint32_t *uid);
 static int   _job_suspend(void *db_conn,
 			  Buf in_buffer, Buf *out_buffer, uint32_t *uid);
+static int   _modify_accounts(void *db_conn,
+			      Buf in_buffer, Buf *out_buffer, uint32_t *uid);
+static int   _modify_assocs(void *db_conn,
+			    Buf in_buffer, Buf *out_buffer, uint32_t *uid);
+static int   _modify_clusters(void *db_conn,
+			      Buf in_buffer, Buf *out_buffer, uint32_t *uid);
+static int   _modify_users(void *db_conn,
+			   Buf in_buffer, Buf *out_buffer, uint32_t *uid);
+static int   _modify_user_admin_level(void *db_conn,
+				      Buf in_buffer, Buf *out_buffer,
+				      uint32_t *uid);
 static int   _node_state(void *db_conn,
 			 Buf in_buffer, Buf *out_buffer, uint32_t *uid);
 static char *_node_state_string(uint16_t node_state);
+static int   _remove_accounts(void *db_conn,
+			      Buf in_buffer, Buf *out_buffer, uint32_t *uid);
+static int   _remove_account_coords(void *db_conn,
+				    Buf in_buffer, Buf *out_buffer,
+				    uint32_t *uid);
+static int   _remove_assocs(void *db_conn,
+			    Buf in_buffer, Buf *out_buffer, uint32_t *uid);
+static int   _remove_clusters(void *db_conn,
+			      Buf in_buffer, Buf *out_buffer, uint32_t *uid);
+static int   _remove_users(void *db_conn,
+			   Buf in_buffer, Buf *out_buffer, uint32_t *uid);
+static int   _roll_usage(void *db_conn,
+			 Buf in_buffer, Buf *out_buffer, uint32_t *uid);
 static int   _step_complete(void *db_conn,
 			    Buf in_buffer, Buf *out_buffer, uint32_t *uid);
 static int   _step_start(void *db_conn,
@@ -82,48 +120,51 @@ proc_req(void *db_conn, char *msg, uint32_t msg_size,
 	int rc = SLURM_SUCCESS;
 	uint16_t msg_type;
 	Buf in_buffer;
+	char *comment = NULL;
 
 	in_buffer = create_buf(msg, msg_size); /* puts msg into buffer struct */
 	safe_unpack16(&msg_type, in_buffer);
 
 	if (first && (msg_type != DBD_INIT)) {
-		error("Initial RPC not DBD_INIT type (%d)", msg_type);
+		comment = "Initial RPC not DBD_INIT";
+		error("%s type (%d)", comment, msg_type);
 		rc = EINVAL;
-		*out_buffer = make_dbd_rc_msg(rc);
+		*out_buffer = make_dbd_rc_msg(rc, comment, DBD_INIT);
 	} else {
 		switch (msg_type) {
 		case DBD_ADD_ACCOUNTS:
+			rc = _add_accounts(db_conn, in_buffer, out_buffer, uid);
 			break;
 		case DBD_ADD_ACCOUNT_COORDS:
+			rc = _add_account_coords(db_conn,
+						 in_buffer, out_buffer, uid);
 			break;
 		case DBD_ADD_ASSOCS:
+			rc = _add_assocs(db_conn, in_buffer, out_buffer, uid);
 			break;
 		case DBD_ADD_CLUSTERS:
+			rc = _add_clusters(db_conn, in_buffer, out_buffer, uid);
 			break;
 		case DBD_ADD_USERS:
+			rc = _add_users(db_conn, in_buffer, out_buffer, uid);
 			break;
 		case DBD_CLUSTER_PROCS:
 			rc = _cluster_procs(db_conn,
 					    in_buffer, out_buffer, uid);
 			break;
 		case DBD_GET_ACCOUNTS:
+			rc = _get_accounts(db_conn, in_buffer, out_buffer);
 			break;
 		case DBD_GET_ASSOCS:
 			rc = _get_assocs(db_conn, in_buffer, out_buffer);
 			break;
-		case DBD_GET_ASSOC_DAY:
-			break;
-		case DBD_GET_ASSOC_HOUR:
-			break;
-		case DBD_GET_ASSOC_MONTH:
+		case DBD_GET_ASSOC_USAGE:
+		case DBD_GET_CLUSTER_USAGE:
+			rc = _get_usage(msg_type, db_conn,
+					in_buffer, out_buffer);
 			break;
 		case DBD_GET_CLUSTERS:
-			break;
-		case DBD_GET_CLUSTER_HOUR:
-			break;
-		case DBD_GET_CLUSTER_DAY:
-			break;
-		case DBD_GET_CLUSTER_MONTH:
+			rc = _get_clusters(db_conn, in_buffer, out_buffer);
 			break;
 		case DBD_GET_JOBS:
 			rc = _get_jobs(db_conn, in_buffer, out_buffer);
@@ -136,10 +177,11 @@ proc_req(void *db_conn, char *msg, uint32_t msg_size,
 				rc = _init_conn(db_conn,
 						in_buffer, out_buffer, uid);
 			else {
-				error("DBD_INIT sent after connection "
-				      "established");
+				comment = "DBD_INIT sent after connection established";
+				error("%s", comment);
 				rc = EINVAL;
-				*out_buffer = make_dbd_rc_msg(rc);
+				*out_buffer = make_dbd_rc_msg(rc, comment,
+							      DBD_INIT);
 			}
 			break;
 		case DBD_JOB_COMPLETE:
@@ -155,28 +197,51 @@ proc_req(void *db_conn, char *msg, uint32_t msg_size,
 					  in_buffer, out_buffer, uid);
 			break;
 		case DBD_MODIFY_ACCOUNTS:
+			rc = _modify_accounts(db_conn,
+					      in_buffer, out_buffer, uid);
 			break;
 		case DBD_MODIFY_ASSOCS:
+			rc = _modify_assocs(db_conn,
+					    in_buffer, out_buffer, uid);
 			break;
 		case DBD_MODIFY_CLUSTERS:
+			rc = _modify_clusters(db_conn,
+					      in_buffer, out_buffer, uid);
 			break;
 		case DBD_MODIFY_USERS:
+			rc = _modify_users(db_conn,
+					   in_buffer, out_buffer, uid);
 			break;
 		case DBD_MODIFY_USER_ADMIN_LEVEL:
+			rc = _modify_user_admin_level(db_conn,
+						      in_buffer, out_buffer,
+						      uid);
 			break;
 		case DBD_NODE_STATE:
 			rc = _node_state(db_conn,
 					 in_buffer, out_buffer, uid);
 			break;
 		case DBD_REMOVE_ACCOUNTS:
+			rc = _remove_accounts(db_conn,
+					      in_buffer, out_buffer, uid);
 			break;
 		case DBD_REMOVE_ACCOUNT_COORDS:
+			rc = _remove_account_coords(db_conn,
+						 in_buffer, out_buffer, uid);
 			break;
 		case DBD_REMOVE_ASSOCS:
+			rc = _remove_assocs(db_conn,
+					    in_buffer, out_buffer, uid);
 			break;
 		case DBD_REMOVE_CLUSTERS:
+			rc = _remove_clusters(db_conn,
+					      in_buffer, out_buffer, uid);
 			break;
 		case DBD_REMOVE_USERS:
+			rc = _remove_users(db_conn, in_buffer, out_buffer, uid);
+			break;
+		case DBD_ROLL_USAGE:
+			rc = _roll_usage(db_conn, in_buffer, out_buffer, uid);
 			break;
 		case DBD_STEP_COMPLETE:
 			rc = _step_complete(db_conn,
@@ -187,9 +252,10 @@ proc_req(void *db_conn, char *msg, uint32_t msg_size,
 					 in_buffer, out_buffer, uid);
 			break;
 		default:
-			error("Invalid RPC msg_type=%d", msg_type);
+			comment = "Invalid RPC";
+			error("%s msg_type=%d", comment, msg_type);
 			rc = EINVAL;
-			*out_buffer = make_dbd_rc_msg(rc);
+			*out_buffer = make_dbd_rc_msg(rc, comment, 0);
 			break;
 		}
 	}
@@ -203,51 +269,337 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
+static int _add_accounts(void *db_conn,
+			 Buf in_buffer, Buf *out_buffer, uint32_t *uid)
+{
+	int rc = SLURM_ERROR;
+	dbd_list_msg_t *get_msg = NULL;
+	char *comment = NULL;
+
+	debug2("DBD_ADD_ACCOUNTS: called");
+	if(assoc_mgr_get_admin_level(db_conn, *uid) < ACCT_ADMIN_OPERATOR) {
+		acct_user_rec_t user;
+
+		memset(&user, 0, sizeof(acct_user_rec_t));
+		user.uid = *uid;
+		if(!assoc_mgr_fill_in_user(db_conn, &user, 1)) {
+			comment = "Couldn't get user info";
+			error("%s", comment);
+			rc = SLURM_ERROR;
+			goto end_it;
+		}
+		if(!list_count(user.coord_accts)) {
+			comment = "User doesn't have privilege to preform this action";
+			error("%s", comment);
+			rc = ESLURM_ACCESS_DENIED;
+			goto end_it;			
+		}
+		/* If the user is a coord of any acct they can add
+		 * accounts they are only able to make associations to
+		 * these accounts if they are coordinators of the
+		 * parent they are trying to add to
+		 */		
+	}
+
+	if (slurmdbd_unpack_list_msg(DBD_ADD_ACCOUNTS, &get_msg, in_buffer) !=
+	    SLURM_SUCCESS) {
+		comment = "Failed to unpack DBD_ADD_ACCOUNTS message";
+		error("%s", comment);
+		rc = SLURM_ERROR;
+		goto end_it;
+	}
+	
+	rc = acct_storage_g_add_accounts(db_conn, get_msg->my_list);
+end_it:
+	slurmdbd_free_list_msg(get_msg);
+	*out_buffer = make_dbd_rc_msg(rc, comment, DBD_ADD_ACCOUNTS);
+	return rc;
+}
+static int _add_account_coords(void *db_conn,
+			       Buf in_buffer, Buf *out_buffer, uint32_t *uid)
+{
+	int rc = SLURM_ERROR;
+	dbd_acct_coord_msg_t *get_msg = NULL;
+	char *comment = NULL;
+	
+	if (slurmdbd_unpack_acct_coord_msg(&get_msg, in_buffer) !=
+	    SLURM_SUCCESS) {
+		comment = "Failed to unpack DBD_ADD_ACCOUNT_COORDS message";
+		error("%s", comment);
+		rc = SLURM_ERROR;
+		goto end_it;
+	}
+	
+	debug2("DBD_ADD_ACCOUNT_COORDS: called");
+	if(assoc_mgr_get_admin_level(db_conn, *uid) < ACCT_ADMIN_OPERATOR) {
+		ListIterator itr = NULL;
+		acct_user_rec_t user;
+		acct_coord_rec_t *coord = NULL;
+		
+		memset(&user, 0, sizeof(acct_user_rec_t));
+		user.uid = *uid;
+		if(!assoc_mgr_fill_in_user(db_conn, &user, 1)) {
+			comment = "Couldn't get user info";
+			error("%s", comment);
+			rc = SLURM_ERROR;
+			goto end_it;
+		}
+		if(!list_count(user.coord_accts)) {
+			comment = "User doesn't have privilege to preform this action";
+			error("%s", comment);
+			rc = ESLURM_ACCESS_DENIED;
+			goto end_it;
+		}
+		itr = list_iterator_create(user.coord_accts);
+		while((coord = list_next(itr))) {
+			if(!strcasecmp(coord->acct_name, get_msg->acct))
+				break;
+		}
+		list_iterator_destroy(itr);
+		
+		if(!coord)  {
+			comment = "User doesn't have privilege to preform this action";
+			error("%s", comment);
+			rc = ESLURM_ACCESS_DENIED;
+			goto end_it;
+		}
+	}
+
+	rc = acct_storage_g_add_coord(db_conn, get_msg->acct, get_msg->cond);
+end_it:
+	slurmdbd_free_acct_coord_msg(get_msg);
+	*out_buffer = make_dbd_rc_msg(rc, comment, DBD_ADD_ACCOUNT_COORDS);
+	return rc;
+}
+
+static int _add_assocs(void *db_conn,
+			 Buf in_buffer, Buf *out_buffer, uint32_t *uid)
+{
+	int rc = SLURM_ERROR;
+	dbd_list_msg_t *get_msg;
+	char *comment = NULL;
+
+	debug2("DBD_ADD_ASSOCS: called");
+
+	if (slurmdbd_unpack_list_msg(DBD_ADD_ASSOCS, &get_msg, in_buffer) !=
+	    SLURM_SUCCESS) {
+		comment = "Failed to unpack DBD_ADD_ASSOCS message";
+		error("%s", comment);
+		rc = SLURM_ERROR;
+		goto end_it;
+	}
+	
+	if(assoc_mgr_get_admin_level(db_conn, *uid) < ACCT_ADMIN_OPERATOR) {
+		ListIterator itr = NULL;
+		ListIterator itr2 = NULL;
+		acct_user_rec_t user;
+		acct_coord_rec_t *coord = NULL;
+		acct_association_rec_t *object = NULL;
+
+		memset(&user, 0, sizeof(acct_user_rec_t));
+		user.uid = *uid;
+		if(!assoc_mgr_fill_in_user(db_conn, &user, 1)) {
+			comment = "Couldn't get user info";
+			error("%s", comment);
+			rc = SLURM_ERROR;
+			goto end_it;
+		}
+		if(!list_count(user.coord_accts)) {
+			comment = "User doesn't have privilege to preform this action";
+			error("%s", comment);
+			rc = ESLURM_ACCESS_DENIED;
+			goto end_it;
+		}
+		itr = list_iterator_create(get_msg->my_list);
+		itr2 = list_iterator_create(user.coord_accts);
+		while((object = list_next(itr))) {
+			char *account = "root";
+			if(object->user)
+				account = object->acct;
+			else if(object->parent_acct)
+				account = object->parent_acct;
+			list_iterator_reset(itr2);
+			while((coord = list_next(itr2))) {
+				if(!strcasecmp(coord->acct_name, account))
+					break;
+			}
+			if(!coord) 
+				break;
+		}
+		list_iterator_destroy(itr2);
+		list_iterator_destroy(itr);
+		if(!coord)  {
+			comment = "User doesn't have privilege to preform this action";
+			error("%s", comment);
+			rc = ESLURM_ACCESS_DENIED;
+			goto end_it;
+		}
+	}
+
+	rc = acct_storage_g_add_associations(db_conn, get_msg->my_list);
+end_it:
+	slurmdbd_free_list_msg(get_msg);
+	*out_buffer = make_dbd_rc_msg(rc, comment, DBD_ADD_ASSOCS);
+	return rc;
+}
+
+static int _add_clusters(void *db_conn,
+			   Buf in_buffer, Buf *out_buffer, uint32_t *uid)
+{
+	int rc = SLURM_ERROR;
+	dbd_list_msg_t *get_msg;
+	char *comment = NULL;
+
+	debug2("DBD_ADD_CLUSTERS: called");
+	if(assoc_mgr_get_admin_level(db_conn, *uid) < ACCT_ADMIN_SUPER_USER) {
+		comment = "User doesn't have privilege to preform this action";
+		error("%s", comment);
+		rc = ESLURM_ACCESS_DENIED;
+		goto end_it;
+	}
+
+	if (slurmdbd_unpack_list_msg(DBD_ADD_CLUSTERS, &get_msg, in_buffer) !=
+	    SLURM_SUCCESS) {
+		comment = "Failed to unpack DBD_ADD_CLUSTERS message";
+		error("%s", comment);
+		rc = SLURM_ERROR;
+		goto end_it;
+	}
+	
+	rc = acct_storage_g_add_clusters(db_conn, get_msg->my_list);
+
+end_it:
+	slurmdbd_free_list_msg(get_msg);
+	*out_buffer = make_dbd_rc_msg(rc, comment, DBD_ADD_CLUSTERS);
+	return rc;
+}
+static int _add_users(void *db_conn,
+		      Buf in_buffer, Buf *out_buffer, uint32_t *uid)
+{
+	int rc = SLURM_ERROR;
+	dbd_list_msg_t *get_msg = NULL;
+	char *comment = NULL;
+	debug2("DBD_ADD_USERS: called");
+	if(assoc_mgr_get_admin_level(db_conn, *uid) < ACCT_ADMIN_OPERATOR) {
+		acct_user_rec_t user;
+
+		memset(&user, 0, sizeof(acct_user_rec_t));
+		user.uid = *uid;
+		if(!assoc_mgr_fill_in_user(db_conn, &user, 1)) {
+			comment = "Couldn't get user info";
+			error("%s", comment);
+			rc = SLURM_ERROR;
+			goto end_it;
+		}
+		if(!list_count(user.coord_accts)) {
+			comment = "User doesn't have privilege to preform this action";
+			error("%s", comment);
+			rc = ESLURM_ACCESS_DENIED;
+			goto end_it;			
+		}
+		/* If the user is a coord of any acct they can add
+		 * users they are only able to make associations to
+		 * these users if they are coordinators of the
+		 * account they are trying to add to
+		 */		
+	}
+
+	if (slurmdbd_unpack_list_msg(DBD_ADD_USERS, &get_msg, in_buffer) !=
+	    SLURM_SUCCESS) {
+		comment = "Failed to unpack DBD_ADD_USERS message";
+		error("%s", comment);
+		rc = SLURM_ERROR;
+		goto end_it;
+	}
+	
+	rc = acct_storage_g_add_users(db_conn, get_msg->my_list);
+
+end_it:
+	slurmdbd_free_list_msg(get_msg);
+	*out_buffer = make_dbd_rc_msg(rc, comment, DBD_ADD_USERS);
+	return rc;
+}
+
 static int _cluster_procs(void *db_conn,
 			  Buf in_buffer, Buf *out_buffer, uint32_t *uid)
 {
-	dbd_cluster_procs_msg_t *cluster_procs_msg;
+	dbd_cluster_procs_msg_t *cluster_procs_msg = NULL;
 	int rc = SLURM_ERROR;
+	char *comment = NULL;
 
 	if (*uid != slurmdbd_conf->slurm_user_id) {
+		comment = "DBD_CLUSTER_PROCS message from invalid uid";
 		error("DBD_CLUSTER_PROCS message from invalid uid %u", *uid);
-		*out_buffer = make_dbd_rc_msg(ESLURM_ACCESS_DENIED);
-		return SLURM_ERROR;
+		rc = ESLURM_ACCESS_DENIED;
+		goto end_it;
 	}
 	if (slurmdbd_unpack_cluster_procs_msg(&cluster_procs_msg, in_buffer) !=
 	    SLURM_SUCCESS) {
-		error("Failed to unpack DBD_CLUSTER_PROCS message");
-		*out_buffer = make_dbd_rc_msg(SLURM_ERROR);
-		return SLURM_ERROR;
+		comment = "Failed to unpack DBD_CLUSTER_PROCS message";
+		error("%s", comment);
+		rc = SLURM_ERROR;
+		goto end_it;
 	}
+	debug2("DBD_CLUSTER_PROCS: called for %s(%u)",
+	       cluster_procs_msg->cluster_name,
+	       cluster_procs_msg->proc_count);
 
-	info("DBD_CLUSTER_PROCS: CLUSTER_NAME:%s PROC_COUNT:%u TIME:%u", 
-	     cluster_procs_msg->cluster_name, cluster_procs_msg->proc_count,
-	     cluster_procs_msg->event_time);
 	rc = clusteracct_storage_g_cluster_procs(
 		db_conn,
 		cluster_procs_msg->cluster_name,
 		cluster_procs_msg->proc_count,
 		cluster_procs_msg->event_time);
+end_it:
 	slurmdbd_free_cluster_procs_msg(cluster_procs_msg);
-	*out_buffer = make_dbd_rc_msg(rc);
+	*out_buffer = make_dbd_rc_msg(rc, comment, DBD_CLUSTER_PROCS);
 	return rc;
+}
+
+static int _get_accounts(void *db_conn, Buf in_buffer, Buf *out_buffer)
+{
+	dbd_cond_msg_t *get_msg = NULL;
+	dbd_list_msg_t list_msg;
+	char *comment = NULL;
+
+	debug2("DBD_GET_ACCOUNTS: called");
+	if (slurmdbd_unpack_cond_msg(DBD_GET_ACCOUNTS, &get_msg, in_buffer) !=
+	    SLURM_SUCCESS) {
+		comment = "Failed to unpack DBD_GET_ACCOUNTS message";
+		error("%s", comment);
+		*out_buffer = make_dbd_rc_msg(SLURM_ERROR, comment,
+					      DBD_GET_ACCOUNTS);
+		return SLURM_ERROR;
+	}
+	
+	list_msg.my_list = acct_storage_g_get_accounts(db_conn, get_msg->cond);
+	slurmdbd_free_cond_msg(DBD_GET_ACCOUNTS, get_msg);
+
+
+	*out_buffer = init_buf(1024);
+	pack16((uint16_t) DBD_GOT_ACCOUNTS, *out_buffer);
+	slurmdbd_pack_list_msg(DBD_GOT_ACCOUNTS, &list_msg, *out_buffer);
+	if(list_msg.my_list)
+		list_destroy(list_msg.my_list);
+
+	return SLURM_SUCCESS;
 }
 
 static int _get_assocs(void *db_conn, Buf in_buffer, Buf *out_buffer)
 {
-	dbd_cond_msg_t *get_msg;
+	dbd_cond_msg_t *get_msg = NULL;
 	dbd_list_msg_t list_msg;
+	char *comment = NULL;
 
+	debug2("DBD_GET_ASSOCS: called");
 	if (slurmdbd_unpack_cond_msg(DBD_GET_ASSOCS, &get_msg, in_buffer) !=
 	    SLURM_SUCCESS) {
-		error("Failed to unpack DBD_GET_ASSOCS message");
-		*out_buffer = make_dbd_rc_msg(SLURM_ERROR);
+		comment = "Failed to unpack DBD_GET_ASSOCS message";
+		error("%s", comment);
+		*out_buffer = make_dbd_rc_msg(SLURM_ERROR, comment,
+					      DBD_GET_ASSOCS);
 		return SLURM_ERROR;
 	}
 	
-	info("DBD_GET_ASSOCS: called");
-
 	list_msg.my_list = acct_storage_g_get_associations(
 		db_conn, get_msg->cond);
 	slurmdbd_free_cond_msg(DBD_GET_ASSOCS, get_msg);
@@ -258,26 +610,58 @@ static int _get_assocs(void *db_conn, Buf in_buffer, Buf *out_buffer)
 	slurmdbd_pack_list_msg(DBD_GOT_ASSOCS, &list_msg, *out_buffer);
 	if(list_msg.my_list)
 		list_destroy(list_msg.my_list);
-	info("DBD_GET_ASSOCS: done");
+	
+	return SLURM_SUCCESS;
+}
+
+static int _get_clusters(void *db_conn, Buf in_buffer, Buf *out_buffer)
+{
+	dbd_cond_msg_t *get_msg = NULL;
+	dbd_list_msg_t list_msg;
+	char *comment = NULL;
+
+	debug2("DBD_GET_CLUSTERS: called");
+	if (slurmdbd_unpack_cond_msg(DBD_GET_CLUSTERS, &get_msg, in_buffer) !=
+	    SLURM_SUCCESS) {
+		comment = "Failed to unpack DBD_GET_CLUSTERS message";
+		error("%s", comment);
+		*out_buffer = make_dbd_rc_msg(SLURM_ERROR, comment,
+					      DBD_GET_CLUSTERS);
+		return SLURM_ERROR;
+	}
+	
+	list_msg.my_list = acct_storage_g_get_clusters(
+		db_conn, get_msg->cond);
+	slurmdbd_free_cond_msg(DBD_GET_CLUSTERS, get_msg);
+
+
+	*out_buffer = init_buf(1024);
+	pack16((uint16_t) DBD_GOT_CLUSTERS, *out_buffer);
+	slurmdbd_pack_list_msg(DBD_GOT_CLUSTERS, &list_msg, *out_buffer);
+	if(list_msg.my_list)
+		list_destroy(list_msg.my_list);
 	
 	return SLURM_SUCCESS;
 }
 
 static int _get_jobs(void *db_conn, Buf in_buffer, Buf *out_buffer)
 {
-	dbd_get_jobs_msg_t *get_jobs_msg;
+	dbd_get_jobs_msg_t *get_jobs_msg = NULL;
 	dbd_list_msg_t list_msg;
 	sacct_parameters_t sacct_params;
+	char *comment = NULL;
 
+	debug2("DBD_GET_JOBS: called");
 	if (slurmdbd_unpack_get_jobs_msg(&get_jobs_msg, in_buffer) !=
 	    SLURM_SUCCESS) {
-		error("Failed to unpack DBD_GET_JOBS message");
-		*out_buffer = make_dbd_rc_msg(SLURM_ERROR);
+		comment = "Failed to unpack DBD_GET_JOBS message";
+		error("%s", comment);
+		*out_buffer = make_dbd_rc_msg(SLURM_ERROR, comment, 
+					      DBD_GET_JOBS);
 		return SLURM_ERROR;
 	}
 	
-	info("DBD_GET_JOBS: called");
-	memset(&sacct_params, 0, sizeof(sacct_params));
+	memset(&sacct_params, 0, sizeof(sacct_parameters_t));
 	sacct_params.opt_cluster = get_jobs_msg->cluster_name;
 
 	list_msg.my_list = jobacct_storage_g_get_jobs(
@@ -292,25 +676,84 @@ static int _get_jobs(void *db_conn, Buf in_buffer, Buf *out_buffer)
 	slurmdbd_pack_list_msg(DBD_GOT_JOBS, &list_msg, *out_buffer);
 	if(list_msg.my_list)
 		list_destroy(list_msg.my_list);
-	info("DBD_GET_JOBS: done");
+	
+	return SLURM_SUCCESS;
+}
+
+static int _get_usage(uint16_t type, void *db_conn,
+		      Buf in_buffer, Buf *out_buffer)
+{
+	dbd_usage_msg_t *get_msg = NULL;
+	dbd_usage_msg_t got_msg;
+	uint16_t ret_type = 0;
+	int (*my_function) (void *db_conn, acct_usage_type_t type, void *object,
+			    time_t start, time_t end);
+	int rc = SLURM_SUCCESS;
+	char *comment = NULL;
+
+	info("DBD_GET_USAGE: called");
+
+	if (slurmdbd_unpack_usage_msg(type, &get_msg, in_buffer) !=
+	    SLURM_SUCCESS) {
+		comment = "Failed to unpack DBD_GET_USAGE message"; 
+		error("%s", comment);
+		*out_buffer = make_dbd_rc_msg(SLURM_ERROR, comment, type);
+		return SLURM_ERROR;
+	}
+	switch(type) {
+	case DBD_GET_ASSOC_USAGE:
+		ret_type = DBD_GOT_ASSOC_USAGE;
+		my_function = acct_storage_g_get_usage;
+		break;
+	case DBD_GET_CLUSTER_USAGE:
+		ret_type = DBD_GOT_CLUSTER_USAGE;
+		my_function = clusteracct_storage_g_get_usage;
+		break;
+	default:
+		comment = "Unknown type of usage to get";
+		error("%s %u", comment, type);
+		*out_buffer = make_dbd_rc_msg(SLURM_ERROR, comment, type);
+		return SLURM_ERROR;
+	}		
+
+	rc = (*(my_function))(db_conn, get_msg->type, get_msg->rec,
+			      get_msg->start, get_msg->end);
+	slurmdbd_free_usage_msg(type, get_msg);
+
+	if(rc != SLURM_SUCCESS) {
+		comment = "Problem getting usage info";
+		error("%s", comment);
+		*out_buffer = make_dbd_rc_msg(SLURM_ERROR, comment, type);
+		return SLURM_ERROR;
+		
+	}
+	memset(&got_msg, 0, sizeof(dbd_usage_msg_t));
+	got_msg.rec = get_msg->rec;
+	get_msg->rec = NULL;
+	*out_buffer = init_buf(1024);
+	pack16((uint16_t) ret_type, *out_buffer);
+	slurmdbd_pack_usage_msg(ret_type, &got_msg, *out_buffer);
 	
 	return SLURM_SUCCESS;
 }
 
 static int _get_users(void *db_conn, Buf in_buffer, Buf *out_buffer)
 {
-	dbd_cond_msg_t *get_msg;
+	dbd_cond_msg_t *get_msg = NULL;
 	dbd_list_msg_t list_msg;
+	char *comment = NULL;
+
+	debug2("DBD_GET_USERS: called");
 
 	if (slurmdbd_unpack_cond_msg(DBD_GET_USERS, &get_msg, in_buffer) !=
 	    SLURM_SUCCESS) {
-		error("Failed to unpack DBD_GET_USERS message");
-		*out_buffer = make_dbd_rc_msg(SLURM_ERROR);
+		comment = "Failed to unpack DBD_GET_USERS message";
+		error("%s", comment);
+		*out_buffer = make_dbd_rc_msg(SLURM_ERROR, comment,
+					      DBD_GET_USERS);
 		return SLURM_ERROR;
 	}
 	
-	info("DBD_GET_USERS: called");
-
 	list_msg.my_list = acct_storage_g_get_users(db_conn, get_msg->cond);
 	slurmdbd_free_cond_msg(DBD_GET_USERS, get_msg);
 
@@ -319,7 +762,6 @@ static int _get_users(void *db_conn, Buf in_buffer, Buf *out_buffer)
 	slurmdbd_pack_list_msg(DBD_GOT_USERS, &list_msg, *out_buffer);
 	if(list_msg.my_list)
 		list_destroy(list_msg.my_list);
-	info("DBD_GET_USERS: done");
 	
 	return SLURM_SUCCESS;
 }
@@ -327,45 +769,52 @@ static int _get_users(void *db_conn, Buf in_buffer, Buf *out_buffer)
 static int _init_conn(void *db_conn,
 		      Buf in_buffer, Buf *out_buffer, uint32_t *uid)
 {
-	dbd_init_msg_t *init_msg;
+	dbd_init_msg_t *init_msg = NULL;
+	char *comment = NULL;
 
 	if (slurmdbd_unpack_init_msg(&init_msg, in_buffer, 
-				      slurmdbd_conf->auth_info) != SLURM_SUCCESS) {
-		error("Failed to unpack DBD_INIT message");
-		*out_buffer = make_dbd_rc_msg(SLURM_ERROR);
-		return SLURM_ERROR;
+				     slurmdbd_conf->auth_info)
+	    != SLURM_SUCCESS) {
+		comment = "Failed to unpack DBD_INIT message";
+		error("%s", comment);
+		goto end_it;
 	}
 	if (init_msg->version != SLURMDBD_VERSION) {
+		comment = "Incompatable RPC version";
 		error("Incompatable RPC version (%d != %d)",
-			init_msg->version, SLURMDBD_VERSION);
-		return SLURM_ERROR;
+		      init_msg->version, SLURMDBD_VERSION);
+		goto end_it;
 	}
 	*uid = init_msg->uid;
-
-	info("DBD_INIT: VERSION:%u UID:%u", init_msg->version, init_msg->uid);
+	
+	debug("DBD_INIT: VERSION:%u UID:%u", init_msg->version, init_msg->uid);
+end_it:
 	slurmdbd_free_init_msg(init_msg);
-	*out_buffer = make_dbd_rc_msg(SLURM_SUCCESS);
+	*out_buffer = make_dbd_rc_msg(SLURM_SUCCESS, comment, DBD_INIT);
 	return SLURM_SUCCESS;
 }
 
 static int  _job_complete(void *db_conn,
 			  Buf in_buffer, Buf *out_buffer, uint32_t *uid)
 {
-	dbd_job_comp_msg_t *job_comp_msg;
+	dbd_job_comp_msg_t *job_comp_msg = NULL;
 	struct job_record job;
 	struct job_details details;
 	int rc = SLURM_SUCCESS;
+	char *comment = NULL;
 
 	if (*uid != slurmdbd_conf->slurm_user_id) {
-		error("DBD_JOB_COMPLETE message from invalid uid %u", *uid);
-		*out_buffer = make_dbd_rc_msg(ESLURM_ACCESS_DENIED);
-		return SLURM_ERROR;
+		comment = "DBD_JOB_COMPLETE message from invalid uid";
+		error("%s %u", comment, *uid);
+		rc = ESLURM_ACCESS_DENIED;
+		goto end_it;
 	}
 	if (slurmdbd_unpack_job_complete_msg(&job_comp_msg, in_buffer) !=
 	    SLURM_SUCCESS) {
-		error("Failed to unpack DBD_JOB_COMPLETE message");
-		*out_buffer = make_dbd_rc_msg(SLURM_ERROR);
-		return SLURM_ERROR;
+		comment = "Failed to unpack DBD_JOB_COMPLETE message";
+		error("%s", comment);
+		rc = SLURM_ERROR;
+		goto end_it;
 	}
 
 	debug2("DBD_JOB_COMPLETE: ID:%u ", job_comp_msg->job_id);
@@ -388,29 +837,34 @@ static int  _job_complete(void *db_conn,
 
 	if(rc && errno == 740) /* meaning data is already there */
 		rc = SLURM_SUCCESS;
-
+end_it:
 	slurmdbd_free_job_complete_msg(job_comp_msg);
-	*out_buffer = make_dbd_rc_msg(rc);
+	*out_buffer = make_dbd_rc_msg(rc, comment, DBD_JOB_COMPLETE);
 	return SLURM_SUCCESS;
 }
 
 static int  _job_start(void *db_conn,
 		       Buf in_buffer, Buf *out_buffer, uint32_t *uid)
 {
-	dbd_job_start_msg_t *job_start_msg;
+	dbd_job_start_msg_t *job_start_msg = NULL;
 	dbd_job_start_rc_msg_t job_start_rc_msg;
 	struct job_record job;
 	struct job_details details;
+	char *comment = NULL;
 
 	if (*uid != slurmdbd_conf->slurm_user_id) {
-		error("DBD_JOB_START message from invalid uid %u", *uid);
-		*out_buffer = make_dbd_rc_msg(ESLURM_ACCESS_DENIED);
+		comment = "DBD_JOB_START message from invalid uid";
+		error("%s %u", comment, *uid);
+		*out_buffer = make_dbd_rc_msg(ESLURM_ACCESS_DENIED, comment,
+					      DBD_JOB_START);
 		return SLURM_ERROR;
 	}
 	if (slurmdbd_unpack_job_start_msg(&job_start_msg, in_buffer) !=
 	    SLURM_SUCCESS) {
-		error("Failed to unpack DBD_JOB_START message");
-		*out_buffer = make_dbd_rc_msg(SLURM_ERROR);
+		comment = "Failed to unpack DBD_JOB_START message";
+		error("%s", comment);
+		*out_buffer = make_dbd_rc_msg(SLURM_ERROR, comment,
+					      DBD_JOB_START);
 		return SLURM_ERROR;
 	}
 	memset(&job, 0, sizeof(struct job_record));
@@ -451,21 +905,24 @@ static int  _job_start(void *db_conn,
 static int  _job_suspend(void *db_conn,
 			 Buf in_buffer, Buf *out_buffer, uint32_t *uid)
 {
-	dbd_job_suspend_msg_t *job_suspend_msg;
+	dbd_job_suspend_msg_t *job_suspend_msg = NULL;
 	struct job_record job;
 	struct job_details details;
 	int rc = SLURM_SUCCESS;
+	char *comment = NULL;
 
 	if (*uid != slurmdbd_conf->slurm_user_id) {
-		error("DBD_JOB_SUSPEND message from invalid uid %u", *uid);
-		*out_buffer = make_dbd_rc_msg(ESLURM_ACCESS_DENIED);
-		return SLURM_ERROR;
+		comment = "DBD_JOB_SUSPEND message from invalid uid";
+		error("%s %u", comment, *uid);
+		rc = ESLURM_ACCESS_DENIED;
+		goto end_it;
 	}
 	if (slurmdbd_unpack_job_suspend_msg(&job_suspend_msg, in_buffer) !=
 	    SLURM_SUCCESS) {
-		error("Failed to unpack DBD_JOB_SUSPEND message");
-		*out_buffer = make_dbd_rc_msg(SLURM_ERROR);
-		return SLURM_ERROR;
+		comment = "Failed to unpack DBD_JOB_SUSPEND message";
+		error("%s", comment);
+		rc = SLURM_ERROR;
+		goto end_it;
 	}
 
 	debug2("DBD_JOB_SUSPEND: ID:%u STATE:%s", 
@@ -487,31 +944,195 @@ static int  _job_suspend(void *db_conn,
 
 	if(rc && errno == 740) /* meaning data is already there */
 		rc = SLURM_SUCCESS;
-
+end_it:
 	slurmdbd_free_job_suspend_msg(job_suspend_msg);
-	*out_buffer = make_dbd_rc_msg(rc);
+	*out_buffer = make_dbd_rc_msg(rc, comment, DBD_JOB_START);
 	return SLURM_SUCCESS;
+}
+
+static int   _modify_accounts(void *db_conn,
+			      Buf in_buffer, Buf *out_buffer, uint32_t *uid)
+{
+	int rc = SLURM_ERROR;
+	dbd_modify_msg_t *get_msg = NULL;
+	char *comment = NULL;
+
+	debug2("DBD_MODIFY_ACCOUNTS: called");
+	if(assoc_mgr_get_admin_level(db_conn, *uid) < ACCT_ADMIN_OPERATOR) {
+		comment = "User doesn't have privilege to preform this action";
+		error("%s", comment);
+		rc = ESLURM_ACCESS_DENIED;
+		goto end_it;
+	}
+
+	if (slurmdbd_unpack_modify_msg(DBD_MODIFY_ACCOUNTS, &get_msg,
+				       in_buffer) != SLURM_SUCCESS) {
+		comment = "Failed to unpack DBD_MODIFY_ACCOUNTS message";
+		error("%s", comment);
+		rc = SLURM_ERROR;
+		goto end_it;
+	}
+	
+
+	rc = acct_storage_g_modify_accounts(db_conn,
+					    get_msg->cond, get_msg->rec);
+
+end_it:
+	slurmdbd_free_modify_msg(DBD_MODIFY_ACCOUNTS, get_msg);
+	*out_buffer = make_dbd_rc_msg(rc, comment, DBD_MODIFY_ACCOUNTS);
+	return rc;
+}
+
+static int   _modify_assocs(void *db_conn,
+			    Buf in_buffer, Buf *out_buffer, uint32_t *uid)
+{
+	int rc = SLURM_ERROR;
+	dbd_modify_msg_t *get_msg = NULL;
+	char *comment = NULL;
+
+	debug2("DBD_MODIFY_ASSOCS: called");
+
+	if(assoc_mgr_get_admin_level(db_conn, *uid) < ACCT_ADMIN_OPERATOR) {
+		comment = "User doesn't have privilege to preform this action";
+		error("%s", comment);
+		rc = ESLURM_ACCESS_DENIED;
+		goto end_it;
+	}
+
+	if (slurmdbd_unpack_modify_msg(DBD_MODIFY_ASSOCS, &get_msg, 
+				       in_buffer) != SLURM_SUCCESS) {
+		comment = "Failed to unpack DBD_MODIFY_ASSOCS message";
+		error("%s", comment);
+		rc = SLURM_ERROR;
+		goto end_it;
+	}
+	
+
+	rc = acct_storage_g_modify_associations(db_conn,
+						get_msg->cond, get_msg->rec);
+end_it:
+	slurmdbd_free_modify_msg(DBD_MODIFY_ASSOCS, get_msg);
+	*out_buffer = make_dbd_rc_msg(rc, comment, DBD_MODIFY_ASSOCS);
+	return rc;
+}
+
+static int   _modify_clusters(void *db_conn,
+			      Buf in_buffer, Buf *out_buffer, uint32_t *uid)
+{
+	int rc = SLURM_ERROR;
+	dbd_modify_msg_t *get_msg = NULL;
+	char *comment = NULL;
+
+	if(assoc_mgr_get_admin_level(db_conn, *uid) < ACCT_ADMIN_SUPER_USER) {
+		comment = "User doesn't have privilege to preform this action";
+		error("%s", comment);
+		rc = ESLURM_ACCESS_DENIED;
+		goto end_it;
+	}
+
+	if (slurmdbd_unpack_modify_msg(DBD_MODIFY_CLUSTERS, &get_msg,
+				       in_buffer) != SLURM_SUCCESS) {
+		comment = "Failed to unpack DBD_MODIFY_CLUSTERS message";
+		error("%s", comment);
+		rc = SLURM_ERROR;
+		goto end_it;
+	}
+	
+	debug2("DBD_MODIFY_CLUSTERS: called");
+
+	rc = acct_storage_g_modify_clusters(db_conn,
+					    get_msg->cond, get_msg->rec);
+end_it:
+	slurmdbd_free_modify_msg(DBD_MODIFY_CLUSTERS, get_msg);
+	*out_buffer = make_dbd_rc_msg(rc, comment, DBD_MODIFY_CLUSTERS);
+	return rc;
+}
+
+static int   _modify_users(void *db_conn,
+			   Buf in_buffer, Buf *out_buffer, uint32_t *uid)
+{
+	int rc = SLURM_ERROR;
+	dbd_modify_msg_t *get_msg = NULL;
+	char *comment = NULL;
+
+	debug2("DBD_MODIFY_USERS: called");
+
+	if(assoc_mgr_get_admin_level(db_conn, *uid) < ACCT_ADMIN_OPERATOR) {
+		comment = "User doesn't have privilege to preform this action";
+		error("%s", comment);
+		rc = ESLURM_ACCESS_DENIED;
+		goto end_it;
+	}
+
+	if (slurmdbd_unpack_modify_msg(DBD_MODIFY_USERS, &get_msg, in_buffer) !=
+	    SLURM_SUCCESS) {
+		comment = "Failed to unpack DBD_MODIFY_USERS message";
+		error("%s", comment);
+		rc = SLURM_ERROR;
+		goto end_it;
+	}
+	
+	rc = acct_storage_g_modify_users(db_conn, get_msg->cond, get_msg->rec);
+end_it:
+	slurmdbd_free_modify_msg(DBD_MODIFY_USERS, get_msg);
+	*out_buffer = make_dbd_rc_msg(rc, comment, DBD_MODIFY_USERS);
+	return rc;
+}
+
+static int   _modify_user_admin_level(void *db_conn,
+				      Buf in_buffer, Buf *out_buffer,
+				      uint32_t *uid)
+{
+	int rc = SLURM_ERROR;
+	dbd_modify_msg_t *get_msg = NULL;
+	char *comment = NULL;
+
+	if(assoc_mgr_get_admin_level(db_conn, *uid) < ACCT_ADMIN_OPERATOR) {
+		comment = "User doesn't have privilege to preform this action";
+		error("%s", comment);
+		rc = ESLURM_ACCESS_DENIED;
+		goto end_it;
+	}
+
+	if (slurmdbd_unpack_modify_msg(DBD_MODIFY_USER_ADMIN_LEVEL, &get_msg,
+				       in_buffer) != SLURM_SUCCESS) {
+		comment = "Failed to unpack DBD_MODIFY_USER_ADMIN_LEVEL message";
+		error("%s", comment);
+		rc = SLURM_ERROR;
+		goto end_it;
+	}
+	
+	debug2("DBD_MODIFY_USER_ADMIN_LEVEL: called");
+
+	rc = acct_storage_g_modify_user_admin_level(db_conn, get_msg->cond);
+end_it:
+	slurmdbd_free_modify_msg(DBD_MODIFY_USER_ADMIN_LEVEL, get_msg);
+	*out_buffer = make_dbd_rc_msg(rc, comment, DBD_MODIFY_USER_ADMIN_LEVEL);
+	return rc;
 }
 
 static int _node_state(void *db_conn,
 		       Buf in_buffer, Buf *out_buffer, uint32_t *uid)
 {
-	dbd_node_state_msg_t *node_state_msg;
+	dbd_node_state_msg_t *node_state_msg = NULL;
 	struct node_record node_ptr;
 	int rc = SLURM_SUCCESS;
+	char *comment = NULL;
 
 	memset(&node_ptr, 0, sizeof(struct node_record));
 
 	if (*uid != slurmdbd_conf->slurm_user_id) {
-		error("DBD_NODE_STATE message from invalid uid %u", *uid);
-		*out_buffer = make_dbd_rc_msg(ESLURM_ACCESS_DENIED);
-		return SLURM_ERROR;
+		comment = "DBD_NODE_STATE message from invalid uid";
+		error("%s %u", comment, *uid);
+		rc = ESLURM_ACCESS_DENIED;
+		goto end_it;
 	}
 	if (slurmdbd_unpack_node_state_msg(&node_state_msg, in_buffer) !=
 	    SLURM_SUCCESS) {
-		error("Failed to unpack DBD_NODE_STATE message");
-		*out_buffer = make_dbd_rc_msg(SLURM_ERROR);
-		return SLURM_ERROR;
+		comment = "Failed to unpack DBD_NODE_STATE message";
+		error("%s", comment);
+		rc = SLURM_ERROR;
+		goto end_it;
 	}
 
 	debug2("DBD_NODE_STATE: NODE:%s STATE:%s REASON:%s TIME:%u", 
@@ -539,8 +1160,9 @@ static int _node_state(void *db_conn,
 	if(rc && errno == 740) /* meaning data is already there */
 		rc = SLURM_SUCCESS;
 
+end_it:
 	slurmdbd_free_node_state_msg(node_state_msg);
-	*out_buffer = make_dbd_rc_msg(rc);
+	*out_buffer = make_dbd_rc_msg(rc, comment, DBD_NODE_STATE);
 	return SLURM_SUCCESS;
 }
 
@@ -555,25 +1177,243 @@ static char *_node_state_string(uint16_t node_state)
 	return "UNKNOWN";
 }
 
+static int   _remove_accounts(void *db_conn,
+			      Buf in_buffer, Buf *out_buffer, uint32_t *uid)
+{
+	int rc = SLURM_ERROR;
+	dbd_cond_msg_t *get_msg = NULL;
+	char *comment = NULL;
+
+	debug2("DBD_REMOVE_ACCOUNTS: called");
+
+	if(assoc_mgr_get_admin_level(db_conn, *uid) < ACCT_ADMIN_OPERATOR) {
+		comment = "User doesn't have privilege to preform this action";
+		error("%s", comment);
+		rc = ESLURM_ACCESS_DENIED;
+		goto end_it;
+	}
+
+	if (slurmdbd_unpack_cond_msg(DBD_REMOVE_ACCOUNTS, &get_msg, 
+				     in_buffer) != SLURM_SUCCESS) {
+		comment = "Failed to unpack DBD_REMOVE_ACCOUNTS message";
+		error("%s", comment);
+		rc = SLURM_ERROR;
+		goto end_it;
+	}
+	
+	rc = acct_storage_g_remove_accounts(db_conn, get_msg->cond);
+/* this should be done inside the plugin */
+/* 	if(rc == SLURM_SUCCESS) { */
+/* 		memset(&assoc_q, 0, sizeof(acct_association_cond_t)); */
+/* 		assoc_q.acct_list = */
+/* 			((acct_account_cond_t *)get_msg->cond)->acct_list; */
+/* 		rc = acct_storage_g_remove_associations(db_conn, &assoc_q); */
+/* 	} */
+
+end_it:
+	slurmdbd_free_cond_msg(DBD_REMOVE_ACCOUNTS, get_msg);
+	*out_buffer = make_dbd_rc_msg(rc, comment, DBD_REMOVE_ACCOUNTS);
+	return rc;
+}
+
+static int   _remove_account_coords(void *db_conn,
+				    Buf in_buffer, Buf *out_buffer,
+				    uint32_t *uid)
+{
+	int rc = SLURM_ERROR;
+	dbd_acct_coord_msg_t *get_msg = NULL;
+	char *comment = NULL;
+
+	debug2("DBD_REMOVE_ACCOUNT_COORDS: called");
+
+	if(assoc_mgr_get_admin_level(db_conn, *uid) < ACCT_ADMIN_OPERATOR) {
+		comment = "User doesn't have privilege to preform this action";
+		error("%s", comment);
+		rc = ESLURM_ACCESS_DENIED;
+		goto end_it;
+	}
+
+	if (slurmdbd_unpack_acct_coord_msg(&get_msg, in_buffer) !=
+	    SLURM_SUCCESS) {
+		comment = "Failed to unpack DBD_REMOVE_ACCOUNT_COORDS message";
+		error("%s", comment);
+		rc = SLURM_ERROR;
+		goto end_it;
+	}
+	
+	rc = acct_storage_g_remove_coord(db_conn, get_msg->acct, get_msg->cond);
+end_it:
+	slurmdbd_free_acct_coord_msg(get_msg);
+	*out_buffer = make_dbd_rc_msg(rc, comment, DBD_REMOVE_ACCOUNT_COORDS);
+	return rc;
+}
+
+static int   _remove_assocs(void *db_conn,
+			    Buf in_buffer, Buf *out_buffer, uint32_t *uid)
+{
+	int rc = SLURM_ERROR;
+	dbd_cond_msg_t *get_msg = NULL;
+	char *comment = NULL;
+
+	debug2("DBD_REMOVE_ASSOCS: called");
+
+	if(assoc_mgr_get_admin_level(db_conn, *uid) < ACCT_ADMIN_OPERATOR) {
+		comment = "User doesn't have privilege to preform this action";
+		error("%s", comment);
+		rc = ESLURM_ACCESS_DENIED;
+		goto end_it;
+	}
+
+	if (slurmdbd_unpack_cond_msg(DBD_REMOVE_ASSOCS, &get_msg, in_buffer) !=
+	    SLURM_SUCCESS) {
+		comment = "Failed to unpack DBD_REMOVE_ASSOCS message";
+		error("%s", comment);
+		rc = SLURM_ERROR;
+		goto end_it;
+	}
+	
+	rc = acct_storage_g_remove_associations(db_conn, get_msg->cond);
+
+end_it:
+	slurmdbd_free_cond_msg(DBD_REMOVE_ASSOCS, get_msg);
+	*out_buffer = make_dbd_rc_msg(rc, comment, DBD_REMOVE_ASSOCS);
+	return rc;
+
+}
+
+static int   _remove_clusters(void *db_conn,
+			      Buf in_buffer, Buf *out_buffer, uint32_t *uid)
+{
+	int rc = SLURM_ERROR;
+	dbd_cond_msg_t *get_msg = NULL;
+	char *comment = NULL;
+
+	debug2("DBD_REMOVE_CLUSTERS: called");
+
+	if(assoc_mgr_get_admin_level(db_conn, *uid) < ACCT_ADMIN_SUPER_USER) {
+		comment = "User doesn't have privilege to preform this action";
+		error("%s", comment);
+		rc = ESLURM_ACCESS_DENIED;
+		goto end_it;
+	}
+
+	if (slurmdbd_unpack_cond_msg(DBD_REMOVE_CLUSTERS, &get_msg, 
+				     in_buffer) != SLURM_SUCCESS) {
+		comment = "Failed to unpack DBD_REMOVE_CLUSTERS message";
+		error("%s", comment);
+		rc = SLURM_ERROR;
+		goto end_it;
+	}
+	
+	rc = acct_storage_g_remove_clusters(db_conn, get_msg->cond);
+/* this should be done inside the plugin */
+/* 	if(rc == SLURM_SUCCESS) { */
+/* 		memset(&assoc_q, 0, sizeof(acct_association_cond_t)); */
+/* 		assoc_q.cluster_list = */
+/* 			((acct_cluster_cond_t *)get_msg->cond)->cluster_list; */
+/* 		rc = acct_storage_g_remove_associations(db_conn, &assoc_q); */
+/* 	} */
+
+end_it:
+	slurmdbd_free_cond_msg(DBD_REMOVE_CLUSTERS, get_msg);
+	*out_buffer = make_dbd_rc_msg(rc, comment, DBD_REMOVE_CLUSTERS);
+	return rc;
+}
+
+static int   _remove_users(void *db_conn,
+			   Buf in_buffer, Buf *out_buffer, uint32_t *uid)
+{
+	int rc = SLURM_ERROR;
+	dbd_cond_msg_t *get_msg = NULL;
+	char *comment = NULL;
+
+	debug2("DBD_REMOVE_USERS: called");
+
+	if(assoc_mgr_get_admin_level(db_conn, *uid) < ACCT_ADMIN_OPERATOR) {
+		comment = "User doesn't have privilege to preform this action";
+		error("%s", comment);
+		rc = ESLURM_ACCESS_DENIED;
+		goto end_it;
+	}
+
+	if (slurmdbd_unpack_cond_msg(DBD_REMOVE_USERS, &get_msg, in_buffer) !=
+	    SLURM_SUCCESS) {
+		comment = "Failed to unpack DBD_REMOVE_USERS message";
+		error("%s", comment);
+		rc = SLURM_ERROR;
+		goto end_it;
+	}
+	
+	rc = acct_storage_g_remove_users(db_conn, get_msg->cond);
+/* this should be done inside the plugin */
+	/* if(rc == SLURM_SUCCESS) { */
+/* 		memset(&assoc_q, 0, sizeof(acct_association_cond_t)); */
+/* 		assoc_q.user_list = */
+/* 			((acct_user_cond_t *)get_msg->cond)->user_list; */
+/* 		rc = acct_storage_g_remove_associations(db_conn, &assoc_q); */
+/* 	} */
+
+end_it:
+	slurmdbd_free_cond_msg(DBD_REMOVE_USERS, get_msg);
+	*out_buffer = make_dbd_rc_msg(rc, comment, DBD_REMOVE_USERS);
+	return rc;
+}
+
+static int   _roll_usage(void *db_conn,
+			 Buf in_buffer, Buf *out_buffer, uint32_t *uid)
+{
+	dbd_roll_usage_msg_t *get_msg = NULL;
+	int rc = SLURM_SUCCESS;
+	char *comment = NULL;
+
+	info("DBD_ROLL_USAGE: called");
+
+	if(assoc_mgr_get_admin_level(db_conn, *uid) < ACCT_ADMIN_OPERATOR) {
+		comment = "User doesn't have privilege to preform this action";
+		error("%s", comment);
+		rc = ESLURM_ACCESS_DENIED;
+		goto end_it;
+	}
+
+	if (slurmdbd_unpack_roll_usage_msg(&get_msg, in_buffer) !=
+	    SLURM_SUCCESS) {
+		comment = "Failed to unpack DBD_ROLL_USAGE message"; 
+		error("%s", comment);
+		rc = SLURM_ERROR;
+		goto end_it;
+	}
+
+	rc = acct_storage_g_roll_usage(db_conn, get_msg->type, get_msg->start);
+	slurmdbd_free_roll_usage_msg(get_msg);
+
+end_it:
+	slurmdbd_free_roll_usage_msg(get_msg);
+	*out_buffer = make_dbd_rc_msg(rc, comment, DBD_ROLL_USAGE);
+	return rc;
+}
+
 static int  _step_complete(void *db_conn,
 			   Buf in_buffer, Buf *out_buffer, uint32_t *uid)
 {
-	dbd_step_comp_msg_t *step_comp_msg;
+	dbd_step_comp_msg_t *step_comp_msg = NULL;
 	struct step_record step;
 	struct job_record job;
 	struct job_details details;
 	int rc = SLURM_SUCCESS;
+	char *comment = NULL;
 
 	if (*uid != slurmdbd_conf->slurm_user_id) {
-		error("DBD_STEP_COMPLETE message from invalid uid %u", *uid);
-		*out_buffer = make_dbd_rc_msg(ESLURM_ACCESS_DENIED);
-		return SLURM_ERROR;
+		comment = "DBD_STEP_COMPLETE message from invalid uid";
+		error("%s %u", comment, *uid);
+		rc = ESLURM_ACCESS_DENIED;
+		goto end_it;
 	}
 	if (slurmdbd_unpack_step_complete_msg(&step_comp_msg, in_buffer) !=
 	    SLURM_SUCCESS) {
-		error("Failed to unpack DBD_STEP_COMPLETE message");
-		*out_buffer = make_dbd_rc_msg(SLURM_ERROR);
-		return SLURM_ERROR;
+		comment = "Failed to unpack DBD_STEP_COMPLETE message";
+		error("%s", comment);
+		rc = SLURM_ERROR;
+		goto end_it;
 	}
 
 	debug2("DBD_STEP_COMPLETE: ID:%u.%u SUBMIT:%u", 
@@ -603,30 +1443,34 @@ static int  _step_complete(void *db_conn,
 	if(rc && errno == 740) /* meaning data is already there */
 		rc = SLURM_SUCCESS;
 
+end_it:
 	slurmdbd_free_step_complete_msg(step_comp_msg);
-	*out_buffer = make_dbd_rc_msg(rc);
-	return SLURM_SUCCESS;
+	*out_buffer = make_dbd_rc_msg(rc, comment, DBD_STEP_COMPLETE);
+	return rc;
 }
 
 static int  _step_start(void *db_conn,
 			Buf in_buffer, Buf *out_buffer, uint32_t *uid)
 {
-	dbd_step_start_msg_t *step_start_msg;
+	dbd_step_start_msg_t *step_start_msg = NULL;
 	struct step_record step;
 	struct job_record job;
 	struct job_details details;
 	int rc = SLURM_SUCCESS;
+	char *comment = NULL;
 
 	if (*uid != slurmdbd_conf->slurm_user_id) {
-		error("DBD_STEP_START message from invalid uid %u", *uid);
-		*out_buffer = make_dbd_rc_msg(ESLURM_ACCESS_DENIED);
-		return SLURM_ERROR;
+		comment = "DBD_STEP_START message from invalid uid";
+		error("%s %u", comment, *uid);
+		rc = ESLURM_ACCESS_DENIED;
+		goto end_it;
 	}
 	if (slurmdbd_unpack_step_start_msg(&step_start_msg, in_buffer) !=
 	    SLURM_SUCCESS) {
-		error("Failed to unpack DBD_STEP_START message");
-		*out_buffer = make_dbd_rc_msg(SLURM_ERROR);
-		return SLURM_ERROR;
+		comment = "Failed to unpack DBD_STEP_START message";
+		error("%s", comment);
+		rc = SLURM_ERROR;
+		goto end_it;
 	}
 
 	debug2("DBD_STEP_START: ID:%u.%u NAME:%s SUBMIT:%d", 
@@ -654,8 +1498,8 @@ static int  _step_start(void *db_conn,
 
 	if(rc && errno == 740) /* meaning data is already there */
 		rc = SLURM_SUCCESS;
-
+end_it:
 	slurmdbd_free_step_start_msg(step_start_msg);
-	*out_buffer = make_dbd_rc_msg(rc);
-	return SLURM_SUCCESS;
+	*out_buffer = make_dbd_rc_msg(rc, comment, DBD_STEP_START);
+	return rc;
 }

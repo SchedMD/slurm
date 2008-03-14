@@ -67,6 +67,7 @@
 #include "src/common/switch.h"
 #include "src/common/xstring.h"
 #include "src/common/forward.h"
+#include "src/common/assoc_mgr.h"
 
 #include "src/slurmctld/agent.h"
 #include "src/slurmctld/job_scheduler.h"
@@ -78,7 +79,6 @@
 #include "src/slurmctld/srun_comm.h"
 #include "src/slurmctld/state_save.h"
 #include "src/slurmctld/trigger_mgr.h"
-#include "src/slurmctld/assoc_mgr.h"
 
 static void         _fill_ctld_conf(slurm_ctl_conf_t * build_ptr);
 static void         _kill_job_on_msg_fail(uint32_t job_id);
@@ -2850,7 +2850,8 @@ inline static void  _slurm_rpc_accounting_remove_assocs(slurm_msg_t *msg)
 
 	if(remove_ptr->id_count) {
 		for(i=0; i<remove_ptr->id_count; i++) {
-			rc = remove_local_association(remove_ptr->ids[i]);
+			rc = assoc_mgr_remove_local_association(
+				remove_ptr->ids[i]);
 		}
 	}
 	END_TIMER2("_slurm_rpc_accounting_remove_assocs");
@@ -2879,7 +2880,7 @@ inline static void  _slurm_rpc_accounting_remove_users(slurm_msg_t *msg)
 	}
 	if(remove_ptr->name_count) {
 		for(i=0; i<remove_ptr->name_count; i++) {
-			rc = remove_local_user(remove_ptr->names[i]);
+			rc = assoc_mgr_remove_local_user(remove_ptr->names[i]);
 		}
 	}
 	END_TIMER2("_slurm_rpc_accounting_remove_users");
@@ -2907,7 +2908,8 @@ inline static void  _slurm_rpc_accounting_update_assocs(slurm_msg_t *msg)
 		return;
 	}
 	if(update_ptr->update_list && list_count(update_ptr->update_list))
-		rc = update_local_associations(update_ptr->update_list);
+		rc = assoc_mgr_update_local_associations(
+			update_ptr->update_list);
 	
 	END_TIMER2("_slurm_rpc_accounting_update_assocs");
 
@@ -2934,7 +2936,7 @@ inline static void  _slurm_rpc_accounting_update_users(slurm_msg_t *msg)
 		return;
 	}
 	if(update_ptr->update_list && list_count(update_ptr->update_list))
-		rc = update_local_users(update_ptr->update_list);
+		rc = assoc_mgr_update_local_users(update_ptr->update_list);
 	
 	END_TIMER2("_slurm_rpc_accounting_update_users");
 
