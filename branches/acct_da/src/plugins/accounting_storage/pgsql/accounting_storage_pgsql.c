@@ -379,7 +379,7 @@ static int _pgsql_acct_check_tables(PGconn *acct_pgsql_db,
 		if(pgsql_db_create_table(acct_pgsql_db, 
 					 acct_coord_table, 
 					 acct_coord_table_fields,
-					 ", primary key (acct(20), name(20)))")
+					 ", primary key (acct(20), user(20)))")
 		   == SLURM_ERROR)
 			return SLURM_ERROR;
 	} else {

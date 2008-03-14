@@ -309,7 +309,7 @@ static int _mysql_acct_check_tables(MYSQL *acct_mysql_db)
 
 	if(mysql_db_create_table(acct_mysql_db, acct_coord_table,
 				 acct_coord_table_fields,
-				 ", primary key (acct(20), name(20)))")
+				 ", primary key (acct(20), user(20)))")
 	   == SLURM_ERROR)
 		return SLURM_ERROR;
 
@@ -1072,8 +1072,8 @@ extern List acct_storage_p_get_associations(MYSQL *acct_mysql_db,
 		"fairshare",
 		"max_jobs",
 		"max_nodes_per_job",
-		"max_wall_duration_per_job"
-		"max_cpu_secs_per_job",
+		"max_wall_duration_per_job",
+		"max_cpu_seconds_per_job",
 	};
 	enum {
 		ASSOC_REQ_ID,
