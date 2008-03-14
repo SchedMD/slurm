@@ -88,9 +88,11 @@ static int message_timeout = -1;
 
 /* STATIC FUNCTIONS */
 static void _remap_slurmctld_errno(void);
+static char *_global_auth_key(void);
 
 /* define the slurmdbd_options flag */
 slurm_dbd_conf_t *slurmdbd_conf = NULL;
+
 /**********************************************************************\
  * protocol configuration functions
 \**********************************************************************/
@@ -626,7 +628,44 @@ char *slurm_get_accounting_storage_pass(void)
 		storage_pass = xstrdup(conf->accounting_storage_pass);
 		slurm_conf_unlock();
 	}
-	return storage_pass;	
+	return storage_pass;
+}
+
+/* _global_auth_key
+ * returns the storage password from slurmctld_conf or slurmdbd_conf object
+ * cache value in local buffer for best performance
+ * RET char *    - storage password
+ */
+static char *_global_auth_key(void)
+{
+	static bool loaded_storage_pass = false;
+	static char storage_pass[512] = "\0";
+	slurm_ctl_conf_t *conf;
+
+	if(loaded_storage_pass)
+		return storage_pass;
+
+	if(slurmdbd_conf) {
+		if(slurmdbd_conf->storage_pass) {
+			if(strlen(slurmdbd_conf->storage_pass) > 
+			   sizeof(storage_pass))
+				fatal("StoragePass is too long");
+			strncpy(storage_pass, slurmdbd_conf->storage_pass, 
+				sizeof(storage_pass));
+		}
+	} else {
+		conf = slurm_conf_lock();
+		if(conf->accounting_storage_pass) {
+			if(strlen(conf->accounting_storage_pass) > 
+			   sizeof(storage_pass))
+				fatal("AccountingStoragePass is too long");
+			strncpy(storage_pass, conf->accounting_storage_pass, 
+				sizeof(storage_pass));
+		}
+		slurm_conf_unlock();
+	}
+	loaded_storage_pass = true;
+	return storage_pass;
 }
 
 /* slurm_get_accounting_storage_port
@@ -1324,7 +1363,11 @@ int slurm_receive_msg(slurm_fd fd, slurm_msg_t *msg, int timeout)
 		rc = ESLURM_PROTOCOL_INCOMPLETE_PACKET;
 		goto total_return;
 	}
-	rc = g_slurm_auth_verify( auth_cred, NULL, 2, NULL );
+	if(header.flags & SLURM_GLOBAL_AUTH_KEY)
+		rc = g_slurm_auth_verify( auth_cred, NULL, 2, 
+					  _global_auth_key() );
+	else
+		rc = g_slurm_auth_verify( auth_cred, NULL, 2, NULL );
 	
 	if (rc != SLURM_SUCCESS) {
 		error( "authentication: %s ",
@@ -1339,6 +1382,7 @@ int slurm_receive_msg(slurm_fd fd, slurm_msg_t *msg, int timeout)
 	 * Unpack message body 
 	 */
 	msg->msg_type = header.msg_type;
+	msg->flags = header.flags;
 	
 	if ( (header.body_length > remaining_buf(buffer)) ||
 	     (unpack_msg(msg, buffer) != SLURM_SUCCESS) ) {
@@ -1474,7 +1518,11 @@ List slurm_receive_msgs(slurm_fd fd, int steps, int timeout)
 		rc = ESLURM_PROTOCOL_INCOMPLETE_PACKET;
 		goto total_return;
 	}
-	rc = g_slurm_auth_verify( auth_cred, NULL, 2, NULL );
+	if(header.flags & SLURM_GLOBAL_AUTH_KEY)
+		rc = g_slurm_auth_verify( auth_cred, NULL, 2, 
+					  _global_auth_key() );
+	else
+		rc = g_slurm_auth_verify( auth_cred, NULL, 2, NULL );
 	
 	if(rc != SLURM_SUCCESS) {
 		error("authentication: %s ",
@@ -1489,6 +1537,7 @@ List slurm_receive_msgs(slurm_fd fd, int steps, int timeout)
 	 * Unpack message body 
 	 */
 	msg.msg_type = header.msg_type;
+	msg.flags = header.flags;
 	
 	if((header.body_length > remaining_buf(buffer)) ||
 	   (unpack_msg(&msg, buffer) != SLURM_SUCCESS)) {
@@ -1671,7 +1720,11 @@ int slurm_receive_msg_and_forward(slurm_fd fd, slurm_addr *orig_addr,
 		rc = ESLURM_PROTOCOL_INCOMPLETE_PACKET;
 		goto total_return;
 	}
-	rc = g_slurm_auth_verify( auth_cred, NULL, 2, NULL );
+	if(header.flags & SLURM_GLOBAL_AUTH_KEY)
+		rc = g_slurm_auth_verify( auth_cred, NULL, 2, 
+					  _global_auth_key() );
+	else
+		rc = g_slurm_auth_verify( auth_cred, NULL, 2, NULL );
 	
 	if (rc != SLURM_SUCCESS) {
 		error( "authentication: %s ",
@@ -1686,6 +1739,7 @@ int slurm_receive_msg_and_forward(slurm_fd fd, slurm_addr *orig_addr,
 	 * Unpack message body 
 	 */
 	msg->msg_type = header.msg_type;
+	msg->flags = header.flags;
 	
 	if ( (header.body_length > remaining_buf(buffer)) ||
 	     (unpack_msg(msg, buffer) != SLURM_SUCCESS) ) {
@@ -1754,11 +1808,16 @@ int slurm_send_node_msg(slurm_fd fd, slurm_msg_t * msg)
 	Buf      buffer;
 	int      rc;
 	void *   auth_cred;
+	uint16_t auth_flags = SLURM_PROTOCOL_NO_FLAGS;
 	
 	/* 
 	 * Initialize header with Auth credential and message type.
 	 */
-	auth_cred = g_slurm_auth_create(NULL, 2, NULL);
+	if (msg->flags & SLURM_GLOBAL_AUTH_KEY) {
+		auth_flags = SLURM_GLOBAL_AUTH_KEY;
+		auth_cred = g_slurm_auth_create(NULL, 2, _global_auth_key());
+	} else
+		auth_cred = g_slurm_auth_create(NULL, 2, NULL);
 	if (auth_cred == NULL) {
 		error("authentication: %s",
 		       g_slurm_auth_errstr(g_slurm_auth_errno(NULL)) );
