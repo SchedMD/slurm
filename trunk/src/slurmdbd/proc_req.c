@@ -88,7 +88,7 @@ static int   _modify_user_admin_level(void *db_conn,
 static int   _node_state(void *db_conn,
 			 Buf in_buffer, Buf *out_buffer, uint32_t *uid);
 static char *_node_state_string(uint16_t node_state);
-static int   _register_ctld(void *db_conn,
+static int   _register_ctld(void *db_conn, slurm_fd fd,
 			    Buf in_buffer, Buf *out_buffer, uint32_t *uid);
 static int   _remove_accounts(void *db_conn,
 			      Buf in_buffer, Buf *out_buffer, uint32_t *uid);
@@ -109,6 +109,7 @@ static int   _step_start(void *db_conn,
 			 Buf in_buffer, Buf *out_buffer, uint32_t *uid);
 
 /* Process an incoming RPC
+ * orig_fd IN - originating file descriptor of the RPC
  * msg IN - incoming message
  * msg_size IN - size of msg in bytes
  * first IN - set if first message received on the socket
@@ -116,7 +117,8 @@ static int   _step_start(void *db_conn,
  * uid IN/OUT - user ID who initiated the RPC
  * RET SLURM_SUCCESS or error code */
 extern int 
-proc_req(void *db_conn, char *msg, uint32_t msg_size,
+proc_req(void *db_conn, slurm_fd orig_fd, 
+	 char *msg, uint32_t msg_size,
 	 bool first, Buf *out_buffer, uint32_t *uid)
 {
 	int rc = SLURM_SUCCESS;
@@ -254,7 +256,8 @@ proc_req(void *db_conn, char *msg, uint32_t msg_size,
 					 in_buffer, out_buffer, uid);
 			break;
 		case DBD_REGISTER_CTLD:
-			rc = _register_ctld(db_conn, in_buffer, out_buffer, uid);
+			rc = _register_ctld(db_conn, orig_fd, in_buffer, 
+					    out_buffer, uid);
 			break;
 		default:
 			comment = "Invalid RPC";
@@ -560,12 +563,14 @@ end_it:
 	return rc;
 }
 
-static int   _register_ctld(void *db_conn,
+static int   _register_ctld(void *db_conn, slurm_fd orig_fd,
 			    Buf in_buffer, Buf *out_buffer, uint32_t *uid)
 {
 	dbd_register_ctld_msg_t *register_ctld_msg = NULL;
 	int rc = SLURM_ERROR;
-	char *comment = NULL;
+	char *comment = NULL, ip[32];
+	slurm_addr ctld_address;
+	uint16_t orig_port;
 
 	if (*uid != slurmdbd_conf->slurm_user_id) {
 		comment = "DBD_REGISTER_CTLD message from invalid uid";
@@ -582,39 +587,38 @@ static int   _register_ctld(void *db_conn,
 	}
 	info("DBD_REGISTER_CTLD: called for %s(%u)",
 	       register_ctld_msg->cluster_name, register_ctld_msg->port);
-
-	/* FIXME */
-	rc = SLURM_SUCCESS;
+	slurm_get_peer_addr(orig_fd, &ctld_address);
+	slurm_get_ip_str(&ctld_address, &orig_port, ip, sizeof(ip));
+	info("slurmctld at ip:%s, port:%d", ip, register_ctld_msg->port);
+	/* 
+	 * FIXME: save ip/port/cluster_name pair
+	 * when new ctld_address for a given cluster_name arrives
+	 * replace the old one.
+	 * Outgoing must have:
+	 * out_msg.flags = SLURM_GLOBAL_AUTH_KEY;
+	 */
 #if 0
 {
-/* test code only */
-slurm_fd fd;
-slurm_addr ctld_address;
-
-slurm_get_stream_addr(conn->newsockfd,  &ctld_address);
-((struct sockaddr_in) ctld_address).sin_port = htons(port);
-
-fd =  slurm_open_stream(&ctld_address);
-if (fd < 0)
-	error("can not open socket back to slurmctld");
-else {
-	uint32_t msg_size, nw_size;
-	Buf buffer;
-	slurmdbd_msg_t req;
-	dbd_rc_msg_t msg;
-	msg.return_code = 5;
-	req.msg_type = DBD_RC;
-	req.data = &msg;
-	buffer = pack_slurmdbd_msg(&req);
-	msg_size = get_buf_offset(buffer);
-	nw_size = htonl(msg_size);
-	slurm_write_stream(fd, (char *)&nw_size, sizeof(nw_size));
-	slurm_write_stream(fd, get_buf_data(buffer), msg_size);
-	free_buf(buffer);
-	slurm_close_stream(fd);
-}
+	/* Code to validate communications back to slurmctld */
+	slurm_fd fd;
+	slurm_set_addr_char(&ctld_address, register_ctld_msg->port, ip);
+	fd =  slurm_open_msg_conn(&ctld_address);
+	if (fd < 0) {
+		error("can not open socket back to slurmctld");
+	} else {
+		slurm_msg_t out_msg;
+		slurm_msg_t_init(&out_msg);
+		out_msg.msg_type = REQUEST_PING;
+		out_msg.flags = SLURM_GLOBAL_AUTH_KEY;
+		slurm_send_node_msg(fd, &out_msg);
+		/* We need to add matching recv_msg function
+		 * for an arbitray fd */
+		slurm_close_stream(fd);
+	}
 }
 #endif
+	rc = SLURM_SUCCESS;
+
 end_it:
 	slurmdbd_free_register_ctld_msg(register_ctld_msg);
 	*out_buffer = make_dbd_rc_msg(rc, comment, DBD_REGISTER_CTLD);
