@@ -1098,7 +1098,8 @@ extern int jobacct_storage_p_step_start(PGconn *acct_pgsql_db,
 		(int)step_ptr->start_time, step_ptr->name,
 		JOB_RUNNING, cpus, node_list);
 	rc = pgsql_db_query(acct_pgsql_db, query);
-			 
+	xfree(query);
+
 	return rc;
 #else
 	return SLURM_ERROR;
@@ -1232,6 +1233,7 @@ extern int jobacct_storage_p_step_complete(PGconn *acct_pgsql_db,
 		ave_cpu,	/* ave cpu */
 		step_ptr->job_ptr->db_index, step_ptr->step_id);
 	rc = pgsql_db_query(acct_pgsql_db, query);
+	xfree(query);
 		 
 	return rc;
 #else
