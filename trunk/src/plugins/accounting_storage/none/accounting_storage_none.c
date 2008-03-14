@@ -215,29 +215,22 @@ extern List acct_storage_p_get_associations(void *db_conn,
 	return NULL;
 }
 
-extern int acct_storage_p_get_hourly_usage(void *db_conn,
-					   acct_association_rec_t *acct_assoc,
-					   time_t start, time_t end)
+extern int acct_storage_p_get_usage(void *db_conn,
+				    acct_usage_type_t type,
+				    acct_association_rec_t *acct_assoc,
+				    time_t start, time_t end)
 {
 	int rc = SLURM_SUCCESS;
 
 	return rc;
 }
 
-extern int acct_storage_p_get_daily_usage(void *db_conn,
-					  acct_association_rec_t *acct_assoc,
-					  time_t start, time_t end)
+extern int acct_storage_p_roll_usage(void *db_conn, 
+				     acct_usage_type_t type,
+				     time_t start)
 {
 	int rc = SLURM_SUCCESS;
 
-	return rc;
-}
-
-extern int acct_storage_p_get_monthly_usage(void *db_conn,
-					    acct_association_rec_t *acct_assoc,
-					    time_t start, time_t end)
-{
-	int rc = SLURM_SUCCESS;
 	return rc;
 }
 
@@ -263,30 +256,11 @@ extern int clusteracct_storage_p_cluster_procs(void *db_conn,
 	return SLURM_SUCCESS;
 }
 
-extern int clusteracct_storage_p_get_hourly_usage(
-	void *db_conn,	
-	acct_cluster_rec_t *cluster_rec, time_t start, 
-	time_t end)
+extern int clusteracct_storage_p_get_usage(
+	void *db_conn, acct_usage_type_t type, 
+	acct_cluster_rec_t *cluster_rec, time_t start, time_t end)
 {
 
-	return SLURM_SUCCESS;
-}
-
-extern int clusteracct_storage_p_get_daily_usage(
-	void *db_conn,
-	acct_cluster_rec_t *cluster_rec, time_t start, 
-	time_t end)
-{
-	
-	return SLURM_SUCCESS;
-}
-
-extern int clusteracct_storage_p_get_monthly_usage(
-	void *db_conn,
-	acct_cluster_rec_t *cluster_rec, time_t start, 
-	time_t end)
-{
-	
 	return SLURM_SUCCESS;
 }
 

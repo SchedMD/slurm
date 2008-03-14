@@ -91,6 +91,7 @@ static void _remap_slurmctld_errno(void);
 
 /* define the slurmdbd_options flag */
 slurm_dbd_conf_t *slurmdbd_conf = NULL;
+
 /**********************************************************************\
  * protocol configuration functions
 \**********************************************************************/

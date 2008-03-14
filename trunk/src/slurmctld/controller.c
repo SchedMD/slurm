@@ -77,6 +77,7 @@
 #include "src/common/uid.h"
 #include "src/common/xsignal.h"
 #include "src/common/xstring.h"
+#include "src/common/assoc_mgr.h"
 
 #include "src/slurmctld/agent.h"
 #include "src/slurmctld/job_scheduler.h"
@@ -89,7 +90,6 @@
 #include "src/slurmctld/srun_comm.h"
 #include "src/slurmctld/state_save.h"
 #include "src/slurmctld/trigger_mgr.h"
-#include "src/slurmctld/assoc_mgr.h"
 
 
 #define CRED_LIFE         60	/* Job credential lifetime in seconds */
@@ -141,6 +141,7 @@ slurmctld_config_t slurmctld_config;
 int bg_recover = DEFAULT_RECOVER;
 char *slurmctld_cluster_name = NULL; /* name of cluster */
 void *acct_db_conn = NULL;
+int accounting_enforce = 0;
 
 /* Local variables */
 static int	daemonize = DEFAULT_DAEMONIZE;
@@ -269,9 +270,15 @@ int main(int argc, char *argv[])
 	} else {
 		slurmctld_config.daemonize = 0;
 	}
-	info("slurmctld version %s started", SLURM_VERSION);
 
+	/* This needs to be copied for other modules to access the
+	 * memory, it will report 'HashBase' if it is not duped
+	 */
 	slurmctld_cluster_name = xstrdup(slurmctld_conf.cluster_name);
+	accounting_enforce = slurmctld_conf.accounting_storage_enforce;
+
+	info("slurmctld version %s started on cluster %s",
+	     SLURM_VERSION, slurmctld_cluster_name);
 
 	if ((error_code = gethostname_short(node_name, MAX_SLURM_NAME)))
 		fatal("getnodename error %s", slurm_strerror(error_code));
@@ -308,7 +315,7 @@ int main(int argc, char *argv[])
 		fatal( "failed to initialize accounting_storage plugin");
 	
 	acct_db_conn = acct_storage_g_get_connection();
-	assoc_mgr_init(acct_db_conn);
+	assoc_mgr_init(acct_db_conn, accounting_enforce);
 
 	if (slurm_jobacct_gather_init() != SLURM_SUCCESS )
 		fatal( "failed to initialize jobacct_gather plugin");
@@ -430,7 +437,7 @@ int main(int argc, char *argv[])
 	acct_storage_g_close_connection(acct_db_conn);
 	slurm_acct_storage_fini();	/* Save pending message traffic */
 	assoc_mgr_fini();
-	xfree(slurmctld_cluster_name);
+
 #ifdef MEMORY_LEAK_DEBUG
 	/* This should purge all allocated memory,   *\
 	\*   Anything left over represents a leak.   */
@@ -482,6 +489,7 @@ int main(int argc, char *argv[])
 		sleep(1);
 	}
 #endif
+	xfree(slurmctld_cluster_name);
 	if (cnt) {
 		info("Slurmctld shutdown completing with %d active agent "
 			"threads\n\n", cnt);
@@ -841,6 +849,7 @@ static int _gold_cluster_ready()
 		procs += node_ptr->config_ptr->cpus;
 #endif
 	}
+	info("sending info for cluster %s", slurmctld_cluster_name);
 
 	rc = clusteracct_storage_g_cluster_procs(acct_db_conn,
 						 slurmctld_cluster_name,
