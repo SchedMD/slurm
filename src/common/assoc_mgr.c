@@ -175,7 +175,8 @@ extern int assoc_mgr_fill_in_assoc(void *db_conn, acct_association_rec_t *assoc,
 		if(_get_local_association_list(db_conn, enforce) == SLURM_ERROR)
 			return SLURM_ERROR;
 
-	if(!local_association_list && !enforce) 
+	if((!local_association_list || !list_count(local_association_list))
+	   && !enforce) 
 		return SLURM_SUCCESS;
 
 	if(!assoc->id) {
@@ -292,7 +293,7 @@ extern int assoc_mgr_fill_in_user(void *db_conn, acct_user_rec_t *user,
 		if(_get_local_user_list(db_conn, enforce) == SLURM_ERROR)
 			return SLURM_ERROR;
 
-	if(!local_user_list && !enforce) 
+	if((!local_user_list || !list_count(local_user_list)) && !enforce) 
 		return SLURM_SUCCESS;
 
 	slurm_mutex_lock(&local_user_lock);
@@ -519,7 +520,8 @@ extern int assoc_mgr_validate_assoc_id(void *db_conn,
 		if(_get_local_association_list(db_conn, enforce) == SLURM_ERROR)
 			return SLURM_ERROR;
 
-	if(!local_association_list && !enforce) 
+	if((!local_association_list || !list_count(local_association_list))
+	   && !enforce) 
 		return SLURM_SUCCESS;
 	
 	slurm_mutex_lock(&local_association_lock);
@@ -531,8 +533,9 @@ extern int assoc_mgr_validate_assoc_id(void *db_conn,
 	list_iterator_destroy(itr);
 	slurm_mutex_unlock(&local_association_lock);
 
-	if(found_assoc)
+	if(found_assoc || !enforce)
 		return SLURM_SUCCESS;
+
 	return SLURM_ERROR;
 }
 
