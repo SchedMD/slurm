@@ -398,6 +398,10 @@ extern Buf pack_slurmdbd_msg(slurmdbd_msg_t *req)
 		slurmdbd_pack_step_start_msg((dbd_step_start_msg_t *)req->data,
 					      buffer);
 		break;
+	case DBD_REGISTER_CTLD:
+		slurmdbd_pack_register_ctld_msg((dbd_register_ctld_msg_t *)
+						req->data, buffer);
+		break;
 	default:
 		error("slurmdbd: Invalid message type %u", req->msg_type);
 		free_buf(buffer);
@@ -501,6 +505,10 @@ extern int unpack_slurmdbd_msg(slurmdbd_msg_t *resp, Buf buffer)
 	case DBD_STEP_START:
 		rc = slurmdbd_unpack_step_start_msg(
 			(dbd_step_start_msg_t **)&resp->data, buffer);
+		break;
+	case DBD_REGISTER_CTLD:
+		rc = slurmdbd_unpack_register_ctld_msg(
+			(dbd_register_ctld_msg_t **)&resp->data, buffer);
 		break;
 	default:
 		error("slurmdbd: Invalid message type %u", resp->msg_type);
@@ -1281,6 +1289,14 @@ void inline slurmdbd_free_rc_msg(dbd_rc_msg_t *msg)
 	}
 }
 
+void inline slurmdbd_free_register_ctld_msg(dbd_register_ctld_msg_t *msg)
+{
+	if(msg) {
+		xfree(msg->cluster_name);
+		xfree(msg);
+	}
+}
+
 void inline slurmdbd_free_roll_usage_msg(dbd_roll_usage_msg_t *msg)
 {
 	xfree(msg);
@@ -1953,6 +1969,30 @@ slurmdbd_unpack_rc_msg(dbd_rc_msg_t **msg, Buf buffer)
 
 unpack_error:
 	slurmdbd_free_rc_msg(msg_ptr);
+	*msg = NULL;
+	return SLURM_ERROR;
+}
+
+void inline 
+slurmdbd_pack_register_ctld_msg(dbd_register_ctld_msg_t *msg, Buf buffer)
+{
+	packstr(msg->cluster_name, buffer);
+	pack16(msg->port, buffer);
+}
+
+int inline 
+slurmdbd_unpack_register_ctld_msg(dbd_register_ctld_msg_t **msg, Buf buffer)
+{
+	uint32_t uint32_tmp;
+	dbd_register_ctld_msg_t *msg_ptr = xmalloc(
+					sizeof(dbd_register_ctld_msg_t));
+	*msg = msg_ptr;
+	safe_unpackstr_xmalloc(&msg_ptr->cluster_name, &uint32_tmp, buffer);
+	safe_unpack16(&msg_ptr->port, buffer);
+	return SLURM_SUCCESS;
+
+unpack_error:
+	slurmdbd_free_register_ctld_msg(msg_ptr);
 	*msg = NULL;
 	return SLURM_ERROR;
 }

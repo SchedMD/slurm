@@ -88,6 +88,8 @@ static int   _modify_user_admin_level(void *db_conn,
 static int   _node_state(void *db_conn,
 			 Buf in_buffer, Buf *out_buffer, uint32_t *uid);
 static char *_node_state_string(uint16_t node_state);
+static int   _register_ctld(void *db_conn,
+			    Buf in_buffer, Buf *out_buffer, uint32_t *uid);
 static int   _remove_accounts(void *db_conn,
 			      Buf in_buffer, Buf *out_buffer, uint32_t *uid);
 static int   _remove_account_coords(void *db_conn,
@@ -250,6 +252,9 @@ proc_req(void *db_conn, char *msg, uint32_t msg_size,
 		case DBD_STEP_START:
 			rc = _step_start(db_conn,
 					 in_buffer, out_buffer, uid);
+			break;
+		case DBD_REGISTER_CTLD:
+			rc = _register_ctld(db_conn, in_buffer, out_buffer, uid);
 			break;
 		default:
 			comment = "Invalid RPC";
@@ -552,6 +557,67 @@ static int _cluster_procs(void *db_conn,
 end_it:
 	slurmdbd_free_cluster_procs_msg(cluster_procs_msg);
 	*out_buffer = make_dbd_rc_msg(rc, comment, DBD_CLUSTER_PROCS);
+	return rc;
+}
+
+static int   _register_ctld(void *db_conn,
+			    Buf in_buffer, Buf *out_buffer, uint32_t *uid)
+{
+	dbd_register_ctld_msg_t *register_ctld_msg = NULL;
+	int rc = SLURM_ERROR;
+	char *comment = NULL;
+
+	if (*uid != slurmdbd_conf->slurm_user_id) {
+		comment = "DBD_REGISTER_CTLD message from invalid uid";
+		error("DBD_REGISTER_CTLD message from invalid uid %u", *uid);
+		rc = ESLURM_ACCESS_DENIED;
+		goto end_it;
+	}
+	if (slurmdbd_unpack_register_ctld_msg(&register_ctld_msg, in_buffer) !=
+	    SLURM_SUCCESS) {
+		comment = "Failed to unpack DBD_REGISTER_CTLD message";
+		error("%s", comment);
+		rc = SLURM_ERROR;
+		goto end_it;
+	}
+	info("DBD_REGISTER_CTLD: called for %s(%u)",
+	       register_ctld_msg->cluster_name, register_ctld_msg->port);
+
+	/* FIXME */
+	rc = SLURM_SUCCESS;
+#if 0
+{
+/* test code only */
+slurm_fd fd;
+slurm_addr ctld_address;
+
+slurm_get_stream_addr(conn->newsockfd,  &ctld_address);
+((struct sockaddr_in) ctld_address).sin_port = htons(port);
+
+fd =  slurm_open_stream(&ctld_address);
+if (fd < 0)
+	error("can not open socket back to slurmctld");
+else {
+	uint32_t msg_size, nw_size;
+	Buf buffer;
+	slurmdbd_msg_t req;
+	dbd_rc_msg_t msg;
+	msg.return_code = 5;
+	req.msg_type = DBD_RC;
+	req.data = &msg;
+	buffer = pack_slurmdbd_msg(&req);
+	msg_size = get_buf_offset(buffer);
+	nw_size = htonl(msg_size);
+	slurm_write_stream(fd, (char *)&nw_size, sizeof(nw_size));
+	slurm_write_stream(fd, get_buf_data(buffer), msg_size);
+	free_buf(buffer);
+	slurm_close_stream(fd);
+}
+}
+#endif
+end_it:
+	slurmdbd_free_register_ctld_msg(register_ctld_msg);
+	*out_buffer = make_dbd_rc_msg(rc, comment, DBD_REGISTER_CTLD);
 	return rc;
 }
 

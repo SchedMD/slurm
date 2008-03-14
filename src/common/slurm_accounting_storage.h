@@ -429,6 +429,8 @@ extern int clusteracct_storage_g_cluster_procs(void *db_conn,
 					       uint32_t procs,
 					       time_t event_time);
 
+extern int clusteracct_storage_g_register_ctld(char *cluster, uint16_t port);
+
 /* 
  * get info from the storage 
  * IN:  type period specifier
