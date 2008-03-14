@@ -99,9 +99,9 @@ typedef struct {
 
 typedef struct {
 	List accounting_list; /* list of cluster_accounting_rec_t *'s */
-	char *backup;
+	char *control_host;
+	uint32_t control_port;
 	char *name;
-	char *primary;
 } acct_cluster_rec_t;
 
 typedef struct {

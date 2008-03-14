@@ -1905,6 +1905,7 @@ void inline
 slurmdbd_pack_node_state_msg(dbd_node_state_msg_t *msg, Buf buffer)
 {
 	packstr(msg->cluster_name, buffer);
+	pack32(msg->cpu_count, buffer);
 	packstr(msg->hostlist, buffer);
 	packstr(msg->reason, buffer);
 	pack16(msg->new_state, buffer);
@@ -1920,6 +1921,7 @@ slurmdbd_unpack_node_state_msg(dbd_node_state_msg_t **msg, Buf buffer)
 	msg_ptr = xmalloc(sizeof(dbd_node_state_msg_t));
 	*msg = msg_ptr;
 	safe_unpackstr_xmalloc(&msg_ptr->cluster_name, &uint32_tmp, buffer);
+	safe_unpack32(&msg_ptr->cpu_count, buffer);
 	safe_unpackstr_xmalloc(&msg_ptr->hostlist, &uint32_tmp, buffer);
 	safe_unpackstr_xmalloc(&msg_ptr->reason,   &uint32_tmp, buffer);
 	safe_unpack16(&msg_ptr->new_state, buffer);

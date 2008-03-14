@@ -89,7 +89,7 @@ char *cluster_day_table = "cluster_day_usage_table";
 char *cluster_hour_table = "cluster_hour_usage_table";
 char *cluster_month_table = "cluster_month_usage_table";
 char *cluster_table = "cluster_table";
-char *event_table = "event_table";
+char *event_table = "cluster_event_table";
 char *job_table = "job_table";
 char *step_table = "step_table";
 char *txn_table = "txn_table";
@@ -145,7 +145,7 @@ static int _pgsql_acct_check_tables(PGconn *acct_pgsql_db,
 	storage_field_t acct_coord_table_fields[] = {
 		{ "deleted", "smallint default 0" },
 		{ "acct", "text not null" },
-		{ "name", "text not null" },
+		{ "user", "text not null" },
 		{ NULL, NULL}		
 	};
 
@@ -196,8 +196,8 @@ static int _pgsql_acct_check_tables(PGconn *acct_pgsql_db,
 		{ "mod_time", "bigint default 0" },
 		{ "deleted", "smallint default 0" },
 		{ "name", "text not null" },
-		{ "primary_node", "text not null" },
-		{ "backup_node", "text not null" },
+		{ "control_host", "tinytext not null" },
+		{ "control_port", "int not null" },
 		{ NULL, NULL}		
 	};
 
@@ -218,6 +218,7 @@ static int _pgsql_acct_check_tables(PGconn *acct_pgsql_db,
 	storage_field_t event_table_fields[] = {
 		{ "node_name", "text default '' not null" },
 		{ "cluster", "text not null" },
+		{ "cpu_count", "int not null" },
 		{ "period_start", "bigint unsigned not null" },
 		{ "period_end", "bigint default 0 not null" },
 		{ "reason", "text not null" },
@@ -836,21 +837,135 @@ extern int clusteracct_storage_p_node_down(PGconn *acct_pgsql_db,
 					   struct node_record *node_ptr,
 					   time_t event_time, char *reason)
 {
+#ifdef HAVE_PGSQL
+	uint16_t cpus;
+	int rc = SLURM_ERROR;
+	char *query = NULL;
+	char *my_reason;
+
+	if (slurmctld_conf.fast_schedule && !slurmdbd_conf)
+		cpus = node_ptr->config_ptr->cpus;
+	else
+		cpus = node_ptr->cpus;
+
+	if (reason)
+		my_reason = reason;
+	else
+		my_reason = node_ptr->reason;
+	
+	query = xstrdup_printf(
+		"update %s set period_end=%d where cluster='%s' "
+		"and period_end=0 and node_name='%s'",
+		event_table, (event_time-1), cluster, node_ptr->name);
+	rc = pgsql_db_query(acct_pgsql_db, query);
+	xfree(query);
+
+	debug2("inserting %s(%s) with %u cpus", node_ptr->name, cluster, cpus);
+
+	query = xstrdup_printf(
+		"insert into %s "
+		"(node_name, cluster, cpu_count, period_start, reason) "
+		"values ('%s', '%s', %u, %d, '%s')",
+		event_table, node_ptr->name, cluster, 
+		cpus, event_time, my_reason);
+	rc = pgsql_db_query(acct_pgsql_db, query);
+	xfree(query);
+
 	return SLURM_SUCCESS;
+#else
+	return SLURM_ERROR;
+#endif
 }
 extern int clusteracct_storage_p_node_up(PGconn *acct_pgsql_db,
 					 char *cluster,
 					 struct node_record *node_ptr,
 					 time_t event_time)
 {
-	return SLURM_SUCCESS;
+#ifdef HAVE_PGSQL
+	char* query;
+	int rc = SLURM_ERROR;
+
+	query = xstrdup_printf(
+		"update %s set period_end=%d where cluster='%s' "
+		"and period_end=0 and node_name='%s'",
+		event_table, (event_time-1), cluster, node_ptr->name);
+	rc = pgsql_db_query(acct_pgsql_db, query);
+	xfree(query);
+	return rc;
+#else
+	return SLURM_ERROR;
+#endif
 }
 extern int clusteracct_storage_p_cluster_procs(PGconn *acct_pgsql_db,
 					       char *cluster,
 					       uint32_t procs,
 					       time_t event_time)
 {
-	return SLURM_SUCCESS;
+#ifdef HAVE_PGSQL
+	static uint32_t last_procs = -1;
+	char* query;
+	int rc = SLURM_ERROR;
+	PGresult *result = NULL;
+	int got_procs = 0;
+
+	if (procs == last_procs) {
+		debug3("we have the same procs as before no need to "
+		       "update the database.");
+		return SLURM_SUCCESS;
+	}
+	last_procs = procs;
+
+	/* Record the processor count */
+#if _DEBUG
+	slurm_make_time_str(&event_time, tmp_buff, sizeof(tmp_buff));
+	info("cluster_acct_procs: %s has %u total CPUs at %s", 
+	     cluster, procs, tmp_buff);
+#endif
+	query = xstrdup_printf(
+		"select cpu_count from %s where cluster='%s' "
+		"and period_end=0 and node_name=''",
+		event_table, cluster);
+	if(!(result = pgsql_db_query_ret(acct_pgsql_db, query))) {
+		xfree(query);
+		return SLURM_ERROR;
+	}
+	xfree(query);
+
+	/* we only are checking the first one here */
+	if(!PQntuples(result)) {
+		debug("We don't have an entry for this machine %s"
+		      "most likely a first time running.", cluster);
+		goto add_it;
+	}
+	got_procs = atoi(PQgetvalue(result, 0, 0));
+	if(got_procs == procs) {
+		debug("%s hasn't changed since last entry", cluster);
+		goto end_it;
+	}
+	debug("%s has changed from %d cpus to %u", cluster, got_procs, procs);
+
+	query = xstrdup_printf(
+		"update %s set period_end=%u where cluster='%s' "
+		"and period_end=0 and node_name=''",
+		event_table, (event_time-1), cluster);
+	rc = pgsql_db_query(acct_pgsql_db, query);
+	xfree(query);
+	if(rc != SLURM_SUCCESS)
+		goto end_it;
+add_it:
+	query = xstrdup_printf(
+		"insert into %s (cluster, cpu_count, period_start) "
+		"values ('%s', %u, %d)",
+		event_table, cluster, procs, event_time);
+	rc = pgsql_db_query(acct_pgsql_db, query);
+	xfree(query);
+
+end_it:
+	PQclear(result);
+	return rc;
+#else
+	return SLURM_ERROR;
+#endif
 }
 
 extern int clusteracct_storage_p_get_usage(
