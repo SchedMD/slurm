@@ -1839,7 +1839,8 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 	assoc_rec.uid       = job_desc->user_id;
 	assoc_rec.partition = part_ptr->name;
 	assoc_rec.acct      = job_desc->account;
-	if (get_assoc_id(acct_db_conn, &assoc_rec)) {
+	if (get_assoc_id(acct_db_conn, &assoc_rec) && 
+	    slurmctld_conf.accounting_storage_enforce) {
 		info("_job_create: invalid account or partition for user %u",
 		     job_desc->user_id);
 		error_code = ESLURM_INVALID_ACCOUNT;
