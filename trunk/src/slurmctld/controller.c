@@ -379,6 +379,8 @@ int main(int argc, char *argv[])
 		clusteracct_storage_g_register_ctld(
 					slurmctld_conf.cluster_name, 
 					slurmctld_conf.slurmctld_port);
+		/* FIXME: wait for response and treat SLURM_ERROR as fatal
+		 * if accounting_storage_enforce is set */
 
 		/*
 		 * create attached thread for signal handling
