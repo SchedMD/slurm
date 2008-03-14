@@ -458,6 +458,16 @@ extern void pack_acct_user_rec(void *in, Buf buffer)
 	uint32_t count = 0;
 	acct_coord_rec_t *coord = NULL;
 
+	if(!object) {
+		pack16(0, buffer);
+		pack32(0, buffer);
+		packstr("", buffer);
+		pack16(0, buffer);
+		packstr("", buffer);
+		pack32(0, buffer);
+		return;
+	}
+ 
 	pack16((uint16_t)object->admin_level, buffer);
 	if(object->coord_accts)
 		count = list_count(object->coord_accts);
@@ -512,6 +522,15 @@ extern void pack_acct_account_rec(void *in, Buf buffer)
 	uint32_t count = 0;
 	acct_account_rec_t *object = (acct_account_rec_t *)in;
 
+	if(!object) {
+		pack32(0, buffer);
+		packstr("", buffer);
+		pack16(0, buffer);
+		packstr("", buffer);
+		packstr("", buffer);
+		return;
+	}
+ 
 	if(object->coordinators)
 		count = list_count(object->coordinators);
 	
@@ -563,6 +582,12 @@ extern void pack_acct_coord_rec(void *in, Buf buffer)
 {
 	acct_coord_rec_t *object = (acct_coord_rec_t *)in;
 
+	if(!object) {
+		packstr("", buffer);
+		pack16(0, buffer);
+		return;
+	}
+
 	packstr(object->acct_name, buffer);
 	pack16(object->sub_acct, buffer);
 }
@@ -586,7 +611,17 @@ extern void pack_cluster_accounting_rec(void *in, Buf buffer)
 {
 	cluster_accounting_rec_t *object = (cluster_accounting_rec_t *)in;
 	
-	pack32(object->alloc_secs, buffer);
+	if(!object) {
+		pack32(0, buffer);
+		pack32(0, buffer);
+		pack32(0, buffer);
+		pack32(0, buffer);
+		pack_time(0, buffer);
+		pack32(0, buffer);
+		return;
+	}
+
+ 	pack32(object->alloc_secs, buffer);
 	pack32(object->cpu_count, buffer);
 	pack32(object->down_secs, buffer);
 	pack32(object->idle_secs, buffer);
@@ -622,6 +657,14 @@ extern void pack_acct_cluster_rec(void *in, Buf buffer)
 	uint32_t count = 0;
 	acct_cluster_rec_t *object = (acct_cluster_rec_t *)in;
 
+	if(!object) {
+		pack32(0, buffer);
+		packstr("", buffer);
+		packstr("", buffer);
+		packstr("", buffer);
+		return;
+	}
+ 
 	if(object->accounting_list)
 		count = list_count(object->accounting_list);
 
@@ -672,6 +715,12 @@ extern void pack_acct_accounting_rec(void *in, Buf buffer)
 {
 	acct_accounting_rec_t *object = (acct_accounting_rec_t *)in;
 	
+	if(!object) {
+		pack_time(0, buffer);
+		pack32(0, buffer);
+		return;
+	}
+
 	pack_time(object->period_start, buffer);
 	pack32(object->alloc_secs, buffer);
 }
@@ -700,6 +749,26 @@ extern void pack_acct_association_rec(void *in, Buf buffer)
 	uint32_t count = 0;
 	acct_association_rec_t *object = (acct_association_rec_t *)in;	
 	
+	if(!object) {
+		pack32(0, buffer);
+		packstr("", buffer);
+		packstr("", buffer);
+		pack32(0, buffer);
+		pack32(0, buffer);
+		pack32(0, buffer);
+		pack32(0, buffer);
+		pack32(0, buffer);
+		pack32(0, buffer);
+		pack32(0, buffer);
+		pack32(0, buffer);
+		packstr("", buffer);
+		pack32(0, buffer);
+		pack32(0, buffer);
+		pack32(0, buffer);
+		packstr("", buffer);
+		return;
+	}
+ 
 	if(object->accounting_list)
 		count = list_count(object->accounting_list);
 
@@ -779,6 +848,14 @@ extern void pack_acct_user_cond(void *in, Buf buffer)
 	acct_user_cond_t *object = (acct_user_cond_t *)in;
 	uint32_t count = 0;
 
+	if(!object) {
+		pack16(0, buffer);
+		pack32(0, buffer);
+		pack16(0, buffer);
+		pack32(0, buffer);
+		return;
+	}
+ 
 	pack16((uint16_t)object->admin_level, buffer);
 
 	if(object->def_acct_list)
@@ -851,7 +928,14 @@ extern void pack_acct_account_cond(void *in, Buf buffer)
 	acct_account_cond_t *object = (acct_account_cond_t *)in;
 	uint32_t count = 0;
 
-	if(object->acct_list)
+	if(!object) {
+		pack32(0, buffer);
+		pack32(0, buffer);
+		pack16(0, buffer);
+		pack32(0, buffer);
+		return;
+	}
+ 	if(object->acct_list)
 		count = list_count(object->acct_list);
 
 	pack32(count, buffer);
@@ -939,6 +1023,12 @@ extern void pack_acct_cluster_cond(void *in, Buf buffer)
 	acct_cluster_cond_t *object = (acct_cluster_cond_t *)in;
 	uint32_t count = 0;
 
+	if(!object) {
+		packstr("", buffer);
+		pack32(0, buffer);
+		return;
+	}
+ 
 	if(object->cluster_list)
 		count = list_count(object->cluster_list);
 	
@@ -983,6 +1073,20 @@ extern void pack_acct_association_cond(void *in, Buf buffer)
 
 	ListIterator itr = NULL;
 	acct_association_cond_t *object = (acct_association_cond_t *)in;
+
+	if(!object) {
+		pack32(0, buffer);
+		pack32(0, buffer);
+		pack32(0, buffer);
+		pack32(0, buffer);
+		pack32(0, buffer);
+		packstr("", buffer);
+		pack32(0, buffer);
+		pack32(0, buffer);
+		pack32(0, buffer);
+		pack32(0, buffer);
+		return;
+	}
 
 	if(object->acct_list)
 		count = list_count(object->acct_list);
