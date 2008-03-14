@@ -1363,10 +1363,10 @@ int slurm_receive_msg(slurm_fd fd, slurm_msg_t *msg, int timeout)
 		rc = ESLURM_PROTOCOL_INCOMPLETE_PACKET;
 		goto total_return;
 	}
-	if(header.flags & SLURM_GLOBAL_AUTH_KEY)
+	if(header.flags & SLURM_GLOBAL_AUTH_KEY) {
 		rc = g_slurm_auth_verify( auth_cred, NULL, 2, 
 					  _global_auth_key() );
-	else
+	} else
 		rc = g_slurm_auth_verify( auth_cred, NULL, 2, NULL );
 	
 	if (rc != SLURM_SUCCESS) {
@@ -1518,10 +1518,10 @@ List slurm_receive_msgs(slurm_fd fd, int steps, int timeout)
 		rc = ESLURM_PROTOCOL_INCOMPLETE_PACKET;
 		goto total_return;
 	}
-	if(header.flags & SLURM_GLOBAL_AUTH_KEY)
+	if(header.flags & SLURM_GLOBAL_AUTH_KEY) {
 		rc = g_slurm_auth_verify( auth_cred, NULL, 2, 
 					  _global_auth_key() );
-	else
+	} else
 		rc = g_slurm_auth_verify( auth_cred, NULL, 2, NULL );
 	
 	if(rc != SLURM_SUCCESS) {
@@ -1720,10 +1720,10 @@ int slurm_receive_msg_and_forward(slurm_fd fd, slurm_addr *orig_addr,
 		rc = ESLURM_PROTOCOL_INCOMPLETE_PACKET;
 		goto total_return;
 	}
-	if(header.flags & SLURM_GLOBAL_AUTH_KEY)
+	if(header.flags & SLURM_GLOBAL_AUTH_KEY) {
 		rc = g_slurm_auth_verify( auth_cred, NULL, 2, 
 					  _global_auth_key() );
-	else
+	} else
 		rc = g_slurm_auth_verify( auth_cred, NULL, 2, NULL );
 	
 	if (rc != SLURM_SUCCESS) {
@@ -1830,7 +1830,7 @@ int slurm_send_node_msg(slurm_fd fd, slurm_msg_t * msg)
 	}
 	forward_wait(msg);
 	
-	init_header(&header, msg, SLURM_PROTOCOL_NO_FLAGS);
+	init_header(&header, msg, msg->flags);
 	
 	/*
 	 * Pack header into buffer for transmission
@@ -2220,6 +2220,7 @@ int slurm_send_rc_msg(slurm_msg_t *msg, int rc)
 	}
 	rc_msg.return_code = rc;
 
+	slurm_msg_t_init(&resp_msg);
 	resp_msg.address  = msg->address;
 	resp_msg.msg_type = RESPONSE_SLURM_RC;
 	resp_msg.data     = &rc_msg;
