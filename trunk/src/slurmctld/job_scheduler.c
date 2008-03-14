@@ -247,6 +247,8 @@ extern int schedule(void)
 #endif
 	static bool wiki_sched = false;
 	static bool wiki_sched_test = false;
+	time_t now = time(NULL);
+
 	DEF_TIMERS;
 
 	START_TIMER;
@@ -326,7 +328,7 @@ extern int schedule(void)
 #endif
 		} else if (error_code == SLURM_SUCCESS) {	
 			/* job initiated */
-			last_job_update = time(NULL);
+			last_job_update = now;
 #ifdef HAVE_BG
 			select_g_get_jobinfo(job_ptr->select_jobinfo, 
 					     SELECT_DATA_IONODES, 
@@ -355,13 +357,15 @@ extern int schedule(void)
 			info("schedule: JobId=%u non-runnable: %s",
 				job_ptr->job_id, 
 				slurm_strerror(error_code));
-			last_job_update = time(NULL);
-			job_ptr->job_state = JOB_FAILED;
-			job_ptr->exit_code = 1;
-			job_ptr->state_reason = FAIL_BAD_CONSTRAINTS;
-			job_ptr->start_time = job_ptr->end_time = time(NULL);
-			job_completion_logger(job_ptr);
-			delete_job_details(job_ptr);
+			if (!wiki_sched) {
+				last_job_update = now;
+				job_ptr->job_state = JOB_FAILED;
+				job_ptr->exit_code = 1;
+				job_ptr->state_reason = FAIL_BAD_CONSTRAINTS;
+				job_ptr->start_time = job_ptr->end_time = now;
+				job_completion_logger(job_ptr);
+				delete_job_details(job_ptr);
+			}
 		}
 	}
 

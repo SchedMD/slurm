@@ -209,6 +209,7 @@ documents those changes that are of interest to users and admins.
  -- Add salloc options --chdir and --get-user-env (for Moab).
  -- Modify scontrol update to support job comment changes.
  -- Do not clear a DRAINED node's reason field when slurmctld restarts.
+ -- Do not kill a pending job if Moab or Maui try to start it on unusable nodes.
  
 * Changes in SLURM 1.2.24
 =========================
