@@ -104,18 +104,14 @@ typedef struct slurm_acct_storage_ops {
 				    acct_cluster_cond_t *cluster_q);
 	List (*get_associations)   (void *db_conn,
 				    acct_association_cond_t *assoc_q);
-	int  (*get_hourly_usage)   (void *db_conn,
+	int  (*get_usage)          (void *db_conn,
+				    acct_usage_type_t type,
 				    void *acct_assoc,
 				    time_t start, 
 				    time_t end);
-	int (*get_daily_usage)     (void *db_conn,
-				    void *acct_assoc,
-				    time_t start, 
-				    time_t end);
-	int (*get_monthly_usage)   (void *db_conn,
-				    void *acct_assoc,
-				    time_t start, 
-				    time_t end);
+	int (*roll_usage)          (void *db_conn,
+				    acct_usage_type_t type,
+				    time_t start);
 	int  (*node_down)          (void *db_conn,
 				    char *cluster,
 				    struct node_record *node_ptr,
@@ -128,14 +124,9 @@ typedef struct slurm_acct_storage_ops {
 	int  (*cluster_procs)      (void *db_conn,
 				    char *cluster,
 				    uint32_t procs, time_t event_time);
-	int  (*c_get_hourly_usage) (void *db_conn,
+	int  (*c_get_usage)        (void *db_conn,
+				    acct_usage_type_t type,
 				    void *cluster_rec, 
-				    time_t start, time_t end);
-	int (*c_get_daily_usage)   (void *db_conn,
-				    void *cluster_rec, 
-				    time_t start, time_t end);
-	int (*c_get_monthly_usage) (void *db_conn,
-				    void *cluster_rec,
 				    time_t start, time_t end);
 	int  (*job_start)          (void *db_conn,
 				    struct job_record *job_ptr);
@@ -208,15 +199,12 @@ static slurm_acct_storage_ops_t * _acct_storage_get_ops(
 		"acct_storage_p_get_accts",
 		"acct_storage_p_get_clusters",
 		"acct_storage_p_get_associations",
-		"acct_storage_p_get_hourly_usage",
-		"acct_storage_p_get_daily_usage",
-		"acct_storage_p_get_monthly_usage",
+		"acct_storage_p_get_usage",
+		"acct_storage_p_roll_usage",
 		"clusteracct_storage_p_node_down",
 		"clusteracct_storage_p_node_up",
 		"clusteracct_storage_p_cluster_procs",
-		"clusteracct_storage_p_get_hourly_usage",
-		"clusteracct_storage_p_get_daily_usage",
-		"clusteracct_storage_p_get_monthly_usage",
+		"clusteracct_storage_p_get_usage",
 		"jobacct_storage_p_job_start",
 		"jobacct_storage_p_job_complete",
 		"jobacct_storage_p_step_start",
@@ -1446,34 +1434,22 @@ extern List acct_storage_g_get_associations(void *db_conn,
 		(db_conn, assoc_q);
 }
 
-extern int acct_storage_g_get_hourly_usage(void *db_conn,
-					   void *acct_assoc,
-					   time_t start, time_t end)
+extern int acct_storage_g_get_usage(void *db_conn, acct_usage_type_t type,
+				    void *acct_assoc, time_t start, time_t end)
 {
 	if (slurm_acct_storage_init(NULL) < 0)
 		return SLURM_ERROR;
-	return (*(g_acct_storage_context->ops.get_hourly_usage))
-		(db_conn, acct_assoc, start, end);
+	return (*(g_acct_storage_context->ops.get_usage))
+		(db_conn, type, acct_assoc, start, end);
 }
 
-extern int acct_storage_g_get_daily_usage(void *db_conn,
-					  void *acct_assoc,
-					  time_t start, time_t end)
+extern int acct_storage_g_roll_usage(void *db_conn, acct_usage_type_t type,
+				     time_t start)
 {
 	if (slurm_acct_storage_init(NULL) < 0)
 		return SLURM_ERROR;
-	return (*(g_acct_storage_context->ops.get_daily_usage))
-		(db_conn, acct_assoc, start, end);
-}
-
-extern int acct_storage_g_get_monthly_usage(void *db_conn,
-					    void *acct_assoc,
-					    time_t start, time_t end)
-{
-	if (slurm_acct_storage_init(NULL) < 0)
-		return SLURM_ERROR;
-	return (*(g_acct_storage_context->ops.get_monthly_usage))
-		(db_conn, acct_assoc, start, end);
+	return (*(g_acct_storage_context->ops.roll_usage))
+		(db_conn, type, start);
 }
 
 extern int clusteracct_storage_g_node_down(void *db_conn,
@@ -1512,31 +1488,14 @@ extern int clusteracct_storage_g_cluster_procs(void *db_conn,
 }
 
 
-extern int clusteracct_storage_g_get_hourly_usage(
-	void *db_conn, void *cluster_rec, time_t start, time_t end)
+extern int clusteracct_storage_g_get_usage(
+	void *db_conn, acct_usage_type_t type, void *cluster_rec,
+	time_t start, time_t end)
 {
 	if (slurm_acct_storage_init(NULL) < 0)
 		return SLURM_ERROR;
-	return (*(g_acct_storage_context->ops.c_get_hourly_usage))
-		(db_conn, cluster_rec, start, end);
-}
-
-extern int clusteracct_storage_g_get_daily_usage(
-	void *db_conn, void *cluster_rec, time_t start, time_t end)
-{
-	if (slurm_acct_storage_init(NULL) < 0)
-		return SLURM_ERROR;
-	return (*(g_acct_storage_context->ops.c_get_daily_usage))
-		(db_conn, cluster_rec, start, end);
-}
-
-extern int clusteracct_storage_g_get_monthly_usage(
-	void *db_conn, void *cluster_rec, time_t start, time_t end)
-{
-	if (slurm_acct_storage_init(NULL) < 0)
-		return SLURM_ERROR;
-	return (*(g_acct_storage_context->ops.c_get_monthly_usage))
-		(db_conn, cluster_rec, start, end);
+	return (*(g_acct_storage_context->ops.c_get_usage))
+		(db_conn, type, cluster_rec, start, end);
 }
 
 /* 

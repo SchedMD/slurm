@@ -70,25 +70,17 @@ typedef enum {
 	DBD_ADD_USERS,          /* Add new user to the mix              */
 	DBD_CLUSTER_PROCS,	/* Record total processors on cluster	*/
 	DBD_GET_ACCOUNTS,	/* Get account information		*/
-	DBD_GET_ASSOCS,         /* Get assocation information	*/
-	DBD_GET_ASSOC_DAY,	/* Get assoc daily usage information	*/
-	DBD_GET_ASSOC_HOUR,     /* Get assoc hourly usage information	*/
-	DBD_GET_ASSOC_MONTH,	/* Get assoc monthly usage information	*/
+	DBD_GET_ASSOCS,         /* Get assocation information   	*/
+	DBD_GET_ASSOC_USAGE,  	/* Get assoc usage information  	*/
 	DBD_GET_CLUSTERS,	/* Get account information		*/
-	DBD_GET_CLUSTER_HOUR,	/* Get cluster hourly usage information	*/
-	DBD_GET_CLUSTER_DAY,	/* Get cluster hourly usage information	*/
-	DBD_GET_CLUSTER_MONTH,	/* Get cluster hourly usage information	*/
+	DBD_GET_CLUSTER_USAGE, 	/* Get cluster usage information	*/
 	DBD_GET_JOBS,		/* Get job information			*/
 	DBD_GET_USERS,  	/* Get account information		*/
 	DBD_GOT_ACCOUNTS,	/* Response to DBD_GET_ACCOUNTS		*/
 	DBD_GOT_ASSOCS, 	/* Response to DBD_GET_ASSOCS   	*/
-	DBD_GOT_ASSOC_DAY,	/* Response to DBD_GET_ASSOC_DAY	*/
-	DBD_GOT_ASSOC_HOUR,	/* Response to DBD_GET_ASSOC_HOUR	*/
-	DBD_GOT_ASSOC_MONTH,	/* Response to DBD_GET_ASSOC_MONTH	*/
+	DBD_GOT_ASSOC_USAGE,  	/* Response to DBD_GET_ASSOC_USAGE    	*/
 	DBD_GOT_CLUSTERS,	/* Response to DBD_GET_CLUSTERS		*/
-	DBD_GOT_CLUSTER_DAY,	/* Response to DBD_GET_CLUSTER_DAY	*/
-	DBD_GOT_CLUSTER_HOUR,	/* Response to DBD_GET_CLUSTER_HOUR	*/
-	DBD_GOT_CLUSTER_MONTH,	/* Response to DBD_GET_CLUSTER_MONTH	*/
+	DBD_GOT_CLUSTER_USAGE, 	/* Response to DBD_GET_CLUSTER_USAGE   	*/
 	DBD_GOT_JOBS,		/* Response to DBD_GET_JOBS		*/
 	DBD_GOT_USERS,  	/* Response to DBD_GET_USERS		*/
 	DBD_JOB_COMPLETE,	/* Record job completion 		*/
@@ -108,6 +100,7 @@ typedef enum {
 	DBD_REMOVE_ASSOCS,      /* Remove existing association          */
 	DBD_REMOVE_CLUSTERS,    /* Remove existing cluster              */
 	DBD_REMOVE_USERS,        /* Remove existing user                 */
+	DBD_ROLL_USAGE,         /* Roll up usage                        */
 	DBD_STEP_COMPLETE,	/* Record step completion		*/
 	DBD_STEP_START		/* Record step starting			*/
 } slurmdbd_msg_type_t;
@@ -139,8 +132,14 @@ typedef struct {
 } dbd_cond_msg_t;
 
 typedef struct {
+	time_t start;
+	acct_usage_type_t type;
+} dbd_roll_usage_msg_t;
+
+typedef struct {
 	void *rec;
 	time_t start;
+	acct_usage_type_t type;
 	time_t end;
 } dbd_usage_msg_t;
 
@@ -293,7 +292,7 @@ extern int unpack_slurmdbd_msg(slurmdbd_msg_t *resp, Buf buffer);
 void inline slurmdbd_free_acct_coord_msg(dbd_acct_coord_msg_t *msg);
 void inline slurmdbd_free_cluster_procs_msg(dbd_cluster_procs_msg_t *msg);
 void inline slurmdbd_free_cond_msg(slurmdbd_msg_type_t type,
-				    dbd_cond_msg_t *msg);
+				   dbd_cond_msg_t *msg);
 void inline slurmdbd_free_get_jobs_msg(dbd_get_jobs_msg_t *msg);
 void inline slurmdbd_free_init_msg(dbd_init_msg_t *msg);
 void inline slurmdbd_free_job_complete_msg(dbd_job_comp_msg_t *msg);
@@ -305,10 +304,11 @@ void inline slurmdbd_free_modify_msg(slurmdbd_msg_type_t type,
 				      dbd_modify_msg_t *msg);
 void inline slurmdbd_free_node_state_msg(dbd_node_state_msg_t *msg);
 void inline slurmdbd_free_rc_msg(dbd_rc_msg_t *msg);
+void inline slurmdbd_free_roll_usage_msg(dbd_roll_usage_msg_t *msg);
 void inline slurmdbd_free_step_complete_msg(dbd_step_comp_msg_t *msg);
 void inline slurmdbd_free_step_start_msg(dbd_step_start_msg_t *msg);
 void inline slurmdbd_free_usage_msg(slurmdbd_msg_type_t type,
-				     dbd_usage_msg_t *msg);
+				    dbd_usage_msg_t *msg);
 
 /*****************************************************************************\
  * Pack various SlurmDBD message structures into a buffer
@@ -337,12 +337,13 @@ void inline slurmdbd_pack_modify_msg(slurmdbd_msg_type_t type,
 void inline slurmdbd_pack_node_state_msg(dbd_node_state_msg_t *msg,
 					  Buf buffer);
 void inline slurmdbd_pack_rc_msg(dbd_rc_msg_t *msg, Buf buffer);
+void inline slurmdbd_pack_roll_usage_msg(dbd_roll_usage_msg_t *msg, Buf buffer);
 void inline slurmdbd_pack_step_complete_msg(dbd_step_comp_msg_t *msg,
 					     Buf buffer);
 void inline slurmdbd_pack_step_start_msg(dbd_step_start_msg_t *msg,
 					  Buf buffer);
 void inline slurmdbd_pack_usage_msg(slurmdbd_msg_type_t type,
-				     dbd_usage_msg_t *msg, Buf buffer);
+				    dbd_usage_msg_t *msg, Buf buffer);
 
 /*****************************************************************************\
  * Unpack various SlurmDBD message structures from a buffer
@@ -371,12 +372,14 @@ int inline slurmdbd_unpack_modify_msg(slurmdbd_msg_type_t type,
 int inline slurmdbd_unpack_node_state_msg(dbd_node_state_msg_t **msg,
 					   Buf buffer);
 int inline slurmdbd_unpack_rc_msg(dbd_rc_msg_t **msg, Buf buffer);
+int inline slurmdbd_unpack_roll_usage_msg(dbd_roll_usage_msg_t **msg,
+					  Buf buffer);
 int inline slurmdbd_unpack_step_complete_msg(dbd_step_comp_msg_t **msg,
-					      Buf buffer);
+					     Buf buffer);
 int inline slurmdbd_unpack_step_start_msg(dbd_step_start_msg_t **msg,
-					   Buf buffer);
+					  Buf buffer);
 int inline slurmdbd_unpack_usage_msg(slurmdbd_msg_type_t type,
-				      dbd_usage_msg_t **msg,
-				      Buf buffer);
+				     dbd_usage_msg_t **msg,
+				     Buf buffer);
 
 #endif	/* !_SLURMDBD_DEFS_H */

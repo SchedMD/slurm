@@ -343,18 +343,10 @@ extern Buf pack_slurmdbd_msg(slurmdbd_msg_t *req)
 		slurmdbd_pack_cond_msg(
 			req->msg_type, (dbd_cond_msg_t *)req->data, buffer);
 		break;
-	case DBD_GET_ASSOC_DAY:
-	case DBD_GET_ASSOC_HOUR:
-	case DBD_GET_ASSOC_MONTH:
-	case DBD_GOT_ASSOC_DAY:
-	case DBD_GOT_ASSOC_HOUR:
-	case DBD_GOT_ASSOC_MONTH:
-	case DBD_GET_CLUSTER_HOUR:
-	case DBD_GET_CLUSTER_DAY:
-	case DBD_GET_CLUSTER_MONTH:
-	case DBD_GOT_CLUSTER_DAY:
-	case DBD_GOT_CLUSTER_HOUR:
-	case DBD_GOT_CLUSTER_MONTH:
+	case DBD_GET_ASSOC_USAGE:
+	case DBD_GOT_ASSOC_USAGE:
+	case DBD_GET_CLUSTER_USAGE:
+	case DBD_GOT_CLUSTER_USAGE:
 		slurmdbd_pack_usage_msg(
 			req->msg_type, (dbd_usage_msg_t *)req->data,
 			buffer);
@@ -452,18 +444,10 @@ extern int unpack_slurmdbd_msg(slurmdbd_msg_t *resp, Buf buffer)
 		rc = slurmdbd_unpack_cond_msg(
 			resp->msg_type, (dbd_cond_msg_t **)&resp->data, buffer);
 		break;
-	case DBD_GET_ASSOC_DAY:
-	case DBD_GET_ASSOC_HOUR:
-	case DBD_GET_ASSOC_MONTH:
-	case DBD_GOT_ASSOC_DAY:
-	case DBD_GOT_ASSOC_HOUR:
-	case DBD_GOT_ASSOC_MONTH:
-	case DBD_GET_CLUSTER_HOUR:
-	case DBD_GET_CLUSTER_DAY:
-	case DBD_GET_CLUSTER_MONTH:
-	case DBD_GOT_CLUSTER_DAY:
-	case DBD_GOT_CLUSTER_HOUR:
-	case DBD_GOT_CLUSTER_MONTH:
+	case DBD_GET_ASSOC_USAGE:
+	case DBD_GOT_ASSOC_USAGE:
+	case DBD_GET_CLUSTER_USAGE:
+	case DBD_GOT_CLUSTER_USAGE:
 		rc = slurmdbd_unpack_usage_msg(
 			resp->msg_type, (dbd_usage_msg_t **)&resp->data, 
 			buffer);
@@ -1296,6 +1280,11 @@ void inline slurmdbd_free_rc_msg(dbd_rc_msg_t *msg)
 	}
 }
 
+void inline slurmdbd_free_roll_usage_msg(dbd_roll_usage_msg_t *msg)
+{
+	xfree(msg);
+}
+
 void inline slurmdbd_free_step_complete_msg(dbd_step_comp_msg_t *msg)
 {
 	if (msg) {
@@ -1314,25 +1303,17 @@ void inline slurmdbd_free_step_start_msg(dbd_step_start_msg_t *msg)
 }
 
 void inline slurmdbd_free_usage_msg(slurmdbd_msg_type_t type,
-					 dbd_usage_msg_t *msg)
+				    dbd_usage_msg_t *msg)
 {
 	void (*destroy_rec) (void *object);
 	if (msg) {
 		switch(type) {
-		case DBD_GET_ASSOC_DAY:
-		case DBD_GET_ASSOC_HOUR:
-		case DBD_GET_ASSOC_MONTH:
-		case DBD_GOT_ASSOC_DAY:
-		case DBD_GOT_ASSOC_HOUR:
-		case DBD_GOT_ASSOC_MONTH:
+		case DBD_GET_ASSOC_USAGE:
+		case DBD_GOT_ASSOC_USAGE:
 			destroy_rec = destroy_acct_association_rec;
 			break;
-		case DBD_GET_CLUSTER_DAY:
-		case DBD_GET_CLUSTER_HOUR:
-		case DBD_GET_CLUSTER_MONTH:
-		case DBD_GOT_CLUSTER_DAY:
-		case DBD_GOT_CLUSTER_HOUR:
-		case DBD_GOT_CLUSTER_MONTH:
+		case DBD_GET_CLUSTER_USAGE:
+		case DBD_GOT_CLUSTER_USAGE:
 			destroy_rec = destroy_acct_cluster_rec;
 			break;
 		default:
@@ -1974,6 +1955,27 @@ unpack_error:
 }
 
 void inline 
+slurmdbd_pack_roll_usage_msg(dbd_roll_usage_msg_t *msg, Buf buffer)
+{
+	pack_time(msg->start, buffer);
+	pack16(msg->type, buffer);
+}
+
+int inline 
+slurmdbd_unpack_roll_usage_msg(dbd_roll_usage_msg_t **msg, Buf buffer)
+{
+	dbd_roll_usage_msg_t *msg_ptr = xmalloc(sizeof(dbd_roll_usage_msg_t));
+
+	safe_unpack_time(&msg_ptr->start, buffer);
+	safe_unpack16((uint16_t *)&msg_ptr->type, buffer);
+	
+unpack_error:
+	slurmdbd_free_roll_usage_msg(msg_ptr);
+	*msg = NULL;
+	return SLURM_ERROR;
+}
+
+void inline 
 slurmdbd_pack_step_complete_msg(dbd_step_comp_msg_t *msg, Buf buffer)
 {
 	pack32(msg->assoc_id, buffer);
@@ -2054,20 +2056,12 @@ void inline slurmdbd_pack_usage_msg(slurmdbd_msg_type_t type,
 	void (*my_rec) (void *object, Buf buffer);
 
 	switch(type) {
-	case DBD_GET_ASSOC_DAY:
-	case DBD_GET_ASSOC_HOUR:
-	case DBD_GET_ASSOC_MONTH:
-	case DBD_GOT_ASSOC_DAY:
-	case DBD_GOT_ASSOC_HOUR:
-	case DBD_GOT_ASSOC_MONTH:
+	case DBD_GET_ASSOC_USAGE:
+	case DBD_GOT_ASSOC_USAGE:
 		my_rec = pack_acct_association_rec;
 		break;
-	case DBD_GET_CLUSTER_DAY:
-	case DBD_GET_CLUSTER_HOUR:
-	case DBD_GET_CLUSTER_MONTH:
-	case DBD_GOT_CLUSTER_DAY:
-	case DBD_GOT_CLUSTER_HOUR:
-	case DBD_GOT_CLUSTER_MONTH:
+	case DBD_GET_CLUSTER_USAGE:
+	case DBD_GOT_CLUSTER_USAGE:
 		my_rec = pack_acct_cluster_rec;
 		break;
 	default:
@@ -2089,20 +2083,12 @@ int inline slurmdbd_unpack_usage_msg(slurmdbd_msg_type_t type,
 	*msg = msg_ptr;
 
 	switch(type) {
-	case DBD_GET_ASSOC_DAY:
-	case DBD_GET_ASSOC_HOUR:
-	case DBD_GET_ASSOC_MONTH:
-	case DBD_GOT_ASSOC_DAY:
-	case DBD_GOT_ASSOC_HOUR:
-	case DBD_GOT_ASSOC_MONTH:
+	case DBD_GET_ASSOC_USAGE:
+	case DBD_GOT_ASSOC_USAGE:
 		my_rec = unpack_acct_association_rec;
 		break;
-	case DBD_GET_CLUSTER_DAY:
-	case DBD_GET_CLUSTER_HOUR:
-	case DBD_GET_CLUSTER_MONTH:
-	case DBD_GOT_CLUSTER_DAY:
-	case DBD_GOT_CLUSTER_HOUR:
-	case DBD_GOT_CLUSTER_MONTH:
+	case DBD_GET_CLUSTER_USAGE:
+	case DBD_GOT_CLUSTER_USAGE:
 		my_rec = unpack_acct_cluster_rec;
 		break;
 	default:

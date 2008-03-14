@@ -99,6 +99,8 @@ static int   _remove_clusters(void *db_conn,
 			      Buf in_buffer, Buf *out_buffer, uint32_t *uid);
 static int   _remove_users(void *db_conn,
 			   Buf in_buffer, Buf *out_buffer, uint32_t *uid);
+static int   _roll_usage(void *db_conn,
+			 Buf in_buffer, Buf *out_buffer, uint32_t *uid);
 static int   _step_complete(void *db_conn,
 			    Buf in_buffer, Buf *out_buffer, uint32_t *uid);
 static int   _step_start(void *db_conn,
@@ -156,12 +158,8 @@ proc_req(void *db_conn, char *msg, uint32_t msg_size,
 		case DBD_GET_ASSOCS:
 			rc = _get_assocs(db_conn, in_buffer, out_buffer);
 			break;
-		case DBD_GET_ASSOC_DAY:
-		case DBD_GET_ASSOC_HOUR:
-		case DBD_GET_ASSOC_MONTH:
-		case DBD_GET_CLUSTER_HOUR:
-		case DBD_GET_CLUSTER_DAY:
-		case DBD_GET_CLUSTER_MONTH:
+		case DBD_GET_ASSOC_USAGE:
+		case DBD_GET_CLUSTER_USAGE:
 			rc = _get_usage(msg_type, db_conn,
 					in_buffer, out_buffer);
 			break;
@@ -240,6 +238,9 @@ proc_req(void *db_conn, char *msg, uint32_t msg_size,
 			break;
 		case DBD_REMOVE_USERS:
 			rc = _remove_users(db_conn, in_buffer, out_buffer, uid);
+			break;
+		case DBD_ROLL_USAGE:
+			rc = _roll_usage(db_conn, in_buffer, out_buffer, uid);
 			break;
 		case DBD_STEP_COMPLETE:
 			rc = _step_complete(db_conn,
@@ -679,7 +680,7 @@ static int _get_usage(uint16_t type, void *db_conn,
 	dbd_usage_msg_t *get_msg = NULL;
 	dbd_usage_msg_t got_msg;
 	uint16_t ret_type = 0;
-	int (*my_function) (void *db_conn, void *object,
+	int (*my_function) (void *db_conn, acct_usage_type_t type, void *object,
 			    time_t start, time_t end);
 	int rc = SLURM_SUCCESS;
 	char *comment = NULL;
@@ -694,29 +695,13 @@ static int _get_usage(uint16_t type, void *db_conn,
 		return SLURM_ERROR;
 	}
 	switch(type) {
-	case DBD_GET_ASSOC_DAY:
-		ret_type = DBD_GOT_ASSOC_DAY;
-		my_function = acct_storage_g_get_daily_usage;
+	case DBD_GET_ASSOC_USAGE:
+		ret_type = DBD_GOT_ASSOC_USAGE;
+		my_function = acct_storage_g_get_usage;
 		break;
-	case DBD_GET_ASSOC_HOUR:
-		ret_type = DBD_GOT_ASSOC_HOUR;
-		my_function = acct_storage_g_get_hourly_usage;
-		break;
-	case DBD_GET_ASSOC_MONTH:
-		ret_type = DBD_GOT_ASSOC_MONTH;
-		my_function = acct_storage_g_get_monthly_usage;
-		break;
-	case DBD_GET_CLUSTER_DAY:
-		ret_type = DBD_GOT_CLUSTER_DAY;
-		my_function = clusteracct_storage_g_get_daily_usage;
-		break;
-	case DBD_GET_CLUSTER_HOUR:
-		ret_type = DBD_GOT_CLUSTER_HOUR;
-		my_function = clusteracct_storage_g_get_hourly_usage;
-		break;
-	case DBD_GET_CLUSTER_MONTH:
-		ret_type = DBD_GOT_CLUSTER_MONTH;
-		my_function = clusteracct_storage_g_get_monthly_usage;
+	case DBD_GET_CLUSTER_USAGE:
+		ret_type = DBD_GOT_CLUSTER_USAGE;
+		my_function = clusteracct_storage_g_get_usage;
 		break;
 	default:
 		comment = "Unknown type of usage to get";
@@ -725,7 +710,7 @@ static int _get_usage(uint16_t type, void *db_conn,
 		return SLURM_ERROR;
 	}		
 
-	rc = (*(my_function))(db_conn, get_msg->rec,
+	rc = (*(my_function))(db_conn, get_msg->type, get_msg->rec,
 			      get_msg->start, get_msg->end);
 	slurmdbd_free_usage_msg(type, get_msg);
 
@@ -1188,7 +1173,6 @@ static int   _remove_accounts(void *db_conn,
 {
 	int rc = SLURM_ERROR;
 	dbd_cond_msg_t *get_msg = NULL;
-	acct_association_cond_t assoc_q;
 	char *comment = NULL;
 
 	debug2("DBD_REMOVE_ACCOUNTS: called");
@@ -1209,12 +1193,13 @@ static int   _remove_accounts(void *db_conn,
 	}
 	
 	rc = acct_storage_g_remove_accounts(db_conn, get_msg->cond);
-	if(rc == SLURM_SUCCESS) {
-		memset(&assoc_q, 0, sizeof(acct_association_cond_t));
-		assoc_q.acct_list =
-			((acct_account_cond_t *)get_msg->cond)->acct_list;
-		rc = acct_storage_g_remove_associations(db_conn, &assoc_q);
-	}
+/* this should be done inside the plugin */
+/* 	if(rc == SLURM_SUCCESS) { */
+/* 		memset(&assoc_q, 0, sizeof(acct_association_cond_t)); */
+/* 		assoc_q.acct_list = */
+/* 			((acct_account_cond_t *)get_msg->cond)->acct_list; */
+/* 		rc = acct_storage_g_remove_associations(db_conn, &assoc_q); */
+/* 	} */
 
 end_it:
 	slurmdbd_free_cond_msg(DBD_REMOVE_ACCOUNTS, get_msg);
@@ -1292,7 +1277,6 @@ static int   _remove_clusters(void *db_conn,
 {
 	int rc = SLURM_ERROR;
 	dbd_cond_msg_t *get_msg = NULL;
-	acct_association_cond_t assoc_q;
 	char *comment = NULL;
 
 	debug2("DBD_REMOVE_CLUSTERS: called");
@@ -1313,12 +1297,13 @@ static int   _remove_clusters(void *db_conn,
 	}
 	
 	rc = acct_storage_g_remove_clusters(db_conn, get_msg->cond);
-	if(rc == SLURM_SUCCESS) {
-		memset(&assoc_q, 0, sizeof(acct_association_cond_t));
-		assoc_q.cluster_list =
-			((acct_cluster_cond_t *)get_msg->cond)->cluster_list;
-		rc = acct_storage_g_remove_associations(db_conn, &assoc_q);
-	}
+/* this should be done inside the plugin */
+/* 	if(rc == SLURM_SUCCESS) { */
+/* 		memset(&assoc_q, 0, sizeof(acct_association_cond_t)); */
+/* 		assoc_q.cluster_list = */
+/* 			((acct_cluster_cond_t *)get_msg->cond)->cluster_list; */
+/* 		rc = acct_storage_g_remove_associations(db_conn, &assoc_q); */
+/* 	} */
 
 end_it:
 	slurmdbd_free_cond_msg(DBD_REMOVE_CLUSTERS, get_msg);
@@ -1331,10 +1316,16 @@ static int   _remove_users(void *db_conn,
 {
 	int rc = SLURM_ERROR;
 	dbd_cond_msg_t *get_msg = NULL;
-	acct_association_cond_t assoc_q;
 	char *comment = NULL;
 
 	debug2("DBD_REMOVE_USERS: called");
+
+	if(assoc_mgr_get_admin_level(db_conn, *uid) < ACCT_ADMIN_OPERATOR) {
+		comment = "User doesn't have privilege to preform this action";
+		error("%s", comment);
+		rc = ESLURM_ACCESS_DENIED;
+		goto end_it;
+	}
 
 	if (slurmdbd_unpack_cond_msg(DBD_REMOVE_USERS, &get_msg, in_buffer) !=
 	    SLURM_SUCCESS) {
@@ -1345,17 +1336,54 @@ static int   _remove_users(void *db_conn,
 	}
 	
 	rc = acct_storage_g_remove_users(db_conn, get_msg->cond);
-	if(rc == SLURM_SUCCESS) {
-		memset(&assoc_q, 0, sizeof(acct_association_cond_t));
-		assoc_q.user_list =
-			((acct_user_cond_t *)get_msg->cond)->user_list;
-		rc = acct_storage_g_remove_associations(db_conn, &assoc_q);
-	}
+/* this should be done inside the plugin */
+	/* if(rc == SLURM_SUCCESS) { */
+/* 		memset(&assoc_q, 0, sizeof(acct_association_cond_t)); */
+/* 		assoc_q.user_list = */
+/* 			((acct_user_cond_t *)get_msg->cond)->user_list; */
+/* 		rc = acct_storage_g_remove_associations(db_conn, &assoc_q); */
+/* 	} */
 
 end_it:
 	slurmdbd_free_cond_msg(DBD_REMOVE_USERS, get_msg);
 	*out_buffer = make_dbd_rc_msg(rc, comment);
 	return rc;
+}
+
+static int   _roll_usage(void *db_conn,
+			 Buf in_buffer, Buf *out_buffer, uint32_t *uid)
+{
+	dbd_roll_usage_msg_t *get_msg = NULL;
+	int rc = SLURM_SUCCESS;
+	char *comment = NULL;
+
+	info("DBD_ROLL_USAGE: called");
+
+	if(assoc_mgr_get_admin_level(db_conn, *uid) < ACCT_ADMIN_OPERATOR) {
+		comment = "User doesn't have privilege to preform this action";
+		error("%s", comment);
+		rc = ESLURM_ACCESS_DENIED;
+		goto end_it;
+	}
+
+	if (slurmdbd_unpack_roll_usage_msg(&get_msg, in_buffer) !=
+	    SLURM_SUCCESS) {
+		comment = "Failed to unpack DBD_ROLL_USAGE message"; 
+		error("%s", comment);
+		rc = SLURM_ERROR;
+		goto end_it;
+	}
+
+	rc = acct_storage_g_roll_usage(db_conn, get_msg->type, get_msg->start);
+	slurmdbd_free_roll_usage_msg(get_msg);
+
+end_it:
+	slurmdbd_free_roll_usage_msg(get_msg);
+	*out_buffer = make_dbd_rc_msg(rc, comment);
+	return SLURM_SUCCESS;
+	
+	return SLURM_SUCCESS;
+
 }
 
 static int  _step_complete(void *db_conn,

@@ -45,6 +45,13 @@
 #include <slurm/slurm_errno.h>
 
 typedef enum {
+	ACCT_USAGE_NOTSET,
+	ACCT_USAGE_HOUR,
+	ACCT_USAGE_DAY,
+	ACCT_USAGE_MONTH
+} acct_usage_type_t;
+
+typedef enum {
 	ACCT_ADMIN_NOTSET,
 	ACCT_ADMIN_NONE,
 	ACCT_ADMIN_OPERATOR,
@@ -386,38 +393,23 @@ extern List acct_storage_g_get_associations(void *db_conn,
 
 /* 
  * get info from the storage 
+ * IN:  type period specifier
  * IN/OUT:  assoc void * (acct_association_rec_t *) with the id set
  * IN:  start time stamp for records >=
  * IN:  end time stamp for records <
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
-extern int acct_storage_g_get_hourly_usage(void *db_conn, 
-					   void *assoc,
-					   time_t start, time_t end);
-
+extern int acct_storage_g_get_usage(
+	void *db_conn, acct_usage_type_t type, void *assoc,
+	time_t start, time_t end);
 /* 
- * get info from the storage 
- * IN/OUT:  assoc void * (acct_association_rec_t *) with the id set
+ * roll up data in the storage 
+ * IN:  type period specifier
  * IN:  start time stamp for records >=
- * IN:  end time stamp for records <
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
-extern int acct_storage_g_get_daily_usage(void *db_conn, 
-					  void *assoc,
-					  time_t start, time_t end);
-
-/* 
- * get info from the storage 
- * IN/OUT:  assoc void * (acct_association_rec_t *) with the id set
- * IN:  start time stamp for records >=
- * IN:  end time stamp for records <
- * IN:  params void *
- * RET: SLURM_SUCCESS on success SLURM_ERROR else
- */
-extern int acct_storage_g_get_monthly_usage(void *db_conn, 
-					    void *assoc,
-					    time_t start, time_t end);
-
+extern int acct_storage_g_roll_usage(
+	void *db_conn, acct_usage_type_t type, time_t start);
 
 /*********************** CLUSTER ACCOUNTING STORAGE **************************/
 
@@ -439,36 +431,16 @@ extern int clusteracct_storage_g_cluster_procs(void *db_conn,
 
 /* 
  * get info from the storage 
- * IN/OUT:  cluster_rec void * (account_cluster_rec_t *) with the name set
- * IN:  start time stamp for records >=
- * IN:  end time stamp for records <
- * IN:  params void *
- * RET: SLURM_SUCCESS on success SLURM_ERROR else
- */
-extern int clusteracct_storage_g_get_hourly_usage(
-	void *db_conn, void *cluster_rec, time_t start, time_t end);
-
-/* 
- * get info from the storage 
+ * IN:  type period specifier
  * IN/OUT:  cluster_rec void * (acct_cluster_rec_t *) with the name set
  * IN:  start time stamp for records >=
  * IN:  end time stamp for records <
  * IN:  params void *
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
-extern int clusteracct_storage_g_get_daily_usage(
-	void *db_conn, void *cluster_rec, time_t start, time_t end);
-
-/* 
- * get info from the storage 
- * IN/OUT:  cluster_rec void * (acct_cluster_rec_t *) with the name set
- * IN:  start time stamp for records >=
- * IN:  end time stamp for records <
- * IN:  params void *
- * RET: SLURM_SUCCESS on success SLURM_ERROR else
- */
-extern int clusteracct_storage_g_get_monthly_usage(
-	void *db_conn, void *cluster_rec, time_t start, time_t end);
+extern int clusteracct_storage_g_get_usage(
+	void *db_conn, acct_usage_type_t type, void *cluster_rec,
+	time_t start, time_t end);
 
 /* 
  * load into the storage the start of a job
