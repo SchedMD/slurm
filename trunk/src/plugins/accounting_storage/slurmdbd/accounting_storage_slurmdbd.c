@@ -625,12 +625,25 @@ extern int clusteracct_storage_p_node_down(void *db_conn,
 {
 	slurmdbd_msg_t msg;
 	dbd_node_state_msg_t req;
+	uint16_t cpus;
+	char *my_reason;
+
+	if (slurmctld_conf.fast_schedule)
+		cpus = node_ptr->config_ptr->cpus;
+	else
+		cpus = node_ptr->cpus;
+
+	if (reason)
+		my_reason = reason;
+	else
+		my_reason = node_ptr->reason;
 
 	req.cluster_name = cluster;
+	req.cpu_count = cpus;
 	req.hostlist   = node_ptr->name;
 	req.new_state  = DBD_NODE_STATE_DOWN;
 	req.event_time = event_time;
-	req.reason     = reason;
+	req.reason     = my_reason;
 	msg.msg_type   = DBD_NODE_STATE;
 	msg.data       = &req;
 

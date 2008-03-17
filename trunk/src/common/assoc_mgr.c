@@ -120,17 +120,7 @@ static int _get_local_user_list(void *db_conn, int enforce)
 		} else {
 			return SLURM_SUCCESS;
 		}		
-	} else {
-		acct_user_rec_t *user = NULL;
-		struct passwd *passwd_ptr = NULL;
-		ListIterator itr = list_iterator_create(local_user_list);
-		while((user = list_next(itr))) {
-			passwd_ptr = getpwnam(user->name);
-			if(passwd_ptr) 
-				user->uid = passwd_ptr->pw_uid;
-		}
-		list_iterator_destroy(itr);
-	}
+	} 
 
 	slurm_mutex_unlock(&local_user_lock);
 	return SLURM_SUCCESS;

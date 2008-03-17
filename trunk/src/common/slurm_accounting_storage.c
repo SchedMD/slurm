@@ -354,9 +354,8 @@ extern void destroy_acct_cluster_rec(void *object)
 	if(acct_cluster) {
 		if(acct_cluster->accounting_list)
 			list_destroy(acct_cluster->accounting_list);
-		xfree(acct_cluster->backup);
+		xfree(acct_cluster->control_host);
 		xfree(acct_cluster->name);
-		xfree(acct_cluster->primary);
 		xfree(acct_cluster);
 	}
 }
@@ -679,9 +678,9 @@ extern void pack_acct_cluster_rec(void *in, Buf buffer)
 		}
 		list_iterator_destroy(itr);
 	}
-	packstr(object->backup, buffer);
+	packstr(object->control_host, buffer);
+	pack32(object->control_port, buffer);
 	packstr(object->name, buffer);
-	packstr(object->primary, buffer);
 }
 
 extern int unpack_acct_cluster_rec(void **object, Buf buffer)
@@ -701,9 +700,9 @@ extern int unpack_acct_cluster_rec(void **object, Buf buffer)
 		unpack_cluster_accounting_rec((void *)&acct_info, buffer);
 		list_append(object_ptr->accounting_list, acct_info);
 	}
-	safe_unpackstr_xmalloc(&object_ptr->backup, &uint32_tmp, buffer);
+	safe_unpackstr_xmalloc(&object_ptr->control_host, &uint32_tmp, buffer);
+	safe_unpack32(&object_ptr->control_port, buffer);
 	safe_unpackstr_xmalloc(&object_ptr->name, &uint32_tmp, buffer);
-	safe_unpackstr_xmalloc(&object_ptr->primary, &uint32_tmp, buffer);
 
 	return SLURM_SUCCESS;
 
