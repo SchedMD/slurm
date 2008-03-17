@@ -95,7 +95,7 @@ extern List mysql_jobacct_process_get_jobs(MYSQL *acct_mysql_db,
 		"t1.alloc_cpus",
 		"t1.nodelist",
 		"t1.kill_requid",
-		"t1.qos",
+		"t1.qos"
 	};
 
 	/* if this changes you will need to edit the corresponding 
@@ -130,7 +130,7 @@ extern List mysql_jobacct_process_get_jobs(MYSQL *acct_mysql_db,
 		"t1.min_cpu",
 		"t1.min_cpu_task",
 		"t1.min_cpu_node",
-		"t1.ave_cpu",
+		"t1.ave_cpu"
 	};
 
 	enum {
@@ -193,7 +193,10 @@ extern List mysql_jobacct_process_get_jobs(MYSQL *acct_mysql_db,
 
 	if(selected_steps && list_count(selected_steps)) {
 		set = 0;
-		xstrcat(extra, " && (");
+		if(extra)
+			xstrcat(extra, " && (");
+		else
+			xstrcat(extra, " where (");
 		itr = list_iterator_create(selected_steps);
 		while((selected_step = list_next(itr))) {
 			if(set) 
@@ -210,7 +213,10 @@ extern List mysql_jobacct_process_get_jobs(MYSQL *acct_mysql_db,
 
 	if(selected_parts && list_count(selected_parts)) {
 		set = 0;
-		xstrcat(extra, " && (");
+		if(extra)
+			xstrcat(extra, " && (");
+		else
+			xstrcat(extra, " where (");
 		itr = list_iterator_create(selected_parts);
 		while((selected_part = list_next(itr))) {
 			if(set) 
@@ -241,8 +247,7 @@ extern List mysql_jobacct_process_get_jobs(MYSQL *acct_mysql_db,
 	}
 
 	//info("query = %s", query);
-	if(!(result =
-	     mysql_db_query_ret(acct_mysql_db, query))) {
+	if(!(result = mysql_db_query_ret(acct_mysql_db, query))) {
 		xfree(query);
 		list_destroy(job_list);
 		return NULL;
@@ -257,8 +262,7 @@ extern List mysql_jobacct_process_get_jobs(MYSQL *acct_mysql_db,
 
 		job->alloc_cpus = atoi(row[JOB_REQ_ALLOC_CPUS]);
 		account_rec.id = job->associd = atoi(row[JOB_REQ_ASSOCID]);
-		
-		acct_storage_p_get_assoc_id(acct_mysql_db, &account_rec);
+		assoc_mgr_fill_in_assoc(acct_mysql_db, &account_rec, 0);
 		if(account_rec.cluster) {
 			if(params->opt_cluster &&
 			   strcmp(params->opt_cluster, account_rec.cluster)) {

@@ -1211,6 +1211,7 @@ static int _node_state(void *db_conn,
 	       node_state_msg->reason, 
 	       node_state_msg->event_time);
 	node_ptr.name = node_state_msg->hostlist;
+	node_ptr.cpus = node_state_msg->cpu_count;
 
 	slurmctld_conf.fast_schedule = 0;
 

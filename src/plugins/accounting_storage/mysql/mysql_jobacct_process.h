@@ -43,7 +43,10 @@
 #ifndef _HAVE_MYSQL_JOBACCT_PROCESS_H
 #define _HAVE_MYSQL_JOBACCT_PROCESS_H
 
+#include <sys/types.h>
+#include <pwd.h>
 #include <stdlib.h>
+#include "src/common/assoc_mgr.h"
 #include "src/common/jobacct_common.h"
 #include "src/slurmdbd/read_config.h"
 #include "src/slurmctld/slurmctld.h"
