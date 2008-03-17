@@ -156,16 +156,16 @@ extern int slurm_send_slurmdbd_recv_rc_msg(slurmdbd_msg_t *req, int *resp_code)
 
 	resp = xmalloc(sizeof(slurmdbd_msg_t));
 	rc = slurm_send_recv_slurmdbd_msg(req, resp);
-	if (rc != SLURM_SUCCESS)
+	if (rc != SLURM_SUCCESS) {
 		;	/* error message already sent */
-	else if (resp->msg_type != DBD_RC) {
+	} else if (resp->msg_type != DBD_RC) {
 		error("slurmdbd: response is type DBD_RC: %d", resp->msg_type);
 		rc = SLURM_ERROR;
 	} else {	/* resp->msg_type == DBD_RC */
 		dbd_rc_msg_t *msg = resp->data;
 		*resp_code = msg->return_code;
 		if(msg->return_code != SLURM_SUCCESS)
-			error("slurmdbd(%u): from %u: %s", msg->return_code, 
+			error("slurmdbd(%d): from %u: %s", msg->return_code, 
 			      msg->sent_type, msg->comment);
 		slurmdbd_free_rc_msg(msg);
 	}
@@ -181,7 +181,7 @@ extern int slurm_send_slurmdbd_recv_rc_msg(slurmdbd_msg_t *req, int *resp_code)
 extern int slurm_send_recv_slurmdbd_msg(slurmdbd_msg_t *req, 
 					slurmdbd_msg_t *resp)
 {
-	int rc;
+	int rc = SLURM_SUCCESS;
 	Buf buffer;
 
 	xassert(req);
@@ -215,7 +215,7 @@ extern int slurm_send_recv_slurmdbd_msg(slurmdbd_msg_t *req,
 		slurm_mutex_unlock(&slurmdbd_lock);
 		return SLURM_ERROR;
 	}
-
+		
 	rc = unpack_slurmdbd_msg(resp, buffer);
 
 	free_buf(buffer);
@@ -390,6 +390,7 @@ extern Buf pack_slurmdbd_msg(slurmdbd_msg_t *req)
 		break;
 	case DBD_RC:
 		slurmdbd_pack_rc_msg((dbd_rc_msg_t *)req->data, buffer);
+		break;
 	case DBD_STEP_COMPLETE:
 		slurmdbd_pack_step_complete_msg(
 			(dbd_step_comp_msg_t *)req->data, buffer);
@@ -498,6 +499,7 @@ extern int unpack_slurmdbd_msg(slurmdbd_msg_t *resp, Buf buffer)
 	case DBD_RC:
 		rc = slurmdbd_unpack_rc_msg((dbd_rc_msg_t **)&resp->data,
 					     buffer);
+		break;
 	case DBD_STEP_COMPLETE:
 		rc = slurmdbd_unpack_step_complete_msg(
 			(dbd_step_comp_msg_t **)&resp->data, buffer);

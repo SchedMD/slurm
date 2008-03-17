@@ -317,7 +317,7 @@ static int _add_accounts(void *db_conn,
 		goto end_it;
 	}
 	
-	rc = acct_storage_g_add_accounts(db_conn, get_msg->my_list);
+	rc = acct_storage_g_add_accounts(db_conn, *uid, get_msg->my_list);
 end_it:
 	slurmdbd_free_list_msg(get_msg);
 	*out_buffer = make_dbd_rc_msg(rc, comment, DBD_ADD_ACCOUNTS);
@@ -373,7 +373,8 @@ static int _add_account_coords(void *db_conn,
 		}
 	}
 
-	rc = acct_storage_g_add_coord(db_conn, get_msg->acct, get_msg->cond);
+	rc = acct_storage_g_add_coord(db_conn, *uid, get_msg->acct,
+				      get_msg->cond);
 end_it:
 	slurmdbd_free_acct_coord_msg(get_msg);
 	*out_buffer = make_dbd_rc_msg(rc, comment, DBD_ADD_ACCOUNT_COORDS);
@@ -384,7 +385,7 @@ static int _add_assocs(void *db_conn,
 			 Buf in_buffer, Buf *out_buffer, uint32_t *uid)
 {
 	int rc = SLURM_ERROR;
-	dbd_list_msg_t *get_msg;
+	dbd_list_msg_t *get_msg = NULL;
 	char *comment = NULL;
 
 	debug2("DBD_ADD_ASSOCS: called");
@@ -412,7 +413,7 @@ static int _add_assocs(void *db_conn,
 			rc = SLURM_ERROR;
 			goto end_it;
 		}
-		if(!list_count(user.coord_accts)) {
+		if(!user.coord_accts || !list_count(user.coord_accts)) {
 			comment = "User doesn't have privilege to preform this action";
 			error("%s", comment);
 			rc = ESLURM_ACCESS_DENIED;
@@ -444,7 +445,7 @@ static int _add_assocs(void *db_conn,
 		}
 	}
 
-	rc = acct_storage_g_add_associations(db_conn, get_msg->my_list);
+	rc = acct_storage_g_add_associations(db_conn, *uid, get_msg->my_list);
 end_it:
 	slurmdbd_free_list_msg(get_msg);
 	*out_buffer = make_dbd_rc_msg(rc, comment, DBD_ADD_ASSOCS);
@@ -452,10 +453,10 @@ end_it:
 }
 
 static int _add_clusters(void *db_conn,
-			   Buf in_buffer, Buf *out_buffer, uint32_t *uid)
+			 Buf in_buffer, Buf *out_buffer, uint32_t *uid)
 {
 	int rc = SLURM_ERROR;
-	dbd_list_msg_t *get_msg;
+	dbd_list_msg_t *get_msg = NULL;
 	char *comment = NULL;
 
 	debug2("DBD_ADD_CLUSTERS: called");
@@ -474,7 +475,9 @@ static int _add_clusters(void *db_conn,
 		goto end_it;
 	}
 	
-	rc = acct_storage_g_add_clusters(db_conn, get_msg->my_list);
+	rc = acct_storage_g_add_clusters(db_conn, *uid, get_msg->my_list);
+	if(rc != SLURM_SUCCESS) 
+		comment = "Failed to add cluster.";
 
 end_it:
 	slurmdbd_free_list_msg(get_msg);
@@ -520,7 +523,7 @@ static int _add_users(void *db_conn,
 		goto end_it;
 	}
 	
-	rc = acct_storage_g_add_users(db_conn, get_msg->my_list);
+	rc = acct_storage_g_add_users(db_conn, *uid, get_msg->my_list);
 
 end_it:
 	slurmdbd_free_list_msg(get_msg);
@@ -1044,7 +1047,7 @@ static int   _modify_accounts(void *db_conn,
 	}
 	
 
-	rc = acct_storage_g_modify_accounts(db_conn,
+	rc = acct_storage_g_modify_accounts(db_conn, *uid,
 					    get_msg->cond, get_msg->rec);
 
 end_it:
@@ -1078,7 +1081,7 @@ static int   _modify_assocs(void *db_conn,
 	}
 	
 
-	rc = acct_storage_g_modify_associations(db_conn,
+	rc = acct_storage_g_modify_associations(db_conn, *uid,
 						get_msg->cond, get_msg->rec);
 end_it:
 	slurmdbd_free_modify_msg(DBD_MODIFY_ASSOCS, get_msg);
@@ -1110,7 +1113,7 @@ static int   _modify_clusters(void *db_conn,
 	
 	debug2("DBD_MODIFY_CLUSTERS: called");
 
-	rc = acct_storage_g_modify_clusters(db_conn,
+	rc = acct_storage_g_modify_clusters(db_conn, *uid,
 					    get_msg->cond, get_msg->rec);
 end_it:
 	slurmdbd_free_modify_msg(DBD_MODIFY_CLUSTERS, get_msg);
@@ -1142,7 +1145,8 @@ static int   _modify_users(void *db_conn,
 		goto end_it;
 	}
 	
-	rc = acct_storage_g_modify_users(db_conn, get_msg->cond, get_msg->rec);
+	rc = acct_storage_g_modify_users(db_conn, *uid, get_msg->cond, 
+					 get_msg->rec);
 end_it:
 	slurmdbd_free_modify_msg(DBD_MODIFY_USERS, get_msg);
 	*out_buffer = make_dbd_rc_msg(rc, comment, DBD_MODIFY_USERS);
@@ -1174,7 +1178,8 @@ static int   _modify_user_admin_level(void *db_conn,
 	
 	debug2("DBD_MODIFY_USER_ADMIN_LEVEL: called");
 
-	rc = acct_storage_g_modify_user_admin_level(db_conn, get_msg->cond);
+	rc = acct_storage_g_modify_user_admin_level(db_conn, *uid,
+						    get_msg->cond);
 end_it:
 	slurmdbd_free_modify_msg(DBD_MODIFY_USER_ADMIN_LEVEL, get_msg);
 	*out_buffer = make_dbd_rc_msg(rc, comment, DBD_MODIFY_USER_ADMIN_LEVEL);
@@ -1272,13 +1277,13 @@ static int   _remove_accounts(void *db_conn,
 		goto end_it;
 	}
 	
-	rc = acct_storage_g_remove_accounts(db_conn, get_msg->cond);
+	rc = acct_storage_g_remove_accounts(db_conn, *uid, get_msg->cond);
 /* this should be done inside the plugin */
 /* 	if(rc == SLURM_SUCCESS) { */
 /* 		memset(&assoc_q, 0, sizeof(acct_association_cond_t)); */
 /* 		assoc_q.acct_list = */
 /* 			((acct_account_cond_t *)get_msg->cond)->acct_list; */
-/* 		rc = acct_storage_g_remove_associations(db_conn, &assoc_q); */
+/* 		rc = acct_storage_g_remove_associations(db_conn, *uid, &assoc_q); */
 /* 	} */
 
 end_it:
@@ -1312,7 +1317,8 @@ static int   _remove_account_coords(void *db_conn,
 		goto end_it;
 	}
 	
-	rc = acct_storage_g_remove_coord(db_conn, get_msg->acct, get_msg->cond);
+	rc = acct_storage_g_remove_coord(db_conn, *uid, get_msg->acct,
+					 get_msg->cond);
 end_it:
 	slurmdbd_free_acct_coord_msg(get_msg);
 	*out_buffer = make_dbd_rc_msg(rc, comment, DBD_REMOVE_ACCOUNT_COORDS);
@@ -1343,7 +1349,7 @@ static int   _remove_assocs(void *db_conn,
 		goto end_it;
 	}
 	
-	rc = acct_storage_g_remove_associations(db_conn, get_msg->cond);
+	rc = acct_storage_g_remove_associations(db_conn, *uid, get_msg->cond);
 
 end_it:
 	slurmdbd_free_cond_msg(DBD_REMOVE_ASSOCS, get_msg);
@@ -1376,13 +1382,13 @@ static int   _remove_clusters(void *db_conn,
 		goto end_it;
 	}
 	
-	rc = acct_storage_g_remove_clusters(db_conn, get_msg->cond);
+	rc = acct_storage_g_remove_clusters(db_conn, *uid, get_msg->cond);
 /* this should be done inside the plugin */
 /* 	if(rc == SLURM_SUCCESS) { */
 /* 		memset(&assoc_q, 0, sizeof(acct_association_cond_t)); */
 /* 		assoc_q.cluster_list = */
 /* 			((acct_cluster_cond_t *)get_msg->cond)->cluster_list; */
-/* 		rc = acct_storage_g_remove_associations(db_conn, &assoc_q); */
+/* 		rc = acct_storage_g_remove_associations(db_conn, *uid, &assoc_q); */
 /* 	} */
 
 end_it:
@@ -1415,13 +1421,13 @@ static int   _remove_users(void *db_conn,
 		goto end_it;
 	}
 	
-	rc = acct_storage_g_remove_users(db_conn, get_msg->cond);
+	rc = acct_storage_g_remove_users(db_conn, *uid, get_msg->cond);
 /* this should be done inside the plugin */
 	/* if(rc == SLURM_SUCCESS) { */
 /* 		memset(&assoc_q, 0, sizeof(acct_association_cond_t)); */
 /* 		assoc_q.user_list = */
 /* 			((acct_user_cond_t *)get_msg->cond)->user_list; */
-/* 		rc = acct_storage_g_remove_associations(db_conn, &assoc_q); */
+/* 		rc = acct_storage_g_remove_associations(db_conn, *uid, &assoc_q); */
 /* 	} */
 
 end_it:

@@ -61,6 +61,7 @@ List sacctmgr_association_list = NULL;
 List sacctmgr_account_list = NULL;
 List sacctmgr_cluster_list = NULL;
 void *db_conn = NULL;
+uint32_t my_uid = 0;
 
 static void	_show_it (int argc, char *argv[]);
 static void	_add_it (int argc, char *argv[]);
@@ -105,6 +106,7 @@ main (int argc, char *argv[])
 	if (getenv ("SACCTMGR_ALL"))
 		all_flag= 1;
 	db_conn = acct_storage_g_get_connection();
+	my_uid = getuid();
 
 	while((opt_char = getopt_long(argc, argv, "ahioqvV",
 			long_options, &option_index)) != -1) {
@@ -596,70 +598,70 @@ static void _commit ()
 			error("This action does not have a type.");
 			break;
 		case SACCTMGR_USER_CREATE:
-			rc = acct_storage_g_add_users(db_conn, 
+			rc = acct_storage_g_add_users(db_conn, my_uid, 
 						      action->list);		
 			break;
 		case SACCTMGR_ACCOUNT_CREATE:
-			rc = acct_storage_g_add_accounts(db_conn, 
+			rc = acct_storage_g_add_accounts(db_conn, my_uid, 
 							 action->list);
 			break;
 		case SACCTMGR_CLUSTER_CREATE:
-			rc = acct_storage_g_add_clusters(db_conn, 
+			rc = acct_storage_g_add_clusters(db_conn, my_uid, 
 							 action->list);
 			break;
 		case SACCTMGR_ASSOCIATION_CREATE:
-			rc = acct_storage_g_add_associations(db_conn, 
+			rc = acct_storage_g_add_associations(db_conn, my_uid, 
 							     action->list);
 			break;
 		case SACCTMGR_USER_MODIFY:
-			rc = acct_storage_g_modify_users(db_conn, 
+			rc = acct_storage_g_modify_users(db_conn, my_uid, 
 							 action->cond,
 							 action->rec);
 			break;
 		case SACCTMGR_USER_DELETE:
-			rc = acct_storage_g_remove_users(db_conn, 
+			rc = acct_storage_g_remove_users(db_conn, my_uid, 
 							 action->cond);
 			break;
 		case SACCTMGR_ACCOUNT_MODIFY:
-			rc = acct_storage_g_modify_accounts(db_conn, 
+			rc = acct_storage_g_modify_accounts(db_conn, my_uid, 
 							    action->cond,
 							    action->rec);
 			break;
 		case SACCTMGR_ACCOUNT_DELETE:
-			rc = acct_storage_g_remove_accounts(db_conn, 
+			rc = acct_storage_g_remove_accounts(db_conn, my_uid, 
 							    action->cond);
 			break;
 		case SACCTMGR_CLUSTER_MODIFY:
-			rc = acct_storage_g_modify_clusters(db_conn, 
+			rc = acct_storage_g_modify_clusters(db_conn, my_uid, 
 							    action->cond,
 							    action->rec);
 			break;
 		case SACCTMGR_CLUSTER_DELETE:
-			rc = acct_storage_g_remove_clusters(db_conn, 
+			rc = acct_storage_g_remove_clusters(db_conn, my_uid, 
 							    action->cond);
 			break;
 		case SACCTMGR_ASSOCIATION_MODIFY:
-			rc = acct_storage_g_modify_associations(db_conn, 
+			rc = acct_storage_g_modify_associations(db_conn, my_uid, 
 								action->cond,
 								action->rec);
 			break;
 		case SACCTMGR_ASSOCIATION_DELETE:
 			rc = acct_storage_g_remove_associations(
-				db_conn, 
+				db_conn, my_uid, 
 				action->cond);
 			break;
 		case SACCTMGR_ADMIN_MODIFY:
 			rc = acct_storage_g_modify_user_admin_level(
-				db_conn, 
+				db_conn, my_uid, 
 				action->cond);
 			break;
 		case SACCTMGR_COORD_CREATE:
-			rc = acct_storage_g_add_coord(db_conn, 
+			rc = acct_storage_g_add_coord(db_conn, my_uid, 
 						      action->rec,
 						      action->cond);
 			break;
 		case SACCTMGR_COORD_DELETE:
-			rc = acct_storage_g_remove_coord(db_conn, 
+			rc = acct_storage_g_remove_coord(db_conn, my_uid, 
 							 action->rec,
 							 action->cond);
 			break;	

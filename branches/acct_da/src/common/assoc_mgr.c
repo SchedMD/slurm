@@ -60,20 +60,23 @@ static int _get_local_association_list(void *db_conn, int enforce)
 		list_destroy(local_association_list);
 
 	memset(&assoc_q, 0, sizeof(acct_association_cond_t));
-	assoc_q.cluster_list = list_create(slurm_destroy_char);
-	cluster_name = xstrdup(local_cluster_name);
-	if(!cluster_name) {
-		if(enforce && !slurmdbd_conf) {
-			error("_get_local_association_list: "
-			      "no cluster name here going to get "
-			      "all associations.");
-		}
-	} else 
-		list_append(assoc_q.cluster_list, cluster_name);
-	
+	if(local_cluster_name) {
+		assoc_q.cluster_list = list_create(slurm_destroy_char);
+		cluster_name = xstrdup(local_cluster_name);
+		if(!cluster_name) {
+			if(enforce && !slurmdbd_conf) {
+				error("_get_local_association_list: "
+				      "no cluster name here going to get "
+				      "all associations.");
+			}
+		} else 
+			list_append(assoc_q.cluster_list, cluster_name);
+	}
+
 	local_association_list =
 		acct_storage_g_get_associations(db_conn, &assoc_q);
-	list_destroy(assoc_q.cluster_list);
+	if(assoc_q.cluster_list)
+		list_destroy(assoc_q.cluster_list);
 	
 	if(!local_association_list) {
 		slurm_mutex_unlock(&local_association_lock);
@@ -130,10 +133,11 @@ extern int assoc_mgr_init(void *db_conn, int enforce)
 {
 	if(!local_cluster_name && !slurmdbd_conf)
 		local_cluster_name = slurm_get_cluster_name();
-	
+
 	if(!local_association_list) 
 		if(_get_local_association_list(db_conn, enforce) == SLURM_ERROR)
 			return SLURM_ERROR;
+
 	if(!local_user_list) 
 		if(_get_local_user_list(db_conn, enforce) == SLURM_ERROR)
 			return SLURM_ERROR;

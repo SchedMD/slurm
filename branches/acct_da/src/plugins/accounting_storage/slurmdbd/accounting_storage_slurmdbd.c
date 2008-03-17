@@ -144,7 +144,7 @@ extern int acct_storage_p_close_connection(void *db_conn)
 	return SLURM_SUCCESS;
 }
 
-extern int acct_storage_p_add_users(void *db_conn, List user_list)
+extern int acct_storage_p_add_users(void *db_conn, uint32_t uid, List user_list)
 {
 	slurmdbd_msg_t req;
 	dbd_list_msg_t get_msg;
@@ -162,7 +162,7 @@ extern int acct_storage_p_add_users(void *db_conn, List user_list)
 	return rc;
 }
 
-extern int acct_storage_p_add_coord(void *db_conn,
+extern int acct_storage_p_add_coord(void *db_conn, uint32_t uid,
 				    char *acct, acct_user_cond_t *user_q)
 {
 	slurmdbd_msg_t req;
@@ -182,7 +182,7 @@ extern int acct_storage_p_add_coord(void *db_conn,
 	return rc;
 }
 
-extern int acct_storage_p_add_accts(void *db_conn, List acct_list)
+extern int acct_storage_p_add_accts(void *db_conn, uint32_t uid, List acct_list)
 {
 	slurmdbd_msg_t req;
 	dbd_list_msg_t get_msg;
@@ -200,7 +200,7 @@ extern int acct_storage_p_add_accts(void *db_conn, List acct_list)
 	return rc;
 }
 
-extern int acct_storage_p_add_clusters(void *db_conn, List cluster_list)
+extern int acct_storage_p_add_clusters(void *db_conn, uint32_t uid, List cluster_list)
 {
 	slurmdbd_msg_t req;
 	dbd_list_msg_t get_msg;
@@ -210,15 +210,16 @@ extern int acct_storage_p_add_clusters(void *db_conn, List cluster_list)
 
 	req.msg_type = DBD_ADD_CLUSTERS;
 	req.data = &get_msg;
+
 	rc = slurm_send_slurmdbd_recv_rc_msg(&req, &resp_code);
 
-	if(resp_code != SLURM_SUCCESS)
+	if(resp_code != SLURM_SUCCESS) {
 		rc = resp_code;
-
+	}
 	return rc;
 }
 
-extern int acct_storage_p_add_associations(void *db_conn,
+extern int acct_storage_p_add_associations(void *db_conn, uint32_t uid,
 					   List association_list)
 {
 	slurmdbd_msg_t req;
@@ -237,7 +238,7 @@ extern int acct_storage_p_add_associations(void *db_conn,
 	return rc;
 }
 
-extern int acct_storage_p_modify_users(void *db_conn,
+extern int acct_storage_p_modify_users(void *db_conn, uint32_t uid,
 				       acct_user_cond_t *user_q,
 				       acct_user_rec_t *user)
 {
@@ -258,7 +259,7 @@ extern int acct_storage_p_modify_users(void *db_conn,
 	return rc;
 }
 
-extern int acct_storage_p_modify_user_admin_level(void *db_conn,
+extern int acct_storage_p_modify_user_admin_level(void *db_conn, uint32_t uid,
 						  acct_user_cond_t *user_q)
 {
 	slurmdbd_msg_t req;
@@ -278,7 +279,7 @@ extern int acct_storage_p_modify_user_admin_level(void *db_conn,
 	return rc;
 }
 
-extern int acct_storage_p_modify_accts(void *db_conn,
+extern int acct_storage_p_modify_accts(void *db_conn, uint32_t uid,
 				       acct_account_cond_t *acct_q,
 				       acct_account_rec_t *acct)
 {
@@ -299,7 +300,7 @@ extern int acct_storage_p_modify_accts(void *db_conn,
 	return rc;
 }
 
-extern int acct_storage_p_modify_clusters(void *db_conn,
+extern int acct_storage_p_modify_clusters(void *db_conn, uint32_t uid,
 					  acct_cluster_cond_t *cluster_q,
 					  acct_cluster_rec_t *cluster)
 {
@@ -320,7 +321,7 @@ extern int acct_storage_p_modify_clusters(void *db_conn,
 	return rc;
 }
 
-extern int acct_storage_p_modify_associations(void *db_conn,
+extern int acct_storage_p_modify_associations(void *db_conn, uint32_t uid,
 					      acct_association_cond_t *assoc_q,
 					      acct_association_rec_t *assoc)
 {
@@ -341,7 +342,7 @@ extern int acct_storage_p_modify_associations(void *db_conn,
 	return rc;
 }
 
-extern int acct_storage_p_remove_users(void *db_conn,
+extern int acct_storage_p_remove_users(void *db_conn, uint32_t uid,
 				       acct_user_cond_t *user_q)
 {
 	slurmdbd_msg_t req;
@@ -360,7 +361,7 @@ extern int acct_storage_p_remove_users(void *db_conn,
 	return rc;
 }
 
-extern int acct_storage_p_remove_coord(void *db_conn,
+extern int acct_storage_p_remove_coord(void *db_conn, uint32_t uid,
 				       char *acct, acct_user_cond_t *user_q)
 {
 	slurmdbd_msg_t req;
@@ -380,7 +381,7 @@ extern int acct_storage_p_remove_coord(void *db_conn,
 	return rc;
 }
 
-extern int acct_storage_p_remove_accts(void *db_conn,
+extern int acct_storage_p_remove_accts(void *db_conn, uint32_t uid,
 				       acct_account_cond_t *acct_q)
 {
 	slurmdbd_msg_t req;
@@ -399,7 +400,7 @@ extern int acct_storage_p_remove_accts(void *db_conn,
 	return rc;
 }
 
-extern int acct_storage_p_remove_clusters(void *db_conn,
+extern int acct_storage_p_remove_clusters(void *db_conn, uint32_t uid,
 					  acct_account_cond_t *cluster_q)
 {
 	slurmdbd_msg_t req;
@@ -418,7 +419,7 @@ extern int acct_storage_p_remove_clusters(void *db_conn,
 	return rc;
 }
 
-extern int acct_storage_p_remove_associations(void *db_conn,
+extern int acct_storage_p_remove_associations(void *db_conn, uint32_t uid,
 					      acct_association_cond_t *assoc_q)
 {
 	slurmdbd_msg_t req;

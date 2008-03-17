@@ -124,6 +124,7 @@ extern List sacctmgr_association_list; /* list of current associations */
 extern List sacctmgr_account_list; /* list of current accounts */
 extern List sacctmgr_cluster_list; /* list of current clusters */
 extern void *db_conn;
+extern uint32_t my_uid;
 
 extern int sacctmgr_add_association(int argc, char *argv[]);
 extern int sacctmgr_add_user(int argc, char *argv[]);

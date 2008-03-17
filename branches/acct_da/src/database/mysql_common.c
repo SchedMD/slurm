@@ -131,7 +131,7 @@ extern int mysql_get_db_connection(MYSQL **mysql_db, char *db_name,
 			if(!mysql_real_connect(*mysql_db, db_info->host,
 					       db_info->user, db_info->pass,
 					       db_name, db_info->port,
-					       NULL, 0)) {
+					       NULL, CLIENT_MULTI_STATEMENTS)) {
 				if(mysql_errno(*mysql_db) == ER_BAD_DB_ERROR) {
 					debug("Database %s not created.  "
 					      "Creating", db_name);

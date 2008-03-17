@@ -38,6 +38,7 @@
 \*****************************************************************************/
 
 #include "pgsql_jobacct_process.h"
+#include "src/common/slurmdbd_defs.h"
 
 /*
  * These variables are required by the generic plugin interface.  If they
@@ -288,8 +289,7 @@ static int _pgsql_acct_check_tables(PGconn *acct_pgsql_db,
 	storage_field_t txn_table_fields[] = {
 		{ "id", "serial" },
 		{ "timestamp", "bigint default 0" },
-		{ "action", "text not null" },
-		{ "object", "text not null" },
+		{ "action", "smallint not null" },
 		{ "name", "text not null" },
 		{ "actor", "text not null" },
 		{ "info", "text not null" },
@@ -697,55 +697,58 @@ extern int acct_storage_p_close_connection(void *acct_pgsql_db)
 #endif
 }
 
-extern int acct_storage_p_add_users(PGconn *acct_pgsql_db,
+extern int acct_storage_p_add_users(PGconn *acct_pgsql_db, uint32_t uid,
 				    List user_list)
 {
 	return SLURM_SUCCESS;
 }
 
-extern int acct_storage_p_add_coord(PGconn *acct_pgsql_db,
+extern int acct_storage_p_add_coord(PGconn *acct_pgsql_db, uint32_t uid,
 				    char *acct, acct_user_cond_t *user_q)
 {
 	return SLURM_SUCCESS;
 }
 
-extern int acct_storage_p_add_accts(PGconn *acct_pgsql_db, List acct_list)
+extern int acct_storage_p_add_accts(PGconn *acct_pgsql_db, uint32_t uid,
+				    List acct_list)
 {
 	return SLURM_SUCCESS;
 }
 
-extern int acct_storage_p_add_clusters(PGconn *acct_pgsql_db, List cluster_list)
+extern int acct_storage_p_add_clusters(PGconn *acct_pgsql_db, uint32_t uid, 
+				       List cluster_list)
 {
 	return SLURM_SUCCESS;
 }
 
-extern int acct_storage_p_add_associations(PGconn *acct_pgsql_db,
+extern int acct_storage_p_add_associations(PGconn *acct_pgsql_db, uint32_t uid,
 					   List association_list)
 {
 	return SLURM_SUCCESS;
 }
 
-extern int acct_storage_p_modify_users(PGconn *acct_pgsql_db,
+extern int acct_storage_p_modify_users(PGconn *acct_pgsql_db, uint32_t uid,
 					   acct_user_cond_t *user_q,
 				       acct_user_rec_t *user)
 {
 	return SLURM_SUCCESS;
 }
 
-extern int acct_storage_p_modify_user_admin_level(PGconn *acct_pgsql_db,
-					   acct_user_cond_t *user_q)
+extern int acct_storage_p_modify_user_admin_level(PGconn *acct_pgsql_db, 
+						  uint32_t uid,
+						  acct_user_cond_t *user_q)
 {
 	return SLURM_SUCCESS;
 }
 
-extern int acct_storage_p_modify_accts(PGconn *acct_pgsql_db,
-					   acct_account_cond_t *acct_q,
+extern int acct_storage_p_modify_accts(PGconn *acct_pgsql_db, uint32_t uid,
+				       acct_account_cond_t *acct_q,
 				       acct_account_rec_t *acct)
 {
 	return SLURM_SUCCESS;
 }
 
-extern int acct_storage_p_modify_clusters(PGconn *acct_pgsql_db,
+extern int acct_storage_p_modify_clusters(PGconn *acct_pgsql_db, uint32_t uid,
 					   acct_cluster_cond_t *cluster_q,
 					  acct_cluster_rec_t *cluster)
 {
@@ -753,38 +756,40 @@ extern int acct_storage_p_modify_clusters(PGconn *acct_pgsql_db,
 }
 
 extern int acct_storage_p_modify_associations(PGconn *acct_pgsql_db,
-					   acct_association_cond_t *assoc_q,
+					      uint32_t uid,
+					      acct_association_cond_t *assoc_q,
 					      acct_association_rec_t *assoc)
 {
 	return SLURM_SUCCESS;
 }
 
-extern int acct_storage_p_remove_users(PGconn *acct_pgsql_db,
+extern int acct_storage_p_remove_users(PGconn *acct_pgsql_db, uint32_t uid,
 					   acct_user_cond_t *user_q)
 {
 	return SLURM_SUCCESS;
 }
 
-extern int acct_storage_p_remove_coord(PGconn *acct_pgsql_db,
+extern int acct_storage_p_remove_coord(PGconn *acct_pgsql_db, uint32_t uid,
 					   char *acct, acct_user_cond_t *user_q)
 {
 	return SLURM_SUCCESS;
 }
 
-extern int acct_storage_p_remove_accts(PGconn *acct_pgsql_db,
+extern int acct_storage_p_remove_accts(PGconn *acct_pgsql_db, uint32_t uid,
 					   acct_account_cond_t *acct_q)
 {
 	return SLURM_SUCCESS;
 }
 
-extern int acct_storage_p_remove_clusters(PGconn *acct_pgsql_db,
+extern int acct_storage_p_remove_clusters(PGconn *acct_pgsql_db, uint32_t uid,
 					   acct_account_cond_t *cluster_q)
 {
 	return SLURM_SUCCESS;
 }
 
-extern int acct_storage_p_remove_associations(PGconn *acct_pgsql_db,
-					   acct_association_cond_t *assoc_q)
+extern int acct_storage_p_remove_associations(PGconn *acct_pgsql_db, 
+					      uint32_t uid,
+					      acct_association_cond_t *assoc_q)
 {
 	return SLURM_SUCCESS;
 }

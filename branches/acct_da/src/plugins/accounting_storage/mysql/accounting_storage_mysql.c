@@ -38,6 +38,7 @@
 \*****************************************************************************/
 
 #include "mysql_jobacct_process.h"
+#include "src/common/slurmdbd_defs.h"
 
 /*
  * These variables are required by the generic plugin interface.  If they
@@ -170,6 +171,7 @@ static int _mysql_acct_check_tables(MYSQL *acct_mysql_db)
 		{ "cluster", "tinytext not null" },
 		{ "partition", "tinytext not null default ''" },
 		{ "parent", "int not null" },
+		{ "parent_acct", "tinytext not null" },
 		{ "lft", "int not null" },
 		{ "rgt", "int not null" },
 		{ "fairshare", "int default 1 not null" },
@@ -288,8 +290,7 @@ static int _mysql_acct_check_tables(MYSQL *acct_mysql_db)
 	storage_field_t txn_table_fields[] = {
 		{ "id", "int not null auto_increment" },
 		{ "timestamp", "int unsigned default 0 not null" },
-		{ "action", "tinytext not null" },
-		{ "object", "tinytext not null" },
+		{ "action", "smallint not null" },
 		{ "name", "tinytext not null" },
 		{ "actor", "tinytext not null" },
 		{ "info", "text not null" },
@@ -501,7 +502,8 @@ extern int acct_storage_p_close_connection(MYSQL *acct_mysql_db)
 #endif
 }
 
-extern int acct_storage_p_add_users(MYSQL *acct_mysql_db, List user_list)
+extern int acct_storage_p_add_users(MYSQL *acct_mysql_db, uint32_t uid,
+				    List user_list)
 {
 #ifdef HAVE_MYSQL
 	ListIterator itr = NULL;
@@ -548,7 +550,7 @@ extern int acct_storage_p_add_users(MYSQL *acct_mysql_db, List user_list)
 #endif
 }
 
-extern int acct_storage_p_add_coord(MYSQL *acct_mysql_db, 
+extern int acct_storage_p_add_coord(MYSQL *acct_mysql_db, uint32_t uid, 
 				    char *acct, acct_user_cond_t *user_q)
 {
 #ifdef HAVE_MYSQL
@@ -558,7 +560,8 @@ extern int acct_storage_p_add_coord(MYSQL *acct_mysql_db,
 #endif
 }
 
-extern int acct_storage_p_add_accts(MYSQL *acct_mysql_db, List acct_list)
+extern int acct_storage_p_add_accts(MYSQL *acct_mysql_db, uint32_t uid, 
+				    List acct_list)
 {
 #ifdef HAVE_MYSQL
 	return SLURM_SUCCESS;
@@ -567,16 +570,126 @@ extern int acct_storage_p_add_accts(MYSQL *acct_mysql_db, List acct_list)
 #endif
 }
 
-extern int acct_storage_p_add_clusters(MYSQL *acct_mysql_db, List cluster_list)
+extern int acct_storage_p_add_clusters(MYSQL *acct_mysql_db, uint32_t uid, 
+				       List cluster_list)
 {
 #ifdef HAVE_MYSQL
-	return SLURM_SUCCESS;
+	ListIterator itr = NULL;
+	int rc = SLURM_SUCCESS;
+	acct_cluster_rec_t *object = NULL;
+	char *cols = NULL, *vals = NULL, *extra = NULL, *query = NULL;
+	time_t now = time(NULL);
+	struct passwd *pw = NULL;
+	char *user = NULL;
+
+	if((pw=getpwuid(uid))) {
+		user = pw->pw_name;
+	}
+	info("we got it from user %s", user);
+	itr = list_iterator_create(cluster_list);
+	while((object = list_next(itr))) {
+		if(!object->name) {
+			error("We need a cluster name to add.");
+			rc = SLURM_ERROR;
+			continue;
+		}
+
+		xstrcat(cols, "creation_time, mod_time, acct, cluster");
+		xstrfmtcat(vals, "%d, %d, 'root', '%s'",
+			   now, now, object->name);
+		
+		if(object->default_fairshare) {
+			xstrcat(cols, ", fairshare");
+			xstrfmtcat(vals, ", %u", object->default_fairshare);
+			xstrfmtcat(extra, ", fairshare=%u",
+				   object->default_fairshare);
+		}
+
+		if(object->default_max_jobs) {
+			xstrcat(cols, ", max_jobs");
+			xstrfmtcat(vals, ", %u", object->default_max_jobs);
+			xstrfmtcat(extra, ", max_jobs=%u",
+				   object->default_max_jobs);
+		}
+
+		if(object->default_max_nodes_per_job) {
+			xstrcat(cols, ", max_nodes_per_job");
+			xstrfmtcat(vals, ", %u", 
+				   object->default_max_nodes_per_job);
+			xstrfmtcat(extra, ", max_nodes_per_job=%u",
+				   object->default_max_nodes_per_job);
+		}
+
+		if(object->default_max_wall_duration_per_job) {
+			xstrcat(cols, ", max_wall_duration_per_job");
+			xstrfmtcat(vals, ", %u",
+				   object->default_max_wall_duration_per_job);
+			xstrfmtcat(extra, ", max_wall_duration_per_job=%u",
+				   object->default_max_wall_duration_per_job);
+		}
+
+		if(object->default_max_cpu_secs_per_job) {
+			xstrcat(cols, ", max_cpu_seconds_per_job");
+			xstrfmtcat(vals, ", %u",
+				   object->default_max_cpu_secs_per_job);
+			xstrfmtcat(extra, ", max_cpu_seconds_per_job=%u",
+				   object->default_max_cpu_secs_per_job);
+		}
+		
+		xstrfmtcat(query, 
+			   "insert into %s (creation_time, mod_time, name) "
+			   "values (%d, %d, '%s') "
+			   "on duplicate key update deleted=0, mod_time=%d;",
+			   cluster_table, 
+			   now, now, object->name,
+			   now);
+
+		xstrfmtcat(query, 	
+			   "insert into %s "
+			   "(timestamp, action, name, actor, info) "
+			   "values (%d, %d, '%s', '%s', '%s');",
+			   txn_table,
+			   now, DBD_ADD_CLUSTERS, object->name, user, extra);
+			
+		xstrfmtcat(query,
+			   "SELECT @MyMax := coalesce(max(rgt), 0) FROM %s;"
+			   "insert into %s (%s, lft, rgt) "
+			   "values (%s, @MyMax+1, @MyMax+2) "
+			   "on duplicate key update deleted=0, mod_time=%d",
+			   assoc_table, 
+			   assoc_table, cols, 
+			   vals,
+			   now);
+
+		xfree(cols);
+		xfree(vals);
+
+		if(extra) {
+			xstrfmtcat(query, " %s;", extra);
+			xfree(extra);
+		} else {
+			xstrcat(query, ";");
+		}
+
+		//info("query is %s", query);
+		rc = mysql_db_query(acct_mysql_db, query);
+		xfree(query);
+		if(rc != SLURM_SUCCESS) {
+			error("Couldn't add tempate assoc for cluster %s",
+			      object->name);
+			rc = SLURM_ERROR;
+			continue;
+		}
+	}
+	list_iterator_destroy(itr);
+
+	return rc;
 #else
 	return SLURM_ERROR;
 #endif
 }
 
-extern int acct_storage_p_add_associations(MYSQL *acct_mysql_db, 
+extern int acct_storage_p_add_associations(MYSQL *acct_mysql_db, uint32_t uid, 
 					   List association_list)
 {
 #ifdef HAVE_MYSQL
@@ -640,11 +753,11 @@ extern int acct_storage_p_add_associations(MYSQL *acct_mysql_db,
 		}
 		query = xstrdup_printf("SELECT @myRight := rgt FROM %s"
 				       "WHERE acct = '%s' and cluster = '%s' "
-				       "and user = '';"
+				       "and user = ''; "
 				       "UPDATE %s SET rgt = rgt + 2 "
 				       "WHERE rgt > @myRight;"
 				       "UPDATE %s SET lft = lft + 2 "
-				       "WHERE lft > @myRight;"
+				       "WHERE lft > @myRight; "
 				       "insert into %s (%s, lft, rgt) "
 				       "values (%s, @myRight + 1, "
 				       "@myRight + 2);",
@@ -668,7 +781,7 @@ extern int acct_storage_p_add_associations(MYSQL *acct_mysql_db,
 #endif
 }
 
-extern int acct_storage_p_modify_users(MYSQL *acct_mysql_db, 
+extern int acct_storage_p_modify_users(MYSQL *acct_mysql_db, uint32_t uid, 
 				       acct_user_cond_t *user_q,
 				       acct_user_rec_t *user)
 {
@@ -679,7 +792,8 @@ extern int acct_storage_p_modify_users(MYSQL *acct_mysql_db,
 #endif
 }
 
-extern int acct_storage_p_modify_user_admin_level(MYSQL *acct_mysql_db, 
+extern int acct_storage_p_modify_user_admin_level(MYSQL *acct_mysql_db,
+						  uint32_t uid, 
 						  acct_user_cond_t *user_q)
 {
 #ifdef HAVE_MYSQL
@@ -689,7 +803,7 @@ extern int acct_storage_p_modify_user_admin_level(MYSQL *acct_mysql_db,
 #endif
 }
 
-extern int acct_storage_p_modify_accts(MYSQL *acct_mysql_db, 
+extern int acct_storage_p_modify_accts(MYSQL *acct_mysql_db, uint32_t uid, 
 				       acct_account_cond_t *acct_q,
 				       acct_account_rec_t *acct)
 {
@@ -700,7 +814,7 @@ extern int acct_storage_p_modify_accts(MYSQL *acct_mysql_db,
 #endif
 }
 
-extern int acct_storage_p_modify_clusters(MYSQL *acct_mysql_db, 
+extern int acct_storage_p_modify_clusters(MYSQL *acct_mysql_db, uint32_t uid, 
 					  acct_cluster_cond_t *cluster_q,
 					  acct_cluster_rec_t *cluster)
 {
@@ -712,6 +826,7 @@ extern int acct_storage_p_modify_clusters(MYSQL *acct_mysql_db,
 }
 
 extern int acct_storage_p_modify_associations(MYSQL *acct_mysql_db, 
+					      uint32_t uid, 
 					      acct_association_cond_t *assoc_q,
 					      acct_association_rec_t *assoc)
 {
@@ -722,7 +837,7 @@ extern int acct_storage_p_modify_associations(MYSQL *acct_mysql_db,
 #endif
 }
 
-extern int acct_storage_p_remove_users(MYSQL *acct_mysql_db, 
+extern int acct_storage_p_remove_users(MYSQL *acct_mysql_db, uint32_t uid, 
 				       acct_user_cond_t *user_q)
 {
 #ifdef HAVE_MYSQL
@@ -732,7 +847,7 @@ extern int acct_storage_p_remove_users(MYSQL *acct_mysql_db,
 #endif
 }
 
-extern int acct_storage_p_remove_coord(MYSQL *acct_mysql_db, 
+extern int acct_storage_p_remove_coord(MYSQL *acct_mysql_db, uint32_t uid, 
 				       char *acct, acct_user_cond_t *user_q)
 {
 #ifdef HAVE_MYSQL
@@ -742,7 +857,7 @@ extern int acct_storage_p_remove_coord(MYSQL *acct_mysql_db,
 #endif
 }
 
-extern int acct_storage_p_remove_accts(MYSQL *acct_mysql_db, 
+extern int acct_storage_p_remove_accts(MYSQL *acct_mysql_db, uint32_t uid, 
 				       acct_account_cond_t *acct_q)
 {
 #ifdef HAVE_MYSQL
@@ -752,7 +867,7 @@ extern int acct_storage_p_remove_accts(MYSQL *acct_mysql_db,
 #endif
 }
 
-extern int acct_storage_p_remove_clusters(MYSQL *acct_mysql_db, 
+extern int acct_storage_p_remove_clusters(MYSQL *acct_mysql_db, uint32_t uid, 
 					  acct_account_cond_t *cluster_q)
 {
 #ifdef HAVE_MYSQL
@@ -762,7 +877,8 @@ extern int acct_storage_p_remove_clusters(MYSQL *acct_mysql_db,
 #endif
 }
 
-extern int acct_storage_p_remove_associations(MYSQL *acct_mysql_db, 
+extern int acct_storage_p_remove_associations(MYSQL *acct_mysql_db,
+					      uint32_t uid, 
 					      acct_association_cond_t *assoc_q)
 {
 #ifdef HAVE_MYSQL
@@ -1328,7 +1444,6 @@ empty:
 		xfree(extra);
 	}
 
-	//info("query = %s", query);
 	if(!(result = mysql_db_query_ret(acct_mysql_db, query))) {
 		xfree(query);
 		return NULL;
@@ -1341,18 +1456,37 @@ empty:
 		acct_association_rec_t *assoc =
 			xmalloc(sizeof(acct_association_rec_t));
 		list_append(assoc_list, assoc);
-
+		
 		assoc->id =  atoi(row[ASSOC_REQ_ID]);
 		assoc->user = xstrdup(row[ASSOC_REQ_USER]);
 		assoc->acct = xstrdup(row[ASSOC_REQ_ACCT]);
 		assoc->cluster = xstrdup(row[ASSOC_REQ_CLUSTER]);
 		assoc->partition = xstrdup(row[ASSOC_REQ_PART]);
-		assoc->parent = atoi(row[ASSOC_REQ_PARENT]);
-		assoc->fairshare = atoi(row[ASSOC_REQ_FS]);
-		assoc->max_jobs = atoi(row[ASSOC_REQ_MJ]);
-		assoc->max_nodes_per_job = atoi(row[ASSOC_REQ_MNPJ]);
-		assoc->max_wall_duration_per_job = atoi(row[ASSOC_REQ_MWPJ]);
-		assoc->max_cpu_secs_per_job = atoi(row[ASSOC_REQ_MCPJ]);
+		if(row[ASSOC_REQ_PARENT])
+			assoc->parent = atoi(row[ASSOC_REQ_PARENT]);
+		else
+			assoc->parent = -1;
+		if(row[ASSOC_REQ_FS])
+			assoc->fairshare = atoi(row[ASSOC_REQ_FS]);
+		else
+			assoc->fairshare = -1;
+		if(row[ASSOC_REQ_MJ])
+			assoc->max_jobs = atoi(row[ASSOC_REQ_MJ]);
+		else
+			assoc->max_jobs = -1;
+		if(row[ASSOC_REQ_MNPJ])
+			assoc->max_nodes_per_job = atoi(row[ASSOC_REQ_MNPJ]);
+		else
+			assoc->max_nodes_per_job = -1;
+		if(row[ASSOC_REQ_MWPJ])
+			assoc->max_wall_duration_per_job = 
+				atoi(row[ASSOC_REQ_MWPJ]);
+		else
+			assoc->max_wall_duration_per_job = -1;
+		if(row[ASSOC_REQ_MCPJ])
+			assoc->max_cpu_secs_per_job = atoi(row[ASSOC_REQ_MCPJ]);
+		else
+			assoc->max_cpu_secs_per_job = -1;
 	}
 	mysql_free_result(result);
 
@@ -1561,7 +1695,7 @@ extern int jobacct_storage_p_job_start(MYSQL *acct_mysql_db,
 	}
 
 	if(!acct_mysql_db || mysql_ping(acct_mysql_db) != 0) {
-		if(init() == SLURM_ERROR) {
+		if(!(acct_mysql_db = acct_storage_p_get_connection())) {
 			return SLURM_ERROR;
 		}
 	}
@@ -1618,8 +1752,8 @@ try_again:
 		if(!reinit) {
 			error("It looks like the storage has gone "
 			      "away trying to reconnect");
-			fini();
-			init();
+			acct_storage_p_close_connection(acct_mysql_db);
+			acct_mysql_db = acct_storage_p_get_connection();
 			reinit = 1;
 			goto try_again;
 		} else
@@ -1651,7 +1785,7 @@ extern int jobacct_storage_p_job_complete(MYSQL *acct_mysql_db,
 	}
 
 	if(!acct_mysql_db || mysql_ping(acct_mysql_db) != 0) {
-		if(init() == SLURM_ERROR) {
+		if(!(acct_mysql_db = acct_storage_p_get_connection())) {
 			return SLURM_ERROR;
 		}
 	}
@@ -1716,7 +1850,7 @@ extern int jobacct_storage_p_step_start(MYSQL *acct_mysql_db,
 	}
 
 	if(!acct_mysql_db || mysql_ping(acct_mysql_db) != 0) {
-		if(init() == SLURM_ERROR) {
+		if(!(acct_mysql_db = acct_storage_p_get_connection())) {
 			return SLURM_ERROR;
 		}
 	}
@@ -1810,7 +1944,7 @@ extern int jobacct_storage_p_step_complete(MYSQL *acct_mysql_db,
 	}
 
 	if(!acct_mysql_db || mysql_ping(acct_mysql_db) != 0) {
-		if(init() == SLURM_ERROR) {
+		if(!(acct_mysql_db = acct_storage_p_get_connection())) {
 			return SLURM_ERROR;
 		}
 	}
@@ -1930,7 +2064,7 @@ extern int jobacct_storage_p_suspend(MYSQL *acct_mysql_db,
 	int rc = SLURM_SUCCESS;
 	
 	if(!acct_mysql_db || mysql_ping(acct_mysql_db) != 0) {
-		if(init() == SLURM_ERROR) {
+		if(!(acct_mysql_db = acct_storage_p_get_connection())) {
 			return SLURM_ERROR;
 		}
 	}
@@ -1979,7 +2113,7 @@ extern List jobacct_storage_p_get_jobs(MYSQL *acct_mysql_db,
 	List job_list = NULL;
 #ifdef HAVE_MYSQL
 	if(!acct_mysql_db || mysql_ping(acct_mysql_db) != 0) {
-		if(init() == SLURM_ERROR) {
+		if(!(acct_mysql_db = acct_storage_p_get_connection())) {
 			return NULL;
 		}
 	}
@@ -2000,7 +2134,7 @@ extern void jobacct_storage_p_archive(MYSQL *acct_mysql_db,
 {
 #ifdef HAVE_MYSQL
 	if(!acct_mysql_db || mysql_ping(acct_mysql_db) != 0) {
-		if(init() == SLURM_ERROR) {
+		if(!(acct_mysql_db = acct_storage_p_get_connection())) {
 			return;
 		}
 	}
