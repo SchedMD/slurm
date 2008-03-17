@@ -27,6 +27,15 @@ now supports gang scheduling (time-slicing of parallel jobs for
 improved responsiveness and system utilization). Many related 
 scheduling changes have also been made. 
 
+There are changes in SLURM's RPMs. There is a new RPM called 
+slurmdbd (SLURM DataBase Daemon) used to provide a secure 
+SLURM database interface for accounting purposes (more information 
+about that below). The SLURM plugins have been moved to a new
+RPM called slurm-plugins. If the slurmdbd is installed it 
+requires the slurm-plugins, but not the other slurm components.
+The base SLURM plugin requires the plugins, which used to be
+within that RPM. 
+
 Many enhancements have been made for better Slurm integration with 
 Moab and Maui schedulers. Moab development work is still underway 
 to support Slurm v1.3. Moab users should not upgrade to Slurm v1.3
