@@ -401,7 +401,10 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man1/*
 %{_mandir}/man5/slurm.*
 %{_mandir}/man5/wiki.*
-%{_mandir}/man8/*
+%{_mandir}/man8/slurmctld.*
+%{_mandir}/man8/slurmd.*
+%{_mandir}/man8/slurmstepd*
+%{_mandir}/man8/spank*
 %dir %{_sysconfdir}
 %dir %{_libdir}/slurm/src
 %config %{_sysconfdir}/slurm.conf.example
@@ -458,6 +461,7 @@ rm -rf $RPM_BUILD_ROOT
 %defattr(-,root,root)
 %{_sbindir}/slurmdbd
 %{_mandir}/man5/slurmdbd.*
+%{_mandir}/man8/slurmdbd.*
 #############################################################################
 
 %files -f slurm_plugins.files slurm-plugins
