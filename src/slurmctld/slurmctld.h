@@ -274,6 +274,18 @@ extern struct part_record *default_part_loc;	/* default partition ptr */
 \*****************************************************************************/
 extern time_t last_job_update;	/* time of last update to part records */
 
+/* Used for Moab
+ * These QOS values only apply to LLNL's configuration
+ * Other values may apply at other sites */
+typedef enum {
+	QOS_DEFAULT = 0,	/* if none set */
+	QOS_EXEMPT_ALL,
+	QOS_EXEMPT_WC_LIMIT,
+	QOS_EXPEDITE,
+	QOS_NORMAL,
+	QOS_STANDBY
+} job_qos_t;
+
 #define DETAILS_MAGIC 0xdea84e7
 #define JOB_MAGIC 0xf0b7392c
 #define STEP_MAGIC 0xce593bc1
@@ -395,6 +407,7 @@ struct job_record {
 	time_t pre_sus_time;		/* time job ran prior to last suspend */
 	uint32_t priority;		/* relative priority of the job,
 					 * zero == held (don't initiate) */
+	uint16_t qos;			/* quality of service, used only by Moab */
 	uint32_t requid;            	/* requester user ID */
 	char *resp_host;		/* host for srun communications */
 	select_jobinfo_t select_jobinfo;/* opaque data */
