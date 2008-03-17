@@ -143,6 +143,7 @@
 #define LONG_OPT_MULTI       0x122
 #define LONG_OPT_NO_REQUEUE  0x123
 #define LONG_OPT_COMMENT     0x124
+#define LONG_OPT_REQUEUE     0x125
 #define LONG_OPT_SOCKETSPERNODE  0x130
 #define LONG_OPT_CORESPERSOCKET	 0x131
 #define LONG_OPT_THREADSPERCORE  0x132
@@ -1408,6 +1409,7 @@ void set_options(const int argc, char **argv, int first)
 		{"ctrl-comm-ifhn",   required_argument, 0, LONG_OPT_CTRL_COMM_IFHN},
 		{"multi-prog",       no_argument,       0, LONG_OPT_MULTI},
 		{"no-requeue",       no_argument,       0, LONG_OPT_NO_REQUEUE},
+		{"requeue",          no_argument,       0, LONG_OPT_REQUEUE},
 		{"comment",          required_argument, 0, LONG_OPT_COMMENT},
 		{"sockets-per-node", required_argument, 0, LONG_OPT_SOCKETSPERNODE},
 		{"cores-per-socket", required_argument, 0, LONG_OPT_CORESPERSOCKET},
@@ -1940,6 +1942,9 @@ void set_options(const int argc, char **argv, int first)
 			break;
 		case LONG_OPT_NO_REQUEUE:
 			opt.no_requeue = true;
+			break;
+		case LONG_OPT_REQUEUE:
+			opt.no_requeue = false;	/* the default */
 			break;
 		case LONG_OPT_COMMENT:
 			if(!first && opt.comment)

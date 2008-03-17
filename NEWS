@@ -23,6 +23,8 @@ documents those changes that are of interest to users and admins.
  -- Do not clear a DRAINED node's reason field when slurmctld restarts.
  -- Do not cancel a pending job if Moab or Maui try to start it on unusable nodes.
     Leave the job queued.
+ -- Add --requeue option to srun and sbatch (these undocumented options have no
+    effect in slurm v1.2, but are legitimate options in slurm v1.3).
  
 * Changes in SLURM 1.2.24
 =========================
