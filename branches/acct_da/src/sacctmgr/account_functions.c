@@ -63,9 +63,9 @@ static int _set_cond(int *start, int argc, char *argv[],
 			addto_char_list(acct_cond->organization_list,
 					argv[i]+14);
 			set = 1;
-		} else if (strncasecmp (argv[i], "ExpediteLevel=", 14) == 0) {
-			acct_cond->expedite =
-				str_2_acct_expedite(argv[i]+14);
+		} else if (strncasecmp (argv[i], "QosLevel=", 14) == 0) {
+			acct_cond->qos =
+				str_2_acct_qos(argv[i]+14);
 			set = 1;
 		} else if (strncasecmp (argv[i], "Description=", 12) == 0) {
 			addto_char_list(acct_cond->description_list,
@@ -75,9 +75,9 @@ static int _set_cond(int *start, int argc, char *argv[],
 			addto_char_list(acct_cond->organization_list,
 					argv[i]+13);
 			set = 1;
-		} else if (strncasecmp (argv[i], "Expedite=", 8) == 0) {
-			acct_cond->expedite =
-				str_2_acct_expedite(argv[i]+8);
+		} else if (strncasecmp (argv[i], "Qos=", 8) == 0) {
+			acct_cond->qos =
+				str_2_acct_qos(argv[i]+8);
 			set = 1;
 		} else {
 			addto_char_list(acct_cond->acct_list, argv[i]);
@@ -103,9 +103,9 @@ static int _set_rec(int *start, int argc, char *argv[],
 		} else if (strncasecmp (argv[i], "Where", 5) == 0) {
 			i--;
 			break;
-		}else if (strncasecmp (argv[i], "ExpediteLevel=", 14) == 0) {
-			acct->expedite =
-				str_2_acct_expedite(argv[i]+14);
+		}else if (strncasecmp (argv[i], "QosLevel=", 14) == 0) {
+			acct->qos =
+				str_2_acct_qos(argv[i]+14);
 			set = 1;
 		} else if (strncasecmp (argv[i], "Description=", 12) == 0) {
 			acct->description = xstrdup(argv[i]+12);
@@ -113,9 +113,9 @@ static int _set_rec(int *start, int argc, char *argv[],
 		} else if (strncasecmp (argv[i], "Organization=", 13) == 0) {
 			acct->organization = xstrdup(argv[i]+13);
 			set = 1;
-		} else if (strncasecmp (argv[i], "Expedite=", 8) == 0) {
-			acct->expedite =
-				str_2_acct_expedite(argv[i]+8);
+		} else if (strncasecmp (argv[i], "Qos=", 8) == 0) {
+			acct->qos =
+				str_2_acct_qos(argv[i]+8);
 			set = 1;
 		} else {
 			acct->name = xstrdup(argv[i]+5);
@@ -163,9 +163,9 @@ static void _print_cond(acct_account_cond_t *acct_cond)
 		}
 	}
 
-	if(acct_cond->expedite != ACCT_EXPEDITE_NOTSET)
-		printf("  Expedite     = %s\n", 
-		       acct_expedite_str(acct_cond->expedite));
+	if(acct_cond->qos != ACCT_QOS_NOTSET)
+		printf("  Qos     = %s\n", 
+		       acct_qos_str(acct_cond->qos));
 }
 
 /* static void _update_existing(acct_account_cond_t *acct_cond, */
@@ -249,9 +249,9 @@ static void _print_rec(acct_account_rec_t *acct)
 	if(acct->organization) 
 		printf("  Organization = %s\n", acct->organization);
 		
-	if(acct->expedite != ACCT_EXPEDITE_NOTSET)
-		printf("  Expedite     = %s\n", 
-		       acct_expedite_str(acct->expedite));
+	if(acct->qos != ACCT_QOS_NOTSET)
+		printf("  Qos     = %s\n", 
+		       acct_qos_str(acct->qos));
 
 }
 
@@ -271,7 +271,7 @@ extern int sacctmgr_add_account(int argc, char *argv[])
 	char *parent = NULL;
 	char *cluster = NULL;
 	char *name = NULL;
-	acct_expedite_level_t expedite = ACCT_EXPEDITE_NOTSET;
+	acct_qos_level_t qos = ACCT_QOS_NOTSET;
 	List acct_list = NULL;
 	List assoc_list = NULL;
 	uint32_t fairshare = 1; 
@@ -293,10 +293,10 @@ extern int sacctmgr_add_account(int argc, char *argv[])
 			description = xstrdup(argv[i]+12);
 		} else if (strncasecmp (argv[i], "Organization=", 13) == 0) {
 			organization = xstrdup(argv[i]+13);
-		} else if (strncasecmp (argv[i], "Expedite=", 8) == 0) {
-			expedite = str_2_acct_expedite(argv[i]+8);
-		} else if (strncasecmp (argv[i], "ExpediteLevel=", 14) == 0) {
-			expedite = str_2_acct_expedite(argv[i]+14);
+		} else if (strncasecmp (argv[i], "Qos=", 8) == 0) {
+			qos = str_2_acct_qos(argv[i]+8);
+		} else if (strncasecmp (argv[i], "QosLevel=", 14) == 0) {
+			qos = str_2_acct_qos(argv[i]+14);
 		} else if (strncasecmp (argv[i], "FairShare=", 10) == 0) {
 			fairshare = atoi(argv[i]+10);
 			limit_set = 1;
@@ -362,7 +362,7 @@ extern int sacctmgr_add_account(int argc, char *argv[])
 			acct->name = xstrdup(name);
 			acct->description = xstrdup(description);
 			acct->organization = xstrdup(organization);
-			acct->expedite = expedite;
+			acct->qos = qos;
 			xstrfmtcat(acct_str, "  %s\n", name);
 			list_append(acct_list, acct);
 			list_append(sacctmgr_account_list, acct);
@@ -419,9 +419,9 @@ extern int sacctmgr_add_account(int argc, char *argv[])
 		printf("  Description  = %s\n", description);
 		printf("  Organization = %s\n", organization);
 		
-		if(expedite != ACCT_EXPEDITE_NOTSET)
-			printf("  Expedite     = %s\n", 
-			       acct_expedite_str(expedite));
+		if(qos != ACCT_QOS_NOTSET)
+			printf("  Qos     = %s\n", 
+			       acct_qos_str(qos));
 	}
 
 	if(list_count(assoc_list))
@@ -508,13 +508,13 @@ extern int sacctmgr_list_account(int argc, char *argv[])
 		} else if (strncasecmp (argv[i], "Organizations=", 14) == 0) {
 			addto_char_list(acct_cond->organization_list,
 					argv[i]+14);
-		} else if (strncasecmp (argv[i], "ExpediteLevel=", 14) == 0) {
-			acct_cond->expedite =
-				str_2_acct_expedite(argv[i]+14);
+		} else if (strncasecmp (argv[i], "QosLevel=", 14) == 0) {
+			acct_cond->qos =
+				str_2_acct_qos(argv[i]+14);
 		} else {
 			error("Valid options are 'Names=' "
 			      "'Descriptions=' 'Oranizations=' "
-			      "and 'ExpediteLevel='");
+			      "and 'QosLevel='");
 		}		
 	}
 
@@ -528,7 +528,7 @@ extern int sacctmgr_list_account(int argc, char *argv[])
 
 	itr = list_iterator_create(acct_list);
 	printf("%-15s %-15s %-15s %-10s\n%-15s %-15s %-15s %-10s\n",
-	       "Name", "Description", "Organization", "Expedite",
+	       "Name", "Description", "Organization", "Qos",
 	       "---------------",
 	       "---------------",
 	       "---------------",
@@ -538,7 +538,7 @@ extern int sacctmgr_list_account(int argc, char *argv[])
 		printf("%-15.15s %-15.15s %-15.15s %-10.10s\n",
 		       acct->name, acct->description,
 		       acct->organization,
-		       acct_expedite_str(acct->expedite));
+		       acct_qos_str(acct->qos));
 	}
 
 	printf("\n");

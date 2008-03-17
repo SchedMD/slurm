@@ -453,7 +453,7 @@ static List _get_user_list_from_response(gold_response_t *gold_response)
 				user_rec->name = 
 					xstrdup(name_val->value);
 			} else if(!strcmp(name_val->name, "Expedite")) {
-				user_rec->expedite = 
+				user_rec->qos = 
 					atoi(name_val->value)+1;
 			} else if(!strcmp(name_val->name, "DefaultProject")) {
 				user_rec->default_acct = 
@@ -489,7 +489,7 @@ static List _get_acct_list_from_response(gold_response_t *gold_response)
 		itr2 = list_iterator_create(resp_entry->name_val);
 		while((name_val = list_next(itr2))) {
 			if(!strcmp(name_val->name, "Expedite")) {
-				acct_rec->expedite = 
+				acct_rec->qos = 
 					atoi(name_val->value)+1;
 			} else if(!strcmp(name_val->name, 
 					  "Name")) {
@@ -754,9 +754,9 @@ extern int acct_storage_p_add_users(void *db_conn,
 		gold_request_add_assignment(gold_request, "DefaultProject",
 					    object->default_acct);		
 
-		if(object->expedite != ACCT_EXPEDITE_NOTSET) {
+		if(object->qos != ACCT_QOS_NOTSET) {
 			snprintf(tmp_buff, sizeof(tmp_buff), "%u",
-				 object->expedite-1);
+				 object->qos-1);
 			gold_request_add_assignment(gold_request, "Expedite",
 						    tmp_buff);
 		}		
@@ -825,9 +825,9 @@ extern int acct_storage_p_add_accts(void *db_conn,
 					    object->description);		
 		gold_request_add_assignment(gold_request, "Organization",
 					    object->organization);		
-		if(object->expedite != ACCT_EXPEDITE_NOTSET) {
+		if(object->qos != ACCT_QOS_NOTSET) {
 			snprintf(tmp_buff, sizeof(tmp_buff), "%u",
-				 object->expedite-1);
+				 object->qos-1);
 			gold_request_add_assignment(gold_request, "Expedite",
 						    tmp_buff);
 		}		
@@ -1178,9 +1178,9 @@ extern int acct_storage_p_modify_users(void *db_conn,
 					    "DefaultProject",
 					    user->default_acct);
 	
-	if(user->expedite != ACCT_EXPEDITE_NOTSET) {
+	if(user->qos != ACCT_QOS_NOTSET) {
 		snprintf(tmp_buff, sizeof(tmp_buff), "%u",
-			 user->expedite-1);
+			 user->qos-1);
 		gold_request_add_assignment(gold_request, "Expedite",
 					    tmp_buff);		
 	}
@@ -1403,9 +1403,9 @@ extern int acct_storage_p_modify_accts(void *db_conn,
 					    "Organization",
 					    acct->organization);
 	
-	if(acct->expedite != ACCT_EXPEDITE_NOTSET) {
+	if(acct->qos != ACCT_QOS_NOTSET) {
 		snprintf(tmp_buff, sizeof(tmp_buff), "%u",
-			 acct->expedite-1);
+			 acct->qos-1);
 		gold_request_add_assignment(gold_request, "Expedite",
 					    tmp_buff);		
 	}
@@ -2138,9 +2138,9 @@ extern List acct_storage_p_get_users(void *db_conn,
 		list_iterator_destroy(itr);
 	}
 	
-	if(user_q->expedite != ACCT_EXPEDITE_NOTSET) {
+	if(user_q->qos != ACCT_QOS_NOTSET) {
 		snprintf(tmp_buff, sizeof(tmp_buff), "%u",
-			 user_q->expedite-1);
+			 user_q->qos-1);
 		gold_request_add_condition(gold_request, "Expedite",
 					   tmp_buff,
 					   GOLD_OPERATOR_NONE, 0);		
@@ -2246,9 +2246,9 @@ extern List acct_storage_p_get_accts(void *db_conn,
 		list_iterator_destroy(itr);
 	}
 
-	if(acct_q->expedite != ACCT_EXPEDITE_NOTSET) {
+	if(acct_q->qos != ACCT_QOS_NOTSET) {
 		snprintf(tmp_buff, sizeof(tmp_buff), "%u",
-			 acct_q->expedite-1);
+			 acct_q->qos-1);
 		gold_request_add_condition(gold_request, "Expedite",
 					   tmp_buff,
 					   GOLD_OPERATOR_NONE, 0);		

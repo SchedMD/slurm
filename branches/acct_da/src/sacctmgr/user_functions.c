@@ -58,13 +58,13 @@ static int _set_cond(int *start, int argc, char *argv[],
 			addto_char_list(user_cond->def_acct_list,
 					argv[i]+16);
 			set = 1;
-		} else if (strncasecmp (argv[i], "Expedite=", 9) == 0) {
-			user_cond->expedite =
-				str_2_acct_expedite(argv[i]+9);
+		} else if (strncasecmp (argv[i], "Qos=", 9) == 0) {
+			user_cond->qos =
+				str_2_acct_qos(argv[i]+9);
 			set = 1;
-		} else if (strncasecmp (argv[i], "ExpediteLevel=", 14) == 0) {
-			user_cond->expedite =
-				str_2_acct_expedite(argv[i]+14);
+		} else if (strncasecmp (argv[i], "QosLevel=", 14) == 0) {
+			user_cond->qos =
+				str_2_acct_qos(argv[i]+14);
 			set = 1;
 		} else if (strncasecmp (argv[i], "Admin=", 6) == 0) {
 			user_cond->admin_level = 
@@ -97,13 +97,13 @@ static int _set_rec(int *start, int argc, char *argv[],
 		if (strncasecmp (argv[i], "DefaultAccount=", 15) == 0) {
 			user->default_acct = xstrdup(argv[i]+15);
 			set = 1;
-		} else if (strncasecmp (argv[i], "Expedite=", 9) == 0) {
-			user->expedite =
-				str_2_acct_expedite(argv[i]+9);
+		} else if (strncasecmp (argv[i], "Qos=", 9) == 0) {
+			user->qos =
+				str_2_acct_qos(argv[i]+9);
 			set = 1;
-		} else if (strncasecmp (argv[i], "ExpediteLevel=", 14) == 0) {
-			user->expedite =
-				str_2_acct_expedite(argv[i]+14);
+		} else if (strncasecmp (argv[i], "QosLevel=", 14) == 0) {
+			user->qos =
+				str_2_acct_qos(argv[i]+14);
 			set = 1;
 		} else if (strncasecmp (argv[i], "Admin=", 6) == 0) {
 			user->admin_level = 
@@ -118,7 +118,7 @@ static int _set_rec(int *start, int argc, char *argv[],
 			break;
 		} else {
 			printf(" error: Valid options are 'DefaultAccount=' "
-			       "'ExpediteLevel=' and 'AdminLevel='\n");
+			       "'QosLevel=' and 'AdminLevel='\n");
 		}		
 	}	
 	(*start) = i;
@@ -153,9 +153,9 @@ static void _print_cond(acct_user_cond_t *user_cond)
 		}
 	}
 
-	if(user_cond->expedite != ACCT_EXPEDITE_NOTSET)
-		printf("  Expedite        = %s\n", 
-		       acct_expedite_str(user_cond->expedite));
+	if(user_cond->qos != ACCT_QOS_NOTSET)
+		printf("  Qos        = %s\n", 
+		       acct_qos_str(user_cond->qos));
 
 	if(user_cond->admin_level != ACCT_ADMIN_NOTSET)
 		printf("  Admin Level     = %s\n", 
@@ -175,9 +175,9 @@ static void _print_rec(acct_user_rec_t *user)
 	if(user->default_acct) 
 		printf("  Default Account = %s\n", user->default_acct);
 		
-	if(user->expedite != ACCT_EXPEDITE_NOTSET)
-		printf("  Expedite        = %s\n", 
-		       acct_expedite_str(user->expedite));
+	if(user->qos != ACCT_QOS_NOTSET)
+		printf("  Qos        = %s\n", 
+		       acct_qos_str(user->qos));
 
 	if(user->admin_level != ACCT_ADMIN_NOTSET)
 		printf("  Admin Level     = %s\n", 
@@ -198,7 +198,7 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 	acct_association_rec_t *temp_assoc = NULL;
 	char *default_acct = NULL;
 	acct_association_cond_t *assoc_cond = NULL;
-	acct_expedite_level_t expedite = ACCT_EXPEDITE_NOTSET;
+	acct_qos_level_t qos = ACCT_QOS_NOTSET;
 	acct_admin_level_t admin_level = ACCT_ADMIN_NOTSET;
 	char *name = NULL, *account = NULL, *cluster = NULL, *partition = NULL;
 	int partition_set = 0;
@@ -233,10 +233,10 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 			default_acct = xstrdup(argv[i]+15);
 			addto_char_list(assoc_cond->acct_list,
 					argv[i]+15);
-		} else if (strncasecmp (argv[i], "Expedite=", 8) == 0) {
-			expedite = str_2_acct_expedite(argv[i]+8);
-		} else if (strncasecmp (argv[i], "ExpediteLevel=", 14) == 0) {
-			expedite = str_2_acct_expedite(argv[i]+14);
+		} else if (strncasecmp (argv[i], "Qos=", 8) == 0) {
+			qos = str_2_acct_qos(argv[i]+8);
+		} else if (strncasecmp (argv[i], "QosLevel=", 14) == 0) {
+			qos = str_2_acct_qos(argv[i]+14);
 		} else if (strncasecmp (argv[i], "Admin=", 5) == 0) {
 			admin_level = str_2_acct_admin_level(argv[i]+5);
 		} else if (strncasecmp (argv[i], "AdminLevel=", 11) == 0) {
@@ -309,7 +309,7 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 			user = xmalloc(sizeof(acct_user_rec_t));
 			user->name = xstrdup(name);
 			user->default_acct = xstrdup(default_acct);
-			user->expedite = expedite;
+			user->qos = qos;
 			user->admin_level = admin_level;
 			xstrfmtcat(user_str, "  %s\n", name);
 
@@ -402,9 +402,9 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 		printf(" Adding User(s)\n%s", user_str);
 		printf(" Settings =\n");
 		printf("  Default Account = %s\n", default_acct);
-		if(expedite != ACCT_EXPEDITE_NOTSET)
-			printf("  Expedite        = %s\n", 
-			       acct_expedite_str(expedite));
+		if(qos != ACCT_QOS_NOTSET)
+			printf("  Qos        = %s\n", 
+			       acct_qos_str(qos));
 		
 		if(admin_level != ACCT_ADMIN_NOTSET)
 			printf("  Admin Level     = %s\n", 
@@ -503,7 +503,7 @@ extern int sacctmgr_list_user(int argc, char *argv[])
 
 	itr = list_iterator_create(user_list);
 	printf("%-15s %-15s %-10s\n%-15s %-15s %-10s\n",
-	       "Name", "Default Account", "Expedite",
+	       "Name", "Default Account", "Qos",
 	       "---------------",
 	       "---------------",
 	       "----------");
@@ -511,7 +511,7 @@ extern int sacctmgr_list_user(int argc, char *argv[])
 	while((user = list_next(itr))) {
 		printf("%-15.15s %-15.15s %-10.10s\n",
 		       user->name, user->default_acct,
-		       acct_expedite_str(user->expedite));
+		       acct_qos_str(user->qos));
 	}
 
 	printf("\n");

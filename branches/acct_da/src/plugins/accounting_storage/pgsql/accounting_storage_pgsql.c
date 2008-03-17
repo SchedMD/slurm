@@ -157,7 +157,7 @@ static int _pgsql_acct_check_tables(PGconn *acct_pgsql_db,
 		{ "name", "text not null" },
 		{ "description", "text not null" },
 		{ "organization", "text not null" },
-		{ "expedite", "smallint default 1 not null" },
+		{ "qos", "smallint default 1 not null" },
 		{ NULL, NULL}		
 	};
 
@@ -302,7 +302,7 @@ static int _pgsql_acct_check_tables(PGconn *acct_pgsql_db,
 		{ "deleted", "bool default 0" },
 		{ "name", "text not null" },
 		{ "default_acct", "text not null" },
-		{ "expedite", "smallint default 1 not null" },
+		{ "qos", "smallint default 1 not null" },
 		{ "admin_level", "smallint default 1 not null" },
 		{ NULL, NULL}		
 	};

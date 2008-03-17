@@ -720,22 +720,22 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
   <ENTITY> may be \"user\", \"cluster\", \"account\", or \"association\".  \n\
                                                                            \n\
   <SPECS> are different for each command entity pair.                      \n\
-       list user          - Names=, DefaultAccounts=, ExpediteLevel=,      \n\
+       list user          - Names=, DefaultAccounts=, QosLevel=,      \n\
                             and AdminLevel=                                \n\
-       add user           - Names=, DefaultAccount=, ExpediteLevel=,       \n\
+       add user           - Names=, DefaultAccount=, QosLevel=,       \n\
                             and AdminLevel=                                \n\
-       modify user        - Names=, DefaultAccounts=, ExpediteLevel=,      \n\
+       modify user        - Names=, DefaultAccounts=, QosLevel=,      \n\
                             and AdminLevel=                                \n\
-       delete user        - Names=, DefaultAccounts=, ExpediteLevel=,      \n\
+       delete user        - Names=, DefaultAccounts=, QosLevel=,      \n\
                             and AdminLevel=                                \n\
                                                                            \n\
-       list account       - Names=, Descriptions=, ExpediteLevel=,         \n\
+       list account       - Names=, Descriptions=, QosLevel=,         \n\
                             and Organizations=                             \n\
-       add account        - Names=, Descriptions=, ExpediteLevel=,         \n\
+       add account        - Names=, Descriptions=, QosLevel=,         \n\
                             and Organizations=                             \n\
-       modify account     - Names=, Descriptions=, ExpediteLevel=,         \n\
+       modify account     - Names=, Descriptions=, QosLevel=,         \n\
                             and Organizations=                             \n\
-       delete account     - Names=, Descriptions=, ExpediteLevel=,         \n\
+       delete account     - Names=, Descriptions=, QosLevel=,         \n\
                             and Organizations=                             \n\
                                                                            \n\
        list cluster       - Names=                                         \n\

@@ -61,18 +61,18 @@ typedef enum {
 } acct_admin_level_t;
 
 typedef enum {
-	ACCT_EXPEDITE_NOTSET,
-	ACCT_EXPEDITE_NORMAL,
-	ACCT_EXPEDITE_EXPEDITE,
-	ACCT_EXPEDITE_STANDBY,
-	ACCT_EXPEDITE_EXEMPT	
-} acct_expedite_level_t;
+	ACCT_QOS_NOTSET,
+	ACCT_QOS_NORMAL,
+	ACCT_QOS_EXPEDITE,
+	ACCT_QOS_STANDBY,
+	ACCT_QOS_EXEMPT	
+} acct_qos_level_t;
 
 typedef struct {
 	acct_admin_level_t admin_level;
 	List coord_accts; /* list of acct_coord_rec_t *'s */
 	char *default_acct;
-	acct_expedite_level_t expedite;
+	acct_qos_level_t qos;
 	char *name;
 	uint32_t uid;
 } acct_user_rec_t;
@@ -80,7 +80,7 @@ typedef struct {
 typedef struct {
 	List coordinators; /* list of char *'s */
 	char *description;
-	acct_expedite_level_t expedite;
+	acct_qos_level_t qos;
 	char *name;
 	char *organization;
 } acct_account_rec_t;
@@ -149,14 +149,14 @@ typedef struct {
 typedef struct {
 	acct_admin_level_t admin_level;
 	List def_acct_list; /* list of char * */
-	acct_expedite_level_t expedite;	
+	acct_qos_level_t qos;	
 	List user_list; /* list of char * */
 } acct_user_cond_t;
 
 typedef struct {
 	List acct_list; /* list of char * */
 	List description_list; /* list of char * */
-	acct_expedite_level_t expedite;	
+	acct_qos_level_t qos;	
 	List organization_list; /* list of char * */
 } acct_account_cond_t;
 
@@ -214,8 +214,8 @@ extern int unpack_acct_cluster_cond(void **object, Buf buffer);
 extern void pack_acct_association_cond(void *object, Buf buffer);
 extern int unpack_acct_association_cond(void **object, Buf buffer);
 
-extern char *acct_expedite_str(acct_expedite_level_t level);
-extern acct_expedite_level_t str_2_acct_expedite(char *level);
+extern char *acct_qos_str(acct_qos_level_t level);
+extern acct_qos_level_t str_2_acct_qos(char *level);
 extern char *acct_admin_level_str(acct_admin_level_t level);
 extern acct_admin_level_t str_2_acct_admin_level(char *level);
 

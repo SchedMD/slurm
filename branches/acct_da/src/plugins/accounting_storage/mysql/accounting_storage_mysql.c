@@ -157,7 +157,7 @@ static int _mysql_acct_check_tables(MYSQL *acct_mysql_db)
 		{ "name", "tinytext not null" },
 		{ "description", "text not null" },
 		{ "organization", "text not null" },
-		{ "expedite", "smallint default 1 not null" },
+		{ "qos", "smallint default 1 not null" },
 		{ NULL, NULL}		
 	};
 
@@ -303,7 +303,7 @@ static int _mysql_acct_check_tables(MYSQL *acct_mysql_db)
 		{ "deleted", "bool default 0" },
 		{ "name", "tinytext not null" },
 		{ "default_acct", "tinytext not null" },
-		{ "expedite", "smallint default 1 not null" },
+		{ "qos", "smallint default 1 not null" },
 		{ "admin_level", "smallint default 1 not null" },
 		{ NULL, NULL}		
 	};
@@ -510,6 +510,14 @@ extern int acct_storage_p_add_users(MYSQL *acct_mysql_db, uint32_t uid,
 	int rc = SLURM_SUCCESS;
 	acct_user_rec_t *object = NULL;
 	char *cols = NULL, *vals = NULL, *query = NULL;
+	struct passwd *pw = NULL;
+	time_t now = time(NULL);
+	char *user = NULL;
+	char *extra = NULL;
+
+	if((pw=getpwuid(uid))) {
+		user = pw->pw_name;
+	}
 
 	itr = list_iterator_create(user_list);
 	while((object = list_next(itr))) {
@@ -519,12 +527,13 @@ extern int acct_storage_p_add_users(MYSQL *acct_mysql_db, uint32_t uid,
 			rc = SLURM_ERROR;
 			continue;
 		}
-		xstrcat(cols, "name, default_acct");
-		xstrfmtcat(vals, "'%s', '%s'", 
-			   object->name, object->default_acct); 
-		if(object->expedite != ACCT_EXPEDITE_NOTSET) {
-			xstrcat(cols, ", expedite");
-			xstrfmtcat(vals, ", %u", object->expedite); 		
+		xstrcat(cols, "creation_time, mod_time, name, default_acct");
+		xstrfmtcat(vals, "%d, %d, '%s', '%s'", 
+			   now, now, object->name, object->default_acct); 
+		if(object->qos != ACCT_QOS_NOTSET) {
+			xstrcat(cols, ", qos");
+			xstrfmtcat(vals, ", %u", object->qos); 		
+			xstrfmtcat(extra, ", qos%u", object->qos); 		
 		}
 
 		if(object->admin_level != ACCT_ADMIN_NOTSET) {
@@ -532,8 +541,25 @@ extern int acct_storage_p_add_users(MYSQL *acct_mysql_db, uint32_t uid,
 			xstrfmtcat(vals, ", %u", object->admin_level);
 		}
 
-		query = xstrdup_printf("insert into %s (%s) values (%s)",
-				       user_table, cols, vals);
+		query = xstrdup_printf(
+			"insert into %s (%s) values (%s)",
+			"on duplicate key update deleted=0, mod_time=%d",
+			user_table, cols, vals,
+			now);
+		if(extra) {
+			xstrfmtcat(query, " %s;", extra);
+			xfree(extra);
+		} else {
+			xstrcat(query, ";");
+		}
+		xstrfmtcat(query, 	
+			   "insert into %s "
+			   "(timestamp, action, name, actor, info) "
+			   "values (%d, %d, '%s', '%s', '%s');",
+			   txn_table,
+			   now, DBD_ADD_USERS, object->name, user, vals);
+			
+
 		xfree(cols);
 		xfree(vals);
 		rc = mysql_db_query(acct_mysql_db, query);
@@ -585,7 +611,7 @@ extern int acct_storage_p_add_clusters(MYSQL *acct_mysql_db, uint32_t uid,
 	if((pw=getpwuid(uid))) {
 		user = pw->pw_name;
 	}
-	info("we got it from user %s", user);
+
 	itr = list_iterator_create(cluster_list);
 	while((object = list_next(itr))) {
 		if(!object->name) {
@@ -907,7 +933,7 @@ extern List acct_storage_p_get_users(MYSQL *acct_mysql_db,
 	char *user_req_inx[] = {
 		"name",
 		"default_acct",
-		"expedite",
+		"qos",
 		"admin_level"
 	};
 	enum {
@@ -955,16 +981,16 @@ extern List acct_storage_p_get_users(MYSQL *acct_mysql_db,
 		xstrcat(extra, ")");
 	}
 	
-	if(user_q->expedite != ACCT_EXPEDITE_NOTSET) {
+	if(user_q->qos != ACCT_QOS_NOTSET) {
 		if(extra)
-			xstrfmtcat(extra, " && expedite=%u", user_q->expedite);
+			xstrfmtcat(extra, " && qos=%u", user_q->qos);
 		else
-			xstrfmtcat(extra, " where expedite=%u",
-				   user_q->expedite);
+			xstrfmtcat(extra, " where qos=%u",
+				   user_q->qos);
 			
 	}
 
-	if(user_q->expedite != ACCT_ADMIN_NOTSET) {
+	if(user_q->qos != ACCT_ADMIN_NOTSET) {
 		if(extra)
 			xstrfmtcat(extra, " && admin_level=%u",
 				   user_q->admin_level);
@@ -1005,7 +1031,7 @@ empty:
 		user->name =  xstrdup(row[USER_REQ_NAME]);
 		user->default_acct = xstrdup(row[USER_REQ_DA]);
 		user->admin_level = atoi(row[USER_REQ_AL]);
-		user->expedite = atoi(row[USER_REQ_EX]);
+		user->qos = atoi(row[USER_REQ_EX]);
 
 		passwd_ptr = getpwnam(user->name);
 		if(passwd_ptr) 
@@ -1060,13 +1086,13 @@ extern List acct_storage_p_get_accts(MYSQL *acct_mysql_db,
 	char *acct_req_inx[] = {
 		"name",
 		"description",
-		"expedite",
+		"qos",
 		"organization"
 	};
 	enum {
 		ACCT_REQ_NAME,
 		ACCT_REQ_DESC,
-		ACCT_REQ_EX,
+		ACCT_REQ_QOS,
 		ACCT_REQ_ORG,
 		ACCT_REQ_COUNT
 	};
@@ -1125,12 +1151,12 @@ extern List acct_storage_p_get_accts(MYSQL *acct_mysql_db,
 		xstrcat(extra, ")");
 	}
 	
-	if(acct_q->expedite != ACCT_EXPEDITE_NOTSET) {
+	if(acct_q->qos != ACCT_QOS_NOTSET) {
 		if(extra)
-			xstrfmtcat(extra, " && expedite=%u", acct_q->expedite);
+			xstrfmtcat(extra, " && qos=%u", acct_q->qos);
 		else
-			xstrfmtcat(extra, " where expedite=%u",
-				   acct_q->expedite);
+			xstrfmtcat(extra, " where qos=%u",
+				   acct_q->qos);
 			
 	}
 
@@ -1166,7 +1192,7 @@ empty:
 		acct->name =  xstrdup(row[ACCT_REQ_NAME]);
 		acct->description = xstrdup(row[ACCT_REQ_DESC]);
 		acct->organization = xstrdup(row[ACCT_REQ_ORG]);
-		acct->expedite = atoi(row[ACCT_REQ_EX]);
+		acct->qos = atoi(row[ACCT_REQ_QOS]);
 
 		acct->coordinators = list_create(slurm_destroy_char);
 		query = xstrdup_printf("select user from %s where acct='%s'",

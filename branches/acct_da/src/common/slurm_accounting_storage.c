@@ -483,7 +483,7 @@ extern void pack_acct_user_rec(void *in, Buf buffer)
 	}
 	
 	packstr(object->default_acct, buffer);
-	pack16((uint16_t)object->expedite, buffer);
+	pack16((uint16_t)object->qos, buffer);
 	packstr(object->name, buffer);
 	pack32(object->uid, buffer);
 }
@@ -505,7 +505,7 @@ extern int unpack_acct_user_rec(void **object, Buf buffer)
 		list_append(object_ptr->coord_accts, coord);
 	}
 	safe_unpackstr_xmalloc(&object_ptr->default_acct, &uint32_tmp, buffer);
-	safe_unpack16((uint16_t *)&object_ptr->expedite, buffer);
+	safe_unpack16((uint16_t *)&object_ptr->qos, buffer);
 	safe_unpackstr_xmalloc(&object_ptr->name, &uint32_tmp, buffer);
 	safe_unpack32(&object_ptr->uid, buffer);
 	return SLURM_SUCCESS;
@@ -545,7 +545,7 @@ extern void pack_acct_account_rec(void *in, Buf buffer)
 	}
 
 	packstr(object->description, buffer);
-	pack16((uint16_t)object->expedite, buffer);
+	pack16((uint16_t)object->qos, buffer);
 	packstr(object->name, buffer);
 	packstr(object->organization, buffer);
 }
@@ -567,7 +567,7 @@ extern int unpack_acct_account_rec(void **object, Buf buffer)
 		list_append(object_ptr->coordinators, coord);
 	}
 	safe_unpackstr_xmalloc(&object_ptr->description, &uint32_tmp, buffer);
-	safe_unpack16((uint16_t *)&object_ptr->expedite, buffer);
+	safe_unpack16((uint16_t *)&object_ptr->qos, buffer);
 	safe_unpackstr_xmalloc(&object_ptr->name, &uint32_tmp, buffer);
 	safe_unpackstr_xmalloc(&object_ptr->organization, &uint32_tmp, buffer);
 
@@ -887,7 +887,7 @@ extern void pack_acct_user_cond(void *in, Buf buffer)
 		}
 		list_iterator_destroy(itr);
 	}
-	pack16((uint16_t)object->expedite, buffer);
+	pack16((uint16_t)object->qos, buffer);
 
 	count = 0;
 	if(object->user_list)
@@ -922,7 +922,7 @@ extern int unpack_acct_user_cond(void **object, Buf buffer)
 		safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp, buffer);
 		list_append(object_ptr->def_acct_list, tmp_info);
 	}
-	safe_unpack16((uint16_t *)&object_ptr->expedite, buffer);
+	safe_unpack16((uint16_t *)&object_ptr->qos, buffer);
 	safe_unpack32(&count, buffer);
 	object_ptr->user_list = list_create(slurm_destroy_char);
 	for(i=0; i<count; i++) {
@@ -979,7 +979,7 @@ extern void pack_acct_account_cond(void *in, Buf buffer)
 		list_iterator_destroy(itr);
 	}
 
-	pack16((uint16_t)object->expedite, buffer);
+	pack16((uint16_t)object->qos, buffer);
 
 	count = 0;
 	if(object->organization_list)
@@ -1017,7 +1017,7 @@ extern int unpack_acct_account_cond(void **object, Buf buffer)
 		safe_unpackstr_xmalloc(&tmp_info, &uint32_tmp, buffer);
 		list_append(object_ptr->description_list, tmp_info);
 	}
-	safe_unpack16((uint16_t *)&object_ptr->expedite, buffer);
+	safe_unpack16((uint16_t *)&object_ptr->qos, buffer);
 	safe_unpack32(&count, buffer);
 	object_ptr->organization_list = list_create(slurm_destroy_char);
 	for(i=0; i<count; i++) {
@@ -1238,22 +1238,22 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
-extern char *acct_expedite_str(acct_expedite_level_t level)
+extern char *acct_qos_str(acct_qos_level_t level)
 {
 	switch(level) {
-	case ACCT_EXPEDITE_NOTSET:
+	case ACCT_QOS_NOTSET:
 		return "Not Set";
 		break;
-	case ACCT_EXPEDITE_NORMAL:
+	case ACCT_QOS_NORMAL:
 		return "Normal";
 		break;
-	case ACCT_EXPEDITE_EXPEDITE:
+	case ACCT_QOS_EXPEDITE:
 		return "Expedite";
 		break;
-	case ACCT_EXPEDITE_STANDBY:
+	case ACCT_QOS_STANDBY:
 		return "Standby";
 		break;
-	case ACCT_EXPEDITE_EXEMPT:
+	case ACCT_QOS_EXEMPT:
 		return "Exempt";
 		break;
 	default:
@@ -1263,20 +1263,20 @@ extern char *acct_expedite_str(acct_expedite_level_t level)
 	return "Unknown";
 }
 
-extern acct_expedite_level_t str_2_acct_expedite(char *level)
+extern acct_qos_level_t str_2_acct_qos(char *level)
 {
 	if(!level) {
-		return ACCT_EXPEDITE_NOTSET;
+		return ACCT_QOS_NOTSET;
 	} else if(!strncasecmp(level, "Normal", 1)) {
-		return ACCT_EXPEDITE_NORMAL;
+		return ACCT_QOS_NORMAL;
 	} else if(!strncasecmp(level, "Expedite", 3)) {
-		return ACCT_EXPEDITE_EXPEDITE;
+		return ACCT_QOS_EXPEDITE;
 	} else if(!strncasecmp(level, "Standby", 1)) {
-		return ACCT_EXPEDITE_STANDBY;
+		return ACCT_QOS_STANDBY;
 	} else if(!strncasecmp(level, "Exempt", 3)) {
-		return ACCT_EXPEDITE_EXEMPT;
+		return ACCT_QOS_EXEMPT;
 	} else {
-		return ACCT_EXPEDITE_NOTSET;		
+		return ACCT_QOS_NOTSET;		
 	}
 }
 
