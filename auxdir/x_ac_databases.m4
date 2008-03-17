@@ -49,7 +49,9 @@ AC_DEFUN([X_AC_DATABASES],
 			AC_SUBST(MYSQL_CFLAGS)
 			AC_DEFINE(HAVE_MYSQL, 1, [Define to 1 if using MySQL libaries])
 	        else
-        		AC_MSG_WARN([*** MySQL test program execution failed.])
+ 			MYSQL_CFLAGS=""
+			MYSQL_LIBS=""
+       			AC_MSG_WARN([*** MySQL test program execution failed.])
 		fi        	
       	fi
 
@@ -88,6 +90,8 @@ AC_DEFUN([X_AC_DATABASES],
 			AC_SUBST(PGSQL_CFLAGS)
 			AC_DEFINE(HAVE_PGSQL, 1, [Define to 1 if using PostgreSQL libaries])
 		else	
+			PGSQL_CFLAGS=""
+			PGSQL_LIBS=""
        			AC_MSG_WARN([*** PostgreSQL test program execution failed.])
 		fi        	
       	fi

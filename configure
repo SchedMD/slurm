@@ -25059,7 +25059,9 @@ cat >>confdefs.h <<\_ACEOF
 _ACEOF
 
 	        else
-        		{ echo "$as_me:$LINENO: WARNING: *** MySQL test program execution failed." >&5
+ 			MYSQL_CFLAGS=""
+			MYSQL_LIBS=""
+       			{ echo "$as_me:$LINENO: WARNING: *** MySQL test program execution failed." >&5
 echo "$as_me: WARNING: *** MySQL test program execution failed." >&2;}
 		fi
       	fi
@@ -25185,6 +25187,8 @@ cat >>confdefs.h <<\_ACEOF
 _ACEOF
 
 		else
+			PGSQL_CFLAGS=""
+			PGSQL_LIBS=""
        			{ echo "$as_me:$LINENO: WARNING: *** PostgreSQL test program execution failed." >&5
 echo "$as_me: WARNING: *** PostgreSQL test program execution failed." >&2;}
 		fi
