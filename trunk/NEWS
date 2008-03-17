@@ -8,6 +8,8 @@ documents those changes that are of interest to users and admins.
  -- Fix several memory leaks.
  -- In scontrol, show job's Requeue value, permit change of Requeue and COmment
     values.
+ -- In slurmctld job record, add QOS (quality of service) value for accounting
+    purposes with Maui and Moab.
 
 * Changes in SLURM 1.3.0-pre10
 ==============================

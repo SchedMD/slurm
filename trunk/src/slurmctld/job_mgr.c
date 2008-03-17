@@ -101,6 +101,8 @@ static int      hash_table_size = 0;
 static int      job_count = 0;		/* job's in the system */
 static uint32_t job_id_sequence = 0;	/* first job_id to assign new job */
 static struct   job_record **job_hash = NULL;
+static bool     wiki_sched = false;
+static bool     wiki_sched_test = false;
 
 /* Local functions */
 static void _add_job_hash(struct job_record *job_ptr);
@@ -487,6 +489,7 @@ static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer)
 	pack16(dump_job_ptr->kill_on_step_done, buffer);
 	pack16(dump_job_ptr->batch_flag, buffer);
 	pack16(dump_job_ptr->mail_type, buffer);
+	pack16(dump_job_ptr->qos, buffer);
 	pack16(dump_job_ptr->state_reason, buffer);
 
 	packstr(dump_job_ptr->resp_host, buffer);
@@ -542,7 +545,7 @@ static int _load_job_state(Buf buffer)
 		total_procs;
 	time_t start_time, end_time, suspend_time, pre_sus_time, tot_sus_time;
 	uint16_t job_state, next_step_id, details, batch_flag, step_flag;
-	uint16_t kill_on_node_fail, kill_on_step_done;
+	uint16_t kill_on_node_fail, kill_on_step_done, qos;
 	uint16_t alloc_resp_port, other_port, mail_type, state_reason;
 	char *nodes = NULL, *partition = NULL, *name = NULL, *resp_host = NULL;
 	char *account = NULL, *network = NULL, *mail_user = NULL;
@@ -577,6 +580,7 @@ static int _load_job_state(Buf buffer)
 	safe_unpack16(&kill_on_step_done, buffer);
 	safe_unpack16(&batch_flag, buffer);
 	safe_unpack16(&mail_type, buffer);
+	safe_unpack16(&qos, buffer);
 	safe_unpack16(&state_reason, buffer);
 
 	safe_unpackstr_xmalloc(&resp_host, &name_len, buffer);
@@ -662,61 +666,69 @@ static int _load_job_state(Buf buffer)
 		goto unpack_error;
 	}
 
-	job_ptr->assoc_id     = assoc_id;
-	job_ptr->user_id      = user_id;
-	job_ptr->group_id     = group_id;
-	job_ptr->time_limit   = time_limit;
-	job_ptr->priority     = priority;
+	xfree(job_ptr->account);
+	job_ptr->account = account;
+	account          = NULL;  /* reused, nothing left to free */
+	xfree(job_ptr->alloc_node);
+	job_ptr->alloc_node   = alloc_node;
+	alloc_node             = NULL;	/* reused, nothing left to free */
+	job_ptr->alloc_resp_port = alloc_resp_port;
 	job_ptr->alloc_sid    = alloc_sid;
-	job_ptr->start_time   = start_time;
-	job_ptr->end_time     = end_time;
-	job_ptr->suspend_time = suspend_time;
-	job_ptr->pre_sus_time = pre_sus_time;
-	job_ptr->tot_sus_time = tot_sus_time;
-	job_ptr->job_state    = job_state;
-	job_ptr->next_step_id = next_step_id;
-	job_ptr->exit_code    = exit_code;
-	job_ptr->state_reason = state_reason;
-	job_ptr->num_procs    = num_procs;
-	job_ptr->total_procs  = total_procs;
-	job_ptr->db_index     = db_index;
 	job_ptr->assoc_id     = assoc_id;
-	job_ptr->time_last_active = time(NULL);
-	job_ptr->name = name;
-	name          = NULL;	/* reused, nothing left to free */
-	xfree(job_ptr->nodes);
-	job_ptr->nodes  = nodes;
-	nodes           = NULL;	/* reused, nothing left to free */
+	job_ptr->batch_flag   = batch_flag;
+	xfree(job_ptr->comment);
+	job_ptr->comment      = comment;
+	comment               = NULL;  /* reused, nothing left to free */
+	job_ptr->db_index     = db_index;
+	job_ptr->end_time     = end_time;
+	job_ptr->exit_code    = exit_code;
+	job_ptr->group_id     = group_id;
+	job_ptr->job_state    = job_state;
+	job_ptr->kill_on_node_fail = kill_on_node_fail;
+	job_ptr->kill_on_step_done = kill_on_step_done;
+	xfree(job_ptr->licenses);
+	job_ptr->licenses     = licenses;
+	licenses              = NULL;	/* reused, nothing left to free */
+	job_ptr->mail_type    = mail_type;
+	xfree(job_ptr->mail_user);
+	job_ptr->mail_user    = mail_user;
+	mail_user             = NULL;	/* reused, nothing left to free */
+	xfree(job_ptr->name);		/* in case duplicate record */
+	job_ptr->name         = name;
+	name                  = NULL;	/* reused, nothing left to free */
+	xfree(job_ptr->network);
+	job_ptr->network      = network;
+	network               = NULL;  /* reused, nothing left to free */
+	job_ptr->next_step_id = next_step_id;
+	xfree(job_ptr->nodes);		/* in case duplicate record */
+	job_ptr->nodes        = nodes;
+	nodes                 = NULL;	/* reused, nothing left to free */
 	if (nodes_completing) {
 		xfree(job_ptr->nodes_completing);
 		job_ptr->nodes_completing = nodes_completing;
 		nodes_completing = NULL;  /* reused, nothing left to free */
 	}
-	xfree(job_ptr->alloc_node);
-	job_ptr->alloc_node = alloc_node;
-	alloc_node          = NULL;	/* reused, nothing left to free */
-	job_ptr->partition = partition;
-	partition          = NULL;	/* reused, nothing left to free */
-	job_ptr->account = account;
-	account          = NULL;  /* reused, nothing left to free */
-	job_ptr->comment = comment;
-	comment          = NULL;  /* reused, nothing left to free */
-	job_ptr->network = network;
-	network          = NULL;  /* reused, nothing left to free */
+	job_ptr->num_procs    = num_procs;
+	job_ptr->other_port   = other_port;
+	xfree(job_ptr->partition);
+	job_ptr->partition    = partition;
+	partition             = NULL;	/* reused, nothing left to free */
 	job_ptr->part_ptr = part_ptr;
-	job_ptr->kill_on_node_fail = kill_on_node_fail;
-	job_ptr->kill_on_step_done = kill_on_step_done;
-	job_ptr->batch_flag        = batch_flag;
-	job_ptr->resp_host         = resp_host;
-	resp_host = NULL;	/* reused, nothing left to free */
-	job_ptr->alloc_resp_port   = alloc_resp_port;
-	job_ptr->other_port        = other_port;
-	job_ptr->licenses          = licenses;
-	licenses = NULL;	/* reused, nothing left to free */
-	job_ptr->mail_type         = mail_type;
-	job_ptr->mail_user         = mail_user;
-	mail_user = NULL;	/* reused, nothing left to free */
+	job_ptr->pre_sus_time = pre_sus_time;
+	job_ptr->priority     = priority;
+	job_ptr->qos          = qos;
+	xfree(job_ptr->resp_host);
+	job_ptr->resp_host    = resp_host;
+	resp_host             = NULL;	/* reused, nothing left to free */
 	job_ptr->select_jobinfo = select_jobinfo;
+	job_ptr->start_time   = start_time;
+	job_ptr->state_reason = state_reason;
+	job_ptr->suspend_time = suspend_time;
+	job_ptr->time_last_active = time(NULL);
+	job_ptr->time_limit   = time_limit;
+	job_ptr->total_procs  = total_procs;
+	job_ptr->tot_sus_time = tot_sus_time;
+	job_ptr->user_id      = user_id;
 	info("recovered job id %u", job_id);
 
 	safe_unpack16(&step_flag, buffer);
@@ -2558,7 +2570,27 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 	job_ptr->account    = xstrdup(job_desc->account);
 	job_ptr->network    = xstrdup(job_desc->network);
 	job_ptr->comment    = xstrdup(job_desc->comment);
-
+	if (!wiki_sched_test) {
+		char *sched_type = slurm_get_sched_type();
+		if (strcmp(sched_type, "sched/wiki") == 0)
+			wiki_sched = true;
+		xfree(sched_type);
+		wiki_sched_test = true;
+	}
+	if (wiki_sched && strstr(job_ptr->comment, "QOS:")) {
+		if      (strstr(job_ptr->comment, "QOS:execmptall"))
+			job_ptr->qos = QOS_EXEMPT_ALL;
+		else if (strstr(job_ptr->comment, "QOS:execmptwclimit"))
+			job_ptr->qos = QOS_EXEMPT_WC_LIMIT;
+		else if (strstr(job_ptr->comment, "QOS:expedite"))
+			job_ptr->qos = QOS_EXPEDITE;
+		else if (strstr(job_ptr->comment, "QOS:normal"))
+			job_ptr->qos = QOS_NORMAL;
+		else if (strstr(job_ptr->comment, "QOS:standby"))
+			job_ptr->qos = QOS_STANDBY;
+		else
+			job_ptr->qos = QOS_DEFAULT;
+	}
 	if (job_desc->priority != NO_VAL) /* already confirmed submit_uid==0 */
 		job_ptr->priority = job_desc->priority;
 	else {
@@ -2747,9 +2779,6 @@ static void _job_timed_out(struct job_record *job_ptr)
 static int _validate_job_desc(job_desc_msg_t * job_desc_msg, int allocate, 
 			      uid_t submit_uid)
 {
-	static bool wiki_sched = false;
-	static bool wiki_sched_test = false;
-
 	/* Permit normal user to specify job id only for sched/wiki 
 	 * (Maui scheduler). This was also required with earlier
 	 * versions of the Moab scheduler (wiki2), but was fixed 
@@ -3829,6 +3858,21 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 		job_specs->comment = NULL;	/* Nothing left to free */
 		info("update_job: setting comment to %s for job_id %u",
 		     job_ptr->comment, job_specs->job_id);
+
+		if (wiki_sched && strstr(job_ptr->comment, "QOS:")) {
+			if      (strstr(job_ptr->comment, "QOS:execmptall"))
+				job_ptr->qos = QOS_EXEMPT_ALL;
+			else if (strstr(job_ptr->comment, "QOS:execmptwclimit"))
+				job_ptr->qos = QOS_EXEMPT_WC_LIMIT;
+			else if (strstr(job_ptr->comment, "QOS:expedite"))
+				job_ptr->qos = QOS_EXPEDITE;
+			else if (strstr(job_ptr->comment, "QOS:normal"))
+				job_ptr->qos = QOS_NORMAL;
+			else if (strstr(job_ptr->comment, "QOS:standby"))
+				job_ptr->qos = QOS_STANDBY;
+			else
+				job_ptr->qos = QOS_DEFAULT;
+		}
 	}
 
 	if (job_specs->name) {
