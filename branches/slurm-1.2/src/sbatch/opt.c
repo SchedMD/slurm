@@ -106,6 +106,7 @@
 #define LONG_OPT_NO_REQUEUE  0x116
 #define LONG_OPT_COMMENT     0x117
 #define LONG_OPT_WRAP        0x118
+#define LONG_OPT_REQUEUE     0x119
 #define LONG_OPT_BLRTS_IMAGE     0x140
 #define LONG_OPT_LINUX_IMAGE     0x141
 #define LONG_OPT_MLOADER_IMAGE   0x142
@@ -654,6 +655,7 @@ static struct option long_options[] = {
 	{"mail-type",     required_argument, 0, LONG_OPT_MAIL_TYPE},
 	{"mail-user",     required_argument, 0, LONG_OPT_MAIL_USER},
 	{"nice",          optional_argument, 0, LONG_OPT_NICE},
+	{"requeue",       no_argument,       0, LONG_OPT_REQUEUE},
 	{"no-requeue",    no_argument,       0, LONG_OPT_NO_REQUEUE},
 	{"comment",       required_argument, 0, LONG_OPT_COMMENT},
 	{"blrts-image",   required_argument, 0, LONG_OPT_BLRTS_IMAGE},
@@ -1274,6 +1276,9 @@ static void _set_options(int argc, char **argv)
 			break;
 		case LONG_OPT_NO_REQUEUE:
 			opt.no_requeue = true;
+			break;
+		case LONG_OPT_REQUEUE:
+			opt.no_requeue = false;	/* the default */
 			break;
 		case LONG_OPT_COMMENT:
 			xfree(opt.comment);
