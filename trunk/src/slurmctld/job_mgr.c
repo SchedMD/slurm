@@ -2578,18 +2578,12 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 		wiki_sched_test = true;
 	}
 	if (wiki_sched && strstr(job_ptr->comment, "QOS:")) {
-		if      (strstr(job_ptr->comment, "QOS:execmptall"))
-			job_ptr->qos = QOS_EXEMPT_ALL;
-		else if (strstr(job_ptr->comment, "QOS:execmptwclimit"))
-			job_ptr->qos = QOS_EXEMPT_WC_LIMIT;
-		else if (strstr(job_ptr->comment, "QOS:expedite"))
+		if (strstr(job_ptr->comment, "FLAGS:PREEMPTOR"))
 			job_ptr->qos = QOS_EXPEDITE;
-		else if (strstr(job_ptr->comment, "QOS:normal"))
-			job_ptr->qos = QOS_NORMAL;
-		else if (strstr(job_ptr->comment, "QOS:standby"))
+		else if (strstr(job_ptr->comment, "FLAGS:PREEMPTEE"))
 			job_ptr->qos = QOS_STANDBY;
 		else
-			job_ptr->qos = QOS_DEFAULT;
+			job_ptr->qos = QOS_NORMAL;
 	}
 	if (job_desc->priority != NO_VAL) /* already confirmed submit_uid==0 */
 		job_ptr->priority = job_desc->priority;
@@ -3860,18 +3854,12 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 		     job_ptr->comment, job_specs->job_id);
 
 		if (wiki_sched && strstr(job_ptr->comment, "QOS:")) {
-			if      (strstr(job_ptr->comment, "QOS:execmptall"))
-				job_ptr->qos = QOS_EXEMPT_ALL;
-			else if (strstr(job_ptr->comment, "QOS:execmptwclimit"))
-				job_ptr->qos = QOS_EXEMPT_WC_LIMIT;
-			else if (strstr(job_ptr->comment, "QOS:expedite"))
+			if (strstr(job_ptr->comment, "FLAGS:PREEMPTOR"))
 				job_ptr->qos = QOS_EXPEDITE;
-			else if (strstr(job_ptr->comment, "QOS:normal"))
-				job_ptr->qos = QOS_NORMAL;
-			else if (strstr(job_ptr->comment, "QOS:standby"))
+			else if (strstr(job_ptr->comment, "FLAGS:PREEMPTEE"))
 				job_ptr->qos = QOS_STANDBY;
 			else
-				job_ptr->qos = QOS_DEFAULT;
+				job_ptr->qos = QOS_NORMAL;
 		}
 	}
 
