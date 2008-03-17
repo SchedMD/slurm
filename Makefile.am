@@ -9,6 +9,7 @@ EXTRA_DIST =			\
 	etc/slurm.conf.example	\
 	etc/slurm.epilog.clean	\
 	etc/init.d.slurm	\
+	etc/init.d.slurmdbd	\
 	autogen.sh		\
 	slurm.spec		\
 	README			\

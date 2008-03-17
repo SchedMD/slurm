@@ -245,7 +245,8 @@ mv ${RPM_BUILD_ROOT}%{_bindir}/srun ${RPM_BUILD_ROOT}%{_sbindir}
 %endif
 
 if [ -d /etc/init.d ]; then
-   install -D -m755 etc/init.d.slurm $RPM_BUILD_ROOT/etc/init.d/slurm
+   install -D -m755 etc/init.d.slurm    $RPM_BUILD_ROOT/etc/init.d/slurm
+   install -D -m755 etc/init.d.slurmdbd $RPM_BUILD_ROOT/etc/init.d/slurmdbd
 fi
 install -D -m644 etc/slurm.conf.example ${RPM_BUILD_ROOT}%{_sysconfdir}/slurm.conf.example
 install -D -m755 etc/slurm.epilog.clean ${RPM_BUILD_ROOT}%{_sysconfdir}/slurm.epilog.clean
@@ -257,7 +258,8 @@ rm -f $RPM_BUILD_ROOT/%{_libdir}/slurm/*.{a,la}
 LIST=./slurm.files
 touch $LIST
 if [ -d /etc/init.d ]; then
-   echo "/etc/init.d/slurm" >> $LIST
+   echo "/etc/init.d/slurm"    >> $LIST
+   echo "/etc/init.d/slurmdbd" >> $LIST
 fi
 test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/task_affinity.so &&
    echo %{_libdir}/slurm/task_affinity.so >> $LIST
@@ -487,6 +489,11 @@ rm -rf $RPM_BUILD_ROOT
 #        /etc/init.d/slurm stop
 #    fi
 #fi
+#if [ -x /etc/init.d/slurmdbd ]; then
+#    if /etc/init.d/slurmdbd status | grep -q running; then
+#        /etc/init.d/slurmdbd stop
+#    fi
+#fi
 
 %post
 if [ -x /sbin/ldconfig ]; then
@@ -509,6 +516,12 @@ if [ "$1" = 0 ]; then
         [ -x /sbin/chkconfig ] && /sbin/chkconfig --del slurm
         if /etc/init.d/slurm status | grep -q running; then
             /etc/init.d/slurm stop
+        fi
+    fi
+    if [ -x /etc/init.d/slurmdbd ]; then
+        [ -x /sbin/chkconfig ] && /sbin/chkconfig --del slurmdbd
+        if /etc/init.d/slurmdbd status | grep -q running; then
+            /etc/init.d/slurmdbd stop
         fi
     fi
 fi
