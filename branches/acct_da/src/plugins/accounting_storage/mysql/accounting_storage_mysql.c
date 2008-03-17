@@ -504,7 +504,45 @@ extern int acct_storage_p_close_connection(MYSQL *acct_mysql_db)
 extern int acct_storage_p_add_users(MYSQL *acct_mysql_db, List user_list)
 {
 #ifdef HAVE_MYSQL
-	return SLURM_SUCCESS;
+	ListIterator itr = NULL;
+	int rc = SLURM_SUCCESS;
+	acct_user_rec_t *object = NULL;
+	char *cols = NULL, *vals = NULL, *query = NULL;
+
+	itr = list_iterator_create(user_list);
+	while((object = list_next(itr))) {
+		if(!object->name || !object->default_acct) {
+			error("We need a user name and "
+			      "default acct to add.");
+			rc = SLURM_ERROR;
+			continue;
+		}
+		xstrcat(cols, "name, default_acct");
+		xstrfmtcat(vals, "'%s', '%s'", 
+			   object->name, object->default_acct); 
+		if(object->expedite != ACCT_EXPEDITE_NOTSET) {
+			xstrcat(cols, ", expedite");
+			xstrfmtcat(vals, ", %u", object->expedite); 		
+		}
+
+		if(object->admin_level != ACCT_ADMIN_NOTSET) {
+			xstrcat(cols, ", admin_level");
+			xstrfmtcat(vals, ", %u", object->admin_level);
+		}
+
+		query = xstrdup_printf("insert into %s (%s) values (%s)",
+				       user_table, cols, vals);
+		xfree(cols);
+		xfree(vals);
+		rc = mysql_db_query(acct_mysql_db, query);
+		xfree(query);
+		if(rc != SLURM_SUCCESS) {
+			error("Couldn't add user %s", object->name);
+		}
+	}
+	list_iterator_destroy(itr);
+
+	return rc;
 #else
 	return SLURM_ERROR;
 #endif
@@ -542,7 +580,89 @@ extern int acct_storage_p_add_associations(MYSQL *acct_mysql_db,
 					   List association_list)
 {
 #ifdef HAVE_MYSQL
-	return SLURM_SUCCESS;
+	ListIterator itr = NULL;
+	int rc = SLURM_SUCCESS;
+	acct_association_rec_t *object = NULL;
+	char *cols = NULL, *vals = NULL, *query = NULL;
+	char *parent = NULL;
+
+	itr = list_iterator_create(association_list);
+	while((object = list_next(itr))) {
+		if(!object->cluster || !object->acct) {
+			error("We need a association cluster and "
+			      "acct to add one.");
+			rc = SLURM_ERROR;
+			continue;
+		}
+		xstrcat(cols, "cluster, acct");
+		xstrfmtcat(vals, "'%s', '%s'", 
+			   object->cluster, object->acct); 
+		if(object->user) {
+			xstrcat(cols, ", user");
+			xstrfmtcat(vals, ", '%s'", object->user); 		
+		}
+
+		if(object->parent_acct) {
+			parent = xstrdup(object->parent_acct);
+		} else {
+			parent = xstrdup("root");
+		}
+
+		if(object->partition) {
+			xstrcat(cols, ", partition");
+			xstrfmtcat(vals, ", '%s'", object->partition);
+		}
+
+		if(object->fairshare) {
+			xstrcat(cols, ", fairshare");
+			xstrfmtcat(vals, ", %u", object->fairshare);
+		}
+
+		if(object->max_jobs) {
+			xstrcat(cols, ", max_jobs");
+			xstrfmtcat(vals, ", %u", object->max_jobs);
+		}
+
+		if(object->max_nodes_per_job) {
+			xstrcat(cols, ", max_nodes_per_job");
+			xstrfmtcat(vals, ", %u", object->max_nodes_per_job);
+		}
+
+		if(object->max_wall_duration_per_job) {
+			xstrcat(cols, ", max_wall_duration_per_job");
+			xstrfmtcat(vals, ", %u",
+				   object->max_wall_duration_per_job);
+		}
+
+		if(object->max_cpu_secs_per_job) {
+			xstrcat(cols, ", max_cpu_seconds_per_job");
+			xstrfmtcat(vals, ", %u", object->max_cpu_secs_per_job);
+		}
+		query = xstrdup_printf("SELECT @myRight := rgt FROM %s"
+				       "WHERE acct = '%s' and cluster = '%s' "
+				       "and user = '';"
+				       "UPDATE %s SET rgt = rgt + 2 "
+				       "WHERE rgt > @myRight;"
+				       "UPDATE %s SET lft = lft + 2 "
+				       "WHERE lft > @myRight;"
+				       "insert into %s (%s, lft, rgt) "
+				       "values (%s, @myRight + 1, "
+				       "@myRight + 2);",
+				       assoc_table, parent, object->cluster,
+				       assoc_table, assoc_table,
+				       assoc_table, cols, vals);
+		xfree(cols);
+		xfree(vals);
+		xfree(parent);
+		rc = mysql_db_query(acct_mysql_db, query);
+		xfree(query);
+		if(rc != SLURM_SUCCESS) {
+			error("Couldn't add assoc");
+		}
+	}
+	list_iterator_destroy(itr);
+
+	return rc;
 #else
 	return SLURM_ERROR;
 #endif
