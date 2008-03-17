@@ -97,6 +97,8 @@ BuildRequires: readline-devel
 BuildRequires: openssl-devel >= 0.9.6 openssl >= 0.9.6
 %endif
 
+Requires: slurm-plugins
+
 #  Allow override of sysconfdir via _slurm_sysconfdir.
 #  Note 'global' instead of 'define' needed here to work around apparent
 #   bug in rpm macro scoping (or something...)
@@ -188,6 +190,19 @@ BuildRequires: qsnetlibs
 SLURM switch plugin for Quadrics Elan3 or Elan4.
 %endif
 
+%package slurmdbd
+Summary: SLURM database daemon
+Group: System Environment/Base
+Requires: slurm-plugins
+%description slurmdbd
+SLURM database daemon
+
+%package slurm-plugins
+Summary: SLURM plugins (loadable shared objects)
+Group: System Environment/Base
+%description slurm-plugins
+SLURM plugins (loadable shared objects)
+
 %package torque
 Summary: Torque/PBS wrappers for transitition from Torque/PBS to SLURM.
 Group: Development/System
@@ -259,20 +274,7 @@ LIST=./slurm.files
 touch $LIST
 if [ -d /etc/init.d ]; then
    echo "/etc/init.d/slurm"    >> $LIST
-   echo "/etc/init.d/slurmdbd" >> $LIST
 fi
-test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/task_affinity.so &&
-   echo %{_libdir}/slurm/task_affinity.so >> $LIST
-test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/crypto_openssl.so &&
-   echo %{_libdir}/slurm/crypto_openssl.so >> $LIST
-
-# Build file lists for optional plugin packages
-for plugin in auth_authd; do
-   LIST=./${plugin}.files
-   touch $LIST
-   test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/${plugin}.so &&
-     echo %{_libdir}/slurm/${plugin}.so > $LIST
-done
 
 LIST=./munge.files
 touch $LIST
@@ -313,6 +315,31 @@ test -f $RPM_BUILD_ROOT/%{_perldir}/auto/Slurm/Slurm.bs &&
   echo "%{_perldir}/auto/Slurm/Slurm.bs"      >> $LIST
 test -f $RPM_BUILD_ROOT/%{_perldir}/auto/Slurm/autosplit.ix &&
   echo "%{_perldir}/auto/Slurm/autosplit.ix"      >> $LIST
+
+LIST=./slurmdbd.files
+touch $LIST
+if [ -d /etc/init.d ]; then
+   echo "/etc/init.d/slurmdbd" >> $LIST
+fi
+
+LIST=./slurm_plugins.files
+test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/task_affinity.so &&
+   echo %{_libdir}/slurm/task_affinity.so >> $LIST
+test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/crypto_openssl.so &&
+   echo %{_libdir}/slurm/crypto_openssl.so >> $LIST
+
+# Build file lists for optional plugin packages
+for plugin in auth_authd; do
+   LIST=./${plugin}.files
+   touch $LIST
+   test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/${plugin}.so &&
+     echo %{_libdir}/slurm/${plugin}.so > $LIST
+done
+
+
+
+
+
 
 LIST=./torque.files
 touch $LIST
@@ -365,7 +392,6 @@ rm -rf $RPM_BUILD_ROOT
 %{_bindir}/s*
 %{_sbindir}/slurmctld
 %{_sbindir}/slurmd
-%{_sbindir}/slurmdbd
 %{_sbindir}/slurmstepd
 %ifos aix5.3
 %{_sbindir}/srun
@@ -374,48 +400,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/slurm/src/*
 %{_mandir}/man1/*
 %{_mandir}/man5/slurm.*
-%{_mandir}/man5/slurmdbd.*
 %{_mandir}/man5/wiki.*
 %{_mandir}/man8/*
 %dir %{_sysconfdir}
-%dir %{_libdir}/slurm
-%{_libdir}/slurm/accounting_storage_filetxt.so
-%{_libdir}/slurm/accounting_storage_gold.so
-%{_libdir}/slurm/accounting_storage_mysql.so
-%{_libdir}/slurm/accounting_storage_none.so
-%{_libdir}/slurm/accounting_storage_pgsql.so
-%{_libdir}/slurm/accounting_storage_slurmdbd.so
-%{_libdir}/slurm/checkpoint_none.so
-%{_libdir}/slurm/checkpoint_ompi.so
-%{_libdir}/slurm/checkpoint_xlch.so
-%{_libdir}/slurm/jobacct_gather_aix.so
-%{_libdir}/slurm/jobacct_gather_linux.so
-%{_libdir}/slurm/jobacct_gather_none.so
-%{_libdir}/slurm/jobcomp_none.so
-%{_libdir}/slurm/jobcomp_filetxt.so
-%{_libdir}/slurm/jobcomp_mysql.so
-%{_libdir}/slurm/jobcomp_pgsql.so
-%{_libdir}/slurm/jobcomp_script.so
-%{_libdir}/slurm/jobcomp_slurmdbd.so
-%{_libdir}/slurm/proctrack_pgid.so
-%{_libdir}/slurm/proctrack_linuxproc.so
-%{_libdir}/slurm/sched_backfill.so
-%{_libdir}/slurm/sched_builtin.so
-%{_libdir}/slurm/sched_hold.so
-%{_libdir}/slurm/sched_gang.so
-%{_libdir}/slurm/sched_wiki.so
-%{_libdir}/slurm/sched_wiki2.so
-%{_libdir}/slurm/select_cons_res.so
-%{_libdir}/slurm/select_linear.so
-%{_libdir}/slurm/switch_none.so
-%{_libdir}/slurm/mpi_none.so
-%{_libdir}/slurm/mpi_mpich1_p4.so
-%{_libdir}/slurm/mpi_mpich1_shmem.so
-%{_libdir}/slurm/mpi_mpichgm.so
-%{_libdir}/slurm/mpi_mpichmx.so
-%{_libdir}/slurm/mpi_mvapich.so
-%{_libdir}/slurm/mpi_lam.so
-%{_libdir}/slurm/task_none.so
 %dir %{_libdir}/slurm/src
 %config %{_sysconfdir}/slurm.conf.example
 %config %{_sysconfdir}/slurm.epilog.clean
@@ -465,6 +452,54 @@ rm -rf $RPM_BUILD_ROOT
 %files -f switch_elan.files switch-elan
 %defattr(-,root,root)
 %endif
+#############################################################################
+
+%files -f slurmdbd.files slurmdbd
+%defattr(-,root,root)
+%{_sbindir}/slurmdbd
+%{_mandir}/man5/slurmdbd.*
+#############################################################################
+
+%files -f slurm_plugins.files slurm-plugins
+%defattr(-,root,root)
+%dir %{_libdir}/slurm
+%{_libdir}/slurm/accounting_storage_filetxt.so
+%{_libdir}/slurm/accounting_storage_gold.so
+%{_libdir}/slurm/accounting_storage_mysql.so
+%{_libdir}/slurm/accounting_storage_none.so
+%{_libdir}/slurm/accounting_storage_pgsql.so
+%{_libdir}/slurm/accounting_storage_slurmdbd.so
+%{_libdir}/slurm/checkpoint_none.so
+%{_libdir}/slurm/checkpoint_ompi.so
+%{_libdir}/slurm/checkpoint_xlch.so
+%{_libdir}/slurm/jobacct_gather_aix.so
+%{_libdir}/slurm/jobacct_gather_linux.so
+%{_libdir}/slurm/jobacct_gather_none.so
+%{_libdir}/slurm/jobcomp_none.so
+%{_libdir}/slurm/jobcomp_filetxt.so
+%{_libdir}/slurm/jobcomp_mysql.so
+%{_libdir}/slurm/jobcomp_pgsql.so
+%{_libdir}/slurm/jobcomp_script.so
+%{_libdir}/slurm/jobcomp_slurmdbd.so
+%{_libdir}/slurm/proctrack_pgid.so
+%{_libdir}/slurm/proctrack_linuxproc.so
+%{_libdir}/slurm/sched_backfill.so
+%{_libdir}/slurm/sched_builtin.so
+%{_libdir}/slurm/sched_hold.so
+%{_libdir}/slurm/sched_gang.so
+%{_libdir}/slurm/sched_wiki.so
+%{_libdir}/slurm/sched_wiki2.so
+%{_libdir}/slurm/select_cons_res.so
+%{_libdir}/slurm/select_linear.so
+%{_libdir}/slurm/switch_none.so
+%{_libdir}/slurm/mpi_none.so
+%{_libdir}/slurm/mpi_mpich1_p4.so
+%{_libdir}/slurm/mpi_mpich1_shmem.so
+%{_libdir}/slurm/mpi_mpichgm.so
+%{_libdir}/slurm/mpi_mpichmx.so
+%{_libdir}/slurm/mpi_mvapich.so
+%{_libdir}/slurm/mpi_lam.so
+%{_libdir}/slurm/task_none.so
 #############################################################################
 
 %files -f torque.files torque
