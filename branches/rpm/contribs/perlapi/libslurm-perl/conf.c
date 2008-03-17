@@ -42,17 +42,17 @@ slurm_ctl_conf_to_hv(slurm_ctl_conf_t* conf, HV* hv)
 	if(conf->job_acct_gather_type)
 		STORE_FIELD(hv, conf, job_acct_gather_type, charp);
 	STORE_FIELD(hv, conf, job_acct_gather_freq, uint16_t);
-	if(conf->job_acct_storage_loc)
-		STORE_FIELD(hv, conf, job_acct_storage_loc, charp);
-	if(conf->job_acct_storage_type)
-		STORE_FIELD(hv, conf, job_acct_storage_type, charp);
-	if(conf->job_acct_storage_user)
-		STORE_FIELD(hv, conf, job_acct_storage_user, charp);
-	if(conf->job_acct_storage_host)
-		STORE_FIELD(hv, conf, job_acct_storage_host, charp);
-	if(conf->job_acct_storage_pass)
-		STORE_FIELD(hv, conf, job_acct_storage_pass, charp);
-	STORE_FIELD(hv, conf, job_acct_storage_port, uint32_t);
+	if(conf->accounting_storage_loc)
+		STORE_FIELD(hv, conf, accounting_storage_loc, charp);
+	if(conf->accounting_storage_type)
+		STORE_FIELD(hv, conf, accounting_storage_type, charp);
+	if(conf->accounting_storage_user)
+		STORE_FIELD(hv, conf, accounting_storage_user, charp);
+	if(conf->accounting_storage_host)
+		STORE_FIELD(hv, conf, accounting_storage_host, charp);
+	if(conf->accounting_storage_pass)
+		STORE_FIELD(hv, conf, accounting_storage_pass, charp);
+	STORE_FIELD(hv, conf, accounting_storage_port, uint32_t);
 	if(conf->job_comp_loc)
 		STORE_FIELD(hv, conf, job_comp_loc, charp);
 	if(conf->job_comp_type)
