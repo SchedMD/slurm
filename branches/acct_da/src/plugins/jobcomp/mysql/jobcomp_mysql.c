@@ -380,7 +380,7 @@ extern int slurm_jobcomp_log_record(struct job_record *job_ptr)
 #endif
 		 );
 //	info("query = %s", query);
-	rc = mysql_db_query(jobcomp_mysql_db, query);
+	rc = mysql_db_query_no_ret(jobcomp_mysql_db, query);
 	xfree(usr_str);
 	xfree(grp_str);
 

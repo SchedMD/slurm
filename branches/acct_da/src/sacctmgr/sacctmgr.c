@@ -439,33 +439,25 @@ _process_command (int argc, char *argv[])
  */
 static void _add_it (int argc, char *argv[]) 
 {
-	int i, error_code = SLURM_SUCCESS;
+	int error_code = SLURM_SUCCESS;
 	sacctmgr_init();
 
 	/* First identify the entity to add */
-	for (i=0; i<argc; i++) {
-		if (strncasecmp (argv[i], "User", 4) == 0) {
-			error_code = sacctmgr_add_user(
-				(argc - 1), &argv[1]);
-			break;
-		} else if (strncasecmp (argv[i], "Account", 7) == 0) {
-			error_code = sacctmgr_add_account(
-				(argc - 1), &argv[1]);
-			break;
-		} else if (strncasecmp (argv[i], "Cluster", 7) == 0) {
-			error_code = sacctmgr_add_cluster(
-				(argc - 1), &argv[1]);
-			break;
-		}		
-	}
-	
-	if (i >= argc) {
+	if (strncasecmp (argv[0], "User", 4) == 0) {
+		error_code = sacctmgr_add_user((argc - 1), &argv[1]);
+	} else if (strncasecmp (argv[0], "Account", 7) == 0) {
+		error_code = sacctmgr_add_account((argc - 1), &argv[1]);
+	} else if (strncasecmp (argv[0], "Cluster", 7) == 0) {
+		error_code = sacctmgr_add_cluster((argc - 1), &argv[1]);
+	} else {
 		exit_code = 1;
 		fprintf(stderr, "No valid entity in add command\n");
 		fprintf(stderr, "Input line must include \"Association\", ");
 		fprintf(stderr, "\"UserName\", \"AccountName\", ");
 		fprintf(stderr, "or \"ClusterName\"\n");
-	} else if (error_code) {
+	}
+	
+	if (error_code) {
 		exit_code = 1;
 	}
 }
@@ -507,33 +499,26 @@ static void _show_it (int argc, char *argv[])
  */
 static void _modify_it (int argc, char *argv[]) 
 {
-	int i, error_code = SLURM_SUCCESS;
+	int error_code = SLURM_SUCCESS;
 
 	sacctmgr_init();
 
 	/* First identify the entity to modify */
-	for (i=0; i<argc; i++) {
-		if (strncasecmp (argv[i], "User", 4) == 0) {
-			error_code = sacctmgr_modify_user((argc - 1), &argv[1]);
-			break;
-		} else if (strncasecmp (argv[i], "Account", 7) == 0) {
-			error_code = sacctmgr_modify_account(
-				(argc - 1), &argv[1]);
-			break;
-		} else if (strncasecmp (argv[i], "Cluster", 7) == 0) {
-			error_code = sacctmgr_modify_cluster(
-				(argc - 1), &argv[1]);
-			break;
-		}		
-	}
-	
-	if (i >= argc) {
+	if (strncasecmp (argv[0], "User", 4) == 0) {
+		error_code = sacctmgr_modify_user((argc - 1), &argv[1]);
+	} else if (strncasecmp (argv[0], "Account", 7) == 0) {
+		error_code = sacctmgr_modify_account((argc - 1), &argv[1]);
+	} else if (strncasecmp (argv[0], "Cluster", 7) == 0) {
+		error_code = sacctmgr_modify_cluster((argc - 1), &argv[1]);
+	} else {
 		exit_code = 1;
 		fprintf(stderr, "No valid entity in modify command\n");
 		fprintf(stderr, "Input line must include ");
 		fprintf(stderr, "\"User\", \"Account\", ");
 		fprintf(stderr, "or \"Cluster\"\n");
-	} else if (error_code) {
+	}
+
+	if (error_code) {
 		exit_code = 1;
 	}
 }
@@ -545,33 +530,26 @@ static void _modify_it (int argc, char *argv[])
  */
 static void _delete_it (int argc, char *argv[]) 
 {
-	int i, error_code = SLURM_SUCCESS;
+	int error_code = SLURM_SUCCESS;
 
 	sacctmgr_init();
 
 	/* First identify the entity to delete */
-	for (i=0; i<argc; i++) {
-		if (strncasecmp (argv[i], "User", 4) == 0) {
-			error_code = sacctmgr_delete_user((argc - 1), &argv[1]);
-			break;
-		} else if (strncasecmp (argv[i], "Account", 7) == 0) {
-			error_code = sacctmgr_delete_account(
-				(argc - 1), &argv[1]);
-			break;
-		} else if (strncasecmp (argv[i], "Cluster", 7) == 0) {
-			error_code = sacctmgr_delete_cluster(
-				(argc - 1), &argv[1]);
-			break;
-		}		
-	}
-	
-	if (i >= argc) {
+	if (strncasecmp (argv[0], "User", 4) == 0) {
+		error_code = sacctmgr_delete_user((argc - 1), &argv[1]);
+	} else if (strncasecmp (argv[0], "Account", 7) == 0) {
+		error_code = sacctmgr_delete_account((argc - 1), &argv[1]);
+	} else if (strncasecmp (argv[0], "Cluster", 7) == 0) {
+		error_code = sacctmgr_delete_cluster((argc - 1), &argv[1]);
+	} else {
 		exit_code = 1;
 		fprintf(stderr, "No valid entity in delete command\n");
 		fprintf(stderr, "Input line must include ");
 		fprintf(stderr, "\"User\", \"Account\", ");
 		fprintf(stderr, "or \"Cluster\"\n");
-	} else if (error_code) {
+	}
+	
+	if (error_code) {
 		exit_code = 1;
 	}
 }

@@ -92,6 +92,8 @@ static int _get_local_association_list(void *db_conn, int enforce)
 		struct passwd *passwd_ptr = NULL;
 		ListIterator itr = list_iterator_create(local_association_list);
 		while((assoc = list_next(itr))) {
+			if(!assoc->user)
+				continue;
 			passwd_ptr = getpwnam(assoc->user);
 			if(passwd_ptr) 
 				assoc->uid = passwd_ptr->pw_uid;
@@ -216,8 +218,7 @@ extern int assoc_mgr_fill_in_assoc(void *db_conn, acct_association_rec_t *assoc,
 			}
 			continue;
 		} else {
-			if(!assoc->user && found_assoc->user 
-			   && strcasecmp("none", found_assoc->user)) {
+			if(!assoc->user && found_assoc->user) {
 				debug3("we are looking for a "
 				       "nonuser association");
 				continue;

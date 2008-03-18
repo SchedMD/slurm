@@ -329,7 +329,6 @@ extern acct_association_rec_t *sacctmgr_find_association(char *user,
 	itr = list_iterator_create(sacctmgr_association_list);
 	while((assoc = list_next(itr))) {
 		if((user && (!assoc->user || strcasecmp(user, assoc->user)))
-		   || (!user && assoc->user && strcasecmp("none", assoc->user))
 		   || (account && (!assoc->acct 
 				   || strcasecmp(account, assoc->acct)))
 		   || (cluster && (!assoc->cluster 
@@ -350,7 +349,7 @@ extern acct_association_rec_t *sacctmgr_find_parent_assoc(char *account,
 {
 	ListIterator itr = NULL;
 	acct_association_rec_t *assoc = NULL;
-	uint32_t par_id = 0;
+	char *par_acct = NULL;
 
 	if(!account || !cluster)
 		return NULL;
@@ -364,18 +363,18 @@ extern acct_association_rec_t *sacctmgr_find_parent_assoc(char *account,
 
 	itr = list_iterator_create(sacctmgr_association_list);
 	while((assoc = list_next(itr))) {
-		if(par_id) {
-			if(assoc->id == par_id)
+		if(par_acct) {
+			if(!strcasecmp(par_acct, assoc->acct))
 				break;
 			else
 				continue;
 		}
-		if((assoc->user && strcmp(assoc->user, "NONE"))
+		if(assoc->user
 		   || strcasecmp(account, assoc->acct)
 		   || strcasecmp(cluster, assoc->cluster))
 			continue;
 		list_iterator_reset(itr);
-		par_id = assoc->parent;
+		par_acct = assoc->parent_acct;
 	}
 	list_iterator_destroy(itr);
 
@@ -398,10 +397,12 @@ extern acct_association_rec_t *sacctmgr_find_account_base_assoc(char *account,
 
 	if(account)
 		temp = account;
-	
+//	info("looking for %s %s in %d", account, cluster,
+//	     list_count(sacctmgr_association_list));
 	itr = list_iterator_create(sacctmgr_association_list);
 	while((assoc = list_next(itr))) {
-		if((assoc->user && strcmp(assoc->user, "NONE"))
+//		info("is it %s %s %s", assoc->user, assoc->acct, assoc->cluster);
+		if(assoc->user
 		   || strcasecmp(temp, assoc->acct)
 		   || strcasecmp(cluster, assoc->cluster))
 			continue;

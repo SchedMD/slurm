@@ -284,10 +284,6 @@ static List _get_association_list_from_response(gold_response_t *gold_response)
 				acct_rec->id = 
 					atoi(name_val->value);
 			} else if(!strcmp(name_val->name, 
-					  "Parent")) {
-				acct_rec->parent = 
-					atoi(name_val->value);
-			} else if(!strcmp(name_val->name, 
 					  "FairShare")) {
 				acct_rec->fairshare = 
 					atoi(name_val->value);
@@ -309,8 +305,9 @@ static List _get_association_list_from_response(gold_response_t *gold_response)
 					atoi(name_val->value);
 			} else if(!strcmp(name_val->name, 
 					  "User")) {
-				acct_rec->user = 
-					xstrdup(name_val->value);
+				if(strcmp(name_val->name, "NONE"))
+					acct_rec->user = 
+						xstrdup(name_val->value);
 			} else if(!strcmp(name_val->name, 
 					  "Project")) {
 				acct_rec->acct = 
@@ -961,13 +958,6 @@ extern int acct_storage_p_add_associations(void *db_conn,
 		gold_request_add_assignment(gold_request, "Machine",
 					    object->cluster);	
 			
-		if(object->parent) {
-			snprintf(tmp_buff, sizeof(tmp_buff), "%u",
-				 object->parent);
-			gold_request_add_assignment(gold_request, "Parent",
-						    tmp_buff);		
-		}
-
 		if(object->fairshare) {
 			snprintf(tmp_buff, sizeof(tmp_buff), "%u",
 				 object->fairshare);
@@ -1533,18 +1523,6 @@ extern int acct_storage_p_modify_associations(void *db_conn,
 		list_iterator_destroy(itr);
 	}
 
-	if(assoc_q->parent) {
-		snprintf(tmp_buff, sizeof(tmp_buff), "%u",
-			 assoc_q->parent);
-		gold_request_add_condition(gold_request, "Parent",
-					   object,
-					   GOLD_OPERATOR_NONE, 0);
-	}
-
-	if(assoc_q->lft && assoc_q->rgt) {
-		error("lft && rgt don't work with gold.");
-	}
-		
 	if(assoc->fairshare) {
 		snprintf(tmp_buff, sizeof(tmp_buff), "%u",
 			 assoc->fairshare);
@@ -1945,7 +1923,6 @@ extern int acct_storage_p_remove_associations(void *db_conn,
 	int rc = SLURM_SUCCESS;
 	gold_request_t *gold_request = NULL;
 	gold_response_t *gold_response = NULL;
-	char tmp_buff[50];
 	char *object = NULL;
 	int set = 0;
 
@@ -2026,18 +2003,6 @@ extern int acct_storage_p_remove_associations(void *db_conn,
 		list_iterator_destroy(itr);
 	}
 
-	if(assoc_q->parent) {
-		snprintf(tmp_buff, sizeof(tmp_buff), "%u",
-			 assoc_q->parent);
-		gold_request_add_condition(gold_request, "Parent",
-					   object,
-					   GOLD_OPERATOR_NONE, 0);
-	}
-
-	if(assoc_q->lft && assoc_q->rgt) {
-		error("lft && rgt don't work with gold.");
-	}
-		
 	gold_response = get_gold_response(gold_request);	
 	destroy_gold_request(gold_request);
 	
@@ -2357,7 +2322,6 @@ extern List acct_storage_p_get_associations(void *db_conn,
 	ListIterator itr = NULL;
 	int set = 0;
 	char *object = NULL;
-	char tmp_buff[50];
 
 	gold_request = create_gold_request(GOLD_OBJECT_ACCT,
 					   GOLD_ACTION_QUERY);
@@ -2430,18 +2394,6 @@ extern List acct_storage_p_get_associations(void *db_conn,
 			set = 1;
 		}
 		list_iterator_destroy(itr);
-	}
-
-	if(assoc_q->parent) {
-		snprintf(tmp_buff, sizeof(tmp_buff), "%u",
-			 assoc_q->parent);
-		gold_request_add_condition(gold_request, "Parent",
-					   object,
-					   GOLD_OPERATOR_NONE, 0);
-	}
-
-	if(assoc_q->lft && assoc_q->rgt) {
-		error("lft && rgt don't work with gold.");
 	}
 
 empty:

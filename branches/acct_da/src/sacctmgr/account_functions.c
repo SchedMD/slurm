@@ -327,15 +327,7 @@ extern int sacctmgr_add_account(int argc, char *argv[])
 		list_destroy(name_list);
 		printf(" Need name of account to add.\n"); 
 		return SLURM_SUCCESS;
-	} else if(!description) {
-		list_destroy(name_list);
-		printf(" Need a description for these accounts to add.\n"); 
-		return SLURM_SUCCESS;
-	} else if(!organization) {
-		list_destroy(name_list);
-		printf(" Need an organization for these accounts to add.\n"); 
-		return SLURM_SUCCESS;
-	} 
+	}
 
 	if(!parent)
 		parent = xstrdup("root");
@@ -357,8 +349,23 @@ extern int sacctmgr_add_account(int argc, char *argv[])
 	assoc_list = list_create(NULL);
 	itr = list_iterator_create(name_list);
 	while((name = list_next(itr))) {
+		acct = NULL;
 		if(!sacctmgr_find_account(name)) {
+			if(!description) {
+				printf(" Need a description for "
+				       "these accounts to add.\n"); 
+				rc = SLURM_ERROR;
+				goto end_it;
+			} else if(!organization) {
+				printf(" Need an organization for "
+				       "these accounts to add.\n"); 
+				rc = SLURM_ERROR;
+				goto end_it;
+			} 
 			acct = xmalloc(sizeof(acct_account_rec_t));
+			acct->assoc_list =
+				list_create(destroy_acct_association_rec);
+	
 			acct->name = xstrdup(name);
 			acct->description = xstrdup(description);
 			acct->organization = xstrdup(organization);
@@ -371,8 +378,10 @@ extern int sacctmgr_add_account(int argc, char *argv[])
 		itr_c = list_iterator_create(cluster_list);
 		while((cluster = list_next(itr_c))) {
 			if(sacctmgr_find_association(NULL, name,
-						     cluster, NULL))
+						     cluster, NULL)) {
+				printf(" already have this assoc\n");
 				continue;
+			}
 			temp_assoc = sacctmgr_find_account_base_assoc(
 				parent, cluster);
 			if(!temp_assoc) {
@@ -383,19 +392,18 @@ extern int sacctmgr_add_account(int argc, char *argv[])
 				       "to add this account.\n",
 				       parent, cluster);
 				break;
-			}/*  else  */
-/* 					printf("got %u %s %s %s %s\n", */
-/* 					       temp_assoc->id, */
-/* 					       temp_assoc->user, */
-/* 					       temp_assoc->account, */
-/* 					       temp_assoc->cluster, */
-/* 					       temp_assoc->parent_account); */
+			} else
+					printf("got %u %s %s %s %s\n",
+					       temp_assoc->id,
+					       temp_assoc->user,
+					       temp_assoc->acct,
+					       temp_assoc->cluster,
+					       temp_assoc->parent_acct);
 			
 			
 			assoc = xmalloc(sizeof(acct_association_rec_t));
 			assoc->acct = xstrdup(name);
 			assoc->cluster = xstrdup(cluster);
-			assoc->parent = temp_assoc->id;
 			assoc->parent_acct = xstrdup(temp_assoc->acct);
 			assoc->fairshare = fairshare;
 			assoc->max_jobs = max_jobs;
@@ -404,11 +412,16 @@ extern int sacctmgr_add_account(int argc, char *argv[])
 				max_wall_duration_per_job;
 			assoc->max_cpu_secs_per_job = 
 				max_cpu_secs_per_job;
-			list_append(assoc_list, assoc);
-			list_append(sacctmgr_association_list, assoc);
+			if(acct) {
+				list_append(acct->assoc_list, assoc);
+			} else {
+				list_append(assoc_list, assoc);
+				list_append(sacctmgr_association_list, assoc);
+			}
 		}
 		list_iterator_destroy(itr_c);
 	}
+end_it:
 	list_iterator_destroy(itr);
 	list_destroy(name_list);
 	list_destroy(cluster_list);
@@ -425,8 +438,11 @@ extern int sacctmgr_add_account(int argc, char *argv[])
 	}
 
 	if(list_count(assoc_list))
-		printf(" Association =\n");
-	itr = list_iterator_create(assoc_list);
+		printf(" Associations =\n");
+	if(acct)
+		itr = list_iterator_create(acct->assoc_list);
+	else
+		itr = list_iterator_create(assoc_list);
 	while((assoc = list_next(itr))) {
 		printf("  A = %s"
 		       "\tC = %s\n",

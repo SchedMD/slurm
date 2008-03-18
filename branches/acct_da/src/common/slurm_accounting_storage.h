@@ -69,15 +69,15 @@ typedef enum {
 } acct_qos_level_t;
 
 typedef struct {
-	acct_admin_level_t admin_level;
-	List coord_accts; /* list of acct_coord_rec_t *'s */
-	char *default_acct;
-	acct_qos_level_t qos;
-	char *name;
-	uint32_t uid;
-} acct_user_rec_t;
+	List acct_list; /* list of char * */
+	List description_list; /* list of char * */
+	acct_qos_level_t qos;	
+	List organization_list; /* list of char * */
+	uint16_t with_assocs; 
+} acct_account_cond_t;
 
 typedef struct {
+	List assoc_list; /* list of acct_association_rec_t *'s */
 	List coordinators; /* list of char *'s */
 	char *description;
 	acct_qos_level_t qos;
@@ -86,18 +86,44 @@ typedef struct {
 } acct_account_rec_t;
 
 typedef struct {
-	char *acct_name;
-	uint16_t sub_acct;
-} acct_coord_rec_t;
+	uint32_t alloc_secs; /* number of cpu seconds allocated */
+	time_t period_start; 
+} acct_accounting_rec_t;
 
 typedef struct {
-	uint32_t alloc_secs; /* number of cpu seconds allocated */
-	uint32_t cpu_count; /* number of cpus during time period */
-	uint32_t down_secs; /* number of cpu seconds down */
-	uint32_t idle_secs; /* number of cpu seconds idle */
-	time_t period_start; /* when this record was started */
-	uint32_t resv_secs; /* number of cpu seconds reserved */	
-} cluster_accounting_rec_t;
+	List acct_list; /* list of char * */
+	List cluster_list; /* list of char * */
+	List id_list; /* list of char */
+	List partition_list; /* list of char * */
+	char *parent_acct; /* name of parent account */
+	List user_list; /* list of char * */
+} acct_association_cond_t;
+
+typedef struct {
+	List accounting_list; 	/* list of acct_accounting_rec_t *'s */
+	char *acct;		/* account/project associated to association */
+	char *cluster;		/* cluster associated to association */
+	uint32_t fairshare;	/* fairshare number */
+	uint32_t id;		/* id identifing a combination of
+				 * user-account-cluster(-partition) */
+	uint32_t max_cpu_secs_per_job; /* max number of cpu seconds this 
+					   * association can have per job */
+	uint32_t max_jobs;	/* max number of jobs this association can run
+				 * at one time */
+	uint32_t max_nodes_per_job; /* max number of nodes this
+				     * association can allocate per job */
+	uint32_t max_wall_duration_per_job; /* longest time this
+					     * association can run a job */
+	char *parent_acct;	/* name of parent account */
+	char *partition;	/* optional partition in a cluster 
+				 * associated to association */
+	uint32_t uid;		/* user ID */
+	char *user;		/* user associated to association */
+} acct_association_rec_t;
+
+typedef struct {
+	List cluster_list; /* list of char * */
+} acct_cluster_cond_t;
 
 typedef struct {
 	List accounting_list; /* list of cluster_accounting_rec_t *'s */
@@ -117,64 +143,36 @@ typedef struct {
 } acct_cluster_rec_t;
 
 typedef struct {
-	uint32_t alloc_secs; /* number of cpu seconds allocated */
-	time_t period_start; 
-} acct_accounting_rec_t;
-
-typedef struct {
-	List accounting_list; 	/* list of acct_accounting_rec_t *'s */
-	char *acct;		/* account/project associated to association */
-	char *cluster;		/* cluster associated to association */
-	uint32_t fairshare;	/* fairshare number */
-	uint32_t id;		/* id identifing a combination of
-				 * user-account-cluster(-partition) */
-	uint32_t lft;		/* left most association in this group */
-	uint32_t max_cpu_secs_per_job; /* max number of cpu seconds this 
-					   * association can have per job */
-	uint32_t max_jobs;	/* max number of jobs this association can run
-				 * at one time */
-	uint32_t max_nodes_per_job; /* max number of nodes this
-				     * association can allocate per job */
-	uint32_t max_wall_duration_per_job; /* longest time this
-					     * association can run a job */
-	uint32_t parent;	/* parent id associated to this */
-	char *parent_acct;	/* name of parent account */
-	char *partition;	/* optional partition in a cluster 
-				 * associated to association */
-	uint32_t rgt;		/* right most association in this group */
-	uint32_t uid;		/* user ID */
-	char *user;		/* user associated to association */
-} acct_association_rec_t;
+	char *acct_name;
+	uint16_t sub_acct;
+} acct_coord_rec_t;
 
 typedef struct {
 	acct_admin_level_t admin_level;
 	List def_acct_list; /* list of char * */
 	acct_qos_level_t qos;	
 	List user_list; /* list of char * */
+	uint16_t with_assocs; 
 } acct_user_cond_t;
 
 typedef struct {
-	List acct_list; /* list of char * */
-	List description_list; /* list of char * */
-	acct_qos_level_t qos;	
-	List organization_list; /* list of char * */
-} acct_account_cond_t;
+	acct_admin_level_t admin_level;
+	List assoc_list; /* list of acct_association_rec_t *'s */
+	List coord_accts; /* list of acct_coord_rec_t *'s */
+	char *default_acct;
+	acct_qos_level_t qos;
+	char *name;
+	uint32_t uid;
+} acct_user_rec_t;
 
 typedef struct {
-	List cluster_list; /* list of char * */
-} acct_cluster_cond_t;
-
-typedef struct {
-	List acct_list; /* list of char * */
-	List cluster_list; /* list of char * */
-	List id_list; /* list of char */
-	uint32_t lft; /* left most association */
-	List partition_list; /* list of char * */
-	char *parent_acct; /* name of parent account */
-	uint32_t parent; /* parent account id */
-	uint32_t rgt; /* right most association */
-	List user_list; /* list of char * */
-} acct_association_cond_t;
+	uint32_t alloc_secs; /* number of cpu seconds allocated */
+	uint32_t cpu_count; /* number of cpus during time period */
+	uint32_t down_secs; /* number of cpu seconds down */
+	uint32_t idle_secs; /* number of cpu seconds idle */
+	time_t period_start; /* when this record was started */
+	uint32_t resv_secs; /* number of cpu seconds reserved */	
+} cluster_accounting_rec_t;
 
 extern void destroy_acct_user_rec(void *object);
 extern void destroy_acct_account_rec(void *object);

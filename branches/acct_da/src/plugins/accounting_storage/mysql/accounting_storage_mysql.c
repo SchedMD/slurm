@@ -99,6 +99,11 @@ char *step_table = "step_table";
 char *txn_table = "txn_table";
 char *user_table = "user_table";
 
+extern int acct_storage_p_add_associations(MYSQL *acct_mysql_db, uint32_t uid, 
+					   List association_list);
+extern List acct_storage_p_get_associations(MYSQL *acct_mysql_db, 
+					    acct_association_cond_t *assoc_q);
+
 static int _get_db_index(MYSQL *acct_mysql_db, 
 			 time_t submit, uint32_t jobid, uint32_t associd)
 {
@@ -530,10 +535,11 @@ extern int acct_storage_p_add_users(MYSQL *acct_mysql_db, uint32_t uid,
 		xstrcat(cols, "creation_time, mod_time, name, default_acct");
 		xstrfmtcat(vals, "%d, %d, '%s', '%s'", 
 			   now, now, object->name, object->default_acct); 
+		xstrfmtcat(extra, ", default_acct='%s'", object->default_acct);
 		if(object->qos != ACCT_QOS_NOTSET) {
 			xstrcat(cols, ", qos");
 			xstrfmtcat(vals, ", %u", object->qos); 		
-			xstrfmtcat(extra, ", qos%u", object->qos); 		
+			xstrfmtcat(extra, ", qos=%u", object->qos); 		
 		}
 
 		if(object->admin_level != ACCT_ADMIN_NOTSET) {
@@ -542,34 +548,37 @@ extern int acct_storage_p_add_users(MYSQL *acct_mysql_db, uint32_t uid,
 		}
 
 		query = xstrdup_printf(
-			"insert into %s (%s) values (%s)",
-			"on duplicate key update deleted=0, mod_time=%d",
+			"insert into %s (%s) values (%s)"
+			"on duplicate key update deleted=0, mod_time=%d %s;",
 			user_table, cols, vals,
-			now);
-		if(extra) {
-			xstrfmtcat(query, " %s;", extra);
-			xfree(extra);
-		} else {
-			xstrcat(query, ";");
-		}
+			now, extra);
+
 		xstrfmtcat(query, 	
 			   "insert into %s "
 			   "(timestamp, action, name, actor, info) "
-			   "values (%d, %d, '%s', '%s', '%s');",
+			   "values (%d, %d, '%s', '%s', \"%s\");",
 			   txn_table,
-			   now, DBD_ADD_USERS, object->name, user, vals);
-			
-
+			   now, DBD_ADD_USERS, object->name, user, extra);
 		xfree(cols);
 		xfree(vals);
-		rc = mysql_db_query(acct_mysql_db, query);
+		xfree(extra);
+		
+		rc = mysql_db_query_no_ret(acct_mysql_db, query);
 		xfree(query);
 		if(rc != SLURM_SUCCESS) {
 			error("Couldn't add user %s", object->name);
+			continue;
+		}
+
+		if(acct_storage_p_add_associations(
+			   acct_mysql_db, uid, object->assoc_list)
+		   == SLURM_ERROR) {
+			error("Problem adding user associations");
+			rc = SLURM_ERROR;
 		}
 	}
 	list_iterator_destroy(itr);
-
+	
 	return rc;
 #else
 	return SLURM_ERROR;
@@ -590,7 +599,75 @@ extern int acct_storage_p_add_accts(MYSQL *acct_mysql_db, uint32_t uid,
 				    List acct_list)
 {
 #ifdef HAVE_MYSQL
-	return SLURM_SUCCESS;
+	ListIterator itr = NULL;
+	int rc = SLURM_SUCCESS;
+	acct_account_rec_t *object = NULL;
+	char *cols = NULL, *vals = NULL, *query = NULL;
+	struct passwd *pw = NULL;
+	time_t now = time(NULL);
+	char *user = NULL;
+	char *extra = NULL;
+
+	if((pw=getpwuid(uid))) {
+		user = pw->pw_name;
+	}
+
+	itr = list_iterator_create(acct_list);
+	while((object = list_next(itr))) {
+		if(!object->name || !object->description
+		   || !object->organization) {
+			error("We need a acct name, description, and "
+			      "organization to add.");
+			rc = SLURM_ERROR;
+			continue;
+		}
+		xstrcat(cols, "creation_time, mod_time, name, "
+			"description, organization");
+		xstrfmtcat(vals, "%d, %d, '%s', '%s', '%s'", 
+			   now, now, object->name, 
+			   object->description, object->organization); 
+		xstrfmtcat(extra, ", description='%s', organization='%s'",
+			   object->description, object->organization); 		
+		
+		if(object->qos != ACCT_QOS_NOTSET) {
+			xstrcat(cols, ", qos");
+			xstrfmtcat(vals, ", %u", object->qos); 		
+			xstrfmtcat(extra, ", qos=%u", object->qos); 		
+		}
+
+		query = xstrdup_printf(
+			"insert into %s (%s) values (%s)"
+			"on duplicate key update deleted=0, mod_time=%d %s;",
+			acct_table, cols, vals,
+			now, extra);
+
+		xstrfmtcat(query, 	
+			   "insert into %s "
+			   "(timestamp, action, name, actor, info) "
+			   "values (%d, %d, '%s', '%s', \"%s\");",
+			   txn_table,
+			   now, DBD_ADD_ACCOUNTS, object->name, user, extra);
+		xfree(cols);
+		xfree(vals);
+		xfree(extra);
+		
+		rc = mysql_db_query_no_ret(acct_mysql_db, query);
+		xfree(query);
+		if(rc != SLURM_SUCCESS) {
+			error("Couldn't add acct %s", object->name);
+			continue;
+		}
+
+		if(acct_storage_p_add_associations(
+			   acct_mysql_db, uid, object->assoc_list)
+		   == SLURM_ERROR) {
+			error("Problem adding acct associations");
+			rc = SLURM_ERROR;
+		}
+	}
+	list_iterator_destroy(itr);
+	
+	return rc;
 #else
 	return SLURM_ERROR;
 #endif
@@ -623,7 +700,7 @@ extern int acct_storage_p_add_clusters(MYSQL *acct_mysql_db, uint32_t uid,
 		xstrcat(cols, "creation_time, mod_time, acct, cluster");
 		xstrfmtcat(vals, "%d, %d, 'root', '%s'",
 			   now, now, object->name);
-		
+
 		if(object->default_fairshare) {
 			xstrcat(cols, ", fairshare");
 			xstrfmtcat(vals, ", %u", object->default_fairshare);
@@ -673,7 +750,7 @@ extern int acct_storage_p_add_clusters(MYSQL *acct_mysql_db, uint32_t uid,
 		xstrfmtcat(query, 	
 			   "insert into %s "
 			   "(timestamp, action, name, actor, info) "
-			   "values (%d, %d, '%s', '%s', '%s');",
+			   "values (%d, %d, '%s', '%s', \"%s\");",
 			   txn_table,
 			   now, DBD_ADD_CLUSTERS, object->name, user, extra);
 			
@@ -698,7 +775,7 @@ extern int acct_storage_p_add_clusters(MYSQL *acct_mysql_db, uint32_t uid,
 		}
 
 		//info("query is %s", query);
-		rc = mysql_db_query(acct_mysql_db, query);
+		rc = mysql_db_query_no_ret(acct_mysql_db, query);
 		xfree(query);
 		if(rc != SLURM_SUCCESS) {
 			error("Couldn't add tempate assoc for cluster %s",
@@ -722,8 +799,16 @@ extern int acct_storage_p_add_associations(MYSQL *acct_mysql_db, uint32_t uid,
 	ListIterator itr = NULL;
 	int rc = SLURM_SUCCESS;
 	acct_association_rec_t *object = NULL;
-	char *cols = NULL, *vals = NULL, *query = NULL;
+	char *cols = NULL, *vals = NULL, *extra = NULL, *query = NULL;
 	char *parent = NULL;
+	time_t now = time(NULL);
+	struct passwd *pw = NULL;
+	char *user = NULL;
+	char *assoc_name = NULL;
+
+	if((pw=getpwuid(uid))) {
+		user = pw->pw_name;
+	}
 
 	itr = list_iterator_create(association_list);
 	while((object = list_next(itr))) {
@@ -733,70 +818,108 @@ extern int acct_storage_p_add_associations(MYSQL *acct_mysql_db, uint32_t uid,
 			rc = SLURM_ERROR;
 			continue;
 		}
-		xstrcat(cols, "cluster, acct");
-		xstrfmtcat(vals, "'%s', '%s'", 
-			   object->cluster, object->acct); 
+
+		if(object->parent_acct) {
+			parent = object->parent_acct;
+		} else {
+			parent = "root";
+		}
+
+		xstrcat(cols, "cluster, acct, parent_acct");
+		xstrfmtcat(vals, "'%s', '%s', '%s'", 
+			   object->cluster, object->acct, parent); 
+		xstrfmtcat(extra, ", mod_time=%d, parent_acct='%s'",
+			   now, parent);
+		xstrfmtcat(assoc_name, "%s of %s on %s",
+			   object->acct, parent, object->cluster);
 		if(object->user) {
 			xstrcat(cols, ", user");
 			xstrfmtcat(vals, ", '%s'", object->user); 		
-		}
-
-		if(object->parent_acct) {
-			parent = xstrdup(object->parent_acct);
-		} else {
-			parent = xstrdup("root");
-		}
-
-		if(object->partition) {
-			xstrcat(cols, ", partition");
-			xstrfmtcat(vals, ", '%s'", object->partition);
+			xstrfmtcat(extra, ", user='%s'", object->user);
+			xstrfmtcat(assoc_name, " for %s", object->user);
+			
+			if(object->partition) {
+				xstrcat(cols, ", partition");
+				xstrfmtcat(vals, ", '%s'", object->partition);
+				xstrfmtcat(extra, ", partition'%s'",
+					   object->partition);
+				xstrfmtcat(assoc_name, " in %s",
+					   object->partition);
+			}
 		}
 
 		if(object->fairshare) {
 			xstrcat(cols, ", fairshare");
 			xstrfmtcat(vals, ", %u", object->fairshare);
+			xstrfmtcat(extra, ", fairshare=%u",
+				   object->fairshare);
 		}
 
 		if(object->max_jobs) {
 			xstrcat(cols, ", max_jobs");
 			xstrfmtcat(vals, ", %u", object->max_jobs);
+			xstrfmtcat(extra, ", max_jobs=%u",
+				   object->max_jobs);
 		}
 
 		if(object->max_nodes_per_job) {
 			xstrcat(cols, ", max_nodes_per_job");
 			xstrfmtcat(vals, ", %u", object->max_nodes_per_job);
+			xstrfmtcat(extra, ", max_nodes_per_job=%u",
+				   object->max_nodes_per_job);
 		}
 
 		if(object->max_wall_duration_per_job) {
 			xstrcat(cols, ", max_wall_duration_per_job");
 			xstrfmtcat(vals, ", %u",
 				   object->max_wall_duration_per_job);
+			xstrfmtcat(extra, ", max_wall_duration_per_job=%u",
+				   object->max_wall_duration_per_job);
 		}
 
 		if(object->max_cpu_secs_per_job) {
 			xstrcat(cols, ", max_cpu_seconds_per_job");
 			xstrfmtcat(vals, ", %u", object->max_cpu_secs_per_job);
+			xstrfmtcat(extra, ", max_cpu_seconds_per_job=%u",
+				   object->max_cpu_secs_per_job);
 		}
-		query = xstrdup_printf("SELECT @myRight := rgt FROM %s"
-				       "WHERE acct = '%s' and cluster = '%s' "
-				       "and user = ''; "
-				       "UPDATE %s SET rgt = rgt + 2 "
-				       "WHERE rgt > @myRight;"
-				       "UPDATE %s SET lft = lft + 2 "
-				       "WHERE lft > @myRight; "
-				       "insert into %s (%s, lft, rgt) "
-				       "values (%s, @myRight + 1, "
-				       "@myRight + 2);",
-				       assoc_table, parent, object->cluster,
-				       assoc_table, assoc_table,
-				       assoc_table, cols, vals);
+
+		xstrfmtcat(query,
+			   "LOCK TABLE %s WRITE;"
+			   "SELECT @myLeft := lft FROM %s WHERE acct = '%s' "
+			   "and cluster = '%s' and user = '';",
+			   assoc_table,
+			   assoc_table, parent, object->cluster);
+		xstrfmtcat(query,
+			   "UPDATE %s SET rgt = rgt+2 WHERE rgt > @myLeft;"
+			   "UPDATE %s SET lft = lft+2 WHERE lft > @myLeft;",
+			   assoc_table, assoc_table);
+		
+		xstrfmtcat(query,
+			   "insert into %s (%s, lft, rgt) "
+			   "values (%s, @myLeft+1, @myLeft+2) "
+			   "on duplicate key update deleted=0, "
+			   "lft=@myLeft+1, rgt=@myLeft+2 %s;"
+			   "UNLOCK TABLES;",
+			   assoc_table, cols,
+			   vals,
+			   extra);
+		xstrfmtcat(query, 	
+			   "insert into %s "
+			   "(timestamp, action, name, actor, info) "
+			   "values (%d, %d, '%s', '%s', \"%s\");",
+			   txn_table,
+			   now, DBD_ADD_ASSOCS, assoc_name, user, extra);
 		xfree(cols);
 		xfree(vals);
-		xfree(parent);
-		rc = mysql_db_query(acct_mysql_db, query);
+		xfree(extra);
+			
+		rc = mysql_db_query_no_ret(acct_mysql_db, query);
 		xfree(query);
 		if(rc != SLURM_SUCCESS) {
 			error("Couldn't add assoc");
+			rc = SLURM_ERROR;
+			continue;
 		}
 	}
 	list_iterator_destroy(itr);
@@ -1057,7 +1180,16 @@ empty:
 		mysql_free_result(coord_result);
 		/* FIX ME: ADD SUB projects here from assoc list lft
 		 * rgt */
-
+		
+		if(user_q->with_assocs) {
+			acct_association_cond_t assoc_q;
+			memset(&assoc_q, 0, sizeof(acct_association_cond_t));
+			assoc_q.user_list = list_create(slurm_destroy_char);
+			list_append(assoc_q.user_list, user->name);
+			user->assoc_list = acct_storage_p_get_associations(
+				acct_mysql_db, &assoc_q);
+			list_destroy(assoc_q.user_list);
+		}
 	}
 	mysql_free_result(result);
 
@@ -1330,7 +1462,7 @@ extern List acct_storage_p_get_associations(MYSQL *acct_mysql_db,
 		"acct",
 		"cluster",
 		"partition",
-		"parent",
+		"parent_acct",
 		"fairshare",
 		"max_jobs",
 		"max_nodes_per_job",
@@ -1351,16 +1483,13 @@ extern List acct_storage_p_get_associations(MYSQL *acct_mysql_db,
 		ASSOC_REQ_MCPJ,
 		ASSOC_REQ_COUNT
 	};
-
+	xstrcat(extra, "where deleted=0");
 	if(!assoc_q) 
 		goto empty;
 
 	if(assoc_q->acct_list && list_count(assoc_q->acct_list)) {
 		set = 0;
-		if(extra)
-			xstrcat(extra, " && (");
-		else
-			xstrcat(extra, " where (");
+		xstrcat(extra, " && (");
 		itr = list_iterator_create(assoc_q->acct_list);
 		while((object = list_next(itr))) {
 			if(set) 
@@ -1374,10 +1503,7 @@ extern List acct_storage_p_get_associations(MYSQL *acct_mysql_db,
 
 	if(assoc_q->cluster_list && list_count(assoc_q->cluster_list)) {
 		set = 0;
-		if(extra)
-			xstrcat(extra, " && (");
-		else
-			xstrcat(extra, " where (");
+		xstrcat(extra, " && (");
 		itr = list_iterator_create(assoc_q->cluster_list);
 		while((object = list_next(itr))) {
 			if(set) 
@@ -1391,10 +1517,7 @@ extern List acct_storage_p_get_associations(MYSQL *acct_mysql_db,
 
 	if(assoc_q->user_list && list_count(assoc_q->user_list)) {
 		set = 0;
-		if(extra)
-			xstrcat(extra, " && (");
-		else
-			xstrcat(extra, " where (");
+		xstrcat(extra, " && (");
 		itr = list_iterator_create(assoc_q->user_list);
 		while((object = list_next(itr))) {
 			if(set) 
@@ -1408,10 +1531,7 @@ extern List acct_storage_p_get_associations(MYSQL *acct_mysql_db,
 
 	if(assoc_q->id_list && list_count(assoc_q->id_list)) {
 		set = 0;
-		if(extra)
-			xstrcat(extra, " && (");
-		else
-			xstrcat(extra, " where (");
+		xstrcat(extra, " && (");
 		itr = list_iterator_create(assoc_q->id_list);
 		while((object = list_next(itr))) {
 			if(set) 
@@ -1423,37 +1543,8 @@ extern List acct_storage_p_get_associations(MYSQL *acct_mysql_db,
 		xstrcat(extra, ")");
 	}
 	
-	if(assoc_q->lft) {
-		if(extra)
-			xstrfmtcat(extra, " && lft=%u", assoc_q->lft);
-		else
-			xstrfmtcat(extra, " where lft=%u",
-				   assoc_q->lft);			
-	}
-
-	if(assoc_q->rgt) {
-		if(extra)
-			xstrfmtcat(extra, " && rgt=%u", assoc_q->rgt);
-		else
-			xstrfmtcat(extra, " where rgt=%u",
-				   assoc_q->rgt);			
-	}
-
-	if(assoc_q->parent) {
-		if(extra)
-			xstrfmtcat(extra, " && parent=%u", assoc_q->parent);
-		else
-			xstrfmtcat(extra, " where parent=%u",
-				   assoc_q->parent);			
-	}
-
 	if(assoc_q->parent_acct) {
-		if(extra)
-			xstrfmtcat(extra, " && parent_acct='%s'",
-				   assoc_q->parent_acct);
-		else
-			xstrfmtcat(extra, " where parent_acct='%s'",
-				   assoc_q->parent_acct);			
+		xstrfmtcat(extra, " && parent_acct='%s'", assoc_q->parent_acct);
 	}
 empty:
 	xfree(tmp);
@@ -1462,14 +1553,10 @@ empty:
 		xstrfmtcat(tmp, ", %s", assoc_req_inx[i]);
 	}
 
-	query = xstrdup_printf("select %s from %s", tmp, assoc_table);
+	query = xstrdup_printf("select %s from %s %s", tmp, assoc_table, extra);
 	xfree(tmp);
-
-	if(extra) {
-		xstrcat(query, extra);
-		xfree(extra);
-	}
-
+	xfree(extra);
+	//info("query =\n%s", query);
 	if(!(result = mysql_db_query_ret(acct_mysql_db, query))) {
 		xfree(query);
 		return NULL;
@@ -1484,14 +1571,13 @@ empty:
 		list_append(assoc_list, assoc);
 		
 		assoc->id =  atoi(row[ASSOC_REQ_ID]);
-		assoc->user = xstrdup(row[ASSOC_REQ_USER]);
+		
+		if(row[ASSOC_REQ_USER][0])
+			assoc->user = xstrdup(row[ASSOC_REQ_USER]);
 		assoc->acct = xstrdup(row[ASSOC_REQ_ACCT]);
 		assoc->cluster = xstrdup(row[ASSOC_REQ_CLUSTER]);
-		assoc->partition = xstrdup(row[ASSOC_REQ_PART]);
-		if(row[ASSOC_REQ_PARENT])
-			assoc->parent = atoi(row[ASSOC_REQ_PARENT]);
-		else
-			assoc->parent = -1;
+		if(row[ASSOC_REQ_PART][0])
+			assoc->partition = xstrdup(row[ASSOC_REQ_PART]);
 		if(row[ASSOC_REQ_FS])
 			assoc->fairshare = atoi(row[ASSOC_REQ_FS]);
 		else
@@ -1574,7 +1660,7 @@ extern int clusteracct_storage_p_node_down(MYSQL *acct_mysql_db,
 		"update %s set period_end=%d where cluster='%s' "
 		"and period_end=0 and node_name='%s'",
 		event_table, (event_time-1), cluster, node_ptr->name);
-	rc = mysql_db_query(acct_mysql_db, query);
+	rc = mysql_db_query_no_ret(acct_mysql_db, query);
 	xfree(query);
 
 	debug2("inserting %s(%s) with %u cpus", node_ptr->name, cluster, cpus);
@@ -1585,7 +1671,7 @@ extern int clusteracct_storage_p_node_down(MYSQL *acct_mysql_db,
 		"values ('%s', '%s', %u, %d, '%s')",
 		event_table, node_ptr->name, cluster, 
 		cpus, event_time, my_reason);
-	rc = mysql_db_query(acct_mysql_db, query);
+	rc = mysql_db_query_no_ret(acct_mysql_db, query);
 	xfree(query);
 
 	return rc;
@@ -1606,7 +1692,7 @@ extern int clusteracct_storage_p_node_up(MYSQL *acct_mysql_db,
 		"update %s set period_end=%d where cluster='%s' "
 		"and period_end=0 and node_name='%s'",
 		event_table, (event_time-1), cluster, node_ptr->name);
-	rc = mysql_db_query(acct_mysql_db, query);
+	rc = mysql_db_query_no_ret(acct_mysql_db, query);
 	xfree(query);
 	return rc;
 #else
@@ -1667,7 +1753,7 @@ extern int clusteracct_storage_p_cluster_procs(MYSQL *acct_mysql_db,
 		"update %s set period_end=%d where cluster='%s' "
 		"and period_end=0 and node_name=''",
 		event_table, (event_time-1), cluster);
-	rc = mysql_db_query(acct_mysql_db, query);
+	rc = mysql_db_query_no_ret(acct_mysql_db, query);
 	xfree(query);
 	if(rc != SLURM_SUCCESS)
 		goto end_it;
@@ -1676,7 +1762,7 @@ add_it:
 		"insert into %s (cluster, cpu_count, period_start) "
 		"values ('%s', %u, %d)",
 		event_table, cluster, procs, event_time);
-	rc = mysql_db_query(acct_mysql_db, query);
+	rc = mysql_db_query_no_ret(acct_mysql_db, query);
 	xfree(query);
 
 end_it:
@@ -1843,7 +1929,7 @@ extern int jobacct_storage_p_job_complete(MYSQL *acct_mysql_db,
 			       job_ptr->job_state & (~JOB_COMPLETING),
 			       nodes, job_ptr->exit_code,
 			       job_ptr->requid, job_ptr->db_index);
-	rc = mysql_db_query(acct_mysql_db, query);
+	rc = mysql_db_query_no_ret(acct_mysql_db, query);
 	xfree(query);
 	
 	return  rc;
@@ -1935,7 +2021,7 @@ extern int jobacct_storage_p_step_start(MYSQL *acct_mysql_db,
 		step_ptr->step_id, 
 		(int)step_ptr->start_time, step_ptr->name,
 		JOB_RUNNING, cpus, node_list, cpus);
-	rc = mysql_db_query(acct_mysql_db, query);
+	rc = mysql_db_query_no_ret(acct_mysql_db, query);
 	xfree(query);
 
 	return rc;
@@ -2070,7 +2156,7 @@ extern int jobacct_storage_p_step_complete(MYSQL *acct_mysql_db,
 		jobacct->min_cpu_id.nodeid,	/* min cpu node */
 		ave_cpu,	/* ave cpu */
 		step_ptr->job_ptr->db_index, step_ptr->step_id);
-	rc = mysql_db_query(acct_mysql_db, query);
+	rc = mysql_db_query_no_ret(acct_mysql_db, query);
 	xfree(query);
 	 
 	return rc;
@@ -2110,14 +2196,14 @@ extern int jobacct_storage_p_suspend(MYSQL *acct_mysql_db,
 		 job_table, (int)job_ptr->suspend_time, 
 		 job_ptr->job_state & (~JOB_COMPLETING),
 		 job_ptr->db_index);
-	rc = mysql_db_query(acct_mysql_db, query);
+	rc = mysql_db_query_no_ret(acct_mysql_db, query);
 	if(rc != SLURM_ERROR) {
 		snprintf(query, sizeof(query),
 			 "update %s set suspended=%u-suspended, "
 			 "state=%d where id=%u and end=0",
 			 step_table, (int)job_ptr->suspend_time, 
 			 job_ptr->job_state, job_ptr->db_index);
-		rc = mysql_db_query(acct_mysql_db, query);
+		rc = mysql_db_query_no_ret(acct_mysql_db, query);
 	}
 	
 	return rc;
