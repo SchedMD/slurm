@@ -44,7 +44,7 @@ print_header $test_id
  
 spawn $sacct --help
 expect {
-	-re "SLURM accounting is disabled" {
+	-re "SLURM accounting storage is disabled" {
 		set not_support 1
 		exp_continue
 	}
