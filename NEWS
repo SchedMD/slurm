@@ -35,7 +35,7 @@ documents those changes that are of interest to users and admins.
     shared across partitions are not gang-scheduled.
  -- Add EpilogMsgTime configuration parameter. See "man slurm.conf" for details.
  -- Increase default MaxJobCount configuration parameter from 2000 to 5000. 
- -- Move all database common files from src/common to new lib in src/database
+ -- Move all database common files from src/common to new lib in src/database.
  -- Move sacct to src/accounting added sacctmgr for scontrol like operations 
     to accounting infrastructure.
  -- Basic functions of sacctmgr in place to make for administration of 
