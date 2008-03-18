@@ -380,7 +380,6 @@ extern Buf pack_slurmdbd_msg(slurmdbd_msg_t *req)
 	case DBD_MODIFY_ASSOCS:
 	case DBD_MODIFY_CLUSTERS:
 	case DBD_MODIFY_USERS:
-	case DBD_MODIFY_USER_ADMIN_LEVEL:
 		slurmdbd_pack_modify_msg(
 			req->msg_type, (dbd_modify_msg_t *)req->data, buffer);
 		break;
@@ -487,7 +486,6 @@ extern int unpack_slurmdbd_msg(slurmdbd_msg_t *resp, Buf buffer)
 	case DBD_MODIFY_ASSOCS:
 	case DBD_MODIFY_CLUSTERS:
 	case DBD_MODIFY_USERS:
-	case DBD_MODIFY_USER_ADMIN_LEVEL:
 		rc = slurmdbd_unpack_modify_msg(
 			resp->msg_type, (dbd_modify_msg_t **)&resp->data,
 			buffer);
@@ -1255,11 +1253,6 @@ void inline slurmdbd_free_modify_msg(slurmdbd_msg_type_t type,
 			destroy_cond = destroy_acct_user_cond;
 			destroy_rec = destroy_acct_user_rec;
 			break;
-		case DBD_MODIFY_USER_ADMIN_LEVEL:
-			if(msg->cond)
-				destroy_acct_user_cond(msg->cond);
-			return;
-			break;
 		default:
 			fatal("Unknown modify type");
 			return;
@@ -1856,10 +1849,6 @@ void inline slurmdbd_pack_modify_msg(slurmdbd_msg_type_t type,
 		my_cond = pack_acct_user_cond;
 		my_rec = pack_acct_user_rec;
 		break;
-	case DBD_MODIFY_USER_ADMIN_LEVEL:
-		pack_acct_user_cond(msg->cond, buffer);
-		return;
-		break;
 	default:
 		fatal("Unknown pack type");
 		return;
@@ -1894,12 +1883,6 @@ int inline slurmdbd_unpack_modify_msg(slurmdbd_msg_type_t type,
 	case DBD_MODIFY_USERS:
 		my_cond = unpack_acct_user_cond;
 		my_rec = unpack_acct_user_rec;
-		break;
-	case DBD_MODIFY_USER_ADMIN_LEVEL:
-		if(unpack_acct_user_cond(&msg_ptr->cond, buffer)
-		   == SLURM_ERROR) 
-			goto unpack_error;
-		return SLURM_SUCCESS;
 		break;
 	default:
 		fatal("Unknown unpack type");

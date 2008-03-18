@@ -82,9 +82,6 @@ static int   _modify_clusters(void *db_conn,
 			      Buf in_buffer, Buf *out_buffer, uint32_t *uid);
 static int   _modify_users(void *db_conn,
 			   Buf in_buffer, Buf *out_buffer, uint32_t *uid);
-static int   _modify_user_admin_level(void *db_conn,
-				      Buf in_buffer, Buf *out_buffer,
-				      uint32_t *uid);
 static int   _node_state(void *db_conn,
 			 Buf in_buffer, Buf *out_buffer, uint32_t *uid);
 static char *_node_state_string(uint16_t node_state);
@@ -215,11 +212,6 @@ proc_req(void *db_conn, slurm_fd orig_fd,
 		case DBD_MODIFY_USERS:
 			rc = _modify_users(db_conn,
 					   in_buffer, out_buffer, uid);
-			break;
-		case DBD_MODIFY_USER_ADMIN_LEVEL:
-			rc = _modify_user_admin_level(db_conn,
-						      in_buffer, out_buffer,
-						      uid);
 			break;
 		case DBD_NODE_STATE:
 			rc = _node_state(db_conn,
@@ -1153,46 +1145,21 @@ static int   _modify_users(void *db_conn,
 		rc = SLURM_ERROR;
 		goto end_it;
 	}
-	
+
+	if(((acct_user_rec_t *)get_msg->rec)->admin_level != ACCT_ADMIN_NOTSET 
+	   && *uid != slurmdbd_conf->slurm_user_id
+	   && assoc_mgr_get_admin_level(db_conn, *uid) 
+	   < ((acct_user_rec_t *)get_msg->rec)->admin_level) {
+		comment = "You have to be the same or higher admin level to change another persons";
+		((acct_user_rec_t *)get_msg->rec)->admin_level =
+			ACCT_ADMIN_NOTSET;
+	}
+
 	rc = acct_storage_g_modify_users(db_conn, *uid, get_msg->cond, 
 					 get_msg->rec);
 end_it:
 	slurmdbd_free_modify_msg(DBD_MODIFY_USERS, get_msg);
 	*out_buffer = make_dbd_rc_msg(rc, comment, DBD_MODIFY_USERS);
-	return rc;
-}
-
-static int   _modify_user_admin_level(void *db_conn,
-				      Buf in_buffer, Buf *out_buffer,
-				      uint32_t *uid)
-{
-	int rc = SLURM_ERROR;
-	dbd_modify_msg_t *get_msg = NULL;
-	char *comment = NULL;
-
-	if(*uid != slurmdbd_conf->slurm_user_id
-	   && assoc_mgr_get_admin_level(db_conn, *uid) < ACCT_ADMIN_OPERATOR) {
-		comment = "User doesn't have privilege to preform this action";
-		error("%s", comment);
-		rc = ESLURM_ACCESS_DENIED;
-		goto end_it;
-	}
-
-	if (slurmdbd_unpack_modify_msg(DBD_MODIFY_USER_ADMIN_LEVEL, &get_msg,
-				       in_buffer) != SLURM_SUCCESS) {
-		comment = "Failed to unpack DBD_MODIFY_USER_ADMIN_LEVEL message";
-		error("%s", comment);
-		rc = SLURM_ERROR;
-		goto end_it;
-	}
-	
-	debug2("DBD_MODIFY_USER_ADMIN_LEVEL: called");
-
-	rc = acct_storage_g_modify_user_admin_level(db_conn, *uid,
-						    get_msg->cond);
-end_it:
-	slurmdbd_free_modify_msg(DBD_MODIFY_USER_ADMIN_LEVEL, get_msg);
-	*out_buffer = make_dbd_rc_msg(rc, comment, DBD_MODIFY_USER_ADMIN_LEVEL);
 	return rc;
 }
 

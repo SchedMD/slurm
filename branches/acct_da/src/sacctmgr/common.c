@@ -221,9 +221,6 @@ extern void destroy_sacctmgr_action(void *object)
 		case SACCTMGR_ASSOCIATION_DELETE:
 			destroy_acct_association_cond(action->cond);
 			break;
-		case SACCTMGR_ADMIN_MODIFY:
-			destroy_acct_user_cond(action->cond);
-			break;
 		case SACCTMGR_COORD_CREATE:
 			xfree(action->rec);
 			destroy_acct_user_cond(action->cond);

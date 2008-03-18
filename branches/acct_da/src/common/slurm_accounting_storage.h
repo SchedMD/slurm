@@ -287,14 +287,6 @@ extern int acct_storage_g_modify_users(void *db_conn, uint32_t uid,
 				       acct_user_rec_t *user);
 
 /* 
- * modify existing users admin level in the accounting system 
- * IN:  acct_user_cond_t *user_q,
- * RET: SLURM_SUCCESS on success SLURM_ERROR else
- */
-extern int acct_storage_g_modify_user_admin_level(void *db_conn, uint32_t uid, 
-						  acct_user_cond_t *user_q);
-
-/* 
  * modify existing accounts in the accounting system 
  * IN:  acct_acct_cond_t *acct_q
  * IN:  acct_account_rec_t *acct

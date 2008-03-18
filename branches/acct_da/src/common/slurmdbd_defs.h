@@ -91,7 +91,6 @@ typedef enum {
 	DBD_MODIFY_ASSOCS,      /* Modify existing association          */
 	DBD_MODIFY_CLUSTERS,    /* Modify existing cluster              */
 	DBD_MODIFY_USERS,       /* Modify existing user                 */
-	DBD_MODIFY_USER_ADMIN_LEVEL,/* Modify existing user             */
 	DBD_NODE_STATE,		/* Record node state transition		*/
 	DBD_RC,			/* Return code from operation		*/
 	DBD_REGISTER_CTLD,	/* Register a slurmctld's comm port	*/

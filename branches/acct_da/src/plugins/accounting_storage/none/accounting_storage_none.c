@@ -134,12 +134,6 @@ extern int acct_storage_p_modify_users(void *db_conn, uint32_t uid,
 	return SLURM_SUCCESS;
 }
 
-extern int acct_storage_p_modify_user_admin_level(void *db_conn, uint32_t uid,
-						  acct_user_cond_t *user_q)
-{
-	return SLURM_SUCCESS;
-}
-
 extern int acct_storage_p_modify_accts(void *db_conn, uint32_t uid,
 				       acct_account_cond_t *acct_q,
 				       acct_account_rec_t *acct)

@@ -259,26 +259,6 @@ extern int acct_storage_p_modify_users(void *db_conn, uint32_t uid,
 	return rc;
 }
 
-extern int acct_storage_p_modify_user_admin_level(void *db_conn, uint32_t uid,
-						  acct_user_cond_t *user_q)
-{
-	slurmdbd_msg_t req;
-	dbd_modify_msg_t get_msg;
-	int rc, resp_code;
-
-	get_msg.cond = user_q;
-	get_msg.rec = NULL;
-
-	req.msg_type = DBD_MODIFY_USER_ADMIN_LEVEL;
-	req.data = &get_msg;
-	rc = slurm_send_slurmdbd_recv_rc_msg(&req, &resp_code);
-
-	if(resp_code != SLURM_SUCCESS)
-		rc = resp_code;
-
-	return rc;
-}
-
 extern int acct_storage_p_modify_accts(void *db_conn, uint32_t uid,
 				       acct_account_cond_t *acct_q,
 				       acct_account_rec_t *acct)

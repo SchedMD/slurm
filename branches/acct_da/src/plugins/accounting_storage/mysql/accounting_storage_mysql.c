@@ -834,14 +834,16 @@ extern int acct_storage_p_add_associations(MYSQL *acct_mysql_db, uint32_t uid,
 			xstrcat(cols, ", parent_acct");
 			xstrfmtcat(vals, ", '%s'", parent);
 			xstrfmtcat(extra, ", parent_acct='%s'", parent);
+			xstrfmtcat(assoc_name, "%s of %s on %s",
+				   object->acct, parent, object->cluster);
 		}
-		xstrfmtcat(assoc_name, "%s of %s on %s",
-			   object->acct, parent, object->cluster);
+		
 		if(object->user) {
 			xstrcat(cols, ", user");
 			xstrfmtcat(vals, ", '%s'", object->user); 		
 			xstrfmtcat(extra, ", user='%s'", object->user);
-			xstrfmtcat(assoc_name, " for %s", object->user);
+			xstrfmtcat(assoc_name, "%s on %s for %s",
+				   object->acct, object->cluster, object->user);
 			
 			if(object->partition) {
 				xstrcat(cols, ", partition");
@@ -940,18 +942,110 @@ extern int acct_storage_p_modify_users(MYSQL *acct_mysql_db, uint32_t uid,
 				       acct_user_rec_t *user)
 {
 #ifdef HAVE_MYSQL
-	return SLURM_SUCCESS;
-#else
-	return SLURM_ERROR;
-#endif
-}
+	ListIterator itr = NULL;
+	int rc = SLURM_SUCCESS;
+	char *object = NULL;
+	char *vals = NULL, *extra = NULL, *query = NULL;
+	time_t now = time(NULL);
+	struct passwd *pw = NULL;
+	char *user_name = NULL;
+	int set = 0;
 
-extern int acct_storage_p_modify_user_admin_level(MYSQL *acct_mysql_db,
-						  uint32_t uid, 
-						  acct_user_cond_t *user_q)
-{
-#ifdef HAVE_MYSQL
-	return SLURM_SUCCESS;
+	if(!user_q) {
+		error("we need something to change");
+		return SLURM_ERROR;
+	}
+
+	if((pw=getpwuid(uid))) {
+		user_name = pw->pw_name;
+	}
+
+	if(user_q->user_list && list_count(user_q->user_list)) {
+		set = 0;
+		if(extra)
+			xstrcat(extra, " && (");
+		else
+			xstrcat(extra, " where (");
+		itr = list_iterator_create(user_q->user_list);
+		while((object = list_next(itr))) {
+			if(set) 
+				xstrcat(extra, " || ");
+			xstrfmtcat(extra, "name='%s'", object);
+			set = 1;
+		}
+		list_iterator_destroy(itr);
+		xstrcat(extra, ")");
+	}
+
+	if(user_q->def_acct_list && list_count(user_q->def_acct_list)) {
+		set = 0;
+		if(extra)
+			xstrcat(extra, " && (");
+		else
+			xstrcat(extra, " where (");
+		itr = list_iterator_create(user_q->def_acct_list);
+		while((object = list_next(itr))) {
+			if(set) 
+				xstrcat(extra, " || ");
+			xstrfmtcat(extra, "default_acct='%s'", object);
+			set = 1;
+		}
+		list_iterator_destroy(itr);
+		xstrcat(extra, ")");
+	}
+	
+	if(user_q->qos != ACCT_QOS_NOTSET) {
+		if(extra)
+			xstrfmtcat(extra, " && qos=%u", user_q->qos);
+		else
+			xstrfmtcat(extra, " where qos=%u",
+				   user_q->qos);
+			
+	}
+
+	if(user_q->admin_level != ACCT_ADMIN_NOTSET) {
+		if(extra)
+			xstrfmtcat(extra, " && admin_level=%u",
+				   user_q->admin_level);
+		else
+			xstrfmtcat(extra, " where admin_level=%u",
+				   user_q->admin_level);
+	}
+
+	if(user->default_acct)
+		xstrfmtcat(vals, ", default_acct='%s'", user->default_acct);
+
+	if(user->qos != ACCT_QOS_NOTSET)
+		xstrfmtcat(vals, ", qos=%u", user->qos);
+
+	if(user->admin_level != ACCT_ADMIN_NOTSET)
+		xstrfmtcat(vals, ", admin_level=%u", user->admin_level);
+
+	if(!extra || !vals) {
+		error("Nothing to change");
+		return SLURM_ERROR;
+	}
+
+	query = xstrdup_printf("update %s set %s %s", user_table, vals, extra);
+	xstrfmtcat(query, 	
+		   "insert into %s "
+		   "(timestamp, action, name, actor, info) "
+		   "values (%d, %d, \"%s\", '%s', \"%s\");",
+		   txn_table,
+		   now, DBD_MODIFY_USERS, extra, user_name, vals);
+	xfree(vals);
+	xfree(extra);
+			
+	rc = mysql_db_query(acct_mysql_db, query);
+	xfree(query);
+	if(rc != SLURM_SUCCESS) {
+		error("Couldn't modify assocs");
+		rc = SLURM_ERROR;
+	}
+	
+	return rc;
+
+
 #else
 	return SLURM_ERROR;
 #endif
@@ -962,7 +1056,114 @@ extern int acct_storage_p_modify_accts(MYSQL *acct_mysql_db, uint32_t uid,
 				       acct_account_rec_t *acct)
 {
 #ifdef HAVE_MYSQL
-	return SLURM_SUCCESS;
+	ListIterator itr = NULL;
+	int rc = SLURM_SUCCESS;
+	char *object = NULL;
+	char *vals = NULL, *extra = NULL, *query = NULL;
+	time_t now = time(NULL);
+	struct passwd *pw = NULL;
+	char *user = NULL;
+	int set = 0;
+
+	if(!acct_q) {
+		error("we need something to change");
+		return SLURM_ERROR;
+	}
+
+	if((pw=getpwuid(uid))) {
+		user = pw->pw_name;
+	}
+
+	if(acct_q->acct_list && list_count(acct_q->acct_list)) {
+		set = 0;
+		if(extra)
+			xstrcat(extra, " && (");
+		else
+			xstrcat(extra, " where (");
+		itr = list_iterator_create(acct_q->acct_list);
+		while((object = list_next(itr))) {
+			if(set) 
+				xstrcat(extra, " || ");
+			xstrfmtcat(extra, "name='%s'", object);
+			set = 1;
+		}
+		list_iterator_destroy(itr);
+		xstrcat(extra, ")");
+	}
+
+	if(acct_q->description_list && list_count(acct_q->description_list)) {
+		set = 0;
+		if(extra)
+			xstrcat(extra, " && (");
+		else
+			xstrcat(extra, " where (");
+		itr = list_iterator_create(acct_q->description_list);
+		while((object = list_next(itr))) {
+			if(set) 
+				xstrcat(extra, " || ");
+			xstrfmtcat(extra, "description='%s'", object);
+			set = 1;
+		}
+		list_iterator_destroy(itr);
+		xstrcat(extra, ")");
+	}
+	
+	if(acct_q->organization_list && list_count(acct_q->organization_list)) {
+		set = 0;
+		if(extra)
+			xstrcat(extra, " && (");
+		else
+			xstrcat(extra, " where (");
+		itr = list_iterator_create(acct_q->organization_list);
+		while((object = list_next(itr))) {
+			if(set) 
+				xstrcat(extra, " || ");
+			xstrfmtcat(extra, "organization='%s'", object);
+			set = 1;
+		}
+		list_iterator_destroy(itr);
+		xstrcat(extra, ")");
+	}
+	
+	if(acct_q->qos != ACCT_QOS_NOTSET) {
+		if(extra)
+			xstrfmtcat(extra, " && qos=%u", acct_q->qos);
+		else
+			xstrfmtcat(extra, " where qos=%u",
+				   acct_q->qos);
+			
+	}
+
+	if(acct->description)
+		xstrfmtcat(vals, ", description='%s'", acct->description);
+	if(acct->organization)
+		xstrfmtcat(vals, ", organization='%u'", acct->organization);
+	if(acct->qos != ACCT_QOS_NOTSET)
+		xstrfmtcat(vals, ", qos='%u'", acct->qos);
+
+	if(!extra || !vals) {
+		error("Nothing to change");
+		return SLURM_ERROR;
+	}
+
+	query = xstrdup_printf("update %s set %s %s", acct_table, vals, extra);
+	xstrfmtcat(query, 	
+		   "insert into %s "
+		   "(timestamp, action, name, actor, info) "
+		   "values (%d, %d, \"%s\", '%s', \"%s\");",
+		   txn_table,
+		   now, DBD_MODIFY_ACCOUNTS, extra, user, vals);
+	xfree(vals);
+	xfree(extra);
+			
+	rc = mysql_db_query(acct_mysql_db, query);
+	xfree(query);
+	if(rc != SLURM_SUCCESS) {
+		error("Couldn't modify assocs");
+		rc = SLURM_ERROR;
+	}
+	
+	return rc;
 #else
 	return SLURM_ERROR;
 #endif
@@ -973,7 +1174,72 @@ extern int acct_storage_p_modify_clusters(MYSQL *acct_mysql_db, uint32_t uid,
 					  acct_cluster_rec_t *cluster)
 {
 #ifdef HAVE_MYSQL
-	return SLURM_SUCCESS;
+	ListIterator itr = NULL;
+	int rc = SLURM_SUCCESS;
+	char *object = NULL;
+	char *vals = NULL, *extra = NULL, *query = NULL;
+	time_t now = time(NULL);
+	struct passwd *pw = NULL;
+	char *user = NULL;
+	int set = 0;
+
+	if(!cluster_q) {
+		error("we need something to change");
+		return SLURM_ERROR;
+	}
+
+	if((pw=getpwuid(uid))) {
+		user = pw->pw_name;
+	}
+
+	if(cluster_q->cluster_list && list_count(cluster_q->cluster_list)) {
+		set = 0;
+		if(extra)
+			xstrcat(extra, " && (");
+		else
+			xstrcat(extra, " where (");
+		itr = list_iterator_create(cluster_q->cluster_list);
+		while((object = list_next(itr))) {
+			if(set) 
+				xstrcat(extra, " || ");
+			xstrfmtcat(extra, "name='%s'", object);
+			set = 1;
+		}
+		list_iterator_destroy(itr);
+		xstrcat(extra, ")");
+	}
+
+	xstrfmtcat(vals, "mod_time=%d", now);
+
+	if(cluster->control_host)
+		xstrfmtcat(vals, ", control_host='%s'", cluster->control_host);
+	if(cluster->control_port)
+		xstrfmtcat(vals, ", control_port='%u'", cluster->control_port);
+		
+	if(!extra || !vals) {
+		error("Nothing to change");
+		return SLURM_ERROR;
+	}
+
+	query = xstrdup_printf("update %s set %s %s",
+			       cluster_table, vals, extra);
+	xstrfmtcat(query, 	
+		   "insert into %s "
+		   "(timestamp, action, name, actor, info) "
+		   "values (%d, %d, \"%s\", '%s', \"%s\");",
+		   txn_table,
+		   now, DBD_MODIFY_CLUSTERS, extra, user, vals);
+	xfree(vals);
+	xfree(extra);
+			
+	rc = mysql_db_query(acct_mysql_db, query);
+	xfree(query);
+	if(rc != SLURM_SUCCESS) {
+		error("Couldn't modify assocs");
+		rc = SLURM_ERROR;
+	}
+	
+	return rc;
 #else
 	return SLURM_ERROR;
 #endif
@@ -985,7 +1251,135 @@ extern int acct_storage_p_modify_associations(MYSQL *acct_mysql_db,
 					      acct_association_rec_t *assoc)
 {
 #ifdef HAVE_MYSQL
-	return SLURM_SUCCESS;
+	ListIterator itr = NULL;
+	int rc = SLURM_SUCCESS;
+	char *object = NULL;
+	char *vals = NULL, *extra = NULL, *query = NULL;
+	time_t now = time(NULL);
+	struct passwd *pw = NULL;
+	char *user = NULL;
+	int set = 0;
+
+	if(!assoc_q) {
+		error("we need something to change");
+		return SLURM_ERROR;
+	}
+
+	if((pw=getpwuid(uid))) {
+		user = pw->pw_name;
+	}
+
+	if(assoc_q->acct_list && list_count(assoc_q->acct_list)) {
+		set = 0;
+		xstrcat(extra, " && (");
+		itr = list_iterator_create(assoc_q->acct_list);
+		while((object = list_next(itr))) {
+			if(set) 
+				xstrcat(extra, " || ");
+			xstrfmtcat(extra, "acct='%s'", object);
+			set = 1;
+		}
+		list_iterator_destroy(itr);
+		xstrcat(extra, ")");
+	}
+
+	if(assoc_q->cluster_list && list_count(assoc_q->cluster_list)) {
+		set = 0;
+		xstrcat(extra, " && (");
+		itr = list_iterator_create(assoc_q->cluster_list);
+		while((object = list_next(itr))) {
+			if(set) 
+				xstrcat(extra, " || ");
+			xstrfmtcat(extra, "cluster='%s'", object);
+			set = 1;
+		}
+		list_iterator_destroy(itr);
+		xstrcat(extra, ")");
+	}
+
+	if(assoc_q->user_list && list_count(assoc_q->user_list)) {
+		set = 0;
+		xstrcat(extra, " && (");
+		itr = list_iterator_create(assoc_q->user_list);
+		while((object = list_next(itr))) {
+			if(set) 
+				xstrcat(extra, " || ");
+			xstrfmtcat(extra, "user='%s'", object);
+			set = 1;
+		}
+		list_iterator_destroy(itr);
+		xstrcat(extra, ")");
+	}
+
+	if(assoc_q->id_list && list_count(assoc_q->id_list)) {
+		set = 0;
+		xstrcat(extra, " && (");
+		itr = list_iterator_create(assoc_q->id_list);
+		while((object = list_next(itr))) {
+			if(set) 
+				xstrcat(extra, " || ");
+			xstrfmtcat(extra, "id=%s", object);
+			set = 1;
+		}
+		list_iterator_destroy(itr);
+		xstrcat(extra, ")");
+	}
+	
+	if(assoc_q->parent_acct) {
+		xstrfmtcat(extra, " && parent_acct='%s'", assoc_q->parent_acct);
+	}
+
+	if(assoc->parent_acct) {
+		/* FIX ME: We need to be able to move the account to a
+		   different place here in the heiarchy
+		*/
+	}
+
+	xstrfmtcat(vals, "mod_time=%d", now);
+	
+	if((int)assoc->fairshare >= 0) 
+		xstrfmtcat(vals, ", fairshare=%d", assoc->fairshare);
+	
+	if((int)assoc->max_jobs >= 0) 
+		xstrfmtcat(vals, ", max_jobs=%d", assoc->max_jobs);
+	
+	if((int)assoc->max_nodes_per_job >= 0) 
+		xstrfmtcat(vals, ", max_nodes_per_job=%d",
+			   assoc->max_nodes_per_job);
+	
+	if((int)assoc->max_wall_duration_per_job >= 0) {
+		xstrfmtcat(vals, ", max_wall_duration_per_job=%d",
+			   assoc->max_wall_duration_per_job);
+	}
+
+	if((int)assoc->max_cpu_secs_per_job >= 0) {
+		xstrfmtcat(vals, ", max_cpu_seconds_per_job=%d",
+			   assoc->max_cpu_secs_per_job);
+	}
+
+	if(!extra || !vals) {
+		error("Nothing to change");
+		return SLURM_ERROR;
+	}
+
+	query = xstrdup_printf("update %s set %s %s", assoc_table, vals, extra);
+	xstrfmtcat(query, 	
+		   "insert into %s "
+		   "(timestamp, action, name, actor, info) "
+		   "values (%d, %d, \"%s\", '%s', \"%s\");",
+		   txn_table,
+		   now, DBD_MODIFY_ASSOCS, extra, user, vals);
+	xfree(vals);
+	xfree(extra);
+			
+	rc = mysql_db_query(acct_mysql_db, query);
+	xfree(query);
+	if(rc != SLURM_SUCCESS) {
+		error("Couldn't modify assocs");
+		rc = SLURM_ERROR;
+	}
+	
+	return rc;
 #else
 	return SLURM_ERROR;
 #endif
@@ -1118,7 +1512,7 @@ extern List acct_storage_p_get_users(MYSQL *acct_mysql_db,
 			
 	}
 
-	if(user_q->qos != ACCT_ADMIN_NOTSET) {
+	if(user_q->admin_level != ACCT_ADMIN_NOTSET) {
 		if(extra)
 			xstrfmtcat(extra, " && admin_level=%u",
 				   user_q->admin_level);
@@ -1294,7 +1688,6 @@ extern List acct_storage_p_get_accts(MYSQL *acct_mysql_db,
 		else
 			xstrfmtcat(extra, " where qos=%u",
 				   acct_q->qos);
-			
 	}
 
 empty:

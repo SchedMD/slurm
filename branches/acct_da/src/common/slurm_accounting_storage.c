@@ -74,8 +74,6 @@ typedef struct slurm_acct_storage_ops {
 	int  (*modify_users)       (void *db_conn, uint32_t uid,
 				    acct_user_cond_t *user_q,
 				    acct_user_rec_t *user);
-	int  (*modify_user_admin_level)(void *db_conn, uint32_t uid,
-					acct_user_cond_t *user_q);
 	int  (*modify_accts)       (void *db_conn, uint32_t uid,
 				    acct_account_cond_t *acct_q,
 				    acct_account_rec_t *acct);
@@ -187,7 +185,6 @@ static slurm_acct_storage_ops_t * _acct_storage_get_ops(
 		"acct_storage_p_add_clusters",
 		"acct_storage_p_add_associations",
 		"acct_storage_p_modify_users",
-		"acct_storage_p_modify_user_admin_level",
 		"acct_storage_p_modify_accts",
 		"acct_storage_p_modify_clusters",
 		"acct_storage_p_modify_associations",
@@ -1475,15 +1472,6 @@ extern int acct_storage_g_modify_users(void *db_conn, uint32_t uid,
 		return SLURM_ERROR;
 	return (*(g_acct_storage_context->ops.modify_users))
 		(db_conn, uid, user_q, user);
-}
-
-extern int acct_storage_g_modify_user_admin_level(void *db_conn, uint32_t uid,
-						  acct_user_cond_t *user_q)
-{
-	if (slurm_acct_storage_init(NULL) < 0)
-		return SLURM_ERROR;
-	return (*(g_acct_storage_context->ops.modify_user_admin_level))
-		(db_conn, uid, user_q);
 }
 
 extern int acct_storage_g_modify_accounts(void *db_conn, uint32_t uid,

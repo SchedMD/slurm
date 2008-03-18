@@ -626,11 +626,6 @@ static void _commit ()
 				db_conn, my_uid, 
 				action->cond);
 			break;
-		case SACCTMGR_ADMIN_MODIFY:
-			rc = acct_storage_g_modify_user_admin_level(
-				db_conn, my_uid, 
-				action->cond);
-			break;
 		case SACCTMGR_COORD_CREATE:
 			rc = acct_storage_g_add_coord(db_conn, my_uid, 
 						      action->rec,
