@@ -720,9 +720,13 @@ _handle_signal_container(int fd, slurmd_job_t *job, uid_t uid)
 	/*
 	 * Signal the container
 	 */
-	if ((sig == SIGTERM) && (job->nodeid == 0)) {
-		/* Not really an error, but we want this displayed by default */
-		error("*** SLURM CANCELLING JOB ***");
+	if (job->nodeid == 0) {
+		/* Not really errors, 
+		 * but we want messages displayed by default */
+		if (sig == SIGXCPU)
+			error("*** JOB REACHED TIME LIMIT ***");
+		else if (sig == SIGTERM)
+			error("*** JOB CANCELLED ***");
 	}
 
 	pthread_mutex_lock(&suspend_mutex);
