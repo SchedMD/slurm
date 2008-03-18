@@ -64,7 +64,7 @@ if {$job_id == 0} {
 #
 spawn $scontrol notify $job_id TEST_NOTIFY
 expect {
-	-re "Invalid user ID" {
+	-re "Invalid user id" {
 		set authorized 0
 		exp_continue
 	}
