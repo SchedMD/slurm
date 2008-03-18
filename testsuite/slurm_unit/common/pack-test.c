@@ -32,8 +32,8 @@
 int main (int argc, char *argv[])
 {
 	Buf buffer;
-	uint16_t test16 = 1234, out16, byte_cnt;
-	uint32_t test32 = 5678, out32;
+	uint16_t test16 = 1234, out16;
+	uint32_t test32 = 5678, out32, byte_cnt;
 	char testbytes[] = "TEST BYTES", *outbytes;
 	char teststring[] = "TEST STRING",  *outstring = NULL;
 	char *nullstr = NULL;
