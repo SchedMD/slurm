@@ -557,7 +557,6 @@ static void _delete_it (int argc, char *argv[])
 static void _commit ()
 {
 	int rc = SLURM_SUCCESS;
-	ListIterator itr = NULL;
 	sacctmgr_action_t *action = NULL;
 
 	if(!sacctmgr_action_list) {
@@ -565,8 +564,7 @@ static void _commit ()
 		return;
 	}
 	
-	itr = list_iterator_create(sacctmgr_action_list);
-	while((action = list_next(itr))) {
+	while((action = list_pop(sacctmgr_action_list))) {
 		/* if(rc != SLURM_SUCCESS) { */
 /* 			error("_commit: last command returned error."); */
 /* 			break; */
@@ -647,8 +645,8 @@ static void _commit ()
 			error("unknown action %d", action->type);
 			break;
 		}
+		destroy_sacctmgr_action(action);
 	}
-	list_iterator_destroy(itr);
 }
 
 /* _usage - show the valid sacctmgr commands */

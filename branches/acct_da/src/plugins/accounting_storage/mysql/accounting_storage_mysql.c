@@ -175,7 +175,6 @@ static int _mysql_acct_check_tables(MYSQL *acct_mysql_db)
 		{ "acct", "tinytext not null" },
 		{ "cluster", "tinytext not null" },
 		{ "partition", "tinytext not null default ''" },
-		{ "parent", "int not null" },
 		{ "parent_acct", "tinytext not null" },
 		{ "lft", "int not null" },
 		{ "rgt", "int not null" },
@@ -563,7 +562,7 @@ extern int acct_storage_p_add_users(MYSQL *acct_mysql_db, uint32_t uid,
 		xfree(vals);
 		xfree(extra);
 		
-		rc = mysql_db_query_no_ret(acct_mysql_db, query);
+		rc = mysql_db_query(acct_mysql_db, query);
 		xfree(query);
 		if(rc != SLURM_SUCCESS) {
 			error("Couldn't add user %s", object->name);
@@ -651,7 +650,7 @@ extern int acct_storage_p_add_accts(MYSQL *acct_mysql_db, uint32_t uid,
 		xfree(vals);
 		xfree(extra);
 		
-		rc = mysql_db_query_no_ret(acct_mysql_db, query);
+		rc = mysql_db_query(acct_mysql_db, query);
 		xfree(query);
 		if(rc != SLURM_SUCCESS) {
 			error("Couldn't add acct %s", object->name);
@@ -775,10 +774,10 @@ extern int acct_storage_p_add_clusters(MYSQL *acct_mysql_db, uint32_t uid,
 		}
 
 		//info("query is %s", query);
-		rc = mysql_db_query_no_ret(acct_mysql_db, query);
+		rc = mysql_db_query(acct_mysql_db, query);
 		xfree(query);
 		if(rc != SLURM_SUCCESS) {
-			error("Couldn't add tempate assoc for cluster %s",
+			error("Couldn't add root assoc for cluster %s",
 			      object->name);
 			rc = SLURM_ERROR;
 			continue;
@@ -914,7 +913,7 @@ extern int acct_storage_p_add_associations(MYSQL *acct_mysql_db, uint32_t uid,
 		xfree(vals);
 		xfree(extra);
 			
-		rc = mysql_db_query_no_ret(acct_mysql_db, query);
+		rc = mysql_db_query(acct_mysql_db, query);
 		xfree(query);
 		if(rc != SLURM_SUCCESS) {
 			error("Couldn't add assoc");
@@ -1660,7 +1659,7 @@ extern int clusteracct_storage_p_node_down(MYSQL *acct_mysql_db,
 		"update %s set period_end=%d where cluster='%s' "
 		"and period_end=0 and node_name='%s'",
 		event_table, (event_time-1), cluster, node_ptr->name);
-	rc = mysql_db_query_no_ret(acct_mysql_db, query);
+	rc = mysql_db_query(acct_mysql_db, query);
 	xfree(query);
 
 	debug2("inserting %s(%s) with %u cpus", node_ptr->name, cluster, cpus);
@@ -1671,7 +1670,7 @@ extern int clusteracct_storage_p_node_down(MYSQL *acct_mysql_db,
 		"values ('%s', '%s', %u, %d, '%s')",
 		event_table, node_ptr->name, cluster, 
 		cpus, event_time, my_reason);
-	rc = mysql_db_query_no_ret(acct_mysql_db, query);
+	rc = mysql_db_query(acct_mysql_db, query);
 	xfree(query);
 
 	return rc;
@@ -1692,7 +1691,7 @@ extern int clusteracct_storage_p_node_up(MYSQL *acct_mysql_db,
 		"update %s set period_end=%d where cluster='%s' "
 		"and period_end=0 and node_name='%s'",
 		event_table, (event_time-1), cluster, node_ptr->name);
-	rc = mysql_db_query_no_ret(acct_mysql_db, query);
+	rc = mysql_db_query(acct_mysql_db, query);
 	xfree(query);
 	return rc;
 #else
@@ -1753,7 +1752,7 @@ extern int clusteracct_storage_p_cluster_procs(MYSQL *acct_mysql_db,
 		"update %s set period_end=%d where cluster='%s' "
 		"and period_end=0 and node_name=''",
 		event_table, (event_time-1), cluster);
-	rc = mysql_db_query_no_ret(acct_mysql_db, query);
+	rc = mysql_db_query(acct_mysql_db, query);
 	xfree(query);
 	if(rc != SLURM_SUCCESS)
 		goto end_it;
@@ -1762,7 +1761,7 @@ add_it:
 		"insert into %s (cluster, cpu_count, period_start) "
 		"values ('%s', %u, %d)",
 		event_table, cluster, procs, event_time);
-	rc = mysql_db_query_no_ret(acct_mysql_db, query);
+	rc = mysql_db_query(acct_mysql_db, query);
 	xfree(query);
 
 end_it:
@@ -1929,7 +1928,7 @@ extern int jobacct_storage_p_job_complete(MYSQL *acct_mysql_db,
 			       job_ptr->job_state & (~JOB_COMPLETING),
 			       nodes, job_ptr->exit_code,
 			       job_ptr->requid, job_ptr->db_index);
-	rc = mysql_db_query_no_ret(acct_mysql_db, query);
+	rc = mysql_db_query(acct_mysql_db, query);
 	xfree(query);
 	
 	return  rc;
@@ -2021,7 +2020,7 @@ extern int jobacct_storage_p_step_start(MYSQL *acct_mysql_db,
 		step_ptr->step_id, 
 		(int)step_ptr->start_time, step_ptr->name,
 		JOB_RUNNING, cpus, node_list, cpus);
-	rc = mysql_db_query_no_ret(acct_mysql_db, query);
+	rc = mysql_db_query(acct_mysql_db, query);
 	xfree(query);
 
 	return rc;
@@ -2156,7 +2155,7 @@ extern int jobacct_storage_p_step_complete(MYSQL *acct_mysql_db,
 		jobacct->min_cpu_id.nodeid,	/* min cpu node */
 		ave_cpu,	/* ave cpu */
 		step_ptr->job_ptr->db_index, step_ptr->step_id);
-	rc = mysql_db_query_no_ret(acct_mysql_db, query);
+	rc = mysql_db_query(acct_mysql_db, query);
 	xfree(query);
 	 
 	return rc;
@@ -2196,14 +2195,14 @@ extern int jobacct_storage_p_suspend(MYSQL *acct_mysql_db,
 		 job_table, (int)job_ptr->suspend_time, 
 		 job_ptr->job_state & (~JOB_COMPLETING),
 		 job_ptr->db_index);
-	rc = mysql_db_query_no_ret(acct_mysql_db, query);
+	rc = mysql_db_query(acct_mysql_db, query);
 	if(rc != SLURM_ERROR) {
 		snprintf(query, sizeof(query),
 			 "update %s set suspended=%u-suspended, "
 			 "state=%d where id=%u and end=0",
 			 step_table, (int)job_ptr->suspend_time, 
 			 job_ptr->job_state, job_ptr->db_index);
-		rc = mysql_db_query_no_ret(acct_mysql_db, query);
+		rc = mysql_db_query(acct_mysql_db, query);
 	}
 	
 	return rc;
