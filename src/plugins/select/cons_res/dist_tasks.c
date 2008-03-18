@@ -156,8 +156,10 @@ static int _find_offset(struct select_cr_job *job, const int job_index,
 		}
 	}
 	if (index < 0) {
+		/* This may happen if a node has fewer nodes than
+		 * configured and FastSchedule=2 */
 		error("job_assign_task: failure in computing offset");
-		abort();
+		index = 0;
 	}
 
 	return index * this_cr_node->num_sockets;
@@ -511,7 +513,7 @@ extern int cr_plane_dist(struct select_cr_job *job,
 		if (last_taskcount == taskcount) {
 			/* avoid possible infinite loop on error */
 			error("cr_plane_dist failure");
-			abort();
+			return SLURM_ERROR;
 		}
 	}
 
