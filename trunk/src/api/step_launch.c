@@ -296,7 +296,7 @@ int slurm_step_launch (slurm_step_ctx_t *ctx,
 		launch.resp_port[i] = ctx->launch_state->resp_port[i];
 	}
 
-	_launch_tasks(ctx, &launch, params->msg_timeout);
+	rc = _launch_tasks(ctx, &launch, params->msg_timeout);
 
 	/* clean up */
 	xfree(launch.resp_port);
@@ -1037,9 +1037,13 @@ static int _launch_tasks(slurm_step_ctx_t *ctx,
 		debug("launch returned msg_rc=%d err=%d type=%d",
 		      rc, ret_data->err, ret_data->type);
 		if (rc != SLURM_SUCCESS) {
-			errno = ret_data->err;
+			if (ret_data->err)
+				errno = ret_data->err;
+			else
+				errno = rc;
 			error("Task launch failed on node %s: %m",
 			      ret_data->node_name);
+			rc = SLURM_ERROR;
 		} else {
 #if 0 /* only for debugging, might want to make this a callback */
 			errno = ret_data->err;
@@ -1050,7 +1054,7 @@ static int _launch_tasks(slurm_step_ctx_t *ctx,
 	}
 	list_iterator_destroy(ret_itr);
 	list_destroy(ret_list);
-	return SLURM_SUCCESS;
+	return rc;
 }
 
 /* returns an xmalloc cwd string, or NULL if lookup failed. */
