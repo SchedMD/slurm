@@ -414,6 +414,11 @@ extern acct_association_rec_t *sacctmgr_find_account_base_assoc(char *account,
 	return assoc;
 }
 
+extern acct_association_rec_t *sacctmgr_find_root_assoc(char *cluster)
+{
+	return sacctmgr_find_account_base_assoc(NULL, cluster);
+}
+
 extern acct_user_rec_t *sacctmgr_find_user(char *name)
 {
 	ListIterator itr = NULL;

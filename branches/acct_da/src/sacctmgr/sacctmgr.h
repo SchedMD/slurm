@@ -166,6 +166,7 @@ extern acct_association_rec_t *sacctmgr_find_parent_assoc(char *account,
 							  char *cluster);
 extern acct_association_rec_t *sacctmgr_find_account_base_assoc(
 	char *account, char *cluster);
+extern acct_association_rec_t *sacctmgr_find_root_assoc(char *cluster);
 extern acct_user_rec_t *sacctmgr_find_user(char *name);
 extern acct_account_rec_t *sacctmgr_find_account(char *name);
 extern acct_cluster_rec_t *sacctmgr_find_cluster(char *name);

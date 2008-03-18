@@ -188,6 +188,7 @@ extern int sacctmgr_add_cluster(int argc, char *argv[])
 	int rc = SLURM_SUCCESS;
 	int i=0;
 	acct_cluster_rec_t *cluster = xmalloc(sizeof(acct_cluster_rec_t));
+	acct_association_rec_t *assoc = NULL;		  
 	List cluster_list = NULL;
 	int limit_set = 0;
 
@@ -246,7 +247,8 @@ extern int sacctmgr_add_cluster(int argc, char *argv[])
 	if(cluster->default_max_jobs)
 		printf("  MaxJobs       = %u\n", cluster->default_max_jobs);
 	if(cluster->default_max_nodes_per_job)
-		printf("  MaxNodes      = %u\n", cluster->default_max_nodes_per_job);
+		printf("  MaxNodes      = %u\n",
+		       cluster->default_max_nodes_per_job);
 	if(cluster->default_max_wall_duration_per_job)
 		printf("  MaxWall       = %u\n",
 		       cluster->default_max_wall_duration_per_job);
@@ -255,7 +257,7 @@ extern int sacctmgr_add_cluster(int argc, char *argv[])
 		       cluster->default_max_cpu_secs_per_job);
 	
 	cluster_list = list_create(NULL);
-	list_push(cluster_list, cluster);
+	list_append(cluster_list, cluster);
 
 	if(execute_flag) {
 		rc = acct_storage_g_add_clusters(db_conn, my_uid, 
@@ -265,8 +267,19 @@ extern int sacctmgr_add_cluster(int argc, char *argv[])
 		sacctmgr_action_t *action = xmalloc(sizeof(sacctmgr_action_t));
 		action->type = SACCTMGR_CLUSTER_CREATE;
 		action->list = cluster_list;
-		list_push(sacctmgr_action_list, action);
+		list_append(sacctmgr_action_list, action);
 	}
+	list_append(sacctmgr_cluster_list, cluster);
+	assoc = xmalloc(sizeof(acct_association_rec_t));
+	list_append(sacctmgr_association_list, assoc);
+	assoc->acct = xstrdup("root");
+	assoc->cluster = xstrdup(cluster->name);
+	assoc->fairshare = cluster->default_fairshare;
+	assoc->max_jobs = cluster->default_max_jobs;
+	assoc->max_nodes_per_job = cluster->default_max_nodes_per_job;
+	assoc->max_wall_duration_per_job = 
+		cluster->default_max_wall_duration_per_job;
+	assoc->max_cpu_secs_per_job = cluster->default_max_cpu_secs_per_job;
 
 	return rc;
 }
@@ -389,7 +402,7 @@ extern int sacctmgr_modify_cluster(int argc, char *argv[])
 	_print_cond(cluster_cond);
 
 	cluster_list = list_create(destroy_acct_cluster_rec);
-	list_push(cluster_list, cluster);
+	list_append(cluster_list, cluster);
 
 	if(execute_flag) {
 		if(list_count(cluster_cond->cluster_list)) {
@@ -407,7 +420,7 @@ extern int sacctmgr_modify_cluster(int argc, char *argv[])
 			action->type = SACCTMGR_CLUSTER_MODIFY;
 			action->cond = cluster_cond;
 			action->rec = cluster;
-			list_push(sacctmgr_action_list, action);
+			list_append(sacctmgr_action_list, action);
 		} else {
 			destroy_acct_cluster_cond(cluster_cond);
 			destroy_acct_cluster_rec(cluster);

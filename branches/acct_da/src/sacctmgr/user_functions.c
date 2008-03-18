@@ -54,17 +54,17 @@ static int _set_cond(int *start, int argc, char *argv[],
 			addto_char_list(user_cond->def_acct_list,
 					argv[i]+15);
 			set = 1;
-		} else if (strncasecmp (argv[i], "DefaultAccounts=", 16) == 0) {
+		} else if (strncasecmp (argv[i], "Default=", 8) == 0) {
 			addto_char_list(user_cond->def_acct_list,
-					argv[i]+16);
+					argv[i]+8);
 			set = 1;
-		} else if (strncasecmp (argv[i], "Qos=", 9) == 0) {
+		} else if (strncasecmp (argv[i], "Qos=", 4) == 0) {
+			user_cond->qos =
+				str_2_acct_qos(argv[i]+4);
+			set = 1;
+		} else if (strncasecmp (argv[i], "QosLevel=", 9) == 0) {
 			user_cond->qos =
 				str_2_acct_qos(argv[i]+9);
-			set = 1;
-		} else if (strncasecmp (argv[i], "QosLevel=", 14) == 0) {
-			user_cond->qos =
-				str_2_acct_qos(argv[i]+14);
 			set = 1;
 		} else if (strncasecmp (argv[i], "Admin=", 6) == 0) {
 			user_cond->admin_level = 
@@ -97,13 +97,14 @@ static int _set_rec(int *start, int argc, char *argv[],
 		if (strncasecmp (argv[i], "DefaultAccount=", 15) == 0) {
 			user->default_acct = xstrdup(argv[i]+15);
 			set = 1;
-		} else if (strncasecmp (argv[i], "Qos=", 9) == 0) {
-			user->qos =
-				str_2_acct_qos(argv[i]+9);
+		} else if (strncasecmp (argv[i], "Default=", 8) == 0) {
+			user->default_acct = xstrdup(argv[i]+8);
 			set = 1;
-		} else if (strncasecmp (argv[i], "QosLevel=", 14) == 0) {
-			user->qos =
-				str_2_acct_qos(argv[i]+14);
+		} else if (strncasecmp (argv[i], "Qos=", 4) == 0) {
+			user->qos = str_2_acct_qos(argv[i]+4);
+			set = 1;
+		} else if (strncasecmp (argv[i], "QosLevel=", 9) == 0) {
+			user->qos = str_2_acct_qos(argv[i]+9);
 			set = 1;
 		} else if (strncasecmp (argv[i], "Admin=", 6) == 0) {
 			user->admin_level = 
@@ -204,12 +205,18 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 	int partition_set = 0;
 	List user_list = NULL;
 	List assoc_list = NULL;
-	uint32_t fairshare = 1; 
-	uint32_t max_jobs = 0; 
-	uint32_t max_nodes_per_job = 0;
-	uint32_t max_wall_duration_per_job = 0;
-	uint32_t max_cpu_secs_per_job = 0;
+	uint32_t fairshare = -1; 
+	uint32_t max_jobs = -1; 
+	uint32_t max_nodes_per_job = -1;
+	uint32_t max_wall_duration_per_job = -1;
+	uint32_t max_cpu_secs_per_job = -1;
+	uint32_t use_fairshare = -1; 
+	uint32_t use_max_jobs = -1; 
+	uint32_t use_max_nodes_per_job = -1;
+	uint32_t use_max_wall_duration_per_job = -1;
+	uint32_t use_max_cpu_secs_per_job = -1;
 	char *user_str = NULL;
+	char *assoc_str = NULL;
 	int limit_set = 0;
 
 	if(!list_count(sacctmgr_cluster_list)) {
@@ -229,16 +236,20 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 			addto_char_list(assoc_cond->user_list, argv[i]+6);
 		} else if (strncasecmp (argv[i], "Name=", 5) == 0) {
 			addto_char_list(assoc_cond->user_list, argv[i]+5);
+		} else if (strncasecmp (argv[i], "Default=", 8) == 0) {
+			default_acct = xstrdup(argv[i]+8);
+			addto_char_list(assoc_cond->acct_list,
+					argv[i]+8);
 		} else if (strncasecmp (argv[i], "DefaultAccount=", 15) == 0) {
 			default_acct = xstrdup(argv[i]+15);
 			addto_char_list(assoc_cond->acct_list,
 					argv[i]+15);
-		} else if (strncasecmp (argv[i], "Qos=", 8) == 0) {
-			qos = str_2_acct_qos(argv[i]+8);
-		} else if (strncasecmp (argv[i], "QosLevel=", 14) == 0) {
-			qos = str_2_acct_qos(argv[i]+14);
-		} else if (strncasecmp (argv[i], "Admin=", 5) == 0) {
-			admin_level = str_2_acct_admin_level(argv[i]+5);
+		} else if (strncasecmp (argv[i], "Qos=", 4) == 0) {
+			qos = str_2_acct_qos(argv[i]+4);
+		} else if (strncasecmp (argv[i], "QosLevel=", 9) == 0) {
+			qos = str_2_acct_qos(argv[i]+9);
+		} else if (strncasecmp (argv[i], "Admin=", 6) == 0) {
+			admin_level = str_2_acct_admin_level(argv[i]+6);
 		} else if (strncasecmp (argv[i], "AdminLevel=", 11) == 0) {
 			admin_level = str_2_acct_admin_level(argv[i]+11);
 		} else if (strncasecmp (argv[i], "FairShare=", 10) == 0) {
@@ -290,7 +301,7 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 		itr_c = list_iterator_create(sacctmgr_cluster_list);
 		while((cluster_rec = list_next(itr_c))) {
 			list_append(assoc_cond->cluster_list, 
-				    cluster_rec->name);
+				    xstrdup(cluster_rec->name));
 		}
 		list_iterator_destroy(itr_c);
 	}
@@ -310,8 +321,7 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 				goto end_it;
 			}
 			user = xmalloc(sizeof(acct_user_rec_t));
-			user->assoc_list =
-				list_create(destroy_acct_association_rec);
+			user->assoc_list = list_create(NULL);
 			user->name = xstrdup(name);
 			user->default_acct = xstrdup(default_acct);
 			user->qos = qos;
@@ -326,8 +336,18 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 		while((account = list_next(itr_a))) {
 			itr_c = list_iterator_create(assoc_cond->cluster_list);
 			while((cluster = list_next(itr_c))) {
-				itr_p = list_iterator_create(
-					assoc_cond->partition_list);
+				acct_association_rec_t *root_assoc = 
+					sacctmgr_find_root_assoc(cluster);
+				if(!root_assoc) {
+					printf(" error: This cluster '%s' "
+					       "doesn't have a root account\n"
+					       "        Something bad has "
+					       "happend.  "
+					       "Contact your admin.\n",
+					       cluster);
+					continue;
+				}
+
 				temp_assoc = sacctmgr_find_account_base_assoc(
 					account, cluster);
 				if(!temp_assoc) {
@@ -345,8 +365,49 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 /* 					       temp_assoc->account, */
 /* 					       temp_assoc->cluster, */
 /* 					       temp_assoc->parent_account); */
-					
+				use_fairshare = -1; 
+				use_max_jobs = -1; 
+				use_max_nodes_per_job = -1;
+				use_max_wall_duration_per_job = -1;
+				use_max_cpu_secs_per_job = -1;
 
+				if(fairshare >= 0)
+					use_fairshare = fairshare;
+				else if((int)root_assoc->fairshare >= 0)
+					use_fairshare = root_assoc->fairshare;
+				
+				if(max_jobs >= 0)
+					use_max_jobs = max_jobs;
+				else if((int)root_assoc->max_jobs >= 0)
+					use_max_jobs =root_assoc->max_jobs;
+				
+				if(max_nodes_per_job >= 0)
+					use_max_nodes_per_job =
+						max_nodes_per_job;
+				else if((int)root_assoc->max_nodes_per_job >= 0)
+					use_max_nodes_per_job =
+						root_assoc->max_nodes_per_job;
+				
+				if(max_wall_duration_per_job >= 0)
+					use_max_wall_duration_per_job =
+						max_wall_duration_per_job;
+				else if((int)root_assoc->
+					max_wall_duration_per_job >= 0)
+					use_max_wall_duration_per_job =
+						root_assoc->
+						max_wall_duration_per_job;
+
+				if(max_cpu_secs_per_job >= 0)
+					use_max_cpu_secs_per_job =
+						max_cpu_secs_per_job;
+				else if((int)root_assoc->
+					max_cpu_secs_per_job >= 0)
+					use_max_cpu_secs_per_job =
+						root_assoc->
+						max_cpu_secs_per_job;
+
+				itr_p = list_iterator_create(
+					assoc_cond->partition_list);
 				while((partition = list_next(itr_p))) {
 					partition_set = 1;
 					if(sacctmgr_find_association(
@@ -359,24 +420,30 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 					assoc->acct = xstrdup(account);
 					assoc->cluster = xstrdup(cluster);
 					assoc->partition = xstrdup(partition);
-					assoc->parent_acct = xstrdup(
-						temp_assoc->parent_acct);
-					assoc->fairshare = fairshare;
-					assoc->max_jobs = max_jobs;
+					//assoc->parent_acct = xstrdup(account);
+					assoc->fairshare = use_fairshare;
+					assoc->max_jobs = use_max_jobs;
 					assoc->max_nodes_per_job =
-						max_nodes_per_job;
+						use_max_nodes_per_job;
 					assoc->max_wall_duration_per_job =
-						max_wall_duration_per_job;
+						use_max_wall_duration_per_job;
 					assoc->max_cpu_secs_per_job =
-						max_cpu_secs_per_job;
-					if(user) {
+						use_max_cpu_secs_per_job;
+					if(user) 
 						list_append(user->assoc_list,
 							    assoc);
-					} else {
+					else 
 						list_append(assoc_list, assoc);
-						list_append(sacctmgr_association_list,
-							    assoc);
-					}
+					list_append(sacctmgr_association_list,
+						    assoc);
+					xstrfmtcat(assoc_str,
+						   "  U = %s"
+						   "\tA = %s"
+						   "\tC = %s"
+						   "\tP = %s\n",
+						   assoc->user, assoc->acct,
+						   assoc->cluster,
+						   assoc->partition);
 				}
 				list_iterator_destroy(itr_p);
 				if(partition_set) 
@@ -386,27 +453,29 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 							     cluster, NULL))
 						continue;
 					
-				assoc = xmalloc(
-					sizeof(acct_association_rec_t));
+				assoc = xmalloc(sizeof(acct_association_rec_t));
 				assoc->user = xstrdup(name);
 				assoc->acct = xstrdup(account);
 				assoc->cluster = xstrdup(cluster);
-				assoc->parent_acct = xstrdup(
-					temp_assoc->parent_acct);
-				assoc->fairshare = fairshare;
-				assoc->max_jobs = max_jobs;
-				assoc->max_nodes_per_job = max_nodes_per_job;
+				assoc->fairshare = use_fairshare;
+				assoc->max_jobs = use_max_jobs;
+				assoc->max_nodes_per_job = 
+					use_max_nodes_per_job;
 				assoc->max_wall_duration_per_job =
-					max_wall_duration_per_job;
+					use_max_wall_duration_per_job;
 				assoc->max_cpu_secs_per_job =
-					max_cpu_secs_per_job;
-				if(user) {
+					use_max_cpu_secs_per_job;
+				if(user) 
 					list_append(user->assoc_list, assoc);
-				} else {
+				else 
 					list_append(assoc_list, assoc);
-					list_append(sacctmgr_association_list,
-						    assoc);
-				}
+				list_append(sacctmgr_association_list, assoc);
+				xstrfmtcat(assoc_str,
+					   "  U = %s"
+					   "\tA = %s"
+					   "\tC = %s\n",
+					   assoc->user, assoc->acct,
+					   assoc->cluster);		
 			}
 			list_iterator_destroy(itr_c);
 		}
@@ -429,44 +498,24 @@ end_it:
 			       acct_admin_level_str(admin_level));
 	}
 
-	if(list_count(assoc_list))
-		printf(" Associations =\n");
-	if(user)
-		itr = list_iterator_create(user->assoc_list);
-	else
-		itr = list_iterator_create(assoc_list);
-	while((assoc = list_next(itr))) {
-		if(assoc->partition) 
-			printf("  U = %s"
-			       "\tA = %s"
-			       "\tC = %s"
-			       "\tP = %s\n",
-			       assoc->user, assoc->acct, assoc->cluster,
-			       assoc->partition);
-		else 
-			printf("  U = %s"
-			       "\tA = %s"
-			       "\tC = %s\n",
-			       assoc->user, assoc->acct, assoc->cluster);
-	}
-	list_iterator_destroy(itr);
+	if(assoc_str)
+		printf(" Associations =\n%s", assoc_str);
 
 	if(limit_set) {
-		printf(" Settings =\n");
-		if(fairshare)
+		printf(" Non Default Settings =\n");
+		if((int)fairshare >= 0)
 			printf("  Fairshare       = %u\n", fairshare);
-		if(max_jobs)
+		if((int)max_jobs >= 0)
 			printf("  MaxJobs         = %u\n", max_jobs);
-		if(max_nodes_per_job)
+		if((int)max_nodes_per_job >= 0)
 			printf("  MaxNodes        = %u\n", max_nodes_per_job);
-		if(max_wall_duration_per_job)
+		if((int)max_wall_duration_per_job >= 0)
 			printf("  MaxWall         = %u\n",
 			       max_wall_duration_per_job);
-		if(max_cpu_secs_per_job)
+		if((int)max_cpu_secs_per_job >= 0)
 			printf("  MaxCPUSecs      = %u\n",
 			       max_cpu_secs_per_job);
 	}
-
 
 	if(!list_count(user_list) && !list_count(assoc_list))
 		printf(" Nothing new added.\n");
@@ -596,7 +645,7 @@ extern int sacctmgr_modify_user(int argc, char *argv[])
 		action->type = SACCTMGR_USER_MODIFY;
 		action->cond = user_cond;
 		action->rec = user;
-		list_push(sacctmgr_action_list, action);
+		list_append(sacctmgr_action_list, action);
 	}
 
 	return rc;
@@ -627,7 +676,7 @@ extern int sacctmgr_delete_user(int argc, char *argv[])
 		sacctmgr_action_t *action = xmalloc(sizeof(sacctmgr_action_t));
 		action->type = SACCTMGR_USER_DELETE;
 		action->cond = user_cond;
-		list_push(sacctmgr_action_list, action);
+		list_append(sacctmgr_action_list, action);
 	}
 
 	return rc;

@@ -568,7 +568,7 @@ extern int acct_storage_p_add_users(MYSQL *acct_mysql_db, uint32_t uid,
 			error("Couldn't add user %s", object->name);
 			continue;
 		}
-
+		
 		if(acct_storage_p_add_associations(
 			   acct_mysql_db, uid, object->assoc_list)
 		   == SLURM_ERROR) {
@@ -820,15 +820,21 @@ extern int acct_storage_p_add_associations(MYSQL *acct_mysql_db, uint32_t uid,
 
 		if(object->parent_acct) {
 			parent = object->parent_acct;
+		} else if(object->user) {
+			parent = object->acct;
 		} else {
 			parent = "root";
 		}
 
-		xstrcat(cols, "cluster, acct, parent_acct");
-		xstrfmtcat(vals, "'%s', '%s', '%s'", 
-			   object->cluster, object->acct, parent); 
-		xstrfmtcat(extra, ", mod_time=%d, parent_acct='%s'",
-			   now, parent);
+		xstrcat(cols, "creation_time, mod_time, cluster, acct");
+		xstrfmtcat(vals, "%d, %d, '%s', '%s'", 
+			   now, now, object->cluster, object->acct); 
+		xstrfmtcat(extra, ", mod_time=%d", now);
+		if(!object->user) {
+			xstrcat(cols, ", parent_acct");
+			xstrfmtcat(vals, ", '%s'", parent);
+			xstrfmtcat(extra, ", parent_acct='%s'", parent);
+		}
 		xstrfmtcat(assoc_name, "%s of %s on %s",
 			   object->acct, parent, object->cluster);
 		if(object->user) {
@@ -847,39 +853,39 @@ extern int acct_storage_p_add_associations(MYSQL *acct_mysql_db, uint32_t uid,
 			}
 		}
 
-		if(object->fairshare) {
+		if((int)object->fairshare >= 0) {
 			xstrcat(cols, ", fairshare");
-			xstrfmtcat(vals, ", %u", object->fairshare);
-			xstrfmtcat(extra, ", fairshare=%u",
+			xstrfmtcat(vals, ", %d", object->fairshare);
+			xstrfmtcat(extra, ", fairshare=%d",
 				   object->fairshare);
 		}
 
-		if(object->max_jobs) {
+		if((int)object->max_jobs >= 0) {
 			xstrcat(cols, ", max_jobs");
-			xstrfmtcat(vals, ", %u", object->max_jobs);
-			xstrfmtcat(extra, ", max_jobs=%u",
+			xstrfmtcat(vals, ", %d", object->max_jobs);
+			xstrfmtcat(extra, ", max_jobs=%d",
 				   object->max_jobs);
 		}
 
-		if(object->max_nodes_per_job) {
+		if((int)object->max_nodes_per_job >= 0) {
 			xstrcat(cols, ", max_nodes_per_job");
-			xstrfmtcat(vals, ", %u", object->max_nodes_per_job);
-			xstrfmtcat(extra, ", max_nodes_per_job=%u",
+			xstrfmtcat(vals, ", %d", object->max_nodes_per_job);
+			xstrfmtcat(extra, ", max_nodes_per_job=%d",
 				   object->max_nodes_per_job);
 		}
 
-		if(object->max_wall_duration_per_job) {
+		if((int)object->max_wall_duration_per_job >= 0) {
 			xstrcat(cols, ", max_wall_duration_per_job");
-			xstrfmtcat(vals, ", %u",
+			xstrfmtcat(vals, ", %d",
 				   object->max_wall_duration_per_job);
-			xstrfmtcat(extra, ", max_wall_duration_per_job=%u",
+			xstrfmtcat(extra, ", max_wall_duration_per_job=%d",
 				   object->max_wall_duration_per_job);
 		}
 
-		if(object->max_cpu_secs_per_job) {
+		if((int)object->max_cpu_secs_per_job >= 0) {
 			xstrcat(cols, ", max_cpu_seconds_per_job");
-			xstrfmtcat(vals, ", %u", object->max_cpu_secs_per_job);
-			xstrfmtcat(extra, ", max_cpu_seconds_per_job=%u",
+			xstrfmtcat(vals, ", %d", object->max_cpu_secs_per_job);
+			xstrfmtcat(extra, ", max_cpu_seconds_per_job=%d",
 				   object->max_cpu_secs_per_job);
 		}
 

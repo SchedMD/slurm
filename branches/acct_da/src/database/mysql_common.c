@@ -165,13 +165,12 @@ extern int mysql_db_query(MYSQL *mysql_db, char *query)
 	if(!mysql_db)
 		fatal("You haven't inited this storage yet.");
 	slurm_mutex_lock(&mysql_lock);
-	/* clear out the old results */
-	while(!mysql_next_result(mysql_db)) {
-		if((result = mysql_store_result(mysql_db))) {
-			info("freeing results");
+
+	/* clear out the old results so we don't get a 2014 error */
+	while(mysql_next_result(mysql_db) == 0) 
+		if((result = mysql_store_result(mysql_db))) 
 			mysql_free_result(result);
-		} 
-	}
+	
 	if(mysql_query(mysql_db, query)) {
 		error("mysql_query failed: %d %s\n%s",
 		      mysql_errno(mysql_db),
