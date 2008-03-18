@@ -308,6 +308,10 @@ _pick_best_load(struct job_record *job_ptr, bitstr_t * bitmap,
 	    ((req_nodes > min_nodes) && (set_cnt < req_nodes)))
 		return error_code;	/* not usable */
 
+	if (job_ptr->details && job_ptr->details->req_node_bitmap &&
+	    (!bit_super_set(job_ptr->details->req_node_bitmap, bitmap)))
+		return error_code;	/* required nodes not available */
+
 	basemap = bit_copy(bitmap);
 	if (basemap == NULL)
 		fatal("bit_copy malloc failure");
