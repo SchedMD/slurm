@@ -1389,7 +1389,100 @@ extern int acct_storage_p_remove_users(MYSQL *acct_mysql_db, uint32_t uid,
 				       acct_user_cond_t *user_q)
 {
 #ifdef HAVE_MYSQL
-	return SLURM_SUCCESS;
+	ListIterator itr = NULL;
+	int rc = SLURM_SUCCESS;
+	char *object = NULL;
+	char *extra = NULL, *query = NULL;
+	time_t now = time(NULL);
+	struct passwd *pw = NULL;
+	char *user_name = NULL;
+	int set = 0;
+
+	if(!user_q) {
+		error("we need something to change");
+		return SLURM_ERROR;
+	}
+
+	if((pw=getpwuid(uid))) {
+		user_name = pw->pw_name;
+	}
+
+	if(user_q->user_list && list_count(user_q->user_list)) {
+		set = 0;
+		if(extra)
+			xstrcat(extra, " && (");
+		else
+			xstrcat(extra, " where (");
+		itr = list_iterator_create(user_q->user_list);
+		while((object = list_next(itr))) {
+			if(set) 
+				xstrcat(extra, " || ");
+			xstrfmtcat(extra, "name='%s'", object);
+			set = 1;
+		}
+		list_iterator_destroy(itr);
+		xstrcat(extra, ")");
+	}
+
+	if(user_q->def_acct_list && list_count(user_q->def_acct_list)) {
+		set = 0;
+		if(extra)
+			xstrcat(extra, " && (");
+		else
+			xstrcat(extra, " where (");
+		itr = list_iterator_create(user_q->def_acct_list);
+		while((object = list_next(itr))) {
+			if(set) 
+				xstrcat(extra, " || ");
+			xstrfmtcat(extra, "default_acct='%s'", object);
+			set = 1;
+		}
+		list_iterator_destroy(itr);
+		xstrcat(extra, ")");
+	}
+	
+	if(user_q->qos != ACCT_QOS_NOTSET) {
+		if(extra)
+			xstrfmtcat(extra, " && qos=%u", user_q->qos);
+		else
+			xstrfmtcat(extra, " where qos=%u",
+				   user_q->qos);
+			
+	}
+
+	if(user_q->admin_level != ACCT_ADMIN_NOTSET) {
+		if(extra)
+			xstrfmtcat(extra, " && admin_level=%u",
+				   user_q->admin_level);
+		else
+			xstrfmtcat(extra, " where admin_level=%u",
+				   user_q->admin_level);
+	}
+
+	if(!extra) {
+		error("Nothing to remove");
+		return SLURM_ERROR;
+	}
+
+	query = xstrdup_printf("update %s set mod_time=%d, deleted=1 %s", 
+			       now, user_table, extra);
+	xstrfmtcat(query, 	
+		   "insert into %s "
+		   "(timestamp, action, name, actor) "
+		   "values (%d, %d, \"%s\", '%s');",
+		   txn_table,
+		   now, DBD_REMOVE_USERS, extra, user_name);
+	xfree(extra);
+			
+	rc = mysql_db_query(acct_mysql_db, query);
+	xfree(query);
+	if(rc != SLURM_SUCCESS) {
+		error("Couldn't modify assocs");
+		rc = SLURM_ERROR;
+	}
+	
+	return rc;
+
 #else
 	return SLURM_ERROR;
 #endif
@@ -1409,17 +1502,190 @@ extern int acct_storage_p_remove_accts(MYSQL *acct_mysql_db, uint32_t uid,
 				       acct_account_cond_t *acct_q)
 {
 #ifdef HAVE_MYSQL
-	return SLURM_SUCCESS;
+	ListIterator itr = NULL;
+	int rc = SLURM_SUCCESS;
+	char *object = NULL;
+	char *extra = NULL, *query = NULL;
+	time_t now = time(NULL);
+	struct passwd *pw = NULL;
+	char *user_name = NULL;
+	int set = 0;
+
+	if(!acct_q) {
+		error("we need something to change");
+		return SLURM_ERROR;
+	}
+
+	if((pw=getpwuid(uid))) {
+		user_name = pw->pw_name;
+	}
+
+	if(acct_q->acct_list && list_count(acct_q->acct_list)) {
+		set = 0;
+		if(extra)
+			xstrcat(extra, " && (");
+		else
+			xstrcat(extra, " where (");
+		itr = list_iterator_create(acct_q->acct_list);
+		while((object = list_next(itr))) {
+			if(set) 
+				xstrcat(extra, " || ");
+			xstrfmtcat(extra, "name='%s'", object);
+			set = 1;
+		}
+		list_iterator_destroy(itr);
+		xstrcat(extra, ")");
+	}
+
+	if(acct_q->description_list && list_count(acct_q->description_list)) {
+		set = 0;
+		if(extra)
+			xstrcat(extra, " && (");
+		else
+			xstrcat(extra, " where (");
+		itr = list_iterator_create(acct_q->description_list);
+		while((object = list_next(itr))) {
+			if(set) 
+				xstrcat(extra, " || ");
+			xstrfmtcat(extra, "description='%s'", object);
+			set = 1;
+		}
+		list_iterator_destroy(itr);
+		xstrcat(extra, ")");
+	}
+	
+	if(acct_q->organization_list && list_count(acct_q->organization_list)) {
+		set = 0;
+		if(extra)
+			xstrcat(extra, " && (");
+		else
+			xstrcat(extra, " where (");
+		itr = list_iterator_create(acct_q->organization_list);
+		while((object = list_next(itr))) {
+			if(set) 
+				xstrcat(extra, " || ");
+			xstrfmtcat(extra, "organization='%s'", object);
+			set = 1;
+		}
+		list_iterator_destroy(itr);
+		xstrcat(extra, ")");
+	}
+	
+	if(acct_q->qos != ACCT_QOS_NOTSET) {
+		if(extra)
+			xstrfmtcat(extra, " && qos=%u", acct_q->qos);
+		else
+			xstrfmtcat(extra, " where qos=%u",
+				   acct_q->qos);
+			
+	}
+
+	if(!extra) {
+		error("Nothing to remove");
+		return SLURM_ERROR;
+	}
+
+	query = xstrdup_printf("update %s set mod_time=%d, deleted=1 %s",
+			       now, acct_table, extra);
+	xstrfmtcat(query, 	
+		   "insert into %s "
+		   "(timestamp, action, name, actor) "
+		   "values (%d, %d, \"%s\", '%s');",
+		   txn_table,
+		   now, DBD_REMOVE_ACCOUNTS, extra, user_name);
+	xfree(extra);
+			
+	rc = mysql_db_query(acct_mysql_db, query);
+	xfree(query);
+	if(rc != SLURM_SUCCESS) {
+		error("Couldn't remove accts");
+		goto end_it;
+	}
+	
+
+end_it:
+	return rc;
 #else
 	return SLURM_ERROR;
 #endif
 }
 
 extern int acct_storage_p_remove_clusters(MYSQL *acct_mysql_db, uint32_t uid, 
-					  acct_account_cond_t *cluster_q)
+					  acct_cluster_cond_t *cluster_q)
 {
 #ifdef HAVE_MYSQL
-	return SLURM_SUCCESS;
+	ListIterator itr = NULL;
+	int rc = SLURM_SUCCESS;
+	char *object = NULL;
+	char *extra = NULL, *assoc_extra = NULL, *query = NULL;
+	time_t now = time(NULL);
+	struct passwd *pw = NULL;
+	char *user_name = NULL;
+	int set = 0;
+
+	if(!cluster_q) {
+		error("we need something to change");
+		return SLURM_ERROR;
+	}
+
+	if((pw=getpwuid(uid))) {
+		user_name = pw->pw_name;
+	}
+
+	if(cluster_q->cluster_list && list_count(cluster_q->cluster_list)) {
+		set = 0;
+		if(extra) {
+			xstrcat(extra, " && (");
+			xstrcat(assoc_extra, " && (");
+		} else {
+			xstrcat(extra, " where (");
+			xstrcat(assoc_extra, " where (");
+		}
+		itr = list_iterator_create(cluster_q->cluster_list);
+		while((object = list_next(itr))) {
+			if(set) 
+				xstrcat(extra, " || ");
+			xstrfmtcat(extra, "name='%s'", object);
+			xstrfmtcat(assoc_extra, "cluster='%s'", object);
+			set = 1;
+		}
+		list_iterator_destroy(itr);
+		xstrcat(extra, ")");
+		xstrcat(assoc_extra, ")");
+	}
+
+	if(!extra) {
+		error("Nothing to remove");
+		return SLURM_ERROR;
+	}
+
+	query = xstrdup_printf("update %s set mod_time=%d, deleted=1 %s",
+			       now, cluster_table, extra);
+	xstrfmtcat(query, 	
+		   "insert into %s "
+		   "(timestamp, action, name, actor) "
+		   "values (%d, %d, \"%s\", '%s');",
+		   txn_table,
+		   now, DBD_REMOVE_CLUSTERS, extra, user_name);
+	xfree(extra);
+			
+	rc = mysql_db_query(acct_mysql_db, query);
+	xfree(query);
+	if(rc != SLURM_SUCCESS) {
+		error("Couldn't remove clusters");
+		goto end_it;
+	}
+	
+	query = xstrdup_printf("update %s set mod_time=%d, deleted=1 %s",
+			       now, assoc_table, assoc_extra);
+	rc = mysql_db_query(acct_mysql_db, query);
+	xfree(query);
+	if(rc != SLURM_SUCCESS) {
+		error("Couldn't remove cluster associations");
+	}
+	
+end_it:
+	return rc;
 #else
 	return SLURM_ERROR;
 #endif
@@ -1430,7 +1696,102 @@ extern int acct_storage_p_remove_associations(MYSQL *acct_mysql_db,
 					      acct_association_cond_t *assoc_q)
 {
 #ifdef HAVE_MYSQL
-	return SLURM_SUCCESS;
+	ListIterator itr = NULL;
+	int rc = SLURM_SUCCESS;
+	char *object = NULL;
+	char *extra = NULL, *query = NULL;
+	time_t now = time(NULL);
+	struct passwd *pw = NULL;
+	char *user_name = NULL;
+	int set = 0;
+
+	if(!assoc_q) {
+		error("we need something to change");
+		return SLURM_ERROR;
+	}
+
+	if((pw=getpwuid(uid))) {
+		user_name = pw->pw_name;
+	}
+
+	if(assoc_q->acct_list && list_count(assoc_q->acct_list)) {
+		set = 0;
+		xstrcat(extra, " && (");
+		itr = list_iterator_create(assoc_q->acct_list);
+		while((object = list_next(itr))) {
+			if(set) 
+				xstrcat(extra, " || ");
+			xstrfmtcat(extra, "acct='%s'", object);
+			set = 1;
+		}
+		list_iterator_destroy(itr);
+		xstrcat(extra, ")");
+	}
+
+	if(assoc_q->cluster_list && list_count(assoc_q->cluster_list)) {
+		set = 0;
+		xstrcat(extra, " && (");
+		itr = list_iterator_create(assoc_q->cluster_list);
+		while((object = list_next(itr))) {
+			if(set) 
+				xstrcat(extra, " || ");
+			xstrfmtcat(extra, "cluster='%s'", object);
+			set = 1;
+		}
+		list_iterator_destroy(itr);
+		xstrcat(extra, ")");
+	}
+
+	if(assoc_q->user_list && list_count(assoc_q->user_list)) {
+		set = 0;
+		xstrcat(extra, " && (");
+		itr = list_iterator_create(assoc_q->user_list);
+		while((object = list_next(itr))) {
+			if(set) 
+				xstrcat(extra, " || ");
+			xstrfmtcat(extra, "user='%s'", object);
+			set = 1;
+		}
+		list_iterator_destroy(itr);
+		xstrcat(extra, ")");
+	}
+
+	if(assoc_q->id_list && list_count(assoc_q->id_list)) {
+		set = 0;
+		xstrcat(extra, " && (");
+		itr = list_iterator_create(assoc_q->id_list);
+		while((object = list_next(itr))) {
+			if(set) 
+				xstrcat(extra, " || ");
+			xstrfmtcat(extra, "id=%s", object);
+			set = 1;
+		}
+		list_iterator_destroy(itr);
+		xstrcat(extra, ")");
+	}
+	
+	if(assoc_q->parent_acct) {
+		xstrfmtcat(extra, " && parent_acct='%s'", assoc_q->parent_acct);
+	}
+
+	query = xstrdup_printf("update %s set mod_time=%d, deleted=1 %s",
+			       now, assoc_table, extra);
+	xstrfmtcat(query, 	
+		   "insert into %s "
+		   "(timestamp, action, name, actor) "
+		   "values (%d, %d, \"%s\", '%s');",
+		   txn_table,
+		   now, DBD_REMOVE_ASSOCS, extra, user_name);
+	xfree(extra);
+			
+	rc = mysql_db_query(acct_mysql_db, query);
+	xfree(query);
+	if(rc != SLURM_SUCCESS) {
+		error("Couldn't remove assocs");
+		rc = SLURM_ERROR;
+	}
+	
+	return rc;
 #else
 	return SLURM_ERROR;
 #endif
