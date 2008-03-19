@@ -60,7 +60,6 @@
 extern char *job_table;
 extern char *step_table;
 
-extern void *acct_storage_p_get_connection();
 extern int acct_storage_p_get_assoc_id(MYSQL *acct_mysql_db,
 				       acct_association_rec_t *assoc);
 

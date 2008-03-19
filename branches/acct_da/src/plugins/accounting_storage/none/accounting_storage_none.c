@@ -87,12 +87,12 @@ extern int fini ( void )
 	return SLURM_SUCCESS;
 }
 
-extern void * acct_storage_p_get_connection()
+extern void * acct_storage_p_get_connection(bool commit)
 {
 	return NULL;
 }
 
-extern int acct_storage_p_close_connection(void *db_conn)
+extern int acct_storage_p_close_connection(void *db_conn, bool rollback)
 {
 	return SLURM_SUCCESS;
 }

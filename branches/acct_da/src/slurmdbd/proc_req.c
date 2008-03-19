@@ -66,8 +66,8 @@ static int   _get_jobs(void *db_conn, Buf in_buffer, Buf *out_buffer);
 static int   _get_usage(uint16_t type, void *db_conn,
 			Buf in_buffer, Buf *out_buffer);
 static int   _get_users(void *db_conn, Buf in_buffer, Buf *out_buffer);
-static int   _init_conn(void *db_conn,
-			Buf in_buffer, Buf *out_buffer, uint32_t *uid);
+static void *_init_conn(Buf in_buffer, Buf *out_buffer, uint32_t *uid);
+static int   _fini_conn(void *db_conn, Buf in_buffer, Buf *out_buffer);
 static int   _job_complete(void *db_conn,
 			   Buf in_buffer, Buf *out_buffer, uint32_t *uid);
 static int   _job_start(void *db_conn,
@@ -85,7 +85,7 @@ static int   _modify_users(void *db_conn,
 static int   _node_state(void *db_conn,
 			 Buf in_buffer, Buf *out_buffer, uint32_t *uid);
 static char *_node_state_string(uint16_t node_state);
-static int   _register_ctld(void *db_conn, slurm_fd fd,
+static int   _register_ctld(void *db_conn, slurm_fd orig_fd,
 			    Buf in_buffer, Buf *out_buffer, uint32_t *uid);
 static int   _remove_accounts(void *db_conn,
 			      Buf in_buffer, Buf *out_buffer, uint32_t *uid);
@@ -114,7 +114,7 @@ static int   _step_start(void *db_conn,
  * uid IN/OUT - user ID who initiated the RPC
  * RET SLURM_SUCCESS or error code */
 extern int 
-proc_req(void *db_conn, slurm_fd orig_fd, 
+proc_req(void **db_conn, slurm_fd orig_fd, 
 	 char *msg, uint32_t msg_size,
 	 bool first, Buf *out_buffer, uint32_t *uid)
 {
@@ -134,49 +134,51 @@ proc_req(void *db_conn, slurm_fd orig_fd,
 	} else {
 		switch (msg_type) {
 		case DBD_ADD_ACCOUNTS:
-			rc = _add_accounts(db_conn, in_buffer, out_buffer, uid);
+			rc = _add_accounts(*db_conn,
+					   in_buffer, out_buffer, uid);
 			break;
 		case DBD_ADD_ACCOUNT_COORDS:
-			rc = _add_account_coords(db_conn,
+			rc = _add_account_coords(*db_conn,
 						 in_buffer, out_buffer, uid);
 			break;
 		case DBD_ADD_ASSOCS:
-			rc = _add_assocs(db_conn, in_buffer, out_buffer, uid);
+			rc = _add_assocs(*db_conn, in_buffer, out_buffer, uid);
 			break;
 		case DBD_ADD_CLUSTERS:
-			rc = _add_clusters(db_conn, in_buffer, out_buffer, uid);
+			rc = _add_clusters(*db_conn,
+					   in_buffer, out_buffer, uid);
 			break;
 		case DBD_ADD_USERS:
-			rc = _add_users(db_conn, in_buffer, out_buffer, uid);
+			rc = _add_users(*db_conn, in_buffer, out_buffer, uid);
 			break;
 		case DBD_CLUSTER_PROCS:
-			rc = _cluster_procs(db_conn,
+			rc = _cluster_procs(*db_conn,
 					    in_buffer, out_buffer, uid);
 			break;
 		case DBD_GET_ACCOUNTS:
-			rc = _get_accounts(db_conn, in_buffer, out_buffer);
+			rc = _get_accounts(*db_conn, in_buffer, out_buffer);
 			break;
 		case DBD_GET_ASSOCS:
-			rc = _get_assocs(db_conn, in_buffer, out_buffer);
+			rc = _get_assocs(*db_conn, in_buffer, out_buffer);
 			break;
 		case DBD_GET_ASSOC_USAGE:
 		case DBD_GET_CLUSTER_USAGE:
-			rc = _get_usage(msg_type, db_conn,
+			rc = _get_usage(msg_type, *db_conn,
 					in_buffer, out_buffer);
 			break;
 		case DBD_GET_CLUSTERS:
-			rc = _get_clusters(db_conn, in_buffer, out_buffer);
+			rc = _get_clusters(*db_conn, in_buffer, out_buffer);
 			break;
 		case DBD_GET_JOBS:
-			rc = _get_jobs(db_conn, in_buffer, out_buffer);
+			rc = _get_jobs(*db_conn, in_buffer, out_buffer);
 			break;
 		case DBD_GET_USERS:
-			rc = _get_users(db_conn, in_buffer, out_buffer);
+			rc = _get_users(*db_conn, in_buffer, out_buffer);
 			break;
 		case DBD_INIT:
 			if (first)
-				rc = _init_conn(db_conn,
-						in_buffer, out_buffer, uid);
+				(*db_conn) = _init_conn(
+					in_buffer, out_buffer, uid);
 			else {
 				comment = "DBD_INIT sent after connection established";
 				error("%s", comment);
@@ -185,71 +187,75 @@ proc_req(void *db_conn, slurm_fd orig_fd,
 							      DBD_INIT);
 			}
 			break;
+		case DBD_FINI:
+			rc = _fini_conn(*db_conn, in_buffer, out_buffer);
+			break;
 		case DBD_JOB_COMPLETE:
-			rc = _job_complete(db_conn,
+			rc = _job_complete(*db_conn,
 					   in_buffer, out_buffer, uid);
 			break;
 		case DBD_JOB_START:
-			rc = _job_start(db_conn,
+			rc = _job_start(*db_conn,
 					in_buffer, out_buffer, uid);
 			break;
 		case DBD_JOB_SUSPEND:
-			rc = _job_suspend(db_conn,
+			rc = _job_suspend(*db_conn,
 					  in_buffer, out_buffer, uid);
 			break;
 		case DBD_MODIFY_ACCOUNTS:
-			rc = _modify_accounts(db_conn,
+			rc = _modify_accounts(*db_conn,
 					      in_buffer, out_buffer, uid);
 			break;
 		case DBD_MODIFY_ASSOCS:
-			rc = _modify_assocs(db_conn,
+			rc = _modify_assocs(*db_conn,
 					    in_buffer, out_buffer, uid);
 			break;
 		case DBD_MODIFY_CLUSTERS:
-			rc = _modify_clusters(db_conn,
+			rc = _modify_clusters(*db_conn,
 					      in_buffer, out_buffer, uid);
 			break;
 		case DBD_MODIFY_USERS:
-			rc = _modify_users(db_conn,
+			rc = _modify_users(*db_conn,
 					   in_buffer, out_buffer, uid);
 			break;
 		case DBD_NODE_STATE:
-			rc = _node_state(db_conn,
-					 in_buffer, out_buffer, uid);
-			break;
-		case DBD_REMOVE_ACCOUNTS:
-			rc = _remove_accounts(db_conn,
-					      in_buffer, out_buffer, uid);
-			break;
-		case DBD_REMOVE_ACCOUNT_COORDS:
-			rc = _remove_account_coords(db_conn,
-						 in_buffer, out_buffer, uid);
-			break;
-		case DBD_REMOVE_ASSOCS:
-			rc = _remove_assocs(db_conn,
-					    in_buffer, out_buffer, uid);
-			break;
-		case DBD_REMOVE_CLUSTERS:
-			rc = _remove_clusters(db_conn,
-					      in_buffer, out_buffer, uid);
-			break;
-		case DBD_REMOVE_USERS:
-			rc = _remove_users(db_conn, in_buffer, out_buffer, uid);
-			break;
-		case DBD_ROLL_USAGE:
-			rc = _roll_usage(db_conn, in_buffer, out_buffer, uid);
-			break;
-		case DBD_STEP_COMPLETE:
-			rc = _step_complete(db_conn,
-					    in_buffer, out_buffer, uid);
-			break;
-		case DBD_STEP_START:
-			rc = _step_start(db_conn,
+			rc = _node_state(*db_conn,
 					 in_buffer, out_buffer, uid);
 			break;
 		case DBD_REGISTER_CTLD:
-			rc = _register_ctld(db_conn, orig_fd, in_buffer, 
+			rc = _register_ctld(*db_conn, orig_fd, in_buffer, 
 					    out_buffer, uid);
+			break;
+		case DBD_REMOVE_ACCOUNTS:
+			rc = _remove_accounts(*db_conn,
+					      in_buffer, out_buffer, uid);
+			break;
+		case DBD_REMOVE_ACCOUNT_COORDS:
+			rc = _remove_account_coords(*db_conn,
+						 in_buffer, out_buffer, uid);
+			break;
+		case DBD_REMOVE_ASSOCS:
+			rc = _remove_assocs(*db_conn,
+					    in_buffer, out_buffer, uid);
+			break;
+		case DBD_REMOVE_CLUSTERS:
+			rc = _remove_clusters(*db_conn,
+					      in_buffer, out_buffer, uid);
+			break;
+		case DBD_REMOVE_USERS:
+			rc = _remove_users(*db_conn,
+					   in_buffer, out_buffer, uid);
+			break;
+		case DBD_ROLL_USAGE:
+			rc = _roll_usage(*db_conn, in_buffer, out_buffer, uid);
+			break;
+		case DBD_STEP_COMPLETE:
+			rc = _step_complete(*db_conn,
+					    in_buffer, out_buffer, uid);
+			break;
+		case DBD_STEP_START:
+			rc = _step_start(*db_conn,
+					 in_buffer, out_buffer, uid);
 			break;
 		default:
 			comment = "Invalid RPC";
@@ -563,68 +569,6 @@ end_it:
 	return rc;
 }
 
-static int   _register_ctld(void *db_conn, slurm_fd orig_fd,
-			    Buf in_buffer, Buf *out_buffer, uint32_t *uid)
-{
-	dbd_register_ctld_msg_t *register_ctld_msg = NULL;
-	int rc = SLURM_ERROR;
-	char *comment = NULL, ip[32];
-	slurm_addr ctld_address;
-	uint16_t orig_port;
-
-	if (*uid != slurmdbd_conf->slurm_user_id) {
-		comment = "DBD_REGISTER_CTLD message from invalid uid";
-		error("DBD_REGISTER_CTLD message from invalid uid %u", *uid);
-		rc = ESLURM_ACCESS_DENIED;
-		goto end_it;
-	}
-	if (slurmdbd_unpack_register_ctld_msg(&register_ctld_msg, in_buffer) !=
-	    SLURM_SUCCESS) {
-		comment = "Failed to unpack DBD_REGISTER_CTLD message";
-		error("%s", comment);
-		rc = SLURM_ERROR;
-		goto end_it;
-	}
-	info("DBD_REGISTER_CTLD: called for %s(%u)",
-	       register_ctld_msg->cluster_name, register_ctld_msg->port);
-	slurm_get_peer_addr(orig_fd, &ctld_address);
-	slurm_get_ip_str(&ctld_address, &orig_port, ip, sizeof(ip));
-	info("slurmctld at ip:%s, port:%d", ip, register_ctld_msg->port);
-	/* 
-	 * FIXME: save ip/port/cluster_name pair
-	 * when new ctld_address for a given cluster_name arrives
-	 * replace the old one.
-	 * Outgoing message header must have flag set:
-	 * out_msg.flags = SLURM_GLOBAL_AUTH_KEY;
-	 */
-#if 0
-{
-	/* Code to validate communications back to slurmctld */
-	slurm_fd fd;
-	slurm_set_addr_char(&ctld_address, register_ctld_msg->port, ip);
-	fd =  slurm_open_msg_conn(&ctld_address);
-	if (fd < 0) {
-		error("can not open socket back to slurmctld");
-	} else {
-		slurm_msg_t out_msg;
-		slurm_msg_t_init(&out_msg);
-		out_msg.msg_type = REQUEST_PING;
-		out_msg.flags = SLURM_GLOBAL_AUTH_KEY;
-		slurm_send_node_msg(fd, &out_msg);
-		/* We probably need to add matching recv_msg function
-		 * for an arbitray fd or should these be fire and forget? */
-		slurm_close_stream(fd);
-	}
-}
-#endif
-	rc = SLURM_SUCCESS;
-
-end_it:
-	slurmdbd_free_register_ctld_msg(register_ctld_msg);
-	*out_buffer = make_dbd_rc_msg(rc, comment, DBD_REGISTER_CTLD);
-	return rc;
-}
-
 static int _get_accounts(void *db_conn, Buf in_buffer, Buf *out_buffer)
 {
 	dbd_cond_msg_t *get_msg = NULL;
@@ -836,17 +780,19 @@ static int _get_users(void *db_conn, Buf in_buffer, Buf *out_buffer)
 	return SLURM_SUCCESS;
 }
 
-static int _init_conn(void *db_conn,
-		      Buf in_buffer, Buf *out_buffer, uint32_t *uid)
+static void *_init_conn(Buf in_buffer, Buf *out_buffer, uint32_t *uid)
 {
 	dbd_init_msg_t *init_msg = NULL;
 	char *comment = NULL;
+	int rc = SLURM_SUCCESS;
+	void *new_conn = NULL;
 
 	if (slurmdbd_unpack_init_msg(&init_msg, in_buffer, 
 				     slurmdbd_conf->auth_info)
 	    != SLURM_SUCCESS) {
 		comment = "Failed to unpack DBD_INIT message";
 		error("%s", comment);
+		rc = SLURM_ERROR;
 		goto end_it;
 	}
 	if (init_msg->version != SLURMDBD_VERSION) {
@@ -858,10 +804,35 @@ static int _init_conn(void *db_conn,
 	*uid = init_msg->uid;
 	
 	debug("DBD_INIT: VERSION:%u UID:%u", init_msg->version, init_msg->uid);
+	new_conn = acct_storage_g_get_connection(init_msg->rollback);
+	
 end_it:
 	slurmdbd_free_init_msg(init_msg);
-	*out_buffer = make_dbd_rc_msg(SLURM_SUCCESS, comment, DBD_INIT);
-	return SLURM_SUCCESS;
+	*out_buffer = make_dbd_rc_msg(rc, comment, DBD_INIT);
+	return new_conn;
+}
+
+static int   _fini_conn(void *db_conn, Buf in_buffer, Buf *out_buffer)
+{
+	dbd_fini_msg_t *fini_msg = NULL;
+	char *comment = NULL;
+	int rc = SLURM_SUCCESS;
+
+	if (slurmdbd_unpack_fini_msg(&fini_msg, in_buffer) != SLURM_SUCCESS) {
+		comment = "Failed to unpack DBD_FINI message";
+		error("%s", comment);
+		rc = SLURM_ERROR;
+		goto end_it;
+	}
+	
+	debug2("DBD_FINI: COMMIT:%u", fini_msg->commit);
+	acct_storage_g_close_connection(db_conn, fini_msg->commit);
+
+end_it:
+	slurmdbd_free_fini_msg(fini_msg);
+	*out_buffer = make_dbd_rc_msg(rc, comment, DBD_FINI);
+	return rc;
+
 }
 
 static int  _job_complete(void *db_conn,
@@ -1228,6 +1199,78 @@ static char *_node_state_string(uint16_t node_state)
 			return "UP";
 	}
 	return "UNKNOWN";
+}
+
+static int   _register_ctld(void *db_conn, slurm_fd orig_fd,
+			    Buf in_buffer, Buf *out_buffer, uint32_t *uid)
+{
+	dbd_register_ctld_msg_t *register_ctld_msg = NULL;
+	int rc = SLURM_SUCCESS;
+	char *comment = NULL, ip[32];
+	slurm_addr ctld_address;
+	uint16_t orig_port;
+	acct_cluster_cond_t cluster_q;
+	acct_cluster_rec_t cluster;
+
+	if (*uid != slurmdbd_conf->slurm_user_id) {
+		comment = "DBD_REGISTER_CTLD message from invalid uid";
+		error("%s %u", comment, *uid);
+		rc = ESLURM_ACCESS_DENIED;
+		goto end_it;
+	}
+	if (slurmdbd_unpack_register_ctld_msg(&register_ctld_msg, in_buffer) !=
+	    SLURM_SUCCESS) {
+		comment = "Failed to unpack DBD_REGISTER_CTLD message";
+		error("%s", comment);
+		rc = SLURM_ERROR;
+		goto end_it;
+	}
+	debug2("DBD_REGISTER_CTLD: called for %s(%u)",
+	       register_ctld_msg->cluster_name, register_ctld_msg->port);
+	slurm_get_peer_addr(orig_fd, &ctld_address);
+	slurm_get_ip_str(&ctld_address, &orig_port, ip, sizeof(ip));
+	debug2("slurmctld at ip:%s, port:%d", ip, register_ctld_msg->port);
+
+	memset(&cluster_q, 0, sizeof(acct_cluster_cond_t));
+	memset(&cluster, 0, sizeof(acct_cluster_rec_t));
+	cluster_q.cluster_list = list_create(NULL);
+	list_append(cluster_q.cluster_list, register_ctld_msg->cluster_name);
+	cluster.control_host = ip;
+	cluster.control_port = register_ctld_msg->port;
+	if((rc = acct_storage_g_modify_clusters(
+		    db_conn, *uid, &cluster_q, &cluster)) == SLURM_ERROR)
+		comment = "Unable to register with accounting, we will recieve no updates";
+	list_destroy(cluster_q.cluster_list);
+
+	/*
+	 * Outgoing message header must have flag set:
+	 * out_msg.flags = SLURM_GLOBAL_AUTH_KEY;
+	 */
+#if 0
+{
+	/* Code to validate communications back to slurmctld */
+	slurm_fd fd;
+	slurm_set_addr_char(&ctld_address, register_ctld_msg->port, ip);
+	fd =  slurm_open_msg_conn(&ctld_address);
+	if (fd < 0) {
+		error("can not open socket back to slurmctld");
+	} else {
+		slurm_msg_t out_msg;
+		slurm_msg_t_init(&out_msg);
+		out_msg.msg_type = REQUEST_PING;
+		out_msg.flags = SLURM_GLOBAL_AUTH_KEY;
+		slurm_send_node_msg(fd, &out_msg);
+		/* We probably need to add matching recv_msg function
+		 * for an arbitray fd or should these be fire and forget? */
+		slurm_close_stream(fd);
+	}
+}
+#endif
+
+end_it:
+	slurmdbd_free_register_ctld_msg(register_ctld_msg);
+	*out_buffer = make_dbd_rc_msg(rc, comment, DBD_REGISTER_CTLD);
+	return rc;
 }
 
 static int   _remove_accounts(void *db_conn,

@@ -228,12 +228,12 @@ extern int fini ( void )
 	return SLURM_SUCCESS;
 }
 
-extern void * acct_storage_p_get_connection()
+extern void * acct_storage_p_get_connection(bool commit)
 {
 	return NULL;
 }
 
-extern int acct_storage_p_close_connection(void *db_conn)
+extern int acct_storage_p_close_connection(void *db_conn, bool rollback)
 {
 	return SLURM_SUCCESS;
 }
@@ -271,12 +271,6 @@ extern int acct_storage_p_add_associations(void *db_conn, uint32_t uid,
 extern int acct_storage_p_modify_users(void *db_conn, uint32_t uid,
 				       acct_user_cond_t *user_q,
 				       acct_user_rec_t *user)
-{
-	return SLURM_SUCCESS;
-}
-
-extern int acct_storage_p_modify_user_admin_level(void *db_conn, uint32_t uid,
-						  acct_user_cond_t *user_q)
 {
 	return SLURM_SUCCESS;
 }

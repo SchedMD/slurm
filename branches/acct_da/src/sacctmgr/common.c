@@ -267,6 +267,7 @@ extern int sacctmgr_init()
 
 	if(inited) 
 		return SLURM_SUCCESS;
+
 	sacctmgr_action_list = list_create(destroy_sacctmgr_action);
 
 	if(!sacctmgr_user_list)

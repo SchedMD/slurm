@@ -50,7 +50,7 @@
  * buffer OUT - outgoing response, must be freed by caller
  * uid IN/OUT - user ID who initiated the RPC
  * RET SLURM_SUCCESS or error code */
-extern int proc_req(void *db_conn, slurm_fd orig_fd, char *msg, 
+extern int proc_req(void **db_conn, slurm_fd orig_fd, char *msg, 
 		    uint32_t msg_size, bool first, Buf *out_buffer, 
 		    uint32_t *uid);
 

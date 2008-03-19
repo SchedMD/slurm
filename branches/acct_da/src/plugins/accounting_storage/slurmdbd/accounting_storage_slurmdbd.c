@@ -92,7 +92,6 @@ const char plugin_name[] = "Accounting storage SLURMDBD plugin";
 const char plugin_type[] = "accounting_storage/slurmdbd";
 const uint32_t plugin_version = 100;
 
-static char *cluster_name       = NULL;
 static char *slurmdbd_auth_info = NULL;
 
 /*
@@ -102,6 +101,7 @@ static char *slurmdbd_auth_info = NULL;
 extern int init ( void )
 {
 	static int first = 1;
+	char *cluster_name = NULL;
 
 	if (first) {
 		/* since this can be loaded from many different places
@@ -109,14 +109,11 @@ extern int init ( void )
 		if (!(cluster_name = slurm_get_cluster_name()))
 			fatal("%s requires ClusterName in slurm.conf",
 			      plugin_name);
-		
+		xfree(cluster_name);
 		slurmdbd_auth_info = slurm_get_accounting_storage_pass();
-		if(!slurmdbd_auth_info)
-			
+		if(!slurmdbd_auth_info)			
 			verbose("%s loaded AuthInfo=%s",
 				plugin_name, slurmdbd_auth_info);
-		slurm_open_slurmdbd_conn(slurmdbd_auth_info);
-
 		first = 0;
 	} else {
 		debug4("%s loaded", plugin_name);
@@ -127,21 +124,23 @@ extern int init ( void )
 
 extern int fini ( void )
 {
-	xfree(cluster_name);
 	xfree(slurmdbd_auth_info);
 
-	slurm_close_slurmdbd_conn();
 	return SLURM_SUCCESS;
 }
 
-extern void *acct_storage_p_get_connection()
+extern void *acct_storage_p_get_connection(bool rollback)
 {
+	if(!slurmdbd_auth_info)	
+		init();
+	slurm_open_slurmdbd_conn(slurmdbd_auth_info, rollback);
+
 	return NULL;
 }
 
-extern int acct_storage_p_close_connection(void *db_conn)
+extern int acct_storage_p_close_connection(void *db_conn, bool commit)
 {
-	return SLURM_SUCCESS;
+	return slurm_close_slurmdbd_conn(commit);
 }
 
 extern int acct_storage_p_add_users(void *db_conn, uint32_t uid, List user_list)
@@ -655,23 +654,6 @@ extern int clusteracct_storage_p_node_up(void *db_conn,
 	return SLURM_SUCCESS;
 }
 
-extern int clusteracct_storage_p_register_ctld(char *cluster,
-					       uint16_t port)
-{
-	slurmdbd_msg_t msg;
-	dbd_register_ctld_msg_t req;
-	info("registering slurmctld for cluster %s at port %u", cluster, port);
-	req.cluster_name = cluster;
-	req.port         = port;
-	msg.msg_type     = DBD_REGISTER_CTLD;
-	msg.data         = &req;
-
-	if (slurm_send_slurmdbd_msg(&msg) < 0)
-		return SLURM_ERROR;
-
-	return SLURM_SUCCESS;
-}
-
 extern int clusteracct_storage_p_cluster_procs(void *db_conn,
 					       char *cluster,
 					       uint32_t procs,
@@ -684,6 +666,23 @@ extern int clusteracct_storage_p_cluster_procs(void *db_conn,
 	req.proc_count   = procs;
 	req.event_time   = event_time;
 	msg.msg_type     = DBD_CLUSTER_PROCS;
+	msg.data         = &req;
+
+	if (slurm_send_slurmdbd_msg(&msg) < 0)
+		return SLURM_ERROR;
+
+	return SLURM_SUCCESS;
+}
+
+extern int clusteracct_storage_p_register_ctld(char *cluster,
+					       uint16_t port)
+{
+	slurmdbd_msg_t msg;
+	dbd_register_ctld_msg_t req;
+	info("registering slurmctld for cluster %s at port %u", cluster, port);
+	req.cluster_name = cluster;
+	req.port         = port;
+	msg.msg_type     = DBD_REGISTER_CTLD;
 	msg.data         = &req;
 
 	if (slurm_send_slurmdbd_msg(&msg) < 0)

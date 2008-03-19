@@ -447,7 +447,8 @@ extern int init ( void )
 
 	debug2("mysql_connect() called for db %s", mysql_db_name);
 	
-	mysql_get_db_connection(&acct_mysql_db, mysql_db_name, mysql_db_info);
+	mysql_get_db_connection(&acct_mysql_db, mysql_db_name, mysql_db_info, 
+				0);
 		
 	rc = _mysql_acct_check_tables(acct_mysql_db);
 
@@ -475,7 +476,7 @@ extern int fini ( void )
 #endif
 }
 
-extern void *acct_storage_p_get_connection()
+extern void *acct_storage_p_get_connection(bool rollback)
 {
 #ifdef HAVE_MYSQL
 	MYSQL *acct_mysql_db = NULL;
@@ -485,7 +486,8 @@ extern void *acct_storage_p_get_connection()
 
 	debug2("acct_storage_p_get_connection: request new connection");
 	
-	mysql_get_db_connection(&acct_mysql_db, mysql_db_name, mysql_db_info);
+	mysql_get_db_connection(&acct_mysql_db, mysql_db_name, mysql_db_info, 
+				rollback);
 
 	return (void *)acct_mysql_db;
 #else
@@ -493,11 +495,11 @@ extern void *acct_storage_p_get_connection()
 #endif
 }
 
-extern int acct_storage_p_close_connection(MYSQL *acct_mysql_db)
+extern int acct_storage_p_close_connection(MYSQL *acct_mysql_db, bool commit)
 {
 #ifdef HAVE_MYSQL
 	if (acct_mysql_db) {
-		mysql_close(acct_mysql_db);
+		mysql_close_db_connection(acct_mysql_db, commit);
 		acct_mysql_db = NULL;
 	}	
 	return SLURM_SUCCESS;
@@ -1026,7 +1028,7 @@ extern int acct_storage_p_modify_users(MYSQL *acct_mysql_db, uint32_t uid,
 		return SLURM_ERROR;
 	}
 
-	query = xstrdup_printf("update %s set %s %s", user_table, vals, extra);
+	query = xstrdup_printf("update %s set %s %s;", user_table, vals, extra);
 	xstrfmtcat(query, 	
 		   "insert into %s "
 		   "(timestamp, action, name, actor, info) "
@@ -1146,7 +1148,7 @@ extern int acct_storage_p_modify_accts(MYSQL *acct_mysql_db, uint32_t uid,
 		return SLURM_ERROR;
 	}
 
-	query = xstrdup_printf("update %s set %s %s", acct_table, vals, extra);
+	query = xstrdup_printf("update %s set %s %s;", acct_table, vals, extra);
 	xstrfmtcat(query, 	
 		   "insert into %s "
 		   "(timestamp, action, name, actor, info) "
@@ -1214,14 +1216,14 @@ extern int acct_storage_p_modify_clusters(MYSQL *acct_mysql_db, uint32_t uid,
 	if(cluster->control_host)
 		xstrfmtcat(vals, ", control_host='%s'", cluster->control_host);
 	if(cluster->control_port)
-		xstrfmtcat(vals, ", control_port='%u'", cluster->control_port);
+		xstrfmtcat(vals, ", control_port=%u", cluster->control_port);
 		
 	if(!extra || !vals) {
 		error("Nothing to change");
 		return SLURM_ERROR;
 	}
 
-	query = xstrdup_printf("update %s set %s %s",
+	query = xstrdup_printf("update %s set %s %s;",
 			       cluster_table, vals, extra);
 	xstrfmtcat(query, 	
 		   "insert into %s "
@@ -1362,7 +1364,8 @@ extern int acct_storage_p_modify_associations(MYSQL *acct_mysql_db,
 		return SLURM_ERROR;
 	}
 
-	query = xstrdup_printf("update %s set %s %s", assoc_table, vals, extra);
+	query = xstrdup_printf("update %s set %s %s;",
+			       assoc_table, vals, extra);
 	xstrfmtcat(query, 	
 		   "insert into %s "
 		   "(timestamp, action, name, actor, info) "
@@ -1464,7 +1467,7 @@ extern int acct_storage_p_remove_users(MYSQL *acct_mysql_db, uint32_t uid,
 		return SLURM_ERROR;
 	}
 
-	query = xstrdup_printf("update %s set mod_time=%d, deleted=1 %s", 
+	query = xstrdup_printf("update %s set mod_time=%d, deleted=1 %s;", 
 			       now, user_table, extra);
 	xstrfmtcat(query, 	
 		   "insert into %s "
@@ -1585,7 +1588,7 @@ extern int acct_storage_p_remove_accts(MYSQL *acct_mysql_db, uint32_t uid,
 		return SLURM_ERROR;
 	}
 
-	query = xstrdup_printf("update %s set mod_time=%d, deleted=1 %s",
+	query = xstrdup_printf("update %s set mod_time=%d, deleted=1 %s;",
 			       now, acct_table, extra);
 	xstrfmtcat(query, 	
 		   "insert into %s "
@@ -1659,7 +1662,7 @@ extern int acct_storage_p_remove_clusters(MYSQL *acct_mysql_db, uint32_t uid,
 		return SLURM_ERROR;
 	}
 
-	query = xstrdup_printf("update %s set mod_time=%d, deleted=1 %s",
+	query = xstrdup_printf("update %s set mod_time=%d, deleted=1 %s;",
 			       now, cluster_table, extra);
 	xstrfmtcat(query, 	
 		   "insert into %s "
@@ -1676,7 +1679,7 @@ extern int acct_storage_p_remove_clusters(MYSQL *acct_mysql_db, uint32_t uid,
 		goto end_it;
 	}
 	
-	query = xstrdup_printf("update %s set mod_time=%d, deleted=1 %s",
+	query = xstrdup_printf("update %s set mod_time=%d, deleted=1 %s;",
 			       now, assoc_table, assoc_extra);
 	rc = mysql_db_query(acct_mysql_db, query);
 	xfree(query);
@@ -1774,7 +1777,7 @@ extern int acct_storage_p_remove_associations(MYSQL *acct_mysql_db,
 		xstrfmtcat(extra, " && parent_acct='%s'", assoc_q->parent_acct);
 	}
 
-	query = xstrdup_printf("update %s set mod_time=%d, deleted=1 %s",
+	query = xstrdup_printf("update %s set mod_time=%d, deleted=1 %s;",
 			       now, assoc_table, extra);
 	xstrfmtcat(query, 	
 		   "insert into %s "
@@ -2566,7 +2569,7 @@ extern int jobacct_storage_p_job_start(MYSQL *acct_mysql_db,
 	}
 
 	if(!acct_mysql_db || mysql_ping(acct_mysql_db) != 0) {
-		if(!(acct_mysql_db = acct_storage_p_get_connection())) {
+		if(!(acct_mysql_db = acct_storage_p_get_connection(0))) {
 			return SLURM_ERROR;
 		}
 	}
@@ -2623,8 +2626,8 @@ try_again:
 		if(!reinit) {
 			error("It looks like the storage has gone "
 			      "away trying to reconnect");
-			acct_storage_p_close_connection(acct_mysql_db);
-			acct_mysql_db = acct_storage_p_get_connection();
+			acct_storage_p_close_connection(acct_mysql_db, 1);
+			acct_mysql_db = acct_storage_p_get_connection(0);
 			reinit = 1;
 			goto try_again;
 		} else
@@ -2656,7 +2659,7 @@ extern int jobacct_storage_p_job_complete(MYSQL *acct_mysql_db,
 	}
 
 	if(!acct_mysql_db || mysql_ping(acct_mysql_db) != 0) {
-		if(!(acct_mysql_db = acct_storage_p_get_connection())) {
+		if(!(acct_mysql_db = acct_storage_p_get_connection(0))) {
 			return SLURM_ERROR;
 		}
 	}
@@ -2721,7 +2724,7 @@ extern int jobacct_storage_p_step_start(MYSQL *acct_mysql_db,
 	}
 
 	if(!acct_mysql_db || mysql_ping(acct_mysql_db) != 0) {
-		if(!(acct_mysql_db = acct_storage_p_get_connection())) {
+		if(!(acct_mysql_db = acct_storage_p_get_connection(0))) {
 			return SLURM_ERROR;
 		}
 	}
@@ -2815,7 +2818,7 @@ extern int jobacct_storage_p_step_complete(MYSQL *acct_mysql_db,
 	}
 
 	if(!acct_mysql_db || mysql_ping(acct_mysql_db) != 0) {
-		if(!(acct_mysql_db = acct_storage_p_get_connection())) {
+		if(!(acct_mysql_db = acct_storage_p_get_connection(0))) {
 			return SLURM_ERROR;
 		}
 	}
@@ -2935,7 +2938,7 @@ extern int jobacct_storage_p_suspend(MYSQL *acct_mysql_db,
 	int rc = SLURM_SUCCESS;
 	
 	if(!acct_mysql_db || mysql_ping(acct_mysql_db) != 0) {
-		if(!(acct_mysql_db = acct_storage_p_get_connection())) {
+		if(!(acct_mysql_db = acct_storage_p_get_connection(0))) {
 			return SLURM_ERROR;
 		}
 	}
@@ -2984,7 +2987,7 @@ extern List jobacct_storage_p_get_jobs(MYSQL *acct_mysql_db,
 	List job_list = NULL;
 #ifdef HAVE_MYSQL
 	if(!acct_mysql_db || mysql_ping(acct_mysql_db) != 0) {
-		if(!(acct_mysql_db = acct_storage_p_get_connection())) {
+		if(!(acct_mysql_db = acct_storage_p_get_connection(0))) {
 			return NULL;
 		}
 	}
@@ -3005,7 +3008,7 @@ extern void jobacct_storage_p_archive(MYSQL *acct_mysql_db,
 {
 #ifdef HAVE_MYSQL
 	if(!acct_mysql_db || mysql_ping(acct_mysql_db) != 0) {
-		if(!(acct_mysql_db = acct_storage_p_get_connection())) {
+		if(!(acct_mysql_db = acct_storage_p_get_connection(0))) {
 			return;
 		}
 	}

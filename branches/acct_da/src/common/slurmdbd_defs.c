@@ -84,10 +84,11 @@ static time_t    agent_shutdown = 0;
 static pthread_mutex_t slurmdbd_lock = PTHREAD_MUTEX_INITIALIZER;
 static slurm_fd  slurmdbd_fd         = -1;
 static char *    slurmdbd_auth_info  = NULL;
+static bool      rollback_started    = 0;
 
 static void * _agent(void *x);
 static void   _agent_queue_del(void *x);
-static void   _close_slurmdbd_fd(void);
+static void   _close_slurmdbd_fd(bool commit);
 static void   _create_agent(void);
 static bool   _fd_readable(slurm_fd fd);
 static int    _fd_writeable(slurm_fd fd);
@@ -101,6 +102,7 @@ static void   _reopen_slurmdbd_fd(void);
 static int    _save_dbd_rec(int fd, Buf buffer);
 static void   _save_dbd_state(void);
 static int    _send_init_msg(void);
+static int    _send_fini_msg(bool commit);
 static int    _send_msg(Buf buffer);
 static void   _sig_handler(int signal);
 static void   _shutdown_agent(void);
@@ -111,7 +113,7 @@ static int    _tot_wait (struct timeval *start_time);
  ****************************************************************************/
 
 /* Open a socket connection to SlurmDbd */
-extern int slurm_open_slurmdbd_conn(char *auth_info)
+extern int slurm_open_slurmdbd_conn(char *auth_info, bool rollback)
 {
 	slurm_mutex_lock(&agent_lock);
 	if ((agent_tid == 0) || (agent_list == NULL))
@@ -122,6 +124,9 @@ extern int slurm_open_slurmdbd_conn(char *auth_info)
 	xfree(slurmdbd_auth_info);
 	if (auth_info)
 		slurmdbd_auth_info = xstrdup(auth_info);
+
+	rollback_started = rollback;
+
 	if (slurmdbd_fd < 0)
 		_open_slurmdbd_fd();
 	slurm_mutex_unlock(&slurmdbd_lock);
@@ -130,13 +135,13 @@ extern int slurm_open_slurmdbd_conn(char *auth_info)
 }
 
 /* Close the SlurmDBD socket connection */
-extern int slurm_close_slurmdbd_conn(void)
+extern int slurm_close_slurmdbd_conn(bool commit)
 {
 	/* NOTE: agent_lock not needed for _shutdown_agent() */
 	_shutdown_agent();
 
 	slurm_mutex_lock(&slurmdbd_lock);
-	_close_slurmdbd_fd();
+	_close_slurmdbd_fd(commit);
 	xfree(slurmdbd_auth_info);
 	slurm_mutex_unlock(&slurmdbd_lock);
 
@@ -267,7 +272,7 @@ extern int slurm_send_slurmdbd_msg(slurmdbd_msg_t *req)
 }
 
 /* Open a connection to the Slurm DBD and set slurmdbd_fd */
-static void _open_slurmdbd_fd(void)
+static void _open_slurmdbd_fd()
 {
 	slurm_addr dbd_addr;
 	uint16_t slurmdbd_port;
@@ -360,6 +365,9 @@ extern Buf pack_slurmdbd_msg(slurmdbd_msg_t *req)
 		slurmdbd_pack_init_msg((dbd_init_msg_t *)req->data, buffer, 
 					slurmdbd_auth_info);
 		break;
+	case DBD_FINI:
+		slurmdbd_pack_fini_msg((dbd_fini_msg_t *)&req->data, buffer);
+		break;		
 	case DBD_JOB_COMPLETE:
 		slurmdbd_pack_job_complete_msg((dbd_job_comp_msg_t *)req->data,
 						buffer);
@@ -401,6 +409,10 @@ extern Buf pack_slurmdbd_msg(slurmdbd_msg_t *req)
 	case DBD_REGISTER_CTLD:
 		slurmdbd_pack_register_ctld_msg((dbd_register_ctld_msg_t *)
 						req->data, buffer);
+		break;
+	case DBD_ROLL_USAGE:
+		slurmdbd_pack_roll_usage_msg((dbd_roll_usage_msg_t *)
+					     req->data, buffer);
 		break;
 	default:
 		error("slurmdbd: Invalid message type %u", req->msg_type);
@@ -466,6 +478,10 @@ extern int unpack_slurmdbd_msg(slurmdbd_msg_t *resp, Buf buffer)
 					       buffer, 
 					       slurmdbd_auth_info);
 		break;
+	case DBD_FINI:
+		rc = slurmdbd_unpack_fini_msg((dbd_fini_msg_t **)&resp->data,
+					      buffer);
+		break;		
 	case DBD_JOB_COMPLETE:
 		rc = slurmdbd_unpack_job_complete_msg(
 			(dbd_job_comp_msg_t **)&resp->data, buffer);
@@ -510,6 +526,10 @@ extern int unpack_slurmdbd_msg(slurmdbd_msg_t *resp, Buf buffer)
 		rc = slurmdbd_unpack_register_ctld_msg(
 			(dbd_register_ctld_msg_t **)&resp->data, buffer);
 		break;
+	case DBD_ROLL_USAGE:
+		rc = slurmdbd_unpack_roll_usage_msg(
+			(dbd_roll_usage_msg_t **)&resp->data, buffer);
+		break;
 	default:
 		error("slurmdbd: Invalid message type %u", resp->msg_type);
 		return SLURM_ERROR;
@@ -528,6 +548,7 @@ static int _send_init_msg(void)
 
 	buffer = init_buf(1024);
 	pack16((uint16_t) DBD_INIT, buffer);
+	req.rollback = rollback_started;
 	req.version  = SLURMDBD_VERSION;
 	slurmdbd_pack_init_msg(&req, buffer, slurmdbd_auth_info);
 
@@ -542,10 +563,39 @@ static int _send_init_msg(void)
 	return rc;
 }
 
+static int _send_fini_msg(bool commit)
+{
+	int rc;
+	Buf buffer;
+	dbd_fini_msg_t req;
+
+	buffer = init_buf(1024);
+	pack16((uint16_t) DBD_FINI, buffer);
+	req.commit  = commit;
+	slurmdbd_pack_fini_msg(&req, buffer);
+
+	rc = _send_msg(buffer);
+	free_buf(buffer);
+	if (rc != SLURM_SUCCESS) {
+		error("slurmdbd: Sending DBD_INIT message");
+		return rc;
+	}
+
+	rc = _get_return_code();
+	return rc;
+}
+
 /* Close the SlurmDbd connection */
-static void _close_slurmdbd_fd(void)
+static void _close_slurmdbd_fd(bool commit)
 {
 	if (slurmdbd_fd >= 0) {
+		if(rollback_started) {
+			if (_send_fini_msg(commit) != SLURM_SUCCESS)
+				error("slurmdbd: Sending fini msg: %m");
+			else
+				debug("slurmdbd: Sent fini msg");
+		}
+
 		close(slurmdbd_fd);
 		slurmdbd_fd = -1;
 	}
@@ -555,7 +605,7 @@ static void _close_slurmdbd_fd(void)
 static void _reopen_slurmdbd_fd(void)
 {
 	info("slurmdbd: reopening connection");
-	_close_slurmdbd_fd();
+	_close_slurmdbd_fd(1);
 	_open_slurmdbd_fd();
 }
 
@@ -1191,6 +1241,11 @@ void inline slurmdbd_free_init_msg(dbd_init_msg_t *msg)
 	xfree(msg);
 }
 
+void inline slurmdbd_free_fini_msg(dbd_fini_msg_t *msg)
+{
+	xfree(msg);
+}
+
 void inline slurmdbd_free_job_complete_msg(dbd_job_comp_msg_t *msg)
 {
 	if (msg) {
@@ -1547,6 +1602,7 @@ slurmdbd_pack_init_msg(dbd_init_msg_t *msg, Buf buffer, char *auth_info)
 	int rc;
 	void *auth_cred;
 
+	pack16(msg->rollback, buffer);
 	pack16(msg->version, buffer);
 	auth_cred = g_slurm_auth_create(NULL, 2, auth_info);
 	if (auth_cred == NULL) {
@@ -1560,7 +1616,6 @@ slurmdbd_pack_init_msg(dbd_init_msg_t *msg, Buf buffer, char *auth_info)
 			      g_slurm_auth_errstr(g_slurm_auth_errno(auth_cred)));
 		}
 	}
-
 }
 
 int inline 
@@ -1570,6 +1625,8 @@ slurmdbd_unpack_init_msg(dbd_init_msg_t **msg, Buf buffer, char *auth_info)
 
 	dbd_init_msg_t *msg_ptr = xmalloc(sizeof(dbd_init_msg_t));
 	*msg = msg_ptr;
+
+	safe_unpack16(&msg_ptr->rollback, buffer);
 	safe_unpack16(&msg_ptr->version, buffer);
 	auth_cred = g_slurm_auth_unpack(buffer);
 	if (auth_cred == NULL) {
@@ -1583,6 +1640,27 @@ slurmdbd_unpack_init_msg(dbd_init_msg_t **msg, Buf buffer, char *auth_info)
 
 unpack_error:
 	slurmdbd_free_init_msg(msg_ptr);
+	*msg = NULL;
+	return SLURM_ERROR;
+}
+
+void inline 
+slurmdbd_pack_fini_msg(dbd_fini_msg_t *msg, Buf buffer)
+{
+	pack16(msg->commit, buffer);
+}
+
+int inline 
+slurmdbd_unpack_fini_msg(dbd_fini_msg_t **msg, Buf buffer)
+{
+	dbd_fini_msg_t *msg_ptr = xmalloc(sizeof(dbd_fini_msg_t));
+	*msg = msg_ptr;
+
+	safe_unpack16(&msg_ptr->commit, buffer);
+	return SLURM_SUCCESS;
+
+unpack_error:
+	slurmdbd_free_fini_msg(msg_ptr);
 	*msg = NULL;
 	return SLURM_ERROR;
 }

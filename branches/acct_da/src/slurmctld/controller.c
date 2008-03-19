@@ -357,7 +357,7 @@ int main(int argc, char *argv[])
 				slurmctld_conf.backup_controller);
 			exit(0);
 		}
-		acct_db_conn = acct_storage_g_get_connection();
+		acct_db_conn = acct_storage_g_get_connection(0);
 		assoc_mgr_init(acct_db_conn, accounting_enforce);
 
 		info("Running as primary controller");
@@ -428,7 +428,7 @@ int main(int argc, char *argv[])
 		if (slurmctld_config.resume_backup == false)
 			break;
 		recover = 2;
-		acct_storage_g_close_connection(acct_db_conn);
+		acct_storage_g_close_connection(acct_db_conn, 1);
 		assoc_mgr_fini();
 	}
 

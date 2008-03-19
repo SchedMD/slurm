@@ -259,7 +259,7 @@ extern int sacctmgr_add_cluster(int argc, char *argv[])
 	cluster_list = list_create(NULL);
 	list_append(cluster_list, cluster);
 
-	if(execute_flag) {
+	if(rollback_flag) {
 		rc = acct_storage_g_add_clusters(db_conn, my_uid, 
 						 cluster_list);
 		list_destroy(cluster_list);
@@ -404,7 +404,7 @@ extern int sacctmgr_modify_cluster(int argc, char *argv[])
 	cluster_list = list_create(destroy_acct_cluster_rec);
 	list_append(cluster_list, cluster);
 
-	if(execute_flag) {
+	if(rollback_flag) {
 		if(list_count(cluster_cond->cluster_list)) {
 			rc = acct_storage_g_modify_clusters(db_conn, my_uid, 
 							    cluster_cond,
@@ -460,7 +460,7 @@ extern int sacctmgr_delete_cluster(int argc, char *argv[])
 	printf(" Deleting clusters where...\n");
 	_print_cond(cluster_cond);
 
-	if(execute_flag) {
+	if(rollback_flag) {
 		if(list_count(cluster_cond->cluster_list)) {
 			rc = acct_storage_g_remove_clusters(db_conn, my_uid, 
 							    cluster_cond);

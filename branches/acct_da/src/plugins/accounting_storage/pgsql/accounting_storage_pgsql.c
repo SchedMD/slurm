@@ -640,7 +640,8 @@ extern int init ( void )
 
 	debug2("pgsql_connect() called for db %s", pgsql_db_name);
 		
-	pgsql_get_db_connection(&acct_pgsql_db, pgsql_db_name, pgsql_db_info);
+	pgsql_get_db_connection(&acct_pgsql_db, pgsql_db_name, pgsql_db_info,
+				0);
 		
 	rc = _pgsql_acct_check_tables(acct_pgsql_db, pgsql_db_info->user);
 
@@ -666,7 +667,7 @@ extern int fini ( void )
 #endif
 }
 
-extern void *acct_storage_p_get_connection()
+extern void *acct_storage_p_get_connection(bool rollback)
 {
 #ifdef HAVE_PGSQL
 	PGconn *acct_pgsql_db = NULL;
@@ -676,7 +677,8 @@ extern void *acct_storage_p_get_connection()
 	
 	debug2("acct_storage_p_get_connection: request new connection");
 	
-	pgsql_get_db_connection(&acct_pgsql_db, pgsql_db_name, pgsql_db_info);
+	pgsql_get_db_connection(&acct_pgsql_db, pgsql_db_name, pgsql_db_info,
+				rollback);
 	
 	return (void *)acct_pgsql_db;
 #else
@@ -684,11 +686,11 @@ extern void *acct_storage_p_get_connection()
 #endif
 }
 
-extern int acct_storage_p_close_connection(void *acct_pgsql_db)
+extern int acct_storage_p_close_connection(void *acct_pgsql_db, bool commit)
 {
 #ifdef HAVE_PGSQL
 	if (acct_pgsql_db) {
-		PQfinish((PGconn *)acct_pgsql_db);
+		pgsql_close_db_connection((PGconn *)acct_pgsql_db, commit);
 		acct_pgsql_db = NULL;
 	}	
 	return SLURM_SUCCESS;
@@ -1003,7 +1005,7 @@ extern int jobacct_storage_p_job_start(PGconn *acct_pgsql_db,
 	}
 
 	if(!acct_pgsql_db || PQstatus(acct_pgsql_db) != CONNECTION_OK) {
-		if(!(acct_pgsql_db = acct_storage_p_get_connection())) {
+		if(!(acct_pgsql_db = acct_storage_p_get_connection(0))) {
 			return SLURM_ERROR;
 		}
 	}
@@ -1061,8 +1063,8 @@ try_again:
 		if(!reinit) {
 			error("It looks like the storage has gone "
 			      "away trying to reconnect");
-			acct_storage_p_close_connection(acct_pgsql_db);
-			acct_pgsql_db = acct_storage_p_get_connection();
+			acct_storage_p_close_connection(acct_pgsql_db, 1);
+			acct_pgsql_db = acct_storage_p_get_connection(0);
 			reinit = 1;
 			goto try_again;
 		} else
@@ -1094,7 +1096,7 @@ extern int jobacct_storage_p_job_complete(PGconn *acct_pgsql_db,
 	}
 
 	if(!acct_pgsql_db || PQstatus(acct_pgsql_db) != CONNECTION_OK) {
-		if(!(acct_pgsql_db = acct_storage_p_get_connection())) {
+		if(!(acct_pgsql_db = acct_storage_p_get_connection(0))) {
 			return SLURM_ERROR;
 		}
 	}
@@ -1159,7 +1161,7 @@ extern int jobacct_storage_p_step_start(PGconn *acct_pgsql_db,
 	}
 
 	if(!acct_pgsql_db || PQstatus(acct_pgsql_db) != CONNECTION_OK) {
-		if(!(acct_pgsql_db = acct_storage_p_get_connection())) {
+		if(!(acct_pgsql_db = acct_storage_p_get_connection(0))) {
 			return SLURM_ERROR;
 		}
 	}
@@ -1252,7 +1254,7 @@ extern int jobacct_storage_p_step_complete(PGconn *acct_pgsql_db,
 	}
 
 	if(!acct_pgsql_db || PQstatus(acct_pgsql_db) != CONNECTION_OK) {
-		if(!(acct_pgsql_db = acct_storage_p_get_connection())) {
+		if(!(acct_pgsql_db = acct_storage_p_get_connection(0))) {
 			return SLURM_ERROR;
 		}
 	}
@@ -1372,7 +1374,7 @@ extern int jobacct_storage_p_suspend(PGconn *acct_pgsql_db,
 	int rc = SLURM_SUCCESS;
 	
 	if(!acct_pgsql_db || PQstatus(acct_pgsql_db) != CONNECTION_OK) {
-		if(!(acct_pgsql_db = acct_storage_p_get_connection())) {
+		if(!(acct_pgsql_db = acct_storage_p_get_connection(0))) {
 			return SLURM_ERROR;
 		}
 	}
@@ -1421,7 +1423,7 @@ extern List jobacct_storage_p_get_jobs(PGconn *acct_pgsql_db,
 	List job_list = NULL;
 #ifdef HAVE_PGSQL
 	if(!acct_pgsql_db || PQstatus(acct_pgsql_db) != CONNECTION_OK) {
-		if(!(acct_pgsql_db = acct_storage_p_get_connection())) {
+		if(!(acct_pgsql_db = acct_storage_p_get_connection(0))) {
 			return job_list;
 		}
 	}
@@ -1443,7 +1445,7 @@ extern void jobacct_storage_p_archive(PGconn *acct_pgsql_db,
 {
 #ifdef HAVE_PGSQL
 	if(!acct_pgsql_db || PQstatus(acct_pgsql_db) != CONNECTION_OK) {
-		if(!(acct_pgsql_db = acct_storage_p_get_connection())) {
+		if(!(acct_pgsql_db = acct_storage_p_get_connection(0))) {
 			return;
 		}
 	}

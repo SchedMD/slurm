@@ -224,14 +224,14 @@ extern int slurm_acct_storage_fini(void); /* unload the plugin */
  * get a new connection to the storage unit
  * RET: pointer used to access db 
  */
-extern void *acct_storage_g_get_connection();
+extern void *acct_storage_g_get_connection(bool rollback);
 
 /*
  * release connection to the storage unit
  * IN: void * pointer returned from acct_storage_g_get_connection()
  * RET: SLURM_SUCCESS on success SLURM_ERROR else 
  */
-extern int acct_storage_g_close_connection(void *db_conn);
+extern int acct_storage_g_close_connection(void *db_conn, bool commit);
 
 
 /* 

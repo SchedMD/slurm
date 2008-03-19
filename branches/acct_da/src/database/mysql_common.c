@@ -46,6 +46,8 @@ pthread_mutex_t mysql_lock = PTHREAD_MUTEX_INITIALIZER;
 
 #ifdef HAVE_MYSQL
 
+static int rollback_started = 0;
+
 static int _mysql_make_table_current(MYSQL *mysql_db, char *table_name,
 				     storage_field_t *fields)
 {
@@ -119,7 +121,7 @@ extern int mysql_create_db(MYSQL *mysql_db, char *db_name,
 }
 
 extern int mysql_get_db_connection(MYSQL **mysql_db, char *db_name,
-				   mysql_db_info_t *db_info)
+				   mysql_db_info_t *db_info, bool rollback)
 {
 	int rc = SLURM_SUCCESS;
 	bool storage_init = false;
@@ -145,6 +147,10 @@ extern int mysql_get_db_connection(MYSQL **mysql_db, char *db_name,
 				}
 			} else {
 				storage_init = true;
+				if(rollback || rollback_started) {
+					rollback_started = 1;
+					rc = mysql_autocommit(*mysql_db, 0);
+				}
 			}
 		}
 #ifdef MYSQL_OPT_RECONNECT
@@ -158,17 +164,30 @@ extern int mysql_get_db_connection(MYSQL **mysql_db, char *db_name,
 	return rc;
 }
 
+extern int mysql_close_db_connection(MYSQL *mysql_db, bool commit)
+{
+	if(rollback_started) {
+		if(commit)
+			mysql_commit(mysql_db);
+		else
+			mysql_rollback(mysql_db);
+	}
+
+	mysql_close(mysql_db);
+	return SLURM_SUCCESS;
+}
+
 extern int mysql_db_query(MYSQL *mysql_db, char *query)
 {
 	MYSQL_RES *result = NULL;
-
+	
 	if(!mysql_db)
 		fatal("You haven't inited this storage yet.");
 	slurm_mutex_lock(&mysql_lock);
 
 	/* clear out the old results so we don't get a 2014 error */
-	while(mysql_next_result(mysql_db) == 0) 
-		if((result = mysql_store_result(mysql_db))) 
+	while(mysql_next_result(mysql_db) == 0)
+		if((result = mysql_store_result(mysql_db)))
 			mysql_free_result(result);
 	
 	if(mysql_query(mysql_db, query)) {
@@ -251,6 +270,7 @@ extern int mysql_db_create_table(MYSQL *mysql_db, char *table_name,
 	
 	return _mysql_make_table_current(mysql_db, table_name, first_field);
 }
+
 
 #endif
 

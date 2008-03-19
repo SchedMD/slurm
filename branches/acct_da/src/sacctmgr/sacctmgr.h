@@ -116,7 +116,8 @@ extern int exit_flag;	/* program to terminate if =1 */
 extern int input_words;	/* number of words of input permitted */
 extern int one_liner;	/* one record per line if =1 */
 extern int quiet_flag;	/* quiet=1, verbose=-1, normal=0 */
-extern int execute_flag;/* immediate execute=1, else = 0 */
+extern int rollback_flag;/* immediate execute=0, else = 1 */
+extern int changes_made;
 extern List sacctmgr_action_list; /* list of sacctmgr_action_t * */
 extern List sacctmgr_user_list; /* list of current users */
 extern List sacctmgr_association_list; /* list of current associations */

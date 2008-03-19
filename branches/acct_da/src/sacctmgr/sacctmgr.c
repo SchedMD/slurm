@@ -38,6 +38,7 @@
 \*****************************************************************************/
 
 #include "sacctmgr.h"
+#include "src/common/xsignal.h"
 
 #define OPT_LONG_HIDE   0x102
 #define BUFFER_SIZE 4096
@@ -54,7 +55,8 @@ int exit_flag;		/* program to terminate if =1 */
 int input_words;	/* number of words of input permitted */
 int one_liner;		/* one record per line if =1 */
 int quiet_flag;		/* quiet=1, verbose=-1, normal=0 */
-int execute_flag;       /* immediate execute=1, else = 0 */
+int rollback_flag;       /* immediate execute=1, else = 0 */
+int changes_made = 0;
 List sacctmgr_action_list = NULL;
 List sacctmgr_user_list = NULL;
 List sacctmgr_association_list = NULL;
@@ -70,7 +72,10 @@ static void	_delete_it (int argc, char *argv[]);
 static int	_get_command (int *argc, char *argv[]);
 static void     _print_version( void );
 static int	_process_command (int argc, char *argv[]);
-static void     _commit ();
+static void     _handle_signal(int signo);
+static int      _setup_signals();
+static void     _close_db();
+static void     _handle_intr();
 static void	_usage ();
 
 int 
@@ -96,7 +101,7 @@ main (int argc, char *argv[])
 
 	command_name      = argv[0];
 	all_flag          = 0;
-	execute_flag      = 0;
+	rollback_flag     = 1;
 	exit_code         = 0;
 	exit_flag         = 0;
 	input_field_count = 0;
@@ -105,8 +110,6 @@ main (int argc, char *argv[])
 
 	if (getenv ("SACCTMGR_ALL"))
 		all_flag= 1;
-	db_conn = acct_storage_g_get_connection();
-	my_uid = getuid();
 
 	while((opt_char = getopt_long(argc, argv, "ahioqvV",
 			long_options, &option_index)) != -1) {
@@ -126,7 +129,7 @@ main (int argc, char *argv[])
 			all_flag = 0;
 			break;
 		case (int)'i':
-			execute_flag = 1;
+			rollback_flag = 0;
 			break;
 		case (int)'o':
 			one_liner = 1;
@@ -159,6 +162,10 @@ main (int argc, char *argv[])
 		}	
 	}
 
+	db_conn = acct_storage_g_get_connection(rollback_flag);
+	my_uid = getuid();
+	_setup_signals();
+
 	if (input_field_count)
 		exit_flag = 1;
 	else
@@ -170,18 +177,8 @@ main (int argc, char *argv[])
 			break;
 		error_code = _get_command (&input_field_count, input_fields);
 	}
+	_close_db();
 
-	if(sacctmgr_action_list) {
-		if(list_count(sacctmgr_action_list) > 0) {
-			if(commit_check("Would you like to commit "
-					"these changes?")) 
-				_commit();			
-			else 
-				printf("Changes discarded.\n");
-		}
-		list_destroy(sacctmgr_action_list);
-	}
-	acct_storage_g_close_connection(db_conn);
 	exit(exit_code);
 }
 
@@ -310,8 +307,6 @@ _process_command (int argc, char *argv[])
 			fprintf(stderr, "no input");
 	} else if (strncasecmp (argv[0], "all", 3) == 0) {
 		all_flag = 1;
-	} else if (strncasecmp (argv[0], "commit", 6) == 0) {
-		_commit();
 	} else if (strncasecmp (argv[0], "exit", 1) == 0) {
 		if (argc > 1) {
 			exit_code = 1;
@@ -319,24 +314,29 @@ _process_command (int argc, char *argv[])
 				 "too many arguments for keyword:%s\n", 
 				 argv[0]);
 		}
-		if(list_count(sacctmgr_action_list) > 0) {
-			char tmp_char[255];
+		//_close_db();
 
-			snprintf(tmp_char, sizeof(tmp_char),
-				 "There are %d action(s) that haven't been "
-				 "committed yet, would you like to commit "
-				 "before exit?", 
-				 list_count(sacctmgr_action_list));
-			if(commit_check(tmp_char)) 
-				_commit();			
-			else 
-				printf("Changes discarded.\n");
-			list_destroy(sacctmgr_action_list);
-			sacctmgr_action_list = NULL;
-		} else {
-			list_destroy(sacctmgr_action_list);
-			sacctmgr_action_list = NULL;
-		}
+/* 		if(list_count(sacctmgr_action_list) > 0) { */
+/* 				_close_db(); */
+/* 				char tmp_char[255]; */
+
+/* 			snprintf(tmp_char, sizeof(tmp_char), */
+/* 				 "There are %d action(s) that haven't been " */
+/* 				 "committed yet, would you like to commit " */
+/* 				 "before exit?",  */
+/* 				 list_count(sacctmgr_action_list)); */
+/* 			if(commit_check(tmp_char))  */
+/* 				acct_storage_g_close_connection(db_conn, 1); */
+/* 			else { */
+/* 				acct_storage_g_close_connection(db_conn, 0); */
+/* 				printf("Changes discarded.\n"); */
+/* 			} */
+/* 			list_destroy(sacctmgr_action_list); */
+/* 			sacctmgr_action_list = NULL; */
+/* 		} else { */
+/* 			list_destroy(sacctmgr_action_list); */
+/* 			sacctmgr_action_list = NULL; */
+/* 		} */
 		exit_flag = 1;
 	} else if (strncasecmp (argv[0], "help", 2) == 0) {
 		if (argc > 1) {
@@ -348,8 +348,6 @@ _process_command (int argc, char *argv[])
 		_usage ();
 	} else if (strncasecmp (argv[0], "hide", 2) == 0) {
 		all_flag = 0;
-	} else if (strncasecmp (argv[0], "immediate", 9) == 0) {
-		execute_flag = 1;
 	} else if (strncasecmp (argv[0], "oneliner", 1) == 0) {
 		if (argc > 1) {
 			exit_code = 1;
@@ -554,6 +552,60 @@ static void _delete_it (int argc, char *argv[])
 	}
 }
 
+static void _close_db()
+{
+	if(changes_made && rollback_flag) {
+		if(commit_check("Would you like to commit changes?")) 
+			acct_storage_g_close_connection(db_conn, 1);
+		else {
+			acct_storage_g_close_connection(db_conn, 0);
+			printf("Changes discarded.\n");
+		}
+	} else 
+		acct_storage_g_close_connection(db_conn, 0);
+}
+
+static void _handle_intr()
+{
+	static time_t last_intr      = 0;
+
+	if (((time(NULL) - last_intr) > 1 && changes_made && rollback_flag)) {
+		info("interrupt (one more within 1 "
+		     "sec to discard any changes)");
+		_close_db();
+		last_intr = time(NULL);
+	} else { /* second Ctrl-C in half as many seconds */
+		acct_storage_g_close_connection(db_conn, 0);
+		if(changes_made && rollback_flag)
+			printf("Changes discarded.\n");
+	}
+}
+
+static void _handle_signal(int signo)
+{
+	debug2("got signal %d", signo);
+
+	switch (signo) {
+	default:
+		_handle_intr();
+		break;
+	}
+}
+
+static int _setup_signals()
+{
+	int sigarray[] = {
+		SIGINT,  SIGQUIT, /*SIGTSTP,*/ SIGCONT, SIGTERM,
+		SIGALRM, SIGUSR1, SIGUSR2, SIGPIPE, 0
+	};
+	int rc = SLURM_SUCCESS, i=0, signo;
+
+	while ((signo = sigarray[i++])) 
+		xsignal(signo, _handle_signal);
+
+	return rc;
+}
+
 static void _commit ()
 {
 	int rc = SLURM_SUCCESS;
@@ -652,7 +704,7 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
      -a or --all: equivalent to \"all\" command                            \n\
      -h or --help: equivalent to \"help\" command                          \n\
      --hide: equivalent to \"hide\" command                                \n\
-     -i or --immediate: equivalent to \"immediate\" command                \n\
+     -i or --immediate: commit changes immediately                         \n\
      -o or --oneliner: equivalent to \"oneliner\" command                  \n\
      -q or --quiet: equivalent to \"quiet\" command                        \n\
      -s or --associations: equivalent to \"associations\" command          \n\
@@ -669,14 +721,11 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
      add <ENTITY> <SPECS>     add entity                                   \n\
      associations             when using show/list will list the           \n\
                               associations asspciated with the entity.     \n\
-     commit                   commit changes done with create, modify,     \n\
-                              or delete                                    \n\
      delete <ENTITY> <SPECS>  delete the specified entity(s)               \n\
      exit                     terminate sacctmgr                           \n\
      help                     print this description of use.               \n\
      hide                     do not display information about             \n\
                               hidden/deleted entities.                     \n\
-     immediate                commit changes immediately                   \n\
      list <ENTITY> [<SPECS>]  display info of identified entity, default   \n\
                               is display all.                              \n\
      modify <ENTITY> <SPECS>  modify entity                                \n\

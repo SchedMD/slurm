@@ -188,7 +188,6 @@ static void * _service_connection(void *arg)
 	void *db_conn = NULL;
 			 
 	debug2("Opened connection %d", conn->newsockfd);
-	db_conn = acct_storage_g_get_connection();
 	while (!fini) {
 		if (!_fd_readable(conn->newsockfd))
 			break;		/* problem with this socket */
@@ -221,7 +220,7 @@ static void * _service_connection(void *arg)
 			offset += msg_read;
 		}
 		if (msg_size == offset) {
-			rc = proc_req(db_conn, conn->newsockfd,
+			rc = proc_req(&db_conn, conn->newsockfd,
 				      msg, msg_size, first, &buffer, &uid);
 			first = false;
 			if (rc != SLURM_SUCCESS) {
@@ -237,7 +236,9 @@ static void * _service_connection(void *arg)
 		rc = _send_resp(conn->newsockfd, buffer);
 		xfree(msg);
 	}
-	acct_storage_g_close_connection(db_conn);
+
+	acct_storage_g_close_connection(db_conn, 0);
+
 	if (slurm_close_accepted_conn(conn->newsockfd) < 0)
 		error("close(%d): %m",  conn->newsockfd);
 	else

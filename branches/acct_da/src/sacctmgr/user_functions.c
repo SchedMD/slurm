@@ -520,7 +520,7 @@ end_it:
 	if(!list_count(user_list) && !list_count(assoc_list))
 		printf(" Nothing new added.\n");
 
-	if(execute_flag) {
+	if(rollback_flag) {
 		if(list_count(user_list))
 			rc = acct_storage_g_add_users(db_conn, my_uid, 
 						      user_list);
@@ -635,7 +635,7 @@ extern int sacctmgr_modify_user(int argc, char *argv[])
 	printf("\n Where\n");
 	_print_cond(user_cond);
 
-	if(execute_flag) {
+	if(rollback_flag) {
 		rc = acct_storage_g_modify_users(db_conn, my_uid, 
 						 user_cond, user);
 		destroy_acct_user_cond(user_cond);
@@ -668,7 +668,7 @@ extern int sacctmgr_delete_user(int argc, char *argv[])
 	printf(" Deleting users where...");
 	_print_cond(user_cond);
 
-	if(execute_flag) {
+	if(rollback_flag) {
 		rc = acct_storage_g_remove_users(db_conn, my_uid, 
 						 user_cond);
 		destroy_acct_user_cond(user_cond);
