@@ -1,7 +1,8 @@
 /*****************************************************************************\
  *  print.c - definitions for all printing functions.
  *****************************************************************************
- *  Copyright (C) 2002-2008 The Regents of the University of California.
+ *  Copyright (C) 2008 Lawrence Livermore National Security.
+ *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Danny Auble <da@llnl.gov>
  *  UCRL-CODE-226842.
