@@ -1736,7 +1736,11 @@ _run_script_as_user(const char *name, const char *path, slurmd_job_t *job,
 		}
 
 		chdir(job->cwd);
+#ifdef SETPGRP_TWO_ARGS
+		setpgrp(0, 0);
+#else
 		setpgrp();
+#endif
 		execve(path, argv, env);
 		error("execve(): %m");
 		exit(127);

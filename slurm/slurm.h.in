@@ -84,9 +84,11 @@ BEGIN_C_DECLS
 #if HAVE_INTTYPES_H
 #  include <inttypes.h>		/* for uint16_t, uint32_t definitions */
 #endif
-#include <stdio.h>		/* for FILE definitions */
-#include <time.h>		/* for time_t definitions */
 #include <stdbool.h>
+#include <stdio.h>		/* for FILE definitions */
+#include <sys/types.h>		/* for uid_t definition */
+#include <time.h>		/* for time_t definitions */
+#include <unistd.h>
 
 #ifdef CRAPPY_COMPILER
   /*
