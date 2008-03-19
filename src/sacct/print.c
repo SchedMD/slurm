@@ -495,7 +495,6 @@ void print_blockid(type_t type, void *object)
 { 
 	jobacct_job_rec_t *job = (jobacct_job_rec_t *)object;
 	jobcomp_job_rec_t *jobcomp = (jobcomp_job_rec_t *)object;
-	jobacct_step_rec_t *step = (jobacct_step_rec_t *)object;
 
 	switch(type) {
 	case HEADLINE:
