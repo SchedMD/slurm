@@ -1134,8 +1134,8 @@ static int _fake_unpack_adapters(Buf buf)
 	safe_unpack32(&adapter_count, buf);
 	for (i = 0; i < adapter_count; i++) {
 		/* no copy, just advances buf counters */
-		safe_unpackmem_ptr(&dummyptr, &dummy16, buf);
-		if (dummy16 != FED_ADAPTERNAME_LEN)
+		safe_unpackmem_ptr(&dummyptr, &dummy32, buf);
+		if (dummy32 != FED_ADAPTERNAME_LEN)
 			goto unpack_error;
 		safe_unpack16(&dummy16, buf);
 		safe_unpack16(&dummy16, buf);
@@ -1171,7 +1171,7 @@ _unpack_nodeinfo(fed_nodeinfo_t *n, Buf buf, bool believe_window_status)
 	int i, j;
 	fed_adapter_t *tmp_a = NULL;
 	fed_window_t *tmp_w = NULL;
-	uint16_t size;
+	uint32_t size;
 	fed_nodeinfo_t *tmp_n = NULL;
 	char *name_ptr, name[FED_HOSTLEN];
 	int magic;
@@ -1964,7 +1964,7 @@ fed_pack_jobinfo(fed_jobinfo_t *j, Buf buf)
 static int
 _unpack_tableinfo(fed_tableinfo_t *tableinfo, Buf buf)
 {
-	uint16_t size;
+	uint32_t size;
 	char *name_ptr;
 	int i;
 
@@ -1993,7 +1993,7 @@ unpack_error: /* safe_unpackXX are macros which jump to unpack_error */
 int 
 fed_unpack_jobinfo(fed_jobinfo_t *j, Buf buf)
 {
-	uint16_t size;
+	uint32_t size;
 	int i, k;
 	
 	assert(j);
