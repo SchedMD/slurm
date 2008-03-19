@@ -226,7 +226,7 @@ static void * _service_connection(void *arg)
 			if (rc != SLURM_SUCCESS) {
 				error("Processing message from connection %d",
 				      conn->newsockfd);
-				fini = true;
+				//fini = true;
 			}
 		} else {
 			buffer = make_dbd_rc_msg(SLURM_ERROR, "Bad offset", 0);
@@ -236,7 +236,7 @@ static void * _service_connection(void *arg)
 		rc = _send_resp(conn->newsockfd, buffer);
 		xfree(msg);
 	}
-
+	info("closing here %x", db_conn);
 	acct_storage_g_close_connection(db_conn, 0);
 
 	if (slurm_close_accepted_conn(conn->newsockfd) < 0)

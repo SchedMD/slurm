@@ -164,7 +164,9 @@ main (int argc, char *argv[])
 
 	db_conn = acct_storage_g_get_connection(rollback_flag);
 	my_uid = getuid();
-	_setup_signals();
+
+	xsignal(SIGINT, _handle_intr);
+//	_setup_signals();
 
 	if (input_field_count)
 		exit_flag = 1;
@@ -563,21 +565,26 @@ static void _close_db()
 		}
 	} else 
 		acct_storage_g_close_connection(db_conn, 0);
+	printf("\n");
+	exit_flag = 1;
 }
 
 static void _handle_intr()
 {
-	static time_t last_intr      = 0;
-
-	if (((time(NULL) - last_intr) > 1 && changes_made && rollback_flag)) {
-		info("interrupt (one more within 1 "
-		     "sec to discard any changes)");
+	static int been_here = 0;
+	
+	if(!been_here) {
+		been_here = 1;
+		if(changes_made && rollback_flag)
+			printf("interrupt (one more to discard any changes)\n");
 		_close_db();
-		last_intr = time(NULL);
+		exit(1);
 	} else { /* second Ctrl-C in half as many seconds */
 		acct_storage_g_close_connection(db_conn, 0);
 		if(changes_made && rollback_flag)
 			printf("Changes discarded.\n");
+		printf("\n");	
+		exit(1);
 	}
 }
 
@@ -586,8 +593,10 @@ static void _handle_signal(int signo)
 	debug2("got signal %d", signo);
 
 	switch (signo) {
-	default:
+	case SIGINT:
 		_handle_intr();
+		break;
+	default:
 		break;
 	}
 }

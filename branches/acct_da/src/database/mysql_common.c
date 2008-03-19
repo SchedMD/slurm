@@ -166,14 +166,18 @@ extern int mysql_get_db_connection(MYSQL **mysql_db, char *db_name,
 
 extern int mysql_close_db_connection(MYSQL *mysql_db, bool commit)
 {
+	int rc = 0;
+
 	if(rollback_started) {
 		if(commit)
-			mysql_commit(mysql_db);
+			rc = mysql_commit(mysql_db);
 		else
-			mysql_rollback(mysql_db);
+			rc = mysql_rollback(mysql_db);
 	}
-
+	info("got rc of %d %x", rc, mysql_db);
 	mysql_close(mysql_db);
+	
+	mysql_db = NULL;
 	return SLURM_SUCCESS;
 }
 
@@ -187,9 +191,10 @@ extern int mysql_db_query(MYSQL *mysql_db, char *query)
 
 	/* clear out the old results so we don't get a 2014 error */
 	while(mysql_next_result(mysql_db) == 0)
-		if((result = mysql_store_result(mysql_db)))
+		if((result = mysql_store_result(mysql_db))) {
+			info("freeing stuff");
 			mysql_free_result(result);
-	
+		}
 	if(mysql_query(mysql_db, query)) {
 		error("mysql_query failed: %d %s\n%s",
 		      mysql_errno(mysql_db),
@@ -240,27 +245,28 @@ extern int mysql_db_create_table(MYSQL *mysql_db, char *table_name,
 				 storage_field_t *fields, char *ending)
 {
 	char *query = NULL;
-	char *tmp = NULL;
-	char *next = NULL;
 	int i = 0;
 	storage_field_t *first_field = fields;
-	
-	query = xstrdup_printf("create table if not exists %s (", table_name);
-	i=0;
+
+	if(!fields || !fields->name) {
+		error("Not creating an empty table");
+		return SLURM_ERROR;
+	}
+
+	query = xstrdup_printf("create table if not exists %s (%s %s",
+			       table_name, fields->name, fields->options);
+	i=1;
+	fields++;
+		
 	while(fields && fields->name) {
-		next = xstrdup_printf(" %s %s",
-				      fields->name, 
-				      fields->options);
-		if(i) 
-			xstrcat(tmp, ",");
-		xstrcat(tmp, next);
-		xfree(next);
+		xstrfmtcat(query, ", %s %s", fields->name, fields->options);
 		fields++;
 		i++;
 	}
-	xstrcat(query, tmp);
-	xfree(tmp);
 	xstrcat(query, ending);
+
+	/* make sure we can do a rollback */
+	xstrcat(query, " engine='innodb'");
 
 	if(mysql_db_query(mysql_db, query) == SLURM_ERROR) {
 		xfree(query);

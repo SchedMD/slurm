@@ -67,7 +67,7 @@ static int   _get_usage(uint16_t type, void *db_conn,
 			Buf in_buffer, Buf *out_buffer);
 static int   _get_users(void *db_conn, Buf in_buffer, Buf *out_buffer);
 static void *_init_conn(Buf in_buffer, Buf *out_buffer, uint32_t *uid);
-static int   _fini_conn(void *db_conn, Buf in_buffer, Buf *out_buffer);
+static int   _fini_conn(void **db_conn, Buf in_buffer, Buf *out_buffer);
 static int   _job_complete(void *db_conn,
 			   Buf in_buffer, Buf *out_buffer, uint32_t *uid);
 static int   _job_start(void *db_conn,
@@ -188,7 +188,7 @@ proc_req(void **db_conn, slurm_fd orig_fd,
 			}
 			break;
 		case DBD_FINI:
-			rc = _fini_conn(*db_conn, in_buffer, out_buffer);
+			rc = _fini_conn(db_conn, in_buffer, out_buffer);
 			break;
 		case DBD_JOB_COMPLETE:
 			rc = _job_complete(*db_conn,
@@ -809,10 +809,11 @@ static void *_init_conn(Buf in_buffer, Buf *out_buffer, uint32_t *uid)
 end_it:
 	slurmdbd_free_init_msg(init_msg);
 	*out_buffer = make_dbd_rc_msg(rc, comment, DBD_INIT);
+
 	return new_conn;
 }
 
-static int   _fini_conn(void *db_conn, Buf in_buffer, Buf *out_buffer)
+static int   _fini_conn(void **db_conn, Buf in_buffer, Buf *out_buffer)
 {
 	dbd_fini_msg_t *fini_msg = NULL;
 	char *comment = NULL;
@@ -826,8 +827,9 @@ static int   _fini_conn(void *db_conn, Buf in_buffer, Buf *out_buffer)
 	}
 	
 	debug2("DBD_FINI: COMMIT:%u", fini_msg->commit);
-	acct_storage_g_close_connection(db_conn, fini_msg->commit);
-
+	acct_storage_g_close_connection(*db_conn, fini_msg->commit);
+	*db_conn = NULL;
+	info("got here!");
 end_it:
 	slurmdbd_free_fini_msg(fini_msg);
 	*out_buffer = make_dbd_rc_msg(rc, comment, DBD_FINI);

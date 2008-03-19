@@ -894,7 +894,6 @@ extern int acct_storage_p_add_associations(MYSQL *acct_mysql_db, uint32_t uid,
 		}
 
 		xstrfmtcat(query,
-			   "LOCK TABLE %s WRITE;"
 			   "SELECT @myLeft := lft FROM %s WHERE acct = '%s' "
 			   "and cluster = '%s' and user = '';",
 			   assoc_table,
@@ -908,8 +907,7 @@ extern int acct_storage_p_add_associations(MYSQL *acct_mysql_db, uint32_t uid,
 			   "insert into %s (%s, lft, rgt) "
 			   "values (%s, @myLeft+1, @myLeft+2) "
 			   "on duplicate key update deleted=0, "
-			   "lft=@myLeft+1, rgt=@myLeft+2 %s;"
-			   "UNLOCK TABLES;",
+			   "lft=@myLeft+1, rgt=@myLeft+2%s;",
 			   assoc_table, cols,
 			   vals,
 			   extra);
@@ -2500,7 +2498,7 @@ extern int clusteracct_storage_p_cluster_procs(MYSQL *acct_mysql_db,
 
 	/* we only are checking the first one here */
 	if(!(row = mysql_fetch_row(result))) {
-		debug("We don't have an entry for this machine %s"
+		debug("We don't have an entry for this machine %s "
 		      "most likely a first time running.", cluster);
 		goto add_it;
 	}
