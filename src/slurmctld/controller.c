@@ -358,7 +358,9 @@ int main(int argc, char *argv[])
 			exit(0);
 		}
 		acct_db_conn = acct_storage_g_get_connection();
-		assoc_mgr_init(acct_db_conn, accounting_enforce);
+		if (assoc_mgr_init(acct_db_conn, accounting_enforce) &&
+		    accounting_enforce)
+			fatal("assoc_mgr_init failure");
 
 		info("Running as primary controller");
 		_gold_cluster_ready();
