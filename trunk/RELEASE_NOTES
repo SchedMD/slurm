@@ -166,8 +166,11 @@ ACCOUNTING CHANGES
 
 * A new command, sacctmgr, is available for managing user accounts in
   SlurmDBD has been added. This information is required for use of SlurmDBD
-  to manage job accounting data. Additional tools to generate accounting 
-  reports are currently under development and will be released soon.
+  to manage job accounting data. Information is maintained based upon 
+  an "association", which has four components: cluster name, Slurm partition, 
+  user name and bank account. See the sacctmgr man page or accounting web
+  page for more information. Additional tools to generate accounting reports
+  are currently under development and will be released soon.
 
 * Job completion records can now be written to a MySQL or PostGreSQL
   database in addition to a test file as controlled using the JobCompType
