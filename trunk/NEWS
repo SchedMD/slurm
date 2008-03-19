@@ -12,6 +12,7 @@ documents those changes that are of interest to users and admins.
     purposes with Maui and Moab.
  -- Log to a job's stderr when it is being cancelled explicitly or upon reaching
     it's time limit.
+ -- Only permit a job's account to be changed while that job is PENDING.
 
 * Changes in SLURM 1.3.0-pre10
 ==============================

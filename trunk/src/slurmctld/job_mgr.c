@@ -3971,36 +3971,37 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 	}
 
 	if (job_specs->account) {
-		acct_association_rec_t assoc_rec;
-		bzero(&assoc_rec, sizeof(acct_association_rec_t));
-
-		xfree(job_ptr->account);
-		if (job_specs->account[0] != '\0') {
-			job_ptr->account = job_specs->account;
-			job_specs->account = NULL;  /* Nothing left to free */
-			info("update_job: setting account to %s for job_id %u",
-			     job_ptr->account, job_specs->job_id);
+		if ((!IS_JOB_PENDING(job_ptr)) || (detail_ptr == NULL)) {
+			info("update_job: attempt to modify account for "
+			     "non-pending job_id %u", job_specs->job_id);
+			error_code = ESLURM_DISABLED;
 		} else {
-			info("update_job: cleared account for job_id %u",
-			     job_specs->job_id);
-		}
+			acct_association_rec_t assoc_rec;
+			bzero(&assoc_rec, sizeof(acct_association_rec_t));
 
-		assoc_rec.uid       = job_ptr->user_id;
-		assoc_rec.partition = job_ptr->partition;
-		assoc_rec.acct      = job_ptr->account;
-		if (assoc_mgr_fill_in_assoc(acct_db_conn, &assoc_rec,
-					    accounting_enforce)) {
-			info("job_update: invalid account %s for job %u",
-			     job_specs->account, job_ptr->job_id);
-			error_code = ESLURM_INVALID_ACCOUNT;
-		} else {
-			xfree(job_ptr->account);
-			if (assoc_rec.acct != '\0') {
-				job_ptr->account = xstrdup(assoc_rec.acct);
-				info("update_job: setting account to %s for job_id %u",
-				     assoc_rec.acct, job_ptr->job_id);
+			assoc_rec.uid       = job_ptr->user_id;
+			assoc_rec.partition = job_ptr->partition;
+			assoc_rec.acct      = job_specs->account;
+			if (assoc_mgr_fill_in_assoc(acct_db_conn, &assoc_rec,
+						    accounting_enforce)) {
+				info("job_update: invalid account %s for "
+				     "job_id %u",
+				     job_specs->account, job_ptr->job_id);
+				error_code = ESLURM_INVALID_ACCOUNT;
+			} else {
+				xfree(job_ptr->account);
+				if (assoc_rec.acct[0] != '\0') {
+					job_ptr->account = xstrdup(assoc_rec.acct);
+					info("update_job: setting account to "
+					     "%s for job_id %u",
+					     assoc_rec.acct, job_ptr->job_id);
+				} else {
+					info("update_job: cleared account for "
+					     "job_id %u",
+					     job_specs->job_id);
+				}
+				job_ptr->assoc_id = assoc_rec.id;
 			}
-			job_ptr->assoc_id = assoc_rec.id;
 		}
 	}
 
