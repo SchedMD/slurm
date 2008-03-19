@@ -236,11 +236,11 @@ extern int sacctmgr_add_cluster(int argc, char *argv[])
 	}
 
 	printf(" Adding Cluster(s)\n");
-	printf("  Name           = %s\n", cluster->name);
+	printf("  Name          = %s\n", cluster->name);
 
-	printf(" User Defaults =\n");
+	printf(" User Defaults  =\n");
 
-	if(cluster->default_fairshare < 0)
+	if(cluster->default_fairshare <= 0)
 		cluster->default_fairshare = 1;
 	printf("  Fairshare     = %u\n", cluster->default_fairshare);
 
@@ -259,16 +259,12 @@ extern int sacctmgr_add_cluster(int argc, char *argv[])
 	cluster_list = list_create(NULL);
 	list_append(cluster_list, cluster);
 
-	if(rollback_flag) {
-		rc = acct_storage_g_add_clusters(db_conn, my_uid, 
-						 cluster_list);
-		list_destroy(cluster_list);
-	} else {
-		sacctmgr_action_t *action = xmalloc(sizeof(sacctmgr_action_t));
-		action->type = SACCTMGR_CLUSTER_CREATE;
-		action->list = cluster_list;
-		list_append(sacctmgr_action_list, action);
-	}
+	rc = acct_storage_g_add_clusters(db_conn, my_uid, cluster_list);
+	if(rc == SLURM_SUCCESS)
+		changes_made = 1;
+
+	list_destroy(cluster_list);
+	
 	list_append(sacctmgr_cluster_list, cluster);
 	assoc = xmalloc(sizeof(acct_association_rec_t));
 	list_append(sacctmgr_association_list, assoc);
@@ -344,6 +340,7 @@ extern int sacctmgr_modify_cluster(int argc, char *argv[])
 		xmalloc(sizeof(acct_cluster_cond_t));
 	List cluster_list = NULL;
 	int cond_set = 0, rec_set = 0;
+	List ret_list = NULL;
 
 	cluster_cond->cluster_list = list_create(slurm_destroy_char);
 	//assoc_cond->cluster_list = list_create(slurm_destroy_char);
@@ -404,29 +401,24 @@ extern int sacctmgr_modify_cluster(int argc, char *argv[])
 	cluster_list = list_create(destroy_acct_cluster_rec);
 	list_append(cluster_list, cluster);
 
-	if(rollback_flag) {
-		if(list_count(cluster_cond->cluster_list)) {
-			rc = acct_storage_g_modify_clusters(db_conn, my_uid, 
-							    cluster_cond,
-							    cluster);
+	if((ret_list = acct_storage_g_modify_clusters(db_conn, my_uid, 
+						      cluster_cond,
+						      cluster))) {
+		char *object = NULL;
+		ListIterator itr = list_iterator_create(ret_list);
+		printf(" Effected...\n");
+		while((object = list_next(itr))) {
+			printf("  %s\n", object);
 		}
-		destroy_acct_cluster_cond(cluster_cond);
-		destroy_acct_cluster_rec(cluster);
-
+		list_iterator_destroy(itr);
+		changes_made = 1;
+		list_destroy(ret_list);
 	} else {
-		sacctmgr_action_t *action = NULL;
-		if(list_count(cluster_cond->cluster_list)) {
-			action = xmalloc(sizeof(sacctmgr_action_t));
-			action->type = SACCTMGR_CLUSTER_MODIFY;
-			action->cond = cluster_cond;
-			action->rec = cluster;
-			list_append(sacctmgr_action_list, action);
-		} else {
-			destroy_acct_cluster_cond(cluster_cond);
-			destroy_acct_cluster_rec(cluster);
-		
-		}
+		rc = SLURM_ERROR;
 	}
+
+	destroy_acct_cluster_cond(cluster_cond);
+	destroy_acct_cluster_rec(cluster);
 
 	return rc;
 }
@@ -439,6 +431,7 @@ extern int sacctmgr_delete_cluster(int argc, char *argv[])
 	acct_association_cond_t *assoc_cond =
 		xmalloc(sizeof(acct_association_cond_t));
 	int i=0;
+	List ret_list = NULL;
 
 	cluster_cond->cluster_list = list_create(slurm_destroy_char);
 	assoc_cond->cluster_list = list_create(slurm_destroy_char);
@@ -460,34 +453,23 @@ extern int sacctmgr_delete_cluster(int argc, char *argv[])
 	printf(" Deleting clusters where...\n");
 	_print_cond(cluster_cond);
 
-	if(rollback_flag) {
-		if(list_count(cluster_cond->cluster_list)) {
-			rc = acct_storage_g_remove_clusters(db_conn, my_uid, 
-							    cluster_cond);
-			rc = acct_storage_g_remove_associations(db_conn, 
-								my_uid, 
-								assoc_cond);
+	if((ret_list = acct_storage_g_remove_clusters(db_conn, my_uid, 
+						      cluster_cond))) {
+		char *object = NULL;
+		ListIterator itr = list_iterator_create(ret_list);
+		printf(" Effected...\n");
+		while((object = list_next(itr))) {
+			printf("  %s\n", object);
 		}
-		destroy_acct_cluster_cond(cluster_cond);
-		destroy_acct_association_cond(assoc_cond);
+		list_iterator_destroy(itr);
+		changes_made = 1;
+		list_destroy(ret_list);
 	} else {
-		sacctmgr_action_t *action = NULL;
-		
-		if(list_count(cluster_cond->cluster_list)) {
-			action = xmalloc(sizeof(sacctmgr_action_t));
-			action->type = SACCTMGR_CLUSTER_DELETE;
-			action->cond = cluster_cond;
-			list_append(sacctmgr_action_list, action);
-
-			action = xmalloc(sizeof(sacctmgr_action_t));
-			action->type = SACCTMGR_ASSOCIATION_DELETE;
-			action->cond = assoc_cond;
-			list_append(sacctmgr_action_list, action);
-		} else {
-			destroy_acct_cluster_cond(cluster_cond);
-			destroy_acct_association_cond(assoc_cond);
-		}
+		rc = SLURM_ERROR;
 	}
+	
+	destroy_acct_cluster_cond(cluster_cond);
+	destroy_acct_association_cond(assoc_cond);	
 
 	return rc;
 }

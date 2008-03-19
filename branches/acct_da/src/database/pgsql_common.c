@@ -137,16 +137,18 @@ extern int pgsql_get_db_connection(PGconn **pgsql_db, char *db_name,
 	return rc;
 }
 
-extern int pgsql_close_db_connection(PGconn *pgsql_db, bool commit)
+extern int pgsql_close_db_connection(PGconn **pgsql_db, bool commit)
 {
-	if(rollback_started) {
-		if(commit) 
-			PQexec(pgsql_db, "COMMIT WORK");
-		else 
-			PQexec(pgsql_db, "ROLLBACK WORK");
-	}
-
-	PQfinish(pgsql_db);	      
+	if(*pgsql_db) {
+		if(rollback_started) {
+			if(commit) 
+				PQexec(*pgsql_db, "COMMIT WORK");
+			else 
+				PQexec(*pgsql_db, "ROLLBACK WORK");
+		}
+		PQfinish(*pgsql_db);
+		*pgsql_db = NULL;
+	}	      
 	return SLURM_SUCCESS;
 }
 

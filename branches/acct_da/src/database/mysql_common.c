@@ -164,20 +164,33 @@ extern int mysql_get_db_connection(MYSQL **mysql_db, char *db_name,
 	return rc;
 }
 
-extern int mysql_close_db_connection(MYSQL *mysql_db, bool commit)
+extern int mysql_close_db_connection(MYSQL **mysql_db, bool commit)
 {
-	int rc = 0;
+	int rc;
+	MYSQL_RES *result = NULL;
 
-	if(rollback_started) {
-		if(commit)
-			rc = mysql_commit(mysql_db);
-		else
-			rc = mysql_rollback(mysql_db);
+	if(*mysql_db) {
+		/* clear out the old results so we don't get a 2014 error */
+		while(mysql_next_result(*mysql_db) == 0)
+			if((result = mysql_store_result(*mysql_db))) {
+				//info("freeing stuff");
+				mysql_free_result(result);
+			}
+		if(rollback_started) {
+			info("commit? %d", commit);
+			if(commit)
+				rc = mysql_commit(*mysql_db);
+			else
+				rc = mysql_rollback(*mysql_db);
+			if(rc) {
+				error("failed: %d %s\n%s",
+				      mysql_errno(*mysql_db),
+				      mysql_error(*mysql_db));
+			}
+		}
+		mysql_close(*mysql_db);
+		*mysql_db = NULL;
 	}
-	info("got rc of %d %x", rc, mysql_db);
-	mysql_close(mysql_db);
-	
-	mysql_db = NULL;
 	return SLURM_SUCCESS;
 }
 
@@ -192,7 +205,7 @@ extern int mysql_db_query(MYSQL *mysql_db, char *query)
 	/* clear out the old results so we don't get a 2014 error */
 	while(mysql_next_result(mysql_db) == 0)
 		if((result = mysql_store_result(mysql_db))) {
-			info("freeing stuff");
+			//info("freeing stuff");
 			mysql_free_result(result);
 		}
 	if(mysql_query(mysql_db, query)) {

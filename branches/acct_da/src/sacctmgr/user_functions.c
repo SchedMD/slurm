@@ -519,34 +519,17 @@ end_it:
 
 	if(!list_count(user_list) && !list_count(assoc_list))
 		printf(" Nothing new added.\n");
-
-	if(rollback_flag) {
-		if(list_count(user_list))
-			rc = acct_storage_g_add_users(db_conn, my_uid, 
-						      user_list);
-		list_destroy(user_list);
-		if(list_count(assoc_list))
-			rc = acct_storage_g_add_associations(db_conn, my_uid, 
-							     assoc_list);
-		list_destroy(assoc_list);
-	} else {
-		sacctmgr_action_t *action = NULL;
-		if(list_count(user_list)) {
-			action = xmalloc(sizeof(sacctmgr_action_t));
-			action->type = SACCTMGR_USER_CREATE;
-			action->list = user_list;
-			list_append(sacctmgr_action_list, action);
-		} else 
-			list_destroy(user_list);
-
-		if(list_count(assoc_list)) {
-			action = xmalloc(sizeof(sacctmgr_action_t));
-			action->type = SACCTMGR_ASSOCIATION_CREATE;
-			action->list = assoc_list;
-			list_append(sacctmgr_action_list, action);
-		} else 
-			list_destroy(assoc_list);
-	}
+	else
+		changes_made = 1;
+		
+	if(list_count(user_list))
+		rc = acct_storage_g_add_users(db_conn, my_uid, 
+					      user_list);
+	list_destroy(user_list);
+	if(list_count(assoc_list))
+		rc = acct_storage_g_add_associations(db_conn, my_uid, 
+						     assoc_list);
+	list_destroy(assoc_list);
 
 	return rc;
 }
@@ -598,6 +581,7 @@ extern int sacctmgr_modify_user(int argc, char *argv[])
 	acct_user_rec_t *user = xmalloc(sizeof(acct_user_rec_t));
 	int i=0;
 	int cond_set = 0, rec_set = 0;
+	List ret_list = NULL;
 
 	user_cond->user_list = list_create(slurm_destroy_char);
 	user_cond->def_acct_list = list_create(slurm_destroy_char);
@@ -635,18 +619,22 @@ extern int sacctmgr_modify_user(int argc, char *argv[])
 	printf("\n Where\n");
 	_print_cond(user_cond);
 
-	if(rollback_flag) {
-		rc = acct_storage_g_modify_users(db_conn, my_uid, 
-						 user_cond, user);
-		destroy_acct_user_cond(user_cond);
-		destroy_acct_user_rec(user);
+	if((ret_list = acct_storage_g_modify_users(db_conn, my_uid,
+						   user_cond, user))) {
+		char *object = NULL;
+		ListIterator itr = list_iterator_create(ret_list);
+		printf(" Effected...\n");
+		while((object = list_next(itr))) {
+			printf("  %s\n", object);
+		}
+		list_iterator_destroy(itr);
+		changes_made = 1;
+		list_destroy(ret_list);
 	} else {
-		sacctmgr_action_t *action = xmalloc(sizeof(sacctmgr_action_t));
-		action->type = SACCTMGR_USER_MODIFY;
-		action->cond = user_cond;
-		action->rec = user;
-		list_append(sacctmgr_action_list, action);
+		rc = SLURM_ERROR;
 	}
+	destroy_acct_user_cond(user_cond);
+	destroy_acct_user_rec(user);	
 
 	return rc;
 }
@@ -656,6 +644,7 @@ extern int sacctmgr_delete_user(int argc, char *argv[])
 	int rc = SLURM_SUCCESS;
 	acct_user_cond_t *user_cond = xmalloc(sizeof(acct_user_cond_t));
 	int i=0;
+	List ret_list = NULL;
 
 	user_cond->user_list = list_create(slurm_destroy_char);
 	user_cond->def_acct_list = list_create(slurm_destroy_char);
@@ -668,16 +657,21 @@ extern int sacctmgr_delete_user(int argc, char *argv[])
 	printf(" Deleting users where...");
 	_print_cond(user_cond);
 
-	if(rollback_flag) {
-		rc = acct_storage_g_remove_users(db_conn, my_uid, 
-						 user_cond);
-		destroy_acct_user_cond(user_cond);
+	if((ret_list = acct_storage_g_remove_users(db_conn, my_uid,
+						   user_cond))) {
+		char *object = NULL;
+		ListIterator itr = list_iterator_create(ret_list);
+		printf(" Effected...\n");
+		while((object = list_next(itr))) {
+			printf("  %s\n", object);
+		}
+		list_iterator_destroy(itr);
+		changes_made = 1;
+		list_destroy(ret_list);
 	} else {
-		sacctmgr_action_t *action = xmalloc(sizeof(sacctmgr_action_t));
-		action->type = SACCTMGR_USER_DELETE;
-		action->cond = user_cond;
-		list_append(sacctmgr_action_list, action);
+		rc = SLURM_ERROR;
 	}
+	destroy_acct_user_cond(user_cond);
 
 	return rc;
 }

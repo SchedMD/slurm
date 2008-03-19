@@ -236,13 +236,13 @@ static void * _service_connection(void *arg)
 		rc = _send_resp(conn->newsockfd, buffer);
 		xfree(msg);
 	}
-	info("closing here %x", db_conn);
-	acct_storage_g_close_connection(db_conn, 0);
+
+	acct_storage_g_close_connection(&db_conn, 0);
 
 	if (slurm_close_accepted_conn(conn->newsockfd) < 0)
 		error("close(%d): %m",  conn->newsockfd);
 	else
-		debug2("Closed connection %d", conn->newsockfd);
+		debug2("Closed connection %d uid(%d)", conn->newsockfd, uid);
 	xfree(arg);
 	_free_server_thread(pthread_self());
 	return NULL;
@@ -330,7 +330,7 @@ static bool _fd_readable(slurm_fd fd)
 			return false;
 		}
 		if (ufds.revents & POLLHUP) {
-			debug2("Connection %d closed", fd);
+			debug3("Connection %d closed", fd);
 			return false;
 		}
 		if (ufds.revents & POLLNVAL) {
@@ -378,7 +378,7 @@ static bool _fd_writeable(slurm_fd fd)
 			return false;
 		}
 		if (ufds.revents & POLLHUP) {
-			debug2("Connection %d closed", fd);
+			debug3("Connection %d closed", fd);
 			return false;
 		}
 		if (ufds.revents & POLLNVAL) {

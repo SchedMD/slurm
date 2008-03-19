@@ -1214,7 +1214,7 @@ void sacct_fini()
 	if(params.opt_completion)
 		g_slurm_jobcomp_fini();
 	else {
-		acct_storage_g_close_connection(acct_db_conn, 1);
+		acct_storage_g_close_connection(&acct_db_conn, 1);
 		slurm_acct_storage_fini();
 	}
 }

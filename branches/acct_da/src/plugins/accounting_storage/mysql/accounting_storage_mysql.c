@@ -452,8 +452,7 @@ extern int init ( void )
 		
 	rc = _mysql_acct_check_tables(acct_mysql_db);
 
-	mysql_close(acct_mysql_db);
-	acct_mysql_db = NULL;
+	mysql_close_db_connection(&acct_mysql_db, 0);
 #endif		
 
 	if(rc == SLURM_SUCCESS)
@@ -495,13 +494,11 @@ extern void *acct_storage_p_get_connection(bool rollback)
 #endif
 }
 
-extern int acct_storage_p_close_connection(MYSQL *acct_mysql_db, bool commit)
+extern int acct_storage_p_close_connection(MYSQL **acct_mysql_db, bool commit)
 {
 #ifdef HAVE_MYSQL
-	if (acct_mysql_db) {
-		mysql_close_db_connection(acct_mysql_db, commit);
-		acct_mysql_db = NULL;
-	}	
+	mysql_close_db_connection(acct_mysql_db, commit);
+	
 	return SLURM_SUCCESS;
 #else
 	return SLURM_ERROR;
@@ -937,12 +934,13 @@ extern int acct_storage_p_add_associations(MYSQL *acct_mysql_db, uint32_t uid,
 #endif
 }
 
-extern int acct_storage_p_modify_users(MYSQL *acct_mysql_db, uint32_t uid, 
+extern List acct_storage_p_modify_users(MYSQL *acct_mysql_db, uint32_t uid, 
 				       acct_user_cond_t *user_q,
 				       acct_user_rec_t *user)
 {
 #ifdef HAVE_MYSQL
 	ListIterator itr = NULL;
+	List ret_list = NULL;
 	int rc = SLURM_SUCCESS;
 	char *object = NULL;
 	char *vals = NULL, *extra = NULL, *query = NULL;
@@ -950,10 +948,12 @@ extern int acct_storage_p_modify_users(MYSQL *acct_mysql_db, uint32_t uid,
 	struct passwd *pw = NULL;
 	char *user_name = NULL;
 	int set = 0;
+	MYSQL_RES *result = NULL;
+	MYSQL_ROW row;
 
 	if(!user_q) {
 		error("we need something to change");
-		return SLURM_ERROR;
+		return NULL;
 	}
 
 	if((pw=getpwuid(uid))) {
@@ -1023,8 +1023,21 @@ extern int acct_storage_p_modify_users(MYSQL *acct_mysql_db, uint32_t uid,
 
 	if(!extra || !vals) {
 		error("Nothing to change");
-		return SLURM_ERROR;
+		return NULL;
 	}
+	query = xstrdup_printf("select name from %s %s;", user_table, extra);
+	if(!(result = mysql_db_query_ret(acct_mysql_db, query))) {
+		xfree(query);
+		return NULL;
+	}
+	xfree(query);
+
+	ret_list = list_create(slurm_destroy_char);
+	while((row = mysql_fetch_row(result))) {
+		char *object = xstrdup(row[0]);
+		list_append(ret_list, object);
+	}
+	mysql_free_result(result);
 
 	query = xstrdup_printf("update %s set %s %s;", user_table, vals, extra);
 	xstrfmtcat(query, 	
@@ -1040,23 +1053,23 @@ extern int acct_storage_p_modify_users(MYSQL *acct_mysql_db, uint32_t uid,
 	xfree(query);
 	if(rc != SLURM_SUCCESS) {
 		error("Couldn't modify assocs");
-		rc = SLURM_ERROR;
+		list_destroy(ret_list);
+		ret_list = NULL;
 	}
 	
-	return rc;
-
-
+	return ret_list;
 #else
-	return SLURM_ERROR;
+	return NULL;
 #endif
 }
 
-extern int acct_storage_p_modify_accts(MYSQL *acct_mysql_db, uint32_t uid, 
+extern List acct_storage_p_modify_accts(MYSQL *acct_mysql_db, uint32_t uid, 
 				       acct_account_cond_t *acct_q,
 				       acct_account_rec_t *acct)
 {
 #ifdef HAVE_MYSQL
 	ListIterator itr = NULL;
+	List ret_list = NULL;
 	int rc = SLURM_SUCCESS;
 	char *object = NULL;
 	char *vals = NULL, *extra = NULL, *query = NULL;
@@ -1064,10 +1077,12 @@ extern int acct_storage_p_modify_accts(MYSQL *acct_mysql_db, uint32_t uid,
 	struct passwd *pw = NULL;
 	char *user = NULL;
 	int set = 0;
+	MYSQL_RES *result = NULL;
+	MYSQL_ROW row;
 
 	if(!acct_q) {
 		error("we need something to change");
-		return SLURM_ERROR;
+		return NULL;
 	}
 
 	if((pw=getpwuid(uid))) {
@@ -1143,7 +1158,7 @@ extern int acct_storage_p_modify_accts(MYSQL *acct_mysql_db, uint32_t uid,
 
 	if(!extra || !vals) {
 		error("Nothing to change");
-		return SLURM_ERROR;
+		return NULL;
 	}
 
 	query = xstrdup_printf("update %s set %s %s;", acct_table, vals, extra);
@@ -1160,21 +1175,22 @@ extern int acct_storage_p_modify_accts(MYSQL *acct_mysql_db, uint32_t uid,
 	xfree(query);
 	if(rc != SLURM_SUCCESS) {
 		error("Couldn't modify assocs");
-		rc = SLURM_ERROR;
+		rc = NULL;
 	}
 	
-	return rc;
+	return ret_list;
 #else
-	return SLURM_ERROR;
+	return NULL;
 #endif
 }
 
-extern int acct_storage_p_modify_clusters(MYSQL *acct_mysql_db, uint32_t uid, 
+extern List acct_storage_p_modify_clusters(MYSQL *acct_mysql_db, uint32_t uid, 
 					  acct_cluster_cond_t *cluster_q,
 					  acct_cluster_rec_t *cluster)
 {
 #ifdef HAVE_MYSQL
 	ListIterator itr = NULL;
+	List ret_list = NULL;
 	int rc = SLURM_SUCCESS;
 	char *object = NULL;
 	char *vals = NULL, *extra = NULL, *query = NULL;
@@ -1182,10 +1198,12 @@ extern int acct_storage_p_modify_clusters(MYSQL *acct_mysql_db, uint32_t uid,
 	struct passwd *pw = NULL;
 	char *user = NULL;
 	int set = 0;
+	MYSQL_RES *result = NULL;
+	MYSQL_ROW row;
 
 	if(!cluster_q) {
 		error("we need something to change");
-		return SLURM_ERROR;
+		return NULL;
 	}
 
 	if((pw=getpwuid(uid))) {
@@ -1218,7 +1236,7 @@ extern int acct_storage_p_modify_clusters(MYSQL *acct_mysql_db, uint32_t uid,
 		
 	if(!extra || !vals) {
 		error("Nothing to change");
-		return SLURM_ERROR;
+		return NULL;
 	}
 
 	query = xstrdup_printf("update %s set %s %s;",
@@ -1236,22 +1254,23 @@ extern int acct_storage_p_modify_clusters(MYSQL *acct_mysql_db, uint32_t uid,
 	xfree(query);
 	if(rc != SLURM_SUCCESS) {
 		error("Couldn't modify assocs");
-		rc = SLURM_ERROR;
+		rc = NULL;
 	}
 	
-	return rc;
+	return ret_list;
 #else
-	return SLURM_ERROR;
+	return NULL;
 #endif
 }
 
-extern int acct_storage_p_modify_associations(MYSQL *acct_mysql_db, 
+extern List acct_storage_p_modify_associations(MYSQL *acct_mysql_db, 
 					      uint32_t uid, 
 					      acct_association_cond_t *assoc_q,
 					      acct_association_rec_t *assoc)
 {
 #ifdef HAVE_MYSQL
 	ListIterator itr = NULL;
+	List ret_list = NULL;
 	int rc = SLURM_SUCCESS;
 	char *object = NULL;
 	char *vals = NULL, *extra = NULL, *query = NULL;
@@ -1259,10 +1278,12 @@ extern int acct_storage_p_modify_associations(MYSQL *acct_mysql_db,
 	struct passwd *pw = NULL;
 	char *user = NULL;
 	int set = 0;
+	MYSQL_RES *result = NULL;
+	MYSQL_ROW row;
 
 	if(!assoc_q) {
 		error("we need something to change");
-		return SLURM_ERROR;
+		return NULL;
 	}
 
 	if((pw=getpwuid(uid))) {
@@ -1359,7 +1380,7 @@ extern int acct_storage_p_modify_associations(MYSQL *acct_mysql_db,
 
 	if(!extra || !vals) {
 		error("Nothing to change");
-		return SLURM_ERROR;
+		return NULL;
 	}
 
 	query = xstrdup_printf("update %s set %s %s;",
@@ -1377,20 +1398,21 @@ extern int acct_storage_p_modify_associations(MYSQL *acct_mysql_db,
 	xfree(query);
 	if(rc != SLURM_SUCCESS) {
 		error("Couldn't modify assocs");
-		rc = SLURM_ERROR;
+		rc = NULL;
 	}
 	
-	return rc;
+	return ret_list;
 #else
-	return SLURM_ERROR;
+	return NULL;
 #endif
 }
 
-extern int acct_storage_p_remove_users(MYSQL *acct_mysql_db, uint32_t uid, 
+extern List acct_storage_p_remove_users(MYSQL *acct_mysql_db, uint32_t uid, 
 				       acct_user_cond_t *user_q)
 {
 #ifdef HAVE_MYSQL
 	ListIterator itr = NULL;
+	List ret_list = NULL;
 	int rc = SLURM_SUCCESS;
 	char *object = NULL;
 	char *extra = NULL, *query = NULL;
@@ -1398,10 +1420,12 @@ extern int acct_storage_p_remove_users(MYSQL *acct_mysql_db, uint32_t uid,
 	struct passwd *pw = NULL;
 	char *user_name = NULL;
 	int set = 0;
+	MYSQL_RES *result = NULL;
+	MYSQL_ROW row;
 
 	if(!user_q) {
 		error("we need something to change");
-		return SLURM_ERROR;
+		return NULL;
 	}
 
 	if((pw=getpwuid(uid))) {
@@ -1462,7 +1486,7 @@ extern int acct_storage_p_remove_users(MYSQL *acct_mysql_db, uint32_t uid,
 
 	if(!extra) {
 		error("Nothing to remove");
-		return SLURM_ERROR;
+		return NULL;
 	}
 
 	query = xstrdup_printf("update %s set mod_time=%d, deleted=1 %s;", 
@@ -1479,31 +1503,32 @@ extern int acct_storage_p_remove_users(MYSQL *acct_mysql_db, uint32_t uid,
 	xfree(query);
 	if(rc != SLURM_SUCCESS) {
 		error("Couldn't modify assocs");
-		rc = SLURM_ERROR;
+		rc = NULL;
 	}
 	
-	return rc;
+	return ret_list;
 
 #else
-	return SLURM_ERROR;
+	return NULL;
 #endif
 }
 
-extern int acct_storage_p_remove_coord(MYSQL *acct_mysql_db, uint32_t uid, 
+extern List acct_storage_p_remove_coord(MYSQL *acct_mysql_db, uint32_t uid, 
 				       char *acct, acct_user_cond_t *user_q)
 {
 #ifdef HAVE_MYSQL
 	return SLURM_SUCCESS;
 #else
-	return SLURM_ERROR;
+	return NULL;
 #endif
 }
 
-extern int acct_storage_p_remove_accts(MYSQL *acct_mysql_db, uint32_t uid, 
+extern List acct_storage_p_remove_accts(MYSQL *acct_mysql_db, uint32_t uid, 
 				       acct_account_cond_t *acct_q)
 {
 #ifdef HAVE_MYSQL
 	ListIterator itr = NULL;
+	List ret_list = NULL;
 	int rc = SLURM_SUCCESS;
 	char *object = NULL;
 	char *extra = NULL, *query = NULL;
@@ -1511,10 +1536,12 @@ extern int acct_storage_p_remove_accts(MYSQL *acct_mysql_db, uint32_t uid,
 	struct passwd *pw = NULL;
 	char *user_name = NULL;
 	int set = 0;
+	MYSQL_RES *result = NULL;
+	MYSQL_ROW row;
 
 	if(!acct_q) {
 		error("we need something to change");
-		return SLURM_ERROR;
+		return NULL;
 	}
 
 	if((pw=getpwuid(uid))) {
@@ -1583,7 +1610,7 @@ extern int acct_storage_p_remove_accts(MYSQL *acct_mysql_db, uint32_t uid,
 
 	if(!extra) {
 		error("Nothing to remove");
-		return SLURM_ERROR;
+		return NULL;
 	}
 
 	query = xstrdup_printf("update %s set mod_time=%d, deleted=1 %s;",
@@ -1605,17 +1632,18 @@ extern int acct_storage_p_remove_accts(MYSQL *acct_mysql_db, uint32_t uid,
 	
 
 end_it:
-	return rc;
+	return ret_list;
 #else
-	return SLURM_ERROR;
+	return NULL;
 #endif
 }
 
-extern int acct_storage_p_remove_clusters(MYSQL *acct_mysql_db, uint32_t uid, 
+extern List acct_storage_p_remove_clusters(MYSQL *acct_mysql_db, uint32_t uid, 
 					  acct_cluster_cond_t *cluster_q)
 {
 #ifdef HAVE_MYSQL
 	ListIterator itr = NULL;
+	List ret_list = NULL;
 	int rc = SLURM_SUCCESS;
 	char *object = NULL;
 	char *extra = NULL, *assoc_extra = NULL, *query = NULL;
@@ -1623,10 +1651,12 @@ extern int acct_storage_p_remove_clusters(MYSQL *acct_mysql_db, uint32_t uid,
 	struct passwd *pw = NULL;
 	char *user_name = NULL;
 	int set = 0;
+	MYSQL_RES *result = NULL;
+	MYSQL_ROW row;
 
 	if(!cluster_q) {
 		error("we need something to change");
-		return SLURM_ERROR;
+		return NULL;
 	}
 
 	if((pw=getpwuid(uid))) {
@@ -1657,7 +1687,7 @@ extern int acct_storage_p_remove_clusters(MYSQL *acct_mysql_db, uint32_t uid,
 
 	if(!extra) {
 		error("Nothing to remove");
-		return SLURM_ERROR;
+		return NULL;
 	}
 
 	query = xstrdup_printf("update %s set mod_time=%d, deleted=1 %s;",
@@ -1686,18 +1716,19 @@ extern int acct_storage_p_remove_clusters(MYSQL *acct_mysql_db, uint32_t uid,
 	}
 	
 end_it:
-	return rc;
+	return ret_list;
 #else
-	return SLURM_ERROR;
+	return NULL;
 #endif
 }
 
-extern int acct_storage_p_remove_associations(MYSQL *acct_mysql_db,
+extern List acct_storage_p_remove_associations(MYSQL *acct_mysql_db,
 					      uint32_t uid, 
 					      acct_association_cond_t *assoc_q)
 {
 #ifdef HAVE_MYSQL
 	ListIterator itr = NULL;
+	List ret_list = NULL;
 	int rc = SLURM_SUCCESS;
 	char *object = NULL;
 	char *extra = NULL, *query = NULL;
@@ -1705,10 +1736,12 @@ extern int acct_storage_p_remove_associations(MYSQL *acct_mysql_db,
 	struct passwd *pw = NULL;
 	char *user_name = NULL;
 	int set = 0;
+	MYSQL_RES *result = NULL;
+	MYSQL_ROW row;
 
 	if(!assoc_q) {
 		error("we need something to change");
-		return SLURM_ERROR;
+		return NULL;
 	}
 
 	if((pw=getpwuid(uid))) {
@@ -1789,12 +1822,12 @@ extern int acct_storage_p_remove_associations(MYSQL *acct_mysql_db,
 	xfree(query);
 	if(rc != SLURM_SUCCESS) {
 		error("Couldn't remove assocs");
-		rc = SLURM_ERROR;
+		rc = NULL;
 	}
 	
-	return rc;
+	return ret_list;
 #else
-	return SLURM_ERROR;
+	return NULL;
 #endif
 }
 
@@ -2624,7 +2657,7 @@ try_again:
 		if(!reinit) {
 			error("It looks like the storage has gone "
 			      "away trying to reconnect");
-			acct_storage_p_close_connection(acct_mysql_db, 1);
+			acct_storage_p_close_connection(&acct_mysql_db, 1);
 			acct_mysql_db = acct_storage_p_get_connection(0);
 			reinit = 1;
 			goto try_again;

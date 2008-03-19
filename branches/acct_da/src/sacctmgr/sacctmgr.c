@@ -328,9 +328,9 @@ _process_command (int argc, char *argv[])
 /* 				 "before exit?",  */
 /* 				 list_count(sacctmgr_action_list)); */
 /* 			if(commit_check(tmp_char))  */
-/* 				acct_storage_g_close_connection(db_conn, 1); */
+/* 				acct_storage_g_close_connection(&db_conn, 1); */
 /* 			else { */
-/* 				acct_storage_g_close_connection(db_conn, 0); */
+/* 				acct_storage_g_close_connection(&db_conn, 0); */
 /* 				printf("Changes discarded.\n"); */
 /* 			} */
 /* 			list_destroy(sacctmgr_action_list); */
@@ -558,13 +558,13 @@ static void _close_db()
 {
 	if(changes_made && rollback_flag) {
 		if(commit_check("Would you like to commit changes?")) 
-			acct_storage_g_close_connection(db_conn, 1);
+			acct_storage_g_close_connection(&db_conn, 1);
 		else {
-			acct_storage_g_close_connection(db_conn, 0);
+			acct_storage_g_close_connection(&db_conn, 0);
 			printf("Changes discarded.\n");
 		}
 	} else 
-		acct_storage_g_close_connection(db_conn, 0);
+		acct_storage_g_close_connection(&db_conn, 0);
 	printf("\n");
 	exit_flag = 1;
 }
@@ -580,7 +580,7 @@ static void _handle_intr()
 		_close_db();
 		exit(1);
 	} else { /* second Ctrl-C in half as many seconds */
-		acct_storage_g_close_connection(db_conn, 0);
+		acct_storage_g_close_connection(&db_conn, 0);
 		if(changes_made && rollback_flag)
 			printf("Changes discarded.\n");
 		printf("\n");	
@@ -615,95 +615,95 @@ static int _setup_signals()
 	return rc;
 }
 
-static void _commit ()
-{
-	int rc = SLURM_SUCCESS;
-	sacctmgr_action_t *action = NULL;
+/* static void _commit () */
+/* { */
+/* 	int rc = SLURM_SUCCESS; */
+/* 	sacctmgr_action_t *action = NULL; */
 
-	if(!sacctmgr_action_list) {
-		error("No actions to commit");
-		return;
-	}
+/* 	if(!sacctmgr_action_list) { */
+/* 		error("No actions to commit"); */
+/* 		return; */
+/* 	} */
 	
-	while((action = list_pop(sacctmgr_action_list))) {
-		/* if(rc != SLURM_SUCCESS) { */
-/* 			error("_commit: last command returned error."); */
+/* 	while((action = list_pop(sacctmgr_action_list))) { */
+/* 		/\* if(rc != SLURM_SUCCESS) { *\/ */
+/* /\* 			error("_commit: last command returned error."); *\/ */
+/* /\* 			break; *\/ */
+/* /\* 		} *\/ */
+/* 		switch(action->type) { */
+/* 		case SACCTMGR_ACTION_NOTSET: */
+/* 			error("This action does not have a type."); */
+/* 			break; */
+/* 		case SACCTMGR_USER_CREATE: */
+/* 			rc = acct_storage_g_add_users(db_conn, my_uid,  */
+/* 						      action->list);		 */
+/* 			break; */
+/* 		case SACCTMGR_ACCOUNT_CREATE: */
+/* 			rc = acct_storage_g_add_accounts(db_conn, my_uid,  */
+/* 							 action->list); */
+/* 			break; */
+/* 		case SACCTMGR_CLUSTER_CREATE: */
+/* 			rc = acct_storage_g_add_clusters(db_conn, my_uid,  */
+/* 							 action->list); */
+/* 			break; */
+/* 		case SACCTMGR_ASSOCIATION_CREATE: */
+/* 			rc = acct_storage_g_add_associations(db_conn, my_uid,  */
+/* 							     action->list); */
+/* 			break; */
+/* 		case SACCTMGR_USER_MODIFY: */
+/* 			rc = acct_storage_g_modify_users(db_conn, my_uid,  */
+/* 							 action->cond, */
+/* 							 action->rec); */
+/* 			break; */
+/* 		case SACCTMGR_USER_DELETE: */
+/* 			rc = acct_storage_g_remove_users(db_conn, my_uid,  */
+/* 							 action->cond); */
+/* 			break; */
+/* 		case SACCTMGR_ACCOUNT_MODIFY: */
+/* 			rc = acct_storage_g_modify_accounts(db_conn, my_uid,  */
+/* 							    action->cond, */
+/* 							    action->rec); */
+/* 			break; */
+/* 		case SACCTMGR_ACCOUNT_DELETE: */
+/* 			rc = acct_storage_g_remove_accounts(db_conn, my_uid,  */
+/* 							    action->cond); */
+/* 			break; */
+/* 		case SACCTMGR_CLUSTER_MODIFY: */
+/* 			rc = acct_storage_g_modify_clusters(db_conn, my_uid,  */
+/* 							    action->cond, */
+/* 							    action->rec); */
+/* 			break; */
+/* 		case SACCTMGR_CLUSTER_DELETE: */
+/* 			rc = acct_storage_g_remove_clusters(db_conn, my_uid,  */
+/* 							    action->cond); */
+/* 			break; */
+/* 		case SACCTMGR_ASSOCIATION_MODIFY: */
+/* 			rc = acct_storage_g_modify_associations(db_conn, my_uid,  */
+/* 								action->cond, */
+/* 								action->rec); */
+/* 			break; */
+/* 		case SACCTMGR_ASSOCIATION_DELETE: */
+/* 			rc = acct_storage_g_remove_associations( */
+/* 				db_conn, my_uid,  */
+/* 				action->cond); */
+/* 			break; */
+/* 		case SACCTMGR_COORD_CREATE: */
+/* 			rc = acct_storage_g_add_coord(db_conn, my_uid,  */
+/* 						      action->rec, */
+/* 						      action->cond); */
+/* 			break; */
+/* 		case SACCTMGR_COORD_DELETE: */
+/* 			rc = acct_storage_g_remove_coord(db_conn, my_uid,  */
+/* 							 action->rec, */
+/* 							 action->cond); */
+/* 			break;	 */
+/* 		default: */
+/* 			error("unknown action %d", action->type); */
 /* 			break; */
 /* 		} */
-		switch(action->type) {
-		case SACCTMGR_ACTION_NOTSET:
-			error("This action does not have a type.");
-			break;
-		case SACCTMGR_USER_CREATE:
-			rc = acct_storage_g_add_users(db_conn, my_uid, 
-						      action->list);		
-			break;
-		case SACCTMGR_ACCOUNT_CREATE:
-			rc = acct_storage_g_add_accounts(db_conn, my_uid, 
-							 action->list);
-			break;
-		case SACCTMGR_CLUSTER_CREATE:
-			rc = acct_storage_g_add_clusters(db_conn, my_uid, 
-							 action->list);
-			break;
-		case SACCTMGR_ASSOCIATION_CREATE:
-			rc = acct_storage_g_add_associations(db_conn, my_uid, 
-							     action->list);
-			break;
-		case SACCTMGR_USER_MODIFY:
-			rc = acct_storage_g_modify_users(db_conn, my_uid, 
-							 action->cond,
-							 action->rec);
-			break;
-		case SACCTMGR_USER_DELETE:
-			rc = acct_storage_g_remove_users(db_conn, my_uid, 
-							 action->cond);
-			break;
-		case SACCTMGR_ACCOUNT_MODIFY:
-			rc = acct_storage_g_modify_accounts(db_conn, my_uid, 
-							    action->cond,
-							    action->rec);
-			break;
-		case SACCTMGR_ACCOUNT_DELETE:
-			rc = acct_storage_g_remove_accounts(db_conn, my_uid, 
-							    action->cond);
-			break;
-		case SACCTMGR_CLUSTER_MODIFY:
-			rc = acct_storage_g_modify_clusters(db_conn, my_uid, 
-							    action->cond,
-							    action->rec);
-			break;
-		case SACCTMGR_CLUSTER_DELETE:
-			rc = acct_storage_g_remove_clusters(db_conn, my_uid, 
-							    action->cond);
-			break;
-		case SACCTMGR_ASSOCIATION_MODIFY:
-			rc = acct_storage_g_modify_associations(db_conn, my_uid, 
-								action->cond,
-								action->rec);
-			break;
-		case SACCTMGR_ASSOCIATION_DELETE:
-			rc = acct_storage_g_remove_associations(
-				db_conn, my_uid, 
-				action->cond);
-			break;
-		case SACCTMGR_COORD_CREATE:
-			rc = acct_storage_g_add_coord(db_conn, my_uid, 
-						      action->rec,
-						      action->cond);
-			break;
-		case SACCTMGR_COORD_DELETE:
-			rc = acct_storage_g_remove_coord(db_conn, my_uid, 
-							 action->rec,
-							 action->cond);
-			break;	
-		default:
-			error("unknown action %d", action->type);
-			break;
-		}
-		destroy_sacctmgr_action(action);
-	}
-}
+/* 		destroy_sacctmgr_action(action); */
+/* 	} */
+/* } */
 
 /* _usage - show the valid sacctmgr commands */
 void _usage () {

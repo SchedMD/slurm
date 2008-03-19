@@ -716,7 +716,7 @@ extern void * acct_storage_p_get_connection(bool rollback)
 	return NULL;
 }
 
-extern int acct_storage_p_close_connection(void *db_conn, bool commit)
+extern int acct_storage_p_close_connection(void **db_conn, bool commit)
 {
 	return SLURM_SUCCESS;
 }
@@ -1098,12 +1098,12 @@ extern int acct_storage_p_validate_assoc_id(void *db_conn,
 	return SLURM_SUCCESS;
 }
 
-extern int acct_storage_p_modify_users(void *db_conn,
-				       acct_user_cond_t *user_q,
-				       acct_user_rec_t *user)
+extern List acct_storage_p_modify_users(void *db_conn,
+					acct_user_cond_t *user_q,
+					acct_user_rec_t *user)
 {
 	ListIterator itr = NULL;
-	int rc = SLURM_SUCCESS;
+//	int rc = SLURM_SUCCESS;
 	gold_request_t *gold_request = NULL;
 	gold_response_t *gold_response = NULL;
 	char *object = NULL;
@@ -1113,13 +1113,13 @@ extern int acct_storage_p_modify_users(void *db_conn,
 	if(!user_q) {
 		error("acct_storage_p_modify_users: "
 		      "we need conditions to modify");
-		return SLURM_ERROR;
+		return NULL;
 	}
 
 	if(!user) {
 		error("acct_storage_p_modify_users: "
 		      "we need something to change");
-		return SLURM_ERROR;
+		return NULL;
 	}
 
 	gold_request = create_gold_request(GOLD_OBJECT_USER,
@@ -1127,7 +1127,7 @@ extern int acct_storage_p_modify_users(void *db_conn,
 	if(!gold_request) { 
 		error("acct_storage_p_modify_users: "
 		      "couldn't create gold_request");
-		return SLURM_ERROR;
+		return NULL;
 	}
 
 	if(user_q->user_list && list_count(user_q->user_list)) {
@@ -1181,7 +1181,7 @@ extern int acct_storage_p_modify_users(void *db_conn,
 	if(!gold_response) {
 		error("acct_storage_p_modify_users: "
 		      "no response received");
-		return SLURM_ERROR;
+		return NULL;
 	}
 	
 	if(gold_response->rc) {
@@ -1189,19 +1189,18 @@ extern int acct_storage_p_modify_users(void *db_conn,
 		      gold_response->rc,
 		      gold_response->message);
 		errno = gold_response->rc;
-		rc = SLURM_ERROR;
 	}
 
 	destroy_gold_response(gold_response);		
 	
-	return rc;
+	return NULL;
 }
 
-extern int acct_storage_p_modify_user_admin_level(void *db_conn,
-						  acct_user_cond_t *user_q)
+extern List acct_storage_p_modify_user_admin_level(void *db_conn,
+						   acct_user_cond_t *user_q)
 {
 	ListIterator itr = NULL;
-	int rc = SLURM_SUCCESS;
+//	int rc = SLURM_SUCCESS;
 	gold_request_t *gold_request = NULL;
 	gold_response_t *gold_response = NULL;
 	char *object = NULL;
@@ -1210,7 +1209,7 @@ extern int acct_storage_p_modify_user_admin_level(void *db_conn,
 	if(!user_q || user_q->admin_level == ACCT_ADMIN_NOTSET) {
 		error("acct_storage_p_modify_users: "
 		      "we need conditions to modify");
-		return SLURM_ERROR;
+		return NULL;
 	}
 
 	if(user_q->admin_level == ACCT_ADMIN_NONE) 
@@ -1222,7 +1221,7 @@ extern int acct_storage_p_modify_user_admin_level(void *db_conn,
 	
 	if(!gold_request) { 
 		error("couldn't create gold_request");
-		return SLURM_ERROR;
+		return NULL;
 	}
 
 	if(user_q->admin_level == ACCT_ADMIN_NONE) {
@@ -1246,7 +1245,7 @@ extern int acct_storage_p_modify_user_admin_level(void *db_conn,
 	else {
 		error("acct_storage_p_modify_user_admin_level: "
 		      "unknown admin level %d", user_q->admin_level);
-		return SLURM_ERROR;
+		return NULL;
 	}
 
 	if(user_q->user_list && list_count(user_q->user_list)) {
@@ -1288,7 +1287,7 @@ extern int acct_storage_p_modify_user_admin_level(void *db_conn,
 	if(!gold_response) {
 		error("acct_storage_p_modify_users: "
 		      "no response received");
-		return SLURM_ERROR;
+		return NULL;
 	}
 	
 	if(gold_response->rc) {
@@ -1296,19 +1295,19 @@ extern int acct_storage_p_modify_user_admin_level(void *db_conn,
 		      gold_response->rc,
 		      gold_response->message);
 		errno = gold_response->rc;
-		rc = SLURM_ERROR;
+		
 	}
 	destroy_gold_response(gold_response);	
 	
-	return rc;
+	return NULL;
 }
 
-extern int acct_storage_p_modify_accts(void *db_conn,
+extern List acct_storage_p_modify_accts(void *db_conn,
 				       acct_account_cond_t *acct_q,
 				       acct_account_rec_t *acct)
 {
 	ListIterator itr = NULL;
-	int rc = SLURM_SUCCESS;
+//	int rc = SLURM_SUCCESS;
 	gold_request_t *gold_request = NULL;
 	gold_response_t *gold_response = NULL;
 	char tmp_buff[50];
@@ -1318,20 +1317,20 @@ extern int acct_storage_p_modify_accts(void *db_conn,
 	if(!acct_q) {
 		error("acct_storage_p_modify_accts: "
 		      "we need conditions to modify");
-		return SLURM_ERROR;
+		return NULL;
 	}
 
 	if(!acct) {
 		error("acct_storage_p_modify_accts: "
 		      "we need something to change");
-		return SLURM_ERROR;
+		return NULL;
 	}
 	
 	gold_request = create_gold_request(GOLD_OBJECT_ACCT,
 					   GOLD_ACTION_MODIFY);
 	if(!gold_request) { 
 		error("couldn't create gold_request");
-		return SLURM_ERROR;
+		return NULL;
 	}
 
 	if(acct_q->acct_list && list_count(acct_q->acct_list)) {
@@ -1405,7 +1404,7 @@ extern int acct_storage_p_modify_accts(void *db_conn,
 	if(!gold_response) {
 		error("acct_storage_p_modify_accts: "
 		      "no response received");
-		return SLURM_ERROR;
+		return NULL;
 	}
 	
 	if(gold_response->rc) {
@@ -1413,27 +1412,27 @@ extern int acct_storage_p_modify_accts(void *db_conn,
 		      gold_response->rc,
 		      gold_response->message);
 		errno = gold_response->rc;
-		rc = SLURM_ERROR;
+		
 	}
 
 	destroy_gold_response(gold_response);		
 	
-	return rc;
+	return NULL;
 }
 
-extern int acct_storage_p_modify_clusters(void *db_conn,
+extern List acct_storage_p_modify_clusters(void *db_conn,
 					  acct_cluster_cond_t *cluster_q,
 					  acct_cluster_rec_t *cluster)
 {
 	return SLURM_SUCCESS;
 }
 
-extern int acct_storage_p_modify_associations(void *db_conn,
+extern List acct_storage_p_modify_associations(void *db_conn,
 					      acct_association_cond_t *assoc_q,
 					      acct_association_rec_t *assoc)
 {
 	ListIterator itr = NULL;
-	int rc = SLURM_SUCCESS;
+//	int rc = SLURM_SUCCESS;
 	gold_request_t *gold_request = NULL;
 	gold_response_t *gold_response = NULL;
 	char tmp_buff[50];
@@ -1443,20 +1442,20 @@ extern int acct_storage_p_modify_associations(void *db_conn,
 	if(!assoc_q) {
 		error("acct_storage_p_modify_associations: "
 		      "we need conditions to modify");
-		return SLURM_ERROR;
+		return NULL;
 	}
 
 	if(!assoc) {
 		error("acct_storage_p_modify_associations: "
 		      "we need something to change");
-		return SLURM_ERROR;
+		return NULL;
 	}
 
 	gold_request = create_gold_request(GOLD_OBJECT_ACCT,
 					   GOLD_ACTION_MODIFY);
 	if(!gold_request) { 
 		error("couldn't create gold_request");
-		return SLURM_ERROR;
+		return NULL;
 	}
 
 	if(assoc_q->id_list && list_count(assoc_q->id_list)) {
@@ -1567,7 +1566,7 @@ extern int acct_storage_p_modify_associations(void *db_conn,
 	if(!gold_response) {
 		error("acct_storage_p_modify_associations: "
 		      "no response received");
-		return SLURM_ERROR;
+		return NULL;
 	}
 		
 	if(gold_response->rc) {
@@ -1575,18 +1574,18 @@ extern int acct_storage_p_modify_associations(void *db_conn,
 		      gold_response->rc,
 		      gold_response->message);
 		errno = gold_response->rc;
-		rc = SLURM_ERROR;
+		
 	}
 	destroy_gold_response(gold_response);		
 	
-	return rc;
+	return NULL;
 }
 
-extern int acct_storage_p_remove_users(void *db_conn,
+extern List acct_storage_p_remove_users(void *db_conn,
 				       acct_user_cond_t *user_q)
 {
 	ListIterator itr = NULL;
-	int rc = SLURM_SUCCESS;
+//	int rc = SLURM_SUCCESS;
 	gold_request_t *gold_request = NULL;
 	gold_response_t *gold_response = NULL;
 	char *object = NULL;
@@ -1595,7 +1594,7 @@ extern int acct_storage_p_remove_users(void *db_conn,
 	if(!user_q) {
 		error("acct_storage_p_remove_users: "
 		      "we need conditions to remove");
-		return SLURM_ERROR;
+		return NULL;
 	}
 
 	gold_request = create_gold_request(GOLD_OBJECT_USER,
@@ -1603,7 +1602,7 @@ extern int acct_storage_p_remove_users(void *db_conn,
 	if(!gold_request) { 
 		error("acct_storage_p_remove_users: "
 		      "couldn't create gold_request");
-		return SLURM_ERROR;
+		return NULL;
 	}
 	
 	if(user_q->user_list && list_count(user_q->user_list)) {
@@ -1645,7 +1644,7 @@ extern int acct_storage_p_remove_users(void *db_conn,
 	if(!gold_response) {
 		error("acct_storage_p_remove_users: "
 		      "no response received");
-		return SLURM_ERROR;
+		return NULL;
 	}
 		
 	if(gold_response->rc) {
@@ -1654,25 +1653,25 @@ extern int acct_storage_p_remove_users(void *db_conn,
 		      gold_response->rc,
 		      gold_response->message);
 		errno = gold_response->rc;
-		rc = SLURM_ERROR;
+		
 	}
 	destroy_gold_response(gold_response);		
 		
-	return rc;
+	return NULL;
 }
 
-extern int acct_storage_p_remove_coord(void *db_conn,
+extern List acct_storage_p_remove_coord(void *db_conn,
 				       char *acct,
 				       acct_user_cond_t *user_q)
 {
 	return SLURM_SUCCESS;
 }
 
-extern int acct_storage_p_remove_accts(void *db_conn,
+extern List acct_storage_p_remove_accts(void *db_conn,
 				       acct_account_cond_t *acct_q)
 {
 	ListIterator itr = NULL;
-	int rc = SLURM_SUCCESS;
+//	int rc = SLURM_SUCCESS;
 	gold_request_t *gold_request = NULL;
 	gold_response_t *gold_response = NULL;
 	char *object = NULL;
@@ -1681,7 +1680,7 @@ extern int acct_storage_p_remove_accts(void *db_conn,
 	if(!acct_q) {
 		error("acct_storage_p_remove_accts: "
 		      "we need conditions to remove");
-		return SLURM_ERROR;
+		return NULL;
 	}
 
 	gold_request = create_gold_request(GOLD_OBJECT_PROJECT,
@@ -1689,7 +1688,7 @@ extern int acct_storage_p_remove_accts(void *db_conn,
 	if(!gold_request) { 
 		error("acct_storage_p_remove_accts: "
 		      "couldn't create gold_request");
-		return SLURM_ERROR;
+		return NULL;
 	}
 	
 	if(acct_q->acct_list && list_count(acct_q->acct_list)) {
@@ -1748,7 +1747,7 @@ extern int acct_storage_p_remove_accts(void *db_conn,
 	if(!gold_response) {
 		error("acct_storage_p_remove_accts: "
 		      "no response received");
-		return SLURM_ERROR;
+		return NULL;
 	}
 	
 	if(gold_response->rc) {
@@ -1757,18 +1756,18 @@ extern int acct_storage_p_remove_accts(void *db_conn,
 		      gold_response->rc,
 		      gold_response->message);
 		errno = gold_response->rc;
-		rc = SLURM_ERROR;
+		
 	}
 	destroy_gold_response(gold_response);		
 		
-	return rc;
+	return NULL;
 }
 
-extern int acct_storage_p_remove_clusters(void *db_conn,
+extern List acct_storage_p_remove_clusters(void *db_conn,
 					  acct_cluster_cond_t *cluster_q)
 {
 	ListIterator itr = NULL;
-	int rc = SLURM_SUCCESS;
+//	int rc = SLURM_SUCCESS;
 	gold_request_t *gold_request = NULL;
 	gold_response_t *gold_response = NULL;
 	char *object = NULL;
@@ -1777,7 +1776,7 @@ extern int acct_storage_p_remove_clusters(void *db_conn,
 	if(!cluster_q) {
 		error("acct_storage_p_modify_clusters: "
 		      "we need conditions to modify");
-		return SLURM_ERROR;
+		return NULL;
 	}
 
 	gold_request = create_gold_request(GOLD_OBJECT_MACHINE,
@@ -1785,7 +1784,7 @@ extern int acct_storage_p_remove_clusters(void *db_conn,
 	if(!gold_request) { 
 		error("acct_storage_p_remove_clusters: "
 		      "couldn't create gold_request");
-		return SLURM_ERROR;
+		return NULL;
 	}
 	
 	if(cluster_q->cluster_list && list_count(cluster_q->cluster_list)) {
@@ -1811,7 +1810,7 @@ extern int acct_storage_p_remove_clusters(void *db_conn,
 	if(!gold_response) {
 		error("acct_storage_p_remove_clusters: "
 		      "no response received");
-		return SLURM_ERROR;
+		return NULL;
 	}
 	
 	if(gold_response->rc) {
@@ -1821,7 +1820,7 @@ extern int acct_storage_p_remove_clusters(void *db_conn,
 		      gold_response->message);
 		errno = gold_response->rc;
 		destroy_gold_response(gold_response);
-		return SLURM_ERROR;
+		return NULL;
 	}
 	destroy_gold_response(gold_response);
 
@@ -1830,7 +1829,7 @@ extern int acct_storage_p_remove_clusters(void *db_conn,
 	if(!gold_request) { 
 		error("acct_storage_p_remove_clusters: "
 		      "couldn't create gold_request");
-		return SLURM_ERROR;
+		return NULL;
 	}
 	
 	if(cluster_q->cluster_list && list_count(cluster_q->cluster_list)) {
@@ -1855,7 +1854,7 @@ extern int acct_storage_p_remove_clusters(void *db_conn,
 		error("acct_storage_p_remove_clusters: "
 		      "no response received");
 		destroy_gold_request(gold_request);
-		return SLURM_ERROR;
+		return NULL;
 	}
 		
 	if(gold_response->rc) {
@@ -1866,7 +1865,7 @@ extern int acct_storage_p_remove_clusters(void *db_conn,
 		errno = gold_response->rc;
 		destroy_gold_request(gold_request);
 		destroy_gold_response(gold_response);
-		return SLURM_ERROR;
+		return NULL;
 	}
 	destroy_gold_response(gold_response);
 
@@ -1876,7 +1875,7 @@ extern int acct_storage_p_remove_clusters(void *db_conn,
 		error("acct_storage_p_remove_clusters: "
 		      "no response received");
 		destroy_gold_request(gold_request);
-		return SLURM_ERROR;
+		return NULL;
 	}
 		
 	if(gold_response->rc) {
@@ -1887,7 +1886,7 @@ extern int acct_storage_p_remove_clusters(void *db_conn,
 		errno = gold_response->rc;
 		destroy_gold_request(gold_request);
 		destroy_gold_response(gold_response);
-		return SLURM_ERROR;
+		return NULL;
 	}
 	
 	destroy_gold_response(gold_response);
@@ -1898,7 +1897,7 @@ extern int acct_storage_p_remove_clusters(void *db_conn,
 		error("acct_storage_p_remove_clusters: "
 		      "no response received");
 		destroy_gold_request(gold_request);
-		return SLURM_ERROR;
+		return NULL;
 	}
 		
 	if(gold_response->rc) {
@@ -1907,20 +1906,20 @@ extern int acct_storage_p_remove_clusters(void *db_conn,
 		      gold_response->rc,
 		      gold_response->message);
 		errno = gold_response->rc;
-		rc = SLURM_ERROR;
+		
 	}
 	
 	destroy_gold_request(gold_request);
 	destroy_gold_response(gold_response);
 	
-	return rc;
+	return NULL;
 }
 
-extern int acct_storage_p_remove_associations(void *db_conn,
+extern List acct_storage_p_remove_associations(void *db_conn,
 					      acct_association_cond_t *assoc_q)
 {
 	ListIterator itr = NULL;
-	int rc = SLURM_SUCCESS;
+//	int rc = SLURM_SUCCESS;
 	gold_request_t *gold_request = NULL;
 	gold_response_t *gold_response = NULL;
 	char *object = NULL;
@@ -1929,14 +1928,14 @@ extern int acct_storage_p_remove_associations(void *db_conn,
 	if(!assoc_q) {
 		error("acct_storage_p_remove_associations: "
 		      "we need conditions to remove");
-		return SLURM_ERROR;
+		return NULL;
 	}
 
 	gold_request = create_gold_request(GOLD_OBJECT_ACCT,
 					   GOLD_ACTION_DELETE);
 	if(!gold_request) { 
 		error("couldn't create gold_request");
-		return SLURM_ERROR;
+		return NULL;
 	}
 
 	if(assoc_q->id_list && list_count(assoc_q->id_list)) {
@@ -2009,7 +2008,7 @@ extern int acct_storage_p_remove_associations(void *db_conn,
 	if(!gold_response) {
 		error("acct_storage_p_modify_associations: "
 		      "no response received");
-		return SLURM_ERROR;
+		return NULL;
 	}
 		
 	if(gold_response->rc) {
@@ -2017,7 +2016,7 @@ extern int acct_storage_p_remove_associations(void *db_conn,
 		      gold_response->rc,
 		      gold_response->message);
 		errno = gold_response->rc;
-		rc = SLURM_ERROR;
+		
 	}
 
 	if(gold_response->entry_cnt > 0) {
@@ -2047,7 +2046,7 @@ extern int acct_storage_p_remove_associations(void *db_conn,
 	}
 	destroy_gold_response(gold_response);		
 
-	return rc;
+	return NULL;
 }
 
 extern List acct_storage_p_get_users(void *db_conn,

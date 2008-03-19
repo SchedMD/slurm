@@ -428,7 +428,7 @@ int main(int argc, char *argv[])
 		if (slurmctld_config.resume_backup == false)
 			break;
 		recover = 2;
-		acct_storage_g_close_connection(acct_db_conn, 1);
+		acct_storage_g_close_connection(&acct_db_conn, 1);
 		assoc_mgr_fini();
 	}
 

@@ -686,13 +686,11 @@ extern void *acct_storage_p_get_connection(bool rollback)
 #endif
 }
 
-extern int acct_storage_p_close_connection(void *acct_pgsql_db, bool commit)
+extern int acct_storage_p_close_connection(PGconn **acct_pgsql_db, bool commit)
 {
 #ifdef HAVE_PGSQL
-	if (acct_pgsql_db) {
-		pgsql_close_db_connection((PGconn *)acct_pgsql_db, commit);
-		acct_pgsql_db = NULL;
-	}	
+	pgsql_close_db_connection(acct_pgsql_db, commit);
+	
 	return SLURM_SUCCESS;
 #else
 	return SLURM_ERROR;
@@ -729,28 +727,28 @@ extern int acct_storage_p_add_associations(PGconn *acct_pgsql_db, uint32_t uid,
 	return SLURM_SUCCESS;
 }
 
-extern int acct_storage_p_modify_users(PGconn *acct_pgsql_db, uint32_t uid,
+extern List acct_storage_p_modify_users(PGconn *acct_pgsql_db, uint32_t uid,
 					   acct_user_cond_t *user_q,
 				       acct_user_rec_t *user)
 {
 	return SLURM_SUCCESS;
 }
 
-extern int acct_storage_p_modify_accts(PGconn *acct_pgsql_db, uint32_t uid,
+extern List acct_storage_p_modify_accts(PGconn *acct_pgsql_db, uint32_t uid,
 				       acct_account_cond_t *acct_q,
 				       acct_account_rec_t *acct)
 {
 	return SLURM_SUCCESS;
 }
 
-extern int acct_storage_p_modify_clusters(PGconn *acct_pgsql_db, uint32_t uid,
+extern List acct_storage_p_modify_clusters(PGconn *acct_pgsql_db, uint32_t uid,
 					   acct_cluster_cond_t *cluster_q,
 					  acct_cluster_rec_t *cluster)
 {
 	return SLURM_SUCCESS;
 }
 
-extern int acct_storage_p_modify_associations(PGconn *acct_pgsql_db,
+extern List acct_storage_p_modify_associations(PGconn *acct_pgsql_db,
 					      uint32_t uid,
 					      acct_association_cond_t *assoc_q,
 					      acct_association_rec_t *assoc)
@@ -758,31 +756,31 @@ extern int acct_storage_p_modify_associations(PGconn *acct_pgsql_db,
 	return SLURM_SUCCESS;
 }
 
-extern int acct_storage_p_remove_users(PGconn *acct_pgsql_db, uint32_t uid,
+extern List acct_storage_p_remove_users(PGconn *acct_pgsql_db, uint32_t uid,
 					   acct_user_cond_t *user_q)
 {
 	return SLURM_SUCCESS;
 }
 
-extern int acct_storage_p_remove_coord(PGconn *acct_pgsql_db, uint32_t uid,
+extern List acct_storage_p_remove_coord(PGconn *acct_pgsql_db, uint32_t uid,
 					   char *acct, acct_user_cond_t *user_q)
 {
 	return SLURM_SUCCESS;
 }
 
-extern int acct_storage_p_remove_accts(PGconn *acct_pgsql_db, uint32_t uid,
+extern List acct_storage_p_remove_accts(PGconn *acct_pgsql_db, uint32_t uid,
 					   acct_account_cond_t *acct_q)
 {
 	return SLURM_SUCCESS;
 }
 
-extern int acct_storage_p_remove_clusters(PGconn *acct_pgsql_db, uint32_t uid,
+extern List acct_storage_p_remove_clusters(PGconn *acct_pgsql_db, uint32_t uid,
 					   acct_account_cond_t *cluster_q)
 {
 	return SLURM_SUCCESS;
 }
 
-extern int acct_storage_p_remove_associations(PGconn *acct_pgsql_db, 
+extern List acct_storage_p_remove_associations(PGconn *acct_pgsql_db, 
 					      uint32_t uid,
 					      acct_association_cond_t *assoc_q)
 {
@@ -1063,7 +1061,7 @@ try_again:
 		if(!reinit) {
 			error("It looks like the storage has gone "
 			      "away trying to reconnect");
-			acct_storage_p_close_connection(acct_pgsql_db, 1);
+			acct_storage_p_close_connection(&acct_pgsql_db, 1);
 			acct_pgsql_db = acct_storage_p_get_connection(0);
 			reinit = 1;
 			goto try_again;

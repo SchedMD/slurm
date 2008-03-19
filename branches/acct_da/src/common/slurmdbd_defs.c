@@ -106,6 +106,8 @@ static int    _send_fini_msg(bool commit);
 static int    _send_msg(Buf buffer);
 static void   _sig_handler(int signal);
 static void   _shutdown_agent(void);
+static void   _slurmdbd_packstr(void *str, Buf buffer);
+static int    _slurmdbd_unpackstr(void **str, Buf buffer);
 static int    _tot_wait (struct timeval *start_time);
 
 /****************************************************************************
@@ -325,6 +327,7 @@ extern Buf pack_slurmdbd_msg(slurmdbd_msg_t *req)
 	case DBD_GOT_ASSOCS:
 	case DBD_GOT_CLUSTERS:
 	case DBD_GOT_JOBS:
+	case DBD_GOT_LIST:
 	case DBD_GOT_USERS:
 		slurmdbd_pack_list_msg(
 			req->msg_type, (dbd_list_msg_t *)req->data, buffer);
@@ -437,6 +440,7 @@ extern int unpack_slurmdbd_msg(slurmdbd_msg_t *resp, Buf buffer)
 	case DBD_GOT_ASSOCS:
 	case DBD_GOT_CLUSTERS:
 	case DBD_GOT_JOBS:
+	case DBD_GOT_LIST:
 	case DBD_GOT_USERS:
 		rc = slurmdbd_unpack_list_msg(
 			resp->msg_type, (dbd_list_msg_t **)&resp->data, buffer);
@@ -565,7 +569,6 @@ static int _send_init_msg(void)
 
 static int _send_fini_msg(bool commit)
 {
-	int rc;
 	Buf buffer;
 	dbd_fini_msg_t req;
 
@@ -574,15 +577,10 @@ static int _send_fini_msg(bool commit)
 	req.commit  = commit;
 	slurmdbd_pack_fini_msg(&req, buffer);
 
-	rc = _send_msg(buffer);
+	_send_msg(buffer);
 	free_buf(buffer);
-	if (rc != SLURM_SUCCESS) {
-		error("slurmdbd: Sending DBD_INIT message");
-		return rc;
-	}
-
-	rc = _get_return_code();
-	return rc;
+	
+	return SLURM_SUCCESS;
 }
 
 /* Close the SlurmDbd connection */
@@ -896,10 +894,24 @@ static void _shutdown_agent(void)
 				agent_tid = 0;
 		}
 		if (agent_tid) {
-			error("slurmdbd: agent failed to shutdown gracefully");
+			debug2("slurmdbd: agent failed to shutdown gracefully");
 		} else
 			agent_shutdown = 0;
 	}
+}
+
+static void _slurmdbd_packstr(void *str, Buf buffer)
+{
+	packstr((char *)str, buffer);
+}
+
+static int _slurmdbd_unpackstr(void **str, Buf buffer)
+{
+	uint32_t uint32_tmp;
+	safe_unpackstr_xmalloc((char **)str, &uint32_tmp, buffer);
+	return SLURM_SUCCESS;
+unpack_error:
+	return SLURM_ERROR;
 }
 
 static void *_agent(void *x)
@@ -1826,6 +1838,9 @@ void inline slurmdbd_pack_list_msg(slurmdbd_msg_type_t type,
 	case DBD_GOT_JOBS:
 		my_function = pack_jobacct_job_rec;
 		break;
+	case DBD_GOT_LIST:
+		my_function = _slurmdbd_packstr;
+		break;
 	case DBD_ADD_USERS:
 	case DBD_GOT_USERS:
 		my_function = pack_acct_user_rec;
@@ -1876,6 +1891,10 @@ int inline slurmdbd_unpack_list_msg(slurmdbd_msg_type_t type,
 	case DBD_GOT_JOBS:
 		my_function = unpack_jobacct_job_rec;
 		my_destroy = destroy_jobacct_job_rec;
+		break;
+	case DBD_GOT_LIST:
+		my_function = _slurmdbd_unpackstr;
+		my_destroy = slurm_destroy_char;
 		break;
 	case DBD_ADD_USERS:
 	case DBD_GOT_USERS:

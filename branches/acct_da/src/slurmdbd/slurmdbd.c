@@ -137,10 +137,10 @@ int main(int argc, char *argv[])
 	
 	if(assoc_mgr_init(db_conn, 0) == SLURM_ERROR) {
 		error("Problem getting cache of data");
-		acct_storage_g_close_connection(db_conn, 0);
+		acct_storage_g_close_connection(&db_conn, 0);
 		goto end_it;
 	}
-	acct_storage_g_close_connection(db_conn, 0);
+	acct_storage_g_close_connection(&db_conn, 0);
 	/* Create attached thread to process incoming RPCs */
 	slurm_attr_init(&thread_attr);
 	if (pthread_create(&rpc_handler_thread, &thread_attr, rpc_mgr, NULL))

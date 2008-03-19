@@ -83,6 +83,7 @@ typedef enum {
 	DBD_GOT_CLUSTERS,	/* Response to DBD_GET_CLUSTERS		*/
 	DBD_GOT_CLUSTER_USAGE, 	/* Response to DBD_GET_CLUSTER_USAGE   	*/
 	DBD_GOT_JOBS,		/* Response to DBD_GET_JOBS		*/
+	DBD_GOT_LIST,           /* Response to DBD_MODIFY/REMOVE MOVE_* */
 	DBD_GOT_USERS,  	/* Response to DBD_GET_USERS		*/
 	DBD_JOB_COMPLETE,	/* Record job completion 		*/
 	DBD_JOB_START,		/* Record job starting			*/

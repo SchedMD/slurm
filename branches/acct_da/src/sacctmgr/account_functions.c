@@ -466,35 +466,17 @@ end_it:
 
 	if(!list_count(acct_list) && !list_count(assoc_list))
 		printf(" Nothing new added.\n");
+	else
+		changes_made = 1;
 
-	if(rollback_flag) {
-		if(list_count(acct_list))
-			rc = acct_storage_g_add_accounts(db_conn, my_uid, 
-							 acct_list);
-		list_destroy(acct_list);
-		if(list_count(assoc_list))
-			rc = acct_storage_g_add_associations(db_conn, my_uid, 
-							     assoc_list);
-		list_destroy(assoc_list);
-	} else {
-		sacctmgr_action_t *action = NULL;
-
-		if(list_count(acct_list)) {
-			action = xmalloc(sizeof(sacctmgr_action_t));
-			action->type = SACCTMGR_ACCOUNT_CREATE;
-			action->list = acct_list;
-			list_append(sacctmgr_action_list, action);
-		} else
-			list_destroy(acct_list);
-
-		if(list_count(assoc_list)) {
-			action = xmalloc(sizeof(sacctmgr_action_t));
-			action->type = SACCTMGR_ASSOCIATION_CREATE;
-			action->list = assoc_list;
-			list_append(sacctmgr_action_list, action);
-		} else 
-			list_destroy(assoc_list);
-	}
+	if(list_count(acct_list))
+		rc = acct_storage_g_add_accounts(db_conn, my_uid, 
+						 acct_list);
+	list_destroy(acct_list);
+	if(list_count(assoc_list))
+		rc = acct_storage_g_add_associations(db_conn, my_uid, 
+						     assoc_list);
+	list_destroy(assoc_list);
 	
 	return rc;
 }
@@ -574,6 +556,7 @@ extern int sacctmgr_modify_account(int argc, char *argv[])
 
 	int i=0;
 	int cond_set = 0, rec_set = 0;
+	List ret_list = NULL;
 
 	acct_cond->acct_list = list_create(slurm_destroy_char);
 	acct_cond->description_list = list_create(slurm_destroy_char);
@@ -614,18 +597,24 @@ extern int sacctmgr_modify_account(int argc, char *argv[])
 	printf("\n Where\n");
 	_print_cond(acct_cond);
 
-	if(rollback_flag) {
-		rc = acct_storage_g_modify_accounts(db_conn, my_uid, 
-						    acct_cond, acct);
-		destroy_acct_account_cond(acct_cond);
-		destroy_acct_account_rec(acct);
+	
+	if((ret_list = acct_storage_g_modify_accounts(db_conn, my_uid, 
+						      acct_cond, acct))) {
+		char *object = NULL;
+		ListIterator itr = list_iterator_create(ret_list);
+		printf(" Effected...\n");
+		while((object = list_next(itr))) {
+			printf("  %s\n", object);
+		}
+		list_iterator_destroy(itr);
+		changes_made = 1;
+		list_destroy(ret_list);
 	} else {
-		sacctmgr_action_t *action = xmalloc(sizeof(sacctmgr_action_t));
-		action->type = SACCTMGR_ACCOUNT_MODIFY;
-		action->cond = acct_cond;
-		action->rec = acct;
-		list_append(sacctmgr_action_list, action);
+		rc = SLURM_ERROR;
 	}
+	destroy_acct_account_cond(acct_cond);
+	destroy_acct_account_rec(acct);
+	
 
 	return rc;
 }
@@ -638,6 +627,7 @@ extern int sacctmgr_delete_account(int argc, char *argv[])
 	acct_association_cond_t *assoc_cond =
 		xmalloc(sizeof(acct_association_cond_t));
 	int i=0;
+	List ret_list = NULL;
 
 	acct_cond->acct_list = list_create(slurm_destroy_char);
 	acct_cond->description_list = list_create(slurm_destroy_char);
@@ -652,16 +642,21 @@ extern int sacctmgr_delete_account(int argc, char *argv[])
 	printf(" Deleting accounts where...");
 	_print_cond(acct_cond);
 
-	if(rollback_flag) {
-		rc = acct_storage_g_remove_accounts(db_conn, my_uid, 
-						    acct_cond);
-		destroy_acct_account_cond(acct_cond);
+	if((ret_list = acct_storage_g_remove_accounts(db_conn, my_uid, 
+						      acct_cond))) {
+		char *object = NULL;
+		ListIterator itr = list_iterator_create(ret_list);
+		printf(" Effected...\n");
+		while((object = list_next(itr))) {
+			printf("  %s\n", object);
+		}
+		list_iterator_destroy(itr);
+		changes_made = 1;
+		list_destroy(ret_list);
 	} else {
-		sacctmgr_action_t *action = xmalloc(sizeof(sacctmgr_action_t));
-		action->type = SACCTMGR_ACCOUNT_DELETE;
-		action->cond = acct_cond;
-		list_append(sacctmgr_action_list, action);
+		rc = SLURM_ERROR;
 	}
+	destroy_acct_account_cond(acct_cond);
 
 	return rc;
 }
