@@ -6,7 +6,7 @@ documents those changes that are of interest to users and admins.
  -- Restructure the sbcast RPC to take advantage of larger buffers available
     in Slurm v1.3 RPCs.
  -- Fix several memory leaks.
- -- In scontrol, show job's Requeue value, permit change of Requeue and COmment
+ -- In scontrol, show job's Requeue value, permit change of Requeue and Comment
     values.
  -- In slurmctld job record, add QOS (quality of service) value for accounting
     purposes with Maui and Moab.
