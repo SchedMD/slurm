@@ -263,7 +263,11 @@ You will want to define the names of clusters being managed
 by Slurm, the users with accounts on these computers, plus
 the user's default and valid account names. Partition names
 will be uploaded from Slurm on the cluster, but can be 
-explicitly defined if so desired.</p>
+explicitly defined if so desired.
+Bank accounts may be arranged in a hierarchical fashion, for 
+example accounts <i>chemistry</i> and <i>physics</i> may be 
+children of the account <i>science</i>. 
+The hierarchy may have an arbitrary depth.</p>
 
 <h2>Node State Information</h2>
 
