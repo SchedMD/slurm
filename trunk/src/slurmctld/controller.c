@@ -5,7 +5,7 @@
  *  Copyright (C) 2008 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>, Kevin Tew <tew1@llnl.gov>
- *  UCRL-CODE-226842.
+ *  LLNL-CODE-402394.
  *  
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -552,6 +552,34 @@ static void  _init_config(void)
 #endif
 }
 
+/* Read configuration file */
+extern int reconfigure_slurmctld(void)
+{
+	/* Locks: Write configuration, job, node, and partition */
+	slurmctld_lock_t config_write_lock = { 
+		WRITE_LOCK, WRITE_LOCK, WRITE_LOCK, WRITE_LOCK };
+	int rc;
+
+	/*
+	 * XXX - need to shut down the scheduler
+	 * plugin, re-read the configuration, and then
+	 * restart the (possibly new) plugin.
+	 */
+	lock_slurmctld(config_write_lock);
+	rc = read_slurm_conf(0);
+	if (rc)
+		error("read_slurm_conf: %s", slurm_strerror(rc));
+	else {
+		_update_cred_key();
+		set_slurmctld_state_loc();
+	}
+	unlock_slurmctld(config_write_lock);
+	trigger_reconfig();
+	slurm_sched_partition_change();	/* notify sched plugin */
+	select_g_reconfigure();		/* notify select plugin too */
+	return rc;
+}
+
 /* _slurmctld_signal_hand - Process daemon-wide signals */
 static void *_slurmctld_signal_hand(void *no_data)
 {
@@ -562,9 +590,6 @@ static void *_slurmctld_signal_hand(void *no_data)
 	/* Locks: Read configuration */
 	slurmctld_lock_t config_read_lock = { 
 		READ_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
-	/* Locks: Write configuration, job, node, and partition */
-	slurmctld_lock_t config_write_lock = { 
-		WRITE_LOCK, WRITE_LOCK, WRITE_LOCK, WRITE_LOCK };
 
 	(void) pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
 	(void) pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
@@ -598,24 +623,6 @@ static void *_slurmctld_signal_hand(void *no_data)
 			break;
 		case SIGHUP:	/* kill -1 */
 			info("Reconfigure signal (SIGHUP) received");
-			/*
-			 * XXX - need to shut down the scheduler
-			 * plugin, re-read the configuration, and then
-			 * restart the (possibly new) plugin.
-			 */
-			lock_slurmctld(config_write_lock);
-			rc = read_slurm_conf(0);
-			if (rc)
-				error("read_slurm_conf: %s",
-				      slurm_strerror(rc));
-			else {
-				_update_cred_key();
-				set_slurmctld_state_loc();
-			}
-			unlock_slurmctld(config_write_lock);
-			trigger_reconfig();
-			slurm_sched_partition_change();	/* notify sched plugin */
-			select_g_reconfigure();		/* notify select plugin too */
 			break;
 		case SIGABRT:	/* abort */
 			info("SIGABRT received");

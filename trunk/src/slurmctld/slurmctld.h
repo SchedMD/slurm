@@ -5,7 +5,7 @@
  *  Copyright (C) 2008 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov> et. al.
- *  UCRL-CODE-226842.
+ *  LLNL-CODE-402394.
  *  
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -1209,6 +1209,9 @@ void part_fini (void);
  *	last_job_update - time of last job table update
  */
 extern void purge_old_job (void);
+
+/* Read configuration file */
+extern int reconfigure_slurmctld(void);
 
 /*
  * rehash_jobs - Create or rebuild the job hash table.

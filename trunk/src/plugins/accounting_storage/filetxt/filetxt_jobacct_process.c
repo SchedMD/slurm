@@ -47,6 +47,7 @@
 #include "src/common/xmalloc.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/jobacct_common.h"
+#include "src/slurmctld/slurmctld.h"
 #include "src/slurmdbd/read_config.h"
 /* Map field names to positions */
 
@@ -1405,8 +1406,8 @@ extern void filetxt_jobacct_process_archive(List selected_parts,
 	}
 	fflush(new_logfile);	/* Flush the buffers before forking */
 	fflush(fd);
-	
-	file_err = slurm_reconfigure ();
+
+	file_err = reconfigure_slurmctld();
 	
 	if (file_err) {
 		file_err = 1;
