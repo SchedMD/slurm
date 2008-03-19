@@ -1684,8 +1684,9 @@ _pack_kill_job_msg(kill_job_msg_t * msg, Buf buffer)
 {
 	xassert(msg != NULL);
 
-	pack32((uint32_t)msg->job_id,  buffer);
-	pack32((uint32_t)msg->job_uid, buffer);
+	pack32(msg->job_id,  buffer);
+	pack16(msg->job_state, buffer);
+	pack32(msg->job_uid, buffer);
 	pack_time(msg->time, buffer);
 	packstr(msg->nodes, buffer);
 	select_g_pack_jobinfo(msg->select_jobinfo, buffer);
@@ -1703,6 +1704,7 @@ _unpack_kill_job_msg(kill_job_msg_t ** msg, Buf buffer)
 	*msg = tmp_ptr;
 
 	safe_unpack32(&(tmp_ptr->job_id),  buffer);
+	safe_unpack16(&(tmp_ptr->job_state),  buffer);
 	safe_unpack32(&(tmp_ptr->job_uid), buffer);
 	safe_unpack_time(&(tmp_ptr->time), buffer);
 	safe_unpackstr_xmalloc(&(tmp_ptr->nodes), &uint32_tmp, buffer);
