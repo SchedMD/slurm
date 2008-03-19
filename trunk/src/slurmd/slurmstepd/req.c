@@ -721,13 +721,27 @@ _handle_signal_container(int fd, slurmd_job_t *job, uid_t uid)
 	 * Signal the container
 	 */
 	if (job->nodeid == 0) {
+		static int msg_sent = 0;
 		/* Not really errors, 
 		 * but we want messages displayed by default */
-		if (sig == SIGXCPU)
-			error("*** JOB REACHED TIME LIMIT ***");
-		else if (sig == SIGTERM)
+		if (msg_sent)
+			;
+		else if (sig == SIGXCPU) {
+			error("*** JOB CANCELLED DUE TO TIME LIMIT ***");
+			msg_sent = 1;
+		} else if (sig == SIG_NODE_FAIL) {
+			error("*** JOB CANCELLED DUE TO NODE FAILURE ***");
+			msg_sent = 1;
+		} else if (sig == SIG_FAILURE) {
+			error("*** JOB CANCELLED DUE TO SYSTEM FAILURE ***");
+			msg_sent = 1;
+		} else if ((sig == SIGTERM) || (sig == SIGKILL)) {
 			error("*** JOB CANCELLED ***");
+			msg_sent = 1;
+		}
 	}
+	if ((sig == SIG_NODE_FAIL) || (sig == SIG_FAILURE))
+		goto done;
 
 	pthread_mutex_lock(&suspend_mutex);
 	if (suspended) {

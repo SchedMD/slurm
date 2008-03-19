@@ -165,11 +165,12 @@ extern void deallocate_nodes(struct job_record *job_ptr, bool timeout,
 	agent_args->retry = 0;	/* re_kill_job() resends as needed */
 	agent_args->hostlist = hostlist_create("");
 	kill_job = xmalloc(sizeof(kill_job_msg_t));
-	last_node_update = time(NULL);
-	kill_job->job_id  = job_ptr->job_id;
-	kill_job->job_uid = job_ptr->user_id;
-	kill_job->nodes   = xstrdup(job_ptr->nodes);
-	kill_job->time    = time(NULL);
+	last_node_update    = time(NULL);
+	kill_job->job_id    = job_ptr->job_id;
+	kill_job->job_state = job_ptr->job_state;
+	kill_job->job_uid   = job_ptr->user_id;
+	kill_job->nodes     = xstrdup(job_ptr->nodes);
+	kill_job->time      = time(NULL);
 	kill_job->select_jobinfo = select_g_copy_jobinfo(
 			job_ptr->select_jobinfo);
 
