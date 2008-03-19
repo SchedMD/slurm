@@ -7,7 +7,7 @@
  *  Copyright (C) 2005 The Regents of the University of California and
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  task_none.c Written by Morris Jette <jette1@llnl.gov>. 
- *  UCRL-CODE-226842.
+ *  LLNL-CODE-402394.
  *  
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.llnl.gov/linux/slurm/>.

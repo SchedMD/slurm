@@ -5,7 +5,7 @@
  *  Copyright (C) 2007 The Regents of the University of California.
  *  Written by Don Albert <Don.Albert@Bull.com> and 
  *             Morris Jette <jette1@llnl.gov>
- *  UCRL-CODE-226842.
+ *  LLNL-CODE-402394.
  *  
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.llnl.gov/linux/slurm/>.

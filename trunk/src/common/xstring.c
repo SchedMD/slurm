@@ -7,7 +7,7 @@
  *  Written by Jim Garlick <garlick@llnl.gov>
  *             Mark Grondona <grondona@llnl.gov>, et al.
  *	
- *  UCRL-CODE-226842.
+ *  LLNL-CODE-402394.
  *
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.llnl.gov/linux/slurm/>.

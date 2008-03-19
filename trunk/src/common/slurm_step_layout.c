@@ -6,7 +6,7 @@
  *  Copyright (C) 2005 Hewlett-Packard Development Company, L.P.
  *  Written by Chris Holmes, <cholmes@hp.com>, who borrowed heavily
  *  from other parts of SLURM.
- *  UCRL-CODE-226842.
+ *  LLNL-CODE-402394.
  *  
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.llnl.gov/linux/slurm/>.
