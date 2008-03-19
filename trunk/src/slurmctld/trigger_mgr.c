@@ -897,7 +897,11 @@ static void _trigger_run_program(trig_mgr_info_t *trig_in)
 		int i;
 		for (i=0; i<128; i++)
 			close(i);
+#ifdef SETPGRP_TWO_ARGS
+		setpgrp(0, 0);
+#else
 		setpgrp();
+#endif
 		setsid();
 		setuid(uid);
 		setgid(gid);
