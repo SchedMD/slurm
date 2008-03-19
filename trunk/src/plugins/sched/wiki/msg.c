@@ -352,7 +352,7 @@ extern int parse_wiki_config(void)
 	for (i=0; i<HIDE_PART_CNT; i++) {
 		if (!hide_part_ptr[i])
 			continue;
-		info("HidePartitionJobs  = %s, hide_ptr_ptr[i]->name);
+		info("HidePartitionJobs  = %s", hide_ptr_ptr[i]->name);
 	}
 #endif
 	return SLURM_SUCCESS;

@@ -50,6 +50,12 @@
 #include "src/common/checkpoint.h"
 #include "src/common/slurm_protocol_api.h"
 
+#ifdef HAVE_AIX
+  char *__progname = "PROGRAM";
+#else
+  extern char * __progname;
+#endif
+
 static int _handle_rc_msg(slurm_msg_t *msg);
 static int _checkpoint_op (uint16_t op, uint16_t data,
 		uint32_t job_id, uint32_t step_id);
@@ -334,7 +340,6 @@ extern int slurm_checkpoint_task_complete (uint32_t job_id, uint32_t step_id,
 	return SLURM_SUCCESS;
 }
 
-extern char * __progname;
 /*
  * slurm_get_checkpoint_file_path - return the checkpoint file
  *      path of this process, creating the directory if needed.
