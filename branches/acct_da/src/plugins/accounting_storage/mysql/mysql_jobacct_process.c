@@ -51,7 +51,7 @@ static void _do_fdump(List job_list)
 	return;
 }
 
-extern List mysql_jobacct_process_get_jobs(MYSQL *acct_mysql_db,
+extern List mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn,
 					   List selected_steps,
 					   List selected_parts,
 					   sacct_parameters_t *params)
@@ -247,7 +247,7 @@ extern List mysql_jobacct_process_get_jobs(MYSQL *acct_mysql_db,
 	}
 
 	//info("query = %s", query);
-	if(!(result = mysql_db_query_ret(acct_mysql_db, query))) {
+	if(!(result = mysql_db_query_ret(mysql_conn->acct_mysql_db, query))) {
 		xfree(query);
 		list_destroy(job_list);
 		return NULL;
@@ -262,7 +262,8 @@ extern List mysql_jobacct_process_get_jobs(MYSQL *acct_mysql_db,
 
 		job->alloc_cpus = atoi(row[JOB_REQ_ALLOC_CPUS]);
 		account_rec.id = job->associd = atoi(row[JOB_REQ_ASSOCID]);
-		assoc_mgr_fill_in_assoc(acct_mysql_db, &account_rec, 0);
+		assoc_mgr_fill_in_assoc(mysql_conn->acct_mysql_db,
+					&account_rec, 0);
 		if(account_rec.cluster) {
 			if(params->opt_cluster &&
 			   strcmp(params->opt_cluster, account_rec.cluster)) {
@@ -355,7 +356,8 @@ extern List mysql_jobacct_process_get_jobs(MYSQL *acct_mysql_db,
 		}
 		
 		//info("query = %s", query);
-		if(!(step_result = mysql_db_query_ret(acct_mysql_db, query))) {
+		if(!(step_result = mysql_db_query_ret(mysql_conn->acct_mysql_db,
+						      query))) {
 			xfree(query);
 			list_destroy(job_list);
 			return NULL;
@@ -442,7 +444,7 @@ extern List mysql_jobacct_process_get_jobs(MYSQL *acct_mysql_db,
 	return job_list;
 }
 
-extern void mysql_jobacct_process_archive(MYSQL *acct_mysql_db,
+extern void mysql_jobacct_process_archive(mysql_conn_t *mysql_conn,
 					  List selected_parts,
 					  sacct_parameters_t *params)
 {

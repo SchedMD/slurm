@@ -53,22 +53,30 @@
 #include "src/database/mysql_common.h"
 #include "src/common/slurm_accounting_storage.h"
 
-#ifdef HAVE_MYSQL
+#ifndef HAVE_MYSQL
+typedef void mysql_conn_t;
+#else
+
+typedef struct {
+	MYSQL *acct_mysql_db;
+	bool rollback;
+	char *query;
+} mysql_conn_t;
 
 //extern int acct_db_init;
 
 extern char *job_table;
 extern char *step_table;
 
-extern int acct_storage_p_get_assoc_id(MYSQL *acct_mysql_db,
+extern int acct_storage_p_get_assoc_id(mysql_conn_t *mysql_conn,
 				       acct_association_rec_t *assoc);
 
-extern List mysql_jobacct_process_get_jobs(MYSQL *acct_mysql_db,
+extern List mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn,
 					   List selected_steps,
 					   List selected_parts,
 					   sacct_parameters_t *params);
 
-extern void mysql_jobacct_process_archive(MYSQL *acct_mysql_db,
+extern void mysql_jobacct_process_archive(mysql_conn_t *mysql_conn,
 					  List selected_parts,
 					  sacct_parameters_t *params);
 #endif

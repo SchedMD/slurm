@@ -46,8 +46,6 @@ pthread_mutex_t mysql_lock = PTHREAD_MUTEX_INITIALIZER;
 
 #ifdef HAVE_MYSQL
 
-static int rollback_started = 0;
-
 static int _clear_results(MYSQL *mysql_db)
 {
 	MYSQL_RES *result = NULL;
@@ -59,7 +57,7 @@ static int _clear_results(MYSQL *mysql_db)
 		
 		/* more results? -1 = no, >0 = error, 0 = yes (keep looping) */
 		if ((rc = mysql_next_result(mysql_db)) > 0)
-			error("Could not execute statement\n");
+			debug3("error: Could not execute statement %d\n", rc);
 	} while (rc == 0);
 	
 	return SLURM_SUCCESS;
@@ -138,7 +136,7 @@ extern int mysql_create_db(MYSQL *mysql_db, char *db_name,
 }
 
 extern int mysql_get_db_connection(MYSQL **mysql_db, char *db_name,
-				   mysql_db_info_t *db_info, bool rollback)
+				   mysql_db_info_t *db_info)
 {
 	int rc = SLURM_SUCCESS;
 	bool storage_init = false;
@@ -171,34 +169,15 @@ extern int mysql_get_db_connection(MYSQL **mysql_db, char *db_name,
 				}
 			} else {
 				storage_init = true;
-				if(rollback || rollback_started) {
-					rollback_started = 1;
-					rc = mysql_autocommit(*mysql_db, 0);
-				}
 			}
 		}
 	}
 	return rc;
 }
 
-extern int mysql_close_db_connection(MYSQL **mysql_db, bool commit)
+extern int mysql_close_db_connection(MYSQL **mysql_db)
 {
-	int rc;
-
 	if(*mysql_db) {
-		/* clear out the old results so we don't get a 2014 error */
-		_clear_results(*mysql_db);			
-		if(rollback_started) {
-			if(commit)
-				rc = mysql_commit(*mysql_db);
-			else
-				rc = mysql_rollback(*mysql_db);
-			if(rc) {
-				error("failed: %d %s\n%s",
-				      mysql_errno(*mysql_db),
-				      mysql_error(*mysql_db));
-			}
-		}
 		mysql_close(*mysql_db);
 		*mysql_db = NULL;
 	}
