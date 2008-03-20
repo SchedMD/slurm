@@ -3,6 +3,7 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 1.2.26
 =========================
+ -- Export "slurm_*" symbols in libpmi.
 
 * Changes in SLURM 1.2.25
 =========================
