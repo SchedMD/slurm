@@ -194,6 +194,9 @@ documents those changes that are of interest to users and admins.
     Moved existing digital signature logic into new plugin: crypto/openssl.
     Added new support for crypto/munge (available with GPL license).
 
+* Changes in SLURM 1.2.26
+=========================
+
 * Changes in SLURM 1.2.25
 =========================
  -- Bug fix for setting exit code in accounting for batch script.
