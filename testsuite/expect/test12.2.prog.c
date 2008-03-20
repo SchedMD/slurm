@@ -31,7 +31,7 @@
 
 main (int argc, char **argv) 
 {
-	int exit_code, sleep_time, mem_kb;
+	int exit_code, i, sleep_time, mem_kb;
 	char *mem;
 
 	if (argc != 4) {
@@ -46,6 +46,10 @@ main (int argc, char **argv)
 	mem_kb     = atoi(argv[3]);
 
 	mem = malloc(mem_kb * 1024);
+	/* We need to actually use the memory for
+	 * AIX to the allocation */
+	for (i=0; i<(mem_kb * 1024); i++)
+		mem[i] = i%64;
 	sleep(sleep_time);
 	exit(exit_code);
 }
