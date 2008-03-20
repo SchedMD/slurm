@@ -103,6 +103,139 @@ extern int acct_storage_p_add_associations(mysql_conn_t *mysql_conn,
 extern List acct_storage_p_get_associations(mysql_conn_t *mysql_conn, 
 					    acct_association_cond_t *assoc_q);
 
+static int _get_affected_rows(MYSQL *mysql_db)
+{
+	int status=0, rows=0;
+	MYSQL_RES *result = NULL;
+
+	do {
+		result = mysql_store_result(mysql_db);
+		if (result) 
+			mysql_free_result(result);
+		else 
+			if (mysql_field_count(mysql_db) == 0) {
+				status = mysql_affected_rows(mysql_db);
+				if(status > 0)
+					rows+=status;
+			}
+		if ((status = mysql_next_result(mysql_db)) > 0)
+			debug3("Could not execute statement\n");
+	} while (status == 0);
+	
+	return rows;
+}
+
+static int _remove_common(mysql_conn_t *mysql_conn,
+			  uint16_t type,
+			  time_t now,
+			  char *user_name,
+			  char *table,
+			  char *name_char,
+			  char *assoc_char) 
+{
+	int rc = SLURM_SUCCESS;
+	char *query = NULL;
+	MYSQL_RES *result = NULL;
+	MYSQL_ROW row;
+	int txn_id = 0;
+
+	query = xstrdup_printf("LOCK TABLE %s WRITE;"
+			       "update %s set mod_time=%d, deleted=1 "
+			       "where deleted=0 && (%s);"
+			       "UNLOCK TABLES;", 
+			       table, table, now, name_char);
+
+	rc = mysql_db_query(mysql_conn->acct_mysql_db, query);
+	xfree(query);
+	if(rc != SLURM_SUCCESS) {
+		error("Couldn't remove");
+		return SLURM_ERROR;
+	}
+	if(mysql_conn->rollback) {
+		char *roll = mysql_conn->query;
+		mysql_conn->query = xstrdup_printf(
+			"LOCK TABLE %s WRITE;"
+			"update %s set deleted=0 where deleted=1 && (%s);"
+			"UNLOCK TABLES;",
+			table, table, name_char);
+		if(roll) {
+			xstrfmtcat(mysql_conn->query, "%s", roll);
+			xfree(roll);
+		} 
+	}
+
+	xstrfmtcat(query, 	
+		   "LOCK TABLE %s WRITE;"
+		   "insert into %s "
+		   "(timestamp, action, name, actor) "
+		   "values (%d, %d, \"%s\", '%s');",
+		   txn_table,
+		   txn_table,
+		   now, type, name_char, user_name);
+//	info("query\n%s", query);
+	rc = mysql_db_query(mysql_conn->acct_mysql_db, query);
+	xfree(query);
+	if(rc != SLURM_SUCCESS) {
+		error("Couldn't add tnx");
+	}
+	xstrfmtcat(query,
+		   "select last_insert_id();"
+		   "UNLOCK TABLES;");
+	if(!(result = mysql_db_query_ret(mysql_conn->acct_mysql_db,
+					 query))) {
+		xfree(query);
+		error("can't get last id");
+		return SLURM_ERROR;
+	}
+	xfree(query);
+	row = mysql_fetch_row(result);
+	if(!row) {
+		error("nothing returned");
+		return SLURM_ERROR;
+	} 
+	txn_id = atoi(row[0]);			
+	info("added transaction %d", txn_id);
+
+	if(mysql_conn->rollback) {
+		char *roll = mysql_conn->query;
+		mysql_conn->query = xstrdup_printf(
+			"LOCK TABLE %s WRITE;"
+			"delete from %s where id=%d;"
+			"UNLOCK TABLES;",
+			txn_table, txn_table, txn_id);
+		if(roll) {
+			xstrfmtcat(mysql_conn->query, "%s", roll);
+			xfree(roll);
+		} 
+	}
+		
+	query = xstrdup_printf("LOCK TABLE %s WRITE;"
+			       "update %s set mod_time=%d, deleted=1 "
+			       "where deleted=0 && (%s);"
+			       "UNLOCK TABLES;",
+			       assoc_table, assoc_table, now, assoc_char);
+	rc = mysql_db_query(mysql_conn->acct_mysql_db, query);
+	xfree(query);
+	if(rc != SLURM_SUCCESS) {
+		error("Couldn't remove user associations");
+		return SLURM_ERROR;
+	}
+	
+	if(mysql_conn->rollback) {
+		char *roll = mysql_conn->query;
+		mysql_conn->query = xstrdup_printf(
+			"LOCK TABLE %s WRITE;"
+			"update %s set deleted=0 where deleted=1 && (%s);"
+			"UNLOCK TABLES;",
+			assoc_table, assoc_table, assoc_char);
+		if(roll) {
+			xstrfmtcat(mysql_conn->query, "%s", roll);
+			xfree(roll);
+		} 
+	}
+	return SLURM_SUCCESS;
+}
+
 static int _get_db_index(MYSQL *acct_mysql_db, 
 			 time_t submit, uint32_t jobid, uint32_t associd)
 {
@@ -174,7 +307,7 @@ static int _mysql_acct_check_tables(MYSQL *acct_mysql_db)
 		{ "acct", "tinytext not null" },
 		{ "cluster", "tinytext not null" },
 		{ "partition", "tinytext not null default ''" },
-		{ "parent_acct", "tinytext not null" },
+		{ "parent_acct", "tinytext not null default ''" },
 		{ "lft", "int not null" },
 		{ "rgt", "int not null" },
 		{ "fairshare", "int default 1 not null" },
@@ -201,8 +334,8 @@ static int _mysql_acct_check_tables(MYSQL *acct_mysql_db)
 		{ "mod_time", "int unsigned default 0 not null" },
 		{ "deleted", "tinyint default 0" },
 		{ "name", "tinytext not null" },
-		{ "control_host", "tinytext not null" },
-		{ "control_port", "mediumint not null" },
+		{ "control_host", "tinytext not null default ''" },
+		{ "control_port", "mediumint not null default 0" },
 		{ NULL, NULL}		
 	};
 
@@ -296,7 +429,7 @@ static int _mysql_acct_check_tables(MYSQL *acct_mysql_db)
 		{ "action", "smallint not null" },
 		{ "name", "tinytext not null" },
 		{ "actor", "tinytext not null" },
-		{ "info", "text not null" },
+		{ "info", "text" },
 		{ NULL, NULL}		
 	};
 
@@ -568,7 +701,6 @@ extern int acct_storage_p_add_users(mysql_conn_t *mysql_conn, uint32_t uid,
 			"UNLOCK TABLES;",
 			user_table, user_table, cols, vals,
 			now, extra);
-
 		rc = mysql_db_query(mysql_conn->acct_mysql_db, query);
 		xfree(query);
 		if(rc != SLURM_SUCCESS) {
@@ -579,7 +711,14 @@ extern int acct_storage_p_add_users(mysql_conn_t *mysql_conn, uint32_t uid,
 			continue;
 		}
 
-		affect_rows = mysql_affected_rows(mysql_conn->acct_mysql_db);
+		affect_rows = _get_affected_rows(mysql_conn->acct_mysql_db);
+		if(!affect_rows) {
+			debug3("nothing changed");
+			xfree(extra);
+			xfree(cols);
+			xfree(vals);
+			continue;
+		}
 		if(mysql_conn->rollback) {
 			char *roll = mysql_conn->query;
 			mysql_conn->query = xstrdup_printf(
@@ -632,8 +771,10 @@ extern int acct_storage_p_add_users(mysql_conn_t *mysql_conn, uint32_t uid,
 		row = mysql_fetch_row(result);
 		if(!row) {
 			error("nothing returned");
-		} else 
-			txn_id = atoi(row[0]);			
+			continue;
+		} 
+		
+		txn_id = atoi(row[0]);			
 		
 		if(mysql_conn->rollback) {
 			char *roll = mysql_conn->query;
@@ -725,16 +866,20 @@ extern int acct_storage_p_add_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 			acct_table, acct_table, cols, vals,
 			now, extra);
 		rc = mysql_db_query(mysql_conn->acct_mysql_db, query);
-
+		xfree(cols);
+		xfree(vals);
 		xfree(query);
 		if(rc != SLURM_SUCCESS) {
 			error("Couldn't add acct");
-			xfree(cols);
-			xfree(vals);
 			xfree(extra);
 			continue;
 		}
-		affect_rows = mysql_affected_rows(mysql_conn->acct_mysql_db);
+		affect_rows = _get_affected_rows(mysql_conn->acct_mysql_db);
+		if(!affect_rows) {
+			debug3("nothing changed");
+			xfree(extra);
+			continue;
+		}
 		if(mysql_conn->rollback) {
 			char *roll = mysql_conn->query;
 			mysql_conn->query = xstrdup_printf(
@@ -773,7 +918,6 @@ extern int acct_storage_p_add_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 		
 		if(rc != SLURM_SUCCESS) {
 			error("Couldn't add tnx");
-			continue;
 		}
 		xstrfmtcat(query,
 			   "select last_insert_id();"
@@ -908,18 +1052,26 @@ extern int acct_storage_p_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 			   cluster_table, 
 			   now, now, object->name,
 			   now);
-
+		//info("query\n%s", query);
 		rc = mysql_db_query(mysql_conn->acct_mysql_db, query);
 		xfree(query);
 		if(rc != SLURM_SUCCESS) {
 			error("Couldn't add cluster %s", object->name);
+			xfree(extra);
 			xfree(cols);
 			xfree(vals);
-			xfree(extra);
 			continue;
 		}
 
-		affect_rows = mysql_affected_rows(mysql_conn->acct_mysql_db);
+		affect_rows = _get_affected_rows(mysql_conn->acct_mysql_db);
+
+		if(!affect_rows) {
+			debug("nothing changed %d", affect_rows);
+			xfree(extra);
+			xfree(cols);
+			xfree(vals);
+			continue;
+		}
 		if(mysql_conn->rollback) {
 			char *roll = mysql_conn->query;
 			mysql_conn->query = xstrdup_printf(
@@ -950,6 +1102,7 @@ extern int acct_storage_p_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 			   txn_table,
 			   txn_table,
 			   now, DBD_ADD_CLUSTERS, object->name, user, extra);
+		//info("query\n%s",query);
 		rc = mysql_db_query(mysql_conn->acct_mysql_db, query);
 		xfree(query);
 		if(rc != SLURM_SUCCESS) {
@@ -961,9 +1114,9 @@ extern int acct_storage_p_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 		if(!(result = mysql_db_query_ret(mysql_conn->acct_mysql_db,
 						 query))) {
 			xfree(query);
+			xfree(extra);
 			xfree(cols);
 			xfree(vals);
-			xfree(extra);
 			error("can't get last id");
 			continue;
 		}
@@ -972,9 +1125,13 @@ extern int acct_storage_p_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 		if(!row) {
 			error("nothing returned");
 			xfree(extra);
+			xfree(cols);
+			xfree(vals);
 			continue;
 		} 
-		txn_id = atoi(row[0]);			
+
+		txn_id = atoi(row[0]);	
+		//info("got id of %d", txn_id);
 		if(mysql_conn->rollback) {
 			char *roll = mysql_conn->query;
 			mysql_conn->query = xstrdup_printf(
@@ -991,13 +1148,13 @@ extern int acct_storage_p_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 		xstrfmtcat(query,
 			   "LOCK TABLE %s WRITE;"
 			   "SELECT @MyMax := coalesce(max(rgt), 0) FROM %s;",
-			   assoc_table,
-			   assoc_table);
+			   assoc_table, assoc_table);
 		xstrfmtcat(query,
 			   "insert into %s (%s, lft, rgt) "
 			   "values (%s, @MyMax+1, @MyMax+2) "
 			   "on duplicate key update deleted=0, "
-			   "lft=@MyMax+1, rgt=@MyMax+2 %s;",
+			   "lft=@MyMax+1, rgt=@MyMax+2 %s;"
+			   "UNLOCK TABLES;",
 			   assoc_table, cols,
 			   vals,
 			   extra);
@@ -1005,7 +1162,7 @@ extern int acct_storage_p_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 		xfree(cols);
 		xfree(vals);
 		xfree(extra);
-		//info("query is %s", query);
+//		info("query is %s", query);
 
 		rc = mysql_db_query(mysql_conn->acct_mysql_db, query);
 		xfree(query);
@@ -1015,18 +1172,14 @@ extern int acct_storage_p_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 			xfree(extra);
 			continue;
 		}
-		affect_rows = mysql_affected_rows(mysql_conn->acct_mysql_db);
-		xstrfmtcat(query,
-			   "select last_insert_id();"
-			   "UNLOCK TABLES;");
+		affect_rows = _get_affected_rows(mysql_conn->acct_mysql_db);
+//		info("got %d rows", affect_rows);
 		if(!(result = mysql_db_query_ret(mysql_conn->acct_mysql_db,
-						 query))) {
-			xfree(query);
+						 "select last_insert_id();"))) {
 			xfree(extra);
 			error("can't get last id");
 			continue;
 		}
-		xfree(query);
 		row = mysql_fetch_row(result);
 		if(!row) {
 			error("nothing returned");
@@ -1212,7 +1365,7 @@ extern int acct_storage_p_add_associations(mysql_conn_t *mysql_conn,
 			xfree(extra);
 			continue;
 		}
-		affect_rows = mysql_affected_rows(mysql_conn->acct_mysql_db);
+		affect_rows = _get_affected_rows(mysql_conn->acct_mysql_db);
 		xstrfmtcat(query,
 			   "select last_insert_id();"
 			   "UNLOCK TABLES;");
@@ -1266,7 +1419,7 @@ extern int acct_storage_p_add_associations(mysql_conn_t *mysql_conn,
 			} 
 		}
 
-		info("got %d %d %d", assoc_id, affect_rows, txn_id);
+//		info("got %d %d %d", assoc_id, affect_rows, txn_id);
 		
 		xstrfmtcat(query, 	
 			   "LOCK TABLE %s WRITE;"
@@ -1284,7 +1437,6 @@ extern int acct_storage_p_add_associations(mysql_conn_t *mysql_conn,
 		xfree(query);
 		if(rc != SLURM_SUCCESS) {
 			error("Couldn't add tnx");
-			continue;
 		}
 		xstrfmtcat(query,
 			   "select last_insert_id();"
@@ -1302,7 +1454,7 @@ extern int acct_storage_p_add_associations(mysql_conn_t *mysql_conn,
 		} else 
 			txn_id = atoi(row[0]);			
 
-		info("got %d %d %d", assoc_id, affect_rows, txn_id);
+//		info("got %d %d %d", assoc_id, affect_rows, txn_id);
 	
 		if(mysql_conn->rollback) {
 			char *roll = mysql_conn->query;
@@ -1892,7 +2044,8 @@ extern List acct_storage_p_remove_users(mysql_conn_t *mysql_conn, uint32_t uid,
 	List ret_list = NULL;
 	int rc = SLURM_SUCCESS;
 	char *object = NULL;
-	char *extra = NULL, *query = NULL;
+	char *extra = NULL, *query = NULL,
+		*name_char = NULL, *assoc_char = NULL;
 	time_t now = time(NULL);
 	struct passwd *pw = NULL;
 	char *user_name = NULL;
@@ -1953,53 +2106,45 @@ extern List acct_storage_p_remove_users(mysql_conn_t *mysql_conn, uint32_t uid,
 	}
 
 	query = xstrdup_printf("select name from %s %s;", user_table, extra);
+	xfree(extra);
 	if(!(result = mysql_db_query_ret(mysql_conn->acct_mysql_db, query))) {
 		xfree(query);
 		return NULL;
 	}
 	xfree(query);
 
+	rc = 0;
 	ret_list = list_create(slurm_destroy_char);
 	while((row = mysql_fetch_row(result))) {
 		char *object = xstrdup(row[0]);
 		list_append(ret_list, object);
+		if(!rc) {
+			xstrfmtcat(name_char, "name='%s'", object);
+			xstrfmtcat(assoc_char, "user='%s'", object);
+			rc = 1;
+		} else  {
+			xstrfmtcat(name_char, " || name='%s'", object);
+			xstrfmtcat(assoc_char, " || user='%s'", object);
+		}
 	}
 	mysql_free_result(result);
 
 	if(!list_count(ret_list)) {
 		debug3("didn't effect anything");
 		list_destroy(ret_list);
-		xfree(extra);
 		return NULL;
 	}
-
-	query = xstrdup_printf("update %s set mod_time=%d, deleted=1 %s;", 
-			       now, user_table, extra);
-	xstrfmtcat(query, 	
-		   "insert into %s "
-		   "(timestamp, action, name, actor) "
-		   "values (%d, %d, \"%s\", '%s');",
-		   txn_table,
-		   now, DBD_REMOVE_USERS, extra, user_name);
-	xfree(extra);
-			
-	rc = mysql_db_query(mysql_conn->acct_mysql_db, query);
-	xfree(query);
-	if(rc != SLURM_SUCCESS) {
-		error("Couldn't modify assocs");
-		list_destroy(ret_list);
-		ret_list = NULL;
-	}
 	
-	if(mysql_conn->rollback) {
-		char *roll = mysql_conn->query;
-		mysql_conn->query = xstrdup_printf("");
-		if(roll) {
-			xstrfmtcat(mysql_conn->query, "%s", roll);
-			xfree(roll);
-		} 
+	if(!_remove_common(mysql_conn, DBD_REMOVE_USERS, now,
+			   user_name, user_table, name_char, assoc_char)) {
+		list_destroy(ret_list);
+		xfree(name_char);
+		xfree(assoc_char);
+		return NULL;
 	}
-		
+	xfree(name_char);
+	xfree(assoc_char);
+
 	return ret_list;
 
 #else
@@ -2025,7 +2170,8 @@ extern List acct_storage_p_remove_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 	List ret_list = NULL;
 	int rc = SLURM_SUCCESS;
 	char *object = NULL;
-	char *extra = NULL, *query = NULL;
+	char *extra = NULL, *query = NULL,
+		*name_char = NULL, *assoc_char = NULL;
 	time_t now = time(NULL);
 	struct passwd *pw = NULL;
 	char *user_name = NULL;
@@ -2095,53 +2241,45 @@ extern List acct_storage_p_remove_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 	}
 
 	query = xstrdup_printf("select name from %s %s;", acct_table, extra);
+	xfree(extra);
 	if(!(result = mysql_db_query_ret(mysql_conn->acct_mysql_db, query))) {
 		xfree(query);
 		return NULL;
 	}
 	xfree(query);
 
+	rc = 0;
 	ret_list = list_create(slurm_destroy_char);
 	while((row = mysql_fetch_row(result))) {
 		char *object = xstrdup(row[0]);
 		list_append(ret_list, object);
+		if(!rc) {
+			xstrfmtcat(name_char, "name='%s'", object);
+			xstrfmtcat(assoc_char, "acct='%s'", object);
+			rc = 1;
+		} else  {
+			xstrfmtcat(name_char, " || name='%s'", object);
+			xstrfmtcat(assoc_char, " || acct='%s'", object);
+		}
 	}
 	mysql_free_result(result);
 
 	if(!list_count(ret_list)) {
 		debug3("didn't effect anything");
 		list_destroy(ret_list);
-		xfree(extra);
 		return NULL;
 	}
 
-	query = xstrdup_printf("update %s set mod_time=%d, deleted=1 %s;",
-			       now, acct_table, extra);
-	xstrfmtcat(query, 	
-		   "insert into %s "
-		   "(timestamp, action, name, actor) "
-		   "values (%d, %d, \"%s\", '%s');",
-		   txn_table,
-		   now, DBD_REMOVE_ACCOUNTS, extra, user_name);
-	xfree(extra);
-			
-	rc = mysql_db_query(mysql_conn->acct_mysql_db, query);
-	xfree(query);
-	if(rc != SLURM_SUCCESS) {
-		error("Couldn't remove accts");
+	if(!_remove_common(mysql_conn, DBD_REMOVE_ACCOUNTS, now,
+			   user_name, acct_table, name_char, assoc_char)) {
 		list_destroy(ret_list);
+		xfree(name_char);
+		xfree(assoc_char);
 		return NULL;
 	}
-	
-	if(mysql_conn->rollback) {
-		char *roll = mysql_conn->query;
-		mysql_conn->query = xstrdup_printf("");
-		if(roll) {
-			xstrfmtcat(mysql_conn->query, "%s", roll);
-			xfree(roll);
-		} 
-	}
-		
+	xfree(name_char);
+	xfree(assoc_char);
+
 	return ret_list;
 #else
 	return NULL;
@@ -2157,7 +2295,8 @@ extern List acct_storage_p_remove_clusters(mysql_conn_t *mysql_conn,
 	List ret_list = NULL;
 	int rc = SLURM_SUCCESS;
 	char *object = NULL;
-	char *extra = NULL, *assoc_extra = NULL, *query = NULL;
+	char *extra = NULL, *query = NULL,
+		*name_char = NULL, *assoc_char = NULL;
 	time_t now = time(NULL);
 	struct passwd *pw = NULL;
 	char *user_name = NULL;
@@ -2174,23 +2313,18 @@ extern List acct_storage_p_remove_clusters(mysql_conn_t *mysql_conn,
 		user_name = pw->pw_name;
 	}
 	xstrcat(extra, "where deleted=0");
-	xstrcat(assoc_extra, "where deleted=0");
-	
 	if(cluster_q->cluster_list && list_count(cluster_q->cluster_list)) {
 		set = 0;
 		xstrcat(extra, " && (");
-		xstrcat(assoc_extra, " && (");
 		itr = list_iterator_create(cluster_q->cluster_list);
 		while((object = list_next(itr))) {
 			if(set) 
 				xstrcat(extra, " || ");
 			xstrfmtcat(extra, "name='%s'", object);
-			xstrfmtcat(assoc_extra, "cluster='%s'", object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
 		xstrcat(extra, ")");
-		xstrcat(assoc_extra, ")");
 	}
 
 	if(!extra) {
@@ -2199,72 +2333,45 @@ extern List acct_storage_p_remove_clusters(mysql_conn_t *mysql_conn,
 	}
 
 	query = xstrdup_printf("select name from %s %s;", cluster_table, extra);
+	xfree(extra);
 	if(!(result = mysql_db_query_ret(mysql_conn->acct_mysql_db, query))) {
 		xfree(query);
 		return NULL;
 	}
 	xfree(query);
 
+	rc = 0;
 	ret_list = list_create(slurm_destroy_char);
 	while((row = mysql_fetch_row(result))) {
 		char *object = xstrdup(row[0]);
 		list_append(ret_list, object);
+		if(!rc) {
+			xstrfmtcat(name_char, "name='%s'", object);
+			xstrfmtcat(assoc_char, "cluster='%s'", object);
+			rc = 1;
+		} else  {
+			xstrfmtcat(name_char, " || name='%s'", object);
+			xstrfmtcat(assoc_char, " || cluster='%s'", object);
+		}
 	}
 	mysql_free_result(result);
 
 	if(!list_count(ret_list)) {
 		debug3("didn't effect anything");
 		list_destroy(ret_list);
-		xfree(extra);
 		return NULL;
 	}
 
-	query = xstrdup_printf("update %s set mod_time=%d, deleted=1 %s;",
-			       now, cluster_table, extra);
-	xstrfmtcat(query, 	
-		   "insert into %s "
-		   "(timestamp, action, name, actor) "
-		   "values (%d, %d, \"%s\", '%s');",
-		   txn_table,
-		   now, DBD_REMOVE_CLUSTERS, extra, user_name);
-	xfree(extra);
-			
-	rc = mysql_db_query(mysql_conn->acct_mysql_db, query);
-	xfree(query);
-	if(rc != SLURM_SUCCESS) {
-		error("Couldn't remove clusters");
+	if(!_remove_common(mysql_conn, DBD_REMOVE_CLUSTERS, now,
+			   user_name, cluster_table, name_char, assoc_char)) {
 		list_destroy(ret_list);
+		xfree(name_char);
+		xfree(assoc_char);
 		return NULL;
 	}
-	
-	if(mysql_conn->rollback) {
-		char *roll = mysql_conn->query;
-		mysql_conn->query = xstrdup_printf("");
-		if(roll) {
-			xstrfmtcat(mysql_conn->query, "%s", roll);
-			xfree(roll);
-		} 
-	}
-		
-	query = xstrdup_printf("update %s set mod_time=%d, deleted=1 %s;",
-			       now, assoc_table, assoc_extra);
-	rc = mysql_db_query(mysql_conn->acct_mysql_db, query);
-	xfree(query);
-	if(rc != SLURM_SUCCESS) {
-		list_destroy(ret_list);
-		error("Couldn't remove cluster associations");
-		return NULL;
-	}
-	
-	if(mysql_conn->rollback) {
-		char *roll = mysql_conn->query;
-		mysql_conn->query = xstrdup_printf("");
-		if(roll) {
-			xstrfmtcat(mysql_conn->query, "%s", roll);
-			xfree(roll);
-		} 
-	}
-		
+	xfree(name_char);
+	xfree(assoc_char);
+
 	return ret_list;
 #else
 	return NULL;
@@ -2381,7 +2488,7 @@ extern List acct_storage_p_remove_associations(mysql_conn_t *mysql_conn,
 	}
 
 	query = xstrdup_printf("update %s set mod_time=%d, deleted=1 %s;",
-			       now, assoc_table, extra);
+			       assoc_table, now, extra);
 	xstrfmtcat(query, 	
 		   "insert into %s "
 		   "(timestamp, action, name, actor) "
