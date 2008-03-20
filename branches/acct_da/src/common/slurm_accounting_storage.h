@@ -233,7 +233,6 @@ extern void *acct_storage_g_get_connection(bool rollback);
  */
 extern int acct_storage_g_close_connection(void **db_conn, bool commit);
 
-
 /* 
  * add users to accounting system 
  * IN:  user_list List of acct_user_rec_t *

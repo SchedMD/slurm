@@ -48,6 +48,23 @@ pthread_mutex_t mysql_lock = PTHREAD_MUTEX_INITIALIZER;
 
 static int rollback_started = 0;
 
+static int _clear_results(MYSQL *mysql_db)
+{
+	MYSQL_RES *result = NULL;
+	int rc = 0;
+	do {
+		/* did current statement return data? */
+		if((result = mysql_store_result(mysql_db)))
+			mysql_free_result(result);
+		
+		/* more results? -1 = no, >0 = error, 0 = yes (keep looping) */
+		if ((rc = mysql_next_result(mysql_db)) > 0)
+			error("Could not execute statement\n");
+	} while (rc == 0);
+	
+	return SLURM_SUCCESS;
+}
+
 static int _mysql_make_table_current(MYSQL *mysql_db, char *table_name,
 				     storage_field_t *fields)
 {
@@ -129,6 +146,13 @@ extern int mysql_get_db_connection(MYSQL **mysql_db, char *db_name,
 	if(!(*mysql_db = mysql_init(*mysql_db)))
 		fatal("mysql_init failed: %s", mysql_error(*mysql_db));
 	else {
+#ifdef MYSQL_OPT_RECONNECT
+{
+		my_bool reconnect = 0;
+		/* make sure reconnect is off */
+		mysql_options(*mysql_db, MYSQL_OPT_RECONNECT, &reconnect);
+}
+#endif
 		while(!storage_init) {
 			if(!mysql_real_connect(*mysql_db, db_info->host,
 					       db_info->user, db_info->pass,
@@ -153,13 +177,6 @@ extern int mysql_get_db_connection(MYSQL **mysql_db, char *db_name,
 				}
 			}
 		}
-#ifdef MYSQL_OPT_RECONNECT
-{
-		my_bool reconnect = 0;
-		/* make sure reconnect is off */
-		mysql_options(*mysql_db, MYSQL_OPT_RECONNECT, &reconnect);
-}
-#endif
 	}
 	return rc;
 }
@@ -167,17 +184,11 @@ extern int mysql_get_db_connection(MYSQL **mysql_db, char *db_name,
 extern int mysql_close_db_connection(MYSQL **mysql_db, bool commit)
 {
 	int rc;
-	MYSQL_RES *result = NULL;
 
 	if(*mysql_db) {
 		/* clear out the old results so we don't get a 2014 error */
-		while(mysql_next_result(*mysql_db) == 0)
-			if((result = mysql_store_result(*mysql_db))) {
-				//info("freeing stuff");
-				mysql_free_result(result);
-			}
+		_clear_results(*mysql_db);			
 		if(rollback_started) {
-			info("commit? %d", commit);
 			if(commit)
 				rc = mysql_commit(*mysql_db);
 			else
@@ -196,18 +207,12 @@ extern int mysql_close_db_connection(MYSQL **mysql_db, bool commit)
 
 extern int mysql_db_query(MYSQL *mysql_db, char *query)
 {
-	MYSQL_RES *result = NULL;
-	
 	if(!mysql_db)
 		fatal("You haven't inited this storage yet.");
 	slurm_mutex_lock(&mysql_lock);
 
 	/* clear out the old results so we don't get a 2014 error */
-	while(mysql_next_result(mysql_db) == 0)
-		if((result = mysql_store_result(mysql_db))) {
-			//info("freeing stuff");
-			mysql_free_result(result);
-		}
+	_clear_results(mysql_db);			
 	if(mysql_query(mysql_db, query)) {
 		error("mysql_query failed: %d %s\n%s",
 		      mysql_errno(mysql_db),

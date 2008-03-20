@@ -325,6 +325,7 @@ extern int sacctmgr_add_account(int argc, char *argv[])
 
 	if(!list_count(name_list)) {
 		list_destroy(name_list);
+		list_count(cluster_list);
 		printf(" Need name of account to add.\n"); 
 		return SLURM_SUCCESS;
 	}
@@ -340,6 +341,24 @@ extern int sacctmgr_add_account(int argc, char *argv[])
 				    xstrdup(cluster_rec->name));
 		}
 		list_iterator_destroy(itr_c);
+	} else {
+		
+		itr_c = list_iterator_create(cluster_list);
+		while((cluster = list_next(itr_c))) {
+			if(!sacctmgr_find_cluster(cluster)) {
+				printf(" error: This cluster '%s' "
+				       "doesn't exist.\n"
+				       "        Contact your admin "
+				       "to add it to accounting.\n",
+				       cluster);
+				list_delete_item(itr_c);
+			}
+		}
+		if(!list_count(cluster_list)) {
+			list_destroy(name_list);
+			list_count(cluster_list);
+			return SLURM_ERROR;
+		}
 	}
 
 		

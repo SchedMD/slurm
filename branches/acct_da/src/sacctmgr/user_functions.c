@@ -296,6 +296,8 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 		return SLURM_SUCCESS;
 	}
 
+	
+	
 	if(!list_count(assoc_cond->cluster_list)) {
 		acct_cluster_rec_t *cluster_rec = NULL;
 		itr_c = list_iterator_create(sacctmgr_cluster_list);
@@ -312,13 +314,26 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 	assoc_list = list_create(NULL);
 	itr = list_iterator_create(assoc_cond->user_list);
 	while((name = list_next(itr))) {
+		int acct_first = 1;
 		user = NULL;
 		if(!sacctmgr_find_user(name)) {
+			int first = 1;
 			if(!default_acct) {
 				printf(" Need a default account for "
 				       "these users to add.\n"); 
 				rc = SLURM_ERROR;
 				goto end_it;
+			}
+			if(first) {
+				if(!sacctmgr_find_account(default_acct)) {
+					printf(" error: This account '%s' "
+					       "doesn't exist.\n"
+					       "        Contact your admin "
+					       "to add this account.\n",
+					       default_acct);
+					continue;
+				}
+				first = 0;				
 			}
 			user = xmalloc(sizeof(acct_user_rec_t));
 			user->assoc_list = list_create(NULL);
@@ -334,6 +349,16 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 
 		itr_a = list_iterator_create(assoc_cond->acct_list);
 		while((account = list_next(itr_a))) {
+			if(acct_first) {
+				if(!sacctmgr_find_account(default_acct)) {
+					printf(" error: This account '%s' "
+					       "doesn't exist.\n"
+					       "        Contact your admin "
+					       "to add this account.\n",
+					       account);
+					continue;
+				}
+			}
 			itr_c = list_iterator_create(assoc_cond->cluster_list);
 			while((cluster = list_next(itr_c))) {
 				acct_association_rec_t *root_assoc = 
@@ -347,7 +372,7 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 					       cluster);
 					continue;
 				}
-
+				
 				temp_assoc = sacctmgr_find_account_base_assoc(
 					account, cluster);
 				if(!temp_assoc) {
@@ -479,7 +504,8 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 			}
 			list_iterator_destroy(itr_c);
 		}
-		list_iterator_destroy(itr_a);				
+		list_iterator_destroy(itr_a);
+		acct_first = 0;
 	}
 end_it:
 	list_iterator_destroy(itr);
