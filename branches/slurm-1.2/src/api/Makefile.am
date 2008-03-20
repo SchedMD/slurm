@@ -127,6 +127,7 @@ $(VERSION_SCRIPT) :
 $(PMI_VERSION_SCRIPT) :
 	(echo "{ global:"; \
 	 echo "   PMI_*;"; \
+	 echo "   slurm_*;"; \
 	 echo "  local: *;"; \
 	 echo "};") > $(PMI_VERSION_SCRIPT)
 
