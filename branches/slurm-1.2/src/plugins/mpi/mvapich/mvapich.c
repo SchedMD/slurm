@@ -604,7 +604,7 @@ static int mvapich_alltoallbcast (mvapich_state_t *st, void* buf, int size)
 {
 	int pbufsize = size * st->nprocs;
 	void* pbuf = xmalloc(pbufsize);	
-	int i, src, rc;
+	int i, src, rc = 0;
 	int n = 0;
 
 	for (i = 0; i < st->nprocs; i++) {
