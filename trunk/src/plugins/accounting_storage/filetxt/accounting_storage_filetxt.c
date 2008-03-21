@@ -229,105 +229,99 @@ extern int fini ( void )
 	return SLURM_SUCCESS;
 }
 
-extern void * acct_storage_p_get_connection()
+extern void * acct_storage_p_get_connection(bool commit)
 {
 	return NULL;
 }
 
-extern int acct_storage_p_close_connection(void *db_conn)
+extern int acct_storage_p_close_connection(void **db_conn, bool rollback)
 {
 	return SLURM_SUCCESS;
 }
 
-extern int acct_storage_p_add_users(void *db_conn,
+extern int acct_storage_p_add_users(void *db_conn, uint32_t uid,
 				    List user_list)
 {
 	return SLURM_SUCCESS;
 }
 
-extern int acct_storage_p_add_coord(void *db_conn,
+extern int acct_storage_p_add_coord(void *db_conn, uint32_t uid,
 				    char *acct, acct_user_cond_t *user_q)
 {
 	return SLURM_SUCCESS;
 }
 
-extern int acct_storage_p_add_accts(void *db_conn,
+extern int acct_storage_p_add_accts(void *db_conn, uint32_t uid,
 				    List acct_list)
 {
 	return SLURM_SUCCESS;
 }
 
-extern int acct_storage_p_add_clusters(void *db_conn,
+extern int acct_storage_p_add_clusters(void *db_conn, uint32_t uid,
 				       List cluster_list)
 {
 	return SLURM_SUCCESS;
 }
 
-extern int acct_storage_p_add_associations(void *db_conn,
+extern int acct_storage_p_add_associations(void *db_conn, uint32_t uid,
 					   List association_list)
 {
 	return SLURM_SUCCESS;
 }
 
-extern int acct_storage_p_modify_users(void *db_conn,
+extern List acct_storage_p_modify_users(void *db_conn, uint32_t uid,
 				       acct_user_cond_t *user_q,
 				       acct_user_rec_t *user)
 {
 	return SLURM_SUCCESS;
 }
 
-extern int acct_storage_p_modify_user_admin_level(void *db_conn,
-						  acct_user_cond_t *user_q)
-{
-	return SLURM_SUCCESS;
-}
-
-extern int acct_storage_p_modify_accts(void *db_conn,
+extern List acct_storage_p_modify_accts(void *db_conn, uint32_t uid,
 				       acct_account_cond_t *acct_q,
 				       acct_account_rec_t *acct)
 {
 	return SLURM_SUCCESS;
 }
 
-extern int acct_storage_p_modify_clusters(void *db_conn,
+extern List acct_storage_p_modify_clusters(void *db_conn, uint32_t uid,
 					  acct_cluster_cond_t *cluster_q,
 					  acct_cluster_rec_t *cluster)
 {
 	return SLURM_SUCCESS;
 }
 
-extern int acct_storage_p_modify_associations(void *db_conn,
+extern List acct_storage_p_modify_associations(void *db_conn, uint32_t uid,
 					      acct_association_cond_t *assoc_q,
 					      acct_association_rec_t *assoc)
 {
 	return SLURM_SUCCESS;
 }
 
-extern int acct_storage_p_remove_users(void *db_conn,
+extern List acct_storage_p_remove_users(void *db_conn, uint32_t uid,
 				       acct_user_cond_t *user_q)
 {
 	return SLURM_SUCCESS;
 }
 
-extern int acct_storage_p_remove_coord(void *db_conn,
+extern List acct_storage_p_remove_coord(void *db_conn, uint32_t uid,
 				       char *acct, acct_user_cond_t *user_q)
 {
 	return SLURM_SUCCESS;
 }
 
-extern int acct_storage_p_remove_accts(void *db_conn,
+extern List acct_storage_p_remove_accts(void *db_conn, uint32_t uid,
 				       acct_account_cond_t *acct_q)
 {
 	return SLURM_SUCCESS;
 }
 
-extern int acct_storage_p_remove_clusters(void *db_conn,
+extern List acct_storage_p_remove_clusters(void *db_conn, uint32_t uid,
 					  acct_account_cond_t *cluster_q)
 {
 	return SLURM_SUCCESS;
 }
 
-extern int acct_storage_p_remove_associations(void *db_conn,
+extern List acct_storage_p_remove_associations(void *db_conn, uint32_t uid,
 					      acct_association_cond_t *assoc_q)
 {
 	return SLURM_SUCCESS;

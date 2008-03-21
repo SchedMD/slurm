@@ -40,8 +40,7 @@
 #include "sacctmgr.h"
 
 static int _set_cond(int *start, int argc, char *argv[],
-		     acct_cluster_cond_t *cluster_cond,
-		     acct_association_cond_t *assoc_cond)
+		     acct_cluster_cond_t *cluster_cond)
 {
 	int i;
 	int set = 0;
@@ -49,18 +48,15 @@ static int _set_cond(int *start, int argc, char *argv[],
 	for (i=(*start); i<argc; i++) {
 		if (strncasecmp (argv[i], "Name=", 5) == 0) {
 			addto_char_list(cluster_cond->cluster_list, argv[i]+5);
-			addto_char_list(assoc_cond->cluster_list, argv[i]+5);
 			set = 1;
 		} else if (strncasecmp (argv[i], "Names=", 6) == 0) {
 			addto_char_list(cluster_cond->cluster_list, argv[i]+6);
-			addto_char_list(assoc_cond->cluster_list, argv[i]+6);
 			set = 1;
 		} else if (strncasecmp (argv[i], "Set", 3) == 0) {
 			i--;
 			break;
 		} else {
 			addto_char_list(cluster_cond->cluster_list, argv[i]);
-			addto_char_list(assoc_cond->cluster_list, argv[i]);
 			set = 1;
 		}
 	}
@@ -70,27 +66,26 @@ static int _set_cond(int *start, int argc, char *argv[],
 }
 
 static int _set_rec(int *start, int argc, char *argv[],
-		    acct_cluster_rec_t *cluster,
-		    acct_association_rec_t *assoc)
+		    acct_cluster_rec_t *cluster)
 {
 	int i;
 	int set = 0;
 
 	for (i=(*start); i<argc; i++) {
 		if (strncasecmp (argv[i], "FairShare=", 10) == 0) {
-			assoc->fairshare = atoi(argv[i]+10);
+			cluster->default_fairshare = atoi(argv[i]+10);
 			set = 1;
 		} else if (strncasecmp (argv[i], "MaxJobs=", 8) == 0) {
-			assoc->max_jobs = atoi(argv[i]+8);
+			cluster->default_max_jobs = atoi(argv[i]+8);
 			set = 1;
 		} else if (strncasecmp (argv[i], "MaxNodes=", 9) == 0) {
-			assoc->max_nodes_per_job = atoi(argv[i]+9);
+			cluster->default_max_nodes_per_job = atoi(argv[i]+9);
 			set = 1;
 		} else if (strncasecmp (argv[i], "MaxWall=", 8) == 0) {
-			assoc->max_wall_duration_per_job = atoi(argv[i]+8);
+			cluster->default_max_wall_duration_per_job = atoi(argv[i]+8);
 			set = 1;
 		} else if (strncasecmp (argv[i], "MaxCPUSecs=", 11) == 0) {
-			assoc->max_cpu_secs_per_job = atoi(argv[i]+11);
+			cluster->default_max_cpu_secs_per_job = atoi(argv[i]+11);
 			set = 1;
 		} else if (strncasecmp (argv[i], "Where", 5) == 0) {
 			i--;
@@ -126,67 +121,52 @@ static void _print_cond(acct_cluster_cond_t *cluster_cond)
 	}
 }
 
-static void _update_existing(acct_cluster_cond_t *cluster_cond,
-			     acct_cluster_rec_t *new_cluster,
-			     acct_association_rec_t *new_assoc)
+static void _update_existing(List ret_list,
+			     acct_cluster_rec_t *new_cluster)
 {
 	ListIterator itr = NULL;
 	char *tmp_char = NULL;
 	acct_cluster_rec_t *cluster = NULL;
-	acct_association_rec_t *assoc = NULL;
 
-	if(!cluster_cond) {
-		error("no acct_cluster_cond_t * given");
+	if(!ret_list) {
+		error("no return list given");
 		return;
 	}
 
-	if(cluster_cond->cluster_list
-	   && list_count(cluster_cond->cluster_list)) {
-		itr = list_iterator_create(cluster_cond->cluster_list);
-		while((tmp_char = list_next(itr))) {
-			if(!(cluster = sacctmgr_find_cluster(tmp_char))) {
-				printf(" Cluster '%s' does not exist, "
-				       "not removing.\n", tmp_char);
-				list_remove(itr);
-				continue;
-			}
 
-			if(!new_cluster) {
-				sacctmgr_remove_from_list(sacctmgr_cluster_list,
-							  cluster);
-			} else {
-								
-			}
-
-			if(!(assoc = sacctmgr_find_association(
-				     NULL, "template_account",
-				     tmp_char, NULL))) {
-				printf(" Can't find template account for '%s' "
-				       "something is messed up.\n", tmp_char);
-				continue;
-			}
-			if(!new_assoc) {
-				sacctmgr_remove_from_list(
-					sacctmgr_association_list, assoc);
-				continue;
-			}
-
-			if(new_assoc->fairshare)
-				assoc->fairshare = new_assoc->fairshare;
-			if(new_assoc->max_jobs)
-				assoc->max_jobs = new_assoc->max_jobs;
-			if(new_assoc->max_nodes_per_job)
-				assoc->max_nodes_per_job =
-					new_assoc->max_nodes_per_job;
-			if(new_assoc->max_wall_duration_per_job)
-				assoc->max_wall_duration_per_job = 
-					new_assoc->max_wall_duration_per_job;
-			if(new_assoc->max_cpu_secs_per_job)
-				assoc->max_cpu_secs_per_job = 
-					new_assoc->max_cpu_secs_per_job;	
+	itr = list_iterator_create(ret_list);
+	while((tmp_char = list_next(itr))) {
+		if(!(cluster = sacctmgr_find_cluster(tmp_char))) {
+			printf(" Cluster '%s' does not exist, "
+			       "not removing.\n", tmp_char);
+			list_remove(itr);
+			continue;
 		}
-		list_iterator_destroy(itr);
+		if(new_cluster) {
+			if(new_cluster->default_fairshare)
+				cluster->default_fairshare =
+					new_cluster->default_fairshare;
+			if(new_cluster->default_max_jobs)
+				cluster->default_max_jobs =
+					new_cluster->default_max_jobs;
+			if(new_cluster->default_max_nodes_per_job)
+				cluster->default_max_nodes_per_job =
+					new_cluster->default_max_nodes_per_job;
+			if(new_cluster->default_max_wall_duration_per_job)
+				cluster->default_max_wall_duration_per_job = 
+					new_cluster->
+					default_max_wall_duration_per_job;
+			if(new_cluster->default_max_cpu_secs_per_job)
+				cluster->default_max_cpu_secs_per_job = 
+					new_cluster->
+					default_max_cpu_secs_per_job;	
+			
+		} else 
+			sacctmgr_remove_from_list(sacctmgr_cluster_list,
+						  cluster);
+		       
 	}
+	list_iterator_destroy(itr);
 }
 	
 extern int sacctmgr_add_cluster(int argc, char *argv[])
@@ -194,13 +174,9 @@ extern int sacctmgr_add_cluster(int argc, char *argv[])
 	int rc = SLURM_SUCCESS;
 	int i=0;
 	acct_cluster_rec_t *cluster = xmalloc(sizeof(acct_cluster_rec_t));
-	acct_association_rec_t *assoc = xmalloc(sizeof(acct_association_rec_t));
+	acct_association_rec_t *assoc = NULL;		  
 	List cluster_list = NULL;
-	List assoc_list = NULL;
 	int limit_set = 0;
-
-	assoc->fairshare = 1;
-	assoc->acct = xstrdup("template_account");
 
 	for (i=0; i<argc; i++) {
 		if (strncasecmp (argv[i], "Name=", 5) == 0) {
@@ -208,100 +184,84 @@ extern int sacctmgr_add_cluster(int argc, char *argv[])
 				error("can only add one cluster at a time.\n");
 			else {
 				cluster->name = xstrdup(argv[i]+5);
-				assoc->cluster = xstrdup(argv[i]+5);
 			}
 		} else if (strncasecmp (argv[i], "FairShare=", 10) == 0) {
-			assoc->fairshare = atoi(argv[i]+10);
+			cluster->default_fairshare = atoi(argv[i]+10);
 			limit_set = 1;
 		} else if (strncasecmp (argv[i], "MaxJobs=", 8) == 0) {
-			assoc->max_jobs = atoi(argv[i]+8);
+			cluster->default_max_jobs = atoi(argv[i]+8);
 			limit_set = 1;
 		} else if (strncasecmp (argv[i], "MaxNodes=", 9) == 0) {
-			assoc->max_nodes_per_job = atoi(argv[i]+9);
+			cluster->default_max_nodes_per_job = atoi(argv[i]+9);
 			limit_set = 1;
 		} else if (strncasecmp (argv[i], "MaxWall=", 8) == 0) {
-			assoc->max_wall_duration_per_job = atoi(argv[i]+8);
+			cluster->default_max_wall_duration_per_job =
+				atoi(argv[i]+8);
 			limit_set = 1;
 		} else if (strncasecmp (argv[i], "MaxCPUSecs=", 11) == 0) {
-			assoc->max_cpu_secs_per_job = atoi(argv[i]+11);
+			cluster->default_max_cpu_secs_per_job = 
+				atoi(argv[i]+11);
 			limit_set = 1;
 		} else {
 			if(cluster->name)
 				error("can only add one cluster at a time.\n");
 			else {
 				cluster->name = xstrdup(argv[i]);
-				assoc->cluster = xstrdup(argv[i]);
 			}
 		}		
 	}
 
 	if(!cluster->name) {
 		destroy_acct_cluster_rec(cluster);
-		destroy_acct_association_rec(assoc);
 		printf(" Need name of cluster to add.\n"); 
 		return SLURM_ERROR;
 	} else if(sacctmgr_find_cluster(cluster->name)) {
 		destroy_acct_cluster_rec(cluster);
-		destroy_acct_association_rec(assoc);
-		printf(" This cluster already exists.  Not adding.");
+		printf(" This cluster already exists.  Not adding.\n");
 		return SLURM_ERROR;
 	}
 
 	printf(" Adding Cluster(s)\n");
-	printf("  Name           = %s\n", cluster->name);
+	printf("  Name          = %s\n", cluster->name);
 
-	printf(" User Defaults =\n");
+	printf(" User Defaults  =\n");
 
-	if(assoc->fairshare < 0)
-		assoc->fairshare = 1;
-	printf("  Fairshare     = %u\n", assoc->fairshare);
+	if(cluster->default_fairshare <= 0)
+		cluster->default_fairshare = 1;
+	printf("  Fairshare     = %u\n", cluster->default_fairshare);
 
-	if(assoc->max_jobs)
-		printf("  MaxJobs       = %u\n", assoc->max_jobs);
-	if(assoc->max_nodes_per_job)
-		printf("  MaxNodes      = %u\n", assoc->max_nodes_per_job);
-	if(assoc->max_wall_duration_per_job)
+	if(cluster->default_max_jobs)
+		printf("  MaxJobs       = %u\n", cluster->default_max_jobs);
+	if(cluster->default_max_nodes_per_job)
+		printf("  MaxNodes      = %u\n",
+		       cluster->default_max_nodes_per_job);
+	if(cluster->default_max_wall_duration_per_job)
 		printf("  MaxWall       = %u\n",
-		       assoc->max_wall_duration_per_job);
-	if(assoc->max_cpu_secs_per_job)
+		       cluster->default_max_wall_duration_per_job);
+	if(cluster->default_max_cpu_secs_per_job)
 		printf("  MaxCPUSecs    = %u\n",
-		       assoc->max_cpu_secs_per_job);
+		       cluster->default_max_cpu_secs_per_job);
 	
 	cluster_list = list_create(NULL);
-	assoc_list = list_create(NULL);
-	list_push(cluster_list, cluster);
+	list_append(cluster_list, cluster);
+
+	rc = acct_storage_g_add_clusters(db_conn, my_uid, cluster_list);
+	if(rc == SLURM_SUCCESS)
+		changes_made = 1;
+
+	list_destroy(cluster_list);
+	
 	list_append(sacctmgr_cluster_list, cluster);
-
-	/* add the template account */
-	list_append(assoc_list, assoc);
-	list_append(sacctmgr_association_list, assoc);
-
-	/* add the root account */
 	assoc = xmalloc(sizeof(acct_association_rec_t));
-	assoc->fairshare = 1;
+	list_append(sacctmgr_association_list, assoc);
 	assoc->acct = xstrdup("root");
 	assoc->cluster = xstrdup(cluster->name);
-	list_append(assoc_list, assoc);
-	list_append(sacctmgr_association_list, assoc);
-
-	if(execute_flag) {
-		rc = acct_storage_g_add_clusters(db_conn, 
-						 cluster_list);
-		list_destroy(cluster_list);
-		rc = acct_storage_g_add_associations(db_conn, 
-						     assoc_list);
-		list_destroy(assoc_list);
-	} else {
-		sacctmgr_action_t *action = xmalloc(sizeof(sacctmgr_action_t));
-		action->type = SACCTMGR_CLUSTER_CREATE;
-		action->list = cluster_list;
-		list_push(sacctmgr_action_list, action);
-
-		action = xmalloc(sizeof(sacctmgr_action_t));
-		action->type = SACCTMGR_ASSOCIATION_CREATE;
-		action->list = assoc_list;
-		list_append(sacctmgr_action_list, action);
-	}
+	assoc->fairshare = cluster->default_fairshare;
+	assoc->max_jobs = cluster->default_max_jobs;
+	assoc->max_nodes_per_job = cluster->default_max_nodes_per_job;
+	assoc->max_wall_duration_per_job = 
+		cluster->default_max_wall_duration_per_job;
+	assoc->max_cpu_secs_per_job = cluster->default_max_cpu_secs_per_job;
 
 	return rc;
 }
@@ -327,8 +287,7 @@ extern int sacctmgr_list_cluster(int argc, char *argv[])
 		}		
 	}
 	
-	cluster_list = acct_storage_g_get_clusters(db_conn, 
-						   cluster_cond);
+	cluster_list = acct_storage_g_get_clusters(db_conn, cluster_cond);
 	destroy_acct_cluster_cond(cluster_cond);
 	
 	if(!cluster_list) 
@@ -359,37 +318,36 @@ extern int sacctmgr_modify_cluster(int argc, char *argv[])
 {
 	int rc = SLURM_SUCCESS;
 	int i=0;
-	acct_association_rec_t *assoc = xmalloc(sizeof(acct_association_rec_t));
-	acct_association_cond_t *assoc_cond =
-		xmalloc(sizeof(acct_association_cond_t));
+/* 	acct_association_rec_t *assoc = xmalloc(sizeof(acct_association_rec_t)); */
+/* 	acct_association_cond_t *assoc_cond = */
+/* 		xmalloc(sizeof(acct_association_cond_t)); */
 	acct_cluster_rec_t *cluster = xmalloc(sizeof(acct_cluster_rec_t));
 	acct_cluster_cond_t *cluster_cond =
 		xmalloc(sizeof(acct_cluster_cond_t));
 	List cluster_list = NULL;
 	int cond_set = 0, rec_set = 0;
+	List ret_list = NULL;
 
 	cluster_cond->cluster_list = list_create(slurm_destroy_char);
-	assoc_cond->cluster_list = list_create(slurm_destroy_char);
+	//assoc_cond->cluster_list = list_create(slurm_destroy_char);
 
 	for (i=0; i<argc; i++) {
 		if (strncasecmp (argv[i], "Where", 5) == 0) {
 			i++;
-			if(_set_cond(&i, argc, argv, cluster_cond, assoc_cond))
+			if(_set_cond(&i, argc, argv, cluster_cond))
 				cond_set = 1;
 		} else if (strncasecmp (argv[i], "Set", 3) == 0) {
 			i++;
-			if(_set_rec(&i, argc, argv, cluster, assoc))
+			if(_set_rec(&i, argc, argv, cluster))
 				rec_set = 1;
 		} else {
-			if(_set_cond(&i, argc, argv, cluster_cond, assoc_cond))
+			if(_set_cond(&i, argc, argv, cluster_cond))
 				cond_set = 1;
 		}
 	}
 
 	if(!rec_set) {
 		printf(" You didn't give me anything to set\n");
-		destroy_acct_cluster_cond(assoc);
-		destroy_acct_cluster_cond(assoc_cond);
 		destroy_acct_cluster_rec(cluster);
 		destroy_acct_cluster_cond(cluster_cond);
 		return SLURM_ERROR;
@@ -397,76 +355,56 @@ extern int sacctmgr_modify_cluster(int argc, char *argv[])
 		if(!commit_check("You didn't set any conditions with 'WHERE'.\n"
 				 "Are you sure you want to continue?")) {
 			printf("Aborted\n");
-			destroy_acct_cluster_cond(assoc);
-			destroy_acct_cluster_cond(assoc_cond);
 			destroy_acct_cluster_rec(cluster);
 			destroy_acct_cluster_cond(cluster_cond);
 			return SLURM_SUCCESS;
 		}		
 	}
 
-	_update_existing(cluster_cond, cluster, assoc);
+//	_update_existing(cluster_cond, cluster, assoc);
 
-	assoc_cond->acct_list = list_create(slurm_destroy_char);
-	list_push(assoc_cond->acct_list, "template_account");
+	//assoc_cond->acct_list = list_create(slurm_destroy_char);
+	//list_push(assoc_cond->acct_list, "template_account");
 
 	printf(" Setting\n");
 	if(rec_set) 
 		printf(" User Defaults =\n");
-	if(assoc->fairshare)
-		printf("  Fairshare     = %u\n", assoc->fairshare);
-	if(assoc->max_jobs)
-		printf("  MaxJobs       = %u\n", assoc->max_jobs);
-	if(assoc->max_nodes_per_job)
-		printf("  MaxNodes      = %u\n", assoc->max_nodes_per_job);
-	if(assoc->max_wall_duration_per_job)
+	if(cluster->default_fairshare)
+		printf("  Fairshare     = %u\n", cluster->default_fairshare);
+	if(cluster->default_max_jobs)
+		printf("  MaxJobs       = %u\n", cluster->default_max_jobs);
+	if(cluster->default_max_nodes_per_job)
+		printf("  MaxNodes      = %u\n", cluster->default_max_nodes_per_job);
+	if(cluster->default_max_wall_duration_per_job)
 		printf("  MaxWall       = %u\n",
-		       assoc->max_wall_duration_per_job);
-	if(assoc->max_cpu_secs_per_job)
+		       cluster->default_max_wall_duration_per_job);
+	if(cluster->default_max_cpu_secs_per_job)
 		printf("  MaxCPUSecs    = %u\n",
-		       assoc->max_cpu_secs_per_job);
+		       cluster->default_max_cpu_secs_per_job);
 	printf("\n Where\n");
 	_print_cond(cluster_cond);
 
 	cluster_list = list_create(destroy_acct_cluster_rec);
-	list_push(cluster_list, cluster);
+	list_append(cluster_list, cluster);
 
-	if(execute_flag) {
-		if(list_count(cluster_cond->cluster_list)) {
-			rc = acct_storage_g_modify_clusters(db_conn, 
-							    cluster_cond,
-							    cluster);
-			rc = acct_storage_g_modify_associations(db_conn, 
-								assoc_cond,
-								assoc);
+	if((ret_list = acct_storage_g_modify_clusters(db_conn, my_uid, 
+						      cluster_cond,
+						      cluster))) {
+		char *object = NULL;
+		ListIterator itr = list_iterator_create(ret_list);
+		printf(" Effected...\n");
+		while((object = list_next(itr))) {
+			printf("  %s\n", object);
 		}
-		destroy_acct_cluster_cond(cluster_cond);
-		destroy_acct_cluster_rec(cluster);
-
-		destroy_acct_association_cond(assoc_cond);
-		destroy_acct_association_rec(assoc);
+		list_iterator_destroy(itr);
+		changes_made = 1;
+		list_destroy(ret_list);
 	} else {
-		sacctmgr_action_t *action = NULL;
-		if(list_count(cluster_cond->cluster_list)) {
-			action = xmalloc(sizeof(sacctmgr_action_t));
-			action->type = SACCTMGR_CLUSTER_MODIFY;
-			action->cond = cluster_cond;
-			action->rec = cluster;
-			list_push(sacctmgr_action_list, action);
-			
-			action = xmalloc(sizeof(sacctmgr_action_t));
-			action->type = SACCTMGR_ASSOCIATION_MODIFY;
-			action->cond = assoc_cond;
-			action->rec = assoc;
-			list_push(sacctmgr_action_list, action);
-		} else {
-			destroy_acct_cluster_cond(cluster_cond);
-			destroy_acct_cluster_rec(cluster);
-			
-			destroy_acct_association_cond(assoc_cond);
-			destroy_acct_association_rec(assoc);
-		}
+		rc = SLURM_ERROR;
 	}
+
+	destroy_acct_cluster_cond(cluster_cond);
+	destroy_acct_cluster_rec(cluster);
 
 	return rc;
 }
@@ -479,18 +417,17 @@ extern int sacctmgr_delete_cluster(int argc, char *argv[])
 	acct_association_cond_t *assoc_cond =
 		xmalloc(sizeof(acct_association_cond_t));
 	int i=0;
+	List ret_list = NULL;
 
 	cluster_cond->cluster_list = list_create(slurm_destroy_char);
 	assoc_cond->cluster_list = list_create(slurm_destroy_char);
 	
-	if(!_set_cond(&i, argc, argv, cluster_cond, assoc_cond)) {
+	if(!_set_cond(&i, argc, argv, cluster_cond)) {
 		printf(" No conditions given to remove, not executing.\n");
 		destroy_acct_cluster_cond(cluster_cond);
 		destroy_acct_association_cond(assoc_cond);
 		return SLURM_ERROR;
 	}
-
-	_update_existing(cluster_cond, NULL, NULL);
 
 	if(!list_count(cluster_cond->cluster_list)) {
 		destroy_acct_cluster_cond(cluster_cond);
@@ -499,34 +436,27 @@ extern int sacctmgr_delete_cluster(int argc, char *argv[])
 	}
 	printf(" Deleting clusters where...\n");
 	_print_cond(cluster_cond);
+	
+	if((ret_list = acct_storage_g_remove_clusters(db_conn, my_uid, 
+						      cluster_cond))) {
+		_update_existing(ret_list, NULL);
 
-	if(execute_flag) {
-		if(list_count(cluster_cond->cluster_list)) {
-			rc = acct_storage_g_remove_clusters(db_conn, 
-							    cluster_cond);
-			rc = acct_storage_g_remove_associations(db_conn, 
-								assoc_cond);
+
+		char *object = NULL;
+		ListIterator itr = list_iterator_create(ret_list);
+		printf(" Effected...\n");
+		while((object = list_next(itr))) {
+			printf("  %s\n", object);
 		}
-		destroy_acct_cluster_cond(cluster_cond);
-		destroy_acct_association_cond(assoc_cond);
+		list_iterator_destroy(itr);
+		changes_made = 1;
+		list_destroy(ret_list);
 	} else {
-		sacctmgr_action_t *action = NULL;
-		
-		if(list_count(cluster_cond->cluster_list)) {
-			action = xmalloc(sizeof(sacctmgr_action_t));
-			action->type = SACCTMGR_CLUSTER_DELETE;
-			action->cond = cluster_cond;
-			list_append(sacctmgr_action_list, action);
-
-			action = xmalloc(sizeof(sacctmgr_action_t));
-			action->type = SACCTMGR_ASSOCIATION_DELETE;
-			action->cond = assoc_cond;
-			list_append(sacctmgr_action_list, action);
-		} else {
-			destroy_acct_cluster_cond(cluster_cond);
-			destroy_acct_association_cond(assoc_cond);
-		}
+		rc = SLURM_ERROR;
 	}
+	
+	destroy_acct_cluster_cond(cluster_cond);
+	destroy_acct_association_cond(assoc_cond);	
 
 	return rc;
 }

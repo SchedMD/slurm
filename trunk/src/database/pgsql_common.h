@@ -79,7 +79,9 @@ extern int pgsql_create_db(PGconn *pgsql_db, char *db_name,
 			   pgsql_db_info_t *db_info);
 
 extern int pgsql_get_db_connection(PGconn **pgsql_db, char *db_name,
-				   pgsql_db_info_t *db_info);
+				   pgsql_db_info_t *db_info, bool rollback);
+
+extern int pgsql_close_db_connection(PGconn **pgsql_db, bool commit);
 
 extern int pgsql_db_query(PGconn *pgsql_db, char *query);
 

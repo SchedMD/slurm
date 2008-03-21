@@ -63,9 +63,9 @@ static int _set_cond(int *start, int argc, char *argv[],
 			addto_char_list(acct_cond->organization_list,
 					argv[i]+14);
 			set = 1;
-		} else if (strncasecmp (argv[i], "ExpediteLevel=", 14) == 0) {
-			acct_cond->expedite =
-				str_2_acct_expedite(argv[i]+14);
+		} else if (strncasecmp (argv[i], "QosLevel=", 14) == 0) {
+			acct_cond->qos =
+				str_2_acct_qos(argv[i]+14);
 			set = 1;
 		} else if (strncasecmp (argv[i], "Description=", 12) == 0) {
 			addto_char_list(acct_cond->description_list,
@@ -75,9 +75,9 @@ static int _set_cond(int *start, int argc, char *argv[],
 			addto_char_list(acct_cond->organization_list,
 					argv[i]+13);
 			set = 1;
-		} else if (strncasecmp (argv[i], "Expedite=", 8) == 0) {
-			acct_cond->expedite =
-				str_2_acct_expedite(argv[i]+8);
+		} else if (strncasecmp (argv[i], "Qos=", 8) == 0) {
+			acct_cond->qos =
+				str_2_acct_qos(argv[i]+8);
 			set = 1;
 		} else {
 			addto_char_list(acct_cond->acct_list, argv[i]);
@@ -103,9 +103,9 @@ static int _set_rec(int *start, int argc, char *argv[],
 		} else if (strncasecmp (argv[i], "Where", 5) == 0) {
 			i--;
 			break;
-		}else if (strncasecmp (argv[i], "ExpediteLevel=", 14) == 0) {
-			acct->expedite =
-				str_2_acct_expedite(argv[i]+14);
+		}else if (strncasecmp (argv[i], "QosLevel=", 14) == 0) {
+			acct->qos =
+				str_2_acct_qos(argv[i]+14);
 			set = 1;
 		} else if (strncasecmp (argv[i], "Description=", 12) == 0) {
 			acct->description = xstrdup(argv[i]+12);
@@ -113,9 +113,9 @@ static int _set_rec(int *start, int argc, char *argv[],
 		} else if (strncasecmp (argv[i], "Organization=", 13) == 0) {
 			acct->organization = xstrdup(argv[i]+13);
 			set = 1;
-		} else if (strncasecmp (argv[i], "Expedite=", 8) == 0) {
-			acct->expedite =
-				str_2_acct_expedite(argv[i]+8);
+		} else if (strncasecmp (argv[i], "Qos=", 8) == 0) {
+			acct->qos =
+				str_2_acct_qos(argv[i]+8);
 			set = 1;
 		} else {
 			acct->name = xstrdup(argv[i]+5);
@@ -163,9 +163,9 @@ static void _print_cond(acct_account_cond_t *acct_cond)
 		}
 	}
 
-	if(acct_cond->expedite != ACCT_EXPEDITE_NOTSET)
-		printf("  Expedite     = %s\n", 
-		       acct_expedite_str(acct_cond->expedite));
+	if(acct_cond->qos != ACCT_QOS_NOTSET)
+		printf("  Qos     = %s\n", 
+		       acct_qos_str(acct_cond->qos));
 }
 
 /* static void _update_existing(acct_account_cond_t *acct_cond, */
@@ -249,9 +249,9 @@ static void _print_rec(acct_account_rec_t *acct)
 	if(acct->organization) 
 		printf("  Organization = %s\n", acct->organization);
 		
-	if(acct->expedite != ACCT_EXPEDITE_NOTSET)
-		printf("  Expedite     = %s\n", 
-		       acct_expedite_str(acct->expedite));
+	if(acct->qos != ACCT_QOS_NOTSET)
+		printf("  Qos     = %s\n", 
+		       acct_qos_str(acct->qos));
 
 }
 
@@ -271,7 +271,7 @@ extern int sacctmgr_add_account(int argc, char *argv[])
 	char *parent = NULL;
 	char *cluster = NULL;
 	char *name = NULL;
-	acct_expedite_level_t expedite = ACCT_EXPEDITE_NOTSET;
+	acct_qos_level_t qos = ACCT_QOS_NOTSET;
 	List acct_list = NULL;
 	List assoc_list = NULL;
 	uint32_t fairshare = 1; 
@@ -293,10 +293,10 @@ extern int sacctmgr_add_account(int argc, char *argv[])
 			description = xstrdup(argv[i]+12);
 		} else if (strncasecmp (argv[i], "Organization=", 13) == 0) {
 			organization = xstrdup(argv[i]+13);
-		} else if (strncasecmp (argv[i], "Expedite=", 8) == 0) {
-			expedite = str_2_acct_expedite(argv[i]+8);
-		} else if (strncasecmp (argv[i], "ExpediteLevel=", 14) == 0) {
-			expedite = str_2_acct_expedite(argv[i]+14);
+		} else if (strncasecmp (argv[i], "Qos=", 8) == 0) {
+			qos = str_2_acct_qos(argv[i]+8);
+		} else if (strncasecmp (argv[i], "QosLevel=", 14) == 0) {
+			qos = str_2_acct_qos(argv[i]+14);
 		} else if (strncasecmp (argv[i], "FairShare=", 10) == 0) {
 			fairshare = atoi(argv[i]+10);
 			limit_set = 1;
@@ -325,17 +325,13 @@ extern int sacctmgr_add_account(int argc, char *argv[])
 
 	if(!list_count(name_list)) {
 		list_destroy(name_list);
+		list_count(cluster_list);
+		xfree(parent);
+		xfree(description);
+		xfree(organization);
 		printf(" Need name of account to add.\n"); 
 		return SLURM_SUCCESS;
-	} else if(!description) {
-		list_destroy(name_list);
-		printf(" Need a description for these accounts to add.\n"); 
-		return SLURM_SUCCESS;
-	} else if(!organization) {
-		list_destroy(name_list);
-		printf(" Need an organization for these accounts to add.\n"); 
-		return SLURM_SUCCESS;
-	} 
+	}
 
 	if(!parent)
 		parent = xstrdup("root");
@@ -345,9 +341,27 @@ extern int sacctmgr_add_account(int argc, char *argv[])
 		itr_c = list_iterator_create(sacctmgr_cluster_list);
 		while((cluster_rec = list_next(itr_c))) {
 			list_append(cluster_list, 
-				    cluster_rec->name);
+				    xstrdup(cluster_rec->name));
 		}
 		list_iterator_destroy(itr_c);
+	} else {
+		
+		itr_c = list_iterator_create(cluster_list);
+		while((cluster = list_next(itr_c))) {
+			if(!sacctmgr_find_cluster(cluster)) {
+				printf(" error: This cluster '%s' "
+				       "doesn't exist.\n"
+				       "        Contact your admin "
+				       "to add it to accounting.\n",
+				       cluster);
+				list_delete_item(itr_c);
+			}
+		}
+		if(!list_count(cluster_list)) {
+			list_destroy(name_list);
+			list_count(cluster_list);
+			return SLURM_ERROR;
+		}
 	}
 
 		
@@ -357,12 +371,25 @@ extern int sacctmgr_add_account(int argc, char *argv[])
 	assoc_list = list_create(NULL);
 	itr = list_iterator_create(name_list);
 	while((name = list_next(itr))) {
+		acct = NULL;
 		if(!sacctmgr_find_account(name)) {
+			if(!description) {
+				printf(" Need a description for "
+				       "these accounts to add.\n"); 
+				rc = SLURM_ERROR;
+				goto end_it;
+			} else if(!organization) {
+				printf(" Need an organization for "
+				       "these accounts to add.\n"); 
+				rc = SLURM_ERROR;
+				goto end_it;
+			} 
 			acct = xmalloc(sizeof(acct_account_rec_t));
+			acct->assoc_list = list_create(NULL);	
 			acct->name = xstrdup(name);
 			acct->description = xstrdup(description);
 			acct->organization = xstrdup(organization);
-			acct->expedite = expedite;
+			acct->qos = qos;
 			xstrfmtcat(acct_str, "  %s\n", name);
 			list_append(acct_list, acct);
 			list_append(sacctmgr_account_list, acct);
@@ -371,8 +398,10 @@ extern int sacctmgr_add_account(int argc, char *argv[])
 		itr_c = list_iterator_create(cluster_list);
 		while((cluster = list_next(itr_c))) {
 			if(sacctmgr_find_association(NULL, name,
-						     cluster, NULL))
+						     cluster, NULL)) {
+				//printf(" already have this assoc\n");
 				continue;
+			}
 			temp_assoc = sacctmgr_find_account_base_assoc(
 				parent, cluster);
 			if(!temp_assoc) {
@@ -383,19 +412,18 @@ extern int sacctmgr_add_account(int argc, char *argv[])
 				       "to add this account.\n",
 				       parent, cluster);
 				break;
-			}/*  else  */
+			} /* else */
 /* 					printf("got %u %s %s %s %s\n", */
 /* 					       temp_assoc->id, */
 /* 					       temp_assoc->user, */
-/* 					       temp_assoc->account, */
+/* 					       temp_assoc->acct, */
 /* 					       temp_assoc->cluster, */
-/* 					       temp_assoc->parent_account); */
+/* 					       temp_assoc->parent_acct); */
 			
 			
 			assoc = xmalloc(sizeof(acct_association_rec_t));
 			assoc->acct = xstrdup(name);
 			assoc->cluster = xstrdup(cluster);
-			assoc->parent = temp_assoc->id;
 			assoc->parent_acct = xstrdup(temp_assoc->acct);
 			assoc->fairshare = fairshare;
 			assoc->max_jobs = max_jobs;
@@ -404,11 +432,16 @@ extern int sacctmgr_add_account(int argc, char *argv[])
 				max_wall_duration_per_job;
 			assoc->max_cpu_secs_per_job = 
 				max_cpu_secs_per_job;
-			list_append(assoc_list, assoc);
+			if(acct) 
+				list_append(acct->assoc_list, assoc);
+			else 
+				list_append(assoc_list, assoc);
 			list_append(sacctmgr_association_list, assoc);
+			
 		}
 		list_iterator_destroy(itr_c);
 	}
+end_it:
 	list_iterator_destroy(itr);
 	list_destroy(name_list);
 	list_destroy(cluster_list);
@@ -419,14 +452,18 @@ extern int sacctmgr_add_account(int argc, char *argv[])
 		printf("  Description  = %s\n", description);
 		printf("  Organization = %s\n", organization);
 		
-		if(expedite != ACCT_EXPEDITE_NOTSET)
-			printf("  Expedite     = %s\n", 
-			       acct_expedite_str(expedite));
+		if(qos != ACCT_QOS_NOTSET)
+			printf("  Qos     = %s\n", 
+			       acct_qos_str(qos));
+		xfree(acct_str);
 	}
 
 	if(list_count(assoc_list))
-		printf(" Association =\n");
-	itr = list_iterator_create(assoc_list);
+		printf(" Associations =\n");
+	if(acct)
+		itr = list_iterator_create(acct->assoc_list);
+	else
+		itr = list_iterator_create(assoc_list);
 	while((assoc = list_next(itr))) {
 		printf("  A = %s"
 		       "\tC = %s\n",
@@ -452,36 +489,28 @@ extern int sacctmgr_add_account(int argc, char *argv[])
 
 	if(!list_count(acct_list) && !list_count(assoc_list))
 		printf(" Nothing new added.\n");
+	else
+		changes_made = 1;
 
-	if(execute_flag) {
-		if(list_count(acct_list))
-			rc = acct_storage_g_add_accounts(db_conn, 
-							 acct_list);
-		list_destroy(acct_list);
-		if(list_count(assoc_list))
-			rc = acct_storage_g_add_associations(db_conn, 
-							     assoc_list);
-		list_destroy(assoc_list);
-	} else {
-		sacctmgr_action_t *action = NULL;
-
-		if(list_count(acct_list)) {
-			action = xmalloc(sizeof(sacctmgr_action_t));
-			action->type = SACCTMGR_ACCOUNT_CREATE;
-			action->list = acct_list;
-			list_push(sacctmgr_action_list, action);
-		} else
-			list_destroy(acct_list);
-
-		if(list_count(assoc_list)) {
-			action = xmalloc(sizeof(sacctmgr_action_t));
-			action->type = SACCTMGR_ASSOCIATION_CREATE;
-			action->list = assoc_list;
-			list_append(sacctmgr_action_list, action);
-		} else 
-			list_destroy(assoc_list);
+	if(list_count(acct_list)) {
+		rc = acct_storage_g_add_accounts(db_conn, my_uid, 
+						 acct_list);
+		account_changes = 1;
+		association_changes = 1;
 	}
+
+	list_destroy(acct_list);
+	if(list_count(assoc_list)) {
+		rc = acct_storage_g_add_associations(db_conn, my_uid, 
+						     assoc_list);
+		association_changes = 1;
+	}
+	list_destroy(assoc_list);
 	
+	xfree(parent);
+	xfree(description);
+	xfree(organization);
+
 	return rc;
 }
 
@@ -508,13 +537,13 @@ extern int sacctmgr_list_account(int argc, char *argv[])
 		} else if (strncasecmp (argv[i], "Organizations=", 14) == 0) {
 			addto_char_list(acct_cond->organization_list,
 					argv[i]+14);
-		} else if (strncasecmp (argv[i], "ExpediteLevel=", 14) == 0) {
-			acct_cond->expedite =
-				str_2_acct_expedite(argv[i]+14);
+		} else if (strncasecmp (argv[i], "QosLevel=", 14) == 0) {
+			acct_cond->qos =
+				str_2_acct_qos(argv[i]+14);
 		} else {
 			error("Valid options are 'Names=' "
 			      "'Descriptions=' 'Oranizations=' "
-			      "and 'ExpediteLevel='");
+			      "and 'QosLevel='");
 		}		
 	}
 
@@ -528,7 +557,7 @@ extern int sacctmgr_list_account(int argc, char *argv[])
 
 	itr = list_iterator_create(acct_list);
 	printf("%-15s %-15s %-15s %-10s\n%-15s %-15s %-15s %-10s\n",
-	       "Name", "Description", "Organization", "Expedite",
+	       "Name", "Description", "Organization", "Qos",
 	       "---------------",
 	       "---------------",
 	       "---------------",
@@ -538,7 +567,7 @@ extern int sacctmgr_list_account(int argc, char *argv[])
 		printf("%-15.15s %-15.15s %-15.15s %-10.10s\n",
 		       acct->name, acct->description,
 		       acct->organization,
-		       acct_expedite_str(acct->expedite));
+		       acct_qos_str(acct->qos));
 	}
 
 	printf("\n");
@@ -560,6 +589,7 @@ extern int sacctmgr_modify_account(int argc, char *argv[])
 
 	int i=0;
 	int cond_set = 0, rec_set = 0;
+	List ret_list = NULL;
 
 	acct_cond->acct_list = list_create(slurm_destroy_char);
 	acct_cond->description_list = list_create(slurm_destroy_char);
@@ -600,18 +630,24 @@ extern int sacctmgr_modify_account(int argc, char *argv[])
 	printf("\n Where\n");
 	_print_cond(acct_cond);
 
-	if(execute_flag) {
-		rc = acct_storage_g_modify_accounts(db_conn, 
-						    acct_cond, acct);
-		destroy_acct_account_cond(acct_cond);
-		destroy_acct_account_rec(acct);
+	
+	if((ret_list = acct_storage_g_modify_accounts(db_conn, my_uid, 
+						      acct_cond, acct))) {
+		char *object = NULL;
+		ListIterator itr = list_iterator_create(ret_list);
+		printf(" Effected...\n");
+		while((object = list_next(itr))) {
+			printf("  %s\n", object);
+		}
+		list_iterator_destroy(itr);
+		changes_made = 1;
+		list_destroy(ret_list);
 	} else {
-		sacctmgr_action_t *action = xmalloc(sizeof(sacctmgr_action_t));
-		action->type = SACCTMGR_ACCOUNT_MODIFY;
-		action->cond = acct_cond;
-		action->rec = acct;
-		list_push(sacctmgr_action_list, action);
+		rc = SLURM_ERROR;
 	}
+	destroy_acct_account_cond(acct_cond);
+	destroy_acct_account_rec(acct);
+	
 
 	return rc;
 }
@@ -624,6 +660,7 @@ extern int sacctmgr_delete_account(int argc, char *argv[])
 	acct_association_cond_t *assoc_cond =
 		xmalloc(sizeof(acct_association_cond_t));
 	int i=0;
+	List ret_list = NULL;
 
 	acct_cond->acct_list = list_create(slurm_destroy_char);
 	acct_cond->description_list = list_create(slurm_destroy_char);
@@ -638,16 +675,22 @@ extern int sacctmgr_delete_account(int argc, char *argv[])
 	printf(" Deleting accounts where...");
 	_print_cond(acct_cond);
 
-	if(execute_flag) {
-		rc = acct_storage_g_remove_accounts(db_conn, 
-						    acct_cond);
-		destroy_acct_account_cond(acct_cond);
+	if((ret_list = acct_storage_g_remove_accounts(db_conn, my_uid, 
+						      acct_cond))) {
+		char *object = NULL;
+		ListIterator itr = list_iterator_create(ret_list);
+		printf(" Effected...\n");
+		while((object = list_next(itr))) {
+			printf("  %s\n", object);
+		}
+		list_iterator_destroy(itr);
+		changes_made = 1;
+		account_changes = 1;
+		list_destroy(ret_list);
 	} else {
-		sacctmgr_action_t *action = xmalloc(sizeof(sacctmgr_action_t));
-		action->type = SACCTMGR_ACCOUNT_DELETE;
-		action->cond = acct_cond;
-		list_push(sacctmgr_action_list, action);
+		rc = SLURM_ERROR;
 	}
+	destroy_acct_account_cond(acct_cond);
 
 	return rc;
 }

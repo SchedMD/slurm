@@ -98,7 +98,6 @@ typedef enum {
 	SACCTMGR_ASSOCIATION_CREATE,
 	SACCTMGR_ASSOCIATION_MODIFY,
 	SACCTMGR_ASSOCIATION_DELETE,
-	SACCTMGR_ADMIN_MODIFY,
 	SACCTMGR_COORD_CREATE,
 	SACCTMGR_COORD_DELETE
 } sacctmgr_action_type_t;
@@ -118,13 +117,19 @@ extern int exit_flag;	/* program to terminate if =1 */
 extern int input_words;	/* number of words of input permitted */
 extern int one_liner;	/* one record per line if =1 */
 extern int quiet_flag;	/* quiet=1, verbose=-1, normal=0 */
-extern int execute_flag;/* immediate execute=1, else = 0 */
+extern int rollback_flag;/* immediate execute=0, else = 1 */
+extern int association_changes;
+extern int account_changes;
+extern int cluster_changes;
+extern int user_changes;
+extern int changes_made;
 extern List sacctmgr_action_list; /* list of sacctmgr_action_t * */
 extern List sacctmgr_user_list; /* list of current users */
 extern List sacctmgr_association_list; /* list of current associations */
 extern List sacctmgr_account_list; /* list of current accounts */
 extern List sacctmgr_cluster_list; /* list of current clusters */
 extern void *db_conn;
+extern uint32_t my_uid;
 
 extern int sacctmgr_add_association(int argc, char *argv[]);
 extern int sacctmgr_add_user(int argc, char *argv[]);
@@ -156,6 +161,7 @@ extern void destroy_sacctmgr_action(void *object);
 extern int commit_check(char *warning);
 extern int sacctmgr_init();
 extern int sacctmgr_remove_from_list(List list, void *object);
+extern int do_rollback();
 
 /* do not free the objects returned from these functions */
 extern acct_association_rec_t *sacctmgr_find_association(char *user,
@@ -166,6 +172,7 @@ extern acct_association_rec_t *sacctmgr_find_parent_assoc(char *account,
 							  char *cluster);
 extern acct_association_rec_t *sacctmgr_find_account_base_assoc(
 	char *account, char *cluster);
+extern acct_association_rec_t *sacctmgr_find_root_assoc(char *cluster);
 extern acct_user_rec_t *sacctmgr_find_user(char *name);
 extern acct_account_rec_t *sacctmgr_find_account(char *name);
 extern acct_cluster_rec_t *sacctmgr_find_cluster(char *name);

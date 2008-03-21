@@ -46,6 +46,23 @@ pthread_mutex_t mysql_lock = PTHREAD_MUTEX_INITIALIZER;
 
 #ifdef HAVE_MYSQL
 
+static int _clear_results(MYSQL *mysql_db)
+{
+	MYSQL_RES *result = NULL;
+	int rc = 0;
+	do {
+		/* did current statement return data? */
+		if((result = mysql_store_result(mysql_db)))
+			mysql_free_result(result);
+		
+		/* more results? -1 = no, >0 = error, 0 = yes (keep looping) */
+		if ((rc = mysql_next_result(mysql_db)) > 0)
+			debug3("error: Could not execute statement %d\n", rc);
+	} while (rc == 0);
+	
+	return SLURM_SUCCESS;
+}
+
 static int _mysql_make_table_current(MYSQL *mysql_db, char *table_name,
 				     storage_field_t *fields)
 {
@@ -127,11 +144,18 @@ extern int mysql_get_db_connection(MYSQL **mysql_db, char *db_name,
 	if(!(*mysql_db = mysql_init(*mysql_db)))
 		fatal("mysql_init failed: %s", mysql_error(*mysql_db));
 	else {
+#ifdef MYSQL_OPT_RECONNECT
+{
+		my_bool reconnect = 0;
+		/* make sure reconnect is off */
+		mysql_options(*mysql_db, MYSQL_OPT_RECONNECT, &reconnect);
+}
+#endif
 		while(!storage_init) {
 			if(!mysql_real_connect(*mysql_db, db_info->host,
 					       db_info->user, db_info->pass,
 					       db_name, db_info->port,
-					       NULL, 0)) {
+					       NULL, CLIENT_MULTI_STATEMENTS)) {
 				if(mysql_errno(*mysql_db) == ER_BAD_DB_ERROR) {
 					debug("Database %s not created.  "
 					      "Creating", db_name);
@@ -147,15 +171,17 @@ extern int mysql_get_db_connection(MYSQL **mysql_db, char *db_name,
 				storage_init = true;
 			}
 		}
-#ifdef MYSQL_OPT_RECONNECT
-{
-		my_bool reconnect = 0;
-		/* make sure reconnect is off */
-		mysql_options(*mysql_db, MYSQL_OPT_RECONNECT, &reconnect);
-}
-#endif
 	}
 	return rc;
+}
+
+extern int mysql_close_db_connection(MYSQL **mysql_db)
+{
+	if(*mysql_db) {
+		mysql_close(*mysql_db);
+		*mysql_db = NULL;
+	}
+	return SLURM_SUCCESS;
 }
 
 extern int mysql_db_query(MYSQL *mysql_db, char *query)
@@ -163,6 +189,9 @@ extern int mysql_db_query(MYSQL *mysql_db, char *query)
 	if(!mysql_db)
 		fatal("You haven't inited this storage yet.");
 	slurm_mutex_lock(&mysql_lock);
+
+	/* clear out the old results so we don't get a 2014 error */
+	_clear_results(mysql_db);			
 	if(mysql_query(mysql_db, query)) {
 		error("mysql_query failed: %d %s\n%s",
 		      mysql_errno(mysql_db),
@@ -213,30 +242,30 @@ extern int mysql_db_create_table(MYSQL *mysql_db, char *table_name,
 				 storage_field_t *fields, char *ending)
 {
 	char *query = NULL;
-	char *tmp = NULL;
-	char *next = NULL;
 	int i = 0;
 	storage_field_t *first_field = fields;
-	
-	query = xstrdup_printf("create table if not exists %s (", table_name);
-	i=0;
+
+	if(!fields || !fields->name) {
+		error("Not creating an empty table");
+		return SLURM_ERROR;
+	}
+
+	query = xstrdup_printf("create table if not exists %s (%s %s",
+			       table_name, fields->name, fields->options);
+	i=1;
+	fields++;
+		
 	while(fields && fields->name) {
-		next = xstrdup_printf(" %s %s",
-				      fields->name, 
-				      fields->options);
-		if(i) 
-			xstrcat(tmp, ",");
-		xstrcat(tmp, next);
-		xfree(next);
+		xstrfmtcat(query, ", %s %s", fields->name, fields->options);
 		fields++;
 		i++;
 	}
-	xstrcat(query, tmp);
-	xfree(tmp);
 	xstrcat(query, ending);
 
-	if(mysql_db_query(mysql_db, query)
-	   == SLURM_ERROR) {
+	/* make sure we can do a rollback */
+	xstrcat(query, " engine='innodb'");
+
+	if(mysql_db_query(mysql_db, query) == SLURM_ERROR) {
 		xfree(query);
 		return SLURM_ERROR;
 	}
@@ -244,6 +273,7 @@ extern int mysql_db_create_table(MYSQL *mysql_db, char *table_name,
 	
 	return _mysql_make_table_current(mysql_db, table_name, first_field);
 }
+
 
 #endif
 
