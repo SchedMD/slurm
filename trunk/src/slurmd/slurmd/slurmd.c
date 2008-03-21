@@ -573,8 +573,6 @@ _read_config()
 
 	conf->cr_type = cf->select_type_param;
 
-	conf->fast_schedule = cf->fast_schedule;
-
 	path_pubkey = xstrdup(cf->job_credential_public_certificate);
 
 	if (!conf->logfile)
@@ -611,17 +609,10 @@ _read_config()
 		    &conf->block_map_size,
 		    &conf->block_map, &conf->block_map_inv);
 
-	if (conf->fast_schedule) {
-	    	conf->cpus    = conf->conf_cpus;
-		conf->sockets = conf->conf_sockets;
-		conf->cores   = conf->conf_cores;
-		conf->threads = conf->conf_threads;
-	} else {
-	    	conf->cpus    = conf->actual_cpus;
-		conf->sockets = conf->actual_sockets;
-		conf->cores   = conf->actual_cores;
-		conf->threads = conf->actual_threads;
-	}
+	conf->cpus    = conf->actual_cpus;
+	conf->sockets = conf->actual_sockets;
+	conf->cores   = conf->actual_cores;
+	conf->threads = conf->actual_threads;
 
 	get_memory(&conf->real_memory_size);
 
@@ -750,7 +741,6 @@ _print_conf()
 	debug3("TaskEpilog  = `%s'",     conf->task_epilog);
 	debug3("Use CPUSETS = %u",       conf->use_cpusets);
 	debug3("Use PAM     = %u",       conf->use_pam);
-	debug3("Fast Sched  = %u",       conf->fast_schedule);
 	slurm_conf_unlock();
 }
 
@@ -792,7 +782,6 @@ _init_conf()
 	conf->spooldir	  = xstrdup(DEFAULT_SPOOLDIR);
 	conf->use_pam	  =  0;
 	conf->use_cpusets =  0;
-	conf->fast_schedule = 0;
 
 	slurm_mutex_init(&conf->config_mutex);
 	return;
