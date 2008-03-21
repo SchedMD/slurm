@@ -37,6 +37,7 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#include <strings.h>
 #include "pgsql_jobacct_process.h"
 
 /*
@@ -1240,6 +1241,7 @@ extern int jobacct_storage_p_step_complete(PGconn *acct_pgsql_db,
 	int comp_status;
 	int cpus = 0;
 	struct jobacctinfo *jobacct = (struct jobacctinfo *)step_ptr->jobacct;
+	struct jobacctinfo dummy_jobacct;
 	float ave_vsize = 0, ave_rss = 0, ave_pages = 0;
 	float ave_cpu = 0, ave_cpu2 = 0;
 	char *query = NULL;
@@ -1259,6 +1261,12 @@ extern int jobacct_storage_p_step_complete(PGconn *acct_pgsql_db,
 		}
 	}
 	
+	if (jobacct == NULL) {
+		/* JobAcctGather=jobacct_gather/none, no data to process */
+		bzero(&dummy_jobacct, sizeof(dummy_jobacct));
+		jobacct = &dummy_jobacct;
+	}
+
 	if(slurmdbd_conf) {
 		now = step_ptr->job_ptr->end_time;
 		cpus = step_ptr->job_ptr->total_procs;
