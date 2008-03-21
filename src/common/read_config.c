@@ -1671,11 +1671,6 @@ validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 			conf->accounting_storage_type =
 				xstrdup(DEFAULT_ACCOUNTING_STORAGE_TYPE);
 	}
-	if (!strcmp(conf->accounting_storage_type, "accounting_storage/none") &&
-	    strcmp(conf->job_acct_gather_type, "jobacct_gather/none")) {
-		fatal("JobAcctGatherType=jobacct_gather/none can only be "
-		      "used if AccountingStorageType=accounting_storage/none");
-	} 
 
 	if (!s_p_get_uint16(&conf->accounting_storage_enforce, 
 			    "AccountingStorageEnforce", hashtbl))

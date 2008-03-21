@@ -37,6 +37,7 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#include <strings.h>
 #include "mysql_jobacct_process.h"
 
 /*
@@ -1796,6 +1797,7 @@ extern int jobacct_storage_p_step_complete(MYSQL *acct_mysql_db,
 	int comp_status;
 	int cpus = 0;
 	struct jobacctinfo *jobacct = (struct jobacctinfo *)step_ptr->jobacct;
+	struct jobacctinfo dummy_jobacct;
 	float ave_vsize = 0, ave_rss = 0, ave_pages = 0;
 	float ave_cpu = 0, ave_cpu2 = 0;
 	char *query = NULL;
@@ -1807,6 +1809,12 @@ extern int jobacct_storage_p_step_complete(MYSQL *acct_mysql_db,
 		error("jobacct_storage_p_step_complete: "
 		      "Not inputing this job, it has no submit time.");
 		return SLURM_ERROR;
+	}
+
+	if (jobacct == NULL) {
+		/* JobAcctGather=jobacct_gather/none, no data to process */
+		bzero(&dummy_jobacct, sizeof(dummy_jobacct));
+		jobacct = &dummy_jobacct;
 	}
 
 	if(!acct_mysql_db || mysql_ping(acct_mysql_db) != 0) {

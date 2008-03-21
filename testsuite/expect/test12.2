@@ -55,16 +55,21 @@ if {[test_bluegene] != 0} {
 #
 # Check if accounting is enabled
 #
-set supported 0
+set supported_gather  0
+set supported_storage 1
 log_user 0
 spawn $scontrol show config
 expect {
+	-re "AccountingStorageType *= accounting_storage/none" {
+		set supported_storage 0
+		exp_continue
+	}
 	-re "JobAcctGatherType *= jobacct_gather/linux" {
-		set supported 1
+		set supported_gather 1
 		exp_continue
 	}
 	-re "JobAcctGatherType *= jobacct_gather/aix" {
-		set supported 1
+		set supported_gather 1
 		set aix 1
 		send_user "AIX doesn't do a great job tracking memory usage,\n"
 		send_user "as long as some memory number was\n"
@@ -78,8 +83,12 @@ expect {
 	}
 }
 log_user 1
-if {$supported == 0} {
-	send_user "\nWARNING: job accounting not configured on this system\n"
+if {$supported_gather == 0} {
+	send_user "\nWARNING: Job accounting information not gathered on this system\n"
+	exit 0
+}
+if {$supported_storage == 0} {
+	send_user "\nWARNING: Job accounting information not stored on this system\n"
 	exit 0
 }
 

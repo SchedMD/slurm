@@ -36,6 +36,7 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#include <strings.h>
 #include "src/common/slurm_accounting_storage.h"
 #include "filetxt_jobacct_process.h"
 
@@ -618,6 +619,7 @@ extern int jobacct_storage_p_step_complete(void *db_conn,
 	int cpus = 0;
 	char node_list[BUFFER_SIZE];
 	struct jobacctinfo *jobacct = (struct jobacctinfo *)step_ptr->jobacct;
+	struct jobacctinfo dummy_jobacct;
 #ifdef HAVE_BG
 	char *ionodes = NULL;
 #endif
@@ -631,6 +633,12 @@ extern int jobacct_storage_p_step_complete(void *db_conn,
 	}
 	
 	now = time(NULL);
+
+	if (jobacct == NULL) {
+		/* JobAcctGather=jobacct_gather/none, no data to process */
+		bzero(&dummy_jobacct, sizeof(dummy_jobacct));
+		jobacct = &dummy_jobacct;
+	}
 	
 	if ((elapsed=now-step_ptr->start_time)<0)
 		elapsed=0;	/* For *very* short jobs, if clock is wrong */

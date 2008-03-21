@@ -230,6 +230,19 @@ int main(int argc, char *argv[])
 	if (stat(slurmctld_conf.mail_prog, &stat_buf) != 0)
 		error("Configured MailProg is invalid");
 
+	if (!strcmp(slurmctld_conf.accounting_storage_type, 
+		    "accounting_storage/none")) {
+		if (strcmp(slurmctld_conf.job_acct_gather_type, 
+			   "jobacct_gather/none"))
+			error("Job accounting information gathered, "
+			      "but not stored"); 
+	} else {
+		if (!strcmp(slurmctld_conf.job_acct_gather_type, 
+			    "jobacct_gather/none"))
+			info("Job accounting information stored, "
+			     "but details not gathered");
+	} 
+
 #ifndef NDEBUG
 #  ifdef PR_SET_DUMPABLE
 	if (prctl(PR_SET_DUMPABLE, 1) < 0)
