@@ -662,7 +662,7 @@ void parse_command_line(int argc, char **argv)
 		xfree(acct_type);
 	} else {
 		slurm_acct_storage_init(params.opt_filein);
-		acct_db_conn = acct_storage_g_get_connection();
+		acct_db_conn = acct_storage_g_get_connection(0);
 		
 		acct_type = slurm_get_accounting_storage_type();
 		if ((strcmp(acct_type, "accounting_storage/none") == 0)
@@ -1219,7 +1219,7 @@ void sacct_fini()
 	if(params.opt_completion)
 		g_slurm_jobcomp_fini();
 	else {
-		acct_storage_g_close_connection(acct_db_conn);
+		acct_storage_g_close_connection(&acct_db_conn, 1);
 		slurm_acct_storage_fini();
 	}
 }

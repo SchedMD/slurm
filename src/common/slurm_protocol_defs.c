@@ -1167,27 +1167,6 @@ void slurm_free_set_debug_level_msg(set_debug_level_msg_t *msg)
 }
 
 
-void inline slurm_free_accounting_remove_assocs_msg(
-	accounting_remove_assocs_msg_t *msg)
-{
-	if (msg) {
-		xfree(msg->ids);
-		xfree(msg);
-	}	
-}
-
-void inline slurm_free_accounting_remove_users_msg(
-	accounting_remove_users_msg_t *msg)
-{
-	int i;
-	if (msg) {
-		for (i=0; i<msg->name_count; i++)
-			xfree(msg->names[i]);
-		xfree(msg->names);
-		xfree(msg);
-	}
-}
-
 void inline slurm_free_accounting_update_msg(accounting_update_msg_t *msg)
 {
 	if(msg) {
@@ -1338,14 +1317,7 @@ extern int slurm_free_msg_data(slurm_msg_type_t type, void *data)
 	case REQUEST_HEALTH_CHECK:
 		/* No body to free */
 		break;
-	case ACCOUNTING_REMOVE_ASSOCS:
-		slurm_free_accounting_remove_assocs_msg(data);
-		break;
-	case ACCOUNTING_REMOVE_USERS:
-		slurm_free_accounting_remove_users_msg(data);
-		break;
-	case ACCOUNTING_UPDATE_ASSOCS:
-	case ACCOUNTING_UPDATE_USERS:
+	case ACCOUNTING_UPDATE_MSG:
 		slurm_free_accounting_update_msg(data);
 		break;
 	default:

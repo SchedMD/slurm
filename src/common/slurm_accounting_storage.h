@@ -43,6 +43,8 @@
 #include "src/slurmctld/slurmctld.h"
 #include <slurm/slurm.h>
 #include <slurm/slurm_errno.h>
+#include <sys/types.h>
+#include <pwd.h>
 
 typedef enum {
 	ACCT_USAGE_NOTSET,
@@ -59,34 +61,124 @@ typedef enum {
 } acct_admin_level_t;
 
 typedef enum {
-	ACCT_EXPEDITE_NOTSET,
-	ACCT_EXPEDITE_NORMAL,
-	ACCT_EXPEDITE_EXPEDITE,
-	ACCT_EXPEDITE_STANDBY,
-	ACCT_EXPEDITE_EXEMPT	
-} acct_expedite_level_t;
+	ACCT_QOS_NOTSET,
+	ACCT_QOS_NORMAL,
+	ACCT_QOS_EXPEDITE,
+	ACCT_QOS_STANDBY,
+	ACCT_QOS_EXEMPT	
+} acct_qos_level_t;
+
+typedef enum {
+	ACCT_UPDATE_NOTSET,
+	ACCT_ADD_USER,
+	ACCT_ADD_ASSOC,
+	ACCT_MODIFY_USER,
+	ACCT_MODIFY_ASSOC,
+	ACCT_REMOVE_USER,
+	ACCT_REMOVE_ASSOC
+} acct_update_type_t;
 
 typedef struct {
-	acct_admin_level_t admin_level;
-	List coord_accts; /* list of acct_coord_rec_t *'s */
-	char *default_acct;
-	acct_expedite_level_t expedite;
-	char *name;
-	uint32_t uid;
-} acct_user_rec_t;
+	List acct_list; /* list of char * */
+	List description_list; /* list of char * */
+	acct_qos_level_t qos;	
+	List organization_list; /* list of char * */
+	uint16_t with_assocs; 
+} acct_account_cond_t;
 
 typedef struct {
+	List assoc_list; /* list of acct_association_rec_t *'s */
 	List coordinators; /* list of char *'s */
 	char *description;
-	acct_expedite_level_t expedite;
+	acct_qos_level_t qos;
 	char *name;
 	char *organization;
 } acct_account_rec_t;
 
 typedef struct {
+	uint32_t alloc_secs; /* number of cpu seconds allocated */
+	time_t period_start; 
+} acct_accounting_rec_t;
+
+typedef struct {
+	List acct_list; /* list of char * */
+	List cluster_list; /* list of char * */
+	List id_list; /* list of char */
+	List partition_list; /* list of char * */
+	char *parent_acct; /* name of parent account */
+	List user_list; /* list of char * */
+} acct_association_cond_t;
+
+typedef struct {
+	List accounting_list; 	/* list of acct_accounting_rec_t *'s */
+	char *acct;		/* account/project associated to association */
+	char *cluster;		/* cluster associated to association */
+	uint32_t fairshare;	/* fairshare number */
+	uint32_t id;		/* id identifing a combination of
+				 * user-account-cluster(-partition) */
+	uint32_t max_cpu_secs_per_job; /* max number of cpu seconds this 
+					   * association can have per job */
+	uint32_t max_jobs;	/* max number of jobs this association can run
+				 * at one time */
+	uint32_t max_nodes_per_job; /* max number of nodes this
+				     * association can allocate per job */
+	uint32_t max_wall_duration_per_job; /* longest time this
+					     * association can run a job */
+	char *parent_acct;	/* name of parent account */
+	char *partition;	/* optional partition in a cluster 
+				 * associated to association */
+	uint32_t uid;		/* user ID */
+	char *user;		/* user associated to association */
+} acct_association_rec_t;
+
+typedef struct {
+	List cluster_list; /* list of char * */
+} acct_cluster_cond_t;
+
+typedef struct {
+	List accounting_list; /* list of cluster_accounting_rec_t *'s */
+	char *control_host;
+	uint32_t control_port;
+	uint32_t default_fairshare;	/* fairshare number */
+	uint32_t default_max_cpu_secs_per_job; /* max number of cpu seconds this 
+					* association can have per job */
+	uint32_t default_max_jobs;	/* max number of jobs this association can run
+				 * at one time */
+	uint32_t default_max_nodes_per_job; /* max number of nodes this
+				     * association can allocate per job */
+	uint32_t default_max_wall_duration_per_job; /* longest time this
+					     * association can run a job */
+	char *name;
+
+} acct_cluster_rec_t;
+
+typedef struct {
 	char *acct_name;
 	uint16_t sub_acct;
 } acct_coord_rec_t;
+
+typedef struct {
+	acct_admin_level_t admin_level;
+	List def_acct_list; /* list of char * */
+	acct_qos_level_t qos;	
+	List user_list; /* list of char * */
+	uint16_t with_assocs; 
+} acct_user_cond_t;
+
+typedef struct {
+	acct_admin_level_t admin_level;
+	List assoc_list; /* list of acct_association_rec_t *'s */
+	List coord_accts; /* list of acct_coord_rec_t *'s */
+	char *default_acct;
+	acct_qos_level_t qos;
+	char *name;
+	uint32_t uid;
+} acct_user_rec_t;
+
+typedef struct {
+	List objects; /* depending on type */ 
+	acct_update_type_t type;
+} acct_update_object_t;
 
 typedef struct {
 	uint32_t alloc_secs; /* number of cpu seconds allocated */
@@ -96,73 +188,6 @@ typedef struct {
 	time_t period_start; /* when this record was started */
 	uint32_t resv_secs; /* number of cpu seconds reserved */	
 } cluster_accounting_rec_t;
-
-typedef struct {
-	List accounting_list; /* list of cluster_accounting_rec_t *'s */
-	char *control_host;
-	uint32_t control_port;
-	char *name;
-} acct_cluster_rec_t;
-
-typedef struct {
-	uint32_t alloc_secs; /* number of cpu seconds allocated */
-	time_t period_start; 
-} acct_accounting_rec_t;
-
-typedef struct {
-	List accounting_list; 	/* list of acct_accounting_rec_t *'s */
-	char *acct;		/* account/project associated to association */
-	char *cluster;		/* cluster associated to association */
-	uint32_t fairshare;	/* fairshare number */
-	uint32_t id;		/* id identifing a combination of
-				 * user-account-cluster(-partition) */
-	uint32_t lft;		/* left most association in this group */
-	uint32_t max_cpu_secs_per_job; /* max number of cpu seconds this 
-					   * association can have per job */
-	uint32_t max_jobs;	/* max number of jobs this association can run
-				 * at one time */
-	uint32_t max_nodes_per_job; /* max number of nodes this
-				     * association can allocate per job */
-	uint32_t max_wall_duration_per_job; /* longest time this
-					     * association can run a job */
-	uint32_t parent;	/* parent id associated to this */
-	char *parent_acct;	/* name of parent account */
-	char *partition;	/* optional partition in a cluster 
-				 * associated to association */
-	uint32_t rgt;		/* right most association in this group */
-	uint32_t uid;		/* user ID */
-	char *user;		/* user associated to association */
-} acct_association_rec_t;
-
-typedef struct {
-	acct_admin_level_t admin_level;
-	List def_acct_list; /* list of char * */
-	acct_expedite_level_t expedite;	
-	List user_list; /* list of char * */
-} acct_user_cond_t;
-
-typedef struct {
-	List acct_list; /* list of char * */
-	List description_list; /* list of char * */
-	acct_expedite_level_t expedite;	
-	List organization_list; /* list of char * */
-} acct_account_cond_t;
-
-typedef struct {
-	List cluster_list; /* list of char * */
-} acct_cluster_cond_t;
-
-typedef struct {
-	List acct_list; /* list of char * */
-	List cluster_list; /* list of char * */
-	List id_list; /* list of char */
-	uint32_t lft; /* left most association */
-	List partition_list; /* list of char * */
-	char *parent_acct; /* name of parent account */
-	uint32_t parent; /* parent account id */
-	uint32_t rgt; /* right most association */
-	List user_list; /* list of char * */
-} acct_association_cond_t;
 
 extern void destroy_acct_user_rec(void *object);
 extern void destroy_acct_account_rec(void *object);
@@ -176,6 +201,8 @@ extern void destroy_acct_user_cond(void *object);
 extern void destroy_acct_account_cond(void *object);
 extern void destroy_acct_cluster_cond(void *object);
 extern void destroy_acct_association_cond(void *object);
+
+extern void destroy_acct_update_object(void *object);
 
 /* pack functions */
 extern void pack_acct_user_rec(void *object, Buf buffer);
@@ -202,8 +229,12 @@ extern int unpack_acct_cluster_cond(void **object, Buf buffer);
 extern void pack_acct_association_cond(void *object, Buf buffer);
 extern int unpack_acct_association_cond(void **object, Buf buffer);
 
-extern char *acct_expedite_str(acct_expedite_level_t level);
-extern acct_expedite_level_t str_2_acct_expedite(char *level);
+extern void pack_acct_update_object(acct_update_object_t *object, Buf buffer);
+extern int unpack_acct_update_object(acct_update_object_t **object, Buf buffer);
+
+
+extern char *acct_qos_str(acct_qos_level_t level);
+extern acct_qos_level_t str_2_acct_qos(char *level);
 extern char *acct_admin_level_str(acct_admin_level_t level);
 extern acct_admin_level_t str_2_acct_admin_level(char *level);
 
@@ -214,22 +245,22 @@ extern int slurm_acct_storage_fini(void); /* unload the plugin */
  * get a new connection to the storage unit
  * RET: pointer used to access db 
  */
-extern void *acct_storage_g_get_connection();
+extern void *acct_storage_g_get_connection(bool rollback);
 
 /*
  * release connection to the storage unit
  * IN: void * pointer returned from acct_storage_g_get_connection()
  * RET: SLURM_SUCCESS on success SLURM_ERROR else 
  */
-extern int acct_storage_g_close_connection(void *db_conn);
-
+extern int acct_storage_g_close_connection(void **db_conn, bool commit);
 
 /* 
  * add users to accounting system 
  * IN:  user_list List of acct_user_rec_t *
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
-extern int acct_storage_g_add_users(void *db_conn, List user_list);
+extern int acct_storage_g_add_users(void *db_conn, uint32_t uid, 
+				    List user_list);
 
 /* 
  * add users as account coordinators 
@@ -237,7 +268,7 @@ extern int acct_storage_g_add_users(void *db_conn, List user_list);
  * IN:  acct_user_cond_t *user_q
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
-extern int acct_storage_g_add_coord(void *db_conn, 
+extern int acct_storage_g_add_coord(void *db_conn, uint32_t uid,
 				    char *acct, acct_user_cond_t *user_q);
 
 
@@ -246,21 +277,23 @@ extern int acct_storage_g_add_coord(void *db_conn,
  * IN:  account_list List of acct_account_rec_t *
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
-extern int acct_storage_g_add_accounts(void *db_conn, List acct_list);
+extern int acct_storage_g_add_accounts(void *db_conn, uint32_t uid,
+				       List acct_list);
 
 /* 
  * add clusters to accounting system 
  * IN:  cluster_list List of acct_cluster_rec_t *
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
-extern int acct_storage_g_add_clusters(void *db_conn, List cluster_list);
+extern int acct_storage_g_add_clusters(void *db_conn, uint32_t uid,
+				       List cluster_list);
 
 /* 
  * add accts to accounting system 
  * IN:  association_list List of acct_association_rec_t *
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
-extern int acct_storage_g_add_associations(void *db_conn, 
+extern int acct_storage_g_add_associations(void *db_conn, uint32_t uid, 
 					   List association_list);
 
 /* 
@@ -269,17 +302,9 @@ extern int acct_storage_g_add_associations(void *db_conn,
  * IN:  acct_user_rec_t *user
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
-extern int acct_storage_g_modify_users(void *db_conn, 
+extern List acct_storage_g_modify_users(void *db_conn, uint32_t uid, 
 				       acct_user_cond_t *user_q,
 				       acct_user_rec_t *user);
-
-/* 
- * modify existing users admin level in the accounting system 
- * IN:  acct_user_cond_t *user_q,
- * RET: SLURM_SUCCESS on success SLURM_ERROR else
- */
-extern int acct_storage_g_modify_user_admin_level(void *db_conn, 
-						  acct_user_cond_t *user_q);
 
 /* 
  * modify existing accounts in the accounting system 
@@ -287,7 +312,7 @@ extern int acct_storage_g_modify_user_admin_level(void *db_conn,
  * IN:  acct_account_rec_t *acct
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
-extern int acct_storage_g_modify_accounts(void *db_conn, 
+extern List acct_storage_g_modify_accounts(void *db_conn, uint32_t uid, 
 					  acct_account_cond_t *acct_q,
 					  acct_account_rec_t *acct);
 
@@ -297,7 +322,7 @@ extern int acct_storage_g_modify_accounts(void *db_conn,
  * IN:  acct_cluster_rec_t *cluster
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
-extern int acct_storage_g_modify_clusters(void *db_conn, 
+extern List acct_storage_g_modify_clusters(void *db_conn, uint32_t uid, 
 					  acct_cluster_cond_t *cluster_q,
 					  acct_cluster_rec_t *cluster);
 
@@ -307,7 +332,7 @@ extern int acct_storage_g_modify_clusters(void *db_conn,
  * IN:  acct_association_rec_t *assoc
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
-extern int acct_storage_g_modify_associations(void *db_conn, 
+extern List acct_storage_g_modify_associations(void *db_conn, uint32_t uid, 
 					      acct_association_cond_t *assoc_q,
 					      acct_association_rec_t *assoc);
 
@@ -316,7 +341,7 @@ extern int acct_storage_g_modify_associations(void *db_conn,
  * IN:  acct_user_cond_t *user_q
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
-extern int acct_storage_g_remove_users(void *db_conn, 
+extern List acct_storage_g_remove_users(void *db_conn, uint32_t uid, 
 				       acct_user_cond_t *user_q);
 
 /* 
@@ -325,7 +350,7 @@ extern int acct_storage_g_remove_users(void *db_conn,
  * IN: acct_user_cond_t *user_q
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
-extern int acct_storage_g_remove_coord(void *db_conn, 
+extern List acct_storage_g_remove_coord(void *db_conn, uint32_t uid, 
 				       char *acct, acct_user_cond_t *user_q);
 
 /* 
@@ -333,7 +358,7 @@ extern int acct_storage_g_remove_coord(void *db_conn,
  * IN:  acct_account_cond_t *acct_q
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
-extern int acct_storage_g_remove_accounts(void *db_conn, 
+extern List acct_storage_g_remove_accounts(void *db_conn, uint32_t uid, 
 					  acct_account_cond_t *acct_q);
 
 /* 
@@ -341,7 +366,7 @@ extern int acct_storage_g_remove_accounts(void *db_conn,
  * IN:  acct_cluster_cond_t *cluster_q
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
-extern int acct_storage_g_remove_clusters(void *db_conn, 
+extern List acct_storage_g_remove_clusters(void *db_conn, uint32_t uid, 
 					  acct_cluster_cond_t *cluster_q);
 
 /* 
@@ -349,7 +374,7 @@ extern int acct_storage_g_remove_clusters(void *db_conn,
  * IN:  acct_association_cond_t *assoc_q
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
-extern int acct_storage_g_remove_associations(void *db_conn, 
+extern List acct_storage_g_remove_associations(void *db_conn, uint32_t uid, 
 					      acct_association_cond_t *assoc_q);
 
 /* 

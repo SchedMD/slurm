@@ -55,17 +55,17 @@ static int _set_cond(int *start, int argc, char *argv[],
 			addto_char_list(user_cond->def_acct_list,
 					argv[i]+15);
 			set = 1;
-		} else if (strncasecmp (argv[i], "DefaultAccounts=", 16) == 0) {
+		} else if (strncasecmp (argv[i], "Default=", 8) == 0) {
 			addto_char_list(user_cond->def_acct_list,
-					argv[i]+16);
+					argv[i]+8);
 			set = 1;
-		} else if (strncasecmp (argv[i], "Expedite=", 9) == 0) {
-			user_cond->expedite =
-				str_2_acct_expedite(argv[i]+9);
+		} else if (strncasecmp (argv[i], "Qos=", 4) == 0) {
+			user_cond->qos =
+				str_2_acct_qos(argv[i]+4);
 			set = 1;
-		} else if (strncasecmp (argv[i], "ExpediteLevel=", 14) == 0) {
-			user_cond->expedite =
-				str_2_acct_expedite(argv[i]+14);
+		} else if (strncasecmp (argv[i], "QosLevel=", 9) == 0) {
+			user_cond->qos =
+				str_2_acct_qos(argv[i]+9);
 			set = 1;
 		} else if (strncasecmp (argv[i], "Admin=", 6) == 0) {
 			user_cond->admin_level = 
@@ -98,13 +98,14 @@ static int _set_rec(int *start, int argc, char *argv[],
 		if (strncasecmp (argv[i], "DefaultAccount=", 15) == 0) {
 			user->default_acct = xstrdup(argv[i]+15);
 			set = 1;
-		} else if (strncasecmp (argv[i], "Expedite=", 9) == 0) {
-			user->expedite =
-				str_2_acct_expedite(argv[i]+9);
+		} else if (strncasecmp (argv[i], "Default=", 8) == 0) {
+			user->default_acct = xstrdup(argv[i]+8);
 			set = 1;
-		} else if (strncasecmp (argv[i], "ExpediteLevel=", 14) == 0) {
-			user->expedite =
-				str_2_acct_expedite(argv[i]+14);
+		} else if (strncasecmp (argv[i], "Qos=", 4) == 0) {
+			user->qos = str_2_acct_qos(argv[i]+4);
+			set = 1;
+		} else if (strncasecmp (argv[i], "QosLevel=", 9) == 0) {
+			user->qos = str_2_acct_qos(argv[i]+9);
 			set = 1;
 		} else if (strncasecmp (argv[i], "Admin=", 6) == 0) {
 			user->admin_level = 
@@ -119,7 +120,7 @@ static int _set_rec(int *start, int argc, char *argv[],
 			break;
 		} else {
 			printf(" error: Valid options are 'DefaultAccount=' "
-			       "'ExpediteLevel=' and 'AdminLevel='\n");
+			       "'QosLevel=' and 'AdminLevel='\n");
 		}		
 	}	
 	(*start) = i;
@@ -154,9 +155,9 @@ static void _print_cond(acct_user_cond_t *user_cond)
 		}
 	}
 
-	if(user_cond->expedite != ACCT_EXPEDITE_NOTSET)
-		printf("  Expedite        = %s\n", 
-		       acct_expedite_str(user_cond->expedite));
+	if(user_cond->qos != ACCT_QOS_NOTSET)
+		printf("  Qos        = %s\n", 
+		       acct_qos_str(user_cond->qos));
 
 	if(user_cond->admin_level != ACCT_ADMIN_NOTSET)
 		printf("  Admin Level     = %s\n", 
@@ -176,9 +177,9 @@ static void _print_rec(acct_user_rec_t *user)
 	if(user->default_acct) 
 		printf("  Default Account = %s\n", user->default_acct);
 		
-	if(user->expedite != ACCT_EXPEDITE_NOTSET)
-		printf("  Expedite        = %s\n", 
-		       acct_expedite_str(user->expedite));
+	if(user->qos != ACCT_QOS_NOTSET)
+		printf("  Qos        = %s\n", 
+		       acct_qos_str(user->qos));
 
 	if(user->admin_level != ACCT_ADMIN_NOTSET)
 		printf("  Admin Level     = %s\n", 
@@ -199,18 +200,24 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 	acct_association_rec_t *temp_assoc = NULL;
 	char *default_acct = NULL;
 	acct_association_cond_t *assoc_cond = NULL;
-	acct_expedite_level_t expedite = ACCT_EXPEDITE_NOTSET;
+	acct_qos_level_t qos = ACCT_QOS_NOTSET;
 	acct_admin_level_t admin_level = ACCT_ADMIN_NOTSET;
 	char *name = NULL, *account = NULL, *cluster = NULL, *partition = NULL;
 	int partition_set = 0;
 	List user_list = NULL;
 	List assoc_list = NULL;
-	uint32_t fairshare = 1; 
-	uint32_t max_jobs = 0; 
-	uint32_t max_nodes_per_job = 0;
-	uint32_t max_wall_duration_per_job = 0;
-	uint32_t max_cpu_secs_per_job = 0;
+	uint32_t fairshare = -1; 
+	uint32_t max_jobs = -1; 
+	uint32_t max_nodes_per_job = -1;
+	uint32_t max_wall_duration_per_job = -1;
+	uint32_t max_cpu_secs_per_job = -1;
+	uint32_t use_fairshare = -1; 
+	uint32_t use_max_jobs = -1; 
+	uint32_t use_max_nodes_per_job = -1;
+	uint32_t use_max_wall_duration_per_job = -1;
+	uint32_t use_max_cpu_secs_per_job = -1;
 	char *user_str = NULL;
+	char *assoc_str = NULL;
 	int limit_set = 0;
 
 	if(!list_count(sacctmgr_cluster_list)) {
@@ -230,16 +237,20 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 			addto_char_list(assoc_cond->user_list, argv[i]+6);
 		} else if (strncasecmp (argv[i], "Name=", 5) == 0) {
 			addto_char_list(assoc_cond->user_list, argv[i]+5);
+		} else if (strncasecmp (argv[i], "Default=", 8) == 0) {
+			default_acct = xstrdup(argv[i]+8);
+			addto_char_list(assoc_cond->acct_list,
+					argv[i]+8);
 		} else if (strncasecmp (argv[i], "DefaultAccount=", 15) == 0) {
 			default_acct = xstrdup(argv[i]+15);
 			addto_char_list(assoc_cond->acct_list,
 					argv[i]+15);
-		} else if (strncasecmp (argv[i], "Expedite=", 8) == 0) {
-			expedite = str_2_acct_expedite(argv[i]+8);
-		} else if (strncasecmp (argv[i], "ExpediteLevel=", 14) == 0) {
-			expedite = str_2_acct_expedite(argv[i]+14);
-		} else if (strncasecmp (argv[i], "Admin=", 5) == 0) {
-			admin_level = str_2_acct_admin_level(argv[i]+5);
+		} else if (strncasecmp (argv[i], "Qos=", 4) == 0) {
+			qos = str_2_acct_qos(argv[i]+4);
+		} else if (strncasecmp (argv[i], "QosLevel=", 9) == 0) {
+			qos = str_2_acct_qos(argv[i]+9);
+		} else if (strncasecmp (argv[i], "Admin=", 6) == 0) {
+			admin_level = str_2_acct_admin_level(argv[i]+6);
 		} else if (strncasecmp (argv[i], "AdminLevel=", 11) == 0) {
 			admin_level = str_2_acct_admin_level(argv[i]+11);
 		} else if (strncasecmp (argv[i], "FairShare=", 10) == 0) {
@@ -284,18 +295,16 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 		destroy_acct_association_cond(assoc_cond);
 		printf(" Need name of user to add.\n"); 
 		return SLURM_SUCCESS;
-	} else if(!default_acct) {
-		destroy_acct_association_cond(assoc_cond);
-		printf(" Need a default account for these users to add.\n"); 
-		return SLURM_SUCCESS;
 	}
 
+	
+	
 	if(!list_count(assoc_cond->cluster_list)) {
 		acct_cluster_rec_t *cluster_rec = NULL;
 		itr_c = list_iterator_create(sacctmgr_cluster_list);
 		while((cluster_rec = list_next(itr_c))) {
 			list_append(assoc_cond->cluster_list, 
-				    cluster_rec->name);
+				    xstrdup(cluster_rec->name));
 		}
 		list_iterator_destroy(itr_c);
 	}
@@ -306,11 +315,32 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 	assoc_list = list_create(NULL);
 	itr = list_iterator_create(assoc_cond->user_list);
 	while((name = list_next(itr))) {
+		int acct_first = 1;
+		user = NULL;
 		if(!sacctmgr_find_user(name)) {
+			int first = 1;
+			if(!default_acct) {
+				printf(" Need a default account for "
+				       "these users to add.\n"); 
+				rc = SLURM_ERROR;
+				goto end_it;
+			}
+			if(first) {
+				if(!sacctmgr_find_account(default_acct)) {
+					printf(" error: This account '%s' "
+					       "doesn't exist.\n"
+					       "        Contact your admin "
+					       "to add this account.\n",
+					       default_acct);
+					continue;
+				}
+				first = 0;				
+			}
 			user = xmalloc(sizeof(acct_user_rec_t));
+			user->assoc_list = list_create(NULL);
 			user->name = xstrdup(name);
 			user->default_acct = xstrdup(default_acct);
-			user->expedite = expedite;
+			user->qos = qos;
 			user->admin_level = admin_level;
 			xstrfmtcat(user_str, "  %s\n", name);
 
@@ -320,10 +350,30 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 
 		itr_a = list_iterator_create(assoc_cond->acct_list);
 		while((account = list_next(itr_a))) {
+			if(acct_first) {
+				if(!sacctmgr_find_account(default_acct)) {
+					printf(" error: This account '%s' "
+					       "doesn't exist.\n"
+					       "        Contact your admin "
+					       "to add this account.\n",
+					       account);
+					continue;
+				}
+			}
 			itr_c = list_iterator_create(assoc_cond->cluster_list);
 			while((cluster = list_next(itr_c))) {
-				itr_p = list_iterator_create(
-					assoc_cond->partition_list);
+				acct_association_rec_t *root_assoc = 
+					sacctmgr_find_root_assoc(cluster);
+				if(!root_assoc) {
+					printf(" error: This cluster '%s' "
+					       "doesn't have a root account\n"
+					       "        Something bad has "
+					       "happend.  "
+					       "Contact your admin.\n",
+					       cluster);
+					continue;
+				}
+				
 				temp_assoc = sacctmgr_find_account_base_assoc(
 					account, cluster);
 				if(!temp_assoc) {
@@ -333,7 +383,7 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 					       "        Contact your admin "
 					       "to add this account.\n",
 					       account, cluster);
-					break;
+					continue;
 				}/*  else  */
 /* 					printf("got %u %s %s %s %s\n", */
 /* 					       temp_assoc->id, */
@@ -341,8 +391,49 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 /* 					       temp_assoc->account, */
 /* 					       temp_assoc->cluster, */
 /* 					       temp_assoc->parent_account); */
-					
+				use_fairshare = -1; 
+				use_max_jobs = -1; 
+				use_max_nodes_per_job = -1;
+				use_max_wall_duration_per_job = -1;
+				use_max_cpu_secs_per_job = -1;
 
+				if(fairshare >= 0)
+					use_fairshare = fairshare;
+				else if((int)root_assoc->fairshare >= 0)
+					use_fairshare = root_assoc->fairshare;
+				
+				if(max_jobs >= 0)
+					use_max_jobs = max_jobs;
+				else if((int)root_assoc->max_jobs >= 0)
+					use_max_jobs =root_assoc->max_jobs;
+				
+				if(max_nodes_per_job >= 0)
+					use_max_nodes_per_job =
+						max_nodes_per_job;
+				else if((int)root_assoc->max_nodes_per_job >= 0)
+					use_max_nodes_per_job =
+						root_assoc->max_nodes_per_job;
+				
+				if(max_wall_duration_per_job >= 0)
+					use_max_wall_duration_per_job =
+						max_wall_duration_per_job;
+				else if((int)root_assoc->
+					max_wall_duration_per_job >= 0)
+					use_max_wall_duration_per_job =
+						root_assoc->
+						max_wall_duration_per_job;
+
+				if(max_cpu_secs_per_job >= 0)
+					use_max_cpu_secs_per_job =
+						max_cpu_secs_per_job;
+				else if((int)root_assoc->
+					max_cpu_secs_per_job >= 0)
+					use_max_cpu_secs_per_job =
+						root_assoc->
+						max_cpu_secs_per_job;
+
+				itr_p = list_iterator_create(
+					assoc_cond->partition_list);
 				while((partition = list_next(itr_p))) {
 					partition_set = 1;
 					if(sacctmgr_find_association(
@@ -355,18 +446,30 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 					assoc->acct = xstrdup(account);
 					assoc->cluster = xstrdup(cluster);
 					assoc->partition = xstrdup(partition);
-					assoc->parent = temp_assoc->id;
-					assoc->fairshare = fairshare;
-					assoc->max_jobs = max_jobs;
+					//assoc->parent_acct = xstrdup(account);
+					assoc->fairshare = use_fairshare;
+					assoc->max_jobs = use_max_jobs;
 					assoc->max_nodes_per_job =
-						max_nodes_per_job;
+						use_max_nodes_per_job;
 					assoc->max_wall_duration_per_job =
-						max_wall_duration_per_job;
+						use_max_wall_duration_per_job;
 					assoc->max_cpu_secs_per_job =
-						max_cpu_secs_per_job;
-					list_append(assoc_list, assoc);
+						use_max_cpu_secs_per_job;
+					if(user) 
+						list_append(user->assoc_list,
+							    assoc);
+					else 
+						list_append(assoc_list, assoc);
 					list_append(sacctmgr_association_list,
 						    assoc);
+					xstrfmtcat(assoc_str,
+						   "  U = %s"
+						   "\tA = %s"
+						   "\tC = %s"
+						   "\tP = %s\n",
+						   assoc->user, assoc->acct,
+						   assoc->cluster,
+						   assoc->partition);
 				}
 				list_iterator_destroy(itr_p);
 				if(partition_set) 
@@ -376,108 +479,89 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 							     cluster, NULL))
 						continue;
 					
-				assoc = xmalloc(
-					sizeof(acct_association_rec_t));
+				assoc = xmalloc(sizeof(acct_association_rec_t));
 				assoc->user = xstrdup(name);
 				assoc->acct = xstrdup(account);
 				assoc->cluster = xstrdup(cluster);
-				assoc->parent = temp_assoc->id;
-				assoc->fairshare = fairshare;
-				assoc->max_jobs = max_jobs;
-				assoc->max_nodes_per_job = max_nodes_per_job;
+				assoc->fairshare = use_fairshare;
+				assoc->max_jobs = use_max_jobs;
+				assoc->max_nodes_per_job = 
+					use_max_nodes_per_job;
 				assoc->max_wall_duration_per_job =
-					max_wall_duration_per_job;
+					use_max_wall_duration_per_job;
 				assoc->max_cpu_secs_per_job =
-					max_cpu_secs_per_job;
-				list_append(assoc_list, assoc);
-				list_append(sacctmgr_association_list,
-					    assoc);
+					use_max_cpu_secs_per_job;
+				if(user) 
+					list_append(user->assoc_list, assoc);
+				else 
+					list_append(assoc_list, assoc);
+				list_append(sacctmgr_association_list, assoc);
+				xstrfmtcat(assoc_str,
+					   "  U = %s"
+					   "\tA = %s"
+					   "\tC = %s\n",
+					   assoc->user, assoc->acct,
+					   assoc->cluster);		
 			}
 			list_iterator_destroy(itr_c);
 		}
-		list_iterator_destroy(itr_a);				
+		list_iterator_destroy(itr_a);
+		acct_first = 0;
 	}
+end_it:
 	list_iterator_destroy(itr);
+	destroy_acct_association_cond(assoc_cond);
 
 	if(user_str) {
 		printf(" Adding User(s)\n%s", user_str);
 		printf(" Settings =\n");
 		printf("  Default Account = %s\n", default_acct);
-		if(expedite != ACCT_EXPEDITE_NOTSET)
-			printf("  Expedite        = %s\n", 
-			       acct_expedite_str(expedite));
+		if(qos != ACCT_QOS_NOTSET)
+			printf("  Qos        = %s\n", 
+			       acct_qos_str(qos));
 		
 		if(admin_level != ACCT_ADMIN_NOTSET)
 			printf("  Admin Level     = %s\n", 
 			       acct_admin_level_str(admin_level));
+		xfree(user_str);
 	}
 
-	if(list_count(assoc_list))
-		printf(" Associated With =\n");
-	itr = list_iterator_create(assoc_list);
-	while((assoc = list_next(itr))) {
-		if(assoc->partition) 
-			printf("  U = %s"
-			       "\tA = %s"
-			       "\tC = %s"
-			       "\tP = %s\n",
-			       assoc->user, assoc->acct, assoc->cluster,
-			       assoc->partition);
-		else 
-			printf("  U = %s"
-			       "\tA = %s"
-			       "\tC = %s\n",
-			       assoc->user, assoc->acct, assoc->cluster);
+	if(assoc_str) {
+		printf(" Associations =\n%s", assoc_str);
+		xfree(assoc_str);
 	}
-	list_iterator_destroy(itr);
 
 	if(limit_set) {
-		printf(" Settings =\n");
-		if(fairshare)
+		printf(" Non Default Settings =\n");
+		if((int)fairshare >= 0)
 			printf("  Fairshare       = %u\n", fairshare);
-		if(max_jobs)
+		if((int)max_jobs >= 0)
 			printf("  MaxJobs         = %u\n", max_jobs);
-		if(max_nodes_per_job)
+		if((int)max_nodes_per_job >= 0)
 			printf("  MaxNodes        = %u\n", max_nodes_per_job);
-		if(max_wall_duration_per_job)
+		if((int)max_wall_duration_per_job >= 0)
 			printf("  MaxWall         = %u\n",
 			       max_wall_duration_per_job);
-		if(max_cpu_secs_per_job)
+		if((int)max_cpu_secs_per_job >= 0)
 			printf("  MaxCPUSecs      = %u\n",
 			       max_cpu_secs_per_job);
 	}
 
-
 	if(!list_count(user_list) && !list_count(assoc_list))
 		printf(" Nothing new added.\n");
+	else
+		changes_made = 1;
+		
+	if(list_count(user_list))
+		rc = acct_storage_g_add_users(db_conn, my_uid, 
+					      user_list);
+	list_destroy(user_list);
+	if(list_count(assoc_list))
+		rc = acct_storage_g_add_associations(db_conn, my_uid, 
+						     assoc_list);
+	list_destroy(assoc_list);
 
-	if(execute_flag) {
-		if(list_count(user_list))
-			rc = acct_storage_g_add_users(db_conn, 
-						      user_list);
-		list_destroy(user_list);
-		if(list_count(assoc_list))
-			rc = acct_storage_g_add_associations(db_conn, 
-							     assoc_list);
-		list_destroy(assoc_list);
-	} else {
-		sacctmgr_action_t *action = NULL;
-		if(list_count(user_list)) {
-			action = xmalloc(sizeof(sacctmgr_action_t));
-			action->type = SACCTMGR_USER_CREATE;
-			action->list = user_list;
-			list_append(sacctmgr_action_list, action);
-		} else 
-			list_destroy(user_list);
-
-		if(list_count(assoc_list)) {
-			action = xmalloc(sizeof(sacctmgr_action_t));
-			action->type = SACCTMGR_ASSOCIATION_CREATE;
-			action->list = assoc_list;
-			list_append(sacctmgr_action_list, action);
-		} else 
-			list_destroy(assoc_list);
-	}
+	xfree(default_acct);
 
 	return rc;
 }
@@ -496,8 +580,7 @@ extern int sacctmgr_list_user(int argc, char *argv[])
 	
 	_set_cond(&i, argc, argv, user_cond);
 
-	user_list = acct_storage_g_get_users(db_conn, 
-					     user_cond);
+	user_list = acct_storage_g_get_users(db_conn, user_cond);
 	destroy_acct_user_cond(user_cond);
 
 	if(!user_list) 
@@ -505,7 +588,7 @@ extern int sacctmgr_list_user(int argc, char *argv[])
 
 	itr = list_iterator_create(user_list);
 	printf("%-15s %-15s %-10s\n%-15s %-15s %-10s\n",
-	       "Name", "Default Account", "Expedite",
+	       "Name", "Default Account", "Qos",
 	       "---------------",
 	       "---------------",
 	       "----------");
@@ -513,7 +596,7 @@ extern int sacctmgr_list_user(int argc, char *argv[])
 	while((user = list_next(itr))) {
 		printf("%-15.15s %-15.15s %-10.10s\n",
 		       user->name, user->default_acct,
-		       acct_expedite_str(user->expedite));
+		       acct_qos_str(user->qos));
 	}
 
 	printf("\n");
@@ -530,6 +613,7 @@ extern int sacctmgr_modify_user(int argc, char *argv[])
 	acct_user_rec_t *user = xmalloc(sizeof(acct_user_rec_t));
 	int i=0;
 	int cond_set = 0, rec_set = 0;
+	List ret_list = NULL;
 
 	user_cond->user_list = list_create(slurm_destroy_char);
 	user_cond->def_acct_list = list_create(slurm_destroy_char);
@@ -567,18 +651,22 @@ extern int sacctmgr_modify_user(int argc, char *argv[])
 	printf("\n Where\n");
 	_print_cond(user_cond);
 
-	if(execute_flag) {
-		rc = acct_storage_g_modify_users(db_conn, 
-						 user_cond, user);
-		destroy_acct_user_cond(user_cond);
-		destroy_acct_user_rec(user);
+	if((ret_list = acct_storage_g_modify_users(db_conn, my_uid,
+						   user_cond, user))) {
+		char *object = NULL;
+		ListIterator itr = list_iterator_create(ret_list);
+		printf(" Effected...\n");
+		while((object = list_next(itr))) {
+			printf("  %s\n", object);
+		}
+		list_iterator_destroy(itr);
+		changes_made = 1;
+		list_destroy(ret_list);
 	} else {
-		sacctmgr_action_t *action = xmalloc(sizeof(sacctmgr_action_t));
-		action->type = SACCTMGR_USER_MODIFY;
-		action->cond = user_cond;
-		action->rec = user;
-		list_push(sacctmgr_action_list, action);
+		rc = SLURM_ERROR;
 	}
+	destroy_acct_user_cond(user_cond);
+	destroy_acct_user_rec(user);	
 
 	return rc;
 }
@@ -588,6 +676,7 @@ extern int sacctmgr_delete_user(int argc, char *argv[])
 	int rc = SLURM_SUCCESS;
 	acct_user_cond_t *user_cond = xmalloc(sizeof(acct_user_cond_t));
 	int i=0;
+	List ret_list = NULL;
 
 	user_cond->user_list = list_create(slurm_destroy_char);
 	user_cond->def_acct_list = list_create(slurm_destroy_char);
@@ -600,16 +689,21 @@ extern int sacctmgr_delete_user(int argc, char *argv[])
 	printf(" Deleting users where...");
 	_print_cond(user_cond);
 
-	if(execute_flag) {
-		rc = acct_storage_g_remove_users(db_conn, 
-						 user_cond);
-		destroy_acct_user_cond(user_cond);
+	if((ret_list = acct_storage_g_remove_users(db_conn, my_uid,
+						   user_cond))) {
+		char *object = NULL;
+		ListIterator itr = list_iterator_create(ret_list);
+		printf(" Effected...\n");
+		while((object = list_next(itr))) {
+			printf("  %s\n", object);
+		}
+		list_iterator_destroy(itr);
+		changes_made = 1;
+		list_destroy(ret_list);
 	} else {
-		sacctmgr_action_t *action = xmalloc(sizeof(sacctmgr_action_t));
-		action->type = SACCTMGR_USER_DELETE;
-		action->cond = user_cond;
-		list_push(sacctmgr_action_list, action);
+		rc = SLURM_ERROR;
 	}
+	destroy_acct_user_cond(user_cond);
 
 	return rc;
 }

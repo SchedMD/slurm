@@ -222,9 +222,6 @@ extern void destroy_sacctmgr_action(void *object)
 		case SACCTMGR_ASSOCIATION_DELETE:
 			destroy_acct_association_cond(action->cond);
 			break;
-		case SACCTMGR_ADMIN_MODIFY:
-			destroy_acct_user_cond(action->cond);
-			break;
 		case SACCTMGR_COORD_CREATE:
 			xfree(action->rec);
 			destroy_acct_user_cond(action->cond);
@@ -271,6 +268,7 @@ extern int sacctmgr_init()
 
 	if(inited) 
 		return SLURM_SUCCESS;
+
 	sacctmgr_action_list = list_create(destroy_sacctmgr_action);
 
 	if(!sacctmgr_user_list)
@@ -315,6 +313,38 @@ extern int sacctmgr_remove_from_list(List list, void *object)
 	return SLURM_ERROR;
 }
 
+extern int do_rollback() 
+{
+	if(user_changes) {
+		list_destroy(sacctmgr_user_list);
+		sacctmgr_user_list = acct_storage_g_get_users(db_conn, 
+							      NULL);
+		user_changes = 0;
+	}
+
+	if(account_changes) {
+		list_destroy(sacctmgr_user_list);
+		sacctmgr_account_list = acct_storage_g_get_accounts(db_conn, 
+								    NULL);
+		account_changes = 0;
+	}
+
+	if(cluster_changes) {
+		list_destroy(sacctmgr_cluster_list);
+		sacctmgr_cluster_list = acct_storage_g_get_clusters(db_conn, 
+								    NULL);
+		cluster_changes = 0;
+	}
+
+	if(association_changes) {
+		list_destroy(sacctmgr_association_list);
+		sacctmgr_association_list = acct_storage_g_get_associations(
+			db_conn, NULL);
+		association_changes = 0;
+	}
+	return SLURM_SUCCESS;
+}
+
 extern acct_association_rec_t *sacctmgr_find_association(char *user,
 							 char *account,
 							 char *cluster,
@@ -330,7 +360,6 @@ extern acct_association_rec_t *sacctmgr_find_association(char *user,
 	itr = list_iterator_create(sacctmgr_association_list);
 	while((assoc = list_next(itr))) {
 		if((user && (!assoc->user || strcasecmp(user, assoc->user)))
-		   || (!user && assoc->user && strcasecmp("none", assoc->user))
 		   || (account && (!assoc->acct 
 				   || strcasecmp(account, assoc->acct)))
 		   || (cluster && (!assoc->cluster 
@@ -351,7 +380,7 @@ extern acct_association_rec_t *sacctmgr_find_parent_assoc(char *account,
 {
 	ListIterator itr = NULL;
 	acct_association_rec_t *assoc = NULL;
-	uint32_t par_id = 0;
+	char *par_acct = NULL;
 
 	if(!account || !cluster)
 		return NULL;
@@ -365,18 +394,18 @@ extern acct_association_rec_t *sacctmgr_find_parent_assoc(char *account,
 
 	itr = list_iterator_create(sacctmgr_association_list);
 	while((assoc = list_next(itr))) {
-		if(par_id) {
-			if(assoc->id == par_id)
+		if(par_acct) {
+			if(!strcasecmp(par_acct, assoc->acct))
 				break;
 			else
 				continue;
 		}
-		if((assoc->user && strcmp(assoc->user, "NONE"))
+		if(assoc->user
 		   || strcasecmp(account, assoc->acct)
 		   || strcasecmp(cluster, assoc->cluster))
 			continue;
 		list_iterator_reset(itr);
-		par_id = assoc->parent;
+		par_acct = assoc->parent_acct;
 	}
 	list_iterator_destroy(itr);
 
@@ -399,10 +428,12 @@ extern acct_association_rec_t *sacctmgr_find_account_base_assoc(char *account,
 
 	if(account)
 		temp = account;
-	
+//	info("looking for %s %s in %d", account, cluster,
+//	     list_count(sacctmgr_association_list));
 	itr = list_iterator_create(sacctmgr_association_list);
 	while((assoc = list_next(itr))) {
-		if((assoc->user && strcmp(assoc->user, "NONE"))
+//		info("is it %s %s %s", assoc->user, assoc->acct, assoc->cluster);
+		if(assoc->user
 		   || strcasecmp(temp, assoc->acct)
 		   || strcasecmp(cluster, assoc->cluster))
 			continue;
@@ -412,6 +443,11 @@ extern acct_association_rec_t *sacctmgr_find_account_base_assoc(char *account,
 	list_iterator_destroy(itr);
 
 	return assoc;
+}
+
+extern acct_association_rec_t *sacctmgr_find_root_assoc(char *cluster)
+{
+	return sacctmgr_find_account_base_assoc(NULL, cluster);
 }
 
 extern acct_user_rec_t *sacctmgr_find_user(char *name)

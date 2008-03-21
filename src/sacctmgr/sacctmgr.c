@@ -39,6 +39,7 @@
 \*****************************************************************************/
 
 #include "sacctmgr.h"
+#include "src/common/xsignal.h"
 
 #define OPT_LONG_HIDE   0x102
 #define BUFFER_SIZE 4096
@@ -55,13 +56,19 @@ int exit_flag;		/* program to terminate if =1 */
 int input_words;	/* number of words of input permitted */
 int one_liner;		/* one record per line if =1 */
 int quiet_flag;		/* quiet=1, verbose=-1, normal=0 */
-int execute_flag;       /* immediate execute=1, else = 0 */
+int rollback_flag;       /* immediate execute=1, else = 0 */
+int association_changes = 0;
+int account_changes = 0;
+int cluster_changes = 0;
+int user_changes = 0;
+int changes_made = 0;
 List sacctmgr_action_list = NULL;
 List sacctmgr_user_list = NULL;
 List sacctmgr_association_list = NULL;
 List sacctmgr_account_list = NULL;
 List sacctmgr_cluster_list = NULL;
 void *db_conn = NULL;
+uint32_t my_uid = 0;
 
 static void	_show_it (int argc, char *argv[]);
 static void	_add_it (int argc, char *argv[]);
@@ -70,7 +77,8 @@ static void	_delete_it (int argc, char *argv[]);
 static int	_get_command (int *argc, char *argv[]);
 static void     _print_version( void );
 static int	_process_command (int argc, char *argv[]);
-static void     _commit ();
+static void     _close_db();
+static void     _handle_intr();
 static void	_usage ();
 
 int 
@@ -96,7 +104,7 @@ main (int argc, char *argv[])
 
 	command_name      = argv[0];
 	all_flag          = 0;
-	execute_flag      = 0;
+	rollback_flag     = 1;
 	exit_code         = 0;
 	exit_flag         = 0;
 	input_field_count = 0;
@@ -105,7 +113,6 @@ main (int argc, char *argv[])
 
 	if (getenv ("SACCTMGR_ALL"))
 		all_flag= 1;
-	db_conn = acct_storage_g_get_connection();
 
 	while((opt_char = getopt_long(argc, argv, "ahioqvV",
 			long_options, &option_index)) != -1) {
@@ -125,7 +132,7 @@ main (int argc, char *argv[])
 			all_flag = 0;
 			break;
 		case (int)'i':
-			execute_flag = 1;
+			rollback_flag = 0;
 			break;
 		case (int)'o':
 			one_liner = 1;
@@ -158,6 +165,11 @@ main (int argc, char *argv[])
 		}	
 	}
 
+	db_conn = acct_storage_g_get_connection(rollback_flag);
+	my_uid = getuid();
+
+	xsignal(SIGINT, _handle_intr);
+
 	if (input_field_count)
 		exit_flag = 1;
 	else
@@ -169,18 +181,8 @@ main (int argc, char *argv[])
 			break;
 		error_code = _get_command (&input_field_count, input_fields);
 	}
+	_close_db();
 
-	if(sacctmgr_action_list) {
-		if(list_count(sacctmgr_action_list) > 0) {
-			if(commit_check("Would you like to commit "
-					"these changes?")) 
-				_commit();			
-			else 
-				printf("Changes discarded.\n");
-		}
-		list_destroy(sacctmgr_action_list);
-	}
-	acct_storage_g_close_connection(db_conn);
 	exit(exit_code);
 }
 
@@ -309,8 +311,23 @@ _process_command (int argc, char *argv[])
 			fprintf(stderr, "no input");
 	} else if (strncasecmp (argv[0], "all", 3) == 0) {
 		all_flag = 1;
-	} else if (strncasecmp (argv[0], "commit", 6) == 0) {
-		_commit();
+	} else if (strncasecmp (argv[0], "commit", 3) == 0) {
+		if(changes_made && rollback_flag)  {
+			acct_storage_g_close_connection(&db_conn, 1);
+			db_conn = acct_storage_g_get_connection(rollback_flag);
+			association_changes = 0;
+			account_changes = 0;
+			cluster_changes = 0;
+			user_changes = 0;
+			changes_made = 0;
+		}
+	} else if (strncasecmp (argv[0], "rollback", 4) == 0) {
+		if(changes_made && rollback_flag)  {
+			acct_storage_g_close_connection(&db_conn, 0);
+			db_conn = acct_storage_g_get_connection(rollback_flag);
+			do_rollback();
+			changes_made = 0;
+		}
 	} else if (strncasecmp (argv[0], "exit", 1) == 0) {
 		if (argc > 1) {
 			exit_code = 1;
@@ -318,24 +335,29 @@ _process_command (int argc, char *argv[])
 				 "too many arguments for keyword:%s\n", 
 				 argv[0]);
 		}
-		if(list_count(sacctmgr_action_list) > 0) {
-			char tmp_char[255];
+		//_close_db();
 
-			snprintf(tmp_char, sizeof(tmp_char),
-				 "There are %d action(s) that haven't been "
-				 "committed yet, would you like to commit "
-				 "before exit?", 
-				 list_count(sacctmgr_action_list));
-			if(commit_check(tmp_char)) 
-				_commit();			
-			else 
-				printf("Changes discarded.\n");
-			list_destroy(sacctmgr_action_list);
-			sacctmgr_action_list = NULL;
-		} else {
-			list_destroy(sacctmgr_action_list);
-			sacctmgr_action_list = NULL;
-		}
+/* 		if(list_count(sacctmgr_action_list) > 0) { */
+/* 				_close_db(); */
+/* 				char tmp_char[255]; */
+
+/* 			snprintf(tmp_char, sizeof(tmp_char), */
+/* 				 "There are %d action(s) that haven't been " */
+/* 				 "committed yet, would you like to commit " */
+/* 				 "before exit?",  */
+/* 				 list_count(sacctmgr_action_list)); */
+/* 			if(commit_check(tmp_char))  */
+/* 				acct_storage_g_close_connection(&db_conn, 1); */
+/* 			else { */
+/* 				acct_storage_g_close_connection(&db_conn, 0); */
+/* 				printf("Changes discarded.\n"); */
+/* 			} */
+/* 			list_destroy(sacctmgr_action_list); */
+/* 			sacctmgr_action_list = NULL; */
+/* 		} else { */
+/* 			list_destroy(sacctmgr_action_list); */
+/* 			sacctmgr_action_list = NULL; */
+/* 		} */
 		exit_flag = 1;
 	} else if (strncasecmp (argv[0], "help", 2) == 0) {
 		if (argc > 1) {
@@ -347,8 +369,6 @@ _process_command (int argc, char *argv[])
 		_usage ();
 	} else if (strncasecmp (argv[0], "hide", 2) == 0) {
 		all_flag = 0;
-	} else if (strncasecmp (argv[0], "immediate", 9) == 0) {
-		execute_flag = 1;
 	} else if (strncasecmp (argv[0], "oneliner", 1) == 0) {
 		if (argc > 1) {
 			exit_code = 1;
@@ -438,33 +458,25 @@ _process_command (int argc, char *argv[])
  */
 static void _add_it (int argc, char *argv[]) 
 {
-	int i, error_code = SLURM_SUCCESS;
+	int error_code = SLURM_SUCCESS;
 	sacctmgr_init();
 
 	/* First identify the entity to add */
-	for (i=0; i<argc; i++) {
-		if (strncasecmp (argv[i], "User", 4) == 0) {
-			error_code = sacctmgr_add_user(
-				(argc - 1), &argv[1]);
-			break;
-		} else if (strncasecmp (argv[i], "Account", 7) == 0) {
-			error_code = sacctmgr_add_account(
-				(argc - 1), &argv[1]);
-			break;
-		} else if (strncasecmp (argv[i], "Cluster", 7) == 0) {
-			error_code = sacctmgr_add_cluster(
-				(argc - 1), &argv[1]);
-			break;
-		}		
-	}
-	
-	if (i >= argc) {
+	if (strncasecmp (argv[0], "User", 4) == 0) {
+		error_code = sacctmgr_add_user((argc - 1), &argv[1]);
+	} else if (strncasecmp (argv[0], "Account", 7) == 0) {
+		error_code = sacctmgr_add_account((argc - 1), &argv[1]);
+	} else if (strncasecmp (argv[0], "Cluster", 7) == 0) {
+		error_code = sacctmgr_add_cluster((argc - 1), &argv[1]);
+	} else {
 		exit_code = 1;
 		fprintf(stderr, "No valid entity in add command\n");
 		fprintf(stderr, "Input line must include \"Association\", ");
 		fprintf(stderr, "\"UserName\", \"AccountName\", ");
 		fprintf(stderr, "or \"ClusterName\"\n");
-	} else if (error_code) {
+	}
+	
+	if (error_code) {
 		exit_code = 1;
 	}
 }
@@ -506,33 +518,26 @@ static void _show_it (int argc, char *argv[])
  */
 static void _modify_it (int argc, char *argv[]) 
 {
-	int i, error_code = SLURM_SUCCESS;
+	int error_code = SLURM_SUCCESS;
 
 	sacctmgr_init();
 
 	/* First identify the entity to modify */
-	for (i=0; i<argc; i++) {
-		if (strncasecmp (argv[i], "User", 4) == 0) {
-			error_code = sacctmgr_modify_user((argc - 1), &argv[1]);
-			break;
-		} else if (strncasecmp (argv[i], "Account", 7) == 0) {
-			error_code = sacctmgr_modify_account(
-				(argc - 1), &argv[1]);
-			break;
-		} else if (strncasecmp (argv[i], "Cluster", 7) == 0) {
-			error_code = sacctmgr_modify_cluster(
-				(argc - 1), &argv[1]);
-			break;
-		}		
-	}
-	
-	if (i >= argc) {
+	if (strncasecmp (argv[0], "User", 4) == 0) {
+		error_code = sacctmgr_modify_user((argc - 1), &argv[1]);
+	} else if (strncasecmp (argv[0], "Account", 7) == 0) {
+		error_code = sacctmgr_modify_account((argc - 1), &argv[1]);
+	} else if (strncasecmp (argv[0], "Cluster", 7) == 0) {
+		error_code = sacctmgr_modify_cluster((argc - 1), &argv[1]);
+	} else {
 		exit_code = 1;
 		fprintf(stderr, "No valid entity in modify command\n");
 		fprintf(stderr, "Input line must include ");
 		fprintf(stderr, "\"User\", \"Account\", ");
 		fprintf(stderr, "or \"Cluster\"\n");
-	} else if (error_code) {
+	}
+
+	if (error_code) {
 		exit_code = 1;
 	}
 }
@@ -544,132 +549,62 @@ static void _modify_it (int argc, char *argv[])
  */
 static void _delete_it (int argc, char *argv[]) 
 {
-	int i, error_code = SLURM_SUCCESS;
+	int error_code = SLURM_SUCCESS;
 
 	sacctmgr_init();
 
 	/* First identify the entity to delete */
-	for (i=0; i<argc; i++) {
-		if (strncasecmp (argv[i], "User", 4) == 0) {
-			error_code = sacctmgr_delete_user((argc - 1), &argv[1]);
-			break;
-		} else if (strncasecmp (argv[i], "Account", 7) == 0) {
-			error_code = sacctmgr_delete_account(
-				(argc - 1), &argv[1]);
-			break;
-		} else if (strncasecmp (argv[i], "Cluster", 7) == 0) {
-			error_code = sacctmgr_delete_cluster(
-				(argc - 1), &argv[1]);
-			break;
-		}		
-	}
-	
-	if (i >= argc) {
+	if (strncasecmp (argv[0], "User", 4) == 0) {
+		error_code = sacctmgr_delete_user((argc - 1), &argv[1]);
+	} else if (strncasecmp (argv[0], "Account", 7) == 0) {
+		error_code = sacctmgr_delete_account((argc - 1), &argv[1]);
+	} else if (strncasecmp (argv[0], "Cluster", 7) == 0) {
+		error_code = sacctmgr_delete_cluster((argc - 1), &argv[1]);
+	} else {
 		exit_code = 1;
 		fprintf(stderr, "No valid entity in delete command\n");
 		fprintf(stderr, "Input line must include ");
 		fprintf(stderr, "\"User\", \"Account\", ");
 		fprintf(stderr, "or \"Cluster\"\n");
-	} else if (error_code) {
+	}
+	
+	if (error_code) {
 		exit_code = 1;
 	}
 }
 
-static void _commit ()
+static void _close_db()
 {
-	int rc = SLURM_SUCCESS;
-	ListIterator itr = NULL;
-	sacctmgr_action_t *action = NULL;
-
-	if(!sacctmgr_action_list) {
-		error("No actions to commit");
-		return;
-	}
-	
-	itr = list_iterator_create(sacctmgr_action_list);
-	while((action = list_next(itr))) {
-		/* if(rc != SLURM_SUCCESS) { */
-/* 			error("_commit: last command returned error."); */
-/* 			break; */
-/* 		} */
-		switch(action->type) {
-		case SACCTMGR_ACTION_NOTSET:
-			error("This action does not have a type.");
-			break;
-		case SACCTMGR_USER_CREATE:
-			rc = acct_storage_g_add_users(db_conn, 
-						      action->list);		
-			break;
-		case SACCTMGR_ACCOUNT_CREATE:
-			rc = acct_storage_g_add_accounts(db_conn, 
-							 action->list);
-			break;
-		case SACCTMGR_CLUSTER_CREATE:
-			rc = acct_storage_g_add_clusters(db_conn, 
-							 action->list);
-			break;
-		case SACCTMGR_ASSOCIATION_CREATE:
-			rc = acct_storage_g_add_associations(db_conn, 
-							     action->list);
-			break;
-		case SACCTMGR_USER_MODIFY:
-			rc = acct_storage_g_modify_users(db_conn, 
-							 action->cond,
-							 action->rec);
-			break;
-		case SACCTMGR_USER_DELETE:
-			rc = acct_storage_g_remove_users(db_conn, 
-							 action->cond);
-			break;
-		case SACCTMGR_ACCOUNT_MODIFY:
-			rc = acct_storage_g_modify_accounts(db_conn, 
-							    action->cond,
-							    action->rec);
-			break;
-		case SACCTMGR_ACCOUNT_DELETE:
-			rc = acct_storage_g_remove_accounts(db_conn, 
-							    action->cond);
-			break;
-		case SACCTMGR_CLUSTER_MODIFY:
-			rc = acct_storage_g_modify_clusters(db_conn, 
-							    action->cond,
-							    action->rec);
-			break;
-		case SACCTMGR_CLUSTER_DELETE:
-			rc = acct_storage_g_remove_clusters(db_conn, 
-							    action->cond);
-			break;
-		case SACCTMGR_ASSOCIATION_MODIFY:
-			rc = acct_storage_g_modify_associations(db_conn, 
-								action->cond,
-								action->rec);
-			break;
-		case SACCTMGR_ASSOCIATION_DELETE:
-			rc = acct_storage_g_remove_associations(
-				db_conn, 
-				action->cond);
-			break;
-		case SACCTMGR_ADMIN_MODIFY:
-			rc = acct_storage_g_modify_user_admin_level(
-				db_conn, 
-				action->cond);
-			break;
-		case SACCTMGR_COORD_CREATE:
-			rc = acct_storage_g_add_coord(db_conn, 
-						      action->rec,
-						      action->cond);
-			break;
-		case SACCTMGR_COORD_DELETE:
-			rc = acct_storage_g_remove_coord(db_conn, 
-							 action->rec,
-							 action->cond);
-			break;	
-		default:
-			error("unknown action %d", action->type);
-			break;
+	if(changes_made && rollback_flag) {
+		if(commit_check("Would you like to commit changes?")) 
+			acct_storage_g_close_connection(&db_conn, 1);
+		else {
+			acct_storage_g_close_connection(&db_conn, 0);
+			printf("Changes discarded.\n");
 		}
+	} else 
+		acct_storage_g_close_connection(&db_conn, 0);
+	printf("\n");
+	exit_flag = 1;
+}
+
+static void _handle_intr()
+{
+	static int been_here = 0;
+	
+	if(!been_here) {
+		been_here = 1;
+		if(changes_made && rollback_flag)
+			printf("interrupt (one more to discard any changes)\n");
+		_close_db();
+		exit(1);
+	} else { /* second Ctrl-C in half as many seconds */
+		acct_storage_g_close_connection(&db_conn, 0);
+		if(changes_made && rollback_flag)
+			printf("Changes discarded.\n");
+		printf("\n");	
+		exit(1);
 	}
-	list_iterator_destroy(itr);
 }
 
 /* _usage - show the valid sacctmgr commands */
@@ -680,7 +615,7 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
      -a or --all: equivalent to \"all\" command                            \n\
      -h or --help: equivalent to \"help\" command                          \n\
      --hide: equivalent to \"hide\" command                                \n\
-     -i or --immediate: equivalent to \"immediate\" command                \n\
+     -i or --immediate: commit changes immediately                         \n\
      -o or --oneliner: equivalent to \"oneliner\" command                  \n\
      -q or --quiet: equivalent to \"quiet\" command                        \n\
      -s or --associations: equivalent to \"associations\" command          \n\
@@ -697,20 +632,19 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
      add <ENTITY> <SPECS>     add entity                                   \n\
      associations             when using show/list will list the           \n\
                               associations asspciated with the entity.     \n\
-     commit                   commit changes done with create, modify,     \n\
-                              or delete                                    \n\
+     commit                   commit current updates                       \n\
      delete <ENTITY> <SPECS>  delete the specified entity(s)               \n\
      exit                     terminate sacctmgr                           \n\
      help                     print this description of use.               \n\
      hide                     do not display information about             \n\
                               hidden/deleted entities.                     \n\
-     immediate                commit changes immediately                   \n\
      list <ENTITY> [<SPECS>]  display info of identified entity, default   \n\
                               is display all.                              \n\
      modify <ENTITY> <SPECS>  modify entity                                \n\
      oneliner                 report output one record per line.           \n\
      quiet                    print no messages other than error messages. \n\
      quit                     terminate this command.                      \n\
+     rollback                 rollback current updates                    \n\
      show                     same as list                                 \n\
      verbose                  enable detailed logging.                     \n\
      version                  display tool version number.                 \n\
@@ -719,22 +653,22 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
   <ENTITY> may be \"user\", \"cluster\", \"account\", or \"association\".  \n\
                                                                            \n\
   <SPECS> are different for each command entity pair.                      \n\
-       list user          - Names=, DefaultAccounts=, ExpediteLevel=,      \n\
+       list user          - Names=, DefaultAccounts=, QosLevel=,      \n\
                             and AdminLevel=                                \n\
-       add user           - Names=, DefaultAccount=, ExpediteLevel=,       \n\
+       add user           - Names=, DefaultAccount=, QosLevel=,       \n\
                             and AdminLevel=                                \n\
-       modify user        - Names=, DefaultAccounts=, ExpediteLevel=,      \n\
+       modify user        - Names=, DefaultAccounts=, QosLevel=,      \n\
                             and AdminLevel=                                \n\
-       delete user        - Names=, DefaultAccounts=, ExpediteLevel=,      \n\
+       delete user        - Names=, DefaultAccounts=, QosLevel=,      \n\
                             and AdminLevel=                                \n\
                                                                            \n\
-       list account       - Names=, Descriptions=, ExpediteLevel=,         \n\
+       list account       - Names=, Descriptions=, QosLevel=,         \n\
                             and Organizations=                             \n\
-       add account        - Names=, Descriptions=, ExpediteLevel=,         \n\
+       add account        - Names=, Descriptions=, QosLevel=,         \n\
                             and Organizations=                             \n\
-       modify account     - Names=, Descriptions=, ExpediteLevel=,         \n\
+       modify account     - Names=, Descriptions=, QosLevel=,         \n\
                             and Organizations=                             \n\
-       delete account     - Names=, Descriptions=, ExpediteLevel=,         \n\
+       delete account     - Names=, Descriptions=, QosLevel=,         \n\
                             and Organizations=                             \n\
                                                                            \n\
        list cluster       - Names=                                         \n\

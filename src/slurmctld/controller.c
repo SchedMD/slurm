@@ -166,8 +166,8 @@ static int controller_sigarray[] = {
 
 static void         _default_sigaction(int sig);
 inline static void  _free_server_thread(void);
-static int          _gold_cluster_ready();
-static int          _gold_mark_all_nodes_down(char *reason);
+static int          _accounting_cluster_ready();
+static int          _accounting_mark_all_nodes_down(char *reason);
 static void         _init_config(void);
 static void         _init_pidfile(void);
 static void         _kill_old_slurmctld(void);
@@ -356,13 +356,13 @@ int main(int argc, char *argv[])
 			}
 			
 			if ((recover == 0) || 
-			    (!stat("/tmp/slurm_gold_first", &stat_buf))) {
+			    (!stat("/tmp/slurm_accounting_first", &stat_buf))) {
 				/* When first starting to write node state
 				 * information to Gold or SlurmDBD, create 
-				 * a file called "/tmp/slurm_gold_first" to 
+				 * a file called "/tmp/slurm_accounting_first" to 
 				 * capture node initialization information */
-				_gold_mark_all_nodes_down("cold-start");
-				 unlink("/tmp/slurm_gold_first");
+				_accounting_mark_all_nodes_down("cold-start");
+				 unlink("/tmp/slurm_accounting_first");
 			}
 		} else {
 			error("this host (%s) not valid controller (%s or %s)",
@@ -370,13 +370,13 @@ int main(int argc, char *argv[])
 				slurmctld_conf.backup_controller);
 			exit(0);
 		}
-		acct_db_conn = acct_storage_g_get_connection();
+		acct_db_conn = acct_storage_g_get_connection(0);
 		if (assoc_mgr_init(acct_db_conn, accounting_enforce) &&
 		    accounting_enforce)
 			fatal("assoc_mgr_init failure");
 
 		info("Running as primary controller");
-		_gold_cluster_ready();
+		_accounting_cluster_ready();
 		if (slurm_sched_init() != SLURM_SUCCESS)
 			fatal("failed to initialize scheduling plugin");
 
@@ -443,7 +443,7 @@ int main(int argc, char *argv[])
 		if (slurmctld_config.resume_backup == false)
 			break;
 		recover = 2;
-		acct_storage_g_close_connection(acct_db_conn);
+		acct_storage_g_close_connection(&acct_db_conn, 1);
 		assoc_mgr_fini();
 	}
 
@@ -854,7 +854,7 @@ static void _free_server_thread(void)
 	pthread_cond_broadcast(&server_thread_cond);
 }
 
-static int _gold_cluster_ready()
+static int _accounting_cluster_ready()
 {
 	uint32_t procs = 0;
 	struct node_record *node_ptr;
@@ -884,7 +884,7 @@ static int _gold_cluster_ready()
 	return rc;
 }
 
-static int _gold_mark_all_nodes_down(char *reason)
+static int _accounting_mark_all_nodes_down(char *reason)
 {
 	char *state_file;
 	struct stat stat_buf;
@@ -896,7 +896,7 @@ static int _gold_mark_all_nodes_down(char *reason)
 	state_file = xstrdup (slurmctld_conf.state_save_location);
 	xstrcat (state_file, "/node_state");
 	if (stat(state_file, &stat_buf)) {
-		debug("_gold_mark_all_nodes_down: could not stat(%s) "
+		debug("_accounting_mark_all_nodes_down: could not stat(%s) "
 		      "to record node down time", state_file);
 		event_time = time(NULL);
 	} else {
@@ -1078,7 +1078,7 @@ static void *_slurmctld_background(void *no_data)
 			 * or reconfigured nodes */
 			last_node_acct = now;
 			lock_slurmctld(node_read_lock);
-			_gold_cluster_ready();
+			_accounting_cluster_ready();
 			unlock_slurmctld(node_read_lock);
 		}
 		/* Reassert this machine as the primary controller.

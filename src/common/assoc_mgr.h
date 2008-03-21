@@ -92,33 +92,18 @@ extern int assoc_mgr_init(void *db_conn, int enforce);
 extern int assoc_mgr_fini();
 
 /* 
- * remove association from local cache 
- * IN:  uint32_t id (id of association to remove)
- * RET: SLURM_SUCCESS on success (or not found) SLURM_ERROR else
- */
-extern int assoc_mgr_remove_local_association(uint32_t id);
-
-/* 
- * remove user from local cache 
- * IN:  char * name (name of user to remove this will also remove all
- *      associations for this user)
- * RET: SLURM_SUCCESS on success (or not found) SLURM_ERROR else
- */
-extern int assoc_mgr_remove_local_user(char *name);
-
-/* 
  * update associations in local cache 
- * IN:  List of acct_association_rec_t's
+ * IN:  acct_update_object_t *object
  * RET: SLURM_SUCCESS on success (or not found) SLURM_ERROR else
  */
-extern int assoc_mgr_update_local_associations(List update_list);
+extern int assoc_mgr_update_local_assocs(acct_update_object_t *update);
 
 /* 
  * update users in local cache 
- * IN:  List of acct_user_rec_t's
+ * IN:  acct_update_object_t *object
  * RET: SLURM_SUCCESS on success (or not found) SLURM_ERROR else
  */
-extern int assoc_mgr_update_local_users(List update_list);
+extern int assoc_mgr_update_local_users(acct_update_object_t *update);
 
 /* 
  * validate that an association ID is still avlid 

@@ -1114,13 +1114,13 @@ extern int  select_g_pack_jobinfo  (select_jobinfo_t jobinfo, Buf buffer)
 		pack32((uint32_t) 0, buffer); //node_cnt
 		pack32((uint32_t) 0, buffer); //max_procs
 
-		packstr("", buffer); //bg_block_id
-		packstr("", buffer); //nodes
-		packstr("", buffer); //ionodes
-		packstr("", buffer); //blrts
-		packstr("", buffer); //linux
-		packstr("", buffer); //mloader
-		packstr("", buffer); //ramdisk
+		packnull(buffer); //bg_block_id
+		packnull(buffer); //nodes
+		packnull(buffer); //ionodes
+		packnull(buffer); //blrts
+		packnull(buffer); //linux
+		packnull(buffer); //mloader
+		packnull(buffer); //ramdisk
 	}
 
 	return SLURM_SUCCESS;

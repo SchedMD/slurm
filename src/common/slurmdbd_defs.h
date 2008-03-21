@@ -63,6 +63,7 @@
 /* SLURM DBD message types */
 typedef enum {
 	DBD_INIT = 1400,	/* Connection initialization		*/
+	DBD_FINI,       	/* Connection finalization		*/
 	DBD_ADD_ACCOUNTS,       /* Add new account to the mix           */
 	DBD_ADD_ACCOUNT_COORDS, /* Add new coordinatior to an account   */
 	DBD_ADD_ASSOCS,         /* Add new association to the mix       */
@@ -82,6 +83,7 @@ typedef enum {
 	DBD_GOT_CLUSTERS,	/* Response to DBD_GET_CLUSTERS		*/
 	DBD_GOT_CLUSTER_USAGE, 	/* Response to DBD_GET_CLUSTER_USAGE   	*/
 	DBD_GOT_JOBS,		/* Response to DBD_GET_JOBS		*/
+	DBD_GOT_LIST,           /* Response to DBD_MODIFY/REMOVE MOVE_* */
 	DBD_GOT_USERS,  	/* Response to DBD_GET_USERS		*/
 	DBD_JOB_COMPLETE,	/* Record job completion 		*/
 	DBD_JOB_START,		/* Record job starting			*/
@@ -91,7 +93,6 @@ typedef enum {
 	DBD_MODIFY_ASSOCS,      /* Modify existing association          */
 	DBD_MODIFY_CLUSTERS,    /* Modify existing cluster              */
 	DBD_MODIFY_USERS,       /* Modify existing user                 */
-	DBD_MODIFY_USER_ADMIN_LEVEL,/* Modify existing user             */
 	DBD_NODE_STATE,		/* Record node state transition		*/
 	DBD_RC,			/* Return code from operation		*/
 	DBD_REGISTER_CTLD,	/* Register a slurmctld's comm port	*/
@@ -153,10 +154,15 @@ typedef struct dbd_get_jobs_msg {
 } dbd_get_jobs_msg_t;
 
 typedef struct dbd_init_msg {
+	uint16_t rollback;      /* to allow rollbacks or not */     
 	uint16_t version;	/* protocol version */
 	uint32_t uid;		/* UID originating connection,
 				 * filled by authtentication plugin*/
 } dbd_init_msg_t;
+
+typedef struct dbd_fini_msg {
+	uint16_t commit;      /* to rollback(0) or commit(1) changes */     
+} dbd_fini_msg_t;
 
 typedef struct dbd_job_comp_msg {
 	uint32_t assoc_id;	/* accounting association id needed to
@@ -270,10 +276,10 @@ typedef struct dbd_step_start_msg {
 \*****************************************************************************/
 
 /* Open a socket connection to SlurmDbd using SlurmdbdAuthInfo specified */
-extern int slurm_open_slurmdbd_conn(char *auth_info);
+extern int slurm_open_slurmdbd_conn(char *auth_info, bool rollback);
 
 /* Close the SlurmDBD socket connection */
-extern int slurm_close_slurmdbd_conn(void);
+extern int slurm_close_slurmdbd_conn(bool commit);
 
 /* Send an RPC to the SlurmDBD. Do not wait for the reply. The RPC
  * will be queued and processed later if the SlurmDBD is not responding.
@@ -303,6 +309,7 @@ void inline slurmdbd_free_cond_msg(slurmdbd_msg_type_t type,
 				   dbd_cond_msg_t *msg);
 void inline slurmdbd_free_get_jobs_msg(dbd_get_jobs_msg_t *msg);
 void inline slurmdbd_free_init_msg(dbd_init_msg_t *msg);
+void inline slurmdbd_free_fini_msg(dbd_fini_msg_t *msg);
 void inline slurmdbd_free_job_complete_msg(dbd_job_comp_msg_t *msg);
 void inline slurmdbd_free_job_start_msg(dbd_job_start_msg_t *msg);
 void inline slurmdbd_free_job_start_rc_msg(dbd_job_start_rc_msg_t *msg);
@@ -331,6 +338,7 @@ void inline slurmdbd_pack_cond_msg(slurmdbd_msg_type_t type,
 void inline slurmdbd_pack_get_jobs_msg(dbd_get_jobs_msg_t *msg, Buf buffer);
 void inline slurmdbd_pack_init_msg(dbd_init_msg_t *msg, Buf buffer,
 				    char *auth_info);
+void inline slurmdbd_pack_fini_msg(dbd_fini_msg_t *msg, Buf buffer);
 void inline slurmdbd_pack_job_complete_msg(dbd_job_comp_msg_t *msg,
 					    Buf buffer);
 void inline slurmdbd_pack_job_start_msg(dbd_job_start_msg_t *msg,
@@ -367,7 +375,8 @@ int inline slurmdbd_unpack_cond_msg(slurmdbd_msg_type_t type,
 				     dbd_cond_msg_t **msg, Buf buffer);
 int inline slurmdbd_unpack_get_jobs_msg(dbd_get_jobs_msg_t **msg, Buf buffer);
 int inline slurmdbd_unpack_init_msg(dbd_init_msg_t **msg, Buf buffer,
-				     char *auth_info);
+				    char *auth_info);
+int inline slurmdbd_unpack_fini_msg(dbd_fini_msg_t **msg, Buf buffer);
 int inline slurmdbd_unpack_job_complete_msg(dbd_job_comp_msg_t **msg,
 					     Buf buffer);
 int inline slurmdbd_unpack_job_start_msg(dbd_job_start_msg_t **msg,
