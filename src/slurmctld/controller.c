@@ -552,8 +552,9 @@ static void  _init_config(void)
 #endif
 }
 
-/* Read configuration file */
-extern int reconfigure_slurmctld(void)
+/* Read configuration file.
+ * Same name as API function for use in accounting_storage plugin */
+extern int slurm_reconfigure(void)
 {
 	/* Locks: Write configuration, job, node, and partition */
 	slurmctld_lock_t config_write_lock = { 

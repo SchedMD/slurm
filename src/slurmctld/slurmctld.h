@@ -1210,9 +1210,6 @@ void part_fini (void);
  */
 extern void purge_old_job (void);
 
-/* Read configuration file */
-extern int reconfigure_slurmctld(void);
-
 /*
  * rehash_jobs - Create or rebuild the job hash table.
  * NOTE: run lock_slurmctld before entry: Read config, write job
@@ -1282,6 +1279,10 @@ extern void set_slurmd_addr (void);
  * IN signal - signal to send
  */
 extern void signal_step_tasks(struct step_record *step_ptr, uint16_t signal);
+
+/* Read configuration file.
+ * Same name as API function for use in accounting_storage plugin */
+extern int slurm_reconfigure(void);
 
 /*
  * slurmctld_shutdown - wake up slurm_rpc_mgr thread via signal
