@@ -381,6 +381,7 @@ extern void destroy_acct_association_rec(void *object)
 			list_destroy(acct_association->accounting_list);
 		xfree(acct_association->acct);
 		xfree(acct_association->cluster);
+		xfree(acct_association->parent_acct);
 		xfree(acct_association->partition);
 		xfree(acct_association->user);
 		xfree(acct_association);
@@ -446,6 +447,18 @@ extern void destroy_acct_association_cond(void *object)
 		if(acct_association->user_list)
 			list_destroy(acct_association->user_list);
 		xfree(acct_association);
+	}
+}
+
+extern void destroy_acct_update_object(void *object)
+{
+	acct_update_object_t *acct_update = 
+		(acct_update_object_t *) object;
+
+	if(acct_update) {
+		if(acct_update->objects)
+			list_destroy(acct_update->objects);
+		xfree(acct_update);
 	}
 }
 
@@ -1268,6 +1281,90 @@ extern int unpack_acct_association_cond(void **object, Buf buffer)
 
 unpack_error:
 	destroy_acct_association_cond(object_ptr);
+	*object = NULL;
+	return SLURM_ERROR;
+}
+
+extern void pack_acct_update_object(acct_update_object_t *object, Buf buffer)
+{
+	uint32_t count = 0;
+	ListIterator itr = NULL;
+	void *acct_object = NULL;
+	void (*my_function) (void *object, Buf buffer);
+
+	pack16(object->type, buffer);
+	switch(object->type) {
+	case ACCT_MODIFY_USER:
+	case ACCT_ADD_USER:
+	case ACCT_REMOVE_USER:
+		my_function = pack_acct_user_rec;
+		break;
+	case ACCT_ADD_ASSOC:
+	case ACCT_MODIFY_ASSOC:
+	case ACCT_REMOVE_ASSOC:
+		my_function = pack_acct_association_rec;
+		break;
+	case ACCT_UPDATE_NOTSET:
+	default:
+		error("unknown type set in update_object: %d", object->type);
+		return;
+	}
+	if(object->objects) 
+		count = list_count(object->objects);
+			
+	pack32(count, buffer);
+	if(count) {
+		itr = list_iterator_create(object->objects);
+		while((acct_object = list_next(itr))) {
+			(*(my_function))(acct_object, buffer);
+		}
+		list_iterator_destroy(itr);
+	}
+}
+
+extern int unpack_acct_update_object(acct_update_object_t **object, Buf buffer)
+{
+	int i;
+	uint32_t count;
+	acct_update_object_t *object_ptr = 
+		xmalloc(sizeof(acct_update_object_t));
+	void *acct_object = NULL;
+	int (*my_function) (void **object, Buf buffer);
+	void (*my_destroy) (void *object);
+
+	*object = object_ptr;
+
+	safe_unpack16((uint16_t *)&object_ptr->type, buffer);
+	switch(object_ptr->type) {
+	case ACCT_MODIFY_USER:
+	case ACCT_ADD_USER:
+	case ACCT_REMOVE_USER:
+		my_function = unpack_acct_user_rec;
+		my_destroy = destroy_acct_user_rec;
+		break;
+	case ACCT_ADD_ASSOC:
+	case ACCT_MODIFY_ASSOC:
+	case ACCT_REMOVE_ASSOC:
+		my_function = unpack_acct_association_rec;
+		my_destroy = destroy_acct_association_rec;
+		break;
+	case ACCT_UPDATE_NOTSET:
+	default:
+		error("unknown type set in update_object: %d",
+		      object_ptr->type);
+		goto unpack_error;
+	}
+	safe_unpack32(&count, buffer);
+	object_ptr->objects = list_create((*(my_destroy)));
+	for(i=0; i<count; i++) {
+		if(((*(my_function))(&acct_object, buffer)) == SLURM_ERROR)
+			goto unpack_error;
+		list_append(object_ptr->objects, acct_object);
+	}
+	return SLURM_SUCCESS;
+	
+unpack_error:
+	destroy_acct_update_object(object_ptr);
 	*object = NULL;
 	return SLURM_ERROR;
 }

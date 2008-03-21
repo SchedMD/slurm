@@ -68,6 +68,16 @@ typedef enum {
 	ACCT_QOS_EXEMPT	
 } acct_qos_level_t;
 
+typedef enum {
+	ACCT_UPDATE_NOTSET,
+	ACCT_ADD_USER,
+	ACCT_ADD_ASSOC,
+	ACCT_MODIFY_USER,
+	ACCT_MODIFY_ASSOC,
+	ACCT_REMOVE_USER,
+	ACCT_REMOVE_ASSOC
+} acct_update_type_t;
+
 typedef struct {
 	List acct_list; /* list of char * */
 	List description_list; /* list of char * */
@@ -166,6 +176,11 @@ typedef struct {
 } acct_user_rec_t;
 
 typedef struct {
+	List objects; /* depending on type */ 
+	acct_update_type_t type;
+} acct_update_object_t;
+
+typedef struct {
 	uint32_t alloc_secs; /* number of cpu seconds allocated */
 	uint32_t cpu_count; /* number of cpus during time period */
 	uint32_t down_secs; /* number of cpu seconds down */
@@ -186,6 +201,8 @@ extern void destroy_acct_user_cond(void *object);
 extern void destroy_acct_account_cond(void *object);
 extern void destroy_acct_cluster_cond(void *object);
 extern void destroy_acct_association_cond(void *object);
+
+extern void destroy_acct_update_object(void *object);
 
 /* pack functions */
 extern void pack_acct_user_rec(void *object, Buf buffer);
@@ -211,6 +228,10 @@ extern void pack_acct_cluster_cond(void *object, Buf buffer);
 extern int unpack_acct_cluster_cond(void **object, Buf buffer);
 extern void pack_acct_association_cond(void *object, Buf buffer);
 extern int unpack_acct_association_cond(void **object, Buf buffer);
+
+extern void pack_acct_update_object(acct_update_object_t *object, Buf buffer);
+extern int unpack_acct_update_object(acct_update_object_t **object, Buf buffer);
+
 
 extern char *acct_qos_str(acct_qos_level_t level);
 extern acct_qos_level_t str_2_acct_qos(char *level);

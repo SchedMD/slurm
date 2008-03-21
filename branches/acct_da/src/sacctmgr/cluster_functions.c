@@ -120,67 +120,52 @@ static void _print_cond(acct_cluster_cond_t *cluster_cond)
 	}
 }
 
-static void _update_existing(acct_cluster_cond_t *cluster_cond,
-			     acct_cluster_rec_t *new_cluster,
-			     acct_association_rec_t *new_assoc)
+static void _update_existing(List ret_list,
+			     acct_cluster_rec_t *new_cluster)
 {
 	ListIterator itr = NULL;
 	char *tmp_char = NULL;
 	acct_cluster_rec_t *cluster = NULL;
-	acct_association_rec_t *assoc = NULL;
 
-	if(!cluster_cond) {
-		error("no acct_cluster_cond_t * given");
+	if(!ret_list) {
+		error("no return list given");
 		return;
 	}
 
-	if(cluster_cond->cluster_list
-	   && list_count(cluster_cond->cluster_list)) {
-		itr = list_iterator_create(cluster_cond->cluster_list);
-		while((tmp_char = list_next(itr))) {
-			if(!(cluster = sacctmgr_find_cluster(tmp_char))) {
-				printf(" Cluster '%s' does not exist, "
-				       "not removing.\n", tmp_char);
-				list_remove(itr);
-				continue;
-			}
 
-			if(!new_cluster) {
-				sacctmgr_remove_from_list(sacctmgr_cluster_list,
-							  cluster);
-			} else {
-								
-			}
-
-			if(!(assoc = sacctmgr_find_association(
-				     NULL, "template_account",
-				     tmp_char, NULL))) {
-				printf(" Can't find template account for '%s' "
-				       "something is messed up.\n", tmp_char);
-				continue;
-			}
-			if(!new_assoc) {
-				sacctmgr_remove_from_list(
-					sacctmgr_association_list, assoc);
-				continue;
-			}
-
-			if(new_assoc->fairshare)
-				assoc->fairshare = new_assoc->fairshare;
-			if(new_assoc->max_jobs)
-				assoc->max_jobs = new_assoc->max_jobs;
-			if(new_assoc->max_nodes_per_job)
-				assoc->max_nodes_per_job =
-					new_assoc->max_nodes_per_job;
-			if(new_assoc->max_wall_duration_per_job)
-				assoc->max_wall_duration_per_job = 
-					new_assoc->max_wall_duration_per_job;
-			if(new_assoc->max_cpu_secs_per_job)
-				assoc->max_cpu_secs_per_job = 
-					new_assoc->max_cpu_secs_per_job;	
+	itr = list_iterator_create(ret_list);
+	while((tmp_char = list_next(itr))) {
+		if(!(cluster = sacctmgr_find_cluster(tmp_char))) {
+			printf(" Cluster '%s' does not exist, "
+			       "not removing.\n", tmp_char);
+			list_remove(itr);
+			continue;
 		}
-		list_iterator_destroy(itr);
+		if(new_cluster) {
+			if(new_cluster->default_fairshare)
+				cluster->default_fairshare =
+					new_cluster->default_fairshare;
+			if(new_cluster->default_max_jobs)
+				cluster->default_max_jobs =
+					new_cluster->default_max_jobs;
+			if(new_cluster->default_max_nodes_per_job)
+				cluster->default_max_nodes_per_job =
+					new_cluster->default_max_nodes_per_job;
+			if(new_cluster->default_max_wall_duration_per_job)
+				cluster->default_max_wall_duration_per_job = 
+					new_cluster->
+					default_max_wall_duration_per_job;
+			if(new_cluster->default_max_cpu_secs_per_job)
+				cluster->default_max_cpu_secs_per_job = 
+					new_cluster->
+					default_max_cpu_secs_per_job;	
+			
+		} else 
+			sacctmgr_remove_from_list(sacctmgr_cluster_list,
+						  cluster);
+		       
 	}
+	list_iterator_destroy(itr);
 }
 	
 extern int sacctmgr_add_cluster(int argc, char *argv[])
@@ -443,8 +428,6 @@ extern int sacctmgr_delete_cluster(int argc, char *argv[])
 		return SLURM_ERROR;
 	}
 
-	_update_existing(cluster_cond, NULL, NULL);
-
 	if(!list_count(cluster_cond->cluster_list)) {
 		destroy_acct_cluster_cond(cluster_cond);
 		destroy_acct_association_cond(assoc_cond);
@@ -452,9 +435,12 @@ extern int sacctmgr_delete_cluster(int argc, char *argv[])
 	}
 	printf(" Deleting clusters where...\n");
 	_print_cond(cluster_cond);
-
+	
 	if((ret_list = acct_storage_g_remove_clusters(db_conn, my_uid, 
 						      cluster_cond))) {
+		_update_existing(ret_list, NULL);
+
+
 		char *object = NULL;
 		ListIterator itr = list_iterator_create(ret_list);
 		printf(" Effected...\n");

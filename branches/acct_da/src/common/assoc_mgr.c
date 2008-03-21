@@ -379,127 +379,128 @@ extern int assoc_mgr_is_user_acct_coord(void *db_conn,
 	return 0;	
 }
 
-extern int assoc_mgr_remove_local_association(uint32_t id)
-{
-	ListIterator itr = NULL;
-	acct_association_rec_t * found_assoc = NULL;
-
-	if(!local_association_list)
-		return SLURM_SUCCESS;
-
-	slurm_mutex_lock(&local_association_lock);
-	itr = list_iterator_create(local_association_list);
-	while((found_assoc = list_next(itr))) {
-		if(id == found_assoc->id) {
-			list_delete_item(itr);			
-			break;
-		}
-	}
-	list_iterator_destroy(itr);
-	slurm_mutex_unlock(&local_association_lock);
-
-	return SLURM_SUCCESS;
-}
-
-extern int assoc_mgr_remove_local_user(char *name)
-{
-	ListIterator itr = NULL;
-	acct_user_rec_t * found_user = NULL;
-	acct_association_rec_t * found_assoc = NULL;
-
-	if(!local_user_list)
-		return SLURM_SUCCESS;
-	
-	slurm_mutex_lock(&local_user_lock);
-	itr = list_iterator_create(local_user_list);
-	while((found_user = list_next(itr))) {
-		if(!strcasecmp(name, found_user->name)) {
-			list_delete_item(itr);
-			break;
-		}
-	}
-	list_iterator_destroy(itr);
-	slurm_mutex_unlock(&local_user_lock);
-
-	if(!local_association_list)
-		return SLURM_SUCCESS;
-
-	slurm_mutex_lock(&local_association_lock);
-	itr = list_iterator_create(local_user_list);
-	while((found_assoc = list_next(itr))) {
-		if(!strcasecmp(name, found_assoc->user)) 
-			list_delete_item(itr);			
-	}
-	list_iterator_destroy(itr);
-	slurm_mutex_unlock(&local_association_lock);
-
-	return SLURM_SUCCESS;
-}
-
-extern int assoc_mgr_update_local_associations(List update_list)
+extern int assoc_mgr_update_local_assocs(acct_update_object_t *update)
 {
 	acct_association_rec_t * rec = NULL;
-	acct_association_rec_t * update_rec = NULL;
+	acct_association_rec_t * object = NULL;
 	ListIterator itr = NULL;
-	ListIterator itr2 = NULL;
 	int rc = SLURM_SUCCESS;
 
 	if(!local_association_list)
 		return SLURM_SUCCESS;
 
 	slurm_mutex_lock(&local_association_lock);
-	itr = list_iterator_create(update_list);
-	itr2 = list_iterator_create(local_user_list);
-	while((update_rec = list_next(itr2))) {
-		list_iterator_reset(itr2);
-		while((rec = list_next(itr2))) {
-			if(update_rec->id == rec->id)
+	itr = list_iterator_create(local_user_list);
+	while((object = list_pop(update->objects))) {
+		if(local_cluster_name) {
+			/* only update the local clusters assocs */
+			if(strcasecmp(object->cluster, local_cluster_name))
+				continue;
+		}
+		list_iterator_reset(itr);
+		while((rec = list_next(itr))) {
+			if(object->id == rec->id)
 				break;
 		}
-		if(!rec) {
-			rc = SLURM_ERROR;
+		//info("%d assoc %u", update->type, object->id);
+		switch(update->type) {
+		case ACCT_MODIFY_ASSOC:
+			if(!rec) {
+				//rc = SLURM_ERROR;
+				break;
+			}
+
+			/* fix me: do updates here */
+			break;
+		case ACCT_ADD_ASSOC:
+			if(rec) {
+				//rc = SLURM_ERROR;
+				break;
+			}
+			list_append(local_association_list, object);
+		case ACCT_REMOVE_ASSOC:
+			if(!rec) {
+				rc = SLURM_ERROR;
+				//break;
+			}
+			list_delete_item(itr);
+			break;
+		default:
 			break;
 		}
-		/****** FIX ME UPDATE THE STUFF HERE ******/
+		if(update->type != ACCT_ADD_ASSOC) {
+			destroy_acct_update_object(object);			
+		}
+				
 	}
-	slurm_mutex_unlock(&local_association_lock);
-
 	list_iterator_destroy(itr);
-	list_iterator_destroy(itr2);
+	slurm_mutex_unlock(&local_association_lock);
 
 	return rc;	
 }
 
-extern int assoc_mgr_update_local_users(List update_list)
+extern int assoc_mgr_update_local_users(acct_update_object_t *update)
 {
 	acct_user_rec_t * rec = NULL;
-	acct_user_rec_t * update_rec = NULL;
+	acct_user_rec_t * object = NULL;
 	ListIterator itr = NULL;
-	ListIterator itr2 = NULL;
 	int rc = SLURM_SUCCESS;
 
 	if(!local_user_list)
 		return SLURM_SUCCESS;
 
 	slurm_mutex_lock(&local_user_lock);
-	itr = list_iterator_create(update_list);
-	itr2 = list_iterator_create(local_user_list);
-	while((update_rec = list_next(itr2))) {
-		list_iterator_reset(itr2);
-		while((rec = list_next(itr2))) {
-			if(!strcasecmp(update_rec->name, rec->name))
+	itr = list_iterator_create(local_user_list);
+	while((object = list_pop(update->objects))) {
+		list_iterator_reset(itr);
+		while((rec = list_next(itr))) {
+			if(!strcasecmp(object->name, rec->name)) {
 				break;
+			}
 		}
-		if(!rec) {
-			rc = SLURM_ERROR;
+		//info("%d user %s", update->type, object->name);
+		switch(update->type) {
+		case ACCT_MODIFY_USER:
+			if(!rec) {
+				rc = SLURM_ERROR;
+				break;
+			}
+
+			if(object->default_acct) {
+				xfree(rec->default_acct);
+				rec->default_acct = object->default_acct;
+				object->default_acct = NULL;
+			}
+
+			if(object->qos != ACCT_QOS_NOTSET)
+				rec->qos = object->qos;
+			
+			if(object->admin_level != ACCT_ADMIN_NOTSET)
+				rec->admin_level = rec->admin_level;
+
+			break;
+		case ACCT_ADD_USER:
+			if(rec) {
+				rc = SLURM_ERROR;
+				break;
+			}
+			list_append(local_user_list, object);
+		case ACCT_REMOVE_USER:
+			if(!rec) {
+				rc = SLURM_ERROR;
+				break;
+			}
+			list_delete_item(itr);
+			break;
+		default:
 			break;
 		}
-		/****** FIX ME UPDATE THE STUFF HERE ******/
+		if(update->type != ACCT_ADD_USER) {
+			destroy_acct_update_object(object);			
+		}
 	}
-	slurm_mutex_unlock(&local_user_lock);
-
 	list_iterator_destroy(itr);
-	list_iterator_destroy(itr2);
+	slurm_mutex_unlock(&local_user_lock);
 
 	return rc;	
 }

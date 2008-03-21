@@ -326,6 +326,9 @@ extern int sacctmgr_add_account(int argc, char *argv[])
 	if(!list_count(name_list)) {
 		list_destroy(name_list);
 		list_count(cluster_list);
+		xfree(parent);
+		xfree(description);
+		xfree(organization);
 		printf(" Need name of account to add.\n"); 
 		return SLURM_SUCCESS;
 	}
@@ -396,7 +399,7 @@ extern int sacctmgr_add_account(int argc, char *argv[])
 		while((cluster = list_next(itr_c))) {
 			if(sacctmgr_find_association(NULL, name,
 						     cluster, NULL)) {
-				printf(" already have this assoc\n");
+				//printf(" already have this assoc\n");
 				continue;
 			}
 			temp_assoc = sacctmgr_find_account_base_assoc(
@@ -452,6 +455,7 @@ end_it:
 		if(qos != ACCT_QOS_NOTSET)
 			printf("  Qos     = %s\n", 
 			       acct_qos_str(qos));
+		xfree(acct_str);
 	}
 
 	if(list_count(assoc_list))
@@ -488,15 +492,25 @@ end_it:
 	else
 		changes_made = 1;
 
-	if(list_count(acct_list))
+	if(list_count(acct_list)) {
 		rc = acct_storage_g_add_accounts(db_conn, my_uid, 
 						 acct_list);
+		account_changes = 1;
+		association_changes = 1;
+	}
+
 	list_destroy(acct_list);
-	if(list_count(assoc_list))
+	if(list_count(assoc_list)) {
 		rc = acct_storage_g_add_associations(db_conn, my_uid, 
 						     assoc_list);
+		association_changes = 1;
+	}
 	list_destroy(assoc_list);
 	
+	xfree(parent);
+	xfree(description);
+	xfree(organization);
+
 	return rc;
 }
 
@@ -671,6 +685,7 @@ extern int sacctmgr_delete_account(int argc, char *argv[])
 		}
 		list_iterator_destroy(itr);
 		changes_made = 1;
+		account_changes = 1;
 		list_destroy(ret_list);
 	} else {
 		rc = SLURM_ERROR;

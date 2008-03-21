@@ -39,6 +39,7 @@
 
 #include "mysql_jobacct_process.h"
 #include "src/common/slurmdbd_defs.h"
+#include "src/common/slurm_auth.h"
 
 /*
  * These variables are required by the generic plugin interface.  If they
@@ -102,6 +103,57 @@ extern int acct_storage_p_add_associations(mysql_conn_t *mysql_conn,
 					   List association_list);
 extern List acct_storage_p_get_associations(mysql_conn_t *mysql_conn, 
 					    acct_association_cond_t *assoc_q);
+
+/* This function will take the object given and free it later so it
+ * needed to be removed from a list if in one before 
+ */
+static int _addto_update_list(List update_list, acct_update_type_t type,
+			      void *object)
+{
+	acct_update_object_t *update_object = NULL;
+	ListIterator itr = NULL;
+	if(!update_list) {
+		error("no update list given");
+		return SLURM_ERROR;
+	}
+
+	itr = list_iterator_create(update_list);
+	while((update_object = list_next(itr))) {
+		if(update_object->type == type)
+			break;
+	}
+	list_iterator_destroy(itr);
+
+	if(update_object) {
+		list_append(update_object->objects, object);
+		return SLURM_SUCCESS;
+	} 
+	update_object = xmalloc(sizeof(acct_update_object_t));
+
+	list_append(update_list, update_object);
+
+	update_object->type = type;
+	
+	switch(type) {
+	case ACCT_MODIFY_USER:
+	case ACCT_ADD_USER:
+	case ACCT_REMOVE_USER:
+		update_object->objects = list_create(destroy_acct_user_rec);
+		break;
+	case ACCT_ADD_ASSOC:
+	case ACCT_MODIFY_ASSOC:
+	case ACCT_REMOVE_ASSOC:
+		update_object->objects = list_create(
+			destroy_acct_association_rec);
+		break;
+	case ACCT_UPDATE_NOTSET:
+	default:
+		error("unknown type set in update_object: %d", type);
+		return SLURM_ERROR;
+	}
+	list_append(update_object->objects, object);
+	return SLURM_SUCCESS;
+}
 
 static int _get_affected_rows(MYSQL *mysql_db)
 {
@@ -194,7 +246,8 @@ static int _remove_common(mysql_conn_t *mysql_conn,
 		return SLURM_ERROR;
 	} 
 	txn_id = atoi(row[0]);			
-	info("added transaction %d", txn_id);
+	mysql_free_result(result);
+	//info("added transaction %d", txn_id);
 
 	if(mysql_conn->rollback) {
 		char *roll = mysql_conn->query;
@@ -208,7 +261,11 @@ static int _remove_common(mysql_conn_t *mysql_conn,
 			xfree(roll);
 		} 
 	}
-		
+
+	/* Stop here if we are doing associations */
+	if(table == assoc_table || !assoc_char)
+		return SLURM_SUCCESS;
+	
 	query = xstrdup_printf("LOCK TABLE %s WRITE;"
 			       "update %s set mod_time=%d, deleted=1 "
 			       "where deleted=0 && (%s);"
@@ -619,7 +676,7 @@ extern void *acct_storage_p_get_connection(bool rollback)
 	mysql_get_db_connection(&mysql_conn->acct_mysql_db,
 				mysql_db_name, mysql_db_info);
 	mysql_conn->rollback = rollback;
-
+	mysql_conn->update_list = list_create(destroy_acct_update_object);
 	return (void *)mysql_conn;
 #else
 	return NULL;
@@ -634,14 +691,99 @@ extern int acct_storage_p_close_connection(mysql_conn_t **mysql_conn,
 	if(!(*mysql_conn)) 
 		return SLURM_SUCCESS;
 
+	//info("got %d commits", list_count((*mysql_conn)->update_list));
+	
 	if(!commit && (*mysql_conn)->query) {
-		info("running\n%s", (*mysql_conn)->query);
+		//info("running\n%s", (*mysql_conn)->query);
 		if(mysql_db_query((*mysql_conn)->acct_mysql_db,
 				  (*mysql_conn)->query) == SLURM_ERROR)
 			error("undo failed");
+	} else if(commit && list_count((*mysql_conn)->update_list)) {
+		int rc;
+		char *query = NULL;
+		MYSQL_RES *result = NULL;
+		MYSQL_ROW row;
+		accounting_update_msg_t msg;
+		slurm_msg_t req;
+		slurm_msg_t resp;
+		ListIterator itr = NULL;
+		acct_update_object_t *object = NULL;
+
+		slurm_msg_t_init(&req);
+		slurm_msg_t_init(&resp);
+
+		memset(&msg, 0, sizeof(accounting_update_msg_t));
+		msg.update_list = (*mysql_conn)->update_list;
+			
+		xstrfmtcat(query, "select control_host, control_port from %s "
+			   "where deleted=0 && control_port != 0",
+			   cluster_table);
+		if(!(result = mysql_db_query_ret((*mysql_conn)->acct_mysql_db,
+						 query))) {
+			xfree(query);
+			goto skip;
+		}
+		xfree(query);
+		while((row = mysql_fetch_row(result))) {
+			//info("sending to %s(%s)", row[0], row[1]);
+			slurm_set_addr_char(&req.address, atoi(row[1]), row[0]);
+			req.msg_type = ACCOUNTING_UPDATE_MSG;
+			req.flags = SLURM_GLOBAL_AUTH_KEY;
+			req.data = &msg;			
+			
+			rc = slurm_send_recv_node_msg(&req, &resp, 0);
+			if ((rc != 0) || !resp.auth_cred) {
+				error("fini: %m");
+				if (resp.auth_cred)
+					g_slurm_auth_destroy(
+						resp.auth_cred);
+				rc = SLURM_ERROR;
+			}
+			if (resp.auth_cred)
+				g_slurm_auth_destroy(resp.auth_cred);
+			
+			switch (resp.msg_type) {
+			case RESPONSE_SLURM_RC:
+				rc = ((return_code_msg_t *)resp.data)->
+					return_code;
+				slurm_free_return_code_msg(resp.data);	
+				break;
+			default:
+				break;
+			}	
+			//info("got rc of %d", rc);
+		}
+		mysql_free_result(result);
+	skip:
+		itr = list_iterator_create((*mysql_conn)->update_list);
+		while((object = list_next(itr))) {
+			if(!object->objects 
+			   || !list_count(object->objects))
+				continue;
+			switch(object->type) {
+			case ACCT_MODIFY_USER:
+			case ACCT_ADD_USER:
+			case ACCT_REMOVE_USER:
+				rc = assoc_mgr_update_local_users(object);
+				break;
+			case ACCT_ADD_ASSOC:
+			case ACCT_MODIFY_ASSOC:
+			case ACCT_REMOVE_ASSOC:
+				rc = assoc_mgr_update_local_assocs(object);
+				break;
+			case ACCT_UPDATE_NOTSET:
+			default:
+				error("unknown type set in "
+				      "update_object: %d",
+				      object->type);
+				break;
+			}
+		}
+		list_iterator_destroy(itr);
 	}
-	xfree((*mysql_conn)->query);
 	mysql_close_db_connection(&(*mysql_conn)->acct_mysql_db);
+	list_destroy((*mysql_conn)->update_list);
+	xfree((*mysql_conn)->query);
 	xfree((*mysql_conn));
 
 	return SLURM_SUCCESS;
@@ -713,12 +855,18 @@ extern int acct_storage_p_add_users(mysql_conn_t *mysql_conn, uint32_t uid,
 
 		affect_rows = _get_affected_rows(mysql_conn->acct_mysql_db);
 		if(!affect_rows) {
-			debug3("nothing changed");
+			debug("nothing changed");
 			xfree(extra);
 			xfree(cols);
 			xfree(vals);
 			continue;
 		}
+
+		if(_addto_update_list(mysql_conn->update_list, ACCT_ADD_USER,
+				      object) == SLURM_SUCCESS) 
+			list_remove(itr);
+			
+
 		if(mysql_conn->rollback) {
 			char *roll = mysql_conn->query;
 			mysql_conn->query = xstrdup_printf(
@@ -775,6 +923,7 @@ extern int acct_storage_p_add_users(mysql_conn_t *mysql_conn, uint32_t uid,
 		} 
 		
 		txn_id = atoi(row[0]);			
+		mysql_free_result(result);
 		
 		if(mysql_conn->rollback) {
 			char *roll = mysql_conn->query;
@@ -935,6 +1084,7 @@ extern int acct_storage_p_add_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 			continue;
 		} 
 		txn_id = atoi(row[0]);			
+		mysql_free_result(result);
 
 		if(mysql_conn->rollback) {
 			char *roll = mysql_conn->query;
@@ -1129,8 +1279,9 @@ extern int acct_storage_p_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 			xfree(vals);
 			continue;
 		} 
-
 		txn_id = atoi(row[0]);	
+		mysql_free_result(result);
+		
 		//info("got id of %d", txn_id);
 		if(mysql_conn->rollback) {
 			char *roll = mysql_conn->query;
@@ -1187,6 +1338,7 @@ extern int acct_storage_p_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 			continue;
 		}
 		assoc_id = atoi(row[0]);			
+		mysql_free_result(result);
 
 		if(mysql_conn->rollback) {
 			char *roll = mysql_conn->query;
@@ -1383,7 +1535,17 @@ extern int acct_storage_p_add_associations(mysql_conn_t *mysql_conn,
 			xfree(extra);
 			continue;
 		}
-		assoc_id = atoi(row[0]);			
+		assoc_id = atoi(row[0]);
+		mysql_free_result(result);
+
+		object->id = assoc_id;
+
+		if(_addto_update_list(mysql_conn->update_list, ACCT_ADD_ASSOC,
+				      object) == SLURM_SUCCESS) {
+			list_remove(itr);
+			//info("added %s", object->id);
+		}
+
 		if(mysql_conn->rollback) {
 			char *roll = mysql_conn->query;
 			mysql_conn->query = xstrdup_printf(
@@ -1453,6 +1615,7 @@ extern int acct_storage_p_add_associations(mysql_conn_t *mysql_conn,
 			error("nothing returned");
 		} else 
 			txn_id = atoi(row[0]);			
+		mysql_free_result(result);
 
 //		info("got %d %d %d", assoc_id, affect_rows, txn_id);
 	
@@ -2122,7 +2285,7 @@ extern List acct_storage_p_remove_users(mysql_conn_t *mysql_conn, uint32_t uid,
 			xstrfmtcat(name_char, "name='%s'", object);
 			xstrfmtcat(assoc_char, "user='%s'", object);
 			rc = 1;
-		} else  {
+		} else {
 			xstrfmtcat(name_char, " || name='%s'", object);
 			xstrfmtcat(assoc_char, " || user='%s'", object);
 		}
@@ -2387,7 +2550,7 @@ extern List acct_storage_p_remove_associations(mysql_conn_t *mysql_conn,
 	List ret_list = NULL;
 	int rc = SLURM_SUCCESS;
 	char *object = NULL;
-	char *extra = NULL, *query = NULL;
+	char *extra = NULL, *query = NULL, *name_char = NULL;
 	time_t now = time(NULL);
 	struct passwd *pw = NULL;
 	char *user_name = NULL;
@@ -2462,58 +2625,46 @@ extern List acct_storage_p_remove_associations(mysql_conn_t *mysql_conn,
 		xstrcat(extra, ")");
 	}
 	
+	if(assoc_q->parent_acct) {
+		xstrfmtcat(extra, " && parent_acct='%s'", assoc_q->parent_acct);
+	}
+
 	query = xstrdup_printf("select id from %s %s;", assoc_table, extra);
+	xfree(extra);
 	if(!(result = mysql_db_query_ret(mysql_conn->acct_mysql_db, query))) {
 		xfree(query);
 		return NULL;
 	}
 	xfree(query);
 
+	rc = 0;
 	ret_list = list_create(slurm_destroy_char);
 	while((row = mysql_fetch_row(result))) {
 		char *object = xstrdup(row[0]);
 		list_append(ret_list, object);
+		if(!rc) {
+			xstrfmtcat(name_char, "id=%s", object);
+			rc = 1;
+		} else {
+			xstrfmtcat(name_char, " || id=%s", object);
+		}
 	}
 	mysql_free_result(result);
 
 	if(!list_count(ret_list)) {
 		debug3("didn't effect anything");
 		list_destroy(ret_list);
-		xfree(extra);
 		return NULL;
 	}
 
-	if(assoc_q->parent_acct) {
-		xstrfmtcat(extra, " && parent_acct='%s'", assoc_q->parent_acct);
-	}
-
-	query = xstrdup_printf("update %s set mod_time=%d, deleted=1 %s;",
-			       assoc_table, now, extra);
-	xstrfmtcat(query, 	
-		   "insert into %s "
-		   "(timestamp, action, name, actor) "
-		   "values (%d, %d, \"%s\", '%s');",
-		   txn_table,
-		   now, DBD_REMOVE_ASSOCS, extra, user_name);
-	xfree(extra);
-			
-	rc = mysql_db_query(mysql_conn->acct_mysql_db, query);
-	xfree(query);
-	if(rc != SLURM_SUCCESS) {
-		error("Couldn't remove assocs");
+	if(!_remove_common(mysql_conn, DBD_REMOVE_ASSOCS, now,
+			   user_name, assoc_table, name_char, NULL)) {
 		list_destroy(ret_list);
-		ret_list = NULL;
+		xfree(name_char);
+		return NULL;
 	}
-	
-	if(mysql_conn->rollback) {
-		char *roll = mysql_conn->query;
-		mysql_conn->query = xstrdup_printf("");
-		if(roll) {
-			xstrfmtcat(mysql_conn->query, "%s", roll);
-			xfree(roll);
-		} 
-	}
-		
+	xfree(name_char);
+
 	return ret_list;
 #else
 	return NULL;
@@ -3125,7 +3276,7 @@ extern int clusteracct_storage_p_node_down(mysql_conn_t *mysql_conn,
 		"update %s set period_end=%d where cluster='%s' "
 		"and period_end=0 and node_name='%s';",
 		event_table, (event_time-1), cluster, node_ptr->name);
-	query = xstrdup_printf(
+	xstrfmtcat(query,
 		"insert into %s "
 		"(node_name, cluster, cpu_count, period_start, reason) "
 		"values ('%s', '%s', %u, %d, '%s');",

@@ -522,10 +522,13 @@ end_it:
 		if(admin_level != ACCT_ADMIN_NOTSET)
 			printf("  Admin Level     = %s\n", 
 			       acct_admin_level_str(admin_level));
+		xfree(user_str);
 	}
 
-	if(assoc_str)
+	if(assoc_str) {
 		printf(" Associations =\n%s", assoc_str);
+		xfree(assoc_str);
+	}
 
 	if(limit_set) {
 		printf(" Non Default Settings =\n");
@@ -556,6 +559,8 @@ end_it:
 		rc = acct_storage_g_add_associations(db_conn, my_uid, 
 						     assoc_list);
 	list_destroy(assoc_list);
+
+	xfree(default_acct);
 
 	return rc;
 }

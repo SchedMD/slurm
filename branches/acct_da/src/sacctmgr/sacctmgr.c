@@ -56,6 +56,10 @@ int input_words;	/* number of words of input permitted */
 int one_liner;		/* one record per line if =1 */
 int quiet_flag;		/* quiet=1, verbose=-1, normal=0 */
 int rollback_flag;       /* immediate execute=1, else = 0 */
+int association_changes = 0;
+int account_changes = 0;
+int cluster_changes = 0;
+int user_changes = 0;
 int changes_made = 0;
 List sacctmgr_action_list = NULL;
 List sacctmgr_user_list = NULL;
@@ -72,8 +76,6 @@ static void	_delete_it (int argc, char *argv[]);
 static int	_get_command (int *argc, char *argv[]);
 static void     _print_version( void );
 static int	_process_command (int argc, char *argv[]);
-static void     _handle_signal(int signo);
-static int      _setup_signals();
 static void     _close_db();
 static void     _handle_intr();
 static void	_usage ();
@@ -166,7 +168,6 @@ main (int argc, char *argv[])
 	my_uid = getuid();
 
 	xsignal(SIGINT, _handle_intr);
-//	_setup_signals();
 
 	if (input_field_count)
 		exit_flag = 1;
@@ -309,6 +310,23 @@ _process_command (int argc, char *argv[])
 			fprintf(stderr, "no input");
 	} else if (strncasecmp (argv[0], "all", 3) == 0) {
 		all_flag = 1;
+	} else if (strncasecmp (argv[0], "commit", 3) == 0) {
+		if(changes_made && rollback_flag)  {
+			acct_storage_g_close_connection(&db_conn, 1);
+			db_conn = acct_storage_g_get_connection(rollback_flag);
+			association_changes = 0;
+			account_changes = 0;
+			cluster_changes = 0;
+			user_changes = 0;
+			changes_made = 0;
+		}
+	} else if (strncasecmp (argv[0], "rollback", 4) == 0) {
+		if(changes_made && rollback_flag)  {
+			acct_storage_g_close_connection(&db_conn, 0);
+			db_conn = acct_storage_g_get_connection(rollback_flag);
+			do_rollback();
+			changes_made = 0;
+		}
 	} else if (strncasecmp (argv[0], "exit", 1) == 0) {
 		if (argc > 1) {
 			exit_code = 1;
@@ -588,123 +606,6 @@ static void _handle_intr()
 	}
 }
 
-static void _handle_signal(int signo)
-{
-	debug2("got signal %d", signo);
-
-	switch (signo) {
-	case SIGINT:
-		_handle_intr();
-		break;
-	default:
-		break;
-	}
-}
-
-static int _setup_signals()
-{
-	int sigarray[] = {
-		SIGINT,  SIGQUIT, /*SIGTSTP,*/ SIGCONT, SIGTERM,
-		SIGALRM, SIGUSR1, SIGUSR2, SIGPIPE, 0
-	};
-	int rc = SLURM_SUCCESS, i=0, signo;
-
-	while ((signo = sigarray[i++])) 
-		xsignal(signo, _handle_signal);
-
-	return rc;
-}
-
-/* static void _commit () */
-/* { */
-/* 	int rc = SLURM_SUCCESS; */
-/* 	sacctmgr_action_t *action = NULL; */
-
-/* 	if(!sacctmgr_action_list) { */
-/* 		error("No actions to commit"); */
-/* 		return; */
-/* 	} */
-	
-/* 	while((action = list_pop(sacctmgr_action_list))) { */
-/* 		/\* if(rc != SLURM_SUCCESS) { *\/ */
-/* /\* 			error("_commit: last command returned error."); *\/ */
-/* /\* 			break; *\/ */
-/* /\* 		} *\/ */
-/* 		switch(action->type) { */
-/* 		case SACCTMGR_ACTION_NOTSET: */
-/* 			error("This action does not have a type."); */
-/* 			break; */
-/* 		case SACCTMGR_USER_CREATE: */
-/* 			rc = acct_storage_g_add_users(db_conn, my_uid,  */
-/* 						      action->list);		 */
-/* 			break; */
-/* 		case SACCTMGR_ACCOUNT_CREATE: */
-/* 			rc = acct_storage_g_add_accounts(db_conn, my_uid,  */
-/* 							 action->list); */
-/* 			break; */
-/* 		case SACCTMGR_CLUSTER_CREATE: */
-/* 			rc = acct_storage_g_add_clusters(db_conn, my_uid,  */
-/* 							 action->list); */
-/* 			break; */
-/* 		case SACCTMGR_ASSOCIATION_CREATE: */
-/* 			rc = acct_storage_g_add_associations(db_conn, my_uid,  */
-/* 							     action->list); */
-/* 			break; */
-/* 		case SACCTMGR_USER_MODIFY: */
-/* 			rc = acct_storage_g_modify_users(db_conn, my_uid,  */
-/* 							 action->cond, */
-/* 							 action->rec); */
-/* 			break; */
-/* 		case SACCTMGR_USER_DELETE: */
-/* 			rc = acct_storage_g_remove_users(db_conn, my_uid,  */
-/* 							 action->cond); */
-/* 			break; */
-/* 		case SACCTMGR_ACCOUNT_MODIFY: */
-/* 			rc = acct_storage_g_modify_accounts(db_conn, my_uid,  */
-/* 							    action->cond, */
-/* 							    action->rec); */
-/* 			break; */
-/* 		case SACCTMGR_ACCOUNT_DELETE: */
-/* 			rc = acct_storage_g_remove_accounts(db_conn, my_uid,  */
-/* 							    action->cond); */
-/* 			break; */
-/* 		case SACCTMGR_CLUSTER_MODIFY: */
-/* 			rc = acct_storage_g_modify_clusters(db_conn, my_uid,  */
-/* 							    action->cond, */
-/* 							    action->rec); */
-/* 			break; */
-/* 		case SACCTMGR_CLUSTER_DELETE: */
-/* 			rc = acct_storage_g_remove_clusters(db_conn, my_uid,  */
-/* 							    action->cond); */
-/* 			break; */
-/* 		case SACCTMGR_ASSOCIATION_MODIFY: */
-/* 			rc = acct_storage_g_modify_associations(db_conn, my_uid,  */
-/* 								action->cond, */
-/* 								action->rec); */
-/* 			break; */
-/* 		case SACCTMGR_ASSOCIATION_DELETE: */
-/* 			rc = acct_storage_g_remove_associations( */
-/* 				db_conn, my_uid,  */
-/* 				action->cond); */
-/* 			break; */
-/* 		case SACCTMGR_COORD_CREATE: */
-/* 			rc = acct_storage_g_add_coord(db_conn, my_uid,  */
-/* 						      action->rec, */
-/* 						      action->cond); */
-/* 			break; */
-/* 		case SACCTMGR_COORD_DELETE: */
-/* 			rc = acct_storage_g_remove_coord(db_conn, my_uid,  */
-/* 							 action->rec, */
-/* 							 action->cond); */
-/* 			break;	 */
-/* 		default: */
-/* 			error("unknown action %d", action->type); */
-/* 			break; */
-/* 		} */
-/* 		destroy_sacctmgr_action(action); */
-/* 	} */
-/* } */
-
 /* _usage - show the valid sacctmgr commands */
 void _usage () {
 	printf ("\
@@ -730,6 +631,7 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
      add <ENTITY> <SPECS>     add entity                                   \n\
      associations             when using show/list will list the           \n\
                               associations asspciated with the entity.     \n\
+     commit                   commit current updates                       \n\
      delete <ENTITY> <SPECS>  delete the specified entity(s)               \n\
      exit                     terminate sacctmgr                           \n\
      help                     print this description of use.               \n\
@@ -741,6 +643,7 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
      oneliner                 report output one record per line.           \n\
      quiet                    print no messages other than error messages. \n\
      quit                     terminate this command.                      \n\
+     rollback                 rollback current updates                    \n\
      show                     same as list                                 \n\
      verbose                  enable detailed logging.                     \n\
      version                  display tool version number.                 \n\

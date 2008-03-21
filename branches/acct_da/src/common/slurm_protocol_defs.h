@@ -204,10 +204,7 @@ typedef enum {
 
 	RESPONSE_FORWARD_FAILED = 9001,
 
-	ACCOUNTING_UPDATE_ASSOCS = 10001,
-	ACCOUNTING_UPDATE_USERS,
-	ACCOUNTING_REMOVE_ASSOCS,
-	ACCOUNTING_REMOVE_USERS
+	ACCOUNTING_UPDATE_MSG = 10001,
 
 } slurm_msg_type_t;
 
@@ -719,17 +716,7 @@ typedef struct slurm_node_registration_status_msg {
 \*****************************************************************************/
 
 typedef struct {
-	uint32_t id_count;
-	uint32_t *ids;
-} accounting_remove_assocs_msg_t;
-
-typedef struct {
-	uint32_t name_count;
-	char **names;
-} accounting_remove_users_msg_t;
-
-typedef struct {
-	List update_list;
+	List update_list; /* of type acct_update_object_t *'s */
 } accounting_update_msg_t;
 
 typedef struct slurm_ctl_conf slurm_ctl_conf_info_msg_t;
@@ -850,10 +837,6 @@ void inline slurm_free_node_select_msg(
 		node_info_select_request_msg_t *msg);
 void inline slurm_free_job_notify_msg(job_notify_msg_t * msg);
 
-void inline slurm_free_accounting_remove_assocs_msg(
-	accounting_remove_assocs_msg_t *msg);
-void inline slurm_free_accounting_remove_users_msg(
-	accounting_remove_users_msg_t *msg);
 void inline slurm_free_accounting_update_msg(accounting_update_msg_t *msg);
 
 extern int slurm_free_msg_data(slurm_msg_type_t type, void *data);

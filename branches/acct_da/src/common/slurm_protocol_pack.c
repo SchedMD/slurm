@@ -344,19 +344,9 @@ static void _pack_will_run_response_msg(will_run_response_msg_t *msg, Buf buffer
 static int  _unpack_will_run_response_msg(will_run_response_msg_t ** msg_ptr, 
 					  Buf buffer);
 
-static void _pack_accounting_remove_assocs_msg(
-	accounting_remove_assocs_msg_t *msg, Buf buffer);
-static int _unpack_accounting_remove_assocs_msg(
-	accounting_remove_assocs_msg_t **msg, Buf buffer);
-static void _pack_accounting_remove_users_msg(
-	accounting_remove_users_msg_t *msg, Buf buffer);
-static int _unpack_accounting_remove_users_msg(
-	accounting_remove_users_msg_t **msg, Buf buffer);
-static void _pack_accounting_update_msg(uint16_t type,
-				      accounting_update_msg_t *msg, Buf buffer);
-static int _unpack_accounting_update_msg(uint16_t type, 
-				       accounting_update_msg_t **msg,
-				       Buf buffer);
+static void _pack_accounting_update_msg(accounting_update_msg_t *msg, Buf buffer);
+static int _unpack_accounting_update_msg(accounting_update_msg_t **msg,
+					 Buf buffer);
 
 /* pack_header
  * packs a slurm protocol header that proceeds every slurm message
@@ -741,17 +731,9 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 		_pack_set_debug_level_msg(
 			(set_debug_level_msg_t *)msg->data, buffer);
 		break;
-	case ACCOUNTING_REMOVE_ASSOCS:
-		_pack_accounting_remove_assocs_msg(
-			(accounting_remove_assocs_msg_t *)msg->data, buffer);
-	case ACCOUNTING_REMOVE_USERS:
-		_pack_accounting_remove_users_msg(
-			(accounting_remove_users_msg_t *)msg->data, buffer);
-		break;
-	case ACCOUNTING_UPDATE_ASSOCS:
-	case ACCOUNTING_UPDATE_USERS:
+	case ACCOUNTING_UPDATE_MSG:
 		_pack_accounting_update_msg(
-			msg->msg_type, (accounting_update_msg_t *)msg->data,
+			(accounting_update_msg_t *)msg->data,
 			buffer);
 		break;
 	default:
@@ -1105,17 +1087,9 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 		rc = _unpack_set_debug_level_msg(
 			(set_debug_level_msg_t **)&(msg->data), buffer);
 		break;
-	case ACCOUNTING_REMOVE_ASSOCS:
-		_unpack_accounting_remove_assocs_msg(
-			(accounting_remove_assocs_msg_t **)msg->data, buffer);
-	case ACCOUNTING_REMOVE_USERS:
-		_unpack_accounting_remove_users_msg(
-			(accounting_remove_users_msg_t **)msg->data, buffer);
-		break;
-	case ACCOUNTING_UPDATE_ASSOCS:
-	case ACCOUNTING_UPDATE_USERS:
+	case ACCOUNTING_UPDATE_MSG:
 		_unpack_accounting_update_msg(
-			msg->msg_type, (accounting_update_msg_t **)&msg->data,
+			(accounting_update_msg_t **)&msg->data,
 			buffer);
 		break;
 	default:
@@ -4756,101 +4730,13 @@ _unpack_will_run_response_msg(will_run_response_msg_t ** msg_ptr, Buf buffer)
 	return SLURM_ERROR;
 }
 
-static void _pack_accounting_remove_assocs_msg(
-	accounting_remove_assocs_msg_t *msg, Buf buffer)
-{
-	int i;
-
-	pack32(msg->id_count, buffer);
-	for (i=0; i<msg->id_count; i++) {
-		pack32(msg->ids[i], buffer);
-	}
-}
-static int _unpack_accounting_remove_assocs_msg(
-	accounting_remove_assocs_msg_t **msg, Buf buffer)
-{
-	int i;
-	accounting_remove_assocs_msg_t *msg_ptr;
-
-	msg_ptr = xmalloc(sizeof(accounting_remove_assocs_msg_t));
-	*msg = msg_ptr;
-
-	safe_unpack32(&msg_ptr->id_count, buffer);
-	if (msg_ptr->id_count > 16384)
-		goto unpack_error;
-	msg_ptr->ids = xmalloc(sizeof(uint32_t) * msg_ptr->id_count);
-	for (i=0; i<msg_ptr->id_count; i++) {
-		safe_unpack32(&msg_ptr->ids[i], buffer);
-	}
-
-	return SLURM_SUCCESS;
-
-unpack_error:
-	xfree(msg_ptr->ids);
-	xfree(msg_ptr);
-	*msg = NULL;
-	return SLURM_ERROR;
-}
-
-static void _pack_accounting_remove_users_msg(
-	accounting_remove_users_msg_t *msg, Buf buffer)
-{
-	int i = 0;
-
-	pack32(msg->name_count, buffer);
-	for (i=0; i<msg->name_count; i++)
-		packstr(msg->names[i], buffer);
-}
-
-static int _unpack_accounting_remove_users_msg(
-	accounting_remove_users_msg_t **msg, Buf buffer)
-{
-	int i;
-	uint32_t uint32_tmp;
-	accounting_remove_users_msg_t *msg_ptr;
-
-	msg_ptr = xmalloc(sizeof(accounting_remove_users_msg_t));
-	*msg = msg_ptr;
-	safe_unpack32(&msg_ptr->name_count, buffer);
-	if (msg_ptr->name_count > 16384)
-		goto unpack_error;
-	msg_ptr->names = xmalloc(sizeof(char *) * msg_ptr->name_count);
-	for (i=0; i<msg_ptr->name_count; i++) {
-		safe_unpackstr_xmalloc(&msg_ptr->names[i], &uint32_tmp, 
-				       buffer);
-	}
-	return SLURM_SUCCESS;
-unpack_error:
-	for (i=0; i<msg_ptr->name_count; i++)
-		xfree(msg_ptr->names[i]);
-	xfree(msg_ptr->names);
-	xfree(msg_ptr);
-	*msg = NULL;
-	return SLURM_ERROR;
-}
-
-static void _pack_accounting_update_msg(uint16_t type, 
-					accounting_update_msg_t *msg,
+static void _pack_accounting_update_msg(accounting_update_msg_t *msg,
 					Buf buffer)
 {
 	uint32_t count = 0;
 	ListIterator itr = NULL;
-	void *rec = NULL;
+	acct_update_object_t *rec = NULL;
 
-	void (*pack_rec) (void *object, Buf buffer);
-
-	switch(type) {
-	case ACCOUNTING_UPDATE_ASSOCS:
-		pack_rec = pack_acct_association_rec;
-		break;
-	case ACCOUNTING_UPDATE_USERS:
-		pack_rec = pack_acct_user_rec;
-		break;
-	default:
-		fatal("unknown accounting_update_msg %u", type); 
-		return;
-	}
-	
 	if(msg->update_list)
 		count = list_count(msg->update_list);
 
@@ -4859,45 +4745,27 @@ static void _pack_accounting_update_msg(uint16_t type,
 	if(count) {
 		itr = list_iterator_create(msg->update_list);
 		while((rec = list_next(itr))) {
-			(*(pack_rec))(rec, buffer);
+			pack_acct_update_object(rec, buffer);
 		}
 		list_iterator_destroy(itr);
 	}
 }
 
-static int _unpack_accounting_update_msg(uint16_t type, 
-					 accounting_update_msg_t **msg,
+static int _unpack_accounting_update_msg(accounting_update_msg_t **msg,
 					 Buf buffer)
 {
 	uint32_t count = 0;
 	int i = 0;
 	accounting_update_msg_t *msg_ptr =
 		xmalloc(sizeof(accounting_update_msg_t));
-	void *rec = NULL;
-
-	int (*unpack_rec) (void **object, Buf buffer);
-	void (*destroy_rec) (void *object);
+	acct_update_object_t *rec = NULL;
 
 	*msg = msg_ptr;
 
-	switch(type) {
-	case ACCOUNTING_UPDATE_ASSOCS:
-		unpack_rec = unpack_acct_association_rec;
-		destroy_rec = destroy_acct_association_rec;
-		break;
-	case ACCOUNTING_UPDATE_USERS:
-		unpack_rec = unpack_acct_user_rec;
-		destroy_rec = destroy_acct_user_rec;
-		break;
-	default:
-		fatal("unknown accounting_update_msg %u", type); 
-		return SLURM_ERROR;
-	}
-	
 	safe_unpack32(&count, buffer);
-	msg_ptr->update_list = list_create((*(destroy_rec)));
+	msg_ptr->update_list = list_create(destroy_acct_update_object);
 	for(i=0; i<count; i++) {
-		if(((*(unpack_rec))(&rec, buffer)) == SLURM_ERROR)
+		if((unpack_acct_update_object(&rec, buffer)) == SLURM_ERROR)
 			goto unpack_error;
 		list_append(msg_ptr->update_list, rec);
 	}
