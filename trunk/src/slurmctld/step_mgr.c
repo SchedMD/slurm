@@ -81,6 +81,8 @@ static hostlist_t _step_range_to_hostlist(struct step_record *step_ptr,
 static int _step_hostname_to_inx(struct step_record *step_ptr,
 				char *node_name);
 static void _step_dealloc_lps(struct step_record *step_ptr);
+
+
 /* 
  * create_step_record - create an empty step_record for the specified job.
  * IN job_ptr - pointer to job table entry to have step record added
@@ -98,7 +100,7 @@ create_step_record (struct job_record *job_ptr)
 	last_job_update = time(NULL);
 	step_ptr->job_ptr = job_ptr; 
 	step_ptr->step_id = (job_ptr->next_step_id)++;
-	step_ptr->start_time = time ( NULL ) ;
+	step_ptr->start_time = time(NULL) ;
 	step_ptr->jobacct = jobacct_gather_g_create(NULL);
 	step_ptr->ckpt_path = NULL;
 	if (list_append (job_ptr->step_list, step_ptr) == NULL)

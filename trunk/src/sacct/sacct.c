@@ -291,7 +291,7 @@ int main(int argc, char **argv)
 			do_dump();
 		break;
 	case SACCT_EXPIRE:
-		do_expire();
+		do_expire(0);
 		break;
 	case SACCT_FDUMP:
 		if(get_data() == SLURM_ERROR)

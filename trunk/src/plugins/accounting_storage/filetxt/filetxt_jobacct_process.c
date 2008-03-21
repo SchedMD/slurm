@@ -1407,8 +1407,7 @@ extern void filetxt_jobacct_process_archive(List selected_parts,
 	fflush(new_logfile);	/* Flush the buffers before forking */
 	fflush(fd);
 
-	file_err = reconfigure_slurmctld();
-	
+	file_err = slurm_reconfigure();
 	if (file_err) {
 		file_err = 1;
 		fprintf(stderr, "Error: Attempt to reconfigure "
