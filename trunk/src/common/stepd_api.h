@@ -197,7 +197,7 @@ pid_t stepd_daemon_pid(int fd);
  * Returns SLURM_SUCCESS is successful.  On error returns SLURM_ERROR
  * and sets errno.
  */
-int stepd_suspend(int fd);
+int stepd_suspend(int *fd, int size, uint32_t jobid);
 
 /*
  * Resume execution of the job step that has been suspended by a
