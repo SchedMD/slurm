@@ -74,7 +74,7 @@ am__strip_dir = `echo $$p | sed -e 's|^.*/||'`;
 am__installdirs = "$(DESTDIR)$(libdir)"
 libLTLIBRARIES_INSTALL = $(INSTALL)
 LTLIBRARIES = $(lib_LTLIBRARIES) $(noinst_LTLIBRARIES)
-libpmi_la_LIBADD =
+libpmi_la_DEPENDENCIES = $(top_builddir)/src/api/libslurm.la
 am_libpmi_la_OBJECTS = pmi.lo
 libpmi_la_OBJECTS = $(am_libpmi_la_OBJECTS)
 libpmi_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
@@ -372,7 +372,7 @@ libslurm_la_LDFLAGS = \
         $(OTHER_FLAGS)
 
 libpmi_la_SOURCES = pmi.c
-#libpmi_la_LIBADD = $(convenience_libs)
+libpmi_la_LIBADD = $(top_builddir)/src/api/libslurm.la
 libpmi_la_LDFLAGS = $(LIB_LDFLAGS) \
         $(PMI_OTHER_FLAGS)
 
