@@ -196,9 +196,10 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 1.2.26
 =========================
- -- Export "slurm_*" symbols in libpmi.
  -- Correct number of sockets/cores/threads reported by slurmd (from
     Par Andersson, National Supercomputer Centre, Sweden).
+ -- Update libpmi linking so that libslurm is not required for PMI use
+    (from Steven McDougal, SiCortex).
 
 * Changes in SLURM 1.2.25
 =========================
