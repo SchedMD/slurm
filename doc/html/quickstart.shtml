@@ -298,7 +298,7 @@ host and port information at startup. (The system administrator can add
 these option to the mpicc and mpif77 commands directly, so the user will not 
 need to bother). For example:
 <pre>
-$ mpicc -L&lt;path_to_slurm_lib&gt; -lpmi ...
+$ mpicc -L&lt;path_to_slurm_lib&gt; -lpmi -lslurm ...
 $ srun -n20 a.out
 </pre>
 <b>NOTES:</b>
@@ -361,7 +361,7 @@ host and port information at startup. (The system administrator can add
 these option to the mpicc and mpif77 commands directly, so the user will not
 need to bother).  <b>Do not use SLURM's MVAPICH plugin for MVAPICH2.</b>
 <pre>
-$ mpicc -L&lt;path_to_slurm_lib&gt; -lpmi ...
+$ mpicc -L&lt;path_to_slurm_lib&gt; -lpmi -lslurm ...
 $ srun -n16 --mpi=none a.out
 </pre>
 
