@@ -123,7 +123,6 @@ typedef struct slurmd_config {
 	uint16_t	use_pam;
 	uint16_t	use_cpusets;	/* Use cpusets, if available       */
 	uint16_t	propagate_prio;	/* PropagatePrioProcess flag       */
-	uint16_t        fast_schedule;	/* use config from file/slurmctld  */
 } slurmd_conf_t;
 
 extern slurmd_conf_t * conf;
