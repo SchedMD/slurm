@@ -2253,6 +2253,7 @@ _rpc_signal_job(slurm_msg_t *msg)
 	}
 }
 
+#define NUM_PARALLEL_SUSPEND 8
 /*
  * Send a job suspend/resume request through the appropriate slurmstepds for 
  * each job step belonging to a given job allocation.
@@ -2267,15 +2268,15 @@ _rpc_suspend_job(slurm_msg_t *msg)
 	ListIterator i;
 	step_loc_t *stepd;
 	int step_cnt  = 0;  
-	int fd, rc = SLURM_SUCCESS;
+	int rc = SLURM_SUCCESS;
 
 	if (req->op != SUSPEND_JOB && req->op != RESUME_JOB) {
 		error("REQUEST_SUSPEND: bad op code %u", req->op);
 		rc = ESLURM_NOT_SUPPORTED;
 		goto fini;
 	}
-	debug("_rpc_suspend_job jobid=%u uid=%d", 
-		req->job_id, req_uid);
+	debug("_rpc_suspend_job jobid=%u uid=%d action=%s", req->job_id,
+		req_uid, req->op == SUSPEND_JOB ? "suspend" : "resume");
 	job_uid = _get_job_uid(req->job_id);
 	if (job_uid < 0)
 		goto no_job;
@@ -2291,40 +2292,61 @@ _rpc_suspend_job(slurm_msg_t *msg)
 
 	/*
 	 * Loop through all job steps and call stepd_suspend or stepd_resume
-	 * as appropriate.
+	 * as appropriate. Since the "suspend" action contains a 'sleep 1',
+	 * suspend multiple jobsteps in parallel.
 	 */
 	steps = stepd_available(conf->spooldir, conf->node_name);
 	i = list_iterator_create(steps);
-	while ((stepd = list_next(i))) {
-		if (stepd->jobid != req->job_id) {
-			/* multiple jobs expected on shared nodes */
-			debug3("Step from other job: jobid=%u (this jobid=%u)",
-			      stepd->jobid, req->job_id);
-			continue;
-		}
-		step_cnt++;
 
-		fd = stepd_connect(stepd->directory, stepd->nodename,
-				   stepd->jobid, stepd->stepid);
-		if (fd == -1) {
-			debug3("Unable to connect to step %u.%u",
-			       stepd->jobid, stepd->stepid);
-			continue;
+	while (1) {
+		int x, fdi, fd[NUM_PARALLEL_SUSPEND];
+		fdi = 0;
+		while ((stepd = list_next(i))) {
+			if (stepd->jobid != req->job_id) {
+				/* multiple jobs expected on shared nodes */
+				debug3("Step from other job: jobid=%u (this jobid=%u)",
+				      stepd->jobid, req->job_id);
+				continue;
+			}
+			step_cnt++;
+
+			fd[fdi] = stepd_connect(stepd->directory,
+						stepd->nodename, stepd->jobid,
+						stepd->stepid);
+			if (fd[fdi] == -1) {
+				debug3("Unable to connect to step %u.%u",
+			       		stepd->jobid, stepd->stepid);
+				continue;
+			}
+			
+
+			fdi++;
+			if (fdi >= NUM_PARALLEL_SUSPEND)
+				break;
 		}
+		/* check for open connections */
+		if (fdi == 0)
+			break;
 
 		if (req->op == SUSPEND_JOB) {
-			debug2("Suspending job step %u.%u",
-			       stepd->jobid, stepd->stepid);
-			if (stepd_suspend(fd) < 0)
-				debug("  suspend failed: %m", stepd->jobid);
+			stepd_suspend(fd, fdi, req->job_id);
 		} else {
-			debug2("Resuming job step %u.%u",
-			       stepd->jobid, stepd->stepid);
-			if (stepd_resume(fd) < 0)
-				debug("  resume failed: %m", stepd->jobid);
+			/* "resume" remains a serial action (for now) */
+			for (x = 0; x < fdi; x++) {
+				debug2("Resuming job %u (cached step count %d)",
+					req->job_id, x);
+				if (stepd_resume(fd[x]) < 0)
+					debug("  resume failed: %m");
+			}
 		}
+		for (x = 0; x < fdi; x++)
+			/* fd may have been closed by stepd_suspend */
+			if (fd[x] != -1)
+				close(fd[x]);
 
-		close(fd);
+		/* check for no more jobs */
+		if (fdi < NUM_PARALLEL_SUSPEND)
+			break;
 	}
 	list_iterator_destroy(i);
 	list_destroy(steps);
@@ -2339,7 +2361,8 @@ _rpc_suspend_job(slurm_msg_t *msg)
 	 *  At this point, if connection still open, we send controller
 	 *  a reply.
 	 */
- fini:	if (msg->conn_fd >= 0) {
+fini:
+	if (msg->conn_fd >= 0) {
 		slurm_send_rc_msg(msg, rc);
 		if (slurm_close_accepted_conn(msg->conn_fd) < 0)
 			error ("_rpc_signal_job: close(%d): %m", msg->conn_fd);
