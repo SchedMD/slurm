@@ -2234,7 +2234,8 @@ _wait_for_all_windows(fed_tableinfo_t *tableinfo)
 			if (err != SLURM_SUCCESS) {
 				error("Window %hu adapter %s did not become"
 				      " free within %d seconds",
-				      lid, tableinfo->table[i]->window_id, i);
+				      lid, tableinfo->table[i]->window_id, 
+				      retry);
 				rc = err;
 				retry = 2;
 			}
