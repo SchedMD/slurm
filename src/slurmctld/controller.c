@@ -481,7 +481,6 @@ int main(int argc, char *argv[])
 	/* Plugins are needed to purge job/node data structures,
 	 * unplug after other data structures are purged */
 	g_slurm_jobcomp_fini();
-	slurm_acct_storage_fini();
 	slurm_jobacct_gather_fini();
 	slurm_sched_fini();
 	slurm_select_fini();
@@ -496,7 +495,6 @@ int main(int argc, char *argv[])
 	slurm_api_clear_config();
 	sleep(2);
 #else
-	slurm_acct_storage_fini();
 	/* Give REQUEST_SHUTDOWN a chance to get propagated, 
 	 * up to 3 seconds. */
 	for (i=0; i<3; i++) {
