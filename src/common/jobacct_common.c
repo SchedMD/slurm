@@ -70,10 +70,13 @@ static void _pack_sacct(sacct_t *sacct, Buf buffer)
 	int mult = 1000000;
 
 	if(!sacct) {
-		for(i=0; i<12; i++)
+		for(i=0; i<8; i++)
 			pack32((uint32_t) 0, buffer);
-		for(i=0; i<4; i++)
+
+		for(i=0; i<4; i++) {	/* _pack_jobacct_id() */
+			pack32((uint32_t) 0, buffer);
 			pack16((uint16_t) 0, buffer);
+		}
 		return;
 	} 
 	pack32((uint32_t)sacct->max_vsize, buffer);
@@ -84,6 +87,7 @@ static void _pack_sacct(sacct_t *sacct, Buf buffer)
 	pack32((uint32_t)(sacct->ave_pages*mult), buffer);
 	pack32((uint32_t)(sacct->min_cpu*mult), buffer);
 	pack32((uint32_t)(sacct->ave_cpu*mult), buffer);
+
 	_pack_jobacct_id(&sacct->max_vsize_id, buffer);
 	_pack_jobacct_id(&sacct->max_rss_id, buffer);
 	_pack_jobacct_id(&sacct->max_pages_id, buffer);
