@@ -866,8 +866,6 @@ static void _create_agent(void)
 	if (agent_tid == 0) {
 		pthread_attr_t agent_attr;
 		slurm_attr_init(&agent_attr);
-		pthread_attr_setdetachstate(&agent_attr, 
-					    PTHREAD_CREATE_DETACHED);
 		if (pthread_create(&agent_tid, &agent_attr, _agent, NULL) ||
 		    (agent_tid == 0))
 			fatal("pthread_create: %m");
@@ -886,22 +884,24 @@ static void _shutdown_agent(void)
 
 	if (agent_tid) {
 		agent_shutdown = time(NULL);
-		pthread_cond_broadcast(&agent_cond);
-		for (i=0; ((i<10) && agent_tid); i++) {
-			usleep(10000);
+		for (i=0; i<50; i++) {	/* up to 5 secs total */
 			pthread_cond_broadcast(&agent_cond);
+			usleep(100000);	/* 0.1 sec per try */
 			if (pthread_kill(agent_tid, SIGUSR1))
-				agent_tid = 0;
+				break;
+
 		}
-		if (agent_tid) {
-			/* Agent thread is not ending quickly, perhaps due to 
-			 * communication problems with slurmdbd. Cancel it and 
-			 * join before returning or we could remove the plugin
-			 * and leave the agent without valid data */
-			debug("slurmdbd: agent failed to shutdown gracefully");
+		/* On rare occasions agent thread may not end quickly, 
+		 * perhaps due to communication problems with slurmdbd. 
+		 * Cancel it and join before returning or we could remove 
+		 * and leave the agent without valid data */
+		if (pthread_kill(agent_tid, 0) == 0) {
+			error("slurmdbd: agent failed to shutdown gracefully");
+			error("slurmdbd: unable to save pending requests");
 			pthread_cancel(agent_tid);
-			pthread_join(agent_tid,  NULL);
 		}
+		pthread_join(agent_tid,  NULL);
+		agent_tid = 0;
 	}
 }
 
