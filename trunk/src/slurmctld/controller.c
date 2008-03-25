@@ -443,6 +443,8 @@ int main(int argc, char *argv[])
 		if (slurmctld_config.resume_backup == false)
 			break;
 		recover = 2;
+
+		/* Save any pending state save RPCs */
 		acct_storage_g_close_connection(&acct_db_conn, 1);
 		assoc_mgr_fini();
 	}
@@ -453,8 +455,6 @@ int main(int argc, char *argv[])
 	if (unlink(slurmctld_conf.slurmctld_pidfile) < 0)
 		verbose("Unable to remove pidfile '%s': %m",
 			slurmctld_conf.slurmctld_pidfile);
-
-	slurm_acct_storage_fini();	/* Save pending message traffic */
 
 #ifdef MEMORY_LEAK_DEBUG
 	/* This should purge all allocated memory,   *\
@@ -481,6 +481,7 @@ int main(int argc, char *argv[])
 	/* Plugins are needed to purge job/node data structures,
 	 * unplug after other data structures are purged */
 	g_slurm_jobcomp_fini();
+	slurm_acct_storage_fini();
 	slurm_jobacct_gather_fini();
 	slurm_sched_fini();
 	slurm_select_fini();
