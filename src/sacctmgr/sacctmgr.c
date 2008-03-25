@@ -51,7 +51,7 @@ char **history = NULL;
 
 char *command_name;
 int all_flag;		/* display even hidden partitions */
-int exit_code;		/* scontrol's exit code, =1 on any error at any time */
+int exit_code;		/* sacctmgr's exit code, =1 on any error at any time */
 int exit_flag;		/* program to terminate if =1 */
 int input_words;	/* number of words of input permitted */
 int one_liner;		/* one record per line if =1 */
@@ -644,37 +644,62 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
      oneliner                 report output one record per line.           \n\
      quiet                    print no messages other than error messages. \n\
      quit                     terminate this command.                      \n\
-     rollback                 rollback current updates                    \n\
+     rollback                 rollback current updates                     \n\
      show                     same as list                                 \n\
      verbose                  enable detailed logging.                     \n\
      version                  display tool version number.                 \n\
      !!                       Repeat the last command entered.             \n\
                                                                            \n\
-  <ENTITY> may be \"user\", \"cluster\", \"account\", or \"association\".  \n\
+  <ENTITY> may be \"user\", \"cluster\", or \"account\".                   \n\
                                                                            \n\
   <SPECS> are different for each command entity pair.                      \n\
-       list user          - Names=, DefaultAccounts=, QosLevel=,      \n\
-                            and AdminLevel=                                \n\
-       add user           - Names=, DefaultAccount=, QosLevel=,       \n\
-                            and AdminLevel=                                \n\
-       modify user        - Names=, DefaultAccounts=, QosLevel=,      \n\
-                            and AdminLevel=                                \n\
-       delete user        - Names=, DefaultAccounts=, QosLevel=,      \n\
-                            and AdminLevel=                                \n\
+       list user          - Names=, DefaultAccounts=, QosLevel=,           \n\
+                            ShowAssocs, and AdminLevel=                    \n\
+       add user           - Names=, DefaultAccount=, QosLevel=,            \n\
+                            AdminLevel=, QosLevel=, Fairshare=, MaxJobs=,  \n\
+                            MaxNodes=, MaxWall=, and MaxCPUSecs=           \n\
+                            (where options) Descriptions=, Organizations=, \n\
+                            QosLevel=, Names=, Fairshare=, MaxJobs=,       \n\
+                            MaxNodes=, MaxWall=, and MaxCPUSecs=           \n\
+       modify user        - (set options) DefaultAccount=, AdminLevel=,    \n\
+                            QosLevel=, Fairshare=, MaxJobs=,               \n\
+                            MaxNodes=, MaxWall=, and MaxCPUSecs=           \n\
+                            (where options) DefaultAccounts=, AdminLevel=, \n\
+                            QosLevel=, Names=, Fairshare=, MaxJobs=,       \n\
+                            MaxNodes=, MaxWall=, and MaxCPUSecs=           \n\
+       delete user        - Names=, DefaultAccounts=, AdminLevel=,         \n\
+                            QosLevel=, Names=, Fairshare=, MaxJobs=,       \n\
+                            MaxNodes=, MaxWall=, and MaxCPUSecs=           \n\
                                                                            \n\
-       list account       - Names=, Descriptions=, QosLevel=,         \n\
-                            and Organizations=                             \n\
-       add account        - Names=, Descriptions=, QosLevel=,         \n\
-                            and Organizations=                             \n\
-       modify account     - Names=, Descriptions=, QosLevel=,         \n\
-                            and Organizations=                             \n\
-       delete account     - Names=, Descriptions=, QosLevel=,         \n\
-                            and Organizations=                             \n\
+       list account       - Names=, Descriptions=, Organizations=,         \n\
+                            QosLevel=, Fairshare=, MaxJobs=,               \n\
+                            MaxNodes=, MaxWall=, and MaxCPUSecs=           \n\
+       add account        - Names=, Description=, Oranization=,            \n\
+                            ShowAssocs, QosLevel=, Fairshare=, MaxJobs=,   \n\
+                            MaxNodes=, MaxWall=, and MaxCPUSecs=           \n\
+                            (where options) Descriptions=, Organizations=, \n\
+                            QosLevel=, Names=, Fairshare=, MaxJobs=,       \n\
+                            MaxNodes=, MaxWall=, and MaxCPUSecs=           \n\
+       modify account     - (set options) Description=, Organization=,     \n\
+                            QosLevel=, Fairshare=, MaxJobs=,               \n\
+                            MaxNodes=, MaxWall=, and MaxCPUSecs=           \n\
+                            (where options) Descriptions=, Organizations=, \n\
+                            QosLevel=, Names=, Fairshare=, MaxJobs=,       \n\
+                            MaxNodes=, MaxWall=, and MaxCPUSecs=           \n\
+       delete account     - Names=, Descriptions=, QosLevel=,              \n\
+                            Organizations=, Fairshare=, MaxJobs=,          \n\
+                            MaxNodes=, MaxWall=, and MaxCPUSecs=           \n\
                                                                            \n\
-       list cluster       - Names=                                         \n\
-       add cluster        - Name=, and InterfaceNode=                      \n\
-       modify cluster     - Name=, and InterfaceNode=                      \n\
-       delete cluster     - Names=                                         \n\
+       list cluster       - Names=, Fairshare=, MaxJobs=, MaxNodes=,       \n\
+                            MaxWall=, and MaxCPUSecs=                      \n\
+       add cluster        - Name=, Fairshare=, MaxJobs=, MaxNodes=,        \n\
+                            MaxWall=, and MaxCPUSecs=                      \n\
+       modify cluster     - (set options) Fairshare=, MaxJobs=, MaxNodes=, \n\
+                            MaxWall=, and MaxCPUSecs=                      \n\
+                            (where options) Name=, Fairshare=, MaxJobs=,   \n\
+                            MaxNodes=, MaxWall=, and MaxCPUSecs=           \n\
+       delete cluster     - Names=, Fairshare=, MaxJobs=,                  \n\
+                            MaxNodes=, MaxWall=, and MaxCPUSecs=           \n\
                                                                            \n\
                                                                            \n\
   All commands entitys, and options are case-insensitive.               \n\n");

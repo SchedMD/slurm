@@ -43,7 +43,6 @@ This is equivalent to the \fBhide\fR command.
 .TP
 \fB\-i\fR, \fB\-\-immediate\fR
 Commit all changes immediately. Use with caution.
-This is equivalent to the \fBimmediate\fR command.
 
 .TP
 \fB\-o\fR, \fB\-\-oneliner\fR
@@ -56,9 +55,9 @@ Print no warning or informational messages, only error messages.
 This is equivalent to the \fBquiet\fR command.
 
 .TP
-\fB\-s\fR, \fB\-\-association\fR
+\fB\-s\fR, \fB\-\-associations\fR
 Show an association for entities displayed.
-This is equivalent to the \fBassociation\fR command.
+This is equivalent to the \fBassociations\fR command.
 
 .TP
 \fB\-v\fR, \fB\-\-verbose\fR
@@ -82,8 +81,8 @@ Display information about all entities including hidden or deleted ones.
 Add an entity.
 
 .TP
-\fBassociation\fR
-Show an association for entities displayed.
+\fBassociations\fR
+Show associations for entities displayed.
 
 .TP
 \fBcommit\fR
@@ -105,10 +104,6 @@ Display a description of sacctmgr options and commands.
 .TP
 \fBhide\fP
 Do not display information about hidden or deleted entities. 
-
-.TP
-\fBimmediate\fP
-Commit all changes immediately. Use with caution.
 
 .TP
 \fBlist\fR <\fIENTITY\fR> [<\fISPECS\fR>]
@@ -146,7 +141,7 @@ This is an independent command with no options meant for use in interactive mode
 
 .TP
 \fBversion\fP
-Display the version number of scontrol being executed.
+Display the version number of sacctmgr being executed.
 
 .TP
 \fB!!\fP
@@ -171,7 +166,8 @@ The entity used to group information consisting of four parameters:
 
 .TP
 \fIcluster\fP
-The \fIClusterName\fR parameter in the \fIslurm.conf\fR configuration file. 
+The \fIClusterName\fR parameter in the \fIslurm.conf\fR configuration
+file, used to differentiate accounts from on different machines. 
 
 .TP
 \fIuser\fR
