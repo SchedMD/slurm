@@ -73,7 +73,9 @@ errors generated?</a></li>
 <li><a href="#globus">Can SLURM be used with Globus?</li>
 <li><a href="#time_format">Can SLURM time output format include the year?</li>
 <li><a href="#file_limit">What causes the error 
-&quot;Unable to accept new connection: Too many open files&quot;?
+&quot;Unable to accept new connection: Too many open files&quot;?</li>
+<li><a href="#slurmd_log">Why does the setting of <i>SlurmdDebug</i> fail 
+to log job step information at the appropriate level?</li>
 </ol>
 
 <h2>For Users</h2>
@@ -876,7 +878,7 @@ Note there are RPMs available for both of these packages, named
 year?</b><br>
 The default SLURM time format output is <i>MM/DD-HH:MM:SS</i>. 
 Define &quot;ISO8601&quot; at SLURM build time to get the time format
-<i>YYY-MM-DDTHH:MM:SS</i>.
+<i>YYYY-MM-DDTHH:MM:SS</i>.
 Note that this change in format will break anything that parses 
 SLURM output expecting the old format (e.g. LSF, Maui or Moab).
 
@@ -887,8 +889,18 @@ the hard limit in order to process all of the standard input and output
 connections to the launched tasks. It is recommended that you set the
 open file hard limit to 8192 across the cluster.
 
+<p><a name="slurmd_log"><b>26. Why does the setting of <i>SlurmdDebug</i> 
+fail to log job step information at the appropriate level?</b><br>
+There are two programs involved here. One is <b>slurmd</b>, which is 
+a persistent daemon running at the desired debug level. The second 
+program is <b>slurmstep</b>, which executed the user job and its
+debug level is controlled by the user. Submitting the job with 
+an option of <i>--debug=#</i> will result in the desired level of 
+detail being logged in the <i>SlurmdLogFile</i> plus the output 
+of the program.
+
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 22 February 2008</p>
+<p style="text-align:center;">Last modified 25 March 2008</p>
 
 <!--#include virtual="footer.txt"-->
