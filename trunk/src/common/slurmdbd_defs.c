@@ -894,9 +894,14 @@ static void _shutdown_agent(void)
 				agent_tid = 0;
 		}
 		if (agent_tid) {
-			debug2("slurmdbd: agent failed to shutdown gracefully");
-		} else
-			agent_shutdown = 0;
+			/* Agent thread is not ending quickly, perhaps due to 
+			 * communication problems with slurmdbd. Cancel it and 
+			 * join before returning or we could remove the plugin
+			 * and leave the agent without valid data */
+			debug("slurmdbd: agent failed to shutdown gracefully");
+			pthread_cancel(agent_tid);
+			pthread_join(agent_tid,  NULL);
+		}
 	}
 }
 
