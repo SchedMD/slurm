@@ -250,9 +250,18 @@ This value must be specified.</li>
 <li><b>StorageUser</b>:
 Define the name of the user we are going to connect to the database
 with to store the job accounting data.</li>
-</ul>
+</ul><big><big><span style="font-weight: bold;">Tools</span></big></big><br><br>There are two tools available to work with accounting data,
+sacct and sacctmgr. Both of these tools will get or set data
+through the SlurmDBD daemon. 
+Sacct is used to generate accounting report for both running and 
+completed jobs.
+Sacctmgr is used to manage associations in the database: 
+add or remove clusters, add or remove users, etc.
+See the man pages for each command for more information.
 
-<h2>Database Configuration</h2>
+<br><br>Web interfaces with graphical output is currently under
+development and should be available in the summer of 2008.
+A tool to report node state information is also under development.<br><h2>Database Configuration</h2>
 
 <p>Accounting records are maintained based upon what we refer 
 to as an <i>Association</i>,
@@ -294,18 +303,7 @@ appropriate slurmctld and will be available to be used instantly. <br><br><big><
 <br><br>Node state information is also recorded in the database. 
 Whenever a node goes DOWN or becomes DRAINED that event is 
 logged along with the node's <i>Reason</i> field. 
-This can be used to generate various reports.<span style="font-weight: bold;"></span><span style="font-weight: bold;"></span><br><br><big><big><span style="font-weight: bold;">Tools</span></big></big><br><br>There are two tools available to work with accounting data,
-sacct and sacctmgr. Both of these tools will get or set data
-through the SlurmDBD daemon. 
-Sacct is used to generate accounting report for both running and 
-completed jobs.
-Sacctmgr is used to manage associations in the database: 
-add or remove clusters, add or remove users, etc.
-See the man pages for each command for more information.
-
-<br><br>Web interfaces with graphical output is currently under
-development and should be available in the summer of 2008.
-A tool to report node state information is also under development.<ul>
+This can be used to generate various reports.<span style="font-weight: bold;"></span><span style="font-weight: bold;"></span><br><br><big><big><span style="font-weight: bold;"><br></span></big></big><ul>
 
 
 <p style="text-align: center;">Last modified 25 March 2008</p>
