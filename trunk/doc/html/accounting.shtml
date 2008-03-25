@@ -1,6 +1,7 @@
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
-<html xmlns="http://www.w3.org/1999/xhtml"><head><!--#include virtual="header.txt"--></head>
-<body><h1>Accounting</h1><p>SLURM collects accounting information for every job and job step 
+<!--#include virtual="header.txt"-->
+
+<h1>Accounting</h1>
+<p>SLURM collects accounting information for every job and job step 
 executed. 
 Information is available about both currently executing jobs and 
 jobs which have already terminated and can be viewed using the 
@@ -250,61 +251,226 @@ This value must be specified.</li>
 <li><b>StorageUser</b>:
 Define the name of the user we are going to connect to the database
 with to store the job accounting data.</li>
-</ul><big><big><span style="font-weight: bold;">Tools</span></big></big><br><br>There are two tools available to work with accounting data,
-sacct and sacctmgr. Both of these tools will get or set data
-through the SlurmDBD daemon. 
+</ul>
+
+<h2>Tools</h2>
+
+<p>There are two tools available to work with accounting data,
+<b>sacct</b> and <b>sacctmgr</b>. 
+Both of these tools will get or set data through the SlurmDBD daemon. 
 Sacct is used to generate accounting report for both running and 
 completed jobs.
 Sacctmgr is used to manage associations in the database: 
 add or remove clusters, add or remove users, etc.
-See the man pages for each command for more information.
+See the man pages for each command for more information.</p>
 
-<br><br>Web interfaces with graphical output is currently under
+<p>Web interfaces with graphical output is currently under
 development and should be available in the summer of 2008.
-A tool to report node state information is also under development.<br><h2>Database Configuration</h2>
+A tool to report node state information is also under development.</p>
+
+<h2>Database Configuration</h2>
 
 <p>Accounting records are maintained based upon what we refer 
 to as an <i>Association</i>,
 which consists of four elements: cluster, account, and user names. For
 more flexibility in accounting the association can also include a
-partition name, but it is not necissary. Use the <i>sacctmgr</i>
+partition name, but it is not necessary. Use the <i>sacctmgr</i>
 command to create and manage these records. There is an order to set up
 accounting associations. You must define clusters before you add
-accounts and you must add accounts before you can add users. </p><p>When adding clusters to the system you only need to run... </p><p>&nbsp;&nbsp;&nbsp; <span style="font-family: Bitstream Charter;">sacctmgr add cluster Snowflake</span></p><p>To add accounts to clusters you can do something like this...</p><p>&nbsp;&nbsp;&nbsp; <span style="font-family: Bitstream Charter;">sacctmgr add account<span style="font-family: Bitstream Charter;"> </span>none,test Description="none" Organization="none" Cluster=Snowflake</span></p><p>This will add accounts <span style="font-style: italic;">none</span> and <span style="font-style: italic;">test </span>to cluster Snowflake
-&nbsp;If you have more clusters you want to add these accounts to you
+accounts and you must add accounts before you can add users. </p>
+
+<p>For example, to add a cluster named "snowflake" to the database
+execute this line:</p>
+<pre>
+sacctmgr add cluster snowflake
+</pre>
+
+<p>Add accounts "none" and "test" to cluster "snowflake" with an execute 
+line of this sort:</p>
+<pre>
+sacctmgr add account none,test Cluster=snowflake \
+  Description="none" Organization="none" 
+</pre>
+
+<p>If you have more clusters you want to add these accounts to you
 can either not specify a cluster, which will add the accounts to all
-clusters in the system, or common separate the cluster names you want
-to add to in the cluster option. &nbsp;As you may have noticed you can
-add many different accounts at the same time by common separating the
-names. &nbsp;You need to specify the Description of the account and the
-organization which it belongs. &nbsp;These terms can be used to display
-accounting reports later. &nbsp;Accounts may be arranged in a hierarchical fashion, for example accounts <i>chemistry</i> and <i>physics</i> may be 
-children of the account <i>science</i>. 
-The hierarchy may have an arbitrary depth. To do this one only needs to specify the <span style="font-style: italic;">parent='' </span>option to the add account line, for instance if you want to do the example above...</p><p style="font-family: Bitstream Charter;">sacctmgr add account science Description="science accounts" Organization=science<br>sacctmgr add account chemistry,physics parent=science Description="physical sciences" Organization=science<br></p><p>Now, to add users to accounts you can run...</p><p>&nbsp;&nbsp;&nbsp; <span style="font-family: Bitstream Charter;">sacctmgr add user da default=test <br></span></p><p>This
-will add user da to the system, and add associations to account test on
-all clusters test exists for user da. This will enable user da to run
-jobs in account test on those clusters. &nbsp;For instance if
-AccountingStorageEnforce=1 in the slurm.conf of Snowflake da would be
-allowed to run in account test, and any other ones we add him to in the
-future but not any other accounts. &nbsp;Account <span style="font-style: italic;">test</span> will be the default if he doesn't specify one in a srun line.&nbsp;</p><p>Partition
-names can also be added to an add user command with the
+clusters in the system, or comma separate the cluster names you want
+to add to in the cluster option.
+Note that multiple accounts can be added at the same at the same time 
+by comma separating the names. 
+Some Description of the account and the organization which it belongs
+must be specified. 
+These terms can be used later to generated accounting reports.
+Accounts may be arranged in a hierarchical fashion, for example accounts 
+<i>chemistry</i> and <i>physics</i> may be children of the account <i>science</i>. 
+The hierarchy may have an arbitrary depth. 
+To do this one only needs to specify the <i>parent='' </i>option in the add 
+account line.
+For the example above execute</p>
+<pre>
+sacctmgr add account science \
+   Description="science accounts" Organization=science
+sacctmgr add account chemistry,physics parent=science \
+   Description="physical sciences" Organization=science
+</pre>
+
+<p>Add users to accounts using similar syntax.
+For example, to permit user <i>da</i> to execute jobs on all clusters
+with a default account of <i>test</i> execute:</p>
+<pre>
+sacctmgr add user da default=test
+</pre>
+<p>If <b>AccountingStorageEnforce=1</b> is configured in the slurm.conf of 
+the cluster <i>snowflake</i> then user <i>da</i> would be
+allowed to run in account <i>test</i> and any other accounts added
+in the future.
+Any attepmt to use other accounts will result in the job being 
+aborted. 
+Account <i>test</i> will be the default if he doesn't specify one in a 
+srun line.</p>
+
+<p>Partition names can also be added to an "add user" command with the
 Partition='partitionname' option to specify an association specific to
-a slurm partition. &nbsp;</p><h2>Cluster Options</h2>When either adding or modifying a cluster these are the options you can use with sacctmgr:<ul><li><span style="font-weight: bold;">Name=:</span> Cluster name<span style="font-weight: bold;"></span></li><li><span style="font-weight: bold;">Fairshare=:</span> Used for determining priority (used in later development)</li><li><span style="font-weight: bold;">MaxJobs=:</span> Limit number of jobs a user can run in this account  (used in later development)</li><li><span style="font-weight: bold;">MaxNodes=: </span>Limit number of nodes a user can allocate in this account (used in later development)</li><li><span style="font-weight: bold;">MaxWall=: </span>Limit wall clock time a job can run (used in later development)</li><li><span style="font-weight: bold;">MaxCPUSecs=:</span> Limit cpu seconds a job can run (used in later development)</li></ul><h2>Account Options</h2>When either adding or modifying an account these are the options you can use with sacctmgr:<br><ul><li><span style="font-weight: bold;">Description=:</span> Description of the account. (Required when creating)</li><li><span style="font-weight: bold;">Organization=: </span>Organization of the account. (Required when creating)</li><li><span style="font-weight: bold;">Name=:</span> Name of account</li><li><span style="font-weight: bold;">Cluster=:</span> Only add this account to these clusters.</li><li><span style="font-weight: bold;">Parent=:</span> Make this account a child of this other account.</li><li><span style="font-weight: bold;">QOS=:</span> Quality of Service (used in later development)</li><li><span style="font-weight: bold;">Fairshare=:</span> Used for determining priority (used in later development)</li><li><span style="font-weight: bold;">MaxJobs=:</span> Limit number of jobs a user can run in this account  (used in later development)</li><li><span style="font-weight: bold;">MaxNodes=: </span>Limit number of nodes a user can allocate in this account (used in later development)</li><li><span style="font-weight: bold;">MaxWall=: </span>Limit wall time a job can run (used in later development)</li><li><span style="font-weight: bold;">MaxCPUSecs=:</span> Limit cpu seconds a job can run (used in later development)</li></ul><h2>User Options</h2>When either adding or modifying a user these are the options you can use with sacctmgr:<br><ul><li><span style="font-weight: bold;">Name=: </span>User name</li><li><span style="font-weight: bold;">DefaultAccount=:</span> Default account for the user, used when a user doesn't specify an account on job submit. (Required when creating)</li><li><span style="font-weight: bold;">AdminLevel=: </span>This field is used to allow a user to add accounting privileges to this user. &nbsp;Valid options are <span style="font-style: italic;">None, Operator </span>(can add, modify,<span style="font-style: italic;"> </span>and remove users, and add other operators)<span style="font-style: italic;">, </span>and<span style="font-style: italic;"> Admin<span style="font-style: italic;"><span style="font-style: italic;"> <span style="font-style: italic;"></span></span></span></span>(In addition to operator privileges these users can add, modify, and remove accounts and clusters).</li><li><span style="font-weight: bold;">Account=: </span>Account(s) to add user to.&nbsp;</li><li><span style="font-weight: bold;">Cluster=: </span>Only add to accounts on these clusters.</li><li><span style="font-weight: bold;">Partition=:</span> Name of partition this association is for.</li><li><span style="font-weight: bold;">QOS=:</span> Quality of Service (used in later development)</li>
-<li><span style="font-weight: bold;">Fairshare=:</span> Used for determining priority (used in later development)</li><li><span style="font-weight: bold;">MaxJobs=:</span> Limit number of jobs a user can run in this account  (used in later development)</li><li><span style="font-weight: bold;">MaxNodes=: </span>Limit number of nodes a user can allocate in this account (used in later development)</li><li><span style="font-weight: bold;">MaxWall=: </span>Limit wall time a job can run (used in later development)</li><li><span style="font-weight: bold;">MaxCPUSecs=:</span> Limit cpu seconds a job can run (used in later development)</li></ul><big><big><span style="font-weight: bold;">Limit enforcement</span></big></big><br><br>When limits are developed they will work in this order...<br>If
-a user has a limit set SLURM will read in those, if not we will refer
-to the account associated with the job. &nbsp;If the account doesn't
-have the limit set we will refer to the cluster's limits. &nbsp;If the
-cluster doesn't have the limit set no limit will be enforced.<br><big><big><br><span style="font-weight: bold;">Modifying entities<br></span></big></big><br>When modifying entities, you can specify many different options in SQL like fashion, using key words like <span style="font-style: italic;">where, </span>and <span style="font-style: italic;">set.</span> &nbsp;The line<br><br><span style="font-family: Bitstream Charter;">sacctmgr modify <span style="font-style: italic;">entity</span> set <span style="font-style: italic;">options</span> where <span style="font-style: italic;">options</span><br><br></span>The example...<br><br><span style="font-family: Bitstream Charter;">sacctmgr modify user set default=none where default=test fairshare=2<br><br></span>will change all users with default account test, and fairshare of 2 to account none. &nbsp;<br><br>Once
-an entity has been add/modified/removed the change is sent to the
-appropriate slurmctld and will be available to be used instantly. <br><br><big><big><span style="font-weight: bold;">Removing entities</span><br style="font-weight: bold;"></big></big><br>When removing entities, you can issue a line similar to the modify example above only removing the set options.<br><br><span style="font-family: Bitstream Charter;">sacctmgr remove user where default=test fairshare=2<br><br></span>This will remove all users with default account test, and fairshare of 2.<br>
+a slurm partition.</p>
 
-<big style="font-weight: bold;"><big>Node State Information</big></big>
+<!-- For future use
+<h2>Cluster Options</h2>
 
-<br><br>Node state information is also recorded in the database. 
+<p>When either adding or modifying a cluster, these are the options 
+available with sacctmgr:
+<ul>
+<li><b>Name=</b> Cluster name</li>
+
+<li><b>Fairshare=</b> Used for determining priority</li>
+
+<li><b>MaxJobs=</b> Limit number of jobs a user can run in this account</li>
+
+<li><b>MaxNodes=</b>Limit number of nodes a user can allocate in this 
+account</li>
+
+<li><b>MaxWall=</b>Limit wall clock time a job can run</li>
+
+<li><b>MaxCPUSecs=</b> Limit cpu seconds a job can run</li>
+</ul>
+!-->
+
+<h2>Account Options</h2>
+
+<p>When either adding or modifying an account, the following sacctmgr 
+options are available:
+<ul>
+<li><b>Description=</b> Description of the account. (Required on creation)</li>
+
+<li><b>Organization=</b>Organization of the account. (Required on creation)</li>
+
+<li><b>Name=</b> Name of account</li>
+
+<li><b>Cluster=</b> Only add this account to these clusters.
+The account is added to all defined clusters by default.</li>
+
+<li><b>Parent=</b> Make this account a child of this other account.</li>
+
+<!-- For future use
+<li><b>QOS=</b> Quality of Service</li>
+
+<li><b>Fairshare=</b> Used for determining priority</li>
+
+<li><b>MaxJobs=</b> Limit number of jobs a user can run in this account</li>
+
+<li><b>MaxNodes=</b>Limit number of nodes a user can allocate in this account</li>
+
+<li><b>MaxWall=</b>Limit wall time a job can run</li>
+
+<li><b>MaxCPUSecs=</b> Limit cpu seconds a job can run</li>
+!-->
+</ul>
+
+<h2>User Options</h2>
+
+<p>When either adding or modifying a user, the following sacctmgr 
+options are available:
+
+<ul>
+<li><b>Name=</b> User name</li>
+
+<li><b>DefaultAccount=</b> Default account for the user, used when no account 
+is specified when a job is sumbitted. (Required on creation)</li>
+
+<li><b>AdminLevel=</b> This field is used to allow a user to add accounting 
+privileges to this user. Valid options are 
+<ul>
+<li>None</li>
+<li>Operator: can add, modify,and remove users, and add other operators)</li>
+<li>Admin: In addition to operator privileges these users can add, modify, 
+and remove accounts and clusters</li>
+</ul>
+
+<li><b>Account=</b> Account(s) to add user to</li>
+
+<li><b>Cluster=</b> Only add to accounts on these clusters (default is all clusters)</li>
+
+<li><b>Partition=</b> Name of Slurm partition this association applies to</li>
+
+<!-- For future use
+<li><b>QOS=</b> Quality of Service</li>
+
+<li><b>Fairshare=</b> Used for determining priority</li>
+
+<li><b>MaxJobs=</b> Limit number of jobs a user can run in this account</li>
+
+<li><b>MaxNodes=</b> Limit number of nodes a user can allocate in this account</li>
+
+<li><b>MaxWall=</b> Limit wall time a job can run</li>
+
+<li><b>MaxCPUSecs=</b> Limit cpu seconds a job can run</li>
+!-->
+</ul>
+
+<!-- For future use
+<h2>Limit enforcement</h2>
+
+<p>When limits are developed they will work in this order...
+If a user has a limit set SLURM will read in those, 
+if not we will refer to the account associated with the job. 
+If the account doesn't have the limit set we will refer to 
+the cluster's limits. 
+If the cluster doesn't have the limit set no limit will be enforced.
+!-->
+
+<h2>Modifying Entities</h2>
+
+<p>When modifying entities, you can specify many different options in 
+SQL-like fashion, using key words like <i>where</i> and <i>set</i>.
+A typical execute line has the following form:
+<pre>
+sacctmgr modify &lt;entity&gt; set &lt;options&gt; where &lt;options&gt;
+</pre>
+
+<p>For example:</p>
+<pre>
+sacctmgr modify user set default=none where default=test
+</pre>
+<p>will change all users with a default account of "test" to account "none".
+Once an entity has been added, modified or removed, the change is 
+sent to the appropriate SLURM daemons and will be available for use 
+instantly.</p>
+
+<h2>Removing Entities</h2>
+
+<p>Removing entities using an execute line similar to the modify example above,
+but without the set options.
+For example, remove all users with a default account "test" using the following 
+execute line:</p>
+<pre>
+sacctmgr remove user where default=test
+</pre>
+
+<h2>Node State Information</h2>
+
+<p>Node state information is also recorded in the database. 
 Whenever a node goes DOWN or becomes DRAINED that event is 
 logged along with the node's <i>Reason</i> field. 
-This can be used to generate various reports.<span style="font-weight: bold;"></span><span style="font-weight: bold;"></span><br><br><big><big><span style="font-weight: bold;"><br></span></big></big><ul>
-
+This can be used to generate various reports.
 
 <p style="text-align: center;">Last modified 25 March 2008</p>
 
