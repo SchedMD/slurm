@@ -425,7 +425,9 @@ void slurm_step_launch_wait_finish(slurm_step_ctx_t *ctx)
 
 	/* Then shutdown the message handler thread */
 	eio_signal_shutdown(sls->msg_handle);
+	pthread_mutex_unlock(&sls->lock);
 	pthread_join(sls->msg_thread, NULL);
+	pthread_mutex_lock(&sls->lock);
 	eio_handle_destroy(sls->msg_handle);
 
 	/* Then wait for the IO thread to finish */
@@ -435,7 +437,6 @@ void slurm_step_launch_wait_finish(slurm_step_ctx_t *ctx)
 	}
 
 	mpi_hook_client_fini(sls->mpi_state);
-
 	pthread_mutex_unlock(&sls->lock);
 }
 
