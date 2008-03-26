@@ -102,7 +102,6 @@ extern char *default_plugstack;
 #define DEFAULT_STORAGE_HOST        "localhost"
 #define DEFAULT_STORAGE_LOC         "/var/log/slurm_jobacct.log"
 #define DEFAULT_STORAGE_USER        "root"
-#define DEFAULT_STORAGE_PASS        ""
 #define DEFAULT_STORAGE_PORT        0
 #define DEFAULT_SUSPEND_RATE        60
 #define DEFAULT_SUSPEND_TIME        0
