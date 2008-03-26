@@ -1062,7 +1062,7 @@ static void _handle_signal(int signo)
 		break;
 	case SIGQUIT:
 		info("Quit");
-		/* continue with skurm_step_launch_abort */
+		/* continue with slurm_step_launch_abort */
 	case SIGTERM:
 	case SIGHUP:
 		job_force_termination(job);
