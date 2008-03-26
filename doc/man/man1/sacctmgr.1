@@ -176,44 +176,118 @@ The login name.
 .TP
 \fBSPECIFICATIONS FOR ACCOUNTS\fR
 .TP
-\fIDescriptions\fP=<description>
+\fICluster\fP=<cluster>
+Specific cluster to add account to.  Default is all in system.
+\fIDescription\fP=<description>
 An arbitrary string describing an account.
 .TP
-\fIExpediteLevel\fP=<level>
-TBD.
+\fIFairshare\fP=<fairshare>
+Number used in conjunction with other accounts to determine job priority.
 .TP
-\fINames\fP=<name>
+\fIMaxCPUSecs\fP=<max cpu seconds> 
+Maximum number of cpu seconds each job is able to use in this account.
+This is overridden if set directly on a user. 
+.TP
+\fIMaxJobs\fP=<max jobs>
+Maximum number of jobs each user is allowed to run at one time in this account.
+This is overridden if set directly on a user. 
+.TP
+\fIMaxNodes\fP=<max nodes>
+Maximum number of nodes each job is able to use in this account.
+This is overridden if set directly on a user. 
+.TP
+\fIMaxWall\fP=<max wall>
+Maximum wall clock time each job is able to use in this account.
+This is overridden if set directly on a user. 
+.TP
+\fIName\fP=<name>
 The name of a bank account.
 .TP
-\fIOrganizations\fP=<org>
-TBD.
+\fIOrganization\fP=<org>
+Organization to which the account belongs.
+.TP
+\fIParent\fP=<parent>
+Parent account of this account.
+.TP
+\fIQosLevel\fP=<qos>
+Quality of Service jobs are to run at for this account.  Now consisting
+of Normal, Standby, Expedite, and Exempt.
+This is overridden if set directly on a user. 
 
 .TP
 \fBSPECIFICATIONS FOR CLUSTERS\fR
 .TP
-\fIInterfaceNode\fP=<name>
-TBD. 
+\fIFairshare\fP=<fairshare>
+Number used in conjunction with other accounts to determine job priority.
 .TP
-\fINames\fP=<name>
+\fIName\fP=<name>
 The name of a cluster.
 This should be equal to the \fIClusterName\fR parameter in the \fIslurm.conf\fR 
 configuration file for some Slurm-managed cluster. 
+.TP
+\fIMaxCPUSecs\fP=<max cpu seconds> 
+Maximum number of cpu seconds each job is able to use in this account.
+This is overridden if set directly on an account or user. 
+\fIMaxJobs\fP=<max jobs>
+Maximum number of jobs each user is allowed to run at one time in this account.
+This is overridden if set directly on an account or user. 
+.TP
+\fIMaxNodes\fP=<max nodes>
+Maximum number of nodes each job is able to use in this account.
+This is overridden if set directly on an account or user. 
+.TP
+\fIMaxWall\fP=<max wall>
+Maximum wall clock time each job is able to use in this account.
+This is overridden if set directly on an account or user. 
+.TP
+\fIQosLevel\fP=<qos>
+Quality of Service jobs are to run at for this account.  Now consisting
+of Normal, Standby, Expedite, and Exempt.
+This is overridden if set directly on an account or user. 
 
 .TP
 \fBSPECIFICATIONS FOR USERS\fR
 .TP
+\fIAccount\fP=<account>
+Account name to add this user to.
+.TP
 \fIAdminLevel\fP=<level>
-TBD.
+Admin level of user.  Valid levels are None, Operator, and Admin.
+.TP
+\fICluster\fP=<cluster>
+Specific cluster to add user to the account on.  Default is all in system.
 .TP
 \fIDefaultAccount\fP=<account>
 Identify the default bank account name to be used for a job if none is 
 specified at submission time.
 .TP
-\fIExpediteLevel\fP=<level>
-TBD.
+\fIFairshare\fP=<fairshare>
+Number used in conjunction with other users in the same account to
+determine job priority.
 .TP
-\fINames\fP=<name>
-TBD.
+\fIName\fP=<name>
+Name of user.
+.TP
+\fIQosLevel\fP=<qos>
+The Quality of Service jobs are to run at for this user using the
+account specified.  Now consisting of Normal, Standby, Expedite, and Exempt.
+.TP
+\fIMaxCPUSecs\fP=<max cpu seconds> 
+Maximum number of cpu seconds this user can use in each job using the
+account specified.
+.TP
+\fIMaxJobs\fP=<max jobs>
+Maximum number of jobs this user can run at a given time using the
+account specified.
+This is overridden if set directly on a user. 
+.TP
+\fIMaxNodes\fP=<max nodes>
+Maximum number of nodes this user can allocate in each job using the
+account specified. 
+.TP
+\fIMaxWall\fP=<max wall>
+Maximum wall clock time this user can use in each job using the
+account specified.
 
 .SH "COPYING"
 Copyright (C) 2008 Lawrence Livermore National Security.
