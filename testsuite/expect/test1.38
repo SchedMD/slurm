@@ -147,6 +147,7 @@ expect {
 		wait
 	}
 }
+cancel_job $job_id
 if {$matches != 2} {
 	send_user "\nFAILURE: srun failed to properly process SIGINT\n"
 	set exit_code 1
