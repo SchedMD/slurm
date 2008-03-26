@@ -77,5 +77,6 @@ main (int argc, char **argv)
 		sleep(1);
 	}
 
+	printf("FINI\n");
 	exit(0);
 }
