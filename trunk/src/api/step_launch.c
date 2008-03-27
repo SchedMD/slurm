@@ -560,22 +560,20 @@ struct step_launch_state *step_launch_state_create(slurm_step_ctx_t *ctx)
 	slurm_step_layout_t *layout = ctx->step_resp->step_layout;
 
 	sls = xmalloc(sizeof(struct step_launch_state));
-	if (sls != NULL) {
-		sls->slurmctld_socket_fd = -1;
-		sls->tasks_requested = layout->task_cnt;
-		sls->tasks_started = bit_alloc(layout->task_cnt);
-		sls->tasks_exited = bit_alloc(layout->task_cnt);
-		sls->layout = layout;
-		sls->resp_port = NULL;
-		sls->abort = false;
-		sls->abort_action_taken = false;
-		sls->mpi_info->jobid = ctx->step_req->job_id;
-		sls->mpi_info->stepid = ctx->step_resp->job_step_id;
-		sls->mpi_info->step_layout = layout;
-		sls->mpi_state = NULL;
-		pthread_mutex_init(&sls->lock, NULL);
-		pthread_cond_init(&sls->cond, NULL);
-	}
+	sls->slurmctld_socket_fd = -1;
+	sls->tasks_requested = layout->task_cnt;
+	sls->tasks_started = bit_alloc(layout->task_cnt);
+	sls->tasks_exited = bit_alloc(layout->task_cnt);
+	sls->layout = layout;
+	sls->resp_port = NULL;
+	sls->abort = false;
+	sls->abort_action_taken = false;
+	sls->mpi_info->jobid = ctx->step_req->job_id;
+	sls->mpi_info->stepid = ctx->step_resp->job_step_id;
+	sls->mpi_info->step_layout = layout;
+	sls->mpi_state = NULL;
+	pthread_mutex_init(&sls->lock, NULL);
+	pthread_cond_init(&sls->cond, NULL);
 	return sls;
 }
 
@@ -621,7 +619,8 @@ static int _msg_thr_create(struct step_launch_state *sls, int num_nodes)
 	int sock = -1;
 	short port = -1;
 	eio_obj_t *obj;
-	int i;
+	int i, rc = SLURM_SUCCESS;
+	pthread_attr_t attr;
 
 	debug("Entering _msg_thr_create()");
 	slurm_uid = (uid_t) slurm_get_slurm_user_id();
@@ -646,12 +645,15 @@ static int _msg_thr_create(struct step_launch_state *sls, int num_nodes)
 		eio_new_initial_obj(sls->msg_handle, obj);
 	}
 
+	slurm_attr_init(&attr);
 	if (pthread_create(&sls->msg_thread, NULL,
 			   _msg_thr_internal, (void *)sls) != 0) {
 		error("pthread_create of message thread: %m");
-		return SLURM_ERROR;
+		
+		rc = SLURM_ERROR;
 	}
-	return SLURM_SUCCESS;
+	slurm_attr_destroy(&attr);
+	return rc;
 }
 
 static bool _message_socket_readable(eio_obj_t *obj)
