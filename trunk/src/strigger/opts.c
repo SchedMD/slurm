@@ -2,6 +2,7 @@
  *  opts.c - strigger command line option processing functions
  *****************************************************************************
  *  Copyright (C) 2006-2007 The Regents of the University of California.
+ *  Copyright (C) 2008 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
  *  LLNL-CODE-402394.
@@ -92,6 +93,7 @@ extern void parse_command_line(int argc, char *argv[])
 	static struct option long_options[] = {
 		{"block_err", no_argument,       0, OPT_LONG_BLOCK_ERR},
 		{"down",      no_argument,       0, 'd'},
+		{"drained",   no_argument,       0, 'D'},
 		{"fail",      no_argument,       0, 'F'},
 		{"fini",      no_argument,       0, 'f'},
 		{"id",        required_argument, 0, 'i'},
@@ -118,7 +120,7 @@ extern void parse_command_line(int argc, char *argv[])
 	_init_options();
 
 	optind = 0;
-	while((opt_char = getopt_long(argc, argv, "dFfi:Ij:no:p:qrtuvV",
+	while((opt_char = getopt_long(argc, argv, "dDFfi:Ij:no:p:qrtuvV",
 			long_options, &option_index)) != -1) {
 		switch (opt_char) {
 		case (int)'?':
@@ -131,6 +133,9 @@ extern void parse_command_line(int argc, char *argv[])
 			break;
 		case (int)'d':
 			params.node_down = true;
+			break;
+		case (int)'D':
+			params.node_drained = true;
 			break;
 		case (int)'F':
 			params.node_fail = true;
@@ -225,51 +230,53 @@ extern void parse_command_line(int argc, char *argv[])
 /* initialize the parameters */
 static void _init_options( void )
 {
-	params.mode_set   = false;
-	params.mode_get   = false;
-	params.mode_clear = false;
+	params.mode_set     = false;
+	params.mode_get     = false;
+	params.mode_clear   = false;
 
-	params.block_err  = false;
-	params.node_down  = false;
-	params.node_fail  = false;
-	params.node_idle  = false;
-	params.trigger_id = 0;
-	params.job_fini   = false;
-	params.job_id     = 0;
-	params.node_id    = NULL;
-	params.offset     = 0;
-	params.program    = NULL;
-	params.quiet      = false;
-	params.reconfig   = false;
-	params.time_limit = false;
-	params.node_up    = false;
-	params.user_id    = 0;
-	params.verbose    = 0;
+	params.block_err    = false;
+	params.node_down    = false;
+	params.node_drained = false;
+	params.node_fail    = false;
+	params.node_idle    = false;
+	params.trigger_id   = 0;
+	params.job_fini     = false;
+	params.job_id       = 0;
+	params.node_id      = NULL;
+	params.offset       = 0;
+	params.program      = NULL;
+	params.quiet        = false;
+	params.reconfig     = false;
+	params.time_limit   = false;
+	params.node_up      = false;
+	params.user_id      = 0;
+	params.verbose      = 0;
 }
 
 /* print the parameters specified */
 static void _print_options( void )
 {
 	verbose("-----------------------------");
-	verbose("set        = %s", params.mode_set ? "true" : "false");
-	verbose("get        = %s", params.mode_get ? "true" : "false");
-	verbose("clear      = %s", params.mode_clear ? "true" : "false");
-	verbose("block_err  = %s", params.block_err ? "true" : "false");
-	verbose("job_id     = %u", params.job_id);
-	verbose("job_fini   = %s", params.job_fini ? "true" : "false");
-	verbose("node_down  = %s", params.node_down ? "true" : "false");
-	verbose("node_fail  = %s", params.node_fail ? "true" : "false");
-	verbose("node_idle  = %s", params.node_idle ? "true" : "false");
-	verbose("node_up    = %s", params.node_up ? "true" : "false");
-	verbose("node       = %s", params.node_id);
-	verbose("offset     = %d secs", params.offset);
-	verbose("program    = %s", params.program);
-	verbose("quiet      = %s", params.quiet ? "true" : "false");
-	verbose("reconfig   = %s", params.reconfig ? "true" : "false");
-	verbose("time_limit = %s", params.time_limit ? "true" : "false");
-	verbose("trigger_id = %u", params.trigger_id);
-	verbose("user_id    = %u", params.user_id);
-	verbose("verbose    = %d", params.verbose);
+	verbose("set          = %s", params.mode_set ? "true" : "false");
+	verbose("get          = %s", params.mode_get ? "true" : "false");
+	verbose("clear        = %s", params.mode_clear ? "true" : "false");
+	verbose("block_err    = %s", params.block_err ? "true" : "false");
+	verbose("job_id       = %u", params.job_id);
+	verbose("job_fini     = %s", params.job_fini ? "true" : "false");
+	verbose("node_down    = %s", params.node_down ? "true" : "false");
+	verbose("node_drained = %s", params.node_drained ? "true" : "false");
+	verbose("node_fail    = %s", params.node_fail ? "true" : "false");
+	verbose("node_idle    = %s", params.node_idle ? "true" : "false");
+	verbose("node_up      = %s", params.node_up ? "true" : "false");
+	verbose("node         = %s", params.node_id);
+	verbose("offset       = %d secs", params.offset);
+	verbose("program      = %s", params.program);
+	verbose("quiet        = %s", params.quiet ? "true" : "false");
+	verbose("reconfig     = %s", params.reconfig ? "true" : "false");
+	verbose("time_limit   = %s", params.time_limit ? "true" : "false");
+	verbose("trigger_id   = %u", params.trigger_id);
+	verbose("user_id      = %u", params.user_id);
+	verbose("verbose      = %d", params.verbose);
 	verbose("-----------------------------");
 }
 
@@ -288,8 +295,8 @@ static void _validate_options( void )
 	}
 
 	if (params.mode_set
-	&&  ((params.node_down + params.node_fail + params.node_idle + params.node_up + 
-	      params.reconfig +
+	&&  ((params.node_down + params.node_drained + params.node_fail + 
+	      params.node_idle + params.node_up + params.reconfig +
 	      params.job_fini  + params.time_limit + params.block_err) == 0)) {
 		error("You must specify a trigger (--block_err, --down, --up, "
 			"--reconfig, --time or --fini)");
@@ -337,7 +344,7 @@ static void _print_version(void)
 
 static void _usage( void )
 {
-	printf("Usage: strigger [--set | --get | --clear | --version] [-dfiIjnoptuv]\n");
+	printf("Usage: strigger [--set | --get | --clear | --version] [-dDfiIjnoptuv]\n");
 }
 
 static void _help( void )
@@ -349,6 +356,7 @@ Usage: strigger [--set | --get | --clear] [OPTIONS]\n\
       --clear         delete a trigger\n\n\
       --block_err     trigger event on BlueGene block error\n\
   -d, --down          trigger event when node goes DOWN\n\
+  -D, --drained       trigger event when node becomes DRAINED\n\
   -F, --fail          trigger event when node is expected to FAIL\n\
   -f, --fini          trigger event when job finishes\n\
   -i, --id=#          a trigger's ID number\n\

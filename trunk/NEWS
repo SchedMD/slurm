@@ -4,6 +4,7 @@ documents those changes that are of interest to users and admins.
 * Changes in SLURM 1.3.0
 ========================
  -- In sched/wiki2, add processor count to JOBWILLRUN response.
+ -- Add event trigger for node entering DRAINED state.
 
 * Changes in SLURM 1.3.0-pre11
 ==============================
