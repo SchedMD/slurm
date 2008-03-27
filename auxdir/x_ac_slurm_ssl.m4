@@ -24,7 +24,7 @@ AC_DEFUN([X_AC_SLURM_WITH_SSL], [
   AC_SUBST(SSL_LIBS)
   AC_SUBST(SSL_CPPFLAGS)
   
-  SSL_LIBS="-lcrypto"
+  SSL_LIB_TEST="-lcrypto"
   
   AC_ARG_WITH(ssl,
     AS_HELP_STRING(--with-ssl=PATH,Specify path to OpenSSL installation),
@@ -36,7 +36,7 @@ AC_DEFUN([X_AC_SLURM_WITH_SSL], [
   	# which is specified with --with-ssl), and libtool is not setting
   	# the correct runtime library path in the binaries.
   	if test "x$ac_have_aix" = "xyes"; then
-  		SSL_LIBS="-lcrypto-static"
+  		SSL_LIB_TEST="-lcrypto-static"
   	fi
     ])
   
@@ -52,7 +52,7 @@ AC_DEFUN([X_AC_SLURM_WITH_SSL], [
   	for ssldir in $tryssldir "" $ssl_default_dirs; do 
   		CPPFLAGS="$saved_CPPFLAGS"
   		LDFLAGS="$saved_LDFLAGS"
-  		LIBS="$saved_LIBS $SSL_LIBS"
+  		LIBS="$saved_LIBS $SSL_LIB_TEST"
   		
   		# Skip directories if they don't exist
   		if test ! -z "$ssldir" -a ! -d "$ssldir" ; then
@@ -116,6 +116,7 @@ AC_DEFUN([X_AC_SLURM_WITH_SSL], [
   fi
 
   if test ! -z "$ac_have_openssl" ; then
+    SSL_LIBS="$SSL_LIB_TEST"
     if (test ! -z "$ac_cv_openssldir" && test "x$ac_cv_openssldir" != "x(system)") ; then
   	dnl Need to recover ssldir - test above runs in subshell
   	ssldir=$ac_cv_openssldir
@@ -139,6 +140,8 @@ AC_DEFUN([X_AC_SLURM_WITH_SSL], [
   
     AC_LINK_IFELSE([AC_LANG_PROGRAM([[#include <openssl/evp.h>]], [[EVP_MD_CTX_cleanup(NULL);]])],[AC_DEFINE(HAVE_EVP_MD_CTX_CLEANUP, 1,
                [Define to 1 if function EVP_MD_CTX_cleanup exists.])],[])
+  else
+    SSL_LIBS=""
   fi
   
   LIBS="$saved_LIBS"
