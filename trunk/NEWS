@@ -5,6 +5,8 @@ documents those changes that are of interest to users and admins.
 ========================
  -- In sched/wiki2, add processor count to JOBWILLRUN response.
  -- Add event trigger for node entering DRAINED state.
+ -- Build properly without OpenSSL installed (OpenSSL is recommended, but not 
+    required).
 
 * Changes in SLURM 1.3.0-pre11
 ==============================

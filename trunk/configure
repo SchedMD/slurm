@@ -25982,7 +25982,7 @@ rm -f core conftest.err conftest.$ac_objext conftest_ipa8_conftest.oo \
 
 
 
-  SSL_LIBS="-lcrypto"
+  SSL_LIB_TEST="-lcrypto"
 
 
 # Check whether --with-ssl was given.
@@ -25995,7 +25995,7 @@ if test "${with_ssl+set}" = set; then
   	# which is specified with --with-ssl), and libtool is not setting
   	# the correct runtime library path in the binaries.
   	if test "x$ac_have_aix" = "xyes"; then
-  		SSL_LIBS="-lcrypto-static"
+  		SSL_LIB_TEST="-lcrypto-static"
   	fi
 
 fi
@@ -26018,7 +26018,7 @@ else
   	for ssldir in $tryssldir "" $ssl_default_dirs; do
   		CPPFLAGS="$saved_CPPFLAGS"
   		LDFLAGS="$saved_LDFLAGS"
-  		LIBS="$saved_LIBS $SSL_LIBS"
+  		LIBS="$saved_LIBS $SSL_LIB_TEST"
 
   		# Skip directories if they don't exist
   		if test ! -z "$ssldir" -a ! -d "$ssldir" ; then
@@ -26132,6 +26132,7 @@ echo "${ECHO_T}$ac_cv_openssldir" >&6; }
   fi
 
   if test ! -z "$ac_have_openssl" ; then
+    SSL_LIBS="$SSL_LIB_TEST"
     if (test ! -z "$ac_cv_openssldir" && test "x$ac_cv_openssldir" != "x(system)") ; then
   	  	ssldir=$ac_cv_openssldir
   	if test ! -z "$ssldir" -a "x$ssldir" != "x/usr"; then
@@ -26199,6 +26200,8 @@ fi
 
 rm -f core conftest.err conftest.$ac_objext conftest_ipa8_conftest.oo \
       conftest$ac_exeext conftest.$ac_ext
+  else
+    SSL_LIBS=""
   fi
 
   LIBS="$saved_LIBS"
