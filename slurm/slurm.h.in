@@ -1081,14 +1081,15 @@ typedef struct slurm_step_ctx_struct slurm_step_ctx_t;
 
 #define TRIGGER_RES_TYPE_JOB   1
 #define TRIGGER_RES_TYPE_NODE  2
-#define TRIGGER_TYPE_UP        0x01
-#define TRIGGER_TYPE_DOWN      0x02
-#define TRIGGER_TYPE_FAIL      0x04
-#define TRIGGER_TYPE_TIME      0x08
-#define TRIGGER_TYPE_FINI      0x10
-#define TRIGGER_TYPE_RECONFIG  0x20
-#define TRIGGER_TYPE_BLOCK_ERR 0x40
-#define TRIGGER_TYPE_IDLE      0x80
+#define TRIGGER_TYPE_UP        0x0001
+#define TRIGGER_TYPE_DOWN      0x0002
+#define TRIGGER_TYPE_FAIL      0x0004
+#define TRIGGER_TYPE_TIME      0x0008
+#define TRIGGER_TYPE_FINI      0x0010
+#define TRIGGER_TYPE_RECONFIG  0x0020
+#define TRIGGER_TYPE_BLOCK_ERR 0x0040
+#define TRIGGER_TYPE_IDLE      0x0080
+#define TRIGGER_TYPE_DRAINED   0x0100
 
 typedef struct trigger_info {
 	uint32_t trig_id;	/* trigger ID */

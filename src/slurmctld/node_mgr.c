@@ -1120,11 +1120,13 @@ int update_node ( update_node_msg_t * update_node_msg )
 				state_val = node_ptr->node_state |
 					NODE_STATE_DRAIN;
 				if ((node_ptr->run_job_cnt  == 0) &&
-				    (node_ptr->comp_job_cnt == 0))
+				    (node_ptr->comp_job_cnt == 0)) {
+					trigger_node_drained(node_ptr);
 					clusteracct_storage_g_node_down(
 						acct_db_conn, 
 						slurmctld_cluster_name,
 						node_ptr, now, NULL);
+				}
 			}
 			else if (state_val == NODE_STATE_FAIL) {
 				bit_clear (avail_node_bitmap, node_inx);
@@ -1369,6 +1371,7 @@ extern int drain_nodes ( char *nodes, char *reason )
 		if ((node_ptr->run_job_cnt  == 0) &&
 		    (node_ptr->comp_job_cnt == 0)) {
 			/* no jobs, node is drained */
+			trigger_node_drained(node_ptr);
 			clusteracct_storage_g_node_down(acct_db_conn, 
 							slurmctld_cluster_name,
 							node_ptr, now, NULL);
@@ -2244,10 +2247,12 @@ extern void make_node_comp(struct node_record *node_ptr,
 	&&  (node_ptr->comp_job_cnt == 0)) {
 		bit_set(idle_node_bitmap, inx);
 		if ((node_ptr->node_state & NODE_STATE_DRAIN) ||
-		    (node_ptr->node_state & NODE_STATE_FAIL))
+		    (node_ptr->node_state & NODE_STATE_FAIL)) {
+			trigger_node_drained(node_ptr);
 			clusteracct_storage_g_node_down(acct_db_conn, 
 							slurmctld_cluster_name,
 							node_ptr, now, NULL);
+		}
 	}
 
 	if (base_state == NODE_STATE_DOWN) {
@@ -2354,6 +2359,7 @@ void make_node_idle(struct node_record *node_ptr,
 		debug3("make_node_idle: Node %s is DRAINED", 
 		       node_ptr->name);
 		node_ptr->last_idle = now;
+		trigger_node_drained(node_ptr);
 		clusteracct_storage_g_node_down(acct_db_conn, 
 						slurmctld_cluster_name,
 						node_ptr, now, NULL);

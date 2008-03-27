@@ -2,6 +2,7 @@
  *  trigger_mgr.c - Event trigger management
  *****************************************************************************
  *  Copyright (C) 2007 The Regents of the University of California.
+ *  Copyright (C) 2008 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov> et. al.
  *  LLNL-CODE-402394.
@@ -75,6 +76,7 @@ List trigger_list;
 uint32_t next_trigger_id = 1;
 static pthread_mutex_t trigger_mutex = PTHREAD_MUTEX_INITIALIZER;
 bitstr_t *trigger_down_nodes_bitmap = NULL;
+bitstr_t *trigger_drained_nodes_bitmap = NULL;
 bitstr_t *trigger_fail_nodes_bitmap = NULL;
 bitstr_t *trigger_up_nodes_bitmap   = NULL;
 static bool trigger_block_err = false;
@@ -121,6 +123,8 @@ static char *_trig_type(uint16_t trig_type)
 		return "up";
 	else if (trig_type == TRIGGER_TYPE_DOWN)
 		return "down";
+	else if (trig_type == TRIGGER_TYPE_DRAINED)
+		return "drained";
 	else if (trig_type == TRIGGER_TYPE_FAIL)
 		return "fail";
 	else if (trig_type == TRIGGER_TYPE_IDLE)
@@ -365,6 +369,17 @@ extern void trigger_node_down(struct node_record *node_ptr)
 	if (trigger_down_nodes_bitmap == NULL)
 		trigger_down_nodes_bitmap = bit_alloc(node_record_count);
 	bit_set(trigger_down_nodes_bitmap, inx);
+	slurm_mutex_unlock(&trigger_mutex);
+}
+
+extern void trigger_node_drained(struct node_record *node_ptr)
+{
+        int inx = node_ptr - node_record_table_ptr;
+
+	slurm_mutex_lock(&trigger_mutex);
+	if (trigger_drained_nodes_bitmap == NULL)
+		trigger_drained_nodes_bitmap = bit_alloc(node_record_count);
+	bit_set(trigger_drained_nodes_bitmap, inx);
 	slurm_mutex_unlock(&trigger_mutex);
 }
 
@@ -754,6 +769,34 @@ static void _trigger_node_event(trig_mgr_info_t *trig_in, time_t now)
 		}
 	}
 
+	if ((trig_in->trig_type & TRIGGER_TYPE_DRAINED)
+	&&   trigger_drained_nodes_bitmap
+	&&   (bit_ffs(trigger_drained_nodes_bitmap) != -1)) {
+		if (trig_in->nodes_bitmap == NULL) {	/* all nodes */
+			xfree(trig_in->res_id);
+			trig_in->res_id = bitmap2node_name(
+					trigger_drained_nodes_bitmap);
+			trig_in->state = 1;
+		} else if (bit_overlap(trig_in->nodes_bitmap, 
+					trigger_drained_nodes_bitmap)) {
+			bit_and(trig_in->nodes_bitmap, 
+					trigger_drained_nodes_bitmap);
+			xfree(trig_in->res_id);
+			trig_in->res_id = bitmap2node_name(
+					trig_in->nodes_bitmap);
+			trig_in->state = 1;
+		}
+		if (trig_in->state == 1) {
+			trig_in->trig_time = now + 
+					(trig_in->trig_time - 0x8000);
+#if _DEBUG
+			info("trigger[%u] for node %s drained",
+				trig_in->trig_id, trig_in->res_id);
+#endif
+			return;
+		}
+	}
+
 	if ((trig_in->trig_type & TRIGGER_TYPE_FAIL)
 	&&   trigger_fail_nodes_bitmap
 	&&   (bit_ffs(trigger_fail_nodes_bitmap) != -1)) {
@@ -916,6 +959,8 @@ static void _clear_event_triggers(void)
 {
 	if (trigger_down_nodes_bitmap)
 		bit_nclear(trigger_down_nodes_bitmap, 0, (node_record_count-1));
+	if (trigger_drained_nodes_bitmap)
+		bit_nclear(trigger_drained_nodes_bitmap, 0, (node_record_count-1));
 	if (trigger_up_nodes_bitmap)
 		bit_nclear(trigger_up_nodes_bitmap,   0, (node_record_count-1));
 	trigger_node_reconfig = false;
@@ -1004,6 +1049,7 @@ extern void trigger_fini(void)
 		trigger_list = NULL;
 	}
 	FREE_NULL_BITMAP(trigger_down_nodes_bitmap);
+	FREE_NULL_BITMAP(trigger_drained_nodes_bitmap);
 	FREE_NULL_BITMAP(trigger_fail_nodes_bitmap);
 	FREE_NULL_BITMAP(trigger_up_nodes_bitmap);
 }

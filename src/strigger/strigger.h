@@ -2,6 +2,7 @@
  *  strigger.h - definitions used for strigger functions
  *****************************************************************************
  *  Copyright (C) 2007 The Regents of the University of California.
+ *  Copyright (C) 2008 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
  *  LLNL-CODE-402394.
@@ -54,6 +55,7 @@ struct strigger_parameters {
 	bool     mode_get;
 	bool     mode_clear;
 	bool     node_down;
+	bool     node_drained;
 	char *   node_id;
 	bool     node_fail;
 	bool     node_idle;

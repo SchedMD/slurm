@@ -1,4 +1,4 @@
-.TH SCONTROL "1" "May 2007" "strigger 1.2" "Slurm components"
+.TH SCONTROL "1" "March 2008" "strigger 1.3" "Slurm components"
 
 .SH "NAME"
 strigger \- Used set, get or clear Slurm trigger information.
@@ -44,6 +44,11 @@ be cleared.
 .TP
 \fB\-d\fR, \fB\-\-down\fR
 Trigger an event if the specified node goes into a DOWN state.
+
+
+.TP
+\fB\-D\fR, \fB\-\-drained\fR
+Trigger an event if the specified node goes into a DRAINED state.
 
 .TP
 \fB\-F\fR, \fB\-\-fail\fR
@@ -163,7 +168,7 @@ Resource ID: job ID or host names or "*" for any host
 \fBTYPE\fP
 Trigger type: \fItime\fR or \fIfini\fR (for jobs only), 
 \fIdown\fR or \fIup\fR (for jobs or nodes), or
-\fIidle\fR or \fIreconfig\fR (for nodes only)
+\fIdrained\fR, \fIidle\fR or \fIreconfig\fR (for nodes only)
 
 .TP
 \fBOFFSET\fP
