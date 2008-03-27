@@ -100,6 +100,7 @@ extern allocation_msg_thread_t *slurm_allocation_msg_thr_create(
 	uint16_t *port,
 	const slurm_allocation_callbacks_t *callbacks)
 {
+	pthread_attr_t attr;
 	int sock = -1;
 	eio_obj_t *obj;
 	struct allocation_msg_thread *msg_thr = NULL;
@@ -133,13 +134,16 @@ extern allocation_msg_thread_t *slurm_allocation_msg_thr_create(
 	msg_thr->handle = eio_handle_create();
 	eio_new_initial_obj(msg_thr->handle, obj);
 	pthread_mutex_lock(&msg_thr_start_lock);
-	if (pthread_create(&msg_thr->id, NULL,
+	slurm_attr_init(&attr);
+	if (pthread_create(&msg_thr->id, &attr,
 			   _msg_thr_internal, (void *)msg_thr->handle) != 0) {
 		error("pthread_create of message thread: %m");
+		slurm_attr_destroy(&attr);
 		eio_handle_destroy(msg_thr->handle);
 		xfree(msg_thr);
 		return NULL;
 	}
+	slurm_attr_destroy(&attr);
 	/* Wait until the message thread has blocked signals
 	   before continuing. */
 	pthread_cond_wait(&msg_thr_start_cond, &msg_thr_start_lock);
