@@ -687,6 +687,7 @@ typedef struct pty_winsz {
 
 typedef struct will_run_response_msg {
 	uint32_t job_id;
+	uint32_t proc_cnt;
 	time_t start_time;
 	char *node_list;
 } will_run_response_msg_t;

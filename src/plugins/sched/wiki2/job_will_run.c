@@ -61,7 +61,8 @@ static char *	_will_run_test(uint32_t *jobid, time_t *start_time,
  *		  at the specified time (if given) on the available nodes. 
  *		  Otherwise information on when and where the pending jobs
  *		  will be initiated
- *                ARG=<JOBID>@<TIME>,<USED_NODES> [<JOBID>@<TIME>,<USED_NODES>]
+ *                ARG=<JOBID>:<PROCS>@<TIME>,<USED_NODES>
+ *		     [<JOBID>:<PROCS>@<TIME>,<USED_NODES>]
  * NOTE: xfree() err_msg if err_code is zero
  * RET 0 on success, -1 on failure
  */
@@ -210,7 +211,8 @@ static char *	_will_run_test(uint32_t *jobid, time_t *start_time,
 			/* Only consider nodes that are not DOWN or DRAINED */
 			bit_and(avail_bitmap, avail_node_bitmap);
 		}
-		if (job_req_node_filter(job_ptr, avail_bitmap) != SLURM_SUCCESS) {
+		if (job_req_node_filter(job_ptr, avail_bitmap) != 
+		    SLURM_SUCCESS) {
 			/* Job probably has invalid feature list */
 			*err_code = -730;
 			*err_msg = "Job's required features not available "
@@ -285,6 +287,8 @@ static char *	_will_run_test(uint32_t *jobid, time_t *start_time,
 		char tmp_str[128];
 		ListIterator iter;
 		*err_code = 0;
+		uint32_t proc_cnt = 0;
+
 		iter = list_iterator_create(select_list);
 		if (iter == NULL)
 			fatal("list_iterator_create: malloc failure");
@@ -298,8 +302,18 @@ static char *	_will_run_test(uint32_t *jobid, time_t *start_time,
 				xstrcat(reply_msg, " ");
 			else
 				xstrcat(reply_msg, "STARTINFO=");
-			snprintf(tmp_str, sizeof(tmp_str), "%u@%u,",
+#ifdef HAVE_BG
+			select_g_get_jobinfo(select_will_run->job_ptr->
+					     select_jobinfo,
+                             		     SELECT_DATA_NODE_CNT, 
+					     &proc_cnt);
+
+#else
+			proc_cnt = select_will_run->job_ptr->total_procs;
+#endif
+			snprintf(tmp_str, sizeof(tmp_str), "%u:%u@%u,",
 				 select_will_run->job_ptr->job_id,
+				 proc_cnt,
 				 (uint32_t) select_will_run->
 					    job_ptr->start_time);
 			xstrcat(reply_msg, tmp_str);

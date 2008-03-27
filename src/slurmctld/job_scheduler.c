@@ -833,6 +833,14 @@ extern int job_start_data(job_desc_msg_t *job_desc_msg,
 		will_run_response_msg_t *resp_data;
 		resp_data = xmalloc(sizeof(will_run_response_msg_t));
 		resp_data->job_id     = job_ptr->job_id;
+#ifdef HAVE_BG
+		select_g_get_jobinfo(job_ptr->select_jobinfo,
+                        	     SELECT_DATA_NODE_CNT, 
+				     &resp_data->proc_cnt);
+
+#else
+		resp_data->proc_cnt = job_ptr->total_procs;
+#endif
 		resp_data->start_time = job_ptr->start_time;
 		resp_data->node_list  = bitmap2node_name(avail_bitmap);
 		FREE_NULL_BITMAP(avail_bitmap);
