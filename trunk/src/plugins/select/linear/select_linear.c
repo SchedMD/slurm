@@ -668,7 +668,7 @@ static int _job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	int rem_cpus, rem_nodes;	/* remaining resources desired */
 	int best_fit_nodes, best_fit_cpus, best_fit_req;
 	int best_fit_location = 0, best_fit_sufficient;
-	int avail_cpus;
+	int avail_cpus, alloc_cpus = 0;
 
 	if ((job_ptr->details->req_node_bitmap) &&
 	    (!bit_super_set(job_ptr->details->req_node_bitmap, bitmap)))
@@ -707,7 +707,8 @@ static int _job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 					/* first required node in set */
 					consec_req[consec_index] = index;
 				}
-				rem_cpus -= avail_cpus;
+				rem_cpus   -= avail_cpus;
+				alloc_cpus += avail_cpus;
 				rem_nodes--;
 				max_nodes--;
 			} else {	 /* node not required (yet) */
@@ -813,7 +814,8 @@ static int _job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 				rem_nodes--;
 				max_nodes--;
 				avail_cpus = _get_avail_cpus(job_ptr, i);
-				rem_cpus -= avail_cpus;
+				rem_cpus   -= avail_cpus;
+				alloc_cpus += avail_cpus;
 			}
 			for (i = (best_fit_req - 1);
 			     i >= consec_start[best_fit_location]; i--) {
@@ -826,7 +828,8 @@ static int _job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 				rem_nodes--;
 				max_nodes--;
 				avail_cpus = _get_avail_cpus(job_ptr, i);
-				rem_cpus -= avail_cpus;
+				rem_cpus   -= avail_cpus;
+				alloc_cpus += avail_cpus;
 			}
 		} else {
 			for (i = consec_start[best_fit_location];
@@ -840,7 +843,8 @@ static int _job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 				rem_nodes--;
 				max_nodes--;
 				avail_cpus = _get_avail_cpus(job_ptr, i);
-				rem_cpus -= avail_cpus;
+				rem_cpus   -= avail_cpus;
+				alloc_cpus += avail_cpus;
 			}
 		}
 		if (job_ptr->details->contiguous || 
@@ -855,6 +859,10 @@ static int _job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	if (error_code && (rem_cpus <= 0)
 	&&  _enough_nodes(0, rem_nodes, min_nodes, req_nodes)) {
 		error_code = SLURM_SUCCESS;
+	}
+	if (error_code == SLURM_SUCCESS) {
+		/* job's total_procs is needed for SELECT_MODE_WILL_RUN */
+		job_ptr->total_procs = alloc_cpus;
 	}
 
 	xfree(consec_cpus);
