@@ -646,7 +646,7 @@ static int _msg_thr_create(struct step_launch_state *sls, int num_nodes)
 	}
 
 	slurm_attr_init(&attr);
-	if (pthread_create(&sls->msg_thread, NULL,
+	if (pthread_create(&sls->msg_thread, &attr,
 			   _msg_thr_internal, (void *)sls) != 0) {
 		error("pthread_create of message thread: %m");
 		
