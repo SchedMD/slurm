@@ -4708,6 +4708,7 @@ static void
 _pack_will_run_response_msg(will_run_response_msg_t *msg, Buf buffer)
 {
 	pack32(msg->job_id, buffer);
+	pack32(msg->proc_cnt, buffer);
 	pack_time(msg->start_time, buffer);
 	packstr(msg->node_list, buffer);
 }
@@ -4720,6 +4721,7 @@ _unpack_will_run_response_msg(will_run_response_msg_t ** msg_ptr, Buf buffer)
 
 	msg = xmalloc(sizeof(will_run_response_msg_t));
 	safe_unpack32(&msg->job_id, buffer);
+	safe_unpack32(&msg->proc_cnt, buffer);
 	safe_unpack_time(&msg->start_time, buffer);
 	safe_unpackstr_xmalloc(&msg->node_list, &uint32_tmp, buffer);
 	*msg_ptr = msg;

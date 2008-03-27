@@ -1,6 +1,10 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins.
 
+* Changes in SLURM 1.3.0
+========================
+ -- In sched/wiki2, add processor count to JOBWILLRUN response.
+
 * Changes in SLURM 1.3.0-pre11
 ==============================
  -- Restructure the sbcast RPC to take advantage of larger buffers available
