@@ -2479,6 +2479,32 @@ static int _job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 
 	if ((mode != SELECT_MODE_WILL_RUN) && (job_ptr->part_ptr == NULL))
 		error_code = EINVAL;
+	if ((error_code == SLURM_SUCCESS) && (mode == SELECT_MODE_WILL_RUN)) {
+		if (job_ptr->details->shared == 0) {
+			uint16_t procs;
+			job_ptr->total_procs = 0;
+			for (i = 0; i < select_node_cnt; i++) {
+				if (!bit_test(bitmap, i))
+					continue;
+				if (select_fast_schedule) {
+					procs = select_node_ptr[i].node_ptr->
+						config_ptr->cpus;
+				} else {
+					procs = select_node_ptr[i].node_ptr->
+						cpus;
+				}
+				job_ptr->total_procs += procs;
+			}
+		} else {
+			job_ptr->total_procs = job_ptr->num_procs;
+			if (job_ptr->details->cpus_per_task &&
+			    (job_ptr->details->cpus_per_task != 
+			     (uint16_t) NO_VAL)) {
+				job_ptr->total_procs *= job_ptr->details->
+							cpus_per_task;
+			}
+		}
+	}
 	if ((error_code != SLURM_SUCCESS) || (mode == SELECT_MODE_WILL_RUN)) {
 		xfree(busy_rows);
 		xfree(sh_tasks);
