@@ -2585,7 +2585,7 @@ _create_path_list(void)
 static char *
 _search_path(char *cmd, bool check_current_dir, int access_mode)
 {
-	List         l        = _create_path_list();
+	List         l        = NULL;
 	ListIterator i        = NULL;
 	char *path, *fullpath = NULL;
 
@@ -2596,6 +2596,10 @@ _search_path(char *cmd, bool check_current_dir, int access_mode)
 		xstrcat(fullpath, cmd);
 		goto done;
 	}
+
+	l = _create_path_list();
+	if (l == NULL)
+		return NULL;
 
 	if (check_current_dir) 
 		list_prepend(l, xstrdup(opt.cwd));
@@ -2611,7 +2615,8 @@ _search_path(char *cmd, bool check_current_dir, int access_mode)
 		fullpath = NULL;
 	}
 done:
-	list_destroy(l);
+	if (l)
+		list_destroy(l);
 	return fullpath;
 }
 
