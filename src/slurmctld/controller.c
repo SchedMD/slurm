@@ -874,7 +874,6 @@ static int _accounting_cluster_ready()
 		procs += node_ptr->config_ptr->cpus;
 #endif
 	}
-	info("sending info for cluster %s", slurmctld_cluster_name);
 
 	rc = clusteracct_storage_g_cluster_procs(acct_db_conn,
 						 slurmctld_cluster_name,
