@@ -168,9 +168,12 @@ ACCOUNTING CHANGES
   SlurmDBD has been added. This information is required for use of SlurmDBD
   to manage job accounting data. Information is maintained based upon 
   an "association", which has four components: cluster name, Slurm partition, 
-  user name and bank account. See the sacctmgr man page or accounting web
-  page for more information. Additional tools to generate accounting reports
-  are currently under development and will be released soon.
+  user name and bank account. This tool can also be used to maintain 
+  scheduling policy information that can be uploaded to Moab (various 
+  resource limits and fair-share values) See the sacctmgr man page and 
+  accounting web page for more information. Additional tools to generate 
+  accounting reports are currently under development and will be released 
+  soon.
 
 * Job completion records can now be written to a MySQL or PostGreSQL
   database in addition to a test file as controlled using the JobCompType
@@ -223,4 +226,5 @@ OTHER CHANGES
 
 * New node state FAILING has been added along with event trigger for it.
   This is similar to DRAINING, but is intended for fault prediction work.
+  A trigger was also added for nodes becoming DRAINED.
 
