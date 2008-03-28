@@ -192,6 +192,9 @@ static int _modify_common(mysql_conn_t *mysql_conn,
 	char *query = NULL;
 	int rc = SLURM_SUCCESS;
 
+	if(mysql_conn->rollback)
+		mysql_autocommit(mysql_conn->acct_mysql_db, 0);
+
 	xstrfmtcat(query, 
 		   "update %s set mod_time=%d%s "
 		   "where deleted=0 && %s;",
@@ -235,6 +238,9 @@ static int _remove_common(mysql_conn_t *mysql_conn,
 	char *query = NULL;
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
+
+	if(mysql_conn->rollback)
+		mysql_autocommit(mysql_conn->acct_mysql_db, 0);
 
 	query = xstrdup_printf("update %s set mod_time=%d, deleted=1 "
 			       "where deleted=0 && (%s);",
@@ -297,7 +303,10 @@ static int _remove_common(mysql_conn_t *mysql_conn,
 		}
 	}
 	mysql_free_result(result);
-
+ 
+	if(rc == SLURM_SUCCESS && mysql_conn->rollback) 
+		mysql_conn->trans_started = 1;
+	
 	return rc;
 }
 
@@ -774,19 +783,16 @@ extern int acct_storage_p_commit(mysql_conn_t *mysql_conn, bool commit)
 				error("undo failed");
 		} else if(mysql_conn->trans_started) {
 			info("rolling back");
-			if(mysql_db_query(mysql_conn->acct_mysql_db,
-					  "ROLLBACK;"))
+			if(mysql_db_rollback(mysql_conn->acct_mysql_db))
 				error("rollback failed");
 			mysql_conn->trans_started = 0;
-			mysql_autocommit(mysql_conn->acct_mysql_db, 1);
 		}	
 	
 	} else if(mysql_conn->trans_started) {
 		debug4("commiting");
-		if(mysql_db_query(mysql_conn->acct_mysql_db, "COMMIT;"))
+		if(mysql_db_commit(mysql_conn->acct_mysql_db))
 			error("commit failed");
 		mysql_conn->trans_started = 0;
-		mysql_autocommit(mysql_conn->acct_mysql_db, 1);
 	}
 	
 	if(commit && list_count(mysql_conn->update_list)) {
@@ -2122,9 +2128,6 @@ extern List acct_storage_p_modify_clusters(mysql_conn_t *mysql_conn,
 		return NULL;
 	}
 
-	if(mysql_conn->rollback)
-		mysql_autocommit(mysql_conn->acct_mysql_db, 0);
-
 	if(vals) {
 		char *send_char = xstrdup_printf("(%s)", name_char);
 		
@@ -2638,7 +2641,6 @@ extern List acct_storage_p_remove_clusters(mysql_conn_t *mysql_conn,
 		xfree(query);
 		return NULL;
 	}
-	xfree(query);
 	rc = 0;
 	ret_list = list_create(slurm_destroy_char);
 	while((row = mysql_fetch_row(result))) {
@@ -2656,11 +2658,13 @@ extern List acct_storage_p_remove_clusters(mysql_conn_t *mysql_conn,
 	mysql_free_result(result);
 
 	if(!list_count(ret_list)) {
-		debug3("didn't effect anything");
+		debug3("didn't effect anything\n%s", query);
 		list_destroy(ret_list);
+		xfree(query);
 		return NULL;
 	}
-	
+	xfree(query);
+
 	assoc_char = xstrdup_printf("acct='root' && (%s)", extra);
 	xfree(extra);
 
