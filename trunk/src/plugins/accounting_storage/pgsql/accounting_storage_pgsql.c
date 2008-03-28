@@ -668,7 +668,7 @@ extern int fini ( void )
 #endif
 }
 
-extern void *acct_storage_p_get_connection(bool rollback)
+extern void *acct_storage_p_get_connection(bool make_agent, bool rollback)
 {
 #ifdef HAVE_PGSQL
 	PGconn *acct_pgsql_db = NULL;

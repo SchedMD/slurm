@@ -87,7 +87,7 @@ extern int fini ( void )
 	return SLURM_SUCCESS;
 }
 
-extern void * acct_storage_p_get_connection(bool commit)
+extern void * acct_storage_p_get_connection(bool make_agent, bool rollback)
 {
 	return NULL;
 }

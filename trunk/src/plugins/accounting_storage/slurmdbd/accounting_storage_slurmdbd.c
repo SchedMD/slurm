@@ -129,11 +129,11 @@ extern int fini ( void )
 	return SLURM_SUCCESS;
 }
 
-extern void *acct_storage_p_get_connection(bool rollback)
+extern void *acct_storage_p_get_connection(bool make_agent, bool rollback)
 {
 	if(!slurmdbd_auth_info)	
 		init();
-	slurm_open_slurmdbd_conn(slurmdbd_auth_info, rollback);
+	slurm_open_slurmdbd_conn(slurmdbd_auth_info, make_agent, rollback);
 
 	return NULL;
 }

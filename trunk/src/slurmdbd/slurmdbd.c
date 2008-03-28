@@ -133,7 +133,7 @@ int main(int argc, char *argv[])
 		fatal("pthread_create %m");
 	slurm_attr_destroy(&thread_attr);
 
-	db_conn = acct_storage_g_get_connection(0);
+	db_conn = acct_storage_g_get_connection(false, false);
 	
 	if(assoc_mgr_init(db_conn, 0) == SLURM_ERROR) {
 		error("Problem getting cache of data");

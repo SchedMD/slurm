@@ -88,7 +88,7 @@ static bool      rollback_started    = 0;
 
 static void * _agent(void *x);
 static void   _agent_queue_del(void *x);
-static void   _close_slurmdbd_fd();
+static void   _close_slurmdbd_fd(void);
 static void   _create_agent(void);
 static bool   _fd_readable(slurm_fd fd);
 static int    _fd_writeable(slurm_fd fd);
@@ -114,11 +114,16 @@ static int    _tot_wait (struct timeval *start_time);
  * Socket open/close/read/write functions
  ****************************************************************************/
 
-/* Open a socket connection to SlurmDbd */
-extern int slurm_open_slurmdbd_conn(char *auth_info, bool rollback)
+/* Open a socket connection to SlurmDbd
+ * auth_info IN - alternate authentication key
+ * make_agent IN - make agent to process RPCs if set
+ * rollback IN - keep journal and permit rollback if set
+ * Returns SLURM_SUCCESS or an error code */
+extern int slurm_open_slurmdbd_conn(char *auth_info, bool make_agent, 
+				    bool rollback)
 {
 	slurm_mutex_lock(&agent_lock);
-	if ((agent_tid == 0) || (agent_list == NULL))
+	if (make_agent && ((agent_tid == 0) || (agent_list == NULL)))
 		_create_agent();
 	slurm_mutex_unlock(&agent_lock);
 
@@ -137,10 +142,17 @@ extern int slurm_open_slurmdbd_conn(char *auth_info, bool rollback)
 }
 
 /* Close the SlurmDBD socket connection */
-extern int slurm_close_slurmdbd_conn()
+extern int slurm_close_slurmdbd_conn(void)
 {
 	/* NOTE: agent_lock not needed for _shutdown_agent() */
 	_shutdown_agent();
+
+	if (rollback_started) {
+		if (_send_fini_msg() != SLURM_SUCCESS)
+			error("slurmdbd: Sending fini msg: %m");
+		else
+			debug("slurmdbd: Sent fini msg");
+	}
 
 	slurm_mutex_lock(&slurmdbd_lock);
 	_close_slurmdbd_fd();
@@ -232,6 +244,8 @@ extern int slurm_send_recv_slurmdbd_msg(slurmdbd_msg_t *req,
 
 /* Send an RPC to the SlurmDBD. Do not wait for the reply. The RPC
  * will be queued and processed later if the SlurmDBD is not responding.
+ * NOTE: slurm_open_slurmdbd_conn() must have been called with make_agent set
+ * 
  * Returns SLURM_SUCCESS or an error code */
 extern int slurm_send_slurmdbd_msg(slurmdbd_msg_t *req)
 {
@@ -567,7 +581,7 @@ static int _send_init_msg(void)
 	return rc;
 }
 
-static int _send_fini_msg()
+static int _send_fini_msg(void)
 {
 	Buf buffer;
 	dbd_fini_msg_t req;
@@ -585,16 +599,9 @@ static int _send_fini_msg()
 }
 
 /* Close the SlurmDbd connection */
-static void _close_slurmdbd_fd()
+static void _close_slurmdbd_fd(void)
 {
 	if (slurmdbd_fd >= 0) {
-		if(rollback_started) {
-			if (_send_fini_msg() != SLURM_SUCCESS)
-				error("slurmdbd: Sending fini msg: %m");
-			else
-				debug("slurmdbd: Sent fini msg");
-		}
-
 		close(slurmdbd_fd);
 		slurmdbd_fd = -1;
 	}
@@ -613,7 +620,7 @@ static int _send_msg(Buf buffer)
 	uint32_t msg_size, nw_size;
 	char *msg;
 	ssize_t msg_wrote;
-	int rc;
+	int rc, retry_cnt = 0;
 
 	if (slurmdbd_fd < 0)
 		return EAGAIN;
@@ -621,6 +628,8 @@ static int _send_msg(Buf buffer)
 	rc =_fd_writeable(slurmdbd_fd);
 	if (rc == -1) {
 re_open:	/* SlurmDBD shutdown, try to reopen a connection now */
+		if (retry_cnt++ > 3)
+			return EAGAIN;
 		_reopen_slurmdbd_fd();
 		rc = _fd_writeable(slurmdbd_fd);
 	}
