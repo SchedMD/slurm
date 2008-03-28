@@ -687,15 +687,20 @@ extern void *acct_storage_p_get_connection(bool rollback)
 #endif
 }
 
-extern int acct_storage_p_close_connection(PGconn **acct_pgsql_db, bool commit)
+extern int acct_storage_p_close_connection(PGconn **acct_pgsql_db)
 {
 #ifdef HAVE_PGSQL
-	pgsql_close_db_connection(acct_pgsql_db, commit);
+	pgsql_close_db_connection(acct_pgsql_db, 1);
 	
 	return SLURM_SUCCESS;
 #else
 	return SLURM_ERROR;
 #endif
+}
+
+extern int acct_storage_p_commit(void *db_conn, bool commit)
+{
+	return SLURM_SUCCESS;
 }
 
 extern int acct_storage_p_add_users(PGconn *acct_pgsql_db, uint32_t uid,
@@ -1062,7 +1067,7 @@ try_again:
 		if(!reinit) {
 			error("It looks like the storage has gone "
 			      "away trying to reconnect");
-			acct_storage_p_close_connection(&acct_pgsql_db, 1);
+			acct_storage_p_close_connection(&acct_pgsql_db);
 			acct_pgsql_db = acct_storage_p_get_connection(0);
 			reinit = 1;
 			goto try_again;

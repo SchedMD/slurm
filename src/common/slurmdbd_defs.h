@@ -161,6 +161,8 @@ typedef struct dbd_init_msg {
 } dbd_init_msg_t;
 
 typedef struct dbd_fini_msg {
+	uint16_t close_conn;  /* to close connection 1, 0 will keep
+				 connection open */
 	uint16_t commit;      /* to rollback(0) or commit(1) changes */     
 } dbd_fini_msg_t;
 
@@ -279,7 +281,7 @@ typedef struct dbd_step_start_msg {
 extern int slurm_open_slurmdbd_conn(char *auth_info, bool rollback);
 
 /* Close the SlurmDBD socket connection */
-extern int slurm_close_slurmdbd_conn(bool commit);
+extern int slurm_close_slurmdbd_conn();
 
 /* Send an RPC to the SlurmDBD. Do not wait for the reply. The RPC
  * will be queued and processed later if the SlurmDBD is not responding.

@@ -103,9 +103,19 @@ typedef struct {
 typedef struct {
 	List acct_list; /* list of char * */
 	List cluster_list; /* list of char * */
+	uint32_t fairshare;	/* fairshare number */
 	List id_list; /* list of char */
+	uint32_t max_cpu_secs_per_job; /* max number of cpu seconds this 
+					   * association can have per job */
+	uint32_t max_jobs;	/* max number of jobs this association can run
+				 * at one time */
+	uint32_t max_nodes_per_job; /* max number of nodes this
+				     * association can allocate per job */
+	uint32_t max_wall_duration_per_job; /* longest time this
+					     * association can run a job */
 	List partition_list; /* list of char * */
 	char *parent_acct; /* name of parent account */
+
 	List user_list; /* list of char * */
 } acct_association_cond_t;
 
@@ -243,16 +253,26 @@ extern int slurm_acct_storage_fini(void); /* unload the plugin */
 
 /*
  * get a new connection to the storage unit
+ * IN: bool weither to be able to rollback or not
  * RET: pointer used to access db 
  */
 extern void *acct_storage_g_get_connection(bool rollback);
 
 /*
  * release connection to the storage unit
- * IN: void * pointer returned from acct_storage_g_get_connection()
+ * IN/OUT: void ** pointer returned from
+ *         acct_storage_g_get_connection() which will be freed.
  * RET: SLURM_SUCCESS on success SLURM_ERROR else 
  */
-extern int acct_storage_g_close_connection(void **db_conn, bool commit);
+extern int acct_storage_g_close_connection(void **db_conn);
+
+/*
+ * commit or rollback changes made without closing connection
+ * IN: void * pointer returned from acct_storage_g_get_connection()
+ * IN: bool - true will commit changes false will rollback
+ * RET: SLURM_SUCCESS on success SLURM_ERROR else 
+ */
+extern int acct_storage_g_commit(void *db_conn, bool commit);
 
 /* 
  * add users to accounting system 

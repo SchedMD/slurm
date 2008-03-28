@@ -1,12 +1,11 @@
 /*****************************************************************************\
- *  mysql_jobacct_process.h - functions the processing of
- *                               information from the mysql jobacct
- *                               storage.
+ *  print.h - definitions for all printing functions.
  *****************************************************************************
- *
- *  Copyright (C) 2004-2007 The Regents of the University of California.
+ *  Copyright (C) 2008 Lawrence Livermore National Security.
+ *  Copyright (C) 2002-2007 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Danny Auble <da@llnl.gov>
+ *  LLNL-CODE-402394.
  *  
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -35,52 +34,54 @@
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
- *
- *  This file is patterned after jobcomp_linux.c, written by Morris Jette and
- *  Copyright (C) 2002 The Regents of the University of California.
 \*****************************************************************************/
+#ifndef __SACCTMGR_PRINT_H__
+#define __SACCTMGR_PRINT_H__
 
-#ifndef _HAVE_MYSQL_JOBACCT_PROCESS_H
-#define _HAVE_MYSQL_JOBACCT_PROCESS_H
+#if HAVE_CONFIG_H
+#  include "config.h"
+#endif
 
-#include <sys/types.h>
-#include <pwd.h>
-#include <stdlib.h>
-#include "src/common/assoc_mgr.h"
-#include "src/common/jobacct_common.h"
-#include "src/slurmdbd/read_config.h"
-#include "src/slurmctld/slurmctld.h"
-#include "src/database/mysql_common.h"
-#include "src/common/slurm_accounting_storage.h"
-
-#ifndef HAVE_MYSQL
-typedef void mysql_conn_t;
+#if HAVE_GETOPT_H
+#  include <getopt.h>
 #else
+#  include "src/common/getopt.h"
+#endif
+
+#include <ctype.h>
+#include <errno.h>
+#include <stdio.h>
+#include <stdlib.h>
+#ifdef HAVE_STRING_H
+#  include <string.h>
+#endif
+#ifdef HAVE_STRINGS_H
+#  include <strings.h>
+#endif
+#include <time.h>
+#include <unistd.h>
+
+#include <slurm/slurm.h>
+
+#include "src/common/xstring.h"
+#include "src/common/slurm_accounting_storage.h"
+#include "src/common/jobacct_common.h"
+
+typedef enum {	HEADLINE,
+		UNDERSCORE,
+		VALUE
+} type_t;
 
 typedef struct {
-	MYSQL *acct_mysql_db;
-	bool rollback;
-	char *query;
-	bool trans_started;
-	List update_list;
-} mysql_conn_t;
+	char *name;  /* name to be printed in header */
+	uint16_t len;  /* what is the width of the print */          
+	void (*print_routine) (); /* what is the function to print with  */
+} print_field_t;
 
-//extern int acct_db_init;
-
-extern char *job_table;
-extern char *step_table;
-
-extern int acct_storage_p_get_assoc_id(mysql_conn_t *mysql_conn,
-				       acct_association_rec_t *assoc);
-
-extern List mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn,
-					   List selected_steps,
-					   List selected_parts,
-					   sacct_parameters_t *params);
-
-extern void mysql_jobacct_process_archive(mysql_conn_t *mysql_conn,
-					  List selected_parts,
-					  sacct_parameters_t *params);
-#endif
+extern void destroy_print_field(void *object);
+extern void print_header(List print_fields_list);
+extern void print_date(void);
+extern void print_str(type_t type, print_field_t *field, char *value);
+extern void print_int(type_t type, print_field_t *field, uint32_t value);
 
 #endif

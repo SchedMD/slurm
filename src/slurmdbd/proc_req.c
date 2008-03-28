@@ -826,9 +826,12 @@ static int   _fini_conn(void **db_conn, Buf in_buffer, Buf *out_buffer)
 		goto end_it;
 	}
 	
-	debug2("DBD_FINI: COMMIT:%u", fini_msg->commit);
-	acct_storage_g_close_connection(db_conn, fini_msg->commit);
-
+	debug2("DBD_FINI: CLOSE:%u COMMIT:%u",
+	       fini_msg->close_conn, fini_msg->commit);
+	if(fini_msg->close_conn == 1)
+		rc = acct_storage_g_close_connection(db_conn);
+	else
+		rc = acct_storage_g_commit((*db_conn), fini_msg->commit);
 end_it:
 	slurmdbd_free_fini_msg(fini_msg);
 	*out_buffer = make_dbd_rc_msg(rc, comment, DBD_FINI);

@@ -63,6 +63,23 @@ static int _clear_results(MYSQL *mysql_db)
 	return SLURM_SUCCESS;
 }
 
+static MYSQL_RES *_get_first_result(MYSQL *mysql_db)
+{
+	MYSQL_RES *result = NULL;
+	int rc = 0;
+	do {
+		/* did current statement return data? */
+		if((result = mysql_store_result(mysql_db)))
+			return result;
+		
+		/* more results? -1 = no, >0 = error, 0 = yes (keep looping) */
+		if ((rc = mysql_next_result(mysql_db)) > 0)
+			debug3("error: Could not execute statement %d\n", rc);
+	} while (rc == 0);
+	
+	return NULL;
+}
+
 static int _mysql_make_table_current(MYSQL *mysql_db, char *table_name,
 				     storage_field_t *fields)
 {
@@ -177,7 +194,7 @@ extern int mysql_get_db_connection(MYSQL **mysql_db, char *db_name,
 
 extern int mysql_close_db_connection(MYSQL **mysql_db)
 {
-	if(*mysql_db) {
+	if(mysql_db && *mysql_db) {
 		mysql_close(*mysql_db);
 		*mysql_db = NULL;
 	}
@@ -210,7 +227,7 @@ extern MYSQL_RES *mysql_db_query_ret(MYSQL *mysql_db, char *query)
 	MYSQL_RES *result = NULL;
 	
 	if(mysql_db_query(mysql_db, query) != SLURM_ERROR)  {
-		result = mysql_store_result(mysql_db);
+		result = _get_first_result(mysql_db);
 		if(!result && mysql_field_count(mysql_db)) {
 			/* should have returned data */
 			error("We should have gotten a result: %s", 

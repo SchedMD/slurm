@@ -445,7 +445,7 @@ int main(int argc, char *argv[])
 		recover = 2;
 
 		/* Save any pending state save RPCs */
-		acct_storage_g_close_connection(&acct_db_conn, 1);
+		acct_storage_g_close_connection(&acct_db_conn);
 		assoc_mgr_fini();
 	}
 

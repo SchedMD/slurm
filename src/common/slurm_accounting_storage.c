@@ -59,7 +59,8 @@
 
 typedef struct slurm_acct_storage_ops {
 	void *(*get_conn)          (bool rollback);
-	int  (*close_conn)         (void **db_conn, bool commit);
+	int  (*close_conn)         (void **db_conn);
+	int  (*commit)             (void *db_conn, bool commit);
 	int  (*add_users)          (void *db_conn, uint32_t uid,
 				    List user_list);
 	int  (*add_coord)          (void *db_conn, uint32_t uid,
@@ -179,6 +180,7 @@ static slurm_acct_storage_ops_t * _acct_storage_get_ops(
 	static const char *syms[] = {
 		"acct_storage_p_get_connection",
 		"acct_storage_p_close_connection",
+		"acct_storage_p_commit",
 		"acct_storage_p_add_users",
 		"acct_storage_p_add_coord",
 		"acct_storage_p_add_accts",
@@ -1158,6 +1160,11 @@ extern void pack_acct_association_cond(void *in, Buf buffer)
 		pack32(0, buffer);
 		pack32(0, buffer);
 		pack32(0, buffer);
+		pack32(0, buffer);
+		pack32(0, buffer);
+		pack32(0, buffer);
+		pack32(0, buffer);
+		pack32(0, buffer);
 		packnull(buffer);
 		pack32(0, buffer);
 		return;
@@ -1189,6 +1196,8 @@ extern void pack_acct_association_cond(void *in, Buf buffer)
 	}
 	count = 0;
 
+	pack32(object->fairshare, buffer);
+	
 	if(object->id_list)
 		count = list_count(object->id_list);
 	
@@ -1200,6 +1209,11 @@ extern void pack_acct_association_cond(void *in, Buf buffer)
 		}
 	}
 	count = 0;
+
+	pack32(object->max_cpu_secs_per_job, buffer);
+	pack32(object->max_jobs, buffer);
+	pack32(object->max_nodes_per_job, buffer);
+	pack32(object->max_wall_duration_per_job, buffer);
 
 	if(object->partition_list)
 		count = list_count(object->partition_list);
@@ -1254,6 +1268,8 @@ extern int unpack_acct_association_cond(void **object, Buf buffer)
 		list_append(object_ptr->cluster_list, tmp_info);
 	}
 
+	safe_unpack32(&object_ptr->fairshare, buffer);
+
 	safe_unpack32(&count, buffer);
 	object_ptr->id_list = list_create(slurm_destroy_char);
 	for(i=0; i<count; i++) {
@@ -1261,6 +1277,11 @@ extern int unpack_acct_association_cond(void **object, Buf buffer)
 		list_append(object_ptr->id_list, tmp_info);
 	}
 	
+	safe_unpack32(&object_ptr->max_cpu_secs_per_job, buffer);
+	safe_unpack32(&object_ptr->max_jobs, buffer);
+	safe_unpack32(&object_ptr->max_nodes_per_job, buffer);
+	safe_unpack32(&object_ptr->max_wall_duration_per_job, buffer);
+
 	safe_unpack32(&count, buffer);
 	object_ptr->partition_list = list_create(slurm_destroy_char);
 	for(i=0; i<count; i++) {
@@ -1508,11 +1529,19 @@ extern void *acct_storage_g_get_connection(bool rollback)
 	return (*(g_acct_storage_context->ops.get_conn))(rollback);
 }
 
-extern int acct_storage_g_close_connection(void **db_conn, bool commit)
+extern int acct_storage_g_close_connection(void **db_conn)
 {
 	if (slurm_acct_storage_init(NULL) < 0)
 		return SLURM_ERROR;
-	return (*(g_acct_storage_context->ops.close_conn))(db_conn, commit);
+	return (*(g_acct_storage_context->ops.close_conn))(db_conn);
+
+}
+
+extern int acct_storage_g_commit(void *db_conn, bool commit)
+{
+	if (slurm_acct_storage_init(NULL) < 0)
+		return SLURM_ERROR;
+	return (*(g_acct_storage_context->ops.commit))(db_conn, commit);
 
 }
 

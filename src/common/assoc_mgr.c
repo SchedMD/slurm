@@ -232,14 +232,14 @@ extern int assoc_mgr_fill_in_assoc(void *db_conn, acct_association_rec_t *assoc,
 				   debug3("not the right account");
 				   continue;
 			}
-/* We shouldn't have to do this since we only have this clusters
- * assocs here */
-/* 			if(found_assoc->cluster  */
-/* 			   && strcasecmp(assoc->cluster, */
-/* 					 found_assoc->cluster)) { */
-/* 				debug3("not the right cluster"); */
-/* 				continue; */
-/* 			} */
+
+			/* only check for on the slurmdbd */
+			if(!local_cluster_name && found_assoc->cluster
+			   && strcasecmp(assoc->cluster,
+					 found_assoc->cluster)) {
+				debug3("not the right cluster");
+				continue;
+			}
 	
 			if(assoc->partition
 			   && (!found_assoc->partition 
@@ -390,7 +390,7 @@ extern int assoc_mgr_update_local_assocs(acct_update_object_t *update)
 		return SLURM_SUCCESS;
 
 	slurm_mutex_lock(&local_association_lock);
-	itr = list_iterator_create(local_user_list);
+	itr = list_iterator_create(local_association_list);
 	while((object = list_pop(update->objects))) {
 		if(local_cluster_name) {
 			/* only update the local clusters assocs */
@@ -399,8 +399,47 @@ extern int assoc_mgr_update_local_assocs(acct_update_object_t *update)
 		}
 		list_iterator_reset(itr);
 		while((rec = list_next(itr))) {
-			if(object->id == rec->id)
+			if(object->id) {
+				if(object->id == rec->id) {
+					break;
+				}
+				continue;
+			} else {
+				if(!object->user && rec->user) {
+					debug3("we are looking for a "
+					       "nonuser association");
+					continue;
+				} else if(object->uid != rec->uid) {
+					debug3("not the right user");
+					continue;
+				}
+				
+				if(object->acct
+				   && (!rec->acct 
+				       || strcasecmp(object->acct,
+						     rec->acct))) {
+					debug3("not the right account");
+					continue;
+				}
+				
+				/* only check for on the slurmdbd */
+				if(!local_cluster_name && object->acct
+				   && (!rec->cluster
+				       || strcasecmp(object->cluster,
+						     rec->cluster))) {
+					debug3("not the right cluster");
+					continue;
+				}
+				
+				if(object->partition
+				   && (!rec->partition 
+				       || strcasecmp(object->partition, 
+						     rec->partition))) {
+					debug3("not the right partition");
+					continue;
+				}
 				break;
+			}			
 		}
 		//info("%d assoc %u", update->type, object->id);
 		switch(update->type) {
@@ -409,8 +448,31 @@ extern int assoc_mgr_update_local_assocs(acct_update_object_t *update)
 				//rc = SLURM_ERROR;
 				break;
 			}
+			debug("updating the assocs here on %u", rec->id);
+			if((int)object->fairshare >= 0) {
+				rec->fairshare = object->fairshare;
+			}
 
-			/* fix me: do updates here */
+			if((int)object->max_jobs >= 0) {
+				rec->max_jobs = object->max_jobs;
+			}
+
+			if((int)object->max_nodes_per_job >= 0) {
+				rec->max_nodes_per_job =
+					object->max_nodes_per_job;
+			}
+
+			if((int)object->max_wall_duration_per_job >= 0) {
+				rec->max_wall_duration_per_job =
+					object->max_wall_duration_per_job;
+			}
+
+			if((int)object->max_cpu_secs_per_job >= 0) {
+				rec->max_cpu_secs_per_job = 
+					object->max_cpu_secs_per_job;
+			}
+
+			/* fix me: do more updates here */
 			break;
 		case ACCT_ADD_ASSOC:
 			if(rec) {
