@@ -561,7 +561,11 @@ struct step_launch_state *step_launch_state_create(slurm_step_ctx_t *ctx)
 
 	sls = xmalloc(sizeof(struct step_launch_state));
 	sls->slurmctld_socket_fd = -1;
-	sls->tasks_requested = layout->task_cnt;
+	/* Hack for LAM-MPI's lamboot, launch one task per node */
+	if (mpi_hook_client_single_task_per_node())
+		sls->tasks_requested = layout->node_cnt;
+	else
+		sls->tasks_requested = layout->task_cnt;
 	sls->tasks_started = bit_alloc(layout->task_cnt);
 	sls->tasks_exited = bit_alloc(layout->task_cnt);
 	sls->layout = layout;
