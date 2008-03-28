@@ -26,6 +26,23 @@ The latest stable release is version 1.4.</p>
 <h1>Related Software</h1>
 <ul>
 
+<li>Authentication plugins identifies the user originating a message.</li>
+<ul>
+<li><b>Munge</b><br>
+In order to compile the "auth/munge" authentication plugin for SLURM, you will need
+to build and install Munge, available from 
+<a href="http://home.gna.org/munge/">http://home.gna.org/munge/</a>.
+</li>
+</ul>
+
+<li>Databases can be used to store accounting information.
+See our <a href="accounting.html">Accounting</a> web page for more information.</li>
+<ul>
+<li><a href="http://www.clusterresources.com/pages/products/gold-allocation-manager.php">Gold</a></li>
+<li><a href="http://www.mysql.com/">MySQL</a></li>
+<li><a href="http://www.postgresql.org/">PostgreSQL</a></li>
+</ul>
+
 <li>Digital signatures (Cypto plugin) are used to insure message are not altered.</li>
 <ul>
 <li><b>OpenSSL</b><br>
@@ -38,16 +55,7 @@ for the generation of digital signatures. Munge is available from
 <a href="http://home.gna.org/munge/">http://home.gna.org/munge/</a>.</li>
 </ul> 
 
-<li>Authentication plugins identifies the user originating a message.</li>
-<ul>
-<li><b>Munge</b><br>
-In order to compile the "auth/munge" authentication plugin for SLURM, you will need
-to build and install Munge, available from 
-<a href="http://home.gna.org/munge/">http://home.gna.org/munge/</a>.
-</li>
-</ul>
-
-<li>Interconnect plugins</li>
+<li>Interconnect plugins (Switch plugin)</li>
 <ul>
 <li><b>QsNet</b><br>
 In order to build the "switch/elan" plugin for SLURM, you will need
@@ -84,13 +92,6 @@ Maui Scheduler</a></li>
 Moab Cluster Suite</a></li>
 </ul>
 
-<li>Database tools available for managing accounting data</li>
-<ul>
-<li><a href="http://www.clusterresources.com/pages/products/gold-allocation-manager.php">Gold</a></li>
-<li><a href="http://www.mysql.com/">MySQL</a></li>
-<li><a href="http://www.postgresql.org/">PostgreSQL</a><li>
-</ul>
-
 <li>Task Affinity plugins</li>
 <ul>
 <li><a href="http://www.open-mpi.org/software/plpa/">
@@ -99,6 +100,6 @@ Portable Linux Processor Affinity (PLPA)</a></li>
 
 </ul>
 
-<p style="text-align:center;">Last modified 11 March 2008</p>
+<p style="text-align:center;">Last modified 28 March 2008</p>
 
 <!--#include virtual="footer.txt"-->
