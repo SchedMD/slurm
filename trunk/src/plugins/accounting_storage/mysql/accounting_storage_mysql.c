@@ -263,7 +263,8 @@ static int _remove_common(mysql_conn_t *mysql_conn,
 			list_create(destroy_acct_update_object);
 		
 		return SLURM_ERROR;
-	}
+	} else if(mysql_conn->rollback) 
+		mysql_conn->trans_started = 1;
 
 	if(table == assoc_table || !assoc_char)
 		return SLURM_SUCCESS;
@@ -304,56 +305,9 @@ static int _remove_common(mysql_conn_t *mysql_conn,
 	}
 	mysql_free_result(result);
  
-	if(rc == SLURM_SUCCESS && mysql_conn->rollback) 
-		mysql_conn->trans_started = 1;
-	
 	return rc;
 }
 
-/* static int _remove_assoc_common(mysql_conn_t *mysql_conn, */
-/* 				uint16_t type, */
-/* 				time_t now, */
-/* 				char *user_name, */
-/* 				char *assoc_char)  */
-/* { */
-/* 	MYSQL_RES *result = NULL; */
-/* 	MYSQL_ROW row; */
-/* 	int lft = 0, rgt = 0; */
-/* 	char *query = xstrdup_printf("SELECT lft, rgt FROM %s WHERE %s;", */
-/* 				     assoc_table, assoc_char); */
-/* 	int rc = SLURM_SUCCESS; */
-
-/* 	debug3("query\n%s", query); */
-/* 	if(!(result = mysql_db_query_ret(mysql_conn->acct_mysql_db, query))) { */
-/* 		xfree(query); */
-/* 		return rc; */
-/* 	} */
-/* 	xfree(query); */
-
-/* 	while((row = mysql_fetch_row(result))) { */
-/* 		query = xstrdup_printf( */
-/* 			"update %s set mod_time=%d, deleted=1 " */
-/* 			"where deleted=0 && lft>=%s && rgt<=%s;", */
-/* 			assoc_table, now, */
-/* 			row[0], row[1]); */
-/* 		debug3("query\n%s", query); */
-/* 		rc = mysql_db_query(mysql_conn->acct_mysql_db, query); */
-/* 		xfree(query); */
-/* 		if(rc != SLURM_SUCCESS) { */
-/* 			if(mysql_conn->rollback) { */
-/* 				mysql_db_rollback(mysql_conn->acct_mysql_db); */
-/* 			} */
-/* 			list_destroy(mysql_conn->update_list); */
-/* 			mysql_conn->update_list = */
-/* 				list_create(destroy_acct_update_object); */
-/* 			break; */
-/* 		} */
-/* 	} */
-/* 	mysql_free_result(result); */
-
-/* 	return rc; */
-
-/* } */
 static int _get_db_index(MYSQL *acct_mysql_db, 
 			 time_t submit, uint32_t jobid, uint32_t associd)
 {
@@ -2773,33 +2727,40 @@ extern List acct_storage_p_remove_associations(mysql_conn_t *mysql_conn,
 		xstrfmtcat(extra, " && parent_acct='%s'", assoc_q->parent_acct);
 	}
 
-	query = xstrdup_printf("select id from %s %s;", assoc_table, extra);
+	query = xstrdup_printf("select id, lft, rgt from %s %s;",
+			       assoc_table, extra);
 	xfree(extra);
 	if(!(result = mysql_db_query_ret(mysql_conn->acct_mysql_db, query))) {
 		xfree(query);
 		return NULL;
 	}
-	xfree(query);
 
 	rc = 0;
 	ret_list = list_create(slurm_destroy_char);
 	while((row = mysql_fetch_row(result))) {
 		char *object = xstrdup(row[0]);
 		list_append(ret_list, object);
+		/* get the lft and rgt associations also */
 		if(!rc) {
-			xstrfmtcat(name_char, "id=%s", object);
+			xstrfmtcat(name_char, 
+				   "(id=%s || (lft>=%s && rgt<=%s))",
+				   object, row[1], row[2]);
 			rc = 1;
 		} else {
-			xstrfmtcat(name_char, " || id=%s", object);
+			xstrfmtcat(name_char,
+				   " || (id=%s || (lft>=%s && rgt<=%s))",
+				   object, row[1], row[2]);
 		}
 	}
 	mysql_free_result(result);
 
 	if(!list_count(ret_list)) {
-		debug3("didn't effect anything");
+		debug3("didn't effect anything\n%s", query);
 		list_destroy(ret_list);
+		xfree(query);
 		return NULL;
 	}
+	xfree(query);
 
 	if(_remove_common(mysql_conn, DBD_REMOVE_ASSOCS, now,
 			  user_name, assoc_table, name_char, NULL)

@@ -430,6 +430,9 @@ extern int sacctmgr_delete_cluster(int argc, char *argv[])
 	}
 	ret_list = acct_storage_g_remove_clusters(
 		db_conn, my_uid, cluster_cond);
+
+	destroy_acct_cluster_cond(cluster_cond);
+
 	if(ret_list && list_count(ret_list)) {
 		char *object = NULL;
 		ListIterator itr = list_iterator_create(ret_list);
@@ -445,14 +448,11 @@ extern int sacctmgr_delete_cluster(int argc, char *argv[])
 			acct_storage_g_commit(db_conn, 0);;
 
 	} else {
-		printf(" error: problem deleting clusters\n");
-		rc = SLURM_ERROR;
+		printf(" Nothing deleted\n");
 	}
 
 	if(ret_list)
 		list_destroy(ret_list);
-	
-	destroy_acct_cluster_cond(cluster_cond);
 
 	return rc;
 }

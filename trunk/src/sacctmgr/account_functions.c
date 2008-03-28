@@ -44,8 +44,8 @@ static int _set_cond(int *start, int argc, char *argv[],
 		     acct_association_cond_t *assoc_cond)
 {
 	int i;
-	int u_set = 0;
 	int a_set = 0;
+	int u_set = 0;
 	int end = 0;
 
 	for (i=(*start); i<argc; i++) {
@@ -80,19 +80,17 @@ static int _set_cond(int *start, int argc, char *argv[],
 			u_set = 1;
 		} else if (strncasecmp (argv[i], "ShowAssoc", 1) == 0) {
 			acct_cond->with_assocs = 1;
-			u_set = 1;
 		} else {
 			printf(" Unknown condition: %s", argv[i]);
 		}
 	}
 	(*start) = i;
 
-	if(u_set && a_set)
-		return 3;
-	else if(u_set)
-		return 1;
-	else if(a_set)
+	if(a_set) {
 		return 2;
+	} else if(u_set)
+		return 1;
+
 	return 0;
 }
 
@@ -696,7 +694,8 @@ extern int sacctmgr_delete_account(int argc, char *argv[])
 		xmalloc(sizeof(acct_association_cond_t));
 	int i=0;
 	List ret_list = NULL;
-
+	int set = 0;
+	
 	acct_cond->acct_list = list_create(slurm_destroy_char);
 	acct_cond->description_list = list_create(slurm_destroy_char);
 	acct_cond->organization_list = list_create(slurm_destroy_char);
@@ -706,18 +705,31 @@ extern int sacctmgr_delete_account(int argc, char *argv[])
 	assoc_cond->cluster_list = list_create(slurm_destroy_char);
 	assoc_cond->partition_list = list_create(slurm_destroy_char);
 
-	if(!_set_cond(&i, argc, argv, acct_cond, assoc_cond)) {
+	if(!(set = _set_cond(&i, argc, argv, acct_cond, assoc_cond))) {
 		printf(" No conditions given to remove, not executing.\n");
 		destroy_acct_account_cond(acct_cond);
 		destroy_acct_association_cond(assoc_cond);
 		return SLURM_ERROR;
 	}
 
-	if((ret_list = acct_storage_g_remove_accounts(db_conn, my_uid, 
-						      acct_cond))) {
+	if(set == 1) {
+		ret_list = acct_storage_g_remove_accounts(
+			db_conn, my_uid, acct_cond);		
+	} else if(set == 2) {
+		ret_list = acct_storage_g_remove_associations(
+			db_conn, my_uid, assoc_cond);
+	}
+	destroy_acct_account_cond(acct_cond);
+	destroy_acct_association_cond(assoc_cond);
+	
+	if(ret_list && list_count(ret_list)) {
 		char *object = NULL;
 		ListIterator itr = list_iterator_create(ret_list);
-		printf(" Deleting accounts...\n");
+		if(set == 1) {
+			printf(" Deleting accounts...\n");
+		} else if(set == 2) {
+			printf(" Deleting account associations...\n");
+		}
 		while((object = list_next(itr))) {
 			printf("  %s\n", object);
 		}
@@ -727,12 +739,12 @@ extern int sacctmgr_delete_account(int argc, char *argv[])
 			_remove_existing_accounts(ret_list);
 		} else
 			acct_storage_g_commit(db_conn, 0);;
-		list_destroy(ret_list);
 	} else {
-		rc = SLURM_ERROR;
+		printf(" Nothing deleted\n");
 	}
-	destroy_acct_account_cond(acct_cond);
-	destroy_acct_association_cond(assoc_cond);
+
+	if(ret_list)
+		list_destroy(ret_list);
 
 	return rc;
 }

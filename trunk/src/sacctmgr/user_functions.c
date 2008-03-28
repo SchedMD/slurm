@@ -89,12 +89,11 @@ static int _set_cond(int *start, int argc, char *argv[],
 	}	
 	(*start) = i;
 
-	if(u_set && a_set)
-		return 3;
-	else if(u_set)
-		return 1;
-	else if(a_set)
+	if(a_set) {
 		return 2;
+	} else if(u_set)
+		return 1;
+
 	return 0;
 }
 
@@ -772,6 +771,7 @@ extern int sacctmgr_delete_user(int argc, char *argv[])
 		xmalloc(sizeof(acct_association_cond_t));
 	int i=0;
 	List ret_list = NULL;
+	int set = 0;
 
 	user_cond->user_list = list_create(slurm_destroy_char);
 	user_cond->def_acct_list = list_create(slurm_destroy_char);
@@ -781,18 +781,32 @@ extern int sacctmgr_delete_user(int argc, char *argv[])
 	assoc_cond->cluster_list = list_create(slurm_destroy_char);
 	assoc_cond->partition_list = list_create(slurm_destroy_char);
 
-	if(!_set_cond(&i, argc, argv, user_cond, assoc_cond)) {
+	if(!(set = _set_cond(&i, argc, argv, user_cond, assoc_cond))) {
 		printf(" No conditions given to remove, not executing.\n");
 		destroy_acct_user_cond(user_cond);
 		destroy_acct_association_cond(assoc_cond);
 		return SLURM_ERROR;
 	}
 
-	if((ret_list = acct_storage_g_remove_users(db_conn, my_uid,
-						   user_cond))) {
+	if(set == 1) {
+		ret_list = acct_storage_g_remove_users(
+			db_conn, my_uid, user_cond);		
+	} else if(set == 2) {
+		ret_list = acct_storage_g_remove_associations(
+			db_conn, my_uid, assoc_cond);
+	}
+
+	destroy_acct_user_cond(user_cond);
+	destroy_acct_association_cond(assoc_cond);
+
+	if(ret_list && list_count(ret_list)) {
 		char *object = NULL;
 		ListIterator itr = list_iterator_create(ret_list);
-		printf(" Deleting users...\n");
+		if(set == 1) {
+			printf(" Deleting users...\n");
+		} else if(set == 2) {
+			printf(" Deleting user associations...\n");
+		}
 		while((object = list_next(itr))) {
 			printf("  %s\n", object);
 		}
@@ -801,14 +815,13 @@ extern int sacctmgr_delete_user(int argc, char *argv[])
 			acct_storage_g_commit(db_conn, 1);
 			_remove_existing_users(ret_list);
 		} else
-			acct_storage_g_commit(db_conn, 0);
-		list_destroy(ret_list);
+			acct_storage_g_commit(db_conn, 0);;
 	} else {
-		rc = SLURM_ERROR;
+		printf(" Nothing deleted\n");
 	}
 
-	destroy_acct_user_cond(user_cond);
-	destroy_acct_association_cond(assoc_cond);
+	if(ret_list)
+		list_destroy(ret_list);
 
 	return rc;
 }
