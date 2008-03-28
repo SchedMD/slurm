@@ -138,9 +138,30 @@ extern void *acct_storage_p_get_connection(bool rollback)
 	return NULL;
 }
 
-extern int acct_storage_p_close_connection(void **db_conn, bool commit)
+extern int acct_storage_p_close_connection(void **db_conn)
 {
-	return slurm_close_slurmdbd_conn(commit);
+	return slurm_close_slurmdbd_conn();
+}
+
+extern int acct_storage_p_commit(void *db_conn, bool commit)
+{
+	slurmdbd_msg_t req;
+	dbd_fini_msg_t get_msg;
+	int rc, resp_code;
+
+	memset(&get_msg, 0, sizeof(dbd_fini_msg_t));
+
+	get_msg.close_conn = 0;
+	get_msg.commit = (uint16_t)commit;
+
+	req.msg_type = DBD_FINI;
+	req.data = &get_msg;
+	rc = slurm_send_slurmdbd_recv_rc_msg(&req, &resp_code);
+
+	if(resp_code != SLURM_SUCCESS)
+		rc = resp_code;
+
+	return rc;
 }
 
 extern int acct_storage_p_add_users(void *db_conn, uint32_t uid, List user_list)

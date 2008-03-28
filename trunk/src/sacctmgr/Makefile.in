@@ -69,9 +69,9 @@ CONFIG_CLEAN_FILES =
 am__installdirs = "$(DESTDIR)$(bindir)"
 binPROGRAMS_INSTALL = $(INSTALL_PROGRAM)
 PROGRAMS = $(bin_PROGRAMS)
-am_sacctmgr_OBJECTS = user_functions.$(OBJEXT) \
-	cluster_functions.$(OBJEXT) account_functions.$(OBJEXT) \
-	sacctmgr.$(OBJEXT) common.$(OBJEXT)
+am_sacctmgr_OBJECTS = account_functions.$(OBJEXT) \
+	cluster_functions.$(OBJEXT) common.$(OBJEXT) print.$(OBJEXT) \
+	sacctmgr.$(OBJEXT) user_functions.$(OBJEXT)
 sacctmgr_OBJECTS = $(am_sacctmgr_OBJECTS)
 am__DEPENDENCIES_1 =
 sacctmgr_DEPENDENCIES = $(convenience_libs) $(am__DEPENDENCIES_1)
@@ -263,12 +263,12 @@ top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
 INCLUDES = -I$(top_srcdir)
 sacctmgr_SOURCES = \
-	user_functions.c	\
-	cluster_functions.c	\
 	account_functions.c	\
-	sacctmgr.c	\
-	sacctmgr.h	\
-	common.c
+	cluster_functions.c	\
+	common.c                \
+	print.c	print.h	        \
+	sacctmgr.c sacctmgr.h	\
+	user_functions.c	
 
 convenience_libs = $(top_builddir)/src/api/libslurmhelper.la
 sacctmgr_LDADD = \
@@ -350,6 +350,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/account_functions.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cluster_functions.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/common.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/print.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sacctmgr.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/user_functions.Po@am__quote@
 

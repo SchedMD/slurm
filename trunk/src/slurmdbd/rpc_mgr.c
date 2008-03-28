@@ -237,7 +237,7 @@ static void * _service_connection(void *arg)
 		xfree(msg);
 	}
 
-	acct_storage_g_close_connection(&db_conn, 0);
+	acct_storage_g_close_connection(&db_conn);
 
 	if (slurm_close_accepted_conn(conn->newsockfd) < 0)
 		error("close(%d): %m",  conn->newsockfd);

@@ -7,12 +7,12 @@ INCLUDES = -I$(top_srcdir)
 bin_PROGRAMS = sacctmgr
 
 sacctmgr_SOURCES =	\
-	user_functions.c	\
-	cluster_functions.c	\
 	account_functions.c	\
-	sacctmgr.c	\
-	sacctmgr.h	\
-	common.c
+	cluster_functions.c	\
+	common.c                \
+	print.c	print.h	        \
+	sacctmgr.c sacctmgr.h	\
+	user_functions.c	
 
 convenience_libs = $(top_builddir)/src/api/libslurmhelper.la
 

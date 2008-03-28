@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  print.c - definitions for all printing functions.
+ *  common.c - definitions for functions common to all modules in sacctmgr.
  *****************************************************************************
  *  Copyright (C) 2008 Lawrence Livermore National Security.
  *  Copyright (C) 2002-2007 The Regents of the University of California.
@@ -39,90 +39,19 @@
 #include "sacctmgr.h"
 #define FORMAT_STRING_SIZE 32
 
-
-extern void print_header(void)
+extern int parse_option_end(char *option)
 {
-/* 	int	i,j; */
-/* 	for (i=0; i<nprintfields; i++) { */
-/* 		if (i) */
-/* 			printf(" "); */
-/* 		j=printfields[i]; */
-/* 		(fields[j].print_routine)(HEADLINE, 0); */
-/* 	} */
-/* 	printf("\n"); */
-/* 	for (i=0; i<nprintfields; i++) { */
-/* 		if (i) */
-/* 			printf(" "); */
-/* 		j=printfields[i]; */
-/* 		(fields[j].print_routine)(UNDERSCORE, 0); */
-/* 	} */
-/* 	printf("\n"); */
-}
+	int end = 0;
+	
+	if(!option)
+		return 0;
 
-extern int  print_str(char *str, int width, bool right, bool cut_output)
-{
-	char format[64];
-	int printed = 0;
-
-	if (right == true && width != 0)
-		snprintf(format, 64, "%%%ds", width);
-	else if (width != 0)
-		snprintf(format, 64, "%%.%ds", width);
-	else {
-		format[0] = '%';
-		format[1] = 's';
-		format[2] = '\0';
-	}
-
-	if ((width == 0) || (cut_output == false)) {
-		if ((printed = printf(format, str)) < 0)
-			return printed;
-	} else {
-		char temp[width + 1];
-		snprintf(temp, width + 1, format, str);
-		if ((printed = printf("%s",temp)) < 0)
-			return printed;
-	}
-
-	while (printed++ < width)
-		printf(" ");
-
-	return printed;
-}
-extern void print_date(void)
-{
-	time_t now;
-
-	now = time(NULL);
-	printf("%s", ctime(&now));
-
-}
-
-extern int print_secs(long time, int width, bool right, bool cut_output)
-{
-	char str[FORMAT_STRING_SIZE];
-	long days, hours, minutes, seconds;
-
-	seconds =  time % 60;
-	minutes = (time / 60)   % 60;
-	hours   = (time / 3600) % 24;
-	days    =  time / 86400;
-
-	if (days) 
-		snprintf(str, FORMAT_STRING_SIZE,
-			 "%ld-%2.2ld:%2.2ld:%2.2ld",
-		         days, hours, minutes, seconds);
-	else if (hours)
-		snprintf(str, FORMAT_STRING_SIZE,
-			 "%ld:%2.2ld:%2.2ld",
-		         hours, minutes, seconds);
-	else
-		snprintf(str, FORMAT_STRING_SIZE,
-			 "%ld:%2.2ld",
-		         minutes, seconds);
-
-	print_str(str, width, right, cut_output);
-	return SLURM_SUCCESS;
+	while(option[end] && option[end] != '=')
+		end++;
+	if(!option[end])
+		return 0;
+	end++;
+	return end;
 }
 
 extern void addto_char_list(List char_list, char *names)

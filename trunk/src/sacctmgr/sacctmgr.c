@@ -77,8 +77,6 @@ static void	_delete_it (int argc, char *argv[]);
 static int	_get_command (int *argc, char *argv[]);
 static void     _print_version( void );
 static int	_process_command (int argc, char *argv[]);
-static void     _close_db();
-static void     _handle_intr();
 static void	_usage ();
 
 int 
@@ -168,8 +166,6 @@ main (int argc, char *argv[])
 	db_conn = acct_storage_g_get_connection(rollback_flag);
 	my_uid = getuid();
 
-	xsignal(SIGINT, _handle_intr);
-
 	if (input_field_count)
 		exit_flag = 1;
 	else
@@ -181,8 +177,9 @@ main (int argc, char *argv[])
 			break;
 		error_code = _get_command (&input_field_count, input_fields);
 	}
-	_close_db();
 
+	acct_storage_g_close_connection(&db_conn);
+	printf("\n");
 	exit(exit_code);
 }
 
@@ -311,23 +308,6 @@ _process_command (int argc, char *argv[])
 			fprintf(stderr, "no input");
 	} else if (strncasecmp (argv[0], "all", 3) == 0) {
 		all_flag = 1;
-	} else if (strncasecmp (argv[0], "commit", 3) == 0) {
-		if(changes_made && rollback_flag)  {
-			acct_storage_g_close_connection(&db_conn, 1);
-			db_conn = acct_storage_g_get_connection(rollback_flag);
-			association_changes = 0;
-			account_changes = 0;
-			cluster_changes = 0;
-			user_changes = 0;
-			changes_made = 0;
-		}
-	} else if (strncasecmp (argv[0], "rollback", 4) == 0) {
-		if(changes_made && rollback_flag)  {
-			acct_storage_g_close_connection(&db_conn, 0);
-			db_conn = acct_storage_g_get_connection(rollback_flag);
-			do_rollback();
-			changes_made = 0;
-		}
 	} else if (strncasecmp (argv[0], "exit", 1) == 0) {
 		if (argc > 1) {
 			exit_code = 1;
@@ -573,39 +553,6 @@ static void _delete_it (int argc, char *argv[])
 	}
 }
 
-static void _close_db()
-{
-	if(changes_made && rollback_flag) {
-		if(commit_check("Would you like to commit changes?")) 
-			acct_storage_g_close_connection(&db_conn, 1);
-		else {
-			acct_storage_g_close_connection(&db_conn, 0);
-			printf("Changes discarded.\n");
-		}
-	} else 
-		acct_storage_g_close_connection(&db_conn, 0);
-	printf("\n");
-	exit_flag = 1;
-}
-
-static void _handle_intr()
-{
-	static int been_here = 0;
-	
-	if(!been_here) {
-		been_here = 1;
-		if(changes_made && rollback_flag)
-			printf("interrupt (one more to discard any changes)\n");
-		_close_db();
-		exit(1);
-	} else { /* second Ctrl-C in half as many seconds */
-		acct_storage_g_close_connection(&db_conn, 0);
-		if(changes_made && rollback_flag)
-			printf("Changes discarded.\n");
-		printf("\n");	
-		exit(1);
-	}
-}
 
 /* _usage - show the valid sacctmgr commands */
 void _usage () {
@@ -632,7 +579,6 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
      add <ENTITY> <SPECS>     add entity                                   \n\
      associations             when using show/list will list the           \n\
                               associations asspciated with the entity.     \n\
-     commit                   commit current updates                       \n\
      delete <ENTITY> <SPECS>  delete the specified entity(s)               \n\
      exit                     terminate sacctmgr                           \n\
      help                     print this description of use.               \n\
@@ -644,7 +590,6 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
      oneliner                 report output one record per line.           \n\
      quiet                    print no messages other than error messages. \n\
      quit                     terminate this command.                      \n\
-     rollback                 rollback current updates                     \n\
      show                     same as list                                 \n\
      verbose                  enable detailed logging.                     \n\
      version                  display tool version number.                 \n\
@@ -653,21 +598,19 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
   <ENTITY> may be \"cluster\", \"account\", or \"user\".                   \n\
                                                                            \n\
   <SPECS> are different for each command entity pair.                      \n\
-       list cluster       - Fairshare=, MaxCPUSecs=,                       \n\
-                            MaxJobs=, MaxNodes=, MaxWall=, and Names=      \n\
+       list cluster       - Names=                                         \n\
        add cluster        - Fairshare=, MaxCPUSecs=,                       \n\
-                            MaxJobs=, MaxNodes=, MaxWall=, and Name=       \n\
+                            MaxJobs=, MaxNodes=, MaxWall=, and Names=      \n\
        modify cluster     - (set options) Fairshare=, MaxCPUSecs=,         \n\
                             MaxJobs=, MaxNodes=, and MaxWall=              \n\
-                            (where options) Fairshare=, MaxCPUSecs=,       \n\
-                            MaxJobs=, MaxNodes=, MaxWall=, and Name=       \n\
+                            (where options) Names=                         \n\
        delete cluster     - Names=                                         \n\
                                                                            \n\
        list account       - Clusters=, Descriptions=, Names=,              \n\
                             Organizations=, Parents=, and ShowAssocs       \n\
        add account        - Clusters=, Description=, Fairshare=,           \n\
                             MaxCPUSecs=, MaxJobs=, MaxNodes=, MaxWall=,    \n\
-                            Name=, Organization=, Parent=, and QosLevel    \n\
+                            Names=, Organization=, Parent=, and QosLevel   \n\
        modify account     - (set options) Description=, Fairshare=,        \n\
                             MaxCPUSecs=, MaxJobs=, MaxNodes=, MaxWall=,    \n\
                             Organization=, Parent=, and QosLevel=          \n\
@@ -678,14 +621,16 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
                                                                            \n\
        list user          - AdminLevel=, DefaultAccounts=, Names=,         \n\
                             QosLevel=, and ShowAssocs                      \n\
-       add user           - Accounts=, AdminLevel=, DefaultAccount=,       \n\
+       add user           - Accounts=, AdminLevel=, Clusters=,             \n\
+                            DefaultAccount=, Fairshare=, MaxCPUSecs=,      \n\
+                            MaxJobs=, MaxNodes=, MaxWall=, Names=,         \n\
+                            Partitions=, and QosLevel=                     \n\
+       modify user        - (set options) AdminLevel=, DefaultAccount=,    \n\
                             Fairshare=, MaxCPUSecs=, MaxJobs=,             \n\
-                            MaxNodes=, MaxWall=, Name=, and QosLevel=      \n\
-       modify user        - (set options) DefaultAccount=, AdminLevel=,    \n\
-                            Fairshare=, MaxCPUSecs=, MaxJobs=,             \n\
-                            MaxNodes=, and MaxWall=, and QosLevel=         \n\
-                            (where options) AdminLevel=, DefaultAccounts=, \n\
-                            and Names=                                     \n\
+                            MaxNodes=, MaxWall=, and QosLevel=             \n\
+                            (where options) Accounts=, AdminLevel=,        \n\
+                            Clusters=, DefaultAccounts=, Names=,           \n\
+                            Partitions=, and QosLevel=                     \n\
        delete user        - Accounts=, AdminLevel=, Clusters=,             \n\
                             DefaultAccounts=, and Names=                   \n\
                                                                            \n\

@@ -234,7 +234,12 @@ extern void * acct_storage_p_get_connection(bool commit)
 	return NULL;
 }
 
-extern int acct_storage_p_close_connection(void **db_conn, bool rollback)
+extern int acct_storage_p_close_connection(void **db_conn)
+{
+	return SLURM_SUCCESS;
+}
+
+extern int acct_storage_p_commit(void *db_conn, bool commit)
 {
 	return SLURM_SUCCESS;
 }

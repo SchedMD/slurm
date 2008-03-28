@@ -152,10 +152,7 @@ extern int sacctmgr_delete_account(int argc, char *argv[]);
 extern int sacctmgr_delete_cluster(int argc, char *argv[]);
 
 /* common.c */
-extern void print_header(void);
-extern int  print_str(char *str, int width, bool right, bool cut_output);
-extern void print_date(void);
-extern int print_secs(long time, int width, bool right, bool cut_output);
+extern int parse_option_end(char *option);
 extern void addto_char_list(List char_list, char *names);
 extern void destroy_sacctmgr_action(void *object);
 extern int commit_check(char *warning);

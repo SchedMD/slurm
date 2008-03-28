@@ -88,7 +88,7 @@ static bool      rollback_started    = 0;
 
 static void * _agent(void *x);
 static void   _agent_queue_del(void *x);
-static void   _close_slurmdbd_fd(bool commit);
+static void   _close_slurmdbd_fd();
 static void   _create_agent(void);
 static bool   _fd_readable(slurm_fd fd);
 static int    _fd_writeable(slurm_fd fd);
@@ -102,7 +102,7 @@ static void   _reopen_slurmdbd_fd(void);
 static int    _save_dbd_rec(int fd, Buf buffer);
 static void   _save_dbd_state(void);
 static int    _send_init_msg(void);
-static int    _send_fini_msg(bool commit);
+static int    _send_fini_msg(void);
 static int    _send_msg(Buf buffer);
 static void   _sig_handler(int signal);
 static void   _shutdown_agent(void);
@@ -137,13 +137,13 @@ extern int slurm_open_slurmdbd_conn(char *auth_info, bool rollback)
 }
 
 /* Close the SlurmDBD socket connection */
-extern int slurm_close_slurmdbd_conn(bool commit)
+extern int slurm_close_slurmdbd_conn()
 {
 	/* NOTE: agent_lock not needed for _shutdown_agent() */
 	_shutdown_agent();
 
 	slurm_mutex_lock(&slurmdbd_lock);
-	_close_slurmdbd_fd(commit);
+	_close_slurmdbd_fd();
 	xfree(slurmdbd_auth_info);
 	slurm_mutex_unlock(&slurmdbd_lock);
 
@@ -369,7 +369,7 @@ extern Buf pack_slurmdbd_msg(slurmdbd_msg_t *req)
 					slurmdbd_auth_info);
 		break;
 	case DBD_FINI:
-		slurmdbd_pack_fini_msg((dbd_fini_msg_t *)&req->data, buffer);
+		slurmdbd_pack_fini_msg((dbd_fini_msg_t *)req->data, buffer);
 		break;		
 	case DBD_JOB_COMPLETE:
 		slurmdbd_pack_job_complete_msg((dbd_job_comp_msg_t *)req->data,
@@ -567,14 +567,15 @@ static int _send_init_msg(void)
 	return rc;
 }
 
-static int _send_fini_msg(bool commit)
+static int _send_fini_msg()
 {
 	Buf buffer;
 	dbd_fini_msg_t req;
 
 	buffer = init_buf(1024);
 	pack16((uint16_t) DBD_FINI, buffer);
-	req.commit  = commit;
+	req.commit  = 0;
+	req.close_conn   = 1;
 	slurmdbd_pack_fini_msg(&req, buffer);
 
 	_send_msg(buffer);
@@ -584,11 +585,11 @@ static int _send_fini_msg(bool commit)
 }
 
 /* Close the SlurmDbd connection */
-static void _close_slurmdbd_fd(bool commit)
+static void _close_slurmdbd_fd()
 {
 	if (slurmdbd_fd >= 0) {
 		if(rollback_started) {
-			if (_send_fini_msg(commit) != SLURM_SUCCESS)
+			if (_send_fini_msg() != SLURM_SUCCESS)
 				error("slurmdbd: Sending fini msg: %m");
 			else
 				debug("slurmdbd: Sent fini msg");
@@ -603,7 +604,7 @@ static void _close_slurmdbd_fd(bool commit)
 static void _reopen_slurmdbd_fd(void)
 {
 	info("slurmdbd: reopening connection");
-	_close_slurmdbd_fd(1);
+	_close_slurmdbd_fd();
 	_open_slurmdbd_fd();
 }
 
@@ -1664,6 +1665,7 @@ unpack_error:
 void inline 
 slurmdbd_pack_fini_msg(dbd_fini_msg_t *msg, Buf buffer)
 {
+	pack16(msg->close_conn, buffer);
 	pack16(msg->commit, buffer);
 }
 
@@ -1673,7 +1675,9 @@ slurmdbd_unpack_fini_msg(dbd_fini_msg_t **msg, Buf buffer)
 	dbd_fini_msg_t *msg_ptr = xmalloc(sizeof(dbd_fini_msg_t));
 	*msg = msg_ptr;
 
+	safe_unpack16(&msg_ptr->close_conn, buffer);
 	safe_unpack16(&msg_ptr->commit, buffer);
+
 	return SLURM_SUCCESS;
 
 unpack_error:
