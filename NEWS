@@ -7,6 +7,10 @@ documents those changes that are of interest to users and admins.
  -- Add event trigger for node entering DRAINED state.
  -- Build properly without OpenSSL installed (OpenSSL is recommended, but not 
     required).
+ -- Added slurmdbd, and modified accounting_storage plugin to talk to it. 
+    Allowing multiple slurm systems to securly store and gather information
+    not only about jobs, but the system also. See accounting web page for more
+    information.    
 
 * Changes in SLURM 1.3.0-pre11
 ==============================
