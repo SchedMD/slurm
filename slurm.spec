@@ -197,10 +197,10 @@ Requires: slurm-plugins
 %description slurmdbd
 SLURM database daemon
 
-%package slurm-plugins
+%package plugins
 Summary: SLURM plugins (loadable shared objects)
 Group: System Environment/Base
-%description slurm-plugins
+%description plugins
 SLURM plugins (loadable shared objects)
 
 %package torque
@@ -322,7 +322,7 @@ if [ -d /etc/init.d ]; then
    echo "/etc/init.d/slurmdbd" >> $LIST
 fi
 
-LIST=./slurm_plugins.files
+LIST=./plugins.files
 test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/task_affinity.so &&
    echo %{_libdir}/slurm/task_affinity.so >> $LIST
 test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/crypto_openssl.so &&
@@ -464,7 +464,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man8/slurmdbd.*
 #############################################################################
 
-%files -f slurm_plugins.files slurm-plugins
+%files -f plugins.files plugins
 %defattr(-,root,root)
 %dir %{_libdir}/slurm
 %{_libdir}/slurm/accounting_storage_filetxt.so
