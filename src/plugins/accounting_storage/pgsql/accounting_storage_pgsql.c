@@ -641,8 +641,7 @@ extern int init ( void )
 
 	debug2("pgsql_connect() called for db %s", pgsql_db_name);
 		
-	pgsql_get_db_connection(&acct_pgsql_db, pgsql_db_name, pgsql_db_info,
-				0);
+	pgsql_get_db_connection(&acct_pgsql_db, pgsql_db_name, pgsql_db_info);
 		
 	rc = _pgsql_acct_check_tables(acct_pgsql_db, pgsql_db_info->user);
 
@@ -678,8 +677,7 @@ extern void *acct_storage_p_get_connection(bool make_agent, bool rollback)
 	
 	debug2("acct_storage_p_get_connection: request new connection");
 	
-	pgsql_get_db_connection(&acct_pgsql_db, pgsql_db_name, pgsql_db_info,
-				rollback);
+	pgsql_get_db_connection(&acct_pgsql_db, pgsql_db_name, pgsql_db_info);
 	
 	return (void *)acct_pgsql_db;
 #else
@@ -690,7 +688,7 @@ extern void *acct_storage_p_get_connection(bool make_agent, bool rollback)
 extern int acct_storage_p_close_connection(PGconn **acct_pgsql_db)
 {
 #ifdef HAVE_PGSQL
-	pgsql_close_db_connection(acct_pgsql_db, 1);
+	pgsql_close_db_connection(acct_pgsql_db);
 	
 	return SLURM_SUCCESS;
 #else
@@ -1009,9 +1007,9 @@ extern int jobacct_storage_p_job_start(PGconn *acct_pgsql_db,
 	}
 
 	if(!acct_pgsql_db || PQstatus(acct_pgsql_db) != CONNECTION_OK) {
-		if(!(acct_pgsql_db = acct_storage_p_get_connection(0))) {
+		if(!pgsql_get_db_connection(&acct_pgsql_db,
+					    pgsql_db_name, pgsql_db_info))
 			return SLURM_ERROR;
-		}
 	}
 
 	debug2("pgsql_jobacct_job_start() called");
@@ -1067,8 +1065,9 @@ try_again:
 		if(!reinit) {
 			error("It looks like the storage has gone "
 			      "away trying to reconnect");
-			acct_storage_p_close_connection(&acct_pgsql_db);
-			acct_pgsql_db = acct_storage_p_get_connection(0);
+			pgsql_close_db_connection(&acct_pgsql_db);
+			pgsql_get_db_connection(&acct_pgsql_db,
+						pgsql_db_name, pgsql_db_info);
 			reinit = 1;
 			goto try_again;
 		} else
@@ -1100,9 +1099,9 @@ extern int jobacct_storage_p_job_complete(PGconn *acct_pgsql_db,
 	}
 
 	if(!acct_pgsql_db || PQstatus(acct_pgsql_db) != CONNECTION_OK) {
-		if(!(acct_pgsql_db = acct_storage_p_get_connection(0))) {
+		if(!pgsql_get_db_connection(&acct_pgsql_db,
+					    pgsql_db_name, pgsql_db_info))
 			return SLURM_ERROR;
-		}
 	}
 	
 	debug2("pgsql_jobacct_job_complete() called");
@@ -1165,9 +1164,9 @@ extern int jobacct_storage_p_step_start(PGconn *acct_pgsql_db,
 	}
 
 	if(!acct_pgsql_db || PQstatus(acct_pgsql_db) != CONNECTION_OK) {
-		if(!(acct_pgsql_db = acct_storage_p_get_connection(0))) {
+		if(!pgsql_get_db_connection(&acct_pgsql_db,
+					    pgsql_db_name, pgsql_db_info))
 			return SLURM_ERROR;
-		}
 	}
 
 	if(slurmdbd_conf) {
@@ -1259,9 +1258,9 @@ extern int jobacct_storage_p_step_complete(PGconn *acct_pgsql_db,
 	}
 
 	if(!acct_pgsql_db || PQstatus(acct_pgsql_db) != CONNECTION_OK) {
-		if(!(acct_pgsql_db = acct_storage_p_get_connection(0))) {
+		if(!pgsql_get_db_connection(&acct_pgsql_db,
+					    pgsql_db_name, pgsql_db_info))
 			return SLURM_ERROR;
-		}
 	}
 	
 	if (jobacct == NULL) {
@@ -1385,9 +1384,9 @@ extern int jobacct_storage_p_suspend(PGconn *acct_pgsql_db,
 	int rc = SLURM_SUCCESS;
 	
 	if(!acct_pgsql_db || PQstatus(acct_pgsql_db) != CONNECTION_OK) {
-		if(!(acct_pgsql_db = acct_storage_p_get_connection(0))) {
+		if(!pgsql_get_db_connection(&acct_pgsql_db,
+					    pgsql_db_name, pgsql_db_info))
 			return SLURM_ERROR;
-		}
 	}
 	
 	if(!job_ptr->db_index) {
@@ -1434,9 +1433,9 @@ extern List jobacct_storage_p_get_jobs(PGconn *acct_pgsql_db,
 	List job_list = NULL;
 #ifdef HAVE_PGSQL
 	if(!acct_pgsql_db || PQstatus(acct_pgsql_db) != CONNECTION_OK) {
-		if(!(acct_pgsql_db = acct_storage_p_get_connection(0))) {
+		if(!pgsql_get_db_connection(&acct_pgsql_db,
+					    pgsql_db_name, pgsql_db_info))
 			return job_list;
-		}
 	}
 
 	job_list = pgsql_jobacct_process_get_jobs(acct_pgsql_db,
@@ -1456,9 +1455,9 @@ extern void jobacct_storage_p_archive(PGconn *acct_pgsql_db,
 {
 #ifdef HAVE_PGSQL
 	if(!acct_pgsql_db || PQstatus(acct_pgsql_db) != CONNECTION_OK) {
-		if(!(acct_pgsql_db = acct_storage_p_get_connection(0))) {
+		if(!pgsql_get_db_connection(&acct_pgsql_db,
+					    pgsql_db_name, pgsql_db_info))
 			return;
-		}
 	}
 
 	pgsql_jobacct_process_archive(acct_pgsql_db, selected_parts, params);

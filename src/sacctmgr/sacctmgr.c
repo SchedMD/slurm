@@ -309,35 +309,6 @@ _process_command (int argc, char *argv[])
 	} else if (strncasecmp (argv[0], "all", 3) == 0) {
 		all_flag = 1;
 	} else if (strncasecmp (argv[0], "exit", 1) == 0) {
-		if (argc > 1) {
-			exit_code = 1;
-			fprintf (stderr, 
-				 "too many arguments for keyword:%s\n", 
-				 argv[0]);
-		}
-		//_close_db();
-
-/* 		if(list_count(sacctmgr_action_list) > 0) { */
-/* 				_close_db(); */
-/* 				char tmp_char[255]; */
-
-/* 			snprintf(tmp_char, sizeof(tmp_char), */
-/* 				 "There are %d action(s) that haven't been " */
-/* 				 "committed yet, would you like to commit " */
-/* 				 "before exit?",  */
-/* 				 list_count(sacctmgr_action_list)); */
-/* 			if(commit_check(tmp_char))  */
-/* 				acct_storage_g_close_connection(&db_conn, 1); */
-/* 			else { */
-/* 				acct_storage_g_close_connection(&db_conn, 0); */
-/* 				printf("Changes discarded.\n"); */
-/* 			} */
-/* 			list_destroy(sacctmgr_action_list); */
-/* 			sacctmgr_action_list = NULL; */
-/* 		} else { */
-/* 			list_destroy(sacctmgr_action_list); */
-/* 			sacctmgr_action_list = NULL; */
-/* 		} */
 		exit_flag = 1;
 	} else if (strncasecmp (argv[0], "help", 2) == 0) {
 		if (argc > 1) {
@@ -381,6 +352,15 @@ _process_command (int argc, char *argv[])
 				        argv[0]);
 		}
 		_add_it((argc - 1), &argv[1]);
+	} else if (strncasecmp (argv[0], "create", 3) == 0) {
+		if (argc < 2) {
+			exit_code = 1;
+			if (quiet_flag != 1)
+				fprintf(stderr, 
+				        "too few arguments for keyword:%s\n", 
+				        argv[0]);
+		}
+		_add_it((argc - 1), &argv[1]);
 	} else if (strncasecmp (argv[0], "show", 3) == 0
 		   || strncasecmp (argv[0], "list", 3) == 0) {
 		if (argc < 2) {
@@ -400,6 +380,14 @@ _process_command (int argc, char *argv[])
 		}		
 		_modify_it((argc - 1), &argv[1]);
 	} else if (strncasecmp (argv[0], "delete", 3) == 0) {
+		if (argc < 2) {
+			exit_code = 1;
+			fprintf (stderr, "too few arguments for %s keyword\n",
+				 argv[0]);
+			return 0;
+		}
+		_delete_it((argc - 1), &argv[1]);
+	} else if (strncasecmp (argv[0], "remove", 3) == 0) {
 		if (argc < 2) {
 			exit_code = 1;
 			fprintf (stderr, "too few arguments for %s keyword\n",
@@ -442,18 +430,18 @@ static void _add_it (int argc, char *argv[])
 	sacctmgr_init();
 
 	/* First identify the entity to add */
-	if (strncasecmp (argv[0], "User", 4) == 0) {
+	if (strncasecmp (argv[0], "User", 1) == 0) {
 		error_code = sacctmgr_add_user((argc - 1), &argv[1]);
-	} else if (strncasecmp (argv[0], "Account", 7) == 0) {
+	} else if (strncasecmp (argv[0], "Account", 1) == 0) {
 		error_code = sacctmgr_add_account((argc - 1), &argv[1]);
-	} else if (strncasecmp (argv[0], "Cluster", 7) == 0) {
+	} else if (strncasecmp (argv[0], "Cluster", 1) == 0) {
 		error_code = sacctmgr_add_cluster((argc - 1), &argv[1]);
 	} else {
 		exit_code = 1;
 		fprintf(stderr, "No valid entity in add command\n");
-		fprintf(stderr, "Input line must include \"Association\", ");
-		fprintf(stderr, "\"UserName\", \"AccountName\", ");
-		fprintf(stderr, "or \"ClusterName\"\n");
+		fprintf(stderr, "Input line must include, ");
+		fprintf(stderr, "\"User\", \"Account\", ");
+		fprintf(stderr, "or \"Cluster\"\n");
 	}
 	
 	if (error_code) {
@@ -471,11 +459,11 @@ static void _show_it (int argc, char *argv[])
 	int error_code = SLURM_SUCCESS;
 		
 	/* First identify the entity to list */
-	if (strncasecmp (argv[0], "User", 4) == 0) {
+	if (strncasecmp (argv[0], "User", 1) == 0) {
 		error_code = sacctmgr_list_user((argc - 1), &argv[1]);
-	} else if (strncasecmp (argv[0], "Account", 7) == 0) {
+	} else if (strncasecmp (argv[0], "Account", 1) == 0) {
 		error_code = sacctmgr_list_account((argc - 1), &argv[1]);
-	} else if (strncasecmp (argv[0], "Cluster", 7) == 0) {
+	} else if (strncasecmp (argv[0], "Cluster", 1) == 0) {
 		error_code = sacctmgr_list_cluster((argc - 1), &argv[1]);
 	} else {
 		exit_code = 1;
@@ -503,11 +491,11 @@ static void _modify_it (int argc, char *argv[])
 	sacctmgr_init();
 
 	/* First identify the entity to modify */
-	if (strncasecmp (argv[0], "User", 4) == 0) {
+	if (strncasecmp (argv[0], "User", 1) == 0) {
 		error_code = sacctmgr_modify_user((argc - 1), &argv[1]);
-	} else if (strncasecmp (argv[0], "Account", 7) == 0) {
+	} else if (strncasecmp (argv[0], "Account", 1) == 0) {
 		error_code = sacctmgr_modify_account((argc - 1), &argv[1]);
-	} else if (strncasecmp (argv[0], "Cluster", 7) == 0) {
+	} else if (strncasecmp (argv[0], "Cluster", 1) == 0) {
 		error_code = sacctmgr_modify_cluster((argc - 1), &argv[1]);
 	} else {
 		exit_code = 1;
@@ -534,11 +522,11 @@ static void _delete_it (int argc, char *argv[])
 	sacctmgr_init();
 
 	/* First identify the entity to delete */
-	if (strncasecmp (argv[0], "User", 4) == 0) {
+	if (strncasecmp (argv[0], "User", 1) == 0) {
 		error_code = sacctmgr_delete_user((argc - 1), &argv[1]);
-	} else if (strncasecmp (argv[0], "Account", 7) == 0) {
+	} else if (strncasecmp (argv[0], "Account", 1) == 0) {
 		error_code = sacctmgr_delete_account((argc - 1), &argv[1]);
-	} else if (strncasecmp (argv[0], "Cluster", 7) == 0) {
+	} else if (strncasecmp (argv[0], "Cluster", 1) == 0) {
 		error_code = sacctmgr_delete_cluster((argc - 1), &argv[1]);
 	} else {
 		exit_code = 1;
@@ -615,7 +603,7 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
                             MaxCPUSecs=, MaxJobs=, MaxNodes=, MaxWall=,    \n\
                             Organization=, Parent=, and QosLevel=          \n\
                             (where options) Clusters=, Descriptions=,      \n\
-                            Names=, Organizations=, and Parents=           \n\
+                            Names=, Organizations=, Parent=, and QosLevel= \n\
        delete account     - Clusters=, Descriptions=, Names=,              \n\
                             Organizations=, and Parents=                   \n\
                                                                            \n\

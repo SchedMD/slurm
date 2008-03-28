@@ -45,8 +45,6 @@ pthread_mutex_t pgsql_lock = PTHREAD_MUTEX_INITIALIZER;
 
 #ifdef HAVE_PGSQL
 
-static int rollback_started = 0;
-
 extern int *destroy_pgsql_db_info(pgsql_db_info_t *db_info)
 {
 	if(db_info) {
@@ -94,7 +92,7 @@ extern int pgsql_create_db(PGconn *pgsql_db, char *db_name,
 }
 
 extern int pgsql_get_db_connection(PGconn **pgsql_db, char *db_name,
-				   pgsql_db_info_t *db_info, bool rollback)
+				   pgsql_db_info_t *db_info)
 {
 	int rc = SLURM_SUCCESS;
 	bool storage_init = false;
@@ -126,26 +124,20 @@ extern int pgsql_get_db_connection(PGconn **pgsql_db, char *db_name,
 			pgsql_create_db(*pgsql_db, db_name, db_info);		
 		} else {
 			storage_init = true;
-			debug2("connected to %s", db_name);
-			if(rollback || rollback_started) {
-				rollback_started = 1;
-				PQexec(*pgsql_db, "BEGIN WORK");
-			}
+			/* debug2("connected to %s", db_name); */
+/* 			if(rollback || rollback_started) { */
+/* 				rollback_started = 1; */
+/* 				PQexec(*pgsql_db, "BEGIN WORK"); */
+/* 			} */
 		} 
 	}
 	xfree(connect_line);
 	return rc;
 }
 
-extern int pgsql_close_db_connection(PGconn **pgsql_db, bool commit)
+extern int pgsql_close_db_connection(PGconn **pgsql_db)
 {
-	if(*pgsql_db) {
-		if(rollback_started) {
-			if(commit) 
-				PQexec(*pgsql_db, "COMMIT WORK");
-			else 
-				PQexec(*pgsql_db, "ROLLBACK WORK");
-		}
+	if(pgsql_db && *pgsql_db) {
 		PQfinish(*pgsql_db);
 		*pgsql_db = NULL;
 	}	      
@@ -164,6 +156,17 @@ extern int pgsql_db_query(PGconn *pgsql_db, char *query)
 	
 	PQclear(result);
 	return SLURM_SUCCESS;
+}
+
+extern int pgsql_db_commit(PGconn *pgsql_db)
+{
+	return pgsql_db_query(pgsql_db, "COMMIT WORK");	
+}
+
+extern int pgsql_db_rollback(PGconn *pgsql_db)
+{
+	return pgsql_db_query(pgsql_db, "ROLLBACK WORK");
+
 }
 
 extern PGresult *pgsql_db_query_ret(PGconn *pgsql_db, char *query)

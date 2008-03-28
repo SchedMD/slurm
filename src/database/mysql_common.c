@@ -163,8 +163,8 @@ extern int mysql_get_db_connection(MYSQL **mysql_db, char *db_name,
 	else {
 #ifdef MYSQL_OPT_RECONNECT
 {
-		my_bool reconnect = 0;
-		/* make sure reconnect is off */
+		my_bool reconnect = 1;
+		/* make sure reconnect is on */
 		mysql_options(*mysql_db, MYSQL_OPT_RECONNECT, &reconnect);
 }
 #endif
@@ -208,8 +208,13 @@ extern int mysql_db_query(MYSQL *mysql_db, char *query)
 	slurm_mutex_lock(&mysql_lock);
 
 	/* clear out the old results so we don't get a 2014 error */
-	_clear_results(mysql_db);			
+	_clear_results(mysql_db);		
+//try_again:
 	if(mysql_query(mysql_db, query)) {
+		/* if(mysql_errno(mysql_db) == CR_SERVER_GONE_ERROR) { */
+/* 			/\* FIX ME: this means the connection went away *\/ */
+/* 		} */
+
 		error("mysql_query failed: %d %s\n%s",
 		      mysql_errno(mysql_db),
 		      mysql_error(mysql_db), query);
@@ -220,6 +225,49 @@ extern int mysql_db_query(MYSQL *mysql_db, char *query)
 	slurm_mutex_unlock(&mysql_lock);
 
 	return SLURM_SUCCESS;
+}
+
+extern int mysql_db_commit(MYSQL *mysql_db)
+{
+	slurm_mutex_lock(&mysql_lock);
+
+	/* clear out the old results so we don't get a 2014 error */
+	_clear_results(mysql_db);		
+	if(mysql_commit(mysql_db)) {
+		error("mysql_commit failed: %d %s",
+		      mysql_errno(mysql_db),
+		      mysql_error(mysql_db));
+		errno = mysql_errno(mysql_db);
+		mysql_autocommit(mysql_db, 1);
+		slurm_mutex_unlock(&mysql_lock);
+		return SLURM_ERROR;
+	}
+	mysql_autocommit(mysql_db, 1);
+	slurm_mutex_unlock(&mysql_lock);
+
+	return SLURM_SUCCESS;
+}
+
+extern int mysql_db_rollback(MYSQL *mysql_db)
+{
+	slurm_mutex_lock(&mysql_lock);
+
+	/* clear out the old results so we don't get a 2014 error */
+	_clear_results(mysql_db);		
+	if(mysql_rollback(mysql_db)) {
+		error("mysql_commit failed: %d %s",
+		      mysql_errno(mysql_db),
+		      mysql_error(mysql_db));
+		errno = mysql_errno(mysql_db);
+		mysql_autocommit(mysql_db, 1);
+		slurm_mutex_unlock(&mysql_lock);
+		return SLURM_ERROR;
+	}
+	mysql_autocommit(mysql_db, 1);
+	slurm_mutex_unlock(&mysql_lock);
+
+	return SLURM_SUCCESS;
+
 }
 
 extern MYSQL_RES *mysql_db_query_ret(MYSQL *mysql_db, char *query)
