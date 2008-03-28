@@ -804,7 +804,7 @@ static void *_init_conn(Buf in_buffer, Buf *out_buffer, uint32_t *uid)
 	*uid = init_msg->uid;
 	
 	debug("DBD_INIT: VERSION:%u UID:%u", init_msg->version, init_msg->uid);
-	new_conn = acct_storage_g_get_connection(init_msg->rollback);
+	new_conn = acct_storage_g_get_connection(false, init_msg->rollback);
 	
 end_it:
 	slurmdbd_free_init_msg(init_msg);

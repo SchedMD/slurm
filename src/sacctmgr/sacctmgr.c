@@ -163,7 +163,7 @@ main (int argc, char *argv[])
 		}	
 	}
 
-	db_conn = acct_storage_g_get_connection(rollback_flag);
+	db_conn = acct_storage_g_get_connection(false, rollback_flag);
 	my_uid = getuid();
 
 	if (input_field_count)

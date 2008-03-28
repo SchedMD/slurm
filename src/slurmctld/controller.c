@@ -370,7 +370,7 @@ int main(int argc, char *argv[])
 				slurmctld_conf.backup_controller);
 			exit(0);
 		}
-		acct_db_conn = acct_storage_g_get_connection(0);
+		acct_db_conn = acct_storage_g_get_connection(true, false);
 		if (assoc_mgr_init(acct_db_conn, accounting_enforce) &&
 		    accounting_enforce)
 			fatal("assoc_mgr_init failure");

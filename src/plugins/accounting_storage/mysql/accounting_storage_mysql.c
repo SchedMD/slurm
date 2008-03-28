@@ -711,7 +711,7 @@ extern int fini ( void )
 #endif
 }
 
-extern void *acct_storage_p_get_connection(bool rollback)
+extern void *acct_storage_p_get_connection(bool make_agent, bool rollback)
 {
 #ifdef HAVE_MYSQL
 	mysql_conn_t *mysql_conn = xmalloc(sizeof(mysql_conn_t));

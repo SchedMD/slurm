@@ -277,14 +277,21 @@ typedef struct dbd_step_start_msg {
  * Slurm DBD message processing functions
 \*****************************************************************************/
 
-/* Open a socket connection to SlurmDbd using SlurmdbdAuthInfo specified */
-extern int slurm_open_slurmdbd_conn(char *auth_info, bool rollback);
+/* Open a socket connection to SlurmDbd
+ * auth_info IN - alternate authentication key
+ * make_agent IN - make agent to process RPCs if set
+ * rollback IN - keep journal and permit rollback if set
+ * Returns SLURM_SUCCESS or an error code */
+extern int slurm_open_slurmdbd_conn(char *auth_info, bool make_agent, 
+				    bool rollback);
 
 /* Close the SlurmDBD socket connection */
 extern int slurm_close_slurmdbd_conn();
 
 /* Send an RPC to the SlurmDBD. Do not wait for the reply. The RPC
  * will be queued and processed later if the SlurmDBD is not responding.
+ * NOTE: slurm_open_slurmdbd_conn() must have been called with make_agent set
+ * 
  * Returns SLURM_SUCCESS or an error code */
 extern int slurm_send_slurmdbd_msg(slurmdbd_msg_t *req);
 
