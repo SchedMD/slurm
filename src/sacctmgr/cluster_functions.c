@@ -354,7 +354,7 @@ extern int sacctmgr_modify_cluster(int argc, char *argv[])
 
 	printf(" Setting\n");
 	if(rec_set) 
-		printf(" User Defaults =\n");
+		printf(" User Defaults  =\n");
 	if((int)cluster->default_fairshare <= 0)
 		cluster->default_fairshare = 1;
 	else
