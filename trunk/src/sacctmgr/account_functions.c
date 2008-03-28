@@ -37,56 +37,63 @@
 \*****************************************************************************/
 
 #include "sacctmgr.h"
+#include "print.h"
 
 static int _set_cond(int *start, int argc, char *argv[],
 		     acct_account_cond_t *acct_cond,
 		     acct_association_cond_t *assoc_cond)
 {
 	int i;
-	int set = 0;
+	int u_set = 0;
+	int a_set = 0;
+	int end = 0;
 
 	for (i=(*start); i<argc; i++) {
-		if (strncasecmp (argv[i], "Name=", 5) == 0) {
-			addto_char_list(acct_cond->acct_list, argv[i]+5);
-			set = 1;
-		} else if (strncasecmp (argv[i], "Names=", 6) == 0) {
-			addto_char_list(acct_cond->acct_list, argv[i]+6);
-			set = 1;
-		} else if (strncasecmp (argv[i], "Set", 3) == 0) {
+		end = parse_option_end(argv[i]);
+		if (strncasecmp (argv[i], "Set", 3) == 0) {
 			i--;
 			break;
-		} else if (strncasecmp (argv[i], "Descriptions=", 13) == 0) {
-			addto_char_list(acct_cond->description_list,
-					argv[i]+13);
-			set = 1;
-		} else if (strncasecmp (argv[i], "Organizations=", 14) == 0) {
-			addto_char_list(acct_cond->organization_list,
-					argv[i]+14);
-			set = 1;
-		} else if (strncasecmp (argv[i], "QosLevel=", 14) == 0) {
-			acct_cond->qos =
-				str_2_acct_qos(argv[i]+14);
-			set = 1;
-		} else if (strncasecmp (argv[i], "Description=", 12) == 0) {
-			addto_char_list(acct_cond->description_list,
-					argv[i]+12);
-			set = 1;
-		} else if (strncasecmp (argv[i], "Organization=", 13) == 0) {
-			addto_char_list(acct_cond->organization_list,
-					argv[i]+13);
-			set = 1;
-		} else if (strncasecmp (argv[i], "Qos=", 8) == 0) {
-			acct_cond->qos =
-				str_2_acct_qos(argv[i]+8);
-			set = 1;
-		} else {
+		} else if(!end) {
 			addto_char_list(acct_cond->acct_list, argv[i]);
-			set = 1;
+			addto_char_list(assoc_cond->acct_list, argv[i]);
+			u_set = 1;
+		} else if (strncasecmp (argv[i], "Clusters", 1) == 0) {
+			addto_char_list(assoc_cond->cluster_list, argv[i]+end);
+			a_set = 1;
+		} else if (strncasecmp (argv[i], "Descriptions", 1) == 0) {
+			addto_char_list(acct_cond->description_list,
+					argv[i]+end);
+			u_set = 1;
+		} else if (strncasecmp (argv[i], "Names", 1) == 0) {
+			addto_char_list(acct_cond->acct_list, argv[i]+end);
+			addto_char_list(assoc_cond->acct_list, argv[i]);
+			u_set = 1;
+		} else if (strncasecmp (argv[i], "Organizations", 1) == 0) {
+			addto_char_list(acct_cond->organization_list,
+					argv[i]+end);
+			u_set = 1;
+		} else if (strncasecmp (argv[i], "Parent", 1) == 0) {
+			assoc_cond->parent_acct = xstrdup(argv[i]+end);
+			a_set = 1;
+		} else if (strncasecmp (argv[i], "QosLevel", 1) == 0) {
+			acct_cond->qos = str_2_acct_qos(argv[i]+end);
+			u_set = 1;
+		} else if (strncasecmp (argv[i], "ShowAssoc", 1) == 0) {
+			acct_cond->with_assocs = 1;
+			u_set = 1;
+		} else {
+			printf(" Unknown condition: %s", argv[i]);
 		}
 	}
 	(*start) = i;
 
-	return set;
+	if(u_set && a_set)
+		return 3;
+	else if(u_set)
+		return 1;
+	else if(a_set)
+		return 2;
+	return 0;
 }
 
 static int _set_rec(int *start, int argc, char *argv[],
@@ -94,37 +101,59 @@ static int _set_rec(int *start, int argc, char *argv[],
 		    acct_association_rec_t *assoc)
 {
 	int i;
-	int set = 0;
+	int u_set = 0;
+	int a_set = 0;
+	int end = 0;
 
 	for (i=(*start); i<argc; i++) {
-		if (strncasecmp (argv[i], "Name=", 5) == 0) {
-			acct->name = xstrdup(argv[i]+5);
-			set = 1;
-		} else if (strncasecmp (argv[i], "Where", 5) == 0) {
+		end = parse_option_end(argv[i]);
+		if (strncasecmp (argv[i], "Where", 5) == 0) {
 			i--;
 			break;
-		}else if (strncasecmp (argv[i], "QosLevel=", 14) == 0) {
-			acct->qos =
-				str_2_acct_qos(argv[i]+14);
-			set = 1;
-		} else if (strncasecmp (argv[i], "Description=", 12) == 0) {
-			acct->description = xstrdup(argv[i]+12);
-			set = 1;
-		} else if (strncasecmp (argv[i], "Organization=", 13) == 0) {
-			acct->organization = xstrdup(argv[i]+13);
-			set = 1;
-		} else if (strncasecmp (argv[i], "Qos=", 8) == 0) {
-			acct->qos =
-				str_2_acct_qos(argv[i]+8);
-			set = 1;
+		} else if(!end) {
+			printf(" Bad format on %s: End your option with "
+			       "an '=' sign\n", argv[i]);
+		} else if (strncasecmp (argv[i], "Description", 1) == 0) {
+			acct->description = xstrdup(argv[i]+end);
+			u_set = 1;
+		} else if (strncasecmp (argv[i], "Fairshare", 1) == 0) {
+			assoc->fairshare = atoi(argv[i]+end);
+			a_set = 1;
+		} else if (strncasecmp (argv[i], "MaxCPUSec", 4) == 0) {
+			assoc->max_cpu_secs_per_job =
+				atoi(argv[i]+end);
+			a_set = 1;
+		} else if (strncasecmp (argv[i], "MaxJobs", 4) == 0) {
+			assoc->max_jobs = atoi(argv[i]+end);
+			a_set = 1;
+		} else if (strncasecmp (argv[i], "MaxNodes", 4) == 0) {
+			assoc->max_nodes_per_job = atoi(argv[i]+end);
+			a_set = 1;
+		} else if (strncasecmp (argv[i], "MaxWall", 4) == 0) {
+			assoc->max_wall_duration_per_job = atoi(argv[i]+end);
+			a_set = 1;
+		} else if (strncasecmp (argv[i], "Organization", 1) == 0) {
+			acct->organization = xstrdup(argv[i]+end);
+			u_set = 1;
+		} else if (strncasecmp (argv[i], "Parent", 1) == 0) {
+			assoc->parent_acct = xstrdup(argv[i]+end);
+			a_set = 1;
+		} else if (strncasecmp (argv[i], "QosLevel=", 1) == 0) {
+			acct->qos = str_2_acct_qos(argv[i]+end);
+			u_set = 1;
 		} else {
-			acct->name = xstrdup(argv[i]+5);
-			set = 1;
+			printf(" Unknown option: %s", argv[i]);
 		}
 	}
 	(*start) = i;
 
-	return set;
+	if(u_set && a_set)
+		return 3;
+	else if(u_set)
+		return 1;
+	else if(a_set)
+		return 2;
+	return 0;
 }
 
 static void _print_cond(acct_account_cond_t *acct_cond)
@@ -242,12 +271,13 @@ extern int sacctmgr_add_account(int argc, char *argv[])
 	acct_qos_level_t qos = ACCT_QOS_NOTSET;
 	List acct_list = NULL;
 	List assoc_list = NULL;
-	uint32_t fairshare = 1; 
-	uint32_t max_jobs = 0; 
-	uint32_t max_nodes_per_job = 0;
-	uint32_t max_wall_duration_per_job = 0;
-	uint32_t max_cpu_secs_per_job = 0;
+	uint32_t fairshare = -1; 
+	uint32_t max_jobs = -1; 
+	uint32_t max_nodes_per_job = -1;
+	uint32_t max_wall_duration_per_job = -1;
+	uint32_t max_cpu_secs_per_job = -1;
 	char *acct_str = NULL;
+	char *assoc_str = NULL;
 	int limit_set = 0;
 	
 	for (i=0; i<argc; i++) {
@@ -305,6 +335,7 @@ extern int sacctmgr_add_account(int argc, char *argv[])
 		while((cluster_rec = list_next(itr_c))) {
 			list_append(cluster_list, 
 				    xstrdup(cluster_rec->name));
+			info("adding to cluster %s", cluster_rec->name);
 		}
 		list_iterator_destroy(itr_c);
 	} else {
@@ -340,12 +371,12 @@ extern int sacctmgr_add_account(int argc, char *argv[])
 				printf(" Need a description for "
 				       "these accounts to add.\n"); 
 				rc = SLURM_ERROR;
-				goto end_it;
+				goto no_required;
 			} else if(!organization) {
 				printf(" Need an organization for "
 				       "these accounts to add.\n"); 
 				rc = SLURM_ERROR;
-				goto end_it;
+				goto no_required;
 			} 
 			acct = xmalloc(sizeof(acct_account_rec_t));
 			acct->assoc_list = list_create(NULL);	
@@ -398,65 +429,70 @@ extern int sacctmgr_add_account(int argc, char *argv[])
 				list_append(acct->assoc_list, assoc);
 			else 
 				list_append(assoc_list, assoc);
+			xstrfmtcat(assoc_str,
+				   "  A = %s"
+				   "\tC = %s\n",
+				   assoc->acct,
+				   assoc->cluster);		
+
 		}
 		list_iterator_destroy(itr_c);
 	}
-end_it:
+no_required:
 	list_iterator_destroy(itr);
 	list_destroy(name_list);
 	list_destroy(cluster_list);
 
+	if(!list_count(acct_list) && !list_count(assoc_list)) {
+		printf(" Nothing new added.\n");
+		goto end_it;
+	}
+
 	if(acct_str) {
 		printf(" Adding Account(s)\n%s",acct_str);
-		printf(" Settings =\n");
-		printf("  Description  = %s\n", description);
-		printf("  Organization = %s\n", organization);
+		printf(" Settings\n");
+		printf("  Description     = %s\n", description);
+		printf("  Organization    = %s\n", organization);
 		
 		if(qos != ACCT_QOS_NOTSET)
-			printf("  Qos     = %s\n", 
-			       acct_qos_str(qos));
+		   	printf("  Qos             = %s\n", acct_qos_str(qos));
 		xfree(acct_str);
 	}
 
-	if(list_count(assoc_list))
-		printf(" Associations =\n");
-	if(acct)
-		itr = list_iterator_create(acct->assoc_list);
-	else
-		itr = list_iterator_create(assoc_list);
-	while((assoc = list_next(itr))) {
-		printf("  A = %s"
-		       "\tC = %s\n",
-		       assoc->acct, assoc->cluster);
+	if(assoc_str) {
+		printf(" Associations\n%s", assoc_str);
+		xfree(assoc_str);
 	}
-	list_iterator_destroy(itr);
 
 	if(limit_set) {
-		printf(" Settings =\n");
-		if(fairshare)
+		printf(" Settings\n");
+		if((int)fairshare >= 0)
 			printf("  Fairshare       = %u\n", fairshare);
-		if(max_jobs)
-			printf("  MaxJobs         = %u\n", max_jobs);
-		if(max_nodes_per_job)
-			printf("  MaxNodes        = %u\n", max_nodes_per_job);
-		if(max_wall_duration_per_job)
-			printf("  MaxWall         = %u\n",
-			       max_wall_duration_per_job);
-		if(max_cpu_secs_per_job)
+		if((int)max_cpu_secs_per_job >= 0)
 			printf("  MaxCPUSecs      = %u\n",
 			       max_cpu_secs_per_job);
+		if((int)max_jobs >= 0)
+			printf("  MaxJobs         = %u\n", max_jobs);
+		if((int)max_nodes_per_job >= 0)
+			printf("  MaxNodes        = %u\n", max_nodes_per_job);
+		if((int)max_wall_duration_per_job >= 0)
+			printf("  MaxWall         = %u\n",
+			       max_wall_duration_per_job);
 	}
-
-	if(!list_count(acct_list) && !list_count(assoc_list))
-		printf(" Nothing new added.\n");
 
 	if(list_count(acct_list)) 
 		rc = acct_storage_g_add_accounts(db_conn, my_uid, acct_list);
 	
 
-	if(rc == SLURM_SUCCESS && list_count(assoc_list)) 
-		rc = acct_storage_g_add_associations(db_conn, my_uid, 
-						     assoc_list);
+	if(rc == SLURM_SUCCESS) {
+		if(list_count(assoc_list)) 
+			rc = acct_storage_g_add_associations(db_conn, my_uid, 
+							     assoc_list);
+	} else {
+		printf(" error: Problem adding accounts\n");
+		rc = SLURM_ERROR;
+		goto end_it;
+	}
 	
 	if(rc == SLURM_SUCCESS) {
 		if(commit_check("Would you like to commit changes?")) {
@@ -473,7 +509,12 @@ end_it:
 			}			
 		} else
 			acct_storage_g_commit(db_conn, 0);
+	} else {
+		printf(" error: Problem adding account associations");
+		rc = SLURM_ERROR;
 	}
+
+end_it:
 	list_destroy(acct_list);
 	list_destroy(assoc_list);
 	
@@ -489,61 +530,75 @@ extern int sacctmgr_list_account(int argc, char *argv[])
 	int rc = SLURM_SUCCESS;
 	acct_account_cond_t *acct_cond =
 		xmalloc(sizeof(acct_account_cond_t));
+	acct_association_cond_t *assoc_cond =
+		xmalloc(sizeof(acct_association_cond_t));
 	List acct_list;
 	int i=0;
 	ListIterator itr = NULL;
 	acct_account_rec_t *acct = NULL;
+	print_field_t name_field;
+	print_field_t desc_field;
+	print_field_t org_field;
+	print_field_t qos_field;
+	List print_fields_list; /* types are of print_field_t */
 	
 	acct_cond->acct_list = list_create(slurm_destroy_char);
 	acct_cond->description_list = list_create(slurm_destroy_char);
 	acct_cond->organization_list = list_create(slurm_destroy_char);
 
-	for (i=0; i<argc; i++) {
-		int end = parse_option_end(argv[i]);
-		if (strncasecmp (argv[i], "Names", 1) == 0) {
-			addto_char_list(acct_cond->acct_list, argv[i]+end);
-		} else if (strncasecmp (argv[i], "Description", 1) == 0) {
-			addto_char_list(acct_cond->description_list,
-					argv[i]+end);
-		} else if (strncasecmp (argv[i], "Organization", 1) == 0) {
-			addto_char_list(acct_cond->organization_list,
-					argv[i]+end);
-		} else if (strncasecmp (argv[i], "Qoslevel", 1) == 0) {
-			acct_cond->qos =
-				str_2_acct_qos(argv[i]+end);
-		} else {
-			error("Valid options are 'Names=' "
-			      "'Descriptions=' 'Oranizations=' "
-			      "and 'QosLevel='");
-		}		
-	}
+	assoc_cond->user_list = list_create(slurm_destroy_char);
+	assoc_cond->acct_list = list_create(slurm_destroy_char);
+	assoc_cond->cluster_list = list_create(slurm_destroy_char);
+	assoc_cond->partition_list = list_create(slurm_destroy_char);
+
+	_set_cond(&i, argc, argv, acct_cond, assoc_cond);
 
 	acct_list = acct_storage_g_get_accounts(db_conn, acct_cond);
 	destroy_acct_account_cond(acct_cond);
+	destroy_acct_association_cond(assoc_cond);
 	
 	if(!acct_list) 
 		return SLURM_ERROR;
 	
+	print_fields_list = list_create(NULL);
+
+	name_field.name = "Name";
+	name_field.len = 10;
+	name_field.print_routine = print_str;
+	list_append(print_fields_list, &name_field);
+
+	desc_field.name = "Descr";
+	desc_field.len = 10;
+	desc_field.print_routine = print_str;
+	list_append(print_fields_list, &desc_field);
+
+	org_field.name = "Org";
+	org_field.len = 10;
+	org_field.print_routine = print_str;
+	list_append(print_fields_list, &org_field);
+
+	qos_field.name = "QOS";
+	qos_field.len = 4;
+	qos_field.print_routine = print_str;
+	list_append(print_fields_list, &qos_field);
 
 	itr = list_iterator_create(acct_list);
-	printf("%-15s %-15s %-15s %-10s\n%-15s %-15s %-15s %-10s\n",
-	       "Name", "Description", "Organization", "Qos",
-	       "---------------",
-	       "---------------",
-	       "---------------",
-	       "----------");
-	
+	print_header(print_fields_list);
+
 	while((acct = list_next(itr))) {
-		printf("%-15.15s %-15.15s %-15.15s %-10.10s\n",
-		       acct->name, acct->description,
-		       acct->organization,
-		       acct_qos_str(acct->qos));
+		print_str(VALUE, &name_field, acct->name);
+		print_str(VALUE, &desc_field, acct->name);
+		print_str(VALUE, &org_field, acct->name);
+		print_str(VALUE, &qos_field, acct->name);
+		printf("\n");
+		/*FIX ME: show assocs */
 	}
 
 	printf("\n");
 
 	list_iterator_destroy(itr);
 	list_destroy(acct_list);
+	list_destroy(print_fields_list);
 	return rc;
 }
 

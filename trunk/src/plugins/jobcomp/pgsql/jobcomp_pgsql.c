@@ -307,7 +307,7 @@ extern int slurm_jobcomp_set_location(char *location)
 		
 	debug2("pgsql_connect() called for db %s", db_name);
 	
-	pgsql_get_db_connection(&jobcomp_pgsql_db, db_name, db_info, 0);
+	pgsql_get_db_connection(&jobcomp_pgsql_db, db_name, db_info);
 	
 	rc = _pgsql_jobcomp_check_tables(db_info->user);
 

@@ -37,6 +37,7 @@
 \*****************************************************************************/
 
 #include "sacctmgr.h"
+#include "print.h"
 
 static int _set_cond(int *start, int argc, char *argv[],
 		     acct_user_cond_t *user_cond,
@@ -549,13 +550,17 @@ no_default:
 	list_iterator_destroy(itr);
 	destroy_acct_association_cond(assoc_cond);
 
+	if(!list_count(user_list) && !list_count(assoc_list)) {
+		printf(" Nothing new added.\n");
+		goto end_it;
+	}
+
 	if(user_str) {
 		printf(" Adding User(s)\n%s", user_str);
 		printf(" Settings =\n");
 		printf("  Default Account = %s\n", default_acct);
 		if(qos != ACCT_QOS_NOTSET)
-			printf("  Qos        = %s\n", 
-			       acct_qos_str(qos));
+			printf("  Qos        = %s\n", acct_qos_str(qos));
 		
 		if(admin_level != ACCT_ADMIN_NOTSET)
 			printf("  Admin Level     = %s\n", 
@@ -569,9 +574,12 @@ no_default:
 	}
 
 	if(limit_set) {
-		printf(" Non Default Settings =\n");
+		        printf(" Non Default Settings\n");
 		if((int)fairshare >= 0)
 			printf("  Fairshare       = %u\n", fairshare);
+		if((int)max_cpu_secs_per_job >= 0)
+			printf("  MaxCPUSecs      = %u\n",
+			       max_cpu_secs_per_job);
 		if((int)max_jobs >= 0)
 			printf("  MaxJobs         = %u\n", max_jobs);
 		if((int)max_nodes_per_job >= 0)
@@ -579,14 +587,6 @@ no_default:
 		if((int)max_wall_duration_per_job >= 0)
 			printf("  MaxWall         = %u\n",
 			       max_wall_duration_per_job);
-		if((int)max_cpu_secs_per_job >= 0)
-			printf("  MaxCPUSecs      = %u\n",
-			       max_cpu_secs_per_job);
-	}
-
-	if(!list_count(user_list) && !list_count(assoc_list)) {
-		printf(" Nothing new added.\n");
-		goto end_it;
 	}
 
 	if(list_count(user_list)) {

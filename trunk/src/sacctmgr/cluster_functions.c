@@ -140,104 +140,112 @@ extern int sacctmgr_add_cluster(int argc, char *argv[])
 {
 	int rc = SLURM_SUCCESS;
 	int i=0;
-	acct_cluster_rec_t *cluster = xmalloc(sizeof(acct_cluster_rec_t));
+	acct_cluster_rec_t *cluster = NULL;
 	acct_association_rec_t *assoc = NULL;		  
+	List name_list = list_create(slurm_destroy_char);
 	List cluster_list = NULL;
+	uint32_t fairshare = -1; 
+	uint32_t max_jobs = -1; 
+	uint32_t max_nodes_per_job = -1;
+	uint32_t max_wall_duration_per_job = -1;
+	uint32_t max_cpu_secs_per_job = -1;
 	int limit_set = 0;
+	ListIterator itr = NULL;
+	char *name = NULL;
 
 	for (i=0; i<argc; i++) {
-		if (strncasecmp (argv[i], "Name=", 5) == 0) {
-			if(cluster->name)
-				error("can only add one cluster at a time.\n");
-			else {
-				cluster->name = xstrdup(argv[i]+5);
-			}
-		} else if (strncasecmp (argv[i], "FairShare=", 10) == 0) {
-			cluster->default_fairshare = atoi(argv[i]+10);
+		int end = parse_option_end(argv[i]);
+		if(!end) {
+			addto_char_list(name_list, argv[i]+end);
+		} else if (strncasecmp (argv[i], "FairShare", 1) == 0) {
+			fairshare = atoi(argv[i]+end);
 			limit_set = 1;
-		} else if (strncasecmp (argv[i], "MaxJobs=", 8) == 0) {
-			cluster->default_max_jobs = atoi(argv[i]+8);
+		} else if (strncasecmp (argv[i], "MaxCPUSecs4", 4) == 0) {
+			max_cpu_secs_per_job = atoi(argv[i]+end);
 			limit_set = 1;
-		} else if (strncasecmp (argv[i], "MaxNodes=", 9) == 0) {
-			cluster->default_max_nodes_per_job = atoi(argv[i]+9);
+		} else if (strncasecmp (argv[i], "MaxJobs=", 4) == 0) {
+			max_jobs = atoi(argv[i]+end);
 			limit_set = 1;
-		} else if (strncasecmp (argv[i], "MaxWall=", 8) == 0) {
-			cluster->default_max_wall_duration_per_job =
-				atoi(argv[i]+8);
+		} else if (strncasecmp (argv[i], "MaxNodes", 4) == 0) {
+			max_nodes_per_job = atoi(argv[i]+end);
 			limit_set = 1;
-		} else if (strncasecmp (argv[i], "MaxCPUSecs=", 11) == 0) {
-			cluster->default_max_cpu_secs_per_job = 
-				atoi(argv[i]+11);
+		} else if (strncasecmp (argv[i], "MaxWall", 4) == 0) {
+			max_wall_duration_per_job = atoi(argv[i]+end);
 			limit_set = 1;
+		} else if (strncasecmp (argv[i], "Names", 1) == 0) {
+			addto_char_list(name_list, argv[i]+end);
 		} else {
-			if(cluster->name)
-				error("can only add one cluster at a time.\n");
-			else {
-				cluster->name = xstrdup(argv[i]);
-			}
+			printf(" Unknown option: %s", argv[i]);
 		}		
 	}
 
-	if(!cluster->name) {
-		destroy_acct_cluster_rec(cluster);
+	if(!list_count(name_list)) {
+		list_destroy(name_list);
 		printf(" Need name of cluster to add.\n"); 
-		return SLURM_ERROR;
-	} else if(sacctmgr_find_cluster(cluster->name)) {
-		destroy_acct_cluster_rec(cluster);
-		printf(" This cluster already exists.  Not adding.\n");
 		return SLURM_ERROR;
 	}
 
 	printf(" Adding Cluster(s)\n");
-	printf("  Name          = %s\n", cluster->name);
-	if(limit_set)
-		printf(" User Defaults  =\n");
-	if(cluster->default_fairshare <= 0)
-		cluster->default_fairshare = 1;
-	else
-		printf("  Fairshare     = %u\n", cluster->default_fairshare);
+	cluster_list = list_create(destroy_acct_cluster_rec);
+	itr = list_iterator_create(name_list);
+	while((name = list_next(itr))) {
+		if(sacctmgr_find_cluster(name)) {
+			printf(" This cluster %salready exists.  "
+			       "Not adding.\n", name);
+			continue;
+		}
+		cluster = xmalloc(sizeof(acct_cluster_rec_t));
+		cluster->name = xstrdup(name);
+		list_append(cluster_list, cluster);
 
-	if(cluster->default_max_cpu_secs_per_job <= 0)
-		cluster->default_max_cpu_secs_per_job = -1;
-	else
-		printf("  MaxCPUSecs    = %u\n",
-		       cluster->default_max_cpu_secs_per_job);
-	if(cluster->default_max_jobs <= 0)
-		cluster->default_max_jobs = -1;
-	else
-		printf("  MaxJobs       = %u\n", cluster->default_max_jobs);
-	if(cluster->default_max_nodes_per_job <= 0)
-		cluster->default_max_nodes_per_job = -1;
-	else
-		printf("  MaxNodes      = %u\n",
-		       cluster->default_max_nodes_per_job);
-	if(cluster->default_max_wall_duration_per_job <= 0)
-		cluster->default_max_wall_duration_per_job = -1;
-	else
-		printf("  MaxWall       = %u\n",
-		       cluster->default_max_wall_duration_per_job);
-	
-	cluster_list = list_create(NULL);
-	list_append(cluster_list, cluster);
+		printf("  Name          = %s\n", cluster->name);
+
+		cluster->default_fairshare = fairshare;		
+		cluster->default_max_cpu_secs_per_job = max_cpu_secs_per_job;
+		cluster->default_max_jobs = max_jobs;
+		cluster->default_max_nodes_per_job = max_nodes_per_job;
+		cluster->default_max_wall_duration_per_job = 
+			max_wall_duration_per_job;
+	}
+	list_iterator_destroy(itr);
+	list_destroy(name_list);
+
+	if(limit_set) {
+		printf(" User Defaults\n");
+		if((int)fairshare >= 0)
+			printf("  Fairshare       = %u\n", fairshare);
+		if((int)max_cpu_secs_per_job >= 0)
+			printf("  MaxCPUSecs      = %u\n",
+			       max_cpu_secs_per_job);
+		if((int)max_jobs >= 0)
+			printf("  MaxJobs         = %u\n", max_jobs);
+		if((int)max_nodes_per_job >= 0)
+			printf("  MaxNodes        = %u\n", max_nodes_per_job);
+		if((int)max_wall_duration_per_job >= 0)
+			printf("  MaxWall         = %u\n",
+			       max_wall_duration_per_job);
+	}
 
 	rc = acct_storage_g_add_clusters(db_conn, my_uid, cluster_list);
 	if(rc == SLURM_SUCCESS) {
 		if(commit_check("Would you like to commit changes?")) {
 			acct_storage_g_commit(db_conn, 1);
-
-			list_append(sacctmgr_cluster_list, cluster);
-			assoc = xmalloc(sizeof(acct_association_rec_t));
-			list_append(sacctmgr_association_list, assoc);
-			assoc->acct = xstrdup("root");
-			assoc->cluster = xstrdup(cluster->name);
-			assoc->fairshare = cluster->default_fairshare;
-			assoc->max_jobs = cluster->default_max_jobs;
-			assoc->max_nodes_per_job =
-				cluster->default_max_nodes_per_job;
-			assoc->max_wall_duration_per_job = 
-				cluster->default_max_wall_duration_per_job;
-			assoc->max_cpu_secs_per_job =
-				cluster->default_max_cpu_secs_per_job;
+			while((cluster = list_pop(cluster_list))) {
+				list_append(sacctmgr_cluster_list, cluster);
+				assoc = xmalloc(sizeof(acct_association_rec_t));
+				list_append(sacctmgr_association_list, assoc);
+				assoc->acct = xstrdup("root");
+				assoc->cluster = xstrdup(cluster->name);
+				assoc->fairshare = cluster->default_fairshare;
+				assoc->max_jobs = cluster->default_max_jobs;
+				assoc->max_nodes_per_job =
+					cluster->default_max_nodes_per_job;
+				assoc->max_wall_duration_per_job = 
+					cluster->
+					default_max_wall_duration_per_job;
+				assoc->max_cpu_secs_per_job =
+					cluster->default_max_cpu_secs_per_job;
+			}
 		} else
 			acct_storage_g_commit(db_conn, 0);
 	} else {
@@ -262,15 +270,13 @@ extern int sacctmgr_list_cluster(int argc, char *argv[])
 	List print_fields_list; /* types are of print_field_t */
 
 	cluster_cond->cluster_list = list_create(slurm_destroy_char);
-	for (i=0; i<argc; i++) {
-		if (strncasecmp (argv[i], "Name=", 5) == 0) {
-			addto_char_list(cluster_cond->cluster_list, argv[i]+5);
-		} else if (strncasecmp (argv[i], "Names=", 6) == 0) {
-			addto_char_list(cluster_cond->cluster_list, argv[i]+6);
-		} else {
-			error("Only 'Names=' is supported as an option");
-		}		
-	}
+	_set_cond(&i, argc, argv, cluster_cond);
+	
+	cluster_list = acct_storage_g_get_clusters(db_conn, cluster_cond);
+	destroy_acct_cluster_cond(cluster_cond);
+	
+	if(!cluster_list) 
+		return SLURM_ERROR;
 	
 	print_fields_list = list_create(NULL);
 
@@ -282,15 +288,7 @@ extern int sacctmgr_list_cluster(int argc, char *argv[])
 /* 	fs_field.name = "FS"; */
 /* 	fs_field.len = 4; */
 /* 	fs_field.print_routine = print_str; */
-/* 	list_append(print_fields_list, &fs_field); */
-
-	cluster_list = acct_storage_g_get_clusters(db_conn, cluster_cond);
-	destroy_acct_cluster_cond(cluster_cond);
-	
-	if(!cluster_list) 
-		return SLURM_ERROR;
-	
-	
+/* 	list_append(print_fields_list, &fs_field); */	
 	
 	itr = list_iterator_create(cluster_list);
 	print_header(print_fields_list);
@@ -356,7 +354,7 @@ extern int sacctmgr_modify_cluster(int argc, char *argv[])
 	if(rec_set) 
 		printf(" User Defaults  =\n");
 	if((int)cluster->default_fairshare <= 0)
-		cluster->default_fairshare = 1;
+		cluster->default_fairshare = -1;
 	else
 		printf("  Fairshare     = %u\n", cluster->default_fairshare);
 
