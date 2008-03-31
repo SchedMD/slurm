@@ -49,6 +49,7 @@ typedef struct licenses {
 
 extern List license_list;
 
+
 /* Initialize licenses on this system based upon slurm.conf */
 extern int license_init(char *licenses);
 
@@ -58,12 +59,6 @@ extern int license_update(char *licenses);
 /* Free memory associated with licenses on this system */
 extern void license_free(void);
 
-/*
- * license_job_test - Test if the licenses required for a job are available
- * IN job_ptr - job identification
- * RET SLURM_SUCCESS, EAGAIN (not available now), SLURM_ERROR (never runnable)
- */ 
-extern int license_job_test(struct job_record *job_ptr);
 
 /*
  * license_job_get - Get the licenses required for a job
@@ -78,5 +73,19 @@ extern int license_job_get(struct job_record *job_ptr);
  * RET SLURM_SUCCESS or failure code
  */ 
 extern int license_job_return(struct job_record *job_ptr);
+
+/*
+ * license_job_test - Test if the licenses required for a job are available
+ * IN job_ptr - job identification
+ * RET SLURM_SUCCESS, EAGAIN (not available now), SLURM_ERROR (never runnable)
+ */ 
+extern int license_job_test(struct job_record *job_ptr);
+
+/*
+ * license_job_validate - Test if the licenses required by a job are valid
+ * IN job_ptr - job identification
+ * RET: SLURM_SUCCESS or SLURM_ERROR (never runnable)
+ */ 
+extern int license_job_validate(struct job_record *job_ptr);
 
 #endif /* !_LICENSES_H */

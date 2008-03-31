@@ -35,27 +35,34 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
+#include <ctype.h>
 #include <errno.h>
 #include <pthread.h>
 #include <slurm/slurm_errno.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "src/common/list.h"
 #include "src/common/log.h"
 #include "src/common/macros.h"
 #include "src/common/xmalloc.h"
+#include "src/common/xstring.h"
 #include "src/slurmctld/licenses.h"
 #include "src/slurmctld/slurmctld.h"
+
+#define _DEBUG 1
 
 List license_list = (List) NULL;
 static pthread_mutex_t license_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 /* Print all licenses on a list */
-static void _licenses_print(List licenses)
+static inline void _licenses_print(char *header, List licenses)
 {
+#if _DEBUG
 	ListIterator iter;
 	licenses_t *license_entry;
 
+	info("licenses: %s", header);
 	if (licenses == NULL)
 		return;
 
@@ -67,6 +74,7 @@ static void _licenses_print(List licenses)
 		     license_entry->total, license_entry->used);
 	}
 	list_iterator_destroy(iter);
+#endif
 }
 
 /* Free a license_t record (for use by list_destroy) */
@@ -93,34 +101,66 @@ static int _license_find_rec(void *x, void *key)
 	return 1;
 }
 
-/* Determine if a license string is valid or not */
-static bool _valid_licenses(char *licenses)
-{
-/* FIXME FIXME FIXME FIXME */
-	return true;
-}
-
 /* Given a license string, return a list of license_t records */
-static List _build_license_list(char *licenses)
+static List _build_license_list(char *licenses, bool *valid)
 {
+	int i;
+	char *end_num, *tmp_str, *token, *last;
+	licenses_t *license_entry;
+	List lic_list;
+
+	*valid = true;
 	if ((licenses == NULL) || (licenses[0] == '\0'))
 		return NULL;
 
-/* FIXME FIXME FIXME FIXME */
-	return NULL;
+	lic_list = list_create(_license_free_rec);
+	tmp_str = xstrdup(licenses);
+	token = strtok_r(tmp_str, ",;", &last);
+	while (token && *valid) {
+		uint16_t num = 1;
+		for (i=0; token[i]; i++) {
+			if (isspace(token[i])) {
+				*valid = false;
+				break;
+			}
+			if (token[i] == '*') {
+				token[i++] = '\0';
+				num = (uint16_t)strtol(&token[i], &end_num, 10);
+			}
+		}
+		if (num <= 0) {
+			*valid = false;
+			break;
+		}
+		license_entry = xmalloc(sizeof(licenses_t));
+		license_entry->name = xstrdup(token);
+		license_entry->total = num;
+		list_push(lic_list, license_entry);
+		token = strtok_r(NULL, ",;", &last);
+	}
+	xfree(tmp_str);
+
+	if (*valid == false) {
+		list_destroy(lic_list);
+		lic_list = NULL;
+	}
+	return lic_list;
 }
 
 /* Initialize licenses on this system based upon slurm.conf */
 extern int license_init(char *licenses)
 {
-	if (!_valid_licenses(licenses))
-		return SLURM_ERROR;
+	bool valid;
 
 	slurm_mutex_lock(&license_mutex);
 	if (license_list)
 		fatal("license_list already defined");
 
-	license_list = _build_license_list(licenses);
+	license_list = _build_license_list(licenses, &valid);
+	if (!valid)
+		fatal("Invalid configured licenses: %s", licenses);
+
+	_licenses_print("licences_init", license_list);
 	slurm_mutex_unlock(&license_mutex);
 	return SLURM_SUCCESS;
 }
@@ -132,19 +172,19 @@ extern int license_update(char *licenses)
 	ListIterator iter;
 	licenses_t *license_entry, *match;
 	List new_list;
+	bool valid;
 
-	if (!_valid_licenses(licenses))
-		return SLURM_ERROR;
+	new_list = _build_license_list(licenses, &valid);
+	if (!valid)
+		fatal("Invalid configured licenses: %s", licenses);
 
 	slurm_mutex_lock(&license_mutex);
-	if (license_list) {	/* no licenses previously */
-		license_list = _build_license_list(licenses);
+	if (!license_list) {	/* no licenses before now */
+		license_list = new_list;
 		slurm_mutex_unlock(&license_mutex);
 		return SLURM_SUCCESS;
 	}
 
-	new_list = _build_license_list(licenses);
-	slurm_mutex_lock(&license_mutex);
 	iter = list_iterator_create(license_list);
 	if (iter == NULL)
 		fatal("malloc failure from list_iterator_create");
@@ -164,6 +204,7 @@ extern int license_update(char *licenses)
 
 	list_destroy(license_list);
 	license_list = new_list;
+	_licenses_print("licences_update", license_list);
 	slurm_mutex_unlock(&license_mutex);
 	return SLURM_SUCCESS;
 }
@@ -179,6 +220,25 @@ extern void license_free(void)
 	slurm_mutex_unlock(&license_mutex);
 }
 
+/*
+ * license_job_validate - Test if the licenses required by a job are valid
+ * IN job_ptr - job identification
+ * RET: SLURM_SUCCESS or SLURM_ERROR (never runnable)
+ */ 
+extern int license_job_validate(struct job_record *job_ptr)
+{
+	bool valid;
+
+	if (job_ptr->license_list)	/* updating license requirements */
+		list_destroy(job_ptr->license_list);
+
+	job_ptr->license_list = _build_license_list(job_ptr->licenses,&valid);
+	if (!valid)
+		return SLURM_ERROR;
+
+	_licenses_print("job_validate", license_list);
+	return SLURM_SUCCESS;
+}
 
 /*
  * license_job_test - Test if the licenses required for a job are available
@@ -191,8 +251,6 @@ extern int license_job_test(struct job_record *job_ptr)
 	licenses_t *license_entry, *match;
 	int rc = SLURM_SUCCESS;
 
-	if (!job_ptr->license_list)
-		job_ptr->license_list = _build_license_list(job_ptr->licenses);
 	if (!job_ptr->license_list)	/* no licenses needed */
 		return rc;
 
@@ -235,8 +293,6 @@ extern int license_job_get(struct job_record *job_ptr)
 	licenses_t *license_entry, *match;
 	int rc = SLURM_SUCCESS;
 
-	if (!job_ptr->license_list)
-		job_ptr->license_list = _build_license_list(job_ptr->licenses);
 	if (!job_ptr->license_list)	/* no licenses needed */
 		return rc;
 
