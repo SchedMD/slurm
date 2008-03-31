@@ -318,8 +318,12 @@ The options include a number representing the size of the task block.
 This is followed by an optional specification of the task distribution 
 scheme within a block of tasks and between the blocks of tasks.
 For more details (including examples and diagrams), please see
+.ad l
+.nh
 https://computing.llnl.gov/linux/slurm/mc_support.html and
 https://computing.llnl.gov/linux/slurm/dist_plane.html.
+.hy
+.ad
 .TP
 .B arbitrary
 The arbitrary method of distribution will allocate processes in\-order as 
@@ -327,7 +331,7 @@ listed in file designated by the environment variable SLURM_HOSTFILE.  If
 this variable is listed it will over ride any other method specified. 
 If not set the method will default to block.  Inside the hostfile must
 contain at minimum the number of hosts requested.  If requesting tasks
-(-n) your tasks will be laid out on the nodes in the order of the file.
+(\-n) your tasks will be laid out on the nodes in the order of the file.
 .RE
 
 .TP

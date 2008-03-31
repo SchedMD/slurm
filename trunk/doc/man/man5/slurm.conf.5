@@ -234,12 +234,13 @@ Also see \fBAccountingStoragePort\fR and \fBJobCompPort\fR.
 
 .TP
 \fBDefaultStorageType\fR
+.ad l
 Define the accounting and job completion storage mechanism type.
 Acceptable values at present include 
 "filetxt", "gold", "mysql", "none", "pgsql", and "slurmdbd".
 The value "filetxt" indicates that records will be written to a the file.
 The value "gold" indicates that records will be written to Gold
-(http://www.clusterresources.com/pages/products/gold-allocation-manager.ph),
+(http://www.clusterresources.com/pages/products/gold-allocation-manager.php),
 which maintains its own database.
 The value "mysql" indicates that accounting records will be written to 
 a mysql database.
@@ -249,6 +250,7 @@ database.
 The value "slurmdbd" indicates that records will be written to SlurmDbd,
 which maintains its own database. See "man slurmdbd for more information".
 Also see \fBAccountingStorageType\fR  and \fBJobCompType\fR.
+.ad
 
 .TP
 \fBDefaultStorageUser\fR
@@ -986,7 +988,7 @@ Related configuration options include \fBResumeProgram\fR, \fBResumeRate\fR,
 \fBSuspendTime\fR
 Nodes which remain idle for this number of seconds will be placed into 
 power save mode by \fBSuspendProgram\fR,
-A value of -1 disables power save mode and is the default.
+A value of \-1 disables power save mode and is the default.
 Related configuration options include \fBResumeProgram\fR, \fBResumeRate\fR,
 \fBSuspendProgram\fR, \fBSuspendRate\fR, \fBSuspendExcNodes\fR, and
 \fBSuspendExcParts\fR.
