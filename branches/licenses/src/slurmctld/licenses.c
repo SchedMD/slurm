@@ -1,0 +1,305 @@
+/*****************************************************************************\
+ *  licenses.c - Functions for handling cluster-wide consumable resources
+ *****************************************************************************
+ *  Copyright (C) 2008 Lawrence Livermore National Security.
+ *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+ *  Written by Morris Jette <jette@llnl.gov>, et. al.
+ *  LLNL-CODE-402394.
+ *  
+ *  This file is part of SLURM, a resource management program.
+ *  For details, see <http://www.llnl.gov/linux/slurm/>.
+ *  
+ *  SLURM is free software; you can redistribute it and/or modify it under
+ *  the terms of the GNU General Public License as published by the Free
+ *  Software Foundation; either version 2 of the License, or (at your option)
+ *  any later version.
+ *
+ *  In addition, as a special exception, the copyright holders give permission 
+ *  to link the code of portions of this program with the OpenSSL library under 
+ *  certain conditions as described in each individual source file, and 
+ *  distribute linked combinations including the two. You must obey the GNU 
+ *  General Public License in all respects for all of the code used other than 
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this 
+ *  exception to your version of the file(s), but you are not obligated to do 
+ *  so. If you do not wish to do so, delete this exception statement from your
+ *  version.  If you delete this exception statement from all source files in 
+ *  the program, then also delete it here.
+ *  
+ *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+ *  details.
+ *  
+ *  You should have received a copy of the GNU General Public License along
+ *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+\*****************************************************************************/
+
+#include <errno.h>
+#include <pthread.h>
+#include <slurm/slurm_errno.h>
+#include <string.h>
+
+#include "src/common/list.h"
+#include "src/common/log.h"
+#include "src/common/macros.h"
+#include "src/common/xmalloc.h"
+#include "src/slurmctld/licenses.h"
+#include "src/slurmctld/slurmctld.h"
+
+List license_list = (List) NULL;
+static pthread_mutex_t license_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+/* Print all licenses on a list */
+static void _licenses_print(List licenses)
+{
+	ListIterator iter;
+	licenses_t *license_entry;
+
+	if (licenses == NULL)
+		return;
+
+	iter = list_iterator_create(licenses);
+	if (iter == NULL)
+		fatal("malloc failure from list_iterator_create");
+	while ((license_entry = (licenses_t *) licenses)) {
+		info("name:%s total:%u used:%u", license_entry->name, 
+		     license_entry->total, license_entry->used);
+	}
+	list_iterator_destroy(iter);
+}
+
+/* Free a license_t record (for use by list_destroy) */
+static void _license_free_rec(void *x)
+{
+	licenses_t *license_entry = (licenses_t *) x;
+
+	if (license_entry) {
+		xfree(license_entry->name);
+		xfree(license_entry);
+	}
+}
+
+/* Find a license_t record by license name (for use by list_find_first) */
+static int _license_find_rec(void *x, void *key)
+{
+	licenses_t *license_entry = (licenses_t *) x;
+	char *name = (char *) key;
+
+	if ((license_entry->name == NULL) || (name == NULL))
+		return 0;
+	if (strcmp(license_entry->name, name))
+		return 0;
+	return 1;
+}
+
+/* Determine if a license string is valid or not */
+static bool _valid_licenses(char *licenses)
+{
+/* FIXME FIXME FIXME FIXME */
+	return true;
+}
+
+/* Given a license string, return a list of license_t records */
+static List _build_license_list(char *licenses)
+{
+	if ((licenses == NULL) || (licenses[0] == '\0'))
+		return NULL;
+
+/* FIXME FIXME FIXME FIXME */
+	return NULL;
+}
+
+/* Initialize licenses on this system based upon slurm.conf */
+extern int license_init(char *licenses)
+{
+	if (!_valid_licenses(licenses))
+		return SLURM_ERROR;
+
+	slurm_mutex_lock(&license_mutex);
+	if (license_list)
+		fatal("license_list already defined");
+
+	license_list = _build_license_list(licenses);
+	slurm_mutex_unlock(&license_mutex);
+	return SLURM_SUCCESS;
+}
+
+
+/* Update licenses on this system based upon slurm.conf */
+extern int license_update(char *licenses)
+{
+	ListIterator iter;
+	licenses_t *license_entry, *match;
+	List new_list;
+
+	if (!_valid_licenses(licenses))
+		return SLURM_ERROR;
+
+	slurm_mutex_lock(&license_mutex);
+	if (license_list) {	/* no licenses previously */
+		license_list = _build_license_list(licenses);
+		slurm_mutex_unlock(&license_mutex);
+		return SLURM_SUCCESS;
+	}
+
+	new_list = _build_license_list(licenses);
+	slurm_mutex_lock(&license_mutex);
+	iter = list_iterator_create(license_list);
+	if (iter == NULL)
+		fatal("malloc failure from list_iterator_create");
+	while ((license_entry = (licenses_t *) licenses)) {
+		match = list_find_first(new_list, _license_find_rec, 
+			license_entry->name);
+		if (!match) {
+			info("license %s removed with %u in use",
+			     license_entry->name, license_entry->used);
+		} else {
+			match->used = license_entry->used;
+			if (match->used > match->total)
+				info("license %s count decreased", match->name);
+		}
+	}
+	list_iterator_destroy(iter);
+
+	list_destroy(license_list);
+	license_list = new_list;
+	slurm_mutex_unlock(&license_mutex);
+	return SLURM_SUCCESS;
+}
+
+/* Free memory associated with licenses on this system */
+extern void license_free(void)
+{
+	slurm_mutex_lock(&license_mutex);
+	if (license_list) {
+		list_destroy(license_list);
+		license_list = (List) NULL;
+	}
+	slurm_mutex_unlock(&license_mutex);
+}
+
+
+/*
+ * license_job_test - Test if the licenses required for a job are available
+ * IN job_ptr - job identification
+ * RET: SLURM_SUCCESS, EAGAIN (not available now), SLURM_ERROR (never runnable)
+ */ 
+extern int license_job_test(struct job_record *job_ptr)
+{
+	ListIterator iter;
+	licenses_t *license_entry, *match;
+	int rc = SLURM_SUCCESS;
+
+	if (!job_ptr->license_list)
+		job_ptr->license_list = _build_license_list(job_ptr->licenses);
+	if (!job_ptr->license_list)	/* no licenses needed */
+		return rc;
+
+	slurm_mutex_lock(&license_mutex);
+	iter = list_iterator_create(job_ptr->license_list);
+	if (iter == NULL)
+		fatal("malloc failure from list_iterator_create");
+	while ((license_entry = (licenses_t *) list_next(iter))) {
+		match = list_find_first(license_list, _license_find_rec, 
+			license_entry->name);
+		if (!match) {
+			error("could not find license %s for job %u",
+			      license_entry->name, job_ptr->job_id);
+			rc = SLURM_ERROR;
+			break;
+		} else if (license_entry->total > match->total) {
+			info("job %u wants more %s licenses than configured",
+			     job_ptr->job_id, match->name);
+			rc = SLURM_ERROR;
+			break;
+		} else if ((license_entry->total + match->used) > 
+			   match->total) {
+			rc = EAGAIN;
+			break;
+		}
+	}
+	list_iterator_destroy(iter);
+	slurm_mutex_unlock(&license_mutex);
+	return rc;
+}
+
+/*
+ * license_job_get - Get the licenses required for a job
+ * IN job_ptr - job identification
+ * RET SLURM_SUCCESS or failure code
+ */ 
+extern int license_job_get(struct job_record *job_ptr)
+{
+	ListIterator iter;
+	licenses_t *license_entry, *match;
+	int rc = SLURM_SUCCESS;
+
+	if (!job_ptr->license_list)
+		job_ptr->license_list = _build_license_list(job_ptr->licenses);
+	if (!job_ptr->license_list)	/* no licenses needed */
+		return rc;
+
+	slurm_mutex_lock(&license_mutex);
+	iter = list_iterator_create(job_ptr->license_list);
+	if (iter == NULL)
+		fatal("malloc failure from list_iterator_create");
+	while ((license_entry = (licenses_t *) list_next(iter))) {
+		match = list_find_first(license_list, _license_find_rec, 
+			license_entry->name);
+		if (match) {
+			match->used += license_entry->total;
+			license_entry->used += license_entry->total;
+		} else {
+			error("could not find license %s for job %u",
+			      license_entry->name, job_ptr->job_id);
+			rc = SLURM_ERROR;
+		}
+	}
+	list_iterator_destroy(iter);
+	slurm_mutex_unlock(&license_mutex);
+	return rc;
+}
+
+/*
+ * license_job_return - Return the licenses allocated to a job
+ * IN job_ptr - job identification
+ * RET SLURM_SUCCESS or failure code
+ */ 
+extern int license_job_return(struct job_record *job_ptr)
+{
+	ListIterator iter;
+	licenses_t *license_entry, *match;
+	int rc = SLURM_SUCCESS;
+
+	if (!job_ptr->license_list)	/* no licenses needed */
+		return rc;
+
+	slurm_mutex_lock(&license_mutex);
+	iter = list_iterator_create(job_ptr->license_list);
+	if (iter == NULL)
+		fatal("malloc failure from list_iterator_create");
+	while ((license_entry = (licenses_t *) list_next(iter))) {
+		match = list_find_first(license_list, _license_find_rec, 
+			license_entry->name);
+		if (match) {
+			if (match->used >= license_entry->total)
+				match->used -= license_entry->total;
+			else {
+				error("license use count underflow for %s",
+				      match->name);
+				match->used = 0;
+				rc = SLURM_ERROR;
+			}
+			license_entry->used = 0;
+		} else {
+			/* This can happen after a reconfiguration */
+			error("job returning unknown license %s", 
+			      license_entry->name);
+		}
+	}
+	list_iterator_destroy(iter);
+	slurm_mutex_unlock(&license_mutex);
+	return rc;
+}
+

@@ -382,6 +382,7 @@ struct job_record {
 					 * the job step completes, 2 if kill
 					 * in progress */
 	char *licenses;			/* licenses required by the job */
+	List license_list;		/* structure with license info */
 	uint16_t mail_type;		/* see MAIL_JOB_* in slurm.h */
 	char *mail_user;		/* user to get e-mail notification */
 	uint32_t magic;			/* magic cookie for data integrity */
