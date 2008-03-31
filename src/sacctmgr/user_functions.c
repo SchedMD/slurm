@@ -84,7 +84,8 @@ static int _set_cond(int *start, int argc, char *argv[],
 				str_2_acct_qos(argv[i]+end);
 			u_set = 1;
 		} else {
-			printf(" Unknown condition: %s", argv[i]);
+			printf(" Unknown condition: %s\n"
+			       " Use keyword 'set' to modify value\n", argv[i]);
 		}		
 	}	
 	(*start) = i;
@@ -142,7 +143,9 @@ static int _set_rec(int *start, int argc, char *argv[],
 			user->qos = str_2_acct_qos(argv[i]+end);
 			u_set = 1;
 		} else {
-			printf(" Unknown option: %s", argv[i]);
+			printf(" Unknown option: %s\n"
+			       " Use keyword 'where' to modify condition\n",
+			       argv[i]);
 		}		
 	}	
 	(*start) = i;
@@ -156,63 +159,63 @@ static int _set_rec(int *start, int argc, char *argv[],
 	return 0;
 }
 
-static void _print_cond(acct_user_cond_t *user_cond)
-{
-	ListIterator itr = NULL;
-	char *tmp_char = NULL;
+/* static void _print_cond(acct_user_cond_t *user_cond) */
+/* { */
+/* 	ListIterator itr = NULL; */
+/* 	char *tmp_char = NULL; */
 
-	if(!user_cond) {
-		error("no acct_user_cond_t * given");
-		return;
-	}
+/* 	if(!user_cond) { */
+/* 		error("no acct_user_cond_t * given"); */
+/* 		return; */
+/* 	} */
 
-	if(user_cond->user_list && list_count(user_cond->user_list)) {
-		itr = list_iterator_create(user_cond->user_list);
-		printf("  Names           = %s\n", (char *)list_next(itr));
-		while((tmp_char = list_next(itr))) {
-			printf("                 or %s\n", tmp_char);
-		}
-	}
+/* 	if(user_cond->user_list && list_count(user_cond->user_list)) { */
+/* 		itr = list_iterator_create(user_cond->user_list); */
+/* 		printf("  Names           = %s\n", (char *)list_next(itr)); */
+/* 		while((tmp_char = list_next(itr))) { */
+/* 			printf("                 or %s\n", tmp_char); */
+/* 		} */
+/* 	} */
 
-	if(user_cond->def_acct_list
-	   && list_count(user_cond->def_acct_list)) {
-		itr = list_iterator_create(user_cond->def_acct_list);
-		printf("  Default Account = %s\n", (char *)list_next(itr));
-		while((tmp_char = list_next(itr))) {
-			printf("                 or %s\n", tmp_char);
-		}
-	}
+/* 	if(user_cond->def_acct_list */
+/* 	   && list_count(user_cond->def_acct_list)) { */
+/* 		itr = list_iterator_create(user_cond->def_acct_list); */
+/* 		printf("  Default Account = %s\n", (char *)list_next(itr)); */
+/* 		while((tmp_char = list_next(itr))) { */
+/* 			printf("                 or %s\n", tmp_char); */
+/* 		} */
+/* 	} */
 
-	if(user_cond->qos != ACCT_QOS_NOTSET)
-		printf("  Qos        = %s\n", 
-		       acct_qos_str(user_cond->qos));
+/* 	if(user_cond->qos != ACCT_QOS_NOTSET) */
+/* 		printf("  Qos        = %s\n",  */
+/* 		       acct_qos_str(user_cond->qos)); */
 
-	if(user_cond->admin_level != ACCT_ADMIN_NOTSET)
-		printf("  Admin Level     = %s\n", 
-		       acct_admin_level_str(user_cond->admin_level));
-}
+/* 	if(user_cond->admin_level != ACCT_ADMIN_NOTSET) */
+/* 		printf("  Admin Level     = %s\n",  */
+/* 		       acct_admin_level_str(user_cond->admin_level)); */
+/* } */
 
-static void _print_rec(acct_user_rec_t *user)
-{
-	if(!user) {
-		error("no acct_user_rec_t * given");
-		return;
-	}
+/* static void _print_rec(acct_user_rec_t *user) */
+/* { */
+/* 	if(!user) { */
+/* 		error("no acct_user_rec_t * given"); */
+/* 		return; */
+/* 	} */
 	
-	if(user->name) 
-		printf("  Name            = %s\n", user->name);	
+/* 	if(user->name)  */
+/* 		printf("  Name            = %s\n", user->name);	 */
 		
-	if(user->default_acct) 
-		printf("  Default Account = %s\n", user->default_acct);
+/* 	if(user->default_acct)  */
+/* 		printf("  Default Account = %s\n", user->default_acct); */
 		
-	if(user->qos != ACCT_QOS_NOTSET)
-		printf("  Qos        = %s\n", 
-		       acct_qos_str(user->qos));
+/* 	if(user->qos != ACCT_QOS_NOTSET) */
+/* 		printf("  Qos        = %s\n",  */
+/* 		       acct_qos_str(user->qos)); */
 
-	if(user->admin_level != ACCT_ADMIN_NOTSET)
-		printf("  Admin Level     = %s\n", 
-		       acct_admin_level_str(user->admin_level));
-}
+/* 	if(user->admin_level != ACCT_ADMIN_NOTSET) */
+/* 		printf("  Admin Level     = %s\n",  */
+/* 		       acct_admin_level_str(user->admin_level)); */
+/* } */
 
 static void _remove_existing_users(List ret_list)
 {
@@ -252,16 +255,16 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 	int partition_set = 0;
 	List user_list = NULL;
 	List assoc_list = NULL;
-	uint32_t fairshare = -1; 
-	uint32_t max_jobs = -1; 
-	uint32_t max_nodes_per_job = -1;
-	uint32_t max_wall_duration_per_job = -1;
-	uint32_t max_cpu_secs_per_job = -1;
-	uint32_t use_fairshare = -1; 
-	uint32_t use_max_jobs = -1; 
-	uint32_t use_max_nodes_per_job = -1;
-	uint32_t use_max_wall_duration_per_job = -1;
-	uint32_t use_max_cpu_secs_per_job = -1;
+	uint32_t fairshare = -2; 
+	uint32_t max_jobs = -2; 
+	uint32_t max_nodes_per_job = -2;
+	uint32_t max_wall_duration_per_job = -2;
+	uint32_t max_cpu_secs_per_job = -2;
+	uint32_t use_fairshare = -2; 
+	uint32_t use_max_jobs = -2; 
+	uint32_t use_max_nodes_per_job = -2;
+	uint32_t use_max_wall_duration_per_job = -2;
+	uint32_t use_max_cpu_secs_per_job = -2;
 	char *user_str = NULL;
 	char *assoc_str = NULL;
 	int limit_set = 0;
@@ -430,43 +433,44 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 /* 					       temp_assoc->account, */
 /* 					       temp_assoc->cluster, */
 /* 					       temp_assoc->parent_account); */
-				use_fairshare = -1; 
-				use_max_jobs = -1; 
-				use_max_nodes_per_job = -1;
-				use_max_wall_duration_per_job = -1;
-				use_max_cpu_secs_per_job = -1;
+				use_fairshare = -2; 
+				use_max_jobs = -2; 
+				use_max_nodes_per_job = -2;
+				use_max_wall_duration_per_job = -2;
+				use_max_cpu_secs_per_job = -2;
 
-				if(fairshare >= 0)
+				if(fairshare != -2)
 					use_fairshare = fairshare;
-				else if((int)root_assoc->fairshare >= 0)
+				else if((int)root_assoc->fairshare != -1)
 					use_fairshare = root_assoc->fairshare;
 				
-				if(max_jobs >= 0)
+				if(max_jobs != -2)
 					use_max_jobs = max_jobs;
-				else if((int)root_assoc->max_jobs >= 0)
+				else if((int)root_assoc->max_jobs != -1)
 					use_max_jobs =root_assoc->max_jobs;
 				
-				if(max_nodes_per_job >= 0)
+				if(max_nodes_per_job != -2)
 					use_max_nodes_per_job =
 						max_nodes_per_job;
-				else if((int)root_assoc->max_nodes_per_job >= 0)
+				else if((int)root_assoc->max_nodes_per_job
+					!= -1)
 					use_max_nodes_per_job =
 						root_assoc->max_nodes_per_job;
 				
-				if(max_wall_duration_per_job >= 0)
+				if(max_wall_duration_per_job != -2)
 					use_max_wall_duration_per_job =
 						max_wall_duration_per_job;
 				else if((int)root_assoc->
-					max_wall_duration_per_job >= 0)
+					max_wall_duration_per_job != -1)
 					use_max_wall_duration_per_job =
 						root_assoc->
 						max_wall_duration_per_job;
 
-				if(max_cpu_secs_per_job >= 0)
+				if(max_cpu_secs_per_job != -2)
 					use_max_cpu_secs_per_job =
 						max_cpu_secs_per_job;
 				else if((int)root_assoc->
-					max_cpu_secs_per_job >= 0)
+					max_cpu_secs_per_job != -1)
 					use_max_cpu_secs_per_job =
 						root_assoc->
 						max_cpu_secs_per_job;
@@ -574,16 +578,16 @@ no_default:
 
 	if(limit_set) {
 		        printf(" Non Default Settings\n");
-		if((int)fairshare >= 0)
+		if((int)fairshare != -2)
 			printf("  Fairshare       = %u\n", fairshare);
-		if((int)max_cpu_secs_per_job >= 0)
+		if((int)max_cpu_secs_per_job != -2)
 			printf("  MaxCPUSecs      = %u\n",
 			       max_cpu_secs_per_job);
-		if((int)max_jobs >= 0)
+		if((int)max_jobs != -2)
 			printf("  MaxJobs         = %u\n", max_jobs);
-		if((int)max_nodes_per_job >= 0)
+		if((int)max_nodes_per_job != -2)
 			printf("  MaxNodes        = %u\n", max_nodes_per_job);
-		if((int)max_wall_duration_per_job >= 0)
+		if((int)max_wall_duration_per_job != -2)
 			printf("  MaxWall         = %u\n",
 			       max_wall_duration_per_job);
 	}
@@ -698,6 +702,17 @@ extern int sacctmgr_modify_user(int argc, char *argv[])
 	assoc_cond->acct_list = list_create(slurm_destroy_char);
 	assoc_cond->cluster_list = list_create(slurm_destroy_char);
 	assoc_cond->partition_list = list_create(slurm_destroy_char);
+	assoc_cond->fairshare = -2; 
+	assoc_cond->max_cpu_secs_per_job = -2;
+	assoc_cond->max_jobs = -2; 
+	assoc_cond->max_nodes_per_job = -2;
+	assoc_cond->max_wall_duration_per_job = -2;
+	
+	assoc->fairshare = -2; 
+	assoc->max_cpu_secs_per_job = -2;
+	assoc->max_jobs = -2; 
+	assoc->max_nodes_per_job = -2;
+	assoc->max_wall_duration_per_job = -2;
 
 	for (i=0; i<argc; i++) {
 		if (strncasecmp (argv[i], "Where", 5) == 0) {
@@ -733,27 +748,51 @@ extern int sacctmgr_modify_user(int argc, char *argv[])
 		}		
 	}
 
-	printf(" Setting\n");
-	_print_rec(user);
-	printf("\n Where\n");
-	_print_cond(user_cond);
-
-	if((ret_list = acct_storage_g_modify_users(db_conn, my_uid,
-						   user_cond, user))) {
-		char *object = NULL;
-		ListIterator itr = list_iterator_create(ret_list);
-		printf(" Modified users...\n");
-		while((object = list_next(itr))) {
-			printf("  %s\n", object);
+	if(rec_set == 3 || rec_set == 1) { // process the account changes
+		if(cond_set == 2) {
+			rc = SLURM_ERROR;
+			goto assoc_start;
 		}
-		list_iterator_destroy(itr);
+		ret_list = acct_storage_g_modify_users(
+			db_conn, my_uid, user_cond, user);
+		if(ret_list && list_count(ret_list)) {
+			char *object = NULL;
+			ListIterator itr = list_iterator_create(ret_list);
+			printf(" Modified users...\n");
+			while((object = list_next(itr))) {
+				printf("  %s\n", object);
+			}
+			list_iterator_destroy(itr);
+			list_destroy(ret_list);
+		} else {
+			rc = SLURM_ERROR;
+		}
+	}
+
+assoc_start:
+	if(rec_set == 3 || rec_set == 2) { // process the association changes
+		ret_list = acct_storage_g_modify_associations(
+			db_conn, my_uid, assoc_cond, assoc);
+
+		if(ret_list && list_count(ret_list)) {
+			char *object = NULL;
+			ListIterator itr = list_iterator_create(ret_list);
+			printf(" Modified account associations...\n");
+			while((object = list_next(itr))) {
+				printf("  %s\n", object);
+			}
+			list_iterator_destroy(itr);
+			list_destroy(ret_list);
+		} else {
+			rc = SLURM_ERROR;
+		}
+	}
+
+	if(rc == SLURM_SUCCESS) {
 		if(commit_check("Would you like to commit changes?")) 
 			acct_storage_g_commit(db_conn, 1);
 		else
 			acct_storage_g_commit(db_conn, 0);
-		list_destroy(ret_list);
-	} else {
-		rc = SLURM_ERROR;
 	}
 	destroy_acct_user_cond(user_cond);
 	destroy_acct_user_rec(user);	

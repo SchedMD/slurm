@@ -81,14 +81,17 @@ static int _set_cond(int *start, int argc, char *argv[],
 		} else if (strncasecmp (argv[i], "ShowAssoc", 1) == 0) {
 			acct_cond->with_assocs = 1;
 		} else {
-			printf(" Unknown condition: %s", argv[i]);
+			printf(" Unknown condition: %s\n"
+			       " Use keyword 'set' to modify value\n", argv[i]);
 		}
 	}
 	(*start) = i;
 
-	if(a_set) {
+	if(a_set && u_set) 
+		return 3;
+	else if(a_set) 
 		return 2;
-	} else if(u_set)
+	else if(u_set)
 		return 1;
 
 	return 0;
@@ -140,82 +143,84 @@ static int _set_rec(int *start, int argc, char *argv[],
 			acct->qos = str_2_acct_qos(argv[i]+end);
 			u_set = 1;
 		} else {
-			printf(" Unknown option: %s", argv[i]);
+			printf(" Unknown option: %s\n"
+			       " Use keyword 'where' to modify condition\n",
+			       argv[i]);
 		}
 	}
 	(*start) = i;
 
 	if(u_set && a_set)
 		return 3;
-	else if(u_set)
-		return 1;
 	else if(a_set)
 		return 2;
+	else if(u_set)
+		return 1;
 	return 0;
 }
 
-static void _print_cond(acct_account_cond_t *acct_cond)
-{
-	ListIterator itr = NULL;
-	char *tmp_char = NULL;
+/* static void _print_cond(acct_account_cond_t *acct_cond) */
+/* { */
+/* 	ListIterator itr = NULL; */
+/* 	char *tmp_char = NULL; */
 
-	if(!acct_cond) {
-		error("no acct_account_cond_t * given");
-		return;
-	}
+/* 	if(!acct_cond) { */
+/* 		error("no acct_account_cond_t * given"); */
+/* 		return; */
+/* 	} */
 
-	if(acct_cond->acct_list && list_count(acct_cond->acct_list)) {
-		itr = list_iterator_create(acct_cond->acct_list);
-		printf("  Names       = %s\n", (char *)list_next(itr));
-		while((tmp_char = list_next(itr))) {
-			printf("             or %s\n", tmp_char);
-		}
-	}
+/* 	if(acct_cond->acct_list && list_count(acct_cond->acct_list)) { */
+/* 		itr = list_iterator_create(acct_cond->acct_list); */
+/* 		printf("  Names       = %s\n", (char *)list_next(itr)); */
+/* 		while((tmp_char = list_next(itr))) { */
+/* 			printf("             or %s\n", tmp_char); */
+/* 		} */
+/* 	} */
 
-	if(acct_cond->description_list
-	   && list_count(acct_cond->description_list)) {
-		itr = list_iterator_create(acct_cond->description_list);
-		printf("  Description = %s\n", (char *)list_next(itr));
-		while((tmp_char = list_next(itr))) {
-			printf("             or %s\n", tmp_char);
-		}
-	}
+/* 	if(acct_cond->description_list */
+/* 	   && list_count(acct_cond->description_list)) { */
+/* 		itr = list_iterator_create(acct_cond->description_list); */
+/* 		printf("  Description = %s\n", (char *)list_next(itr)); */
+/* 		while((tmp_char = list_next(itr))) { */
+/* 			printf("             or %s\n", tmp_char); */
+/* 		} */
+/* 	} */
 
-	if(acct_cond->organization_list
-	   && list_count(acct_cond->organization_list)) {
-		itr = list_iterator_create(acct_cond->organization_list);
-		printf("  Organization = %s\n", (char *)list_next(itr));
-		while((tmp_char = list_next(itr))) {
-			printf("             or %s\n", tmp_char);
-		}
-	}
+/* 	if(acct_cond->organization_list */
+/* 	   && list_count(acct_cond->organization_list)) { */
+/* 		itr = list_iterator_create(acct_cond->organization_list); */
+/* 		printf("  Organization = %s\n", (char *)list_next(itr)); */
+/* 		while((tmp_char = list_next(itr))) { */
+/* 			printf("             or %s\n", tmp_char); */
+/* 		} */
+/* 	} */
 
-	if(acct_cond->qos != ACCT_QOS_NOTSET)
-		printf("  Qos     = %s\n", 
-		       acct_qos_str(acct_cond->qos));
-}
+/* 	if(acct_cond->qos != ACCT_QOS_NOTSET) */
+/* 		printf("  Qos     = %s\n",  */
+/* 		       acct_qos_str(acct_cond->qos)); */
+/* } */
 
-static void _print_rec(acct_account_rec_t *acct)
-{
-	if(!acct) {
-		error("no acct_account_rec_t * given");
-		return;
-	}
+/* static void _print_rec(acct_account_rec_t *acct) */
+/* { */
+/* 	if(!acct) { */
+/* 		error("no acct_account_rec_t * given"); */
+/* 		return; */
+/* 	} */
 	
-	if(acct->name) 
-		printf("  Name         = %s\n", acct->name);	
+/* 	if(acct->name)  */
+/* 		printf("  Name         = %s\n", acct->name);	 */
 		
-	if(acct->description) 
-		printf("  Description  = %s\n", acct->description);
+/* 	if(acct->description)  */
+/* 		printf("  Description  = %s\n", acct->description); */
 
-	if(acct->organization) 
-		printf("  Organization = %s\n", acct->organization);
+/* 	if(acct->organization)  */
+/* 		printf("  Organization = %s\n", acct->organization); */
 		
-	if(acct->qos != ACCT_QOS_NOTSET)
-		printf("  Qos     = %s\n", 
-		       acct_qos_str(acct->qos));
+/* 	if(acct->qos != ACCT_QOS_NOTSET) */
+/* 		printf("  Qos     = %s\n",  */
+/* 		       acct_qos_str(acct->qos)); */
 
-}
+/* } */
 
 static void _remove_existing_accounts(List ret_list)
 {
@@ -269,11 +274,11 @@ extern int sacctmgr_add_account(int argc, char *argv[])
 	acct_qos_level_t qos = ACCT_QOS_NOTSET;
 	List acct_list = NULL;
 	List assoc_list = NULL;
-	uint32_t fairshare = -1; 
-	uint32_t max_jobs = -1; 
-	uint32_t max_nodes_per_job = -1;
-	uint32_t max_wall_duration_per_job = -1;
-	uint32_t max_cpu_secs_per_job = -1;
+	uint32_t fairshare = -2; 
+	uint32_t max_jobs = -2; 
+	uint32_t max_nodes_per_job = -2;
+	uint32_t max_wall_duration_per_job = -2;
+	uint32_t max_cpu_secs_per_job = -2;
 	char *acct_str = NULL;
 	char *assoc_str = NULL;
 	int limit_set = 0;
@@ -464,16 +469,16 @@ no_required:
 
 	if(limit_set) {
 		printf(" Settings\n");
-		if((int)fairshare >= 0)
+		if((int)fairshare != -2)
 			printf("  Fairshare       = %u\n", fairshare);
-		if((int)max_cpu_secs_per_job >= 0)
+		if((int)max_cpu_secs_per_job != -2)
 			printf("  MaxCPUSecs      = %u\n",
 			       max_cpu_secs_per_job);
-		if((int)max_jobs >= 0)
+		if((int)max_jobs != -2)
 			printf("  MaxJobs         = %u\n", max_jobs);
-		if((int)max_nodes_per_job >= 0)
+		if((int)max_nodes_per_job != -2)
 			printf("  MaxNodes        = %u\n", max_nodes_per_job);
-		if((int)max_wall_duration_per_job >= 0)
+		if((int)max_wall_duration_per_job != -2)
 			printf("  MaxWall         = %u\n",
 			       max_wall_duration_per_job);
 	}
@@ -620,19 +625,29 @@ extern int sacctmgr_modify_account(int argc, char *argv[])
 
 	assoc_cond->cluster_list = list_create(slurm_destroy_char);
 	assoc_cond->acct_list = list_create(slurm_destroy_char);
+	assoc_cond->fairshare = -2; 
+	assoc_cond->max_cpu_secs_per_job = -2;
+	assoc_cond->max_jobs = -2; 
+	assoc_cond->max_nodes_per_job = -2;
+	assoc_cond->max_wall_duration_per_job = -2;
 	
+	assoc->fairshare = -2; 
+	assoc->max_cpu_secs_per_job = -2;
+	assoc->max_jobs = -2; 
+	assoc->max_nodes_per_job = -2;
+	assoc->max_wall_duration_per_job = -2;
+
 	for (i=0; i<argc; i++) {
 		if (strncasecmp (argv[i], "Where", 5) == 0) {
 			i++;
-			if(_set_cond(&i, argc, argv, acct_cond, assoc_cond))
-				cond_set = 1;
+			cond_set = _set_cond(&i, argc, argv,
+					     acct_cond, assoc_cond);
 		} else if (strncasecmp (argv[i], "Set", 3) == 0) {
 			i++;
-			if(_set_rec(&i, argc, argv, acct, assoc))
-				rec_set = 1;
+			rec_set = _set_rec(&i, argc, argv, acct, assoc);
 		} else {
-			if(_set_cond(&i, argc, argv, acct_cond, assoc_cond))
-				cond_set = 1;
+			cond_set = _set_cond(&i, argc, argv, 
+					     acct_cond, assoc_cond);
 		}
 	}
 
@@ -655,27 +670,51 @@ extern int sacctmgr_modify_account(int argc, char *argv[])
 		}		
 	}
 
-	printf(" Setting\n");
-	_print_rec(acct);
-	printf("\n Where\n");
-	_print_cond(acct_cond);
-	
-	if((ret_list = acct_storage_g_modify_accounts(db_conn, my_uid, 
-						      acct_cond, acct))) {
-		char *object = NULL;
-		ListIterator itr = list_iterator_create(ret_list);
-		printf(" Modified accounts...\n");
-		while((object = list_next(itr))) {
-			printf("  %s\n", object);
+	if(rec_set == 3 || rec_set == 1) { // process the account changes
+		if(cond_set == 2) {
+			rc = SLURM_ERROR;
+			goto assoc_start;
 		}
-		list_iterator_destroy(itr);
+		ret_list = acct_storage_g_modify_accounts(
+			db_conn, my_uid, acct_cond, acct);
+		if(ret_list && list_count(ret_list)) {
+			char *object = NULL;
+			ListIterator itr = list_iterator_create(ret_list);
+			printf(" Modified accounts...\n");
+			while((object = list_next(itr))) {
+				printf("  %s\n", object);
+			}
+			list_iterator_destroy(itr);
+			list_destroy(ret_list);
+		} else {
+			rc = SLURM_ERROR;
+		}
+	}
+
+assoc_start:
+	if(rec_set == 3 || rec_set == 2) { // process the association changes
+		ret_list = acct_storage_g_modify_associations(
+			db_conn, my_uid, assoc_cond, assoc);
+
+		if(ret_list && list_count(ret_list)) {
+			char *object = NULL;
+			ListIterator itr = list_iterator_create(ret_list);
+			printf(" Modified account associations...\n");
+			while((object = list_next(itr))) {
+				printf("  %s\n", object);
+			}
+			list_iterator_destroy(itr);
+			list_destroy(ret_list);
+		} else {
+			rc = SLURM_ERROR;
+		}
+	}
+
+	if(rc == SLURM_SUCCESS) {
 		if(commit_check("Would you like to commit changes?")) 
 			acct_storage_g_commit(db_conn, 1);
 		else
 			acct_storage_g_commit(db_conn, 0);
-		list_destroy(ret_list);
-	} else {
-		rc = SLURM_ERROR;
 	}
 	destroy_acct_account_cond(acct_cond);
 	destroy_acct_account_rec(acct);
