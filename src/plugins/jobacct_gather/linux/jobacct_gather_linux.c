@@ -312,7 +312,7 @@ static void _get_process_data() {
 				/* tally their usage */
 				jobacct->max_rss = jobacct->tot_rss = 
 					MAX(jobacct->max_rss, prec->rss);
-				total_job_mem += jobacct->max_rss;
+				total_job_mem += prec->rss;
 				jobacct->max_vsize = jobacct->tot_vsize = 
 					MAX(jobacct->max_vsize, prec->vsize);
 				jobacct->max_pages = jobacct->tot_pages =
