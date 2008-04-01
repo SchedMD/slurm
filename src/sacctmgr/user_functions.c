@@ -322,7 +322,7 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 		} else if (strncasecmp (argv[i], "QosLevel", 1) == 0) {
 			qos = str_2_acct_qos(argv[i]+end);
 		} else {
-			printf(" Unknown option: %s", argv[i]);
+			printf(" Unknown option: %s\n", argv[i]);
 		}		
 	}
 

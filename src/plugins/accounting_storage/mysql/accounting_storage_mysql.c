@@ -107,6 +107,58 @@ extern int acct_storage_p_add_associations(mysql_conn_t *mysql_conn,
 extern List acct_storage_p_get_associations(mysql_conn_t *mysql_conn, 
 					    acct_association_cond_t *assoc_q);
 
+static int move_account(mysql_conn_t *mysql_conn, char *cluster,
+			char *id, char *parent)
+{
+	int rc = SLURM_SUCCESS;
+	char *query = xstrdup_printf(
+		"SELECT @parLeft := lft from %s " 
+		"where cluster='%s' && acct='%s' && user='';",
+		assoc_table,
+		cluster, parent);
+					
+	xstrfmtcat(query, 
+		   "SELECT @oldLeft := lft, @oldRight := rgt, "
+		   "@myWidth := (rgt - lft + 1), @myDiff := (@parLeft+1) - lft "
+		   "FROM %s WHERE id = %s;",
+		   assoc_table, id);
+
+	xstrfmtcat(query,
+		   "update %s set deleted = deleted + 2, "
+		   "lft = lft + @myDiff, rgt = rgt + @myDiff "
+		   "WHERE lft BETWEEN @oldLeft AND @oldRight;",
+		   assoc_table);
+				
+	xstrfmtcat(query,
+		   "UPDATE %s SET rgt = rgt + @myWidth WHERE "
+		   "rgt > @parLeft && deleted < 2;"
+		   "UPDATE %s SET lft = lft + @myWidth WHERE "
+		   "lft > @parLeft && deleted < 2;",
+		   assoc_table,
+		   assoc_table);
+	xstrfmtcat(query,
+		   "UPDATE %s SET rgt = rgt - @myWidth WHERE "
+		   "(@myDiff < 0 && rgt > @oldRight && deleted < 2) "
+		   "|| (@myDiff >= 0 && rgt > @oldLeft);"
+		   "UPDATE %s SET lft = lft - @myWidth WHERE "
+		   "(@myDiff < 0 && lft > @oldRight && deleted < 2) "
+		   "|| (@myDiff >= 0 && lft > @oldLeft);",
+		   assoc_table,
+		   assoc_table);
+
+	xstrfmtcat(query,
+		   "update %s set deleted = deleted - 2 WHERE deleted > 1;",
+		   assoc_table);
+	xstrfmtcat(query,
+		   "update %s set parent_acct='%s' where id = %s;",
+		   assoc_table, parent, id);
+	debug3("query\n%s", query);
+	rc = mysql_db_query(mysql_conn->acct_mysql_db, query);
+	xfree(query);
+
+	return rc;
+}
+
 
 /* This function will take the object given and free it later so it
  * needed to be removed from a list if in one before 
@@ -238,10 +290,15 @@ static int _remove_common(mysql_conn_t *mysql_conn,
 	char *query = NULL;
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
+	time_t day_old = now - 86400;
 
 	if(mysql_conn->rollback)
 		mysql_autocommit(mysql_conn->acct_mysql_db, 0);
-
+	/* we want to remove completely all that is less than a day old */
+	query = xstrdup_printf("delete from %s where creation_time<%d "
+			       "&& (%s);",
+			       table, day_old, name_char);
+	
 	query = xstrdup_printf("update %s set mod_time=%d, deleted=1 "
 			       "where deleted=0 && (%s);",
 			       table, now, name_char);
@@ -270,7 +327,7 @@ static int _remove_common(mysql_conn_t *mysql_conn,
 		return SLURM_SUCCESS;
 
 	query = xstrdup_printf("SELECT lft, rgt FROM %s WHERE %s;",
-				     assoc_table, assoc_char);
+			       assoc_table, assoc_char);
 
 	debug3("query\n%s", query);
 	if(!(result = mysql_db_query_ret(mysql_conn->acct_mysql_db, query))) {
@@ -288,7 +345,7 @@ static int _remove_common(mysql_conn_t *mysql_conn,
 	while((row = mysql_fetch_row(result))) {
 		query = xstrdup_printf(
 			"update %s set mod_time=%d, deleted=1 "
-			"where deleted=0 && lft>=%s && rgt<=%s;",
+			"where deleted=0 && lft between %s and %s;",
 			assoc_table, now,
 			row[0], row[1]);
 		debug3("query\n%s", query);
@@ -2021,27 +2078,35 @@ extern List acct_storage_p_modify_clusters(mysql_conn_t *mysql_conn,
 	if((int)cluster->default_fairshare >= 0) {
 		xstrfmtcat(assoc_vals, ", fairshare=%u",
 			   cluster->default_fairshare);
-	}
-
-	if((int)cluster->default_max_jobs >= 0) {
-		xstrfmtcat(assoc_vals, ", max_jobs=%u",
-			   cluster->default_max_jobs);
-	}
-
-	if((int)cluster->default_max_nodes_per_job >= 0) {
-		xstrfmtcat(assoc_vals, ", max_nodes_per_job=%u",
-			   cluster->default_max_nodes_per_job);
-	}
-
-	if((int)cluster->default_max_wall_duration_per_job >= 0) {
-		xstrfmtcat(assoc_vals, ", max_wall_duration_per_job=%u",
-			   cluster->default_max_wall_duration_per_job);
-	}
+	} else if((int)cluster->default_fairshare == -1) 
+		xstrfmtcat(assoc_vals, ", fairshare=1");
 
 	if((int)cluster->default_max_cpu_secs_per_job >= 0) {
 		xstrfmtcat(assoc_vals, ", max_cpu_secs_per_job=%u",
 			   cluster->default_max_cpu_secs_per_job);
-	}
+	} else if((int)cluster->default_max_cpu_secs_per_job == -1) 
+		xstrfmtcat(assoc_vals, ", max_cpu_secs_per_job=NULL");
+
+	if((int)cluster->default_max_jobs >= 0) {
+		xstrfmtcat(assoc_vals, ", max_jobs=%u",
+			   cluster->default_max_jobs);
+	} else if((int)cluster->default_max_jobs == -1)
+		xstrfmtcat(assoc_vals, ", max_jobs=NULL");
+	
+
+	if((int)cluster->default_max_nodes_per_job >= 0) {
+		xstrfmtcat(assoc_vals, ", max_nodes_per_job=%u",
+			   cluster->default_max_nodes_per_job);
+	} else if((int)cluster->default_max_nodes_per_job == -1)
+		xstrfmtcat(assoc_vals, ", max_nodes_per_job=NULL");
+
+
+	if((int)cluster->default_max_wall_duration_per_job >= 0) {
+		xstrfmtcat(assoc_vals, ", max_wall_duration_per_job=%u",
+			   cluster->default_max_wall_duration_per_job);
+	} else if((int)cluster->default_max_wall_duration_per_job == -1) 
+		xstrfmtcat(assoc_vals, ", max_wall_duration_per_job=NULL");
+	
 
 	if(!vals && !assoc_vals) {
 		error("Nothing to change");
@@ -2053,6 +2118,8 @@ extern List acct_storage_p_modify_clusters(mysql_conn_t *mysql_conn,
 	debug3("query\n%s",query);
 	if(!(result = mysql_db_query_ret(mysql_conn->acct_mysql_db, query))) {
 		xfree(query);
+		xfree(vals);
+		xfree(assoc_vals);
 		error("no result given for %s", extra);
 		return NULL;
 	}
@@ -2077,29 +2144,15 @@ extern List acct_storage_p_modify_clusters(mysql_conn_t *mysql_conn,
 			assoc = xmalloc(sizeof(acct_association_rec_t));
 			assoc->cluster = xstrdup(object);
 			assoc->acct = xstrdup("root");
-			if((int)cluster->default_fairshare >= 0) {
-				assoc->fairshare = cluster->default_fairshare;
-			}
-
-			if((int)cluster->default_max_jobs >= 0) {
-				assoc->max_jobs = cluster->default_max_jobs;
-			}
-
-			if((int)cluster->default_max_nodes_per_job >= 0) {
-				assoc->max_nodes_per_job =
-					cluster->default_max_nodes_per_job;
-			}
-
-			if((int)cluster->default_max_wall_duration_per_job
-			   >= 0) {
-				assoc->max_wall_duration_per_job = cluster-> 
-					default_max_wall_duration_per_job;
-			}
-
-			if((int)cluster->default_max_cpu_secs_per_job >= 0) {
-				assoc->max_cpu_secs_per_job = cluster->
-					default_max_cpu_secs_per_job;
-			}
+			assoc->fairshare = cluster->default_fairshare;
+			assoc->max_jobs = cluster->default_max_jobs;
+			assoc->max_nodes_per_job =
+				cluster->default_max_nodes_per_job;
+			assoc->max_wall_duration_per_job = 
+				cluster->default_max_wall_duration_per_job;
+			assoc->max_cpu_secs_per_job = 
+				cluster->default_max_cpu_secs_per_job;
+			
 			if(_addto_update_list(mysql_conn->update_list, 
 					      ACCT_MODIFY_ASSOC,
 					      assoc) != SLURM_SUCCESS) 
@@ -2111,6 +2164,7 @@ extern List acct_storage_p_modify_clusters(mysql_conn_t *mysql_conn,
 	if(!list_count(ret_list)) {
 		debug3("didn't effect anything");
 		list_destroy(ret_list);
+		xfree(assoc_vals);
 		xfree(vals);
 		return NULL;
 	}
@@ -2174,7 +2228,9 @@ extern List acct_storage_p_modify_associations(mysql_conn_t *mysql_conn,
 		"parent_acct",
 		"cluster",
 		"user",
-		"partition"
+		"partition",
+		"lft",
+		"rgt"
 	};
 	
 	enum {
@@ -2184,6 +2240,8 @@ extern List acct_storage_p_modify_associations(mysql_conn_t *mysql_conn,
 		MASSOC_CLUSTER,
 		MASSOC_USER,
 		MASSOC_PART,
+		MASSOC_LFT,
+		MASSOC_RGT,
 		MASSOC_COUNT
 	};
 
@@ -2196,8 +2254,7 @@ extern List acct_storage_p_modify_associations(mysql_conn_t *mysql_conn,
 	if((pw=getpwuid(uid))) {
 		user = pw->pw_name;
 	}
-	xstrcat(extra, "where deleted=0");
-		
+
 	if(assoc_q->acct_list && list_count(assoc_q->acct_list)) {
 		set = 0;
 		xstrcat(extra, " && (");
@@ -2258,12 +2315,6 @@ extern List acct_storage_p_modify_associations(mysql_conn_t *mysql_conn,
 		xstrfmtcat(extra, " && parent_acct='%s'", assoc_q->parent_acct);
 	}
 
-	if(assoc->parent_acct) {
-		/* FIX ME: We need to be able to move the account to a
-		   different place here in the heiarchy
-		*/
-	}
-
 	if((int)assoc->fairshare >= 0) 
 		xstrfmtcat(vals, ", fairshare=%d", assoc->fairshare);
 	else if((int)assoc->fairshare == -1) 
@@ -2292,8 +2343,7 @@ extern List acct_storage_p_modify_associations(mysql_conn_t *mysql_conn,
 	else if((int)assoc->max_wall_duration_per_job == -1) 
 		xstrfmtcat(vals, ", max_wall_duration_per_job=NULL");
 		
-
-	if(!extra || !vals) {
+	if(!extra || (!vals && !assoc->parent_acct)) {
 		error("Nothing to change");
 		return NULL;
 	}
@@ -2304,8 +2354,8 @@ extern List acct_storage_p_modify_associations(mysql_conn_t *mysql_conn,
 		xstrcat(object, massoc_req_inx[i]);
 	}
 
-	query = xstrdup_printf("select %s from %s %s;", object, 
-			       assoc_table, extra);
+	query = xstrdup_printf("select distinct %s from %s where deleted=0%s;",
+			       object, assoc_table, extra);
 	xfree(object);
 	xfree(extra);
 
@@ -2316,9 +2366,17 @@ extern List acct_storage_p_modify_associations(mysql_conn_t *mysql_conn,
 	}
 	xfree(query);
 
+	rc = SLURM_SUCCESS;
+	set = 0;
+	
+	if(assoc->parent_acct && mysql_conn->rollback)
+		mysql_autocommit(mysql_conn->acct_mysql_db, 0);
+
 	ret_list = list_create(slurm_destroy_char);
 	while((row = mysql_fetch_row(result))) {
 		acct_association_rec_t *mod_assoc = NULL;
+		MYSQL_RES *result2 = NULL;
+		MYSQL_ROW row2;
 
 		if(strlen(row[MASSOC_PART])) { 
 			// see if there is a partition name
@@ -2342,12 +2400,76 @@ extern List acct_storage_p_modify_associations(mysql_conn_t *mysql_conn,
 					"C = %-10s A = %s",
 					row[MASSOC_CLUSTER], row[MASSOC_ACCT]);
 			}
+			if(assoc->parent_acct) {
+/*
+		   tested sql...
+
+SELECT @parLeft := lft from assoc_table where cluster='name' && acct='new parent' && user='';
+
+SELECT @oldLeft := lft, @oldRight := rgt, @myWidth := (rgt - lft + 1), @myDiff := (@parLeft+1) - lft FROM assoc_table WHERE id = 'account id';
+
+update assoc_table set deleted = deleted + 2, lft = lft + @myDiff, rgt = rgt + @myDiff WHERE lft BETWEEN @oldLeft AND @oldRight;
+
+UPDATE assoc_table SET rgt = rgt + @myWidth WHERE rgt > @parLeft && deleted < 2;
+UPDATE assoc_table SET lft = lft + @myWidth WHERE lft > @parLeft && deleted < 2;
+
+UPDATE assoc_table SET rgt = rgt - @myWidth WHERE (@myDiff < 0 && rgt > @oldRight && deleted < 2) || (@myDiff >= 0 && rgt > @oldLeft);
+UPDATE assoc_table SET lft = lft - @myWidth WHERE (@myDiff < 0 && lft > @oldRight && deleted < 2) || (@myDiff >= 0 && lft > @oldLeft);
+
+update assoc_table set deleted = deleted - 2 WHERE deleted > 1;
+	   
+update assoc_table set parent_acct='new parent' where id = 'account id';
+
+		*/
+
+				/* first we need to see if we are
+				 * going to make a child of this
+				 * account the new parent.  If so we
+				 * need to move that child to this
+				 * accounts parent and then do the move 
+				 */
+				query = xstrdup_printf(
+					"select id from %s where "
+					"lft between %s and %s "
+					"&& acct='%s' && user=''",
+					assoc_table,
+					row[MASSOC_LFT], row[MASSOC_RGT],
+					assoc->parent_acct);
+				if(!(result2 = mysql_db_query_ret(
+					     mysql_conn->acct_mysql_db,
+					     query))) {
+					rc = SLURM_ERROR;
+					break;
+				}
+
+				if((row2 = mysql_fetch_row(result2))) {
+					rc = move_account(mysql_conn,
+							  row[MASSOC_CLUSTER],
+							  row2[0],
+							  row[MASSOC_PACCT]);
+				
+				}
+				mysql_free_result(result2);
+				if(rc == SLURM_ERROR) 
+					break;
+				
+				/* now move the one we wanted to move
+				 * in the first place
+				 */
+				rc = move_account(mysql_conn,
+						  row[MASSOC_CLUSTER],
+						  row[MASSOC_ID],
+						  assoc->parent_acct);
+				
+				if(rc == SLURM_ERROR) 
+					break;
+			}
 		}
 		list_append(ret_list, object);
 
-		if(!rc) {
+		if(!set) {
 			xstrfmtcat(name_char, "(id=%s", row[MASSOC_ID]);
-			rc = 1;
+			set = 1;
 		} else {
 			xstrfmtcat(name_char, " || id=%s", row[MASSOC_ID]);
 		}
@@ -2361,6 +2483,8 @@ extern List acct_storage_p_modify_associations(mysql_conn_t *mysql_conn,
 		mod_assoc->max_nodes_per_job = assoc->max_nodes_per_job;
 		mod_assoc->max_wall_duration_per_job = 
 			assoc->max_wall_duration_per_job;
+		if(!strlen(row[MASSOC_USER]))
+			mod_assoc->parent_acct = xstrdup(assoc->parent_acct);
 
 		if(_addto_update_list(mysql_conn->update_list, 
 				      ACCT_MODIFY_ASSOC,
@@ -2368,6 +2492,23 @@ extern List acct_storage_p_modify_associations(mysql_conn_t *mysql_conn,
 			error("couldn't add to the update list");		
 	}
 	mysql_free_result(result);
+
+	if(assoc->parent_acct) {
+		if(rc != SLURM_SUCCESS) {
+			if(mysql_conn->rollback) {
+				mysql_db_rollback(mysql_conn->acct_mysql_db);
+			}
+			list_destroy(mysql_conn->update_list);
+			mysql_conn->update_list =
+				list_create(destroy_acct_update_object);
+			list_destroy(ret_list);
+			xfree(vals);
+			return NULL;
+		} else if(mysql_conn->rollback) {
+			mysql_conn->trans_started = 1;
+		}
+	}
+
 
 	if(!list_count(ret_list)) {
 		debug3("didn't effect anything");
@@ -2377,14 +2518,18 @@ extern List acct_storage_p_modify_associations(mysql_conn_t *mysql_conn,
 	}
 	xstrcat(name_char, ")");
 
-	if(_modify_common(mysql_conn, DBD_MODIFY_ASSOCS, now,
-			  user, assoc_table, name_char, vals)
-	   == SLURM_ERROR) {
-		error("Couldn't modify associations");
-		list_destroy(ret_list);
-		ret_list = NULL;
+	if(vals) {
+		if(_modify_common(mysql_conn, DBD_MODIFY_ASSOCS, now,
+				  user, assoc_table, name_char, vals)
+		   == SLURM_ERROR) {
+			error("Couldn't modify associations");
+			list_destroy(ret_list);
+			ret_list = NULL;
+			goto end_it;
+		}
 	}
 
+end_it:
 	xfree(name_char);
 	xfree(vals);
 

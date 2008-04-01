@@ -178,7 +178,7 @@ extern int sacctmgr_add_cluster(int argc, char *argv[])
 		} else if (strncasecmp (argv[i], "Names", 1) == 0) {
 			addto_char_list(name_list, argv[i]+end);
 		} else {
-			printf(" Unknown option: %s", argv[i]);
+			printf(" Unknown option: %s\n", argv[i]);
 		}		
 	}
 

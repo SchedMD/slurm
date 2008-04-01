@@ -315,7 +315,7 @@ extern int sacctmgr_add_account(int argc, char *argv[])
 		} else if (strncasecmp (argv[i], "QosLevel", 1) == 0) {
 			qos = str_2_acct_qos(argv[i]+end);
 		} else {
-			printf(" Unknown option: %s", argv[i]);
+			printf(" Unknown option: %s\n", argv[i]);
 		}		
 	}
 
@@ -687,6 +687,7 @@ extern int sacctmgr_modify_account(int argc, char *argv[])
 			list_iterator_destroy(itr);
 			list_destroy(ret_list);
 		} else {
+			printf(" Nothing modified\n");
 			rc = SLURM_ERROR;
 		}
 	}
@@ -706,6 +707,7 @@ assoc_start:
 			list_iterator_destroy(itr);
 			list_destroy(ret_list);
 		} else {
+			printf(" Nothing modified\n");
 			rc = SLURM_ERROR;
 		}
 	}
