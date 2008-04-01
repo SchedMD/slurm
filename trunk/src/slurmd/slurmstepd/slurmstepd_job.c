@@ -329,6 +329,11 @@ job_batch_job_create(batch_job_launch_msg_t *msg)
 	job->nprocs  = msg->nprocs;
 	job->jobid   = msg->job_id;
 	job->stepid  = msg->step_id;
+
+	job->job_mem = msg->job_mem;
+	if (job->job_mem)
+		jobacct_common_set_mem_limit(job->jobid, job->job_mem);
+
 	job->batch   = true;
 	if (msg->acctg_freq != (uint16_t) NO_VAL)
 		jobacct_gather_g_change_poll(msg->acctg_freq);

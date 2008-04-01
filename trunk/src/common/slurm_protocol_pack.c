@@ -3785,13 +3785,14 @@ unpack_error:
 static void
 _pack_batch_job_launch_msg(batch_job_launch_msg_t * msg, Buf buffer)
 {
+	uint32_t kludge = 0;	/* remove this in slurm v1.4 */
 	xassert(msg != NULL);
 
-	pack32((uint32_t)msg->job_id, buffer);
-	pack32((uint32_t)msg->step_id, buffer);
-	pack32((uint32_t)msg->uid, buffer);
-	pack32((uint32_t)msg->gid, buffer);
-	pack32((uint32_t)msg->nprocs, buffer);
+	pack32(msg->job_id, buffer);
+	pack32(msg->step_id, buffer);
+	pack32(msg->uid, buffer);
+	pack32(msg->gid, buffer);
+	pack32(msg->nprocs, buffer);
 
 	pack8(msg->open_mode, buffer);
 	pack8(msg->overcommit, buffer);
@@ -3810,7 +3811,10 @@ _pack_batch_job_launch_msg(batch_job_launch_msg_t * msg, Buf buffer)
 	packstr(msg->in, buffer);
 	packstr(msg->out, buffer);
 
-	pack32(msg->argc, buffer);
+	if ((msg->job_mem <= 0xffff) && (msg->argc <= 0xffff))
+		kludge = msg->job_mem << 16;
+	kludge |= msg->argc;
+	pack32(kludge, buffer);
 	packstr_array(msg->argv, msg->argc, buffer);
 
 	pack32(msg->envc, buffer);
@@ -3824,6 +3828,7 @@ _pack_batch_job_launch_msg(batch_job_launch_msg_t * msg, Buf buffer)
 static int
 _unpack_batch_job_launch_msg(batch_job_launch_msg_t ** msg, Buf buffer)
 {
+	uint32_t kludge;	/* remove this in slurm v1.4 */
 	uint32_t uint32_tmp;
 	batch_job_launch_msg_t *launch_msg_ptr;
 
@@ -3862,7 +3867,9 @@ _unpack_batch_job_launch_msg(batch_job_launch_msg_t ** msg, Buf buffer)
 	safe_unpackstr_xmalloc(&launch_msg_ptr->in,  &uint32_tmp, buffer);
 	safe_unpackstr_xmalloc(&launch_msg_ptr->out, &uint32_tmp, buffer);
 
-	safe_unpack32(&launch_msg_ptr->argc, buffer);
+	safe_unpack32(&kludge, buffer);
+	launch_msg_ptr->job_mem = (kludge >> 16) & 0xffff;
+	launch_msg_ptr->argc = kludge & 0xffff;
 	safe_unpackstr_array(&launch_msg_ptr->argv,
 			     &launch_msg_ptr->argc, buffer);
 
