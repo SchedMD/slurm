@@ -2421,7 +2421,13 @@ update assoc_table set deleted = deleted - 2 WHERE deleted > 1;
 update assoc_table set parent_acct='new parent' where id = 'account id';
 
 		*/
-
+				if(!strcasecmp(row[MASSOC_ACCT],
+					       assoc->parent_acct)) {
+					error("You can't make an account be a "
+					      "child of it's self");
+					xfree(object);
+					continue;
+				}
 				/* first we need to see if we are
 				 * going to make a child of this
 				 * account the new parent.  If so we
