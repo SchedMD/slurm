@@ -20,8 +20,6 @@ details.
 You should have received a copy of the GNU General Public License along
 with SLURM; if not, write to the Free Software Foundation, Inc.,
 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
-
-$Id$
 -->
 <HTML>
 <HEAD><TITLE>SLURM System Configuration Tool</TITLE>
@@ -148,6 +146,7 @@ function displayfile()
    get_field("JobCredentialPublicCertificate", document.config.public_key) + "<br>" +
    "#JobFileAppend=0 <br>" +
    "#JobRequeue=1 <br>" +
+   "#Licenses=foo*4,bar <br>" +
    "#MailProg=/bin/mail <br>" +
    "#MaxJobCount=5000 <br>" +
    "MpiDefault=" + get_radio_value(document.config.mpi_default) + "<br>" +
@@ -778,7 +777,7 @@ before terminating all remaining tasks. A value of zero indicates unlimited wait
 <P>
 </FORM>
 <HR>
-<P class="footer">UCRL-WEB-225274<BR>
-Last modified 10 March 2008</P>
+<P class="footer">LLNL-WEB-402631<BR>
+Last modified 1 April 2008</P>
 </BODY>
 
