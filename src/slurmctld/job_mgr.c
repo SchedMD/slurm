@@ -3872,7 +3872,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 		     job_ptr->name, job_specs->job_id);
 	}
 
-	if (job_specs->requeue) {
+	if (job_specs->requeue != (uint16_t) NO_VAL) {
 		detail_ptr->requeue = job_specs->requeue;
 		info("update_job: setting requeue to %u for job_id %u",
 		     job_specs->requeue, job_specs->job_id);
