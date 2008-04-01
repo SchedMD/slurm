@@ -57,7 +57,9 @@ static int _clear_results(MYSQL *mysql_db)
 		
 		/* more results? -1 = no, >0 = error, 0 = yes (keep looping) */
 		if ((rc = mysql_next_result(mysql_db)) > 0)
-			debug3("error: Could not execute statement %d\n", rc);
+			error("Could not execute statement %d %s\n",
+			      mysql_errno(mysql_db),
+			      mysql_error(mysql_db));
 	} while (rc == 0);
 	
 	return SLURM_SUCCESS;

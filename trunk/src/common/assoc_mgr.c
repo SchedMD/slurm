@@ -449,30 +449,35 @@ extern int assoc_mgr_update_local_assocs(acct_update_object_t *update)
 				break;
 			}
 			debug("updating the assocs here on %u", rec->id);
-			if((int)object->fairshare >= 0) {
+			if((int)object->fairshare >= -1) {
 				rec->fairshare = object->fairshare;
 			}
 
-			if((int)object->max_jobs >= 0) {
+			if((int)object->max_jobs >= -1) {
 				rec->max_jobs = object->max_jobs;
 			}
 
-			if((int)object->max_nodes_per_job >= 0) {
+			if((int)object->max_nodes_per_job >= -1) {
 				rec->max_nodes_per_job =
 					object->max_nodes_per_job;
 			}
 
-			if((int)object->max_wall_duration_per_job >= 0) {
+			if((int)object->max_wall_duration_per_job >= -1) {
 				rec->max_wall_duration_per_job =
 					object->max_wall_duration_per_job;
 			}
 
-			if((int)object->max_cpu_secs_per_job >= 0) {
+			if((int)object->max_cpu_secs_per_job >= -1) {
 				rec->max_cpu_secs_per_job = 
 					object->max_cpu_secs_per_job;
 			}
 
-			/* fix me: do more updates here */
+			if(object->parent_acct) {
+				xfree(rec->parent_acct);
+				rec->parent_acct = xstrdup(object->parent_acct);
+			}
+
+			/* FIX ME: do more updates here */
 			break;
 		case ACCT_ADD_ASSOC:
 			if(rec) {
@@ -482,8 +487,8 @@ extern int assoc_mgr_update_local_assocs(acct_update_object_t *update)
 			list_append(local_association_list, object);
 		case ACCT_REMOVE_ASSOC:
 			if(!rec) {
-				rc = SLURM_ERROR;
-				//break;
+				//rc = SLURM_ERROR;
+				break;
 			}
 			list_delete_item(itr);
 			break;
