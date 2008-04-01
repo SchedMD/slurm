@@ -83,9 +83,11 @@ extern int license_job_test(struct job_record *job_ptr);
 
 /*
  * license_job_validate - Test if the licenses required by a job are valid
- * IN job_ptr - job identification
- * RET: SLURM_SUCCESS or SLURM_ERROR (never runnable)
+ * IN licenses - required licenses
+ * OUT valid - true if required licenses are valid and a sufficient number
+ *             are configured (though not necessarily available now)
+ * RET license_list, must be destroyed by caller
  */ 
-extern int license_job_validate(struct job_record *job_ptr);
+extern List license_job_validate(char *licenses, bool *valid);
 
 #endif /* !_LICENSES_H */

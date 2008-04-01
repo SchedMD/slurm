@@ -73,6 +73,7 @@
 
 #include "src/slurmctld/agent.h"
 #include "src/slurmctld/job_scheduler.h"
+#include "src/slurmctld/licenses.h"
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/node_scheduler.h"
 #include "src/slurmctld/proc_req.h"
@@ -1791,6 +1792,8 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 	struct job_record *job_ptr;
 	uint32_t total_nodes, max_procs;
 	acct_association_rec_t assoc_rec;
+	List license_list = NULL;
+	bool valid;
 
 #if SYSTEM_DIMENSIONS
 	uint16_t geo[SYSTEM_DIMENSIONS];
@@ -1992,6 +1995,14 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 		goto cleanup;
 	}
 
+	license_list = license_job_validate(job_desc->licenses, &valid);
+	if (!valid) {
+		info("Job's requested licenses are invalid: %s", 
+		     job_desc->licenses);
+		error_code = ESLURM_INVALID_LICENSES;
+		goto cleanup;
+	}
+
 	if ((error_code =_validate_job_create_req(job_desc)))
 		goto cleanup;
 
@@ -2025,6 +2036,9 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 		job_ptr->batch_flag = 1;
 	} else
 		job_ptr->batch_flag = 0;
+
+	job_ptr->license_list = license_list;
+	license_list = NULL;
 
 	/* Insure that requested partition is valid right now, 
 	 * otherwise leave job queued and provide warning code */
@@ -2060,6 +2074,8 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 	
 	
 cleanup:
+	if (license_list)
+		list_destroy(license_list);
 	FREE_NULL_BITMAP(req_bitmap);
 	FREE_NULL_BITMAP(exc_bitmap);
 	return error_code;
@@ -2921,6 +2937,8 @@ static void _list_delete_job(void *job_entry)
 	xfree(job_ptr->account);
 	xfree(job_ptr->resp_host);
 	xfree(job_ptr->licenses);
+	if (job_ptr->license_list)
+		list_destroy(job_ptr->license_list);
 	xfree(job_ptr->mail_user);
 	xfree(job_ptr->network);
 	xfree(job_ptr->alloc_lps);

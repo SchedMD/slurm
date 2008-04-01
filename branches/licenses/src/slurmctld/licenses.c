@@ -222,22 +222,49 @@ extern void license_free(void)
 
 /*
  * license_job_validate - Test if the licenses required by a job are valid
- * IN job_ptr - job identification
- * RET: SLURM_SUCCESS or SLURM_ERROR (never runnable)
+ * IN licenses - required licenses
+ * OUT valid - true if required licenses are valid and a sufficient number
+ *             are configured (though not necessarily available now)
+ * RET license_list, must be destroyed by caller
  */ 
-extern int license_job_validate(struct job_record *job_ptr)
+extern List license_job_validate(char *licenses, bool *valid)
 {
-	bool valid;
+	ListIterator iter;
+	licenses_t *license_entry, *match;
+	List job_license_list;
 
-	if (job_ptr->license_list)	/* updating license requirements */
-		list_destroy(job_ptr->license_list);
+	job_license_list = _build_license_list(licenses, valid);
+	_licenses_print("job_validate", job_license_list);
+	if (!job_license_list)
+		return job_license_list;
 
-	job_ptr->license_list = _build_license_list(job_ptr->licenses,&valid);
-	if (!valid)
-		return SLURM_ERROR;
+	slurm_mutex_lock(&license_mutex);
+	iter = list_iterator_create(job_license_list);
+	if (iter == NULL)
+		fatal("malloc failure from list_iterator_create");
+	while ((license_entry = (licenses_t *) list_next(iter))) {
+		match = list_find_first(license_list, _license_find_rec, 
+			license_entry->name);
+		if (!match) {
+			debug("could not find license %s for job",
+			      license_entry->name);
+			*valid = false;
+			break;
+		} else if (license_entry->total > match->total) {
+			debug("job wants more %s licenses than configured",
+			     match->name);
+			*valid = false;
+			break;
+		}
+	}
+	list_iterator_destroy(iter);
+	slurm_mutex_unlock(&license_mutex);
 
-	_licenses_print("job_validate", license_list);
-	return SLURM_SUCCESS;
+	if (!(*valid)) {
+		list_destroy(job_license_list);
+		job_license_list = NULL;
+	}
+	return job_license_list;
 }
 
 /*
