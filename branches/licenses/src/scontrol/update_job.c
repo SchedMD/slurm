@@ -1,7 +1,8 @@
 /*****************************************************************************\
  *  update_job.c - update job functions for scontrol.
  *****************************************************************************
- *  Copyright (C) 2002-2006 The Regents of the University of California.
+ *  Copyright (C) 2002-2007 The Regents of the University of California.
+ *  Copyright (C) 2008 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
  *  LLNL-CODE-402394.
@@ -439,6 +440,10 @@ scontrol_update_job (int argc, char *argv[])
 			update_cnt++;
 		}
 #endif
+		else if (strncasecmp(argv[i], "Licenses=", 9) == 0) {
+			job_msg.licenses = &argv[i][9];
+			update_cnt++;
+		}
 		else if (strncasecmp(argv[i], "StartTime=", 10) == 0) {
 			job_msg.begin_time = parse_time(&argv[i][10]);
 			update_cnt++;

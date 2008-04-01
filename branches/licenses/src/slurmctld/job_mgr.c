@@ -6,7 +6,7 @@
  *  $Id$
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
- *  Copyright (C) 2008 Lawrence Livermore National Security
+ *  Copyright (C) 2008 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
  *  LLNL-CODE-402394.
@@ -3270,12 +3270,19 @@ void reset_job_bitmaps(void)
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
 		xassert (job_ptr->magic == JOB_MAGIC);
 		job_fail = false;
-		part_ptr = list_find_first(part_list, &list_find_part,
-					   job_ptr->partition);
-		if (part_ptr == NULL) {
-			error("Invalid partition (%s) for job_id %u", 
-		    	      job_ptr->partition, job_ptr->job_id);
+
+		if (job_ptr->partition == NULL) {
+			error("No partition for job_id %u", job_ptr->job_id);
+			part_ptr = NULL;
 			job_fail = true;
+		} else {
+			part_ptr = list_find_first(part_list, &list_find_part,
+						   job_ptr->partition);
+			if (part_ptr == NULL) {
+				error("Invalid partition (%s) for job_id %u", 
+		    		      job_ptr->partition, job_ptr->job_id);
+				job_fail = true;
+			}
 		}
 		job_ptr->part_ptr = part_ptr;
 
@@ -4057,6 +4064,31 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			detail_ptr->begin_time = job_specs->begin_time;
 		else
 			error_code = ESLURM_DISABLED;
+	}
+
+	if (job_specs->licenses) {
+		if (!IS_JOB_PENDING(job_ptr))
+			error_code = ESLURM_DISABLED;
+		else {
+			List license_list = NULL;
+			bool valid;
+			license_list = license_job_validate(job_specs->licenses,
+							    &valid);
+			if (valid) {
+				if (job_ptr->license_list)
+					list_destroy(job_ptr->license_list);
+				job_ptr->license_list = license_list;
+				xfree(job_ptr->licenses);
+				job_ptr->licenses = job_specs->licenses;
+				job_specs->licenses = NULL; /* nothing to free */
+				info("update_job: setting licenses to %s for "
+				     "job %u",
+				     job_ptr->licenses, job_ptr->job_id);
+			} else {
+				info("update_job: invalid licenses: %s",
+				     job_specs->licenses);
+			}
+		}
 	}
 
 #ifdef HAVE_BG
