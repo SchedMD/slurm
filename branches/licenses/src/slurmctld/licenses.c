@@ -69,7 +69,7 @@ static inline void _licenses_print(char *header, List licenses)
 	iter = list_iterator_create(licenses);
 	if (iter == NULL)
 		fatal("malloc failure from list_iterator_create");
-	while ((license_entry = (licenses_t *) licenses)) {
+	while ((license_entry = (licenses_t *) list_next(iter))) {
 		info("name:%s total:%u used:%u", license_entry->name, 
 		     license_entry->total, license_entry->used);
 	}
@@ -188,7 +188,7 @@ extern int license_update(char *licenses)
 	iter = list_iterator_create(license_list);
 	if (iter == NULL)
 		fatal("malloc failure from list_iterator_create");
-	while ((license_entry = (licenses_t *) licenses)) {
+	while ((license_entry = (licenses_t *) list_next(iter))) {
 		match = list_find_first(new_list, _license_find_rec, 
 			license_entry->name);
 		if (!match) {

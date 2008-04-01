@@ -164,6 +164,8 @@ static int fill_job_desc_from_opts(job_desc_msg_t *desc)
 	desc->exc_nodes = opt.exc_nodes;
 	desc->partition = opt.partition;
 	desc->min_nodes = opt.min_nodes;
+	if (opt.licenses)
+		desc->licenses = xstrdup(opt.licenses);
 	if (opt.max_nodes)
 		desc->max_nodes = opt.max_nodes;
 	desc->user_id = opt.uid;

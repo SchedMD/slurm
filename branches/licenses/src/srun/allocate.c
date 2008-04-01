@@ -394,6 +394,8 @@ job_desc_msg_create_from_opts ()
 		j->mail_user = xstrdup(opt.mail_user);
 	if (opt.begin)
 		j->begin_time = opt.begin;
+	if (opt.licenses)
+		j->licenses = xstrdup(opt.licenses);
 	if (opt.network)
 		j->network = xstrdup(opt.network);
 	if (opt.account)
