@@ -723,8 +723,9 @@ extern int select_p_get_extra_jobinfo (struct node_record *node_ptr,
 	{
 		uint16_t *tmp_16 = (uint16_t *) data;
 
-		if ((job_ptr->details->cpus_per_task > 1)
-		||  (job_ptr->details->mc_ptr)) {
+		if (job_ptr->details &&
+		    ((job_ptr->details->cpus_per_task > 1) ||
+		     (job_ptr->details->mc_ptr))) {
 			int index = (node_ptr - node_record_table_ptr);
 			*tmp_16 = _get_avail_cpus(job_ptr, index);
 		} else {
