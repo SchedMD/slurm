@@ -66,6 +66,7 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 #include "src/slurmctld/job_scheduler.h"
+#include "src/slurmctld/licenses.h"
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/node_scheduler.h"
 #include "src/slurmctld/slurmctld.h"
@@ -171,7 +172,7 @@ extern void *backfill_agent(void *args)
 		READ_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK };
 
 	while (!stop_backfill) {
-		sleep(1);		/* don't run continuously */
+		sleep(2);		/* don't run continuously */
 
 		now = time(NULL);
 		/* Avoid resource fragmentation if important */
@@ -241,6 +242,9 @@ static void _attempt_backfill(void)
 		    (part_ptr->node_bitmap == NULL))
 		 	continue;
 		if ((part_ptr->root_only) && filter_root)
+			continue;
+
+		if (license_job_test(job_ptr) != SLURM_SUCCESS)
 			continue;
 
 		/* Determine minimum and maximum node counts */
