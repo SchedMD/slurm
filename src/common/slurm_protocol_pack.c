@@ -3785,7 +3785,6 @@ unpack_error:
 static void
 _pack_batch_job_launch_msg(batch_job_launch_msg_t * msg, Buf buffer)
 {
-	uint32_t kludge = 0;	/* remove this in slurm v1.4 */
 	xassert(msg != NULL);
 
 	pack32(msg->job_id, buffer);
@@ -3811,14 +3810,13 @@ _pack_batch_job_launch_msg(batch_job_launch_msg_t * msg, Buf buffer)
 	packstr(msg->in, buffer);
 	packstr(msg->out, buffer);
 
-	if ((msg->job_mem <= 0xffff) && (msg->argc <= 0xffff))
-		kludge = msg->job_mem << 16;
-	kludge |= msg->argc;
-	pack32(kludge, buffer);
+	pack32(msg->argc, buffer);
 	packstr_array(msg->argv, msg->argc, buffer);
 
 	pack32(msg->envc, buffer);
 	packstr_array(msg->environment, msg->envc, buffer);
+
+	pack32(msg->job_mem, buffer);
 
 	slurm_cred_pack(msg->cred, buffer);
 
@@ -3828,7 +3826,6 @@ _pack_batch_job_launch_msg(batch_job_launch_msg_t * msg, Buf buffer)
 static int
 _unpack_batch_job_launch_msg(batch_job_launch_msg_t ** msg, Buf buffer)
 {
-	uint32_t kludge;	/* remove this in slurm v1.4 */
 	uint32_t uint32_tmp;
 	batch_job_launch_msg_t *launch_msg_ptr;
 
@@ -3867,15 +3864,15 @@ _unpack_batch_job_launch_msg(batch_job_launch_msg_t ** msg, Buf buffer)
 	safe_unpackstr_xmalloc(&launch_msg_ptr->in,  &uint32_tmp, buffer);
 	safe_unpackstr_xmalloc(&launch_msg_ptr->out, &uint32_tmp, buffer);
 
-	safe_unpack32(&kludge, buffer);
-	launch_msg_ptr->job_mem = (kludge >> 16) & 0xffff;
-	launch_msg_ptr->argc = kludge & 0xffff;
+	safe_unpack32(&launch_msg_ptr->argc, buffer);
 	safe_unpackstr_array(&launch_msg_ptr->argv,
 			     &launch_msg_ptr->argc, buffer);
 
 	safe_unpack32(&launch_msg_ptr->envc, buffer);
 	safe_unpackstr_array(&launch_msg_ptr->environment,
 			     &launch_msg_ptr->envc, buffer);
+
+	safe_unpack32(&launch_msg_ptr->job_mem, buffer);
 
 	if (!(launch_msg_ptr->cred = slurm_cred_unpack(buffer)))
 		goto unpack_error;
