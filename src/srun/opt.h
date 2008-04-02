@@ -162,6 +162,7 @@ typedef struct srun_options {
 	char *propagate;	/* --propagate[=RLIMIT_CORE,...]*/
 	char *task_epilog;	/* --task-epilog=		*/
 	char *task_prolog;	/* --task-prolog=		*/
+	char *licenses;		/* --licenses, -L		*/
 
 	/* constraint options */
 	int32_t job_min_cpus;	/* --mincpus=n			*/

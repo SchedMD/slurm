@@ -204,6 +204,8 @@ static slurm_errtab_t slurm_errtab[] = {
 	  "Memory required by task is not available"		},
 	{ ESLURM_INVALID_ACCOUNT,
 	  "Job has invalid account"				},
+	{ ESLURM_INVALID_LICENSES,
+	  "Job has invalid license specification"		},
 
 	/* slurmd error codes */
 

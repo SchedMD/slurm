@@ -594,6 +594,8 @@ extern char *job_reason_string(enum job_state_reason inx)
 			return "JobHeld";
 		case WAIT_TIME:
 			return "BeginTime";
+		case WAIT_LICENSES:
+			return "Licenses";
 		case FAIL_DOWN_PARTITION:
 			return "PartitionDown";
 		case FAIL_DOWN_NODE:

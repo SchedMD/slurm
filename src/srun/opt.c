@@ -956,6 +956,7 @@ static void set_options(const int argc, char **argv)
 		{"no-kill",       no_argument,       0, 'k'},
 		{"kill-on-bad-exit", no_argument,    0, 'K'},
 		{"label",         no_argument,       0, 'l'},
+		{"licenses",      required_argument, 0, 'L'},
 		{"distribution",  required_argument, 0, 'm'},
 		{"ntasks",        required_argument, 0, 'n'},
 		{"nodes",         required_argument, 0, 'N'},
@@ -1038,7 +1039,7 @@ static void set_options(const int argc, char **argv)
 		{"acctg-freq",       required_argument, 0, LONG_OPT_ACCTG_FREQ},
 		{NULL,               0,                 0, 0}
 	};
-	char *opt_string = "+aAbB:c:C:d:D:e:g:Hi:IjJ:kKlm:n:N:"
+	char *opt_string = "+aAbB:c:C:d:D:e:g:Hi:IjJ:kKlL:m:n:N:"
 		"o:Op:P:qQr:R:st:T:uU:vVw:W:x:XZ";
 
 	struct option *optz = spank_option_table_create (long_options);
@@ -1154,6 +1155,10 @@ static void set_options(const int argc, char **argv)
 			break;
 		case (int)'l':
 			opt.labelio = true;
+			break;
+		case 'L':
+			xfree(opt.licenses);
+			opt.licenses = xstrdup(optarg);
 			break;
 		case (int)'m':
 			opt.distribution = verify_dist_type(optarg, 
@@ -2212,7 +2217,7 @@ static void _usage(void)
 "            [--share] [--label] [--unbuffered] [-m dist] [-J jobname]\n"
 "            [--jobid=id] [--verbose] [--slurmd_debug=#]\n"
 "            [--core=type] [-T threads] [-W sec] [--checkpoint=time]\n"
-"            [--checkpoint-path=dir]\n"
+"            [--checkpoint-path=dir]  [--licenses=names]\n"
 "            [--contiguous] [--mincpus=n] [--mem=MB] [--tmp=MB] [-C list]\n"
 "            [--mpi=type] [--account=name] [--dependency=type:jobid]\n"
 "            [--kill-on-bad-exit] [--propagate[=rlimits] [--comment=name]\n"
@@ -2292,6 +2297,7 @@ static void _help(void)
 "      --multi-prog            if set the program name specified is the\n"
 "                              configuration specification for multiple programs\n"
 "      --get-user-env          used by Moab.  See srun man page.\n"
+"  -L, --licenses=names        required license, comma separated\n"
 "      --checkpoint=time       job step checkpoint interval\n"
 "      --checkpoint-path=dir   path to store job step checkpoint image files\n"
 #ifdef HAVE_PTY_H

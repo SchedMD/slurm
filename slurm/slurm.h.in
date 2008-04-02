@@ -220,6 +220,7 @@ enum job_state_reason {
 	WAIT_PART_STATE,	/* requested partition is down */
 	WAIT_HELD,		/* job is held, priority==0 */
 	WAIT_TIME,		/* job waiting for specific begin time */
+	WAIT_LICENSES,		/* job is waiting for licenses */
 	WAIT_TBD1,
 	WAIT_TBD2,
 	FAIL_DOWN_PARTITION,	/* partition for job is DOWN */

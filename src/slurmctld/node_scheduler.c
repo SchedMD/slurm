@@ -1,10 +1,9 @@
 /*****************************************************************************\
  *  node_scheduler.c - select and allocated nodes to jobs 
  *	Note: there is a global node table (node_record_table_ptr) 
- *
- *  $Id$
  *****************************************************************************
- *  Copyright (C) 2002-2006 The Regents of the University of California.
+ *  Copyright (C) 2002-2007 The Regents of the University of California.
+ *  Copyright (C) 2008 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
  *  LLNL-CODE-402394.
@@ -65,6 +64,7 @@
 #include "src/common/slurm_accounting_storage.h"
 
 #include "src/slurmctld/agent.h"
+#include "src/slurmctld/licenses.h"
 #include "src/slurmctld/node_scheduler.h"
 #include "src/slurmctld/sched_plugin.h"
 #include "src/slurmctld/slurmctld.h"
@@ -110,10 +110,8 @@ static bitstr_t *_valid_features(struct job_details *detail_ptr,
 
 /*
  * allocate_nodes - change state of specified nodes to NODE_STATE_ALLOCATED
+ *	also claim required licenses
  * IN job_ptr - job being allocated resources
- * globals: node_record_count - number of nodes in the system
- *	node_record_table_ptr - pointer to global node table
- *	last_node_update - last update time of node table
  */
 extern void allocate_nodes(struct job_record *job_ptr)
 {
@@ -125,6 +123,8 @@ extern void allocate_nodes(struct job_record *job_ptr)
 		if (bit_test(job_ptr->node_bitmap, i))
 			make_node_alloc(&node_record_table_ptr[i], job_ptr);
 	}
+
+	license_job_get(job_ptr);
 	return;
 }
 
@@ -132,13 +132,12 @@ extern void allocate_nodes(struct job_record *job_ptr)
 /*
  * deallocate_nodes - for a given job, deallocate its nodes and make 
  *	their state NODE_STATE_COMPLETING
+ *	also release the job's licenses
  * IN job_ptr - pointer to terminating job (already in some COMPLETING state)
  * IN timeout - true if job exhausted time limit, send REQUEST_KILL_TIMELIMIT
  *	RPC instead of REQUEST_TERMINATE_JOB
  * IN suspended - true if job was already suspended (node's job_run_cnt 
  *	already decremented);
- * globals: node_record_count - number of nodes in the system
- *	node_record_table_ptr - pointer to global node table
  */
 extern void deallocate_nodes(struct job_record *job_ptr, bool timeout, 
 		bool suspended)
@@ -152,6 +151,7 @@ extern void deallocate_nodes(struct job_record *job_ptr, bool timeout,
 	xassert(job_ptr);
 	xassert(job_ptr->details);
 
+	license_job_return(job_ptr);
 	if (slurm_sched_freealloc(job_ptr) != SLURM_SUCCESS)
 		error("slurm_sched_freealloc(%u): %m", job_ptr->job_id);
 	if (select_g_job_fini(job_ptr) != SLURM_SUCCESS)

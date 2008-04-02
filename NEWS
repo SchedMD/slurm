@@ -9,6 +9,9 @@ documents those changes that are of interest to users and admins.
  -- Fix bug that was setting a job's requeue value on any update of the 
     job using the "scontrol update" command. The invalid value of an 
     updated job prevents it's recovery when slurmctld restarts.
+ -- Add support for cluster-wide consumable resources. See "Licenses"
+    parameter in slurm.conf man page and "--licenses" option in salloc, 
+    sbatch and srun man pages.
 
 * Changes in SLURM 1.3.0
 ========================

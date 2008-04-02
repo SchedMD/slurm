@@ -154,6 +154,7 @@ enum {
 	ESLURM_INVALID_BANK_ACCOUNT,
 	ESLURM_INVALID_TASK_MEMORY,
 	ESLURM_INVALID_ACCOUNT,
+	ESLURM_INVALID_LICENSES,
 
 	/* switch specific error codes, specific values defined in plugin module */
 	ESLURM_SWITCH_MIN = 3000,

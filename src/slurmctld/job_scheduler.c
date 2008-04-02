@@ -46,16 +46,17 @@
 #include <string.h>
 #include <unistd.h>
 
+#include "src/common/assoc_mgr.h"
 #include "src/common/list.h"
 #include "src/common/macros.h"
 #include "src/common/node_select.h"
 #include "src/common/slurm_accounting_storage.h"
 #include "src/common/xassert.h"
 #include "src/common/xstring.h"
-#include "src/common/assoc_mgr.h"
 
 #include "src/slurmctld/agent.h"
 #include "src/slurmctld/job_scheduler.h"
+#include "src/slurmctld/licenses.h"
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/node_scheduler.h"
 #include "src/slurmctld/slurmctld.h"
@@ -91,7 +92,7 @@ extern int build_job_queue(struct job_queue **job_queue)
 		    (job_ptr->job_state &  JOB_COMPLETING) ||
 		    (job_ptr->priority == 0))	/* held */
 			continue;
-		if (!job_independent(job_ptr))	/* waiting for other job */
+		if (!job_independent(job_ptr))	/* can not run now */
 			continue;
 		if (job_buffer_size <= job_queue_size) {
 			job_buffer_size += 200;
@@ -288,7 +289,12 @@ extern int schedule(void)
 				      failed_part_cnt)) {
 			continue;
 		}
-		
+
+		if (license_job_test(job_ptr) != SLURM_SUCCESS) {
+			job_ptr->state_reason = WAIT_LICENSES;
+			continue;
+		}
+
 		if (assoc_mgr_validate_assoc_id(acct_db_conn, job_ptr->assoc_id,
 						accounting_enforce)) {
 			/* NOTE: This only happens if a user's account is 
@@ -297,7 +303,7 @@ extern int schedule(void)
 			 * very rare. */
 			info("schedule: JobId=%u has invalid account",
 				job_ptr->job_id);
-			last_job_update = time(NULL);
+			last_job_update = time(NULL);		
 			job_ptr->job_state = JOB_FAILED;
 			job_ptr->exit_code = 1;
 			job_ptr->state_reason = FAIL_BANK_ACCOUNT;

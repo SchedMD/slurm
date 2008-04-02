@@ -1,4 +1,4 @@
-.TH "salloc" "1" "SLURM 1.2" "February 2008" "SLURM Commands"
+.TH "salloc" "1" "SLURM 1.3" "April 2008" "SLURM Commands"
 .SH "NAME"
 .LP 
 salloc \- Obtain a SLURM job allocation (a set of nodes), execute a command, and then release the allocation when the command is finished.
@@ -264,6 +264,15 @@ new job steps on the remaining nodes in their allocation.
 
 By default SLURM terminates the entire job allocation if any node fails in its
 range of allocated nodes.
+
+.TP
+\fB\-L\fR, \fB\-\-licenses\fR=
+Specification of licenses (or other resources available on all 
+nodes of the cluster) which must be allocated to this job.
+License names can be followed by an asterisk and count 
+(the default count is one).
+Multiple license names should be comma separated (e.g.
+"\-\-licenses=foo*4,bar").
 
 .TP
 \fB\-m\fR, \fB\-\-distribution\fR=

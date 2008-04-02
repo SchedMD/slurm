@@ -485,6 +485,7 @@ static struct option long_options[] = {
 	{"immediate",     no_argument,       0, 'I'},
 	{"job-name",      required_argument, 0, 'J'},
 	{"no-kill",       no_argument,       0, 'k'},
+	{"licenses",      required_argument, 0, 'L'},
 	{"distribution",  required_argument, 0, 'm'},
 	{"tasks",         required_argument, 0, 'n'},	
 	{"ntasks",        required_argument, 0, 'n'},
@@ -545,7 +546,7 @@ static struct option long_options[] = {
 };
 
 static char *opt_string =
-	"+a:bB:c:C:d:D:e:F:g:hHi:IJ:km:n:N:o:Op:qR:st:uU:vVw:x:";
+	"+a:bB:c:C:d:D:e:F:g:hHi:IJ:kL:m:n:N:o:Op:qR:st:uU:vVw:x:";
 
 
 /*
@@ -997,6 +998,10 @@ static void _set_options(int argc, char **argv)
 			break;
 		case 'k':
 			opt.no_kill = true;
+			break;
+		case 'L':
+			xfree(opt.licenses);
+			opt.licenses = xstrdup(optarg);
 			break;
 		case 'm':
 			opt.distribution = verify_dist_type(optarg, 
@@ -2103,7 +2108,7 @@ static void _usage(void)
 "Usage: sbatch [-N nnodes] [-n ntasks]\n"
 "              [-c ncpus] [-r n] [-p partition] [--hold] [-t minutes]\n"
 "              [-D path] [--immediate] [--no-kill] [--overcommit]\n"
-"              [--input file] [--output file] [--error file]\n"
+"              [--input file] [--output file] [--error file]  [--licenses=names]\n"
 "              [--workdir=directory] [--share] [-m dist] [-J jobname]\n"
 "              [--jobid=id] [--verbose] [--gid=group] [--uid=user]\n"
 "              [-W sec] [--minsockets=n] [--mincores=n] [--minthreads=n]\n"
@@ -2153,6 +2158,7 @@ static void _help(void)
 "  -U, --account=name          charge job to specified account\n"
 "      --begin=time            defer job until HH:MM DD/MM/YY\n"
 "      --comment=name          arbitrary comment\n"
+"  -L, --licenses=names        required license, comma separated\n"
 "      --mail-type=type        notify on state change: BEGIN, END, FAIL or ALL\n"
 "      --mail-user=user        who to send email notification for job state changes\n"
 "      --gid=group_id          group ID to run job as (user root only)\n"
