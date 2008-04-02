@@ -1143,16 +1143,18 @@ static int _restore_job_dependencies(void)
 	struct job_record *job_ptr;
 	ListIterator job_iterator;
 	char *new_depend;
+	bool valid;
+	List license_list;
 
 	job_iterator = list_iterator_create(job_list);
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
-		if (job_ptr->job_state == JOB_RUNNING) {
-			bool valid;
-			List license_list;
-			license_list = license_job_validate(job_ptr->licenses, &valid);
-			if (valid)
-				license_job_get(job_ptr);
-		}
+		license_list = license_job_validate(job_ptr->licenses, &valid);
+		if (job_ptr->license_list)
+			list_destroy(job_ptr->license_list);
+		if (valid)
+			job_ptr->license_list = license_list;
+		if (job_ptr->job_state == JOB_RUNNING) 
+			license_job_get(job_ptr);
 
 		if ((job_ptr->details == NULL) ||
 		    (job_ptr->details->dependency == NULL))
