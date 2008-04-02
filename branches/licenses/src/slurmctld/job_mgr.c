@@ -4067,27 +4067,46 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 	}
 
 	if (job_specs->licenses) {
-		if (!IS_JOB_PENDING(job_ptr))
+		List license_list = NULL;
+		bool valid;
+		license_list = license_job_validate(job_specs->licenses,
+						    &valid);
+
+		if (!valid) {
+			info("update_job: invalid licenses: %s",
+			     job_specs->licenses);
+			error_code = ESLURM_INVALID_LICENSES;
+		} else if (IS_JOB_PENDING(job_ptr)) {
+			if (job_ptr->license_list)
+				list_destroy(job_ptr->license_list);
+			job_ptr->license_list = license_list;
+			xfree(job_ptr->licenses);
+			job_ptr->licenses = job_specs->licenses;
+			job_specs->licenses = NULL; /* nothing to free */
+			info("update_job: setting licenses to %s for job %u",
+			     job_ptr->licenses, job_ptr->job_id);
+		} else if ((job_ptr->job_state == JOB_RUNNING) && super_user) {
+			/* NOTE: This can result in oversubscription of 
+			 * licenses */
+			license_job_return(job_ptr);
+			if (job_ptr->license_list)
+				list_destroy(job_ptr->license_list);
+			job_ptr->license_list = license_list;
+			info("update_job: changing licenses from %s to %s for "
+			     " running job %u",
+			     job_ptr->licenses, job_specs->licenses, 
+			     job_ptr->job_id);
+			xfree(job_ptr->licenses);
+			job_ptr->licenses = job_specs->licenses;
+			job_specs->licenses = NULL; /* nothing to free */
+			license_job_get(job_ptr);
+		} else {
+			/* licenses are valid, but job state or user not
+			 * allowed to make changes */
+			info("update_job: could not change licenses for job %u",
+			     job_ptr->job_id);
 			error_code = ESLURM_DISABLED;
-		else {
-			List license_list = NULL;
-			bool valid;
-			license_list = license_job_validate(job_specs->licenses,
-							    &valid);
-			if (valid) {
-				if (job_ptr->license_list)
-					list_destroy(job_ptr->license_list);
-				job_ptr->license_list = license_list;
-				xfree(job_ptr->licenses);
-				job_ptr->licenses = job_specs->licenses;
-				job_specs->licenses = NULL; /* nothing to free */
-				info("update_job: setting licenses to %s for "
-				     "job %u",
-				     job_ptr->licenses, job_ptr->job_id);
-			} else {
-				info("update_job: invalid licenses: %s",
-				     job_specs->licenses);
-			}
+			list_destroy(license_list);
 		}
 	}
 
