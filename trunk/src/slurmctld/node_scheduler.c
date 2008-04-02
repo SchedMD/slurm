@@ -102,7 +102,7 @@ static int _pick_best_nodes(struct node_set *node_set_ptr,
 			    struct job_record *job_ptr,
 			    struct part_record *part_ptr,
 			    uint32_t min_nodes, uint32_t max_nodes,
-			    uint32_t req_nodes);
+			    uint32_t req_nodes, bool test_only);
 static void _print_feature_list(uint32_t job_id, List feature_list);
 static bitstr_t *_valid_features(struct job_details *detail_ptr, 
 				 char *available);
@@ -328,7 +328,8 @@ static int
 _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 		  bitstr_t ** select_bitmap, struct job_record *job_ptr,
 		  struct part_record *part_ptr,
-		  uint32_t min_nodes, uint32_t max_nodes, uint32_t req_nodes)
+		  uint32_t min_nodes, uint32_t max_nodes, uint32_t req_nodes,
+		  bool test_only)
 {
 	uint32_t saved_min_nodes, saved_job_min_nodes;
 	bitstr_t *saved_req_node_bitmap = NULL;
@@ -394,7 +395,7 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 			error_code = _pick_best_nodes(tmp_node_set_ptr, 
 					tmp_node_set_size, &feature_bitmap, 
 					job_ptr, part_ptr, min_nodes, 
-					max_nodes, req_nodes);
+					max_nodes, req_nodes, test_only);
 #if 0
 {
 			char *tmp_str = bitmap2node_name(feature_bitmap);
@@ -444,7 +445,7 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
 	if (error_code == SLURM_SUCCESS) {
 		error_code = _pick_best_nodes(node_set_ptr, node_set_size,
 				select_bitmap, job_ptr, part_ptr, min_nodes, 
-				max_nodes, req_nodes);
+				max_nodes, req_nodes, test_only);
 	}
 
 	/* restore job's initial required node bitmap */
@@ -466,6 +467,7 @@ _get_req_features(struct node_set *node_set_ptr, int node_set_size,
  * IN min_nodes - minimum count of nodes required by the job
  * IN max_nodes - maximum count of nodes required by the job (0==no limit)
  * IN req_nodes - requested (or desired) count of nodes
+ * IN test_only - do not actually allocate resources
  * RET SLURM_SUCCESS on success, 
  *	ESLURM_NODES_BUSY if request can not be satisfied now, 
  *	ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE if request can never 
@@ -492,7 +494,8 @@ static int
 _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 		 bitstr_t ** select_bitmap, struct job_record *job_ptr,
 		 struct part_record *part_ptr,
-		 uint32_t min_nodes, uint32_t max_nodes, uint32_t req_nodes)
+		 uint32_t min_nodes, uint32_t max_nodes, uint32_t req_nodes,
+		 bool test_only)
 {
 	int error_code = SLURM_SUCCESS, i, j, pick_code;
 	int total_nodes = 0, avail_nodes = 0;	
@@ -506,7 +509,12 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 	bool tried_sched = false;	/* Tried to schedule with avail nodes */
 	static uint32_t cr_enabled = NO_VAL;
 	select_type_plugin_info_t cr_type = SELECT_TYPE_INFO_NONE; 
-	int shared = 0;
+	int shared = 0, select_mode;
+
+	if (test_only)
+		select_mode = SELECT_MODE_TEST_ONLY;
+	else
+		select_mode = SELECT_MODE_RUN_NOW;
 
 	if (node_set_size == 0) {
 		info("_pick_best_nodes: empty node set for selection");
@@ -679,7 +687,7 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 						      min_nodes, 
 						      max_nodes,
 						      req_nodes,
-						      SELECT_MODE_RUN_NOW);
+						      select_mode);
 			if (pick_code == SLURM_SUCCESS) {
 				FREE_NULL_BITMAP(backup_bitmap);
 				if (bit_set_count(avail_bitmap) > max_nodes) {
@@ -708,7 +716,7 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 			pick_code = select_g_job_test(job_ptr, avail_bitmap, 
 						      min_nodes, max_nodes,
 						      req_nodes, 
-						      SELECT_MODE_RUN_NOW);
+						      select_mode);
 			if ((pick_code == SLURM_SUCCESS) &&
 			     (bit_set_count(avail_bitmap) <= max_nodes)) {
 				FREE_NULL_BITMAP(partially_idle_node_bitmap);
@@ -912,7 +920,7 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 		error_code = _get_req_features(node_set_ptr, node_set_size,
 					       &select_bitmap, job_ptr,
 					       part_ptr, min_nodes, max_nodes,
-					       req_nodes);
+					       req_nodes, test_only);
 	}
 
 	if (error_code) {
