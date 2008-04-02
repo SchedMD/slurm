@@ -130,6 +130,10 @@ SCHEDULING CHANGES
 * The new parameter, SchedulerTimeSlice, controls the length of gang scheduler 
   time slices.
 
+* Added a new parameter, Licenses to support cluster-wide consumable 
+  resources. The --licenses option was also added to salloc, sbatch, 
+  and srun.
+
 * The Shared=exclusive option in conjunction with SelectType=select/cons_res
   can be used to dedicate whole nodes to jobs in specific partitions while
   allocating sockets, cores, or hyperthreads in other partitions.
