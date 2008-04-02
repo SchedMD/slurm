@@ -1419,6 +1419,8 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 	xassert(job_ptr);
 
 	independent = job_independent(job_ptr);
+	if (license_job_test(job_ptr) != SLURM_SUCCESS)
+		independent = false;
 
 	/* Avoid resource fragmentation if important */
 	if (independent && switch_no_frag() && 
@@ -4719,7 +4721,6 @@ extern void job_completion_logger(struct job_record  *job_ptr)
 
 /*
  * job_independent - determine if this job has a depenendent job pending
- *	or if the required licenses are not currently available
  *	or if the job's scheduled begin time is in the future
  * IN job_ptr - pointer to job being tested
  * RET - true if job no longer must be defered for another job
@@ -4733,11 +4734,6 @@ extern bool job_independent(struct job_record *job_ptr)
 	if (detail_ptr && (detail_ptr->begin_time > now)) {
 		job_ptr->state_reason = WAIT_TIME;
 		return false;	/* not yet time */
-	}
-
-	if (license_job_test(job_ptr) != SLURM_SUCCESS) {
-		job_ptr->state_reason = WAIT_LICENSES;
-		return false;
 	}
 
 	rc = test_job_dependency(job_ptr);

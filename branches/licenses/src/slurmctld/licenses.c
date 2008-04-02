@@ -50,7 +50,7 @@
 #include "src/slurmctld/licenses.h"
 #include "src/slurmctld/slurmctld.h"
 
-#define _DEBUG 1
+#define _DEBUG 0
 
 List license_list = (List) NULL;
 static pthread_mutex_t license_mutex = PTHREAD_MUTEX_INITIALIZER;

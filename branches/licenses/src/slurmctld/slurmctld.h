@@ -905,7 +905,6 @@ extern int job_complete (uint32_t job_id, uid_t uid, bool requeue,
 
 /*
  * job_independent - determine if this job has a depenentent job pending
- *	or if the required licenses are not currently available
  *	or if the job's scheduled begin time is in the future
  * IN job_ptr - pointer to job being tested
  * RET - true if job no longer must be defered for another job

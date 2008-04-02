@@ -288,7 +288,12 @@ extern int schedule(void)
 				      failed_part_cnt)) {
 			continue;
 		}
-		
+
+		if (license_job_test(job_ptr) != SLURM_SUCCESS) {
+			job_ptr->state_reason = WAIT_LICENSES;
+			continue;
+		}
+
 		if (assoc_mgr_validate_assoc_id(acct_db_conn, job_ptr->assoc_id,
 						accounting_enforce)) {
 			/* NOTE: This only happens if a user's account is 
@@ -297,7 +302,7 @@ extern int schedule(void)
 			 * very rare. */
 			info("schedule: JobId=%u has invalid account",
 				job_ptr->job_id);
-			last_job_update = time(NULL);
+			last_job_update = time(NULL);		
 			job_ptr->job_state = JOB_FAILED;
 			job_ptr->exit_code = 1;
 			job_ptr->state_reason = FAIL_BANK_ACCOUNT;
