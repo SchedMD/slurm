@@ -53,7 +53,8 @@ extern List license_list;
 /* Initialize licenses on this system based upon slurm.conf */
 extern int license_init(char *licenses);
 
-/* Update licenses on this system based upon slurm.conf */
+/* Update licenses on this system based upon slurm.conf.
+ * Preserve all previously allocated licenses */
 extern int license_update(char *licenses);
 
 /* Free memory associated with licenses on this system */

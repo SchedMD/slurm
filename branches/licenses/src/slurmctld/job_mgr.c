@@ -570,6 +570,7 @@ static int _load_job_state(Buf buffer)
 	safe_unpack32(&exit_code, buffer);
 	safe_unpack32(&db_index, buffer);
 	safe_unpack32(&assoc_id, buffer);
+
 	safe_unpack_time(&start_time, buffer);
 	safe_unpack_time(&end_time, buffer);
 	safe_unpack_time(&suspend_time, buffer);
