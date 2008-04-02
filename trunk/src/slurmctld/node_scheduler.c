@@ -679,7 +679,7 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 						      min_nodes, 
 						      max_nodes,
 						      req_nodes,
-						      false);
+						      SELECT_MODE_RUN_NOW);
 			if (pick_code == SLURM_SUCCESS) {
 				FREE_NULL_BITMAP(backup_bitmap);
 				if (bit_set_count(avail_bitmap) > max_nodes) {
@@ -707,7 +707,8 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
                                         avail_bitmap))) {
 			pick_code = select_g_job_test(job_ptr, avail_bitmap, 
 						      min_nodes, max_nodes,
-						      req_nodes, false);
+						      req_nodes, 
+						      SELECT_MODE_RUN_NOW);
 			if ((pick_code == SLURM_SUCCESS) &&
 			     (bit_set_count(avail_bitmap) <= max_nodes)) {
 				FREE_NULL_BITMAP(partially_idle_node_bitmap);
@@ -739,7 +740,7 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 							      min_nodes, 
 							      max_nodes,
 							      req_nodes,
-							      true);
+							      SELECT_MODE_TEST_ONLY);
 				if (pick_code == SLURM_SUCCESS) {
 					runable_ever  = true;
 					if (bit_set_count(avail_bitmap) <=
@@ -756,7 +757,7 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 							      min_nodes, 
 							      max_nodes,
 							      req_nodes, 
-							      true);
+							      SELECT_MODE_TEST_ONLY);
 				if (pick_code == SLURM_SUCCESS) {
 					FREE_NULL_BITMAP(possible_bitmap);
 					possible_bitmap = total_bitmap;
