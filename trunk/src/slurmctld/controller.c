@@ -81,6 +81,7 @@
 
 #include "src/slurmctld/agent.h"
 #include "src/slurmctld/job_scheduler.h"
+#include "src/slurmctld/licenses.h"
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/ping_nodes.h"
 #include "src/slurmctld/proc_req.h"
@@ -241,7 +242,10 @@ int main(int argc, char *argv[])
 			    "jobacct_gather/none"))
 			info("Job accounting information stored, "
 			     "but details not gathered");
-	} 
+	}
+
+	if (license_init(slurmctld_conf.licenses) != SLURM_SUCCESS)
+		fatal("Invalid Licenses value: %s", slurmctld_conf.licenses);
 
 #ifndef NDEBUG
 #  ifdef PR_SET_DUMPABLE

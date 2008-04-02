@@ -62,12 +62,12 @@
 #include "src/common/parse_spec.h"
 #include "src/common/read_config.h"
 #include "src/common/slurm_jobcomp.h"
+#include "src/common/slurm_rlimits_info.h"
 #include "src/common/switch.h"
 #include "src/common/xstring.h"
-#include "src/common/node_select.h"
-#include "src/common/slurm_rlimits_info.h"
 
 #include "src/slurmctld/job_scheduler.h"
+#include "src/slurmctld/licenses.h"
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/node_scheduler.h"
 #include "src/slurmctld/proc_req.h"
@@ -784,6 +784,11 @@ int read_slurm_conf(int recover)
 
 	if ((error_code = _build_bitmaps()))
 		return error_code;
+
+	license_free();
+	if (license_init(slurmctld_conf.licenses) != SLURM_SUCCESS)
+		fatal("Invalid Licenses value: %s", slurmctld_conf.licenses);
+
 	_restore_job_dependencies();
 	restore_node_features();
 #ifdef 	HAVE_ELAN
@@ -1130,7 +1135,7 @@ static void _validate_node_proc_count(void)
 #endif
 
 /*
- * _restore_job_dependencies - Build depend_list for every job
+ * _restore_job_dependencies - Build depend_list and license_list for every job
  */
 static int _restore_job_dependencies(void)
 {
@@ -1141,6 +1146,14 @@ static int _restore_job_dependencies(void)
 
 	job_iterator = list_iterator_create(job_list);
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
+		if (job_ptr->job_state == JOB_RUNNING) {
+			bool valid;
+			List license_list;
+			license_list = license_job_validate(job_ptr->licenses, &valid);
+			if (valid)
+				license_job_get(job_ptr);
+		}
+
 		if ((job_ptr->details == NULL) ||
 		    (job_ptr->details->dependency == NULL))
 			continue;

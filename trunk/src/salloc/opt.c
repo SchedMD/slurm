@@ -485,6 +485,7 @@ void set_options(const int argc, char **argv)
 		{"job-name",      required_argument, 0, 'J'},
 		{"no-kill",       no_argument,       0, 'k'},
 		{"kill-command",  optional_argument, 0, 'K'},
+		{"licenses",      required_argument, 0, 'L'},
 		{"distribution",  required_argument, 0, 'm'},
 		{"tasks",         required_argument, 0, 'n'},
 		{"ntasks",        required_argument, 0, 'n'},
@@ -541,7 +542,7 @@ void set_options(const int argc, char **argv)
 		{"get-user-env",  optional_argument, 0, LONG_OPT_GET_USER_ENV},
 		{NULL,            0,                 0, 0}
 	};
-	char *opt_string = "+a:B:c:C:d:D:F:g:hHIJ:kK:m:n:N:Op:qR:st:uU:vVw:W:x:";
+	char *opt_string = "+a:B:c:C:d:D:F:g:hHIJ:kK:L:m:n:N:Op:qR:st:uU:vVw:W:x:";
 
 	opt.progname = xbasename(argv[0]);
 	optind = 0;		
@@ -627,6 +628,10 @@ void set_options(const int argc, char **argv)
 					exit(1);
 			}
 			opt.kill_command_signal_set = true;
+			break;
+		case 'L':
+			xfree(opt.licenses);
+			opt.licenses = xstrdup(optarg);
 			break;
 		case 'm':
 			opt.distribution = verify_dist_type(optarg, 
@@ -1320,7 +1325,7 @@ static void _usage(void)
 "              [[-c cpus-per-node] [-r n] [-p partition] [--hold] [-t minutes]\n"
 "              [--immediate] [--no-kill] [--overcommit] [-D path]\n"
 "              [--share] [-J jobname] [--jobid=id]\n"
-"              [--verbose] [--gid=group] [--uid=user]\n"
+"              [--verbose] [--gid=group] [--uid=user] [--licenses=names]\n"
 "              [-W sec] [--minsockets=n] [--mincores=n] [--minthreads=n]\n"
 "              [--contiguous] [--mincpus=n] [--mem=MB] [--tmp=MB] [-C list]\n"
 "              [--account=name] [--dependency=type:jobid] [--comment=name]\n"
@@ -1369,6 +1374,7 @@ static void _help(void)
 "  -U, --account=name          charge job to specified account\n"
 "      --begin=time            defer job until HH:MM DD/MM/YY\n"
 "      --comment=name          arbitrary comment\n"
+"  -L, --licenses=names        required license, comma separated\n"
 "      --mail-type=type        notify on state change: BEGIN, END, FAIL or ALL\n"
 "      --mail-user=user        who to send email notification for job state changes\n"
 "      --bell                  ring the terminal bell when the job is allocated\n"

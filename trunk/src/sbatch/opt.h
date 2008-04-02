@@ -102,6 +102,7 @@ typedef struct sbatch_options {
 	int acctg_freq;		/* --acctg-freq=secs		*/
 	bool overcommit;	/* --overcommit -O		*/
 	uint16_t shared;	/* --share,   -s		*/
+	char *licenses;		/* --licenses, -L		*/
 	int  quiet;
 	int  verbose;
 	char *wrap;

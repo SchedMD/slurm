@@ -6,7 +6,7 @@
  *  $Id$
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
- *  Copyright (C) 2008 Lawrence Livermore National Security
+ *  Copyright (C) 2008 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov>
  *  LLNL-CODE-402394.
@@ -73,6 +73,7 @@
 
 #include "src/slurmctld/agent.h"
 #include "src/slurmctld/job_scheduler.h"
+#include "src/slurmctld/licenses.h"
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/node_scheduler.h"
 #include "src/slurmctld/proc_req.h"
@@ -569,6 +570,7 @@ static int _load_job_state(Buf buffer)
 	safe_unpack32(&exit_code, buffer);
 	safe_unpack32(&db_index, buffer);
 	safe_unpack32(&assoc_id, buffer);
+
 	safe_unpack_time(&start_time, buffer);
 	safe_unpack_time(&end_time, buffer);
 	safe_unpack_time(&suspend_time, buffer);
@@ -1417,6 +1419,8 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 	xassert(job_ptr);
 
 	independent = job_independent(job_ptr);
+	if (license_job_test(job_ptr) != SLURM_SUCCESS)
+		independent = false;
 
 	/* Avoid resource fragmentation if important */
 	if (independent && switch_no_frag() && 
@@ -1791,6 +1795,8 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 	struct job_record *job_ptr;
 	uint32_t total_nodes, max_procs;
 	acct_association_rec_t assoc_rec;
+	List license_list = NULL;
+	bool valid;
 
 #if SYSTEM_DIMENSIONS
 	uint16_t geo[SYSTEM_DIMENSIONS];
@@ -1992,6 +1998,14 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 		goto cleanup;
 	}
 
+	license_list = license_job_validate(job_desc->licenses, &valid);
+	if (!valid) {
+		info("Job's requested licenses are invalid: %s", 
+		     job_desc->licenses);
+		error_code = ESLURM_INVALID_LICENSES;
+		goto cleanup;
+	}
+
 	if ((error_code =_validate_job_create_req(job_desc)))
 		goto cleanup;
 
@@ -2025,6 +2039,9 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 		job_ptr->batch_flag = 1;
 	} else
 		job_ptr->batch_flag = 0;
+
+	job_ptr->license_list = license_list;
+	license_list = NULL;
 
 	/* Insure that requested partition is valid right now, 
 	 * otherwise leave job queued and provide warning code */
@@ -2060,6 +2077,8 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 	
 	
 cleanup:
+	if (license_list)
+		list_destroy(license_list);
 	FREE_NULL_BITMAP(req_bitmap);
 	FREE_NULL_BITMAP(exc_bitmap);
 	return error_code;
@@ -2921,6 +2940,8 @@ static void _list_delete_job(void *job_entry)
 	xfree(job_ptr->account);
 	xfree(job_ptr->resp_host);
 	xfree(job_ptr->licenses);
+	if (job_ptr->license_list)
+		list_destroy(job_ptr->license_list);
 	xfree(job_ptr->mail_user);
 	xfree(job_ptr->network);
 	xfree(job_ptr->alloc_lps);
@@ -3252,12 +3273,19 @@ void reset_job_bitmaps(void)
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
 		xassert (job_ptr->magic == JOB_MAGIC);
 		job_fail = false;
-		part_ptr = list_find_first(part_list, &list_find_part,
-					   job_ptr->partition);
-		if (part_ptr == NULL) {
-			error("Invalid partition (%s) for job_id %u", 
-		    	      job_ptr->partition, job_ptr->job_id);
+
+		if (job_ptr->partition == NULL) {
+			error("No partition for job_id %u", job_ptr->job_id);
+			part_ptr = NULL;
 			job_fail = true;
+		} else {
+			part_ptr = list_find_first(part_list, &list_find_part,
+						   job_ptr->partition);
+			if (part_ptr == NULL) {
+				error("Invalid partition (%s) for job_id %u", 
+		    		      job_ptr->partition, job_ptr->job_id);
+				job_fail = true;
+			}
 		}
 		job_ptr->part_ptr = part_ptr;
 
@@ -4039,6 +4067,50 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			detail_ptr->begin_time = job_specs->begin_time;
 		else
 			error_code = ESLURM_DISABLED;
+	}
+
+	if (job_specs->licenses) {
+		List license_list = NULL;
+		bool valid;
+		license_list = license_job_validate(job_specs->licenses,
+						    &valid);
+
+		if (!valid) {
+			info("update_job: invalid licenses: %s",
+			     job_specs->licenses);
+			error_code = ESLURM_INVALID_LICENSES;
+		} else if (IS_JOB_PENDING(job_ptr)) {
+			if (job_ptr->license_list)
+				list_destroy(job_ptr->license_list);
+			job_ptr->license_list = license_list;
+			xfree(job_ptr->licenses);
+			job_ptr->licenses = job_specs->licenses;
+			job_specs->licenses = NULL; /* nothing to free */
+			info("update_job: setting licenses to %s for job %u",
+			     job_ptr->licenses, job_ptr->job_id);
+		} else if ((job_ptr->job_state == JOB_RUNNING) && super_user) {
+			/* NOTE: This can result in oversubscription of 
+			 * licenses */
+			license_job_return(job_ptr);
+			if (job_ptr->license_list)
+				list_destroy(job_ptr->license_list);
+			job_ptr->license_list = license_list;
+			info("update_job: changing licenses from %s to %s for "
+			     " running job %u",
+			     job_ptr->licenses, job_specs->licenses, 
+			     job_ptr->job_id);
+			xfree(job_ptr->licenses);
+			job_ptr->licenses = job_specs->licenses;
+			job_specs->licenses = NULL; /* nothing to free */
+			license_job_get(job_ptr);
+		} else {
+			/* licenses are valid, but job state or user not
+			 * allowed to make changes */
+			info("update_job: could not change licenses for job %u",
+			     job_ptr->job_id);
+			error_code = ESLURM_DISABLED;
+			list_destroy(license_list);
+		}
 	}
 
 #ifdef HAVE_BG

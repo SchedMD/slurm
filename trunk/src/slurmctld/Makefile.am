@@ -21,6 +21,8 @@ slurmctld_SOURCES = 	\
 	job_mgr.c 	\
 	job_scheduler.c \
 	job_scheduler.h \
+	licenses.c	\
+	licenses.h	\
 	locks.c   	\
 	locks.h  	\
 	node_mgr.c 	\
