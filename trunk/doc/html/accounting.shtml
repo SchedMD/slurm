@@ -296,7 +296,7 @@ sacctmgr add account none,test Cluster=snowflake \
 can either not specify a cluster, which will add the accounts to all
 clusters in the system, or comma separate the cluster names you want
 to add to in the cluster option.
-Note that multiple accounts can be added at the same at the same time 
+Note that multiple accounts can be added at the same time 
 by comma separating the names. 
 Some Description of the account and the organization which it belongs
 must be specified. 
@@ -324,7 +324,7 @@ sacctmgr add user da default=test
 the cluster <i>snowflake</i> then user <i>da</i> would be
 allowed to run in account <i>test</i> and any other accounts added
 in the future.
-Any attepmt to use other accounts will result in the job being 
+Any attempt to use other accounts will result in the job being 
 aborted. 
 Account <i>test</i> will be the default if he doesn't specify one in a 
 srun line.</p>
