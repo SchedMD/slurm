@@ -340,6 +340,7 @@ extern int license_job_get(struct job_record *job_ptr)
 		}
 	}
 	list_iterator_destroy(iter);
+	_licenses_print("licences_job_get", license_list);
 	slurm_mutex_unlock(&license_mutex);
 	return rc;
 }
@@ -382,6 +383,7 @@ extern int license_job_return(struct job_record *job_ptr)
 		}
 	}
 	list_iterator_destroy(iter);
+	_licenses_print("licences_job_return", license_list);
 	slurm_mutex_unlock(&license_mutex);
 	return rc;
 }

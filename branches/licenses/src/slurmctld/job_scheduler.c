@@ -91,7 +91,7 @@ extern int build_job_queue(struct job_queue **job_queue)
 		    (job_ptr->job_state &  JOB_COMPLETING) ||
 		    (job_ptr->priority == 0))	/* held */
 			continue;
-		if (!job_independent(job_ptr))	/* waiting for other job */
+		if (!job_independent(job_ptr))	/* can not run now */
 			continue;
 		if (job_buffer_size <= job_queue_size) {
 			job_buffer_size += 200;
