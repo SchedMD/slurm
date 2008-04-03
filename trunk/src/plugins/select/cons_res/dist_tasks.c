@@ -208,12 +208,17 @@ static int _job_assign_tasks(struct select_cr_job *job,
 	/* determine the number of required cores. When multiple threads
 	 * are available, the maxtasks value may not reflect the requested
 	 * core count, which is what we are seeking here. */
-	maxcores = maxtasks / usable_threads;
-	while ((maxcores * usable_threads) < maxtasks)
-		maxcores++;
-	reqcores = mc_ptr->min_cores * mc_ptr->min_sockets;
-	if (maxcores < reqcores)
-		maxcores = reqcores;
+	if (job->job_ptr->details->overcommit) {
+		maxcores = 1;
+		reqcores = 1;
+	} else {
+		maxcores = maxtasks / usable_threads;
+		while ((maxcores * usable_threads) < maxtasks)
+			maxcores++;
+		reqcores = mc_ptr->min_cores * mc_ptr->min_sockets;
+		if (maxcores < reqcores)
+			maxcores = reqcores;
+	}
 
 	offset = _find_offset(job, job_index, cores, sockets, maxcores, cr_type,
 			      this_cr_node);
