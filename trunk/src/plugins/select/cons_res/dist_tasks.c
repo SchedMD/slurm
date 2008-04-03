@@ -120,8 +120,8 @@ static int _find_offset(struct select_cr_job *job, const int job_index,
 		acores = 0;
 		asockets = 0;
 		skip = 0;
-		offset = i * this_cr_node->num_sockets;
-		for (j = 0; j < this_cr_node->num_sockets; j++) {
+		offset = i * this_cr_node->sockets;
+		for (j = 0; j < this_cr_node->sockets; j++) {
 			if ((cores - p_ptr->alloc_cores[offset+j]) <
 							mc_ptr->min_cores) {
 				/* count the number of unusable sockets */
@@ -162,7 +162,7 @@ static int _find_offset(struct select_cr_job *job, const int job_index,
 		index = 0;
 	}
 
-	return index * this_cr_node->num_sockets;
+	return index * this_cr_node->sockets;
 }
 
 /*  _job_assign_tasks: Assign tasks to hardware for block and cyclic
@@ -239,15 +239,14 @@ static int _job_assign_tasks(struct select_cr_job *job,
 		if ((total >= maxcores) && (asockets >= mc_ptr->min_sockets)) {
 			break;
 		}
-		if (this_cr_node->node_ptr->cores <=
-		    p_ptr->alloc_cores[offset+i]) {
+		if (this_cr_node->cores <= p_ptr->alloc_cores[offset+i]) {
 			continue;
 		}
 		/* for CR_SOCKET, we only want to allocate empty sockets */
 		if ((cr_type == CR_SOCKET || cr_type == CR_SOCKET_MEMORY) &&
 		    (p_ptr->alloc_cores[offset+i] > 0))
 			continue;
-		avail_cores[i] = this_cr_node->node_ptr->cores - 
+		avail_cores[i] = this_cr_node->cores - 
 				 p_ptr->alloc_cores[offset+i];
 		if (usable_cores <= avail_cores[i]) {
 			avail_cores[i] = usable_cores;
@@ -272,10 +271,9 @@ static int _job_assign_tasks(struct select_cr_job *job,
 		      " request -B %u:%u: Using alternative strategy",
 		      job->job_id, mc_ptr->min_sockets, mc_ptr->min_cores);
 		for (i = 0; i < sockets; i++) {
-			if (this_cr_node->node_ptr->cores <=
-			    p_ptr->alloc_cores[offset+i])
+			if (this_cr_node->cores <= p_ptr->alloc_cores[offset+i])
 				continue;
-			avail_cores[i] = this_cr_node->node_ptr->cores - 
+			avail_cores[i] = this_cr_node->cores - 
 				p_ptr->alloc_cores[offset+i];
 		}
 	}
@@ -356,7 +354,7 @@ static uint16_t _get_cpu_offset(struct select_cr_job *job, int index,
 				besto = offset;
 			}
 		}
-		offset += this_node->num_sockets;
+		offset += this_node->sockets;
 	}
 	return besto;
 }
@@ -465,17 +463,37 @@ extern int cr_exclusive_dist(struct select_cr_job *job,
 	    (cr_type == CR_SOCKET) || (cr_type == CR_SOCKET_MEMORY))
 		get_cores = 1;
 
-	for (i = 0; i < node_record_count; i++) {
-		if (bit_test(job->node_bitmap, i) == 0)
-			continue;
-		job->alloc_cpus[host_index] = node_record_table_ptr[i].cpus;
-		if (get_cores) {
-			for (j = 0; j < node_record_table_ptr[i].sockets; j++) {
-				job->alloc_cores[host_index][j] = 
-					node_record_table_ptr[i].cores; 
+	if (select_fast_schedule) {
+		struct config_record *config_ptr;
+		for (i = 0; i < node_record_count; i++) {
+			if (bit_test(job->node_bitmap, i) == 0)
+				continue;
+			config_ptr = node_record_table_ptr[i].config_ptr;
+			job->alloc_cpus[host_index] = config_ptr->cpus;
+			if (get_cores) {
+				for (j=0; j<config_ptr->sockets; 
+				     j++) {
+					job->alloc_cores[host_index][j] = 
+						config_ptr->cores;
+				}
 			}
+			host_index++;
 		}
-		host_index++;
+	} else {
+		for (i = 0; i < node_record_count; i++) {
+			if (bit_test(job->node_bitmap, i) == 0)
+				continue;
+			job->alloc_cpus[host_index] = node_record_table_ptr[i].
+						      cpus;
+			if (get_cores) {
+				for (j=0; j<node_record_table_ptr[i].sockets; 
+				     j++) {
+					job->alloc_cores[host_index][j] = 
+						node_record_table_ptr[i].cores;
+				}
+			}
+			host_index++;
+		}
 	}
 	return SLURM_SUCCESS;
 }
@@ -572,7 +590,7 @@ extern int cr_plane_dist(struct select_cr_job *job,
 		     job->job_id, host_index, this_cr_node->node_ptr->name, 
 		     job->alloc_cpus[job_index]);
 
-		for (i = 0; !cr_cpu && i < this_cr_node->node_ptr->sockets; i++) {
+		for (i = 0; !cr_cpu && i < this_cr_node->sockets; i++) {
 			info("cons_res _cr_plane_dist %u host %d %s alloc_cores %u",
 			     job->job_id, host_index,
 			     this_cr_node->node_ptr->name,
