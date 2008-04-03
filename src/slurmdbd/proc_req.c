@@ -835,6 +835,7 @@ static int   _fini_conn(void **db_conn, Buf in_buffer, Buf *out_buffer)
 end_it:
 	slurmdbd_free_fini_msg(fini_msg);
 	*out_buffer = make_dbd_rc_msg(rc, comment, DBD_FINI);
+
 	return rc;
 
 }
