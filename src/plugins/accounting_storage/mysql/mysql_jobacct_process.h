@@ -61,6 +61,7 @@ typedef struct {
 	MYSQL *acct_mysql_db;
 	bool rollback;
 	List update_list;
+	int conn;
 } mysql_conn_t;
 
 //extern int acct_db_init;

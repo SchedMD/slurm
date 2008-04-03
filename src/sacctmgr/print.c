@@ -93,7 +93,7 @@ extern void print_str(type_t type, print_field_t *field, char *value)
 		if(!print_this)
 			print_this = " ";
 		
-		printf("%-*s ", field->len, print_this);
+		printf("%-*.*s ", field->len, field->len, print_this);
 		break;
 	default:
 		printf("%-*s ", field->len, "n/a");

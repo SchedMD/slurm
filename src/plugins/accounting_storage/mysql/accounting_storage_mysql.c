@@ -107,44 +107,117 @@ extern int acct_storage_p_add_associations(mysql_conn_t *mysql_conn,
 extern List acct_storage_p_get_associations(mysql_conn_t *mysql_conn, 
 					    acct_association_cond_t *assoc_q);
 
-static int move_account(mysql_conn_t *mysql_conn, char *cluster,
+static int move_account(mysql_conn_t *mysql_conn, uint32_t lft, uint32_t rgt,
+			char *cluster,
 			char *id, char *parent)
 {
 	int rc = SLURM_SUCCESS;
+/* 	char *query = xstrdup_printf( */
+/* 		"SELECT @parLeft := lft from %s "  */
+/* 		"where cluster='%s' && acct='%s' && user='';", */
+/* 		assoc_table, */
+/* 		cluster, parent); */
+	
+/* 	xstrfmtcat(query,  */
+/* 		   "SELECT @oldLeft := lft, @oldRight := rgt, " */
+/* 		   "@myWidth := (rgt - lft + 1), @myDiff := (@parLeft+1) - lft " */
+/* 		   "FROM %s WHERE id = %s;", */
+/* 		   assoc_table, id); */
+
+/* 	xstrfmtcat(query, */
+/* 		   "update %s set deleted = deleted + 2, " */
+/* 		   "lft = lft + @myDiff, rgt = rgt + @myDiff " */
+/* 		   "WHERE lft BETWEEN @oldLeft AND @oldRight;", */
+/* 		   assoc_table); */
+				
+/* 	xstrfmtcat(query, */
+/* 		   "UPDATE %s SET rgt = rgt + @myWidth WHERE " */
+/* 		   "rgt > @parLeft && deleted < 2;" */
+/* 		   "UPDATE %s SET lft = lft + @myWidth WHERE " */
+/* 		   "lft > @parLeft && deleted < 2;", */
+/* 		   assoc_table, */
+/* 		   assoc_table); */
+/* 	xstrfmtcat(query, */
+/* 		   "UPDATE %s SET rgt = rgt - @myWidth WHERE " */
+/* 		   "(@myDiff < 0 && rgt > @oldRight && deleted < 2) " */
+/* 		   "|| (@myDiff >= 0 && rgt > @oldLeft);" */
+/* 		   "UPDATE %s SET lft = lft - @myWidth WHERE " */
+/* 		   "(@myDiff < 0 && lft > @oldRight && deleted < 2) " */
+/* 		   "|| (@myDiff >= 0 && lft > @oldLeft);", */
+/* 		   assoc_table, */
+/* 		   assoc_table); */
+
+/* 	xstrfmtcat(query, */
+/* 		   "update %s set deleted = deleted - 2 WHERE deleted > 1;", */
+/* 		   assoc_table); */
+/* 	xstrfmtcat(query, */
+/* 		   "update %s set parent_acct='%s' where id = %s;", */
+/* 		   assoc_table, parent, id); */
+	MYSQL_RES *result = NULL;
+	MYSQL_ROW row;
+	uint32_t par_left = 0;
+	uint32_t diff = 0;
+	uint32_t width = 0;
 	char *query = xstrdup_printf(
-		"SELECT @parLeft := lft from %s " 
+		"SELECT lft from %s " 
 		"where cluster='%s' && acct='%s' && user='';",
 		assoc_table,
 		cluster, parent);
-					
-	xstrfmtcat(query, 
-		   "SELECT @oldLeft := lft, @oldRight := rgt, "
-		   "@myWidth := (rgt - lft + 1), @myDiff := (@parLeft+1) - lft "
-		   "FROM %s WHERE id = %s;",
-		   assoc_table, id);
-
+	debug3("%d query\n%s", mysql_conn->conn, query);
+	if(!(result = mysql_db_query_ret(mysql_conn->acct_mysql_db, query))) {
+		xfree(query);
+		return SLURM_ERROR;
+	}
+	xfree(query);
+	if(!(row = mysql_fetch_row(result))) {
+		error("no row");
+		mysql_free_result(result);
+		return SLURM_ERROR;
+	}
+	par_left = atoi(row[0]);
+	mysql_free_result(result);
+	
+	width = (rgt - lft + 1);
+	diff = ((par_left + 1) - lft);
+	
 	xstrfmtcat(query,
 		   "update %s set deleted = deleted + 2, "
-		   "lft = lft + @myDiff, rgt = rgt + @myDiff "
-		   "WHERE lft BETWEEN @oldLeft AND @oldRight;",
-		   assoc_table);
-				
+		   "lft = lft + %d, rgt = rgt + %d "
+		   "WHERE lft BETWEEN %d AND %d;",
+		   assoc_table, diff, diff, lft, rgt);
+/* 	debug3("%d query\n%s", mysql_conn->conn, query); */
+/* 	rc = mysql_db_query(mysql_conn->acct_mysql_db, query); */
+/* 	xfree(query); */
+
 	xstrfmtcat(query,
-		   "UPDATE %s SET rgt = rgt + @myWidth WHERE "
-		   "rgt > @parLeft && deleted < 2;"
-		   "UPDATE %s SET lft = lft + @myWidth WHERE "
-		   "lft > @parLeft && deleted < 2;",
-		   assoc_table,
-		   assoc_table);
+		   "UPDATE %s SET rgt = rgt + %d WHERE "
+		   "rgt > %d && deleted < 2;"
+		   "UPDATE %s SET lft = lft + %d WHERE "
+		   "lft > %d && deleted < 2;",
+		   assoc_table, width,
+		   par_left,
+		   assoc_table, width,
+		   par_left);
+/* 	debug3("%d query\n%s", mysql_conn->conn, query); */
+/* 	rc = mysql_db_query(mysql_conn->acct_mysql_db, query); */
+/* 	xfree(query); */
+
 	xstrfmtcat(query,
-		   "UPDATE %s SET rgt = rgt - @myWidth WHERE "
-		   "(@myDiff < 0 && rgt > @oldRight && deleted < 2) "
-		   "|| (@myDiff >= 0 && rgt > @oldLeft);"
-		   "UPDATE %s SET lft = lft - @myWidth WHERE "
-		   "(@myDiff < 0 && lft > @oldRight && deleted < 2) "
-		   "|| (@myDiff >= 0 && lft > @oldLeft);",
-		   assoc_table,
-		   assoc_table);
+		   "UPDATE %s SET rgt = rgt - %d WHERE "
+		   "(%d < 0 && rgt > %d && deleted < 2) "
+		   "|| (%d >= 0 && rgt > %d);"
+		   "UPDATE %s SET lft = lft - %d WHERE "
+		   "(%d < 0 && lft > %d && deleted < 2) "
+		   "|| (%d >= 0 && lft > %d);",
+		   assoc_table, width,
+		   diff, rgt,
+		   diff, lft,
+		   assoc_table, width,
+		   diff, rgt,
+		   diff, lft);
+/* 	debug3("%d query\n%s", mysql_conn->conn, query); */
+/* 	rc = mysql_db_query(mysql_conn->acct_mysql_db, query); */
+/* 	xfree(query); */
 
 	xstrfmtcat(query,
 		   "update %s set deleted = deleted - 2 WHERE deleted > 1;",
@@ -152,13 +225,57 @@ static int move_account(mysql_conn_t *mysql_conn, char *cluster,
 	xstrfmtcat(query,
 		   "update %s set parent_acct='%s' where id = %s;",
 		   assoc_table, parent, id);
-	debug3("query\n%s", query);
+	debug3("%d query\n%s", mysql_conn->conn, query);
 	rc = mysql_db_query(mysql_conn->acct_mysql_db, query);
 	xfree(query);
 
 	return rc;
 }
 
+static int move_parent(mysql_conn_t *mysql_conn, uint32_t lft, uint32_t rgt,
+		       char *cluster,
+		       char *id, char *old_parent, char *new_parent)
+{
+	MYSQL_RES *result = NULL;
+	MYSQL_ROW row;
+	char *query = NULL;
+	int rc = SLURM_SUCCESS;
+
+	/* first we need to see if we are
+	 * going to make a child of this
+	 * account the new parent.  If so we
+	 * need to move that child to this
+	 * accounts parent and then do the move 
+	 */
+	query = xstrdup_printf(
+		"select id, lft, rgt from %s where lft between %d and %d "
+		"&& acct='%s' && user='';",
+		assoc_table, lft, rgt,
+		new_parent);
+	debug3("%d query\n%s", mysql_conn->conn, query);
+	if(!(result = mysql_db_query_ret(mysql_conn->acct_mysql_db, query))) {
+		xfree(query);
+		return SLURM_ERROR;
+	}
+	xfree(query);
+
+	if((row = mysql_fetch_row(result))) {
+		debug4("%s(%s) %s,%s is a child of %s",
+		       new_parent, row[0], row[1], row[2], id);
+		rc = move_account(mysql_conn, atoi(row[1]), atoi(row[2]),
+				  cluster, row[0], old_parent);
+	}
+
+	mysql_free_result(result);
+
+	if(rc == SLURM_ERROR) 
+		return rc;
+	
+	/* now move the one we wanted to move in the first place */
+	rc = move_account(mysql_conn, lft, rgt, cluster, id, new_parent);
+
+	return rc;
+}
 
 /* This function will take the object given and free it later so it
  * needed to be removed from a list if in one before 
@@ -598,7 +715,9 @@ static int _mysql_acct_check_tables(MYSQL *acct_mysql_db)
 	if(mysql_db_create_table(acct_mysql_db, assoc_table, assoc_table_fields,
 				 ", primary key (id), "
 				 " unique index (user(20), acct(20), "
-				 "cluster(20), partition(20)))")
+				 "cluster(20), partition(20)))"
+/* 				 " unique index (lft), " */
+/* 				 " unique index (rgt))" */)
 	   == SLURM_ERROR)
 		return SLURM_ERROR;
 
@@ -734,7 +853,7 @@ extern void *acct_storage_p_get_connection(bool make_agent, bool rollback)
 {
 #ifdef HAVE_MYSQL
 	mysql_conn_t *mysql_conn = xmalloc(sizeof(mysql_conn_t));
-
+	static int conn = 0;
 	if(!mysql_db_info)
 		init();
 
@@ -746,6 +865,7 @@ extern void *acct_storage_p_get_connection(bool make_agent, bool rollback)
 	if(rollback) {
 		mysql_autocommit(mysql_conn->acct_mysql_db, 0);
 	}
+	mysql_conn->conn = conn++;
 	mysql_conn->update_list = list_create(destroy_acct_update_object);
 	return (void *)mysql_conn;
 #else
@@ -1047,7 +1167,7 @@ extern int acct_storage_p_add_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 			"on duplicate key update deleted=0, mod_time=%d %s;",
 			acct_table, cols, vals,
 			now, extra);
-		debug3("query\n%s", query);
+		debug3("%d query\n%s", mysql_conn->conn, query);
 		rc = mysql_db_query(mysql_conn->acct_mysql_db, query);
 		xfree(cols);
 		xfree(vals);
@@ -1121,11 +1241,6 @@ extern int acct_storage_p_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 			rc = SLURM_ERROR;
 			continue;
 		}
-
-		xfree(cols);
-		xfree(extra);
-		xfree(vals);
-		xfree(query);
 
 		xstrcat(cols, "creation_time, mod_time, acct, cluster");
 		xstrfmtcat(vals, "%d, %d, 'root', '%s'",
@@ -1220,21 +1335,9 @@ extern int acct_storage_p_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 		}
 
 		xstrfmtcat(query,
-			   "insert into %s "
-			   "(timestamp, action, name, actor, info) "
-			   "values (%d, %d, '%s', '%s', \"%s\");",
-			   txn_table,
-			   now, DBD_ADD_CLUSTERS, object->name, user, extra);
-		debug4("query\n%s",query);
-		rc = mysql_db_query(mysql_conn->acct_mysql_db, query);
-		xfree(query);
-		if(rc != SLURM_SUCCESS) {
-			error("Couldn't add txn");
-		}
-
-		xstrfmtcat(query,
-			   "SELECT @MyMax := coalesce(max(rgt), 0) FROM %s;",
-			   assoc_table, assoc_table);
+			   "SELECT @MyMax := coalesce(max(rgt), 0) FROM %s "
+			   "FOR UPDATE;",
+			   assoc_table);
 		xstrfmtcat(query,
 			   "insert into %s (%s, lft, rgt) "
 			   "values (%s, @MyMax+1, @MyMax+2) "
@@ -1257,6 +1360,18 @@ extern int acct_storage_p_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 			xfree(extra);
 			continue;
 		}
+		xstrfmtcat(query,
+			   "insert into %s "
+			   "(timestamp, action, name, actor, info) "
+			   "values (%d, %d, '%s', '%s', \"%s\");",
+			   txn_table,
+			   now, DBD_ADD_CLUSTERS, object->name, user, extra);
+		debug4("query\n%s",query);
+		rc = mysql_db_query(mysql_conn->acct_mysql_db, query);
+		xfree(query);
+		if(rc != SLURM_SUCCESS) {
+			error("Couldn't add txn");
+		}
 	}
 	list_iterator_destroy(itr);
 
@@ -1273,6 +1388,7 @@ extern int acct_storage_p_add_associations(mysql_conn_t *mysql_conn,
 #ifdef HAVE_MYSQL
 	ListIterator itr = NULL;
 	int rc = SLURM_SUCCESS;
+	int i=0;
 	acct_association_rec_t *object = NULL;
 	char *cols = NULL, *vals = NULL, 
 		*extra = NULL, *query = NULL, *update = NULL;
@@ -1280,10 +1396,28 @@ extern int acct_storage_p_add_associations(mysql_conn_t *mysql_conn,
 	time_t now = time(NULL);
 	struct passwd *pw = NULL;
 	char *user = NULL;
+	char *tmp_char = NULL;
 	int assoc_id = 0;
 	int affect_rows = 0;
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
+
+	char *massoc_req_inx[] = {
+		"id",
+		"parent_acct",
+		"lft",
+		"rgt",
+		"deleted"
+	};
+	
+	enum {
+		MASSOC_ID,
+		MASSOC_PACCT,
+		MASSOC_LFT,
+		MASSOC_RGT,
+		MASSOC_DELETED,
+		MASSOC_COUNT
+	};
 
 	if(!association_list) {
 		error("No association list given");
@@ -1314,7 +1448,7 @@ extern int acct_storage_p_add_associations(mysql_conn_t *mysql_conn,
 		xstrcat(cols, "creation_time, mod_time, cluster, acct");
 		xstrfmtcat(vals, "%d, %d, '%s', '%s'", 
 			   now, now, object->cluster, object->acct); 
-		xstrfmtcat(update, "where cluster='%s' && acct='%s'",
+		xstrfmtcat(update, "where id>=0 && cluster='%s' && acct='%s'",
 			   object->cluster, object->acct); 
 
 		xstrfmtcat(extra, ", mod_time=%d", now);
@@ -1377,7 +1511,19 @@ extern int acct_storage_p_add_associations(mysql_conn_t *mysql_conn,
 			xstrfmtcat(extra, ", max_cpu_secs_per_job=%d",
 				   object->max_cpu_secs_per_job);
 		}
-		xstrfmtcat(query, "select id from %s %s;", assoc_table, update);
+
+		for(i=0; i<MASSOC_COUNT; i++) {
+			if(i) 
+				xstrcat(tmp_char, ", ");
+			xstrcat(tmp_char, massoc_req_inx[i]);
+		}
+
+
+		xstrfmtcat(query, 
+			   "select distinct %s from %s %s LOCK IN SHARE MODE;",
+			   tmp_char, assoc_table, update);
+		xfree(tmp_char);
+		debug3("%d query\n%s", mysql_conn->conn, query);
 		if(!(result = mysql_db_query_ret(mysql_conn->acct_mysql_db,
 						 query))) {
 			xfree(query);
@@ -1410,8 +1556,34 @@ extern int acct_storage_p_add_associations(mysql_conn_t *mysql_conn,
 				   "values (%s, @myLeft+1, @myLeft+2);",
 				   assoc_table, cols,
 				   vals);
+		} else if(!atoi(row[MASSOC_DELETED])) {
+			debug("This account was added already");
+			xfree(cols);
+			xfree(vals);
+			xfree(update);
+			mysql_free_result(result);
+			xfree(extra);
+			rc = SLURM_ERROR;
+			continue;
 		} else {
-			assoc_id = atoi(row[0]);
+			assoc_id = atoi(row[MASSOC_ID]);
+			if(object->parent_acct 
+			   && strcasecmp(object->parent_acct,
+					 row[MASSOC_PACCT])) {
+				
+				/* We need to move the parent! */
+				if(move_parent(mysql_conn,
+					       atoi(row[MASSOC_LFT]),
+					       atoi(row[MASSOC_RGT]),
+					       object->cluster,
+					       row[MASSOC_ID],
+					       row[MASSOC_PACCT],
+					       object->parent_acct)
+				   == SLURM_ERROR)
+					continue;
+			}
+
+
 			affect_rows = 2;
 			xstrfmtcat(query,
 				   "update %s set deleted=0, "
@@ -1687,7 +1859,7 @@ extern List acct_storage_p_modify_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 
 	query = xstrdup_printf("select name from %s %s;", acct_table, extra);
 	xfree(extra);
-	debug3("query\n%s",query);
+	debug3("%d query\n%s", mysql_conn->conn, query);
 	if(!(result = mysql_db_query_ret(mysql_conn->acct_mysql_db, query))) {
 		xfree(query);
 		return NULL;
@@ -1824,7 +1996,7 @@ extern List acct_storage_p_modify_clusters(mysql_conn_t *mysql_conn,
 
 	xstrfmtcat(query, "select name from %s %s;", cluster_table, extra);
 	xfree(extra);
-	debug3("query\n%s",query);
+	debug3("%d query\n%s", mysql_conn->conn, query);
 	if(!(result = mysql_db_query_ret(mysql_conn->acct_mysql_db, query))) {
 		xfree(query);
 		xfree(vals);
@@ -2062,12 +2234,13 @@ extern List acct_storage_p_modify_associations(mysql_conn_t *mysql_conn,
 		xstrcat(object, massoc_req_inx[i]);
 	}
 
-	query = xstrdup_printf("select distinct %s from %s where deleted=0%s;",
+	query = xstrdup_printf("select distinct %s from %s where deleted=0%s "
+			       "FOR UPDATE;",
 			       object, assoc_table, extra);
 	xfree(object);
 	xfree(extra);
 
-	debug3("query\n%s",query);
+	debug3("%d query\n%s", mysql_conn->conn, query);
 	if(!(result = mysql_db_query_ret(mysql_conn->acct_mysql_db, query))) {
 		xfree(query);
 		return NULL;
@@ -2080,8 +2253,8 @@ extern List acct_storage_p_modify_associations(mysql_conn_t *mysql_conn,
 	ret_list = list_create(slurm_destroy_char);
 	while((row = mysql_fetch_row(result))) {
 		acct_association_rec_t *mod_assoc = NULL;
-		MYSQL_RES *result2 = NULL;
-		MYSQL_ROW row2;
+/* 		MYSQL_RES *result2 = NULL; */
+/* 		MYSQL_ROW row2; */
 
 		if(strlen(row[MASSOC_PART])) { 
 			// see if there is a partition name
@@ -2133,47 +2306,58 @@ extern List acct_storage_p_modify_associations(mysql_conn_t *mysql_conn,
 					xfree(object);
 					continue;
 				}
-				/* first we need to see if we are
-				 * going to make a child of this
-				 * account the new parent.  If so we
-				 * need to move that child to this
-				 * accounts parent and then do the move 
-				 */
-				query = xstrdup_printf(
-					"select id from %s where "
-					"lft between %s and %s "
-					"&& acct='%s' && user=''",
-					assoc_table,
-					row[MASSOC_LFT], row[MASSOC_RGT],
-					assoc->parent_acct);
-				if(!(result2 = mysql_db_query_ret(
-					     mysql_conn->acct_mysql_db,
-					     query))) {
-					rc = SLURM_ERROR;
-					break;
-				}
 
-				if((row2 = mysql_fetch_row(result2))) {
-					rc = move_account(mysql_conn,
-							  row[MASSOC_CLUSTER],
-							  row2[0],
-							  row[MASSOC_PACCT]);
-				
-				}
-				mysql_free_result(result2);
-				if(rc == SLURM_ERROR) 
+				if(move_parent(mysql_conn,
+					       atoi(row[MASSOC_LFT]),
+					       atoi(row[MASSOC_RGT]),
+					       row[MASSOC_CLUSTER],
+					       row[MASSOC_ID],
+					       row[MASSOC_PACCT],
+					       assoc->parent_acct)
+				   == SLURM_ERROR)
 					break;
+
+/* 				/\* first we need to see if we are */
+/* 				 * going to make a child of this */
+/* 				 * account the new parent.  If so we */
+/* 				 * need to move that child to this */
+/* 				 * accounts parent and then do the move  */
+/* 				 *\/ */
+/* 				query = xstrdup_printf( */
+/* 					"select id from %s where " */
+/* 					"lft between %s and %s " */
+/* 					"&& acct='%s' && user='';", */
+/* 					assoc_table, */
+/* 					row[MASSOC_LFT], row[MASSOC_RGT], */
+/* 					assoc->parent_acct); */
+/* 				if(!(result2 = mysql_db_query_ret( */
+/* 					     mysql_conn->acct_mysql_db, */
+/* 					     query))) { */
+/* 					rc = SLURM_ERROR; */
+/* 					break; */
+/* 				} */
+
+/* 				if((row2 = mysql_fetch_row(result2))) { */
+/* 					rc = move_account(mysql_conn, */
+/* 							  row[MASSOC_CLUSTER], */
+/* 							  row2[0], */
+/* 							  row[MASSOC_PACCT]); */
 				
-				/* now move the one we wanted to move
-				 * in the first place
-				 */
-				rc = move_account(mysql_conn,
-						  row[MASSOC_CLUSTER],
-						  row[MASSOC_ID],
-						  assoc->parent_acct);
+/* 				} */
+/* 				mysql_free_result(result2); */
+/* 				if(rc == SLURM_ERROR)  */
+/* 					break; */
 				
-				if(rc == SLURM_ERROR) 
-					break;
+/* 				/\* now move the one we wanted to move */
+/* 				 * in the first place */
+/* 				 *\/ */
+/* 				rc = move_account(mysql_conn, */
+/* 						  row[MASSOC_CLUSTER], */
+/* 						  row[MASSOC_ID], */
+/* 						  assoc->parent_acct); */
+				
+/* 				if(rc == SLURM_ERROR)  */
+/* 					break; */
 			}
 		}
 		list_append(ret_list, object);
@@ -2710,12 +2894,13 @@ extern List acct_storage_p_remove_associations(mysql_conn_t *mysql_conn,
 
 	query = xstrdup_printf("select distinct %s "
 			       "from %s as t1, %s as t2 "
-			       "%s && t1.lft between t2.lft and t2.rgt;",
+			       "%s && t1.lft between t2.lft and t2.rgt "
+			       "FOR UPDATE;",
 			       object,
 			       assoc_table, assoc_table, extra);
 	xfree(extra);
 	xfree(object);
-	debug3("query\n%s",query);
+	debug3("%d query\n%s", mysql_conn->conn, query);
 	if(!(result = mysql_db_query_ret(mysql_conn->acct_mysql_db, query))) {
 		xfree(query);
 		return NULL;
@@ -3312,7 +3497,8 @@ empty:
 		xstrfmtcat(tmp, ", %s", assoc_req_inx[i]);
 	}
 
-	query = xstrdup_printf("select %s from %s %s", tmp, assoc_table, extra);
+	query = xstrdup_printf("select %s from %s %s;", 
+			       tmp, assoc_table, extra);
 	xfree(tmp);
 	xfree(extra);
 	//info("query =\n%s", query);
