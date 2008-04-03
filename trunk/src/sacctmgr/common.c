@@ -42,6 +42,16 @@
 
 #define FORMAT_STRING_SIZE 32
 
+static pthread_t lock_warning_thread;
+
+static void *_print_lock_warn(void *no_data)
+{
+	sleep(2);
+	printf(" Waiting for lock from other user.\n");
+
+	return NULL;
+}
+
 static void nonblock(int state)
 {
 	struct termios ttystate;
@@ -191,6 +201,22 @@ extern void destroy_sacctmgr_action(void *object)
 		}
 		xfree(action);
 	}
+}
+
+extern int notice_thread_init()
+{
+	pthread_attr_t attr;
+	
+	slurm_attr_init(&attr);
+	if(pthread_create(&lock_warning_thread, &attr, &_print_lock_warn, NULL))
+		error ("pthread_create error %m");
+	slurm_attr_destroy(&attr);
+	return SLURM_SUCCESS;
+}
+
+extern int notice_thread_fini()
+{
+	return pthread_cancel(lock_warning_thread);
 }
 
 extern int commit_check(char *warning) 
