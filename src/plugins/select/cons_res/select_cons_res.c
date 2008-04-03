@@ -2505,7 +2505,7 @@ static int _job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 			}
 		}
 	}
-	if ((error_code != SLURM_SUCCESS) || (mode == SELECT_MODE_WILL_RUN)) {
+	if ((error_code != SLURM_SUCCESS) || (mode != SELECT_MODE_RUN_NOW)) {
 		xfree(busy_rows);
 		xfree(sh_tasks);
 		xfree(al_tasks);
