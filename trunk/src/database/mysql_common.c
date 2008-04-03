@@ -231,7 +231,7 @@ extern int mysql_db_query(MYSQL *mysql_db, char *query)
 
 extern int mysql_db_commit(MYSQL *mysql_db)
 {
-	slurm_mutex_lock(&mysql_lock);
+	//slurm_mutex_lock(&mysql_lock);
 
 	/* clear out the old results so we don't get a 2014 error */
 	_clear_results(mysql_db);		
@@ -240,17 +240,17 @@ extern int mysql_db_commit(MYSQL *mysql_db)
 		      mysql_errno(mysql_db),
 		      mysql_error(mysql_db));
 		errno = mysql_errno(mysql_db);
-		slurm_mutex_unlock(&mysql_lock);
+		//slurm_mutex_unlock(&mysql_lock);
 		return SLURM_ERROR;
 	}
-	slurm_mutex_unlock(&mysql_lock);
+	//slurm_mutex_unlock(&mysql_lock);
 
 	return SLURM_SUCCESS;
 }
 
 extern int mysql_db_rollback(MYSQL *mysql_db)
 {
-	slurm_mutex_lock(&mysql_lock);
+	//slurm_mutex_lock(&mysql_lock);
 
 	/* clear out the old results so we don't get a 2014 error */
 	_clear_results(mysql_db);		
@@ -259,10 +259,11 @@ extern int mysql_db_rollback(MYSQL *mysql_db)
 		      mysql_errno(mysql_db),
 		      mysql_error(mysql_db));
 		errno = mysql_errno(mysql_db);
-		slurm_mutex_unlock(&mysql_lock);
+		//slurm_mutex_unlock(&mysql_lock);
 		return SLURM_ERROR;
 	}
-	slurm_mutex_unlock(&mysql_lock);
+	//mysql_db_query(mysql_db, "unlock tables;");
+	//slurm_mutex_unlock(&mysql_lock);
 
 	return SLURM_SUCCESS;
 

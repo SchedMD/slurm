@@ -743,9 +743,9 @@ extern void *acct_storage_p_get_connection(bool make_agent, bool rollback)
 	mysql_get_db_connection(&mysql_conn->acct_mysql_db,
 				mysql_db_name, mysql_db_info);
 	mysql_conn->rollback = rollback;
-	if(rollback) 
+	if(rollback) {
 		mysql_autocommit(mysql_conn->acct_mysql_db, 0);
-	
+	}
 	mysql_conn->update_list = list_create(destroy_acct_update_object);
 	return (void *)mysql_conn;
 #else
