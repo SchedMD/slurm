@@ -45,6 +45,8 @@
 #include "src/common/slurm_protocol_defs.h"
 #include "src/slurmd/common/proctrack.h"
 
+#define _DEBUG 0
+
 /*
  * These variables are required by the generic plugin interface.  If they
  * are not found in the plugin, the plugin loader will ignore it.
@@ -133,6 +135,10 @@ _get_offspring_data(List prec_list, prec_t *ancestor, pid_t pid) {
 	itr = list_iterator_create(prec_list);
 	while((prec = list_next(itr))) {
 		if (prec->ppid == pid) {
+#if _DEBUG
+			info("pid:%u ppid:%u rss:%u KB", 
+			     prec->pid, prec->ppid, prec->rss);
+#endif
 			_get_offspring_data(prec_list, ancestor, prec->pid);
 			ancestor->usec += prec->usec;
 			ancestor->ssec += prec->ssec;
@@ -306,6 +312,10 @@ static void _get_process_data() {
 		itr2 = list_iterator_create(prec_list);
 		while((prec = list_next(itr2))) {
 			if (prec->pid == jobacct->pid) {
+#if _DEBUG
+				info("pid:%u ppid:%u rss:%u KB", 
+				     prec->pid, prec->ppid, prec->rss);
+#endif
 				/* find all my descendents */
 				_get_offspring_data(prec_list, 
 						    prec, prec->pid);
