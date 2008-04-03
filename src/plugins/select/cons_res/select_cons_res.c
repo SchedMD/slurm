@@ -367,15 +367,19 @@ static void _chk_resize_node(struct node_cr_record *node)
 	struct part_cr_record *p_ptr;
 
 	if ((select_fast_schedule > 0) ||
-	    (node->sockets >= node->node_ptr->sockets))
+	    (node->cpus >= node->node_ptr->cpus))
 		return;
 
-	verbose("cons_res: increasing node %s sockets from %u to %u",
-		node->node_ptr->name, node->sockets, node->node_ptr->sockets);
-	node->sockets = node->node_ptr->sockets;
+	verbose("cons_res: increasing node %s cpus from %u to %u",
+		node->node_ptr->name, node->cpus, node->node_ptr->cpus);
+	node->cpus        = node->node_ptr->cpus;
+	node->sockets     = node->node_ptr->sockets;
+	node->cores       = node->node_ptr->cores;
+	node->threads     = node->node_ptr->threads;
+	node->real_memory = node->node_ptr->real_memory;
 	for (p_ptr = node->parts; p_ptr; p_ptr = p_ptr->next) {
 		xrealloc(p_ptr->alloc_cores, (sizeof(uint16_t) *
-			 node->node_ptr->sockets * p_ptr->num_rows));
+			 node->sockets * p_ptr->num_rows));
 		/* NOTE: xrealloc zero fills added memory */
 	}
 }
