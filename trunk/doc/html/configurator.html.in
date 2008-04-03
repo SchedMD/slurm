@@ -681,8 +681,8 @@ job accounting<BR>
 AIX process table information gathered, use with AIX systems only<BR>
 <input type="radio" name="job_acct_gather_type" value="linux"> <B>Linux</B>: Specifc
 Linux process table information gathered, use with Linux systems only<BR>
-<input type="text" name="job_acct_gather_frequency" value=""> <B>JobAcctGatherFrequency</B>:
-polling interval in seconds.<BR>
+<input type="text" name="job_acct_gather_frequency" value="30"> <B>JobAcctGatherFrequency</B>:
+polling interval in seconds. Zero disables periodic sampling.<BR>
 <P>
 
 <H2>Job Accounting Storage</H2>
