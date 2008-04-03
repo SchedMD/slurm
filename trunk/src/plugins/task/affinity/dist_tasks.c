@@ -603,7 +603,7 @@ static int _task_layout_lllp_init(launch_tasks_request_msg_t *req,
 				  uint16_t *hw_threads,
 				  uint16_t *avail_cpus)
 {
-	int min_sockets = 1, min_cores = 1;;
+	int min_sockets = 1, min_cores = 1;
 	uint16_t alloc_cores[conf->sockets];
 
 	if (req->cpu_bind_type & CPU_BIND_TO_THREADS) {
@@ -1195,7 +1195,7 @@ int _cleanup_lllp(void)
 		}
 		xfree(lllp_tasks->sockets[i].cores);
 	}
-	xfree(lllp_tasks->sockets);;
+	xfree(lllp_tasks->sockets);
 	xfree(lllp_tasks);
 	return SLURM_SUCCESS;
 }

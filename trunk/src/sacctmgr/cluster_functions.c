@@ -193,7 +193,7 @@ extern int sacctmgr_add_cluster(int argc, char *argv[])
 	itr = list_iterator_create(name_list);
 	while((name = list_next(itr))) {
 		if(sacctmgr_find_cluster(name)) {
-			printf(" This cluster %salready exists.  "
+			printf(" This cluster %s already exists.  "
 			       "Not adding.\n", name);
 			continue;
 		}
@@ -229,6 +229,11 @@ extern int sacctmgr_add_cluster(int argc, char *argv[])
 			       max_wall_duration_per_job);
 	}
 
+	if(!list_count(cluster_list)) {
+		printf(" Nothing new added.\n");
+		goto end_it;
+	}
+
 	rc = acct_storage_g_add_clusters(db_conn, my_uid, cluster_list);
 	if(rc == SLURM_SUCCESS) {
 		if(commit_check("Would you like to commit changes?")) {
@@ -249,11 +254,14 @@ extern int sacctmgr_add_cluster(int argc, char *argv[])
 				assoc->max_cpu_secs_per_job =
 					cluster->default_max_cpu_secs_per_job;
 			}
-		} else
+		} else {
+			printf(" Changes Discarded\n");
 			acct_storage_g_commit(db_conn, 0);
+		}
 	} else {
 		printf(" error: problem adding clusters\n");
 	}
+end_it:
 	list_destroy(cluster_list);
 	
 	return rc;
@@ -391,10 +399,14 @@ extern int sacctmgr_modify_cluster(int argc, char *argv[])
 		list_iterator_destroy(itr);
 		if(commit_check("Would you like to commit changes?")) {
 			acct_storage_g_commit(db_conn, 1);
-		} else
-			acct_storage_g_commit(db_conn, 0);;
+		} else {
+			printf(" Changes Discarded\n");
+			acct_storage_g_commit(db_conn, 0);
+		}
+	} else if(ret_list) {
+		printf(" Nothing modified\n");
 	} else {
- 		printf(" error: problem modifying clusters\n");
+		printf(" Error with request\n");
 		rc = SLURM_ERROR;
 	}
 
@@ -443,11 +455,15 @@ extern int sacctmgr_delete_cluster(int argc, char *argv[])
 		if(commit_check("Would you like to commit changes?")) {
 			acct_storage_g_commit(db_conn, 1);
 			_remove_existing_clusters(ret_list);
-		} else
-			acct_storage_g_commit(db_conn, 0);;
-
-	} else {
+		} else {
+			printf(" Changes Discarded\n");
+			acct_storage_g_commit(db_conn, 0);
+		}
+	} else if(ret_list) {
 		printf(" Nothing deleted\n");
+	} else {
+		printf(" Error with request\n");
+		rc = SLURM_ERROR;
 	}
 
 	if(ret_list)

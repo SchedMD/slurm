@@ -40,8 +40,7 @@
 #include "print.h"
 
 static int _set_cond(int *start, int argc, char *argv[],
-		     acct_user_cond_t *user_cond,
-		     acct_association_cond_t *assoc_cond)
+		     acct_user_cond_t *user_cond)
 {
 	int i;
 	int u_set = 0;
@@ -53,19 +52,24 @@ static int _set_cond(int *start, int argc, char *argv[],
 		if (strncasecmp (argv[i], "Set", 3) == 0) {
 			i--;
 			break;
+		} else if (strncasecmp (argv[i], "WithAssoc", 4) == 0) {
+			user_cond->with_assocs = 1;
 		} else if(!end) {
 			addto_char_list(user_cond->user_list, argv[i]);
-			addto_char_list(assoc_cond->user_list, argv[i]);
+			addto_char_list(user_cond->assoc_cond->user_list,
+					argv[i]);
 			u_set = 1;
 		} else if (strncasecmp (argv[i], "Account", 2) == 0) {
-			addto_char_list(assoc_cond->acct_list, argv[i]+end);
+			addto_char_list(user_cond->assoc_cond->acct_list,
+					argv[i]+end);
 			a_set = 1;
 		} else if (strncasecmp (argv[i], "AdminLevel", 2) == 0) {
 			user_cond->admin_level = 
 				str_2_acct_admin_level(argv[i]+end);
 			u_set = 1;			
 		} else if (strncasecmp (argv[i], "Clusters", 1) == 0) {
-			addto_char_list(assoc_cond->cluster_list, argv[i]+end);
+			addto_char_list(user_cond->assoc_cond->cluster_list,
+					argv[i]+end);
 			a_set = 1;
 		} else if (strncasecmp (argv[i], "DefaultAccount", 1) == 0) {
 			addto_char_list(user_cond->def_acct_list,
@@ -73,15 +77,15 @@ static int _set_cond(int *start, int argc, char *argv[],
 			u_set = 1;
 		} else if (strncasecmp (argv[i], "Names", 1) == 0) {
 			addto_char_list(user_cond->user_list, argv[i]+end);
-			addto_char_list(assoc_cond->user_list, argv[i]);
+			addto_char_list(user_cond->assoc_cond->user_list,
+					argv[i]);
 			u_set = 1;
 		} else if (strncasecmp (argv[i], "Partition", 3) == 0) {
-			addto_char_list(assoc_cond->partition_list, 
+			addto_char_list(user_cond->assoc_cond->partition_list, 
 					argv[i]+end);
 			a_set = 1;
 		} else if (strncasecmp (argv[i], "QosLevel", 1) == 0) {
-			user_cond->qos =
-				str_2_acct_qos(argv[i]+end);
+			user_cond->qos = str_2_acct_qos(argv[i]+end);
 			u_set = 1;
 		} else {
 			printf(" Unknown condition: %s\n"
@@ -504,10 +508,10 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 					else 
 						list_append(assoc_list, assoc);
 					xstrfmtcat(assoc_str,
-						   "  U = %s"
-						   "\tA = %s"
-						   "\tC = %s"
-						   "\tP = %s\n",
+						   "  U = %-9s"
+						   " A = %-10s"
+						   " C = %-10s"
+						   " P = %-10s\n",
 						   assoc->user, assoc->acct,
 						   assoc->cluster,
 						   assoc->partition);
@@ -538,9 +542,9 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 					list_append(assoc_list, assoc);
 				list_append(sacctmgr_association_list, assoc);
 				xstrfmtcat(assoc_str,
-					   "  U = %s"
-					   "\tA = %s"
-					   "\tC = %s\n",
+					   "  U = %-9s"
+					   " A = %-10s"
+					   " C = %-10s\n",
 					   assoc->user, assoc->acct,
 					   assoc->cluster);		
 			}
@@ -555,6 +559,9 @@ no_default:
 
 	if(!list_count(user_list) && !list_count(assoc_list)) {
 		printf(" Nothing new added.\n");
+		goto end_it;
+	} else if(!assoc_str) {
+		printf(" Error: no associations created.\n");
 		goto end_it;
 	}
 
@@ -620,8 +627,10 @@ no_default:
 			while((assoc = list_pop(assoc_list))) {
 				list_append(sacctmgr_association_list, assoc);
 			}			
-		} else
+		} else {
+			printf(" Changes Discarded\n");
 			acct_storage_g_commit(db_conn, 0);
+		}
 	} else {
 		printf(" error: Problem adding user associations");
 		rc = SLURM_ERROR;
@@ -639,47 +648,119 @@ extern int sacctmgr_list_user(int argc, char *argv[])
 {
 	int rc = SLURM_SUCCESS;
 	acct_user_cond_t *user_cond = xmalloc(sizeof(acct_user_cond_t));
-	acct_association_cond_t *assoc_cond =
-		xmalloc(sizeof(acct_association_cond_t));
 	List user_list;
 	int i=0;
 	ListIterator itr = NULL;
 	acct_user_rec_t *user = NULL;
+	print_field_t name_field;
+	print_field_t dacct_field;
+	print_field_t qos_field;
+	print_field_t admin_field;
+
+	print_field_t cluster_field;
+	print_field_t acct_field;
+	print_field_t part_field;
+
+	List print_fields_list; /* types are of print_field_t */
+	int over= 0;
 
 	user_cond->user_list = list_create(slurm_destroy_char);
 	user_cond->def_acct_list = list_create(slurm_destroy_char);
 
-	assoc_cond->user_list = list_create(slurm_destroy_char);
-	assoc_cond->acct_list = list_create(slurm_destroy_char);
-	assoc_cond->cluster_list = list_create(slurm_destroy_char);
-	assoc_cond->partition_list = list_create(slurm_destroy_char);
+	user_cond->assoc_cond = xmalloc(sizeof(acct_association_cond_t));
+	user_cond->assoc_cond->user_list = list_create(slurm_destroy_char);
+	user_cond->assoc_cond->acct_list = list_create(slurm_destroy_char);
+	user_cond->assoc_cond->cluster_list = list_create(slurm_destroy_char);
+	user_cond->assoc_cond->partition_list = list_create(slurm_destroy_char);
 	
-	_set_cond(&i, argc, argv, user_cond, assoc_cond);
+	_set_cond(&i, argc, argv, user_cond);
 
 	user_list = acct_storage_g_get_users(db_conn, user_cond);
 	destroy_acct_user_cond(user_cond);
-	destroy_acct_association_cond(assoc_cond);
 
 	if(!user_list) 
 		return SLURM_ERROR;
 
+	print_fields_list = list_create(NULL);
+
+	name_field.name = "Name";
+	name_field.len = 9;
+	name_field.print_routine = print_str;
+	list_append(print_fields_list, &name_field);
+
+	dacct_field.name = "Def Acct";
+	dacct_field.len = 10;
+	dacct_field.print_routine = print_str;
+	list_append(print_fields_list, &dacct_field);
+
+	qos_field.name = "QOS";
+	qos_field.len = 9;
+	qos_field.print_routine = print_str;
+	list_append(print_fields_list, &qos_field);
+
+	admin_field.name = "Admin";
+	admin_field.len = 9;
+	admin_field.print_routine = print_str;
+	list_append(print_fields_list, &admin_field);
+
+	if(user_cond->with_assocs) {
+		cluster_field.name = "Cluster";
+		cluster_field.len = 10;
+		cluster_field.print_routine = print_str;
+		list_append(print_fields_list, &cluster_field);
+
+		acct_field.name = "Account";
+		acct_field.len = 10;
+		acct_field.print_routine = print_str;
+		list_append(print_fields_list, &acct_field);
+
+		part_field.name = "Partition";
+		part_field.len = 10;
+		part_field.print_routine = print_str;
+		list_append(print_fields_list, &part_field);
+	}
+
 	itr = list_iterator_create(user_list);
-	printf("%-15s %-15s %-10s\n%-15s %-15s %-10s\n",
-	       "Name", "Default Account", "Qos",
-	       "---------------",
-	       "---------------",
-	       "----------");
-	
+	print_header(print_fields_list);
+
 	while((user = list_next(itr))) {
-		printf("%-15.15s %-15.15s %-10.10s\n",
-		       user->name, user->default_acct,
-		       acct_qos_str(user->qos));
+		over = 0;
+		print_str(VALUE, &name_field, user->name);
+		over += name_field.len + 1;
+		print_str(VALUE, &dacct_field, user->default_acct);
+		over += dacct_field.len + 1;
+		print_str(VALUE, &qos_field, acct_qos_str(user->qos));
+		over += qos_field.len + 1;
+		print_str(VALUE, &admin_field,
+			  acct_admin_level_str(user->admin_level));
+		over += admin_field.len + 1;
+
+		if(user->assoc_list) {
+			acct_association_rec_t *assoc = NULL;
+			ListIterator itr2 =
+				list_iterator_create(user->assoc_list);
+			int first = 1;
+
+			while((assoc = list_next(itr2))) {
+				if(!first)
+					printf("\n%-*.*s", over, over, " ");
+				
+				print_str(VALUE, &cluster_field,
+					  assoc->cluster);
+				print_str(VALUE, &acct_field, assoc->acct);
+				print_str(VALUE, &part_field, assoc->partition);
+				first = 0;
+			}
+			list_iterator_destroy(itr2);
+		}
+		printf("\n");
 	}
 
 	printf("\n");
 
 	list_iterator_destroy(itr);
 	list_destroy(user_list);
+	list_destroy(print_fields_list);
 	return rc;
 }
 
@@ -688,25 +769,24 @@ extern int sacctmgr_modify_user(int argc, char *argv[])
 	int rc = SLURM_SUCCESS;
 	acct_user_cond_t *user_cond = xmalloc(sizeof(acct_user_cond_t));
 	acct_user_rec_t *user = xmalloc(sizeof(acct_user_rec_t));
-	acct_association_cond_t *assoc_cond =
-		xmalloc(sizeof(acct_association_cond_t));
 	acct_association_rec_t *assoc = xmalloc(sizeof(acct_association_rec_t));
 	int i=0;
-	int cond_set = 0, rec_set = 0;
+	int cond_set = 0, rec_set = 0, set = 0;
 	List ret_list = NULL;
 
 	user_cond->user_list = list_create(slurm_destroy_char);
 	user_cond->def_acct_list = list_create(slurm_destroy_char);
 	
-	assoc_cond->user_list = list_create(slurm_destroy_char);
-	assoc_cond->acct_list = list_create(slurm_destroy_char);
-	assoc_cond->cluster_list = list_create(slurm_destroy_char);
-	assoc_cond->partition_list = list_create(slurm_destroy_char);
-	assoc_cond->fairshare = -2; 
-	assoc_cond->max_cpu_secs_per_job = -2;
-	assoc_cond->max_jobs = -2; 
-	assoc_cond->max_nodes_per_job = -2;
-	assoc_cond->max_wall_duration_per_job = -2;
+	user_cond->assoc_cond = xmalloc(sizeof(acct_association_cond_t));
+	user_cond->assoc_cond->user_list = list_create(slurm_destroy_char);
+	user_cond->assoc_cond->acct_list = list_create(slurm_destroy_char);
+	user_cond->assoc_cond->cluster_list = list_create(slurm_destroy_char);
+	user_cond->assoc_cond->partition_list = list_create(slurm_destroy_char);
+	user_cond->assoc_cond->fairshare = -2; 
+	user_cond->assoc_cond->max_cpu_secs_per_job = -2;
+	user_cond->assoc_cond->max_jobs = -2; 
+	user_cond->assoc_cond->max_nodes_per_job = -2;
+	user_cond->assoc_cond->max_wall_duration_per_job = -2;
 	
 	assoc->fairshare = -2; 
 	assoc->max_cpu_secs_per_job = -2;
@@ -717,15 +797,13 @@ extern int sacctmgr_modify_user(int argc, char *argv[])
 	for (i=0; i<argc; i++) {
 		if (strncasecmp (argv[i], "Where", 5) == 0) {
 			i++;
-			cond_set = _set_cond(&i, argc, argv,
-					     user_cond, assoc_cond);
+			cond_set = _set_cond(&i, argc, argv, user_cond);
 			      
 		} else if (strncasecmp (argv[i], "Set", 3) == 0) {
 			i++;
 			rec_set = _set_rec(&i, argc, argv, user, assoc);
 		} else {
-			cond_set = _set_cond(&i, argc, argv,
-					     user_cond, assoc_cond);
+			cond_set = _set_cond(&i, argc, argv, user_cond);
 		}
 	}
 
@@ -733,7 +811,6 @@ extern int sacctmgr_modify_user(int argc, char *argv[])
 		printf(" You didn't give me anything to set\n");
 		destroy_acct_user_cond(user_cond);
 		destroy_acct_user_rec(user);
-		destroy_acct_association_cond(assoc_cond);
 		destroy_acct_association_rec(assoc);
 		return SLURM_ERROR;
 	} else if(!cond_set) {
@@ -742,7 +819,6 @@ extern int sacctmgr_modify_user(int argc, char *argv[])
 			printf("Aborted\n");
 			destroy_acct_user_cond(user_cond);
 			destroy_acct_user_rec(user);
-			destroy_acct_association_cond(assoc_cond);
 			destroy_acct_association_rec(assoc);
 			return SLURM_SUCCESS;
 		}		
@@ -764,15 +840,22 @@ extern int sacctmgr_modify_user(int argc, char *argv[])
 			}
 			list_iterator_destroy(itr);
 			list_destroy(ret_list);
+			set = 1;
+		} else if(ret_list) {
+			printf(" Nothing modified\n");
 		} else {
+			printf(" Error with request\n");
 			rc = SLURM_ERROR;
 		}
+
+		if(ret_list)
+			list_destroy(ret_list);
 	}
 
 assoc_start:
 	if(rec_set == 3 || rec_set == 2) { // process the association changes
 		ret_list = acct_storage_g_modify_associations(
-			db_conn, my_uid, assoc_cond, assoc);
+			db_conn, my_uid, user_cond->assoc_cond, assoc);
 
 		if(ret_list && list_count(ret_list)) {
 			char *object = NULL;
@@ -782,21 +865,29 @@ assoc_start:
 				printf("  %s\n", object);
 			}
 			list_iterator_destroy(itr);
-			list_destroy(ret_list);
+			set = 1;
+		} else if(ret_list) {
+			printf(" Nothing modified\n");
 		} else {
+			printf(" Error with request\n");
 			rc = SLURM_ERROR;
+		}
+
+		if(ret_list)
+			list_destroy(ret_list);
+	}
+
+	if(set) {
+		if(commit_check("Would you like to commit changes?")) 
+			acct_storage_g_commit(db_conn, 1);
+		else {
+			printf(" Changes Discarded\n");
+			acct_storage_g_commit(db_conn, 0);
 		}
 	}
 
-	if(rc == SLURM_SUCCESS) {
-		if(commit_check("Would you like to commit changes?")) 
-			acct_storage_g_commit(db_conn, 1);
-		else
-			acct_storage_g_commit(db_conn, 0);
-	}
 	destroy_acct_user_cond(user_cond);
 	destroy_acct_user_rec(user);	
-	destroy_acct_association_cond(assoc_cond);
 	destroy_acct_association_rec(assoc);
 
 	return rc;
@@ -806,8 +897,6 @@ extern int sacctmgr_delete_user(int argc, char *argv[])
 {
 	int rc = SLURM_SUCCESS;
 	acct_user_cond_t *user_cond = xmalloc(sizeof(acct_user_cond_t));
-	acct_association_cond_t *assoc_cond =
-		xmalloc(sizeof(acct_association_cond_t));
 	int i=0;
 	List ret_list = NULL;
 	int set = 0;
@@ -815,15 +904,15 @@ extern int sacctmgr_delete_user(int argc, char *argv[])
 	user_cond->user_list = list_create(slurm_destroy_char);
 	user_cond->def_acct_list = list_create(slurm_destroy_char);
 	
-	assoc_cond->user_list = list_create(slurm_destroy_char);
-	assoc_cond->acct_list = list_create(slurm_destroy_char);
-	assoc_cond->cluster_list = list_create(slurm_destroy_char);
-	assoc_cond->partition_list = list_create(slurm_destroy_char);
+	user_cond->assoc_cond = xmalloc(sizeof(acct_association_cond_t));
+	user_cond->assoc_cond->user_list = list_create(slurm_destroy_char);
+	user_cond->assoc_cond->acct_list = list_create(slurm_destroy_char);
+	user_cond->assoc_cond->cluster_list = list_create(slurm_destroy_char);
+	user_cond->assoc_cond->partition_list = list_create(slurm_destroy_char);
 
-	if(!(set = _set_cond(&i, argc, argv, user_cond, assoc_cond))) {
+	if(!(set = _set_cond(&i, argc, argv, user_cond))) {
 		printf(" No conditions given to remove, not executing.\n");
 		destroy_acct_user_cond(user_cond);
-		destroy_acct_association_cond(assoc_cond);
 		return SLURM_ERROR;
 	}
 
@@ -832,11 +921,10 @@ extern int sacctmgr_delete_user(int argc, char *argv[])
 			db_conn, my_uid, user_cond);		
 	} else if(set == 2) {
 		ret_list = acct_storage_g_remove_associations(
-			db_conn, my_uid, assoc_cond);
+			db_conn, my_uid, user_cond->assoc_cond);
 	}
 
 	destroy_acct_user_cond(user_cond);
-	destroy_acct_association_cond(assoc_cond);
 
 	if(ret_list && list_count(ret_list)) {
 		char *object = NULL;
@@ -853,11 +941,17 @@ extern int sacctmgr_delete_user(int argc, char *argv[])
 		if(commit_check("Would you like to commit changes?")) {
 			acct_storage_g_commit(db_conn, 1);
 			_remove_existing_users(ret_list);
-		} else
-			acct_storage_g_commit(db_conn, 0);;
-	} else {
+		} else {
+			printf(" Changes Discarded\n");
+			acct_storage_g_commit(db_conn, 0);
+		}
+	} else if(ret_list) {
 		printf(" Nothing deleted\n");
-	}
+	} else {
+		printf(" Error with request\n");
+		rc = SLURM_ERROR;
+	} 
+	
 
 	if(ret_list)
 		list_destroy(ret_list);

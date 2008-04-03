@@ -147,7 +147,10 @@ typedef struct {
 
 typedef struct dbd_get_jobs_msg {
 	char *cluster_name;	/* name of cluster to query */
+	uint16_t completion;	/* get job completion records instead
+				 * of accounting record */
 	uint32_t gid;		/* group id */
+	time_t last_update;	/* time of latest info */
 	List selected_steps;	/* List of jobacct_selected_step_t *'s */
 	List selected_parts;	/* List of char *'s */
 	char *user;		/* user name */

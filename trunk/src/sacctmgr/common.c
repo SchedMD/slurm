@@ -37,7 +37,33 @@
 \*****************************************************************************/
 
 #include "sacctmgr.h"
+#include <unistd.h>
+#include <termios.h>
+
 #define FORMAT_STRING_SIZE 32
+
+static void nonblock(int state)
+{
+	struct termios ttystate;
+
+	//get the terminal state
+	tcgetattr(STDIN_FILENO, &ttystate);
+
+	switch(state) {
+	case 1:
+		//turn off canonical mode
+		ttystate.c_lflag &= ~ICANON;
+		//minimum of number input read.
+		ttystate.c_cc[VMIN] = 1;
+		break;
+	default:
+		//turn on canonical mode
+		ttystate.c_lflag |= ICANON;
+	}
+	//set the terminal attributes.
+	tcsetattr(STDIN_FILENO, TCSANOW, &ttystate);
+
+}
 
 extern int parse_option_end(char *option)
 {
@@ -170,22 +196,36 @@ extern void destroy_sacctmgr_action(void *object)
 extern int commit_check(char *warning) 
 {
 	int ans = 0;
+	char c = '\0';
+	int fd = fileno(stdin);
+	fd_set rfds;
+	struct timeval tv;
 
-	printf("%s\n", warning);
-	while(ans != 'Y' && ans != 'y'
-	      && ans != 'N' && ans != 'n'
-	      && ans != '\n') {
-		if(ans) {
-			getchar();  //grab the \n
+	printf("%s (You have 30 seconds to decide)\n", warning);
+	nonblock(1);
+	while(c != 'Y' && c != 'y'
+	      && c != 'N' && c != 'n'
+	      && c != '\n') {
+		if(c) {
 			printf("Y or N please\n");
 		}
 		printf("(N/y): ");
-		ans = getchar();
+		fflush(stdout);
+		FD_ZERO(&rfds);
+		FD_SET(fd, &rfds);
+		/* Wait up to 30 seconds. */
+		tv.tv_sec = 30;
+		tv.tv_usec = 0;
+		if((ans = select(fd+1, &rfds, NULL, NULL, &tv)) <= 0)
+			break;
+		
+		c = getchar();
+		printf("\n");
 	}
-	if(ans != '\n')
-		getchar(); //grab the \n
-	
-	if(ans == 'Y' || ans == 'y') 
+	nonblock(0);
+	if(ans <= 0) 
+		printf("timeout\n");
+	else if(c == 'Y' || c == 'y') 
 		return 1;			
 	
 	return 0;
@@ -200,18 +240,25 @@ extern int sacctmgr_init()
 
 	sacctmgr_action_list = list_create(destroy_sacctmgr_action);
 
-	if(!sacctmgr_user_list)
-		sacctmgr_user_list = acct_storage_g_get_users(db_conn, 
-							      NULL);
+	if(!sacctmgr_user_list) 
+		if(!(sacctmgr_user_list = acct_storage_g_get_users(db_conn, 
+								   NULL)))
+			fatal("no user list returned");
+
 	if(!sacctmgr_account_list)
-		sacctmgr_account_list = acct_storage_g_get_accounts(db_conn, 
-								    NULL);
+		if(!(sacctmgr_account_list = acct_storage_g_get_accounts(
+			     db_conn, NULL)))
+			fatal("no accoun list returned");
+			
 	if(!sacctmgr_cluster_list)
-		sacctmgr_cluster_list = acct_storage_g_get_clusters(db_conn, 
-								    NULL);
+		if(!(sacctmgr_cluster_list = acct_storage_g_get_clusters(
+			     db_conn, NULL)))
+			fatal("no cluster list returned");
+
 	if(!sacctmgr_association_list)
-		sacctmgr_association_list = acct_storage_g_get_associations(
-			db_conn, NULL);
+		if(!(sacctmgr_association_list =
+		     acct_storage_g_get_associations(db_conn, NULL)))
+			fatal("no association list returned");
 
 	inited = 1;
 

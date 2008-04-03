@@ -656,7 +656,7 @@ static int _change_state_bps(char *com, int state)
 	if ((com[i+3] == 'x')
 	    || (com[i+3] == '-')) {
 		start[X] =  xstrntol(com + i, NULL,
-				    BA_SYSTEM_DIMENSIONS, HOSTLIST_BASE);;
+				    BA_SYSTEM_DIMENSIONS, HOSTLIST_BASE);
 		i += 4;
 		end[X] =  xstrntol(com + i, NULL, 
 				   BA_SYSTEM_DIMENSIONS, HOSTLIST_BASE);

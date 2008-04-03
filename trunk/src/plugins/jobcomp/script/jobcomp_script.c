@@ -179,7 +179,7 @@ static struct jobcomp_info * _jobcomp_info_create (struct job_record *job)
 	j->limit = job->time_limit;
 	j->start = job->start_time;
 	j->end = job->end_time;
-	j->submit = job->details ? job->details->submit_time:job->start_time;;
+	j->submit = job->details ? job->details->submit_time:job->start_time;
 	j->batch_flag = job->batch_flag;
 	j->nodes = xstrdup (job->nodes);
 	j->nprocs = job->num_procs;
