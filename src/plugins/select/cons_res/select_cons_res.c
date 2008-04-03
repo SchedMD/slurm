@@ -149,11 +149,10 @@ select_type_plugin_info_t cr_type = CR_CPU; /* cr_type is overwritten in init() 
 
 /* Array of node_cr_record. One entry for each node in the cluster */
 struct node_cr_record *select_node_ptr = NULL;
+uint16_t select_fast_schedule;
 static int select_node_cnt = 0;
 static time_t last_cr_update_time;
 static pthread_mutex_t cr_mutex = PTHREAD_MUTEX_INITIALIZER;
-
-static uint16_t select_fast_schedule;
 
 List select_cr_job_list = NULL; /* List of select_cr_job(s) that are still active */
 static uint32_t last_verified_job_id = 0;
@@ -183,7 +182,7 @@ static void _dump_state(struct node_cr_record *select_node_ptr)
 	for (i=0; i<select_node_cnt; i++) {
 		info("node:%s sockets:%u alloc_memory:%u state:%d",
 			select_node_ptr[i].node_ptr->name,
-			select_node_ptr[i].num_sockets,
+			select_node_ptr[i].sockets,
 			select_node_ptr[i].alloc_memory,
 			select_node_ptr[i].node_state);
 		parts = select_node_ptr[i].parts;
@@ -191,7 +190,7 @@ static void _dump_state(struct node_cr_record *select_node_ptr)
 			info("  part:%s rows:%u",
 				parts->part_ptr->name,
 				parts->num_rows);
-			cores = select_node_ptr[i].num_sockets * 
+			cores = select_node_ptr[i].sockets * 
 				parts->num_rows;
 			for (j=0; j<cores; j++) {
 				info("    alloc_cores[%d]:%u",
@@ -238,7 +237,11 @@ static struct node_cr_record *_dup_node_cr(struct node_cr_record *node_cr_ptr)
 
 	for (i=0; i<select_node_cnt; i++) {
 		new_node_cr_ptr[i].node_ptr     = select_node_ptr[i].node_ptr;
-		new_node_cr_ptr[i].num_sockets  = select_node_ptr[i].num_sockets;
+		new_node_cr_ptr[i].cpus         = select_node_ptr[i].cpus;
+		new_node_cr_ptr[i].sockets      = select_node_ptr[i].sockets;
+		new_node_cr_ptr[i].cores        = select_node_ptr[i].cores;
+		new_node_cr_ptr[i].threads      = select_node_ptr[i].threads;
+		new_node_cr_ptr[i].real_memory  = select_node_ptr[i].real_memory;
 		new_node_cr_ptr[i].alloc_memory = select_node_ptr[i].alloc_memory;
 		new_node_cr_ptr[i].node_state   = select_node_ptr[i].node_state;
 
@@ -248,7 +251,7 @@ static struct node_cr_record *_dup_node_cr(struct node_cr_record *node_cr_ptr)
 			new_part_cr_ptr->part_ptr   = part_cr_ptr->part_ptr;
 			new_part_cr_ptr->num_rows   = part_cr_ptr->num_rows;
 			j = sizeof(uint16_t) * part_cr_ptr->num_rows * 
-			    select_node_ptr[i].num_sockets;
+			    select_node_ptr[i].sockets;
 			new_part_cr_ptr->alloc_cores = xmalloc(j);
 			memcpy(new_part_cr_ptr->alloc_cores, 
 			       part_cr_ptr->alloc_cores, j);
@@ -313,7 +316,7 @@ static void _create_node_part_array(struct node_cr_record *this_cr_node)
 		     p_ptr->part_ptr->name, p_ptr->num_rows);
 #endif
 		p_ptr->alloc_cores = xmalloc(sizeof(uint16_t) *
-		        		     this_cr_node->num_sockets *
+		        		     this_cr_node->sockets *
 					     p_ptr->num_rows);
 		if (i+1 < node_ptr->part_cnt)
 			p_ptr->next = &(this_cr_node->parts[i+1]);
@@ -354,24 +357,26 @@ extern struct part_cr_record *get_cr_part_ptr(struct node_cr_record *this_node,
 	return NULL;
 }
 
-static void _chk_resize_node(struct node_cr_record *node, uint16_t sockets)
+/* This just resizes alloc_cores based on a potential change to
+ * the number of sockets on this node (if fast_schedule = 0 and the
+ * node checks in with a different node count after initialization).
+ * Any changes to the number of partition rows will be caught
+ * and adjusted in select_p_reconfigure() */
+static void _chk_resize_node(struct node_cr_record *node)
 {
 	struct part_cr_record *p_ptr;
 
-	/* This just resizes alloc_cores based on a potential change to
-	 * the number of sockets on this node (if fast_schedule = 0?).
-	 * Any changes to the number of partition rows will be caught
-	 * and adjusted in select_p_reconfigure() */
+	if ((select_fast_schedule > 0) ||
+	    (node->sockets >= node->node_ptr->sockets))
+		return;
 
-	if (sockets > node->num_sockets) {
-		debug3("cons_res: increasing node %s num_sockets %u to %u",
-			node->node_ptr->name, node->num_sockets, sockets);
-		for (p_ptr = node->parts; p_ptr; p_ptr = p_ptr->next) {
-			xrealloc(p_ptr->alloc_cores,
-				 sockets * p_ptr->num_rows * sizeof(uint16_t));
-			/* NOTE: xrealloc zero fills added memory */
-		}
-		node->num_sockets = sockets;
+	verbose("cons_res: increasing node %s sockets from %u to %u",
+		node->node_ptr->name, node->sockets, node->node_ptr->sockets);
+	node->sockets = node->node_ptr->sockets;
+	for (p_ptr = node->parts; p_ptr; p_ptr = p_ptr->next) {
+		xrealloc(p_ptr->alloc_cores, (sizeof(uint16_t) *
+			 node->node_ptr->sockets * p_ptr->num_rows));
+		/* NOTE: xrealloc zero fills added memory */
 	}
 }
 
@@ -395,17 +400,12 @@ extern void get_resources_this_node(uint16_t *cpus, uint16_t *sockets,
 				    struct node_cr_record *this_cr_node,
 				    uint32_t jobid)
 {
-	if (select_fast_schedule) {
-		*cpus    = this_cr_node->node_ptr->config_ptr->cpus;
-		*sockets = this_cr_node->node_ptr->config_ptr->sockets;
-		*cores   = this_cr_node->node_ptr->config_ptr->cores;
-		*threads = this_cr_node->node_ptr->config_ptr->threads;
-	} else {
-		*cpus    = this_cr_node->node_ptr->cpus;
-		*sockets = this_cr_node->node_ptr->sockets;
-		*cores   = this_cr_node->node_ptr->cores;
-		*threads = this_cr_node->node_ptr->threads;
-	}
+	_chk_resize_node(this_cr_node);
+
+	*cpus    = this_cr_node->cpus;
+	*sockets = this_cr_node->sockets;
+	*cores   = this_cr_node->cores;
+	*threads = this_cr_node->threads;
 
 	debug3("cons_res %u _get_resources host %s HW_ "
 	       "cpus %u sockets %u cores %u threads %u ", 
@@ -506,7 +506,6 @@ static uint16_t _get_task_count(struct node_cr_record *select_node_ptr,
 	get_resources_this_node(&cpus, &sockets, &cores, &threads, 
 				this_node, job_ptr->job_id);
 
-	_chk_resize_node(this_node, sockets);
 	alloc_cores = xmalloc(sockets * sizeof(uint16_t));
 	/* array is zero filled by xmalloc() */
 
@@ -739,7 +738,7 @@ static uint16_t _count_idle_cpus(struct node_cr_record *this_node)
 		for (p_ptr = this_node->parts; p_ptr; p_ptr = p_ptr->next) {
 			if (p_ptr->num_rows > 1)
 				continue;
-			for (i = 0; i < this_node->num_sockets; i++) {
+			for (i = 0; i < this_node->sockets; i++) {
 				if ((cr_type == CR_SOCKET) ||
 				    (cr_type == CR_SOCKET_MEMORY)) {
 				 	if (p_ptr->alloc_cores[i])
@@ -760,8 +759,7 @@ static uint16_t _count_idle_cpus(struct node_cr_record *this_node)
 		for (p_ptr = this_node->parts; p_ptr; p_ptr = p_ptr->next) {
 			for (i = 0, index = 0; i < p_ptr->num_rows; i++) {
 				tmpcpus = idlecpus;
-				for (j = 0;
-				     j < this_node->num_sockets;
+				for (j = 0; j < this_node->sockets;
 				     j++, index++) {
 				 	if ((cr_type == CR_SOCKET) ||
 				 	    (cr_type == CR_SOCKET_MEMORY)) {
@@ -870,7 +868,6 @@ static int _add_job_to_nodes(struct select_cr_job *job, char *pre_err,
 
 		this_node->node_state = job->node_req;
 		
-		_chk_resize_node(this_node, this_node->node_ptr->sockets);
 		p_ptr = get_cr_part_ptr(this_node, job->job_ptr->part_ptr);
 		if (p_ptr == NULL) {
 			error("%s: could not find part %s", pre_err,
@@ -894,7 +891,7 @@ static int _add_job_to_nodes(struct select_cr_job *job, char *pre_err,
 		 * (if requested). 
 		 */
 		offset = job->node_offset[i];
-		if (offset > (this_node->num_sockets * (p_ptr->num_rows - 1))) {
+		if (offset > (this_node->sockets * (p_ptr->num_rows - 1))) {
 			rc = SLURM_ERROR;
 			continue;
 		}
@@ -904,12 +901,12 @@ static int _add_job_to_nodes(struct select_cr_job *job, char *pre_err,
 		case CR_SOCKET:
 		case CR_CORE_MEMORY:
 		case CR_CORE:
-			_chk_resize_job(job, i, this_node->num_sockets);
-			for (j = 0; j < this_node->num_sockets; j++) {
+			_chk_resize_job(job, i, this_node->sockets);
+			for (j = 0; j < this_node->sockets; j++) {
 				p_ptr->alloc_cores[offset+j] +=
 							job->alloc_cores[i][j];
 				if (p_ptr->alloc_cores[offset+j] >
-						this_node->node_ptr->cores)
+						this_node->cores)
 					error("%s: Job %u Host %s offset %u "
 					      "too many allocated "
 					      "cores %u for socket %d",
@@ -935,7 +932,7 @@ static int _add_job_to_nodes(struct select_cr_job *job, char *pre_err,
 		debug3("cons_res: %s: Job %u (+) alloc_ cpus %u offset %u mem %u",
 			pre_err, job->job_id, job->alloc_cpus[i],
 			job->node_offset[i], job->alloc_memory[i]);
-		for (j = 0; j < this_node->num_sockets; j++)
+		for (j = 0; j < this_node->sockets; j++)
 			debug3("cons_res: %s: Job %u (+) node %s alloc_cores[%d] %u",
 				pre_err, job->job_id, 
 				node_record_table_ptr[host_index].name, 
@@ -1001,7 +998,6 @@ static int _rm_job_from_nodes(struct node_cr_record *select_node_ptr,
 		if (!cpuset)
 			continue;
 		
-		_chk_resize_node(this_node, this_node->node_ptr->sockets);
 		p_ptr = get_cr_part_ptr(this_node, job->job_ptr->part_ptr);
 		if (p_ptr == NULL) {
 			error("%s: could not find part %s", pre_err,
@@ -1013,7 +1009,7 @@ static int _rm_job_from_nodes(struct node_cr_record *select_node_ptr,
 		 * "allocated" on these cores (see add_job_to_nodes).
 		 * Therefore just continue. */
 		offset = job->node_offset[i];
-		if (offset > (this_node->num_sockets * (p_ptr->num_rows - 1))) {
+		if (offset > (this_node->sockets * (p_ptr->num_rows - 1))) {
 			rc = SLURM_ERROR;
 			continue;
 		}
@@ -1023,8 +1019,8 @@ static int _rm_job_from_nodes(struct node_cr_record *select_node_ptr,
 		case CR_SOCKET:
 		case CR_CORE_MEMORY:
 		case CR_CORE:
-			_chk_resize_job(job, i, this_node->num_sockets);
-			for (j = 0; j < this_node->num_sockets; j++) {
+			_chk_resize_job(job, i, this_node->sockets);
+			for (j = 0; j < this_node->sockets; j++) {
 				if (p_ptr->alloc_cores[offset+j] >= 
 						job->alloc_cores[i][j])
 					p_ptr->alloc_cores[offset+j] -= 
@@ -1066,7 +1062,7 @@ static int _rm_job_from_nodes(struct node_cr_record *select_node_ptr,
 				/* just need to check single row partitions */
 				if (pptr->num_rows > 1)
 					continue;
-				k = pptr->num_rows * this_node->num_sockets;
+				k = pptr->num_rows * this_node->sockets;
 				for (j = 0; j < k; j++) {
 					count += p_ptr->alloc_cores[j];
 				}
@@ -1080,7 +1076,7 @@ static int _rm_job_from_nodes(struct node_cr_record *select_node_ptr,
 		debug3("%s: Job %u (-) node %s alloc_mem %u offset %d",
 			pre_err, job->job_id, this_node->node_ptr->name,
 			this_node->alloc_memory, offset);
-		for (j = 0; j < this_node->num_sockets; j++)
+		for (j = 0; j < this_node->sockets; j++)
 			debug3("cons_res: %s: Job %u (-) node %s alloc_cores[%d] %u",
 				pre_err, job->job_id, 
 				node_record_table_ptr[host_index].name, 
@@ -1568,17 +1564,30 @@ extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)
 	select_node_cnt = node_cnt;
 	select_node_ptr = xmalloc(sizeof(struct node_cr_record) *
 							select_node_cnt);
+	select_fast_schedule = slurm_get_fast_schedule();
 
 	for (i = 0; i < select_node_cnt; i++) {
 		select_node_ptr[i].node_ptr = &node_ptr[i];
-		select_node_ptr[i].num_sockets = node_ptr[i].sockets;
+		if (select_fast_schedule) {
+			struct config_record *config_ptr;
+			config_ptr = node_ptr[i].config_ptr;
+			select_node_ptr[i].cpus        = config_ptr->cpus;
+			select_node_ptr[i].sockets     = config_ptr->sockets;
+			select_node_ptr[i].cores       = config_ptr->cores;
+			select_node_ptr[i].threads     = config_ptr->threads;
+			select_node_ptr[i].real_memory = config_ptr->real_memory;
+		} else {
+			select_node_ptr[i].cpus        = node_ptr[i].cpus;
+			select_node_ptr[i].sockets     = node_ptr[i].sockets;
+			select_node_ptr[i].cores       = node_ptr[i].cores;
+			select_node_ptr[i].threads     = node_ptr[i].threads;
+			select_node_ptr[i].real_memory = node_ptr[i].real_memory;
+		}
 		select_node_ptr[i].node_state = NODE_CR_AVAILABLE;
 		/* xmalloc initialized everything to zero, 
 		 * including alloc_memory and parts */
 		_create_node_part_array(&(select_node_ptr[i]));
 	}
-
-	select_fast_schedule = slurm_get_fast_schedule();
 
 	return SLURM_SUCCESS;
 }
@@ -1925,7 +1934,7 @@ static int _is_node_sharing(struct node_cr_record *this_node)
 	for (; p_ptr; p_ptr = p_ptr->next) {
 		if (p_ptr->num_rows < 2)
 			continue;
-		size = p_ptr->num_rows * this_node->num_sockets;
+		size = p_ptr->num_rows * this_node->sockets;
 		for (i = 0; i < size; i++) {
 			if (p_ptr->alloc_cores[i])
 				return 1;
@@ -1941,7 +1950,7 @@ static int _is_node_busy(struct node_cr_record *this_node)
 	int i, size;
 	struct part_cr_record *p_ptr = this_node->parts;
 	for (; p_ptr; p_ptr = p_ptr->next) {
-		size = p_ptr->num_rows * this_node->num_sockets;
+		size = p_ptr->num_rows * this_node->sockets;
 		for (i = 0; i < size; i++) {
 			if (p_ptr->alloc_cores[i])
 				return 1;
@@ -1981,13 +1990,7 @@ static int _verify_node_state(struct node_cr_record *select_node_ptr,
 		if ((job_ptr->details->job_min_memory) &&
 		    ((cr_type == CR_CORE_MEMORY) || (cr_type == CR_CPU_MEMORY) || 
 		     (cr_type == CR_MEMORY) || (cr_type == CR_SOCKET_MEMORY))) {
-			if (select_fast_schedule) {
-				free_mem = select_node_ptr[i].node_ptr->
-					config_ptr->real_memory;
-			} else {
-				free_mem = select_node_ptr[i].node_ptr->
-					real_memory;
-			}
+			free_mem = select_node_ptr[i].real_memory;
 			free_mem -= select_node_ptr[i].alloc_memory;
 			if (free_mem < job_ptr->details->job_min_memory)
 				goto clear_bit;
@@ -2063,8 +2066,8 @@ static int _get_allocated_rows(struct node_cr_record *select_node_ptr,
 		return rows;
 
 	for (i = 0; i < p_ptr->num_rows; i++) {
-		int offset = i * select_node_ptr[n].num_sockets;
-		for (j = 0; j < select_node_ptr[n].num_sockets; j++){
+		int offset = i * select_node_ptr[n].sockets;
+		for (j = 0; j < select_node_ptr[n].sockets; j++){
 			if (p_ptr->alloc_cores[offset+j]) {
 				rows++;
 				break;
@@ -2486,13 +2489,7 @@ static int _job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 			for (i = 0; i < select_node_cnt; i++) {
 				if (!bit_test(bitmap, i))
 					continue;
-				if (select_fast_schedule) {
-					procs = select_node_ptr[i].node_ptr->
-						config_ptr->cpus;
-				} else {
-					procs = select_node_ptr[i].node_ptr->
-						cpus;
-				}
+				procs = select_node_ptr[i].cpus;
 				job_ptr->total_procs += procs;
 			}
 		} else {
@@ -2540,7 +2537,7 @@ static int _job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 		for (i = 0; i < select_node_cnt; i++) {
 			if (!bit_test(job->node_bitmap, i))
 				continue;
-			job->num_sockets[j] = select_node_ptr[i].num_sockets;
+			job->num_sockets[j] = select_node_ptr[i].sockets;
 			job->alloc_cores[j] = (uint16_t *) xmalloc(
 				job->num_sockets[j] * sizeof(uint16_t));
 			j++;
@@ -2769,8 +2766,9 @@ extern int select_p_get_extra_jobinfo(struct node_record *node_ptr,
 				      enum select_data_info cr_info,
 				      void *data)
 {
-	int rc = SLURM_SUCCESS, i, node_offset, node_inx;
+	int rc = SLURM_SUCCESS, i, index, node_offset, node_inx;
 	struct select_cr_job *job;
+	struct node_cr_record *this_cr_node;
 	uint16_t *tmp_16 = (uint16_t *) data;
 
 	xassert(job_ptr);
@@ -2800,7 +2798,9 @@ extern int select_p_get_extra_jobinfo(struct node_record *node_ptr,
 			 * on the output from _cr_dist */
 			switch(cr_type) {
 			case CR_MEMORY:
-				*tmp_16 = node_ptr->cpus;
+				index = node_ptr - node_record_table_ptr;
+				this_cr_node = select_node_ptr + index;
+				*tmp_16 = this_cr_node->cpus;
 				break;
 			case CR_SOCKET:
 			case CR_SOCKET_MEMORY:
@@ -2852,9 +2852,9 @@ extern int select_p_get_select_nodeinfo(struct node_record *node_ptr,
 			i = 0;
 			for (j = 0; j < p_ptr->num_rows; j++) {
 				uint16_t tmp = 0;
-				for (; i < this_cr_node->num_sockets; i++)
+				for (; i < this_cr_node->sockets; i++)
 					tmp += p_ptr->alloc_cores[i] *
-							node_ptr->threads;
+					       this_cr_node->threads;
 				if (tmp > *tmp_16)
 					*tmp_16 = tmp;
 			}
@@ -3055,13 +3055,7 @@ extern int select_p_step_begin(struct step_record *step_ptr)
 		this_node = &select_node_ptr[host_index];
 		step_mem = step_layout->tasks[step_node_inx] * 
 			   step_ptr->mem_per_task;
-		if (select_fast_schedule) {
-			avail_mem = select_node_ptr[host_index].node_ptr->
-				    config_ptr->real_memory;
-		} else {
-			avail_mem = select_node_ptr[host_index].node_ptr->
-				    real_memory;
-		}
+		avail_mem = select_node_ptr[host_index].real_memory;
 		if ((this_node->alloc_memory + step_mem) > avail_mem)
 			return SLURM_ERROR;	/* no room */
 	}

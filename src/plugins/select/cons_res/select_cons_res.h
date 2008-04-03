@@ -93,7 +93,11 @@ enum node_cr_state {
  */
 struct node_cr_record {
 	struct node_record *node_ptr;	/* ptr to the actual node */
-	uint16_t num_sockets;		/* number of sockets in this node */
+	uint16_t cpus;			/* count of processors configured */
+	uint16_t sockets;		/* count of sockets configured */
+	uint16_t cores;			/* count of cores configured */
+	uint16_t threads;		/* count of threads configured */
+	uint32_t real_memory;		/* MB of real memory configured */
 	enum node_cr_state node_state;	/* see node_cr_state comments */
 	struct part_cr_record *parts;	/* ptr to singly-linked part_cr_record
 					 * list that contains alloc_core info */
@@ -101,7 +105,7 @@ struct node_cr_record {
 					 * scheduled jobs */
 };
 extern struct node_cr_record *select_node_ptr;
-
+extern uint16_t select_fast_schedule;
 
 /*** NOTE: If any changes are made here, the following data structure has
  ***       persistent state which is maintained by select_cons_res.c:
