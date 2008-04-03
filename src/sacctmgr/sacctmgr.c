@@ -566,7 +566,7 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
                               including hidden/deleted ones.               \n\
      add <ENTITY> <SPECS>     add entity                                   \n\
      associations             when using show/list will list the           \n\
-                              associations asspciated with the entity.     \n\
+                              associations associated with the entity.     \n\
      delete <ENTITY> <SPECS>  delete the specified entity(s)               \n\
      exit                     terminate sacctmgr                           \n\
      help                     print this description of use.               \n\
@@ -595,7 +595,7 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
        delete cluster     - Names=                                         \n\
                                                                            \n\
        list account       - Clusters=, Descriptions=, Names=,              \n\
-                            Organizations=, Parents=, and ShowAssocs       \n\
+                            Organizations=, Parents=, and WithAssocs       \n\
        add account        - Clusters=, Description=, Fairshare=,           \n\
                             MaxCPUSecs=, MaxJobs=, MaxNodes=, MaxWall=,    \n\
                             Names=, Organization=, Parent=, and QosLevel   \n\
@@ -608,7 +608,7 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
                             Organizations=, and Parents=                   \n\
                                                                            \n\
        list user          - AdminLevel=, DefaultAccounts=, Names=,         \n\
-                            QosLevel=, and ShowAssocs                      \n\
+                            QosLevel=, and WithAssocs                      \n\
        add user           - Accounts=, AdminLevel=, Clusters=,             \n\
                             DefaultAccount=, Fairshare=, MaxCPUSecs=,      \n\
                             MaxJobs=, MaxNodes=, MaxWall=, Names=,         \n\

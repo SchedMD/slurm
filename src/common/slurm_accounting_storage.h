@@ -80,28 +80,6 @@ typedef enum {
 
 typedef struct {
 	List acct_list; /* list of char * */
-	List description_list; /* list of char * */
-	acct_qos_level_t qos;	
-	List organization_list; /* list of char * */
-	uint16_t with_assocs; 
-} acct_account_cond_t;
-
-typedef struct {
-	List assoc_list; /* list of acct_association_rec_t *'s */
-	List coordinators; /* list of char *'s */
-	char *description;
-	acct_qos_level_t qos;
-	char *name;
-	char *organization;
-} acct_account_rec_t;
-
-typedef struct {
-	uint32_t alloc_secs; /* number of cpu seconds allocated */
-	time_t period_start; 
-} acct_accounting_rec_t;
-
-typedef struct {
-	List acct_list; /* list of char * */
 	List cluster_list; /* list of char * */
 	uint32_t fairshare;	/* fairshare number */
 	List id_list; /* list of char */
@@ -118,6 +96,29 @@ typedef struct {
 
 	List user_list; /* list of char * */
 } acct_association_cond_t;
+
+typedef struct {
+	List acct_list; /* list of char * */
+	acct_association_cond_t *assoc_cond;
+	List description_list; /* list of char * */
+	List organization_list; /* list of char * */
+	acct_qos_level_t qos;	
+	uint16_t with_assocs; 
+} acct_account_cond_t;
+
+typedef struct {
+	List assoc_list; /* list of acct_association_rec_t *'s */
+	List coordinators; /* list of char *'s */
+	char *description;
+	char *name;
+	char *organization;
+	acct_qos_level_t qos;
+} acct_account_rec_t;
+
+typedef struct {
+	uint32_t alloc_secs; /* number of cpu seconds allocated */
+	time_t period_start; 
+} acct_accounting_rec_t;
 
 typedef struct {
 	List accounting_list; 	/* list of acct_accounting_rec_t *'s */
@@ -169,6 +170,7 @@ typedef struct {
 
 typedef struct {
 	acct_admin_level_t admin_level;
+	acct_association_cond_t *assoc_cond;
 	List def_acct_list; /* list of char * */
 	acct_qos_level_t qos;	
 	List user_list; /* list of char * */
@@ -180,8 +182,8 @@ typedef struct {
 	List assoc_list; /* list of acct_association_rec_t *'s */
 	List coord_accts; /* list of acct_coord_rec_t *'s */
 	char *default_acct;
-	acct_qos_level_t qos;
 	char *name;
+	acct_qos_level_t qos;
 	uint32_t uid;
 } acct_user_rec_t;
 

@@ -936,7 +936,7 @@ void slurm_free_ctl_conf(slurm_ctl_conf_info_msg_t * config_ptr)
 		xfree(config_ptr->slurm_conf);
 		xfree(config_ptr->slurm_user_name);
 		xfree(config_ptr->slurmctld_pidfile);
-		xfree(config_ptr->slurmctld_logfile);;
+		xfree(config_ptr->slurmctld_logfile);
 		xfree(config_ptr->slurmd_logfile);
 		xfree(config_ptr->slurmd_pidfile);
 		xfree(config_ptr->slurmd_spooldir);

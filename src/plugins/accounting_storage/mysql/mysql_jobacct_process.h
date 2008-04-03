@@ -60,8 +60,6 @@ typedef void mysql_conn_t;
 typedef struct {
 	MYSQL *acct_mysql_db;
 	bool rollback;
-	char *query;
-	bool trans_started;
 	List update_list;
 } mysql_conn_t;
 

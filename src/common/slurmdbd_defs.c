@@ -303,7 +303,7 @@ static void _open_slurmdbd_fd()
 	slurmdbd_port = slurm_get_accounting_storage_port();
 	if ((slurmdbd_host == NULL) || (slurmdbd_port == 0)) {
 		error("Invalid SlurmDbd address %s:%u",
-			slurmdbd_host, slurmdbd_port);
+		      slurmdbd_host, slurmdbd_port);
 		xfree(slurmdbd_host);
 		return;
 	}
@@ -349,7 +349,7 @@ extern Buf pack_slurmdbd_msg(slurmdbd_msg_t *req)
 	case DBD_ADD_ACCOUNT_COORDS:
 	case DBD_REMOVE_ACCOUNT_COORDS:
 		slurmdbd_pack_acct_coord_msg((dbd_acct_coord_msg_t *)req->data,
-					      buffer);
+					     buffer);
 		break;
 	case DBD_CLUSTER_PROCS:
 		slurmdbd_pack_cluster_procs_msg(
@@ -380,18 +380,18 @@ extern Buf pack_slurmdbd_msg(slurmdbd_msg_t *req)
 		break;
 	case DBD_INIT:
 		slurmdbd_pack_init_msg((dbd_init_msg_t *)req->data, buffer, 
-					slurmdbd_auth_info);
+				       slurmdbd_auth_info);
 		break;
 	case DBD_FINI:
 		slurmdbd_pack_fini_msg((dbd_fini_msg_t *)req->data, buffer);
 		break;		
 	case DBD_JOB_COMPLETE:
 		slurmdbd_pack_job_complete_msg((dbd_job_comp_msg_t *)req->data,
-						buffer);
+					       buffer);
 		break;
 	case DBD_JOB_START:
 		slurmdbd_pack_job_start_msg((dbd_job_start_msg_t *)req->data, 
-					     buffer);
+					    buffer);
 		break;
 	case DBD_JOB_START_RC:
 		slurmdbd_pack_job_start_rc_msg(
@@ -421,7 +421,7 @@ extern Buf pack_slurmdbd_msg(slurmdbd_msg_t *req)
 		break;
 	case DBD_STEP_START:
 		slurmdbd_pack_step_start_msg((dbd_step_start_msg_t *)req->data,
-					      buffer);
+					     buffer);
 		break;
 	case DBD_REGISTER_CTLD:
 		slurmdbd_pack_register_ctld_msg((dbd_register_ctld_msg_t *)
@@ -493,8 +493,8 @@ extern int unpack_slurmdbd_msg(slurmdbd_msg_t *resp, Buf buffer)
 		break;
 	case DBD_INIT:
 		rc = slurmdbd_unpack_init_msg((dbd_init_msg_t **)&resp->data,
-					       buffer, 
-					       slurmdbd_auth_info);
+					      buffer, 
+					      slurmdbd_auth_info);
 		break;
 	case DBD_FINI:
 		rc = slurmdbd_unpack_fini_msg((dbd_fini_msg_t **)&resp->data,
@@ -530,7 +530,7 @@ extern int unpack_slurmdbd_msg(slurmdbd_msg_t *resp, Buf buffer)
 		break;
 	case DBD_RC:
 		rc = slurmdbd_unpack_rc_msg((dbd_rc_msg_t **)&resp->data,
-					     buffer);
+					    buffer);
 		break;
 	case DBD_STEP_COMPLETE:
 		rc = slurmdbd_unpack_step_complete_msg(
@@ -627,7 +627,7 @@ static int _send_msg(Buf buffer)
 
 	rc =_fd_writeable(slurmdbd_fd);
 	if (rc == -1) {
-re_open:	/* SlurmDBD shutdown, try to reopen a connection now */
+	re_open:	/* SlurmDBD shutdown, try to reopen a connection now */
 		if (retry_cnt++ > 3)
 			return EAGAIN;
 		_reopen_slurmdbd_fd();
@@ -697,7 +697,7 @@ static int _get_return_code(void)
 		error("slurmdbd: bad message type %d != DBD_RC", msg_type);
 	}
 
- unpack_error:
+unpack_error:
 	free_buf(buffer);
 	return rc;
 }
@@ -803,7 +803,7 @@ static bool _fd_readable(slurm_fd fd)
 		}
 		if ((ufds.revents & POLLIN) == 0) {
 			error("SlurmDBD connection %d events %d", 
-				fd, ufds.revents);
+			      fd, ufds.revents);
 			return false;
 		}
 		/* revents == POLLIN */
@@ -852,7 +852,7 @@ static int _fd_writeable(slurm_fd fd)
 		}
 		if ((ufds.revents & POLLOUT) == 0) {
 			error("SlurmDBD connection %d events %d", 
-				fd, ufds.revents);
+			      fd, ufds.revents);
 			return 0;
 		}
 		/* revents == POLLOUT */
@@ -1218,7 +1218,7 @@ void inline slurmdbd_free_cluster_procs_msg(dbd_cluster_procs_msg_t *msg)
 }
 
 void inline slurmdbd_free_cond_msg(slurmdbd_msg_type_t type,
-				    dbd_cond_msg_t *msg)
+				   dbd_cond_msg_t *msg)
 {
 	void (*my_destroy) (void *object);
 
@@ -1312,7 +1312,7 @@ void inline slurmdbd_free_list_msg(dbd_list_msg_t *msg)
 }
 
 void inline slurmdbd_free_modify_msg(slurmdbd_msg_type_t type,
-				      dbd_modify_msg_t *msg)
+				     dbd_modify_msg_t *msg)
 {
 	void (*destroy_cond) (void *object);
 	void (*destroy_rec) (void *object);
@@ -1475,7 +1475,7 @@ unpack_error:
 }
 
 void inline slurmdbd_pack_cond_msg(slurmdbd_msg_type_t type,
-				    dbd_cond_msg_t *msg, Buf buffer)
+				   dbd_cond_msg_t *msg, Buf buffer)
 {
 	void (*my_function) (void *object, Buf buffer);
 
@@ -1500,11 +1500,12 @@ void inline slurmdbd_pack_cond_msg(slurmdbd_msg_type_t type,
 		fatal("Unknown pack type");
 		return;
 	}
+
 	(*(my_function))(msg->cond, buffer);
 }
 
 int inline slurmdbd_unpack_cond_msg(slurmdbd_msg_type_t type,
-				     dbd_cond_msg_t **msg, Buf buffer)
+				    dbd_cond_msg_t **msg, Buf buffer)
 {
 	dbd_cond_msg_t *msg_ptr = NULL;
 	int (*my_function) (void **object, Buf buffer);
@@ -1554,7 +1555,11 @@ void inline slurmdbd_pack_get_jobs_msg(dbd_get_jobs_msg_t *msg, Buf buffer)
 
 	packstr(msg->cluster_name, buffer);
 
+	pack16(msg->completion, buffer);
+
 	pack32(msg->gid, buffer);
+
+	pack_time(msg->last_update, buffer);
 
 	if(msg->selected_steps) 
 		i = list_count(msg->selected_steps);
@@ -1597,20 +1602,28 @@ int inline slurmdbd_unpack_get_jobs_msg(dbd_get_jobs_msg_t **msg, Buf buffer)
 
 	safe_unpackstr_xmalloc(&msg_ptr->cluster_name, &uint32_tmp, buffer);
 
+	safe_unpack16(&msg_ptr->completion, buffer);
+
 	safe_unpack32(&msg_ptr->gid, buffer);
 
-	safe_unpack32(&count, buffer);
-	msg_ptr->selected_steps = list_create(destroy_jobacct_selected_step);
-	for(i=0; i<count; i++) {
-		unpack_jobacct_selected_step(&job, buffer);
-		list_append(msg_ptr->selected_steps, job);
-	}
+	safe_unpack_time(&msg_ptr->last_update, buffer);
 
 	safe_unpack32(&count, buffer);
-	msg_ptr->selected_parts = list_create(slurm_destroy_char);
-	for(i=0; i<count; i++) {
-		safe_unpackstr_xmalloc(&part, &uint32_tmp, buffer);
-		list_append(msg_ptr->selected_parts, part);
+	if(count) {
+		msg_ptr->selected_steps =
+			list_create(destroy_jobacct_selected_step);
+		for(i=0; i<count; i++) {
+			unpack_jobacct_selected_step(&job, buffer);
+			list_append(msg_ptr->selected_steps, job);
+		}
+	}
+	safe_unpack32(&count, buffer);
+	if(count) {
+		msg_ptr->selected_parts = list_create(slurm_destroy_char);
+		for(i=0; i<count; i++) {
+			safe_unpackstr_xmalloc(&part, &uint32_tmp, buffer);
+			list_append(msg_ptr->selected_parts, part);
+		}
 	}
 
 	safe_unpackstr_xmalloc(&msg_ptr->user, &uint32_tmp, buffer);
@@ -1634,7 +1647,7 @@ slurmdbd_pack_init_msg(dbd_init_msg_t *msg, Buf buffer, char *auth_info)
 	auth_cred = g_slurm_auth_create(NULL, 2, auth_info);
 	if (auth_cred == NULL) {
 		error("Creating authentication credential: %s",
-			 g_slurm_auth_errstr(g_slurm_auth_errno(NULL)));
+		      g_slurm_auth_errstr(g_slurm_auth_errno(NULL)));
 	} else {
 		rc = g_slurm_auth_pack(auth_cred, buffer);
 		(void) g_slurm_auth_destroy(auth_cred);
@@ -1658,7 +1671,7 @@ slurmdbd_unpack_init_msg(dbd_init_msg_t **msg, Buf buffer, char *auth_info)
 	auth_cred = g_slurm_auth_unpack(buffer);
 	if (auth_cred == NULL) {
 		error("Unpacking authentication credential: %s",
-			g_slurm_auth_errstr(g_slurm_auth_errno(NULL)));
+		      g_slurm_auth_errstr(g_slurm_auth_errno(NULL)));
 		goto unpack_error;
 	}
 	msg_ptr->uid = g_slurm_auth_get_uid(auth_cred, auth_info);
@@ -1833,7 +1846,7 @@ unpack_error:
 }
 
 void inline slurmdbd_pack_list_msg(slurmdbd_msg_type_t type,
-				    dbd_list_msg_t *msg, Buf buffer)
+				   dbd_list_msg_t *msg, Buf buffer)
 {
 	uint32_t count = 0;
 	ListIterator itr = NULL;
@@ -1867,10 +1880,13 @@ void inline slurmdbd_pack_list_msg(slurmdbd_msg_type_t type,
 		fatal("Unknown pack type");
 		return;
 	}
-	if(msg->my_list) 
+	if(msg->my_list) {
 		count = list_count(msg->my_list);
-			
-	pack32(count, buffer);
+		pack32(count, buffer); 
+	} else {
+		// to let user know there wasn't a list (error)
+		pack32((uint32_t)-1, buffer); 
+	}
 	if(count) {
 		itr = list_iterator_create(msg->my_list);
 		while((object = list_next(itr))) {
@@ -1881,7 +1897,7 @@ void inline slurmdbd_pack_list_msg(slurmdbd_msg_type_t type,
 }
 
 int inline slurmdbd_unpack_list_msg(slurmdbd_msg_type_t type,
-				     dbd_list_msg_t **msg, Buf buffer)
+				    dbd_list_msg_t **msg, Buf buffer)
 {
 	int i;
 	uint32_t count;
@@ -1927,11 +1943,17 @@ int inline slurmdbd_unpack_list_msg(slurmdbd_msg_type_t type,
 	msg_ptr = xmalloc(sizeof(dbd_list_msg_t));
 	*msg = msg_ptr;
 	safe_unpack32(&count, buffer);
-	msg_ptr->my_list = list_create((*(my_destroy)));
-	for(i=0; i<count; i++) {
-		if(((*(my_function))(&object, buffer)) == SLURM_ERROR)
-			goto unpack_error;
-		list_append(msg_ptr->my_list, object);
+	if((int)count > -1) {
+		/* here we are looking to make the list if -1 or
+		   higher than 0.  If -1 we don't want to have the
+		   list be NULL meaning an error occured.
+		*/
+		msg_ptr->my_list = list_create((*(my_destroy)));
+		for(i=0; i<count; i++) {
+			if(((*(my_function))(&object, buffer)) == SLURM_ERROR)
+				goto unpack_error;
+			list_append(msg_ptr->my_list, object);
+		}
 	}
 	return SLURM_SUCCESS;
 
@@ -1942,7 +1964,7 @@ unpack_error:
 }
 
 void inline slurmdbd_pack_modify_msg(slurmdbd_msg_type_t type,
-				      dbd_modify_msg_t *msg, Buf buffer)
+				     dbd_modify_msg_t *msg, Buf buffer)
 {
 	void (*my_cond) (void *object, Buf buffer);
 	void (*my_rec) (void *object, Buf buffer);
@@ -1973,7 +1995,7 @@ void inline slurmdbd_pack_modify_msg(slurmdbd_msg_type_t type,
 }
 
 int inline slurmdbd_unpack_modify_msg(slurmdbd_msg_type_t type,
-				       dbd_modify_msg_t **msg, Buf buffer)
+				      dbd_modify_msg_t **msg, Buf buffer)
 {
 	dbd_modify_msg_t *msg_ptr = NULL;
 	int (*my_cond) (void **object, Buf buffer);
@@ -2087,7 +2109,7 @@ slurmdbd_unpack_register_ctld_msg(dbd_register_ctld_msg_t **msg, Buf buffer)
 {
 	uint32_t uint32_tmp;
 	dbd_register_ctld_msg_t *msg_ptr = xmalloc(
-					sizeof(dbd_register_ctld_msg_t));
+		sizeof(dbd_register_ctld_msg_t));
 	*msg = msg_ptr;
 	safe_unpackstr_xmalloc(&msg_ptr->cluster_name, &uint32_tmp, buffer);
 	safe_unpack16(&msg_ptr->port, buffer);
@@ -2196,7 +2218,7 @@ unpack_error:
 }
 
 void inline slurmdbd_pack_usage_msg(slurmdbd_msg_type_t type,
-				     dbd_usage_msg_t *msg, Buf buffer)
+				    dbd_usage_msg_t *msg, Buf buffer)
 {
 	void (*my_rec) (void *object, Buf buffer);
 
@@ -2213,13 +2235,14 @@ void inline slurmdbd_pack_usage_msg(slurmdbd_msg_type_t type,
 		fatal("Unknown pack type");
 		return;
 	}
+	
 	(*(my_rec))(msg->rec, buffer);
 	pack_time(msg->start, buffer);
 	pack_time(msg->end, buffer);
 }
 
 int inline slurmdbd_unpack_usage_msg(slurmdbd_msg_type_t type,
-				      dbd_usage_msg_t **msg, Buf buffer)
+				     dbd_usage_msg_t **msg, Buf buffer)
 {
 	dbd_usage_msg_t *msg_ptr = NULL;
 	int (*my_rec) (void **object, Buf buffer);
@@ -2240,6 +2263,7 @@ int inline slurmdbd_unpack_usage_msg(slurmdbd_msg_type_t type,
 		fatal("Unknown pack type");
 		return SLURM_ERROR;
 	}
+
 	if((*(my_rec))(&msg_ptr->rec, buffer) == SLURM_ERROR)
 		goto unpack_error;
 

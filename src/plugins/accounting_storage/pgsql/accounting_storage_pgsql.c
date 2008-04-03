@@ -633,9 +633,10 @@ extern int init ( void )
 			}
 			i++;
 		}
-		if(location[i]) 
+		if(location[i]) {
 			pgsql_db_name = xstrdup(DEFAULT_ACCT_DB);
-		else
+			xfree(location);
+		} else
 			pgsql_db_name = location;
 	}
 

@@ -240,11 +240,9 @@ extern int mysql_db_commit(MYSQL *mysql_db)
 		      mysql_errno(mysql_db),
 		      mysql_error(mysql_db));
 		errno = mysql_errno(mysql_db);
-		mysql_autocommit(mysql_db, 1);
 		slurm_mutex_unlock(&mysql_lock);
 		return SLURM_ERROR;
 	}
-	mysql_autocommit(mysql_db, 1);
 	slurm_mutex_unlock(&mysql_lock);
 
 	return SLURM_SUCCESS;
@@ -261,11 +259,9 @@ extern int mysql_db_rollback(MYSQL *mysql_db)
 		      mysql_errno(mysql_db),
 		      mysql_error(mysql_db));
 		errno = mysql_errno(mysql_db);
-		mysql_autocommit(mysql_db, 1);
 		slurm_mutex_unlock(&mysql_lock);
 		return SLURM_ERROR;
 	}
-	mysql_autocommit(mysql_db, 1);
 	slurm_mutex_unlock(&mysql_lock);
 
 	return SLURM_SUCCESS;

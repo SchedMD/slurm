@@ -79,6 +79,8 @@ extern void print_date(void)
 
 extern void print_str(type_t type, print_field_t *field, char *value)
 {
+	char *print_this = value;
+
 	switch(type) {
 	case HEADLINE:
 		printf("%-*.*s ", field->len, field->len, field->name);
@@ -88,7 +90,10 @@ extern void print_str(type_t type, print_field_t *field, char *value)
 		       "---------------------------------------");
 		break;
 	case VALUE:
-		printf("%-*s ", field->len, value);
+		if(!print_this)
+			print_this = " ";
+		
+		printf("%-*s ", field->len, print_this);
 		break;
 	default:
 		printf("%-*s ", field->len, "n/a");
