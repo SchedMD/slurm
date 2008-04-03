@@ -501,7 +501,8 @@ extern int sacctmgr_add_account(int argc, char *argv[])
 			printf("  MaxWall         = %u\n",
 			       max_wall_duration_per_job);
 	}
-
+	
+	notice_thread_init();
 	if(list_count(acct_list)) 
 		rc = acct_storage_g_add_accounts(db_conn, my_uid, acct_list);
 	
@@ -513,8 +514,10 @@ extern int sacctmgr_add_account(int argc, char *argv[])
 	} else {
 		printf(" error: Problem adding accounts\n");
 		rc = SLURM_ERROR;
+		notice_thread_fini();
 		goto end_it;
 	}
+	notice_thread_fini();
 	
 	if(rc == SLURM_SUCCESS) {
 		if(commit_check("Would you like to commit changes?")) {
@@ -733,6 +736,7 @@ extern int sacctmgr_modify_account(int argc, char *argv[])
 		}		
 	}
 
+	notice_thread_init();
 	if(rec_set == 3 || rec_set == 1) { // process the account changes
 		if(cond_set == 2) {
 			rc = SLURM_ERROR;
@@ -785,6 +789,7 @@ assoc_start:
 			list_destroy(ret_list);
 	}
 
+	notice_thread_fini();
 	if(set) {
 		if(commit_check("Would you like to commit changes?")) 
 			acct_storage_g_commit(db_conn, 1);
@@ -825,6 +830,7 @@ extern int sacctmgr_delete_account(int argc, char *argv[])
 		return SLURM_ERROR;
 	}
 
+	notice_thread_init();
 	if(set == 1) {
 		ret_list = acct_storage_g_remove_accounts(
 			db_conn, my_uid, acct_cond);		
@@ -832,6 +838,7 @@ extern int sacctmgr_delete_account(int argc, char *argv[])
 		ret_list = acct_storage_g_remove_associations(
 			db_conn, my_uid, acct_cond->assoc_cond);
 	}
+	notice_thread_fini();
 	destroy_acct_account_cond(acct_cond);
 	
 	if(ret_list && list_count(ret_list)) {

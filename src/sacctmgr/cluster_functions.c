@@ -234,7 +234,9 @@ extern int sacctmgr_add_cluster(int argc, char *argv[])
 		goto end_it;
 	}
 
+	notice_thread_init();
 	rc = acct_storage_g_add_clusters(db_conn, my_uid, cluster_list);
+	notice_thread_fini();
 	if(rc == SLURM_SUCCESS) {
 		if(commit_check("Would you like to commit changes?")) {
 			acct_storage_g_commit(db_conn, 1);
@@ -387,8 +389,10 @@ extern int sacctmgr_modify_cluster(int argc, char *argv[])
 
 	cluster_list = list_create(destroy_acct_cluster_rec);
 	list_append(cluster_list, cluster);
+	notice_thread_init();
 	ret_list = acct_storage_g_modify_clusters(
 		db_conn, my_uid, cluster_cond, cluster);
+	notice_thread_fini();
 	if(ret_list && list_count(ret_list)) {
 		char *object = NULL;
 		ListIterator itr = list_iterator_create(ret_list);
@@ -439,8 +443,10 @@ extern int sacctmgr_delete_cluster(int argc, char *argv[])
 		destroy_acct_cluster_cond(cluster_cond);
 		return SLURM_SUCCESS;
 	}
+	notice_thread_init();
 	ret_list = acct_storage_g_remove_clusters(
 		db_conn, my_uid, cluster_cond);
+	notice_thread_fini();
 
 	destroy_acct_cluster_cond(cluster_cond);
 

@@ -250,7 +250,7 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 	ListIterator itr_p = NULL;
 	acct_user_rec_t *user = NULL;
 	acct_association_rec_t *assoc = NULL;
-	acct_association_rec_t *temp_assoc = NULL;
+	acct_association_rec_t *acct_assoc = NULL;
 	char *default_acct = NULL;
 	acct_association_cond_t *assoc_cond = NULL;
 	acct_qos_level_t qos = ACCT_QOS_NOTSET;
@@ -264,11 +264,6 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 	uint32_t max_nodes_per_job = -2;
 	uint32_t max_wall_duration_per_job = -2;
 	uint32_t max_cpu_secs_per_job = -2;
-	uint32_t use_fairshare = -2; 
-	uint32_t use_max_jobs = -2; 
-	uint32_t use_max_nodes_per_job = -2;
-	uint32_t use_max_wall_duration_per_job = -2;
-	uint32_t use_max_cpu_secs_per_job = -2;
 	char *user_str = NULL;
 	char *assoc_str = NULL;
 	int limit_set = 0;
@@ -404,21 +399,9 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 			}
 			itr_c = list_iterator_create(assoc_cond->cluster_list);
 			while((cluster = list_next(itr_c))) {
-				acct_association_rec_t *root_assoc = 
-					sacctmgr_find_root_assoc(cluster);
-				if(!root_assoc) {
-					printf(" error: This cluster '%s' "
-					       "doesn't have a root account\n"
-					       "        Something bad has "
-					       "happend.  "
-					       "Contact your admin.\n",
-					       cluster);
-					continue;
-				}
-				
-				temp_assoc = sacctmgr_find_account_base_assoc(
+				acct_assoc = sacctmgr_find_account_base_assoc(
 					account, cluster);
-				if(!temp_assoc) {
+				if(!acct_assoc) {
 					if(acct_first)
 						printf(" error: This "
 						       "account '%s' "
@@ -427,58 +410,16 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 						       "        Contact your "
 						       "admin "
 						       "to add this account.\n",
-						       account, cluster);
-					
+						       account, cluster);	
 					continue;
 				}/*  else  */
 /* 					printf("got %u %s %s %s %s\n", */
-/* 					       temp_assoc->id, */
-/* 					       temp_assoc->user, */
-/* 					       temp_assoc->account, */
-/* 					       temp_assoc->cluster, */
-/* 					       temp_assoc->parent_account); */
-				use_fairshare = -2; 
-				use_max_jobs = -2; 
-				use_max_nodes_per_job = -2;
-				use_max_wall_duration_per_job = -2;
-				use_max_cpu_secs_per_job = -2;
-
-				if(fairshare != -2)
-					use_fairshare = fairshare;
-				else if((int)root_assoc->fairshare != -1)
-					use_fairshare = root_assoc->fairshare;
+/* 					       acct_assoc->id, */
+/* 					       acct_assoc->user, */
+/* 					       acct_assoc->account, */
+/* 					       acct_assoc->cluster, */
+/* 					       acct_assoc->parent_account); */
 				
-				if(max_jobs != -2)
-					use_max_jobs = max_jobs;
-				else if((int)root_assoc->max_jobs != -1)
-					use_max_jobs =root_assoc->max_jobs;
-				
-				if(max_nodes_per_job != -2)
-					use_max_nodes_per_job =
-						max_nodes_per_job;
-				else if((int)root_assoc->max_nodes_per_job
-					!= -1)
-					use_max_nodes_per_job =
-						root_assoc->max_nodes_per_job;
-				
-				if(max_wall_duration_per_job != -2)
-					use_max_wall_duration_per_job =
-						max_wall_duration_per_job;
-				else if((int)root_assoc->
-					max_wall_duration_per_job != -1)
-					use_max_wall_duration_per_job =
-						root_assoc->
-						max_wall_duration_per_job;
-
-				if(max_cpu_secs_per_job != -2)
-					use_max_cpu_secs_per_job =
-						max_cpu_secs_per_job;
-				else if((int)root_assoc->
-					max_cpu_secs_per_job != -1)
-					use_max_cpu_secs_per_job =
-						root_assoc->
-						max_cpu_secs_per_job;
-
 				itr_p = list_iterator_create(
 					assoc_cond->partition_list);
 				while((partition = list_next(itr_p))) {
@@ -493,15 +434,14 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 					assoc->acct = xstrdup(account);
 					assoc->cluster = xstrdup(cluster);
 					assoc->partition = xstrdup(partition);
-					//assoc->parent_acct = xstrdup(account);
-					assoc->fairshare = use_fairshare;
-					assoc->max_jobs = use_max_jobs;
+					assoc->fairshare = fairshare;
+					assoc->max_jobs = max_jobs;
 					assoc->max_nodes_per_job =
-						use_max_nodes_per_job;
+						max_nodes_per_job;
 					assoc->max_wall_duration_per_job =
-						use_max_wall_duration_per_job;
+						max_wall_duration_per_job;
 					assoc->max_cpu_secs_per_job =
-						use_max_cpu_secs_per_job;
+						max_cpu_secs_per_job;
 					if(user) 
 						list_append(user->assoc_list,
 							    assoc);
@@ -520,22 +460,21 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 				if(partition_set) 
 					continue;
 
-				if(sacctmgr_find_association(name, account,
-							     cluster, NULL))
+				if(sacctmgr_find_association(
+					   name, account, cluster, NULL))
 						continue;
 					
 				assoc = xmalloc(sizeof(acct_association_rec_t));
 				assoc->user = xstrdup(name);
 				assoc->acct = xstrdup(account);
 				assoc->cluster = xstrdup(cluster);
-				assoc->fairshare = use_fairshare;
-				assoc->max_jobs = use_max_jobs;
-				assoc->max_nodes_per_job = 
-					use_max_nodes_per_job;
+				assoc->fairshare = fairshare;
+				assoc->max_jobs = max_jobs;
+				assoc->max_nodes_per_job = max_nodes_per_job;
 				assoc->max_wall_duration_per_job =
-					use_max_wall_duration_per_job;
+					max_wall_duration_per_job;
 				assoc->max_cpu_secs_per_job =
-					use_max_cpu_secs_per_job;
+					max_cpu_secs_per_job;
 				if(user) 
 					list_append(user->assoc_list, assoc);
 				else 
@@ -599,6 +538,7 @@ no_default:
 			       max_wall_duration_per_job);
 	}
 
+	notice_thread_init();
 	if(list_count(user_list)) {
 		rc = acct_storage_g_add_users(db_conn, my_uid, 
 					      user_list);
@@ -611,8 +551,10 @@ no_default:
 	} else {
 		printf(" error: Problem adding users\n");
 		rc = SLURM_ERROR;
+		notice_thread_fini();
 		goto end_it;
 	}
+	notice_thread_fini();
 
 	if(rc == SLURM_SUCCESS) {
 		if(commit_check("Would you like to commit changes?")) {
@@ -824,6 +766,7 @@ extern int sacctmgr_modify_user(int argc, char *argv[])
 		}		
 	}
 
+	notice_thread_init();
 	if(rec_set == 3 || rec_set == 1) { // process the account changes
 		if(cond_set == 2) {
 			rc = SLURM_ERROR;
@@ -877,6 +820,7 @@ assoc_start:
 			list_destroy(ret_list);
 	}
 
+	notice_thread_fini();
 	if(set) {
 		if(commit_check("Would you like to commit changes?")) 
 			acct_storage_g_commit(db_conn, 1);
@@ -916,6 +860,7 @@ extern int sacctmgr_delete_user(int argc, char *argv[])
 		return SLURM_ERROR;
 	}
 
+	notice_thread_init();
 	if(set == 1) {
 		ret_list = acct_storage_g_remove_users(
 			db_conn, my_uid, user_cond);		
@@ -923,6 +868,7 @@ extern int sacctmgr_delete_user(int argc, char *argv[])
 		ret_list = acct_storage_g_remove_associations(
 			db_conn, my_uid, user_cond->assoc_cond);
 	}
+	notice_thread_fini();
 
 	destroy_acct_user_cond(user_cond);
 
