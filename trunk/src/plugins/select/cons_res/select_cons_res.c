@@ -2320,6 +2320,7 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 		saved_state = job->state;
 		_rm_job_from_nodes(exp_node_cr, job, "_will_run_test", 1);
 		job->state = saved_state;
+		bit_or(bitmap, orig_map);
 		rc = _job_test(job_ptr, bitmap, min_nodes, max_nodes, 
 			       req_nodes, SELECT_MODE_WILL_RUN, job_node_req,
 			       exp_node_cr);
@@ -2327,7 +2328,6 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 			job_ptr->start_time = tmp_job_ptr->end_time;
 			break;
 		}
-		bit_or(bitmap, orig_map);
 	}
 	list_iterator_destroy(job_iterator);
 	list_destroy(cr_job_list);
