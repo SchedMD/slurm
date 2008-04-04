@@ -112,47 +112,6 @@ static int move_account(mysql_conn_t *mysql_conn, uint32_t lft, uint32_t rgt,
 			char *id, char *parent)
 {
 	int rc = SLURM_SUCCESS;
-/* 	char *query = xstrdup_printf( */
-/* 		"SELECT @parLeft := lft from %s "  */
-/* 		"where cluster='%s' && acct='%s' && user='';", */
-/* 		assoc_table, */
-/* 		cluster, parent); */
-	
-/* 	xstrfmtcat(query,  */
-/* 		   "SELECT @oldLeft := lft, @oldRight := rgt, " */
-/* 		   "@myWidth := (rgt - lft + 1), @myDiff := (@parLeft+1) - lft " */
-/* 		   "FROM %s WHERE id = %s;", */
-/* 		   assoc_table, id); */
-
-/* 	xstrfmtcat(query, */
-/* 		   "update %s set deleted = deleted + 2, " */
-/* 		   "lft = lft + @myDiff, rgt = rgt + @myDiff " */
-/* 		   "WHERE lft BETWEEN @oldLeft AND @oldRight;", */
-/* 		   assoc_table); */
-				
-/* 	xstrfmtcat(query, */
-/* 		   "UPDATE %s SET rgt = rgt + @myWidth WHERE " */
-/* 		   "rgt > @parLeft && deleted < 2;" */
-/* 		   "UPDATE %s SET lft = lft + @myWidth WHERE " */
-/* 		   "lft > @parLeft && deleted < 2;", */
-/* 		   assoc_table, */
-/* 		   assoc_table); */
-/* 	xstrfmtcat(query, */
-/* 		   "UPDATE %s SET rgt = rgt - @myWidth WHERE " */
-/* 		   "(@myDiff < 0 && rgt > @oldRight && deleted < 2) " */
-/* 		   "|| (@myDiff >= 0 && rgt > @oldLeft);" */
-/* 		   "UPDATE %s SET lft = lft - @myWidth WHERE " */
-/* 		   "(@myDiff < 0 && lft > @oldRight && deleted < 2) " */
-/* 		   "|| (@myDiff >= 0 && lft > @oldLeft);", */
-/* 		   assoc_table, */
-/* 		   assoc_table); */
-
-/* 	xstrfmtcat(query, */
-/* 		   "update %s set deleted = deleted - 2 WHERE deleted > 1;", */
-/* 		   assoc_table); */
-/* 	xstrfmtcat(query, */
-/* 		   "update %s set parent_acct='%s' where id = %s;", */
-/* 		   assoc_table, parent, id); */
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
 	uint32_t par_left = 0;
@@ -185,9 +144,6 @@ static int move_account(mysql_conn_t *mysql_conn, uint32_t lft, uint32_t rgt,
 		   "lft = lft + %d, rgt = rgt + %d "
 		   "WHERE lft BETWEEN %d AND %d;",
 		   assoc_table, diff, diff, lft, rgt);
-/* 	debug3("%d query\n%s", mysql_conn->conn, query); */
-/* 	rc = mysql_db_query(mysql_conn->acct_mysql_db, query); */
-/* 	xfree(query); */
 
 	xstrfmtcat(query,
 		   "UPDATE %s SET rgt = rgt + %d WHERE "
@@ -198,9 +154,6 @@ static int move_account(mysql_conn_t *mysql_conn, uint32_t lft, uint32_t rgt,
 		   par_left,
 		   assoc_table, width,
 		   par_left);
-/* 	debug3("%d query\n%s", mysql_conn->conn, query); */
-/* 	rc = mysql_db_query(mysql_conn->acct_mysql_db, query); */
-/* 	xfree(query); */
 
 	xstrfmtcat(query,
 		   "UPDATE %s SET rgt = rgt - %d WHERE "
@@ -215,9 +168,6 @@ static int move_account(mysql_conn_t *mysql_conn, uint32_t lft, uint32_t rgt,
 		   assoc_table, width,
 		   diff, rgt,
 		   diff, lft);
-/* 	debug3("%d query\n%s", mysql_conn->conn, query); */
-/* 	rc = mysql_db_query(mysql_conn->acct_mysql_db, query); */
-/* 	xfree(query); */
 
 	xstrfmtcat(query,
 		   "update %s set deleted = deleted - 2 WHERE deleted > 1;",
@@ -402,13 +352,16 @@ static int _remove_common(mysql_conn_t *mysql_conn,
 	char *query = NULL;
 	MYSQL_RES *result = NULL;
 	MYSQL_ROW row;
-//	time_t day_old = now - 86400;
+	time_t day_old = now - 86400;
 
 	/* we want to remove completely all that is less than a day old */
-/* 	query = xstrdup_printf("delete from %s where creation_time<%d " */
-/* 			       "&& (%s);", */
-/* 			       table, day_old, name_char); */
-	
+	if(table != assoc_table) {
+		query = xstrdup_printf("delete from %s where creation_time<%d "
+				       "&& (%s);",
+				       table, day_old, name_char);
+
+	}
+
 	xstrfmtcat(query,
 		   "update %s set mod_time=%d, deleted=1 "
 		   "where deleted=0 && (%s);",
@@ -432,6 +385,46 @@ static int _remove_common(mysql_conn_t *mysql_conn,
 		
 		return SLURM_ERROR;
 	}
+
+	/* remove completely all the associations for this added in the last
+	 * day, since they are most likely nothing we really wanted in
+	 * the first place.
+	 */
+	if(table == assoc_table || !assoc_char)
+		assoc_char = name_char;
+
+	query = xstrdup_printf("select lft, rgt %s where "
+			       "creation_time<%d && (%s);",
+			       assoc_table, day_old, assoc_char);
+	if(!(result = mysql_db_query_ret(mysql_conn->acct_mysql_db,
+					 query))) {
+		xfree(query);
+		return SLURM_ERROR;
+	}
+	xfree(query);
+	
+	while((row = mysql_fetch_row(result))) {
+		int width = (atoi(row[1]) - atoi(row[0]) + 1); 
+		xstrfmtcat(query,
+			   "delete from %s where lft between %s AND %s;",
+			   assoc_table, row[0], row[1]);
+		xstrfmtcat(query,
+			   "UPDATE %s SET rgt = rgt + %d WHERE rgt > %s;"
+			   "UPDATE %s SET lft = lft + %d WHERE lft > %s;",
+			   assoc_table, width,
+			   row[1],
+			   assoc_table, width,
+			   row[1]);
+		rc = mysql_db_query(mysql_conn->acct_mysql_db, query);
+		xfree(query);
+		if(rc != SLURM_SUCCESS) {
+			error("couldn't remove assoc");
+			break;
+		}
+	}
+	mysql_free_result(result);
+	if(rc == SLURM_ERROR)
+		return rc;
 
 	if(table == assoc_table || !assoc_char)
 		return SLURM_SUCCESS;
@@ -3113,7 +3106,7 @@ empty:
 		/* FIX ME: ADD SUB projects here from assoc list lft
 		 * rgt */
 		
-		if(user_q->with_assocs) {
+		if(user_q && user_q->with_assocs) {
 			acct_association_cond_t *assoc_q = NULL;
 			if(!user_q->assoc_cond) {
 				user_q->assoc_cond = xmalloc(
@@ -3271,7 +3264,7 @@ empty:
 		}
 		mysql_free_result(coord_result);
 
-		if(acct_q->with_assocs) {
+		if(acct_q && acct_q->with_assocs) {
 			acct_association_cond_t *assoc_q = NULL;
 			if(!acct_q->assoc_cond) {
 				acct_q->assoc_cond = xmalloc(
