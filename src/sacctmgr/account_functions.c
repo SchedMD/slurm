@@ -90,9 +90,7 @@ static int _set_cond(int *start, int argc, char *argv[],
 	}
 	(*start) = i;
 
-	if(a_set && u_set) 
-		return 3;
-	else if(a_set) 
+	if(a_set) 
 		return 2;
 	else if(u_set)
 		return 1;
