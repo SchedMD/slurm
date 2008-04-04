@@ -1385,9 +1385,12 @@ Signals sent to the \fBsrun\fR command are automatically forwarded to
 the tasks it is controlling with a few exceptions. The escape sequence
 \fB<control\-c>\fR will report the state of all tasks associated with 
 the \fBsrun\fR command. If \fB<control\-c>\fR is entered twice within 
-one second, then the associated SIGINT signal will be sent to all tasks.
-If a third \fB<control\-c>\fR is received, the job will be forcefully
-terminated without waiting for remote tasks to exit.
+one second, then the associated SIGINT signal will be sent to all tasks
+and a termination sequence will be entered sending SIGCONT, SIGTERM, 
+and SIGKILL to all spawned tasks.
+If a third \fB<control\-c>\fR is received, the srun program will be 
+terminated without waiting for remote tasks to exit or their I/O to
+complete.
 
 The escape sequence \fB<control\-z>\fR is presently ignored. Our intent 
 is for this put the \fBsrun\fR command into a mode where various special 
