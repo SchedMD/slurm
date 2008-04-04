@@ -322,7 +322,7 @@ static int _modify_common(mysql_conn_t *mysql_conn,
 		   "values (%d, %d, \"%s\", '%s', \"%s\");",
 		   txn_table,
 		   now, type, cond_char, user_name, vals);
-	debug3("query\n%s", query);		
+	debug3("%d query\n%s", mysql_conn->conn, query);		
 	rc = mysql_db_query(mysql_conn->acct_mysql_db, query);
 	xfree(query);
 
@@ -356,7 +356,7 @@ static int _remove_common(mysql_conn_t *mysql_conn,
 
 	/* we want to remove completely all that is less than a day old */
 	if(table != assoc_table) {
-		query = xstrdup_printf("delete from %s where creation_time<%d "
+		query = xstrdup_printf("delete from %s where creation_time>%d "
 				       "&& (%s);",
 				       table, day_old, name_char);
 
@@ -372,7 +372,7 @@ static int _remove_common(mysql_conn_t *mysql_conn,
 		   txn_table,
 		   now, type, name_char, user_name);
 
-	debug3("query\n%s", query);
+	debug3("%d query\n%s", mysql_conn->conn, query);
 	rc = mysql_db_query(mysql_conn->acct_mysql_db, query);
 	xfree(query);
 	if(rc != SLURM_SUCCESS) {
@@ -393,9 +393,10 @@ static int _remove_common(mysql_conn_t *mysql_conn,
 	if(table == assoc_table || !assoc_char)
 		assoc_char = name_char;
 
-	query = xstrdup_printf("select lft, rgt %s where "
-			       "creation_time<%d && (%s);",
+	query = xstrdup_printf("select lft, rgt from %s where "
+			       "creation_time>%d && (%s);",
 			       assoc_table, day_old, assoc_char);
+	
 	if(!(result = mysql_db_query_ret(mysql_conn->acct_mysql_db,
 					 query))) {
 		xfree(query);
@@ -409,12 +410,13 @@ static int _remove_common(mysql_conn_t *mysql_conn,
 			   "delete from %s where lft between %s AND %s;",
 			   assoc_table, row[0], row[1]);
 		xstrfmtcat(query,
-			   "UPDATE %s SET rgt = rgt + %d WHERE rgt > %s;"
-			   "UPDATE %s SET lft = lft + %d WHERE lft > %s;",
+			   "UPDATE %s SET rgt = rgt - %d WHERE rgt > %s;"
+			   "UPDATE %s SET lft = lft - %d WHERE lft > %s;",
 			   assoc_table, width,
 			   row[1],
 			   assoc_table, width,
 			   row[1]);
+		debug3("%d query\n%s", mysql_conn->conn, query);
 		rc = mysql_db_query(mysql_conn->acct_mysql_db, query);
 		xfree(query);
 		if(rc != SLURM_SUCCESS) {
@@ -432,7 +434,7 @@ static int _remove_common(mysql_conn_t *mysql_conn,
 	query = xstrdup_printf("SELECT lft, rgt FROM %s WHERE %s;",
 			       assoc_table, assoc_char);
 
-	debug3("query\n%s", query);
+	debug3("%d query\n%s", mysql_conn->conn, query);
 	if(!(result = mysql_db_query_ret(mysql_conn->acct_mysql_db, query))) {
 		if(mysql_conn->rollback) {
 			mysql_db_rollback(mysql_conn->acct_mysql_db);
@@ -450,7 +452,7 @@ static int _remove_common(mysql_conn_t *mysql_conn,
 			"where deleted=0 && lft between %s and %s;",
 			assoc_table, now,
 			row[0], row[1]);
-		debug3("query\n%s", query);
+		debug3("%d query\n%s", mysql_conn->conn, query);
 		rc = mysql_db_query(mysql_conn->acct_mysql_db, query);
 		xfree(query);
 		if(rc != SLURM_SUCCESS) {
@@ -1306,7 +1308,7 @@ extern int acct_storage_p_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 			   cluster_table, 
 			   now, now, object->name,
 			   now);
-		debug3("query\n%s", query);
+		debug3("%d query\n%s", mysql_conn->conn, query);
 		rc = mysql_db_query(mysql_conn->acct_mysql_db, query);
 		xfree(query);
 		if(rc != SLURM_SUCCESS) {
@@ -1343,7 +1345,7 @@ extern int acct_storage_p_add_clusters(mysql_conn_t *mysql_conn, uint32_t uid,
 		xfree(cols);
 		xfree(vals);
 		xfree(extra);
-		debug3("query\n%s", query);
+		debug3("%d query\n%s", mysql_conn->conn, query);
 
 		rc = mysql_db_query(mysql_conn->acct_mysql_db, query);
 		xfree(query);
@@ -1589,7 +1591,7 @@ extern int acct_storage_p_add_associations(mysql_conn_t *mysql_conn,
 		xfree(cols);
 		xfree(vals);
 		xfree(update);
-		debug3("query\n%s", query);
+		debug3("%d query\n%s", mysql_conn->conn, query);
 		rc = mysql_db_query(mysql_conn->acct_mysql_db, query);
 		xfree(query);
 		if(rc != SLURM_SUCCESS) {
