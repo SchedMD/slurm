@@ -350,8 +350,8 @@ _process_command (int argc, char *argv[])
 				fprintf(stderr, 
 				        "too few arguments for keyword:%s\n", 
 				        argv[0]);
-		}
-		_add_it((argc - 1), &argv[1]);
+		} else
+			_add_it((argc - 1), &argv[1]);
 	} else if (strncasecmp (argv[0], "create", 3) == 0) {
 		if (argc < 2) {
 			exit_code = 1;
@@ -359,8 +359,8 @@ _process_command (int argc, char *argv[])
 				fprintf(stderr, 
 				        "too few arguments for keyword:%s\n", 
 				        argv[0]);
-		}
-		_add_it((argc - 1), &argv[1]);
+		} else 
+			_add_it((argc - 1), &argv[1]);
 	} else if (strncasecmp (argv[0], "show", 3) == 0
 		   || strncasecmp (argv[0], "list", 3) == 0) {
 		if (argc < 2) {
@@ -369,32 +369,32 @@ _process_command (int argc, char *argv[])
 				fprintf(stderr, 
 				        "too few arguments for keyword:%s\n", 
 				        argv[0]);
-		}
-		_show_it((argc - 1), &argv[1]);
+		} else 
+			_show_it((argc - 1), &argv[1]);
 	} else if (strncasecmp (argv[0], "modify", 1) == 0) {
 		if (argc < 2) {
 			exit_code = 1;
 			fprintf (stderr, "too few arguments for %s keyword\n",
 				 argv[0]);
 			return 0;
-		}		
-		_modify_it((argc - 1), &argv[1]);
+		} else 		
+			_modify_it((argc - 1), &argv[1]);
 	} else if (strncasecmp (argv[0], "delete", 3) == 0) {
 		if (argc < 2) {
 			exit_code = 1;
 			fprintf (stderr, "too few arguments for %s keyword\n",
 				 argv[0]);
 			return 0;
-		}
-		_delete_it((argc - 1), &argv[1]);
+		} else 
+			_delete_it((argc - 1), &argv[1]);
 	} else if (strncasecmp (argv[0], "remove", 3) == 0) {
 		if (argc < 2) {
 			exit_code = 1;
 			fprintf (stderr, "too few arguments for %s keyword\n",
 				 argv[0]);
 			return 0;
-		}
-		_delete_it((argc - 1), &argv[1]);
+		} else 
+			_delete_it((argc - 1), &argv[1]);
 	} else if (strncasecmp (argv[0], "verbose", 4) == 0) {
 		if (argc > 1) {
 			exit_code = 1;
