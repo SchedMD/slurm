@@ -34,7 +34,7 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 ############################################################################
 
-global sacct salloc sattach sbatch sbcast scancel scontrol sinfo smap squeue srun
+global sacctmgr sacct salloc sattach sbatch sbcast scancel scontrol sinfo smap squeue srun
 
 # Conditional set.  Only set variable if variable does not yet exist.
 proc cset {name value} {
@@ -54,6 +54,7 @@ if [file exists globals.local] {
 #
 cset slurm_dir   "/usr"
 cset build_dir   "../../"
+cset sacctmgr    "${slurm_dir}/bin/sacctmgr"
 cset sacct       "${slurm_dir}/bin/sacct"
 cset salloc      "${slurm_dir}/bin/salloc"
 cset sattach     "${slurm_dir}/bin/sattach"
