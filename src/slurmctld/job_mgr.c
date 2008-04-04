@@ -1379,6 +1379,7 @@ extern void rehash_jobs(void)
  * IN immediate - if set then either initiate the job immediately or fail
  * IN will_run - don't initiate the job if set, just test if it could run 
  *	now or later
+ * OUT resp - will run response (includes start location, time, etc.)
  * IN allocate - resource allocation request if set, not a full job
  * IN submit_uid -uid of user issuing the request
  * OUT job_pptr - set to pointer to job record
@@ -1394,7 +1395,7 @@ extern void rehash_jobs(void)
  * NOTE: lock_slurmctld on entry: Read config Write job, Write node, Read part
  */
 extern int job_allocate(job_desc_msg_t * job_specs, int immediate, 
-			int will_run, 
+			int will_run, will_run_response_msg_t **resp,
 			int allocate, uid_t submit_uid,
 			struct job_record **job_pptr)
 {
@@ -1453,6 +1454,18 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate,
 			return ESLURM_FRAGMENTATION;
 		else
 			return ESLURM_NOT_TOP_PRIORITY;
+	}
+
+	if (will_run && resp) {
+		job_desc_msg_t job_desc_msg;
+		int rc;
+		bzero(&job_desc_msg, sizeof(job_desc_msg_t));
+		job_desc_msg.job_id = job_ptr->job_id;
+		rc = job_start_data(&job_desc_msg, resp);
+		job_ptr->job_state  = JOB_FAILED;
+		job_ptr->exit_code  = 1;
+		job_ptr->start_time = job_ptr->end_time = now;
+		return rc;
 	}
 
 	test_only = will_run || (allocate == 0);

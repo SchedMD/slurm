@@ -14,6 +14,9 @@ documents those changes that are of interest to users and admins.
     sbatch and srun man pages.
  -- Major changes in select/cons_res to support FastSchedule=2 with more
     resources configured than actually exist (useful for testing purposes).
+ -- Modify srun --test-only response to include expected initiation time 
+    for a job as well as the nodes to be allocated and processor count
+    (for use by Moab).
 
 * Changes in SLURM 1.3.0
 ========================
