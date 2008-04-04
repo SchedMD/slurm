@@ -768,6 +768,7 @@ extern bool is_node_resp (char *name);
  * IN immediate - if set then either initiate the job immediately or fail
  * IN will_run - don't initiate the job if set, just test if it could run 
  *	now or later
+ * OUT resp - will run response (includes start location, time, etc.)
  * IN allocate - resource allocation request if set, not a full job
  * IN submit_uid -uid of user issuing the request
  * OUT job_pptr - set to pointer to job record
@@ -782,7 +783,8 @@ extern bool is_node_resp (char *name);
  *	default_part_loc - pointer to default partition
  * NOTE: lock_slurmctld on entry: Read config Write job, Write node, Read part
  */
-extern int job_allocate(job_desc_msg_t * job_specs, int immediate, int will_run, 
+extern int job_allocate(job_desc_msg_t * job_specs, int immediate, 
+		int will_run, will_run_response_msg_t **resp, 
 		int allocate, uid_t submit_uid, struct job_record **job_pptr);
 
 /* log the completion of the specified job */

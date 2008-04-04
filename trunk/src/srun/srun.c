@@ -216,7 +216,6 @@ int srun(int ac, char **av)
 			slurm_perror("allocation failure");
 			exit (1);
 		}
-		info("allocation success");
 		exit (0);
 
 	} else if (opt.no_alloc) {
