@@ -2163,10 +2163,12 @@ static int _load_arrays(struct node_cr_record *select_node_ptr,
 	/* array_index becomes "array size" */
 	index++;
 
+#if (CR_DEBUG)
 	for (i = 0; i < index; i++) {
-		debug3("cons_res: i %d row %d ptasks %d atasks %d freq %d",
+		info("cons_res: i %d row %d ptasks %d atasks %d freq %d",
 		     i, busy_rows[i], shr_tasks[i], all_tasks[i], num_nodes[i]);
 	}
+#endif
 
 	*a_rows  = busy_rows;
 	*s_tasks = shr_tasks;
@@ -2456,12 +2458,14 @@ static int _job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 			if (bit_set_count(bitmap) < min_nodes)
 				break;
 
+#if (CR_DEBUG)
 			for (i = 0; i < array_size; i++) {
-				debug3("cons_res: i %d row %d stasks %d "
-					"atasks %d freq %d",
-					i, busy_rows[i], sh_tasks[i],
-					al_tasks[i], freq[i]);
+				info("cons_res: try:%d i:%d busy_rows:%d "
+				     "sh_tasks:%d al_tasks:%d freq:%d",
+				     try, i, busy_rows[i], sh_tasks[i],
+				     al_tasks[i], freq[i]);
 			}
+#endif
 
 			if (row > 1) {
 				/* We need to share resources. 
