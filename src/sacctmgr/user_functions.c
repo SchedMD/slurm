@@ -221,25 +221,6 @@ static int _set_rec(int *start, int argc, char *argv[],
 /* 		       acct_admin_level_str(user->admin_level)); */
 /* } */
 
-static void _remove_existing_users(List ret_list)
-{
-	ListIterator itr = NULL;
-	char *tmp_char = NULL;
-	acct_user_rec_t *user = NULL;
-
-	if(!ret_list) {
-		error("no return list given");
-		return;
-	}
-
-	itr = list_iterator_create(ret_list);
-	while((tmp_char = list_next(itr))) {
-		if((user = sacctmgr_find_user(tmp_char))) 
-			sacctmgr_remove_from_list(sacctmgr_cluster_list, user);
-	}
-	list_iterator_destroy(itr);
-}
-
 extern int sacctmgr_add_user(int argc, char *argv[])
 {
 	int rc = SLURM_SUCCESS;
@@ -608,6 +589,7 @@ extern int sacctmgr_list_user(int argc, char *argv[])
 
 	user_cond->user_list = list_create(slurm_destroy_char);
 	user_cond->def_acct_list = list_create(slurm_destroy_char);
+	user_cond->with_assocs = with_assoc_flag;
 
 	user_cond->assoc_cond = xmalloc(sizeof(acct_association_cond_t));
 	user_cond->assoc_cond->user_list = list_create(slurm_destroy_char);
@@ -886,7 +868,6 @@ extern int sacctmgr_delete_user(int argc, char *argv[])
 		list_iterator_destroy(itr);
 		if(commit_check("Would you like to commit changes?")) {
 			acct_storage_g_commit(db_conn, 1);
-			_remove_existing_users(ret_list);
 		} else {
 			printf(" Changes Discarded\n");
 			acct_storage_g_commit(db_conn, 0);

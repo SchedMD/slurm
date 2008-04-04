@@ -315,38 +315,6 @@ extern int sacctmgr_remove_from_list(List list, void *object)
 	return SLURM_ERROR;
 }
 
-extern int do_rollback() 
-{
-	if(user_changes) {
-		list_destroy(sacctmgr_user_list);
-		sacctmgr_user_list = acct_storage_g_get_users(db_conn, 
-							      NULL);
-		user_changes = 0;
-	}
-
-	if(account_changes) {
-		list_destroy(sacctmgr_user_list);
-		sacctmgr_account_list = acct_storage_g_get_accounts(db_conn, 
-								    NULL);
-		account_changes = 0;
-	}
-
-	if(cluster_changes) {
-		list_destroy(sacctmgr_cluster_list);
-		sacctmgr_cluster_list = acct_storage_g_get_clusters(db_conn, 
-								    NULL);
-		cluster_changes = 0;
-	}
-
-	if(association_changes) {
-		list_destroy(sacctmgr_association_list);
-		sacctmgr_association_list = acct_storage_g_get_associations(
-			db_conn, NULL);
-		association_changes = 0;
-	}
-	return SLURM_SUCCESS;
-}
-
 extern acct_association_rec_t *sacctmgr_find_association(char *user,
 							 char *account,
 							 char *cluster,

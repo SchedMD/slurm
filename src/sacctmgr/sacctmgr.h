@@ -118,6 +118,7 @@ extern int input_words;	/* number of words of input permitted */
 extern int one_liner;	/* one record per line if =1 */
 extern int quiet_flag;	/* quiet=1, verbose=-1, normal=0 */
 extern int rollback_flag;/* immediate execute=0, else = 1 */
+extern int with_assoc_flag;/* show acct/user associations flag */
 extern int association_changes;
 extern int account_changes;
 extern int cluster_changes;
@@ -160,7 +161,6 @@ extern int notice_thread_fini();
 extern int commit_check(char *warning);
 extern int sacctmgr_init();
 extern int sacctmgr_remove_from_list(List list, void *object);
-extern int do_rollback();
 
 /* do not free the objects returned from these functions */
 extern acct_association_rec_t *sacctmgr_find_association(char *user,

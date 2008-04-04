@@ -223,40 +223,6 @@ static int _set_rec(int *start, int argc, char *argv[],
 
 /* } */
 
-static void _remove_existing_accounts(List ret_list)
-{
-	ListIterator itr = NULL;
-	ListIterator itr2 = NULL;
-	char *tmp_char = NULL;
-	acct_account_rec_t *acct = NULL;
-	acct_association_rec_t *assoc = NULL;
-	acct_cluster_rec_t *cluster = NULL;
-
-	if(!ret_list) {
-		error("no return list given");
-		return;
-	}
-
-	itr = list_iterator_create(ret_list);
-	itr2 = list_iterator_create(sacctmgr_cluster_list);
-
-	while((tmp_char = list_next(itr))) {
-		if((acct = sacctmgr_find_account(tmp_char))) 
-			sacctmgr_remove_from_list(sacctmgr_account_list, acct);
-
-		list_iterator_reset(itr2);
-		while((cluster = list_next(itr2))) {
-			if((assoc = sacctmgr_find_account_base_assoc(
-				    tmp_char, cluster->name)))
-				sacctmgr_remove_from_list(
-					sacctmgr_association_list, assoc);
-		}
-	}
-	list_iterator_destroy(itr);
-	list_iterator_destroy(itr2);
-}
-	
-
 extern int sacctmgr_add_account(int argc, char *argv[])
 {
 	int rc = SLURM_SUCCESS;
@@ -574,6 +540,7 @@ extern int sacctmgr_list_account(int argc, char *argv[])
 	acct_cond->acct_list = list_create(slurm_destroy_char);
 	acct_cond->description_list = list_create(slurm_destroy_char);
 	acct_cond->organization_list = list_create(slurm_destroy_char);
+	acct_cond->with_assocs = with_assoc_flag;
 
 	acct_cond->assoc_cond = xmalloc(sizeof(acct_association_cond_t));
 	acct_cond->assoc_cond->user_list = list_create(slurm_destroy_char);
@@ -853,7 +820,6 @@ extern int sacctmgr_delete_account(int argc, char *argv[])
 		list_iterator_destroy(itr);
 		if(commit_check("Would you like to commit changes?")) {
 			acct_storage_g_commit(db_conn, 1);
-			_remove_existing_accounts(ret_list);
 		} else {
 			printf(" Changes Discarded\n");
 			acct_storage_g_commit(db_conn, 0);

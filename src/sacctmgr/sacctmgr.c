@@ -57,11 +57,7 @@ int input_words;	/* number of words of input permitted */
 int one_liner;		/* one record per line if =1 */
 int quiet_flag;		/* quiet=1, verbose=-1, normal=0 */
 int rollback_flag;       /* immediate execute=1, else = 0 */
-int association_changes = 0;
-int account_changes = 0;
-int cluster_changes = 0;
-int user_changes = 0;
-int changes_made = 0;
+int with_assoc_flag = 0;
 List sacctmgr_action_list = NULL;
 List sacctmgr_user_list = NULL;
 List sacctmgr_association_list = NULL;
@@ -112,7 +108,7 @@ main (int argc, char *argv[])
 	if (getenv ("SACCTMGR_ALL"))
 		all_flag= 1;
 
-	while((opt_char = getopt_long(argc, argv, "ahioqvV",
+	while((opt_char = getopt_long(argc, argv, "ahioqsvV",
 			long_options, &option_index)) != -1) {
 		switch (opt_char) {
 		case (int)'?':
@@ -137,6 +133,9 @@ main (int argc, char *argv[])
 			break;
 		case (int)'q':
 			quiet_flag = 1;
+			break;
+		case (int)'s':
+			with_assoc_flag = 1;
 			break;
 		case (int)'v':
 			quiet_flag = -1;
@@ -308,6 +307,8 @@ _process_command (int argc, char *argv[])
 			fprintf(stderr, "no input");
 	} else if (strncasecmp (argv[0], "all", 3) == 0) {
 		all_flag = 1;
+	} else if (strncasecmp (argv[0], "associations", 3) == 0) {
+		with_assoc_flag = 1;
 	} else if (strncasecmp (argv[0], "exit", 1) == 0) {
 		exit_flag = 1;
 	} else if (strncasecmp (argv[0], "help", 2) == 0) {
