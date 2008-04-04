@@ -250,7 +250,6 @@ extern int assoc_mgr_fill_in_assoc(void *db_conn, acct_association_rec_t *assoc,
 				continue;
 			}
 		}
-		debug3("found correct association");
 		ret_assoc = found_assoc;
 		break;
 	}
@@ -263,7 +262,8 @@ extern int assoc_mgr_fill_in_assoc(void *db_conn, acct_association_rec_t *assoc,
 		else
 			return SLURM_SUCCESS;
 	}
-
+	debug3("found correct association");
+		
 	assoc->id = ret_assoc->id;
 	if(!assoc->user)
 		assoc->user = ret_assoc->user;
