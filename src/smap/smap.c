@@ -249,7 +249,8 @@ part_fini:
 #else
 		default:
 			error("Must be on a BG SYSTEM to run this command");
-			endwin();
+			if(!params.commandline)
+				endwin();
 			ba_fini();
 			exit(0);
 			break;
