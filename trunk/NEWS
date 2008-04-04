@@ -3,8 +3,6 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 1.3.1
 ========================
- -- Correction in calculation of a job's memory used for use in enforcement
-    of a job's memory limit.
  -- Correct logic for processing batch job's memory limit enforcement.
  -- Fix bug that was setting a job's requeue value on any update of the 
     job using the "scontrol update" command. The invalid value of an 
