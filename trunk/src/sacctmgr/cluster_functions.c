@@ -113,32 +113,6 @@ static int _set_rec(int *start, int argc, char *argv[],
 
 }
 
-static void _remove_existing_clusters(List ret_list)
-{
-	ListIterator itr = NULL;
-	char *tmp_char = NULL;
-	acct_cluster_rec_t *cluster = NULL;
-	acct_association_rec_t *assoc = NULL;
-
-	if(!ret_list) {
-		error("no return list given");
-		return;
-	}
-
-
-	itr = list_iterator_create(ret_list);
-	while((tmp_char = list_next(itr))) {
-		if((cluster = sacctmgr_find_cluster(tmp_char))) 
-			sacctmgr_remove_from_list(sacctmgr_cluster_list,
-						  cluster);
-
-		if((assoc = sacctmgr_find_root_assoc(cluster->name)))
-			sacctmgr_remove_from_list(sacctmgr_association_list,
-						  assoc);
-	}
-	list_iterator_destroy(itr);
-}
-	
 extern int sacctmgr_add_cluster(int argc, char *argv[])
 {
 	int rc = SLURM_SUCCESS;
@@ -460,7 +434,6 @@ extern int sacctmgr_delete_cluster(int argc, char *argv[])
 		list_iterator_destroy(itr);
 		if(commit_check("Would you like to commit changes?")) {
 			acct_storage_g_commit(db_conn, 1);
-			_remove_existing_clusters(ret_list);
 		} else {
 			printf(" Changes Discarded\n");
 			acct_storage_g_commit(db_conn, 0);
