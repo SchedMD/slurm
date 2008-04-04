@@ -1264,7 +1264,7 @@ static void _slurm_rpc_job_will_run(slurm_msg_t * msg)
 	if (error_code == SLURM_SUCCESS) {
 		lock_slurmctld(job_write_lock);
 		if (job_desc_msg->job_id == NO_VAL) {
-			error_code = job_allocate(job_desc_msg, true, 
+			error_code = job_allocate(job_desc_msg, false, 
 						  true, &resp,
 						  true, uid, &job_ptr);
 		} else {	/* existing job test */
