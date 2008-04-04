@@ -1,7 +1,9 @@
 ############################################################################
+# Copyright (C) 2008 Lawrence Livermore National Security.
 # Copyright (C) 2002-2007 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
 # Written by Morris Jette <jette1@llnl.gov>
+# Additionals by Joseph Donaghy <donaghy1@llnl.gov>
 # LLNL-CODE-402394.
 #
 # This file is part of SLURM, a resource management program.
@@ -490,3 +492,9 @@ test20.2   qstat command tests
 test20.3   qdel command tests
 test20.4   pbsnodes command tests
 
+
+test21.#   Testing of sacctmgr commands and options.
+=================================================
+test21.1   sacctmgr --usage
+test21.1   sacctmgr --help
+test21.1   sacctmgr -V
