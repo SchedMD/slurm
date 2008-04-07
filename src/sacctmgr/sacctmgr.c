@@ -428,7 +428,6 @@ _process_command (int argc, char *argv[])
 static void _add_it (int argc, char *argv[]) 
 {
 	int error_code = SLURM_SUCCESS;
-	sacctmgr_init();
 
 	/* First identify the entity to add */
 	if (strncasecmp (argv[0], "User", 1) == 0) {
@@ -489,8 +488,6 @@ static void _modify_it (int argc, char *argv[])
 {
 	int error_code = SLURM_SUCCESS;
 
-	sacctmgr_init();
-
 	/* First identify the entity to modify */
 	if (strncasecmp (argv[0], "User", 1) == 0) {
 		error_code = sacctmgr_modify_user((argc - 1), &argv[1]);
@@ -519,8 +516,6 @@ static void _modify_it (int argc, char *argv[])
 static void _delete_it (int argc, char *argv[]) 
 {
 	int error_code = SLURM_SUCCESS;
-
-	sacctmgr_init();
 
 	/* First identify the entity to delete */
 	if (strncasecmp (argv[0], "User", 1) == 0) {

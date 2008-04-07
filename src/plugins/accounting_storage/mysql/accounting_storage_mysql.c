@@ -3206,8 +3206,7 @@ empty:
 	xfree(tmp);
 	xfree(extra);
 	
-
-	//info("query = %s", query);
+	debug3("%d query\n%s", mysql_conn->conn, query);
 	if(!(result = mysql_db_query_ret(mysql_conn->acct_mysql_db, query))) {
 		xfree(query);
 		return NULL;
@@ -3375,7 +3374,7 @@ empty:
 	xfree(tmp);
 	xfree(extra);
 	
-	//info("query = %s", query);
+	debug3("%d query\n%s", mysql_conn->conn, query);
 	if(!(result = mysql_db_query_ret(mysql_conn->acct_mysql_db, query))) {
 		xfree(query);
 		return NULL;
@@ -3498,7 +3497,7 @@ empty:
 	xfree(tmp);
 	xfree(extra);
 	
-	//info("query = %s", query);
+	debug3("%d query\n%s", mysql_conn->conn, query);
 	if(!(result = mysql_db_query_ret(mysql_conn->acct_mysql_db, query))) {
 		xfree(query);
 		return NULL;
@@ -3641,7 +3640,7 @@ empty:
 			       tmp, assoc_table, extra);
 	xfree(tmp);
 	xfree(extra);
-	//info("query =\n%s", query);
+	debug3("%d query\n%s", mysql_conn->conn, query);
 	if(!(result = mysql_db_query_ret(mysql_conn->acct_mysql_db, query))) {
 		xfree(query);
 		return NULL;

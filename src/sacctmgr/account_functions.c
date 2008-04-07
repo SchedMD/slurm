@@ -230,7 +230,7 @@ extern int sacctmgr_add_account(int argc, char *argv[])
 	ListIterator itr = NULL, itr_c = NULL;
 	acct_account_rec_t *acct = NULL;
 	acct_association_rec_t *assoc = NULL;
-	acct_association_rec_t *temp_assoc = NULL;
+	acct_association_cond_t assoc_cond;
 	List name_list = list_create(slurm_destroy_char);
 	List cluster_list = list_create(slurm_destroy_char);
 	char *description = NULL;
@@ -241,6 +241,8 @@ extern int sacctmgr_add_account(int argc, char *argv[])
 	acct_qos_level_t qos = ACCT_QOS_NOTSET;
 	List acct_list = NULL;
 	List assoc_list = NULL;
+	List local_assoc_list = NULL;
+	List local_account_list = NULL;
 	uint32_t fairshare = -2; 
 	uint32_t max_jobs = -2; 
 	uint32_t max_nodes_per_job = -2;
@@ -288,38 +290,90 @@ extern int sacctmgr_add_account(int argc, char *argv[])
 
 	if(!list_count(name_list)) {
 		list_destroy(name_list);
-		list_count(cluster_list);
+		list_destroy(cluster_list);
 		xfree(parent);
 		xfree(description);
 		xfree(organization);
 		printf(" Need name of account to add.\n"); 
 		return SLURM_SUCCESS;
+	} else {
+		acct_account_cond_t account_cond;
+
+		memset(&account_cond, 0, sizeof(acct_account_cond_t));
+		account_cond.acct_list = name_list;
+
+		local_account_list = acct_storage_g_get_accounts(
+			db_conn, &account_cond);
+		
+	}
+	if(!local_account_list) {
+		printf(" Problem getting accounts from database.  "
+		       "Contact your admin.\n");
+		list_destroy(name_list);
+		list_destroy(cluster_list);
+		xfree(parent);
+		xfree(description);
+		xfree(organization);
+		return SLURM_ERROR;
 	}
 
 	if(!parent)
 		parent = xstrdup("root");
 
 	if(!list_count(cluster_list)) {
+		List temp_list = NULL;
 		acct_cluster_rec_t *cluster_rec = NULL;
-		
-		if(!list_count(sacctmgr_cluster_list)) {
-			printf(" error: No cluster added yet.  "
-			       "Do this before adding accounts.\n");
+
+		temp_list = acct_storage_g_get_clusters(db_conn, NULL);
+		if(!cluster_list) {
+			printf(" Problem getting clusters from database.  "
+			       "Contact your admin.\n");
 			list_destroy(name_list);
-			list_count(cluster_list);
-			return SLURM_ERROR;			
+			list_destroy(cluster_list);
+			list_destroy(local_account_list);
+			xfree(parent);
+			xfree(description);
+			xfree(organization);
+			return SLURM_ERROR;
 		}
-		itr_c = list_iterator_create(sacctmgr_cluster_list);
+
+		itr_c = list_iterator_create(temp_list);
 		while((cluster_rec = list_next(itr_c))) {
-			list_append(cluster_list, 
-				    xstrdup(cluster_rec->name));
+			list_append(cluster_list, xstrdup(cluster_rec->name));
 		}
 		list_iterator_destroy(itr_c);
+
+		if(!list_count(cluster_list)) {
+			printf("  Can't add accounts, no cluster defined yet.\n"
+			       " Please contact your administrator.\n");
+			list_destroy(name_list);
+			list_destroy(cluster_list);
+			list_destroy(local_account_list);
+			xfree(parent);
+			xfree(description);
+			xfree(organization);
+			return SLURM_ERROR; 
+		}
 	} else {
+		List temp_list = NULL;
+		acct_cluster_cond_t cluster_cond;
+
+		memset(&cluster_cond, 0, sizeof(acct_cluster_cond_t));
+		cluster_cond.cluster_list = cluster_list;
+
+		temp_list = acct_storage_g_get_clusters(db_conn, &cluster_cond);
 		
 		itr_c = list_iterator_create(cluster_list);
+		itr = list_iterator_create(temp_list);
 		while((cluster = list_next(itr_c))) {
-			if(!sacctmgr_find_cluster(cluster)) {
+			acct_cluster_rec_t *cluster_rec = NULL;
+
+			list_iterator_reset(itr);
+			while((cluster_rec = list_next(itr))) {
+				if(!strcasecmp(cluster_rec->name, cluster))
+					break;
+			}
+			if(!cluster_rec) {
 				printf(" error: This cluster '%s' "
 				       "doesn't exist.\n"
 				       "        Contact your admin "
@@ -328,9 +382,13 @@ extern int sacctmgr_add_account(int argc, char *argv[])
 				list_delete_item(itr_c);
 			}
 		}
+		list_iterator_destroy(itr);
+		list_iterator_destroy(itr_c);
+		list_destroy(temp_list);
 		if(!list_count(cluster_list)) {
 			list_destroy(name_list);
-			list_count(cluster_list);
+			list_destroy(cluster_list);
+			list_destroy(local_account_list);
 			return SLURM_ERROR;
 		}
 	}
@@ -340,10 +398,37 @@ extern int sacctmgr_add_account(int argc, char *argv[])
 	   freed when they are */
 	acct_list = list_create(destroy_acct_account_rec);
 	assoc_list = list_create(destroy_acct_association_rec);
+	
+	memset(&assoc_cond, 0, sizeof(acct_association_cond_t));
+
+	assoc_cond.acct_list = list_create(NULL);
+	itr = list_iterator_create(name_list);
+	while((name = list_next(itr))) {
+		list_append(assoc_cond.acct_list, name);
+	}
+	list_iterator_destroy(itr);
+	list_append(assoc_cond.acct_list, parent);
+
+	assoc_cond.cluster_list = cluster_list;
+	local_assoc_list = acct_storage_g_get_associations(
+		db_conn, &assoc_cond);	
+	list_destroy(assoc_cond.acct_list);
+	if(!local_assoc_list) {
+		printf(" Problem getting associations from database.  "
+		       "Contact your admin.\n");
+		list_destroy(name_list);
+		list_destroy(cluster_list);
+		list_destroy(local_account_list);
+		xfree(parent);
+		xfree(description);
+		xfree(organization);
+		return SLURM_ERROR;
+	}
+
 	itr = list_iterator_create(name_list);
 	while((name = list_next(itr))) {
 		acct = NULL;
-		if(!sacctmgr_find_account(name)) {
+		if(!sacctmgr_find_account_from_list(local_account_list, name)) {
 			acct = xmalloc(sizeof(acct_account_rec_t));
 			acct->assoc_list = list_create(NULL);	
 			acct->name = xstrdup(name);
@@ -366,14 +451,13 @@ extern int sacctmgr_add_account(int argc, char *argv[])
 
 		itr_c = list_iterator_create(cluster_list);
 		while((cluster = list_next(itr_c))) {
-			if(sacctmgr_find_association(NULL, name,
-						     cluster, NULL)) {
+			if(sacctmgr_find_account_base_assoc_from_list(
+				   local_assoc_list, name, cluster)) {
 				//printf(" already have this assoc\n");
 				continue;
 			}
-			temp_assoc = sacctmgr_find_account_base_assoc(
-				parent, cluster);
-			if(!temp_assoc) {
+			if(!sacctmgr_find_account_base_assoc_from_list(
+				   local_assoc_list, parent, cluster)) {
 				printf(" error: Parent account '%s' "
 				       "doesn't exist on "
 				       "cluster %s\n"
@@ -381,18 +465,12 @@ extern int sacctmgr_add_account(int argc, char *argv[])
 				       "to add this account.\n",
 				       parent, cluster);
 				continue;
-			} /* else */
-/* 					printf("got %u %s %s %s %s\n", */
-/* 					       temp_assoc->id, */
-/* 					       temp_assoc->user, */
-/* 					       temp_assoc->acct, */
-/* 					       temp_assoc->cluster, */
-/* 					       temp_assoc->parent_acct); */
-			
+			}
+
 			assoc = xmalloc(sizeof(acct_association_rec_t));
 			assoc->acct = xstrdup(name);
 			assoc->cluster = xstrdup(cluster);
-			assoc->parent_acct = xstrdup(temp_assoc->acct);
+			assoc->parent_acct = xstrdup(parent);
 			assoc->fairshare = fairshare;
 			assoc->max_jobs = max_jobs;
 			assoc->max_nodes_per_job = max_nodes_per_job;
@@ -405,16 +483,17 @@ extern int sacctmgr_add_account(int argc, char *argv[])
 			else 
 				list_append(assoc_list, assoc);
 			xstrfmtcat(assoc_str,
-				   "  A = %-10s"
-				   " C = %-10s\n",
+				   "  A = %-10.10s"
+				   " C = %-10.10s\n",
 				   assoc->acct,
 				   assoc->cluster);		
 
 		}
 		list_iterator_destroy(itr_c);
 	}
-
 	list_iterator_destroy(itr);
+	list_destroy(local_account_list);
+	list_destroy(local_assoc_list);
 	list_destroy(name_list);
 	list_destroy(cluster_list);
 
@@ -486,29 +565,19 @@ extern int sacctmgr_add_account(int argc, char *argv[])
 	if(rc == SLURM_SUCCESS) {
 		if(commit_check("Would you like to commit changes?")) {
 			acct_storage_g_commit(db_conn, 1);
-			while((acct = list_pop(acct_list))) {
-				list_append(sacctmgr_account_list, acct);
-				while((assoc = list_pop(acct->assoc_list))) {
-					list_append(sacctmgr_association_list,
-						    assoc);
-				}
-			}
-			while((assoc = list_pop(assoc_list))) {
-				list_append(sacctmgr_association_list, assoc);
-			}			
 		} else {
 			printf(" Changes Discarded\n");
 			acct_storage_g_commit(db_conn, 0);
 		}
 	} else {
-		printf(" error: Problem adding account associations");
+		printf(" error: Problem adding account associations\n");
 		rc = SLURM_ERROR;
 	}
 
 end_it:
 	list_destroy(acct_list);
 	list_destroy(assoc_list);
-	
+		
 	xfree(parent);
 	xfree(description);
 	xfree(organization);
