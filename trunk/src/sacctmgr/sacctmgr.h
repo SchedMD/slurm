@@ -119,16 +119,6 @@ extern int one_liner;	/* one record per line if =1 */
 extern int quiet_flag;	/* quiet=1, verbose=-1, normal=0 */
 extern int rollback_flag;/* immediate execute=0, else = 1 */
 extern int with_assoc_flag;/* show acct/user associations flag */
-extern int association_changes;
-extern int account_changes;
-extern int cluster_changes;
-extern int user_changes;
-extern int changes_made;
-extern List sacctmgr_action_list; /* list of sacctmgr_action_t * */
-extern List sacctmgr_user_list; /* list of current users */
-extern List sacctmgr_association_list; /* list of current associations */
-extern List sacctmgr_account_list; /* list of current accounts */
-extern List sacctmgr_cluster_list; /* list of current clusters */
 extern void *db_conn;
 extern uint32_t my_uid;
 
@@ -162,18 +152,33 @@ extern int commit_check(char *warning);
 extern int sacctmgr_init();
 extern int sacctmgr_remove_from_list(List list, void *object);
 
-/* do not free the objects returned from these functions */
+/* you need to free the objects returned from these functions */
 extern acct_association_rec_t *sacctmgr_find_association(char *user,
 							 char *account,
 							 char *cluster,
 							 char *partition);
-extern acct_association_rec_t *sacctmgr_find_parent_assoc(char *account,
-							  char *cluster);
 extern acct_association_rec_t *sacctmgr_find_account_base_assoc(
 	char *account, char *cluster);
 extern acct_association_rec_t *sacctmgr_find_root_assoc(char *cluster);
 extern acct_user_rec_t *sacctmgr_find_user(char *name);
 extern acct_account_rec_t *sacctmgr_find_account(char *name);
 extern acct_cluster_rec_t *sacctmgr_find_cluster(char *name);
+
+/* do not free any of the object returned from these functions since
+ * they are pointing to an object in the list given 
+ */
+
+extern acct_association_rec_t *sacctmgr_find_association_from_list(
+	List assoc_list, char *user, char *account, 
+	char *cluster, char *partition);
+extern acct_association_rec_t *sacctmgr_find_account_base_assoc_from_list(
+	List assoc_list, char *account, char *cluster);
+extern acct_user_rec_t *sacctmgr_find_user_from_list(
+	List user_list, char *name);
+extern acct_account_rec_t *sacctmgr_find_account_from_list(
+	List acct_list, char *name);
+extern acct_cluster_rec_t *sacctmgr_find_cluster_from_list(
+	List cluster_list, char *name);
+
 
 #endif

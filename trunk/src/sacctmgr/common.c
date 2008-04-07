@@ -257,77 +257,190 @@ extern int commit_check(char *warning)
 	return 0;
 }
 
-extern int sacctmgr_init()
-{
-	static int inited = 0;
-
-	if(inited) 
-		return SLURM_SUCCESS;
-
-	sacctmgr_action_list = list_create(destroy_sacctmgr_action);
-
-	if(!sacctmgr_user_list) 
-		if(!(sacctmgr_user_list = acct_storage_g_get_users(db_conn, 
-								   NULL)))
-			fatal("no user list returned");
-
-	if(!sacctmgr_account_list)
-		if(!(sacctmgr_account_list = acct_storage_g_get_accounts(
-			     db_conn, NULL)))
-			fatal("no accoun list returned");
-			
-	if(!sacctmgr_cluster_list)
-		if(!(sacctmgr_cluster_list = acct_storage_g_get_clusters(
-			     db_conn, NULL)))
-			fatal("no cluster list returned");
-
-	if(!sacctmgr_association_list)
-		if(!(sacctmgr_association_list =
-		     acct_storage_g_get_associations(db_conn, NULL)))
-			fatal("no association list returned");
-
-	inited = 1;
-
-	return SLURM_SUCCESS;
-}
-
-extern int sacctmgr_remove_from_list(List list, void *object)
-{
-	ListIterator itr = NULL;
-	void *new_object = NULL;
-	int rc = SLURM_ERROR;
-
-	if(!list || !object) {
-		printf(" No list or object was given.\n");
-		return SLURM_ERROR;
-	}
-
-	itr = list_iterator_create(list);
-	
-	while((new_object = list_next(itr))) {
-		if(object == new_object) {
-			if(list_delete_item(itr))
-				rc = SLURM_SUCCESS;
-			break;
-		}		
-	}
-	list_iterator_destroy(itr);
-	return SLURM_ERROR;
-}
-
 extern acct_association_rec_t *sacctmgr_find_association(char *user,
 							 char *account,
 							 char *cluster,
 							 char *partition)
 {
+	acct_association_rec_t * assoc = NULL;
+	acct_association_cond_t assoc_cond;
+	List assoc_list = NULL;
+
+	memset(&assoc_cond, 0, sizeof(acct_association_cond_t));
+	if(account) {
+		assoc_cond.acct_list = list_create(NULL);
+		list_append(assoc_cond.acct_list, account);
+	} else {
+		error("need an account to find association");
+		return NULL;
+	}
+	if(cluster) {
+		assoc_cond.cluster_list = list_create(NULL);
+		list_append(assoc_cond.cluster_list, cluster);
+	} else {
+		if(assoc_cond.acct_list)
+			list_destroy(assoc_cond.acct_list);
+		error("need an cluster to find association");
+		return NULL;
+	}
+
+	assoc_cond.user_list = list_create(NULL);
+	if(user) 
+		list_append(assoc_cond.user_list, user);
+	else
+		list_append(assoc_cond.user_list, "");
+	
+	assoc_cond.partition_list = list_create(NULL);
+	if(partition) 
+		list_append(assoc_cond.partition_list, partition);
+	else
+		list_append(assoc_cond.partition_list, "");
+	
+	assoc_list = acct_storage_g_get_associations(db_conn, &assoc_cond);
+	
+	list_destroy(assoc_cond.acct_list);
+	list_destroy(assoc_cond.cluster_list);
+	list_destroy(assoc_cond.user_list);
+	list_destroy(assoc_cond.partition_list);
+
+	if(assoc_list)
+		assoc = list_pop(assoc_list);
+
+	list_destroy(assoc_list);
+	
+	return assoc;
+}
+
+extern acct_association_rec_t *sacctmgr_find_account_base_assoc(char *account,
+								char *cluster)
+{
+	acct_association_rec_t *assoc = NULL;
+	char *temp = "root";
+	acct_association_cond_t assoc_cond;
+	List assoc_list = NULL;
+
+	if(!cluster)
+		return NULL;
+
+	if(account)
+		temp = account;
+
+	memset(&assoc_cond, 0, sizeof(acct_association_cond_t));
+	assoc_cond.acct_list = list_create(NULL);
+	list_append(assoc_cond.cluster_list, temp);
+	assoc_cond.cluster_list = list_create(NULL);
+	list_append(assoc_cond.cluster_list, cluster);
+	assoc_cond.user_list = list_create(NULL);
+	list_append(assoc_cond.user_list, "");
+
+//	info("looking for %s %s in %d", account, cluster,
+//	     list_count(sacctmgr_association_list));
+	
+	assoc_list = acct_storage_g_get_associations(db_conn, &assoc_cond);
+
+	list_destroy(assoc_cond.acct_list);
+	list_destroy(assoc_cond.cluster_list);
+	list_destroy(assoc_cond.user_list);
+
+	if(assoc_list)
+		assoc = list_pop(assoc_list);
+
+	list_destroy(assoc_list);
+
+	return assoc;
+}
+
+extern acct_association_rec_t *sacctmgr_find_root_assoc(char *cluster)
+{
+	return sacctmgr_find_account_base_assoc(NULL, cluster);
+}
+
+extern acct_user_rec_t *sacctmgr_find_user(char *name)
+{
+	acct_user_rec_t *user = NULL;
+	acct_user_cond_t user_cond;
+	List user_list = NULL;
+	
+	if(!name)
+		return NULL;
+	
+	memset(&user_cond, 0, sizeof(acct_user_cond_t));
+	user_cond.user_list = list_create(NULL);
+	list_append(user_cond.user_list, name);
+
+	user_list = acct_storage_g_get_users(db_conn, &user_cond);
+
+	list_destroy(user_cond.user_list);
+
+	if(user_list)
+		user = list_pop(user_list);
+
+	list_destroy(user_list);
+
+	return user;
+}
+
+extern acct_account_rec_t *sacctmgr_find_account(char *name)
+{
+	acct_account_rec_t *account = NULL;
+	acct_account_cond_t account_cond;
+	List account_list = NULL;
+	
+	if(!name)
+		return NULL;
+
+	memset(&account_cond, 0, sizeof(acct_account_cond_t));
+	account_cond.acct_list = list_create(NULL);
+	list_append(account_cond.acct_list, name);
+
+	account_list = acct_storage_g_get_accounts(db_conn, &account_cond);
+	
+	list_destroy(account_cond.acct_list);
+
+	if(account_list)
+		account = list_pop(account_list);
+
+	list_destroy(account_list);
+
+	return account;
+}
+
+extern acct_cluster_rec_t *sacctmgr_find_cluster(char *name)
+{
+	acct_cluster_rec_t *cluster = NULL;
+	acct_cluster_cond_t cluster_cond;
+	List cluster_list = NULL;
+
+	if(!name)
+		return NULL;
+
+	memset(&cluster_cond, 0, sizeof(acct_cluster_cond_t));
+	cluster_cond.cluster_list = list_create(NULL);
+	list_append(cluster_cond.cluster_list, name);
+
+	cluster_list = acct_storage_g_get_clusters(db_conn, &cluster_cond);
+
+	list_destroy(cluster_cond.cluster_list);
+
+	if(cluster_list) 
+		cluster = list_pop(cluster_list);
+
+	list_destroy(cluster_list);
+	
+	return cluster;
+}
+
+extern acct_association_rec_t *sacctmgr_find_association_from_list(
+	List assoc_list, char *user, char *account, 
+	char *cluster, char *partition)
+{
 	ListIterator itr = NULL;
 	acct_association_rec_t * assoc = NULL;
 	
-	if(!sacctmgr_association_list)
-		sacctmgr_association_list =
-			acct_storage_g_get_associations(db_conn, NULL);
+	if(!assoc_list)
+		return NULL;
 	
-	itr = list_iterator_create(sacctmgr_association_list);
+	itr = list_iterator_create(assoc_list);
 	while((assoc = list_next(itr))) {
 		if((user && (!assoc->user || strcasecmp(user, assoc->user)))
 		   || (account && (!assoc->acct 
@@ -345,93 +458,44 @@ extern acct_association_rec_t *sacctmgr_find_association(char *user,
 	return assoc;
 }
 
-extern acct_association_rec_t *sacctmgr_find_parent_assoc(char *account,
-							  char *cluster)
-{
-	ListIterator itr = NULL;
-	acct_association_rec_t *assoc = NULL;
-	char *par_acct = NULL;
-
-	if(!account || !cluster)
-		return NULL;
-
-	if(!strcasecmp(account, "root"))
-		return NULL;
-
-	if(!sacctmgr_association_list)
-		sacctmgr_association_list =
-			acct_storage_g_get_associations(db_conn, NULL);
-
-	itr = list_iterator_create(sacctmgr_association_list);
-	while((assoc = list_next(itr))) {
-		if(par_acct) {
-			if(!strcasecmp(par_acct, assoc->acct))
-				break;
-			else
-				continue;
-		}
-		if(assoc->user
-		   || strcasecmp(account, assoc->acct)
-		   || strcasecmp(cluster, assoc->cluster))
-			continue;
-		list_iterator_reset(itr);
-		par_acct = assoc->parent_acct;
-	}
-	list_iterator_destroy(itr);
-
-	return assoc;
-}
-
-extern acct_association_rec_t *sacctmgr_find_account_base_assoc(char *account,
-								char *cluster)
+extern acct_association_rec_t *sacctmgr_find_account_base_assoc_from_list(
+	List assoc_list, char *account, char *cluster)
 {
 	ListIterator itr = NULL;
 	acct_association_rec_t *assoc = NULL;
 	char *temp = "root";
 
-	if(!cluster)
+	if(!cluster || !assoc_list)
 		return NULL;
-
-	if(!sacctmgr_association_list)
-		sacctmgr_association_list =
-			acct_storage_g_get_associations(db_conn, NULL);
 
 	if(account)
 		temp = account;
-//	info("looking for %s %s in %d", account, cluster,
-//	     list_count(sacctmgr_association_list));
-	itr = list_iterator_create(sacctmgr_association_list);
+	/* info("looking for %s %s in %d", account, cluster, */
+/* 	     list_count(assoc_list)); */
+	itr = list_iterator_create(assoc_list);
 	while((assoc = list_next(itr))) {
-//		info("is it %s %s %s", assoc->user, assoc->acct, assoc->cluster);
+		/* info("is it %s %s %s", assoc->user, assoc->acct, assoc->cluster); */
 		if(assoc->user
 		   || strcasecmp(temp, assoc->acct)
 		   || strcasecmp(cluster, assoc->cluster))
 			continue;
-		
+	/* 	info("found it"); */
 		break;
 	}
 	list_iterator_destroy(itr);
 
 	return assoc;
 }
-
-extern acct_association_rec_t *sacctmgr_find_root_assoc(char *cluster)
-{
-	return sacctmgr_find_account_base_assoc(NULL, cluster);
-}
-
-extern acct_user_rec_t *sacctmgr_find_user(char *name)
+extern acct_user_rec_t *sacctmgr_find_user_from_list(
+	List user_list, char *name)
 {
 	ListIterator itr = NULL;
 	acct_user_rec_t *user = NULL;
 	
-	if(!name)
+	if(!name || !user_list)
 		return NULL;
 	
-	if(!sacctmgr_user_list)
-		sacctmgr_user_list = acct_storage_g_get_users(db_conn, NULL);
-
-	itr = list_iterator_create(sacctmgr_user_list);
+	itr = list_iterator_create(user_list);
 	while((user = list_next(itr))) {
 		if(!strcasecmp(name, user->name))
 			break;
@@ -439,21 +503,19 @@ extern acct_user_rec_t *sacctmgr_find_user(char *name)
 	list_iterator_destroy(itr);
 	
 	return user;
+
 }
 
-extern acct_account_rec_t *sacctmgr_find_account(char *name)
+extern acct_account_rec_t *sacctmgr_find_account_from_list(
+	List acct_list, char *name)
 {
 	ListIterator itr = NULL;
 	acct_account_rec_t *account = NULL;
 	
-	if(!name)
+	if(!name || !acct_list)
 		return NULL;
 
-	if(!sacctmgr_account_list)
-		sacctmgr_account_list = acct_storage_g_get_accounts(db_conn, 
-								    NULL);
-	
-	itr = list_iterator_create(sacctmgr_account_list);
+	itr = list_iterator_create(acct_list);
 	while((account = list_next(itr))) {
 		if(!strcasecmp(name, account->name))
 			break;
@@ -461,20 +523,19 @@ extern acct_account_rec_t *sacctmgr_find_account(char *name)
 	list_iterator_destroy(itr);
 	
 	return account;
+
 }
 
-extern acct_cluster_rec_t *sacctmgr_find_cluster(char *name)
+extern acct_cluster_rec_t *sacctmgr_find_cluster_from_list(
+	List cluster_list, char *name)
 {
 	ListIterator itr = NULL;
 	acct_cluster_rec_t *cluster = NULL;
-	if(!name)
+
+	if(!name || !cluster_list)
 		return NULL;
 
-	if(!sacctmgr_cluster_list)
-		sacctmgr_cluster_list = acct_storage_g_get_clusters(db_conn, 
-								    NULL);
-
-	itr = list_iterator_create(sacctmgr_cluster_list);
+	itr = list_iterator_create(cluster_list);
 	while((cluster = list_next(itr))) {
 		if(!strcasecmp(name, cluster->name))
 			break;
@@ -483,4 +544,3 @@ extern acct_cluster_rec_t *sacctmgr_find_cluster(char *name)
 	
 	return cluster;
 }
-

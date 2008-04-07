@@ -118,7 +118,6 @@ extern int sacctmgr_add_cluster(int argc, char *argv[])
 	int rc = SLURM_SUCCESS;
 	int i=0;
 	acct_cluster_rec_t *cluster = NULL;
-	acct_association_rec_t *assoc = NULL;		  
 	List name_list = list_create(slurm_destroy_char);
 	List cluster_list = NULL;
 	uint32_t fairshare = -2; 
@@ -127,7 +126,7 @@ extern int sacctmgr_add_cluster(int argc, char *argv[])
 	uint32_t max_nodes_per_job = -2;
 	uint32_t max_wall_duration_per_job = -2;
 	int limit_set = 0;
-	ListIterator itr = NULL;
+	ListIterator itr = NULL, itr_c = NULL;
 	char *name = NULL;
 
 	for (i=0; i<argc; i++) {
@@ -160,17 +159,45 @@ extern int sacctmgr_add_cluster(int argc, char *argv[])
 		list_destroy(name_list);
 		printf(" Need name of cluster to add.\n"); 
 		return SLURM_ERROR;
+	} else {
+		List temp_list = NULL;
+		acct_cluster_cond_t cluster_cond;
+		char *name = NULL;
+
+		memset(&cluster_cond, 0, sizeof(acct_cluster_cond_t));
+		cluster_cond.cluster_list = name_list;
+
+		temp_list = acct_storage_g_get_clusters(db_conn, &cluster_cond);
+		
+		itr_c = list_iterator_create(name_list);
+		itr = list_iterator_create(temp_list);
+		while((name = list_next(itr_c))) {
+			acct_cluster_rec_t *cluster_rec = NULL;
+
+			list_iterator_reset(itr);
+			while((cluster_rec = list_next(itr))) {
+				if(!strcasecmp(cluster_rec->name, name))
+					break;
+			}
+			if(cluster_rec) {
+				printf(" This cluster %s already exists.  "
+				       "Not adding.\n", name);
+				list_delete_item(itr_c);
+			}
+		}
+		list_iterator_destroy(itr);
+		list_iterator_destroy(itr_c);
+		list_destroy(temp_list);
+		if(!list_count(name_list)) {
+			list_destroy(name_list);
+			return SLURM_ERROR;
+		}
 	}
 
 	printf(" Adding Cluster(s)\n");
 	cluster_list = list_create(destroy_acct_cluster_rec);
 	itr = list_iterator_create(name_list);
 	while((name = list_next(itr))) {
-		if(sacctmgr_find_cluster(name)) {
-			printf(" This cluster %s already exists.  "
-			       "Not adding.\n", name);
-			continue;
-		}
 		cluster = xmalloc(sizeof(acct_cluster_rec_t));
 		cluster->name = xstrdup(name);
 		list_append(cluster_list, cluster);
@@ -214,22 +241,6 @@ extern int sacctmgr_add_cluster(int argc, char *argv[])
 	if(rc == SLURM_SUCCESS) {
 		if(commit_check("Would you like to commit changes?")) {
 			acct_storage_g_commit(db_conn, 1);
-			while((cluster = list_pop(cluster_list))) {
-				list_append(sacctmgr_cluster_list, cluster);
-				assoc = xmalloc(sizeof(acct_association_rec_t));
-				list_append(sacctmgr_association_list, assoc);
-				assoc->acct = xstrdup("root");
-				assoc->cluster = xstrdup(cluster->name);
-				assoc->fairshare = cluster->default_fairshare;
-				assoc->max_jobs = cluster->default_max_jobs;
-				assoc->max_nodes_per_job =
-					cluster->default_max_nodes_per_job;
-				assoc->max_wall_duration_per_job = 
-					cluster->
-					default_max_wall_duration_per_job;
-				assoc->max_cpu_secs_per_job =
-					cluster->default_max_cpu_secs_per_job;
-			}
 		} else {
 			printf(" Changes Discarded\n");
 			acct_storage_g_commit(db_conn, 0);

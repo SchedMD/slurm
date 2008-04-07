@@ -231,15 +231,18 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 	ListIterator itr_p = NULL;
 	acct_user_rec_t *user = NULL;
 	acct_association_rec_t *assoc = NULL;
-	acct_association_rec_t *acct_assoc = NULL;
 	char *default_acct = NULL;
 	acct_association_cond_t *assoc_cond = NULL;
+	acct_association_cond_t query_assoc_cond;
 	acct_qos_level_t qos = ACCT_QOS_NOTSET;
 	acct_admin_level_t admin_level = ACCT_ADMIN_NOTSET;
 	char *name = NULL, *account = NULL, *cluster = NULL, *partition = NULL;
 	int partition_set = 0;
 	List user_list = NULL;
 	List assoc_list = NULL;
+	List local_assoc_list = NULL;
+	List local_acct_list = NULL;
+	List local_user_list = NULL;
 	uint32_t fairshare = -2; 
 	uint32_t max_jobs = -2; 
 	uint32_t max_nodes_per_job = -2;
@@ -251,11 +254,11 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 	int first = 1;
 	int acct_first = 1;
 
-	if(!list_count(sacctmgr_cluster_list)) {
-		printf(" Can't add users, no cluster defined yet.\n"
-		       " Please contact your administrator.\n");
-		return SLURM_ERROR;
-	}
+/* 	if(!list_count(sacctmgr_cluster_list)) { */
+/* 		printf(" Can't add users, no cluster defined yet.\n" */
+/* 		       " Please contact your administrator.\n"); */
+/* 		return SLURM_ERROR; */
+/* 	} */
 
 	assoc_cond = xmalloc(sizeof(acct_association_cond_t));
 	assoc_cond->user_list = list_create(slurm_destroy_char);
@@ -309,19 +312,78 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 	if(!list_count(assoc_cond->user_list)) {
 		destroy_acct_association_cond(assoc_cond);
 		printf(" Need name of user to add.\n"); 
-		return SLURM_SUCCESS;
+		return SLURM_ERROR;
+	} else {
+ 		acct_user_cond_t user_cond;
+
+		memset(&user_cond, 0, sizeof(acct_user_cond_t));
+		user_cond.user_list = assoc_cond->user_list;
+
+		local_user_list = acct_storage_g_get_users(
+			db_conn, &user_cond);
+		
+	}	
+	if(!local_user_list) {
+		printf(" Problem getting users from database.  "
+		       "Contact your admin.\n");
+		destroy_acct_association_cond(assoc_cond);
+		return SLURM_ERROR;
 	}
 
+
+	if(!list_count(assoc_cond->acct_list)) {
+		destroy_acct_association_cond(assoc_cond);
+		printf(" Need name of acct to add user to.\n"); 
+		return SLURM_ERROR;
+	} else {
+ 		acct_account_cond_t account_cond;
+
+		memset(&account_cond, 0, sizeof(acct_account_cond_t));
+		account_cond.acct_list = assoc_cond->acct_list;
+
+		local_acct_list = acct_storage_g_get_accounts(
+			db_conn, &account_cond);
+		
+	}	
+
+	if(!local_acct_list) {
+		printf(" Problem getting accounts from database.  "
+		       "Contact your admin.\n");
+		list_destroy(local_user_list);
+		destroy_acct_association_cond(assoc_cond);
+		return SLURM_ERROR;
+	}
 	
 	
 	if(!list_count(assoc_cond->cluster_list)) {
+		List cluster_list = NULL;
 		acct_cluster_rec_t *cluster_rec = NULL;
-		itr_c = list_iterator_create(sacctmgr_cluster_list);
+
+		cluster_list = acct_storage_g_get_clusters(db_conn, NULL);
+		if(!cluster_list) {
+			printf(" Problem getting clusters from database.  "
+			       "Contact your admin.\n");
+			destroy_acct_association_cond(assoc_cond);
+			list_destroy(local_user_list);
+			list_destroy(local_acct_list);
+			return SLURM_ERROR;
+		}
+
+		itr_c = list_iterator_create(cluster_list);
 		while((cluster_rec = list_next(itr_c))) {
 			list_append(assoc_cond->cluster_list, 
 				    xstrdup(cluster_rec->name));
 		}
 		list_iterator_destroy(itr_c);
+
+		if(!list_count(assoc_cond->cluster_list)) {
+			printf("  Can't add users, no cluster defined yet.\n"
+			       " Please contact your administrator.\n");
+			destroy_acct_association_cond(assoc_cond);
+			list_destroy(local_user_list);
+			list_destroy(local_acct_list);
+			return SLURM_ERROR; 
+		}
 	}
 
 	if(!default_acct) {
@@ -334,10 +396,17 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 	   freed when they are */
 	user_list = list_create(destroy_acct_user_rec);
 	assoc_list = list_create(destroy_acct_association_rec);
+
+	memset(&query_assoc_cond, 0, sizeof(acct_association_cond_t));
+	query_assoc_cond.acct_list = assoc_cond->acct_list;
+	query_assoc_cond.cluster_list = assoc_cond->cluster_list;
+	local_assoc_list = acct_storage_g_get_associations(
+		db_conn, &query_assoc_cond);	
+	
 	itr = list_iterator_create(assoc_cond->user_list);
 	while((name = list_next(itr))) {
 		user = NULL;
-		if(!sacctmgr_find_user(name)) {
+		if(!sacctmgr_find_user_from_list(local_user_list, name)) {
 			if(!default_acct) {
 				printf(" Need a default account for "
 				       "these users to add.\n"); 
@@ -345,7 +414,8 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 				goto no_default;
 			}
 			if(first) {
-				if(!sacctmgr_find_account(default_acct)) {
+				if(!sacctmgr_find_account_from_list(
+					   local_acct_list, default_acct)) {
 					printf(" error: This account '%s' "
 					       "doesn't exist.\n"
 					       "        Contact your admin "
@@ -369,7 +439,8 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 		itr_a = list_iterator_create(assoc_cond->acct_list);
 		while((account = list_next(itr_a))) {
 			if(acct_first) {
-				if(!sacctmgr_find_account(default_acct)) {
+				if(!sacctmgr_find_account_from_list(
+					   local_acct_list, default_acct)) {
 					printf(" error: This account '%s' "
 					       "doesn't exist.\n"
 					       "        Contact your admin "
@@ -380,9 +451,9 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 			}
 			itr_c = list_iterator_create(assoc_cond->cluster_list);
 			while((cluster = list_next(itr_c))) {
-				acct_assoc = sacctmgr_find_account_base_assoc(
-					account, cluster);
-				if(!acct_assoc) {
+				if(!sacctmgr_find_account_base_assoc_from_list(
+					   local_assoc_list, account,
+					   cluster)) {
 					if(acct_first)
 						printf(" error: This "
 						       "account '%s' "
@@ -393,19 +464,14 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 						       "to add this account.\n",
 						       account, cluster);	
 					continue;
-				}/*  else  */
-/* 					printf("got %u %s %s %s %s\n", */
-/* 					       acct_assoc->id, */
-/* 					       acct_assoc->user, */
-/* 					       acct_assoc->account, */
-/* 					       acct_assoc->cluster, */
-/* 					       acct_assoc->parent_account); */
+				}
 				
 				itr_p = list_iterator_create(
 					assoc_cond->partition_list);
 				while((partition = list_next(itr_p))) {
 					partition_set = 1;
-					if(sacctmgr_find_association(
+					if(sacctmgr_find_association_from_list(
+						   local_assoc_list,
 						   name, account,
 						   cluster, partition))
 						continue;
@@ -429,10 +495,10 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 					else 
 						list_append(assoc_list, assoc);
 					xstrfmtcat(assoc_str,
-						   "  U = %-9s"
-						   " A = %-10s"
-						   " C = %-10s"
-						   " P = %-10s\n",
+						   "  U = %-9.9s"
+						   " A = %-10.10s"
+						   " C = %-10.10s"
+						   " P = %-10.10s\n",
 						   assoc->user, assoc->acct,
 						   assoc->cluster,
 						   assoc->partition);
@@ -441,7 +507,8 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 				if(partition_set) 
 					continue;
 
-				if(sacctmgr_find_association(
+				if(sacctmgr_find_association_from_list(
+					   local_assoc_list,
 					   name, account, cluster, NULL))
 						continue;
 					
@@ -460,11 +527,10 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 					list_append(user->assoc_list, assoc);
 				else 
 					list_append(assoc_list, assoc);
-				list_append(sacctmgr_association_list, assoc);
 				xstrfmtcat(assoc_str,
-					   "  U = %-9s"
-					   " A = %-10s"
-					   " C = %-10s\n",
+					   "  U = %-9.9s"
+					   " A = %-10.10s"
+					   " C = %-10.10s\n",
 					   assoc->user, assoc->acct,
 					   assoc->cluster);		
 			}
@@ -475,6 +541,9 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 	}
 no_default:
 	list_iterator_destroy(itr);
+	list_destroy(local_user_list);
+	list_destroy(local_acct_list);
+	list_destroy(local_assoc_list);
 	destroy_acct_association_cond(assoc_cond);
 
 	if(!list_count(user_list) && !list_count(assoc_list)) {
@@ -540,22 +609,12 @@ no_default:
 	if(rc == SLURM_SUCCESS) {
 		if(commit_check("Would you like to commit changes?")) {
 			acct_storage_g_commit(db_conn, 1);
-			while((user = list_pop(user_list))) {
-				list_append(sacctmgr_user_list, user);
-				while((assoc = list_pop(user->assoc_list))) {
-					list_append(sacctmgr_association_list,
-						    assoc);
-				}
-			}
-			while((assoc = list_pop(assoc_list))) {
-				list_append(sacctmgr_association_list, assoc);
-			}			
 		} else {
 			printf(" Changes Discarded\n");
 			acct_storage_g_commit(db_conn, 0);
 		}
 	} else {
-		printf(" error: Problem adding user associations");
+		printf(" error: Problem adding user associations\n");
 		rc = SLURM_ERROR;
 	}
 
