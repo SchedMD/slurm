@@ -125,6 +125,12 @@ function get_task_plugin_param()
   return "#TaskPluginParam="
 }
 
+function hide_box()
+{
+   var popup = document.getElementById('out_box');
+   popup.style.visibility = 'hidden';
+    
+}
 
 function displayfile()
 {
@@ -256,13 +262,26 @@ function displayfile()
    " MaxTime=" + document.config.max_time.value +
    " State=UP"
 
-    document.open();
-    document.write(printme);
-    document.close();
+   scroll(0,0);
+   var popup = document.getElementById('out_box');
+   
+   popup.innerHTML = "<a href='javascript:hide_box();'>close</a><br>";
+   popup.innerHTML += "#BEGIN SLURM.CONF FILE<br><br>";
+   popup.innerHTML += printme;
+   popup.innerHTML += "<br><br>#END SLURM.CONF FILE<br>";
+   popup.innerHTML += "<a href='javascript:hide_box();'>close</a>";
+   
+   popup.style.visibility = 'visible';
+
+   // OLD CODE
+   //document.open();
+   //document.write(printme);
+   //document.close();
 }
 
 -->
 </SCRIPT>
+<div style='visibility:hidden;text-align:left;background:#ccc;border:1px solid black;position: absolute;left:100;z-index:1;padding:5;' id='out_box'></div>
 </HEAD>
 <BODY>
 <FORM name=config>
@@ -774,7 +793,7 @@ before terminating all remaining tasks. A value of zero indicates unlimited wait
 
 <BR> 
 <BR>
-<input type=submit value="Submit" onClick="javascript:displayfile()">
+<input type=button value="Submit" onClick="javascript:displayfile()">
 <input type=reset value="Reset Form">
 <P>
 </FORM>
