@@ -262,26 +262,26 @@ function displayfile()
    " MaxTime=" + document.config.max_time.value +
    " State=UP"
 
-   scroll(0,0);
-   var popup = document.getElementById('out_box');
+   //scroll(0,0);
+   //var popup = document.getElementById('out_box');
    
-   popup.innerHTML = "<a href='javascript:hide_box();'>close</a><br>";
-   popup.innerHTML += "#BEGIN SLURM.CONF FILE<br><br>";
-   popup.innerHTML += printme;
-   popup.innerHTML += "<br><br>#END SLURM.CONF FILE<br>";
-   popup.innerHTML += "<a href='javascript:hide_box();'>close</a>";
+   //popup.innerHTML = "<a href='javascript:hide_box();'>close</a><br>";
+   //popup.innerHTML += "#BEGIN SLURM.CONF FILE<br><br>";
+   //popup.innerHTML += printme;
+   //popup.innerHTML += "<br><br>#END SLURM.CONF FILE<br>";
+   //popup.innerHTML += "<a href='javascript:hide_box();'>close</a>";
    
-   popup.style.visibility = 'visible';
+   //popup.style.visibility = 'visible';
 
    // OLD CODE
-   //document.open();
-   //document.write(printme);
-   //document.close();
+   document.open();
+   document.write(printme);
+   document.close();
 }
 
 -->
 </SCRIPT>
-<div style='visibility:hidden;text-align:left;background:#ccc;border:1px solid black;position: absolute;left:100;z-index:1;padding:5;' id='out_box'></div>
+<!-- <div style='visibility:hidden;text-align:left;background:#ccc;border:1px solid black;position: absolute;left:100;z-index:1;padding:5;' id='out_box'></div> -->
 </HEAD>
 <BODY>
 <FORM name=config>
