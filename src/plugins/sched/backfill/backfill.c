@@ -246,6 +246,8 @@ static void _attempt_backfill(void)
 
 		if (license_job_test(job_ptr) != SLURM_SUCCESS)
 			continue;
+		if (job_independent(job_ptr) != true)
+			continue;
 
 		/* Determine minimum and maximum node counts */
 		min_nodes = MAX(job_ptr->details->min_nodes,
