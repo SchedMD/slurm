@@ -70,9 +70,11 @@ fi
 export LD_LIBRARY_PATH="$LIBDIR:$LD_LIBRARY_PATH"
 
 start() {
-    echo -n "starting $1: " 
+    prog=$1
+    shift
+    echo -n "starting $prog: " 
     unset HOME MAIL USER USERNAME 
-    $STARTPROC $SBINDIR/$1 $2
+    $STARTPROC $SBINDIR/$prog $*
     rc_status -v
     echo
     touch /var/lock/subsys/slurm
