@@ -93,7 +93,7 @@ int slurm_get_avail_procs(const uint16_t max_sockets,
 			  char *name)
 {
 	uint16_t avail_cpus = 0, max_cpus = 0;
-	uint16_t allocated_cores = 0, allocated_sockets = 0;
+	uint16_t allocated_cpus = 0, allocated_cores = 0, allocated_sockets = 0;
 	uint16_t max_avail_cpus = 0xffff;	/* for alloc_* accounting */
 	int i;
 
@@ -128,7 +128,7 @@ int slurm_get_avail_procs(const uint16_t max_sockets,
 		info("get_avail_procs %u %s alloc_cores[%d] = %u", 
 		     job_id, name, i, alloc_cores[i]);
 #endif
-		
+	allocated_cpus = allocated_cores * (*threads);
 	switch(cr_type) {
 	/* For the following CR types, nodes have no notion of socket, core,
 	   and thread.  Only one level of logical processors */ 
@@ -137,8 +137,8 @@ int slurm_get_avail_procs(const uint16_t max_sockets,
 	case CR_CPU:
 	case CR_CPU_MEMORY:
 		
-		if (*cpus >= allocated_cores)
-			*cpus -= allocated_cores;
+		if (*cpus >= allocated_cpus)
+			*cpus -= allocated_cpus;
 		else {
 			*cpus = 0;
 			error("cons_res: *cpus underflow");
@@ -155,8 +155,8 @@ int slurm_get_avail_procs(const uint16_t max_sockets,
 	/* For all other types, nodes contain sockets, cores, and threads */
 	case CR_CORE:
 	case CR_CORE_MEMORY:
-		if (*cpus >= allocated_cores)
-			*cpus -= allocated_cores;
+		if (*cpus >= allocated_cpus)
+			*cpus -= allocated_cpus;
 		else {
 			*cpus = 0;
 			error("cons_res: *cpus underflow");
@@ -166,8 +166,10 @@ int slurm_get_avail_procs(const uint16_t max_sockets,
 			int tmp_diff = 0;
 			for (i=0; i<*sockets; i++) {
 				tmp_diff = *cores - alloc_cores[i];
-				if (min_cores <= tmp_diff)
+				if (min_cores <= tmp_diff) {
+					tmp_diff *= (*threads);
 					max_avail_cpus += tmp_diff;
+				}
 			}
 		} 
 
@@ -217,8 +219,8 @@ int slurm_get_avail_procs(const uint16_t max_sockets,
 			*sockets = 0;
 			error("cons_res: *sockets underflow");
 		}
-		if (*cpus >= allocated_cores)
-			*cpus -= allocated_cores;
+		if (*cpus >= allocated_cpus)
+			*cpus -= allocated_cpus;
 		else {
 			*cpus = 0;
 			error("cons_res: *cpus underflow");

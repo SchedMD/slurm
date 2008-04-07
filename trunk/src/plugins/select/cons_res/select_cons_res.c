@@ -2058,6 +2058,8 @@ static enum node_cr_state _get_job_node_req(struct job_record *job_ptr)
 	return NODE_CR_ONE_ROW;
 }
 
+/* for a given node and partition return the count of rows (time slices)
+ * that have resources allocated */
 static int _get_allocated_rows(struct node_cr_record *select_node_ptr,
 			       struct job_record *job_ptr, int n,
 			       enum node_cr_state job_node_req)
