@@ -214,7 +214,7 @@ function displayfile()
    get_field("AccountingStorageLoc",document.config.accounting_storage_loc) + "<br>" +
    get_field("AccountingStoragePass",document.config.accounting_storage_pass) + "<br>" +
    get_field("AccountingStoragePort",document.config.accounting_storage_port) + "<br>" +
-   "AccountingStorageType=jobacct_storage/" + get_accounting_storage_type_field(get_radio_value(document.config.job_acct_gather_type), document.config.accounting_storage_type) + "<br>" +
+   "AccountingStorageType=accounting_storage/" + get_accounting_storage_type_field(get_radio_value(document.config.job_acct_gather_type), document.config.accounting_storage_type) + "<br>" +
    get_field("AccountingStorageUser",document.config.accounting_storage_user) + "<br>" +
    get_field("ClusterName",document.config.cluster_name) + "<br>" +
    get_field("JobCompHost",document.config.job_comp_host) + "<br>" +
@@ -255,8 +255,10 @@ function displayfile()
    " Default=YES"+
    " MaxTime=" + document.config.max_time.value +
    " State=UP"
-    
+
+    document.open();
     document.write(printme);
+    document.close();
 }
 
 -->
@@ -692,7 +694,7 @@ Select one value for <B>AccountingStorageType</B>:<BR>
 No job accounting storage<BR>
 <input type="radio" name="accounting_storage_type" value="filetxt"> <B>FileTxt</B>: 
 Write job accounting to a text file<BR>
-<input type="radio" name="accounting_storage_type" value="Gold"> <B>Gold</B>: 
+<input type="radio" name="accounting_storage_type" value="gold"> <B>Gold</B>: 
 Write completion status to Gold database daemon which can securely 
 save the data from many Slurm managed clusters into a common database<BR>
 <input type="radio" name="accounting_storage_type" value="mysql"> <B>MySQL</B>: 
