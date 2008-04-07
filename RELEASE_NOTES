@@ -156,8 +156,8 @@ SCHEDULING CHANGES
 ACCOUNTING CHANGES
 ==================
 * The job accounting plugin has been split into two components: gathering
-  of data and storing the data. The JobAcctType parameter has been replaced
-  by JobAcctGatherType (AIX or Linux) and JobAcctStorageType (MySQL, PostGreSQL,
+  of data and storing the data. The JobAcctType parameter has been replaced by
+  JobAcctGatherType (AIX or Linux) and AccountingStorageType (MySQL, PostGreSQL,
   filetext, and SlurmDBD). Storing the accounting information into a database
   will provide you with greater flexibility in managing the data.
 
