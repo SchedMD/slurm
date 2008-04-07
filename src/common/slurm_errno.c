@@ -114,7 +114,7 @@ static slurm_errtab_t slurm_errtab[] = {
 	{ ESLURM_DEFAULT_PARTITION_NOT_SET,
 	  "No partition specified or system default partition"	},
 	{ ESLURM_ACCESS_DENIED, 
-	  "Access denied"					},
+	  "Access/permission denied"				},
 	{ ESLURM_JOB_MISSING_REQUIRED_PARTITION_GROUP,
 	  "User's group not permitted to use this partition"	},
 	{ ESLURM_REQUESTED_NODES_NOT_IN_PARTITION,
