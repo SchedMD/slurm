@@ -19,7 +19,13 @@ script.
 Typical uses include notifying system administrators of node failures 
 and gracefully terminating a job when it's time limit is approaching.
 
-\fBNOTE:\fR This command can only set triggers if run by the 
+\fBIMPORTANT NOTE:\fR Trigger events are not processed instantly, but 
+a check is performed for trigger events on a periodic basis (currently 
+every 15 seconds). 
+Node state event trigger programs must establish a new trigger within 
+that time period to avoid node state changes failing to invoke a trigger.
+
+\fBIMPORTANT NOTE:\fR This command can only set triggers if run by the 
 user \fISlurmUser\fR unless \fISlurmUser\fR is configured as user root.
 This is required for the \fIslurmctld\fR daemon to set the appropriate
 user and group IDs for the executed program. 
@@ -90,7 +96,8 @@ By default, all nodes associated with the job (if \fB\-\-jobid\fR
 is specified) or on the system are considered for event triggers.
 \fBNOTE:\fR The \fB\-\-node\fR option can not be used in conjunction 
 with the \fB\-\-jobid\fR option. When the \fB\-\-jobid\fR option is 
-used in conjunction with the \fB\-\-up\fR or \fB\-\-down\fR option, 
+used in conjunction with the \fB\-\-up\fR, \fB\-\-down\fR or 
+\fB\-\-drained\fR option, 
 all nodes allocated to that job will considered the nodes used as a 
 trigger event.
 
