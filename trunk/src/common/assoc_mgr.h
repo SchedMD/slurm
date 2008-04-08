@@ -106,7 +106,7 @@ extern int assoc_mgr_update_local_assocs(acct_update_object_t *update);
 extern int assoc_mgr_update_local_users(acct_update_object_t *update);
 
 /* 
- * validate that an association ID is still avlid 
+ * validate that an association ID is still valid 
  * IN:  assoc_id - association ID previously returned by 
  *		get_assoc_id(void *db_conn, 
  )
