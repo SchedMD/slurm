@@ -479,7 +479,7 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 			max_share = job_ptr->part_ptr->max_share & 
 					~SHARED_FORCE;
 		} else	/* ((shared == 0) || (shared == (uint16_t) NO_VAL)) */
-			max_share = 0;
+			max_share = 1;
 	}
 
 	if (mode == SELECT_MODE_WILL_RUN) {
@@ -488,16 +488,18 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 		slurm_mutex_unlock(&cr_mutex);
 		return rc;
 	} else if (mode == SELECT_MODE_TEST_ONLY) {
-		min_share = max_share = NO_SHARE_LIMIT;
+		min_share = NO_SHARE_LIMIT;
+		max_share = min_share + 1;
 		save_mem = job_ptr->details->job_min_memory;
 		job_ptr->details->job_min_memory = 0;
 	}
 
 	orig_map = bit_copy(bitmap);
-	for (max_run_job=min_share; max_run_job<=max_share; max_run_job++) {
+	for (max_run_job=min_share; max_run_job<max_share; max_run_job++) {
+		bool last_iteration = (max_run_job == (max_share -1));
 		for (sus_jobs=0; ((sus_jobs<5) && (rc != SLURM_SUCCESS)); 
 		     sus_jobs++) {
-			if (max_run_job == max_share)
+			if (last_iteration)
 				sus_jobs = 999;
 			j = _job_count_bitmap(node_cr_ptr, job_ptr, 
 					      orig_map, bitmap, 
@@ -548,7 +550,7 @@ extern int select_p_job_list_test(List req_list)
 
 /*
  * Set the bits in 'jobmap' that correspond to bits in the 'bitmap'
- * that are running 'job_cnt' jobs or less, and clear the rest.
+ * that are running 'run_job_cnt' jobs or less, and clear the rest.
  */
 static int _job_count_bitmap(struct node_cr_record *node_cr_ptr,
 			     struct job_record *job_ptr, 
@@ -1457,11 +1459,13 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	ListIterator job_iterator;
 	bitstr_t *orig_map;
 	int i, rc = SLURM_ERROR;
+	int max_run_jobs = max_share - 1;	/* exclude this job */
 
 	orig_map = bit_copy(bitmap);
 
 	/* Try to run with currently available nodes */
-	i = _job_count_bitmap(node_cr_ptr, job_ptr, orig_map, bitmap, max_share, max_share);
+	i = _job_count_bitmap(node_cr_ptr, job_ptr, orig_map, bitmap, 
+			      max_run_jobs, NO_SHARE_LIMIT);
 	if (i >= min_nodes) {
 		rc = _job_test(job_ptr, bitmap, min_nodes, max_nodes, 
 			       req_nodes);
@@ -1507,7 +1511,7 @@ static int _will_run_test(struct job_record *job_ptr, bitstr_t *bitmap,
 		_rm_job_from_nodes(exp_node_cr, tmp_job_ptr,
 				   "_will_run_test", 1);
 		i = _job_count_bitmap(exp_node_cr, job_ptr, orig_map, bitmap, 
-				      max_share, max_share);
+				      max_run_jobs, NO_SHARE_LIMIT);
 		if (i < min_nodes)
 			continue;
 		rc = _job_test(job_ptr, bitmap, min_nodes, max_nodes, 
