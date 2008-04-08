@@ -1,9 +1,8 @@
 /*****************************************************************************
  *  gang.c - Gang scheduler functions.
  *****************************************************************************
- *  Copyright (C) 2006 The Regents of the University of California.
- *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Morris Jette <jette1@llnl.gov>
+ *  Copyright (C) 2008 Hewlett-Packard Development Company, L.P.
+ *  Written by Chris Holmes
  *  LLNL-CODE-402394.
  *  
  *  This file is part of SLURM, a resource management program.
@@ -13,18 +12,18 @@
  *  the terms of the GNU General Public License as published by the Free
  *  Software Foundation; either version 2 of the License, or (at your option)
  *  any later version.
- *
- *  In addition, as a special exception, the copyright holders give permission 
- *  to link the code of portions of this program with the OpenSSL library under 
- *  certain conditions as described in each individual source file, and 
- *  distribute linked combinations including the two. You must obey the GNU 
- *  General Public License in all respects for all of the code used other than 
- *  OpenSSL. If you modify file(s) with this exception, you may extend this 
- *  exception to your version of the file(s), but you are not obligated to do 
- *  so. If you do not wish to do so, delete this exception statement from your
- *  version.  If you delete this exception statement from all source files in 
- *  the program, then also delete it here.
  *  
+ *  In addition, as a special exception, the copyright holders give permission
+ *  to link the code of portions of this program with the OpenSSL library under
+ *  certain conditions as described in each individual source file, and
+ *  distribute linked combinations including the two. You must obey the GNU
+ *  General Public License in all respects for all of the code used other than
+ *  OpenSSL. If you modify file(s) with this exception, you may extend this
+ *  exception to your version of the file(s), but you are not obligated to do
+ *  so. If you do not wish to do so, delete this exception statement from your
+ *  version.  If you delete this exception statement from all source files in
+ *  the program, then also delete it here.
+ *
  *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
  *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
@@ -175,16 +174,16 @@ char *_print_flag(int flag) {
 void _print_jobs(struct gs_part *p_ptr)
 {
 	int i;
-	debug3("sched/gang:  part %s has %d jobs, %d shadows:",
+	debug3("sched/gang:  part %s has %u jobs, %u shadows:",
 		p_ptr->part_name, p_ptr->num_jobs, p_ptr->num_shadows);
 	for (i = 0; i < p_ptr->num_shadows; i++) {
-		debug3("sched/gang:   shadow job %d row_s %s, sig_s %s",
+		debug3("sched/gang:   shadow job %u row_s %s, sig_s %s",
 			p_ptr->shadow[i]->job_id,
 			_print_flag(p_ptr->shadow[i]->row_state),
 			_print_flag(p_ptr->shadow[i]->sig_state));
 	}
 	for (i = 0; i < p_ptr->num_jobs; i++) {
-		debug3("sched/gang:   job %d row_s %s, sig_s %s",
+		debug3("sched/gang:   job %u row_s %s, sig_s %s",
 			p_ptr->job_list[i]->job_id,
 			_print_flag(p_ptr->job_list[i]->row_state),
 			_print_flag(p_ptr->job_list[i]->sig_state));
@@ -286,7 +285,7 @@ _load_phys_res_cnt()
 	}
 	gs_num_groups++;
 	for (i = 0; i < gs_num_groups; i++) {
-		debug3("sched/gang: _load_phys_res_cnt: grp %d cpus %d reps %d",
+		debug3("sched/gang: _load_phys_res_cnt: grp %d cpus %u reps %u",
 			i, gs_cpus_per_res[i], gs_cpu_count_reps[i]);
 	}
 	return;
@@ -465,18 +464,18 @@ _add_job_to_active(struct gs_job *j_ptr, struct gs_part *p_ptr)
 	/* add job to active_resmap */
 	if (!p_ptr->active_resmap) {
 		/* allocate the active resmap */
-		debug3("sched/gang: _add_job_to_active: using job %d as active base",
+		debug3("sched/gang: _add_job_to_active: using job %u as active base",
 			j_ptr->job_id);
 		p_ptr->active_resmap = bit_copy(j_ptr->resmap);
 	} else if (p_ptr->jobs_active == 0) {
 		/* if the active_resmap exists but jobs_active is '0',
 		 * this means to overwrite the bitmap memory */
-		debug3("sched/gang: _add_job_to_active: copying job %d into active base",
+		debug3("sched/gang: _add_job_to_active: copying job %u into active base",
 			j_ptr->job_id);
 		bit_copybits(p_ptr->active_resmap, j_ptr->resmap);
 	} else {
 		/* add job to existing jobs in the active resmap */
-		debug3("sched/gang: _add_job_to_active: merging job %d into active resmap",
+		debug3("sched/gang: _add_job_to_active: merging job %u into active resmap",
 			j_ptr->job_id);
 		bit_or(p_ptr->active_resmap, j_ptr->resmap);
 	}
@@ -526,15 +525,15 @@ _signal_job(uint32_t job_id, int sig)
 	
 	msg.job_id = job_id;
 	if (sig == GS_SUSPEND) {
-		debug3("sched/gang: suspending %d", job_id);
+		debug3("sched/gang: suspending %u", job_id);
 		msg.op = SUSPEND_JOB;
 	} else {
-		debug3("sched/gang: resuming %d", job_id);
+		debug3("sched/gang: resuming %u", job_id);
 		msg.op = RESUME_JOB;
 	}
 	rc = job_suspend(&msg, 0, -1);
 	if (rc)
-		error("sched/gang: error (%d) signaling(%d) job %d", rc, sig,
+		error("sched/gang: error (%d) signaling(%d) job %u", rc, sig,
 		      job_id);
 }
 
@@ -592,7 +591,7 @@ _get_resmap(bitstr_t *origmap, uint32_t job_id)
 	bitstr_t *newmap;
 	
 	if (bit_size(origmap) != node_record_count) {
-		error("sched/gang: bitmap size has changed from %d for %d",
+		error("sched/gang: bitmap size has changed from %d for %u",
 			node_record_count, job_id);
 		fatal("sched/gang: inconsistent bitmap size error");
 	}
@@ -816,7 +815,6 @@ _update_active_row(struct gs_part *p_ptr, int add_new_jobs)
 static void
 _update_all_active_rows()
 {
-	struct gs_part *p_ptr;
 	int i;
 	
 	/* Sort the partitions. This way the shadows of any high-priority
@@ -839,7 +837,7 @@ _remove_job_from_part(uint32_t job_id, struct gs_part *p_ptr)
 	if (!job_id || !p_ptr)
 		return;
 
-	debug3("sched/gang: _remove_job_from_part: removing job %d", job_id);
+	debug3("sched/gang: _remove_job_from_part: removing job %u", job_id);
 	/* find the job in the job_list */
 	i = _find_job_index(p_ptr, job_id);
 	if (i < 0)
@@ -860,7 +858,7 @@ _remove_job_from_part(uint32_t job_id, struct gs_part *p_ptr)
 	
 	/* make sure the job is not suspended, and then delete it */
 	if (j_ptr->sig_state == GS_SUSPEND) {
-		debug3("sched/gang: _remove_job_from_part: resuming suspended job %d",
+		debug3("sched/gang: _remove_job_from_part: resuming suspended job %u",
 			j_ptr->job_id);
 		_signal_job(j_ptr->job_id, GS_RESUME);
 	}
@@ -888,7 +886,7 @@ _add_job_to_part(struct gs_part *p_ptr, uint32_t job_id, bitstr_t *job_bitmap)
 	xassert(job_id > 0);
 	xassert(job_bitmap);
 
-	debug3("sched/gang: _add_job_to_part: adding job %d", job_id);
+	debug3("sched/gang: _add_job_to_part: adding job %u", job_id);
 	_print_jobs(p_ptr);
 	
 	/* take care of any memory needs */
@@ -906,7 +904,7 @@ _add_job_to_part(struct gs_part *p_ptr, uint32_t job_id, bitstr_t *job_bitmap)
 		 * may have changed. In any case, remove the existing
 		 * job before adding this new one.
 		 */
-		debug3("sched/gang: _add_job_to_part: duplicate job %d detected",
+		debug3("sched/gang: _add_job_to_part: duplicate job %u detected",
 			job_id);
 		_remove_job_from_part(job_id, p_ptr);
 		_update_active_row(p_ptr, 0);
@@ -937,7 +935,8 @@ _add_job_to_part(struct gs_part *p_ptr, uint32_t job_id, bitstr_t *job_bitmap)
 	
 	/* determine the immediate fate of this job (run or suspend) */
 	if (_job_fits_in_active_row(j_ptr, p_ptr)) {
-		debug3("sched/gang: _add_job_to_part: adding job %d to active row", job_id);
+		debug3("sched/gang: _add_job_to_part: adding job %u to active row", 
+			job_id);
 		_add_job_to_active(j_ptr, p_ptr);
 		/* note that this job is a "filler" for this row */
 		j_ptr->row_state = GS_FILLER;
@@ -949,7 +948,7 @@ _add_job_to_part(struct gs_part *p_ptr, uint32_t job_id, bitstr_t *job_bitmap)
 		_cast_shadow(j_ptr, p_ptr->priority);
 
 	} else {
-		debug3("sched/gang: _add_job_to_part: suspending job %d",
+		debug3("sched/gang: _add_job_to_part: suspending job %u",
 			job_id);
 		_signal_job(j_ptr->job_id, GS_SUSPEND);
 		j_ptr->sig_state = GS_SUSPEND;
@@ -978,7 +977,7 @@ _scan_slurm_job_list()
 	debug3("sched/gang: _scan_slurm_job_list: job_list exists...");
 	job_iterator = list_iterator_create(job_list);
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
-		debug3("sched/gang: _scan_slurm_job_list: checking job %d",
+		debug3("sched/gang: _scan_slurm_job_list: checking job %u",
 			job_ptr->job_id);		
 		if (job_ptr->job_state == JOB_PENDING)
 			continue;
@@ -1152,7 +1151,7 @@ gs_job_start(struct job_record *job_ptr)
 		/* No partition was found for this job, so let it run
 		 * uninterupted (what else can we do?)
 		 */
-		error("sched_gang: could not find partition %s for job %d",
+		error("sched_gang: could not find partition %s for job %u",
 		      job_ptr->partition, job_ptr->job_id);
 	}
 	debug3("sched/gang: leaving gs_job_start");
@@ -1380,7 +1379,7 @@ _cycle_job_list(struct gs_part *p_ptr)
 		j_ptr = p_ptr->job_list[i];
 		if (j_ptr->row_state == GS_NO_ACTIVE &&
 		    j_ptr->sig_state == GS_RESUME) {
-		    	debug3("sched/gang: _cycle_job_list: suspending job %d",
+		    	debug3("sched/gang: _cycle_job_list: suspending job %u",
 				j_ptr->job_id);
 			_signal_job(j_ptr->job_id, GS_SUSPEND);
 			j_ptr->sig_state = GS_SUSPEND;
@@ -1393,7 +1392,7 @@ _cycle_job_list(struct gs_part *p_ptr)
 		j_ptr = p_ptr->job_list[i];
 		if (j_ptr->row_state == GS_ACTIVE &&
 		    j_ptr->sig_state == GS_SUSPEND) {
-		    	debug3("sched/gang: _cycle_job_list: resuming job %d",
+		    	debug3("sched/gang: _cycle_job_list: resuming job %u",
 				j_ptr->job_id);
 			_signal_job(j_ptr->job_id, GS_RESUME);
 			j_ptr->sig_state = GS_RESUME;
@@ -1419,7 +1418,7 @@ _timeslicer_thread() {
 		debug3("sched/gang: _timeslicer_thread: scanning partitions");
 		for (i = 0; i < num_sorted_part; i++) {
 			p_ptr = gs_part_sorted[i];
-			debug3("sched/gang: _timeslicer_thread: part %s: run %d total %d",
+			debug3("sched/gang: _timeslicer_thread: part %s: run %u total %u",
 				p_ptr->part_name, p_ptr->jobs_active,
 				p_ptr->num_jobs);
 			if (p_ptr->jobs_active <
