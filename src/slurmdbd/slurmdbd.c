@@ -159,6 +159,8 @@ end_it:
 		verbose("Unable to remove pidfile '%s': %m",
 			slurmdbd_conf->pid_file);
 	}
+
+	assoc_mgr_fini();
 	slurm_acct_storage_fini();
 	slurm_auth_fini();
 	log_fini();

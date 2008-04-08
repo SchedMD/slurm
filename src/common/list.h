@@ -145,6 +145,21 @@ void * list_append (List l, void *x);
  *  Returns the data's ptr, or lsd_nomem_error() if insertion failed.
  */
 
+int list_append_list (List l, List sub);
+/*
+ *  Inserts list [sub] at the end of list [l].
+ *  Note: list [l] must have a destroy function of NULL.
+ *  Returns a count of the number of items added to list [l].
+ */
+
+int list_transfer (List l, List sub);
+/*
+ *  Pops off list [sub] and appends data at the end of list [l].
+ *  Note: list [l] must have the same destroy function as list [sub].
+ *  Note: list [sub] will be returned empty, but not destroyed.
+ *  Returns a count of the number of items added to list [l].
+ */
+
 void * list_prepend (List l, void *x);
 /*
  *  Inserts data [x] at the beginning of list [l].
@@ -184,7 +199,6 @@ void list_sort (List l, ListCmpF f);
  *  Note: Sorting a list resets all iterators associated with the list.
  *  Note: The sort algorithm is stable.
  */
-
 
 /****************************
  *  Stack Access Functions  *

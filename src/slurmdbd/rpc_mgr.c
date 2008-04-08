@@ -330,7 +330,7 @@ static bool _fd_readable(slurm_fd fd)
 			return false;
 		}
 		if (ufds.revents & POLLHUP) {
-			debug3("Connection %d closed", fd);
+			debug3("Read connection %d closed", fd);
 			return false;
 		}
 		if (ufds.revents & POLLNVAL) {
@@ -378,7 +378,7 @@ static bool _fd_writeable(slurm_fd fd)
 			return false;
 		}
 		if (ufds.revents & POLLHUP) {
-			debug3("Connection %d closed", fd);
+			debug3("Write connection %d closed", fd);
 			return false;
 		}
 		if (ufds.revents & POLLNVAL) {

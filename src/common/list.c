@@ -63,6 +63,8 @@ strong_alias(list_destroy,	slurm_list_destroy);
 strong_alias(list_is_empty,	slurm_list_is_empty);
 strong_alias(list_count,	slurm_list_count);
 strong_alias(list_append,	slurm_list_append);
+strong_alias(list_append_list,	slurm_list_append_list);
+strong_alias(list_transfer,	slurm_list_transfer);
 strong_alias(list_prepend,	slurm_list_prepend);
 strong_alias(list_find_first,	slurm_list_find_first);
 strong_alias(list_delete_all,	slurm_list_delete_all);
@@ -369,6 +371,50 @@ list_append (List l, void *x)
 }
 
 
+int
+list_append_list (List l, List sub)
+{
+    ListIterator itr;
+    void *v;
+    int n = 0;
+    
+    assert(l != NULL);
+    assert(l->fDel == NULL);
+    assert(sub != NULL);
+    itr = list_iterator_create(sub);
+    while((v = list_next(itr))) {
+        if(list_append(l, v))
+	    n++;
+	else 
+	    break;
+    }
+    list_iterator_destroy(itr);
+    
+    return n;
+}
+
+int
+list_transfer (List l, List sub)
+{
+    void *v;
+    int n = 0;
+    
+    assert(l != NULL);
+    assert(sub != NULL);
+    assert(l->fDel == sub->fDel);
+    while((v = list_pop(sub))) {
+        if(list_append(l, v))
+	    n++;
+	else {
+	    if(l->fDel)
+		l->fDel(v);
+	    break;
+	}
+    }
+    
+    return n;
+}
+
 void *
 list_prepend (List l, void *x)
 {
@@ -500,7 +546,6 @@ list_sort (List l, ListCmpF f)
     list_mutex_unlock(&l->mutex);
     return;
 }
-
 
 void *
 list_push (List l, void *x)

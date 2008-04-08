@@ -39,6 +39,7 @@
 \*****************************************************************************/
 
 #include "sacctmgr.h"
+#include "print.h"
 #include "src/common/xsignal.h"
 
 #define OPT_LONG_HIDE   0x102
@@ -740,6 +741,7 @@ static sacctmgr_file_opts_t *_parse_options(char *options)
 }
 static void _load_file (int argc, char *argv[])
 {
+	DEF_TIMERS;
 	char line[BUFFER_SIZE];
 	FILE *fd = NULL;
 	char *parent = NULL;
@@ -755,16 +757,39 @@ static void _load_file (int argc, char *argv[])
 	acct_cluster_rec_t *cluster = NULL;
 	acct_user_rec_t *user = NULL;
 
-	List local_assoc_list = NULL;
-	List local_acct_list = acct_storage_g_get_accounts(db_conn, NULL);
-	List local_cluster_list = acct_storage_g_get_clusters(db_conn, NULL);
-	List local_user_list = acct_storage_g_get_users(db_conn, NULL);
+	List curr_assoc_list = NULL;
+	List curr_acct_list = acct_storage_g_get_accounts(db_conn, NULL);
+	List curr_cluster_list = acct_storage_g_get_clusters(db_conn, NULL);
+	List curr_user_list = acct_storage_g_get_users(db_conn, NULL);
 
 	/* This will be freed in their local counter parts */
 	List acct_list = list_create(NULL);
-	List assoc_list = list_create(NULL);
+	List acct_assoc_list = list_create(NULL);
 	List user_list = list_create(NULL);
+	List user_assoc_list = list_create(NULL);
 
+	ListIterator itr;
+
+	List print_fields_list;
+
+	print_field_t name_field;
+	print_field_t acct_field;
+	print_field_t parent_field;
+	print_field_t fs_field;
+	print_field_t mc_field;
+	print_field_t mj_field;
+	print_field_t mn_field;
+	print_field_t mw_field;
+
+	print_field_t desc_field;
+	print_field_t org_field;
+	print_field_t qos_field;
+
+	print_field_t admin_field;
+	print_field_t dacct_field;
+	
+	int set = 0;
+	
 	fd = fopen(argv[0], "r");
 	if (fd == NULL) {
 		printf(" error: Unable to read \"%s\": %m\n", argv[0]);
@@ -829,7 +854,7 @@ static void _load_file (int argc, char *argv[])
 			}
 			cluster_name = xstrdup(file_opts->name);
 			if(!sacctmgr_find_cluster_from_list(
-				   local_cluster_list, cluster_name)) {
+				   curr_cluster_list, cluster_name)) {
 				List cluster_list =
 					list_create(destroy_acct_cluster_rec);
 				cluster = xmalloc(sizeof(acct_cluster_rec_t));
@@ -856,23 +881,23 @@ static void _load_file (int argc, char *argv[])
 					break;
 				}
 			}
-			info("got cluster %s", cluster_name);
+			info("For cluster %s", cluster_name);
 			_destroy_sacctmgr_file_opts(file_opts);
 			
 			memset(&assoc_cond, 0, sizeof(acct_association_cond_t));
 			assoc_cond.cluster_list = list_create(NULL);
 			list_append(assoc_cond.cluster_list, cluster_name);
-			local_assoc_list = acct_storage_g_get_associations(
+			curr_assoc_list = acct_storage_g_get_associations(
 				db_conn, &assoc_cond);
 			list_destroy(assoc_cond.cluster_list);
 
-			if(!local_assoc_list) {
+			if(!curr_assoc_list) {
 				printf(" Problem getting associations "
 				       "for this cluster\n");
 				rc = SLURM_ERROR;
 				break;
 			}
-			info("got %d assocs", list_count(local_assoc_list));
+			//info("got %d assocs", list_count(curr_assoc_list));
 			continue;
 		} else if(!cluster_name) {
 			printf(" error: You need to specify a cluster name "
@@ -896,12 +921,14 @@ static void _load_file (int argc, char *argv[])
 				break;
 			}
 			parent = xstrndup(line+start, i-start);
-			info("got parent %s", parent);
+			//info("got parent %s", parent);
 			if(!sacctmgr_find_account_base_assoc_from_list(
-				   local_assoc_list, parent, cluster_name)) {
+				   curr_assoc_list, parent, cluster_name)
+			   && !sacctmgr_find_account_base_assoc_from_list(
+				   acct_assoc_list, parent, cluster_name)) {
 				printf(" error: line(%d) You need to add "
 				       "this parent (%s) as a child before "
-				       "you can add childern to it.",
+				       "you can add childern to it.\n",
 				       lc, parent);
 				break;
 			}
@@ -913,7 +940,8 @@ static void _load_file (int argc, char *argv[])
 			       "before any childern in your file\n");
 		} 
 	
-		if(!strcasecmp("Project", object)) {
+		if(!strcasecmp("Project", object)
+		   || !strcasecmp("Account", object)) {
 			file_opts = _parse_options(line+start);
 			
 			if(!file_opts) {
@@ -922,11 +950,11 @@ static void _load_file (int argc, char *argv[])
 				break;
 			}
 			
-			info("got a project %s", file_opts->name);
+			//info("got a project %s of %s", file_opts->name, parent);
 			if(!sacctmgr_find_account_from_list(
-				   local_acct_list, file_opts->name)) {
+				   curr_acct_list, file_opts->name)) {
 				acct = xmalloc(sizeof(acct_account_rec_t));
-				acct->assoc_list = list_create(NULL);	
+				acct->assoc_list = NULL;	
 				acct->name = xstrdup(file_opts->name);
 				if(file_opts->desc) 
 					acct->description =
@@ -942,12 +970,12 @@ static void _load_file (int argc, char *argv[])
 				else
 					acct->organization =
 						xstrdup(file_opts->name);
-				info("adding acct %s (%s) (%s)",
-				     acct->name, acct->description,
-				     acct->organization);
+				/* info("adding acct %s (%s) (%s)", */
+/* 				     acct->name, acct->description, */
+/* 				     acct->organization); */
 				acct->qos = file_opts->qos;
 				list_append(acct_list, acct);
-				list_append(local_acct_list, acct);
+				list_append(curr_acct_list, acct);
 
 				assoc = xmalloc(sizeof(acct_association_rec_t));
 				assoc->acct = xstrdup(file_opts->name);
@@ -961,10 +989,14 @@ static void _load_file (int argc, char *argv[])
 					file_opts->max_wall_duration_per_job;
 				assoc->max_cpu_secs_per_job = 
 					file_opts->max_cpu_secs_per_job;
-				list_append(acct->assoc_list, assoc);
-				list_append(local_assoc_list, assoc);
+				list_append(acct_assoc_list, assoc);
+				/* don't add anything to the
+				   curr_assoc_list */
 			} else if(!sacctmgr_find_account_base_assoc_from_list(
-					  local_assoc_list, file_opts->name,
+					  curr_assoc_list, file_opts->name,
+					  cluster_name) &&
+				  !sacctmgr_find_account_base_assoc_from_list(
+					  acct_assoc_list, file_opts->name,
 					  cluster_name)) {
 				assoc = xmalloc(sizeof(acct_association_rec_t));
 				assoc->acct = xstrdup(file_opts->name);
@@ -978,8 +1010,9 @@ static void _load_file (int argc, char *argv[])
 					file_opts->max_wall_duration_per_job;
 				assoc->max_cpu_secs_per_job = 
 					file_opts->max_cpu_secs_per_job;
-				list_append(assoc_list, assoc);
-				list_append(local_assoc_list, assoc);
+				list_append(acct_assoc_list, assoc);
+				/* don't add anything to the
+				   curr_assoc_list */
 			}
 			_destroy_sacctmgr_file_opts(file_opts);
 			continue;
@@ -992,9 +1025,11 @@ static void _load_file (int argc, char *argv[])
 				break;
 			}
 			if(!sacctmgr_find_user_from_list(
-				   local_user_list, file_opts->name)) {
+				   curr_user_list, file_opts->name)
+			   && !sacctmgr_find_user_from_list(
+				   user_list, file_opts->name)) {
 				user = xmalloc(sizeof(acct_user_rec_t));
-				user->assoc_list = list_create(NULL);
+				user->assoc_list = NULL;
 				user->name = xstrdup(file_opts->name);
 				if(file_opts->def_acct)
 					user->default_acct = 
@@ -1006,7 +1041,8 @@ static void _load_file (int argc, char *argv[])
 				user->admin_level = file_opts->admin;
 				
 				list_append(user_list, user);
-				list_append(local_user_list, user);
+				/* don't add anything to the
+				   curr_user_list */
 
 				assoc = xmalloc(sizeof(acct_association_rec_t));
 				assoc->acct = xstrdup(parent);
@@ -1022,10 +1058,15 @@ static void _load_file (int argc, char *argv[])
 				assoc->partition = xstrdup(file_opts->part);
 				assoc->user = xstrdup(file_opts->name);
 				
-				list_append(user->assoc_list, assoc);
-				list_append(local_assoc_list, assoc);
+				list_append(user_assoc_list, assoc);
+				/* don't add anything to the
+				   curr_assoc_list */
 			} else if(!sacctmgr_find_association_from_list(
-					  local_assoc_list,
+					  curr_assoc_list,
+					  file_opts->name, parent,
+					  cluster_name, file_opts->part)
+				&& !sacctmgr_find_association_from_list(
+					  user_assoc_list,
 					  file_opts->name, parent,
 					  cluster_name, file_opts->part)) {
 				assoc = xmalloc(sizeof(acct_association_rec_t));
@@ -1042,10 +1083,11 @@ static void _load_file (int argc, char *argv[])
 				assoc->partition = xstrdup(file_opts->part);
 				assoc->user = xstrdup(file_opts->name);
 				
-				list_append(assoc_list, assoc);
-				list_append(local_assoc_list, assoc);		
+				list_append(user_assoc_list, assoc);
+				/* don't add anything to the
+				   curr_assoc_list */
 			}
-			info("got a user %s", file_opts->name);
+			//info("got a user %s", file_opts->name);
 			_destroy_sacctmgr_file_opts(file_opts);
 			continue;
 		} else {
@@ -1058,38 +1100,214 @@ static void _load_file (int argc, char *argv[])
 	xfree(cluster_name);
 	xfree(parent);
 
-	if(rc == SLURM_SUCCESS && list_count(acct_list)) 
-		rc = acct_storage_g_add_accounts(db_conn, my_uid, acct_list);
-	
-	if(rc == SLURM_SUCCESS && list_count(user_list)) 
-		rc = acct_storage_g_add_users(db_conn, my_uid, user_list);
-	
-	if(rc == SLURM_SUCCESS && list_count(assoc_list)) 
-		rc = acct_storage_g_add_associations(
-			db_conn, my_uid, assoc_list);
+	admin_field.name = "Admin";
+	admin_field.len = 9;
+	admin_field.print_routine = print_str;
 
+	name_field.name = "Name";
+	name_field.len = 10;
+	name_field.print_routine = print_str;
+		
+	parent_field.name = "Parent";
+	parent_field.len = 10;
+	parent_field.print_routine = print_str;
+	
+	acct_field.name = "Account";
+	acct_field.len = 10;
+	acct_field.print_routine = print_str;
+	
+	dacct_field.name = "Def Acct";
+	dacct_field.len = 10;
+	dacct_field.print_routine = print_str;
+	
+	desc_field.name = "Descr";
+	desc_field.len = 10;
+	desc_field.print_routine = print_str;
+	
+	org_field.name = "Org";
+	org_field.len = 10;
+	org_field.print_routine = print_str;
+	
+	qos_field.name = "QOS";
+	qos_field.len = 9;
+	qos_field.print_routine = print_str;
+	
+	fs_field.name = "FairShare";
+	fs_field.len = 10;
+	fs_field.print_routine = print_int;
+
+	mc_field.name = "MaxCPUSecs";
+	mc_field.len = 10;
+	mc_field.print_routine = print_int;
+
+	mj_field.name = "MaxJobs";
+	mj_field.len = 7;
+	mj_field.print_routine = print_int;
+
+	mn_field.name = "MaxNodes";
+	mn_field.len = 8;
+	mn_field.print_routine = print_int;
+
+	mw_field.name = "MaxWall";
+	mw_field.len = 7;
+	mw_field.print_routine = print_int;
+		
+	START_TIMER;
+	if(rc == SLURM_SUCCESS && list_count(acct_list)) {
+		printf("Accounts\n");
+
+		print_fields_list = list_create(NULL);
+		list_append(print_fields_list, &name_field);
+		list_append(print_fields_list, &desc_field);
+		list_append(print_fields_list, &org_field);
+		list_append(print_fields_list, &qos_field);
+
+		print_header(print_fields_list);
+
+		itr = list_iterator_create(acct_list);
+		while((acct = list_next(itr))) {
+			print_str(VALUE, &name_field, acct->name);
+			print_str(VALUE, &desc_field, acct->description);
+			print_str(VALUE, &org_field, acct->organization);
+			print_str(VALUE, &qos_field, acct_qos_str(acct->qos));
+			printf("\n");
+		}
+		list_iterator_destroy(itr);
+		list_destroy(print_fields_list);
+		rc = acct_storage_g_add_accounts(db_conn, my_uid, acct_list);
+		printf("---------------------------------------------------\n");
+		set = 1;
+	}
+	
+	if(rc == SLURM_SUCCESS && list_count(acct_assoc_list)) {
+		printf("Account Associations\n");
+
+		print_fields_list = list_create(NULL);
+		list_append(print_fields_list, &name_field);
+		list_append(print_fields_list, &parent_field);
+		list_append(print_fields_list, &fs_field);
+		list_append(print_fields_list, &mc_field);
+		list_append(print_fields_list, &mj_field);
+		list_append(print_fields_list, &mn_field);
+		list_append(print_fields_list, &mw_field);
+
+		print_header(print_fields_list);
+		
+		itr = list_iterator_create(acct_assoc_list);
+		while((assoc = list_next(itr))) {
+			print_str(VALUE, &name_field, assoc->acct);
+			print_str(VALUE, &parent_field, assoc->parent_acct);
+			print_int(VALUE, &fs_field, assoc->fairshare);
+			print_int(VALUE, &mc_field, 
+				  assoc->max_cpu_secs_per_job);
+			print_int(VALUE, &mj_field, assoc->max_jobs);
+			print_int(VALUE, &mn_field, assoc->max_nodes_per_job);
+			print_int(VALUE, &mw_field,
+				  assoc->max_wall_duration_per_job);
+			printf("\n");
+		}
+		list_iterator_destroy(itr);
+		list_destroy(print_fields_list);
+		
+		rc = acct_storage_g_add_associations(
+			db_conn, my_uid, acct_assoc_list);
+		printf("---------------------------------------------------\n");
+		set = 1;
+	}
+	if(rc == SLURM_SUCCESS && list_count(user_list)) {
+		printf("Users\n");
+
+		print_fields_list = list_create(NULL);
+		list_append(print_fields_list, &name_field);
+		list_append(print_fields_list, &dacct_field);
+		list_append(print_fields_list, &qos_field);
+		list_append(print_fields_list, &admin_field);
+
+		print_header(print_fields_list);
+
+		itr = list_iterator_create(user_list);
+		while((acct = list_next(itr))) {
+			print_str(VALUE, &name_field, user->name);
+			print_str(VALUE, &dacct_field, user->default_acct);
+			print_str(VALUE, &qos_field, acct_qos_str(user->qos));
+			print_str(VALUE, &admin_field,
+				  acct_admin_level_str(user->admin_level));
+			printf("\n");
+		}
+		list_iterator_destroy(itr);
+		list_destroy(print_fields_list);
+		
+		rc = acct_storage_g_add_users(db_conn, my_uid, user_list);
+		printf("---------------------------------------------------\n");
+		set = 1;
+	}
+
+	if(rc == SLURM_SUCCESS && list_count(user_assoc_list)) {
+		printf("User Associations\n");
+
+		print_fields_list = list_create(NULL);
+		list_append(print_fields_list, &name_field);
+		list_append(print_fields_list, &acct_field);
+		list_append(print_fields_list, &fs_field);
+		list_append(print_fields_list, &mc_field);
+		list_append(print_fields_list, &mj_field);
+		list_append(print_fields_list, &mn_field);
+		list_append(print_fields_list, &mw_field);
+
+		print_header(print_fields_list);
+		
+		itr = list_iterator_create(user_assoc_list);
+		while((assoc = list_next(itr))) {
+			print_str(VALUE, &name_field, assoc->user);
+			print_str(VALUE, &acct_field, assoc->acct);
+			print_int(VALUE, &fs_field, assoc->fairshare);
+			print_int(VALUE, &mc_field, 
+				  assoc->max_cpu_secs_per_job);
+			print_int(VALUE, &mj_field, assoc->max_jobs);
+			print_int(VALUE, &mn_field, assoc->max_nodes_per_job);
+			print_int(VALUE, &mw_field,
+				  assoc->max_wall_duration_per_job);
+			printf("\n");
+		}
+		list_iterator_destroy(itr);
+		list_destroy(print_fields_list);
+	
+		rc = acct_storage_g_add_associations(
+			db_conn, my_uid, user_assoc_list);
+		printf("---------------------------------------------------\n");
+		set = 1;
+	}
+	END_TIMER2("add cluster");
+		
+	info("Done adding cluster in %s", TIME_STR);
+		
 	if(rc == SLURM_SUCCESS) {
-		if(commit_check("Would you like to commit changes?")) {
-			acct_storage_g_commit(db_conn, 1);
+		if(set) {
+			if(commit_check("Would you like to commit changes?")) {
+				acct_storage_g_commit(db_conn, 1);
+			} else {
+				printf(" Changes Discarded\n");
+				acct_storage_g_commit(db_conn, 0);
+			}
 		} else {
-			printf(" Changes Discarded\n");
-			acct_storage_g_commit(db_conn, 0);
+			printf(" Nothing new added.\n");
 		}
 	} else {
 		printf(" error: Problem with requests.\n");
 	}
 
 	list_destroy(acct_list);
-	list_destroy(assoc_list);
+	list_destroy(acct_assoc_list);
 	list_destroy(user_list);
-	if(local_acct_list)
-		list_destroy(local_acct_list);
-	if(local_assoc_list)
-		list_destroy(local_assoc_list);
-	if(local_cluster_list)
-		list_destroy(local_cluster_list);
-	if(local_user_list)
-		list_destroy(local_user_list);
+	list_destroy(user_assoc_list);
+	if(curr_acct_list)
+		list_destroy(curr_acct_list);
+	if(curr_assoc_list)
+		list_destroy(curr_assoc_list);
+	if(curr_cluster_list)
+		list_destroy(curr_cluster_list);
+	if(curr_user_list)
+		list_destroy(curr_user_list);
 }
 
 /* _usage - show the valid sacctmgr commands */

@@ -112,7 +112,10 @@ extern void print_int(type_t type, print_field_t *field, uint32_t value)
 		       "---------------------------------------");
 		break;
 	case VALUE:
-		printf("%-*u ", field->len, value);
+		if((int)value < 0)
+			printf("%-*s ", field->len, " ");
+		else
+			printf("%*u ", field->len, value);
 		break;
 	default:
 		printf("%-*.*s ", field->len, field->len, "n/a");
