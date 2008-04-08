@@ -76,7 +76,8 @@ extern int slurm_sched_plugin_schedule( void )
 {
 	/* synchronize job listings */
 	debug3("sched/gang: slurm_sched_schedule called");
-	return gs_job_scan();
+	/* return gs_job_scan();*/
+	return SLURM_SUCCESS;
 }
 
 /***************************************************************************/
