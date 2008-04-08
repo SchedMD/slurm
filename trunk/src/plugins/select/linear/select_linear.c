@@ -500,7 +500,7 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 		for (sus_jobs=0; ((sus_jobs<5) && (rc != SLURM_SUCCESS)); 
 		     sus_jobs++) {
 			if (last_iteration)
-				sus_jobs = 999;
+				sus_jobs = NO_SHARE_LIMIT;
 			j = _job_count_bitmap(node_cr_ptr, job_ptr, 
 					      orig_map, bitmap, 
 					      max_run_job, 
@@ -560,8 +560,18 @@ static int _job_count_bitmap(struct node_cr_record *node_cr_ptr,
 	int i, count = 0, total_jobs, total_run_jobs;
 	struct part_cr_record *part_cr_ptr;
 	uint32_t job_memory = 0;
+	bool exclusive;
 
 	xassert(node_cr_ptr);
+
+	/* Jobs submitted to a partition with 
+	 * Shared=FORCE:1 may share resources with jobs in other partitions
+	 * Shared=NO  may not share resources with jobs in other partitions */
+	if (run_job_cnt || (job_ptr->part_ptr->max_share & SHARED_FORCE))
+		exclusive = false;
+	else
+		exclusive = true;
+
 	if (job_ptr->details->job_min_memory  && (cr_type == CR_MEMORY))
 		job_memory = job_ptr->details->job_min_memory;
 
@@ -596,7 +606,7 @@ static int _job_count_bitmap(struct node_cr_record *node_cr_ptr,
 		total_run_jobs = 0;
 		part_cr_ptr = node_cr_ptr[i].parts;
 		while (part_cr_ptr) {
-			if (run_job_cnt == 0) {
+			if (exclusive) {      /* count jobs in all partitions */
 				total_run_jobs += part_cr_ptr->run_job_cnt;
 				total_jobs     += part_cr_ptr->tot_job_cnt;
 			} else if (part_cr_ptr->part_ptr == job_ptr->part_ptr) {
