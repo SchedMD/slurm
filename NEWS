@@ -19,6 +19,8 @@ documents those changes that are of interest to users and admins.
  -- Correct select/cons_res logic to allocate CPUs properly if there is
     more than one thread per core (previously failed to allocate all cores).
  -- Correct select/linear logic in shared job count (was off by 1).
+ -- Add support for job preeption based upon partition priority (in sched/gang,
+    preempt.patch from Chris Holmes, HP).
 
 * Changes in SLURM 1.3.0
 ========================
