@@ -342,6 +342,7 @@ static void _set_node_prefix(const char *nodenames, slurm_ctl_conf_t *conf)
 	debug3("Prefix is %s %s %d", conf->node_prefix, nodenames, i);
 }
 #endif /* HAVE_BG */
+
 /* 
  * _build_single_nodeline_info - From the slurm.conf reader, build table,
  * 	and set values
@@ -389,7 +390,8 @@ static int _build_single_nodeline_info(slurm_conf_node_t *node_ptr,
 	}
 
 #ifdef HAVE_BG
-	_set_node_prefix(node_ptr->nodenames, conf);
+	if (conf->node_prefix == NULL)
+		_set_node_prefix(node_ptr->nodenames, conf);
 #endif
 
 	/* some sanity checks */
@@ -568,6 +570,21 @@ static int _build_all_nodeline_info(slurm_ctl_conf_t *conf)
 		_build_single_nodeline_info(node, config_ptr, conf);
 	}
 	xfree(highest_node_name);
+#ifdef HAVE_BG
+{
+	char *node_000 = NULL;
+	struct node_record *node_rec = NULL;
+	if (conf->node_prefix)
+		node_000 = xstrdup(conf->node_prefix);
+	xstrcat(node_000, "000");
+	slurm_conf_unlock();
+	node_rec = find_node_record(node_000);
+	slurm_conf_lock();
+	if (node_rec == NULL)
+		fatal("No node %s configured", node_000);
+	xfree(node_000);
+}
+#endif
 	return SLURM_SUCCESS;
 }
 
