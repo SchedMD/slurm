@@ -394,8 +394,6 @@ extern int sacctmgr_add_account(int argc, char *argv[])
 	}
 
 		
-	/* we are adding these lists to the global lists and will be
-	   freed when they are */
 	acct_list = list_create(destroy_acct_account_rec);
 	assoc_list = list_create(destroy_acct_association_rec);
 	

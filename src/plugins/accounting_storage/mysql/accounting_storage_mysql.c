@@ -1202,6 +1202,9 @@ extern int acct_storage_p_add_users(mysql_conn_t *mysql_conn, uint32_t uid,
 			error("Couldn't add txn");
 		}
 
+		if(!object->assoc_list)
+			continue;
+
 		if(acct_storage_p_add_associations(
 			   mysql_conn, uid, object->assoc_list)
 		   == SLURM_ERROR) {
@@ -1249,8 +1252,10 @@ extern int acct_storage_p_add_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 	while((object = list_next(itr))) {
 		if(!object->name || !object->description
 		   || !object->organization) {
-			error("We need a acct name, description, and "
-			      "organization to add.");
+			error("We need an account name, description, and "
+			      "organization to add. %s %s %s", 
+			      object->name, object->description,
+			      object->organization);
 			rc = SLURM_ERROR;
 			continue;
 		}
@@ -1307,6 +1312,9 @@ extern int acct_storage_p_add_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 		if(rc != SLURM_SUCCESS) {
 			error("Couldn't add txn");
 		}
+
+		if(!object->assoc_list)
+			continue;
 
 		if(acct_storage_p_add_associations(
 			   mysql_conn, uid, object->assoc_list)

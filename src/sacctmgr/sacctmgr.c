@@ -44,6 +44,22 @@
 #define OPT_LONG_HIDE   0x102
 #define BUFFER_SIZE 4096
 
+typedef struct {
+	uint16_t admin;
+	char *def_acct;
+	char *desc;
+	uint32_t fairshare;
+	uint32_t max_cpu_secs_per_job; 
+	uint32_t max_jobs;
+	uint32_t max_nodes_per_job; 
+	uint32_t max_wall_duration_per_job;
+	char *name;
+	char *org;
+	char *part;
+	uint16_t qos;
+} sacctmgr_file_opts_t;
+
+
 FILE *history_fp = NULL;
 int history_pos = 0;
 int history_count = 0;
@@ -70,6 +86,7 @@ static void	_show_it (int argc, char *argv[]);
 static void	_add_it (int argc, char *argv[]);
 static void	_modify_it (int argc, char *argv[]);
 static void	_delete_it (int argc, char *argv[]);
+static void	_load_file (int argc, char *argv[]);
 static int	_get_command (int *argc, char *argv[]);
 static void     _print_version( void );
 static int	_process_command (int argc, char *argv[]);
@@ -321,6 +338,15 @@ _process_command (int argc, char *argv[])
 		_usage ();
 	} else if (strncasecmp (argv[0], "hide", 2) == 0) {
 		all_flag = 0;
+	} else if (strncasecmp (argv[0], "load", 2) == 0) {
+		if (argc < 2) {
+			exit_code = 1;
+			if (quiet_flag != 1)
+				fprintf(stderr, 
+				        "too few arguments for keyword:%s\n", 
+				        argv[0]);
+		} else
+			_load_file((argc - 1), &argv[1]);
 	} else if (strncasecmp (argv[0], "oneliner", 1) == 0) {
 		if (argc > 1) {
 			exit_code = 1;
@@ -537,6 +563,534 @@ static void _delete_it (int argc, char *argv[])
 	}
 }
 
+static int _strip_continuation(char *buf, int len)
+{
+	char *ptr;
+	int bs = 0;
+
+	for (ptr = buf+len-1; ptr >= buf; ptr--) {
+		if (*ptr == '\\')
+			bs++;
+		else if (isspace(*ptr) && bs == 0)
+			continue;
+		else
+			break;
+	}
+	/* Check for an odd number of contiguous backslashes at
+	   the end of the line */
+	if (bs % 2 == 1) {
+		ptr = ptr + bs;
+		*ptr = '\0';
+		return (ptr - buf);
+	} else {
+		return len; /* no continuation */
+	}
+}
+
+/* Strip comments from a line by terminating the string
+ * where the comment begins.
+ * Everything after a non-escaped "#" is a comment.
+ */
+static void _strip_comments(char *line)
+{
+	int i;
+	int len = strlen(line);
+	int bs_count = 0;
+
+	for (i = 0; i < len; i++) {
+		/* if # character is preceded by an even number of
+		 * escape characters '\' */
+		if (line[i] == '#' && (bs_count%2) == 0) {
+			line[i] = '\0';
+ 			break;
+		} else if (line[i] == '\\') {
+			bs_count++;
+		} else {
+			bs_count = 0;
+		}
+	}
+}
+
+/*
+ * Strips any escape characters, "\".  If you WANT a back-slash,
+ * it must be escaped, "\\".
+ */
+static void _strip_escapes(char *line)
+{
+	int i, j;
+	int len = strlen(line);
+
+	for (i = 0, j = 0; i < len+1; i++, j++) {
+		if (line[i] == '\\')
+			i++;
+		line[j] = line[i];
+	}
+}
+
+/*
+ * Reads the next line from the "file" into buffer "buf".
+ *
+ * Concatonates together lines that are continued on
+ * the next line by a trailing "\".  Strips out comments,
+ * replaces escaped "\#" with "#", and replaces "\\" with "\".
+ */
+static int _get_next_line(char *buf, int buf_size, FILE *file)
+{
+	char *ptr = buf;
+	int leftover = buf_size;
+	int read_size, new_size;
+	int lines = 0;
+
+	while (fgets(ptr, leftover, file)) {
+		lines++;
+		_strip_comments(ptr);
+		read_size = strlen(ptr);
+		new_size = _strip_continuation(ptr, read_size);
+		if (new_size < read_size) {
+			ptr += new_size;
+			leftover -= new_size;
+		} else { /* no continuation */
+			break;
+		}
+	}
+	/* _strip_cr_nl(buf); */ /* not necessary */
+	_strip_escapes(buf);
+	
+	return lines;
+}
+
+static void _destroy_sacctmgr_file_opts(void *object)
+{
+	sacctmgr_file_opts_t *file_opts = (sacctmgr_file_opts_t *)object;
+
+	if(file_opts) {
+		xfree(file_opts->def_acct);
+		xfree(file_opts->desc);
+		xfree(file_opts->name);
+		xfree(file_opts->org);
+		xfree(file_opts->part);
+		xfree(file_opts);		
+	}
+}
+
+static sacctmgr_file_opts_t *_parse_options(char *options)
+{
+	int start=0, i=0, end=0;
+	char *sub = NULL;
+	sacctmgr_file_opts_t *file_opts = xmalloc(sizeof(sacctmgr_file_opts_t));
+	file_opts->fairshare = -2; 
+	file_opts->max_cpu_secs_per_job = -2;
+	file_opts->max_jobs = -2; 
+	file_opts->max_nodes_per_job = -2;
+	file_opts->max_wall_duration_per_job = -2;
+
+	while(options[i]) {
+		start=i;
+
+		while(options[i] != ':' && options[i] != '\n' && options[i])
+			i++;
+
+		sub = xstrndup(options+start, i-start);
+		end = parse_option_end(sub);
+		if(!end) {
+			if(file_opts->name) {
+				printf(" Bad format on %s: "
+				       "End your option with "
+				       "an '=' sign\n", sub);
+				_destroy_sacctmgr_file_opts(file_opts);
+				break;
+			}
+			file_opts->name = xstrdup(sub+end);
+		} else if (strncasecmp (sub, "AdminLevel", 2) == 0) {
+			file_opts->admin = str_2_acct_admin_level(sub+end);
+		} else if (strncasecmp (sub, "DefaultAccount", 3) == 0) {
+			file_opts->def_acct = xstrdup(sub+end);
+		} else if (strncasecmp (sub, "Description", 3) == 0) {
+			file_opts->desc = xstrdup(sub+end);
+		} else if (strncasecmp (sub, "Fairshare", 1) == 0) {
+			file_opts->fairshare = atoi(sub+end);
+		} else if (strncasecmp (sub, "MaxCPUSec", 4) == 0) {
+			file_opts->max_cpu_secs_per_job = atoi(sub+end);
+		} else if (strncasecmp (sub, "MaxJobs", 4) == 0) {
+			file_opts->max_jobs = atoi(sub+end);
+		} else if (strncasecmp (sub, "MaxNodes", 4) == 0) {
+			file_opts->max_nodes_per_job = atoi(sub+end);
+		} else if (strncasecmp (sub, "MaxWall", 4) == 0) {
+			file_opts->max_wall_duration_per_job = atoi(sub+end);
+		} else if (strncasecmp (sub, "Organization", 1) == 0) {
+			file_opts->org = xstrdup(sub+end);
+		} else if (strncasecmp (sub, "QosLevel", 1) == 0) {
+			file_opts->qos = str_2_acct_qos(sub+end);
+		} else {
+			printf(" Unknown option: %s\n", sub);
+		}
+
+		xfree(sub);
+
+		if(options[i] == ':')
+			i++;
+		else
+			break;
+	}
+	if(!file_opts->name) {
+		printf(" error: No name given\n");
+		_destroy_sacctmgr_file_opts(file_opts);
+	}
+	return file_opts;
+}
+static void _load_file (int argc, char *argv[])
+{
+	char line[BUFFER_SIZE];
+	FILE *fd = NULL;
+	char *parent = NULL;
+	char *cluster_name = NULL;
+	char object[25];
+	int start = 0, len = 0, i = 0;
+	int lc=0, num_lines=0;
+	int rc = SLURM_SUCCESS;
+
+	sacctmgr_file_opts_t *file_opts = NULL;
+	acct_association_rec_t *assoc = NULL;
+	acct_account_rec_t *acct = NULL;
+	acct_cluster_rec_t *cluster = NULL;
+	acct_user_rec_t *user = NULL;
+
+	List local_assoc_list = NULL;
+	List local_acct_list = acct_storage_g_get_accounts(db_conn, NULL);
+	List local_cluster_list = acct_storage_g_get_clusters(db_conn, NULL);
+	List local_user_list = acct_storage_g_get_users(db_conn, NULL);
+
+	/* This will be freed in their local counter parts */
+	List acct_list = list_create(NULL);
+	List assoc_list = list_create(NULL);
+	List user_list = list_create(NULL);
+
+	fd = fopen(argv[0], "r");
+	if (fd == NULL) {
+		printf(" error: Unable to read \"%s\": %m\n", argv[0]);
+		return;
+	}
+
+	while((num_lines = _get_next_line(line, BUFFER_SIZE, fd)) > 0) {
+		lc += num_lines;
+		/* skip empty lines */
+		if (line[0] == '\0') {
+			continue;
+		}
+		len = strlen(line);
+
+		memset(object, 0, sizeof(object));
+
+		/* first find the object */
+		start=0;
+		for(i=0; i<len; i++) {
+			if(line[i] == '-') {
+				start = i;
+				if(line[i-1] == ' ') 
+					i--;
+				if(i<sizeof(object))
+					strncpy(object, line, i);
+				break;
+			} 
+		}
+		if(!object[0]) {
+			printf(" error: Misformatted line(%d): %s\n", lc, line);
+			rc = SLURM_ERROR;
+			break;
+		} 
+		while(line[start] != ' ' && start<len)
+			start++;
+		if(start>=len) {
+			printf(" error: Nothing after object "
+			       "name '%s'. line(%d)\n",
+			       object, lc);
+			rc = SLURM_ERROR;
+			break;
+			
+		}
+		start++;
+		
+		if(!strcasecmp("Machine", object) 
+		   || !strcasecmp("Cluster", object)) {
+			acct_association_cond_t assoc_cond;
+
+			if(cluster_name) {
+				printf(" You can only add one cluster "
+				       "at a time.\n");
+				rc = SLURM_ERROR;
+				break;
+			}
+			file_opts = _parse_options(line+start);
+			
+			if(!file_opts) {
+				printf(" error: Problem with line(%d)\n", lc);
+				rc = SLURM_ERROR;
+				break;
+			}
+			cluster_name = xstrdup(file_opts->name);
+			if(!sacctmgr_find_cluster_from_list(
+				   local_cluster_list, cluster_name)) {
+				List cluster_list =
+					list_create(destroy_acct_cluster_rec);
+				cluster = xmalloc(sizeof(acct_cluster_rec_t));
+				list_append(cluster_list, cluster);
+				cluster->name = xstrdup(cluster_name);
+				cluster->default_fairshare =
+					file_opts->fairshare;		
+				cluster->default_max_cpu_secs_per_job = 
+					file_opts->max_cpu_secs_per_job;
+				cluster->default_max_jobs = file_opts->max_jobs;
+				cluster->default_max_nodes_per_job = 
+					file_opts->max_nodes_per_job;
+				cluster->default_max_wall_duration_per_job = 
+					file_opts->max_wall_duration_per_job;
+				notice_thread_init();
+				rc = acct_storage_g_add_clusters(
+					db_conn, my_uid, cluster_list);
+				notice_thread_fini();
+				list_destroy(cluster_list);
+
+				if(rc != SLURM_SUCCESS) {
+					printf(" Problem adding machine\n");
+					rc = SLURM_ERROR;
+					break;
+				}
+			}
+			info("got cluster %s", cluster_name);
+			_destroy_sacctmgr_file_opts(file_opts);
+			
+			memset(&assoc_cond, 0, sizeof(acct_association_cond_t));
+			assoc_cond.cluster_list = list_create(NULL);
+			list_append(assoc_cond.cluster_list, cluster_name);
+			local_assoc_list = acct_storage_g_get_associations(
+				db_conn, &assoc_cond);
+			list_destroy(assoc_cond.cluster_list);
+
+			if(!local_assoc_list) {
+				printf(" Problem getting associations "
+				       "for this cluster\n");
+				rc = SLURM_ERROR;
+				break;
+			}
+			info("got %d assocs", list_count(local_assoc_list));
+			continue;
+		} else if(!cluster_name) {
+			printf(" error: You need to specify a cluster name "
+			       "first with 'Cluster - name' in your file\n");
+			break;
+		}
+
+		if(!strcasecmp("Parent", object)) {
+			if(parent) 
+				xfree(parent);
+			
+			i = start;
+			while(line[i] != '\n' && i<len)
+				i++;
+			
+			if(i >= len) {
+				printf(" error: No parent name "
+				       "given line(%d)\n",
+				       lc);
+				rc = SLURM_ERROR;
+				break;
+			}
+			parent = xstrndup(line+start, i-start);
+			info("got parent %s", parent);
+			if(!sacctmgr_find_account_base_assoc_from_list(
+				   local_assoc_list, parent, cluster_name)) {
+				printf(" error: line(%d) You need to add "
+				       "this parent (%s) as a child before "
+				       "you can add childern to it.",
+				       lc, parent);
+				break;
+			}
+			continue;
+		} else if(!parent) {
+			parent = xstrdup("root");
+			printf(" No parent given creating off root, "
+			       "If incorrect specify 'Parent - name' "
+			       "before any childern in your file\n");
+		} 
+	
+		if(!strcasecmp("Project", object)) {
+			file_opts = _parse_options(line+start);
+			
+			if(!file_opts) {
+				printf(" error: Problem with line(%d)\n", lc);
+				rc = SLURM_ERROR;
+				break;
+			}
+			
+			info("got a project %s", file_opts->name);
+			if(!sacctmgr_find_account_from_list(
+				   local_acct_list, file_opts->name)) {
+				acct = xmalloc(sizeof(acct_account_rec_t));
+				acct->assoc_list = list_create(NULL);	
+				acct->name = xstrdup(file_opts->name);
+				if(file_opts->desc) 
+					acct->description =
+						xstrdup(file_opts->desc);
+				else
+					acct->description = 
+						xstrdup(file_opts->name);
+				if(file_opts->org)
+					acct->organization =
+						xstrdup(file_opts->org);
+				else if(strcmp(parent, "root"))
+					acct->organization = xstrdup(parent);
+				else
+					acct->organization =
+						xstrdup(file_opts->name);
+				info("adding acct %s (%s) (%s)",
+				     acct->name, acct->description,
+				     acct->organization);
+				acct->qos = file_opts->qos;
+				list_append(acct_list, acct);
+				list_append(local_acct_list, acct);
+
+				assoc = xmalloc(sizeof(acct_association_rec_t));
+				assoc->acct = xstrdup(file_opts->name);
+				assoc->cluster = xstrdup(cluster_name);
+				assoc->parent_acct = xstrdup(parent);
+				assoc->fairshare = file_opts->fairshare;
+				assoc->max_jobs = file_opts->max_jobs;
+				assoc->max_nodes_per_job =
+					file_opts->max_nodes_per_job;
+				assoc->max_wall_duration_per_job =
+					file_opts->max_wall_duration_per_job;
+				assoc->max_cpu_secs_per_job = 
+					file_opts->max_cpu_secs_per_job;
+				list_append(acct->assoc_list, assoc);
+				list_append(local_assoc_list, assoc);
+			} else if(!sacctmgr_find_account_base_assoc_from_list(
+					  local_assoc_list, file_opts->name,
+					  cluster_name)) {
+				assoc = xmalloc(sizeof(acct_association_rec_t));
+				assoc->acct = xstrdup(file_opts->name);
+				assoc->cluster = xstrdup(cluster_name);
+				assoc->parent_acct = xstrdup(parent);
+				assoc->fairshare = file_opts->fairshare;
+				assoc->max_jobs = file_opts->max_jobs;
+				assoc->max_nodes_per_job =
+					file_opts->max_nodes_per_job;
+				assoc->max_wall_duration_per_job =
+					file_opts->max_wall_duration_per_job;
+				assoc->max_cpu_secs_per_job = 
+					file_opts->max_cpu_secs_per_job;
+				list_append(assoc_list, assoc);
+				list_append(local_assoc_list, assoc);
+			}
+			_destroy_sacctmgr_file_opts(file_opts);
+			continue;
+		} else if(!strcasecmp("User", object)) {
+			file_opts = _parse_options(line+start);
+			
+			if(!file_opts) {
+				printf(" error: Problem with line(%d)\n", lc);
+				rc = SLURM_ERROR;
+				break;
+			}
+			if(!sacctmgr_find_user_from_list(
+				   local_user_list, file_opts->name)) {
+				user = xmalloc(sizeof(acct_user_rec_t));
+				user->assoc_list = list_create(NULL);
+				user->name = xstrdup(file_opts->name);
+				if(file_opts->def_acct)
+					user->default_acct = 
+						xstrdup(file_opts->def_acct);
+				else
+					user->default_acct = xstrdup(parent);
+					
+				user->qos = file_opts->qos;
+				user->admin_level = file_opts->admin;
+				
+				list_append(user_list, user);
+				list_append(local_user_list, user);
+
+				assoc = xmalloc(sizeof(acct_association_rec_t));
+				assoc->acct = xstrdup(parent);
+				assoc->cluster = xstrdup(cluster_name);
+				assoc->fairshare = file_opts->fairshare;
+				assoc->max_jobs = file_opts->max_jobs;
+				assoc->max_nodes_per_job =
+					file_opts->max_nodes_per_job;
+				assoc->max_wall_duration_per_job =
+					file_opts->max_wall_duration_per_job;
+				assoc->max_cpu_secs_per_job = 
+					file_opts->max_cpu_secs_per_job;
+				assoc->partition = xstrdup(file_opts->part);
+				assoc->user = xstrdup(file_opts->name);
+				
+				list_append(user->assoc_list, assoc);
+				list_append(local_assoc_list, assoc);
+			} else if(!sacctmgr_find_association_from_list(
+					  local_assoc_list,
+					  file_opts->name, parent,
+					  cluster_name, file_opts->part)) {
+				assoc = xmalloc(sizeof(acct_association_rec_t));
+				assoc->acct = xstrdup(parent);
+				assoc->cluster = xstrdup(cluster_name);
+				assoc->fairshare = file_opts->fairshare;
+				assoc->max_jobs = file_opts->max_jobs;
+				assoc->max_nodes_per_job =
+					file_opts->max_nodes_per_job;
+				assoc->max_wall_duration_per_job =
+					file_opts->max_wall_duration_per_job;
+				assoc->max_cpu_secs_per_job = 
+					file_opts->max_cpu_secs_per_job;
+				assoc->partition = xstrdup(file_opts->part);
+				assoc->user = xstrdup(file_opts->name);
+				
+				list_append(assoc_list, assoc);
+				list_append(local_assoc_list, assoc);		
+			}
+			info("got a user %s", file_opts->name);
+			_destroy_sacctmgr_file_opts(file_opts);
+			continue;
+		} else {
+			printf(" error: Misformatted line(%d): %s\n", lc, line);
+			rc = SLURM_ERROR;
+			break;
+		}
+	}
+	fclose(fd);
+	xfree(cluster_name);
+	xfree(parent);
+
+	if(rc == SLURM_SUCCESS && list_count(acct_list)) 
+		rc = acct_storage_g_add_accounts(db_conn, my_uid, acct_list);
+	
+	if(rc == SLURM_SUCCESS && list_count(user_list)) 
+		rc = acct_storage_g_add_users(db_conn, my_uid, user_list);
+	
+	if(rc == SLURM_SUCCESS && list_count(assoc_list)) 
+		rc = acct_storage_g_add_associations(
+			db_conn, my_uid, assoc_list);
+
+	if(rc == SLURM_SUCCESS) {
+		if(commit_check("Would you like to commit changes?")) {
+			acct_storage_g_commit(db_conn, 1);
+		} else {
+			printf(" Changes Discarded\n");
+			acct_storage_g_commit(db_conn, 0);
+		}
+	} else {
+		printf(" error: Problem with requests.\n");
+	}
+
+	list_destroy(acct_list);
+	list_destroy(assoc_list);
+	list_destroy(user_list);
+	if(local_acct_list)
+		list_destroy(local_acct_list);
+	if(local_assoc_list)
+		list_destroy(local_assoc_list);
+	if(local_cluster_list)
+		list_destroy(local_cluster_list);
+	if(local_user_list)
+		list_destroy(local_user_list);
+}
 
 /* _usage - show the valid sacctmgr commands */
 void _usage () {
