@@ -456,6 +456,7 @@ This should be a fully qualified pathname which can be read and written to
 by the SLURM user on both the control machine and backup controller (if configured).
 The location of a directory where slurmd saves state should also be defined.
 This must be a unique directory on each compute server (local disk).
+The use of a highly reliable file system (e.g. RAID) is recommended.
 <P>
 <input type="text" name="state_save_location" value="/tmp"> <B>StateSaveLocation</B>:
 Slurmctld state save directory <B>Must be writable by both ControlMachine and BackupController</B>

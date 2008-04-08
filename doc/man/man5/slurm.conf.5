@@ -948,6 +948,8 @@ SLURM state will saved here to recover from system failures.
 \fBSlurmUser\fR must be able to create files in this directory.
 If you have a \fBBackupController\fR configured, this location should be 
 readable and writable by both systems. 
+Since all running and pending job information is stored here, the use of 
+a reliable file system (e.g. RAID) is recommended.
 The default value is "/tmp".
 If any slurm daemons terminate abnormally, their core files will also be written 
 into this directory.
