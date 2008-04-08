@@ -1,4 +1,4 @@
-.TH SCONTROL "1" "March 2008" "strigger 1.3" "Slurm components"
+.TH STRIGGER "1" "March 2008" "strigger 1.3" "Slurm components"
 
 .SH "NAME"
 strigger \- Used set, get or clear Slurm trigger information.
@@ -19,11 +19,18 @@ script.
 Typical uses include notifying system administrators of node failures 
 and gracefully terminating a job when it's time limit is approaching.
 
-\fBIMPORTANT NOTE:\fR Trigger events are not processed instantly, but 
-a check is performed for trigger events on a periodic basis (currently 
-every 15 seconds). 
-Node state event trigger programs must establish a new trigger within 
-that time period to avoid node state changes failing to invoke a trigger.
+Trigger events are not processed instantly, but a check is performed for 
+trigger events on a periodic basis (currently every 15 seconds). 
+Any trigger events which occur within that interval will be compared 
+against the trigger programs set at the end of the time interval. 
+The trigger program will be executed once for any event occuring in
+that interval with a hostlist expression for the nodelist or job ID 
+as an argument to the program.
+The record of those events (e.g. nodes which went DOWN in the previous
+15 seconds) will then be cleared.
+The trigger program must set a new trigger before the end of the next 
+interval to insure that no trigger events are missed.
+If desired, multiple trigger programs can be set for the same event.
 
 \fBIMPORTANT NOTE:\fR This command can only set triggers if run by the 
 user \fISlurmUser\fR unless \fISlurmUser\fR is configured as user root.
