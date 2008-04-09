@@ -295,7 +295,8 @@ even those allocated to other users.</p>
 
 <h2>Configuration</h2>
 <p>The SLURM configuration file includes a wide variety of parameters. 
-This configuration file must be available on each node of the cluster. A full
+This configuration file must be available on each node of the cluster and 
+must have consistent contents. A full
 description of the parameters is included in the <i>slurm.conf</i> man page. Rather than 
 duplicate that information, a minimal sample configuration file is shown below. 
 Your slurm.conf file should define at least the configuration parameters defined 
