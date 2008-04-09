@@ -114,23 +114,15 @@ static int _mysql_make_table_current(MYSQL *mysql_db, char *table_name,
 	return SLURM_SUCCESS;
 }
 
-extern int *destroy_mysql_db_info(mysql_db_info_t *db_info)
-{
-	if(db_info) {
-		xfree(db_info->host);
-		xfree(db_info->user);
-		xfree(db_info->pass);
-		xfree(db_info);
-	}
-	return SLURM_SUCCESS;
-}
-
-extern int mysql_create_db(MYSQL *mysql_db, char *db_name,
-			   mysql_db_info_t *db_info)
+static int _create_db(char *db_name, mysql_db_info_t *db_info)
 {
 	char create_line[50];
+	MYSQL *mysql_db = NULL;
 
-	slurm_mutex_lock(&mysql_lock);
+//	slurm_mutex_lock(&mysql_lock);
+	if(!(mysql_db = mysql_init(mysql_db)))
+		fatal("mysql_init failed: %s", mysql_error(mysql_db));
+	
 	if(mysql_real_connect(mysql_db, db_info->host, db_info->user,
 			      db_info->pass, NULL, db_info->port, NULL, 0)) {
 		snprintf(create_line, sizeof(create_line),
@@ -140,17 +132,30 @@ extern int mysql_create_db(MYSQL *mysql_db, char *db_name,
 			      mysql_errno(mysql_db),
 			      mysql_error(mysql_db), create_line);
 		}
+		mysql_close(mysql_db);
+		mysql_server_end();				
 	} else {
 		info("Connection failed to host = %s "
 		     "user = %s pass = %s port = %u",
 		     db_info->host, db_info->user,
 		     db_info->pass, db_info->port);
 		slurm_mutex_unlock(&mysql_lock);
-		fatal("mysql_real_connect failed: %d %s",
+		fatal("mysql_real_connect failed: %d %s\n",
 		      mysql_errno(mysql_db),
 		      mysql_error(mysql_db));
 	}
-	slurm_mutex_unlock(&mysql_lock);
+//	slurm_mutex_unlock(&mysql_lock);
+	return SLURM_SUCCESS;
+}
+
+extern int *destroy_mysql_db_info(mysql_db_info_t *db_info)
+{
+	if(db_info) {
+		xfree(db_info->host);
+		xfree(db_info->user);
+		xfree(db_info->pass);
+		xfree(db_info);
+	}
 	return SLURM_SUCCESS;
 }
 
@@ -178,8 +183,7 @@ extern int mysql_get_db_connection(MYSQL **mysql_db, char *db_name,
 				if(mysql_errno(*mysql_db) == ER_BAD_DB_ERROR) {
 					debug("Database %s not created.  "
 					      "Creating", db_name);
-					mysql_create_db(*mysql_db, db_name,
-							db_info);
+					_create_db(db_name, db_info);
 				} else {
 					fatal("mysql_real_connect failed: "
 					      "%d %s",
