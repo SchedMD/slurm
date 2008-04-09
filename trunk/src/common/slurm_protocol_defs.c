@@ -930,7 +930,7 @@ void slurm_free_ctl_conf(slurm_ctl_conf_info_msg_t * config_ptr)
 		xfree(config_ptr->propagate_rlimits);
 		xfree(config_ptr->propagate_rlimits_except);
 		xfree(config_ptr->resume_program);
-		xfree(config_ptr->sched_conf);
+		xfree(config_ptr->sched_params);
 		xfree(config_ptr->schedtype);
 		xfree(config_ptr->select_type);
 		xfree(config_ptr->slurm_conf);

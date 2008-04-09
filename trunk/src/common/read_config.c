@@ -191,6 +191,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"ResumeRate", S_P_UINT16},
 	{"ReturnToService", S_P_UINT16},
 	{"SchedulerAuth", S_P_STRING, defunct_option},
+	{"SchedulerParameters", S_P_STRING},
 	{"SchedulerPort", S_P_UINT16},
 	{"SchedulerRootFilter", S_P_UINT16},
 	{"SchedulerTimeSlice", S_P_UINT16},
@@ -1185,7 +1186,7 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	xfree (ctl_conf_ptr->resume_program);
 	ctl_conf_ptr->resume_rate		= (uint16_t) NO_VAL;
 	ctl_conf_ptr->ret2service		= (uint16_t) NO_VAL;
-	xfree( ctl_conf_ptr->sched_conf );
+	xfree( ctl_conf_ptr->sched_params );
 	ctl_conf_ptr->sched_time_slice		= (uint16_t) NO_VAL;
 	xfree( ctl_conf_ptr->schedtype );
 	ctl_conf_ptr->schedport			= (uint16_t) NO_VAL;
@@ -1777,6 +1778,8 @@ validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	if (!s_p_get_uint16(&conf->resume_rate, "ResumeRate", hashtbl))
 		conf->resume_rate = DEFAULT_RESUME_RATE;
 
+	s_p_get_string(&conf->sched_params, "SchedulerParameters", hashtbl);
+
 	if (s_p_get_uint16(&conf->schedport, "SchedulerPort", hashtbl)) {
 		if (conf->schedport == 0) {
 			error("SchedulerPort=0 is invalid");
@@ -1786,13 +1789,13 @@ validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 		conf->schedport = DEFAULT_SCHEDULER_PORT;
 	}
 
-	if (!s_p_get_uint16(&conf->sched_time_slice, "SchedulerTimeSlice",
-	    hashtbl))
-		conf->sched_time_slice = DEFAULT_SCHED_TIME_SLICE;
-
 	if (!s_p_get_uint16(&conf->schedrootfltr,
 			    "SchedulerRootFilter", hashtbl))
 		conf->schedrootfltr = DEFAULT_SCHEDROOTFILTER;
+
+	if (!s_p_get_uint16(&conf->sched_time_slice, "SchedulerTimeSlice",
+	    hashtbl))
+		conf->sched_time_slice = DEFAULT_SCHED_TIME_SLICE;
 
 	if (!s_p_get_string(&conf->schedtype, "SchedulerType", hashtbl))
 		conf->schedtype = xstrdup(DEFAULT_SCHEDTYPE);
