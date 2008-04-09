@@ -238,6 +238,7 @@ documents those changes that are of interest to users and admins.
     (from Steven McDougal, SiCortex).
  -- In srun and sbatch, do not check the PATH env var if an absolute pathname 
     of the program is specified (previously reported an error if no PATH).
+ -- Correct output of "sinfo -o %C" (CPU counts by node state).
 
 * Changes in SLURM 1.2.25
 =========================
