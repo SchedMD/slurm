@@ -76,8 +76,6 @@ extern pthread_mutex_t mysql_lock;
 
 extern int *destroy_mysql_db_info(mysql_db_info_t *db_info);
 
-extern int mysql_create_db(char *db_name, mysql_db_info_t *db_info);
-
 extern int mysql_get_db_connection(MYSQL **mysql_db, char *db_name,
 				   mysql_db_info_t *db_info);
 extern int mysql_close_db_connection(MYSQL **mysql_db);
