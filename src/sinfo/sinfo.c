@@ -728,7 +728,7 @@ static void _update_sinfo(sinfo_data_t *sinfo_ptr, node_info_t *node_ptr)
 
 	sinfo_ptr->cpus_alloc += node_ptr->used_cpus;
 	sinfo_ptr->cpus_total += node_ptr->cpus;
-	if ((sinfo_ptr->node_state & NODE_STATE_DRAIN) ||
+	if ((node_ptr->node_state & NODE_STATE_DRAIN) ||
 	    (base_state == NODE_STATE_DOWN)) {
 		sinfo_ptr->cpus_other += node_ptr->cpus -
 					 node_ptr->used_cpus;
