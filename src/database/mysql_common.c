@@ -198,8 +198,12 @@ extern int mysql_close_db_connection(MYSQL **mysql_db)
 {
 	if(mysql_db && *mysql_db) {
 		mysql_close(*mysql_db);
+		/* leave as server instead of library since this is
+		 * backwards compatible */
+		mysql_server_end();
 		*mysql_db = NULL;
 	}
+
 	return SLURM_SUCCESS;
 }
 
