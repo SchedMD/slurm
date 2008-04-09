@@ -410,7 +410,10 @@ void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
 	conf_ptr->resume_rate         = conf->resume_rate;
 	conf_ptr->ret2service         = conf->ret2service;
 
-	conf_ptr->sched_conf          = slurm_sched_p_get_conf();
+	if (conf->sched_params)
+		conf_ptr->sched_params = xstrdup(conf->sched_params);
+	else
+		conf_ptr->sched_params = slurm_sched_p_get_conf();
 	conf_ptr->schedport           = conf->schedport;
 	conf_ptr->schedrootfltr       = conf->schedrootfltr;
 	conf_ptr->sched_time_slice    = conf->sched_time_slice;
