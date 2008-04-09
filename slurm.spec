@@ -78,8 +78,8 @@ URL: https://computing.llnl.gov/linux/slurm/
 %description 
 SLURM is an open source, fault-tolerant, and highly
 scalable cluster management and job scheduling system for Linux clusters
-containing up to thousands of nodes. Components include machine status,
-partition management, job management, and scheduling modules.
+containing up to 65,536 nodes. Components include machine status,
+partition management, job management, scheduling and accounting modules.
 
 %ifnos aix
 BuildRequires: ncurses-devel
