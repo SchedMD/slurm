@@ -168,7 +168,12 @@ extern int sacctmgr_add_cluster(int argc, char *argv[])
 		cluster_cond.cluster_list = name_list;
 
 		temp_list = acct_storage_g_get_clusters(db_conn, &cluster_cond);
-		
+		if(!temp_list) {
+			printf(" Problem getting clusters from database.  "
+		   	    "Contact your admin.\n");
+			return SLURM_ERROR;
+		}
+
 		itr_c = list_iterator_create(name_list);
 		itr = list_iterator_create(temp_list);
 		while((name = list_next(itr_c))) {
