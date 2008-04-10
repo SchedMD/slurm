@@ -713,11 +713,22 @@ step_create(job_step_create_request_msg_t *step_specs,
 	}
 
 	if (batch_step) {
+		static bool wiki_sched = false;
+		static bool wiki_sched_test = false;
+		if (!wiki_sched_test) {
+			char *sched_type = slurm_get_sched_type();
+			if ((strcmp(sched_type, "sched/wiki") == 0) ||
+			    (strcmp(sched_type, "sched/wiki2") == 0))
+				wiki_sched = true;
+			xfree(sched_type);
+			wiki_sched_test = true;
+		}
 		info("user %u attempting to run batch script within "
 			"an existing job", step_specs->user_id);
 		/* This seems hazardous to allow, but LSF seems to 
-		 * work this way, so don't treat it as an error.
-		 * return ESLURM_ACCESS_DENIED ; */
+		 * work this way, so don't treat it as an error. */
+		if (wiki_sched)
+			return ESLURM_ACCESS_DENIED;
 	}
 
 	if ((step_specs->user_id != job_ptr->user_id) &&
