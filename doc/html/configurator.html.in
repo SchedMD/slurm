@@ -297,6 +297,12 @@ manually edit the resulting <I>slurm.conf</I> as desired
 for greater flexibiilty. See <I>man slurm.conf</I> for more
 details about the configuration parameters.</P>
 
+<P>Note the while SLURM daemons create log files and other files as needed, 
+it treats the lack of parent directories as a fatal error. 
+This prevents the daemons from running if critical file systems are
+not mounted and will minimize the risk of cold-starting (starting 
+without preserving jobs).</P>
+
 <P>After you have filled in the fields of interest, use the 
 "Submit" button on the bottom of the page to build the <I>slurm.conf</I>
 file. It will appear on your web browser. Save the file in text format 
