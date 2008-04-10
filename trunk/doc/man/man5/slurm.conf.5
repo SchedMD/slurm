@@ -15,6 +15,12 @@ location of this file. The SLURM daemons also allow you to override
 both the built\-in and environment\-provided location using the "\-f"
 option on the command line.
 .LP
+Note the while SLURM daemons create log files and other files as needed, 
+it treats the lack of parent directories as a fatal error. 
+This prevents the daemons from running if critical file systems are
+not mounted and will minimize the risk of cold\-starting (starting 
+without preserving jobs).
+.LP
 The contents of the file are case insensitive except for the names of nodes 
 and partitions. Any text following a "#" in the configuration file is treated 
 as a comment through the end of that line. 
