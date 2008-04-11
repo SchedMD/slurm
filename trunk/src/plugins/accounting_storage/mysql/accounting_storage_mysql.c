@@ -382,9 +382,7 @@ static int _remove_common(mysql_conn_t *mysql_conn,
 		query = xstrdup_printf("delete from %s where creation_time>%d "
 				       "&& (%s);",
 				       table, day_old, name_char);
-	}/*  else { */
-/* 		query = xstrdup_printf("delete from %s where %s",) */
-/* 	} */
+	}
 
 	xstrfmtcat(query,
 		   "update %s set mod_time=%d, deleted=1 "
@@ -416,11 +414,14 @@ static int _remove_common(mysql_conn_t *mysql_conn,
 	if(table != assoc_table) {
 		/* If we are doing this on an assoc_table we have
 		   already done this, so don't */
-		query = xstrdup_printf("select distinct t1.id "
-				       "from %s as t1, %s as t2 "
-				       "where %s && t1.lft between "
-				       "t2.lft and t2.rgt;",
+		query = xstrdup_printf("select distinct id "
+				       "from %s where %s order by lft;",
 				       assoc_table, assoc_table, assoc_char);
+		/* query = xstrdup_printf("select distinct t1.id " */
+/* 				       "from %s as t1, %s as t2 " */
+/* 				       "where %s && t1.lft between " */
+/* 				       "t2.lft and t2.rgt;", */
+/* 				       assoc_table, assoc_table, assoc_char); */
 		
 		debug3("%d query\n%s", mysql_conn->conn, query);
 		if(!(result = mysql_db_query_ret(mysql_conn->acct_mysql_db,
@@ -455,7 +456,7 @@ static int _remove_common(mysql_conn_t *mysql_conn,
 		}
 		mysql_free_result(result);
 	} else 
-		loc_assoc_char = name_char;
+		loc_assoc_char = assoc_char;
 
 	query = xstrdup_printf("delete from %s where creation_time>%d && (%s);"
 			       "delete from %s where creation_time>%d && (%s);"
@@ -463,6 +464,18 @@ static int _remove_common(mysql_conn_t *mysql_conn,
 			       assoc_day_table, day_old, loc_assoc_char,
 			       assoc_hour_table, day_old, loc_assoc_char,
 			       assoc_month_table, day_old, loc_assoc_char);
+	debug3("%d query\n%s", mysql_conn->conn, query);
+	rc = mysql_db_query(mysql_conn->acct_mysql_db, query);
+	xfree(query);
+	if(rc != SLURM_SUCCESS) {
+		if(mysql_conn->rollback) {
+			mysql_db_rollback(mysql_conn->acct_mysql_db);
+		}
+		list_destroy(mysql_conn->update_list);
+		mysql_conn->update_list =
+			list_create(destroy_acct_update_object);
+		return SLURM_ERROR;
+	}
 	xstrfmtcat(query,
 		   "update %s set mod_time=%d, deleted=1 where (%s);"
 		   "update %s set mod_time=%d, deleted=1 where (%s);"
@@ -471,7 +484,7 @@ static int _remove_common(mysql_conn_t *mysql_conn,
 		   assoc_hour_table, now, loc_assoc_char,
 		   assoc_month_table, now, loc_assoc_char);
 
-	debug3("%d query\n%s", mysql_conn->conn, query);
+	debug3("%d query\n%s %d", mysql_conn->conn, query, strlen(query));
 	rc = mysql_db_query(mysql_conn->acct_mysql_db, query);
 	xfree(query);
 	if(rc != SLURM_SUCCESS) {
@@ -488,9 +501,7 @@ static int _remove_common(mysql_conn_t *mysql_conn,
 	 * day, since they are most likely nothing we really wanted in
 	 * the first place.
 	 */
-	if(table == assoc_table) {
-		assoc_char = name_char;
-	} else if(!assoc_char) {
+	if(!assoc_char) {
 		error("no assoc_char");
 		if(mysql_conn->rollback) {
 			mysql_db_rollback(mysql_conn->acct_mysql_db);
@@ -501,7 +512,7 @@ static int _remove_common(mysql_conn_t *mysql_conn,
 		return SLURM_ERROR;
 	}
 
-	query = xstrdup_printf("select id from %s as t1 where "
+	query = xstrdup_printf("select id from %s where "
 			       "creation_time>%d && (%s);",
 			       assoc_table, day_old, assoc_char);
 	
@@ -2783,11 +2794,11 @@ extern List acct_storage_p_remove_users(mysql_conn_t *mysql_conn, uint32_t uid,
 		list_append(ret_list, object);
 		if(!rc) {
 			xstrfmtcat(name_char, "name='%s'", object);
-			xstrfmtcat(assoc_char, "t1.user='%s'", object);
+			xstrfmtcat(assoc_char, "user='%s'", object);
 			rc = 1;
 		} else {
 			xstrfmtcat(name_char, " || name='%s'", object);
-			xstrfmtcat(assoc_char, " || t1.user='%s'", object);
+			xstrfmtcat(assoc_char, " || user='%s'", object);
 		}
 	}
 	mysql_free_result(result);
@@ -2918,11 +2929,11 @@ extern List acct_storage_p_remove_accts(mysql_conn_t *mysql_conn, uint32_t uid,
 		list_append(ret_list, object);
 		if(!rc) {
 			xstrfmtcat(name_char, "name='%s'", object);
-			xstrfmtcat(assoc_char, "t1.acct='%s'", object);
+			xstrfmtcat(assoc_char, "acct='%s'", object);
 			rc = 1;
 		} else  {
 			xstrfmtcat(name_char, " || name='%s'", object);
-			xstrfmtcat(assoc_char, " || t1.acct='%s'", object);
+			xstrfmtcat(assoc_char, " || acct='%s'", object);
 		}
 	}
 	mysql_free_result(result);
@@ -3009,13 +3020,11 @@ extern List acct_storage_p_remove_clusters(mysql_conn_t *mysql_conn,
 		list_append(ret_list, object);
 		if(!rc) {
 			xstrfmtcat(name_char, "name='%s'", object);
-			xstrfmtcat(extra, "t1.cluster='%s'", object);
-			xstrfmtcat(assoc_char, "cluster='%s'", object);
+			xstrfmtcat(extra, "cluster='%s'", object);
 			rc = 1;
 		} else  {
 			xstrfmtcat(name_char, " || name='%s'", object);
-			xstrfmtcat(extra, " || t1.cluster='%s'", object);
-			xstrfmtcat(assoc_char, " || cluster='%s'", object);
+			xstrfmtcat(extra, " || cluster='%s'", object);
 		}
 	}
 	mysql_free_result(result);
@@ -3031,17 +3040,16 @@ extern List acct_storage_p_remove_clusters(mysql_conn_t *mysql_conn,
 	query = xstrdup_printf("delete from %s where creation_time>%d && (%s);"
 			       "delete from %s where creation_time>%d && (%s);"
 			       "delete from %s where creation_time>%d && (%s);",
-			       cluster_day_table, day_old, assoc_char,
-			       cluster_hour_table, day_old, assoc_char,
-			       cluster_month_table, day_old, assoc_char);
+			       cluster_day_table, day_old, extra,
+			       cluster_hour_table, day_old, extra,
+			       cluster_month_table, day_old, extra);
 	xstrfmtcat(query,
 		   "update %s set mod_time=%d, deleted=1 where (%s);"
 		   "update %s set mod_time=%d, deleted=1 where (%s);"
 		   "update %s set mod_time=%d, deleted=1 where (%s);",
-		   cluster_day_table, now, assoc_char,
-		   cluster_hour_table, now, assoc_char,
-		   cluster_month_table, now, assoc_char);
-	xfree(assoc_char);
+		   cluster_day_table, now, extra,
+		   cluster_hour_table, now, extra,
+		   cluster_month_table, now, extra);
 	debug3("%d query\n%s", mysql_conn->conn, query);
 	rc = mysql_db_query(mysql_conn->acct_mysql_db, query);
 	xfree(query);
@@ -3058,7 +3066,7 @@ extern List acct_storage_p_remove_clusters(mysql_conn_t *mysql_conn,
 		return NULL;
 	}
 
-	assoc_char = xstrdup_printf("t1.acct='root' && (%s)", extra);
+	assoc_char = xstrdup_printf("acct='root' && (%s)", extra);
 	xfree(extra);
 
 	if(_remove_common(mysql_conn, DBD_REMOVE_CLUSTERS, now,
@@ -3087,7 +3095,8 @@ extern List acct_storage_p_remove_associations(mysql_conn_t *mysql_conn,
 	List ret_list = NULL;
 	int rc = SLURM_SUCCESS;
 	char *object = NULL;
-	char *extra = NULL, *query = NULL, *name_char = NULL;
+	char *extra = NULL, *query = NULL,
+		*name_char = NULL, *assoc_char = NULL;
 	time_t now = time(NULL);
 	struct passwd *pw = NULL;
 	char *user_name = NULL;
@@ -3098,12 +3107,12 @@ extern List acct_storage_p_remove_associations(mysql_conn_t *mysql_conn,
 	/* if this changes you will need to edit the corresponding 
 	 * enum below also t1 is step_table */
 	char *rassoc_req_inx[] = {
-		"t1.id",
-		"t1.acct",
-		"t1.parent_acct",
-		"t1.cluster",
-		"t1.user",
-		"t1.partition"
+		"id",
+		"acct",
+		"parent_acct",
+		"cluster",
+		"user",
+		"partition"
 	};
 	
 	enum {
@@ -3121,7 +3130,7 @@ extern List acct_storage_p_remove_associations(mysql_conn_t *mysql_conn,
 		return NULL;
 	}
 
-	xstrcat(extra, "where t1.id>0 && t1.deleted=0");
+	xstrcat(extra, "where id>0 && deleted=0");
 
 	if((pw=getpwuid(uid))) {
 		user_name = pw->pw_name;
@@ -3134,7 +3143,7 @@ extern List acct_storage_p_remove_associations(mysql_conn_t *mysql_conn,
 		while((object = list_next(itr))) {
 			if(set) 
 				xstrcat(extra, " || ");
-			xstrfmtcat(extra, "t1.acct='%s'", object);
+			xstrfmtcat(extra, "acct='%s'", object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
@@ -3148,7 +3157,7 @@ extern List acct_storage_p_remove_associations(mysql_conn_t *mysql_conn,
 		while((object = list_next(itr))) {
 			if(set) 
 				xstrcat(extra, " || ");
-			xstrfmtcat(extra, "t1.cluster='%s'", object);
+			xstrfmtcat(extra, "cluster='%s'", object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
@@ -3162,7 +3171,7 @@ extern List acct_storage_p_remove_associations(mysql_conn_t *mysql_conn,
 		while((object = list_next(itr))) {
 			if(set) 
 				xstrcat(extra, " || ");
-			xstrfmtcat(extra, "t1.user='%s'", object);
+			xstrfmtcat(extra, "user='%s'", object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
@@ -3176,7 +3185,7 @@ extern List acct_storage_p_remove_associations(mysql_conn_t *mysql_conn,
 		while((object = list_next(itr))) {
 			if(set) 
 				xstrcat(extra, " || ");
-			xstrfmtcat(extra, "t1.id=%s", object);
+			xstrfmtcat(extra, "id=%s", object);
 			set = 1;
 		}
 		list_iterator_destroy(itr);
@@ -3184,7 +3193,7 @@ extern List acct_storage_p_remove_associations(mysql_conn_t *mysql_conn,
 	}
 	
 	if(assoc_q->parent_acct) {
-		xstrfmtcat(extra, " && t1.parent_acct='%s'",
+		xstrfmtcat(extra, " && parent_acct='%s'",
 			   assoc_q->parent_acct);
 	}
 
@@ -3194,17 +3203,45 @@ extern List acct_storage_p_remove_associations(mysql_conn_t *mysql_conn,
 		xstrcat(object, rassoc_req_inx[i]);
 	}
 
+	query = xstrdup_printf("select lft, rgt from %s %s FOR UPDATE;",
+			       assoc_table, extra);
+	xfree(extra);
+	if(!(result = mysql_db_query_ret(mysql_conn->acct_mysql_db, query))) {
+		xfree(query);
+		return NULL;
+	}
+	xfree(query);
+		
+	rc = 0;
+	while((row = mysql_fetch_row(result))) {
+		if(!rc) {
+			xstrfmtcat(name_char, "lft between %s and %s",
+				   row[0], row[1]);
+			rc = 1;
+		} else {
+			xstrfmtcat(name_char, " || lft between %s and %s",
+				   row[0], row[1]);
+		}
+	}
+	mysql_free_result(result);
+
+	if(!name_char) {
+		debug3("didn't effect anything\n%s", query);
+		xfree(query);
+		return ret_list;
+	}
+
+	xfree(query);
 	query = xstrdup_printf("select distinct %s "
-			       "from %s as t1, %s as t2 "
-			       "%s && t1.lft between t2.lft and t2.rgt "
-			       "FOR UPDATE;",
+			       "from %s where (%s) order by lft;",
 			       object,
-			       assoc_table, assoc_table, extra);
+			       assoc_table, name_char);
 	xfree(extra);
 	xfree(object);
 	debug3("%d query\n%s", mysql_conn->conn, query);
 	if(!(result = mysql_db_query_ret(mysql_conn->acct_mysql_db, query))) {
 		xfree(query);
+		xfree(name_char);
 		return NULL;
 	}
 
@@ -3237,13 +3274,13 @@ extern List acct_storage_p_remove_associations(mysql_conn_t *mysql_conn,
 			}
 		}
 		list_append(ret_list, object);
-
 		if(!rc) {
-			xstrfmtcat(name_char, "id=%s", row[RASSOC_ID]);
+			xstrfmtcat(assoc_char, "id=%s", row[RASSOC_ID]);
 			rc = 1;
 		} else {
-			xstrfmtcat(name_char, " || id=%s", row[RASSOC_ID]);
+			xstrfmtcat(assoc_char, " || id=%s", row[RASSOC_ID]);
 		}
+
 		rem_assoc = xmalloc(sizeof(acct_association_rec_t));
 		rem_assoc->id = atoi(row[RASSOC_ID]);
 		if(_addto_update_list(mysql_conn->update_list, 
@@ -3254,21 +3291,16 @@ extern List acct_storage_p_remove_associations(mysql_conn_t *mysql_conn,
 	}
 	mysql_free_result(result);
 
-	if(!list_count(ret_list)) {
-		debug3("didn't effect anything\n%s", query);
-		xfree(query);
-		return ret_list;
-	}
-	xfree(query);
-
 	if(_remove_common(mysql_conn, DBD_REMOVE_ASSOCS, now,
-			  user_name, assoc_table, name_char, NULL)
+			  user_name, assoc_table, name_char, assoc_char)
 	   == SLURM_ERROR) {
 		list_destroy(ret_list);
 		xfree(name_char);
+		xfree(assoc_char);
 		return NULL;
 	}
 	xfree(name_char);
+	xfree(assoc_char);
 
 	return ret_list;
 #else
