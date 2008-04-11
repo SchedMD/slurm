@@ -150,7 +150,6 @@ extern void set_job_elig_time(void)
 	ListIterator job_iterator;
 	slurmctld_lock_t job_write_lock =
 		{ READ_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK };
-	time_t now = time(NULL);
 
 	lock_slurmctld(job_write_lock);
 	job_iterator = list_iterator_create(job_list);
@@ -173,7 +172,6 @@ extern void set_job_elig_time(void)
 			continue;
 		if (!job_independent(job_ptr))
 			continue;
-		job_ptr->details->begin_time = now;
 	}
 	list_iterator_destroy(job_iterator);
 	unlock_slurmctld(job_write_lock);

@@ -194,6 +194,14 @@ extern int common_job_start_slurmctld(struct job_record *job_ptr)
 	}
 
 	debug2("jobacct_job_start() called");
+
+	if (job_ptr->start_time == 0) {
+		/* This function is called when a job becomes elligible to run
+		 * in order to record reserved time (a measure of system 
+		 * over-subscription). We only use this in the Gold plugin. */
+		return;
+	}
+
 	for (i=0; i < job_ptr->num_cpu_groups; i++)
 		ncpus += (job_ptr->cpus_per_node[i])
 			* (job_ptr->cpu_count_reps[i]);

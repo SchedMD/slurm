@@ -1,6 +1,10 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins.
 
+* Changes in SLURM 1.2.27
+=========================
+ -- Record job eligible time in accounting database (for jobacct/gold only).
+
 * Changes in SLURM 1.2.26
 =========================
  -- Correct number of sockets/cores/threads reported by slurmd (from
