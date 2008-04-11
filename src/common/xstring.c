@@ -196,17 +196,35 @@ void _xstrftimecat(char **buf, const char *fmt)
  */
 int _xstrfmtcat(char **str, const char *fmt, ...)
 {
+	/* Start out with a size of 100 bytes. */
+	int n, size = 100;
+	char *p = NULL;
 	va_list ap;
-	int     rc; 
-	char    buf[4096];
+	
+	if((p = xmalloc(size)) == NULL)
+		return 0;
+	while(1) {
+		/* Try to print in the allocated space. */
+		va_start(ap, fmt);
+		n = vsnprintf(p, size, fmt, ap);
+		va_end (ap);
+		/* If that worked, return the string. */
+		if (n > -1 && n < size)
+			break;
+		/* Else try again with more space. */
+		if (n > -1)               /* glibc 2.1 */
+			size = n + 1;           /* precisely what is needed */
+		else                      /* glibc 2.0 */
+			size *= 2;              /* twice the old size */
+		if ((p = xrealloc(p, size)) == NULL)
+			return 0;
+	}
 
-	va_start(ap, fmt);
-	rc = vsnprintf(buf, 4096, fmt, ap);
-	va_end(ap);
+	xstrcat(*str, p);
 
-	xstrcat(*str, buf);
+	xfree(p);
 
-	return rc;
+	return n;
 }
 
 /*
