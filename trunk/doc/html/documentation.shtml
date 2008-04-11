@@ -29,6 +29,7 @@
 <li><a href="cons_res_share.shtml">Sharing Consumable Resources</a></li>
 <li><a href="accounting.shtml">Accounting</a></li>
 <li><a href="gang_scheduling.shtml">Gang Scheduling</a></li>
+<li><a href="preempt.shtml">Preemption</a></li>
 <li><a href="maui.shtml">Maui Scheduler Integration Guide</a></li>
 <li><a href="moab.shtml">Moab Cluster Suite Integration Guide</a></li>
 <li><a href="http://docs.hp.com/en/5991-4847/ch09s02.html">Submitting Jobs throuh LSF</a></li>

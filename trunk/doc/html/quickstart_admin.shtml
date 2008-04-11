@@ -224,7 +224,8 @@ The Maui Scheduler</a> or
 <a href="http://www.clusterresources.com/pages/products/moab-cluster-suite.php">
 Moab Cluster Suite</a> which offer sophisticated scheduling algorithms.
 For more information about these options see
-<a href="gang_scheduling.html">Gang Scheduling</a> and
+<a href="gang_scheduling.html">Gang Scheduling</a>,
+<a href="preempt.html">Preemption</a> and
 <a href="cons_res_share.html">Sharing Consumable Resources</a>.</p> 
 
 <h3>Node selection</h3>
