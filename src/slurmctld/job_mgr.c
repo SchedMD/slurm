@@ -2696,7 +2696,8 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 		detail_ptr->work_dir = xstrdup(job_desc->work_dir);
 	if (job_desc->overcommit != (uint8_t) NO_VAL)
 		detail_ptr->overcommit = job_desc->overcommit;
-	detail_ptr->begin_time = job_desc->begin_time;
+	if (job_desc->begin_time > time(NULL))
+		detail_ptr->begin_time = job_desc->begin_time;
 	job_ptr->select_jobinfo = 
 		select_g_copy_jobinfo(job_desc->select_jobinfo);
 	detail_ptr->mc_ptr = _set_multi_core_data(job_desc);	
@@ -4751,8 +4752,21 @@ extern bool job_independent(struct job_record *job_ptr)
 
 	rc = test_job_dependency(job_ptr);
 	if (rc == 0) {
-		if (detail_ptr && (detail_ptr->begin_time == 0))
+		bool send_acct_rec = false;
+		if (detail_ptr && (detail_ptr->begin_time == 0)) {
 			detail_ptr->begin_time = now;
+			send_acct_rec = true;
+		} else if (job_ptr->state_reason == WAIT_TIME) {
+			job_ptr->state_reason = WAIT_NO_REASON;
+			send_acct_rec = true;
+		}
+		if (send_acct_rec) {
+			/* We want to record when a job becomes eligible in
+			 * order to calculate reserved time (a measure of
+			 * system over-subscription), job really is not
+			 * starting now */
+			jobacct_storage_g_job_start(acct_db_conn, job_ptr);
+		}
 		return true;
 	} else if (rc == 1) {
 		job_ptr->state_reason = WAIT_DEPENDENCY;

@@ -230,6 +230,10 @@ documents those changes that are of interest to users and admins.
     Moved existing digital signature logic into new plugin: crypto/openssl.
     Added new support for crypto/munge (available with GPL license).
 
+* Changes in SLURM 1.2.27
+=========================
+ -- Record job eligible time in accounting database (for jobacct/gold only).
+
 * Changes in SLURM 1.2.26
 =========================
  -- Correct number of sockets/cores/threads reported by slurmd (from
