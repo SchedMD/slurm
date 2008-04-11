@@ -199,7 +199,7 @@ extern int common_job_start_slurmctld(struct job_record *job_ptr)
 		/* This function is called when a job becomes elligible to run
 		 * in order to record reserved time (a measure of system 
 		 * over-subscription). We only use this in the Gold plugin. */
-		return;
+		return SLURM_SUCCESS;
 	}
 
 	for (i=0; i < job_ptr->num_cpu_groups; i++)

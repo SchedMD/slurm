@@ -6,6 +6,7 @@ documents those changes that are of interest to users and admins.
  -- Record job eligible time in accounting database (for jobacct/gold only).
  -- Prevent user root from executing a job step within a job allocation 
     belonging to another user.
+ -- fixed limiting issue for strings larger than 4096 in xstrfmtcat
 
 * Changes in SLURM 1.2.26
 =========================
