@@ -1107,9 +1107,10 @@ static void _slurm_rpc_job_step_create(slurm_msg_t * msg)
 
 	dump_step_desc(req_step_msg);
 	uid = g_slurm_auth_get_uid(msg->auth_cred, NULL);
-	if ( (uid != req_step_msg->user_id) && (!validate_super_user(uid)) ) {
-		error("Security violation, JOB_STEP_CREATE RPC from uid=%u",
-			(unsigned int) uid);
+	if (uid != req_step_msg->user_id) {
+		error("Security violation, JOB_STEP_CREATE RPC from uid=%u "
+		      "to run as uid %u",
+			(unsigned int) uid, req_step_msg->user_id);
 		slurm_send_rc_msg(msg, ESLURM_USER_ID_MISSING);
 		return;
 	}
@@ -1816,6 +1817,7 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t * msg)
 	/* do RPC call */
 	uid = g_slurm_auth_get_uid(msg->auth_cred, NULL);
 	if ( (uid != job_desc_msg->user_id) && (!validate_super_user(uid)) ) {
+		/* NOTE: User root can submit a batch job for any other user */
 		error_code = ESLURM_USER_ID_MISSING;
 		error("Security violation, SUBMIT_JOB from uid=%u",
 			(unsigned int) uid);
@@ -1848,6 +1850,17 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t * msg)
 				return;
 			}
 #endif
+
+			if (job_ptr->user_id != uid) {
+				error("Security violation, uid=%u attempting "
+				      "to execute a step within job %u owned "
+				      "by user %u",
+		 		      (unsigned int) uid, job_ptr->job_id,
+				      job_ptr->user_id);
+				slurm_send_rc_msg(msg, ESLURM_USER_ID_MISSING);
+				unlock_slurmctld(job_write_lock);
+				return;
+			}
 			error_code = _launch_batch_step(job_desc_msg, uid,
 							&step_id);
 			unlock_slurmctld(job_write_lock);
