@@ -31,6 +31,7 @@ generated_html = \
 	platforms.html \
 	plugins.html \
 	power_save.html \
+	preempt.html \
 	proctrack_plugins.html \
 	programmer_guide.html \
 	publications.html \
