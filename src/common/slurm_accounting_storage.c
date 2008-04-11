@@ -859,6 +859,7 @@ extern void pack_acct_association_rec(void *in, Buf buffer)
 		packnull(buffer);
 		packnull(buffer);
 		pack32(0, buffer);
+		pack32(0, buffer);
 		packnull(buffer);
 		return;
 	}
@@ -888,6 +889,7 @@ extern void pack_acct_association_rec(void *in, Buf buffer)
 	packstr(object->parent_acct, buffer);
 	packstr(object->partition, buffer);
 	pack32(object->uid, buffer);
+	pack32(object->used_share, buffer);
 	packstr(object->user, buffer);	
 }
 
@@ -922,6 +924,7 @@ extern int unpack_acct_association_rec(void **object, Buf buffer)
 	safe_unpackstr_xmalloc(&object_ptr->parent_acct, &uint32_tmp, buffer);
 	safe_unpackstr_xmalloc(&object_ptr->partition, &uint32_tmp, buffer);
 	safe_unpack32(&object_ptr->uid, buffer);
+	safe_unpack32(&object_ptr->used_share, buffer);
 	safe_unpackstr_xmalloc(&object_ptr->user, &uint32_tmp, buffer);	
 
 	return SLURM_SUCCESS;
