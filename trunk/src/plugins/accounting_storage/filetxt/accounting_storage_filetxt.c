@@ -431,6 +431,14 @@ extern int jobacct_storage_p_job_start(void *db_conn,
 	}
 
 	debug2("jobacct_job_start() called");
+
+	if (job_ptr->start_time == 0) {
+		/* This function is called when a job becomes elligible to run
+		 * in order to record reserved time (a measure of system
+		 * over-subscription). We only use this in the Gold plugin. */
+		return rc;
+	}
+
 	priority = (job_ptr->priority == NO_VAL) ?
 		-1L : (long) job_ptr->priority;
 
