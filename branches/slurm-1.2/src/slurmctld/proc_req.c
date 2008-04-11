@@ -1004,8 +1004,9 @@ static void _slurm_rpc_job_step_create(slurm_msg_t * msg)
 	dump_step_desc(req_step_msg);
 	uid = g_slurm_auth_get_uid(msg->auth_cred);
 	if (uid != req_step_msg->user_id) {
-		error("Security violation, JOB_STEP_CREATE RPC from uid=%u",
-			(unsigned int) uid);
+		error("Security violation, JOB_STEP_CREATE RPC from uid=%u "
+		      "to run as uid %u",
+			(unsigned int) uid, req_step_msg->user_id);
 		slurm_send_rc_msg(msg, ESLURM_USER_ID_MISSING);
 		return;
 	}
