@@ -56,7 +56,7 @@ my (
     $giga,             $help,            $idle,         $mega,
     $man,              $nodes,           $one,          $queueList,
     $queueStatus,      $running,         $serverStatus, $siteSpecific,
-    $userList,         $hostname,        $rc
+    $userList,         $hostname,        $rc,           $header_printed
 );
 
 GetOptions(
@@ -409,24 +409,26 @@ sub print_job_select
 	my $sessID = "--";
 	my $execHost;
 
-	print "\n${hostname}:\n";
-	
-	printf("%-20s %-8s %-8s %-10s %-6s %-5s %-3s %-6s %-5s %-1s %-5s\n",
-	       "", "", "", "", "", "", "", "Req'd", "Req'd", "", "Elap");
-	printf(
-	       "%-20s %-8s %-8s %-10s %-6s %-5s %-3s %-6s %-5s %-1s %-5s\n",
-	       "Job ID", "Username", "Queue", "Jobname", "SessID", "NDS",
-	       "TSK",    "Memory",   "Time",  "S",       "Time"
-	       );
-	printf(
-	       "%-20s %-8s %-8s %-10s %-6s %-5s %-3s %-6s %-5s %-1s %-5s\n",
-	       '-' x 20, '-' x 8, '-' x 8, '-' x 10, '-' x 6, '-' x 5,
-	       '-' x 3,  '-' x 6, '-' x 5, '-',      '-' x 5
-	       );
-
+	if (!defined $header_printed) {
+		print "\n${hostname}:\n";
+		
+		printf("%-20s %-8s %-8s %-20s %-6s %-5s %-3s %-6s %-5s %-1s %-5s\n",
+		       "", "", "", "", "", "", "", "Req'd", "Req'd", "", "Elap");
+		printf(
+			"%-20s %-8s %-8s %-20s %-6s %-5s %-3s %-6s %-5s %-1s %-5s\n",
+			"Job ID", "Username", "Queue", "Jobname", "SessID", "NDS",
+			"TSK",    "Memory",   "Time",  "S",       "Time"
+			);
+		printf(
+			"%-20s %-8s %-8s %-20s %-6s %-5s %-3s %-6s %-5s %-1s %-5s\n",
+			'-' x 20, '-' x 8, '-' x 8, '-' x 20, '-' x 6, '-' x 5,
+			'-' x 3,  '-' x 6, '-' x 5, '-',      '-' x 5
+			);
+		$header_printed = 1;
+	}
 	$execHost = get_exec_host($job) if $nodes;
 		
-	printf("%-20.20s %-8.8s %-8.8s %-10.10s " .
+	printf("%-20.20s %-8.8s %-8.8s %-20.20s " .
 	       "%-6.6s %5.5s %3.3s %6.6s %-5.5s %-1s %-5.5s",
 	       $job->{'job_id'}, 
 	       $job->{'user_name'},

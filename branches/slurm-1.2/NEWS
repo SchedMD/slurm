@@ -7,6 +7,8 @@ documents those changes that are of interest to users and admins.
  -- Prevent user root from executing a job step within a job allocation 
     belonging to another user.
  -- fixed limiting issue for strings larger than 4096 in xstrfmtcat
+ -- Added patch from Jerry Smith for qstat -a output
+ -- Fixed looking at the correct perl path for Slurm.pm in torque wrappers.
 
 * Changes in SLURM 1.2.26
 =========================
