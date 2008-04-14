@@ -104,7 +104,8 @@ typedef enum {
 	DBD_REMOVE_USERS,       /* Remove existing user                 */
 	DBD_ROLL_USAGE,         /* Roll up usage                        */
 	DBD_STEP_COMPLETE,	/* Record step completion		*/
-	DBD_STEP_START		/* Record step starting			*/
+	DBD_STEP_START,		/* Record step starting			*/
+	DBD_UPDATE_SHARES_USED	/* Record current share usage		*/
 } slurmdbd_msg_type_t;
 
 /*****************************************************************************\

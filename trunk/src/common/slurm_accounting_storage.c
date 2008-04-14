@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  slurm_accounting_storage.c - account torage plugin wrapper.
+ *  slurm_accounting_storage.c - account storage plugin wrapper.
  *
  *  $Id: slurm_accounting_storage.c 10744 2007-01-11 20:09:18Z da $
  *****************************************************************************
@@ -144,6 +144,8 @@ typedef struct slurm_acct_storage_ops {
 				    void *params);	
 	void (*job_archive)        (void *db_conn,
 				    List selected_parts, void *params);	
+	int (*update_shares_used)  (void *db_conn,
+				    List shares_used);
 } slurm_acct_storage_ops_t;
 
 typedef struct slurm_acct_storage_context {
@@ -212,7 +214,8 @@ static slurm_acct_storage_ops_t * _acct_storage_get_ops(
 		"jobacct_storage_p_step_complete",
 		"jobacct_storage_p_suspend",
 		"jobacct_storage_p_get_jobs",
-		"jobacct_storage_p_archive"
+		"jobacct_storage_p_archive",
+		"acct_storage_p_update_shares_used"
 	};
 	int n_syms = sizeof( syms ) / sizeof( char * );
 
@@ -466,6 +469,10 @@ extern void destroy_acct_update_object(void *object)
 	}
 }
 
+extern void destroy_update_shares_rec(void *object)
+{
+	xfree(object);
+}
 
 /****************************************************************************\
  * Pack and unpack data structures
@@ -563,6 +570,28 @@ unpack_error:
 	return SLURM_ERROR;
 }
 
+extern void pack_update_shares_used(void *object, Buf buffer)
+{
+	shares_used_object_t *object_ptr = (shares_used_object_t *) object;
+	pack32(object_ptr->assoc_id, buffer);
+	pack32(object_ptr->shares_used, buffer);
+}
+
+extern int unpack_update_shares_used(void **object, Buf buffer)
+{
+	shares_used_object_t *object_ptr = xmalloc(sizeof(shares_used_object_t));
+
+	*object = (void *) object_ptr;
+	safe_unpack32(&object_ptr->assoc_id, buffer);
+	safe_unpack32(&object_ptr->shares_used, buffer);
+
+	return SLURM_SUCCESS;
+
+unpack_error:
+	destroy_update_shares_rec(object_ptr);
+	*object = NULL;
+	return SLURM_ERROR;
+}
 extern void pack_acct_account_rec(void *in, Buf buffer)
 {
 	char *coord = NULL;
@@ -1922,5 +1951,18 @@ extern void jobacct_storage_g_archive(void *db_conn,
 		return;
  	(*(g_acct_storage_context->ops.job_archive))(db_conn, selected_parts, params);
 	return;
+}
+
+/* 
+ * record shares used information for backup in case slurmctld restarts 
+ * IN:  account_list List of shares_used_object_t *
+ * RET: SLURM_SUCCESS on success SLURM_ERROR else
+ */
+extern int acct_storage_g_update_shares_used(void *db_conn, List acct_list)
+{
+	if (slurm_acct_storage_init(NULL) < 0)
+		return SLURM_ERROR;
+ 	return (*(g_acct_storage_context->ops.update_shares_used))(db_conn, 
+								   acct_list);
 }
 

@@ -337,3 +337,9 @@ extern void jobacct_storage_p_archive(void *db_conn,
 {
 	return;
 }
+
+extern int acct_storage_p_update_shares_used(void *db_conn,
+					     List shares_used)
+{
+	return SLURM_SUCCESS;
+}

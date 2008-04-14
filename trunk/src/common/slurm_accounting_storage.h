@@ -142,6 +142,7 @@ typedef struct acct_association_rec {
 	char *partition;	/* optional partition in a cluster 
 				 * associated to association */
 	uint32_t uid;		/* user ID */
+	uint32_t used_jobs;	/* count of active jobs */
 	uint32_t used_share;	/* measure of resource usage */
 	char *user;		/* user associated to association */
 } acct_association_rec_t;
@@ -197,6 +198,11 @@ typedef struct {
 } acct_update_object_t;
 
 typedef struct {
+	uint32_t assoc_id;	/* association ID		*/
+	uint32_t shares_used;	/* measure of recent usage	*/
+} shares_used_object_t;
+
+typedef struct {
 	uint32_t alloc_secs; /* number of cpu seconds allocated */
 	uint32_t cpu_count; /* number of cpus during time period */
 	uint32_t down_secs; /* number of cpu seconds down */
@@ -219,6 +225,7 @@ extern void destroy_acct_cluster_cond(void *object);
 extern void destroy_acct_association_cond(void *object);
 
 extern void destroy_acct_update_object(void *object);
+extern void destroy_update_shares_rec(void *object);
 
 /* pack functions */
 extern void pack_acct_user_rec(void *object, Buf buffer);
@@ -248,6 +255,8 @@ extern int unpack_acct_association_cond(void **object, Buf buffer);
 extern void pack_acct_update_object(acct_update_object_t *object, Buf buffer);
 extern int unpack_acct_update_object(acct_update_object_t **object, Buf buffer);
 
+extern void pack_update_shares_used(void *object, Buf buffer);
+extern int unpack_update_shares_used(void **object, Buf buffer);
 
 extern char *acct_qos_str(acct_qos_level_t level);
 extern acct_qos_level_t str_2_acct_qos(char *level);
@@ -462,6 +471,12 @@ extern int acct_storage_g_get_usage(
  */
 extern int acct_storage_g_roll_usage(
 	void *db_conn, acct_usage_type_t type, time_t start);
+/* 
+ * record shares used information for backup in case slurmctld restarts 
+ * IN:  account_list List of shares_used_object_t *
+ * RET: SLURM_SUCCESS on success SLURM_ERROR else
+ */
+extern int acct_storage_g_update_shares_used(void *db_conn, List acct_list);
 
 /*********************** CLUSTER ACCOUNTING STORAGE **************************/
 
