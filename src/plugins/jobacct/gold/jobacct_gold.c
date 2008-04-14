@@ -791,7 +791,7 @@ static int _add_edit_job(gold_job_info_msg_t *job_ptr, gold_object_t action)
 	gold_request_add_assignment(gold_request, "NodeList", nodes);
 
 	
-	if (job_ptr->job_state != JOB_RUNNING) {
+	if (job_ptr->job_state >= JOB_COMPLETE) {
 		snprintf(tmp_buff, sizeof(tmp_buff), "%u", 
 			 (uint32_t)job_ptr->end_time);
 		gold_request_add_assignment(gold_request, "EndTime", 
