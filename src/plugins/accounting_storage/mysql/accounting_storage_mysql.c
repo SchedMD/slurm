@@ -4566,3 +4566,11 @@ extern void jobacct_storage_p_archive(mysql_conn_t *mysql_conn,
 #endif
 	return;
 }
+
+extern int acct_storage_p_update_shares_used(void *db_conn,
+					     List shares_used)
+{
+	/* This definitely needs to be fleshed out.
+	 * Go through the list of shares_used_object_t objects and store them */
+	return SLURM_SUCCESS;
+}

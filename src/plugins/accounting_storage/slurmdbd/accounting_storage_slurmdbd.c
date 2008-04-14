@@ -1171,3 +1171,22 @@ extern void jobacct_storage_p_archive(void *db_conn,
 {
 	return;
 }
+
+extern int acct_storage_p_update_shares_used(void *db_conn,
+					     List shares_used)
+{
+	slurmdbd_msg_t req;
+	dbd_list_msg_t shares_used_msg;
+	int rc, resp_code;
+
+	shares_used_msg.my_list = shares_used;
+
+	req.msg_type = DBD_UPDATE_SHARES_USED;
+	req.data = &shares_used_msg;
+	rc = slurm_send_slurmdbd_recv_rc_msg(&req, &resp_code);
+
+	if(resp_code != SLURM_SUCCESS)
+		rc = resp_code;
+
+	return rc;
+}

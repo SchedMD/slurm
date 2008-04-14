@@ -343,6 +343,7 @@ extern Buf pack_slurmdbd_msg(slurmdbd_msg_t *req)
 	case DBD_GOT_JOBS:
 	case DBD_GOT_LIST:
 	case DBD_GOT_USERS:
+	case DBD_UPDATE_SHARES_USED:
 		slurmdbd_pack_list_msg(
 			req->msg_type, (dbd_list_msg_t *)req->data, buffer);
 		break;
@@ -456,6 +457,7 @@ extern int unpack_slurmdbd_msg(slurmdbd_msg_t *resp, Buf buffer)
 	case DBD_GOT_JOBS:
 	case DBD_GOT_LIST:
 	case DBD_GOT_USERS:
+	case DBD_UPDATE_SHARES_USED:
 		rc = slurmdbd_unpack_list_msg(
 			resp->msg_type, (dbd_list_msg_t **)&resp->data, buffer);
 		break;
@@ -1876,6 +1878,9 @@ void inline slurmdbd_pack_list_msg(slurmdbd_msg_type_t type,
 	case DBD_GOT_USERS:
 		my_function = pack_acct_user_rec;
 		break;
+	case DBD_UPDATE_SHARES_USED:
+		my_function = pack_update_shares_used;
+		break;
 	default:
 		fatal("Unknown pack type");
 		return;
@@ -1934,6 +1939,10 @@ int inline slurmdbd_unpack_list_msg(slurmdbd_msg_type_t type,
 	case DBD_GOT_USERS:
 		my_function = unpack_acct_user_rec;
 		my_destroy = destroy_acct_user_rec;
+		break;
+	case DBD_UPDATE_SHARES_USED:
+		my_function = unpack_update_shares_used;
+		my_destroy = destroy_update_shares_rec;
 		break;
 	default:
 		fatal("Unknown unpack type");
