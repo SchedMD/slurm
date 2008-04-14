@@ -403,13 +403,6 @@ static char *	_get_job_state(struct job_record *job_ptr)
 	uint16_t state = job_ptr->job_state;
 	uint16_t base_state = state & (~JOB_COMPLETING);
 
-	if (base_state == JOB_PENDING)
-		return "Idle";
-	if (base_state == JOB_RUNNING)
-		return "Running";
-	if (base_state == JOB_SUSPENDED)
-		return "Suspended";
-
 	if (state & JOB_COMPLETING) {
 		/* Give configured KillWait+10 for job
 		 * to clear out, then then consider job 
@@ -420,6 +413,13 @@ static char *	_get_job_state(struct job_record *job_ptr)
 		if (age < (kill_wait+10))
 			return "Running";
 	}
+
+	if (base_state == JOB_PENDING)
+		return "Idle";
+	if (base_state == JOB_RUNNING)
+		return "Running";
+	if (base_state == JOB_SUSPENDED)
+		return "Suspended";
 
 	if (base_state == JOB_COMPLETE)
 		return "Completed";
