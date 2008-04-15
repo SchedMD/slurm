@@ -18,6 +18,7 @@ documents those changes that are of interest to users and admins.
  -- Enhance job requeue on node failure to be more robust.
  -- Added configuration parameter "DisableRootJobs". See "man slurm.conf" 
     for details.
+ -- Fixed issue with account = NULL in Gold job accounting plugin
 
 * Changes in SLURM 1.2.26
 =========================
