@@ -1063,13 +1063,11 @@ extern int kill_running_job_by_node_name(char *node_name, bool step_test)
 				_excise_node_from_job(job_ptr, node_ptr);
 			} else if (job_ptr->batch_flag && job_ptr->details &&
 			           (job_ptr->details->no_requeue == 0)) {
-				uint16_t save_state;
 				srun_node_fail(job_ptr->job_id, node_name);
 				info("requeue job %u due to failure of node %s",
 				     job_ptr->job_id, node_name);
 				_set_job_prio(job_ptr);
 				job_ptr->time_last_active  = now;
-				job_ptr->job_state = JOB_PENDING | JOB_COMPLETING;
 				if (suspended)
 					job_ptr->end_time = job_ptr->suspend_time;
 				else
@@ -1078,11 +1076,12 @@ extern int kill_running_job_by_node_name(char *node_name, bool step_test)
 				/* We want this job to look like it was cancelled in the
 				 * accounting logs. Set a new submit time so the restarted
 				 * job looks like a new job. */
-				save_state = job_ptr->job_state;
 				job_ptr->job_state  = JOB_CANCELLED;
 				deallocate_nodes(job_ptr, false, suspended);
 				job_completion_logger(job_ptr);
-				job_ptr->job_state = save_state;
+				job_ptr->job_state = JOB_PENDING;
+				if (job_ptr->node_cnt)
+					job_ptr->job_state |= JOB_COMPLETING;
 				job_ptr->details->submit_time = now;
 			} else {
 				info("Killing job_id %u on failed node %s",
@@ -1679,12 +1678,12 @@ extern int job_complete(uint32_t job_id, uid_t uid, bool requeue,
 		job_ptr->batch_flag++;	/* only one retry */
 		job_ptr->job_state = JOB_PENDING | job_comp_flag;
 		info("Non-responding node, requeue JobId=%u", job_ptr->job_id);
-	} else if (job_ptr->job_state == JOB_PENDING) {
-		job_ptr->job_state  = JOB_CANCELLED;
-		job_ptr->start_time = now;
-		job_ptr->end_time   = now;
-		job_ptr->requid = uid;
-		job_completion_logger(job_ptr);
+	} else if ((job_ptr->job_state == JOB_PENDING) && job_ptr->details && 
+		   job_ptr->batch_flag) {
+		/* Possible failure mode with DOWN node and job requeue.
+		 * The DOWN node might actually respond to the cancel and
+		 * take us here. */
+		return SLURM_SUCCESS;
 	} else {
 		if (job_return_code == NO_VAL) {
 			job_ptr->job_state = JOB_CANCELLED | job_comp_flag;
@@ -4795,7 +4794,6 @@ extern int job_requeue (uid_t uid, uint32_t job_id, slurm_fd conn_fd)
 	slurm_msg_t resp_msg;
 	return_code_msg_t rc_msg;
 	time_t now = time(NULL);
-	uint16_t save_state;
 
 	/* find the job */
 	job_ptr = find_job_record (job_id);
@@ -4848,7 +4846,6 @@ extern int job_requeue (uid_t uid, uint32_t job_id, slurm_fd conn_fd)
 	if (job_ptr->job_state == JOB_SUSPENDED)
 		suspended = true;
 	job_ptr->time_last_active  = now;
-	job_ptr->job_state         = JOB_PENDING | JOB_COMPLETING;
 	if (suspended)
 		job_ptr->end_time = job_ptr->suspend_time;
 	else
@@ -4857,12 +4854,13 @@ extern int job_requeue (uid_t uid, uint32_t job_id, slurm_fd conn_fd)
 	/* We want this job to look like it was cancelled in the
 	 * accounting logs. Set a new submit time so the restarted
 	 * job looks like a new job. */
-	save_state = job_ptr->job_state;
 	job_ptr->job_state  = JOB_CANCELLED;
 	deallocate_nodes(job_ptr, false, suspended);
 	xfree(job_ptr->details->req_node_layout);
 	job_completion_logger(job_ptr);
-	job_ptr->job_state = save_state;
+	job_ptr->job_state = JOB_PENDING;
+	if (job_ptr->node_cnt)
+		job_ptr->job_state |= JOB_COMPLETING;
 	job_ptr->details->submit_time = now;
 
     reply:
