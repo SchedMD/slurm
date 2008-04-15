@@ -13,6 +13,8 @@ documents those changes that are of interest to users and admins.
  -- Added patch from Jerry Smith for qstat -a output
  -- Fixed looking at the correct perl path for Slurm.pm in torque wrappers.
  -- Enhance job requeue on node failure to be more robust.
+ -- Added configuration parameter "DisableRootJobs". See "man slurm.conf" 
+    for details.
 
 * Changes in SLURM 1.2.26
 =========================
