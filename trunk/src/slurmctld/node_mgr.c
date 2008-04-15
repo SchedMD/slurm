@@ -2035,6 +2035,7 @@ void set_node_down (char *name, char *reason)
 		return;
 	}
 
+	_make_node_down(node_ptr, now);
 	(void) kill_running_job_by_node_name(name, false);
 	if ((node_ptr->reason == NULL)
 	||  (strncmp(node_ptr->reason, "Not responding", 14) == 0)) {
@@ -2049,7 +2050,6 @@ void set_node_down (char *name, char *reason)
 		node_ptr->reason = xstrdup(reason);
 		xstrcat(node_ptr->reason, time_buf);
 	}
-	_make_node_down(node_ptr, now);
 
 	return;
 }

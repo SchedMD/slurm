@@ -239,7 +239,13 @@ documents those changes that are of interest to users and admins.
  -- Record job eligible time in accounting database (for jobacct/gold only).
  -- Prevent user root from executing a job step within a job allocation 
     belonging to another user.
- -- fixed limiting issue for strings larger than 4096 in xstrfmtcat
+ -- Fixed limiting issue for strings larger than 4096 in xstrfmtcat
+ -- Fix bug in how Slurm reports job state to Maui/Moab when a job is requeued
+    due to a node failure, but we can't terminate the job's spawned processes.
+    Job was being reported as PENDING when it was really still COMPLETING.
+ -- Added patch from Jerry Smith for qstat -a output
+ -- Fixed looking at the correct perl path for Slurm.pm in torque wrappers.
+ -- Enhance job requeue on node failure to be more robust.
 
 * Changes in SLURM 1.2.26
 =========================
