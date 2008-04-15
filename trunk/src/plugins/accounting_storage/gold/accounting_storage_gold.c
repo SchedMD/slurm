@@ -2984,9 +2984,7 @@ extern int jobacct_storage_p_job_start(void *db_conn,
 	gold_object_t action = GOLD_ACTION_CREATE;
 	
 	if(_check_for_job(job_ptr->job_id, job_ptr->details->submit_time)) {
-		error("It looks like this job is already in GOLD.  "
-		      "This shouldn't happen, we are going to overwrite "
-		      "old info.");
+		debug3("It looks like this job is already in GOLD.");
 		action = GOLD_ACTION_MODIFY;
 	}
 
