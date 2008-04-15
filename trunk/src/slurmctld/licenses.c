@@ -244,8 +244,11 @@ extern List license_job_validate(char *licenses, bool *valid)
 	if (iter == NULL)
 		fatal("malloc failure from list_iterator_create");
 	while ((license_entry = (licenses_t *) list_next(iter))) {
-		match = list_find_first(license_list, _license_find_rec, 
-			license_entry->name);
+		if (license_list) {
+			match = list_find_first(license_list,
+				_license_find_rec, license_entry->name);
+		} else
+			match = NULL;
 		if (!match) {
 			debug("could not find license %s for job",
 			      license_entry->name);
