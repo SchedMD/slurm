@@ -633,7 +633,7 @@ extern int agent_job_start(Buf buffer)
 
 	if (_check_for_job(job_info_msg->job_id, 
 			   job_info_msg->submit_time)) {
-		error("Job %u is already in GOLD, overwrite old info",
+		debug3("Job %u is already in GOLD, overwrite old info",
 		      job_info_msg->job_id);
 		action = GOLD_ACTION_MODIFY;
 	} else {
