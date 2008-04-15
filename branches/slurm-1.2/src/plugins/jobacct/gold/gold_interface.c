@@ -120,7 +120,7 @@ static gold_response_entry_t *_create_response_entry(char *object,
 			name_val->name = _get_return_name(gold_msg, i);
 			name_val->value = _get_return_value(gold_msg, i);
 			
-			debug3("got %s = %s", name_val->name, name_val->value);
+			debug4("got %s = %s", name_val->name, name_val->value);
 			list_push(resp_entry->name_val, name_val);
 		}
 		(*i)++;
@@ -477,7 +477,7 @@ extern gold_response_t *get_gold_response(gold_request_t *gold_request)
 		goto error;
 	}
 
-	debug2("sending %d '%s'", rc, gold_msg);
+	debug3("sending %d '%s'", rc, gold_msg);
 
 	xstrcat(gold_msg, "0\r\n");
 	rc = _slurm_send_timeout(gold_fd, gold_msg, strlen(gold_msg),
@@ -518,7 +518,7 @@ extern gold_response_t *get_gold_response(gold_request_t *gold_request)
 	tmp_buff[i] = '\0';
 	ret_len = xstrntol(tmp_buff, NULL, i, 16);
 		
-	debug3("got size %d", ret_len);
+	debug4("got size %d", ret_len);
 	
 	gold_msg = xmalloc(ret_len+1);
 	
@@ -528,7 +528,7 @@ extern gold_response_t *get_gold_response(gold_request_t *gold_request)
 		goto error;
 	}
 
-	debug2("got back '%s'", gold_msg);
+	debug3("got back '%s'", gold_msg);
 	if(_slurm_recv_timeout(gold_fd, tmp_buff, 3, 0, timeout) < 0) {
 		error("get_gold_response: "
 		      "couldn't get the end of the message");

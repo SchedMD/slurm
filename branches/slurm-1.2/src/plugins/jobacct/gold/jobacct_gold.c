@@ -179,10 +179,13 @@ static char *_get_account_id(char *user, char *project, char *machine)
 		break;
 	}
 	list_iterator_destroy(itr);
-
-	if(gold_account_id) 
-		return gold_account_id;
 	
+	if(gold_account_id) {
+		debug2("Cached GOLD account id for %s-%s-%s is %s", 
+		       machine, project, user, gold_account_id);
+		return gold_account_id;
+	}
+
 	gold_request = create_gold_request(GOLD_OBJECT_ACCOUNT,
 					   GOLD_ACTION_QUERY);
 
@@ -226,6 +229,8 @@ static char *_get_account_id(char *user, char *project, char *machine)
 	}
 
 	destroy_gold_response(gold_response);
+	debug2("GOLD account id for %s-%s-%s is %s", 
+	       machine, project, user, gold_account_id);
 
 	return gold_account_id;
 }
@@ -720,6 +725,9 @@ static int _add_edit_job(gold_job_info_msg_t *job_ptr, gold_object_t action)
 	if (!gold_request) 
 		return SLURM_ERROR;
 
+	if (job_ptr->account && job_ptr->account[0])
+		account = job_ptr->account;
+	
 	if (action == GOLD_ACTION_CREATE) {
 		snprintf(tmp_buff, sizeof(tmp_buff), "%u", job_ptr->job_id);
 		gold_request_add_assignment(gold_request, "JobId", tmp_buff);
@@ -729,8 +737,7 @@ static int _add_edit_job(gold_job_info_msg_t *job_ptr, gold_object_t action)
 		gold_request_add_assignment(gold_request, "SubmitTime",
 					    tmp_buff);
 		
-		gold_account_id = _get_account_id(user, account, 
-						  cluster_name);
+		gold_account_id = _get_account_id(user, account, cluster_name);
 		if ((gold_account_id == NULL) ||
 		    ((gold_account_id[0] == '0') && (gold_account_id[1] == '\0'))) {
 			destroy_gold_request(gold_request);
@@ -774,9 +781,6 @@ static int _add_edit_job(gold_job_info_msg_t *job_ptr, gold_object_t action)
 	gold_request_add_assignment(gold_request, "JobName", jname);
 	xfree(jname);
 
-	if (job_ptr->account && job_ptr->account[0])
-		account = job_ptr->account;
-	
 	if (job_ptr->nodes && job_ptr->nodes[0])
 		nodes = job_ptr->nodes;
 
