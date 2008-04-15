@@ -944,6 +944,7 @@ typedef struct slurm_ctl_conf {
 	char *control_machine;	/* name of slurmctld primary server */
 	char *crypto_type;	/* cryptographic signature plugin */
 	uint32_t def_mem_per_task; /* default MB memory per spawned task */
+	uint16_t disable_root_jobs; /* if set then user root can't run jobs */
 	char *epilog;		/* pathname of job epilog */
 	uint32_t epilog_msg_time;  /* usecs for slurmctld to process an
 				 * epilog complete message */

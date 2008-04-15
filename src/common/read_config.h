@@ -63,8 +63,9 @@ extern char *default_plugstack;
 #define JOB_ACCT_GATHER_TYPE_NONE "jobacct_gather/none"
 #define DEFAULT_JOB_ACCT_GATHER_FREQ  30
 #define ACCOUNTING_STORAGE_TYPE_NONE "accounting_storage/none"
-#define DEFAULT_JOB_COMP_TYPE "jobcomp/none"
-#define DEFAULT_JOB_COMP_LOC  "/var/log/slurm_jobcomp.log"
+#define DEFAULT_DISABLE_ROOT_JOBS   0
+#define DEFAULT_JOB_COMP_TYPE       "jobcomp/none"
+#define DEFAULT_JOB_COMP_LOC        "/var/log/slurm_jobcomp.log"
 #define DEFAULT_KILL_TREE           0
 #define DEFAULT_KILL_WAIT           30
 #define DEFAULT_MAIL_PROG           "/bin/mail"
