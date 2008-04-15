@@ -168,6 +168,8 @@ static int fill_job_desc_from_opts(job_desc_msg_t *desc)
 		desc->licenses = xstrdup(opt.licenses);
 	if (opt.max_nodes)
 		desc->max_nodes = opt.max_nodes;
+	if (opt.ntasks_per_node)
+		desc->ntasks_per_node = opt.ntasks_per_node;
 	desc->user_id = opt.uid;
 	desc->group_id = opt.gid;
 	if (opt.dependency)
