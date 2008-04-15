@@ -3,6 +3,7 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 1.3.2
 ========================
+ -- Get --ntasks-per-node option working for sbatch command.
 
 * Changes in SLURM 1.3.1
 ========================

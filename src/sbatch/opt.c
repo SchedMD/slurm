@@ -235,7 +235,7 @@ static void _opt_default()
 	opt.max_cores_per_socket = NO_VAL;
 	opt.min_threads_per_core = NO_VAL; /* requested min/maxthreads */
 	opt.max_threads_per_core = NO_VAL;
-	opt.ntasks_per_node      = NO_VAL; /* ntask max limits */
+	opt.ntasks_per_node      = 0;      /* ntask max limits */
 	opt.ntasks_per_socket    = NO_VAL;
 	opt.ntasks_per_core      = NO_VAL;
 	opt.cpu_bind_type = 0;		/* local dummy variable for now */
