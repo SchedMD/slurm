@@ -28,6 +28,8 @@ documents those changes that are of interest to users and admins.
     all nodes in a cluster from v1.3.0 to v1.3.1 at the same time.
  -- NOTE: Work is currently underway to improve placement of jobs for gang
     scheduling and preemption.
+ -- NOTE: Work is underway to provide additional tools for reporting 
+    accounting information.
 
 * Changes in SLURM 1.3.0
 ========================
