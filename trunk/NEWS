@@ -1,6 +1,9 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins.
 
+* Changes in SLURM 1.3.2
+========================
+
 * Changes in SLURM 1.3.1
 ========================
  -- Correct logic for processing batch job's memory limit enforcement.
