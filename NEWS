@@ -1,6 +1,9 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins.
 
+* Changes in SLURM 1.2.28
+=========================
+
 * Changes in SLURM 1.2.27
 =========================
  -- Record job eligible time in accounting database (for jobacct/gold only).
@@ -25,8 +28,6 @@ documents those changes that are of interest to users and admins.
  -- In srun and sbatch, do not check the PATH env var if an absolute pathname 
     of the program is specified (previously reported an error if no PATH).
  -- Correct output of "sinfo -o %C" (CPU counts by node state).
- -- Treat attempt to submit a batch job against an existing resource allocation
-    as an error if sched/wiki2 is configured (Moab).
 
 * Changes in SLURM 1.2.25
 =========================
