@@ -855,6 +855,7 @@ typedef struct slurm_ctl_conf {
 	char *checkpoint_type;	/* checkpoint plugin type */
 	char *control_addr;	/* comm path of slurmctld primary server */
 	char *control_machine;	/* name of slurmctld primary server */
+	uint16_t disable_root_jobs; /* if set then user root can't run jobs */
 	char *epilog;		/* pathname of job epilog */
 	uint32_t first_job_id;	/* first slurm generated job_id to assign */
 	uint32_t next_job_id;	/* next slurm generated job_id to assign */

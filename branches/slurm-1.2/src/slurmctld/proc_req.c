@@ -310,6 +310,7 @@ void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
 	conf_ptr->checkpoint_type     = xstrdup(conf->checkpoint_type);
 	conf_ptr->control_addr        = xstrdup(conf->control_addr);
 	conf_ptr->control_machine     = xstrdup(conf->control_machine);
+	conf_ptr->disable_root_jobs   = conf->disable_root_jobs;
 	conf_ptr->epilog              = xstrdup(conf->epilog);
 	conf_ptr->fast_schedule       = conf->fast_schedule;
 	conf_ptr->first_job_id        = conf->first_job_id;

@@ -102,6 +102,12 @@ This should be a node name without the full domain name (e.g. "lx0001").
 This value must be specified.
 See  the \fBRELOCATING CONTROLLERS\fR section if you change this.
 
+
+.TP
+\fBDisableRootJobs\fR
+If set to 1 then user root will be prevented from running any jobs
+The default value is 0, meaning user root will be able to execute jobs.
+
 .TP
 \fBEpilog\fR
 Fully qualified pathname of a script to execute as user root on every 

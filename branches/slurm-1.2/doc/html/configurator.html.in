@@ -116,6 +116,7 @@ function displayfile()
    get_field("BackupController",document.config.backup_controller) + "<br>" +
    get_field("BackupAddr",document.config.backup_addr) + "<br>" +
    "# <br>" +
+   "#DisableRootJobs=0 <br>" +
    "#JobFileAppend=0 <br>" +
    "SlurmUser=" + document.config.slurm_user.value + "<br>" +
    "SlurmctldPort=" + document.config.slurmctld_port.value + "<br>" +

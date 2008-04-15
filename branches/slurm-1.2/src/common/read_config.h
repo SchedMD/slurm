@@ -50,6 +50,7 @@ extern char *default_plugstack;
 
 #define DEFAULT_AUTH_TYPE          "auth/none"
 #define DEFAULT_CACHE_GROUPS        0
+#define DEFAULT_DISABLE_ROOT_JOBS   0
 #define DEFAULT_FAST_SCHEDULE       1
 #define DEFAULT_FIRST_JOB_ID        1
 #define DEFAULT_GET_ENV_TIMEOUT     2
