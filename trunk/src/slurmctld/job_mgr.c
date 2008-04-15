@@ -2818,6 +2818,11 @@ static int _validate_job_desc(job_desc_msg_t * job_desc_msg, int allocate,
 		wiki_sched_test = true;
 	}
 
+	if ((job_desc_msg->user_id == 0) && slurmctld_conf.disable_root_jobs) {
+		error("Security violation, SUBMIT_JOB for user root disabled");
+		return ESLURM_USER_ID_MISSING;
+	}
+
 	if ((job_desc_msg->num_procs == NO_VAL)
 	    &&  (job_desc_msg->min_nodes == NO_VAL)
 	    &&  (job_desc_msg->req_nodes == NULL)) {

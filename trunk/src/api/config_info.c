@@ -158,6 +158,8 @@ void slurm_print_ctl_conf ( FILE* out,
 			slurm_ctl_conf_ptr->def_mem_per_task);
 	} else
 		fprintf(out, "DefMemPerTask           = UNLIMITED\n");
+	fprintf(out, "DisableRootJobs         = %u\n",
+		slurm_ctl_conf_ptr->disable_root_jobs);
 	fprintf(out, "Epilog                  = %s\n",
 		slurm_ctl_conf_ptr->epilog);
 	fprintf(out, "EpilogMsgTime           = %u\n",
