@@ -132,8 +132,8 @@ void lllp_distribution(launch_tasks_request_msg_t *req, uint32_t node_id)
 	int rc = SLURM_SUCCESS;
 	bitstr_t **masks = NULL;
 	char buf_type[100];
-	int maxtasks = req->tasks_to_launch[node_id];
-        const uint32_t *gtid = req->global_task_ids[node_id];
+	int maxtasks = req->tasks_to_launch[(int)node_id];
+        const uint32_t *gtid = req->global_task_ids[(int)node_id];
 	
 	slurm_sprint_cpu_bind_type(buf_type, req->cpu_bind_type);
 	if(req->cpu_bind_type >= CPU_BIND_NONE) {
@@ -1638,7 +1638,7 @@ void cr_reserve_lllp(uint32_t job_id,
 	debug3("reserve LLLP job [%u.%u]\n", job_id, req->job_step_id);
 
 	if (req->tasks_to_launch) {
-		numtasks = req->tasks_to_launch[node_id];
+		numtasks = req->tasks_to_launch[(int)node_id];
 	}
 
 	slurm_sprint_cpu_bind_type(buf_type, cpu_bind_type);
