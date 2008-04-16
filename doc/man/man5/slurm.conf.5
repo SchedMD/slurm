@@ -1038,6 +1038,11 @@ specification will utilize this partition.
 Possible values are "YES" and "NO". 
 The default value is "NO".
 .TP
+\fBDisableRootJobs\fR
+If set to "YES" then user root will be prevented from running any jobs
+The default value is "NO", meaning user root will be able to execute jobs.
+The value entered here will override the global value.
+.TP
 \fBHidden\fR
 Specifies if the partition and its jobs are to be hidden by default. 
 Hidden partitions will by default not be reported by the SLURM 

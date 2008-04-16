@@ -606,6 +606,14 @@ static int _build_single_partitionline_info(slurm_conf_partition_t *part)
 		strcpy(default_part_name, part->name);
 		default_part_loc = part_ptr;
 	}
+	if(part->disable_root_jobs == (uint16_t)NO_VAL)
+		part_ptr->disable_root_jobs = slurmctld_conf.disable_root_jobs;
+	else
+		part_ptr->disable_root_jobs = part->disable_root_jobs;
+	
+	if(part_ptr->disable_root_jobs) 
+		debug2("partition %s does not allow root jobs", part_ptr->name);
+	
 	part_ptr->hidden    = part->hidden_flag ? 1 : 0;
 	part_ptr->max_time  = part->max_time;
 	part_ptr->max_nodes = part->max_nodes;

@@ -400,6 +400,7 @@ static int parse_partitionname(void **dest, slurm_parser_enum_t type,
 	static s_p_options_t _partition_options[] = {
 		{"AllowGroups", S_P_STRING},
 		{"Default", S_P_BOOLEAN}, /* YES or NO */
+		{"DisableRootJobs", S_P_BOOLEAN}, /* YES or NO */
 		{"Hidden", S_P_BOOLEAN}, /* YES or NO */
 		{"MaxTime", S_P_UINT32}, /* INFINITE or a number */
 		{"MaxNodes", S_P_UINT32}, /* INFINITE or a number */
@@ -438,6 +439,10 @@ static int parse_partitionname(void **dest, slurm_parser_enum_t type,
 		if (!s_p_get_boolean(&p->default_flag, "Default", tbl)
 		    && !s_p_get_boolean(&p->default_flag, "Default", dflt))
 			p->default_flag = false;
+
+		if (!s_p_get_boolean((bool *)&p->disable_root_jobs,
+				     "DisableRootJobs", tbl))
+			p->disable_root_jobs = (uint16_t)NO_VAL;
 
 		if (!s_p_get_boolean(&p->hidden_flag, "Hidden", tbl)
 		    && !s_p_get_boolean(&p->hidden_flag, "Hidden", dflt))
