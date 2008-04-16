@@ -3,6 +3,8 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 1.2.28
 =========================
+ -- Added configuration option "DisableRootJobs" for parameter 
+    "PartitionName".  See "man slurm.conf" for details.
 
 * Changes in SLURM 1.2.27
 =========================

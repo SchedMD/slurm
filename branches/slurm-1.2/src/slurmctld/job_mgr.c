@@ -1784,6 +1784,11 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 		}
 		part_ptr = default_part_loc;
 	}
+ 
+	if ((job_desc->user_id == 0) && part_ptr->disable_root_jobs) {
+		error("Security violation, SUBMIT_JOB for user root disabled");
+		return ESLURM_USER_ID_MISSING;
+	}
 
 	/* can this user access this partition */
 	if ((part_ptr->root_only) && (submit_uid != 0)) {
@@ -2644,11 +2649,6 @@ static int _validate_job_desc(job_desc_msg_t * job_desc_msg, int allocate,
 			wiki_sched = true;
 		xfree(sched_type);
 		wiki_sched_test = true;
-	}
-
-	if ((job_desc_msg->user_id == 0) && slurmctld_conf.disable_root_jobs) {
-		error("Security violation, SUBMIT_JOB for user root disabled");
-		return ESLURM_USER_ID_MISSING;
 	}
 
 	if ((job_desc_msg->num_procs == NO_VAL)
