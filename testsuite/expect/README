@@ -496,5 +496,7 @@ test20.4   pbsnodes command tests
 test21.#   Testing of sacctmgr commands and options.
 =================================================
 test21.1   sacctmgr --usage
-test21.1   sacctmgr --help
-test21.1   sacctmgr -V
+test21.2   sacctmgr --help
+test21.3   sacctmgr -V
+test21.4   sacctmgr version
+test21.5   sacctmgr add, list, and delete a cluster
