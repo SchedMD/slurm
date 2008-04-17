@@ -1,10 +1,15 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins.
 
+* Changes in SLURM 1.2.29
+=========================
+
 * Changes in SLURM 1.2.28
 =========================
  -- Added configuration option "DisableRootJobs" for parameter 
     "PartitionName".  See "man slurm.conf" for details.
+ -- Fix for faking a large system to correctly handle node_id in the task
+    afffinity plugin for ia64 systems.
 
 * Changes in SLURM 1.2.27
 =========================
