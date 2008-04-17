@@ -50,8 +50,7 @@ print_header $test_id
 #
 # Use sacctmgr to create a cluster
 #
- 
-spawn $sacctmgr $add $clu $tc1
+set sadd_pid [spawn $sacctmgr $add $clu $tc1]
 expect {
 	-re "Adding Cluster" {
 		incr amatches
@@ -72,6 +71,7 @@ expect {
 	}
 	timeout {
 		send_user "\nFAILURE: sacctmgr add not responding\n"
+		slow_kill $sadd_pid
 		set exit_code 1
 	}
 	eof {
@@ -87,7 +87,7 @@ if {$amatches != 4} {
 #
 # Use sacctmgr to list the addition of cluster
 #
-spawn $sacctmgr $lis $clu $tc1
+set slist_pid [spawn $sacctmgr $lis $clu $tc1]
 expect {
 	-re "Name" {
 		incr lmatches
@@ -100,6 +100,7 @@ expect {
 	}
 	timeout {
 		send_user "\nFAILURE: sacctmgr list not responding\n"
+		slow_kill $slist_pid
 		set exit_code 1
 	}
 	eof {
@@ -115,7 +116,7 @@ if {$lmatches != 2} {
 #
 # Use sacctmgr to delete the test cluster
 #
-spawn $sacctmgr $del $clu $tc1
+set sadel_pid [spawn $sacctmgr $del $clu $tc1]
 expect {
 	-re "Deleting clusters" {
 		incr dmatches
@@ -136,6 +137,7 @@ expect {
 	}
 	timeout {
 		send_user "\nFAILURE: sacctmgr delete not responding\n"
+		slow_kill $sadel_pid
 		set exit_code 1
 	}
 	eof {

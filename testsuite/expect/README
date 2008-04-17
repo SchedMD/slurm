@@ -500,3 +500,4 @@ test21.2   sacctmgr --help
 test21.3   sacctmgr -V
 test21.4   sacctmgr version
 test21.5   sacctmgr add, list, and delete a cluster
+test21.6   sacctmgr add, list, and delete multiple cluster
