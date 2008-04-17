@@ -66,7 +66,6 @@ pthread_mutex_t job_list_test_mutex = PTHREAD_MUTEX_INITIALIZER;
  */
 List job_block_test_list = NULL;
 
-
 static void _rotate_geo(uint16_t *req_geometry, int rot_cnt);
 static int _bg_record_sort_aval_inc(bg_record_t* rec_a, bg_record_t* rec_b); 
 static int _get_user_groups(uint32_t user_id, uint32_t group_id, 
@@ -82,10 +81,13 @@ static bg_record_t *_find_matching_block(List block_list,
 					 ba_request_t *request,
 					 uint32_t max_procs,
 					 int allow, int check_image,
-					 int created, bool test_only);
+					 int overlap_check,
+					 List overlapped_list,
+					 bool test_only);
 static int _check_for_booted_overlapping_blocks(
 	List block_list, ListIterator bg_record_itr,
-	bg_record_t *bg_record, int overlap_check, bool test_only);
+	bg_record_t *bg_record, int overlap_check, List overlapped_list,
+	bool test_only);
 static int _dynamically_request(List block_list, int *blocks_added,
 				ba_request_t *request,
 				bitstr_t* slurm_block_bitmap,
@@ -372,7 +374,9 @@ static bg_record_t *_find_matching_block(List block_list,
 					 ba_request_t *request,
 					 uint32_t max_procs,
 					 int allow, int check_image,
-					 int overlap_check, bool test_only)
+					 int overlap_check,
+					 List overlapped_list,
+					 bool test_only)
 {
 	bg_record_t *bg_record = NULL;
 	ListIterator itr = NULL;
@@ -451,7 +455,7 @@ static bg_record_t *_find_matching_block(List block_list,
 		
 		if(_check_for_booted_overlapping_blocks(
 			   block_list, itr, bg_record,
-			   overlap_check, test_only))
+			   overlap_check, overlapped_list, test_only))
 			continue;
 		
 		if(check_image) {
@@ -529,14 +533,15 @@ static bg_record_t *_find_matching_block(List block_list,
 
 static int _check_for_booted_overlapping_blocks(
 	List block_list, ListIterator bg_record_itr,
-	bg_record_t *bg_record, int overlap_check, bool test_only)
+	bg_record_t *bg_record, int overlap_check, List overlapped_list,
+	bool test_only)
 {
 	bg_record_t *found_record = NULL;
 	ListIterator itr = NULL;
 	int rc = 0;
 
-	/* this test only is for actually picking a block not testing */
-	if(test_only)
+	 /* this test only is for actually picking a block not testing */
+	if(test_only && bluegene_layout_mode == LAYOUT_DYNAMIC)
 		return rc;
 
 	/* Make sure no other blocks are under this block 
@@ -551,7 +556,48 @@ static int _check_for_booted_overlapping_blocks(
 			       found_record->bg_block_id);
 			continue;
 		}
+		
 		if(blocks_overlap(bg_record, found_record)) {
+			/* make the available time on this block
+			 * (bg_record) the max of this found_record's job
+			 * or the one already set if in overlapped_block_list
+			 * since we aren't setting job_running we
+			 * don't have to remove them since the
+			 * block_list should always be destroyed afterwards.
+			 */
+			if(test_only && overlapped_list
+			   && found_record->job_ptr 
+			   && bg_record->job_running == NO_JOB_RUNNING) {
+				debug2("found over lapping block %s "
+				       "overlapped %s with job %u",
+				       found_record->bg_block_id,
+				       bg_record->bg_block_id,
+				       found_record->job_ptr->job_id);
+				ListIterator itr = list_iterator_create(
+					overlapped_list);
+				bg_record_t *tmp_rec = NULL;
+				while((tmp_rec = list_next(itr))) {
+					if(tmp_rec == bg_record)
+						break;
+				}
+				list_iterator_destroy(itr);
+				if(tmp_rec && tmp_rec->job_ptr->end_time 
+				   < found_record->job_ptr->end_time)
+					tmp_rec->job_ptr =
+						found_record->job_ptr;
+				else if(!tmp_rec) {
+					bg_record->job_ptr =
+						found_record->job_ptr;
+					list_append(overlapped_list,
+						    bg_record);
+				}
+			}
+			/* We already know this block doesn't work
+			 * right now so we will if there is another
+			 * overlapping block that ends later
+			 */
+			if(rc)
+				continue;
 			/* This test is here to check if the block we
 			 * chose is not booted or if there is a block
 			 * overlapping that we could avoid freeing if
@@ -563,7 +609,8 @@ static int _check_for_booted_overlapping_blocks(
 			       || (overlap_check == 1 && found_record->state 
 				   != RM_PARTITION_FREE))) {
 				rc = 1;
-				break;
+				if(!test_only) 
+					break;
 			}
 
 			if(found_record->job_running != NO_JOB_RUNNING) {
@@ -596,7 +643,9 @@ static int _check_for_booted_overlapping_blocks(
 					list_destroy(temp_list);
 				} 
 				rc = 1;
-				break;
+					
+				if(!test_only) 
+					break;
 			} 
 		} 
 	}
@@ -740,6 +789,7 @@ static int _find_best_block_match(List block_list,
 	char *ramdiskimage = NULL;      /* RamDiskImage for this request */
 	int rc = SLURM_SUCCESS;
 	int create_try = 0;
+	List overlapped_list = NULL;
 
 	if(!total_cpus)
 		total_cpus = DIM_SIZE[X] * DIM_SIZE[Y] * DIM_SIZE[Z] 
@@ -886,16 +936,42 @@ static int _find_best_block_match(List block_list,
 	if(max_procs == (uint32_t)NO_VAL) 
 		max_procs = max_nodes * procs_per_node;
 	
-
 	while(1) {
+		/* Here we are creating a list of all the blocks that
+		 * have overlapped jobs so if we don't find one that
+		 * works we will have can look and see the earliest
+		 * the job can start.  This doesn't apply to Dynamic mode.
+		 */ 
+		if(test_only && bluegene_layout_mode != LAYOUT_DYNAMIC) 
+			overlapped_list = list_create(NULL);
+		
 		bg_record = _find_matching_block(block_list, 
 						 job_ptr,
 						 slurm_block_bitmap,
 						 &request,
 						 max_procs,
 						 allow, check_image,
-						 overlap_check, test_only);
+						 overlap_check, 
+						 overlapped_list,
+						 test_only);
+		if(!bg_record && test_only
+		   && bluegene_layout_mode != LAYOUT_DYNAMIC
+		   && list_count(overlapped_list)) {
+			ListIterator itr =
+				list_iterator_create(overlapped_list);
+			bg_record_t *tmp_rec = NULL;
+			while((tmp_rec = list_next(itr))) {
+				if(!bg_record || 
+				   (tmp_rec->job_ptr->end_time <
+				    bg_record->job_ptr->end_time))
+					bg_record = tmp_rec;
+			}
+			list_iterator_destroy(itr);
+		}
 		
+		if(test_only && bluegene_layout_mode != LAYOUT_DYNAMIC)
+			list_destroy(overlapped_list);
+
 		/* set the bitmap and do other allocation activities */
 		if (bg_record) {
 			if(!test_only) {
@@ -1112,7 +1188,7 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 		slurm_mutex_lock(&create_dynamic_mutex);
 
 	job_block_test_list = bg_job_block_list;
-
+	
 	select_g_sprint_jobinfo(job_ptr->select_jobinfo, buf, sizeof(buf), 
 				SELECT_PRINT_MIXED);
 	debug("bluegene:submit_job: %s nodes=%u-%u-%u", 
@@ -1218,8 +1294,7 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 	if(bluegene_layout_mode == LAYOUT_DYNAMIC) {		
 		slurm_mutex_lock(&block_state_mutex);
 		if(blocks_added) 
-			_sync_block_lists(block_list, bg_list);
-		
+			_sync_block_lists(block_list, bg_list);		
 		slurm_mutex_unlock(&block_state_mutex);
 		slurm_mutex_unlock(&create_dynamic_mutex);
 	}
