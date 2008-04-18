@@ -828,8 +828,8 @@ static int _find_best_block_match(List block_list,
 			     SELECT_DATA_MAX_PROCS, &max_procs);
 
 	
-	if(_check_images(job_ptr, &blrtsimage, &linuximage,
-			 &mloaderimage, &ramdiskimage) == SLURM_ERROR)
+	if((rc = _check_images(job_ptr, &blrtsimage, &linuximage,
+			       &mloaderimage, &ramdiskimage)) == SLURM_ERROR)
 		goto end_it;
 	
 	if(req_geometry[X] != 0 && req_geometry[X] != (uint16_t)NO_VAL) {
