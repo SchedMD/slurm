@@ -702,8 +702,14 @@ extern int add_bg_record(List records, List used_nodes, blockreq_t *blockreq)
 		/* if the ionode cnt for nodecards is 0 then don't
 		   allow a nodecard allocation 
 		*/
-		if(!bluegene_nodecard_ionode_cnt)
-			blockreq->nodecards = 0;
+		if(!bluegene_nodecard_ionode_cnt) {
+			if(blockreq->nodecards) 
+				fatal("There is an error in your "
+				      "bluegene.conf file.\n"
+				      "Can't create a 32 node block with "
+				      "Numpsets=%u. (Try setting it to 64)",
+				      bluegene_numpsets);
+		}
 
 		if(blockreq->nodecards==0 && blockreq->quarters==0) {
 			info("No specs given for this small block, "
@@ -715,9 +721,11 @@ extern int add_bg_record(List records, List used_nodes, blockreq_t *blockreq)
 			(blockreq->quarters*bluegene_quarter_node_cnt);
 		if(i != bluegene_bp_node_cnt)
 			fatal("There is an error in your bluegene.conf file.\n"
-			      "I am unable to request %d nodes in one "
-			      "base partition with %d nodes.", 
-			      i, bluegene_bp_node_cnt);
+			      "I am unable to request %d nodes consisting of "
+			      "%u nodecards and\n%u quarters in one "
+			      "base partition with %u nodes.", 
+			      i, bluegene_bp_node_cnt, 
+			      blockreq->nodecards, blockreq->quarters);
 		small_count = blockreq->nodecards+blockreq->quarters; 
 		
 		/* Automatically create 4-way split if 

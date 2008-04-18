@@ -19,7 +19,8 @@ The overall configuration parameters available include:
 .TP
 \fBBasePartitionNodeCount\fR
 The number of c\-nodes per base partition.
-There is no default value and this must be specified.
+There is no default value and this must be specified. (For bgl systems this
+is usually 512)
 
 .TP
 \fBBridgeAPILogFile\fR
@@ -115,13 +116,17 @@ and starvation of larger jobs.
 .TP
 \fBNodeCardNodeCount\fR
 Number of c\-nodes per node card.
-There is no default value and this must be specified.
+There is no default value and this must be specified. (For bgl systems this 
+is usually 32)
 
 .TP
 \fBNumPsets\fR
 The Numpsets used for creation of all bgblocks  equals this value 
 multiplied by the number of  base partitions in the bgblock.
-There is no default value and this must be specified.
+There is no default value and this must be specified.  The typical settings
+for bgl systems goes as follows... For IO rich systems 64 is the value that 
+should be used to create small blocks.  For systems that are not IO rich, or 
+you do not wish to create small blocks, 8 is usually the number to use.
 
 .LP
 Each bgblock is defined by the base partitions used to construct it.

@@ -6,6 +6,9 @@ documents those changes that are of interest to users and admins.
  -- Get --ntasks-per-node option working for sbatch command.
  -- BLUEGENE: Added logic to give back a best block on overlapped mode 
     in test_only mode
+ -- BLUEGENE: Updated debug info and man pages for better help with the 
+    numpsets option and to fail correctly with bad image request for building
+    blocks.
 
 * Changes in SLURM 1.3.1
 ========================
