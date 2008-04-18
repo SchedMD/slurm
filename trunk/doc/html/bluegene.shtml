@@ -406,7 +406,10 @@ and <i>NodeCardNodeCnt=NODE_COUNT</i> respectively in the <i>bluegene.conf</i>
 file (i.e. <i>BasePartitionNodeCnt=512</i> and <i>NodeCardNodeCnt=32</i>).</p>
 
 <p>Note that the <i>Numpsets</i> values defined in 
-<i>bluegene.conf</i> are used only when SLURM creates bgblocks.
+<i>bluegene.conf</i> is used only when SLURM creates bgblocks this
+determines if the system is IO rich or not.  For most bluegene/L
+systems this value is either 8 (for IO poor systems) or 64 (for IO rich
+systems).
 <p>The <i>Images</i> can change during job start based on input from
 the user.
 If you change the bgblock layout, then slurmctld and slurmd should 

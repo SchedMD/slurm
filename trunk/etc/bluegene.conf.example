@@ -67,7 +67,8 @@ AltRamDiskImage=*  Groups=da,adamb
 LayoutMode=STATIC
 BasePartitionNodeCnt=512
 NodeCardNodeCnt=32
-Numpsets=8
+#Numpsets=8 #used for IO poor systems (Can't create 32 cnode blocks)
+Numpsets=64 #used for IO rich systems
 
 BridgeAPILogFile=/var/log/slurm/bridgeapi.log
 BridgeAPIVerbose=0
