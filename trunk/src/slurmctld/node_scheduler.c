@@ -924,17 +924,20 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only,
 	}
 
 	if (error_code) {
-		job_ptr->state_reason = WAIT_RESOURCES;
 		if (error_code == ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE) {
 			/* Required nodes are down or 
 			 * too many nodes requested */
 			debug3("JobId=%u not runnable with present config",
 			       job_ptr->job_id);
+			job_ptr->state_reason = WAIT_PART_NODE_LIMIT;
 			if (job_ptr->priority != 0)  /* Move to end of queue */
 				job_ptr->priority = 1;
 			last_job_update = now;
-		} else if (error_code == ESLURM_NODES_BUSY)
-			slurm_sched_job_is_pending();
+		} else {
+			job_ptr->state_reason = WAIT_RESOURCES;
+			if (error_code == ESLURM_NODES_BUSY)
+				slurm_sched_job_is_pending();
+		}
 		goto cleanup;
 	}
 	if (test_only) {	/* set if job not highest priority */

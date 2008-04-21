@@ -9,6 +9,13 @@ documents those changes that are of interest to users and admins.
  -- BLUEGENE: Updated debug info and man pages for better help with the 
     numpsets option and to fail correctly with bad image request for building
     blocks.
+ -- In sched/wiki and sched/wiki2 properly support Slurm license consumption
+    (job state reported as "Hold" when required licenses are not available).
+ -- In sched/wiki2 JobWillRun command, don't return an error code if the job(s)
+    can not be started at that time. Just return an error message (from 
+    Doug Wightman, CRI).
+ -- Fix bug if sched/wiki or sched/wiki2 are configured and no job comment is 
+    set.
 
 * Changes in SLURM 1.3.1
 ========================
