@@ -82,6 +82,7 @@ extern int	start_job(char *cmd_ptr, int *err_code, char **err_msg)
 		return -1;
 	}
 	task_ptr += 9;	/* skip over "TASKLIST=" */
+	null_term(task_ptr);
 	tasklist = moab2slurm_task_list(task_ptr, &task_cnt);
 	if (tasklist)
 		hl = hostlist_create(tasklist);

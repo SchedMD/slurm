@@ -105,6 +105,11 @@ extern int	spawn_msg_thread(void);
 extern void	term_msg_thread(void);
 extern char *   get_wiki_conf(void);
 
+/*
+ * Given a string, replace the first space found with '\0'
+ */
+extern void	null_term(char *str);
+
 /* Functions called from within msg.c (rather than creating a bunch 
  * more header files with one function definition each */
 extern int	cancel_job(char *cmd_ptr, int *err_code, char **err_msg);
