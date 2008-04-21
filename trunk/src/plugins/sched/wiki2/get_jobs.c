@@ -177,7 +177,10 @@ extern int	get_jobs(char *cmd_ptr, int *err_code, char **err_msg)
 	if (buf)
 		buf_size = strlen(buf);
 	tmp_buf = xmalloc(buf_size + 32);
-	sprintf(tmp_buf, "SC=0 ARG=%d#%s", job_rec_cnt, buf);
+	if (job_rec_cnt)
+		sprintf(tmp_buf, "SC=0 ARG=%d#%s", job_rec_cnt, buf);
+	else
+		sprintf(tmp_buf, "SC=0 ARG=0#");
 	xfree(buf);
 	*err_code = 0;
 	*err_msg = tmp_buf;
@@ -531,12 +534,15 @@ static char *	_get_job_state(struct job_record *job_ptr)
 			return "Running";
 	}
 
-	if (base_state == JOB_PENDING)
-		return "Idle";
 	if (base_state == JOB_RUNNING)
 		return "Running";
 	if (base_state == JOB_SUSPENDED)
 		return "Suspended";
+	if (base_state == JOB_PENDING) {
+		if (job_independent(job_ptr))
+			return "Idle";
+		return "Hold";
+	}
 
 	if ((base_state == JOB_COMPLETE) || (base_state == JOB_FAILED))
 		state_str = "Completed";
