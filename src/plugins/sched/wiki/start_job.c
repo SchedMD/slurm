@@ -46,7 +46,9 @@
 static int	_start_job(uint32_t jobid, int task_cnt, char *hostlist, 
 			char *tasklist, int *err_code, char **err_msg);
 
-/* RET 0 on success, -1 on failure */
+/* Start a job:
+ *	CMD=STARTJOB ARG=<jobid> TASKLIST=<node_list>
+ * RET 0 on success, -1 on failure */
 extern int	start_job(char *cmd_ptr, int *err_code, char **err_msg)
 {
 	char *arg_ptr, *task_ptr, *tasklist, *tmp_char;

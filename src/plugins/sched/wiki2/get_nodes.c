@@ -112,7 +112,10 @@ extern int	get_nodes(char *cmd_ptr, int *err_code, char **err_msg)
 	if (buf)
 		buf_size = strlen(buf);
 	tmp_buf = xmalloc(buf_size + 32);
-	sprintf(tmp_buf, "SC=0 ARG=%d#%s", node_rec_cnt, buf);
+	if (node_rec_cnt)
+		sprintf(tmp_buf, "SC=0 ARG=%d#%s", node_rec_cnt, buf);
+	else
+		sprintf(tmp_buf, "SC=0 ARG=0#");
 	xfree(buf);
 	*err_code = 0;
 	*err_msg = tmp_buf;
@@ -178,6 +181,18 @@ static char *	_dump_node(struct node_record *node_ptr, time_t update_time)
 	if (i > 0)
 		xstrcat(buf, ";");
 
+	if (node_ptr->config_ptr
+	&&  node_ptr->config_ptr->feature) {
+		snprintf(tmp, sizeof(tmp), "FEATURE=%s;",
+			node_ptr->config_ptr->feature);
+		/* comma separator to colon */
+		for (i=0; (tmp[i] != '\0'); i++) {
+			if (tmp[i] == ',')
+				tmp[i] = ':';
+		}
+		xstrcat(buf, tmp);
+	}
+
 	if (update_time > 0)
 		return buf;
 
@@ -197,18 +212,6 @@ static char *	_dump_node(struct node_record *node_ptr, time_t update_time)
 			node_ptr->cpus);
 	}
 	xstrcat(buf, tmp);
-
-	if (node_ptr->config_ptr
-	&&  node_ptr->config_ptr->feature) {
-		snprintf(tmp, sizeof(tmp), "FEATURE=%s;",
-			node_ptr->config_ptr->feature);
-		/* comma separator to colon */
-		for (i=0; (tmp[i] != '\0'); i++) {
-			if (tmp[i] == ',')
-				tmp[i] = ':';
-		}
-		xstrcat(buf, tmp);
-	}
 
 	return buf;
 }
