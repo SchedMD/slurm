@@ -218,6 +218,7 @@ struct part_record *create_part_record(void)
 
 	xassert (part_ptr->magic = PART_MAGIC);  /* set value */
 	part_ptr->name         = xstrdup("DEFAULT");
+	part_ptr->disable_root_jobs = default_part.disable_root_jobs;
 	part_ptr->hidden       = default_part.hidden;
 	part_ptr->max_time     = default_part.max_time;
 	part_ptr->max_nodes    = default_part.max_nodes;
@@ -550,6 +551,7 @@ int init_part_conf(void)
 
 	xfree(default_part.name);	/* needed for reconfig */
 	default_part.name        = xstrdup("DEFAULT");
+	default_part.disable_root_jobs = slurmctld_conf.disable_root_jobs;
 	default_part.hidden      = 0;
 	default_part.max_time    = INFINITE;
 	default_part.max_nodes   = INFINITE;

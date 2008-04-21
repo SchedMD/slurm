@@ -144,7 +144,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"DefaultStorageType", S_P_STRING},
 	{"DefaultStorageUser", S_P_STRING},
 	{"DefMemPerTask", S_P_UINT32},
-	{"DisableRootJobs", S_P_UINT16},
+	{"DisableRootJobs", S_P_BOOLEAN},
 	{"Epilog", S_P_STRING},
 	{"EpilogMsgTime", S_P_UINT32},
 	{"FastSchedule", S_P_UINT16},
@@ -440,6 +440,7 @@ static int parse_partitionname(void **dest, slurm_parser_enum_t type,
 	static s_p_options_t _partition_options[] = {
 		{"AllowGroups", S_P_STRING},
 		{"Default", S_P_BOOLEAN}, /* YES or NO */
+		{"DisableRootJobs", S_P_BOOLEAN}, /* YES or NO */
 		{"Hidden", S_P_BOOLEAN}, /* YES or NO */
 		{"MaxTime", S_P_STRING},
 		{"MaxNodes", S_P_UINT32}, /* INFINITE or a number */
@@ -479,6 +480,10 @@ static int parse_partitionname(void **dest, slurm_parser_enum_t type,
 		if (!s_p_get_boolean(&p->default_flag, "Default", tbl)
 		    && !s_p_get_boolean(&p->default_flag, "Default", dflt))
 			p->default_flag = false;
+
+		if (!s_p_get_boolean((bool *)&p->disable_root_jobs,
+				     "DisableRootJobs", tbl))
+			p->disable_root_jobs = (uint16_t)NO_VAL;
 
 		if (!s_p_get_boolean(&p->hidden_flag, "Hidden", tbl)
 		    && !s_p_get_boolean(&p->hidden_flag, "Hidden", dflt))
@@ -1526,8 +1531,8 @@ validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	if (!s_p_get_uint32(&conf->def_mem_per_task, "DefMemPerTask", hashtbl))
 		conf->def_mem_per_task = DEFAULT_MEM_PER_TASK;
 
-	if (!s_p_get_uint16(&conf->disable_root_jobs, "DisableRootJobs", 
-			    hashtbl))
+	if (!s_p_get_boolean((bool *) &conf->disable_root_jobs, 
+			     "DisableRootJobs", hashtbl))
 		conf->disable_root_jobs = DEFAULT_DISABLE_ROOT_JOBS;
 
 	s_p_get_string(&conf->epilog, "Epilog", hashtbl);

@@ -241,6 +241,7 @@ extern bitstr_t *up_node_bitmap;	/* bitmap of up nodes, not DOWN */
 #define PART_MAGIC 0xaefe8495
 
 struct part_record {
+	uint16_t disable_root_jobs; /* if set then user root can't run jobs */
 	uint32_t magic;		/* magic cookie to test data integrity */
 	char *name;		/* name of the partition */
 	uint16_t hidden;	/* 1 if hidden by default */
