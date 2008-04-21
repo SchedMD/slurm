@@ -43,6 +43,7 @@
 #include "src/common/list.h"
 #include "src/common/node_select.h"
 #include "src/common/uid.h"
+#include "src/slurmctld/licenses.h"
 #include "src/slurmctld/locks.h"
 
 static char *	_dump_all_jobs(int *job_cnt, time_t update_time);
@@ -539,7 +540,8 @@ static char *	_get_job_state(struct job_record *job_ptr)
 	if (base_state == JOB_SUSPENDED)
 		return "Suspended";
 	if (base_state == JOB_PENDING) {
-		if (job_independent(job_ptr))
+		if (job_independent(job_ptr) &&
+		    (license_job_test(job_ptr) == SLURM_SUCCESS))
 			return "Idle";
 		return "Hold";
 	}

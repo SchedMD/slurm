@@ -324,10 +324,8 @@ static char *	_will_run_test(uint32_t *jobid, time_t *start_time,
 		}
 		list_iterator_destroy(iter);
 	} else {
-		*err_code = -730;
-		*err_msg = "Jobs not runable on selected nodes";
+		xstrcat(reply_msg, "Jobs not runable on selected nodes");
 		error("wiki: jobs not runnable on nodes");
-		reply_msg = NULL;
 	}
 
 	list_destroy(select_list);

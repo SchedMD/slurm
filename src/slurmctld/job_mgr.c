@@ -2614,7 +2614,8 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 		xfree(sched_type);
 		wiki_sched_test = true;
 	}
-	if (wiki_sched && strstr(job_ptr->comment, "QOS:")) {
+	if (wiki_sched && job_ptr->comment &&
+	    strstr(job_ptr->comment, "QOS:")) {
 		if (strstr(job_ptr->comment, "FLAGS:PREEMPTOR"))
 			job_ptr->qos = QOS_EXPEDITE;
 		else if (strstr(job_ptr->comment, "FLAGS:PREEMPTEE"))
