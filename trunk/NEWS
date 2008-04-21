@@ -245,6 +245,20 @@ documents those changes that are of interest to users and admins.
     Moved existing digital signature logic into new plugin: crypto/openssl.
     Added new support for crypto/munge (available with GPL license).
 
+* Changes in SLURM 1.2.29
+=========================
+ -- Modified global configuration option "DisableRootJobs" from number (0 or 1)
+    to boolean (YES or NO) to match partition parameter.
+ -- Set "DisableRootJobs" for a partition to match the global parameters value 
+    for newly created partitions.
+
+* Changes in SLURM 1.2.28
+=========================
+ -- Added configuration option "DisableRootJobs" for parameter 
+    "PartitionName".  See "man slurm.conf" for details.
+ -- Fix for faking a large system to correctly handle node_id in the task
+    afffinity plugin for ia64 systems.
+
 * Changes in SLURM 1.2.27
 =========================
  -- Record job eligible time in accounting database (for jobacct/gold only).
@@ -259,6 +273,7 @@ documents those changes that are of interest to users and admins.
  -- Enhance job requeue on node failure to be more robust.
  -- Added configuration parameter "DisableRootJobs". See "man slurm.conf" 
     for details.
+ -- Fixed issue with account = NULL in Gold job accounting plugin
 
 * Changes in SLURM 1.2.26
 =========================
@@ -269,8 +284,6 @@ documents those changes that are of interest to users and admins.
  -- In srun and sbatch, do not check the PATH env var if an absolute pathname 
     of the program is specified (previously reported an error if no PATH).
  -- Correct output of "sinfo -o %C" (CPU counts by node state).
- -- Treat attempt to submit a batch job against an existing resource allocation
-    as an error if sched/wiki2 is configured (Moab).
 
 * Changes in SLURM 1.2.25
 =========================

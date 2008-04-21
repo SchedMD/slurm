@@ -268,10 +268,10 @@ Also see \fBAccountingStorageUser\fR and \fBJobCompUser\fR.
 
 .TP
 \fBDisableRootJobs\fR
-If set to 1 then user root will be prevented from running any jobs
-The default value is 0, meaning user root will be able to execute jobs.
+If set to "YES" then user root will be prevented from running any jobs.
+The default value is "NO", meaning user root will be able to execute jobs.
+\fBDisableRootJobs\fR may also be set by partition.
 
-.TP
 \fBEpilog\fR
 Fully qualified pathname of a script to execute as user root on every 
 node when a user's job completes (e.g. "/usr/local/slurm/epilog"). This may 
@@ -1446,6 +1446,14 @@ If this keyword is set, jobs submitted without a partition
 specification will utilize this partition.
 Possible values are "YES" and "NO". 
 The default value is "NO".
+
+.TP
+\fBDisableRootJobs\fR
+If set to "YES" then user root will be prevented from running any jobs
+on this partition.
+The default value will be the value of \fBDisableRootJobs\fR set 
+outside of a partition specification (which is "NO", allowing user
+root to execute jobs).
 
 .TP
 \fBHidden\fR

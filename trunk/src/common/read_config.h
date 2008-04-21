@@ -132,6 +132,9 @@ typedef struct slurm_conf_node {
 } slurm_conf_node_t;
 
 typedef struct slurm_conf_partition {
+	uint16_t disable_root_jobs; /* if set then user root can't run
+				     * jobs if NO_VAL use global
+				     * default */
 	char	*name;		/* name of the partition */
 	bool     hidden_flag;	/* 1 if hidden by default */
 	uint32_t max_time;	/* minutes or INFINITE */
