@@ -156,6 +156,7 @@ static char *	_will_run_test(uint32_t *jobid, time_t *start_time,
 	int i, rc;
 	select_will_run_t *select_will_run = NULL;
 	List select_list;
+	ListIterator iter;
 
 	select_list = list_create(_select_list_del);
 	if (select_list == NULL)
@@ -177,8 +178,6 @@ static char *	_will_run_test(uint32_t *jobid, time_t *start_time,
 			error("wiki: WillRun on non-pending job %u", jobid[i]);
 			break;
 		}
-
-		job_ptr->start_time = start_time[i];
 
 		part_ptr = job_ptr->part_ptr;
 		if (part_ptr == NULL) {
@@ -260,6 +259,7 @@ static char *	_will_run_test(uint32_t *jobid, time_t *start_time,
 		select_will_run->avail_nodes = avail_bitmap;
 		avail_bitmap = NULL;
 		select_will_run->job_ptr     = job_ptr;
+		job_ptr->start_time          = start_time[i];
 		select_will_run->max_nodes   = max_nodes;
 		select_will_run->min_nodes   = min_nodes;
 		select_will_run->req_nodes   = req_nodes;
@@ -267,6 +267,13 @@ static char *	_will_run_test(uint32_t *jobid, time_t *start_time,
 	}
 	FREE_NULL_BITMAP(avail_bitmap);
 	if (i < job_cnt) {	/* error logged above */
+		/* Restore pending job start time */
+		iter = list_iterator_create(select_list);
+		if (iter == NULL)
+			fatal("list_iterator_create: malloc failure");
+		while ((select_will_run = list_next(iter)))
+			select_will_run->job_ptr->start_time = 0;
+		list_iterator_destroy(iter);
 		list_destroy(select_list);
 		return NULL;
 	}
@@ -285,7 +292,6 @@ static char *	_will_run_test(uint32_t *jobid, time_t *start_time,
 
 	if (rc == SLURM_SUCCESS) {
 		char tmp_str[128];
-		ListIterator iter;
 		*err_code = 0;
 		uint32_t proc_cnt = 0;
 
@@ -316,6 +322,8 @@ static char *	_will_run_test(uint32_t *jobid, time_t *start_time,
 				 proc_cnt,
 				 (uint32_t) select_will_run->
 					    job_ptr->start_time);
+			/* Restore pending job start time */
+			select_will_run->job_ptr->start_time = 0;
 			xstrcat(reply_msg, tmp_str);
 			hostlist = bitmap2node_name(select_will_run->
 						    avail_nodes);
@@ -324,6 +332,13 @@ static char *	_will_run_test(uint32_t *jobid, time_t *start_time,
 		}
 		list_iterator_destroy(iter);
 	} else {
+		/* Restore pending job start times */
+		iter = list_iterator_create(select_list);
+		if (iter == NULL)
+			fatal("list_iterator_create: malloc failure");
+		while ((select_will_run = list_next(iter)))
+			select_will_run->job_ptr->start_time = 0;
+		list_iterator_destroy(iter);
 		xstrcat(reply_msg, "Jobs not runable on selected nodes");
 		error("wiki: jobs not runnable on nodes");
 	}
