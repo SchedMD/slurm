@@ -126,7 +126,7 @@ s_p_options_t slurm_conf_options[] = {
 	{"BackupController", S_P_STRING},
 	{"ControlAddr", S_P_STRING},
 	{"ControlMachine", S_P_STRING},
-	{"DisableRootJobs", S_P_UINT16},
+	{"DisableRootJobs", S_P_BOOLEAN},
 	{"Epilog", S_P_STRING},
 	{"FastSchedule", S_P_UINT16},
 	{"FirstJobId", S_P_UINT32},
@@ -1405,8 +1405,8 @@ validate_and_set_defaults(slurm_ctl_conf_t *conf, s_p_hashtbl_t *hashtbl)
 	if (!s_p_get_string(&conf->checkpoint_type, "CheckpointType", hashtbl))
 		conf->checkpoint_type = xstrdup(DEFAULT_CHECKPOINT_TYPE);
 
-	if (!s_p_get_uint16(&conf->disable_root_jobs, "DisableRootJobs", 
-			    hashtbl))
+	if (!s_p_get_boolean((bool *) &conf->disable_root_jobs, 
+			     "DisableRootJobs", hashtbl))
 		conf->disable_root_jobs = DEFAULT_DISABLE_ROOT_JOBS;
 
 	s_p_get_string(&conf->epilog, "Epilog", hashtbl);
