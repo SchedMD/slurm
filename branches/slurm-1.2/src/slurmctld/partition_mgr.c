@@ -215,7 +215,8 @@ struct part_record *create_part_record(void)
 
 	xassert (part_ptr->magic = PART_MAGIC);  /* set value */
 	strcpy(part_ptr->name, "DEFAULT");
-	part_ptr->hidden    = default_part.hidden;
+	part_ptr->disable_root_jobs = default_part.disable_root_jobs;
+	part_ptr->hidden       = default_part.hidden;
 	part_ptr->max_time     = default_part.max_time;
 	part_ptr->max_nodes    = default_part.max_nodes;
 	part_ptr->min_nodes    = default_part.min_nodes;
@@ -526,6 +527,7 @@ int init_part_conf(void)
 	last_part_update = time(NULL);
 
 	strcpy(default_part.name, "DEFAULT");
+	default_part.disable_root_jobs = slurmctld_conf.disable_root_jobs;
 	default_part.hidden      = 0;
 	default_part.max_time    = INFINITE;
 	default_part.max_nodes   = INFINITE;

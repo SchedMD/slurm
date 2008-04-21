@@ -102,13 +102,12 @@ This should be a node name without the full domain name (e.g. "lx0001").
 This value must be specified.
 See  the \fBRELOCATING CONTROLLERS\fR section if you change this.
 
-
 .TP
 \fBDisableRootJobs\fR
-If set to 1 then user root will be prevented from running any jobs
-The default value is 0, meaning user root will be able to execute jobs.
+If set to "YES" then user root will be prevented from running any jobs.
+The default value is "NO", meaning user root will be able to execute jobs.
+\fBDisableRootJobs\fR may also be set by partition.
 
-.TP
 \fBEpilog\fR
 Fully qualified pathname of a script to execute as user root on every 
 node when a user's job completes (e.g. "/usr/local/slurm/epilog"). This may 
@@ -1031,17 +1030,19 @@ If user root attempts to execute a job as another user (e.g. using
 srun's \-\-uid option), this other user must be in one of groups 
 identified by AllowGroups for the job to succesfully execute.
 The default value is "ALL". 
+
 .TP
 \fBDefault\fR
 If this keyword is set, jobs submitted without a partition 
 specification will utilize this partition.
 Possible values are "YES" and "NO". 
 The default value is "NO".
+
 .TP
 \fBDisableRootJobs\fR
 If set to "YES" then user root will be prevented from running any jobs
-The default value is "NO", meaning user root will be able to execute jobs.
-The value entered here will override the global value.
+The default value is the global value of \fBDisableRootJobs\fR.
+
 .TP
 \fBHidden\fR
 Specifies if the partition and its jobs are to be hidden by default. 
