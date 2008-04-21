@@ -9,8 +9,8 @@ documents those changes that are of interest to users and admins.
     for newly created partitions.
  -- In sched/wiki and sched/wiki2 report a node's updated features if changed
     after startup using "scontrol update ..." command.
- -- In sched/wiki and sched/wiki2 report a job's state as "Hold" if it's dependencies
-    have not been satisfied.
+ -- In sched/wiki and sched/wiki2 report a job's state as "Hold" if it's 
+    dependencies have not been satisfied.
 
 * Changes in SLURM 1.2.28
 =========================
