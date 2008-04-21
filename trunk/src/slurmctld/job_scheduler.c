@@ -846,6 +846,7 @@ extern int job_start_data(job_desc_msg_t *job_desc_msg,
 		resp_data->proc_cnt = job_ptr->total_procs;
 #endif
 		resp_data->start_time = job_ptr->start_time;
+		job_ptr->start_time   = 0;  /* restore pending job start time */
 		resp_data->node_list  = bitmap2node_name(avail_bitmap);
 		FREE_NULL_BITMAP(avail_bitmap);
 		*resp = resp_data;
