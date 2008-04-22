@@ -401,9 +401,9 @@ static bg_record_t *_find_matching_block(List block_list,
 			continue;
 		} else if((bg_record->job_running != NO_JOB_RUNNING) 
 			  && (bg_record->job_running != job_ptr->job_id)
-			  && (!test_only 
-			      || (job_block_test_list != bg_job_block_list
-				  && bluegene_layout_mode == LAYOUT_DYNAMIC))) {
+			  && (bluegene_layout_mode == LAYOUT_DYNAMIC 
+			      || (!test_only 
+				  && bluegene_layout_mode != LAYOUT_DYNAMIC))) {
 			debug("block %s in use by %s job %d", 
 			      bg_record->bg_block_id,
 			      bg_record->user_name,
@@ -608,9 +608,11 @@ static int _check_for_booted_overlapping_blocks(
 				!= RM_PARTITION_READY)
 			       || (overlap_check == 1 && found_record->state 
 				   != RM_PARTITION_FREE))) {
-				rc = 1;
-				if(!test_only) 
+
+				if(!test_only) {
+					rc = 1;
 					break;
+				}
 			}
 
 			if(found_record->job_running != NO_JOB_RUNNING) {
@@ -705,7 +707,6 @@ static int _dynamically_request(List block_list, int *blocks_added,
 		if((new_blocks = create_dynamic_block(block_list,
 						      request, temp_list))) {
 			bg_record_t *bg_record = NULL;
-			rc = SLURM_SUCCESS;
 			while((bg_record = list_pop(new_blocks))) {
 				if(block_exist_in_list(block_list, bg_record))
 					destroy_bg_record(bg_record);
@@ -731,6 +732,12 @@ static int _dynamically_request(List block_list, int *blocks_added,
 				}
 			}
 			list_destroy(new_blocks);
+			if(!*blocks_added) {
+				memcpy(request->geometry, start_geo,      
+				       sizeof(int)*BA_SYSTEM_DIMENSIONS); 
+				rc = SLURM_ERROR;
+				continue;
+			}
 			list_sort(block_list,
 				  (ListCmpF)_bg_record_sort_aval_dec);
 	
