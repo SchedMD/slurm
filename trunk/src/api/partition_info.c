@@ -1,8 +1,8 @@
 /*****************************************************************************\
  *  partition_info.c - get/print the partition state information of slurm
- *  $Id$
  *****************************************************************************
  *  Copyright (C) 2002-2007 The Regents of the University of California.
+ *  Copyright (C) 2008 Lawrence Livermore National Security.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Morris Jette <jette1@llnl.gov> et. al.
  *  LLNL-CODE-402394.
@@ -201,6 +201,11 @@ char *slurm_sprint_partition_info ( partition_info_t * part_ptr,
 #endif
 		sprintf(tmp_line, "MaxNodes=%s ", tmp1);
 	}
+	xstrcat(out, tmp_line);
+	if (part_ptr->disable_root_jobs)
+		sprintf(tmp_line, "DisableRootJobs=YES ");
+	else
+		sprintf(tmp_line, "DisableRootJobs=NO ");
 	xstrcat(out, tmp_line);
 	if ((part_ptr->allow_groups == NULL) || 
 	    (part_ptr->allow_groups[0] == '\0'))
