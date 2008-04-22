@@ -1897,6 +1897,7 @@ _unpack_partition_info_members(partition_info_t * part, Buf buffer)
 	
 	safe_unpack32(&part->total_cpus,   buffer);
 	safe_unpack16(&part->default_part, buffer);
+	safe_unpack16(&part->disable_root_jobs, buffer);
 	safe_unpack16(&part->hidden,       buffer);
 	safe_unpack16(&part->root_only,    buffer);
 	safe_unpack16(&part->max_share,    buffer);

@@ -762,6 +762,7 @@ void pack_part(struct part_record *part_ptr, Buf buffer)
 	pack16(node_scaling, buffer);
 	pack32(part_ptr->total_cpus, buffer);
 	pack16(default_part_flag,    buffer);
+	pack16(part_ptr->disable_root_jobs, buffer);
 	pack16(part_ptr->hidden,     buffer);
 	pack16(part_ptr->root_only,  buffer);
 	pack16(part_ptr->max_share,  buffer);
