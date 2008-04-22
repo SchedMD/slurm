@@ -727,7 +727,7 @@ _check_job_credential(launch_tasks_request_msg_t *req, uid_t uid,
 static void 
 _rpc_launch_tasks(slurm_msg_t *msg)
 {
-	int      errnum = SLURM_SUCCESS;
+	int      errnum = SLURM_SUCCESS, rc;
 	uint16_t port;
 	char     host[MAXHOSTNAMELEN];
 	uid_t    req_uid;
@@ -770,8 +770,18 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 	
 #ifndef HAVE_FRONT_END
 	if (first_job_run) {
-		if (_run_prolog(req->job_id, req->uid, NULL) != 0) {
-			error("[job %u] prolog failed", req->job_id);
+		rc =  _run_prolog(req->job_id, req->uid, NULL);
+		if (rc) {
+			int term_sig, exit_status;
+			if (WIFSIGNALED(rc)) {
+				exit_status = 0;
+				term_sig    = WTERMSIG(rc);
+			} else {
+				exit_status = WEXITSTATUS(rc);
+				term_sig    = 0;
+			}
+			error("[job %u] prolog failed status=%d:%d", 
+			      req->job_id, exit_status, term_sig);
 			errnum = ESLURMD_PROLOG_FAILED;
 			goto done;
 		}
@@ -910,8 +920,17 @@ _rpc_batch_job(slurm_msg_t *msg)
 
 		rc = _run_prolog(req->job_id, req->uid, bg_part_id);
 		xfree(bg_part_id);
-		if (rc != 0) {
-			error("[job %u] prolog failed", req->job_id);
+		if (rc) {
+			int term_sig, exit_status;
+			if (WIFSIGNALED(rc)) {
+				exit_status = 0;
+				term_sig    = WTERMSIG(rc);
+			} else {
+				exit_status = WEXITSTATUS(rc);
+				term_sig    = 0;
+			}
+			error("[job %u] prolog failed status=%d:%d", 
+			      req->job_id, exit_status, term_sig);
 			_prolog_error(req, rc);
 			rc = ESLURMD_PROLOG_FAILED;
 			goto done;
@@ -2578,8 +2597,17 @@ _rpc_terminate_job(slurm_msg_t *msg)
 	rc = _run_epilog(req->job_id, req->job_uid, bg_part_id);
 	xfree(bg_part_id);
 	
-	if (rc != 0) {
-		error ("[job %u] epilog failed", req->job_id);
+	if (rc) {
+		int term_sig, exit_status;
+		if (WIFSIGNALED(rc)) {
+			exit_status = 0;
+			term_sig    = WTERMSIG(rc);
+		} else {
+			exit_status = WEXITSTATUS(rc);
+			term_sig    = 0;
+		}
+		error("[job %u] epilog failed status=%d:%d", 
+		      req->job_id, exit_status, term_sig);
 		rc = ESLURMD_EPILOG_FAILED;
 	} else
 		debug("completed epilog for jobid %u", req->job_id);
