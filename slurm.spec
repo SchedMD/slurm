@@ -71,13 +71,6 @@ Source: %{name}-%{version}-%{release}.tgz
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}
 URL: https://computing.llnl.gov/linux/slurm/
 BuildRequires: openssl-devel >= 0.9.6 openssl >= 0.9.6
-
-%description 
-SLURM is an open source, fault-tolerant, and highly
-scalable cluster management and job scheduling system for Linux clusters
-containing up to thousands of nodes. Components include machine status,
-partition management, job management, and scheduling modules.
-
 %ifnos aix
 BuildRequires: ncurses-devel
 %endif
@@ -90,6 +83,12 @@ BuildRequires: pam-devel
 %if %{slurm_with readline}
 BuildRequires: readline-devel
 %endif
+
+%description 
+SLURM is an open source, fault-tolerant, and highly
+scalable cluster management and job scheduling system for Linux clusters
+containing up to thousands of nodes. Components include machine status,
+partition management, job management, and scheduling modules.
 
 #  Allow override of sysconfdir via _slurm_sysconfdir.
 #  Note 'global' instead of 'define' needed here to work around apparent
