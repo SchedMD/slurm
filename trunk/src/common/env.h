@@ -165,8 +165,7 @@ void
 env_array_for_step(char ***dest,
 		   const job_step_create_response_msg_t *step,
 		   const char *launcher_hostname,
-		   uint16_t launcher_port,
-		   const char *ip_addr_str);
+		   uint16_t launcher_port);
 
 /*
  * Return an empty environment variable array (contains a single
