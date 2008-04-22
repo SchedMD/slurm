@@ -771,10 +771,10 @@ static int _add_edit_job(gold_job_info_msg_t *job_ptr, gold_object_t action)
 	if ((tmp = strlen(job_ptr->name))) {
 		jname = xmalloc(++tmp);
 		for (i=0; i<tmp; i++) {
-			if (isspace(job_ptr->name[i]))
-				jname[i]='_';
-			else
+			if (isalnum(job_ptr->name[i]))
 				jname[i]=job_ptr->name[i];
+			else
+				jname[i]='_';
 		}
 	} else
 		jname = xstrdup("allocation");
