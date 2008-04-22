@@ -11,6 +11,7 @@ documents those changes that are of interest to users and admins.
     after startup using "scontrol update ..." command.
  -- In sched/wiki and sched/wiki2 report a job's state as "Hold" if it's 
     dependencies have not been satisfied.
+ -- If job prolog or epilog fail, log the program's exit code.
 
 * Changes in SLURM 1.2.28
 =========================
