@@ -290,7 +290,7 @@ int srun(int ac, char **av)
 	env->labelio = opt.labelio;
 	env->comm_port = slurmctld_comm_addr.port;
 	env->comm_hostname = slurmctld_comm_addr.hostname;
-	if(job) {
+	if (job) {
 		uint16_t *tasks = NULL;
 		slurm_step_ctx_get(job->step_ctx, SLURM_STEP_CTX_TASKS, 
 				   &tasks);
@@ -383,8 +383,8 @@ int srun(int ac, char **av)
 	}
 
 	update_job_state(job, SRUN_JOB_LAUNCHING);
-	if (slurm_step_launch(job->step_ctx, &launch_params, &callbacks)
-	    != SLURM_SUCCESS) {
+	if (slurm_step_launch(job->step_ctx, slurmctld_comm_addr.hostname, 
+	    &launch_params, &callbacks) != SLURM_SUCCESS) {
 		error("Application launch failed: %m");
 		goto cleanup;
 	}

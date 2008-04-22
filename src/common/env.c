@@ -898,8 +898,7 @@ void
 env_array_for_step(char ***dest, 
 		   const job_step_create_response_msg_t *step,
 		   const char *launcher_hostname,
-		   uint16_t launcher_port,
-		   const char *ip_addr_str)
+		   uint16_t launcher_port)
 {
 	char *tmp;
 
@@ -917,8 +916,6 @@ env_array_for_step(char ***dest,
 			 "%s", launcher_hostname);
 	env_array_overwrite_fmt(dest, "SLURM_STEP_LAUNCHER_PORT",
 			 "%hu", launcher_port);
-/* 	env_array_overwrite_fmt(dest, "SLURM_STEP_LAUNCHER_IPADDR", */
-/* 			 "%s", ip_addr_str); */
 
 	/* OBSOLETE */
 	env_array_overwrite_fmt(dest, "SLURM_STEPID", "%u", step->job_step_id);
@@ -931,8 +928,6 @@ env_array_for_step(char ***dest,
 			 "%s", launcher_hostname);
 	env_array_overwrite_fmt(dest, "SLURM_SRUN_COMM_PORT",
 			 "%hu", launcher_port);
-/* 	env_array_overwrite_fmt(dest, "SLURM_LAUNCH_NODE_IPADDR", */
-/* 			 "%s", ip_addr_str); */
 
 	xfree(tmp);
 }
