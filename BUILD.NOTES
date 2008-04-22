@@ -65,10 +65,11 @@ Linux cluster (See BlueGene and AIX specific notes below for some differences).
 BlueGene build notes:
 3. Use the rpm make target to create the new RPMs. This requires a .rpmmacros
    (.rpmrc for newer versions of rpmbuild) file containing:
+	%_prefix                /usr
 	%_slurm_sysconfdir      /etc/slurm
-	%_with_debug            1
 	%_with_bluegene         1
-	%with_cflags		CFLAGS=-m64
+	%_with_debug            1
+	%with_cflags		CFLAGS=-m64 CXX="g++ -m64"
    Build on Service Node with using the following syntax
    rpmbuild -ta slurm-...bz2
 
