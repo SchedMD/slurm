@@ -684,7 +684,7 @@ _check_job_credential(slurm_cred_t cred, uint32_t jobid,
 static void 
 _rpc_launch_tasks(slurm_msg_t *msg)
 {
-	int      errnum = SLURM_SUCCESS, rc;
+	int      errnum = SLURM_SUCCESS;
 	uint16_t port;
 	char     host[MAXHOSTNAMELEN];
 	uid_t    req_uid;
@@ -729,6 +729,7 @@ _rpc_launch_tasks(slurm_msg_t *msg)
 
 #ifndef HAVE_FRONT_END
 	if (first_job_run) {
+		int rc;
 		rc =  _run_prolog(req->job_id, req->uid, NULL);
 		if (rc) {
 			int term_sig, exit_status;
