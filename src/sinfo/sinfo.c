@@ -552,9 +552,13 @@ static bool _match_node_data(sinfo_data_t *sinfo_ptr,
 	    (_strcmp(node_ptr->reason, sinfo_ptr->reason)))
 		return false;
 
-	if (params.match_flags.state_flag &&
-	    (node_ptr->node_state != sinfo_ptr->node_state))
-		return false;
+	if (params.match_flags.state_flag) {
+		char *state1, *state2;
+		state1 = node_state_string(node_ptr->node_state);
+		state2 = node_state_string(sinfo_ptr->node_state);
+		if (strcmp(state1, state2))
+			return false;
+	}
 
 	/* If no need to exactly match sizes, just return here 
 	 * otherwise check cpus, disk, memory and weigth individually */
