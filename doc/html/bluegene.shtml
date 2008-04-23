@@ -493,7 +493,7 @@ AltRamDiskImage=*  Groups=da,adamb
 LayoutMode=STATIC
 BasePartitionNodeCnt=512
 NodeCardNodeCnt=32
-Numpsets=8
+NumPsets=64	# An I/O rich environment
 BridgeAPILogFile=/var/log/slurm/bridgeapi.log
 BridgeAPIVerbose=0
 
@@ -631,6 +631,6 @@ scheduling logic, etc. </p>
  
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 19 September 2007</p>
+<p style="text-align:center;">Last modified 23 April 2008</p>
 
 <!--#include virtual="footer.txt"-->
