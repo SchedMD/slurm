@@ -213,7 +213,7 @@ static slurm_errtab_t slurm_errtab[] = {
 	{ ESLURM_INVALID_LICENSES,
 	  "Job has invalid license specification"		},
 	{ ESLURM_NEED_RESTART,
-	  "The node configuration changes that were made require restart"
+	  "The node configuration changes that were made require restart "
 	  "of the slurmctld daemon to take effect"},
 
 	/* slurmd error codes */
