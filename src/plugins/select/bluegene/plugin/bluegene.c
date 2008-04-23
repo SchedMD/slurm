@@ -470,6 +470,57 @@ extern int remove_from_bg_list(List my_bg_list, bg_record_t *bg_record)
 	return rc;
 }
 
+/* This is here to remove from the orignal list when dealing with
+ * copies like above all locks need to be set.  This function does not
+ * free anything you must free it when you are done */
+extern bg_record_t *find_and_remove_org_from_bg_list(List my_list, 
+						     bg_record_t *bg_record)
+{
+	ListIterator itr = list_iterator_create(my_list);
+	bg_record_t *found_record = NULL;
+
+	while ((found_record = (bg_record_t *) list_next(itr)) != NULL) {
+		/* check for full node bitmap compare */
+		if(bit_equal(bg_record->bitmap, found_record->bitmap)
+		   && bit_equal(bg_record->ionode_bitmap,
+				found_record->ionode_bitmap)) {
+			
+			if(!strcmp(bg_record->bg_block_id,
+				   found_record->bg_block_id)) {
+				list_remove(itr);
+				debug2("got the block");
+				break;
+			}
+		}
+	}
+	list_iterator_destroy(itr);
+	return found_record;
+}
+
+/* This is here to remove from the orignal list when dealing with
+ * copies like above all locks need to be set */
+extern bg_record_t *find_org_in_bg_list(List my_list, bg_record_t *bg_record)
+{
+	ListIterator itr = list_iterator_create(my_list);
+	bg_record_t *found_record = NULL;
+
+	while ((found_record = (bg_record_t *) list_next(itr)) != NULL) {
+		/* check for full node bitmap compare */
+		if(bit_equal(bg_record->bitmap, found_record->bitmap)
+		   && bit_equal(bg_record->ionode_bitmap,
+				found_record->ionode_bitmap)) {
+			
+			if(!strcmp(bg_record->bg_block_id,
+				   found_record->bg_block_id)) {
+				debug2("got the block");
+				break;
+			}
+		}
+	}
+	list_iterator_destroy(itr);
+	return found_record;
+}
+
 extern int bg_free_block(bg_record_t *bg_record)
 {
 #ifdef HAVE_BG_FILES
@@ -614,9 +665,6 @@ extern void *mult_destroy_block(void *args)
 		 * tool such as smap it will be in a nice order
 		 */
 		sort_bg_record_inc_size(bg_freeing_list);
-		slurm_mutex_unlock(&block_state_mutex);
-		
-		slurm_mutex_lock(&block_state_mutex);
 		if(remove_from_bg_list(bg_job_block_list, bg_record) 
 		   == SLURM_SUCCESS) {
 			num_unused_cpus += 

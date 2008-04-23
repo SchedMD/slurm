@@ -661,6 +661,15 @@ static int _breakup_blocks(List block_list, List new_blocks,
 	}
 found_one:
 	if(bg_record) {
+		List temp_list = NULL;
+		bg_record_t *found_record = 
+			find_org_in_bg_list(bg_list, bg_record);
+		if(!found_record) {
+			error("this record wasn't found in the list!");
+			rc = SLURM_ERROR;
+			goto finished;
+		}
+		bg_record = found_record;
 		format_node_name(bg_record, tmp_char, sizeof(tmp_char));
 			
 		debug2("going to split %s, %s",
@@ -677,7 +686,14 @@ found_one:
 			rc = SLURM_SUCCESS;
 			goto finished;	
 		}
-		_split_block(block_list, new_blocks, bg_record, request->procs);
+		_split_block(block_list, new_blocks,
+			     bg_record, request->procs);
+
+		temp_list = list_create(NULL);
+		list_push(temp_list, bg_record);
+		num_block_to_free++;
+		free_block_list(temp_list);
+		list_destroy(temp_list);
 		rc = SLURM_SUCCESS;
 		goto finished;
 	}

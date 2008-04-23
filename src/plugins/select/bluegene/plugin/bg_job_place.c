@@ -637,12 +637,23 @@ static int _check_for_booted_overlapping_blocks(
 					 * destroy the memory for
 					 * bg_record
 					*/
-					List temp_list = list_create(NULL);
 					list_remove(bg_record_itr);
-					list_push(temp_list, bg_record);
-					num_block_to_free++;
-					free_block_list(temp_list);
-					list_destroy(temp_list);
+					found_record =
+						find_and_remove_org_from_bg_list(
+							bg_list, bg_record);
+					if(!found_record) {
+						error("1 this record wasn't "
+						      "found in the list!");
+						rc = SLURM_ERROR;
+					} else {
+						List temp_list =
+							list_create(NULL);
+						list_push(temp_list, 
+							  found_record);
+						num_block_to_free++;
+						free_block_list(temp_list);
+						list_destroy(temp_list);
+					}
 				} 
 				rc = 1;
 					
