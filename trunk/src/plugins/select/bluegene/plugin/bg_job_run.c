@@ -653,6 +653,25 @@ static void _term_agent(bg_update_t *bg_update_ptr)
 #endif
 	
 }
+
+/* 
+ * Comparator used for sorting blocks types we want to do terminations
+ * first and then submits
+ * 
+ * returns: 
+ * -1: up_a->op == TERM_OP && up_b->op != TERM_OP  
+ *  1: up_b->op == TERM_OP && up_a->op != TERM_OP 
+ *  0: else
+ */
+static int _sort_operations(bg_update_t *up_a, bg_update_t * up_b)
+{
+	if(up_a->op == TERM_OP && up_b->op != TERM_OP)
+		return -1;
+	else if(up_b->op == TERM_OP && up_a->op != TERM_OP)
+		return 1;
+	
+	return 0;
+}
 	
 /* Process requests off the bg_update_list queue and exit when done */
 static void *_block_agent(void *args)
@@ -668,6 +687,8 @@ static void *_block_agent(void *args)
 	while (!agent_fini) {
 		slurm_mutex_lock(&agent_cnt_mutex);
 		bg_update_ptr = list_dequeue(bg_update_list);
+/* 		info("running %d %d %d", TERM_OP, bg_update_ptr->op, */
+/* 		     list_count(bg_update_list)); */
 		slurm_mutex_unlock(&agent_cnt_mutex);
 		if (!bg_update_ptr) {
 			usleep(100000);
@@ -707,6 +728,8 @@ static void _block_op(bg_update_t *bg_update_ptr)
 	/* push job onto queue in a FIFO */
 	if (list_push(bg_update_list, bg_update_ptr) == NULL)
 		fatal("malloc failure in _block_op/list_push");
+	list_sort(bg_update_list, (ListCmpF)_sort_operations);
+		
 	/* already running MAX_AGENTS we don't really need more 
 	   since they never end */
 	if (agent_cnt > MAX_AGENT_COUNT) {
