@@ -309,6 +309,7 @@ extern List copy_bg_list(List in_list)
 
 	while ((bg_record = (bg_record_t *) list_next(itr))) { 
 		new_record = xmalloc(sizeof(bg_record_t));
+		new_record->original = bg_record;
 		copy_bg_record(bg_record, new_record);
 		list_append(out_list, new_record);
 	}

@@ -106,6 +106,8 @@ typedef struct bg_record {
 	char *linuximage;              /* LinuxImage for this block */
 	char *mloaderimage;            /* mloaderImage for this block */
 	char *ramdiskimage;            /* RamDiskImage for this block */
+	struct bg_record *original;    /* if this is a copy this is a
+					  pointer to the original */
 } bg_record_t;
 
 /* Log a bg_record's contents */

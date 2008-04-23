@@ -638,9 +638,20 @@ static int _check_for_booted_overlapping_blocks(
 					 * bg_record
 					*/
 					list_remove(bg_record_itr);
-					found_record =
-						find_and_remove_org_from_bg_list(
-							bg_list, bg_record);
+					if(bg_record->original) {
+						debug3("This was a copy");
+						found_record =
+							bg_record->original;
+						remove_from_bg_list(
+							bg_list, found_record);
+					} else {
+						debug("looking for original");
+						found_record =
+							find_and_remove_org_from_bg_list(
+								bg_list,
+								bg_record);
+					}
+					destroy_bg_record(bg_record);
 					if(!found_record) {
 						error("1 this record wasn't "
 						      "found in the list!");
@@ -1190,8 +1201,8 @@ static int _sync_block_lists(List full_list, List incomp_list)
  * RET - SLURM_SUCCESS if job runnable now, error code otherwise
  */
 extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
-		      uint32_t min_nodes, uint32_t max_nodes, uint32_t req_nodes, 
-		      bool test_only)
+		      uint32_t min_nodes, uint32_t max_nodes,
+		      uint32_t req_nodes, bool test_only)
 {
 	bg_record_t* bg_record = NULL;
 	char buf[100];
@@ -1241,8 +1252,8 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 			if(bg_record->job_ptr && bg_record->job_ptr->end_time) 
 				starttime = bg_record->job_ptr->end_time;
 						
-			job_ptr->start_time = starttime;			
-
+			job_ptr->start_time = starttime;
+			
 			select_g_set_jobinfo(job_ptr->select_jobinfo,
 					     SELECT_DATA_NODES, 
 					     bg_record->nodes);
@@ -1515,6 +1526,7 @@ extern int test_job_list(List req_list)
 /* 				} */
 			} else {
 				error("we got a success, but no block back");
+				rc = SLURM_ERROR;
 			}
 		}
 	}
