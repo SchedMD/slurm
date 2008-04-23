@@ -1083,10 +1083,11 @@ static int _find_best_block_match(List block_list,
 
 				bg_record = list_pop(job_list);
 				if(bg_record)
-					debug2("taking off %d(%s) ends at %d",
+					debug2("taking off %d(%s) started at %d ends at %d",
 					       bg_record->job_running,
 					       bg_record->bg_block_id,
-					       bg_record->job_ptr->start_time);
+					       bg_record->job_ptr->start_time,
+					       bg_record->job_ptr->end_time);
 				if(!(new_blocks = create_dynamic_block(
 					     block_list, &request, job_list))) {
 					destroy_bg_record(bg_record);
@@ -1104,6 +1105,9 @@ static int _find_best_block_match(List block_list,
 				 * about it now 
 				 */
 				(*found_bg_record) = list_pop(new_blocks);
+				bit_and(slurm_block_bitmap,
+					(*found_bg_record)->bitmap);
+
 				if(bg_record) {
 					(*found_bg_record)->job_ptr 
 						= bg_record->job_ptr; 
@@ -1209,7 +1213,6 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 	int i, rc = SLURM_SUCCESS;
 	uint16_t tmp16 = (uint16_t)NO_VAL;
 	List block_list = NULL;
-	int block_list_count = 0;
 	int blocks_added = 0;
 	int starttime = time(NULL);
 
@@ -1240,7 +1243,6 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 	slurm_mutex_unlock(&block_state_mutex);
 	
 	list_sort(block_list, (ListCmpF)_bg_record_sort_aval_dec);
-	block_list_count = list_count(block_list);
 
 	rc = _find_best_block_match(block_list, &blocks_added,
 				    job_ptr, slurm_block_bitmap, min_nodes, 
@@ -1340,7 +1342,6 @@ extern int test_job_list(List req_list)
 	int rc = SLURM_SUCCESS;
 //	uint16_t tmp16 = (uint16_t)NO_VAL;
 	List block_list = NULL;
-	int block_list_count = 0;
 	int blocks_added = 0;
 	int starttime = time(NULL);
 	ListIterator itr = NULL;
@@ -1372,7 +1373,6 @@ extern int test_job_list(List req_list)
 		      buf, will_run->min_nodes,
 		      will_run->req_nodes, will_run->max_nodes);
 		list_sort(block_list, (ListCmpF)_bg_record_sort_aval_dec);
-		block_list_count = list_count(block_list);
 		rc = _find_best_block_match(block_list, &blocks_added,
 					    will_run->job_ptr,
 					    will_run->avail_nodes,

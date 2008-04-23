@@ -4911,56 +4911,56 @@ int main(int argc, char** argv)
 	ba_init(new_node_ptr);
 	init_wires(NULL);
 						
-	/* results = list_create(NULL); */
-/* 	request->geometry[0] = 1; */
-/* 	request->geometry[1] = 4; */
-/* 	request->geometry[2] = 4; */
-/* 	request->start[0] = 5; */
-/* 	request->start[1] = 0; */
-/* 	request->start[2] = 0; */
-/* 	request->start_req = 1; */
-/* 	request->size = 32; */
-/* 	request->rotate = 0; */
-/* 	request->elongate = 0; */
-/* 	request->conn_type = SELECT_TORUS; */
-/* 	new_ba_request(request); */
-/* 	print_ba_request(request); */
-/* 	if(!allocate_block(request, results)) { */
-/*        		debug("couldn't allocate %c%c%c", */
-/* 		       request->geometry[0], */
-/* 		       request->geometry[1], */
-/* 		       request->geometry[2]);	 */
-/* 	} */
-/* 	list_destroy(results); */
-
-/* 	results = list_create(NULL); */
-/* 	request->geometry[0] = 1; */
-/* 	request->geometry[1] = 1; */
-/* 	request->geometry[2] = 1; */
-/* 	request->start[0] = 0; */
-/* 	request->start[1] = 0; */
-/* 	request->start[2] = 0; */
-/* 	request->start_req = 1; */
-/* 	request->size = 1; */
-/* 	request->rotate = 0; */
-/* 	request->elongate = 0; */
-/* 	request->conn_type = SELECT_TORUS; */
-/* 	new_ba_request(request); */
-/* 	print_ba_request(request); */
-/* 	if(!allocate_block(request, results)) { */
-/*        		debug("couldn't allocate %c%c%c", */
-/* 		       alpha_num[request->geometry[0]], */
-/* 		       alpha_num[request->geometry[1]], */
-/* 		       alpha_num[request->geometry[2]]);	 */
-/* 	} */
-/* 	list_destroy(results); */
-
 	results = list_create(NULL);
-	request->geometry[0] = 12;
+	request->geometry[0] = 1;
 	request->geometry[1] = 1;
 	request->geometry[2] = 1;
-	request->start[0] = 0;
+	request->start[0] = 6;
+	request->start[1] = 3;
+	request->start[2] = 2;
+	request->start_req = 1;
+//	request->size = 1;
+	request->rotate = 0;
+	request->elongate = 0;
+	request->conn_type = SELECT_TORUS;
+	new_ba_request(request);
+	print_ba_request(request);
+	if(!allocate_block(request, results)) {
+       		debug("couldn't allocate %c%c%c",
+		       request->geometry[0],
+		       request->geometry[1],
+		       request->geometry[2]);
+	}
+	list_destroy(results);
+
+	results = list_create(NULL);
+	request->geometry[0] = 2;
+	request->geometry[1] = 4;
+	request->geometry[2] = 1;
+	request->start[0] = 3;
 	request->start[1] = 0;
+	request->start[2] = 2;
+	request->start_req = 1;
+//	request->size = 16;
+	request->rotate = 0;
+	request->elongate = 0;
+	request->conn_type = SELECT_TORUS;
+	new_ba_request(request);
+	print_ba_request(request);
+	if(!allocate_block(request, results)) {
+       		debug("couldn't allocate %c%c%c",
+		       alpha_num[request->geometry[0]],
+		       alpha_num[request->geometry[1]],
+		       alpha_num[request->geometry[2]]);
+	}
+	list_destroy(results);
+
+	results = list_create(NULL);
+	request->geometry[0] = 2;
+	request->geometry[1] = 1;
+	request->geometry[2] = 4;
+	request->start[0] = 5;
+	request->start[1] = 2;
 	request->start[2] = 0;
 	request->start_req = 1;
 	request->rotate = 0;
@@ -5018,15 +5018,16 @@ int main(int argc, char** argv)
 	for(x=startx;x<endx;x++) {
 		for(y=starty;y<endy;y++) {
 			for(z=startz;z<endz;z++) {
+				ba_node_t *curr_node = 
+					&(ba_system_ptr->grid[x][y][z]);
 				info("Node %c%c%c Used = %d Letter = %c",
 				     alpha_num[x],alpha_num[y],alpha_num[z],
-				     ba_system_ptr->grid[x][y][z].used,
-				     ba_system_ptr->grid[x][y][z].letter);
+				     curr_node->used,
+				     curr_node->letter);
 				for(dim=0;dim<1;dim++) {
 					info("Dim %d",dim);
 					ba_switch_t *wire =
-						&ba_system_ptr->
-						grid[x][y][z].axis_switch[dim];
+						&curr_node->axis_switch[dim];
 					for(j=0;j<NUM_PORTS_PER_NODE;j++)
 						info("\t%d -> %d -> %c%c%c %d "
 						     "Used = %d",
