@@ -92,8 +92,10 @@ extern void destroy_bg_record(void *object)
 		xfree(bg_record->ionodes);
 		xfree(bg_record->user_name);
 		xfree(bg_record->target_name);
-		if(bg_record->bg_block_list)
+		if(bg_record->bg_block_list) {
 			list_destroy(bg_record->bg_block_list);
+			bg_record->bg_block_list = NULL;
+		}
 		FREE_NULL_BITMAP(bg_record->bitmap);
 		FREE_NULL_BITMAP(bg_record->ionode_bitmap);
 
