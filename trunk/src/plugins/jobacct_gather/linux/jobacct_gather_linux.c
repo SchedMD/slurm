@@ -136,7 +136,7 @@ _get_offspring_data(List prec_list, prec_t *ancestor, pid_t pid) {
 	while((prec = list_next(itr))) {
 		if (prec->ppid == pid) {
 #if _DEBUG
-			info("pid:%u ppid:%u rss:%u KB", 
+			info("pid:%u ppid:%u rss:%d KB", 
 			     prec->pid, prec->ppid, prec->rss);
 #endif
 			_get_offspring_data(prec_list, ancestor, prec->pid);
@@ -313,7 +313,7 @@ static void _get_process_data() {
 		while((prec = list_next(itr2))) {
 			if (prec->pid == jobacct->pid) {
 #if _DEBUG
-				info("pid:%u ppid:%u rss:%u KB", 
+				info("pid:%u ppid:%u rss:%d KB", 
 				     prec->pid, prec->ppid, prec->rss);
 #endif
 				/* find all my descendents */
@@ -330,7 +330,7 @@ static void _get_process_data() {
 				jobacct->min_cpu = jobacct->tot_cpu = 
 					MAX(jobacct->min_cpu, 
 					    (prec->usec + prec->ssec));
-				debug2("%d size now %d %d time %d",
+				debug2("%d mem size %u %u time %u",
 				      jobacct->pid, jobacct->max_rss, 
 				      jobacct->max_vsize, jobacct->tot_cpu);
 				break;
@@ -422,12 +422,16 @@ static int _get_process_data_line(FILE *in, prec_t *prec) {
 	 *	itrealvalue, starttime, vsize, rss, rlim
 	 */
 	xfree(s);
-	if (nvals != 25)	/* Is it what we expected? */
-		return 0;	/* No! */
 	
+	prec->rss += 3;			/* adjust for 3 page decrement
+					 * performed for administrative 
+					 * purposes, see "man 5 proc" */
+	if ((nvals != 25) || (prec->rss < 0) || (prec->vsize < 0))
+		 return 0;		/* Invalid data read */
+
 	prec->rss *= getpagesize();	/* convert rss from pages to bytes */
-	prec->rss /= 1024;      	/* convert rss to kibibytes */
-	prec->vsize /= 1024;		/* and convert vsize to kibibytes */
+	prec->rss /= 1024;      	/* convert rss from bytes to KB */
+	prec->vsize /= 1024;		/* and convert vsize from bytes to KB */
 	return 1;
 }
 
