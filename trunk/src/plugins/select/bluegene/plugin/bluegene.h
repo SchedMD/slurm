@@ -131,6 +131,9 @@ extern void *bluegene_agent(void *args);
 
 extern int bg_free_block(bg_record_t *bg_record);
 extern int remove_from_bg_list(List my_bg_list, bg_record_t *bg_record);
+extern bg_record_t *find_and_remove_org_from_bg_list(List my_list, 
+						     bg_record_t *bg_record);
+extern bg_record_t *find_org_in_bg_list(List my_list, bg_record_t *bg_record);
 extern void *mult_free_block(void *args);
 extern void *mult_destroy_block(void *args);
 extern int free_block_list(List delete_list);
