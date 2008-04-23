@@ -1018,9 +1018,16 @@ extern int jobacct_storage_p_job_start(PGconn *acct_pgsql_db,
 		-1L : (long) job_ptr->priority;
 
 	if (job_ptr->name && job_ptr->name[0]) {
-		jname = job_ptr->name;
+		int i;
+		jname = xmalloc(strlen(job_ptr->name) + 1);
+		for (i=0; job_ptr->name[i]; i++) {
+			if (isalnum(job_ptr->name[i]))
+				jname[i] = job_ptr->name[i];
+			else
+				jname[i] = '_';
+		}
 	} else {
-		jname = "allocation";
+		jname = xstrdup("allocation");
 		track_steps = 1;
 	}
 
@@ -1058,6 +1065,7 @@ extern int jobacct_storage_p_job_start(PGconn *acct_pgsql_db,
 		priority, job_ptr->num_procs, job_ptr->total_procs, nodes);
 
 	xfree(block_id);
+	xfree(jname);
 
 try_again:
 	if(!(job_ptr->db_index = pgsql_insert_ret_id(acct_pgsql_db,  

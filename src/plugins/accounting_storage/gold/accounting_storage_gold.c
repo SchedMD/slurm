@@ -116,7 +116,6 @@ static int _add_edit_job(struct job_record *job_ptr, gold_object_t action)
 	char tmp_buff[50];
 	int rc = SLURM_ERROR;
 	char *jname = NULL;
-	int tmp = 0, i = 0;
 	char *nodes = "(null)";
 
 	if(!gold_request) 
@@ -128,13 +127,14 @@ static int _add_edit_job(struct job_record *job_ptr, gold_object_t action)
 	
 //info("total procs is  %d", job_ptr->total_procs);
 	if(action == GOLD_ACTION_CREATE) {
-		if (job_ptr->name && (tmp = strlen(job_ptr->name))) {
-			jname = xmalloc(++tmp);
-			for (i=0; i<tmp; i++) {
-				if (isspace(job_ptr->name[i]))
-					jname[i]='_';
+		if (job_ptr->name && job_ptr->name[0]) {
+			int i;
+			jname = xmalloc(strlen(job_ptr->name) + 1);
+			for (i=0; job_ptr->name[i]; i++) {
+				if (isalnum(job_ptr->name[i]))
+					jname[i] = job_ptr->name[i];
 				else
-					jname[i]=job_ptr->name[i];
+					jname[i] = '_';
 			}
 		} else
 			jname = xstrdup("allocation");

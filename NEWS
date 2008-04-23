@@ -267,6 +267,8 @@ documents those changes that are of interest to users and admins.
  -- In sched/wiki and sched/wiki2 report a job's state as "Hold" if it's 
     dependencies have not been satisfied.
  -- If job prolog or epilog fail, log the program's exit code.
+ -- In jobacct/gold map job names containing any non-alphanumeric characters 
+    to '_' to avoid MySQL parsing problems.
 
 * Changes in SLURM 1.2.28
 =========================
