@@ -662,35 +662,45 @@ static int _breakup_blocks(List block_list, List new_blocks,
 found_one:
 	if(bg_record) {
 		List temp_list = NULL;
-		bg_record_t *found_record = 
-			find_org_in_bg_list(bg_list, bg_record);
+		bg_record_t *found_record = NULL;
+
+		if(bg_record->original) {
+			debug3("This was a copy");
+			found_record = bg_record->original;
+		} else {
+			debug3("looking for original");
+			found_record = find_org_in_bg_list(
+				bg_list, bg_record);
+		}
 		if(!found_record) {
 			error("this record wasn't found in the list!");
 			rc = SLURM_ERROR;
 			goto finished;
 		}
-		bg_record = found_record;
-		format_node_name(bg_record, tmp_char, sizeof(tmp_char));
+		
+		format_node_name(found_record, tmp_char, sizeof(tmp_char));
 			
 		debug2("going to split %s, %s",
-		       bg_record->bg_block_id,
+		       found_record->bg_block_id,
 		       tmp_char);
 		request->save_name = xmalloc(4);
 		snprintf(request->save_name, 
 			 4,
 			 "%c%c%c",
-			 alpha_num[bg_record->start[X]],
-			 alpha_num[bg_record->start[Y]],
-			 alpha_num[bg_record->start[Z]]);
+			 alpha_num[found_record->start[X]],
+			 alpha_num[found_record->start[Y]],
+			 alpha_num[found_record->start[Z]]);
 		if(!my_block_list) {
 			rc = SLURM_SUCCESS;
 			goto finished;	
 		}
 		_split_block(block_list, new_blocks,
-			     bg_record, request->procs);
-
+			     found_record, request->procs);
+		remove_from_bg_list(block_list, bg_record);
+		destroy_bg_record(bg_record);
+		remove_from_bg_list(bg_list, found_record);
 		temp_list = list_create(NULL);
-		list_push(temp_list, bg_record);
+		list_push(temp_list, found_record);
 		num_block_to_free++;
 		free_block_list(temp_list);
 		list_destroy(temp_list);
