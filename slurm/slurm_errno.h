@@ -155,6 +155,7 @@ enum {
 	ESLURM_INVALID_TASK_MEMORY,
 	ESLURM_INVALID_ACCOUNT,
 	ESLURM_INVALID_LICENSES,
+	ESLURM_NEED_RESTART,
 
 	/* switch specific error codes, specific values defined in plugin module */
 	ESLURM_SWITCH_MIN = 3000,

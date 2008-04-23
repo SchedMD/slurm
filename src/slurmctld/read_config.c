@@ -82,7 +82,7 @@ static int  _init_all_slurm_conf(void);
 static void _purge_old_node_state(struct node_record *old_node_table_ptr, 
 				int old_node_record_count);
 static int  _restore_job_dependencies(void);
-static void _restore_node_state(struct node_record *old_node_table_ptr, 
+static int  _restore_node_state(struct node_record *old_node_table_ptr, 
 				int old_node_record_count);
 static int  _preserve_select_type_param(slurm_ctl_conf_t * ctl_conf_ptr, 
 					select_type_plugin_info_t old_select_type_p);
@@ -708,7 +708,7 @@ static int _build_all_partitionline_info()
 int read_slurm_conf(int recover)
 {
 	DEF_TIMERS;
-	int error_code, i;
+	int error_code, i, rc;
 	int old_node_record_count;
 	struct node_record *old_node_table_ptr;
 	char *old_auth_type       = xstrdup(slurmctld_conf.authtype);
@@ -740,6 +740,11 @@ int read_slurm_conf(int recover)
 		xfree(old_node_table_ptr[i].os);
 		old_node_table_ptr[i].features = xstrdup(
 			old_node_table_ptr[i].config_ptr->feature);
+		/* Store the original configured CPU count somewhere
+		 * (port is reused here for that purpose) so we can
+		 * report changes in its configuration. */
+		old_node_table_ptr[i].port = old_node_table_ptr[i].
+					     config_ptr->cpus;
 	}
 	node_record_table_ptr = NULL;
 	node_record_count = 0;
@@ -782,9 +787,10 @@ int read_slurm_conf(int recover)
 		(void) load_all_job_state();
 	} else {	/* Load no info, preserve all state */
 		if (old_node_table_ptr) {
-			debug("restoring original state of nodes");
-			_restore_node_state(old_node_table_ptr, 
-					    old_node_record_count);
+			info("restoring original state of nodes");
+			rc = _restore_node_state(old_node_table_ptr, 
+						 old_node_record_count);
+			error_code = MAX(error_code, rc);  /* not fatal */
 		}
 		reset_first_job_id();
 		(void) slurm_sched_reconfig();
@@ -807,8 +813,8 @@ int read_slurm_conf(int recover)
 	(void) sync_job_files();
 	_purge_old_node_state(old_node_table_ptr, old_node_record_count);
 
-	if ((error_code = _build_bitmaps()))
-		return error_code;
+	if ((rc = _build_bitmaps()))
+		return rc;	/* fatal error */
 
 	license_free();
 	if (license_init(slurmctld_conf.licenses) != SLURM_SUCCESS)
@@ -829,17 +835,16 @@ int read_slurm_conf(int recover)
 	list_sort(config_list, &list_compare_config);
 
 	/* Update plugins as possible */
-	error_code = _preserve_plugins(&slurmctld_conf,
-			old_auth_type, old_checkpoint_type,
-			old_crypto_type, old_sched_type, 
-			old_select_type, old_switch_type);
-	if (error_code)
-		return error_code;
+	rc = _preserve_plugins(&slurmctld_conf,
+			       old_auth_type, old_checkpoint_type,
+			       old_crypto_type, old_sched_type, 
+			       old_select_type, old_switch_type);
+	error_code = MAX(error_code, rc);	/* not fatal */
 
 	/* Update plugin parameters as possible */
-	error_code = _preserve_select_type_param(
-		        &slurmctld_conf,
-			old_select_type_p);
+	rc = _preserve_select_type_param(&slurmctld_conf,
+					 old_select_type_p);
+	error_code = MAX(error_code, rc);	/* not fatal */
 
 	slurmctld_conf.last_update = time(NULL);
 	END_TIMER2("read_slurm_conf");
@@ -849,11 +854,11 @@ int read_slurm_conf(int recover)
 
 /* Restore node state and size information from saved records.
  * If a node was re-configured to be down or drained, we set those states */
-static void _restore_node_state(struct node_record *old_node_table_ptr, 
+static int _restore_node_state(struct node_record *old_node_table_ptr, 
 				int old_node_record_count)
 {
 	struct node_record *node_ptr;
-	int i;
+	int i, rc = SLURM_SUCCESS;
 
 	for (i = 0; i < old_node_record_count; i++) {
 		uint16_t drain_flag = false, down_flag = false;
@@ -874,6 +879,12 @@ static void _restore_node_state(struct node_record *old_node_table_ptr,
 			node_ptr->node_state |= NODE_STATE_DRAIN; 
 			
 		node_ptr->last_response = old_node_table_ptr[i].last_response;
+		if (old_node_table_ptr[i].port != node_ptr->config_ptr->cpus) {
+			rc = ESLURM_NEED_RESTART;
+			error("Configured cpu count change on %s (%u to %u)", 
+			      node_ptr->name, old_node_table_ptr[i].port, 
+			      node_ptr->config_ptr->cpus);
+		}
 		node_ptr->cpus          = old_node_table_ptr[i].cpus;
 		node_ptr->sockets       = old_node_table_ptr[i].sockets;
 		node_ptr->cores         = old_node_table_ptr[i].cores;
@@ -901,6 +912,7 @@ static void _restore_node_state(struct node_record *old_node_table_ptr,
 			old_node_table_ptr[i].os = NULL;
 		}
 	}
+	return rc;
 }
 
 /* Purge old node state information */
