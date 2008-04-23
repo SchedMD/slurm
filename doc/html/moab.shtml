@@ -175,6 +175,21 @@ CLIENTCFG[RM:slurm] KEY=123456789
 </pre>
 <p>Insure that this file is protected from viewing by users. </p>
 
+<h3>Job Submission</h3>
+
+<p>Jobs can either be submitted to Moab or directly to SLURM.
+Moab's <i>msub</i> command has a <i>--slurm</i> option that can 
+be placed at the <b>end</b> of the command line and those options 
+will be passed to SLURM. This can be used to invoke SLURM 
+options which are not directly supported by Moab (e.g.
+system images to boot, task distribution specification across 
+sockets, cores, and hyperthreads, etc.).
+For example:
+<pre>
+msub my.script -l walltime=600,nodes=2 \
+     --slurm --linux-image=/bgl/linux_image2
+</pre>
+
 <h3>User Environment</h3>
 
 <p>When a user submits a job to Moab, that job could potentially 
@@ -185,7 +200,8 @@ Moab relies upon SLURM to perform this action, using the
 The SLURM command then executes as user root a command of this sort
 as user root:
 <pre>
-/bin/su - &lt;user&gt; -c "/bin/echo BEGIN; /bin/env; /bin/echo FINI"
+/bin/su - &lt;user&gt; -c \
+        "/bin/echo BEGIN; /bin/env; /bin/echo FINI"
 </pre>
 While this command is executing within salloc, sbatch or srun, 
 the Moab daemon is completely non-responsive. 
@@ -231,6 +247,6 @@ Write the output to a file with the same name as the user in the
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 12 March 2008</p>
+<p style="text-align:center;">Last modified 23 April 2008</p>
 
 <!--#include virtual="footer.txt"-->
