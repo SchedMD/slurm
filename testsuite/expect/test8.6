@@ -39,9 +39,9 @@ set matches     0
 set 32node_block_cnt 16
 set 128node_block_cnt 8
 set 512node_block_cnt 8
-set 1knode_block_cnt 8
-set 4knode_block_cnt 8
-set 8knode_block_cnt 8
+set 1knode_block_cnt  8
+set 4knode_block_cnt  8
+set 8knode_block_cnt  8
 set 16knode_block_cnt 8
 set 32knode_block_cnt 8
 
@@ -101,13 +101,14 @@ proc run_batch_jobs { node_cnt job_cnt file_in } {
 # Wait up to 900 seconds for all jobs to terminate
 # Return 0 if all jobs done, remainin job count otherwise
 proc wait_for_all_jobs { job_name } {
-	global squeue bin_sleep
+	global scancel squeue bin_sleep file_in
 
 	set last_matches 0
 	send_user "Waiting for all jobs to terminate\n"
+	set timeout 30
 	for {set inx 0} {$inx < 60} {incr inx} {
 		exec $bin_sleep 15
-		set matches 0
+		set matches -1
 		log_user 0
 		spawn $squeue -o %j
 		expect {
@@ -120,12 +121,16 @@ proc wait_for_all_jobs { job_name } {
 			}
 		}
 		log_user 1
+		if {$matches == -1} {
+			send_user "No response from squeue"
+		}
 		if {$matches == 0} { 
 			send_user "All jobs complete\n"
 			return 0
 		}
 		send_user "  $matches jobs remaining\n"
 		if {$matches == $last_matches} {
+			exec $scancel -n $file_in
 			return $matches
 		}
 		set last_matches $matches
