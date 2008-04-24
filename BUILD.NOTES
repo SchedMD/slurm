@@ -72,6 +72,8 @@ BlueGene build notes:
 	%with_cflags		CFLAGS=-m64 CXX="g++ -m64"
    Build on Service Node with using the following syntax
    rpmbuild -ta slurm-...bz2
+   The RPM files get written to the directory
+   /usr/src/packages/RPMS/ppc64
 
 To build and run on AIX:
 0. svn co https://eris.llnl.gov/svn/slurm/trunk slurm
