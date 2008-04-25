@@ -105,10 +105,8 @@ proc wait_for_all_jobs { job_name } {
 
 	set last_matches 0
 	send_user "Waiting for all jobs to terminate\n"
-	set timeout 30
 	for {set inx 0} {$inx < 60} {incr inx} {
-		exec $bin_sleep 15
-		set matches -1
+		set matches 0
 		log_user 0
 		spawn $squeue -o %j
 		expect {
@@ -116,25 +114,35 @@ proc wait_for_all_jobs { job_name } {
 				incr matches
 				exp_continue
 			}
+			-re "error" {
+				set matches -1
+			}
+			timeout {
+				send_user "No response from squeue\n"
+				set matches -1
+			}
 			eof {
 				wait
 			}
 		}
 		log_user 1
-		if {$matches == -1} {
-			send_user "No response from squeue"
-		}
 		if {$matches == 0} { 
 			send_user "All jobs complete\n"
-			return 0
+			break
 		}
-		send_user "  $matches jobs remaining\n"
-		if {$matches == $last_matches} {
-			exec $scancel -n $file_in
-			return $matches
+		if {$matches > 0} {
+			send_user "  $matches jobs remaining\n"
+#			Moab can slow throughput down a lot, 
+#			so don't return here
+#			if {$matches == $last_matches} {
+#				send_user "Running jobs hung\n"
+#				break
+#			}
+#			set last_matches $matches
+			exec $bin_sleep 15
 		}
-		set last_matches $matches
 	}
+	exec $scancel -n $file_in
 	return $matches
 }
 
