@@ -1201,12 +1201,14 @@ static int _sync_block_lists(List full_list, List incomp_list)
  *	be used
  * IN min_nodes, max_nodes  - minimum and maximum number of nodes to allocate
  *	to this job (considers slurm block limits)
- * IN test_only - if true, only test if ever could run, not necessarily now
+ * IN mode - SELECT_MODE_RUN_NOW: try to schedule job now
+ *           SELECT_MODE_TEST_ONLY: test if job can ever run
+ *           SELECT_MODE_WILL_RUN: determine when and where job can run
  * RET - SLURM_SUCCESS if job runnable now, error code otherwise
  */
 extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 		      uint32_t min_nodes, uint32_t max_nodes,
-		      uint32_t req_nodes, bool test_only)
+		      uint32_t req_nodes, int mode)
 {
 	bg_record_t* bg_record = NULL;
 	char buf[100];
@@ -1215,6 +1217,14 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 	List block_list = NULL;
 	int blocks_added = 0;
 	int starttime = time(NULL);
+	bool test_only;
+
+	if (mode == SELECT_MODE_TEST_ONLY || mode == SELECT_MODE_WILL_RUN)
+		test_only = true;
+	else if (mode == SELECT_MODE_RUN_NOW)
+		test_only = false;
+	else	
+		return EINVAL;	/* something not yet supported */
 
 	if(bluegene_layout_mode == LAYOUT_DYNAMIC)
 		slurm_mutex_lock(&create_dynamic_mutex);

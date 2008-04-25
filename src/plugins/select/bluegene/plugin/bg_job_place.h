@@ -49,13 +49,14 @@
  *	                      to this job (considers slurm partition limits)
  * IN test_only - test to see if job is ever runnable, 
  *                or (false) runable right now
- * IN test_only - if true, only test if ever could run, not necessarily now
- * IN test_only - if true, only test if ever could run, not necessarily now
+ * IN mode - SELECT_MODE_RUN_NOW: try to schedule job now
+ *           SELECT_MODE_TEST_ONLY: test if job can ever run
+ *           SELECT_MODE_WILL_RUN: determine when and where job can run
  * RET - SLURM_SUCCESS if job runnable now, error code otherwise 
  */
 extern int submit_job(struct job_record *job_ptr, bitstr_t *bitmap,
 		      uint32_t min_nodes, uint32_t max_nodes,
-		      uint32_t req_nodes, bool test_only);
+		      uint32_t req_nodes, int mode);
 
 extern int test_job_list(List req_list);
 
