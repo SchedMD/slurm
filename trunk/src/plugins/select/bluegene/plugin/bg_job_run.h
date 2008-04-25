@@ -41,6 +41,13 @@
 #include "src/slurmctld/slurmctld.h"
 
 /*
+ * Boot a block. Partition state expected to be FREE upon entry. 
+ * NOTE: This function does not wait for the boot to complete.
+ * the slurm prolog script needs to perform the waiting.
+ */
+extern int boot_block(bg_record_t *bg_record);
+
+/*
  * Perform any setup required to initiate a job
  * job_ptr IN - pointer to the job being initiated
  * RET - SLURM_SUCCESS or an error code 
@@ -50,6 +57,13 @@
  * the job script until the BG block is available for use.
  */
 extern int start_job(struct job_record *job_ptr);
+
+/*
+ * Synchronize BG block state to that of currently active jobs.
+ * This can recover from slurmctld crashes when block ownership 
+ * changes were queued
+ */
+extern int sync_jobs(List job_list);
 
 /* 
  * Perform any work required to terminate a job
@@ -72,17 +86,4 @@ extern int term_job(struct job_record *job_ptr);
  */
 extern int term_jobs_on_block(pm_partition_id_t bg_block_id);
 
-/*
- * Synchronize BG block state to that of currently active jobs.
- * This can recover from slurmctld crashes when block ownership 
- * changes were queued
- */
-extern int sync_jobs(List job_list);
-
-/*
- * Boot a block. Partition state expected to be FREE upon entry. 
- * NOTE: This function does not wait for the boot to complete.
- * the slurm prolog script needs to perform the waiting.
- */
-extern int boot_block(bg_record_t *bg_record);
 #endif /* _BG_JOB_RUN_H_ */

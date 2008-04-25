@@ -279,7 +279,7 @@ static void _start_agent(bg_update_t *bg_update_ptr)
 	if(bg_record->job_running <= NO_JOB_RUNNING) {
 		slurm_mutex_unlock(&block_state_mutex);
 		slurm_mutex_unlock(&job_start_mutex);
-		debug("job %d finished during the queueing job "
+		debug("job %u finished during the queueing job "
 		      "(everything is ok)",
 		      bg_update_ptr->job_ptr->job_id);
 		return;
@@ -337,7 +337,7 @@ static void _start_agent(bg_update_t *bg_update_ptr)
 	if(bg_record->job_running <= NO_JOB_RUNNING) {
 		slurm_mutex_unlock(&block_state_mutex);
 		slurm_mutex_unlock(&job_start_mutex);
-		debug("job %d already finished before boot",
+		debug("job %u already finished before boot",
 		      bg_update_ptr->job_ptr->job_id);
 		return;
 	}
@@ -445,7 +445,7 @@ static void _start_agent(bg_update_t *bg_update_ptr)
 	
 	if(bg_record->job_running <= NO_JOB_RUNNING) {
 		slurm_mutex_unlock(&job_start_mutex);
-		debug("job %d finished during the start of the boot "
+		debug("job %u finished during the start of the boot "
 		      "(everything is ok)",
 		      bg_update_ptr->job_ptr->job_id);
 		return;
