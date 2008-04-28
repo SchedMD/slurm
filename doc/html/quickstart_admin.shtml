@@ -24,12 +24,15 @@ NOTE: The parent directories for SLURM's log files, process ID files,
 state save directories, etc. are not created by SLURM.
 They must be created and made writable by <i>SlurmUser</i> as needed prior to 
 starting SLURM daemons.</li>
-<li>Install the configuration file in <i>&lt;sysconfdir&gt;/slurm.conf</i>.</li>
+<li>Install the configuration file in <i>&lt;sysconfdir&gt;/slurm.conf</i>.<br>
+NOTE: You will need to install this configuration file on all nodes of the cluster.</li>
 <li>Create OpenSSL keys:<br>
 <i>openssl genrsa -out &lt;sysconfdir&gt;/slurm.key 1024</i><br>
 <i>openssl rsa -in  &lt;sysconfdir&gt/slurm.key -pubout -out  &lt;sysconfdir&gt;/slurm.cert</i><br>
-NOTE: You will build the OpenSSL key files on one node and distribute them
-to all of the nodes in the cluster.</li>
+NOTE: You will build the OpenSSL key files on one node and distribute <i>slurm.cert</i>
+to all of the nodes in the cluster. <i>slurm.key</i> must be readable only by
+<i>SlurmUser<i> and is only needed where the <i>slurmctld</i> (SLURM controller
+daemon) executes, typically just a couple of nodes.</li>
 <li>Start the <i>slurmctld</i> and <i>slurmd</i> daemons.</li>
 </ol>
 <p>NOTE: Items 2 through 5 can be replaced with</p>
@@ -210,14 +213,15 @@ For more information, see <a href="quickstart.html#mpi">MPI</a>.
 <p>The scheduler used by SLURM is controlled by the <b>SchedType</b> configuration 
 parameter. This is meant to control the relative importance of pending jobs and 
 several options are available
-SLURM's default scheduler is FIFO (First-In First-Out). 
+SLURM's default scheduler is <u>FIFO (First-In First-Out)</u>. 
 SLURM offers a backfill scheduling plugin.
-Backfill scheduling will initiate a lower-priority jobs
+<u>Backfill scheduling</u> will initiate a lower-priority jobs
 if doing so does not delay the expected initiation time of higher priority jobs; 
 essentially using smaller jobs to fill holes in the resource allocation plan. 
 Effective backfill scheduling does require users to specify job time limits.
-SLURM offers a gang scheduler plugin, which provides time slicing of parallel 
-jobs sharing the same nodes.
+SLURM offers a <u>gang scheduler</u>, which time-slices jobs in the same partition/queue
+and can be used to preempt jobs from lower-priority queues in order to execute
+jobs in higher priority queues.
 SLURM also supports a plugin for use of 
 <a href="http://www.clusterresources.com/pages/products/maui-cluster-scheduler.php">
 The Maui Scheduler</a> or 
@@ -606,6 +610,6 @@ in the NEWS file.
 
 </pre> <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 11 March 2008</p>
+<p style="text-align:center;">Last modified 28 April 2008</p>
 
 <!--#include virtual="footer.txt"-->
