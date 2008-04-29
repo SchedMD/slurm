@@ -174,7 +174,7 @@ extern int fini ( void )
 {
 	int i;
 
-	if (!&ckpt_agent_tid)
+	if (!ckpt_agent_tid)
 		return SLURM_SUCCESS;
 
 	for (i=0; i<4; i++) {

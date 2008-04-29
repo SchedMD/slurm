@@ -287,7 +287,7 @@ extern int parse_wiki_config(void)
 	s_p_get_uint16(&job_aggregation_time, "JobAggregationTime", tbl); 
 
 	if (s_p_get_string(&exclude_partitions, "ExcludePartitions", tbl)) {
-		char *tok, *tok_p;
+		char *tok = NULL, *tok_p = NULL;
 		tok = strtok_r(exclude_partitions, ",", &tok_p);
 		i = 0;
 		while (tok) {

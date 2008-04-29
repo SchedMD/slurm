@@ -74,7 +74,8 @@ static char * _task_list_exp(struct job_record *job_ptr);
  */
 extern char * moab2slurm_task_list(char *moab_tasklist, int *task_cnt)
 {
-	char *slurm_tasklist, *host, *tmp1, *tmp2, *tok, *tok_p;
+	char *slurm_tasklist = NULL, *host = NULL, *tmp1 = NULL, 
+		*tmp2 = NULL, *tok = NULL, *tok_p = NULL;
 	int i, reps;
 	hostlist_t hl;
 	static uint32_t cr_test = 0, cr_enabled = 0;
