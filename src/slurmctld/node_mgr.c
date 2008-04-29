@@ -1559,10 +1559,14 @@ extern int validate_node_specs(slurm_node_registration_status_msg_t *reg_msg)
 		_sync_bitmaps(node_ptr, reg_msg->job_count);
 	} else if (reg_msg->status == ESLURMD_PROLOG_FAILED) {
 		if ((node_flags & (NODE_STATE_DRAIN | NODE_STATE_FAIL)) == 0) {
+#ifdef HAVE_BG
+			info("Prolog failure on node %s", reg_msg->node_name);
+#else
 			last_node_update = time (NULL);
-			error ("Prolog failure on node %s, state to DOWN",
+			error("Prolog failure on node %s, state to DOWN",
 				reg_msg->node_name);
 			set_node_down(reg_msg->node_name, "Prolog failed");
+#endif
 		}
 	} else {
 		if (base_state == NODE_STATE_UNKNOWN) {
@@ -1741,6 +1745,9 @@ extern int validate_nodes_via_front_end(
 		if (reg_msg->status == ESLURMD_PROLOG_FAILED) {
 			if (!(node_ptr->node_state & (NODE_STATE_DRAIN | 
 						      NODE_STATE_FAIL))) {
+#ifdef HAVE_BG
+				error("Prolog failure");
+#else
 				updated_job = true;
 				if (prolog_hostlist)
 					(void) hostlist_push_host(
@@ -1750,6 +1757,7 @@ extern int validate_nodes_via_front_end(
 					prolog_hostlist = hostlist_create(
 						node_ptr->name);
 				set_node_down(node_ptr->name, "Prolog failed");
+#endif
 			}
 		} else {
 			base_state = node_ptr->node_state & NODE_STATE_BASE;
