@@ -655,7 +655,7 @@ static int _check_for_booted_overlapping_blocks(
 					if(!found_record) {
 						error("1 this record wasn't "
 						      "found in the list!");
-						rc = SLURM_ERROR;
+						//rc = SLURM_ERROR;
 					} else {
 						List temp_list =
 							list_create(NULL);
