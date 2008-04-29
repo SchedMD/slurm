@@ -125,8 +125,8 @@ extern int	get_jobs(char *cmd_ptr, int *err_code, char **err_msg)
 		/* report all jobs */
 		buf = _dump_all_jobs(&job_rec_cnt, update_time);
 	} else {
-		struct job_record *job_ptr;
-		char *job_name, *tmp2_char;
+		struct job_record *job_ptr = NULL;
+		char *job_name = NULL, *tmp2_char = NULL;
 		uint32_t job_id;
 
 		job_name = strtok_r(tmp_char, ":", &tmp2_char);

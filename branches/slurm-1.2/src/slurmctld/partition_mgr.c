@@ -744,7 +744,7 @@ void pack_part(struct part_record *part_ptr, Buf buffer)
 	if (part_ptr->node_bitmap) {
 		bit_fmt(node_inx_ptr, BUF_SIZE,
 			part_ptr->node_bitmap);
-		packstr(node_inx_ptr, buffer);
+		packstr((char *)node_inx_ptr, buffer);
 	} else
 		packstr("", buffer);
 }
