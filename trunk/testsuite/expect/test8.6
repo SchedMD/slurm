@@ -156,7 +156,7 @@ if {[run_batch_jobs 32 $32node_block_cnt $file_in ] == 0} {
 	set exit_code 1	
 }
 
-if {[run_batch_jobs 128 $32node_block_cnt $file_in ] == 0} {
+if {[run_batch_jobs 128 $128node_block_cnt $file_in ] == 0} {
 	send_user "\nFAILURE: 128 cnodes can't be created\n"
 	set exit_code 1	
 }
