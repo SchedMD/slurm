@@ -61,11 +61,11 @@
 
 /*
  * Check the bgblock's status every POLL_SLEEP seconds. 
- * Retry for a period of MIN_FREE_PERVIOUS_BLOCK_DELAY + MIN_DELAY + 
- * (INCR_DELAY * POLL_SLEEP * base partition count).
- * For example if MIN_DELAY=300 and INCR_DELAY=20 and POLL_SLEEP=3, 
- * wait up to 1260 seconds.
- * For a 16 base partition bgblock to be ready (300 + (20 * 3 * 16).
+ * Retry for a period of 
+ * MIN_FREE_PERVIOUS_BLOCK_DELAY + MIN_DELAY + (INCR_DELAY * base partition count)
+ * For example if MIN_FREE_PERVIOUS_BLOCK_DELAY=300 and MIN_DELAY=200 and 
+ * INCR_DELAY=20 and job_size=4 base partitions then wait up to 580 seconds
+ * 300 + 200 + (20 * 4)
  */ 
 #define POLL_SLEEP 3			/* retry interval in seconds  */
 #define MIN_FREE_PERVIOUS_BLOCK_DELAY 300 /* time in seconds */
@@ -115,7 +115,7 @@ static int _wait_part_ready(uint32_t job_id)
 {
 	int is_ready = 0, i, rc;
 	
-	max_delay = MIN_DELAY + MIN_FREE_PERVIOUS_BLOCK_DELAY +
+	max_delay = MIN_FREE_PERVIOUS_BLOCK_DELAY + MIN_DELAY +
 		(INCR_DELAY * _get_job_size(job_id));
 
 #if _DEBUG
