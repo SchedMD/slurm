@@ -1261,12 +1261,21 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 	
 	if(rc == SLURM_SUCCESS) {
 		if(bg_record) {
-			/* we should check to see if the time is in
-			   the past and if there is a job that finished
-			   in the past here
-			*/
-			if(bg_record->job_ptr && bg_record->job_ptr->end_time) 
-				starttime = bg_record->job_ptr->end_time;
+			/* Here we see if there is a job running since
+			 * some jobs take awhile to finish we need to
+			 * make sure the time of the end is in the
+			 * future.  If it isn't (meaning it is in the
+			 * past or current time) we add 5 seconds to
+			 * it so we don't use the block immediately.
+			 */
+			if(bg_record->job_ptr 
+			   && bg_record->job_ptr->end_time) { 
+				if(bg_record->job_ptr->end_time <= starttime)
+					starttime += 5;
+				else
+					starttime =
+						bg_record->job_ptr->end_time;
+			}
 						
 			job_ptr->start_time = starttime;
 			
