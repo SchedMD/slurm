@@ -1297,7 +1297,7 @@ char **_load_env_cache(const char *username)
  */
 char **env_array_user_default(const char *username, int timeout, int mode)
 {
-	char *line, *last, name[128], value[ENV_BUFSIZE];
+	char *line = NULL, *last = NULL, name[128], value[ENV_BUFSIZE];
 	char buffer[ENV_BUFSIZE];
 	char **env = NULL;
 	char *starttoken = "XXXXSLURMSTARTPARSINGHEREXXXX";

@@ -142,11 +142,11 @@ extern int
 multi_prog_get_argv(char *file_contents, char **prog_env, int task_rank,
 		    int *argc, char ***argv)
 {
-	char *line;
+	char *line = NULL;
 	int line_num = 0;
 	int task_offset;
-	char *p, *s, *ptrptr;
-	char *rank_spec, *args_spec;
+	char *p = NULL, *s = NULL, *ptrptr = NULL;
+	char *rank_spec = NULL, *args_spec = NULL;
 	int prog_argc = 0;
 	char **prog_argv = NULL;
 	char *local_data = NULL;
