@@ -681,6 +681,9 @@ static void _notify_slurmctld_nodes(agent_info_t *agent_ptr,
 					      thread_ptr[i].start_time);
 				break;
 			case DSH_FAILED:
+#ifdef HAVE_BG
+				error("Prolog/epilog failure");
+#else
 				if(!is_ret_list) {
 					set_node_down(thread_ptr[i].nodelist, 
 						      "Prolog/epilog failure");
@@ -688,6 +691,7 @@ static void _notify_slurmctld_nodes(agent_info_t *agent_ptr,
 				}
 				set_node_down(ret_data_info->node_name,
 					      "Prolog/epilog failure");
+#endif
 				break;
 			case DSH_DONE:
 				if(!is_ret_list) {
