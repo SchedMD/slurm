@@ -257,10 +257,11 @@ int	unpackmem_array(char *valp, uint32_t size_valp, Buf buffer);
 } while (0)				
 
 #define packstr(str,buf) do {				\
-	uint32_t _size;					\
-	_size = (uint32_t)(str ? strlen(str)+1 : 0);	\
-	assert(_size == 0 || str != NULL);		\
-	assert(_size <= 0xfffff);			\
+	uint32_t _size = 0;				\
+	if((char *)str != NULL)				\
+		_size = (uint32_t)strlen(str)+1;	\
+        assert(_size == 0 || str != NULL);             	\
+	assert(_size <= 0xffff);			\
 	assert(buf->magic == BUF_MAGIC);		\
 	packmem(str,(uint16_t)_size,buf);		\
 } while (0)				

@@ -90,8 +90,8 @@ extern int	get_nodes(char *cmd_ptr, int *err_code, char **err_msg)
 		/* report all nodes */
 		buf = _dump_all_nodes(&node_rec_cnt, update_time);
 	} else {
-		struct node_record *node_ptr;
-		char *node_name, *tmp2_char;
+		struct node_record *node_ptr = NULL;
+		char *node_name = NULL, *tmp2_char = NULL;
 
 		node_name = strtok_r(tmp_char, ":", &tmp2_char);
 		while (node_name) {

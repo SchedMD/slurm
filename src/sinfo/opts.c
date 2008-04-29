@@ -422,7 +422,8 @@ _parse_format( char* format )
 {
 	int field_size;
 	bool right_justify;
-	char *prefix, *suffix, *token, *tmp_char, *tmp_format;
+	char *prefix = NULL, *suffix = NULL, *token = NULL,
+		*tmp_char = NULL, *tmp_format = NULL;
 	char field[1];
 
 	if (format == NULL) {
