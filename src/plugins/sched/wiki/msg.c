@@ -178,8 +178,10 @@ static void *_msg_thread(void *no_data)
 		err_code = 0;
 		err_msg = "";
 		msg = _recv_msg(new_fd);
-		_proc_msg(new_fd, msg);
-		xfree(msg);
+		if (msg) {
+			_proc_msg(new_fd, msg);
+			xfree(msg);
+		}
 		slurm_close_accepted_conn(new_fd);
 	}
 	if (sock_fd > 0)

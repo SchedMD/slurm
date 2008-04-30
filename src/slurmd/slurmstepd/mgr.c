@@ -980,7 +980,7 @@ _fork_all_tasks(slurmd_job_t *job)
 
                 if (slurm_container_add(job, job->task[i]->pid)
 		    == SLURM_ERROR) {
-                        error("slurm_container_create: %m");
+                        error("slurm_container_add: %m");
 			goto fail1;
                 }
 		jobacct_id.nodeid = job->nodeid;
