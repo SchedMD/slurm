@@ -14,6 +14,7 @@ documents those changes that are of interest to users and admins.
  -- If job prolog or epilog fail, log the program's exit code.
  -- In jobacct/gold map job names containing any non-alphanumeric characters 
     to '_' to avoid MySQL parsing problems.
+ -- In jobacct/linux correct parsing if command name contains spaces.
 
 * Changes in SLURM 1.2.28
 =========================
