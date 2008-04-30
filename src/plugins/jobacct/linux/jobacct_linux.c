@@ -94,7 +94,7 @@ static pthread_mutex_t reading_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 static void _get_offspring_data(List prec_list, prec_t *ancestor, pid_t pid);
 static void _get_process_data();
-static int _get_process_data_line(FILE *in, prec_t *prec);
+static int _get_process_data_line(int in, prec_t *prec);
 static void *_watch_tasks(void *arg);
 static void _destroy_prec(void *object);
 
@@ -433,7 +433,7 @@ static void _get_process_data() {
 			fcntl(fd, F_SETFD, FD_CLOEXEC);
 			
 			prec = xmalloc(sizeof(prec_t));
-			if (_get_process_data_line(stat_fp, prec))
+			if (_get_process_data_line(fd, prec))
 				list_append(prec_list, prec);
 			else 
 				xfree(prec);
@@ -499,7 +499,7 @@ static void _get_process_data() {
 			fcntl(fd, F_SETFD, FD_CLOEXEC);
 
 			prec = xmalloc(sizeof(prec_t));
-			if (_get_process_data_line(stat_fp, prec))
+			if (_get_process_data_line(fd, prec))
 				list_append(prec_list, prec);
 			else 
 				xfree(prec);
@@ -557,7 +557,7 @@ finished:
 
 /* _get_process_data_line() - get line of data from /proc/<pid>/stat
  *
- * IN:	in - input file channel
+ * IN:	in - input file descriptor
  * OUT:	prec - the destination for the data
  *
  * RETVAL:	==0 - no valid data
@@ -568,43 +568,47 @@ finished:
  *       but they help to ensure that we really are looking at the
  *       expected type of record.
  */
-static int _get_process_data_line(FILE *in, prec_t *prec) {
-	/* discardable data */
-	int		d;
-	char		c;
-	char		*s;
-	uint32_t	tmpu32;
-	int max_path_len = pathconf("/", _PC_NAME_MAX);
+static int _get_process_data_line(int in, prec_t *prec) {
+	char sbuf[256], *tmp;
+	int num_read, nvals;
+	char cmd[40], state[1];
+	int ppid, pgrp, session, tty_nr, tpgid;
+	long unsigned flags, minflt, cminflt, majflt, cmajflt;
+	long unsigned utime, stime, starttime, vsize;
+	long int cutime, cstime, priority, nice, timeout, itrealvalue, rss;
 
-	/* useful datum */
-	int		nvals;
+	num_read = read(in, sbuf, (sizeof(sbuf) - 1));
+	if (num_read <= 0)
+		return 0;
+	sbuf[num_read] = '\0';
 
-	s = xmalloc(max_path_len + 1);
-	nvals=fscanf(in,
-		     "%d %s %c %d %d "
-		     "%d %d %d %d %d "
-		     "%d %d %d %d %d "
-		     "%d %d %d %d %d "
-		     "%d %d %d %d %d", 
-		     &prec->pid, s, &c, &prec->ppid, &d,
-		     &d, &d, &d, &tmpu32, &tmpu32,
-		     &tmpu32, &prec->pages, &tmpu32, &prec->usec, &prec->ssec,
-		     &tmpu32, &tmpu32, &tmpu32, &tmpu32, &tmpu32,
-		     &tmpu32, &tmpu32, &prec->vsize, &prec->rss, &tmpu32);
-	/* The fields in the record are
-	 *	pid, command, state, ppid, pgrp,
-	 *	session, tty_nr, tpgid, flags, minflt,
-	 *	cminflt, majflt, cmajflt, utime, stime,
-	 *	cutime, cstime, priority, nice, lit_0,
-	 *	itrealvalue, starttime, vsize, rss, rlim
-	 */
-	xfree(s);
-	if (nvals != 25)	/* Is it what we expected? */
-		return 0;	/* No! */
-	
-	prec->rss *= getpagesize();	/* convert rss from pages to bytes */
-	prec->rss /= 1024;      	/* convert rss to kibibytes */
-	prec->vsize /= 1024;		/* and convert vsize to kibibytes */
+	tmp = strrchr(sbuf, ')');	/* split into "PID (cmd" and "<rest>" */
+	*tmp = '\0';			/* replace trailing ')' with NUL */
+	/* parse these two strings separately, skipping the leading "(". */
+	nvals = sscanf(sbuf, "%d (%39c", &prec->pid, cmd);
+	if (nvals < 2)
+		return 0;
+
+	nvals = sscanf(tmp + 2,		/* skip space after ')' too */
+		"%c %d %d %d %d %d "
+		"%lu %lu %lu %lu %lu "
+		"%lu %lu %ld %ld %ld %ld "
+		"%ld %ld %lu %lu %ld",
+		state, &ppid, &pgrp, &session, &tty_nr, &tpgid,
+		&flags, &minflt, &cminflt, &majflt, &cmajflt,
+		&utime, &stime, &cutime, &cstime, &priority, &nice,
+		&timeout, &itrealvalue, &starttime, &vsize, &rss);
+	/* There are some additional fields, which we do not scan or use */
+	if ((nvals < 22) || (rss < 0))
+		return 0;
+
+	/* Copy the values that slurm records into our data structure */
+	prec->ppid  = ppid;
+	prec->pages = majflt;
+	prec->usec  = utime;
+	prec->ssec  = stime;
+	prec->vsize = vsize / 1024;		  /* convert from bytes to KB */
+	prec->rss   = rss * getpagesize() / 1024; /* convert from pages to KB */
 	return 1;
 }
 
