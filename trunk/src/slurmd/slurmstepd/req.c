@@ -1032,6 +1032,14 @@ _handle_suspend(int fd, slurmd_job_t *job, uid_t uid)
 		goto done;
 	}
 
+	if (cont_id == 0) {
+		debug ("step %u.%u invalid container [cont_id:%u]",
+			job->jobid, job->stepid, job->cont_id);
+		rc = -1;
+		errnum = ESLURMD_JOB_NOTRUNNING;
+		goto done;
+	}
+
 	jobacct_gather_g_suspend_poll();
 
 	/*
@@ -1086,6 +1094,14 @@ _handle_resume(int fd, slurmd_job_t *job, uid_t uid)
 		      (long)uid, job->jobid, job->stepid);
 		rc = -1;
 		errnum = EPERM;
+		goto done;
+	}
+
+	if (job->cont_id == 0) {
+		debug ("step %u.%u invalid container [cont_id:%u]",
+			job->jobid, job->stepid, job->cont_id);
+		rc = -1;
+		errnum = ESLURMD_JOB_NOTRUNNING;
 		goto done;
 	}
 
