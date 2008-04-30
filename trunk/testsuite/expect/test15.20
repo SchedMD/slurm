@@ -80,7 +80,7 @@ expect {
 		send_user "WARNING: partition too small for test\n"
 		exit 0
 	}
-	-re "($number): ($alpha_numeric)" {
+	-re "($number): ($alpha_numeric_under)" {
 		if {$expect_out(1,string) == 0} {
 			set host_0 $expect_out(2,string)
 		}
@@ -168,7 +168,7 @@ expect {
 		exit 0	
 	}
 		
-	-re "($number): ($alpha_numeric)" {
+	-re "($number): ($alpha_numeric_under)" {
 		if {$expect_out(1,string) == 0} {
 			set host_0 $expect_out(2,string)
 		}
@@ -233,7 +233,7 @@ expect {
 		set job_id $expect_out(1,string)
 		exp_continue
 	}
-	-re "($number): ($alpha_numeric)" {
+	-re "($number): ($alpha_numeric_under)" {
 		if {$expect_out(1,string) == 0} {
 			set host_0 $expect_out(2,string)
 		}

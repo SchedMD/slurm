@@ -110,7 +110,7 @@ if {[wait_for_file $file_out] != 0} {
 }
 spawn $bin_cat $file_out
 expect {
-	-re "($number): ($alpha_numeric)" {
+	-re "($number): ($alpha_numeric_under)" {
 		if {$expect_out(1,string) == 0} {
 			set host_0 $expect_out(2,string)
 		}
@@ -201,7 +201,7 @@ if {[wait_for_file $file_out] != 0} {
 }
 spawn $bin_cat $file_out
 expect {
-	-re "($number): ($alpha_numeric)" {
+	-re "($number): ($alpha_numeric_under)" {
 		if {$expect_out(1,string) == 0} {
 			set host_0 $expect_out(2,string)
 		}
@@ -277,7 +277,7 @@ if {[wait_for_file $file_out] != 0} {
 spawn $bin_cat $file_out
 expect {
 
-	-re "($number): ($alpha_numeric)" {
+	-re "($number): ($alpha_numeric_under)" {
 		if {$expect_out(1,string) == 0} {
 			set host_0 $expect_out(2,string)
 		}
