@@ -908,7 +908,7 @@ static int _find_best_block_match(List block_list,
 					 tmp_nodes+i);
 				slurm_conf_unlock();
 			
-				process_nodes(tmp_record);
+				process_nodes(tmp_record, false);
 				for(i=0; i<BA_SYSTEM_DIMENSIONS; i++) {
 					req_geometry[i] = tmp_record->geo[i];
 					start[i] = tmp_record->start[i];

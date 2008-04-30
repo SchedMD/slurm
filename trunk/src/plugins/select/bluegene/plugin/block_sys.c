@@ -654,7 +654,7 @@ int read_bg_blocks()
 		       bg_record->bg_block_id, 
 		       bg_record->state);
 		
-		process_nodes(bg_record);
+		process_nodes(bg_record, false);
 	
 		if(bluegene_layout_mode == LAYOUT_DYNAMIC) {
 			bg_record_t *tmp_record = xmalloc(sizeof(bg_record_t));

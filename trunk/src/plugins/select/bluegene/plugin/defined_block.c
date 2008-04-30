@@ -157,8 +157,7 @@ extern int create_defined_blocks(bg_layout_t overlapped,
 						fatal("given list of %s "
 						      "but allocated %s, "
 						      "your order might be "
-						      "wrong in the "
-						      "bluegene.conf",
+						      "wrong in bluegene.conf",
 						      bg_record->nodes,
 						      temp);
 					}

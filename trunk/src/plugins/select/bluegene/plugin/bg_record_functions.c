@@ -139,7 +139,7 @@ extern int block_exist_in_list(List my_list, bg_record_t *bg_record)
 	return rc;
 }
 
-extern void process_nodes(bg_record_t *bg_record)
+extern void process_nodes(bg_record_t *bg_record, bool startup)
 {
 #ifdef HAVE_BG
 	int j=0, number;
@@ -155,7 +155,7 @@ extern void process_nodes(bg_record_t *bg_record)
 				list_create(destroy_ba_node);
 		}
 		bg_record->bp_count = 0;
-		if(bg_record->conn_type == SELECT_SMALL)
+		if((bg_record->conn_type == SELECT_SMALL) && (!startup))
 			error("We shouldn't be here there could be some "
 			      "badness if we use this logic %s",
 			      bg_record->nodes);
@@ -660,7 +660,7 @@ extern int add_bg_record(List records, List used_nodes, blockreq_t *blockreq)
 	} else 
 		fatal("BPs=%s is in a weird format", blockreq->block); 
 	
-	process_nodes(bg_record);
+	process_nodes(bg_record, false);
 	
 	bg_record->node_use = SELECT_COPROCESSOR_MODE;
 	bg_record->conn_type = blockreq->conn_type;
