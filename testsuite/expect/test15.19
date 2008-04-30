@@ -59,7 +59,7 @@ expect {
 		}
 		exp_continue
 	}
-	-re "($number): ($alpha_numeric)" {
+	-re "($number): ($alpha_numeric_under)" {
 		if {$task_cnt == 0} {
 			set host_0 $expect_out(1,string)
 		}
@@ -139,7 +139,7 @@ expect {
 		set job_id $expect_out(1,string)
 		exp_continue
 	}
-	-re "($number): ($alpha_numeric)" {
+	-re "($number): ($alpha_numeric_under)" {
 		if {$expect_out(1,string) == 0} {
 			set host_0 $expect_out(2,string)
 		}
@@ -191,7 +191,7 @@ expect {
 		set job_id $expect_out(1,string)
 		exp_continue
 	}
-	-re "($number): ($alpha_numeric)" {
+	-re "($number): ($alpha_numeric_under)" {
 		if {$expect_out(1,string) == 0} {
 			set host_0 $expect_out(2,string)
 		}
@@ -264,7 +264,7 @@ expect {
 		send_user "\nWARNING: can't test salloc task distribution\n"
 		exit $exit_code
 	}
-	-re "($number): ($alpha_numeric)" {
+	-re "($number): ($alpha_numeric_under)" {
 		if {$expect_out(1,string) == 0} {
 			set host_0 $expect_out(2,string)
 		}

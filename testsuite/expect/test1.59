@@ -173,7 +173,7 @@ for {set i 0} {$i<4} {incr i} {
 	#
 	send "$srun -l $extra -O $bin_printenv SLURMD_NODENAME\n"
 	expect {
-		-re "($number): ($alpha_numeric)" {
+		-re "($number): ($alpha_numeric_under)" {
 			set task_id $expect_out(1,string)
 			if {$task_id == 0} {
 				set node0 $expect_out(2,string)
@@ -326,7 +326,7 @@ for {set i 0} {$i<5} {incr i} {
 	send "$srun -l $extra -O $bin_printenv SLURMD_NODENAME\n"
 	
 	expect {
-		-re "($number): ($alpha_numeric)" {
+		-re "($number): ($alpha_numeric_under)" {
 			set task_id $expect_out(1,string)
 			if {$task_id == 0} {
 				set node0 $expect_out(2,string)

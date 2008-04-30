@@ -74,7 +74,7 @@ expect {
 		send_user "\nWARNING: can't test srun task distribution\n"
 		exit $exit_code
 	}
-	-re "($number): ($alpha)($number)" {
+	-re "($number): ($alpha_numeric_under)($number)" {
 		set task_id $expect_out(1,string)
 		if {$task_id == 0} {
 			set host_0_name $expect_out(2,string)
@@ -90,7 +90,7 @@ expect {
 		}
 		exp_continue
 	}
-	-re "($number): ($alpha)" {
+	-re "($number): ($alpha_numeric_under)" {
 		set task_id $expect_out(1,string)
 		if {$task_id == 0} {
 			set host_0_name $expect_out(2,string)
