@@ -514,7 +514,7 @@ extern int select_p_state_restore(char *dir_name)
 			bg_record->conn_type = bg_info_record->conn_type;
 			bg_record->boot_state = 0;
 
-			process_nodes(bg_record);
+			process_nodes(bg_record, true);
 
 			slurm_conf_lock();
 			bg_record->target_name = 
@@ -564,13 +564,18 @@ extern int select_p_state_restore(char *dir_name)
 
 			xfree(name);
 			if(strcmp(temp, bg_record->nodes)) {
+#ifdef HAVE_BG_FILES
 				fatal("given list of %s "
 				      "but allocated %s, "
 				      "your order might be "
-				      "wrong in the "
-				      "bluegene.conf",
-				      bg_record->nodes,
-				      temp);
+				      "wrong in bluegene.conf",
+				      bg_record->nodes, temp);
+#else
+				fatal("bad wiring in preserved state "
+				      "(found %s, but allocated %s) "
+				      "YOU MUST COLDSTART",
+				      bg_record->nodes, temp);
+#endif
 			}
 			if(bg_record->bg_block_list)
 				list_destroy(bg_record->bg_block_list);

@@ -382,7 +382,7 @@ extern bg_record_t *create_small_record(bg_record_t *bg_record,
 	found_record->mloaderimage = xstrdup(bg_record->mloaderimage);
 	found_record->ramdiskimage = xstrdup(bg_record->ramdiskimage);
 
-	process_nodes(found_record);
+	process_nodes(found_record, false);
 				
 	found_record->conn_type = SELECT_SMALL;
 				
