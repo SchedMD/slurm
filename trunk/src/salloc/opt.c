@@ -475,7 +475,6 @@ void set_options(const int argc, char **argv)
 		{"extra-node-info", required_argument, 0, 'B'},
 		{"cpus-per-task", required_argument, 0, 'c'},
 		{"constraint",    required_argument, 0, 'C'},
-		{"dependency",    required_argument, 0, 'd'},
 		{"chdir",         required_argument, 0, 'D'},
 		{"nodefile",      required_argument, 0, 'F'},
 		{"geometry",      required_argument, 0, 'g'},
@@ -492,6 +491,7 @@ void set_options(const int argc, char **argv)
 		{"nodes",         required_argument, 0, 'N'},
 		{"overcommit",    no_argument,       0, 'O'},
 		{"partition",     required_argument, 0, 'p'},
+		{"dependency",    required_argument, 0, 'P'},
 		{"quiet",         no_argument,       0, 'q'},
 		{"no-rotate",     no_argument,       0, 'R'},
 		{"share",         no_argument,       0, 's'},
@@ -542,7 +542,7 @@ void set_options(const int argc, char **argv)
 		{"get-user-env",  optional_argument, 0, LONG_OPT_GET_USER_ENV},
 		{NULL,            0,                 0, 0}
 	};
-	char *opt_string = "+a:B:c:C:d:D:F:g:hHIJ:kK:L:m:n:N:Op:qR:st:uU:vVw:W:x:";
+	char *opt_string = "+a:B:c:C:d:D:F:g:hHIJ:kK:L:m:n:N:Op:P:qR:st:uU:vVw:W:x:";
 
 	opt.progname = xbasename(argv[0]);
 	optind = 0;		
@@ -582,10 +582,7 @@ void set_options(const int argc, char **argv)
 			xfree(opt.constraints);
 			opt.constraints = xstrdup(optarg);
 			break;
-		case 'd':
-			xfree(opt.dependency);
-			opt.dependency = xstrdup(optarg);
-			break;
+/* 		case 'd':	see 'P' below */
 		case 'D':
 			xfree(opt.cwd);
 			opt.cwd = xstrdup(optarg);
@@ -662,6 +659,11 @@ void set_options(const int argc, char **argv)
 		case 'p':
 			xfree(opt.partition);
 			opt.partition = xstrdup(optarg);
+			break;
+		case 'd':
+		case 'P':
+			xfree(opt.dependency);
+			opt.dependency = xstrdup(optarg);
 			break;
 		case 'q':
 			opt.quiet++;
@@ -1369,7 +1371,7 @@ static void _help(void)
 "                              immediately available\n"
 "  -v, --verbose               verbose mode (multiple -v's increase verbosity)\n"
 "  -q, --quiet                 quiet mode (suppress informational messages)\n"
-"  -d, --dependency=type:jobid defer job until condition on jobid is satisfied\n"
+"  -P, --dependency=type:jobid defer job until condition on jobid is satisfied\n"
 "      --nice[=value]          decrease secheduling priority by value\n"
 "  -U, --account=name          charge job to specified account\n"
 "      --begin=time            defer job until HH:MM DD/MM/YY\n"

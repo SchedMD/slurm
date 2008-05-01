@@ -474,7 +474,6 @@ static struct option long_options[] = {
 	{"extra-node-info", required_argument, 0, 'B'},
 	{"cpus-per-task", required_argument, 0, 'c'},
 	{"constraint",    required_argument, 0, 'C'},
-	{"dependency",    required_argument, 0, 'd'},
 	{"workdir",       required_argument, 0, 'D'},
 	{"error",         required_argument, 0, 'e'},
 	{"nodefile",      required_argument, 0, 'F'},
@@ -493,6 +492,7 @@ static struct option long_options[] = {
 	{"output",        required_argument, 0, 'o'},
 	{"overcommit",    no_argument,       0, 'O'},
 	{"partition",     required_argument, 0, 'p'},
+	{"dependency",    required_argument, 0, 'P'},
 	{"quiet",         no_argument,       0, 'q'},
 	{"no-rotate",     no_argument,       0, 'R'},
 	{"share",         no_argument,       0, 's'},
@@ -546,7 +546,7 @@ static struct option long_options[] = {
 };
 
 static char *opt_string =
-	"+a:bB:c:C:d:D:e:F:g:hHi:IJ:kL:m:n:N:o:Op:qR:st:uU:vVw:x:";
+	"+a:bB:c:C:d:D:e:F:g:hHi:IJ:kL:m:n:N:o:Op:P:qR:st:uU:vVw:x:";
 
 
 /*
@@ -946,10 +946,7 @@ static void _set_options(int argc, char **argv)
 			xfree(opt.constraints);
 			opt.constraints = xstrdup(optarg);
 			break;
-		case 'd':
-			xfree(opt.dependency);
-			opt.dependency = xstrdup(optarg);
-			break;
+/*		case 'd': See 'P' below */
 		case 'D':
 			xfree(opt.cwd);
 			opt.cwd = xstrdup(optarg);
@@ -1041,6 +1038,12 @@ static void _set_options(int argc, char **argv)
 		case 'p':
 			xfree(opt.partition);
 			opt.partition = xstrdup(optarg);
+			break;
+		case 'd':
+		case 'P':
+			/* use -P instead */
+			xfree(opt.dependency);
+			opt.dependency = xstrdup(optarg);
 			break;
 		case 'q':
 			opt.quiet++;
@@ -2151,7 +2154,7 @@ static void _help(void)
 "      --jobid=id              run under already allocated job\n"
 "  -v, --verbose               verbose mode (multiple -v's increase verbosity)\n"
 "  -q, --quiet                 quiet mode (suppress informational messages)\n"
-"  -d, --dependency=type:jobid defer job until condition on jobid is satisfied\n"
+"  -P, --dependency=type:jobid defer job until condition on jobid is satisfied\n"
 "  -D, --workdir=directory     set working directory for batch script\n"
 "      --nice[=value]          decrease secheduling priority by value\n"
 "  -O, --overcommit            overcommit resources\n"
