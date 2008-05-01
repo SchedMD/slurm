@@ -2546,21 +2546,14 @@ int _launch_batch_step(job_desc_msg_t *job_desc_msg, uid_t uid,
 	 * to the slurmd should contain the proper allocation values
 	 * for subsequent srun jobs within the batch script.
 	 */
+	memset(&req_step_msg, 0, sizeof(job_step_create_request_msg_t));
 	req_step_msg.job_id = job_desc_msg->job_id;
 	req_step_msg.user_id = uid;
 	req_step_msg.node_count = 1;
 	req_step_msg.cpu_count = 1;
 	req_step_msg.num_tasks = 1;
-	req_step_msg.relative = 0;
 	req_step_msg.task_dist = SLURM_DIST_CYCLIC;
-	req_step_msg.port = 0;
-	req_step_msg.host = NULL;
 	req_step_msg.name = job_desc_msg->name;
-	req_step_msg.network = NULL;
-	req_step_msg.node_list = NULL;
-	req_step_msg.ckpt_interval = 0;
-	req_step_msg.exclusive = 0;
-	req_step_msg.immediate = 0;
 
 	error_code = step_create(&req_step_msg, &step_rec, false, true);
 	xfree(req_step_msg.node_list);	/* may be set by step_create */
