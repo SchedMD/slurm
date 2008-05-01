@@ -158,6 +158,7 @@ typedef struct kill_thread {
 /* 
  * Job manager related prototypes
  */
+static int  _access(const char *path, int modes, uid_t uid, gid_t gid);
 static void _send_launch_failure(launch_tasks_request_msg_t *, 
                                  slurm_addr *, int);
 static int  _fork_all_tasks(slurmd_job_t *job);
@@ -1679,6 +1680,34 @@ _initgroups(slurmd_job_t *job)
 }
 
 /*
+ * Check this user's access rights to a file
+ * path IN: pathname of file to test
+ * modes IN: desired access
+ * uid IN: user ID to access the file
+ * gid IN: group ID to access the file
+ * RET 0 on success, -1 on failure
+ */
+static int _access(const char *path, int modes, uid_t uid, gid_t gid)
+{
+	struct stat buf;
+	int f_mode;
+
+	if (stat(path, &buf) != 0)
+		return -1;
+
+	if (buf.st_uid == uid)
+		f_mode = (buf.st_mode >> 6) & 07;
+	else if (buf.st_gid == gid)
+		f_mode = (buf.st_mode >> 3) & 07;
+	else
+		f_mode = buf.st_mode & 07;
+
+	if ((f_mode & modes) == modes)
+		return 0;
+	return -1;
+}
+
+/*
  * Run a script as a specific user, with the specified uid, gid, and 
  * extended groups.
  *
@@ -1704,7 +1733,7 @@ _run_script_as_user(const char *name, const char *path, slurmd_job_t *job,
 
 	debug("[job %u] attempting to run %s [%s]", job->jobid, name, path);
 
-	if (access(path, R_OK | X_OK) < 0) {
+	if (_access(path, 5, job->pwd->pw_uid, job->pwd->pw_gid) < 0) {
 		error("Could not run %s [%s]: %m", name, path);
 		return -1;
 	}
