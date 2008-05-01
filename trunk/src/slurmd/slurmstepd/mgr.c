@@ -1734,7 +1734,7 @@ _run_script_as_user(const char *name, const char *path, slurmd_job_t *job,
 	debug("[job %u] attempting to run %s [%s]", job->jobid, name, path);
 
 	if (_access(path, 5, job->pwd->pw_uid, job->pwd->pw_gid) < 0) {
-		error("Could not run %s [%s]: %m", name, path);
+		error("Could not run %s [%s]: access denied", name, path);
 		return -1;
 	}
 
