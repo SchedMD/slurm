@@ -2,11 +2,18 @@
 
 AUTOMAKE_OPTIONS = foreign
 
+if HAVE_OPENSSL
+gold_lib = accounting_storage_gold.la
+else
+gold_lib =
+endif
+
 PLUGIN_FLAGS = -module -avoid-version --export-dynamic 
 
 INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common
 
-pkglib_LTLIBRARIES = accounting_storage_gold.la
+pkglib_LTLIBRARIES = $(gold_lib)
+if HAVE_OPENSSL
 accounting_storage_gold_la_SOURCES = accounting_storage_gold.c
 accounting_storage_gold_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
 accounting_storage_gold_la_LIBADD  = \
@@ -14,4 +21,7 @@ accounting_storage_gold_la_LIBADD  = \
 accounting_storage_gold_la_DEPENDENCIES = \
 	$(top_builddir)/src/database/libslurm_gold.la
 
+else
+EXTRA_accounting_storage_gold_la_SOURCES = accounting_storage_gold.c
+endif
 
