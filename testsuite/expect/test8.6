@@ -105,7 +105,7 @@ proc wait_for_all_jobs { job_name } {
 
 	set last_matches 0
 	send_user "Waiting for all jobs to terminate\n"
-	for {set inx 0} {$inx < 60} {incr inx} {
+	for {set inx 0} {$inx < 600} {incr inx} {
 		set matches 0
 		log_user 0
 		spawn $squeue -o %j

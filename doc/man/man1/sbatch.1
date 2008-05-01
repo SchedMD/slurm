@@ -132,34 +132,6 @@ Demand a contiguous range of nodes. The default is "yes". Specify
 Set the working directory of the batch script to \fIdirectory\fR before
 it it executed.
 
-.TP 
-\fB\-d\fR, \fB\-\-dependency\fR[=]<\fIdependency_list\fR>
-Defer the start of this job until the specified dependencies have been
-satisfied completed.
-<\fIdependency_list\fR> is of the form 
-<\fItype:job_id[:job_id][,type:job_id[:job_id]]\fR>.
-Many jobs can share the same dependency and these jobs may even belong to
-different  users. The  value may be changed after job submission using the
-scontrol command.
-.PD
-.RS
-.TP
-\fBafter:job_id[:jobid...]\fR
-This job can begin execution after the specified jobs have begun
-execution.
-.TP
-\fBafterany:job_id[:jobid...]\fR
-This job can begin execution after the specified jobs have terminated.
-.TP
-\fBafternotok:job_id[:jobid...]\fR
-This job can begin execution after the specified jobs have terminated
-in some failed state (non-zero exit code, node failure, timed out, etc).
-.TP
-\fBafterok:job_id[:jobid...]\fR
-This job can begin execution after the specified jobs have successfully
-executed (ran to completion with non-zero exit code).
-.RE
-
 .TP
 \fB\-e\fR, \fB\-\-error\fR[=]<\fIfilename pattern\fR>
 Instruct SLURM to connect the batch script's standard error directly to the 
@@ -531,6 +503,34 @@ The maximum resident set size
 .TP
 \fBSTACK\fR
 The maximum stack size
+.RE
+
+.TP 
+\fB\-P\fR, \fB\-\-dependency\fR[=]<\fIdependency_list\fR>
+Defer the start of this job until the specified dependencies have been
+satisfied completed.
+<\fIdependency_list\fR> is of the form 
+<\fItype:job_id[:job_id][,type:job_id[:job_id]]\fR>.
+Many jobs can share the same dependency and these jobs may even belong to
+different  users. The  value may be changed after job submission using the
+scontrol command.
+.PD
+.RS
+.TP
+\fBafter:job_id[:jobid...]\fR
+This job can begin execution after the specified jobs have begun
+execution.
+.TP
+\fBafterany:job_id[:jobid...]\fR
+This job can begin execution after the specified jobs have terminated.
+.TP
+\fBafternotok:job_id[:jobid...]\fR
+This job can begin execution after the specified jobs have terminated
+in some failed state (non-zero exit code, node failure, timed out, etc).
+.TP
+\fBafterok:job_id[:jobid...]\fR
+This job can begin execution after the specified jobs have successfully
+executed (ran to completion with non-zero exit code).
 .RE
 
 .TP
