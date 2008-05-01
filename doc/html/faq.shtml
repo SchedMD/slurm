@@ -76,6 +76,8 @@ errors generated?</a></li>
 &quot;Unable to accept new connection: Too many open files&quot;?</li>
 <li><a href="#slurmd_log">Why does the setting of <i>SlurmdDebug</i> fail 
 to log job step information at the appropriate level?</li>
+<li><a href="#rpm">Why isn't the auth_none.so (or other file) in a 
+SLURM RPM?</li>
 </ol>
 
 <h2>For Users</h2>
@@ -899,8 +901,18 @@ an option of <i>--debug=#</i> will result in the desired level of
 detail being logged in the <i>SlurmdLogFile</i> plus the output 
 of the program.
 
+<p><a name="rpm"><b>27. Why isn't the auth_none.so (or other file) in a 
+SLURM RPM?</b><br>
+The auth_none plugin is in a separete RPM and not built by default.
+Using the auth_none plugin means that SLURM communications are not 
+authenticated, so you probably do not want to run in this mode of operation 
+except for testing purposes. If you want to build the auth_none RPM then 
+add <i>--with auth_none</i> on the rpmbuild command line or add 
+<i>%_with_auth_none</i> to your ~/rpmmacros file. See the file slurm.spec 
+in the SLURM distribution for a list of other options.
+
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 25 March 2008</p>
+<p style="text-align:center;">Last modified 1 May 2008</p>
 
 <!--#include virtual="footer.txt"-->
