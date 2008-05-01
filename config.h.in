@@ -110,6 +110,9 @@
 /* define if numa library installed */
 #undef HAVE_NUMA
 
+/* define if you have openssl. */
+#undef HAVE_OPENSSL
+
 /* define if you have the PAM library */
 #undef HAVE_PAM
 
