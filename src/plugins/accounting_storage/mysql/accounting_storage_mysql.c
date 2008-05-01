@@ -698,7 +698,7 @@ static int _mysql_acct_check_tables(MYSQL *acct_mysql_db)
 		{ "id", "int not null" },
 		{ "period_start", "int unsigned not null" },
 		{ "cpu_count", "int unsigned default 0" },
-		{ "alloc_cpu_secs", "int unsigned default 0" },
+		{ "alloc_cpu_secs", "bigint default 0" },
 		{ NULL, NULL}		
 	};
 
@@ -718,11 +718,11 @@ static int _mysql_acct_check_tables(MYSQL *acct_mysql_db)
 		{ "deleted", "tinyint default 0" },
 		{ "cluster", "tinytext not null" },
 		{ "period_start", "int unsigned not null" },
-		{ "cpu_count", "int unsigned default 0" },
-		{ "alloc_cpu_secs", "int unsigned default 0" },
-		{ "down_cpu_secs", "int unsigned default 0" },
-		{ "idle_cpu_secs", "int unsigned default 0" },
-		{ "resv_cpu_secs", "int unsigned default 0" },
+		{ "cpu_count", "int default 0" },
+		{ "alloc_cpu_secs", "bigint default 0" },
+		{ "down_cpu_secs", "bigint default 0" },
+		{ "idle_cpu_secs", "bigint default 0" },
+		{ "resv_cpu_secs", "bigint default 0" },
 		{ NULL, NULL}		
 	};
 
