@@ -15,7 +15,6 @@
 
 AC_DEFUN([X_AC_SLURM_WITH_SSL], [
 
-  ac_slurm_with_ssl=no
   ssl_default_dirs="/usr/local/openssl64 /usr/local/openssl /usr/lib/openssl    \
                     /usr/local/ssl /usr/lib/ssl /usr/local \
                     /usr/pkg /opt /opt/openssl"
@@ -143,7 +142,11 @@ AC_DEFUN([X_AC_SLURM_WITH_SSL], [
   else
     SSL_LIBS=""
   fi
-  
+
+  if test ! -z "$ac_have_openssl" ; then
+    AC_DEFINE(HAVE_OPENSSL, 1, [define if you have openssl.])
+  fi
+
   LIBS="$saved_LIBS"
   CPPFLAGS="$saved_CPPFLAGS"
   LDFLAGS="$saved_LDFLAGS"

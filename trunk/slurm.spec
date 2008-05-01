@@ -327,6 +327,8 @@ test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/task_affinity.so &&
    echo %{_libdir}/slurm/task_affinity.so >> $LIST
 test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/crypto_openssl.so &&
    echo %{_libdir}/slurm/crypto_openssl.so >> $LIST
+test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/accounting_storage_gold.so
+   echo %{_libdir}/slurm/accounting_storage_gold.so >> $LIST
 
 # Build file lists for optional plugin packages
 for plugin in auth_authd; do
@@ -468,7 +470,6 @@ rm -rf $RPM_BUILD_ROOT
 %defattr(-,root,root)
 %dir %{_libdir}/slurm
 %{_libdir}/slurm/accounting_storage_filetxt.so
-%{_libdir}/slurm/accounting_storage_gold.so
 %{_libdir}/slurm/accounting_storage_mysql.so
 %{_libdir}/slurm/accounting_storage_none.so
 %{_libdir}/slurm/accounting_storage_pgsql.so
