@@ -26498,11 +26498,12 @@ fi
   		fi
   	done
 
-  	if test -z "$ssldir" ; then
-  		ssldir="(system)"
-  	fi
-
-  	ac_cv_openssldir=$ssldir
+	if test ! -z "$ac_have_openssl" ; then
+		ac_cv_openssldir=$ssldir
+	else
+		{ echo "$as_me:$LINENO: WARNING: Could not find working OpenSSL library" >&5
+echo "$as_me: WARNING: Could not find working OpenSSL library" >&2;}
+	fi
 
 fi
 { echo "$as_me:$LINENO: result: $ac_cv_openssldir" >&5
@@ -26511,7 +26512,7 @@ echo "${ECHO_T}$ac_cv_openssldir" >&6; }
 
   if test ! -z "$ac_have_openssl" ; then
     SSL_LIBS="$SSL_LIB_TEST"
-    if (test ! -z "$ac_cv_openssldir" && test "x$ac_cv_openssldir" != "x(system)") ; then
+    if (test ! -z "$ac_cv_openssldir") ; then
   	  	ssldir=$ac_cv_openssldir
   	if test ! -z "$ssldir" -a "x$ssldir" != "x/usr"; then
   		# Try to use $ssldir/lib if it exists, otherwise

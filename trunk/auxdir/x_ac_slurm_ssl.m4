@@ -106,17 +106,17 @@ AC_DEFUN([X_AC_SLURM_WITH_SSL], [
   		fi
   	done
   
-  	if test -z "$ssldir" ; then
-  		ssldir="(system)"
-  	fi
-  
-  	ac_cv_openssldir=$ssldir
+	if test ! -z "$ac_have_openssl" ; then
+		ac_cv_openssldir=$ssldir
+	else
+		AC_MSG_WARN([Could not find working OpenSSL library])
+	fi
     ])
   fi
 
   if test ! -z "$ac_have_openssl" ; then
     SSL_LIBS="$SSL_LIB_TEST"
-    if (test ! -z "$ac_cv_openssldir" && test "x$ac_cv_openssldir" != "x(system)") ; then
+    if (test ! -z "$ac_cv_openssldir") ; then
   	dnl Need to recover ssldir - test above runs in subshell
   	ssldir=$ac_cv_openssldir
   	if test ! -z "$ssldir" -a "x$ssldir" != "x/usr"; then
@@ -142,7 +142,7 @@ AC_DEFUN([X_AC_SLURM_WITH_SSL], [
   else
     SSL_LIBS=""
   fi
-
+  
   if test ! -z "$ac_have_openssl" ; then
     AC_DEFINE(HAVE_OPENSSL, 1, [define if you have openssl.])
   fi
