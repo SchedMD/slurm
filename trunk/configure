@@ -26500,9 +26500,6 @@ fi
 
 	if test ! -z "$ac_have_openssl" ; then
 		ac_cv_openssldir=$ssldir
-	else
-		{ echo "$as_me:$LINENO: WARNING: Could not find working OpenSSL library" >&5
-echo "$as_me: WARNING: Could not find working OpenSSL library" >&2;}
 	fi
 
 fi
@@ -26512,6 +26509,11 @@ echo "${ECHO_T}$ac_cv_openssldir" >&6; }
 
   if test ! -z "$ac_have_openssl" ; then
     SSL_LIBS="$SSL_LIB_TEST"
+
+cat >>confdefs.h <<\_ACEOF
+#define HAVE_OPENSSL 1
+_ACEOF
+
     if (test ! -z "$ac_cv_openssldir") ; then
   	  	ssldir=$ac_cv_openssldir
   	if test ! -z "$ssldir" -a "x$ssldir" != "x/usr"; then
@@ -26581,14 +26583,8 @@ rm -f core conftest.err conftest.$ac_objext conftest_ipa8_conftest.oo \
       conftest$ac_exeext conftest.$ac_ext
   else
     SSL_LIBS=""
-  fi
-
-  if test ! -z "$ac_have_openssl" ; then
-
-cat >>confdefs.h <<\_ACEOF
-#define HAVE_OPENSSL 1
-_ACEOF
-
+    { echo "$as_me:$LINENO: WARNING: Could not find working OpenSSL library" >&5
+echo "$as_me: WARNING: Could not find working OpenSSL library" >&2;}
   fi
 
   LIBS="$saved_LIBS"
