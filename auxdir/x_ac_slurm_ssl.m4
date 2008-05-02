@@ -108,14 +108,13 @@ AC_DEFUN([X_AC_SLURM_WITH_SSL], [
   
 	if test ! -z "$ac_have_openssl" ; then
 		ac_cv_openssldir=$ssldir
-	else
-		AC_MSG_WARN([Could not find working OpenSSL library])
 	fi
     ])
   fi
 
   if test ! -z "$ac_have_openssl" ; then
     SSL_LIBS="$SSL_LIB_TEST"
+    AC_DEFINE(HAVE_OPENSSL, 1, [define if you have openssl.])
     if (test ! -z "$ac_cv_openssldir") ; then
   	dnl Need to recover ssldir - test above runs in subshell
   	ssldir=$ac_cv_openssldir
@@ -141,12 +140,9 @@ AC_DEFUN([X_AC_SLURM_WITH_SSL], [
                [Define to 1 if function EVP_MD_CTX_cleanup exists.])],[])
   else
     SSL_LIBS=""
+    AC_MSG_WARN([Could not find working OpenSSL library])
   fi
   
-  if test ! -z "$ac_have_openssl" ; then
-    AC_DEFINE(HAVE_OPENSSL, 1, [define if you have openssl.])
-  fi
-
   LIBS="$saved_LIBS"
   CPPFLAGS="$saved_CPPFLAGS"
   LDFLAGS="$saved_LDFLAGS"
