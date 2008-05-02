@@ -220,16 +220,17 @@ to store the data.
 Ideally this should be the host on which slurmdbd executes.</li>
 
 <li><b>StorageLoc</b>:
-Specifies the location of the database where accounting 
-records are written, for databases the default database is slurm_acct_db.</li>
+Specifies the name of the database where accounting 
+records are written, for databases the default database is
+slurm_acct_db.  Note the name can not have a '/' in it or the
+default will be used.</li>
 
 <li><b>StoragePass</b>:
 Define the password used to gain access to the database to store 
 the job accounting data.</li>
 
 <li><b>StoragePort</b>:
-Define the password used to gain access to the database to store 
-the job accounting data.</li>
+Define the port on which the database is listening.</li>
 
 <li><b>StorageType</b>:
 Define the accounting storage mechanism type.
