@@ -1149,7 +1149,7 @@ _wait_for_any_task(slurmd_job_t *job, bool waitflag)
 			if (job->task_epilog) {
 				_run_script_as_user("user task_epilog",
 						    job->task_epilog,
-						    job, 2, job->env);
+						    job, 5, job->env);
 			}
 			if (conf->task_epilog) {
 				char *my_epilog;
