@@ -17,7 +17,7 @@ AC_DEFUN([X_AC_SLURM_WITH_SSL], [
 
   ssl_default_dirs="/usr/local/openssl64 /usr/local/openssl /usr/lib/openssl    \
                     /usr/local/ssl /usr/lib/ssl /usr/local \
-                    /usr/pkg /opt /opt/openssl"
+                    /usr/pkg /opt /opt/openssl /usr"
   
   AC_SUBST(SSL_LDFLAGS)
   AC_SUBST(SSL_LIBS)
@@ -57,7 +57,8 @@ AC_DEFUN([X_AC_SLURM_WITH_SSL], [
   		if test ! -z "$ssldir" -a ! -d "$ssldir" ; then
   			continue;
   		fi
-  		if test ! -z "$ssldir" -a "x$ssldir" != "x/usr"; then
+  		sslincludedir="$ssldir"
+  		if test ! -z "$ssldir"; then
   			# Try to use $ssldir/lib if it exists, otherwise 
   			# $ssldir
   			if test -d "$ssldir/lib" ; then
@@ -74,12 +75,16 @@ AC_DEFUN([X_AC_SLURM_WITH_SSL], [
   			# Try to use $ssldir/include if it exists, otherwise 
   			# $ssldir
   			if test -d "$ssldir/include" ; then
+				sslincludedir="$ssldir/include"
   				CPPFLAGS="-I$ssldir/include $saved_CPPFLAGS"
   			else
   				CPPFLAGS="-I$ssldir $saved_CPPFLAGS"
   			fi
   		fi
-  
+		test -f "$sslincludedir/openssl/rand.h" || continue
+		test -f "$sslincludedir/openssl/hmac.h" || continue
+		test -f "$sslincludedir/openssl/sha.h" || continue
+
   		# Basic test to check for compatible version and correct linking
   		AC_RUN_IFELSE([AC_LANG_SOURCE([[
   #include <stdlib.h>
