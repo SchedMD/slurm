@@ -35,6 +35,15 @@
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
+ *****************************************************************************
+ * Notes on mysql configuration 
+ *	Assumes mysql is installed as user root
+ *	Assumes SlurmUser is configured as user slurm
+ * # mysqladmin create <db_name>
+ *	The <db_name> goes into slurmdbd.conf as StorageLoc
+ * # mysql --user=root -p
+ * mysql> GRANT ALL ON *.* TO 'slurm'@'localhost' IDENTIFIED BY PASSWORD 'pw';
+ * mysql> GRANT SELECT, INSERT ON *.* TO 'slurm'@'localhost';
 \*****************************************************************************/
 
 #include <strings.h>
