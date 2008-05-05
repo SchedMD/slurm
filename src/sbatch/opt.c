@@ -168,7 +168,7 @@ static void _process_env_var(env_vars_t *e, const char *val);
 static uint16_t _parse_pbs_mail_type(const char *arg);
 
 static void  _usage(void);
-static char *_fullpath(const char *filename);
+static  void _fullpath(char **filename, const char *cwd);
 static void _set_options(int argc, char **argv);
 static void _set_pbs_options(int argc, char **argv);
 static void _parse_pbs_resource_list(char *rl);
@@ -956,7 +956,7 @@ static void _set_options(int argc, char **argv)
 			if (strncasecmp(optarg, "none", (size_t)4) == 0)
 				opt.efname = xstrdup("/dev/null");
 			else
-				opt.efname = _fullpath(optarg);
+				opt.efname = xstrdup(optarg);
 			break;
 		case 'F':
 			xfree(opt.nodelist);
@@ -984,7 +984,7 @@ static void _set_options(int argc, char **argv)
 			if (strncasecmp(optarg, "none", (size_t)4) == 0)
 				opt.ifname = xstrdup("/dev/null");
 			else
-				opt.ifname = _fullpath(optarg);
+				opt.ifname = xstrdup(optarg);
 			break;
 		case 'I':
 			opt.immediate = true;
@@ -1030,7 +1030,7 @@ static void _set_options(int argc, char **argv)
 			if (strncasecmp(optarg, "none", (size_t)4) == 0)
 				opt.ofname = xstrdup("/dev/null");
 			else
-				opt.ofname = _fullpath(optarg);
+				opt.ofname = xstrdup(optarg);
 			break;
 		case 'O':
 			opt.overcommit = true;
@@ -1719,6 +1719,10 @@ static bool _opt_verify(void)
 		verified = false;
 	}
 
+	_fullpath(&opt.efname, opt.cwd);
+	_fullpath(&opt.ifname, opt.cwd);
+	_fullpath(&opt.ofname, opt.cwd);
+
 	if (opt.mincpus < opt.cpus_per_task)
 		opt.mincpus = opt.cpus_per_task;
 
@@ -1996,23 +2000,18 @@ _get_int(const char *arg, const char *what)
  * Return an absolute path for the "filename".  If "filename" is already
  * an absolute path, it returns a copy.  Free the returned with xfree().
  */
-static char *_fullpath(const char *filename)
+static void _fullpath(char **filename, const char *cwd)
 {
-	char cwd[BUFSIZ];
 	char *ptr = NULL;
 
-	if (filename[0] == '/') {
-		return xstrdup(filename);
-	} else {
-		if (getcwd(cwd, BUFSIZ) == NULL) {
-			error("could not get current working directory");
-			return NULL;
-		}
-		ptr = xstrdup(cwd);
-		xstrcat(ptr, "/");
-		xstrcat(ptr, filename);
-		return ptr;
-	}
+	if ((*filename == NULL) || (*filename[0] == '/'))
+		return;
+
+	ptr = xstrdup(cwd);
+	xstrcat(ptr, "/");
+	xstrcat(ptr, *filename);
+	xfree(*filename);
+	*filename = ptr;
 }
 
 #define tf_(b) (b == true) ? "true" : "false"
