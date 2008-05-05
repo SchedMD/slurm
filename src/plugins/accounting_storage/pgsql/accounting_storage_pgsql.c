@@ -147,7 +147,7 @@ static int _pgsql_acct_check_tables(PGconn *acct_pgsql_db,
 	storage_field_t acct_coord_table_fields[] = {
 		{ "deleted", "smallint default 0" },
 		{ "acct", "text not null" },
-		{ "user", "text not null" },
+		{ "user_name", "text not null" },
 		{ NULL, NULL}		
 	};
 
@@ -167,7 +167,7 @@ static int _pgsql_acct_check_tables(PGconn *acct_pgsql_db,
 		{ "mod_time", "bigint default 0" },
 		{ "deleted", "smallint default 0" },
 		{ "id", "serial" },
-		{ "user", "text not null default ''" },
+		{ "user_name", "text not null default ''" },
 		{ "acct", "text not null" },
 		{ "cluster", "text not null" },
 		{ "partition", "text not null default ''" },
@@ -380,7 +380,8 @@ static int _pgsql_acct_check_tables(PGconn *acct_pgsql_db,
 		if(pgsql_db_create_table(acct_pgsql_db, 
 					 acct_coord_table, 
 					 acct_coord_table_fields,
-					 ", primary key (acct(20), user(20)))")
+					 ", primary key (acct(20), "
+					 "user_name(20)))")
 		   == SLURM_ERROR)
 			return SLURM_ERROR;
 	} else {
@@ -453,7 +454,7 @@ static int _pgsql_acct_check_tables(PGconn *acct_pgsql_db,
 			   acct_pgsql_db, 
 			   assoc_table, assoc_table_fields,
 			   ", primary key (id), "
-			   "unique index (user(20), acct(20), "
+			   "unique index (user_name(20), acct(20), "
 			   "cluster(20), partition(20)))") 
 		   == SLURM_ERROR)
 			return SLURM_ERROR;
