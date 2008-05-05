@@ -66,7 +66,7 @@ mkinstalldirs = $(install_sh) -d
 CONFIG_HEADER = $(top_builddir)/config.h $(top_builddir)/slurm/slurm.h
 CONFIG_CLEAN_FILES =
 LTLIBRARIES = $(noinst_LTLIBRARIES)
-am__DEPENDENCIES_1 = $(top_builddir)/src/common/libcommon.la
+am__DEPENDENCIES_1 = $(top_builddir)/src/common/.libs/libcommon.a
 am__libslurm_gold_la_SOURCES_DIST = gold_interface.c gold_interface.h \
 	base64.c base64.h
 @HAVE_OPENSSL_TRUE@am_libslurm_gold_la_OBJECTS = gold_interface.lo \
@@ -281,7 +281,7 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
 INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common
-COMMON_LIBS = $(top_builddir)/src/common/libcommon.la -lpthread
+COMMON_LIBS = $(top_builddir)/src/common/.libs/libcommon.a -lpthread
 @HAVE_OPENSSL_FALSE@noinst_LTLIBRARIES = \
 @HAVE_OPENSSL_FALSE@	libslurm_mysql.la \
 @HAVE_OPENSSL_FALSE@	libslurm_pgsql.la
@@ -294,19 +294,19 @@ COMMON_LIBS = $(top_builddir)/src/common/libcommon.la -lpthread
 @HAVE_OPENSSL_TRUE@libslurm_gold_la_SOURCES = gold_interface.c gold_interface.h \
 @HAVE_OPENSSL_TRUE@	base64.c base64.h
 
-@HAVE_OPENSSL_TRUE@libslurm_gold_la_LIBADD = $(COMMON_LIBS) 
+@HAVE_OPENSSL_TRUE@libslurm_gold_la_LIBADD = $(COMMON_LIBS)
 @HAVE_OPENSSL_TRUE@libslurm_gold_la_LDFLAGS = $(LIB_LDFLAGS)
-@HAVE_OPENSSL_TRUE@libslurm_gold_la_DEPENDENCIES = $(top_builddir)/src/common/libcommon.la 
+@HAVE_OPENSSL_TRUE@libslurm_gold_la_DEPENDENCIES = $(top_builddir)/src/common/.libs/libcommon.a  
 libslurm_mysql_la_SOURCES = mysql_common.c mysql_common.h
 libslurm_pgsql_la_SOURCES = pgsql_common.c pgsql_common.h
-libslurm_mysql_la_LIBADD = $(COMMON_LIBS) $(MYSQL_LIBS)
-libslurm_pgsql_la_LIBADD = $(COMMON_LIBS) $(PGSQL_LIBS)
+libslurm_mysql_la_LIBADD = $(COMMON_LIBS) $(MYSQL_LIBS) 
+libslurm_pgsql_la_LIBADD = $(COMMON_LIBS) $(PGSQL_LIBS) 
 libslurm_mysql_la_LDFLAGS = $(LIB_LDFLAGS)
 libslurm_pgsql_la_LDFLAGS = $(LIB_LDFLAGS)
 libslurm_mysql_la_CFLAGS = $(MYSQL_CFLAGS)
 libslurm_pgsql_la_CFLAGS = $(PGSQL_CFLAGS)
-libslurm_mysql_la_DEPENDENCIES = $(top_builddir)/src/common/libcommon.la 
-libslurm_pgsql_la_DEPENDENCIES = $(top_builddir)/src/common/libcommon.la 
+libslurm_mysql_la_DEPENDENCIES = $(top_builddir)/src/common/.libs/libcommon.a 
+libslurm_pgsql_la_DEPENDENCIES = $(top_builddir)/src/common/.libs/libcommon.a  
 all: all-am
 
 .SUFFIXES:

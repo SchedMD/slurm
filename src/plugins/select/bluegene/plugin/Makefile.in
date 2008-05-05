@@ -98,22 +98,19 @@ PROGRAMS = $(sbin_PROGRAMS)
 am_sfree_OBJECTS = sfree.$(OBJEXT) opts.$(OBJEXT) \
 	bridge_linker.$(OBJEXT)
 sfree_OBJECTS = $(am_sfree_OBJECTS)
-sfree_DEPENDENCIES = $(top_builddir)/src/common/libcommon.la \
-	$(top_builddir)/src/api/libslurm.la
+sfree_DEPENDENCIES = $(top_builddir)/src/api/libslurmhelper.la
 sfree_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(sfree_LDFLAGS) \
 	$(LDFLAGS) -o $@
 am_slurm_epilog_OBJECTS = slurm_epilog.$(OBJEXT)
 slurm_epilog_OBJECTS = $(am_slurm_epilog_OBJECTS)
-slurm_epilog_DEPENDENCIES = $(top_builddir)/src/common/libcommon.la \
-	$(top_builddir)/src/api/libslurm.la
+slurm_epilog_DEPENDENCIES = $(top_builddir)/src/api/libslurmhelper.la
 slurm_epilog_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
 	$(slurm_epilog_LDFLAGS) $(LDFLAGS) -o $@
 am_slurm_prolog_OBJECTS = slurm_prolog.$(OBJEXT)
 slurm_prolog_OBJECTS = $(am_slurm_prolog_OBJECTS)
-slurm_prolog_DEPENDENCIES = $(top_builddir)/src/common/libcommon.la \
-	$(top_builddir)/src/api/libslurm.la
+slurm_prolog_DEPENDENCIES = $(top_builddir)/src/api/libslurmhelper.la
 slurm_prolog_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
 	$(slurm_prolog_LDFLAGS) $(LDFLAGS) -o $@
@@ -330,15 +327,9 @@ select_bluegene_la_LIBADD = ../block_allocator/libbluegene_block_allocator.la
 # MPIRUN dynamic lib.
 libsched_if64_la_SOURCES = libsched_if64.c 
 libsched_if64_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
-sfree_LDADD = $(top_builddir)/src/common/libcommon.la \
-		$(top_builddir)/src/api/libslurm.la
-
-slurm_prolog_LDADD = $(top_builddir)/src/common/libcommon.la \
-		$(top_builddir)/src/api/libslurm.la
-
-slurm_epilog_LDADD = $(top_builddir)/src/common/libcommon.la \
-		$(top_builddir)/src/api/libslurm.la
-
+sfree_LDADD = $(top_builddir)/src/api/libslurmhelper.la
+slurm_prolog_LDADD = $(top_builddir)/src/api/libslurmhelper.la
+slurm_epilog_LDADD = $(top_builddir)/src/api/libslurmhelper.la
 sfree_SOURCES = sfree.c sfree.h opts.c \
 		../block_allocator/bridge_linker.c \
 		../block_allocator/bridge_linker.h 

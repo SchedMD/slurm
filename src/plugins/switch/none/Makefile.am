@@ -13,5 +13,5 @@ switch_none_la_SOURCES = switch_none.c
 switch_none_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
 
 if HAVE_AIX
-switch_none_la_LIBADD = $(top_builddir)/src/common/libcommon.la
+switch_none_la_LIBADD = $(top_builddir)/src/common/.libs/libcommon.a
 endif
