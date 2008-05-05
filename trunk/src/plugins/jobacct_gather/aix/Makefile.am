@@ -15,4 +15,4 @@ jobacct_gather_aix_la_SOURCES = jobacct_gather_aix.c \
 
 jobacct_gather_aix_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
 jobacct_gather_aix_la_LIBADD  =  \
-	$(top_builddir)/src/common/libcommon.la -lpthread 
+	$(top_builddir)/src/common/.libs/libcommon.a -lpthread 

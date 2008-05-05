@@ -75,7 +75,7 @@ am__installdirs = "$(DESTDIR)$(pkglibdir)"
 pkglibLTLIBRARIES_INSTALL = $(INSTALL)
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
 select_cons_res_la_DEPENDENCIES =  \
-	$(top_builddir)/src/common/libcommon.la
+	$(top_builddir)/src/common/.libs/libcommon.a
 am_select_cons_res_la_OBJECTS = select_cons_res.lo dist_tasks.lo
 select_cons_res_la_OBJECTS = $(am_select_cons_res_la_OBJECTS)
 select_cons_res_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
@@ -275,7 +275,7 @@ select_cons_res_la_SOURCES = select_cons_res.c select_cons_res.h \
                               dist_tasks.c dist_tasks.h
 
 select_cons_res_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
-select_cons_res_la_LIBADD = $(top_builddir)/src/common/libcommon.la
+select_cons_res_la_LIBADD = $(top_builddir)/src/common/.libs/libcommon.a
 all: all-am
 
 .SUFFIXES:

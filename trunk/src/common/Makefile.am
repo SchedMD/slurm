@@ -1,4 +1,11 @@
 # Makefile for common library 
+# If you are linking to this lib in a plugin you will need to link to 
+# $(top_builddir)/src/common/.libs/libcommon.a
+# if you are linking to a stand alone program link to
+# $(top_builddir)/src/common/libcommon.la
+# This avoids having multiple symbols running around when there should 
+# only be 1 address per symbol.  If you link to the libcommon.la in
+# a plugin you will get 2 addresses for one symbol which could lead to problems.
 
 AUTOMAKE_OPTIONS = foreign
 

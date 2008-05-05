@@ -12,6 +12,6 @@ accounting_storage_filetxt_la_SOURCES = accounting_storage_filetxt.c \
 		filetxt_jobacct_process.c filetxt_jobacct_process.h
 accounting_storage_filetxt_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
 accounting_storage_filetxt_la_LIBADD  =  \
-	$(top_builddir)/src/common/libcommon.la -lpthread
+	$(top_builddir)/src/common/.libs/libcommon.a -lpthread
 accounting_storage_filetxt_la_DEPENDENCIES  = \
-	$(top_builddir)/src/common/libcommon.la 
+	$(top_builddir)/src/common/.libs/libcommon.a 

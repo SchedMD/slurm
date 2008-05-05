@@ -12,7 +12,6 @@ INCLUDES = -I$(top_srcdir) $(BG_INCLUDES)
 # 	block_allocator.h bridge_linker.h
 
 # block_allocator_LDADD = \
-# 	$(top_builddir)/src/common/libcommon.la \
 # 	$(top_builddir)/src/api/libslurm.la
 
 
