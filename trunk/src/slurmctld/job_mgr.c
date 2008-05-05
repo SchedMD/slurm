@@ -153,6 +153,9 @@ static void _signal_job(struct job_record *job_ptr, int signal);
 static void _suspend_job(struct job_record *job_ptr, uint16_t op);
 static int  _suspend_job_nodes(struct job_record *job_ptr);
 static bool _top_priority(struct job_record *job_ptr);
+static bool _validate_acct_policy(job_desc_msg_t *job_desc,
+				  struct part_record *part_ptr,
+				  acct_association_rec_t *assoc_ptr);
 static int  _validate_job_create_req(job_desc_msg_t * job_desc);
 static int  _validate_job_desc(job_desc_msg_t * job_desc_msg, int allocate,
 			       uid_t submit_uid);
@@ -1885,6 +1888,13 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 	}
 	if (job_desc->account == NULL)
 		job_desc->account = xstrdup(assoc_rec.acct);
+	if (accounting_enforce &&
+	    (!_validate_acct_policy(job_desc, part_ptr, &assoc_rec))) {
+		info("_job_create: exceeded association's node or time limit "
+		     "for user %u", job_desc->user_id);
+		error_code = ESLURM_ACCOUNTING_POLICY;
+		return error_code;
+	}
 
 	/* check if select partition has sufficient resources to satisfy
 	 * the request */
@@ -5255,4 +5265,54 @@ extern void update_job_nodes_completing(void)
 		job_ptr->nodes_completing = bitmap2node_name(job_ptr->node_bitmap);
 	}
 	list_iterator_destroy(job_iterator);
+}
+
+static bool _validate_acct_policy(job_desc_msg_t *job_desc,
+				  struct part_record *part_ptr,
+				  acct_association_rec_t *assoc_ptr)
+{
+#if 0
+	uint32_t time_limit;
+
+	if (assoc_ptr->max_wall_duration_per_job) {
+		/* Round up, seconds to minutes */
+		time_limit = (assoc_ptr->max_wall_duration_per_job + 59) / 60;
+		if (job_desc->time_limit == NO_VAL) {
+			if (part_ptr->max_time == INFINITE)
+				job_desc->time_limit = time_limit;
+			else
+				job_desc->time_limit = MIN(time_limit, 
+							   part_ptr->max_time);
+		} else if (job_desc->time_limit > time_limit) {
+			info("job %u for user %u: "
+			     "time limit %u exceeds account max %u",
+			     job_desc->job_id, job_desc->user_id, 
+			     job_desc->time_limit, time_limit);
+			return false;
+		}
+	}
+
+	if (assoc_ptr->max_nodes_per_job) {
+		if (job_desc->max_nodes == 0)
+			job_desc->max_nodes = assoc_ptr->max_nodes_per_job;
+		else if (job_desc->max_nodes > assoc_ptr->max_nodes_per_job) {
+			if (job_desc->min_nodes > 
+			    assoc_ptr->max_nodes_per_job) {
+				info("job %u for user %u: "
+				     "node limit %u exceeds account max %u",
+				     job_desc->job_id, job_desc->user_id, 
+				     job_desc->min_nodes, 
+				     assoc_ptr->max_nodes_per_job);
+			return false;
+			}
+			job_desc->max_nodes = assoc_ptr->max_nodes_per_job;
+		}
+	}
+
+	/* NOTE: We can't enforce assoc_ptr->max_cpu_secs_per_job at this
+	 * time because we don't have access to a CPU count for the job
+	 * due to how all of the job's specifications interact */
+
+	return true;
+#endif
 }
