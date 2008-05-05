@@ -5312,7 +5312,6 @@ static bool _validate_acct_policy(job_desc_msg_t *job_desc,
 	/* NOTE: We can't enforce assoc_ptr->max_cpu_secs_per_job at this
 	 * time because we don't have access to a CPU count for the job
 	 * due to how all of the job's specifications interact */
-
-	return true;
 #endif
+	return true;
 }
