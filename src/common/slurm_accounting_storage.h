@@ -90,8 +90,8 @@ typedef struct {
 				 * at one time */
 	uint32_t max_nodes_per_job; /* max number of nodes this
 				     * association can allocate per job */
-	uint32_t max_wall_duration_per_job; /* longest time this
-					     * association can run a job */
+	uint32_t max_wall_duration_per_job; /* longest time this association
+					     * can run a job (seconds) */
 	List partition_list;	/* list of char * */
 	char *parent_acct;	/* name of parent account */
 

@@ -215,6 +215,8 @@ static slurm_errtab_t slurm_errtab[] = {
 	{ ESLURM_NEED_RESTART,
 	  "The node configuration changes that were made require restart "
 	  "of the slurmctld daemon to take effect"},
+	{ ESLURM_ACCOUNTING_POLICY,
+	  "Job violates accounting policy (the user's size and/or time limits)"},
 
 	/* slurmd error codes */
 
