@@ -202,7 +202,7 @@ void _help_msg(void)
 	       "    intermediate steps\n"
 	       "-u <uid>, --uid <uid>\n"
 	       "    Select only jobs submitted by the user with uid <uid>.  Only\n"
-	       "    root users are allowed to specify a uid other than their own.\n"
+	       "    root users are allowed to specify a uid other than their own -1 for all users.\n"
 	       "--usage\n"
 	       "    Pointer to this message.\n"
 	       "-v, --verbose\n"
@@ -235,6 +235,7 @@ void _init_params()
 	params.opt_purge = 0;		/* --purge */
 	params.opt_total = 0;		/* --total */
 	params.opt_uid = -1;		/* --uid (-1=wildcard, 0=root) */
+	params.opt_uid_set = 0;
 	params.opt_verbose = 0;		/* --verbose */
 	params.opt_expire_timespec = NULL; /* --expire= */
 	params.opt_field_list = NULL;	/* --fields= */
@@ -292,6 +293,12 @@ int get_data(void)
 
 	itr = list_iterator_create(jobs);
 	while((job = list_next(itr))) {
+		if(job->user) {
+			struct	passwd *pw = NULL;		 
+			if ((pw=getpwnam(job->user)))
+				job->uid = pw->pw_uid;
+		}
+		
 		if(!list_count(job->steps)) 
 			continue;
 		
@@ -367,7 +374,8 @@ void parse_command_line(int argc, char **argv)
 
 	_init_params();
 
-	if ((i=getuid()))	/* default to current user unless root*/
+	if ((i=getuid()))
+		/* default to current user unless root*/
 		params.opt_uid = i;
 
 	opterr = 1;		/* Let getopt report problems to the user */
@@ -547,7 +555,7 @@ void parse_command_line(int argc, char **argv)
 			break;
 
 		case 'u':
-			if (isdigit((int) *optarg))
+			if (isdigit((int) *optarg) || atoi(optarg) == -1)
 				params.opt_uid = atoi(optarg);
 			else {
 				struct passwd *pwd;

@@ -78,6 +78,8 @@ errors generated?</a></li>
 to log job step information at the appropriate level?</li>
 <li><a href="#rpm">Why isn't the auth_none.so (or other file) in a 
 SLURM RPM?</li>
+<li><a href="#slurmdbd">Why should I use the slurmdbd instead of the
+regular database plugins?</li>
 </ol>
 
 <h2>For Users</h2>
@@ -910,6 +912,24 @@ except for testing purposes. If you want to build the auth_none RPM then
 add <i>--with auth_none</i> on the rpmbuild command line or add 
 <i>%_with_auth_none</i> to your ~/rpmmacros file. See the file slurm.spec 
 in the SLURM distribution for a list of other options.
+
+<p><a name="slurmdbd"><b>28. Why should I use the slurmdbd instead of the
+regular database plugins?</b><br>
+While the normal storage plugins will work fine without the added
+layer of the slurmdbd there are some great benifits to using the
+slurmdbd.
+
+1. Added security.  Using the slurmdbd you can have an authenticated
+   connection to the database.
+2. Off loading processing from the controller.  With the slurmdbd there is no
+   slow down to the controller due to a slow or overloaded database.
+3. Keeping enterprise wide accounting from all slurm clusters in one database.
+   The slurmdbd is multi-threaded and designed to handle all the
+   accounting for the entire enterprise.
+4. With the new database plugins 1.3+ you can query with sacct
+   accounting stats from any node slurm is installed on.  With the
+   slurmdbd you can also query any cluster using the slurmdbd from any
+   other cluster's nodes.
 
 <p class="footer"><a href="#top">top</a></p>
 

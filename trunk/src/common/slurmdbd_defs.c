@@ -1753,6 +1753,7 @@ slurmdbd_pack_job_start_msg(dbd_job_start_msg_t *msg, Buf buffer)
 	pack32(msg->alloc_cpus, buffer);
 	pack32(msg->assoc_id, buffer);
 	packstr(msg->block_id, buffer);
+	pack32(msg->db_index, buffer);
 	pack_time(msg->eligible_time, buffer);
 	pack32(msg->gid, buffer);
 	pack32(msg->job_id, buffer);
@@ -1764,6 +1765,7 @@ slurmdbd_pack_job_start_msg(dbd_job_start_msg_t *msg, Buf buffer)
 	pack32(msg->req_cpus, buffer);
 	pack_time(msg->start_time, buffer);
 	pack_time(msg->submit_time, buffer);
+	pack32(msg->uid, buffer);
 }
 
 int inline 
@@ -1775,6 +1777,7 @@ slurmdbd_unpack_job_start_msg(dbd_job_start_msg_t **msg, Buf buffer)
 	safe_unpack32(&msg_ptr->alloc_cpus, buffer);
 	safe_unpack32(&msg_ptr->assoc_id, buffer);
 	safe_unpackstr_xmalloc(&msg_ptr->block_id, &uint32_tmp, buffer);
+	safe_unpack32(&msg_ptr->db_index, buffer);
 	safe_unpack_time(&msg_ptr->eligible_time, buffer);
 	safe_unpack32(&msg_ptr->gid, buffer);
 	safe_unpack32(&msg_ptr->job_id, buffer);
@@ -1786,6 +1789,7 @@ slurmdbd_unpack_job_start_msg(dbd_job_start_msg_t **msg, Buf buffer)
 	safe_unpack32(&msg_ptr->req_cpus, buffer);
 	safe_unpack_time(&msg_ptr->start_time, buffer);
 	safe_unpack_time(&msg_ptr->submit_time, buffer);
+	safe_unpack32(&msg_ptr->uid, buffer);
 	return SLURM_SUCCESS;
 
 unpack_error:

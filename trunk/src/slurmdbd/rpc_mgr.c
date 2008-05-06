@@ -238,7 +238,6 @@ static void * _service_connection(void *arg)
 	}
 
 	acct_storage_g_close_connection(&db_conn);
-
 	if (slurm_close_accepted_conn(conn->newsockfd) < 0)
 		error("close(%d): %m",  conn->newsockfd);
 	else

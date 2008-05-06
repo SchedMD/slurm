@@ -76,13 +76,15 @@ extern List pgsql_jobacct_process_get_jobs(PGconn *acct_pgsql_db,
 		"t1.id",
 		"t1.jobid",
 		"t1.associd",
+		"t1.uid",
 		"t1.gid",
 		"t1.partition",
 		"t1.blockid",
+		"t1.account",
 		"t1.eligible",
 		"t1.submit",
 		"t1.start",
-		"t1.end",
+		"t1.endtime",
 		"t1.suspended",
 		"t1.name",
 		"t1.track_steps",
@@ -101,7 +103,7 @@ extern List pgsql_jobacct_process_get_jobs(PGconn *acct_pgsql_db,
 	char *step_req_inx[] = {
 		"t1.stepid",
 		"t1.start",
-		"t1.end",
+		"t1.endtime",
 		"t1.suspended",
 		"t1.name",
 		"t1.nodelist",
@@ -135,13 +137,15 @@ extern List pgsql_jobacct_process_get_jobs(PGconn *acct_pgsql_db,
 		JOB_REQ_ID,
 		JOB_REQ_JOBID,
 		JOB_REQ_ASSOCID,
+		JOB_REQ_UID,
 		JOB_REQ_GID,
 		JOB_REQ_PARTITION,
 		JOB_REQ_BLOCKID,
+		JOB_REQ_ACCOUNT,
 		JOB_REQ_ELIGIBLE,
 		JOB_REQ_SUBMIT,
 		JOB_REQ_START,
-		JOB_REQ_END,
+		JOB_REQ_ENDTIME,
 		JOB_REQ_SUSPENDED,
 		JOB_REQ_NAME,
 		JOB_REQ_TRACKSTEPS,
@@ -158,7 +162,7 @@ extern List pgsql_jobacct_process_get_jobs(PGconn *acct_pgsql_db,
 	enum {
 		STEP_REQ_STEPID,
 		STEP_REQ_START,
-		STEP_REQ_END,
+		STEP_REQ_ENDTIME,
 		STEP_REQ_SUSPENDED,
 		STEP_REQ_NAME,
 		STEP_REQ_NODELIST,
@@ -256,19 +260,31 @@ extern List pgsql_jobacct_process_get_jobs(PGconn *acct_pgsql_db,
 						  JOB_REQ_ALLOC_CPUS));
 		job->associd = atoi(PQgetvalue(result, i, JOB_REQ_ASSOCID));
 		account_rec.id = job->associd;
-		acct_storage_p_get_assoc_id(acct_pgsql_db, &account_rec);
+		assoc_mgr_fill_in_assoc(acct_pgsql_db, &account_rec, 0);
+		if(account_rec.cluster) {
+			if(params->opt_cluster &&
+			   strcmp(params->opt_cluster, account_rec.cluster)) {
+				destroy_jobacct_job_rec(job);
+				job = NULL;
+				continue;
+			}
+			job->cluster = xstrdup(account_rec.cluster);
+		}
 		if(account_rec.user) 
 			job->user = xstrdup(account_rec.user);
+		else 
+			job->uid = atoi(PQgetvalue(result, i, JOB_REQ_UID));
 		if(account_rec.acct) 
 			job->account = xstrdup(account_rec.acct);
-		if(account_rec.cluster) 
-			job->cluster = xstrdup(account_rec.cluster);
+		else
+			job->account = xstrdup(PQgetvalue(result, i,
+							  JOB_REQ_ACCOUNT));
 		job->blockid = xstrdup(PQgetvalue(result, i,
 						    JOB_REQ_BLOCKID));
 		job->eligible = atoi(PQgetvalue(result, i, JOB_REQ_SUBMIT));
 		job->submit = atoi(PQgetvalue(result, i, JOB_REQ_SUBMIT));
 		job->start = atoi(PQgetvalue(result, i, JOB_REQ_START));
-		job->end = atoi(PQgetvalue(result, i, JOB_REQ_END));
+		job->end = atoi(PQgetvalue(result, i, JOB_REQ_ENDTIME));
 		job->suspended = atoi(PQgetvalue(result, i, JOB_REQ_SUSPENDED));
 		if(!job->end) {
 			job->elapsed = now - job->start;
@@ -368,7 +384,7 @@ extern List pgsql_jobacct_process_get_jobs(PGconn *acct_pgsql_db,
 			step->start = atoi(
 				PQgetvalue(step_result, j, JOB_REQ_START));
 			step->end = atoi(
-				PQgetvalue(step_result, j, STEP_REQ_END));
+				PQgetvalue(step_result, j, STEP_REQ_ENDTIME));
 			/* figure this out by start stop */
 			step->suspended = atoi(
 				PQgetvalue(step_result, j, STEP_REQ_SUSPENDED));

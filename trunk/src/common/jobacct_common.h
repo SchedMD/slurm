@@ -101,6 +101,7 @@ typedef struct {
 	int opt_purge;		/* --purge */
 	int opt_total;		/* --total */
 	int opt_uid;		/* --uid (-1=wildcard, 0=root) */
+	int opt_uid_set;	
 	int opt_verbose;	/* --verbose */
 	long opt_expire;		/* --expire= */ 
 	char *opt_expire_timespec; /* --expire= */

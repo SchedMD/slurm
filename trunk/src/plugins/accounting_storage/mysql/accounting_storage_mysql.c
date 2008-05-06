@@ -749,6 +749,7 @@ static int _mysql_acct_check_tables(MYSQL *acct_mysql_db)
 		{ "id", "int not null auto_increment" },
 		{ "jobid", "mediumint unsigned not null" },
 		{ "associd", "mediumint unsigned not null" },
+		{ "uid", "smallint unsigned not null" },
 		{ "gid", "smallint unsigned not null" },
 		{ "partition", "tinytext not null" },
 		{ "blockid", "tinytext" },
@@ -985,7 +986,7 @@ extern int fini ( void )
 #ifdef HAVE_MYSQL
 	destroy_mysql_db_info(mysql_db_info);		
 	xfree(mysql_db_name);
-
+	mysql_cleanup();
 	return SLURM_SUCCESS;
 #else
 	return SLURM_ERROR;
@@ -1024,7 +1025,6 @@ extern int acct_storage_p_close_connection(mysql_conn_t **mysql_conn)
 		return SLURM_SUCCESS;
 
 	acct_storage_p_commit((*mysql_conn), 0);
-
 	mysql_close_db_connection(&(*mysql_conn)->acct_mysql_db);
 	list_destroy((*mysql_conn)->update_list);
 	xfree((*mysql_conn));
@@ -1704,8 +1704,7 @@ extern int acct_storage_p_add_associations(mysql_conn_t *mysql_conn,
 				xstrcat(tmp_char, ", ");
 			xstrcat(tmp_char, massoc_req_inx[i]);
 		}
-
-
+		
 		xstrfmtcat(query, 
 			   "select distinct %s from %s %s FOR UPDATE;",
 			   tmp_char, assoc_table, update);
@@ -4139,38 +4138,60 @@ extern int jobacct_storage_p_job_start(mysql_conn_t *mysql_conn,
 
 	job_ptr->requid = -1; /* force to -1 for sacct to know this
 			       * hasn't been set yet */
-	query = xstrdup_printf(
-		"insert into %s "
-		"(jobid, account, associd, gid, partition, blockid, "
-		"eligible, submit, start, name, track_steps, "
-		"state, priority, req_cpus, alloc_cpus, nodelist) "
-		"values (%u, '%s', %u, %u, '%s', '%s', "
-		"%d, %d, %d, '%s', %u, "
-		"%u, %u, %u, %u, '%s') "
-		"on duplicate key update id=LAST_INSERT_ID(id)",
-		job_table, job_ptr->job_id, job_ptr->account, job_ptr->assoc_id,
-		job_ptr->group_id, job_ptr->partition, block_id,
-		(int)job_ptr->details->begin_time,
-		(int)job_ptr->details->submit_time, (int)job_ptr->start_time,
-		jname, track_steps, job_ptr->job_state & (~JOB_COMPLETING),
-		priority, job_ptr->num_procs, job_ptr->total_procs, nodes);
+	if(!job_ptr->db_index) {
+		query = xstrdup_printf(
+			"insert into %s "
+			"(jobid, account, associd, uid, gid, partition, "
+			"blockid, eligible, submit, start, name, track_steps, "
+			"state, priority, req_cpus, alloc_cpus, nodelist) "
+			"values (%u, '%s', %u, %u, %u, '%s', '%s', "
+			"%d, %d, %d, '%s', %u, "
+			"%u, %u, %u, %u, '%s')",
+			job_table, job_ptr->job_id, job_ptr->account, 
+			job_ptr->assoc_id,
+			job_ptr->user_id, job_ptr->group_id,
+			job_ptr->partition, block_id,
+			(int)job_ptr->details->begin_time,
+			(int)job_ptr->details->submit_time,
+			(int)job_ptr->start_time,
+			jname, track_steps,
+			job_ptr->job_state & (~JOB_COMPLETING),
+			priority, job_ptr->num_procs,
+			job_ptr->total_procs, nodes);
+
+	try_again:
+		if(!(job_ptr->db_index = mysql_insert_ret_id(
+			     mysql_conn->acct_mysql_db, query))) {
+			if(!reinit) {
+				error("It looks like the storage has gone "
+				      "away trying to reconnect");
+				mysql_close_db_connection(
+					&mysql_conn->acct_mysql_db);
+				mysql_get_db_connection(
+					&mysql_conn->acct_mysql_db,
+					mysql_db_name, mysql_db_info);
+				reinit = 1;
+				goto try_again;
+			} else
+				rc = SLURM_ERROR;
+		}
+	} else {
+		query = xstrdup_printf(
+			"update %s set partition='%s', blockid='%s', start=%d, "
+			"name='%s', state=%u, alloc_cpus=%u, nodelist='%s', "
+			"account='%s' where id=%d",
+			job_table, job_ptr->partition, block_id,
+			(int)job_ptr->start_time,
+			jname, 
+			job_ptr->job_state & (~JOB_COMPLETING),
+			job_ptr->total_procs, nodes, 
+			job_ptr->account, job_ptr->db_index);
+		rc = mysql_db_query(mysql_conn->acct_mysql_db, query);
+	}
 
 	xfree(block_id);
 	xfree(jname);
 
-try_again:
-	if(!(job_ptr->db_index = mysql_insert_ret_id(mysql_conn->acct_mysql_db, query))) {
-		if(!reinit) {
-			error("It looks like the storage has gone "
-			      "away trying to reconnect");
-			mysql_close_db_connection(&mysql_conn->acct_mysql_db);
-			mysql_get_db_connection(&mysql_conn->acct_mysql_db,
-						mysql_db_name, mysql_db_info);
-			reinit = 1;
-			goto try_again;
-		} else
-			rc = SLURM_ERROR;
-	}
 	xfree(query);
 
 	return rc;

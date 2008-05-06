@@ -69,9 +69,6 @@ typedef struct {
 extern char *job_table;
 extern char *step_table;
 
-extern int acct_storage_p_get_assoc_id(mysql_conn_t *mysql_conn,
-				       acct_association_rec_t *assoc);
-
 extern List mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn,
 					   List selected_steps,
 					   List selected_parts,

@@ -196,6 +196,7 @@ main (int argc, char *argv[])
 	}
 
 	acct_storage_g_close_connection(&db_conn);
+	slurm_acct_storage_fini();
 	printf("\n");
 	exit(exit_code);
 }

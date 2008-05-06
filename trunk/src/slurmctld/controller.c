@@ -459,7 +459,7 @@ int main(int argc, char *argv[])
 	if (unlink(slurmctld_conf.slurmctld_pidfile) < 0)
 		verbose("Unable to remove pidfile '%s': %m",
 			slurmctld_conf.slurmctld_pidfile);
-
+	
 #ifdef MEMORY_LEAK_DEBUG
 	/* This should purge all allocated memory,   *\
 	\*   Anything left over represents a leak.   */
@@ -492,6 +492,7 @@ int main(int argc, char *argv[])
 	checkpoint_fini();
 	slurm_auth_fini();
 	switch_fini();
+	assoc_mgr_fini();
 
 	/* purge remaining data structures */
 	slurm_cred_ctx_destroy(slurmctld_config.cred_ctx);
@@ -510,13 +511,14 @@ int main(int argc, char *argv[])
 		sleep(1);
 	}
 #endif
+
 	xfree(slurmctld_cluster_name);
 	if (cnt) {
 		info("Slurmctld shutdown completing with %d active agent "
 			"threads\n\n", cnt);
 	}
 	log_fini();
-
+	
 	if (dump_core)
 		abort();
 	else
