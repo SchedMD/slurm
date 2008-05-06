@@ -46,6 +46,7 @@
 #include <sys/types.h>
 #include <pwd.h>
 #include <stdlib.h>
+#include "src/common/assoc_mgr.h"
 #include "src/common/jobacct_common.h"
 #include "src/slurmdbd/read_config.h"
 #include "src/slurmctld/slurmctld.h"
@@ -56,9 +57,6 @@
 
 extern char *job_table;
 extern char *step_table;
-
-extern int acct_storage_p_get_assoc_id(PGconn *acct_pgsql_db,
-				       acct_association_rec_t *assoc);
 
 extern List pgsql_jobacct_process_get_jobs(PGconn *acct_pgsql_db,
 					   List selected_steps,

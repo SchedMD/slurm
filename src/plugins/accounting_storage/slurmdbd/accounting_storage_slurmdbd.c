@@ -889,6 +889,7 @@ extern int jobacct_storage_p_job_start(void *db_conn,
 #endif
 	req.block_id      = block_id;
 	xfree(block_id);
+	req.db_index    = job_ptr->db_index;
 	if (job_ptr->details) 
 		req.eligible_time = job_ptr->details->begin_time;
 	req.gid           = job_ptr->group_id;
@@ -902,6 +903,7 @@ extern int jobacct_storage_p_job_start(void *db_conn,
 	req.start_time    = job_ptr->start_time;
 	if (job_ptr->details)
 		req.submit_time   = job_ptr->details->submit_time;
+	req.uid           = job_ptr->user_id;
 
 	msg.msg_type      = DBD_JOB_START;
 	msg.data          = &req;

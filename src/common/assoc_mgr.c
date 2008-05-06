@@ -79,6 +79,9 @@ static int _get_local_association_list(void *db_conn, int enforce)
 		list_destroy(assoc_q.cluster_list);
 	
 	if(!local_association_list) {
+		/* create list so we don't keep calling this if there
+		   isn't anything there */
+		local_association_list = list_create(NULL);
 		slurm_mutex_unlock(&local_association_lock);
 		if(enforce) {
 			error("_get_local_association_list: "
@@ -167,10 +170,10 @@ extern int assoc_mgr_fill_in_assoc(void *db_conn, acct_association_rec_t *assoc,
 	acct_association_rec_t * found_assoc = NULL;
 	acct_association_rec_t * ret_assoc = NULL;
 	
-	if(!local_association_list) 
+	if(!local_association_list) {
 		if(_get_local_association_list(db_conn, enforce) == SLURM_ERROR)
 			return SLURM_ERROR;
-
+	}
 	if((!local_association_list || !list_count(local_association_list))
 	   && !enforce) 
 		return SLURM_SUCCESS;

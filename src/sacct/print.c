@@ -850,7 +850,7 @@ void print_uid(type_t type, void *object)
 	jobacct_job_rec_t *job = (jobacct_job_rec_t *)object;
 	jobcomp_job_rec_t *jobcomp = (jobcomp_job_rec_t *)object;
 	int32_t uid = -1;
-	struct passwd *passwd_ptr = NULL;
+	struct passwd *pw = NULL;
 	
 	switch(type) {
 	case HEADLINE:
@@ -861,9 +861,8 @@ void print_uid(type_t type, void *object)
 		break;
 	case JOB:
 		if(job->user) {
-			getpwnam(job->user);
-			if(passwd_ptr)
-				uid = passwd_ptr->pw_uid;
+			if ((pw=getpwnam(job->user)))
+				uid = pw->pw_uid;
 		} else 
 			uid = job->uid;
 		break;

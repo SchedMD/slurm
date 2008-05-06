@@ -75,9 +75,6 @@ extern pthread_mutex_t pgsql_lock;
 
 extern int *destroy_pgsql_db_info(pgsql_db_info_t *db_info);
 
-extern int pgsql_create_db(PGconn *pgsql_db, char *db_name,
-			   pgsql_db_info_t *db_info);
-
 extern int pgsql_get_db_connection(PGconn **pgsql_db, char *db_name,
 				   pgsql_db_info_t *db_info);
 

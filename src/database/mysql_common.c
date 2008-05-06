@@ -132,8 +132,7 @@ static int _create_db(char *db_name, mysql_db_info_t *db_info)
 			      mysql_errno(mysql_db),
 			      mysql_error(mysql_db), create_line);
 		}
-		mysql_close(mysql_db);
-		mysql_server_end();				
+		mysql_close_db_connection(&mysql_db);
 	} else {
 		info("Connection failed to host = %s "
 		     "user = %s pass = %s port = %u",
@@ -201,13 +200,26 @@ extern int mysql_get_db_connection(MYSQL **mysql_db, char *db_name,
 extern int mysql_close_db_connection(MYSQL **mysql_db)
 {
 	if(mysql_db && *mysql_db) {
+		if(mysql_thread_safe())
+			mysql_thread_end();
 		mysql_close(*mysql_db);
-		/* leave as server instead of library since this is
-		 * backwards compatible */
-		mysql_server_end();
 		*mysql_db = NULL;
 	}
 
+	return SLURM_SUCCESS;
+}
+
+extern int mysql_cleanup()
+{
+	debug3("starting mysql cleaning up");
+
+#ifdef mysql_library_end
+	mysql_library_end();
+#else
+	mysql_server_end();
+#endif
+
+	debug3("finished mysql cleaning up");
 	return SLURM_SUCCESS;
 }
 

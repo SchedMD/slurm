@@ -78,9 +78,11 @@ extern List mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn,
 		"t1.id",
 		"t1.jobid",
 		"t1.associd",
+		"t1.uid",
 		"t1.gid",
 		"t1.partition",
 		"t1.blockid",
+		"t1.account",
 		"t1.eligible",
 		"t1.submit",
 		"t1.start",
@@ -137,9 +139,11 @@ extern List mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn,
 		JOB_REQ_ID,
 		JOB_REQ_JOBID,
 		JOB_REQ_ASSOCID,
+		JOB_REQ_UID,
 		JOB_REQ_GID,
 		JOB_REQ_PARTITION,
 		JOB_REQ_BLOCKID,
+		JOB_REQ_ACCOUNT,
 		JOB_REQ_ELIGIBLE,
 		JOB_REQ_SUBMIT,
 		JOB_REQ_START,
@@ -276,8 +280,13 @@ extern List mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn,
 
 		if(account_rec.user) 
 			job->user = xstrdup(account_rec.user);
+		else 
+			job->uid = atoi(row[JOB_REQ_UID]);
 		if(account_rec.acct) 
 			job->account = xstrdup(account_rec.acct);
+		else
+			job->account = xstrdup(row[JOB_REQ_ACCOUNT]);
+	
 		job->blockid = xstrdup(row[JOB_REQ_BLOCKID]);
 
 		job->eligible = atoi(row[JOB_REQ_ELIGIBLE]);

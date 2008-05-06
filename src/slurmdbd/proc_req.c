@@ -926,7 +926,9 @@ static int  _job_start(void *db_conn,
 	job.total_procs = job_start_msg->alloc_cpus;
 	job.assoc_id = job_start_msg->assoc_id;
 	job.comment = job_start_msg->block_id;
+	job.db_index = job_start_msg->db_index;
 	details.begin_time = job_start_msg->eligible_time;
+	job.user_id = job_start_msg->uid;
 	job.group_id = job_start_msg->gid;
 	job.job_id = job_start_msg->job_id;
 	job.job_state = job_start_msg->job_state;
@@ -940,9 +942,14 @@ static int  _job_start(void *db_conn,
 
 	job.details = &details;
 
-	debug2("DBD_JOB_START: ID:%u NAME:%s", 
-	       job_start_msg->job_id, job_start_msg->name);
-
+	if(job.db_index) {
+		debug2("DBD_JOB_START: START CALL ID:%u NAME:%s INX:%u", 
+		       job_start_msg->job_id, job_start_msg->name, 
+		       job.db_index);	
+	} else {
+		debug2("DBD_JOB_START: ELIGIBLE CALL ID:%u NAME:%s", 
+		       job_start_msg->job_id, job_start_msg->name);
+	}
 	job_start_rc_msg.return_code = jobacct_storage_g_job_start(db_conn,
 								   &job);
 	job_start_rc_msg.db_index = job.db_index;
@@ -1291,9 +1298,11 @@ static int   _register_ctld(void *db_conn, slurm_fd orig_fd,
 	if(!list_msg.my_list || !list_count(list_msg.my_list)) {
 		comment = "This cluster hasn't been added to accounting yet";
 		rc = SLURM_ERROR;
-	} else {
+	} 
+	
+	if(list_msg.my_list)
 		list_destroy(list_msg.my_list);
-	}
+	
 
 	list_destroy(cluster_q.cluster_list);
 	/*

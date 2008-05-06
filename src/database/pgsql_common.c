@@ -56,10 +56,10 @@ extern int *destroy_pgsql_db_info(pgsql_db_info_t *db_info)
 	return SLURM_SUCCESS;
 }
 
-extern int pgsql_create_db(PGconn *pgsql_db, char *db_name,
-			   pgsql_db_info_t *db_info)
+extern int _create_db(char *db_name, pgsql_db_info_t *db_info)
 {
 	char create_line[50];
+	PGconn *pgsql_db = NULL;
 	char *connect_line = xstrdup_printf("dbname = 'postgres'"
 					    " host = '%s'"
 					    " port = '%u'"
@@ -82,12 +82,14 @@ extern int pgsql_create_db(PGconn *pgsql_db, char *db_name,
 			     PQresultStatus(result), PQerrorMessage(pgsql_db), create_line);
 		}
 		PQclear(result);
+		pgsql_close_db_connection(&pgsql_db);
 	} else {
 		info("Connection failed to %s", connect_line);
 		fatal("Status was: %d %s",
 		      PQstatus(pgsql_db), PQerrorMessage(pgsql_db));
 	}
 	xfree(connect_line);
+
 	return SLURM_SUCCESS;
 }
 
@@ -120,15 +122,10 @@ extern int pgsql_get_db_connection(PGconn **pgsql_db, char *db_name,
 			} 
 			
 			info("Database %s not created. Creating", db_name);
-			PQfinish(*pgsql_db);
-			pgsql_create_db(*pgsql_db, db_name, db_info);		
+			pgsql_close_db_connection(pgsql_db);
+			_create_db(db_name, db_info);		
 		} else {
 			storage_init = true;
-			/* debug2("connected to %s", db_name); */
-/* 			if(rollback || rollback_started) { */
-/* 				rollback_started = 1; */
-/* 				PQexec(*pgsql_db, "BEGIN WORK"); */
-/* 			} */
 		} 
 	}
 	xfree(connect_line);
