@@ -23,7 +23,7 @@ documents those changes that are of interest to users and admins.
     to "-P" (continue to accept "-d", but change the documentation).
  -- Only check that task_epilog and task_prolog are runable by the job's
     user, not as root.
- -- In sbatch, if specifying an alternate directory (--directory/-D), then
+ -- In sbatch, if specifying an alternate directory (--workdir/-D), then
     input, output and error files are in that directory rather than the 
     directory from which the command is executed
  -- NOTE: Fully operational with Moab version 5.2.3+. Change SUBMITCMD in
