@@ -54,6 +54,8 @@ def main(argv=None):
     #
     print
     print "NOTE: slurm_epilog and slurm_prolog only exist on BlueGene systems"
+    print "NOTE: federation.conf only exists on AIX systems"
+    print "NOTE: sview, slurmdbd and slurmdbd.conf exists only on selected systems"
     print "NOTE: JobCredentialPrivateKey, SlurmctldLogFile, and StateSaveLocation only on control host"
     print "NOTE: SlurmdLogFile and SlurmdSpoolDir only exist on compute servers" 
     print
