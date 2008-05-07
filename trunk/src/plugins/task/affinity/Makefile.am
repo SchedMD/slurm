@@ -16,6 +16,13 @@ task_affinity_la_SOURCES = 	\
 	schedutils.c \
 	task_affinity.c
 task_affinity_la_LDFLAGS = $(SO_LDFLAGS) $(NUMA_LIBS) $(PLPA_LIBS) $(PLUGIN_FLAGS)
+# Add libcommon to provide some symbols that are not
+#  available in slurmctld (slurm_sprint_cpu_bind_type)
+
+task_affinity_la_LIBADD  = \
+	$(top_builddir)/src/common/.libs/libcommon.a
+
+
 else
 pkglib_LTLIBRARIES =
 EXTRA_task_affinity_la_SOURCES = \
