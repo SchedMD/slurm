@@ -211,8 +211,10 @@ extern int init_gold(char *keyfile, char *host, uint16_t port)
 	}
 
 	fp = open(keyfile, O_RDONLY);
-	bytes_read = read(fp, key, sizeof(key));
-	if ( bytes_read == -1) {
+	if (fp < 0)
+		fatal("Error opening gold keyfile (%s): %m\n", keyfile);
+	bytes_read = read(fp, key, sizeof(key) - 1);
+	if (bytes_read == -1) {
 		fatal("Error reading hash key from keyfile (%s): %m\n",
 		      keyfile);
 	}
