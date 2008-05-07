@@ -1,4 +1,4 @@
-.TH SACCTMGR "1" "March 2008" "sacctmgr 1.3" "Slurm components"
+.TH SACCTMGR "1" "May 2008" "sacctmgr 1.3" "Slurm components"
 
 .SH "NAME"
 sacctmgr \- Used view and modify Slurm account information.
@@ -103,7 +103,7 @@ By default, all entities are displayed.
 Idential to the \fBshow\fR command.
 
 .TP
-\fBmodify\fR <\fIENTITY\fR> <\fISPECS\fR>
+\fBmodify\fR <\fIENTITY\fR> <\fISPECS\fR> \fbset\fR <\fISPECS\fR>
 Modify an entities.
 
 .TP
@@ -178,18 +178,22 @@ Number used in conjunction with other accounts to determine job priority.
 \fIMaxCPUSecs\fP=<max cpu seconds> 
 Maximum number of cpu seconds each job is able to use in this account.
 This is overridden if set directly on a user. 
+Default is the cluster's limit.
 .TP
 \fIMaxJobs\fP=<max jobs>
 Maximum number of jobs each user is allowed to run at one time in this account.
 This is overridden if set directly on a user. 
+Default is the cluster's limit.
 .TP
 \fIMaxNodes\fP=<max nodes>
 Maximum number of nodes each job is able to use in this account.
 This is overridden if set directly on a user. 
+Default is the cluster's limit.
 .TP
 \fIMaxWall\fP=<max wall>
 Maximum wall clock time each job is able to use in this account.
 This is overridden if set directly on a user. 
+Default is the cluster's limit.
 .TP
 \fIName\fP=<name>
 The name of a bank account.
@@ -198,7 +202,7 @@ The name of a bank account.
 Organization to which the account belongs.
 .TP
 \fIParent\fP=<parent>
-Parent account of this account.
+Parent account of this account. Default is no parent, a top level account.
 .TP
 \fIQosLevel\fP=<qos>
 Quality of Service jobs are to run at for this account.  Now consisting
@@ -219,17 +223,21 @@ configuration file for some Slurm-managed cluster.
 \fIMaxCPUSecs\fP=<max cpu seconds> 
 Maximum number of cpu seconds each job is able to use in this account.
 This is overridden if set directly on an account or user. 
+Default is no limit.
 \fIMaxJobs\fP=<max jobs>
 Maximum number of jobs each user is allowed to run at one time in this account.
 This is overridden if set directly on an account or user. 
+Default is no limit.
 .TP
 \fIMaxNodes\fP=<max nodes>
 Maximum number of nodes each job is able to use in this account.
 This is overridden if set directly on an account or user. 
+Default is no limit.
 .TP
 \fIMaxWall\fP=<max wall>
 Maximum wall clock time each job is able to use in this account.
 This is overridden if set directly on an account or user. 
+Default is no limit.
 .TP
 \fIQosLevel\fP=<qos>
 Quality of Service jobs are to run at for this account.  Now consisting
@@ -271,14 +279,35 @@ account specified.
 Maximum number of jobs this user can run at a given time using the
 account specified.
 This is overridden if set directly on a user. 
+Default is the account's limit.
 .TP
 \fIMaxNodes\fP=<max nodes>
 Maximum number of nodes this user can allocate in each job using the
 account specified. 
+Default is the account's limit.
 .TP
 \fIMaxWall\fP=<max wall>
 Maximum wall clock time this user can use in each job using the
 account specified.
+Default is the account's limit.
+
+.SH "EXAMPLES"
+.eo
+.br
+> sacctmgr create cluster=tux
+.br
+> sacctmgr create account name=science fairshare=50
+.br
+> sacctmgr create account name=chemistry parent=science fairshare=30
+.br
+> sacctmgr create account name=physics   parent=science fairshare=20
+.br
+> sacctmgr create user name=adam cluster=tux bank=physics fairshare=10
+.br
+> sacctmgr modify user name=adam cluster=tux bank=physics \
+.br
+  set maxjobs=2 maxtime=30:00
+.ec
 
 .SH "COPYING"
 Copyright (C) 2008 Lawrence Livermore National Security.
