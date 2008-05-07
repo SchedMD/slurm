@@ -14,7 +14,7 @@ noinst_LTLIBRARIES =      \
 libslurm_gold_la_SOURCES = gold_interface.c gold_interface.h \
 	base64.c base64.h
 libslurm_gold_la_LIBADD   = $(SSL_LIBS)
-libslurm_gold_la_LDFLAGS  = $(LIB_LDFLAGS)
+libslurm_gold_la_LDFLAGS  = $(LIB_LDFLAGS) $(SSL_LDFLAGS)
 libslurm_gold_la_CFLAGS   = $(SSL_CPPFLAGS)
 
 else 
