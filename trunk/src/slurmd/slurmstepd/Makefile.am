@@ -5,14 +5,14 @@ AUTOMAKE_OPTIONS = foreign
 
 sbin_PROGRAMS = slurmstepd
 
-INCLUDES = -I$(top_srcdir) $(SSL_CPPFLAGS)
+INCLUDES = -I$(top_srcdir)
 
 slurmstepd_LDADD = 				   \
         $(top_builddir)/src/common/libcommon.la    \
 	$(top_builddir)/src/common/libdaemonize.la \
 	$(top_builddir)/src/common/libeio.la       \
 	$(top_builddir)/src/common/libspank.la     \
-	$(PLPA_LIBS) $(SSL_LIBS) $(PAM_LIBS) $(UTIL_LIBS) 
+	$(PLPA_LIBS) $(PAM_LIBS) $(UTIL_LIBS) 
 
 slurmstepd_SOURCES = 	        	\
 	slurmstepd.c slurmstepd.h	\
