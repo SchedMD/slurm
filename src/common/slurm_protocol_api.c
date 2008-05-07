@@ -573,8 +573,8 @@ char *slurm_get_accounting_storage_host(void)
 	return storage_host;	
 }
 
-/* slurm_get_accounting_storage_pass
- * returns the storage password from slurmctld_conf object
+/* slurm_get_accounting_storage_loc
+ * returns the storage location from slurmctld_conf object
  * RET char *    - storage location,  MUST be xfreed by caller
  */
 char *slurm_get_accounting_storage_loc(void)
