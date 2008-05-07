@@ -17,7 +17,8 @@ pkglib_LTLIBRARIES = $(openssl_lib)
 if HAVE_OPENSSL
 crypto_openssl_la_SOURCES = crypto_openssl.c
 
-crypto_openssl_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
+crypto_openssl_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS) $(SSL_LDFLAGS)
+crypto_openssl_la_LIBADD   = $(SSL_LIBS)
 
 else
 EXTRA_crypto_openssl_la_SOURCES = crypto_openssl.c
