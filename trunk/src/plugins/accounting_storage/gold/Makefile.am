@@ -17,7 +17,6 @@ if HAVE_OPENSSL
 accounting_storage_gold_la_SOURCES = accounting_storage_gold.c
 accounting_storage_gold_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
 
-if HAVE_AIX
 # Add libcommon to provide some symbols that are not
 #  available in slurmctld (create_jobacct_job_rec)
 
@@ -27,15 +26,6 @@ accounting_storage_gold_la_LIBADD  = \
 accounting_storage_gold_la_DEPENDENCIES = \
 	$(top_builddir)/src/database/libslurm_gold.la \
 	$(top_builddir)/src/common/.libs/libcommon.a
-
-else
-accounting_storage_gold_la_LIBADD  = \
-	$(top_builddir)/src/database/libslurm_gold.la
-accounting_storage_gold_la_DEPENDENCIES = \
-	$(top_builddir)/src/database/libslurm_gold.la
-
-endif
-
 
 else
 EXTRA_accounting_storage_gold_la_SOURCES = accounting_storage_gold.c
