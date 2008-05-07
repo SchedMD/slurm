@@ -11,3 +11,10 @@ pkglib_LTLIBRARIES = accounting_storage_filetxt.la
 accounting_storage_filetxt_la_SOURCES = accounting_storage_filetxt.c \
 		filetxt_jobacct_process.c filetxt_jobacct_process.h
 accounting_storage_filetxt_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
+
+if HAVE_AIX
+# Add libcommon to provide some symbols that are not
+#  available in slurmctld (create_jobacct_job_rec)
+
+accounting_storage_filetxt_la_LIBADD  = $(top_builddir)/src/common/.libs/libcommon.a
+endif

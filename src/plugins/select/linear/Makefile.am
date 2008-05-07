@@ -12,3 +12,10 @@ pkglib_LTLIBRARIES = select_linear.la
 select_linear_la_SOURCES = select_linear.c select_linear.h
 select_linear_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
 
+
+if HAVE_AIX
+# Add libcommon to provide some symbols that are not
+#  available in slurmctld (slurm_get_avail_procs)
+
+select_linear_la_LIBADD  = $(top_builddir)/src/common/.libs/libcommon.a
+endif

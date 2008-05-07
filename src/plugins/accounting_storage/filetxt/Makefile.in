@@ -74,7 +74,8 @@ am__strip_dir = `echo $$p | sed -e 's|^.*/||'`;
 am__installdirs = "$(DESTDIR)$(pkglibdir)"
 pkglibLTLIBRARIES_INSTALL = $(INSTALL)
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
-accounting_storage_filetxt_la_LIBADD =
+@HAVE_AIX_TRUE@accounting_storage_filetxt_la_DEPENDENCIES =  \
+@HAVE_AIX_TRUE@	$(top_builddir)/src/common/.libs/libcommon.a
 am_accounting_storage_filetxt_la_OBJECTS =  \
 	accounting_storage_filetxt.lo filetxt_jobacct_process.lo
 accounting_storage_filetxt_la_OBJECTS =  \
@@ -275,6 +276,10 @@ accounting_storage_filetxt_la_SOURCES = accounting_storage_filetxt.c \
 		filetxt_jobacct_process.c filetxt_jobacct_process.h
 
 accounting_storage_filetxt_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
+
+# Add libcommon to provide some symbols that are not
+#  available in slurmctld (create_jobacct_job_rec)
+@HAVE_AIX_TRUE@accounting_storage_filetxt_la_LIBADD = $(top_builddir)/src/common/.libs/libcommon.a
 all: all-am
 
 .SUFFIXES:
