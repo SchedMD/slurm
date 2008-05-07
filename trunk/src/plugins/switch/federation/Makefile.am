@@ -23,8 +23,6 @@ switch_federation_la_SOURCES = \
 	switch_federation.c 
 switch_federation_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
 
-switch_federation_la_LIBADD = $(top_builddir)/src/common/.libs/libcommon.a 
-
 else
 EXTRA_switch_federation_la_SOURCES = \
 	federation.c federation.h \

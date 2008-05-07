@@ -73,8 +73,7 @@ mkinstalldirs = $(install_sh) -d
 CONFIG_HEADER = $(top_builddir)/config.h $(top_builddir)/slurm/slurm.h
 CONFIG_CLEAN_FILES =
 LTLIBRARIES = $(noinst_LTLIBRARIES)
-am__DEPENDENCIES_1 =
-libcommon_la_DEPENDENCIES = $(am__DEPENDENCIES_1)
+libcommon_la_DEPENDENCIES =
 am__libcommon_la_SOURCES_DIST = assoc_mgr.c assoc_mgr.h xmalloc.c \
 	xmalloc.h xassert.c xassert.h xstring.c xstring.h xsignal.c \
 	xsignal.h forward.c forward.h strlcpy.c strlcpy.h list.c \
@@ -328,7 +327,7 @@ AUTOMAKE_OPTIONS = foreign
 @HAVE_UNSETENV_TRUE@build_unsetenv_src = 
 @HAVE_UNSETENV_FALSE@extra_unsetenv_src = 
 @HAVE_UNSETENV_TRUE@extra_unsetenv_src = unsetenv.c unsetenv.h
-INCLUDES = -I$(top_srcdir) $(SSL_CPPFLAGS)
+INCLUDES = -I$(top_srcdir)
 noinst_LTLIBRARIES = \
 	libcommon.la 			\
 	libdaemonize.la 		\
@@ -420,7 +419,7 @@ libspank_la_SOURCES = \
 	plugstack.c plugstack.h \
 	optz.c      optz.h
 
-libcommon_la_LIBADD = $(SSL_LIBS) -ldl
+libcommon_la_LIBADD = -ldl
 libcommon_la_LDFLAGS = $(LIB_LDFLAGS) $(SSL_LDFLAGS)
 all: all-am
 

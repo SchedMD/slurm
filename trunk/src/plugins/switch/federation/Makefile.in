@@ -74,7 +74,7 @@ am__strip_dir = `echo $$p | sed -e 's|^.*/||'`;
 am__installdirs = "$(DESTDIR)$(pkglibdir)"
 pkglibLTLIBRARIES_INSTALL = $(INSTALL)
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
-@HAVE_FEDERATION_TRUE@switch_federation_la_DEPENDENCIES = $(top_builddir)/src/common/.libs/libcommon.a
+switch_federation_la_LIBADD =
 am__switch_federation_la_SOURCES_DIST = federation.c federation.h \
 	federation_keys.h switch_federation.c
 @HAVE_FEDERATION_TRUE@am_switch_federation_la_OBJECTS = federation.lo \
@@ -287,7 +287,6 @@ pkglib_LTLIBRARIES = $(federation_lib)
 @HAVE_FEDERATION_TRUE@	switch_federation.c 
 
 @HAVE_FEDERATION_TRUE@switch_federation_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
-@HAVE_FEDERATION_TRUE@switch_federation_la_LIBADD = $(top_builddir)/src/common/.libs/libcommon.a 
 @HAVE_FEDERATION_FALSE@EXTRA_switch_federation_la_SOURCES = \
 @HAVE_FEDERATION_FALSE@	federation.c federation.h \
 @HAVE_FEDERATION_FALSE@	federation_keys.h \

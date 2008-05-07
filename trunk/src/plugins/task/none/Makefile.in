@@ -74,8 +74,7 @@ am__strip_dir = `echo $$p | sed -e 's|^.*/||'`;
 am__installdirs = "$(DESTDIR)$(pkglibdir)"
 pkglibLTLIBRARIES_INSTALL = $(INSTALL)
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
-@HAVE_AIX_TRUE@task_none_la_DEPENDENCIES =  \
-@HAVE_AIX_TRUE@	$(top_builddir)/src/common/.libs/libcommon.a
+task_none_la_LIBADD =
 am_task_none_la_OBJECTS = task_none.lo
 task_none_la_OBJECTS = $(am_task_none_la_OBJECTS)
 task_none_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
@@ -273,7 +272,6 @@ pkglib_LTLIBRARIES = task_none.la
 # Null task plugin.
 task_none_la_SOURCES = task_none.c
 task_none_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
-@HAVE_AIX_TRUE@task_none_la_LIBADD = $(top_builddir)/src/common/.libs/libcommon.a
 all: all-am
 
 .SUFFIXES:

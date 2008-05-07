@@ -17,7 +17,7 @@ build_unsetenv_src = unsetenv.c unsetenv.h
 extra_unsetenv_src = 
 endif
 
-INCLUDES     = -I$(top_srcdir) $(SSL_CPPFLAGS)
+INCLUDES     = -I$(top_srcdir)
 
 noinst_LTLIBRARIES = 			\
 	libcommon.la 			\
@@ -110,7 +110,7 @@ libspank_la_SOURCES = \
 	plugstack.c plugstack.h \
 	optz.c      optz.h
 
-libcommon_la_LIBADD   = $(SSL_LIBS) -ldl
+libcommon_la_LIBADD   = -ldl
 
 libcommon_la_LDFLAGS  = $(LIB_LDFLAGS) $(SSL_LDFLAGS)
 

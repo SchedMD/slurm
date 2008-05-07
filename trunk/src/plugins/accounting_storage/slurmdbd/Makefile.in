@@ -74,8 +74,7 @@ am__strip_dir = `echo $$p | sed -e 's|^.*/||'`;
 am__installdirs = "$(DESTDIR)$(pkglibdir)"
 pkglibLTLIBRARIES_INSTALL = $(INSTALL)
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
-accounting_storage_slurmdbd_la_DEPENDENCIES =  \
-	$(top_builddir)/src/common/.libs/libcommon.a
+accounting_storage_slurmdbd_la_LIBADD =
 am_accounting_storage_slurmdbd_la_OBJECTS =  \
 	accounting_storage_slurmdbd.lo
 accounting_storage_slurmdbd_la_OBJECTS =  \
@@ -276,9 +275,6 @@ pkglib_LTLIBRARIES = accounting_storage_slurmdbd.la
 # Null job completion logging plugin.
 accounting_storage_slurmdbd_la_SOURCES = accounting_storage_slurmdbd.c
 accounting_storage_slurmdbd_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
-accounting_storage_slurmdbd_la_LIBADD = \
-	$(top_builddir)/src/common/.libs/libcommon.a
-
 all: all-am
 
 .SUFFIXES:

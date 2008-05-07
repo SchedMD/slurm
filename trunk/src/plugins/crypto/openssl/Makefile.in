@@ -74,10 +74,7 @@ am__strip_dir = `echo $$p | sed -e 's|^.*/||'`;
 am__installdirs = "$(DESTDIR)$(pkglibdir)"
 pkglibLTLIBRARIES_INSTALL = $(INSTALL)
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
-am__DEPENDENCIES_1 =
-@HAVE_OPENSSL_TRUE@crypto_openssl_la_DEPENDENCIES =  \
-@HAVE_OPENSSL_TRUE@	$(am__DEPENDENCIES_1) \
-@HAVE_OPENSSL_TRUE@	$(top_builddir)/src/common/.libs/libcommon.a
+crypto_openssl_la_LIBADD =
 am__crypto_openssl_la_SOURCES_DIST = crypto_openssl.c
 @HAVE_OPENSSL_TRUE@am_crypto_openssl_la_OBJECTS = crypto_openssl.lo
 am__EXTRA_crypto_openssl_la_SOURCES_DIST = crypto_openssl.c
@@ -278,19 +275,9 @@ AUTOMAKE_OPTIONS = foreign
 PLUGIN_FLAGS = -module -avoid-version --export-dynamic 
 INCLUDES = -I$(top_srcdir) $(SSL_CPPFLAGS) -I$(top_srcdir)/src/common
 pkglib_LTLIBRARIES = $(openssl_lib)
-@HAVE_OPENSSL_TRUE@crypto_openssl_la_SOURCES = \
-@HAVE_OPENSSL_TRUE@	crypto_openssl.c
-
-
-# Add libslurm to switch_elan to provide some symbols that are not
-#  available in slurmctld (slurm_setenvpf)
-@HAVE_OPENSSL_TRUE@crypto_openssl_la_LIBADD = $(SSL_LIBS) \
-@HAVE_OPENSSL_TRUE@			$(top_builddir)/src/common/.libs/libcommon.a
-
+@HAVE_OPENSSL_TRUE@crypto_openssl_la_SOURCES = crypto_openssl.c
 @HAVE_OPENSSL_TRUE@crypto_openssl_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
-@HAVE_OPENSSL_FALSE@EXTRA_crypto_openssl_la_SOURCES = \
-@HAVE_OPENSSL_FALSE@	crypto_openssl.c
-
+@HAVE_OPENSSL_FALSE@EXTRA_crypto_openssl_la_SOURCES = crypto_openssl.c
 all: all-am
 
 .SUFFIXES:

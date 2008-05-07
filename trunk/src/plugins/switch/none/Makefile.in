@@ -74,8 +74,7 @@ am__strip_dir = `echo $$p | sed -e 's|^.*/||'`;
 am__installdirs = "$(DESTDIR)$(pkglibdir)"
 pkglibLTLIBRARIES_INSTALL = $(INSTALL)
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
-@HAVE_AIX_TRUE@switch_none_la_DEPENDENCIES =  \
-@HAVE_AIX_TRUE@	$(top_builddir)/src/common/.libs/libcommon.a
+switch_none_la_LIBADD =
 am_switch_none_la_OBJECTS = switch_none.lo
 switch_none_la_OBJECTS = $(am_switch_none_la_OBJECTS)
 switch_none_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
@@ -273,7 +272,6 @@ pkglib_LTLIBRARIES = switch_none.la
 # Null switch plugin.
 switch_none_la_SOURCES = switch_none.c
 switch_none_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
-@HAVE_AIX_TRUE@switch_none_la_LIBADD = $(top_builddir)/src/common/.libs/libcommon.a
 all: all-am
 
 .SUFFIXES:
