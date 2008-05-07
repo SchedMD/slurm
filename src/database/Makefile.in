@@ -298,7 +298,7 @@ INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common
 @HAVE_OPENSSL_TRUE@	base64.c base64.h
 
 @HAVE_OPENSSL_TRUE@libslurm_gold_la_LIBADD = $(SSL_LIBS)
-@HAVE_OPENSSL_TRUE@libslurm_gold_la_LDFLAGS = $(LIB_LDFLAGS)
+@HAVE_OPENSSL_TRUE@libslurm_gold_la_LDFLAGS = $(LIB_LDFLAGS) $(SSL_LDFLAGS)
 @HAVE_OPENSSL_TRUE@libslurm_gold_la_CFLAGS = $(SSL_CPPFLAGS)
 libslurm_mysql_la_SOURCES = mysql_common.c mysql_common.h
 libslurm_pgsql_la_SOURCES = pgsql_common.c pgsql_common.h
