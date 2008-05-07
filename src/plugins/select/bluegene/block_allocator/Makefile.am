@@ -25,11 +25,6 @@ noinst_LTLIBRARIES = libbluegene_block_allocator.la
 libbluegene_block_allocator_la_SOURCES =    \
 	block_allocator.c bridge_linker.c block_allocator.h bridge_linker.h
 
-libbluegene_block_allocator_la_LIBADD  =  \
-	$(top_builddir)/src/common/libcommon.la -lpthread
-
 libbluegene_block_allocator_la_LDFLAGS        = \
 	$(LIB_LDFLAGS) -lm    
 
-libbluegene_block_allocator_la_DEPENDENCIES  = \
-	$(top_builddir)/src/common/libcommon.la 

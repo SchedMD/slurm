@@ -66,17 +66,20 @@ mkinstalldirs = $(install_sh) -d
 CONFIG_HEADER = $(top_builddir)/config.h $(top_builddir)/slurm/slurm.h
 CONFIG_CLEAN_FILES =
 LTLIBRARIES = $(noinst_LTLIBRARIES)
-am__DEPENDENCIES_1 = $(top_builddir)/src/common/.libs/libcommon.a
+am__DEPENDENCIES_1 =
+@HAVE_OPENSSL_TRUE@libslurm_gold_la_DEPENDENCIES =  \
+@HAVE_OPENSSL_TRUE@	$(am__DEPENDENCIES_1)
 am__libslurm_gold_la_SOURCES_DIST = gold_interface.c gold_interface.h \
 	base64.c base64.h
-@HAVE_OPENSSL_TRUE@am_libslurm_gold_la_OBJECTS = gold_interface.lo \
-@HAVE_OPENSSL_TRUE@	base64.lo
+@HAVE_OPENSSL_TRUE@am_libslurm_gold_la_OBJECTS =  \
+@HAVE_OPENSSL_TRUE@	libslurm_gold_la-gold_interface.lo \
+@HAVE_OPENSSL_TRUE@	libslurm_gold_la-base64.lo
 libslurm_gold_la_OBJECTS = $(am_libslurm_gold_la_OBJECTS)
 libslurm_gold_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
-	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
-	$(libslurm_gold_la_LDFLAGS) $(LDFLAGS) -o $@
+	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(libslurm_gold_la_CFLAGS) \
+	$(CFLAGS) $(libslurm_gold_la_LDFLAGS) $(LDFLAGS) -o $@
 @HAVE_OPENSSL_TRUE@am_libslurm_gold_la_rpath =
-am__DEPENDENCIES_2 =
+libslurm_mysql_la_DEPENDENCIES = $(am__DEPENDENCIES_1)
 am_libslurm_mysql_la_OBJECTS = libslurm_mysql_la-mysql_common.lo
 libslurm_mysql_la_OBJECTS = $(am_libslurm_mysql_la_OBJECTS)
 libslurm_mysql_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
@@ -85,6 +88,7 @@ libslurm_mysql_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(libslurm_mysql_la_LDFLAGS) $(LDFLAGS) -o $@
 @HAVE_OPENSSL_FALSE@am_libslurm_mysql_la_rpath =
 @HAVE_OPENSSL_TRUE@am_libslurm_mysql_la_rpath =
+libslurm_pgsql_la_DEPENDENCIES = $(am__DEPENDENCIES_1)
 am_libslurm_pgsql_la_OBJECTS = libslurm_pgsql_la-pgsql_common.lo
 libslurm_pgsql_la_OBJECTS = $(am_libslurm_pgsql_la_OBJECTS)
 libslurm_pgsql_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
@@ -281,7 +285,6 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
 INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common
-COMMON_LIBS = $(top_builddir)/src/common/.libs/libcommon.a -lpthread
 @HAVE_OPENSSL_FALSE@noinst_LTLIBRARIES = \
 @HAVE_OPENSSL_FALSE@	libslurm_mysql.la \
 @HAVE_OPENSSL_FALSE@	libslurm_pgsql.la
@@ -294,19 +297,17 @@ COMMON_LIBS = $(top_builddir)/src/common/.libs/libcommon.a -lpthread
 @HAVE_OPENSSL_TRUE@libslurm_gold_la_SOURCES = gold_interface.c gold_interface.h \
 @HAVE_OPENSSL_TRUE@	base64.c base64.h
 
-@HAVE_OPENSSL_TRUE@libslurm_gold_la_LIBADD = $(COMMON_LIBS)
+@HAVE_OPENSSL_TRUE@libslurm_gold_la_LIBADD = $(SSL_LIBS)
 @HAVE_OPENSSL_TRUE@libslurm_gold_la_LDFLAGS = $(LIB_LDFLAGS)
-@HAVE_OPENSSL_TRUE@libslurm_gold_la_DEPENDENCIES = $(top_builddir)/src/common/.libs/libcommon.a  
+@HAVE_OPENSSL_TRUE@libslurm_gold_la_CFLAGS = $(SSL_CPPFLAGS)
 libslurm_mysql_la_SOURCES = mysql_common.c mysql_common.h
 libslurm_pgsql_la_SOURCES = pgsql_common.c pgsql_common.h
-libslurm_mysql_la_LIBADD = $(COMMON_LIBS) $(MYSQL_LIBS) 
-libslurm_pgsql_la_LIBADD = $(COMMON_LIBS) $(PGSQL_LIBS) 
+libslurm_mysql_la_LIBADD = $(MYSQL_LIBS) 
+libslurm_pgsql_la_LIBADD = $(PGSQL_LIBS) 
 libslurm_mysql_la_LDFLAGS = $(LIB_LDFLAGS)
 libslurm_pgsql_la_LDFLAGS = $(LIB_LDFLAGS)
 libslurm_mysql_la_CFLAGS = $(MYSQL_CFLAGS)
 libslurm_pgsql_la_CFLAGS = $(PGSQL_CFLAGS)
-libslurm_mysql_la_DEPENDENCIES = $(top_builddir)/src/common/.libs/libcommon.a 
-libslurm_pgsql_la_DEPENDENCIES = $(top_builddir)/src/common/.libs/libcommon.a  
 all: all-am
 
 .SUFFIXES:
@@ -362,8 +363,8 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/base64.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/gold_interface.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libslurm_gold_la-base64.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libslurm_gold_la-gold_interface.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libslurm_mysql_la-mysql_common.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libslurm_pgsql_la-pgsql_common.Plo@am__quote@
 
@@ -387,6 +388,20 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$<' object='$@' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LTCOMPILE) -c -o $@ $<
+
+libslurm_gold_la-gold_interface.lo: gold_interface.c
+@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libslurm_gold_la_CFLAGS) $(CFLAGS) -MT libslurm_gold_la-gold_interface.lo -MD -MP -MF $(DEPDIR)/libslurm_gold_la-gold_interface.Tpo -c -o libslurm_gold_la-gold_interface.lo `test -f 'gold_interface.c' || echo '$(srcdir)/'`gold_interface.c
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libslurm_gold_la-gold_interface.Tpo $(DEPDIR)/libslurm_gold_la-gold_interface.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='gold_interface.c' object='libslurm_gold_la-gold_interface.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libslurm_gold_la_CFLAGS) $(CFLAGS) -c -o libslurm_gold_la-gold_interface.lo `test -f 'gold_interface.c' || echo '$(srcdir)/'`gold_interface.c
+
+libslurm_gold_la-base64.lo: base64.c
+@am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libslurm_gold_la_CFLAGS) $(CFLAGS) -MT libslurm_gold_la-base64.lo -MD -MP -MF $(DEPDIR)/libslurm_gold_la-base64.Tpo -c -o libslurm_gold_la-base64.lo `test -f 'base64.c' || echo '$(srcdir)/'`base64.c
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/libslurm_gold_la-base64.Tpo $(DEPDIR)/libslurm_gold_la-base64.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='base64.c' object='libslurm_gold_la-base64.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libslurm_gold_la_CFLAGS) $(CFLAGS) -c -o libslurm_gold_la-base64.lo `test -f 'base64.c' || echo '$(srcdir)/'`base64.c
 
 libslurm_mysql_la-mysql_common.lo: mysql_common.c
 @am__fastdepCC_TRUE@	$(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libslurm_mysql_la_CFLAGS) $(CFLAGS) -MT libslurm_mysql_la-mysql_common.lo -MD -MP -MF $(DEPDIR)/libslurm_mysql_la-mysql_common.Tpo -c -o libslurm_mysql_la-mysql_common.lo `test -f 'mysql_common.c' || echo '$(srcdir)/'`mysql_common.c

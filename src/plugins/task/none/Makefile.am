@@ -11,7 +11,3 @@ pkglib_LTLIBRARIES = task_none.la
 # Null task plugin.
 task_none_la_SOURCES = task_none.c
 task_none_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
-
-if HAVE_AIX
-task_none_la_LIBADD = $(top_builddir)/src/common/.libs/libcommon.a
-endif

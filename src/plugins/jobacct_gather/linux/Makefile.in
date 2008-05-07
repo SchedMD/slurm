@@ -74,8 +74,7 @@ am__strip_dir = `echo $$p | sed -e 's|^.*/||'`;
 am__installdirs = "$(DESTDIR)$(pkglibdir)"
 pkglibLTLIBRARIES_INSTALL = $(INSTALL)
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
-jobacct_gather_linux_la_DEPENDENCIES =  \
-	$(top_builddir)/src/common/.libs/libcommon.a
+jobacct_gather_linux_la_LIBADD =
 am_jobacct_gather_linux_la_OBJECTS = jobacct_gather_linux.lo \
 	proctrack.lo
 jobacct_gather_linux_la_OBJECTS =  \
@@ -278,9 +277,6 @@ jobacct_gather_linux_la_SOURCES = jobacct_gather_linux.c \
 	$(top_builddir)/src/slurmd/common/proctrack.h 
 
 jobacct_gather_linux_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
-jobacct_gather_linux_la_LIBADD = \
-	$(top_builddir)/src/common/.libs/libcommon.a -lpthread 
-
 all: all-am
 
 .SUFFIXES:
