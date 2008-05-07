@@ -7,13 +7,13 @@ sbin_PROGRAMS = slurmd
 noinst_PROGRAMS = slurmd.test
 
 CPPFLAGS =  -DLIBSLURM_SO=\"$(libdir)/libslurm.so\"
-INCLUDES = -I$(top_srcdir) $(SSL_CPPFLAGS) 
+INCLUDES = -I$(top_srcdir)
 
 slurmd_LDADD = 					   \
         $(top_builddir)/src/common/libcommon.la    \
 	$(top_builddir)/src/common/libdaemonize.la \
 	$(top_builddir)/src/common/libeio.la       \
-	$(PLPA_LIBS) $(SSL_LIBS) 
+	$(PLPA_LIBS)
 
 slurmd_test_LDADD = $(slurmd_LDADD)
 

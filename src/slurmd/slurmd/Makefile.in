@@ -81,8 +81,7 @@ slurmd_OBJECTS = $(am_slurmd_OBJECTS)
 am__DEPENDENCIES_1 =
 slurmd_DEPENDENCIES = $(top_builddir)/src/common/libcommon.la \
 	$(top_builddir)/src/common/libdaemonize.la \
-	$(top_builddir)/src/common/libeio.la $(am__DEPENDENCIES_1) \
-	$(am__DEPENDENCIES_1)
+	$(top_builddir)/src/common/libeio.la $(am__DEPENDENCIES_1)
 slurmd_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(slurmd_LDFLAGS) \
 	$(LDFLAGS) -o $@
@@ -90,8 +89,7 @@ am_slurmd_test_OBJECTS = $(am__objects_1) testconfig.$(OBJEXT)
 slurmd_test_OBJECTS = $(am_slurmd_test_OBJECTS)
 am__DEPENDENCIES_2 = $(top_builddir)/src/common/libcommon.la \
 	$(top_builddir)/src/common/libdaemonize.la \
-	$(top_builddir)/src/common/libeio.la $(am__DEPENDENCIES_1) \
-	$(am__DEPENDENCIES_1)
+	$(top_builddir)/src/common/libeio.la $(am__DEPENDENCIES_1)
 slurmd_test_DEPENDENCIES = $(am__DEPENDENCIES_2)
 slurmd_test_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
@@ -281,12 +279,12 @@ target_vendor = @target_vendor@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
-INCLUDES = -I$(top_srcdir) $(SSL_CPPFLAGS) 
+INCLUDES = -I$(top_srcdir)
 slurmd_LDADD = \
         $(top_builddir)/src/common/libcommon.la    \
 	$(top_builddir)/src/common/libdaemonize.la \
 	$(top_builddir)/src/common/libeio.la       \
-	$(PLPA_LIBS) $(SSL_LIBS) 
+	$(PLPA_LIBS)
 
 slurmd_test_LDADD = $(slurmd_LDADD)
 SLURMD_SOURCES = \
