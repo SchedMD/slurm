@@ -15,6 +15,9 @@ documents those changes that are of interest to users and admins.
  -- In jobacct/gold map job names containing any non-alphanumeric characters 
     to '_' to avoid MySQL parsing problems.
  -- In jobacct/linux correct parsing if command name contains spaces.
+ -- In sched/wiki and sched/wiki2 report make job info TASK count reflect the 
+    actual task allocation (not requested tasks) even after job terminates.
+    Useful for accounting purposes only.
 
 * Changes in SLURM 1.2.28
 =========================
