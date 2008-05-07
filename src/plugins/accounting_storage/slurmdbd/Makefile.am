@@ -12,9 +12,8 @@ pkglib_LTLIBRARIES = accounting_storage_slurmdbd.la
 accounting_storage_slurmdbd_la_SOURCES = accounting_storage_slurmdbd.c
 accounting_storage_slurmdbd_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
 
-if HAVE_AIX
 # Add libcommon to provide some symbols that are not
 #  available in slurmctld (create_jobacct_job_rec)
 
 accounting_storage_slurmdbd_la_LIBADD  = $(top_builddir)/src/common/.libs/libcommon.a
-endif
+

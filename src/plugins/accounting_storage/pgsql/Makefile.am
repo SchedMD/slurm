@@ -14,7 +14,9 @@ accounting_storage_pgsql_la_SOURCES = accounting_storage_pgsql.c \
 accounting_storage_pgsql_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
 accounting_storage_pgsql_la_CFLAGS = $(PGSQL_CFLAGS)
 accounting_storage_pgsql_la_LIBADD = \
-	$(top_builddir)/src/database/libslurm_pgsql.la $(PGSQL_LIBS)
+	$(top_builddir)/src/database/libslurm_pgsql.la $(PGSQL_LIBS) \
+	$(top_builddir)/src/common/.libs/libcommon.a
 accounting_storage_pgsql_la_DEPENDENCIES = \
-	$(top_builddir)/src/database/libslurm_pgsql.la
+	$(top_builddir)/src/database/libslurm_pgsql.la \
+	$(top_builddir)/src/common/.libs/libcommon.a
 

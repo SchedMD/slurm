@@ -14,7 +14,9 @@ accounting_storage_mysql_la_SOURCES = accounting_storage_mysql.c \
 accounting_storage_mysql_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
 accounting_storage_mysql_la_CFLAGS = $(MYSQL_CFLAGS)
 accounting_storage_mysql_la_LIBADD = \
-	$(top_builddir)/src/database/libslurm_mysql.la $(MYSQL_LIBS)
+	$(top_builddir)/src/database/libslurm_mysql.la $(MYSQL_LIBS) \
+	$(top_builddir)/src/common/.libs/libcommon.a
 accounting_storage_mysql_la_DEPENDENCIES = \
-	$(top_builddir)/src/database/libslurm_mysql.la
+	$(top_builddir)/src/database/libslurm_mysql.la \
+	$(top_builddir)/src/common/.libs/libcommon.a
 
