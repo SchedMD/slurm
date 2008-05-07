@@ -376,15 +376,21 @@ static uint32_t _get_job_submit_time(struct job_record *job_ptr)
 
 static uint32_t _get_job_tasks(struct job_record *job_ptr)
 {
-	uint32_t task_cnt = 1;
+	uint32_t task_cnt;
 
-	if (job_ptr->num_procs)
-		task_cnt = job_ptr->num_procs;
-
-	if (job_ptr->details) {
-		task_cnt = MAX(task_cnt,
-			       (_get_job_min_nodes(job_ptr) * 
-			        job_ptr->details->ntasks_per_node));
+	if (job_ptr->job_state > JOB_PENDING) {
+		task_cnt = job_ptr->total_procs;
+	} else {
+		if (job_ptr->num_procs)
+			task_cnt = job_ptr->num_procs;
+		else
+			task_cnt = 1;
+		if (job_ptr->details) {
+			task_cnt = MAX(task_cnt,
+				       (_get_job_min_nodes(job_ptr) * 
+				        job_ptr->details->
+					ntasks_per_node));
+		}
 	}
 
 	return task_cnt / _get_job_cpus_per_task(job_ptr);
