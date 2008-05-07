@@ -15,5 +15,6 @@ accounting_storage_slurmdbd_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
 # Add libcommon to provide some symbols that are not
 #  available in slurmctld (create_jobacct_job_rec)
 
-accounting_storage_slurmdbd_la_LIBADD  = $(top_builddir)/src/common/.libs/libcommon.a
+accounting_storage_slurmdbd_la_LIBADD  = \
+	$(top_builddir)/src/common/.libs/libcommon.a
 
