@@ -45,6 +45,8 @@
 #include "bluegene.h"
 #include "dynamic_block.h"
 
+#ifdef HAVE_BG 
+
 #define _DEBUG 0
 #define MAX_GROUPS 128
 
@@ -236,7 +238,7 @@ static int _get_user_groups(uint32_t user_id, uint32_t group_id,
 		return -1;
 	}
 	*ngroups = max_groups;
-	rc = getgrouplist(pwd.pw_name, (gid_t) group_id, groups, ngroups);
+ 	rc = getgrouplist(pwd.pw_name, (gid_t) group_id, groups, ngroups);
 	xfree(buffer);
 	if (rc < 0) {
 		error("getgrouplist(%s): %m", pwd.pw_name);
@@ -1193,6 +1195,7 @@ static int _sync_block_lists(List full_list, List incomp_list)
 	return count;
 }
 
+#endif // HAVE_BG
 
 /*
  * Try to find resources for a given job request
@@ -1210,9 +1213,11 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 		      uint32_t min_nodes, uint32_t max_nodes,
 		      uint32_t req_nodes, int mode)
 {
+	int rc = SLURM_SUCCESS;
+#ifdef HAVE_BG
+	int i=0;
 	bg_record_t* bg_record = NULL;
 	char buf[100];
-	int i, rc = SLURM_SUCCESS;
 	uint16_t tmp16 = (uint16_t)NO_VAL;
 	List block_list = NULL;
 	int blocks_added = 0;
@@ -1354,15 +1359,17 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_block_bitmap,
 	}
 
 	list_destroy(block_list);
+#endif
 	return rc;
 }
 
 extern int test_job_list(List req_list)
 {
+	int rc = SLURM_SUCCESS;
+#ifdef HAVE_BG
 	bg_record_t* bg_record = NULL;
 	bg_record_t* new_record = NULL;
 	char buf[100];
-	int rc = SLURM_SUCCESS;
 //	uint16_t tmp16 = (uint16_t)NO_VAL;
 	List block_list = NULL;
 	int blocks_added = 0;
@@ -1563,7 +1570,6 @@ extern int test_job_list(List req_list)
 	list_destroy(job_block_test_list);
 	
 	slurm_mutex_unlock(&job_list_test_mutex);
-
+#endif
 	return rc;
-
 }
