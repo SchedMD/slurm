@@ -394,7 +394,8 @@ struct job_record {
 	slurm_addr *node_addr;		/* addresses of the nodes allocated to 
 					 * job */
 	bitstr_t *node_bitmap;		/* bitmap of nodes allocated to job */
-	uint32_t node_cnt;		/* count of nodes allocated to job */
+	uint32_t node_cnt;		/* count of nodes currently 
+					 * allocated to job */
 	char *nodes_completing;		/* nodes still in completing state
 					 * for this job, used to insure
 					 * epilog is not re-run for job */
@@ -420,7 +421,7 @@ struct job_record {
 					 * NO_VAL implies partition max_time */
 	time_t tot_sus_time;		/* total time in suspend state */
 	uint32_t total_procs;		/* number of allocated processors, 
-					   for accounting */
+					 * for accounting */
 	uint32_t user_id;		/* user the job runs as */
 
 	/* Per node allocation details */
