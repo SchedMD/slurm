@@ -245,18 +245,18 @@ static char *	_dump_job(struct job_record *job_ptr, time_t update_time)
 	}
 
 	snprintf(tmp, sizeof(tmp), 
-		"UPDATETIME=%u;WCLIMIT=%u;",
+		"UPDATETIME=%u;WCLIMIT=%u;TASKS=%u;",
 		(uint32_t) job_ptr->time_last_active,
-		(uint32_t) _get_job_time_limit(job_ptr));
+		(uint32_t) _get_job_time_limit(job_ptr),
+		_get_job_tasks(job_ptr));
 	xstrcat(buf, tmp);
 
-	/* Don't report actual tasks or nodes allocated since
-	 * this can impact requeue on heterogenous clusters */
-	snprintf(tmp, sizeof(tmp),
-		"TASKS=%u;NODES=%u;",
-		_get_job_tasks(job_ptr),
-		_get_job_min_nodes(job_ptr));
-	xstrcat(buf, tmp);
+	if (!IS_JOB_FINISHED(job_ptr)) {
+		snprintf(tmp, sizeof(tmp),
+			"NODES=%u;",
+			_get_job_min_nodes(job_ptr));
+		xstrcat(buf, tmp);
+	}
 
 	snprintf(tmp, sizeof(tmp),
 		"DPROCS=%u;",
@@ -348,7 +348,8 @@ static uint32_t _get_job_min_disk(struct job_record *job_ptr)
 static uint32_t	_get_job_min_nodes(struct job_record *job_ptr)
 {
 	if (job_ptr->job_state > JOB_PENDING) {
-		/* return actual count of allocated nodes */
+		/* return actual count of currently allocated nodes.
+		 * NOTE: gets decremented to zero while job is completing */
 		return job_ptr->node_cnt;
 	}
 
