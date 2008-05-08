@@ -48,6 +48,7 @@
 #include <strings.h>
 #include <unistd.h>
 #include <sys/poll.h>
+#include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/param.h>		/* MAXPATHLEN */
 #include "src/common/macros.h"
@@ -1317,12 +1318,20 @@ char **env_array_user_default(const char *username, int timeout, int mode)
 	char **env = NULL;
 	char *starttoken = "XXXXSLURMSTARTPARSINGHEREXXXX";
 	char *stoptoken  = "XXXXSLURMSTOPPARSINGHEREXXXXX";
-	char cmdstr[256];
+	char cmdstr[256], *env_loc = NULL;
 	int fildes[2], found, fval, len, rc, timeleft;
 	int buf_read, buf_rem;
 	pid_t child;
 	struct timeval begin, now;
 	struct pollfd ufds;
+	struct stat buf;
+
+	if (stat("/bin/env", &buf) == 0)
+		env_loc = "/bin/env";
+	else if (stat("/usr/bin/env", &buf) == 0)
+		env_loc = "/usr/bin/env";
+	else
+		fatal("Could not location command: env");
 
 	if (geteuid() != (uid_t)0) {
 		fatal("WARNING: you must be root to use --get-user-env");
@@ -1347,8 +1356,8 @@ char **env_array_user_default(const char *username, int timeout, int mode)
 		open("/dev/null", O_WRONLY);
 		snprintf(cmdstr, sizeof(cmdstr),
 			 "/bin/echo; /bin/echo; /bin/echo; "
-			 "/bin/echo %s; /bin/env; /bin/echo %s",
-			 starttoken, stoptoken);
+			 "/bin/echo %s; %s; /bin/echo %s",
+			 starttoken, env_loc, stoptoken);
 		if      (mode == 1)
 			execl("/bin/su", "su", username, "-c", cmdstr, NULL);
 		else if (mode == 2)
