@@ -193,6 +193,9 @@ int main(int argc, char *argv[])
 	int cnt, error_code, i;
 	pthread_attr_t thread_attr;
 	struct stat stat_buf;
+	/* Locks: Write configuration, job, node, and partition */
+	slurmctld_lock_t config_write_lock = {
+		WRITE_LOCK, WRITE_LOCK, WRITE_LOCK, WRITE_LOCK };
 
 	/*
 	 * Establish initial configuration
@@ -353,11 +356,13 @@ int main(int argc, char *argv[])
 			if (switch_restore(slurmctld_conf.state_save_location,
 					   recover ? true : false))
 				fatal(" failed to initialize switch plugin" );
+			lock_slurmctld(config_write_lock);
 			if ((error_code = read_slurm_conf(recover))) {
 				fatal("read_slurm_conf reading %s: %s",
 					slurmctld_conf.slurm_conf,
 					slurm_strerror(error_code));
 			}
+			unlock_slurmctld(config_write_lock);
 			
 			if ((recover == 0) || 
 			    (!stat("/tmp/slurm_accounting_first", &stat_buf))) {

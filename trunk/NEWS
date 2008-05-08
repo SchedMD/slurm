@@ -279,6 +279,11 @@ documents those changes that are of interest to users and admins.
     after startup using "scontrol update ..." command.
  -- In sched/wiki and sched/wiki2 report a job's state as "Hold" if it's 
     dependencies have not been satisfied.
+ -- In sched/wiki and sched/wiki2 do not process incoming requests until
+    slurm configuration is completely loaded.
+ -- In sched/wiki and sched/wiki2 do not report a job's node count after it 
+    has completed (slurm decrements the allocated node count when the nodes
+    transition from completing to idle state).
  -- If job prolog or epilog fail, log the program's exit code.
  -- In jobacct/gold map job names containing any non-alphanumeric characters 
     to '_' to avoid MySQL parsing problems.
