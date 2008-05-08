@@ -38,6 +38,7 @@
 #include "./crypto.h"
 #include "./msg.h"
 #include "src/common/uid.h"
+#include "src/slurmctld/locks.h"
 
 #define _DEBUG 0
 
@@ -139,11 +140,19 @@ static void *_msg_thread(void *no_data)
 	slurm_fd sock_fd = -1, new_fd;
 	slurm_addr cli_addr;
 	char *msg;
-	slurm_ctl_conf_t *conf = slurm_conf_lock();
+	slurm_ctl_conf_t *conf;
 	int i;
+	/* Locks: Write configuration, job, node, and partition */
+	slurmctld_lock_t config_write_lock = {
+		WRITE_LOCK, WRITE_LOCK, WRITE_LOCK, WRITE_LOCK };
 
+	conf = slurm_conf_lock();
 	sched_port = conf->schedport;
 	slurm_conf_unlock();
+
+	/* Wait until configuration is completely loaded */
+	lock_slurmctld(config_write_lock);
+	unlock_slurmctld(config_write_lock);
 
 	/* If SchedulerPort is already taken, keep trying to open it
 	 * once per minute. Slurmctld will continue to function
