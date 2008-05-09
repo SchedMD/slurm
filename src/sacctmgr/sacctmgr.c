@@ -718,7 +718,8 @@ static sacctmgr_file_opts_t *_parse_options(char *options)
 		} else if (strncasecmp (sub, "MaxNodes", 4) == 0) {
 			file_opts->max_nodes_per_job = atoi(sub+end);
 		} else if (strncasecmp (sub, "MaxWall", 4) == 0) {
-			file_opts->max_wall_duration_per_job = atoi(sub+end);
+			file_opts->max_wall_duration_per_job = 
+				(uint32_t) time_str2mins(sub+end);
 		} else if (strncasecmp (sub, "Organization", 1) == 0) {
 			file_opts->org = xstrdup(sub+end);
 		} else if (strncasecmp (sub, "QosLevel", 1) == 0) {
@@ -1151,7 +1152,7 @@ static void _load_file (int argc, char *argv[])
 
 	mw_field.name = "MaxWall";
 	mw_field.len = 7;
-	mw_field.print_routine = print_int;
+	mw_field.print_routine = print_time;
 		
 	START_TIMER;
 	if(rc == SLURM_SUCCESS && list_count(acct_list)) {
@@ -1203,8 +1204,8 @@ static void _load_file (int argc, char *argv[])
 				  assoc->max_cpu_secs_per_job);
 			print_int(VALUE, &mj_field, assoc->max_jobs);
 			print_int(VALUE, &mn_field, assoc->max_nodes_per_job);
-			print_int(VALUE, &mw_field,
-				  assoc->max_wall_duration_per_job);
+			print_time(VALUE, &mw_field,
+				   assoc->max_wall_duration_per_job);
 			printf("\n");
 		}
 		list_iterator_destroy(itr);

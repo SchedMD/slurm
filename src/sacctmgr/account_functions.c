@@ -132,7 +132,8 @@ static int _set_rec(int *start, int argc, char *argv[],
 			assoc->max_nodes_per_job = atoi(argv[i]+end);
 			a_set = 1;
 		} else if (strncasecmp (argv[i], "MaxWall", 4) == 0) {
-			assoc->max_wall_duration_per_job = atoi(argv[i]+end);
+			assoc->max_wall_duration_per_job = 
+				(uint32_t) time_str2mins(argv[i]+end);
 			a_set = 1;
 		} else if (strncasecmp (argv[i], "Organization", 1) == 0) {
 			acct->organization = xstrdup(argv[i]+end);
@@ -273,7 +274,8 @@ extern int sacctmgr_add_account(int argc, char *argv[])
 			max_nodes_per_job = atoi(argv[i]+end);
 			limit_set = 1;
 		} else if (strncasecmp (argv[i], "MaxWall", 4) == 0) {
-			max_wall_duration_per_job = atoi(argv[i]+end);
+			max_wall_duration_per_job = 
+				(uint32_t) time_str2mins(argv[i]+end);
 			limit_set = 1;
 		} else if (strncasecmp (argv[i], "Names", 1) == 0) {
 			addto_char_list(name_list, argv[i]+end);
@@ -538,9 +540,12 @@ extern int sacctmgr_add_account(int argc, char *argv[])
 			printf("  MaxJobs         = %u\n", max_jobs);
 		if((int)max_nodes_per_job != -2)
 			printf("  MaxNodes        = %u\n", max_nodes_per_job);
-		if((int)max_wall_duration_per_job != -2)
-			printf("  MaxWall         = %u\n",
-			       max_wall_duration_per_job);
+		if((int)max_wall_duration_per_job != -2) {
+			char time_buf[32];
+			mins2time_str((time_t) max_wall_duration_per_job, 
+				      time_buf, sizeof(time_buf));
+			printf("  MaxWall         = %s\n", time_buf);
+		}
 	}
 	
 	notice_thread_init();

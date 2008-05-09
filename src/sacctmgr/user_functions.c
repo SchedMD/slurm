@@ -141,7 +141,7 @@ static int _set_rec(int *start, int argc, char *argv[],
 			a_set = 1;
 		} else if (strncasecmp (argv[i], "MaxWall", 4) == 0) {
 			association->max_wall_duration_per_job =
-				atoi(argv[i]+end);
+				(uint32_t) time_str2mins(argv[i]+end);
 			a_set = 1;
 		} else if (strncasecmp (argv[i], "QosLevel", 1) == 0) {
 			user->qos = str_2_acct_qos(argv[i]+end);
@@ -295,7 +295,8 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 			max_nodes_per_job = atoi(argv[i]+end);
 			limit_set = 1;
 		} else if (strncasecmp (argv[i], "MaxWall", 4) == 0) {
-			max_wall_duration_per_job = atoi(argv[i]+end);
+			max_wall_duration_per_job = 
+				(uint32_t) time_str2mins(argv[i]+end);
 			limit_set = 1;
 		} else if (strncasecmp (argv[i], "Names", 1) == 0) {
 			addto_char_list(assoc_cond->user_list, argv[i]+end);
@@ -583,9 +584,12 @@ no_default:
 			printf("  MaxJobs         = %u\n", max_jobs);
 		if((int)max_nodes_per_job != -2)
 			printf("  MaxNodes        = %u\n", max_nodes_per_job);
-		if((int)max_wall_duration_per_job != -2)
-			printf("  MaxWall         = %u\n",
-			       max_wall_duration_per_job);
+		if((int)max_wall_duration_per_job != -2) {
+			char time_buf[32];
+			mins2time_str((time_t) max_wall_duration_per_job, 
+				      time_buf, sizeof(time_buf));
+			printf("  MaxWall         = %s\n", time_buf);
+		}
 	}
 
 	notice_thread_init();
@@ -717,7 +721,7 @@ extern int sacctmgr_list_user(int argc, char *argv[])
 
 		maxwall_field.name = "MaxWall";
 		maxwall_field.len = 7;
-		maxwall_field.print_routine = print_int;
+		maxwall_field.print_routine = print_time;
 		list_append(print_fields_list, &maxwall_field);
 	}
 
@@ -754,8 +758,8 @@ extern int sacctmgr_list_user(int argc, char *argv[])
 					  assoc->max_jobs);
 				print_int(VALUE, &maxnodes_field, 
 					  assoc->max_nodes_per_job);
-				print_int(VALUE, &maxwall_field, 
-					  assoc->max_wall_duration_per_job);
+				print_time(VALUE, &maxwall_field, 
+					   assoc->max_wall_duration_per_job);
 				first = 0;
 			}
 			list_iterator_destroy(itr2);
