@@ -133,7 +133,7 @@ static int _set_rec(int *start, int argc, char *argv[],
 			set = 1;
 		} else if (strncasecmp (argv[i], "MaxWall=", 8) == 0) {
 			association->max_wall_duration_per_job =
-				atoi(argv[i]+8);
+				(uint32_t) time_str2mins(argv[i]+8);
 			set = 1;
 		} else if (strncasecmp (argv[i], "MaxCPUSecs=", 11) == 0) {
 			association->max_cpu_seconds_per_job = atoi(argv[i]+11);
@@ -237,9 +237,12 @@ static void _print_rec(account_association_rec_t *association)
 		printf("  MaxJobs    = %u\n", association->max_jobs);
 	if(association->max_nodes_per_job) 
 		printf("  MaxNodes   = %u\n", association->max_nodes_per_job);
-	if(association->max_wall_duration_per_job) 
-		printf("  MaxWall    = %u\n",
-		       association->max_wall_duration_per_job);
+	if(association->max_wall_duration_per_job) {
+		char time_buf[32];
+		mins2time_str((time_t) association->max_wall_duration_per_job,
+			      time_buf, sizeof(time_buf));
+		printf("  MaxWall    = %s\n", time_buf);
+	}
 	if(association->max_cpu_seconds_per_job) 
 		printf("  MaxCPUSecs = %u\n",
 		       association->max_cpu_seconds_per_job);
@@ -261,6 +264,7 @@ extern int sacctmgr_list_association(int argc, char *argv[])
 	account_association_rec_t *assoc = NULL;
 	int i=0;
 	ListIterator itr = NULL;
+	char time_buf[32];
 
 	assoc_cond->id_list = list_create(destroy_char);
 	assoc_cond->user_list = list_create(destroy_char);
@@ -306,7 +310,9 @@ extern int sacctmgr_list_association(int argc, char *argv[])
 		printf("%-9u ", assoc->fairshare);
 		printf("%-7u ", assoc->max_jobs);
 		printf("%-8u ", assoc->max_nodes_per_job);
-		printf("%-7u ", assoc->max_wall_duration_per_job);
+		mins2time_str((time_t) assoc->max_wall_duration_per_job,
+			      time_buf, sizeof(time_buf));
+		printf("%-7s ", time_buf);
 		printf("%-10u\n", assoc->max_cpu_seconds_per_job);
 	}
 

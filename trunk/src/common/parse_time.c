@@ -1,6 +1,5 @@
 /*****************************************************************************\
  *  src/common/parse_time.c - time parsing utility functions
- *  $Id$
  *****************************************************************************
  *  Copyright (C) 2005-2006 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -535,6 +534,28 @@ extern void secs2time_str(time_t time, char *string, int size)
 		minutes = (time / 60) % 60;
 		hours = (time / 3600) % 24;
 		days = time / 86400;
+
+		if (days)
+			snprintf(string, size,
+				"%ld-%2.2ld:%2.2ld:%2.2ld",
+				days, hours, minutes, seconds);
+		else
+			snprintf(string, size,
+				"%2.2ld:%2.2ld:%2.2ld", 
+				hours, minutes, seconds);
+	}
+}
+
+extern void mins2time_str(uint32_t time, char *string, int size)
+{
+	if (time == INFINITE) {
+		snprintf(string, size, "UNLIMITED");
+	} else {
+		long days, hours, minutes, seconds;
+		seconds = 0;
+		minutes = time % 60;
+		hours = time / 60 % 24;
+		days = time / 1440;
 
 		if (days)
 			snprintf(string, size,

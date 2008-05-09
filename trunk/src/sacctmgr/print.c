@@ -36,6 +36,7 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 #include "print.h"
+#include "src/common/parse_time.h"
 
 extern void destroy_print_field(void *object)
 {
@@ -116,6 +117,32 @@ extern void print_int(type_t type, print_field_t *field, uint32_t value)
 			printf("%-*s ", field->len, " ");
 		else
 			printf("%*u ", field->len, value);
+		break;
+	default:
+		printf("%-*.*s ", field->len, field->len, "n/a");
+		break;
+	}
+}
+
+extern void print_time(type_t type, print_field_t *field, uint32_t value)
+{
+	switch(type) {
+	case HEADLINE:
+		printf("%-*.*s ", field->len, field->len, field->name);
+		break;
+	case UNDERSCORE:
+		printf("%-*.*s ", field->len, field->len, 
+		       "---------------------------------------");
+		break;
+	case VALUE:
+		if((int)value < 0)
+			printf("%-*s ", field->len, " ");
+		else {
+			char time_buf[32];
+			mins2time_str((time_t) value, 
+				      time_buf, sizeof(time_buf));
+			printf("%*s ", field->len, time_buf);
+		}
 		break;
 	default:
 		printf("%-*.*s ", field->len, field->len, "n/a");

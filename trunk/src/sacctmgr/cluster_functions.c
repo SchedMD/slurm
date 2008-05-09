@@ -95,7 +95,7 @@ static int _set_rec(int *start, int argc, char *argv[],
 			set = 1;
 		} else if (strncasecmp (argv[i], "MaxWall", 4) == 0) {
 			cluster->default_max_wall_duration_per_job =
-				atoi(argv[i]+end);
+				(uint32_t) time_str2mins(argv[i]+end);
 			set = 1;
 		} else if (strncasecmp (argv[i], "MaxCPUSecs=", 11) == 0) {
 			cluster->default_max_cpu_secs_per_job =
@@ -146,7 +146,8 @@ extern int sacctmgr_add_cluster(int argc, char *argv[])
 			max_nodes_per_job = atoi(argv[i]+end);
 			limit_set = 1;
 		} else if (strncasecmp (argv[i], "MaxWall", 4) == 0) {
-			max_wall_duration_per_job = atoi(argv[i]+end);
+			max_wall_duration_per_job = 
+				(uint32_t) time_str2mins(argv[i]+end);
 			limit_set = 1;
 		} else if (strncasecmp (argv[i], "Names", 1) == 0) {
 			addto_char_list(name_list, argv[i]+end);
@@ -230,9 +231,12 @@ extern int sacctmgr_add_cluster(int argc, char *argv[])
 			printf("  MaxJobs         = %u\n", max_jobs);
 		if((int)max_nodes_per_job != -2)
 			printf("  MaxNodes        = %u\n", max_nodes_per_job);
-		if((int)max_wall_duration_per_job != -2)
-			printf("  MaxWall         = %u\n",
-			       max_wall_duration_per_job);
+		if((int)max_wall_duration_per_job != -2) {
+			char time_buf[32];
+			mins2time_str((time_t) max_wall_duration_per_job, 
+				      time_buf, sizeof(time_buf));
+			printf("  MaxWall         = %s\n", time_buf);
+		}
 	}
 
 	if(!list_count(cluster_list)) {
@@ -373,9 +377,13 @@ extern int sacctmgr_modify_cluster(int argc, char *argv[])
 	if((int)cluster->default_max_nodes_per_job != -2)
 		printf("  MaxNodes      = %u\n",
 		       cluster->default_max_nodes_per_job);
-	if((int)cluster->default_max_wall_duration_per_job != -2)
-		printf("  MaxWall       = %u\n",
-		       cluster->default_max_wall_duration_per_job);
+	if((int)cluster->default_max_wall_duration_per_job != -2) {
+		char time_buf[32];
+		mins2time_str((time_t) 
+			      cluster->default_max_wall_duration_per_job, 
+			      time_buf, sizeof(time_buf));
+		printf("  MaxWall       = %s\n", time_buf);
+	}
 
 	cluster_list = list_create(destroy_acct_cluster_rec);
 	list_append(cluster_list, cluster);

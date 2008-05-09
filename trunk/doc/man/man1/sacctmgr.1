@@ -97,7 +97,7 @@ Display a description of sacctmgr options and commands.
 Do not display information about hidden or deleted entities. 
 
 .TP
-\fBlist\fR <\fIENTITY\fR> [<\fISPECS\fR>]
+\fBlist\fR <\fIENTITY\fR> [with <\fISPECS\fR>]
 Display information about the specified entities.
 By default, all entities are displayed.
 Idential to the \fBshow\fR command.
@@ -119,7 +119,7 @@ Print no warning or informational messages, only fatal error messages.
 Terminate the execution of sacctmgr.
 
 .TP
-\fBshow\fR <\fIENTITY\fR> [<\fISPECS\fR>]
+\fBshow\fR <\fIENTITY\fR> [with <\fISPECS\fR>]
 Display information about the specified entities.
 By default, all entities are displayed.
 Idential to the \fBlist\fR command.
@@ -194,6 +194,9 @@ Default is the cluster's limit.
 Maximum wall clock time each job is able to use in this account.
 This is overridden if set directly on a user. 
 Default is the cluster's limit.
+<max wall> format is <min> or <min>:<sec> or <hr>:<min>:<sec> or 
+<days>\-<hr>:<min>:<sec> or <days>\-<hr>.
+Data is recorded in minutes with rounding as needed.
 .TP
 \fIName\fP=<name>
 The name of a bank account.
@@ -238,6 +241,9 @@ Default is no limit.
 Maximum wall clock time each job is able to use in this account.
 This is overridden if set directly on an account or user. 
 Default is no limit.
+<max wall> format is <min> or <min>:<sec> or <hr>:<min>:<sec> or 
+<days>\-<hr>:<min>:<sec> or <days>\-<hr>.
+Data is recorded in minutes with rounding as needed.
 .TP
 \fIQosLevel\fP=<qos>
 Quality of Service jobs are to run at for this account.  Now consisting
@@ -290,6 +296,9 @@ Default is the account's limit.
 Maximum wall clock time this user can use in each job using the
 account specified.
 Default is the account's limit.
+<max wall> format is <min> or <min>:<sec> or <hr>:<min>:<sec> or 
+<days>\-<hr>:<min>:<sec> or <days>\-<hr>.
+Data is recorded in minutes with rounding as needed.
 
 .SH "EXAMPLES"
 .eo
