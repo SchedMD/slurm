@@ -298,8 +298,11 @@ int main(int argc, char *argv[])
 	accounting_enforce = slurmctld_conf.accounting_storage_enforce;
 	acct_db_conn = acct_storage_g_get_connection(true, false);
 	if (assoc_mgr_init(acct_db_conn, accounting_enforce) &&
-	    accounting_enforce)
-		fatal("assoc_mgr_init failure");
+	    accounting_enforce) {
+		error("assoc_mgr_init failure");
+		fatal("slurmdbd and/or database must be up at "
+		      "slurmctld start time");
+	}
 
 	info("slurmctld version %s started on cluster %s",
 	     SLURM_VERSION, slurmctld_cluster_name);
@@ -383,13 +386,18 @@ int main(int argc, char *argv[])
 				slurmctld_conf.backup_controller);
 			exit(0);
 		}
+
 		if(!acct_db_conn) {
 			acct_db_conn = 
 				acct_storage_g_get_connection(true, false);
 			if (assoc_mgr_init(acct_db_conn, accounting_enforce) &&
-			    accounting_enforce)
-				fatal("assoc_mgr_init failure");
+			    accounting_enforce) {
+				error("assoc_mgr_init failure");
+				fatal("slurmdbd and/or database must be up at "
+				      "slurmctld start time");
+			}
 		}
+
 		info("Running as primary controller");
 		_accounting_cluster_ready();
 		if (slurm_sched_init() != SLURM_SUCCESS)

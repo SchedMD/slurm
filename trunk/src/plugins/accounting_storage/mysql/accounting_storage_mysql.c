@@ -3886,6 +3886,7 @@ empty:
 			assoc->max_cpu_secs_per_job = atoi(row[ASSOC_REQ_MCPJ]);
 		else
 			assoc->max_cpu_secs_per_job = -1;
+		//log_assoc_rec(assoc);
 	}
 	mysql_free_result(result);
 

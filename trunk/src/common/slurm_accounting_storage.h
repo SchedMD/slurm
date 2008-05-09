@@ -263,6 +263,8 @@ extern acct_qos_level_t str_2_acct_qos(char *level);
 extern char *acct_admin_level_str(acct_admin_level_t level);
 extern acct_admin_level_t str_2_acct_admin_level(char *level);
 
+extern void log_assoc_rec(acct_association_rec_t *assoc_ptr);
+
 extern int slurm_acct_storage_init(char *loc); /* load the plugin */
 extern int slurm_acct_storage_fini(void); /* unload the plugin */
 

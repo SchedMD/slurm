@@ -643,6 +643,7 @@ extern int sacctmgr_list_user(int argc, char *argv[])
 	print_field_t acct_field;
 	print_field_t part_field;
 	print_field_t maxjobs_field;
+	print_field_t maxnodes_field;
 	print_field_t maxwall_field;
 
 	List print_fields_list; /* types are of print_field_t */
@@ -709,6 +710,11 @@ extern int sacctmgr_list_user(int argc, char *argv[])
 		maxjobs_field.print_routine = print_int;
 		list_append(print_fields_list, &maxjobs_field);
 
+		maxnodes_field.name = "MaxNodes";
+		maxnodes_field.len = 8;
+		maxnodes_field.print_routine = print_int;
+		list_append(print_fields_list, &maxnodes_field);
+
 		maxwall_field.name = "MaxWall";
 		maxwall_field.len = 7;
 		maxwall_field.print_routine = print_int;
@@ -744,7 +750,10 @@ extern int sacctmgr_list_user(int argc, char *argv[])
 					  assoc->cluster);
 				print_str(VALUE, &acct_field, assoc->acct);
 				print_str(VALUE, &part_field, assoc->partition);
-				print_int(VALUE, &maxjobs_field, assoc->max_jobs);
+				print_int(VALUE, &maxjobs_field, 
+					  assoc->max_jobs);
+				print_int(VALUE, &maxnodes_field, 
+					  assoc->max_nodes_per_job);
 				print_int(VALUE, &maxwall_field, 
 					  assoc->max_wall_duration_per_job);
 				first = 0;

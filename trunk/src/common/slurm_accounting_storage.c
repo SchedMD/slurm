@@ -954,8 +954,9 @@ extern int unpack_acct_association_rec(void **object, Buf buffer)
 	safe_unpackstr_xmalloc(&object_ptr->partition, &uint32_tmp, buffer);
 	safe_unpack32(&object_ptr->uid, buffer);
 	safe_unpack32(&object_ptr->used_share, buffer);
-	safe_unpackstr_xmalloc(&object_ptr->user, &uint32_tmp, buffer);	
+	safe_unpackstr_xmalloc(&object_ptr->user, &uint32_tmp, buffer);
 
+	//log_assoc_rec(object_ptr);
 	return SLURM_SUCCESS;
 
 unpack_error:
@@ -1556,6 +1557,24 @@ extern acct_admin_level_t str_2_acct_admin_level(char *level)
 	} else {
 		return ACCT_ADMIN_NOTSET;		
 	}	
+}
+
+extern void log_assoc_rec(acct_association_rec_t *assoc_ptr)
+{
+	info("association rec id: %u", assoc_ptr->id);
+	info("  acct :            %s", assoc_ptr->acct);
+	info("  cluster :         %s", assoc_ptr->cluster);
+	info("  fairshare :       %u", assoc_ptr->fairshare);
+	info("  max_cpu_secs_per_job : %u", assoc_ptr->max_cpu_secs_per_job);
+	info("  max_jobs :        %u", assoc_ptr->max_jobs);
+	info("  max_nodes_per_job : %u", assoc_ptr->max_nodes_per_job);
+	info("  max_wall_duration_per_job : %u", 
+	     assoc_ptr->max_wall_duration_per_job);
+	info("  parent_acct :     %s", assoc_ptr->parent_acct);
+	info("  partition :       %s", assoc_ptr->partition);
+	info("  user :            %s(%u)", assoc_ptr->user, assoc_ptr->uid);
+	info("  used_jobs :       %u", assoc_ptr->used_jobs);
+	info("  used_share :      %u", assoc_ptr->used_share);
 }
 
 /*
