@@ -1326,6 +1326,10 @@ char **env_array_user_default(const char *username, int timeout, int mode)
 	struct pollfd ufds;
 	struct stat buf;
 
+	if (stat("/bin/su", &buf))
+		fatal("Could not locate command: /bin/su");
+	if (stat("/bin/echo", &buf))
+		fatal("Could not locate command: /bin/echo");
 	if (stat("/bin/env", &buf) == 0)
 		env_loc = "/bin/env";
 	else if (stat("/usr/bin/env", &buf) == 0)

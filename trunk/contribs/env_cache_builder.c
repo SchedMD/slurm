@@ -77,14 +77,17 @@ static int	_get_cache_dir(char *buffer, int buf_size);
 static void	_log_failures(int failures, char *cache_dir);
 static int	_parse_line(char *in_line, char **user_name, int *user_id);
 
+char *env_loc = NULL;
+
 main (int argc, char **argv)
 {
 	FILE *passwd_fd;
 	char cache_dir[256], in_line[256], *user_name;
 	int i, failures = 0, user_cnt = 0, user_id;
 	long int delta_t;
+	struct stat buf;
 
-	if (geteuid() != (uid_t)0) {
+	if (geteuid() != (uid_t) 0) {
 		printf("Need to run as user root\n");
 		exit(1);
 	}
@@ -97,6 +100,30 @@ main (int argc, char **argv)
 			strerror(errno));
 		exit(1);
 	}
+
+	if (stat("/bgl", &buf) == 0) {
+		printf("BlueGene Note: Execute only a a front-end node, "
+			"not the service node\n");
+		printf("               User logins to the service node are "
+			"disabled\n\n");
+	}
+	if (stat("/bin/su", &buf)) {
+		printf("Could not locate command: /bin/su\n");
+		exit(1);
+	}
+	if (stat("/bin/echo", &buf)) {
+		printf("Could not locate command: /bin/echo\n");
+		exit(1);
+	}
+	if (stat("/bin/env", &buf) == 0)
+		env_loc = "/bin/env";
+	else if (stat("/usr/bin/env", &buf) == 0)
+		env_loc = "/usr/bin/env";
+	else {
+		printf("Could not location command: env\n");
+		exit(1);
+	}
+
 	printf("Building user environment cache files for Moab/Slurm.\n");
 	printf("This will take a while.\n\n");
 
@@ -230,8 +257,8 @@ static long int _build_cache(char *user_name, char *cache_dir)
 		open("/dev/null", O_WRONLY);
 		snprintf(buffer, sizeof(buffer),
 			 "/bin/echo; /bin/echo; /bin/echo; "
-			 "/bin/echo %s; /bin/env; /bin/echo %s",
-			 starttoken, stoptoken);
+			 "/bin/echo %s; %s; /bin/echo %s",
+			 starttoken, env_loc, stoptoken);
 #ifdef LOAD_ENV_NO_LOGIN
 		execl("/bin/su", "su", user_name, "-c", buffer, NULL);
 #else
