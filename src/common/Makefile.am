@@ -117,6 +117,9 @@ libcommon_la_LIBADD   = -ldl
 
 libcommon_la_LDFLAGS  = $(LIB_LDFLAGS) -module --export-dynamic
 
+libcommon_o_SOURCES = 
+
+
 # This was made so we chould export all symbols from libcommon 
 # on multiple platforms
 libcommon.o :  $(libcommon_la_OBJECTS) $(libcommon_la_DEPENDENCIES) 

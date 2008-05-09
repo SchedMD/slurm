@@ -137,8 +137,8 @@ libspank_la_LIBADD =
 am_libspank_la_OBJECTS = plugstack.lo optz.lo
 libspank_la_OBJECTS = $(am_libspank_la_OBJECTS)
 PROGRAMS = $(noinst_PROGRAMS)
-libcommon_o_SOURCES = libcommon.c
-libcommon_o_OBJECTS = libcommon.$(OBJEXT)
+am_libcommon_o_OBJECTS =
+libcommon_o_OBJECTS = $(am_libcommon_o_OBJECTS)
 libcommon_o_LDADD = $(LDADD)
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir) -I$(top_builddir)/slurm
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
@@ -154,11 +154,11 @@ LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	$(LDFLAGS) -o $@
 SOURCES = $(libcommon_la_SOURCES) $(EXTRA_libcommon_la_SOURCES) \
 	$(libdaemonize_la_SOURCES) $(libeio_la_SOURCES) \
-	$(libspank_la_SOURCES) libcommon.c
+	$(libspank_la_SOURCES) $(libcommon_o_SOURCES)
 DIST_SOURCES = $(am__libcommon_la_SOURCES_DIST) \
 	$(am__EXTRA_libcommon_la_SOURCES_DIST) \
 	$(libdaemonize_la_SOURCES) $(libeio_la_SOURCES) \
-	$(libspank_la_SOURCES) libcommon.c
+	$(libspank_la_SOURCES) $(libcommon_o_SOURCES)
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -428,6 +428,7 @@ libspank_la_SOURCES = \
 
 libcommon_la_LIBADD = -ldl 
 libcommon_la_LDFLAGS = $(LIB_LDFLAGS) -module --export-dynamic
+libcommon_o_SOURCES = 
 all: all-am
 
 .SUFFIXES:
@@ -509,7 +510,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/io_hdr.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/job_options.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/jobacct_common.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcommon.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/list.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/log.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/malloc.Plo@am__quote@
