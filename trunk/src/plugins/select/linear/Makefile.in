@@ -74,8 +74,7 @@ am__strip_dir = `echo $$p | sed -e 's|^.*/||'`;
 am__installdirs = "$(DESTDIR)$(pkglibdir)"
 pkglibLTLIBRARIES_INSTALL = $(INSTALL)
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
-select_linear_la_DEPENDENCIES =  \
-	$(top_builddir)/src/common/.libs/libcommon.a
+select_linear_la_LIBADD =
 am_select_linear_la_OBJECTS = select_linear.lo
 select_linear_la_OBJECTS = $(am_select_linear_la_OBJECTS)
 select_linear_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
@@ -273,10 +272,6 @@ pkglib_LTLIBRARIES = select_linear.la
 # Linear node selection plugin.
 select_linear_la_SOURCES = select_linear.c select_linear.h
 select_linear_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
-
-# Add libcommon to provide some symbols that are not
-#  available in slurmctld (slurm_get_avail_procs)
-select_linear_la_LIBADD = $(top_builddir)/src/common/.libs/libcommon.a
 all: all-am
 
 .SUFFIXES:

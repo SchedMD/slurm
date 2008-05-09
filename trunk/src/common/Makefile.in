@@ -15,13 +15,15 @@
 @SET_MAKE@
 
 # Makefile for common library 
-# If you are linking to this lib in a plugin you will need to link to 
-# $(top_builddir)/src/common/.libs/libcommon.a
-# if you are linking to a stand alone program link to
+# If you are linking to this lib any know you are not linking to 
+# anything else that will need variables here link to 
 # $(top_builddir)/src/common/libcommon.la
+# if you are linking to a stand alone program that needs all symbols link to
+# $(top_builddir)/src/common/libcommon.o with -ldl added 
 # This avoids having multiple symbols running around when there should 
 # only be 1 address per symbol.  If you link to the libcommon.la in
 # a plugin you will get 2 addresses for one symbol which could lead to problems.
+
 
 VPATH = @srcdir@
 pkgdatadir = $(datadir)/@PACKAGE@
@@ -42,6 +44,7 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
+noinst_PROGRAMS = libcommon.o$(EXEEXT)
 subdir = src/common
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -133,6 +136,10 @@ libeio_la_OBJECTS = $(am_libeio_la_OBJECTS)
 libspank_la_LIBADD =
 am_libspank_la_OBJECTS = plugstack.lo optz.lo
 libspank_la_OBJECTS = $(am_libspank_la_OBJECTS)
+PROGRAMS = $(noinst_PROGRAMS)
+libcommon_o_SOURCES = libcommon.c
+libcommon_o_OBJECTS = libcommon.$(OBJEXT)
+libcommon_o_LDADD = $(LDADD)
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir) -I$(top_builddir)/slurm
 depcomp = $(SHELL) $(top_srcdir)/auxdir/depcomp
 am__depfiles_maybe = depfiles
@@ -147,11 +154,11 @@ LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	$(LDFLAGS) -o $@
 SOURCES = $(libcommon_la_SOURCES) $(EXTRA_libcommon_la_SOURCES) \
 	$(libdaemonize_la_SOURCES) $(libeio_la_SOURCES) \
-	$(libspank_la_SOURCES)
+	$(libspank_la_SOURCES) libcommon.c
 DIST_SOURCES = $(am__libcommon_la_SOURCES_DIST) \
 	$(am__EXTRA_libcommon_la_SOURCES_DIST) \
 	$(libdaemonize_la_SOURCES) $(libeio_la_SOURCES) \
-	$(libspank_la_SOURCES)
+	$(libspank_la_SOURCES) libcommon.c
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -472,6 +479,13 @@ libeio.la: $(libeio_la_OBJECTS) $(libeio_la_DEPENDENCIES)
 libspank.la: $(libspank_la_OBJECTS) $(libspank_la_DEPENDENCIES) 
 	$(LINK)  $(libspank_la_OBJECTS) $(libspank_la_LIBADD) $(LIBS)
 
+clean-noinstPROGRAMS:
+	@list='$(noinst_PROGRAMS)'; for p in $$list; do \
+	  f=`echo $$p|sed 's/$(EXEEXT)$$//'`; \
+	  echo " rm -f $$p $$f"; \
+	  rm -f $$p $$f ; \
+	done
+
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
 
@@ -495,6 +509,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/io_hdr.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/job_options.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/jobacct_common.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libcommon.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/list.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/log.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/malloc.Plo@am__quote@
@@ -642,7 +657,7 @@ distdir: $(DISTFILES)
 	done
 check-am: all-am
 check: check-am
-all-am: Makefile $(LTLIBRARIES)
+all-am: Makefile $(LTLIBRARIES) $(PROGRAMS)
 installdirs:
 install: install-am
 install-exec: install-exec-am
@@ -671,7 +686,7 @@ maintainer-clean-generic:
 clean: clean-am
 
 clean-am: clean-generic clean-libtool clean-noinstLTLIBRARIES \
-	mostlyclean-am
+	clean-noinstPROGRAMS mostlyclean-am
 
 distclean: distclean-am
 	-rm -rf ./$(DEPDIR)
@@ -730,18 +745,24 @@ uninstall-am:
 .MAKE: install-am install-strip
 
 .PHONY: CTAGS GTAGS all all-am check check-am clean clean-generic \
-	clean-libtool clean-noinstLTLIBRARIES ctags distclean \
-	distclean-compile distclean-generic distclean-libtool \
-	distclean-tags distdir dvi dvi-am html html-am info info-am \
-	install install-am install-data install-data-am install-dvi \
-	install-dvi-am install-exec install-exec-am install-html \
-	install-html-am install-info install-info-am install-man \
-	install-pdf install-pdf-am install-ps install-ps-am \
-	install-strip installcheck installcheck-am installdirs \
-	maintainer-clean maintainer-clean-generic mostlyclean \
-	mostlyclean-compile mostlyclean-generic mostlyclean-libtool \
-	pdf pdf-am ps ps-am tags uninstall uninstall-am
+	clean-libtool clean-noinstLTLIBRARIES clean-noinstPROGRAMS \
+	ctags distclean distclean-compile distclean-generic \
+	distclean-libtool distclean-tags distdir dvi dvi-am html \
+	html-am info info-am install install-am install-data \
+	install-data-am install-dvi install-dvi-am install-exec \
+	install-exec-am install-html install-html-am install-info \
+	install-info-am install-man install-pdf install-pdf-am \
+	install-ps install-ps-am install-strip installcheck \
+	installcheck-am installdirs maintainer-clean \
+	maintainer-clean-generic mostlyclean mostlyclean-compile \
+	mostlyclean-generic mostlyclean-libtool pdf pdf-am ps ps-am \
+	tags uninstall uninstall-am
 
+
+# This was made so we chould export all symbols from libcommon 
+# on multiple platforms
+libcommon.o :  $(libcommon_la_OBJECTS) $(libcommon_la_DEPENDENCIES) 
+	$(libcommon_la_LINK)  $(libcommon_la_OBJECTS) 
 
 global_defaults.c : $(top_builddir)/config.h Makefile
 	@( echo "/* This file autogenerated by src/common/Makefile */"; \

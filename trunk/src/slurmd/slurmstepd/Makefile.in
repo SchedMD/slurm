@@ -79,8 +79,7 @@ am_slurmstepd_OBJECTS = slurmstepd.$(OBJEXT) mgr.$(OBJEXT) \
 	run_script.$(OBJEXT) task_plugin.$(OBJEXT)
 slurmstepd_OBJECTS = $(am_slurmstepd_OBJECTS)
 am__DEPENDENCIES_1 =
-slurmstepd_DEPENDENCIES = $(top_builddir)/src/common/libcommon.la \
-	$(top_builddir)/src/common/libdaemonize.la \
+slurmstepd_DEPENDENCIES = $(top_builddir)/src/common/libdaemonize.la \
 	$(top_builddir)/src/common/libeio.la \
 	$(top_builddir)/src/common/libspank.la $(am__DEPENDENCIES_1) \
 	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
@@ -274,7 +273,6 @@ top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
 INCLUDES = -I$(top_srcdir)
 slurmstepd_LDADD = \
-        $(top_builddir)/src/common/libcommon.la    \
 	$(top_builddir)/src/common/libdaemonize.la \
 	$(top_builddir)/src/common/libeio.la       \
 	$(top_builddir)/src/common/libspank.la     \
@@ -305,11 +303,15 @@ slurmstepd_SOURCES = \
 	$(top_builddir)/src/slurmd/common/task_plugin.h \
 	$(top_builddir)/src/slurmd/common/reverse_tree.h
 
-@HAVE_AIX_FALSE@slurmstepd_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
+@HAVE_AIX_FALSE@slurmstepd_LDFLAGS = -export-dynamic $(CMD_LDFLAGS) \
+@HAVE_AIX_FALSE@	 $(top_builddir)/src/common/libcommon.o -ldl
+
 
 # We need to set maxdata back to 0 because this effects the "max memory size"
 # ulimit, and the ulimit is inherited by child processes.
-@HAVE_AIX_TRUE@slurmstepd_LDFLAGS = -export-dynamic $(CMD_LDFLAGS) -Wl,-bmaxdata:0x0
+@HAVE_AIX_TRUE@slurmstepd_LDFLAGS = -export-dynamic $(CMD_LDFLAGS) -Wl,-bmaxdata:0x0 \
+@HAVE_AIX_TRUE@	 $(top_builddir)/src/common/libcommon.o -ldl
+
 all: all-am
 
 .SUFFIXES:

@@ -74,8 +74,7 @@ am__strip_dir = `echo $$p | sed -e 's|^.*/||'`;
 am__installdirs = "$(DESTDIR)$(pkglibdir)"
 pkglibLTLIBRARIES_INSTALL = $(INSTALL)
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
-jobacct_gather_aix_la_DEPENDENCIES =  \
-	$(top_builddir)/src/common/.libs/libcommon.a
+jobacct_gather_aix_la_LIBADD =
 am_jobacct_gather_aix_la_OBJECTS = jobacct_gather_aix.lo proctrack.lo
 jobacct_gather_aix_la_OBJECTS = $(am_jobacct_gather_aix_la_OBJECTS)
 jobacct_gather_aix_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
@@ -276,10 +275,6 @@ jobacct_gather_aix_la_SOURCES = jobacct_gather_aix.c \
 	$(top_builddir)/src/slurmd/common/proctrack.h 
 
 jobacct_gather_aix_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
-
-# Add libcommon to provide some symbols that are not
-#  available in slurmctld (jobacct_common_free_jobacct)
-jobacct_gather_aix_la_LIBADD = $(top_builddir)/src/common/.libs/libcommon.a
 all: all-am
 
 .SUFFIXES:

@@ -10,7 +10,6 @@ CPPFLAGS =  -DLIBSLURM_SO=\"$(libdir)/libslurm.so\"
 INCLUDES = -I$(top_srcdir)
 
 slurmd_LDADD = 					   \
-        $(top_builddir)/src/common/libcommon.la    \
 	$(top_builddir)/src/common/libdaemonize.la \
 	$(top_builddir)/src/common/libeio.la       \
 	$(PLPA_LIBS)
@@ -47,9 +46,11 @@ slurmd_test_SOURCES = \
 if HAVE_AIX
 # We need to set maxdata back to 0 because this effects the "max memory size"
 # ulimit, and the ulimit is inherited by child processes.
-slurmd_LDFLAGS = -export-dynamic $(CMD_LDFLAGS) -Wl,-bmaxdata:0x0
+slurmd_LDFLAGS = -export-dynamic $(CMD_LDFLAGS) -Wl,-bmaxdata:0x0 \
+	 $(top_builddir)/src/common/libcommon.o -ldl
 else
-slurmd_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
+slurmd_LDFLAGS = -export-dynamic $(CMD_LDFLAGS) \
+	 $(top_builddir)/src/common/libcommon.o -ldl
 endif
 
 slurmd_test_LDFLAGS = $(slurmd_LDFLAGS)
