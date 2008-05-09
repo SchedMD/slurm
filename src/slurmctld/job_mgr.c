@@ -5271,10 +5271,10 @@ static bool _validate_acct_policy(job_desc_msg_t *job_desc,
 				  struct part_record *part_ptr,
 				  acct_association_rec_t *assoc_ptr)
 {
-#if 0
 	uint32_t time_limit;
 
-	if (assoc_ptr->max_wall_duration_per_job) {
+	log_assoc_rec(assoc_ptr);
+	if ((int)assoc_ptr->max_wall_duration_per_job > 0) {
 		/* Round up, seconds to minutes */
 		time_limit = (assoc_ptr->max_wall_duration_per_job + 59) / 60;
 		if (job_desc->time_limit == NO_VAL) {
@@ -5284,15 +5284,15 @@ static bool _validate_acct_policy(job_desc_msg_t *job_desc,
 				job_desc->time_limit = MIN(time_limit, 
 							   part_ptr->max_time);
 		} else if (job_desc->time_limit > time_limit) {
-			info("job %u for user %u: "
+			info("job for user %u: "
 			     "time limit %u exceeds account max %u",
-			     job_desc->job_id, job_desc->user_id, 
+			     job_desc->user_id, 
 			     job_desc->time_limit, time_limit);
 			return false;
 		}
 	}
 
-	if (assoc_ptr->max_nodes_per_job) {
+	if ((int)assoc_ptr->max_nodes_per_job > 0) {
 		if (job_desc->max_nodes == 0)
 			job_desc->max_nodes = assoc_ptr->max_nodes_per_job;
 		else if (job_desc->max_nodes > assoc_ptr->max_nodes_per_job) {
@@ -5312,6 +5312,6 @@ static bool _validate_acct_policy(job_desc_msg_t *job_desc,
 	/* NOTE: We can't enforce assoc_ptr->max_cpu_secs_per_job at this
 	 * time because we don't have access to a CPU count for the job
 	 * due to how all of the job's specifications interact */
-#endif
+
 	return true;
 }

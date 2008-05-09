@@ -268,7 +268,7 @@ extern int assoc_mgr_fill_in_assoc(void *db_conn, acct_association_rec_t *assoc,
 			return SLURM_SUCCESS;
 	}
 	debug3("found correct association");
-		
+	
 	assoc->id = ret_assoc->id;
 	if(!assoc->user)
 		assoc->user = ret_assoc->user;
@@ -278,6 +278,11 @@ extern int assoc_mgr_fill_in_assoc(void *db_conn, acct_association_rec_t *assoc,
 		assoc->cluster = ret_assoc->cluster;
 	if(!assoc->partition)
 		assoc->partition = ret_assoc->partition;
+	assoc->max_cpu_secs_per_job      = ret_assoc->max_cpu_secs_per_job;
+	assoc->max_nodes_per_job         = ret_assoc->max_nodes_per_job;
+	assoc->max_wall_duration_per_job = ret_assoc->max_wall_duration_per_job;
+	/* The other fields are not relevant to the specific job,
+	 * for example max_jobs */
 	slurm_mutex_unlock(&local_association_lock);
 
 	return SLURM_SUCCESS;

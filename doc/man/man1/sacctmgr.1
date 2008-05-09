@@ -103,7 +103,7 @@ By default, all entities are displayed.
 Idential to the \fBshow\fR command.
 
 .TP
-\fBmodify\fR <\fIENTITY\fR> <\fISPECS\fR> \fbset\fR <\fISPECS\fR>
+\fBmodify\fR <\fIENTITY\fR> \fbwith\fR <\fISPECS\fR> \fbset\fR <\fISPECS\fR>
 Modify an entities.
 
 .TP
@@ -304,7 +304,7 @@ Default is the account's limit.
 .br
 > sacctmgr create user name=adam cluster=tux bank=physics fairshare=10
 .br
-> sacctmgr modify user name=adam cluster=tux bank=physics \
+> sacctmgr modify user with name=adam cluster=tux bank=physics \
 .br
   set maxjobs=2 maxtime=30:00
 .ec
