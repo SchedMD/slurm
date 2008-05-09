@@ -277,7 +277,9 @@ sacctmgr_LDADD = \
 	$(convenience_libs) \
 	$(READLINE_LIBS)
 
-sacctmgr_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
+sacctmgr_LDFLAGS = -export-dynamic $(CMD_LDFLAGS) \
+	$(top_builddir)/src/common/libcommon.o -ldl
+
 all: all-am
 
 .SUFFIXES:
