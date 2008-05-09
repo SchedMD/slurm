@@ -280,8 +280,7 @@ slurmdbd_SOURCES = \
 	slurmdbd.h
 
 slurmdbd_LDFLAGS = -export-dynamic $(CMD_LDFLAGS) \
-	-Wl,--whole-archive,$(top_builddir)/src/common/.libs/libcommon.a,\
-	-Wl,-no-whole-archive -ldl
+	 $(top_builddir)/src/common/libcommon.o -ldl	
 
 all: all-am
 

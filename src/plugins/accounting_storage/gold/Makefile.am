@@ -21,11 +21,9 @@ accounting_storage_gold_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
 #  available in slurmctld (create_jobacct_job_rec)
 
 accounting_storage_gold_la_LIBADD  = \
-	$(top_builddir)/src/database/libslurm_gold.la \
-	$(top_builddir)/src/common/.libs/libcommon.a	
+	$(top_builddir)/src/database/libslurm_gold.la	
 accounting_storage_gold_la_DEPENDENCIES = \
-	$(top_builddir)/src/database/libslurm_gold.la \
-	$(top_builddir)/src/common/.libs/libcommon.a
+	$(top_builddir)/src/database/libslurm_gold.la
 
 else
 EXTRA_accounting_storage_gold_la_SOURCES = accounting_storage_gold.c
