@@ -4,13 +4,12 @@
 AUTOMAKE_OPTIONS = foreign
 CLEANFILES = core.*
 
-INCLUDES = -I$(top_srcdir) $(SSL_CPPFLAGS)
+INCLUDES = -I$(top_srcdir)
 
 sbin_PROGRAMS = slurmdbd
 
 slurmdbd_LDADD = 					\
-	$(top_builddir)/src/common/libcommon.la    	\
-	$(top_builddir)/src/common/libdaemonize.la
+	$(top_builddir)/src/common/libdaemonize.la 
 
 
 slurmdbd_SOURCES = 		\
@@ -26,7 +25,8 @@ slurmdbd_SOURCES = 		\
 	slurmdbd.h
 
 slurmdbd_LDFLAGS = -export-dynamic $(CMD_LDFLAGS) \
-			$(FEDERATION_LDFLAGS)	
+	-Wl,--whole-archive,$(top_builddir)/src/common/.libs/libcommon.a,\
+	-Wl,-no-whole-archive -ldl
 
 force:
 $(slurmdbd_LDADD) : force

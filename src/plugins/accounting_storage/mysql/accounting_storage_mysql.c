@@ -4145,7 +4145,8 @@ extern int jobacct_storage_p_job_start(mysql_conn_t *mysql_conn,
 			"state, priority, req_cpus, alloc_cpus, nodelist) "
 			"values (%u, '%s', %u, %u, %u, '%s', '%s', "
 			"%d, %d, %d, '%s', %u, "
-			"%u, %u, %u, %u, '%s')",
+			"%u, %u, %u, %u, '%s') "
+			"on duplicate key update id=LAST_INSERT_ID(id)",
 			job_table, job_ptr->job_id, job_ptr->account, 
 			job_ptr->assoc_id,
 			job_ptr->user_id, job_ptr->group_id,
@@ -4341,12 +4342,13 @@ extern int jobacct_storage_p_step_start(mysql_conn_t *mysql_conn,
 	query = xstrdup_printf(
 		"insert into %s (id, stepid, start, name, state, "
 		"cpus, nodelist) "
-		"values (%d, %u, %u, '%s', %d, %u, '%s') "
+		"values (%d, %u, %d, '%s', %d, %u, '%s') "
 		"on duplicate key update cpus=%u",
 		step_table, step_ptr->job_ptr->db_index,
 		step_ptr->step_id, 
 		(int)step_ptr->start_time, step_ptr->name,
 		JOB_RUNNING, cpus, node_list, cpus);
+	debug3("%d query\n%s", mysql_conn->conn, query);
 	rc = mysql_db_query(mysql_conn->acct_mysql_db, query);
 	xfree(query);
 
@@ -4451,7 +4453,7 @@ extern int jobacct_storage_p_step_complete(mysql_conn_t *mysql_conn,
 	}
 
 	query = xstrdup_printf(
-		"update %s set end=%u, state=%d, "
+		"update %s set end=%d, state=%d, "
 		"kill_requid=%u, comp_code=%u, "
 		"user_sec=%ld, user_usec=%ld, "
 		"sys_sec=%ld, sys_usec=%ld, "

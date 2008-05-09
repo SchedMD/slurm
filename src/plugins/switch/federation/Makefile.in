@@ -286,7 +286,9 @@ pkglib_LTLIBRARIES = $(federation_lib)
 @HAVE_FEDERATION_TRUE@	federation_keys.h \
 @HAVE_FEDERATION_TRUE@	switch_federation.c 
 
-@HAVE_FEDERATION_TRUE@switch_federation_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
+@HAVE_FEDERATION_TRUE@switch_federation_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS) \
+@HAVE_FEDERATION_TRUE@	 $(FEDERATION_LDFLAGS)
+
 @HAVE_FEDERATION_FALSE@EXTRA_switch_federation_la_SOURCES = \
 @HAVE_FEDERATION_FALSE@	federation.c federation.h \
 @HAVE_FEDERATION_FALSE@	federation_keys.h \

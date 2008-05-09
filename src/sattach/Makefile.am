@@ -17,7 +17,7 @@ convenience_libs = $(top_builddir)/src/api/libslurmhelper.la
 sattach_LDADD = \
 	$(convenience_libs) 
 
-sattach_LDFLAGS = -export-dynamic $(CMD_LDFLAGS) $(FEDERATION_LDFLAGS)
+sattach_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
 
 force:
 $(convenience_libs) : force
