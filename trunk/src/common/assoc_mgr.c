@@ -88,6 +88,8 @@ static int _get_local_association_list(void *db_conn, int enforce)
 			      "no list was made.");
 			return SLURM_ERROR;
 		} else {
+			debug3("not enforcing associations and no "
+			       "list was given so we are giving a blank list");
 			return SLURM_SUCCESS;
 		}
 	} else {

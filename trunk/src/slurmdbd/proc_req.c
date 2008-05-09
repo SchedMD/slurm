@@ -1699,7 +1699,7 @@ static int  _step_start(void *db_conn,
 	job.job_id = step_start_msg->job_id;
 	step.name = step_start_msg->name;
 	job.nodes = step_start_msg->nodes;
-	job.start_time = step_start_msg->start_time;
+	step.start_time = step_start_msg->start_time;
 	details.submit_time = step_start_msg->job_submit_time;
 	step.step_id = step_start_msg->step_id;
 	job.total_procs = step_start_msg->total_procs;

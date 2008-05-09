@@ -13,7 +13,7 @@ convenience_libs = $(top_builddir)/src/api/libslurmhelper.la
 salloc_LDADD = \
 	$(convenience_libs) 
 
-salloc_LDFLAGS = -export-dynamic $(CMD_LDFLAGS) $(FEDERATION_LDFLAGS)
+salloc_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
 
 force:
 $(convenience_libs) : force

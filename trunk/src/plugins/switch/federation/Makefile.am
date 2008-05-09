@@ -21,7 +21,8 @@ switch_federation_la_SOURCES = \
 	federation.c federation.h \
 	federation_keys.h \
 	switch_federation.c 
-switch_federation_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
+switch_federation_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS) \
+	 $(FEDERATION_LDFLAGS)
 
 else
 EXTRA_switch_federation_la_SOURCES = \

@@ -27,7 +27,7 @@ convenience_libs = $(top_builddir)/src/api/libslurmhelper.la
 srun_LDADD = \
 	$(convenience_libs) 
 
-srun_LDFLAGS = -export-dynamic $(CMD_LDFLAGS) $(FEDERATION_LDFLAGS)
+srun_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
 
 force:
 $(convenience_libs) : force

@@ -4,13 +4,12 @@
 AUTOMAKE_OPTIONS = foreign
 CLEANFILES = core.*
 
-INCLUDES = -I$(top_srcdir) $(SSL_CPPFLAGS)
+INCLUDES = -I$(top_srcdir)
 
 sbin_PROGRAMS = slurmctld
 
 slurmctld_LDADD = 					\
-	$(top_builddir)/src/common/libcommon.la    	\
-	$(top_builddir)/src/common/libdaemonize.la
+	$(top_builddir)/src/common/libdaemonize.la 
 
 
 slurmctld_SOURCES = 	\
@@ -48,7 +47,8 @@ slurmctld_SOURCES = 	\
 	trigger_mgr.h
 
 slurmctld_LDFLAGS = -export-dynamic $(CMD_LDFLAGS) \
-			$(FEDERATION_LDFLAGS)	
+	-Wl,--whole-archive,$(top_builddir)/src/common/.libs/libcommon.a,\
+	-Wl,-no-whole-archive -ldl
 
 force:
 $(slurmctld_LDADD) : force
