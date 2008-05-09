@@ -395,7 +395,7 @@ extern int assoc_mgr_update_local_assocs(acct_update_object_t *update)
 	slurm_mutex_lock(&local_association_lock);
 	itr = list_iterator_create(local_association_list);
 	while((object = list_pop(update->objects))) {
-		if(local_cluster_name) {
+		if(object->cluster && local_cluster_name) {
 			/* only update the local clusters assocs */
 			if(strcasecmp(object->cluster, local_cluster_name))
 				continue;
