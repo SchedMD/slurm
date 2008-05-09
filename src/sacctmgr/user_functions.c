@@ -78,7 +78,7 @@ static int _set_cond(int *start, int argc, char *argv[],
 		} else if (strncasecmp (argv[i], "Names", 1) == 0) {
 			addto_char_list(user_cond->user_list, argv[i]+end);
 			addto_char_list(user_cond->assoc_cond->user_list,
-					argv[i]);
+					argv[i]+end);
 			u_set = 1;
 		} else if (strncasecmp (argv[i], "Partition", 3) == 0) {
 			addto_char_list(user_cond->assoc_cond->partition_list, 
@@ -642,6 +642,8 @@ extern int sacctmgr_list_user(int argc, char *argv[])
 	print_field_t cluster_field;
 	print_field_t acct_field;
 	print_field_t part_field;
+	print_field_t maxjobs_field;
+	print_field_t maxwall_field;
 
 	List print_fields_list; /* types are of print_field_t */
 	int over= 0;
@@ -701,6 +703,16 @@ extern int sacctmgr_list_user(int argc, char *argv[])
 		part_field.len = 10;
 		part_field.print_routine = print_str;
 		list_append(print_fields_list, &part_field);
+
+		maxjobs_field.name = "MaxJobs";
+		maxjobs_field.len = 7;
+		maxjobs_field.print_routine = print_int;
+		list_append(print_fields_list, &maxjobs_field);
+
+		maxwall_field.name = "MaxWall";
+		maxwall_field.len = 7;
+		maxwall_field.print_routine = print_int;
+		list_append(print_fields_list, &maxwall_field);
 	}
 
 	itr = list_iterator_create(user_list);
@@ -732,6 +744,9 @@ extern int sacctmgr_list_user(int argc, char *argv[])
 					  assoc->cluster);
 				print_str(VALUE, &acct_field, assoc->acct);
 				print_str(VALUE, &part_field, assoc->partition);
+				print_int(VALUE, &maxjobs_field, assoc->max_jobs);
+				print_int(VALUE, &maxwall_field, 
+					  assoc->max_wall_duration_per_job);
 				first = 0;
 			}
 			list_iterator_destroy(itr2);

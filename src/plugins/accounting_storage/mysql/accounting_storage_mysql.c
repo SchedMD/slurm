@@ -2430,7 +2430,6 @@ extern List acct_storage_p_modify_associations(mysql_conn_t *mysql_conn,
 		MASSOC_COUNT
 	};
 
-
 	if(!assoc_q) {
 		error("we need something to change");
 		return NULL;
@@ -2501,29 +2500,29 @@ extern List acct_storage_p_modify_associations(mysql_conn_t *mysql_conn,
 	}
 
 	if((int)assoc->fairshare >= 0) 
-		xstrfmtcat(vals, ", fairshare=%d", assoc->fairshare);
+		xstrfmtcat(vals, ", fairshare=%u", assoc->fairshare);
 	else if((int)assoc->fairshare == -1) 
 		xstrfmtcat(vals, ", fairshare=1");
 		
 	if((int)assoc->max_cpu_secs_per_job >= 0) 
-		xstrfmtcat(vals, ", max_cpu_secs_per_job=%d",
+		xstrfmtcat(vals, ", max_cpu_secs_per_job=%u",
 			   assoc->max_cpu_secs_per_job);
 	else if((int)assoc->max_cpu_secs_per_job == -1) 
 		xstrfmtcat(vals, ", max_cpu_secs_per_job=NULL");
 
 	if((int)assoc->max_jobs >= 0) 
-		xstrfmtcat(vals, ", max_jobs=%d", assoc->max_jobs);
+		xstrfmtcat(vals, ", max_jobs=%u", assoc->max_jobs);
 	else if((int)assoc->max_jobs == -1)
 		xstrfmtcat(vals, ", max_jobs=NULL");
 		
 	if((int)assoc->max_nodes_per_job >= 0) 
-		xstrfmtcat(vals, ", max_nodes_per_job=%d",
+		xstrfmtcat(vals, ", max_nodes_per_job=%u",
 			   assoc->max_nodes_per_job);
 	else if((int)assoc->max_nodes_per_job == -1)
 		xstrfmtcat(vals, ", max_nodes_per_job=NULL");
 
 	if((int)assoc->max_wall_duration_per_job >= 0) 
-		xstrfmtcat(vals, ", max_wall_duration_per_job=%d",
+		xstrfmtcat(vals, ", max_wall_duration_per_job=%u",
 			   assoc->max_wall_duration_per_job);
 	else if((int)assoc->max_wall_duration_per_job == -1) 
 		xstrfmtcat(vals, ", max_wall_duration_per_job=NULL");
