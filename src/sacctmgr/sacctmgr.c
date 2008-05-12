@@ -680,11 +680,11 @@ static sacctmgr_file_opts_t *_parse_options(char *options)
 	int start=0, i=0, end=0;
 	char *sub = NULL;
 	sacctmgr_file_opts_t *file_opts = xmalloc(sizeof(sacctmgr_file_opts_t));
-	file_opts->fairshare = -2; 
-	file_opts->max_cpu_secs_per_job = -2;
-	file_opts->max_jobs = -2; 
-	file_opts->max_nodes_per_job = -2;
-	file_opts->max_wall_duration_per_job = -2;
+	file_opts->fairshare = NO_VAL;
+	file_opts->max_cpu_secs_per_job = NO_VAL;
+	file_opts->max_jobs = NO_VAL;
+	file_opts->max_nodes_per_job = NO_VAL;
+	file_opts->max_wall_duration_per_job = NO_VAL;
 
 	while(options[i]) {
 		start=i;
@@ -710,13 +710,17 @@ static sacctmgr_file_opts_t *_parse_options(char *options)
 		} else if (strncasecmp (sub, "Description", 3) == 0) {
 			file_opts->desc = xstrdup(sub+end);
 		} else if (strncasecmp (sub, "Fairshare", 1) == 0) {
-			file_opts->fairshare = atoi(sub+end);
+			get_uint(sub+end, &file_opts->fairshare, 
+			    "FairShare");
 		} else if (strncasecmp (sub, "MaxCPUSec", 4) == 0) {
-			file_opts->max_cpu_secs_per_job = atoi(sub+end);
+			get_uint(sub+end, &file_opts->max_cpu_secs_per_job,
+			    "MaxCPUSec");
 		} else if (strncasecmp (sub, "MaxJobs", 4) == 0) {
-			file_opts->max_jobs = atoi(sub+end);
+			get_uint(sub+end, &file_opts->max_jobs,
+			    "MaxJobs");
 		} else if (strncasecmp (sub, "MaxNodes", 4) == 0) {
-			file_opts->max_nodes_per_job = atoi(sub+end);
+			get_uint(sub+end, &file_opts->max_nodes_per_job,
+			    "MaxNodes");
 		} else if (strncasecmp (sub, "MaxWall", 4) == 0) {
 			file_opts->max_wall_duration_per_job = 
 				(uint32_t) time_str2mins(sub+end);
@@ -1136,19 +1140,19 @@ static void _load_file (int argc, char *argv[])
 	
 	fs_field.name = "FairShare";
 	fs_field.len = 10;
-	fs_field.print_routine = print_int;
+	fs_field.print_routine = print_uint;
 
 	mc_field.name = "MaxCPUSecs";
 	mc_field.len = 10;
-	mc_field.print_routine = print_int;
+	mc_field.print_routine = print_uint;
 
 	mj_field.name = "MaxJobs";
 	mj_field.len = 7;
-	mj_field.print_routine = print_int;
+	mj_field.print_routine = print_uint;
 
 	mn_field.name = "MaxNodes";
 	mn_field.len = 8;
-	mn_field.print_routine = print_int;
+	mn_field.print_routine = print_uint;
 
 	mw_field.name = "MaxWall";
 	mw_field.len = 7;
@@ -1199,11 +1203,11 @@ static void _load_file (int argc, char *argv[])
 		while((assoc = list_next(itr))) {
 			print_str(VALUE, &name_field, assoc->acct);
 			print_str(VALUE, &parent_field, assoc->parent_acct);
-			print_int(VALUE, &fs_field, assoc->fairshare);
-			print_int(VALUE, &mc_field, 
-				  assoc->max_cpu_secs_per_job);
-			print_int(VALUE, &mj_field, assoc->max_jobs);
-			print_int(VALUE, &mn_field, assoc->max_nodes_per_job);
+			print_uint(VALUE, &fs_field, assoc->fairshare);
+			print_uint(VALUE, &mc_field, 
+				   assoc->max_cpu_secs_per_job);
+			print_uint(VALUE, &mj_field, assoc->max_jobs);
+			print_uint(VALUE, &mn_field, assoc->max_nodes_per_job);
 			print_time(VALUE, &mw_field,
 				   assoc->max_wall_duration_per_job);
 			printf("\n");
@@ -1262,13 +1266,13 @@ static void _load_file (int argc, char *argv[])
 		while((assoc = list_next(itr))) {
 			print_str(VALUE, &name_field, assoc->user);
 			print_str(VALUE, &acct_field, assoc->acct);
-			print_int(VALUE, &fs_field, assoc->fairshare);
-			print_int(VALUE, &mc_field, 
-				  assoc->max_cpu_secs_per_job);
-			print_int(VALUE, &mj_field, assoc->max_jobs);
-			print_int(VALUE, &mn_field, assoc->max_nodes_per_job);
-			print_int(VALUE, &mw_field,
-				  assoc->max_wall_duration_per_job);
+			print_uint(VALUE, &fs_field, assoc->fairshare);
+			print_uint(VALUE, &mc_field, 
+				   assoc->max_cpu_secs_per_job);
+			print_uint(VALUE, &mj_field, assoc->max_jobs);
+			print_uint(VALUE, &mn_field, assoc->max_nodes_per_job);
+			print_uint(VALUE, &mw_field,
+				   assoc->max_wall_duration_per_job);
 			printf("\n");
 		}
 		list_iterator_destroy(itr);

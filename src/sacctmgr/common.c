@@ -544,3 +544,21 @@ extern acct_cluster_rec_t *sacctmgr_find_cluster_from_list(
 	
 	return cluster;
 }
+
+extern int get_uint(char *in_value, uint32_t *out_value, char *type)
+{
+	char *ptr = NULL;
+	long num;
+
+	num = strtol(in_value, &ptr, 10);
+	if ((num == 0) && ptr && ptr[0]) {
+		error("Invalid value for %s", type);
+		return SLURM_ERROR;
+	}
+
+	if (num < 0)
+		*out_value = INFINITE;		/* flag to clear */
+	else
+		*out_value = (uint32_t) num;
+	return SLURM_SUCCESS;
+}

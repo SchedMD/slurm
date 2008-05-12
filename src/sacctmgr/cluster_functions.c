@@ -85,22 +85,27 @@ static int _set_rec(int *start, int argc, char *argv[],
 			printf(" Bad format on %s: End your option with "
 			       "an '=' sign\n", argv[i]);			
 		} else if (strncasecmp (argv[i], "FairShare", 1) == 0) {
-			cluster->default_fairshare = atoi(argv[i]+end);
-			set = 1;
+			if (get_uint(argv[i]+end, &cluster->default_fairshare, 
+			    "FairShare") == SLURM_SUCCESS)
+				set = 1;
 		} else if (strncasecmp (argv[i], "MaxJobs", 4) == 0) {
-			cluster->default_max_jobs = atoi(argv[i]+end);
-			set = 1;
+			if (get_uint(argv[i]+end, &cluster->default_max_jobs,
+			    "MaxJobs") == SLURM_SUCCESS)
+				set = 1;
 		} else if (strncasecmp (argv[i], "MaxNodes", 4) == 0) {
-			cluster->default_max_nodes_per_job = atoi(argv[i]+end);
-			set = 1;
+			if (get_uint(argv[i]+end, 
+			    &cluster->default_max_nodes_per_job,
+			    "MaxNodes") == SLURM_SUCCESS)
+				set = 1;
 		} else if (strncasecmp (argv[i], "MaxWall", 4) == 0) {
 			cluster->default_max_wall_duration_per_job =
 				(uint32_t) time_str2mins(argv[i]+end);
 			set = 1;
 		} else if (strncasecmp (argv[i], "MaxCPUSecs=", 11) == 0) {
-			cluster->default_max_cpu_secs_per_job =
-				atoi(argv[i]+end);
-			set = 1;
+			if (get_uint(argv[i]+end, 
+			     &cluster->default_max_cpu_secs_per_job, 
+			    "MaxCPUSecs") == SLURM_SUCCESS)
+				set = 1;
 		} else {
 			printf(" Unknown option: %s\n"
 			       " Use keyword 'where' to modify condition\n",
@@ -120,11 +125,11 @@ extern int sacctmgr_add_cluster(int argc, char *argv[])
 	acct_cluster_rec_t *cluster = NULL;
 	List name_list = list_create(slurm_destroy_char);
 	List cluster_list = NULL;
-	uint32_t fairshare = -2; 
-	uint32_t max_cpu_secs_per_job = -2;
-	uint32_t max_jobs = -2; 
-	uint32_t max_nodes_per_job = -2;
-	uint32_t max_wall_duration_per_job = -2;
+	uint32_t fairshare = NO_VAL; 
+	uint32_t max_cpu_secs_per_job = NO_VAL;
+	uint32_t max_jobs = NO_VAL;
+	uint32_t max_nodes_per_job = NO_VAL;
+	uint32_t max_wall_duration_per_job = NO_VAL;
 	int limit_set = 0;
 	ListIterator itr = NULL, itr_c = NULL;
 	char *name = NULL;
@@ -222,16 +227,16 @@ extern int sacctmgr_add_cluster(int argc, char *argv[])
 
 	if(limit_set) {
 		printf(" User Defaults\n");
-		if((int)fairshare != -2)
+		if(fairshare != NO_VAL)
 			printf("  Fairshare       = %u\n", fairshare);
-		if((int)max_cpu_secs_per_job != -2)
+		if(max_cpu_secs_per_job != NO_VAL)
 			printf("  MaxCPUSecs      = %u\n",
 			       max_cpu_secs_per_job);
-		if((int)max_jobs != -2)
+		if(max_jobs != NO_VAL)
 			printf("  MaxJobs         = %u\n", max_jobs);
-		if((int)max_nodes_per_job != -2)
+		if(max_nodes_per_job != NO_VAL)
 			printf("  MaxNodes        = %u\n", max_nodes_per_job);
-		if((int)max_wall_duration_per_job != -2) {
+		if(max_wall_duration_per_job != NO_VAL) {
 			char time_buf[32];
 			mins2time_str((time_t) max_wall_duration_per_job, 
 				      time_buf, sizeof(time_buf));
@@ -366,18 +371,18 @@ extern int sacctmgr_modify_cluster(int argc, char *argv[])
 	printf(" Setting\n");
 	if(rec_set) 
 		printf(" User Defaults  =\n");
-	if((int)cluster->default_fairshare != -2)
+	if(cluster->default_fairshare != NO_VAL)
 		printf("  Fairshare     = %u\n", cluster->default_fairshare);
 
-	if((int)cluster->default_max_cpu_secs_per_job != -2)
+	if(cluster->default_max_cpu_secs_per_job != NO_VAL)
 		printf("  MaxCPUSecs    = %u\n",
 		       cluster->default_max_cpu_secs_per_job);
-	if((int)cluster->default_max_jobs != -2)
+	if(cluster->default_max_jobs != NO_VAL)
 		printf("  MaxJobs       = %u\n", cluster->default_max_jobs);
-	if((int)cluster->default_max_nodes_per_job != -2)
+	if(cluster->default_max_nodes_per_job != NO_VAL)
 		printf("  MaxNodes      = %u\n",
 		       cluster->default_max_nodes_per_job);
-	if((int)cluster->default_max_wall_duration_per_job != -2) {
+	if(cluster->default_max_wall_duration_per_job != NO_VAL) {
 		char time_buf[32];
 		mins2time_str((time_t) 
 			      cluster->default_max_wall_duration_per_job, 
