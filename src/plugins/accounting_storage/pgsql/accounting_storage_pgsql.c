@@ -231,7 +231,7 @@ static int _pgsql_acct_check_tables(PGconn *acct_pgsql_db,
 
 	storage_field_t job_table_fields[] = {
 		{ "id", "serial" },
-		{ "jobid ", "integer not null" },
+		{ "jobid", "integer not null" },
 		{ "associd", "bigint not null" },
 		{ "uid", "smallint not null" },
 		{ "gid", "smallint not null" },
