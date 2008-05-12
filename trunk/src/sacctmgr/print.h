@@ -82,7 +82,7 @@ extern void destroy_print_field(void *object);
 extern void print_header(List print_fields_list);
 extern void print_date(void);
 extern void print_str(type_t type, print_field_t *field, char *value);
-extern void print_int(type_t type, print_field_t *field, uint32_t value);
+extern void print_uint(type_t type, print_field_t *field, uint32_t value);
 extern void print_time(type_t type, print_field_t *field, uint32_t value);
 
 #endif

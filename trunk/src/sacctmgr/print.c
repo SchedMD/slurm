@@ -102,7 +102,7 @@ extern void print_str(type_t type, print_field_t *field, char *value)
 	}
 }
 
-extern void print_int(type_t type, print_field_t *field, uint32_t value)
+extern void print_uint(type_t type, print_field_t *field, uint32_t value)
 {
 	switch(type) {
 	case HEADLINE:
@@ -113,7 +113,8 @@ extern void print_int(type_t type, print_field_t *field, uint32_t value)
 		       "---------------------------------------");
 		break;
 	case VALUE:
-		if((int)value < 0)
+		/* (value == unset)  || (value == cleared) */
+		if((value == NO_VAL) || (value == INFINITE))
 			printf("%-*s ", field->len, " ");
 		else
 			printf("%*u ", field->len, value);
@@ -135,7 +136,8 @@ extern void print_time(type_t type, print_field_t *field, uint32_t value)
 		       "---------------------------------------");
 		break;
 	case VALUE:
-		if((int)value < 0)
+		/* (value == unset)  || (value == cleared) */
+		if((value == NO_VAL) || (value == INFINITE))
 			printf("%-*s ", field->len, " ");
 		else {
 			char time_buf[32];

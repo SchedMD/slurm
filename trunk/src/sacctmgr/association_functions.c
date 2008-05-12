@@ -104,43 +104,55 @@ static int _set_rec(int *start, int argc, char *argv[],
 	int set = 0;
 
 	for (i=(*start); i<argc; i++) {
-		if (strncasecmp (argv[i], "Id=", 3) == 0) {
-			association->id = atoi(argv[i]+3);
-			set = 1;
-		} else if (strncasecmp (argv[i], "User=", 5) == 0) {
-			association->user = xstrdup(argv[i]+5);
-			set = 1;
-		} else if (strncasecmp (argv[i], "Account=", 8) == 0) {
-			association->account = xstrdup(argv[i]+8);
-			set = 1;
-		} else if (strncasecmp (argv[i], "Cluster=", 8) == 0) {
-			association->cluster = xstrdup(argv[i]+8);
-			set = 1;
-		} else if (strncasecmp (argv[i], "Partition=", 10) == 0) {
-			association->partition = xstrdup(argv[i]+10);
-			set = 1;
-		} else if (strncasecmp (argv[i], "Parent=", 7) == 0) {
-			association->parent_account = xstrdup(argv[i]+7);
-			set = 1;
-		} else if (strncasecmp (argv[i], "FairShare=", 10) == 0) {
-			association->fairshare = atoi(argv[i]+10);
-			set = 1;
-		} else if (strncasecmp (argv[i], "MaxJobs=", 8) == 0) {
-			association->max_jobs = atoi(argv[i]+8);
-			set = 1;
-		} else if (strncasecmp (argv[i], "MaxNodes=", 9) == 0) {
-			association->max_nodes_per_job = atoi(argv[i]+9);
-			set = 1;
-		} else if (strncasecmp (argv[i], "MaxWall=", 8) == 0) {
-			association->max_wall_duration_per_job =
-				(uint32_t) time_str2mins(argv[i]+8);
-			set = 1;
-		} else if (strncasecmp (argv[i], "MaxCPUSecs=", 11) == 0) {
-			association->max_cpu_seconds_per_job = atoi(argv[i]+11);
-			set = 1;
-		} else if (strncasecmp (argv[i], "Where", 5) == 0) {
+		int end = parse_option_end(argv[i]);
+		if (strncasecmp (argv[i], "Where", 5) == 0) {
 			i--;
 			break;
+		}
+		if (!end) {
+			printf(" Bad format on %s: End your option with "
+			       "an '=' sign\n", argv[i]);
+		} else if (strncasecmp (argv[i], "Id", ) == 0) {
+			if (get_uint(argv[i]+end, &association->id, 
+			    "Id") == SLURM_SUCCESS)
+				set = 1;
+		} else if (strncasecmp (argv[i], "User", 2) == 0) {
+			association->user = xstrdup(argv[i]+end);
+			set = 1;
+		} else if (strncasecmp (argv[i], "Account", 2) == 0) {
+			association->account = xstrdup(argv[i]+end);
+			set = 1;
+		} else if (strncasecmp (argv[i], "Cluster", 2) == 0) {
+			association->cluster = xstrdup(argv[i]+end);
+			set = 1;
+		} else if (strncasecmp (argv[i], "Partition", 4) == 0) {
+			association->partition = xstrdup(argv[i]+end);
+			set = 1;
+		} else if (strncasecmp (argv[i], "Parent", 4) == 0) {
+			association->parent_account = xstrdup(argv[i]+end);
+			set = 1;
+		} else if (strncasecmp (argv[i], "FairShare", 4) == 0) {
+			if (get_uint(argv[i]+end, &association->fairshare, 
+			    "FairShare") == SLURM_SUCCESS)
+				set = 1;
+		} else if (strncasecmp (argv[i], "MaxJobs", 4) == 0) {
+			if (get_uint(argv[i]+end, &association->max_jobs, 
+			    "MaxJobs") == SLURM_SUCCESS)
+				set = 1;
+		} else if (strncasecmp (argv[i], "MaxNodes", 4) == 0) {
+			if (get_uint(argv[i]+end, 
+			     &association->max_nodes_per_job, 
+			    "MaxNodes") == SLURM_SUCCESS)
+				set = 1;
+		} else if (strncasecmp (argv[i], "MaxWall", 4) == 0) {
+			association->max_wall_duration_per_job =
+				(uint32_t) time_str2mins(argv[i]+end);
+			set = 1;
+		} else if (strncasecmp (argv[i], "MaxCPUSecs", 4) == 0) {
+			if (get_uint(argv[i]+end, 
+			     &association->max_cpu_seconds_per_job, 
+			    "MaxCPUSecs") == SLURM_SUCCESS)
+				set = 1;
 		} else {
 			printf(" error: Valid options are 'DefaultAccount=' "
 			       "'ExpediteLevel=' and 'AdminLevel='\n");
@@ -272,14 +284,15 @@ extern int sacctmgr_list_association(int argc, char *argv[])
 	assoc_cond->cluster_list = list_create(destroy_char);
 
 	for (i=0; i<argc; i++) {
-		if (strncasecmp (argv[i], "Ids=", 4) == 0) {
-			addto_char_list(assoc_cond->id_list, argv[i]+3);
-		} else if (strncasecmp (argv[i], "Users=", 6) == 0) {
-			addto_char_list(assoc_cond->user_list, argv[i]+6);
-		} else if (strncasecmp (argv[i], "Accounts=", 9) == 0) {
-			addto_char_list(assoc_cond->account_list, argv[i]+9);
-		} else if (strncasecmp (argv[i], "Clusters=", 9) == 0) {
-			addto_char_list(assoc_cond->cluster_list, argv[i]+9);
+		int end = parse_option_end(argv[i]);
+		if (strncasecmp (argv[i], "Ids", 2) == 0) {
+			addto_char_list(assoc_cond->id_list, argv[i]+end);
+		} else if (strncasecmp (argv[i], "Users", 2) == 0) {
+			addto_char_list(assoc_cond->user_list, argv[i]+end);
+		} else if (strncasecmp (argv[i], "Accounts", 2) == 0) {
+			addto_char_list(assoc_cond->account_list, argv[i]+end);
+		} else if (strncasecmp (argv[i], "Clusters", ) == 0) {
+			addto_char_list(assoc_cond->cluster_list, argv[i]+end);
 		} else {
 			error("Valid options are 'Ids=' 'Users=' 'Accounts=' "
 			      "and 'Clusters='");

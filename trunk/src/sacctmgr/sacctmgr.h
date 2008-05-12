@@ -150,6 +150,7 @@ extern void destroy_sacctmgr_action(void *object);
 extern int notice_thread_init();
 extern int notice_thread_fini();
 extern int commit_check(char *warning);
+extern int get_uint(char *in_value, uint32_t *out_value, char *type);
 
 /* you need to free the objects returned from these functions */
 extern acct_association_rec_t *sacctmgr_find_association(char *user,

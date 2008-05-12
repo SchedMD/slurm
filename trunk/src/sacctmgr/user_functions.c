@@ -126,23 +126,29 @@ static int _set_rec(int *start, int argc, char *argv[],
 		} else if (strncasecmp (argv[i], "DefaultAccount", 1) == 0) {
 			user->default_acct = xstrdup(argv[i]+end);
 			u_set = 1;
-		} else if (strncasecmp (argv[i], "Fairshare", 1) == 0) {
-			association->fairshare = atoi(argv[i]+end);
-			a_set = 1;
+		} else if (strncasecmp (argv[i], "FairShare", 1) == 0) {
+			if (get_uint(argv[i]+end, &association->fairshare, 
+			    "FairShare") == SLURM_SUCCESS)
+				a_set = 1;
 		} else if (strncasecmp (argv[i], "MaxCPUSec", 4) == 0) {
-			association->max_cpu_secs_per_job =
-				atoi(argv[i]+end);
-			a_set = 1;
+			if (get_uint(argv[i]+end, 
+			     &association->max_cpu_secs_per_job, 
+			    "MaxCPUSec") == SLURM_SUCCESS)
+				a_set = 1;
 		} else if (strncasecmp (argv[i], "MaxJobs", 4) == 0) {
-			association->max_jobs = atoi(argv[i]+end);
-			a_set = 1;
+			if (get_uint(argv[i]+end, &association->max_jobs, 
+			    "MaxJobs") == SLURM_SUCCESS)
+				a_set = 1;
 		} else if (strncasecmp (argv[i], "MaxNodes", 4) == 0) {
-			association->max_nodes_per_job = atoi(argv[i]+end);
-			a_set = 1;
+			if (get_uint(argv[i]+end,
+			    &association->max_nodes_per_job, 
+			    "MaxNodes") == SLURM_SUCCESS)
+				a_set = 1;
 		} else if (strncasecmp (argv[i], "MaxWall", 4) == 0) {
-			association->max_wall_duration_per_job =
-				(uint32_t) time_str2mins(argv[i]+end);
-			a_set = 1;
+			if (get_uint(argv[i]+end, 
+			    &association->max_wall_duration_per_job, 
+			    "MaxWall") == SLURM_SUCCESS)
+				a_set = 1;
 		} else if (strncasecmp (argv[i], "QosLevel", 1) == 0) {
 			user->qos = str_2_acct_qos(argv[i]+end);
 			u_set = 1;
@@ -243,11 +249,11 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 	List local_assoc_list = NULL;
 	List local_acct_list = NULL;
 	List local_user_list = NULL;
-	uint32_t fairshare = -2; 
-	uint32_t max_jobs = -2; 
-	uint32_t max_nodes_per_job = -2;
-	uint32_t max_wall_duration_per_job = -2;
-	uint32_t max_cpu_secs_per_job = -2;
+	uint32_t fairshare = NO_VAL; 
+	uint32_t max_jobs = NO_VAL; 
+	uint32_t max_nodes_per_job = NO_VAL;
+	uint32_t max_wall_duration_per_job = NO_VAL;
+	uint32_t max_cpu_secs_per_job = NO_VAL;
 	char *user_str = NULL;
 	char *assoc_str = NULL;
 	int limit_set = 0;
@@ -283,21 +289,25 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 			addto_char_list(assoc_cond->acct_list,
 					argv[i]+end);
 		} else if (strncasecmp (argv[i], "FairShare", 1) == 0) {
-			fairshare = atoi(argv[i]+end);
-			limit_set = 1;
+			if (get_uint(argv[i]+end, &fairshare, 
+			    "FairShare") == SLURM_SUCCESS)
+				limit_set = 1;
 		} else if (strncasecmp (argv[i], "MaxCPUSecs", 4) == 0) {
-			max_cpu_secs_per_job = atoi(argv[i]+end);
-			limit_set = 1;
+			if (get_uint(argv[i]+end, &max_cpu_secs_per_job, 
+			    "MaxCPUSecs") == SLURM_SUCCESS)
+				limit_set = 1;
 		} else if (strncasecmp (argv[i], "MaxJobs", 4) == 0) {
-			max_jobs = atoi(argv[i]+end);
-			limit_set = 1;
+			if (get_uint(argv[i]+end, &max_jobs, 
+			    "MaxJobs") == SLURM_SUCCESS)
+				limit_set = 1;
 		} else if (strncasecmp (argv[i], "MaxNodes", 4) == 0) {
-			max_nodes_per_job = atoi(argv[i]+end);
-			limit_set = 1;
+			if (get_uint(argv[i]+end, &max_nodes_per_job, 
+			    "MaxNodes") == SLURM_SUCCESS)
+				limit_set = 1;
 		} else if (strncasecmp (argv[i], "MaxWall", 4) == 0) {
-			max_wall_duration_per_job = 
-				(uint32_t) time_str2mins(argv[i]+end);
-			limit_set = 1;
+			if (get_uint(argv[i]+end, &max_wall_duration_per_job, 
+			    "MaxWall") == SLURM_SUCCESS)
+				limit_set = 1;
 		} else if (strncasecmp (argv[i], "Names", 1) == 0) {
 			addto_char_list(assoc_cond->user_list, argv[i]+end);
 		} else if (strncasecmp (argv[i], "Partitions", 1) == 0) {
@@ -575,16 +585,16 @@ no_default:
 
 	if(limit_set) {
 		        printf(" Non Default Settings\n");
-		if((int)fairshare != -2)
+		if(fairshare != NO_VAL)
 			printf("  Fairshare       = %u\n", fairshare);
-		if((int)max_cpu_secs_per_job != -2)
+		if(max_cpu_secs_per_job != NO_VAL)
 			printf("  MaxCPUSecs      = %u\n",
 			       max_cpu_secs_per_job);
-		if((int)max_jobs != -2)
+		if(max_jobs != NO_VAL)
 			printf("  MaxJobs         = %u\n", max_jobs);
-		if((int)max_nodes_per_job != -2)
+		if(max_nodes_per_job != NO_VAL)
 			printf("  MaxNodes        = %u\n", max_nodes_per_job);
-		if((int)max_wall_duration_per_job != -2) {
+		if(max_wall_duration_per_job != NO_VAL) {
 			char time_buf[32];
 			mins2time_str((time_t) max_wall_duration_per_job, 
 				      time_buf, sizeof(time_buf));
@@ -711,12 +721,12 @@ extern int sacctmgr_list_user(int argc, char *argv[])
 
 		maxjobs_field.name = "MaxJobs";
 		maxjobs_field.len = 7;
-		maxjobs_field.print_routine = print_int;
+		maxjobs_field.print_routine = print_uint;
 		list_append(print_fields_list, &maxjobs_field);
 
 		maxnodes_field.name = "MaxNodes";
 		maxnodes_field.len = 8;
-		maxnodes_field.print_routine = print_int;
+		maxnodes_field.print_routine = print_uint;
 		list_append(print_fields_list, &maxnodes_field);
 
 		maxwall_field.name = "MaxWall";
@@ -754,10 +764,10 @@ extern int sacctmgr_list_user(int argc, char *argv[])
 					  assoc->cluster);
 				print_str(VALUE, &acct_field, assoc->acct);
 				print_str(VALUE, &part_field, assoc->partition);
-				print_int(VALUE, &maxjobs_field, 
-					  assoc->max_jobs);
-				print_int(VALUE, &maxnodes_field, 
-					  assoc->max_nodes_per_job);
+				print_uint(VALUE, &maxjobs_field, 
+					   assoc->max_jobs);
+				print_uint(VALUE, &maxnodes_field, 
+					   assoc->max_nodes_per_job);
 				print_time(VALUE, &maxwall_field, 
 					   assoc->max_wall_duration_per_job);
 				first = 0;
@@ -793,17 +803,17 @@ extern int sacctmgr_modify_user(int argc, char *argv[])
 	user_cond->assoc_cond->acct_list = list_create(slurm_destroy_char);
 	user_cond->assoc_cond->cluster_list = list_create(slurm_destroy_char);
 	user_cond->assoc_cond->partition_list = list_create(slurm_destroy_char);
-	user_cond->assoc_cond->fairshare = -2; 
-	user_cond->assoc_cond->max_cpu_secs_per_job = -2;
-	user_cond->assoc_cond->max_jobs = -2; 
-	user_cond->assoc_cond->max_nodes_per_job = -2;
-	user_cond->assoc_cond->max_wall_duration_per_job = -2;
+	user_cond->assoc_cond->fairshare = NO_VAL;
+	user_cond->assoc_cond->max_cpu_secs_per_job = NO_VAL;
+	user_cond->assoc_cond->max_jobs = NO_VAL;
+	user_cond->assoc_cond->max_nodes_per_job = NO_VAL;
+	user_cond->assoc_cond->max_wall_duration_per_job = NO_VAL;
 	
-	assoc->fairshare = -2; 
-	assoc->max_cpu_secs_per_job = -2;
-	assoc->max_jobs = -2; 
-	assoc->max_nodes_per_job = -2;
-	assoc->max_wall_duration_per_job = -2;
+	assoc->fairshare = NO_VAL;
+	assoc->max_cpu_secs_per_job = NO_VAL;
+	assoc->max_jobs = NO_VAL;
+	assoc->max_nodes_per_job = NO_VAL;
+	assoc->max_wall_duration_per_job = NO_VAL;
 
 	for (i=0; i<argc; i++) {
 		if (strncasecmp (argv[i], "Where", 5) == 0) {
