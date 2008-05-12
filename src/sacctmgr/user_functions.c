@@ -145,10 +145,9 @@ static int _set_rec(int *start, int argc, char *argv[],
 			    "MaxNodes") == SLURM_SUCCESS)
 				a_set = 1;
 		} else if (strncasecmp (argv[i], "MaxWall", 4) == 0) {
-			if (get_uint(argv[i]+end, 
-			    &association->max_wall_duration_per_job, 
-			    "MaxWall") == SLURM_SUCCESS)
-				a_set = 1;
+			association->max_wall_duration_per_job =
+				(uint32_t) time_str2mins(argv[i]+end);
+			a_set = 1;
 		} else if (strncasecmp (argv[i], "QosLevel", 1) == 0) {
 			user->qos = str_2_acct_qos(argv[i]+end);
 			u_set = 1;
@@ -305,9 +304,9 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 			    "MaxNodes") == SLURM_SUCCESS)
 				limit_set = 1;
 		} else if (strncasecmp (argv[i], "MaxWall", 4) == 0) {
-			if (get_uint(argv[i]+end, &max_wall_duration_per_job, 
-			    "MaxWall") == SLURM_SUCCESS)
-				limit_set = 1;
+			max_wall_duration_per_job =
+				(uint32_t) time_str2mins(argv[i]+end);
+			limit_set = 1;
 		} else if (strncasecmp (argv[i], "Names", 1) == 0) {
 			addto_char_list(assoc_cond->user_list, argv[i]+end);
 		} else if (strncasecmp (argv[i], "Partitions", 1) == 0) {
