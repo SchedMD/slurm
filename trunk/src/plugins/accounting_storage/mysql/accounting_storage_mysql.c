@@ -827,7 +827,6 @@ static int _mysql_acct_check_tables(MYSQL *acct_mysql_db)
 		{ "admin_level", "smallint default 1 not null" },
 		{ NULL, NULL}		
 	};
-
 	if(mysql_db_create_table(acct_mysql_db, acct_coord_table,
 				 acct_coord_table_fields,
 				 ", primary key (acct(20), user(20)))")
@@ -933,6 +932,7 @@ extern int init ( void )
 	fatal("No MySQL database was found on the machine. "
 	      "Please check the configure log and run again.");
 #endif
+
 	/* since this can be loaded from many different places
 	   only tell us once. */
 	if(!first)
@@ -2600,48 +2600,6 @@ extern List acct_storage_p_modify_associations(mysql_conn_t *mysql_conn,
 					       assoc->parent_acct)
 				   == SLURM_ERROR)
 					break;
-
-/* 				/\* first we need to see if we are */
-/* 				 * going to make a child of this */
-/* 				 * account the new parent.  If so we */
-/* 				 * need to move that child to this */
-/* 				 * accounts parent and then do the move  */
-/* 				 *\/ */
-/* 				query = xstrdup_printf( */
-/* 					"select id from %s where " */
-/* 					"lft between %s and %s " */
-/* 					"&& acct='%s' && user='';", */
-/* 					assoc_table, */
-/* 					row[MASSOC_LFT], row[MASSOC_RGT], */
-/* 					assoc->parent_acct); */
-/* 				if(!(result2 = mysql_db_query_ret( */
-/* 					     mysql_conn->acct_mysql_db, */
-/* 					     query))) { */
-/* 					rc = SLURM_ERROR; */
-/* 					break; */
-/* 				} */
-
-/* 				if((row2 = mysql_fetch_row(result2))) { */
-/* 					rc = move_account(mysql_conn, */
-/* 							  row[MASSOC_CLUSTER], */
-/* 							  row2[0], */
-/* 							  row[MASSOC_PACCT]); */
-				
-/* 				} */
-/* 				mysql_free_result(result2); */
-/* 				if(rc == SLURM_ERROR)  */
-/* 					break; */
-				
-/* 				/\* now move the one we wanted to move */
-/* 				 * in the first place */
-/* 				 *\/ */
-/* 				rc = move_account(mysql_conn, */
-/* 						  row[MASSOC_CLUSTER], */
-/* 						  row[MASSOC_ID], */
-/* 						  assoc->parent_acct); */
-				
-/* 				if(rc == SLURM_ERROR)  */
-/* 					break; */
 			}
 		}
 		list_append(ret_list, object);

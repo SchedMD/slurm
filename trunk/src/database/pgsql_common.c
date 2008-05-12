@@ -255,11 +255,37 @@ extern int pgsql_db_make_table_current(PGconn *pgsql_db, char *table_name,
 	char *query = NULL, *opt_part = NULL, *temp_char = NULL;
 	char *type = NULL;
 	int not_null = 0;
-	char *default_str = NULL, *default_query = NULL, *null_query = NULL;
+	char *default_str = NULL;
 	char* original_ptr = NULL;
 	int i = 0;
+	PGresult *result = NULL;
+	List columns = NULL;
+	ListIterator itr = NULL;
+	char *col = NULL;
 
+	DEF_TIMERS;
+
+	query = xstrdup_printf("select column_name from "
+			       "information_schema.columns where "
+			       "table_name='%s'", table_name);
+
+	if(!(result = pgsql_db_query_ret(pgsql_db, query))) {
+		xfree(query);
+		return SLURM_ERROR;
+	}
+	xfree(query);
+	columns = list_create(slurm_destroy_char);
+	for (i = 0; i < PQntuples(result); i++) {
+		col = xstrdup(PQgetvalue(result, i, 0)); //column_name
+		list_append(columns, col);
+	}
+	PQclear(result);
+	itr = list_iterator_create(columns);
+	query = xstrdup_printf("alter table %s", table_name);
+	START_TIMER;
+	i=0;
 	while(fields[i].name) {
+		int found = 0;
 		if(!strcmp("serial", fields[i].options)) {
 			i++;
 			continue;
@@ -293,72 +319,69 @@ extern int pgsql_db_make_table_current(PGconn *pgsql_db, char *table_name,
 			type = xstrdup(fields[i].options);
 		}
 		xfree(original_ptr);
-
-		if(default_str) 
-			default_query = xstrdup_printf(
-				", alter column %s set default %s",
-				fields[i].name, default_str);
-		else 
-			default_query = xstrdup_printf(
-				", alter column %s drop default",
-				fields[i].name);
-
-		if(not_null) 
-			null_query = xstrdup_printf(
-				", alter column %s set not null",
-				fields[i].name);
-		else 
-			null_query = xstrdup_printf(
-				", alter column %s drop not null",
-				fields[i].name);
+		list_iterator_reset(itr);
+		while((col = list_next(itr))) {
+			if(!strcmp(col, fields[i].name)) {
+				list_delete_item(itr);
+				found = 1;
+				break;
+			}
+		}
 		
-		
-		query = xstrdup_printf("alter table %s alter column "
-				       "%s type %s%s%s",
-				       table_name, fields[i].name, type,
-				       default_query, null_query);
-		xfree(default_query);
-		xfree(null_query);
-			
-		if(pgsql_db_query(pgsql_db, query)) {
+		temp_char = NULL;
+		if(!found) {
 			info("adding column %s", fields[i].name);
 			if(default_str) 
-				default_query = xstrdup_printf(
-					" default %s", default_str);
+				xstrfmtcat(temp_char,
+					   " default %s", default_str);
 						
 			if(not_null) 
-				null_query = xstrdup_printf(" not null");
+				xstrcat(temp_char, " not null");
 			
-			xfree(query);
-			query = xstrdup_printf(
-				"alter table %s add %s %s",
-				table_name, fields[i].name,
-				type);
-			if(default_query) {
-				xstrcat(query, default_query);
-				xfree(default_query);
-			}
-
-			if(null_query) {
-				xstrcat(query, null_query);
-				xfree(null_query);
-			}
-
-			if(pgsql_db_query(pgsql_db, query)) {
-				xfree(default_str);
-				xfree(query);
-				xfree(type);
-				return SLURM_ERROR;
-			}
+			xstrfmtcat(query,
+				   " add %s %s",
+				   fields[i].name, type);
+			if(temp_char)
+				xstrcat(query, temp_char);
+			xstrcat(query, ",");
+		} else {
+			if(default_str) 
+				xstrfmtcat(temp_char,
+					   " alter %s set default %s,",
+					   fields[i].name, default_str);
+			else 
+				xstrfmtcat(temp_char,
+					   " alter %s drop default,",
+					   fields[i].name);
 			
-
+			if(not_null) 
+				xstrfmtcat(temp_char,
+					   " alter %s set not null,",
+					   fields[i].name);
+			else 
+				xstrfmtcat(temp_char,
+					   " alter %s drop not null,",
+					   fields[i].name);
+			xstrfmtcat(query, " alter %s type %s,%s",
+				   fields[i].name, type, temp_char);
 		}
+		xfree(temp_char);
 		xfree(default_str);
-		xfree(query);
 		xfree(type);
+	
 		i++;
 	}
-	
+	list_iterator_destroy(itr);
+	list_destroy(columns);
+	query[strlen(query)-1] = ';';
+
+	if(pgsql_db_query(pgsql_db, query)) {
+		xfree(query);
+		return SLURM_ERROR;
+	}
+	xfree(query);
+		
+	END_TIMER2("make table current");
 	return SLURM_SUCCESS;
 }
 

@@ -40,6 +40,7 @@
 
 #include "mysql_common.h"
 #include "src/common/xmalloc.h"
+#include "src/common/timers.h"
 #include "src/common/slurm_protocol_api.h"
 
 pthread_mutex_t mysql_lock = PTHREAD_MUTEX_INITIALIZER;
@@ -86,31 +87,64 @@ static int _mysql_make_table_current(MYSQL *mysql_db, char *table_name,
 				     storage_field_t *fields)
 {
 	char *query = NULL;
+	MYSQL_RES *result = NULL;
+	MYSQL_ROW row;
 	int i = 0;
+	List columns = NULL;
+	ListIterator itr = NULL;
+	char *col = NULL;
+	DEF_TIMERS;
 
+	query = xstrdup_printf("show columns from %s", table_name);
+
+	if(!(result = mysql_db_query_ret(mysql_db, query))) {
+		xfree(query);
+		return SLURM_ERROR;
+	}
+	xfree(query);
+	columns = list_create(slurm_destroy_char);
+	while((row = mysql_fetch_row(result))) {
+		col = xstrdup(row[0]); //Field
+		list_append(columns, col);
+	}
+	mysql_free_result(result);
+	itr = list_iterator_create(columns);
+	query = xstrdup_printf("alter table %s", table_name);
+	START_TIMER;
 	while(fields[i].name) {
-		query = xstrdup_printf("alter table %s modify %s %s",
-				       table_name, fields[i].name,
-				       fields[i].options);
-		if(mysql_db_query(mysql_db, query)) {
+		int found = 0;
+		list_iterator_reset(itr);
+		while((col = list_next(itr))) {
+			if(!strcmp(col, fields[i].name)) {
+				xstrfmtcat(query, " modify %s %s,",
+					   fields[i].name,
+					   fields[i].options);
+				list_delete_item(itr);
+				found = 1;
+				break;
+			}
+		}
+		if(!found) {
 			info("adding column %s after %s", fields[i].name,
 			     fields[i-1].name);
-			xfree(query);
-			query = xstrdup_printf(
-				"alter table %s add %s %s after %s",
-				table_name, fields[i].name,
-				fields[i].options,
-				fields[i-1].name);
-			if(mysql_db_query(mysql_db, query)) {
-				xfree(query);
-				return SLURM_ERROR;
-			}
-
+			xstrfmtcat(query, " add %s %s after %s,",
+				   fields[i].name,
+				   fields[i].options,
+				   fields[i-1].name);
 		}
-		xfree(query);
+
 		i++;
 	}
+	list_iterator_destroy(itr);
+	list_destroy(columns);
+	query[strlen(query)-1] = ';';
+	if(mysql_db_query(mysql_db, query)) {
+		xfree(query);
+		return SLURM_ERROR;
+	}
+	xfree(query);
 	
+	END_TIMER2("make table current");
 	return SLURM_SUCCESS;
 }
 
