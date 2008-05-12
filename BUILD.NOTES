@@ -154,7 +154,7 @@ Some RPM commands:
   rpm -i --ignoresize slurm-1.1.9-1.rpm (install a new rpm)
 For main SLURM plugin installation on BGL service node:
   rpm -i --force --nodeps --ignoresize slurm-1.1.9-1.rpm
-
+  rpm -U --force --nodeps --ignoresize slurm-1.1.9-1.rpm  (upgrade option)
 
 To clear a wedged job:
   /bgl/startMMCSconsole
