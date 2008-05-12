@@ -459,25 +459,26 @@ extern int assoc_mgr_update_local_assocs(acct_update_object_t *update)
 				break;
 			}
 			debug("updating the assocs here on %u", rec->id);
-			if((int)object->fairshare >= -1) {
+			if(object->fairshare != (uint32_t)NO_VAL) {
 				rec->fairshare = object->fairshare;
 			}
 
-			if((int)object->max_jobs >= -1) {
+			if(object->max_jobs != (uint32_t)NO_VAL) {
 				rec->max_jobs = object->max_jobs;
 			}
 
-			if((int)object->max_nodes_per_job >= -1) {
+			if(object->max_nodes_per_job != (uint32_t)NO_VAL) {
 				rec->max_nodes_per_job =
 					object->max_nodes_per_job;
 			}
 
-			if((int)object->max_wall_duration_per_job >= -1) {
+			if(object->max_wall_duration_per_job !=
+			   (uint32_t)NO_VAL) {
 				rec->max_wall_duration_per_job =
 					object->max_wall_duration_per_job;
 			}
 
-			if((int)object->max_cpu_secs_per_job >= -1) {
+			if(object->max_cpu_secs_per_job != (uint32_t)NO_VAL) {
 				rec->max_cpu_secs_per_job = 
 					object->max_cpu_secs_per_job;
 			}
