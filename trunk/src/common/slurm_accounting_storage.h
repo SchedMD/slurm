@@ -94,7 +94,6 @@ typedef struct {
 					     * can run a job (seconds) */
 	List partition_list;	/* list of char * */
 	char *parent_acct;	/* name of parent account */
-
 	List user_list;		/* list of char * */
 } acct_association_cond_t;
 
@@ -139,6 +138,7 @@ typedef struct acct_association_rec {
 	char *parent_acct;	/* name of parent account */
 	struct acct_association_rec *parent_acct_ptr;	/* ptr to parent acct
 							 * set in slurmctld */
+	uint32_t parent_id;	/* id of parent account */
 	char *partition;	/* optional partition in a cluster 
 				 * associated to association */
 	uint32_t uid;		/* user ID */
