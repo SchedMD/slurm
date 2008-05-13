@@ -78,9 +78,30 @@ static MYSQL_RES *_get_first_result(MYSQL *mysql_db)
 		/* more results? -1 = no, >0 = error, 0 = yes (keep looping) */
 		if ((rc = mysql_next_result(mysql_db)) > 0)
 			debug3("error: Could not execute statement %d\n", rc);
+		
 	} while (rc == 0);
 	
 	return NULL;
+}
+
+static MYSQL_RES *_get_last_result(MYSQL *mysql_db)
+{
+	MYSQL_RES *result = NULL;
+	MYSQL_RES *last_result = NULL;
+	int rc = 0;
+	do {
+		/* did current statement return data? */
+		if((result = mysql_store_result(mysql_db))) {
+			if(last_result)
+				mysql_free_result(last_result);
+			last_result = result;
+		}
+		/* more results? -1 = no, >0 = error, 0 = yes (keep looping) */
+		if ((rc = mysql_next_result(mysql_db)) > 0)
+			debug3("error: Could not execute statement %d\n", rc);
+	} while (rc == 0);
+	
+	return last_result;
 }
 
 static int _mysql_make_table_current(MYSQL *mysql_db, char *table_name,
@@ -97,7 +118,7 @@ static int _mysql_make_table_current(MYSQL *mysql_db, char *table_name,
 
 	query = xstrdup_printf("show columns from %s", table_name);
 
-	if(!(result = mysql_db_query_ret(mysql_db, query))) {
+	if(!(result = mysql_db_query_ret(mysql_db, query, 0))) {
 		xfree(query);
 		return SLURM_ERROR;
 	}
@@ -323,12 +344,15 @@ extern int mysql_db_rollback(MYSQL *mysql_db)
 
 }
 
-extern MYSQL_RES *mysql_db_query_ret(MYSQL *mysql_db, char *query)
+extern MYSQL_RES *mysql_db_query_ret(MYSQL *mysql_db, char *query, bool last)
 {
 	MYSQL_RES *result = NULL;
 	
 	if(mysql_db_query(mysql_db, query) != SLURM_ERROR)  {
-		result = _get_first_result(mysql_db);
+		if(last)
+			result = _get_last_result(mysql_db);
+		else
+			result = _get_first_result(mysql_db);
 		if(!result && mysql_field_count(mysql_db)) {
 			/* should have returned data */
 			error("We should have gotten a result: %s", 

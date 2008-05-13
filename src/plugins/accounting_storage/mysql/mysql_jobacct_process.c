@@ -251,7 +251,8 @@ extern List mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn,
 	}
 
 	//info("query = %s", query);
-	if(!(result = mysql_db_query_ret(mysql_conn->acct_mysql_db, query))) {
+	if(!(result = mysql_db_query_ret(
+		     mysql_conn->acct_mysql_db, query, 0))) {
 		xfree(query);
 		list_destroy(job_list);
 		return NULL;
@@ -364,8 +365,8 @@ extern List mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn,
 		}
 		
 		//info("query = %s", query);
-		if(!(step_result = mysql_db_query_ret(mysql_conn->acct_mysql_db,
-						      query))) {
+		if(!(step_result = mysql_db_query_ret(
+			     mysql_conn->acct_mysql_db, query, 0))) {
 			xfree(query);
 			list_destroy(job_list);
 			return NULL;
