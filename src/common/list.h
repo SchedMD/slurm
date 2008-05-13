@@ -193,6 +193,14 @@ int list_for_each (List l, ListForF f, void *arg);
  *    function returns the negative of that item's position in the list.
  */
 
+int list_flush (List l);
+/*
+ *  Traverses list [l] and removes all items in list
+ *  If a deletion function was specified when the list was
+ *  created, it will be called to deallocate each item being removed.
+ *  Returns a count of the number of items removed from the list.
+ */
+
 void list_sort (List l, ListCmpF f);
 /*
  *  Sorts list [l] into ascending order according to the function [f].
