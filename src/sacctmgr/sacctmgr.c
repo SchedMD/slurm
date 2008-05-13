@@ -328,8 +328,6 @@ _process_command (int argc, char *argv[])
 		all_flag = 1;
 	} else if (strncasecmp (argv[0], "associations", 3) == 0) {
 		with_assoc_flag = 1;
-	} else if (strncasecmp (argv[0], "exit", 1) == 0) {
-		exit_flag = 1;
 	} else if (strncasecmp (argv[0], "help", 2) == 0) {
 		if (argc > 1) {
 			exit_code = 1;
@@ -364,7 +362,8 @@ _process_command (int argc, char *argv[])
 				 argv[0]);
 		}
 		quiet_flag = 1;
-	} else if (strncasecmp (argv[0], "quit", 4) == 0) {
+	} else if ((strncasecmp (argv[0], "exit", 4) == 0) ||
+		   (strncasecmp (argv[0], "quit", 4) == 0)) {
 		if (argc > 1) {
 			exit_code = 1;
 			fprintf (stderr, 
@@ -372,7 +371,8 @@ _process_command (int argc, char *argv[])
 				 argv[0]);
 		}
 		exit_flag = 1;
-	} else if (strncasecmp (argv[0], "add", 3) == 0) {
+	} else if ((strncasecmp (argv[0], "add", 3) == 0) ||
+		   (strncasecmp (argv[0], "create", 3) == 0)) {
 		if (argc < 2) {
 			exit_code = 1;
 			if (quiet_flag != 1)
@@ -381,17 +381,8 @@ _process_command (int argc, char *argv[])
 				        argv[0]);
 		} else
 			_add_it((argc - 1), &argv[1]);
-	} else if (strncasecmp (argv[0], "create", 3) == 0) {
-		if (argc < 2) {
-			exit_code = 1;
-			if (quiet_flag != 1)
-				fprintf(stderr, 
-				        "too few arguments for keyword:%s\n", 
-				        argv[0]);
-		} else 
-			_add_it((argc - 1), &argv[1]);
-	} else if (strncasecmp (argv[0], "show", 3) == 0
-		   || strncasecmp (argv[0], "list", 3) == 0) {
+	} else if ((strncasecmp (argv[0], "show", 3) == 0) ||
+		   (strncasecmp (argv[0], "list", 3) == 0)) {
 		if (argc < 2) {
 			exit_code = 1;
 			if (quiet_flag != 1)
@@ -408,15 +399,8 @@ _process_command (int argc, char *argv[])
 			return 0;
 		} else 		
 			_modify_it((argc - 1), &argv[1]);
-	} else if (strncasecmp (argv[0], "delete", 3) == 0) {
-		if (argc < 2) {
-			exit_code = 1;
-			fprintf (stderr, "too few arguments for %s keyword\n",
-				 argv[0]);
-			return 0;
-		} else 
-			_delete_it((argc - 1), &argv[1]);
-	} else if (strncasecmp (argv[0], "remove", 3) == 0) {
+	} else if ((strncasecmp (argv[0], "delete", 3) == 0) ||
+		   (strncasecmp (argv[0], "remove", 3) == 0)) {
 		if (argc < 2) {
 			exit_code = 1;
 			fprintf (stderr, "too few arguments for %s keyword\n",
