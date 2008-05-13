@@ -106,7 +106,7 @@ static int _set_rec(int *start, int argc, char *argv[],
 		    acct_user_rec_t *user,
 		    acct_association_rec_t *association)
 {
-	int i;
+	int i, mins;
 	int u_set = 0;
 	int a_set = 0;
 	int end = 0;
@@ -145,9 +145,18 @@ static int _set_rec(int *start, int argc, char *argv[],
 			    "MaxNodes") == SLURM_SUCCESS)
 				a_set = 1;
 		} else if (strncasecmp (argv[i], "MaxWall", 4) == 0) {
-			association->max_wall_duration_per_job =
-				(uint32_t) time_str2mins(argv[i]+end);
-			a_set = 1;
+			mins = time_str2mins(argv[i]+end);
+			if (mins >= 0) {
+				association->max_wall_duration_per_job 
+					= (uint32_t) mins;
+				a_set = 1;
+			} else if (strcmp(argv[i]+end, "-1") == 0) {
+				association->max_wall_duration_per_job = -1;
+				a_set = 1;
+			} else {
+				printf(" Bad MaxWall time format: %s\n", 
+					argv[i]);
+			}
 		} else if (strncasecmp (argv[i], "QosLevel", 1) == 0) {
 			user->qos = str_2_acct_qos(argv[i]+end);
 			u_set = 1;
@@ -255,7 +264,7 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 	uint32_t max_cpu_secs_per_job = NO_VAL;
 	char *user_str = NULL;
 	char *assoc_str = NULL;
-	int limit_set = 0;
+	int limit_set = 0, mins;
 	int first = 1;
 	int acct_first = 1;
 
@@ -304,9 +313,17 @@ extern int sacctmgr_add_user(int argc, char *argv[])
 			    "MaxNodes") == SLURM_SUCCESS)
 				limit_set = 1;
 		} else if (strncasecmp (argv[i], "MaxWall", 4) == 0) {
-			max_wall_duration_per_job =
-				(uint32_t) time_str2mins(argv[i]+end);
-			limit_set = 1;
+			mins = time_str2mins(argv[i]+end);
+			if (mins >= 0) {
+				max_wall_duration_per_job = (uint32_t) mins;
+				limit_set = 1;
+			} else if (strcmp(argv[i]+end, "-1") == 0) {
+				max_wall_duration_per_job = -1;
+				limit_set = 1;
+			} else {
+				printf(" Bad MaxWall time format: %s\n", 
+					argv[i]);
+			}
 		} else if (strncasecmp (argv[i], "Names", 1) == 0) {
 			addto_char_list(assoc_cond->user_list, argv[i]+end);
 		} else if (strncasecmp (argv[i], "Partitions", 1) == 0) {
