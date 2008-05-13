@@ -54,7 +54,7 @@ static int _get_local_association_list(void *db_conn, int enforce)
 {
 	acct_association_cond_t assoc_q;
 	char *cluster_name = NULL;
-
+//	DEF_TIMERS;
 	slurm_mutex_lock(&local_association_lock);
 	if(local_association_list)
 		list_destroy(local_association_list);
@@ -73,8 +73,11 @@ static int _get_local_association_list(void *db_conn, int enforce)
 			list_append(assoc_q.cluster_list, cluster_name);
 	}
 
+//	START_TIMER;
 	local_association_list =
 		acct_storage_g_get_associations(db_conn, &assoc_q);
+//	END_TIMER2("get_associations");
+
 	if(assoc_q.cluster_list)
 		list_destroy(assoc_q.cluster_list);
 	
