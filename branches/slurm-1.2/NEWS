@@ -3,6 +3,11 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 1.2.29
 =========================
+ -- Fix for gold not to print out 720 error messages since they are
+    potentally harmful.
+
+* Changes in SLURM 1.2.29
+=========================
  -- Modified global configuration option "DisableRootJobs" from number (0 or 1)
     to boolean (YES or NO) to match partition parameter.
  -- Set "DisableRootJobs" for a partition to match the global parameters value 
