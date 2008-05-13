@@ -72,7 +72,7 @@ static int _set_cond(int *start, int argc, char *argv[],
 static int _set_rec(int *start, int argc, char *argv[],
 		    acct_cluster_rec_t *cluster)
 {
-	int i;
+	int i, mins;
 	int set = 0;
 	int end = 0;
 
@@ -98,9 +98,18 @@ static int _set_rec(int *start, int argc, char *argv[],
 			    "MaxNodes") == SLURM_SUCCESS)
 				set = 1;
 		} else if (strncasecmp (argv[i], "MaxWall", 4) == 0) {
-			cluster->default_max_wall_duration_per_job =
-				(uint32_t) time_str2mins(argv[i]+end);
-			set = 1;
+			mins = time_str2mins(argv[i]+end);
+			if (mins >= 0) {
+				cluster->default_max_wall_duration_per_job
+						= (uint32_t) mins;
+				set = 1;
+			} else if (strcmp(argv[i]+end, "-1") == 0) {
+				cluster->default_max_wall_duration_per_job = -1;
+				set = 1;
+			} else {
+				printf(" Bad MaxWall time format: %s\n", 
+					argv[i]);
+			}
 		} else if (strncasecmp (argv[i], "MaxCPUSecs=", 11) == 0) {
 			if (get_uint(argv[i]+end, 
 			     &cluster->default_max_cpu_secs_per_job, 
@@ -121,7 +130,7 @@ static int _set_rec(int *start, int argc, char *argv[],
 extern int sacctmgr_add_cluster(int argc, char *argv[])
 {
 	int rc = SLURM_SUCCESS;
-	int i=0;
+	int i = 0, mins;
 	acct_cluster_rec_t *cluster = NULL;
 	List name_list = list_create(slurm_destroy_char);
 	List cluster_list = NULL;
@@ -151,9 +160,17 @@ extern int sacctmgr_add_cluster(int argc, char *argv[])
 			max_nodes_per_job = atoi(argv[i]+end);
 			limit_set = 1;
 		} else if (strncasecmp (argv[i], "MaxWall", 4) == 0) {
-			max_wall_duration_per_job = 
-				(uint32_t) time_str2mins(argv[i]+end);
-			limit_set = 1;
+			mins = time_str2mins(argv[i]+end);
+			if (mins >= 0) {
+				max_wall_duration_per_job = (uint32_t) mins;
+				limit_set = 1;
+			} else if (strcmp(argv[i]+end, "-1") == 0) {
+				max_wall_duration_per_job = -1;
+				limit_set = 1;
+			} else {
+				printf(" Bad MaxWall time format: %s\n", 
+					argv[i]);
+			}
 		} else if (strncasecmp (argv[i], "Names", 1) == 0) {
 			addto_char_list(name_list, argv[i]+end);
 		} else {

@@ -100,7 +100,7 @@ static int _set_cond(int *start, int argc, char *argv[],
 static int _set_rec(int *start, int argc, char *argv[],
 		    account_association_rec_t *association)
 {
-	int i;
+	int i, mins;
 	int set = 0;
 
 	for (i=(*start); i<argc; i++) {
@@ -145,9 +145,18 @@ static int _set_rec(int *start, int argc, char *argv[],
 			    "MaxNodes") == SLURM_SUCCESS)
 				set = 1;
 		} else if (strncasecmp (argv[i], "MaxWall", 4) == 0) {
-			association->max_wall_duration_per_job =
-				(uint32_t) time_str2mins(argv[i]+end);
-			set = 1;
+			mins = time_str2mins(argv[i]+end);
+			if (mins >= 0) {
+				association->max_wall_duration_per_job 
+					= (uint32_t) mins;
+				set = 1;
+			} else if (strcmp(argv[i]+end, "-1") == 0) {
+				association->max_wall_duration_per_job = -1;
+				set = 1;
+			} else {
+				printf(" Bad MaxWall time format: %s\n", 
+					argv[i]);
+			}
 		} else if (strncasecmp (argv[i], "MaxCPUSecs", 4) == 0) {
 			if (get_uint(argv[i]+end, 
 			     &association->max_cpu_seconds_per_job, 

@@ -102,7 +102,7 @@ static int _set_rec(int *start, int argc, char *argv[],
 		    acct_account_rec_t *acct,
 		    acct_association_rec_t *assoc)
 {
-	int i;
+	int i, mins;
 	int u_set = 0;
 	int a_set = 0;
 	int end = 0;
@@ -135,9 +135,18 @@ static int _set_rec(int *start, int argc, char *argv[],
 			    "MaxNodes") == SLURM_SUCCESS)
 				a_set = 1;
 		} else if (strncasecmp (argv[i], "MaxWall", 4) == 0) {
-			assoc->max_wall_duration_per_job = 
-				(uint32_t) time_str2mins(argv[i]+end);
-			a_set = 1;
+			mins = time_str2mins(argv[i]+end);
+			if (mins >= 0) {
+				assoc->max_wall_duration_per_job 
+					= (uint32_t) mins;
+				a_set = 1;
+			} else if (strcmp(argv[i]+end, "-1") == 0) {
+				assoc->max_wall_duration_per_job = -1;
+				a_set = 1;
+			} else {
+				printf(" Bad MaxWall time format: %s\n", 
+					argv[i]);
+			}
 		} else if (strncasecmp (argv[i], "Organization", 1) == 0) {
 			acct->organization = xstrdup(argv[i]+end);
 			u_set = 1;
@@ -230,7 +239,7 @@ static int _set_rec(int *start, int argc, char *argv[],
 extern int sacctmgr_add_account(int argc, char *argv[])
 {
 	int rc = SLURM_SUCCESS;
-	int i=0;
+	int i=0, mins;
 	ListIterator itr = NULL, itr_c = NULL;
 	acct_account_rec_t *acct = NULL;
 	acct_association_rec_t *assoc = NULL;
@@ -281,9 +290,17 @@ extern int sacctmgr_add_account(int argc, char *argv[])
 			    "MaxNodes") == SLURM_SUCCESS)
 				limit_set = 1;
 		} else if (strncasecmp (argv[i], "MaxWall", 4) == 0) {
-			max_wall_duration_per_job = 
-				(uint32_t) time_str2mins(argv[i]+end);
-			limit_set = 1;
+			mins = time_str2mins(argv[i]+end);
+			if (mins >= 0) {
+				max_wall_duration_per_job = (uint32_t) mins;
+				limit_set = 1;
+			} else if (strcmp(argv[i]+end, "-1") == 0) {
+				max_wall_duration_per_job = -1;
+				limit_set = 1;
+			} else {
+				printf(" Bad MaxWall time format: %s\n", 
+					argv[i]);
+			}
 		} else if (strncasecmp (argv[i], "Names", 1) == 0) {
 			addto_char_list(name_list, argv[i]+end);
 		} else if (strncasecmp (argv[i], "Organization", 1) == 0) {

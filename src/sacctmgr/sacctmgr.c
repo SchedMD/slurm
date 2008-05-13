@@ -677,7 +677,7 @@ static void _destroy_sacctmgr_file_opts(void *object)
 
 static sacctmgr_file_opts_t *_parse_options(char *options)
 {
-	int start=0, i=0, end=0;
+	int start=0, i=0, end=0, mins;
 	char *sub = NULL;
 	sacctmgr_file_opts_t *file_opts = xmalloc(sizeof(sacctmgr_file_opts_t));
 	file_opts->fairshare = NO_VAL;
@@ -709,21 +709,47 @@ static sacctmgr_file_opts_t *_parse_options(char *options)
 			file_opts->def_acct = xstrdup(sub+end);
 		} else if (strncasecmp (sub, "Description", 3) == 0) {
 			file_opts->desc = xstrdup(sub+end);
-		} else if (strncasecmp (sub, "Fairshare", 1) == 0) {
-			get_uint(sub+end, &file_opts->fairshare, 
-			    "FairShare");
+		} else if (strncasecmp (sub, "FairShare", 1) == 0) {
+			if (get_uint(sub+end, &file_opts->fairshare, 
+			    "FairShare") != SLURM_SUCCESS) {
+				printf(" Bad FairShare value: %s\n", sub+end);
+				_destroy_sacctmgr_file_opts(file_opts);
+				break;
+			}
 		} else if (strncasecmp (sub, "MaxCPUSec", 4) == 0) {
-			get_uint(sub+end, &file_opts->max_cpu_secs_per_job,
-			    "MaxCPUSec");
+			if (get_uint(sub+end, &file_opts->max_cpu_secs_per_job,
+			    "MaxCPUSec") != SLURM_SUCCESS) {
+				printf(" Bad MaxCPUSec value: %s\n", sub+end);
+				_destroy_sacctmgr_file_opts(file_opts);
+				break;
+			}
 		} else if (strncasecmp (sub, "MaxJobs", 4) == 0) {
-			get_uint(sub+end, &file_opts->max_jobs,
-			    "MaxJobs");
+			if (get_uint(sub+end, &file_opts->max_jobs,
+			    "MaxJobs") != SLURM_SUCCESS) {
+				printf(" Bad MaxJobs value: %s\n", sub+end);
+				_destroy_sacctmgr_file_opts(file_opts);
+				break;
+			}
 		} else if (strncasecmp (sub, "MaxNodes", 4) == 0) {
-			get_uint(sub+end, &file_opts->max_nodes_per_job,
-			    "MaxNodes");
+			if (get_uint(sub+end, &file_opts->max_nodes_per_job,
+			    "MaxNodes") != SLURM_SUCCESS) {
+				printf(" Bad MaxNodes value: %s\n", sub+end);
+				_destroy_sacctmgr_file_opts(file_opts);
+				break;
+			}
 		} else if (strncasecmp (sub, "MaxWall", 4) == 0) {
-			file_opts->max_wall_duration_per_job = 
-				(uint32_t) time_str2mins(sub+end);
+			mins = time_str2mins(sub+end);
+			if (mins >= 0) {
+				file_opts->max_wall_duration_per_job 
+					= (uint32_t) mins;
+			} else if (strcmp(sub+end, "-1") == 0) {
+				file_opts->max_wall_duration_per_job = -1;
+			} else {
+				printf(" Bad MaxWall time format: %s\n", 
+					sub+end);
+				_destroy_sacctmgr_file_opts(file_opts);
+				break;
+			}
 		} else if (strncasecmp (sub, "Organization", 1) == 0) {
 			file_opts->org = xstrdup(sub+end);
 		} else if (strncasecmp (sub, "QosLevel", 1) == 0) {
