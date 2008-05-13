@@ -23,6 +23,8 @@ name for a batch job?</a></li>
 allocated to a SLURM job?</a></li>
 <li><a href="#terminal">Can tasks be launched with a remote terminal?</a></li>
 <li><a href="#force">What does &quot;srun: Force Terminated job&quot; indicate?</a></li>
+<li><a href="#early_exit">What does this mean: &quot;srun: First task exited 30s ago&quot;
+followed by &quot;srun Job Failed&quot;?</a></li>
 </ol>
 <h2>For Administrators</h2>
 <ol>
@@ -462,6 +464,18 @@ killed. If the srun has not already terminated, the message
 If the job step's I/O does not terminate in a timely fashion
 thereafter, pending I/O is abandoned and the srun command 
 exits.</p>
+
+<p><a name="early_exit"><b>17. What does this mean: 
+&quot;srun: First task exited 30s ago&quot;
+followed by &quot;srun Job Failed&quot;?</b></a><br>
+The srun command monitors when tasks exit. By default, 30 seconds 
+after the first task exists, the job is killed. 
+This typically indicates some type of job failure and continuing
+to execute a parallel job when one of the tasks has exited is
+not normally productive. This behavior can be changed using srun's
+<i>--wait=&lt;time&gt;</i> option to either change the timeout
+period or disable the timeout altogether. See srun's man page
+for details.
 
 <p class="footer"><a href="#top">top</a></p>
 
@@ -933,6 +947,6 @@ slurmdbd.
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 1 May 2008</p>
+<p style="text-align:center;">Last modified 13 May 2008</p>
 
 <!--#include virtual="footer.txt"-->
