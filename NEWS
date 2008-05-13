@@ -35,6 +35,8 @@ documents those changes that are of interest to users and admins.
     management yet.
  -- For srun/sbatch --get-user-env option (Moab use only) look for "env"
     command in both /bin and /usr/sbin (for Suse Linux).
+ -- Fix bug in processing job feature requests with node counts (could fail
+    to schedule job if some nodes have not associated features).
 
 * Changes in SLURM 1.3.1
 ========================

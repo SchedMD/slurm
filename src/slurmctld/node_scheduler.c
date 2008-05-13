@@ -233,7 +233,7 @@ static int _match_feature(char *seek, char *available)
 	if (seek == NULL)
 		return 1;	/* nothing to look for */
 	if (available == NULL)
-		return SLURM_SUCCESS;	/* nothing to find */
+		return 0;	/* nothing to find */
 
 	tmp_available = xstrdup(available);
 	found = 0;
@@ -1636,8 +1636,6 @@ static bitstr_t *_valid_features(struct job_details *details_ptr,
 		bit_set(result_bits, 0);
 		return result_bits;
 	}
-	if (available == NULL)			/* no features */
-		return result_bits;
 
 	result = 1;				/* assume good for now */
 	last_op = FEATURE_OP_AND;
