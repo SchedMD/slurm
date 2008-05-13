@@ -714,9 +714,12 @@ extern int sacctmgr_list_account(int argc, char *argv[])
 			while((assoc = list_next(itr2))) {
 				if(!first)
 					printf("\n%-*.*s", over, over, " ");
-				
-				print_str(VALUE, &cluster_field,
-					  assoc->cluster);
+				else {
+					print_str(VALUE, &cluster_field,
+						  assoc->cluster);
+					over += cluster_field.len + 1;
+
+				}
 				print_str(VALUE, &parent_field,
 					  assoc->parent_acct);
 				print_str(VALUE, &user_field, assoc->user);
