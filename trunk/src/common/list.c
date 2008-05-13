@@ -503,6 +503,29 @@ list_for_each (List l, ListForF f, void *arg)
 }
 
 
+int
+list_flush (List l)
+{
+    ListNode *pp;
+    void *v;
+    int n = 0;
+
+    assert(l != NULL);
+    list_mutex_lock(&l->mutex);
+    assert(l->magic == LIST_MAGIC);
+    pp = &l->head;
+    while (*pp) {
+        if ((v = list_node_destroy(l, pp))) {
+            if (l->fDel)
+                l->fDel(v);
+	    n++;
+	}
+    }
+    list_mutex_unlock(&l->mutex);
+    return(n);
+}
+
+
 void
 list_sort (List l, ListCmpF f)
 {

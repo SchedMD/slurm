@@ -360,9 +360,7 @@ static int _modify_common(mysql_conn_t *mysql_conn,
 		if(mysql_conn->rollback) {
 			mysql_db_rollback(mysql_conn->acct_mysql_db);
 		}
-		list_destroy(mysql_conn->update_list);
-		mysql_conn->update_list =
-			list_create(destroy_acct_update_object);
+		list_flush(mysql_conn->update_list);
 		
 		return SLURM_ERROR;
 	}
@@ -371,6 +369,7 @@ static int _modify_common(mysql_conn_t *mysql_conn,
 }
 static int _modify_unset_users(mysql_conn_t *mysql_conn,
 			       acct_association_rec_t *assoc,
+			       char *acct,
 			       uint32_t lft, uint32_t rgt,
 			       List ret_list)
 {
@@ -389,6 +388,8 @@ static int _modify_unset_users(mysql_conn_t *mysql_conn,
 		"max_nodes_per_job",
 		"max_wall_duration_per_job",
 		"max_cpu_secs_per_job",
+		"lft",
+		"rgt"
 	};
 	
 	enum {
@@ -401,10 +402,12 @@ static int _modify_unset_users(mysql_conn_t *mysql_conn,
 		ASSOC_MNPJ,
 		ASSOC_MWPJ,
 		ASSOC_MCPJ,
+		ASSOC_LFT,
+		ASSOC_RGT,
 		ASSOC_COUNT
 	};
 
-	if(!ret_list)
+	if(!ret_list || !acct)
 		return SLURM_ERROR;
 
 	for(i=0; i<ASSOC_COUNT; i++) {
@@ -414,9 +417,15 @@ static int _modify_unset_users(mysql_conn_t *mysql_conn,
 	}
 
 	query = xstrdup_printf("select distinct %s from %s where deleted=0 "
-			       "&& lft between %u and %u and user != ''"
+			       "&& lft between %u and %u && "
+			       "((user = '' && parent_acct = '%s') || "
+			       "(user != '' && acct = '%s')) "
 			       "order by lft;",
-			       object, assoc_table, lft, rgt);
+			       object, assoc_table, lft, rgt, acct, acct);
+/* 	query = xstrdup_printf("select distinct %s from %s where deleted=0 " */
+/* 			       "&& lft between %u and %u and user != ''" */
+/* 			       "order by lft;", */
+/* 			       object, assoc_table, lft, rgt); */
 	xfree(object);
 	debug3("%d query\n%s", mysql_conn->conn, query);
 	if(!(result = mysql_db_query_ret(mysql_conn->acct_mysql_db, query))) {
@@ -465,6 +474,17 @@ static int _modify_unset_users(mysql_conn_t *mysql_conn,
 		
 
 		if(modified) {
+			if(!strlen(row[ASSOC_USER])) {
+				_modify_unset_users(mysql_conn,
+						    mod_assoc,
+						    row[ASSOC_ACCT],
+						    atoi(row[ASSOC_LFT]),
+						    atoi(row[ASSOC_RGT]),
+						    ret_list);
+				destroy_acct_association_rec(mod_assoc);
+				continue;
+			}
+
 			mod_assoc->fairshare = (uint32_t)NO_VAL;
 			if(strlen(row[ASSOC_PART])) { 
 				// see if there is a partition name
@@ -537,9 +557,7 @@ static int _remove_common(mysql_conn_t *mysql_conn,
 		if(mysql_conn->rollback) {
 			mysql_db_rollback(mysql_conn->acct_mysql_db);
 		}
-		list_destroy(mysql_conn->update_list);
-		mysql_conn->update_list =
-			list_create(destroy_acct_update_object);
+		list_flush(mysql_conn->update_list);
 		
 		return SLURM_ERROR;
 	}
@@ -635,9 +653,7 @@ static int _remove_common(mysql_conn_t *mysql_conn,
 		if(mysql_conn->rollback) {
 			mysql_db_rollback(mysql_conn->acct_mysql_db);
 		}
-		list_destroy(mysql_conn->update_list);
-		mysql_conn->update_list =
-			list_create(destroy_acct_update_object);
+		list_flush(mysql_conn->update_list);
 		return SLURM_ERROR;
 	}
 
@@ -656,9 +672,7 @@ static int _remove_common(mysql_conn_t *mysql_conn,
 		if(mysql_conn->rollback) {
 			mysql_db_rollback(mysql_conn->acct_mysql_db);
 		}
-		list_destroy(mysql_conn->update_list);
-		mysql_conn->update_list =
-			list_create(destroy_acct_update_object);
+		list_flush(mysql_conn->update_list);
 		return SLURM_ERROR;
 	}
 	xfree(query);
@@ -715,9 +729,7 @@ static int _remove_common(mysql_conn_t *mysql_conn,
 		if(mysql_conn->rollback) {
 			mysql_db_rollback(mysql_conn->acct_mysql_db);
 		}
-		list_destroy(mysql_conn->update_list);
-		mysql_conn->update_list =
-			list_create(destroy_acct_update_object);
+		list_flush(mysql_conn->update_list);
 		return rc;
 	}
 	
@@ -737,9 +749,7 @@ static int _remove_common(mysql_conn_t *mysql_conn,
 		if(mysql_conn->rollback) {
 			mysql_db_rollback(mysql_conn->acct_mysql_db);
 		}
-		list_destroy(mysql_conn->update_list);
-		mysql_conn->update_list =
-			list_create(destroy_acct_update_object);
+		list_flush(mysql_conn->update_list);
 	}
 	
 	return rc;
@@ -1273,7 +1283,8 @@ extern int acct_storage_p_commit(mysql_conn_t *mysql_conn, bool commit)
 		}
 		list_iterator_destroy(itr);
 	}
-	
+	list_flush(mysql_conn->update_list);
+
 	return SLURM_SUCCESS;
 #else
 	return SLURM_ERROR;
@@ -2606,6 +2617,9 @@ extern List acct_storage_p_modify_associations(mysql_conn_t *mysql_conn,
 		}
 		list_iterator_destroy(itr);
 		xstrcat(extra, ")");
+	} else {
+		info("no user specified");
+		xstrcat(extra, " && user = '' ");
 	}
 
 	if(assoc_q->id_list && list_count(assoc_q->id_list)) {
@@ -2620,8 +2634,6 @@ extern List acct_storage_p_modify_associations(mysql_conn_t *mysql_conn,
 		}
 		list_iterator_destroy(itr);
 		xstrcat(extra, ")");
-	} else {
-		xstrcat(query, "&& user = '' ");
 	}
 	
 	if(assoc_q->parent_acct) {
@@ -2682,13 +2694,13 @@ extern List acct_storage_p_modify_associations(mysql_conn_t *mysql_conn,
 
 	rc = SLURM_SUCCESS;
 	set = 0;
-	
+	extra = NULL;
 	ret_list = list_create(slurm_destroy_char);
 	while((row = mysql_fetch_row(result))) {
 		acct_association_rec_t *mod_assoc = NULL;
+		int account_type=0;
 /* 		MYSQL_RES *result2 = NULL; */
 /* 		MYSQL_ROW row2; */
-
 		if(strlen(row[MASSOC_PART])) { 
 			// see if there is a partition name
 			object = xstrdup_printf(
@@ -2730,6 +2742,7 @@ extern List acct_storage_p_modify_associations(mysql_conn_t *mysql_conn,
 				   == SLURM_ERROR)
 					break;
 			}
+			account_type = 1;
 		}
 		list_append(ret_list, object);
 
@@ -2756,11 +2769,14 @@ extern List acct_storage_p_modify_associations(mysql_conn_t *mysql_conn,
 				      ACCT_MODIFY_ASSOC,
 				      mod_assoc) != SLURM_SUCCESS) 
 			error("couldn't add to the update list");
-		_modify_unset_users(mysql_conn,
-				    mod_assoc,
-				    atoi(row[MASSOC_LFT]),
-				    atoi(row[MASSOC_RGT]),
-				    ret_list);
+		if(account_type) {
+			_modify_unset_users(mysql_conn,
+					    mod_assoc,
+					    row[MASSOC_ACCT],
+					    atoi(row[MASSOC_LFT]),
+					    atoi(row[MASSOC_RGT]),
+					    ret_list);
+		}
 	}
 	mysql_free_result(result);
 
@@ -3157,9 +3173,7 @@ extern List acct_storage_p_remove_clusters(mysql_conn_t *mysql_conn,
 		if(mysql_conn->rollback) {
 			mysql_db_rollback(mysql_conn->acct_mysql_db);
 		}
-		list_destroy(mysql_conn->update_list);
-		mysql_conn->update_list =
-			list_create(destroy_acct_update_object);
+		list_flush(mysql_conn->update_list);
 		list_destroy(ret_list);
 		xfree(name_char);
 		xfree(extra);
