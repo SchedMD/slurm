@@ -349,12 +349,15 @@ struct job_details {
 };
 
 struct job_record {
-	char *account;			/* account number to charge */
+	char    *account;		/* account number to charge */
 	char    *alloc_node;		/* local node making resource alloc */
 	uint16_t alloc_resp_port;	/* RESPONSE_RESOURCE_ALLOCATION port */
 	uint32_t alloc_sid;		/* local sid making resource alloc */
 	uint32_t assoc_id;              /* used for accounting plugins */
-
+	void    *assoc_ptr;		/* job's association record ptr, it is
+					 * void* because of interdependencies
+					 * in the header files, confirm the 
+					 * value before use */
 	uint16_t batch_flag;		/* 1 or 2 if batch job (with script),
 					 * 2 indicates retry mode (one retry) */
 	char *comment;			/* arbitrary comment */
@@ -367,7 +370,7 @@ struct job_record {
                                          * 0 if cr is NOT enabled, 
                                          * 1 if cr is enabled */
 	uint32_t db_index;              /* used only for database
-					   plugins */
+					 * plugins */
 	struct job_details *details;	/* job details */
 	time_t end_time;		/* time of termination, 
 					 * actual or expected */

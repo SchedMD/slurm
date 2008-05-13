@@ -260,7 +260,7 @@ extern List pgsql_jobacct_process_get_jobs(PGconn *acct_pgsql_db,
 						  JOB_REQ_ALLOC_CPUS));
 		job->associd = atoi(PQgetvalue(result, i, JOB_REQ_ASSOCID));
 		account_rec.id = job->associd;
-		assoc_mgr_fill_in_assoc(acct_pgsql_db, &account_rec, 0);
+		assoc_mgr_fill_in_assoc(acct_pgsql_db, &account_rec, 0, NULL);
 		if(account_rec.cluster) {
 			if(params->opt_cluster &&
 			   strcmp(params->opt_cluster, account_rec.cluster)) {
