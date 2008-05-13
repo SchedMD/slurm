@@ -974,6 +974,7 @@ static int _mysql_acct_check_tables(MYSQL *acct_mysql_db)
 		"create procedure get_parent_limits("
 		"my_table text, acct text, cluster text) "
 		"begin "
+		"set @par_id = NULL; "
 		"set @mj = NULL; "
 		"set @mnpj = NULL; "
 		"set @mwpj = NULL; "
@@ -981,6 +982,9 @@ static int _mysql_acct_check_tables(MYSQL *acct_mysql_db)
 		"set @my_acct = acct; "
 		"REPEAT "
 		"set @s = 'select '; "
+		"if @par_id is NULL then set @s = CONCAT("
+		"@s, '@par_id := id, '); "
+		"end if; "
 		"if @mj is NULL then set @s = CONCAT("
 		"@s, '@mj := max_jobs, '); "
 		"end if; "
@@ -3905,7 +3909,10 @@ extern List acct_storage_p_get_associations(mysql_conn_t *mysql_conn,
 	int parent_mwpj = -1;
 	int parent_mcpj = -1;
 	char *last_acct = NULL;
+	char *last_acct_parent = NULL;
 	char *last_cluster = NULL;
+	uint32_t user_parent_id = 0;
+	uint32_t acct_parent_id = 0;
 
 	/* if this changes you will need to edit the corresponding enum */
 	char *assoc_req_inx[] = {
@@ -3936,6 +3943,7 @@ extern List acct_storage_p_get_associations(mysql_conn_t *mysql_conn,
 		ASSOC_REQ_COUNT
 	};
 	enum {
+		ASSOC2_REQ_PARENT_ID,
 		ASSOC2_REQ_MJ,
 		ASSOC2_REQ_MNPJ,
 		ASSOC2_REQ_MWPJ,
@@ -4025,13 +4033,13 @@ empty:
 	xfree(query);
 
 	assoc_list = list_create(destroy_acct_association_rec);
-
+	
 	while((row = mysql_fetch_row(result))) {
 		acct_association_rec_t *assoc =
 			xmalloc(sizeof(acct_association_rec_t));
 		MYSQL_RES *result2 = NULL;
 		MYSQL_ROW row2;
-		
+
 		list_append(assoc_list, assoc);
 		
 		assoc->id =  atoi(row[ASSOC_REQ_ID]);
@@ -4040,7 +4048,36 @@ empty:
 			assoc->user = xstrdup(row[ASSOC_REQ_USER]);
 		assoc->acct = xstrdup(row[ASSOC_REQ_ACCT]);
 		assoc->cluster = xstrdup(row[ASSOC_REQ_CLUSTER]);
-		assoc->parent_acct = xstrdup(row[ASSOC_REQ_PARENT]);
+		
+		if(row[ASSOC_REQ_PARENT][0]) {
+			if(!last_acct_parent || !last_cluster 
+			   || strcmp(row[ASSOC_REQ_PARENT], last_acct_parent)
+			   || strcmp(row[ASSOC_REQ_CLUSTER], last_cluster)) {
+			
+			query = xstrdup_printf(
+					"select id from %s where user='' "
+					"and deleted = 0 and acct='%s' "
+					"and cluster='%s';", 
+					assoc_table, row[ASSOC_REQ_PARENT],
+					row[ASSOC_REQ_CLUSTER]);
+			
+				if(!(result2 = mysql_db_query_ret(
+					     mysql_conn->acct_mysql_db,
+					     query, 1))) {
+					xfree(query);
+					break;
+				}
+				xfree(query);
+				row2 = mysql_fetch_row(result2);
+				last_acct_parent = row[ASSOC_REQ_PARENT];
+				last_cluster = row[ASSOC_REQ_CLUSTER];
+				acct_parent_id = atoi(row2[0]);	
+				mysql_free_result(result2);
+			}
+			assoc->parent_acct = xstrdup(row[ASSOC_REQ_PARENT]);
+			assoc->parent_id = acct_parent_id;
+		} 
+
 		if(row[ASSOC_REQ_PART][0])
 			assoc->partition = xstrdup(row[ASSOC_REQ_PART]);
 		if(row[ASSOC_REQ_FS])
@@ -4053,7 +4090,7 @@ empty:
 		   || strcmp(row[ASSOC_REQ_CLUSTER], last_cluster)) {
 			query = xstrdup_printf(
 				"call get_parent_limits('%s', '%s', '%s');"
-				"select @mj, @mnpj, @mwpj, @mcpj;", 
+				"select @par_id, @mj, @mnpj, @mwpj, @mcpj;", 
 				assoc_table, row[ASSOC_REQ_ACCT],
 				row[ASSOC_REQ_CLUSTER]);
 			
@@ -4063,7 +4100,10 @@ empty:
 				break;
 			}
 			xfree(query);
+			
 			row2 = mysql_fetch_row(result2);
+			user_parent_id = atoi(row2[ASSOC2_REQ_PARENT_ID]);
+			
 			if(row2[ASSOC2_REQ_MJ])
 				parent_mj = atoi(row2[ASSOC2_REQ_MJ]);
 			else
@@ -4107,6 +4147,10 @@ empty:
 				atoi(row[ASSOC_REQ_MCPJ]);
 		else
 			assoc->max_cpu_secs_per_job = parent_mcpj;
+
+		if(assoc->parent_id != acct_parent_id)
+			assoc->parent_id = user_parent_id;
+		//info("parent id is %d", assoc->parent_id);
 		//log_assoc_rec(assoc);
 	}
 	mysql_free_result(result);

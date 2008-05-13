@@ -135,7 +135,7 @@ extern List mysql_jobcomp_process_get_jobs(List selected_steps,
 
 	//info("query = %s", query);
 	if(!(result =
-	     mysql_db_query_ret(jobcomp_mysql_db, query))) {
+	     mysql_db_query_ret(jobcomp_mysql_db, query, 0))) {
 		xfree(query);
 		list_destroy(job_list);
 		return NULL;
