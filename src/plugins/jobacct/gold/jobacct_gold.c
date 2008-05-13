@@ -831,9 +831,15 @@ static int _add_edit_job(gold_job_info_msg_t *job_ptr, gold_object_t action)
 	if (!gold_response->rc) 
 		rc = SLURM_SUCCESS;
 	else {
-		error("gold_response has non-zero rc(%d): %s",
-		      gold_response->rc,
-		      gold_response->message);
+		if(gold_response->rc == 720)
+			error("gold_response has non-zero rc(%d): "
+			      "NOT PRINTING MESSAGE: this was a parser error",
+			      gold_response->rc);
+		else
+			error("gold_response has non-zero rc(%d): %s",
+			      gold_response->rc,
+			      gold_response->message);
+
 		rc = SLURM_ERROR;
 	}
 	destroy_gold_response(gold_response);
