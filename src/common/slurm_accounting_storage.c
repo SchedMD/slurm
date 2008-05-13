@@ -916,6 +916,7 @@ extern void pack_acct_association_rec(void *in, Buf buffer)
 	pack32(object->max_nodes_per_job, buffer);
 	pack32(object->max_wall_duration_per_job, buffer);
 	packstr(object->parent_acct, buffer);
+	pack32(object->parent_id, buffer);
 	packstr(object->partition, buffer);
 	pack32(object->uid, buffer);
 	pack32(object->used_share, buffer);
@@ -951,6 +952,7 @@ extern int unpack_acct_association_rec(void **object, Buf buffer)
 	safe_unpack32(&object_ptr->max_nodes_per_job, buffer);
 	safe_unpack32(&object_ptr->max_wall_duration_per_job, buffer);
 	safe_unpackstr_xmalloc(&object_ptr->parent_acct, &uint32_tmp, buffer);
+	safe_unpack32(&object_ptr->parent_id, buffer);
 	safe_unpackstr_xmalloc(&object_ptr->partition, &uint32_tmp, buffer);
 	safe_unpack32(&object_ptr->uid, buffer);
 	safe_unpack32(&object_ptr->used_share, buffer);
