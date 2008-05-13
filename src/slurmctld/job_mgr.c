@@ -1809,7 +1809,7 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 	bool super_user = false;
 	struct job_record *job_ptr;
 	uint32_t total_nodes, max_procs;
-	acct_association_rec_t assoc_rec;
+	acct_association_rec_t assoc_rec, *assoc_ptr;
 	List license_list = NULL;
 	bool valid;
 
@@ -1880,7 +1880,7 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 	assoc_rec.acct      = job_desc->account;
 
 	if (assoc_mgr_fill_in_assoc(acct_db_conn, &assoc_rec,
-				    accounting_enforce)) {
+				    accounting_enforce, &assoc_ptr)) {
 		info("_job_create: invalid account or partition for user %u",
 		     job_desc->user_id);
 		error_code = ESLURM_INVALID_ACCOUNT;
@@ -2047,6 +2047,7 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 
 	job_ptr = *job_pptr;
 	job_ptr->assoc_id = assoc_rec.id;
+	job_ptr->assoc_ptr = (void *) assoc_ptr;
 	if (update_job_dependency(job_ptr, job_desc->dependency)) {
 		error_code = ESLURM_DEPENDENCY;
 		goto cleanup;
@@ -3942,13 +3943,14 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 		else if (tmp_part_ptr == NULL)
 			error_code = ESLURM_INVALID_PARTITION_NAME;
 		else if (super_user) {
-			acct_association_rec_t assoc_rec;
+			acct_association_rec_t assoc_rec, *assoc_ptr;
 			bzero(&assoc_rec, sizeof(acct_association_rec_t));
 			assoc_rec.uid       = job_ptr->user_id;
 			assoc_rec.partition = job_specs->partition;
 			assoc_rec.acct      = job_ptr->account;
 			if (assoc_mgr_fill_in_assoc(acct_db_conn, &assoc_rec,
-						    accounting_enforce)) {
+						    accounting_enforce, 
+						    &assoc_ptr)) {
 				info("job_update: invalid account %s for job %u",
 				     job_specs->account, job_ptr->job_id);
 				error_code = ESLURM_INVALID_ACCOUNT;
@@ -3956,6 +3958,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 				 * association ID for accounting purposes */
 			} else {
 				job_ptr->assoc_id = assoc_rec.id;
+				job_ptr->assoc_ptr = (void *) assoc_ptr;
 			}
 			xfree(job_ptr->partition);
 			job_ptr->partition = xstrdup(job_specs->partition);
@@ -4034,14 +4037,15 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			     "non-pending job_id %u", job_specs->job_id);
 			error_code = ESLURM_DISABLED;
 		} else {
-			acct_association_rec_t assoc_rec;
+			acct_association_rec_t assoc_rec, *assoc_ptr;
 			bzero(&assoc_rec, sizeof(acct_association_rec_t));
 
 			assoc_rec.uid       = job_ptr->user_id;
 			assoc_rec.partition = job_ptr->partition;
 			assoc_rec.acct      = job_specs->account;
 			if (assoc_mgr_fill_in_assoc(acct_db_conn, &assoc_rec,
-						    accounting_enforce)) {
+						    accounting_enforce, 
+						    &assoc_ptr)) {
 				info("job_update: invalid account %s for "
 				     "job_id %u",
 				     job_specs->account, job_ptr->job_id);
@@ -4059,6 +4063,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 					     job_specs->job_id);
 				}
 				job_ptr->assoc_id = assoc_rec.id;
+				job_ptr->assoc_ptr = (void *) assoc_ptr;
 			}
 		}
 	}
@@ -5274,9 +5279,9 @@ static bool _validate_acct_policy(job_desc_msg_t *job_desc,
 	uint32_t time_limit;
 
 	log_assoc_rec(assoc_ptr);
-	if ((int)assoc_ptr->max_wall_duration_per_job > 0) {
-		/* Round up, seconds to minutes */
-		time_limit = (assoc_ptr->max_wall_duration_per_job + 59) / 60;
+	if ((assoc_ptr->max_wall_duration_per_job != NO_VAL) &&
+	    (assoc_ptr->max_wall_duration_per_job != INFINITE)) {
+		time_limit = assoc_ptr->max_wall_duration_per_job;
 		if (job_desc->time_limit == NO_VAL) {
 			if (part_ptr->max_time == INFINITE)
 				job_desc->time_limit = time_limit;
@@ -5292,7 +5297,8 @@ static bool _validate_acct_policy(job_desc_msg_t *job_desc,
 		}
 	}
 
-	if ((int)assoc_ptr->max_nodes_per_job > 0) {
+	if ((assoc_ptr->max_nodes_per_job != NO_VAL) &&
+	    (assoc_ptr->max_nodes_per_job != INFINITE)) {
 		if (job_desc->max_nodes == 0)
 			job_desc->max_nodes = assoc_ptr->max_nodes_per_job;
 		else if (job_desc->max_nodes > assoc_ptr->max_nodes_per_job) {
@@ -5303,7 +5309,7 @@ static bool _validate_acct_policy(job_desc_msg_t *job_desc,
 				     job_desc->job_id, job_desc->user_id, 
 				     job_desc->min_nodes, 
 				     assoc_ptr->max_nodes_per_job);
-			return false;
+				return false;
 			}
 			job_desc->max_nodes = assoc_ptr->max_nodes_per_job;
 		}

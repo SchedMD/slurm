@@ -65,11 +65,15 @@ extern int assoc_mgr_fill_in_user(void *db_conn, acct_user_rec_t *user,
  *		    account set for account association.  To get user
  *		    association set user, and optional partition.
  *		    Sets "id" field with the association ID.
- * RET: SLURM_SUCCESS on success SLURM_ERROR else
+ * IN: enforce - return an error if no such association exists
+ * IN/OUT: assoc_pptr - if non-NULL then return a pointer to the 
+ *			acct_association record in cache on success
+ * RET: SLURM_SUCCESS on success, else SLURM_ERROR
  */
 extern int assoc_mgr_fill_in_assoc(void *db_conn,
 				   acct_association_rec_t *assoc,
-				   int enforce);
+				   int enforce,
+				   acct_association_rec_t **assoc_pptr);
 
 /* 
  * get admin_level of uid 

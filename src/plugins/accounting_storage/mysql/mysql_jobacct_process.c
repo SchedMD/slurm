@@ -267,7 +267,7 @@ extern List mysql_jobacct_process_get_jobs(mysql_conn_t *mysql_conn,
 
 		job->alloc_cpus = atoi(row[JOB_REQ_ALLOC_CPUS]);
 		account_rec.id = job->associd = atoi(row[JOB_REQ_ASSOCID]);
-		assoc_mgr_fill_in_assoc(mysql_conn, &account_rec, 0);
+		assoc_mgr_fill_in_assoc(mysql_conn, &account_rec, 0, NULL);
 		if(account_rec.cluster) {
 			if(params->opt_cluster &&
 			   strcmp(params->opt_cluster, account_rec.cluster)) {

@@ -169,12 +169,15 @@ extern int assoc_mgr_fini()
 }
 
 extern int assoc_mgr_fill_in_assoc(void *db_conn, acct_association_rec_t *assoc,
-				   int enforce)
+				   int enforce, 
+				   acct_association_rec_t **assoc_pptr)
 {
 	ListIterator itr = NULL;
 	acct_association_rec_t * found_assoc = NULL;
 	acct_association_rec_t * ret_assoc = NULL;
-	
+
+	if (assoc_pptr)
+		*assoc_pptr = NULL;
 	if(!local_association_list) {
 		if(_get_local_association_list(db_conn, enforce) == SLURM_ERROR)
 			return SLURM_ERROR;
@@ -271,7 +274,8 @@ extern int assoc_mgr_fill_in_assoc(void *db_conn, acct_association_rec_t *assoc,
 			return SLURM_SUCCESS;
 	}
 	debug3("found correct association");
-	
+	if (assoc_pptr)
+		*assoc_pptr = ret_assoc;
 	assoc->id = ret_assoc->id;
 	if(!assoc->user)
 		assoc->user = ret_assoc->user;
