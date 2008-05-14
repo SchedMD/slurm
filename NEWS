@@ -277,6 +277,8 @@ documents those changes that are of interest to users and admins.
 =========================
  -- Fix for gold not to print out 720 error messages since they are
     potentally harmful.
+ -- In sched/wiki2 (Moab), permit changes to a pending job's required features:
+    CMD=CHANGEJOB ARG=<jobid> RFEATURES=<features>
 
 * Changes in SLURM 1.2.29
 =========================
