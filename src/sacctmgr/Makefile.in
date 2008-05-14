@@ -74,7 +74,9 @@ am_sacctmgr_OBJECTS = account_functions.$(OBJEXT) \
 	sacctmgr.$(OBJEXT) user_functions.$(OBJEXT)
 sacctmgr_OBJECTS = $(am_sacctmgr_OBJECTS)
 am__DEPENDENCIES_1 =
-sacctmgr_DEPENDENCIES = $(convenience_libs) $(am__DEPENDENCIES_1)
+sacctmgr_DEPENDENCIES = $(top_builddir)/src/common/libcommon.o \
+	$(top_builddir)/src/api/libslurmhelper.la \
+	$(am__DEPENDENCIES_1)
 sacctmgr_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(sacctmgr_LDFLAGS) \
 	$(LDFLAGS) -o $@
@@ -272,14 +274,12 @@ sacctmgr_SOURCES = \
 	sacctmgr.c sacctmgr.h	\
 	user_functions.c	
 
-convenience_libs = $(top_builddir)/src/api/libslurmhelper.la
 sacctmgr_LDADD = \
-	$(convenience_libs) \
+	$(top_builddir)/src/common/libcommon.o -ldl \
+	$(top_builddir)/src/api/libslurmhelper.la \
 	$(READLINE_LIBS)
 
-sacctmgr_LDFLAGS = -export-dynamic $(CMD_LDFLAGS) \
-	$(top_builddir)/src/common/libcommon.o -ldl
-
+sacctmgr_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
 all: all-am
 
 .SUFFIXES:

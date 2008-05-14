@@ -74,7 +74,8 @@ PROGRAMS = $(bin_PROGRAMS)
 am_sacct_OBJECTS = sacct.$(OBJEXT) process.$(OBJEXT) print.$(OBJEXT) \
 	options.$(OBJEXT) sacct_stat.$(OBJEXT)
 sacct_OBJECTS = $(am_sacct_OBJECTS)
-sacct_DEPENDENCIES = $(top_builddir)/src/api/libslurmhelper.la
+sacct_DEPENDENCIES = $(top_builddir)/src/common/libcommon.o \
+	$(top_builddir)/src/api/libslurmhelper.la
 sacct_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(sacct_LDFLAGS) \
 	$(LDFLAGS) -o $@
@@ -265,7 +266,9 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AUTOMAKE_OPTIONS = foreign
 INCLUDES = -I$(top_srcdir)
-sacct_LDADD = $(top_builddir)/src/api/libslurmhelper.la
+sacct_LDADD = $(top_builddir)/src/common/libcommon.o -ldl \
+	$(top_builddir)/src/api/libslurmhelper.la
+
 noinst_HEADERS = sacct.c 
 sacct_SOURCES = sacct.c process.c print.c options.c sacct_stat.c
 sacct_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)

@@ -9,7 +9,8 @@ INCLUDES = -I$(top_srcdir)
 sbin_PROGRAMS = slurmctld
 
 slurmctld_LDADD = 					\
-	$(top_builddir)/src/common/libdaemonize.la 
+	$(top_builddir)/src/common/libdaemonize.la  \
+	$(top_builddir)/src/common/libcommon.o -ldl
 
 
 slurmctld_SOURCES = 	\
@@ -46,8 +47,7 @@ slurmctld_SOURCES = 	\
 	trigger_mgr.c	\
 	trigger_mgr.h
 
-slurmctld_LDFLAGS = -export-dynamic $(CMD_LDFLAGS) \
-	 $(top_builddir)/src/common/libcommon.o -ldl
+slurmctld_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
 
 
 force:

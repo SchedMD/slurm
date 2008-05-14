@@ -14,14 +14,12 @@ sacctmgr_SOURCES =	\
 	sacctmgr.c sacctmgr.h	\
 	user_functions.c	
 
-convenience_libs = $(top_builddir)/src/api/libslurmhelper.la
-
-sacctmgr_LDADD = \
-	$(convenience_libs) \
+sacctmgr_LDADD =  \
+	$(top_builddir)/src/common/libcommon.o -ldl \
+	$(top_builddir)/src/api/libslurmhelper.la \
 	$(READLINE_LIBS)
 
-sacctmgr_LDFLAGS = -export-dynamic $(CMD_LDFLAGS) \
-	$(top_builddir)/src/common/libcommon.o -ldl
+sacctmgr_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
 
 force:
 $(convenience_libs) : force
