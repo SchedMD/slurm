@@ -53,10 +53,9 @@
  */
 int check_header_version(header_t * header)
 {
-	if (header->version != SLURM_PROTOCOL_VERSION) {
-		debug("Invalid Protocol Version %d", header->version);
+	if (header->version != SLURM_PROTOCOL_VERSION)
 		slurm_seterrno_ret(SLURM_PROTOCOL_VERSION_ERROR);
-	}
+
 	return SLURM_PROTOCOL_SUCCESS;
 }
 

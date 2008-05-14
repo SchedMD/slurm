@@ -87,8 +87,9 @@ static slurm_protocol_config_t *proto_conf = &proto_conf_default;
 static int message_timeout = -1;
 
 /* STATIC FUNCTIONS */
-static void _remap_slurmctld_errno(void);
 static char *_global_auth_key(void);
+static void  _remap_slurmctld_errno(void);
+static int   _unpack_msg_uid(Buf buffer);
 
 /* define the slurmdbd_options flag */
 slurm_dbd_conf_t *slurmdbd_conf = NULL;
@@ -1336,6 +1337,9 @@ int slurm_receive_msg(slurm_fd fd, slurm_msg_t *msg, int timeout)
 	}
 	
 	if (check_header_version(&header) < 0) {
+		int uid = _unpack_msg_uid(buffer);
+		error("Invalid Protocol Version %u from uid=%d", 
+			header.version, uid);
 		free_buf(buffer);
 		rc = SLURM_PROTOCOL_VERSION_ERROR;
 		goto total_return;
@@ -1491,6 +1495,9 @@ List slurm_receive_msgs(slurm_fd fd, int steps, int timeout)
 	}
 	
 	if(check_header_version(&header) < 0) {
+		int uid = _unpack_msg_uid(buffer);
+		error("Invalid Protocol Version %u from uid=%d",
+			header.version, uid);
 		free_buf(buffer);
 		rc = SLURM_PROTOCOL_VERSION_ERROR;
 		goto total_return;
@@ -1580,6 +1587,21 @@ total_return:
 		
 }
 
+/* try to determine the UID associated with a message with different 
+ * message header version, return -1 if we can't tell */
+static int _unpack_msg_uid(Buf buffer)
+{
+	int uid = -1;
+	void *auth_cred = NULL;
+
+	if ((auth_cred = g_slurm_auth_unpack(buffer)) == NULL)
+		return uid;
+	uid = (int) g_slurm_auth_get_uid(auth_cred, NULL);
+	g_slurm_auth_destroy(auth_cred);
+
+	return uid;
+}
+
 /*
  * NOTE: memory is allocated for the returned msg and the returned list
  *       both must be freed at some point using the slurm_free_functions 
@@ -1656,6 +1678,9 @@ int slurm_receive_msg_and_forward(slurm_fd fd, slurm_addr *orig_addr,
 	}
 	
 	if (check_header_version(&header) < 0) {
+		int uid = _unpack_msg_uid(buffer);
+		error("Invalid Protocol Version %u from uid=%d", 
+			header.version, uid);
 		free_buf(buffer);
 		rc = SLURM_PROTOCOL_VERSION_ERROR;
 		goto total_return;
