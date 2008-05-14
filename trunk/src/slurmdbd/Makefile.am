@@ -9,7 +9,8 @@ INCLUDES = -I$(top_srcdir)
 sbin_PROGRAMS = slurmdbd
 
 slurmdbd_LDADD = 					\
-	$(top_builddir)/src/common/libdaemonize.la 
+	$(top_builddir)/src/common/libdaemonize.la \
+	 $(top_builddir)/src/common/libcommon.o -ldl
 
 
 slurmdbd_SOURCES = 		\
@@ -24,8 +25,7 @@ slurmdbd_SOURCES = 		\
 	slurmdbd.c  		\
 	slurmdbd.h
 
-slurmdbd_LDFLAGS = -export-dynamic $(CMD_LDFLAGS) \
-	 $(top_builddir)/src/common/libcommon.o -ldl	
+slurmdbd_LDFLAGS = -export-dynamic $(CMD_LDFLAGS) 	
 
 force:
 $(slurmdbd_LDADD) : force

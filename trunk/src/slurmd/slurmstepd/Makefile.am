@@ -11,6 +11,7 @@ slurmstepd_LDADD = 				   \
 	$(top_builddir)/src/common/libdaemonize.la \
 	$(top_builddir)/src/common/libeio.la       \
 	$(top_builddir)/src/common/libspank.la     \
+	$(top_builddir)/src/common/libcommon.o -ldl\
 	$(PLPA_LIBS) $(PAM_LIBS) $(UTIL_LIBS) 
 
 slurmstepd_SOURCES = 	        	\
@@ -41,11 +42,9 @@ slurmstepd_SOURCES = 	        	\
 if HAVE_AIX
 # We need to set maxdata back to 0 because this effects the "max memory size"
 # ulimit, and the ulimit is inherited by child processes.
-slurmstepd_LDFLAGS = -export-dynamic $(CMD_LDFLAGS) -Wl,-bmaxdata:0x0 \
-	 $(top_builddir)/src/common/libcommon.o -ldl
+slurmstepd_LDFLAGS = -export-dynamic $(CMD_LDFLAGS) -Wl,-bmaxdata:0x0
 else
-slurmstepd_LDFLAGS = -export-dynamic $(CMD_LDFLAGS) \
-	 $(top_builddir)/src/common/libcommon.o -ldl
+slurmstepd_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
 endif
 
 force:

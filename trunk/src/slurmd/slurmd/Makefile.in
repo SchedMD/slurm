@@ -80,14 +80,16 @@ am_slurmd_OBJECTS = $(am__objects_1) config.$(OBJEXT)
 slurmd_OBJECTS = $(am_slurmd_OBJECTS)
 am__DEPENDENCIES_1 =
 slurmd_DEPENDENCIES = $(top_builddir)/src/common/libdaemonize.la \
-	$(top_builddir)/src/common/libeio.la $(am__DEPENDENCIES_1)
+	$(top_builddir)/src/common/libeio.la \
+	$(top_builddir)/src/common/libcommon.o $(am__DEPENDENCIES_1)
 slurmd_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) \
 	--mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(slurmd_LDFLAGS) \
 	$(LDFLAGS) -o $@
 am_slurmd_test_OBJECTS = $(am__objects_1) testconfig.$(OBJEXT)
 slurmd_test_OBJECTS = $(am_slurmd_test_OBJECTS)
 am__DEPENDENCIES_2 = $(top_builddir)/src/common/libdaemonize.la \
-	$(top_builddir)/src/common/libeio.la $(am__DEPENDENCIES_1)
+	$(top_builddir)/src/common/libeio.la \
+	$(top_builddir)/src/common/libcommon.o $(am__DEPENDENCIES_1)
 slurmd_test_DEPENDENCIES = $(am__DEPENDENCIES_2)
 slurmd_test_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
@@ -281,7 +283,8 @@ INCLUDES = -I$(top_srcdir)
 slurmd_LDADD = \
 	$(top_builddir)/src/common/libdaemonize.la \
 	$(top_builddir)/src/common/libeio.la       \
-	$(PLPA_LIBS)
+	$(top_builddir)/src/common/libcommon.o -ldl \
+	$(PLPA_LIBS) 
 
 slurmd_test_LDADD = $(slurmd_LDADD)
 SLURMD_SOURCES = \
@@ -311,15 +314,11 @@ slurmd_test_SOURCES = \
     $(SLURMD_SOURCES) \
 	testconfig.c
 
-@HAVE_AIX_FALSE@slurmd_LDFLAGS = -export-dynamic $(CMD_LDFLAGS) \
-@HAVE_AIX_FALSE@	 $(top_builddir)/src/common/libcommon.o -ldl
-
+@HAVE_AIX_FALSE@slurmd_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
 
 # We need to set maxdata back to 0 because this effects the "max memory size"
 # ulimit, and the ulimit is inherited by child processes.
-@HAVE_AIX_TRUE@slurmd_LDFLAGS = -export-dynamic $(CMD_LDFLAGS) -Wl,-bmaxdata:0x0 \
-@HAVE_AIX_TRUE@	 $(top_builddir)/src/common/libcommon.o -ldl
-
+@HAVE_AIX_TRUE@slurmd_LDFLAGS = -export-dynamic $(CMD_LDFLAGS) -Wl,-bmaxdata:0x0 
 slurmd_test_LDFLAGS = $(slurmd_LDFLAGS)
 all: all-am
 
