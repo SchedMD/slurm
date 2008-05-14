@@ -473,15 +473,17 @@ static void _show_it (int argc, char *argv[])
 	/* First identify the entity to list */
 	if (strncasecmp (argv[0], "User", 1) == 0) {
 		error_code = sacctmgr_list_user((argc - 1), &argv[1]);
-	} else if (strncasecmp (argv[0], "Account", 1) == 0) {
+	} else if (strncasecmp (argv[0], "Account", 2) == 0) {
 		error_code = sacctmgr_list_account((argc - 1), &argv[1]);
+	} else if (strncasecmp (argv[0], "Association", 2) == 0) {
+		error_code = sacctmgr_list_association((argc - 1), &argv[1]);
 	} else if (strncasecmp (argv[0], "Cluster", 1) == 0) {
 		error_code = sacctmgr_list_cluster((argc - 1), &argv[1]);
 	} else {
 		exit_code = 1;
 		fprintf(stderr, "No valid entity in list command\n");
 		fprintf(stderr, "Input line must include ");
-		fprintf(stderr, "\"User\", \"Account\", ");
+		fprintf(stderr, "\"User\", \"Account\", \"Association\", ");
 		fprintf(stderr, "or \"Cluster\"\n");
 	} 
 	

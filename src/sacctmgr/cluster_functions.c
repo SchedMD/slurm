@@ -110,7 +110,7 @@ static int _set_rec(int *start, int argc, char *argv[],
 				printf(" Bad MaxWall time format: %s\n", 
 					argv[i]);
 			}
-		} else if (strncasecmp (argv[i], "MaxCPUSecs=", 11) == 0) {
+		} else if (strncasecmp (argv[i], "MaxCPUSecs", 4) == 0) {
 			if (get_uint(argv[i]+end, 
 			     &cluster->default_max_cpu_secs_per_job, 
 			    "MaxCPUSecs") == SLURM_SUCCESS)
