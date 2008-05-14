@@ -8,6 +8,7 @@ bin_PROGRAMS = sacctmgr
 
 sacctmgr_SOURCES =	\
 	account_functions.c	\
+	association_functions.c	\
 	cluster_functions.c	\
 	common.c                \
 	print.c	print.h	        \

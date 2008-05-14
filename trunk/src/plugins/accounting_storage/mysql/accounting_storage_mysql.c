@@ -1004,8 +1004,7 @@ static int _mysql_acct_check_tables(MYSQL *acct_mysql_db)
 		"execute query; "
 		"deallocate prepare query; "
 		"UNTIL (@mj != -1 && @mnpj != -1 && @mwpj != -1 "
-		"&& @mcpj != -1) || @my_acct = '' || "
-		"@my_acct = 'root' END REPEAT; "
+		"&& @mcpj != -1) || @my_acct = '' END REPEAT; "
 		"END;";
 	
 	if(mysql_db_create_table(acct_mysql_db, acct_coord_table,

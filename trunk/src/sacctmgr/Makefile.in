@@ -70,8 +70,9 @@ am__installdirs = "$(DESTDIR)$(bindir)"
 binPROGRAMS_INSTALL = $(INSTALL_PROGRAM)
 PROGRAMS = $(bin_PROGRAMS)
 am_sacctmgr_OBJECTS = account_functions.$(OBJEXT) \
-	cluster_functions.$(OBJEXT) common.$(OBJEXT) print.$(OBJEXT) \
-	sacctmgr.$(OBJEXT) user_functions.$(OBJEXT)
+	association_functions.$(OBJEXT) cluster_functions.$(OBJEXT) \
+	common.$(OBJEXT) print.$(OBJEXT) sacctmgr.$(OBJEXT) \
+	user_functions.$(OBJEXT)
 sacctmgr_OBJECTS = $(am_sacctmgr_OBJECTS)
 am__DEPENDENCIES_1 =
 sacctmgr_DEPENDENCIES = $(top_builddir)/src/common/libcommon.o \
@@ -268,6 +269,7 @@ AUTOMAKE_OPTIONS = foreign
 INCLUDES = -I$(top_srcdir)
 sacctmgr_SOURCES = \
 	account_functions.c	\
+	association_functions.c	\
 	cluster_functions.c	\
 	common.c                \
 	print.c	print.h	        \
@@ -352,6 +354,7 @@ distclean-compile:
 	-rm -f *.tab.c
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/account_functions.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/association_functions.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cluster_functions.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/common.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/print.Po@am__quote@

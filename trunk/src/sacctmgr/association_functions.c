@@ -37,323 +37,295 @@
 \*****************************************************************************/
 
 #include "sacctmgr.h"
+#include "print.h"
 
 static int _set_cond(int *start, int argc, char *argv[],
-		     account_association_cond_t *association_cond)
+		     acct_association_cond_t *association_cond)
 {
-	int i;
+	int i, end = 0;
 	int set = 0;
 
 	for (i=(*start); i<argc; i++) {
-		if (strncasecmp (argv[i], "Id=", 3) == 0) {
-			addto_char_list(association_cond->id_list, argv[i]+3);
-			set = 1;
-		} else if (strncasecmp (argv[i], "Ids=", 4) == 0) {
-			addto_char_list(association_cond->id_list, argv[i]+4);
-			set = 1;
-		} else if (strncasecmp (argv[i], "User=", 5) == 0) {
-			addto_char_list(association_cond->user_list, argv[i]+5);
-			set = 1;
-		} else if (strncasecmp (argv[i], "Users=", 6) == 0) {
-			addto_char_list(association_cond->user_list, argv[i]+6);
-			set = 1;
-		} else if (strncasecmp (argv[i], "Account=", 8) == 0) {
-			addto_char_list(association_cond->account_list,
-					argv[i]+8);
-			set = 1;
-		} else if (strncasecmp (argv[i], "Accounts=", 9) == 0) {
-			addto_char_list(association_cond->account_list,
-					argv[i]+9);
-			set = 1;
-		} else if (strncasecmp (argv[i], "Cluster=", 8) == 0) {
-			addto_char_list(association_cond->cluster_list,
-					argv[i]+8);
-			set = 1;
-		} else if (strncasecmp (argv[i], "Clusters=", 9) == 0) {
-			addto_char_list(association_cond->cluster_list,
-					argv[i]+9);
-			set = 1;
-		} else if (strncasecmp (argv[i], "Partition=", 10) == 0) {
-			addto_char_list(association_cond->partition_list,
-					argv[i]+10);
-			set = 1;
-		} else if (strncasecmp (argv[i], "Partitions=", 11) == 0) {
-			addto_char_list(association_cond->partition_list,
-					argv[i]+11);
-			set = 1;
-		} else if (strncasecmp (argv[i], "Parent=", 7) == 0) {
-			association_cond->parent_account = xstrdup(argv[i]+7);
-			set = 1;
-		} else if (strncasecmp (argv[i], "Set", 3) == 0) {
-			i--;
-			break;
-		} else {
+		end = parse_option_end(argv[i]);
+		if(!end) {
 			addto_char_list(association_cond->id_list, argv[i]);
 			set = 1;
-		}
-	}
-	(*start) = i;
-
-	return set;
-}
-
-static int _set_rec(int *start, int argc, char *argv[],
-		    account_association_rec_t *association)
-{
-	int i, mins;
-	int set = 0;
-
-	for (i=(*start); i<argc; i++) {
-		int end = parse_option_end(argv[i]);
-		if (strncasecmp (argv[i], "Where", 5) == 0) {
-			i--;
-			break;
-		}
-		if (!end) {
-			printf(" Bad format on %s: End your option with "
-			       "an '=' sign\n", argv[i]);
-		} else if (strncasecmp (argv[i], "Id", ) == 0) {
-			if (get_uint(argv[i]+end, &association->id, 
-			    "Id") == SLURM_SUCCESS)
-				set = 1;
-		} else if (strncasecmp (argv[i], "User", 2) == 0) {
-			association->user = xstrdup(argv[i]+end);
+		} else if (strncasecmp (argv[i], "Id", 1) == 0) {
+			addto_char_list(association_cond->id_list, argv[i]+end);
 			set = 1;
-		} else if (strncasecmp (argv[i], "Account", 2) == 0) {
-			association->account = xstrdup(argv[i]+end);
+		}  else if (strncasecmp (argv[i], "Associations", 2) == 0) {
+			addto_char_list(association_cond->id_list, argv[i]+end);
 			set = 1;
-		} else if (strncasecmp (argv[i], "Cluster", 2) == 0) {
-			association->cluster = xstrdup(argv[i]+end);
+		} else if (strncasecmp (argv[i], "Users", 1) == 0) {
+			addto_char_list(association_cond->user_list,
+					argv[i]+end);
 			set = 1;
-		} else if (strncasecmp (argv[i], "Partition", 4) == 0) {
-			association->partition = xstrdup(argv[i]+end);
+		} else if (strncasecmp (argv[i], "Accounts", 2) == 0) {
+			addto_char_list(association_cond->acct_list,
+					argv[i]+end);
+			set = 1;
+		} else if (strncasecmp (argv[i], "Clusters", 1) == 0) {
+			addto_char_list(association_cond->cluster_list,
+					argv[i]+end);
+			set = 1;
+		} else if (strncasecmp (argv[i], "Partitions", 4) == 0) {
+			addto_char_list(association_cond->partition_list,
+					argv[i]+end);
 			set = 1;
 		} else if (strncasecmp (argv[i], "Parent", 4) == 0) {
-			association->parent_account = xstrdup(argv[i]+end);
+			association_cond->parent_acct = xstrdup(argv[i]+end);
 			set = 1;
-		} else if (strncasecmp (argv[i], "FairShare", 4) == 0) {
-			if (get_uint(argv[i]+end, &association->fairshare, 
-			    "FairShare") == SLURM_SUCCESS)
-				set = 1;
-		} else if (strncasecmp (argv[i], "MaxJobs", 4) == 0) {
-			if (get_uint(argv[i]+end, &association->max_jobs, 
-			    "MaxJobs") == SLURM_SUCCESS)
-				set = 1;
-		} else if (strncasecmp (argv[i], "MaxNodes", 4) == 0) {
-			if (get_uint(argv[i]+end, 
-			     &association->max_nodes_per_job, 
-			    "MaxNodes") == SLURM_SUCCESS)
-				set = 1;
-		} else if (strncasecmp (argv[i], "MaxWall", 4) == 0) {
-			mins = time_str2mins(argv[i]+end);
-			if (mins >= 0) {
-				association->max_wall_duration_per_job 
-					= (uint32_t) mins;
-				set = 1;
-			} else if (strcmp(argv[i]+end, "-1") == 0) {
-				association->max_wall_duration_per_job = -1;
-				set = 1;
-			} else {
-				printf(" Bad MaxWall time format: %s\n", 
-					argv[i]);
-			}
-		} else if (strncasecmp (argv[i], "MaxCPUSecs", 4) == 0) {
-			if (get_uint(argv[i]+end, 
-			     &association->max_cpu_seconds_per_job, 
-			    "MaxCPUSecs") == SLURM_SUCCESS)
-				set = 1;
 		} else {
-			printf(" error: Valid options are 'DefaultAccount=' "
-			       "'ExpediteLevel=' and 'AdminLevel='\n");
+			printf(" Unknown condition: %s\n", argv[i]);
 		}
 	}
 	(*start) = i;
 
 	return set;
-
 }
 
-static void _print_cond(account_association_cond_t *association_cond)
-{
-	ListIterator itr = NULL;
-	char *tmp_char = NULL;
+/* static void _print_cond(acct_association_cond_t *association_cond) */
+/* { */
+/* 	ListIterator itr = NULL; */
+/* 	char *tmp_char = NULL; */
 
-	if(!association_cond) {
-		error("no account_association_cond_t * given");
-		return;
-	}
+/* 	if(!association_cond) { */
+/* 		error("no acct_association_cond_t * given"); */
+/* 		return; */
+/* 	} */
 
-	if(association_cond->id_list && list_count(association_cond->id_list)) {
-		itr = list_iterator_create(association_cond->id_list);
-		printf("  Id        = %s\n", (char *)list_next(itr));
-		while((tmp_char = list_next(itr))) {
-			printf("           or %s\n", tmp_char);
-		}
-	}
+/* 	if(association_cond->id_list && list_count(association_cond->id_list)) { */
+/* 		itr = list_iterator_create(association_cond->id_list); */
+/* 		printf("  Id        = %s\n", (char *)list_next(itr)); */
+/* 		while((tmp_char = list_next(itr))) { */
+/* 			printf("           or %s\n", tmp_char); */
+/* 		} */
+/* 	} */
 
-	if(association_cond->user_list
-	   && list_count(association_cond->user_list)) {
-		itr = list_iterator_create(association_cond->user_list);
-		printf("  User      = %s\n", (char *)list_next(itr));
-		while((tmp_char = list_next(itr))) {
-			printf("           or %s\n", tmp_char);
-		}
-	}
+/* 	if(association_cond->user_list */
+/* 	   && list_count(association_cond->user_list)) { */
+/* 		itr = list_iterator_create(association_cond->user_list); */
+/* 		printf("  User      = %s\n", (char *)list_next(itr)); */
+/* 		while((tmp_char = list_next(itr))) { */
+/* 			printf("           or %s\n", tmp_char); */
+/* 		} */
+/* 	} */
 
-	if(association_cond->account_list
-	   && list_count(association_cond->account_list)) {
-		itr = list_iterator_create(association_cond->account_list);
-		printf("  Account   = %s\n", (char *)list_next(itr));
-		while((tmp_char = list_next(itr))) {
-			printf("           or %s\n", tmp_char);
-		}
-	}
+/* 	if(association_cond->acct_list */
+/* 	   && list_count(association_cond->acct_list)) { */
+/* 		itr = list_iterator_create(association_cond->acct_list); */
+/* 		printf("  Account   = %s\n", (char *)list_next(itr)); */
+/* 		while((tmp_char = list_next(itr))) { */
+/* 			printf("           or %s\n", tmp_char); */
+/* 		} */
+/* 	} */
 
-	if(association_cond->cluster_list
-	   && list_count(association_cond->cluster_list)) {
-		itr = list_iterator_create(association_cond->cluster_list);
-		printf("  Cluster   = %s\n", (char *)list_next(itr));
-		while((tmp_char = list_next(itr))) {
-			printf("           or %s\n", tmp_char);
-		}
-	}
+/* 	if(association_cond->cluster_list */
+/* 	   && list_count(association_cond->cluster_list)) { */
+/* 		itr = list_iterator_create(association_cond->cluster_list); */
+/* 		printf("  Cluster   = %s\n", (char *)list_next(itr)); */
+/* 		while((tmp_char = list_next(itr))) { */
+/* 			printf("           or %s\n", tmp_char); */
+/* 		} */
+/* 	} */
 
-	if(association_cond->partition_list
-	   && list_count(association_cond->partition_list)) {
-		itr = list_iterator_create(association_cond->partition_list);
-		printf("  Partition = %s\n", (char *)list_next(itr));
-		while((tmp_char = list_next(itr))) {
-			printf("           or %s\n", tmp_char);
-		}
-	}
+/* 	if(association_cond->partition_list */
+/* 	   && list_count(association_cond->partition_list)) { */
+/* 		itr = list_iterator_create(association_cond->partition_list); */
+/* 		printf("  Partition = %s\n", (char *)list_next(itr)); */
+/* 		while((tmp_char = list_next(itr))) { */
+/* 			printf("           or %s\n", tmp_char); */
+/* 		} */
+/* 	} */
 
-	if(association_cond->parent_account)
-		printf("  Parent    = %s\n", association_cond->parent_account);
+/* 	if(association_cond->parent_account) */
+/* 		printf("  Parent    = %s\n", association_cond->parent_account); */
 
-}
+/* } */
 
-static void _print_rec(account_association_rec_t *association)
-{
-	if(!association) {
-		error("no account_association_rec_t * given");
-		return;
-	}
+/* static void _print_rec(acct_association_rec_t *association) */
+/* { */
+/* 	if(!association) { */
+/* 		error("no acct_association_rec_t * given"); */
+/* 		return; */
+/* 	} */
 	
-	if(association->id) 
-		printf("  Id         = %u\n", association->id);	
+/* 	if(association->id)  */
+/* 		printf("  Id         = %u\n", association->id);	 */
 		
-	if(association->user) 
-		printf("  User       = %s\n", association->user);
-	if(association->account) 
-		printf("  Account    = %s\n", association->account);
-	if(association->cluster) 
-		printf("  Cluster    = %s\n", association->cluster);
-	if(association->partition) 
-		printf("  Partition  = %s\n", association->partition);
-	if(association->parent_account) 
-		printf("  Parent     = %s\n", association->parent_account);
-	if(association->fairshare) 
-		printf("  FairShare  = %u\n", association->fairshare);
-	if(association->max_jobs) 
-		printf("  MaxJobs    = %u\n", association->max_jobs);
-	if(association->max_nodes_per_job) 
-		printf("  MaxNodes   = %u\n", association->max_nodes_per_job);
-	if(association->max_wall_duration_per_job) {
-		char time_buf[32];
-		mins2time_str((time_t) association->max_wall_duration_per_job,
-			      time_buf, sizeof(time_buf));
-		printf("  MaxWall    = %s\n", time_buf);
-	}
-	if(association->max_cpu_seconds_per_job) 
-		printf("  MaxCPUSecs = %u\n",
-		       association->max_cpu_seconds_per_job);
-}
+/* 	if(association->user)  */
+/* 		printf("  User       = %s\n", association->user); */
+/* 	if(association->account)  */
+/* 		printf("  Account    = %s\n", association->account); */
+/* 	if(association->cluster)  */
+/* 		printf("  Cluster    = %s\n", association->cluster); */
+/* 	if(association->partition)  */
+/* 		printf("  Partition  = %s\n", association->partition); */
+/* 	if(association->parent_account)  */
+/* 		printf("  Parent     = %s\n", association->parent_account); */
+/* 	if(association->fairshare)  */
+/* 		printf("  FairShare  = %u\n", association->fairshare); */
+/* 	if(association->max_jobs)  */
+/* 		printf("  MaxJobs    = %u\n", association->max_jobs); */
+/* 	if(association->max_nodes_per_job)  */
+/* 		printf("  MaxNodes   = %u\n", association->max_nodes_per_job); */
+/* 	if(association->max_wall_duration_per_job) { */
+/* 		char time_buf[32]; */
+/* 		mins2time_str((time_t) association->max_wall_duration_per_job, */
+/* 			      time_buf, sizeof(time_buf)); */
+/* 		printf("  MaxWall    = %s\n", time_buf); */
+/* 	} */
+/* 	if(association->max_cpu_seconds_per_job)  */
+/* 		printf("  MaxCPUSecs = %u\n", */
+/* 		       association->max_cpu_seconds_per_job); */
+/* } */
 
-extern int sacctmgr_add_association(int argc, char *argv[])
-{
-	int rc = SLURM_SUCCESS;
+/* extern int sacctmgr_add_association(int argc, char *argv[]) */
+/* { */
+/* 	int rc = SLURM_SUCCESS; */
 
-	return rc;
-}
+/* 	return rc; */
+/* } */
 
 extern int sacctmgr_list_association(int argc, char *argv[])
 {
 	int rc = SLURM_SUCCESS;
-	account_association_cond_t *assoc_cond =
-		xmalloc(sizeof(account_association_cond_t));
+	acct_association_cond_t *assoc_cond =
+		xmalloc(sizeof(acct_association_cond_t));
 	List assoc_list = NULL;
-	account_association_rec_t *assoc = NULL;
+	acct_association_rec_t *assoc = NULL;
 	int i=0;
 	ListIterator itr = NULL;
-	char time_buf[32];
 
-	assoc_cond->id_list = list_create(destroy_char);
-	assoc_cond->user_list = list_create(destroy_char);
-	assoc_cond->account_list = list_create(destroy_char);
-	assoc_cond->cluster_list = list_create(destroy_char);
+	print_field_t id_field;
+	print_field_t parent_field;
+	print_field_t cluster_field;
+	print_field_t acct_field;
+	print_field_t user_field;
+	print_field_t part_field;
+	print_field_t fairshare_field;
+	print_field_t maxjobs_field;
+	print_field_t maxnodes_field;
+	print_field_t maxwall_field;
+	print_field_t maxcpu_field;
 
-	for (i=0; i<argc; i++) {
-		int end = parse_option_end(argv[i]);
-		if (strncasecmp (argv[i], "Ids", 2) == 0) {
-			addto_char_list(assoc_cond->id_list, argv[i]+end);
-		} else if (strncasecmp (argv[i], "Users", 2) == 0) {
-			addto_char_list(assoc_cond->user_list, argv[i]+end);
-		} else if (strncasecmp (argv[i], "Accounts", 2) == 0) {
-			addto_char_list(assoc_cond->account_list, argv[i]+end);
-		} else if (strncasecmp (argv[i], "Clusters", ) == 0) {
-			addto_char_list(assoc_cond->cluster_list, argv[i]+end);
-		} else {
-			error("Valid options are 'Ids=' 'Users=' 'Accounts=' "
-			      "and 'Clusters='");
-		}		
-	}
+	List print_fields_list; /* types are of print_field_t */
 
-	assoc_list = account_storage_g_get_associations(assoc_cond);
-	destroy_account_association_cond(assoc_cond);
+	assoc_cond->id_list = list_create(slurm_destroy_char);
+	assoc_cond->user_list = list_create(slurm_destroy_char);
+	assoc_cond->acct_list = list_create(slurm_destroy_char);
+	assoc_cond->cluster_list = list_create(slurm_destroy_char);
+
+	_set_cond(&i, argc, argv, assoc_cond);
+
+	assoc_list = acct_storage_g_get_associations(db_conn, assoc_cond);
+	destroy_acct_association_cond(assoc_cond);
 	
 	if(!assoc_list) 
 		return SLURM_ERROR;
 
-	itr = list_iterator_create(assoc_list);
-	printf("%-6s %-10s %-10s %-10s %-10s %-9s %-7s %-8s %-7s %-10s\n"
-	       "%-6s %-10s %-10s %-10s %-10s %-9s %-7s %-8s %-7s %-10s\n", 
-	       "Id", "User", "Account", "Cluster", "Partition", "FairShare", 
-	       "MaxJobs", "MaxNodes", "MaxWall", "MaxCPUSecs",
-	       "------", "----------", "----------", "----------", 
-	       "----------", "---------", "-------", "--------", "-------",
-	       "----------");
+	print_fields_list = list_create(NULL);
+
+	id_field.name = "ID";
+	id_field.len = 6;
+	id_field.print_routine = print_uint;
+	list_append(print_fields_list, &id_field);
+
+	parent_field.name = "Parent";
+	parent_field.len = 6;
+	parent_field.print_routine = print_uint;
+	list_append(print_fields_list, &parent_field);
+
+	cluster_field.name = "Cluster";
+	cluster_field.len = 10;
+	cluster_field.print_routine = print_str;
+	list_append(print_fields_list, &cluster_field);
 	
+	acct_field.name = "Account";
+	acct_field.len = 10;
+	acct_field.print_routine = print_str;
+	list_append(print_fields_list, &acct_field);
+	
+	user_field.name = "User";
+	user_field.len = 10;
+	user_field.print_routine = print_str;
+	list_append(print_fields_list, &user_field);
+	
+	part_field.name = "Partition";
+	part_field.len = 10;
+	part_field.print_routine = print_str;
+	list_append(print_fields_list, &part_field);
+	
+	fairshare_field.name = "FairShare";
+	fairshare_field.len = 9;
+	fairshare_field.print_routine = print_uint;
+	list_append(print_fields_list, &fairshare_field);
+	
+	maxjobs_field.name = "MaxJobs";
+	maxjobs_field.len = 7;
+	maxjobs_field.print_routine = print_uint;
+	list_append(print_fields_list, &maxjobs_field);
+	
+	maxnodes_field.name = "MaxNodes";
+	maxnodes_field.len = 8;
+	maxnodes_field.print_routine = print_uint;
+	list_append(print_fields_list, &maxnodes_field);
+	
+	maxwall_field.name = "MaxWall";
+	maxwall_field.len = 11;
+	maxwall_field.print_routine = print_time;
+	list_append(print_fields_list, &maxwall_field);
+
+	maxcpu_field.name = "MaxCPUSecs";
+	maxcpu_field.len = 11;
+	maxcpu_field.print_routine = print_uint;
+	list_append(print_fields_list, &maxcpu_field);
+
+
+	itr = list_iterator_create(assoc_list);
+	print_header(print_fields_list);
+
 	while((assoc = list_next(itr))) {
-		printf("%-6u ", assoc->id);
-		printf("%-10.10s ", assoc->user);
-		printf("%-10.10s ", assoc->account);
-		printf("%-10.10s ", assoc->cluster);
-		printf("%-10.10s ", assoc->partition);
-		printf("%-9u ", assoc->fairshare);
-		printf("%-7u ", assoc->max_jobs);
-		printf("%-8u ", assoc->max_nodes_per_job);
-		mins2time_str((time_t) assoc->max_wall_duration_per_job,
-			      time_buf, sizeof(time_buf));
-		printf("%-7s ", time_buf);
-		printf("%-10u\n", assoc->max_cpu_seconds_per_job);
+		id_field.print_routine(VALUE, &id_field, assoc->id);
+
+		parent_field.print_routine(VALUE, &parent_field,
+					   assoc->parent_id);
+
+		cluster_field.print_routine(VALUE, &cluster_field, 
+					    assoc->cluster);
+		acct_field.print_routine(VALUE, &acct_field, assoc->acct);
+		user_field.print_routine(VALUE, &user_field, assoc->user);
+		part_field.print_routine(VALUE, &part_field, assoc->partition);
+		fairshare_field.print_routine(VALUE, &fairshare_field,
+					      assoc->fairshare);
+		maxjobs_field.print_routine(VALUE, &maxjobs_field, 
+			   assoc->max_jobs);
+		maxnodes_field.print_routine(VALUE, &maxnodes_field, 
+			   assoc->max_nodes_per_job);
+		maxwall_field.print_routine(VALUE, &maxwall_field, 
+			   assoc->max_wall_duration_per_job);
+		maxcpu_field.print_routine(VALUE, &maxcpu_field, 
+			   assoc->max_cpu_secs_per_job);
+	
+		printf("\n");
 	}
 
 	printf("\n");
 
 	list_iterator_destroy(itr);
 	list_destroy(assoc_list);
-
+	list_destroy(print_fields_list);
 	return rc;
 }
 
-extern int sacctmgr_modify_association(int argc, char *argv[])
-{
-	int rc = SLURM_SUCCESS;
-	return rc;
-}
+/* extern int sacctmgr_modify_association(int argc, char *argv[]) */
+/* { */
+/* 	int rc = SLURM_SUCCESS; */
+/* 	return rc; */
+/* } */
 
-extern int sacctmgr_delete_association(int argc, char *argv[])
-{
-	int rc = SLURM_SUCCESS;
-	return rc;
-}
+/* extern int sacctmgr_delete_association(int argc, char *argv[]) */
+/* { */
+/* 	int rc = SLURM_SUCCESS; */
+/* 	return rc; */
+/* } */
