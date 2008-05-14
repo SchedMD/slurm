@@ -37,6 +37,8 @@
 \*****************************************************************************/
 #include "print.h"
 #include "src/common/parse_time.h"
+int parsable_print = 0;
+int have_header = 1;
 
 extern void destroy_print_field(void *object)
 {
@@ -53,7 +55,7 @@ extern void print_header(List print_fields_list)
 	ListIterator itr = NULL;
 	print_field_t *object = NULL;
 
-	if(!print_fields_list) 
+	if(!print_fields_list || !have_header) 
 		return;
 
 	itr = list_iterator_create(print_fields_list);
@@ -62,6 +64,8 @@ extern void print_header(List print_fields_list)
 	}
 	list_iterator_reset(itr);
 	printf("\n");
+	if(parsable_print)
+		return;
 	while((object = list_next(itr))) {
 		(object->print_routine)(UNDERSCORE, object, 0);
 	}
@@ -84,20 +88,34 @@ extern void print_str(type_t type, print_field_t *field, char *value)
 
 	switch(type) {
 	case HEADLINE:
-		printf("%-*.*s ", field->len, field->len, field->name);
+		if(parsable_print)
+			printf("%s|", field->name);
+		else
+			printf("%-*.*s ", field->len, field->len, field->name);
 		break;
 	case UNDERSCORE:
-		printf("%-*.*s ", field->len, field->len, 
-		       "---------------------------------------");
+		if(!parsable_print)
+			printf("%-*.*s ", field->len, field->len, 
+			       "---------------------------------------");
 		break;
 	case VALUE:
-		if(!print_this)
-			print_this = " ";
-		
-		printf("%-*.*s ", field->len, field->len, print_this);
+		if(!print_this) {
+			if(parsable_print)
+				print_this = "";
+			else
+				print_this = " ";
+		}
+
+		if(parsable_print)
+			printf("%s|", print_this);
+		else
+			printf("%-*.*s ", field->len, field->len, print_this);
 		break;
 	default:
-		printf("%-*s ", field->len, "n/a");
+		if(parsable_print)
+			printf("%s|", "n/a");
+		else
+			printf("%-*s ", field->len, "n/a");
 		break;
 	}
 }
@@ -106,21 +124,35 @@ extern void print_uint(type_t type, print_field_t *field, uint32_t value)
 {
 	switch(type) {
 	case HEADLINE:
-		printf("%-*.*s ", field->len, field->len, field->name);
+		if(parsable_print)
+			printf("%s|", field->name);
+		else
+			printf("%-*.*s ", field->len, field->len, field->name);
 		break;
 	case UNDERSCORE:
-		printf("%-*.*s ", field->len, field->len, 
-		       "---------------------------------------");
+		if(!parsable_print)
+			printf("%-*.*s ", field->len, field->len, 
+			       "---------------------------------------");
 		break;
 	case VALUE:
 		/* (value == unset)  || (value == cleared) */
-		if((value == NO_VAL) || (value == INFINITE))
-			printf("%-*s ", field->len, " ");
-		else
-			printf("%*u ", field->len, value);
+		if((value == NO_VAL) || (value == INFINITE)) {
+			if(parsable_print)
+				printf("|");	
+			else				
+				printf("%-*s ", field->len, " ");
+		} else {
+			if(parsable_print)
+				printf("%u|", value);	
+			else
+				printf("%*u ", field->len, value);
+		}
 		break;
 	default:
-		printf("%-*.*s ", field->len, field->len, "n/a");
+		if(parsable_print)
+			printf("%s|", "n/a");
+		else
+			printf("%-*.*s ", field->len, field->len, "n/a");
 		break;
 	}
 }
@@ -129,21 +161,31 @@ extern void print_time(type_t type, print_field_t *field, uint32_t value)
 {
 	switch(type) {
 	case HEADLINE:
-		printf("%-*.*s ", field->len, field->len, field->name);
+		if(parsable_print)
+			printf("%s|", field->name);
+		else
+			printf("%-*.*s ", field->len, field->len, field->name);
 		break;
 	case UNDERSCORE:
-		printf("%-*.*s ", field->len, field->len, 
-		       "---------------------------------------");
+		if(!parsable_print)
+			printf("%-*.*s ", field->len, field->len, 
+			       "---------------------------------------");
 		break;
 	case VALUE:
 		/* (value == unset)  || (value == cleared) */
-		if((value == NO_VAL) || (value == INFINITE))
-			printf("%-*s ", field->len, " ");
-		else {
+		if((value == NO_VAL) || (value == INFINITE)) {
+			if(parsable_print)
+				printf("|");	
+			else
+				printf("%-*s ", field->len, " ");
+		} else {
 			char time_buf[32];
 			mins2time_str((time_t) value, 
 				      time_buf, sizeof(time_buf));
-			printf("%*s ", field->len, time_buf);
+			if(parsable_print)
+				printf("%s|", time_buf);
+			else
+				printf("%*s ", field->len, time_buf);
 		}
 		break;
 	default:

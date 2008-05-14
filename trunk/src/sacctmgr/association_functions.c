@@ -40,7 +40,8 @@
 #include "print.h"
 
 static int _set_cond(int *start, int argc, char *argv[],
-		     acct_association_cond_t *association_cond)
+		     acct_association_cond_t *association_cond,
+		     List format_list)
 {
 	int i, end = 0;
 	int set = 0;
@@ -68,7 +69,10 @@ static int _set_cond(int *start, int argc, char *argv[],
 			addto_char_list(association_cond->cluster_list,
 					argv[i]+end);
 			set = 1;
-		} else if (strncasecmp (argv[i], "Partitions", 4) == 0) {
+		} else if (strncasecmp (argv[i], "Format", 1) == 0) {
+			if(format_list)
+				addto_char_list(format_list, argv[i]+end);
+		}  else if (strncasecmp (argv[i], "Partitions", 4) == 0) {
 			addto_char_list(association_cond->partition_list,
 					argv[i]+end);
 			set = 1;
@@ -196,122 +200,185 @@ extern int sacctmgr_list_association(int argc, char *argv[])
 	acct_association_rec_t *assoc = NULL;
 	int i=0;
 	ListIterator itr = NULL;
+	ListIterator itr2 = NULL;
+	char *object;
 
-	print_field_t id_field;
-	print_field_t parent_field;
-	print_field_t cluster_field;
-	print_field_t acct_field;
-	print_field_t user_field;
-	print_field_t part_field;
-	print_field_t fairshare_field;
-	print_field_t maxjobs_field;
-	print_field_t maxnodes_field;
-	print_field_t maxwall_field;
-	print_field_t maxcpu_field;
+	print_field_t *field = NULL;
 
+	List format_list = list_create(slurm_destroy_char);
 	List print_fields_list; /* types are of print_field_t */
+
+	enum {
+		PRINT_ACCOUNT,
+		PRINT_CLUSTER,
+		PRINT_FAIRSHARE,
+		PRINT_ID,
+		PRINT_MAXC,
+		PRINT_MAXJ,
+		PRINT_MAXN,
+		PRINT_MAXW,
+		PRINT_PID,
+		PRINT_PNAME,
+		PRINT_PART,
+		PRINT_USER
+	};
 
 	assoc_cond->id_list = list_create(slurm_destroy_char);
 	assoc_cond->user_list = list_create(slurm_destroy_char);
 	assoc_cond->acct_list = list_create(slurm_destroy_char);
 	assoc_cond->cluster_list = list_create(slurm_destroy_char);
 
-	_set_cond(&i, argc, argv, assoc_cond);
+	_set_cond(&i, argc, argv, assoc_cond, format_list);
 
 	assoc_list = acct_storage_g_get_associations(db_conn, assoc_cond);
 	destroy_acct_association_cond(assoc_cond);
 	
-	if(!assoc_list) 
+	if(!assoc_list) {
+		list_destroy(format_list);
 		return SLURM_ERROR;
+	}
+	print_fields_list = list_create(destroy_print_field);
 
-	print_fields_list = list_create(NULL);
-
-	id_field.name = "ID";
-	id_field.len = 6;
-	id_field.print_routine = print_uint;
-	list_append(print_fields_list, &id_field);
-
-	parent_field.name = "Parent";
-	parent_field.len = 6;
-	parent_field.print_routine = print_uint;
-	list_append(print_fields_list, &parent_field);
-
-	cluster_field.name = "Cluster";
-	cluster_field.len = 10;
-	cluster_field.print_routine = print_str;
-	list_append(print_fields_list, &cluster_field);
+	if(!list_count(format_list)) 
+		addto_char_list(format_list, "C,A,U,F,MaxC,MaxJ,MaxN,MaxW");
 	
-	acct_field.name = "Account";
-	acct_field.len = 10;
-	acct_field.print_routine = print_str;
-	list_append(print_fields_list, &acct_field);
-	
-	user_field.name = "User";
-	user_field.len = 10;
-	user_field.print_routine = print_str;
-	list_append(print_fields_list, &user_field);
-	
-	part_field.name = "Partition";
-	part_field.len = 10;
-	part_field.print_routine = print_str;
-	list_append(print_fields_list, &part_field);
-	
-	fairshare_field.name = "FairShare";
-	fairshare_field.len = 9;
-	fairshare_field.print_routine = print_uint;
-	list_append(print_fields_list, &fairshare_field);
-	
-	maxjobs_field.name = "MaxJobs";
-	maxjobs_field.len = 7;
-	maxjobs_field.print_routine = print_uint;
-	list_append(print_fields_list, &maxjobs_field);
-	
-	maxnodes_field.name = "MaxNodes";
-	maxnodes_field.len = 8;
-	maxnodes_field.print_routine = print_uint;
-	list_append(print_fields_list, &maxnodes_field);
-	
-	maxwall_field.name = "MaxWall";
-	maxwall_field.len = 11;
-	maxwall_field.print_routine = print_time;
-	list_append(print_fields_list, &maxwall_field);
-
-	maxcpu_field.name = "MaxCPUSecs";
-	maxcpu_field.len = 11;
-	maxcpu_field.print_routine = print_uint;
-	list_append(print_fields_list, &maxcpu_field);
-
+	itr = list_iterator_create(format_list);
+	while((object = list_next(itr))) {
+		field = xmalloc(sizeof(print_field_t));
+		if(!strncasecmp("Account", object, 1)) {
+			field->type = PRINT_ACCOUNT;
+			field->name = xstrdup("Account");
+			field->len = 10;
+			field->print_routine = print_str;
+		} else if(!strncasecmp("Cluster", object, 1)) {
+			field->type = PRINT_CLUSTER;
+			field->name = xstrdup("Cluster");
+			field->len = 10;
+			field->print_routine = print_str;
+		} else if(!strncasecmp("FairShare", object, 1)) {
+			field->type = PRINT_FAIRSHARE;
+			field->name = xstrdup("FairShare");
+			field->len = 9;
+			field->print_routine = print_uint;
+		} else if(!strncasecmp("ID", object, 1)) {
+			field->type = PRINT_ID;
+			field->name = xstrdup("ID");
+			field->len = 6;
+			field->print_routine = print_uint;
+		} else if(!strncasecmp("MaxCPUSecs", object, 4)) {
+			field->type = PRINT_MAXC;
+			field->name = xstrdup("MaxCPUSecs");
+			field->len = 11;
+			field->print_routine = print_uint;
+		} else if(!strncasecmp("MaxJobs", object, 4)) {
+			field->type = PRINT_MAXJ;
+			field->name = xstrdup("MaxJobs");
+			field->len = 7;
+			field->print_routine = print_uint;
+		} else if(!strncasecmp("MaxNodes", object, 4)) {
+			field->type = PRINT_MAXN;
+			field->name = xstrdup("MaxNodes");
+			field->len = 8;
+			field->print_routine = print_uint;
+		} else if(!strncasecmp("MaxWall", object, 4)) {
+			field->type = PRINT_MAXW;
+			field->name = xstrdup("MaxWall");
+			field->len = 11;
+			field->print_routine = print_time;
+		} else if(!strncasecmp("ParentID", object, 7)) {
+			field->type = PRINT_PID;
+			field->name = xstrdup("Par ID");
+			field->len = 6;
+			field->print_routine = print_uint;
+		} else if(!strncasecmp("ParentName", object, 7)) {
+			field->type = PRINT_PNAME;
+			field->name = xstrdup("Par Name");
+			field->len = 10;
+			field->print_routine = print_str;
+		} else if(!strncasecmp("Partition", object, 4)) {
+			field->type = PRINT_PART;
+			field->name = xstrdup("Partition");
+			field->len = 10;
+			field->print_routine = print_str;
+		} else if(!strncasecmp("User", object, 1)) {
+			field->type = PRINT_USER;
+			field->name = xstrdup("User");
+			field->len = 10;
+			field->print_routine = print_str;
+		} else {
+			printf("Unknown field '%s'", object);
+			xfree(field);
+			continue;
+		}
+		list_append(print_fields_list, field);		
+	}
+	list_iterator_destroy(itr);
 
 	itr = list_iterator_create(assoc_list);
+	itr2 = list_iterator_create(print_fields_list);
 	print_header(print_fields_list);
 
 	while((assoc = list_next(itr))) {
-		id_field.print_routine(VALUE, &id_field, assoc->id);
-
-		parent_field.print_routine(VALUE, &parent_field,
-					   assoc->parent_id);
-
-		cluster_field.print_routine(VALUE, &cluster_field, 
-					    assoc->cluster);
-		acct_field.print_routine(VALUE, &acct_field, assoc->acct);
-		user_field.print_routine(VALUE, &user_field, assoc->user);
-		part_field.print_routine(VALUE, &part_field, assoc->partition);
-		fairshare_field.print_routine(VALUE, &fairshare_field,
-					      assoc->fairshare);
-		maxjobs_field.print_routine(VALUE, &maxjobs_field, 
-			   assoc->max_jobs);
-		maxnodes_field.print_routine(VALUE, &maxnodes_field, 
-			   assoc->max_nodes_per_job);
-		maxwall_field.print_routine(VALUE, &maxwall_field, 
-			   assoc->max_wall_duration_per_job);
-		maxcpu_field.print_routine(VALUE, &maxcpu_field, 
-			   assoc->max_cpu_secs_per_job);
-	
+		while((field = list_next(itr2))) {
+			switch(field->type) {
+			case PRINT_ACCOUNT:
+				field->print_routine(VALUE, field, assoc->acct);
+				break;
+			case PRINT_CLUSTER:
+				field->print_routine(VALUE, field,
+						     assoc->cluster);
+				break;
+			case PRINT_FAIRSHARE:
+				field->print_routine(VALUE, field,
+						     assoc->fairshare);
+				break;
+			case PRINT_ID:
+				field->print_routine(VALUE, field, assoc->id);
+				break;
+			case PRINT_MAXC:
+				field->print_routine(
+					VALUE, field,
+					assoc->max_cpu_secs_per_job);
+				break;
+			case PRINT_MAXJ:
+				field->print_routine(VALUE, field, 
+						     assoc->max_jobs);
+				break;
+			case PRINT_MAXN:
+				field->print_routine(VALUE, field,
+						     assoc->max_nodes_per_job);
+				break;
+			case PRINT_MAXW:
+				field->print_routine(
+					VALUE, field,
+					assoc->max_wall_duration_per_job);
+				break;
+			case PRINT_PID:
+				field->print_routine(VALUE, field,
+						     assoc->parent_id);
+				break;
+			case PRINT_PNAME:
+				field->print_routine(VALUE, field,
+						     assoc->parent_acct);
+				break;
+			case PRINT_PART:
+				field->print_routine(VALUE, field,
+						     assoc->partition);
+				break;
+			case PRINT_USER:
+				field->print_routine(VALUE, field, assoc->user);
+				break;
+			default:
+				break;
+			}
+		}
+		list_iterator_reset(itr2);
 		printf("\n");
 	}
 
 	printf("\n");
 
+	list_iterator_destroy(itr2);
 	list_iterator_destroy(itr);
 	list_destroy(assoc_list);
 	list_destroy(print_fields_list);

@@ -73,10 +73,14 @@ typedef enum {	HEADLINE,
 } type_t;
 
 typedef struct {
-	char *name;  /* name to be printed in header */
 	uint16_t len;  /* what is the width of the print */          
+	char *name;  /* name to be printed in header */
 	void (*print_routine) (); /* what is the function to print with  */
+	uint16_t type; /* defined in the local function */
 } print_field_t;
+
+extern int parsable_print;
+extern int have_header;
 
 extern void destroy_print_field(void *object);
 extern void print_header(List print_fields_list);
