@@ -1,12 +1,14 @@
 RELEASE NOTES FOR SLURM VERSION 1.3
-3 March 2008
+14 May 2008
 
 
 IMPORTANT NOTE:
 SLURM state files in version 1.3 are different from those of version 1.2.
 After installing SLURM version 1.2, plan to restart without preserving 
-jobs or other state information. Restart daemons with the "-c" option or 
-use "/etc/init.d/slurm startclean".
+jobs or other state information. While SLURM version 1.2 is still running, 
+cancel all pending and running jobs (e.g.
+"scancel --state=pending; scancel --state=running"). Then stop and restart 
+daemons with the "-c" option or use "/etc/init.d/slurm startclean".
 
 There are substantial changes in the slurm.conf configuration file. It 
 is recommended that you rebuild your configuration file using the tool
