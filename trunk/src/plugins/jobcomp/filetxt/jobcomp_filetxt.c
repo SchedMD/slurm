@@ -89,7 +89,7 @@ const char plugin_type[]       	= "jobcomp/filetxt";
 const uint32_t plugin_version	= 100;
 
 #define JOB_FORMAT "JobId=%lu UserId=%s(%lu) GroupId=%s(%lu) Name=%s JobState=%s Partition=%s "\
-		"TimeLimit=%s StartTime=%s EndTime=%s NodeList=%s NodeCnt=%u %s\n"
+		"TimeLimit=%s StartTime=%s EndTime=%s NodeList=%s NodeCnt=%u ProcCnt=%u %s\n"
  
 /* Type for error string table entries */
 typedef struct {
@@ -261,6 +261,7 @@ extern int slurm_jobcomp_log_record ( struct job_record *job_ptr )
 		 job_state_string(job_state), 
 		 job_ptr->partition, lim_str, start_str, 
 		 end_str, job_ptr->nodes, job_ptr->node_cnt,
+		 job_ptr->total_procs,
 		 select_buf);
 	tot_size = strlen(job_rec);
 
