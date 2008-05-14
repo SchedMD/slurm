@@ -97,16 +97,31 @@ static int _get_local_association_list(void *db_conn, int enforce)
 		}
 	} else {
 		acct_association_rec_t *assoc = NULL;
+		acct_association_rec_t *assoc2 = NULL;
 		struct passwd *passwd_ptr = NULL;
 		ListIterator itr = list_iterator_create(local_association_list);
+		ListIterator itr2 = 
+			list_iterator_create(local_association_list);
+		//START_TIMER;
 		while((assoc = list_next(itr))) {
+			if(assoc->parent_id) {
+				while((assoc2 = list_next(itr2))) {
+					if(assoc2->id == assoc->parent_id) {
+						assoc->parent_acct_ptr = assoc2;
+						break;
+					}
+				}
+				list_iterator_reset(itr2);
+			}
 			if(!assoc->user)
 				continue;
 			passwd_ptr = getpwnam(assoc->user);
 			if(passwd_ptr) 
 				assoc->uid = passwd_ptr->pw_uid;
 		}
+		list_iterator_destroy(itr2);
 		list_iterator_destroy(itr);
+		//END_TIMER2("load_associations");
 	}
 	slurm_mutex_unlock(&local_association_lock);
 
@@ -402,6 +417,7 @@ extern int assoc_mgr_update_local_assocs(acct_update_object_t *update)
 	acct_association_rec_t * object = NULL;
 	ListIterator itr = NULL;
 	int rc = SLURM_SUCCESS;
+	int parents_changed = 0;
 
 	if(!local_association_list)
 		return SLURM_SUCCESS;
@@ -462,7 +478,7 @@ extern int assoc_mgr_update_local_assocs(acct_update_object_t *update)
 		switch(update->type) {
 		case ACCT_MODIFY_ASSOC:
 			if(!rec) {
-				//rc = SLURM_ERROR;
+				rc = SLURM_ERROR;
 				break;
 			}
 			debug("updating the assocs here on %u", rec->id);
@@ -494,7 +510,13 @@ extern int assoc_mgr_update_local_assocs(acct_update_object_t *update)
 				xfree(rec->parent_acct);
 				rec->parent_acct = xstrdup(object->parent_acct);
 			}
-
+			if(object->parent_id) {
+				rec->parent_id = object->parent_id;
+				// after all new parents have been set we will
+				// reset the parent pointers below
+				parents_changed = 1;
+				
+			}
 			/* FIX ME: do more updates here */
 			break;
 		case ACCT_ADD_ASSOC:
@@ -514,10 +536,29 @@ extern int assoc_mgr_update_local_assocs(acct_update_object_t *update)
 			break;
 		}
 		if(update->type != ACCT_ADD_ASSOC) {
-			destroy_acct_update_object(object);			
-		}
-				
+			destroy_acct_association_rec(object);			
+		}				
 	}
+
+	if(parents_changed) {
+		ListIterator itr2 = 
+			list_iterator_create(local_association_list);
+		list_iterator_reset(itr);
+
+		while((object = list_next(itr))) {
+			if(object->parent_id) {
+				while((rec = list_next(itr2))) {
+					if(rec->id == object->parent_id) {
+						object->parent_acct_ptr = rec;
+						break;
+					}
+				}
+				list_iterator_reset(itr2);
+			}
+		}
+		list_iterator_destroy(itr2);
+	}
+
 	list_iterator_destroy(itr);
 	slurm_mutex_unlock(&local_association_lock);
 
@@ -566,13 +607,13 @@ extern int assoc_mgr_update_local_users(acct_update_object_t *update)
 			break;
 		case ACCT_ADD_USER:
 			if(rec) {
-				rc = SLURM_ERROR;
+				//rc = SLURM_ERROR;
 				break;
 			}
 			list_append(local_user_list, object);
 		case ACCT_REMOVE_USER:
 			if(!rec) {
-				rc = SLURM_ERROR;
+				//rc = SLURM_ERROR;
 				break;
 			}
 			list_delete_item(itr);
@@ -581,7 +622,7 @@ extern int assoc_mgr_update_local_users(acct_update_object_t *update)
 			break;
 		}
 		if(update->type != ACCT_ADD_USER) {
-			destroy_acct_update_object(object);			
+			destroy_acct_user_rec(object);			
 		}
 	}
 	list_iterator_destroy(itr);

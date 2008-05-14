@@ -886,6 +886,7 @@ extern void pack_acct_association_rec(void *in, Buf buffer)
 		pack32(0, buffer);
 		pack32(0, buffer);
 		packnull(buffer);
+		pack32(0, buffer);
 		packnull(buffer);
 		pack32(0, buffer);
 		pack32(0, buffer);
