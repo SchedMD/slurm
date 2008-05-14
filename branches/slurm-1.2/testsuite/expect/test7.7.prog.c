@@ -333,6 +333,7 @@ static void _modify_job(long my_job_id)
 		"TS=%u AUTH=root DT=CMD=MODIFYJOB ARG=%ld "
 		/* "MINSTARTTIME=55555 " */
 		/* "JOBNAME=foo " */
+		/* "RFEATURES=big " */
 		/* "PARTITION=pdebug " */
 		/* "NODES=2 " */ 
 		/* "DEPEND=afterany:3 " */
