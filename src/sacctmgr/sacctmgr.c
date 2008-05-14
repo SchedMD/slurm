@@ -107,6 +107,8 @@ main (int argc, char *argv[])
 		{"hide",     0, 0, OPT_LONG_HIDE},
 		{"immediate",0, 0, 'i'},
 		{"oneliner", 0, 0, 'o'},
+		{"no_header", 0, 0, 'n'},
+		{"parsable", 0, 0, 'p'},
 		{"quiet",    0, 0, 'q'},
 		{"usage",    0, 0, 'h'},
 		{"verbose",  0, 0, 'v'},
@@ -126,7 +128,7 @@ main (int argc, char *argv[])
 	if (getenv ("SACCTMGR_ALL"))
 		all_flag= 1;
 
-	while((opt_char = getopt_long(argc, argv, "ahioqsvV",
+	while((opt_char = getopt_long(argc, argv, "ahionpqsvV",
 			long_options, &option_index)) != -1) {
 		switch (opt_char) {
 		case (int)'?':
@@ -148,6 +150,12 @@ main (int argc, char *argv[])
 			break;
 		case (int)'o':
 			one_liner = 1;
+			break;
+		case (int)'n':
+			have_header = 0;
+			break;
+		case (int)'p':
+			parsable_print = 1;
 			break;
 		case (int)'q':
 			quiet_flag = 1;
@@ -1361,9 +1369,12 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
      list <ENTITY> [<SPECS>]  display info of identified entity, default   \n\
                               is display all.                              \n\
      modify <ENTITY> <SPECS>  modify entity                                \n\
+     no_header                no header will be added to the beginning of  \n\
+                              output.                                      \n\
      oneliner                 report output one record per line.           \n\
      quiet                    print no messages other than error messages. \n\
      quit                     terminate this command.                      \n\
+     parsable                 output will be | delimited                   \n\
      show                     same as list                                 \n\
      verbose                  enable detailed logging.                     \n\
      version                  display tool version number.                 \n\
@@ -1372,15 +1383,7 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
   <ENTITY> may be \"cluster\", \"account\", or \"user\".                   \n\
                                                                            \n\
   <SPECS> are different for each command entity pair.                      \n\
-       list cluster       - Names=                                         \n\
-       add cluster        - Fairshare=, MaxCPUSecs=,                       \n\
-                            MaxJobs=, MaxNodes=, MaxWall=, and Names=      \n\
-       modify cluster     - (set options) Fairshare=, MaxCPUSecs=,         \n\
-                            MaxJobs=, MaxNodes=, and MaxWall=              \n\
-                            (where options) Names=                         \n\
-       delete cluster     - Names=                                         \n\
-                                                                           \n\
-       list account       - Clusters=, Descriptions=, Names=,              \n\
+       list account       - Clusters=, Descriptions=, Format=, Names=,     \n\
                             Organizations=, Parents=, and WithAssocs       \n\
        add account        - Clusters=, Description=, Fairshare=,           \n\
                             MaxCPUSecs=, MaxJobs=, MaxNodes=, MaxWall=,    \n\
@@ -1393,7 +1396,18 @@ sacctmgr [<OPTION>] [<COMMAND>]                                            \n\
        delete account     - Clusters=, Descriptions=, Names=,              \n\
                             Organizations=, and Parents=                   \n\
                                                                            \n\
-       list user          - AdminLevel=, DefaultAccounts=, Names=,         \n\
+       list associations  - Accounts=, Clusters=, Format=, ID=,            \n\
+                            Partitions=, Parent=, Users=                   \n\
+                                                                           \n\
+       list cluster       - Names= Format=                                 \n\
+       add cluster        - Fairshare=, MaxCPUSecs=,                       \n\
+                            MaxJobs=, MaxNodes=, MaxWall=, and Names=      \n\
+       modify cluster     - (set options) Fairshare=, MaxCPUSecs=,         \n\
+                            MaxJobs=, MaxNodes=, and MaxWall=              \n\
+                            (where options) Names=                         \n\
+       delete cluster     - Names=                                         \n\
+                                                                           \n\
+       list user          - AdminLevel=, DefaultAccounts=, Format=, Names=,\n\
                             QosLevel=, and WithAssocs                      \n\
        add user           - Accounts=, AdminLevel=, Clusters=,             \n\
                             DefaultAccount=, Fairshare=, MaxCPUSecs=,      \n\
