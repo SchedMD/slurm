@@ -97,6 +97,7 @@ storage_field_t jobcomp_table_fields[] = {
 	{ "endtime", "bigint default 0 not null" },
 	{ "nodelist", "text" }, 
 	{ "nodecnt", "integer not null" },
+	{ "proc_cnt", "integer not null" },
 #ifdef HAVE_BG
 	{ "connect_type", "text" },
 	{ "reboot", "text" },
@@ -380,13 +381,13 @@ extern int slurm_jobcomp_log_record(struct job_record *job_ptr)
 #endif
 	snprintf(query, sizeof(query),
 		 "insert into %s (jobid, uid, user_name, gid, group_name, "
-		 "name, state, "
+		 "name, state, proc_cnt, "
 		 "partition, timelimit, starttime, endtime, nodelist, nodecnt"
 #ifdef HAVE_BG
 		 ", connect_type, reboot, rotate, maxprocs, geometry, "
 		 "start, blockid"
 #endif
-		 ") values (%u, %u, '%s', %u, '%s', '%s', %d, "
+		 ") values (%u, %u, '%s', %u, '%s', '%s', %d, %u, "
 		 "'%s', '%s', %u, %u, '%s', %u"
 #ifdef HAVE_BG
 		 ", '%s', '%s', '%s', %s, '%s', '%s', '%s'"
@@ -394,7 +395,7 @@ extern int slurm_jobcomp_log_record(struct job_record *job_ptr)
 		 ")",
 		 jobcomp_table, job_ptr->job_id, job_ptr->user_id, usr_str,
 		 job_ptr->group_id, grp_str, job_ptr->name, job_state,
-		 job_ptr->partition, lim_str,
+		 job_ptr->total_procs, job_ptr->partition, lim_str,
 		 (int)job_ptr->start_time, (int)job_ptr->end_time,
 		 job_ptr->nodes, job_ptr->node_cnt
 #ifdef HAVE_BG

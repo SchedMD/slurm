@@ -145,8 +145,10 @@ static const char * _jobcomp_script_strerror (int errnum)
 struct jobcomp_info {
 	uint32_t jobid;
 	uint32_t uid;
+	uint32_t gid;
 	uint32_t limit;
 	uint32_t nprocs;
+	uint32_t nnodes;
 	uint16_t batch_flag;
 	time_t submit;
 	time_t start;
@@ -165,6 +167,7 @@ static struct jobcomp_info * _jobcomp_info_create (struct job_record *job)
 
 	j->jobid = job->job_id;
 	j->uid = job->user_id;
+	j->gid = job->group_id;
 	j->name = xstrdup (job->name);
 
 	/*
@@ -182,7 +185,8 @@ static struct jobcomp_info * _jobcomp_info_create (struct job_record *job)
 	j->submit = job->details ? job->details->submit_time:job->start_time;
 	j->batch_flag = job->batch_flag;
 	j->nodes = xstrdup (job->nodes);
-	j->nprocs = job->num_procs;
+	j->nprocs = job->total_procs;
+	j->nnodes = job->node_cnt;
 	j->account = job->account ? xstrdup (job->account) : NULL;
 
 	return (j);
@@ -287,10 +291,12 @@ static char ** _create_environment (struct jobcomp_info *job)
 
 	_env_append_fmt (&env, "JOBID", "%u",  job->jobid);
 	_env_append_fmt (&env, "UID",   "%u",  job->uid);
+	_env_append_fmt (&env, "GID",   "%u",  job->gid);
 	_env_append_fmt (&env, "START", "%lu", job->start);
 	_env_append_fmt (&env, "END",   "%lu", job->end);
 	_env_append_fmt (&env, "SUBMIT","%lu", job->submit);
 	_env_append_fmt (&env, "PROCS", "%u",  job->nprocs);
+	_env_append_fmt (&env, "NODECNT", "%u", job->nnodes);
 
 	_env_append (&env, "BATCH", (job->batch_flag ? "yes" : "no"));
 	_env_append (&env, "NODES",     job->nodes);
