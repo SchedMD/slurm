@@ -511,10 +511,14 @@ static int _handle_uint32(s_p_values_t *v,
 
 		errno = 0;
 		num = strtoul(value, &endptr, 0);
+		if ((endptr[0] == 'k') || (endptr[0] == 'K')) {
+			num *= 1024;
+			endptr++;
+		}
 		if ((num == 0 && errno == EINVAL)
 		    || (*endptr != '\0')) {
-			if (strcasecmp(value, "UNLIMITED") == 0
-			    || strcasecmp(value, "INFINITE") == 0) {
+			if ((strcasecmp(value, "UNLIMITED") == 0) ||
+			    (strcasecmp(value, "INFINITE")  == 0)) {
 				num = (uint32_t)-1;
 			} else {
 				error("%s value (%s) is not a valid number", 
