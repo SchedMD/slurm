@@ -791,10 +791,16 @@ extern int job_start_data(job_desc_msg_t *job_desc_msg,
 	} else if (node_name2bitmap(job_desc_msg->req_nodes, false, 
 				    &avail_bitmap) != 0) {
 		return ESLURM_INVALID_NODE_NAME;
-	} else {
-		/* Only consider nodes that are not DOWN or DRAINED */
-		bit_and(avail_bitmap, avail_node_bitmap);
 	}
+
+	/* Only consider nodes that are not DOWN or DRAINED */
+	bit_and(avail_bitmap, avail_node_bitmap);
+
+	/* Consider only nodes in this job's partition */
+	if (part_ptr->node_bitmap)
+		bit_and(avail_bitmap, part_ptr->node_bitmap);
+	else
+		rc = ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE;
 
 	if (job_req_node_filter(job_ptr, avail_bitmap))
 		rc = ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE;
