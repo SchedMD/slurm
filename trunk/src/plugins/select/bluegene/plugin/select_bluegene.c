@@ -1211,10 +1211,10 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 		/* See if min_nodes is greater than one base partition */
 		if(job_desc->min_nodes > bluegene_bp_node_cnt) {
 			/*
-			  if it is make sure it is a factor of 
-			  bluegene_bp_node_cnt, if it isn't make it 
-			  that way 
-			*/
+			 * if it is make sure it is a factor of 
+			 * bluegene_bp_node_cnt, if it isn't make it 
+			 * that way 
+			 */
 			tmp = job_desc->min_nodes % bluegene_bp_node_cnt;
 			if(tmp > 0)
 				job_desc->min_nodes += 
