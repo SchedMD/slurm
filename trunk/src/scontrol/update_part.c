@@ -35,7 +35,8 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#include "scontrol.h"
+#include "src/common/proc_args.h"
+#include "src/scontrol/scontrol.h"
 
 
 /* 
@@ -49,7 +50,7 @@
 extern int
 scontrol_update_part (int argc, char *argv[]) 
 {
-	int i, update_cnt = 0;
+	int i, min, max, update_cnt = 0;
 	update_part_msg_t part_msg;
 
 	slurm_init_part_desc_msg ( &part_msg );
@@ -70,16 +71,19 @@ scontrol_update_part (int argc, char *argv[])
 			if ((strcasecmp(&argv[i][9],"UNLIMITED") == 0) ||
 			    (strcasecmp(&argv[i][8],"INFINITE") == 0))
 				part_msg.max_nodes = (uint32_t) INFINITE;
-			else
-				part_msg.max_nodes = 
-					(uint32_t) strtol(&argv[i][9], 
-						(char **) NULL, 10);
+			else {
+				min = 1;
+				get_resource_arg_range(&argv[i][9],
+					"MaxNodes", &min, &max, true);
+				part_msg.max_nodes = min;
+			}
 			update_cnt++;
 		}
 		else if (strncasecmp(argv[i], "MinNodes=", 9) == 0) {
-			part_msg.min_nodes = 
-				(uint32_t) strtol(&argv[i][9], 
-					(char **) NULL, 10);
+			min = 1;
+			get_resource_arg_range(&argv[i][9],
+				"MinNodes", &min, &max, true);
+			part_msg.min_nodes = min;
 			update_cnt++;
 		}
 		else if (strncasecmp(argv[i], "Default=", 8) == 0) {
