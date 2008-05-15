@@ -206,10 +206,22 @@ static char *	_will_run_test(uint32_t *jobid, time_t *start_time,
 			error("wiki: Attempt to set invalid available node "
 			      "list for job %u, %s", jobid[i], node_list[i]);
 			break;
-		} else {
-			/* Only consider nodes that are not DOWN or DRAINED */
-			bit_and(avail_bitmap, avail_node_bitmap);
 		}
+
+		/* Only consider nodes that are not DOWN or DRAINED */
+		bit_and(avail_bitmap, avail_node_bitmap);
+
+		/* Consider only nodes in this job's partition */
+		if (part_ptr->node_bitmap)
+			bit_and(avail_bitmap, part_ptr->node_bitmap);
+		else {
+			*err_code = -730;
+			*err_msg = "Job's partition has no nodes";
+			error("wiki: no nodes in partition %s for job %u", 
+				part_ptr->name, jobid[i]);
+			break;
+		}
+
 		if (job_req_node_filter(job_ptr, avail_bitmap) != 
 		    SLURM_SUCCESS) {
 			/* Job probably has invalid feature list */
