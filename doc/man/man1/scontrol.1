@@ -451,7 +451,8 @@ Possible values are"YES" and "NO".
 .TP
 \fIMaxNodes\fP=<count>
 Set the maximum number of nodes which will be allocated to any single job 
-in the partition. Specify a number, "INFINITE" or "UNLIMITED".
+in the partition. Specify a number, "INFINITE" or "UNLIMITED".  (On a
+Bluegene type system this represents a c-node count.)
 
 .TP
 \fIMaxTime\fP=<time>
@@ -466,7 +467,7 @@ the next minute.
 .TP
 \fIMinNodes\fP=<count>
 Set the minimum number of nodes which will be allocated to any single job 
-in the partition. 
+in the partition.   (On a Bluegene type system this represents a c-node count.)
 .TP
 \fINodes\fP=<name>
 Identify the node(s) to be associated with this partition. Multiple node names 

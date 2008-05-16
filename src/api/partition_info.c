@@ -180,7 +180,6 @@ char *slurm_sprint_partition_info ( partition_info_t * part_ptr,
 		xstrcat(out, "\n   ");
 	
 	/****** Line 3 ******/
-
 #ifdef HAVE_BG
 	convert_num_unit((float)part_ptr->min_nodes, tmp1, sizeof(tmp1),
 			 UNIT_NONE);
