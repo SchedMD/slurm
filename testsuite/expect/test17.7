@@ -33,9 +33,11 @@
 source ./globals
 
 set test_id     "17.7"
+set cwd         "[$bin_pwd]"
 set exit_code   0
+set file_err    "test$test_id.error"
 set file_in     "test$test_id.input"
-set file_out    "test$test_id.output"
+set file_out    "$cwd/test$test_id.output"
 set tmp_dir     "/tmp"
 
 print_header $test_id
@@ -44,16 +46,17 @@ print_header $test_id
 # Delete left-over stdin/out/err files
 # Build stdin file
 #
-exec $bin_rm -f $file_in $file_out
+exec $bin_rm -f $file_in $file_out $file_err
 make_bash_script $file_in "
   $bin_pwd
+  $bin_cat /no/such/file
 "
 
 #
 # Submit a slurm job that will execute 'pwd'
 #
 set job_id 0
-spawn $sbatch -N1 --output=$file_out --workdir=$tmp_dir -t1 $file_in
+spawn $sbatch -N1 --error=$file_err --output=$file_out --workdir=$tmp_dir -t1 $file_in
 expect {
 	-re "Submitted batch job ($number)" {
 		set job_id $expect_out(1,string)
@@ -89,6 +92,10 @@ if {[wait_for_file $file_out] == 0} {
 			set matches 1
 			exp_continue
 		}
+		-re "No such" {
+			send_user "\nFAILURE: sbatch stderr in stdout file\n"
+			set exit_code 1
+		}
 		eof {
 			wait
 		}
@@ -99,8 +106,13 @@ if {$matches != 1} {
 	set exit_code 1
 }
 
+if [file exists $file_err] {
+	send_user "\nFAILURE: sbatch failed to create error file in working directory\n"
+	set exit_code 1
+}
+
 if {$exit_code == 0} {
-	exec $bin_rm -f $file_in $file_out
+	exec $bin_rm -f $file_in $file_out $file_err
 	send_user "\nSUCCESS\n"
 }
 exit $exit_code
