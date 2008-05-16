@@ -96,6 +96,8 @@ static int _init_status_pthread(void);
 static int _wait_for_thread (pthread_t thread_id);
 static char *_block_state_str(int state);
 
+extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data);
+
 /*
  * init() is called when the plugin is loaded, before any other functions
  * are called.  Put global initialization here.
@@ -218,6 +220,17 @@ extern int fini ( void )
 		fatal("Error, could not read the file");
 		return SLURM_ERROR;
 	}
+	if(part_list) {
+		struct part_record *part_ptr = NULL;
+		ListIterator itr = list_iterator_create(part_list);
+		while((part_ptr = list_next(itr))) {
+			select_p_alter_node_cnt(SELECT_SET_BP_CNT, 
+						&part_ptr->max_nodes);
+			select_p_alter_node_cnt(SELECT_SET_BP_CNT,
+						&part_ptr->min_nodes);
+		}
+		list_iterator_destroy(itr);
+	}
 #else
 	/*looking for blocks only I created */
 	if (create_defined_blocks(bluegene_layout_mode, NULL) 
@@ -230,7 +243,7 @@ extern int fini ( void )
 		return SLURM_ERROR;
 	}
 #endif
-	
+
 	return SLURM_SUCCESS; 
 }
 
@@ -1155,10 +1168,25 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 	int tmp, i;
 	uint16_t req_geometry[BA_SYSTEM_DIMENSIONS];
 	
+	if(!bluegene_bp_node_cnt) {
+		fatal("select_g_alter_node_cnt: This can't be called "
+		      "before select_g_block_init");
+	}
+
 	switch (type) {
 	case SELECT_GET_NODE_SCALING:
 		if((*nodes) != INFINITE)
 			(*nodes) = bluegene_bp_node_cnt;
+		break;
+	case SELECT_SET_BP_CNT:
+		if((*nodes) > bluegene_bp_node_cnt) {
+			tmp = (*nodes);
+			tmp /= bluegene_bp_node_cnt;
+			if(tmp < 1) 
+				tmp = 1;
+		} else 
+			tmp = 1;
+		(*nodes) = tmp;
 		break;
 	case SELECT_APPLY_NODE_MIN_OFFSET:
 		if((*nodes) == 1) {

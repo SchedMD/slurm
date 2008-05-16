@@ -827,12 +827,16 @@ int update_part(update_part_msg_t * part_desc)
 		info("update_part: setting max_nodes to %u for partition %s", 
 		     part_desc->max_nodes, part_desc->name);
 		part_ptr->max_nodes = part_desc->max_nodes;
+		select_g_alter_node_cnt(SELECT_SET_BP_CNT,
+					&part_ptr->max_nodes);
 	}
 
 	if (part_desc->min_nodes != NO_VAL) {
 		info("update_part: setting min_nodes to %u for partition %s", 
 		     part_desc->min_nodes, part_desc->name);
 		part_ptr->min_nodes = part_desc->min_nodes;
+		select_g_alter_node_cnt(SELECT_SET_BP_CNT,
+					&part_ptr->min_nodes);
 	}
 
 	if (part_desc->root_only != (uint16_t) NO_VAL) {
@@ -931,8 +935,10 @@ int update_part(update_part_msg_t * part_desc)
 		slurm_sched_partition_change();	/* notify sched plugin */
 		select_g_reconfigure();		/* notify select plugin too */
 		reset_job_priority();		/* free jobs */
-		if (select_g_block_init(part_list) != SLURM_SUCCESS )
-			error("failed to update node selection plugin state");
+		
+		/* I am not sure why this was ever there (da) */
+/* 		if (select_g_block_init(part_list) != SLURM_SUCCESS ) */
+/* 			error("failed to update node selection plugin state"); */
 	}
 
 	return error_code;
