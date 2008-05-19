@@ -730,7 +730,8 @@ static sacctmgr_file_opts_t *_parse_options(char *options)
 				_destroy_sacctmgr_file_opts(file_opts);
 				break;
 			}
-		} else if (strncasecmp (sub, "MaxCPUSec", 4) == 0) {
+		} else if (strncasecmp (sub, "MaxCPUSec", 4) == 0
+			   || strncasecmp (sub, "MaxProcSec", 4) == 0) {
 			if (get_uint(option, &file_opts->max_cpu_secs_per_job,
 			    "MaxCPUSec") != SLURM_SUCCESS) {
 				printf(" Bad MaxCPUSec value: %s\n", option);
@@ -766,7 +767,8 @@ static sacctmgr_file_opts_t *_parse_options(char *options)
 			}
 		} else if (strncasecmp (sub, "Organization", 1) == 0) {
 			file_opts->org = xstrdup(option);
-		} else if (strncasecmp (sub, "QosLevel", 1) == 0) {
+		} else if (strncasecmp (sub, "QosLevel", 1) == 0
+			   || strncasecmp (sub, "Expedite", 1) == 0) {
 			file_opts->qos = str_2_acct_qos(option);
 		} else {
 			printf(" Unknown option: %s\n", sub);
