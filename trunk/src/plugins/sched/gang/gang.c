@@ -348,6 +348,10 @@ _build_parts() {
 	if (gs_part_list)
 		_destroy_parts();
 
+	/* reset the sorted list, since it's currently
+	 * pointing to partitions we just destroyed */
+	num_sorted_part = 0;
+
 	num_parts = list_count(part_list);
 	if (!num_parts)
 		return;
@@ -646,7 +650,12 @@ _sort_partitions()
 		for (p_ptr = gs_part_list; p_ptr; p_ptr = p_ptr->next)
 			gs_part_sorted[i++] = p_ptr;
 	}
-	
+
+	if (size <= 1) {
+		gs_part_sorted[0] = gs_part_list;
+		return;
+	}
+
 	/* sort array (new array or priorities may have changed) */
 	for (j = 0; j < size; j++) {
 		for (i = j+1; i < size; i++) {
