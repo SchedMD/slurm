@@ -42,6 +42,8 @@ documents those changes that are of interest to users and admins.
     sched/wiki2 are in the job's partition.
  -- BLUGENE - changed partition Min|MaxNodes to represent c-node counts
     instead of base partitions
+ -- In sched/gang only, prevent possible memory corruption when slurmctld 
+    is reconfigured, e.g. "scontrol reconfig".
 
 * Changes in SLURM 1.3.1
 ========================
