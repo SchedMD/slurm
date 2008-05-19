@@ -1844,7 +1844,7 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 #ifdef HAVE_BG
 		job_desc->max_nodes = part_ptr->min_nodes_orig;
 #else
-		job_desc->max_nodes = part_ptr->max_nodes_orig;
+		;
 #endif
 	} else if (job_desc->max_nodes < part_ptr->min_nodes_orig) {
 		info("_job_create: job's max nodes less than partition's "
