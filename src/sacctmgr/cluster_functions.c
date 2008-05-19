@@ -41,7 +41,8 @@
 #include "print.h"
 
 static int _set_cond(int *start, int argc, char *argv[],
-		     acct_cluster_cond_t *cluster_cond)
+		     acct_cluster_cond_t *cluster_cond,
+		     List format_list)
 {
 	int i;
 	int set = 0;
@@ -55,6 +56,9 @@ static int _set_cond(int *start, int argc, char *argv[],
 		} else if(!end) {
 			addto_char_list(cluster_cond->cluster_list, argv[i]);
 			set = 1;
+		} else if (strncasecmp (argv[i], "Format", 1) == 0) {
+			if(format_list)
+				addto_char_list(format_list, argv[i]+end);
 		} else if (strncasecmp (argv[i], "Names", 1) == 0) {
 			addto_char_list(cluster_cond->cluster_list,
 					argv[i]+end);
@@ -293,46 +297,155 @@ extern int sacctmgr_list_cluster(int argc, char *argv[])
 	List cluster_list;
 	int i=0;
 	ListIterator itr = NULL;
+	ListIterator itr2 = NULL;
 	acct_cluster_rec_t *cluster = NULL;
-	print_field_t name_field;
-/* 	print_field_t fs_field; */
+	char *object;
+
+	print_field_t *field = NULL;
+
+	List format_list = list_create(slurm_destroy_char);
 	List print_fields_list; /* types are of print_field_t */
 
+	enum {
+		PRINT_CLUSTER,
+		PRINT_CHOST,
+		PRINT_CPORT,
+		PRINT_FAIRSHARE,
+		PRINT_MAXC,
+		PRINT_MAXJ,
+		PRINT_MAXN,
+		PRINT_MAXW
+	};
+
+
 	cluster_cond->cluster_list = list_create(slurm_destroy_char);
-	_set_cond(&i, argc, argv, cluster_cond);
+	_set_cond(&i, argc, argv, cluster_cond, format_list);
 	
 	cluster_list = acct_storage_g_get_clusters(db_conn, cluster_cond);
 	destroy_acct_cluster_cond(cluster_cond);
 	
-	if(!cluster_list) 
+	if(!cluster_list) {
+		list_destroy(format_list);
 		return SLURM_ERROR;
-	
-	print_fields_list = list_create(NULL);
+	}
 
-	name_field.name = "Name";
-	name_field.len = 10;
-	name_field.print_routine = print_str;
-	list_append(print_fields_list, &name_field);
+	print_fields_list = list_create(destroy_print_field);
 
-/* 	fs_field.name = "FS"; */
-/* 	fs_field.len = 4; */
-/* 	fs_field.print_routine = print_str; */
-/* 	list_append(print_fields_list, &fs_field); */	
-	
+	if(!list_count(format_list)) 
+		addto_char_list(format_list, "Cl,Controlh,Controlp,F,MaxC,MaxJ,MaxN,MaxW");
+
+	itr = list_iterator_create(format_list);
+	while((object = list_next(itr))) {
+		field = xmalloc(sizeof(print_field_t));
+		if(!strncasecmp("Cluster", object, 2)) {
+			field->type = PRINT_CLUSTER;
+			field->name = xstrdup("Cluster");
+			field->len = 10;
+			field->print_routine = print_str;
+		} else if(!strncasecmp("ControlHost", object, 8)) {
+			field->type = PRINT_CHOST;
+			field->name = xstrdup("Control Host");
+			field->len = 12;
+			field->print_routine = print_str;
+		} else if(!strncasecmp("ControlPort", object, 8)) {
+			field->type = PRINT_CPORT;
+			field->name = xstrdup("Control Port");
+			field->len = 12;
+			field->print_routine = print_uint;
+		} else if(!strncasecmp("FairShare", object, 1)) {
+			field->type = PRINT_FAIRSHARE;
+			field->name = xstrdup("FairShare");
+			field->len = 9;
+			field->print_routine = print_uint;
+		} else if(!strncasecmp("MaxCPUSecs", object, 4)) {
+			field->type = PRINT_MAXC;
+			field->name = xstrdup("MaxCPUSecs");
+			field->len = 11;
+			field->print_routine = print_uint;
+		} else if(!strncasecmp("MaxJobs", object, 4)) {
+			field->type = PRINT_MAXJ;
+			field->name = xstrdup("MaxJobs");
+			field->len = 7;
+			field->print_routine = print_uint;
+		} else if(!strncasecmp("MaxNodes", object, 4)) {
+			field->type = PRINT_MAXN;
+			field->name = xstrdup("MaxNodes");
+			field->len = 8;
+			field->print_routine = print_uint;
+		} else if(!strncasecmp("MaxWall", object, 4)) {
+			field->type = PRINT_MAXW;
+			field->name = xstrdup("MaxWall");
+			field->len = 11;
+			field->print_routine = print_time;
+		} else {
+			printf("Unknown field '%s'\n", object);
+			xfree(field);
+			continue;
+		}
+		list_append(print_fields_list, field);		
+	}
+	list_iterator_destroy(itr);
+
 	itr = list_iterator_create(cluster_list);
+	itr2 = list_iterator_create(print_fields_list);
 	print_header(print_fields_list);
-	
+
 	while((cluster = list_next(itr))) {
-		print_str(VALUE, &name_field, cluster->name);
-		//print_int(VALUE, &fs_field, cluster->default_fairshare);
+		while((field = list_next(itr2))) {
+			switch(field->type) {
+			case PRINT_CLUSTER:
+				field->print_routine(VALUE, field,
+						     cluster->name);
+				break;
+			case PRINT_CHOST:
+				field->print_routine(VALUE, field,
+						     cluster->control_host);
+				break;
+			case PRINT_CPORT:
+				field->print_routine(VALUE, field,
+						     cluster->control_port);
+				break;
+			case PRINT_FAIRSHARE:
+				field->print_routine(
+					VALUE, field,
+					cluster->default_fairshare);
+				break;
+			case PRINT_MAXC:
+				field->print_routine(
+					VALUE, field,
+					cluster->default_max_cpu_secs_per_job);
+				break;
+			case PRINT_MAXJ:
+				field->print_routine(
+					VALUE, field, 
+					cluster->default_max_jobs);
+				break;
+			case PRINT_MAXN:
+				field->print_routine(
+					VALUE, field,
+					cluster->default_max_nodes_per_job);
+				break;
+			case PRINT_MAXW:
+				field->print_routine(
+					VALUE, field,
+					cluster->
+					default_max_wall_duration_per_job);
+				break;
+			default:
+				break;
+			}
+		}
+		list_iterator_reset(itr2);
 		printf("\n");
 	}
 
 	printf("\n");
 
+	list_iterator_destroy(itr2);
 	list_iterator_destroy(itr);
 	list_destroy(cluster_list);
 	list_destroy(print_fields_list);
+
 	return rc;
 }
 
@@ -358,14 +471,14 @@ extern int sacctmgr_modify_cluster(int argc, char *argv[])
 	for (i=0; i<argc; i++) {
 		if (strncasecmp (argv[i], "Where", 5) == 0) {
 			i++;
-			if(_set_cond(&i, argc, argv, cluster_cond))
+			if(_set_cond(&i, argc, argv, cluster_cond, NULL))
 				cond_set = 1;
 		} else if (strncasecmp (argv[i], "Set", 3) == 0) {
 			i++;
 			if(_set_rec(&i, argc, argv, cluster))
 				rec_set = 1;
 		} else {
-			if(_set_cond(&i, argc, argv, cluster_cond))
+			if(_set_cond(&i, argc, argv, cluster_cond, NULL))
 				cond_set = 1;
 		}
 	}
@@ -453,7 +566,7 @@ extern int sacctmgr_delete_cluster(int argc, char *argv[])
 
 	cluster_cond->cluster_list = list_create(slurm_destroy_char);
 	
-	if(!_set_cond(&i, argc, argv, cluster_cond)) {
+	if(!_set_cond(&i, argc, argv, cluster_cond, NULL)) {
 		printf(" No conditions given to remove, not executing.\n");
 		destroy_acct_cluster_cond(cluster_cond);
 		return SLURM_ERROR;

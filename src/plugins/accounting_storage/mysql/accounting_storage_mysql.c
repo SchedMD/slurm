@@ -3855,6 +3855,21 @@ extern List acct_storage_p_get_clusters(mysql_conn_t *mysql_conn,
 		CLUSTER_REQ_CP,
 		CLUSTER_REQ_COUNT
 	};
+	char *assoc_req_inx[] = {
+		"fairshare",
+		"max_jobs",
+		"max_nodes_per_job",
+		"max_wall_duration_per_job",
+		"max_cpu_secs_per_job",
+	};
+	enum {
+		ASSOC_REQ_FS,
+		ASSOC_REQ_MJ,
+		ASSOC_REQ_MNPJ,
+		ASSOC_REQ_MWPJ,
+		ASSOC_REQ_MCPJ,
+		ASSOC_REQ_COUNT
+	};
 
 	xstrcat(extra, "where deleted=0");
 		
@@ -3878,6 +3893,7 @@ extern List acct_storage_p_get_clusters(mysql_conn_t *mysql_conn,
 empty:
 
 	xfree(tmp);
+	i=0;
 	xstrfmtcat(tmp, "%s", cluster_req_inx[i]);
 	for(i=1; i<CLUSTER_REQ_COUNT; i++) {
 		xstrfmtcat(tmp, ", %s", cluster_req_inx[i]);
@@ -3896,18 +3912,66 @@ empty:
 	}
 	xfree(query);
 
+	i=0;
+	xstrfmtcat(tmp, "%s", assoc_req_inx[i]);
+	for(i=1; i<ASSOC_REQ_COUNT; i++) {
+		xstrfmtcat(tmp, ", %s", assoc_req_inx[i]);
+	}
+
 	cluster_list = list_create(destroy_acct_cluster_rec);
 
 	while((row = mysql_fetch_row(result))) {
 		acct_cluster_rec_t *cluster =
 			xmalloc(sizeof(acct_cluster_rec_t));
+		MYSQL_RES *result2 = NULL;
+		MYSQL_ROW row2;
 		list_append(cluster_list, cluster);
 
 		cluster->name =  xstrdup(row[CLUSTER_REQ_NAME]);
 		cluster->control_host = xstrdup(row[CLUSTER_REQ_CH]);
 		cluster->control_port = atoi(row[CLUSTER_REQ_CP]);
+		query = xstrdup_printf("select %s from %s where cluster='%s' "
+				       "&& acct='root'", 
+				       tmp, assoc_table, cluster->name);
+		if(!(result2 = mysql_db_query_ret(mysql_conn->acct_mysql_db,
+						  query, 1))) {
+			xfree(query);
+			break;
+		}
+		xfree(query);
+		row2 = mysql_fetch_row(result2);
+
+		if(row2[ASSOC_REQ_FS])
+			cluster->default_fairshare = atoi(row2[ASSOC_REQ_FS]);
+		else
+			cluster->default_fairshare = 1;
+
+		if(row2[ASSOC_REQ_MJ])
+			cluster->default_max_jobs = atoi(row2[ASSOC_REQ_MJ]);
+		else
+			cluster->default_max_jobs = -1;
+		
+		if(row2[ASSOC_REQ_MNPJ])
+			cluster->default_max_nodes_per_job =
+				atoi(row2[ASSOC_REQ_MNPJ]);
+		else
+			cluster->default_max_nodes_per_job = -1;
+		
+		if(row2[ASSOC_REQ_MWPJ])
+			cluster->default_max_wall_duration_per_job = 
+				atoi(row2[ASSOC_REQ_MWPJ]);
+		else
+			cluster->default_max_wall_duration_per_job = -1;
+		
+		if(row2[ASSOC_REQ_MCPJ])
+			cluster->default_max_cpu_secs_per_job = 
+				atoi(row2[ASSOC_REQ_MCPJ]);
+		else 
+			cluster->default_max_cpu_secs_per_job = -1;
+		mysql_free_result(result2);
 	}
 	mysql_free_result(result);
+	xfree(tmp);
 
 	return cluster_list;
 #else

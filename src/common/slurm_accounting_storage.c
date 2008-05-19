@@ -1184,6 +1184,7 @@ extern void pack_acct_cluster_cond(void *in, Buf buffer)
 
 	if(!object) {
 		pack32(0, buffer);
+		pack16(0, buffer);
 		return;
 	}
  

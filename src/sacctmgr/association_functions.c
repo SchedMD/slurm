@@ -72,12 +72,13 @@ static int _set_cond(int *start, int argc, char *argv[],
 		} else if (strncasecmp (argv[i], "Format", 1) == 0) {
 			if(format_list)
 				addto_char_list(format_list, argv[i]+end);
-		}  else if (strncasecmp (argv[i], "Partitions", 4) == 0) {
+		} else if (strncasecmp (argv[i], "Partitions", 4) == 0) {
 			addto_char_list(association_cond->partition_list,
 					argv[i]+end);
 			set = 1;
 		} else if (strncasecmp (argv[i], "Parent", 4) == 0) {
-			association_cond->parent_acct = xstrdup(argv[i]+end);
+			association_cond->parent_acct =
+				strip_quotes(argv[i]+end, NULL);
 			set = 1;
 		} else {
 			printf(" Unknown condition: %s\n", argv[i]);
@@ -306,7 +307,7 @@ extern int sacctmgr_list_association(int argc, char *argv[])
 			field->len = 10;
 			field->print_routine = print_str;
 		} else {
-			printf("Unknown field '%s'", object);
+			printf("Unknown field '%s'\n", object);
 			xfree(field);
 			continue;
 		}

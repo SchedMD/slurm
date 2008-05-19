@@ -117,7 +117,8 @@ extern char *strip_quotes(char *option, int *increased)
 	meat = xmalloc((i-start)+1);
 	memcpy(meat, option+start, (i-start));
 
-	(*increased) += end;
+	if(increased)
+		(*increased) += end;
 
 	return meat;
 }
@@ -258,6 +259,9 @@ extern int commit_check(char *warning)
 	int fd = fileno(stdin);
 	fd_set rfds;
 	struct timeval tv;
+
+	if(!rollback_flag)
+		return 1;
 
 	printf("%s (You have 30 seconds to decide)\n", warning);
 	nonblock(1);
@@ -581,9 +585,8 @@ extern int get_uint(char *in_value, uint32_t *out_value, char *type)
 {
 	char *ptr = NULL, *meat = NULL;
 	long num;
-	int i=0;
-
-	if(!(meat = strip_quotes(in_value, &i)))
+	
+	if(!(meat = strip_quotes(in_value, NULL)))
 		return SLURM_ERROR;
 
 	num = strtol(meat, &ptr, 10);
