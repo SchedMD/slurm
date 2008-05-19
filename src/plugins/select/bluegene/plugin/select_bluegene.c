@@ -224,6 +224,8 @@ extern int fini ( void )
 		struct part_record *part_ptr = NULL;
 		ListIterator itr = list_iterator_create(part_list);
 		while((part_ptr = list_next(itr))) {
+			part_ptr->max_nodes = part_ptr->max_nodes_orig;
+			part_ptr->min_nodes = part_ptr->min_nodes_orig;
 			select_p_alter_node_cnt(SELECT_SET_BP_CNT, 
 						&part_ptr->max_nodes);
 			select_p_alter_node_cnt(SELECT_SET_BP_CNT,
@@ -1164,8 +1166,8 @@ extern int select_p_update_node_state (int index, uint16_t state)
 extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 {
 	job_desc_msg_t *job_desc = (job_desc_msg_t *)data;
-	uint32_t *nodes = (uint32_t *)data;
-	int tmp, i;
+	uint32_t *nodes = (uint32_t *)data, tmp;
+	int i;
 	uint16_t req_geometry[BA_SYSTEM_DIMENSIONS];
 	
 	if(!bluegene_bp_node_cnt) {
@@ -1179,7 +1181,9 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data)
 			(*nodes) = bluegene_bp_node_cnt;
 		break;
 	case SELECT_SET_BP_CNT:
-		if((*nodes) > bluegene_bp_node_cnt) {
+		if(((*nodes) == INFINITE) || ((*nodes) == NO_VAL))
+			tmp = (*nodes);
+		else if((*nodes) > bluegene_bp_node_cnt) {
 			tmp = (*nodes);
 			tmp /= bluegene_bp_node_cnt;
 			if(tmp < 1) 

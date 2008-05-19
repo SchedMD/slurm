@@ -628,14 +628,16 @@ static int _build_single_partitionline_info(slurm_conf_partition_t *part)
 	if(part_ptr->disable_root_jobs) 
 		debug2("partition %s does not allow root jobs", part_ptr->name);
 	
-	part_ptr->hidden    = part->hidden_flag ? 1 : 0;
-	part_ptr->max_time  = part->max_time;
-	part_ptr->max_share = part->max_share;
-	part_ptr->max_nodes = part->max_nodes;
-	part_ptr->min_nodes = part->min_nodes;
-	part_ptr->priority  = part->priority;
-	part_ptr->root_only = part->root_only_flag ? 1 : 0;
-	part_ptr->state_up  = part->state_up_flag ? 1 : 0;
+	part_ptr->hidden         = part->hidden_flag ? 1 : 0;
+	part_ptr->max_time       = part->max_time;
+	part_ptr->max_share      = part->max_share;
+	part_ptr->max_nodes      = part->max_nodes;
+	part_ptr->max_nodes_orig = part->max_nodes;
+	part_ptr->min_nodes      = part->min_nodes;
+	part_ptr->min_nodes_orig = part->min_nodes;
+	part_ptr->priority       = part->priority;
+	part_ptr->root_only      = part->root_only_flag ? 1 : 0;
+	part_ptr->state_up       = part->state_up_flag ? 1 : 0;
 	if (part->allow_groups) {
 		xfree(part_ptr->allow_groups);
 		part_ptr->allow_groups = xstrdup(part->allow_groups);
