@@ -90,6 +90,38 @@ extern int parse_option_end(char *option)
 	return end;
 }
 
+/* you need to xfree whatever is sent from here */
+extern char *strip_quotes(char *option, int *increased)
+{
+	int end = 0;
+	int i=0, start=0;
+	char *meat = NULL;
+
+	if(!option)
+		return NULL;
+
+	/* first strip off the ("|')'s */
+	if (option[i] == '\"' || option[i] == '\'')
+		i++;
+	start = i;
+
+	while(option[i]) {
+		if(option[i] == '\"' || option[i] == '\'') {
+			end++;
+			break;
+		}
+		i++;
+	}
+	end += i;
+
+	meat = xmalloc((i-start)+1);
+	memcpy(meat, option+start, (i-start));
+
+	(*increased) += end;
+
+	return meat;
+}
+
 extern void addto_char_list(List char_list, char *names)
 {
 	int i=0, start=0;
@@ -547,15 +579,21 @@ extern acct_cluster_rec_t *sacctmgr_find_cluster_from_list(
 
 extern int get_uint(char *in_value, uint32_t *out_value, char *type)
 {
-	char *ptr = NULL;
+	char *ptr = NULL, *meat = NULL;
 	long num;
+	int i=0;
 
-	num = strtol(in_value, &ptr, 10);
+	if(!(meat = strip_quotes(in_value, &i)))
+		return SLURM_ERROR;
+
+	num = strtol(meat, &ptr, 10);
 	if ((num == 0) && ptr && ptr[0]) {
-		error("Invalid value for %s", type);
+		error("Invalid value for %s (%s)", type, meat);
+		xfree(meat);
 		return SLURM_ERROR;
 	}
-
+	xfree(meat);
+	
 	if (num < 0)
 		*out_value = INFINITE;		/* flag to clear */
 	else

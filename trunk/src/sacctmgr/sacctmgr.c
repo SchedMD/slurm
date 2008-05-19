@@ -671,9 +671,11 @@ static void _destroy_sacctmgr_file_opts(void *object)
 
 static sacctmgr_file_opts_t *_parse_options(char *options)
 {
-	int start=0, i=0, end=0, mins;
-	char *sub = NULL;
+	int start=0, i=0, end=0, mins, quote = 0;
+ 	char *sub = NULL;
 	sacctmgr_file_opts_t *file_opts = xmalloc(sizeof(sacctmgr_file_opts_t));
+	char *option = NULL;
+
 	file_opts->fairshare = NO_VAL;
 	file_opts->max_cpu_secs_per_job = NO_VAL;
 	file_opts->max_jobs = NO_VAL;
@@ -681,13 +683,31 @@ static sacctmgr_file_opts_t *_parse_options(char *options)
 	file_opts->max_wall_duration_per_job = NO_VAL;
 
 	while(options[i]) {
+		quote = 0;
 		start=i;
-
-		while(options[i] != ':' && options[i] != '\n' && options[i])
+		
+		while(options[i] && options[i] != ':' && options[i] != '\n') {
+			if(options[i] == '"') {
+				if(quote)
+					quote = 0;
+				else
+					quote = 1;
+			}
 			i++;
-
+		}
+		if(quote) {
+			while(options[i] && options[i] != '"') 
+				i++;
+			if(!options[i])
+				fatal("There is a problem with option "
+				      "%s with quotes.", option);
+			i++;
+		}
 		sub = xstrndup(options+start, i-start);
 		end = parse_option_end(sub);
+		
+		option = strip_quotes(sub+end, &quote);
+		
 		if(!end) {
 			if(file_opts->name) {
 				printf(" Bad format on %s: "
@@ -696,75 +716,81 @@ static sacctmgr_file_opts_t *_parse_options(char *options)
 				_destroy_sacctmgr_file_opts(file_opts);
 				break;
 			}
-			file_opts->name = xstrdup(sub+end);
+			file_opts->name = xstrdup(option);
 		} else if (strncasecmp (sub, "AdminLevel", 2) == 0) {
-			file_opts->admin = str_2_acct_admin_level(sub+end);
+			file_opts->admin = str_2_acct_admin_level(option);
 		} else if (strncasecmp (sub, "DefaultAccount", 3) == 0) {
-			file_opts->def_acct = xstrdup(sub+end);
+			file_opts->def_acct = xstrdup(option);
 		} else if (strncasecmp (sub, "Description", 3) == 0) {
-			file_opts->desc = xstrdup(sub+end);
+			file_opts->desc = xstrdup(option);
 		} else if (strncasecmp (sub, "FairShare", 1) == 0) {
-			if (get_uint(sub+end, &file_opts->fairshare, 
+			if (get_uint(option, &file_opts->fairshare, 
 			    "FairShare") != SLURM_SUCCESS) {
-				printf(" Bad FairShare value: %s\n", sub+end);
+				printf(" Bad FairShare value: %s\n", option);
 				_destroy_sacctmgr_file_opts(file_opts);
 				break;
 			}
 		} else if (strncasecmp (sub, "MaxCPUSec", 4) == 0) {
-			if (get_uint(sub+end, &file_opts->max_cpu_secs_per_job,
+			if (get_uint(option, &file_opts->max_cpu_secs_per_job,
 			    "MaxCPUSec") != SLURM_SUCCESS) {
-				printf(" Bad MaxCPUSec value: %s\n", sub+end);
+				printf(" Bad MaxCPUSec value: %s\n", option);
 				_destroy_sacctmgr_file_opts(file_opts);
 				break;
 			}
 		} else if (strncasecmp (sub, "MaxJobs", 4) == 0) {
-			if (get_uint(sub+end, &file_opts->max_jobs,
+			if (get_uint(option, &file_opts->max_jobs,
 			    "MaxJobs") != SLURM_SUCCESS) {
-				printf(" Bad MaxJobs value: %s\n", sub+end);
+				printf(" Bad MaxJobs value: %s\n", option);
 				_destroy_sacctmgr_file_opts(file_opts);
 				break;
 			}
 		} else if (strncasecmp (sub, "MaxNodes", 4) == 0) {
-			if (get_uint(sub+end, &file_opts->max_nodes_per_job,
+			if (get_uint(option, &file_opts->max_nodes_per_job,
 			    "MaxNodes") != SLURM_SUCCESS) {
-				printf(" Bad MaxNodes value: %s\n", sub+end);
+				printf(" Bad MaxNodes value: %s\n", option);
 				_destroy_sacctmgr_file_opts(file_opts);
 				break;
 			}
 		} else if (strncasecmp (sub, "MaxWall", 4) == 0) {
-			mins = time_str2mins(sub+end);
+			mins = time_str2mins(option);
 			if (mins >= 0) {
 				file_opts->max_wall_duration_per_job 
 					= (uint32_t) mins;
-			} else if (strcmp(sub+end, "-1") == 0) {
+			} else if (strcmp(option, "-1") == 0) {
 				file_opts->max_wall_duration_per_job = -1;
 			} else {
 				printf(" Bad MaxWall time format: %s\n", 
-					sub+end);
+					option);
 				_destroy_sacctmgr_file_opts(file_opts);
 				break;
 			}
 		} else if (strncasecmp (sub, "Organization", 1) == 0) {
-			file_opts->org = xstrdup(sub+end);
+			file_opts->org = xstrdup(option);
 		} else if (strncasecmp (sub, "QosLevel", 1) == 0) {
-			file_opts->qos = str_2_acct_qos(sub+end);
+			file_opts->qos = str_2_acct_qos(option);
 		} else {
 			printf(" Unknown option: %s\n", sub);
 		}
 
 		xfree(sub);
+		xfree(option);
 
 		if(options[i] == ':')
 			i++;
 		else
 			break;
 	}
+	
+	xfree(sub);
+	xfree(option);
+
 	if(!file_opts->name) {
 		printf(" error: No name given\n");
 		_destroy_sacctmgr_file_opts(file_opts);
 	}
 	return file_opts;
 }
+
 static void _load_file (int argc, char *argv[])
 {
 	DEF_TIMERS;
