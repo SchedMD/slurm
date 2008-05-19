@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  pmi.c - Global PMI data as maintained within srun
+ *  pmi_server.c - Global PMI data as maintained within srun
  *  $Id$
  *****************************************************************************
  *  Copyright (C) 2005-2006 The Regents of the University of California.
