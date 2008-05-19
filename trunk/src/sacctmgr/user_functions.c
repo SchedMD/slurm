@@ -40,7 +40,8 @@
 #include "print.h"
 
 static int _set_cond(int *start, int argc, char *argv[],
-		     acct_user_cond_t *user_cond)
+		     acct_user_cond_t *user_cond,
+		     List format_list)
 {
 	int i;
 	int u_set = 0;
@@ -75,7 +76,11 @@ static int _set_cond(int *start, int argc, char *argv[],
 			addto_char_list(user_cond->def_acct_list,
 					argv[i]+end);
 			u_set = 1;
-		} else if (strncasecmp (argv[i], "Names", 1) == 0) {
+		} else if (strncasecmp (argv[i], "Format", 1) == 0) {
+			if(format_list)
+				addto_char_list(format_list, argv[i]+end);
+		} else if (strncasecmp (argv[i], "Names", 1) == 0
+			   || strncasecmp (argv[i], "Users", 1) == 0) {
 			addto_char_list(user_cond->user_list, argv[i]+end);
 			addto_char_list(user_cond->assoc_cond->user_list,
 					argv[i]+end);
@@ -663,21 +668,33 @@ extern int sacctmgr_list_user(int argc, char *argv[])
 	List user_list;
 	int i=0;
 	ListIterator itr = NULL;
+	ListIterator itr2 = NULL;
 	acct_user_rec_t *user = NULL;
-	print_field_t name_field;
-	print_field_t dacct_field;
-	print_field_t qos_field;
-	print_field_t admin_field;
+	acct_association_rec_t *assoc = NULL;
+	char *object;
 
-	print_field_t cluster_field;
-	print_field_t acct_field;
-	print_field_t part_field;
-	print_field_t maxjobs_field;
-	print_field_t maxnodes_field;
-	print_field_t maxwall_field;
+	print_field_t *field = NULL;
 
+	List format_list = list_create(slurm_destroy_char);
 	List print_fields_list; /* types are of print_field_t */
-	int over= 0;
+
+	enum {
+		PRINT_ACCOUNT,
+		PRINT_ADMIN,
+		PRINT_CLUSTER,
+		PRINT_DACCT,
+		PRINT_FAIRSHARE,
+		PRINT_ID,
+		PRINT_MAXC,
+		PRINT_MAXJ,
+		PRINT_MAXN,
+		PRINT_MAXW,
+		PRINT_QOS,
+		PRINT_PID,
+		PRINT_PNAME,
+		PRINT_PART,
+		PRINT_USER
+	};
 
 	user_cond->user_list = list_create(slurm_destroy_char);
 	user_cond->def_acct_list = list_create(slurm_destroy_char);
@@ -689,115 +706,297 @@ extern int sacctmgr_list_user(int argc, char *argv[])
 	user_cond->assoc_cond->cluster_list = list_create(slurm_destroy_char);
 	user_cond->assoc_cond->partition_list = list_create(slurm_destroy_char);
 	
-	_set_cond(&i, argc, argv, user_cond);
+	_set_cond(&i, argc, argv, user_cond, format_list);
+
+	if(!list_count(format_list)) {
+		addto_char_list(format_list, "U,D,Q,Ad");
+		if(user_cond->with_assocs)
+			addto_char_list(format_list,
+					"C,Ac,Part,F,MaxC,MaxJ,MaxN,MaxW");
+			
+	}
 
 	user_list = acct_storage_g_get_users(db_conn, user_cond);
 	destroy_acct_user_cond(user_cond);
 
-	if(!user_list) 
+	if(!user_list) {
+		list_destroy(format_list);
 		return SLURM_ERROR;
-
-	print_fields_list = list_create(NULL);
-
-	name_field.name = "Name";
-	name_field.len = 9;
-	name_field.print_routine = print_str;
-	list_append(print_fields_list, &name_field);
-
-	dacct_field.name = "Def Acct";
-	dacct_field.len = 10;
-	dacct_field.print_routine = print_str;
-	list_append(print_fields_list, &dacct_field);
-
-	qos_field.name = "QOS";
-	qos_field.len = 9;
-	qos_field.print_routine = print_str;
-	list_append(print_fields_list, &qos_field);
-
-	admin_field.name = "Admin";
-	admin_field.len = 9;
-	admin_field.print_routine = print_str;
-	list_append(print_fields_list, &admin_field);
-
-	if(user_cond->with_assocs) {
-		cluster_field.name = "Cluster";
-		cluster_field.len = 10;
-		cluster_field.print_routine = print_str;
-		list_append(print_fields_list, &cluster_field);
-
-		acct_field.name = "Account";
-		acct_field.len = 10;
-		acct_field.print_routine = print_str;
-		list_append(print_fields_list, &acct_field);
-
-		part_field.name = "Partition";
-		part_field.len = 10;
-		part_field.print_routine = print_str;
-		list_append(print_fields_list, &part_field);
-
-		maxjobs_field.name = "MaxJobs";
-		maxjobs_field.len = 7;
-		maxjobs_field.print_routine = print_uint;
-		list_append(print_fields_list, &maxjobs_field);
-
-		maxnodes_field.name = "MaxNodes";
-		maxnodes_field.len = 8;
-		maxnodes_field.print_routine = print_uint;
-		list_append(print_fields_list, &maxnodes_field);
-
-		maxwall_field.name = "MaxWall";
-		maxwall_field.len = 7;
-		maxwall_field.print_routine = print_time;
-		list_append(print_fields_list, &maxwall_field);
 	}
 
+	print_fields_list = list_create(destroy_print_field);
+
+	itr = list_iterator_create(format_list);
+	while((object = list_next(itr))) {
+		field = xmalloc(sizeof(print_field_t));
+		if(!strncasecmp("Account", object, 2)) {
+			field->type = PRINT_ACCOUNT;
+			field->name = xstrdup("Account");
+			field->len = 10;
+			field->print_routine = print_str;
+		} else if(!strncasecmp("AdminLevel", object, 2)) {
+			field->type = PRINT_ADMIN;
+			field->name = xstrdup("Admin");
+			field->len = 9;
+			field->print_routine = print_str;
+		} else if(!strncasecmp("Cluster", object, 1)) {
+			field->type = PRINT_CLUSTER;
+			field->name = xstrdup("Cluster");
+			field->len = 10;
+			field->print_routine = print_str;
+		} else if(!strncasecmp("Default", object, 1)) {
+			field->type = PRINT_DACCT;
+			field->name = xstrdup("Def Acct");
+			field->len = 10;
+			field->print_routine = print_str;
+		} else if(!strncasecmp("FairShare", object, 1)) {
+			field->type = PRINT_FAIRSHARE;
+			field->name = xstrdup("FairShare");
+			field->len = 9;
+			field->print_routine = print_uint;
+		} else if(!strncasecmp("ID", object, 1)) {
+			field->type = PRINT_ID;
+			field->name = xstrdup("ID");
+			field->len = 6;
+			field->print_routine = print_uint;
+		} else if(!strncasecmp("MaxCPUSecs", object, 4)) {
+			field->type = PRINT_MAXC;
+			field->name = xstrdup("MaxCPUSecs");
+			field->len = 11;
+			field->print_routine = print_uint;
+		} else if(!strncasecmp("MaxJobs", object, 4)) {
+			field->type = PRINT_MAXJ;
+			field->name = xstrdup("MaxJobs");
+			field->len = 7;
+			field->print_routine = print_uint;
+		} else if(!strncasecmp("MaxNodes", object, 4)) {
+			field->type = PRINT_MAXN;
+			field->name = xstrdup("MaxNodes");
+			field->len = 8;
+			field->print_routine = print_uint;
+		} else if(!strncasecmp("MaxWall", object, 4)) {
+			field->type = PRINT_MAXW;
+			field->name = xstrdup("MaxWall");
+			field->len = 11;
+			field->print_routine = print_time;
+		} else if(!strncasecmp("QOS", object, 1)) {
+			field->type = PRINT_QOS;
+			field->name = xstrdup("QOS");
+			field->len = 9;
+			field->print_routine = print_str;
+		} else if(!strncasecmp("ParentID", object, 7)) {
+			field->type = PRINT_PID;
+			field->name = xstrdup("Par ID");
+			field->len = 6;
+			field->print_routine = print_uint;
+		} else if(!strncasecmp("Partition", object, 4)) {
+			field->type = PRINT_PART;
+			field->name = xstrdup("Partition");
+			field->len = 10;
+			field->print_routine = print_str;
+		} else if(!strncasecmp("User", object, 1)) {
+			field->type = PRINT_USER;
+			field->name = xstrdup("User");
+			field->len = 10;
+			field->print_routine = print_str;
+		} else {
+			printf("Unknown field '%s'\n", object);
+			xfree(field);
+			continue;
+		}
+		list_append(print_fields_list, field);		
+	}
+	list_iterator_destroy(itr);
+
 	itr = list_iterator_create(user_list);
+	itr2 = list_iterator_create(print_fields_list);
 	print_header(print_fields_list);
 
 	while((user = list_next(itr))) {
-		over = 0;
-		print_str(VALUE, &name_field, user->name);
-		over += name_field.len + 1;
-		print_str(VALUE, &dacct_field, user->default_acct);
-		over += dacct_field.len + 1;
-		print_str(VALUE, &qos_field, acct_qos_str(user->qos));
-		over += qos_field.len + 1;
-		print_str(VALUE, &admin_field,
-			  acct_admin_level_str(user->admin_level));
-		over += admin_field.len + 1;
-
-		if(user->assoc_list) {
-			acct_association_rec_t *assoc = NULL;
-			ListIterator itr2 =
+		if(user->assoc_list && list_count(user->assoc_list)) {
+			ListIterator itr3 =
 				list_iterator_create(user->assoc_list);
-			int first = 1;
-
-			while((assoc = list_next(itr2))) {
-				if(!first)
-					printf("\n%-*.*s", over, over, " ");
-				
-				print_str(VALUE, &cluster_field,
-					  assoc->cluster);
-				print_str(VALUE, &acct_field, assoc->acct);
-				print_str(VALUE, &part_field, assoc->partition);
-				print_uint(VALUE, &maxjobs_field, 
-					   assoc->max_jobs);
-				print_uint(VALUE, &maxnodes_field, 
-					   assoc->max_nodes_per_job);
-				print_time(VALUE, &maxwall_field, 
-					   assoc->max_wall_duration_per_job);
-				first = 0;
+			
+			while((assoc = list_next(itr3))) {
+				while((field = list_next(itr2))) {
+					switch(field->type) {
+					case PRINT_ACCOUNT:
+						field->print_routine(
+							VALUE, field, 
+							assoc->acct);
+						break;
+					case PRINT_ADMIN:
+						field->print_routine(
+							VALUE, field,
+							acct_admin_level_str(
+								user->
+								admin_level));
+						break;
+					case PRINT_CLUSTER:
+						field->print_routine(
+							VALUE, field,
+							assoc->cluster);
+						break;
+					case PRINT_DACCT:
+						field->print_routine(
+							VALUE, field,
+							user->default_acct);
+						break;
+					case PRINT_FAIRSHARE:
+						field->print_routine(
+							VALUE, field,
+							assoc->fairshare);
+						break;
+					case PRINT_ID:
+						field->print_routine(
+							VALUE, field,
+							assoc->id);
+						break;
+					case PRINT_MAXC:
+						field->print_routine(
+							VALUE, field,
+							assoc->
+							max_cpu_secs_per_job);
+						break;
+					case PRINT_MAXJ:
+						field->print_routine(
+							VALUE, field, 
+							assoc->max_jobs);
+						break;
+					case PRINT_MAXN:
+						field->print_routine(
+							VALUE, field,
+							assoc->
+							max_nodes_per_job);
+						break;
+					case PRINT_MAXW:
+						field->print_routine(
+							VALUE, field,
+							assoc->
+							max_wall_duration_per_job);
+						break;
+					case PRINT_QOS:
+						field->print_routine(
+							VALUE, field,
+							acct_qos_str(
+								user->qos));
+						break;
+					case PRINT_PID:
+						field->print_routine(
+							VALUE, field,
+							assoc->parent_id);
+						break;
+					case PRINT_PNAME:
+						field->print_routine(
+							VALUE, field,
+							assoc->parent_acct);
+						break;
+					case PRINT_PART:
+						field->print_routine(
+							VALUE, field,
+							assoc->partition);
+						break;
+					case PRINT_USER:
+						field->print_routine(
+							VALUE, field,
+							user->name);
+						break;
+					default:
+						break;
+					}
+				}
+				list_iterator_reset(itr2);
+				printf("\n");
 			}
-			list_iterator_destroy(itr2);
+			list_iterator_destroy(itr3);				
+		} else {
+			while((field = list_next(itr2))) {
+				switch(field->type) {
+				case PRINT_ACCOUNT:
+					field->print_routine(
+						VALUE, field, 
+						NULL);
+					break;
+				case PRINT_ADMIN:
+					field->print_routine(
+						VALUE, field,
+						acct_admin_level_str(
+							user->admin_level));
+					break;
+				case PRINT_CLUSTER:
+					field->print_routine(
+						VALUE, field,
+						NULL);
+					break;
+				case PRINT_DACCT:
+					field->print_routine(
+						VALUE, field,
+						user->default_acct);
+					break;
+				case PRINT_FAIRSHARE:
+					field->print_routine(
+						VALUE, field,
+						NULL);
+					break;
+				case PRINT_ID:
+					field->print_routine(
+						VALUE, field,
+						NULL);
+					break;
+				case PRINT_MAXC:
+					field->print_routine(
+						VALUE, field,
+						NULL);
+					break;
+				case PRINT_MAXJ:
+					field->print_routine(
+						VALUE, field, 
+						NULL);
+					break;
+				case PRINT_MAXN:
+					field->print_routine(
+						VALUE, field,
+						NULL);
+					break;
+				case PRINT_MAXW:
+					field->print_routine(
+						VALUE, field,
+						NULL);
+					break;
+				case PRINT_QOS:
+					field->print_routine(
+						VALUE, field,
+						acct_qos_str(user->qos));
+					break;
+				case PRINT_PID:
+					field->print_routine(
+						VALUE, field,
+						NULL);
+					break;
+				case PRINT_PART:
+					field->print_routine(
+						VALUE, field, NULL);
+					break;
+				case PRINT_USER:
+					field->print_routine(
+						VALUE, field, user->name);
+					break;
+				default:
+					break;
+				}
+			}
+			list_iterator_reset(itr2);
+			printf("\n");
 		}
-		printf("\n");
 	}
 
 	printf("\n");
 
+	list_iterator_destroy(itr2);
 	list_iterator_destroy(itr);
 	list_destroy(user_list);
 	list_destroy(print_fields_list);
+
 	return rc;
 }
 
@@ -834,13 +1033,13 @@ extern int sacctmgr_modify_user(int argc, char *argv[])
 	for (i=0; i<argc; i++) {
 		if (strncasecmp (argv[i], "Where", 5) == 0) {
 			i++;
-			cond_set = _set_cond(&i, argc, argv, user_cond);
+			cond_set = _set_cond(&i, argc, argv, user_cond, NULL);
 			      
 		} else if (strncasecmp (argv[i], "Set", 3) == 0) {
 			i++;
 			rec_set = _set_rec(&i, argc, argv, user, assoc);
 		} else {
-			cond_set = _set_cond(&i, argc, argv, user_cond);
+			cond_set = _set_cond(&i, argc, argv, user_cond, NULL);
 		}
 	}
 
@@ -949,7 +1148,7 @@ extern int sacctmgr_delete_user(int argc, char *argv[])
 	user_cond->assoc_cond->cluster_list = list_create(slurm_destroy_char);
 	user_cond->assoc_cond->partition_list = list_create(slurm_destroy_char);
 
-	if(!(set = _set_cond(&i, argc, argv, user_cond))) {
+	if(!(set = _set_cond(&i, argc, argv, user_cond, NULL))) {
 		printf(" No conditions given to remove, not executing.\n");
 		destroy_acct_user_cond(user_cond);
 		return SLURM_ERROR;
