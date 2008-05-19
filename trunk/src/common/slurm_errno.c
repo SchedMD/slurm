@@ -122,7 +122,7 @@ static slurm_errtab_t slurm_errtab[] = {
 	{ ESLURM_TOO_MANY_REQUESTED_CPUS,
 	  "More processors requested than permitted"		},
 	{ ESLURM_TOO_MANY_REQUESTED_NODES,
-	  "More nodes requested than permitted"			},
+	  "Node count specification invalid"			},
 	{ ESLURM_ERROR_ON_DESC_TO_RECORD_COPY,
 	  "Unable to create job record, try again"		},
 	{ ESLURM_JOB_MISSING_SIZE_SPECIFICATION,

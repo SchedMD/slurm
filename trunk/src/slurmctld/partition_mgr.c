@@ -217,17 +217,19 @@ struct part_record *create_part_record(void)
 	    (struct part_record *) xmalloc(sizeof(struct part_record));
 
 	xassert (part_ptr->magic = PART_MAGIC);  /* set value */
-	part_ptr->name         = xstrdup("DEFAULT");
+	part_ptr->name              = xstrdup("DEFAULT");
 	part_ptr->disable_root_jobs = default_part.disable_root_jobs;
-	part_ptr->hidden       = default_part.hidden;
-	part_ptr->max_time     = default_part.max_time;
-	part_ptr->max_nodes    = default_part.max_nodes;
-	part_ptr->min_nodes    = default_part.min_nodes;
-	part_ptr->root_only    = default_part.root_only;
-	part_ptr->state_up     = default_part.state_up;
-	part_ptr->max_share    = default_part.max_share;
-	part_ptr->priority     = default_part.priority;
-	part_ptr->node_bitmap  = NULL;
+	part_ptr->hidden            = default_part.hidden;
+	part_ptr->max_time          = default_part.max_time;
+	part_ptr->max_nodes         = default_part.max_nodes;
+	part_ptr->max_nodes_orig    = default_part.max_nodes;
+	part_ptr->min_nodes         = default_part.min_nodes;
+	part_ptr->min_nodes_orig    = default_part.min_nodes;
+	part_ptr->root_only         = default_part.root_only;
+	part_ptr->state_up          = default_part.state_up;
+	part_ptr->max_share         = default_part.max_share;
+	part_ptr->priority          = default_part.priority;
+	part_ptr->node_bitmap       = NULL;
 
 	if (default_part.allow_groups)
 		part_ptr->allow_groups = xstrdup(default_part.allow_groups);
@@ -367,20 +369,20 @@ static void _dump_part_state(struct part_record *part_ptr, Buf buffer)
 	else
 		default_part_flag = 0;
 
-	packstr(part_ptr->name,     buffer);
-	pack32(part_ptr->max_time,  buffer);
-	pack32(part_ptr->max_nodes, buffer);
-	pack32(part_ptr->min_nodes, buffer);
+	packstr(part_ptr->name,          buffer);
+	pack32(part_ptr->max_time,       buffer);
+	pack32(part_ptr->max_nodes_orig, buffer);
+	pack32(part_ptr->min_nodes_orig, buffer);
 
-	pack16(default_part_flag,   buffer);
-	pack16(part_ptr->hidden,    buffer);
-	pack16(part_ptr->root_only, buffer);
-	pack16(part_ptr->max_share, buffer);
-	pack16(part_ptr->priority,  buffer);
+	pack16(default_part_flag,        buffer);
+	pack16(part_ptr->hidden,         buffer);
+	pack16(part_ptr->root_only,      buffer);
+	pack16(part_ptr->max_share,      buffer);
+	pack16(part_ptr->priority,       buffer);
 
-	pack16(part_ptr->state_up,  buffer);
-	packstr(part_ptr->allow_groups, buffer);
-	packstr(part_ptr->nodes,    buffer);
+	pack16(part_ptr->state_up,       buffer);
+	packstr(part_ptr->allow_groups,  buffer);
+	packstr(part_ptr->nodes,         buffer);
 }
 
 /*
@@ -489,21 +491,23 @@ int load_all_part_state(void)
 
 		if (part_ptr) {
 			part_cnt++;
-			part_ptr->hidden = hidden;
-			part_ptr->max_time  = max_time;
-			part_ptr->max_nodes = max_nodes;
-			part_ptr->min_nodes = min_nodes;
+			part_ptr->hidden         = hidden;
+			part_ptr->max_time       = max_time;
+			part_ptr->max_nodes      = max_nodes;
+			part_ptr->max_nodes_orig = max_nodes;
+			part_ptr->min_nodes      = min_nodes;
+			part_ptr->min_nodes_orig = min_nodes;
 			if (def_part_flag) {
 				xfree(default_part_name);
 				default_part_name = xstrdup(part_name);
 				default_part_loc = part_ptr;
 			}
-			part_ptr->root_only = root_only;
-			part_ptr->max_share = max_share;
-			part_ptr->priority  = priority;
-			part_ptr->state_up  = state_up;
+			part_ptr->root_only      = root_only;
+			part_ptr->max_share      = max_share;
+			part_ptr->priority       = priority;
+			part_ptr->state_up       = state_up;
 			xfree(part_ptr->allow_groups);
-			part_ptr->allow_groups = allow_groups;
+			part_ptr->allow_groups   = allow_groups;
 			xfree(part_ptr->nodes);
 			part_ptr->nodes = nodes;
 		} else {
@@ -550,18 +554,20 @@ int init_part_conf(void)
 	last_part_update = time(NULL);
 
 	xfree(default_part.name);	/* needed for reconfig */
-	default_part.name        = xstrdup("DEFAULT");
+	default_part.name           = xstrdup("DEFAULT");
 	default_part.disable_root_jobs = slurmctld_conf.disable_root_jobs;
-	default_part.hidden      = 0;
-	default_part.max_time    = INFINITE;
-	default_part.max_nodes   = INFINITE;
-	default_part.min_nodes   = 1;
-	default_part.root_only   = 0;
-	default_part.state_up    = 1;
-	default_part.max_share   = 1;
-	default_part.priority    = 1;
-	default_part.total_nodes = 0;
-	default_part.total_cpus  = 0;
+	default_part.hidden         = 0;
+	default_part.max_time       = INFINITE;
+	default_part.max_nodes      = INFINITE;
+	default_part.max_nodes_orig = INFINITE;
+	default_part.min_nodes      = 1;
+	default_part.min_nodes_orig = 1;
+	default_part.root_only      = 0;
+	default_part.state_up       = 1;
+	default_part.max_share      = 1;
+	default_part.priority       = 1;
+	default_part.total_nodes    = 0;
+	default_part.total_cpus     = 0;
 	xfree(default_part.nodes);
 	xfree(default_part.allow_groups);
 	xfree(default_part.allow_uids);
@@ -745,14 +751,8 @@ void pack_part(struct part_record *part_ptr, Buf buffer)
 
 	packstr(part_ptr->name, buffer);
 	pack32(part_ptr->max_time, buffer);
-	altered = part_ptr->max_nodes;
-	select_g_alter_node_cnt(SELECT_APPLY_NODE_MAX_OFFSET, 
-				&altered);
-	pack32(altered, buffer);
-	altered = part_ptr->min_nodes;
-	select_g_alter_node_cnt(SELECT_APPLY_NODE_MIN_OFFSET,
- 				&altered); 
-	pack32(altered, buffer);
+	pack32(part_ptr->max_nodes_orig, buffer);
+	pack32(part_ptr->min_nodes_orig, buffer);
 	altered = part_ptr->total_nodes;
 	select_g_alter_node_cnt(SELECT_APPLY_NODE_MAX_OFFSET, 
 				&altered);
@@ -826,7 +826,8 @@ int update_part(update_part_msg_t * part_desc)
 	if (part_desc->max_nodes != NO_VAL) {
 		info("update_part: setting max_nodes to %u for partition %s", 
 		     part_desc->max_nodes, part_desc->name);
-		part_ptr->max_nodes = part_desc->max_nodes;
+		part_ptr->max_nodes      = part_desc->max_nodes;
+		part_ptr->max_nodes_orig = part_desc->max_nodes;
 		select_g_alter_node_cnt(SELECT_SET_BP_CNT,
 					&part_ptr->max_nodes);
 	}
@@ -834,7 +835,8 @@ int update_part(update_part_msg_t * part_desc)
 	if (part_desc->min_nodes != NO_VAL) {
 		info("update_part: setting min_nodes to %u for partition %s", 
 		     part_desc->min_nodes, part_desc->name);
-		part_ptr->min_nodes = part_desc->min_nodes;
+		part_ptr->min_nodes      = part_desc->min_nodes;
+		part_ptr->min_nodes_orig = part_desc->min_nodes;
 		select_g_alter_node_cnt(SELECT_SET_BP_CNT,
 					&part_ptr->min_nodes);
 	}

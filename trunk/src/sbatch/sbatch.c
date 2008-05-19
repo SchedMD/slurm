@@ -163,7 +163,8 @@ static int fill_job_desc_from_opts(job_desc_msg_t *desc)
 	desc->req_nodes = opt.nodelist;
 	desc->exc_nodes = opt.exc_nodes;
 	desc->partition = opt.partition;
-	desc->min_nodes = opt.min_nodes;
+	if (opt.min_nodes)
+		desc->min_nodes = opt.min_nodes;
 	if (opt.licenses)
 		desc->licenses = xstrdup(opt.licenses);
 	if (opt.max_nodes)
@@ -227,7 +228,7 @@ static int fill_job_desc_from_opts(job_desc_msg_t *desc)
 	if (opt.tmpdisk > -1)
 		desc->job_min_tmp_disk = opt.tmpdisk;
 	if (opt.overcommit) {
-		desc->num_procs = opt.min_nodes;
+		desc->num_procs = MAX(opt.min_nodes, 1);
 		desc->overcommit = opt.overcommit;
 	} else
 		desc->num_procs = opt.nprocs * opt.cpus_per_task;

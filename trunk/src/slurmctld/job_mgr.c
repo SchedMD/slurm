@@ -1808,7 +1808,7 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 	bitstr_t *req_bitmap = NULL, *exc_bitmap = NULL;
 	bool super_user = false;
 	struct job_record *job_ptr;
-	uint32_t total_nodes, max_procs;
+	uint32_t total_nodes, max_procs, max_nodes_orig;
 	acct_association_rec_t assoc_rec, *assoc_ptr;
 	List license_list = NULL;
 	bool valid;
@@ -1820,14 +1820,15 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 	uint16_t conn_type;
 #endif
 
-	debug2("before alteration asking for nodes %u-%u procs %u", 
+	max_nodes_orig = job_desc->max_nodes;
+	info("before alteration asking for nodes %u-%u procs %u", 
 	       job_desc->min_nodes, job_desc->max_nodes,
 	       job_desc->num_procs);
 	select_g_alter_node_cnt(SELECT_SET_NODE_CNT, job_desc);
 	select_g_get_jobinfo(job_desc->select_jobinfo,
 			     SELECT_DATA_MAX_PROCS, &max_procs);
 	
-	debug2("after alteration asking for nodes %u-%u procs %u-%u", 
+	info("after alteration asking for nodes %u-%u procs %u-%u", 
 	       job_desc->min_nodes, job_desc->max_nodes,
 	       job_desc->num_procs, max_procs);
 	
@@ -1852,6 +1853,17 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 			return error_code;
 		}
 		part_ptr = default_part_loc;
+	}
+	if (job_desc->min_nodes == NO_VAL)
+		job_desc->min_nodes = part_ptr->min_nodes_orig;
+	if (job_desc->max_nodes == NO_VAL)
+		job_desc->max_nodes = part_ptr->max_nodes_orig;
+	else if (max_nodes_orig < part_ptr->min_nodes_orig) {
+		info("_job_create: job's max nodes less than partition's "
+		     "min nodes (%u < %u)", 
+		     max_nodes_orig, part_ptr->min_nodes_orig);
+		error_code = ESLURM_TOO_MANY_REQUESTED_NODES;
+		return error_code;
 	}
  
 	if ((job_desc->user_id == 0) && part_ptr->disable_root_jobs) {

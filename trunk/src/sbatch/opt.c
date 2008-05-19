@@ -226,7 +226,7 @@ static void _opt_default()
 	opt.nprocs_set = false;
 	opt.cpus_per_task = 1; 
 	opt.cpus_set = false;
-	opt.min_nodes = 1;
+	opt.min_nodes = 0;
 	opt.max_nodes = 0;
 	opt.nodes_set = false;
 	opt.min_sockets_per_node = NO_VAL; /* requested min/maxsockets */
@@ -1742,7 +1742,7 @@ static bool _opt_verify(void)
 		verified = false;
 	}
 
-	if ((opt.min_nodes <= 0) || (opt.max_nodes < 0) || 
+	if ((opt.min_nodes < 0) || (opt.max_nodes < 0) || 
 	    (opt.max_nodes && (opt.min_nodes > opt.max_nodes))) {
 		error("%s: invalid number of nodes (-N %d-%d)\n",
 		      opt.progname, opt.min_nodes, opt.max_nodes);
@@ -1771,7 +1771,8 @@ static bool _opt_verify(void)
 	 * environment are more extensive and are documented in the
 	 * SLURM reference guide.  */
 	if (opt.distribution == SLURM_DIST_PLANE && opt.plane_size) {
-		if ((opt.nprocs/opt.plane_size) < opt.min_nodes) {
+		if ((opt.min_nodes <= 0) ||	
+		    ((opt.nprocs/opt.plane_size) < opt.min_nodes)) {
 			if (((opt.min_nodes-1)*opt.plane_size) >= opt.nprocs) {
 #if(0)
 				info("Too few processes ((n/plane_size) %d < N %d) "
@@ -1815,7 +1816,7 @@ static bool _opt_verify(void)
 	/* massage the numbers */
 	if ((opt.nodes_set || opt.extra_set) && !opt.nprocs_set) {
 		/* 1 proc / node default */
-		opt.nprocs = opt.min_nodes;
+		opt.nprocs = MAX(opt.min_nodes, 1);
 
 		/* 1 proc / min_[socket * core * thread] default */
 		if (opt.min_sockets_per_node > 0) {
