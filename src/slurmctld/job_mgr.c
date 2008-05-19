@@ -1820,22 +1820,6 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 	uint16_t conn_type;
 #endif
 
-	max_nodes_orig = job_desc->max_nodes;
-	info("before alteration asking for nodes %u-%u procs %u", 
-	       job_desc->min_nodes, job_desc->max_nodes,
-	       job_desc->num_procs);
-	select_g_alter_node_cnt(SELECT_SET_NODE_CNT, job_desc);
-	select_g_get_jobinfo(job_desc->select_jobinfo,
-			     SELECT_DATA_MAX_PROCS, &max_procs);
-	
-	info("after alteration asking for nodes %u-%u procs %u-%u", 
-	       job_desc->min_nodes, job_desc->max_nodes,
-	       job_desc->num_procs, max_procs);
-	
-	*job_pptr = (struct job_record *) NULL;
-	if ((error_code = _validate_job_desc(job_desc, allocate, submit_uid)))
-		return error_code;
-
 	/* find selected partition */
 	if (job_desc->partition) {
 		part_ptr = list_find_first(part_list, &list_find_part,
@@ -1856,15 +1840,35 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 	}
 	if (job_desc->min_nodes == NO_VAL)
 		job_desc->min_nodes = part_ptr->min_nodes_orig;
-	if (job_desc->max_nodes == NO_VAL)
+	if (job_desc->max_nodes == NO_VAL) {
+#ifdef HAVE_BG
+		job_desc->max_nodes = part_ptr->min_nodes_orig;
+#else
 		job_desc->max_nodes = part_ptr->max_nodes_orig;
-	else if (max_nodes_orig < part_ptr->min_nodes_orig) {
+#endif
+	} else if (max_nodes_orig < part_ptr->min_nodes_orig) {
 		info("_job_create: job's max nodes less than partition's "
 		     "min nodes (%u < %u)", 
 		     max_nodes_orig, part_ptr->min_nodes_orig);
 		error_code = ESLURM_TOO_MANY_REQUESTED_NODES;
 		return error_code;
 	}
+
+	max_nodes_orig = job_desc->max_nodes;
+	info("before alteration asking for nodes %u-%u procs %u", 
+	       job_desc->min_nodes, job_desc->max_nodes,
+	       job_desc->num_procs);
+	select_g_alter_node_cnt(SELECT_SET_NODE_CNT, job_desc);
+	select_g_get_jobinfo(job_desc->select_jobinfo,
+			     SELECT_DATA_MAX_PROCS, &max_procs);
+	
+	info("after alteration asking for nodes %u-%u procs %u-%u", 
+	       job_desc->min_nodes, job_desc->max_nodes,
+	       job_desc->num_procs, max_procs);
+	
+	*job_pptr = (struct job_record *) NULL;
+	if ((error_code = _validate_job_desc(job_desc, allocate, submit_uid)))
+		return error_code;
  
 	if ((job_desc->user_id == 0) && part_ptr->disable_root_jobs) {
 		error("Security violation, SUBMIT_JOB for user root disabled");
