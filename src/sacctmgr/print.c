@@ -35,7 +35,7 @@
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
-#include "print.h"
+#include "src/sacctmgr/print.h"
 #include "src/common/parse_time.h"
 int parsable_print = 0;
 int have_header = 1;
@@ -60,14 +60,14 @@ extern void print_header(List print_fields_list)
 
 	itr = list_iterator_create(print_fields_list);
 	while((object = list_next(itr))) {
-		(object->print_routine)(HEADLINE, object, 0);
+		(object->print_routine)(SLURM_PRINT_HEADLINE, object, 0);
 	}
 	list_iterator_reset(itr);
 	printf("\n");
 	if(parsable_print)
 		return;
 	while((object = list_next(itr))) {
-		(object->print_routine)(UNDERSCORE, object, 0);
+		(object->print_routine)(SLURM_PRINT_UNDERSCORE, object, 0);
 	}
 	list_iterator_destroy(itr);
 	printf("\n");	
@@ -87,18 +87,18 @@ extern void print_str(type_t type, print_field_t *field, char *value)
 	char *print_this = value;
 
 	switch(type) {
-	case HEADLINE:
+	case SLURM_PRINT_HEADLINE:
 		if(parsable_print)
 			printf("%s|", field->name);
 		else
 			printf("%-*.*s ", field->len, field->len, field->name);
 		break;
-	case UNDERSCORE:
+	case SLURM_PRINT_UNDERSCORE:
 		if(!parsable_print)
 			printf("%-*.*s ", field->len, field->len, 
 			       "---------------------------------------");
 		break;
-	case VALUE:
+	case SLURM_PRINT_VALUE:
 		if(!print_this) {
 			if(parsable_print)
 				print_this = "";
@@ -123,18 +123,18 @@ extern void print_str(type_t type, print_field_t *field, char *value)
 extern void print_uint(type_t type, print_field_t *field, uint32_t value)
 {
 	switch(type) {
-	case HEADLINE:
+	case SLURM_PRINT_HEADLINE:
 		if(parsable_print)
 			printf("%s|", field->name);
 		else
 			printf("%-*.*s ", field->len, field->len, field->name);
 		break;
-	case UNDERSCORE:
+	case SLURM_PRINT_UNDERSCORE:
 		if(!parsable_print)
 			printf("%-*.*s ", field->len, field->len, 
 			       "---------------------------------------");
 		break;
-	case VALUE:
+	case SLURM_PRINT_VALUE:
 		/* (value == unset)  || (value == cleared) */
 		if((value == NO_VAL) || (value == INFINITE)) {
 			if(parsable_print)
@@ -160,18 +160,18 @@ extern void print_uint(type_t type, print_field_t *field, uint32_t value)
 extern void print_time(type_t type, print_field_t *field, uint32_t value)
 {
 	switch(type) {
-	case HEADLINE:
+	case SLURM_PRINT_HEADLINE:
 		if(parsable_print)
 			printf("%s|", field->name);
 		else
 			printf("%-*.*s ", field->len, field->len, field->name);
 		break;
-	case UNDERSCORE:
+	case SLURM_PRINT_UNDERSCORE:
 		if(!parsable_print)
 			printf("%-*.*s ", field->len, field->len, 
 			       "---------------------------------------");
 		break;
-	case VALUE:
+	case SLURM_PRINT_VALUE:
 		/* (value == unset)  || (value == cleared) */
 		if((value == NO_VAL) || (value == INFINITE)) {
 			if(parsable_print)

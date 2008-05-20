@@ -37,8 +37,8 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#include "sacctmgr.h"
-#include "print.h"
+#include "src/sacctmgr/sacctmgr.h"
+#include "src/sacctmgr/print.h"
 
 static int _set_cond(int *start, int argc, char *argv[],
 		     acct_cluster_cond_t *cluster_cond,
@@ -331,8 +331,10 @@ extern int sacctmgr_list_cluster(int argc, char *argv[])
 
 	print_fields_list = list_create(destroy_print_field);
 
-	if(!list_count(format_list)) 
-		addto_char_list(format_list, "Cl,Controlh,Controlp,F,MaxC,MaxJ,MaxN,MaxW");
+	if(!list_count(format_list)) {
+		addto_char_list(format_list, 
+				"Cl,Controlh,Controlp,F,MaxC,MaxJ,MaxN,MaxW");
+	}
 
 	itr = list_iterator_create(format_list);
 	while((object = list_next(itr))) {
@@ -394,40 +396,40 @@ extern int sacctmgr_list_cluster(int argc, char *argv[])
 		while((field = list_next(itr2))) {
 			switch(field->type) {
 			case PRINT_CLUSTER:
-				field->print_routine(VALUE, field,
+				field->print_routine(SLURM_PRINT_VALUE, field,
 						     cluster->name);
 				break;
 			case PRINT_CHOST:
-				field->print_routine(VALUE, field,
+				field->print_routine(SLURM_PRINT_VALUE, field,
 						     cluster->control_host);
 				break;
 			case PRINT_CPORT:
-				field->print_routine(VALUE, field,
+				field->print_routine(SLURM_PRINT_VALUE, field,
 						     cluster->control_port);
 				break;
 			case PRINT_FAIRSHARE:
 				field->print_routine(
-					VALUE, field,
+					SLURM_PRINT_VALUE, field,
 					cluster->default_fairshare);
 				break;
 			case PRINT_MAXC:
 				field->print_routine(
-					VALUE, field,
+					SLURM_PRINT_VALUE, field,
 					cluster->default_max_cpu_secs_per_job);
 				break;
 			case PRINT_MAXJ:
 				field->print_routine(
-					VALUE, field, 
+					SLURM_PRINT_VALUE, field, 
 					cluster->default_max_jobs);
 				break;
 			case PRINT_MAXN:
 				field->print_routine(
-					VALUE, field,
+					SLURM_PRINT_VALUE, field,
 					cluster->default_max_nodes_per_job);
 				break;
 			case PRINT_MAXW:
 				field->print_routine(
-					VALUE, field,
+					SLURM_PRINT_VALUE, field,
 					cluster->
 					default_max_wall_duration_per_job);
 				break;

@@ -36,7 +36,7 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#include "sacctmgr.h"
+#include "src/sacctmgr/sacctmgr.h"
 #include <unistd.h>
 #include <termios.h>
 
