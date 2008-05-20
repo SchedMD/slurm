@@ -36,8 +36,8 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#include "sacctmgr.h"
-#include "print.h"
+#include "src/sacctmgr/sacctmgr.h"
+#include "src/sacctmgr/print.h"
 
 static int _set_cond(int *start, int argc, char *argv[],
 		     acct_user_cond_t *user_cond,
@@ -822,83 +822,98 @@ extern int sacctmgr_list_user(int argc, char *argv[])
 					switch(field->type) {
 					case PRINT_ACCOUNT:
 						field->print_routine(
-							VALUE, field, 
+							SLURM_PRINT_VALUE, 
+							field, 
 							assoc->acct);
 						break;
 					case PRINT_ADMIN:
 						field->print_routine(
-							VALUE, field,
+							SLURM_PRINT_VALUE, 
+							field,
 							acct_admin_level_str(
 								user->
 								admin_level));
 						break;
 					case PRINT_CLUSTER:
 						field->print_routine(
-							VALUE, field,
+							SLURM_PRINT_VALUE, 
+							field,
 							assoc->cluster);
 						break;
 					case PRINT_DACCT:
 						field->print_routine(
-							VALUE, field,
+							SLURM_PRINT_VALUE, 
+							field,
 							user->default_acct);
 						break;
 					case PRINT_FAIRSHARE:
 						field->print_routine(
-							VALUE, field,
+							SLURM_PRINT_VALUE, 
+							field,
 							assoc->fairshare);
 						break;
 					case PRINT_ID:
 						field->print_routine(
-							VALUE, field,
+							SLURM_PRINT_VALUE, 
+							field,
 							assoc->id);
 						break;
 					case PRINT_MAXC:
 						field->print_routine(
-							VALUE, field,
+							SLURM_PRINT_VALUE, 
+							field,
 							assoc->
 							max_cpu_secs_per_job);
 						break;
 					case PRINT_MAXJ:
 						field->print_routine(
-							VALUE, field, 
+							SLURM_PRINT_VALUE, 
+							field, 
 							assoc->max_jobs);
 						break;
 					case PRINT_MAXN:
 						field->print_routine(
-							VALUE, field,
+							SLURM_PRINT_VALUE, 
+							field,
 							assoc->
 							max_nodes_per_job);
 						break;
 					case PRINT_MAXW:
 						field->print_routine(
-							VALUE, field,
+							SLURM_PRINT_VALUE, 
+							field,
 							assoc->
 							max_wall_duration_per_job);
 						break;
 					case PRINT_QOS:
 						field->print_routine(
-							VALUE, field,
+							SLURM_PRINT_VALUE, 
+							field,
 							acct_qos_str(
 								user->qos));
 						break;
 					case PRINT_PID:
 						field->print_routine(
-							VALUE, field,
+							SLURM_PRINT_VALUE, 
+							field,
 							assoc->parent_id);
 						break;
 					case PRINT_PNAME:
 						field->print_routine(
-							VALUE, field,
+							SLURM_PRINT_VALUE, 
+							field,
 							assoc->parent_acct);
 						break;
 					case PRINT_PART:
 						field->print_routine(
-							VALUE, field,
+							SLURM_PRINT_VALUE, 
+							field,
 							assoc->partition);
 						break;
 					case PRINT_USER:
 						field->print_routine(
-							VALUE, field,
+							SLURM_PRINT_VALUE, 
+							field,
 							user->name);
 						break;
 					default:
@@ -914,72 +929,74 @@ extern int sacctmgr_list_user(int argc, char *argv[])
 				switch(field->type) {
 				case PRINT_ACCOUNT:
 					field->print_routine(
-						VALUE, field, 
+						SLURM_PRINT_VALUE, field, 
 						NULL);
 					break;
 				case PRINT_ADMIN:
 					field->print_routine(
-						VALUE, field,
+						SLURM_PRINT_VALUE, field,
 						acct_admin_level_str(
 							user->admin_level));
 					break;
 				case PRINT_CLUSTER:
 					field->print_routine(
-						VALUE, field,
+						SLURM_PRINT_VALUE, field,
 						NULL);
 					break;
 				case PRINT_DACCT:
 					field->print_routine(
-						VALUE, field,
+						SLURM_PRINT_VALUE, field,
 						user->default_acct);
 					break;
 				case PRINT_FAIRSHARE:
 					field->print_routine(
-						VALUE, field,
+						SLURM_PRINT_VALUE, field,
 						NULL);
 					break;
 				case PRINT_ID:
 					field->print_routine(
-						VALUE, field,
+						SLURM_PRINT_VALUE, field,
 						NULL);
 					break;
 				case PRINT_MAXC:
 					field->print_routine(
-						VALUE, field,
+						SLURM_PRINT_VALUE, field,
 						NULL);
 					break;
 				case PRINT_MAXJ:
 					field->print_routine(
-						VALUE, field, 
+						SLURM_PRINT_VALUE, field, 
 						NULL);
 					break;
 				case PRINT_MAXN:
 					field->print_routine(
-						VALUE, field,
+						SLURM_PRINT_VALUE, field,
 						NULL);
 					break;
 				case PRINT_MAXW:
 					field->print_routine(
-						VALUE, field,
+						SLURM_PRINT_VALUE, field,
 						NULL);
 					break;
 				case PRINT_QOS:
 					field->print_routine(
-						VALUE, field,
+						SLURM_PRINT_VALUE, field,
 						acct_qos_str(user->qos));
 					break;
 				case PRINT_PID:
 					field->print_routine(
-						VALUE, field,
+						SLURM_PRINT_VALUE, field,
 						NULL);
 					break;
 				case PRINT_PART:
 					field->print_routine(
-						VALUE, field, NULL);
+						SLURM_PRINT_VALUE, field, 
+						NULL);
 					break;
 				case PRINT_USER:
 					field->print_routine(
-						VALUE, field, user->name);
+						SLURM_PRINT_VALUE, field, 
+						user->name);
 					break;
 				default:
 					break;

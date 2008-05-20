@@ -36,8 +36,8 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#include "sacctmgr.h"
-#include "print.h"
+#include "src/sacctmgr/sacctmgr.h"
+#include "src/sacctmgr/print.h"
 
 static int _set_cond(int *start, int argc, char *argv[],
 		     acct_association_cond_t *association_cond,
@@ -323,51 +323,54 @@ extern int sacctmgr_list_association(int argc, char *argv[])
 		while((field = list_next(itr2))) {
 			switch(field->type) {
 			case PRINT_ACCOUNT:
-				field->print_routine(VALUE, field, assoc->acct);
+				field->print_routine(SLURM_PRINT_VALUE, field, 
+						     assoc->acct);
 				break;
 			case PRINT_CLUSTER:
-				field->print_routine(VALUE, field,
+				field->print_routine(SLURM_PRINT_VALUE, field,
 						     assoc->cluster);
 				break;
 			case PRINT_FAIRSHARE:
-				field->print_routine(VALUE, field,
+				field->print_routine(SLURM_PRINT_VALUE, field,
 						     assoc->fairshare);
 				break;
 			case PRINT_ID:
-				field->print_routine(VALUE, field, assoc->id);
+				field->print_routine(SLURM_PRINT_VALUE, field, 
+						     assoc->id);
 				break;
 			case PRINT_MAXC:
 				field->print_routine(
-					VALUE, field,
+					SLURM_PRINT_VALUE, field,
 					assoc->max_cpu_secs_per_job);
 				break;
 			case PRINT_MAXJ:
-				field->print_routine(VALUE, field, 
+				field->print_routine(SLURM_PRINT_VALUE, field, 
 						     assoc->max_jobs);
 				break;
 			case PRINT_MAXN:
-				field->print_routine(VALUE, field,
+				field->print_routine(SLURM_PRINT_VALUE, field,
 						     assoc->max_nodes_per_job);
 				break;
 			case PRINT_MAXW:
 				field->print_routine(
-					VALUE, field,
+					SLURM_PRINT_VALUE, field,
 					assoc->max_wall_duration_per_job);
 				break;
 			case PRINT_PID:
-				field->print_routine(VALUE, field,
+				field->print_routine(SLURM_PRINT_VALUE, field,
 						     assoc->parent_id);
 				break;
 			case PRINT_PNAME:
-				field->print_routine(VALUE, field,
+				field->print_routine(SLURM_PRINT_VALUE, field,
 						     assoc->parent_acct);
 				break;
 			case PRINT_PART:
-				field->print_routine(VALUE, field,
+				field->print_routine(SLURM_PRINT_VALUE, field,
 						     assoc->partition);
 				break;
 			case PRINT_USER:
-				field->print_routine(VALUE, field, assoc->user);
+				field->print_routine(SLURM_PRINT_VALUE, field, 
+						     assoc->user);
 				break;
 			default:
 				break;

@@ -38,8 +38,8 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#include "sacctmgr.h"
-#include "print.h"
+#include "src/sacctmgr/sacctmgr.h"
+#include "src/sacctmgr/print.h"
 #include "src/common/xsignal.h"
 
 #define OPT_LONG_HIDE   0x102
@@ -132,7 +132,8 @@ main (int argc, char *argv[])
 			long_options, &option_index)) != -1) {
 		switch (opt_char) {
 		case (int)'?':
-			fprintf(stderr, "Try \"sacctmgr --help\" for more information\n");
+			fprintf(stderr, "Try \"sacctmgr --help\" "
+				"for more information\n");
 			exit(1);
 			break;
 		case (int)'a':
@@ -172,7 +173,8 @@ main (int argc, char *argv[])
 			break;
 		default:
 			exit_code = 1;
-			fprintf(stderr, "getopt error, returned %c\n", opt_char);
+			fprintf(stderr, "getopt error, returned %c\n", 
+				opt_char);
 			exit(exit_code);
 		}
 	}
@@ -1220,10 +1222,14 @@ static void _load_file (int argc, char *argv[])
 
 		itr = list_iterator_create(acct_list);
 		while((acct = list_next(itr))) {
-			print_str(VALUE, &name_field, acct->name);
-			print_str(VALUE, &desc_field, acct->description);
-			print_str(VALUE, &org_field, acct->organization);
-			print_str(VALUE, &qos_field, acct_qos_str(acct->qos));
+			print_str(SLURM_PRINT_VALUE, &name_field, 
+				  acct->name);
+			print_str(SLURM_PRINT_VALUE, &desc_field, 
+				  acct->description);
+			print_str(SLURM_PRINT_VALUE, &org_field, 
+				  acct->organization);
+			print_str(SLURM_PRINT_VALUE, &qos_field, 
+				  acct_qos_str(acct->qos));
 			printf("\n");
 		}
 		list_iterator_destroy(itr);
@@ -1249,14 +1255,18 @@ static void _load_file (int argc, char *argv[])
 		
 		itr = list_iterator_create(acct_assoc_list);
 		while((assoc = list_next(itr))) {
-			print_str(VALUE, &name_field, assoc->acct);
-			print_str(VALUE, &parent_field, assoc->parent_acct);
-			print_uint(VALUE, &fs_field, assoc->fairshare);
-			print_uint(VALUE, &mc_field, 
+			print_str(SLURM_PRINT_VALUE, &name_field, assoc->acct);
+			print_str(SLURM_PRINT_VALUE, &parent_field, 
+				  assoc->parent_acct);
+			print_uint(SLURM_PRINT_VALUE, &fs_field, 
+				   assoc->fairshare);
+			print_uint(SLURM_PRINT_VALUE, &mc_field, 
 				   assoc->max_cpu_secs_per_job);
-			print_uint(VALUE, &mj_field, assoc->max_jobs);
-			print_uint(VALUE, &mn_field, assoc->max_nodes_per_job);
-			print_time(VALUE, &mw_field,
+			print_uint(SLURM_PRINT_VALUE, &mj_field, 
+				   assoc->max_jobs);
+			print_uint(SLURM_PRINT_VALUE, &mn_field, 
+				   assoc->max_nodes_per_job);
+			print_time(SLURM_PRINT_VALUE, &mw_field,
 				   assoc->max_wall_duration_per_job);
 			printf("\n");
 		}
@@ -1281,10 +1291,12 @@ static void _load_file (int argc, char *argv[])
 
 		itr = list_iterator_create(user_list);
 		while((acct = list_next(itr))) {
-			print_str(VALUE, &name_field, user->name);
-			print_str(VALUE, &dacct_field, user->default_acct);
-			print_str(VALUE, &qos_field, acct_qos_str(user->qos));
-			print_str(VALUE, &admin_field,
+			print_str(SLURM_PRINT_VALUE, &name_field, user->name);
+			print_str(SLURM_PRINT_VALUE, &dacct_field, 
+				  user->default_acct);
+			print_str(SLURM_PRINT_VALUE, &qos_field, 
+				  acct_qos_str(user->qos));
+			print_str(SLURM_PRINT_VALUE, &admin_field,
 				  acct_admin_level_str(user->admin_level));
 			printf("\n");
 		}
@@ -1312,14 +1324,17 @@ static void _load_file (int argc, char *argv[])
 		
 		itr = list_iterator_create(user_assoc_list);
 		while((assoc = list_next(itr))) {
-			print_str(VALUE, &name_field, assoc->user);
-			print_str(VALUE, &acct_field, assoc->acct);
-			print_uint(VALUE, &fs_field, assoc->fairshare);
-			print_uint(VALUE, &mc_field, 
+			print_str(SLURM_PRINT_VALUE, &name_field, assoc->user);
+			print_str(SLURM_PRINT_VALUE, &acct_field, assoc->acct);
+			print_uint(SLURM_PRINT_VALUE, &fs_field, 
+				   assoc->fairshare);
+			print_uint(SLURM_PRINT_VALUE, &mc_field, 
 				   assoc->max_cpu_secs_per_job);
-			print_uint(VALUE, &mj_field, assoc->max_jobs);
-			print_uint(VALUE, &mn_field, assoc->max_nodes_per_job);
-			print_uint(VALUE, &mw_field,
+			print_uint(SLURM_PRINT_VALUE, &mj_field, 
+				   assoc->max_jobs);
+			print_uint(SLURM_PRINT_VALUE, &mn_field, 
+				   assoc->max_nodes_per_job);
+			print_uint(SLURM_PRINT_VALUE, &mw_field,
 				   assoc->max_wall_duration_per_job);
 			printf("\n");
 		}

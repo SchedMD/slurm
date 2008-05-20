@@ -90,7 +90,8 @@ static int _set_cond(int *start, int argc, char *argv[],
 			u_set = 1;
 		} else {
 			printf(" Unknown condition: %s\n"
-			       " Use keyword 'set' to modify value\n", argv[i]);
+			       " Use keyword 'set' to modify "
+			       "SLURM_PRINT_VALUE\n", argv[i]);
 		}
 	}
 	(*start) = i;
@@ -653,7 +654,6 @@ extern int sacctmgr_list_account(int argc, char *argv[])
 		PRINT_USER
 	};
 
-	
 	acct_cond->acct_list = list_create(slurm_destroy_char);
 	acct_cond->description_list = list_create(slurm_destroy_char);
 	acct_cond->organization_list = list_create(slurm_destroy_char);
@@ -779,82 +779,89 @@ extern int sacctmgr_list_account(int argc, char *argv[])
 					switch(field->type) {
 					case PRINT_ACCOUNT:
 						field->print_routine(
-							VALUE, field, 
-							acct->name);
+							SLURM_PRINT_VALUE,
+							field, acct->name);
 						break;
 					case PRINT_CLUSTER:
 						field->print_routine(
-							VALUE, field,
-							assoc->cluster);
+							SLURM_PRINT_VALUE,
+							field, assoc->cluster);
 						break;
 					case PRINT_DESC:
 						field->print_routine(
-							VALUE, field,
+							SLURM_PRINT_VALUE,
+							field, 
 							acct->description);
 						break;
 					case PRINT_FAIRSHARE:
 						field->print_routine(
-							VALUE, field,
+							SLURM_PRINT_VALUE,
+							field, 
 							assoc->fairshare);
 						break;
 					case PRINT_ID:
 						field->print_routine(
-							VALUE, field,
-							assoc->id);
+							SLURM_PRINT_VALUE,
+							field, assoc->id);
 						break;
 					case PRINT_MAXC:
 						field->print_routine(
-							VALUE, field,
-							assoc->
+							SLURM_PRINT_VALUE,
+							field, assoc->
 							max_cpu_secs_per_job);
 						break;
 					case PRINT_MAXJ:
 						field->print_routine(
-							VALUE, field, 
-							assoc->max_jobs);
+							SLURM_PRINT_VALUE,
+							field, assoc->max_jobs);
 						break;
 					case PRINT_MAXN:
 						field->print_routine(
-							VALUE, field,
-							assoc->
+							SLURM_PRINT_VALUE,
+							field, assoc->
 							max_nodes_per_job);
 						break;
 					case PRINT_MAXW:
 						field->print_routine(
-							VALUE, field,
+							SLURM_PRINT_VALUE,
+							field, 
 							assoc->
 							max_wall_duration_per_job);
 						break;
 					case PRINT_ORG:
 						field->print_routine(
-							VALUE, field,
+							SLURM_PRINT_VALUE,
+							field, 
 							acct->organization);
 						break;
 					case PRINT_QOS:
 						field->print_routine(
-							VALUE, field,
-							acct_qos_str(
-								acct->qos));
+							SLURM_PRINT_VALUE,
+							field, 
+							acct_qos_str(acct->qos));
 						break;
 					case PRINT_PID:
 						field->print_routine(
-							VALUE, field,
+							SLURM_PRINT_VALUE,
+							field, 
 							assoc->parent_id);
 						break;
 					case PRINT_PNAME:
 						field->print_routine(
-							VALUE, field,
+							SLURM_PRINT_VALUE,
+							field, 
 							assoc->parent_acct);
 						break;
 					case PRINT_PART:
 						field->print_routine(
-							VALUE, field,
+							SLURM_PRINT_VALUE,
+							field, 
 							assoc->partition);
 						break;
 					case PRINT_USER:
 						field->print_routine(
-							VALUE, field,
-							assoc->user);
+							SLURM_PRINT_VALUE,
+							field, assoc->user);
 						break;
 					default:
 						break;
@@ -863,81 +870,84 @@ extern int sacctmgr_list_account(int argc, char *argv[])
 				list_iterator_reset(itr2);
 				printf("\n");
 			}
-			list_iterator_destroy(itr3);				
+			list_iterator_destroy(itr3);		
 		} else {
 			while((field = list_next(itr2))) {
 				switch(field->type) {
 				case PRINT_ACCOUNT:
 					field->print_routine(
-						VALUE, field, 
-						acct->name);
+						SLURM_PRINT_VALUE,
+						field, acct->name);
 					break;
 				case PRINT_CLUSTER:
 					field->print_routine(
-						VALUE, field,
-						NULL);
+						SLURM_PRINT_VALUE,
+						field, NULL);
 					break;
 				case PRINT_DESC:
 					field->print_routine(
-						VALUE, field,
-						acct->description);
+						SLURM_PRINT_VALUE,
+						field, acct->description);
 					break;
 				case PRINT_FAIRSHARE:
 					field->print_routine(
-						VALUE, field,
-						NULL);
+						SLURM_PRINT_VALUE,
+						field, NULL);
 					break;
 				case PRINT_ID:
 					field->print_routine(
-						VALUE, field,
-						NULL);
+						SLURM_PRINT_VALUE,
+						field, NULL);
 					break;
 				case PRINT_MAXC:
 					field->print_routine(
-						VALUE, field,
-						NULL);
+						SLURM_PRINT_VALUE,
+						field, NULL);
 					break;
 				case PRINT_MAXJ:
 					field->print_routine(
-						VALUE, field, 
-						NULL);
+						SLURM_PRINT_VALUE,
+						field, NULL);
 					break;
 				case PRINT_MAXN:
 					field->print_routine(
-						VALUE, field,
-						NULL);
+						SLURM_PRINT_VALUE,
+						field, NULL);
 					break;
 				case PRINT_MAXW:
 					field->print_routine(
-						VALUE, field,
-						NULL);
+						SLURM_PRINT_VALUE,
+						field, NULL);
 					break;
 				case PRINT_ORG:
 					field->print_routine(
-						VALUE, field,
-						acct->organization);
+						SLURM_PRINT_VALUE,
+						field, acct->organization);
 					break;
 				case PRINT_QOS:
 					field->print_routine(
-						VALUE, field,
-						acct_qos_str(acct->qos));
+						SLURM_PRINT_VALUE,
+						field, acct_qos_str(acct->qos));
 					break;
 				case PRINT_PID:
 					field->print_routine(
-						VALUE, field,
-						NULL);
+						SLURM_PRINT_VALUE,
+						field, NULL);
 					break;
 				case PRINT_PNAME:
 					field->print_routine(
-						VALUE, field, NULL);
+						SLURM_PRINT_VALUE, 
+						field, NULL);
 					break;
 				case PRINT_PART:
 					field->print_routine(
-						VALUE, field, NULL);
+						SLURM_PRINT_VALUE, 
+						field, NULL);
 					break;
 				case PRINT_USER:
 					field->print_routine(
-						VALUE, field, NULL);
+						SLURM_PRINT_VALUE, 
+						field, NULL);
 					break;
 				default:
 					break;
@@ -1104,7 +1114,8 @@ extern int sacctmgr_delete_account(int argc, char *argv[])
 	acct_cond->assoc_cond->user_list = list_create(slurm_destroy_char);
 	acct_cond->assoc_cond->acct_list = list_create(slurm_destroy_char);
 	acct_cond->assoc_cond->cluster_list = list_create(slurm_destroy_char);
-	acct_cond->assoc_cond->partition_list = list_create(slurm_destroy_char);
+	acct_cond->assoc_cond->partition_list = 
+					list_create(slurm_destroy_char);
 
 	if(!(set = _set_cond(&i, argc, argv, acct_cond, NULL))) {
 		printf(" No conditions given to remove, not executing.\n");

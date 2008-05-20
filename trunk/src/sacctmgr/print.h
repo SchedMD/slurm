@@ -67,9 +67,10 @@
 #include "src/common/slurm_accounting_storage.h"
 #include "src/common/jobacct_common.h"
 
-typedef enum {	HEADLINE,
-		UNDERSCORE,
-		VALUE
+typedef enum {
+	SLURM_PRINT_HEADLINE,
+	SLURM_PRINT_UNDERSCORE,
+	SLURM_PRINT_VALUE
 } type_t;
 
 typedef struct {
