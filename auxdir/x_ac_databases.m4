@@ -20,39 +20,52 @@ AC_DEFUN([X_AC_DATABASES],
 	if test x$HAVEMYSQLCONFIG = xno; then
         	AC_MSG_WARN([*** mysql_config not found. Evidently no MySQL install on system.])
 	else
+		# check for mysql-5.0.0+
+		mysql_config_major_version=`$HAVEMYSQLCONFIG --version | \
+			sed 's/\([[0-9]]*\).\([[0-9]]*\).\([[a-zA-Z0-9]]*\)/\1/'`
+    		mysql_config_minor_version=`$HAVEMYSQLCONFIG --version | \
+			sed 's/\([[0-9]]*\).\([[0-9]]*\).\([[a-zA-Z0-9]]*\)/\2/'`
+    		mysql_config_micro_version=`$HAVEMYSQLCONFIG --version | \
+			sed 's/\([[0-9]]*\).\([[0-9]]*\).\([[a-zA-Z0-9]]*\)/\3/'`
+
+		if test $mysql_config_major_version -lt 5; then
+	   		AC_MSG_WARN([*** mysql-$mysql_config_major_version.$mysql_config_minor_version.$mysql_config_micro_version available, we need >= mysql-5.0.0 installed for the mysql interface.])
+            		ac_have_mysql="no"
+		else 
 		# mysql_config puts -I on the front of the dir.  We don't 
 		# want that so we remove it.
-		MYSQL_CFLAGS=`$HAVEMYSQLCONFIG --cflags`
-		MYSQL_LIBS=`$HAVEMYSQLCONFIG --libs_r`
-		if test -z "$MYSQL_LIBS"; then
-			MYSQL_LIBS=`$HAVEMYSQLCONFIG --libs`
+			MYSQL_CFLAGS=`$HAVEMYSQLCONFIG --cflags`
+			MYSQL_LIBS=`$HAVEMYSQLCONFIG --libs_r`
+			if test -z "$MYSQL_LIBS"; then
+				MYSQL_LIBS=`$HAVEMYSQLCONFIG --libs`
+			fi
+			save_CFLAGS="$CFLAGS"
+			save_LIBS="$LIBS"
+       			CFLAGS="$MYSQL_CFLAGS $save_CFLAGS"
+			LIBS="$MYSQL_LIBS $save_LIBS"
+			AC_TRY_LINK([#include <mysql.h>],[
+          				int main()
+          				{
+						MYSQL mysql;
+            					(void) mysql_init(&mysql);
+						(void) mysql_close(&mysql);
+            				}
+        				],
+				[ac_have_mysql="yes"],
+				[ac_have_mysql="no"])
+			CFLAGS="$save_CFLAGS"
+			LIBS="$save_LIBS"
+       			if test "$ac_have_mysql" == "yes"; then
+            			AC_MSG_RESULT([MySQL test program built properly.])
+            			AC_SUBST(MYSQL_LIBS)
+				AC_SUBST(MYSQL_CFLAGS)
+				AC_DEFINE(HAVE_MYSQL, 1, [Define to 1 if using MySQL libaries])
+			else
+ 				MYSQL_CFLAGS=""
+				MYSQL_LIBS=""
+       				AC_MSG_WARN([*** MySQL test program execution failed.])
+			fi        	
 		fi
-		save_CFLAGS="$CFLAGS"
-		save_LIBS="$LIBS"
-       		CFLAGS="$MYSQL_CFLAGS $save_CFLAGS"
-		LIBS="$MYSQL_LIBS $save_LIBS"
-		AC_TRY_LINK([#include <mysql.h>],[
-          		int main()
-          		{
-				MYSQL mysql;
-            			(void) mysql_init(&mysql);
-				(void) mysql_close(&mysql);
-            		}
-        		],
-			[ac_have_mysql="yes"],
-			[ac_have_mysql="no"])
-		CFLAGS="$save_CFLAGS"
-		LIBS="$save_LIBS"
-       		if test "$ac_have_mysql" == "yes"; then
-            		AC_MSG_RESULT([MySQL test program built properly.])
-            		AC_SUBST(MYSQL_LIBS)
-			AC_SUBST(MYSQL_CFLAGS)
-			AC_DEFINE(HAVE_MYSQL, 1, [Define to 1 if using MySQL libaries])
-	        else
- 			MYSQL_CFLAGS=""
-			MYSQL_LIBS=""
-       			AC_MSG_WARN([*** MySQL test program execution failed.])
-		fi        	
       	fi
 
 

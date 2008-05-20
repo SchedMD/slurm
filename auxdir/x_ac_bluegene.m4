@@ -75,6 +75,7 @@ AC_DEFUN([X_AC_BLUEGENE],
 
   	if test ! -z "$have_bg_files" ; then
       		BG_INCLUDES="$bg_includes"
+		BG_LDFLAGS="-L$bg_dir/lib64"
       		AC_DEFINE(HAVE_BG_FILES, 1, [Define to 1 if have Blue Gene files])
 
       		AC_DEFINE_UNQUOTED(BG_BRIDGE_SO, "$bg_bridge_so", [Define the BG_BRIDGE_SO value])
@@ -88,4 +89,5 @@ AC_DEFUN([X_AC_BLUEGENE],
    	fi
 
    	AC_SUBST(BG_INCLUDES)
+   	AC_SUBST(BG_LDFLAGS)
 ])
