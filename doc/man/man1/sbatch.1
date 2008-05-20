@@ -1,4 +1,4 @@
-.TH "sbatch" "1" "SLURM 1.3" "April 2008" "SLURM Commands"
+.TH "sbatch" "1" "SLURM 1.3" "May 2008" "SLURM Commands"
 .SH "NAME"
 .LP 
 sbatch \- Submit a batch script to SLURM.
@@ -10,7 +10,7 @@ sbatch [\fIoptions\fP] \fIscript\fP [\fIargs\fP...]
 sbatch submits a batch script to SLURM.  The batch script may be given to
 sbatch through a file name on the command line, or if no file name is specified,
 sbatch will read in a script from standard input. The batch script may contain
-options preceeded with "#SBATCH" before any executable commands in the script.
+options preceded with "#SBATCH" before any executable commands in the script.
 
 sbatch exits immediately after the script is successfully transferred to the
 SLURM controller and assigned a SLURM job ID.  The batch script is not
@@ -375,12 +375,13 @@ partition, the job will be rejected.
 
 .TP
 \fB\-n\fR, \fB\-\-ntasks\fR[=]<\fInumber\fR>
-sbatch does not launch tasks, it requests an allocation of resources and submits
-a batch script.  However this \-\-tasks option advizes the SLURM controller
-that job steps run within this allocation will launch a maximum of \fInumber\fR
-tasks.  This option, possibly with collaboration with the \-\-cpus\-per\-task
-option, will directly impact the number of processors granted to the job
-allocation.
+sbatch does not launch tasks, it requests an allocation of resources and 
+submits a batch script. This option advises the SLURM controller that job 
+steps run within this allocation will launch a maximum of \fInumber\fR
+tasks and sufficient resources are allocated to accomplish this.  
+The default is one task per socket or core (depending upon the value 
+of the \fISelectTypeParameters\fR parameter in slurm.conf), but note 
+that the \fB\-\-cpus\-per\-task\fR option will change this default.
 
 .TP 
 \fB\-\-nice\fR[=]<\fIadjustment\fR>
