@@ -12,6 +12,7 @@ EXTRA_DIST = \
     x_ac_affinity.m4 \
     x_ac_aix.m4 \
     x_ac_bluegene.m4 \
+    x_ac_cflags.m4 \
     x_ac_debug.m4 \
     x_ac_elan.m4 \
     x_ac_federation.m4 \
