@@ -104,6 +104,18 @@ extern int select_p_alter_node_cnt(enum select_node_cnt type, void *data);
  */
 extern int init ( void )
 {
+#ifdef HAVE_BG_FILES
+	char *lib_path = getenv("LD_LIBRARY_PATH");
+	char *new_libpath = xstrdup("LD_LIBRARY_PATH=");
+
+	if(lib_path)
+		xstrfmtcat(new_libpath, "%s:", lib_path);
+
+	xstrcat(new_libpath, BG_LIB_PATH);
+	putenv(new_libpath);
+	xfree(new_libpath);
+#endif
+
 #ifndef HAVE_BG
 	fatal("Plugin select/bluegene is illegal on non-BlueGene computers");
 #endif
@@ -124,6 +136,7 @@ extern int init ( void )
 	if ((SELECT_COPROCESSOR_MODE  != RM_PARTITION_COPROCESSOR_MODE)
 	||  (SELECT_VIRTUAL_NODE_MODE != RM_PARTITION_VIRTUAL_NODE_MODE))
 		fatal("enum node_use_type out of sync with rm_api.h");
+	
 #endif
 
 	verbose("%s loading...", plugin_name);
