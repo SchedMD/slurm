@@ -17,9 +17,8 @@ Resource Management</a> [PDF].
 engine. While initially written for Linux, other UNIX-like operating systems should 
 be easy porting targets. Code should adhere to the <a href="coding_style.pdf"> 
 Linux kernel coding style</a>. <i>(Some components of SLURM have been taken from 
-various sources. Some of these components are written in C++ or do not conform 
-to the Linux kernel coding style. However, new code written for SLURM should 
-follow these standards.)</i>
+various sources. Some of these components do not conform to the Linux kernel 
+coding style. However, new code written for SLURM should follow these standards.)</i>
  
 <p>Many of these modules have been built and tested on a variety of Unix computers 
 including Red Hat Linux, IBM's AIX, Sun's Solaris, and Compaq's Tru-64. The only 
@@ -230,6 +229,6 @@ host1> slurmd -N foo21
 
 <p class="footer"><a href="#top">top</a></p>
 
-<p style="text-align:center;">Last modified 19 September 2007</p>
+<p style="text-align:center;">Last modified 20 May 2008</p>
 
 <!--#include virtual="footer.txt"-->
