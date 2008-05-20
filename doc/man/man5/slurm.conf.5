@@ -1533,13 +1533,14 @@ The default value is "NO".
 .TP
 \fBShared\fR
 Controls the ability of the partition to execute more than one job at a 
-time on each node.
+time on each resource (node, socket or core depending upon the value
+of \fBSelectTypeParameters\fR).
 Possible values are "EXCLUSIVE", "FORCE", "YES", and "NO".
 "EXCLUSIVE" allocates entire nodes to jobs even with 
 select/cons_res configured.
 This can be used to allocate whole nodes in some partitions 
 and individual processors in other partitions. 
-"FORCE" makes all nodes in the partition available for sharing 
+"FORCE" makes all resources in the partition available for sharing 
 without user means of disabling it.
 "YES" makes nodes in the partition available for sharing if and 
 only if the individual jobs permit sharing (see the srun 
@@ -1547,7 +1548,8 @@ only if the individual jobs permit sharing (see the srun
 "NO" makes nodes unavailable for sharing under all circumstances. 
 The default value is "NO".
 The "FORCE" and "YES" options can be followed by a colon and a job 
-count. For example "Shared=YES:4".
+count. For example "Shared=YES:4" enables each node, socket or 
+core to execute up to four jobs at once.
 If resources are to be shared, avoiding memory over\-subscription 
 is very important. 
 With sched/gang this count is the maximum number of jobs permitted
