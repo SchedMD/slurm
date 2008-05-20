@@ -259,7 +259,7 @@ parameter in slurm.conf.
 When used to initiate a job step within an existing resource allocation, 
 proceed only when processors can be dedicated to the job step without 
 sharing with other job steps. This can be used to initiate many 
-job steps simultaneously withn an existing job allocation and have 
+job steps simultaneously within an existing job allocation and have 
 SLURM perform resource management for the job. 
 In this mode, use with the \fB\-\-ntasks\fR option and NOT the 
 \fB\-\-nodes\fR, \fB\-\-relative\fR, \fB\-\-relative\fR=\fIarbitrary\fR
@@ -535,7 +535,7 @@ procedures.
 .RS
 .TP
 .B list
-Lists avaliable mpi types to choose from.
+Lists available mpi types to choose from.
 .TP
 .B lam
 Initiates one 'lamd' process per node and establishes necessary
@@ -587,7 +587,7 @@ Note that the environment
 variable \fBSLURM_NNODES\fR will be set to the count of nodes actually 
 allocated to the job. See the \fBENVIRONMENT VARIABLES \fR section 
 for more information.  If \fB\-N\fR is not specified, the default
-behaviour is to allocate enough nodes to satisfy the requirements of
+behavior is to allocate enough nodes to satisfy the requirements of
 the \fB\-n\fR and \fB\-c\fR options.
 The job will be allocated as many nodes as possible within the range specified
 and without delaying the initiation of the job.
@@ -595,7 +595,7 @@ and without delaying the initiation of the job.
 .TP
 \fB\-n\fR, \fB\-\-ntasks\fR=\fIntasks\fR
 Specify the number of tasks to run. Request that \fBsrun\fR
-allocate resouces for \fIntasks\fR tasks.  
+allocate resources for \fIntasks\fR tasks.  
 The default is one task per socket or core (depending upon the value 
 of the \fISelectTypeParameters\fR parameter in slurm.conf), but note 
 that the \fB\-\-cpus\-per\-task\fR option will change this default.
@@ -608,10 +608,10 @@ Since POE is used to launch tasks, this option is not normally used or
 is specified using the \fBSLURM_NETWORK\fR environment variable.
 The interpretation of \fItype\fR is system dependent. 
 For systems with an IBM Federation switch, the following 
-comma\-separated and case insensitive types are recongnized:
+comma\-separated and case insensitive types are recognized:
 \fBIP\fR (the default is user\-space), \fBSN_ALL\fR, \fBSN_SINGLE\fR, 
 \fBBULK_XFER\fR and adapter names  (e.g. \fBSNI0\fR and \fBSNI1\fR). 
-For more information, on IBM systems see \fIpoe\fR documenation on 
+For more information, on IBM systems see \fIpoe\fR documentation on 
 the environment variables \fBMP_EUIDEVICE\fR and \fBMP_USE_BULK_XFER\fR.
 Note that only four jobs steps may be active at once on a node with the 
 \fBBULK_XFER\fR option due to limitations in the Federation switch driver.
@@ -649,7 +649,7 @@ or \fISelectType=CR_Socket_Memory\fR is configured.
 .TP
 \fB\-\-ntasks\-per\-node\fR=\fIntasks\fR
 Request that no more than \fIntasks\fR be invoked on each node.
-This is similiar to using \fB\-\-cpus\-per\-task\fR=\fIncpus\fR
+This is similar to using \fB\-\-cpus\-per\-task\fR=\fIncpus\fR
 but does not require knowledge of the actual number of cpus on
 each node.  In some cases, it is more convenient to be able to
 request that no more than a specific number of ntasks be invoked
@@ -1131,7 +1131,7 @@ sends messages to application programs (via the PMI library)
 and those applications may be called upon to forward that 
 data to up to this number of additional tasks. Higher values
 offload work from the srun command to the applications and 
-likely increase the vulernability to failures. 
+likely increase the vulnerability to failures. 
 The default value is 32.
 .TP
 \fBPMI_FANOUT_OFF_HOST\fR
@@ -1145,7 +1145,7 @@ tasks on that host up to \fBPMI_FANOUT\fR.
 If \fBPMI_FANOUT_OFF_HOST\fR is defined, the user task 
 may be required to forward the data to tasks on other hosts.
 Setting \fBPMI_FANOUT_OFF_HOST\fR may increase performance
-and vulernability to failures.
+and vulnerability to failures.
 .TP
 \fBPMI_TIME\fR
 This is used exclusively with PMI (MPICH2 and MVAPICH2) and 
@@ -1153,7 +1153,7 @@ controls how much the communications from the tasks to the
 srun are spread out in time in order to avoid overwhelming the 
 srun command with work. The default value is 500 (microseconds)
 per task. On relatively slow processors or systems with very 
-large processsor counts (and large PMI data sets), higher values 
+large processor counts (and large PMI data sets), higher values 
 may be required.
 .TP
 \fBSLURM_CONF\fR
@@ -1318,7 +1318,7 @@ Zero origin and comma separated.
 Job id of the executing job
 .TP
 \fBSLURM_LAUNCH_NODE_IPADDR\fR
-IP adddress of the node from which the task launch was 
+IP address of the node from which the task launch was 
 initiated (where the srun command ran from)
 .TP
 \fBSLURM_LOCALID\fR
@@ -1349,7 +1349,7 @@ Total number of processes in the current job
 .TP
 \fBSLURM_PRIO_PROCESS\fR
 The scheduling priority (nice value) at the time of job submission.
-This value is propaged to the spawned processes.
+This value is propagated to the spawned processes.
 .TP
 \fBSLURM_PROCID\fR
 The MPI rank (or relative process ID) of the current process
@@ -1374,7 +1374,7 @@ The umask (user file\-create mask) at the time of job submission.
 This value is propagated to the spawned processes.
 .TP
 \fBMPIRUN_NOALLOCATE\fR
-Do not allcate a block on Blue Gene systems only.
+Do not allocate a block on Blue Gene systems only.
 .TP
 \fBMPIRUN_NOFREE\fR
 Do not free a block on Blue Gene systems only.
@@ -1448,7 +1448,7 @@ The expression "%t" will be replaced with the task's number.
 The expression "%o" will be replaced with the task's offset within
 this range (e.g. a configured task rank value of "1\-5" would
 have offset values of "0\-4").
-Single quotes may be used to avoid having the enclosed values interpretted.
+Single quotes may be used to avoid having the enclosed values interpreted.
 This field is optional.
 .PP
 For example:
