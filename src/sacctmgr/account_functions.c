@@ -36,8 +36,8 @@
  *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA.
 \*****************************************************************************/
 
-#include "sacctmgr.h"
-#include "print.h"
+#include "src/sacctmgr/sacctmgr.h"
+#include "src/sacctmgr/print.h"
 
 static int _set_cond(int *start, int argc, char *argv[],
 		     acct_account_cond_t *acct_cond,
