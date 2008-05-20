@@ -718,7 +718,6 @@ static int _add_edit_job(gold_job_info_msg_t *job_ptr, gold_object_t action)
 	char *gold_account_id = NULL;
 	char *user = uid_to_string((uid_t)job_ptr->user_id);
 	char *jname = NULL;
-	int tmp = 0, i = 0;
 	char *account = NULL;
 	char *nodes = "(null)";
 
@@ -768,13 +767,14 @@ static int _add_edit_job(gold_job_info_msg_t *job_ptr, gold_object_t action)
 		return SLURM_ERROR;
 	}
 
-	if ((tmp = strlen(job_ptr->name))) {
-		jname = xmalloc(++tmp);
-		for (i=0; i<tmp; i++) {
+	if (job_ptr->name && job_ptr->name[0]) {
+		int i;
+		jname = xmalloc(strlen(job_ptr->name) + 1);
+		for (i=0; job_ptr->name[i]; i++) {
 			if (isalnum(job_ptr->name[i]))
-				jname[i]=job_ptr->name[i];
+				jname[i] = job_ptr->name[i];
 			else
-				jname[i]='_';
+				jname[i] = '_';
 		}
 	} else
 		jname = xstrdup("allocation");
