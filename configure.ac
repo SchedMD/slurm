@@ -134,6 +134,7 @@ CFLAGS="$CFLAGS $PTHREAD_CFLAGS"
 LIBS="$PTHREAD_LIBS $LIBS"
 
 X_AC_BLUEGENE
+X_AC_CFLAGS
 X_AC_XCPU
 X_AC_SLURM_SEMAPHORE
 
@@ -218,6 +219,9 @@ AC_ARG_ENABLE(
 if test "$x_ac_load_env_no_login" = yes; then
   AC_DEFINE(LOAD_ENV_NO_LOGIN, 1, 
             [Define to 1 for --get-user-env to load user environment without login.])
+  AC_MSG_RESULT([yes])
+else
+  AC_MSG_RESULT([no])
 fi
 
 dnl

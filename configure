@@ -24811,6 +24811,15 @@ _ACEOF
 
 
 
+	# This is here to avoid a bug in the gcc compiler 3.4.6
+	# Without this flag there is a bug when pointing to other functions
+	# and then using them.  It is also advised to set the flag if there
+	# are goto statements you may get better performance.
+	if test "$GCC" == "yes"; then
+		CFLAGS="$CFLAGS -fno-gcse"
+	fi
+
+
    { echo "$as_me:$LINENO: checking whether XCPU is enabled" >&5
 echo $ECHO_N "checking whether XCPU is enabled... $ECHO_C" >&6; }
 
@@ -26754,6 +26763,11 @@ cat >>confdefs.h <<\_ACEOF
 #define LOAD_ENV_NO_LOGIN 1
 _ACEOF
 
+  { echo "$as_me:$LINENO: result: yes" >&5
+echo "${ECHO_T}yes" >&6; }
+else
+  { echo "$as_me:$LINENO: result: no" >&5
+echo "${ECHO_T}no" >&6; }
 fi
 
 { echo "$as_me:$LINENO: checking whether to enable multiple-slurmd support" >&5
