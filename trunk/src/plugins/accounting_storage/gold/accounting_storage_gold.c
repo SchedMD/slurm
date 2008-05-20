@@ -127,37 +127,6 @@ static int _add_edit_job(struct job_record *job_ptr, gold_object_t action)
 	
 //info("total procs is  %d", job_ptr->total_procs);
 	if(action == GOLD_ACTION_CREATE) {
-		if (job_ptr->name && job_ptr->name[0]) {
-			int i;
-			jname = xmalloc(strlen(job_ptr->name) + 1);
-			for (i=0; job_ptr->name[i]; i++) {
-				if (isalnum(job_ptr->name[i]))
-					jname[i] = job_ptr->name[i];
-				else
-					jname[i] = '_';
-			}
-		} else
-			jname = xstrdup("allocation");
-		gold_request_add_assignment(gold_request, "JobName", jname);
-		xfree(jname);
-
-		gold_request_add_assignment(gold_request, "Partition",
-					    job_ptr->partition);
-		
-		snprintf(tmp_buff, sizeof(tmp_buff), "%u",
-			 job_ptr->total_procs);
-		gold_request_add_assignment(gold_request, "RequestedCPUCount",
-					    tmp_buff);
-		snprintf(tmp_buff, sizeof(tmp_buff), "%u",
-			 job_ptr->total_procs);
-		gold_request_add_assignment(gold_request, "AllocatedCPUCount",
-					    tmp_buff);
-		
-		snprintf(tmp_buff, sizeof(tmp_buff), "%u",
-			 (int)job_ptr->details->begin_time);
-		gold_request_add_assignment(gold_request, "EligibleTime",
-					    tmp_buff);
-		
 		snprintf(tmp_buff, sizeof(tmp_buff), "%u", job_ptr->job_id);
 		gold_request_add_assignment(gold_request, "JobId", tmp_buff);
 		
@@ -180,6 +149,38 @@ static int _add_edit_job(struct job_record *job_ptr, gold_object_t action)
 		error("_add_edit_job: bad action given %d", action);		
 		return rc;
 	}
+
+	if (job_ptr->name && job_ptr->name[0]) {
+		int i;
+		jname = xmalloc(strlen(job_ptr->name) + 1);
+		for (i=0; job_ptr->name[i]; i++) {
+			if (isalnum(job_ptr->name[i]))
+				jname[i] = job_ptr->name[i];
+			else
+				jname[i] = '_';
+		}
+	} else
+		jname = xstrdup("allocation");
+
+	gold_request_add_assignment(gold_request, "JobName", jname);
+	xfree(jname);
+	
+	gold_request_add_assignment(gold_request, "Partition",
+				    job_ptr->partition);
+	
+	snprintf(tmp_buff, sizeof(tmp_buff), "%u",
+		 job_ptr->total_procs);
+	gold_request_add_assignment(gold_request, "RequestedCPUCount",
+				    tmp_buff);
+	snprintf(tmp_buff, sizeof(tmp_buff), "%u",
+		 job_ptr->total_procs);
+	gold_request_add_assignment(gold_request, "AllocatedCPUCount",
+				    tmp_buff);
+	
+	snprintf(tmp_buff, sizeof(tmp_buff), "%u",
+		 (int)job_ptr->details->begin_time);
+	gold_request_add_assignment(gold_request, "EligibleTime",
+				    tmp_buff);
 
 	snprintf(tmp_buff, sizeof(tmp_buff), "%u", job_ptr->assoc_id);
 	gold_request_add_assignment(gold_request, "GoldAccountId", tmp_buff);
