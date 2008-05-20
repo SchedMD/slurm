@@ -6,6 +6,9 @@
 /* Define the BG_DB2_SO value */
 #undef BG_DB2_SO
 
+/* Define the BG_LIB_PATH value */
+#undef BG_LIB_PATH
+
 /* Define the BG_SERIAL value */
 #undef BG_SERIAL
 

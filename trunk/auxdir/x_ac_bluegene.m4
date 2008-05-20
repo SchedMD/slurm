@@ -45,6 +45,7 @@ AC_DEFUN([X_AC_BLUEGENE],
          		have_bg_ar=yes
 			bg_bridge_so="$bg_dir/lib64/libbglbridge.so"
        	 		bg_ldflags="$bg_ldflags -L$bg_dir/lib64 -L/usr/lib64 -Wl,--unresolved-symbols=ignore-in-shared-libs -lbglbridge -lbgldb -ltableapi -lbglmachine -lexpat -lsaymessage"
+                        bg_libpath="$bg_libpath:$bg_dir/lib64"
       		fi
       
       		# Search for required DB2 library in the directory
@@ -52,7 +53,8 @@ AC_DEFUN([X_AC_BLUEGENE],
          		have_db2=yes
 	 	 	bg_db2_so="$bg_dir/lib64/libdb2.so"
        	 		bg_ldflags="$bg_ldflags -L$bg_dir/lib64 -ldb2"
-      		fi
+                        bg_libpath="$bg_libpath:$bg_dir/lib64"
+     		fi
 
       		# Search for headers in the directory
       		if test -z "$have_bg_hdr" -a -f "$bg_dir/include/rm_api.h" ; then
@@ -75,11 +77,11 @@ AC_DEFUN([X_AC_BLUEGENE],
 
   	if test ! -z "$have_bg_files" ; then
       		BG_INCLUDES="$bg_includes"
-		BG_LDFLAGS="-L$bg_dir/lib64"
-      		AC_DEFINE(HAVE_BG_FILES, 1, [Define to 1 if have Blue Gene files])
+		AC_DEFINE(HAVE_BG_FILES, 1, [Define to 1 if have Blue Gene files])
 
       		AC_DEFINE_UNQUOTED(BG_BRIDGE_SO, "$bg_bridge_so", [Define the BG_BRIDGE_SO value])
 		AC_DEFINE_UNQUOTED(BG_DB2_SO, "$bg_db2_so", [Define the BG_DB2_SO value])
+		AC_DEFINE_UNQUOTED(BG_LIB_PATH, "$bg_libpath", [Define the BG_LIB_PATH value])
 		AC_MSG_CHECKING(for BG serial value)
       		bg_serial="BGL"
       		AC_ARG_WITH(bg-serial,
@@ -89,5 +91,4 @@ AC_DEFUN([X_AC_BLUEGENE],
    	fi
 
    	AC_SUBST(BG_INCLUDES)
-   	AC_SUBST(BG_LDFLAGS)
 ])
