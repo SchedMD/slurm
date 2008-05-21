@@ -1169,14 +1169,14 @@ static int _rm_job_from_nodes(struct node_cr_record *node_cr_ptr,
 					part_cr_ptr->tot_job_cnt--;
 				else {
 					error("%s: tot_job_cnt underflow "
-						"for node %s",
+						"for node %s", pre_err,
 						node_record_table_ptr[i].name);
 				}
 				if ((part_cr_ptr->tot_job_cnt == 0) &&
 				    (part_cr_ptr->run_job_cnt)) {
 					part_cr_ptr->run_job_cnt = 0;
 					error("%s: run_job_count out of sync "
-						"for node %s",
+						"for node %s", pre_err,
 						node_record_table_ptr[i].name);
 				}
 			}
