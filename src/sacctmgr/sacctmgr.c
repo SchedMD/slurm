@@ -426,6 +426,22 @@ _process_command (int argc, char *argv[])
 				 argv[0]);
 		}		
 		quiet_flag = -1;
+	} else if (strncasecmp (argv[0], "rollup", 1) == 0) {
+		if (argc > 1) {
+			exit_code = 1;
+			fprintf (stderr,
+				 "too many arguments for %s keyword\n",
+				 argv[0]);
+		}
+		
+		if(acct_storage_g_roll_usage(db_conn) == SLURM_SUCCESS) {
+			if(commit_check("Would you like to commit rollup?")) {
+				acct_storage_g_commit(db_conn, 1);
+			} else {
+				printf(" Rollup Discarded\n");
+				acct_storage_g_commit(db_conn, 0);
+			}
+		}
 	} else if (strncasecmp (argv[0], "version", 4) == 0) {
 		if (argc > 1) {
 			exit_code = 1;

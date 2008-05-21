@@ -4326,9 +4326,12 @@ extern int acct_storage_p_roll_usage(mysql_conn_t *mysql_conn)
 	xfree(query);
 	row = mysql_fetch_row(result);
 	if(row) {
-		last_hour = atoi(row[UPDATE_HOUR]);
-		last_day = atoi(row[UPDATE_DAY]);
-		last_month = atoi(row[UPDATE_MONTH]);
+		/* the last times were one second before the next
+		 * period so increment here 1
+		 */
+		last_hour = atoi(row[UPDATE_HOUR])+1;
+		last_day = atoi(row[UPDATE_DAY])+1;
+		last_month = atoi(row[UPDATE_MONTH])+1;		
 	} else {
 		query = xstrdup_printf(
 			"insert into %s "
@@ -4341,60 +4344,110 @@ extern int acct_storage_p_roll_usage(mysql_conn_t *mysql_conn)
 		if(rc == SLURM_ERROR) 
 			return rc;
 	}
+/* 	last_hour = 1211403600; */
+/* 	//	last_hour = 1206946800; */
+/* 	last_day = 1206946800; */
+/* 	last_month = 1206946800; */
 
-	localtime_r(&my_time, &start_tm);
-	localtime_r(&my_time, &end_tm);
+	if(!localtime_r(&last_hour, &start_tm)) {
+		error("Couldn't get localtime from hour start %d", last_hour);
+		return SLURM_ERROR;
+	}
+	
+	if(!localtime_r(&my_time, &end_tm)) {
+		error("Couldn't get localtime from hour end %d", my_time);
+		return SLURM_ERROR;
+	}
+
+	/* below and anywhere in a rollup plugin when dealing with
+	 * epoch times we need to set the tm_isdst = -1 so we don't
+	 * have to worry about the time changes.  Not setting it to -1
+	 * will cause problems in the month with the date change.
+	 */
 
 	start_tm.tm_sec = 0;
 	start_tm.tm_min = 0;
-	start_time = timelocal(&start_tm);
+	start_tm.tm_hour++;
+	start_tm.tm_isdst = -1;
+	start_time = mktime(&start_tm);
 	end_tm.tm_sec = 59;
 	end_tm.tm_min = 59;
-	end_time = timelocal(&end_tm);
-	if(last_hour < start_time) {
+	end_tm.tm_hour--;
+	end_tm.tm_isdst = -1;
+	end_time = mktime(&end_tm);
+	if(end_time-start_time > 0) {
 		if((rc = mysql_hourly_rollup(mysql_conn, start_time, end_time)) 
 		   != SLURM_SUCCESS)
 			return rc;
 		query = xstrdup_printf("update %s set hour_rollup=%d",
-				       last_ran_table, start_time);
+				       last_ran_table, end_time);
+	} else {
+		debug2("no need to run this hour %d < %d", 
+		       end_time, start_time);
 	}
 
+	if(!localtime_r(&last_day, &start_tm)) {
+		error("Couldn't get localtime from day %d", last_day);
+		return SLURM_ERROR;
+	}
+	start_tm.tm_sec = 0;
+	start_tm.tm_min = 0;
 	start_tm.tm_hour = 0;
-	start_time = timelocal(&start_tm);
+	start_tm.tm_mday++;
+	start_tm.tm_isdst = -1;
+	start_time = mktime(&start_tm);
 	end_tm.tm_hour = 23;
-	end_time = timelocal(&end_tm);
-	if(last_day < start_time) {
+	end_tm.tm_mday--;
+	end_tm.tm_isdst = -1;
+	end_time = mktime(&end_tm);
+	if(end_time-start_time > 0) {
 		if((rc = mysql_daily_rollup(mysql_conn, start_time, end_time)) 
 		   != SLURM_SUCCESS)
 			return rc;
 		if(query) 
-			xstrfmtcat(query, ", daily_rollup=%d", start_time);
+			xstrfmtcat(query, ", daily_rollup=%d", end_time);
 		else 
 			query = xstrdup_printf("update %s set daily_rollup=%d",
-					       last_ran_table, start_time);
+					       last_ran_table, end_time);
+	} else {
+		debug2("no need to run this day %d < %d", end_time, start_time);
 	}
 
+	if(!localtime_r(&last_month, &start_tm)) {
+		error("Couldn't get localtime from month %d", last_month);
+		return SLURM_ERROR;
+	}
+
+	start_tm.tm_sec = 0;
+	start_tm.tm_min = 0;
+	start_tm.tm_hour = 0;
 	start_tm.tm_mday = 1;
-	start_time = timelocal(&start_tm);
+	start_tm.tm_isdst = -1;
+	start_time = mktime(&start_tm);
 	end_tm.tm_sec = -1;
 	end_tm.tm_min = 0;
 	end_tm.tm_hour = 0;
 	end_tm.tm_mday = 1;
-	end_tm.tm_mon++;
-	end_time = timelocal(&end_tm);
-	if(last_month < start_time) {
-		if((rc = mysql_daily_rollup(mysql_conn, start_time, end_time)) 
-		   != SLURM_SUCCESS)
+	end_tm.tm_isdst = -1;
+	end_time = mktime(&end_tm);
+	if(end_time-start_time > 0) {
+		if((rc = mysql_monthly_rollup(
+			    mysql_conn, start_time, end_time)) != SLURM_SUCCESS)
 			return rc;
 		if(query) 
-			xstrfmtcat(query, ", montly_rollup=%d", start_time);
+			xstrfmtcat(query, ", montly_rollup=%d", end_time);
 		else 
 			query = xstrdup_printf(
 				"update %s set monthly_rollup=%d",
-				last_ran_table, start_time);
-	}	
+				last_ran_table, end_time);
+	} else {
+		debug2("no need to run this month %d < %d",
+		       end_time, start_time);
+	}
+	
 	if(query) {
-		rc = mysql_db_query(mysql_conn->acct_mysql_db, query);
+		info("%s", query);
+		//rc = mysql_db_query(mysql_conn->acct_mysql_db, query);
 		xfree(query);
 	}
 	return rc;
