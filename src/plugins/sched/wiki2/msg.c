@@ -407,8 +407,6 @@ extern char *	get_wiki_conf(void)
 		if (!hide_part_ptr[i])
 			continue;
 		if (first) {
-			if (conf)
-				xstrcat(conf, ";");
 			xstrcat(conf, ";HidePartitionJobs=");
 			first = 0;
 		} else
