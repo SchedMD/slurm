@@ -43,18 +43,69 @@
 #ifdef HAVE_MYSQL
 
 extern int mysql_hourly_rollup(mysql_conn_t *mysql_conn,
-				time_t start, time_t end)
+			       time_t start, time_t end)
 {
+	int add_sec = 3599;
+	time_t curr_start = start;
+	time_t curr_end = curr_start + add_sec;
+
+	while(curr_start < end) {
+
+		curr_start = curr_end+1;
+		curr_end = curr_start + add_sec;
+		debug3("curr hour is now %d-%d", curr_start, curr_end);
+	}
 	return SLURM_SUCCESS;
 }
 extern int mysql_daily_rollup(mysql_conn_t *mysql_conn, 
-			       time_t start, time_t end)
+			      time_t start, time_t end)
 {
+	int add_sec = 86399;
+	time_t curr_start = start;
+	time_t curr_end = curr_start + add_sec;
+
+	while(curr_start < end) {
+
+		curr_start = curr_end+1;
+		curr_end = curr_start + add_sec;
+		debug3("curr day is now %d-%d", curr_start, curr_end);
+	}
+
 	return SLURM_SUCCESS;
 }
-extern int mysql_montly_rollup(mysql_conn_t *mysql_conn,
-				time_t start, time_t end)
+extern int mysql_monthly_rollup(mysql_conn_t *mysql_conn,
+			       time_t start, time_t end)
 {
+	struct tm start_tm;
+	time_t curr_start = start;
+	time_t curr_end;
+
+	if(!localtime_r(&curr_start, &start_tm)) {
+		error("Couldn't get localtime from month start %d", curr_start);
+		return SLURM_ERROR;
+	}
+	start_tm.tm_sec = -1;
+	start_tm.tm_min = 0;
+	start_tm.tm_hour = 0;
+	start_tm.tm_mday = 1;
+	start_tm.tm_isdst = -1;
+	curr_end = mktime(&start_tm);
+	while(curr_start < end) {
+
+		curr_start = curr_end+1;
+		if(!localtime_r(&curr_start, &start_tm)) {
+			error("Couldn't get localtime from month start %d",
+			      curr_start);
+		}
+		start_tm.tm_sec = -1;
+		start_tm.tm_min = 0;
+		start_tm.tm_hour = 0;
+		start_tm.tm_mday = 1;
+		start_tm.tm_mon++;
+		start_tm.tm_isdst = -1;
+		curr_end = mktime(&start_tm);
+		debug3("curr month is now %d-%d", curr_start, curr_end);
+	}
 	return SLURM_SUCCESS;
 }
 

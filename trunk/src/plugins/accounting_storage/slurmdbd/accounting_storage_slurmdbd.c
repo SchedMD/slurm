@@ -714,6 +714,7 @@ extern int acct_storage_p_roll_usage(void *db_conn)
 {
 	slurmdbd_msg_t req;
 	dbd_roll_usage_msg_t get_msg;
+	int rc, resp_code;
 	
 	get_msg.start = time(NULL);
 
@@ -721,10 +722,12 @@ extern int acct_storage_p_roll_usage(void *db_conn)
 
 	req.data = &get_msg;
 
-	if (slurm_send_slurmdbd_msg(&req) < 0)
-		return SLURM_ERROR;
+	rc = slurm_send_slurmdbd_recv_rc_msg(&req, &resp_code);
+
+	if(resp_code != SLURM_SUCCESS)
+		rc = resp_code;
 	
-	return SLURM_SUCCESS;
+	return rc;
 }
 
 extern int clusteracct_storage_p_node_down(void *db_conn,
@@ -902,6 +905,19 @@ extern int jobacct_storage_p_job_start(void *db_conn,
 
 	msg.msg_type      = DBD_JOB_START;
 	msg.data          = &req;
+
+	/* if we already have the db_index don't wait around for it
+	 * again just send the message 
+	 */
+	if(req.db_index) {
+		if (slurm_send_slurmdbd_msg(&msg) < 0)
+			return SLURM_ERROR;
+		return SLURM_SUCCESS;
+	} 
+
+	/* If we don't have the db_index we need to wait for it to be
+	 * used in the other submissions for this job.
+	 */
 	rc = slurm_send_recv_slurmdbd_msg(&msg, &msg_rc);
 	if (rc != SLURM_SUCCESS) {
 		if (slurm_send_slurmdbd_msg(&msg) < 0)
