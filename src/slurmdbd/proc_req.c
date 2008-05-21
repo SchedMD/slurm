@@ -706,7 +706,7 @@ static int _get_usage(uint16_t type, void *db_conn,
 	dbd_usage_msg_t *get_msg = NULL;
 	dbd_usage_msg_t got_msg;
 	uint16_t ret_type = 0;
-	int (*my_function) (void *db_conn, acct_usage_type_t type, void *object,
+	int (*my_function) (void *db_conn, void *object,
 			    time_t start, time_t end);
 	int rc = SLURM_SUCCESS;
 	char *comment = NULL;
@@ -736,7 +736,7 @@ static int _get_usage(uint16_t type, void *db_conn,
 		return SLURM_ERROR;
 	}		
 
-	rc = (*(my_function))(db_conn, get_msg->type, get_msg->rec,
+	rc = (*(my_function))(db_conn, get_msg->rec,
 			      get_msg->start, get_msg->end);
 	slurmdbd_free_usage_msg(type, get_msg);
 
@@ -1596,7 +1596,7 @@ static int   _roll_usage(void *db_conn,
 		goto end_it;
 	}
 
-	rc = acct_storage_g_roll_usage(db_conn, get_msg->type, get_msg->start);
+	rc = acct_storage_g_roll_usage(db_conn);
 	slurmdbd_free_roll_usage_msg(get_msg);
 
 end_it:

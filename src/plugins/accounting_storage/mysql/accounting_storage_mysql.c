@@ -48,6 +48,7 @@
 
 #include <strings.h>
 #include "mysql_jobacct_process.h"
+#include "mysql_rollup.h"
 #include "src/common/slurmdbd_defs.h"
 #include "src/common/slurm_auth.h"
 
@@ -108,6 +109,7 @@ char *job_table = "job_table";
 char *step_table = "step_table";
 char *txn_table = "txn_table";
 char *user_table = "user_table";
+char *last_ran_table = "last_ran_table";
 
 extern int acct_storage_p_commit(mysql_conn_t *mysql_conn, bool commit);
 
@@ -939,6 +941,13 @@ static int _mysql_acct_check_tables(MYSQL *acct_mysql_db)
 		{ NULL, NULL}
 	};
 
+	storage_field_t last_ran_table_fields[] = {
+		{ "hourly_rollup", "int unsigned default 0 not null" },
+		{ "daily_rollup", "int unsigned default 0 not null" },
+		{ "monthly_rollup", "int unsigned default 0 not null" },
+		{ NULL, NULL}		
+	};
+
 	storage_field_t step_table_fields[] = {
 		{ "id", "int not null" },
 		{ "stepid", "smallint not null" },
@@ -987,7 +996,7 @@ static int _mysql_acct_check_tables(MYSQL *acct_mysql_db)
 	storage_field_t user_table_fields[] = {
 		{ "creation_time", "int unsigned not null" },
 		{ "mod_time", "int unsigned default 0 not null" },
-		{ "deleted", "bool default 0" },
+		{ "deleted", "tinyint default 0" },
 		{ "name", "tinytext not null" },
 		{ "default_acct", "tinytext not null" },
 		{ "qos", "smallint default 1 not null" },
@@ -1103,6 +1112,11 @@ static int _mysql_acct_check_tables(MYSQL *acct_mysql_db)
 				 ", primary key (id), "
 				 "unique index (jobid, associd, submit))")
 	   == SLURM_ERROR)
+		return SLURM_ERROR;
+
+	if(mysql_db_create_table(acct_mysql_db, last_ran_table,
+				 last_ran_table_fields, 
+				 ")") == SLURM_ERROR)
 		return SLURM_ERROR;
 
 	if(mysql_db_create_table(acct_mysql_db, step_table,
@@ -4251,26 +4265,138 @@ empty:
 }
 
 extern int acct_storage_p_get_usage(mysql_conn_t *mysql_conn,
-				    acct_usage_type_t type,
 				    acct_association_rec_t *acct_assoc,
 				    time_t start, time_t end)
 {
 #ifdef HAVE_MYSQL
 	int rc = SLURM_SUCCESS;
-
 	return rc;
 #else
 	return SLURM_ERROR;
 #endif
 }
 
-extern int acct_storage_p_roll_usage(mysql_conn_t *mysql_conn, 
-				     acct_usage_type_t type,
-				     time_t start)
+extern int acct_storage_p_roll_usage(mysql_conn_t *mysql_conn)
 {
 #ifdef HAVE_MYSQL
 	int rc = SLURM_SUCCESS;
+	int i = 0;
+	time_t my_time = time(NULL);
+	struct tm start_tm;
+	struct tm end_tm;
+	MYSQL_RES *result = NULL;
+	MYSQL_ROW row;
+	char *query = NULL;
+	char *tmp = NULL;
+	time_t last_hour = 0;
+	time_t last_day = 0;
+	time_t last_month = 0;
+	time_t start_time = 0;
+  	time_t end_time = 0;
 
+	char *update_req_inx[] = {
+		"hourly_rollup",
+		"daily_rollup",
+		"monthly_rollup"
+	};
+	
+	enum {
+		UPDATE_HOUR,
+		UPDATE_DAY,
+		UPDATE_MONTH,
+		UPDATE_COUNT
+	};
+
+	i=0;
+	xstrfmtcat(tmp, "%s", update_req_inx[i]);
+	for(i=1; i<UPDATE_COUNT; i++) {
+		xstrfmtcat(tmp, ", %s", update_req_inx[i]);
+	}
+	
+	query = xstrdup_printf("select %s from %s", tmp, last_ran_table);
+	xfree(tmp);
+	
+	debug3("%d query\n%s", mysql_conn->conn, query);
+	if(!(result = mysql_db_query_ret(
+		     mysql_conn->acct_mysql_db, query, 0))) {
+		xfree(query);
+		return SLURM_ERROR;
+	}
+
+	xfree(query);
+	row = mysql_fetch_row(result);
+	if(row) {
+		last_hour = atoi(row[UPDATE_HOUR]);
+		last_day = atoi(row[UPDATE_DAY]);
+		last_month = atoi(row[UPDATE_MONTH]);
+	} else {
+		query = xstrdup_printf(
+			"insert into %s "
+			"(hourly_rollup, daily_rollup, monthly_rollup) "
+			"values (0, 0, 0)",
+			last_ran_table);
+		
+		rc = mysql_db_query(mysql_conn->acct_mysql_db, query);
+		xfree(query);
+		if(rc == SLURM_ERROR) 
+			return rc;
+	}
+
+	localtime_r(&my_time, &start_tm);
+	localtime_r(&my_time, &end_tm);
+
+	start_tm.tm_sec = 0;
+	start_tm.tm_min = 0;
+	start_time = timelocal(&start_tm);
+	end_tm.tm_sec = 59;
+	end_tm.tm_min = 59;
+	end_time = timelocal(&end_tm);
+	if(last_hour < start_time) {
+		if((rc = mysql_hourly_rollup(mysql_conn, start_time, end_time)) 
+		   != SLURM_SUCCESS)
+			return rc;
+		query = xstrdup_printf("update %s set hour_rollup=%d",
+				       last_ran_table, start_time);
+	}
+
+	start_tm.tm_hour = 0;
+	start_time = timelocal(&start_tm);
+	end_tm.tm_hour = 23;
+	end_time = timelocal(&end_tm);
+	if(last_day < start_time) {
+		if((rc = mysql_daily_rollup(mysql_conn, start_time, end_time)) 
+		   != SLURM_SUCCESS)
+			return rc;
+		if(query) 
+			xstrfmtcat(query, ", daily_rollup=%d", start_time);
+		else 
+			query = xstrdup_printf("update %s set daily_rollup=%d",
+					       last_ran_table, start_time);
+	}
+
+	start_tm.tm_mday = 1;
+	start_time = timelocal(&start_tm);
+	end_tm.tm_sec = -1;
+	end_tm.tm_min = 0;
+	end_tm.tm_hour = 0;
+	end_tm.tm_mday = 1;
+	end_tm.tm_mon++;
+	end_time = timelocal(&end_tm);
+	if(last_month < start_time) {
+		if((rc = mysql_daily_rollup(mysql_conn, start_time, end_time)) 
+		   != SLURM_SUCCESS)
+			return rc;
+		if(query) 
+			xstrfmtcat(query, ", montly_rollup=%d", start_time);
+		else 
+			query = xstrdup_printf(
+				"update %s set monthly_rollup=%d",
+				last_ran_table, start_time);
+	}	
+	if(query) {
+		rc = mysql_db_query(mysql_conn->acct_mysql_db, query);
+		xfree(query);
+	}
 	return rc;
 #else
 	return SLURM_ERROR;
@@ -4414,7 +4540,7 @@ end_it:
 }
 
 extern int clusteracct_storage_p_get_usage(
-	mysql_conn_t *mysql_conn, acct_usage_type_t type, 
+	mysql_conn_t *mysql_conn,
 	acct_cluster_rec_t *cluster_rec, time_t start, time_t end)
 {
 #ifdef HAVE_MYSQL

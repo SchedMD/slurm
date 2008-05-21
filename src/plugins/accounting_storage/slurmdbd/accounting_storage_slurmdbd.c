@@ -675,7 +675,7 @@ extern List acct_storage_p_get_associations(void *db_conn,
 	return ret_list;
 }
 
-extern int acct_storage_p_get_usage(void *db_conn, acct_usage_type_t type, 
+extern int acct_storage_p_get_usage(void *db_conn,
 				    acct_association_rec_t *acct_assoc,
 				    time_t start, time_t end)
 {
@@ -687,7 +687,6 @@ extern int acct_storage_p_get_usage(void *db_conn, acct_usage_type_t type,
 
 	get_msg.rec = acct_assoc;
 	get_msg.start = start;
-	get_msg.type = type;
 	get_msg.end = end;
 	req.msg_type = DBD_GET_ASSOC_USAGE;
 	
@@ -711,16 +710,13 @@ extern int acct_storage_p_get_usage(void *db_conn, acct_usage_type_t type,
 	return rc;
 }
 
-extern int acct_storage_p_roll_usage(void *db_conn,
-				     acct_usage_type_t type,
-				     time_t start)
+extern int acct_storage_p_roll_usage(void *db_conn)
 {
 	slurmdbd_msg_t req;
 	dbd_roll_usage_msg_t get_msg;
 	
-	get_msg.start = start;
-	get_msg.type = type;
-	
+	get_msg.start = time(NULL);
+
 	req.msg_type = DBD_ROLL_USAGE;
 
 	req.data = &get_msg;
@@ -825,7 +821,7 @@ extern int clusteracct_storage_p_register_ctld(char *cluster,
 }
 
 extern int clusteracct_storage_p_get_usage(
-	void *db_conn, acct_usage_type_t type,
+	void *db_conn,
 	acct_cluster_rec_t *cluster_rec,
 	time_t start, time_t end)
 {
@@ -838,7 +834,6 @@ extern int clusteracct_storage_p_get_usage(
 	get_msg.rec = cluster_rec;
 	get_msg.start = start;
 	get_msg.end = end;
-	get_msg.type = type;
 
 	req.msg_type = DBD_GET_CLUSTER_USAGE;
 	

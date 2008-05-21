@@ -357,7 +357,6 @@ extern List acct_storage_p_get_associations(void *db_conn,
 }
 
 extern int acct_storage_p_get_usage(void *db_conn,
-				    acct_usage_type_t type,
 				    acct_association_rec_t *acct_assoc,
 				    time_t start, time_t end)
 {
@@ -366,9 +365,7 @@ extern int acct_storage_p_get_usage(void *db_conn,
 	return rc;
 }
 
-extern int acct_storage_p_roll_usage(void *db_conn, 
-				     acct_usage_type_t type,
-				     time_t start)
+extern int acct_storage_p_roll_usage(void *db_conn)
 {
 	int rc = SLURM_SUCCESS;
 
@@ -405,7 +402,7 @@ extern int clusteracct_storage_p_cluster_procs(void *db_conn,
 }
 
 extern int clusteracct_storage_p_get_usage(
-	void *db_conn, acct_usage_type_t type, 
+	void *db_conn, 
 	acct_cluster_rec_t *cluster_rec, time_t start, time_t end)
 {
 

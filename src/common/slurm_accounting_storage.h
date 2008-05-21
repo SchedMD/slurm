@@ -47,13 +47,6 @@
 #include <pwd.h>
 
 typedef enum {
-	ACCT_USAGE_NOTSET,
-	ACCT_USAGE_HOUR,
-	ACCT_USAGE_DAY,
-	ACCT_USAGE_MONTH
-} acct_usage_type_t;
-
-typedef enum {
 	ACCT_ADMIN_NOTSET,
 	ACCT_ADMIN_NONE,
 	ACCT_ADMIN_OPERATOR,
@@ -456,23 +449,18 @@ extern List acct_storage_g_get_associations(void *db_conn,
 
 /* 
  * get info from the storage 
- * IN:  type period specifier
  * IN/OUT:  assoc void * (acct_association_rec_t *) with the id set
  * IN:  start time stamp for records >=
- * IN:  end time stamp for records <
+ * IN:  end time stamp for records <=
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
 extern int acct_storage_g_get_usage(
-	void *db_conn, acct_usage_type_t type, void *assoc,
-	time_t start, time_t end);
+	void *db_conn, void *assoc, time_t start, time_t end);
 /* 
  * roll up data in the storage 
- * IN:  type period specifier
- * IN:  start time stamp for records >=
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
-extern int acct_storage_g_roll_usage(
-	void *db_conn, acct_usage_type_t type, time_t start);
+extern int acct_storage_g_roll_usage(void *db_conn);
 /* 
  * record shares used information for backup in case slurmctld restarts 
  * IN:  account_list List of shares_used_object_t *
@@ -502,7 +490,6 @@ extern int clusteracct_storage_g_register_ctld(char *cluster, uint16_t port);
 
 /* 
  * get info from the storage 
- * IN:  type period specifier
  * IN/OUT:  cluster_rec void * (acct_cluster_rec_t *) with the name set
  * IN:  start time stamp for records >=
  * IN:  end time stamp for records <
@@ -510,7 +497,7 @@ extern int clusteracct_storage_g_register_ctld(char *cluster, uint16_t port);
  * RET: SLURM_SUCCESS on success SLURM_ERROR else
  */
 extern int clusteracct_storage_g_get_usage(
-	void *db_conn, acct_usage_type_t type, void *cluster_rec,
+	void *db_conn, void *cluster_rec,
 	time_t start, time_t end);
 
 /* 
