@@ -433,7 +433,8 @@ _process_command (int argc, char *argv[])
 				 "too many arguments for %s keyword\n",
 				 argv[0]);
 		}
-		
+		printf("ROLLUP DOESN'T WORK YET, "
+		       "this is for test purposes only.\n");
 		if(acct_storage_g_roll_usage(db_conn) == SLURM_SUCCESS) {
 			if(commit_check("Would you like to commit rollup?")) {
 				acct_storage_g_commit(db_conn, 1);
