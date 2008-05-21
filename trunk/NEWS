@@ -44,8 +44,8 @@ documents those changes that are of interest to users and admins.
     instead of base partitions
  -- In sched/gang only, prevent possible invalid memory reference when 
     slurmctld is reconfigured, e.g. "scontrol reconfig".
- -- In select/linear only, prevent invalid memory reference when nodes are
-    added to slurm.conf and then "scontrol reconfig" is executed. 
+ -- In select/linear only, prevent invalid memory reference in log message when
+    nodes are added to slurm.conf and then "scontrol reconfig" is executed. 
 
 * Changes in SLURM 1.3.1
 ========================
