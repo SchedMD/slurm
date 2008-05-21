@@ -136,13 +136,11 @@ typedef struct {
 
 typedef struct {
 	time_t start;
-	acct_usage_type_t type;
 } dbd_roll_usage_msg_t;
 
 typedef struct {
 	void *rec;
 	time_t start;
-	acct_usage_type_t type;
 	time_t end;
 } dbd_usage_msg_t;
 

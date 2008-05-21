@@ -2138,7 +2138,6 @@ void inline
 slurmdbd_pack_roll_usage_msg(dbd_roll_usage_msg_t *msg, Buf buffer)
 {
 	pack_time(msg->start, buffer);
-	pack16(msg->type, buffer);
 }
 
 int inline 
@@ -2147,7 +2146,6 @@ slurmdbd_unpack_roll_usage_msg(dbd_roll_usage_msg_t **msg, Buf buffer)
 	dbd_roll_usage_msg_t *msg_ptr = xmalloc(sizeof(dbd_roll_usage_msg_t));
 
 	safe_unpack_time(&msg_ptr->start, buffer);
-	safe_unpack16((uint16_t *)&msg_ptr->type, buffer);
 	
 unpack_error:
 	slurmdbd_free_roll_usage_msg(msg_ptr);

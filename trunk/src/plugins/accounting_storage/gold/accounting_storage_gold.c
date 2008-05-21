@@ -96,12 +96,12 @@ static List local_association_list = NULL;
 static int _add_edit_job(struct job_record *job_ptr, gold_object_t action);
 static int _check_for_job(uint32_t jobid, time_t submit);
 static List _get_association_list_from_response(gold_response_t *gold_response);
-static int _get_cluster_accounting_list_from_response(
-	gold_response_t *gold_response, 
-	acct_cluster_rec_t *cluster_rec);
-static int _get_acct_accounting_list_from_response(
-	gold_response_t *gold_response,
-	acct_association_rec_t *account_rec);
+/* static int _get_cluster_accounting_list_from_response( */
+/* 	gold_response_t *gold_response,  */
+/* 	acct_cluster_rec_t *cluster_rec); */
+/* static int _get_acct_accounting_list_from_response( */
+/* 	gold_response_t *gold_response, */
+/* 	acct_association_rec_t *account_rec); */
 static List _get_user_list_from_response(gold_response_t *gold_response);
 static List _get_acct_list_from_response(gold_response_t *gold_response);
 static List _get_cluster_list_from_response(gold_response_t *gold_response);
@@ -335,105 +335,105 @@ static List _get_association_list_from_response(gold_response_t *gold_response)
 	return association_list;
 }
 
-static int _get_cluster_accounting_list_from_response(
-	gold_response_t *gold_response,
-	acct_cluster_rec_t *cluster_rec)
-{
-	ListIterator itr = NULL;
-	ListIterator itr2 = NULL;
-	cluster_accounting_rec_t *clusteracct_rec = NULL;
-	gold_response_entry_t *resp_entry = NULL;
-	gold_name_value_t *name_val = NULL;
+/* static int _get_cluster_accounting_list_from_response( */
+/* 	gold_response_t *gold_response, */
+/* 	acct_cluster_rec_t *cluster_rec) */
+/* { */
+/* 	ListIterator itr = NULL; */
+/* 	ListIterator itr2 = NULL; */
+/* 	cluster_accounting_rec_t *clusteracct_rec = NULL; */
+/* 	gold_response_entry_t *resp_entry = NULL; */
+/* 	gold_name_value_t *name_val = NULL; */
 	
-	if(gold_response->entry_cnt <= 0) {
-		debug2("_get_list_from_response: No entries given");
-		return SLURM_ERROR;
-	}
-	if(!cluster_rec->accounting_list)
-		cluster_rec->accounting_list = 
-			list_create(destroy_cluster_accounting_rec);
+/* 	if(gold_response->entry_cnt <= 0) { */
+/* 		debug2("_get_list_from_response: No entries given"); */
+/* 		return SLURM_ERROR; */
+/* 	} */
+/* 	if(!cluster_rec->accounting_list) */
+/* 		cluster_rec->accounting_list =  */
+/* 			list_create(destroy_cluster_accounting_rec); */
 	
-	itr = list_iterator_create(gold_response->entries);
-	while((resp_entry = list_next(itr))) {
-		clusteracct_rec = xmalloc(sizeof(cluster_accounting_rec_t));
-		itr2 = list_iterator_create(resp_entry->name_val);
-		while((name_val = list_next(itr2))) {
-			if(!strcmp(name_val->name, "CPUCount")) {
-				clusteracct_rec->cpu_count = 
-					atoi(name_val->value);
-			} else if(!strcmp(name_val->name, 
-					  "PeriodStart")) {
-				clusteracct_rec->period_start = 
-					atoi(name_val->value);
-			} else if(!strcmp(name_val->name, 
-					  "IdleCPUSeconds")) {
-				clusteracct_rec->idle_secs = 
-					atoi(name_val->value);
-			} else if(!strcmp(name_val->name, 
-					  "DownCPUSeconds")) {
-				clusteracct_rec->down_secs = 
-					atoi(name_val->value);
-			} else if(!strcmp(name_val->name, 
-					  "AllocatedCPUSeconds")) {
-				clusteracct_rec->alloc_secs = 
-					atoi(name_val->value);
-			} else if(!strcmp(name_val->name, 
-					  "ReservedCPUSeconds")) {
-				clusteracct_rec->resv_secs = 
-					atoi(name_val->value);
-			} else {
-				error("Unknown name val of '%s' = '%s'",
-				      name_val->name, name_val->value);
-			}
-		}
-		list_iterator_destroy(itr2);
-		list_append(cluster_rec->accounting_list, clusteracct_rec);
-	}
-	list_iterator_destroy(itr);
+/* 	itr = list_iterator_create(gold_response->entries); */
+/* 	while((resp_entry = list_next(itr))) { */
+/* 		clusteracct_rec = xmalloc(sizeof(cluster_accounting_rec_t)); */
+/* 		itr2 = list_iterator_create(resp_entry->name_val); */
+/* 		while((name_val = list_next(itr2))) { */
+/* 			if(!strcmp(name_val->name, "CPUCount")) { */
+/* 				clusteracct_rec->cpu_count =  */
+/* 					atoi(name_val->value); */
+/* 			} else if(!strcmp(name_val->name,  */
+/* 					  "PeriodStart")) { */
+/* 				clusteracct_rec->period_start =  */
+/* 					atoi(name_val->value); */
+/* 			} else if(!strcmp(name_val->name,  */
+/* 					  "IdleCPUSeconds")) { */
+/* 				clusteracct_rec->idle_secs =  */
+/* 					atoi(name_val->value); */
+/* 			} else if(!strcmp(name_val->name,  */
+/* 					  "DownCPUSeconds")) { */
+/* 				clusteracct_rec->down_secs =  */
+/* 					atoi(name_val->value); */
+/* 			} else if(!strcmp(name_val->name,  */
+/* 					  "AllocatedCPUSeconds")) { */
+/* 				clusteracct_rec->alloc_secs =  */
+/* 					atoi(name_val->value); */
+/* 			} else if(!strcmp(name_val->name,  */
+/* 					  "ReservedCPUSeconds")) { */
+/* 				clusteracct_rec->resv_secs =  */
+/* 					atoi(name_val->value); */
+/* 			} else { */
+/* 				error("Unknown name val of '%s' = '%s'", */
+/* 				      name_val->name, name_val->value); */
+/* 			} */
+/* 		} */
+/* 		list_iterator_destroy(itr2); */
+/* 		list_append(cluster_rec->accounting_list, clusteracct_rec); */
+/* 	} */
+/* 	list_iterator_destroy(itr); */
 
-	return SLURM_SUCCESS;
-}
+/* 	return SLURM_SUCCESS; */
+/* } */
 
-static int _get_acct_accounting_list_from_response(
-	gold_response_t *gold_response,
-	acct_association_rec_t *acct_rec)
-{
-	ListIterator itr = NULL;
-	ListIterator itr2 = NULL;
-	acct_accounting_rec_t *accounting_rec = NULL;
-	gold_response_entry_t *resp_entry = NULL;
-	gold_name_value_t *name_val = NULL;
+/* static int _get_acct_accounting_list_from_response( */
+/* 	gold_response_t *gold_response, */
+/* 	acct_association_rec_t *acct_rec) */
+/* { */
+/* 	ListIterator itr = NULL; */
+/* 	ListIterator itr2 = NULL; */
+/* 	acct_accounting_rec_t *accounting_rec = NULL; */
+/* 	gold_response_entry_t *resp_entry = NULL; */
+/* 	gold_name_value_t *name_val = NULL; */
 	
-	if(!acct_rec->accounting_list)
-		acct_rec->accounting_list =
-			list_create(destroy_acct_accounting_rec);
+/* 	if(!acct_rec->accounting_list) */
+/* 		acct_rec->accounting_list = */
+/* 			list_create(destroy_acct_accounting_rec); */
 	
-	itr = list_iterator_create(gold_response->entries);
-	while((resp_entry = list_next(itr))) {
-		accounting_rec = xmalloc(sizeof(acct_accounting_rec_t));
+/* 	itr = list_iterator_create(gold_response->entries); */
+/* 	while((resp_entry = list_next(itr))) { */
+/* 		accounting_rec = xmalloc(sizeof(acct_accounting_rec_t)); */
 
-		itr2 = list_iterator_create(resp_entry->name_val);
-		while((name_val = list_next(itr2))) {
-			if(!strcmp(name_val->name, "PeriodStart")) {
-				accounting_rec->period_start = 
-					atoi(name_val->value);
-			} else if(!strcmp(name_val->name,
-					  "AllocatedCPUSeconds")) {
-				accounting_rec->alloc_secs = 
-					atoi(name_val->value);
-			} else {
-				error("Unknown name val of '%s' = '%s'",
-				      name_val->name, name_val->value);
-			}
-		}
-		list_iterator_destroy(itr2);
-		list_append(acct_rec->accounting_list, accounting_rec);
-	}
-	list_iterator_destroy(itr);
+/* 		itr2 = list_iterator_create(resp_entry->name_val); */
+/* 		while((name_val = list_next(itr2))) { */
+/* 			if(!strcmp(name_val->name, "PeriodStart")) { */
+/* 				accounting_rec->period_start =  */
+/* 					atoi(name_val->value); */
+/* 			} else if(!strcmp(name_val->name, */
+/* 					  "AllocatedCPUSeconds")) { */
+/* 				accounting_rec->alloc_secs =  */
+/* 					atoi(name_val->value); */
+/* 			} else { */
+/* 				error("Unknown name val of '%s' = '%s'", */
+/* 				      name_val->name, name_val->value); */
+/* 			} */
+/* 		} */
+/* 		list_iterator_destroy(itr2); */
+/* 		list_append(acct_rec->accounting_list, accounting_rec); */
+/* 	} */
+/* 	list_iterator_destroy(itr); */
 
-	return SLURM_SUCCESS;
+/* 	return SLURM_SUCCESS; */
 	
-}
+/* } */
 
 static List _get_user_list_from_response(gold_response_t *gold_response)
 {
@@ -2435,86 +2435,83 @@ empty:
 }
 
 extern int acct_storage_p_get_usage(void *db_conn,
-				    acct_usage_type_t type,
 				    acct_association_rec_t *acct_assoc,
 				    time_t start, time_t end)
 {
-	gold_request_t *gold_request = NULL;
-	gold_response_t *gold_response = NULL;
 	int rc = SLURM_ERROR;
-	char tmp_buff[50];
-	gold_object_t g_object;
-	char *req_cpu_type = NULL;
+/* 	gold_request_t *gold_request = NULL; */
+/* 	gold_response_t *gold_response = NULL; */
+/* 	char tmp_buff[50]; */
+/* 	gold_object_t g_object; */
+/* 	char *req_cpu_type = NULL; */
 
-	if(!acct_assoc || acct_assoc->id) {
-		error("acct_storage_p_get_usage: "
-		      "We need an id to go off to query off of");
-		return rc;
-	}
+/* 	if(!acct_assoc || acct_assoc->id) { */
+/* 		error("acct_storage_p_get_usage: " */
+/* 		      "We need an id to go off to query off of"); */
+/* 		return rc; */
+/* 	} */
 
-	switch(type) {
-	case ACCT_USAGE_HOUR:
-		g_object = GOLD_OBJECT_ACCT_HOUR_USAGE;
-		req_cpu_type = "AllocatedCPUSeconds";
-		break;
-	case ACCT_USAGE_DAY:
-		g_object = GOLD_OBJECT_ACCT_DAY_USAGE;
-		req_cpu_type = "AllocatedCPUSeconds";
-		break;
-	case ACCT_USAGE_MONTH:
-		g_object = GOLD_OBJECT_ACCT_MONTH_USAGE;
-		req_cpu_type = "AllocatedCPUHours";
-		break;
-	default:
-		error("Unknown usage type");
-		return rc;
-	}
-	gold_request = create_gold_request(
-		g_object, GOLD_ACTION_QUERY);
+/* 	switch(type) { */
+/* 	case ACCT_USAGE_HOUR: */
+/* 		g_object = GOLD_OBJECT_ACCT_HOUR_USAGE; */
+/* 		req_cpu_type = "AllocatedCPUSeconds"; */
+/* 		break; */
+/* 	case ACCT_USAGE_DAY: */
+/* 		g_object = GOLD_OBJECT_ACCT_DAY_USAGE; */
+/* 		req_cpu_type = "AllocatedCPUSeconds"; */
+/* 		break; */
+/* 	case ACCT_USAGE_MONTH: */
+/* 		g_object = GOLD_OBJECT_ACCT_MONTH_USAGE; */
+/* 		req_cpu_type = "AllocatedCPUHours"; */
+/* 		break; */
+/* 	default: */
+/* 		error("Unknown usage type"); */
+/* 		return rc; */
+/* 	} */
+/* 	gold_request = create_gold_request( */
+/* 		g_object, GOLD_ACTION_QUERY); */
 
-	if(!gold_request) 
-		return rc;
+/* 	if(!gold_request)  */
+/* 		return rc; */
 
-	snprintf(tmp_buff, sizeof(tmp_buff), "%u", acct_assoc->id);
-	gold_request_add_condition(gold_request, "Acct", tmp_buff,
-				   GOLD_OPERATOR_NONE, 0);
+/* 	snprintf(tmp_buff, sizeof(tmp_buff), "%u", acct_assoc->id); */
+/* 	gold_request_add_condition(gold_request, "Acct", tmp_buff, */
+/* 				   GOLD_OPERATOR_NONE, 0); */
 
-	if(start) {
-		snprintf(tmp_buff, sizeof(tmp_buff), "%d", (int)start);
-		gold_request_add_condition(gold_request, "PeriodStart",
-					   tmp_buff,
-					   GOLD_OPERATOR_GE, 0);
-	}
-	if(end) {	
-		snprintf(tmp_buff, sizeof(tmp_buff), "%u", (int)end);
-		gold_request_add_condition(gold_request, "PeriodStart",
-					   tmp_buff,
-					   GOLD_OPERATOR_L, 0);
-	}
+/* 	if(start) { */
+/* 		snprintf(tmp_buff, sizeof(tmp_buff), "%d", (int)start); */
+/* 		gold_request_add_condition(gold_request, "PeriodStart", */
+/* 					   tmp_buff, */
+/* 					   GOLD_OPERATOR_GE, 0); */
+/* 	} */
+/* 	if(end) {	 */
+/* 		snprintf(tmp_buff, sizeof(tmp_buff), "%u", (int)end); */
+/* 		gold_request_add_condition(gold_request, "PeriodStart", */
+/* 					   tmp_buff, */
+/* 					   GOLD_OPERATOR_L, 0); */
+/* 	} */
 
-	gold_request_add_selection(gold_request, "PeriodStart");
-	gold_request_add_selection(gold_request, req_cpu_type);
+/* 	gold_request_add_selection(gold_request, "PeriodStart"); */
+/* 	gold_request_add_selection(gold_request, req_cpu_type); */
 
-	gold_response = get_gold_response(gold_request);	
-	destroy_gold_request(gold_request);
+/* 	gold_response = get_gold_response(gold_request);	 */
+/* 	destroy_gold_request(gold_request); */
 
-	if(!gold_response) {
-		error("acct_storage_p_get_usage: "
-		      "no response received");
-		return rc;
-	}
+/* 	if(!gold_response) { */
+/* 		error("acct_storage_p_get_usage: " */
+/* 		      "no response received"); */
+/* 		return rc; */
+/* 	} */
 
-	rc = _get_acct_accounting_list_from_response(
-		gold_response, acct_assoc);
+/* 	rc = _get_acct_accounting_list_from_response( */
+/* 		gold_response, acct_assoc); */
 
-	destroy_gold_response(gold_response);
+/* 	destroy_gold_response(gold_response); */
 
 	return rc;
 }
 
-extern int acct_storage_p_roll_usage(void *db_conn, 
-				     acct_usage_type_t type,
-				     time_t start)
+extern int acct_storage_p_roll_usage(void *db_conn)
 {
 	int rc = SLURM_ERROR;
 	/* FIX ME: This doesn't do anything now */
@@ -2892,94 +2889,94 @@ extern int clusteracct_storage_p_cluster_procs(void *db_conn,
 }
 
 extern int clusteracct_storage_p_get_usage(
-	void *db_conn, acct_usage_type_t type, 
+	void *db_conn, 
 	acct_cluster_rec_t *cluster_rec, time_t start, 
 	time_t end)
 {
-	gold_request_t *gold_request = NULL;
-	gold_response_t *gold_response = NULL;
-	char tmp_buff[50];
 	int rc = SLURM_ERROR;
-	gold_object_t g_object;
-	char *alloc_cpu = NULL;
-	char *idle_cpu = NULL;
-	char *down_cpu = NULL;
-	char *resv_cpu = NULL;
+/* 	gold_request_t *gold_request = NULL; */
+/* 	gold_response_t *gold_response = NULL; */
+/* 	char tmp_buff[50]; */
+/* 	gold_object_t g_object; */
+/* 	char *alloc_cpu = NULL; */
+/* 	char *idle_cpu = NULL; */
+/* 	char *down_cpu = NULL; */
+/* 	char *resv_cpu = NULL; */
 
-	if(!cluster_rec || !cluster_rec->name) {
-		error("clusteracct_storage_p_get_hourly_usage:"
-		      "no cluster name given to query.");
-		return rc;
-	}
-	switch(type) {
-	case ACCT_USAGE_HOUR:
-		g_object = GOLD_OBJECT_MACHINE_HOUR_USAGE;
-		alloc_cpu = "AllocatedCPUSeconds";
-		idle_cpu = "IdleCPUSeconds";
-		down_cpu = "DownCPUSeconds";
-		resv_cpu = "ReservedCPUSeconds";
-		break;
-	case ACCT_USAGE_DAY:
-		g_object = GOLD_OBJECT_MACHINE_DAY_USAGE;
-		alloc_cpu = "AllocatedCPUSeconds";
-		idle_cpu = "IdleCPUSeconds";
-		down_cpu = "DownCPUSeconds";
-		resv_cpu = "ReservedCPUSeconds";
-		break;
-	case ACCT_USAGE_MONTH:
-		g_object = GOLD_OBJECT_MACHINE_MONTH_USAGE;
-		alloc_cpu = "AllocatedCPUHours";
-		idle_cpu = "IdleCPUHours";
-		down_cpu = "DownCPUHours";
-		resv_cpu = "ReservedCPUHours";
-		break;
-	default:
-		error("Unknown usage type");
-		return rc;
-	}
-	/* get the last known one */
-	gold_request = create_gold_request(GOLD_OBJECT_MACHINE_HOUR_USAGE,
-					   GOLD_ACTION_QUERY);
-	if(!gold_request) 
-		return rc;
+/* 	if(!cluster_rec || !cluster_rec->name) { */
+/* 		error("clusteracct_storage_p_get_hourly_usage:" */
+/* 		      "no cluster name given to query."); */
+/* 		return rc; */
+/* 	} */
+/* 	switch(type) { */
+/* 	case ACCT_USAGE_HOUR: */
+/* 		g_object = GOLD_OBJECT_MACHINE_HOUR_USAGE; */
+/* 		alloc_cpu = "AllocatedCPUSeconds"; */
+/* 		idle_cpu = "IdleCPUSeconds"; */
+/* 		down_cpu = "DownCPUSeconds"; */
+/* 		resv_cpu = "ReservedCPUSeconds"; */
+/* 		break; */
+/* 	case ACCT_USAGE_DAY: */
+/* 		g_object = GOLD_OBJECT_MACHINE_DAY_USAGE; */
+/* 		alloc_cpu = "AllocatedCPUSeconds"; */
+/* 		idle_cpu = "IdleCPUSeconds"; */
+/* 		down_cpu = "DownCPUSeconds"; */
+/* 		resv_cpu = "ReservedCPUSeconds"; */
+/* 		break; */
+/* 	case ACCT_USAGE_MONTH: */
+/* 		g_object = GOLD_OBJECT_MACHINE_MONTH_USAGE; */
+/* 		alloc_cpu = "AllocatedCPUHours"; */
+/* 		idle_cpu = "IdleCPUHours"; */
+/* 		down_cpu = "DownCPUHours"; */
+/* 		resv_cpu = "ReservedCPUHours"; */
+/* 		break; */
+/* 	default: */
+/* 		error("Unknown usage type"); */
+/* 		return rc; */
+/* 	} */
+/* 	/\* get the last known one *\/ */
+/* 	gold_request = create_gold_request(GOLD_OBJECT_MACHINE_HOUR_USAGE, */
+/* 					   GOLD_ACTION_QUERY); */
+/* 	if(!gold_request)  */
+/* 		return rc; */
 
-	gold_request_add_condition(gold_request, "Machine", cluster_rec->name,
-				   GOLD_OPERATOR_NONE, 0);
-	if(start) {
-		snprintf(tmp_buff, sizeof(tmp_buff), "%d", (int)start);
-		gold_request_add_condition(gold_request, "PeriodStart",
-					   tmp_buff,
-					   GOLD_OPERATOR_GE, 0);
-	}
-	if(end) {	
-		snprintf(tmp_buff, sizeof(tmp_buff), "%u", (int)end);
-		gold_request_add_condition(gold_request, "PeriodStart",
-					   tmp_buff,
-					   GOLD_OPERATOR_L, 0);
-	}
+/* 	gold_request_add_condition(gold_request, "Machine", cluster_rec->name, */
+/* 				   GOLD_OPERATOR_NONE, 0); */
+/* 	if(start) { */
+/* 		snprintf(tmp_buff, sizeof(tmp_buff), "%d", (int)start); */
+/* 		gold_request_add_condition(gold_request, "PeriodStart", */
+/* 					   tmp_buff, */
+/* 					   GOLD_OPERATOR_GE, 0); */
+/* 	} */
+/* 	if(end) {	 */
+/* 		snprintf(tmp_buff, sizeof(tmp_buff), "%u", (int)end); */
+/* 		gold_request_add_condition(gold_request, "PeriodStart", */
+/* 					   tmp_buff, */
+/* 					   GOLD_OPERATOR_L, 0); */
+/* 	} */
 
-	gold_request_add_selection(gold_request, "CPUCount");
-	gold_request_add_selection(gold_request, "PeriodStart");
-	gold_request_add_selection(gold_request, idle_cpu);
-	gold_request_add_selection(gold_request, down_cpu);
-	gold_request_add_selection(gold_request, alloc_cpu);
-	gold_request_add_selection(gold_request, resv_cpu);
+/* 	gold_request_add_selection(gold_request, "CPUCount"); */
+/* 	gold_request_add_selection(gold_request, "PeriodStart"); */
+/* 	gold_request_add_selection(gold_request, idle_cpu); */
+/* 	gold_request_add_selection(gold_request, down_cpu); */
+/* 	gold_request_add_selection(gold_request, alloc_cpu); */
+/* 	gold_request_add_selection(gold_request, resv_cpu); */
 		
-	gold_response = get_gold_response(gold_request);	
-	destroy_gold_request(gold_request);
+/* 	gold_response = get_gold_response(gold_request);	 */
+/* 	destroy_gold_request(gold_request); */
 
-	if(!gold_response) {
-		error("clusteracct_p_get_hourly_usage: no response received");
-		return rc;
-	}
+/* 	if(!gold_response) { */
+/* 		error("clusteracct_p_get_hourly_usage: no response received"); */
+/* 		return rc; */
+/* 	} */
 
-	if(gold_response->entry_cnt > 0) {
-		rc = _get_cluster_accounting_list_from_response(
-			gold_response, cluster_rec);
-	} else {
-		debug("We don't have an entry for this machine for this time");
-	}
-	destroy_gold_response(gold_response);
+/* 	if(gold_response->entry_cnt > 0) { */
+/* 		rc = _get_cluster_accounting_list_from_response( */
+/* 			gold_response, cluster_rec); */
+/* 	} else { */
+/* 		debug("We don't have an entry for this machine for this time"); */
+/* 	} */
+/* 	destroy_gold_response(gold_response); */
 
 	return rc;
 }

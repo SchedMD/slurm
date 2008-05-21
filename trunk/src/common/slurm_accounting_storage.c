@@ -104,13 +104,10 @@ typedef struct slurm_acct_storage_ops {
 	List (*get_associations)   (void *db_conn,
 				    acct_association_cond_t *assoc_q);
 	int  (*get_usage)          (void *db_conn,
-				    acct_usage_type_t type,
 				    void *acct_assoc,
 				    time_t start, 
 				    time_t end);
-	int (*roll_usage)          (void *db_conn,
-				    acct_usage_type_t type,
-				    time_t start);
+	int (*roll_usage)          (void *db_conn);
 	int  (*node_down)          (void *db_conn,
 				    char *cluster,
 				    struct node_record *node_ptr,
@@ -124,7 +121,6 @@ typedef struct slurm_acct_storage_ops {
 				    char *cluster,
 				    uint32_t procs, time_t event_time);
 	int  (*c_get_usage)        (void *db_conn,
-				    acct_usage_type_t type,
 				    void *cluster_rec, 
 				    time_t start, time_t end);
 	int  (*register_ctld)      (char *cluster, uint16_t port);
@@ -1821,22 +1817,21 @@ extern List acct_storage_g_get_associations(void *db_conn,
 		(db_conn, assoc_q);
 }
 
-extern int acct_storage_g_get_usage(void *db_conn, acct_usage_type_t type,
-				    void *acct_assoc, time_t start, time_t end)
+extern int acct_storage_g_get_usage(void *db_conn, 
+				    void *acct_assoc,
+				    time_t start, time_t end)
 {
 	if (slurm_acct_storage_init(NULL) < 0)
 		return SLURM_ERROR;
 	return (*(g_acct_storage_context->ops.get_usage))
-		(db_conn, type, acct_assoc, start, end);
+		(db_conn, acct_assoc, start, end);
 }
 
-extern int acct_storage_g_roll_usage(void *db_conn, acct_usage_type_t type,
-				     time_t start)
+extern int acct_storage_g_roll_usage(void *db_conn)
 {
 	if (slurm_acct_storage_init(NULL) < 0)
 		return SLURM_ERROR;
-	return (*(g_acct_storage_context->ops.roll_usage))
-		(db_conn, type, start);
+	return (*(g_acct_storage_context->ops.roll_usage))(db_conn);
 }
 
 extern int clusteracct_storage_g_node_down(void *db_conn,
@@ -1876,13 +1871,13 @@ extern int clusteracct_storage_g_cluster_procs(void *db_conn,
 
 
 extern int clusteracct_storage_g_get_usage(
-	void *db_conn, acct_usage_type_t type, void *cluster_rec,
+	void *db_conn, void *cluster_rec,
 	time_t start, time_t end)
 {
 	if (slurm_acct_storage_init(NULL) < 0)
 		return SLURM_ERROR;
 	return (*(g_acct_storage_context->ops.c_get_usage))
-		(db_conn, type, cluster_rec, start, end);
+		(db_conn, cluster_rec, start, end);
 }
 
 extern int clusteracct_storage_g_register_ctld(char *cluster, uint16_t port)
