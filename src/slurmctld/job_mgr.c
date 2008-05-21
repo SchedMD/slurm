@@ -3357,13 +3357,6 @@ void reset_job_bitmaps(void)
 
 		_reset_step_bitmaps(job_ptr);
 
-		if (select_g_update_nodeinfo(job_ptr) != SLURM_SUCCESS) {
-			error("select_g_update_nodeinfo(%u): %m", 
-				job_ptr->job_id);
-			/* not critical ... ? */
-			/* probably job_fail should be set here */
-		}
-
 		if ((job_ptr->kill_on_step_done)
 		    &&  (list_count(job_ptr->step_list) <= 1)) {
 			info("Single job step done, job is complete");
@@ -3392,7 +3385,18 @@ void reset_job_bitmaps(void)
 		}
 	}
 
+	list_iterator_reset(job_iterator);
+	/* This will reinitialize the select plugin database, which
+	 * we can only do after ALL job's states and bitmaps are set
+	 * (i.e. it needs to be in this second loop) */
+	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
+		if (select_g_update_nodeinfo(job_ptr) != SLURM_SUCCESS) {
+			error("select_g_update_nodeinfo(%u): %m", 
+				job_ptr->job_id);
+		}
+	}
 	list_iterator_destroy(job_iterator);
+
 	last_job_update = now;
 }
 

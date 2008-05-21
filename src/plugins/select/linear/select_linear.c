@@ -1003,6 +1003,11 @@ extern int select_p_update_nodeinfo (struct job_record *job_ptr)
 
 	xassert(job_ptr);
 
+	slurm_mutex_lock(&cr_mutex);
+	if (node_cr_ptr == NULL)
+		_init_node_cr();
+	slurm_mutex_unlock(&cr_mutex);
+
 	if ((job_ptr->job_state != JOB_RUNNING)
 	&&  (job_ptr->job_state != JOB_SUSPENDED))
 		return SLURM_SUCCESS;
@@ -1011,8 +1016,6 @@ extern int select_p_update_nodeinfo (struct job_record *job_ptr)
 		return SLURM_SUCCESS;
 
 	slurm_mutex_lock(&cr_mutex);
-	if (node_cr_ptr == NULL)
-		_init_node_cr();
 	step_iterator = list_iterator_create (job_ptr->step_list);
 	while ((step_ptr = (struct step_record *) list_next (step_iterator))) {
 		if ((step_ptr->step_node_bitmap == NULL) ||
