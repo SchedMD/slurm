@@ -497,13 +497,14 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/slurm/select_cons_res.so
 %{_libdir}/slurm/select_linear.so
 %{_libdir}/slurm/switch_none.so
-%{_libdir}/slurm/mpi_none.so
+%{_libdir}/slurm/mpi_lam.so
 %{_libdir}/slurm/mpi_mpich1_p4.so
 %{_libdir}/slurm/mpi_mpich1_shmem.so
 %{_libdir}/slurm/mpi_mpichgm.so
 %{_libdir}/slurm/mpi_mpichmx.so
 %{_libdir}/slurm/mpi_mvapich.so
-%{_libdir}/slurm/mpi_lam.so
+%{_libdir}/slurm/mpi_none.so
+%{_libdir}/slurm/mpi_openmpi.so
 %{_libdir}/slurm/task_none.so
 #############################################################################
 
