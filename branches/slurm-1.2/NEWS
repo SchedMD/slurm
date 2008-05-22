@@ -8,6 +8,10 @@ documents those changes that are of interest to users and admins.
  -- In sched/wiki2 (Moab), permit changes to a pending job's required features:
     CMD=CHANGEJOB ARG=<jobid> RFEATURES=<features>
  -- Fix for not aborting when node selection doesn't load, fatal error instead
+ -- In sched/wiki and sched/wiki2 DO NOT report a job's state as "Hold" if it's
+    dependencies have not been satisfied. This reverses a changed made in SLURM
+    version 1.2.29 (which was requested by Cluster Resources, but places jobs 
+    in a HELD state indefinitely).
 
 * Changes in SLURM 1.2.29
 =========================
