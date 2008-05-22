@@ -408,7 +408,7 @@ static int _verify_cpu_bind(const char *arg, char **cpu_bind,
 				       CPU_BIND_TO_SOCKETS);
 		} else if ((strcasecmp(tok, "core") == 0) ||
 		           (strcasecmp(tok, "cores") == 0)) {
-			clear_then_set((int *)bind, bind_to_bits,
+			clear_then_set((int *)flags, bind_to_bits,
 				       CPU_BIND_TO_CORES);
 		} else if ((strcasecmp(tok, "thread") == 0) ||
 		           (strcasecmp(tok, "threads") == 0)) {
