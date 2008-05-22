@@ -429,12 +429,8 @@ static char *	_get_job_state(struct job_record *job_ptr)
 		return "Running";
 	if (base_state == JOB_SUSPENDED)
 		return "Suspended";
-	if (base_state == JOB_PENDING) {
-		if (job_independent(job_ptr) &&
-		    (license_job_test(job_ptr) == SLURM_SUCCESS))
-			return "Idle";
-		return "Hold";
-	}
+	if (base_state == JOB_PENDING)
+		return "Idle";
 
 	if (base_state == JOB_COMPLETE)
 		return "Completed";
