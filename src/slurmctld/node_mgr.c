@@ -1638,7 +1638,7 @@ extern int validate_nodes_via_front_end(
 		slurm_node_registration_status_msg_t *reg_msg)
 {
 	int error_code = 0, i, jobs_on_node;
-	bool updated_job = false;
+	bool updated_job = false, failure_logged = false;
 	struct job_record *job_ptr;
 	struct config_record *config_ptr;
 	struct node_record *node_ptr;
@@ -1746,7 +1746,10 @@ extern int validate_nodes_via_front_end(
 			if (!(node_ptr->node_state & (NODE_STATE_DRAIN | 
 						      NODE_STATE_FAIL))) {
 #ifdef HAVE_BG
-				error("Prolog failure");
+				if (!failure_logged) {
+					error("Prolog failure");
+					failure_logged = true;
+				}
 #else
 				updated_job = true;
 				if (prolog_hostlist)
