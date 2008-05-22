@@ -49,12 +49,16 @@ extern int mysql_hourly_rollup(mysql_conn_t *mysql_conn,
 	time_t curr_start = start;
 	time_t curr_end = curr_start + add_sec;
 
+/* 	info("begin start %s", ctime(&curr_start)); */
+/* 	info("begin end %s", ctime(&curr_end)); */
 	while(curr_start < end) {
 
 		curr_start = curr_end+1;
 		curr_end = curr_start + add_sec;
 		debug3("curr hour is now %d-%d", curr_start, curr_end);
 	}
+/* 	info("stop start %s", ctime(&curr_start)); */
+/* 	info("stop end %s", ctime(&curr_end)); */
 	return SLURM_SUCCESS;
 }
 extern int mysql_daily_rollup(mysql_conn_t *mysql_conn, 
@@ -64,12 +68,16 @@ extern int mysql_daily_rollup(mysql_conn_t *mysql_conn,
 	time_t curr_start = start;
 	time_t curr_end = curr_start + add_sec;
 
+/* 	info("begin start %s", ctime(&curr_start)); */
+/* 	info("begin end %s", ctime(&curr_end)); */
 	while(curr_start < end) {
 
 		curr_start = curr_end+1;
 		curr_end = curr_start + add_sec;
 		debug3("curr day is now %d-%d", curr_start, curr_end);
 	}
+/* 	info("stop start %s", ctime(&curr_start)); */
+/* 	info("stop end %s", ctime(&curr_end)); */
 
 	return SLURM_SUCCESS;
 }
@@ -80,6 +88,8 @@ extern int mysql_monthly_rollup(mysql_conn_t *mysql_conn,
 	time_t curr_start = start;
 	time_t curr_end;
 
+/* 	info("begin month start %s", ctime(&start)); */
+/* 	info("begin month end %s", ctime(&end)); */
 	if(!localtime_r(&curr_start, &start_tm)) {
 		error("Couldn't get localtime from month start %d", curr_start);
 		return SLURM_ERROR;
@@ -88,8 +98,11 @@ extern int mysql_monthly_rollup(mysql_conn_t *mysql_conn,
 	start_tm.tm_min = 0;
 	start_tm.tm_hour = 0;
 	start_tm.tm_mday = 1;
+	start_tm.tm_mon++;
 	start_tm.tm_isdst = -1;
 	curr_end = mktime(&start_tm);
+/* 	info("begin start %s", ctime(&curr_start)); */
+/* 	info("begin end %s", ctime(&curr_end)); */
 	while(curr_start < end) {
 
 		curr_start = curr_end+1;
@@ -106,6 +119,8 @@ extern int mysql_monthly_rollup(mysql_conn_t *mysql_conn,
 		curr_end = mktime(&start_tm);
 		debug3("curr month is now %d-%d", curr_start, curr_end);
 	}
+/* 	info("stop start %s", ctime(&curr_start)); */
+/* 	info("stop end %s", ctime(&curr_end)); */
 	return SLURM_SUCCESS;
 }
 
