@@ -4329,9 +4329,9 @@ extern int acct_storage_p_roll_usage(mysql_conn_t *mysql_conn)
 		/* the last times were one second before the next
 		 * period so increment here 1
 		 */
-		last_hour = atoi(row[UPDATE_HOUR])+1;
-		last_day = atoi(row[UPDATE_DAY])+1;
-		last_month = atoi(row[UPDATE_MONTH])+1;		
+		last_hour = atoi(row[UPDATE_HOUR]);
+		last_day = atoi(row[UPDATE_DAY]);
+		last_month = atoi(row[UPDATE_MONTH]);		
 	} else {
 		query = xstrdup_printf(
 			"insert into %s "
@@ -4344,10 +4344,10 @@ extern int acct_storage_p_roll_usage(mysql_conn_t *mysql_conn)
 		if(rc == SLURM_ERROR) 
 			return rc;
 	}
-/* 	last_hour = 1211403600; */
-/* 	//	last_hour = 1206946800; */
-/* 	last_day = 1206946800; */
-/* 	last_month = 1206946800; */
+	last_hour = 1211403599;
+	//	last_hour = 1206946800;
+	last_day = 1207033199;
+	last_month = 1204358399;
 
 	if(!localtime_r(&last_hour, &start_tm)) {
 		error("Couldn't get localtime from hour start %d", last_hour);
@@ -4367,6 +4367,7 @@ extern int acct_storage_p_roll_usage(mysql_conn_t *mysql_conn)
 
 	start_tm.tm_sec = 0;
 	start_tm.tm_min = 0;
+	start_tm.tm_isdst = -1;
 	start_tm.tm_hour++;
 	start_tm.tm_isdst = -1;
 	start_time = mktime(&start_tm);
@@ -4422,6 +4423,7 @@ extern int acct_storage_p_roll_usage(mysql_conn_t *mysql_conn)
 	start_tm.tm_min = 0;
 	start_tm.tm_hour = 0;
 	start_tm.tm_mday = 1;
+	start_tm.tm_mon++;
 	start_tm.tm_isdst = -1;
 	start_time = mktime(&start_tm);
 	end_tm.tm_sec = -1;
