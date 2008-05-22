@@ -661,6 +661,7 @@ static void *_slurmctld_signal_hand(void *no_data)
 			break;
 		case SIGHUP:	/* kill -1 */
 			info("Reconfigure signal (SIGHUP) received");
+			slurm_reconfigure();
 			break;
 		case SIGABRT:	/* abort */
 			info("SIGABRT received");
@@ -1357,6 +1358,7 @@ static void _update_cred_key(void)
  * NOTE: READ lock_slurmctld config before entry */
 void update_logging(void) 
 {
+info("update_logging");
 	/* Preserve execute line arguments (if any) */
 	if (debug_level) {
 		slurmctld_conf.slurmctld_debug = MIN(
