@@ -6,6 +6,9 @@ documents those changes that are of interest to users and admins.
  -- Add mpi_openmpi plugin to the main SLURM RPM.
  -- Prevent invalid memory reference when using srun's --cpu_bind=cores option
     (slurm-1.3.2-1.cea1.patch from Matthieu Hautreux, CEA).
+ -- Task affinity plugin modified to support a particular cpu bind type: cores,
+    sockets, threads, or none. Accomplished by setting an environment variable
+    SLURM_ENFORCE_CPU_TYPE (slurm-1.3.2-1.cea2.patch from Matthieu Hautreux, CEA).
 
 * Changes in SLURM 1.3.2
 ========================
