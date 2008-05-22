@@ -8,7 +8,9 @@ documents those changes that are of interest to users and admins.
     (slurm-1.3.2-1.cea1.patch from Matthieu Hautreux, CEA).
  -- Task affinity plugin modified to support a particular cpu bind type: cores,
     sockets, threads, or none. Accomplished by setting an environment variable
-    SLURM_ENFORCE_CPU_TYPE (slurm-1.3.2-1.cea2.patch from Matthieu Hautreux, CEA).
+    SLURM_ENFORCE_CPU_TYPE (slurm-1.3.2-1.cea2.patch from Matthieu Hautreux, 
+    CEA).
+ -- For BlueGene only, log "Prolog failure" once per job not once per node.
 
 * Changes in SLURM 1.3.2
 ========================
