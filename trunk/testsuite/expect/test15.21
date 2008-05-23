@@ -107,11 +107,7 @@ expect {
 			cancel_job $job_id
 		}
 		slow_kill [expr 0 - $salloc_pid]
-		if {$waiting == 1} {
-			send_user "\nWARNING: salloc still not responding, quiting\n"
-		} else {
-			send_user "\nFAILURE: salloc not responding\n"
-		}
+		send_user "\nFAILURE: salloc not responding\n"
 		exit 1
 	}
 	eof {
