@@ -162,24 +162,24 @@ void lllp_distribution(launch_tasks_request_msg_t *req, uint32_t node_id)
 	switch (req->task_dist) {
 	case SLURM_DIST_BLOCK_BLOCK:
 	case SLURM_DIST_CYCLIC_BLOCK:
-		_task_layout_lllp_block(req, gtid, maxtasks, &masks);
+		rc = _task_layout_lllp_block(req, gtid, maxtasks, &masks);
 		break;
 	case SLURM_DIST_CYCLIC:
 	case SLURM_DIST_BLOCK:
 	case SLURM_DIST_CYCLIC_CYCLIC:
 	case SLURM_DIST_BLOCK_CYCLIC:
-		_task_layout_lllp_cyclic(req, gtid, maxtasks, &masks); 
+		rc = _task_layout_lllp_cyclic(req, gtid, maxtasks, &masks); 
 		break;
 	case SLURM_DIST_PLANE:
-		_task_layout_lllp_plane(req, gtid, maxtasks, &masks); 
+		rc = _task_layout_lllp_plane(req, gtid, maxtasks, &masks); 
 		break;
 	default:
-		_task_layout_lllp_cyclic(req, gtid, maxtasks, &masks); 
+		rc = _task_layout_lllp_cyclic(req, gtid, maxtasks, &masks); 
 		req->task_dist = SLURM_DIST_BLOCK_CYCLIC;
 		break;
 	}
 
-	if (masks) {
+	if (rc == SLURM_SUCCESS) {
 		_task_layout_display_masks(req, gtid, maxtasks, masks); 
 		if (req->cpus_per_task > 1) {
 			_lllp_enlarge_masks(req, maxtasks, masks);
@@ -190,12 +190,8 @@ void lllp_distribution(launch_tasks_request_msg_t *req, uint32_t node_id)
 	    	_lllp_map_abstract_masks(maxtasks, masks);
 		_task_layout_display_masks(req, gtid, maxtasks, masks); 
 	    	_lllp_generate_cpu_bind(req, maxtasks, masks);
-	    	_lllp_free_masks(req, maxtasks, masks);
 	}
-
-	if(rc != SLURM_SUCCESS)
-		error (" Error in lllp_distribution_create %s ", 
-		       req->task_dist);
+	_lllp_free_masks(req, maxtasks, masks);
 }
 
 static
@@ -725,7 +721,7 @@ static int _task_layout_lllp_cyclic(launch_tasks_request_msg_t *req,
 				    const uint32_t maxtasks,
 				    bitstr_t ***masks_p)
 {
-	int retval, i, taskcount = 0, taskid = 0;
+	int retval, i, last_taskcount = -1, taskcount = 0, taskid = 0;
 	uint16_t socket_index = 0, core_index = 0, thread_index = 0;
 	uint16_t hw_sockets = 0, hw_cores = 0, hw_threads = 0;
 	uint16_t usable_cpus = 0, avail_cpus = 0;
@@ -754,7 +750,12 @@ static int _task_layout_lllp_cyclic(launch_tasks_request_msg_t *req,
 		return retval;
 	masks = *masks_p;
 
-	for (i=0; taskcount<maxtasks; i++) { 
+	for (i=0; taskcount<maxtasks; i++) {
+		if (taskcount == last_taskcount) {
+			error("_task_layout_lllp_cyclic failure");
+			return SLURM_ERROR;
+		}
+		last_taskcount = taskcount; 
 		for (thread_index=0; thread_index<usable_threads; thread_index++) {
 			for (core_index=0; core_index<usable_cores; core_index++) {
 				for (socket_index=0; socket_index<usable_sockets; 
@@ -809,7 +810,7 @@ static int _task_layout_lllp_block(launch_tasks_request_msg_t *req,
 				   const uint32_t maxtasks,
 				   bitstr_t ***masks_p)
 {
-        int retval, j, k, l, m, taskcount = 0, taskid = 0;
+	int retval, j, k, l, m, last_taskcount = -1, taskcount = 0, taskid = 0;
 	int over_subscribe  = 0, space_remaining = 0;
 	uint16_t core_index = 0, thread_index = 0;
 	uint16_t hw_sockets = 0, hw_cores = 0, hw_threads = 0;
@@ -846,6 +847,11 @@ static int _task_layout_lllp_block(launch_tasks_request_msg_t *req,
 	}
 	
 	while(taskcount < maxtasks) {
+		if (taskcount == last_taskcount) {
+			error("_task_layout_lllp_block failure");
+			return SLURM_ERROR;
+		}
+		last_taskcount = taskcount;
 		for (j=0; j<usable_sockets; j++) {
 			for(core_index=0; core_index < usable_cores; core_index++) {
 				if((core_index < usable_cores) || (over_subscribe)) {
@@ -885,7 +891,7 @@ static int _task_layout_lllp_block(launch_tasks_request_msg_t *req,
 	}
 	
 	/* Distribute the tasks and create masks for the task
-	   affinity plug-in */
+	 * affinity plug-in */
 	taskid = 0;
 	taskcount = 0;
 	for (j=0; j<usable_sockets; j++) {
@@ -948,7 +954,7 @@ static int _task_layout_lllp_plane(launch_tasks_request_msg_t *req,
 				   const uint32_t maxtasks,
 				   bitstr_t ***masks_p)
 {
-        int retval, j, k, l, m, taskid = 0, next = 0;
+	int retval, j, k, l, m, taskid = 0, last_taskcount = -1, next = 0;
 	uint16_t core_index = 0, thread_index = 0;
 	uint16_t hw_sockets = 0, hw_cores = 0, hw_threads = 0;
 	uint16_t usable_cpus = 0, avail_cpus = 0;
@@ -984,6 +990,11 @@ static int _task_layout_lllp_plane(launch_tasks_request_msg_t *req,
 	next = 0;
 
 	for (j=0; next<maxtasks; j++) {
+		if (next == last_taskcount) {
+			error("_task_layout_lllp_plan failure");
+			return SLURM_ERROR;
+		}
+		last_taskcount = next;
 		for (k=0; k<usable_sockets; k++) {
 			max_plane_size = (plane_size > usable_cores) ? plane_size : usable_cores;
 			for (m=0; m<max_plane_size; m++) {
