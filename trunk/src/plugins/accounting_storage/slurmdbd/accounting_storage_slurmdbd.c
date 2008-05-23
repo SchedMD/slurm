@@ -357,8 +357,8 @@ extern List acct_storage_p_modify_clusters(void *db_conn, uint32_t uid,
 }
 
 extern List acct_storage_p_modify_associations(void *db_conn, uint32_t uid,
-					      acct_association_cond_t *assoc_q,
-					      acct_association_rec_t *assoc)
+					       acct_association_cond_t *assoc_q,
+					       acct_association_rec_t *assoc)
 {
 	slurmdbd_msg_t req;
 	dbd_modify_msg_t get_msg;
@@ -1202,4 +1202,24 @@ extern int acct_storage_p_update_shares_used(void *db_conn,
 		rc = resp_code;
 
 	return rc;
+}
+
+extern int acct_storage_p_flush_jobs_on_cluster(void *db_conn, char *cluster,
+						time_t event_time)
+{
+	slurmdbd_msg_t msg;
+	dbd_cluster_procs_msg_t req;
+
+	info("Ending any jobs in accounting that were running when controller "
+	     "went down on cluster %s", cluster);
+	req.cluster_name = cluster;
+	req.proc_count   = 0;
+	req.event_time   = event_time;
+	msg.msg_type     = DBD_FLUSH_JOBS;
+	msg.data         = &req;
+
+	if (slurm_send_slurmdbd_msg(&msg) < 0)
+		return SLURM_ERROR;
+
+	return SLURM_SUCCESS;
 }

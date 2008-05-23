@@ -304,6 +304,13 @@ extern int mysql_db_query(MYSQL *mysql_db, char *query)
 	return SLURM_SUCCESS;
 }
 
+extern int mysql_db_ping(MYSQL *mysql_db)
+{
+	/* clear out the old results so we don't get a 2014 error */
+	_clear_results(mysql_db);		
+	return mysql_ping(mysql_db);
+}
+
 extern int mysql_db_commit(MYSQL *mysql_db)
 {
 	//slurm_mutex_lock(&mysql_lock);

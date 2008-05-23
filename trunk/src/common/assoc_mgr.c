@@ -113,11 +113,13 @@ static int _get_local_association_list(void *db_conn, int enforce)
 				}
 				list_iterator_reset(itr2);
 			}
-			if(!assoc->user)
+			if(!assoc->user) {
 				continue;
+			}
 			passwd_ptr = getpwnam(assoc->user);
 			if(passwd_ptr) 
 				assoc->uid = passwd_ptr->pw_uid;
+			//log_assoc_rec(assoc);
 		}
 		list_iterator_destroy(itr2);
 		list_iterator_destroy(itr);
@@ -232,8 +234,10 @@ extern int assoc_mgr_fill_in_assoc(void *db_conn, acct_association_rec_t *assoc,
 		if(!assoc->cluster)
 			assoc->cluster = local_cluster_name;
 	}
-/* 	info("looking for assoc of user=%u, acct=%s, cluster=%s, partition=%s", */
-/* 	     assoc->uid, assoc->acct, assoc->cluster, assoc->partition); */
+/* 	info("looking for assoc of user=%s(%u), acct=%s, " */
+/* 	     "cluster=%s, partition=%s", */
+/* 	     assoc->user, assoc->uid, assoc->acct,  */
+/* 	     assoc->cluster, assoc->partition); */
 	slurm_mutex_lock(&local_association_lock);
 	itr = list_iterator_create(local_association_list);
 	while((found_assoc = list_next(itr))) {
@@ -244,12 +248,13 @@ extern int assoc_mgr_fill_in_assoc(void *db_conn, acct_association_rec_t *assoc,
 			}
 			continue;
 		} else {
-			if(!assoc->user && found_assoc->user) {
+			if(!assoc->uid && found_assoc->uid) {
 				debug3("we are looking for a "
 				       "nonuser association");
 				continue;
 			} else if(assoc->uid != found_assoc->uid) {
-				debug3("not the right user");
+				debug3("not the right user %u != %u",
+				       assoc->uid, found_assoc->uid);
 				continue;
 			}
 			
@@ -300,11 +305,17 @@ extern int assoc_mgr_fill_in_assoc(void *db_conn, acct_association_rec_t *assoc,
 		assoc->cluster = ret_assoc->cluster;
 	if(!assoc->partition)
 		assoc->partition = ret_assoc->partition;
+	assoc->fairshare                 = ret_assoc->fairshare;
 	assoc->max_cpu_secs_per_job      = ret_assoc->max_cpu_secs_per_job;
+	assoc->max_jobs                  = ret_assoc->max_jobs;
 	assoc->max_nodes_per_job         = ret_assoc->max_nodes_per_job;
 	assoc->max_wall_duration_per_job = ret_assoc->max_wall_duration_per_job;
-	/* The other fields are not relevant to the specific job,
-	 * for example max_jobs */
+	assoc->parent_acct_ptr           = ret_assoc->parent_acct_ptr;
+	if(assoc->parent_acct) {
+		xfree(assoc->parent_acct);
+		assoc->parent_acct       = xstrdup(ret_assoc->parent_acct);
+	} else 
+		assoc->parent_acct       = ret_assoc->parent_acct;
 	slurm_mutex_unlock(&local_association_lock);
 
 	return SLURM_SUCCESS;
@@ -481,7 +492,7 @@ extern int assoc_mgr_update_local_assocs(acct_update_object_t *update)
 				rc = SLURM_ERROR;
 				break;
 			}
-			debug("updating the assocs here on %u", rec->id);
+			debug("updating assoc %u", rec->id);
 			if(object->fairshare != (uint32_t)NO_VAL) {
 				rec->fairshare = object->fairshare;
 			}
@@ -517,6 +528,7 @@ extern int assoc_mgr_update_local_assocs(acct_update_object_t *update)
 				parents_changed = 1;
 				
 			}
+			log_assoc_rec(rec);
 			/* FIX ME: do more updates here */
 			break;
 		case ACCT_ADD_ASSOC:

@@ -5296,7 +5296,7 @@ static bool _validate_acct_policy(job_desc_msg_t *job_desc,
 {
 	uint32_t time_limit;
 
-	log_assoc_rec(assoc_ptr);
+	//log_assoc_rec(assoc_ptr);
 	if ((assoc_ptr->max_wall_duration_per_job != NO_VAL) &&
 	    (assoc_ptr->max_wall_duration_per_job != INFINITE)) {
 		time_limit = assoc_ptr->max_wall_duration_per_job;

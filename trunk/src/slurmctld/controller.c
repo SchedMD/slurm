@@ -377,6 +377,7 @@ int main(int argc, char *argv[])
 				 * information to Gold or SlurmDBD, create 
 				 * a file called "/tmp/slurm_accounting_first" to 
 				 * capture node initialization information */
+		   
 				_accounting_mark_all_nodes_down("cold-start");
 				 unlink("/tmp/slurm_accounting_first");
 			}
@@ -927,6 +928,12 @@ static int _accounting_mark_all_nodes_down(char *reason)
 		event_time = stat_buf.st_mtime;
 	}
 	xfree(state_file);
+
+	if((rc = acct_storage_g_flush_jobs_on_cluster(acct_db_conn,
+						      slurmctld_cluster_name,
+						      event_time))
+	   == SLURM_ERROR)
+		return rc;
 
 	node_ptr = node_record_table_ptr;
 	for (i = 0; i < node_record_count; i++, node_ptr++) {

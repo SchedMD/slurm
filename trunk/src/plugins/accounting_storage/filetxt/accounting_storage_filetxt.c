@@ -820,3 +820,10 @@ extern int acct_storage_p_update_shares_used(void *db_conn,
 {
 	return SLURM_SUCCESS;
 }
+
+extern int acct_storage_p_flush_jobs_on_cluster(
+	void *db_conn, char *cluster, time_t event_time)
+{
+	/* put end times for a clean start */
+	return SLURM_SUCCESS;
+}

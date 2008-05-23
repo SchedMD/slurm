@@ -468,6 +468,17 @@ extern int acct_storage_g_roll_usage(void *db_conn);
  */
 extern int acct_storage_g_update_shares_used(void *db_conn, List acct_list);
 
+/* 
+ * This should be called when a cluster does a cold start to flush out
+ * any jobs that were running during the restart so we don't have any
+ * jobs in the database "running" forever since no endtime will be
+ * placed in there other wise. 
+ * IN:  char * = cluster name
+ * RET: SLURM_SUCCESS on success SLURM_ERROR else
+ */
+extern int acct_storage_g_flush_jobs_on_cluster(
+	void *db_conn, char *cluster, time_t event_time);
+
 /*********************** CLUSTER ACCOUNTING STORAGE **************************/
 
 extern int clusteracct_storage_g_node_down(void *db_conn, 

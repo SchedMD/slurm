@@ -81,6 +81,7 @@ extern int mysql_get_db_connection(MYSQL **mysql_db, char *db_name,
 extern int mysql_close_db_connection(MYSQL **mysql_db);
 extern int mysql_cleanup();
 extern int mysql_db_query(MYSQL *mysql_db, char *query);
+extern int mysql_db_ping(MYSQL *mysql_db);
 extern int mysql_db_commit(MYSQL *mysql_db);
 extern int mysql_db_rollback(MYSQL *mysql_db);
 

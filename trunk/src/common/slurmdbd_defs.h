@@ -70,6 +70,8 @@ typedef enum {
 	DBD_ADD_CLUSTERS,       /* Add new cluster to the mix           */
 	DBD_ADD_USERS,          /* Add new user to the mix              */
 	DBD_CLUSTER_PROCS,	/* Record total processors on cluster	*/
+	DBD_FLUSH_JOBS, 	/* End jobs that are still running
+				 * when a controller is restarted.	*/
 	DBD_GET_ACCOUNTS,	/* Get account information		*/
 	DBD_GET_ASSOCS,         /* Get assocation information   	*/
 	DBD_GET_ASSOC_USAGE,  	/* Get assoc usage information  	*/
