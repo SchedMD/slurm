@@ -294,6 +294,9 @@ documents those changes that are of interest to users and admins.
     Moved existing digital signature logic into new plugin: crypto/openssl.
     Added new support for crypto/munge (available with GPL license).
 
+* Changes in SLURM 1.2.31
+=========================
+
 * Changes in SLURM 1.2.30
 =========================
  -- Fix for gold not to print out 720 error messages since they are
