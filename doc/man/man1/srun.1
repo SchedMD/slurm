@@ -1144,8 +1144,10 @@ per host and one task on that host forwards the data to other
 tasks on that host up to \fBPMI_FANOUT\fR. 
 If \fBPMI_FANOUT_OFF_HOST\fR is defined, the user task 
 may be required to forward the data to tasks on other hosts.
-Setting \fBPMI_FANOUT_OFF_HOST\fR may increase performance
-and vulnerability to failures.
+Setting \fBPMI_FANOUT_OFF_HOST\fR may increase performance. 
+Since more work is performed by the PMI library loaded by
+the user application, failures also can be more common and 
+more difficult to diagnose.
 .TP
 \fBPMI_TIME\fR
 This is used exclusively with PMI (MPICH2 and MVAPICH2) and 
